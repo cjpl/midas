@@ -9,6 +9,9 @@
                 for SCS-1001 stand alone control unit
 
   $Log$
+  Revision 1.2  2005/07/04 18:35:20  ritt
+  Implemented pump station logic
+
   Revision 1.1  2005/06/24 18:50:48  ritt
   Initial revision
 
@@ -61,21 +64,30 @@ sbit SRCLK    = P1 ^ 7;
 sbit SRIN     = P1 ^ 6;
 sbit SRSTROBE = P1 ^ 5;
 
+/*---- Error codes ----*/
+
+#define ERR_TURBO_COMM (1<<0)
+#define ERR_FOREVAC    (1<<1)
+#define ERR_MAINVAC    (1<<2)
+#define ERR_TURBO      (1<<3)
+
 /*---- Define variable parameters returned to CMD_GET_INFO command ----*/
 
 /* data buffer (mirrored in EEPROM) */
 
 struct {
+   unsigned char error;
+   unsigned char station_on;
+   unsigned char valve_locked;
    unsigned char relais[4];
    unsigned char turbo_on;
-   unsigned char vent_on;
    unsigned short rot_speed;
    float tmp_current;
    unsigned char din[4];
    unsigned char mv_close;
    unsigned char bv_open;
    unsigned char bv_close;
-   float hv_mbar;
+   float mv_mbar;
    float fv_mbar;
    float adc[8];
    float aofs[8];
@@ -84,13 +96,17 @@ struct {
 
 MSCB_INFO_VAR code variables[] = {
 
+   { 1, UNIT_BYTE,    0, 0, 0,           "Error",    &user_data.error },
+
+   { 1, UNIT_BOOLEAN, 0, 0, 0,           "Station",  &user_data.station_on, 0, 1, 1 },
+   { 1, UNIT_BOOLEAN, 0, 0, 0,           "Locked",   &user_data.valve_locked, 0, 1, 1 },
+
    { 1, UNIT_BOOLEAN, 0, 0, 0,           "Forepump", &user_data.relais[0], 0, 1, 1 },
    { 1, UNIT_BOOLEAN, 0, 0, 0,           "Forevlv",  &user_data.relais[1], 0, 1, 1 },
    { 1, UNIT_BOOLEAN, 0, 0, 0,           "Mainvlv",  &user_data.relais[2], 0, 1, 1 },
    { 1, UNIT_BOOLEAN, 0, 0, 0,           "Bypvlv",   &user_data.relais[3], 0, 1, 1 },
 
    { 1, UNIT_BOOLEAN, 0, 0,           0, "Turbo on", &user_data.turbo_on,  0, 1, 1 },
-   { 1, UNIT_BOOLEAN, 0, 0,           0, "Vent on",  &user_data.vent_on,   0, 1, 1 },
    { 2, UNIT_HERTZ,   0, 0,           0, "RotSpd",   &user_data.rot_speed, },
    { 4, UNIT_AMPERE,  0, 0, MSCBF_FLOAT, "TMPcur",   &user_data.tmp_current, },
 
@@ -102,7 +118,7 @@ MSCB_INFO_VAR code variables[] = {
    { 1, UNIT_BOOLEAN, 0, 0, 0,           "BV open",  &user_data.bv_open  },
    { 1, UNIT_BOOLEAN, 0, 0, 0,           "BV close", &user_data.bv_close },
 
-   { 4, UNIT_BAR, PRFX_MILLI, 0, MSCBF_FLOAT,          "HV",      &user_data.hv_mbar },
+   { 4, UNIT_BAR, PRFX_MILLI, 0, MSCBF_FLOAT,          "HV",      &user_data.mv_mbar },
    { 4, UNIT_BAR, PRFX_MILLI, 0, MSCBF_FLOAT,          "FV",      &user_data.fv_mbar },
    { 4, UNIT_VOLT,   0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "ADC0",    &user_data.adc[0] },
    { 4, UNIT_VOLT,   0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "ADC1",    &user_data.adc[1] },
@@ -130,7 +146,6 @@ MSCB_INFO_VAR code variables[] = {
    { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "AGAIN5", &user_data.again[5], 0.9, 1.1, 0.001 },
    { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "AGAIN6", &user_data.again[6], 0.9, 1.1, 0.001 },
    { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "AGAIN7", &user_data.again[7], 0.9, 1.1, 0.001 },
-
 
    { 0 }
 };
@@ -205,9 +220,6 @@ void user_init(unsigned char init)
    /* turn on turbo pump motor (not pump station) */
    tc600_write(23, 6, 111111);
 
-   /* vent mode */
-   tc600_write(30, 3, 0);
-
    /* display startup screen */
    lcd_goto(0, 0);
    for (i=0 ; i<7-strlen(sys_info.node_name)/2 ; i++)
@@ -219,6 +231,8 @@ void user_init(unsigned char init)
    printf("   Address:  %04X", sys_info.node_addr);
    lcd_goto(0, 2);
    printf("   Version:  %bd", PS_VERSION);
+
+   user_data.error = 0;
 }
 
 #pragma NOAREGS
@@ -350,7 +364,7 @@ unsigned char tc600_read(unsigned short param, char *result)
       putchar1(str[i]);
    flush();
 
-   i = gets_wait(str, sizeof(str), 200);
+   i = gets_wait(str, sizeof(str), 50);
    if (i > 2) {
       len = (str[8] - '0') * 10 + (str[9] - '0');
 
@@ -383,55 +397,107 @@ unsigned char tc600_write(unsigned short param, unsigned char len, unsigned long
    for (i=0 ; i<strlen(str); i++)
       putchar1(str[i]);
    flush();
-   i = gets_wait(str, sizeof(str), 200);
+   i = gets_wait(str, sizeof(str), 50);
 
    return i;
 }
 
-/*---- Application display -----------------------------------------*/
+/*---- Pumpstation specific code -----------------------------------*/
+
+#define ST_OFF           1  // station if off
+#define ST_START_FORE    2  // fore pump is starting up
+#define ST_EVAC_FORE     3  // evacuating buffer tank
+#define ST_EVAC_MAIN     4  // evacuating main recipient
+#define ST_RAMP_TURBO    5  // ramp up turbo pump
+#define ST_RUNNING       6  // running operation
+#define ST_ERROR         7  // error condition
+
+unsigned long xdata start_time;
+unsigned char xdata pump_state = ST_OFF;
+
+void set_forepump(unsigned char flag)
+{
+   user_data.relais[0] = flag;
+   user_write(0);
+}
+
+void set_forevalve(unsigned char flag)
+{
+   user_data.relais[1] = flag;
+   user_write(1);
+}
+
+void set_mainvalve(unsigned char flag)
+{
+   user_data.relais[2] = flag;
+   user_write(2);
+}
+
+void set_bypassvalve(unsigned char flag)
+{
+   user_data.relais[3] = flag;
+   user_write(3);
+}
 
 unsigned char application_display(bit init)
 {
-static bit b0_old = 0, b1_old = 0, b2_old = 0, b3_old = 0;
-unsigned char i;
+static bit b0_old = 0, b1_old = 0, b2_old = 0, b3_old = 0, 
+   station_on_old = 0, valve_locked_old = 0;
 
    if (init)
       lcd_clear();
 
-   /* display first two ADCs */
-   for (i=0 ; i<3 ; i++) {
-      lcd_goto(0, i);
-      printf("%bd:%6.3fV", 0+i*2, user_data.adc[0+i*2]);
-      lcd_goto(11, i);
-      printf("%bd:%6.3fV", 1+i*2, user_data.adc[1+i*2]);
+   /* display pressures */
+   lcd_goto(0, 0);
+   if (user_data.relais[0] && user_data.relais[1])
+      printf("P1*: %9.2E mbar", user_data.fv_mbar);
+   else
+      printf("P1: %10.2E mbar", user_data.fv_mbar);
+   
+   lcd_goto(0, 1);
+   if (user_data.turbo_on && (user_data.relais[2] || user_data.relais[3]))
+      printf("P2*: %9.2E mbar", user_data.mv_mbar);
+   else
+      printf("P2: %10.2E mbar", user_data.mv_mbar);
+ 
+   lcd_goto(0, 2);
+   if (user_data.error & ERR_TURBO_COMM)
+      printf("ERROR: turbo comm.  ");
+   else if (user_data.error & ERR_FOREVAC)
+      printf("ERROR: fore vaccuum ");
+   else if (user_data.error & ERR_MAINVAC)
+      printf("ERROR: main vaccuum ");
+   else if (user_data.error & ERR_TURBO)
+      printf("ERROR: TMP < 80%%    ");
+   else {
+      if (pump_state == ST_OFF) {
+         if (user_data.rot_speed > 10)
+            printf("Rmp down TMP: %3d Hz", user_data.rot_speed);
+         else
+            printf("Pump station off    ");
+      } else if (pump_state == ST_START_FORE)
+         printf("Starting fore pump  ");
+      else if (pump_state == ST_EVAC_FORE)
+         printf("Pumping buffer tank ");
+      else if (pump_state == ST_EVAC_MAIN)
+         printf("Pumping recipient   ");
+      else
+         printf("TMP: %4d Hz, %4.2f A", user_data.rot_speed, user_data.tmp_current);
    }
 
-   /* show state of relais 0-2 */
-   for (i=0 ; i<3 ; i++) {
-      lcd_goto(i*5+i/2, 3);
-      printf("R%bd:%bd", i, user_data.relais[i]);
-   }
+   lcd_goto(0, 3);
+   printf(user_data.station_on ? "OFF" : "ON ");
 
-   lcd_goto(16, 3);
-   printf("MENU");
+   lcd_goto(4, 3);
+   printf(user_data.valve_locked ? "UNLOCK" : " LOCK ");
 
-   /* toggle relais 0 with button 0 */
-   if (b0 && !b0_old) {
-      user_data.relais[0] = !user_data.relais[0];
-      user_write(0);
-   }
+   /* toggle main switch with button 0 */
+   if (b0 && !b0_old)
+      user_data.station_on = !user_data.station_on;
 
-   /* toggle relais 1 with button 1 */
-   if (b1 && !b1_old) {
-      user_data.relais[1] = !user_data.relais[1];
-      user_write(1);
-   }
-
-   /* toggle relais 2 with button 2 */
-   if (b2 && !b2_old) {
-      user_data.relais[2] = !user_data.relais[2];
-      user_write(2);
-   }
+   /* toggle locking with button 1 */
+   if (b1 && !b1_old)
+      user_data.valve_locked = !user_data.valve_locked;
 
    /* enter menu on release of button 3 */
    if (!init)
@@ -443,6 +509,167 @@ unsigned char i;
    b2_old = b2;
    b3_old = b3;
 
+   /*---- Pump station turn on logic ----*/
+
+   if (user_data.station_on && !station_on_old) {
+
+      /* start station */
+      
+      /* vent enable off */
+      tc600_write(12, 6, 0);
+
+      set_mainvalve(0);
+      set_bypassvalve(0);
+
+      set_forepump(1);
+      pump_state = ST_START_FORE;
+
+      start_time = time();     // remember start time
+   }
+
+   /* wait 5s for forepump to start (turbo could be still rotating!) */
+   if (pump_state == ST_START_FORE && time() > start_time + 5*100) {
+
+      set_forevalve(1);
+
+      start_time = time();     // remember start time
+      pump_state = ST_EVAC_FORE;
+   }
+
+   /* check if buffer tank gets evacuated in less than 15 min */
+   if (pump_state == ST_EVAC_FORE && time() > start_time + 15*60*100) {
+      pump_state = ST_ERROR;
+      user_data.error = ERR_FOREVAC;
+      set_forevalve(0);
+      set_forepump(0);
+   }
+
+   /* check if evacuation of forepump and buffer tank is ready */
+   if (pump_state == ST_EVAC_FORE && user_data.fv_mbar < 1) {
+
+      if (user_data.mv_mbar < 1) {
+         
+         /* recipient is already evacuated, go to running mode */
+         start_time = time();     // remember start time
+         pump_state = ST_EVAC_MAIN ;
+      
+      } else {
+
+         if (user_data.valve_locked) {
+            /* go immediately to running mode */
+            user_data.turbo_on = 1;
+            set_forevalve(1);
+      
+            start_time = time();     // remember start time
+            pump_state = ST_RAMP_TURBO;
+
+         } else {
+         
+            /* evacuate recipient through bypass valve */
+            set_forevalve(0);
+            delay_ms(2000);          // wait 2s
+            set_bypassvalve(1);
+      
+            start_time = time();     // remember start time
+            pump_state = ST_EVAC_MAIN;
+         }
+      }
+   }
+
+   /* check if recipient gets evacuated in less than 1h */
+   if (pump_state == ST_EVAC_MAIN && time() > start_time + 60*60*100) {
+      pump_state = ST_ERROR;
+      user_data.error = ERR_MAINVAC;
+      set_forevalve(0);
+      set_forepump(0);
+   }
+
+   /* check if evacuation of main recipient is ready, may take very long time */
+   if (pump_state == ST_EVAC_MAIN && user_data.mv_mbar < 1) {
+      
+      set_forevalve(1);        // now evacuate both recipient and buffer tank
+   }
+
+   /* check if vacuum on both sides of main valve is ok */
+   if (pump_state == ST_EVAC_MAIN && user_data.mv_mbar < 1 && user_data.fv_mbar < 1) {
+
+      /* turn on turbo pump */
+      user_data.turbo_on = 1;
+
+      start_time = time();     // remember start time
+      pump_state = ST_RAMP_TURBO;
+   }
+
+   /* check for turbo pump error */
+   if (pump_state == ST_RAMP_TURBO && user_data.rot_speed < 800 && time() > start_time + 15*6*100) {
+      pump_state = ST_ERROR;
+      user_data.error = ERR_TURBO;
+   }
+
+   /* check if turbo pump started successfully */
+   if (pump_state == ST_RAMP_TURBO && user_data.rot_speed > 800 &&
+       user_data.mv_mbar < 1 && user_data.fv_mbar < 1) {
+    
+      set_bypassvalve(0);
+
+      /* now open main (gate) valve if not locked */
+      if (!user_data.valve_locked)
+         set_mainvalve(1);
+
+      pump_state = ST_RUNNING;
+   }
+
+
+   /* cycle fore pump */
+   if (pump_state == ST_RUNNING) {
+      if (user_data.fv_mbar < 0.1) 
+         set_forepump(0);         // turn fore pump off
+      if (user_data.fv_mbar > 1) 
+         set_forepump(1);         // turn fore pump on
+
+      user_write(0);
+   }
+
+   /*---- Pump station turn off logic ----*/
+
+   if (!user_data.station_on && station_on_old) {
+
+      /* close all valves */
+      
+      set_forevalve(0);
+      set_mainvalve(0);
+      set_bypassvalve(0);
+      set_forepump(0);
+
+      /* stop turbo pump */
+      user_data.turbo_on = 0;
+
+      /* vent enable on */
+      tc600_write(12, 6, 111111);
+   
+      /* vent mode auto */
+      tc600_write(30, 3, 0);
+
+      pump_state = ST_OFF;
+      user_data.error = 0;
+   }
+   
+   /*---- Lock logic ----*/
+   
+   if (user_data.valve_locked && !valve_locked_old) {
+      set_mainvalve(0);
+   }
+
+   if (!user_data.valve_locked && valve_locked_old) {
+      if (user_data.station_on) {
+         start_time = time();       // remember start time
+         pump_state = ST_EVAC_FORE; // start with buffer tank evacuation
+      }
+   }
+
+   station_on_old = user_data.station_on;
+   valve_locked_old = user_data.valve_locked;
+
    return 0;
 }
 
@@ -453,7 +680,6 @@ void user_loop(void)
    char idata str[32];
    static unsigned char xdata adc_chn = 0;
    static char xdata turbo_on_last = -1;
-   static char xdata vent_on_last = -1;
    static unsigned long xdata last_read = 0;
  
    /* read one ADC channel */
@@ -461,7 +687,7 @@ void user_loop(void)
 
    /* convert voltage to pressure, see data sheets */
    if (adc_chn == 0)
-      user_data.hv_mbar  = pow(10, 1.667 * user_data.adc[0] - 11.33); // PKR 251
+      user_data.mv_mbar  = pow(10, 1.667 * user_data.adc[0] - 11.33); // PKR 251
    if (adc_chn == 1)
       user_data.fv_mbar  = pow(10, user_data.adc[1] - 5.5);           // TPR 280
    if (adc_chn == 5)
@@ -478,23 +704,22 @@ void user_loop(void)
 
    /* read turbo pump parameters once each second */
    if (time() > last_read + 100) {
-      last_read = time();
 
       if (user_data.turbo_on != turbo_on_last) {
          tc600_write(10, 6, user_data.turbo_on ? 111111 : 0);
          turbo_on_last = user_data.turbo_on;
       }
 
-      if (user_data.vent_on != vent_on_last) {
-         tc600_write(12, 6, user_data.vent_on ? 111111 : 0);
-         vent_on_last = user_data.vent_on;
-      }
-
-      if (tc600_read(309, str))
+      if (tc600_read(309, str)) {
+         user_data.error &= ~ERR_TURBO_COMM;
          user_data.rot_speed = atoi(str);
 
-      if (tc600_read(310, str))
-         user_data.tmp_current = atoi(str) / 100.0;
+         if (tc600_read(310, str))
+            user_data.tmp_current = atoi(str) / 100.0;
+      } else
+         user_data.error |= ERR_TURBO_COMM;
+
+      last_read = time();
    }
    
    /* mangae menu on LCD display */
