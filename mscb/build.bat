@@ -17,6 +17,8 @@ nmake -f calib_700.mak CFG="calib_700 - Win32 Release" Clean
 nmake -f calib_700.mak CFG="calib_700 - Win32 Release"
 nmake -f calib_900.mak CFG="calib_900 - Win32 Release" Clean
 nmake -f calib_900.mak CFG="calib_900 - Win32 Release"
+nmake -f calib_1000.mak CFG="calib_900 - Win32 Release" Clean
+nmake -f calib_1000.mak CFG="calib_900 - Win32 Release"
 nmake -f calib_hvr.mak CFG="calib_hvr - Win32 Release" Clean
 nmake -f calib_hvr.mak CFG="calib_hvr - Win32 Release"
 
@@ -29,6 +31,7 @@ copy \midas\nt\bin\msc.exe \midas\mscb\
 copy \midas\nt\bin\calib_520.exe \midas\mscb\
 copy \midas\nt\bin\calib_700.exe \midas\mscb\
 copy \midas\nt\bin\calib_900.exe \midas\mscb\
+copy \midas\nt\bin\calib_1000.exe \midas\mscb\
 copy \midas\nt\bin\calib_hvr.exe \midas\mscb\
 copy \midas\nt\lib\mscb.dll \midas\mscb\labview\
 
@@ -40,6 +43,7 @@ zip mscb%version%.zip msc.exe
 zip mscb%version%.zip calib_520.exe
 zip mscb%version%.zip calib_700.exe
 zip mscb%version%.zip calib_900.exe
+zip mscb%version%.zip calib_1000.exe
 zip mscb%version%.zip calib_hvr.exe
 
 zip -rp mscb%version%.zip embedded -i \*.h
