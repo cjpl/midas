@@ -6,6 +6,9 @@
   Contents:     Various utility functions for MSCB protocol
 
   $Log$
+  Revision 1.57  2005/07/07 10:35:38  ritt
+  Revised UART1 conditional compiling
+
   Revision 1.56  2005/06/24 18:49:03  ritt
   Implemented UART1_MSCB/DEVICE
 
@@ -283,6 +286,7 @@ unsigned char crc8_add(unsigned char crc, unsigned int c)
 
 /*------------------------------------------------------------------*/
 
+//####################################################################
 #if defined(UART1_DEVICE) // user-level device communication via UART1
 
 bit ti1_shadow = 1;
@@ -432,7 +436,7 @@ char putchar1(char c)
    return c;
 }
 
-#else
+#else // LCD_SUPPORT
 
 char putchar(char c)
 {
@@ -447,7 +451,7 @@ char putchar(char c)
    return c;
 }
 
-#endif;
+#endif // LCD_SUPPORT
 
 /*------------------------------------------------------------------*/
 
@@ -469,7 +473,9 @@ void uart1_init_buffer()
 
 /*------------------------------------------------------------------*/
 
-#elif defined(UART1_MSCB) // UART1 connected as master to MSCB slave bus
+#endif // UART1_DEVICE ###############################################
+
+#if defined(UART1_MSCB) // UART1 connected as master to MSCB slave bus
 
 bit ti1_shadow = 1;
 unsigned char n_recv;
@@ -580,19 +586,7 @@ void uart1_init_buffer()
 
 /*------------------------------------------------------------------*/
 
-void rs232_output(void) // dummy
-{
-}
-
-/*------------------------------------------------------------------*/
-
-#else // UART1_MSCB
-
-void rs232_output(void) // dummy
-{
-}
-
-#endif
+#endif // UART1_MSCB ##################################################
 
 /*------------------------------------------------------------------*/
 
@@ -743,6 +737,8 @@ void uart_init(unsigned char port, unsigned char baud)
       PS0 = 0;                     // serial interrupt low priority
 
 
+#if defined(UART1_MSCB) || defined(UART1_DEVICE)
+
    } else { /*---- UART1 ----*/
 
 #if defined(CPU_C8051F020)
@@ -785,6 +781,7 @@ void uart_init(unsigned char port, unsigned char baud)
 #endif
 
       uart1_init_buffer();
+#endif // defined(UART1_MSCB) || defined(UART1_DEVICE)
    }
 
    EA = 1;                         // general interrupt enable
