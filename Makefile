@@ -17,9 +17,12 @@ ifeq ($(OSTYPE),Linux)
 OSTYPE = linux
 endif
 
+# directory where strlcpy.c resides
+SLCDIR        = ../../mxml/
+
 OUTNAME       = msc 
 CC            = gcc -g -O2
-FLAGS         = -Wall -Wuninitialized
+FLAGS         = -Wall -Wuninitialized -I$(SLCDIR)
 
 ifeq ($(OSTYPE),linux)
 CC   += -DOS_UNIX -DOS_LINUX -DHAVE_LIBUSB
@@ -33,8 +36,8 @@ endif
 
 all: $(OUTNAME)
 
-$(OUTNAME): mscb.o msc.o mscbrpc.o
-	$(CC) $(FLAGS) mscb.o msc.o mscbrpc.o -o $(OUTNAME) $(LIBS)
+$(OUTNAME): mscb.o msc.o mscbrpc.o strlcpy.o
+	$(CC) $(FLAGS) mscb.o msc.o mscbrpc.o strlcpy.o -o $(OUTNAME) $(LIBS)
 
 mscbrpc.o: mscbrpc.c mscbrpc.h
 	$(CC) $(FLAGS) -c mscbrpc.c
@@ -44,6 +47,9 @@ mscb.o: mscb.c mscb.h
 
 msc.o: msc.c
 	$(CC) $(FLAGS) -c msc.c 
+
+strlcpy.o: $(SLCDIR)strlcpy.c
+	$(CC) $(FLAGS) -c $(SLCDIR)strlcpy.c
 
 clean:
 	rm *.o $(OUTNAME)
