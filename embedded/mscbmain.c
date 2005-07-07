@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus protocol main program
 
   $Log$
+  Revision 1.69  2005/07/07 10:35:38  ritt
+  Revised UART1 conditional compiling
+
   Revision 1.68  2005/06/24 18:49:03  ritt
   Implemented UART1_MSCB/DEVICE
 
@@ -248,9 +251,12 @@ extern char code node_name[];
 /*------------------------------------------------------------------*/
 
 /* funtions in mscbutil.c */
-extern void rs232_output(void);
 extern bit lcd_present;
 extern void watchdog_refresh(void);
+
+#if defined(UART1_DEVICE)
+extern void rs232_output(void);
+#endif
 
 /* forward declarations */
 void flash_upgrade(void);
@@ -1449,7 +1455,9 @@ void yield(void)
    watchdog_refresh();
 
    /* output RS232 data if present */
+#if defined(UART1_DEVICE)
    rs232_output();
+#endif
 
    /* manage remote variables on SCS-1000 */
 #ifdef UART1_MSCB
