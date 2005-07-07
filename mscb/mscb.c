@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus communication functions
 
   $Log$
+  Revision 1.97  2005/07/07 11:23:51  ritt
+  Fixed CR/LF problem
+
   Revision 1.96  2005/06/14 11:38:02  ritt
   Revised MSCB adr to 16-bit consistently
 
@@ -295,7 +298,7 @@
 
 \********************************************************************/
 
-#define MSCB_LIBRARY_VERSION   "2.1.3"
+#define MSCB_LIBRARY_VERSION   "2.1.5"
 #define MSCB_PROTOCOL_VERSION  "2.1"
 #define MSCB_VERSION_BIN       0x21
 
@@ -2911,8 +2914,12 @@ int mscb_upload(int fd, unsigned short adr, char *buffer, int size, int debug)
          }
 
          flash_size += len;
-         line = strchr(line, '\r') + 1;
-         if (line && *line == '\n')
+         line = strchr(line, '\n');
+         if (line == NULL)
+            break;
+
+         /* skip CR/LF */
+         while (*line == '\r' || *line == '\n')
             line++;
       } else
          return MSCB_FORMAT_ERROR;
