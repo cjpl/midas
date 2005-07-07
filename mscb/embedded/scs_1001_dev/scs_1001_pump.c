@@ -9,6 +9,9 @@
                 for SCS-1001 stand alone control unit
 
   $Log$
+  Revision 1.4  2005/07/07 10:45:15  ritt
+  Added better fore pump cycling
+
   Revision 1.3  2005/07/05 06:17:54  ritt
   Added timeout parameter
 
@@ -418,8 +421,11 @@ unsigned char tc600_write(unsigned short param, unsigned char len, unsigned long
 #define ST_EVAC_FORE     3  // evacuating buffer tank
 #define ST_EVAC_MAIN     4  // evacuating main recipient
 #define ST_RAMP_TURBO    5  // ramp up turbo pump
-#define ST_RUNNING       6  // running operation
-#define ST_ERROR         7  // error condition
+#define ST_RUN_FPON      6  // running, fore pump on
+#define ST_RUN_FPOFF     7  // running, fore pump off
+#define ST_RUN_FPUP      8  // running, fore pump ramping up
+#define ST_RUN_FPDOWN    9  // running, fore pump ramping down
+#define ST_ERROR        10  // error condition
 
 unsigned long xdata start_time;
 unsigned char xdata pump_state = ST_OFF;
@@ -625,19 +631,50 @@ static bit b0_old = 0, b1_old = 0, b2_old = 0, b3_old = 0,
       if (!user_data.valve_locked)
          set_mainvalve(1);
 
-      pump_state = ST_RUNNING;
+      start_time = time();     // remember start time
+      pump_state = ST_RUN_FPON;
    }
 
 
-   /* cycle fore pump */
-   if (pump_state == ST_RUNNING) {
-      if (user_data.fv_mbar < 0.1) 
-         set_forepump(0);         // turn fore pump off
-      if (user_data.fv_mbar > 1) 
-         set_forepump(1);         // turn fore pump on
+   /* check for fore pump off */
+   if (pump_state == ST_RUN_FPON) {
 
-      user_write(0);
+      if (time() > start_time + 30*100) // run at 30 sec
+         if (user_data.fv_mbar < 0.1) {
+            set_forevalve(0);
+            pump_state = ST_RUN_FPDOWN;
+            start_time = time();
+         }
    }
+
+   /* turn fore pump off */
+   if (pump_state == ST_RUN_FPDOWN) {
+
+      if (time() > start_time + 3*100) // wait 3s
+         set_forepump(0);              // turn fore pump on
+
+      pump_state = ST_RUN_FPOFF;
+   }
+
+   /* check for fore pump on */
+   if (pump_state == ST_RUN_FPOFF) {
+
+      if (user_data.fv_mbar > 4) {
+         set_forepump(1);
+         pump_state = ST_RUN_FPUP;
+         start_time = time();
+      }
+   }
+   
+   /* turn fore pump on */
+   if (pump_state == ST_RUN_FPUP) {
+
+      if (time() > start_time + 3*100) // wait 3s
+         set_forevalve(1); 
+
+      pump_state = ST_RUN_FPON;
+   }
+   
 
    /*---- Pump station turn off logic ----*/
 
