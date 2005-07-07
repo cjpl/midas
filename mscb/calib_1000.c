@@ -6,6 +6,9 @@
   Contents:     Calibration program for SCS-900
 
   $Log$
+  Revision 1.3  2005/07/07 11:56:03  ritt
+  Fixed delay
+
   Revision 1.2  2005/03/21 10:57:25  ritt
   Version 2.0.0
 
@@ -132,7 +135,7 @@ int main(int argc, char *argv[])
    }
 
    /* let voltage settle */
-   Sleep(1000);
+   Sleep(3000);
 
    for (i = 0; i < 8; i++) {
       size = sizeof(float);
@@ -141,11 +144,14 @@ int main(int argc, char *argv[])
       /* write new offset */
       v = (float) v;
       mscb_write(fd, adr, (unsigned char) (i + 26), &v, sizeof(float));
+
+      printf("AOFS%d: %f\n", i, v);
    }
 
    /* calibrate gain around 10V */
    v = 9.9f;
    mscb_write(fd, adr, 8, &v, sizeof(float));
+   Sleep(3000);
 
    for (i = 0; i < 8; i++) {
       size = sizeof(float);
@@ -158,6 +164,8 @@ int main(int argc, char *argv[])
       /* write new gain */
       v = (float) (9.9/v);
       mscb_write(fd, adr, (unsigned char) (i + 34), &v, sizeof(float));
+
+      printf("AGAIN%d: %f\n", i, v);
    }
 
    v = 0.f;
