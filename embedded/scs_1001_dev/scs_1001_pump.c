@@ -9,6 +9,9 @@
                 for SCS-1001 stand alone control unit
 
   $Log$
+  Revision 1.5  2005/07/08 06:23:24  ritt
+  Added MV check
+
   Revision 1.4  2005/07/07 10:45:15  ritt
   Added better fore pump cycling
 
@@ -639,21 +642,20 @@ static bit b0_old = 0, b1_old = 0, b2_old = 0, b3_old = 0,
    /* check for fore pump off */
    if (pump_state == ST_RUN_FPON) {
 
-      if (time() > start_time + 30*100) // run at 30 sec
-         if (user_data.fv_mbar < 0.1) {
-            set_forevalve(0);
-            pump_state = ST_RUN_FPDOWN;
-            start_time = time();
-         }
+      if (time() > start_time + 60*100 && user_data.mv_mbar < 1E-5) { // run at 60 sec
+         set_forevalve(0);
+         pump_state = ST_RUN_FPDOWN;
+         start_time = time();
+      }
    }
 
    /* turn fore pump off */
    if (pump_state == ST_RUN_FPDOWN) {
 
-      if (time() > start_time + 3*100) // wait 3s
-         set_forepump(0);              // turn fore pump on
-
-      pump_state = ST_RUN_FPOFF;
+      if (time() > start_time + 3*100) {  // wait 3s
+         set_forepump(0);                 // turn fore pump off
+         pump_state = ST_RUN_FPOFF;
+      }
    }
 
    /* check for fore pump on */
@@ -669,10 +671,10 @@ static bit b0_old = 0, b1_old = 0, b2_old = 0, b3_old = 0,
    /* turn fore pump on */
    if (pump_state == ST_RUN_FPUP) {
 
-      if (time() > start_time + 3*100) // wait 3s
+      if (time() > start_time + 3*100) { // wait 3s
          set_forevalve(1); 
-
-      pump_state = ST_RUN_FPON;
+         pump_state = ST_RUN_FPON;
+      }
    }
    
 
@@ -710,6 +712,9 @@ static bit b0_old = 0, b1_old = 0, b2_old = 0, b3_old = 0,
       if (user_data.station_on) {
          start_time = time();       // remember start time
          pump_state = ST_EVAC_FORE; // start with buffer tank evacuation
+         set_forepump(1);
+         delay_ms(1000);
+         set_forevalve(1);
       }
    }
 
