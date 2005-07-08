@@ -9,6 +9,9 @@
                 for SCS-1001 stand alone control unit
 
   $Log$
+  Revision 1.8  2005/07/08 10:53:13  ritt
+  Fixed wrong relais inices
+
   Revision 1.7  2005/07/08 06:53:57  ritt
   Show CVS revision in display
 
@@ -237,7 +240,7 @@ void user_init(unsigned char init)
       user_data.evac_timeout = 60; // 1h to pump recipient
       user_data.fp_cycle = 20;     // run fore pump for min. 20 sec.
       user_data.fv_max = 4;        // start fore pump at 4 mbar     
-      user_data.fv_min = 1E-5;     // keep fore pump running until main vacuum below 1E-5 mbar
+      user_data.fv_min = 0.4;     // stop fore pump at 0.4 mbar
    }
 
    /* write digital outputs */
@@ -276,10 +279,10 @@ void user_write(unsigned char index) reentrant
    switch (index) {
 
    /* RELAIS go through inverter */
-   case 0: RELAIS0 = !user_data.relais[0]; break;
-   case 1: RELAIS1 = !user_data.relais[1]; break;
-   case 2: RELAIS2 = !user_data.relais[2]; break;
-   case 3: RELAIS3 = !user_data.relais[3]; break;
+   case 3: RELAIS0 = !user_data.relais[0]; break;
+   case 4: RELAIS1 = !user_data.relais[1]; break;
+   case 5: RELAIS2 = !user_data.relais[2]; break;
+   case 6: RELAIS3 = !user_data.relais[3]; break;
 
    }
 
@@ -453,25 +456,25 @@ unsigned char xdata pump_state = ST_OFF;
 void set_forepump(unsigned char flag)
 {
    user_data.relais[0] = flag;
-   user_write(0);
+   user_write(3);
 }
 
 void set_forevalve(unsigned char flag)
 {
    user_data.relais[1] = flag;
-   user_write(1);
+   user_write(4);
 }
 
 void set_mainvalve(unsigned char flag)
 {
    user_data.relais[2] = flag;
-   user_write(2);
+   user_write(5);
 }
 
 void set_bypassvalve(unsigned char flag)
 {
    user_data.relais[3] = flag;
-   user_write(3);
+   user_write(6);
 }
 
 unsigned char application_display(bit init)
