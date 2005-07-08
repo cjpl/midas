@@ -9,6 +9,9 @@
                 for SCS-1001 stand alone control unit
 
   $Log$
+  Revision 1.7  2005/07/08 06:53:57  ritt
+  Show CVS revision in display
+
   Revision 1.6  2005/07/08 06:32:43  ritt
   Added parameters
 
@@ -186,6 +189,7 @@ extern SYS_INFO sys_info;
 void user_init(unsigned char init)
 {
    unsigned char i;
+   xdata char str[64];
 
    led_mode(2, 0);              // buzzer off by default
 
@@ -254,9 +258,11 @@ void user_init(unsigned char init)
    puts(sys_info.node_name);
    puts(" **");
    lcd_goto(0, 1);
-   printf("   Address:  %04X", sys_info.node_addr);
+   printf("  Address:   %04X", sys_info.node_addr);
    lcd_goto(0, 2);
-   printf("   Version:  %bd", 1);
+   strcpy(str, cvs_revision + 23);
+   *strchr(str, ' ') = 0;
+   printf("  Revision:  %s", str);
 
    user_data.error = 0;
 }
