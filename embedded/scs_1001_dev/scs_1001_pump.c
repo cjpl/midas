@@ -9,6 +9,9 @@
                 for SCS-1001 stand alone control unit
 
   $Log$
+  Revision 1.9  2005/07/08 19:21:28  ritt
+  Added zero timeout
+
   Revision 1.8  2005/07/08 10:53:13  ritt
   Fixed wrong relais inices
 
@@ -142,7 +145,7 @@ MSCB_INFO_VAR code variables[] = {
    { 4, UNIT_BAR, PRFX_MILLI, 0, MSCBF_FLOAT,                "MV",       &user_data.mv_mbar },                  
    { 4, UNIT_BAR, PRFX_MILLI, 0, MSCBF_FLOAT,                "FV",       &user_data.fv_mbar },                  
                                                                                                                
-   { 2, UNIT_MINUTE,  0, 0, MSCBF_HIDDEN,                    "Timeout",  &user_data.evac_timeout, 10, 120, 10 },
+   { 2, UNIT_MINUTE,  0, 0, MSCBF_HIDDEN,                    "Timeout",  &user_data.evac_timeout, 0, 300, 10 },
    { 2, UNIT_SECOND,  0, 0, MSCBF_HIDDEN,                    "FP cycle", &user_data.fp_cycle, 10, 600, 10 },
    { 1, UNIT_BAR, PRFX_MILLI, 0, MSCBF_HIDDEN,               "FV max",   &user_data.fv_max, 1, 10, 1 },         
    { 4, UNIT_BAR, PRFX_MILLI, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "FV min",   &user_data.fv_min, 0.1, 1, 0.1 },
@@ -614,8 +617,10 @@ static bit b0_old = 0, b1_old = 0, b2_old = 0, b3_old = 0,
       }
    }
 
-   /* check if recipient gets evacuated in less than 1h */
-   if (pump_state == ST_EVAC_MAIN && time() > start_time + user_data.evac_timeout*60*100) {
+   /* check if recipient gets evacuated in less than evac_timeout minutes */
+   if (pump_state == ST_EVAC_MAIN && 
+       user_data.evac_timeout > 0 && 
+       time() > start_time + (unsigned long)user_data.evac_timeout*60*100) {
       pump_state = ST_ERROR;
       user_data.error = ERR_MAINVAC;
       set_forevalve(0);
@@ -639,7 +644,7 @@ static bit b0_old = 0, b1_old = 0, b2_old = 0, b3_old = 0,
    }
 
    /* check for turbo pump error */
-   if (pump_state == ST_RAMP_TURBO && user_data.rot_speed < 800 && time() > start_time + 15*6*100) {
+   if (pump_state == ST_RAMP_TURBO && user_data.rot_speed < 800 && time() > start_time + 15*60*100) {
       pump_state = ST_ERROR;
       user_data.error = ERR_TURBO;
    }
