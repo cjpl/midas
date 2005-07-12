@@ -9,6 +9,9 @@
                 for SCS-1001 stand alone control unit
 
   $Log$
+  Revision 1.11  2005/07/12 10:30:21  ritt
+  Added turbo pump error readout
+
   Revision 1.10  2005/07/12 08:32:44  ritt
   Added restarting of pump station in case of vacuum break in
 
@@ -95,6 +98,8 @@ sbit SRSTROBE = P1 ^ 5;
 #define ERR_TURBO      (1<<3)
 
 /*---- Define variable parameters returned to CMD_GET_INFO command ----*/
+
+char xdata turbo_err[10];
 
 /* data buffer (mirrored in EEPROM) */
 
@@ -512,7 +517,7 @@ static bit b0_old = 0, b1_old = 0, b2_old = 0, b3_old = 0,
    else if (user_data.error & ERR_MAINVAC)
       printf("ERROR: main vaccuum ");
    else if (user_data.error & ERR_TURBO)
-      printf("ERROR: TMP < 80%%    ");
+      printf("TMP ERROR: %s    ", turbo_err);
    else {
       if (pump_state == ST_OFF) {
          if (user_data.rot_speed > 10)
@@ -665,12 +670,6 @@ static bit b0_old = 0, b1_old = 0, b2_old = 0, b3_old = 0,
        }
    }
    
-   /* check for turbo pump error */
-   if (pump_state == ST_RAMP_TURBO && user_data.rot_speed < 800 && time() > start_time + 15*60*100) {
-      pump_state = ST_ERROR;
-      user_data.error = ERR_TURBO;
-   }
-
    /* check if turbo pump started successfully */
    if (pump_state == ST_RAMP_TURBO && user_data.rot_speed > 800 &&
        user_data.mv_mbar < 1 && user_data.fv_mbar < 1) {
@@ -815,6 +814,16 @@ void user_loop(void)
 
          if (tc600_read(310, str))
             user_data.tmp_current = atoi(str) / 100.0;
+
+         if (tc600_read(303, str)) {
+            if (str[0] != 'n') {
+               user_data.error |= ERR_TURBO;
+               strcpy(turbo_err, str);
+            } else {
+               user_data.error &= ~ERR_TURBO;
+               turbo_err[0] = 0;
+            }
+         }
       } else
          user_data.error |= ERR_TURBO_COMM;
 
