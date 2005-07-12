@@ -9,6 +9,9 @@
                 for SCS-1001 stand alone control unit
 
   $Log$
+  Revision 1.13  2005/07/12 13:13:22  ritt
+  Fixed small bug
+
   Revision 1.12  2005/07/12 10:51:06  ritt
   Adjusted TMP error code
 
@@ -669,6 +672,7 @@ static bit b0_old = 0, b1_old = 0, b2_old = 0, b3_old = 0,
           if (user_data.station_on) {
              station_on_old = 0;
              pump_state = ST_OFF;
+             return 0;
           }
        }
    }
