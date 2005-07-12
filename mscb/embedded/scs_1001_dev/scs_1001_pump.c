@@ -9,6 +9,9 @@
                 for SCS-1001 stand alone control unit
 
   $Log$
+  Revision 1.10  2005/07/12 08:32:44  ritt
+  Added restarting of pump station in case of vacuum break in
+
   Revision 1.9  2005/07/08 19:21:28  ritt
   Added zero timeout
 
@@ -643,6 +646,25 @@ static bit b0_old = 0, b1_old = 0, b2_old = 0, b3_old = 0,
       pump_state = ST_RAMP_TURBO;
    }
 
+   /* check if vacuum leak after ramping */
+   if (pump_state == ST_RAMP_TURBO || pump_state == ST_RUN_FPON || pump_state == ST_RUN_FPOFF ||
+       pump_state == ST_RUN_FPUP || pump_state == ST_RUN_FPDOWN) {
+
+       if (user_data.mv_mbar > 4) {
+
+          /* protect turbo pump */
+          set_mainvalve(0);
+          set_forevalve(0);
+          user_data.turbo_on = 0;
+
+          /* force restart of pump station */
+          if (user_data.station_on) {
+             station_on_old = 0;
+             pump_state = ST_OFF;
+          }
+       }
+   }
+   
    /* check for turbo pump error */
    if (pump_state == ST_RAMP_TURBO && user_data.rot_speed < 800 && time() > start_time + 15*60*100) {
       pump_state = ST_ERROR;
@@ -795,6 +817,8 @@ void user_loop(void)
             user_data.tmp_current = atoi(str) / 100.0;
       } else
          user_data.error |= ERR_TURBO_COMM;
+
+
 
       last_read = time();
    }
