@@ -9,6 +9,9 @@
                 for SCS-1001 stand alone control unit
 
   $Log$
+  Revision 1.12  2005/07/12 10:51:06  ritt
+  Adjusted TMP error code
+
   Revision 1.11  2005/07/12 10:30:21  ritt
   Added turbo pump error readout
 
@@ -816,7 +819,7 @@ void user_loop(void)
             user_data.tmp_current = atoi(str) / 100.0;
 
          if (tc600_read(303, str)) {
-            if (str[0] != 'n') {
+            if (atoi(str) != 0) {
                user_data.error |= ERR_TURBO;
                strcpy(turbo_err, str);
             } else {
