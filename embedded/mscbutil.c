@@ -6,6 +6,9 @@
   Contents:     Various utility functions for MSCB protocol
 
   $Log$
+  Revision 1.58  2005/07/13 09:39:09  ritt
+  Fixed LED problem on subm_260
+
   Revision 1.57  2005/07/07 10:35:38  ritt
   Revised UART1 conditional compiling
 
@@ -672,6 +675,7 @@ void uart_init(unsigned char port, unsigned char baud)
       0x100 - 53,   // 115200  0.3% error
       0x100 - 35,   // 172800  1.3% error
       0x100 - 18 }; // 345600  1.6% error
+#if defined(UART1_MSCB) || defined(UART1_DEVICE)
    unsigned char code baud_table1[] =  // UART1 via timer 1
      {0x100 - 0,    //  N/A
       0x100 - 212,  //   4800  0.3% error
@@ -683,6 +687,7 @@ void uart_init(unsigned char port, unsigned char baud)
       0x100 - 9,    // 115200  1.6% error
       0x100 - 6,    // 172800  1.6% error
       0x100 - 3 };  // 345600  1.6% error
+#endif
 #else                              // 11.0592 MHz
    unsigned char code baud_table[] =
      {0x100 - 144,  //   2400

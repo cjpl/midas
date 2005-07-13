@@ -7,6 +7,9 @@
                 SUBM260 running on Cygnal C8051F120
 
   $Log$
+  Revision 1.4  2005/07/13 09:39:09  ritt
+  Fixed LED problem on subm_260
+
   Revision 1.3  2005/03/21 13:16:05  ritt
   Added submaster software version
 
@@ -24,7 +27,7 @@
 #include "mscb.h"
 #include "net.h"
 
-#define VERSION 0x20  // used for PC-Submaster communication
+#define SUBM_VERSION 0x20  // used for PC-Submaster communication
 
 /*------------------------------------------------------------------*/
 
@@ -125,9 +128,9 @@ void setup(void)
 
    SFRPAGE = CONFIG_PAGE;       // set SFR page
 
-   XBR0 = 0x04;                 // Enable UART0 & UART1
+   XBR0 = 0x04;                 // Enable UART0
    XBR1 = 0x00;
-   XBR2 = 0x44;
+   XBR2 = 0x40;
 
    // all pins used by the external memory interface are in push-pull mode
    P0MDOUT = 0xFF;
@@ -300,9 +303,6 @@ void yield()
 
 /*------------------------------------------------------------------*/
 
-sbit led_0 = LED_0;
-sbit led_1 = LED_1;
-
 unsigned char execute(char socket_no)
 {
    if (rs485_tx_buf[1] == MCMD_INIT) {
@@ -315,7 +315,7 @@ unsigned char execute(char socket_no)
       /* return echo */
       led_blink(1, 1, 50);
       rs485_rx_buf[0] = MCMD_ACK;
-      rs485_rx_buf[1] = VERSION;
+      rs485_rx_buf[1] = SUBM_VERSION;
       tcp_send(socket_no, rs485_rx_buf, 2);
       return 2;
    }
