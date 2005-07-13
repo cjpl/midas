@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus protocol commands
 
   $Log$
+  Revision 1.58  2005/07/13 09:39:09  ritt
+  Fixed LED problem on subm_260
+
   Revision 1.57  2005/06/24 18:49:03  ritt
   Implemented UART1_MSCB/DEVICE
 
@@ -283,8 +286,8 @@ sbit RS485_ENABLE = P1 ^ 0;
 #include <c8051F120.h>
 #define CPU_C8051F120
 
-#define LED_0 P1 ^ 2
-#define LED_1 P1 ^ 3
+#define LED_0 P0 ^ 2
+#define LED_1 P0 ^ 3
 #define LED_ON 0
 sbit RS485_ENABLE = P0 ^ 4;
 
