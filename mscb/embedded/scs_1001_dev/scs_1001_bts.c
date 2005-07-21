@@ -8,6 +8,9 @@
                 SCS-910
 
   $Log$
+  Revision 1.2  2005/07/21 15:31:32  ritt
+  Added temperature readout
+
   Revision 1.1  2005/07/15 15:01:37  ritt
   Initial revision
 
@@ -58,6 +61,9 @@ struct {
    unsigned char error;
    unsigned char bts_state;
 
+   unsigned short ln2_on;
+   unsigned short ln2_off;
+
    unsigned char ka_out;
    unsigned char ka_in;
    float         ka_level;
@@ -71,20 +77,20 @@ struct {
    float         jt_valve2;
    float         jt_temp;
 
-   float         lhe_level1;
-   float         lhe_level2;
+   float         lhe_level1; // main
+   float         lhe_level2; // reserve
 
-   float         ln2_temp1;
-   float         ln2_temp2;
-   float         ln2_temp3;
-   float         ln2_temp4;
+   float         ln2_temp1; // screen left
+   float         ln2_temp2; // screen right
+   float         ln2_temp3; // screen tower
+   float         ln2_temp4; // screen top
 
-   float         lhe_temp1;
-   float         lhe_temp2;
-   float         lhe_temp3;
-   float         lhe_temp4;
-   float         lhe_temp5;
-   float         lhe_temp6;
+   float         lhe_temp1a; // middle D9K
+   float         lhe_temp2a; // left D9K
+   float         lhe_temp3a; // right D9K
+   float         lhe_temp1b; // middle TVO
+   float         lhe_temp2b; // left TVO
+   float         lhe_temp3b; // right TVO
 
    float         ln2_mbar;
    float         lhe_mbar;
@@ -105,33 +111,36 @@ MSCB_INFO_VAR code variables[] = {
    { 1, UNIT_BYTE,    0, 0, 0,                               "Error",    &user_data.error },                    
    { 1, UNIT_BYTE,    0, 0, 0,                               "State",    &user_data.bts_state, 0, 9, 1 },
                                                                                                                
+   { 2, UNIT_SECOND,  0, 0, 0,                               "LN2 on",   &user_data.ln2_on, 0, 120, 10 },
+   { 2, UNIT_SECOND,  0, 0, 0,                               "LN2 off",  &user_data.ln2_off, 0, 3600, 10 },
+
    { 1, UNIT_BYTE,    0, 0, 0,                               "KA Out",   &user_data.ka_out, 0, 7, 1 },
    { 1, UNIT_BYTE,    0, 0, 0,                               "KA In",    &user_data.ka_in },
    { 4, UNIT_PERCENT, 0, 0, MSCBF_FLOAT,                     "KA Level", &user_data.ka_level },                    
 
    { 1, UNIT_BOOLEAN, 0, 0, 0,                               "LN2 vlve", &user_data.ln2_valve, 0, 1, 1 },      
    { 1, UNIT_BOOLEAN, 0, 0, 0,                               "LN2 htr",  &user_data.ln2_heater, 0, 1, 1 },    
-   { 4, UNIT_CELSIUS, 0, 0, MSCBF_FLOAT,                     "LN2vlv T", &user_data.ln2_valve_temp },
-   { 4, UNIT_CELSIUS, 0, 0, MSCBF_FLOAT,                     "LN2htr T", &user_data.ln2_heater_temp },
+   { 4, UNIT_KELVIN,  0, 0, MSCBF_FLOAT,                     "LN2vlv T", &user_data.ln2_valve_temp },
+   { 4, UNIT_KELVIN,  0, 0, MSCBF_FLOAT,                     "LN2htr T", &user_data.ln2_heater_temp },
                                                                                                                
    { 4, UNIT_PERCENT, 0, 0, MSCBF_FLOAT,                     "JT vlve1", &user_data.jt_valve1 },
    { 4, UNIT_PERCENT, 0, 0, MSCBF_FLOAT,                     "JT vlve2", &user_data.jt_valve2 },
-   { 4, UNIT_CELSIUS, 0, 0, MSCBF_FLOAT,                     "JT T",     &user_data.jt_temp },
+   { 4, UNIT_KELVIN,  0, 0, MSCBF_FLOAT,                     "JT T",     &user_data.jt_temp },
 
    { 4, UNIT_PERCENT, 0, 0, MSCBF_FLOAT,                     "LHe lvl1", &user_data.lhe_level1 },
    { 4, UNIT_PERCENT, 0, 0, MSCBF_FLOAT,                     "LHe lvl2", &user_data.lhe_level2 },
 
-   { 4, UNIT_CELSIUS, 0, 0, MSCBF_FLOAT,                     "LN2 T1",   &user_data.ln2_temp1 },
-   { 4, UNIT_CELSIUS, 0, 0, MSCBF_FLOAT,                     "LN2 T2",   &user_data.ln2_temp2 },
-   { 4, UNIT_CELSIUS, 0, 0, MSCBF_FLOAT,                     "LN2 T3",   &user_data.ln2_temp3 },
-   { 4, UNIT_CELSIUS, 0, 0, MSCBF_FLOAT,                     "LN2 T4",   &user_data.ln2_temp4 },
+   { 4, UNIT_KELVIN,  0, 0, MSCBF_FLOAT,                     "LN2 T1",   &user_data.ln2_temp1 },
+   { 4, UNIT_KELVIN,  0, 0, MSCBF_FLOAT,                     "LN2 T2",   &user_data.ln2_temp2 },
+   { 4, UNIT_KELVIN,  0, 0, MSCBF_FLOAT,                     "LN2 T3",   &user_data.ln2_temp3 },
+   { 4, UNIT_KELVIN,  0, 0, MSCBF_FLOAT,                     "LN2 T4",   &user_data.ln2_temp4 },
 
-   { 4, UNIT_CELSIUS, 0, 0, MSCBF_FLOAT,                     "LHE T1",   &user_data.lhe_temp1 },
-   { 4, UNIT_CELSIUS, 0, 0, MSCBF_FLOAT,                     "LHE T2",   &user_data.lhe_temp2 },
-   { 4, UNIT_CELSIUS, 0, 0, MSCBF_FLOAT,                     "LHE T3",   &user_data.lhe_temp3 },
-   { 4, UNIT_CELSIUS, 0, 0, MSCBF_FLOAT,                     "LHE T4",   &user_data.lhe_temp4 },
-   { 4, UNIT_CELSIUS, 0, 0, MSCBF_FLOAT,                     "LHE T5",   &user_data.lhe_temp5 },
-   { 4, UNIT_CELSIUS, 0, 0, MSCBF_FLOAT,                     "LHE T6",   &user_data.lhe_temp6 },
+   { 4, UNIT_KELVIN,  0, 0, MSCBF_FLOAT,                     "LHE T1a",  &user_data.lhe_temp1a },
+   { 4, UNIT_KELVIN,  0, 0, MSCBF_FLOAT,                     "LHE T2a",  &user_data.lhe_temp2a },
+   { 4, UNIT_KELVIN,  0, 0, MSCBF_FLOAT,                     "LHE T3a",  &user_data.lhe_temp3a },
+   { 4, UNIT_KELVIN,  0, 0, MSCBF_FLOAT,                     "LHE T1b",  &user_data.lhe_temp1b },
+   { 4, UNIT_KELVIN,  0, 0, MSCBF_FLOAT,                     "LHE T2b",  &user_data.lhe_temp2b },
+   { 4, UNIT_KELVIN,  0, 0, MSCBF_FLOAT,                     "LHE T3b",  &user_data.lhe_temp3b },
 
    { 4, UNIT_BAR, PRFX_MILLI, 0, MSCBF_FLOAT,                "LN2 P",    &user_data.ln2_mbar }, 
    { 4, UNIT_BAR, PRFX_MILLI, 0, MSCBF_FLOAT,                "LHE P",    &user_data.lhe_mbar }, 
@@ -247,11 +256,10 @@ void user_init(unsigned char init)
          user_data.aofs[i] = 0;
          user_data.again[i] = 1;
       }
-   }
 
-   /* write digital outputs */
-   for (i=0 ; i<4 ; i++)
-      user_write(i);
+	  user_data.ln2_on = 30;
+	  user_data.ln2_off = 180;
+   }
 
    /* initialize UART1 for SCS_910 */
    uart_init(1, BD_115200);
@@ -266,7 +274,7 @@ void user_init(unsigned char init)
    lcd_goto(0, 1);
    printf("  Address:   %04X", sys_info.node_addr);
    lcd_goto(0, 2);
-   strcpy(str, cvs_revision + 23);
+   strcpy(str, cvs_revision + 22);
    *strchr(str, ' ') = 0;
    printf("  Revision:  %s", str);
 
@@ -275,6 +283,11 @@ void user_init(unsigned char init)
    user_data.ka_out = 1;
    user_data.ln2_valve = 0;
    user_data.ln2_heater = 0;
+
+   /* write digital outputs */
+   for (i=0 ; i<10 ; i++)
+      user_write(i);
+
 }
 
 #pragma NOAREGS
@@ -294,7 +307,7 @@ unsigned short d;
            DOUT2 = (user_data.ka_out & (1<<1)) == 0;
            DOUT3 = (user_data.ka_out & (1<<2)) == 0; break;
    
-   case 5: RELAIS0 = !user_data.ln2_valve; break;
+   case 5: RELAIS0 = user_data.ln2_valve; break;
    case 6: DOUT0   = !user_data.ln2_heater; break;
    
    case 9:
@@ -424,39 +437,71 @@ unsigned char d;
 unsigned char application_display(bit init)
 {
 static bit b0_old = 0, b1_old = 0, b2_old = 0, b3_old = 0;
+static xdata long last_time = 0;
+unsigned short delta;
 
    if (init)
       lcd_clear();
 
    /* display pressures */
    lcd_goto(0, 0);
-   printf("T1: %5.1f C", user_data.ln2_temp1);
+   printf("TT:%5.1fK", user_data.ln2_temp3);
    lcd_goto(10, 0);
-   printf("T2: %5.1f C", user_data.ln2_temp2);
+   printf("TV:%5.1fK", user_data.ln2_valve_temp);
    
-   lcd_goto(0, 0);
-   printf("T3: %5.1f C", user_data.ln2_temp3);
-   lcd_goto(10, 0);
-   printf("T4: %5.1f C", user_data.ln2_temp4);
+   lcd_goto(0, 2);
+   printf("He:%5.1f%%", user_data.lhe_level1);
+
+   lcd_goto(10, 2);
+   printf("TH:%5.1f%K", user_data.lhe_temp1b);
 
    lcd_goto(0, 3);
    printf(user_data.ln2_valve ? "LN2OFF" : "LN2ON ");
 
-   lcd_goto(8, 3);
-   printf(user_data.ln2_heater ? "HTROFF" : "HTRON");
+   lcd_goto(6, 3);
+   printf(user_data.ln2_heater ? "HOFF" : "HON ");
 
    /* toggle valve switch with button 0 */
-   if (b0 && !b0_old)
+   if (b0 && !b0_old) {
+      last_time = time();
       user_data.ln2_valve = !user_data.ln2_valve;
+      user_write(5);
+   }
 
-   /* toggle heater with button 2 */
-   if (b2 && !b2_old)
+   /* toggle heater with button 1 */
+   if (b1 && !b1_old) {
       user_data.ln2_heater = !user_data.ln2_heater;
+      user_write(6);
+   }
 
    /* enter menu on release of button 3 */
    if (!init)
       if (!b3 && b3_old)
          return 1;
+
+   /* swith ln2 valve on by specified time */
+   if (user_data.ln2_off && user_data.ln2_valve == 0 && time() - last_time > user_data.ln2_off * 100) {
+      last_time = time();
+	  user_data.ln2_valve = 1;
+	  user_write(5);
+   }
+
+   /* swith ln2 valve off by specified time */
+   if (user_data.ln2_on && user_data.ln2_valve == 1 && time() - last_time > user_data.ln2_on * 100) {
+      last_time = time();
+	  user_data.ln2_valve = 0;
+	  user_write(5);
+   }
+
+   lcd_goto(14, 3);
+   delta = (unsigned short)((time() - last_time) / 100);
+   if (user_data.ln2_off && user_data.ln2_on) {
+	   if (user_data.ln2_valve == 0)
+	      printf("%3d s", user_data.ln2_off - delta);
+	   if (user_data.ln2_valve == 1) 
+	      printf("%3d s", user_data.ln2_on - delta);
+   } else
+      printf("        ");
 
    b0_old = b0;
    b1_old = b1;
@@ -471,6 +516,7 @@ static bit b0_old = 0, b1_old = 0, b2_old = 0, b3_old = 0;
 void user_loop(void)
 {
    static unsigned char xdata adc_chn = 0;
+   float xdata x;
  
    /* read one ADC channel */
    adc_read(adc_chn, &user_data.adc[adc_chn]);
@@ -483,6 +529,38 @@ void user_loop(void)
       user_data.jt_temp = user_data.adc[2]; // convert CLTS
 
    adc_chn = (adc_chn + 1) % 8;
+
+   /* convert SCS_910 voltges to degree */
+   user_data.ln2_valve_temp = (user_data.scs_910[0]*1000.0 - 224) / -2.064 + 270;
+   user_data.ln2_heater_temp = (user_data.scs_910[1]*1000.0 - 224) / -2.064 + 270;
+
+   user_data.ln2_temp1 = (user_data.scs_910[2]*1000.0 - 224) / -2.064 + 270;
+   user_data.ln2_temp2 = (user_data.scs_910[3]*1000.0 - 213) / -2.087 + 270;
+   user_data.ln2_temp3 = (user_data.scs_910[4]*1000.0 - 229) / -1.984 + 270;
+   user_data.ln2_temp4 = (user_data.scs_910[5]*1000.0 - 243) / -1.946 + 270;
+
+   user_data.lhe_temp1a = (user_data.scs_910[6]*1000.0 - 228) / -2.018 + 270;
+   user_data.lhe_temp2a = (user_data.scs_910[7]*1000.0 - 230) / -1.996 + 270;
+   user_data.lhe_temp3a = (user_data.scs_910[8]*1000.0 - 230) / -1.981 + 270;
+
+   if (user_data.scs_910[9] != 0) {
+      x = 1/user_data.scs_910[9];
+	   user_data.lhe_temp1b = 0.1189*x*x*x*x-1.8979*x*x*x+12.401*x*x-35.427*x+40.5; // R5
+   }
+   if (user_data.scs_910[10] != 0) {
+      x = 1/user_data.scs_910[10];
+	   user_data.lhe_temp2b = 0.1403*x*x*x*x-2.3273*x*x*x+15.733*x*x-46.722*x+54.5; // R6
+   }
+   if (user_data.scs_910[11] != 0) {
+      x = 1/user_data.scs_910[11];
+	   user_data.lhe_temp2b = 0.2491*x*x*x*x-4.3396*x*x*x+29.209*x*x-85.018*x+93.4; // R1
+   }
+   
+   x = user_data.scs_910[12]*6;
+   x = (1-x/7.32)*100;
+   if (x < 0)
+      x = 0;
+   user_data.lhe_level1 = x;
 
    /* read buttons and digital input */
    sr_read();
