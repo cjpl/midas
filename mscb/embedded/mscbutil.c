@@ -6,6 +6,9 @@
   Contents:     Various utility functions for MSCB protocol
 
   $Log$
+  Revision 1.59  2005/07/22 09:52:15  ritt
+  Put some pointes in idata
+
   Revision 1.58  2005/07/13 09:39:09  ritt
   Fixed LED problem on subm_260
 
@@ -1165,9 +1168,9 @@ void eeprom_write(void * src, unsigned char len, unsigned short *offset)
 
 \********************************************************************/
 {
-   unsigned char xdata *p;      // xdata pointer causes MOVX command
-   unsigned char i, b;
-   unsigned char *s;
+   unsigned char xdata * idata p;      // xdata pointer causes MOVX command
+   unsigned char idata i, b;
+   unsigned char * idata s;
 
    if (_flkey != 0xF1)
       return;
@@ -1220,8 +1223,8 @@ void eeprom_erase(void)
 
 \********************************************************************/
 {
-   int i;
-   unsigned char xdata *p;
+   int idata i;
+   unsigned char xdata * idata p;
 
    if (_flkey != 0xF1)
       return;
