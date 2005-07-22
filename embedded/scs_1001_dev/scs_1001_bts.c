@@ -8,6 +8,9 @@
                 SCS-910
 
   $Log$
+  Revision 1.3  2005/07/22 09:51:10  ritt
+  Check for valid temperature range
+
   Revision 1.2  2005/07/21 15:31:32  ritt
   Added temperature readout
 
@@ -184,7 +187,7 @@ MSCB_INFO_VAR code variables[] = {
    { 4, UNIT_VOLT,   0, 0, MSCBF_FLOAT | MSCBF_HIDDEN | MSCBF_REMIN, "910_06", &user_data.scs_910[6], 0, 0, 0, 1, 6 },    
    { 4, UNIT_VOLT,   0, 0, MSCBF_FLOAT | MSCBF_HIDDEN | MSCBF_REMIN, "910_07", &user_data.scs_910[7], 0, 0, 0, 1, 7 },    
    { 4, UNIT_VOLT,   0, 0, MSCBF_FLOAT | MSCBF_HIDDEN | MSCBF_REMIN, "910_08", &user_data.scs_910[8], 0, 0, 0, 1, 8 },    
-   { 4, UNIT_VOLT,   0, 0, MSCBF_FLOAT | MSCBF_HIDDEN | MSCBF_REMIN, "910_09", &user_data.scs_910[9], 0, 0, 0, 1, 9 },    
+/*   { 4, UNIT_VOLT,   0, 0, MSCBF_FLOAT | MSCBF_HIDDEN | MSCBF_REMIN, "910_09", &user_data.scs_910[9], 0, 0, 0, 1, 9 },    
    { 4, UNIT_VOLT,   0, 0, MSCBF_FLOAT | MSCBF_HIDDEN | MSCBF_REMIN, "910_10", &user_data.scs_910[10], 0, 0, 0, 1, 10 },    
    { 4, UNIT_VOLT,   0, 0, MSCBF_FLOAT | MSCBF_HIDDEN | MSCBF_REMIN, "910_11", &user_data.scs_910[11], 0, 0, 0, 1, 11 },    
    { 4, UNIT_VOLT,   0, 0, MSCBF_FLOAT | MSCBF_HIDDEN | MSCBF_REMIN, "910_12", &user_data.scs_910[12], 0, 0, 0, 1, 12 },    
@@ -194,7 +197,7 @@ MSCB_INFO_VAR code variables[] = {
    { 4, UNIT_VOLT,   0, 0, MSCBF_FLOAT | MSCBF_HIDDEN | MSCBF_REMIN, "910_16", &user_data.scs_910[16], 0, 0, 0, 1, 16 },    
    { 4, UNIT_VOLT,   0, 0, MSCBF_FLOAT | MSCBF_HIDDEN | MSCBF_REMIN, "910_17", &user_data.scs_910[17], 0, 0, 0, 1, 17 },    
    { 4, UNIT_VOLT,   0, 0, MSCBF_FLOAT | MSCBF_HIDDEN | MSCBF_REMIN, "910_18", &user_data.scs_910[18], 0, 0, 0, 1, 18 },    
-   { 4, UNIT_VOLT,   0, 0, MSCBF_FLOAT | MSCBF_HIDDEN | MSCBF_REMIN, "910_19", &user_data.scs_910[19], 0, 0, 0, 1, 19 },    
+   { 4, UNIT_VOLT,   0, 0, MSCBF_FLOAT | MSCBF_HIDDEN | MSCBF_REMIN, "910_19", &user_data.scs_910[19], 0, 0, 0, 1, 19 }, */
 
    { 0 }
 };
@@ -214,7 +217,7 @@ extern SYS_INFO sys_info;
 void user_init(unsigned char init)
 {
    unsigned char i;
-   xdata char str[64];
+   char xdata str[64];
 
    led_mode(2, 0);              // buzzer off by default
 
@@ -280,7 +283,7 @@ void user_init(unsigned char init)
 
    user_data.error = 0;
    user_data.bts_state = 0;
-   user_data.ka_out = 1;
+   user_data.ka_out = 0; // 1
    user_data.ln2_valve = 0;
    user_data.ln2_heater = 0;
 
@@ -307,7 +310,7 @@ unsigned short d;
            DOUT2 = (user_data.ka_out & (1<<1)) == 0;
            DOUT3 = (user_data.ka_out & (1<<2)) == 0; break;
    
-   case 5: RELAIS0 = user_data.ln2_valve; break;
+   case 5: RELAIS0 = !user_data.ln2_valve; break;
    case 6: DOUT0   = !user_data.ln2_heater; break;
    
    case 9:
@@ -437,8 +440,8 @@ unsigned char d;
 unsigned char application_display(bit init)
 {
 static bit b0_old = 0, b1_old = 0, b2_old = 0, b3_old = 0;
-static xdata long last_time = 0;
-unsigned short delta;
+static long xdata last_time = 0;
+unsigned short xdata delta;
 
    if (init)
       lcd_clear();
@@ -501,7 +504,7 @@ unsigned short delta;
 	   if (user_data.ln2_valve == 1) 
 	      printf("%3d s", user_data.ln2_on - delta);
    } else
-      printf("        ");
+      printf("     ");
 
    b0_old = b0;
    b1_old = b1;
@@ -516,7 +519,7 @@ unsigned short delta;
 void user_loop(void)
 {
    static unsigned char xdata adc_chn = 0;
-   float xdata x;
+   float xdata x, temp;
  
    /* read one ADC channel */
    adc_read(adc_chn, &user_data.adc[adc_chn]);
@@ -531,30 +534,59 @@ void user_loop(void)
    adc_chn = (adc_chn + 1) % 8;
 
    /* convert SCS_910 voltges to degree */
-   user_data.ln2_valve_temp = (user_data.scs_910[0]*1000.0 - 224) / -2.064 + 270;
-   user_data.ln2_heater_temp = (user_data.scs_910[1]*1000.0 - 224) / -2.064 + 270;
+   temp = (user_data.scs_910[0]*1000.0 - 224) / -2.064 + 270;
+   if (temp < 0 || temp > 999) temp = 0;
+   user_data.ln2_valve_temp = temp;
+   temp = (user_data.scs_910[0]*1000.0 - 224) / -2.064 + 270;
+   if (temp < 0 || temp > 999) temp = 0;
+   user_data.ln2_heater_temp = temp;
 
-   user_data.ln2_temp1 = (user_data.scs_910[2]*1000.0 - 224) / -2.064 + 270;
-   user_data.ln2_temp2 = (user_data.scs_910[3]*1000.0 - 213) / -2.087 + 270;
-   user_data.ln2_temp3 = (user_data.scs_910[4]*1000.0 - 229) / -1.984 + 270;
-   user_data.ln2_temp4 = (user_data.scs_910[5]*1000.0 - 243) / -1.946 + 270;
+   temp = (user_data.scs_910[2]*1000.0 - 224) / -2.064 + 270;
+   if (temp < 0 || temp > 999) temp = 0;
+   user_data.ln2_temp1 = temp;
+   temp = (user_data.scs_910[3]*1000.0 - 213) / -2.087 + 270;
+   if (temp < 0 || temp > 999) temp = 0;
+   user_data.ln2_temp2 = temp;
+   temp = (user_data.scs_910[4]*1000.0 - 229) / -1.984 + 270;
+   if (temp < 0 || temp > 999) temp = 0;
+   user_data.ln2_temp3 = temp;
+   temp = (user_data.scs_910[5]*1000.0 - 243) / -1.946 + 270;
+   if (temp < 0 || temp > 999) temp = 0;
+   user_data.ln2_temp4 = temp;
 
-   user_data.lhe_temp1a = (user_data.scs_910[6]*1000.0 - 228) / -2.018 + 270;
-   user_data.lhe_temp2a = (user_data.scs_910[7]*1000.0 - 230) / -1.996 + 270;
-   user_data.lhe_temp3a = (user_data.scs_910[8]*1000.0 - 230) / -1.981 + 270;
+   temp = (user_data.scs_910[6]*1000.0 - 228) / -2.018 + 270;
+   if (temp < 0 || temp > 999) temp = 0;
+   user_data.lhe_temp1a = temp;
+   temp = (user_data.scs_910[7]*1000.0 - 230) / -1.996 + 270;
+   if (temp < 0 || temp > 999) temp = 0;
+   user_data.lhe_temp2a = temp;
+   temp = (user_data.scs_910[8]*1000.0 - 230) / -1.981 + 270;
+   if (temp < 0 || temp > 999) temp = 0;
+   user_data.lhe_temp3a = temp;
 
    if (user_data.scs_910[9] != 0) {
       x = 1/user_data.scs_910[9];
-	   user_data.lhe_temp1b = 0.1189*x*x*x*x-1.8979*x*x*x+12.401*x*x-35.427*x+40.5; // R5
-   }
+	   temp = 0.1189*x*x*x*x-1.8979*x*x*x+12.401*x*x-35.427*x+40.5; // R5
+      if (temp < 0 || temp > 999) temp = 0;
+   } else 
+      temp = 0;
+   user_data.lhe_temp1b = temp;
+
    if (user_data.scs_910[10] != 0) {
       x = 1/user_data.scs_910[10];
-	   user_data.lhe_temp2b = 0.1403*x*x*x*x-2.3273*x*x*x+15.733*x*x-46.722*x+54.5; // R6
-   }
+	   temp = 0.1403*x*x*x*x-2.3273*x*x*x+15.733*x*x-46.722*x+54.5; // R6
+      if (temp < 0 || temp > 999) temp = 0;
+   } else
+      temp = 0;
+   user_data.lhe_temp2b = temp;
+
    if (user_data.scs_910[11] != 0) {
       x = 1/user_data.scs_910[11];
-	   user_data.lhe_temp2b = 0.2491*x*x*x*x-4.3396*x*x*x+29.209*x*x-85.018*x+93.4; // R1
-   }
+	   temp = 0.2491*x*x*x*x-4.3396*x*x*x+29.209*x*x-85.018*x+93.4; // R1
+      if (temp < 0 || temp > 999) temp = 0;
+   } else
+      temp = 0;
+   user_data.lhe_temp3b = temp;
    
    x = user_data.scs_910[12]*6;
    x = (1-x/7.32)*100;
