@@ -35,7 +35,7 @@ Options 1,0,0  // Target 'ICE'
  OrgReg (ÿCygnal\)
  TgStat=0
  OutDir (.\)
- OutName (scs_1001_pump)
+ OutName (scs_1001_bts)
  GenApp=1
  GenLib=0
  GenHex=1
