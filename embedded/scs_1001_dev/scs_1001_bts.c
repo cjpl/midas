@@ -8,6 +8,9 @@
                 SCS-910
 
   $Log$
+  Revision 1.4  2005/07/22 12:34:32  ritt
+  Fixed typo
+
   Revision 1.3  2005/07/22 09:51:10  ritt
   Check for valid temperature range
 
@@ -187,7 +190,7 @@ MSCB_INFO_VAR code variables[] = {
    { 4, UNIT_VOLT,   0, 0, MSCBF_FLOAT | MSCBF_HIDDEN | MSCBF_REMIN, "910_06", &user_data.scs_910[6], 0, 0, 0, 1, 6 },    
    { 4, UNIT_VOLT,   0, 0, MSCBF_FLOAT | MSCBF_HIDDEN | MSCBF_REMIN, "910_07", &user_data.scs_910[7], 0, 0, 0, 1, 7 },    
    { 4, UNIT_VOLT,   0, 0, MSCBF_FLOAT | MSCBF_HIDDEN | MSCBF_REMIN, "910_08", &user_data.scs_910[8], 0, 0, 0, 1, 8 },    
-/*   { 4, UNIT_VOLT,   0, 0, MSCBF_FLOAT | MSCBF_HIDDEN | MSCBF_REMIN, "910_09", &user_data.scs_910[9], 0, 0, 0, 1, 9 },    
+   { 4, UNIT_VOLT,   0, 0, MSCBF_FLOAT | MSCBF_HIDDEN | MSCBF_REMIN, "910_09", &user_data.scs_910[9], 0, 0, 0, 1, 9 },    
    { 4, UNIT_VOLT,   0, 0, MSCBF_FLOAT | MSCBF_HIDDEN | MSCBF_REMIN, "910_10", &user_data.scs_910[10], 0, 0, 0, 1, 10 },    
    { 4, UNIT_VOLT,   0, 0, MSCBF_FLOAT | MSCBF_HIDDEN | MSCBF_REMIN, "910_11", &user_data.scs_910[11], 0, 0, 0, 1, 11 },    
    { 4, UNIT_VOLT,   0, 0, MSCBF_FLOAT | MSCBF_HIDDEN | MSCBF_REMIN, "910_12", &user_data.scs_910[12], 0, 0, 0, 1, 12 },    
@@ -197,7 +200,7 @@ MSCB_INFO_VAR code variables[] = {
    { 4, UNIT_VOLT,   0, 0, MSCBF_FLOAT | MSCBF_HIDDEN | MSCBF_REMIN, "910_16", &user_data.scs_910[16], 0, 0, 0, 1, 16 },    
    { 4, UNIT_VOLT,   0, 0, MSCBF_FLOAT | MSCBF_HIDDEN | MSCBF_REMIN, "910_17", &user_data.scs_910[17], 0, 0, 0, 1, 17 },    
    { 4, UNIT_VOLT,   0, 0, MSCBF_FLOAT | MSCBF_HIDDEN | MSCBF_REMIN, "910_18", &user_data.scs_910[18], 0, 0, 0, 1, 18 },    
-   { 4, UNIT_VOLT,   0, 0, MSCBF_FLOAT | MSCBF_HIDDEN | MSCBF_REMIN, "910_19", &user_data.scs_910[19], 0, 0, 0, 1, 19 }, */
+   { 4, UNIT_VOLT,   0, 0, MSCBF_FLOAT | MSCBF_HIDDEN | MSCBF_REMIN, "910_19", &user_data.scs_910[19], 0, 0, 0, 1, 19 },
 
    { 0 }
 };
@@ -537,7 +540,7 @@ void user_loop(void)
    temp = (user_data.scs_910[0]*1000.0 - 224) / -2.064 + 270;
    if (temp < 0 || temp > 999) temp = 0;
    user_data.ln2_valve_temp = temp;
-   temp = (user_data.scs_910[0]*1000.0 - 224) / -2.064 + 270;
+   temp = (user_data.scs_910[1]*1000.0 - 224) / -2.064 + 270;
    if (temp < 0 || temp > 999) temp = 0;
    user_data.ln2_heater_temp = temp;
 
