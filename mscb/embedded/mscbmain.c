@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus protocol main program
 
   $Log$
+  Revision 1.70  2005/07/22 09:51:49  ritt
+  Put remote variable polling in main loop
+
   Revision 1.69  2005/07/07 10:35:38  ritt
   Revised UART1 conditional compiling
 
@@ -639,7 +642,7 @@ void serial_int(void) interrupt 4 using 1
 
 #include <intrins.h>
 
-static void send_byte(unsigned char d, unsigned char data * crc)
+static void send_byte(unsigned char d, unsigned char *crc)
 {
 #ifdef CPU_C8051F120
    SFRPAGE = UART0_PAGE;
@@ -1068,57 +1071,53 @@ unsigned char ping(unsigned short addr)
 
 /*------------------------------------------------------------------*/
 
-unsigned long xdata last_poll = 0;
-
 void poll_error(unsigned char i)
 {
-   memset(variables[i].ud, 0, variables[i].width);
+   if (i);
    led_blink(1, 1, 50);
+   last_addr = -1; // force re-adressing of single node
 }
 
 void poll_remote_vars()
 {
 unsigned char i, n;
 
-   /* only do once every 100ms */
-   if (time() > last_poll+10) {
-      last_poll = time();
-      for (i=0 ; i<n_variables ; i++)
-         if (variables[i].flags & MSCBF_REMIN) {
-            
-            address_node(variables[i].node_address);
-   
-            /* read variable */
-            uart1_buf[0] = CMD_READ + 1;
-            uart1_buf[1] = variables[i].channel;
-            uart1_buf[2] = crc8(uart1_buf, 2);
-            uart1_send(uart1_buf, 3, 0);
-   
-            n = uart1_receive(uart1_buf, 10);
-            if (n<2) {
-               poll_error(i);
-               continue; // no bytes receive
-            }
-   
-            if (uart1_buf[0] != CMD_ACK + n - 2) {
-               poll_error(i);
-               continue; // invalid command received
-            }
-   
-            if (variables[i].width != n - 2) {
-               poll_error(i);
-               continue; // variables has wrong length
-            }
-   
-            if (uart1_buf[n-1] != crc8(uart1_buf, n-1)) {
-               poll_error(i);
-               continue; // invalid CRC
-            }
-   
-            /* all ok, so copy variable */
-            memcpy(variables[i].ud, uart1_buf+1, variables[i].width);
-     	   }
-   }
+   for (i=0 ; i<n_variables ; i++)
+      if (variables[i].flags & MSCBF_REMIN) {
+         
+         address_node(variables[i].node_address);
+
+         /* read variable */
+         uart1_buf[0] = CMD_READ + 1;
+         uart1_buf[1] = variables[i].channel;
+         uart1_buf[2] = crc8(uart1_buf, 2);
+         uart1_send(uart1_buf, 3, 0);
+
+         n = uart1_receive(uart1_buf, 100);
+         if (n<2) {
+            poll_error(i);
+            continue; // no bytes receive
+         }
+
+         if (uart1_buf[0] != CMD_ACK + n - 2) {
+            poll_error(i);
+            continue; // invalid command received
+         }
+
+         if (variables[i].width != n - 2) {
+            poll_error(i);
+            continue; // variables has wrong length
+         }
+
+         if (uart1_buf[n-1] != crc8(uart1_buf, n-1)) {
+            poll_error(i);
+            continue; // invalid CRC
+         }
+
+         /* all ok, so copy variable */
+         memcpy(variables[i].ud, uart1_buf+1, variables[i].width);
+  	   }
+
 }
 
 /*------------------------------------------------------------------*/
@@ -1138,6 +1137,25 @@ unsigned char size;
    uart1_send(uart1_buf, 3+size, 0);
 
    led_blink(1, 1, 50);
+}
+
+/*------------------------------------------------------------------*/
+
+unsigned long xdata last_poll = 0;
+
+void manage_remote_vars()
+{
+   /* read remote variables once every 10 ms */
+   if (time() > last_poll+10) {
+      poll_remote_vars();
+      last_poll = time();
+   }
+
+   /* send remote variables if changed */
+   if (var_to_send != 0xFF) {
+      send_remote_var(var_to_send);
+      var_to_send = 0xFF;
+   }
 }
 
 #endif // UART1_MSCB
@@ -1459,16 +1477,6 @@ void yield(void)
    rs232_output();
 #endif
 
-   /* manage remote variables on SCS-1000 */
-#ifdef UART1_MSCB
-   poll_remote_vars();
-
-   if (var_to_send != 0xFF) {
-      send_remote_var(var_to_send);
-      var_to_send = 0xFF;
-   }
-#endif
-
    /* blink LED if not configured */
    if (!configured)
       led_blink(0, 1, 50);
@@ -1531,8 +1539,15 @@ void main(void)
    setup();
 
    do {
+
       yield();
+      
+#ifdef UART1_MSCB
+      manage_remote_vars();
+#endif
+      
       user_loop();
+
    } while (1);
 
 }
