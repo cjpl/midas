@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus protocol commands
 
   $Log$
+  Revision 1.59  2005/07/25 09:22:33  ritt
+  Implemented external watchdog for SCS_100x
+
   Revision 1.58  2005/07/13 09:39:09  ritt
   Fixed LED problem on subm_260
 
@@ -359,6 +362,10 @@ sbit RS485_SEC_ENABLE = P0 ^ 4;
 #define LED_ON 1
 sbit RS485_ENABLE = P0 ^ 5;
 sbit RS485_SEC_ENABLE = P0 ^ 4;
+
+#ifdef EXT_WATCHDOG
+sbit EXT_WATCHDOG_PIN = P1 ^ 4;
+#endif
 
 #undef USE_WATCHDOG // max. interval is 10ms on F121, not enough for EEPROM
 #define LCD_SUPPORT
