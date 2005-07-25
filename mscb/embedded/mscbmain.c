@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus protocol main program
 
   $Log$
+  Revision 1.71  2005/07/25 09:22:33  ritt
+  Implemented external watchdog for SCS_100x
+
   Revision 1.70  2005/07/22 09:51:49  ritt
   Put remote variable polling in main loop
 
@@ -903,20 +906,20 @@ void interprete(void)
                if (n > 6) {
                   /* variable length buffer */
                   send_byte(CMD_ACK + 7, &crc);       // send acknowledge, variable data length
-                  send_byte(n, &crc); // send data length
+                  send_byte(n, &crc);                 // send data length
 
-                  for (i = 0; i < n; i++)           // copy user data
+                  for (i = 0; i < n; i++)             // copy user data
                      send_byte(((char *) variables[in_buf[1]].ud)[i+_var_size*_cur_sub_addr], &crc);
                   n++;
                } else {
 
                   send_byte(CMD_ACK + n, &crc);       // send acknowledge
                
-                  for (i = 0; i < n; i++)           // copy user data
-                     send_byte(((char *) variables[in_buf[1]].ud)[i+_var_size*_cur_sub_addr], &crc);      
+                  for (i = 0; i < n; i++)             // copy user data
+                     send_byte(((char *) variables[in_buf[1]].ud)[i+_var_size*_cur_sub_addr], &crc);
                }
 
-               send_byte(crc, NULL);       // send CRC code
+               send_byte(crc, NULL);                  // send CRC code
    
                RS485_ENABLE = 0;
                ES0 = 1;            // re-enable serial interrupts
@@ -1076,6 +1079,10 @@ void poll_error(unsigned char i)
    if (i);
    led_blink(1, 1, 50);
    last_addr = -1; // force re-adressing of single node
+
+   for (i=0 ; i<10 ; i++)
+      uart1_buf[i] = 0;
+   uart1_send(uart1_buf, 10, 1);
 }
 
 void poll_remote_vars()
@@ -1094,6 +1101,7 @@ unsigned char i, n;
          uart1_send(uart1_buf, 3, 0);
 
          n = uart1_receive(uart1_buf, 100);
+
          if (n<2) {
             poll_error(i);
             continue; // no bytes receive
@@ -1209,10 +1217,17 @@ receive_cmd:
          for (i=0 ; !RI0 && i<5000 ; i++)
             DELAY_US(10);
          led_0 = !led_0;
+#ifdef EXT_WATCHDOG
+         EXT_WATCHDOG_PIN = !EXT_WATCHDOG_PIN;
+#endif
       }
 
       cmd = SBUF0;
       RI0 = 0;
+
+#ifdef EXT_WATCHDOG
+      EXT_WATCHDOG_PIN = !EXT_WATCHDOG_PIN;
+#endif
 
       /* cannot use case since it calls the C library */
 

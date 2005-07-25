@@ -8,6 +8,9 @@
                 SCS-910
 
   $Log$
+  Revision 1.5  2005/07/25 09:22:33  ritt
+  Implemented external watchdog for SCS_100x
+
   Revision 1.4  2005/07/22 12:34:32  ritt
   Fixed typo
 
@@ -189,7 +192,7 @@ MSCB_INFO_VAR code variables[] = {
    { 4, UNIT_VOLT,   0, 0, MSCBF_FLOAT | MSCBF_HIDDEN | MSCBF_REMIN, "910_05", &user_data.scs_910[5], 0, 0, 0, 1, 5 },    
    { 4, UNIT_VOLT,   0, 0, MSCBF_FLOAT | MSCBF_HIDDEN | MSCBF_REMIN, "910_06", &user_data.scs_910[6], 0, 0, 0, 1, 6 },    
    { 4, UNIT_VOLT,   0, 0, MSCBF_FLOAT | MSCBF_HIDDEN | MSCBF_REMIN, "910_07", &user_data.scs_910[7], 0, 0, 0, 1, 7 },    
-   { 4, UNIT_VOLT,   0, 0, MSCBF_FLOAT | MSCBF_HIDDEN | MSCBF_REMIN, "910_08", &user_data.scs_910[8], 0, 0, 0, 1, 8 },    
+/*   { 4, UNIT_VOLT,   0, 0, MSCBF_FLOAT | MSCBF_HIDDEN | MSCBF_REMIN, "910_08", &user_data.scs_910[8], 0, 0, 0, 1, 8 },    
    { 4, UNIT_VOLT,   0, 0, MSCBF_FLOAT | MSCBF_HIDDEN | MSCBF_REMIN, "910_09", &user_data.scs_910[9], 0, 0, 0, 1, 9 },    
    { 4, UNIT_VOLT,   0, 0, MSCBF_FLOAT | MSCBF_HIDDEN | MSCBF_REMIN, "910_10", &user_data.scs_910[10], 0, 0, 0, 1, 10 },    
    { 4, UNIT_VOLT,   0, 0, MSCBF_FLOAT | MSCBF_HIDDEN | MSCBF_REMIN, "910_11", &user_data.scs_910[11], 0, 0, 0, 1, 11 },    
@@ -200,7 +203,7 @@ MSCB_INFO_VAR code variables[] = {
    { 4, UNIT_VOLT,   0, 0, MSCBF_FLOAT | MSCBF_HIDDEN | MSCBF_REMIN, "910_16", &user_data.scs_910[16], 0, 0, 0, 1, 16 },    
    { 4, UNIT_VOLT,   0, 0, MSCBF_FLOAT | MSCBF_HIDDEN | MSCBF_REMIN, "910_17", &user_data.scs_910[17], 0, 0, 0, 1, 17 },    
    { 4, UNIT_VOLT,   0, 0, MSCBF_FLOAT | MSCBF_HIDDEN | MSCBF_REMIN, "910_18", &user_data.scs_910[18], 0, 0, 0, 1, 18 },    
-   { 4, UNIT_VOLT,   0, 0, MSCBF_FLOAT | MSCBF_HIDDEN | MSCBF_REMIN, "910_19", &user_data.scs_910[19], 0, 0, 0, 1, 19 },
+   { 4, UNIT_VOLT,   0, 0, MSCBF_FLOAT | MSCBF_HIDDEN | MSCBF_REMIN, "910_19", &user_data.scs_910[19], 0, 0, 0, 1, 19 }, */
 
    { 0 }
 };
@@ -602,4 +605,8 @@ void user_loop(void)
    
    /* mangae menu on LCD display */
    lcd_menu();
+
+   /* watchdog test */
+   if (user_data.error == 123)
+      while(1);
 }
