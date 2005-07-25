@@ -6,6 +6,9 @@
   Contents:     Command-line interface for the Midas Slow Control Bus
 
   $Log$
+  Revision 1.83  2005/07/25 09:23:15  ritt
+  Changed retries for ping
+
   Revision 1.82  2005/04/13 14:54:53  ritt
   Changed rpc.x to mscbrpc.x
 
@@ -617,7 +620,11 @@ void cmd_loop(int fd, char *cmd, int adr)
                printf("Test address %d    \r", i);
                fflush(stdout);
 
-               status = mscb_ping(fd, i);
+               if (i == 0)
+                  /* do the first time with retry, to send '0's */
+                  status = mscb_addr(fd, MCMD_PING16, i, 2, 1);
+               else
+                  status = mscb_ping(fd, i);
 
                if (status == MSCB_SUCCESS) {
                   status = mscb_info(fd, i, &info);
@@ -713,12 +720,13 @@ void cmd_loop(int fd, char *cmd, int adr)
                printf("\nVariables:\n");
                for (i = 0; i < info.n_variables; i++) {
                   mscb_info_variable(fd, current_addr, i, &info_var);
-                  size = info_var.width;
-                  memset(dbuf, 0, sizeof(dbuf));
-                  status = mscb_read(fd, current_addr, (unsigned char) i, dbuf, &size);
-                  if (status == MSCB_SUCCESS)
-                     if ((info_var.flags & MSCBF_HIDDEN) == 0 || param[1][0])
-                        print_channel(i, &info_var, dbuf, 1);
+                  if ((info_var.flags & MSCBF_HIDDEN) == 0 || param[1][0]) {
+                     size = info_var.width;
+                     memset(dbuf, 0, sizeof(dbuf));
+                     status = mscb_read(fd, current_addr, (unsigned char) i, dbuf, &size);
+                     if (status == MSCB_SUCCESS)
+                           print_channel(i, &info_var, dbuf, 1);
+                  }
                }
 
                mscb_get_version(lib, prot);
@@ -747,7 +755,7 @@ void cmd_loop(int fd, char *cmd, int adr)
                addr = atoi(param[1]);
 
             do {
-               status = mscb_addr(fd, MCMD_PING16, addr, 1, 1);
+               status = mscb_addr(fd, MCMD_PING16, addr, 10, 1);
                if (status != MSCB_SUCCESS) {
                   if (status == MSCB_MUTEX)
                      printf("MSCB used by other process\n");
