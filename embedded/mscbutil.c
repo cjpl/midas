@@ -6,6 +6,9 @@
   Contents:     Various utility functions for MSCB protocol
 
   $Log$
+  Revision 1.60  2005/07/25 09:22:33  ritt
+  Implemented external watchdog for SCS_100x
+
   Revision 1.59  2005/07/22 09:52:15  ritt
   Put some pointes in idata
 
@@ -785,7 +788,8 @@ void uart_init(unsigned char port, unsigned char baud)
       TR1 = 1;                     // start timer 1
 
       EIE2 |= 0x40;                // enable serial interrupt
-      EIP2 &= ~0x40;               // serial interrupt low priority
+      //EIP2 &= ~0x40;               // serial interrupt low priority
+      EIP2 |= 0x40;                // serial interrupt high priority
 #endif
 
       uart1_init_buffer();
@@ -1054,6 +1058,9 @@ void watchdog_refresh(void)
    WDTCN = 0xA5;
 #endif
 
+#endif
+#ifdef EXT_WATCHDOG
+   EXT_WATCHDOG_PIN = !EXT_WATCHDOG_PIN;
 #endif
 }
 
