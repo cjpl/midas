@@ -8,6 +8,9 @@
                 SCS-910
 
   $Log$
+  Revision 1.6  2005/07/25 12:57:35  ritt
+  Disabled UART0 interrupts for last byte in uart1_send
+
   Revision 1.5  2005/07/25 09:22:33  ritt
   Implemented external watchdog for SCS_100x
 
@@ -358,6 +361,16 @@ unsigned char user_func(unsigned char *data_in, unsigned char *data_out)
 
 /*---- ADC read function -------------------------------------------*/
 
+void dround(float *v, unsigned char digits)
+{
+unsigned char i;
+float b;
+
+   for (i=0,b=1 ; i<digits ; i++)
+      b *= 10;
+   *v = floor((*v * b) + 0.5) / b;
+}
+
 void adc_read(channel, float *d)
 {
    unsigned long value;
@@ -394,6 +407,7 @@ void adc_read(channel, float *d)
 
    gvalue -= user_data.aofs[channel];
    gvalue *= user_data.again[channel];
+   dround(&gvalue, 3);
 
    DISABLE_INTERRUPTS;
    *d = gvalue;
