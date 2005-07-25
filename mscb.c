@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus communication functions
 
   $Log$
+  Revision 1.98  2005/07/25 09:23:28  ritt
+  Implemented info cache
+
   Revision 1.97  2005/07/07 11:23:51  ritt
   Fixed CR/LF problem
 
@@ -298,7 +301,7 @@
 
 \********************************************************************/
 
-#define MSCB_LIBRARY_VERSION   "2.1.5"
+#define MSCB_LIBRARY_VERSION   "2.1.7"
 #define MSCB_PROTOCOL_VERSION  "2.1"
 #define MSCB_VERSION_BIN       0x21
 
@@ -454,6 +457,29 @@ CACHE_ENTRY *cache;
 int n_cache;
 
 #define CACHE_PERIOD 500        // update cache every 500 ms
+
+/*------------------------------------------------------------------*/
+
+/* cache definitions for mscb_info[_var] */
+
+typedef struct {
+   int            fd;
+   unsigned short adr;
+   MSCB_INFO      info;
+} CACHE_INFO;
+
+CACHE_INFO *cache_info;
+int n_cache_info;
+
+typedef struct {
+   int            fd;
+   unsigned short adr;
+   unsigned char  index;
+   MSCB_INFO_VAR  info;
+} CACHE_INFO_VAR;
+
+CACHE_INFO_VAR *cache_info_var;
+int n_cache_info_var;
 
 /*------------------------------------------------------------------*/
 
@@ -1725,11 +1751,17 @@ int mscb_init(char *device, int bufsize, char *password, int debug)
 
    debug_log("mscb_init(device=%s,bufsize=%d,password=%s,debug=%d) ", device, bufsize, password, debug);
 
-   /* clear cache */
+   /* clear caches */
    for (i = 0; i < n_cache; i++)
       free(cache[i].data);
    free(cache);
    n_cache = 0;
+
+   free(cache_info);
+   n_cache_info = 0;
+
+   free(cache_info_var);
+   n_cache_info_var = 0;
 
    if (!device[0]) {
       if (debug == -1)
@@ -2314,6 +2346,37 @@ int mscb_ping(int fd, unsigned short adr)
 
 /*------------------------------------------------------------------*/
 
+void mscb_clear_info_cache(int fd, unsigned short adr)
+/* called internally when a node gets upgraded */
+{
+   int i;
+
+   for (i = 0; i < n_cache_info; i++)
+      if (cache_info[i].fd == fd && cache_info[i].adr == adr) {
+         if (i < n_cache_info-1)
+            memcpy(&cache_info[i], &cache_info[i+1], sizeof(CACHE_INFO)*(n_cache_info-i-1));
+         if (n_cache_info == 1)
+            free(cache_info);
+         else
+            cache_info = (CACHE_INFO *) realloc(cache_info, sizeof(CACHE_INFO) * (n_cache_info - 1));
+         n_cache_info--;
+      }
+
+   for (i = 0; i < n_cache_info_var; i++)
+      if (cache_info_var[i].fd == fd && cache_info_var[i].adr == adr) {
+         if (i < n_cache_info_var-1)
+            memcpy(&cache_info_var[i], &cache_info_var[i+1], sizeof(CACHE_INFO_VAR)*(n_cache_info_var-i-1));
+         if (n_cache_info_var == 1)
+            free(cache_info_var);
+         else
+            cache_info_var = (CACHE_INFO_VAR *) realloc(cache_info_var, sizeof(CACHE_INFO_VAR) * (n_cache_info_var - 1));
+         n_cache_info_var--;
+         i--;
+      }
+}
+
+/*------------------------------------------------------------------*/
+
 int mscb_info(int fd, unsigned short adr, MSCB_INFO * info)
 /********************************************************************\
 
@@ -2342,36 +2405,61 @@ int mscb_info(int fd, unsigned short adr, MSCB_INFO * info)
    if (fd > MSCB_MAX_FD || fd < 1 || !mscb_fd[fd - 1].type)
       return MSCB_INVAL_PARAM;
 
-   if (mrpc_connected(fd))
-      return mrpc_call(mscb_fd[fd - 1].fd, RPC_MSCB_INFO, mscb_fd[fd - 1].remote_fd, adr, info);
+   /* check if info in cache */
+   for (i = 0; i < n_cache_info; i++)
+      if (cache_info[i].fd == fd && cache_info[i].adr == adr)
+         break;
 
-   if (mscb_lock(fd) != MSCB_SUCCESS)
-      return MSCB_MUTEX;
+   if (i < n_cache_info) {
+      /* copy from cache */
+      memcpy(info, &cache_info[i].info, sizeof(MSCB_INFO));
+   } else {
+      /* add new entry in cache */
+      if (n_cache_info == 0)
+         cache_info = (CACHE_INFO *) malloc(sizeof(CACHE_INFO));
+      else
+         cache_info = (CACHE_INFO *) realloc(cache_info, sizeof(CACHE_INFO) * (n_cache_info + 1));
 
-   buf[0] = MCMD_ADDR_NODE16;
-   buf[1] = (unsigned char) (adr >> 8);
-   buf[2] = (unsigned char) (adr & 0xFF);
-   buf[3] = crc8(buf, 3);
+      if (cache_info == NULL)
+         return MSCB_NO_MEM;
 
-   buf[4] = MCMD_GET_INFO;
-   buf[5] = crc8(buf+4, 1);
-   mscb_out(fd, buf, 6, RS485_FLAG_LONG_TO | RS485_FLAG_ADR_CYCLE);
+      cache_info[n_cache_info].fd = fd;
+      cache_info[n_cache_info].adr = adr;
 
-   i = mscb_in(fd, buf, sizeof(buf), 10000);
-   mscb_release(fd);
+      if (mrpc_connected(fd))
+         return mrpc_call(mscb_fd[fd - 1].fd, RPC_MSCB_INFO, mscb_fd[fd - 1].remote_fd, adr, info);
 
-   if (i < (int) sizeof(MSCB_INFO) + 2)
-      return MSCB_TIMEOUT;
+      if (mscb_lock(fd) != MSCB_SUCCESS)
+         return MSCB_MUTEX;
 
-   memcpy(info, buf + 2, sizeof(MSCB_INFO));
+      buf[0] = MCMD_ADDR_NODE16;
+      buf[1] = (unsigned char) (adr >> 8);
+      buf[2] = (unsigned char) (adr & 0xFF);
+      buf[3] = crc8(buf, 3);
 
-   /* do CRC check */
-   if (crc8(buf, sizeof(MSCB_INFO) + 2) != buf[sizeof(MSCB_INFO) + 2])
-      return MSCB_CRC_ERROR;
+      buf[4] = MCMD_GET_INFO;
+      buf[5] = crc8(buf+4, 1);
+      mscb_out(fd, buf, 6, RS485_FLAG_LONG_TO | RS485_FLAG_ADR_CYCLE);
 
-   WORD_SWAP(&info->node_address);
-   WORD_SWAP(&info->group_address);
-   WORD_SWAP(&info->watchdog_resets);
+      i = mscb_in(fd, buf, sizeof(buf), 10000);
+      mscb_release(fd);
+
+      if (i < (int) sizeof(MSCB_INFO) + 2)
+         return MSCB_TIMEOUT;
+
+      memcpy(info, buf + 2, sizeof(MSCB_INFO));
+
+      /* do CRC check */
+      if (crc8(buf, sizeof(MSCB_INFO) + 2) != buf[sizeof(MSCB_INFO) + 2])
+         return MSCB_CRC_ERROR;
+
+      WORD_SWAP(&info->node_address);
+      WORD_SWAP(&info->group_address);
+      WORD_SWAP(&info->watchdog_resets);
+
+      memcpy(&cache_info[n_cache_info].info, info, sizeof (MSCB_INFO));
+      n_cache_info++;
+   }
 
    return MSCB_SUCCESS;
 }
@@ -2408,34 +2496,61 @@ int mscb_info_variable(int fd, unsigned short adr, unsigned char index, MSCB_INF
    if (fd > MSCB_MAX_FD || fd < 1 || !mscb_fd[fd - 1].type)
       return MSCB_INVAL_PARAM;
 
-   if (mrpc_connected(fd))
-      return mrpc_call(mscb_fd[fd - 1].fd, RPC_MSCB_INFO_VARIABLE,
-                       mscb_fd[fd - 1].remote_fd, adr, index, info);
+   /* check if info in cache */
+   for (i = 0; i < n_cache_info_var; i++)
+      if (cache_info_var[i].fd == fd && cache_info_var[i].adr == adr &&
+          cache_info_var[i].index == index)
+         break;
 
-   if (mscb_lock(fd) != MSCB_SUCCESS)
-      return MSCB_MUTEX;
+   if (i < n_cache_info_var) {
+      /* copy from cache */
+      memcpy(info, &cache_info_var[i].info, sizeof(MSCB_INFO_VAR));
+   } else {
+      /* add new entry in cache */
+      if (n_cache_info_var == 0)
+         cache_info_var = (CACHE_INFO_VAR *) malloc(sizeof(CACHE_INFO_VAR));
+      else
+         cache_info_var = (CACHE_INFO_VAR *) realloc(cache_info_var, sizeof(CACHE_INFO_VAR) * (n_cache_info_var + 1));
 
-   buf[0] = MCMD_ADDR_NODE16;
-   buf[1] = (unsigned char) (adr >> 8);
-   buf[2] = (unsigned char) (adr & 0xFF);
-   buf[3] = crc8(buf, 3);
+      if (cache_info_var == NULL)
+         return MSCB_NO_MEM;
 
-   buf[4] = MCMD_GET_INFO + 1;
-   buf[5] = index;
-   buf[6] = crc8(buf+4, 2);
-   mscb_out(fd, buf, 7, RS485_FLAG_LONG_TO | RS485_FLAG_ADR_CYCLE);
+      cache_info_var[n_cache_info_var].fd = fd;
+      cache_info_var[n_cache_info_var].adr = adr;
+      cache_info_var[n_cache_info_var].index = index;
 
-   i = mscb_in(fd, buf, sizeof(buf), 10000);
-   mscb_release(fd);
+      if (mrpc_connected(fd))
+         return mrpc_call(mscb_fd[fd - 1].fd, RPC_MSCB_INFO_VARIABLE,
+                        mscb_fd[fd - 1].remote_fd, adr, index, info);
 
-   if (i < (int) sizeof(MSCB_INFO_VAR) + 3)
-      return MSCB_TIMEOUT;
+      if (mscb_lock(fd) != MSCB_SUCCESS)
+         return MSCB_MUTEX;
 
-   memcpy(info, buf + 2, sizeof(MSCB_INFO_VAR));
+      buf[0] = MCMD_ADDR_NODE16;
+      buf[1] = (unsigned char) (adr >> 8);
+      buf[2] = (unsigned char) (adr & 0xFF);
+      buf[3] = crc8(buf, 3);
 
-   /* do CRC check */
-   if (crc8(buf, sizeof(MSCB_INFO_VAR) + 2) != buf[sizeof(MSCB_INFO_VAR) + 2])
-      return MSCB_CRC_ERROR;
+      buf[4] = MCMD_GET_INFO + 1;
+      buf[5] = index;
+      buf[6] = crc8(buf+4, 2);
+      mscb_out(fd, buf, 7, RS485_FLAG_LONG_TO | RS485_FLAG_ADR_CYCLE);
+
+      i = mscb_in(fd, buf, sizeof(buf), 10000);
+      mscb_release(fd);
+
+      if (i < (int) sizeof(MSCB_INFO_VAR) + 3)
+         return MSCB_TIMEOUT;
+
+      memcpy(info, buf + 2, sizeof(MSCB_INFO_VAR));
+
+      /* do CRC check */
+      if (crc8(buf, sizeof(MSCB_INFO_VAR) + 2) != buf[sizeof(MSCB_INFO_VAR) + 2])
+         return MSCB_CRC_ERROR;
+
+      memcpy(&cache_info_var[n_cache_info_var].info, info, sizeof(MSCB_INFO_VAR));
+      n_cache_info_var++;
+   }
 
    return MSCB_SUCCESS;
 }
@@ -3156,6 +3271,9 @@ prog_pages:
 
    if (debug)
       printf("Reboot node\n");
+
+   /* clear info cache from that node */
+   mscb_clear_info_cache(fd, adr);
 
 prog_error:
    mscb_release(fd);
