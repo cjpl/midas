@@ -6,6 +6,9 @@
   Contents:     Command-line interface for the Midas Slow Control Bus
 
   $Log$
+  Revision 1.84  2005/07/25 10:11:21  ritt
+  Fixed compiler warnings
+
   Revision 1.83  2005/07/25 09:23:15  ritt
   Changed retries for ping
 
@@ -498,10 +501,10 @@ int match(char *str, char *cmd)
 
 /*------------------------------------------------------------------*/
 
-void cmd_loop(int fd, char *cmd, int adr)
+void cmd_loop(int fd, char *cmd, unsigned short adr)
 {
-   int i, j, fh, status, size, nparam, addr, gaddr, current_addr, current_group,
-      majv, minv;
+   int i, j, fh, status, size, nparam, majv, minv, current_addr, current_group;
+   unsigned short addr, gaddr;
    unsigned int data;
    unsigned char c;
    float value;
@@ -622,12 +625,12 @@ void cmd_loop(int fd, char *cmd, int adr)
 
                if (i == 0)
                   /* do the first time with retry, to send '0's */
-                  status = mscb_addr(fd, MCMD_PING16, i, 2, 1);
+                  status = mscb_addr(fd, MCMD_PING16, (unsigned short)i, 2, 1);
                else
-                  status = mscb_ping(fd, i);
+                  status = mscb_ping(fd, (unsigned short)i);
 
                if (status == MSCB_SUCCESS) {
-                  status = mscb_info(fd, i, &info);
+                  status = mscb_info(fd, (unsigned short)i, &info);
                   strncpy(str, info.node_name, sizeof(info.node_name));
                   str[16] = 0;
 
@@ -664,10 +667,10 @@ void cmd_loop(int fd, char *cmd, int adr)
                printf("Test address 0x%x    \r", i);
                fflush(stdout);
 
-               status = mscb_ping(fd, i);
+               status = mscb_ping(fd, (unsigned short)i);
 
                if (status == MSCB_SUCCESS) {
-                  status = mscb_info(fd, i, &info);
+                  status = mscb_info(fd, (unsigned short)i, &info);
                   strncpy(str, info.node_name, sizeof(info.node_name));
                   str[16] = 0;
 
@@ -703,7 +706,7 @@ void cmd_loop(int fd, char *cmd, int adr)
          if (current_addr < 0)
             printf("You must first address an individual node\n");
          else {
-            status = mscb_info(fd, current_addr, &info);
+            status = mscb_info(fd, (unsigned short)current_addr, &info);
             if (status == MSCB_CRC_ERROR)
                puts("CRC Error");
             else if (status != MSCB_SUCCESS)
@@ -719,11 +722,11 @@ void cmd_loop(int fd, char *cmd, int adr)
 
                printf("\nVariables:\n");
                for (i = 0; i < info.n_variables; i++) {
-                  mscb_info_variable(fd, current_addr, i, &info_var);
+                  mscb_info_variable(fd, (unsigned short)current_addr, (unsigned char)i, &info_var);
                   if ((info_var.flags & MSCBF_HIDDEN) == 0 || param[1][0]) {
                      size = info_var.width;
                      memset(dbuf, 0, sizeof(dbuf));
-                     status = mscb_read(fd, current_addr, (unsigned char) i, dbuf, &size);
+                     status = mscb_read(fd, (unsigned short)current_addr, (unsigned char) i, dbuf, &size);
                      if (status == MSCB_SUCCESS)
                            print_channel(i, &info_var, dbuf, 1);
                   }
@@ -827,7 +830,7 @@ void cmd_loop(int fd, char *cmd, int adr)
                else
                   gaddr = atoi(param[2]);
 
-               status = mscb_set_addr(fd, current_addr, addr, gaddr);
+               status = mscb_set_addr(fd, (unsigned short)current_addr, addr, gaddr);
                if (status == MSCB_ADDR_EXISTS)
                   printf("Error: Address %d exists already on this network\n", addr);
                else
@@ -848,7 +851,7 @@ void cmd_loop(int fd, char *cmd, int adr)
                while (strlen(str) > 0 && (str[strlen(str) - 1] == '\r' || str[strlen(str) - 1] == '\n'))
                   str[strlen(str) - 1] = 0;
 
-               mscb_set_name(fd, current_addr, str);
+               mscb_set_name(fd, (unsigned short)current_addr, str);
             }
          }
       }
@@ -871,7 +874,7 @@ void cmd_loop(int fd, char *cmd, int adr)
 
                /* write CSR register */
                c = i ? CSR_DEBUG : 0;
-               mscb_write(fd, current_addr, 0xFF, &c, 1);
+               mscb_write(fd, (unsigned short)current_addr, 0xFF, &c, 1);
             }
          }
       }
@@ -887,7 +890,7 @@ void cmd_loop(int fd, char *cmd, int adr)
                addr = atoi(param[1]);
 
                if (current_addr >= 0) {
-                  mscb_info_variable(fd, current_addr, addr, &info_var);
+                  mscb_info_variable(fd, (unsigned short)current_addr, (unsigned char)addr, &info_var);
 
                   if (info_var.unit == UNIT_STRING) {
                      memset(str, 0, sizeof(str));
@@ -896,7 +899,7 @@ void cmd_loop(int fd, char *cmd, int adr)
                         str[strlen(str) - 1] = 0;
 
                      do {
-                        status = mscb_write(fd, current_addr, (unsigned char) addr, str, strlen(str)+1);
+                        status = mscb_write(fd, (unsigned short)current_addr, (unsigned char) addr, str, strlen(str)+1);
                         Sleep(1000);
                      } while (param[3][0] && !kbhit());
 
@@ -907,7 +910,7 @@ void cmd_loop(int fd, char *cmd, int adr)
                         str[strlen(str) - 1] = 0;
 
                      do {
-                        status = mscb_write_block(fd, current_addr, (unsigned char) addr, str, strlen(str)+1);
+                        status = mscb_write_block(fd, (unsigned short)current_addr, (unsigned char) addr, str, strlen(str)+1);
                         Sleep(100);
                      } while (param[3][0] && !kbhit());
 
@@ -924,7 +927,7 @@ void cmd_loop(int fd, char *cmd, int adr)
 
                      do {
 
-                        status = mscb_write(fd, current_addr, (unsigned char) addr, &data, info_var.width);
+                        status = mscb_write(fd, (unsigned short)current_addr, (unsigned char)addr, &data, info_var.width);
                         Sleep(100);
 
                      } while (param[3][0] && !kbhit());
@@ -936,7 +939,7 @@ void cmd_loop(int fd, char *cmd, int adr)
                   else
                      data = atoi(param[2]);
 
-                  status = mscb_write_group(fd, current_group, (unsigned char) addr, &data, 4);
+                  status = mscb_write_group(fd, (unsigned short)current_group, (unsigned char)addr, &data, 4);
                }
 
                if (status != MSCB_SUCCESS)
@@ -955,7 +958,7 @@ void cmd_loop(int fd, char *cmd, int adr)
             else {
                addr = atoi(param[1]);
 
-               status = mscb_info_variable(fd, current_addr, addr, &info_var);
+               status = mscb_info_variable(fd, (unsigned short)current_addr, (unsigned char)addr, &info_var);
 
                if (status == MSCB_CRC_ERROR)
                   puts("CRC Error");
@@ -968,7 +971,7 @@ void cmd_loop(int fd, char *cmd, int adr)
                      /* read ASCII string */
                      memset(dbuf, 0, sizeof(dbuf));
                      size = sizeof(dbuf);
-                     status = mscb_read_block(fd, current_addr, (unsigned char) addr, dbuf, &size);
+                     status = mscb_read_block(fd, (unsigned short)current_addr, (unsigned char)addr, dbuf, &size);
                      if (status != MSCB_SUCCESS)
                         printf("Error: %d\n", status);
                      else if (size == 0)
@@ -982,7 +985,7 @@ void cmd_loop(int fd, char *cmd, int adr)
                      do {
                         memset(dbuf, 0, sizeof(dbuf));
                         size = info_var.width;
-                        status = mscb_read(fd, current_addr, (unsigned char) addr, dbuf, &size);
+                        status = mscb_read(fd, (unsigned short)current_addr, (unsigned char) addr, dbuf, &size);
                         if (status != MSCB_SUCCESS)
                            printf("Error: %d\n", status);
                         else if (size != info_var.width)
@@ -1021,7 +1024,7 @@ void cmd_loop(int fd, char *cmd, int adr)
             if (f == NULL) {
                printf("Cannot open file %s\n", str);
             } else {
-               status = mscb_info(fd, current_addr, &info);
+               status = mscb_info(fd, (unsigned short)current_addr, &info);
                if (status == MSCB_CRC_ERROR)
                   puts("CRC Error");
                else if (status != MSCB_SUCCESS)
@@ -1038,9 +1041,9 @@ void cmd_loop(int fd, char *cmd, int adr)
 
                   fprintf(f, "\nVariables:\n");
                   for (i = 0; i < info.n_variables; i++) {
-                     mscb_info_variable(fd, current_addr, i, &info_var);
+                     mscb_info_variable(fd, (unsigned short)current_addr, (unsigned char)i, &info_var);
                      size = sizeof(data);
-                     mscb_read(fd, current_addr, (unsigned char) i, dbuf, &size);
+                     mscb_read(fd, (unsigned short)current_addr, (unsigned char)i, dbuf, &size);
 
                      print_channel_str(i, &info_var, dbuf, 1, str);
                      fprintf(f, str);
@@ -1067,7 +1070,7 @@ void cmd_loop(int fd, char *cmd, int adr)
                str[strlen(str) - 1] = 0;
 
             /* get list of channel names */
-            status = mscb_info(fd, current_addr, &info);
+            status = mscb_info(fd, (unsigned short)current_addr, &info);
             if (status == MSCB_CRC_ERROR)
                puts("CRC Error");
             else if (status != MSCB_SUCCESS)
@@ -1075,7 +1078,7 @@ void cmd_loop(int fd, char *cmd, int adr)
             else {
                memset(chn_name, 0, sizeof(chn_name));
                for (i = 0; i < info.n_variables; i++) {
-                  mscb_info_variable(fd, current_addr, i, &info_var);
+                  mscb_info_variable(fd, (unsigned short)current_addr, (unsigned char)i, &info_var);
                   strcpy(chn_name[i], info_var.name);
                }
 
@@ -1098,7 +1101,7 @@ void cmd_loop(int fd, char *cmd, int adr)
                         /* search for channel with same name */
                         for (i = 0; chn_name[i][0]; i++)
                            if (strcmp(chn_name[i], name) == 0) {
-                              mscb_info_variable(fd, current_addr, i, &info_var);
+                              mscb_info_variable(fd, (unsigned short)current_addr, (unsigned char)i, &info_var);
 
                               if (info_var.unit == UNIT_STRING) {
                                  memset(str, 0, sizeof(str));
@@ -1107,7 +1110,7 @@ void cmd_loop(int fd, char *cmd, int adr)
                                     str[strlen(str) - 1] = 0;
 
                                  status =
-                                     mscb_write(fd, current_addr, (unsigned char) i, str, info_var.width);
+                                     mscb_write(fd, (unsigned short)current_addr, (unsigned char) i, str, info_var.width);
                               } else {
                                  if (info_var.flags & MSCBF_FLOAT) {
                                     value = (float) atof(p);
@@ -1117,7 +1120,7 @@ void cmd_loop(int fd, char *cmd, int adr)
                                  }
 
                                  status =
-                                     mscb_write(fd, current_addr, (unsigned char) i, &data, info_var.width);
+                                     mscb_write(fd, (unsigned short)current_addr, (unsigned char) i, &data, info_var.width);
 
                                  /* blank padding */
                                  for (j = strlen(name); j < 8; j++)
@@ -1153,7 +1156,7 @@ void cmd_loop(int fd, char *cmd, int adr)
                   break;
 
                putchar(c);
-               status = mscb_write_block(fd, current_addr, 0, &c, 1);
+               status = mscb_write_block(fd, (unsigned short)current_addr, 0, &c, 1);
                if (status != MSCB_SUCCESS) {
                   printf("\nError: %d\n", status);
                   break;
@@ -1162,14 +1165,14 @@ void cmd_loop(int fd, char *cmd, int adr)
                if (c == '\r') {
                   putchar('\n');
                   c = '\n';
-                  mscb_write_block(fd, current_addr, 0, &c, 1);
+                  mscb_write_block(fd, (unsigned short)current_addr, 0, &c, 1);
                }
 
             }
 
             memset(line, 0, sizeof(line));
             size = sizeof(line);
-            mscb_read_block(fd, current_addr, 0, line, &size);
+            mscb_read_block(fd, (unsigned short)current_addr, 0, line, &size);
             if (size > 0)
                fputs(line, stdout);
 
@@ -1186,7 +1189,7 @@ void cmd_loop(int fd, char *cmd, int adr)
          if (current_addr < 0)
             printf("You must first address an individual node\n");
          else {
-            status = mscb_flash(fd, current_addr);
+            status = mscb_flash(fd, (unsigned short)current_addr);
 
             if (status != MSCB_SUCCESS)
                printf("Error: %d\n", status);
@@ -1219,9 +1222,9 @@ void cmd_loop(int fd, char *cmd, int adr)
                close(fh);
 
                if (param[2][0] == 'd')
-                  status = mscb_upload(fd, current_addr, buffer, size, TRUE);
+                  status = mscb_upload(fd, (unsigned short)current_addr, buffer, size, TRUE);
                else
-                  status = mscb_upload(fd, current_addr, buffer, size, FALSE);
+                  status = mscb_upload(fd, (unsigned short)current_addr, buffer, size, FALSE);
 
                if (status == MSCB_FORMAT_ERROR)
                   printf("Syntax error in file \"%s\"\n", str);
@@ -1259,7 +1262,7 @@ void cmd_loop(int fd, char *cmd, int adr)
                read(fh, buffer, size - 1);
                close(fh);
 
-               status = mscb_verify(fd, current_addr, buffer, size);
+               status = mscb_verify(fd, (unsigned short)current_addr, buffer, size);
 
                if (status == MSCB_FORMAT_ERROR)
                   printf("Syntax error in file \"%s\"\n", str);
@@ -1274,7 +1277,7 @@ void cmd_loop(int fd, char *cmd, int adr)
 
       /* reboot ---------- */
       else if (match(param[0], "reboot")) {
-         mscb_reboot(fd, current_addr);
+         mscb_reboot(fd, (unsigned short)current_addr);
       }
 
       /* reset ---------- */
@@ -1292,7 +1295,7 @@ void cmd_loop(int fd, char *cmd, int adr)
          else {
             d1 = i = 0;
             /* first echo with adressing */
-            status = mscb_echo(fd, current_addr, d1, &d2);
+            status = mscb_echo(fd, (unsigned short)current_addr, d1, &d2);
             while (!kbhit()) {
                d1 = rand();
 
@@ -1331,7 +1334,7 @@ void cmd_loop(int fd, char *cmd, int adr)
             i = 0;
             time(&start);
             while (!kbhit()) {
-               status = mscb_write_block(fd, current_addr, 0, dbuf, 1024);
+               status = mscb_write_block(fd, (unsigned short)current_addr, 0, dbuf, 1024);
                i += 1024;
 
                time(&now);
@@ -1351,7 +1354,7 @@ void cmd_loop(int fd, char *cmd, int adr)
       /* test1 ---------- */
       else if (match(param[0], "t1")) {
          data = atoi(param[1]);
-         mscb_link(fd, current_addr, 8, &data, 4);
+         mscb_link(fd, (unsigned short)current_addr, 8, &data, 4);
 
          printf("Data: %d\n", data);
       }
@@ -1378,7 +1381,8 @@ void cmd_loop(int fd, char *cmd, int adr)
 
 int main(int argc, char *argv[])
 {
-   int i, fd, adr, server;
+   int i, fd, server;
+   unsigned short adr;
    char cmd[256], device[256], str[256];
    int debug, check_io;
 

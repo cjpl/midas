@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus communication functions
 
   $Log$
+  Revision 1.99  2005/07/25 10:11:23  ritt
+  Fixed compiler warnings
+
   Revision 1.98  2005/07/25 09:23:28  ritt
   Implemented info cache
 
@@ -594,6 +597,9 @@ int mscb_lock(int fd)
 {
 #ifdef _MSC_VER
    int status;
+
+   if (fd);
+
    if (mutex_handle == 0)
       mutex_handle = CreateMutex(NULL, FALSE, "mscb");
 
@@ -624,6 +630,8 @@ int mscb_release(int fd)
 {
 #ifdef _MSC_VER
    int status;
+
+   if (fd);
 
    status = ReleaseMutex(mutex_handle);
    if (status == FALSE)
@@ -736,7 +744,7 @@ unsigned char pp_rdata(int fd)
 /* intput data byte */
 {
 #if defined(_MSC_VER)
-   return _inp((unsigned short) mscb_fd[fd - 1].fd);
+   return (unsigned char)_inp((unsigned short) mscb_fd[fd - 1].fd);
 #elif defined(OS_LINUX)
    unsigned char data;
    if (ioctl(mscb_fd[fd - 1].fd, PPRDATA, &data))
@@ -866,7 +874,7 @@ int mscb_out(int index, unsigned char *buffer, int len, int flags)
          return MSCB_INVAL_PARAM;
 
       /* add flags in first byte of USB buffer */
-      usb_buf[0] = flags;
+      usb_buf[0] = (unsigned char)flags;
       memcpy(usb_buf + 1, buffer, len);
 
       /* send on OUT pipe */
@@ -975,10 +983,10 @@ int mscb_out(int index, unsigned char *buffer, int len, int flags)
          return MSCB_INVAL_PARAM;
 
       /* write buffer size in first byte */
-      eth_buf[0] = len + 1;
+      eth_buf[0] = (unsigned char)(len + 1);
 
       /* add flags in second byte of Ethernet buffer */
-      eth_buf[1] = flags;
+      eth_buf[1] = (unsigned char)flags;
       memcpy(eth_buf + 2, buffer, len);
 
       /* send over TCP link */
@@ -1858,6 +1866,8 @@ int mscb_init(char *device, int bufsize, char *password, int debug)
          musb_close(mscb_fd[index].hr, mscb_fd[index].hw);
       }
 
+      n = 0;
+
       /* linux needs some time to start-up ...??? */
       for (i = 0; i < 10; i++) {
          if (!mscb_lock(index + 1)) {
@@ -2020,7 +2030,7 @@ void mscb_get_device(int fd, char *device, int bufsize)
                 mscb_fd[fd - 1].remote_fd, str, sizeof(str));
    }
 
-   strcpy(device, mscb_fd[fd-1].device);
+   strlcpy(device, mscb_fd[fd-1].device, bufsize);
 }
 
 /*------------------------------------------------------------------*/
@@ -2147,7 +2157,7 @@ int mscb_addr(int fd, int cmd, unsigned short adr, int retry, int lock)
    }
 
    for (n = 0; n < retry; n++) {
-      buf[0] = cmd;
+      buf[0] = (unsigned char)cmd;
 
       if (cmd == MCMD_ADDR_NODE8 || cmd == MCMD_ADDR_GRP8) {
          buf[1] = (unsigned char) adr;
@@ -2657,7 +2667,7 @@ int mscb_set_name(int fd, unsigned short adr, char *name)
    if (i < 16)
       buf[6 + (i++)] = 0;
 
-   buf[5] = i;                  /* varibale buffer length */
+   buf[5] = (unsigned char)i; /* varibale buffer length */
 
    buf[6 + i] = crc8(buf+4, 2 + i);
    mscb_out(fd, buf, 7 + i, RS485_FLAG_NO_ACK | RS485_FLAG_ADR_CYCLE);
@@ -2712,7 +2722,7 @@ int mscb_write_group(int fd, unsigned short adr, unsigned char index, void *data
    buf[2] = (unsigned char) (adr & 0xFF);
    buf[3] = crc8(buf, 3);
 
-   buf[4] = MCMD_WRITE_NA + size + 1;
+   buf[4] = (unsigned char)(MCMD_WRITE_NA + size + 1);
    buf[5] = index;
 
    for (i = 0, d = data; i < size; i++)
@@ -2789,7 +2799,7 @@ int mscb_write(int fd, unsigned short adr, unsigned char index, void *data, int 
    buf[3] = crc8(buf, 3);
 
    if (size < 6) {
-      buf[4] = MCMD_WRITE_ACK + size + 1;
+      buf[4] = (unsigned char)(MCMD_WRITE_ACK + size + 1);
       buf[5] = index;
 
       /* reverse order for WORD & DWORD */
@@ -2805,7 +2815,7 @@ int mscb_write(int fd, unsigned short adr, unsigned char index, void *data, int 
       mscb_out(fd, buf, 7 + i, RS485_FLAG_ADR_CYCLE);
    } else {
       buf[4] = MCMD_WRITE_ACK + 7;
-      buf[5] = size + 1;
+      buf[5] = (unsigned char)(size + 1);
       buf[6] = index;
 
       for (i = 0, d = data; i < size; i++)
@@ -2899,7 +2909,7 @@ int mscb_write_block(int fd, unsigned short adr, unsigned char index, void *data
       buf[3] = crc8(buf, 3);
 
       buf[4] = MCMD_WRITE_ACK + 7;
-      buf[5] = n + 1;
+      buf[5] = (unsigned char)(n + 1);
       buf[6] = index;
 
       memcpy(buf+7, (char *)data+i*58, n);
@@ -3021,11 +3031,11 @@ int mscb_upload(int fd, unsigned short adr, char *buffer, int size, int debug)
    do {
       if (line[0] == ':') {
          sscanf(line + 1, "%02x%02x%02x%02x", &len, &ofh, &ofl, &type);
-         ofs = (ofh << 8) | ofl;
+         ofs = (unsigned short)((ofh << 8) | ofl);
 
          for (i = 0; i < (int) len; i++) {
             sscanf(line + 9 + i * 2, "%02x", &d);
-            image[ofs + i] = d;
+            image[ofs + i] = (unsigned char)d;
          }
 
          flash_size += len;
@@ -3120,7 +3130,7 @@ int mscb_upload(int fd, unsigned short adr, char *buffer, int size, int debug)
 
          /* erase page */
          buf[0] = UCMD_ERASE;
-         buf[1] = page;
+         buf[1] = (unsigned char)page;
          mscb_out(fd, buf, 2, RS485_FLAG_LONG_TO);
 
          if (mscb_in(fd, ack, 2, 100000) != 2) {
@@ -3190,8 +3200,8 @@ prog_pages:
             for (sretry = 0 ; sretry < 10 ; sretry++) {
                /* program page */
                buf[0] = UCMD_PROGRAM;
-               buf[1] = page;
-               buf[2] = subpage;
+               buf[1] = (unsigned char)page;
+               buf[2] = (unsigned char)subpage;
 
                /* extract page from image */
                for (i = 0; i < 32; i++)
@@ -3230,7 +3240,7 @@ prog_pages:
 
          /* verify page */
          buf[0] = UCMD_VERIFY;
-         buf[1] = page;
+         buf[1] = (unsigned char)page;
          mscb_out(fd, buf, 2, RS485_FLAG_LONG_TO);
 
          ack[1] = 0;
@@ -3324,11 +3334,11 @@ int mscb_verify(int fd, unsigned short adr, char *buffer, int size)
    do {
       if (line[0] == ':') {
          sscanf(line + 1, "%02x%02x%02x%02x", &len, &ofh, &ofl, &type);
-         ofs = (ofh << 8) | ofl;
+         ofs = (unsigned short)((ofh << 8) | ofl);
 
          for (i = 0; i < (int) len; i++) {
             sscanf(line + 9 + i * 2, "%02x", &d);
-            image[ofs + i] = d;
+            image[ofs + i] = (unsigned char)d;
          }
 
          flash_size += len;
@@ -3398,8 +3408,8 @@ int mscb_verify(int fd, unsigned short adr, char *buffer, int size)
 
          /* read page */
          buf[0] = UCMD_READ;
-         buf[1] = page;
-         buf[2] = subpage;
+         buf[1] = (unsigned char)page;
+         buf[2] = (unsigned char)subpage;
          mscb_out(fd, buf, 3, RS485_FLAG_LONG_TO);
 
          memset(buf, 0, sizeof(buf));
@@ -3489,7 +3499,7 @@ int mscb_read(int fd, unsigned short adr, unsigned char index, void *data, int *
    }
 
    /* try ten times */
-   for (n = 0; n < 10; n++) {
+   for (n = i = 0; n < 10; n++) {
       /* after five times, reset submaster */
       if (n == 5) {
 #ifndef _USRDLL
@@ -3624,7 +3634,7 @@ int mscb_read_range(int fd, unsigned short adr, unsigned char index1, unsigned c
       return MSCB_MUTEX;
 
    /* try ten times */
-   for (n = 0; n < 10; n++) {
+   for (n = i = 0; n < 10; n++) {
       /* after five times, reset submaster */
       if (n == 5) {
 #ifndef _USRDLL
@@ -3836,7 +3846,7 @@ int mscb_user(int fd, unsigned short adr, void *param, int size, void *result, i
    buf[2] = (unsigned char) (adr & 0xFF);
    buf[3] = crc8(buf, 3);
 
-   buf[4] = MCMD_USER + size;
+   buf[4] = (unsigned char)(MCMD_USER + size);
 
    for (i = 0; i < size; i++)
       buf[5 + i] = ((char *) param)[i];
@@ -4247,8 +4257,8 @@ int set_mac_address(int fd)
    cfg.eth_mac_addr[1] = 0x50;
    cfg.eth_mac_addr[2] = 0xC2;
    cfg.eth_mac_addr[3] = 0x46;
-   cfg.eth_mac_addr[4] = 0xD0 | (n >> 8);
-   cfg.eth_mac_addr[5] = n & 0xFF;
+   cfg.eth_mac_addr[4] = (unsigned char)(0xD0 | (n >> 8));
+   cfg.eth_mac_addr[5] = (unsigned char)(n & 0xFF);
 
    printf("MAC Address is 00-50-C2-46-%02X-%02X\n",
            cfg.eth_mac_addr[4], cfg.eth_mac_addr[5]);

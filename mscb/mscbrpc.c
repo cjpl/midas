@@ -6,6 +6,9 @@
   Contents:     List of MSCB RPC functions with parameters
 
   $Log$
+  Revision 1.4  2005/07/25 10:11:24  ritt
+  Fixed compiler warnings
+
   Revision 1.3  2005/06/14 11:38:02  ritt
   Revised MSCB adr to 16-bit consistently
 
@@ -371,7 +374,7 @@ int mrecv_tcp(int sock, char *buffer, int buffer_size)
    /* first receive header */
    n_received = 0;
    do {
-      n = recv(sock, net_buffer + n_received, sizeof(NET_COMMAND_HEADER), 0);
+      n = recv(sock, buffer + n_received, sizeof(NET_COMMAND_HEADER), 0);
 
       if (n <= 0)
          return n;
@@ -382,7 +385,7 @@ int mrecv_tcp(int sock, char *buffer, int buffer_size)
 
    /* now receive parameters */
 
-   nc = (NET_COMMAND *) net_buffer;
+   nc = (NET_COMMAND *) buffer;
    param_size = nc->header.param_size;
    n_received = 0;
 
@@ -390,7 +393,7 @@ int mrecv_tcp(int sock, char *buffer, int buffer_size)
       return sizeof(NET_COMMAND_HEADER);
 
    do {
-      n = recv(sock, net_buffer + sizeof(NET_COMMAND_HEADER) + n_received,
+      n = recv(sock, buffer + sizeof(NET_COMMAND_HEADER) + n_received,
                param_size - n_received, 0);
 
       if (n <= 0)

@@ -6,6 +6,9 @@
   Contents:     Calibration program for HVR-200
 
   $Log$
+  Revision 1.14  2005/07/25 10:11:20  ritt
+  Fixed compiler warnings
+
   Revision 1.13  2005/05/02 10:50:12  ritt
   Version 2.1.1
 
@@ -79,13 +82,14 @@
 
 /*------------------------------------------------------------------*/
 
-float read_voltage(int fd, int adr)
+float read_voltage(int fd, unsigned short adr)
 {
    int status, size;
    float value;
    char str[80];
 
    status = 0;
+   value = 0;
    if (adr > 0) {
       size = sizeof(float);
       status = mscb_read(fd, adr, 1, &value, &size);
@@ -104,12 +108,14 @@ float read_voltage(int fd, int adr)
 
 /*------------------------------------------------------------------*/
 
-int calib_ui(int fd, int adr, int adr_dvm)
+int calib_ui(int fd, unsigned short adr, unsigned short adr_dvm)
 {
    float f;
    int size, d;
    char str[80];
    float v_adc1, v_adc2, i1, i2, i_vgain;
+
+   if (adr_dvm);
 
    printf("\n**** Calibrating channel %d ****\n\n", adr);
 
@@ -195,7 +201,7 @@ int calib_ui(int fd, int adr, int adr_dvm)
 
 /*------------------------------------------------------------------*/
 
-int calib(int fd, int adr, int adr_dvm, float rin_dvm)
+int calib(int fd, unsigned short adr, unsigned short adr_dvm, float rin_dvm)
 {
    float f;
    int size, d;
@@ -369,7 +375,8 @@ void stop()
 
 int main(int argc, char *argv[])
 {
-   int fd, adr, adr_start, adr_end, adr_dvm;
+   int fd;
+   unsigned short adr, adr_start, adr_end, adr_dvm;
    char str[80];
    MSCB_INFO_VAR info;
 
@@ -387,21 +394,21 @@ int main(int argc, char *argv[])
 
    printf("Enter address of first HVR-400/500 channel          [  0] : ");
    fgets(str, sizeof(str), stdin);
-   adr_start = atoi(str);
+   adr_start = (unsigned short)atoi(str);
 
    printf("Enter address of last HVR-400/500 channel           [%3d] : ", adr_start + 9);
    fgets(str, sizeof(str), stdin);
    if (!isdigit(str[0]))
       adr_end = adr_start + 9;
    else
-      adr_end = atoi(str);
+      adr_end = (unsigned short)atoi(str);
 
    printf("Enter address of Keithley DVM, or 'manual' for none [100] : ");
    fgets(str, sizeof(str), stdin);
    if (str[0] == 'm')
-      adr_dvm = -1;
+      adr_dvm = 0xFFFF;
    else if (isdigit(str[0]))
-      adr_dvm = atoi(str);
+      adr_dvm = (unsigned short)atoi(str);
    else
       adr_dvm = 100;
 
