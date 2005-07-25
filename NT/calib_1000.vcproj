@@ -22,6 +22,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
+				AdditionalIncludeDirectories="c:\mxml"
 				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="5"
@@ -158,22 +159,10 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="..\mscb\rpc.c">
-				<FileConfiguration
-					Name="Debug|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="0"
-						PreprocessorDefinitions=""
-						BasicRuntimeChecks="3"/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="2"
-						PreprocessorDefinitions=""/>
-				</FileConfiguration>
+				RelativePath="..\mscb\mscbrpc.c">
+			</File>
+			<File
+				RelativePath="..\..\mxml\strlcpy.c">
 			</File>
 		</Filter>
 		<Filter
