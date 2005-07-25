@@ -6,6 +6,9 @@
   Contents:     Various utility functions for MSCB protocol
 
   $Log$
+  Revision 1.61  2005/07/25 12:57:34  ritt
+  Disabled UART0 interrupts for last byte in uart1_send
+
   Revision 1.60  2005/07/25 09:22:33  ritt
   Implemented external watchdog for SCS_100x
 
@@ -533,8 +536,25 @@ unsigned char i;
       ti1_shadow = 0;
 
       DELAY_US(INTERCHAR_DELAY);
-      SBUF1 = *buffer++;
-      while (ti1_shadow == 0);
+
+      if (i == size-1) {
+        
+         /* interrupt between last send and enable=0 could cause bus collision */
+         ES0 = 0;
+
+         SBUF1 = *buffer++;
+         while (ti1_shadow == 0);
+         
+         RS485_SEC_ENABLE = 0;
+
+         ES0 = 1;
+
+      } else {
+
+         SBUF1 = *buffer++;
+         while (ti1_shadow == 0);
+
+      }
 
       watchdog_refresh();
    }
