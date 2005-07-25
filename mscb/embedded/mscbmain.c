@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus protocol main program
 
   $Log$
+  Revision 1.72  2005/07/25 11:41:13  ritt
+  Disabled interrupts during memcpy
+
   Revision 1.71  2005/07/25 09:22:33  ritt
   Implemented external watchdog for SCS_100x
 
@@ -1123,7 +1126,9 @@ unsigned char i, n;
          }
 
          /* all ok, so copy variable */
+         DISABLE_INTERRUPTS;
          memcpy(variables[i].ud, uart1_buf+1, variables[i].width);
+         ENABLE_INTERRUPTS;
   	   }
 
 }
