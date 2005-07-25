@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus protocol main program
 
   $Log$
+  Revision 1.73  2005/07/25 12:57:33  ritt
+  Disabled UART0 interrupts for last byte in uart1_send
+
   Revision 1.72  2005/07/25 11:41:13  ritt
   Disabled interrupts during memcpy
 
@@ -1083,6 +1086,7 @@ void poll_error(unsigned char i)
    led_blink(1, 1, 50);
    last_addr = -1; // force re-adressing of single node
 
+   /* flush input queue of remote device */
    for (i=0 ; i<10 ; i++)
       uart1_buf[i] = 0;
    uart1_send(uart1_buf, 10, 1);
