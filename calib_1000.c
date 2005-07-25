@@ -6,6 +6,9 @@
   Contents:     Calibration program for SCS-900
 
   $Log$
+  Revision 1.4  2005/07/25 10:11:19  ritt
+  Fixed compiler warnings
+
   Revision 1.3  2005/07/07 11:56:03  ritt
   Fixed delay
 
@@ -30,7 +33,8 @@ int main(int argc, char *argv[])
 {
    float v;
    double d;
-   int i, fd, adr, size;
+   int i, fd, size;
+   unsigned short adr;
    char str[80];
    MSCB_INFO_VAR info;
 
@@ -48,7 +52,7 @@ int main(int argc, char *argv[])
 
    printf("Enter address of SCS-1000/1001 device: ");
    fgets(str, sizeof(str), stdin);
-   adr = atoi(str);
+   adr = (unsigned short)atoi(str);
 
    if (mscb_ping(fd, adr) != MSCB_SUCCESS) {
       printf("No device at address %d found.\n", adr);

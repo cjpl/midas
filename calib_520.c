@@ -6,6 +6,9 @@
   Contents:     Calibration program for SCS-520
 
   $Log$
+  Revision 1.6  2005/07/25 10:11:19  ritt
+  Fixed compiler warnings
+
   Revision 1.5  2005/03/21 10:57:25  ritt
   Version 2.0.0
 
@@ -35,7 +38,8 @@
 int main(int argc, char *argv[])
 {
    float v;
-   int i, fd, adr, size, d;
+   int i, fd, size, d;
+   unsigned short adr;
    char str[80];
    MSCB_INFO_VAR info;
 
@@ -53,7 +57,7 @@ int main(int argc, char *argv[])
 
    printf("Enter address of SCS-520 device: ");
    fgets(str, sizeof(str), stdin);
-   adr = atoi(str);
+   adr = (unsigned short)atoi(str);
 
    if (mscb_ping(fd, adr) != MSCB_SUCCESS) {
       printf("No device at address %d found.\n", adr);
