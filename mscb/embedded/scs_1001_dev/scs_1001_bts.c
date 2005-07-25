@@ -8,6 +8,9 @@
                 SCS-910
 
   $Log$
+  Revision 1.7  2005/07/25 15:13:13  ritt
+  Added auto mode for ln2 valve
+
   Revision 1.6  2005/07/25 12:57:35  ritt
   Disabled UART0 interrupts for last byte in uart1_send
 
@@ -227,8 +230,6 @@ void user_init(unsigned char init)
 {
    unsigned char i;
    char xdata str[64];
-
-   led_mode(2, 0);              // buzzer off by default
 
    SFRPAGE = ADC0_PAGE;
    AMX0CF = 0x00;               // select single ended analog inputs
@@ -479,15 +480,25 @@ unsigned short xdata delta;
    printf("TH:%5.1f%K", user_data.lhe_temp1b);
 
    lcd_goto(0, 3);
-   printf(user_data.ln2_valve ? "LN2OFF" : "LN2ON ");
+   if (user_data.bts_state == 0)
+      printf("LN2OFF");
+   else if (user_data.bts_state == 1)
+      printf("LN2ON ");
+   else
+      printf("LN2AUT");
 
    lcd_goto(6, 3);
-   printf(user_data.ln2_heater ? "HOFF" : "HON ");
+   printf(user_data.ln2_heater ? "HON " : "HOFF");
 
-   /* toggle valve switch with button 0 */
+   /* toggle state with button 0 */
    if (b0 && !b0_old) {
       last_time = time();
-      user_data.ln2_valve = !user_data.ln2_valve;
+      user_data.bts_state = (user_data.bts_state + 1) % 3;
+
+      if (user_data.bts_state == 0)
+         user_data.ln2_valve = 0;
+      else if (user_data.bts_state == 1)
+         user_data.ln2_valve = 1;
       user_write(5);
    }
 
@@ -503,14 +514,18 @@ unsigned short xdata delta;
          return 1;
 
    /* swith ln2 valve on by specified time */
-   if (user_data.ln2_off && user_data.ln2_valve == 0 && time() - last_time > user_data.ln2_off * 100) {
+   if (user_data.bts_state == 2 && 
+       user_data.ln2_valve == 0 && 
+       time() - last_time > user_data.ln2_off * 100) {
       last_time = time();
 	  user_data.ln2_valve = 1;
 	  user_write(5);
    }
 
    /* swith ln2 valve off by specified time */
-   if (user_data.ln2_on && user_data.ln2_valve == 1 && time() - last_time > user_data.ln2_on * 100) {
+   if (user_data.bts_state == 2 && 
+       user_data.ln2_valve == 1 && 
+       time() - last_time > user_data.ln2_on * 100) {
       last_time = time();
 	  user_data.ln2_valve = 0;
 	  user_write(5);
@@ -518,7 +533,7 @@ unsigned short xdata delta;
 
    lcd_goto(14, 3);
    delta = (unsigned short)((time() - last_time) / 100);
-   if (user_data.ln2_off && user_data.ln2_on) {
+   if (user_data.bts_state == 2) {
 	   if (user_data.ln2_valve == 0)
 	      printf("%3d s", user_data.ln2_off - delta);
 	   if (user_data.ln2_valve == 1) 
