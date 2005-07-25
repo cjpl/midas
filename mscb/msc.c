@@ -6,6 +6,9 @@
   Contents:     Command-line interface for the Midas Slow Control Bus
 
   $Log$
+  Revision 1.85  2005/07/25 11:40:21  ritt
+  Fixed bug with '%x'
+
   Revision 1.84  2005/07/25 10:11:21  ritt
   Fixed compiler warnings
 
@@ -518,7 +521,6 @@ void cmd_loop(int fd, char *cmd, unsigned short adr)
    MSCB_INFO_VAR info_var;
    time_t start, now;
 
-
    /* open command file */
    if (cmd[0] == '@') {
       cmd_file = fopen(cmd + 1, "r");
@@ -752,10 +754,11 @@ void cmd_loop(int fd, char *cmd, unsigned short adr)
          if (!param[1][0])
             puts("Please specify node address");
          else {
-            if (param[1][1] == 'x')
-               sscanf(param[1] + 2, "%x", &addr);
-            else
-               addr = atoi(param[1]);
+            if (param[1][1] == 'x') {
+               sscanf(param[1] + 2, "%x", &i);
+               addr = (unsigned short) i;
+            } else
+               addr = (unsigned short) atoi(param[1]);
 
             do {
                status = mscb_addr(fd, MCMD_PING16, addr, 10, 1);
@@ -786,10 +789,11 @@ void cmd_loop(int fd, char *cmd, unsigned short adr)
          if (!param[1][0])
             puts("Please specify node address");
          else {
-            if (param[1][1] == 'x')
-               sscanf(param[1] + 2, "%x", &addr);
-            else
-               addr = atoi(param[1]);
+            if (param[1][1] == 'x') {
+               sscanf(param[1] + 2, "%x", &i);
+               addr = (unsigned short)i;
+            } else
+               addr = (unsigned short)atoi(param[1]);
 
             mscb_addr(fd, MCMD_ADDR_NODE16, addr, 1, 1);
             current_addr = addr;
@@ -802,10 +806,11 @@ void cmd_loop(int fd, char *cmd, unsigned short adr)
          if (!param[1][0])
             puts("Please specify node address");
          else {
-            if (param[1][1] == 'x')
-               sscanf(param[1] + 2, "%x", &addr);
-            else
-               addr = atoi(param[1]);
+            if (param[1][1] == 'x') {
+               sscanf(param[1] + 2, "%x", &i);
+               addr = (unsigned short)i;
+            } else
+               addr = (unsigned short)atoi(param[1]);
 
             current_addr = -1;
             current_group = addr;
@@ -820,15 +825,17 @@ void cmd_loop(int fd, char *cmd, unsigned short adr)
             if (!param[1][0] || !param[2][0])
                puts("Please specify node and group address");
             else {
-               if (param[1][1] == 'x')
-                  sscanf(param[1] + 2, "%x", &addr);
-               else
-                  addr = atoi(param[1]);
+               if (param[1][1] == 'x') {
+                  sscanf(param[1] + 2, "%x", &i);
+                  addr = (unsigned short)i;
+               } else
+                  addr = (unsigned short)atoi(param[1]);
 
-               if (param[2][1] == 'x')
-                  sscanf(param[2] + 2, "%x", &gaddr);
-               else
-                  gaddr = atoi(param[2]);
+               if (param[2][1] == 'x') {
+                  sscanf(param[1] + 2, "%x", &i);
+                  gaddr = (unsigned short)i;
+               } else
+                  gaddr = (unsigned short)atoi(param[2]);
 
                status = mscb_set_addr(fd, (unsigned short)current_addr, addr, gaddr);
                if (status == MSCB_ADDR_EXISTS)
