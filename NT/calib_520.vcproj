@@ -81,6 +81,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
+				AdditionalIncludeDirectories="c:\mxml"
 				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="5"
@@ -98,7 +99,7 @@
 				Name="VCLinkerTool"
 				AdditionalDependencies="wsock32.lib"
 				OutputFile="c:\midas\nt\bin\calib_520.exe"
-				LinkIncremental="1"
+				LinkIncremental="2"
 				SuppressStartupBanner="TRUE"
 				GenerateDebugInformation="TRUE"
 				ProgramDatabaseFile=".\Debug/calib_520.pdb"
@@ -174,6 +175,9 @@
 			</File>
 			<File
 				RelativePath="..\mscb\mscbrpc.c">
+			</File>
+			<File
+				RelativePath="..\..\mxml\strlcpy.c">
 			</File>
 		</Filter>
 		<Filter

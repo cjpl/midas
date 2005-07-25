@@ -192,6 +192,9 @@
 			<File
 				RelativePath="..\mscb\mscbrpc.h">
 			</File>
+			<File
+				RelativePath="..\..\mxml\strlcpy.h">
+			</File>
 		</Filter>
 		<Filter
 			Name="Resource Files"
