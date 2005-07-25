@@ -6,6 +6,9 @@
   Contents:     Various utility functions for MSCB protocol
 
   $Log$
+  Revision 1.62  2005/07/25 15:14:47  ritt
+  Fixed problem with blinking LED
+
   Revision 1.61  2005/07/25 12:57:34  ritt
   Disabled UART0 interrupts for last byte in uart1_send
 
@@ -313,7 +316,7 @@ unsigned char xdata * xdata sbuf_wp = sbuf;
 
 /*---- UART1 handling ----------------------------------------------*/
 
-void serial_int1(void) interrupt 20 using 2
+void serial_int1(void) interrupt 20 using 1
 {
    if (SCON1 & 0x02) {          // TI1
 
@@ -496,7 +499,7 @@ char xdata rbuf[64];
 
 /*---- UART1 handling ----------------------------------------------*/
 
-void serial_int1(void) interrupt 20 using 2
+void serial_int1(void) interrupt 20 using 1
 {
    if (SCON1 & 0x02) {          // TI1
       /* character has been transferred */
@@ -902,28 +905,28 @@ void sysclock_init(void)
 
 /*------------------------------------------------------------------*/
 
-void led_int() reentrant using 2
+unsigned char idata led_i; // having this as auto gives problems!
+
+void led_int() reentrant using 1
 {
-   unsigned char i;
-
    /* manage blinking LEDs */
-   for (i=0 ; i<N_LED ; i++) {
-      if (leds[i].n > 0 && leds[i].timer == 0) {
-         if ((leds[i].n & 1) && leds[i].n > 1)
-            led_set(i, LED_ON);
+   for (led_i=0 ; led_i<N_LED ; led_i++) {
+      if (leds[led_i].n > 0 && leds[led_i].timer == 0) {
+         if ((leds[led_i].n & 1) && leds[led_i].n > 1)
+            led_set(led_i, LED_ON);
          else
-            led_set(i, LED_OFF);
+            led_set(led_i, LED_OFF);
 
-         leds[i].n--;
-         if (leds[i].n)
-            leds[i].timer = leds[i].interval;
+         leds[led_i].n--;
+         if (leds[led_i].n)
+            leds[led_i].timer = leds[led_i].interval;
       }
 
-      if (leds[i].timer)
-         leds[i].timer--;
+      if (leds[led_i].timer)
+         leds[led_i].timer--;
 
-      if (leds[i].n == 0)
-         led_set(i, LED_OFF);
+      if (leds[led_i].n == 0)
+         led_set(led_i, LED_OFF);
    }
 }
 
@@ -931,7 +934,7 @@ void led_int() reentrant using 2
 
 extern void tcp_timer(void);
 
-void timer0_int(void) interrupt 1 using 2
+void timer0_int(void) interrupt 1 using 1
 /********************************************************************\
 
   Routine: timer0_int
@@ -1007,9 +1010,9 @@ void led_blink(unsigned char led, unsigned char n, int interval) reentrant
 
 /*------------------------------------------------------------------*/
 
-void led_set(unsigned char led, unsigned char flag) reentrant using 2
+void led_set(unsigned char led, unsigned char flag) reentrant using 1
 {
-   /* invert on/of if mode = 1 */
+   /* invert on/off if mode == 1 */
    if (led < N_LED && leds[led].mode)
       flag = !flag;
 

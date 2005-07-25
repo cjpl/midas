@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus protocol main program
 
   $Log$
+  Revision 1.74  2005/07/25 15:14:47  ritt
+  Fixed problem with blinking LED
+
   Revision 1.73  2005/07/25 12:57:33  ritt
   Disabled UART0 interrupts for last byte in uart1_send
 
@@ -574,7 +577,7 @@ unsigned char cur_sub_addr()
 
 void interprete(void);
 
-void serial_int(void) interrupt 4 using 1
+void serial_int(void) interrupt 4 using 2
 {
    if (TI0) {
       /* character has been transferred */
@@ -719,7 +722,7 @@ void addr_node16(unsigned char mode, unsigned int adr, unsigned int node_addr)
    }
 }
 
-void interprete(void)
+void interprete(void) using 2
 {
    unsigned char crc, cmd, i, j, n, ch;
    MSCB_INFO_VAR code *pvar;
