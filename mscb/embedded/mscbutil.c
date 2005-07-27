@@ -6,6 +6,9 @@
   Contents:     Various utility functions for MSCB protocol
 
   $Log$
+  Revision 1.63  2005/07/27 10:23:52  ritt
+  Removed 'using'
+
   Revision 1.62  2005/07/25 15:14:47  ritt
   Fixed problem with blinking LED
 
@@ -316,7 +319,7 @@ unsigned char xdata * xdata sbuf_wp = sbuf;
 
 /*---- UART1 handling ----------------------------------------------*/
 
-void serial_int1(void) interrupt 20 using 1
+void serial_int1(void) interrupt 20
 {
    if (SCON1 & 0x02) {          // TI1
 
@@ -499,7 +502,7 @@ char xdata rbuf[64];
 
 /*---- UART1 handling ----------------------------------------------*/
 
-void serial_int1(void) interrupt 20 using 1
+void serial_int1(void) interrupt 20 
 {
    if (SCON1 & 0x02) {          // TI1
       /* character has been transferred */
@@ -905,10 +908,10 @@ void sysclock_init(void)
 
 /*------------------------------------------------------------------*/
 
-unsigned char idata led_i; // having this as auto gives problems!
-
-void led_int() reentrant using 1
+void led_int() reentrant
 {
+unsigned char led_i;
+
    /* manage blinking LEDs */
    for (led_i=0 ; led_i<N_LED ; led_i++) {
       if (leds[led_i].n > 0 && leds[led_i].timer == 0) {
@@ -934,7 +937,7 @@ void led_int() reentrant using 1
 
 extern void tcp_timer(void);
 
-void timer0_int(void) interrupt 1 using 1
+void timer0_int(void) interrupt 1
 /********************************************************************\
 
   Routine: timer0_int
@@ -1010,7 +1013,7 @@ void led_blink(unsigned char led, unsigned char n, int interval) reentrant
 
 /*------------------------------------------------------------------*/
 
-void led_set(unsigned char led, unsigned char flag) reentrant using 1
+void led_set(unsigned char led, unsigned char flag) reentrant 
 {
    /* invert on/off if mode == 1 */
    if (led < N_LED && leds[led].mode)
