@@ -7,6 +7,9 @@
                 linked with analyze.c to form a complete analyzer
 
   $Log$
+  Revision 1.140  2005/08/02 20:49:58  olchanski
+  fix ODB corruption in book_ttree() when we call db_open_record() with hkey==0 after db_find_key() failed.
+
   Revision 1.139  2005/04/27 22:42:47  olchanski
   do not create duplicated folders for analyzer modules
 
@@ -1216,7 +1219,12 @@ INT book_ntuples(void)
 
    /* hot link bank switches to N-tuple re-booking */
    sprintf(str, "/%s/Bank switches", analyzer_name);
-   db_find_key(hDB, 0, str, &hkey);
+   status = db_find_key(hDB, 0, str, &hkey);
+   if (status != DB_SUCCESS) {
+     cm_msg(MERROR, "book_ttree", "Cannot find key \'%s\', status %d", str, status);
+     return SUCCESS;
+   }
+   
    db_open_record(hDB, hkey, NULL, 0, MODE_READ, banks_changed, NULL);
 
    if (!clp.rwnt) {
