@@ -9,6 +9,9 @@
                 for SCS-1001 stand alone control unit
 
   $Log$
+  Revision 1.14  2005/08/04 12:11:33  ritt
+  Fixed buzzer polarity
+
   Revision 1.13  2005/07/12 13:13:22  ritt
   Fixed small bug
 
@@ -210,8 +213,6 @@ void user_init(unsigned char init)
 {
    unsigned char i;
    xdata char str[64];
-
-   led_mode(2, 0);              // buzzer off by default
 
    SFRPAGE = ADC0_PAGE;
    AMX0CF = 0x00;               // select single ended analog inputs
