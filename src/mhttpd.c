@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.292  2005/08/04 12:28:40  ritt
+  Implemented hidden custom pages
+
   Revision 1.291  2005/01/26 09:45:45  ritt
   Removed 'unit' in custom page (covered already by format)
 
@@ -2077,10 +2080,6 @@ void show_status_page(int refresh, char *cookie_wpwd)
 
    db_find_key(hDB, 0, "/Custom", &hkey);
    if (hkey) {
-      if (first) {
-         rsprintf("<tr><td colspan=6 bgcolor=#C0C0C0>\n");
-         first = FALSE;
-      }
       for (i = 0;; i++) {
          db_enum_link(hDB, hkey, i, &hsubkey);
          if (!hsubkey)
@@ -2088,22 +2087,34 @@ void show_status_page(int refresh, char *cookie_wpwd)
 
          db_get_key(hDB, hsubkey, &key);
 
+         /* skip "Images" */
+         if (key.type != TID_STRING)
+            continue;
+
          strcpy(name, key.name);
+
+         /* check if hidden page */
+         if (name[strlen(name) - 1] == '!')
+            continue;
+
+         if (first) {
+            rsprintf("<tr><td colspan=6 bgcolor=#C0C0C0>\n");
+            first = FALSE;
+         }
+
          new_window = (name[strlen(name) - 1] != '&');
          if (!new_window)
             name[strlen(name) - 1] = 0;
 
-         if (key.type == TID_STRING) {
-            if (exp_name[0])
-               sprintf(ref, "/CS/%s?exp=%s", key.name, exp_name);
-            else
-               sprintf(ref, "/CS/%s", key.name);
+         if (exp_name[0])
+            sprintf(ref, "/CS/%s?exp=%s", key.name, exp_name);
+         else
+            sprintf(ref, "/CS/%s", key.name);
 
-            if (new_window)
-               rsprintf("<a href=\"%s\" target=\"_blank\">%s</a> ", ref, name);
-            else
-               rsprintf("<a href=\"%s\">%s</a> ", ref, name);
-         }
+         if (new_window)
+            rsprintf("<a href=\"%s\" target=\"_blank\">%s</a> ", ref, name);
+         else
+            rsprintf("<a href=\"%s\">%s</a> ", ref, name);
       }
    }
 
@@ -5758,6 +5769,10 @@ void show_custom_page(char *path)
 
    cm_get_experiment_database(&hDB, NULL);
 
+   if (path[0] == 0) {
+      show_error("Invalid custom page");
+      return;
+   }
    sprintf(str, "/Custom/%s", path);
 
    db_find_key(hDB, 0, str, &hkey);
@@ -5809,6 +5824,9 @@ void show_custom_page(char *path)
       } while (p != NULL);
 
    free(ctext);
+   } else {
+      show_error("Invalid custom page");
+      return;
    }
 }
 
