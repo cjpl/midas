@@ -6,6 +6,9 @@
 #  Contents:     Makefile for MIDAS binaries and examples under unix
 #
 #  $Log$
+#  Revision 1.72  2005/08/18 22:03:27  olchanski
+#  add "-m32" to Linux gcc flags to force 32-bit compilation even on 64-bit Linux
+#
 #  Revision 1.71  2005/08/18 22:02:01  olchanski
 #  remove unneeded ybos.o from mdump and lazylogger.
 #
@@ -397,7 +400,7 @@ ifeq ($(OSTYPE),linux)
 CFLAGS += -D_LARGEFILE64_SOURCE
 
 OS_DIR = linux
-OSFLAGS = -DOS_LINUX -fPIC -Wno-unused-function
+OSFLAGS = -m32 -DOS_LINUX -fPIC -Wno-unused-function
 LIBS = -lutil -lpthread
 SPECIFIC_OS_PRG = $(BIN_DIR)/mlxspeaker $(BIN_DIR)/dio
 endif
