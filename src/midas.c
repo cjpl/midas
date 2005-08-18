@@ -6,6 +6,10 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.232  2005/08/18 22:34:06  olchanski
+  improve debug messages from run transition code
+  fail transition if cannot connect to a client
+
   Revision 1.231  2005/05/02 10:26:21  ritt
   *** empty log message ***
 
@@ -806,7 +810,8 @@ struct {
    TR_STOP, "STOP",}, {
    TR_PAUSE, "PAUSE",}, {
    TR_RESUME, "RESUME",}, {
-TR_DEFERRED, "DEFERRED",},};
+   TR_DEFERRED, "DEFERRED",}, {
+   0, "",},};
 
 /* Globals */
 #ifdef OS_MSDOS
@@ -3309,7 +3314,7 @@ INT cm_register_transition(INT transition, INT(*func) (INT, char *), INT sequenc
    /* check for valid transition */
    if (transition != TR_START && transition != TR_STOP &&
        transition != TR_PAUSE && transition != TR_RESUME) {
-      cm_msg(MERROR, "cm_transition", "Invalid transition request \"%d\"", transition);
+      cm_msg(MERROR, "cm_register_transition", "Invalid transition request \"%d\"", transition);
       return CM_INVALID_TRANSITION;
    }
 
@@ -3380,7 +3385,7 @@ INT cm_set_transition_sequence(INT transition, INT sequence_number)
    /* check for valid transition */
    if (transition != TR_START && transition != TR_STOP &&
        transition != TR_PAUSE && transition != TR_RESUME) {
-      cm_msg(MERROR, "cm_transition", "Invalid transition request \"%d\"", transition);
+      cm_msg(MERROR, "cm_set_transition_sequence", "Invalid transition request \"%d\"", transition);
       return CM_INVALID_TRANSITION;
    }
 
@@ -3602,6 +3607,7 @@ INT cm_transition(INT transition, INT run_number, char *perror, INT strsize,
    DWORD seconds;
    char host_name[HOST_NAME_LENGTH], client_name[NAME_LENGTH],
        str[256], error[256], tr_key_name[256];
+   char *trname = "unknown";
    KEY key;
    BOOL deferred;
    PROGRAM_INFO program_info;
@@ -3673,11 +3679,14 @@ INT cm_transition(INT transition, INT run_number, char *perror, INT strsize,
          return CM_TRANSITION_IN_PROGRESS;
       }
 
-      for (i = 0; i < 13; i++)
+      for (i = 0; trans_name[i].name[0] != 0; i++)
          if (trans_name[i].transition == transition)
-            break;
-
-      sprintf(tr_key_name, "Transition %s DEFERRED", trans_name[i].name);
+           {
+             trname = trans_name[i].name;
+             break;
+           }
+      
+      sprintf(tr_key_name, "Transition %s DEFERRED", trname);
 
       /* search database for clients with deferred transition request */
       for (i = 0, status = 0;; i++) {
@@ -3699,14 +3708,14 @@ INT cm_transition(INT transition, INT run_number, char *perror, INT strsize,
 
                if (debug_flag == 1)
                   printf("---- Transition %s deferred by client \"%s\" ----\n",
-                         trans_name[i].name, str);
+                         trname, str);
                if (debug_flag == 2)
                   cm_msg(MDEBUG, "cm_transition",
                          "cm_transition: ---- Transition %s deferred by client \"%s\" ----",
-                         trans_name[i].name, str);
+                         trname, str);
 
                if (perror)
-                  sprintf(perror, "Transition deferred by client \"%s\"", str);
+                  sprintf(perror, "Transition %s deferred by client \"%s\"", trname, str);
 
                return CM_DEFERRED_TRANSITION;
             }
@@ -3797,17 +3806,19 @@ INT cm_transition(INT transition, INT run_number, char *perror, INT strsize,
       return status;
    }
 
-   for (i = 0; i < 13; i++)
+   for (i = 0; trans_name[i].name[0] != 0; i++)
       if (trans_name[i].transition == transition)
-         break;
+        {
+          trname = trans_name[i].name;
+          break;
+        }
 
    if (debug_flag == 1)
-      printf("---- Transition %s started ----\n", trans_name[i].name);
+      printf("---- Transition %s started ----\n", trname);
    if (debug_flag == 2)
-      cm_msg(MDEBUG, "cm_transition", "cm_transition: ---- Transition %s started ----",
-             trans_name[i].name);
+      cm_msg(MDEBUG, "cm_transition", "cm_transition: ---- Transition %s started ----", trname);
 
-   sprintf(tr_key_name, "Transition %s", trans_name[i].name);
+   sprintf(tr_key_name, "Transition %s", trname);
 
    /* search database for clients which registered for transition */
    n_tr_clients = 0;
@@ -3889,7 +3900,7 @@ INT cm_transition(INT transition, INT run_number, char *perror, INT strsize,
             if (_trans_table[i].transition == transition)
                break;
 
-         /* call registerd function */
+         /* call registered function */
          if (_trans_table[i].transition == transition && _trans_table[i].func) {
             if (debug_flag == 1)
                printf("Calling local transition callback\n");
@@ -3932,10 +3943,11 @@ INT cm_transition(INT transition, INT run_number, char *perror, INT strsize,
                                      tr_client[index].client_name, &hConn);
          if (status != RPC_SUCCESS) {
             cm_msg(MERROR, "cm_transition",
-                   "cannot connect to client \"%s\" on host %s, port %d",
+                   "cannot connect to client \"%s\" on host %s, port %d, status %d",
                    tr_client[index].client_name, tr_client[index].host_name,
-                   tr_client[index].port);
-            continue;
+                   tr_client[index].port,
+                   status);
+            return status;
          }
 
          if (debug_flag == 1)
@@ -3974,12 +3986,12 @@ INT cm_transition(INT transition, INT run_number, char *perror, INT strsize,
             rpc_set_option(hConn, RPC_OTRANSPORT, RPC_TCP);
 
          if (debug_flag == 1)
-            printf("RPC transition finished client \"%s\" on host %s\n",
-                   tr_client[index].client_name, tr_client[index].host_name);
+            printf("RPC transition finished client \"%s\" on host %s with status %d\n",
+                   tr_client[index].client_name, tr_client[index].host_name, status);
          if (debug_flag == 2)
             cm_msg(MDEBUG, "cm_transition",
-                   "cm_transition: RPC transition finished client \"%s\" on host %s",
-                   tr_client[index].client_name, tr_client[index].host_name);
+                   "cm_transition: RPC transition finished client \"%s\" on host %s with status %d",
+                   tr_client[index].client_name, tr_client[index].host_name, status);
 
          if (perror != NULL)
             memcpy(perror, error, (INT) strlen(error) + 1 < strsize ?
@@ -3995,15 +4007,11 @@ INT cm_transition(INT transition, INT run_number, char *perror, INT strsize,
    if (tr_client)
       free(tr_client);
 
-   for (i = 0; i < 13; i++)
-      if (trans_name[i].transition == transition)
-         break;
-
    if (debug_flag == 1)
-      printf("\n---- Transition %s finished ----\n", trans_name[i].name);
+      printf("\n---- Transition %s finished ----\n", trname);
    if (debug_flag == 2)
       cm_msg(MDEBUG, "cm_transition",
-             "cm_transition: ---- Transition %s finished ----", trans_name[i].name);
+             "cm_transition: ---- Transition %s finished ----", trname);
 
    /* set new run state in database */
    if (transition == TR_START || transition == TR_RESUME)
