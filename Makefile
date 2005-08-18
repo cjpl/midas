@@ -6,6 +6,9 @@
 #  Contents:     Makefile for MIDAS binaries and examples under unix
 #
 #  $Log$
+#  Revision 1.71  2005/08/18 22:02:01  olchanski
+#  remove unneeded ybos.o from mdump and lazylogger.
+#
 #  Revision 1.70  2005/05/09 09:10:39  ritt
 #  Moved strlcpy to \mxml
 #
@@ -626,10 +629,10 @@ $(BIN_DIR)/%:$(UTL_DIR)/%.c
 $(BIN_DIR)/mcnaf: $(UTL_DIR)/mcnaf.c $(DRV_DIR)/bus/camacrpc.c
 	$(CC) $(CFLAGS) $(OSFLAGS) -o $@ $(UTL_DIR)/mcnaf.c $(DRV_DIR)/bus/camacrpc.c $(LIB) $(LIBS)
 
-$(BIN_DIR)/mdump: $(UTL_DIR)/mdump.c $(LIB_DIR)/ybos.o
+$(BIN_DIR)/mdump: $(UTL_DIR)/mdump.c
 	$(CC) $(CFLAGS) $(OSFLAGS) -o $@ $(UTL_DIR)/mdump.c $(LIB) -lz $(LIBS)
 
-$(BIN_DIR)/lazylogger: $(SRC_DIR)/lazylogger.c $(LIB_DIR)/ybos.o
+$(BIN_DIR)/lazylogger: $(SRC_DIR)/lazylogger.c
 	$(CC) $(CFLAGS) $(OSFLAGS) -o $@ $(SRC_DIR)/lazylogger.c $(LIB) -lz $(LIBS)
 
 $(BIN_DIR)/dio: $(UTL_DIR)/dio.c
