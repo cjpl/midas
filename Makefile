@@ -6,6 +6,10 @@
 #  Contents:     Makefile for MIDAS binaries and examples under unix
 #
 #  $Log$
+#  Revision 1.73  2005/08/18 22:15:55  olchanski
+#  move "remove camac rpc" code from mfe.c to a file of it's own
+#  add register_cnaf_callback()
+#
 #  Revision 1.72  2005/08/18 22:03:27  olchanski
 #  add "-m32" to Linux gcc flags to force 32-bit compilation even on 64-bit Linux
 #
@@ -466,7 +470,7 @@ endif
 
 OBJS =  $(LIB_DIR)/midas.o $(LIB_DIR)/system.o $(LIB_DIR)/mrpc.o \
 	$(LIB_DIR)/odb.o $(LIB_DIR)/ybos.o $(LIB_DIR)/ftplib.o \
-	$(LIB_DIR)/mxml.o $(LIB_DIR)/strlcpy.o
+	$(LIB_DIR)/mxml.o $(LIB_DIR)/strlcpy.o $(LIB_DIR)/cnaf_callback.o
 
 LIBNAME=$(LIB_DIR)/libmidas.a
 LIB    =$(LIBNAME)
