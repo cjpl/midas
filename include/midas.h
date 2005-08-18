@@ -8,6 +8,10 @@
 
 
   $Log$
+  Revision 1.151  2005/08/18 22:15:55  olchanski
+  move "remove camac rpc" code from mfe.c to a file of it's own
+  add register_cnaf_callback()
+
   Revision 1.150  2005/05/02 10:50:41  ritt
   Moved strlcpy/strlcat in separate C file
 
@@ -2258,6 +2262,7 @@ extern "C" {
 
    /*---- frontend functions ----*/
    INT get_frontend_index();
+   void register_cnaf_callback(int debug);
 
    /*---- analyzer functions ----*/
    void EXPRT test_register(ANA_TEST * t);
