@@ -6,6 +6,9 @@
   Contents:     MIDAS logger program
 
   $Log$
+  Revision 1.94  2005/08/19 03:36:18  olchanski
+  fix race condition between frontends, analyzer and logger during run start and stop; pause and resume
+
   Revision 1.93  2005/03/24 22:05:51  ritt
   Changed last.odb to last.xml
 
@@ -3775,8 +3778,8 @@ int main(int argc, char *argv[])
    }
 
    cm_register_transition(TR_STOP, tr_stop, 800);
-   cm_register_transition(TR_PAUSE, tr_pause, 500);
-   cm_register_transition(TR_RESUME, tr_resume, 500);
+   cm_register_transition(TR_PAUSE, tr_pause, 800);
+   cm_register_transition(TR_RESUME, tr_resume, 200);
 
    /* register callback for rewinding tapes */
    cm_register_function(RPC_LOG_REWIND, log_callback);
