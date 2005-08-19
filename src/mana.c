@@ -7,6 +7,9 @@
                 linked with analyze.c to form a complete analyzer
 
   $Log$
+  Revision 1.142  2005/08/19 03:36:18  olchanski
+  fix race condition between frontends, analyzer and logger during run start and stop; pause and resume
+
   Revision 1.141  2005/08/02 20:59:41  olchanski
   Try again- fixed the bug in the wrong place
 
@@ -5904,10 +5907,10 @@ int main(int argc, char *argv[])
       }
 
       /* register transitions if started online */
-      if (cm_register_transition(TR_START, tr_start, 500) != CM_SUCCESS ||
-          cm_register_transition(TR_STOP, tr_stop, 500) != CM_SUCCESS ||
-          cm_register_transition(TR_PAUSE, tr_pause, 500) != CM_SUCCESS ||
-          cm_register_transition(TR_RESUME, tr_resume, 500) != CM_SUCCESS) {
+      if (cm_register_transition(TR_START, tr_start, 300) != CM_SUCCESS ||
+          cm_register_transition(TR_STOP, tr_stop, 700) != CM_SUCCESS ||
+          cm_register_transition(TR_PAUSE, tr_pause, 700) != CM_SUCCESS ||
+          cm_register_transition(TR_RESUME, tr_resume, 300) != CM_SUCCESS) {
          printf("Failed to start local RPC server");
          return 1;
       }
