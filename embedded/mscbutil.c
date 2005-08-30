@@ -6,6 +6,9 @@
   Contents:     Various utility functions for MSCB protocol
 
   $Log$
+  Revision 1.64  2005/08/30 11:11:38  ritt
+  Changed uart1 mode to 3/9bit for UART1_MSCB
+
   Revision 1.63  2005/07/27 10:23:52  ritt
   Removed 'using'
 
@@ -804,7 +807,11 @@ void uart_init(unsigned char port, unsigned char baud)
       EIP2 &= ~0x40;               // serial interrupt low priority
 #elif defined(CPU_C8051F120)       // 98 MHz
       SFRPAGE = UART1_PAGE;
+#ifdef UART1_MSCB
+      SCON1 = 0xD0;                // Mode 3, 9 bit, receive enable
+#else
       SCON1 = 0x50;                // Mode 1, 8 bit, receive enable
+#endif
 
       SFRPAGE = TIMER01_PAGE;
       TMOD  = (TMOD & 0x0F)| 0x20; // Timer 1 8-bit counter with auto reload
@@ -814,8 +821,8 @@ void uart_init(unsigned char port, unsigned char baud)
       TR1 = 1;                     // start timer 1
 
       EIE2 |= 0x40;                // enable serial interrupt
-      //EIP2 &= ~0x40;               // serial interrupt low priority
-      EIP2 |= 0x40;                // serial interrupt high priority
+      EIP2 |= 0x40;                // serial interrupt high priority, needed in order not
+                                   // to loose data during UART0 communication
 #endif
 
       uart1_init_buffer();
