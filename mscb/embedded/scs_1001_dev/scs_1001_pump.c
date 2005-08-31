@@ -9,6 +9,9 @@
                 for SCS-1001 stand alone control unit
 
   $Log$
+  Revision 1.15  2005/08/31 06:52:10  ritt
+  Increased forepump startup time when cyceling
+
   Revision 1.14  2005/08/04 12:11:33  ritt
   Fixed buzzer polarity
 
@@ -726,7 +729,7 @@ static bit b0_old = 0, b1_old = 0, b2_old = 0, b3_old = 0,
    /* turn fore pump on */
    if (pump_state == ST_RUN_FPUP) {
 
-      if (time() > start_time + 3*100) { // wait 3s
+      if (time() > start_time + 10*100) { // wait 10s
          set_forevalve(1); 
          pump_state = ST_RUN_FPON;
       }
