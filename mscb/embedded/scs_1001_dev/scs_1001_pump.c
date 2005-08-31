@@ -9,6 +9,9 @@
                 for SCS-1001 stand alone control unit
 
   $Log$
+  Revision 1.16  2005/08/31 07:49:09  ritt
+  Added vacuum status on DOUT0
+
   Revision 1.15  2005/08/31 06:52:10  ritt
   Increased forepump startup time when cyceling
 
@@ -119,6 +122,7 @@ struct {
    unsigned char error;
    unsigned char station_on;
    unsigned char valve_locked;
+   unsigned char vacuum_ok;
    unsigned char relais[4];
    unsigned char turbo_on;
    unsigned short rot_speed;
@@ -131,8 +135,9 @@ struct {
    float fv_mbar;
    unsigned short evac_timeout;
    unsigned short fp_cycle;
-   unsigned char fv_max;
+   float fv_max;
    float fv_min;
+   float mv_thresh;
    float adc[8];
    float aofs[8];
    float again[8];
@@ -144,6 +149,7 @@ MSCB_INFO_VAR code variables[] = {
                                                                                                                
    { 1, UNIT_BOOLEAN, 0, 0, 0,                               "Station",  &user_data.station_on, 0, 1, 1 },      
    { 1, UNIT_BOOLEAN, 0, 0, 0,                               "Locked",   &user_data.valve_locked, 0, 1, 1 },    
+   { 1, UNIT_BOOLEAN, 0, 0, 0,                               "Vac OK",   &user_data.vacuum_ok,  0, 1, 1 },       
                                                                                                                
    { 1, UNIT_BOOLEAN, 0, 0, 0,                               "Forepump", &user_data.relais[0], 0, 1, 1 },       
    { 1, UNIT_BOOLEAN, 0, 0, 0,                               "Forevlv",  &user_data.relais[1], 0, 1, 1 },       
@@ -167,8 +173,9 @@ MSCB_INFO_VAR code variables[] = {
                                                                                                                
    { 2, UNIT_MINUTE,  0, 0, MSCBF_HIDDEN,                    "Timeout",  &user_data.evac_timeout, 0, 300, 10 },
    { 2, UNIT_SECOND,  0, 0, MSCBF_HIDDEN,                    "FP cycle", &user_data.fp_cycle, 10, 600, 10 },
-   { 1, UNIT_BAR, PRFX_MILLI, 0, MSCBF_HIDDEN,               "FV max",   &user_data.fv_max, 1, 10, 1 },         
+   { 4, UNIT_BAR, PRFX_MILLI, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "FV max",   &user_data.fv_max, 1, 10, 1 },         
    { 4, UNIT_BAR, PRFX_MILLI, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "FV min",   &user_data.fv_min, 0.1, 1, 0.1 },
+   { 4, UNIT_BAR, PRFX_MILLI, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "MV thrsh", &user_data.mv_thresh, 0.001, 1, 0.001 },
 
    { 4, UNIT_VOLT,   0, 0, MSCBF_FLOAT | MSCBF_HIDDEN,       "ADC0",     &user_data.adc[0] },                    
    { 4, UNIT_VOLT,   0, 0, MSCBF_FLOAT | MSCBF_HIDDEN,       "ADC1",     &user_data.adc[1] },                    
@@ -261,11 +268,12 @@ void user_init(unsigned char init)
       user_data.evac_timeout = 60; // 1h to pump recipient
       user_data.fp_cycle = 20;     // run fore pump for min. 20 sec.
       user_data.fv_max = 4;        // start fore pump at 4 mbar     
-      user_data.fv_min = 0.4;     // stop fore pump at 0.4 mbar
+      user_data.fv_min = 0.4;      // stop fore pump at 0.4 mbar
+      user_data.mv_thresh = 1E-3;  // vacuum ok if < 10^-3 mbar
    }
 
    /* write digital outputs */
-   for (i=0 ; i<4 ; i++)
+   for (i=0 ; i<20 ; i++)
       user_write(i);
 
    /* initialize UART1 for TC600 */
@@ -299,11 +307,14 @@ void user_write(unsigned char index) reentrant
 {
    switch (index) {
 
+   /* DOUT go through inverter */
+   case 3: DOUT0   = !user_data.vacuum_ok; break;
+
    /* RELAIS go through inverter */
-   case 3: RELAIS0 = !user_data.relais[0]; break;
-   case 4: RELAIS1 = !user_data.relais[1]; break;
-   case 5: RELAIS2 = !user_data.relais[2]; break;
-   case 6: RELAIS3 = !user_data.relais[3]; break;
+   case 4: RELAIS0 = !user_data.relais[0]; break;
+   case 5: RELAIS1 = !user_data.relais[1]; break;
+   case 6: RELAIS2 = !user_data.relais[2]; break;
+   case 7: RELAIS3 = !user_data.relais[3]; break;
 
    }
 
@@ -477,25 +488,25 @@ unsigned char xdata pump_state = ST_OFF;
 void set_forepump(unsigned char flag)
 {
    user_data.relais[0] = flag;
-   user_write(3);
+   user_write(4);
 }
 
 void set_forevalve(unsigned char flag)
 {
    user_data.relais[1] = flag;
-   user_write(4);
+   user_write(5);
 }
 
 void set_mainvalve(unsigned char flag)
 {
    user_data.relais[2] = flag;
-   user_write(5);
+   user_write(6);
 }
 
 void set_bypassvalve(unsigned char flag)
 {
    user_data.relais[3] = flag;
-   user_write(6);
+   user_write(7);
 }
 
 unsigned char application_display(bit init)
@@ -735,6 +746,9 @@ static bit b0_old = 0, b1_old = 0, b2_old = 0, b3_old = 0,
       }
    }
    
+   /* set vacuum status */
+   user_data.vacuum_ok = (user_data.mv_mbar <= user_data.mv_thresh);
+   user_write(3);
 
    /*---- Pump station turn off logic ----*/
 
