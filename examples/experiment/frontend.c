@@ -11,6 +11,9 @@
                 with one bank (SCLR).
 
   $Log$
+  Revision 1.25  2005/09/01 10:15:36  ritt
+  Call register_cnaf_callback
+
   Revision 1.24  2004/06/18 11:50:38  midas
   Changed ADC0 bank from structured to DWORD
 
@@ -135,6 +138,8 @@ INT frontend_loop();
 INT read_trigger_event(char *pevent, INT off);
 INT read_scaler_event(char *pevent, INT off);
 
+void register_cnaf_callback(int debug);
+
 /*-- Equipment list ------------------------------------------------*/
 
 #undef USE_INT
@@ -230,6 +235,9 @@ INT frontend_init()
    /* reset external LAM Flip-Flop */
    camo(CRATE, SLOT_IO, 1, 16, 0xFF);
    camo(CRATE, SLOT_IO, 1, 16, 0);
+
+   /* register CNAF functionality from cnaf_callback.c with debug output */
+   register_cnaf_callback(1);
 
    /* print message and return FE_ERR_HW if frontend should not be started */
 
