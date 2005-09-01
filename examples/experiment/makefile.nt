@@ -13,6 +13,9 @@
 #  13-NOV-97    SR    created
 #
 #  $Log$
+#  Revision 1.9  2005/09/01 10:19:40  ritt
+#  Added cnaf_callback.c
+#
 #  Revision 1.8  2004/10/19 04:53:02  pierre
 #  add USE_ROOT
 #
@@ -52,15 +55,15 @@ LIBRARY = $(LIB_DIR)\midas.lib
 
 # compiler
 CC = cl
-CFLAGS = /I$(INC_DIR) /I$(ROOT_DIR)/include /nologo /GX /D WIN32 /D USE_ROOT
+CFLAGS = /I$(INC_DIR) /I$(ROOT_DIR)/include /nologo /GX /D WIN32
 
 all: frontend.exe analyzer.exe
 
-frontend.exe:  $(LIBRARY) $(LIB_DIR)\mfe.obj frontend.c $(DRV_DIR)\bus\camacnul.c
-  $(CC) $(CFLAGS) /Fefrontend.exe frontend.c $(DRV_DIR)\bus\camacnul.c $(LIB_DIR)\mfe.obj $(LIBRARY) $(LIBS) wsock32.lib
+frontend.exe:  $(LIBRARY) $(LIB_DIR)\mfe.obj $(SRC_DIR)\cnaf_callback.c frontend.c $(DRV_DIR)\bus\camacnul.c
+  $(CC) $(CFLAGS) /Fefrontend.exe frontend.c $(SRC_DIR)\cnaf_callback.c $(DRV_DIR)\bus\camacnul.c $(LIB_DIR)\mfe.obj $(LIBRARY) $(LIBS) wsock32.lib
 
 analyzer.exe: $(LIBRARY) rmana.obj analyzer.obj $(MODULES)
-  $(CC) /Feanalyzer.exe rmana.obj analyzer.obj \
+  $(CC) /D USE_ROOT /Feanalyzer.exe rmana.obj analyzer.obj \
     $(MODULES) libCore.lib libTree.lib libHist.lib libRint.lib $(ZLIB_DIR)\zlib.lib \
     $(LIBRARY) $(LIBS) wsock32.lib /link /libpath:"$(ROOT_DIR)/lib"
 
