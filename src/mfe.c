@@ -7,6 +7,9 @@
                 linked with user code to form a complete frontend
 
   $Log$
+  Revision 1.74  2005/09/01 10:20:49  ritt
+  Removed HAVE_CAMAC completely
+
   Revision 1.73  2005/08/18 22:15:55  olchanski
   move "remove camac rpc" code from mfe.c to a file of it's own
   add register_cnaf_callback()
@@ -1973,12 +1976,6 @@ int main(int argc, char *argv[])
       ss_sleep(5000);
       return 1;
    }
-
-   cm_get_experiment_database(&hDB, &status);
-
-#ifdef HAVE_CAMAC
-   register_cnaf_callback(debug);
-#endif
 
    cm_get_experiment_database(&hDB, &status);
 
