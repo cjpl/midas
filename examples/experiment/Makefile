@@ -6,6 +6,9 @@
 #  Contents:     Makefile for MIDAS example frontend and analyzer
 #
 #  $Log$
+#  Revision 1.24  2005/09/01 10:24:54  ritt
+#  Added cnaf_callback
+#
 #  Revision 1.23  2005/05/05 19:19:05  olchanski
 #  Changes:
 #  add "-m32" compiler switch to work on 64-bit linux
@@ -104,6 +107,7 @@ endif
 DRV_DIR         = ../../drivers/bus
 INC_DIR 	= ../../include
 LIB_DIR 	= ../../linux/lib
+SRC_DIR 	= ../../src
 #
 #-------------------------------------------------------------------
 # List of analyzer modules
@@ -137,8 +141,8 @@ LDFLAGS +=
 
 all: $(UFE) analyzer
 
-$(UFE): $(LIB) $(LIB_DIR)/mfe.o $(DRIVER).o $(UFE).c
-	$(CC) $(CFLAGS) $(OSFLAGS) -o $(UFE) $(UFE).c $(DRIVER).o \
+$(UFE): $(LIB) $(LIB_DIR)/mfe.o $(DRIVER).o $(UFE).c $(SRC_DIR)/cnaf_callback.c
+	$(CC) $(CFLAGS) $(OSFLAGS) -o $(UFE) $(UFE).c $(SRC_DIR)/cnaf_callback.c $(DRIVER).o \
 	$(LIB_DIR)/mfe.o $(LIB) $(LDFEFLAGS) $(LIBS)
 
 $(DRIVER).o: $(DRV_DIR)/$(DRIVER).c
