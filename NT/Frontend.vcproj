@@ -20,7 +20,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..\include,..\drivers"
+				AdditionalIncludeDirectories="..\include,..\drivers,..\..\mxml"
 				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE"
 				RuntimeLibrary="5"
 				UsePrecompiledHeader="2"
@@ -160,6 +160,9 @@
 				</FileConfiguration>
 			</File>
 			<File
+				RelativePath="..\src\cnaf_callback.c">
+			</File>
+			<File
 				RelativePath="..\examples\experiment\frontend.c">
 				<FileConfiguration
 					Name="Debug|Win32">
@@ -265,13 +268,7 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="..\src\mxml.c">
-				<FileConfiguration
-					Name="Debug|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						PreprocessorDefinitions="HAVE_STRLCPY"/>
-				</FileConfiguration>
+				RelativePath="..\..\mxml\mxml.c">
 			</File>
 			<File
 				RelativePath="..\src\ODB.C">
@@ -295,7 +292,7 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="..\src\strlcpy.c">
+				RelativePath="..\..\mxml\strlcpy.c">
 			</File>
 			<File
 				RelativePath="..\src\SYSTEM.C">
