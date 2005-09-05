@@ -9,6 +9,9 @@
                 for SCS-1001 stand alone control unit
 
   $Log$
+  Revision 1.17  2005/09/05 15:06:57  ritt
+  Implemented manual mode
+
   Revision 1.16  2005/08/31 07:49:09  ritt
   Added vacuum status on DOUT0
 
@@ -123,6 +126,7 @@ struct {
    unsigned char station_on;
    unsigned char valve_locked;
    unsigned char vacuum_ok;
+   unsigned char man_mode;
    unsigned char relais[4];
    unsigned char turbo_on;
    unsigned short rot_speed;
@@ -150,6 +154,7 @@ MSCB_INFO_VAR code variables[] = {
    { 1, UNIT_BOOLEAN, 0, 0, 0,                               "Station",  &user_data.station_on, 0, 1, 1 },      
    { 1, UNIT_BOOLEAN, 0, 0, 0,                               "Locked",   &user_data.valve_locked, 0, 1, 1 },    
    { 1, UNIT_BOOLEAN, 0, 0, 0,                               "Vac OK",   &user_data.vacuum_ok,  0, 1, 1 },       
+   { 1, UNIT_BOOLEAN, 0, 0, 0,                               "ManMode",  &user_data.man_mode,  0, 1, 1 },       
                                                                                                                
    { 1, UNIT_BOOLEAN, 0, 0, 0,                               "Forepump", &user_data.relais[0], 0, 1, 1 },       
    { 1, UNIT_BOOLEAN, 0, 0, 0,                               "Forevlv",  &user_data.relais[1], 0, 1, 1 },       
@@ -257,6 +262,12 @@ void user_init(unsigned char init)
 
    /* initial EEPROM value */
    if (init) {
+
+      user_data.station_on = 0;
+      user_data.valve_locked = 0;
+      user_data.vacuum_ok = 0;
+      user_data.man_mode = 0;
+
       for (i=0 ; i<4 ; i++)
          user_data.relais[i] = 0;
 
@@ -431,7 +442,7 @@ unsigned char tc600_read(unsigned short param, char *result)
       putchar1(str[i]);
    flush();
 
-   i = gets_wait(str, sizeof(str), 50);
+   i = gets_wait(str, sizeof(str), 20);
    if (i > 2) {
       len = (str[8] - '0') * 10 + (str[9] - '0');
 
@@ -540,39 +551,85 @@ static bit b0_old = 0, b1_old = 0, b2_old = 0, b3_old = 0,
    else if (user_data.error & ERR_TURBO)
       printf("TMP ERROR: %s    ", turbo_err);
    else {
-      if (pump_state == ST_OFF) {
-         if (user_data.rot_speed > 10)
-            printf("Rmp down TMP: %3d Hz", user_data.rot_speed);
-         else
-            printf("Pump station off    ");
-      } else if (pump_state == ST_START_FORE)
-         printf("Starting fore pump  ");
-      else if (pump_state == ST_EVAC_FORE)
-         printf("Pumping buffer tank ");
-      else if (pump_state == ST_EVAC_MAIN)
-         printf("Pumping recipient   ");
-      else
+      if (user_data.man_mode) {
          printf("TMP: %4d Hz, %4.2f A", user_data.rot_speed, user_data.tmp_current);
+      } else {
+         if (pump_state == ST_OFF) {
+            if (user_data.rot_speed > 10)
+               printf("Rmp down TMP: %3d Hz", user_data.rot_speed);
+            else
+               printf("Pump station off    ");
+         } else if (pump_state == ST_START_FORE)
+            printf("Starting fore pump  ");
+         else if (pump_state == ST_EVAC_FORE)
+            printf("Pumping buffer tank ");
+         else if (pump_state == ST_EVAC_MAIN)
+            printf("Pumping recipient   ");
+         else
+            printf("TMP: %4d Hz, %4.2f A", user_data.rot_speed, user_data.tmp_current);
+      }
    }
 
-   lcd_goto(0, 3);
-   printf(user_data.station_on ? "OFF" : "ON ");
+   if (user_data.man_mode) {
 
-   lcd_goto(4, 3);
-   printf(user_data.valve_locked ? "UNLOCK" : " LOCK ");
+      lcd_goto(0, 3);
+      printf(user_data.relais[0] ? "FP0" : "FP1");
 
-   /* toggle main switch with button 0 */
-   if (b0 && !b0_old)
-      user_data.station_on = !user_data.station_on;
+      lcd_goto(5, 3);
+      printf(user_data.relais[1] ? "FV0" : "FV1");
 
-   /* toggle locking with button 1 */
-   if (b1 && !b1_old)
-      user_data.valve_locked = !user_data.valve_locked;
+      lcd_goto(11, 3);
+      printf(user_data.relais[2] ? "MV0" : "MV1");
 
-   /* enter menu on release of button 3 */
-   if (!init)
-      if (!b3 && b3_old)
+      lcd_goto(16, 3);
+      printf(user_data.relais[3] ? "BV0" : "BV1");
+
+      if (b0 && !b0_old)
+         user_data.relais[0] = !user_data.relais[0];
+      if (b1 && !b1_old)
+         user_data.relais[1] = !user_data.relais[1];
+      if (b2 && !b2_old)
+         user_data.relais[2] = !user_data.relais[2];
+      if (b3 && !b3_old)
+         user_data.relais[3] = !user_data.relais[3];
+         
+      user_write(4);
+      user_write(5);
+      user_write(6);
+      user_write(7);
+
+      /* enter menu on buttons 2 & 3 */                                   
+      if (b2 && b3) {
+
+         /* wait for buttons to be released */
+         do {
+           sr_read();
+           } while (b2 || b3);
+
          return 1;
+      }
+
+   } else {
+
+      lcd_goto(0, 3);
+      printf(user_data.station_on ? "OFF" : "ON ");
+   
+      lcd_goto(4, 3);
+      printf(user_data.valve_locked ? "UNLOCK" : " LOCK ");
+   
+      /* toggle main switch with button 0 */
+      if (b0 && !b0_old)
+         user_data.station_on = !user_data.station_on;
+   
+      /* toggle locking with button 1 */
+      if (b1 && !b1_old)
+         user_data.valve_locked = !user_data.valve_locked;
+   
+      /* enter menu on release of button 3 */
+      if (!init)
+         if (!b3 && b3_old)
+            return 1;
+   }
 
    b0_old = b0;
    b1_old = b1;
@@ -800,7 +857,7 @@ static bit b0_old = 0, b1_old = 0, b2_old = 0, b3_old = 0,
 
 void user_loop(void)
 {
-   char idata str[32];
+   char xdata str[32];
    static unsigned char xdata adc_chn = 0;
    static char xdata turbo_on_last = -1;
    static unsigned long xdata last_read = 0;
@@ -852,9 +909,7 @@ void user_loop(void)
       } else
          user_data.error |= ERR_TURBO_COMM;
 
-
-
-      last_read = time();
+       last_read = time();
    }
    
    /* mangae menu on LCD display */
