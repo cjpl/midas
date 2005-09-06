@@ -6,6 +6,9 @@
   Contents:     Command-line interface for the Midas Slow Control Bus
 
   $Log$
+  Revision 1.86  2005/09/06 11:17:47  ritt
+  Improved error display
+
   Revision 1.85  2005/07/25 11:40:21  ritt
   Fixed bug with '%x'
 
@@ -724,13 +727,18 @@ void cmd_loop(int fd, char *cmd, unsigned short adr)
 
                printf("\nVariables:\n");
                for (i = 0; i < info.n_variables; i++) {
-                  mscb_info_variable(fd, (unsigned short)current_addr, (unsigned char)i, &info_var);
-                  if ((info_var.flags & MSCBF_HIDDEN) == 0 || param[1][0]) {
-                     size = info_var.width;
-                     memset(dbuf, 0, sizeof(dbuf));
-                     status = mscb_read(fd, (unsigned short)current_addr, (unsigned char) i, dbuf, &size);
-                     if (status == MSCB_SUCCESS)
-                           print_channel(i, &info_var, dbuf, 1);
+                  status = mscb_info_variable(fd, (unsigned short)current_addr, (unsigned char)i, &info_var);
+                  if (status != MSCB_SUCCESS) {
+                     puts("Error reading variable");
+                     break;
+                  } else {
+                     if ((info_var.flags & MSCBF_HIDDEN) == 0 || param[1][0]) {
+                        size = info_var.width;
+                        memset(dbuf, 0, sizeof(dbuf));
+                        status = mscb_read(fd, (unsigned short)current_addr, (unsigned char) i, dbuf, &size);
+                        if (status == MSCB_SUCCESS)
+                              print_channel(i, &info_var, dbuf, 1);
+                     }
                   }
                }
 
