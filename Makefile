@@ -6,6 +6,9 @@
 #  Contents:     Makefile for MIDAS binaries and examples under unix
 #
 #  $Log$
+#  Revision 1.74  2005/09/19 21:33:15  olchanski
+#  First cut at the standard USB access functions, used by USB-MSCB and USB-CAMAC (CCUSB) drivers
+#
 #  Revision 1.73  2005/08/18 22:15:55  olchanski
 #  move "remove camac rpc" code from mfe.c to a file of it's own
 #  add register_cnaf_callback()
@@ -470,7 +473,7 @@ endif
 
 OBJS =  $(LIB_DIR)/midas.o $(LIB_DIR)/system.o $(LIB_DIR)/mrpc.o \
 	$(LIB_DIR)/odb.o $(LIB_DIR)/ybos.o $(LIB_DIR)/ftplib.o \
-	$(LIB_DIR)/mxml.o $(LIB_DIR)/strlcpy.o $(LIB_DIR)/cnaf_callback.o
+	$(LIB_DIR)/mxml.o $(LIB_DIR)/strlcpy.o $(LIB_DIR)/cnaf_callback.o $(LIB_DIR)/musbstd.o
 
 LIBNAME=$(LIB_DIR)/libmidas.a
 LIB    =$(LIBNAME)
