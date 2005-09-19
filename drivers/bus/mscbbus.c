@@ -6,6 +6,9 @@
   Contents:     MSCB bus driver to transport ASCII commands to scs_210 
 
   $Log$
+  Revision 1.3  2005/09/19 09:47:30  ritt
+  Implemented password from SCS-210 (A. Suter)
+
   Revision 1.2  2005/03/24 22:48:37  ritt
   Changed parameters to mscb_init
 
@@ -14,6 +17,7 @@
 
 \********************************************************************/
 
+#include <stdarg.h>
 #include <midas.h>
 #include "../mscb/mscb.h"
 
@@ -21,11 +25,13 @@ static int debug_flag = 0;
 
 typedef struct {
    char port[32];
+   char pwd[32];
    unsigned short address;
 } MSCBBUS_SETTINGS;
 
 #define MSCBBUS_SETTINGS_STR "\
 MSCB Port = STRING : [32] usb0\n\
+Pwd = STRING : [32] \n\
 Address = WORD : 0\n\
 "
 
@@ -206,7 +212,11 @@ int mscbbus_init(HNDLE hkey, void **pinfo)
    db_get_record(hDB, hkeybd, &info->settings, &size, 0);
 
    /* open port */
-   info->fd = mscb_init(info->settings.port, sizeof(info->settings.port), "", FALSE);
+   // check if ethernet submaster
+   if (strstr(info->settings.port, "MSCB")) // ethernet submaster
+     info->fd = mscb_init(info->settings.port, sizeof(info->settings.port), info->settings.pwd, FALSE);
+   else
+     info->fd = mscb_init(info->settings.port, sizeof(info->settings.port), "", FALSE);
 
    if (info->fd < 0)
       return FE_ERR_HW;
