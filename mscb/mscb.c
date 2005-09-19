@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus communication functions
 
   $Log$
+  Revision 1.101  2005/09/19 10:32:37  ritt
+  Added error handling from A. Suter
+
   Revision 1.100  2005/08/30 11:11:51  ritt
   Version 2.1.8
 
@@ -3713,7 +3716,7 @@ int mscb_read_block(int fd, unsigned short adr, unsigned char index, void *data,
 
 \********************************************************************/
 {
-   int i, n;
+   int i, n, error_count;
    unsigned char buf[256], crc;
 
    memset(data, 0, *size);
@@ -3727,7 +3730,7 @@ int mscb_read_block(int fd, unsigned short adr, unsigned char index, void *data,
    if (mscb_lock(fd) != MSCB_SUCCESS)
       return MSCB_MUTEX;
 
-   n = 0;
+   n = error_count = 0;
    do {
 
       buf[0] = MCMD_ADDR_NODE16;
@@ -3750,6 +3753,20 @@ int mscb_read_block(int fd, unsigned short adr, unsigned char index, void *data,
          mscb_release(fd);
          *size = 0;
          return MSCB_TIMEOUT;
+      }
+      
+      if (i<0) {
+         error_count++;
+         if (error_count > 10) { // too many errors
+#ifndef _USRDLL
+            printf("Too many errors reading from RS485 bus.\n");
+#endif
+            mscb_release(fd);
+            *size = 0;
+            return MSCB_TIMEOUT;
+         }
+         
+         continue; // try again
       }
 
       crc = crc8(buf, i - 1);
