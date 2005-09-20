@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus communication functions
 
   $Log$
+  Revision 1.102  2005/09/20 14:49:02  ritt
+  Fixed bug im mscb_write_group()
+
   Revision 1.101  2005/09/19 10:32:37  ritt
   Added error handling from A. Suter
 
@@ -2735,7 +2738,7 @@ int mscb_write_group(int fd, unsigned short adr, unsigned char index, void *data
       buf[6 + size - 1 - i] = *d++;
 
    buf[6 + i] = crc8(buf, 6 + i);
-   mscb_out(fd, buf, 7 + i, RS485_FLAG_NO_ACK);
+   mscb_out(fd, buf, 7 + i, RS485_FLAG_ADR_CYCLE | RS485_FLAG_NO_ACK);
 
    mscb_release(fd);
 
