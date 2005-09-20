@@ -39,7 +39,6 @@ echo Creating archive...
 
 zip mscb%version%.zip *.c
 zip mscb%version%.zip *.h
-zip mscb%version%.zip \mxml\strlcpy.*
 zip mscb%version%.zip msc.exe
 zip mscb%version%.zip calib_520.exe
 zip mscb%version%.zip calib_700.exe

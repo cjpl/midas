@@ -18,7 +18,7 @@ OSTYPE = linux
 endif
 
 # directory where strlcpy.c resides
-SLCDIR        = ../../mxml/
+SLCDIR        = 
 
 OUTNAME       = msc 
 CC            = gcc -g -O2
@@ -30,7 +30,7 @@ LIBS  = -lusb
 endif
 
 ifeq ($(OSTYPE),darwin)
-CC   += -DOS_UNIX -DOS_DARWIN -DHAVE_STRLCPY
+CC   += -DOS_UNIX -DOS_DARWIN
 LIBS  = -lIOKit /System/Library/Frameworks/CoreFoundation.framework/CoreFoundation
 endif
 
