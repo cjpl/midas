@@ -18,7 +18,7 @@ OSTYPE = linux
 endif
 
 # directory where strlcpy.c resides
-SLCDIR        = 
+SLCDIR        = ./
 
 OUTNAME       = msc 
 CC            = gcc -g -O2
