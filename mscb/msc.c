@@ -6,6 +6,9 @@
   Contents:     Command-line interface for the Midas Slow Control Bus
 
   $Log$
+  Revision 1.87  2005/09/21 09:30:17  ritt
+  Removed OS_UNIX
+
   Revision 1.86  2005/09/06 11:17:47  ritt
   Improved error display
 
@@ -273,7 +276,7 @@
 #include <conio.h>
 #include <io.h>
 
-#elif defined(OS_UNIX)
+#elif defined(OS_LINUX)
 
 #define O_BINARY 0
 
