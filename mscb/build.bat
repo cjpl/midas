@@ -37,6 +37,7 @@ copy \midas\nt\lib\mscb.dll \midas\mscb\labview\
 
 echo Creating archive...
 
+zip mscb%version%.zip Makefile
 zip mscb%version%.zip *.c
 zip mscb%version%.zip *.h
 zip mscb%version%.zip msc.exe
