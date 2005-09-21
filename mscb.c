@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus communication functions
 
   $Log$
+  Revision 1.104  2005/09/21 09:31:24  ritt
+  Removed OS_UNIX
+
   Revision 1.103  2005/09/21 09:30:17  ritt
   Removed OS_UNIX
 
@@ -500,7 +503,7 @@ int n_cache_info_var;
 
 /* missing linux functions */
 
-#if defined(OS_UNIX)
+#if defined(OS_LINUX)
 
 int kbhit()
 {
