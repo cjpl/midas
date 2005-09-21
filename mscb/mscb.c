@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus communication functions
 
   $Log$
+  Revision 1.103  2005/09/21 09:30:17  ritt
+  Removed OS_UNIX
+
   Revision 1.102  2005/09/20 14:49:02  ritt
   Fixed bug im mscb_write_group()
 
@@ -627,11 +630,15 @@ int mscb_lock(int fd)
    if (mscb_fd[fd - 1].type == MSCB_TYPE_LPT) {
       if (ioctl(mscb_fd[fd - 1].fd, PPCLAIM))
          return 0;
-   } else if (mscb_fd[fd - 1].type == MSCB_TYPE_USB) {
+   } 
+#ifdef HAVE_LIBUSB
+     else if (mscb_fd[fd - 1].type == MSCB_TYPE_USB) {
       if (usb_claim_interface((usb_dev_handle *) mscb_fd[fd - 1].hr, 0) < 0)
          return 0;
    }
-#endif
+#endif // HAVE_LIBUSB
+
+#endif // OS_LINUX
    return MSCB_SUCCESS;
 }
 
@@ -651,11 +658,17 @@ int mscb_release(int fd)
    if (mscb_fd[fd - 1].type == MSCB_TYPE_LPT) {
       if (ioctl(mscb_fd[fd - 1].fd, PPRELEASE))
          return 0;
-   } else if (mscb_fd[fd - 1].type == MSCB_TYPE_USB) {
+   } 
+
+#ifdef HAVE_LIBUSB
+     else if (mscb_fd[fd - 1].type == MSCB_TYPE_USB) {
       if (usb_release_interface((usb_dev_handle *) mscb_fd[fd - 1].hr, 0) < 0)
          return 0;
    }
-#endif
+#endif // HAVE_LIBUSB
+
+#endif // OS_LINUX
+
    return MSCB_SUCCESS;
 }
 
@@ -773,8 +786,10 @@ int msend_usb(int fd, void *buf, int size)
 #if defined(_MSC_VER)
    WriteFile((HANDLE) fd, buf, size, &n_written, NULL);
 #elif defined(OS_LINUX)
+#ifdef HAVE_LIBUSB
    n_written = usb_bulk_write((usb_dev_handle *) fd, 2, buf, size, 100);
    usleep(0); // needed for linux not to crash !!!!
+#endif
 #elif defined(OS_DARWIN)
    IOReturn status;
    IOUSBInterfaceInterface** device = (IOUSBInterfaceInterface**)fd;

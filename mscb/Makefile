@@ -25,12 +25,12 @@ CC            = gcc -g -O2
 FLAGS         = -Wall -Wuninitialized -I$(SLCDIR)
 
 ifeq ($(OSTYPE),linux)
-CC   += -DOS_UNIX -DOS_LINUX -DHAVE_LIBUSB
+CC   += -DOS_LINUX -DHAVE_LIBUSB
 LIBS  = -lusb
 endif
 
 ifeq ($(OSTYPE),darwin)
-CC   += -DOS_UNIX -DOS_DARWIN
+CC   += -DOS_DARWIN
 LIBS  = -lIOKit /System/Library/Frameworks/CoreFoundation.framework/CoreFoundation
 endif
 
