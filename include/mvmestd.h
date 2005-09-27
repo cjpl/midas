@@ -4,10 +4,12 @@
   Created by:   Stefan Ritt
 
   Cotents:      Midas VME standard routines (MVMESTD) supplying an
-                abstract layer to all supported VME interfaces. So far,
-                bt617.c and sis3100.c are supported
+                abstract layer to all supported VME interfaces.
                 
   $Log$
+  Revision 1.10  2005/09/27 10:05:52  ritt
+  Implemented 'new' mvmestd
+
   Revision 1.9  2004/12/07 09:59:04  midas
   Revised MVMESTD
 
@@ -68,6 +70,8 @@ typedef unsigned long int DWORD;
 #define MVME_NO_INTERFACE             2
 #define MVME_NO_CRATE                 3
 #define MVME_UNSUPPORTED              4
+#define MVME_INVALID_PARAM            5
+#define MVME_NO_MEM                   6
 
 /*---- types -------------------------------------------------------*/
 
@@ -75,18 +79,6 @@ typedef unsigned long mvme_addr_t;
 typedef unsigned long mvme_size_t;
 
 /*---- constants ---------------------------------------------------*/
-
-/* vme_ioctl commands */
-#define MVME_IOCTL_CRATE_SET          0
-#define MVME_IOCTL_CRATE_GET          1
-#define MVME_IOCTL_AMOD_SET           2
-#define MVME_IOCTL_AMOD_GET           3
-#define MVME_IOCTL_DMODE_SET          4
-#define MVME_IOCTL_DMODE_GET          5
-#define MVME_IOCTL_DMA_SET            6
-#define MVME_IOCTL_DMA_GET            7
-#define MVME_IOCTL_FIFO_SET           8
-#define MVME_IOCTL_FIFO_GET           9
 
 /* data modes */
 #define MVME_DMODE_D8                 1
@@ -96,6 +88,16 @@ typedef unsigned long mvme_size_t;
 #define MVME_DMODE_RAMD16             5   /* RAM memory of VME adapter */
 #define MVME_DMODE_RAMD32             6
 #define MVME_DMODE_LM                 7   /* local memory mapped to VME */
+
+/* block transfer modes */
+#define MVME_BLT_NONE                 1   /* normal programmed IO */
+#define MVME_BLT_BLT32                2   /* 32-bit block transfer */
+#define MVME_BLT_MBLT64               3   /* multiplexed 64-bit block transfer */
+#define MVME_BLT_2EVME                4   /* two edge block transfer */
+#define MVME_BLT_2ESST                5   /* two edge source synchrnous transfer */
+#define MVME_BLT_BLT32FIFO            6   /* FIFO mode, don't increment address */
+#define MVME_BLT_MBLT64FIFO           7   /* FIFO mode, don't increment address */
+#define MVME_BLT_2EVMEFIFO            8   /* two edge block transfer with FIFO mode */
 
 /* vme bus address modifiers */
 #define MVME_AMOD_A32_SB     (0x0F)      /* A32 Extended Supervisory Block */
@@ -127,6 +129,19 @@ typedef unsigned long mvme_size_t;
 
 #define MVME_AMOD_A16     MVME_AMOD_A16_SD
 
+/*---- interface structure -----------------------------------------*/
+
+#define MAX_CRATE         10             /* maximum number of crates */
+
+typedef struct {
+   int  handle;              // internal handle
+   void *info;               // internal info structure
+   int  am;                  // Address modifier
+   int  dmode;
+   int  blt_mode;
+   void *vme_table;
+} MVME_INTERFACE;
+
 /*---- function declarations ---------------------------------------*/
 
 /* make functions callable from a C++ program */
@@ -134,13 +149,19 @@ typedef unsigned long mvme_size_t;
 extern "C" {
 #endif
 
-   int EXPRT mvme_init();
-   int EXPRT mvme_ioctl(int req, int *parm);
-   int EXPRT mvme_exit();
-   int EXPRT mvme_read(void *dst, mvme_addr_t vme_addr, mvme_size_t size);
-   int EXPRT mvme_write(mvme_addr_t vme_addr, void *src, mvme_size_t n_bytes);
-   int EXPRT mvme_mmap(void **ptr, mvme_addr_t vme_addr, mvme_size_t size);
-   int EXPRT mvme_unmap(void *ptr, mvme_size_t size);
+   int EXPRT mvme_open(MVME_INTERFACE *vme, int index);
+   int EXPRT mvme_close(MVME_INTERFACE *vme);
+   int EXPRT mvme_sysreset(MVME_INTERFACE *vme);
+   int EXPRT mvme_read(MVME_INTERFACE *vme, void *dst, mvme_addr_t vme_addr, mvme_size_t n_bytes);
+   DWORD EXPRT mvme_read_value(MVME_INTERFACE *vme, mvme_addr_t vme_addr);
+   int EXPRT mvme_write(MVME_INTERFACE *vme, mvme_addr_t vme_addr, void *src, mvme_size_t n_bytes);
+   int EXPRT mvme_write_value(MVME_INTERFACE *vme, mvme_addr_t vme_addr, DWORD value);
+   int EXPRT mvme_set_am(MVME_INTERFACE *vme, int am);
+   int EXPRT mvme_get_am(MVME_INTERFACE *vme, int *am);
+   int EXPRT mvme_set_dmode(MVME_INTERFACE *vme, int dmode);
+   int EXPRT mvme_get_dmode(MVME_INTERFACE *vme, int *dmode);
+   int EXPRT mvme_set_blt(MVME_INTERFACE *vme, int mode);
+   int EXPRT mvme_get_blt(MVME_INTERFACE *vme, int *mode);
 
 #ifdef __cplusplus
 }
