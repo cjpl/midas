@@ -6,6 +6,10 @@
 #  Contents:     Makefile for MIDAS binaries and examples under unix
 #
 #  $Log$
+#  Revision 1.75  2005/09/28 16:25:26  olchanski
+#  Make use of our own strlcpy & co optional
+#  Use the system version of strlcpy & co on MacOSX
+#
 #  Revision 1.74  2005/09/19 21:33:15  olchanski
 #  First cut at the standard USB access functions, used by USB-MSCB and USB-CAMAC (CCUSB) drivers
 #
@@ -322,6 +326,11 @@ NEED_MYSQL=
 MYSQL_LIBS=/usr/lib/mysql/libmysqlclient.a
 
 #
+# Option to use our own implementation of strlcat, strlcpy
+#
+NEED_STRLCPY=1
+
+#
 # Directory in which mxml.c/h resides. This library has to be checked
 # out separately from the midas CVS since it's used in several projects
 #
@@ -389,6 +398,7 @@ OS_DIR = darwin
 OSFLAGS = -DOS_LINUX -DOS_DARWIN -DHAVE_STRLCPY -fPIC -Wno-unused-function
 LIBS = -lpthread
 SPECIFIC_OS_PRG = $(BIN_DIR)/mlxspeaker
+NEED_STRLCPY=
 NEED_RANLIB=1
 NEED_SHLIB=
 NEED_RPATH=
@@ -473,7 +483,11 @@ endif
 
 OBJS =  $(LIB_DIR)/midas.o $(LIB_DIR)/system.o $(LIB_DIR)/mrpc.o \
 	$(LIB_DIR)/odb.o $(LIB_DIR)/ybos.o $(LIB_DIR)/ftplib.o \
-	$(LIB_DIR)/mxml.o $(LIB_DIR)/strlcpy.o $(LIB_DIR)/cnaf_callback.o $(LIB_DIR)/musbstd.o
+	$(LIB_DIR)/mxml.o $(LIB_DIR)/cnaf_callback.o $(LIB_DIR)/musbstd.o
+
+ifdef NEED_STRLCPY
+OBJS += $(LIB_DIR)/strlcpy.o
+endif
 
 LIBNAME=$(LIB_DIR)/libmidas.a
 LIB    =$(LIBNAME)
