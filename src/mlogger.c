@@ -6,6 +6,9 @@
   Contents:     MIDAS logger program
 
   $Log$
+  Revision 1.95  2005/09/28 16:26:57  olchanski
+  Fix compile error on MacOSX 10.4: gcc4.0.0 does not like unnamed structs.
+
   Revision 1.94  2005/08/19 03:36:18  olchanski
   fix race condition between frontends, analyzer and logger during run start and stop; pause and resume
 
@@ -341,7 +344,7 @@ BOOL verbose = FALSE;
 
 LOG_CHN log_chn[MAX_CHANNELS];
 
-struct {
+struct hist_log_s {
    WORD event_id;
    void *buffer;
    INT buffer_size;
