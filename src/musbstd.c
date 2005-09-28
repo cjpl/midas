@@ -6,6 +6,9 @@
   Contents:     Midas USB access
 
   $Log$
+  Revision 1.2  2005/09/28 16:27:35  olchanski
+  Make musbstd.c compile (but not work, yet) on MacOSX 10.4
+
   Revision 1.1  2005/09/19 21:33:15  olchanski
   First cut at the standard USB access functions, used by USB-MSCB and USB-CAMAC (CCUSB) drivers
 
@@ -19,14 +22,6 @@
 
 #include <windows.h>
 #include <conio.h>
-
-#elif defined(OS_LINUX)        // Linux includes
-
-#include <unistd.h>
-#include <string.h>
-#include <stdlib.h>
-
-#define HAVE_LIBUSB 1
 
 #elif defined(OS_DARWIN)
 
@@ -44,6 +39,14 @@
 #include <IOKit/IOKitLib.h>
 #include <IOKit/IOCFPlugIn.h>
 #include <IOKit/usb/IOUSBLib.h>
+
+#elif defined(OS_LINUX)        // Linux includes
+
+#include <unistd.h>
+#include <string.h>
+#include <stdlib.h>
+
+#define HAVE_LIBUSB 1
 
 #endif
 
@@ -153,7 +156,7 @@ void* musb_open(int vendor,int product,int instance,int configuration,int interf
   IOCFPlugInInterface** plugin;
   SInt32 score;
   IOUSBDeviceInterface** device;
-  IOUSBInterfaceInterface** interface;
+  IOUSBInterfaceInterface** uinterface;
   UInt16 xvendor, xproduct;
   UInt8 numend;
   int count = 0;
@@ -206,23 +209,23 @@ void* musb_open(int vendor,int product,int instance,int configuration,int interf
                   status = IOCreatePlugInInterfaceForService(service, kIOUSBInterfaceUserClientTypeID, kIOCFPlugInInterfaceID, &plugin, &score);
                   assert(status==kIOReturnSuccess);
                   
-                  status = (*plugin)->QueryInterface(plugin, CFUUIDGetUUIDBytes (kIOUSBInterfaceInterfaceID), (void*)&interface);
+                  status = (*plugin)->QueryInterface(plugin, CFUUIDGetUUIDBytes (kIOUSBInterfaceInterfaceID), (void*)&uinterface);
                   assert(status==kIOReturnSuccess);
                   
 
-                  status = (*interface)->USBInterfaceOpen(interface);
+                  status = (*uinterface)->USBInterfaceOpen(uinterface);
                   printf("status 0x%x\n",status);
                   assert(status==kIOReturnSuccess);
                   
-                  status = (*interface)->GetNumEndpoints(interface,&numend);
+                  status = (*uinterface)->GetNumEndpoints(uinterface,&numend);
                   assert(status==kIOReturnSuccess);
                   
                   printf("endpoints: %d\n",numend);
                   
-                  printf("pipe 1 status: 0x%x\n",(*interface)->GetPipeStatus(interface,1));
-                  printf("pipe 2 status: 0x%x\n",(*interface)->GetPipeStatus(interface,2));
+                  printf("pipe 1 status: 0x%x\n",(*uinterface)->GetPipeStatus(uinterface,1));
+                  printf("pipe 2 status: 0x%x\n",(*uinterface)->GetPipeStatus(uinterface,2));
                   
-                  handle->handle = interface;
+                  handle->handle = uinterface;
                   return handle;
                 }
 
@@ -265,15 +268,15 @@ int musb_write(void* handle,int endpoint,const void *buf,int count,int timeout)
 
 #if defined(_MSC_VER)
    WriteFile(h->whandle, buf, size, &n_written, NULL);
-#elif defined(OS_LINUX)
+#elif defined(HAVE_LIBUSB)
    n_written = usb_bulk_write(h->dev, endpoint, buf, count, timeout);
    //usleep(0); // needed for linux not to crash !!!!
 #elif defined(OS_DARWIN)
    IOReturn status;
    IOUSBInterfaceInterface** device = h->handle;
-   status = (*device)->WritePipe(device,endpoint,buf,size);
+   status = (*device)->WritePipe(device,endpoint,buf,count);
    if (status != 0) printf("musb_write: WritePipe() status %d 0x%x\n",status,status);
-   n_written = size;
+   n_written = count;
 #endif
    return n_written;
 }
@@ -317,10 +320,10 @@ int musb_read(void* handle,int endpoint,void *buf,int count,int timeout)
 
    IOReturn status;
    IOUSBInterfaceInterface** device = h->handle;
-   n_read = size;
+   n_read = count;
    status = (*device)->ReadPipe(device,endpoint,buf,&n_read);
    if (status != kIOReturnSuccess) {
-      printf("musb_read: size %d, read %d, ReadPipe() status %d 0x%x\n",size,n_read,status,status);
+      printf("musb_read: requested %d, read %d, ReadPipe() status %d 0x%x\n",count,n_read,status,status);
       return -1;
    }
 
