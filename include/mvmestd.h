@@ -7,6 +7,9 @@
                 abstract layer to all supported VME interfaces.
                 
   $Log$
+  Revision 1.11  2005/09/28 04:36:02  ritt
+  vme structure gets allocated in driver
+
   Revision 1.10  2005/09/27 10:05:52  ritt
   Implemented 'new' mvmestd
 
@@ -100,34 +103,36 @@ typedef unsigned long mvme_size_t;
 #define MVME_BLT_2EVMEFIFO            8   /* two edge block transfer with FIFO mode */
 
 /* vme bus address modifiers */
-#define MVME_AMOD_A32_SB     (0x0F)      /* A32 Extended Supervisory Block */
-#define MVME_AMOD_A32_SP     (0x0E)      /* A32 Extended Supervisory Program */
-#define MVME_AMOD_A32_SD     (0x0D)      /* A32 Extended Supervisory Data */
-#define MVME_AMOD_A32_NB     (0x0B)      /* A32 Extended Non-Privileged Block */
-#define MVME_AMOD_A32_NP     (0x0A)      /* A32 Extended Non-Privileged Program */
-#define MVME_AMOD_A32_ND     (0x09)      /* A32 Extended Non-Privileged Data */
-#define MVME_AMOD_A32_SMBLT  (0x0C)      /* A32 Multiplexed Block Transfer (D64) */
-#define MVME_AMOD_A32_NMBLT  (0x08)      /* A32 Multiplexed Block Transfer (D64) */
+#define MVME_AM_A32_SB     (0x0F)      /* A32 Extended Supervisory Block */
+#define MVME_AM_A32_SP     (0x0E)      /* A32 Extended Supervisory Program */
+#define MVME_AM_A32_SD     (0x0D)      /* A32 Extended Supervisory Data */
+#define MVME_AM_A32_NB     (0x0B)      /* A32 Extended Non-Privileged Block */
+#define MVME_AM_A32_NP     (0x0A)      /* A32 Extended Non-Privileged Program */
+#define MVME_AM_A32_ND     (0x09)      /* A32 Extended Non-Privileged Data */
+#define MVME_AM_A32_SMBLT  (0x0C)      /* A32 Multiplexed Block Transfer (D64) */
+#define MVME_AM_A32_NMBLT  (0x08)      /* A32 Multiplexed Block Transfer (D64) */
 
-#define MVME_AMOD_A32     MVME_AMOD_A32_SD
-#define MVME_AMOD_A32_D64 MVME_AMOD_A32_SMBLT
+#define MVME_AM_A32     MVME_AM_A32_SD
+#define MVME_AM_A32_D64 MVME_AM_A32_SMBLT
 
-#define MVME_AMOD_A24_SB     (0x3F)      /* A24 Standard Supervisory Block Transfer      */
-#define MVME_AMOD_A24_SP     (0x3E)      /* A24 Standard Supervisory Program Access      */
-#define MVME_AMOD_A24_SD     (0x3D)      /* A24 Standard Supervisory Data Access         */
-#define MVME_AMOD_A24_NB     (0x3B)      /* A24 Standard Non-Privileged Block Transfer   */
-#define MVME_AMOD_A24_NP     (0x3A)      /* A24 Standard Non-Privileged Program Access   */
-#define MVME_AMOD_A24_ND     (0x39)      /* A24 Standard Non-Privileged Data Access      */
-#define MVME_AMOD_A24_SMBLT  (0x3C)      /* A24 Multiplexed Block Transfer (D64) */
-#define MVME_AMOD_A24_NMBLT  (0x38)      /* A24 Multiplexed Block Transfer (D64) */
+#define MVME_AM_A24_SB     (0x3F)      /* A24 Standard Supervisory Block Transfer      */
+#define MVME_AM_A24_SP     (0x3E)      /* A24 Standard Supervisory Program Access      */
+#define MVME_AM_A24_SD     (0x3D)      /* A24 Standard Supervisory Data Access         */
+#define MVME_AM_A24_NB     (0x3B)      /* A24 Standard Non-Privileged Block Transfer   */
+#define MVME_AM_A24_NP     (0x3A)      /* A24 Standard Non-Privileged Program Access   */
+#define MVME_AM_A24_ND     (0x39)      /* A24 Standard Non-Privileged Data Access      */
+#define MVME_AM_A24_SMBLT  (0x3C)      /* A24 Multiplexed Block Transfer (D64) */
+#define MVME_AM_A24_NMBLT  (0x38)      /* A24 Multiplexed Block Transfer (D64) */
 
-#define MVME_AMOD_A24     MVME_AMOD_A24_SD
-#define MVME_AMOD_A24_D64 MVME_AMOD_A24_SMBLT
+#define MVME_AM_A24     MVME_AM_A24_SD
+#define MVME_AM_A24_D64 MVME_AM_A24_SMBLT
 
-#define MVME_AMOD_A16_SD  (0x2D) /* A16 Short Supervisory Data Access            */
-#define MVME_AMOD_A16_ND  (0x29) /* A16 Short Non-Privileged Data Access         */
+#define MVME_AM_A16_SD  (0x2D) /* A16 Short Supervisory Data Access            */
+#define MVME_AM_A16_ND  (0x29) /* A16 Short Non-Privileged Data Access         */
 
-#define MVME_AMOD_A16     MVME_AMOD_A16_SD
+#define MVME_AM_A16     MVME_AM_A16_SD
+
+#define MVME_AM_DEFAULT MVME_AM_A32
 
 /*---- interface structure -----------------------------------------*/
 
@@ -139,7 +144,7 @@ typedef struct {
    int  am;                  // Address modifier
    int  dmode;
    int  blt_mode;
-   void *vme_table;
+   void *table;
 } MVME_INTERFACE;
 
 /*---- function declarations ---------------------------------------*/
@@ -149,7 +154,7 @@ typedef struct {
 extern "C" {
 #endif
 
-   int EXPRT mvme_open(MVME_INTERFACE *vme, int index);
+   int EXPRT mvme_open(MVME_INTERFACE **vme, int index);
    int EXPRT mvme_close(MVME_INTERFACE *vme);
    int EXPRT mvme_sysreset(MVME_INTERFACE *vme);
    int EXPRT mvme_read(MVME_INTERFACE *vme, void *dst, mvme_addr_t vme_addr, mvme_size_t n_bytes);
