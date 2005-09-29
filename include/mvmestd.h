@@ -7,6 +7,9 @@
                 abstract layer to all supported VME interfaces.
                 
   $Log$
+  Revision 1.12  2005/09/29 03:42:31  amaudruz
+  add new error type
+
   Revision 1.11  2005/09/28 04:36:02  ritt
   vme structure gets allocated in driver
 
@@ -75,6 +78,7 @@ typedef unsigned long int DWORD;
 #define MVME_UNSUPPORTED              4
 #define MVME_INVALID_PARAM            5
 #define MVME_NO_MEM                   6
+#define MVME_ACCESS_ERROR             7
 
 /*---- types -------------------------------------------------------*/
 
