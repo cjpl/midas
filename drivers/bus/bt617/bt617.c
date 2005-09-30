@@ -20,257 +20,313 @@
 #include    "btapi.h"
 #endif
 
+#ifdef __linux__
+#define BT1003
+#include    "btapi.h"
+#endif
+
 #include    "mvmestd.h"
 
 /*------------------------------------------------------------------*/
 
-#define MAX_BT617_DEVICES  4
-#define MAX_BT617_MODES   20
+#define MAX_BT617_TABLES 32 /* one for each address mode */
 
 typedef struct {
-   int amod;
+   int am;
    char devname[BT_MAX_DEV_NAME];
    bt_desc_t btd;
-} BT617_MODE;
-
-typedef struct {
-   int i_mode;
-   int dmode;
-   int dma;
-   int fifo_mode;
-   BT617_MODE bt617_mode[MAX_BT617_MODES];
-} BT617_DEVICE;
-
-BT617_DEVICE bt617_device[MAX_BT617_DEVICES];
-
-static int i_bt617;
+} BT617_TABLE;
 
 /*------------------------------------------------------------------*/
 
-int mvme_init(void)
+int mvme_open(MVME_INTERFACE **vme, int index)
 {
-   BT617_MODE *pmode;
+   BT617_TABLE *ptab;
    bt_devdata_t flag;
    int status;
 
-   i_bt617 = 0; /* use first device by default */
-   bt617_device[0].i_mode = 0;
-   bt617_device[0].dmode = MVME_DMODE_D16;
-   pmode = bt617_device[i_bt617].bt617_mode;
+   *vme = (MVME_INTERFACE *)malloc(sizeof(MVME_INTERFACE));
+   if (*vme == NULL)
+      return MVME_NO_MEM;
 
-   /* open in A16D16 by default */
-   pmode->amod = MVME_AMOD_A16;
-   bt_gen_name(i_bt617, BT_DEV_A16, pmode->devname, BT_MAX_DEV_NAME);
-   status = bt_open(&pmode->btd, pmode->devname, BT_RDWR);
+   (*vme)->am       = MVME_AM_DEFAULT;
+   (*vme)->dmode    = MVME_DMODE_DEFAULT;
+   (*vme)->blt_mode = MVME_BLT_NONE;
+
+   (*vme)->handle = 0; /* use first entry in BT617_TABLE by default */
+
+   (*vme)->table = (void *)malloc(sizeof(BT617_TABLE)*MAX_BT617_TABLES);
+   if ((*vme)->table == NULL)
+      return MVME_NO_MEM;
+
+   memset((*vme)->table, 0, sizeof(BT617_TABLE)*MAX_BT617_TABLES);   
+   ptab = (BT617_TABLE *) (*vme)->table;
+
+   ptab->am = MVME_AM_DEFAULT;
+   
+   bt_gen_name(index, BT_DEV_A32, ptab->devname, BT_MAX_DEV_NAME);
+   status = bt_open(&ptab->btd, ptab->devname, BT_RDWR);
    if (status != BT_SUCCESS) {
-      bt_perror(pmode->btd, status, "bt_open error");
+      bt_perror(ptab->btd, status, "bt_open error");
       return MVME_NO_INTERFACE;
    }
-   bt_init(pmode->btd);
-   bt_clrerr(pmode->btd);
+   bt_init(ptab->btd);
+   bt_clrerr(ptab->btd);
 
    /* select swapping mode */
    flag = BT_SWAP_NONE;
-   bt_set_info(pmode->btd, BT_INFO_SWAP, flag);
+   bt_set_info(ptab->btd, BT_INFO_SWAP, flag);
 
    /* set data mode */
-   flag = BT_WIDTH_D16;
-   bt_set_info(pmode->btd, BT_INFO_DATAWIDTH, flag);
+   flag = BT_WIDTH_D32;
+   bt_set_info(ptab->btd, BT_INFO_DATAWIDTH, flag);
 
    /* switch off block transfer */
    flag = FALSE;
-   bt_set_info(pmode->btd, BT_INFO_BLOCK, flag);
+   bt_set_info(ptab->btd, BT_INFO_BLOCK, flag);
 
    return MVME_SUCCESS;
 }
 
 /*------------------------------------------------------------------*/
 
-int mvme_exit()
+int mvme_exit(MVME_INTERFACE *vme)
 {
-   int i, j;
+   int i;
    bt_error_t status;
-   BT617_MODE *pmode;
+   BT617_TABLE *ptab;
 
-   for (i=0 ; i<MAX_BT617_DEVICES ; i++)
-      for (j=0 ; j<MAX_BT617_MODES ; j++) {
-         pmode = &(bt617_device[i].bt617_mode[j]);
-         status = bt_close(pmode->btd);
+   for (i=0 ; i<MAX_BT617_TABLES ; i++) {
+      ptab = ((BT617_TABLE *)vme->table)+i;
+      if (ptab->btd != NULL) {
+         status = bt_close(ptab->btd);
          if (status != BT_SUCCESS)
-            bt_perror(pmode->btd, status, "bt_close error");
+            bt_perror(ptab->btd, status, "bt_close error");
+         }
       }
 
    return MVME_SUCCESS;
 }
 
+
 /*------------------------------------------------------------------*/
 
-int mvme_write(mvme_addr_t vme_addr, void *src, mvme_size_t n_bytes)
+int mvme_read(MVME_INTERFACE *vme, void *dst, mvme_addr_t vme_addr, mvme_size_t n_bytes)
 {
    mvme_size_t n;
    bt_error_t status;
-   BT617_MODE *pmode;
+   BT617_TABLE *ptab;
 
-   pmode = &bt617_device[i_bt617].bt617_mode[bt617_device[i_bt617].i_mode];
+   ptab = ((BT617_TABLE *)vme->table)+vme->handle;
 
-   status = bt_write(pmode->btd, src, vme_addr, n_bytes, &n);
+   status = bt_read(ptab->btd, dst, vme_addr, n_bytes, (size_t *)&n);
    if (status != BT_SUCCESS)
-      bt_perror(pmode->btd, status, "bt_write error");
+      bt_perror(ptab->btd, status, "bt_read error");
 
    return n;
 }
 
 /*------------------------------------------------------------------*/
 
-int mvme_read(void *dst, mvme_addr_t vme_addr, mvme_size_t n_bytes)
+DWORD mvme_read_value(MVME_INTERFACE *vme, mvme_addr_t vme_addr)
 {
    mvme_size_t n;
+   DWORD data;
    bt_error_t status;
-   BT617_MODE *pmode;
+   BT617_TABLE *ptab;
 
-   pmode = &bt617_device[i_bt617].bt617_mode[bt617_device[i_bt617].i_mode];
+   ptab = ((BT617_TABLE *)vme->table)+vme->handle;
 
-   status = bt_read(pmode->btd, dst, vme_addr, n_bytes, &n);
+   if (vme->dmode = MVME_DMODE_D8)
+      n = 1;
+   else if (vme->dmode = MVME_DMODE_D16)
+      n = 2;
+   else
+      n = 4;
+
+   data = 0;
+   status = bt_read(ptab->btd, &data, vme_addr, n, (size_t *)&n);
    if (status != BT_SUCCESS)
-      bt_perror(pmode->btd, status, "bt_read error");
+      bt_perror(ptab->btd, status, "bt_read error");
 
-   return n;
+   return data;
 }
 
 /*------------------------------------------------------------------*/
 
-int bt617_set_amod(int amod)
+int mvme_write(MVME_INTERFACE *vme, mvme_addr_t vme_addr, void *src, mvme_size_t n_bytes)
+{
+   mvme_size_t n;
+   bt_error_t status;
+   BT617_TABLE *ptab;
+
+   ptab = ((BT617_TABLE *)vme->table)+vme->handle;
+
+   status = bt_write(ptab->btd, src, vme_addr, n_bytes, (size_t *)&n);
+   if (status != BT_SUCCESS)
+      bt_perror(ptab->btd, status, "bt_write error");
+
+   return n;
+}
+ 
+/*------------------------------------------------------------------*/
+
+int mvme_write_value(MVME_INTERFACE *vme, mvme_addr_t vme_addr, DWORD value)
+{
+   mvme_size_t n;
+   bt_error_t status;
+   BT617_TABLE *ptab;
+ 
+   ptab = ((BT617_TABLE *)vme->table)+vme->handle;
+
+   if (vme->dmode = MVME_DMODE_D8)
+      n = 1;
+   else if (vme->dmode = MVME_DMODE_D16)
+      n = 2;
+   else
+      n = 4;
+
+   status = bt_write(ptab->btd, &value, vme_addr, n, (size_t *)&n);
+   if (status != BT_SUCCESS)
+      bt_perror(ptab->btd, status, "bt_write error");
+
+   return n;
+}
+ 
+/*------------------------------------------------------------------*/
+
+int bt617_set_am(MVME_INTERFACE *vme, int am)
 {
    int i;
-   BT617_MODE *pmode;
+   BT617_TABLE *ptab;
    bt_error_t status;
    bt_devdata_t flag;
 
-   for (i=0 ; i<MAX_BT617_MODES ; i++)
-      if (bt617_device[i_bt617].bt617_mode[i].amod == amod)
+   for (i=0 ; i<MAX_BT617_TABLES ; i++)
+      if (((BT617_TABLE *)vme->table)[i].am == am)
          break;
 
-   if (bt617_device[i_bt617].bt617_mode[i].amod == amod) {
+   if (((BT617_TABLE *)vme->table)[i].am == am) {
 
-      bt617_device[i_bt617].i_mode = i;
-      pmode = &bt617_device[i_bt617].bt617_mode[i];
-      bt_set_info(pmode->btd, BT_INFO_DMA_AMOD, amod);
-      bt_set_info(pmode->btd, BT_INFO_PIO_AMOD, amod);
-      bt_set_info(pmode->btd, BT_INFO_MMAP_AMOD, amod);
+      vme->handle = i;
+      ptab = ((BT617_TABLE *)vme->table)+i;
+      bt_set_info(ptab->btd, BT_INFO_DMA_AMOD, am);
+      bt_set_info(ptab->btd, BT_INFO_PIO_AMOD, am);
+      bt_set_info(ptab->btd, BT_INFO_MMAP_AMOD, am);
       return MVME_SUCCESS;
    }
 
    /* search free slot */
-   for (i=0 ; i<MAX_BT617_MODES ; i++)
-      if (bt617_device[i_bt617].bt617_mode[i].amod == 0)
+   for (i=0 ; i<MAX_BT617_TABLES ; i++)
+      if (((BT617_TABLE *)vme->table)[i].am == 0)
          break;
-   if (i==MAX_BT617_MODES)
-      return MVME_UNSUPPORTED;
+   if (i==MAX_BT617_TABLES)
+      return MVME_NO_MEM;
 
    /* mode not yet open, open it */
-   bt617_device[0].i_mode = i;
-   pmode = &bt617_device[i_bt617].bt617_mode[i];
+   vme->handle = i;
+   ptab = ((BT617_TABLE *)vme->table)+i;
 
-   /* open in A16D16 by default */
-   pmode->amod = amod;
-   if (amod == MVME_AMOD_A16_SD || amod == MVME_AMOD_A16_ND)
-      bt_gen_name(i_bt617, BT_DEV_A16, pmode->devname, BT_MAX_DEV_NAME);
-   else if (amod == MVME_AMOD_A24_SB     ||
-            amod == MVME_AMOD_A24_SP     ||
-            amod == MVME_AMOD_A24_SD     ||
-            amod == MVME_AMOD_A24_NB     ||
-            amod == MVME_AMOD_A24_NP     ||
-            amod == MVME_AMOD_A24_ND     ||
-            amod == MVME_AMOD_A24_SMBLT  ||
-            amod == MVME_AMOD_A24_NMBLT  ||
-            amod == MVME_AMOD_A24        ||
-            amod == MVME_AMOD_A24_D64)
-      bt_gen_name(i_bt617, BT_DEV_A24, pmode->devname, BT_MAX_DEV_NAME);
+   ptab->am = am;
+   if (am == MVME_AM_A16_SD || am == MVME_AM_A16_ND)
+      bt_gen_name(vme->index, BT_DEV_A16, ptab->devname, BT_MAX_DEV_NAME);
+   else if (am == MVME_AM_A24_SB     ||
+            am == MVME_AM_A24_SP     ||
+            am == MVME_AM_A24_SD     ||
+            am == MVME_AM_A24_NB     ||
+            am == MVME_AM_A24_NP     ||
+            am == MVME_AM_A24_ND     ||
+            am == MVME_AM_A24_SMBLT  ||
+            am == MVME_AM_A24_NMBLT  ||
+            am == MVME_AM_A24        ||
+            am == MVME_AM_A24_D64)
+      bt_gen_name(vme->index, BT_DEV_A24, ptab->devname, BT_MAX_DEV_NAME);
    else
-      bt_gen_name(i_bt617, BT_DEV_A32, pmode->devname, BT_MAX_DEV_NAME);
+      bt_gen_name(vme->index, BT_DEV_A32, ptab->devname, BT_MAX_DEV_NAME);
 
-   status = bt_open(&pmode->btd, pmode->devname, BT_RDWR);
+   status = bt_open(&ptab->btd, ptab->devname, BT_RDWR);
    if (status != BT_SUCCESS) {
-      bt_perror(pmode->btd, status, "bt_open error");
+      bt_perror(ptab->btd, status, "bt_open error");
       return MVME_NO_INTERFACE;
    }
-   bt_init(pmode->btd);
-   bt_clrerr(pmode->btd);
+   bt_init(ptab->btd);
+   bt_clrerr(ptab->btd);
 
    /* select swapping mode */
    flag = BT_SWAP_NONE;
-   bt_set_info(pmode->btd, BT_INFO_SWAP, flag);
+   bt_set_info(ptab->btd, BT_INFO_SWAP, flag);
 
    /* set data mode */
    flag = BT_WIDTH_D16;
-   bt_set_info(pmode->btd, BT_INFO_DATAWIDTH, flag);
+   bt_set_info(ptab->btd, BT_INFO_DATAWIDTH, flag);
 
    /* switch off block transfer */
    flag = FALSE;
-   bt_set_info(pmode->btd, BT_INFO_BLOCK, flag);
+   bt_set_info(ptab->btd, BT_INFO_BLOCK, flag);
 
    /* set amod */
-   bt_set_info(pmode->btd, BT_INFO_DMA_AMOD, amod);
-   bt_set_info(pmode->btd, BT_INFO_PIO_AMOD, amod);
-   bt_set_info(pmode->btd, BT_INFO_MMAP_AMOD, amod);
+   bt_set_info(ptab->btd, BT_INFO_DMA_AMOD, am);
+   bt_set_info(ptab->btd, BT_INFO_PIO_AMOD, am);
+   bt_set_info(ptab->btd, BT_INFO_MMAP_AMOD, am);
 
    return MVME_SUCCESS;
 }
 
 /*------------------------------------------------------------------*/
 
-int bt617_set_dmode(int dmode)
+int bt617_set_dmode(MVME_INTERFACE *vme, int dmode)
 {
-   BT617_MODE *pmode;
+   BT617_TABLE *ptab;
    bt_devdata_t flag;
 
-   bt617_device[i_bt617].dmode = dmode;
-   pmode = &bt617_device[i_bt617].bt617_mode[bt617_device[i_bt617].i_mode];
+   vme->dmode = dmode;
+   ptab = ((BT617_TABLE *)vme->table)+vme->handle;
 
    if (dmode == MVME_DMODE_D8)
       flag = BT_WIDTH_D8;
    else if (dmode == MVME_DMODE_D16)
       flag = BT_WIDTH_D16;
    else if (dmode == MVME_DMODE_D32)
-      flag = BT_WIDTH_D16;
+      flag = BT_WIDTH_D32;
    else if (dmode == MVME_DMODE_D64)
       flag = BT_WIDTH_D64;
    else
       return MVME_UNSUPPORTED;
    
-   bt_set_info(pmode->btd, BT_INFO_DATAWIDTH, flag);
+   bt_set_info(ptab->btd, BT_INFO_DATAWIDTH, flag);
    return MVME_SUCCESS;
 }
 
 /*------------------------------------------------------------------*/
 
-int bt617_set_dma(int dma)
+int bt617_set_blt(MVME_INTERFACE *vme, int blt)
 {
-   BT617_MODE *pmode;
+   BT617_TABLE *ptab;
    bt_devdata_t flag;
 
-   pmode = &bt617_device[i_bt617].bt617_mode[bt617_device[i_bt617].i_mode];
+   ptab = ((BT617_TABLE *)vme->table)+vme->handle;
 
-   if (dma) {
+   if (blt == MVME_BLT_BLT32 ||
+       blt == MVME_BLT_MBLT64) {
       /* switch on block transfer */
       flag = TRUE;
-      bt_set_info(pmode->btd, BT_INFO_BLOCK, flag);
+      bt_set_info(ptab->btd, BT_INFO_BLOCK, flag);
 
       flag = 4;
-      bt_set_info(pmode->btd, BT_INFO_DMA_POLL_CEILING, flag);
+      bt_set_info(ptab->btd, BT_INFO_DMA_POLL_CEILING, flag);
 
       flag = 4;
-      bt_set_info(pmode->btd, BT_INFO_DMA_THRESHOLD, flag);
+      bt_set_info(ptab->btd, BT_INFO_DMA_THRESHOLD, flag);
    } else {
       /* switch on block transfer */
       flag = FALSE;
-      bt_set_info(pmode->btd, BT_INFO_BLOCK, flag);
+      bt_set_info(ptab->btd, BT_INFO_BLOCK, flag);
 
       flag = 100000000;
-      bt_set_info(pmode->btd, BT_INFO_DMA_POLL_CEILING, flag);
+      bt_set_info(ptab->btd, BT_INFO_DMA_POLL_CEILING, flag);
 
       flag = 100000000;
-      bt_set_info(pmode->btd, BT_INFO_DMA_THRESHOLD, flag);
+      bt_set_info(ptab->btd, BT_INFO_DMA_THRESHOLD, flag);
    }
 
    return MVME_SUCCESS;
@@ -278,79 +334,76 @@ int bt617_set_dma(int dma)
 
 /*------------------------------------------------------------------*/
 
-int mvme_ioctl(int req, int *param)
+int mvme_set_am(MVME_INTERFACE *vme, int am)
 {
-   switch (req) {
-      case MVME_IOCTL_CRATE_SET:
-         *param = i_bt617;
-         break;
-
-      case MVME_IOCTL_CRATE_GET:
-         if (*param >= MAX_BT617_DEVICES)
-            return MVME_NO_CRATE;
-         i_bt617 = *param;
-         break;
-
-      case MVME_IOCTL_DMODE_SET:
-         bt617_device[i_bt617].dmode = *param;
-         return bt617_set_dmode(*param);
-         break;
-
-      case MVME_IOCTL_DMODE_GET:
-         *param = bt617_device[i_bt617].dmode;
-         break;
-
-      case MVME_IOCTL_AMOD_SET:
-         return bt617_set_amod(*param);
-         break;
-
-      case MVME_IOCTL_AMOD_GET:
-         *param = bt617_device[i_bt617].bt617_mode[bt617_device[i_bt617].i_mode].amod;
-         break;
-
-      case MVME_IOCTL_FIFO_SET:
-         bt617_device[i_bt617].fifo_mode = *param;
-         break;
-
-      case MVME_IOCTL_FIFO_GET:
-         *param = bt617_device[i_bt617].fifo_mode;
-         break;
-
-      case MVME_IOCTL_DMA_SET:
-         bt617_device[i_bt617].dma = *param;
-         return bt617_set_dma(*param);
-         break;
-
-      case MVME_IOCTL_DMA_GET:
-         *param = bt617_device[i_bt617].dma;
-         break;
-   }
-
+   vme->am = am;
+   bt617_set_am(vme, am);
    return MVME_SUCCESS;
 }
 
 /*------------------------------------------------------------------*/
 
-int bt_vme_mmap(int vh, void **ptr, int vme_addr, int size)
+int mvme_get_am(MVME_INTERFACE *vme, int *am)
 {
-   bt_error_t status;
-
-   status = bt_mmap((bt_desc_t) vh, ptr, vme_addr, size, BT_RDWR, BT_SWAP_DEFAULT);
-   if (status != BT_SUCCESS)
-      bt_perror((bt_desc_t) vh, status, "vme_mmap error");
-
-   return status == BT_SUCCESS ? 1 : (int) status;
+   *am = vme->am;
+   return MVME_SUCCESS;
 }
 
 /*------------------------------------------------------------------*/
 
-int bt_vme_unmap(int vh, void *ptr, int size)
+int mvme_set_dmode(MVME_INTERFACE *vme, int dmode)
 {
-   bt_error_t status;
+   vme->dmode = dmode;
+   bt617_set_dmode(vme, dmode);
+   return MVME_SUCCESS;
+}
 
-   status = bt_unmmap((bt_desc_t) vh, ptr, size);
-   if (status != BT_SUCCESS)
-      bt_perror((bt_desc_t) vh, status, "vme_unmap error");
+/*------------------------------------------------------------------*/
 
-   return status == BT_SUCCESS ? 1 : (int) status;
+int mvme_get_dmode(MVME_INTERFACE *vme, int *dmode)
+{
+   *dmode = vme->dmode;
+   return MVME_SUCCESS;
+}
+
+/*------------------------------------------------------------------*/
+
+int mvme_set_blt(MVME_INTERFACE *vme, int mode)
+{
+   vme->blt_mode = mode;
+   bt617_set_blt(vme, mode);
+   return MVME_SUCCESS;
+}
+
+/*------------------------------------------------------------------*/
+
+int mvme_get_blt(MVME_INTERFACE *vme, int *mode)
+{
+   *mode = vme->blt_mode;
+   return MVME_SUCCESS;
+}
+
+/*------------------------------------------------------------------*/
+
+main()
+{
+   int i;
+   MVME_INTERFACE *vme;
+   mvme_open(&vme, 0);
+
+   mvme_set_am(vme, MVME_AM_A32_ND);
+   mvme_set_dmode(vme, MVME_DMODE_D32);
+
+   i = 0x0F;
+   mvme_read(vme, &i, 0x00000000, 4);
+   i = 0x00;
+   mvme_read(vme, &i, 0xee000000, 4);
+
+   do {
+   i = 0x0F;
+   mvme_write(vme, 0x780010, &i, 4);
+   i = 0x00;
+   mvme_write(vme, 0x780010, &i, 4);
+   } while (1);
+
 }
