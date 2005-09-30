@@ -7,6 +7,9 @@
                 abstract layer to all supported VME interfaces.
                 
   $Log$
+  Revision 1.13  2005/09/30 04:25:18  ritt
+  Added index to MVME_INTERFACE
+
   Revision 1.12  2005/09/29 03:42:31  amaudruz
   add new error type
 
@@ -96,6 +99,8 @@ typedef unsigned long mvme_size_t;
 #define MVME_DMODE_RAMD32             6
 #define MVME_DMODE_LM                 7   /* local memory mapped to VME */
 
+#define MVME_DMODE_DEFAULT MVME_DMODE_D32
+
 /* block transfer modes */
 #define MVME_BLT_NONE                 1   /* normal programmed IO */
 #define MVME_BLT_BLT32                2   /* 32-bit block transfer */
@@ -144,11 +149,12 @@ typedef unsigned long mvme_size_t;
 
 typedef struct {
    int  handle;              // internal handle
+   int  index;               // index of interface 0..n
    void *info;               // internal info structure
    int  am;                  // Address modifier
-   int  dmode;
-   int  blt_mode;
-   void *table;
+   int  dmode;               // Data mode (D8,D16,D32,D64)
+   int  blt_mode;            // Block transfer mode
+   void *table;              // Optional table for some drivers
 } MVME_INTERFACE;
 
 /*---- function declarations ---------------------------------------*/
