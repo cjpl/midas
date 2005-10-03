@@ -4,6 +4,9 @@ Created by:   Pierre-Andre Amaudruz
 
 Contents:     Main Event builder task.
 $Log$
+Revision 1.19  2005/10/03 21:21:39  amaudruz
+correct transtion number
+
 Revision 1.18  2004/10/07 23:11:49  pierre
 active enable and fragment request switch
 
@@ -1009,7 +1012,7 @@ INT source_scan(INT fmt, EQUIPMENT_INFO *eq_info)
        , (EVENT_HEADER *) dest_event,(void *) ((EVENT_HEADER *) dest_event + 1), &act_size);
      if (status != EB_SUCCESS) {
        if (status == EB_SKIP) {
-         /* Reset mask and timeouts as even thave been succesfully send */
+         /* Reset mask and timeouts as if event has been successfully send out */
          for (i = 0; i < nfragment; i++) {
            ebch[i].timeout = 0;
            ebset.received[i] = FALSE;
@@ -1161,9 +1164,9 @@ usage:
   }
 
   /* Register transition for reset counters */
-  if (cm_register_transition(TR_START, tr_start, 300) != CM_SUCCESS)
+  if (cm_register_transition(TR_START, tr_start, 400) != CM_SUCCESS)
     return status;
-  if (cm_register_transition(TR_STOP, tr_stop, 700) != CM_SUCCESS)
+  if (cm_register_transition(TR_STOP, tr_stop, 600) != CM_SUCCESS)
     goto exit;
 
   /* Scan fragments... will stay in */
