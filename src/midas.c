@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.233  2005/10/04 04:56:19  ritt
+  Applied patch from John O'Donnell in bk_locate
+
   Revision 1.232  2005/08/18 22:34:06  olchanski
   improve debug messages from run transition code
   fail transition if cannot connect to a client
@@ -12992,7 +12995,8 @@ INT bk_locate(void *event, const char *name, void *pdata)
    if (bk_is32(event)) {
       pbk32 = (BANK32 *) (((BANK_HEADER *) event) + 1);
       strncpy((char *) &dname, name, 4);
-      do {
+      while ((DWORD) pbk32 - (DWORD) event <
+               ((BANK_HEADER *) event)->data_size + sizeof(BANK_HEADER)) {
          if (*((DWORD *) pbk32->name) == dname) {
             *((void **) pdata) = pbk32 + 1;
             if (tid_size[pbk32->type & 0xFF] == 0)
@@ -13000,12 +13004,12 @@ INT bk_locate(void *event, const char *name, void *pdata)
             return pbk32->data_size / tid_size[pbk32->type & 0xFF];
          }
          pbk32 = (BANK32 *) ((char *) (pbk32 + 1) + ALIGN8(pbk32->data_size));
-      } while ((DWORD) pbk32 - (DWORD) event <
-               ((BANK_HEADER *) event)->data_size + sizeof(BANK_HEADER));
+      }
    } else {
       pbk = (BANK *) (((BANK_HEADER *) event) + 1);
       strncpy((char *) &dname, name, 4);
-      do {
+      while ((DWORD) pbk - (DWORD) event <
+               ((BANK_HEADER *) event)->data_size + sizeof(BANK_HEADER)) {
          if (*((DWORD *) pbk->name) == dname) {
             *((void **) pdata) = pbk + 1;
             if (tid_size[pbk->type & 0xFF] == 0)
@@ -13013,8 +13017,8 @@ INT bk_locate(void *event, const char *name, void *pdata)
             return pbk->data_size / tid_size[pbk->type & 0xFF];
          }
          pbk = (BANK *) ((char *) (pbk + 1) + ALIGN8(pbk->data_size));
-      } while ((DWORD) pbk - (DWORD) event <
-               ((BANK_HEADER *) event)->data_size + sizeof(BANK_HEADER));
+      }
+
    }
 
    /* bank not found */
