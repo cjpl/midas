@@ -8,6 +8,9 @@
                 and four buttons
 
   $Log$
+  Revision 1.7  2005/10/04 15:01:55  ritt
+  Fixed bug with flashing address
+
   Revision 1.6  2005/06/24 18:49:02  ritt
   Implemented UART1_MSCB/DEVICE
 
@@ -39,6 +42,7 @@ extern void user_write(unsigned char index) reentrant;
 extern MSCB_INFO_VAR code variables[];
 extern SYS_INFO sys_info;
 extern bit flash_param, reboot;
+extern unsigned char idata _flkey;
 
 extern bit b0, b1, b2, b3;     // buttons defined in scs-1000.c
 extern unsigned char idata n_variables;
@@ -392,8 +396,10 @@ void lcd_menu()
                
                if (system_menu) {
                   /* flash new address */
-                  if (var_index == 0 || var_index == 1)
+                  if (var_index == 0 || var_index == 1) {
                      flash_param = 1;
+                     _flkey = 0xF1;
+                  }
                } else {
                   user_write(var_index);
 #ifdef UART1_MSCB
@@ -457,6 +463,7 @@ void lcd_menu()
                /* check for flash command */
                if (system_menu && var_index == 2) {
                   flash_param = 1;
+                  _flkey = 0xF1;
                   lcd_clear();
                   lcd_goto(0, 0);
                   puts("Parameters written");
@@ -578,8 +585,10 @@ void lcd_menu()
                
                if (system_menu) {
                   /* flash new address */
-                  if (var_index == 0 || var_index == 1)
+                  if (var_index == 0 || var_index == 1) {
                      flash_param = 1;
+                     _flkey = 0xF1;
+                  }
                } else {
                   user_write(var_index);
 #ifdef UART1_MSCB
