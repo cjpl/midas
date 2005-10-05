@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus protocol commands
 
   $Log$
+  Revision 1.61  2005/10/05 15:21:40  ritt
+  Implemented scs_320
+
   Revision 1.60  2005/07/25 10:11:28  ritt
   Fixed compiler warnings
 
@@ -308,6 +311,15 @@ sbit RS485_ENABLE = P0 ^ 4;
 #define LED_1 P3 ^ 4
 #define LED_ON 0
 sbit RS485_ENABLE = P3 ^ 5;
+
+/*--------------------------------*/
+#elif defined(SCS_320)
+#include <c8051F320.h>
+#define CPU_C8051F320
+
+#define LED_0 P1 ^ 3
+#define LED_ON 0
+sbit RS485_ENABLE = P1 ^ 0;
 
 /*--------------------------------*/
 #elif defined(SUBM_300)
