@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus protocol main program
 
   $Log$
+  Revision 1.76  2005/10/05 15:21:40  ritt
+  Implemented scs_320
+
   Revision 1.75  2005/07/27 10:23:52  ritt
   Removed 'using'
 
@@ -332,7 +335,7 @@ void setup(void)
    _flkey = 0;
 
    /* first disable watchdog */
-#if defined(CPU_C8051F310)
+#if defined(CPU_C8051F310) || defined(CPU_C8051F320)
    PCA0MD = 0x00;
 #else
    WDTCN = 0xDE;
@@ -398,7 +401,7 @@ void setup(void)
    OSCXCN = 0x67;               // Crystal mode, Power Factor 22E6
    OSCICN = 0x08;               // CLKSL=1 (external)
 
-#elif defined(CPU_C8051F310)
+#elif defined(CPU_C8051F310) || defined(CPU_C8051F320)
 
    XBR0 = 0x01;                 // Enable RX/TX
    XBR1 = 0x40;                 // Enable crossbar
@@ -425,7 +428,7 @@ void setup(void)
 
 #endif
 
-#if defined(CPU_C8051F310)
+#if defined(CPU_C8051F310) || defined(CPU_C8051F320)
 #ifdef USE_WATCHDOG
    PCA0CPL4 = 255;              // 32.1 msec
    PCA0MD = 0x40;               // enable watchdog
@@ -1210,7 +1213,7 @@ void upgrade()
    EA = 0;
 
    /* disable watchdog */
-#if defined(CPU_C8051F310)
+#if defined(CPU_C8051F310) || defined(CPU_C8051F320)
    PCA0MD = 0x00;
 #else
    WDTCN = 0xDE;
@@ -1313,14 +1316,14 @@ receive_cmd:
    
             pw = (char xdata *) (512 * page);
    
-#if defined(CPU_C8051F310)
+#if defined(CPU_C8051F310) || defined (CPU_C8051F320)
             FLKEY = 0xA5;          // write flash key code
             FLKEY = _flkey;
 #endif
             
             *pw = 0;
    
-#ifndef CPU_C8051F310
+#if !defined(CPU_C8051F310) && !defined(CPU_C8051F320)
             FLSCL = (FLSCL & 0xF0);
 #endif
             PSCTL = 0x00;
@@ -1391,7 +1394,7 @@ erase_ok:
             if (!RI0) 
                goto receive_cmd;
 
-#if defined(CPU_C8051F310)
+#if defined(CPU_C8051F310) || defined (CPU_C8051F320)
             FLKEY = 0xA5;          // write flash key code
             FLKEY = _flkey;
 #endif
@@ -1405,7 +1408,7 @@ erase_ok:
 #endif
 
          /* disable write */
-#ifndef CPU_C8051F310
+#if !defined(CPU_C8051F310) && !defined(CPU_C8051F320)
          FLSCL = (FLSCL & 0xF0);
 #endif
          PSCTL = 0x00;
