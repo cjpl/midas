@@ -7,10 +7,13 @@
 #                using HBOOK functionality
 #
 #  $Log$
+#  Revision 1.7  2005/10/06 22:32:54  amaudruz
+#  check for MIDASSYS , CERNLIB , add Darwin support, use OS_DIR
+#
 #  Revision 1.6  2003/12/12 17:40:29  midas
 #  Added experim.h dependency
 #
-#  Revision 1.5  2003/08/20 21:00:46  pierre
+##  Revision 1.5  2003/08/20 21:00:46  pierre
 #  add phtread lib
 #
 #  Revision 1.4  2003/07/14 14:51:45  midas
@@ -27,37 +30,75 @@
 #
 #
 #####################################################################
-#
+# The MIDASSYS should be defined prior the use of this Makefile
+ifndef MIDASSYS
+missmidas::
+	@echo "...";
+	@echo "Missing definition of environment variable 'MIDASSYS' !";
+	@echo "...";
+endif
 
 #--------------------------------------------------------------------
 # The following lines contain specific switches for different UNIX
 # systems. Find the one which matches your OS and outcomment the 
 # lines below.
 
+ifndef CERNLIB
+misscern::
+	@echo "..."
+	@echo "Missing definition of the  environment variable 'CERNLIB' "
+	@echo "..."
+else
+CERNLIB_PACK	= $(CERNLIB)/lib/libpacklib.a
+endif
+
 #-----------------------------------------
 # This is for Linux
+ifeq ($(OSTYPE),Linux)
+OSTYPE = linux
+endif
+
+ifeq ($(OSTYPE),linux)
+
 OSFLAGS = -DOS_LINUX -Dextname
 CFLAGS = -O3
-
+OS_DIR = linux
+#
 # for f2c, uncomment following:
 #LIBS = -lbsd -lm -lutil /usr/lib/libf2c.a
 #FF = cc
 # for egcs g77, use this
 FF = g77
 LIBS = -lm -lz -lutil -lnsl -lpthread
+endif
+
+#-----------------------
+# MacOSX/Darwin is just a funny Linux
+#
+ifeq ($(OSTYPE),Darwin)
+OSTYPE = darwin
+endif
+
+ifeq ($(OSTYPE),darwin)
+OS_DIR = darwin
+FF = g77
+OSFLAGS = -DOS_LINUX -DOS_DARWIN -DHAVE_STRLCPY -DAbsoftUNIXFortran -Dextname -fPIC -Wno-unused-function
+LIBS = -lm -lz -lpthread
+SPECIFIC_OS_PRG = $(BIN_DIR)/mlxspeaker
+NEED_STRLCPY=
+NEED_RANLIB=1
+NEED_SHLIB=
+NEED_RPATH=
+USERFLAGS=
+endif
 
 #-------------------------------------------------------------------
-# The following lines define direcories. Adjust if necessary
+# The following lines define directories. Adjust if necessary
 #                 
-DRV_DIR         = ../../drivers/bus
-INC_DIR 	= /usr/local/include
-LIB_DIR 	= /usr/local/lib
-#
-# Link with or without CERNLIB
-ifndef USERFLAGS
-CERNLIB_PACK	= /cern/pro/lib/libpacklib.a
-endif
-#
+DRV_DIR         = $(MIDASSYS)/drivers/bus
+INC_DIR 	= $(MIDASSYS)/include
+LIB_DIR 	= $(MIDASSYS)/$(OS_DIR)/lib
+
 #-------------------------------------------------------------------
 # List of analyzer modules
 #                 
@@ -109,5 +150,7 @@ fal: $(LIB) $(LIB_DIR)/fal.o $(DRIVER).o $(UFE).c $(MODULES) $(UFE).o analyzer.o
 .c.o: experim.h
 	$(CC) $(USERFLAGS) $(CFLAGS) $(OSFLAGS) -o $@ -c $<
 
-clean:
+clean::
 	rm -f *.o *~ \#*
+
+#end file
