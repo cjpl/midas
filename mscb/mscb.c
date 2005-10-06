@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus communication functions
 
   $Log$
+  Revision 1.105  2005/10/06 06:43:05  ritt
+  Version 2.1.9
+
   Revision 1.104  2005/09/21 09:31:24  ritt
   Removed OS_UNIX
 
@@ -319,7 +322,7 @@
 
 \********************************************************************/
 
-#define MSCB_LIBRARY_VERSION   "2.1.8"
+#define MSCB_LIBRARY_VERSION   "2.1.9"
 #define MSCB_PROTOCOL_VERSION  "2.1"
 #define MSCB_VERSION_BIN       0x21
 
