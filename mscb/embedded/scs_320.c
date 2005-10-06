@@ -9,6 +9,9 @@
                 for SCS-320 VME Crate interface
 
   $Log$
+  Revision 1.2  2005/10/06 11:38:20  ritt
+  Implemented temperature sensor
+
   Revision 1.1  2005/10/05 15:21:25  ritt
   Initial revision
 
@@ -42,15 +45,19 @@ struct {
    unsigned char p5v_ok;
    unsigned char sys_reset;
    unsigned char inhibit;
+   unsigned char power_fail;
+   float         temperature;
 } idata user_data;
 
 MSCB_INFO_VAR code variables[] = {
-   1, UNIT_BOOLEAN, 0, 0, 0, "Fan OK",   &user_data.fan_ok,        // 0
-   1, UNIT_BOOLEAN, 0, 0, 0, "SysFail",  &user_data.sys_fail,      // 1
-   1, UNIT_BOOLEAN, 0, 0, 0, "ACFail",   &user_data.ac_power_fail, // 2
-   1, UNIT_BOOLEAN, 0, 0, 0, "+5V OK",   &user_data.p5v_ok,        // 3
-   1, UNIT_BOOLEAN, 0, 0, 0, "SysReset", &user_data.sys_reset,     // 4
-   1, UNIT_BOOLEAN, 0, 0, 0, "Inhibit",  &user_data.inhibit,       // 5
+   1, UNIT_BOOLEAN, 0, 0,           0, "Fan OK",   &user_data.fan_ok,        // 0
+   1, UNIT_BOOLEAN, 0, 0,           0, "SysFail",  &user_data.sys_fail,      // 1
+   1, UNIT_BOOLEAN, 0, 0,           0, "ACFail",   &user_data.ac_power_fail, // 2
+   1, UNIT_BOOLEAN, 0, 0,           0, "+5V OK",   &user_data.p5v_ok,        // 3
+   1, UNIT_BOOLEAN, 0, 0,           0, "SysReset", &user_data.sys_reset,     // 4
+   1, UNIT_BOOLEAN, 0, 0,           0, "Inhibit",  &user_data.inhibit,       // 5
+   1, UNIT_BOOLEAN, 0, 0,           0, "PwrFail",  &user_data.power_fail,    // 6
+   4, UNIT_CELSIUS, 0, 0, MSCBF_FLOAT, "Temp",     &user_data.temperature,   // 7
    0
 };
 
@@ -68,6 +75,10 @@ sbit VME_P5V_OK        = P2 ^ 2; // Pin 9
 sbit VME_SYS_RESET     = P2 ^ 1; // Pin 7
 sbit VME_INHIBIT       = P2 ^ 0; // Pin 8
 
+/* MAX6662 */
+sbit SCLK              = P0 ^ 0;
+sbit SIO               = P0 ^ 1;
+sbit CS_N              = P0 ^ 2;
 
 #pragma NOAREGS
 
@@ -86,6 +97,7 @@ void user_init(unsigned char init)
    VME_INHIBIT   = 1; // negative polarity
 
    do_sys_reset = 0;
+   user_data.power_fail = 0;
 
    if (init) {
    }
@@ -120,14 +132,68 @@ unsigned char user_func(unsigned char *data_in, unsigned char *data_out)
    return 2;
 }
 
+/*------------------------------------------------------------------*/
+
+void read_temperature()
+{
+unsigned char  i, c;
+unsigned short d;
+
+   P0MDOUT = 0x07;    // CS_N & SCLK & SIO = Push Pull
+
+   /* send command */
+   c = 0xC1;
+   SCLK = 0;
+   CS_N = 0;
+
+   for (i=0 ; i<8 ; i++) {
+      
+      SCLK = 0;
+      SIO = (c & 0x80) > 0;
+      SCLK = 1;
+
+      c <<= 1;
+   }
+
+   P0MDOUT = 0x05;    // CS_N & SCL = Push Pull
+   SIO = 1;
+
+   /* read 16 bit data */
+   d = 0;
+   for (i=0 ; i<16 ; i++) {
+      SCLK = 0;
+      d |= SIO;
+      SCLK = 1;
+      d <<= 1;
+   }
+
+   SCLK = 0;
+   CS_N = 1;
+
+   user_data.temperature = ((d >> 4) & 0xFFF) * 0.0625;
+}
+ 
 /*---- User loop function ------------------------------------------*/
 
 void user_loop(void)
 {
+static unsigned long last = 0;
+
    user_data.fan_ok        = VME_FAN_OK;
    user_data.sys_fail      = VME_SYS_FAIL;
    user_data.ac_power_fail = VME_AC_POWER_FAIL;
    user_data.p5v_ok        = VME_P5V_OK;
+
+   if (user_data.ac_power_fail == 0 && user_data.p5v_ok == 1)
+      user_data.power_fail = 1;
+
+   if (user_data.ac_power_fail == 1 && user_data.p5v_ok == 1)
+      user_data.power_fail = 0;
+
+   if (time() - last > 100) {
+      last = time();
+      read_temperature();
+   }
 
    if (do_sys_reset) {
       do_sys_reset = 0;
