@@ -6,6 +6,9 @@
 #  Contents:     Makefile for MIDAS example frontend and analyzer
 #
 #  $Log$
+#  Revision 1.25  2005/10/06 22:31:49  amaudruz
+#  check for MIDASSYS , ROOTSYS, add Darwin support, use OS_DIR
+#
 #  Revision 1.24  2005/09/01 10:24:54  ritt
 #  Added cnaf_callback
 #
@@ -79,6 +82,15 @@
 #  - Add DRIVER selection and UFE option
 #
 #####################################################################
+#
+#--------------------------------------------------------------------
+# The MIDASSYS should be defined prior the use of this Makefile
+ifndef MIDASSYS
+missmidas::
+	@echo "...";
+	@echo "Missing definition of environment variable 'MIDASSYS' !";
+	@echo "...";
+endif
 
 #--------------------------------------------------------------------
 # The following lines contain specific switches for different UNIX
@@ -87,10 +99,37 @@
 
 #-----------------------------------------
 # This is for Linux
-#
+ifeq ($(OSTYPE),Linux)
+OSTYPE = linux
+endif
+
+ifeq ($(OSTYPE),linux)
+
+OS_DIR = linux
 OSFLAGS = -DOS_LINUX -Dextname
 CFLAGS = -m32 -g -O2 -Wall
 LIBS = -lm -lz -lutil -lnsl -lpthread
+endif
+
+#-----------------------
+# MacOSX/Darwin is just a funny Linux
+#
+ifeq ($(OSTYPE),Darwin)
+OSTYPE = darwin
+endif
+
+ifeq ($(OSTYPE),darwin)
+OS_DIR = darwin
+FF = cc
+OSFLAGS = -DOS_LINUX -DOS_DARWIN -DHAVE_STRLCPY -DAbsoftUNIXFortran -fPIC -Wno-unused-function
+LIBS = -lpthread
+SPECIFIC_OS_PRG = $(BIN_DIR)/mlxspeaker
+NEED_STRLCPY=
+NEED_RANLIB=1
+NEED_SHLIB=
+NEED_RPATH=
+
+endif
 
 #-----------------------------------------
 # ROOT flags and libs
@@ -100,15 +139,20 @@ ROOTCFLAGS := $(shell  $(ROOTSYS)/bin/root-config --cflags)
 ROOTCFLAGS += -DHAVE_ROOT -DUSE_ROOT
 ROOTLIBS   := $(shell  $(ROOTSYS)/bin/root-config --libs) -Wl,-rpath,$(ROOTSYS)/lib
 ROOTLIBS   += -lThread
+else
+missroot:
+	@echo "...";
+	@echo "Missing definition of environment variable 'ROOTSYS' !";
+	@echo "...";
 endif
 #-------------------------------------------------------------------
-# The following lines define direcories. Adjust if necessary
+# The following lines define directories. Adjust if necessary
 #                 
-DRV_DIR         = ../../drivers/bus
-INC_DIR 	= ../../include
-LIB_DIR 	= ../../linux/lib
-SRC_DIR 	= ../../src
-#
+DRV_DIR         = $(MIDASSYS)/drivers/bus
+INC_DIR 	= $(MIDASSYS)/include
+LIB_DIR 	= $(MIDASSYS)/$(OS_DIR)/lib
+SRC_DIR 	= $(MIDASSYS)/src
+
 #-------------------------------------------------------------------
 # List of analyzer modules
 #
