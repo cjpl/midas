@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus communication functions
 
   $Log$
+  Revision 1.106  2005/10/06 14:33:39  ritt
+  Applied patch from A. Suter for nonblocking recv()
+
   Revision 1.105  2005/10/06 06:43:05  ritt
   Version 2.1.9
 
@@ -1127,15 +1130,31 @@ int mscb_in1(int fd, unsigned char *c, int timeout)
 
 int recv_eth(int sock, char *buf, int buffer_size)
 {
-   int n_received, n;
+   int n_received, n, millisec, status;
    unsigned char buffer[65];
+   fd_set readfds;
+   struct timeval timeout;
 
    if (buffer_size > sizeof(buffer))
       buffer_size = sizeof(buffer);
 
    /* receive buffer in TCP mode, first byte contains remaining bytes */
    n_received = 0;
+   millisec = 500; /* 0.5 s timeout */
    do {
+      FD_ZERO(&readfds);
+      FD_SET(sock, &readfds);
+
+      timeout.tv_sec = millisec / 1000;
+      timeout.tv_usec = (millisec % 1000) * 1000;
+
+      do {
+         status = select(FD_SETSIZE, (void *) &readfds, NULL, NULL, (void *) &timeout);
+      } while (status == -1);        /* dont return if an alarm signal was cought */
+
+      if (!FD_ISSET(sock, &readfds))
+         return n_received;
+
       n = recv(sock, buffer + n_received, sizeof(buffer) - n_received, 0);
 
       if (n <= 0)
