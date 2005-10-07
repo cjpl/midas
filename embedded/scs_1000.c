@@ -8,28 +8,7 @@
                 Midas Slow Control Bus protocol 
                 for SCS-1000 stand alone control unit
 
-  $Log$
-  Revision 1.7  2005/02/16 13:14:50  ritt
-  Version 1.8.0
-
-  Revision 1.6  2004/12/21 10:47:38  midas
-  Subtract ADC offset
-
-  Revision 1.5  2004/09/25 01:14:54  midas
-  Started implementing slave port on SCS-1000
-
-  Revision 1.4  2004/09/10 12:27:22  midas
-  Version 1.7.5
-
-  Revision 1.3  2004/07/22 11:52:33  midas
-  Fixed bugs with DOFS
-
-  Revision 1.2  2004/07/20 16:04:40  midas
-  Implemented scs-1000 code
-
-  Revision 1.1  2004/07/09 07:48:10  midas
-  Initial revision
-
+  $Id:$
 
 \********************************************************************/
 

@@ -7,27 +7,7 @@
   Contents:     BTS control program for SCS-1001 connected to one
                 SCS-910
 
-  $Log$
-  Revision 1.7  2005/07/25 15:13:13  ritt
-  Added auto mode for ln2 valve
-
-  Revision 1.6  2005/07/25 12:57:35  ritt
-  Disabled UART0 interrupts for last byte in uart1_send
-
-  Revision 1.5  2005/07/25 09:22:33  ritt
-  Implemented external watchdog for SCS_100x
-
-  Revision 1.4  2005/07/22 12:34:32  ritt
-  Fixed typo
-
-  Revision 1.3  2005/07/22 09:51:10  ritt
-  Check for valid temperature range
-
-  Revision 1.2  2005/07/21 15:31:32  ritt
-  Added temperature readout
-
-  Revision 1.1  2005/07/15 15:01:37  ritt
-  Initial revision
+  $Id:$
 
 \********************************************************************/
 

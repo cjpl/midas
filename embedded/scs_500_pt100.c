@@ -8,16 +8,7 @@
                 Midas Slow Control Bus protocol 
                 for SCS-500 unit modified for PT100 sensors
 
-  $Log$
-  Revision 1.3  2004/01/07 12:56:15  midas
-  Chaned line length
-
-  Revision 1.2  2004/01/07 12:52:23  midas
-  Changed indentation
-
-  Revision 1.1  2003/05/09 11:31:34  midas
-  Added labview files
-
+  $Id:$
 
 \********************************************************************/
 

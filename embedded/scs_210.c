@@ -8,54 +8,7 @@
                 Midas Slow Control Bus protocol 
                 for SCS-210 RS232 node
 
-  $Log$
-  Revision 1.16  2005/05/09 09:09:50  ritt
-  Decreased power consumption of scs_210
-
-  Revision 1.15  2005/03/08 14:52:32  ritt
-  Adapted SCS_210 to F121 CPU
-
-  Revision 1.14  2004/12/13 11:13:43  midas
-  Modified terminal mode
-
-  Revision 1.13  2004/07/30 10:22:03  midas
-  Added MSCBF_DATALESS
-
-  Revision 1.12  2004/06/16 11:39:55  midas
-  Added external watchdog
-
-  Revision 1.11  2004/04/07 11:06:17  midas
-  Version 1.7.1
-
-  Revision 1.10  2004/03/05 12:27:46  midas
-  Added input/output strings
-
-  Revision 1.9  2004/01/07 12:52:23  midas
-  Changed indentation
-
-  Revision 1.8  2003/05/02 09:03:01  midas
-  Fixed buffer overflows by strlcpy()
-
-  Revision 1.7  2003/04/11 08:59:10  midas
-  Merged channels/config into variables
-
-  Revision 1.6  2003/02/19 16:05:36  midas
-  Added 'init' parameter to user_init
-
-  Revision 1.5  2002/11/28 14:44:02  midas
-  Removed SIZE_XBIT
-
-  Revision 1.4  2002/11/28 13:03:41  midas
-  Protocol version 1.2
-
-  Revision 1.3  2002/10/09 15:48:13  midas
-  Fixed bug with download
-
-  Revision 1.2  2002/10/09 11:06:46  midas
-  Protocol version 1.1
-
-  Revision 1.1  2002/10/03 15:35:06  midas
-  Initial revision
+  $Id:$
 
 \********************************************************************/
 

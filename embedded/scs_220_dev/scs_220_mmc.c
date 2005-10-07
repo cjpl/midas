@@ -9,12 +9,7 @@
                 for SCS-220 RS-485 node connected to
                 MEG magnet mapping machine
 
-  $Log$
-  Revision 1.2  2005/03/23 12:31:39  ritt
-  Fixed problem with zero readings in repeat mode
-
-  Revision 1.1  2005/01/07 14:37:02  midas
-  Initial revision
+  $Id:$
 
 \********************************************************************/
 

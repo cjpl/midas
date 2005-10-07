@@ -8,15 +8,7 @@
                 Midas Slow Control Bus protocol 
                 for SCS-220 RS-485 node
 
-  $Log$
-  Revision 1.3  2005/01/07 14:37:46  midas
-  Changed label
-
-  Revision 1.2  2005/01/07 09:29:05  midas
-  Version 1.7.a
-
-  Revision 1.1  2005/01/06 14:49:25  midas
-  Initial revision
+  $Id:$
 
 \********************************************************************/
 

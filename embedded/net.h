@@ -5,12 +5,7 @@
 
   Contents:     CMX Micronet data types and prototypes
 
-  $Log$
-  Revision 1.2  2005/03/17 14:20:38  ritt
-  Increased number of sockets
-
-  Revision 1.1  2005/03/16 14:15:48  ritt
-  Initial revision
+  $Id:$
 
 \********************************************************************/
 

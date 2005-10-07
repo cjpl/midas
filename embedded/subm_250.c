@@ -6,43 +6,7 @@
   Contents:     MSCB program for Cygnal USB sub-master
                 SUBM250 running on Cygnal C8051F320
 
-  $Log$
-  Revision 1.12  2005/04/14 08:20:40  ritt
-  Version 2.1.0
-
-  Revision 1.11  2005/04/13 14:24:57  ritt
-  Added INDENT command
-
-  Revision 1.10  2005/03/21 13:16:05  ritt
-  Added submaster software version
-
-  Revision 1.9  2005/03/21 12:54:13  ritt
-  Implemented new Bit9 handling
-
-  Revision 1.8  2005/02/16 13:14:50  ritt
-  Version 1.8.0
-
-  Revision 1.7  2004/12/21 10:46:47  midas
-  Adjusted timeouts
-
-  Revision 1.6  2004/07/21 14:18:55  midas
-  Restructured timer usage
-
-  Revision 1.5  2004/07/20 16:04:40  midas
-  Implemented scs-1000 code
-
-  Revision 1.4  2004/03/12 07:15:24  midas
-  Enabled watchdog
-
-  Revision 1.3  2004/03/10 10:28:48  midas
-  Implemented test block write for speed tests
-
-  Revision 1.2  2004/03/09 14:19:08  midas
-  Increased default timeout
-
-  Revision 1.1  2004/03/04 14:36:52  midas
-  Initial revision
-
+  $Id:$
 
 \********************************************************************/
 

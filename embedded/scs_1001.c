@@ -8,18 +8,7 @@
                 Midas Slow Control Bus protocol 
                 for SCS-1001 stand alone control unit
 
-  $Log$
-  Revision 1.4  2005/08/04 12:11:33  ritt
-  Fixed buzzer polarity
-
-  Revision 1.3  2005/03/08 12:41:32  ritt
-  Version 1.9.0
-
-  Revision 1.2  2005/02/16 14:17:58  ritt
-  Two-speed menu increment
-
-  Revision 1.1  2005/02/16 13:17:25  ritt
-  Initial revision
+  $Id:$
 
 \********************************************************************/
 

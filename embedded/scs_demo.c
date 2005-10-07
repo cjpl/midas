@@ -8,12 +8,7 @@
                 Midas Slow Control Bus protocol
                 for SCS-300 standalone node (just for demo)
 
-  $Log$
-  Revision 1.2  2004/01/07 12:52:23  midas
-  Changed indentation
-
-  Revision 1.1  2003/05/08 11:55:53  midas
-  Initial revision
+  $Id:$
 
 \********************************************************************/
 

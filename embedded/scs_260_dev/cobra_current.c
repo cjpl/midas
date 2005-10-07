@@ -6,21 +6,7 @@
   Contents:     Receive broadcasts from COBRA magnet in PiE5 area
                 and display coil currents.
 
-  $Log$
-  Revision 1.5  2005/03/24 23:51:39  ritt
-  Print time
-
-  Revision 1.4  2005/03/21 10:52:46  ritt
-  Added mcast display
-
-  Revision 1.3  2005/03/18 13:44:27  ritt
-  Switched to multicast mode
-
-  Revision 1.2  2005/03/17 14:19:38  ritt
-  Added TCP code
-
-  Revision 1.1  2005/03/16 14:20:34  ritt
-  Initial revision
+  $Id:$
 
 \********************************************************************/
 

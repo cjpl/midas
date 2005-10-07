@@ -5,21 +5,7 @@
 
   Contents:     Broadcast program for COBRA magnet
 
-  $Log$
-  Revision 1.5  2005/03/24 23:52:07  ritt
-  Applied calibration
-
-  Revision 1.4  2005/03/21 10:54:40  ritt
-  Added ADC code
-
-  Revision 1.3  2005/03/17 14:20:09  ritt
-  Changed host_name
-
-  Revision 1.2  2005/03/17 11:19:24  ritt
-  Changed indentation
-
-  Revision 1.1  2005/03/16 14:21:20  ritt
-  Initial revision
+  $Id:$
 
 \********************************************************************/
 

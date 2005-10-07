@@ -7,27 +7,7 @@
   Contents:     Menu functions for SCS-1000 using LCD display
                 and four buttons
 
-  $Log$
-  Revision 1.7  2005/10/04 15:01:55  ritt
-  Fixed bug with flashing address
-
-  Revision 1.6  2005/06/24 18:49:02  ritt
-  Implemented UART1_MSCB/DEVICE
-
-  Revision 1.5  2005/02/16 14:17:58  ritt
-  Two-speed menu increment
-
-  Revision 1.4  2005/02/16 13:14:50  ritt
-  Version 1.8.0
-
-  Revision 1.3  2004/12/21 10:47:59  midas
-  Fixed bug in system menu
-
-  Revision 1.2  2004/09/25 01:14:54  midas
-  Started implementing slave port on SCS-1000
-
-  Revision 1.1  2004/07/20 16:05:32  midas
-  Initial revision
+  $Id:$
 
 \********************************************************************/
 

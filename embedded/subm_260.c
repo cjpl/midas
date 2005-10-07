@@ -6,18 +6,7 @@
   Contents:     MSCB program for Cygnal Ethernet sub-master
                 SUBM260 running on Cygnal C8051F120
 
-  $Log$
-  Revision 1.4  2005/07/13 09:39:09  ritt
-  Fixed LED problem on subm_260
-
-  Revision 1.3  2005/03/21 13:16:05  ritt
-  Added submaster software version
-
-  Revision 1.2  2005/03/21 10:51:34  ritt
-  Added network configuration
-
-  Revision 1.1  2005/03/16 14:16:49  ritt
-  Initial revision
+  $Id:$
 
 \********************************************************************/
 

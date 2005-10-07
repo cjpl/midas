@@ -8,66 +8,7 @@
                 Midas Slow Control Bus protocol 
                 for SCS-1001 stand alone control unit
 
-  $Log$
-  Revision 1.17  2005/09/05 15:06:57  ritt
-  Implemented manual mode
-
-  Revision 1.16  2005/08/31 07:49:09  ritt
-  Added vacuum status on DOUT0
-
-  Revision 1.15  2005/08/31 06:52:10  ritt
-  Increased forepump startup time when cyceling
-
-  Revision 1.14  2005/08/04 12:11:33  ritt
-  Fixed buzzer polarity
-
-  Revision 1.13  2005/07/12 13:13:22  ritt
-  Fixed small bug
-
-  Revision 1.12  2005/07/12 10:51:06  ritt
-  Adjusted TMP error code
-
-  Revision 1.11  2005/07/12 10:30:21  ritt
-  Added turbo pump error readout
-
-  Revision 1.10  2005/07/12 08:32:44  ritt
-  Added restarting of pump station in case of vacuum break in
-
-  Revision 1.9  2005/07/08 19:21:28  ritt
-  Added zero timeout
-
-  Revision 1.8  2005/07/08 10:53:13  ritt
-  Fixed wrong relais inices
-
-  Revision 1.7  2005/07/08 06:53:57  ritt
-  Show CVS revision in display
-
-  Revision 1.6  2005/07/08 06:32:43  ritt
-  Added parameters
-
-  Revision 1.5  2005/07/08 06:23:24  ritt
-  Added MV check
-
-  Revision 1.4  2005/07/07 10:45:15  ritt
-  Added better fore pump cycling
-
-  Revision 1.3  2005/07/05 06:17:54  ritt
-  Added timeout parameter
-
-  Revision 1.2  2005/07/04 18:35:20  ritt
-  Implemented pump station logic
-
-  Revision 1.1  2005/06/24 18:50:48  ritt
-  Initial revision
-
-  Revision 1.3  2005/03/08 12:41:32  ritt
-  Version 1.9.0
-
-  Revision 1.2  2005/02/16 14:17:58  ritt
-  Two-speed menu increment
-
-  Revision 1.1  2005/02/16 13:17:25  ritt
-  Initial revision
+  $Id:$
 
 \********************************************************************/
 

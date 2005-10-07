@@ -8,57 +8,7 @@
                 Midas Slow Control Bus protocol 
                 for SCS-310 GPIB Adapter
 
-  $Log$
-  Revision 1.10  2004/12/13 11:13:43  midas
-  Modified terminal mode
-
-  Revision 1.9  2004/07/30 10:22:03  midas
-  Added MSCBF_DATALESS
-
-  Revision 1.8  2004/04/07 11:06:17  midas
-  Version 1.7.1
-
-  Revision 1.7  2004/03/19 08:17:13  midas
-  Changed node name
-
-  Revision 1.6  2004/03/19 07:10:33  midas
-  Changed pinout for GPIB
-
-  Revision 1.5  2004/03/05 12:28:00  midas
-  *** empty log message ***
-
-  Revision 1.4  2004/01/07 12:56:15  midas
-  Chaned line length
-
-  Revision 1.3  2004/01/07 12:52:23  midas
-  Changed indentation
-
-  Revision 1.2  2003/03/19 16:35:03  midas
-  Eliminated configuration parameters
-
-  Revision 1.1  2003/03/14 13:47:54  midas
-  Added SCS_310 code
-
-  Revision 1.5  2003/02/19 16:05:36  midas
-  Added 'init' parameter to user_init
-
-  Revision 1.4  2003/01/16 16:29:49  midas
-  Removed SIZE_32
-
-  Revision 1.3  2002/11/28 13:03:41  midas
-  Protocol version 1.2
-
-  Revision 1.2  2002/10/09 11:06:46  midas
-  Protocol version 1.1
-
-  Revision 1.1  2002/10/04 09:02:05  midas
-  Initial revision
-
-  Revision 1.2  2002/10/03 15:31:53  midas
-  Various modifications
-
-  Revision 1.1  2002/07/12 15:20:08  midas
-  Initial revision
+  $Id:$
 
 \********************************************************************/
 
