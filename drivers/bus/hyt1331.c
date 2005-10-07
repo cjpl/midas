@@ -7,54 +7,7 @@
                 either via IS PC card or via 5331 PCI interface card
                 following the MIDAS CAMAC Standard under DIRECTIO
 
-  $Log$
-  Revision 1.25  2005/04/07 22:51:58  olchanski
-  report status of mulfunctionning hyt1331 camac controllers rather than just saying "card not found"
-
-  Revision 1.24  2004/04/20 13:27:22  midas
-  Fixed bug with PCI interface
-
-  Revision 1.23  2004/01/08 08:40:08  midas
-  Implemented standard indentation
-
-  Revision 1.22  2003/10/30 12:21:45  midas
-  Fixed bug with pci_scan under linux
-
-  Revision 1.21  2003/10/29 13:08:15  midas
-  Stop after one PCI device found
-
-  Revision 1.20  2003/10/06 15:01:33  midas
-  Removed tabs
-
-  Revision 1.19  2002/03/12 22:28:50  pierre
-  fix gbl_sw1d, cam16i_sa for sw1d
-
-  Revision 1.18  2002/02/12 14:56:04  midas
-  Opened port 0x80 for delayed write
-
-  Revision 1.17  2002/01/16 14:54:52  midas
-  Removed debugging printf()
-
-  Revision 1.16  2002/01/16 14:40:45  midas
-  Fixed bug with gbl_sw1d
-
-  Revision 1.15  2001/09/04 12:53:41  midas
-  Fixed small bug
-
-  Revision 1.14  2001/08/22 13:53:32  midas
-  Fixed small bug
-
-  Revision 1.13  2001/08/16 09:39:12  midas
-  Changed comments
-
-  Revision 1.12  2001/08/14 10:27:40  midas
-  Restore signal handler on error
-
-  Revision 1.11  2001/08/14 10:15:43  midas
-  Removed debugging statements
-
-  Revision 1.10  2001/08/14 09:42:42  midas
-  Added autodetection of ISA and PCI cards
+  $Id:$
 
 \********************************************************************/
 

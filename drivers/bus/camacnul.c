@@ -16,39 +16,7 @@
  *     
  *  Author:  Pierre-Andre Amaudruz Data Acquisition Group
  * 
- *  $Log$
- *  Revision 1.5  2004/01/08 08:40:08  midas
- *  Implemented standard indentation
- *
- *  Revision 1.4  2003/08/20 21:21:35  pierre
- *  add cam_interrupt/inhibit_test()
- *
- *  Revision 1.3  2001/09/07 18:09:23  pierre
- *  Fix args for interrupts
- *
- *  Revision 1.2  2000/08/11 13:41:27  midas
- *  Changed parameter of rpc_cam_init
- *
- *  Revision 1.1  1999/12/20 10:18:55  midas
- *  Added files
- *
- *  Revision 1.6  1999/02/22 19:02:23  pierre
- *  - Remove came_xxx
- *
- *  Revision 1.5  1998/10/23 14:21:49  midas
- *  - Modified version scheme from 1.06 to 1.6.0
- *  - cm_get_version() now returns versino as string
- *
- *  Revision 1.4  1998/10/12 09:43:11  midas
- *  -SR- Changed header comment
- *
- *  Revision 1.3  1998/10/12 09:30:48  midas
- *  -SR- cam_lam_read returns always 1 (needed for test frontends)
- *
- *  Revision 1.2  1998/10/09 22:57:13  midas
- *  -PAA- int to DWORD *lam
- *
- *  Revision 1.0  1998        Pierre	 Initial revision
+ *  $Id:$
  *
  *------------------------------------------------------------------------ */
 

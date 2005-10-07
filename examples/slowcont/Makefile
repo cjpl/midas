@@ -5,16 +5,7 @@
 #
 #  Contents:     UNIX Makefile for MIDAS slow control frontend
 #
-#  $Log$
-#  Revision 1.3  2003/08/20 21:02:12  pierre
-#  add phtread lib
-#
-#  Revision 1.2  2002/05/29 13:36:42  midas
-#  Added nulldev driver
-#
-#  Revision 1.1  1999/12/21 09:39:00  midas
-#  Added source
-#
+#  $Id:$
 #
 #####################################################################
 

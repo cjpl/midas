@@ -5,9 +5,7 @@
   Contents:     VME interface for the VMIC VME board processor
                 using the mvmestd vme call convention.
                 
-  $Log$
-  Revision 1.2  2005/09/29 03:35:38  amaudruz
-  VMIC VME driver following the mvmestd
+  $Id:$
 
 *********************************************************************/
 

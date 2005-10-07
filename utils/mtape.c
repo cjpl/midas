@@ -5,52 +5,7 @@
 
   Contents:     Magnetic tape manipulation program for MIDAS tapes
 
-  $Log$
-  Revision 1.15  2004/01/08 08:40:11  midas
-  Implemented standard indentation
-
-  Revision 1.14  2003/06/12 18:41:47  pierre
-  add block# display on dir if available
-
-  Revision 1.13  2003/06/09 19:14:52  pierre
-  fix buffer size for dir
-
-  Revision 1.12  2003/04/25 14:37:35  midas
-  Fixed compiler warnings
-
-  Revision 1.11  1998/12/10 10:45:43  midas
-  Improved tape error codes under NT (now same as UNIX)
-
-  Revision 1.10  1998/12/10 10:19:56  midas
-  - Improved end-of-file and end-of-tape handling
-  - Added [last] parameter for backup command
-
-  Revision 1.9  1998/11/02 08:42:10  midas
-  Fixed bug in command line parameter processing
-
-  Revision 1.8  1998/10/29 15:54:32  midas
-  Added detection of other than MIDAS files on tape
-
-  Revision 1.7  1998/10/29 15:34:02  midas
-  Added end-of-tape detection under UNIX
-
-  Revision 1.6  1998/10/29 15:13:24  midas
-  Don't stop on "dir" command if data is not MIDAS data
-
-  Revision 1.5  1998/10/22 12:41:08  midas
-  - Added "oflag" to ss_tape_open()
-  - Open tape in read only mode for all read operations
-    (necessary if tape is write locked)
-
-  Revision 1.4  1998/10/22 12:05:54  midas
-  Added backup/restore commands
-
-  Revision 1.3  1998/10/13 07:31:28  midas
-  Fixed minor bugs causing compiler warnings
-
-  Revision 1.2  1998/10/12 12:19:04  midas
-  Added Log tag in header
-
+  $Id:$
 
 \********************************************************************/
 

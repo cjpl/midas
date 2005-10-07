@@ -5,71 +5,7 @@
 
   Contents:     Header fiel for MSCB RPC funcions
 
-  $Log$
-  Revision 1.1  2005/04/13 14:25:12  ritt
-  Renamed files
-
-  Revision 1.20  2005/03/16 14:11:51  ritt
-  Added ethernet protocol
-
-  Revision 1.19  2005/03/08 12:41:30  ritt
-  Version 1.9.0
-
-  Revision 1.18  2004/12/10 11:22:05  midas
-  Added block functions
-
-  Revision 1.17  2004/10/03 18:08:43  olchansk
-  in server_execute(), abort() on unknown commands
-  replace ALIGN with ALIGN8 (same as in midas.h) to dodge namespace pollution on Darwin
-
-  Revision 1.16  2004/03/10 13:28:25  midas
-  mscb_init returns device name
-
-  Revision 1.15  2004/03/10 10:28:48  midas
-  Implemented test block write for speed tests
-
-  Revision 1.14  2004/03/09 14:19:33  midas
-  Fixed problems with write/read of strings
-
-  Revision 1.13  2004/03/04 15:29:27  midas
-  Added USB support
-
-  Revision 1.12  2004/01/08 08:40:09  midas
-  Implemented standard indentation
-
-  Revision 1.11  2004/01/07 12:56:15  midas
-  Chaned line length
-
-  Revision 1.10  2004/01/07 12:52:23  midas
-  Changed indentation
-
-  Revision 1.9  2003/09/30 08:03:41  midas
-  Implemented multiple RPC connections
-
-  Revision 1.8  2003/09/23 09:25:27  midas
-  Added RPC call for mscb_addr
-
-  Revision 1.7  2003/05/12 10:30:45  midas
-  Fixed name collisions with midas library
-
-  Revision 1.6  2003/03/19 16:35:03  midas
-  Eliminated configuration parameters
-
-  Revision 1.5  2003/03/06 16:08:50  midas
-  Protocol version 1.3 (change node name)
-
-  Revision 1.4  2002/11/28 13:04:36  midas
-  Implemented protocol version 1.2 (echo, read_channels)
-
-  Revision 1.3  2002/11/27 16:26:22  midas
-  Fixed errors under linux
-
-  Revision 1.2  2002/11/20 12:01:39  midas
-  Added host to mscb_init
-
-  Revision 1.1  2002/10/28 14:26:30  midas
-  Changes from Japan
-
+  $Id:$
 
 \********************************************************************/
 

@@ -5,74 +5,8 @@
 
   Contents:     Declarations for ybos data format
 
-  Revision history
-  ------------------------------------------------------------------
-  date        by    modification
-  ---------   ---   ------------------------------------------------
-*  $Log$
-*  Revision 1.25  2004/07/21 05:43:58  pierre
-*  fix dox doc
-*
-*  Revision 1.24  2004/01/13 00:51:23  pierre
-*  fix dox comment for vxworks
-*
-*  Revision 1.23  2004/01/08 08:40:09  midas
-*  Implemented standard indentation
-*
-*  Revision 1.22  2004/01/08 06:30:37  pierre
-*  Doxygen the file
-*
-*  Revision 1.21  2003/04/14 12:59:51  midas
-*  Added 'compression' in channel settings
-*
-*  Revision 1.20  2003/04/07 23:55:55  olchansk
-*  add c++ wrappers
-*
-*  Revision 1.19  2002/09/19 17:50:34  pierre
-*  remove ^m
-*
-*  Revision 1.18  2002/09/18 16:37:27  pierre
-*  remove bk_list()
-*
-*  Revision 1.17  2002/06/08 06:06:27  pierre
-*  add DSP_UNK
-*
-*  Revision 1.16  2001/12/12 17:50:50  pierre
-*  EVID bank handling, 1.8.3-2 doc++
-*
-*  Revision 1.15  2001/07/20 20:36:19  pierre
-*  -Make ybk_close_... return bank size in bytes
-*
-*  Revision 1.14  2000/07/21 18:28:06  pierre
-*  - Include YBOS version >4.0 support by default, otherwise use in Makefile
-*    -DYBOS_VERSION_3_3 for MIDAS_PREF_FLAGS
-*
-*  Revision 1.13  2000/05/04 14:50:20  midas
-*  Return yb_tid_size[] via new function ybos_get_tid_size()
-*
-*  Revision 1.12  2000/04/26 19:11:45  pierre
-*  - Moved doc++ comments to ybos.c
-*
-*  Revision 1.11  2000/04/17 17:22:24  pierre
-*  - First round of doc++ comments
-*
-*  Revision 1.10  1999/12/20 08:38:25  midas
-*  Defined ybos_event_get
-*
-*  Revision 1.9  1999/09/30 22:52:16  pierre
-*  - arg of yb_any_bank_display
-*
-*  Revision 1.8  1999/06/23 09:59:22  midas
-*  Added D8_BKTYPE
-*
-*  Revision 1.7  1999/01/19 19:56:59  pierre
-*  - Fix prototype
-*  - Added YB_UNKNOWN_FORMAT
-*
-*  Revision 1.6  1999/01/18 17:34:36  pierre
-*  - cleanup definitions and structures for ybos
-*  - Correct prototype for ybos
-*
+  $Id:$
+
 \********************************************************************/
 
 /**dox***************************************************************/

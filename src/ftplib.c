@@ -7,22 +7,7 @@
 
   Contents:     File Transfer Protocol library
 
-  $Log$
-  Revision 1.6  2004/01/08 08:40:09  midas
-  Implemented standard indentation
-
-  Revision 1.5  2003/04/14 13:01:59  midas
-  Fixed compiler warning
-
-  Revision 1.4  2003/04/09 13:42:40  midas
-  Made file compile under C++
-
-  Revision 1.3  1999/02/12 11:52:13  midas
-  Fixed bug that i was not initialized in ftp_get
-
-  Revision 1.2  1998/10/12 12:19:01  midas
-  Added Log tag in header
-
+  $Id:$
 
 \********************************************************************/
 

@@ -6,42 +6,7 @@
   Purpose:      Centralized file with all #includes
   Contents:     Includes all necessary include files
 
-  $Log$
-  Revision 1.12  2004/01/19 16:54:56  olchansk
-  add assert.h
-  add OS_DARWIN specific
-  remove sys/mount.h (moved to system.c to avoid namespace pollution on macosx)
-
-  Revision 1.11  2004/01/08 08:40:09  midas
-  Implemented standard indentation
-
-  Revision 1.10  2003/06/25 18:22:53  pierre
-  Added pthread support for UNIX version - DBM
-
-  Revision 1.9  2003/04/25 14:38:02  midas
-  Fixed compiler warnings
-
-  Revision 1.8  2003/04/25 13:54:19  midas
-  Added include file for inet_ntoa
-
-  Revision 1.7  2003/04/15 21:47:35  pierre
-  include ctype.h in all OS
-
-  Revision 1.6  2001/06/27 12:18:16  midas
-  Added code for OS_IRIX
-
-  Revision 1.5  1999/01/21 22:58:18  pierre
-  - include DM_DUAL_THREAD lib as default for OS_VXWORKS
-
-  Revision 1.4  1999/01/18 17:25:36  pierre
-  - Add extra lib for dm_() for OS_VxWorks
-
-  Revision 1.3  1998/10/28 11:06:42  midas
-  Added NO_PTY for solaris and ultrix
-
-  Revision 1.2  1998/10/12 12:19:01  midas
-  Added Log tag in header
-
+  $Id:$
 
 \********************************************************************/
 

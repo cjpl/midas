@@ -8,33 +8,7 @@
                 Midas Slow Control Bus protocol
                 for SCS-700 PT100/PT1000 unit
 
-  $Log$
-  Revision 1.9  2004/04/07 11:06:17  midas
-  Version 1.7.1
-
-  Revision 1.8  2004/01/07 12:56:15  midas
-  Chaned line length
-
-  Revision 1.7  2004/01/07 12:52:23  midas
-  Changed indentation
-
-  Revision 1.6  2003/09/23 09:22:35  midas
-  Disable PID_CONTROL by default
-
-  Revision 1.5  2003/07/17 14:24:20  midas
-  Added PID loop
-
-  Revision 1.4  2003/07/14 10:19:06  midas
-  Added PID loop
-
-  Revision 1.3  2003/03/24 14:59:46  midas
-  Removed LCD code
-
-  Revision 1.2  2003/03/19 16:35:03  midas
-  Eliminated configuration parameters
-
-  Revision 1.1  2003/03/06 16:08:50  midas
-  Protocol version 1.3 (change node name)
+  $Id:$
 
 \********************************************************************/
 

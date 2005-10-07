@@ -5,66 +5,7 @@
 
   Contents:     MIDAS history display utility
 
-  $Log$
-  Revision 1.20  2004/07/12 12:23:24  midas
-  Fixed small bug with hs_enum_vars()
-
-  Revision 1.19  2004/01/08 08:40:11  midas
-  Implemented standard indentation
-
-  Revision 1.18  2003/04/23 23:54:04  pierre
-  Fixed compiler warning
-
-  Revision 1.17  2003/01/13 15:47:56  midas
-  Fixed a few bugs, now -l is working with -f
-
-  Revision 1.16  2002/09/13 16:36:51  pierre
-  add -i idx1:idx2 option for -v request
-
-  Revision 1.15  2002/05/22 05:43:33  midas
-  Added extra variables to hs_enum_vars for mhist to display array size
-
-  Revision 1.14  2002/05/08 19:54:41  midas
-  Added extra parameter to function db_get_value()
-
-  Revision 1.13  2001/12/13 08:50:53  midas
-  Removed tabs in source code
-
-  Revision 1.12  2001/12/13 04:31:52  pierre
-  add hs_set_path, add -z for path
-
-  Revision 1.11  2000/06/20 06:52:27  midas
-  Changed date format from DDMMYY to YYMMDD
-
-  Revision 1.10  2000/04/25 11:56:09  midas
-  Added -s and -p flags to specify start/stop time explicitly
-
-  Revision 1.9  2000/04/25 11:04:42  midas
-  Added display_vars(filename) function which can be used to display variables
-  in an arbitrary history file via the '-l' and '-f filename' flags
-
-  Revision 1.8  2000/04/17 17:15:06  pierre
-  - added arg -l for list of EventID and variables (single arg)
-  - added arg -b for binary time stamp.
-  - change prg exit with return 0 for Unix success.
-
-  Revision 1.7  1999/08/17 12:39:51  midas
-  Fixed bug
-
-  Revision 1.6  1999/07/06 09:02:53  midas
-  Fixed little bug
-
-  Revision 1.5  1999/06/28 12:01:10  midas
-  Added -f flag
-
-  Revision 1.4  1999/06/02 07:52:50  midas
-  Fixed compiler warning
-
-  Revision 1.3  1999/05/05 12:03:21  midas
-  Adapted usage of new history functions
-
-  Revision 1.2  1998/10/12 12:19:03  midas
-  Added Log tag in header
+  $Id:$
 
 \********************************************************************/
 

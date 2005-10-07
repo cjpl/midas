@@ -12,43 +12,7 @@
  *  Application : Used in any camac driver
  *  Author:  Pierre-Andre Amaudruz Data Acquisition Group
  *
- *  $Log$
- *  Revision 1.13  2004/01/13 00:50:53  pierre
- *  fix dox comment for vxworks
- *
- *  Revision 1.12  2004/01/08 08:40:09  midas
- *  Implemented standard indentation
- *
- *  Revision 1.11  2004/01/08 06:30:02  pierre
- *  Doxygen the file
- *
- *  Revision 1.10  2002/02/08 06:46:42  pierre
- *  fix doc++ comments
- *
- *  Revision 1.9  2001/08/21 11:18:28  midas
- *  Added c,n to cam_interrupt_attach/detach, added comments
- *
- *  Revision 1.8  2001/08/21 09:32:02  midas
- *  Added cam_lam_wait
- *
- *  Revision 1.7  2001/08/13 11:25:34  midas
- *  Added some new functions
- *
- *  Revision 1.6  2000/08/10 07:49:04  midas
- *  Added client name together with frontend name in cam_init_rpc
- *
- *  Revision 1.5  2000/04/17 17:38:10  pierre
- *  - First round of doc++ comments
- *
- *  Revision 1.4  1999/02/19 21:59:59  pierre
- *  - Moved came_xxx to esone
- *
- *  Revision 1.3  1998/10/13 07:04:29  midas
- *  Added Log in header
- *
- *
- *  Previous revision 1.0  1998        Pierre  Initial revision
- *                    1.1  JUL 98      SR      Added 8-bit functions, BYTE definition
+ *  $Id:$
  *---------------------------------------------------------------------------*/
 
 /**dox***************************************************************/

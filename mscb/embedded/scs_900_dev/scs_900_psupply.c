@@ -8,12 +8,7 @@
                 Midas Slow Control Bus protocol 
                 for SCS-900 single channel power supply (2A)
 
-  $Log$
-  Revision 1.2  2005/05/12 13:55:15  ritt
-  Fixed regulation problems
-
-  Revision 1.1  2005/04/15 12:35:51  ritt
-  Initial revision
+  $Id:$
 
 \********************************************************************/
 

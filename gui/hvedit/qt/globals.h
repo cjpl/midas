@@ -9,16 +9,7 @@
     copyright            : (C) 2003 by
     email                : andreas.suter@psi.ch
 
-  $Log$
-  Revision 1.2  2004/01/08 08:40:09  midas
-  Implemented standard indentation
-
-  Revision 1.1  2003/05/09 10:08:09  midas
-  Initial revision
-
-  Revision 1.1.1.1  2003/02/27 15:24:37  nemu
-  added log info
-
+  $Id:$
 
 ********************************************************************************************/
 

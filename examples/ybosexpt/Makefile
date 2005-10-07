@@ -5,18 +5,7 @@
 #
 #  Contents:     Makefile for MIDAS example frontend and analyzer
 #
-#  $Log$
-#  Revision 1.1  1999/12/21 19:51:15  pierre
-#  - UNIX like makefile for ybos examples
-#
-#  Revision 1.5  1999/12/21 10:15:29  midas
-#  Removed kernel flags
-#
-#  Revision 1.4  1999/12/20 15:33:39  midas
-#  Adjustments for different driver directories
-#
-#  Revision 1.3  1999/12/10 00:45:48  pierre
-#  - Add DRIVER selection and UFE option
+#  $Id:$
 #
 #####################################################################
 

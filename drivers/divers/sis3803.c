@@ -12,12 +12,7 @@
  *  Requires 	: sis3803.h
  *  Application : VME
  *  Author      : Pierre-Andre Amaudruz Data Acquisition Group
-    $Log$
-    Revision 1.2  2004/01/08 07:51:21  midas
-    Changed indentation
-
-    Revision 1.1  2000/07/21 18:46:09  pierre
-    - SIS3803 16ch 32-bit 200MHz scalers (www.struck.de)
+  $Id:$
 
  *
  *---------------------------------------------------------------------------*/

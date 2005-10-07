@@ -8,33 +8,7 @@
                 Midas Slow Control Bus protocol 
                 for SCS-520 analog I/O with current option
 
-  $Log$
-  Revision 1.9  2005/02/16 13:14:50  ritt
-  Version 1.8.0
-
-  Revision 1.8  2004/06/09 12:27:29  midas
-  Re-enabled DAC
-
-  Revision 1.7  2004/05/12 13:10:48  midas
-  Removed variables (stack overflow!)
-
-  Revision 1.6  2004/04/07 11:06:17  midas
-  Version 1.7.1
-
-  Revision 1.5  2004/01/07 12:56:15  midas
-  Chaned line length
-
-  Revision 1.4  2004/01/07 12:52:23  midas
-  Changed indentation
-
-  Revision 1.3  2003/06/06 15:19:32  midas
-  Set gains asynchronously
-
-  Revision 1.2  2003/06/05 14:47:50  midas
-  Added channel gain/offset/bip offset
-
-  Revision 1.1  2003/06/05 07:26:46  midas
-  Initial revision
+  $Id:$
 
 \********************************************************************/
 

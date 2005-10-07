@@ -6,25 +6,7 @@
   Contents:     NULL Device Driver. This file can be used as a 
                 template to write a read device driver
 
-  $Log$
-  Revision 1.6  2004/05/07 19:40:11  midas
-  Replaced min/max by MIN/MAX macros
-
-  Revision 1.5  2004/01/08 08:40:08  midas
-  Implemented standard indentation
-
-  Revision 1.4  2003/09/29 11:56:44  midas
-  Initial revision
-
-  Revision 1.3  2003/05/09 10:33:52  midas
-  Fixed bug with CMD_SET_ALL
-
-  Revision 1.2  2002/06/06 07:50:12  midas
-  Implemented scheme with DF_xxx flags
-
-  Revision 1.1  2002/03/14 13:12:17  midas
-  Split null driver in bus and device drivers
-
+  $Id:$
 
 \********************************************************************/
 

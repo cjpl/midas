@@ -8,13 +8,7 @@
   in the idle task based on circular/alternate on minimum of
   n raised channels + one. See doc for further explanation.
 
-  $Log$
-  Revision 1.2  2004/01/08 08:40:08  midas
-  Implemented standard indentation
-
-  Revision 1.1  2002/05/10 05:47:37  pierre
-  based on generic + idle on N raised + 1
-
+  $Id:$
 
 \********************************************************************/
 

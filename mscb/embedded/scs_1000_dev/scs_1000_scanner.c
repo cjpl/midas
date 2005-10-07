@@ -8,18 +8,7 @@
                 Midas Slow Control Bus protocol 
                 for PSI beamline scanner
 
-  $Log$
-  Revision 1.3  2005/06/14 11:36:43  ritt
-  Implemented end switches
-
-  Revision 1.1  2004/12/21 10:55:29  midas
-  Created subdirectory
-
-  Revision 1.2  2004/07/29 13:55:52  midas
-  Finished code
-
-  Revision 1.1  2004/07/27 09:30:57  midas
-  Initial revision
+  $Id:$
 
 \********************************************************************/
 

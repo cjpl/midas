@@ -9,13 +9,7 @@
         31mar00 das     modified for SCSI bus decoding
         16oct01 gsh     added target_result to sjy_controller struct
 
- $Log$
- Revision 1.2  2004/01/08 08:40:08  midas
- Implemented standard indentation
-
- Revision 1.1  2002/05/08 22:21:39  pierre
- initial version
-
+  $Id:$
  
  */
 

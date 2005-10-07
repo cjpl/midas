@@ -7,13 +7,7 @@
   Contents:     The system part of the MIDAS frontend. Has to be
                 linked with user code to form a complete frontend
 
-  $Log$
-  Revision 1.1  2005/08/18 22:15:55  olchanski
-  move "remove camac rpc" code from mfe.c to a file of it's own
-  add register_cnaf_callback()
-
-  Revision 1.72  2004/12/14 22:29:24  olchansk
-  Include record name in error messages about "Cannot find statistics record"
+  $Id:$
 
 \********************************************************************/
 

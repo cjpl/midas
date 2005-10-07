@@ -5,73 +5,7 @@
 
   Contents:     High Voltage Class Driver
 
-  $Log$
-  Revision 1.19  2005/04/06 06:48:23  ritt
-  Fixed bug with channel offset
-
-  Revision 1.18  2004/05/07 19:40:10  midas
-  Replaced min/max by MIN/MAX macros
-
-  Revision 1.17  2004/01/08 08:40:08  midas
-  Implemented standard indentation
-
-  Revision 1.16  2003/10/30 12:37:33  midas
-  Don't overwrite number of channels from ODB
-
-  Revision 1.15  2003/10/06 09:17:10  midas
-  Output commect if # channels overwritten by ODB
-
-  Revision 1.14  2003/09/29 11:57:30  midas
-  Fixed bug with driver entry point offset
-
-  Revision 1.13  2003/09/23 09:16:37  midas
-  Added <math.h>
-
-  Revision 1.12  2003/08/26 23:27:40  pierre
-  Cannot use // to denote comments because this does not compile under VxWorks; replaced all new // introduced on 2003/06/03 by normal comments
-
-  Revision 1.11  2003/06/03 09:09:39  suter_a
-  allow negative high voltage values and adopeted hv_ramp accordingly
-
-  Revision 1.10  2003/05/12 12:05:26  midas
-  Removed tabs
-
-  Revision 1.9  2003/03/06 11:43:11  midas
-  Added CMD_SET_LABEL routines
-
-  Revision 1.8  2002/06/06 08:06:32  midas
-  Implemented DF_xx scheme
-
-  Revision 1.7  2002/06/06 07:50:12  midas
-  Implemented scheme with DF_xxx flags
-
-  Revision 1.6  2002/05/08 19:54:40  midas
-  Added extra parameter to function db_get_value()
-
-  Revision 1.5  2002/03/14 13:02:48  midas
-  Added ramping speed for both up/down
-
-  Revision 1.4  2001/04/04 04:14:04  midas
-  Use CMD_SET_CURRENT_LIMIT_ALL, use CMD_SET_ALL when more than 10% of channel have changed
-
-  Revision 1.3  2001/01/03 16:20:07  midas
-  Added Bus Driver scheme
-
-  Revision 1.2  2000/03/02 21:54:02  midas
-  Added offset in readout routines, added cmd_set_label
-
-  Revision 1.1  1999/12/20 10:18:16  midas
-  Reorganized driver directory structure
-
-  Revision 1.4  1999/10/27 14:05:03  midas
-  Fixed bug that demand_mirror was not initialized correctly
-
-  Revision 1.3  1999/06/25 13:49:46  midas
-  Print message "setting channels"
-
-  Revision 1.2  1998/10/12 12:18:55  midas
-  Added Log tag in header
-
+  $Id:$
 
 \********************************************************************/
 

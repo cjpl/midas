@@ -9,43 +9,7 @@
                 for SCS-210 RS232 node connected to Pfeiffer
                 Turbomolecular Pump with TC600 Electronics
 
-  $Log$
-  Revision 1.1  2004/12/16 09:26:09  midas
-  Created 'dev' directories
-
-  Revision 1.11  2004/12/13 11:13:43  midas
-  Modified terminal mode
-
-  Revision 1.10  2004/07/30 10:22:03  midas
-  Added MSCBF_DATALESS
-
-  Revision 1.9  2004/04/07 11:06:17  midas
-  Version 1.7.1
-
-  Revision 1.8  2004/01/07 12:56:15  midas
-  Chaned line length
-
-  Revision 1.7  2004/01/07 12:52:23  midas
-  Changed indentation
-
-  Revision 1.6  2003/03/21 13:36:22  midas
-  Default address 1
-
-  Revision 1.5  2003/03/21 08:28:15  midas
-  Fixed bug with LSB bytes
-
-  Revision 1.4  2003/02/19 16:05:36  midas
-  Added 'init' parameter to user_init
-
-  Revision 1.3  2002/11/28 14:44:02  midas
-  Removed SIZE_XBIT
-
-  Revision 1.2  2002/11/28 13:03:41  midas
-  Protocol version 1.2
-
-  Revision 1.1  2002/11/20 12:05:14  midas
-  Initila revision
-
+  $Id:$
 
 \********************************************************************/
 

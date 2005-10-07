@@ -6,39 +6,7 @@
   Contents:     Device driver for Kinetics System KCS2927 16bit CAMAC controller
                 following the MIDAS CAMAC Standard for DirectIO
 
-  $Log$
-  Revision 1.7  2004/01/08 08:40:08  midas
-  Implemented standard indentation
-
-  Revision 1.6  2002/05/08 22:19:57  pierre
-  remove warnings
-
-  Revision 1.5  2001/10/16 20:47:29  pierre
-  Update cam_interrupt_() args
-
-  Revision 1.4  2001/04/20 21:56:51  pierre
-  - Zeroed upper byte in 24i, sa, rq
-
-  Revision 1.3  2000/09/26 07:10:50  midas
-  Added DO_IOPERM for debugging as root
-
-  Revision 1.2  2000/09/07 17:17:14  pierre
-  -Add fe_name
-
-  Revision 1.1  1999/12/20 10:18:11  midas
-  Reorganized driver directory structure
-
-  Revision 1.5  1999/02/22 19:10:37  pierre
-  - Remove came_xxx
-
-  Revision 1.4  1998/11/19 22:31:43  pierre
-  correct (*d)-- for the _rq in case of noQ
-  Remove Q-stop for _sa and_sn
-  Fix 24x_ data access
-
-  Revision 1.2  1998/10/12 12:18:56  midas
-  Added Log tag in header
-
+  $Id:$
 
 \********************************************************************/
 

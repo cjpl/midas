@@ -7,27 +7,7 @@
                 Urs Rohrer's beamline control
                 (http://www1.psi.ch/~rohrer/secblctl.htm)
 
-  $Log$
-  Revision 1.2  2004/01/08 08:40:08  midas
-  Implemented standard indentation
-
-  Revision 1.1  1999/12/20 10:18:19  midas
-  Reorganized driver directory structure
-
-  Revision 1.5  1999/11/12 09:38:04  midas
-  Added notification message upon reconnect
-
-  Revision 1.4  1999/11/12 09:24:52  midas
-  Added reconnect
-
-  Revision 1.3  1999/11/11 11:50:52  midas
-  Added default name and update threshold
-
-  Revision 1.2  1999/11/11 10:41:44  midas
-  Fixed compiler warning
-
-  Revision 1.1  1999/11/11 10:30:02  midas
-  Added files
+  $Id:$
 
 \********************************************************************/
 

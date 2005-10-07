@@ -7,46 +7,7 @@
                 either as dedicated server (camacsrv.c) or inside a
                 CAMAC frontend (mfe.c)
 
-  $Log$
-  Revision 1.6  2004/01/08 08:40:08  midas
-  Implemented standard indentation
-
-  Revision 1.5  2003/04/23 20:57:52  pierre
-  add client_name arg to rpc_client_connect
-
-  Revision 1.4  2002/05/08 19:54:40  midas
-  Added extra parameter to function db_get_value()
-
-  Revision 1.3  2001/08/28 08:43:46  midas
-  Changed dummy interrupt function parameters
-
-  Revision 1.2  2000/08/10 07:48:29  midas
-  Added client name together with frontend name in cam_init_rpc
-
-  Revision 1.1  1999/12/20 10:18:55  midas
-  Added files
-
-  Revision 1.7  1999/05/06 18:49:54  pierre
-  - Fix return code using midas code.
-
-  Revision 1.6  1999/02/22 19:04:50  pierre
-  - Remove came_xxx
-
-  Revision 1.5  1998/11/22 18:27:58  midas
-  Fixed &x and &q pointer bugs in various functions
-
-  Revision 1.4  1998/10/13 07:23:21  midas
-  Added void to cam_interrupt_attach(void (*isr)(void))
-
-  Revision 1.3  1998/10/12 09:34:08  midas
-  -SR- added back CNAF_TEST instead of CNAF. This way, no CAMAC cycle is executed
-       during the test.
-
-  Revision 1.2  1998/10/09 22:56:49  midas
-  -PAA- int to DWORD *lam
-
-  Revision 1.0  1998/4/17
-  -SR- created
+  $Id:$
 
 \********************************************************************/
 

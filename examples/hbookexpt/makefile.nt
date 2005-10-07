@@ -6,15 +6,7 @@
 #  Contents:     Makefile for MIDAS example frontend and analyzer
 #                under Windows NT 
 #
-#  Revision history
-#  ------------------------------------------------------------------
-#  date         by    modification
-#  ---------    ---   -----------------------------------------------
-#  13-NOV-97    SR    created
-#
-#  $Log$
-#  Revision 1.2  2003/09/02 20:32:47  pierre
-#  include cvs tag, local hmana.obj build
+#  $Id:$
 #
 #####################################################################
 

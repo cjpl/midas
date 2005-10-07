@@ -5,48 +5,7 @@
 
   Contents:     Calibration program for HVR-200
 
-  $Log$
-  Revision 1.14  2005/07/25 10:11:20  ritt
-  Fixed compiler warnings
-
-  Revision 1.13  2005/05/02 10:50:12  ritt
-  Version 2.1.1
-
-  Revision 1.12  2005/03/21 10:57:25  ritt
-  Version 2.0.0
-
-  Revision 1.11  2005/02/22 13:21:35  ritt
-  Calibration with hvr_500
-
-  Revision 1.10  2004/12/22 16:03:24  midas
-  Implemented VGain calibration
-
-  Revision 1.9  2004/07/29 15:47:38  midas
-  Fixed wrong warning with current offset
-
-  Revision 1.8  2004/05/14 15:09:46  midas
-  Increased wait time
-
-  Revision 1.7  2004/03/10 13:28:25  midas
-  mscb_init returns device name
-
-  Revision 1.6  2004/03/04 15:28:57  midas
-  Changed HVR-500 to HVR-200
-
-  Revision 1.5  2004/01/07 12:56:15  midas
-  Chaned line length
-
-  Revision 1.4  2004/01/07 12:52:23  midas
-  Changed indentation
-
-  Revision 1.3  2003/11/13 12:26:24  midas
-  Remove HV before plugging in 1MOhm resistor
-
-  Revision 1.2  2003/09/23 09:24:07  midas
-  Added current calibration
-
-  Revision 1.1  2003/09/12 10:07:00  midas
-  Initial revision
+  $Id:$
 
 \********************************************************************/
 

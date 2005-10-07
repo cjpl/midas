@@ -5,13 +5,7 @@
 
   Contents:     Midas USB access
 
-  $Log$
-  Revision 1.2  2005/09/28 16:27:35  olchanski
-  Make musbstd.c compile (but not work, yet) on MacOSX 10.4
-
-  Revision 1.1  2005/09/19 21:33:15  olchanski
-  First cut at the standard USB access functions, used by USB-MSCB and USB-CAMAC (CCUSB) drivers
-
+  $Id:$
 
 \********************************************************************/
 

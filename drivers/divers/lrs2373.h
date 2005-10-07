@@ -5,16 +5,7 @@
 
   Cotents:      Header file for accessing LeCroy 2372 MLU
 
-  $Log$
-  Revision 1.2  2004/01/08 07:51:21  midas
-  Changed indentation
-
-  Revision 1.1  1999/12/20 10:18:23  midas
-  Reorganized driver directory structure
-
-  Revision 1.2  1998/10/12 12:18:57  midas
-  Added Log tag in header
-
+  $Id:$
 
 \********************************************************************/
 

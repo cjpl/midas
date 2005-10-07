@@ -6,16 +6,7 @@
   Cotents:      Routines for accessing Fastbus over LeCroy 1821 SMI
                 under MS-DOS via the 1691A IBM-PC interface.
                 
-  $Log$
-  Revision 1.2  2004/01/08 08:40:08  midas
-  Implemented standard indentation
-
-  Revision 1.1  1999/12/20 10:18:11  midas
-  Reorganized driver directory structure
-
-  Revision 1.2  1998/10/12 12:18:57  midas
-  Added Log tag in header
-
+  $Id:$
 
 *********************************************************************/
 

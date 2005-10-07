@@ -5,49 +5,7 @@
 
   Contents:     RS232 communication routines for MS-DOS and NT
 
-  $Log$
-  Revision 1.13  2004/05/07 19:40:10  midas
-  Replaced min/max by MIN/MAX macros
-
-  Revision 1.12  2004/01/08 08:40:08  midas
-  Implemented standard indentation
-
-  Revision 1.11  2001/06/20 09:10:36  midas
-  Implemented flow control under NT (Fixed problems with W2k)
-
-  Revision 1.10  2001/04/10 21:39:23  pierre
-  - Fix rs232_read fprintf (...str)
-
-  Revision 1.9  2001/04/05 05:53:34  midas
-  Added CMD_NAME
-
-  Revision 1.8  2001/02/26 11:56:55  midas
-  Added READ and WRITE functions
-
-  Revision 1.7  2001/01/05 15:30:56  midas
-  *** empty log message ***
-
-  Revision 1.6  2001/01/05 15:20:44  midas
-  Fixed wrong error return value
-
-  Revision 1.5  2001/01/05 15:08:22  midas
-  Fine-tuned timeout in rs232_gets
-
-  Revision 1.4  2001/01/04 11:25:19  midas
-  Added flow control (0=off, 1=CTS/DSR, 2=XON/XOFF)
-
-  Revision 1.3  2001/01/04 10:22:22  midas
-  Read characters individually under Linux
-
-  Revision 1.2  2001/01/03 16:05:10  midas
-  Adapted Bus Driver scheme to rs232
-
-  Revision 1.1  1999/12/20 10:18:11  midas
-  Reorganized driver directory structure
-
-  Revision 1.2  1998/10/12 12:18:58  midas
-  Added Log tag in header
-
+  $Id:$
 
 \********************************************************************/
 

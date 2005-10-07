@@ -11,13 +11,7 @@
                 receiving the proper results, one can check that the
                 parameter passing via MIDAS RPCs works correctly.
 
-  $Log$
-  Revision 1.3  2004/01/08 08:40:09  midas
-  Implemented standard indentation
-
-  Revision 1.2  1998/10/12 12:18:59  midas
-  Added Log tag in header
-
+  $Id:$
 
 \********************************************************************/
 

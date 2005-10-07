@@ -13,34 +13,7 @@
  *  Author      : Pierre-Andre Amaudruz Data Acquisition Group
  *  Revision    : 1.0  1998        Pierre	 Initial revision
  *                include linux-camac.h from linux drivers
- *  $Log$
- *  Revision 1.4  2004/01/08 08:40:08  midas
- *  Implemented standard indentation
- *
- *  Revision 1.3  2002/01/24 22:24:44  pierre
- *  adjust for new esone
- *
- *  Revision 1.2  2000/09/07 17:16:46  pierre
- *  -Add fe_name
- *
- *  Revision 1.1  1999/12/20 10:18:11  midas
- *  Reorganized driver directory structure
- *
- *  Revision 1.5  1999/07/22 19:19:26  pierre
- *  - implemented cam16o_r, cam24o_r
- *
- *  Revision 1.4  1999/05/06 18:40:35  pierre
- *  - remove came_xxx
- *
- *  Revision 1.3  1998/11/23 17:45:32  pierre
- *  cleanup variables, remove test func()
- *
- *  Revision 1.2  1998/10/09 23:17:41  midas
- *  -PAA- Made OS_LINUX dependent
- *
- *  Revision 1.1  1998/10/09 22:43:35  midas
- *  -PAA- MCStd compliant for Linux driver
- *
+ *  $Id:$
  *
  *---------------------------------------------------------------------------*/
 

@@ -10,12 +10,7 @@
  * Description	: Header file for SIS3803 Standard 200MHz 16 channels scaler
  *
  * Author:  Pierre-Andre Amaudruz Data Acquisition Group
-   $Log$
-   Revision 1.2  2004/01/08 07:51:21  midas
-   Changed indentation
-
-   Revision 1.1  2000/07/21 18:46:39  pierre
-   - SIS3803 16ch 32-bit 200MHz scalers (www.struck.de)
+  $Id:$
 
  *---------------------------------------------------------------------------*/
 #ifndef SIS3803_INCLUDE

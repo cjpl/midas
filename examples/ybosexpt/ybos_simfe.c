@@ -10,26 +10,7 @@
                 two banks (ADC0 and TDC0), the scaler event with 
                 one bank (SCLR).
 
-  $Log$
-  Revision 1.7  2004/01/08 08:40:09  midas
-  Implemented standard indentation
-
-  Revision 1.6  2001/10/05 22:38:45  pierre
-  correct cam_interrupt_xxx() arg list.
-
-  Revision 1.5  2001/04/30 19:55:16  pierre
-  - Correct max_event_size, event_buffer_size declaration
-  - fix data increment in read_event_trigger for double pointer
-
-  Revision 1.4  2000/03/01 18:04:38  pierre
-  - include Super event support
-
-  Revision 1.3  1999/07/16 00:08:50  pierre
-  -Added D8 ybos bank, random event size and event length
-
-  Revision 1.2  1998/10/12 12:18:59  midas
-  Added Log tag in header
-
+  $Id:$
 
 \********************************************************************/
 

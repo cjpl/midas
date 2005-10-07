@@ -9,46 +9,7 @@
                 ASUM bank is a "structured" bank. It has been defined
                 in the ODB and transferred to experim.h.
 
-  $Log$
-  Revision 1.13  2005/05/05 19:20:38  olchanski
-  Change TH1F -> TH1D
-  Use the h1_book<TH1D> macro
-
-  Revision 1.12  2004/09/30 23:35:33  midas
-  Added some simple tests
-
-  Revision 1.11  2004/09/23 19:22:43  midas
-  Use new histo booking
-
-  Revision 1.10  2004/01/08 08:40:08  midas
-  Implemented standard indentation
-
-  Revision 1.9  2003/11/14 13:43:10  midas
-  Fixed type
-
-  Revision 1.8  2003/04/28 15:33:05  midas
-  Fixed compiler warnings
-
-  Revision 1.7  2003/04/25 14:49:46  midas
-  Removed HBOOK code
-
-  Revision 1.6  2003/04/23 15:09:29  midas
-  Added 'average' in ASUM bank
-
-  Revision 1.5  2003/04/22 15:00:27  midas
-  Worked on ROOT histo booking
-
-  Revision 1.4  2003/04/21 04:02:13  olchansk
-  replace MANA_LITE with HAVE_HBOOK and HAVE_ROOT
-  implement ROOT-equivalents of the sample HBOOK code
-  implement example of adding custom branches to the analyzer root output file
-
-  Revision 1.3  2002/05/10 05:22:59  pierre
-  add MANA_LITE #ifdef
-
-  Revision 1.2  1998/10/12 12:18:58  midas
-  Added Log tag in header
-
+  $Id:$
 
 \********************************************************************/
 

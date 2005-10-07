@@ -6,24 +6,7 @@
   Contents:     Midas VME standard (MVMESTD) layer for SIS 3100/1100
                 VME controller using sis1100w.lib
 
-  $Log$
-  Revision 1.6  2005/09/28 04:35:34  ritt
-  vme structure gets allocated in driver
-
-  Revision 1.5  2005/09/27 10:05:26  ritt
-  Implemented 'new' mvmestd
-
-  Revision 1.4  2004/12/07 08:28:42  midas
-  Revised MVMESTD
-
-  Revision 1.3  2004/11/25 07:13:20  midas
-  Added PLX defines
-
-  Revision 1.2  2004/08/11 15:31:35  midas
-  Adjusted inlude directories
-
-  Revision 1.1  2004/08/11 15:30:07  midas
-  Initial revision
+  $Id:$
 
 \********************************************************************/
 

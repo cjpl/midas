@@ -5,42 +5,7 @@
 
   Contents:     User section for the Event builder
 
-  $Log$
-  Revision 1.12  2004/10/07 23:12:30  pierre
-  add bank creation from user code
-
-  Revision 1.11  2004/10/07 20:08:34  pierre
-  1.9.5
-
-  Revision 1.10  2004/10/04 23:55:57  pierre
-  move ebuilder into equipment list
-
-  Revision 1.9  2004/09/29 16:25:04  pierre
-  change Ebuilder structure
-
-  Revision 1.8  2004/01/08 06:46:43  pierre
-  Doxygen the file
-
-  Revision 1.7  2003/12/03 00:57:20  pierre
-  ctlM fix
-
-  Revision 1.6  2002/09/28 00:49:08  pierre
-  Add EB_USER_ERROR example
-
-  Revision 1.5  2002/09/25 18:38:03  pierre
-  correct: header passing, user field, abort run
-
-  Revision 1.4  2002/07/13 05:46:10  pierre
-  added ybos comments
-
-  Revision 1.3  2002/06/14 04:59:46  pierre
-  revised for ybos
-
-  Revision 1.2  2002/01/17 23:34:29  pierre
-  doc++ format
-
-  Revision 1.1.1.1  2002/01/17 19:49:54  pierre
-  Initial Version
+  $Id:$
 
 \********************************************************************/
 /** @file ebuser.c

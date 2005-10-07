@@ -8,42 +8,7 @@
                 Midas Slow Control Bus protocol 
                 for SCS-300 Parallel Port Interface
 
-  $Log$
-  Revision 1.10  2004/06/16 11:40:25  midas
-  Fixed temporarily linker error
-
-  Revision 1.9  2004/01/07 12:56:15  midas
-  Chaned line length
-
-  Revision 1.8  2004/01/07 12:52:23  midas
-  Changed indentation
-
-  Revision 1.7  2003/03/31 08:15:54  midas
-  Added data to idata
-
-  Revision 1.6  2003/03/19 16:35:03  midas
-  Eliminated configuration parameters
-
-  Revision 1.5  2003/02/19 16:05:36  midas
-  Added 'init' parameter to user_init
-
-  Revision 1.4  2003/01/16 16:29:49  midas
-  Removed SIZE_32
-
-  Revision 1.3  2002/11/28 13:03:41  midas
-  Protocol version 1.2
-
-  Revision 1.2  2002/10/09 11:06:46  midas
-  Protocol version 1.1
-
-  Revision 1.1  2002/10/04 09:02:05  midas
-  Initial revision
-
-  Revision 1.2  2002/10/03 15:31:53  midas
-  Various modifications
-
-  Revision 1.1  2002/07/12 15:20:08  midas
-  Initial revision
+  $Id:$
 
 \********************************************************************/
 

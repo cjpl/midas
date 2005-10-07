@@ -6,15 +6,7 @@
   Contents:     Simple RS232 test program, needs  
                 midas/drivers/bus/rs232.c
 
-  $Log$
-  Revision 1.3  2004/01/08 08:40:11  midas
-  Implemented standard indentation
-
-  Revision 1.2  2001/01/05 15:25:43  midas
-  Added variable port name
-
-  Revision 1.1  2001/01/05 15:08:50  midas
-  Initial revision
+  $Id:$
 
 \********************************************************************/
 

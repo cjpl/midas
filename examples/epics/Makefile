@@ -5,16 +5,7 @@
 #
 #  Contents:     UNIX Makefile for MIDAS EPICS slow control frontend
 #
-#  $Log$
-#  Revision 1.3  2000/03/03 01:11:22  pierre
-#  - Added EPICS_DIR for Epics library
-#
-#  Revision 1.2  1999/12/21 09:37:38  midas
-#  Adjusted for new driver names
-#
-#  Revision 1.1  1999/09/22 12:24:02  midas
-#  *** empty log message ***
-#
+#  $Id:$
 #
 #####################################################################
 

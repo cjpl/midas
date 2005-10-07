@@ -6,21 +6,7 @@
   Contents:     ROOT based Midas GUI for histo display and experiment
                 control
 
-  $Log$
-  Revision 1.5  2004/01/08 08:40:10  midas
-  Implemented standard indentation
-
-  Revision 1.4  2003/04/28 15:28:40  midas
-  Added text entry box
-
-  Revision 1.3  2003/04/25 14:36:49  midas
-  Added clear button
-
-  Revision 1.2  2003/04/17 15:12:02  midas
-  Added tab panels
-
-  Revision 1.1  2003/04/17 14:18:03  midas
-  Initial revision
+  $Id:$
 
 \*******************************************************************/
 

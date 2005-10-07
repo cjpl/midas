@@ -5,21 +5,7 @@
 
   Contents:     Calibration program for SCS-900
 
-  $Log$
-  Revision 1.5  2005/07/25 10:11:20  ritt
-  Fixed compiler warnings
-
-  Revision 1.4  2005/03/21 10:57:25  ritt
-  Version 2.0.0
-
-  Revision 1.3  2005/02/07 14:34:20  ritt
-  Added not about connection DAC to ADC
-
-  Revision 1.2  2004/12/22 16:03:01  midas
-  Fixed compiler warning
-
-  Revision 1.1  2004/12/08 10:39:40  midas
-  Initial revision
+  $Id:$
 
 \********************************************************************/
 

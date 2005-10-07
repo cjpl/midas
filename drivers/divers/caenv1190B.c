@@ -5,9 +5,7 @@
 
   Contents:     V1190B 64ch. TDC
                 
-  $Log$
-  Revision 1.1  2005/08/23 22:27:20  olchanski
-  TRIUMF drivers for sundry CAEN VME modules
+  $Id:$
 
 *********************************************************************/
 #include <stdio.h>

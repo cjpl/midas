@@ -8,27 +8,7 @@
                 Midas Slow Control Bus protocol 
                 for TTI QL335P Power supply
 
-  $Log$
-  Revision 1.7  2004/12/13 11:13:43  midas
-  Modified terminal mode
-
-  Revision 1.6  2004/07/30 10:22:03  midas
-  Added MSCBF_DATALESS
-
-  Revision 1.5  2004/04/07 11:06:17  midas
-  Version 1.7.1
-
-  Revision 1.4  2004/03/19 07:10:33  midas
-  Changed pinout for GPIB
-
-  Revision 1.3  2004/01/07 12:52:23  midas
-  Changed indentation
-
-  Revision 1.2  2003/03/19 16:35:03  midas
-  Eliminated configuration parameters
-
-  Revision 1.1  2003/03/14 13:47:54  midas
-  Added SCS_310 code
+  $Id:$
 
 \********************************************************************/
 

@@ -8,25 +8,7 @@
                 Midas Slow Control Bus protocol 
                 for SCS-910 20-chn analog in
 
-  $Log$
-  Revision 1.6  2004/10/29 13:11:51  midas
-  Changed UNIPOLAR to DIFFERENTIAL
-
-  Revision 1.5  2004/10/29 11:16:06  midas
-  Added N_CHANNEL
-
-  Revision 1.4  2004/10/12 11:02:41  midas
-  Version 1.7.6
-
-  Revision 1.3  2004/09/10 14:40:47  midas
-  Fixed problem in bipolar 910 mode
-
-  Revision 1.2  2004/09/10 13:05:49  midas
-  *** empty log message ***
-
-  Revision 1.1  2004/09/10 12:27:24  midas
-  Version 1.7.5
-
+  $Id:$
 
 \********************************************************************/
 

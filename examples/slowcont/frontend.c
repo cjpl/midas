@@ -15,38 +15,7 @@
                 the device driver "null" has to be replaces with
                 real device drivers.
 
-
-  $Log$
-  Revision 1.11  2004/01/08 08:40:09  midas
-  Implemented standard indentation
-
-  Revision 1.10  2002/06/10 07:15:17  midas
-  Use new DF_xxx flags
-
-  Revision 1.9  2002/05/29 13:35:47  midas
-  Added max_event_size_frag
-
-  Revision 1.8  2002/05/13 22:21:08  midas
-  Fixed typo
-
-  Revision 1.7  2002/03/13 08:39:28  midas
-  Use bus drivers in examples
-
-  Revision 1.6  2000/08/21 10:49:11  midas
-  Added max_event_size
-
-  Revision 1.5  2000/03/02 22:00:47  midas
-  Added number of subevents in equipment list
-
-  Revision 1.4  1999/12/21 09:38:23  midas
-  Use new driver names
-
-  Revision 1.3  1998/10/23 08:46:26  midas
-  Added #include "null.h"
-
-  Revision 1.2  1998/10/12 12:18:59  midas
-  Added Log tag in header
-
+  $Id:$
 
 \********************************************************************/
 

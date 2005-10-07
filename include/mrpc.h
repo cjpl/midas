@@ -7,67 +7,7 @@
   Purpose:      MIDAS RPC function header file
   Contents:     Symbolic constants for internal RPC functions
 
-  $Log$
-  Revision 1.21  2004/07/21 05:37:48  pierre
-  fix dox doc
-
-  Revision 1.20  2004/01/28 01:21:44  pierre
-  fix double slash for VxWorks
-
-  Revision 1.19  2004/01/08 08:40:09  midas
-  Implemented standard indentation
-
-  Revision 1.18  2004/01/08 06:36:53  pierre
-  Doxygen the file
-
-  Revision 1.17  2003/11/20 11:28:56  midas
-  Added db_check_record
-
-  Revision 1.16  2003/04/15 12:52:23  midas
-  Removed db_show_mem
-
-  Revision 1.15  2002/05/10 01:41:19  midas
-  Added optional debug output to cm_transition
-
-  Revision 1.14  2000/09/28 13:01:25  midas
-  Added manual triggered events
-
-  Revision 1.13  2000/08/21 07:05:47  midas
-  Added cm_msg_log1(...,facility) to be compatible with older programs
-
-  Revision 1.12  1999/09/17 11:48:05  midas
-  Alarm system half finished
-
-  Revision 1.11  1999/09/15 13:33:32  midas
-  Added remote el_submit functionality
-
-  Revision 1.10  1999/08/03 11:15:07  midas
-  Added bm_skip_event
-
-  Revision 1.9  1999/05/05 12:01:42  midas
-  Added and modified hs_xxx functions
-
-  Revision 1.8  1999/04/19 07:46:43  midas
-  Added cm_msg_retrieve
-
-  Revision 1.7  1999/04/15 09:59:22  midas
-  Added RPC_CM_EXIST
-
-  Revision 1.6  1999/04/13 12:20:42  midas
-  Added db_get_data1 (for Java)
-
-  Revision 1.5  1999/04/08 15:24:13  midas
-  Added RPC_CM_TRANSITION and RPC_DB_GET_KEY_INFO
-
-  Revision 1.4  1999/02/11 13:20:06  midas
-  Added RPC_CM_CSG
-
-  Revision 1.3  1999/01/13 09:40:48  midas
-  Added db_set_data_index2 function
-
-  Revision 1.2  1998/10/12 12:19:01  midas
-  Added Log tag in header
-
+  $Id:$
 
 \********************************************************************/
 

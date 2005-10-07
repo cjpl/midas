@@ -5,16 +5,7 @@
 
   Contents:     LeCroy LRS 1440 High Voltage Device Driver
 
-  $Log$
-  Revision 1.3  2004/01/08 08:40:08  midas
-  Implemented standard indentation
-
-  Revision 1.2  2003/10/06 09:17:46  midas
-  Fixed bugs with set_all
-
-  Revision 1.1  2003/09/29 11:56:44  midas
-  Initial revision
-
+  $Id:$
   
 \********************************************************************/
 

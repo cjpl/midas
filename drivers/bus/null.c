@@ -5,16 +5,7 @@
 
   Contents:     NULL bus driver
 
-  $Log$
-  Revision 1.3  2004/01/08 08:40:08  midas
-  Implemented standard indentation
-
-  Revision 1.2  2002/05/29 13:24:56  midas
-  Added stdlib.h and stdarg.h
-
-  Revision 1.1  2002/03/14 13:12:17  midas
-  Split null driver in bus and device drivers
-
+  $Id:$
 
 \********************************************************************/
 

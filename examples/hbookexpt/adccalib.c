@@ -11,13 +11,7 @@
                 adccalib_param structure which was defined in the ODB
                 and transferred to experim.h.
 
-  $Log$
-  Revision 1.2  2004/01/08 08:40:09  midas
-  Implemented standard indentation
-
-  Revision 1.1  2003/04/25 13:20:07  midas
-  Initial revision
-
+  $Id:$
   
 \********************************************************************/
 

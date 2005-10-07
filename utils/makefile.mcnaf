@@ -25,37 +25,7 @@
 #
 #  Author:  Pierre-Andre Amaudruz Data Acquisition Group
 # 
-#  Revision History:
-#    $Log$
-#    Revision 1.8  2004/08/26 20:17:51  pierre
-#    add pthread lib
-#
-#    Revision 1.7  2002/05/08 22:17:17  pierre
-#    improve comments, add MIDAS_BASE
-#
-#    Revision 1.6  2000/04/18 19:12:55  pierre
-#    - Added mwecnaf from /drivers/bus/wecc32.c (PCI/CAMAC CC32 Wiener interface)
-#
-#    Revision 1.5  1999/12/21 21:05:40  pierre
-#    - default hyt1331, build all 3 applications, cosmetic
-#
-#    Revision 1.4  1999/12/08 00:13:35  pierre
-#    - remove OS_UNIX
-#
-#    Revision 1.3  1998/11/23 16:20:38  pierre
-#    change names :  miocnaf  <- DirectIO (DRIVER=... hy1331, kcs2927, kcs2926, dsp004)
-#    		mdrvcnaf <- Linux camac (drivers/camaclx.c)
-#    		mcnaf    <- Camac RPC (drivers/camacrpc.c)
-#    Added install option
-#
-#    Revision 1.2  1998/11/19 22:38:44  pierre
-#    add -lutil for Linux
-#
-#    Revision 1.1  1998/10/23 09:15:48  midas
-#    Moved makefile.mcnaf from examples\basic\ to utils\
-#
-#    Revision 1.1  1998/10/09 22:36:01  midas
-#    -PAA- for DirectIO and for Linux drivers
+#  $Id:$
 #
 #
 

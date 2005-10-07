@@ -8,18 +8,7 @@
                 PCI-VME interface (Model 617) under Linux 2.2
 
 
-  $Log$
-  Revision 1.1  2004/04/30 07:22:22  midas
-  Initial revision
-
-
-  Old Revision history
-  ------------------------------------------------------------------
-  date        by    modification
-  --------    ---   ------------------------------------------------
-  28-Apr-98   SR    created for str340
-  18-Jan-01   SM    modified for sis4100, Interupt is not impremented yet.
-  05-Apr-01   SR    changed to mvmestd functions
+  $Id:$
 
 *********************************************************************/
 

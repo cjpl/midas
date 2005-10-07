@@ -14,39 +14,8 @@
  *                              btxxx  -> Linux,NT/bit3
  *  Application :
  *  Author      : Pierre-Andre Amaudruz Data Acquisition Group
- *  $Log$
- *  Revision 1.12  2005/02/18 06:29:56  olchanski
- *  Fix compilation on VxWorks
  *
- *  Revision 1.11  2004/10/06 18:56:55  pierre
- *  fix definition MVME
- *
- *  Revision 1.10  2004/01/08 08:40:08  midas
- *  Implemented standard indentation
- *
- *  Revision 1.9  2003/12/01 18:31:51  pierre
- *  adapted for new mvmestd
- *
- *  Revision 1.8  2002/06/17 23:46:01  pierre
- *  fix camc R/W mode
- *
- *  Revision 1.7  2002/05/08 22:30:07  pierre
- *  24bit access arithmetic bug
- *
- *  Revision 1.6  2002/03/02 01:16:26  pierre
- *  fix _sx  loop
- *
- *  Revision 1.5  2002/02/08 06:52:10  pierre
- *  add inhibit_test, interrupt_test
- *
- *  Revision 1.4  2002/01/28 20:14:16  pierre
- *  added macros, fix camc_chk
- *
- *  Revision 1.3  2001/09/07 18:09:44  pierre
- *  Fix args for interrupts
- *
- *  Revision 1.2  2001/06/18 11:11:54  midas
- *  Major modifications (SR) to work with Bit3 MOdel 617 interface
+ *  $Id:$
  *
  *---------------------------------------------------------------------------*/
 

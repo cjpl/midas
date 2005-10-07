@@ -5,49 +5,7 @@
 
   Contents:     Multimeter Class Driver
 
-  $Log$
-  Revision 1.13  2004/12/23 09:35:23  midas
-  Implemented NaNs for invalid channel readings
-
-  Revision 1.12  2004/01/08 08:40:08  midas
-  Implemented standard indentation
-
-  Revision 1.11  2003/10/30 12:38:21  midas
-  Don't overwrite number of channels from ODB
-
-  Revision 1.10  2003/09/30 19:48:45  midas
-  Output channels with DF_PRIO_DEVICE are now bidirectionally linked
-
-  Revision 1.9  2003/09/30 16:11:41  midas
-  Fixed another bug with zero output channels
-
-  Revision 1.8  2003/09/30 14:40:27  midas
-  Fixed problem if no output channels
-
-  Revision 1.7  2003/05/12 12:05:49  midas
-  Implemented DF_PRIO_DEVICE
-
-  Revision 1.6  2003/03/06 11:43:11  midas
-  Added CMD_SET_LABEL routines
-
-  Revision 1.5  2002/06/06 07:50:12  midas
-  Implemented scheme with DF_xxx flags
-
-  Revision 1.4  2002/05/08 19:54:40  midas
-  Added extra parameter to function db_get_value()
-
-  Revision 1.3  2002/03/14 13:03:15  midas
-  Fixed small bug
-
-  Revision 1.2  2000/03/02 21:54:02  midas
-  Added offset in readout routines, added cmd_set_label
-
-  Revision 1.1  1999/12/20 10:18:16  midas
-  Reorganized driver directory structure
-
-  Revision 1.2  1998/10/12 12:18:56  midas
-  Added Log tag in header
-
+  $Id:$
 
 \********************************************************************/
 

@@ -6,46 +6,7 @@
   Cotents:      Midas VME standard routines (MVMESTD) supplying an
                 abstract layer to all supported VME interfaces.
                 
-  $Log$
-  Revision 1.13  2005/09/30 04:25:18  ritt
-  Added index to MVME_INTERFACE
-
-  Revision 1.12  2005/09/29 03:42:31  amaudruz
-  add new error type
-
-  Revision 1.11  2005/09/28 04:36:02  ritt
-  vme structure gets allocated in driver
-
-  Revision 1.10  2005/09/27 10:05:52  ritt
-  Implemented 'new' mvmestd
-
-  Revision 1.9  2004/12/07 09:59:04  midas
-  Revised MVMESTD
-
-  Revision 1.8  2004/09/10 12:33:47  midas
-  Implemented SIS3100/1100
-
-  Revision 1.7  2004/01/08 08:40:09  midas
-  Implemented standard indentation
-
-  Revision 1.6  2003/11/24 08:22:45  midas
-  Changed timeouts from INT to DWORD, added ignore_timeout to cm_cleanup, adde '-f' flag to ODBEdit 'cleanup'
-
-  Revision 1.5  2001/06/27 12:16:30  midas
-  Added OS_IRIX
-
-  Revision 1.4  2001/04/05 05:51:36  midas
-  Added VME_LM
-
-  Revision 1.3  2000/09/28 11:12:15  midas
-  Added DMA flag to vme_read/vme_write
-
-  Revision 1.2  2000/09/26 07:45:19  midas
-  Added vme_write
-
-  Revision 1.1  2000/09/26 07:26:56  midas
-  Added file
-
+  $Id:$
 
 *********************************************************************/
 

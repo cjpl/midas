@@ -5,24 +5,7 @@
 
   Contents:     Calibration program for SCS-520
 
-  $Log$
-  Revision 1.6  2005/07/25 10:11:19  ritt
-  Fixed compiler warnings
-
-  Revision 1.5  2005/03/21 10:57:25  ritt
-  Version 2.0.0
-
-  Revision 1.4  2004/03/10 13:28:25  midas
-  mscb_init returns device name
-
-  Revision 1.3  2004/01/07 12:56:15  midas
-  Chaned line length
-
-  Revision 1.2  2004/01/07 12:52:23  midas
-  Changed indentation
-
-  Revision 1.1  2003/06/11 14:13:33  midas
-  Version 1.4.5
+  $Id:$
 
 \********************************************************************/
 

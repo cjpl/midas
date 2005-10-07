@@ -5,10 +5,7 @@
 
   Contents:     Device driver function declarations for MSCB device
 
-  $Log$
-  Revision 1.1  2003/05/12 10:30:16  midas
-  Initial revision
-
+  $Id:$
 
 \********************************************************************/
 

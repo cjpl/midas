@@ -5,46 +5,7 @@
 
   Contents:     Generic Class Driver
 
-  $Log$
-  Revision 1.8  2004/01/08 08:40:08  midas
-  Implemented standard indentation
-
-  Revision 1.7  2003/10/30 12:39:42  midas
-  Don't overwrite number of channels from ODB
-
-  Revision 1.6  2002/06/06 07:50:12  midas
-  Implemented scheme with DF_xxx flags
-
-  Revision 1.5  2002/06/06 07:15:45  midas
-  Added demand priority ODB/Device
-
-  Revision 1.4  2002/05/09 03:02:37  midas
-  Simplified driver to better serve as template for more complicated drivers
-
-  Revision 1.3  2002/05/08 19:54:40  midas
-  Added extra parameter to function db_get_value()
-
-  Revision 1.2  2000/03/02 21:54:02  midas
-  Added offset in readout routines, added cmd_set_label
-
-  Revision 1.1  1999/12/20 10:18:16  midas
-  Reorganized driver directory structure
-
-  Revision 1.6  1999/11/12 09:34:11  midas
-  Fixed compiler warning
-
-  Revision 1.5  1999/11/08 13:54:53  midas
-  Initialize demand_mirror with invalid value
-
-  Revision 1.4  1999/11/04 15:54:37  midas
-  Modifications in order to work with bl_psi.c
-
-  Revision 1.3  1999/09/20 11:54:08  midas
-  Fixed compiler warning
-
-  Revision 1.2  1998/10/12 12:18:55  midas
-  Added Log tag in header
-
+  $Id:$
 
 \********************************************************************/
 
