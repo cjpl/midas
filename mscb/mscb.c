@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus communication functions
 
   $Log$
+  Revision 1.107  2005/10/07 06:35:23  ritt
+  Improved error handling
+
   Revision 1.106  2005/10/06 14:33:39  ritt
   Applied patch from A. Suter for nonblocking recv()
 
@@ -1026,7 +1029,7 @@ int mscb_out(int index, unsigned char *buffer, int len, int flags)
       i = msend_tcp(mscb_fd[index - 1].fd, eth_buf, len + 2);
 
       if (i <= 0) {
-         /* USB submaster might have been dis- and reconnected, so reinit */
+         /* Ethernet submaster might have been dis- and reconnected, so reinit */
          mrpc_disconnect(mscb_fd[index - 1].fd);
 
          mscb_fd[index].fd = mrpc_connect(mscb_fd[index - 1].device, MSCB_NET_PORT);
@@ -3524,7 +3527,7 @@ int mscb_read(int fd, unsigned short adr, unsigned char index, void *data, int *
 
 \********************************************************************/
 {
-   int i, n;
+   int i, n, status;
    unsigned char buf[256], crc;
 
    debug_log("mscb_read(fd=%d,adr=%d,index=%d,data=%p,size=%d) ", fd, adr, index, data, *size);
@@ -3533,6 +3536,7 @@ int mscb_read(int fd, unsigned short adr, unsigned char index, void *data, int *
       return MSCB_INVAL_PARAM;
 
    memset(data, 0, *size);
+   status = 0;
 
    if (fd > MSCB_MAX_FD || fd < 1 || !mscb_fd[fd - 1].type) {
       debug_log("return MSCB_INVAL_PARAM\n");
@@ -3567,7 +3571,9 @@ int mscb_read(int fd, unsigned short adr, unsigned char index, void *data, int *
       buf[4] = MCMD_READ + 1;
       buf[5] = index;
       buf[6] = crc8(buf+4, 2);
-      mscb_out(fd, buf, 7, RS485_FLAG_ADR_CYCLE);
+      status = mscb_out(fd, buf, 7, RS485_FLAG_ADR_CYCLE);
+      if (status == MSCB_TIMEOUT)
+         continue;
 
       /* read data */
       i = mscb_in(fd, buf, sizeof(buf), 10000);
@@ -3579,14 +3585,18 @@ int mscb_read(int fd, unsigned short adr, unsigned char index, void *data, int *
 #endif
       }
 
-      if (i < 2)
+      if (i < 2) {
+         status = MSCB_TIMEOUT;
          continue;
+      }
 
       crc = crc8(buf, i - 1);
 
       if ((buf[0] != MCMD_ACK + i - 2 && buf[0] != MCMD_ACK + 7)
-          || buf[i - 1] != crc)
+         || buf[i - 1] != crc) {
+         status = MSCB_CRC_ERROR;
          continue;
+      }
 
       if (buf[0] == MCMD_ACK + 7) {
          if (i - 3 > *size) {
@@ -3629,13 +3639,13 @@ int mscb_read(int fd, unsigned short adr, unsigned char index, void *data, int *
 
    mscb_release(fd);
 
-   if (i < 2) {
+   if (status == MSCB_TIMEOUT)
       debug_log("return MSCB_TIMEOUT\n");
-      return MSCB_TIMEOUT;
-   }
 
-   debug_log("return MSCB_CRC_ERROR");
-   return MSCB_CRC_ERROR;
+   if (status == MSCB_CRC_ERROR)
+      debug_log("return MSCB_CRC_ERROR");
+
+   return status;
 }
 
 /*------------------------------------------------------------------*/
