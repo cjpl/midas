@@ -5,24 +5,7 @@
 
   Contents:     TCP/IP socket communication routines
 
-  $Log$
-  Revision 1.6  2004/01/08 08:40:08  midas
-  Implemented standard indentation
-
-  Revision 1.5  2001/04/06 03:58:34  midas
-  Moved debugging flag into ODB for BD
-
-  Revision 1.4  2001/04/05 05:53:34  midas
-  Added CMD_NAME
-
-  Revision 1.3  2001/04/03 12:26:50  midas
-  Improved logging
-
-  Revision 1.2  2001/03/01 09:36:25  midas
-  Put <TIMOUT> into debug messages
-
-  Revision 1.1  2001/02/26 13:58:06  midas
-  Added files
+  $Id:$
 
 \********************************************************************/
 

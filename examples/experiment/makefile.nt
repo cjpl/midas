@@ -6,27 +6,7 @@
 #  Contents:     Makefile for MIDAS example frontend and analyzer
 #                under Windows NT 
 #
-#  Revision history
-#  ------------------------------------------------------------------
-#  date         by    modification
-#  ---------    ---   -----------------------------------------------
-#  13-NOV-97    SR    created
-#
-#  $Log$
-#  Revision 1.9  2005/09/01 10:19:40  ritt
-#  Added cnaf_callback.c
-#
-#  Revision 1.8  2004/10/19 04:53:02  pierre
-#  add USE_ROOT
-#
-#  Revision 1.7  2004/09/30 23:20:46  midas
-#  Use USE_ROOT for mana.c
-#
-#  Revision 1.6  2004/06/18 10:01:40  midas
-#  Added /GX
-#
-#  Revision 1.5  2003/09/02 20:31:48  pierre
-#  include cvs tag
+#  $Id:$
 #
 #####################################################################
 

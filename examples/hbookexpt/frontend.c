@@ -10,55 +10,7 @@
                 with two banks (ADC0 and TDC0), the scaler event 
                 with one bank (SCLR).
 
-  $Log$
-  Revision 1.2  2004/01/08 08:40:09  midas
-  Implemented standard indentation
-
-  Revision 1.1  2003/04/25 13:20:08  midas
-  Initial revision
-
-  Revision 1.17  2003/04/23 15:08:43  midas
-  Decreased N_TDC to 4
-
-  Revision 1.16  2003/04/14 13:31:17  midas
-  Enabled trigger_bank_list
-
-  Revision 1.15  2003/04/14 13:17:01  midas
-  Added bank description
-
-  Revision 1.14  2002/05/16 21:09:53  midas
-  Added max_event_size_frag
-
-  Revision 1.11  2000/08/21 10:32:51  midas
-  Added max_event_size, set event_buffer_size = 10*max_event_size
-
-  Revision 1.10  2000/03/13 18:53:29  pierre
-  - Added 2nd arg in readout functions (offset for Super event)
-
-  Revision 1.9  2000/03/02 22:00:00  midas
-  Added number of subevents as zero
-
-  Revision 1.8  1999/02/24 16:27:01  midas
-  Added some "real" readout code
-
-  Revision 1.7  1999/01/20 09:03:38  midas
-  Added LAM_SOURCE_CRATE and LAM_SOURCE_STATION macros
-
-  Revision 1.6  1999/01/19 10:27:30  midas
-  Use new LAM_SOURCE and LAM_STATION macros
-
-  Revision 1.5  1998/11/09 09:14:41  midas
-  Added code to simulate random data
-
-  Revision 1.4  1998/10/29 14:27:46  midas
-  Added note about FE_ERR_HW in frontend_init()
-
-  Revision 1.3  1998/10/28 15:50:58  midas
-  Changed lam to DWORD
-
-  Revision 1.2  1998/10/12 12:18:58  midas
-  Added Log tag in header
-
+  $Id:$
 
 \********************************************************************/
 

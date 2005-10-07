@@ -5,46 +5,7 @@
 
   Contents:     Epics channel access device driver
 
-  $Log$
-  Revision 1.5  2004/05/07 19:40:11  midas
-  Replaced min/max by MIN/MAX macros
-
-  Revision 1.4  2004/01/08 08:40:08  midas
-  Implemented standard indentation
-
-  Revision 1.3  2002/06/06 07:50:12  midas
-  Implemented scheme with DF_xxx flags
-
-  Revision 1.2  2000/03/02 21:50:53  midas
-  Added set_label command and possibility to disable individual functions
-
-  Revision 1.1  1999/12/20 10:18:19  midas
-  Reorganized driver directory structure
-
-  Revision 1.7  1999/09/22 15:27:35  midas
-  Removed TABs
-
-  Revision 1.6  1999/09/22 13:01:12  midas
-  Figured out that pv_handle is an array of pointers
-
-  Revision 1.5  1999/09/22 12:53:04  midas
-  Removed sizeof(chid) by sizeof(struct channel_in_use)
-
-  Revision 1.4  1999/09/22 12:13:42  midas
-  Fixed compiler warning
-
-  Revision 1.3  1999/09/22 11:30:48  midas
-  Added event driven data readout
-
-  Revision 1.2  1999/09/21 13:48:40  midas
-  Fixed compiler warning
-
-  Revision 1.1  1999/08/31 15:16:26  midas
-  Added file
-
-  Revision 1.2  1998/10/12 12:18:57  midas
-  Added Log tag in header
-
+  $Id:$
 
 \********************************************************************/
 

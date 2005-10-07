@@ -5,16 +5,7 @@
 
   Contents:     Program which tests the architecture of the HW/OS
 
-  $Log$
-  Revision 1.3  2004/01/08 08:40:11  midas
-  Implemented standard indentation
-
-  Revision 1.2  1999/06/23 09:47:43  midas
-  Added (long int) and (long double)
-
-  Revision 1.2  1998/10/12 12:19:01  midas
-  Added Log tag in header
-
+  $Id:$
 
 \********************************************************************/
 

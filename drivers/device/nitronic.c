@@ -5,24 +5,7 @@
 
   Contents:     Nitronic HVS 132 High Voltage Device Driver
 
-  $Log$
-  Revision 1.7  2004/01/08 08:40:08  midas
-  Implemented standard indentation
-
-  Revision 1.6  2001/01/04 10:50:46  midas
-  Switched off debugging
-
-  Revision 1.5  2001/01/04 10:20:57  midas
-  Increased timeouts from 1s to 3s
-
-  Revision 1.4  2001/01/03 16:11:36  midas
-  Fixed compiler warnings
-
-  Revision 1.3  2000/12/18 13:43:49  midas
-  Implemented new bus driver scheme
-
-  Revision 1.2  2000/10/19 13:00:42  midas
-  Initial revision
+  $Id:$
 
 \********************************************************************/
 

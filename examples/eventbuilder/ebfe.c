@@ -18,18 +18,7 @@
 		But nothing prevent to generate real event using
 		proper driver.
 		
-  $Log$
-  Revision 1.1  2004/09/29 16:19:47  pierre
-  for new mevb
-
-  Revision 1.3  2004/01/08 08:40:08  midas
-  Implemented standard indentation
-
-  Revision 1.2  2002/07/13 05:46:25  pierre
-  added frag declaration
-
-  Revision 1.1.1.1  2002/01/17 20:22:16  pierre
-  Initial Version
+  $Id:$
 
 \********************************************************************/
 

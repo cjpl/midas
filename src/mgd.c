@@ -18,22 +18,7 @@
 
   Contents:     GD graphics library to create Web images
 
-  $Log$
-  Revision 1.5  2005/01/04 13:33:06  midas
-  Recycle already allocated colors
-
-  Revision 1.4  2004/01/18 09:59:45  olchansk
-  remove bogus #include <malloc.h>
-
-  Revision 1.3  2004/01/08 08:40:10  midas
-  Implemented standard indentation
-
-  Revision 1.2  2002/05/11 01:23:23  midas
-  Added malloc/free debugging
-
-  Revision 1.1  2000/04/28 09:10:57  midas
-  Initial revision
-
+  $Id:$
 
 \********************************************************************/
 

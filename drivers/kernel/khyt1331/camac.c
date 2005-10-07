@@ -6,15 +6,7 @@
   Contents:     Linux CAMAC library wrapping calls around /dev/camac
                 driver
 
-  $Log$
-  Revision 1.3  2004/01/08 08:40:08  midas
-  Implemented standard indentation
-
-  Revision 1.2  2001/10/03 14:45:11  midas
-  Separated IOCTL functions code into header file
-
-  Revision 1.1  2001/08/21 14:28:34  midas
-  Initial revision
+  $Id:$
 
 \********************************************************************/
 

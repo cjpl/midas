@@ -8,33 +8,7 @@
                 Midas Slow Control Bus protocol 
                 for SCS-900 analog high precision I/O 
 
-  $Log$
-  Revision 1.9  2005/04/14 10:19:09  ritt
-  Assume 2.5 DAC if ADC is 2.5V
-
-  Revision 1.8  2005/03/08 12:41:38  ritt
-  Version 1.9.0
-
-  Revision 1.7  2005/02/16 13:14:50  ritt
-  Version 1.8.0
-
-  Revision 1.6  2004/12/08 10:38:05  midas
-  Implemented calibration
-
-  Revision 1.5  2004/09/10 12:27:23  midas
-  Version 1.7.5
-
-  Revision 1.4  2004/04/07 11:06:17  midas
-  Version 1.7.1
-
-  Revision 1.3  2004/02/24 13:29:35  midas
-  Made bipolar mode working
-
-  Revision 1.2  2004/02/06 12:03:31  midas
-  ADC works as well
-
-  Revision 1.1  2004/02/05 16:30:54  midas
-  DAC works
+  $Id:$
 
 \********************************************************************/
 

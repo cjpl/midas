@@ -5,40 +5,7 @@
 
   Contents:     LeCroy LRS 1440 High Voltage Device Driver
 
-  $Log$
-  Revision 1.7  2004/12/15 17:05:52  midas
-  Changed warning text
-
-  Revision 1.6  2004/01/08 08:40:08  midas
-  Implemented standard indentation
-
-  Revision 1.5  2003/09/29 11:56:44  midas
-  Initial revision
-
-  Revision 1.4  2001/01/04 12:21:46  midas
-  Fixed bug
-
-  Revision 1.3  2001/01/04 12:05:41  midas
-  Implemented Bus Driver scheme
-
-  Revision 1.2  2000/03/17 13:13:58  midas
-  Changed rs232.h to bus\rs232.h
-
-  Revision 1.1  1999/12/20 10:18:19  midas
-  Reorganized driver directory structure
-
-  Revision 1.5  1999/06/25 13:50:10  midas
-  Reduced timeout from 3s to 1s
-
-  Revision 1.4  1999/01/14 17:01:44  midas
-  Added rs232 port sharing
-
-  Revision 1.3  1999/01/14 15:57:54  midas
-  Adapted to new "info" structure
-
-  Revision 1.2  1998/10/12 12:18:57  midas
-  Added Log tag in header
-
+  $Id:$
 
 \********************************************************************/
 

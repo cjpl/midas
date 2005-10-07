@@ -5,20 +5,7 @@
 
   Cotents:      CAMAC functions for CES VCC 2117 controller
 
-  $Log$
-  Revision 1.2  2004/01/08 08:39:19  midas
-  Removed garbage at end of file
-
-  Revision 1.1  1999/12/20 10:18:11  midas
-  Reorganized driver directory structure
-
-  Revision 1.3  1998/10/23 14:21:49  midas
-  - Modified version scheme from 1.06 to 1.6.0
-  - cm_get_version() now returns versino as string
-
-  Revision 1.2  1998/10/12 12:18:56  midas
-  Added Log tag in header
-
+  $Id:$
 
 \********************************************************************/
 

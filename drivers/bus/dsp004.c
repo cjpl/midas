@@ -6,49 +6,7 @@
   Contents:     Device driver for DSP6002 and PC004 8bit CAMAC controller
                 following the MIDAS CAMAC Standard for DirectIO
 
-  $Log$
-  Revision 1.10  2004/01/08 08:40:08  midas
-  Implemented standard indentation
-
-  Revision 1.9  2002/05/16 22:20:54  pierre
-  add cam_inhibit_test
-
-  Revision 1.8  2002/05/08 22:19:27  pierre
-  remove warnings
-
-  Revision 1.7  2001/11/22 18:26:25  pierre
-  fix cam24o_q upper byte
-
-  Revision 1.6  2001/10/16 20:47:40  pierre
-  Update cam_interrupt_() args
-
-  Revision 1.5  2001/04/20 21:58:29  pierre
-  - decrement *d if no Q in _rq calls
-
-  Revision 1.4  2000/09/26 07:10:50  midas
-  Added DO_IOPERM for debugging as root
-
-  Revision 1.3  2000/09/07 17:15:47  pierre
-  -Add fe_name
-
-  Revision 1.2  2000/07/11 16:39:38  pierre
-  - Fix bug for i_sa, i_r functions
-
-  Revision 1.1  1999/12/20 10:18:11  midas
-  Reorganized driver directory structure
-
-  Revision 1.5  1999/07/22 01:24:27  pierre
-  - Zero 4th bytes on R24 calls
-
-  Revision 1.4  1999/02/22 19:07:10  pierre
-  - Remove came_xxx
-
-  Revision 1.3  1999/01/18 17:22:42  pierre
-  - fix cam24i_r for DH access
-
-  Revision 1.2  1998/10/12 12:18:56  midas
-  Added Log tag in header
-
+  $Id:$
 
 \********************************************************************/
 

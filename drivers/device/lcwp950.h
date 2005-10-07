@@ -6,13 +6,7 @@
   Contents:     LeCroy WavePro 950 Digital Storage Oscilloscope 
                 header file
 
-  $Log$
-  Revision 1.3  2004/07/16 08:20:34  schneebeli
-  Added timeout to scope_wait()
-
-  Revision 1.1  2002/01/14 16:49:53  midas
-  Initial revisioin
-
+  $Id:$
 
 \********************************************************************/
 

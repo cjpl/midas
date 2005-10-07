@@ -8,75 +8,7 @@
                 Midas Slow Control Bus protocol 
                 for SCS-500 analog I/O
 
-  $Log$
-  Revision 1.21  2005/03/30 14:33:02  ritt
-  Added n_sub_addr
-
-  Revision 1.20  2004/01/07 12:52:23  midas
-  Changed indentation
-
-  Revision 1.19  2003/07/14 10:19:14  midas
-  Version 1.4.8
-
-  Revision 1.18  2003/05/14 15:13:43  midas
-  Limit ADC_average to 8
-
-  Revision 1.17  2003/05/14 15:08:04  midas
-  Switched P1 back to open drain
-
-  Revision 1.16  2003/05/14 14:56:44  midas
-  Switched P1 to push-pull
-
-  Revision 1.15  2003/03/19 16:35:03  midas
-  Eliminated configuration parameters
-
-  Revision 1.14  2003/03/06 16:08:50  midas
-  Protocol version 1.3 (change node name)
-
-  Revision 1.13  2003/02/19 16:05:36  midas
-  Added 'init' parameter to user_init
-
-  Revision 1.12  2002/11/22 15:43:03  midas
-  Made user_write reentrant
-
-  Revision 1.11  2002/11/20 12:02:59  midas
-  Added yield()
-
-  Revision 1.10  2002/10/28 14:26:30  midas
-  Changes from Japan
-
-  Revision 1.9  2002/10/23 05:46:04  midas
-  Fixed bug with wrong gain bits
-
-  Revision 1.8  2002/10/22 15:05:36  midas
-  Added gain and offset calibrations
-
-  Revision 1.7  2002/10/16 15:24:38  midas
-  Added units in descriptor
-
-  Revision 1.6  2002/10/09 11:06:46  midas
-  Protocol version 1.1
-
-  Revision 1.5  2002/10/03 15:31:53  midas
-  Various modifications
-
-  Revision 1.4  2002/08/12 12:11:49  midas
-  No voltage output in debug mode
-
-  Revision 1.3  2002/08/08 06:47:27  midas
-  Fixed typo
-
-  Revision 1.2  2002/07/12 15:19:53  midas
-  Added NOAREGS
-
-  Revision 1.1  2002/07/12 08:38:13  midas
-  Fixed LCD recognition
-
-  Revision 1.2  2002/07/10 09:52:55  midas
-  Finished EEPROM routines
-
-  Revision 1.1  2002/07/09 15:31:32  midas
-  Initial Revision
+  $Id:$
 
 \********************************************************************/
 

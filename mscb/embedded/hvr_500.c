@@ -8,15 +8,7 @@
                 Midas Slow Control Bus protocol
                 for HVR_300 High Voltage Regulator
 
-  $Log$
-  Revision 1.3  2005/05/02 10:50:12  ritt
-  Version 2.1.1
-
-  Revision 1.2  2005/04/19 15:00:37  ritt
-  Implemented hardware trip
-
-  Revision 1.1  2005/02/22 13:20:18  ritt
-  Initial revision
+  $Id:$
 
 \********************************************************************/
 

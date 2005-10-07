@@ -5,24 +5,7 @@
 
   Cotents:      Routines for accessing VME under VxWorks
                 
-  $Log$
-  Revision 1.6  2005/02/18 06:29:57  olchanski
-  Fix compilation on VxWorks
-
-  Revision 1.5  2004/10/06 18:57:05  pierre
-  fix definition MVME
-
-  Revision 1.4  2004/06/23 17:07:54  pierre
-  add read/write func code
-
-  Revision 1.3  2004/02/06 01:15:27  pierre
-  fix new definition
-
-  Revision 1.2  2004/01/08 08:40:08  midas
-  Implemented standard indentation
-
-  Revision 1.1  2001/10/05 22:28:34  pierre
-  Initial version
+  $Id:$
 
 *********************************************************************/
 #include <stdio.h>

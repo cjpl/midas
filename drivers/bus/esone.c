@@ -6,21 +6,7 @@
   Contents:     CAMAC interface for ESONE standard using 
                 MCSTD (Midas Camac Standard)
 
-  $Log$
-  Revision 1.8  2004/01/08 06:51:40  pierre
-  Doxygen the file
-
-  Revision 1.7  2002/02/01 19:11:33  pierre
-  doc++ cleanup
-
-  Revision 1.6  2001/12/17 18:25:05  pierre
-  include cclnk, cculk, ccrgl from khy1331
-
-  Revision 1.5  2001/08/14 10:27:40  midas
-  Restore signal handler on error
-
-  Revision 1.3  2001/08/14 09:43:30  midas
-  Initial revision
+  $Id:$
 
 \********************************************************************/
 

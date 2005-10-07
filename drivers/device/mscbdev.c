@@ -5,36 +5,7 @@
 
   Contents:     MSCB Device Driver.
 
-  $Log$
-  Revision 1.10  2005/03/24 22:48:45  ritt
-  Changed parameters to mscb_init
-
-  Revision 1.9  2004/12/23 09:35:23  midas
-  Implemented NaNs for invalid channel readings
-
-  Revision 1.8  2004/12/22 14:31:12  midas
-  Produce error message
-
-  Revision 1.7  2004/04/30 07:58:17  midas
-  Adjusted mscb_init()
-
-  Revision 1.6  2004/01/08 08:40:08  midas
-  Implemented standard indentation
-
-  Revision 1.5  2003/09/30 16:12:32  midas
-  Show error if cannot connect
-
-  Revision 1.4  2003/05/12 14:45:58  midas
-  Corrected error status
-
-  Revision 1.3  2003/05/12 14:36:31  midas
-  Fixed compiler warning
-
-  Revision 1.2  2003/05/12 12:04:44  midas
-  Check for DF_PRIO_DEV
-
-  Revision 1.1  2003/05/12 10:30:16  midas
-  Initial revision
+  $Id:$
 
 \********************************************************************/
 

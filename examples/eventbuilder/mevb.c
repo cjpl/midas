@@ -3,63 +3,8 @@ Name:         mevb.c
 Created by:   Pierre-Andre Amaudruz
 
 Contents:     Main Event builder task.
-$Log$
-Revision 1.19  2005/10/03 21:21:39  amaudruz
-correct transtion number
 
-Revision 1.18  2004/10/07 23:11:49  pierre
-active enable and fragment request switch
-
-Revision 1.17  2004/10/07 22:04:00  pierre
-Doxygen correction
-
-Revision 1.16  2004/10/07 20:08:34  pierre
-1.9.5
-
-Revision 1.15  2004/10/04 23:55:28  pierre
-move ebuilder into equipment list
-
-Revision 1.14  2004/09/29 17:55:34  pierre
-fix speed problem
-
-Revision 1.13  2004/09/29 16:20:31  pierre
-change Ebuilder structure
-
-Revision 1.12  2004/01/08 08:40:08  midas
-Implemented standard indentation
-
-Revision 1.11  2004/01/08 06:48:26  pierre
-Doxygen the file
-
-Revision 1.10  2003/08/19 23:26:36  pierre
-fix cm_get_environment arg
-
-Revision 1.9  2002/10/07 17:04:01  pierre
-fix tr_stop request
-
-Revision 1.8  2002/09/28 00:48:33  pierre
-Add EB_USER_ERROR handling, handFlush()
-
-Revision 1.7  2002/09/25 18:37:37  pierre
-correct: header passing, user field, abort run
-
-Revision 1.6  2002/08/29 22:07:47  pierre
-fix event header, double task, EOR
-
-Revision 1.5  2002/07/13 05:45:49  pierre
-added swap before user function
-
-Revision 1.4  2002/06/14 04:59:08  pierre
-revised for ybos 
-
-Revision 1.3  2002/05/08 20:51:41  midas
-Added extra parameter to function db_get_value()
-
-Revision 1.2  2002/01/17 23:34:14  pierre
-doc++ format
-
-Revision 1.1.1.1  2002/01/17 19:49:54  pierre
-Initial Version
+  $Id:$
 
 \********************************************************************/
 

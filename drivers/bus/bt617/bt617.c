@@ -8,7 +8,8 @@
                 Model 983 and under Linux using the vmehb device
                 driver.
 
-  $LOG$
+  $Id:$
+
 *********************************************************************/
 
 #include    <stdio.h>

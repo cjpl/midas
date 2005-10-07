@@ -5,16 +5,7 @@
 
   Contents:     Single file analyzer code for sample experiment
 
-  $Log$
-  Revision 1.3  2004/01/08 08:40:09  midas
-  Implemented standard indentation
-
-  Revision 1.2  2002/05/08 20:51:41  midas
-  Added extra parameter to function db_get_value()
-
-  Revision 1.1  1999/02/22 12:24:56  midas
-  Initial revision
-
+  $Id:$
 
 \********************************************************************/
 

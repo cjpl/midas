@@ -5,28 +5,7 @@
 
   Contents:     MIDAS history display utility
 
-  $Log$
-  Revision 1.8  2004/01/08 08:40:11  midas
-  Implemented standard indentation
-
-  Revision 1.7  2003/04/23 23:53:41  pierre
-  Fixed compiler warning
-
-  Revision 1.6  2000/07/24 14:27:34  midas
-  Did some cosmetics
-
-  Revision 1.5  2000/06/15 09:49:07  midas
-  Added Ilia's changes and additions (mainly configuration file)
-
-  Revision 1.4  1999/08/27 07:59:53  midas
-  Fixed bug
-
-  Revision 1.2  1999/08/24 14:46:44  midas
-  Added -a flag and indexed variables
-
-  Revision 1.1  1999/08/23 15:22:39  midas
-  Added file
-
+  $Id:$
 
 \********************************************************************/
 

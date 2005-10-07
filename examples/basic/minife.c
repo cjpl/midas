@@ -6,13 +6,7 @@
   Contents:     A "Mini-Frontend" program showing the basic concept
                 of frontend in the MIDAS system
 
-  $Log$
-  Revision 1.3  2004/01/08 08:40:08  midas
-  Implemented standard indentation
-
-  Revision 1.2  1998/10/12 12:18:58  midas
-  Added Log tag in header
-
+  $Id:$
 
 \********************************************************************/
 

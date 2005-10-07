@@ -5,12 +5,7 @@
 
   Contents:     ESONE declarations
 
-  $Log$
-  Revision 1.5  2004/01/08 08:40:09  midas
-  Implemented standard indentation
-
-  Revision 1.4  2001/08/21 09:34:08  midas
-  Added a few functions
+  $Id:$
 
 \********************************************************************/
 

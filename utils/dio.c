@@ -10,25 +10,7 @@
 
                 dio frontend
 
-  $Log$
-  Revision 1.4  2004/01/08 08:40:11  midas
-  Implemented standard indentation
-
-  Revision 1.3  2003/04/23 23:08:57  pierre
-  Fixed compiler warning
-
-  Revision 1.2  2001/08/14 10:04:56  midas
-  Use iopl() instead of ioperm() to access PCI ports > 0x3FF
-
-  Revision 1.1  1999/12/20 09:19:11  midas
-  Moved dio.c from drivers to utils direcotry
-
-  Revision 1.2  1999/05/06 18:44:16  pierre
-  - Added ioperm to port 0x80 for slow IO access (linux asm/io.h)
-
-  Revision 1.1  1998/11/25 15:57:37  midas
-  Added dio.c program as ioperm() wrapper for frontends
-
+  $Id:$
 
 \********************************************************************/
 

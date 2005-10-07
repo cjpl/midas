@@ -5,16 +5,7 @@
 
   Contents:     System part of Analyzer code for sample experiment
 
-  $Log$
-  Revision 1.3  2004/01/08 08:40:09  midas
-  Implemented standard indentation
-
-  Revision 1.2  2003/04/25 13:24:28  midas
-  Removed HAVE_HBOOK
-
-  Revision 1.1  2003/04/25 13:20:07  midas
-  Initial revision
-
+  $Id:$
 
 \********************************************************************/
 

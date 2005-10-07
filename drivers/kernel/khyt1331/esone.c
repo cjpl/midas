@@ -6,12 +6,7 @@
   Contents:     CAMAC interface for ESONE standard using
                 MCSTD (Midas Camac Standard)
 
-  $Log$
-  Revision 1.2  2004/01/08 08:40:08  midas
-  Implemented standard indentation
-
-  Revision 1.1  2001/08/21 14:28:34  midas
-  Initial revision
+  $Id:$
 
 \********************************************************************/
 

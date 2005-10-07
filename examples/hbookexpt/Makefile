@@ -6,30 +6,10 @@
 #  Contents:     Makefile for MIDAS example frontend and analyzer
 #                using HBOOK functionality
 #
-#  $Log$
-#  Revision 1.7  2005/10/06 22:32:54  amaudruz
-#  check for MIDASSYS , CERNLIB , add Darwin support, use OS_DIR
-#
-#  Revision 1.6  2003/12/12 17:40:29  midas
-#  Added experim.h dependency
-#
-##  Revision 1.5  2003/08/20 21:00:46  pierre
-#  add phtread lib
-#
-#  Revision 1.4  2003/07/14 14:51:45  midas
-#  Restructured driver directory
-#
-#  Revision 1.3  2003/05/09 09:58:23  midas
-#  Removed ranalyzer from Makefile
-#
-#  Revision 1.2  2003/04/25 13:27:13  midas
-#  Link against hmana.o
-#
-#  Revision 1.1  2003/04/25 13:20:07  midas
-#  Initial revision
-#
+#  $Id:$
 #
 #####################################################################
+
 # The MIDASSYS should be defined prior the use of this Makefile
 ifndef MIDASSYS
 missmidas::

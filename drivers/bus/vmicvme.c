@@ -5,9 +5,7 @@ Created by:   Pierre-Andre Amaudruz
 Contents:     VME interface for the VMIC VME board processor
               using the mvmestd VME call convention.
 
-$Log$
-Revision 1.2  2005/09/29 03:36:02  amaudruz
-VMIC VME driver following the mvmestd
+  $Id:$
 
 *********************************************************************/
 #include <stdio.h>

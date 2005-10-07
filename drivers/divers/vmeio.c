@@ -13,21 +13,7 @@
  *  Application : VME
  *  Author      :  Pierre-Andre Amaudruz Data Acquisition Group
  *  Revision 1.0:  1998/Mar/20 Pierre	   Inline function
-    $Log$
-    Revision 1.2  2004/01/08 07:51:21  midas
-    Changed indentation
-
-    Revision 1.1  1999/12/20 10:18:23  midas
-    Reorganized driver directory structure
-
-    Revision 1.4  1999/12/08 00:52:24  pierre
-    - fix () to (void *) declaration.
-
-    Revision 1.3  1999/09/29 21:04:19  pierre
-    - include vmeio.h
-
-    Revision 1.2  1999/05/06 18:36:20  pierre
-    - PPCxxx support
+  $Id:$
  *
  *---------------------------------------------------------------------------*/
 

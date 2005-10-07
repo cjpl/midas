@@ -6,22 +6,7 @@
   Contents:     Type ID definitions and structured for specific
                 hardware.
 
-  $Log$
-  Revision 1.6  2004/04/30 07:27:20  midas
-  Cleanup
-
-  Revision 1.5  2004/01/08 08:40:09  midas
-  Implemented standard indentation
-
-  Revision 1.4  2003/11/19 11:22:18  midas
-  Added CAEN775 TDC
-
-  Revision 1.3  2003/09/29 07:59:46  midas
-  *** empty log message ***
-
-  Revision 1.2  1998/10/12 12:18:59  midas
-  Added Log tag in header
-
+  $Id:$
 
 \********************************************************************/
 

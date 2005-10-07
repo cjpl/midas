@@ -6,27 +6,7 @@
   Contents:     Buffer manager test program. Simple consumer connec-
                 ting to a SYSTEM buffer and receiving some data.
 
-  $Log$
-  Revision 1.7  2004/05/03 11:30:36  midas
-  Implemented cm_query_transition()
-
-  Revision 1.6  2004/01/08 08:40:09  midas
-  Implemented standard indentation
-
-  Revision 1.5  2000/03/03 22:48:31  midas
-  Changed MDEBUG to MERROR (to see it in the log file)
-
-  Revision 1.4  2000/03/03 20:55:56  midas
-  Added serial number check for multiple events (id<10)
-
-  Revision 1.3  1999/04/30 13:19:53  midas
-  Changed inter-process communication (ss_resume, bm_notify_clients, etc)
-  to strings so that server process can receive it's own watchdog produced
-  messages (pass buffer name insteas buffer handle)
-
-  Revision 1.2  1998/10/12 12:18:59  midas
-  Added Log tag in header
-
+  $Id:$
 
 \********************************************************************/
 

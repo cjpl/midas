@@ -8,12 +8,7 @@
                 Midas Slow Control Bus protocol 
                 for SCS-320 VME Crate interface
 
-  $Log$
-  Revision 1.2  2005/10/06 11:38:20  ritt
-  Implemented temperature sensor
-
-  Revision 1.1  2005/10/05 15:21:25  ritt
-  Initial revision
+  $Id:$
 
 \********************************************************************/
 

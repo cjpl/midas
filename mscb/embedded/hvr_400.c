@@ -8,42 +8,7 @@
                 Midas Slow Control Bus protocol
                 for HVR_300 High Voltage Regulator
 
-  $Log$
-  Revision 1.1  2005/02/22 13:20:18  ritt
-  Initial revision
-
-  Revision 1.12  2005/02/16 13:14:50  ritt
-  Version 1.8.0
-
-  Revision 1.11  2004/12/21 15:12:33  midas
-  Implemented voltage divider unbalance calibration
-
-  Revision 1.10  2004/12/21 10:44:12  midas
-  Added watchdog_refresh to avoid timeout during ramping
-
-  Revision 1.9  2004/10/12 11:02:41  midas
-  Version 1.7.6
-
-  Revision 1.8  2004/07/29 15:48:27  midas
-  Disabled temp. measurement (unreliable)
-
-  Revision 1.7  2004/07/22 13:08:10  midas
-  Implemented idle command
-
-  Revision 1.6  2004/05/14 15:10:09  midas
-  Fixed bug with status bits
-
-  Revision 1.5  2004/04/30 07:59:22  midas
-  LED on when HV is on
-
-  Revision 1.4  2004/04/08 09:23:36  midas
-  Added software current limit
-
-  Revision 1.3  2004/04/07 11:06:17  midas
-  Version 1.7.1
-
-  Revision 1.2  2004/03/04 14:33:01  midas
-  Initial revision
+  $Id:$
 
 \********************************************************************/
 

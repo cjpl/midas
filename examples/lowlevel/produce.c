@@ -6,30 +6,7 @@
   Contents:     Buffer manager test program. Simple producer connec-
                 ting to a SYSTEM buffer and sending some data.
 
-  $Log$
-  Revision 1.8  2004/01/08 08:40:09  midas
-  Implemented standard indentation
-
-  Revision 1.7  1999/11/23 11:48:40  midas
-  Replaced random() by rand(), since random doesn't exist under NT
-
-  Revision 1.6  1999/11/09 13:22:12  midas
-  Changed event size slightly to be above 10
-
-  Revision 1.5  1999/10/26 12:26:05  midas
-  Added variable event size for test purposes
-
-  Revision 1.4  1999/08/06 15:10:32  midas
-  Release 1.6.4
-
-  Revision 1.3  1999/04/30 13:19:53  midas
-  Changed inter-process communication (ss_resume, bm_notify_clients, etc)
-  to strings so that server process can receive it's own watchdog produced
-  messages (pass buffer name insteas buffer handle)
-
-  Revision 1.2  1998/10/12 12:18:59  midas
-  Added Log tag in header
-
+  $Id:$
 
 \********************************************************************/
 

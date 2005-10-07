@@ -8,19 +8,7 @@
                 Midas Slow Control Bus protocol
                 for SCS-800 capacitance meter
 
-  $Log$
-  Revision 1.4  2004/04/07 11:06:17  midas
-  Version 1.7.1
-
-  Revision 1.3  2004/01/07 12:52:23  midas
-  Changed indentation
-
-  Revision 1.2  2003/09/23 09:23:05  midas
-  Removed tabs
-
-  Revision 1.1  2003/09/10 13:46:34  midas
-  Initial revision
-
+  $Id:$
 
 \********************************************************************/
 

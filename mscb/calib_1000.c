@@ -5,18 +5,7 @@
 
   Contents:     Calibration program for SCS-900
 
-  $Log$
-  Revision 1.4  2005/07/25 10:11:19  ritt
-  Fixed compiler warnings
-
-  Revision 1.3  2005/07/07 11:56:03  ritt
-  Fixed delay
-
-  Revision 1.2  2005/03/21 10:57:25  ritt
-  Version 2.0.0
-
-  Revision 1.1  2005/02/16 12:18:24  ritt
-  Initial revision
+  $Id:$
 
 \********************************************************************/
 

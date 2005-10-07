@@ -5,18 +5,7 @@
 #
 #  Contents:     Makefile for mevb MIDAS example 
 #
-#  $Log$
-#  Revision 1.4  2004/10/07 20:08:34  pierre
-#  1.9.5
-#
-#  Revision 1.3  2004/09/28 16:16:39  pierre
-#  Add MIDASSYS
-#
-#  Revision 1.2  2003/08/19 23:25:29  pierre
-#  add pthread lib
-#
-#  Revision 1.1.1.2  2002/01/17 21:37:44  pierre
-#  Initial Version
+#  $Id:$
 #
 #####################################################################
 

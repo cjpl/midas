@@ -6,49 +6,7 @@
   Contents:     MSCB program for Cygnal parallel port sub-master
                 SUBM300 running on Cygnal C8051F021
 
-  $Log$
-  Revision 1.14  2004/05/12 13:18:36  midas
-  *** empty log message ***
-
-  Revision 1.13  2004/03/04 14:33:54  midas
-  Fixed wrong LED index
-
-  Revision 1.12  2004/01/07 12:52:23  midas
-  Changed indentation
-
-  Revision 1.11  2003/07/14 10:19:14  midas
-  Version 1.4.8
-
-  Revision 1.10  2003/06/27 13:51:44  midas
-  Made fast reboot
-
-  Revision 1.9  2003/03/20 07:57:04  midas
-  Chaned 'channels' to 'variables'
-
-  Revision 1.8  2003/03/06 11:00:39  midas
-  Added delay for slow AduC
-
-  Revision 1.7  2003/03/03 15:58:50  midas
-  V1.2.1, fixed communication problem with slow ADuC
-
-  Revision 1.6  2003/02/27 10:45:04  midas
-  Two-cycle communication to avoid data collision
-
-  Revision 1.5  2003/01/30 08:39:30  midas
-  Use USE_WATCHDOG flag
-
-  Revision 1.4  2002/11/27 15:40:05  midas
-  Added version, fixed few bugs
-
-  Revision 1.3  2002/10/09 11:06:46  midas
-  Protocol version 1.1
-
-  Revision 1.2  2002/10/04 09:03:20  midas
-  Small mods for scs_300
-
-  Revision 1.1  2002/10/03 15:35:15  midas
-  Initial revision
-
+  $Id:$
 
 \********************************************************************/
 

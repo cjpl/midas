@@ -5,9 +5,7 @@
 
   Contents:     V792 32ch. QDC
                 
-  $Log$
-  Revision 1.1  2005/08/23 22:27:21  olchanski
-  TRIUMF drivers for sundry CAEN VME modules
+  $Id:$
 
 *********************************************************************/
 #include <stdio.h>

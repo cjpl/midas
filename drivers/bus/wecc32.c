@@ -11,22 +11,7 @@
 		Requires module pcicc32.o to be loaded prior the use of
 		this driver. For info contact midas@triumf.ca
 		
-  $Log$
-  Revision 1.5  2004/01/08 08:40:08  midas
-  Implemented standard indentation
-
-  Revision 1.4  2002/02/19 21:56:31  pierre
-  comments+verified for Kernel 2.4
-
-  Revision 1.3  2001/10/16 20:47:51  pierre
-  Update cam_interrupt_() args
-
-  Revision 1.2  2000/09/07 17:17:33  pierre
-  -Add fe_name
-
-  Revision 1.1  2000/04/18 19:07:36  pierre
-  - W-IE-NE-R PCI/CAMAC interface CC32 uses pcicc32.o module, doesn't use dio.
-
+  $Id:$
 
 /*--PAA--- ---------------------------------------------------------------
    cc32lib.c -- a simple access library for the PCICC32 PCI to CAMAC

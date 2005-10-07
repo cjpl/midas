@@ -38,26 +38,7 @@
     copyright            : (C) 2003 by
     email                : andreas.suter@psi.ch
 
-  $Log$
-  Revision 1.4  2003/12/30 14:54:26  suter_a
-  "doxygenized" code, i.e. added comments which can be handled by doxygen in
-  order to generate html- and latex-docu.
-
-  Revision 1.3  2003/10/27 11:22:59  suter_a
-  use new QSettings for default settings. Changed the routines accordingly.
-
-  Revision 1.2  2003/05/12 16:19:09  suter_a
-  fixed problem with white spaces in '.hvEdit'
-
-  Revision 1.1  2003/05/09 10:08:09  midas
-  Initial revision
-
-  Revision 1.1.1.2  2003/03/03 09:33:50  nemu
-  add documentation path info to help facility.
-
-  Revision 1.1.1.1  2003/02/27 15:26:12  nemu
-  added log info
-
+  $Id:$
 
 ********************************************************************************************/
 

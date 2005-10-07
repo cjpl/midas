@@ -5,57 +5,7 @@
  
   Contents:     CAMAC utility
 
-    $Log$
-    Revision 1.20  2004/01/08 08:40:11  midas
-    Implemented standard indentation
-
-    Revision 1.19  2003/05/09 07:40:05  midas
-    Added extra parameter to cm_get_environment
-
-    Revision 1.18  2003/04/23 23:08:19  pierre
-    Fixed compiler warning
-
-    Revision 1.17  2002/06/05 04:12:23  pierre
-    pass cmd_flag arg, remove printf
-
-    Revision 1.16  2002/06/05 04:07:30  pierre
-    fix @ job
-
-    Revision 1.15  2001/07/20 00:49:29  pierre
-    - Added -c option and -c @filename.
-
-    Revision 1.14  2000/11/02 17:54:58  pierre
-    - Fix job repeat, uses command RxWx.
-
-    Revision 1.13  2000/09/14 20:23:45  pierre
-    -Add cm_get_environment()
-
-    Revision 1.12  2000/08/10 07:49:25  midas
-    Added client name together with frontend name in cam_init_rpc
-
-    Revision 1.11  2000/07/25 14:11:33  midas
-    Changed "&" to "&&"
-
-    Revision 1.10  2000/04/18 22:07:31  pierre
-    - added cam_lam_clear private function.
-    - fix cc_services for N >= 28
-
-    Revision 1.9  1999/12/08 00:04:48  pierre
-    - Fix mcstd _r, _sa functions
-
-    Revision 1.8  1998/11/23 16:17:37  pierre
-    Fix bug: double CAMAC call since [P] implementation (visible in camacrpc)
-    CVS:-----------------------------------------------------------------------
-
-    Revision 1.7  1998/11/20 14:29:31  pierre
-    Added [P] cmd for MCStd commands (2nd level)
-
-    Revision 1.5  1998/10/23 14:21:51  midas
-    - Modified version scheme from 1.06 to 1.6.0
-    - cm_get_version() now returns versino as string
-
-    Revision 1.4  1998/10/13 16:56:53  pierre
-    -PAA- Add log header
+  $Id:$
              
 \********************************************************************/
 #include <stdio.h>

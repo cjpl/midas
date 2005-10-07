@@ -5,44 +5,7 @@
 
   Contents:     Speaks midas messages (UNIX version)
 
-  $Log$
-  Revision 1.11  2004/01/08 08:40:11  midas
-  Implemented standard indentation
-
-  Revision 1.10  2003/05/09 07:40:05  midas
-  Added extra parameter to cm_get_environment
-
-  Revision 1.9  2003/04/23 23:09:08  pierre
-  Fixed compiler warning
-
-  Revision 1.8  2002/09/26 00:09:17  pierre
-  include arg for 'play beep'
-
-  Revision 1.7  2002/06/03 06:07:15  midas
-  Added extra parameter to ss_daemon_init to keep stdout
-
-  Revision 1.6  2000/09/29 09:52:14  midas
-  Replace "isblank" routine which doesn't exist under DECUnix
-
-  Revision 1.5  1999/11/29 17:51:29  pierre
-  - add daemon startup (-D)
-
-  Revision 1.4  1999/07/15 23:49:29  pierre
-  -Fix last char of the line being ignored
-
-  Revision 1.3  1999/05/06 19:09:49  pierre
-  - Fix empty trailing char on the message which would hold festival
-
-  Revision 1.2  1998/10/12 12:19:03  midas
-  Added Log tag in header
-
-
-  Previous revision history
-  ------------------------------------------------------------------
-  date        by    modification
-  --------    ---   ------------------------------------------------
-  30-JAN-97   PAA   created
-  05-JUN-98   Glenn Ported to "festival speech system"
+  $Id:$
 
 \********************************************************************/
 

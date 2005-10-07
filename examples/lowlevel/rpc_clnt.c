@@ -5,19 +5,7 @@
 
   Contents:     Mini RPC client program for test purposes.
 
-  $Log$
-  Revision 1.4  2004/01/08 08:40:09  midas
-  Implemented standard indentation
-
-  Revision 1.3  2003/05/09 10:03:14  midas
-  Added missing argument in rpc_connect_client()
-
-  Revision 1.2  1999/10/26 12:00:57  midas
-  Replaced gets by ss_gets
-
-  Revision 1.1  1999/04/27 11:10:56  midas
-  Added files to CVS
-
+  $Id:$
 
 \********************************************************************/
 

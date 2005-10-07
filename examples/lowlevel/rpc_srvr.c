@@ -8,16 +8,7 @@
                 This function can be calles remotely by rpc_clnt.
 
 
-  $Log$
-  Revision 1.3  2004/01/08 08:40:09  midas
-  Implemented standard indentation
-
-  Revision 1.2  1999/10/26 11:20:43  midas
-  Fixed wrong parameters in rpc_set_debug
-
-  Revision 1.1  1999/04/27 11:10:56  midas
-  Added files to CVS
-
+  $Id:$
 
 \********************************************************************/
 

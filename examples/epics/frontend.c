@@ -6,34 +6,7 @@
   Contents:     Example Slow Control Frontend for equipment control
                 through EPICS channel access.
 
-  $Log$
-  Revision 1.8  2004/01/08 08:40:08  midas
-  Implemented standard indentation
-
-  Revision 1.7  2002/05/10 00:42:32  pierre
-  additional arg for BUS_DRIVER
-
-  Revision 1.6  2000/03/02 21:54:48  midas
-  Added comments concerning channel names and possibility to disable functions
-
-  Revision 1.5  1999/12/21 09:37:00  midas
-  Use new driver names
-
-  Revision 1.3  1999/10/08 14:04:45  midas
-  Set initial channel number to 10
-
-  Revision 1.2  1999/09/22 12:01:09  midas
-  Fixed compiler warning
-
-  Revision 1.1  1999/09/22 09:19:25  midas
-  Added sources
-
-  Revision 1.3  1998/10/23 08:46:26  midas
-  Added #include "null.h"
-
-  Revision 1.2  1998/10/12 12:18:59  midas
-  Added Log tag in header
-
+  $Id:$
 
 \********************************************************************/
 

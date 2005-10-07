@@ -5,15 +5,7 @@
 
   Contents:     MSCB bus driver to transport ASCII commands to scs_210 
 
-  $Log$
-  Revision 1.3  2005/09/19 09:47:30  ritt
-  Implemented password from SCS-210 (A. Suter)
-
-  Revision 1.2  2005/03/24 22:48:37  ritt
-  Changed parameters to mscb_init
-
-  Revision 1.1  2004/12/13 12:59:15  midas
-  Initial revision
+  $Id:$
 
 \********************************************************************/
 

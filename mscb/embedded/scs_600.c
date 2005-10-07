@@ -8,63 +8,7 @@
                 Midas Slow Control Bus protocol 
                 for SCS-600 Digital I/O
 
-  $Log$
-  Revision 1.19  2004/04/07 11:06:17  midas
-  Version 1.7.1
-
-  Revision 1.18  2004/03/04 14:33:22  midas
-  *** empty log message ***
-
-  Revision 1.17  2004/01/08 09:41:42  midas
-  Made single shot capability conditional
-
-  Revision 1.16  2004/01/07 13:12:39  midas
-  Added single shot mode
-
-  Revision 1.15  2004/01/07 12:56:15  midas
-  Chaned line length
-
-  Revision 1.14  2004/01/07 12:52:23  midas
-  Changed indentation
-
-  Revision 1.13  2003/07/17 14:23:24  midas
-  Turn output off immediately if button pressed
-
-  Revision 1.12  2003/06/11 14:12:18  midas
-  Removed LCD output
-
-  Revision 1.11  2003/03/19 16:35:03  midas
-  Eliminated configuration parameters
-
-  Revision 1.10  2003/03/06 10:59:54  midas
-  Added P1 output and 16-bit input
-
-  Revision 1.9  2003/02/19 16:05:36  midas
-  Added 'init' parameter to user_init
-
-  Revision 1.8  2002/11/28 13:03:41  midas
-  Protocol version 1.2
-
-  Revision 1.7  2002/11/22 15:43:03  midas
-  Made user_write reentrant
-
-  Revision 1.6  2002/10/28 14:26:30  midas
-  Changes from Japan
-
-  Revision 1.5  2002/10/22 15:06:18  midas
-  Removed temporary OE test
-
-  Revision 1.4  2002/10/16 15:24:38  midas
-  Added units in descriptor
-
-  Revision 1.3  2002/10/09 11:06:46  midas
-  Protocol version 1.1
-
-  Revision 1.2  2002/10/03 15:31:53  midas
-  Various modifications
-
-  Revision 1.1  2002/07/12 15:20:08  midas
-  Initial revision
+  $Id:$
 
 \********************************************************************/
 

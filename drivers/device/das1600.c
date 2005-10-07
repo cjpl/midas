@@ -5,25 +5,7 @@
 
   Contents:     DAS-1600 (Keithley) Device Driver
 
-  $Log$
-  Revision 1.4  2004/05/10 19:04:45  midas
-  Changed CH_IN/OUTUT to DF_IN/OUTPUT
-
-  Revision 1.3  2004/01/08 08:40:08  midas
-  Implemented standard indentation
-
-  Revision 1.2  2001/08/22 13:53:02  midas
-  Reorganized directio functions
-
-  Revision 1.1  1999/12/20 10:18:19  midas
-  Reorganized driver directory structure
-
-  Revision 1.3  1999/01/14 15:57:53  midas
-  Adapted to new "info" structure
-
-  Revision 1.2  1998/10/12 12:18:56  midas
-  Added Log tag in header
-
+  $Id:$
 
 \********************************************************************/
 

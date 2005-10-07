@@ -10,16 +10,7 @@
  * Description	: Header file for VMEIO triumf board
  *
  * Author:  Pierre-Andre Amaudruz Data Acquisition Group
-   $Log$
-   Revision 1.2  2004/01/08 07:51:21  midas
-   Changed indentation
-
-   Revision 1.1  1999/12/20 10:18:23  midas
-   Reorganized driver directory structure
-
-   Revision 1.3  1999/09/29 21:06:33  pierre
-   - was missing the cvs header
-
+  $Id:$
  *---------------------------------------------------------------------------*/
 #ifndef VMEIO_INCLUDE
 #define VMEIO_INCLUDE

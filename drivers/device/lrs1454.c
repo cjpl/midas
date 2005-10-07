@@ -5,57 +5,7 @@
 
   Contents:     LeCroy LRS1454/1458 Voltage Device Driver
 
-  $Log$
-  Revision 1.17  2004/01/08 08:40:08  midas
-  Implemented standard indentation
-
-  Revision 1.16  2003/10/29 13:08:56  midas
-  Added blanks
-
-  Revision 1.15  2003/10/06 09:18:20  midas
-  Fix segfault if module does not report voltage
-
-  Revision 1.14  2003/09/30 16:12:11  midas
-  Show error about panic switch
-
-  Revision 1.13  2003/09/29 11:56:44  midas
-  Initial revision
-
-  Revision 1.12  2003/09/29 08:01:32  midas
-  Added 'zero channels'
-
-  Revision 1.11  2002/06/06 08:06:32  midas
-  Implemented DF_xx scheme
-
-  Revision 1.10  2001/04/11 02:11:24  midas
-  First zero all channels (for the case of trip problems)
-
-  Revision 1.9  2001/04/06 03:58:35  midas
-  Moved debugging flag into ODB for BD
-
-  Revision 1.8  2001/04/06 01:57:12  midas
-  Added #include <stdlib.h> for atof under Linux
-
-  Revision 1.7  2001/04/06 01:33:57  midas
-  Addef fflush
-
-  Revision 1.6  2001/04/05 12:48:53  midas
-  Re-open broken TCP connection
-
-  Revision 1.5  2001/04/04 04:11:24  midas
-  Various changes at KEK, added CMD_SET_CURRENT_LIMIT_ALL
-
-  Revision 1.4  2001/02/26 13:57:34  midas
-  Made ajdustments to work with tcpip bus driver
-
-  Revision 1.3  2001/01/04 11:17:23  midas
-  Implemented Bus Driver scheme
-
-  Revision 1.2  2000/12/18 09:45:39  midas
-  changed CR-LF
-
-  Revision 1.1  2000/12/05 00:49:55  midas
-  Initial revision
+  $Id:$
 
 \********************************************************************/
 

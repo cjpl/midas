@@ -18,44 +18,7 @@
     display of the data.
     See mchart -h for further info.
 
-  $Log$
-  Revision 1.11  2004/01/08 08:40:11  midas
-  Implemented standard indentation
-
-  Revision 1.10  2003/05/09 07:40:05  midas
-  Added extra parameter to cm_get_environment
-
-  Revision 1.9  2003/04/23 23:08:33  pierre
-  Fixed compiler warning
-
-  Revision 1.8  2002/06/03 06:07:15  midas
-  Added extra parameter to ss_daemon_init to keep stdout
-
-  Revision 1.7  2002/05/10 23:57:37  pierre
-  pass arg to stripchart + cosmetics
-
-  Revision 1.6  2001/12/08 01:04:13  pierre
-  fix float min, max values
-
-  Revision 1.5  2000/10/20 21:59:55  pierre
-  - Fix duplicate config bug
-  - Add messages on spawning, creation.
-
-  Revision 1.4  2000/10/20 19:10:57  pierre
-  - cleanup code for arguments
-    mchart -f <file>[.conf] for run
-    mchart -f <file>[.conf] -q <[/]eqp_path> for creation
-    disable -D if -c or -q
-    prevent config overwrite if -q not valid
-
-  Revision 1.3  2000/09/29 20:10:30  pierre
-  fix warning messages
-
-  Revision 1.2  2000/04/20 18:22:38  pierre
-  - added "%" to "_" substitution for variable names (midas group, tcl parsing)
-
-  Revision 1.1  2000/04/18 20:29:15  pierre
-  - Periodic Midas chart graph data generator. (new application)
+  $Id:$
 
 \********************************************************************/
 

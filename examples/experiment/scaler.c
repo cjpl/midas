@@ -7,19 +7,7 @@
                 for a SCLR banks and accumulates scalers into an
                 ACUM bank.
 
-  $Log$
-  Revision 1.5  2004/01/08 08:40:08  midas
-  Implemented standard indentation
-
-  Revision 1.4  2003/04/08 00:09:50  olchansk
-  add required #include <string.h>
-
-  Revision 1.3  1998/11/09 09:14:16  midas
-  Removed printf("EOR scaler\n");
-
-  Revision 1.2  1998/10/12 12:18:58  midas
-  Added Log tag in header
-
+  $Id:$
 
 \********************************************************************/
 

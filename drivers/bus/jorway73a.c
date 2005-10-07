@@ -40,16 +40,7 @@ one datum per 1.3 us.  So for example reading a full 4302 memory
 takes almost 12 seconds in NODMA mode but occurs in a blistering
 15 ms if block transfers are enabled.
 
-$Log$
-Revision 1.3  2004/01/08 08:40:08  midas
-Implemented standard indentation
-
-Revision 1.2  2004/01/08 06:49:58  pierre
-fix small bugs
-
-Revision 1.1  2002/05/08 22:21:30  pierre
-initial version
-
+$Id:$
 
 \********************************************************************/
 

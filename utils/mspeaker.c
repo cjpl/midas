@@ -5,28 +5,7 @@
 
   Contents:     Speaks midas messages
 
-  $Log$
-  Revision 1.9  2004/01/08 08:40:11  midas
-  Implemented standard indentation
-
-  Revision 1.8  2003/05/10 05:25:56  pierre
-  revive Provoice, update to mlxspeaker
-
-  Revision 1.6  2000/04/10 13:16:14  midas
-  Added reconnect
-
-  Revision 1.5  2000/04/05 14:59:24  midas
-  Added time display
-
-  Revision 1.4  2000/04/05 08:24:26  midas
-  Changed speech font which crashed program
-
-  Revision 1.3  1999/07/06 09:03:16  midas
-  Changed include directory for provoice to c:
-
-  Revision 1.2  1998/10/12 12:19:04  midas
-  Added Log tag in header
-
+  $Id:$
 
 \********************************************************************/
 

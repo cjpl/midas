@@ -6,16 +6,7 @@
   Contents:     Device driver for TOYO CC/7700 PCI CAMAC controller
                 following the MIDAS CAMAC Standard under DIRECTIO
 
-  $Log$
-  Revision 1.3  2004/01/08 08:40:08  midas
-  Implemented standard indentation
-
-  Revision 1.2  2002/01/31 09:11:03  midas
-  Fixed bugs with directio driver
-
-  Revision 1.1  2000/12/05 00:49:24  midas
-  Initial revision
-
+  $Id:$
 
 \********************************************************************/
 

@@ -5,16 +5,7 @@
 
   Contents:     C macros for writing a MIDAS frontend
 
-  $Log$
-  Revision 1.4  2004/01/08 08:40:09  midas
-  Implemented standard indentation
-
-  Revision 1.3  2000/08/21 10:49:11  midas
-  Added max_event_size
-
-  Revision 1.2  1998/10/12 12:18:59  midas
-  Added Log tag in header
-
+  $Id:$
 
 \********************************************************************/
 

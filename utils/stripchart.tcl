@@ -58,30 +58,8 @@ exec /bin/nice bltwish "$0" -- ${1+"$@"}
 # 17.10.2000
 # fixed bug in online mode - string comparison was wrong
 # re-ordered some code (no functional change)
-#  Revision History:
-#    $Log$
-#    Revision 1.15  2002/08/26 22:12:40  midas
-#    Handle data that are arrays - queery MHIST for each element of the
-#    array and pretend they are different data words. Requested by TWIST.
-#    Fixed minor bugs wrt opening correct directories.
 #
-#    Revision 1.14  2002/06/15 00:32:10  midas
-#    Fix problem with having EPICS like ':' in variable name
-#
-#    Revision 1.8  2001/12/08 01:05:43  pierre
-#    correct path, new display
-#
-#    Revision 1.7  2000/10/20 19:07:50  pierre
-#    - improve online/mhist toggle. (GH)
-#    - added mhist path search. (GH)
-#    - cleanup code. (GH)
-#
-#    Revision 1.6  2000/10/05 17:43:17  pierre
-#    - add scroll bar instead of radio button.
-#    - cosmetics
-#
-#    Revision 1.3  2000/04/20 17:06:50  pierre
-#    # ODB or history stripchart in tcl. Requires bltwhish. (New application)
+#  $Id:$
 #
 #
 # 29.11.01

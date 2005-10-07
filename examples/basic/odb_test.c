@@ -5,16 +5,7 @@
 
   Contents:     Small demo program to show how to connect to the ODB
 
-  $Log$
-  Revision 1.4  2004/01/08 08:40:08  midas
-  Implemented standard indentation
-
-  Revision 1.3  2002/05/08 20:51:41  midas
-  Added extra parameter to function db_get_value()
-
-  Revision 1.2  1998/10/12 12:18:58  midas
-  Added Log tag in header
-
+  $Id:$
 
 \********************************************************************/
 

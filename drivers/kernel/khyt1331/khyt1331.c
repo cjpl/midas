@@ -5,24 +5,7 @@
 
   Contents:     Kernel mode driver for Hytec 1331 CAMAC interface
 
-  $Log$
-  Revision 1.6  2004/01/08 08:40:08  midas
-  Implemented standard indentation
-
-  Revision 1.5  2003/06/23 08:00:57  midas
-  Replaced malloc.h by slab.h
-
-  Revision 1.4  2001/10/03 14:57:22  midas
-  Check IO address region before allocation
-
-  Revision 1.3  2001/10/03 14:51:30  midas
-  Return -ENODEV if interface not found
-
-  Revision 1.2  2001/10/03 14:45:11  midas
-  Separated IOCTL functions code into header file
-
-  Revision 1.1  2001/08/21 14:28:34  midas
-  Initial revision
+  $Id:$
 
 \********************************************************************/
 

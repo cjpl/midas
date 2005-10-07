@@ -5,64 +5,7 @@
   
   Contents:     Display/log some pertinent information of the ODB
   
-  $Log$
-  Revision 1.17  2004/01/08 08:40:11  midas
-  Implemented standard indentation
-
-  Revision 1.16  2003/05/09 07:40:05  midas
-  Added extra parameter to cm_get_environment
-
-  Revision 1.15  2003/04/25 04:14:52  pierre
-  Fixed compiler warning
-
-  Revision 1.14  2003/04/23 23:53:54  pierre
-  Fixed compiler warning
-
-  Revision 1.13  2002/05/08 19:54:41  midas
-  Added extra parameter to function db_get_value()
-
-  Revision 1.12  2001/02/16 19:08:52  pierre
-  - fix FAL test
-
-  Revision 1.11  2001/02/16 18:51:30  pierre
-  - Added logger status section for FAL
-
-  Revision 1.10  2000/02/28 17:57:06  pierre
-  - Change statistics to TID_DOUBLE for Super event implementation
-
-  Revision 1.9  2000/02/25 18:51:51  pierre
-  - include deferred transition messages
-
-  Revision 1.8  1999/10/07 13:17:36  midas
-  Put a few EXPRT im msystem.h to make NT happy, updated NT makefile
-
-  Revision 1.7  1999/09/24 00:04:12  pierre
-  - Modified Lazy status for multiple lazy channel
-
-  Revision 1.6  1999/06/23 09:50:06  midas
-  Changed lazy label from "last" to "<empty>"
-
-  Revision 1.5  1999/02/05 23:47:55  pierre
-  - Fix lazylogger client display
-
-  Revision 1.4  1999/01/18 17:20:47  pierre
-  - Added lazylogger status line
-  - correct main for new keyboard handling
-
-  Revision 1.3  1998/10/23 14:21:52  midas
-  - Modified version scheme from 1.06 to 1.6.0
-  - cm_get_version() now returns versino as string
-
-  Revision 1.2  1998/10/12 12:19:04  midas
-  Added Log tag in header
-
-
-  Previous revision history
-  ------------------------------------------------------------------
-  date        by    modification
-  --------    ---   ------------------------------------------------
-  30-JAN-97   PAA   created
-  20-Oct-97   PAA   included malarm functionality
+  $Id:$
 
 \********************************************************************/
 

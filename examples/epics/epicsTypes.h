@@ -27,30 +27,7 @@
  *
  * Modification Log:
  * -----------------
- * $Log$
- * Revision 1.2  2004/01/08 08:40:08  midas
- * Implemented standard indentation
- *
- * Revision 1.1  1999/09/22 09:19:25  midas
- * Added sources
- *
- * Revision 1.4  1997/05/01 19:50:40  jhill
- * updated dll keywords
- *
- * Revision 1.3  1997/04/10 20:00:40  jhill
- * VMS changes
- *
- * Revision 1.2  1996/06/20 16:27:33  jhill
- * eliminated sbufs
- *
- * Revision 1.1  1996/01/25 21:38:48  mrk
- * moved files from /base/include
- *
- * Revision 1.7  1995/12/19 19:46:44  jhill
- * added epicsStatus typedef
- *
- * Revision 1.6  1995/09/29  21:41:41  jhill
- * added use of sbufs
+ * $Id:$
  *
  */
 

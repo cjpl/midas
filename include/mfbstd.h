@@ -6,19 +6,7 @@
   Cotents:      MIDAS FASTBUS standard routines. Has to be combined
                 with either LRS1821.C or STR340.C
                 
-  $Log$
-  Revision 1.4  2004/01/08 08:40:09  midas
-  Implemented standard indentation
-
-  Revision 1.3  2000/09/22 07:34:19  midas
-  Moved to main include directory
-
-  Revision 1.1  1999/12/20 10:18:11  midas
-  Reorganized driver directory structure
-
-  Revision 1.2  1998/10/12 12:18:57  midas
-  Added Log tag in header
-
+  $Id:$
 
 *********************************************************************/
 

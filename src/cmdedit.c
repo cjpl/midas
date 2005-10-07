@@ -5,34 +5,7 @@
 
   Contents:     Command-line editor for ODBEdit
 
-  $Log$
-  Revision 1.11  2004/01/08 08:40:09  midas
-  Implemented standard indentation
-
-  Revision 1.10  2002/05/08 19:54:40  midas
-  Added extra parameter to function db_get_value()
-
-  Revision 1.9  2000/10/23 14:34:38  midas
-  Fixed output of '%' when editing
-
-  Revision 1.8  1999/06/23 09:35:41  midas
-  Switched back cursor to end of line for editing
-
-  Revision 1.7  1998/12/10 16:32:14  midas
-  Command line completion now also adds values if <tab> is pressed after full key
-
-  Revision 1.6  1998/11/02 08:41:41  midas
-  - Added fflush() at the beginning
-  - Fixed bug with <arrow up> under UNIX
-
-  Revision 1.5  1998/10/29 14:52:17  midas
-  <tab> completion now also works if not at the end of the line
-
-  Revision 1.4  1998/10/12 12:23:51  midas
-  Added run state character in ODBEdit prompt
-
-  Revision 1.3  1998/10/12 12:19:01  midas
-  Added Log tag in header
+  $Id:$
 
 \********************************************************************/
 

@@ -6,13 +6,7 @@
   Contents:     USB routines for Cygnal USB sub-master
                 SUBM250 running on Cygnal C8051F320
 
-  $Log$
-  Revision 1.2  2005/05/02 10:50:13  ritt
-  Version 2.1.1
-
-  Revision 1.1  2004/03/04 14:38:23  midas
-  Initial revision
-
+  $Id:$
 
 \********************************************************************/
 

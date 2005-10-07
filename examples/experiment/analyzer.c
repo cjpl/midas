@@ -5,55 +5,7 @@
 
   Contents:     System part of Analyzer code for sample experiment
 
-  $Log$
-  Revision 1.17  2004/06/18 11:50:38  midas
-  Changed ADC0 bank from structured to DWORD
-
-  Revision 1.16  2004/01/08 08:40:08  midas
-  Implemented standard indentation
-
-  Revision 1.15  2003/04/28 15:33:05  midas
-  Fixed compiler warnings
-
-  Revision 1.14  2003/04/25 14:49:46  midas
-  Removed HBOOK code
-
-  Revision 1.13  2003/04/21 04:00:15  olchansk
-  replace MANA_LITE with HAVE_HBOOK
-
-  Revision 1.12  2003/04/14 13:30:52  midas
-  Changed bank descriptions because of conflict in fal.c
-
-  Revision 1.11  2003/04/07 23:54:43  olchansk
-  add #include <string.h>
-
-  Revision 1.10  2002/05/10 05:22:34  pierre
-  add MANA_LITE #ifdef
-
-  Revision 1.9  2002/05/09 02:50:28  midas
-  Removed initialization of 'Edit on start' by analyzer
-
-  Revision 1.8  2002/05/08 19:54:40  midas
-  Added extra parameter to function db_get_value()
-
-  Revision 1.7  2000/11/20 12:29:37  midas
-  Added use_tests flag in analyzer request
-
-  Revision 1.6  2000/09/12 12:36:15  midas
-  Removed test messages
-
-  Revision 1.5  2000/08/11 11:43:50  midas
-  Added cm_msg1 to produce messages which go to a differnt logging file
-
-  Revision 1.4  2000/03/02 22:00:18  midas
-  Changed events sent to double
-
-  Revision 1.3  1998/10/29 14:18:19  midas
-  Used hDB consistently
-
-  Revision 1.2  1998/10/12 12:18:58  midas
-  Added Log tag in header
-
+  $Id:$
 
 \********************************************************************/
 

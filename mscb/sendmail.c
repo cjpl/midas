@@ -5,15 +5,7 @@
 
   Contents:     SMTP interface for sending an email
 
-  $Log$
-  Revision 1.3  2004/01/07 12:56:15  midas
-  Chaned line length
-
-  Revision 1.2  2004/01/07 12:52:23  midas
-  Changed indentation
-
-  Revision 1.1  2003/09/18 07:46:44  midas
-  Initial revision
+  $Id:$
 
 \********************************************************************/
 

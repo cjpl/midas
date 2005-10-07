@@ -5,59 +5,7 @@
 
   Contents:     Electronic logbook utility   
 
-  $Log$
-  Revision 1.4  2004/03/11 07:55:37  midas
-  Changed POST statement to contain /EL/
-
-  Revision 1.3  2004/01/18 09:58:21  olchansk
-  fix format mismatch warning between %d and sizeof(foo)
-
-  Revision 1.2  2004/01/08 08:40:11  midas
-  Implemented standard indentation
-
-  Revision 1.1  2001/12/21 13:57:23  midas
-  Removed elog files from midas, added melog.c
-
-  Revision 1.23  2001/12/21 12:33:04  midas
-  Fixed bug with single logbook and user authentication, thanks to Glenn Horton-Smith
-
-  Revision 1.22  2001/12/05 10:02:50  midas
-  Fixed -Wall compiler warning
-
-  Revision 1.21  2001/12/05 09:58:57  midas
-  Fixed small bug
-
-  Revision 1.20  2001/11/15 11:49:46  midas
-  Added -u flag for user name/password
-
-  Revision 1.19  2001/11/14 15:35:37  midas
-  Fix error under Cygwin with O_BINARY
-
-  Revision 1.18  2001/11/06 15:52:17  midas
-  Added general attributes
-
-  Revision 1.17  2001/10/12 08:40:02  midas
-  Fixed bug when submitting text files and an additional (garbage) lines was
-  added
-
-  Revision 1.16  2001/06/19 10:55:40  midas
-  Variable number of attachments, revised attachment editing
-
-  Revision 1.15  2001/05/23 13:15:34  midas
-  Fixed bug with category
-
-  Revision 1.14  2001/05/23 13:04:19  midas
-  Added password functionality
-
-  Revision 1.13  2001/05/23 10:48:21  midas
-  elog can be used with elogd now
-
-  Revision 1.12  2000/09/01 15:49:26  midas
-  Elog is now submitted via mhttpd
-
-  Revision 1.1  1999/09/14 15:15:27  midas
-  Initial revision
-
+  $Id:$
 
 \********************************************************************/
 

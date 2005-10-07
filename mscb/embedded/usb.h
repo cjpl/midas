@@ -5,10 +5,7 @@
 
   Contents:     USB header file for C8051F320
 
-  $Log$
-  Revision 1.1  2004/03/04 14:38:26  midas
-  Initial revision
-
+  $Id:$
 
 \********************************************************************/
 
