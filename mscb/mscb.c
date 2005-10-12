@@ -5,7 +5,7 @@
 
   Contents:     Midas Slow Control Bus communication functions
 
-  $Id:$
+  $Id$
 
 \********************************************************************/
 
@@ -3253,8 +3253,13 @@ int mscb_read(int fd, unsigned short adr, unsigned char index, void *data, int *
       buf[5] = index;
       buf[6] = crc8(buf+4, 2);
       status = mscb_out(fd, buf, 7, RS485_FLAG_ADR_CYCLE);
-      if (status == MSCB_TIMEOUT)
+      if (status == MSCB_TIMEOUT) {
+#ifndef _USRDLL
+         /* show error, but repeat 10 times */
+         printf("Timeout sumbster communication\n");
+#endif
          continue;
+      }
 
       /* read data */
       i = mscb_in(fd, buf, sizeof(buf), 10000);
@@ -3262,7 +3267,7 @@ int mscb_read(int fd, unsigned short adr, unsigned char index, void *data, int *
       if (i == 1 && buf[0] == 0xFF) {
 #ifndef _USRDLL
          /* show error, but repeat 10 times */
-         printf("Timeout from RS485 bus, resent request.\n");
+         printf("Timeout from RS485 bus, resend request\n");
 #endif
       }
 
@@ -3276,6 +3281,10 @@ int mscb_read(int fd, unsigned short adr, unsigned char index, void *data, int *
       if ((buf[0] != MCMD_ACK + i - 2 && buf[0] != MCMD_ACK + 7)
          || buf[i - 1] != crc) {
          status = MSCB_CRC_ERROR;
+#ifndef _USRDLL
+         /* show error, but repeat 10 times */
+         printf("CRC error on RS485 bus, resend request\n");
+#endif
          continue;
       }
 
