@@ -5,7 +5,7 @@
 
   Contents:     Midas Slow Control Bus protocol commands
 
-  $Id:$
+  $Id$
 
 \********************************************************************/
 
@@ -70,7 +70,6 @@
 
 /* default flags */
 #define USE_WATCHDOG
-#undef  LCD_SUPPORT
 #define EEPROM_SUPPORT
 
 /*--------------------------------*/

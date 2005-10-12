@@ -5,7 +5,7 @@
 
   Contents:     Various utility functions for MSCB protocol
 
-  $Id:$
+  $Id$
 
 \********************************************************************/
 
@@ -1206,11 +1206,7 @@ bit lcd_present;
 
 #define LCD P2                  // LCD display connected to port2
 
-#if defined(SCS_1000)
-sbit LCD_RS  = LCD ^ 3;
-sbit LCD_R_W = LCD ^ 2;
-sbit LCD_E   = LCD ^ 1;
-#elif defined (SCS_1001)
+#if defined(SCS_1000) || defined (SCS_1001) || defined (SCS_900)
 sbit LCD_RS  = LCD ^ 3;
 sbit LCD_R_W = LCD ^ 2;
 sbit LCD_E   = LCD ^ 1;
@@ -1237,8 +1233,12 @@ lcd_out(unsigned char d, bit df)
       return;
 
    LCD = LCD | 0xF0;            // data input
+#if defined(CPU_C8051F120)
    SFRPAGE = CONFIG_PAGE;
    P2MDOUT = 0x0F;
+#else
+   PRT2CF = 0x0F;
+#endif
    LCD_RS = 0;                  // select BF
    LCD_R_W = 1;
    delay_us(1);
@@ -1250,7 +1250,11 @@ lcd_out(unsigned char d, bit df)
    LCD_E = 0;
    delay_us(1);
    LCD_R_W = 0;
+#if defined(CPU_C8051F120)
    P2MDOUT = 0xFF;              // data output
+#else
+   PRT2CF = 0xFF;               // data output
+#endif
    delay_us(1);
 
    /* high nibble, preserve P0.0 */
@@ -1299,10 +1303,14 @@ void lcd_setup()
 {
    unsigned i=0;
 
+#if defined(CPU_C8051F120)
    SFRPAGE = CONFIG_PAGE;
    P2MDOUT = 0xFF;             // all push-pull
+#else
+   PRT2CF = 0xFF;              // all push-pull
+#endif
 
-#ifdef SCS_1001  // 4-line LCD display with KS0078 controller
+#if defined(SCS_1001) || defined(SCS_900)  // 4-line LCD display with KS0078 controller
 
    LCD &= ~(0xFE);
    LCD |= 0x20;  // set 4-bit interface
@@ -1315,7 +1323,11 @@ void lcd_setup()
    // test if LCD present
 
    LCD = LCD | 0xF0;            // data input
+#if defined(CPU_C8051F120)
    P2MDOUT = 0x0F;
+#else
+   PRT2CF = 0x0F;
+#endif
    LCD_RS = 0;                  // select BF
    LCD_R_W = 1;
    delay_us(1);
@@ -1363,7 +1375,11 @@ void lcd_setup()
    // test if LCD present
 
    LCD = LCD | 0xF0;            // data input
+#if defined(CPU_C8051F120)
    P2MDOUT = 0x0F;
+#else
+   PRT2CF = 0x0F;
+#endif
    LCD_RS = 0;                  // select BF
    LCD_R_W = 1;
    delay_us(1);
@@ -1396,7 +1412,7 @@ void lcd_clear()
 void lcd_goto(char x, char y)
 {
 
-#ifdef SCS_1001
+#if defined(SCS_1001) || defined(SCS_900)
    /* goto position x(0..19), y(0..3) */
    lcd_out((x & 0x1F) | (0x80) | ((y & 0x03) << 5), 0);
 #else
