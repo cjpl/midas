@@ -6,16 +6,16 @@
 #  Contents:     Makefile for MIDAS example frontend and analyzer
 #                using HBOOK functionality
 #
-#  $Id:$
+#  $Id$
 #
 #####################################################################
 
 # The MIDASSYS should be defined prior the use of this Makefile
 ifndef MIDASSYS
 missmidas::
-	@echo "...";
-	@echo "Missing definition of environment variable 'MIDASSYS' !";
-	@echo "...";
+  @echo "...";
+  @echo "Missing definition of environment variable 'MIDASSYS' !";
+  @echo "...";
 endif
 
 #--------------------------------------------------------------------
@@ -25,11 +25,11 @@ endif
 
 ifndef CERNLIB
 misscern::
-	@echo "..."
-	@echo "Missing definition of the  environment variable 'CERNLIB' "
-	@echo "..."
+  @echo "..."
+  @echo "Missing definition of the  environment variable 'CERNLIB' "
+  @echo "..."
 else
-CERNLIB_PACK	= $(CERNLIB)/lib/libpacklib.a
+CERNLIB_PACK  = $(CERNLIB)/lib/libpacklib.a
 endif
 
 #-----------------------------------------
@@ -75,14 +75,14 @@ endif
 #-------------------------------------------------------------------
 # The following lines define directories. Adjust if necessary
 #                 
-DRV_DIR         = $(MIDASSYS)/drivers/bus
-INC_DIR 	= $(MIDASSYS)/include
-LIB_DIR 	= $(MIDASSYS)/$(OS_DIR)/lib
+DRV_DIR         = $(MIDASSYS)/drivers/camac
+INC_DIR   = $(MIDASSYS)/include
+LIB_DIR   = $(MIDASSYS)/$(OS_DIR)/lib
 
 #-------------------------------------------------------------------
 # List of analyzer modules
 #                 
-MODULES 	= adccalib.o adcsum.o scaler.o
+MODULES   = adccalib.o adcsum.o scaler.o
 
 #-------------------------------------------------------------------
 # Hardware driver can be (camacnul, kcs2926, kcs2927, hyt1331)
@@ -111,26 +111,26 @@ LDFLAGS +=
 all: $(UFE) fal analyzer
 
 $(UFE): $(LIB) $(LIB_DIR)/mfe.o $(DRIVER).o $(UFE).c
-	$(CC) $(CFLAGS) $(OSFLAGS) -o $(UFE) $(UFE).c $(DRIVER).o \
-	$(LIB_DIR)/mfe.o $(LIB) $(LDFEFLAGS) $(LIBS)
+  $(CC) $(CFLAGS) $(OSFLAGS) -o $(UFE) $(UFE).c $(DRIVER).o \
+  $(LIB_DIR)/mfe.o $(LIB) $(LDFEFLAGS) $(LIBS)
 
 $(DRIVER).o: $(DRV_DIR)/$(DRIVER).c
-	$(CC) $(CFLAGS) $(OSFLAGS) -c -o $(DRIVER).o $(DRV_DIR)/$(DRIVER).c
+  $(CC) $(CFLAGS) $(OSFLAGS) -c -o $(DRIVER).o $(DRV_DIR)/$(DRIVER).c
 
 analyzer: $(LIB) $(LIB_DIR)/hmana.o analyzer.o $(MODULES)
-	$(FF) $(FFLAGS) -o analyzer $(LIB_DIR)/hmana.o analyzer.o \
-	$(MODULES) $(CERNLIB_PACK) \
-	$(LIB) $(LDFLAGS) $(LIBS)
+  $(FF) $(FFLAGS) -o analyzer $(LIB_DIR)/hmana.o analyzer.o \
+  $(MODULES) $(CERNLIB_PACK) \
+  $(LIB) $(LDFLAGS) $(LIBS)
 
 fal: $(LIB) $(LIB_DIR)/fal.o $(DRIVER).o $(UFE).c $(MODULES) $(UFE).o analyzer.o
-	$(FF) $(FFLAGS) -o fal $(LIB_DIR)/fal.o $(UFE).o $(DRIVER).o \
-	analyzer.o $(MODULES) $(CERNLIB_PACK) \
-	$(LIB) $(LDFEFLAGS) $(LIBS)
+  $(FF) $(FFLAGS) -o fal $(LIB_DIR)/fal.o $(UFE).o $(DRIVER).o \
+  analyzer.o $(MODULES) $(CERNLIB_PACK) \
+  $(LIB) $(LDFEFLAGS) $(LIBS)
 
 .c.o: experim.h
-	$(CC) $(USERFLAGS) $(CFLAGS) $(OSFLAGS) -o $@ -c $<
+  $(CC) $(USERFLAGS) $(CFLAGS) $(OSFLAGS) -o $@ -c $<
 
 clean::
-	rm -f *.o *~ \#*
+  rm -f *.o *~ \#*
 
 #end file
