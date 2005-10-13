@@ -5,7 +5,7 @@
 
   Contents:     MSCB Device Driver.
 
-  $Id:$
+  $Id$
 
 \********************************************************************/
 
@@ -21,6 +21,7 @@
 
 typedef struct {
    char device[256];
+   char pwd[32];
    int *mscb_address;
    unsigned char *mscb_index;
    int *var_size;
@@ -86,6 +87,14 @@ INT mscbdev_init(HNDLE hkey, void **pinfo, INT channels, INT(*bd) (INT cmd, ...)
    if (status != DB_SUCCESS)
       return FE_ERR_ODB;
 
+   size = sizeof(info->mscbdev_settings.pwd);
+   info->mscbdev_settings.pwd[0] = 0;
+   status =
+       db_get_value(hDB, hkey, "Pwd", &info->mscbdev_settings.pwd, &size,
+                    TID_STRING, TRUE);
+   if (status != DB_SUCCESS)
+      return FE_ERR_ODB;
+
    size = sizeof(INT) * channels;
    db_get_value(hDB, hkey, "MSCB Address", info->mscbdev_settings.mscb_address, &size,
                 TID_INT, TRUE);
@@ -108,7 +117,8 @@ INT mscbdev_init(HNDLE hkey, void **pinfo, INT channels, INT(*bd) (INT cmd, ...)
    /* initialize info structure */
    info->num_channels = channels;
 
-   info->fd = mscb_init(info->mscbdev_settings.device, sizeof(info->mscbdev_settings.device), "", FALSE);
+   info->fd = mscb_init(info->mscbdev_settings.device, sizeof(info->mscbdev_settings.device), 
+                        info->mscbdev_settings.pwd, FALSE);
    if (info->fd < 0) {
       cm_msg(MERROR, "mscbdev_init", "Cannot connect to MSCB device \"%s\"",
              info->mscbdev_settings.device);
