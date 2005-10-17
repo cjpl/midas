@@ -5,7 +5,7 @@
 #
 #  Contents:     Makefile for MIDAS binaries and examples under unix
 #
-#  $Id:$
+#  $Id$
 #
 #####################################################################
 #
@@ -490,7 +490,7 @@ ifdef CERNLIB
 	install -v -m 644 $(LIB_DIR)/hmana.o $(SYSLIB_DIR)/hmana.o
 else
 	rm -fv $(SYSLIB_DIR)/hmana.o
-endif
+      chmod +s $(SYSBIN_DIR)/mhttpd
 ifdef ROOTSYS
 	install -v -m 644 $(LIB_DIR)/rmana.o $(SYSLIB_DIR)/rmana.o
 else
