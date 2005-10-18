@@ -1599,12 +1599,16 @@ int mscb_init(char *device, int bufsize, char *password, int debug)
          musb_close(mscb_fd[index].hr, mscb_fd[index].hw);
       }
 
+      /* mark device descriptor used */
+      mscb_fd[index].fd = 1;
+
       n = 0;
 
       /* linux needs some time to start-up ...??? */
       for (i = 0; i < 10; i++) {
          if (!mscb_lock(index + 1)) {
             debug_log("return EMSCB_LOCKED\n");
+            memset(&mscb_fd[index], 0, sizeof(MSCB_FD));
             return EMSCB_LOCKED;
          }
 
@@ -1620,6 +1624,7 @@ int mscb_init(char *device, int bufsize, char *password, int debug)
             /* check version */
             if (buf[1] < MSCB_VERSION_BIN) {
                debug_log("return EMSCB_SUBM_VERSION\n");
+               memset(&mscb_fd[index], 0, sizeof(MSCB_FD));
                return EMSCB_SUBM_VERSION;
             }
 
@@ -1629,6 +1634,7 @@ int mscb_init(char *device, int bufsize, char *password, int debug)
 
       if (n != 2 || buf[0] != MCMD_ACK) {
          debug_log("return EMSCB_COMM_ERROR\n");
+         memset(&mscb_fd[index], 0, sizeof(MSCB_FD));
          return EMSCB_COMM_ERROR;
       }
    }
@@ -1638,12 +1644,13 @@ int mscb_init(char *device, int bufsize, char *password, int debug)
       mscb_fd[index].fd = mrpc_connect(mscb_fd[index].device, MSCB_NET_PORT);
 
       if (mscb_fd[index].fd < 0) {
-         mscb_fd[index].fd = 0;
+         memset(&mscb_fd[index], 0, sizeof(MSCB_FD));
          debug_log("return EMSCB_RPC_ERROR\n");
          return EMSCB_RPC_ERROR;
       }
 
       if (!mscb_lock(index + 1)) {
+         memset(&mscb_fd[index], 0, sizeof(MSCB_FD));
          debug_log("return EMSCB_LOCKED\n");
          return EMSCB_LOCKED;
       }
@@ -1662,12 +1669,14 @@ int mscb_init(char *device, int bufsize, char *password, int debug)
 
       if (n != 1 || (buf[0] != MCMD_ACK && buf[0] != 0xFF)) {
          mscb_exit(index + 1);
+         memset(&mscb_fd[index], 0, sizeof(MSCB_FD));
          debug_log("return EMSCB_COMM_ERROR\n");
          return EMSCB_COMM_ERROR;
       }
 
       if (buf[0] == 0xFF) {
          mscb_exit(index + 1);
+         memset(&mscb_fd[index], 0, sizeof(MSCB_FD));
          debug_log("return EMSCB_WRONG_PASSWORD\n");
          return EMSCB_WRONG_PASSWORD;
       }
@@ -3208,8 +3217,8 @@ int mscb_read(int fd, unsigned short adr, unsigned char index, void *data, int *
 
 \********************************************************************/
 {
-   int i, n, status;
-   unsigned char buf[256], crc;
+   int i, j, n, status;
+   unsigned char buf[256], str[1000], crc;
 
    debug_log("mscb_read(fd=%d,adr=%d,index=%d,data=%p,size=%d) ", fd, adr, index, data, *size);
 
@@ -3316,14 +3325,17 @@ int mscb_read(int fd, unsigned short adr, unsigned char index, void *data, int *
          DWORD_SWAP(data);
 
       mscb_release(fd);
-      for (i=0 ; i<*size && ((char *)data)[i] ; i++)
-         if (!isascii(((char *)data)[i]))
-            break;
+      sprintf(str, "return %d bytes: ", *size);
+      for (j=0 ; j<*size ; j++) {
+         sprintf(str+strlen(str), "0x%02X ", 
+            *(((unsigned char *)data)+i));
+         if (isalnum(*(((unsigned char *)data)+i)))
+            sprintf(str+strlen(str), "(%c) ", 
+               *(((unsigned char *)data)+i));
+      }
+      strlcat(str, "\n", sizeof(str)); 
+      debug_log(str);
 
-      if (i < *size && ((char *)data)[i])
-         debug_log("return %d bytes: %s\n", *size, data);
-      else
-         debug_log("return %d bytes: \"%s\"\n", *size, data);
       return MSCB_SUCCESS;
    }
 
