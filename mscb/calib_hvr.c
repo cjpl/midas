@@ -5,7 +5,7 @@
 
   Contents:     Calibration program for HVR-200
 
-  $Id:$
+  $Id$
 
 \********************************************************************/
 
@@ -332,7 +332,7 @@ void stop()
 
 /*------------------------------------------------------------------*/
 
-int main(int argc, char *argv[])
+int main()
 {
    int fd;
    unsigned short adr, adr_start, adr_end, adr_dvm;
