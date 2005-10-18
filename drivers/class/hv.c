@@ -5,7 +5,7 @@
 
   Contents:     High Voltage Class Driver
 
-  $Id:$
+  $Id$
 
 \********************************************************************/
 
@@ -554,7 +554,7 @@ INT hv_init(EQUIPMENT * pequipment)
       hv_info->flags[i] = pequipment->driver[index].flags;
    }
 
-  /*---- get default names from device driver ----*/
+   /*---- get default names from device driver ----*/
    size = NAME_LENGTH * sizeof(char);
 
    db_find_key(hDB, hv_info->hKeyRoot, "Settings/Names", &hKey);
@@ -564,7 +564,7 @@ INT hv_init(EQUIPMENT * pequipment)
       db_set_data_index(hDB, hKey, hv_info->names + NAME_LENGTH * i, size, i, TID_STRING);
    }
 
-  /*---- set labels form midas SC names ----*/
+   /*---- set labels form midas SC names ----*/
    for (i = 0; i < hv_info->num_channels; i++) {
       DRIVER(i) (CMD_SET_LABEL, hv_info->dd_info[i],
                  i - hv_info->channel_offset[i], hv_info->names + NAME_LENGTH * i);
