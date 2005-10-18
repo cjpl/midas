@@ -5,7 +5,7 @@
 
   Contents:     MSCB bus driver to transport ASCII commands to scs_210 
 
-  $Id:$
+  $Id$
 
 \********************************************************************/
 
@@ -16,13 +16,13 @@
 static int debug_flag = 0;
 
 typedef struct {
-   char port[32];
+   char mscb_device[32];
    char pwd[32];
    unsigned short address;
 } MSCBBUS_SETTINGS;
 
 #define MSCBBUS_SETTINGS_STR "\
-MSCB Port = STRING : [32] usb0\n\
+MSCB Device = STRING : [32] usb0\n\
 Pwd = STRING : [32] \n\
 Address = WORD : 0\n\
 "
@@ -205,10 +205,7 @@ int mscbbus_init(HNDLE hkey, void **pinfo)
 
    /* open port */
    // check if ethernet submaster
-   if (strstr(info->settings.port, "MSCB")) // ethernet submaster
-     info->fd = mscb_init(info->settings.port, sizeof(info->settings.port), info->settings.pwd, FALSE);
-   else
-     info->fd = mscb_init(info->settings.port, sizeof(info->settings.port), "", FALSE);
+   info->fd = mscb_init(info->settings.mscb_device, sizeof(info->settings.mscb_device), info->settings.pwd, FALSE);
 
    if (info->fd < 0)
       return FE_ERR_HW;
