@@ -5,7 +5,7 @@
 
   Contents:     LeCroy LRS 1440 High Voltage Device Driver
 
-  $Id:$
+  $Id$
   
 \********************************************************************/
 
@@ -44,7 +44,7 @@ Polarity = INT[16] :\n\
 typedef struct {
    LRS1445A_SETTINGS settings;
    int num_channels;
-    INT(*bd) (INT cmd, ...);    /* bus driver entry function */
+   INT(*bd) (INT cmd, ...);     /* bus driver entry function */
    void *bd_info;               /* private info of bus driver */
 } LRS1445A_INFO;
 
