@@ -508,6 +508,42 @@ endif
 	  install -v -m 644 $(ZLIB_DIR)/libz.a $(SYSLIB_DIR) ;\
 	fi;
 
+#--------------------------------------------------------------
+# mininal_install
+minimal_install:
+# system programs
+        @echo "... "
+        @echo "... Minimal Install for programs to $(SYSBIN_DIR)"
+        @echo "... "
+
+        @if [ ! -d  $(SYSBIN_DIR) ] ; then \
+          echo "Making directory $(SYSBIN_DIR)" ; \
+          mkdir -p $(SYSBIN_DIR); \
+        fi;
+
+        @for i in mserver mhttpd dio ; \
+          do \
+          install -v -m 755 $(BIN_DIR)/$$i $(SYSBIN_DIR) ; \
+          done
+
+        install -v -m 755 $(UTL_DIR)/mcleanup $(SYSBIN_DIR)
+        chmod +s $(SYSBIN_DIR)/dio
+        chmod +s $(SYSBIN_DIR)/mhttpd
+
+# utilities
+        @echo "... "
+        @echo "... No utilities install to $(SYSBIN_DIR)"
+        @echo "... "
+
+# include
+        @echo "... "
+        @echo "... No include install to $(SYSINC_DIR)"
+        @echo "... "
+
+# library + objects
+        @echo "... "
+        @echo "... No library Install to $(SYSLIB_DIR)"
+        @echo "... "
 
 indent:
 	find . -name "*.[hc]" -exec indent -kr -nut -i3 -l90 {} \;
