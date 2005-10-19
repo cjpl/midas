@@ -5,7 +5,7 @@
 
   Contents:     List of MSCB RPC functions with parameters
 
-  $Id:$
+  $Id$
 
 \********************************************************************/
 
@@ -69,6 +69,8 @@ static RPC_LIST rpc_list[] = {
    {RPC_MSCB_REBOOT, "mscb_reboot",
     {{TID_INT, RPC_IN},
      {TID_INT, RPC_IN},
+     {TID_INT, RPC_IN},
+     {TID_INT, RPC_IN},
      {0}}},
 
    {RPC_MSCB_RESET, "mscb_reset",
@@ -98,6 +100,15 @@ static RPC_LIST rpc_list[] = {
      {TID_INT, RPC_IN},
      {TID_INT, RPC_IN},
      {TID_INT, RPC_IN},
+     {TID_SHORT, RPC_IN},
+     {0}}},
+
+   {RPC_MSCB_SET_GADDR, "mscb_set_gaddr",
+    {{TID_INT, RPC_IN},
+     {TID_INT, RPC_IN},
+     {TID_INT, RPC_IN},
+     {TID_INT, RPC_IN},
+     {TID_SHORT, RPC_IN},
      {0}}},
 
    {RPC_MSCB_SET_NAME, "mscb_set_name",
@@ -132,6 +143,8 @@ static RPC_LIST rpc_list[] = {
 
    {RPC_MSCB_FLASH, "mscb_flash",
     {{TID_INT, RPC_IN},
+     {TID_INT, RPC_IN},
+     {TID_INT, RPC_IN},
      {TID_INT, RPC_IN},
      {0}}},
 
@@ -349,7 +362,7 @@ int server_execute(int index, void *prpc_param[])
       break;
 
    case RPC_MSCB_REBOOT:
-      status = mscb_reboot(CINT(0), CWORD(1));
+      status = mscb_reboot(CINT(0), CINT(1), CINT(2), CINT(3));
       break;
 
    case RPC_MSCB_RESET:
@@ -369,7 +382,11 @@ int server_execute(int index, void *prpc_param[])
       break;
 
    case RPC_MSCB_SET_ADDR:
-      status = mscb_set_addr(CINT(0), CSHORT(1), CSHORT(2), CSHORT(3));
+      status = mscb_set_addr(CINT(0), CINT(1), CINT(2), CINT(3), CSHORT(4));
+      break;
+
+   case RPC_MSCB_SET_GADDR:
+      status = mscb_set_gaddr(CINT(0), CINT(1), CINT(2), CINT(3), CSHORT(4));
       break;
 
    case RPC_MSCB_SET_NAME:
@@ -389,7 +406,7 @@ int server_execute(int index, void *prpc_param[])
       break;
 
    case RPC_MSCB_FLASH:
-      status = mscb_flash(CINT(0), CSHORT(1));
+      status = mscb_flash(CINT(0), CINT(1), CINT(2), CINT(3));
       break;
 
    case RPC_MSCB_UPLOAD:
