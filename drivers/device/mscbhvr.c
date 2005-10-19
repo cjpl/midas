@@ -111,8 +111,6 @@ INT mscbhvr_exit(MSCBHVR_INFO * info)
 INT mscbhvr_set(MSCBHVR_INFO * info, INT channel, float value)
 {
    mscb_write(info->fd, info->settings.base_address + channel, 1, &value, 4);
-
-   printf("%d %1.2lf\n", channel, value);
    return FE_SUCCESS;
 }
 
