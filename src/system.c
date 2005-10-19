@@ -13,7 +13,7 @@
                 found in "UNIX distributed programming" by Chris
                 Brown, Prentice Hall
 
-  $Id:$
+  $Id$
 
 \********************************************************************/
 
@@ -1286,7 +1286,7 @@ invoke ss_exec() and ignore pid.
   ss_system(cmd);
 }
 ...
-\encode
+\endcode
 @param command Command to execute.
 @return SS_SUCCESS or ss_exec() return code
 */
