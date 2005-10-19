@@ -15,7 +15,7 @@
                 the device driver "null" has to be replaces with
                 real device drivers.
 
-  $Id:$
+  $Id$
 
 \********************************************************************/
 
@@ -66,18 +66,18 @@ DEVICE_DRIVER multi_driver[] = {
 EQUIPMENT equipment[] = {
 
    {"HV",                       /* equipment name */
-    3, 0,                       /* event ID, trigger mask */
-    "SYSTEM",                   /* event buffer */
-    EQ_SLOW,                    /* equipment type */
-    0,                          /* event source */
-    "FIXED",                    /* format */
-    TRUE,                       /* enabled */
-    RO_RUNNING | RO_TRANSITIONS,        /* read when running and on transitions */
-    60000,                      /* read every 60 sec */
-    0,                          /* stop run after this event limit */
-    0,                          /* number of sub events */
-    1,                          /* log history every event */
-    "", "", "",
+    {3, 0,                       /* event ID, trigger mask */
+     "SYSTEM",                  /* event buffer */
+     EQ_SLOW,                   /* equipment type */
+     0,                         /* event source */
+     "FIXED",                   /* format */
+     TRUE,                      /* enabled */
+     RO_RUNNING | RO_TRANSITIONS,        /* read when running and on transitions */
+     60000,                     /* read every 60 sec */
+     0,                         /* stop run after this event limit */
+     0,                         /* number of sub events */
+     1,                         /* log history every event */
+     "", "", ""} ,
     cd_hv_read,                 /* readout routine */
     cd_hv,                      /* class driver main routine */
     hv_driver,                  /* device driver list */
@@ -85,18 +85,18 @@ EQUIPMENT equipment[] = {
     },
 
    {"Environment",              /* equipment name */
-    4, 0,                       /* event ID, trigger mask */
-    "SYSTEM",                   /* event buffer */
-    EQ_SLOW,                    /* equipment type */
-    0,                          /* event source */
-    "FIXED",                    /* format */
-    TRUE,                       /* enabled */
-    RO_RUNNING | RO_TRANSITIONS,        /* read when running and on transitions */
-    60000,                      /* read every 60 sec */
-    0,                          /* stop run after this event limit */
-    0,                          /* number of sub events */
-    1,                          /* log history every event */
-    "", "", "",
+    {4, 0,                      /* event ID, trigger mask */
+     "SYSTEM",                  /* event buffer */
+     EQ_SLOW,                   /* equipment type */
+     0,                         /* event source */
+     "FIXED",                   /* format */
+     TRUE,                      /* enabled */
+     RO_RUNNING | RO_TRANSITIONS,        /* read when running and on transitions */
+     60000,                     /* read every 60 sec */
+     0,                         /* stop run after this event limit */
+     0,                         /* number of sub events */
+     1,                         /* log history every event */
+     "", "", ""} ,
     cd_multi_read,              /* readout routine */
     cd_multi,                   /* class driver main routine */
     multi_driver,               /* device driver list */
