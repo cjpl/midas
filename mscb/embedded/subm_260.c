@@ -6,7 +6,7 @@
   Contents:     MSCB program for Cygnal Ethernet sub-master
                 SUBM260 running on Cygnal C8051F120
 
-  $Id:$
+  $Id$
 
 \********************************************************************/
 
@@ -16,7 +16,7 @@
 #include "mscb.h"
 #include "net.h"
 
-#define SUBM_VERSION 0x20  // used for PC-Submaster communication
+#define SUBM_VERSION 0x21  // used for PC-Submaster communication
 
 /*------------------------------------------------------------------*/
 
@@ -349,7 +349,7 @@ unsigned char execute(char socket_no)
 
 unsigned char rs485_send(char socket_no, unsigned char len, unsigned char flags)
 {
-   unsigned char i;
+   unsigned char i, j;
 
    /* clear receive buffer */
    i_rs485_rx = 0;
@@ -373,10 +373,15 @@ unsigned char rs485_send(char socket_no, unsigned char len, unsigned char flags)
          for (i=1 ; i<len && i<5 ; i++)
             rs485_tx_bit9[i-1] = 1;
 
-      /* set first four bit9 if ADR_CYCLE flag */
-      if (flags & RS485_FLAG_ADR_CYCLE)
-         for (i=0 ; i<4 ; i++)
+      /* set first two/four bit9 if ADR_CYCLE flag */
+      if (flags & RS485_FLAG_ADR_CYCLE) {
+         if (rs485_tx_buf[1] == MCMD_ADDR_BC)
+           j = 2;
+         else
+           j = 4;
+         for (i=0 ; i<j ; i++)
             rs485_tx_bit9[i] = 1;
+      }
 
       TB80 = rs485_tx_bit9[0];
 

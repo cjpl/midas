@@ -6,7 +6,7 @@
   Contents:     MSCB program for Cygnal USB sub-master
                 SUBM250 running on Cygnal C8051F320
 
-  $Id:$
+  $Id$
 
 \********************************************************************/
 
@@ -17,6 +17,7 @@
 #include "usb.h"
 
 #define IDENT_STR "SUBM_250"
+#define SUBM_VERSION 0x21   // used for PC-Submaster communication
 
 /*------------------------------------------------------------------*/
 
@@ -192,7 +193,7 @@ void execute()
       /* return echo */
       led_blink(1, 1, 50);
       usb_tx_buf[0] = MCMD_ACK;
-      usb_tx_buf[1] = VERSION;
+      usb_tx_buf[1] = SUBM_VERSION;
       usb_send(usb_tx_buf, 2);
    }
 
@@ -207,7 +208,7 @@ void execute()
 
 unsigned char rs485_send(unsigned char len, unsigned char flags)
 {
-   unsigned char i;
+   unsigned char i, j;
 
    /* clear receive buffer */
    i_rs485_rx = 0;
@@ -228,10 +229,16 @@ unsigned char rs485_send(unsigned char len, unsigned char flags)
          for (i=1 ; i<len && i<5 ; i++)
             rs485_tx_bit9[i-1] = 1;
 
-      /* set first four bit9 if ADR_CYCLE flag */
-      if (flags & RS485_FLAG_ADR_CYCLE)
-         for (i=0 ; i<4 ; i++)
+      /* set first two/four bit9 if ADR_CYCLE flag */
+      if (flags & RS485_FLAG_ADR_CYCLE) {
+         if (usb_rx_buf[1] == MCMD_ADDR_BC)
+           j = 2;
+         else
+           j = 4;
+         for (i=0 ; i<j ; i++)
             rs485_tx_bit9[i] = 1;
+      }
+      
 
       TB80 = rs485_tx_bit9[0];
 

@@ -5,7 +5,7 @@
 
   Contents:     Header fiel for MSCB RPC funcions
 
-  $Id:$
+  $Id$
 
 \********************************************************************/
 
@@ -91,20 +91,21 @@ typedef struct {
 #define RPC_MSCB_INFO              6
 #define RPC_MSCB_INFO_VARIABLE     7
 #define RPC_MSCB_SET_ADDR          8
-#define RPC_MSCB_WRITE             9
-#define RPC_MSCB_WRITE_GROUP      10
-#define RPC_MSCB_WRITE_BLOCK      11
-#define RPC_MSCB_FLASH            12
-#define RPC_MSCB_UPLOAD           13
-#define RPC_MSCB_VERIFY           14
-#define RPC_MSCB_READ             15
-#define RPC_MSCB_READ_RANGE       16
-#define RPC_MSCB_READ_BLOCK       17
-#define RPC_MSCB_USER             18
-#define RPC_MSCB_ECHO             19
-#define RPC_MSCB_SET_NAME         20
-#define RPC_MSCB_ADDR             21
-#define RPC_MSCB_GET_DEVICE       22
+#define RPC_MSCB_SET_GADDR         9
+#define RPC_MSCB_WRITE            10
+#define RPC_MSCB_WRITE_GROUP      11
+#define RPC_MSCB_WRITE_BLOCK      12
+#define RPC_MSCB_FLASH            13
+#define RPC_MSCB_UPLOAD           14
+#define RPC_MSCB_VERIFY           15
+#define RPC_MSCB_READ             16
+#define RPC_MSCB_READ_RANGE       17
+#define RPC_MSCB_READ_BLOCK       18
+#define RPC_MSCB_USER             19
+#define RPC_MSCB_ECHO             20
+#define RPC_MSCB_SET_NAME         21
+#define RPC_MSCB_ADDR             22
+#define RPC_MSCB_GET_DEVICE       23
 
 /*------------------------------------------------------------------*/
 

@@ -5,7 +5,7 @@
 
   Contents:     Header fiel for MSCB funcions
 
-  $Id:$
+  $Id$
 
 \********************************************************************/
 
@@ -192,6 +192,8 @@ extern MSCB_FD mscb_fd[MSCB_MAX_FD];
 #define MSCB_SUBM_ERROR    8
 #define MSCB_ADDR_EXISTS   9
 #define MSCB_WRONG_PASS   10
+#define MSCB_SUBADDR      11
+#define MSCB_NOTREADY     12
 
 /*---- error codes ------------------------------------------------*/
 
@@ -245,17 +247,18 @@ extern "C" {
    void EXPRT mscb_check(char *device, int size);
    int EXPRT mscb_exit(int fd);
    int EXPRT mscb_reset(int fd);
-   int EXPRT mscb_reboot(int fd, unsigned short adr);
+   int EXPRT mscb_reboot(int fd, int addr, int gaddr, int broadcast);
    int EXPRT mscb_ping(int fd, unsigned short adr);
    int EXPRT mscb_echo(int fd, unsigned short add, unsigned char d1, unsigned char *d2);
    int EXPRT mscb_info(int fd, unsigned short adr, MSCB_INFO * info);
    int EXPRT mscb_info_variable(int fd, unsigned short adr, unsigned char index, MSCB_INFO_VAR * info);
-   int EXPRT mscb_set_addr(int fd, unsigned short adr, unsigned short node, unsigned short group);
+   int EXPRT mscb_set_addr(int fd, int addr, int gaddr, int broadcast, unsigned short new_addr);
+   int EXPRT mscb_set_gaddr(int fd, int addr, int gaddr, int broadcast, unsigned short new_addr);
    int EXPRT mscb_set_name(int fd, unsigned short adr, char *name);
    int EXPRT mscb_write(int fd, unsigned short adr, unsigned char index, void *data, int size);
    int EXPRT mscb_write_group(int fd, unsigned short adr, unsigned char index, void *data, int size);
    int EXPRT mscb_write_block(int fd, unsigned short adr, unsigned char index, void *data, int size);
-   int EXPRT mscb_flash(int fd, unsigned short adr);
+   int EXPRT mscb_flash(int fd, int adr, int gaddr, int broadcast);
    int EXPRT mscb_upload(int fd, unsigned short adr, char *buffer, int size, int debug);
    int EXPRT mscb_verify(int fd, unsigned short adr, char *buffer, int size);
    int EXPRT mscb_read(int fd, unsigned short adr, unsigned char index, void *data, int *size);

@@ -8,7 +8,7 @@ Group (Include Files)
 
 File 1,1,<.\mscbmain.c><mscbmain.c> 0x0 
 File 1,1,<.\mscbutil.c><mscbutil.c> 0x0 
-File 1,1,<.\hvr_200.c><hvr_200.c> 0x0 
+File 1,1,<.\hvr_400.c><hvr_400.c> 0x0 
 File 2,7,<.\mscb.h><mscb.h> 0x0 
 
 
@@ -33,7 +33,7 @@ Options 1,0,0  // Target 'Target 1'
  OrgReg (ÿCygnal\)
  TgStat=0
  OutDir (.\)
- OutName (hvr_200)
+ OutName (hvr_400)
  GenApp=1
  GenLib=0
  GenHex=1
@@ -67,7 +67,7 @@ Options 1,0,0  // Target 'Target 1'
  C51FL=17435920
  C51VA=0
  C51MSC ()
- C51DEF (HVR_200)
+ C51DEF (HVR_400)
  C51UDF ()
  INCC5 ()
  AX51FL=4
