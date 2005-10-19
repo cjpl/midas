@@ -7,7 +7,7 @@
                 for MIDAS applications
 
 
-  $Id:$
+  $Id$
 
 \********************************************************************/
 
@@ -43,7 +43,7 @@ The main include file
  *  @{  */
 
 #define MIDAS_VERSION "1.9.5"
-#define DATABASE_VERSION 2   /* has to be changed whenenver binary ODB format changes*/
+#define DATABASE_VERSION 2   /* has to be changed whenever binary ODB format changes*/
 
 /**dox***************************************************************/
 #ifndef DOXYGEN_SHOULD_SKIP_THIS
@@ -871,7 +871,7 @@ typedef struct {
 } KEYLIST;
 
 /**dox***************************************************************/
-/** @} */ /* end of msectionh */
+/** @} */ /* end of mbufferh */
 
 /*---- Equipment ---------------------------------------------------*/
 
@@ -1078,7 +1078,7 @@ typedef struct {
 #define DEF_TEST(t) extern ANA_TEST t;
 #endif
 /**dox***************************************************************/
-/** @} */ /* end of mbank */
+/** @} */ /* end of manalyzer */
 
 /*---- History structures ------------------------------------------*/
 
@@ -1121,7 +1121,7 @@ typedef struct {
    DWORD def_offset;
 } HISTORY;
 /**dox***************************************************************/
-/** @} */ /* end of mhistory */
+/** @} */ /* end of mhistoryh */
 
 /*---- ODB runinfo -------------------------------------------------*/
 
@@ -1158,12 +1158,12 @@ typedef struct {
 "",\
 NULL }
 /**dox***************************************************************/
-/** @} */ /* end of mhistory */
+/** @} */ /* end of modbh */
 
 /*---- Alarm system ------------------------------------------------*/
 /**dox***************************************************************/
 /** @defgroup malarmh Alarm related
- * Alarm structre. 
+ * Alarm structure. 
  *  @{  */
 
 /********************************************************************/
@@ -1980,6 +1980,9 @@ extern "C" {
 #endif                          /* _MIDAS_H */
 /**dox***************************************************************/
 #endif                          /* DOXYGEN_SHOULD_SKIP_THIS */
+
+/**dox***************************************************************/
+/** @} */ /* end of msectionh */
 
 /**dox***************************************************************/
 /** @} */ /* end of midasincludecode */
