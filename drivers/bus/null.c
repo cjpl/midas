@@ -5,13 +5,14 @@
 
   Contents:     NULL bus driver
 
-  $Id:$
+  $Id$
 
 \********************************************************************/
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
+#include <string.h>
 #include "midas.h"
 
 static int debug_flag = 0;

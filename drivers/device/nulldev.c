@@ -6,13 +6,14 @@
   Contents:     NULL Device Driver. This file can be used as a 
                 template to write a read device driver
 
-  $Id:$
+  $Id$
 
 \********************************************************************/
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
+#include <string.h>
 #include "midas.h"
 
 /*---- globals -----------------------------------------------------*/
