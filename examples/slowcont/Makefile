@@ -5,7 +5,7 @@
 #
 #  Contents:     UNIX Makefile for MIDAS slow control frontend
 #
-#  $Id:$
+#  $Id$
 #
 #####################################################################
 
@@ -40,7 +40,7 @@ DRV_DIR		= ../../drivers
 #-------------------------------------------------------------------
 # Drivers needed by the frontend program
 #                 
-DRIVERS         = camacnul.o hv.o multi.o null.o nulldev.o
+DRIVERS         = hv.o multi.o null.o nulldev.o
 
 ####################################################################
 # Lines below here should not be edited
@@ -50,7 +50,7 @@ LIB = $(LIB_DIR)/libmidas.a
 
 # compiler
 CC = cc
-CFLAGS = -g -I$(INC_DIR) -I$(DRV_DIR)
+CFLAGS = -g -Wall -I$(INC_DIR) -I$(DRV_DIR)
 LDFLAGS =
 
 all: scfe
