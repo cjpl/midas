@@ -9,9 +9,9 @@
 
 \********************************************************************/
 
-#define MSCB_LIBRARY_VERSION   "2.1.9"
-#define MSCB_PROTOCOL_VERSION  "2.1"
-#define MSCB_VERSION_BIN       0x21
+#define MSCB_LIBRARY_VERSION   "2.2.0"
+#define MSCB_PROTOCOL_VERSION  "2.2"
+#define MSCB_SUBM_VERSION      0x21
 
 #ifdef _MSC_VER                 // Windows includes
 
@@ -1622,7 +1622,7 @@ int mscb_init(char *device, int bufsize, char *password, int debug)
          if (n == 2 && buf[0] == MCMD_ACK) {
 
             /* check version */
-            if (buf[1] < MSCB_VERSION_BIN) {
+            if (buf[1] != MSCB_SUBM_VERSION) {
                debug_log("return EMSCB_SUBM_VERSION\n");
                memset(&mscb_fd[index], 0, sizeof(MSCB_FD));
                return EMSCB_SUBM_VERSION;
@@ -1965,7 +1965,7 @@ int mscb_addr(int fd, int cmd, unsigned short adr, int retry, int lock)
 
 /*------------------------------------------------------------------*/
 
-int mscb_reboot(int fd, unsigned short adr)
+int mscb_reboot(int fd, int addr, int gaddr, int broadcast)
 /********************************************************************\
 
   Routine: mscb_reboot
@@ -1974,7 +1974,9 @@ int mscb_reboot(int fd, unsigned short adr)
 
   Input:
     int fd                  File descriptor for connection
-    unsigned short adr      Node address
+    int addr                Node address
+    int gaddr               Group address
+    int broadcast           Broadcast flag
 
   Function value:
     MSCB_SUCCESS            Successful completion
@@ -1989,19 +1991,37 @@ int mscb_reboot(int fd, unsigned short adr)
       return MSCB_INVAL_PARAM;
 
    if (mrpc_connected(fd))
-      return mrpc_call(mscb_fd[fd - 1].fd, RPC_MSCB_REBOOT, mscb_fd[fd - 1].remote_fd, adr);
+      return mrpc_call(mscb_fd[fd - 1].fd, RPC_MSCB_REBOOT, mscb_fd[fd - 1].remote_fd, addr, gaddr, broadcast);
 
    if (mscb_lock(fd) != MSCB_SUCCESS)
       return MSCB_MUTEX;
 
-   buf[0] = MCMD_ADDR_NODE16;
-   buf[1] = (unsigned char) (adr >> 8);
-   buf[2] = (unsigned char) (adr & 0xFF);
-   buf[3] = crc8(buf, 3);
+   if (addr >= 0) {
+      buf[0] = MCMD_ADDR_NODE16;
+      buf[1] = (unsigned char) (addr >> 8);
+      buf[2] = (unsigned char) (addr & 0xFF);
+      buf[3] = crc8(buf, 3);
 
-   buf[4] = MCMD_INIT;
-   buf[5] = crc8(buf+4, 1);
-   mscb_out(fd, buf, 6, RS485_FLAG_NO_ACK | RS485_FLAG_ADR_CYCLE);
+      buf[4] = MCMD_INIT;
+      buf[5] = crc8(buf+4, 1);
+      mscb_out(fd, buf, 6, RS485_FLAG_NO_ACK | RS485_FLAG_ADR_CYCLE);
+   } else if (gaddr >= 0) {
+      buf[0] = MCMD_ADDR_GRP16;
+      buf[1] = (unsigned char) (gaddr >> 8);
+      buf[2] = (unsigned char) (gaddr & 0xFF);
+      buf[3] = crc8(buf, 3);
+
+      buf[4] = MCMD_INIT;
+      buf[5] = crc8(buf+4, 1);
+      mscb_out(fd, buf, 6, RS485_FLAG_NO_ACK | RS485_FLAG_ADR_CYCLE);
+   } else if (broadcast) {
+      buf[0] = MCMD_ADDR_BC;
+      buf[1] = crc8(buf, 1);
+
+      buf[2] = MCMD_INIT;
+      buf[3] = crc8(buf+2, 1);
+      mscb_out(fd, buf, 4, RS485_FLAG_NO_ACK | RS485_FLAG_ADR_CYCLE);
+   }
 
    mscb_release(fd);
 
@@ -2309,18 +2329,19 @@ int mscb_info_variable(int fd, unsigned short adr, unsigned char index, MSCB_INF
 
 /*------------------------------------------------------------------*/
 
-int mscb_set_addr(int fd, unsigned short adr, unsigned short node, unsigned short group)
+int mscb_set_addr(int fd, int addr, int gaddr, int broadcast, unsigned short new_addr)
 /********************************************************************\
 
   Routine: mscb_set_addr
 
-  Purpose: Set node and group address of an node
+  Purpose: Set node address of an node
 
   Input:
     int fd                  File descriptor for connection
-    unsigned short adr      Node address
-    unsigned short node     16-bit node address
-    unsigned short group    16-bit group address
+    int addr                Node address
+    int gaddr               Group address
+    int broadcast           Broadcast flag
+    unsigned short new_addr New node address
 
   Function value:
     MSCB_SUCCESS            Successful completion
@@ -2330,41 +2351,150 @@ int mscb_set_addr(int fd, unsigned short adr, unsigned short node, unsigned shor
 {
    unsigned char buf[64];
    int status;
+   MSCB_INFO info;
 
    if (fd > MSCB_MAX_FD || fd < 1 || !mscb_fd[fd - 1].type)
       return MSCB_INVAL_PARAM;
 
    if (mrpc_connected(fd))
-      return mrpc_call(mscb_fd[fd - 1].fd, RPC_MSCB_SET_ADDR, mscb_fd[fd - 1].remote_fd, adr, node, group);
+      return mrpc_call(mscb_fd[fd - 1].fd, RPC_MSCB_SET_ADDR, mscb_fd[fd - 1].remote_fd, addr, gaddr, broadcast, new_addr);
 
    if (mscb_lock(fd) != MSCB_SUCCESS)
       return MSCB_MUTEX;
 
-   /* check if destination address is alive */
-   status = mscb_addr(fd, MCMD_PING16, node, 10, 0);
-   if (status == MSCB_SUCCESS) {
-      mscb_release(fd);
-      return MSCB_ADDR_EXISTS;
+   if (addr >= 0) { // individual node
+
+      /* check if destination address is alive */
+      if (addr >= 0) {
+         status = mscb_addr(fd, MCMD_PING16, new_addr, 10, 0);
+         if (status == MSCB_SUCCESS) {
+            mscb_release(fd);
+            return MSCB_ADDR_EXISTS;
+         }
+      }
+
+      /* retrieve current group address */
+      mscb_info(fd, (unsigned short)addr, &info);
+                
+      buf[0] = MCMD_ADDR_NODE16;
+      buf[1] = (unsigned char) (addr >> 8);
+      buf[2] = (unsigned char) (addr & 0xFF);
+      buf[3] = crc8(buf, 3);
+
+      buf[4] = MCMD_SET_ADDR;
+      buf[5] = (unsigned char) (new_addr >> 8);
+      buf[6] = (unsigned char) (new_addr & 0xFF);
+      buf[7] = (unsigned char) (info.group_address >> 8);
+      buf[8] = (unsigned char) (info.group_address & 0xFF);
+      buf[9] = crc8(buf+4, 5);
+      mscb_out(fd, buf, 10, RS485_FLAG_NO_ACK | RS485_FLAG_ADR_CYCLE);
+   } if (gaddr >= 0) {
+      buf[0] = MCMD_ADDR_GRP16;
+      buf[1] = (unsigned char) (gaddr >> 8);
+      buf[2] = (unsigned char) (gaddr & 0xFF);
+      buf[3] = crc8(buf, 3);
+
+      buf[4] = MCMD_SET_ADDR;
+      buf[5] = (unsigned char) (new_addr >> 8);
+      buf[6] = (unsigned char) (0xFF); /* low byte of node address should be ignored */
+      buf[7] = (unsigned char) (gaddr >> 8);
+      buf[8] = (unsigned char) (gaddr & 0xFF);
+      buf[9] = crc8(buf+4, 5);
+      mscb_out(fd, buf, 10, RS485_FLAG_NO_ACK | RS485_FLAG_ADR_CYCLE);
+   } else if (broadcast ) {
+      buf[0] = MCMD_ADDR_BC;
+      buf[1] = crc8(buf, 1);
+
+      buf[2] = MCMD_SET_ADDR;
+      buf[3] = (unsigned char) (0xFF); /* node address should be ignored from nodes */
+      buf[4] = (unsigned char) (0xFF); /* in group or broadcast address mode */
+      buf[5] = (unsigned char) (new_addr >> 8);
+      buf[6] = (unsigned char) (new_addr & 0xFF);
+      buf[7] = crc8(buf+2, 5);
+      mscb_out(fd, buf, 8, RS485_FLAG_NO_ACK | RS485_FLAG_ADR_CYCLE);
    }
-
-   buf[0] = MCMD_ADDR_NODE16;
-   buf[1] = (unsigned char) (adr >> 8);
-   buf[2] = (unsigned char) (adr & 0xFF);
-   buf[3] = crc8(buf, 3);
-
-   buf[4] = MCMD_SET_ADDR;
-   buf[5] = (unsigned char) (node >> 8);
-   buf[6] = (unsigned char) (node & 0xFF);
-   buf[7] = (unsigned char) (group >> 8);
-   buf[8] = (unsigned char) (group & 0xFF);
-   buf[9] = crc8(buf+4, 5);
-   mscb_out(fd, buf, 10, RS485_FLAG_NO_ACK | RS485_FLAG_ADR_CYCLE);
 
    mscb_release(fd);
 
    return MSCB_SUCCESS;
 }
 
+/*------------------------------------------------------------------*/
+
+int mscb_set_gaddr(int fd, int addr, int gaddr, int broadcast, unsigned short new_addr)
+/********************************************************************\
+
+  Routine: mscb_set_gaddr
+
+  Purpose: Set group address of addressed node(s)
+
+  Input:
+    int fd                  File descriptor for connection
+    int addr                Node address
+    int gaddr               Group address
+    int broadcast           Broadcast flag
+    unsigned short new_addr New group address
+
+  Function value:
+    MSCB_SUCCESS            Successful completion
+    MSCB_MUTEX              Cannot obtain mutex for mscb
+
+\********************************************************************/
+{
+   unsigned char buf[64];
+
+   if (fd > MSCB_MAX_FD || fd < 1 || !mscb_fd[fd - 1].type)
+      return MSCB_INVAL_PARAM;
+
+   if (mrpc_connected(fd))
+      return mrpc_call(mscb_fd[fd - 1].fd, RPC_MSCB_SET_GADDR, mscb_fd[fd - 1].remote_fd, gaddr, new_addr);
+
+   if (mscb_lock(fd) != MSCB_SUCCESS)
+      return MSCB_MUTEX;
+
+   if (broadcast > 0) {         
+      buf[0] = MCMD_ADDR_BC;
+      buf[1] = crc8(buf, 1);
+
+      buf[2] = MCMD_SET_ADDR;
+      buf[3] = (unsigned char) (0xFF); /* node address should be ignored from nodes */
+      buf[4] = (unsigned char) (0xFF); /* in group or broadcast address mode */
+      buf[5] = (unsigned char) (new_addr >> 8);
+      buf[6] = (unsigned char) (new_addr & 0xFF);
+      buf[7] = crc8(buf+2, 5);
+      mscb_out(fd, buf, 8, RS485_FLAG_NO_ACK | RS485_FLAG_ADR_CYCLE);
+   } else if (gaddr >= 0) {
+      buf[0] = MCMD_ADDR_GRP16;
+      buf[1] = (unsigned char) (gaddr >> 8);
+      buf[2] = (unsigned char) (gaddr & 0xFF);
+      buf[3] = crc8(buf, 3);
+
+      buf[4] = MCMD_SET_ADDR;
+      buf[5] = (unsigned char) (0xFF); /* node address should be ignored from nodes */
+      buf[6] = (unsigned char) (0xFF); /* in group or broadcast address mode */
+      buf[7] = (unsigned char) (new_addr >> 8);
+      buf[8] = (unsigned char) (new_addr & 0xFF);
+      buf[9] = crc8(buf+4, 5);
+      mscb_out(fd, buf, 10, RS485_FLAG_NO_ACK | RS485_FLAG_ADR_CYCLE);
+   } else if (addr >= 0) {
+      buf[0] = MCMD_ADDR_NODE16;
+      buf[1] = (unsigned char) (addr >> 8);
+      buf[2] = (unsigned char) (addr & 0xFF);
+      buf[3] = crc8(buf, 3);
+
+      buf[4] = MCMD_SET_ADDR;
+      buf[5] = (unsigned char) (0xFF); /* node address should be ignored from nodes */
+      buf[6] = (unsigned char) (0xFF); /* in group or broadcast address mode */
+      buf[7] = (unsigned char) (new_addr >> 8);
+      buf[8] = (unsigned char) (new_addr & 0xFF);
+      buf[9] = crc8(buf+4, 5);
+      mscb_out(fd, buf, 10, RS485_FLAG_NO_ACK | RS485_FLAG_ADR_CYCLE);
+   }
+
+   mscb_release(fd);
+
+   return MSCB_SUCCESS;
+}
 /*------------------------------------------------------------------*/
 
 int mscb_set_name(int fd, unsigned short adr, char *name)
@@ -2680,7 +2810,7 @@ int mscb_write_block(int fd, unsigned short adr, unsigned char index, void *data
 
 /*------------------------------------------------------------------*/
 
-int mscb_flash(int fd, unsigned short adr)
+int mscb_flash(int fd, int addr, int gaddr, int broadcast)
 /********************************************************************\
 
   Routine: mscb_flash
@@ -2690,8 +2820,9 @@ int mscb_flash(int fd, unsigned short adr)
 
   Input:
     int fd                  File descriptor for connection
-    unsigned short adr      Node address
-                            and dword
+    int addr                Node address
+    int gaddr               Group address
+    int broadcast           Broadcast flag
 
   Function value:
     MSCB_SUCCESS            Successful completion
@@ -2708,19 +2839,37 @@ int mscb_flash(int fd, unsigned short adr)
       return MSCB_INVAL_PARAM;
 
    if (mrpc_connected(fd))
-      return mrpc_call(mscb_fd[fd - 1].fd, RPC_MSCB_FLASH, mscb_fd[fd - 1].remote_fd, adr);
+      return mrpc_call(mscb_fd[fd - 1].fd, RPC_MSCB_FLASH, mscb_fd[fd - 1].remote_fd, addr, gaddr, broadcast);
 
    if (mscb_lock(fd) != MSCB_SUCCESS)
       return MSCB_MUTEX;
 
-   buf[0] = MCMD_ADDR_NODE16;
-   buf[1] = (unsigned char) (adr >> 8);
-   buf[2] = (unsigned char) (adr & 0xFF);
-   buf[3] = crc8(buf, 3);
+   if (addr >= 0) {
+      buf[0] = MCMD_ADDR_NODE16;
+      buf[1] = (unsigned char) (addr >> 8);
+      buf[2] = (unsigned char) (addr & 0xFF);
+      buf[3] = crc8(buf, 3);
 
-   buf[4] = MCMD_FLASH;
-   buf[5] = crc8(buf+4, 1);
-   mscb_out(fd, buf, 6, RS485_FLAG_NO_ACK | RS485_FLAG_ADR_CYCLE);
+      buf[4] = MCMD_FLASH;
+      buf[5] = crc8(buf+4, 1);
+      mscb_out(fd, buf, 6, RS485_FLAG_NO_ACK | RS485_FLAG_ADR_CYCLE);
+   } else if (gaddr >= 0) {
+      buf[0] = MCMD_ADDR_GRP16;
+      buf[1] = (unsigned char) (gaddr >> 8);
+      buf[2] = (unsigned char) (gaddr & 0xFF);
+      buf[3] = crc8(buf, 3);
+
+      buf[4] = MCMD_FLASH;
+      buf[5] = crc8(buf+4, 1);
+      mscb_out(fd, buf, 6, RS485_FLAG_NO_ACK | RS485_FLAG_ADR_CYCLE);
+   } else if (broadcast) {
+      buf[0] = MCMD_ADDR_BC;
+      buf[1] = crc8(buf, 1);
+
+      buf[2] = MCMD_FLASH;
+      buf[3] = crc8(buf+2, 1);
+      mscb_out(fd, buf, 4, RS485_FLAG_NO_ACK | RS485_FLAG_ADR_CYCLE);
+   }
 
    mscb_release(fd);
 
@@ -2826,7 +2975,24 @@ int mscb_upload(int fd, unsigned short adr, char *buffer, int size, int debug)
    buf[0] = MCMD_UPGRADE;
    crc = crc8(buf, 1);
    buf[1] = crc;
-   mscb_out(fd, buf, 2, RS485_FLAG_NO_ACK);
+   mscb_out(fd, buf, 2, RS485_FLAG_LONG_TO);
+
+   /* wait for acknowledge */
+   if (mscb_in(fd, buf, 3, 10000) != 3) {
+      printf("Error: timeout receiving upgrade acknowledge from remote node\n");
+      mscb_release(fd);
+      return MSCB_TIMEOUT;
+   }
+
+   if (buf[1] == 2) {
+      mscb_release(fd);
+      return MSCB_SUBADDR;
+   }
+
+   if (buf[1] == 3) {
+      mscb_release(fd);
+      return MSCB_NOTREADY;
+   }
 
    /* let main routine enter upgrade() */
    Sleep(500);

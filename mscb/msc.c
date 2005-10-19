@@ -5,7 +5,7 @@
 
   Contents:     Command-line interface for the Midas Slow Control Bus
 
-  $Id:$
+  $Id$
 
 \********************************************************************/
 
@@ -31,6 +31,8 @@
 #include <time.h>
 #include "mscb.h"
 #include "mscbrpc.h"
+#include "mxml.h"
+#include "strlcpy.h"
 
 /*------------------------------------------------------------------*/
 
@@ -95,23 +97,26 @@ NAME_TABLE unit_table[] = {
 void print_help()
 {
    puts("Available commands:\n");
-   puts("addr <addr>                Set address");
+   puts("addr <addr>                Address individual node");
+   puts("baddr                      Address all nodes (broadcast)");
    puts("debug 0/1                  Turn debuggin off/on on node (LCD output)");
    puts("echo [fc]                  Perform echo test [fast,continuous]");
    puts("flash                      Flash parameters into EEPROM");
-   puts("gaddr <addr>               Set group address");
+   puts("gaddr <addr>               Address group of nodes");
    puts("info [-a]                  Retrive node info [all variables]");
    puts("load <file>                Load node variables");
    puts("ping <addr> [r]            Ping node and set address [repeat mode]");
    puts("read <index> [r]           Read node variable [repeat mode]");
    puts("reboot                     Reboot addressed node");
    puts("reset                      Reboot whole MSCB system");
-   puts("sa <addr> <gaddr>          Set node and group address of addressed node");
+   puts("sa <addr>                  Set node address of addressed node");
    puts("save <file>                Save current node variables");
    puts("scan [r] [a]               Scan bus for nodes [repeat mode] [all]");
+   puts("sg <addr>                  Set group address of addressed node(s)");
    puts("sn <name>                  Set node name (up to 16 characters)");
    puts("terminal                   Enter teminal mode for SCS-210");
    puts("upload <hex-file> [debug]  Upload new firmware to node [with debug info]");
+   puts("mup <hex-file> <a1> <a2>   Upload new firmware to nodes a1-a2");
    puts("verify <hex-file>          Compare current firmware with file");
    puts("version                    Display version number");
    puts("write <index> <value> [r]  Write node variable");
@@ -232,6 +237,122 @@ void print_channel(int index, MSCB_INFO_VAR * info_chn, void *pdata, int verbose
 
 /*------------------------------------------------------------------*/
 
+void save_node_xml(MXML_WRITER *writer, int fd, int addr)
+{
+   int i, j, status, size;
+   char str[256], line[256], data[256];
+   MSCB_INFO info;
+   MSCB_INFO_VAR info_var;
+
+   status = mscb_info(fd, (unsigned short)addr, &info);
+   if (status == MSCB_CRC_ERROR) {
+      puts("CRC Error");
+      return;
+   } else if (status != MSCB_SUCCESS) {
+      puts("No response from node");
+      return;
+   }
+
+   mxml_start_element(writer, "Node");
+
+   mxml_start_element(writer, "Name");
+   mxml_write_value(writer, info.node_name);
+   mxml_end_element(writer);
+
+   mxml_start_element(writer, "NodeAddress");
+   sprintf(str, "%d (0x%X)", info.node_address, info.node_address);
+   mxml_write_value(writer, str);
+   mxml_end_element(writer);
+
+   mxml_start_element(writer, "GroupAddress");
+   sprintf(str, "%d (0x%X)", info.node_address, info.node_address);
+   mxml_write_value(writer, str);
+   mxml_end_element(writer);
+
+   mxml_start_element(writer, "ProtocolVersion");
+   sprintf(str, "%d.%d",
+      info.protocol_version / 16, info.protocol_version % 16);
+   mxml_write_value(writer, str);
+   mxml_end_element(writer);
+
+   for (i = 0; i < info.n_variables; i++) {
+      mxml_start_element(writer, "Variable");
+
+      mscb_info_variable(fd, (unsigned short)addr, (unsigned char)i, &info_var);
+      size = sizeof(data);
+      mscb_read(fd, (unsigned short)addr, (unsigned char)i, data, &size);
+
+      mxml_start_element(writer, "Index");
+      sprintf(str, "%d", i);
+      mxml_write_value(writer, str);
+      mxml_end_element(writer);
+
+      mxml_start_element(writer, "Name");
+      strncpy(str, info_var.name, 8);
+      str[8] = 0;
+      mxml_write_value(writer, str);
+      mxml_end_element(writer);
+
+      mxml_start_element(writer, "Width");
+      sprintf(str, "%dbit", info_var.width*8);
+      mxml_write_value(writer, str);
+      mxml_end_element(writer);
+
+      print_channel_str(i, &info_var, data, 1, line);
+
+      strlcpy(str, line+21, sizeof(str));
+      for (j=0 ; j<(int)strlen(str) ; j++)
+         if (str[j] == ' ')
+            break;
+      str[j] = 0;
+      mxml_start_element(writer, "Flags");
+      mxml_write_value(writer, str);
+      mxml_end_element(writer);
+
+      strlcpy(str, line+21+j, sizeof(str));
+      for (j+=21 ; j<(int)strlen(line) ; j++)
+         if (line[j] != ' ')
+            break;
+
+      strlcpy(str, line+j, sizeof(str));
+      for (j=0 ; j<(int)strlen(str) ; j++)
+         if (str[j] == ' ')
+            break;
+      str[j] = 0;
+      mxml_start_element(writer, "Value");
+      mxml_write_value(writer, str);
+      mxml_end_element(writer);
+
+      if (line[39] == '(') {
+         strlcpy(str, line+40, sizeof(str));
+         for (j=0 ; j<(int)strlen(str) ; j++)
+            if (str[j] == ')')
+               break;
+         str[j] = 0;
+         mxml_start_element(writer, "HexBinValue");
+         mxml_write_value(writer, str);
+         mxml_end_element(writer);
+         j += 42;
+      } else
+         j = 39;
+
+      strlcpy(str, line+j, sizeof(str));
+      for (j=0 ; j<(int)strlen(str) ; j++)
+         if (!isalnum(str[j]))
+            break;
+      str[j] = 0;
+      mxml_start_element(writer, "Unit");
+      mxml_write_value(writer, str);
+      mxml_end_element(writer);
+
+      mxml_end_element(writer); // "Variable"
+   }
+
+   mxml_end_element(writer); // "Node"
+}
+
+/*------------------------------------------------------------------*/
+
 int match(char *str, char *cmd)
 {
    int i;
@@ -251,20 +372,19 @@ int match(char *str, char *cmd)
 
 void cmd_loop(int fd, char *cmd, unsigned short adr)
 {
-   int i, j, fh, status, size, nparam, majv, minv, current_addr, current_group;
-   unsigned short addr, gaddr;
+   int i, j, fh, status, size, nparam, majv, minv, current_addr, current_group,
+      first, last, broadcast;
+   unsigned short addr;
    unsigned int data;
    unsigned char c;
    float value;
-   char str[256], line[256], dbuf[100*1024];
-   char param[10][100];
-   char *pc, *p, *buffer;
-   char name[256], chn_name[256][9];
-   char lib[32], prot[32];
+   char str[256], line[256], dbuf[100*1024], param[10][100], *pc, *p, *buffer,
+      name[256], chn_name[256][9], lib[32], prot[32];
    FILE *f, *cmd_file = NULL;
    MSCB_INFO info;
    MSCB_INFO_VAR info_var;
    time_t start, now;
+   MXML_WRITER *writer;
 
    /* open command file */
    if (cmd[0] == '@') {
@@ -286,6 +406,8 @@ void cmd_loop(int fd, char *cmd, unsigned short adr)
    if (adr)
       current_addr = adr;
 
+   broadcast = 0;
+
    status = 0;
 
    do {
@@ -295,6 +417,8 @@ void cmd_loop(int fd, char *cmd, unsigned short adr)
             printf("node%d(0x%X)> ", current_addr, current_addr);
          else if (current_group >= 0)
             printf("group%d> ", current_group);
+         else if (broadcast)
+            printf("all> ");
          else
             printf("> ");
          memset(line, 0, sizeof(line));
@@ -432,7 +556,7 @@ void cmd_loop(int fd, char *cmd, unsigned short adr)
                }
 
                if (param[1][0] != 'a' && param[2][0] != 'a')
-                  if (i && (i & 0xFF) == 0 && status != MSCB_SUCCESS) {
+                  if (i && (i & 0xFF) == 0 && i != 0xFF00 && status != MSCB_SUCCESS) {
                      i += 0xFF;
                   }
 
@@ -521,10 +645,12 @@ void cmd_loop(int fd, char *cmd, unsigned short adr)
                      printf("Node %d does not respond\n", addr);
                   current_addr = -1;
                   current_group = -1;
+                  broadcast = 0;
                } else {
                   printf("Node %d addressed\n", addr);
                   current_addr = addr;
                   current_group = -1;
+                  broadcast = 0;
                }
 
                if (param[2][0] == 'r' && !kbhit())
@@ -548,13 +674,21 @@ void cmd_loop(int fd, char *cmd, unsigned short adr)
             mscb_addr(fd, MCMD_ADDR_NODE16, addr, 1, 1);
             current_addr = addr;
             current_group = -1;
+            broadcast = 0;
          }
       }
 
-      /* ga, set group address ---------- */
-      else if (match(param[0], "ga")) {
+      /* ba, broadcast address ---------- */
+      else if (match(param[0], "baddr")) {
+         current_addr = -1;
+         current_group = -1;
+         broadcast = 1;
+      }
+
+      /* ga, group address ---------- */
+      else if (match(param[0], "gaddr")) {
          if (!param[1][0])
-            puts("Please specify node address");
+            puts("Please specify group address");
          else {
             if (param[1][1] == 'x') {
                sscanf(param[1] + 2, "%x", &i);
@@ -564,16 +698,17 @@ void cmd_loop(int fd, char *cmd, unsigned short adr)
 
             current_addr = -1;
             current_group = addr;
+            broadcast = 0;
          }
       }
 
       /* sa, set node address ---------- */
       else if (match(param[0], "sa")) {
-         if (current_addr < 0)
-            printf("You must first address an individual node\n");
+         if (current_addr < 0 && current_group < 0 && !broadcast)
+            printf("You must first address node(s)\n");
          else {
-            if (!param[1][0] || !param[2][0])
-               puts("Please specify node and group address");
+            if (!param[1][0])
+               puts("Please specify node address");
             else {
                if (param[1][1] == 'x') {
                   sscanf(param[1] + 2, "%x", &i);
@@ -581,17 +716,32 @@ void cmd_loop(int fd, char *cmd, unsigned short adr)
                } else
                   addr = (unsigned short)atoi(param[1]);
 
-               if (param[2][1] == 'x') {
-                  sscanf(param[1] + 2, "%x", &i);
-                  gaddr = (unsigned short)i;
-               } else
-                  gaddr = (unsigned short)atoi(param[2]);
+               status = mscb_set_addr(fd, current_addr, current_group, broadcast, addr);
+               if (current_addr >= 0) {
+                  if (status == MSCB_ADDR_EXISTS)
+                     printf("Error: Address %d exists already on this network\n", addr);
+                  else
+                     current_addr = addr;
+               }
+            }
+         }
+      }
 
-               status = mscb_set_addr(fd, (unsigned short)current_addr, addr, gaddr);
-               if (status == MSCB_ADDR_EXISTS)
-                  printf("Error: Address %d exists already on this network\n", addr);
-               else
-                  current_addr = addr;
+      /* sg, set group address ---------- */
+      else if (match(param[0], "sg")) {
+         if (current_addr < 0 && current_group < 0 && !broadcast)
+            printf("You must first address node(s)\n");
+         else {
+            if (!param[1][0])
+               puts("Please specify group address");
+            else {
+               if (param[1][1] == 'x') {
+                  sscanf(param[1] + 2, "%x", &i);
+                  addr = (unsigned short)i;
+               } else
+                  addr = (unsigned short)atoi(param[1]);
+
+               mscb_set_gaddr(fd, current_addr, current_group, broadcast, addr);
             }
          }
       }
@@ -646,57 +796,62 @@ void cmd_loop(int fd, char *cmd, unsigned short adr)
             else {
                addr = atoi(param[1]);
 
-               if (current_addr >= 0) {
-                  mscb_info_variable(fd, (unsigned short)current_addr, (unsigned char)addr, &info_var);
+               if (current_addr < 0) {
+                  printf("Enter address of first node in group %d: ", current_group);
+                  fgets(str, sizeof(str), stdin);
+                  i = atoi(str);
+               } else
+                  i = current_addr;
 
-                  if (info_var.unit == UNIT_STRING) {
-                     memset(str, 0, sizeof(str));
-                     strncpy(str, param[2], info_var.width);
-                     if (strlen(str) > 0 && str[strlen(str) - 1] == '\n')
-                        str[strlen(str) - 1] = 0;
+               mscb_info_variable(fd, (unsigned short)i, (unsigned char)addr, &info_var);
 
-                     do {
+               if (info_var.unit == UNIT_STRING) {
+                  memset(str, 0, sizeof(str));
+                  strncpy(str, param[2], info_var.width);
+                  if (strlen(str) > 0 && str[strlen(str) - 1] == '\n')
+                     str[strlen(str) - 1] = 0;
+
+                  do {
+                     if (current_addr >= 0)
                         status = mscb_write(fd, (unsigned short)current_addr, (unsigned char) addr, str, strlen(str)+1);
-                        Sleep(1000);
-                     } while (param[3][0] && !kbhit());
+                     else
+                        status = mscb_write_group(fd, (unsigned short)current_group, (unsigned char) addr, str, strlen(str)+1);
+                     Sleep(1000);
+                  } while (param[3][0] && !kbhit());
 
-                  } else if (info_var.unit == UNIT_ASCII) {
-                     memset(str, 0, sizeof(str));
-                     strncpy(str, param[2], sizeof(str));
-                     if (strlen(str) > 0 && str[strlen(str) - 1] == '\n')
-                        str[strlen(str) - 1] = 0;
+               } else if (info_var.unit == UNIT_ASCII) {
+                  memset(str, 0, sizeof(str));
+                  strncpy(str, param[2], sizeof(str));
+                  if (strlen(str) > 0 && str[strlen(str) - 1] == '\n')
+                     str[strlen(str) - 1] = 0;
 
-                     do {
+                  do {
+                     if (current_addr >= 0)
                         status = mscb_write_block(fd, (unsigned short)current_addr, (unsigned char) addr, str, strlen(str)+1);
-                        Sleep(100);
-                     } while (param[3][0] && !kbhit());
+                     Sleep(100);
+                  } while (param[3][0] && !kbhit());
 
+               } else {
+                  if (info_var.flags & MSCBF_FLOAT) {
+                     value = (float) atof(param[2]);
+                     memcpy(&data, &value, sizeof(float));
                   } else {
-                     if (info_var.flags & MSCBF_FLOAT) {
-                        value = (float) atof(param[2]);
-                        memcpy(&data, &value, sizeof(float));
-                     } else {
-                        if (param[2][1] == 'x')
-                           sscanf(param[2] + 2, "%x", &data);
-                        else
-                           data = atoi(param[2]);
-                     }
-
-                     do {
-
-                        status = mscb_write(fd, (unsigned short)current_addr, (unsigned char)addr, &data, info_var.width);
-                        Sleep(100);
-
-                     } while (param[3][0] && !kbhit());
-
+                     if (param[2][1] == 'x')
+                        sscanf(param[2] + 2, "%x", &data);
+                     else
+                        data = atoi(param[2]);
                   }
-               } else if (current_group >= 0) {
-                  if (param[2][1] == 'x')
-                     sscanf(param[2] + 2, "%x", &data);
-                  else
-                     data = atoi(param[2]);
 
-                  status = mscb_write_group(fd, (unsigned short)current_group, (unsigned char)addr, &data, 4);
+                  do {
+                     if (current_addr >= 0)
+                        status = mscb_write(fd, (unsigned short)current_addr, (unsigned char)addr, &data, info_var.width);
+                     else
+                        status = mscb_write_group(fd, (unsigned short)current_group, (unsigned char)addr, &data, info_var.width);
+
+                     Sleep(100);
+
+                  } while (param[3][0] && !kbhit());
+
                }
 
                if (status != MSCB_SUCCESS)
@@ -765,10 +920,10 @@ void cmd_loop(int fd, char *cmd, unsigned short adr)
 
       /* save ---------- */
       else if (match(param[0], "save")) {
-         if (current_addr < 0)
-            printf("You must first address an individual node\n");
+         if (current_addr < 0 && param[1][0] == 0 && param[2][0] == 0)
+            printf("You must first address an individual node or specify a range\n");
          else {
-            if (param[1][0] == 0) {
+            if (param[1][0] == 0 || strchr(param[1], '.') == NULL) {
                printf("Enter file name: ");
                fgets(str, sizeof(str), stdin);
             } else
@@ -777,37 +932,30 @@ void cmd_loop(int fd, char *cmd, unsigned short adr)
             if (str[strlen(str) - 1] == '\n')
                str[strlen(str) - 1] = 0;
 
-            f = fopen(str, "wt");
-            if (f == NULL) {
-               printf("Cannot open file %s\n", str);
-            } else {
-               status = mscb_info(fd, (unsigned short)current_addr, &info);
-               if (status == MSCB_CRC_ERROR)
-                  puts("CRC Error");
-               else if (status != MSCB_SUCCESS)
-                  puts("No response from node");
-               else {
-                  strncpy(str, info.node_name, sizeof(info.node_name));
-                  str[16] = 0;
-                  fprintf(f, "Node name:        %s\n", str);
-                  fprintf(f, "Node address:     %d (0x%X)\n", info.node_address, info.node_address);
-                  fprintf(f, "Group address:    %d (0x%X)\n", info.group_address, info.group_address);
-                  fprintf(f, "Protocol version: %d.%d\n",
-                          info.protocol_version / 16, info.protocol_version % 16);
-                  fprintf(f, "Watchdog resets:  %d\n", info.watchdog_resets);
-
-                  fprintf(f, "\nVariables:\n");
-                  for (i = 0; i < info.n_variables; i++) {
-                     mscb_info_variable(fd, (unsigned short)current_addr, (unsigned char)i, &info_var);
-                     size = sizeof(data);
-                     mscb_read(fd, (unsigned short)current_addr, (unsigned char)i, dbuf, &size);
-
-                     print_channel_str(i, &info_var, dbuf, 1, str);
-                     fprintf(f, str);
-                  }
+            if (param[2][0] == 0)
+               first = last = current_addr;
+            else {
+               if (param[3][0]) {
+                  first = atoi(param[2]);
+                  last = atoi(param[3]);
+               } else {
+                  first = atoi(param[1]);
+                  last = atoi(param[2]);
                }
+            }
 
-               fclose(f);
+            writer = mxml_open_file(str);
+            if (writer == NULL)
+               printf("Cannot open xml file \"%s\"\n", str);
+            else {
+               mxml_start_element(writer, "MSCBDump");
+               for (i=first ; i<= last ; i++) {
+                  printf("%d (0x%04X)\r", i, i);
+                  save_node_xml(writer, fd, i);
+               }
+               printf("\n");
+               mxml_end_element(writer);
+               mxml_close_file(writer);
             }
          }
       }
@@ -943,10 +1091,10 @@ void cmd_loop(int fd, char *cmd, unsigned short adr)
 
       /* flash ---------- */
       else if (match(param[0], "flash")) {
-         if (current_addr < 0)
-            printf("You must first address an individual node\n");
+         if (current_addr < 0 && current_group < 0 && !broadcast)
+            printf("You must first address node (s)\n");
          else {
-            status = mscb_flash(fd, (unsigned short)current_addr);
+            status = mscb_flash(fd, current_addr, current_group, broadcast);
 
             if (status != MSCB_SUCCESS)
                printf("Error: %d\n", status);
@@ -987,6 +1135,51 @@ void cmd_loop(int fd, char *cmd, unsigned short adr)
                   printf("Syntax error in file \"%s\"\n", str);
                else if (status == MSCB_TIMEOUT)
                   printf("Node %d does not respond\n", current_addr);
+               else if (status == MSCB_SUBADDR)
+                  printf("Cannot program subaddress\n");
+               else if (status == MSCB_NOTREADY)
+                  printf("Note just rebooted and not ready for upgrade\n");
+
+               free(buffer);
+            } else
+               printf("File \"%s\" not found\n", str);
+         }
+      }
+
+      /* mupload ---------- */
+      else if (match(param[0], "mupload")) {
+
+         first = atoi(param[2]);
+         last = atoi(param[3]);
+
+         if (last == 0)
+            printf("You must specify an address range\n");
+         else {
+            strcpy(str, param[1]);
+
+            fh = open(str, O_RDONLY | O_BINARY);
+            if (fh > 0) {
+               if (param[2][0])
+                  printf("Uploading file %s\n", str);
+               size = lseek(fh, 0, SEEK_END) + 1;
+               lseek(fh, 0, SEEK_SET);
+               buffer = malloc(size);
+               memset(buffer, 0, size);
+               read(fh, buffer, size - 1);
+               close(fh);
+
+               for (i=first ; i<=last ; i++) {
+                  printf("Node%d: ", i);
+                  status = mscb_upload(fd, (unsigned short)i, buffer, size, FALSE);
+
+                  if (status == MSCB_FORMAT_ERROR) {
+                     printf("Syntax error in file \"%s\"\n", str);
+                     break;
+                  } else if (status == MSCB_TIMEOUT)
+                     printf("Node %d does not respond\n", i);
+                  else if (status == MSCB_SUBADDR)
+                     printf("Subchannel %d skipped\n", i);
+               }
 
                free(buffer);
             } else
@@ -1034,7 +1227,7 @@ void cmd_loop(int fd, char *cmd, unsigned short adr)
 
       /* reboot ---------- */
       else if (match(param[0], "reboot")) {
-         mscb_reboot(fd, (unsigned short)current_addr);
+         mscb_reboot(fd, current_addr, current_group, broadcast);
       }
 
       /* reset ---------- */

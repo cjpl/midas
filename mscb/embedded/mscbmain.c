@@ -5,7 +5,7 @@
 
   Contents:     Midas Slow Control Bus protocol main program
 
-  $Id:$
+  $Id$
 
 \********************************************************************/
 
@@ -464,15 +464,26 @@ static void send_obuf(unsigned char n)
 
 void addr_node8(unsigned char mode, unsigned char adr, unsigned char node_addr)
 {
-   if (adr >= node_addr &&
-       adr <  node_addr + _n_sub_addr) {
+   if (mode == ADDR_NODE) {
+      if (adr >= node_addr &&
+          adr <  node_addr + _n_sub_addr) {
 
-      addressed = 1;
-      _cur_sub_addr = adr - node_addr;
-      addr_mode = mode;
-   } else {
-      addressed = 0;
-      addr_mode = ADDR_NONE;
+         addressed = 1;
+         _cur_sub_addr = adr - node_addr;
+         addr_mode = ADDR_NODE;
+      } else {
+         addressed = 0;
+         addr_mode = ADDR_NONE;
+      }
+   } else if (mode == ADDR_GROUP) {
+      if (adr == node_addr) {
+         addressed = 1;
+         _cur_sub_addr = 0;
+         addr_mode = ADDR_GROUP;
+      } else {
+         addressed = 0;
+         addr_mode = ADDR_NONE;
+      }
    }
 }
 
@@ -488,22 +499,33 @@ void addr_node16(unsigned char mode, unsigned int adr, unsigned int node_addr)
          addr_mode = ADDR_NONE;
       }
    } else {
-      if (adr >= node_addr &&
-          adr <  node_addr + _n_sub_addr) {
-
-         addressed = 1;
-         _cur_sub_addr = adr - node_addr;
-         addr_mode = mode;
-      } else {
-         addressed = 0;
-         addr_mode = ADDR_NONE;
+      if (mode == ADDR_NODE) {
+         if (adr >= node_addr &&
+             adr <  node_addr + _n_sub_addr) {
+   
+            addressed = 1;
+            _cur_sub_addr = adr - node_addr;
+            addr_mode = ADDR_NODE;
+         } else {
+            addressed = 0;
+            addr_mode = ADDR_NONE;
+         }
+      } else if (mode == ADDR_GROUP) {
+         if (adr == node_addr) {
+            addressed = 1;
+            _cur_sub_addr = 0;
+            addr_mode = ADDR_GROUP;
+         } else {
+            addressed = 0;
+            addr_mode = ADDR_NONE;
+         }
       }
    }
 }
 
 void interprete(void) 
 {
-   unsigned char crc, cmd, i, j, n, ch;
+   unsigned char crc, cmd, i, j, n, ch, a1, a2;
    MSCB_INFO_VAR code *pvar;
 
    cmd = (in_buf[0] & 0xF8);    // strip length field
@@ -522,7 +544,8 @@ void interprete(void)
       break;
 
    case CMD_ADDR_BC:
-      addr_node8(ADDR_ALL, 0, 0);
+      addressed = 1;
+      addr_mode = ADDR_ALL;
       break;
 
    case CMD_ADDR_GRP8:
@@ -614,7 +637,13 @@ void interprete(void)
 
    case CMD_SET_ADDR:
       /* set address in RAM */
-      sys_info.node_addr = *((unsigned int *) (in_buf + 1));
+   
+      /* ignore node address low byte if in group or bc address mode */
+      if (addr_mode == ADDR_NODE)
+         sys_info.node_addr = *((unsigned int *) (in_buf + 1));
+      else
+         *((unsigned char *)(&sys_info.node_addr)) = *((unsigned char *) (in_buf + 1));
+
       sys_info.group_addr = *((unsigned int *) (in_buf + 3));
 
       /* copy address to EEPROM */
@@ -648,9 +677,22 @@ void interprete(void)
       break;
 
    case CMD_UPGRADE:
-      flash_program = 1;
-      _flkey = 0xF1;
-      /* acknowledge gets sent from upgrade() routine */
+      if (_cur_sub_addr != 0)
+         n = 2; // reject upgrade for sub address
+      else if (flash_allowed == 0)
+         n = 3; // upgrade not yet allowed
+      else
+         n = 1; // positive acknowledge
+
+      out_buf[0] = CMD_ACK + 1;
+      out_buf[1] = n;
+      out_buf[2] = crc8(out_buf, 2);
+      send_obuf(3);
+
+      if (n == 1) {
+         flash_program = 1;
+         _flkey = 0xF1;
+      }
       break;
 
    case CMD_FLASH:
@@ -754,7 +796,11 @@ void interprete(void)
    if (cmd == CMD_WRITE_NA || cmd == CMD_WRITE_ACK) {
 
       /* blink LED once when writing data */
-      led_blink(_cur_sub_addr, 1, 50);
+      if (addr_mode == ADDR_NODE)
+         led_blink(_cur_sub_addr, 1, 50);
+      else 
+         for (i=0 ; i<_n_sub_addr ; i++)
+            led_blink(i, 1, 50);
 
       n = in_buf[0] & 0x07;
 
@@ -775,25 +821,35 @@ void interprete(void)
          if (n > variables[ch].width)
             n = variables[ch].width;
 
-         for (i = 0; i < n; i++)
-            if (!(variables[ch].flags & MSCBF_DATALESS)) {
-               if (variables[ch].unit == UNIT_STRING) {
-                  if (n > 4)
-                     /* copy bytes in normal order */
+         if (addr_mode == ADDR_NODE)
+            a1 = a2 = _cur_sub_addr;
+         else {
+            a1 = 0;
+            a2 = _n_sub_addr-1;
+         }
+            
+         for (_cur_sub_addr = a1 ; _cur_sub_addr <= a2 ; _cur_sub_addr++) {
+            for (i = 0; i < n; i++)
+               if (!(variables[ch].flags & MSCBF_DATALESS)) {
+                  if (variables[ch].unit == UNIT_STRING) {
+                     if (n > 4)
+                        /* copy bytes in normal order */
+                        ((char *) variables[ch].ud)[i + _var_size*_cur_sub_addr] = 
+                           in_buf[2 + j + i];
+                     else
+                        /* copy bytes in reverse order (got swapped on host) */
+                        ((char *) variables[ch].ud)[i + _var_size*_cur_sub_addr] = 
+                           in_buf[i_in - 2 - i];
+                  } else
+                     /* copy LSB bytes, needed for BYTE if DWORD is sent */
                      ((char *) variables[ch].ud)[i + _var_size*_cur_sub_addr] = 
-                        in_buf[2 + j + i];
-                  else
-                     /* copy bytes in reverse order (got swapped on host) */
-                     ((char *) variables[ch].ud)[i + _var_size*_cur_sub_addr] = 
-                        in_buf[i_in - 2 - i];
-               } else
-                  /* copy LSB bytes, needed for BYTE if DWORD is sent */
-                  ((char *) variables[ch].ud)[i + _var_size*_cur_sub_addr] = 
-                        in_buf[i_in - 1 - variables[ch].width + i + j];
-            }
-
-         user_write(ch);
-
+                           in_buf[i_in - 1 - variables[ch].width + i + j];
+               }
+   
+            user_write(ch);
+         }
+         _cur_sub_addr = a1; // restore previous value
+   
 #ifdef UART1_MSCB
          /* mark variable to be send in main loop */
          if (variables[ch].flags & MSCBF_REMOUT)
@@ -981,6 +1037,9 @@ void upgrade()
 
    if (_flkey != 0xF1)
       return;
+
+   /* wait for acknowledge to be sent */
+   while (!out_buf_empty);
 
    /* disable all interrupts */
    EA = 0;

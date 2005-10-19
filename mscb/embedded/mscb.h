@@ -341,7 +341,7 @@ char putchar1(char c);                   // putchar cannot be used with LCD supp
 
 /*---- MSCB commands -----------------------------------------------*/
 
-#define VERSION 0x21            // version 2.0
+#define VERSION 0x22            // version 2.0
 #define INTERCHAR_DELAY 20      // 20us between characters
 
 /* Version history:
