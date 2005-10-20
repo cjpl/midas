@@ -355,7 +355,7 @@ void save_node_xml(MXML_WRITER *writer, int fd, int addr)
 
 /*------------------------------------------------------------------*/
 
-void load_nodes_xml(int fd, char *file_name)
+void load_nodes_xml(int fd, char *file_name, int flash)
 {
    int i, j, index, status, ivar, addr, var_index;
    char str[256], error[256], chn_name[256][9], name[256], value[256];
@@ -474,6 +474,11 @@ void load_nodes_xml(int fd, char *file_name)
 
          if (chn_name[i][0] == 0)
             printf("Variable \"%s\" from file not in node, variable skipped\n", name);
+      }
+
+      if (flash) {
+         mscb_flash(fd, addr, -1, 0);
+         Sleep(200);
       }
    }
 
@@ -1160,7 +1165,10 @@ void cmd_loop(int fd, char *cmd, unsigned short adr)
          if (str[strlen(str) - 1] == '\n')
             str[strlen(str) - 1] = 0;
 
-         load_nodes_xml(fd, str);
+         printf("Write parameters to flash? (y/[n]) ");
+         fgets(line, sizeof(line), stdin);
+
+         load_nodes_xml(fd, str, line[0] == 'y');
       }
 
       /* terminal ---------- */
