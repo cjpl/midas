@@ -905,7 +905,7 @@ void cmd_loop(int fd, char *cmd, unsigned short adr)
                } else
                   addr = (unsigned short)atoi(param[1]);
 
-               status = mscb_set_addr(fd, current_addr, current_group, broadcast, addr);
+               status = mscb_set_node_addr(fd, current_addr, current_group, broadcast, addr);
                if (current_addr >= 0) {
                   if (status == MSCB_ADDR_EXISTS)
                      printf("Error: Address %d exists already on this network\n", addr);
@@ -930,7 +930,7 @@ void cmd_loop(int fd, char *cmd, unsigned short adr)
                } else
                   addr = (unsigned short)atoi(param[1]);
 
-               mscb_set_gaddr(fd, current_addr, current_group, broadcast, addr);
+               mscb_set_group_addr(fd, current_addr, current_group, broadcast, addr);
             }
          }
       }
