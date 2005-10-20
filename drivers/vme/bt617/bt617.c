@@ -386,6 +386,8 @@ int mvme_get_blt(MVME_INTERFACE *vme, int *mode)
 
 /*------------------------------------------------------------------*/
 
+/* Small test program, comment back for testing...
+
 main()
 {
    int i;
@@ -408,3 +410,4 @@ main()
    } while (1);
 
 }
+*/
