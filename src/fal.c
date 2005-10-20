@@ -27,6 +27,16 @@
 #define f2cFortran
 #endif
 
+#ifdef HAVE_MYSQL
+#include <mysql/mysql.h>
+#include <mysql/mysqld_error.h>
+void create_sql_tree();
+#endif
+
+#ifdef USE_ROOT
+#include <TTree.h>
+#include <TLeaf.h>
+#endif
 
 #ifndef MANA_LITE
 #include <cfortran.h>
@@ -1809,7 +1819,7 @@ INT ascii_log_close(LOG_CHN * log_chn, INT run_number)
 
 /*---- ROOT format routines ----------------------------------------*/
 
-#ifdef HAVE_ROOT
+#ifdef USE_ROOT
 
 #define MAX_BANKS 100
 
@@ -2243,7 +2253,7 @@ INT root_log_close(LOG_CHN * log_chn, INT run_number)
    return SS_SUCCESS;
 }
 
-#endif                          /* HAVE_ROOT */
+#endif                          /* USE_ROOT */
 
 /*---- log_open ----------------------------------------------------*/
 
@@ -2261,7 +2271,7 @@ INT log_open(LOG_CHN * log_chn, INT run_number)
       log_chn->format = FORMAT_DUMP;
       status = dump_log_open(log_chn, run_number);
    } else if (equal_ustring(log_chn->settings.format, "ROOT")) {
-#ifdef HAVE_ROOT
+#ifdef USE_ROOT
       log_chn->format = FORMAT_ROOT;
       status = root_log_open(log_chn, run_number);
 #else
@@ -2289,7 +2299,7 @@ INT log_close(LOG_CHN * log_chn, INT run_number)
    if (log_chn->format == FORMAT_DUMP)
       dump_log_close(log_chn, run_number);
 
-#ifdef HAVE_ROOT
+#ifdef USE_ROOT
    if (log_chn->format == FORMAT_ROOT)
       root_log_close(log_chn, run_number);
 #endif
@@ -2331,7 +2341,7 @@ INT log_write(LOG_CHN * log_chn, EVENT_HEADER * pevent)
    if (log_chn->format == FORMAT_MIDAS)
       status = midas_write(log_chn, pevent, pevent->data_size + sizeof(EVENT_HEADER));
 
-#ifdef HAVE_ROOT
+#ifdef USE_ROOT
    if (log_chn->format == FORMAT_ROOT)
       status = root_write(log_chn, pevent, pevent->data_size + sizeof(EVENT_HEADER));
 #endif
@@ -3255,7 +3265,7 @@ INT tr_start(INT run_number, char *error)
                sprintf(error, "Cannot open FTP channel to [%s]", path);
             if (status == SS_NO_ROOT)
                sprintf(error,
-                       "No ROOT support compiled into mlogger, please compile with -DHAVE_ROOT flag");
+                       "No ROOT support compiled into mlogger, please compile with -DUSE_ROOT flag");
 
             if (status == SS_INVALID_FORMAT)
                sprintf(error,
@@ -3886,7 +3896,7 @@ INT write_event_odb(EVENT_HEADER * pevent, ANALYZE_REQUEST * par)
                }
 
                /* shift data pointer to next item */
-               (char *) pdata += key.item_size * key.num_values;
+               (char *) pdata = (char *) pdata + (key.item_size * key.num_values);
             }
          } else {
             db_get_key(hDB, hKeyRoot, &key);
@@ -5472,92 +5482,6 @@ INT scheduler(void)
 
 /*------------------------------------------------------------------*/
 
-INT cnaf_callback(INT index, void *prpc_param[])
-{
-   DWORD cmd, b, c, n, a, f, *pdword, *size, *x, *q;
-   WORD *pword, *pdata;
-   INT i, count;
-
-   /* Decode parameters */
-   cmd = CDWORD(0);
-   b = CDWORD(1);
-   c = CDWORD(2);
-   n = CDWORD(3);
-   a = CDWORD(4);
-   f = CDWORD(5);
-   pdword = CPDWORD(6);
-   pword = CPWORD(6);
-   pdata = CPWORD(6);
-   size = CPDWORD(7);
-   x = CPDWORD(8);
-   q = CPDWORD(9);
-
-   /* determine repeat count */
-   if (index == RPC_CNAF16)
-      count = *size / sizeof(WORD);     /* 16 bit */
-   else
-      count = *size / sizeof(DWORD);    /* 24 bit */
-
-   switch (cmd) {
-    /*---- special commands ----*/
-
-   case CNAF_INHIBIT_SET:
-      cam_inhibit_set(c);
-      break;
-   case CNAF_INHIBIT_CLEAR:
-      cam_inhibit_clear(c);
-      break;
-   case CNAF_CRATE_CLEAR:
-      cam_crate_clear(c);
-      break;
-   case CNAF_CRATE_ZINIT:
-      cam_crate_zinit(c);
-      break;
-
-   case CNAF_TEST:
-      break;
-
-   case CNAF:
-      if (index == RPC_CNAF16) {
-         for (i = 0; i < count; i++)
-            if (f < 16)
-               cam16i_q(c, n, a, f, pword, (int *) x, (int *) q);
-            else
-               cam16o_q(c, n, a, f, pword[i], (int *) x, (int *) q);
-      } else {
-         for (i = 0; i < count; i++)
-            if (f < 16)
-               cam24i_q(c, n, a, f, pdword, (int *) x, (int *) q);
-            else
-               cam24o_q(c, n, a, f, pdword[i], (int *) x, (int *) q);
-      }
-
-      break;
-
-   case CNAF_nQ:
-      if (index == RPC_CNAF16) {
-         if (f < 16)
-            cam16i_rq(c, n, a, f, (WORD **) & pdword, count);
-      } else {
-         if (f < 16)
-            cam24i_rq(c, n, a, f, &pdword, count);
-      }
-
-      /* return reduced return size */
-      *size = (int) pdword - (int) pdata;
-      break;
-
-   default:
-      printf("cnaf: Unknown command 0x%lX\n", cmd);
-   }
-
-   printf("cmd=%ld c=%ld n=%ld a=%ld f=%ld d=%lX\n", cmd, c, n, a, f, pdword[0]);
-
-   return RPC_SUCCESS;
-}
-
-/*------------------------------------------------------------------*/
-
 #ifdef OS_VXWORKS
 int mfe(char *ahost_name, char *aexp_name, BOOL adebug)
 #else
@@ -5674,10 +5598,6 @@ int main(int argc, char *argv[])
 
    /* register message receiver */
    cm_msg_register(receive_message);
-
-   /* register CNAF callback */
-   cm_register_function(RPC_CNAF16, cnaf_callback);
-   cm_register_function(RPC_CNAF24, cnaf_callback);
 
    /* register callback for clearing histos */
    cm_register_function(RPC_ANA_CLEAR_HISTOS, ana_callback);
