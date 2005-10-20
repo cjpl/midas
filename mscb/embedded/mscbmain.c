@@ -583,11 +583,11 @@ void interprete(void)
       crc = 0;
       RS485_ENABLE = 1;
 
-      send_byte(CMD_ACK + 7, &crc);     // send acknowledge, variable data length
-      send_byte(24, &crc);      // send data length
-      send_byte(VERSION, &crc); // send protocol version
+      send_byte(CMD_ACK + 7, &crc);      // send acknowledge, variable data length
+      send_byte(24, &crc);               // send data length
+      send_byte(PROTOCOL_VERSION, &crc); // send protocol version
 
-      send_byte(n_variables, &crc);     // send number of variables
+      send_byte(n_variables, &crc);      // send number of variables
 
       send_byte(*(((unsigned char *) &sys_info.node_addr) + 0), &crc);  // send node address
       send_byte(*(((unsigned char *) &sys_info.node_addr) + 1), &crc);
@@ -636,15 +636,16 @@ void interprete(void)
       break;
 
    case CMD_SET_ADDR:
-      /* set address in RAM */
-   
-      /* ignore node address low byte if in group or bc address mode */
-      if (addr_mode == ADDR_NODE)
-         sys_info.node_addr = *((unsigned int *) (in_buf + 1));
-      else
-         *((unsigned char *)(&sys_info.node_addr)) = *((unsigned char *) (in_buf + 1));
 
-      sys_info.group_addr = *((unsigned int *) (in_buf + 3));
+      if (in_buf[1] == ADDR_SET_NODE) 
+         /* complete node address */
+         sys_info.node_addr = *((unsigned int *) (in_buf + 2));
+      else if (in_buf[1] == ADDR_SET_HIGH)
+         /* only high byte node address */
+         *((unsigned char *)(&sys_info.node_addr)) = *((unsigned char *) (in_buf + 2));
+      else if (in_buf[1] == ADDR_SET_GROUP)
+         /* group address */
+         sys_info.group_addr = *((unsigned int *) (in_buf + 2));
 
       /* copy address to EEPROM */
       flash_param = 1;
@@ -652,7 +653,7 @@ void interprete(void)
 
       break;
 
-   case (CMD_SET_ADDR | 0x07):
+   case (CMD_SET_NAME):
       /* set node name in RAM */
       for (i = 0; i < 16 && i < in_buf[1]; i++)
          sys_info.node_name[i] = in_buf[2 + i];
