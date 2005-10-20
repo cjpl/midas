@@ -3896,7 +3896,7 @@ INT write_event_odb(EVENT_HEADER * pevent, ANALYZE_REQUEST * par)
                }
 
                /* shift data pointer to next item */
-               (char *) pdata = (char *) pdata + (key.item_size * key.num_values);
+               pdata = ((char *) pdata) + key.item_size * key.num_values;
             }
          } else {
             db_get_key(hDB, hKeyRoot, &key);
