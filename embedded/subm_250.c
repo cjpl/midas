@@ -17,7 +17,7 @@
 #include "usb.h"
 
 #define IDENT_STR "SUBM_250"
-#define SUBM_VERSION 0x21   // used for PC-Submaster communication
+#define SUBM_VERSION 33   // used for PC-Submaster communication
 
 /*------------------------------------------------------------------*/
 
