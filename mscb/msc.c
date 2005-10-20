@@ -260,12 +260,12 @@ void save_node_xml(MXML_WRITER *writer, int fd, int addr)
    mxml_end_element(writer);
 
    mxml_start_element(writer, "NodeAddress");
-   sprintf(str, "%d (0x%X)", info.node_address, info.node_address);
+   sprintf(str, "%d (0x%X)", addr, addr);
    mxml_write_value(writer, str);
    mxml_end_element(writer);
 
    mxml_start_element(writer, "GroupAddress");
-   sprintf(str, "%d (0x%X)", info.node_address, info.node_address);
+   sprintf(str, "%d (0x%X)", info.group_address, info.group_address);
    mxml_write_value(writer, str);
    mxml_end_element(writer);
 
@@ -275,6 +275,7 @@ void save_node_xml(MXML_WRITER *writer, int fd, int addr)
    mxml_write_value(writer, str);
    mxml_end_element(writer);
 
+   mxml_start_element(writer, "Variables");
    for (i = 0; i < info.n_variables; i++) {
       mxml_start_element(writer, "Variable");
 
@@ -348,7 +349,200 @@ void save_node_xml(MXML_WRITER *writer, int fd, int addr)
       mxml_end_element(writer); // "Variable"
    }
 
+   mxml_end_element(writer); // "Variables"
    mxml_end_element(writer); // "Node"
+}
+
+/*------------------------------------------------------------------*/
+
+void load_nodes_xml(int fd, char *file_name)
+{
+   int i, j, index, status, ivar, addr, var_index;
+   char str[256], error[256], chn_name[256][9], name[256], value[256];
+   unsigned int data;
+   float fvalue;
+   PMXML_NODE root, node, nvarroot, nvar, nsub;
+   MSCB_INFO info;
+   MSCB_INFO_VAR info_var;
+
+   root = mxml_parse_file(file_name, error, sizeof(error));
+   if (root == NULL) {
+      printf("Error loading \"%s\": %s\n", file_name, error);
+      return;
+   }
+
+   root = mxml_find_node(root, "/MSCBDump");
+   if (root == NULL) {
+      printf("Error loading \"%s\": No MSCBDump structure in file\n", file_name);
+      return;
+   }
+
+   /* loop over all nodes in file */
+   for (index = 0 ; index < mxml_get_number_of_children(root) ; index++) {
+      node = mxml_subnode(root, index);
+
+      nsub = mxml_find_node(node, "NodeAddress");
+      if (nsub == NULL) {
+         printf("Error loading \"%s\": Node #%d does not contain NodeAddress\n", file_name, index);
+         return;
+      }
+
+      printf("\nLoading node #%s\n", mxml_get_value(nsub));
+      addr = atoi(mxml_get_value(nsub));
+
+      nvarroot = mxml_find_node(node, "Variables");
+      if (nvarroot == NULL) {
+         printf("Error loading \"%s\": Node #%d does not contain Variables\n", file_name, index);
+         return;
+      }
+
+      /* get list of channel names from node */
+      if (mscb_info(fd, (unsigned short)addr, &info) != MSCB_SUCCESS) {
+         printf("No response from node %d, skip node.\n", addr);
+         continue;
+      }
+
+      memset(chn_name, 0, sizeof(chn_name));
+      for (i = 0; i < info.n_variables; i++) {
+         mscb_info_variable(fd, (unsigned short)addr, (unsigned char)i, &info_var);
+         strncpy(chn_name[i], info_var.name, 8);
+      }
+
+      /* loop over variables */
+      for (ivar=0 ; ivar < mxml_get_number_of_children(nvarroot) ; ivar++) {
+         
+         nvar = mxml_subnode(nvarroot, ivar);
+         nsub = mxml_find_node(nvar, "Index");
+         if (nsub == NULL) {
+            printf("Found variable without index\n");
+            continue;
+         }
+         var_index = atoi(mxml_get_value(nsub));
+         nsub = mxml_find_node(nvar, "Name");
+         if (nsub == NULL) {
+            printf("Found variable without name\n");
+            continue;
+         }
+
+         strcpy(name, mxml_get_value(nsub));
+
+         nsub = mxml_find_node(nvar, "Value");
+         if (nsub == NULL) {
+            printf("Found variable without value\n");
+            continue;
+         }
+
+         strcpy(value, mxml_get_value(nsub));
+
+         /* search for channel with same name */
+         for (i = 0; chn_name[i][0]; i++)
+            if (strcmp(chn_name[i], name) == 0) {
+               mscb_info_variable(fd, (unsigned short)addr, (unsigned char)i, &info_var);
+
+               if (info_var.unit == UNIT_STRING) {
+                  memset(str, 0, sizeof(str));
+                  strncpy(str, value, info_var.width);
+                  if (strlen(str) > 0 && str[strlen(str) - 1] == '\n')
+                     str[strlen(str) - 1] = 0;
+
+                  status = mscb_write(fd, (unsigned short)addr, (unsigned char) i, str, info_var.width);
+                  if (status != MSCB_SUCCESS)
+                     printf("Error writing to node %d, variable %d\n", addr, i);
+
+               } else {
+                  if (info_var.flags & MSCBF_FLOAT) {
+                     fvalue = (float) atof(value);
+                     memcpy(&data, &fvalue, sizeof(float));
+                  } else {
+                     data = atoi(value);
+                  }
+
+                  status = mscb_write(fd, (unsigned short)addr, (unsigned char) i, &data, info_var.width);
+                  if (status != MSCB_SUCCESS)
+                     printf("Error writing to node %d, variable %d\n", addr, i);
+
+                  /* blank padding */
+                  for (j = strlen(name); j < 8; j++)
+                     name[j] = ' ';
+                  name[j] = 0;
+
+                  printf("%3d: %s %s\n", i, name, value);
+               }
+
+               break;
+            }
+
+         if (chn_name[i][0] == 0)
+            printf("Variable \"%s\" from file not in node, variable skipped\n", name);
+      }
+   }
+
+#ifdef JUNK
+   sprintf(str, "/MSCBDump/Node[name=%s]", user);
+   if ((user_node = mxml_find_node(lbs->pwd_xml_tree, str)) == NULL)
+      return 2;
+
+
+
+            f = fopen(str, "rt");
+            if (f) {
+               do {
+                  line[0] = 0;
+                  fgets(line, sizeof(line), f);
+
+                  if (line[3] == ':' && line[4] == ' ') {
+                     /* variable found, extract it */
+                     for (i = 0; i < 8 && line[i + 5] != ' '; i++)
+                        name[i] = line[i + 5];
+                     name[i] = 0;
+
+                     p = line + 23;
+                     while (*p && *p == ' ')
+                        p++;
+
+                     /* search for channel with same name */
+                     for (i = 0; chn_name[i][0]; i++)
+                        if (strcmp(chn_name[i], name) == 0) {
+                           mscb_info_variable(fd, (unsigned short)current_addr, (unsigned char)i, &info_var);
+
+                           if (info_var.unit == UNIT_STRING) {
+                              memset(str, 0, sizeof(str));
+                              strncpy(str, p, info_var.width);
+                              if (strlen(str) > 0 && str[strlen(str) - 1] == '\n')
+                                 str[strlen(str) - 1] = 0;
+
+                              status =
+                                    mscb_write(fd, (unsigned short)current_addr, (unsigned char) i, str, info_var.width);
+                           } else {
+                              if (info_var.flags & MSCBF_FLOAT) {
+                                 value = (float) atof(p);
+                                 memcpy(&data, &value, sizeof(float));
+                              } else {
+                                 data = atoi(p);
+                              }
+
+                              status =
+                                    mscb_write(fd, (unsigned short)current_addr, (unsigned char) i, &data, info_var.width);
+
+                              /* blank padding */
+                              for (j = strlen(name); j < 8; j++)
+                                 name[j] = ' ';
+                              name[j] = 0;
+
+                              printf("%03d: %s %s", i, name, p);
+                           }
+
+                           break;
+                        }
+                  }
+               } while (!feof(f));
+
+               fclose(f);
+            } else
+               printf("File \"%s\" not found\n", str);
+         }
+#endif
+
 }
 
 /*------------------------------------------------------------------*/
@@ -372,15 +566,15 @@ int match(char *str, char *cmd)
 
 void cmd_loop(int fd, char *cmd, unsigned short adr)
 {
-   int i, j, fh, status, size, nparam, majv, minv, current_addr, current_group,
+   int i, fh, status, size, nparam, current_addr, current_group,
       first, last, broadcast;
    unsigned short addr;
    unsigned int data;
    unsigned char c;
    float value;
-   char str[256], line[256], dbuf[100*1024], param[10][100], *pc, *p, *buffer,
-      name[256], chn_name[256][9], lib[32], prot[32];
-   FILE *f, *cmd_file = NULL;
+   char str[256], line[256], dbuf[100*1024], param[10][100], *pc, *buffer,
+      lib[32], prot[32];
+   FILE *cmd_file = NULL;
    MSCB_INFO info;
    MSCB_INFO_VAR info_var;
    time_t start, now;
@@ -588,7 +782,7 @@ void cmd_loop(int fd, char *cmd, unsigned short adr)
                printf("Node name:        %s\n", str);
                printf("Node address:     %d (0x%X)\n", info.node_address, info.node_address);
                printf("Group address:    %d (0x%X)\n", info.group_address, info.group_address);
-               printf("Protocol version: %d.%d\n", info.protocol_version / 16, info.protocol_version % 16);
+               printf("Protocol version: %d\n", info.protocol_version);
                printf("Watchdog resets:  %d\n", info.watchdog_resets);
 
                printf("\nVariables:\n");
@@ -609,14 +803,9 @@ void cmd_loop(int fd, char *cmd, unsigned short adr)
                }
 
                mscb_get_version(lib, prot);
-               majv = atoi(prot);
-               if (strchr(prot, '.'))
-                  minv = atoi(strchr(prot, '.')+1);
-               else
-                  minv = 0;
-               if (info.protocol_version / 16 != majv || info.protocol_version % 16 != minv) {
-                  printf("\nWARNING: Protocol version on node (%d.%d) differs from local version (%s).\n",
-                     info.protocol_version / 16, info.protocol_version % 16, prot);
+               if (info.protocol_version != atoi(prot)) {
+                  printf("\nWARNING: Protocol version on node (%d) differs from local version (%s).\n",
+                     info.protocol_version, prot);
                   printf("Problems may arise communicating with this node. Please upgrade.\n\n");
                }
             }
@@ -962,89 +1151,16 @@ void cmd_loop(int fd, char *cmd, unsigned short adr)
 
       /* load ---------- */
       else if (match(param[0], "load")) {
-         if (current_addr < 0)
-            printf("You must first address an individual node\n");
-         else {
-            if (param[1][0] == 0) {
-               printf("Enter file name: ");
-               fgets(str, sizeof(str), stdin);
-            } else
-               strcpy(str, param[1]);
+         if (param[1][0] == 0) {
+            printf("Enter file name: ");
+            fgets(str, sizeof(str), stdin);
+         } else
+            strcpy(str, param[1]);
 
-            if (str[strlen(str) - 1] == '\n')
-               str[strlen(str) - 1] = 0;
+         if (str[strlen(str) - 1] == '\n')
+            str[strlen(str) - 1] = 0;
 
-            /* get list of channel names */
-            status = mscb_info(fd, (unsigned short)current_addr, &info);
-            if (status == MSCB_CRC_ERROR)
-               puts("CRC Error");
-            else if (status != MSCB_SUCCESS)
-               puts("No response from node");
-            else {
-               memset(chn_name, 0, sizeof(chn_name));
-               for (i = 0; i < info.n_variables; i++) {
-                  mscb_info_variable(fd, (unsigned short)current_addr, (unsigned char)i, &info_var);
-                  strcpy(chn_name[i], info_var.name);
-               }
-
-               f = fopen(str, "rt");
-               if (f) {
-                  do {
-                     line[0] = 0;
-                     fgets(line, sizeof(line), f);
-
-                     if (line[3] == ':' && line[4] == ' ') {
-                        /* variable found, extract it */
-                        for (i = 0; i < 8 && line[i + 5] != ' '; i++)
-                           name[i] = line[i + 5];
-                        name[i] = 0;
-
-                        p = line + 23;
-                        while (*p && *p == ' ')
-                           p++;
-
-                        /* search for channel with same name */
-                        for (i = 0; chn_name[i][0]; i++)
-                           if (strcmp(chn_name[i], name) == 0) {
-                              mscb_info_variable(fd, (unsigned short)current_addr, (unsigned char)i, &info_var);
-
-                              if (info_var.unit == UNIT_STRING) {
-                                 memset(str, 0, sizeof(str));
-                                 strncpy(str, p, info_var.width);
-                                 if (strlen(str) > 0 && str[strlen(str) - 1] == '\n')
-                                    str[strlen(str) - 1] = 0;
-
-                                 status =
-                                     mscb_write(fd, (unsigned short)current_addr, (unsigned char) i, str, info_var.width);
-                              } else {
-                                 if (info_var.flags & MSCBF_FLOAT) {
-                                    value = (float) atof(p);
-                                    memcpy(&data, &value, sizeof(float));
-                                 } else {
-                                    data = atoi(p);
-                                 }
-
-                                 status =
-                                     mscb_write(fd, (unsigned short)current_addr, (unsigned char) i, &data, info_var.width);
-
-                                 /* blank padding */
-                                 for (j = strlen(name); j < 8; j++)
-                                    name[j] = ' ';
-                                 name[j] = 0;
-
-                                 printf("%03d: %s %s", i, name, p);
-                              }
-
-                              break;
-                           }
-                     }
-                  } while (!feof(f));
-
-                  fclose(f);
-               } else
-                  printf("File \"%s\" not found\n", str);
-            }
-         }
+         load_nodes_xml(fd, str);
       }
 
       /* terminal ---------- */
