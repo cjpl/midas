@@ -57,10 +57,10 @@ char *fal_name = "FAL";
 #define DEBUG_TRANS 0
 #endif
 
-BOOL in_stop_transition = FALSE;
-BOOL auto_restart = FALSE;
-BOOL tape_message = TRUE;
-BOOL verbose = FALSE;
+BOOL  in_stop_transition = FALSE;
+DWORD auto_restart = 0;
+BOOL  tape_message = TRUE;
+BOOL  verbose = FALSE;
 
 LOG_CHN log_chn[MAX_CHANNELS];
 
@@ -3689,8 +3689,7 @@ INT tr_stop_fal(INT rn, char *error)
 \********************************************************************/
 {
    ANA_MODULE **module;
-   INT i, j, size, status;
-   char str[256], file_name[256];
+   INT i, j, status;
 
    /* call frontend EOR routine */
    status = end_of_run(rn, error);
@@ -3716,6 +3715,10 @@ INT tr_stop_fal(INT rn, char *error)
    update_stats();
 
 #ifndef MANA_LITE
+   {
+   INT size;
+   char str[256], file_name[256];
+
    /* save histos if requested */
    if (out_info.histo_dump) {
       size = sizeof(str);
@@ -3733,6 +3736,7 @@ INT tr_stop_fal(INT rn, char *error)
 
       strcpy(str, "NT");
       HRPUT(0, file_name, str);
+   }
    }
 #endif
  
@@ -4942,8 +4946,9 @@ void update_stats()
 
 INT clear_histos(INT id1, INT id2)
 {
-   INT i;
 #ifndef MANA_LITE
+   INT i;
+
    if (id1 != id2) {
       printf("Clear ID %d to ID %d\n", id1, id2);
       for (i = id1; i <= id2; i++)
@@ -5449,7 +5454,7 @@ INT scheduler(void)
          status = cm_yield(100);
 
     /*---- check auto restart --------------------------------------*/
-      if (auto_restart > 0 && (int) ss_time() > auto_restart) {
+      if (auto_restart > 0 && ss_time() > auto_restart) {
          auto_restart = FALSE;
          size = sizeof(run_number);
          db_get_value(hDB, 0, "/Runinfo/Run number", &run_number, &size, TID_INT, TRUE);
