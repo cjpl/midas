@@ -95,7 +95,7 @@ static RPC_LIST rpc_list[] = {
      {TID_STRUCT, RPC_OUT, sizeof(MSCB_INFO_VAR)},
      {0}}},
 
-   {RPC_MSCB_SET_ADDR, "mscb_set_addr",
+   {RPC_MSCB_SET_NODE_ADDR, "mscb_set_node_addr",
     {{TID_INT, RPC_IN},
      {TID_INT, RPC_IN},
      {TID_INT, RPC_IN},
@@ -103,7 +103,7 @@ static RPC_LIST rpc_list[] = {
      {TID_SHORT, RPC_IN},
      {0}}},
 
-   {RPC_MSCB_SET_GADDR, "mscb_set_gaddr",
+   {RPC_MSCB_SET_GROUP_ADDR, "mscb_set_group_addr",
     {{TID_INT, RPC_IN},
      {TID_INT, RPC_IN},
      {TID_INT, RPC_IN},
@@ -381,12 +381,12 @@ int server_execute(int index, void *prpc_param[])
       status = mscb_info_variable(CINT(0), CSHORT(1), CBYTE(2), CARRAY(3));
       break;
 
-   case RPC_MSCB_SET_ADDR:
-      status = mscb_set_addr(CINT(0), CINT(1), CINT(2), CINT(3), CSHORT(4));
+   case RPC_MSCB_SET_NODE_ADDR:
+      status = mscb_set_node_addr(CINT(0), CINT(1), CINT(2), CINT(3), CSHORT(4));
       break;
 
-   case RPC_MSCB_SET_GADDR:
-      status = mscb_set_gaddr(CINT(0), CINT(1), CINT(2), CINT(3), CSHORT(4));
+   case RPC_MSCB_SET_GROUP_ADDR:
+      status = mscb_set_group_addr(CINT(0), CINT(1), CINT(2), CINT(3), CSHORT(4));
       break;
 
    case RPC_MSCB_SET_NAME:
