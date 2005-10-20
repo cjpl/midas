@@ -2118,33 +2118,16 @@ int mscb_ping(int fd, unsigned short adr)
 
 /*------------------------------------------------------------------*/
 
-void mscb_clear_info_cache(int fd, unsigned short adr)
-/* called internally when a node gets upgraded */
+void mscb_clear_info_cache(int fd)
+/* called internally when a node gets upgraded or address changed */
 {
-   int i;
+   if (n_cache_info)
+      free(cache_info);
+   n_cache_info = 0;
 
-   for (i = 0; i < n_cache_info; i++)
-      if (cache_info[i].fd == fd && cache_info[i].adr == adr) {
-         if (i < n_cache_info-1)
-            memcpy(&cache_info[i], &cache_info[i+1], sizeof(CACHE_INFO)*(n_cache_info-i-1));
-         if (n_cache_info == 1)
-            free(cache_info);
-         else
-            cache_info = (CACHE_INFO *) realloc(cache_info, sizeof(CACHE_INFO) * (n_cache_info - 1));
-         n_cache_info--;
-      }
-
-   for (i = 0; i < n_cache_info_var; i++)
-      if (cache_info_var[i].fd == fd && cache_info_var[i].adr == adr) {
-         if (i < n_cache_info_var-1)
-            memcpy(&cache_info_var[i], &cache_info_var[i+1], sizeof(CACHE_INFO_VAR)*(n_cache_info_var-i-1));
-         if (n_cache_info_var == 1)
-            free(cache_info_var);
-         else
-            cache_info_var = (CACHE_INFO_VAR *) realloc(cache_info_var, sizeof(CACHE_INFO_VAR) * (n_cache_info_var - 1));
-         n_cache_info_var--;
-         i--;
-      }
+   if (n_cache_info_var)
+      free(cache_info_var);
+   n_cache_info_var = 0;
 }
 
 /*------------------------------------------------------------------*/
@@ -2329,12 +2312,14 @@ int mscb_info_variable(int fd, unsigned short adr, unsigned char index, MSCB_INF
 
 /*------------------------------------------------------------------*/
 
-int mscb_set_addr(int fd, int addr, int gaddr, int broadcast, unsigned short new_addr)
+int mscb_set_node_addr(int fd, int addr, int gaddr, int broadcast, 
+                       unsigned short new_addr)
 /********************************************************************\
 
-  Routine: mscb_set_addr
+  Routine: mscb_set_node_addr
 
-  Purpose: Set node address of an node
+  Purpose: Set node address of an node. Only set high byte if addressed
+           in group or broadcast mode
 
   Input:
     int fd                  File descriptor for connection
@@ -2357,7 +2342,8 @@ int mscb_set_addr(int fd, int addr, int gaddr, int broadcast, unsigned short new
       return MSCB_INVAL_PARAM;
 
    if (mrpc_connected(fd))
-      return mrpc_call(mscb_fd[fd - 1].fd, RPC_MSCB_SET_ADDR, mscb_fd[fd - 1].remote_fd, addr, gaddr, broadcast, new_addr);
+      return mrpc_call(mscb_fd[fd - 1].fd, RPC_MSCB_SET_NODE_ADDR, mscb_fd[fd - 1].remote_fd, 
+                       addr, gaddr, broadcast, new_addr);
 
    if (mscb_lock(fd) != MSCB_SUCCESS)
       return MSCB_MUTEX;
@@ -2382,12 +2368,12 @@ int mscb_set_addr(int fd, int addr, int gaddr, int broadcast, unsigned short new
       buf[3] = crc8(buf, 3);
 
       buf[4] = MCMD_SET_ADDR;
-      buf[5] = (unsigned char) (new_addr >> 8);
-      buf[6] = (unsigned char) (new_addr & 0xFF);
-      buf[7] = (unsigned char) (info.group_address >> 8);
-      buf[8] = (unsigned char) (info.group_address & 0xFF);
-      buf[9] = crc8(buf+4, 5);
-      mscb_out(fd, buf, 10, RS485_FLAG_NO_ACK | RS485_FLAG_ADR_CYCLE);
+      buf[5] = ADDR_SET_NODE;
+      buf[6] = (unsigned char) (new_addr >> 8);
+      buf[7] = (unsigned char) (new_addr & 0xFF);
+      buf[8] = crc8(buf+4, 4);
+      mscb_out(fd, buf, 9, RS485_FLAG_NO_ACK | RS485_FLAG_ADR_CYCLE);
+
    } if (gaddr >= 0) {
       buf[0] = MCMD_ADDR_GRP16;
       buf[1] = (unsigned char) (gaddr >> 8);
@@ -2395,33 +2381,34 @@ int mscb_set_addr(int fd, int addr, int gaddr, int broadcast, unsigned short new
       buf[3] = crc8(buf, 3);
 
       buf[4] = MCMD_SET_ADDR;
-      buf[5] = (unsigned char) (new_addr >> 8);
-      buf[6] = (unsigned char) (0xFF); /* low byte of node address should be ignored */
-      buf[7] = (unsigned char) (gaddr >> 8);
-      buf[8] = (unsigned char) (gaddr & 0xFF);
-      buf[9] = crc8(buf+4, 5);
-      mscb_out(fd, buf, 10, RS485_FLAG_NO_ACK | RS485_FLAG_ADR_CYCLE);
+      buf[5] = ADDR_SET_HIGH;
+      buf[6] = (unsigned char) (new_addr >> 8);
+      buf[7] = (unsigned char) (new_addr & 0xFF);
+      buf[8] = crc8(buf+4, 4);
+      mscb_out(fd, buf, 9, RS485_FLAG_NO_ACK | RS485_FLAG_ADR_CYCLE);
+
    } else if (broadcast ) {
       buf[0] = MCMD_ADDR_BC;
       buf[1] = crc8(buf, 1);
 
       buf[2] = MCMD_SET_ADDR;
-      buf[3] = (unsigned char) (0xFF); /* node address should be ignored from nodes */
-      buf[4] = (unsigned char) (0xFF); /* in group or broadcast address mode */
-      buf[5] = (unsigned char) (new_addr >> 8);
-      buf[6] = (unsigned char) (new_addr & 0xFF);
-      buf[7] = crc8(buf+2, 5);
-      mscb_out(fd, buf, 8, RS485_FLAG_NO_ACK | RS485_FLAG_ADR_CYCLE);
+      buf[3] = ADDR_SET_HIGH;
+      buf[4] = (unsigned char) (new_addr >> 8);
+      buf[5] = (unsigned char) (new_addr & 0xFF);
+      buf[6] = crc8(buf+2, 4);
+      mscb_out(fd, buf, 7, RS485_FLAG_NO_ACK | RS485_FLAG_ADR_CYCLE);
+
    }
 
    mscb_release(fd);
+   mscb_clear_info_cache(fd);
 
    return MSCB_SUCCESS;
 }
 
 /*------------------------------------------------------------------*/
 
-int mscb_set_gaddr(int fd, int addr, int gaddr, int broadcast, unsigned short new_addr)
+int mscb_set_group_addr(int fd, int addr, int gaddr, int broadcast, unsigned short new_addr)
 /********************************************************************\
 
   Routine: mscb_set_gaddr
@@ -2447,7 +2434,8 @@ int mscb_set_gaddr(int fd, int addr, int gaddr, int broadcast, unsigned short ne
       return MSCB_INVAL_PARAM;
 
    if (mrpc_connected(fd))
-      return mrpc_call(mscb_fd[fd - 1].fd, RPC_MSCB_SET_GADDR, mscb_fd[fd - 1].remote_fd, gaddr, new_addr);
+      return mrpc_call(mscb_fd[fd - 1].fd, RPC_MSCB_SET_GROUP_ADDR, mscb_fd[fd - 1].remote_fd, 
+                       gaddr, new_addr);
 
    if (mscb_lock(fd) != MSCB_SUCCESS)
       return MSCB_MUTEX;
@@ -2457,12 +2445,12 @@ int mscb_set_gaddr(int fd, int addr, int gaddr, int broadcast, unsigned short ne
       buf[1] = crc8(buf, 1);
 
       buf[2] = MCMD_SET_ADDR;
-      buf[3] = (unsigned char) (0xFF); /* node address should be ignored from nodes */
-      buf[4] = (unsigned char) (0xFF); /* in group or broadcast address mode */
-      buf[5] = (unsigned char) (new_addr >> 8);
-      buf[6] = (unsigned char) (new_addr & 0xFF);
-      buf[7] = crc8(buf+2, 5);
-      mscb_out(fd, buf, 8, RS485_FLAG_NO_ACK | RS485_FLAG_ADR_CYCLE);
+      buf[3] = ADDR_SET_GROUP;
+      buf[4] = (unsigned char) (new_addr >> 8);
+      buf[5] = (unsigned char) (new_addr & 0xFF);
+      buf[6] = crc8(buf+2, 4);
+      mscb_out(fd, buf, 7, RS485_FLAG_NO_ACK | RS485_FLAG_ADR_CYCLE);
+
    } else if (gaddr >= 0) {
       buf[0] = MCMD_ADDR_GRP16;
       buf[1] = (unsigned char) (gaddr >> 8);
@@ -2470,12 +2458,12 @@ int mscb_set_gaddr(int fd, int addr, int gaddr, int broadcast, unsigned short ne
       buf[3] = crc8(buf, 3);
 
       buf[4] = MCMD_SET_ADDR;
-      buf[5] = (unsigned char) (0xFF); /* node address should be ignored from nodes */
-      buf[6] = (unsigned char) (0xFF); /* in group or broadcast address mode */
-      buf[7] = (unsigned char) (new_addr >> 8);
-      buf[8] = (unsigned char) (new_addr & 0xFF);
-      buf[9] = crc8(buf+4, 5);
-      mscb_out(fd, buf, 10, RS485_FLAG_NO_ACK | RS485_FLAG_ADR_CYCLE);
+      buf[5] = ADDR_SET_GROUP;
+      buf[6] = (unsigned char) (new_addr >> 8);
+      buf[7] = (unsigned char) (new_addr & 0xFF);
+      buf[8] = crc8(buf+4, 4);
+      mscb_out(fd, buf, 9, RS485_FLAG_NO_ACK | RS485_FLAG_ADR_CYCLE);
+
    } else if (addr >= 0) {
       buf[0] = MCMD_ADDR_NODE16;
       buf[1] = (unsigned char) (addr >> 8);
@@ -2483,15 +2471,16 @@ int mscb_set_gaddr(int fd, int addr, int gaddr, int broadcast, unsigned short ne
       buf[3] = crc8(buf, 3);
 
       buf[4] = MCMD_SET_ADDR;
-      buf[5] = (unsigned char) (0xFF); /* node address should be ignored from nodes */
-      buf[6] = (unsigned char) (0xFF); /* in group or broadcast address mode */
-      buf[7] = (unsigned char) (new_addr >> 8);
-      buf[8] = (unsigned char) (new_addr & 0xFF);
-      buf[9] = crc8(buf+4, 5);
-      mscb_out(fd, buf, 10, RS485_FLAG_NO_ACK | RS485_FLAG_ADR_CYCLE);
+      buf[5] = ADDR_SET_GROUP;
+      buf[6] = (unsigned char) (new_addr >> 8);
+      buf[7] = (unsigned char) (new_addr & 0xFF);
+      buf[8] = crc8(buf+4, 4);
+      mscb_out(fd, buf, 9, RS485_FLAG_NO_ACK | RS485_FLAG_ADR_CYCLE);
+
    }
 
    mscb_release(fd);
+   mscb_clear_info_cache(fd);
 
    return MSCB_SUCCESS;
 }
@@ -2532,7 +2521,7 @@ int mscb_set_name(int fd, unsigned short adr, char *name)
    buf[2] = (unsigned char) (adr & 0xFF);
    buf[3] = crc8(buf, 3);
 
-   buf[4] = MCMD_SET_ADDR | 0x07;
+   buf[4] = MCMD_SET_NAME;
    for (i = 0; i < 16 && name[i]; i++)
       buf[6 + i] = name[i];
 
@@ -2545,6 +2534,7 @@ int mscb_set_name(int fd, unsigned short adr, char *name)
    mscb_out(fd, buf, 7 + i, RS485_FLAG_NO_ACK | RS485_FLAG_ADR_CYCLE);
 
    mscb_release(fd);
+   mscb_clear_info_cache(fd);
 
    return MSCB_SUCCESS;
 }
@@ -3190,8 +3180,7 @@ prog_pages:
    if (debug)
       printf("Reboot node\n");
 
-   /* clear info cache from that node */
-   mscb_clear_info_cache(fd, adr);
+   mscb_clear_info_cache(fd);
 
 prog_error:
    mscb_release(fd);

@@ -21,7 +21,8 @@
 
 #define MCMD_INIT        0x20
 #define MCMD_GET_INFO    0x28
-#define MCMD_SET_ADDR    0x34
+#define MCMD_SET_ADDR    0x33
+#define MCMD_SET_NAME    0x37
 #define MCMD_SET_BAUD    0x39
 
 #define MCMD_FREEZE      0x41
@@ -47,6 +48,10 @@
 
 #define GET_INFO_GENERAL   0
 #define GET_INFO_VARIABLE  1
+
+#define ADDR_SET_NODE      1
+#define ADDR_SET_HIGH      2
+#define ADDR_SET_GROUP     3
 
 #define UCMD_ECHO          1
 #define UCMD_ERASE         2
@@ -252,8 +257,8 @@ extern "C" {
    int EXPRT mscb_echo(int fd, unsigned short add, unsigned char d1, unsigned char *d2);
    int EXPRT mscb_info(int fd, unsigned short adr, MSCB_INFO * info);
    int EXPRT mscb_info_variable(int fd, unsigned short adr, unsigned char index, MSCB_INFO_VAR * info);
-   int EXPRT mscb_set_addr(int fd, int addr, int gaddr, int broadcast, unsigned short new_addr);
-   int EXPRT mscb_set_gaddr(int fd, int addr, int gaddr, int broadcast, unsigned short new_addr);
+   int EXPRT mscb_set_node_addr(int fd, int addr, int gaddr, int broadcast, unsigned short new_addr);
+   int EXPRT mscb_set_group_addr(int fd, int addr, int gaddr, int broadcast, unsigned short new_addr);
    int EXPRT mscb_set_name(int fd, unsigned short adr, char *name);
    int EXPRT mscb_write(int fd, unsigned short adr, unsigned char index, void *data, int size);
    int EXPRT mscb_write_group(int fd, unsigned short adr, unsigned char index, void *data, int size);

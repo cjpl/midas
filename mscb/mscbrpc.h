@@ -90,8 +90,8 @@ typedef struct {
 #define RPC_MSCB_PING              5
 #define RPC_MSCB_INFO              6
 #define RPC_MSCB_INFO_VARIABLE     7
-#define RPC_MSCB_SET_ADDR          8
-#define RPC_MSCB_SET_GADDR         9
+#define RPC_MSCB_SET_NODE_ADDR     8
+#define RPC_MSCB_SET_GROUP_ADDR    9
 #define RPC_MSCB_WRITE            10
 #define RPC_MSCB_WRITE_GROUP      11
 #define RPC_MSCB_WRITE_BLOCK      12
