@@ -17,12 +17,12 @@ ifeq ($(OSTYPE),Linux)
 OSTYPE = linux
 endif
 
-# directory where strlcpy.c resides
-SLCDIR        = ./
+# directory where mxml.c and strlcpy.c resides
+MXMLDIR       = ../../mxml/
 
 OUTNAME       = msc 
 CC            = gcc -g -O2
-FLAGS         = -Wall -Wuninitialized -I$(SLCDIR)
+FLAGS         = -Wall -Wuninitialized -I$(MXMLDIR)
 
 ifeq ($(OSTYPE),linux)
 CC   += -DOS_LINUX -DHAVE_LIBUSB
@@ -36,8 +36,8 @@ endif
 
 all: $(OUTNAME)
 
-$(OUTNAME): mscb.o msc.o mscbrpc.o strlcpy.o
-	$(CC) $(FLAGS) mscb.o msc.o mscbrpc.o strlcpy.o -o $(OUTNAME) $(LIBS)
+$(OUTNAME): mscb.o msc.o mscbrpc.o strlcpy.o mxml.o
+	$(CC) $(FLAGS) mscb.o msc.o mscbrpc.o mxml.o strlcpy.o -o $(OUTNAME) $(LIBS)
 
 mscbrpc.o: mscbrpc.c mscbrpc.h
 	$(CC) $(FLAGS) -c mscbrpc.c
@@ -48,8 +48,11 @@ mscb.o: mscb.c mscb.h
 msc.o: msc.c
 	$(CC) $(FLAGS) -c msc.c 
 
-strlcpy.o: $(SLCDIR)strlcpy.c
-	$(CC) $(FLAGS) -c $(SLCDIR)strlcpy.c
+strlcpy.o: $(MXMLDIR)strlcpy.c
+	$(CC) $(FLAGS) -o strlcpy.o -c $(MXMLDIR)strlcpy.c
+
+mxml.o: $(MXMLDIR)mxml.c
+	$(CC) $(FLAGS) -o mxml.o -c $(MXMLDIR)mxml.c
 
 clean:
 	rm *.o $(OUTNAME)
