@@ -6,7 +6,7 @@
   Contents:     Combined Frontend/Analyzer/Logger for Windows NT.
                 Most routines are from mfe.c mana.c and mlogger.c.
 
-  $Id:$
+  $Id$
 \********************************************************************/
 
 #include "midas.h"
@@ -3527,17 +3527,17 @@ void test_register(ANA_TEST * t)
 
    /* allocate space for pointer to test */
    if (n_test == 0) {
-      tl = malloc(2 * sizeof(void *));
+      tl = (ANA_TEST **)malloc(2 * sizeof(void *));
 
       /* define "always true" test */
-      tl[0] = malloc(sizeof(ANA_TEST));
+      tl[0] = (ANA_TEST *)malloc(sizeof(ANA_TEST));
       strcpy(tl[0]->name, "Always true");
       tl[0]->count = 0;
       tl[0]->value = TRUE;
       tl[0]->registered = TRUE;
       n_test++;
    } else
-      tl = realloc(tl, (n_test + 1) * sizeof(void *));
+      tl = (ANA_TEST **)realloc(tl, (n_test + 1) * sizeof(void *));
 
    tl[n_test] = t;
    t->count = 0;
@@ -4539,7 +4539,7 @@ void process_event(EVENT_HEADER * pevent)
          if (event_def->format == FORMAT_MIDAS)
             pevent->data_size = bk_size((void *) (pevent + 1));
          if (event_def->format == FORMAT_YBOS)
-            pevent->data_size = ybk_size((void *) (pevent + 1));
+            pevent->data_size = ybk_size((DWORD *) (pevent + 1));
 
          /* increment tests */
          test_increment();
@@ -4807,7 +4807,7 @@ and rebuild the system.");
                   interrupt_configure(CMD_INTERRUPT_ATTACH, eq_info->source,
                                       (PTYPE) interrupt_routine);
                   interrupt_eq = &equipment[index];
-                  interrupt_odb_buffer = malloc(MAX_EVENT_SIZE + sizeof(EVENT_HEADER));
+                  interrupt_odb_buffer = (EVENT_HEADER *)malloc(MAX_EVENT_SIZE + sizeof(EVENT_HEADER));
                }
             } else {
                equipment[index].status = FE_ERR_DISABLED;
@@ -5134,7 +5134,7 @@ int print_message(const char *msg)
 void receive_message(HNDLE hBuf, HNDLE id, EVENT_HEADER * pheader, void *message)
 {
    /* display message on screen */
-   print_message(message);
+   print_message((const char*)message);
 }
 
 /*------------------------------------------------------------------*/
