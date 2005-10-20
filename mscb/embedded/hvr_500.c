@@ -8,7 +8,7 @@
                 Midas Slow Control Bus protocol
                 for HVR_300 High Voltage Regulator
 
-  $Id:$
+  $Id$
 
 \********************************************************************/
 
@@ -223,6 +223,7 @@ void user_init(unsigned char init)
       if (user_data[i].i_limit > MAX_CURRENT)
          user_data[i].i_limit = MAX_CURRENT;
 
+      u_actual[i] = 0;
       t_ramp[i] = time();
    }
 
