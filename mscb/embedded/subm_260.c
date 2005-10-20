@@ -16,7 +16,7 @@
 #include "mscb.h"
 #include "net.h"
 
-#define SUBM_VERSION 0x21  // used for PC-Submaster communication
+#define SUBM_VERSION 33  // used for PC-Submaster communication
 
 /*------------------------------------------------------------------*/
 
