@@ -363,7 +363,7 @@ $(LIB_DIR)/mfe.o: msystem.h midas.h midasinc.h mrpc.h
 $(LIB_DIR)/fal.o: $(SRC_DIR)/fal.c msystem.h midas.h midasinc.h mrpc.h
 
 $(LIB_DIR)/fal.o: $(SRC_DIR)/fal.c msystem.h midas.h midasinc.h mrpc.h
-	$(CC) -Dextname -c $(CFLAGS) $(OSFLAGS) -o $@ $<
+	$(CXX) -Dextname -DMANA_LITE -c $(CFLAGS) $(OSFLAGS) -o $@ $<
 $(LIB_DIR)/mana.o: $(SRC_DIR)/mana.c msystem.h midas.h midasinc.h mrpc.h
 	$(CC) -c $(CFLAGS) $(OSFLAGS) -o $@ $<
 $(LIB_DIR)/hmana.o: $(SRC_DIR)/mana.c msystem.h midas.h midasinc.h mrpc.h
@@ -401,8 +401,8 @@ $(BIN_DIR)/%:$(UTL_DIR)/%.c
 	$(CC) $(CFLAGS) $(OSFLAGS) -o $@ $< $(LIB) $(LIBS)
 
 
-$(BIN_DIR)/mcnaf: $(UTL_DIR)/mcnaf.c $(DRV_DIR)/bus/camacrpc.c
-	$(CC) $(CFLAGS) $(OSFLAGS) -o $@ $(UTL_DIR)/mcnaf.c $(DRV_DIR)/bus/camacrpc.c $(LIB) $(LIBS)
+$(BIN_DIR)/mcnaf: $(UTL_DIR)/mcnaf.c $(DRV_DIR)/camac/camacrpc.c
+	$(CC) $(CFLAGS) $(OSFLAGS) -o $@ $(UTL_DIR)/mcnaf.c $(DRV_DIR)/camac/camacrpc.c $(LIB) $(LIBS)
 
 $(BIN_DIR)/mdump: $(UTL_DIR)/mdump.c
 	$(CC) $(CFLAGS) $(OSFLAGS) -o $@ $(UTL_DIR)/mdump.c $(LIB) -lz $(LIBS)
@@ -490,7 +490,8 @@ ifdef CERNLIB
 	install -v -m 644 $(LIB_DIR)/hmana.o $(SYSLIB_DIR)/hmana.o
 else
 	rm -fv $(SYSLIB_DIR)/hmana.o
-      chmod +s $(SYSBIN_DIR)/mhttpd
+	chmod +s $(SYSBIN_DIR)/mhttpd
+endif
 ifdef ROOTSYS
 	install -v -m 644 $(LIB_DIR)/rmana.o $(SYSLIB_DIR)/rmana.o
 else
@@ -512,38 +513,38 @@ endif
 # mininal_install
 minimal_install:
 # system programs
-        @echo "... "
-        @echo "... Minimal Install for programs to $(SYSBIN_DIR)"
-        @echo "... "
+	@echo "... "
+	@echo "... Minimal Install for programs to $(SYSBIN_DIR)"
+	@echo "... "
 
-        @if [ ! -d  $(SYSBIN_DIR) ] ; then \
-          echo "Making directory $(SYSBIN_DIR)" ; \
-          mkdir -p $(SYSBIN_DIR); \
-        fi;
+	@if [ ! -d  $(SYSBIN_DIR) ] ; then \
+	  echo "Making directory $(SYSBIN_DIR)" ; \
+	  mkdir -p $(SYSBIN_DIR); \
+	fi;
 
-        @for i in mserver mhttpd dio ; \
-          do \
-          install -v -m 755 $(BIN_DIR)/$$i $(SYSBIN_DIR) ; \
-          done
+	@for i in mserver mhttpd dio ; \
+	  do \
+	  install -v -m 755 $(BIN_DIR)/$$i $(SYSBIN_DIR) ; \
+	  done
 
-        install -v -m 755 $(UTL_DIR)/mcleanup $(SYSBIN_DIR)
-        chmod +s $(SYSBIN_DIR)/dio
-        chmod +s $(SYSBIN_DIR)/mhttpd
+	install -v -m 755 $(UTL_DIR)/mcleanup $(SYSBIN_DIR)
+	chmod +s $(SYSBIN_DIR)/dio
+	chmod +s $(SYSBIN_DIR)/mhttpd
 
 # utilities
-        @echo "... "
-        @echo "... No utilities install to $(SYSBIN_DIR)"
-        @echo "... "
+	@echo "... "
+	@echo "... No utilities install to $(SYSBIN_DIR)"
+	@echo "... "
 
 # include
-        @echo "... "
-        @echo "... No include install to $(SYSINC_DIR)"
-        @echo "... "
+	@echo "... "
+	@echo "... No include install to $(SYSINC_DIR)"
+	@echo "... "
 
 # library + objects
-        @echo "... "
-        @echo "... No library Install to $(SYSLIB_DIR)"
-        @echo "... "
+	@echo "... "
+	@echo "... No library Install to $(SYSLIB_DIR)"
+	@echo "... "
 
 indent:
 	find . -name "*.[hc]" -exec indent -kr -nut -i3 -l90 {} \;
