@@ -8,7 +8,7 @@
                 Midas Slow Control Bus protocol
                 for HVR_300 High Voltage Regulator
 
-  $Id:$
+  $Id$
 
 \********************************************************************/
 
@@ -43,7 +43,7 @@ char code node_name[] = "HVR-400";
 #define CUR_MULT 15
 
 /* delay for opto-couplers in us */
-#define OPT_DELAY 100
+#define OPT_DELAY 300
 
 /* configuration jumper */
 sbit JU0 = P3 ^ 4;              // negative module if forced to zero
@@ -84,7 +84,8 @@ unsigned char idata chn_bits[N_HV_CHN];
 #define RAMP_DOWN          (1<<2)
 #define CUR_LIMIT_CHANGED  (1<<3)
 
-float xdata v_actual[N_HV_CHN];
+float xdata u_actual[N_HV_CHN];
+unsigned long xdata t_ramp[N_HV_CHN];
 
 /*---- Define variable parameters returned to CMD_GET_INFO command ----*/
 
@@ -105,15 +106,15 @@ float xdata v_actual[N_HV_CHN];
 
 struct {
    unsigned char control;
-   float v_demand;
-   float v_meas;
+   float u_demand;
+   float u_meas;
    float i_meas;
    unsigned char status;
    unsigned char trip_cnt;
 
    unsigned int ramp_up;
    unsigned int ramp_down;
-   float v_limit;
+   float u_limit;
    float i_limit;
    unsigned char trip_max;
 
@@ -126,21 +127,21 @@ struct {
    float cur_offset;
 
    float temperature;
-   float v_dac;
+   float u_dac;
 } xdata user_data[N_HV_CHN];
 
 MSCB_INFO_VAR code variables[] = {
 
    1, UNIT_BYTE,            0, 0,           0, "Control", &user_data[0].control,     // 0
-   4, UNIT_VOLT,            0, 0, MSCBF_FLOAT, "Vdemand", &user_data[0].v_demand,    // 1
-   4, UNIT_VOLT,            0, 0, MSCBF_FLOAT, "Vmeas",   &user_data[0].v_meas,      // 2
+   4, UNIT_VOLT,            0, 0, MSCBF_FLOAT, "Udemand", &user_data[0].u_demand,    // 1
+   4, UNIT_VOLT,            0, 0, MSCBF_FLOAT, "Umeas",   &user_data[0].u_meas,      // 2
    4, UNIT_AMPERE, PRFX_MICRO, 0, MSCBF_FLOAT, "Imeas",   &user_data[0].i_meas,      // 3
    1, UNIT_BYTE,            0, 0,           0, "Status",  &user_data[0].status,      // 4
    1, UNIT_COUNT,           0, 0,           0, "TripCnt", &user_data[0].trip_cnt,    // 5
 
    2, UNIT_VOLT,            0, 0,           0, "RampUp",  &user_data[0].ramp_up,     // 6
    2, UNIT_VOLT,            0, 0,           0, "RampDown",&user_data[0].ramp_down,   // 7
-   4, UNIT_VOLT,            0, 0, MSCBF_FLOAT, "Vlimit",  &user_data[0].v_limit,     // 8
+   4, UNIT_VOLT,            0, 0, MSCBF_FLOAT, "Ylimit",  &user_data[0].u_limit,     // 8
    4, UNIT_AMPERE, PRFX_MICRO, 0, MSCBF_FLOAT, "Ilimit",  &user_data[0].i_limit,     // 9
    1, UNIT_COUNT,           0, 0,           0, "TripMax", &user_data[0].trip_max,    // 10
 
@@ -154,7 +155,7 @@ MSCB_INFO_VAR code variables[] = {
    4, UNIT_AMPERE, PRFX_MICRO, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "CURofs",  &user_data[0].cur_offset,  // 17
 
    4, UNIT_CELSIUS,         0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "Temp",    &user_data[0].temperature, // 18
-   4, UNIT_VOLT,            0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "VDAC",    &user_data[0].v_dac,       // 19
+   4, UNIT_VOLT,            0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "UDAC",    &user_data[0].u_dac,       // 19
    0
 };
 
@@ -184,11 +185,11 @@ void user_init(unsigned char init)
    /* initial nonzero EEPROM values */
    if (init) {
       for (i=0 ; i<N_HV_CHN ; i++) {
-         user_data[i].v_demand = 0;
+         user_data[i].u_demand = 0;
          user_data[i].trip_cnt = 0;
          user_data[i].ramp_up = 0;
          user_data[i].ramp_down = 0;
-         user_data[i].v_limit = MAX_VOLTAGE;
+         user_data[i].u_limit = MAX_VOLTAGE;
          user_data[i].i_limit = MAX_CURRENT;
          user_data[i].trip_max = 0;
 
@@ -206,24 +207,28 @@ void user_init(unsigned char init)
    for (i=0 ; i<N_HV_CHN ; i++) {
       user_data[i].control = CONTROL_REGULATION;
       user_data[i].status = 0;
-      user_data[i].temperature = 0;
+      user_data[i].u_demand = 0;
+      user_data[i].trip_cnt = 0;
 
       /* check maximum ratings */
-      if (user_data[i].v_limit > MAX_VOLTAGE)
-         user_data[i].v_limit = MAX_VOLTAGE;
+      if (user_data[i].u_limit > MAX_VOLTAGE)
+         user_data[i].u_limit = MAX_VOLTAGE;
 
       if (user_data[i].i_limit > MAX_CURRENT)
          user_data[i].i_limit = MAX_CURRENT;
+
+      u_actual[i] = 0;
+      t_ramp[i] = time();
    }
 
    JU1 = 1;
    JU2 = 1;
 
    /* set-up DAC & ADC */
-   DAC_CLR = 1;
+   DAC_CLR  = 1;
    ADC_NRES = 1;
    ADC_NRDY = 1; // input
-   ADC_DIN = 1;  // input
+   ADC_DIN  = 1; // input
 
    write_adc(REG_FILTER, ADC_SF_VALUE);
 
@@ -252,15 +257,16 @@ void user_write(unsigned char index) reentrant
 
    /* re-check voltage limit */
    if (index == 8) {
-      if (user_data[cur_sub_addr()].v_limit > MAX_VOLTAGE)
-         user_data[cur_sub_addr()].v_limit = MAX_VOLTAGE;
+      if (user_data[cur_sub_addr()].u_limit > MAX_VOLTAGE)
+         user_data[cur_sub_addr()].u_limit = MAX_VOLTAGE;
 
       chn_bits[cur_sub_addr()] |= DEMAND_CHANGED;
    }
 
    /* check current limit */
    if (index == 9) {
-      if (user_data[cur_sub_addr()].i_limit > MAX_CURRENT)
+      if (user_data[cur_sub_addr()].i_limit > MAX_CURRENT &&
+          user_data[cur_sub_addr()].i_limit != 9999)
          user_data[cur_sub_addr()].i_limit = MAX_CURRENT;
    }
 }
@@ -305,6 +311,7 @@ unsigned char i, m, b;
       delay_us(OPT_DELAY);
       m >>= 1;
    }
+   watchdog_refresh();
 
    // channel address
    for (i=0,m=8 ; i<4 ; i++) {
@@ -315,6 +322,7 @@ unsigned char i, m, b;
       delay_us(OPT_DELAY);
       m >>= 1;
    }
+   watchdog_refresh();
 
    // MSB
    b = value >> 8;
@@ -326,6 +334,7 @@ unsigned char i, m, b;
       delay_us(OPT_DELAY);
       m >>= 1;
    }
+   watchdog_refresh();
 
    // LSB
    b = value & 0xFF;
@@ -337,9 +346,11 @@ unsigned char i, m, b;
       delay_us(OPT_DELAY);
       m >>= 1;
    }
+   watchdog_refresh();
 
    DAC_NCS = 1; // remove chip select
    delay_us(OPT_DELAY);
+   watchdog_refresh();
 }
 
 /*---- ADC functions -----------------------------------------------*/
@@ -361,6 +372,7 @@ void write_adc(unsigned char a, unsigned char d)
       ADC_SCLK = 1;
       delay_us(OPT_DELAY);
    }
+   watchdog_refresh();
 
    /* register address */
    for (i=0,m=8 ; i<4 ; i++) {
@@ -372,9 +384,11 @@ void write_adc(unsigned char a, unsigned char d)
       delay_us(OPT_DELAY);
       m >>= 1;
    }
+   watchdog_refresh();
 
    ADC_NCS = 1;
    delay_us(OPT_DELAY);
+   watchdog_refresh();
 
    /* write to selected data register */
 
@@ -389,9 +403,11 @@ void write_adc(unsigned char a, unsigned char d)
       delay_us(OPT_DELAY);
       m >>= 1;
    }
+   watchdog_refresh();
 
    ADC_NCS = 1;
    delay_us(OPT_DELAY);
+   watchdog_refresh();
 }
 
 void read_adc8(unsigned char a, unsigned char *d)
@@ -411,6 +427,7 @@ void read_adc8(unsigned char a, unsigned char *d)
       ADC_SCLK = 1;
       delay_us(OPT_DELAY);
    }
+   watchdog_refresh();
 
    /* register address */
    for (i=0,m=8 ; i<4 ; i++) {
@@ -422,9 +439,11 @@ void read_adc8(unsigned char a, unsigned char *d)
       delay_us(OPT_DELAY);
       m >>= 1;
    }
+   watchdog_refresh();
 
    ADC_NCS = 1;
    delay_us(OPT_DELAY);
+   watchdog_refresh();
 
    /* read from selected data register */
 
@@ -439,9 +458,11 @@ void read_adc8(unsigned char a, unsigned char *d)
       delay_us(OPT_DELAY);
       m >>= 1;
    }
+   watchdog_refresh();
 
    ADC_NCS = 1;
    delay_us(OPT_DELAY);
+   watchdog_refresh();
 }
 
 void read_adc24(unsigned char a, unsigned long *d)
@@ -461,6 +482,7 @@ void read_adc24(unsigned char a, unsigned long *d)
       ADC_SCLK = 1;
       delay_us(OPT_DELAY);
    }
+   watchdog_refresh();
 
    /* register address */
    for (i=0,m=8 ; i<4 ; i++) {
@@ -472,9 +494,11 @@ void read_adc24(unsigned char a, unsigned long *d)
       delay_us(OPT_DELAY);
       m >>= 1;
    }
+   watchdog_refresh();
 
    ADC_NCS = 1;
    delay_us(OPT_DELAY);
+   watchdog_refresh();
 
    /* read from selected data register */
 
@@ -489,9 +513,11 @@ void read_adc24(unsigned char a, unsigned long *d)
       ADC_SCLK = 1;
       delay_us(OPT_DELAY);
    }
+   watchdog_refresh();
 
    ADC_NCS = 1;
    delay_us(OPT_DELAY);
+   watchdog_refresh();
 }
 
 unsigned char code adc_index[8] = {7, 6, 5, 4, 3, 2, 1, 0 };
@@ -545,8 +571,8 @@ void set_hv(unsigned char channel, float value) reentrant
    unsigned short d;
 
    /* check for limit */
-   if (value > user_data[channel].v_limit) {
-      value = user_data[channel].v_limit;
+   if (value > user_data[channel].u_limit) {
+      value = user_data[channel].u_limit;
       user_data[channel].status |= STATUS_VLIMIT;
    } else
       user_data[channel].status &= ~STATUS_VLIMIT;
@@ -583,8 +609,11 @@ void read_hv(unsigned char channel)
    /* apply calibration */
    hv = hv * user_data[channel].adc_gain + user_data[channel].adc_offset;
 
+   /* 0.01 resolution */
+   hv = floor(hv * 100) / 100.0;
+
    DISABLE_INTERRUPTS;
-   user_data[channel].v_meas = hv;
+   user_data[channel].u_meas = hv;
    ENABLE_INTERRUPTS;
 }
 
@@ -608,12 +637,15 @@ void set_current_limit(float value) reentrant
 
 void check_current(unsigned char channel)
 {
-   if (user_data[channel].i_meas > user_data[channel].i_limit) {
+   if (user_data[channel].i_meas > user_data[channel].i_limit &&
+       user_data[channel].i_limit != 9999) {
+
+      user_data[channel].temperature = user_data[channel].i_meas;
 
       /* zero output voltage */
       set_hv(channel, 0);
-      v_actual[channel] = 0;
-      user_data[channel].v_dac = 0;
+      u_actual[channel] = 0;
+      user_data[channel].u_dac = 0;
 
       /* stop possible ramping */
       chn_bits[channel] &= ~DEMAND_CHANGED;
@@ -636,7 +668,7 @@ void check_current(unsigned char channel)
    }
 
    if (user_data[channel].status & STATUS_ILIMIT)
-      led_blink(channel, 3, 50);
+      led_blink(channel, 3, 100);
 }
 
 /*------------------------------------------------------------------*/
@@ -652,10 +684,16 @@ void read_current(unsigned char channel)
    current = current / CUR_MULT * DIVIDER / RCURR * 1E6;
 
    /* correct for unbalanced voltage dividers */
-   current += user_data[channel].cur_vgain * user_data[channel].v_meas;
+   current -= user_data[channel].cur_vgain * user_data[channel].u_meas;
 
-   /* calibrate */
-   current = current * user_data[channel].cur_gain + user_data[channel].cur_offset;
+   /* correct for offset */
+   current -= user_data[channel].cur_offset;
+
+   /* calibrate gain */
+   current = current * user_data[channel].cur_gain;
+
+   /* 0.1 resolution */
+   current = floor(current * 10) / 10.0;
 
    DISABLE_INTERRUPTS;
    user_data[channel].i_meas = current;
@@ -663,8 +701,6 @@ void read_current(unsigned char channel)
 }
 
 /*------------------------------------------------------------------*/
-
-static unsigned long xdata t_ramp[N_HV_CHN];
 
 void ramp_hv(unsigned char channel)
 {
@@ -677,7 +713,7 @@ void ramp_hv(unsigned char channel)
       if (chn_bits[channel] & DEMAND_CHANGED) {
          /* start ramping */
 
-         if (user_data[channel].v_demand > v_actual[channel] &&
+         if (user_data[channel].u_demand > u_actual[channel] &&
              user_data[channel].ramp_up > 0) {
             /* ramp up */
             chn_bits[channel] |= RAMP_UP;
@@ -687,7 +723,7 @@ void ramp_hv(unsigned char channel)
             chn_bits[channel] &= ~DEMAND_CHANGED;
          }
 
-         if (user_data[channel].v_demand < v_actual[channel] &&
+         if (user_data[channel].u_demand < u_actual[channel] &&
              user_data[channel].ramp_down > 0) {
             /* ramp down */
             chn_bits[channel] &= ~RAMP_UP;
@@ -705,20 +741,20 @@ void ramp_hv(unsigned char channel)
       if (chn_bits[channel] & RAMP_UP) {
          delta = time() - t_ramp[channel];
          if (delta) {
-            v_actual[channel] += (float) user_data[channel].ramp_up * delta / 100.0;
-            user_data[channel].v_dac = v_actual[channel];
+            u_actual[channel] += (float) user_data[channel].ramp_up * delta / 100.0;
+            user_data[channel].u_dac = u_actual[channel];
 
-            if (v_actual[channel] >= user_data[channel].v_demand) {
+            if (u_actual[channel] >= user_data[channel].u_demand) {
                /* finish ramping */
 
-               v_actual[channel] = user_data[channel].v_demand;
-               user_data[channel].v_dac = v_actual[channel];
+               u_actual[channel] = user_data[channel].u_demand;
+               user_data[channel].u_dac = u_actual[channel];
                chn_bits[channel] &= ~RAMP_UP;
                user_data[channel].status &= ~STATUS_RAMP_UP;
 
             }
 
-            set_hv(channel, v_actual[channel]);
+            set_hv(channel, u_actual[channel]);
             t_ramp[channel] = time();
          }
       }
@@ -727,20 +763,20 @@ void ramp_hv(unsigned char channel)
       if (chn_bits[channel] & RAMP_DOWN) {
          delta = time() - t_ramp[channel];
          if (delta) {
-            v_actual[channel] -= (float) user_data[channel].ramp_down * delta / 100.0;
-            user_data[channel].v_dac = v_actual[channel];
+            u_actual[channel] -= (float) user_data[channel].ramp_down * delta / 100.0;
+            user_data[channel].u_dac = u_actual[channel];
 
-            if (v_actual[channel] <= user_data[channel].v_demand) {
+            if (u_actual[channel] <= user_data[channel].u_demand) {
                /* finish ramping */
 
-               v_actual[channel] = user_data[channel].v_demand;
-               user_data[channel].v_dac = v_actual[channel];
+               u_actual[channel] = user_data[channel].u_demand;
+               user_data[channel].u_dac = u_actual[channel];
                chn_bits[channel] &= ~RAMP_DOWN;
                user_data[channel].status &= ~STATUS_RAMP_DOWN;
 
             }
 
-            set_hv(channel, v_actual[channel]);
+            set_hv(channel, u_actual[channel]);
             t_ramp[channel] = time();
          }
       }
@@ -759,30 +795,30 @@ void regulation(unsigned char channel)
        !(user_data[channel].status & STATUS_ILIMIT)) {
       if (user_data[channel].control & CONTROL_REGULATION) {
 
-         v_actual[channel] = user_data[channel].v_demand;
+         u_actual[channel] = user_data[channel].u_demand;
 
          /* correct if difference is at least half a LSB */
-         if (fabs(user_data[channel].v_demand - user_data[channel].v_meas) / DIVIDER / 2.5 * 65536 > 0.5) {
+         if (fabs(user_data[channel].u_demand - user_data[channel].u_meas) / DIVIDER / 2.5 * 65536 > 0.5) {
 
-            user_data[channel].v_dac += user_data[channel].v_demand - user_data[channel].v_meas;
+            user_data[channel].u_dac += user_data[channel].u_demand - user_data[channel].u_meas;
 
             /* only allow +-2V fine regulation range */
-            if (user_data[channel].v_dac < user_data[channel].v_demand - 2)
-               user_data[channel].v_dac = user_data[channel].v_demand - 2;
+            if (user_data[channel].u_dac < user_data[channel].u_demand - 2)
+               user_data[channel].u_dac = user_data[channel].u_demand - 2;
 
-            if (user_data[channel].v_dac > user_data[channel].v_demand + 2)
-               user_data[channel].v_dac = user_data[channel].v_demand + 2;
+            if (user_data[channel].u_dac > user_data[channel].u_demand + 2)
+               user_data[channel].u_dac = user_data[channel].u_demand + 2;
 
             chn_bits[channel] &= ~DEMAND_CHANGED;
-            set_hv(channel, user_data[channel].v_dac);
+            set_hv(channel, user_data[channel].u_dac);
          }
 
       } else {
          /* set voltage directly */
          if (chn_bits[channel] & DEMAND_CHANGED) {
-            v_actual[channel] = user_data[channel].v_demand;
-            user_data[channel].v_dac = user_data[channel].v_demand;
-            set_hv(channel, user_data[channel].v_demand);
+            u_actual[channel] = user_data[channel].u_demand;
+            user_data[channel].u_dac = user_data[channel].u_demand;
+            set_hv(channel, user_data[channel].u_demand);
 
             chn_bits[channel] &= ~DEMAND_CHANGED;
          }
@@ -793,7 +829,7 @@ void regulation(unsigned char channel)
    if (!(user_data[channel].control & CONTROL_HV_ON) &&
        (chn_bits[channel] & DEMAND_CHANGED)) {
 
-      user_data[channel].v_dac = 0;
+      user_data[channel].u_dac = 0;
       set_hv(channel, 0);
       chn_bits[channel] &= ~DEMAND_CHANGED;
    }
