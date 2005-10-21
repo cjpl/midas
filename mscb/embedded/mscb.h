@@ -341,7 +341,7 @@ char putchar1(char c);                   // putchar cannot be used with LCD supp
 
 /*---- MSCB commands -----------------------------------------------*/
 
-#define VERSION 0x22            // version 2.0
+#define PROTOCOL_VERSION 3
 #define INTERCHAR_DELAY 20      // 20us between characters
 
 /* Version history:
@@ -367,7 +367,8 @@ char putchar1(char c);                   // putchar cannot be used with LCD supp
 
 #define CMD_INIT        0x20
 #define CMD_GET_INFO    0x28
-#define CMD_SET_ADDR    0x34
+#define CMD_SET_ADDR    0x33
+#define CMD_SET_NAME    0x37
 #define CMD_SET_BAUD    0x39
 
 #define CMD_FREEZE      0x41
@@ -393,6 +394,10 @@ char putchar1(char c);                   // putchar cannot be used with LCD supp
 
 #define GET_INFO_GENERAL   0
 #define GET_INFO_VARIABLES 1
+
+#define ADDR_SET_NODE      1
+#define ADDR_SET_HIGH      2
+#define ADDR_SET_GROUP     3
 
 /*---- MSCB upgrade commands ---------------------------------------*/
 

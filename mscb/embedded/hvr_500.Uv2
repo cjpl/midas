@@ -113,7 +113,7 @@ Options 1,0,0  // Target 'Target 1'
   OPTDBG 2046,-1,()()()()()()()()()() (BIN\SiC8051F.dll)()()()
  FLASH1 { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 }
  FLASH2 ()
- FLASH3 ()
+ FLASH3 ("" ())
 EndOpt
 
 Options 1,2,4  // File 'mscb.h'

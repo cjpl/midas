@@ -648,6 +648,9 @@ void read_hv(unsigned char channel)
    /* apply calibration */
    hv = hv * user_data[channel].adc_gain + user_data[channel].adc_offset;
 
+   /* 0.01 resolution */
+   hv = floor(hv * 100) / 100.0;
+
    DISABLE_INTERRUPTS;
    user_data[channel].u_meas = hv;
    ENABLE_INTERRUPTS;
@@ -772,10 +775,16 @@ void read_current(unsigned char channel)
    current = current / CUR_MULT * DIVIDER / RCURR * 1E6;
 
    /* correct for unbalanced voltage dividers */
-   current += user_data[channel].cur_vgain * user_data[channel].u_meas;
+   current -= user_data[channel].cur_vgain * user_data[channel].u_meas;
 
-   /* calibrate */
-   current = current * user_data[channel].cur_gain + user_data[channel].cur_offset;
+   /* correct for offset */
+   current -= user_data[channel].cur_offset;
+
+   /* calibrate gain */
+   current = current * user_data[channel].cur_gain;
+
+   /* 0.1 resolution */
+   current = floor(current * 10) / 10.0;
 
    DISABLE_INTERRUPTS;
    user_data[channel].i_meas = current;
