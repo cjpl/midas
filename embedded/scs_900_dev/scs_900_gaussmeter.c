@@ -145,8 +145,6 @@ unsigned short iadc_read(channel);
 void user_write(unsigned char index) reentrant;
 void write_adc(unsigned char a, unsigned char d);
 
-bit new_value;
-
 unsigned char adc_chn = 0;
 
 /*---- User init function ------------------------------------------*/
@@ -509,9 +507,8 @@ void adc_read()
 
 void user_write(unsigned char index) reentrant
 {
-   if (index == 1) {
-      new_value = 1;
-   }
+   if (index > 7 && index < 16)
+      write_dac(index-8);
 }
 
 /*---- User read function ------------------------------------------*/
