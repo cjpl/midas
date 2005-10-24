@@ -4,35 +4,35 @@
 @ref AppendixB - @ref Top - @ref AppendixD 
 \htmlonly <img alt="next.gif" src="next.gif"> \endhtmlonly
  
-Midas defines its own set of CAMAC and VME calls in order to unify the different hardware
-modules that it supports. This interface method permits to be totally hardware as well
-as OS \b independent. The same user code developed on a system can be used as
-a template for another application on a different operating system.
+Midas defines its own set of CAMAC, VME and FASTBUS calls in order to unify the different 
+hardware modules that it supports. This interface method permits to be totally 
+hardware as well as OS \b independent. The same user code developed on a system 
+can be used as a template for another application on a different operating 
+system.
 
-While the file mcstd.h (Midas Camac Standard) provides the interface for
-the CAMAC access, the file mvmestd.h (Midas VME Standard) is for the VME access.
-
+While the file mcstd.h (Midas Camac Standard) provides the interface for the 
+CAMAC access, the file mvmestd.h (Midas VME Standard) is for the VME access.
 An extra CAMAC interface built on the top of \b mcstd provides the ESONE standard
 CAMAC calls (esone.c).
 
+Refers to the corresponding directories under \b /drivers to find out what
+module of each family is already supported by the current Midas distribution.
+/drivers/divers contains older drivers which has not yet been converted to the
+latest API.
+
 <hr> @section Midas_CAMAC_standard_functions Midas CAMAC standard functions
-Please refer to the file below for function description.  
-@ref mcstd.h
+Please refer to @ref mcstd.h for function description.  
 
 <hr> @section ESONE_CAMAC_standard_functions ESONE CAMAC standard functions
 
 <strong>Not all the functionality of ESONE standard have been fully tested</strong>
 
-Please refer to the file for function description.  
-
-@ref esone.c
+Please refer to @ref esone.c for function description.  
 
 <hr> @section Midas_VME_standard_functions Midas VME standard functions
-This interface is under revision for providing basic VME access through a 
-independent software interface. Please refer to the file below for specific function
-explanation.
-
-@ref mvmestd.h
+This API provides basic VME access through a \b simple set of functions.
+Refer to @ref mvmestd.h for more specific information. mvme_open() contains
+a general access code sample summarizing most of the mvme commands.
 
 <hr> @section Compute_Busy_Logic Computer Busy Logic
 A "computer busy logic" has to be implemented for a front-end to work properly.

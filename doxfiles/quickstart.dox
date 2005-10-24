@@ -10,17 +10,16 @@ This section is under revision to better reflect the latest installation and
 basic operation of the <b>Midas package</b>.
 </STRONG>
  
-...
-This section will... describes step-by-step the installation procedure of the Midas package
-on several platform as well as the procedure to run a demo sample experiment.
-In a second stage, the frontend or the analyzer can be moved to another computer
-to test the remote connection capability.
+... This section will... describes step-by-step the installation procedure of 
+the Midas package on several platform as well as the procedure to run a demo 
+sample experiment. In a second stage, the frontend or the analyzer can be moved 
+to another computer to test the remote connection capability.
 
 The Midas Package source and binaries can be found at :
 <a href=http://midas.psi.ch/download> PSI </a> or at 
 <a href=http://midas.triumf.ca/download> TRIUMF </a>.
-An <a href=http://midas.psi.ch/cgi-bin/cvsweb/midas/> online CVS web site </a>
-is also available for the latest developments.
+An <a href=http://savannah.psi.ch/viewcvs/trunk/?root=midas> online SVN web site 
+</a> is also available for the latest developments.
 
 Even though Midas is available for multiple platforms, the following description
 are for @ref Linux_installation and @ref Windows_installation.
@@ -29,8 +28,9 @@ are for @ref Linux_installation and @ref Windows_installation.
 
 -# <b>Extraction: </b>
   - <b>Compressed files</b>
-    The compressed file contains the source and binary code. It does expand under the
-    directory name of \b midas. This extraction can be done at the user level.
+    The compressed file contains the source and binary code. It does expand 
+    under the directory name of \b midas. This extraction can be done at the 
+    user level.
     \code 
     cd /home/mydir
     tar -zxvf midas-1.9.x.tar.gz
@@ -40,24 +40,24 @@ are for @ref Linux_installation and @ref Windows_installation.
     >ls
     COPYING  doc/      examples/  include/  linux/     makefile.nt  mscb/  utils/
     CVS/     drivers/  gui/       java/     Makefile*  mcleanup*    src/   vxworks/
-    \endcode    
-  - <b>RPM</b>
-    <b> Current RPM is not fully up-to-date. We suggest that you use the compressed files
-    or the CVS repository.</b>
-    In the case of the \b rpm, the binaries are placed in the \b /usr/local/bin
-    \b /usr/local/include \b /usr/local/lib.
-  - <b>CVS</b>
-    The source code can be extracted from the
-    <a href=http://midas.psi.ch/cgi-bin/cvsweb/midas>
-    CVS repository</a>. The following two anonymous commands can used for 
-    respectively <b>checking out</b> (first time) and <b>updating</b> the full midas tree.
-    The password required for access is "cvs".
-    \code
-    cvs -e ssh -d :ext:cvs@midas.psi.ch:/usr/local/cvsroot checkout midas
-    
-    cvs -e ssh -d :ext:cvs@midas.psi.ch:/usr/local/cvsroot update
     \endcode
-<br><br>
+    \n    
+  - <b>RPM</b>
+    Current RPM is not fully up-to-date. We suggest that you use the 
+    compressed files or the \b SVN repository.</b>
+    In the case of the \b rpm, the binaries are placed in the /usr/local/bin
+    , /usr/local/include, /usr/local/lib.
+    \n\n
+  - <b>SVN</b>
+    The source code can be extracted from the
+    <a HREF=http://savannah.psi.ch/viewcvs/trunk/?root=midas>
+    SVN repository</a>. An anonymous access is available under the username
+    svn and password svn which may be required several time. One improvement 
+    over CVS the SVN provides a quick \b tarball creation within the web interface!
+    \code
+    svn co svn+ssh://svn@savannah.psi.ch/afs/psi.ch/project/meg/svn/midas/trunk midas
+    \endcode
+\n\n
 -# <b> Installation: </b>
 The installation consists in placing the image files in the \b /usr/local/ directories.
 This operation requires superuser privilege. The open "install" from the Makefile will
@@ -94,7 +94,8 @@ Several system files needs to be modified for the full Midas implementation.
     \code 
     /usr/local/lib
     \endcode
-  The system environment \b LD_LIBRARY_PATH can used instead.
+  The system is now build by default in static which prevent to have to setup
+  the .so path through either the environment \b LD_LIBRARY_PATH or the ld.so.conf.
   - <b>/etc/exptab :</b> Midas Experiment definition file (see below).
 <br><br>
 -# \anchor Experiment_Definition <b> Experiment definition: </b>
@@ -137,7 +138,7 @@ Several system files needs to be modified for the full Midas implementation.
   placed in your temporary directory. The compilation and link will try to generate the \b rmidas
   application which requires \b ROOT. The application \b mana will also be compiled for \b HBOOK and 
   \b ROOT. Look in the make listing below for the @ref HAVE_HBOOK, @ref HAVE_ROOT. 
-  <br><br>
+  \n\n
   \code
   > cd /home/mydir/midas
   > make

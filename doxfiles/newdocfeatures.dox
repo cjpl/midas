@@ -12,10 +12,30 @@ of the latest documentation on past and current features. It will also
 mention the wish list documentation on current developments.
  
 
-- Current doc revision: 1.9.5-1 
+- Current doc revision: 1.9.5-3 
 - Software version: 1.9.5 
-- Latest tarball : <a href=http://midas.triumf.ca/download> 1.9.5-1 </a> 
+- Latest tarball : <a href=http://midas.triumf.ca/download> 1.9.5-x </a>
+  You can retrieve the daily tarball directly from the SVN web interface
+  by clicking on the  "tarball" link at the bottom of the main SVN-midas page.
 - Latest RPM : <a href=http://midas.triumf.ca/download> 1.9.2-1  </a>
+
+- <b> [Before 1.9.6] </b>
+ - Switch from CVS to Subversion for Version control, this change affects 
+   @ref quickstart. Check the new checkout/update commands. 
+ - New @ref Midas_VME_standard_functions implementation in \b mvmestd.h.
+ - \b MIDASSYS environment variable now required for building 
+   /examples/experiment and /examples/hbookexpt
+ - New \b /drivers tree structure includes \b camac , \b vme , \b fastbus. 
+ - New make option for minimal installation. This permits root installation of
+   mserver, mcleanup, dio and mhttpd only.
+   \code
+   > make minimal_install
+   \endcode
+
+- <b> [1.9.5-2] </b>
+ - XML ODB format
+ - Separate xml SVN path for building Midas required. This package can be
+   extracted the same way as Midas. It has to reside at the same level as Midas.
 
 - <b> [1.9.5-1] </b>
  - @ref Custom_page improvement. Implementation of external file.html and 
@@ -68,10 +88,10 @@ mention the wish list documentation on current developments.
 
 - <b> [1.9.3] </b>
   - Support for ROOT files.
-  - @ref mlogger_task: New Data format \b ROOT and corresponding file extension
+  - @ref mlogger_task : New Data format \b ROOT and corresponding file extension
     \b root
-  - @ref rmidas_task: Initial Root/Midas GUI for Histogram and Run control.
-  - @ref analyzer_struct: New framework for Online/Offline Root analysis using socket
+  - @ref rmidas_task : Initial Root/Midas GUI for Histogram and Run control.
+  - @ref analyzer_struct : New framework for Online/Offline Root analysis using socket
     connection.
   - \b Makefile for ROOT, remove \b MANA_LITE, create @ref HAVE_ROOT, @ref HAVE_HBOOK.
   -  New Analyzer \b mana, \b hmana, \b rmana depending on the type of package.
@@ -79,7 +99,7 @@ mention the wish list documentation on current developments.
 - <b> [1.9.2] </b>
   - odbedit: \<tab\> completion is working with flags too, "Load" protect the data dir if
      changed.
-  - @ref lazylogger_task: This task has been improved for tape manilupation as well as
+  - @ref lazylogger_task : This task has been improved for tape manilupation as well as
     messages display. It has also now extra fiilds for shell scripts when the tape rewinds.
     It supports also split run capability when running multiple instance of the task.
     Please refer to the documentation for explanation of the new fields.

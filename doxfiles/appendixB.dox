@@ -7,7 +7,7 @@
 Drivers included in the driver's directory of the MIDAS distribution support
 various hardware modules.
 The driver library is continuously extended to suit the needs of various experiments.
-For the slow control system. An example is available in the distribution under
+For the slow control system, an example is available in the distribution under
 \b examples/slowcont/frontend.c including the \b hv and \b multi class with
 the \b nulldev device and \b null bus driver.
 Note not all the device drivers implement the triple layer (Class,Device,Bus)

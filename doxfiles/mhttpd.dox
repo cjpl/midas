@@ -96,7 +96,7 @@ the \<status> button.
    - <b> Arguments </b> to the script. Midas Symbolic link are permitted.
    - <b> Example </b>: The <b> Example </b> below defines a script names
     \b doit with 2 <b> Arguments </b> (run\# device) which will be invoked when the button
-    \<doit> is pressed.
+     <doit> is pressed.
     \code
     odbedit
     mkdir Script

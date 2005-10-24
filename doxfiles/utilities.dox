@@ -32,11 +32,11 @@ provide access to the Online data base and run control.
 - @ref mserver_task : Midas Remote server
 
 <hr> @section frontend_task Midas Frontend application
-The purpose of the @ref frontend_task is to collect data from the hardware and transmit this
+The purpose of the @ref frontend_task is to collect data from hardware and transmit this
 information to a central place where data logging and analysis can be performed. This task
 is achieved with a) a specific code written by the user describing the sequence of action to acquire
 the hardware data and b) a framework code handling the data flow control, data transmission and run
-control operation. From Midas version 1.9.5 a new argument (-i index) has been introduce to
+control operation. From Midas version 1.9.5 a new argument (-i index) has been introduced to
 facilitate the multiple frontend configuration operation required for the @ref Event_Builder.
 
 - <b> Arguments </b>
@@ -72,7 +72,7 @@ See @ref ODB_Structure for more information.
   script files.
   - [-c \@commandFile ] :Perform commands in sequence found in the commandFile.
   - [-s size ] : size in byte (for creation). Specify the size of the ODB file to
-  be created when no share file is present in the experiment directory (default 128KB).
+  be created when no shared file is present in the experiment directory (default 128KB).
   - [-d ODB tree] :Specify the initial entry ODB path to go to.
  
 - <b> Usage </b>
@@ -80,10 +80,10 @@ See @ref ODB_Structure for more information.
   It has a simple command line interface with command line editing similar to the UNIX
   tcsh shell.
   Following edit keys are implemented:
-  - [Backspace] Erase character left from cursor
-  - [Delete/Ctrl-D] Erase character under cursor
-  - [Ctrl-W/Ctrl-U] Erase current line
-  - [Ctrl-K]          Erase line from cursor to end
+  - [Backspace] Erase the character left from cursor
+  - [Delete/Ctrl-D] Erase the character under cursor
+  - [Ctrl-W/Ctrl-U] Erase the current line
+  - [Ctrl-K]          Erase the line from cursor to end
   - [Left arrow/Ctrl-B] Move cursor left
   - [Right arrow/Ctrl-F]  Move cursor right
   - [Home/Ctrl-A]   Move cursor to beginning of line
@@ -193,7 +193,7 @@ information of the current condition of the Midas Acquisition system.
 The display is composed at the most of 5 sections depending on the current status
 of the experiment. The section displayed in order from top to bottom refer to:
 - Run information.
-- Equipment listing and statistics. if any frontend is active.
+- Equipment listing and statistics if any frontend is active.
 - Logger information and statistics if mlogger is active.
 - Lazylogger status if lazylogger is active.
 - Client listing.
@@ -251,13 +251,13 @@ For more detailed information see @ref analyzer_struct
  - -c \<filename1> \<filename2> Configuration file name(s).
                      May contain a '%05d' to be replaced by the run number.
                      Up to ten files can be specified in one "-c" statement.
- - -d                Debug flag when started the analyzer fron a debugger.
+ - -d                Debug flag when starts the analyzer from a debugger.
                      Prevents the system to kill the analyzer when the
                      debugger stops at a breakpoint
  - -D                Start analyzer as a daemon in the background (UNIX only).
  - -e \<experiment>  MIDAS experiment to connect to. (see @ref odbedit_task)
  - -f                Filter mode. Write original events to output file
-                     only if analyzer accepts them (doesn't return ANA_SKIP).
+                     only if the analyzer accepts them (doesn't return ANA_SKIP).
  - -h \<hostname>    MIDAS host to connect to when running the analyzer online
                      (see @ref odbedit_task)
  - -i \<filename1> \<filename2> Input file name. May contain a '%05d' to be
@@ -302,10 +302,10 @@ For more detailed information see @ref analyzer_struct
 
 
 <hr> @section mlogger_task mlogger task
-\b mlogger is the main application to collect data from the different frontend
-under certain condition and store them onto physical device such as \em disk or
-\em tape. It also act as an history event collector if either the history flags
-is enabled in the frontend equipment (see @ref The_Equipment_Structure or if the
+\b mlogger is the main application to collect data from the different frontends
+under certain conditions and store them onto physical device such as \em disk or
+\em tape. It also acts as a history event collector if either the history flags
+are enabled in the frontend equipment (see @ref The_Equipment_Structure or if the
 ODB tree /History/Links is defined (See @ref History_System).
 See the @ref ODB_Logger_Tree for reference on the tree structure.
 
@@ -324,10 +324,10 @@ See the @ref ODB_Logger_Tree for reference on the tree structure.
 - <b> Remarks </b> 
  - The \b mlogger application requires to have an existing \b /Equipment/ tree
   in the ODB! 
- - As soon as the mlogger is running, the history is mechanism is enabled. 
+ - As soon as the mlogger starts to run, the history mechanism is enabled. 
  - The data channels as well as the history logging is rescanned automatically
   at each "begin of run" transition. In other word, additional channel can be defined
-  while running but effect will be taken place only at the following begin of run transition.
+  while running but effect will take place only at the following begin of run transition.
  - The default setting defines a data "Midas" format with a file name
   of the type "run\%05d.mid". Make sure this is the requested setting for your experiment.
  - Once the mlogger is running, you should be able to monitor its state.
@@ -342,20 +342,20 @@ See the @ref ODB_Logger_Tree for reference on the tree structure.
 \b lazylogger is an application which decouples the data aquisition from the data logging
 mechanism. The need of such application has been dictated by the slow response time of
 some of the media logging devices (Tape devices). Delay due to tape mounting,
-retension, reposition imply that the data acquisition has to hold until operation
+retension, reposition implies that the data acquisition has to hold until operation
 completion. By using \b mlogger to log data to disk in a first stage and then using
 \b lazylogger to copy or move the stored files to the "slow device" we can keep the
 acquisition running without interruption.
-- Multiple lazylogger can be running comtemporary on the same computer, each one 
+- Multiple lazyloggers can be running comtemporary on the same computer, each one 
   taking care of a particular channel.
-- Each lazylogger channel will have a dedicated ODB tree containg its own information.
+- Each lazylogger channels will have a dedicated ODB tree containg its own information.
 - All the lazylogger channel will be under the ODB \b /Lazy/\<channel_name\>/...
 - Each channel tree is composed of three sub-tree \b Settings, Statistics, List.
 
 Self-explanatory the \b Settings and Statistics contains the running operation of the
 channel. While the \b List- will have a dynamic list of run number which has
-been sucessfully manipulate by the Lazylogger channel.
-This list won't exists until the first successful operation of the channel is complete.
+been sucessfully manipulated by the Lazylogger channel.
+This list won't exist until the first successful operation of the channel is completed.
 
 - <b> Arguments </b> 
   - [-h ] : help.
@@ -388,7 +388,7 @@ This list won't exists until the first successful operation of the channel is co
 \endcode
  <br><br>
   - <b>[Maintain free space]</b> As the Data Logger (mlogger) runs independently from
-  the Lazylogger, the disk will contains all the recorded data files. Under this condition,
+  the Lazylogger, the disk contains all the recorded data files. Under this condition,
   Lazylogger can be instructed to "purge" the data logging device (disk) after successful
   backup of the data onto the "slow device". The \em Maintain free space(\%) parameter
   controls (if none zero) the percentage of disk space required to be maintain free.
@@ -401,26 +401,26 @@ This list won't exists until the first successful operation of the channel is co
   \b AND  The given run number appears anywhere under the "List/" directory of that channel
   </center></b>
  <br><br>
-  - <b>[Stay behind]</b> This parameter defines how many consecutive data file should be kept
+  - <b>[Stay behind]</b> This parameter defines how many consecutive data files should be kept
   between the current run and the last lazylogger run.
     - <b> Example  with "Stay behind = -3" </b>:
-    -# Current acquisition run number 253 -\> run00253.mid is being logger by mlogger.
+    -# Current acquisition run number 253 -\> run00253.mid is being logged by mlogger.
     -# Files available on the disk corresponding to run \#248, \#249, \#250, \#251, \#252.
-    -# Lazylogger will start backing up run \#250 as soon new run 254 will start.
-    -3 "Stay behind = -3" will correspond to 3 file untouch on the disk
+    -# Lazylogger will start backing up run \#250 as soon as the new run 254 starts.
+    -3 "Stay behind = -3" corresponds to 3 file untouched on the disk
     (\#251, \#252, \#253).
-  The negative sign instructs lazylogger to \b always scan the entire "Data Dir" from the
+  The negative sign instructs the lazylogger to \b always scan the entire "Data Dir" from the
   oldest to the most recent file sitting on the disk at the "Data Dir" path- for backup.
   If the "Stay behind" is positive, lazylogger will \b backup starting from- x behind
-  the current acquisition run number. Run older will be ignored.
+  the current acquisition run number. Run order will be ignored.
   <br><br>
   - <b>[Alarm Class]</b> Specify the Alarm class to be used in case of triggered alarm.
   <br><br>
-  - <b>[Running condition]</b> Specify the type of condition for which lazylogger should
-  be actived. By default lazylogger is \b ALWAYS- running. In the case of high data
-  rate acquisition it could be necessary to activate lazylogger only when the run is either
-  pauses, stopped or when some external condition is satisfied such as "Low beam intensity".
-  In this later case, condition based on a single field of the ODB can be given to
+  - <b>[Running condition]</b> Specify the type of condition for which the lazylogger should
+  be actived. By default lazylogger is \b ALWAYS running. In the case of high data
+  rate acquisition it could be necessary to activate the lazylogger only when the run is either
+  paused, stopped or when some external condition is satisfied such as "Low beam intensity".
+  In this latter case, condition based on a single field of the ODB can be given to
   establish when the application should be active.
     - <b> Example </b>:
       \code
@@ -431,8 +431,8 @@ This list won't exists until the first successful operation of the channel is co
   "/Logger/Data Dir" is present, the pointed value is taken otherwise the current directory
   where lazylogger has been started is used.
    <br><br>
-  - <b>[Data format]</b> Specify the Data format of the data files. Currently supported format
-  are: \b MIDAS or \b YBOS.
+  - <b>[Data format]</b> Specify the Data format of the data files. Currently supported formats
+  are: \b MIDAS and \b YBOS.
    <br><br>
   - <b>[Filename format]</b> Specify the file format of the data files. Same format as
   given for the data logger.
@@ -440,36 +440,36 @@ This list won't exists until the first successful operation of the channel is co
   - <b>[Backup type]</b> Specify the "slow device" backup type. Default \b Tape.
   Can be \b Disk or \b Ftp. 
    <br><br>
-  - <b>[Execute after rewind]</b> Specify a script to be run after completion of a lazylogger
+  - <b>[Execute after rewind]</b> Specify a script to run after completion of a lazylogger
   backup set (see below "Capacity (Bytes)").
    <br><br>
-  - <b>[Path]</b> Specify the "slow device" path. Three possible type of Path:
+  - <b>[Path]</b> Specify the "slow device" path. Three possible types of Path:
     - For Tape : \b /dev/nst0- (UNIX like).
     - For Disk : \b /data1/myexpt
     - For Ftp  : \b host,port,user,password,directory
    <br><br>
   - <b>[Capacity (Bytes)]</b> Specify the maximum "slow device" capacity in bytes.
-  When this capacity is reached, lazylogger will close the backup device and clear
+  When this capacity is reached,the lazylogger will close the backup device and clear
   the "List Label" field to prevent further backup (see below).
   It will aslo rewind the stream device if possible.
   - <b>[List label]</b> Specify a label for a set of backed up files to the "slow device".
-  This label is used only internaly by lazylogger for creating under the "/List" a
+  This label is used only internaly by the lazylogger for creating under the "/List" a
   new array composed of the backed up runs until the "Capacity" value has been reached.
   As the backup set is complete, lazylogger will clear this field and therefore
   prevent any further backup until a none empty label list is entered again.
   In the other hand the list label will remain under the "/List" key to display all
   run being backed up until the corresponding files have been removed from the disk.
   - <b>[Exec preW file]</b> Permits to run a script before the begining of the lazy job.
-  The <b> Arguments </b> passed to the scripts are: input file name , output file name, current block number.
+  The <b> arguments </b> passed to the scripts are: input file name , output file name, current block number.
   - <b>[Exec postW file]</b> Permits to run a script after the completion of the lazy job.
-  The <b> Arguments </b> passed to the scripts are: list label, current job number, source path,
+  The <b> arguments </b> passed to the scripts are: list label, current job number, source path,
   file name, file size in MB, current block number.
  <br><br>
-  - <b>[Modulo.Position]</b> This field is for multiple instance of lazylogger where each instance
+  - <b>[Modulo.Position]</b> This field is for multiple instances of the lazylogger where each instance
   works on a sub-set of run number. By specifying the <b>Modulo.Position</b>
-  you're telling the current lazy instance how many instance are simultaneously
+  you're telling the current lazy instance how many instances are simultaneously
   running (3.) and the position of which this instance is assigned to (.1).
-  As an example for 3 lazylogger running contemporaneously the field assignment
+  As an example for 3 lazyloggers running contemporaneously the field assignment
   should be :
   \code
   Channel    Field    Run#
@@ -479,20 +479,20 @@ This list won't exists until the first successful operation of the channel is co
   \endcode
  <br><br>
   - <b>[Tape Data Append]</b> Enable the spooling of the Tape device to the End_of_Device (EOD) before
-  starting the lazy job. This command is valid only for "Backup Type" Tape. If this flag is not enable
+  starting the lazy job. This command is valid only for "Backup Type" Tape. If this flag is not enabled
   the lazy job starts at the current tape position.
  <br><br>
   - <b>[Statistics/]</b> ODB tree specifying general information about the status of
   the current lazylogger channel state.
  <br><br>
-  - <b>[List/]</b> ODB tree, will contain arrays of run number associated to the
-   array name backup-set label. Any run number appearing in any of the array is
+  - <b>[List/]</b> ODB tree, will contain arrays of run number associated with the
+   array name backup-set label. Any run number appearing in any of the arrays is
    considered to have been backed up.
   
 - <b> Usage </b>
  lazylogger requires to be setup prior data file can be moved.
- This setup consists in 4 steps:
-  - <b>[Step 1] </b> Invoking lazylogger once for setting up the appropriate ODB
+ This setup consists of 4 steps:
+  - <b>[Step 1] </b> Invoking the lazylogger once for setting up the appropriate ODB
   tree and exit.
   \code
   >lazylogger -c Tape
@@ -550,9 +550,9 @@ tape                            DIR
 - <b> Remarks </b>
  - For every major operation of the lazylogger a message is sent to the
 Message buffer and will be appended to the default Midas log file (midas.log). These
-messages are the only mean of finding out What/When/Where/How the lazylogger has operate
+messages are the only mean of finding out What/When/Where/How the lazylogger has operated
 on a data file. See below a fragment of the @ref midas.log for the chaos experiment.
-In this case the \b Maintain free space(%) field was enabled which produce the
+In this case the \b Maintain free space(%) field was enabled which produces the
 cleanup of the data files and the entry in the \b List tree after copy.
 \code
 Fri Mar 24 14:40:08 2000 [Lazy_Tape] 8351 (rm:16050ms) /scr0/spring2000/run08351.ybs file REMOVED
@@ -582,15 +582,15 @@ Fri Mar 24 15:50:15 2000 [Lazy_Tape] Tape run#8354 entry REMOVED
 ...
 \endcode
  - Once lazylogger has started a job on a data file, trying to
-terminate the application will result on producing a log message informing about the
-actual percentage of the backup being completed so far. This message will repeat it self
+terminate the application will result in producing a log message informing the
+actual percentage of the backup completed so far. This message will repeat it self
 until completion of the backup and only then the lazylogger application will terminate.
  - If an interruption of the lazylogger is forced (kill...) The state
 of the backup device is undertermined. Recovery is not possible and the full backup set
 has to be redone. In order to do this, you need:
  - To rewind the backup device.
  - Delete the /Lazy/\<channel_name>/List/\<list label> array.
- - Restart lazylogger with the -z switch which will "zap" the statistics entries.
+ - Restart the  lazylogger with the -z switch which will "zap" the statistics entries.
  - In order to facilitate the recovery procedure, \b lazylogger produces an
 ODB ASCII file of the lazy channel tree after completion of successful operation.
 This file (\b Tape_recover.odb) stored in @ref Data_Dir can be used for ODB
@@ -699,10 +699,10 @@ Bank:METR Length: 12(I*1)/3(I*4)/3(Type) Type:Real*4 (FMT machine dependent)
 
 <hr> @section mevb_task mevb task
 \b mevb is an event builder application taking several frontends Midas data source
-and assemble a new overall Midas event.
+and assembles a new overall Midas event.
 
 In the case where overall data collection is handled by multiple
-physically separated frontend, it could be necessary to assemble these
+physically separated frontends, it could be necessary to assemble these
 data fragments into a dedicated event. The synchonization of the fragment
 collection is left to the user which is done usually through specific
 hardware mechanism.
@@ -740,8 +740,8 @@ is for the Windows based system and interface to the
 <a href=http://www.fbyte.com> FirstByte/ProVoice package</a>.
 The \b mlxspeaker is for Linux based system and interface to the
 <a href=http://www.cstr.ed.ac.uk/projects/festival>Festival</a>.
-In case of use of either package, the speech synthesis system has to be install
-prior the activation of the \b mspeaker, mlxspeaker.
+In case of use of either package, the speech synthesis system has to be installed
+prior to the activation of the \b mspeaker, mlxspeaker.
 
 - <b> Arguments </b>
   - [-h ] : help
@@ -760,7 +760,7 @@ prior the activation of the \b mspeaker, mlxspeaker.
 \endcode
 
 <hr> @section mcnaf_task mcnaf task
-\b mcnaf is an interactive CAMAC tool which allow "direct" access to the CAMAC
+\b mcnaf is an interactive CAMAC tool which allows "direct" access to the CAMAC
 hardware. This application is operational under either of the two following
 conditions:
     -# \b mcnaf has been built against a particular CAMAC driver (see @ref CAMAC_drivers).
@@ -783,7 +783,7 @@ conditions:
     (kcs2927 in this case). To be used with \b dio CAMAC application starter
     (see @ref dio_task).
   - <b>[mwecnaf]</b> cnaf application using the WI-E-N-ER PCI/CAMAC interface
-    (see @ref CAMAC_drivers). Please contact mailto:midas@triumf.ca
+    (see @ref CAMAC_drivers). Please contact: midas@triumf.ca
     for further information.
   - <b>[mcnaf]</b> cnaf application using the CAMAC RPC capability of any Midas
     frontend program having CAMAC access.
@@ -849,7 +849,7 @@ Electronic Log utility. Submit full Elog entry to the specified Elog port.
  By default the attributes are "Author", "Type", "System" and "Subject". The "Author"
  attribute has to be present in the elog command in order to successfully submit the
  message. If multiple attributes are required append before "text" field the full
- specification of the attribute. In case of multiple attachement, only one "-f"
+ specification of the attribute. In case of multiple attachements, only one "-f"
  is required followed by up to 10 file names.
  \code
  >melog -h myhost -p 8081 -l myexpt -a author=pierre "Just a elog message"
@@ -953,7 +953,7 @@ History data retriever.
   Apr 24 22:01:32 2000    0
   Apr 24 23:01:39 2000    0
   \endcode
-- <b> Remarks </b> History data can be retrieved and display through the
+- <b> Remarks </b>: History data can be retrieved and displayed through the
 Midas web page (see @ref mhttpd_task).
 
 
@@ -980,8 +980,8 @@ in conjunction with a stripchart graphic program.
 Two possible stripchart available are:
 
 - \b gstripchart The configuration file generated by mchart is compatible
-with the GNU stripchart which permit sofisticated data equation manipulation. In the
-other hand, the data display is not very fency and provide just a basic chart recorder.
+with the GNU stripchart which permits sofisticated data equation manipulation. On the
+other hand, the data display is not very fency and provides just a basic chart recorder.
 - @ref stripchartfile This tcl/tk application written by Gertjan Hofman
 provides a far better graphical chart recorder display tool, it also permits
 history save-set display, but the equation scheme is not implemented.
@@ -1001,8 +1001,8 @@ history save-set display, but the equation scheme is not implemented.
   - [-gg ] : force the use of gstripchart for graphic.
   - [-gh ] : force the use of stripchart (tcl/tk) for graphic.
  
-- <b> Usage </b>
-The configuration contains an entry for each variable found under the ODBpath requested.
+- <b> Usage </b>:
+The configuration contains one entry for each variable found under the ODBpath requested.
 The format is described in the gstripchart documentation.
 
 Once the configuration file has been created, it is possible to apply any valid
@@ -1059,7 +1059,7 @@ begin:        kBytes_per_sec.
 end:            kBytes_per_sec.
  \endcode
 
-A second file (data file) will be updated a fixed interval by the {\em mchart- utility.
+A second file (data file) will be updated a fixed interval by the {\em mchart} utility.
   \code
   chaos:~/chart> more trigger
     Events_sent 6.620470e+05
@@ -1128,7 +1128,7 @@ Tape manipulation utility.
 Direct I/O task provider (LINUX).
 
 If no particular Linux driver is installed for the CAMAC access, the \b dio-
-program will allows you to gain access to the I/O ports to which the CAMAC
+program will allow you to access the I/O ports to which the CAMAC
 interface card is connected to. 
 
 - <b> Arguments </b>
@@ -1140,11 +1140,11 @@ interface card is connected to.
  \endcode
 - <b> Remark </b>
 - This "hacking" utility restricts the access
-to a range of I/O port from 0x200 to 0x3FF.
+to a range of I/O ports from 0x200 to 0x3FF.
 
-- As this mode of I/O access by-passes the driver (if any),
+- As this mode if I/O access by-passes the driver (if any),
 concurrent access to the same I/O port may produce unexpected
-result and in the worth case freeze the computer.
+result and in the worst case it will freeze the computer.
 It is therefore important to ensure to run one and only one dio
 application to a given port in order to prevent potential hangup problem.
 
@@ -1161,10 +1161,10 @@ Operates on @ref mchart_task data or on Midas history save-set files.
    - [-mhist ] : start stripchart for Midas history data.
 - <b> Usage </b>:
  stripchart <-options> \<config-file\>
- -mhist   (look at history file -default)
- -dmhist  debug mhist 
- -debug   debug stripchart
- config_file: see mchart_task
+ -mhist:   (look at history file -default)
+ -dmhist:  debug mhist 
+ -debug:   debug stripchart
+ -config_file: see mchart_task
  \code
  > stripchart.tcl -debug
  > stripchart.tcl
@@ -1219,12 +1219,12 @@ Operates on @ref mchart_task data or on Midas history save-set files.
   - [-h hostname ] : host name 
   - [-e exptname ] : experiment name
   - [-D ] : start program as a daemon
-- <b> Usage </b>
+- <b> Usage </b>:
   To control the high voltage system, the program HVEdit can be used under Windows 95/NT.
   It can be used to set channels, save and load values from disk and print them.
   The program can be started several times even on different computers.
   Since they are all linked to the same ODB arrays, the demand and measured values are
-  consistent between them at any time. HVEdit is started from the command line:
+  consistent among them at any time. HVEdit is started from the command line:
 - <b> Example </b>
  \code
  >hvedit
@@ -1232,9 +1232,9 @@ Operates on @ref mchart_task data or on Midas history save-set files.
 
 <hr> @section mserver_task Midas Remote server
 \em mserver provides remote access to any midas client. This task usually runs in the
-background and doesn't not to be modified. In the case debugging is required, the
+background and doesn't need to be modified. In the case where debugging is required, the
 \em mserver can be started with the -d flag which will write an entry for each transaction
-appearing into the mserver. This log entry contains the time stamp and RPC call request.
+appearing onto the mserver. This log entry contains the time stamp and RPC call request.
 
 - <b> Arguments </b>
   - [-h ] : help
