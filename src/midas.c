@@ -5,12 +5,13 @@
 
   Contents:     MIDAS main library funcitons
 
-  $Id:$
+  $Id$
 
 \********************************************************************/
 
 #include "midas.h"
 #include "msystem.h"
+#include "strlcpy.h"
 #include <assert.h>
 
 /**dox***************************************************************/
