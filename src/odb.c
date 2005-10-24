@@ -5,7 +5,7 @@
 
   Contents:     MIDAS online database functions
 
-  $Id:$
+  $Id$
 
 \********************************************************************/
 
@@ -35,6 +35,7 @@ The Online Database file
 #include "midas.h"
 #include "msystem.h"
 #include "mxml.h"
+#include "strlcpy.h"
 #include <assert.h>
 
 /*------------------------------------------------------------------*/
