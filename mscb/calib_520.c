@@ -5,7 +5,7 @@
 
   Contents:     Calibration program for SCS-520
 
-  $Id:$
+  $Id$
 
 \********************************************************************/
 
@@ -144,7 +144,7 @@ int main(int argc, char *argv[])
    }
 
    /* write constants to EEPROM */
-   mscb_flash(fd, adr);
+   mscb_flash(fd, adr, -1, 0);
 
    printf("\nCalibration finished.\n");
 
