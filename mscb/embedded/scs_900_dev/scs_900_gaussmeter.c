@@ -561,6 +561,4 @@ static xdata unsigned long last = 0;
       last = time();
       lcd_output();
    }
-
-   user_data.uni_dac = lcd_present;
 }
