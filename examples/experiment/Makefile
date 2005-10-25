@@ -13,9 +13,9 @@
 # The MIDASSYS should be defined prior the use of this Makefile
 ifndef MIDASSYS
 missmidas::
-  @echo "...";
-  @echo "Missing definition of environment variable 'MIDASSYS' !";
-  @echo "...";
+	@echo "...";
+	@echo "Missing definition of environment variable 'MIDASSYS' !";
+	@echo "...";
 endif
 
 #--------------------------------------------------------------------
@@ -67,9 +67,9 @@ ROOTLIBS   := $(shell  $(ROOTSYS)/bin/root-config --libs) -Wl,-rpath,$(ROOTSYS)/
 ROOTLIBS   += -lThread
 else
 missroot:
-  @echo "...";
-  @echo "Missing definition of environment variable 'ROOTSYS' !";
-  @echo "...";
+	@echo "...";
+	@echo "Missing definition of environment variable 'ROOTSYS' !";
+	@echo "...";
 endif
 #-------------------------------------------------------------------
 # The following lines define directories. Adjust if necessary
@@ -112,20 +112,21 @@ LDFLAGS +=
 all: $(UFE) analyzer
 
 $(UFE): $(LIB) $(LIB_DIR)/mfe.o $(DRIVER).o $(UFE).c $(SRC_DIR)/cnaf_callback.c
-  $(CC) $(CFLAGS) $(OSFLAGS) -o $(UFE) $(UFE).c $(SRC_DIR)/cnaf_callback.c $(DRIVER).o \
-  $(LIB_DIR)/mfe.o $(LIB) $(LDFEFLAGS) $(LIBS)
+	$(CC) $(CFLAGS) $(OSFLAGS) -o $(UFE) $(UFE).c \
+	$(SRC_DIR)/cnaf_callback.c $(DRIVER).o  $(LIB_DIR)/mfe.o $(LIB) \
+	$(LDFEFLAGS) $(LIBS)
 
 $(DRIVER).o: $(DRV_DIR)/$(DRIVER).c
-  $(CC) $(CFLAGS) $(OSFLAGS) -c -o $(DRIVER).o $(DRV_DIR)/$(DRIVER).c
+	$(CC) $(CFLAGS) $(OSFLAGS) -c -o $(DRIVER).o $(DRV_DIR)/$(DRIVER).c
 
 analyzer: $(LIB) $(LIB_DIR)/rmana.o analyzer.o $(MODULES)
-  $(CXX) $(CFLAGS) -o $@ $(LIB_DIR)/rmana.o analyzer.o $(MODULES) \
-  $(LIB) $(LDFLAGS) $(ROOTLIBS) $(LIBS)
+	$(CXX) $(CFLAGS) -o $@ $(LIB_DIR)/rmana.o analyzer.o $(MODULES) \
+	$(LIB) $(LDFLAGS) $(ROOTLIBS) $(LIBS)
 
 %.o: %.c experim.h
-  $(CXX) $(USERFLAGS) $(ROOTCFLAGS) $(CFLAGS) $(OSFLAGS) -o $@ -c $<
+	$(CXX) $(USERFLAGS) $(ROOTCFLAGS) $(CFLAGS) $(OSFLAGS) -o $@ -c $<
 
 clean::
-  rm -f *.o *~ \#*
+	rm -f *.o *~ \#*
 
 #end file
