@@ -228,7 +228,6 @@ ANALYZER += $(LIB_DIR)/hmana.o
 endif
 
 ifdef ROOTSYS
-PROGS += $(BIN_DIR)/rmidas
 ANALYZER += $(LIB_DIR)/rmana.o
 endif
 
@@ -305,9 +304,6 @@ ROOTGLIBS   := $(ROOTLIBS) -lfreetype
 endif
 
 CFLAGS     += -DHAVE_ROOT $(ROOTCFLAGS)
-
-$(BIN_DIR)/rmidas: $(BIN_DIR)/%: $(SRC_DIR)/%.c
-	$(CXX) $(CFLAGS) $(OSFLAGS) -DHAVE_ROOT $(ROOTCFLAGS) -o $@ $< $(LIB) $(ROOTGLIBS) $(LIBS)
 
 endif # ROOTSYS
 
