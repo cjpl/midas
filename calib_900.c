@@ -5,7 +5,7 @@
 
   Contents:     Calibration program for SCS-900
 
-  $Id:$
+  $Id$
 
 \********************************************************************/
 
@@ -128,7 +128,7 @@ int main(int argc, char *argv[])
             size = sizeof(float);
             mscb_read(fd, adr, (unsigned char) j, &v, &size);
 
-            if (v > 9.8 && v < 10) {
+            if (v > 9 && v < 11) {
                v = (float) (9.9/v);
                mscb_write(fd, adr, (unsigned char) (j + 27), &v, sizeof(float));
 
@@ -137,10 +137,15 @@ int main(int argc, char *argv[])
                printf("Invalid reading for ADC%d: %1.3lf, skipping channel\n", j, v);
          }
       }
+
+      /* reset DAC voltage to zero */
+      v = 0;
+      size = sizeof(v);
+      mscb_write(fd, adr, (unsigned char) (i + 8), &v, sizeof(float));
    }
 
    /* write constants to EEPROM */
-   mscb_flash(fd, adr);
+   mscb_flash(fd, adr, -1, 0);
 
    printf("\nCalibration finished.\n");
 
