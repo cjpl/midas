@@ -538,13 +538,13 @@ unsigned char user_func(unsigned char *data_in, unsigned char *data_out)
 void lcd_output()
 {
    lcd_goto(0, 0);
-   printf("X1%+5.3f  X2%+5.3f", user_data.adc[0], user_data.adc[4]);
+   printf("X1%+5.2f  X2%+5.2f", user_data.adc[0], user_data.adc[4]);
    lcd_goto(0, 1);
-   printf("Y1%+5.3f  Y2%+5.3f", user_data.adc[1], user_data.adc[5]);
+   printf("Y1%+5.2f  Y2%+5.2f", user_data.adc[1], user_data.adc[5]);
    lcd_goto(0, 2);
-   printf("Z1%+5.3f  Z2%+5.3f", user_data.adc[2], user_data.adc[6]);
+   printf("Z1%+5.2f  Z2%+5.2f", user_data.adc[2], user_data.adc[6]);
    lcd_goto(0, 3);
-   printf("E1%+5.3f  E2%+5.3f", user_data.adc[3], user_data.adc[7]);
+   printf("E1%+5.2f  E2%+5.2f", user_data.adc[3], user_data.adc[7]);
 }
 
 /*---- User loop function ------------------------------------------*/
