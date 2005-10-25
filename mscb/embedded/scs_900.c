@@ -8,7 +8,7 @@
                 Midas Slow Control Bus protocol 
                 for SCS-900 analog high precision I/O 
 
-  $Id:$
+  $Id$
 
 \********************************************************************/
 
@@ -207,15 +207,10 @@ void user_init(unsigned char init)
    write_adc(REG_MODE, 3);                      // continuous conversion
    write_adc(REG_CONTROL, adc_chn << 4 | 0x0F); // Chn. 1, +2.56V range
 
-   /* write DACs and UNI_BIP */
-   for (i=0 ; i<8 ; i++)
-      user_write(i+8);
-
-   user_write(16);
-
    /* read configuration jumper */
 
    ADC0CN = 0x80;               // enable ADC 
+   delay_ms(100);
 
    user_data.uni_adc = iadc_read(4) > 0x800;     // JU10
    user_data.adc_25  = iadc_read(2) > 0x800;     // JU11
@@ -224,9 +219,12 @@ void user_init(unsigned char init)
    ADC0CN = 0x00;               // disable ADC 
 
    /* set analog switch */
-   UNI_DAC = user_data.uni_dac;
-   UNI_ADC = !user_data.uni_adc;
+   user_write(16);
+   user_write(17);
 
+   /* write DACs */
+   for (i=0 ; i<8 ; i++)
+      user_write(i+8);
 }
 
 #pragma NOAREGS
@@ -530,6 +528,12 @@ void user_write(unsigned char index) reentrant
 {
    if (index > 7 && index < 16)
       write_dac(index-8);
+
+   if (index == 16)
+      UNI_DAC = user_data.uni_dac;
+
+   if (index == 17)
+      UNI_ADC = !user_data.uni_adc;
 }
 
 /*---- User read function ------------------------------------------*/
