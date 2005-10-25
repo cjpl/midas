@@ -7,7 +7,7 @@
   Contents:     BTS control program for SCS-1001 connected to one
                 SCS-910
 
-  $Id:$
+  $Id$
 
 \********************************************************************/
 
@@ -21,7 +21,7 @@ extern bit FREEZE_MODE;
 extern bit DEBUG_MODE;
 
 char code node_name[] = "BTS";
-char code cvs_revision[] = "$Id$";
+char code svn_revision[] = "$Id$";
 
 /* declare number of sub-addresses to framework */
 unsigned char idata _n_sub_addr = 1;
@@ -267,7 +267,7 @@ void user_init(unsigned char init)
    lcd_goto(0, 1);
    printf("  Address:   %04X", sys_info.node_addr);
    lcd_goto(0, 2);
-   strcpy(str, cvs_revision + 22);
+   strcpy(str, svn_revision + 20);
    *strchr(str, ' ') = 0;
    printf("  Revision:  %s", str);
 
