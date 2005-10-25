@@ -5580,11 +5580,16 @@ int db_paste_node(HNDLE hDB, HNDLE hKeyRoot, PMXML_NODE node)
 
       status = db_find_link(hDB, hKeyRoot, mxml_get_attribute(node, "name"), &hKey);
       if (status == DB_NO_KEY) {
-         db_create_key(hDB, hKeyRoot, mxml_get_attribute(node, "name"), tid);
+         status = db_create_key(hDB, hKeyRoot, mxml_get_attribute(node, "name"), tid);
+         if (status != DB_SUCCESS && status != DB_KEY_EXIST) {
+            cm_msg(MERROR, "db_paste_node", 
+               "cannot create key \"%s\" in ODB, status = %d", mxml_get_attribute(node, "name"), status);
+            return status;
+         }
          status = db_find_link(hDB, hKeyRoot, mxml_get_attribute(node, "name"), &hKey);
          if (status != DB_SUCCESS) {
             cm_msg(MERROR, "db_paste_node", 
-               "cannot create key \"%s\" in ODB", mxml_get_attribute(node, "name"));
+               "cannot find key \"%s\" in ODB, status = %d", mxml_get_attribute(node, "name"));
             return status;
          }
       }
