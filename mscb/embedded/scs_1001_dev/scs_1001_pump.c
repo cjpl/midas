@@ -8,7 +8,7 @@
                 Midas Slow Control Bus protocol 
                 for SCS-1001 stand alone control unit
 
-  $Id:$
+  $Id$
 
 \********************************************************************/
 
@@ -22,7 +22,7 @@ extern bit FREEZE_MODE;
 extern bit DEBUG_MODE;
 
 char code node_name[] = "PUMP-STATION";
-char code cvs_revision[] = "$Id$";
+char code svn_revision[] = "$Id$";
 
 #define TC600_ADDRESS 1   // Address of turbo pump via RS486 bus
 
@@ -244,7 +244,7 @@ void user_init(unsigned char init)
    lcd_goto(0, 1);
    printf("  Address:   %04X", sys_info.node_addr);
    lcd_goto(0, 2);
-   strcpy(str, cvs_revision + 23);
+   strcpy(str, svn_revision + 21);
    *strchr(str, ' ') = 0;
    printf("  Revision:  %s", str);
 
