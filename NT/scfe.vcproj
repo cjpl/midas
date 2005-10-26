@@ -72,7 +72,7 @@
 		</Configuration>
 		<Configuration
 			Name="Debug|Win32"
-			OutputDirectory="\midas\nt\bin"
+			OutputDirectory=".\debug"
 			IntermediateDirectory=".\debug"
 			ConfigurationType="1"
 			UseOfMFC="0"
@@ -80,7 +80,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="\midas\include,\midas\drivers"
+				AdditionalIncludeDirectories="\midas\include,\midas\drivers,\midas\mscb;\mxml"
 				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE"
 				RuntimeLibrary="5"
 				UsePrecompiledHeader="2"
@@ -137,26 +137,6 @@
 		<Filter
 			Name="Source Files"
 			Filter="cpp;c;cxx;rc;def;r;odl;idl;hpj;bat;for;f90">
-			<File
-				RelativePath="..\drivers\bus\camacnul.c">
-				<FileConfiguration
-					Name="Release|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="2"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Debug|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="0"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-						BrowseInformation="1"/>
-				</FileConfiguration>
-			</File>
 			<File
 				RelativePath="..\examples\slowcont\frontend.c">
 				<FileConfiguration
@@ -238,9 +218,6 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="..\drivers\device\lrs1440.c">
-			</File>
-			<File
 				RelativePath="..\src\MFE.C">
 				<FileConfiguration
 					Name="Release|Win32">
@@ -316,12 +293,9 @@
 						Name="VCCLCompilerTool"
 						Optimization="0"
 						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions="HAVE_STRLCPY"
+						PreprocessorDefinitions=""
 						BrowseInformation="1"/>
 				</FileConfiguration>
-			</File>
-			<File
-				RelativePath="..\drivers\bus\mscbbus.c">
 			</File>
 			<File
 				RelativePath="..\drivers\device\mscbdev.c">
@@ -344,6 +318,12 @@
 				</FileConfiguration>
 			</File>
 			<File
+				RelativePath="..\drivers\device\mscbhvr.c">
+			</File>
+			<File
+				RelativePath="..\mscb\mscbrpc.c">
+			</File>
+			<File
 				RelativePath="..\drivers\class\multi.c">
 				<FileConfiguration
 					Name="Release|Win32">
@@ -364,13 +344,7 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="..\src\mxml.c">
-				<FileConfiguration
-					Name="Debug|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						PreprocessorDefinitions="HAVE_STRLCPY"/>
-				</FileConfiguration>
+				RelativePath="..\..\mxml\mxml.c">
 			</File>
 			<File
 				RelativePath="..\drivers\bus\null.c">
@@ -433,27 +407,7 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="..\mscb\rpc.c">
-				<FileConfiguration
-					Name="Release|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="2"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Debug|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="0"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-						BrowseInformation="1"/>
-				</FileConfiguration>
-			</File>
-			<File
-				RelativePath="..\src\strlcpy.c">
+				RelativePath="..\..\mxml\strlcpy.c">
 			</File>
 			<File
 				RelativePath="..\src\SYSTEM.C">
@@ -499,9 +453,6 @@
 		<Filter
 			Name="Header Files"
 			Filter="h;hpp;hxx;hm;inl;fi;fd">
-			<File
-				RelativePath="..\include\midas.h">
-			</File>
 		</Filter>
 		<Filter
 			Name="Resource Files"
