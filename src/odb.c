@@ -5523,7 +5523,7 @@ INT db_paste(HNDLE hDB, HNDLE hKeyRoot, char *buffer)
 */
 int db_paste_node(HNDLE hDB, HNDLE hKeyRoot, PMXML_NODE node)
 {
-   char type[256], data[256];
+   char type[256], data[256], test_str[256];
    int i, status, size, tid, num_values;
    HNDLE hKey;
    PMXML_NODE child;
@@ -5536,12 +5536,27 @@ int db_paste_node(HNDLE hDB, HNDLE hKeyRoot, PMXML_NODE node)
       }
    } else if (strcmp(mxml_get_name(node), "dir") == 0) {
       status = db_find_link(hDB, hKeyRoot, mxml_get_attribute(node, "name"), &hKey);
+
+      /* skip system client entries */
+      strlcpy(test_str, mxml_get_attribute(node, "name"), sizeof(test_str));
+      test_str[15] = 0;
+      if (equal_ustring(test_str, "/System/Clients"))
+         return DB_SUCCESS;
+
       if (status == DB_NO_KEY) {
-         db_create_key(hDB, hKeyRoot, mxml_get_attribute(node, "name"), TID_KEY);
+         status = db_create_key(hDB, hKeyRoot, mxml_get_attribute(node, "name"), TID_KEY);
+         if (status == DB_NO_ACCESS)
+            return DB_SUCCESS; /* key or tree is locked, just skip it */
+
+         if (status != DB_SUCCESS && status != DB_KEY_EXIST) {
+            cm_msg(MERROR, "db_paste_node", 
+               "cannot create key \"%s\" in ODB, status = %d", mxml_get_attribute(node, "name"), status);
+            return status;
+         }
          status = db_find_link(hDB, hKeyRoot, mxml_get_attribute(node, "name"), &hKey);
          if (status != DB_SUCCESS) {
             cm_msg(MERROR, "db_paste_node", 
-               "cannot create key \"%s\" in ODB", mxml_get_attribute(node, "name"));
+               "cannot find key \"%s\" in ODB", mxml_get_attribute(node, "name"));
             return status;
          }
       }
@@ -5581,7 +5596,10 @@ int db_paste_node(HNDLE hDB, HNDLE hKeyRoot, PMXML_NODE node)
       status = db_find_link(hDB, hKeyRoot, mxml_get_attribute(node, "name"), &hKey);
       if (status == DB_NO_KEY) {
          status = db_create_key(hDB, hKeyRoot, mxml_get_attribute(node, "name"), tid);
-         if (status != DB_SUCCESS && status != DB_KEY_EXIST) {
+         if (status == DB_NO_ACCESS)
+            return DB_SUCCESS; /* key or tree is locked, just skip it */
+
+         if (status != DB_SUCCESS) {
             cm_msg(MERROR, "db_paste_node", 
                "cannot create key \"%s\" in ODB, status = %d", mxml_get_attribute(node, "name"), status);
             return status;

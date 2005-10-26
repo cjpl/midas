@@ -6,7 +6,7 @@
   Contents:     The system part of the MIDAS analyzer. Has to be
                 linked with analyze.c to form a complete analyzer
 
-  $Id:$
+  $Id$
 
 \********************************************************************/
 
@@ -4107,7 +4107,6 @@ INT analyze_run(INT run_number, char *input_file_name, char *output_file_name)
    db_set_value(hDB, 0, str, &clp.rwnt, sizeof(BOOL), 1, TID_BOOL);
 #endif
 
-   cm_msg(MINFO, "analyze_run", "Set run number %d in ODB", run_number);
    assert(run_number > 0);
 
    /* set run number in ODB */
