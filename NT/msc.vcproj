@@ -40,7 +40,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="wsock32.lib"
-				OutputFile="c:\midas\nt\bin\msc.exe"
+				OutputFile="c:\midas\mscb\msc.exe"
 				LinkIncremental="2"
 				SuppressStartupBanner="TRUE"
 				GenerateDebugInformation="TRUE"
@@ -179,6 +179,9 @@
 			</File>
 			<File
 				RelativePath="..\mscb\mscbrpc.c">
+			</File>
+			<File
+				RelativePath="..\..\mxml\mxml.c">
 			</File>
 			<File
 				RelativePath="..\..\mxml\strlcpy.c">

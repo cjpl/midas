@@ -30,7 +30,7 @@ NULL=nul
 OUTDIR=.\Release
 INTDIR=.\Release
 
-ALL : ".\bin\msc.exe"
+ALL : "\midas\mscb\msc.exe"
 
 
 CLEAN :
@@ -38,8 +38,9 @@ CLEAN :
 	-@erase "$(INTDIR)\mscb.obj"
 	-@erase "$(INTDIR)\mscbrpc.obj"
 	-@erase "$(INTDIR)\strlcpy.obj"
+	-@erase "$(INTDIR)\mxml.obj"
 	-@erase "$(INTDIR)\vc60.idb"
-	-@erase ".\bin\msc.exe"
+	-@erase "\midas\mscb\msc.exe"
 
 "$(OUTDIR)" :
     if not exist "$(OUTDIR)/$(NULL)" mkdir "$(OUTDIR)"
@@ -83,14 +84,15 @@ BSC32_FLAGS=/nologo /o"$(OUTDIR)\msc.bsc"
 BSC32_SBRS= \
 	
 LINK32=link.exe
-LINK32_FLAGS=wsock32.lib /nologo /subsystem:console /incremental:no /pdb:"$(OUTDIR)\msc.pdb" /machine:I386 /out:"c:\midas\nt\bin\msc.exe" 
+LINK32_FLAGS=wsock32.lib /nologo /subsystem:console /incremental:no /pdb:"$(OUTDIR)\msc.pdb" /machine:I386 /out:"c:\midas\mscb\msc.exe" 
 LINK32_OBJS= \
 	"$(INTDIR)\msc.obj" \
 	"$(INTDIR)\mscb.obj" \
 	"$(INTDIR)\strlcpy.obj" \
+	"$(INTDIR)\mxml.obj" \
 	"$(INTDIR)\mscbrpc.obj"
 
-".\bin\msc.exe" : "$(OUTDIR)" $(DEF_FILE) $(LINK32_OBJS)
+"\midas\mscb\msc.exe" : "$(OUTDIR)" $(DEF_FILE) $(LINK32_OBJS)
     $(LINK32) @<<
   $(LINK32_FLAGS) $(LINK32_OBJS)
 <<
@@ -103,7 +105,7 @@ INTDIR=.\Debug
 OutDir=.\Debug
 # End Custom Macros
 
-ALL : ".\bin\msc.exe" "$(OUTDIR)\msc.bsc"
+ALL : "\midas\mscb\msc.exe" "$(OUTDIR)\msc.bsc"
 
 
 CLEAN :
@@ -114,13 +116,14 @@ CLEAN :
 	-@erase "$(INTDIR)\mscbrpc.obj"
 	-@erase "$(INTDIR)\mscbrpc.sbr"
 	-@erase "$(INTDIR)\strlcpy.obj"
+	-@erase "$(INTDIR)\mxml.obj"
 	-@erase "$(INTDIR)\strlcpy.sbr"
 	-@erase "$(INTDIR)\vc60.idb"
 	-@erase "$(INTDIR)\vc60.pdb"
 	-@erase "$(OUTDIR)\msc.bsc"
 	-@erase "$(OUTDIR)\msc.pdb"
-	-@erase ".\bin\msc.exe"
-	-@erase ".\bin\msc.ilk"
+	-@erase "\midas\mscb\msc.exe"
+	-@erase "\midas\mscb\msc.ilk"
 
 "$(OUTDIR)" :
     if not exist "$(OUTDIR)/$(NULL)" mkdir "$(OUTDIR)"
@@ -165,6 +168,7 @@ BSC32_SBRS= \
 	"$(INTDIR)\msc.sbr" \
 	"$(INTDIR)\mscb.sbr" \
 	"$(INTDIR)\strlcpy.sbr" \
+	"$(INTDIR)\mxml.sbr" \
 	"$(INTDIR)\mscbrpc.sbr"
 
 "$(OUTDIR)\msc.bsc" : "$(OUTDIR)" $(BSC32_SBRS)
@@ -173,14 +177,15 @@ BSC32_SBRS= \
 <<
 
 LINK32=link.exe
-LINK32_FLAGS=wsock32.lib /nologo /subsystem:console /incremental:yes /pdb:"$(OUTDIR)\msc.pdb" /debug /machine:I386 /out:"c:\midas\nt\bin\msc.exe" /pdbtype:sept 
+LINK32_FLAGS=wsock32.lib /nologo /subsystem:console /incremental:yes /pdb:"$(OUTDIR)\msc.pdb" /debug /machine:I386 /out:"c:\midas\mscb\msc.exe" /pdbtype:sept 
 LINK32_OBJS= \
 	"$(INTDIR)\msc.obj" \
 	"$(INTDIR)\mscb.obj" \
 	"$(INTDIR)\strlcpy.obj" \
+	"$(INTDIR)\mxml.obj" \
 	"$(INTDIR)\mscbrpc.obj"
 
-".\bin\msc.exe" : "$(OUTDIR)" $(DEF_FILE) $(LINK32_OBJS)
+"\midas\mscb\msc.exe" : "$(OUTDIR)" $(DEF_FILE) $(LINK32_OBJS)
     $(LINK32) @<<
   $(LINK32_FLAGS) $(LINK32_OBJS)
 <<
@@ -270,6 +275,23 @@ SOURCE=\mxml\strlcpy.c
 
 !ENDIF 
 
+SOURCE=\mxml\mxml.c
+
+!IF  "$(CFG)" == "msc - Win32 Release"
+
+
+"$(INTDIR)\mxml.obj" : $(SOURCE) "$(INTDIR)"
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+
+!ELSEIF  "$(CFG)" == "msc - Win32 Debug"
+
+
+"$(INTDIR)\mxml.obj"	"$(INTDIR)\mxml.sbr" : $(SOURCE) "$(INTDIR)"
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+
+!ENDIF 
 
 !ENDIF 
 

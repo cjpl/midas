@@ -82,7 +82,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="\midas\include"
+				AdditionalIncludeDirectories="\midas\include;\mxml"
 				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="4"
@@ -104,6 +104,7 @@
 				OutputFile="\midas\nt\bin\fal.exe"
 				LinkIncremental="2"
 				SuppressStartupBanner="TRUE"
+				IgnoreDefaultLibraryNames="libcd.lib"
 				GenerateDebugInformation="TRUE"
 				ProgramDatabaseFile=".\Debug/fal.pdb"
 				SubSystem="1"
@@ -204,25 +205,10 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="..\drivers\bus\camacnul.c">
-				<FileConfiguration
-					Name="Release|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="2"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Debug|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="0"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-						BasicRuntimeChecks="3"
-						BrowseInformation="1"/>
-				</FileConfiguration>
+				RelativePath="..\drivers\camac\camacnul.c">
+			</File>
+			<File
+				RelativePath="..\src\cnaf_callback.c">
 			</File>
 			<File
 				RelativePath="..\src\fal.c">
@@ -330,13 +316,7 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="..\src\mxml.c">
-				<FileConfiguration
-					Name="Debug|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						PreprocessorDefinitions="HAVE_STRLCPY"/>
-				</FileConfiguration>
+				RelativePath="..\..\mxml\mxml.c">
 			</File>
 			<File
 				RelativePath="..\src\odb.c">
@@ -381,7 +361,7 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="..\src\strlcpy.c">
+				RelativePath="..\..\mxml\strlcpy.c">
 			</File>
 			<File
 				RelativePath="..\src\system.c">
