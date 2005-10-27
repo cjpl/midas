@@ -5101,11 +5101,10 @@ int pvm_merge()
 TFolder *ReadFolderPointer(TSocket * fSocket)
 {
    //read pointer to current folder
-   TMessage *message = new TMessage(kMESS_OBJECT);
-   fSocket->Recv(message);
+   TMessage *m = 0;
+   fSocket->Recv(m);
    Int_t p;
-   *message >> p;
-   delete message;
+   *m >> p;
    return (TFolder *) p;
 }
 
@@ -5209,9 +5208,9 @@ THREADTYPE root_server_thread(void *arg)
             TFolder *folder = ReadFolderPointer(sock);
 
             //read object
-            message->Reset(kMESS_OBJECT);
-            sock->Recv(message);
-            TObject *obj = ((TObject *) message->ReadObject(message->GetClass()));
+            TMessage *m = 0;
+            sock->Recv(m);
+            TObject *obj = ((TObject *) m->ReadObject(m->GetClass()));
 
             //get occurence
             Int_t retValue = folder->Occurence(obj);
@@ -5251,9 +5250,9 @@ THREADTYPE root_server_thread(void *arg)
             sock->Recv(name, sizeof(name));
             TCutG *cut = (TCutG *) gManaHistosFolder->FindObjectAny(name);
 
-            message->Reset(kMESS_OBJECT);
-            sock->Recv(message);
-            TCutG *newc = ((TCutG *) message->ReadObject(message->GetClass()));
+            TMessage *m = 0;
+            sock->Recv(m);
+            TCutG *newc = ((TCutG *) m->ReadObject(m->GetClass()));
 
             if (cut) {
                cm_msg(MINFO, "root server thread", "changing cut %s", newc->GetName());
