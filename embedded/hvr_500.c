@@ -253,11 +253,21 @@ void user_init(unsigned char init)
 
    sys_info.node_addr = address;
 
+   /* set default group address */
+   if (sys_info.group_addr == 0xFFFF)
+      sys_info.group_addr = 400;
+
    /* set-up DAC & ADC */
    DAC_CLR  = 1;
    ADC_NRES = 1;
    ADC_NRDY = 1; // input
    ADC_DIN  = 1; // input
+
+   /* reset and wait for start-up of ADC */
+   ADC_NRES = 0;
+   delay_ms(100);
+   ADC_NRES = 1;
+   delay_ms(300);
 
    write_adc(REG_FILTER, ADC_SF_VALUE);
 
@@ -338,6 +348,8 @@ unsigned char i, m, b;
    channel = dac_index[channel % (N_HV_CHN+1)];
 
    DAC_NCS = 0; // chip select
+   delay_us(OPT_DELAY);
+   watchdog_refresh();
 
    // command 3: write and update
    for (i=0,m=8 ; i<4 ; i++) {
@@ -347,8 +359,8 @@ unsigned char i, m, b;
       DAC_SCK = 1;
       delay_us(OPT_DELAY);
       m >>= 1;
+      watchdog_refresh();
    }
-   watchdog_refresh();
 
    // channel address
    for (i=0,m=8 ; i<4 ; i++) {
@@ -358,8 +370,8 @@ unsigned char i, m, b;
       DAC_SCK = 1;
       delay_us(OPT_DELAY);
       m >>= 1;
+      watchdog_refresh();
    }
-   watchdog_refresh();
 
    // MSB
    b = value >> 8;
@@ -370,8 +382,8 @@ unsigned char i, m, b;
       DAC_SCK = 1;
       delay_us(OPT_DELAY);
       m >>= 1;
+      watchdog_refresh();
    }
-   watchdog_refresh();
 
    // LSB
    b = value & 0xFF;
@@ -382,8 +394,8 @@ unsigned char i, m, b;
       DAC_SCK = 1;
       delay_us(OPT_DELAY);
       m >>= 1;
+      watchdog_refresh();
    }
-   watchdog_refresh();
 
    DAC_NCS = 1; // remove chip select
    delay_us(OPT_DELAY);
@@ -399,6 +411,8 @@ void write_adc(unsigned char a, unsigned char d)
    /* write to communication register */
 
    ADC_NCS = 0;
+   delay_us(OPT_DELAY);
+   watchdog_refresh();
 
    /* write zeros to !WEN and R/!W */
    for (i=0 ; i<4 ; i++) {
@@ -408,8 +422,8 @@ void write_adc(unsigned char a, unsigned char d)
       delay_us(OPT_DELAY);
       ADC_SCLK = 1;
       delay_us(OPT_DELAY);
+      watchdog_refresh();
    }
-   watchdog_refresh();
 
    /* register address */
    for (i=0,m=8 ; i<4 ; i++) {
@@ -420,8 +434,8 @@ void write_adc(unsigned char a, unsigned char d)
       ADC_SCLK = 1;
       delay_us(OPT_DELAY);
       m >>= 1;
+      watchdog_refresh();
    }
-   watchdog_refresh();
 
    ADC_NCS = 1;
    delay_us(OPT_DELAY);
@@ -430,6 +444,8 @@ void write_adc(unsigned char a, unsigned char d)
    /* write to selected data register */
 
    ADC_NCS = 0;
+   delay_us(OPT_DELAY);
+   watchdog_refresh();
 
    for (i=0,m=0x80 ; i<8 ; i++) {
       ADC_SCLK = 0;
@@ -439,8 +455,8 @@ void write_adc(unsigned char a, unsigned char d)
       ADC_SCLK = 1;
       delay_us(OPT_DELAY);
       m >>= 1;
+      watchdog_refresh();
    }
-   watchdog_refresh();
 
    ADC_NCS = 1;
    delay_us(OPT_DELAY);
@@ -454,6 +470,8 @@ void read_adc8(unsigned char a, unsigned char *d)
    /* write to communication register */
 
    ADC_NCS = 0;
+   delay_us(OPT_DELAY);
+   watchdog_refresh();
 
    /* write zero to !WEN and one to R/!W */
    for (i=0 ; i<4 ; i++) {
@@ -463,8 +481,8 @@ void read_adc8(unsigned char a, unsigned char *d)
       delay_us(OPT_DELAY);
       ADC_SCLK = 1;
       delay_us(OPT_DELAY);
+      watchdog_refresh();
    }
-   watchdog_refresh();
 
    /* register address */
    for (i=0,m=8 ; i<4 ; i++) {
@@ -475,8 +493,8 @@ void read_adc8(unsigned char a, unsigned char *d)
       ADC_SCLK = 1;
       delay_us(OPT_DELAY);
       m >>= 1;
+      watchdog_refresh();
    }
-   watchdog_refresh();
 
    ADC_NCS = 1;
    delay_us(OPT_DELAY);
@@ -485,6 +503,8 @@ void read_adc8(unsigned char a, unsigned char *d)
    /* read from selected data register */
 
    ADC_NCS = 0;
+   delay_us(OPT_DELAY);
+   watchdog_refresh();
 
    for (i=0,m=0x80,*d=0 ; i<8 ; i++) {
       ADC_SCLK = 0;
@@ -494,8 +514,8 @@ void read_adc8(unsigned char a, unsigned char *d)
       ADC_SCLK = 1;
       delay_us(OPT_DELAY);
       m >>= 1;
+      watchdog_refresh();
    }
-   watchdog_refresh();
 
    ADC_NCS = 1;
    delay_us(OPT_DELAY);
@@ -509,6 +529,8 @@ void read_adc24(unsigned char a, unsigned long *d)
    /* write to communication register */
 
    ADC_NCS = 0;
+   delay_us(OPT_DELAY);
+   watchdog_refresh();
 
    /* write zero to !WEN and one to R/!W */
    for (i=0 ; i<4 ; i++) {
@@ -518,8 +540,8 @@ void read_adc24(unsigned char a, unsigned long *d)
       delay_us(OPT_DELAY);
       ADC_SCLK = 1;
       delay_us(OPT_DELAY);
+      watchdog_refresh();
    }
-   watchdog_refresh();
 
    /* register address */
    for (i=0,m=8 ; i<4 ; i++) {
@@ -530,8 +552,8 @@ void read_adc24(unsigned char a, unsigned long *d)
       ADC_SCLK = 1;
       delay_us(OPT_DELAY);
       m >>= 1;
+      watchdog_refresh();
    }
-   watchdog_refresh();
 
    ADC_NCS = 1;
    delay_us(OPT_DELAY);
@@ -540,6 +562,8 @@ void read_adc24(unsigned char a, unsigned long *d)
    /* read from selected data register */
 
    ADC_NCS = 0;
+   delay_us(OPT_DELAY);
+   watchdog_refresh();
 
    for (i=0,*d=0 ; i<24 ; i++) {
       *d <<= 1;
@@ -549,8 +573,8 @@ void read_adc24(unsigned char a, unsigned long *d)
       *d |= ADC_DOUT;
       ADC_SCLK = 1;
       delay_us(OPT_DELAY);
+      watchdog_refresh();
    }
-   watchdog_refresh();
 
    ADC_NCS = 1;
    delay_us(OPT_DELAY);
@@ -561,7 +585,7 @@ void read_adc24(unsigned char a, unsigned long *d)
 
 unsigned char code adc_index[] = {7, 6, 1, 0, 3, 2, 5, 4, 15, 14 };
 
-void adc_read(unsigned char channel, float *value)
+unsigned char adc_read(unsigned char channel, float *value)
 {
    unsigned long d, start_time;
    unsigned char i;
@@ -589,8 +613,7 @@ void adc_read(unsigned char channel, float *value)
 
          write_adc(REG_FILTER, ADC_SF_VALUE);
 
-         *value = 0;
-         return;
+         return 0;
       }
    }
 
@@ -601,6 +624,8 @@ void adc_read(unsigned char channel, float *value)
 
    /* round result to 6 digits */
    *value = floor(*value*1E6+0.5)/1E6;
+
+   return 1;
 }
 
 /*------------------------------------------------------------------*/
@@ -640,7 +665,8 @@ void read_hv(unsigned char channel)
    float hv;
 
    /* read voltage channel */
-   adc_read(channel*2, &hv);
+   if (!adc_read(channel*2, &hv))
+      return;
 
    /* convert to HV */
    hv *= DIVIDER;
@@ -769,7 +795,8 @@ void read_current(unsigned char channel)
    float current;
 
    /* read current channel */
-   adc_read(channel*2+1, &current);
+   if (!adc_read(channel*2+1, &current))
+      return;
 
    /* correct opamp gain, divider & curr. resist, microamp */
    current = current / CUR_MULT * DIVIDER / RCURR * 1E6;
