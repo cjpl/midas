@@ -708,6 +708,13 @@ void cmd_loop(int fd, char *cmd, unsigned short adr)
                      printf
                          ("Found node \"%s\", node addr. %d (0x%04X), group addr. %d (0x%04X)      \n",
                           str, i, i, info.group_address, info.group_address);
+
+                     mscb_get_version(lib, prot);
+                     if (info.protocol_version != atoi(prot)) {
+                        printf("WARNING: Protocol version on node (%d) differs from local version (%s).\n",
+                           info.protocol_version, prot);
+                     }
+
                   }
                } else if (status == MSCB_SUBM_ERROR) {
                   printf("Error: Submaster not responding\n");
