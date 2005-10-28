@@ -1,7 +1,7 @@
 /********************************************************************\
 
   Name:         musbstd.c
-  Created by:   Konstantin Olchanski
+  Created by:   Konstantin Olchanski, Stefan Ritt
 
   Contents:     Midas USB access
 
@@ -10,12 +10,22 @@
 \********************************************************************/
 
 #include <stdio.h>
+#include <assert.h>
 #include "musbstd.h"
 
 #ifdef _MSC_VER                 // Windows includes
 
 #include <windows.h>
 #include <conio.h>
+
+#include <setupapi.h>
+#include <initguid.h>           /* Required for GUID definition */
+
+// link with SetupAPI.Lib.
+#pragma comment (lib, "setupapi.lib")
+
+// {CBEB3FB1-AE9F-471c-9016-9B6AC6DCD323}
+DEFINE_GUID(GUID_CLASS_MSCB_BULK, 0xcbeb3fb1, 0xae9f, 0x471c, 0x90, 0x16, 0x9b, 0x6a, 0xc6, 0xdc, 0xd3, 0x23);
 
 #elif defined(OS_DARWIN)
 
@@ -34,7 +44,7 @@
 #include <IOKit/IOCFPlugIn.h>
 #include <IOKit/usb/IOUSBLib.h>
 
-#elif defined(OS_LINUX)        // Linux includes
+#elif defined(OS_LINUX)         // Linux includes
 
 #include <unistd.h>
 #include <string.h>
@@ -48,38 +58,94 @@
 #include <usb.h>
 #endif
 
-#if defined(_MSC_VER)
-
-typedef struct
-{
-  HANDLE rhandle;
-  HANDLE whandle;
-} Handle_t;
-
-#elif defined(HAVE_LIBUSB)
-
-typedef struct
-{
-  usb_dev_handle* dev;
-  int             interface;
-} Handle_t;
-
-#elif defined(OS_DARWIN)
-
-typedef struct
-{
-  IOUSBInterfaceInterface** handle;
-} Handle_t;
-
-#endif
-
-void* musb_open(int vendor,int product,int instance,int configuration,int interface)
+int musb_open(MUSB_INTERFACE **musb_interface, int vendor, int product, int instance, int configuration, int usbinterface)
 {
 #if defined(_MSC_VER)
 
-   Handle_t* handle = calloc(1,sizeof(Handle_t));
-   assert(!"FIXME!");
-   return NULL;
+   GUID guid;
+   HDEVINFO hDevInfoList;
+   SP_DEVICE_INTERFACE_DATA deviceInfoData;
+   PSP_DEVICE_INTERFACE_DETAIL_DATA functionClassDeviceData;
+   ULONG predictedLength, requiredLength;
+   int status;
+   char device_name[256], str[256];
+
+   *musb_interface = (MUSB_INTERFACE *)calloc(1, sizeof(MUSB_INTERFACE));
+
+   guid = GUID_CLASS_MSCB_BULK;
+
+   // Retrieve device list for GUID that has been specified.
+   hDevInfoList = SetupDiGetClassDevs(&guid, NULL, NULL, (DIGCF_PRESENT | DIGCF_DEVICEINTERFACE));
+
+   status = FALSE;
+   if (hDevInfoList != NULL) {
+
+      // Clear data structure
+      memset(&deviceInfoData, 0, sizeof(deviceInfoData));
+      deviceInfoData.cbSize = sizeof(SP_DEVICE_INTERFACE_DATA);
+
+      // retrieves a context structure for a device interface of a device information set.
+      if (SetupDiEnumDeviceInterfaces(hDevInfoList, 0, &guid, instance, &deviceInfoData)) {
+         // Must get the detailed information in two steps
+         // First get the length of the detailed information and allocate the buffer
+         // retrieves detailed information about a specified device interface.
+         functionClassDeviceData = NULL;
+
+         predictedLength = requiredLength = 0;
+
+         SetupDiGetDeviceInterfaceDetail(hDevInfoList, &deviceInfoData, NULL,   // Not yet allocated
+                                         0,     // Set output buffer length to zero
+                                         &requiredLength,       // Find out memory requirement
+                                         NULL);
+
+         predictedLength = requiredLength;
+         functionClassDeviceData = (PSP_DEVICE_INTERFACE_DETAIL_DATA) malloc(predictedLength);
+         functionClassDeviceData->cbSize = sizeof(SP_DEVICE_INTERFACE_DETAIL_DATA);
+
+         // Second, get the detailed information
+         if (SetupDiGetDeviceInterfaceDetail(hDevInfoList,
+                                             &deviceInfoData, functionClassDeviceData,
+                                             predictedLength, &requiredLength, NULL)) {
+
+            // Save the device name for subsequent pipe open calls
+            strcpy(device_name, functionClassDeviceData->DevicePath);
+            free(functionClassDeviceData);
+
+            // Signal device found
+            status = TRUE;
+         } else
+            free(functionClassDeviceData);
+      }
+   }
+   // SetupDiDestroyDeviceInfoList() destroys a device information set
+   // and frees all associated memory.
+   SetupDiDestroyDeviceInfoList(hDevInfoList);
+
+   if (status) {
+
+      // Get the read handle
+      sprintf(str, "%s\\PIPE00", device_name);
+      (*musb_interface)->rhandle = CreateFile(str,
+                                    GENERIC_WRITE | GENERIC_READ,
+                                    FILE_SHARE_WRITE | FILE_SHARE_READ, NULL,
+                                    OPEN_EXISTING, FILE_FLAG_OVERLAPPED, NULL);
+
+      if ((*musb_interface)->rhandle == INVALID_HANDLE_VALUE)
+         return MUSB_ACCESS_ERROR;
+
+      // Get the write handle
+      sprintf(str, "%s\\PIPE01", device_name);
+      (*musb_interface)->whandle = CreateFile(str,
+                                    GENERIC_WRITE | GENERIC_READ,
+                                    FILE_SHARE_WRITE | FILE_SHARE_READ, NULL, OPEN_EXISTING, 0, NULL);
+
+      if ((*musb_interface)->whandle == INVALID_HANDLE_VALUE)
+         return MUSB_ACCESS_ERROR;
+
+      return MUSB_SUCCESS;
+   } 
+     
+   return MUSB_NOT_FOUND;
 
 #elif defined(HAVE_LIBUSB)
 
@@ -92,192 +158,195 @@ void* musb_open(int vendor,int product,int instance,int configuration,int interf
    usb_find_devices();
 
    for (bus = usb_get_busses(); bus; bus = bus->next)
-     for (dev = bus->devices; dev; dev = dev->next)
-       if (dev->descriptor.idVendor  == vendor &&
-           dev->descriptor.idProduct == product)
-         {
-           if (count == instance)
-             {
+      for (dev = bus->devices; dev; dev = dev->next)
+         if (dev->descriptor.idVendor == vendor && dev->descriptor.idProduct == product) {
+            if (count == instance) {
                int status;
                usb_dev_handle *udev;
 
                udev = usb_open(dev);
-               if (!udev)
-                 {
-                   fprintf(stderr,"musb_open: usb_open() error\n");
-                   return NULL;
-                 }
+               if (!udev) {
+                  fprintf(stderr, "musb_open: usb_open() error\n");
+                  return MUSB_ACCESS_ERROR;
+               }
 
                status = usb_set_configuration(udev, configuration);
-               if (status < 0)
-                 {
-                   fprintf(stderr,"musb_open: usb_set_configuration() error %d (%s)\n",status,strerror(-status));
+               if (status < 0) {
+                  fprintf(stderr, "musb_open: usb_set_configuration() error %d (%s)\n", status,
+                          strerror(-status));
 
-		   fprintf(stderr,"musb_open: Found USB device %04x:%04x instance %d, but cannot initialize it: please check permissions on \"/proc/bus/usb/%s/%s\"\n",vendor,product,instance,bus->dirname,dev->filename);
+                  fprintf(stderr,
+                          "musb_open: Found USB device %04x:%04x instance %d, but cannot initialize it: please check permissions on \"/proc/bus/usb/%s/%s\"\n",
+                          vendor, product, instance, bus->dirname, dev->filename);
 
-                   return NULL;
-                 }
+                  return MUSB_ACCESS_ERROR;
+               }
 
                /* see if we have write access */
-               status = usb_claim_interface(udev, interface);
-               if (status < 0)
-                 {
-                   fprintf(stderr,"musb_open: usb_claim_interface() error %d (%s)\n",status,strerror(-status));
+               status = usb_claim_interface(udev, usbinterface);
+               if (status < 0) {
+                  fprintf(stderr, "musb_open: usb_claim_interface() error %d (%s)\n", status,
+                          strerror(-status));
 
-		   fprintf(stderr,"musb_open: Found USB device %04x:%04x instance %d, but cannot initialize it: please check permissions on \"/proc/bus/usb/%s/%s\"\n",vendor,product,instance,bus->dirname,dev->filename);
+                  fprintf(stderr,
+                          "musb_open: Found USB device %04x:%04x instance %d, but cannot initialize it: please check permissions on \"/proc/bus/usb/%s/%s\"\n",
+                          vendor, product, instance, bus->dirname, dev->filename);
 
-                   return NULL;
-                 }
+                  return MUSB_ACCESS_ERROR;
+               }
 
-               Handle_t* handle = calloc(1,sizeof(Handle_t));
-               handle->dev       = udev;
-	       handle->interface = interface;
-               return handle;
-             }
+               *musb_interface = calloc(1, sizeof(MUSB_INTERFACE));
+               *musb_interface->dev = udev;
+               *musb_interface->usbinterface = usbinterface;
+               return MUSB_SUCCESS;
+            }
 
-           count++;
+            count++;
          }
 
-   return NULL;
+   return MUSB_NOT_FOUND;
 
 #elif defined(OS_DARWIN)
 
-  Handle_t* handle = calloc(1,sizeof(Handle_t));
+   MUSB_INTERFACE *musb_interface = calloc(1, sizeof(MUSB_INTERFACE));
 
-  kern_return_t status;
-  io_iterator_t iter;
-  io_service_t  service;
-  IOCFPlugInInterface** plugin;
-  SInt32 score;
-  IOUSBDeviceInterface** device;
-  IOUSBInterfaceInterface** uinterface;
-  UInt16 xvendor, xproduct;
-  UInt8 numend;
-  int count = 0;
+   kern_return_t status;
+   io_iterator_t iter;
+   io_service_t service;
+   IOCFPlugInInterface **plugin;
+   SInt32 score;
+   IOUSBDeviceInterface **device;
+   IOUSBInterfaceInterface **uinterface;
+   UInt16 xvendor, xproduct;
+   UInt8 numend;
+   int count = 0;
 
-  status = IORegistryCreateIterator(kIOMasterPortDefault,kIOUSBPlane,kIORegistryIterateRecursively,&iter);
-  assert(status==kIOReturnSuccess);
+   status = IORegistryCreateIterator(kIOMasterPortDefault, kIOUSBPlane, kIORegistryIterateRecursively, &iter);
+   assert(status == kIOReturnSuccess);
 
-  while ((service = IOIteratorNext(iter)))
-    {
-      status = IOCreatePlugInInterfaceForService(service, kIOUSBDeviceUserClientTypeID, kIOCFPlugInInterfaceID, &plugin, &score);
-      assert(status==kIOReturnSuccess);
+   while ((service = IOIteratorNext(iter))) {
+      status =
+          IOCreatePlugInInterfaceForService(service, kIOUSBDeviceUserClientTypeID, kIOCFPlugInInterfaceID,
+                                            &plugin, &score);
+      assert(status == kIOReturnSuccess);
 
       status = IOObjectRelease(service);
-      assert(status==kIOReturnSuccess);
+      assert(status == kIOReturnSuccess);
 
-      status = (*plugin)->QueryInterface(plugin, CFUUIDGetUUIDBytes (kIOUSBDeviceInterfaceID), (void*)&device);
-      assert(status==kIOReturnSuccess);
+      status =
+          (*plugin)->QueryInterface(plugin, CFUUIDGetUUIDBytes(kIOUSBDeviceInterfaceID), (void *) &device);
+      assert(status == kIOReturnSuccess);
 
       status = (*plugin)->Release(plugin);
-      
+
       status = (*device)->GetDeviceVendor(device, &xvendor);
-      assert(status==kIOReturnSuccess);
+      assert(status == kIOReturnSuccess);
       status = (*device)->GetDeviceProduct(device, &xproduct);
-      assert(status==kIOReturnSuccess);
+      assert(status == kIOReturnSuccess);
 
-      printf("Found USB device: vendor 0x%04x, product 0x%04x\n",xvendor,xproduct);
+      printf("Found USB device: vendor 0x%04x, product 0x%04x\n", xvendor, xproduct);
 
-      if (xvendor==vendor && xproduct==product)
-        {
-          if (count==instance)
-            {
-              status = (*device)->USBDeviceOpen(device);
-              assert(status==kIOReturnSuccess);
-              
-              status = (*device)->SetConfiguration(device,1);
-              assert(status==kIOReturnSuccess);
+      if (xvendor == vendor && xproduct == product) {
+         if (count == instance) {
+            status = (*device)->USBDeviceOpen(device);
+            assert(status == kIOReturnSuccess);
 
-              IOUSBFindInterfaceRequest request;
+            status = (*device)->SetConfiguration(device, 1);
+            assert(status == kIOReturnSuccess);
 
-              request.bInterfaceClass = kIOUSBFindInterfaceDontCare;
-              request.bInterfaceSubClass = kIOUSBFindInterfaceDontCare;
-              request.bInterfaceProtocol = kIOUSBFindInterfaceDontCare;
-              request.bAlternateSetting = kIOUSBFindInterfaceDontCare;
+            IOUSBFindInterfaceRequest request;
 
-	      status = (*device)->CreateInterfaceIterator(device,&request,&iter);
-	      assert(status==kIOReturnSuccess);
+            request.bInterfaceClass = kIOUSBFindInterfaceDontCare;
+            request.bInterfaceSubClass = kIOUSBFindInterfaceDontCare;
+            request.bInterfaceProtocol = kIOUSBFindInterfaceDontCare;
+            request.bAlternateSetting = kIOUSBFindInterfaceDontCare;
 
-	      while ((service=IOIteratorNext(iter)))
-                {
-                  status = IOCreatePlugInInterfaceForService(service, kIOUSBInterfaceUserClientTypeID, kIOCFPlugInInterfaceID, &plugin, &score);
-                  assert(status==kIOReturnSuccess);
-                  
-                  status = (*plugin)->QueryInterface(plugin, CFUUIDGetUUIDBytes (kIOUSBInterfaceInterfaceID), (void*)&uinterface);
-                  assert(status==kIOReturnSuccess);
-                  
+            status = (*device)->CreateInterfaceIterator(device, &request, &iter);
+            assert(status == kIOReturnSuccess);
 
-                  status = (*uinterface)->USBInterfaceOpen(uinterface);
-                  printf("status 0x%x\n",status);
-                  assert(status==kIOReturnSuccess);
-                  
-                  status = (*uinterface)->GetNumEndpoints(uinterface,&numend);
-                  assert(status==kIOReturnSuccess);
-                  
-                  printf("endpoints: %d\n",numend);
-                  
-                  printf("pipe 1 status: 0x%x\n",(*uinterface)->GetPipeStatus(uinterface,1));
-                  printf("pipe 2 status: 0x%x\n",(*uinterface)->GetPipeStatus(uinterface,2));
-                  
-                  handle->handle = uinterface;
-                  return handle;
-                }
+            while ((service = IOIteratorNext(iter))) {
+               status =
+                   IOCreatePlugInInterfaceForService(service, kIOUSBInterfaceUserClientTypeID,
+                                                     kIOCFPlugInInterfaceID, &plugin, &score);
+               assert(status == kIOReturnSuccess);
 
-              fprintf(stderr,"musb_open: cannot find any interfaces!");
-              return NULL;
+               status =
+                   (*plugin)->QueryInterface(plugin, CFUUIDGetUUIDBytes(kIOUSBInterfaceInterfaceID),
+                                             (void *) &uinterface);
+               assert(status == kIOReturnSuccess);
+
+
+               status = (*uinterface)->USBInterfaceOpen(uinterface);
+               printf("status 0x%x\n", status);
+               assert(status == kIOReturnSuccess);
+
+               status = (*uinterface)->GetNumEndpoints(uinterface, &numend);
+               assert(status == kIOReturnSuccess);
+
+               printf("endpoints: %d\n", numend);
+
+               printf("pipe 1 status: 0x%x\n", (*uinterface)->GetPipeStatus(uinterface, 1));
+               printf("pipe 2 status: 0x%x\n", (*uinterface)->GetPipeStatus(uinterface, 2));
+
+               musb_interface->handle = uinterface;
+               return MUSB_SUCCESS;
             }
 
-          count++;
-        }
+            fprintf(stderr, "musb_open: cannot find any interfaces!");
+            return MUSB_NOT_FOUND;
+         }
+
+         count++;
+      }
 
       (*device)->Release(device);
-    }
+   }
+
+   return MUSB_NOT_FOUND;
 #endif
 }
 
-int musb_close(void* handle)
+int musb_close(MUSB_INTERFACE *musb_interface)
 {
-   Handle_t* h = (Handle_t*)handle;
 #if defined(_MSC_VER)
-   CloseHandle(h->rhandle);
-   CloseHandle(h->whandle);
+   CloseHandle(musb_interface->rhandle);
+   CloseHandle(musb_interface->whandle);
 #elif defined(HAVE_LIBUSB)
    int status;
-   status = usb_release_interface(h->dev,h->interface);
+   status = usb_release_interface(musb_interface->dev, musb_interface->usbinterface);
    if (status < 0)
-     fprintf(stderr,"musb_close: usb_release_interface() error %d\n",status);
-   status = usb_close(h->dev);
+      fprintf(stderr, "musb_close: usb_release_interface() error %d\n", status);
+   status = usb_close(musb_interface->dev);
    if (status < 0)
-     fprintf(stderr,"musb_close: usb_close() error %d\n",status);
+      fprintf(stderr, "musb_close: usb_close() error %d\n", status);
 #else
    /* FIXME */
 #endif
    return 0;
 }
 
-int musb_write(void* handle,int endpoint,const void *buf,int count,int timeout)
+int musb_write(MUSB_INTERFACE *musb_interface, int endpoint, const void *buf, int count, int timeout)
 {
-   Handle_t* h = (Handle_t*)handle;
    int n_written;
 
 #if defined(_MSC_VER)
-   WriteFile(h->whandle, buf, size, &n_written, NULL);
+   WriteFile(musb_interface->whandle, buf, count, &n_written, NULL);
 #elif defined(HAVE_LIBUSB)
-   n_written = usb_bulk_write(h->dev, endpoint, buf, count, timeout);
+   n_written = usb_bulk_write(musb_interface->dev, endpoint, buf, count, timeout);
    //usleep(0); // needed for linux not to crash !!!!
 #elif defined(OS_DARWIN)
    IOReturn status;
-   IOUSBInterfaceInterface** device = h->handle;
-   status = (*device)->WritePipe(device,endpoint,buf,count);
-   if (status != 0) printf("musb_write: WritePipe() status %d 0x%x\n",status,status);
+   IOUSBInterfaceInterface **device = musb_interface->handle;
+   status = (*device)->WritePipe(device, endpoint, buf, count);
+   if (status != 0)
+      printf("musb_write: WritePipe() status %d 0x%x\n", status, status);
    n_written = count;
 #endif
    return n_written;
 }
 
-int musb_read(void* handle,int endpoint,void *buf,int count,int timeout)
+int musb_read(MUSB_INTERFACE *musb_interface, int endpoint, void *buf, int count, int timeout)
 {
-   Handle_t* h = (Handle_t*)handle;
    int n_read = 0;
 
 #if defined(_MSC_VER)
@@ -289,7 +358,7 @@ int musb_read(void* handle,int endpoint,void *buf,int count,int timeout)
    overlapped.hEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
    n_read = 0;
 
-   status = ReadFile((HANDLE) fd, buf, size, &n_read, &overlapped);
+   status = ReadFile(musb_interface->rhandle, buf, count, &n_read, &overlapped);
    if (!status) {
 
       status = GetLastError();
@@ -299,41 +368,42 @@ int musb_read(void* handle,int endpoint,void *buf,int count,int timeout)
       /* wait for completion, 1s timeout */
       status = WaitForSingleObject(overlapped.hEvent, 1000);
       if (status == WAIT_TIMEOUT)
-         CancelIo((HANDLE) fd);
+         CancelIo(musb_interface->rhandle);
       else
-         GetOverlappedResult((HANDLE) fd, &overlapped, &n_read, FALSE);
+         GetOverlappedResult(musb_interface->rhandle, &overlapped, &n_read, FALSE);
    }
 
    CloseHandle(overlapped.hEvent);
 
 #elif defined(HAVE_LIBUSB)
 
-   n_read = usb_bulk_read(h->dev, endpoint, buf, count, timeout);
+   n_read = usb_bulk_read(musb_interface->dev, endpoint, buf, count, timeout);
 
 #elif defined(OS_DARWIN)
 
    IOReturn status;
-   IOUSBInterfaceInterface** device = h->handle;
+   IOUSBInterfaceInterface **device = musb_interface->handle;
    n_read = count;
-   status = (*device)->ReadPipe(device,endpoint,buf,&n_read);
+   status = (*device)->ReadPipe(device, endpoint, buf, &n_read);
    if (status != kIOReturnSuccess) {
-      printf("musb_read: requested %d, read %d, ReadPipe() status %d 0x%x\n",count,n_read,status,status);
+      printf("musb_read: requested %d, read %d, ReadPipe() status %d 0x%x\n", count, n_read, status, status);
       return -1;
    }
-
 #endif
    return n_read;
 }
 
-int musb_reset(void*handle)
+int musb_reset(MUSB_INTERFACE *musb_interface)
 {
-   Handle_t* h = (Handle_t*)handle;
 
 #if defined(_MSC_VER)
    assert(!"musb_reset: not implemented");
 #elif defined(HAVE_LIBUSB)
 
-   return usb_reset(h->dev);
+   /* Causes re-enumeration: After calling usb_reset, the device will need 
+      to re-enumerate and thusly, requires you to find the new device and 
+      open a new handle. The handle used to call usb_reset will no longer work */
+   return usb_reset(musb_interface->dev);
 
 #elif defined(OS_DARWIN)
    assert(!"musb_reset: not implemented");
