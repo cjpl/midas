@@ -10,6 +10,9 @@
 
 *********************************************************************/
 
+#ifndef MVMESTD_H
+#define MVMESTD_H
+
 /**dox***************************************************************/
 /** @file mvmestd.h
 The Midas VME include file
@@ -337,3 +340,5 @@ int EXPRT mvme_get_blt(MVME_INTERFACE *vme, int *mode);
 /** @} */ /* end of mvmestdfunctionh */
 /**dox***************************************************************/
 /** @} */ /* end of mvmestdinclude */
+
+#endif // MVMESTD_H
