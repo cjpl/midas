@@ -31,10 +31,10 @@ are for @ref Linux_installation and @ref Windows_installation.
     The compressed file contains the source and binary code. It does expand 
     under the directory name of \b midas. This extraction can be done at the 
     user level.
-    \code 
+    @code 
     cd /home/mydir
     tar -zxvf midas-1.9.x.tar.gz
-    \endcode
+    @endcode
     The midas directory structure will be composed of several subdirectories such as:
     \code
     >ls
@@ -52,10 +52,11 @@ are for @ref Linux_installation and @ref Windows_installation.
     The source code can be extracted from the
     <a HREF=http://savannah.psi.ch/viewcvs/trunk/?root=midas>
     SVN repository</a>. An anonymous access is available under the username
-    svn and password svn which may be required several time. One improvement 
-    over CVS the SVN provides a quick \b tarball creation within the web interface!
+    svn and password svn which may be required several time. SVN provides also 
+    a quick \b tarball creation within the web interface!
     \code
     svn co svn+ssh://svn@savannah.psi.ch/afs/psi.ch/project/meg/svn/midas/trunk midas
+    svn co svn+ssh://svn@savannah.psi.ch/afs/psi.ch/project/meg/svn/mxml/trunk mxml
     \endcode
 \n\n
 -# <b> Installation: </b>
@@ -239,7 +240,7 @@ Several system files needs to be modified for the full Midas implementation.
   LIB_DIR   = ../../linux/lib
  \endcode
   Replace by: 
-  \code
+ \code
   #-------------------------------------------------------------------
   # The following lines define direcories. Adjust if necessary
   #                 
