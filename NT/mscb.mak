@@ -37,6 +37,7 @@ CLEAN :
 	-@erase "$(INTDIR)\mscb.obj"
 	-@erase "$(INTDIR)\mscbrpc.obj"
 	-@erase "$(INTDIR)\strlcpy.obj"
+	-@erase "$(INTDIR)\musbstd.obj"
 	-@erase "$(INTDIR)\vc60.idb"
 	-@erase "$(OUTDIR)\mscb.exp"
 	-@erase "$(OUTDIR)\mscb.lib"
@@ -46,7 +47,7 @@ CLEAN :
     if not exist "$(OUTDIR)/$(NULL)" mkdir "$(OUTDIR)"
 
 CPP=cl.exe
-CPP_PROJ=/nologo /MT /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "MSCB_EXPORTS" /Fp"$(INTDIR)\mscb.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c /I "\mxml"
+CPP_PROJ=/nologo /MT /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "MSCB_EXPORTS" /Fp"$(INTDIR)\mscb.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c /I "\mxml" /I "\midas\include"
 
 .c{$(INTDIR)}.obj::
    $(CPP) @<<
@@ -90,7 +91,8 @@ LINK32_FLAGS=wsock32.lib /nologo /dll /incremental:no /pdb:"$(OUTDIR)\mscb.pdb" 
 LINK32_OBJS= \
 	"$(INTDIR)\mscb.obj" \
 	"$(INTDIR)\mscbrpc.obj" \
-	"$(INTDIR)\strlcpy.obj"
+	"$(INTDIR)\musbstd.obj" \
+	"$(INTDIR)\strlcpy.obj" 
 
 
 ".\lib\mscb.dll" : "$(OUTDIR)" $(DEF_FILE) $(LINK32_OBJS)
@@ -110,6 +112,7 @@ CLEAN :
 	-@erase "$(INTDIR)\mscb.obj"
 	-@erase "$(INTDIR)\mscbrpc.obj"
 	-@erase "$(INTDIR)\strlcpy.obj"
+	-@erase "$(INTDIR)\musbstd.obj"
 	-@erase "$(INTDIR)\vc60.idb"
 	-@erase "$(INTDIR)\vc60.pdb"
 	-@erase "$(OUTDIR)\mscb.exp"
@@ -166,6 +169,7 @@ LINK32_FLAGS=wsock32.lib /nologo /dll /incremental:yes /pdb:"$(OUTDIR)\mscb.pdb"
 LINK32_OBJS= \
 	"$(INTDIR)\mscb.obj" \
 	"$(INTDIR)\mscbrpc.obj" \
+	"$(INTDIR)\musbstd.obj" \
 	"$(INTDIR)\strlcpy.obj"
 
 
@@ -201,6 +205,11 @@ SOURCE=..\mscb\mscbrpc.c
 SOURCE=\mxml\strlcpy.c
 
 "$(INTDIR)\strlcpy.obj" : $(SOURCE) "$(INTDIR)"
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+SOURCE=\midas\drivers\usb\musbstd.c
+
+"$(INTDIR)\musbstd.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
