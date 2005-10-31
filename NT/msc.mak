@@ -37,6 +37,7 @@ CLEAN :
 	-@erase "$(INTDIR)\msc.obj"
 	-@erase "$(INTDIR)\mscb.obj"
 	-@erase "$(INTDIR)\mscbrpc.obj"
+	-@erase "$(INTDIR)\musbstd.obj"
 	-@erase "$(INTDIR)\strlcpy.obj"
 	-@erase "$(INTDIR)\mxml.obj"
 	-@erase "$(INTDIR)\vc60.idb"
@@ -46,7 +47,7 @@ CLEAN :
     if not exist "$(OUTDIR)/$(NULL)" mkdir "$(OUTDIR)"
 
 CPP=cl.exe
-CPP_PROJ=/nologo /ML /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /Fp"$(INTDIR)\msc.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c /I "\mxml"
+CPP_PROJ=/nologo /ML /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /Fp"$(INTDIR)\msc.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c /I "\mxml" /I "\midas\include"
 
 .c{$(INTDIR)}.obj::
    $(CPP) @<<
@@ -89,6 +90,7 @@ LINK32_OBJS= \
 	"$(INTDIR)\msc.obj" \
 	"$(INTDIR)\mscb.obj" \
 	"$(INTDIR)\strlcpy.obj" \
+	"$(INTDIR)\musbstd.obj" \
 	"$(INTDIR)\mxml.obj" \
 	"$(INTDIR)\mscbrpc.obj"
 
@@ -116,8 +118,11 @@ CLEAN :
 	-@erase "$(INTDIR)\mscbrpc.obj"
 	-@erase "$(INTDIR)\mscbrpc.sbr"
 	-@erase "$(INTDIR)\strlcpy.obj"
-	-@erase "$(INTDIR)\mxml.obj"
 	-@erase "$(INTDIR)\strlcpy.sbr"
+	-@erase "$(INTDIR)\musbstd.obj"
+	-@erase "$(INTDIR)\musbstd.sbr"
+	-@erase "$(INTDIR)\mxml.obj"
+	-@erase "$(INTDIR)\mxml.sbr"
 	-@erase "$(INTDIR)\vc60.idb"
 	-@erase "$(INTDIR)\vc60.pdb"
 	-@erase "$(OUTDIR)\msc.bsc"
@@ -129,7 +134,7 @@ CLEAN :
     if not exist "$(OUTDIR)/$(NULL)" mkdir "$(OUTDIR)"
 
 CPP=cl.exe
-CPP_PROJ=/nologo /MLd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_CONSOLE" /D "_MBCS" /FR"$(INTDIR)\\" /Fp"$(INTDIR)\msc.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /GZ /c /I "\mxml"
+CPP_PROJ=/nologo /MLd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_CONSOLE" /D "_MBCS" /FR"$(INTDIR)\\" /Fp"$(INTDIR)\msc.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /GZ /c /I "\mxml" /I "\midas\include"
 
 .c{$(INTDIR)}.obj::
    $(CPP) @<<
@@ -168,6 +173,7 @@ BSC32_SBRS= \
 	"$(INTDIR)\msc.sbr" \
 	"$(INTDIR)\mscb.sbr" \
 	"$(INTDIR)\strlcpy.sbr" \
+	"$(INTDIR)\musbstd.sbr" \
 	"$(INTDIR)\mxml.sbr" \
 	"$(INTDIR)\mscbrpc.sbr"
 
@@ -182,6 +188,7 @@ LINK32_OBJS= \
 	"$(INTDIR)\msc.obj" \
 	"$(INTDIR)\mscb.obj" \
 	"$(INTDIR)\strlcpy.obj" \
+	"$(INTDIR)\musbstd.obj" \
 	"$(INTDIR)\mxml.obj" \
 	"$(INTDIR)\mscbrpc.obj"
 
@@ -288,6 +295,24 @@ SOURCE=\mxml\mxml.c
 
 
 "$(INTDIR)\mxml.obj"	"$(INTDIR)\mxml.sbr" : $(SOURCE) "$(INTDIR)"
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+
+!ENDIF 
+
+SOURCE=\midas\drivers\usb\musbstd.c
+
+!IF  "$(CFG)" == "msc - Win32 Release"
+
+
+"$(INTDIR)\musbstd.obj" : $(SOURCE) "$(INTDIR)"
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+
+!ELSEIF  "$(CFG)" == "msc - Win32 Debug"
+
+
+"$(INTDIR)\musbstd.obj"	"$(INTDIR)\musbstd.sbr" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 

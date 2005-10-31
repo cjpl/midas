@@ -9,6 +9,8 @@
 
 \********************************************************************/
 
+#include <musbstd.h>
+
 /*---- MSCB commands -----------------------------------------------*/
 
 #define MCMD_ADDR_NODE8  0x09
@@ -180,7 +182,7 @@ typedef struct {
    int type;
    int fd;
    int remote_fd;
-   int hr, hw;
+   MUSB_INTERFACE *ui;
 } MSCB_FD;
 
 extern MSCB_FD mscb_fd[MSCB_MAX_FD];

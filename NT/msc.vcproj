@@ -22,7 +22,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="c:\mxml"
+				AdditionalIncludeDirectories="c:\mxml;c:\midas\inlcude;"
 				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="5"
@@ -146,6 +146,7 @@
 					<Tool
 						Name="VCCLCompilerTool"
 						Optimization="0"
+						AdditionalIncludeDirectories="c:\mxml;c:\midas\include;"
 						PreprocessorDefinitions=""
 						BasicRuntimeChecks="3"
 						BrowseInformation="1"/>
@@ -165,6 +166,7 @@
 					<Tool
 						Name="VCCLCompilerTool"
 						Optimization="0"
+						AdditionalIncludeDirectories="c:\mxml;c:\midas\include;"
 						PreprocessorDefinitions=""
 						BasicRuntimeChecks="3"
 						BrowseInformation="1"/>
@@ -179,6 +181,21 @@
 			</File>
 			<File
 				RelativePath="..\mscb\mscbrpc.c">
+				<FileConfiguration
+					Name="Debug|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories="c:\mxml;c:\midas\include"/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\drivers\usb\musbstd.c">
+				<FileConfiguration
+					Name="Debug|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories="c:\midas\include;"/>
+				</FileConfiguration>
 			</File>
 			<File
 				RelativePath="..\..\mxml\mxml.c">
