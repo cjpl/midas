@@ -36,6 +36,8 @@
 #include <usb.h>
 #endif
 
+#include <musbstd.h>
+
 #elif defined(OS_DARWIN)
 
 #include <unistd.h>
@@ -142,11 +144,7 @@ extern void debug_log(char *format, ...);
 #define RS485_FLAG_CMD       (1<<4)
 #define RS485_FLAG_ADR_CYCLE (1<<5)
 
-/*------------------------------------------------------------------*/
-
-/* function declarations */
-int musb_init(int index, int *hr, int *hw);
-void musb_close(int fdr, int fdw);
+#define MUSB_TIMEOUT 1000 /* 1 sec */
 
 /*------------------------------------------------------------------*/
 
@@ -472,87 +470,6 @@ unsigned char pp_rdata(int fd)
 
 /*------------------------------------------------------------------*/
 
-int msend_usb(int fd, void *buf, int size)
-{
-   int n_written;
-
-#if defined(_MSC_VER)
-   WriteFile((HANDLE) fd, buf, size, &n_written, NULL);
-#elif defined(OS_LINUX)
-#ifdef HAVE_LIBUSB
-   n_written = usb_bulk_write((usb_dev_handle *) fd, 2, buf, size, 100);
-   usleep(0); // needed for linux not to crash !!!!
-#endif
-#elif defined(OS_DARWIN)
-   IOReturn status;
-   IOUSBInterfaceInterface** device = (IOUSBInterfaceInterface**)fd;
-   status = (*device)->WritePipe(device,2,buf,size);
-   if (status != 0) printf("msend_usb: WritePipe() status %d 0x%x\n",status,status);
-   n_written = size;
-#endif
-   return n_written;
-}
-
-/*------------------------------------------------------------------*/
-
-int mrecv_usb(int fd, void *buf, int size)
-{
-   int n_read;
-
-#if defined(_MSC_VER)
-   OVERLAPPED overlapped;
-   int status;
-
-   memset(&overlapped, 0, sizeof(overlapped));
-   overlapped.hEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
-   n_read = 0;
-
-   status = ReadFile((HANDLE) fd, buf, size, &n_read, &overlapped);
-   if (!status) {
-
-      status = GetLastError();
-      if (status != ERROR_IO_PENDING)
-         return 0;
-
-      /* wait for completion, 1s timeout */
-      status = WaitForSingleObject(overlapped.hEvent, 1000);
-      if (status == WAIT_TIMEOUT)
-         CancelIo((HANDLE) fd);
-      else
-         GetOverlappedResult((HANDLE) fd, &overlapped, &n_read, FALSE);
-   }
-
-   CloseHandle(overlapped.hEvent);
-#elif defined(HAVE_LIBUSB)
-   usb_dev_handle *dev;
-   int i;
-
-   dev = (usb_dev_handle *) fd;
-
-   for (i = 0; i < 10; i++) {
-      n_read = usb_bulk_read(dev, 1, buf, size, 1000);
-      //printf("##mrecv_usb(%X): %d\n", dev, n_read);
-
-      if (n_read < 0)
-         usleep(10000);
-      else
-         break;
-   }
-#elif defined(OS_DARWIN)
-   IOReturn status;
-   IOUSBInterfaceInterface** device = (IOUSBInterfaceInterface**)fd;
-   n_read = size;
-   status = (*device)->ReadPipe(device,1,buf,&n_read);
-   if (status != kIOReturnSuccess) {
-      printf("mrecv_usb: size %d, read %d, ReadPipe() status %d 0x%x\n",size,n_read,status,status);
-      return -1;
-   }
-#endif
-   return n_read;
-}
-
-/*------------------------------------------------------------------*/
-
 int mscb_out(int index, unsigned char *buffer, int len, int flags)
 /********************************************************************\
 
@@ -595,17 +512,17 @@ int mscb_out(int index, unsigned char *buffer, int len, int flags)
       memcpy(usb_buf + 1, buffer, len);
 
       /* send on OUT pipe */
-      i = msend_usb(mscb_fd[index - 1].hw, usb_buf, len + 1);
+      i = musb_write(mscb_fd[index - 1].ui, 0, usb_buf, len + 1, MUSB_TIMEOUT);
 
       if (i == 0) {
          /* USB submaster might have been dis- and reconnected, so reinit */
-         musb_close(mscb_fd[index - 1].hr, mscb_fd[index - 1].hw);
+         musb_close(mscb_fd[index - 1].ui);
 
-         i = musb_init(atoi(mscb_fd[index - 1].device+3), &mscb_fd[index - 1].hr, &mscb_fd[index - 1].hw);
+         i = musb_open(&mscb_fd[index - 1].ui, 0x10C4, 0x1175, atoi(mscb_fd[index - 1].device+3), 1, 0);
          if (i < 0)
             return MSCB_TIMEOUT;
 
-         i = msend_usb(mscb_fd[index - 1].hw, usb_buf, len + 1);
+         i = musb_write(mscb_fd[index - 1].ui, 0, usb_buf, len + 1, MUSB_TIMEOUT);
       }
 
       if (i != len + 1)
@@ -812,9 +729,9 @@ int mscb_in1(int fd, unsigned char *c, int timeout)
 
 /*------------------------------------------------------------------*/
 
-int recv_eth(int sock, char *buf, int buffer_size)
+int recv_eth(int sock, char *buf, int buffer_size, int millisec)
 {
-   int n_received, n, millisec, status;
+   int n_received, n, status;
    unsigned char buffer[65];
    fd_set readfds;
    struct timeval timeout;
@@ -824,7 +741,6 @@ int recv_eth(int sock, char *buf, int buffer_size)
 
    /* receive buffer in TCP mode, first byte contains remaining bytes */
    n_received = 0;
-   millisec = 500; /* 0.5 s timeout */
    do {
       FD_ZERO(&readfds);
       FD_SET(sock, &readfds);
@@ -891,7 +807,7 @@ int mscb_in(int index, char *buffer, int size, int timeout)
    if (mscb_fd[index - 1].type == MSCB_TYPE_USB) {
 
       /* receive result on IN pipe */
-      n = mrecv_usb(mscb_fd[index - 1].hr, buffer, size);
+      n = musb_read(mscb_fd[index - 1].ui, 0, buffer, size, timeout);
 
    }
 
@@ -899,7 +815,7 @@ int mscb_in(int index, char *buffer, int size, int timeout)
    if (mscb_fd[index - 1].type == MSCB_TYPE_ETH) {
 
       /* receive result on IN pipe */
-      n = recv_eth(mscb_fd[index - 1].fd, buffer, size);
+      n = recv_eth(mscb_fd[index - 1].fd, buffer, size, timeout);
    }
 
    /*---- LPT code ----*/
@@ -1141,276 +1057,6 @@ int lpt_close(int fd)
    return MSCB_SUCCESS;
 }
 
-/*---- USB access functions ----------------------------------------*/
-
-#ifdef _MSC_VER
-
-#include <setupapi.h>
-#include <initguid.h>           /* Required for GUID definition */
-
-// link with SetupAPI.Lib.
-#pragma comment (lib, "setupapi.lib")
-
-// {CBEB3FB1-AE9F-471c-9016-9B6AC6DCD323}
-DEFINE_GUID(GUID_CLASS_MSCB_BULK, 0xcbeb3fb1, 0xae9f, 0x471c, 0x90, 0x16, 0x9b, 0x6a, 0xc6, 0xdc, 0xd3, 0x23);
-
-int musb_init(int index, int *hUSBRead, int *hUSBWrite)
-{
-   GUID guid;
-   HDEVINFO hDevInfoList;
-   SP_DEVICE_INTERFACE_DATA deviceInfoData;
-   PSP_DEVICE_INTERFACE_DETAIL_DATA functionClassDeviceData;
-   ULONG predictedLength, requiredLength;
-   int status;
-   char device_name[256], str[256];
-
-   // Establish USB connection
-   if (hUSBRead && hUSBWrite) {
-      *hUSBRead = 0;
-      *hUSBWrite = 0;
-   }
-   guid = GUID_CLASS_MSCB_BULK;
-
-   // Retrieve device list for GUID that has been specified.
-   hDevInfoList = SetupDiGetClassDevs(&guid, NULL, NULL, (DIGCF_PRESENT | DIGCF_DEVICEINTERFACE));
-
-   status = FALSE;
-   if (hDevInfoList != NULL) {
-
-      // Clear data structure
-      memset(&deviceInfoData, 0, sizeof(deviceInfoData));
-      deviceInfoData.cbSize = sizeof(SP_DEVICE_INTERFACE_DATA);
-
-      // retrieves a context structure for a device interface of a device information set.
-      if (SetupDiEnumDeviceInterfaces(hDevInfoList, 0, &guid, index, &deviceInfoData)) {
-         // Must get the detailed information in two steps
-         // First get the length of the detailed information and allocate the buffer
-         // retrieves detailed information about a specified device interface.
-         functionClassDeviceData = NULL;
-
-         predictedLength = requiredLength = 0;
-
-         SetupDiGetDeviceInterfaceDetail(hDevInfoList, &deviceInfoData, NULL,   // Not yet allocated
-                                         0,     // Set output buffer length to zero
-                                         &requiredLength,       // Find out memory requirement
-                                         NULL);
-
-         predictedLength = requiredLength;
-         functionClassDeviceData = (PSP_DEVICE_INTERFACE_DETAIL_DATA) malloc(predictedLength);
-         functionClassDeviceData->cbSize = sizeof(SP_DEVICE_INTERFACE_DETAIL_DATA);
-
-         // Second, get the detailed information
-         if (SetupDiGetDeviceInterfaceDetail(hDevInfoList,
-                                             &deviceInfoData, functionClassDeviceData,
-                                             predictedLength, &requiredLength, NULL)) {
-
-            // Save the device name for subsequent pipe open calls
-            strcpy(device_name, functionClassDeviceData->DevicePath);
-            free(functionClassDeviceData);
-
-            // Signal device found
-            status = TRUE;
-         } else
-            free(functionClassDeviceData);
-      }
-   }
-   // SetupDiDestroyDeviceInfoList() destroys a device information set
-   // and frees all associated memory.
-   SetupDiDestroyDeviceInfoList(hDevInfoList);
-
-   if (status) {
-
-      if (hUSBRead) {
-         // Get the read handle
-         sprintf(str, "%s\\PIPE00", device_name);
-         *hUSBRead = (int) CreateFile(str,
-                                      GENERIC_WRITE | GENERIC_READ,
-                                      FILE_SHARE_WRITE | FILE_SHARE_READ, NULL,
-                                      OPEN_EXISTING, FILE_FLAG_OVERLAPPED, NULL);
-
-         if (*hUSBRead == (int) INVALID_HANDLE_VALUE)
-            return EMSCB_NO_ACCESS;
-      }
-
-      if (hUSBWrite) {
-         // Get the write handle
-         sprintf(str, "%s\\PIPE01", device_name);
-         *hUSBWrite = (int) CreateFile(str,
-                                       GENERIC_WRITE | GENERIC_READ,
-                                       FILE_SHARE_WRITE | FILE_SHARE_READ, NULL, OPEN_EXISTING, 0, NULL);
-
-         if (*hUSBWrite == (int) INVALID_HANDLE_VALUE)
-            return EMSCB_NO_ACCESS;
-      }
-
-   } else
-      return EMSCB_NOT_FOUND;
-
-   return 0;
-}
-
-#elif defined(HAVE_LIBUSB)
-
-int musb_init(int index, int *fdr, int *fdw)
-{
-   struct usb_bus *bus;
-   struct usb_device *dev;
-   usb_dev_handle *udev;
-   int found = 0;
-
-   usb_init();
-   usb_find_busses();
-   usb_find_devices();
-
-   for (bus = usb_busses; bus; bus = bus->next) {
-      for (dev = bus->devices; dev; dev = dev->next) {
-
-         if (dev->descriptor.idVendor == 0x10C4 && dev->descriptor.idProduct == 0x1175) {
-
-            found++;
-            if (found == index + 1) {
-
-               if (fdr && fdw) {
-                  udev = usb_open(dev);
-                  if (!udev)
-                     return EMSCB_NO_ACCESS;
-
-                  if (usb_set_configuration(udev, 1) < 0)
-                     return EMSCB_NO_WRITE_ACCESS;
-
-                  /* see if we have write access */
-                  if (usb_claim_interface(udev, 0) < 0)
-                     return EMSCB_NO_WRITE_ACCESS;
-                  usb_release_interface(udev, 0);
-
-                  *fdr = (int) udev;
-                  *fdw = (int) udev;
-               }
-
-               return 0;
-            }
-         }
-      }
-   }
-
-   return EMSCB_NOT_FOUND;
-}
-
-#elif defined(OS_DARWIN)
-
-int musb_init(int index, int *fdr, int *fdw)
-{
-	kern_return_t status;
-	io_iterator_t iter;
-	io_service_t  service;
-	IOCFPlugInInterface** plugin;
-	SInt32 score;
-	IOUSBDeviceInterface** device;
-	IOUSBInterfaceInterface** interface;
-	UInt16 vendor, product;
-	UInt8 numend;
-	int found = 0;
-
-	printf("musb_init, index=%d!\n",index);
-
-	status = IORegistryCreateIterator(kIOMasterPortDefault,kIOUSBPlane,kIORegistryIterateRecursively,&iter);
-	assert(status==kIOReturnSuccess);
-
-	while ((service = IOIteratorNext(iter)))
-	{
-	status = IOCreatePlugInInterfaceForService(service, kIOUSBDeviceUserClientTypeID, kIOCFPlugInInterfaceID, &plugin, &score);
-	assert(status==kIOReturnSuccess);
-
-	status = IOObjectRelease(service);
-	assert(status==kIOReturnSuccess);
-
-	status = (*plugin)->QueryInterface(plugin, CFUUIDGetUUIDBytes (kIOUSBDeviceInterfaceID), (void*)&device);
-	assert(status==kIOReturnSuccess);
-
-	status = (*plugin)->Release(plugin);
-
-	status = (*device)->GetDeviceVendor(device, &vendor);
-	assert(status==kIOReturnSuccess);
-        status = (*device)->GetDeviceProduct(device, &product);
-	assert(status==kIOReturnSuccess);
-
-	printf("Found USB device: vendor 0x%04x, product 0x%04x\n",vendor,product);
-
-	if (vendor==0x10C4 && product==0x1175)
-		{
-		found++;
-		if (found==index+1)
-		{
-			if (fdr && fdw) {
-
-		  	status = (*device)->USBDeviceOpen(device);
-			assert(status==kIOReturnSuccess);
-
-		  	status = (*device)->SetConfiguration(device,1);
-			assert(status==kIOReturnSuccess);
-
-         IOUSBFindInterfaceRequest request;
-
-         request.bInterfaceClass = kIOUSBFindInterfaceDontCare;
-         request.bInterfaceSubClass = kIOUSBFindInterfaceDontCare;
-         request.bInterfaceProtocol = kIOUSBFindInterfaceDontCare;
-         request.bAlternateSetting = kIOUSBFindInterfaceDontCare;
-
-	      status = (*device)->CreateInterfaceIterator(device,&request,&iter);
-	      assert(status==kIOReturnSuccess);
-
-	      while ((service=IOIteratorNext(iter)))
-	      {
-	      status = IOCreatePlugInInterfaceForService(service, kIOUSBInterfaceUserClientTypeID, kIOCFPlugInInterfaceID, &plugin, &score);
-	      assert(status==kIOReturnSuccess);
-
-	      status = (*plugin)->QueryInterface(plugin, CFUUIDGetUUIDBytes (kIOUSBInterfaceInterfaceID), (void*)&interface);
-	      assert(status==kIOReturnSuccess);
-
-
-		  	status = (*interface)->USBInterfaceOpen(interface);
-			printf("status 0x%x\n",status);
-			assert(status==kIOReturnSuccess);
-
-		  	status = (*interface)->GetNumEndpoints(interface,&numend);
-			assert(status==kIOReturnSuccess);
-
-			printf("endpoints: %d\n",numend);
-
-			printf("pipe 1 status: 0x%x\n",(*interface)->GetPipeStatus(interface,1));
-			printf("pipe 2 status: 0x%x\n",(*interface)->GetPipeStatus(interface,2));
-
-
-		          *fdr = (int) interface;
-		          *fdw = (int) interface;
-			return 0;
-	}
-	}
-	return 0;
-		}
-		}
-	(*device)->Release(device);
-	}
-
-        return -1;
-}
-
-#endif
-
-/*------------------------------------------------------------------*/
-
-void musb_close(int fdr, int fdw)
-{
-#if defined(_MSC_VER)
-   CloseHandle((HANDLE) fdr);
-   CloseHandle((HANDLE) fdw);
-#elif defined(HAVE_LIBUSB)
-   usb_close((usb_dev_handle *) fdr);
-#else
-   /* FIXME */
-#endif
-}
-
 /*------------------------------------------------------------------*/
 
 void mscb_get_version(char *lib_version, char *prot_version)
@@ -1583,20 +1229,21 @@ int mscb_init(char *device, int bufsize, char *password, int debug)
    if (mscb_fd[index].type == MSCB_TYPE_USB) {
 
       for (usb_index = found = 0 ; usb_index < 127 ; usb_index ++) {
-         status = musb_init(usb_index, &mscb_fd[index].hr, &mscb_fd[index].hw);
-         if (status < 0)
-            return status;
+
+         status = musb_open(&mscb_fd[index].ui, 0x10C4, 0x1175, usb_index, 1, 0);
+         if (status != MUSB_SUCCESS)
+            return EMSCB_NOT_FOUND;
 
          /* check if it's a subm_250 */
          buf[0] = 0;
-         msend_usb(mscb_fd[index].hw, buf, 1);
+         musb_write(mscb_fd[index].ui, 0, buf, 1, MUSB_TIMEOUT);
 
-         i = mrecv_usb(mscb_fd[index].hr, buf, sizeof(buf));
+         i = musb_read(mscb_fd[index].ui, 0, buf, sizeof(buf), MUSB_TIMEOUT);
          if (strcmp(buf, "SUBM_250") == 0)
             if (found++ == atoi(device + 3))
                break;
 
-         musb_close(mscb_fd[index].hr, mscb_fd[index].hw);
+         musb_close(mscb_fd[index].ui);
       }
 
       /* mark device descriptor used */
@@ -1715,7 +1362,7 @@ int mscb_exit(int fd)
    }
 
    if (mscb_fd[fd - 1].type == MSCB_TYPE_USB)
-      musb_close(mscb_fd[fd - 1].hr, mscb_fd[fd - 1].hw);
+      musb_close(mscb_fd[fd - 1].ui);
 
    if (mscb_fd[fd - 1].type == MSCB_TYPE_ETH)
       mrpc_disconnect(mscb_fd[fd - 1].fd);
@@ -2066,9 +1713,9 @@ int mscb_reset(int fd)
 
       buf[0] = MCMD_INIT;
       mscb_out(fd, buf, 1, RS485_FLAG_CMD);
-      musb_close(mscb_fd[fd - 1].hr, mscb_fd[fd - 1].hw);
+      musb_close(mscb_fd[fd - 1].ui);
       Sleep(1000);
-      musb_init(atoi(mscb_fd[fd - 1].device + 3), &mscb_fd[fd - 1].hr, &mscb_fd[fd - 1].hw);
+      musb_open(&mscb_fd[fd - 1].ui, 0x10C4, 0x1175, atoi(mscb_fd[fd - 1].device+3), 1, 0);
    }
 
    mscb_release(fd);
@@ -4045,7 +3692,7 @@ int mscb_select_device(char *device, int size, int select)
 {
    char list[10][256], str[256], buf[64];
    int status, usb_index, found, i, n, index, error_code;
-   int fdr, fdw;
+   MUSB_INTERFACE *ui;
 
    n = 0;
    *device = 0;
@@ -4061,19 +3708,20 @@ int mscb_select_device(char *device, int size, int select)
 
    /* check USB devices */
    for (usb_index = found = 0 ; usb_index < 127 ; usb_index ++) {
-      status = musb_init(usb_index, &fdr, &fdw);
-      if (status < 0)
+
+      status = musb_open(&ui, 0x10C4, 0x1175, usb_index, 1, 0);
+      if (status != MUSB_SUCCESS)
          break;
 
       /* check if it's a subm_250 */
       buf[0] = 0;
-      msend_usb(fdw, buf, 1);
+      musb_write(ui, 0, buf, 1, 1000);
 
-      i = mrecv_usb(fdr, buf, sizeof(buf));
+      i = musb_read(ui, 0, buf, sizeof(buf), MUSB_TIMEOUT);
       if (strcmp(buf, "SUBM_250") == 0)
          sprintf(list[n++], "usb%d", found++);
 
-      musb_close(fdr, fdw);
+      musb_close(ui);
    }
 
    /* check LPT devices */

@@ -37,6 +37,7 @@
 #endif
 
 #include <stdio.h>
+#include <musbstd.h>
 #include "mscb.h"
 #include "mscbrpc.h"
 
