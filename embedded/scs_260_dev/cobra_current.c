@@ -6,7 +6,7 @@
   Contents:     Receive broadcasts from COBRA magnet in PiE5 area
                 and display coil currents.
 
-  $Id:$
+  $Id$
 
 \********************************************************************/
 
@@ -20,12 +20,12 @@
 #include <netinet/in.h>
 #endif
 
-#define MCAST_GROUP  "239.208.0.1"
+#define DEF_MCAST_GROUP  "239.208.0.1"
 
 main()
 {
    int sock, n;
-   char cur_time[80], str[80];
+   char cur_time[80], str[80], mcast_group[80];
    struct sockaddr_in myaddr, addr;
    struct ip_mreq req;
    int size;
@@ -56,14 +56,22 @@ main()
       perror("bind");
 
    /* set multicast group */
+   printf("Multicast group: %s\b", DEF_MCAST_GROUP);
+   fgets(str, sizeof(str), stdin);
+   if (strchr(str, '\n'))
+      *strchr(str, '\n') = 0;
+   strcpy(mcast_group, DEF_MCAST_GROUP);
+   if (atoi(str) != 0)
+      strcpy(mcast_group+10, str);
+
    memset(&req, 0, sizeof(req));
-   req.imr_multiaddr.s_addr = inet_addr(MCAST_GROUP);
+   req.imr_multiaddr.s_addr = inet_addr(mcast_group);
    req.imr_interface.s_addr = INADDR_ANY;
    
    if (setsockopt(sock, IPPROTO_IP, IP_ADD_MEMBERSHIP, (char *)&req, sizeof(req)) < 0)
       perror("setsockopt IP_ADD_MEMBERSHIP");
 
-   printf("Waiting for data from multicast group %s ...\n", MCAST_GROUP);
+   printf("Waiting for data from multicast group %s ...\n", mcast_group);
    size = sizeof(addr);
    do {
       memset(str, 0, sizeof(str));
