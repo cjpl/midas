@@ -20,9 +20,15 @@ endif
 # directory where mxml.c and strlcpy.c resides
 MXMLDIR       = ../../mxml/
 
+# directory where musbstd.h resides
+MIDASINC      = $(MIDASSYS)/include
+
+# directory where musbstd.c resides
+USBDIR        = $(MIDASSYS)/drivers/usb/
+
 OUTNAME       = msc 
 CC            = gcc -g -O2
-FLAGS         = -Wall -Wuninitialized -I$(MXMLDIR)
+FLAGS         = -Wall -Wuninitialized -I$(MXMLDIR) -I$(MIDASINC)
 
 ifeq ($(OSTYPE),linux)
 CC   += -DOS_LINUX -DHAVE_LIBUSB
@@ -36,8 +42,8 @@ endif
 
 all: $(OUTNAME)
 
-$(OUTNAME): mscb.o msc.o mscbrpc.o strlcpy.o mxml.o
-	$(CC) $(FLAGS) mscb.o msc.o mscbrpc.o mxml.o strlcpy.o -o $(OUTNAME) $(LIBS)
+$(OUTNAME): mscb.o msc.o mscbrpc.o strlcpy.o mxml.o musbstd.o
+	$(CC) $(FLAGS) mscb.o msc.o mscbrpc.o mxml.o musbstd.o strlcpy.o -o $(OUTNAME) $(LIBS)
 
 mscbrpc.o: mscbrpc.c mscbrpc.h
 	$(CC) $(FLAGS) -c mscbrpc.c
@@ -53,6 +59,9 @@ strlcpy.o: $(MXMLDIR)strlcpy.c
 
 mxml.o: $(MXMLDIR)mxml.c
 	$(CC) $(FLAGS) -o mxml.o -c $(MXMLDIR)mxml.c
+
+musbstd.o: $(USBDIR)musbstd.c
+	$(CC) $(FLAGS) -o musbstd.o -c $(USBDIR)musbstd.c
 
 clean:
 	rm *.o $(OUTNAME)
