@@ -23,6 +23,8 @@ typedef struct {
 
 #elif defined(HAVE_LIBUSB)
 
+#include <usb.h>
+
 typedef struct {
    usb_dev_handle *dev;
    int usbinterface;
