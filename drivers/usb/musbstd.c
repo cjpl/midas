@@ -11,7 +11,7 @@
 
 #include <stdio.h>
 #include <assert.h>
-#include "musbstd.h"
+#include <musbstd.h>
 
 #ifdef _MSC_VER                 // Windows includes
 
@@ -322,6 +322,8 @@ int musb_close(MUSB_INTERFACE *musb_interface)
 #else
    /* FIXME */
 #endif
+   /* free memory allocated in musb_open() */
+   free(musb_interface);
    return 0;
 }
 
