@@ -462,7 +462,7 @@ install:
           mkdir -p $(SYSINC_DIR); \
         fi;
 
-	@for i in midas msystem midasinc mrpc ybos cfortran hbook hardware mcstd mvmestd esone mfbstd ; \
+	@for i in midas msystem midasinc mrpc ybos cfortran hbook hardware mcstd mvmestd musbstd esone mfbstd ; \
 	  do \
 	  install -v -m 644 $(INC_DIR)/$$i.h $(SYSINC_DIR) ; \
 	  done
