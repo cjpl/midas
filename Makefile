@@ -422,49 +422,30 @@ static:
 #####################################################################
 
 install:
-# system programs
+# system programs and utilities
 	@echo "... "
-	@echo "... Installing programs to $(SYSBIN_DIR)"
+	@echo "... Installing programs and utilities to $(SYSBIN_DIR)"
 	@echo "... "
 
-	@if [ ! -d  $(SYSBIN_DIR) ] ; then \
-          echo "Making directory $(SYSBIN_DIR)" ; \
-          mkdir -p $(SYSBIN_DIR); \
-        fi;
-
-	@for i in mserver mhttpd odbedit mlogger dio ; \
+	@for file in `find $(BIN_DIR) -type f | grep -v .svn` ; \
 	  do \
-	  install -v -m 755 $(BIN_DIR)/$$i $(SYSBIN_DIR) ; \
+	  install -v -D -m 755 $$file $(SYSBIN_DIR)/`basename $$file` ; \
 	  done
 
 	install -v -m 755 $(UTL_DIR)/mcleanup $(SYSBIN_DIR)
 	chmod +s $(SYSBIN_DIR)/dio
 	chmod +s $(SYSBIN_DIR)/mhttpd
-
-# utilities
-	@echo "... "
-	@echo "... Installing utilities to $(SYSBIN_DIR)"
-	@echo "... "
-	@for i in mhist melog odbhist mtape mstat lazylogger mdump mcnaf mlxspeaker mchart stripchart.tcl webpaw; \
-	  do \
-	  install -v -m 755 $(BIN_DIR)/$$i $(SYSBIN_DIR) ; \
-	  done
-	ln -fs $(SYSBIN_DIR)/stripchart.tcl $(SYSBIN_DIR)/stripchart
 	chmod +s $(SYSBIN_DIR)/webpaw
+	ln -fs $(SYSBIN_DIR)/stripchart.tcl $(SYSBIN_DIR)/stripchart
 
 # include
 	@echo "... "
 	@echo "... Installing include files to $(SYSINC_DIR)"
 	@echo "... "
 
-	@if [ ! -d  $(SYSINC_DIR) ] ; then \
-          echo "Making directory $(SYSINC_DIR)" ; \
-          mkdir -p $(SYSINC_DIR); \
-        fi;
-
-	@for i in midas msystem midasinc mrpc ybos cfortran hbook hardware mcstd mvmestd musbstd esone mfbstd ; \
+	@for file in `find $(INC_DIR) -type f | grep -v .svn` ; \
 	  do \
-	  install -v -m 644 $(INC_DIR)/$$i.h $(SYSINC_DIR) ; \
+	  install -v -D -m 644 $$file $(SYSINC_DIR)/`basename $$file` ; \
 	  done
 
 # library + objects
@@ -472,14 +453,9 @@ install:
 	@echo "... Installing library and objects to $(SYSLIB_DIR)"
 	@echo "... "
 
-	@if [ ! -d  $(SYSLIB_DIR) ] ; then \
-          echo "Making directory $(SYSLIB_DIR)" ; \
-          mkdir -p $(SYSLIB_DIR); \
-        fi;
-
 	@for i in libmidas.a mana.o mfe.o fal.o ; \
 	  do \
-	  install -v -m 644 $(LIB_DIR)/$$i $(SYSLIB_DIR) ; \
+	  install -v -D -m 644 $(LIB_DIR)/$$i $(SYSLIB_DIR)/$$i ; \
 	  done
 
 ifdef CERNLIB
@@ -505,6 +481,16 @@ endif
 	  install -v -m 644 $(ZLIB_DIR)/libz.a $(SYSLIB_DIR) ;\
 	fi;
 
+# drivers
+	@echo "... "
+	@echo "... Installing drivers to $(PREFIX)/drivers"
+	@echo "... "
+
+	@for file in `find $(DRV_DIR) -type f | grep -v .svn` ; \
+	  do \
+	  install -v -D -m 644 $$file $(PREFIX)/$$file ;\
+	  done
+
 #--------------------------------------------------------------
 # mininal_install
 minimal_install:
@@ -512,11 +498,6 @@ minimal_install:
 	@echo "... "
 	@echo "... Minimal Install for programs to $(SYSBIN_DIR)"
 	@echo "... "
-
-	@if [ ! -d  $(SYSBIN_DIR) ] ; then \
-	  echo "Making directory $(SYSBIN_DIR)" ; \
-	  mkdir -p $(SYSBIN_DIR); \
-	fi;
 
 	@for i in mserver mhttpd dio ; \
 	  do \
