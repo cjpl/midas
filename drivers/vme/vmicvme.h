@@ -5,14 +5,16 @@
   Contents:     VME interface for the VMIC VME board processor
                 using the mvmestd vme call convention.
                 
-  $Id$
+  $Log: vmicvme.h,v $
+  Revision 1.2  2005/09/29 03:35:38  amaudruz
+  VMIC VME driver following the mvmestd
 
 *********************************************************************/
 
 #include <stdio.h>
 #include <string.h>
-// #include <vme/vme.h>
-// #include <vme/vme_api.h>
+#include <vme/vme.h>
+#include <vme/vme_api.h>
 
 #include "mvmestd.h"
 
@@ -33,7 +35,11 @@ typedef  unsigned short int   WORD;
 
 #define  DEFAULT_SRC_ADD     0x200000
 #define  DEFAULT_NBYTES      0x100000    /* 1MB */
+#define  DEFAULT_DMA_NBYTES   0x10000    /* 64KB */
 
+/* Used for managing the map segments.
+   DMA_INFO is setup using internal defined memory block for now. 
+*/
 typedef struct {
   vme_master_handle_t  wh;
   int              am;
@@ -44,6 +50,9 @@ typedef struct {
   int           valid;
 } VME_TABLE;
 
-// To be filled ......
+typedef struct {
+  vme_dma_handle_t  dma_handle;
+  void             *dma_ptr;
+} DMA_INFO;
 
 #endif
