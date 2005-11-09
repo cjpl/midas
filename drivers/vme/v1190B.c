@@ -11,7 +11,6 @@
 #include <string.h>
 #include <stdio.h>
 #include "vmicvme.h"
-#include "vmeio.h"
 #include "v1190B.h"
 
 /*****************************************************************/
@@ -580,22 +579,19 @@ int main () {
   // Set dmode to D32
   mvme_set_dmode(myvme, MVME_DMODE_D32);
 
-  csr = vmeio_CsrRead(myvme, VMEIO_BASE);
-  printf("CSR Buffer: 0x%x\n", csr);
+  // Set 0x3 in pulse mode for timing purpose
+  mvme_write_value(myvme, VMEIO_BASE+0x8, 0xF); 
 
-  // Set 0x3 in pulse mode
-  vmeio_OutputSet(myvme, VMEIO_BASE, 0xF);
-
-  // Write pulse
-  vmeio_SyncWrite(myvme, VMEIO_BASE, 0x2);
+  // Write pulse for timing purpose
+  mvme_write_value(myvme, VMEIO_BASE+0xc, 0x2);
 
    mvme_set_blt(myvme, MVME_BLT_BLT32);
 
   // Read Data
   v1190_DataRead(myvme, V1190_BASE, array, 500);
 
-  // Write pulse
-  vmeio_SyncWrite(myvme, VMEIO_BASE, 0x8);
+  // Write pulse for timing purpose
+  mvme_write_value(myvme, VMEIO_BASE+0xc, 0x8);
 
   for (i=0;i<12;i++)
     printf("Data[%i]=0x%lx\n", i, array[i]);
@@ -610,6 +606,7 @@ int main () {
   for (i=0;i<12;i++)
     printf("Data[%i]=0x%x\n", i, array[i]);
   */
+
   status = mvme_close(myvme);
   return 0;
 }	
