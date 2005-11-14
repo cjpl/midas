@@ -9,7 +9,7 @@
 
 \********************************************************************/
 
-#define MSCB_LIBRARY_VERSION   "2.2.0"
+#define MSCB_LIBRARY_VERSION   "2.2.1"
 #define MSCB_PROTOCOL_VERSION  "3"
 #define MSCB_SUBM_VERSION      33
 
@@ -2270,7 +2270,7 @@ int mscb_write(int fd, unsigned short adr, unsigned char index, void *data, int 
 
 \********************************************************************/
 {
-   int i;
+   int i, n, status;
    unsigned char buf[256], crc, ack[2];
    unsigned char *d;
 
@@ -2290,6 +2290,122 @@ int mscb_write(int fd, unsigned short adr, unsigned char index, void *data, int 
 
    if (mrpc_connected(fd))
       return mrpc_call(mscb_fd[fd - 1].fd, RPC_MSCB_WRITE, mscb_fd[fd - 1].remote_fd, adr, index, data, size);
+
+   if (size < 1) {
+      debug_log("return MSCB_INVAL_PARAM\n");
+      return MSCB_INVAL_PARAM;
+   }
+
+   if (mscb_lock(fd) != MSCB_SUCCESS) {
+      debug_log("return MSCB_MUTEX\n");
+      return MSCB_MUTEX;
+   }
+
+   /* try 10 times */
+   for (n=0 ; n<10 ; n++) {
+
+      buf[0] = MCMD_ADDR_NODE16;
+      buf[1] = (unsigned char) (adr >> 8);
+      buf[2] = (unsigned char) (adr & 0xFF);
+      buf[3] = crc8(buf, 3);
+
+      if (size < 6) {
+         buf[4] = (unsigned char)(MCMD_WRITE_ACK + size + 1);
+         buf[5] = index;
+
+         /* reverse order for WORD & DWORD */
+         if (size < 5)
+            for (i = 0, d = data; i < size; i++)
+               buf[6 + size - 1 - i] = *d++;
+         else
+            for (i = 0, d = data; i < size; i++)
+               buf[6 + i] = *d++;
+
+         crc = crc8(buf+4, 2 + i);
+         buf[6 + i] = crc;
+         mscb_out(fd, buf, 7 + i, RS485_FLAG_ADR_CYCLE);
+      } else {
+         buf[4] = MCMD_WRITE_ACK + 7;
+         buf[5] = (unsigned char)(size + 1);
+         buf[6] = index;
+
+         for (i = 0, d = data; i < size; i++)
+            buf[7 + i] = *d++;
+
+         crc = crc8(buf+4, 3 + i);
+         buf[7 + i] = crc;
+         mscb_out(fd, buf, 8 + i, RS485_FLAG_ADR_CYCLE);
+      }
+
+      /* read acknowledge */
+      i = mscb_in(fd, ack, 2, 10000);
+      mscb_release(fd);
+      if (i < 2) {
+         debug_log("return MSCB_TIMEOUT\n");
+         status = MSCB_TIMEOUT;
+         continue;
+      }
+
+      if (ack[0] != MCMD_ACK || ack[1] != crc) {
+         debug_log("return MSCB_CRC_ERROR\n");
+         status = MSCB_CRC_ERROR;
+         continue;
+      }
+
+      status = MSCB_SUCCESS;
+      debug_log("return MSCB_SUCCESS\n");
+      break;
+   }
+
+   return status;
+}
+
+/*------------------------------------------------------------------*/
+
+int mscb_write_no_retries(int fd, unsigned short adr, unsigned char index, void *data, int size)
+/********************************************************************\
+
+  Routine: mscb_write
+
+  Purpose: Same as mscb_write, but without retries
+
+  Input:
+    int fd                  File descriptor for connection
+    unsigned short adr      Node address
+    unsigned char index     Variable index 0..255
+    void *data              Data to send
+    int size                Data size in bytes 1..4 for byte, word,
+                            and dword
+
+  Function value:
+    MSCB_SUCCESS            Successful completion
+    MSCB_TIMEOUT            Timeout receiving acknowledge
+    MSCB_CRC_ERROR          CRC error
+    MSCB_INVAL_PARAM        Parameter "size" has invalid value
+    MSCB_MUTEX              Cannot obtain mutex for mscb
+
+\********************************************************************/
+{
+   int i;
+   unsigned char buf[256], crc, ack[2];
+   unsigned char *d;
+
+   for (i=0 ; i<size && ((char *)data)[i] ; i++)
+      if (!isascii(((char *)data)[i]))
+         break;
+
+   if (i < size && ((char *)data)[i])
+      debug_log("mscb_write_no_retries(fd=%d,adr=%d,index=%d,data=%p,size=%d) ", fd, adr, index, data, size);
+   else
+      debug_log("mscb_write_no_retries(fd=%d,adr=%d,index=%d,data=\"%s\",size=%d) ", fd, adr, index, (char *)data, size);
+
+   if (fd > MSCB_MAX_FD || fd < 1 || !mscb_fd[fd - 1].type) {
+      debug_log("return MSCB_INVAL_PARAM\n");
+      return MSCB_INVAL_PARAM;
+   }
+
+   if (mrpc_connected(fd))
+      return mrpc_call(mscb_fd[fd - 1].fd, RPC_MSCB_WRITE_NO_RETRIES, mscb_fd[fd - 1].remote_fd, adr, index, data, size);
 
    if (size < 1) {
       debug_log("return MSCB_INVAL_PARAM\n");
@@ -3043,7 +3159,7 @@ int mscb_read(int fd, unsigned short adr, unsigned char index, void *data, int *
    }
 
    /* try ten times */
-   for (n = i = 0; n < 10; n++) {
+   for (n = i = 0; n < 10 ; n++) {
       /* after five times, reset submaster */
       if (n == 5) {
 #ifndef _USRDLL
@@ -3066,7 +3182,7 @@ int mscb_read(int fd, unsigned short adr, unsigned char index, void *data, int *
       if (status == MSCB_TIMEOUT) {
 #ifndef _USRDLL
          /* show error, but repeat 10 times */
-         printf("Timeout sumbster communication\n");
+         printf("Timeout writing to sumbster\n");
 #endif
          continue;
       }
@@ -3076,12 +3192,18 @@ int mscb_read(int fd, unsigned short adr, unsigned char index, void *data, int *
 
       if (i == 1 && buf[0] == 0xFF) {
 #ifndef _USRDLL
-         /* show error, but repeat 10 times */
-         printf("Timeout from RS485 bus, resend request\n");
+         /* show error, but repeat request */
+         printf("Timeout from RS485 bus\n");
 #endif
+         status = MSCB_TIMEOUT;
+         continue;
       }
 
       if (i < 2) {
+#ifndef _USRDLL
+         /* show error, but repeat request */
+         printf("Timeout reading from submaster\n");
+#endif
          status = MSCB_TIMEOUT;
          continue;
       }
@@ -3093,7 +3215,7 @@ int mscb_read(int fd, unsigned short adr, unsigned char index, void *data, int *
          status = MSCB_CRC_ERROR;
 #ifndef _USRDLL
          /* show error, but repeat 10 times */
-         printf("CRC error on RS485 bus, resend request\n");
+         printf("CRC error on RS485 bus\n");
 #endif
          continue;
       }
@@ -3149,6 +3271,151 @@ int mscb_read(int fd, unsigned short adr, unsigned char index, void *data, int *
       debug_log("return MSCB_CRC_ERROR");
 
    return status;
+}
+
+/*------------------------------------------------------------------*/
+
+int mscb_read_no_retries(int fd, unsigned short adr, unsigned char index, void *data, int *size)
+/********************************************************************\
+
+  Routine: mscb_read_no_retries
+
+  Purpose: Same as mscb_read, but without retries
+
+  Input:
+    int fd                  File descriptor for connection
+    unsigend short adr                 Node address
+    unsigned char index     Variable index 0..255
+    int size                Buffer size for data
+
+  Output:
+    void *data              Received data
+    int  *size              Number of received bytes
+
+  Function value:
+    MSCB_SUCCESS            Successful completion
+    MSCB_TIMEOUT            Timeout receiving acknowledge
+    MSCB_CRC_ERROR          CRC error
+    MSCB_INVAL_PARAM        Parameter "size" has invalid value
+    MSCB_MUTEX              Cannot obtain mutex for mscb
+
+\********************************************************************/
+{
+   int i, j, status;
+   unsigned char buf[256], str[1000], crc;
+
+   debug_log("mscb_read_no_retries(fd=%d,adr=%d,index=%d,data=%p,size=%d) ", fd, adr, index, data, *size);
+
+   if (*size > 256)
+      return MSCB_INVAL_PARAM;
+
+   memset(data, 0, *size);
+   status = 0;
+
+   if (fd > MSCB_MAX_FD || fd < 1 || !mscb_fd[fd - 1].type) {
+      debug_log("return MSCB_INVAL_PARAM\n");
+      return MSCB_INVAL_PARAM;
+   }
+
+   if (mrpc_connected(fd))
+      return mrpc_call(mscb_fd[fd - 1].fd, RPC_MSCB_READ_NO_RETRIES, mscb_fd[fd - 1].remote_fd, adr, index, data, size);
+
+   if (mscb_lock(fd) != MSCB_SUCCESS) {
+      debug_log("return MSCB_MUTEX\n");
+      return MSCB_MUTEX;
+   }
+
+   buf[0] = MCMD_ADDR_NODE16;
+   buf[1] = (unsigned char) (adr >> 8);
+   buf[2] = (unsigned char) (adr & 0xFF);
+   buf[3] = crc8(buf, 3);
+
+   buf[4] = MCMD_READ + 1;
+   buf[5] = index;
+   buf[6] = crc8(buf+4, 2);
+   status = mscb_out(fd, buf, 7, RS485_FLAG_ADR_CYCLE);
+   if (status == MSCB_TIMEOUT) {
+#ifndef _USRDLL
+      /* show error, but repeat 10 times */
+      printf("Timeout writing to sumbster\n");
+#endif
+      mscb_release(fd);
+      return MSCB_TIMEOUT;
+   }
+
+   /* read data */
+   i = mscb_in(fd, buf, sizeof(buf), 10000);
+
+   if (i == 1 && buf[0] == 0xFF) {
+#ifndef _USRDLL
+      /* show error, but repeat request */
+      printf("Timeout from RS485 bus\n");
+#endif
+      mscb_release(fd);
+      return MSCB_TIMEOUT;
+   }
+
+   if (i < 2) {
+#ifndef _USRDLL
+      /* show error, but repeat request */
+      printf("Timeout reading from submaster\n");
+#endif
+      mscb_release(fd);
+      return MSCB_TIMEOUT;
+   }
+
+   crc = crc8(buf, i - 1);
+
+   if ((buf[0] != MCMD_ACK + i - 2 && buf[0] != MCMD_ACK + 7)
+      || buf[i - 1] != crc) {
+#ifndef _USRDLL
+      /* show error, but repeat 10 times */
+      printf("CRC error on RS485 bus\n");
+#endif
+      mscb_release(fd);
+      return MSCB_CRC_ERROR;
+   }
+
+   if (buf[0] == MCMD_ACK + 7) {
+      if (i - 3 > *size) {
+         mscb_release(fd);
+         *size = 0;
+         debug_log("return MSCB_NO_MEM, i=%d, *size=%d\n", i, *size);
+         return MSCB_NO_MEM;
+      }
+
+      memcpy(data, buf + 2, i - 3);  // variable length
+      *size = i - 3;
+   } else {
+      if (i - 2 > *size) {
+         mscb_release(fd);
+         *size = 0;
+         debug_log("return MSCB_NO_MEM, i=%d, *size=%d\n", i, *size);
+         return MSCB_NO_MEM;
+      }
+
+      memcpy(data, buf + 1, i - 2);
+      *size = i - 2;
+   }
+
+   if (i - 2 == 2)
+      WORD_SWAP(data);
+   if (i - 2 == 4)
+      DWORD_SWAP(data);
+
+   mscb_release(fd);
+   sprintf(str, "return %d bytes: ", *size);
+   for (j=0 ; j<*size ; j++) {
+      sprintf(str+strlen(str), "0x%02X ", 
+         *(((unsigned char *)data)+i));
+      if (isalnum(*(((unsigned char *)data)+i)))
+         sprintf(str+strlen(str), "(%c) ", 
+            *(((unsigned char *)data)+i));
+   }
+   strlcat(str, "\n", sizeof(str)); 
+   debug_log(str);
+
+   return MSCB_SUCCESS;
 }
 
 /*------------------------------------------------------------------*/
@@ -3275,10 +3542,17 @@ int mscb_read_block(int fd, unsigned short adr, unsigned char index, void *data,
    int i, n, error_count;
    unsigned char buf[256], crc;
 
+   debug_log("mscb_read(fd=%d,adr=%d,index=%d,data=%p,size=%d) ", fd, adr, index, data, *size);
+
+   if (*size > 256)
+      return MSCB_INVAL_PARAM;
+
    memset(data, 0, *size);
 
-   if (fd > MSCB_MAX_FD || fd < 1 || !mscb_fd[fd - 1].type)
+   if (fd > MSCB_MAX_FD || fd < 1 || !mscb_fd[fd - 1].type) {
+      debug_log("return MSCB_INVAL_PARAM\n");
       return MSCB_INVAL_PARAM;
+   }
 
    if (mrpc_connected(fd))
       return mrpc_call(mscb_fd[fd - 1].fd, RPC_MSCB_READ_BLOCK, mscb_fd[fd - 1].remote_fd, adr, index, data, size);
