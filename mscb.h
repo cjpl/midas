@@ -263,15 +263,16 @@ extern "C" {
    int EXPRT mscb_set_group_addr(int fd, int addr, int gaddr, int broadcast, unsigned short new_addr);
    int EXPRT mscb_set_name(int fd, unsigned short adr, char *name);
    int EXPRT mscb_write(int fd, unsigned short adr, unsigned char index, void *data, int size);
+   int EXPRT mscb_write_no_retries(int fd, unsigned short adr, unsigned char index, void *data, int size);
    int EXPRT mscb_write_group(int fd, unsigned short adr, unsigned char index, void *data, int size);
    int EXPRT mscb_write_block(int fd, unsigned short adr, unsigned char index, void *data, int size);
    int EXPRT mscb_flash(int fd, int adr, int gaddr, int broadcast);
    int EXPRT mscb_upload(int fd, unsigned short adr, char *buffer, int size, int debug);
    int EXPRT mscb_verify(int fd, unsigned short adr, char *buffer, int size);
    int EXPRT mscb_read(int fd, unsigned short adr, unsigned char index, void *data, int *size);
+   int EXPRT mscb_read_no_retries(int fd, unsigned short adr, unsigned char index, void *data, int *size);
    int EXPRT mscb_read_range(int fd, unsigned short adr, unsigned char index1,
                              unsigned char index2, void *data, int *size);
-   int EXPRT mscb_read_block(int fd, unsigned short adr, unsigned char index, void *data, int *size);
    int EXPRT mscb_user(int fd, unsigned short adr, void *param, int size, void *result, int *rsize);
    int EXPRT mscb_link(int fd, unsigned short adr, unsigned char index, void *data, int size);
    int EXPRT mscb_addr(int fd, int cmd, unsigned short adr, int retry, int lock);
