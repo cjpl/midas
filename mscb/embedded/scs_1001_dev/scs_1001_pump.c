@@ -31,6 +31,7 @@ unsigned char idata _n_sub_addr = 1;
 
 extern lcd_menu(void);
 
+unsigned char tc600_read(unsigned short param, char *result);
 unsigned char tc600_write(unsigned short param, unsigned char len, unsigned long value);
 
 /*---- Port definitions ----*/
@@ -78,6 +79,7 @@ struct {
    unsigned char bv_close;
    float mv_mbar;
    float fv_mbar;
+   unsigned short final_speed;
    unsigned short evac_timeout;
    unsigned short fp_cycle;
    float fv_max;
@@ -117,6 +119,7 @@ MSCB_INFO_VAR code variables[] = {
    { 4, UNIT_BAR, PRFX_MILLI, 0, MSCBF_FLOAT,                "MV",       &user_data.mv_mbar },                  
    { 4, UNIT_BAR, PRFX_MILLI, 0, MSCBF_FLOAT,                "FV",       &user_data.fv_mbar },                  
                                                                                                                
+   { 2, UNIT_HERTZ,   0, 0, MSCBF_HIDDEN,                    "FinSpd",   &user_data.final_speed },               
    { 2, UNIT_MINUTE,  0, 0, MSCBF_HIDDEN,                    "Timeout",  &user_data.evac_timeout, 0, 300, 10 },
    { 2, UNIT_SECOND,  0, 0, MSCBF_HIDDEN,                    "FP cycle", &user_data.fp_cycle, 10, 600, 10 },
    { 4, UNIT_BAR, PRFX_MILLI, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "FV max",   &user_data.fv_max, 1, 10, 1 },         
@@ -233,6 +236,10 @@ void user_init(unsigned char init)
 
    /* turn on turbo pump motor (not pump station) */
    tc600_write(23, 6, 111111);
+
+   /* get parameter 315 (TMP finspd) */
+   tc600_read(315, str);
+   user_data.final_speed = atoi(str);
 
    /* display startup screen */
    lcd_goto(0, 0);
@@ -497,7 +504,7 @@ static bit b0_old = 0, b1_old = 0, b2_old = 0, b3_old = 0,
       } else {
          if (pump_state == ST_OFF) {
             if (user_data.rot_speed > 10)
-               printf("Rmp down TMP: %3d Hz", user_data.rot_speed);
+               printf("Rmp down TMP:%4d Hz", user_data.rot_speed);
             else
                printf("Pump station off    ");
          } else if (pump_state == ST_START_FORE)
@@ -674,7 +681,7 @@ static bit b0_old = 0, b1_old = 0, b2_old = 0, b3_old = 0,
    if (pump_state == ST_RAMP_TURBO || pump_state == ST_RUN_FPON || pump_state == ST_RUN_FPOFF ||
        pump_state == ST_RUN_FPUP || pump_state == ST_RUN_FPDOWN) {
 
-       if (user_data.mv_mbar > 4) {
+       if (user_data.mv_mbar > 4 && user_data.valve_locked == 0) {
 
           /* protect turbo pump */
           set_mainvalve(0);
@@ -690,16 +697,26 @@ static bit b0_old = 0, b1_old = 0, b2_old = 0, b3_old = 0,
        }
    }
    
-   /* check if turbo pump started successfully */
-   if (pump_state == ST_RAMP_TURBO && user_data.rot_speed > 800 &&
+
+   /* check if turbo pump started successfully in unlocked mode */
+   if (user_data.valve_locked == 0 && pump_state == ST_RAMP_TURBO && 
+       user_data.rot_speed > user_data.final_speed*0.8 &&
        user_data.mv_mbar < 1 && user_data.fv_mbar < 1) {
     
       set_bypassvalve(0);
 
-      /* now open main (gate) valve if not locked */
-      if (!user_data.valve_locked)
-         set_mainvalve(1);
+      /* now open main (gate) valve */
+      set_mainvalve(1);
 
+      start_time = time();     // remember start time
+      pump_state = ST_RUN_FPON;
+   }
+
+   /* check if turbo pump started successfully in locked mode */
+   if (user_data.valve_locked == 1 && pump_state == ST_RAMP_TURBO && 
+       user_data.rot_speed > user_data.final_speed*0.8 &&
+       user_data.fv_mbar < 1) {
+    
       start_time = time();     // remember start time
       pump_state = ST_RUN_FPON;
    }
@@ -776,6 +793,7 @@ static bit b0_old = 0, b1_old = 0, b2_old = 0, b3_old = 0,
    
    if (user_data.valve_locked && !valve_locked_old) {
       set_mainvalve(0);
+      set_bypassvalve(0);
    }
 
    if (!user_data.valve_locked && valve_locked_old) {
