@@ -124,6 +124,7 @@ static RPC_LIST rpc_list[] = {
      {TID_BYTE, RPC_IN},
      {TID_ARRAY, RPC_IN | RPC_VARARRAY},
      {TID_INT, RPC_IN},
+     {TID_INT, RPC_IN},
      {0}}},
 
    {RPC_MSCB_WRITE, "mscb_write",
@@ -170,6 +171,7 @@ static RPC_LIST rpc_list[] = {
      {TID_BYTE, RPC_IN},
      {TID_ARRAY, RPC_OUT | RPC_VARARRAY},
      {TID_INT, RPC_IN | RPC_OUT},
+     {TID_INT, RPC_IN},
      {0}}},
 
    {RPC_MSCB_READ_RANGE, "mscb_read_range",
@@ -402,8 +404,12 @@ int server_execute(int index, void *prpc_param[])
       status = mscb_write(CINT(0), CSHORT(1), CBYTE(2), CARRAY(3), CINT(4));
       break;
 
-   case RPC_MSCB_WRITE_BLOCK:
+   case RPC_MSCB_WRITE_NO_RETRIES:
       status = mscb_write(CINT(0), CSHORT(1), CBYTE(2), CARRAY(3), CINT(4));
+      break;
+
+   case RPC_MSCB_WRITE_BLOCK:
+      status = mscb_write_block(CINT(0), CSHORT(1), CBYTE(2), CARRAY(3), CINT(4));
       break;
 
    case RPC_MSCB_FLASH:
@@ -422,12 +428,12 @@ int server_execute(int index, void *prpc_param[])
       status = mscb_read(CINT(0), CSHORT(1), CBYTE(2), CARRAY(3), CPINT(4));
       break;
 
-   case RPC_MSCB_READ_RANGE:
-      status = mscb_read_range(CINT(0), CSHORT(1), CBYTE(2), CBYTE(3), CARRAY(4), CPINT(5));
+   case RPC_MSCB_READ_NO_RETRIES:
+      status = mscb_read_no_retries(CINT(0), CSHORT(1), CBYTE(2), CARRAY(3), CPINT(4));
       break;
 
-   case RPC_MSCB_READ_BLOCK:
-      status = mscb_read(CINT(0), CSHORT(1), CBYTE(2), CARRAY(3), CPINT(4));
+   case RPC_MSCB_READ_RANGE:
+      status = mscb_read_range(CINT(0), CSHORT(1), CBYTE(2), CBYTE(3), CARRAY(4), CPINT(5));
       break;
 
    case RPC_MSCB_ECHO:
