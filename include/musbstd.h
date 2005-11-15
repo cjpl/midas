@@ -51,11 +51,20 @@ typedef struct {
 extern "C" {
 #endif
 
-int musb_open(MUSB_INTERFACE **musb_interface, int vendor, int product, int instance, int configuration, int usbinterface);
-int musb_close(MUSB_INTERFACE *musb_interface);
-int musb_write(MUSB_INTERFACE *musb_interface,int endpoint,const void *buf,int count,int timeout_ms);
-int musb_read(MUSB_INTERFACE *musb_interface,int endpoint,void *buf,int count,int timeout_ms);
-int musb_reset(MUSB_INTERFACE *musb_interface);
+/* make functions under WinNT dll exportable */
+#ifndef EXPRT
+#if defined(_MSC_VER) && defined(_USRDLL)
+#define EXPRT __declspec(dllexport)
+#else
+#define EXPRT
+#endif
+#endif
+
+int EXPRT musb_open(MUSB_INTERFACE **musb_interface, int vendor, int product, int instance, int configuration, int usbinterface);
+int EXPRT musb_close(MUSB_INTERFACE *musb_interface);
+int EXPRT musb_write(MUSB_INTERFACE *musb_interface,int endpoint,const void *buf,int count,int timeout_ms);
+int EXPRT musb_read(MUSB_INTERFACE *musb_interface,int endpoint,void *buf,int count,int timeout_ms);
+int EXPRT musb_reset(MUSB_INTERFACE *musb_interface);
 
 #ifdef __cplusplus
 }
