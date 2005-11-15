@@ -294,7 +294,7 @@ void save_node_xml(MXML_WRITER * writer, int fd, int addr)
 
       mscb_info_variable(fd, (unsigned short) addr, (unsigned char) i, &info_var);
       size = sizeof(data);
-      mscb_read(fd, (unsigned short) addr, (unsigned char) i, data, &size, TRUE);
+      mscb_read(fd, (unsigned short) addr, (unsigned char) i, data, &size);
 
       mxml_start_element(writer, "Index");
       sprintf(str, "%d", i);
@@ -463,7 +463,7 @@ void load_nodes_xml(int fd, char *file_name, int flash)
 
                   status =
                       mscb_write(fd, (unsigned short) addr, (unsigned char) i, str,
-                                 info_var.width, TRUE);
+                                 info_var.width);
                   if (status != MSCB_SUCCESS)
                      printf("Error writing to node %d, variable %d\n", addr, i);
 
@@ -477,7 +477,7 @@ void load_nodes_xml(int fd, char *file_name, int flash)
 
                   status =
                       mscb_write(fd, (unsigned short) addr, (unsigned char) i, &data,
-                                 info_var.width, TRUE);
+                                 info_var.width);
                   if (status != MSCB_SUCCESS)
                      printf("Error writing to node %d, variable %d\n", addr, i);
 
@@ -766,7 +766,7 @@ void cmd_loop(int fd, char *cmd, unsigned short adr)
                         memset(dbuf, 0, sizeof(dbuf));
                         status =
                             mscb_read(fd, (unsigned short) current_addr,
-                                      (unsigned char) i, dbuf, &size, TRUE);
+                                      (unsigned char) i, dbuf, &size);
                         if (status == MSCB_SUCCESS)
                            print_channel(i, &info_var, dbuf, 1);
                      }
@@ -945,7 +945,7 @@ void cmd_loop(int fd, char *cmd, unsigned short adr)
 
                /* write CSR register */
                c = i ? CSR_DEBUG : 0;
-               mscb_write(fd, (unsigned short) current_addr, 0xFF, &c, 1, TRUE);
+               mscb_write(fd, (unsigned short) current_addr, 0xFF, &c, 1);
             }
          }
       }
@@ -979,8 +979,7 @@ void cmd_loop(int fd, char *cmd, unsigned short adr)
                   do {
                      if (current_addr >= 0)
                         status = mscb_write(fd, (unsigned short) current_addr,
-                                            (unsigned char) addr, str, strlen(str) + 1,
-                                            TRUE);
+                                            (unsigned char) addr, str, strlen(str) + 1);
                      else
                         status = mscb_write_group(fd, (unsigned short) current_group,
                                                   (unsigned char) addr, str,
@@ -998,7 +997,7 @@ void cmd_loop(int fd, char *cmd, unsigned short adr)
                      if (current_addr >= 0)
                         status =
                             mscb_write(fd, (unsigned short) current_addr,
-                                       (unsigned char) addr, str, strlen(str) + 1, TRUE);
+                                       (unsigned char) addr, str, strlen(str) + 1);
                      Sleep(100);
                   } while (param[3][0] && !kbhit());
 
@@ -1016,8 +1015,7 @@ void cmd_loop(int fd, char *cmd, unsigned short adr)
                   do {
                      if (current_addr >= 0)
                         status = mscb_write(fd, (unsigned short) current_addr,
-                                            (unsigned char) addr, &data, info_var.width,
-                                            TRUE);
+                                            (unsigned char) addr, &data, info_var.width);
                      else
                         status = mscb_write_group(fd, (unsigned short) current_group,
                                                   (unsigned char) addr, &data,
@@ -1062,7 +1060,7 @@ void cmd_loop(int fd, char *cmd, unsigned short adr)
                      size = sizeof(dbuf);
                      status =
                          mscb_read(fd, (unsigned short) current_addr,
-                                   (unsigned char) addr, dbuf, &size, TRUE);
+                                   (unsigned char) addr, dbuf, &size);
                      if (status != MSCB_SUCCESS)
                         printf("Error: %d\n", status);
                      else if (size == 0)
@@ -1078,7 +1076,7 @@ void cmd_loop(int fd, char *cmd, unsigned short adr)
                         size = info_var.width;
                         status =
                             mscb_read(fd, (unsigned short) current_addr,
-                                      (unsigned char) addr, dbuf, &size, TRUE);
+                                      (unsigned char) addr, dbuf, &size);
                         if (status != MSCB_SUCCESS)
                            printf("Error: %d\n", status);
                         else if (size != info_var.width)
@@ -1173,7 +1171,7 @@ void cmd_loop(int fd, char *cmd, unsigned short adr)
                   break;
 
                putchar(c);
-               status = mscb_write(fd, (unsigned short) current_addr, 0, &c, 1, TRUE);
+               status = mscb_write(fd, (unsigned short) current_addr, 0, &c, 1);
                if (status != MSCB_SUCCESS) {
                   printf("\nError: %d\n", status);
                   break;
@@ -1182,14 +1180,14 @@ void cmd_loop(int fd, char *cmd, unsigned short adr)
                if (c == '\r') {
                   putchar('\n');
                   c = '\n';
-                  mscb_write(fd, (unsigned short) current_addr, 0, &c, 1, TRUE);
+                  mscb_write(fd, (unsigned short) current_addr, 0, &c, 1);
                }
 
             }
 
             memset(line, 0, sizeof(line));
             size = sizeof(line);
-            mscb_read(fd, (unsigned short) current_addr, 0, line, &size, TRUE);
+            mscb_read(fd, (unsigned short) current_addr, 0, line, &size);
             if (size > 0)
                fputs(line, stdout);
 
