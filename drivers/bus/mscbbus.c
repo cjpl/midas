@@ -88,7 +88,7 @@ int mscbbus_read(MSCBBUS_INFO * info, char *str, int size, int timeout)
    for (l = 0; l < size ;) {
 
       i = size-l;
-      status = mscb_read_block(info->fd, info->settings.address, 0, str + l, &i);
+      status = mscb_read_no_retries(info->fd, info->settings.address, 0, str + l, &i, FALSE);
       if (status != MSCB_SUCCESS)
          perror("mscbbus_read");
 
@@ -148,7 +148,7 @@ int mscbbus_gets(MSCBBUS_INFO * info, char *str, int size, char *pattern, int ti
    for (l = 0; l < size - 1;) {
       
       i = size-l;
-      status = mscb_read_block(info->fd, info->settings.address, 0, str + l, &i);
+      status = mscb_read_no_retries(info->fd, info->settings.address, 0, str + l, &i);
       if (status != MSCB_SUCCESS)
          perror("mscbbus_read");
 
