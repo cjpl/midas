@@ -84,7 +84,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="c:\mxml"
+				AdditionalIncludeDirectories="\mxml;\midas\include"
 				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_USRDLL;MSCB_EXPORTS"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
@@ -166,12 +166,24 @@
 				RelativePath="..\mscb\mscbrpc.c">
 			</File>
 			<File
+				RelativePath="..\drivers\usb\musbstd.c">
+			</File>
+			<File
 				RelativePath="..\..\mxml\strlcpy.c">
 			</File>
 		</Filter>
 		<Filter
 			Name="Header Files"
 			Filter="h;hpp;hxx;hm;inl">
+			<File
+				RelativePath="..\mscb\mscb.h">
+			</File>
+			<File
+				RelativePath="..\mscb\mscbrpc.h">
+			</File>
+			<File
+				RelativePath="..\include\musbstd.h">
+			</File>
 		</Filter>
 		<Filter
 			Name="Resource Files"
