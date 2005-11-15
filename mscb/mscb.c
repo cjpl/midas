@@ -1133,7 +1133,7 @@ int mscb_init(char *device, int bufsize, char *password, int debug)
 
    /* search for open file descriptor for same device, used by LabView */
    for (index = 0; index < MSCB_MAX_FD; index++)
-      if (mscb_fd[index].fd != 0 && stricmp(mscb_fd[index].device, device) == 0)
+      if (mscb_fd[index].fd != 0 && strcmp(mscb_fd[index].device, device) == 0)
          return index+1;
 
    /* search for new file descriptor */
