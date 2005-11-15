@@ -267,7 +267,7 @@ void user_write(unsigned char index) reentrant
    switch (index) {
 
    /* DOUT go through inverter */
-   case 3: DOUT0   = !user_data.vacuum_ok; break;
+   case 3: DOUT0 = DOUT1 = !user_data.vacuum_ok;
 
    /* RELAIS go through inverter */
    case 4: RELAIS0 = !user_data.relais[0]; break;
