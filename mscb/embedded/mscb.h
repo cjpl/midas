@@ -265,6 +265,9 @@ sbit RS485_ENABLE = P0 ^ 7;
 #if defined(CPU_C8051F310) || defined(CPU_C8051F320)
 #define EEPROM_OFFSET 0x3A00 // 0x3A00-0x3DFF = 1kB
 #define N_EEPROM_PAGE      2 // 2 pages @ 512 bytes
+#elif defined(CPU_C8051F120)
+#define EEPROM_OFFSET 0xE000 // 0xE000-0xEFFF = 4kB
+#define N_EEPROM_PAGE      8 // 8 pages @ 512 bytes
 #else
 #define EEPROM_OFFSET 0x6000 // 0x6000-0x6FFF = 4kB
 #define N_EEPROM_PAGE      8 // 8 pages @ 512 bytes
