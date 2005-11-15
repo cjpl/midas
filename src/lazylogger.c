@@ -4,7 +4,7 @@
 
   Contents:     Disk to Tape copier for background job.
 
-  $Id:$
+  $Id$
 
 \********************************************************************/
 #include "midas.h"
@@ -26,7 +26,7 @@ typedef struct {
 } DIRLOG;
 
 #define LAZY_SETTINGS_STRING "\
-Maintain free space(%) = INT : 0\n\
+Maintain free space (%) = INT : 0\n\
 Stay behind = INT : -3\n\
 Alarm Class = STRING : [32]\n\
 Running condition = STRING : [128] ALWAYS\n\
@@ -45,12 +45,12 @@ Tape Data Append = BOOL : y\n\
 "
 #define LAZY_STATISTICS_STRING "\
 Backup file = STRING : [128] none \n\
-File size [Bytes] = FLOAT : 0.0\n\
+File size (Bytes) = FLOAT : 0.0\n\
 KBytes copied = FLOAT : 0.0\n\
 Total Bytes copied = FLOAT : 0.0\n\
-Copy progress [%] = FLOAT : 0\n\
-Copy Rate [bytes per s] = FLOAT : 0\n\
-Backup status [%] = FLOAT : 0\n\
+Copy progress (%) = FLOAT : 0\n\
+Copy Rate (Bytes per s) = FLOAT : 0\n\
+Backup status (%) = FLOAT : 0\n\
 Number of Files = INT : 0\n\
 Current Lazy run = INT : 0\n\
 "

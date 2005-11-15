@@ -5,7 +5,7 @@
 
   Contents:     Web server program for midas RPC calls
 
-  $Id:$
+  $Id$
 
 \********************************************************************/
 
@@ -1535,7 +1535,7 @@ void show_status_page(int refresh, char *cookie_wpwd)
                   rsprintf("<tr><td colspan=2><B><a href=\"%s\">%s</a></B>", ref, str);
 
                   size = sizeof(value);
-                  db_get_value(hDB, hLKey, "Statistics/Copy progress [%]", &value, &size, TID_FLOAT, TRUE);
+                  db_get_value(hDB, hLKey, "Statistics/Copy progress (%)", &value, &size, TID_FLOAT, TRUE);
                   rsprintf("<td align=center>%1.0f %%", value);
 
                   size = sizeof(str);
@@ -1544,7 +1544,7 @@ void show_status_page(int refresh, char *cookie_wpwd)
 
                   if (ftp_mode) {
                      size = sizeof(value);
-                     db_get_value(hDB, hLKey, "Statistics/Copy Rate [bytes per s]",
+                     db_get_value(hDB, hLKey, "Statistics/Copy Rate (Bytes per s)",
                                   &value, &size, TID_FLOAT, TRUE);
                      rsprintf("<td align=center>%1.1f", value / 1024.0f);
                   } else {
@@ -1554,7 +1554,7 @@ void show_status_page(int refresh, char *cookie_wpwd)
                   }
 
                   size = sizeof(value);
-                  db_get_value(hDB, hLKey, "Statistics/Backup status [%]", &value, &size, TID_FLOAT, TRUE);
+                  db_get_value(hDB, hLKey, "Statistics/Backup status (%)", &value, &size, TID_FLOAT, TRUE);
                   rsprintf("<td align=center>%1.1f %%", value);
                   k++;
                }
