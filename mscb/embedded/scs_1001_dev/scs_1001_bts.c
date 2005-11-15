@@ -68,8 +68,8 @@ struct {
    float         ln2_valve_temp;
    float         ln2_heater_temp;
 
-   float         jt_valve1;
-   float         jt_valve2;
+   float         jt_valve_forerun;
+   float         jt_valve_return;
    float         jt_temp;
 
    float         lhe_level1; // main
@@ -118,8 +118,8 @@ MSCB_INFO_VAR code variables[] = {
    { 4, UNIT_KELVIN,  0, 0, MSCBF_FLOAT,                     "LN2vlv T", &user_data.ln2_valve_temp },
    { 4, UNIT_KELVIN,  0, 0, MSCBF_FLOAT,                     "LN2htr T", &user_data.ln2_heater_temp },
                                                                                                                
-   { 4, UNIT_PERCENT, 0, 0, MSCBF_FLOAT,                     "JT vlve1", &user_data.jt_valve1 },
-   { 4, UNIT_PERCENT, 0, 0, MSCBF_FLOAT,                     "JT vlve2", &user_data.jt_valve2 },
+   { 4, UNIT_PERCENT, 0, 0, MSCBF_FLOAT,                     "JT vlveF", &user_data.jt_valve_forerun },
+   { 4, UNIT_PERCENT, 0, 0, MSCBF_FLOAT,                     "JT vlveR", &user_data.jt_valve_return },
    { 4, UNIT_KELVIN,  0, 0, MSCBF_FLOAT,                     "JT T",     &user_data.jt_temp },
 
    { 4, UNIT_PERCENT, 0, 0, MSCBF_FLOAT,                     "LHe lvl1", &user_data.lhe_level1 },
@@ -300,15 +300,35 @@ unsigned short d;
            DOUT2 = (user_data.ka_out & (1<<1)) == 0;
            DOUT3 = (user_data.ka_out & (1<<2)) == 0; break;
    
-   case 5: RELAIS0 = !user_data.ln2_valve; break;
+   /* LN2 valve has inverse logic (closes on power) */
+   case 5: RELAIS0 = user_data.ln2_valve; break; 
+
    case 6: DOUT0   = !user_data.ln2_heater; break;
    
-   case 9:
-      /* convert % to current */
-	  curr = 4+16*user_data.jt_valve1/100.0;
+   /* "Vorlauf" JT-valve */
+   case 11:
+      /* convert % to 4-20mA current */
+	   curr = 4+16*user_data.jt_valve_forerun/100.0;
 
-      /* 0...20mA range */
-      d = (curr / 20.0) * 0x1000;
+      /* 0...24mA range */
+      d = (curr / 24.0) * 0x1000;
+      if (d >= 0x1000)
+         d = 0x0FFF;
+      if (d < 0)
+         d = 0;
+
+      SFRPAGE = DAC0_PAGE;
+      DAC0L = d & 0xFF;
+      DAC0H = d >> 8;
+      break;
+
+   /* "Ruecklauf" JT-valve */
+   case 12:
+      /* convert % to 4-20mA current */
+	   curr = 4+16*user_data.jt_valve_return/100.0;
+
+      /* 0...24mA range */
+      d = (curr / 24.0) * 0x1000;
       if (d >= 0x1000)
          d = 0x0FFF;
       if (d < 0)
@@ -441,8 +461,8 @@ unsigned char d;
 unsigned char application_display(bit init)
 {
 static bit b0_old = 0, b1_old = 0, b2_old = 0, b3_old = 0;
-static long xdata last_time = 0;
-unsigned short xdata delta;
+static long xdata last_ln2time = 0, last_b;
+//unsigned short xdata delta;
 
    if (init)
       lcd_clear();
@@ -453,11 +473,15 @@ unsigned short xdata delta;
    lcd_goto(10, 0);
    printf("TV:%5.1fK", user_data.ln2_valve_temp);
    
-   lcd_goto(0, 2);
+   lcd_goto(0, 1);
    printf("He:%5.1f%%", user_data.lhe_level1);
-
-   lcd_goto(10, 2);
+   lcd_goto(10, 1);
    printf("TH:%5.1f%K", user_data.lhe_temp1b);
+
+   lcd_goto(0, 2);
+   printf("JT:%5.1f%%", user_data.jt_valve_forerun);
+   lcd_goto(10, 2);
+   printf("TJ:%5.1f%K", user_data.jt_temp);
 
    lcd_goto(0, 3);
    if (user_data.bts_state == 0)
@@ -470,9 +494,12 @@ unsigned short xdata delta;
    lcd_goto(6, 3);
    printf(user_data.ln2_heater ? "HON " : "HOFF");
 
+   lcd_goto(13, 3);
+   printf("+ HE -");
+
    /* toggle state with button 0 */
    if (b0 && !b0_old) {
-      last_time = time();
+      last_ln2time = time();
       user_data.bts_state = (user_data.bts_state + 1) % 3;
 
       if (user_data.bts_state == 0)
@@ -488,16 +515,48 @@ unsigned short xdata delta;
       user_write(6);
    }
 
-   /* enter menu on release of button 3 */
-   if (!init)
-      if (!b3 && b3_old)
-         return 1;
+   /* increase HE flow with button 2 */
+   if (b2) {
+      if (!b2_old) {
+         user_data.jt_valve_forerun += 1;
+         last_b = time();
+      }
+      if (time() > last_b + 70)
+         user_data.jt_valve_forerun += 1;
+      if (time() > last_b + 300)
+         user_data.jt_valve_forerun += 9;
+      if (user_data.jt_valve_forerun > 100)
+         user_data.jt_valve_forerun = 100;
+      user_write(11);
+   }
+
+   /* decrease HE flow with button 3 */
+   if (b3) {
+      if (!b3_old) {
+         user_data.jt_valve_forerun -= 1;
+         last_b = time();
+      }
+      if (time() > last_b + 70)
+         user_data.jt_valve_forerun -= 1;
+      if (time() > last_b + 300)
+         user_data.jt_valve_forerun -= 9;
+      if (user_data.jt_valve_forerun < 0)
+         user_data.jt_valve_forerun = 0;
+      user_write(11);
+   }
+
+   /* enter menu on release of button 2 & 3 */
+   if (b2 && b3) {
+      while (b2 || b3)
+         sr_read();
+      return 1;
+   }
 
    /* swith ln2 valve on by specified time */
    if (user_data.bts_state == 2 && 
        user_data.ln2_valve == 0 && 
-       time() - last_time > user_data.ln2_off * 100) {
-      last_time = time();
+       time() - last_ln2time > user_data.ln2_off * 100) {
+      last_ln2time = time();
 	  user_data.ln2_valve = 1;
 	  user_write(5);
    }
@@ -505,12 +564,13 @@ unsigned short xdata delta;
    /* swith ln2 valve off by specified time */
    if (user_data.bts_state == 2 && 
        user_data.ln2_valve == 1 && 
-       time() - last_time > user_data.ln2_on * 100) {
-      last_time = time();
+       time() - last_ln2time > user_data.ln2_on * 100) {
+      last_ln2time = time();
 	  user_data.ln2_valve = 0;
 	  user_write(5);
    }
 
+   /*
    lcd_goto(14, 3);
    delta = (unsigned short)((time() - last_time) / 100);
    if (user_data.bts_state == 2) {
@@ -520,6 +580,7 @@ unsigned short xdata delta;
 	      printf("%3d s", user_data.ln2_on - delta);
    } else
       printf("     ");
+   */
 
    b0_old = b0;
    b1_old = b1;
@@ -543,8 +604,18 @@ void user_loop(void)
    if (adc_chn == 0)
       user_data.ln2_mbar = pow(10, 1.667 * user_data.adc[0] - 11.33); // PKR 251
 
-   if (adc_chn == 2)
-      user_data.jt_temp = user_data.adc[2]; // convert CLTS
+   if (adc_chn == 1)
+      user_data.lhe_mbar = pow(10, 1.667 * user_data.adc[1] - 11.33); // PKR 251
+
+   if (adc_chn == 2) {
+      // convert CLTS voltage to Ohm (1mA current)
+      x = user_data.adc[2] / 0.001;
+
+      // convert Ohm to Temperature, 24deg: 290 Ohm, -270deg: 220 Ohm
+      x = (x-220.0)*(24.0+270.0)/(290.0-220.0) - 270.0;
+      user_data.jt_temp = x; 
+      user_data.jt_temp = 0;
+   }
 
    adc_chn = (adc_chn + 1) % 8;
 
