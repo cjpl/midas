@@ -677,15 +677,11 @@ void cmd_loop(int fd, char *cmd, unsigned short adr)
                if (param[1][0] != 'a' && param[2][0] != 'a')
                   if (i && i % 1000 == 0 && status != MSCB_SUCCESS) {
                      i += 999;
-                     if (i == 64999)
-                        i = 0xFFFE;
                   }
 
                if (param[1][0] != 'a' && param[2][0] != 'a')
                   if (i && i % 100 == 0 && status != MSCB_SUCCESS) {
                      i += 99;
-                     if (i == 65499)
-                        i = 0xFFFE;
                   }
 
                if (kbhit())
