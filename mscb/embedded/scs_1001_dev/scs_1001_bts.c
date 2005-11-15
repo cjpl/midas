@@ -613,8 +613,10 @@ void user_loop(void)
 
       // convert Ohm to Temperature, 24deg: 290 Ohm, -270deg: 220 Ohm
       x = (x-220.0)*(24.0+270.0)/(290.0-220.0) - 270.0;
+
+      // convert to Kelvin
+      x += 273;
       user_data.jt_temp = x; 
-      user_data.jt_temp = 0;
    }
 
    adc_chn = (adc_chn + 1) % 8;
