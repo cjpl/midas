@@ -8,7 +8,7 @@
                 Midas Slow Control Bus protocol 
                 for SCS-1001 stand alone control unit
 
-  $Id:$
+  $Id$
 
 \********************************************************************/
 
@@ -21,6 +21,7 @@ extern bit FREEZE_MODE;
 extern bit DEBUG_MODE;
 
 char code node_name[] = "SCS-1001";
+char code svn_revision[] = "$Id$";
 
 /* declare number of sub-addresses to framework */
 unsigned char idata _n_sub_addr = 1;
@@ -135,6 +136,7 @@ extern SYS_INFO sys_info;
 void user_init(unsigned char init)
 {
    unsigned char i;
+   char xdata str[64];
 
    SFRPAGE = ADC0_PAGE;
    AMX0CF = 0x00;               // select single ended analog inputs
@@ -210,7 +212,9 @@ void user_init(unsigned char init)
    lcd_goto(0, 1);
    printf("   Address:  %04X", sys_info.node_addr);
    lcd_goto(0, 2);
-   printf("   Version:  %2bX.%1bX", VERSION / 0x10, VERSION & 0x0F);
+   strcpy(str, svn_revision + 20);
+   *strchr(str, ' ') = 0;
+   printf("  Revision:  %s", str);
 }
 
 #pragma NOAREGS
