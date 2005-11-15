@@ -45,7 +45,7 @@ CLEAN :
     if not exist "$(OUTDIR)/$(NULL)" mkdir "$(OUTDIR)"
 
 CPP=cl.exe
-CPP_PROJ=/nologo /ML /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /Fp"$(INTDIR)\calib_700.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c /I "\mxml"
+CPP_PROJ=/nologo /ML /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /Fp"$(INTDIR)\calib_700.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c /I "\mxml" /I "\midas\include"
 
 .c{$(INTDIR)}.obj::
    $(CPP) @<<
@@ -88,6 +88,7 @@ LINK32_OBJS= \
 	"$(INTDIR)\calib_700.obj" \
 	"$(INTDIR)\mscb.obj" \
 	"$(INTDIR)\strlcpy.obj" \
+	"$(INTDIR)\musbstd.obj" \
 	"$(INTDIR)\mscbrpc.obj"
 
 ".\bin\calib_700.exe" : "$(OUTDIR)" $(DEF_FILE) $(LINK32_OBJS)
@@ -118,7 +119,7 @@ CLEAN :
     if not exist "$(OUTDIR)/$(NULL)" mkdir "$(OUTDIR)"
 
 CPP=cl.exe
-CPP_PROJ=/nologo /MLd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_CONSOLE" /D "_MBCS" /Fp"$(INTDIR)\calib_700.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /GZ /c /I "\mxml"
+CPP_PROJ=/nologo /MLd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_CONSOLE" /D "_MBCS" /Fp"$(INTDIR)\calib_700.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /GZ /c /I "\mxml" /I "\midas\include"
 
 .c{$(INTDIR)}.obj::
    $(CPP) @<<
@@ -161,6 +162,7 @@ LINK32_OBJS= \
 	"$(INTDIR)\calib_700.obj" \
 	"$(INTDIR)\mscb.obj" \
 	"$(INTDIR)\strlcpy.obj" \
+	"$(INTDIR)\musbstd.obj" \
 	"$(INTDIR)\mscbrpc.obj"
 
 ".\bin\calib_700.exe" : "$(OUTDIR)" $(DEF_FILE) $(LINK32_OBJS)
@@ -201,6 +203,12 @@ SOURCE=..\mscb\mscbrpc.c
 SOURCE=\mxml\strlcpy.c
 
 "$(INTDIR)\strlcpy.obj" : $(SOURCE) "$(INTDIR)"
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+
+SOURCE=\midas\drivers\usb\musbstd.c
+
+"$(INTDIR)\musbstd.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
