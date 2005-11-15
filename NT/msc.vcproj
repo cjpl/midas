@@ -214,6 +214,9 @@
 				RelativePath="..\mscb\mscbrpc.h">
 			</File>
 			<File
+				RelativePath="..\include\musbstd.h">
+			</File>
+			<File
 				RelativePath="..\..\mxml\strlcpy.h">
 			</File>
 		</Filter>
