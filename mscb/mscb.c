@@ -1124,6 +1124,18 @@ int mscb_init(char *device, int bufsize, char *password, int debug)
    char host[256], port[256], dev3[256], remote_device[256];
    unsigned char buf[64];
 
+   if (!device[0]) {
+      if (debug == -1)
+         mscb_select_device(device, bufsize, 0); /* for LabView */
+      else
+         mscb_select_device(device, bufsize, 1); /* interactively ask for device */
+   }
+
+   /* search for open file descriptor for same device, used by LabView */
+   for (index = 0; index < MSCB_MAX_FD; index++)
+      if (mscb_fd[index].fd != 0 && stricmp(mscb_fd[index].device, device) == 0)
+         return index+1;
+
    /* search for new file descriptor */
    for (index = 0; index < MSCB_MAX_FD; index++)
       if (mscb_fd[index].fd == 0)
@@ -1148,13 +1160,6 @@ int mscb_init(char *device, int bufsize, char *password, int debug)
 
    free(cache_info_var);
    n_cache_info_var = 0;
-
-   if (!device[0]) {
-      if (debug == -1)
-         mscb_select_device(device, bufsize, 0); /* for LabView */
-      else
-         mscb_select_device(device, bufsize, 1); /* interactively ask for device */
-   }
 
    /* check for RPC connection */
    if (strchr(device, ':')) {
