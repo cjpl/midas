@@ -278,7 +278,7 @@ void user_init(unsigned char init)
    user_data.ln2_heater = 0;
 
    /* write digital outputs */
-   for (i=0 ; i<10 ; i++)
+   for (i=0 ; i<99 ; i++)
       user_write(i);
 
 }
@@ -296,14 +296,14 @@ unsigned short d;
 
    /* digital outputs go through inverter */
 
-   case 2: DOUT1 = (user_data.ka_out & (1<<0)) == 0;
+   case 4: DOUT1 = (user_data.ka_out & (1<<0)) == 0;
            DOUT2 = (user_data.ka_out & (1<<1)) == 0;
            DOUT3 = (user_data.ka_out & (1<<2)) == 0; break;
    
    /* LN2 valve has inverse logic (closes on power) */
-   case 5: RELAIS0 = user_data.ln2_valve; break; 
+   case 7: RELAIS0 = user_data.ln2_valve; break; 
 
-   case 6: DOUT0   = !user_data.ln2_heater; break;
+   case 8: DOUT0   = !user_data.ln2_heater; break;
    
    /* "Vorlauf" JT-valve */
    case 11:
@@ -506,13 +506,13 @@ static long xdata last_ln2time = 0, last_b;
          user_data.ln2_valve = 0;
       else if (user_data.bts_state == 1)
          user_data.ln2_valve = 1;
-      user_write(5);
+      user_write(7);
    }
 
    /* toggle heater with button 1 */
    if (b1 && !b1_old) {
       user_data.ln2_heater = !user_data.ln2_heater;
-      user_write(6);
+      user_write(8);
    }
 
    /* increase HE flow with button 2 */
@@ -564,7 +564,7 @@ static long xdata last_ln2time = 0, last_b;
        time() - last_ln2time > user_data.ln2_off * 100) {
       last_ln2time = time();
 	  user_data.ln2_valve = 1;
-	  user_write(5);
+	  user_write(7);
    }
 
    /* swith ln2 valve off by specified time */
@@ -573,7 +573,7 @@ static long xdata last_ln2time = 0, last_b;
        time() - last_ln2time > user_data.ln2_on * 100) {
       last_ln2time = time();
 	  user_data.ln2_valve = 0;
-	  user_write(5);
+	  user_write(7);
    }
 
    /*
@@ -622,7 +622,19 @@ void user_loop(void)
 
       // convert to Kelvin
       x += 273;
+      if (x < 0)
+         x = 0;
       user_data.jt_temp = x; 
+   }
+
+   if (adc_chn == 4) {
+      // convert voltage to current im mA (100 Ohm)
+      x = user_data.adc[4] * 10;
+
+      // convert current to percent
+      x = (x-4)/16.0 * 100;
+
+      user_data.ka_level = x; 
    }
 
    adc_chn = (adc_chn + 1) % 8;
