@@ -92,39 +92,39 @@ struct {
 
 MSCB_INFO_VAR code variables[] = {
 
-   { 1, UNIT_BYTE,    0, 0, 0,                               "Error",    &user_data.error },                    
+   { 1, UNIT_BYTE,    0, 0, 0,                               "Error",    &user_data.error },                        // 0
                                                                                                                
-   { 1, UNIT_BOOLEAN, 0, 0, 0,                               "Station",  &user_data.station_on, 0, 1, 1 },      
-   { 1, UNIT_BOOLEAN, 0, 0, 0,                               "Locked",   &user_data.valve_locked, 0, 1, 1 },    
-   { 1, UNIT_BOOLEAN, 0, 0, 0,                               "Vac OK",   &user_data.vacuum_ok,  0, 1, 1 },       
-   { 1, UNIT_BOOLEAN, 0, 0, 0,                               "ManMode",  &user_data.man_mode,  0, 1, 1 },       
+   { 1, UNIT_BOOLEAN, 0, 0, 0,                               "Station",  &user_data.station_on, 0, 1, 1 },          // 1
+   { 1, UNIT_BOOLEAN, 0, 0, 0,                               "Locked",   &user_data.valve_locked, 0, 1, 1 },        // 2
+   { 1, UNIT_BOOLEAN, 0, 0, 0,                               "Vac OK",   &user_data.vacuum_ok,  0, 1, 1 },          // 3
+   { 1, UNIT_BOOLEAN, 0, 0, 0,                               "ManMode",  &user_data.man_mode,  0, 1, 1 },           // 4
                                                                                                                
-   { 1, UNIT_BOOLEAN, 0, 0, 0,                               "Forepump", &user_data.relais[0], 0, 1, 1 },       
-   { 1, UNIT_BOOLEAN, 0, 0, 0,                               "Forevlv",  &user_data.relais[1], 0, 1, 1 },       
-   { 1, UNIT_BOOLEAN, 0, 0, 0,                               "Mainvlv",  &user_data.relais[2], 0, 1, 1 },       
-   { 1, UNIT_BOOLEAN, 0, 0, 0,                               "Bypvlv",   &user_data.relais[3], 0, 1, 1 },       
+   { 1, UNIT_BOOLEAN, 0, 0, 0,                               "Forepump", &user_data.relais[0], 0, 1, 1 },           // 5
+   { 1, UNIT_BOOLEAN, 0, 0, 0,                               "Forevlv",  &user_data.relais[1], 0, 1, 1 },           // 6
+   { 1, UNIT_BOOLEAN, 0, 0, 0,                               "Mainvlv",  &user_data.relais[2], 0, 1, 1 },           // 7
+   { 1, UNIT_BOOLEAN, 0, 0, 0,                               "Bypvlv",   &user_data.relais[3], 0, 1, 1 },           // 8
                                                                                                                
-   { 1, UNIT_BOOLEAN, 0, 0, 0,                               "Turbo on", &user_data.turbo_on,  0, 1, 1 },       
-   { 2, UNIT_HERTZ,   0, 0, 0,                               "RotSpd",   &user_data.rot_speed, },               
-   { 4, UNIT_AMPERE,  0, 0, MSCBF_FLOAT,                     "TMPcur",   &user_data.tmp_current, },             
+   { 1, UNIT_BOOLEAN, 0, 0, 0,                               "Turbo on", &user_data.turbo_on,  0, 1, 1 },           // 9
+   { 2, UNIT_HERTZ,   0, 0, 0,                               "RotSpd",   &user_data.rot_speed, },                   // 10
+   { 4, UNIT_AMPERE,  0, 0, MSCBF_FLOAT,                     "TMPcur",   &user_data.tmp_current, },                 // 11
                                                                                                                
-   { 1, UNIT_BOOLEAN, 0, 0, 0,                               "FP on",    &user_data.din[0] },                   
-   { 1, UNIT_BOOLEAN, 0, 0, 0,                               "FV open",  &user_data.din[1] },                   
-   { 1, UNIT_BOOLEAN, 0, 0, 0,                               "FV close", &user_data.din[2] },                   
-   { 1, UNIT_BOOLEAN, 0, 0, 0,                               "MV open",  &user_data.din[3] },                   
-   { 1, UNIT_BOOLEAN, 0, 0, 0,                               "MV close", &user_data.mv_close },                 
-   { 1, UNIT_BOOLEAN, 0, 0, 0,                               "BV open",  &user_data.bv_open  },                 
-   { 1, UNIT_BOOLEAN, 0, 0, 0,                               "BV close", &user_data.bv_close },                 
+   { 1, UNIT_BOOLEAN, 0, 0, 0,                               "FP on",    &user_data.din[0] },                       // 12
+   { 1, UNIT_BOOLEAN, 0, 0, 0,                               "FV open",  &user_data.din[1] },                       // 13
+   { 1, UNIT_BOOLEAN, 0, 0, 0,                               "FV close", &user_data.din[2] },                       // 14
+   { 1, UNIT_BOOLEAN, 0, 0, 0,                               "MV open",  &user_data.din[3] },                       // 15
+   { 1, UNIT_BOOLEAN, 0, 0, 0,                               "MV close", &user_data.mv_close },                     // 16
+   { 1, UNIT_BOOLEAN, 0, 0, 0,                               "BV open",  &user_data.bv_open  },                     // 17
+   { 1, UNIT_BOOLEAN, 0, 0, 0,                               "BV close", &user_data.bv_close },                     // 18
                                                                                                                
-   { 4, UNIT_BAR, PRFX_MILLI, 0, MSCBF_FLOAT,                "MV",       &user_data.mv_mbar },                  
-   { 4, UNIT_BAR, PRFX_MILLI, 0, MSCBF_FLOAT,                "FV",       &user_data.fv_mbar },                  
+   { 4, UNIT_BAR, PRFX_MILLI, 0, MSCBF_FLOAT,                "MV",       &user_data.mv_mbar },                      // 19
+   { 4, UNIT_BAR, PRFX_MILLI, 0, MSCBF_FLOAT,                "FV",       &user_data.fv_mbar },                      // 20
                                                                                                                
-   { 2, UNIT_HERTZ,   0, 0, MSCBF_HIDDEN,                    "FinSpd",   &user_data.final_speed },               
-   { 2, UNIT_MINUTE,  0, 0, MSCBF_HIDDEN,                    "Timeout",  &user_data.evac_timeout, 0, 300, 10 },
-   { 2, UNIT_SECOND,  0, 0, MSCBF_HIDDEN,                    "FP cycle", &user_data.fp_cycle, 10, 600, 10 },
-   { 4, UNIT_BAR, PRFX_MILLI, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "FV max",   &user_data.fv_max, 1, 10, 1 },         
-   { 4, UNIT_BAR, PRFX_MILLI, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "FV min",   &user_data.fv_min, 0.1, 1, 0.1 },
-   { 4, UNIT_BAR, PRFX_MILLI, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "MV thrsh", &user_data.mv_thresh, 0.001, 1, 0.001 },
+   { 2, UNIT_HERTZ,   0, 0, MSCBF_HIDDEN,                    "FinSpd",   &user_data.final_speed },                  // 21
+   { 2, UNIT_MINUTE,  0, 0, MSCBF_HIDDEN,                    "Timeout",  &user_data.evac_timeout, 0, 300, 10 },     // 22
+   { 2, UNIT_SECOND,  0, 0, MSCBF_HIDDEN,                    "FP cycle", &user_data.fp_cycle, 10, 600, 10 },        // 23
+   { 4, UNIT_BAR, PRFX_MILLI, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "FV max",   &user_data.fv_max, 1, 10, 1 },             // 24
+   { 4, UNIT_BAR, PRFX_MILLI, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "FV min",   &user_data.fv_min, 0.1, 1, 0.1 },          // 25
+   { 4, UNIT_BAR, PRFX_MILLI, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "MV thrsh", &user_data.mv_thresh, 0.001, 1, 0.001 },   // 26
 
    { 4, UNIT_VOLT,   0, 0, MSCBF_FLOAT | MSCBF_HIDDEN,       "ADC0",     &user_data.adc[0] },                    
    { 4, UNIT_VOLT,   0, 0, MSCBF_FLOAT | MSCBF_HIDDEN,       "ADC1",     &user_data.adc[1] },                    
