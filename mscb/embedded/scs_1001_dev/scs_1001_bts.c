@@ -545,6 +545,12 @@ static long xdata last_ln2time = 0, last_b;
       user_write(11);
    }
 
+   /* request LHE from station if required */
+   if (user_data.jt_valve_forerun == 0)
+      user_data.ka_out = 1; // close port slowly
+   else
+      user_data.ka_out = 5; // open port
+
    /* enter menu on release of button 2 & 3 */
    if (b2 && b3) {
       while (b2 || b3)
