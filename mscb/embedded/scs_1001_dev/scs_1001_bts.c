@@ -103,72 +103,72 @@ struct {
 
 MSCB_INFO_VAR code variables[] = {
 
-   { 1, UNIT_BYTE,    0, 0, 0,                               "Error",    &user_data.error },                    
-   { 1, UNIT_BYTE,    0, 0, 0,                               "State",    &user_data.bts_state, 0, 9, 1 },
-                                                                                                               
-   { 2, UNIT_SECOND,  0, 0, 0,                               "LN2 on",   &user_data.ln2_on, 0, 120, 10 },
-   { 2, UNIT_SECOND,  0, 0, 0,                               "LN2 off",  &user_data.ln2_off, 0, 3600, 10 },
+   { 1, UNIT_BYTE,    0, 0, 0,                         "Error",    &user_data.error },                     // 0
+   { 1, UNIT_BYTE,    0, 0, 0,                         "State",    &user_data.bts_state, 0, 9, 1 },        // 1
+                                                                                                         
+   { 2, UNIT_SECOND,  0, 0, 0,                         "LN2 on",   &user_data.ln2_on, 0, 120, 10 },        // 2
+   { 2, UNIT_SECOND,  0, 0, 0,                         "LN2 off",  &user_data.ln2_off, 0, 3600, 10 },      // 3
 
-   { 1, UNIT_BYTE,    0, 0, 0,                               "KA Out",   &user_data.ka_out, 0, 7, 1 },
-   { 1, UNIT_BYTE,    0, 0, 0,                               "KA In",    &user_data.ka_in },
-   { 4, UNIT_PERCENT, 0, 0, MSCBF_FLOAT,                     "KA Level", &user_data.ka_level },                    
+   { 1, UNIT_BYTE,    0, 0, 0,                         "KA Out",   &user_data.ka_out, 0, 7, 1 },           // 4
+   { 1, UNIT_BYTE,    0, 0, 0,                         "KA In",    &user_data.ka_in },                     // 5
+   { 4, UNIT_PERCENT, 0, 0, MSCBF_FLOAT,               "KA Level", &user_data.ka_level },                  // 6  
 
-   { 1, UNIT_BOOLEAN, 0, 0, 0,                               "LN2 vlve", &user_data.ln2_valve, 0, 1, 1 },      
-   { 1, UNIT_BOOLEAN, 0, 0, 0,                               "LN2 htr",  &user_data.ln2_heater, 0, 1, 1 },    
-   { 4, UNIT_KELVIN,  0, 0, MSCBF_FLOAT,                     "LN2vlv T", &user_data.ln2_valve_temp },
-   { 4, UNIT_KELVIN,  0, 0, MSCBF_FLOAT,                     "LN2htr T", &user_data.ln2_heater_temp },
-                                                                                                               
-   { 4, UNIT_PERCENT, 0, 0, MSCBF_FLOAT,                     "JT vlveF", &user_data.jt_valve_forerun },
-   { 4, UNIT_PERCENT, 0, 0, MSCBF_FLOAT,                     "JT vlveR", &user_data.jt_valve_return },
-   { 4, UNIT_KELVIN,  0, 0, MSCBF_FLOAT,                     "JT T",     &user_data.jt_temp },
+   { 1, UNIT_BOOLEAN, 0, 0, 0,                         "LN2 vlve", &user_data.ln2_valve, 0, 1, 1 },        // 7
+   { 1, UNIT_BOOLEAN, 0, 0, 0,                         "LN2 htr",  &user_data.ln2_heater, 0, 1, 1 },       // 8
+   { 4, UNIT_KELVIN,  0, 0, MSCBF_FLOAT,               "LN2vlv T", &user_data.ln2_valve_temp },            // 9
+   { 4, UNIT_KELVIN,  0, 0, MSCBF_FLOAT,               "LN2htr T", &user_data.ln2_heater_temp },           // 10
+                                                                                                         
+   { 4, UNIT_PERCENT, 0, 0, MSCBF_FLOAT,               "JT vlveF", &user_data.jt_valve_forerun },          // 11
+   { 4, UNIT_PERCENT, 0, 0, MSCBF_FLOAT,               "JT vlveR", &user_data.jt_valve_return },           // 12
+   { 4, UNIT_KELVIN,  0, 0, MSCBF_FLOAT,               "JT T",     &user_data.jt_temp },                   // 13
 
-   { 4, UNIT_PERCENT, 0, 0, MSCBF_FLOAT,                     "LHe lvl1", &user_data.lhe_level1 },
-   { 4, UNIT_PERCENT, 0, 0, MSCBF_FLOAT,                     "LHe lvl2", &user_data.lhe_level2 },
+   { 4, UNIT_PERCENT, 0, 0, MSCBF_FLOAT,               "LHe lvl1", &user_data.lhe_level1 },                // 14
+   { 4, UNIT_PERCENT, 0, 0, MSCBF_FLOAT,               "LHe lvl2", &user_data.lhe_level2 },                // 15
 
-   { 4, UNIT_KELVIN,  0, 0, MSCBF_FLOAT,                     "LN2 T1",   &user_data.ln2_temp1 },
-   { 4, UNIT_KELVIN,  0, 0, MSCBF_FLOAT,                     "LN2 T2",   &user_data.ln2_temp2 },
-   { 4, UNIT_KELVIN,  0, 0, MSCBF_FLOAT,                     "LN2 T3",   &user_data.ln2_temp3 },
-   { 4, UNIT_KELVIN,  0, 0, MSCBF_FLOAT,                     "LN2 T4",   &user_data.ln2_temp4 },
+   { 4, UNIT_KELVIN,  0, 0, MSCBF_FLOAT,               "LN2 T1",   &user_data.ln2_temp1 },                 // 16
+   { 4, UNIT_KELVIN,  0, 0, MSCBF_FLOAT,               "LN2 T2",   &user_data.ln2_temp2 },                 // 17
+   { 4, UNIT_KELVIN,  0, 0, MSCBF_FLOAT,               "LN2 T3",   &user_data.ln2_temp3 },                 // 18
+   { 4, UNIT_KELVIN,  0, 0, MSCBF_FLOAT,               "LN2 T4",   &user_data.ln2_temp4 },                 // 19
 
-   { 4, UNIT_KELVIN,  0, 0, MSCBF_FLOAT,                     "LHE T1a",  &user_data.lhe_temp1a },
-   { 4, UNIT_KELVIN,  0, 0, MSCBF_FLOAT,                     "LHE T2a",  &user_data.lhe_temp2a },
-   { 4, UNIT_KELVIN,  0, 0, MSCBF_FLOAT,                     "LHE T3a",  &user_data.lhe_temp3a },
-   { 4, UNIT_KELVIN,  0, 0, MSCBF_FLOAT,                     "LHE T1b",  &user_data.lhe_temp1b },
-   { 4, UNIT_KELVIN,  0, 0, MSCBF_FLOAT,                     "LHE T2b",  &user_data.lhe_temp2b },
-   { 4, UNIT_KELVIN,  0, 0, MSCBF_FLOAT,                     "LHE T3b",  &user_data.lhe_temp3b },
+   { 4, UNIT_KELVIN,  0, 0, MSCBF_FLOAT,               "LHE T1a",  &user_data.lhe_temp1a },                // 20
+   { 4, UNIT_KELVIN,  0, 0, MSCBF_FLOAT,               "LHE T2a",  &user_data.lhe_temp2a },                // 21
+   { 4, UNIT_KELVIN,  0, 0, MSCBF_FLOAT,               "LHE T3a",  &user_data.lhe_temp3a },                // 22
+   { 4, UNIT_KELVIN,  0, 0, MSCBF_FLOAT,               "LHE T1b",  &user_data.lhe_temp1b },                // 23
+   { 4, UNIT_KELVIN,  0, 0, MSCBF_FLOAT,               "LHE T2b",  &user_data.lhe_temp2b },                // 24
+   { 4, UNIT_KELVIN,  0, 0, MSCBF_FLOAT,               "LHE T3b",  &user_data.lhe_temp3b },                // 25
 
-   { 4, UNIT_BAR, PRFX_MILLI, 0, MSCBF_FLOAT,                "LN2 P",    &user_data.ln2_mbar }, 
-   { 4, UNIT_BAR, PRFX_MILLI, 0, MSCBF_FLOAT,                "LHE P",    &user_data.lhe_mbar }, 
+   { 4, UNIT_BAR, PRFX_MILLI, 0, MSCBF_FLOAT,          "LN2 P",    &user_data.ln2_mbar },                  // 26
+   { 4, UNIT_BAR, PRFX_MILLI, 0, MSCBF_FLOAT,          "LHE P",    &user_data.lhe_mbar },                  // 27
 
-   { 4, UNIT_VOLT,    0, 0, MSCBF_FLOAT,                     "Quench1",  &user_data.quench1 }, 
-   { 4, UNIT_VOLT,    0, 0, MSCBF_FLOAT,                     "Quench2",  &user_data.quench2 }, 
+   { 4, UNIT_VOLT,    0, 0, MSCBF_FLOAT,               "Quench1",  &user_data.quench1 },                   // 28
+   { 4, UNIT_VOLT,    0, 0, MSCBF_FLOAT,               "Quench2",  &user_data.quench2 },                   // 29
 
-   { 4, UNIT_VOLT,   0, 0, MSCBF_FLOAT | MSCBF_HIDDEN,       "ADC0",     &user_data.adc[0] },                    
-   { 4, UNIT_VOLT,   0, 0, MSCBF_FLOAT | MSCBF_HIDDEN,       "ADC1",     &user_data.adc[1] },                    
-   { 4, UNIT_VOLT,   0, 0, MSCBF_FLOAT | MSCBF_HIDDEN,       "ADC2",     &user_data.adc[2] },                    
-   { 4, UNIT_VOLT,   0, 0, MSCBF_FLOAT | MSCBF_HIDDEN,       "ADC3",     &user_data.adc[3] },                    
-   { 4, UNIT_VOLT,   0, 0, MSCBF_FLOAT | MSCBF_HIDDEN,       "ADC4",     &user_data.adc[4] },                    
-   { 4, UNIT_VOLT,   0, 0, MSCBF_FLOAT | MSCBF_HIDDEN,       "ADC5",     &user_data.adc[5] },                    
-   { 4, UNIT_VOLT,   0, 0, MSCBF_FLOAT | MSCBF_HIDDEN,       "ADC6",     &user_data.adc[6] },                    
-   { 4, UNIT_VOLT,   0, 0, MSCBF_FLOAT | MSCBF_HIDDEN,       "ADC7",     &user_data.adc[7] },                    
-                                                                                                                
-   { 4, UNIT_VOLT,   0, 0, MSCBF_FLOAT | MSCBF_HIDDEN,       "AOFS0",    &user_data.aofs[0], -0.1, 0.1, 0.001 }, 
-   { 4, UNIT_VOLT,   0, 0, MSCBF_FLOAT | MSCBF_HIDDEN,       "AOFS1",    &user_data.aofs[1], -0.1, 0.1, 0.001 }, 
-   { 4, UNIT_VOLT,   0, 0, MSCBF_FLOAT | MSCBF_HIDDEN,       "AOFS2",    &user_data.aofs[2], -0.1, 0.1, 0.001 }, 
-   { 4, UNIT_VOLT,   0, 0, MSCBF_FLOAT | MSCBF_HIDDEN,       "AOFS3",    &user_data.aofs[3], -0.1, 0.1, 0.001 }, 
-   { 4, UNIT_VOLT,   0, 0, MSCBF_FLOAT | MSCBF_HIDDEN,       "AOFS4",    &user_data.aofs[4], -0.1, 0.1, 0.001 }, 
-   { 4, UNIT_VOLT,   0, 0, MSCBF_FLOAT | MSCBF_HIDDEN,       "AOFS5",    &user_data.aofs[5], -0.1, 0.1, 0.001 }, 
-   { 4, UNIT_VOLT,   0, 0, MSCBF_FLOAT | MSCBF_HIDDEN,       "AOFS6",    &user_data.aofs[6], -0.1, 0.1, 0.001 }, 
-   { 4, UNIT_VOLT,   0, 0, MSCBF_FLOAT | MSCBF_HIDDEN,       "AOFS7",    &user_data.aofs[7], -0.1, 0.1, 0.001 }, 
-                                                                                                                
-   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN,       "AGAIN0",   &user_data.again[0], 0.9, 1.1, 0.001 }, 
-   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN,       "AGAIN1",   &user_data.again[1], 0.9, 1.1, 0.001 }, 
-   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN,       "AGAIN2",   &user_data.again[2], 0.9, 1.1, 0.001 }, 
-   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN,       "AGAIN3",   &user_data.again[3], 0.9, 1.1, 0.001 }, 
-   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN,       "AGAIN4",   &user_data.again[4], 0.9, 1.1, 0.001 }, 
-   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN,       "AGAIN5",   &user_data.again[5], 0.9, 1.1, 0.001 }, 
-   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN,       "AGAIN6",   &user_data.again[6], 0.9, 1.1, 0.001 }, 
-   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN,       "AGAIN7",   &user_data.again[7], 0.9, 1.1, 0.001 }, 
+   { 4, UNIT_VOLT,   0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "ADC0",     &user_data.adc[0] },                    
+   { 4, UNIT_VOLT,   0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "ADC1",     &user_data.adc[1] },                    
+   { 4, UNIT_VOLT,   0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "ADC2",     &user_data.adc[2] },                    
+   { 4, UNIT_VOLT,   0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "ADC3",     &user_data.adc[3] },                    
+   { 4, UNIT_VOLT,   0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "ADC4",     &user_data.adc[4] },                    
+   { 4, UNIT_VOLT,   0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "ADC5",     &user_data.adc[5] },                    
+   { 4, UNIT_VOLT,   0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "ADC6",     &user_data.adc[6] },                    
+   { 4, UNIT_VOLT,   0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "ADC7",     &user_data.adc[7] },                    
+                                                                                                          
+   { 4, UNIT_VOLT,   0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "AOFS0",    &user_data.aofs[0], -0.1, 0.1, 0.001 }, 
+   { 4, UNIT_VOLT,   0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "AOFS1",    &user_data.aofs[1], -0.1, 0.1, 0.001 }, 
+   { 4, UNIT_VOLT,   0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "AOFS2",    &user_data.aofs[2], -0.1, 0.1, 0.001 }, 
+   { 4, UNIT_VOLT,   0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "AOFS3",    &user_data.aofs[3], -0.1, 0.1, 0.001 }, 
+   { 4, UNIT_VOLT,   0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "AOFS4",    &user_data.aofs[4], -0.1, 0.1, 0.001 }, 
+   { 4, UNIT_VOLT,   0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "AOFS5",    &user_data.aofs[5], -0.1, 0.1, 0.001 }, 
+   { 4, UNIT_VOLT,   0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "AOFS6",    &user_data.aofs[6], -0.1, 0.1, 0.001 }, 
+   { 4, UNIT_VOLT,   0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "AOFS7",    &user_data.aofs[7], -0.1, 0.1, 0.001 }, 
+                                                                                                          
+   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "AGAIN0",   &user_data.again[0], 0.9, 1.1, 0.001 }, 
+   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "AGAIN1",   &user_data.again[1], 0.9, 1.1, 0.001 }, 
+   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "AGAIN2",   &user_data.again[2], 0.9, 1.1, 0.001 }, 
+   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "AGAIN3",   &user_data.again[3], 0.9, 1.1, 0.001 }, 
+   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "AGAIN4",   &user_data.again[4], 0.9, 1.1, 0.001 }, 
+   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "AGAIN5",   &user_data.again[5], 0.9, 1.1, 0.001 }, 
+   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "AGAIN6",   &user_data.again[6], 0.9, 1.1, 0.001 }, 
+   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "AGAIN7",   &user_data.again[7], 0.9, 1.1, 0.001 }, 
 
    { 4, UNIT_VOLT,   0, 0, MSCBF_FLOAT | MSCBF_HIDDEN | MSCBF_REMIN, "910_00", &user_data.scs_910[0], 0, 0, 0, 1, 0 }, 
    { 4, UNIT_VOLT,   0, 0, MSCBF_FLOAT | MSCBF_HIDDEN | MSCBF_REMIN, "910_01", &user_data.scs_910[1], 0, 0, 0, 1, 1 }, 
@@ -294,11 +294,10 @@ unsigned short d;
 
    switch (index) {
 
-   /* digital outputs go through inverter */
-
-   case 4: DOUT1 = (user_data.ka_out & (1<<0)) == 0;
-           DOUT2 = (user_data.ka_out & (1<<1)) == 0;
-           DOUT3 = (user_data.ka_out & (1<<2)) == 0; break;
+   /* DOUT goes through inverter, and also has inverse logic from KA */
+   case 4: DOUT1 = (user_data.ka_out & (1<<0)) == 1;
+           DOUT2 = (user_data.ka_out & (1<<1)) == 1;
+           DOUT3 = (user_data.ka_out & (1<<2)) == 1; break;
    
    /* LN2 valve has inverse logic (closes on power) */
    case 7: RELAIS0 = user_data.ln2_valve; break; 
@@ -445,7 +444,8 @@ unsigned char d;
      d |= (1<<1);
    SHIFT;
 
-   user_data.ka_in = d & 0x07;
+   /* KA inputs are inverted (relais vs. pull-up) */
+   user_data.ka_in = ~d & 0x07;
 
    b3 = SRIN;
    SHIFT;
@@ -546,10 +546,11 @@ static long xdata last_ln2time = 0, last_b;
    }
 
    /* request LHE from station if required */
-   if (user_data.jt_valve_forerun == 0)
+/*   if (user_data.jt_valve_forerun == 0)
       user_data.ka_out = 1; // close port slowly
    else
       user_data.ka_out = 5; // open port
+*/
 
    /* enter menu on release of button 2 & 3 */
    if (b2 && b3) {
