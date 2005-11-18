@@ -68,8 +68,8 @@ struct {
    float         ln2_valve_temp;
    float         ln2_heater_temp;
 
-   float         jt_valve_forerun;
-   float         jt_valve_return;
+   float         jt_forerun_valve;
+   float         jt_bypass_valve;
    float         jt_temp;
 
    float         lhe_level1; // main
@@ -118,8 +118,8 @@ MSCB_INFO_VAR code variables[] = {
    { 4, UNIT_KELVIN,  0, 0, MSCBF_FLOAT,               "LN2vlv T", &user_data.ln2_valve_temp },            // 9
    { 4, UNIT_KELVIN,  0, 0, MSCBF_FLOAT,               "LN2htr T", &user_data.ln2_heater_temp },           // 10
                                                                                                          
-   { 4, UNIT_PERCENT, 0, 0, MSCBF_FLOAT,               "JT vlveF", &user_data.jt_valve_forerun },          // 11
-   { 4, UNIT_PERCENT, 0, 0, MSCBF_FLOAT,               "JT vlveR", &user_data.jt_valve_return },           // 12
+   { 4, UNIT_PERCENT, 0, 0, MSCBF_FLOAT,               "JT Fvlve", &user_data.jt_forerun_valve },          // 11
+   { 4, UNIT_PERCENT, 0, 0, MSCBF_FLOAT,               "JT Bvlve", &user_data.jt_bypass_valve },           // 12
    { 4, UNIT_KELVIN,  0, 0, MSCBF_FLOAT,               "JT T",     &user_data.jt_temp },                   // 13
 
    { 4, UNIT_PERCENT, 0, 0, MSCBF_FLOAT,               "LHe lvl1", &user_data.lhe_level1 },                // 14
@@ -307,7 +307,7 @@ unsigned short d;
    /* "Vorlauf" JT-valve */
    case 11:
       /* convert % to 4-20mA current */
-	   curr = 4+16*user_data.jt_valve_forerun/100.0;
+	   curr = 4+16*user_data.jt_forerun_valve/100.0;
 
       /* 0...24mA range */
       d = (curr / 24.0) * 0x1000;
@@ -324,7 +324,7 @@ unsigned short d;
    /* "Ruecklauf" JT-valve */
    case 12:
       /* convert % to 4-20mA current */
-	   curr = 4+16*user_data.jt_valve_return/100.0;
+	   curr = 4+16*user_data.jt_bypass_valve/100.0;
 
       /* 0...24mA range */
       d = (curr / 24.0) * 0x1000;
@@ -479,7 +479,7 @@ static long xdata last_ln2time = 0, last_b;
    printf("TH:%5.1f%K", user_data.lhe_temp1b);
 
    lcd_goto(0, 2);
-   printf("JT:%5.1f%%", user_data.jt_valve_forerun);
+   printf("JT:%5.1f%%", user_data.jt_forerun_valve);
    lcd_goto(10, 2);
    printf("TJ:%5.1f%K", user_data.jt_temp);
 
@@ -518,30 +518,30 @@ static long xdata last_ln2time = 0, last_b;
    /* increase HE flow with button 2 */
    if (b2) {
       if (!b2_old) {
-         user_data.jt_valve_forerun += 1;
+         user_data.jt_forerun_valve += 1;
          last_b = time();
       }
       if (time() > last_b + 70)
-         user_data.jt_valve_forerun += 1;
+         user_data.jt_forerun_valve += 1;
       if (time() > last_b + 300)
-         user_data.jt_valve_forerun += 9;
-      if (user_data.jt_valve_forerun > 100)
-         user_data.jt_valve_forerun = 100;
+         user_data.jt_forerun_valve += 9;
+      if (user_data.jt_forerun_valve > 100)
+         user_data.jt_forerun_valve = 100;
       user_write(11);
    }
 
    /* decrease HE flow with button 3 */
    if (b3) {
       if (!b3_old) {
-         user_data.jt_valve_forerun -= 1;
+         user_data.jt_forerun_valve -= 1;
          last_b = time();
       }
       if (time() > last_b + 70)
-         user_data.jt_valve_forerun -= 1;
+         user_data.jt_forerun_valve -= 1;
       if (time() > last_b + 300)
-         user_data.jt_valve_forerun -= 9;
-      if (user_data.jt_valve_forerun < 0)
-         user_data.jt_valve_forerun = 0;
+         user_data.jt_forerun_valve -= 9;
+      if (user_data.jt_forerun_valve < 0)
+         user_data.jt_forerun_valve = 0;
       user_write(11);
    }
 
