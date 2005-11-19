@@ -1443,14 +1443,14 @@ int main(int argc, char *argv[])
 {
    int i, fd, server;
    unsigned short adr;
-   char cmd[256], device[256], str[256];
+   char cmd[256], device[256], str[256], password[256];
    int debug, check_io;
 
    cmd[0] = 0;
    adr = 0;
 
    debug = check_io = server = 0;
-   device[0] = 0;
+   device[0] = password[0] = 0;
 
    /* parse command line parameters */
    for (i = 1; i < argc; i++) {
@@ -1465,6 +1465,8 @@ int main(int argc, char *argv[])
             goto usage;
          else if (argv[i][1] == 'd')
             strcpy(device, argv[++i]);
+         else if (argv[i][1] == 'p')
+            strcpy(password, argv[++i]);
          else if (argv[i][1] == 'a')
             adr = atoi(argv[++i]);
          else if (argv[i][1] == 'c') {
@@ -1476,11 +1478,12 @@ int main(int argc, char *argv[])
          } else {
           usage:
             printf
-                ("usage: msc [-d host:device] [-a addr] [-c Command] [-c @CommandFile] [-v] [-i]\n\n");
+                ("usage: msc [-d host:device] [-p password] [-a addr] [-c Command] [-c @CommandFile] [-v] [-i]\n\n");
             printf("       -d     device, usually usb0 for first USB port,\n");
             printf("              or \"<host>:usb0\" for RPC connection\n");
             printf
                 ("              or \"mscb<xxx>\" for Ethernet connection to SUBM_260\n");
+            printf("       -p     optional password for SUBM_260\n");
             printf("       -s     Start RPC server\n");
             printf("       -a     Address node before executing command\n");
             printf("       -c     Execute command immediately\n");
@@ -1504,7 +1507,7 @@ int main(int argc, char *argv[])
    }
 
    /* open port */
-   fd = mscb_init(device, sizeof(device), NULL, debug ? 1 : 0);
+   fd = mscb_init(device, sizeof(device), password, debug ? 1 : 0);
 
    if (fd == EMSCB_WRONG_PASSWORD) {
       printf("Enter password to access %s: ", device);
