@@ -635,7 +635,7 @@ int mrpc_connect(char *host_name, int port)
    /* create a new socket for connecting to remote server */
    sock = socket(AF_INET, SOCK_STREAM, 0);
    if (sock == -1) {
-      perror("mrpc_connect");
+      perror("mrpc_connect,socket");
       return -1;
    }
 
@@ -647,7 +647,7 @@ int mrpc_connect(char *host_name, int port)
 
    status = bind(sock, (void *) &bind_addr, sizeof(bind_addr));
    if (status < 0) {
-      perror("mrpc_connect");
+      perror("mrpc_connect,bind");
       return -1;
    }
 
@@ -659,7 +659,7 @@ int mrpc_connect(char *host_name, int port)
 
    phe = gethostbyname(host_name);
    if (phe == NULL) {
-      perror("mrpc_connect");
+      perror("mrpc_connect,gethostbyname");
       return -1;
    }
    memcpy((char *) &(bind_addr.sin_addr), phe->h_addr, phe->h_length);
@@ -667,7 +667,7 @@ int mrpc_connect(char *host_name, int port)
    status = connect(sock, (void *) &bind_addr, sizeof(bind_addr));
    if (status != 0) {
       if (errno)
-         perror("mrpc_connect");
+         perror("mrpc_connect,connect");
       return -1;
    }
 
