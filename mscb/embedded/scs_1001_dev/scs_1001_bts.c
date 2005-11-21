@@ -272,7 +272,8 @@ void user_init(unsigned char init)
    printf("  Revision:  %s", str);
 
    user_data.error = 0;
-   user_data.bts_state = 0;
+   if (user_data.bts_state > 2) // keep state from EEPROM if ok
+      user_data.bts_state = 0;
    user_data.ka_out = 0; // 1
    user_data.ln2_valve = 0;
    user_data.ln2_heater = 0;
@@ -299,8 +300,8 @@ unsigned short d;
            DOUT2 = (user_data.ka_out & (1<<1)) == 1;
            DOUT3 = (user_data.ka_out & (1<<2)) == 1; break;
    
-   /* LN2 valve has inverse logic (closes on power) */
-   case 7: RELAIS0 = user_data.ln2_valve; break; 
+   /* LN2 valve has inverse logic */
+   case 7: RELAIS0 = !user_data.ln2_valve; break; 
 
    case 8: DOUT0   = !user_data.ln2_heater; break;
    
@@ -308,6 +309,9 @@ unsigned short d;
    case 11:
       /* convert % to 4-20mA current */
 	   curr = 4+16*user_data.jt_forerun_valve/100.0;
+
+      /* correct for measured offset */
+      curr -= 0.22;
 
       /* 0...24mA range */
       d = (curr / 24.0) * 0x1000;
@@ -326,6 +330,9 @@ unsigned short d;
       /* convert % to 4-20mA current */
 	   curr = 4+16*user_data.jt_bypass_valve/100.0;
 
+      /* correct for measured offset */
+      curr -= 0.32;
+
       /* 0...24mA range */
       d = (curr / 24.0) * 0x1000;
       if (d >= 0x1000)
@@ -333,9 +340,9 @@ unsigned short d;
       if (d < 0)
          d = 0;
 
-      SFRPAGE = DAC0_PAGE;
-      DAC0L = d & 0xFF;
-      DAC0H = d >> 8;
+      SFRPAGE = DAC1_PAGE;
+      DAC1L = d & 0xFF;
+      DAC1H = d >> 8;
       break;
    }
 
@@ -485,11 +492,15 @@ static long xdata last_ln2time = 0, last_b;
 
    lcd_goto(0, 3);
    if (user_data.bts_state == 0)
-      printf("LN2OFF");
+      printf("LN2M0");
    else if (user_data.bts_state == 1)
-      printf("LN2ON ");
-   else
-      printf("LN2AUT");
+      printf("LN2M1 ");
+   else {
+      if (user_data.ln2_valve)
+         printf("LN2A1");
+      else
+         printf("LN2A0");
+   }
 
    lcd_goto(6, 3);
    printf(user_data.ln2_heater ? "HON " : "HOFF");
