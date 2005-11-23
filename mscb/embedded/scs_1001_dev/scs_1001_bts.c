@@ -639,9 +639,9 @@ void user_loop(void)
       user_data.ka_level = x; 
    }
 
-   if (adc_chn == 4) {
+   if (adc_chn == 5) {
       // convert voltage to current im mA (100 Ohm)
-      x = user_data.adc[4] * 10;
+      x = user_data.adc[5] * 10;
 
       // convert current to 0...2.5 bar
       x = (x-4)/16.0 * 2.5;
