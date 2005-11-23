@@ -88,7 +88,7 @@ struct {
    float         lhe_temp3b; // right TVO
 
    float         ln2_mbar;
-   float         lhe_mbar;
+   float         lhe_bar;
 
    float         quench1;
    float         quench2;
@@ -138,7 +138,7 @@ MSCB_INFO_VAR code variables[] = {
    { 4, UNIT_KELVIN,  0, 0, MSCBF_FLOAT,               "LHE T3b",  &user_data.lhe_temp3b },                // 25
 
    { 4, UNIT_BAR, PRFX_MILLI, 0, MSCBF_FLOAT,          "LN2 P",    &user_data.ln2_mbar },                  // 26
-   { 4, UNIT_BAR, PRFX_MILLI, 0, MSCBF_FLOAT,          "LHE P",    &user_data.lhe_mbar },                  // 27
+   { 4, UNIT_BAR, 0,          0, MSCBF_FLOAT,          "LHE P",    &user_data.lhe_bar },                   // 27
 
    { 4, UNIT_VOLT,    0, 0, MSCBF_FLOAT,               "Quench1",  &user_data.quench1 },                   // 28
    { 4, UNIT_VOLT,    0, 0, MSCBF_FLOAT,               "Quench2",  &user_data.quench2 },                   // 29
@@ -556,13 +556,6 @@ static long xdata last_ln2time = 0, last_b;
       user_write(11);
    }
 
-   /* request LHE from station if required */
-/*   if (user_data.jt_valve_forerun == 0)
-      user_data.ka_out = 1; // close port slowly
-   else
-      user_data.ka_out = 5; // open port
-*/
-
    /* enter menu on release of button 2 & 3 */
    if (b2 && b3) {
       while (b2 || b3)
@@ -622,9 +615,6 @@ void user_loop(void)
    if (adc_chn == 0)
       user_data.ln2_mbar = pow(10, 1.667 * user_data.adc[0] - 11.33); // PKR 251
 
-   if (adc_chn == 1)
-      user_data.lhe_mbar = pow(10, 1.667 * user_data.adc[1] - 11.33); // PKR 251
-
    if (adc_chn == 2) {
       // convert CLTS voltage to Ohm (1mA current)
       x = user_data.adc[2] / 0.001;
@@ -647,6 +637,16 @@ void user_loop(void)
       x = (x-4)/16.0 * 100;
 
       user_data.ka_level = x; 
+   }
+
+   if (adc_chn == 4) {
+      // convert voltage to current im mA (100 Ohm)
+      x = user_data.adc[4] * 10;
+
+      // convert current to 0...2.5 bar
+      x = (x-4)/16.0 * 2.5;
+
+      user_data.lhe_bar = x; 
    }
 
    adc_chn = (adc_chn + 1) % 8;
