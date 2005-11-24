@@ -601,6 +601,16 @@ static long xdata last_ln2time = 0, last_b;
    return 0;
 }
 
+/*------------------------------------------------------------------*/
+
+void set_float(float *d, float s)
+{
+  /* copy float value to user_data without intterupt */
+  DISABLE_INTERRUPTS;
+  *d = s;
+  ENABLE_INTERRUPTS;
+}
+
 /*---- User loop function ------------------------------------------*/
 
 void user_loop(void)
@@ -626,7 +636,7 @@ void user_loop(void)
       x += 273;
       if (x < 0)
          x = 0;
-      user_data.jt_temp = x; 
+      set_float(&user_data.jt_temp, x); 
    }
 
    if (adc_chn == 4) {
@@ -636,7 +646,7 @@ void user_loop(void)
       // convert current to percent
       x = (x-4)/16.0 * 100;
 
-      user_data.ka_level = x; 
+      set_float(&user_data.ka_level, x); 
    }
 
    if (adc_chn == 5) {
@@ -646,7 +656,7 @@ void user_loop(void)
       // convert current to 0...2.5 bar
       x = (x-4)/16.0 * 2.5;
 
-      user_data.lhe_bar = x; 
+      set_float(&user_data.lhe_bar, x); 
    }
 
    adc_chn = (adc_chn + 1) % 8;
@@ -657,30 +667,30 @@ void user_loop(void)
    user_data.ln2_valve_temp = temp;
    temp = (user_data.scs_910[1]*1000.0 - 224) / -2.064 + 270;
    if (temp < 0 || temp > 999) temp = 0;
-   user_data.ln2_heater_temp = temp;
+   set_float(&user_data.ln2_heater_temp, x); 
 
    temp = (user_data.scs_910[2]*1000.0 - 224) / -2.064 + 270;
    if (temp < 0 || temp > 999) temp = 0;
-   user_data.ln2_temp1 = temp;
+   set_float(&user_data.ln2_temp1, temp); 
    temp = (user_data.scs_910[3]*1000.0 - 213) / -2.087 + 270;
    if (temp < 0 || temp > 999) temp = 0;
-   user_data.ln2_temp2 = temp;
+   set_float(&user_data.ln2_temp2, temp); 
    temp = (user_data.scs_910[4]*1000.0 - 229) / -1.984 + 270;
    if (temp < 0 || temp > 999) temp = 0;
-   user_data.ln2_temp3 = temp;
+   set_float(&user_data.ln2_temp3, temp); 
    temp = (user_data.scs_910[5]*1000.0 - 243) / -1.946 + 270;
    if (temp < 0 || temp > 999) temp = 0;
-   user_data.ln2_temp4 = temp;
+   set_float(&user_data.ln2_temp4, temp); 
 
    temp = (user_data.scs_910[6]*1000.0 - 228) / -2.018 + 270;
    if (temp < 0 || temp > 999) temp = 0;
-   user_data.lhe_temp1a = temp;
+   set_float(&user_data.lhe_temp1a, temp); 
    temp = (user_data.scs_910[7]*1000.0 - 230) / -1.996 + 270;
    if (temp < 0 || temp > 999) temp = 0;
-   user_data.lhe_temp2a = temp;
+   set_float(&user_data.lhe_temp2a, temp); 
    temp = (user_data.scs_910[8]*1000.0 - 230) / -1.981 + 270;
    if (temp < 0 || temp > 999) temp = 0;
-   user_data.lhe_temp3a = temp;
+   set_float(&user_data.lhe_temp3a, temp); 
 
    if (user_data.scs_910[9] != 0) {
       x = 1/user_data.scs_910[9];
@@ -688,7 +698,7 @@ void user_loop(void)
       if (temp < 0 || temp > 999) temp = 0;
    } else 
       temp = 0;
-   user_data.lhe_temp1b = temp;
+   set_float(&user_data.lhe_temp1b, temp); 
 
    if (user_data.scs_910[10] != 0) {
       x = 1/user_data.scs_910[10];
@@ -696,7 +706,7 @@ void user_loop(void)
       if (temp < 0 || temp > 999) temp = 0;
    } else
       temp = 0;
-   user_data.lhe_temp2b = temp;
+   set_float(&user_data.lhe_temp2b, temp); 
 
    if (user_data.scs_910[11] != 0) {
       x = 1/user_data.scs_910[11];
@@ -704,13 +714,13 @@ void user_loop(void)
       if (temp < 0 || temp > 999) temp = 0;
    } else
       temp = 0;
-   user_data.lhe_temp3b = temp;
+   set_float(&user_data.lhe_temp3b, temp); 
    
    x = user_data.scs_910[12]*6;
    x = (1-x/7.32)*100;
    if (x < 0)
       x = 0;
-   user_data.lhe_level1 = x;
+   set_float(&user_data.lhe_level1, x); 
 
    /* read buttons and digital input */
    sr_read();
