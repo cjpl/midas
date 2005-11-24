@@ -15338,7 +15338,7 @@ BOOL al_evaluate_condition(char *condition, char *value)
    int i, j, index, size;
    KEY key;
    double value1, value2;
-   char str[256], op[3], function[80];
+   char value1_str[256], value2_str[256], str[256], op[3], function[80];
    char data[10000];
    DWORD time;
 
@@ -15352,7 +15352,8 @@ BOOL al_evaluate_condition(char *condition, char *value)
       if (strchr("<>=!", str[i]) != NULL)
          break;
    op[0] = str[i];
-   value2 = atof(str + i + 1);
+   for (j=1 ; str[i+j] == ' '; j++);
+   strlcpy(value2_str, str + i + j, sizeof(value2_str));
    str[i] = 0;
 
    if (i > 0 && strchr("<>=!", str[i - 1])) {
@@ -15402,20 +15403,26 @@ BOOL al_evaluate_condition(char *condition, char *value)
    if (equal_ustring(function, "access")) {
       /* check key access time */
       db_get_key_time(hDB, hkey, &time);
-      sprintf(str, "%ld", time);
-      value1 = atof(str);
+      sprintf(value1_str, "%ld", time);
+      value1 = atof(value1_str);
    } else {
       /* get key data and convert to double */
       db_get_key(hDB, hkey, &key);
       size = sizeof(data);
       db_get_data(hDB, hkey, data, &size, key.type);
-      db_sprintf(str, data, size, index, key.type);
-      value1 = atof(str);
+      db_sprintf(value1_str, data, size, index, key.type);
+      value1 = atof(value1_str);
+   }
+
+   /* convert boolean values to integers */
+   if (key.type == TID_BOOL) {
+      value1 = (value1_str[0] == 'Y' || value1_str[0] == 'y' || value1_str[0] == '1');
+      value2 = (value2_str[0] == 'Y' || value2_str[0] == 'y' || value2_str[0] == '1');
    }
 
    /* return value */
    if (value)
-      strcpy(value, str);
+      strcpy(value, value1_str);
 
    /* now do logical operation */
    if (strcmp(op, "=") == 0)
