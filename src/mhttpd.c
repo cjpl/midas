@@ -9676,7 +9676,7 @@ struct linger        ling;
       return;
    }
 
-   printf("Server listening...\n");
+   printf("Server listening on port %d...\n", tcp_port);
    do {
       FD_ZERO(&readfds);
       FD_SET(lsock, &readfds);
