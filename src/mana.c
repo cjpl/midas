@@ -3988,13 +3988,13 @@ int ma_read_event(MA_FILE * file, EVENT_HEADER * pevent, int size)
          }
 
          /* swap event header if in wrong format */
-         if (pevent->serial_number > 0x1000000) {
-            WORD_SWAP(&pevent->event_id);
-            WORD_SWAP(&pevent->trigger_mask);
-            DWORD_SWAP(&pevent->serial_number);
-            DWORD_SWAP(&pevent->time_stamp);
-            DWORD_SWAP(&pevent->data_size);
-         }
+#ifdef SWAP_EVENTS
+         WORD_SWAP(&pevent->event_id);
+         WORD_SWAP(&pevent->trigger_mask);
+         DWORD_SWAP(&pevent->serial_number);
+         DWORD_SWAP(&pevent->time_stamp);
+         DWORD_SWAP(&pevent->data_size);
+#endif         
 
          /* read event */
          n = 0;
