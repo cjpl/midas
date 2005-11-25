@@ -1414,9 +1414,13 @@ void cmd_loop(int fd, char *cmd, unsigned short adr)
       /* test1 ---------- */
       else if (match(param[0], "t1")) {
          data = atoi(param[1]);
-         mscb_link(fd, (unsigned short) current_addr, 8, &data, 4);
-
-         printf("Data: %d\n", data);
+         
+         do {
+            mscb_link(fd, (unsigned short) current_addr, 4, &data, 1);
+            printf("Data: %d\r", data);
+         } while (!kbhit());
+         while (kbhit())
+            getch();
       }
 
       /* exit/quit ---------- */

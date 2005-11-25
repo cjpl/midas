@@ -17,6 +17,7 @@
 
 #include <windows.h>
 #include <conio.h>
+#include <sys/timeb.h>
 
 #elif defined(OS_LINUX)        // Linux includes
 
@@ -28,6 +29,7 @@
 #include <sys/types.h>
 #include <sys/ioctl.h>
 #include <sys/time.h>
+#include <sys/timeb.h>
 #include <fcntl.h>
 #include <linux/parport.h>
 #include <linux/ppdev.h>
@@ -133,7 +135,7 @@ MSCB_FD mscb_fd[MSCB_MAX_FD];
 #define TIMEOUT_OUT      1000   /* ~1ms */
 
 extern int _debug_flag;         /* global debug flag */
-extern void debug_log(char *format, ...);
+extern void debug_log(char *format, int start, ...);
 
 /* RS485 flags for USB submaster */
 #define RS485_FLAG_BIT9      (1<<0)
@@ -1147,7 +1149,7 @@ int mscb_init(char *device, int bufsize, char *password, int debug)
    /* set global debug flag */
    _debug_flag = (debug == 1);
 
-   debug_log("mscb_init(device=%s,bufsize=%d,password=%s,debug=%d) ", device, bufsize, password, debug);
+   debug_log("mscb_init(device=%s,bufsize=%d,password=%s,debug=%d) ", 1, device, bufsize, password, debug);
 
    /* clear caches */
    for (i = 0; i < n_cache; i++)
@@ -1186,7 +1188,7 @@ int mscb_init(char *device, int bufsize, char *password, int debug)
 
       sprintf(device, "%s:%s", host, remote_device);
 
-      debug_log("return %d\n", index + 1);
+      debug_log("return %d\n", 0, index + 1);
       return index + 1;
    }
 
@@ -1258,7 +1260,7 @@ int mscb_init(char *device, int bufsize, char *password, int debug)
       /* linux needs some time to start-up ...??? */
       for (i = 0; i < 10; i++) {
          if (!mscb_lock(index + 1)) {
-            debug_log("return EMSCB_LOCKED\n");
+            debug_log("return EMSCB_LOCKED\n", 0);
             memset(&mscb_fd[index], 0, sizeof(MSCB_FD));
             return EMSCB_LOCKED;
          }
@@ -1274,7 +1276,7 @@ int mscb_init(char *device, int bufsize, char *password, int debug)
 
             /* check version */
             if (buf[1] != MSCB_SUBM_VERSION) {
-               debug_log("return EMSCB_SUBM_VERSION\n");
+               debug_log("return EMSCB_SUBM_VERSION\n", 0);
                memset(&mscb_fd[index], 0, sizeof(MSCB_FD));
                return EMSCB_SUBM_VERSION;
             }
@@ -1284,7 +1286,7 @@ int mscb_init(char *device, int bufsize, char *password, int debug)
       }
 
       if (n != 2 || buf[0] != MCMD_ACK) {
-         debug_log("return EMSCB_COMM_ERROR\n");
+         debug_log("return EMSCB_COMM_ERROR\n", 0);
          memset(&mscb_fd[index], 0, sizeof(MSCB_FD));
          return EMSCB_COMM_ERROR;
       }
@@ -1296,13 +1298,13 @@ int mscb_init(char *device, int bufsize, char *password, int debug)
 
       if (mscb_fd[index].fd < 0) {
          memset(&mscb_fd[index], 0, sizeof(MSCB_FD));
-         debug_log("return EMSCB_RPC_ERROR\n");
+         debug_log("return EMSCB_RPC_ERROR\n", 0);
          return EMSCB_RPC_ERROR;
       }
 
       if (!mscb_lock(index + 1)) {
          memset(&mscb_fd[index], 0, sizeof(MSCB_FD));
-         debug_log("return EMSCB_LOCKED\n");
+         debug_log("return EMSCB_LOCKED\n", 0);
          return EMSCB_LOCKED;
       }
 
@@ -1321,22 +1323,22 @@ int mscb_init(char *device, int bufsize, char *password, int debug)
       if (n != 1 || (buf[0] != MCMD_ACK && buf[0] != 0xFF)) {
          mscb_exit(index + 1);
          memset(&mscb_fd[index], 0, sizeof(MSCB_FD));
-         debug_log("return EMSCB_COMM_ERROR\n");
+         debug_log("return EMSCB_COMM_ERROR\n", 0);
          return EMSCB_COMM_ERROR;
       }
 
       if (buf[0] == 0xFF) {
          mscb_exit(index + 1);
          memset(&mscb_fd[index], 0, sizeof(MSCB_FD));
-         debug_log("return EMSCB_WRONG_PASSWORD\n");
+         debug_log("return EMSCB_WRONG_PASSWORD\n", 0);
          return EMSCB_WRONG_PASSWORD;
       }
 
-      debug_log("return %d\n", index + 1);
+      debug_log("return %d\n", 0, index + 1);
       return index + 1;
    }
 
-   debug_log("return %d\n", index + 1);
+   debug_log("return %d\n", 0, index + 1);
    return index + 1;
 }
 
@@ -1697,23 +1699,43 @@ int mscb_reset(int fd)
 
 \********************************************************************/
 {
-   if (fd > MSCB_MAX_FD || fd < 1 || !mscb_fd[fd - 1].type)
+   char buf[10];
+
+   debug_log("mscb_reset(fd=%d) ", 1, fd);
+
+   if (fd > MSCB_MAX_FD || fd < 1 || !mscb_fd[fd - 1].type) {
+      debug_log("return MSCB_INVAL_PARAM\n", 0);
       return MSCB_INVAL_PARAM;
+   }
 
    if (mrpc_connected(fd))
       return mrpc_call(mscb_fd[fd - 1].fd, RPC_MSCB_RESET, mscb_fd[fd - 1].remote_fd);
 
-   if (mscb_lock(fd) != MSCB_SUCCESS)
+   if (mscb_lock(fd) != MSCB_SUCCESS) {
+      debug_log("return MSCB_MUTEX\n", 0);
       return MSCB_MUTEX;
+   }
 
    if (mscb_fd[fd - 1].type == MSCB_TYPE_LPT) {
       /* toggle reset */
       pp_wcontrol(fd, LPT_RESET, 1);
       Sleep(100);               // for elko
       pp_wcontrol(fd, LPT_RESET, 0);
-   } else if (mscb_fd[fd - 1].type == MSCB_TYPE_USB) {
+   } else if (mscb_fd[fd - 1].type == MSCB_TYPE_ETH) {
 
-      char buf[10];
+      buf[0] = MCMD_INIT;
+      mscb_out(fd, buf, 1, RS485_FLAG_CMD);
+
+      mrpc_disconnect(fd);
+      Sleep(5000);  // let submaster obtain IP address
+      mscb_fd[fd - 1].fd = mrpc_connect(mscb_fd[fd - 1].device, MSCB_NET_PORT);
+      if (mscb_fd[fd - 1].fd < 0) {
+         mscb_release(fd);
+         debug_log("return MSCB_TIMEOUT (mrpc_connect)\n", 0);
+         return MSCB_TIMEOUT;
+      }
+
+   } else if (mscb_fd[fd - 1].type == MSCB_TYPE_USB) {
 
       buf[0] = MCMD_INIT;
       mscb_out(fd, buf, 1, RS485_FLAG_CMD);
@@ -1722,8 +1744,14 @@ int mscb_reset(int fd)
       musb_open(&mscb_fd[fd - 1].ui, 0x10C4, 0x1175, atoi(mscb_fd[fd - 1].device+3), 1, 0);
    }
 
+   /* send 0's to overflow partially filled node receive buffer */
+   memset(buf, 0, sizeof(buf));
+   mscb_out(fd, buf, 10, RS485_FLAG_BIT9 | RS485_FLAG_NO_ACK);
+   Sleep(10);
+
    mscb_release(fd);
 
+   debug_log("return MSCB_SUCCESS\n", 0);
    return MSCB_SUCCESS;
 }
 
@@ -2284,12 +2312,12 @@ int mscb_write(int fd, unsigned short adr, unsigned char index, void *data, int 
          break;
 
    if (i < size && ((char *)data)[i])
-      debug_log("mscb_write(fd=%d,adr=%d,index=%d,data=%p,size=%d) ", fd, adr, index, data, size);
+      debug_log("mscb_write(fd=%d,adr=%d,index=%d,data=%p,size=%d) ", 1, fd, adr, index, data, size);
    else
-      debug_log("mscb_write(fd=%d,adr=%d,index=%d,data=\"%s\",size=%d) ", fd, adr, index, (char *)data, size);
+      debug_log("mscb_write(fd=%d,adr=%d,index=%d,data=\"%s\",size=%d) ", 1, fd, adr, index, (char *)data, size);
 
    if (fd > MSCB_MAX_FD || fd < 1 || !mscb_fd[fd - 1].type) {
-      debug_log("return MSCB_INVAL_PARAM\n");
+      debug_log("return MSCB_INVAL_PARAM\n", 0);
       return MSCB_INVAL_PARAM;
    }
 
@@ -2297,12 +2325,12 @@ int mscb_write(int fd, unsigned short adr, unsigned char index, void *data, int 
       return mrpc_call(mscb_fd[fd - 1].fd, RPC_MSCB_WRITE, mscb_fd[fd - 1].remote_fd, adr, index, data, size);
 
    if (size < 1) {
-      debug_log("return MSCB_INVAL_PARAM\n");
+      debug_log("return MSCB_INVAL_PARAM\n", 0);
       return MSCB_INVAL_PARAM;
    }
 
    if (mscb_lock(fd) != MSCB_SUCCESS) {
-      debug_log("return MSCB_MUTEX\n");
+      debug_log("return MSCB_MUTEX\n", 0);
       return MSCB_MUTEX;
    }
 
@@ -2346,19 +2374,19 @@ int mscb_write(int fd, unsigned short adr, unsigned char index, void *data, int 
       i = mscb_in(fd, ack, 2, 10000);
       mscb_release(fd);
       if (i < 2) {
-         debug_log("return MSCB_TIMEOUT\n");
+         debug_log("return MSCB_TIMEOUT\n", 0);
          status = MSCB_TIMEOUT;
          continue;
       }
 
       if (ack[0] != MCMD_ACK || ack[1] != crc) {
-         debug_log("return MSCB_CRC_ERROR\n");
+         debug_log("return MSCB_CRC_ERROR\n", 0);
          status = MSCB_CRC_ERROR;
          continue;
       }
 
       status = MSCB_SUCCESS;
-      debug_log("return MSCB_SUCCESS\n");
+      debug_log("return MSCB_SUCCESS\n", 0);
       break;
    }
 
@@ -2400,12 +2428,12 @@ int mscb_write_no_retries(int fd, unsigned short adr, unsigned char index, void 
          break;
 
    if (i < size && ((char *)data)[i])
-      debug_log("mscb_write_no_retries(fd=%d,adr=%d,index=%d,data=%p,size=%d) ", fd, adr, index, data, size);
+      debug_log("mscb_write_no_retries(fd=%d,adr=%d,index=%d,data=%p,size=%d) ", 1, fd, adr, index, data, size);
    else
-      debug_log("mscb_write_no_retries(fd=%d,adr=%d,index=%d,data=\"%s\",size=%d) ", fd, adr, index, (char *)data, size);
+      debug_log("mscb_write_no_retries(fd=%d,adr=%d,index=%d,data=\"%s\",size=%d) ", 1, fd, adr, index, (char *)data, size);
 
    if (fd > MSCB_MAX_FD || fd < 1 || !mscb_fd[fd - 1].type) {
-      debug_log("return MSCB_INVAL_PARAM\n");
+      debug_log("return MSCB_INVAL_PARAM\n", 0);
       return MSCB_INVAL_PARAM;
    }
 
@@ -2413,12 +2441,12 @@ int mscb_write_no_retries(int fd, unsigned short adr, unsigned char index, void 
       return mrpc_call(mscb_fd[fd - 1].fd, RPC_MSCB_WRITE_NO_RETRIES, mscb_fd[fd - 1].remote_fd, adr, index, data, size);
 
    if (size < 1) {
-      debug_log("return MSCB_INVAL_PARAM\n");
+      debug_log("return MSCB_INVAL_PARAM\n", 0);
       return MSCB_INVAL_PARAM;
    }
 
    if (mscb_lock(fd) != MSCB_SUCCESS) {
-      debug_log("return MSCB_MUTEX\n");
+      debug_log("return MSCB_MUTEX\n", 0);
       return MSCB_MUTEX;
    }
 
@@ -2459,16 +2487,16 @@ int mscb_write_no_retries(int fd, unsigned short adr, unsigned char index, void 
    i = mscb_in(fd, ack, 2, 10000);
    mscb_release(fd);
    if (i < 2) {
-      debug_log("return MSCB_TIMEOUT\n");
+      debug_log("return MSCB_TIMEOUT\n", 0);
       return MSCB_TIMEOUT;
    }
 
    if (ack[0] != MCMD_ACK || ack[1] != crc) {
-      debug_log("return MSCB_CRC_ERROR\n");
+      debug_log("return MSCB_CRC_ERROR\n", 0);
       return MSCB_CRC_ERROR;
    }
 
-   debug_log("return MSCB_SUCCESS\n");
+   debug_log("return MSCB_SUCCESS\n", 0);
    return MSCB_SUCCESS;
 }
 
@@ -3142,7 +3170,7 @@ int mscb_read(int fd, unsigned short adr, unsigned char index, void *data, int *
    int i, j, n, status;
    unsigned char buf[256], str[1000], crc;
 
-   debug_log("mscb_read(fd=%d,adr=%d,index=%d,data=%p,size=%d) ", fd, adr, index, data, *size);
+   debug_log("mscb_read(fd=%d,adr=%d,index=%d,data=%p,size=%d) ", 1, fd, adr, index, data, *size);
 
    if (*size > 256)
       return MSCB_INVAL_PARAM;
@@ -3151,7 +3179,7 @@ int mscb_read(int fd, unsigned short adr, unsigned char index, void *data, int *
    status = 0;
 
    if (fd > MSCB_MAX_FD || fd < 1 || !mscb_fd[fd - 1].type) {
-      debug_log("return MSCB_INVAL_PARAM\n");
+      debug_log("return MSCB_INVAL_PARAM\n", 0);
       return MSCB_INVAL_PARAM;
    }
 
@@ -3159,19 +3187,33 @@ int mscb_read(int fd, unsigned short adr, unsigned char index, void *data, int *
       return mrpc_call(mscb_fd[fd - 1].fd, RPC_MSCB_READ, mscb_fd[fd - 1].remote_fd, adr, index, data, size);
 
    if (mscb_lock(fd) != MSCB_SUCCESS) {
-      debug_log("return MSCB_MUTEX\n");
+      debug_log("return MSCB_MUTEX\n", 0);
       return MSCB_MUTEX;
    }
 
    /* try ten times */
    for (n = i = 0; n < 10 ; n++) {
+
+      /* after three times, flush node communication */
+      if (n == 3) {
+#ifndef _USRDLL
+         printf("Flush node communication\n");
+#endif
+         debug_log("Flush node communication\n", 1);
+         memset(buf, 0, sizeof(buf));
+         mscb_out(fd, buf, 10, RS485_FLAG_BIT9 | RS485_FLAG_NO_ACK);
+         Sleep(100);
+      }
+
       /* after five times, reset submaster */
       if (n == 5) {
 #ifndef _USRDLL
-         printf("Automatic submaster reset.\n");
+         printf("Automatic submaster reset\n");
 #endif
-
+         debug_log("Automatic submaster reset\n", 1);
+         mscb_release(fd);
          mscb_reset(fd);
+         mscb_lock(fd);
          Sleep(100);
       }
 
@@ -3189,6 +3231,7 @@ int mscb_read(int fd, unsigned short adr, unsigned char index, void *data, int *
          /* show error, but repeat 10 times */
          printf("Timeout writing to sumbster\n");
 #endif
+         debug_log("Timeout writing to sumbster\n", 1);
          continue;
       }
 
@@ -3200,6 +3243,7 @@ int mscb_read(int fd, unsigned short adr, unsigned char index, void *data, int *
          /* show error, but repeat request */
          printf("Timeout from RS485 bus\n");
 #endif
+         debug_log("Timeout from RS485 bus\n", 1);
          status = MSCB_TIMEOUT;
          continue;
       }
@@ -3229,7 +3273,7 @@ int mscb_read(int fd, unsigned short adr, unsigned char index, void *data, int *
          if (i - 3 > *size) {
             mscb_release(fd);
             *size = 0;
-            debug_log("return MSCB_NO_MEM, i=%d, *size=%d\n", i, *size);
+            debug_log("return MSCB_NO_MEM, i=%d, *size=%d\n", 0, i, *size);
             return MSCB_NO_MEM;
          }
 
@@ -3239,7 +3283,7 @@ int mscb_read(int fd, unsigned short adr, unsigned char index, void *data, int *
          if (i - 2 > *size) {
             mscb_release(fd);
             *size = 0;
-            debug_log("return MSCB_NO_MEM, i=%d, *size=%d\n", i, *size);
+            debug_log("return MSCB_NO_MEM, i=%d, *size=%d\n", 0, i, *size);
             return MSCB_NO_MEM;
          }
 
@@ -3256,24 +3300,25 @@ int mscb_read(int fd, unsigned short adr, unsigned char index, void *data, int *
       sprintf(str, "return %d bytes: ", *size);
       for (j=0 ; j<*size ; j++) {
          sprintf(str+strlen(str), "0x%02X ", 
-            *(((unsigned char *)data)+i));
-         if (isalnum(*(((unsigned char *)data)+i)))
-            sprintf(str+strlen(str), "(%c) ", 
-               *(((unsigned char *)data)+i));
+            *(((unsigned char *)data)+j));
+         if (isalnum(*(((unsigned char *)data)+j)))
+            sprintf(str+strlen(str), "('%c') ", 
+               *(((unsigned char *)data)+j));
       }
       strlcat(str, "\n", sizeof(str)); 
-      debug_log(str);
+      debug_log(str, 0);
 
       return MSCB_SUCCESS;
    }
 
    mscb_release(fd);
 
+   debug_log("\n", 0);
    if (status == MSCB_TIMEOUT)
-      debug_log("return MSCB_TIMEOUT\n");
+      debug_log("return MSCB_TIMEOUT\n", 1);
 
    if (status == MSCB_CRC_ERROR)
-      debug_log("return MSCB_CRC_ERROR");
+      debug_log("return MSCB_CRC_ERROR\n", 1);
 
    return status;
 }
@@ -3309,7 +3354,7 @@ int mscb_read_no_retries(int fd, unsigned short adr, unsigned char index, void *
    int i, j, status;
    unsigned char buf[256], str[1000], crc;
 
-   debug_log("mscb_read_no_retries(fd=%d,adr=%d,index=%d,data=%p,size=%d) ", fd, adr, index, data, *size);
+   debug_log("mscb_read_no_retries(fd=%d,adr=%d,index=%d,data=%p,size=%d) ", 1, fd, adr, index, data, *size);
 
    if (*size > 256)
       return MSCB_INVAL_PARAM;
@@ -3318,7 +3363,7 @@ int mscb_read_no_retries(int fd, unsigned short adr, unsigned char index, void *
    status = 0;
 
    if (fd > MSCB_MAX_FD || fd < 1 || !mscb_fd[fd - 1].type) {
-      debug_log("return MSCB_INVAL_PARAM\n");
+      debug_log("return MSCB_INVAL_PARAM\n", 0);
       return MSCB_INVAL_PARAM;
    }
 
@@ -3326,7 +3371,7 @@ int mscb_read_no_retries(int fd, unsigned short adr, unsigned char index, void *
       return mrpc_call(mscb_fd[fd - 1].fd, RPC_MSCB_READ_NO_RETRIES, mscb_fd[fd - 1].remote_fd, adr, index, data, size);
 
    if (mscb_lock(fd) != MSCB_SUCCESS) {
-      debug_log("return MSCB_MUTEX\n");
+      debug_log("return MSCB_MUTEX\n", 0);
       return MSCB_MUTEX;
    }
 
@@ -3385,7 +3430,7 @@ int mscb_read_no_retries(int fd, unsigned short adr, unsigned char index, void *
       if (i - 3 > *size) {
          mscb_release(fd);
          *size = 0;
-         debug_log("return MSCB_NO_MEM, i=%d, *size=%d\n", i, *size);
+         debug_log("return MSCB_NO_MEM, i=%d, *size=%d\n", 0, i, *size);
          return MSCB_NO_MEM;
       }
 
@@ -3395,7 +3440,7 @@ int mscb_read_no_retries(int fd, unsigned short adr, unsigned char index, void *
       if (i - 2 > *size) {
          mscb_release(fd);
          *size = 0;
-         debug_log("return MSCB_NO_MEM, i=%d, *size=%d\n", i, *size);
+         debug_log("return MSCB_NO_MEM, i=%d, *size=%d\n", 0, i, *size);
          return MSCB_NO_MEM;
       }
 
@@ -3412,13 +3457,13 @@ int mscb_read_no_retries(int fd, unsigned short adr, unsigned char index, void *
    sprintf(str, "return %d bytes: ", *size);
    for (j=0 ; j<*size ; j++) {
       sprintf(str+strlen(str), "0x%02X ", 
-         *(((unsigned char *)data)+i));
-      if (isalnum(*(((unsigned char *)data)+i)))
-         sprintf(str+strlen(str), "(%c) ", 
-            *(((unsigned char *)data)+i));
+         *(((unsigned char *)data)+j));
+      if (isalnum(*(((unsigned char *)data)+j)))
+         sprintf(str+strlen(str), "('%c') ", 
+            *(((unsigned char *)data)+j));
    }
    strlcat(str, "\n", sizeof(str)); 
-   debug_log(str);
+   debug_log(str, 0);
 
    return MSCB_SUCCESS;
 }
@@ -3475,7 +3520,9 @@ int mscb_read_range(int fd, unsigned short adr, unsigned char index1, unsigned c
          printf("Automatic submaster reset.\n");
 #endif
 
+         mscb_release(fd);
          mscb_reset(fd);
+         mscb_lock(fd);
          Sleep(100);
       }
 
@@ -3547,7 +3594,7 @@ int mscb_read_block(int fd, unsigned short adr, unsigned char index, void *data,
    int i, n, error_count;
    unsigned char buf[256], crc;
 
-   debug_log("mscb_read(fd=%d,adr=%d,index=%d,data=%p,size=%d) ", fd, adr, index, data, *size);
+   debug_log("mscb_read(fd=%d,adr=%d,index=%d,data=%p,size=%d) ", 1, fd, adr, index, data, *size);
 
    if (*size > 256)
       return MSCB_INVAL_PARAM;
@@ -3555,7 +3602,7 @@ int mscb_read_block(int fd, unsigned short adr, unsigned char index, void *data,
    memset(data, 0, *size);
 
    if (fd > MSCB_MAX_FD || fd < 1 || !mscb_fd[fd - 1].type) {
-      debug_log("return MSCB_INVAL_PARAM\n");
+      debug_log("return MSCB_INVAL_PARAM\n", 0);
       return MSCB_INVAL_PARAM;
    }
 
@@ -3871,7 +3918,7 @@ int mscb_link(int fd, unsigned short adr, unsigned char index, void *data, int s
    int i, s, status;
    MSCB_INFO_VAR info;
 
-   debug_log("mscb_link( %d %d %d * %d)\n", fd, adr, index, size);
+   debug_log("mscb_link( %d %d %d * %d)\n", 1, fd, adr, index, size);
 
    /* check if variable in cache */
    for (i = 0; i < n_cache; i++)
@@ -3938,6 +3985,8 @@ int mscb_link(int fd, unsigned short adr, unsigned char index, void *data, int s
 
       memcpy(data, cache[i].data, size);
    }
+
+   debug_log("mscb_link() return MSCB_SUCCESS\n", 1);
 
    return MSCB_SUCCESS;
 }
