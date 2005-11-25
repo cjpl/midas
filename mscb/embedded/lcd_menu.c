@@ -7,7 +7,7 @@
   Contents:     Menu functions for SCS-1000 using LCD display
                 and four buttons
 
-  $Id:$
+  $Id$
 
 \********************************************************************/
 
@@ -21,7 +21,7 @@ extern unsigned char application_display(bit init);
 extern void user_write(unsigned char index) reentrant;
 extern MSCB_INFO_VAR code variables[];
 extern SYS_INFO sys_info;
-extern bit flash_param, reboot;
+extern bit flash_param;
 extern unsigned char idata _flkey;
 
 extern bit b0, b1, b2, b3;     // buttons defined in scs-1000.c
@@ -453,8 +453,12 @@ void lcd_menu()
                }
  
                /* check for reboot command */
-               if (system_menu && var_index == 3)
-                  reboot = 1;
+               if (system_menu && var_index == 3) {
+#ifdef CPU_C8051F120
+                  SFRPAGE = LEGACY_PAGE;
+#endif
+                  RSTSRC = 0x10;         // force software reset
+               }
             }
 
             /* evaluate prev button */
