@@ -41,6 +41,9 @@ SUBM_CFG code  *subm_cfg;
 SUBM_CFG xdata *subm_cfg_write;
 
 bit configured;        // set after being configuration
+bit watchdog_on;       // set after DHCP request
+
+sbit CS8900A_RESET = P0 ^ 5;
 
 /*---- MSCB commands -----------------------------------------------*/
 
@@ -126,7 +129,7 @@ void setup(void)
    P1MDOUT = 0xFF;
    P2MDOUT = 0xFF;
    P3MDOUT = 0xFF;
-   P0 = 0xC0;                   // /WR, /RD, are high, RESET is low
+   P0 = 0xE0;                   // /WR, /RD, are high, RESET is high
    P1 = 0x00;
    P2 = 0x00;                   // P1, P2 contain the address lines
    P3 = 0xFF;                   // P3 contains the data lines
@@ -170,6 +173,10 @@ void setup(void)
 
    /* init memory */
    RS485_ENABLE = 0;
+
+   /* remove reset from CS8900A chip */
+   delay_ms(10);
+   CS8900A_RESET = 0;
 
    /* initialize UART0 */
    uart_init(0, BD_115200);
@@ -286,8 +293,42 @@ void serial_int(void) interrupt 4 using 1
 
 /*------------------------------------------------------------------*/
 
+/* dummy to be called by delay_ms() */
 void yield()
 {
+}
+
+/*------------------------------------------------------------------*/
+
+unsigned short wd_timer = 0;
+
+/* called from 10ms timer interrupt in MN_PORT.c */
+void wd_refresh()
+{
+   wd_timer++;
+
+   /* timer expires after 10 sec of inactivity */
+   if (watchdog_on && wd_timer < 1000)
+      WDTCN = 0xA5;
+}
+
+void wd_reset()
+{
+   wd_timer = 0;
+}
+
+void wd_enable()
+{
+   watchdog_on = 1;
+   wd_timer = 0;
+   WDTCN = 0xA5;
+}
+
+void wd_disable()
+{
+   watchdog_on = 0;
+   WDTCN = 0xDE;
+   WDTCN = 0xAD;
 }
 
 /*------------------------------------------------------------------*/
@@ -441,7 +482,6 @@ unsigned short i, to;
          }
       }
 
-      yield();
       delay_us(100);
    }
 
@@ -591,8 +631,11 @@ void main(void)
    // obtain IP address
    mn_dhcp_start(NULL, DHCP_DEFAULT_LEASE_TIME);
 
+   // turn on watchdog
+   wd_enable();
+
    do {
-      yield();
+      wd_reset();
 
       if (!configured)
          led_blink(0, 1, 50);
@@ -614,8 +657,7 @@ void main(void)
          if (rs485_send(socket_no, n-1, flags)) {
 
             /* wait until sent */
-            while (n_rs485_tx)
-               yield();
+            while (n_rs485_tx);
 
             /* wait for data to be received */
             rs485_receive(socket_no, flags);
