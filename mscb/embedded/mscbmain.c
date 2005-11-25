@@ -91,7 +91,6 @@ sbit WD_RESET = CSR ^ 3;        // got rebooted by watchdog reset
 bit addressed;                  // true if node addressed
 bit flash_param;                // used for EEPROM flashing
 bit flash_program;              // used for upgrading firmware
-bit reboot;                     // used for rebooting
 bit configured;                 // TRUE if node is configured
 bit flash_allowed;              // TRUE 5 sec after booting node
 bit wrong_cpu;                  // TRUE if code uses xdata and CPU does't have it
@@ -246,7 +245,6 @@ void setup(void)
    addressed = 0;
    flash_param = 0;
    flash_program = 0;
-   reboot = 0;
    configured = 1;
    flash_allowed = 0;
    wrong_cpu = 0;
@@ -573,7 +571,11 @@ void interprete(void)
       break;
 
    case CMD_INIT:
-      reboot = 1;               // reboot in next main loop
+#ifdef CPU_C8051F120
+      SFRPAGE = LEGACY_PAGE;
+#endif
+
+      RSTSRC = 0x10;         // force software reset
       break;
 
    case CMD_GET_INFO:
@@ -1383,14 +1385,6 @@ void yield(void)
    /* allow flash 3 sec after reboot */
    if (time() > 300)
       flash_allowed = 1;
-
-   if (reboot) {
-#ifdef CPU_C8051F120
-      SFRPAGE = LEGACY_PAGE;
-#endif
-
-      RSTSRC = 0x10;         // force software reset
-   }
 
 }
 
