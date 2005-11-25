@@ -1229,6 +1229,8 @@ sbit LCD_SD  = LCD ^ 0;
 
 lcd_out(unsigned char d, bit df)
 {
+   unsigned char timeout;
+
    if (!lcd_present)
       return;
 
@@ -1244,8 +1246,11 @@ lcd_out(unsigned char d, bit df)
    delay_us(1);
    LCD_E = 1;
 
-   delay_us(10);                // let signals settle
-   while (LCD_DB7);             // loop if busy
+   for (timeout = 0 ; timeout < 200 ; timeout++) {
+     delay_us(10);              // let signals settle
+     if (!LCD_DB7)              // loop if busy
+       break;
+   }
 
    LCD_E = 0;
    delay_us(1);
