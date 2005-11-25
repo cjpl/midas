@@ -15,6 +15,7 @@
 #include <io.h>
 #include <fcntl.h>
 #include <time.h>
+#include <sys/timeb.h>
 
 #elif defined(__linux__)
 
@@ -24,6 +25,7 @@
 #include <sys/types.h>
 #include <sys/time.h>
 #include <sys/socket.h>
+#include <sys/timeb.h>
 #include <netdb.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
@@ -245,29 +247,39 @@ char recv_buffer[NET_BUFFER_SIZE];
 
 /*------------------------------------------------------------------*/
 
-void debug_log(char *format, ...)
+void debug_log(char *format, int start, ...)
 {
    int fh;
-   char str[256];
+   char str[256], line[256];
    va_list argptr;
+   struct timeb tb;
 
    if (!_debug_flag)
       return;
 
-   va_start(argptr, format);
+   line[0] = 0;
+   if (start) {
+      ftime(&tb);
+      strcpy(line, ctime(&tb.time)+11);
+      sprintf(line+8, ".%03d ", tb.millitm);
+   }
+
+   va_start(argptr, start);
    vsprintf(str, (char *) format, argptr);
    va_end(argptr);
 
+   strcat(line, str);
+
    /* if debug flag equals 2, write to stdout */
    if (_debug_flag == 2)
-      write(fileno(stdout), str, strlen(str));
+      write(fileno(stdout), line, strlen(line));
    else {
       /* else write to file */
       fh = open("mscb_debug.log", O_CREAT | O_WRONLY | O_APPEND, 0644);
       if (fh < 0)
          return;
 
-      write(fh, str, strlen(str));
+      write(fh, line, strlen(line));
       close(fh);
    }
 }
@@ -758,7 +770,7 @@ int mrpc_call(int sock, const int routine_id, ...)
    time(&now);
    strcpy(str, ctime(&now));
    str[19] = 0;
-   debug_log("%s %s (", str + 4, rpc_list[i].name);
+   debug_log("%s %s (", 0, str + 4, rpc_list[i].name);
 
    /* examine variable argument list and convert it to parameter array */
    va_start(ap, routine_id);
@@ -833,41 +845,41 @@ int mrpc_call(int sock, const int routine_id, ...)
 
          switch (tid) {
          case TID_BYTE:
-            debug_log(" %d", *((unsigned char *) param_ptr));
+            debug_log(" %d", 0, *((unsigned char *) param_ptr));
             break;
          case TID_SBYTE:
-            debug_log(" %d", *((char *) param_ptr));
+            debug_log(" %d", 0, *((char *) param_ptr));
             break;
          case TID_CHAR:
-            debug_log(" %c", *((char *) param_ptr));
+            debug_log(" %c", 0, *((char *) param_ptr));
             break;
          case TID_WORD:
-            debug_log(" %d", *((unsigned short *) param_ptr));
+            debug_log(" %d", 0, *((unsigned short *) param_ptr));
             break;
          case TID_SHORT:
-            debug_log(" %d", *((short *) param_ptr));
+            debug_log(" %d", 0, *((short *) param_ptr));
             break;
          case TID_DWORD:
-            debug_log(" %d", *((unsigned int *) param_ptr));
+            debug_log(" %d", 0, *((unsigned int *) param_ptr));
             break;
          case TID_INT:
-            debug_log(" %d", *((int *) param_ptr));
+            debug_log(" %d", 0, *((int *) param_ptr));
             break;
          case TID_BOOL:
-            debug_log(" %d", *((int *) param_ptr));
+            debug_log(" %d", 0, *((int *) param_ptr));
             break;
          case TID_FLOAT:
-            debug_log(" %f", *((float *) param_ptr));
+            debug_log(" %f", 0, *((float *) param_ptr));
             break;
          case TID_DOUBLE:
-            debug_log(" %lf", *((double *) param_ptr));
+            debug_log(" %lf", 0, *((double *) param_ptr));
             break;
          case TID_STRING:
-            debug_log(" %s", (char *) param_ptr);
+            debug_log(" %s", 0, (char *) param_ptr);
             break;
 
          default:
-            debug_log(" *");
+            debug_log(" *", 0);
             break;
          }
 
@@ -876,7 +888,7 @@ int mrpc_call(int sock, const int routine_id, ...)
       }
    }
 
-   debug_log(" ) : (");
+   debug_log(" ) : (", 0);
 
    va_end(ap);
 
@@ -965,41 +977,41 @@ int mrpc_call(int sock, const int routine_id, ...)
 
          switch (tid) {
          case TID_BYTE:
-            debug_log(" %d", *((unsigned char *) param_ptr));
+            debug_log(" %d", 0, *((unsigned char *) param_ptr));
             break;
          case TID_SBYTE:
-            debug_log(" %d", *((char *) param_ptr));
+            debug_log(" %d", 0, *((char *) param_ptr));
             break;
          case TID_CHAR:
-            debug_log(" %c", *((char *) param_ptr));
+            debug_log(" %c", 0, *((char *) param_ptr));
             break;
          case TID_WORD:
-            debug_log(" %d", *((unsigned short *) param_ptr));
+            debug_log(" %d", 0, *((unsigned short *) param_ptr));
             break;
          case TID_SHORT:
-            debug_log(" %d", *((short *) param_ptr));
+            debug_log(" %d", 0, *((short *) param_ptr));
             break;
          case TID_DWORD:
-            debug_log(" %d", *((unsigned int *) param_ptr));
+            debug_log(" %d", 0, *((unsigned int *) param_ptr));
             break;
          case TID_INT:
-            debug_log(" %d", *((int *) param_ptr));
+            debug_log(" %d", 0, *((int *) param_ptr));
             break;
          case TID_BOOL:
-            debug_log(" %d", *((int *) param_ptr));
+            debug_log(" %d", 0, *((int *) param_ptr));
             break;
          case TID_FLOAT:
-            debug_log(" %f", *((float *) param_ptr));
+            debug_log(" %f", 0, *((float *) param_ptr));
             break;
          case TID_DOUBLE:
-            debug_log(" %lf", *((double *) param_ptr));
+            debug_log(" %lf", 0, *((double *) param_ptr));
             break;
          case TID_STRING:
-            debug_log(" %s", (char *) param_ptr);
+            debug_log(" %s", 0, (char *) param_ptr);
             break;
 
          default:
-            debug_log(" *");
+            debug_log(" *", 0);
             break;
          }
 
@@ -1007,7 +1019,7 @@ int mrpc_call(int sock, const int routine_id, ...)
       }
    }
 
-   debug_log(" ) : %d\n", status);
+   debug_log(" ) : %d\n", 0, status);
 
    va_end(ap);
 
