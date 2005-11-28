@@ -75,17 +75,17 @@ struct {
    float         lhe_level1; // main
    float         lhe_level2; // reserve
 
-   float         ln2_temp1; // screen left
-   float         ln2_temp2; // screen right
-   float         ln2_temp3; // screen tower
-   float         ln2_temp4; // screen top
+   float         ln2_temp_left;     // screen left
+   float         ln2_temp_right;    // screen right
+   float         ln2_temp_tower;    // screen tower
+   float         ln2_temp_top;      // screen top
 
-   float         lhe_temp1a; // middle D9K
-   float         lhe_temp2a; // left D9K
-   float         lhe_temp3a; // right D9K
-   float         lhe_temp1b; // middle TVO
-   float         lhe_temp2b; // left TVO
-   float         lhe_temp3b; // right TVO
+   float         lhe_temp_d_center; // middle D9K
+   float         lhe_temp_d_left;   // left D9K
+   float         lhe_temp_d_right;  // right D9K
+   float         lhe_temp_r_center; // middle TVO
+   float         lhe_temp_r_left;   // left TVO
+   float         lhe_temp_r_right;  // right TVO
 
    float         ln2_mbar;
    float         lhe_bar;
@@ -118,24 +118,24 @@ MSCB_INFO_VAR code variables[] = {
    { 4, UNIT_KELVIN,  0, 0, MSCBF_FLOAT,               "LN2vlv T", &user_data.ln2_valve_temp },            // 9
    { 4, UNIT_KELVIN,  0, 0, MSCBF_FLOAT,               "LN2htr T", &user_data.ln2_heater_temp },           // 10
                                                                                                          
-   { 4, UNIT_PERCENT, 0, 0, MSCBF_FLOAT,               "JT Fvlve", &user_data.jt_forerun_valve },          // 11
-   { 4, UNIT_PERCENT, 0, 0, MSCBF_FLOAT,               "JT Bvlve", &user_data.jt_bypass_valve },           // 12
+   { 4, UNIT_PERCENT, 0, 0, MSCBF_FLOAT,               "JT Fvlve", &user_data.jt_forerun_valve, 0, 100, 1},// 11
+   { 4, UNIT_PERCENT, 0, 0, MSCBF_FLOAT,               "JT Bvlve", &user_data.jt_bypass_valve, 0, 100, 1}, // 12
    { 4, UNIT_KELVIN,  0, 0, MSCBF_FLOAT,               "JT T",     &user_data.jt_temp },                   // 13
 
    { 4, UNIT_PERCENT, 0, 0, MSCBF_FLOAT,               "LHe lvl1", &user_data.lhe_level1 },                // 14
    { 4, UNIT_PERCENT, 0, 0, MSCBF_FLOAT,               "LHe lvl2", &user_data.lhe_level2 },                // 15
 
-   { 4, UNIT_KELVIN,  0, 0, MSCBF_FLOAT,               "LN2 T1",   &user_data.ln2_temp1 },                 // 16
-   { 4, UNIT_KELVIN,  0, 0, MSCBF_FLOAT,               "LN2 T2",   &user_data.ln2_temp2 },                 // 17
-   { 4, UNIT_KELVIN,  0, 0, MSCBF_FLOAT,               "LN2 T3",   &user_data.ln2_temp3 },                 // 18
-   { 4, UNIT_KELVIN,  0, 0, MSCBF_FLOAT,               "LN2 T4",   &user_data.ln2_temp4 },                 // 19
+   { 4, UNIT_KELVIN,  0, 0, MSCBF_FLOAT,               "LN2 T1",   &user_data.ln2_temp_left },             // 16
+   { 4, UNIT_KELVIN,  0, 0, MSCBF_FLOAT,               "LN2 T2",   &user_data.ln2_temp_right },            // 17
+   { 4, UNIT_KELVIN,  0, 0, MSCBF_FLOAT,               "LN2 T3",   &user_data.ln2_temp_tower },            // 18
+   { 4, UNIT_KELVIN,  0, 0, MSCBF_FLOAT,               "LN2 T4",   &user_data.ln2_temp_top },              // 19
 
-   { 4, UNIT_KELVIN,  0, 0, MSCBF_FLOAT,               "LHE T1a",  &user_data.lhe_temp1a },                // 20
-   { 4, UNIT_KELVIN,  0, 0, MSCBF_FLOAT,               "LHE T2a",  &user_data.lhe_temp2a },                // 21
-   { 4, UNIT_KELVIN,  0, 0, MSCBF_FLOAT,               "LHE T3a",  &user_data.lhe_temp3a },                // 22
-   { 4, UNIT_KELVIN,  0, 0, MSCBF_FLOAT,               "LHE T1b",  &user_data.lhe_temp1b },                // 23
-   { 4, UNIT_KELVIN,  0, 0, MSCBF_FLOAT,               "LHE T2b",  &user_data.lhe_temp2b },                // 24
-   { 4, UNIT_KELVIN,  0, 0, MSCBF_FLOAT,               "LHE T3b",  &user_data.lhe_temp3b },                // 25
+   { 4, UNIT_KELVIN,  0, 0, MSCBF_FLOAT,               "LHE T1a",  &user_data.lhe_temp_d_center },         // 20
+   { 4, UNIT_KELVIN,  0, 0, MSCBF_FLOAT,               "LHE T2a",  &user_data.lhe_temp_d_left },           // 21
+   { 4, UNIT_KELVIN,  0, 0, MSCBF_FLOAT,               "LHE T3a",  &user_data.lhe_temp_d_right },          // 22
+   { 4, UNIT_KELVIN,  0, 0, MSCBF_FLOAT,               "LHE T1b",  &user_data.lhe_temp_r_center },         // 23
+   { 4, UNIT_KELVIN,  0, 0, MSCBF_FLOAT,               "LHE T2b",  &user_data.lhe_temp_r_left },           // 24
+   { 4, UNIT_KELVIN,  0, 0, MSCBF_FLOAT,               "LHE T3b",  &user_data.lhe_temp_r_right },          // 25
 
    { 4, UNIT_BAR, PRFX_MILLI, 0, MSCBF_FLOAT,          "LN2 P",    &user_data.ln2_mbar },                  // 26
    { 4, UNIT_BAR, 0,          0, MSCBF_FLOAT,          "LHE P",    &user_data.lhe_bar },                   // 27
@@ -476,14 +476,14 @@ static long xdata last_ln2time = 0, last_b;
 
    /* display pressures */
    lcd_goto(0, 0);
-   printf("TT:%5.1fK", user_data.ln2_temp3);
+   printf("TT:%5.1fK", user_data.ln2_temp_tower);
    lcd_goto(10, 0);
    printf("TV:%5.1fK", user_data.ln2_valve_temp);
    
    lcd_goto(0, 1);
    printf("He:%5.1f%%", user_data.lhe_level1);
    lcd_goto(10, 1);
-   printf("TH:%5.1f%K", user_data.lhe_temp1b);
+   printf("TH:%5.1f%K", user_data.lhe_temp_r_center);
 
    lcd_goto(0, 2);
    printf("JT:%5.1f%%", user_data.jt_forerun_valve);
@@ -664,33 +664,33 @@ void user_loop(void)
    /* convert SCS_910 voltges to degree */
    temp = (user_data.scs_910[0]*1000.0 - 224) / -2.064 + 270;
    if (temp < 0 || temp > 999) temp = 0;
-   user_data.ln2_valve_temp = temp;
+   set_float(&user_data.ln2_valve_temp, temp);
    temp = (user_data.scs_910[1]*1000.0 - 224) / -2.064 + 270;
    if (temp < 0 || temp > 999) temp = 0;
-   set_float(&user_data.ln2_heater_temp, x); 
+   set_float(&user_data.ln2_heater_temp, temp); 
 
    temp = (user_data.scs_910[2]*1000.0 - 224) / -2.064 + 270;
    if (temp < 0 || temp > 999) temp = 0;
-   set_float(&user_data.ln2_temp1, temp); 
+   set_float(&user_data.ln2_temp_left, temp); 
    temp = (user_data.scs_910[3]*1000.0 - 213) / -2.087 + 270;
    if (temp < 0 || temp > 999) temp = 0;
-   set_float(&user_data.ln2_temp2, temp); 
+   set_float(&user_data.ln2_temp_right, temp); 
    temp = (user_data.scs_910[4]*1000.0 - 229) / -1.984 + 270;
    if (temp < 0 || temp > 999) temp = 0;
-   set_float(&user_data.ln2_temp3, temp); 
+   set_float(&user_data.ln2_temp_tower, temp); 
    temp = (user_data.scs_910[5]*1000.0 - 243) / -1.946 + 270;
    if (temp < 0 || temp > 999) temp = 0;
-   set_float(&user_data.ln2_temp4, temp); 
+   set_float(&user_data.ln2_temp_top, temp); 
 
    temp = (user_data.scs_910[6]*1000.0 - 228) / -2.018 + 270;
    if (temp < 0 || temp > 999) temp = 0;
-   set_float(&user_data.lhe_temp1a, temp); 
+   set_float(&user_data.lhe_temp_d_center, temp); 
    temp = (user_data.scs_910[7]*1000.0 - 230) / -1.996 + 270;
    if (temp < 0 || temp > 999) temp = 0;
-   set_float(&user_data.lhe_temp2a, temp); 
+   set_float(&user_data.lhe_temp_d_left, temp); 
    temp = (user_data.scs_910[8]*1000.0 - 230) / -1.981 + 270;
    if (temp < 0 || temp > 999) temp = 0;
-   set_float(&user_data.lhe_temp3a, temp); 
+   set_float(&user_data.lhe_temp_d_right, temp); 
 
    if (user_data.scs_910[9] != 0) {
       x = 1/user_data.scs_910[9];
@@ -698,7 +698,7 @@ void user_loop(void)
       if (temp < 0 || temp > 999) temp = 0;
    } else 
       temp = 0;
-   set_float(&user_data.lhe_temp1b, temp); 
+   set_float(&user_data.lhe_temp_r_center, temp); 
 
    if (user_data.scs_910[10] != 0) {
       x = 1/user_data.scs_910[10];
@@ -706,7 +706,7 @@ void user_loop(void)
       if (temp < 0 || temp > 999) temp = 0;
    } else
       temp = 0;
-   set_float(&user_data.lhe_temp2b, temp); 
+   set_float(&user_data.lhe_temp_r_left, temp); 
 
    if (user_data.scs_910[11] != 0) {
       x = 1/user_data.scs_910[11];
@@ -714,7 +714,7 @@ void user_loop(void)
       if (temp < 0 || temp > 999) temp = 0;
    } else
       temp = 0;
-   set_float(&user_data.lhe_temp3b, temp); 
+   set_float(&user_data.lhe_temp_r_right, temp); 
    
    x = user_data.scs_910[12]*6;
    x = (1-x/7.32)*100;
