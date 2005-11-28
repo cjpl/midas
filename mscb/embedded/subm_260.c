@@ -237,6 +237,10 @@ unsigned char set_config(SUBM_CFG *new_cfg)
    DISABLE_INTERRUPTS;
    SFRPAGE = LEGACY_PAGE;
 
+   /* Disable watchdog timer */
+   WDTCN = 0xDE;
+   WDTCN = 0xAD;
+
    /* erase scratchpad area */
 
    FLSCL = FLSCL | 1;  // enable flash writes/erases
@@ -372,6 +376,9 @@ unsigned char execute(char socket_no)
          rs485_rx_buf[1] = 0;  // reserved for future use
          tcp_send(socket_no, rs485_rx_buf, 2);
    
+         /* wait until packet sent */
+         delay_ms(100);
+
          /* reboot */
          SFRPAGE = LEGACY_PAGE;
          RSTSRC = 0x10;

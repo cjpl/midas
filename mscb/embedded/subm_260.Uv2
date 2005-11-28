@@ -114,8 +114,8 @@ Options 1,0,0  // Target 'Download'
  LX51IDS ()
   OPTDL (S8051.DLL)()(DCYG.DLL)(-pCYGF121)(S8051.DLL)()(TCYG.DLL)(-pCYGF121)
   OPTDBG 48126,-1,()()()()()()()()()() (BIN\SiC8051F.dll)()()()
- FLASH1 { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 }
- FLASH2 ()
+ FLASH1 { 1,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 }
+ FLASH2 (BIN\SiC8051F.dll)
  FLASH3 ("" ())
 EndOpt
 
