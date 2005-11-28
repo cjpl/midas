@@ -3194,17 +3194,6 @@ int mscb_read(int fd, unsigned short adr, unsigned char index, void *data, int *
    /* try ten times */
    for (n = i = 0; n < 10 ; n++) {
 
-      /* after three times, flush node communication */
-      if (n == 3) {
-#ifndef _USRDLL
-         printf("Flush node communication\n");
-#endif
-         debug_log("Flush node communication\n", 1);
-         memset(buf, 0, sizeof(buf));
-         mscb_out(fd, buf, 10, RS485_FLAG_BIT9 | RS485_FLAG_NO_ACK);
-         Sleep(100);
-      }
-
       /* after five times, reset submaster */
       if (n == 5) {
 #ifndef _USRDLL
@@ -3240,11 +3229,19 @@ int mscb_read(int fd, unsigned short adr, unsigned char index, void *data, int *
 
       if (i == 1 && buf[0] == 0xFF) {
 #ifndef _USRDLL
-         /* show error, but repeat request */
          printf("Timeout from RS485 bus\n");
 #endif
          debug_log("Timeout from RS485 bus\n", 1);
          status = MSCB_TIMEOUT;
+
+#ifndef _USRDLL
+         printf("Flush node communication\n");
+#endif
+         debug_log("Flush node communication\n", 1);
+         memset(buf, 0, sizeof(buf));
+         mscb_out(fd, buf, 10, RS485_FLAG_BIT9 | RS485_FLAG_NO_ACK);
+         Sleep(100);
+
          continue;
       }
 
@@ -3594,7 +3591,7 @@ int mscb_read_block(int fd, unsigned short adr, unsigned char index, void *data,
    int i, n, error_count;
    unsigned char buf[256], crc;
 
-   debug_log("mscb_read(fd=%d,adr=%d,index=%d,data=%p,size=%d) ", 1, fd, adr, index, data, *size);
+   debug_log("mscb_read_block(fd=%d,adr=%d,index=%d,data=%p,size=%d) ", 1, fd, adr, index, data, *size);
 
    if (*size > 256)
       return MSCB_INVAL_PARAM;
