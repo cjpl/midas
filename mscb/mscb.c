@@ -657,7 +657,7 @@ int mscb_in1(int fd, unsigned char *c, int timeout)
 
   Input:
     int  fd                 file descriptor for connection
-    int  timeout            timeout in microseconds
+    int  timeout            timeout in milliseconds
 
   Output:
     char *c                 data bytes
@@ -671,7 +671,7 @@ int mscb_in1(int fd, unsigned char *c, int timeout)
    int i;
 
    /* wait for DATAREADY, each port access takes roughly 1us */
-   timeout = (int) (timeout / 1.3);
+   timeout = (int) (timeout*1000 / 1.3);
 
    for (i = 0; i < timeout; i++) {
       if (pp_rstatus(fd, LPT_DATAREADY))
@@ -786,7 +786,7 @@ int mscb_in(int index, char *buffer, int size, int timeout)
   Input:
     int  index              index to file descriptor table
     int  size               size of data buffer
-    int  timeout            timeout in microseconds
+    int  timeout            timeout in milliseconds
 
   Output:
     char *buffer            data buffer
@@ -1269,7 +1269,7 @@ int mscb_init(char *device, int bufsize, char *password, int debug)
          buf[0] = MCMD_ECHO;
          mscb_out(index + 1, buf, 1, RS485_FLAG_CMD);
 
-         n = mscb_in(index + 1, buf, 2, 10000);
+         n = mscb_in(index + 1, buf, 2, 10);
          mscb_release(index + 1);
 
          if (n == 2 && buf[0] == MCMD_ACK) {
@@ -1317,7 +1317,7 @@ int mscb_init(char *device, int bufsize, char *password, int debug)
          buf[1] = 0;
       mscb_out(index + 1, buf, 21, RS485_FLAG_CMD);
 
-      n = mscb_in(index + 1, buf, 2, 10000);
+      n = mscb_in(index + 1, buf, 2, 10);
       mscb_release(index + 1);
 
       if (n != 1 || (buf[0] != MCMD_ACK && buf[0] != 0xFF)) {
@@ -1585,7 +1585,7 @@ int mscb_addr(int fd, int cmd, unsigned short adr, int retry, int lock)
 
       if (cmd == MCMD_PING8 || cmd == MCMD_PING16) {
          /* read back ping reply, 4ms timeout (for USB!) */
-         i = mscb_in(fd, buf, 1, 4000);
+         i = mscb_in(fd, buf, 1, 4);
 
          if (i == MSCB_SUCCESS && buf[0] == MCMD_ACK) {
             if (lock)
@@ -1875,7 +1875,7 @@ int mscb_info(int fd, unsigned short adr, MSCB_INFO * info)
       buf[5] = crc8(buf+4, 1);
       mscb_out(fd, buf, 6, RS485_FLAG_LONG_TO | RS485_FLAG_ADR_CYCLE);
 
-      i = mscb_in(fd, buf, sizeof(buf), 10000);
+      i = mscb_in(fd, buf, sizeof(buf), 10);
       mscb_release(fd);
 
       if (i < (int) sizeof(MSCB_INFO) + 2)
@@ -1970,7 +1970,7 @@ int mscb_info_variable(int fd, unsigned short adr, unsigned char index, MSCB_INF
       buf[6] = crc8(buf+4, 2);
       mscb_out(fd, buf, 7, RS485_FLAG_LONG_TO | RS485_FLAG_ADR_CYCLE);
 
-      i = mscb_in(fd, buf, sizeof(buf), 10000);
+      i = mscb_in(fd, buf, sizeof(buf), 10);
       mscb_release(fd);
 
       if (i < (int) sizeof(MSCB_INFO_VAR) + 3)
@@ -2371,7 +2371,7 @@ int mscb_write(int fd, unsigned short adr, unsigned char index, void *data, int 
       }
 
       /* read acknowledge */
-      i = mscb_in(fd, ack, 2, 10000);
+      i = mscb_in(fd, ack, 2, 10);
       mscb_release(fd);
       if (i < 2) {
          debug_log("return MSCB_TIMEOUT\n", 0);
@@ -2484,7 +2484,7 @@ int mscb_write_no_retries(int fd, unsigned short adr, unsigned char index, void 
    }
 
    /* read acknowledge */
-   i = mscb_in(fd, ack, 2, 10000);
+   i = mscb_in(fd, ack, 2, 10);
    mscb_release(fd);
    if (i < 2) {
       debug_log("return MSCB_TIMEOUT\n", 0);
@@ -2576,7 +2576,7 @@ int mscb_write_block(int fd, unsigned short adr, unsigned char index, void *data
       mscb_out(fd, buf, n+8, RS485_FLAG_ADR_CYCLE);
 
       /* read acknowledge */
-      n = mscb_in(fd, ack, 2, 10000);
+      n = mscb_in(fd, ack, 2, 10);
       if (n < 2) {
          mscb_release(fd);
          return MSCB_TIMEOUT;
@@ -2763,7 +2763,7 @@ int mscb_upload(int fd, unsigned short adr, char *buffer, int size, int debug)
    mscb_out(fd, buf, 2, RS485_FLAG_LONG_TO);
 
    /* wait for acknowledge */
-   if (mscb_in(fd, buf, 3, 10000) != 3) {
+   if (mscb_in(fd, buf, 3, 10) != 3) {
       printf("Error: timeout receiving upgrade acknowledge from remote node\n");
       mscb_release(fd);
       return MSCB_TIMEOUT;
@@ -2786,8 +2786,8 @@ int mscb_upload(int fd, unsigned short adr, char *buffer, int size, int debug)
    buf[0] = UCMD_ECHO;
    mscb_out(fd, buf, 1, RS485_FLAG_LONG_TO);
 
-   /* wait for ready, 1 sec timeout */
-   if (mscb_in(fd, ack, 2, 1000000) != 2) {
+   /* wait for ready, 3 sec timeout */
+   if (mscb_in(fd, ack, 2, 3000) != 2) {
       printf("Error: timeout receiving upgrade acknowledge from remote node\n");
 
       /* send exit upgrade command, in case node gets to upgrade routine later */
@@ -2826,7 +2826,7 @@ int mscb_upload(int fd, unsigned short adr, char *buffer, int size, int debug)
          buf[1] = (unsigned char)page;
          mscb_out(fd, buf, 2, RS485_FLAG_LONG_TO);
 
-         if (mscb_in(fd, ack, 2, 100000) != 2) {
+         if (mscb_in(fd, ack, 2, 100) != 2) {
             printf("\nError: timeout from remote node for erase page 0x%04X\n", page * 512);
             continue;
          }
@@ -2904,7 +2904,7 @@ prog_pages:
 
                /* read acknowledge */
                ack[0] = 0;
-               if (mscb_in(fd, ack, 2, 100000) != 2 || ack[0] != MCMD_ACK) {
+               if (mscb_in(fd, ack, 2, 100) != 2 || ack[0] != MCMD_ACK) {
                   printf("\nError: timeout from remote node for program page 0x%04X, chunk %d\n", page * 512, i);
                   //goto prog_error;
                } else
@@ -2937,7 +2937,7 @@ prog_pages:
          mscb_out(fd, buf, 2, RS485_FLAG_LONG_TO);
 
          ack[1] = 0;
-         if (mscb_in(fd, ack, 2, 100000) != 2) {
+         if (mscb_in(fd, ack, 2, 100) != 2) {
             printf("\nError: timeout from remote node for verify page 0x%04X\n", page * 512);
             goto prog_error;
          }
@@ -3065,7 +3065,7 @@ int mscb_verify(int fd, unsigned short adr, char *buffer, int size)
    mscb_out(fd, buf, 1, RS485_FLAG_LONG_TO);
 
    /* wait for ready, 1 sec timeout */
-   if (mscb_in(fd, ack, 2, 1000000) != 2) {
+   if (mscb_in(fd, ack, 2, 1000) != 2) {
       printf("Error: timeout receiving upgrade acknowledge from remote node\n");
 
       /* send exit upgrade command, in case node gets to upgrade routine later */
@@ -3105,7 +3105,7 @@ int mscb_verify(int fd, unsigned short adr, char *buffer, int size)
          mscb_out(fd, buf, 3, RS485_FLAG_LONG_TO);
 
          memset(buf, 0, sizeof(buf));
-         status = mscb_in(fd, buf, 32+3, 100000);
+         status = mscb_in(fd, buf, 32+3, 100);
          if (status != 32+3) {
             printf("\nError: timeout from remote node for verify page 0x%04X\n", page * 512);
             goto ver_error;
@@ -3225,7 +3225,7 @@ int mscb_read(int fd, unsigned short adr, unsigned char index, void *data, int *
       }
 
       /* read data */
-      i = mscb_in(fd, buf, sizeof(buf), 10000);
+      i = mscb_in(fd, buf, sizeof(buf), 10);
 
       if (i == 1 && buf[0] == 0xFF) {
 #ifndef _USRDLL
@@ -3391,7 +3391,7 @@ int mscb_read_no_retries(int fd, unsigned short adr, unsigned char index, void *
    }
 
    /* read data */
-   i = mscb_in(fd, buf, sizeof(buf), 10000);
+   i = mscb_in(fd, buf, sizeof(buf), 10);
 
    if (i == 1 && buf[0] == 0xFF) {
 #ifndef _USRDLL
@@ -3535,7 +3535,7 @@ int mscb_read_range(int fd, unsigned short adr, unsigned char index1, unsigned c
       mscb_out(fd, buf, 8, RS485_FLAG_ADR_CYCLE);
 
       /* read data */
-      i = mscb_in(fd, buf, 256, 10000);
+      i = mscb_in(fd, buf, 256, 10);
 
       if (i < 2)
          continue;
@@ -3623,7 +3623,7 @@ int mscb_read_block(int fd, unsigned short adr, unsigned char index, void *data,
       mscb_out(fd, buf, 7, RS485_FLAG_ADR_CYCLE);
 
       /* read data */
-      i = mscb_in(fd, buf, sizeof(buf), 10000);
+      i = mscb_in(fd, buf, sizeof(buf), 10);
 
       if (i == 1 && buf[0] == 0xFF) {
 #ifndef _USRDLL
@@ -3764,7 +3764,7 @@ int mscb_user(int fd, unsigned short adr, void *param, int size, void *result, i
    }
 
    /* read result */
-   n = mscb_in(fd, buf, sizeof(buf), 10000);
+   n = mscb_in(fd, buf, sizeof(buf), 10);
    mscb_release(fd);
 
    if (n < 0)
@@ -3852,7 +3852,7 @@ int mscb_echo(int fd, unsigned short adr, unsigned char d1, unsigned char *d2)
    }
 
    /* read result */
-   n = mscb_in(fd, buf, sizeof(buf), 10000);
+   n = mscb_in(fd, buf, sizeof(buf), 10);
    mscb_release(fd);
 
    if (n < 0)
@@ -4182,7 +4182,7 @@ int set_mac_address(int fd)
    memcpy(buf+1, &cfg, sizeof(cfg));
    mscb_out(fd, buf, 1+sizeof(cfg), RS485_FLAG_CMD);
 
-   n = mscb_in(fd, buf, 2, 10000);
+   n = mscb_in(fd, buf, 2, 10);
    if (n == 2 && buf[0] == MCMD_ACK) {
       printf("\nConfiguration successfully downloaded.\n");
       return MSCB_SUCCESS;
