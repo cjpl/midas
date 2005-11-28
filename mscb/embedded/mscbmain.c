@@ -1046,6 +1046,7 @@ void upgrade()
 
    /* disable all interrupts */
    EA = 0;
+   SCON1 &= ~0x03; // clear pending UART1 interrupts
 
    /* disable watchdog */
 #if defined(CPU_C8051F310) || defined(CPU_C8051F320)
