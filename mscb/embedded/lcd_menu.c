@@ -435,7 +435,7 @@ void lcd_menu()
             /* evaluate ENTER button */
             if (b1 && !b1_old) {
 
-               if (pvar->width <= 4 && pvar->width > 0) {
+               if (pvar->width <= 4 && pvar->width > 0 && pvar->delta > 0) {
                   enter_mode = 1;
                   memcpy(&f_var, pvar->ud, pvar->width);
                }
@@ -630,7 +630,7 @@ void lcd_menu()
             /* evaluate ENTER button */
             if (b1 && !b1_old) {
 
-               if (pvar->width <= 4 && pvar->width > 0) {
+               if (pvar->width <= 4 && pvar->width > 0 && pvar->delta > 0) {
                   enter_mode = 1;
                   memcpy(&f_var, pvar->ud, pvar->width);
                }
