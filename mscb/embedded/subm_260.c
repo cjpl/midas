@@ -456,7 +456,7 @@ unsigned short i, to;
    if (rs485_flags & RS485_FLAG_SHORT_TO)
       to = 4;     // 400 us for PING
    else if (rs485_flags & RS485_FLAG_LONG_TO)
-      to = 10000; // 1 s for flash/upgrade
+      to = 50000; // 5 s for flash/upgrade
    else
       to = 100;   // 10 ms for other commands
 
