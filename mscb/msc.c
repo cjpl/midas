@@ -750,7 +750,7 @@ void cmd_loop(int fd, char *cmd, unsigned short adr)
                status = mscb_uptime(fd, (unsigned short) current_addr, &uptime);
                if (status == MSCB_SUCCESS) 
                   printf("Uptime           : %dd %02dh %02dm %02ds",
-                     uptime / 3600*24,
+                     uptime / (3600*24),
                      (uptime % (3600*24)) / 3600,
                      (uptime % 3600) / 60,
                      (uptime % 60));
