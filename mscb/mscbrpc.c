@@ -91,6 +91,12 @@ static RPC_LIST rpc_list[] = {
      {TID_STRUCT, RPC_OUT, sizeof(MSCB_INFO)},
      {0}}},
 
+   {RPC_MSCB_UPTIME, "mscb_uptime",
+    {{TID_INT, RPC_IN},
+     {TID_INT, RPC_IN},
+     {TID_DWORD, RPC_OUT},
+     {0}}},
+
    {RPC_MSCB_INFO_VARIABLE, "mscb_info_variable",
     {{TID_INT, RPC_IN},
      {TID_INT, RPC_IN},
@@ -394,6 +400,10 @@ int server_execute(int index, void *prpc_param[])
 
    case RPC_MSCB_INFO_VARIABLE:
       status = mscb_info_variable(CINT(0), CSHORT(1), CBYTE(2), CARRAY(3));
+      break;
+
+   case RPC_MSCB_UPTIME:
+      status = mscb_uptime(CINT(0), CWORD(1), CPDWORD(2));
       break;
 
    case RPC_MSCB_SET_NODE_ADDR:

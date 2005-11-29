@@ -526,7 +526,7 @@ void cmd_loop(int fd, char *cmd, unsigned short adr)
 {
    int i, fh, status, size, nparam, current_addr, current_group, first, last, broadcast;
    unsigned short addr;
-   unsigned int data;
+   unsigned int data, uptime;
    unsigned char c;
    float value;
    char str[256], line[256], dbuf[100 * 1024], param[10][100], *pc, *buffer,
@@ -740,13 +740,20 @@ void cmd_loop(int fd, char *cmd, unsigned short adr)
             else {
                strncpy(str, info.node_name, sizeof(info.node_name));
                str[16] = 0;
-               printf("Node name:        %s\n", str);
-               printf("Node address:     %d (0x%X)\n", info.node_address,
+               printf("Node name        : %s\n", str);
+               printf("Node address     : %d (0x%X)\n", info.node_address,
                       info.node_address);
-               printf("Group address:    %d (0x%X)\n", info.group_address,
+               printf("Group address    : %d (0x%X)\n", info.group_address,
                       info.group_address);
-               printf("Protocol version: %d\n", info.protocol_version);
-               printf("Watchdog resets:  %d\n", info.watchdog_resets);
+               printf("Protocol version : %d\n", info.protocol_version);
+               
+               status = mscb_uptime(fd, (unsigned short) current_addr, &uptime);
+               if (status == MSCB_SUCCESS) 
+                  printf("Uptime           : %dd %02dh %02dm %02ds",
+                     uptime / 3600*24,
+                     (uptime % (3600*24)) / 3600,
+                     (uptime % 3600) / 60,
+                     (uptime % 60));
 
                printf("\nVariables:\n");
                for (i = 0; i < info.n_variables; i++) {

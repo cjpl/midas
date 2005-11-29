@@ -344,7 +344,7 @@ char putchar1(char c);                   // putchar cannot be used with LCD supp
 
 /*---- MSCB commands -----------------------------------------------*/
 
-#define PROTOCOL_VERSION 3
+#define PROTOCOL_VERSION 4
 #define INTERCHAR_DELAY 20      // 20us between characters
 
 /* Version history:
@@ -381,7 +381,7 @@ char putchar1(char c);                   // putchar cannot be used with LCD supp
 
 #define CMD_ECHO        0x61
 #define CMD_TOKEN       0x68
-#define CMD_SET_FLAGS   0x69
+#define CMD_GET_UPTIME  0x70
 
 #define CMD_ACK         0x78
 
@@ -529,7 +529,7 @@ typedef struct {
 typedef struct {                // system info stored in EEPROM
    unsigned int node_addr;
    unsigned int group_addr;
-   unsigned int wd_counter;
+   unsigned int reserved;
    char node_name[16];
 } SYS_INFO;
 
@@ -576,6 +576,7 @@ unsigned char ping(unsigned short addr);
 
 void sysclock_init(void);
 unsigned long time(void);
+unsigned long uptime(void);
 
 unsigned char user_func(unsigned char *data_in, unsigned char *data_out);
 

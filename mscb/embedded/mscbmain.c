@@ -296,7 +296,7 @@ void setup(void)
       /* correct initial value */
       sys_info.node_addr = 0xFFFF;
       sys_info.group_addr = 0xFFFF;
-      sys_info.wd_counter = 0;
+      sys_info.reserved = 0;
       memset(sys_info.node_name, 0, sizeof(sys_info.node_name));
       strncpy(sys_info.node_name, node_name, sizeof(sys_info.node_name));
 
@@ -325,13 +325,7 @@ void setup(void)
 
       /* check if reset by watchdog */
       if (RSTSRC & 0x08)
-         {
          WD_RESET = 1;
-         sys_info.wd_counter++;
-
-     	   /* do flash programming later (>3sec after reboot) */
-         //flash_param = 1;
-      }
    }
 
    /* Blink LEDs */
@@ -525,6 +519,7 @@ void interprete(void)
 {
    unsigned char crc, cmd, i, j, n, ch, a1, a2;
    MSCB_INFO_VAR code *pvar;
+   unsigned long idata u;
 
    cmd = (in_buf[0] & 0xF8);    // strip length field
 
@@ -597,8 +592,8 @@ void interprete(void)
       send_byte(*(((unsigned char *) &sys_info.group_addr) + 0), &crc); // send group address
       send_byte(*(((unsigned char *) &sys_info.group_addr) + 1), &crc);
 
-      send_byte(*(((unsigned char *) &sys_info.wd_counter) + 0), &crc); // send watchdog resets
-      send_byte(*(((unsigned char *) &sys_info.wd_counter) + 1), &crc);
+      send_byte(*(((unsigned char *) &sys_info.reserved) + 0), &crc);   // send watchdog resets
+      send_byte(*(((unsigned char *) &sys_info.reserved) + 1), &crc);
 
       for (i = 0; i < 16; i++)  // send node name
          send_byte(sys_info.node_name[i], &crc);
@@ -635,6 +630,20 @@ void interprete(void)
          RS485_ENABLE = 0;
          ES0 = 1;               // re-enable serial interrupts
       }
+      break;
+
+   case CMD_GET_UPTIME:
+      /* send uptime */
+
+      u = uptime();
+
+      out_buf[0] = CMD_ACK + 4;
+      out_buf[1] = *(((unsigned char *)&u) + 0);
+      out_buf[2] = *(((unsigned char *)&u) + 1);
+      out_buf[3] = *(((unsigned char *)&u) + 2);
+      out_buf[4] = *(((unsigned char *)&u) + 3);
+      out_buf[5] = crc8(out_buf, 5);
+      send_obuf(6);
       break;
 
    case CMD_SET_ADDR:
@@ -1046,7 +1055,9 @@ void upgrade()
 
    /* disable all interrupts */
    EA = 0;
+#if defined(CPU_C8051F120)
    SCON1 &= ~0x03; // clear pending UART1 interrupts
+#endif
 
    /* disable watchdog */
 #if defined(CPU_C8051F310) || defined(CPU_C8051F320)
@@ -1109,6 +1120,22 @@ receive_cmd:
          /* acknowledge ping, independent of own address */
          RS485_ENABLE = 1;
          SEND_BYTE(CMD_ACK);
+         RS485_ENABLE = 0;
+
+      } else if (cmd == CMD_UPGRADE) {
+
+         for (i=0 ; !RI0 && i < 5000 ; i++)
+            DELAY_US(10);
+         if (!RI0) 
+            goto receive_cmd;
+         page = SBUF0; // CRC
+         RI0 = 0;
+
+         /* acknowledge upgrade */
+         RS485_ENABLE = 1;
+         SEND_BYTE(CMD_ACK+1);
+         SEND_BYTE(1);
+         SEND_BYTE(0); // dummy CRC
          RS485_ENABLE = 0;
 
       } else if (cmd == UCMD_ECHO) {
@@ -1360,9 +1387,6 @@ void yield(void)
       led_blink(_cur_sub_addr, 1, 50);
 
       flash_param = 0;
-
-      /* reset watchdog counts */
-      sys_info.wd_counter = 0;
 
       eeprom_flash();
 	   configured = 1;

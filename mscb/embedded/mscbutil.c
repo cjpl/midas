@@ -644,6 +644,8 @@ void uart_init(unsigned char port, unsigned char baud)
 /*------------------------------------------------------------------*/
 
 static unsigned long _systime;
+static unsigned long _uptime;
+static unsigned char _uptime_cnt;
 
 /* LED structure */
 
@@ -713,6 +715,8 @@ void sysclock_init(void)
    TR0 = 1;                     // start timer 0
 
    _systime = 0;
+   _uptime = 0;
+   _uptime_cnt = 100;
 
    for (i=0 ; i<N_LED ; i++) {
      leds[i].mode = 0;
@@ -778,7 +782,12 @@ void timer0_int(void) interrupt 1
 
 #endif /* !SUBM_260 */
    _systime++;                  // increment system time
-
+   _uptime_cnt--;
+   if (_uptime_cnt == 0) {      // once every second
+      _uptime++;
+      _uptime_cnt = 100;
+   }
+   
    led_int();
 }
 
@@ -876,6 +885,25 @@ unsigned long time(void)
 
    DISABLE_INTERRUPTS;
    t = _systime;
+   ENABLE_INTERRUPTS;
+   return t;
+}
+
+/*------------------------------------------------------------------*/
+
+unsigned long uptime(void)
+/********************************************************************\
+
+  Routine: uptime
+
+  Purpose: Return system uptime in seconds
+
+\********************************************************************/
+{
+   unsigned long t;
+
+   DISABLE_INTERRUPTS;
+   t = _uptime;
    ENABLE_INTERRUPTS;
    return t;
 }
