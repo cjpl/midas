@@ -90,24 +90,25 @@ typedef struct {
 #define RPC_MSCB_PING              5
 #define RPC_MSCB_INFO              6
 #define RPC_MSCB_INFO_VARIABLE     7
-#define RPC_MSCB_SET_NODE_ADDR     8
-#define RPC_MSCB_SET_GROUP_ADDR    9
-#define RPC_MSCB_WRITE            10
-#define RPC_MSCB_WRITE_NO_RETRIES 11
-#define RPC_MSCB_WRITE_GROUP      12
-#define RPC_MSCB_WRITE_BLOCK      13
-#define RPC_MSCB_FLASH            14
-#define RPC_MSCB_UPLOAD           15
-#define RPC_MSCB_VERIFY           16
-#define RPC_MSCB_READ             17
-#define RPC_MSCB_READ_NO_RETRIES  18
-#define RPC_MSCB_READ_RANGE       19
-#define RPC_MSCB_READ_BLOCK       20
-#define RPC_MSCB_USER             21
-#define RPC_MSCB_ECHO             22
-#define RPC_MSCB_SET_NAME         23
-#define RPC_MSCB_ADDR             24
-#define RPC_MSCB_GET_DEVICE       25
+#define RPC_MSCB_UPTIME            8
+#define RPC_MSCB_SET_NODE_ADDR     9 
+#define RPC_MSCB_SET_GROUP_ADDR   10
+#define RPC_MSCB_WRITE            11
+#define RPC_MSCB_WRITE_NO_RETRIES 12
+#define RPC_MSCB_WRITE_GROUP      13
+#define RPC_MSCB_WRITE_BLOCK      14
+#define RPC_MSCB_FLASH            15
+#define RPC_MSCB_UPLOAD           16
+#define RPC_MSCB_VERIFY           17
+#define RPC_MSCB_READ             18
+#define RPC_MSCB_READ_NO_RETRIES  19
+#define RPC_MSCB_READ_RANGE       20
+#define RPC_MSCB_READ_BLOCK       21
+#define RPC_MSCB_USER             22
+#define RPC_MSCB_ECHO             23
+#define RPC_MSCB_SET_NAME         24
+#define RPC_MSCB_ADDR             25
+#define RPC_MSCB_GET_DEVICE       26
 
 /*------------------------------------------------------------------*/
 

@@ -10,7 +10,7 @@
 \********************************************************************/
 
 #define MSCB_LIBRARY_VERSION   "2.2.1"
-#define MSCB_PROTOCOL_VERSION  "3"
+#define MSCB_PROTOCOL_VERSION  "4"
 #define MSCB_SUBM_VERSION      33
 
 #ifdef _MSC_VER                 // Windows includes
@@ -1884,16 +1884,78 @@ int mscb_info(int fd, unsigned short adr, MSCB_INFO * info)
       memcpy(info, buf + 2, sizeof(MSCB_INFO));
 
       /* do CRC check */
-      if (crc8(buf, sizeof(MSCB_INFO) + 2) != buf[sizeof(MSCB_INFO) + 2])
+      if (crc8(buf, i-1) != buf[i-1])
          return MSCB_CRC_ERROR;
 
       WORD_SWAP(&info->node_address);
       WORD_SWAP(&info->group_address);
-      WORD_SWAP(&info->watchdog_resets);
 
       memcpy(&cache_info[n_cache_info].info, info, sizeof (MSCB_INFO));
       n_cache_info++;
    }
+
+   return MSCB_SUCCESS;
+}
+
+/*------------------------------------------------------------------*/
+
+int mscb_uptime(int fd, unsigned short adr, unsigned long *uptime)
+/********************************************************************\
+
+  Routine: mscb_uptime
+
+  Purpose: Retrieve uptime of node in seconds
+
+  Input:
+    int fd                  File descriptor for connection
+    unsigned short adr      Node address
+
+  Output:
+    unsigned long *uptime   Uptime in seconds
+
+  Function value:
+    MSCB_SUCCESS            Successful completion
+    MSCB_TIMEOUT            Timeout receiving data
+    MSCB_CRC_ERROR          CRC error
+    MSCB_MUTEX              Cannot obtain mutex for mscb
+
+\********************************************************************/
+{
+   int i;
+   unsigned char buf[256];
+   unsigned long u;
+
+   if (fd > MSCB_MAX_FD || fd < 1 || !mscb_fd[fd - 1].type)
+      return MSCB_INVAL_PARAM;
+
+   if (mrpc_connected(fd))
+      return mrpc_call(mscb_fd[fd - 1].fd, RPC_MSCB_UPTIME, mscb_fd[fd - 1].remote_fd, adr, uptime);
+
+   if (mscb_lock(fd) != MSCB_SUCCESS)
+      return MSCB_MUTEX;
+
+   buf[0] = MCMD_ADDR_NODE16;
+   buf[1] = (unsigned char) (adr >> 8);
+   buf[2] = (unsigned char) (adr & 0xFF);
+   buf[3] = crc8(buf, 3);
+
+   buf[4] = MCMD_GET_UPTIME;
+   buf[5] = crc8(buf+4, 1);
+   mscb_out(fd, buf, 6, RS485_FLAG_ADR_CYCLE);
+
+   i = mscb_in(fd, buf, sizeof(buf), 10);
+   mscb_release(fd);
+
+   if (i < 6)
+      return MSCB_TIMEOUT;
+
+   /* do CRC check */
+   if (crc8(buf, i-1) != buf[i-1])
+      return MSCB_CRC_ERROR;
+
+   u = (buf[4]<<0) + (buf[3]<<8) + (buf[2]<<16) + (buf[1]<<24);
+
+   *uptime = u;
 
    return MSCB_SUCCESS;
 }
@@ -2763,8 +2825,8 @@ int mscb_upload(int fd, unsigned short adr, char *buffer, int size, int debug)
    mscb_out(fd, buf, 2, RS485_FLAG_LONG_TO);
 
    /* wait for acknowledge */
-   if (mscb_in(fd, buf, 3, 10) != 3) {
-      printf("Error: timeout receiving upgrade acknowledge from remote node\n");
+   if (mscb_in(fd, buf, 3, 5000) != 3) {
+      printf("Error: timeout receiving acknowledge from remote node\n");
       mscb_release(fd);
       return MSCB_TIMEOUT;
    }
@@ -2788,7 +2850,7 @@ int mscb_upload(int fd, unsigned short adr, char *buffer, int size, int debug)
 
    /* wait for ready, 3 sec timeout */
    if (mscb_in(fd, ack, 2, 3000) != 2) {
-      printf("Error: timeout receiving upgrade acknowledge from remote node\n");
+      printf("Error: timeout receiving upgrade echo test from remote node\n");
 
       /* send exit upgrade command, in case node gets to upgrade routine later */
       buf[0] = UCMD_RETURN;
@@ -2826,7 +2888,7 @@ int mscb_upload(int fd, unsigned short adr, char *buffer, int size, int debug)
          buf[1] = (unsigned char)page;
          mscb_out(fd, buf, 2, RS485_FLAG_LONG_TO);
 
-         if (mscb_in(fd, ack, 2, 100) != 2) {
+         if (mscb_in(fd, ack, 2, 1000) != 2) {
             printf("\nError: timeout from remote node for erase page 0x%04X\n", page * 512);
             continue;
          }
@@ -2904,7 +2966,7 @@ prog_pages:
 
                /* read acknowledge */
                ack[0] = 0;
-               if (mscb_in(fd, ack, 2, 100) != 2 || ack[0] != MCMD_ACK) {
+               if (mscb_in(fd, ack, 2, 1000) != 2 || ack[0] != MCMD_ACK) {
                   printf("\nError: timeout from remote node for program page 0x%04X, chunk %d\n", page * 512, i);
                   //goto prog_error;
                } else
@@ -2937,7 +2999,7 @@ prog_pages:
          mscb_out(fd, buf, 2, RS485_FLAG_LONG_TO);
 
          ack[1] = 0;
-         if (mscb_in(fd, ack, 2, 100) != 2) {
+         if (mscb_in(fd, ack, 2, 1000) != 2) {
             printf("\nError: timeout from remote node for verify page 0x%04X\n", page * 512);
             goto prog_error;
          }
@@ -3105,7 +3167,7 @@ int mscb_verify(int fd, unsigned short adr, char *buffer, int size)
          mscb_out(fd, buf, 3, RS485_FLAG_LONG_TO);
 
          memset(buf, 0, sizeof(buf));
-         status = mscb_in(fd, buf, 32+3, 100);
+         status = mscb_in(fd, buf, 32+3, 1000);
          if (status != 32+3) {
             printf("\nError: timeout from remote node for verify page 0x%04X\n", page * 512);
             goto ver_error;

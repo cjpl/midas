@@ -34,7 +34,7 @@
 
 #define MCMD_ECHO        0x61
 #define MCMD_TOKEN       0x68
-#define MCMD_SET_FLAGS   0x69
+#define MCMD_GET_UPTIME  0x70
 
 #define MCMD_ACK         0x78
 
@@ -87,12 +87,12 @@
 /*---- info structures ---------------------------------------------*/
 
 typedef struct {
-   unsigned char protocol_version;
-   unsigned char n_variables;
+   unsigned char  protocol_version;
+   unsigned char  n_variables;
    unsigned short node_address;
    unsigned short group_address;
-   unsigned short watchdog_resets;
-   char node_name[16];
+   unsigned short reserved;
+   char           node_name[16];
 } MSCB_INFO;
 
 typedef struct {
@@ -261,6 +261,7 @@ extern "C" {
    int EXPRT mscb_echo(int fd, unsigned short add, unsigned char d1, unsigned char *d2);
    int EXPRT mscb_info(int fd, unsigned short adr, MSCB_INFO * info);
    int EXPRT mscb_info_variable(int fd, unsigned short adr, unsigned char index, MSCB_INFO_VAR * info);
+   int EXPRT mscb_uptime(int fd, unsigned short adr, unsigned long *uptime);
    int EXPRT mscb_set_node_addr(int fd, int addr, int gaddr, int broadcast, unsigned short new_addr);
    int EXPRT mscb_set_group_addr(int fd, int addr, int gaddr, int broadcast, unsigned short new_addr);
    int EXPRT mscb_set_name(int fd, unsigned short adr, char *name);
