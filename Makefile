@@ -156,6 +156,20 @@ NEED_RPATH=
 endif
 
 #-----------------------
+# This is for Cygwin
+#
+ifeq ($(OSTYPE),CYGWIN_NT-5.1)
+OSTYPE = cygwin
+endif
+
+ifeq ($(OSTYPE),cygwin)
+
+OS_DIR = cygwin
+OSFLAGS = -DOS_LINUX -DOS_CYGWIN -Wno-unused-function
+LIBS = -lutil -lpthread
+endif
+
+#-----------------------
 # This is for Linux
 #
 ifeq ($(OSTYPE),Linux)
