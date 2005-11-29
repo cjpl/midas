@@ -20,7 +20,7 @@
 extern bit FREEZE_MODE;
 extern bit DEBUG_MODE;
 
-char code node_name[] = "Power Supply";
+char code node_name[] = "Voltage Calib";
 
 /* declare number of sub-addresses to framework */
 unsigned char idata _n_sub_addr = 1;
@@ -89,7 +89,7 @@ unsigned short iadc_read(channel);
 void user_write(unsigned char index) reentrant;
 void write_adc(unsigned char a, unsigned char d);
 
-bit new_value;
+unsigned char new_count;
 
 unsigned char adc_chn = 0;
 
@@ -140,6 +140,8 @@ void user_init(unsigned char init)
       user_data.oadc = 0;
       user_data.gadc = 1;
    }
+
+   new_count = 0;
 
    /* set-up DAC & ADC */
    DAC_CLR = 1;
@@ -388,14 +390,16 @@ unsigned char adc_read()
 void user_write(unsigned char index) reentrant
 {
    if (index == 1) {
-      new_value = 1;
+      new_count = 0;
    }
 
    if (index == 2) {
-      if (user_data.disable)
-         write_dac_cmd(0x3, 4, 0);
-      else
-         write_dac();
+      if (new_count > 2) {
+         if (user_data.disable)
+            write_dac_cmd(0x3, 4, 0);
+         else
+            write_dac();
+      }
    }
 }
 
@@ -421,19 +425,12 @@ unsigned char user_func(unsigned char *data_in, unsigned char *data_out)
 
 void user_loop(void)
 {
-static unsigned short count = 0;
-
    if (adc_read()) {
-      if (new_value) {
-         new_value = 0;
-         count = 0;
-      } else {
-         if (count < 3) {
-            /* do correction three times */
-            user_data.dac += (user_data.demand - user_data.adc);
-            write_dac();
-         }
-         count++;
+      if (new_count < 6) {
+         /* do correction six times */
+         user_data.dac += (user_data.demand - user_data.adc);
+         write_dac();
+         new_count++;
       }
    }
 }
