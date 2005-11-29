@@ -125,17 +125,17 @@ MSCB_INFO_VAR code variables[] = {
    { 4, UNIT_PERCENT, 0, 0, MSCBF_FLOAT,               "LHe lvl1", &user_data.lhe_level1 },                // 14
    { 4, UNIT_PERCENT, 0, 0, MSCBF_FLOAT,               "LHe lvl2", &user_data.lhe_level2 },                // 15
 
-   { 4, UNIT_KELVIN,  0, 0, MSCBF_FLOAT,               "LN2 T1",   &user_data.ln2_temp_left },             // 16
-   { 4, UNIT_KELVIN,  0, 0, MSCBF_FLOAT,               "LN2 T2",   &user_data.ln2_temp_right },            // 17
-   { 4, UNIT_KELVIN,  0, 0, MSCBF_FLOAT,               "LN2 T3",   &user_data.ln2_temp_tower },            // 18
-   { 4, UNIT_KELVIN,  0, 0, MSCBF_FLOAT,               "LN2 T4",   &user_data.ln2_temp_top },              // 19
+   { 4, UNIT_KELVIN,  0, 0, MSCBF_FLOAT,               "LN2 Tl",   &user_data.ln2_temp_left },             // 16
+   { 4, UNIT_KELVIN,  0, 0, MSCBF_FLOAT,               "LN2 Tr",   &user_data.ln2_temp_right },            // 17
+   { 4, UNIT_KELVIN,  0, 0, MSCBF_FLOAT,               "LN2 Tw",   &user_data.ln2_temp_tower },            // 18
+   { 4, UNIT_KELVIN,  0, 0, MSCBF_FLOAT,               "LN2 Tt",   &user_data.ln2_temp_top },              // 19
 
-   { 4, UNIT_KELVIN,  0, 0, MSCBF_FLOAT,               "LHE T1a",  &user_data.lhe_temp_d_center },         // 20
-   { 4, UNIT_KELVIN,  0, 0, MSCBF_FLOAT,               "LHE T2a",  &user_data.lhe_temp_d_left },           // 21
-   { 4, UNIT_KELVIN,  0, 0, MSCBF_FLOAT,               "LHE T3a",  &user_data.lhe_temp_d_right },          // 22
-   { 4, UNIT_KELVIN,  0, 0, MSCBF_FLOAT,               "LHE T1b",  &user_data.lhe_temp_r_center },         // 23
-   { 4, UNIT_KELVIN,  0, 0, MSCBF_FLOAT,               "LHE T2b",  &user_data.lhe_temp_r_left },           // 24
-   { 4, UNIT_KELVIN,  0, 0, MSCBF_FLOAT,               "LHE T3b",  &user_data.lhe_temp_r_right },          // 25
+   { 4, UNIT_KELVIN,  0, 0, MSCBF_FLOAT,               "LHE TDc",  &user_data.lhe_temp_d_center },         // 20
+   { 4, UNIT_KELVIN,  0, 0, MSCBF_FLOAT,               "LHE TDl",  &user_data.lhe_temp_d_left },           // 21
+   { 4, UNIT_KELVIN,  0, 0, MSCBF_FLOAT,               "LHE TDr",  &user_data.lhe_temp_d_right },          // 22
+   { 4, UNIT_KELVIN,  0, 0, MSCBF_FLOAT,               "LHE TRc",  &user_data.lhe_temp_r_center },         // 23
+   { 4, UNIT_KELVIN,  0, 0, MSCBF_FLOAT,               "LHE TRl",  &user_data.lhe_temp_r_left },           // 24
+   { 4, UNIT_KELVIN,  0, 0, MSCBF_FLOAT,               "LHE TRr",  &user_data.lhe_temp_r_right },          // 25
 
    { 4, UNIT_BAR, PRFX_MILLI, 0, MSCBF_FLOAT,          "LN2 P",    &user_data.ln2_mbar },                  // 26
    { 4, UNIT_BAR, 0,          0, MSCBF_FLOAT,          "LHE P",    &user_data.lhe_bar },                   // 27
@@ -476,9 +476,9 @@ static long xdata last_ln2time = 0, last_b;
 
    /* display pressures */
    lcd_goto(0, 0);
-   printf("TT:%5.1fK", user_data.ln2_temp_tower);
+   printf("PH:%4.2bf", user_data.lhe_bar);
    lcd_goto(10, 0);
-   printf("TV:%5.1fK", user_data.ln2_valve_temp);
+   printf("PI:%5.1g", user_data.ln2_mbar);
    
    lcd_goto(0, 1);
    printf("He:%5.1f%%", user_data.lhe_level1);
@@ -486,9 +486,9 @@ static long xdata last_ln2time = 0, last_b;
    printf("TH:%5.1f%K", user_data.lhe_temp_r_center);
 
    lcd_goto(0, 2);
-   printf("JT:%5.1f%%", user_data.jt_forerun_valve);
+   printf("FV:%5.1f%%", user_data.jt_forerun_valve);
    lcd_goto(10, 2);
-   printf("TJ:%5.1f%K", user_data.jt_temp);
+   printf("BV:%5.1f%%", user_data.jt_bypass_valve);
 
    lcd_goto(0, 3);
    if (user_data.bts_state == 0)
