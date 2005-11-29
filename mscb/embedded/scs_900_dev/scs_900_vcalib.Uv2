@@ -7,7 +7,7 @@ Target (Simulator), 0x0000 // Tools: 'MCS-51'
 Group (Source Files)
 Group (Include Files)
 
-File 1,1,<.\scs_900_psupply.c><scs_900_psupply.c> 0x0 
+File 1,1,<.\scs_900_vcalib.c><scs_900_vcalib.c> 0x0 
 File 1,1,<..\mscbmain.c><mscbmain.c> 0x0 
 File 1,1,<..\mscbutil.c><mscbutil.c> 0x0 
 File 2,5,<..\mscb.h><mscb.h> 0x0 
@@ -34,7 +34,7 @@ Options 1,0,0  // Target 'ICE'
  OrgReg (ÿCygnal\)
  TgStat=0
  OutDir (.\)
- OutName (scs_900_psupply)
+ OutName (scs_900_vcalib)
  GenApp=1
  GenLib=0
  GenHex=1
