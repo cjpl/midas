@@ -1906,7 +1906,7 @@ int mscb_info(int fd, unsigned short adr, MSCB_INFO * info)
 
 /*------------------------------------------------------------------*/
 
-int mscb_uptime(int fd, unsigned short adr, unsigned long *uptime)
+int mscb_uptime(int fd, unsigned short adr, unsigned int *uptime)
 /********************************************************************\
 
   Routine: mscb_uptime

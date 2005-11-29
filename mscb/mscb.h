@@ -261,7 +261,7 @@ extern "C" {
    int EXPRT mscb_echo(int fd, unsigned short add, unsigned char d1, unsigned char *d2);
    int EXPRT mscb_info(int fd, unsigned short adr, MSCB_INFO * info);
    int EXPRT mscb_info_variable(int fd, unsigned short adr, unsigned char index, MSCB_INFO_VAR * info);
-   int EXPRT mscb_uptime(int fd, unsigned short adr, unsigned long *uptime);
+   int EXPRT mscb_uptime(int fd, unsigned short adr, unsigned int *uptime);
    int EXPRT mscb_set_node_addr(int fd, int addr, int gaddr, int broadcast, unsigned short new_addr);
    int EXPRT mscb_set_group_addr(int fd, int addr, int gaddr, int broadcast, unsigned short new_addr);
    int EXPRT mscb_set_name(int fd, unsigned short adr, char *name);
