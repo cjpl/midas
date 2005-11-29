@@ -647,8 +647,12 @@ void lcd_menu()
                }
  
                /* check for reboot command */
-               if (system_menu && var_index == 3)
-                  reboot = 1;
+               if (system_menu && var_index == 3) {
+#ifdef CPU_C8051F120
+                  SFRPAGE = LEGACY_PAGE;
+#endif
+                  RSTSRC = 0x10;         // force software reset
+               }
             }
 
             /* evaluate prev button */
