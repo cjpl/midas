@@ -8,7 +8,7 @@
                 Midas Slow Control Bus protocol 
                 for SCS-900 single channel power supply (2A)
 
-  $Id:$
+  $Id$
 
 \********************************************************************/
 
@@ -58,6 +58,7 @@ sbit DAC_DIN  = P0 ^ 7;         // Data in
 struct {
    float adc;
    float demand;
+   unsigned char disable;
 
    float dac;
 
@@ -67,12 +68,13 @@ struct {
 
 MSCB_INFO_VAR code variables[] = {
 
-   { 4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "ADC", &user_data.adc  },
-   { 4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "Demand", &user_data.demand  },
+   { 4, UNIT_VOLT,    0, 0, MSCBF_FLOAT, "ADC", &user_data.adc  },
+   { 4, UNIT_VOLT,    0, 0, MSCBF_FLOAT, "Demand", &user_data.demand  },
+   { 1, UNIT_BOOLEAN, 0, 0, 0,           "Disable", &user_data.disable  },
 
-   { 4, UNIT_VOLT, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "DAC", &user_data.dac  },
-   { 4, UNIT_VOLT, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "OADC", &user_data.oadc },
-   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "GADC", &user_data.gadc },
+   { 4, UNIT_VOLT,    0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "DAC",  &user_data.dac  },
+   { 4, UNIT_VOLT,    0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "OADC", &user_data.oadc },
+   { 4, UNIT_FACTOR,  0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "GADC", &user_data.gadc },
 
    0
 };
@@ -133,6 +135,7 @@ void user_init(unsigned char init)
    if (init) {
 
       user_data.demand = 0;
+      user_data.disable = 0;
       user_data.dac = 0;
       user_data.oadc = 0;
       user_data.gadc = 1;
@@ -141,7 +144,7 @@ void user_init(unsigned char init)
    /* set-up DAC & ADC */
    DAC_CLR = 1;
    ADC_NRES = 1;
-   write_adc(REG_FILTER, 82);                   // SF value for 50Hz rejection
+   write_adc(REG_FILTER, 13);                   // SF value for 105Hz rejection
    write_adc(REG_MODE, 3);                      // continuous conversion
    write_adc(REG_CONTROL, adc_chn << 4 | 0x0F); // Chn. 1, +2.56V range
 
@@ -387,6 +390,13 @@ void user_write(unsigned char index) reentrant
    if (index == 1) {
       new_value = 1;
    }
+
+   if (index == 2) {
+      if (user_data.disable)
+         write_dac_cmd(0x3, 4, 0);
+      else
+         write_dac();
+   }
 }
 
 /*---- User read function ------------------------------------------*/
@@ -411,13 +421,19 @@ unsigned char user_func(unsigned char *data_in, unsigned char *data_out)
 
 void user_loop(void)
 {
+static unsigned short count = 0;
+
    if (adc_read()) {
       if (new_value) {
          new_value = 0;
+         count = 0;
       } else {
-         /* do correction */
-         user_data.dac += (user_data.demand - user_data.adc);
-         write_dac();
+         if (count < 3) {
+            /* do correction three times */
+            user_data.dac += (user_data.demand - user_data.adc);
+            write_dac();
+         }
+         count++;
       }
    }
 }
