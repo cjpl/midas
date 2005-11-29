@@ -1634,7 +1634,7 @@ INT ss_mutex_create(char *name, HNDLE * mutex_handle)
       INT key, status, fh;
       struct semid_ds buf;
 
-#if (defined(OS_LINUX) && !defined(_SEM_SEMUN_UNDEFINED)) || defined(OS_FREEBSD)
+#if (defined(OS_LINUX) && !defined(_SEM_SEMUN_UNDEFINED) && !defined(OS_CYGWIN)) || defined(OS_FREEBSD)
       union semun arg;
 #else
       union semun {
@@ -1744,7 +1744,7 @@ INT ss_mutex_wait_for(HNDLE mutex_handle, INT timeout)
       DWORD start_time;
       struct sembuf sb;
 
-#if (defined(OS_LINUX) && !defined(_SEM_SEMUN_UNDEFINED)) || defined(OS_FREEBSD)
+#if (defined(OS_LINUX) && !defined(_SEM_SEMUN_UNDEFINED) && !defined(OS_CYGWIN)) || defined(OS_FREEBSD)
       union semun arg;
 #else
       union semun {
@@ -1930,7 +1930,7 @@ INT ss_mutex_delete(HNDLE mutex_handle, INT destroy_flag)
 #endif                          /* OS_VXWORKS */
 
 #ifdef OS_UNIX
-#if (defined(OS_LINUX) && !defined(_SEM_SEMUN_UNDEFINED)) || defined(OS_FREEBSD)
+#if (defined(OS_LINUX) && !defined(_SEM_SEMUN_UNDEFINED) && !defined(OS_CYGWIN)) || defined(OS_FREEBSD)
    union semun arg;
 #else
    union semun {
@@ -2097,6 +2097,12 @@ DWORD ss_settime(DWORD seconds)
    /* not reached */
    return SS_NO_DRIVER;
 
+#elif defined(OS_CYGWIN)
+
+   assert(!"ss_settime() is not supported");
+   /* not reached */
+   return SS_NO_DRIVER;
+
 #elif defined(OS_UNIX)
 
    stime((time_t *) & seconds);
@@ -2173,7 +2179,7 @@ INT ss_timezone()
 #if defined(OS_DARWIN) || defined(OS_VXWORKS)
   return 0;
 #else
-  return timezone; /* on Linux, comes from "#include <time.h>". */
+  return (INT)timezone; /* on Linux, comes from "#include <time.h>". */
 #endif
 }
 
