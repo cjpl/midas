@@ -2769,6 +2769,13 @@ int mscb_upload(int fd, unsigned short adr, char *buffer, int size, int debug)
    if (mrpc_connected(fd))
       return mrpc_call(mscb_fd[fd - 1].fd, RPC_MSCB_UPLOAD, mscb_fd[fd - 1].remote_fd, adr, buffer, size);
 
+   /* check if node alive */
+   status = mscb_ping(fd, adr);
+   if (status != MSCB_SUCCESS) {
+      printf("Error: cannot ping node #%d\n", adr);
+      return status;
+   }
+
    /* interprete HEX file */
    memset(image, 0xFF, sizeof(image));
    line = buffer;
@@ -2819,6 +2826,19 @@ int mscb_upload(int fd, unsigned short adr, char *buffer, int size, int debug)
    if (mscb_lock(fd) != MSCB_SUCCESS)
       return MSCB_MUTEX;
 
+   /* enter exclusive mode */
+   buf[0] = MCMD_FREEZE;
+   buf[1] = 1;
+   mscb_out(fd, buf, 2, RS485_FLAG_CMD);
+
+   /* wait for acknowledge */
+   if (mscb_in(fd, buf, 1, TO_SHORT) != 1) {
+      printf("Error: cannot request exlusive access to submaster\n");
+      mscb_release(fd);
+      return MSCB_TIMEOUT;
+   }
+
+   /* address node */
    status = mscb_addr(fd, MCMD_PING16, adr, 10, 0);
    if (status != MSCB_SUCCESS) {
       mscb_release(fd);
@@ -2975,7 +2995,7 @@ prog_pages:
                ack[0] = 0;
                if (mscb_in(fd, ack, 2, TO_LONG) != 2 || ack[0] != MCMD_ACK) {
                   printf("\nError: timeout from remote node for program page 0x%04X, chunk %d\n", page * 512, i);
-                  //goto prog_error;
+                  goto prog_error;
                } else
                   break; // successful
             }
@@ -3047,6 +3067,16 @@ prog_pages:
    mscb_clear_info_cache(fd);
 
 prog_error:
+
+   /* exit exclusive mode */
+   buf[0] = MCMD_FREEZE;
+   buf[1] = 0;
+   mscb_out(fd, buf, 2, RS485_FLAG_CMD);
+
+   /* wait for acknowledge */
+   if (mscb_in(fd, buf, 1, TO_SHORT) != 1)
+      printf("Error: cannot exit exlusive access at submaster\n");
+
    mscb_release(fd);
    return MSCB_SUCCESS;
 }
