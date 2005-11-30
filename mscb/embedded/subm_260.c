@@ -318,7 +318,8 @@ void wd_refresh()
    watchdog_int();
 
    /* check exclusive mode timeout */
-   exclusive_timer--;
+   if (exclusive_timer > 0)
+      exclusive_timer--;
    if (exclusive_timer == 0)
       exclusive_socket_no = -1;
 }
@@ -661,7 +662,11 @@ void main(void)
          if (exclusive_socket_no != -1 &&
              exclusive_socket_no != socket_no)
             continue;
-      
+
+         if (exclusive_socket_no != -1 &&
+             exclusive_socket_no == socket_no)
+            exclusive_timer = 1000; // expires after 10 sec. inactivity
+
          /* signal incoming data */
          led_blink(0, 1, 50);
 
