@@ -139,12 +139,14 @@ void print_channel_str(int index, MSCB_INFO_VAR * info_chn, void *pdata, int ver
       for (i = strlen(str); i < 9; i++)
          str[i] = ' ';
       sprintf(line + strlen(line), "%3d: %s ", index, str);
-   }
+   } else
+      sprintf(line, "%s: ", info_chn->name);
 
    if (info_chn->unit == UNIT_STRING) {
       memset(str, 0, sizeof(str));
       strncpy(str, pdata, info_chn->width);
-      sprintf(line + strlen(line), "STR%02d    \"", info_chn->width);
+      if (verbose)
+         sprintf(line + strlen(line), "STR%02d    \"", info_chn->width);
       for (i = 0; i < (int) strlen(str); i++)
          switch (str[i]) {
          case 1:
@@ -176,10 +178,17 @@ void print_channel_str(int index, MSCB_INFO_VAR * info_chn, void *pdata, int ver
          break;
 
       case 1:
-         if (info_chn->flags & MSCBF_SIGNED)
-            sprintf(line + strlen(line), " 8bit S %15d (0x%02X/", (char) data, data);
-         else
-            sprintf(line + strlen(line), " 8bit U %15u (0x%02X/", data, data);
+         if (info_chn->flags & MSCBF_SIGNED) {
+            if (verbose)
+               sprintf(line + strlen(line), " 8bit S %15d (0x%02X/", (char) data, data);
+            else
+               sprintf(line + strlen(line), "%15d (0x%02X/", (char) data, data);
+         } else {
+            if (verbose)
+               sprintf(line + strlen(line), " 8bit U %15u (0x%02X/", data, data);
+            else
+               sprintf(line + strlen(line), "%15u (0x%02X/", data, data);
+         }
          for (i = 0; i < 8; i++)
             if (data & (0x80 >> i))
                sprintf(line + strlen(line), "1");
@@ -189,27 +198,51 @@ void print_channel_str(int index, MSCB_INFO_VAR * info_chn, void *pdata, int ver
          break;
 
       case 2:
-         if (info_chn->flags & MSCBF_SIGNED)
-            sprintf(line + strlen(line), "16bit S %15d (0x%04X)", (short) data, data);
-         else
-            sprintf(line + strlen(line), "16bit U %15u (0x%04X)", data, data);
+         if (info_chn->flags & MSCBF_SIGNED) {
+            if (verbose)
+               sprintf(line + strlen(line), "16bit S %15d (0x%04X)", (short) data, data);
+            else
+               sprintf(line + strlen(line), "%15d (0x%04X)", (short) data, data);
+         } else {
+            if (verbose)
+               sprintf(line + strlen(line), "16bit U %15u (0x%04X)", data, data);
+            else
+               sprintf(line + strlen(line), "%15u (0x%04X)", data, data);
+         }
          break;
 
       case 3:
-         if (info_chn->flags & MSCBF_SIGNED)
-            sprintf(line + strlen(line), "24bit S %15ld (0x%06X)", (long) data, data);
-         else
-            sprintf(line + strlen(line), "24bit U %15u (0x%06X)", data, data);
+         if (info_chn->flags & MSCBF_SIGNED) {
+            if (verbose)
+               sprintf(line + strlen(line), "24bit S %15ld (0x%06X)", (long) data, data);
+            else
+               sprintf(line + strlen(line), "%15ld (0x%06X)", (long) data, data);
+         } else {
+            if (verbose)
+               sprintf(line + strlen(line), "24bit U %15u (0x%06X)", data, data);
+            else
+               sprintf(line + strlen(line), "%15ld (0x%06X)", (long) data, data);
+         }
          break;
 
       case 4:
-         if (info_chn->flags & MSCBF_FLOAT)
-            sprintf(line + strlen(line), "32bit F %15.6lg", *((float *) &data));
-         else {
-            if (info_chn->flags & MSCBF_SIGNED)
-               sprintf(line + strlen(line), "32bit S %15d (0x%08X)", data, data);
+         if (info_chn->flags & MSCBF_FLOAT) {
+            if (verbose)
+               sprintf(line + strlen(line), "32bit F %15.6lg", *((float *) &data));
             else
-               sprintf(line + strlen(line), "32bit U %15u (0x%08X)", data, data);
+               sprintf(line + strlen(line), "%15.6lg", *((float *) &data));
+         } else {
+            if (info_chn->flags & MSCBF_SIGNED) {
+               if (verbose)
+                  sprintf(line + strlen(line), "32bit S %15d (0x%08X)", data, data);
+               else
+                  sprintf(line + strlen(line), "%15d (0x%08X)", data, data);
+            } else {
+               if (verbose)
+                  sprintf(line + strlen(line), "32bit U %15u (0x%08X)", data, data);
+               else
+                  sprintf(line + strlen(line), "%15u (0x%08X)", data, data);
+            }
          }
          break;
       }
@@ -524,7 +557,8 @@ int match(char *str, char *cmd)
 
 void cmd_loop(int fd, char *cmd, unsigned short adr)
 {
-   int i, fh, status, size, nparam, current_addr, current_group, first, last, broadcast;
+   int i, fh, status, size, nparam, current_addr, current_group, first, last, broadcast,
+      read_all, repeat;
    unsigned short addr;
    unsigned int data, uptime;
    unsigned char c;
@@ -750,32 +784,11 @@ void cmd_loop(int fd, char *cmd, unsigned short adr)
 
                status = mscb_uptime(fd, (unsigned short) current_addr, &uptime);
                if (status == MSCB_SUCCESS) 
-                  printf("Uptime           : %dd %02dh %02dm %02ds",
+                  printf("Uptime           : %dd %02dh %02dm %02ds\n",
                      uptime / (3600*24),
                      (uptime % (3600*24)) / 3600,
                      (uptime % 3600) / 60,
                      (uptime % 60));
-
-               printf("\nVariables:\n");
-               for (i = 0; i < info.n_variables; i++) {
-                  status =
-                      mscb_info_variable(fd, (unsigned short) current_addr,
-                                         (unsigned char) i, &info_var);
-                  if (status != MSCB_SUCCESS) {
-                     puts("Error reading variable");
-                     break;
-                  } else {
-                     if ((info_var.flags & MSCBF_HIDDEN) == 0 || param[1][0]) {
-                        size = info_var.width;
-                        memset(dbuf, 0, sizeof(dbuf));
-                        status =
-                            mscb_read(fd, (unsigned short) current_addr,
-                                      (unsigned char) i, dbuf, &size);
-                        if (status == MSCB_SUCCESS)
-                           print_channel(i, &info_var, dbuf, 1);
-                     }
-                  }
-               }
 
                mscb_get_version(lib, prot);
                if (info.protocol_version != atoi(prot)) {
@@ -1043,63 +1056,56 @@ void cmd_loop(int fd, char *cmd, unsigned short adr)
          if (current_addr < 0)
             printf("You must first address an individual node\n");
          else {
-            if (!param[1][0])
-               puts("Please specify channel number");
-            else {
-               addr = atoi(param[1]);
 
-               status =
-                   mscb_info_variable(fd, (unsigned short) current_addr,
-                                      (unsigned char) addr, &info_var);
+            if (!param[1][0] || param[1][0] == 'a' || param[1][0] == 'r') {
+               first = 0;
+               last = 256;
+            } else {
+               first = last = atoi(param[1]);
+            }
 
-               if (status == MSCB_CRC_ERROR)
-                  puts("CRC Error");
-               else if (status != MSCB_SUCCESS)
-                  puts("Timeout or invalid channel number");
-               else {
+            read_all = (param[1][0] == 'a' || param[2][0] == 'a' || param[3][0] == 'a');
+            repeat   = (param[1][0] == 'r' || param[2][0] == 'r' || param[3][0] == 'r');
 
-                  if (info_var.unit == UNIT_ASCII) {
+            do {
+               for (i = first ; i <= last ; i++) {
 
-                     /* read ASCII string */
-                     memset(dbuf, 0, sizeof(dbuf));
-                     size = sizeof(dbuf);
-                     status =
-                         mscb_read(fd, (unsigned short) current_addr,
-                                   (unsigned char) addr, dbuf, &size);
-                     if (status != MSCB_SUCCESS)
-                        printf("Error: %d\n", status);
-                     else if (size == 0)
-                        puts("No data available");
-                     else
-                        puts(dbuf);
+                  status = mscb_info_variable(fd, (unsigned short) current_addr,
+                                       (unsigned char) i, &info_var);
 
-                  } else {
-
-                     /* read single value, optionally in repeat mode */
-                     do {
-                        memset(dbuf, 0, sizeof(dbuf));
+                  if (status == MSCB_NO_VAR) {
+                     if (first == last)
+                        printf("Node has no variable #%d\n", first);
+                     break;
+                  } else if (status == MSCB_CRC_ERROR)
+                     puts("CRC Error");
+                  else if (status != MSCB_SUCCESS)
+                     puts("Timeout or invalid channel number");
+                  else {
+                     if ((info_var.flags & MSCBF_HIDDEN) == 0 || read_all) {
                         size = info_var.width;
+                        memset(dbuf, 0, sizeof(dbuf));
                         status =
-                            mscb_read(fd, (unsigned short) current_addr,
-                                      (unsigned char) addr, dbuf, &size);
-                        if (status != MSCB_SUCCESS)
-                           printf("Error: %d\n", status);
-                        else if (size != info_var.width)
-                           printf("Error: Received %d bytes instead of %d\n", size,
-                                  info_var.width);
-                        else
-                           print_channel(addr, &info_var, dbuf, 0);
-
-                        Sleep(10);
-                     } while (param[2][0] && !kbhit());
-
-                     while (kbhit())
-                        getch();
+                              mscb_read(fd, (unsigned short) current_addr,
+                                       (unsigned char) i, dbuf, &size);
+                        if (status == MSCB_SUCCESS)
+                           print_channel(i, &info_var, dbuf, first != last);
+                     }
                   }
 
-                  printf("\n");
+                  if (kbhit())
+                     break;
                }
-            }
+
+               if (first != last && repeat)
+                  printf("\n");
+
+            } while (!kbhit() && repeat);
+
+            if (first == last)
+               printf("\n");
+            while (kbhit())
+               getch();
          }
       }
 
