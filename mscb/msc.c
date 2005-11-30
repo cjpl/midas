@@ -801,6 +801,7 @@ void cmd_loop(int fd, char *cmd, unsigned short adr)
 
             do {
                status = mscb_addr(fd, MCMD_PING16, addr, 10, 1);
+
                if (status != MSCB_SUCCESS) {
                   if (status == MSCB_MUTEX)
                      printf("MSCB used by other process\n");
