@@ -316,6 +316,11 @@ void wd_refresh()
 {
    /* pass call to watchdog_int in mscbutil.c */
    watchdog_int();
+
+   /* check exclusive mode timeout */
+   exclusive_timer--;
+   if (exclusive_timer == 0)
+      exclusive_socket_no = -1;
 }
 
 /*------------------------------------------------------------------*/
@@ -380,6 +385,7 @@ unsigned char execute(char socket_no)
          exclusive_timer = 1000; // expires after 10 sec.
       } else {
          exclusive_socket_no = -1;
+         exclusive_timer = 0;
       }
 
       rs485_rx_buf[0] = MCMD_ACK;
@@ -485,6 +491,7 @@ unsigned short i, to;
          }
       }
 
+      watchdog_refresh();
       delay_us(100);
    }
 
@@ -669,7 +676,8 @@ void main(void)
          if (rs485_send(socket_no, n-1, flags)) {
 
             /* wait until sent */
-            while (n_rs485_tx);
+            while (n_rs485_tx)
+               watchdog_refresh();
 
             /* wait for data to be received */
             rs485_receive(socket_no, flags);
