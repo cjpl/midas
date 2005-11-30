@@ -82,8 +82,6 @@
 #define LED_ON 0
 sbit RS485_ENABLE = P3 ^ 5;
 
-#undef USE_WATCHDOG // max. interval is 10ms on F121, not enough for EEPROM
-
 /*--------------------------------*/
 #elif defined(SCS_220)
 #include <c8051F020.h>
@@ -180,7 +178,6 @@ sbit RS485_ENABLE = P3 ^ 5;
 sbit RS485_ENABLE = P0 ^ 5;
 sbit RS485_SEC_ENABLE = P0 ^ 4;
 
-#undef USE_WATCHDOG // max. interval is 10ms on F121, not enough for EEPROM
 #define LCD_SUPPORT
 
 /*--------------------------------*/
@@ -195,10 +192,9 @@ sbit RS485_SEC_ENABLE = P0 ^ 4;
 sbit RS485_ENABLE = P0 ^ 5;
 sbit RS485_SEC_ENABLE = P0 ^ 4;
 
-#define EXT_WATCHDOG              // use external watchdog
+//#define EXT_WATCHDOG              // use external watchdog
 sbit EXT_WATCHDOG_PIN = P1 ^ 4;
 
-#undef USE_WATCHDOG // max. interval is 10ms on F121, not enough for EEPROM
 #define LCD_SUPPORT
 
 /*--------------------------------*/
@@ -529,7 +525,7 @@ typedef struct {
 typedef struct {                // system info stored in EEPROM
    unsigned int node_addr;
    unsigned int group_addr;
-   unsigned int reserved;
+   unsigned int watchdog_resets;
    char node_name[16];
 } SYS_INFO;
 
@@ -543,6 +539,8 @@ typedef struct {                // system info stored in EEPROM
 /*---- function declarations ---------------------------------------*/
 
 void watchdog_refresh(void);
+void watchdog_enable(void);
+void watchdog_disable(void);
 void yield(void);
 void led_set(unsigned char led, unsigned char flag) reentrant;
 void led_blink(unsigned char led, unsigned char n, int interval) reentrant;

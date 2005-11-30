@@ -91,7 +91,7 @@ typedef struct {
    unsigned char  n_variables;
    unsigned short node_address;
    unsigned short group_address;
-   unsigned short reserved;
+   unsigned short watchdog_resets;
    char           node_name[16];
 } MSCB_INFO;
 

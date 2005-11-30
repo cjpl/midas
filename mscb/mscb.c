@@ -1896,6 +1896,7 @@ int mscb_info(int fd, unsigned short adr, MSCB_INFO * info)
 
       WORD_SWAP(&info->node_address);
       WORD_SWAP(&info->group_address);
+      WORD_SWAP(&info->watchdog_resets);
 
       memcpy(&cache_info[n_cache_info].info, info, sizeof (MSCB_INFO));
       n_cache_info++;

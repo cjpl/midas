@@ -756,6 +756,7 @@ unsigned char led_i;
 /*------------------------------------------------------------------*/
 
 extern void tcp_timer(void);
+void watchdog_int(void) reentrant;
 
 void timer0_int(void) interrupt 1
 /********************************************************************\
@@ -789,6 +790,7 @@ void timer0_int(void) interrupt 1
    }
    
    led_int();
+   watchdog_int();
 }
 
 
@@ -910,31 +912,139 @@ unsigned long uptime(void)
 
 /*------------------------------------------------------------------*/
 
+#ifdef USE_WATCHDOG
+unsigned short watchdog_timer;
+bit            watchdog_on;
+#endif
+
 void watchdog_refresh(void)
 /********************************************************************\
 
-  Routine: watchdog_refresh
+  Routine: watchdog_refres
 
-  Purpose: Refresh watchdog, has to be called regularly, otherwise
+  Purpose: Resets watchdog, has to be called regularly, otherwise
            the watchdog issues a reset
 
 \********************************************************************/
 {
 #ifdef USE_WATCHDOG
+   watchdog_timer = 0;
+
+   if (watchdog_on) {
+
+#ifdef EXT_WATCHDOG
+      EXT_WATCHDOG_PIN = !EXT_WATCHDOG_PIN;
+#else
+#if defined(CPU_C8051F310) || defined(CPU_C8051F320)
+      PCA0CPH4 = 0x00;
+#else
+      WDTCN = 0xA5;
+#endif
+#endif // EXT_WATCHDOG
+
+   }
+   
+#endif
+}
+
+/*------------------------------------------------------------------*/
+
+void watchdog_enable(void)
+/********************************************************************\
+
+  Routine: watchdog_enable
+
+  Purpose: Enables watchdog
+
+\********************************************************************/
+{
+#ifdef USE_WATCHDOG
+
+   watchdog_on = 1;
+   watchdog_timer = 0;
+
+#ifndef EXT_WATCHDOG
+#if defined(CPU_C8051F310) || defined(CPU_C8051F320)
+   PCA0CPL4 = 255;              // 32.1 msec
+   PCA0MD   = 0x40;             // enable watchdog
+   PCA0CPH4 = 0x00;             // reset watchdog
+
+   RSTSRC = 0x09;               // enable reset pin and watchdog reset
+#else /* CPU_C8051F310 */
+
+   WDTCN    = 0x07;             // 95 msec (11.052 MHz) / 21msec (49 MHz)
+   WDTCN    = 0xA5;             // start watchdog
+
+#if defined(CPU_C8051F120)
+   SFRPAGE = LEGACY_PAGE;
+   RSTSRC  = 0x04;              // enable missing clock detector
+#else
+   OSCICN |= 0x80;              // enable missing clock detector
+#endif
+
+#endif /* not CPU_C8051F310 */
+#endif /* not EXT_WATCHDOG */
+#endif /* USE_WATCHDOG */
+}
+
+/*------------------------------------------------------------------*/
+
+void watchdog_disable(void)
+/********************************************************************\
+
+  Routine: watchdog_disable
+
+  Purpose: Disables watchdog
+
+\********************************************************************/
+{
+#ifdef USE_WATCHDOG
+   watchdog_on = 0;
+   watchdog_timer = 0;
 
 #if defined(CPU_C8051F310) || defined(CPU_C8051F320)
-   PCA0CPH4 = 0x00;
+   PCA0MD = 0x00;
 #else
-   WDTCN = 0xA5;
+   WDTCN = 0xDE;
+   WDTCN = 0xAD;
 #endif
 
 #endif
+}
+
+/*------------------------------------------------------------------*/
+
+void watchdog_int(void) reentrant
+/********************************************************************\
+
+  Routine: watchdog_int
+
+  Purpose: Called by 100Hz interrupt routine to refresh watchdog
+
+\********************************************************************/
+{
+#ifdef USE_WATCHDOG
+
+   /* timer expires after 10 sec of inactivity */
+   watchdog_timer++;
+   if (watchdog_on && watchdog_timer < 1000) {
+
 #ifdef EXT_WATCHDOG
-   EXT_WATCHDOG_PIN = !EXT_WATCHDOG_PIN;
+      EXT_WATCHDOG_PIN = !EXT_WATCHDOG_PIN;
+#else
+#if defined(CPU_C8051F310) || defined(CPU_C8051F320)
+      PCA0CPH4 = 0x00;
+#else
+      WDTCN = 0xA5;
+#endif
+#endif // EXT_WATCHDOG
+
+   }
 #endif
 }
 
 /*------------------------------------------------------------------*\
+
 
 /********************************************************************\
 
@@ -950,7 +1060,7 @@ void delay_ms(unsigned int ms)
 
    for (i = 0; i < ms; i++) {
       delay_us(1000);
-      yield();
+      watchdog_refresh();
    }
 }
 
@@ -1052,6 +1162,7 @@ void eeprom_write(void * src, unsigned char len, unsigned short *offset)
    if (_flkey != 0xF1)
       return;
 
+   watchdog_disable();
    DISABLE_INTERRUPTS;
 
 #ifdef CPU_C8051F120
@@ -1085,8 +1196,7 @@ void eeprom_write(void * src, unsigned char len, unsigned short *offset)
    *offset += len;
 
    ENABLE_INTERRUPTS;
-
-   watchdog_refresh();
+   watchdog_enable();
 }
 
 /*------------------------------------------------------------------*/
@@ -1107,6 +1217,7 @@ void eeprom_erase(void)
       return;
 
    DISABLE_INTERRUPTS;
+   watchdog_disable();
 
 #ifdef CPU_C8051F120
    SFRPAGE = LEGACY_PAGE;
@@ -1146,6 +1257,7 @@ void eeprom_erase(void)
    FLSCL = FLSCL & 0xF0;
 
    ENABLE_INTERRUPTS;
+   watchdog_enable();
 }
 
 /*------------------------------------------------------------------*/

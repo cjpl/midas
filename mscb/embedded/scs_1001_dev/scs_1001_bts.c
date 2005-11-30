@@ -55,9 +55,12 @@ sbit SRSTROBE = P1 ^ 5;
 struct {
    unsigned char error;
    unsigned char bts_state;
+   unsigned char ln2_valve_state;
+   unsigned char heater_state;
 
    unsigned short ln2_on;
    unsigned short ln2_off;
+   unsigned short preheat;
 
    unsigned char ka_out;
    unsigned char ka_in;
@@ -106,42 +109,46 @@ MSCB_INFO_VAR code variables[] = {
    { 1, UNIT_BYTE,    0, 0, 0,                         "Error",    &user_data.error },                     // 0
    { 1, UNIT_BYTE,    0, 0, 0,                         "State",    &user_data.bts_state, 0, 9, 1 },        // 1
                                                                                                          
-   { 2, UNIT_SECOND,  0, 0, 0,                         "LN2 on",   &user_data.ln2_on, 0, 120, 10 },        // 2
-   { 2, UNIT_SECOND,  0, 0, 0,                         "LN2 off",  &user_data.ln2_off, 0, 3600, 10 },      // 3
+   { 1, UNIT_BYTE,    0, 0, 0,                         "LN2VS",    &user_data.ln2_valve_state, 0, 2, 1 },  // 2
+   { 1, UNIT_BYTE,    0, 0, 0,                         "HTRS",     &user_data.heater_state, 0, 2, 1 },     // 3
 
-   { 1, UNIT_BYTE,    0, 0, 0,                         "KA Out",   &user_data.ka_out, 0, 7, 1 },           // 4
-   { 1, UNIT_BYTE,    0, 0, 0,                         "KA In",    &user_data.ka_in },                     // 5
-   { 4, UNIT_PERCENT, 0, 0, MSCBF_FLOAT,               "KA Level", &user_data.ka_level },                  // 6  
+   { 2, UNIT_SECOND,  0, 0, 0,                         "LN2 on",   &user_data.ln2_on, 0, 120, 10 },        // 4
+   { 2, UNIT_SECOND,  0, 0, 0,                         "LN2 off",  &user_data.ln2_off, 0, 3600, 10 },      // 5
+   { 2, UNIT_SECOND,  0, 0, 0,                         "Preheat",  &user_data.preheat, 0, 60, 1 },         // 6
 
-   { 1, UNIT_BOOLEAN, 0, 0, 0,                         "LN2 vlve", &user_data.ln2_valve, 0, 1, 1 },        // 7
-   { 1, UNIT_BOOLEAN, 0, 0, 0,                         "LN2 htr",  &user_data.ln2_heater, 0, 1, 1 },       // 8
-   { 4, UNIT_KELVIN,  0, 0, MSCBF_FLOAT,               "LN2vlv T", &user_data.ln2_valve_temp },            // 9
-   { 4, UNIT_KELVIN,  0, 0, MSCBF_FLOAT,               "LN2htr T", &user_data.ln2_heater_temp },           // 10
+   { 1, UNIT_BYTE,    0, 0, 0,                         "KA Out",   &user_data.ka_out, 0, 7, 1 },           // 7
+   { 1, UNIT_BYTE,    0, 0, 0,                         "KA In",    &user_data.ka_in },                     // 8
+   { 4, UNIT_PERCENT, 0, 0, MSCBF_FLOAT,               "KA Level", &user_data.ka_level },                  // 9  
+
+   { 1, UNIT_BOOLEAN, 0, 0, 0,                         "LN2 vlve", &user_data.ln2_valve, 0, 1, 1 },        // 10
+   { 1, UNIT_BOOLEAN, 0, 0, 0,                         "LN2 htr",  &user_data.ln2_heater, 0, 1, 1 },       // 11
+   { 4, UNIT_KELVIN,  0, 0, MSCBF_FLOAT,               "LN2vlv T", &user_data.ln2_valve_temp },            // 12
+   { 4, UNIT_KELVIN,  0, 0, MSCBF_FLOAT,               "LN2htr T", &user_data.ln2_heater_temp },           // 13
                                                                                                          
-   { 4, UNIT_PERCENT, 0, 0, MSCBF_FLOAT,               "JT Fvlve", &user_data.jt_forerun_valve, 0, 100, 1},// 11
-   { 4, UNIT_PERCENT, 0, 0, MSCBF_FLOAT,               "JT Bvlve", &user_data.jt_bypass_valve, 0, 100, 1}, // 12
-   { 4, UNIT_KELVIN,  0, 0, MSCBF_FLOAT,               "JT T",     &user_data.jt_temp },                   // 13
+   { 4, UNIT_PERCENT, 0, 0, MSCBF_FLOAT,               "JT Fvlve", &user_data.jt_forerun_valve, 0, 100, 1},// 14
+   { 4, UNIT_PERCENT, 0, 0, MSCBF_FLOAT,               "JT Bvlve", &user_data.jt_bypass_valve, 0, 100, 1}, // 15
+   { 4, UNIT_KELVIN,  0, 0, MSCBF_FLOAT,               "JT T",     &user_data.jt_temp },                   // 16
 
-   { 4, UNIT_PERCENT, 0, 0, MSCBF_FLOAT,               "LHe lvl1", &user_data.lhe_level1 },                // 14
-   { 4, UNIT_PERCENT, 0, 0, MSCBF_FLOAT,               "LHe lvl2", &user_data.lhe_level2 },                // 15
+   { 4, UNIT_PERCENT, 0, 0, MSCBF_FLOAT,               "LHe lvl1", &user_data.lhe_level1 },                // 17
+   { 4, UNIT_PERCENT, 0, 0, MSCBF_FLOAT,               "LHe lvl2", &user_data.lhe_level2 },                // 18
 
-   { 4, UNIT_KELVIN,  0, 0, MSCBF_FLOAT,               "LN2 Tl",   &user_data.ln2_temp_left },             // 16
-   { 4, UNIT_KELVIN,  0, 0, MSCBF_FLOAT,               "LN2 Tr",   &user_data.ln2_temp_right },            // 17
-   { 4, UNIT_KELVIN,  0, 0, MSCBF_FLOAT,               "LN2 Tw",   &user_data.ln2_temp_tower },            // 18
-   { 4, UNIT_KELVIN,  0, 0, MSCBF_FLOAT,               "LN2 Tt",   &user_data.ln2_temp_top },              // 19
+   { 4, UNIT_KELVIN,  0, 0, MSCBF_FLOAT,               "LN2 Tl",   &user_data.ln2_temp_left },             // 19
+   { 4, UNIT_KELVIN,  0, 0, MSCBF_FLOAT,               "LN2 Tr",   &user_data.ln2_temp_right },            // 20
+   { 4, UNIT_KELVIN,  0, 0, MSCBF_FLOAT,               "LN2 Tw",   &user_data.ln2_temp_tower },            // 21
+   { 4, UNIT_KELVIN,  0, 0, MSCBF_FLOAT,               "LN2 Tt",   &user_data.ln2_temp_top },              // 22
 
-   { 4, UNIT_KELVIN,  0, 0, MSCBF_FLOAT,               "LHE TDc",  &user_data.lhe_temp_d_center },         // 20
-   { 4, UNIT_KELVIN,  0, 0, MSCBF_FLOAT,               "LHE TDl",  &user_data.lhe_temp_d_left },           // 21
-   { 4, UNIT_KELVIN,  0, 0, MSCBF_FLOAT,               "LHE TDr",  &user_data.lhe_temp_d_right },          // 22
-   { 4, UNIT_KELVIN,  0, 0, MSCBF_FLOAT,               "LHE TRc",  &user_data.lhe_temp_r_center },         // 23
-   { 4, UNIT_KELVIN,  0, 0, MSCBF_FLOAT,               "LHE TRl",  &user_data.lhe_temp_r_left },           // 24
-   { 4, UNIT_KELVIN,  0, 0, MSCBF_FLOAT,               "LHE TRr",  &user_data.lhe_temp_r_right },          // 25
+   { 4, UNIT_KELVIN,  0, 0, MSCBF_FLOAT,               "LHE TDc",  &user_data.lhe_temp_d_center },         // 23
+   { 4, UNIT_KELVIN,  0, 0, MSCBF_FLOAT,               "LHE TDl",  &user_data.lhe_temp_d_left },           // 24
+   { 4, UNIT_KELVIN,  0, 0, MSCBF_FLOAT,               "LHE TDr",  &user_data.lhe_temp_d_right },          // 25
+   { 4, UNIT_KELVIN,  0, 0, MSCBF_FLOAT,               "LHE TRc",  &user_data.lhe_temp_r_center },         // 26
+   { 4, UNIT_KELVIN,  0, 0, MSCBF_FLOAT,               "LHE TRl",  &user_data.lhe_temp_r_left },           // 27
+   { 4, UNIT_KELVIN,  0, 0, MSCBF_FLOAT,               "LHE TRr",  &user_data.lhe_temp_r_right },          // 28
 
-   { 4, UNIT_BAR, PRFX_MILLI, 0, MSCBF_FLOAT,          "LN2 P",    &user_data.ln2_mbar },                  // 26
-   { 4, UNIT_BAR, 0,          0, MSCBF_FLOAT,          "LHE P",    &user_data.lhe_bar },                   // 27
+   { 4, UNIT_BAR, PRFX_MILLI, 0, MSCBF_FLOAT,          "LN2 P",    &user_data.ln2_mbar },                  // 29
+   { 4, UNIT_BAR, 0,          0, MSCBF_FLOAT,          "LHE P",    &user_data.lhe_bar },                   // 30
 
-   { 4, UNIT_VOLT,    0, 0, MSCBF_FLOAT,               "Quench1",  &user_data.quench1 },                   // 28
-   { 4, UNIT_VOLT,    0, 0, MSCBF_FLOAT,               "Quench2",  &user_data.quench2 },                   // 29
+   { 4, UNIT_VOLT,    0, 0, MSCBF_FLOAT,               "Quench1",  &user_data.quench1 },                   // 31
+   { 4, UNIT_VOLT,    0, 0, MSCBF_FLOAT,               "Quench2",  &user_data.quench2 },                   // 32
 
    { 4, UNIT_VOLT,   0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "ADC0",     &user_data.adc[0] },                    
    { 4, UNIT_VOLT,   0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "ADC1",     &user_data.adc[1] },                    
@@ -250,8 +257,9 @@ void user_init(unsigned char init)
          user_data.again[i] = 1;
       }
 
-	  user_data.ln2_on = 30;
-	  user_data.ln2_off = 180;
+	  user_data.ln2_on = 20;
+	  user_data.ln2_off = 120;
+     user_data.preheat = 10;
    }
 
    /* initialize UART1 for SCS_910 */
@@ -272,8 +280,13 @@ void user_init(unsigned char init)
    printf("  Revision:  %s", str);
 
    user_data.error = 0;
-   if (user_data.bts_state > 2) // keep state from EEPROM if ok
+   // keep states from EEPROM if ok
+   if (user_data.bts_state > 2) 
       user_data.bts_state = 0;
+   if (user_data.ln2_valve_state > 2) 
+      user_data.ln2_valve_state = 0;
+   if (user_data.heater_state > 2) 
+      user_data.heater_state = 0;
    user_data.ka_out = 0; // 1
    user_data.ln2_valve = 0;
    user_data.ln2_heater = 0;
@@ -296,17 +309,17 @@ unsigned short d;
    switch (index) {
 
    /* DOUT goes through inverter, and also has inverse logic from KA */
-   case 4: DOUT1 = (user_data.ka_out & (1<<0)) == 1;
+   case 7: DOUT1 = (user_data.ka_out & (1<<0)) == 1;
            DOUT2 = (user_data.ka_out & (1<<1)) == 1;
            DOUT3 = (user_data.ka_out & (1<<2)) == 1; break;
    
    /* LN2 valve has inverse logic */
-   case 7: RELAIS0 = !user_data.ln2_valve; break; 
+   case 10: RELAIS0 = !user_data.ln2_valve; break; 
 
-   case 8: DOUT0   = !user_data.ln2_heater; break;
+   case 11: DOUT0   = !user_data.ln2_heater; break;
    
    /* "Vorlauf" JT-valve */
-   case 11:
+   case 14:
       /* convert % to 4-20mA current */
 	   curr = 4+16*user_data.jt_forerun_valve/100.0;
 
@@ -326,7 +339,7 @@ unsigned short d;
       break;
 
    /* "Ruecklauf" JT-valve */
-   case 12:
+   case 15:
       /* convert % to 4-20mA current */
 	   curr = 4+16*user_data.jt_bypass_valve/100.0;
 
@@ -476,7 +489,7 @@ static long xdata last_ln2time = 0, last_b;
 
    /* display pressures */
    lcd_goto(0, 0);
-   printf("PH:%4.2bf", user_data.lhe_bar);
+   printf("PH:%5.2fb", user_data.lhe_bar);
    lcd_goto(10, 0);
    printf("PI:%5.1g", user_data.ln2_mbar);
    
@@ -491,9 +504,9 @@ static long xdata last_ln2time = 0, last_b;
    printf("BV:%5.1f%%", user_data.jt_bypass_valve);
 
    lcd_goto(0, 3);
-   if (user_data.bts_state == 0)
+   if (user_data.ln2_valve_state == 0)
       printf("LN2M0");
-   else if (user_data.bts_state == 1)
+   else if (user_data.ln2_valve_state == 1)
       printf("LN2M1 ");
    else {
       if (user_data.ln2_valve)
@@ -503,27 +516,41 @@ static long xdata last_ln2time = 0, last_b;
    }
 
    lcd_goto(6, 3);
-   printf(user_data.ln2_heater ? "HON " : "HOFF");
+   if (user_data.heater_state == 0)
+      printf("HTRM0");
+   else if (user_data.heater_state == 1)
+      printf("HTRM1 ");
+   else {
+      if (user_data.ln2_heater)
+         printf("HTRA1");
+      else
+         printf("HTRA0");
+   }
 
    lcd_goto(13, 3);
    printf("+ HE -");
 
-   /* toggle state with button 0 */
+   /* toggle ln2 valve state with button 0 */
    if (b0 && !b0_old) {
       last_ln2time = time();
-      user_data.bts_state = (user_data.bts_state + 1) % 3;
+      user_data.ln2_valve_state = (user_data.ln2_valve_state + 1) % 3;
 
-      if (user_data.bts_state == 0)
+      if (user_data.ln2_valve_state == 0)
          user_data.ln2_valve = 0;
-      else if (user_data.bts_state == 1)
+      else if (user_data.ln2_valve_state == 1)
          user_data.ln2_valve = 1;
-      user_write(7);
+      user_write(10);
    }
 
-   /* toggle heater with button 1 */
+   /* toggle heater state with button 0 */
    if (b1 && !b1_old) {
-      user_data.ln2_heater = !user_data.ln2_heater;
-      user_write(8);
+      user_data.heater_state = (user_data.heater_state + 1) % 3;
+
+      if (user_data.heater_state == 0)
+         user_data.ln2_heater = 0;
+      else if (user_data.heater_state == 1)
+         user_data.ln2_heater = 1;
+      user_write(11);
    }
 
    /* increase HE flow with button 2 */
@@ -538,7 +565,7 @@ static long xdata last_ln2time = 0, last_b;
          user_data.jt_forerun_valve += 9;
       if (user_data.jt_forerun_valve > 100)
          user_data.jt_forerun_valve = 100;
-      user_write(11);
+      user_write(14);
    }
 
    /* decrease HE flow with button 3 */
@@ -553,7 +580,8 @@ static long xdata last_ln2time = 0, last_b;
          user_data.jt_forerun_valve -= 9;
       if (user_data.jt_forerun_valve < 0)
          user_data.jt_forerun_valve = 0;
-      user_write(11);
+      user_write(14);
+      while(1); //##
    }
 
    /* enter menu on release of button 2 & 3 */
@@ -563,35 +591,33 @@ static long xdata last_ln2time = 0, last_b;
       return 1;
    }
 
-   /* swith ln2 valve on by specified time */
-   if (user_data.bts_state == 2 && 
+   /* switch heater on "preheat" seconds before ln2 valve */
+   if (user_data.ln2_valve_state == 2 && user_data.heater_state == 2 &&
+       user_data.ln2_valve == 0 && 
+       time() - last_ln2time > user_data.ln2_off * 100 - user_data.preheat * 100) {
+	  user_data.ln2_heater = 1;
+	  user_write(11);
+   }
+
+   /* switch ln2 valve on by specified time */
+   if (user_data.ln2_valve_state == 2 && 
        user_data.ln2_valve == 0 && 
        time() - last_ln2time > user_data.ln2_off * 100) {
       last_ln2time = time();
 	  user_data.ln2_valve = 1;
-	  user_write(7);
+	  user_write(10);
    }
 
    /* swith ln2 valve off by specified time */
-   if (user_data.bts_state == 2 && 
+   if (user_data.ln2_valve_state == 2 && 
        user_data.ln2_valve == 1 && 
        time() - last_ln2time > user_data.ln2_on * 100) {
       last_ln2time = time();
 	  user_data.ln2_valve = 0;
-	  user_write(7);
+     user_data.ln2_heater = 0;
+	  user_write(10);
+	  user_write(11);
    }
-
-   /*
-   lcd_goto(14, 3);
-   delta = (unsigned short)((time() - last_time) / 100);
-   if (user_data.bts_state == 2) {
-	   if (user_data.ln2_valve == 0)
-	      printf("%3d s", user_data.ln2_off - delta);
-	   if (user_data.ln2_valve == 1) 
-	      printf("%3d s", user_data.ln2_on - delta);
-   } else
-      printf("     ");
-   */
 
    b0_old = b0;
    b1_old = b1;
