@@ -41,7 +41,6 @@ SUBM_CFG code  *subm_cfg;
 SUBM_CFG xdata *subm_cfg_write;
 
 bit configured;        // set after being configuration
-bit watchdog_on;       // set after DHCP request
 
 char exclusive_socket_no;        // used for exclusive access (download)
 unsigned short exclusive_timer;  // timer to reset exclusive access
@@ -287,6 +286,7 @@ void serial_int(void) interrupt 4 using 1
          SBUF0 = rs485_tx_buf[i_rs485_tx];
       } else {
          /* end of buffer */
+         DELAY_US(10);
          RS485_ENABLE = 0;
          i_rs485_tx = n_rs485_tx = 0;
       }
@@ -309,41 +309,13 @@ void yield()
 
 /*------------------------------------------------------------------*/
 
-unsigned short wd_timer = 0;
+extern void watchdog_int(void) reentrant;
 
-/* called from 10ms timer interrupt in MN_PORT.c */
+/* wd_refresh gets called from 100Hz timer interrupt inside netlib.lib */
 void wd_refresh()
 {
-   /* check for exclusive mode */
-   if (exclusive_timer > 0) {
-      exclusive_timer--;
-      if (exclusive_timer == 0)
-         exclusive_socket_no = -1;
-   }
-
-   /* timer expires after 10 sec of inactivity */
-   wd_timer++;
-   if (watchdog_on && wd_timer < 1000)
-      WDTCN = 0xA5;
-}
-
-void wd_reset()
-{
-   wd_timer = 0;
-}
-
-void wd_enable()
-{
-   watchdog_on = 1;
-   wd_timer = 0;
-   WDTCN = 0xA5;
-}
-
-void wd_disable()
-{
-   watchdog_on = 0;
-   WDTCN = 0xDE;
-   WDTCN = 0xAD;
+   /* pass call to watchdog_int in mscbutil.c */
+   watchdog_int();
 }
 
 /*------------------------------------------------------------------*/
@@ -550,6 +522,10 @@ int tcp_receive(unsigned char **data_ptr, char *socket_no_ptr)
             socket_ptr->recv_ptr = tcp_rx_buf[socket_no];
             socket_ptr->recv_end = tcp_rx_buf[socket_no] + DATA_BUFF_LEN - 1;
          }
+      } else {
+         /* all sockets occupied, do reboot to free possible hanging connections */
+         SFRPAGE = LEGACY_PAGE;
+         RSTSRC = 0x10;
       }
    }
 
@@ -663,10 +639,10 @@ void main(void)
    mn_dhcp_start(NULL, DHCP_DEFAULT_LEASE_TIME);
 
    // turn on watchdog
-   wd_enable();
+   watchdog_enable();
 
    do {
-      wd_reset();
+      watchdog_refresh();
 
       if (!configured || exclusive_socket_no != -1)
          led_blink(0, 1, 50);

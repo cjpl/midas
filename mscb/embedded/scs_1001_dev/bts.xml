@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
-<!-- created by MXML on Wed Nov 23 16:12:12 2005 -->
+<!-- created by MXML on Wed Nov 30 13:37:33 2005 -->
 <MSCBDump>
   <Node>
     <Name>BTS</Name>
     <NodeAddress>1 (0x1)</NodeAddress>
     <GroupAddress>65535 (0xFFFF)</GroupAddress>
-    <ProtocolVersion>0.3</ProtocolVersion>
+    <ProtocolVersion>0.4</ProtocolVersion>
     <Variables>
       <Variable>
         <Index>0</Index>
@@ -57,8 +57,8 @@
         <Name>KA In</Name>
         <Width>8bit</Width>
         <Flags>U</Flags>
-        <Value>3</Value>
-        <HexBinValue>0x03/00000011</HexBinValue>
+        <Value>1</Value>
+        <HexBinValue>0x01/00000001</HexBinValue>
         <Unit>byte</Unit>
       </Variable>
       <Variable>
@@ -92,7 +92,7 @@
         <Name>LN2vlv T</Name>
         <Width>32bit</Width>
         <Flags>F</Flags>
-        <Value>83.1153</Value>
+        <Value>92.4758</Value>
         <Unit>kelvin</Unit>
       </Variable>
       <Variable>
@@ -100,7 +100,7 @@
         <Name>LN2htr T</Name>
         <Width>32bit</Width>
         <Flags>F</Flags>
-        <Value>374.772</Value>
+        <Value>374.864</Value>
         <Unit>kelvin</Unit>
       </Variable>
       <Variable>
@@ -108,7 +108,7 @@
         <Name>JT Fvlve</Name>
         <Width>32bit</Width>
         <Flags>F</Flags>
-        <Value>13</Value>
+        <Value>0</Value>
         <Unit>percent</Unit>
       </Variable>
       <Variable>
@@ -124,7 +124,7 @@
         <Name>JT T</Name>
         <Width>32bit</Width>
         <Flags>F</Flags>
-        <Value>61.7999</Value>
+        <Value>225.6</Value>
         <Unit>kelvin</Unit>
       </Variable>
       <Variable>
@@ -145,82 +145,82 @@
       </Variable>
       <Variable>
         <Index>16</Index>
-        <Name>LN2 T1</Name>
+        <Name>LN2 Tl</Name>
         <Width>32bit</Width>
         <Flags>F</Flags>
-        <Value>88.6337</Value>
+        <Value>98.7306</Value>
         <Unit>kelvin</Unit>
       </Variable>
       <Variable>
         <Index>17</Index>
-        <Name>LN2 T2</Name>
+        <Name>LN2 Tr</Name>
         <Width>32bit</Width>
         <Flags>F</Flags>
-        <Value>89.0465</Value>
+        <Value>97.9923</Value>
         <Unit>kelvin</Unit>
       </Variable>
       <Variable>
         <Index>18</Index>
-        <Name>LN2 T3</Name>
+        <Name>LN2 Tw</Name>
         <Width>32bit</Width>
         <Flags>F</Flags>
-        <Value>86.3205</Value>
+        <Value>95.8165</Value>
         <Unit>kelvin</Unit>
       </Variable>
       <Variable>
         <Index>19</Index>
-        <Name>LN2 T4</Name>
+        <Name>LN2 Tt</Name>
         <Width>32bit</Width>
         <Flags>F</Flags>
-        <Value>221.711</Value>
+        <Value>236.686</Value>
         <Unit>kelvin</Unit>
       </Variable>
       <Variable>
         <Index>20</Index>
-        <Name>LHE T1a</Name>
+        <Name>LHE TDc</Name>
         <Width>32bit</Width>
         <Flags>F</Flags>
-        <Value>164.009</Value>
+        <Value>76.9227</Value>
         <Unit>kelvin</Unit>
       </Variable>
       <Variable>
         <Index>21</Index>
-        <Name>LHE T2a</Name>
+        <Name>LHE TDl</Name>
         <Width>32bit</Width>
         <Flags>F</Flags>
-        <Value>165.621</Value>
+        <Value>74.3738</Value>
         <Unit>kelvin</Unit>
       </Variable>
       <Variable>
         <Index>22</Index>
-        <Name>LHE T3a</Name>
+        <Name>LHE TDr</Name>
         <Width>32bit</Width>
         <Flags>F</Flags>
-        <Value>158.688</Value>
+        <Value>73.3771</Value>
         <Unit>kelvin</Unit>
       </Variable>
       <Variable>
         <Index>23</Index>
-        <Name>LHE T1b</Name>
+        <Name>LHE TRc</Name>
         <Width>32bit</Width>
         <Flags>F</Flags>
-        <Value>139.048</Value>
+        <Value>73.7179</Value>
         <Unit>kelvin</Unit>
       </Variable>
       <Variable>
         <Index>24</Index>
-        <Name>LHE T2b</Name>
+        <Name>LHE TRl</Name>
         <Width>32bit</Width>
         <Flags>F</Flags>
-        <Value>138.837</Value>
+        <Value>70.0617</Value>
         <Unit>kelvin</Unit>
       </Variable>
       <Variable>
         <Index>25</Index>
-        <Name>LHE T3b</Name>
+        <Name>LHE TRr</Name>
         <Width>32bit</Width>
         <Flags>F</Flags>
-        <Value>0</Value>
+        <Value>76.0126</Value>
         <Unit>kelvin</Unit>
       </Variable>
       <Variable>
@@ -228,7 +228,7 @@
         <Name>LN2 P</Name>
         <Width>32bit</Width>
         <Flags>F</Flags>
-        <Value>2.65635e-007</Value>
+        <Value>1.3159e-007</Value>
         <Unit>millibar</Unit>
       </Variable>
       <Variable>
@@ -236,7 +236,7 @@
         <Name>LHE P</Name>
         <Width>32bit</Width>
         <Flags>F</Flags>
-        <Value>1.15781</Value>
+        <Value>1</Value>
         <Unit>bar</Unit>
       </Variable>
       <Variable>
@@ -260,7 +260,7 @@
         <Name>ADC0</Name>
         <Width>32bit</Width>
         <Flags>F</Flags>
-        <Value>2.852</Value>
+        <Value>2.669</Value>
         <Unit>volt</Unit>
       </Variable>
       <Variable>
@@ -268,7 +268,7 @@
         <Name>ADC1</Name>
         <Width>32bit</Width>
         <Flags>F</Flags>
-        <Value>-0.015</Value>
+        <Value>-0.064</Value>
         <Unit>volt</Unit>
       </Variable>
       <Variable>
@@ -276,7 +276,7 @@
         <Name>ADC2</Name>
         <Width>32bit</Width>
         <Flags>F</Flags>
-        <Value>0.234</Value>
+        <Value>0.274</Value>
         <Unit>volt</Unit>
       </Variable>
       <Variable>
@@ -284,7 +284,7 @@
         <Name>ADC3</Name>
         <Width>32bit</Width>
         <Flags>F</Flags>
-        <Value>-0.002</Value>
+        <Value>-0.028</Value>
         <Unit>volt</Unit>
       </Variable>
       <Variable>
@@ -292,7 +292,7 @@
         <Name>ADC4</Name>
         <Width>32bit</Width>
         <Flags>F</Flags>
-        <Value>1.362</Value>
+        <Value>1.363</Value>
         <Unit>volt</Unit>
       </Variable>
       <Variable>
@@ -300,7 +300,7 @@
         <Name>ADC5</Name>
         <Width>32bit</Width>
         <Flags>F</Flags>
-        <Value>1.141</Value>
+        <Value>1.04</Value>
         <Unit>volt</Unit>
       </Variable>
       <Variable>
@@ -308,7 +308,7 @@
         <Name>ADC6</Name>
         <Width>32bit</Width>
         <Flags>F</Flags>
-        <Value>0.046</Value>
+        <Value>0.038</Value>
         <Unit>volt</Unit>
       </Variable>
       <Variable>
@@ -316,7 +316,7 @@
         <Name>ADC7</Name>
         <Width>32bit</Width>
         <Flags>F</Flags>
-        <Value>0.057</Value>
+        <Value>0.042</Value>
         <Unit>volt</Unit>
       </Variable>
       <Variable>
@@ -364,7 +364,7 @@
         <Name>AOFS5</Name>
         <Width>32bit</Width>
         <Flags>F</Flags>
-        <Value>0</Value>
+        <Value>0.01</Value>
         <Unit>volt</Unit>
       </Variable>
       <Variable>
@@ -452,7 +452,7 @@
         <Name>910_00</Name>
         <Width>32bit</Width>
         <Flags>F</Flags>
-        <Value>0.60973</Value>
+        <Value>0.59045</Value>
         <Unit>volt</Unit>
       </Variable>
       <Variable>
@@ -460,7 +460,7 @@
         <Name>910_01</Name>
         <Width>32bit</Width>
         <Flags>F</Flags>
-        <Value>0.00775</Value>
+        <Value>0.00758</Value>
         <Unit>volt</Unit>
       </Variable>
       <Variable>
@@ -468,7 +468,7 @@
         <Name>910_02</Name>
         <Width>32bit</Width>
         <Flags>F</Flags>
-        <Value>0.59825</Value>
+        <Value>0.5775</Value>
         <Unit>volt</Unit>
       </Variable>
       <Variable>
@@ -476,7 +476,7 @@
         <Name>910_03</Name>
         <Width>32bit</Width>
         <Flags>F</Flags>
-        <Value>0.59064</Value>
+        <Value>0.57198</Value>
         <Unit>volt</Unit>
       </Variable>
       <Variable>
@@ -484,7 +484,7 @@
         <Name>910_04</Name>
         <Width>32bit</Width>
         <Flags>F</Flags>
-        <Value>0.59344</Value>
+        <Value>0.57458</Value>
         <Unit>volt</Unit>
       </Variable>
       <Variable>
@@ -492,7 +492,7 @@
         <Name>910_05</Name>
         <Width>32bit</Width>
         <Flags>F</Flags>
-        <Value>0.33697</Value>
+        <Value>0.30784</Value>
         <Unit>volt</Unit>
       </Variable>
       <Variable>
@@ -500,7 +500,7 @@
         <Name>910_06</Name>
         <Width>32bit</Width>
         <Flags>F</Flags>
-        <Value>0.44189</Value>
+        <Value>0.61763</Value>
         <Unit>volt</Unit>
       </Variable>
       <Variable>
@@ -508,7 +508,7 @@
         <Name>910_07</Name>
         <Width>32bit</Width>
         <Flags>F</Flags>
-        <Value>0.43834</Value>
+        <Value>0.62047</Value>
         <Unit>volt</Unit>
       </Variable>
       <Variable>
@@ -516,7 +516,7 @@
         <Name>910_08</Name>
         <Width>32bit</Width>
         <Flags>F</Flags>
-        <Value>0.45049</Value>
+        <Value>0.61951</Value>
         <Unit>volt</Unit>
       </Variable>
       <Variable>
@@ -524,7 +524,7 @@
         <Name>910_09</Name>
         <Width>32bit</Width>
         <Flags>F</Flags>
-        <Value>0.10855</Value>
+        <Value>0.12235</Value>
         <Unit>volt</Unit>
       </Variable>
       <Variable>
@@ -532,7 +532,7 @@
         <Name>910_10</Name>
         <Width>32bit</Width>
         <Flags>F</Flags>
-        <Value>0.11013</Value>
+        <Value>0.12523</Value>
         <Unit>volt</Unit>
       </Variable>
       <Variable>
@@ -540,7 +540,7 @@
         <Name>910_11</Name>
         <Width>32bit</Width>
         <Flags>F</Flags>
-        <Value>0</Value>
+        <Value>0.12616</Value>
         <Unit>volt</Unit>
       </Variable>
       <Variable>
@@ -548,7 +548,7 @@
         <Name>910_12</Name>
         <Width>32bit</Width>
         <Flags>F</Flags>
-        <Value>1.45871</Value>
+        <Value>1.36777</Value>
         <Unit>volt</Unit>
       </Variable>
       <Variable>
@@ -572,7 +572,7 @@
         <Name>910_15</Name>
         <Width>32bit</Width>
         <Flags>F</Flags>
-        <Value>0.17046</Value>
+        <Value>0.16226</Value>
         <Unit>volt</Unit>
       </Variable>
       <Variable>
@@ -580,7 +580,7 @@
         <Name>910_16</Name>
         <Width>32bit</Width>
         <Flags>F</Flags>
-        <Value>0.03356</Value>
+        <Value>0.04463</Value>
         <Unit>volt</Unit>
       </Variable>
       <Variable>
@@ -596,7 +596,7 @@
         <Name>910_18</Name>
         <Width>32bit</Width>
         <Flags>F</Flags>
-        <Value>0.29694</Value>
+        <Value>0.28585</Value>
         <Unit>volt</Unit>
       </Variable>
       <Variable>
