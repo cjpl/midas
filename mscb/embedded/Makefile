@@ -9,8 +9,8 @@ LL = bL51.exe
 CFLAGS = BROWSE DEBUG OBJECTEXTEND "TABS(3)"
 LFLAGS = "RAMSIZE (256)" "DISABLEWARNING (16)" "CODE (?PR?UPGRADE?MSCBMAIN (0X7000))"
 IFLAGS = -kr -nut -i3 -l90
-EXECS = scs_210 scs_220 scs_300 scs_310 scs_400 scs_520 scs_600 scs_700 scs_800 scs_900 scs_910
-SRCS = scs_210.c scs_220.c scs_300.c scs_310.c scs_400.c scs_520.c scs_600.c scs_700.c scs_800.c scs_900.c scs_910.c
+EXECS = scs_210 scs_220 scs_300 scs_310 scs_320 scs_400 scs_520 scs_600 scs_700 scs_800 scs_900 scs_910
+SRCS = scs_210.c scs_220.c scs_300.c scs_310.c scs_320.c scs_400.c scs_520.c scs_600.c scs_700.c scs_800.c scs_900.c scs_910.c
 
 all: $(EXECS) hvr_400.hex hvr_500.hex scs_1000.hex scs_1001.hex subm_250.hex subm_300.hex
 

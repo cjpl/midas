@@ -29,6 +29,9 @@
 #ifdef scs_310
 #define SCS_310
 #endif
+#ifdef scs_320
+#define SCS_320
+#endif
 #ifdef scs_400
 #define SCS_400
 #endif

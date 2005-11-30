@@ -326,6 +326,7 @@ void serial_int(void) interrupt 4
       if (i_out == n_out) {
          i_out = 0;              // send buffer empty, clear pointer
          out_buf_empty = 1;      // and set flag
+         DELAY_US(10);
          RS485_ENABLE = 0;       // disable RS485 driver
       } else {
          DELAY_US(INTERCHAR_DELAY);
@@ -566,6 +567,7 @@ void interprete(void)
 
       send_byte(crc, NULL);     // send CRC code
 
+      DELAY_US(10);
       RS485_ENABLE = 0;
       ES0 = 1;                  // re-enable serial interrupts
       break;
@@ -593,6 +595,7 @@ void interprete(void)
 
          send_byte(crc, NULL);  // send CRC code
 
+         DELAY_US(10);
          RS485_ENABLE = 0;
          ES0 = 1;               // re-enable serial interrupts
       }
@@ -729,6 +732,7 @@ void interprete(void)
 
                send_byte(crc, NULL);                  // send CRC code
    
+               DELAY_US(10);
                RS485_ENABLE = 0;
                ES0 = 1;            // re-enable serial interrupts
             }
@@ -757,6 +761,7 @@ void interprete(void)
 
             send_byte(crc, NULL);       // send CRC code
 
+            DELAY_US(10);
             RS485_ENABLE = 0;
             ES0 = 1;            // re-enable serial interrupts
          }
@@ -1086,6 +1091,7 @@ receive_cmd:
          /* acknowledge ping, independent of own address */
          RS485_ENABLE = 1;
          SEND_BYTE(CMD_ACK);
+         DELAY_US(10);
          RS485_ENABLE = 0;
 
       } else if (cmd == CMD_UPGRADE) {
@@ -1102,6 +1108,7 @@ receive_cmd:
          SEND_BYTE(CMD_ACK+1);
          SEND_BYTE(1);
          SEND_BYTE(0); // dummy CRC
+         DELAY_US(10);
          RS485_ENABLE = 0;
 
       } else if (cmd == UCMD_ECHO) {
@@ -1109,6 +1116,7 @@ receive_cmd:
          RS485_ENABLE = 1;
          SEND_BYTE(CMD_ACK);
          SEND_BYTE(0); // dummy CRC, needed by subm_250
+         DELAY_US(10);
          RS485_ENABLE = 0;
 
       } else if (cmd == UCMD_ERASE) {
@@ -1172,6 +1180,7 @@ erase_ok:
          RS485_ENABLE = 1;
          SEND_BYTE(CMD_ACK);
          SEND_BYTE(crc);
+         DELAY_US(10);
          RS485_ENABLE = 0;
 
       } else if (cmd == UCMD_PROGRAM) {
@@ -1249,6 +1258,7 @@ erase_ok:
          RS485_ENABLE = 1;
          SEND_BYTE(CMD_ACK);
          SEND_BYTE(0);
+         DELAY_US(10);
          RS485_ENABLE = 0;
 
       } else if (cmd == UCMD_VERIFY) {
@@ -1272,6 +1282,7 @@ erase_ok:
          RS485_ENABLE = 1;
          SEND_BYTE(CMD_ACK);
          SEND_BYTE(crc);
+         DELAY_US(10);
          RS485_ENABLE = 0;
 
       } else if (cmd == UCMD_READ) {
@@ -1306,6 +1317,7 @@ erase_ok:
          }
 
          SEND_BYTE(crc);
+         DELAY_US(10);
          RS485_ENABLE = 0;
 
       } else if (cmd == UCMD_REBOOT) {
