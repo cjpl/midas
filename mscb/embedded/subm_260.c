@@ -43,6 +43,9 @@ SUBM_CFG xdata *subm_cfg_write;
 bit configured;        // set after being configuration
 bit watchdog_on;       // set after DHCP request
 
+char exclusive_socket_no;        // used for exclusive access (download)
+unsigned short exclusive_timer;  // timer to reset exclusive access
+
 sbit CS8900A_RESET = P0 ^ 5;
 
 /*---- MSCB commands -----------------------------------------------*/
@@ -225,6 +228,8 @@ void configure()
       memcpy(eth_src_hw_addr, subm_cfg->eth_mac_addr, ETH_ADDR_LEN);
       PSCTL = 0x00; // unselect scratchpad area
    }
+
+   exclusive_socket_no = -1;
 }
  
 /*------------------------------------------------------------------*/
@@ -309,9 +314,15 @@ unsigned short wd_timer = 0;
 /* called from 10ms timer interrupt in MN_PORT.c */
 void wd_refresh()
 {
-   wd_timer++;
+   /* check for exclusive mode */
+   if (exclusive_timer > 0) {
+      exclusive_timer--;
+      if (exclusive_timer == 0)
+         exclusive_socket_no = -1;
+   }
 
    /* timer expires after 10 sec of inactivity */
+   wd_timer++;
    if (watchdog_on && wd_timer < 1000)
       WDTCN = 0xA5;
 }
@@ -388,6 +399,19 @@ unsigned char execute(char socket_no)
          tcp_send(socket_no, rs485_rx_buf, 1);
          return 1;
       }
+   }
+
+   if (rs485_tx_buf[1] == MCMD_FREEZE) {
+
+      if (rs485_tx_buf[2] == 1) {
+         exclusive_socket_no = socket_no;
+         exclusive_timer = 1000; // expires after 10 sec.
+      } else {
+         exclusive_socket_no = -1;
+      }
+
+      rs485_rx_buf[0] = MCMD_ACK;
+      tcp_send(socket_no, rs485_rx_buf, 1);
    }
 
    return 0;
@@ -644,12 +668,17 @@ void main(void)
    do {
       wd_reset();
 
-      if (!configured)
+      if (!configured || exclusive_socket_no != -1)
          led_blink(0, 1, 50);
 
       /* receive a TCP package, open socket if necessary */
       if ((n = tcp_receive(&ptr, &socket_no)) > 0) {
 
+         /* check for exclusive mode */
+         if (exclusive_socket_no != -1 &&
+             exclusive_socket_no != socket_no)
+            continue;
+      
          /* signal incoming data */
          led_blink(0, 1, 50);
 
