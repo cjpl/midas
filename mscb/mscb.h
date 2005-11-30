@@ -201,6 +201,7 @@ extern MSCB_FD mscb_fd[MSCB_MAX_FD];
 #define MSCB_WRONG_PASS   10
 #define MSCB_SUBADDR      11
 #define MSCB_NOTREADY     12
+#define MSCB_NO_VAR       13
 
 /*---- error codes ------------------------------------------------*/
 
