@@ -746,7 +746,8 @@ void cmd_loop(int fd, char *cmd, unsigned short adr)
                printf("Group address    : %d (0x%X)\n", info.group_address,
                       info.group_address);
                printf("Protocol version : %d\n", info.protocol_version);
-               
+               printf("Watchdog resets  : %d\n", info.watchdog_resets);
+
                status = mscb_uptime(fd, (unsigned short) current_addr, &uptime);
                if (status == MSCB_SUCCESS) 
                   printf("Uptime           : %dd %02dh %02dm %02ds",

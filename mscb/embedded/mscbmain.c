@@ -46,7 +46,6 @@ extern char code node_name[];
 
 /* funtions in mscbutil.c */
 extern bit lcd_present;
-extern void watchdog_refresh(void);
 
 #if defined(UART1_DEVICE)
 extern void rs232_output(void);
@@ -98,6 +97,9 @@ bit out_buf_empty;              // TRUR if out_buf has been sent completely
 
 /*------------------------------------------------------------------*/
 
+/* put on idata not to be erased on reboot */
+static unsigned char idata watchdog_resets;
+
 void setup(void)
 {
    unsigned char adr;
@@ -107,12 +109,7 @@ void setup(void)
    _flkey = 0;
 
    /* first disable watchdog */
-#if defined(CPU_C8051F310) || defined(CPU_C8051F320)
-   PCA0MD = 0x00;
-#else
-   WDTCN = 0xDE;
-   WDTCN = 0xAD;
-#endif
+   watchdog_disable();
 
    /* Port and oscillator configuration */
 
@@ -200,39 +197,6 @@ void setup(void)
 
 #endif
 
-#if defined(CPU_C8051F310) || defined(CPU_C8051F320)
-#ifdef USE_WATCHDOG
-   PCA0CPL4 = 255;              // 32.1 msec
-   PCA0MD = 0x40;               // enable watchdog
-   PCA0CPH4 = 0x00;             // reset watchdog
-#endif
-
-   /* enable reset pin and watchdog reset */
-   RSTSRC = 0x09;
-#else /* CPU_C8051F310 */
-
-#ifdef USE_WATCHDOG
-   WDTCN = 0x07;                // 95 msec
-   WDTCN = 0xA5;                // start watchdog
-   PCA0CPH4 = 0x00;
-#else
-   WDTCN = 0xDE;                // disable watchdog
-   WDTCN = 0xAD;
-#endif
-
-#if defined(CPU_C8051F120)
-   SFRPAGE = LEGACY_PAGE;
-   RSTSRC = 0x04;               // enable missing clock detector
-#else /* F120 */
-   /* enable missing clock reset */
-   OSCICN |= 0x80;              // MSCLKE = 1
-
-   /* enable watchdog reset */
-   RSTSRC = 0x08;
-#endif /* not F120 */
-
-#endif /* not F310 */
-
    /* start system clock */
    sysclock_init();
 
@@ -257,8 +221,6 @@ void setup(void)
       in_buf[i] = 0;
    for (i=0 ; i<sizeof(out_buf) ; i++)
       out_buf[i] = 0;
-
-   watchdog_refresh();
 
    /* initialize UART(s) */
    uart_init(0, BD_115200);
@@ -296,7 +258,7 @@ void setup(void)
       /* correct initial value */
       sys_info.node_addr = 0xFFFF;
       sys_info.group_addr = 0xFFFF;
-      sys_info.reserved = 0;
+      sys_info.watchdog_resets = 0;
       memset(sys_info.node_name, 0, sizeof(sys_info.node_name));
       strncpy(sys_info.node_name, node_name, sizeof(sys_info.node_name));
 
@@ -306,15 +268,11 @@ void setup(void)
             /* do it for each sub-address */
             for (adr = 0 ; adr < _n_sub_addr ; adr++) {
                memset((char*)variables[i].ud + _var_size*adr, 0, variables[i].width);
-               watchdog_refresh();
             }
          }
 
       /* call user initialization routine with initialization */
       user_init(1);
-
-  	   /* do flash programming later (>3sec after reboot) */
-      //flash_param = 1;
 
    } else {
       /* remember configured flag */
@@ -322,15 +280,24 @@ void setup(void)
 
       /* call user initialization routine without initialization */
       user_init(0);
-
-      /* check if reset by watchdog */
-      if (RSTSRC & 0x08)
-         WD_RESET = 1;
    }
+
+   /* check if reset by watchdog */
+#if defined(CPU_C8051F120)
+   SFRPAGE   = LEGACY_PAGE;
+#endif
+   if (RSTSRC & 0x08) {
+      WD_RESET = 1;
+      watchdog_resets++;
+      sys_info.watchdog_resets = watchdog_resets;
+   } else
+      watchdog_resets = 0;
 
    /* Blink LEDs */
    for (i=0 ; i<N_LED ; i++)
       led_blink(i, 3, 150);
+
+   watchdog_enable();
 }
 
 /*------------------------------------------------------------------*/
@@ -435,10 +402,9 @@ static void send_byte(unsigned char d, unsigned char *crc)
       *crc = crc8_add(*crc, d);
    DELAY_US(INTERCHAR_DELAY);
    SBUF0 = d;
+   watchdog_refresh();
    while (!TI0);
    TI0 = 0;
-
-   watchdog_refresh();
 }
 
 static void send_obuf(unsigned char n)
@@ -592,8 +558,8 @@ void interprete(void)
       send_byte(*(((unsigned char *) &sys_info.group_addr) + 0), &crc); // send group address
       send_byte(*(((unsigned char *) &sys_info.group_addr) + 1), &crc);
 
-      send_byte(*(((unsigned char *) &sys_info.reserved) + 0), &crc);   // send watchdog resets
-      send_byte(*(((unsigned char *) &sys_info.reserved) + 1), &crc);
+      send_byte(*(((unsigned char *) &sys_info.watchdog_resets) + 0), &crc);   // send watchdog resets
+      send_byte(*(((unsigned char *) &sys_info.watchdog_resets) + 1), &crc);
 
       for (i = 0; i < 16; i++)  // send node name
          send_byte(sys_info.node_name[i], &crc);
