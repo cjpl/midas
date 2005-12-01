@@ -19,6 +19,9 @@
 
 extern bit FREEZE_MODE;
 extern bit DEBUG_MODE;
+extern bit flash_param; 
+extern unsigned char idata _flkey;
+extern SYS_INFO sys_info;
 
 char code node_name[] = "BTS";
 char code svn_revision[] = "$Id$";
@@ -52,7 +55,7 @@ sbit SRSTROBE = P1 ^ 5;
 
 /* data buffer (mirrored in EEPROM) */
 
-struct {
+typedef struct {
    unsigned char error;
    unsigned char bts_state;
    unsigned char ln2_valve_state;
@@ -102,7 +105,10 @@ struct {
 
    float scs_910[20];
 
-} xdata user_data;
+} USER_DATA;
+
+USER_DATA xdata user_data;
+USER_DATA xdata backup_data;
 
 MSCB_INFO_VAR code variables[] = {
 
@@ -211,7 +217,9 @@ void user_write(unsigned char index) reentrant;
 
 /*---- User init function ------------------------------------------*/
 
-extern SYS_INFO sys_info;
+unsigned char xdata ka_out;
+float xdata jt_forerun_valve;
+float xdata jt_bypass_valve;
 
 void user_init(unsigned char init)
 {
@@ -288,13 +296,11 @@ void user_init(unsigned char init)
    if (user_data.heater_state > 2) 
       user_data.heater_state = 0;
 
-   /* keep values if reset by watchdog */
+   /* retrieve backup data from RAM if not reset by power on */
    SFRPAGE = LEGACY_PAGE;
-   if ((RSTSRC & 0x08) == 0) {   
-      user_data.ka_out = 0;
-      user_data.ln2_valve = 0;
-      user_data.ln2_heater = 0;
-   }
+   if ((RSTSRC & 0x02) == 0)
+      memcpy(&user_data, &backup_data, sizeof(user_data));
+   user_data.error = 0;
 
    /* write outputs */
    for (i=0 ; i<99 ; i++)
@@ -313,10 +319,16 @@ unsigned short d;
 
    switch (index) {
 
-   /* DOUT goes through inverter, and also has inverse logic from KA */
-   case 7: DOUT1 = (user_data.ka_out & (1<<0)) == 1;
-           DOUT2 = (user_data.ka_out & (1<<1)) == 1;
-           DOUT3 = (user_data.ka_out & (1<<2)) == 1; break;
+   /* DOUT goes through inverter, bits are switched at KA */
+   case 7: 
+      DOUT3 = (user_data.ka_out & (1<<0)) == 0;
+      DOUT2 = (user_data.ka_out & (1<<1)) == 0;
+      DOUT1 = (user_data.ka_out & (1<<2)) == 0;
+      if (user_data.ka_out != backup_data.ka_out) {
+         flash_param = 1;
+         _flkey = 0xF1;
+      }
+      break;
    
    /* LN2 valve has inverse logic */
    case 10: RELAIS0 = !user_data.ln2_valve; break; 
@@ -586,7 +598,6 @@ static long xdata last_ln2time = 0, last_b;
       if (user_data.jt_forerun_valve < 0)
          user_data.jt_forerun_valve = 0;
       user_write(14);
-      //while(1); //##
    }
 
    /* enter menu on release of button 2 & 3 */
@@ -756,8 +767,11 @@ void user_loop(void)
    /* read buttons and digital input */
    sr_read();
    
-   /* mangae menu on LCD display */
+   /* manage menu on LCD display */
    lcd_menu();
+
+   /* backup data */
+   memcpy(&backup_data, &user_data, sizeof(user_data));
 
    /* watchdog test */
    if (user_data.error == 123)
