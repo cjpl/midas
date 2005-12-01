@@ -598,7 +598,13 @@ void interprete(void)
          DELAY_US(10);
          RS485_ENABLE = 0;
          ES0 = 1;               // re-enable serial interrupts
+      } else {
+         /* just send dummy ack */
+         out_buf[0] = CMD_ACK;
+         out_buf[1] = 0;
+         send_obuf(2);
       }
+
       break;
 
    case CMD_GET_UPTIME:

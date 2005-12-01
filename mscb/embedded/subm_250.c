@@ -17,7 +17,7 @@
 #include "usb.h"
 
 #define IDENT_STR "SUBM_250"
-#define SUBM_VERSION 33   // used for PC-Submaster communication
+#define SUBM_VERSION 4   // used for PC-Submaster communication
 
 /*------------------------------------------------------------------*/
 
@@ -172,13 +172,6 @@ void serial_int(void) interrupt 4 using 1
 
 /*------------------------------------------------------------------*/
 
-void yield()
-{
-   watchdog_refresh();
-}
-
-/*------------------------------------------------------------------*/
-
 sbit led_0 = LED_0;
 sbit led_1 = LED_1;
 
@@ -200,6 +193,13 @@ void execute()
    if (usb_rx_buf[1] == RS485_FLAG_CMD) {
       /* just blink LED, discard data */
       led_1 = !led_1;
+   }
+
+   if (usb_rx_buf[1] == MCMD_FREEZE) {
+
+      /* just send ack */
+      usb_tx_buf[0] = MCMD_ACK;
+      usb_send(usb_tx_buf, 1);
    }
 
 }
@@ -263,7 +263,7 @@ unsigned short i, to;
    if (rs485_flags & RS485_FLAG_SHORT_TO)
       to = 4;     // 400 us for PING
    else if (rs485_flags & RS485_FLAG_LONG_TO)    
-      to = 10000; // 1 s for flash/upgrade
+      to = 50000; // 5 s for flash/upgrade
    else 
       to = 100;   // 10 ms for other commands
 
@@ -322,8 +322,11 @@ void main(void)
    usb_init(usb_rx_buf, &n_usb_rx);
    n_usb_rx = 0;
 
+   /* turn on watchdog */
+   watchdog_enable();
+
    do {
-      yield();
+      watchdog_refresh();
 
       /* check for incoming USB data */
       if (n_usb_rx) {
@@ -346,7 +349,7 @@ void main(void)
 
             /* wait until sent */
             while (n_rs485_tx)
-               yield();
+               watchdog_refresh();
 
             /* wait for data to be received */
             rs485_receive(flags);
