@@ -9,9 +9,9 @@
 
 \********************************************************************/
 
-#define MSCB_LIBRARY_VERSION   "2.2.2"
+#define MSCB_LIBRARY_VERSION   "2.3.0"
 #define MSCB_PROTOCOL_VERSION  "4"
-#define MSCB_SUBM_VERSION      33
+#define MSCB_SUBM_VERSION      4
 
 #ifdef _MSC_VER                 // Windows includes
 
