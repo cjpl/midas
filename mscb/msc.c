@@ -1082,7 +1082,7 @@ void cmd_loop(int fd, char *cmd, unsigned short adr)
                   else if (status != MSCB_SUCCESS)
                      puts("Timeout or invalid channel number");
                   else {
-                     if ((info_var.flags & MSCBF_HIDDEN) == 0 || read_all) {
+                     if ((info_var.flags & MSCBF_HIDDEN) == 0 || read_all || first == last) {
                         size = info_var.width;
                         memset(dbuf, 0, sizeof(dbuf));
                         status =
