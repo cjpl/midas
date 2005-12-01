@@ -1303,6 +1303,22 @@ int mscb_init(char *device, int bufsize, char *password, int debug)
          return EMSCB_LOCKED;
       }
 
+      /* check if submaster alive */
+      buf[0] = MCMD_ECHO;
+      mscb_out(index + 1, buf, 1, RS485_FLAG_CMD);
+
+      n = mscb_in(index + 1, buf, 2, TO_SHORT);
+      mscb_release(index + 1);
+
+      if (n == 2 && buf[0] == MCMD_ACK) {
+         /* check version */
+         if (buf[1] != MSCB_SUBM_VERSION) {
+            debug_log("return EMSCB_SUBM_VERSION\n", 0);
+            memset(&mscb_fd[index], 0, sizeof(MSCB_FD));
+            return EMSCB_SUBM_VERSION;
+         }
+      }
+
       /* authenticate */
       memset(buf, 0, sizeof(buf));
       buf[0] = MCMD_TOKEN;
