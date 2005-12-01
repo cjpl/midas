@@ -12,7 +12,7 @@ IFLAGS = -kr -nut -i3 -l90
 EXECS = scs_210 scs_220 scs_300 scs_310 scs_320 scs_400 scs_520 scs_600 scs_700 scs_800 scs_900 scs_910
 SRCS = scs_210.c scs_220.c scs_300.c scs_310.c scs_320.c scs_400.c scs_520.c scs_600.c scs_700.c scs_800.c scs_900.c scs_910.c
 
-all: $(EXECS) hvr_400.hex hvr_500.hex scs_1000.hex scs_1001.hex subm_250.hex subm_300.hex
+all: $(EXECS) hvr_400.hex hvr_500.hex scs_1000.hex scs_1001.hex subm_250.hex subm_260.hex subm_300.hex
 
 $(EXECS): $(SRCS) mscbmain.c mscbutil.c mscb.h
 	$(CC) $@.c "DEFINE($@)" $(CFLAGS) 
@@ -57,6 +57,12 @@ subm_250.hex: usb.c mscbutil.c subm_250.c usb.h mscb.h
 	$(CC) mscbutil.c "DEFINE(SUBM_250)" $(CFLAGS) 
 	$(LL) usb.obj, mscbutil.obj, subm_250.obj TO subm_250 "RAMSIZE (256)" "DISABLEWARNING (16)" 
 	oh51 subm_250
+
+subm_260.hex: netlib.lib mscbutil.c subm_250.c mscb.h
+	$(CC) subm_260.c "DEFINE(SUBM_260)" LARGE $(CFLAGS) 
+	$(CC) mscbutil.c "DEFINE(SUBM_260)" LARGE $(CFLAGS) 
+	$(LL) netlib.lib, mscbutil.obj, subm_260.obj TO subm_260 "RAMSIZE (256)" "DISABLEWARNING (16)" 
+	oh51 subm_260
 
 subm_300.hex: subm_300.c mscbutil.c mscb.h
 	$(CC) subm_300.c "DEFINE(SUBM_300)" $(CFLAGS) 
