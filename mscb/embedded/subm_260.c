@@ -492,7 +492,7 @@ unsigned short i, to;
          }
       }
 
-      watchdog_refresh();
+      watchdog_refresh(1);
       delay_us(100);
    }
 
@@ -650,7 +650,7 @@ void main(void)
    watchdog_enable();
 
    do {
-      watchdog_refresh();
+      watchdog_refresh(0);
 
       if (!configured || exclusive_socket_no != -1)
          led_blink(0, 1, 50);
@@ -682,7 +682,7 @@ void main(void)
 
             /* wait until sent */
             while (n_rs485_tx)
-               watchdog_refresh();
+               watchdog_refresh(1);
 
             /* wait for data to be received */
             rs485_receive(socket_no, flags);
