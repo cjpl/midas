@@ -374,7 +374,7 @@ unsigned char i;
 
       }
 
-      watchdog_refresh();
+      watchdog_refresh(1);
    }
    RS485_SEC_ENABLE = 0;
 
@@ -416,7 +416,7 @@ long start_time;
          }
       }
 
-      watchdog_refresh();
+      watchdog_refresh(1);
 
    } while (1);
 
@@ -915,22 +915,34 @@ unsigned long uptime(void)
 #ifdef USE_WATCHDOG
 unsigned short watchdog_timer;
 bit            watchdog_on;
+#define WATCHDOG_TIMEOUT 10    // 10 seconds
 #endif
 
-void watchdog_refresh(void)
+void watchdog_refresh(unsigned char from_interrupt)
 /********************************************************************\
 
   Routine: watchdog_refres
 
   Purpose: Resets watchdog, has to be called regularly, otherwise
-           the watchdog issues a reset
+           the watchdog issues a reset. If called from an interrupt
+           routine, just reset the hardware watchdog, but not the
+           watchdog timer. Reset the watchdog timer only when called
+           from the user loop, to ensure that the main user loop
+           is running.
+
+  Input:
+    unsigned char from_interrupt  0 if called from normal user loop,
+                                  1 if called from interrupt routine
+
+
 
 \********************************************************************/
 {
 #ifdef USE_WATCHDOG
-   watchdog_timer = 0;
+   if (from_interrupt == 0)
+      watchdog_timer = 0;
 
-   if (watchdog_on) {
+   if (watchdog_on && watchdog_timer < WATCHDOG_TIMEOUT*100) {
 
 #ifdef EXT_WATCHDOG
       EXT_WATCHDOG_PIN = !EXT_WATCHDOG_PIN;
@@ -1027,7 +1039,7 @@ void watchdog_int(void) reentrant
 
    /* timer expires after 10 sec of inactivity */
    watchdog_timer++;
-   if (watchdog_on && watchdog_timer < 1000) {
+   if (watchdog_on && watchdog_timer < WATCHDOG_TIMEOUT*100) {
 
 #ifdef EXT_WATCHDOG
       EXT_WATCHDOG_PIN = !EXT_WATCHDOG_PIN;
@@ -1060,7 +1072,7 @@ void delay_ms(unsigned int ms)
 
    for (i = 0; i < ms; i++) {
       delay_us(1000);
-      watchdog_refresh();
+      watchdog_refresh(1);
    }
 }
 
@@ -1127,7 +1139,7 @@ void eeprom_read(void * dst, unsigned char len, unsigned short *offset)
    unsigned char code *p;
    unsigned char *d;
 
-   watchdog_refresh();
+   watchdog_refresh(1);
 
    p = EEPROM_OFFSET + *offset;        // read from 128-byte EEPROM page
    d = dst;
@@ -1241,14 +1253,14 @@ void eeprom_erase(void)
       FLKEY = 0xA5;                        // write flash key code
       FLKEY = _flkey;
       *p = 0;                              // erase page
-      watchdog_refresh();
+      watchdog_refresh(1);
       p += 512;
    }
 #else
    p = EEPROM_OFFSET;
    for (i=0 ; i<N_EEPROM_PAGE ; i++) {
       *p = 0; // erase page
-      watchdog_refresh();
+      watchdog_refresh(1);
       p += 512;
    }
 #endif

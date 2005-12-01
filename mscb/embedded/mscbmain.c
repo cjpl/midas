@@ -222,6 +222,12 @@ void setup(void)
    for (i=0 ; i<sizeof(out_buf) ; i++)
       out_buf[i] = 0;
 
+   /* check if we got reset by watchdog */
+#if defined(CPU_C8051F120)
+   SFRPAGE   = LEGACY_PAGE;
+#endif
+   WD_RESET = (RSTSRC & 0x08) > 0;
+
    /* initialize UART(s) */
    uart_init(0, BD_115200);
 
@@ -283,15 +289,12 @@ void setup(void)
    }
 
    /* check if reset by watchdog */
-#if defined(CPU_C8051F120)
-   SFRPAGE   = LEGACY_PAGE;
-#endif
-   if (RSTSRC & 0x08) {
-      WD_RESET = 1;
+   if (WD_RESET)
       watchdog_resets++;
-      sys_info.watchdog_resets = watchdog_resets;
-   } else
+    else
       watchdog_resets = 0;
+
+   sys_info.watchdog_resets = watchdog_resets;
 
    /* Blink LEDs */
    for (i=0 ; i<N_LED ; i++)
@@ -403,7 +406,7 @@ static void send_byte(unsigned char d, unsigned char *crc)
       *crc = crc8_add(*crc, d);
    DELAY_US(INTERCHAR_DELAY);
    SBUF0 = d;
-   watchdog_refresh();
+   watchdog_refresh(1);
    while (!TI0);
    TI0 = 0;
 }
@@ -1033,6 +1036,7 @@ void upgrade()
    /* disable all interrupts */
    EA = 0;
 #if defined(CPU_C8051F120)
+   SFRPAGE = UART1_PAGE;
    SCON1 &= ~0x03; // clear pending UART1 interrupts
 #endif
 
@@ -1350,7 +1354,7 @@ erase_ok:
 
 void yield(void)
 {
-   watchdog_refresh();
+   watchdog_refresh(0);
 
    /* output RS232 data if present */
 #if defined(UART1_DEVICE)

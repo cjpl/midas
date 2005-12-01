@@ -287,11 +287,16 @@ void user_init(unsigned char init)
       user_data.ln2_valve_state = 0;
    if (user_data.heater_state > 2) 
       user_data.heater_state = 0;
-   user_data.ka_out = 0; // 1
-   user_data.ln2_valve = 0;
-   user_data.ln2_heater = 0;
 
-   /* write digital outputs */
+   /* keep values if reset by watchdog */
+   SFRPAGE = LEGACY_PAGE;
+   if ((RSTSRC & 0x08) == 0) {   
+      user_data.ka_out = 0;
+      user_data.ln2_valve = 0;
+      user_data.ln2_heater = 0;
+   }
+
+   /* write outputs */
    for (i=0 ; i<99 ; i++)
       user_write(i);
 
@@ -581,7 +586,7 @@ static long xdata last_ln2time = 0, last_b;
       if (user_data.jt_forerun_valve < 0)
          user_data.jt_forerun_valve = 0;
       user_write(14);
-      while(1); //##
+      //while(1); //##
    }
 
    /* enter menu on release of button 2 & 3 */
