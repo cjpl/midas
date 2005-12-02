@@ -188,8 +188,8 @@ void setup(void)
    SFRPAGE = LEGACY_PAGE;
 
    /* Blink LEDs */
-   led_blink(0, 5, 150);
-   led_blink(1, 5, 150);
+   led_blink(0, 3, 150);
+   led_blink(1, 3, 150);
 
    /* invert first LED */
    led_mode(0, 1);
@@ -647,7 +647,7 @@ void main(void)
    mn_dhcp_start(NULL, DHCP_DEFAULT_LEASE_TIME);
 
    // turn on watchdog
-   watchdog_enable();
+   watchdog_enable(10);
 
    do {
       watchdog_refresh(0);

@@ -349,7 +349,7 @@ unsigned char i, m, b;
 
    DAC_NCS = 0; // chip select
    delay_us(OPT_DELAY);
-   watchdog_refresh();
+   watchdog_refresh(1);
 
    // command 3: write and update
    for (i=0,m=8 ; i<4 ; i++) {
@@ -359,7 +359,7 @@ unsigned char i, m, b;
       DAC_SCK = 1;
       delay_us(OPT_DELAY);
       m >>= 1;
-      watchdog_refresh();
+      watchdog_refresh(1);
    }
 
    // channel address
@@ -370,7 +370,7 @@ unsigned char i, m, b;
       DAC_SCK = 1;
       delay_us(OPT_DELAY);
       m >>= 1;
-      watchdog_refresh();
+      watchdog_refresh(1);
    }
 
    // MSB
@@ -382,7 +382,7 @@ unsigned char i, m, b;
       DAC_SCK = 1;
       delay_us(OPT_DELAY);
       m >>= 1;
-      watchdog_refresh();
+      watchdog_refresh(1);
    }
 
    // LSB
@@ -394,12 +394,12 @@ unsigned char i, m, b;
       DAC_SCK = 1;
       delay_us(OPT_DELAY);
       m >>= 1;
-      watchdog_refresh();
+      watchdog_refresh(1);
    }
 
    DAC_NCS = 1; // remove chip select
    delay_us(OPT_DELAY);
-   watchdog_refresh();
+   watchdog_refresh(1);
 }
 
 /*---- ADC functions -----------------------------------------------*/
@@ -412,7 +412,7 @@ void write_adc(unsigned char a, unsigned char d)
 
    ADC_NCS = 0;
    delay_us(OPT_DELAY);
-   watchdog_refresh();
+   watchdog_refresh(1);
 
    /* write zeros to !WEN and R/!W */
    for (i=0 ; i<4 ; i++) {
@@ -422,7 +422,7 @@ void write_adc(unsigned char a, unsigned char d)
       delay_us(OPT_DELAY);
       ADC_SCLK = 1;
       delay_us(OPT_DELAY);
-      watchdog_refresh();
+      watchdog_refresh(1);
    }
 
    /* register address */
@@ -434,18 +434,18 @@ void write_adc(unsigned char a, unsigned char d)
       ADC_SCLK = 1;
       delay_us(OPT_DELAY);
       m >>= 1;
-      watchdog_refresh();
+      watchdog_refresh(1);
    }
 
    ADC_NCS = 1;
    delay_us(OPT_DELAY);
-   watchdog_refresh();
+   watchdog_refresh(1);
 
    /* write to selected data register */
 
    ADC_NCS = 0;
    delay_us(OPT_DELAY);
-   watchdog_refresh();
+   watchdog_refresh(1);
 
    for (i=0,m=0x80 ; i<8 ; i++) {
       ADC_SCLK = 0;
@@ -455,12 +455,12 @@ void write_adc(unsigned char a, unsigned char d)
       ADC_SCLK = 1;
       delay_us(OPT_DELAY);
       m >>= 1;
-      watchdog_refresh();
+      watchdog_refresh(1);
    }
 
    ADC_NCS = 1;
    delay_us(OPT_DELAY);
-   watchdog_refresh();
+   watchdog_refresh(1);
 }
 
 void read_adc8(unsigned char a, unsigned char *d)
@@ -471,7 +471,7 @@ void read_adc8(unsigned char a, unsigned char *d)
 
    ADC_NCS = 0;
    delay_us(OPT_DELAY);
-   watchdog_refresh();
+   watchdog_refresh(1);
 
    /* write zero to !WEN and one to R/!W */
    for (i=0 ; i<4 ; i++) {
@@ -481,7 +481,7 @@ void read_adc8(unsigned char a, unsigned char *d)
       delay_us(OPT_DELAY);
       ADC_SCLK = 1;
       delay_us(OPT_DELAY);
-      watchdog_refresh();
+      watchdog_refresh(1);
    }
 
    /* register address */
@@ -493,18 +493,18 @@ void read_adc8(unsigned char a, unsigned char *d)
       ADC_SCLK = 1;
       delay_us(OPT_DELAY);
       m >>= 1;
-      watchdog_refresh();
+      watchdog_refresh(1);
    }
 
    ADC_NCS = 1;
    delay_us(OPT_DELAY);
-   watchdog_refresh();
+   watchdog_refresh(1);
 
    /* read from selected data register */
 
    ADC_NCS = 0;
    delay_us(OPT_DELAY);
-   watchdog_refresh();
+   watchdog_refresh(1);
 
    for (i=0,m=0x80,*d=0 ; i<8 ; i++) {
       ADC_SCLK = 0;
@@ -514,12 +514,12 @@ void read_adc8(unsigned char a, unsigned char *d)
       ADC_SCLK = 1;
       delay_us(OPT_DELAY);
       m >>= 1;
-      watchdog_refresh();
+      watchdog_refresh(1);
    }
 
    ADC_NCS = 1;
    delay_us(OPT_DELAY);
-   watchdog_refresh();
+   watchdog_refresh(1);
 }
 
 void read_adc24(unsigned char a, unsigned long *d)
@@ -530,7 +530,7 @@ void read_adc24(unsigned char a, unsigned long *d)
 
    ADC_NCS = 0;
    delay_us(OPT_DELAY);
-   watchdog_refresh();
+   watchdog_refresh(1);
 
    /* write zero to !WEN and one to R/!W */
    for (i=0 ; i<4 ; i++) {
@@ -540,7 +540,7 @@ void read_adc24(unsigned char a, unsigned long *d)
       delay_us(OPT_DELAY);
       ADC_SCLK = 1;
       delay_us(OPT_DELAY);
-      watchdog_refresh();
+      watchdog_refresh(1);
    }
 
    /* register address */
@@ -552,18 +552,18 @@ void read_adc24(unsigned char a, unsigned long *d)
       ADC_SCLK = 1;
       delay_us(OPT_DELAY);
       m >>= 1;
-      watchdog_refresh();
+      watchdog_refresh(1);
    }
 
    ADC_NCS = 1;
    delay_us(OPT_DELAY);
-   watchdog_refresh();
+   watchdog_refresh(1);
 
    /* read from selected data register */
 
    ADC_NCS = 0;
    delay_us(OPT_DELAY);
-   watchdog_refresh();
+   watchdog_refresh(1);
 
    for (i=0,*d=0 ; i<24 ; i++) {
       *d <<= 1;
@@ -573,12 +573,12 @@ void read_adc24(unsigned char a, unsigned long *d)
       *d |= ADC_DOUT;
       ADC_SCLK = 1;
       delay_us(OPT_DELAY);
-      watchdog_refresh();
+      watchdog_refresh(1);
    }
 
    ADC_NCS = 1;
    delay_us(OPT_DELAY);
-   watchdog_refresh();
+   watchdog_refresh(1);
 }
 
 /* adc mapping: 0U,0I 1U,1I 2U,2I 3U,3I ... */
@@ -900,7 +900,7 @@ void ramp_hv(unsigned char channel)
       }
    }
 
-   watchdog_refresh();
+   watchdog_refresh(1);
 }
 
 /*------------------------------------------------------------------*/
@@ -957,7 +957,7 @@ void regulation(unsigned char channel)
       chn_bits[channel] &= ~DEMAND_CHANGED;
    }
 
-   watchdog_refresh();
+   watchdog_refresh(1);
 }
 
 /*------------------------------------------------------------------*/
@@ -1026,6 +1026,8 @@ void user_loop(void)
 
    /* loop over all HV channels */
    for (channel=0 ; channel<N_HV_CHN ; channel++) {
+
+      watchdog_refresh(0);
 
       if ((user_data[0].control & CONTROL_IDLE) == 0) {
 

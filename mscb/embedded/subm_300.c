@@ -6,7 +6,7 @@
   Contents:     MSCB program for Cygnal parallel port sub-master
                 SUBM300 running on Cygnal C8051F021
 
-  $Id:$
+  $Id$
 
 \********************************************************************/
 
@@ -23,8 +23,6 @@ sbit LPT_BUSY = P2 ^ 7;
 sbit LPT_NDATAREADY = P2 ^ 6;
 sbit LPT_NACK = P2 ^ 5;
 sbit LPT_BIT9 = P2 ^ 4;
-
-extern void watchdog_refresh(void);
 
 /*------------------------------------------------------------------*/
 
@@ -46,6 +44,8 @@ SYS_INFO sys_info;
 
 void setup(void)
 {
+   watchdog_disable();
+
    XBR0 = 0x04;                 // Enable RX/TX
    XBR1 = 0x00;
 
@@ -65,10 +65,6 @@ void setup(void)
    /* Select external quartz oscillator */
    OSCXCN = 0x66;               // Crystal mode, Power Factor 22E6
    OSCICN = 0x08;               // CLKSL=1 (external)
-
-   /* enable watchdog */
-   WDTCN = 0x07;                // 95 msec
-   WDTCN = 0xA5;                // start watchdog
 
    /* enable missing clock reset */
    OSCICN |= 0x80;              // MSCLKE = 1
@@ -100,6 +96,8 @@ void setup(void)
 
    /* invert second LED */
    led_mode(2, 1);
+
+   watchdog_enable(0);
 }
 
 /*------------------------------------------------------------------*/
@@ -164,7 +162,7 @@ void check_lpt()
 
    t = time();
    while (LPT_NSTROBE == 0) {   /* wait for strobe to be removed */
-      watchdog_refresh();       /* can take very long (if PC gets context switch) */
+      watchdog_refresh(1);      /* can take very long (if PC gets context switch) */
       if (time() - t > 100)
          break;
    }
@@ -204,7 +202,7 @@ void check_rs485()
    /* wait for PC switched to input with 1s timeout */
    t = time();
    while (LPT_NACK == 1) {
-      watchdog_refresh();
+      watchdog_refresh(1);
       if (time() - t > 100)
          break;
    }
@@ -221,7 +219,7 @@ void check_rs485()
    /* wait until PC has data read with 1s timeout */
    t = time();
    while (LPT_NACK == 0) {
-      watchdog_refresh();
+      watchdog_refresh(1);
       if (time() - t > 100)
          break;
    }
@@ -237,7 +235,7 @@ void check_rs485()
 
    /* wait for PC switched to output */
    while (LPT_NACK == 1)
-      watchdog_refresh();
+      watchdog_refresh(1);
 
    /* reset data ready */
    LPT_NDATAREADY = 1;
@@ -245,17 +243,10 @@ void check_rs485()
    /* wait for end of cycle with 1s timeout */
    t = time();
    while (LPT_NACK == 0) {
-      watchdog_refresh();
+      watchdog_refresh(1);
       if (time() - t > 100)
          break;
    }
-}
-
-/*------------------------------------------------------------------*/
-
-void yield()
-{
-   watchdog_refresh();
 }
 
 /*------------------------------------------------------------------*\
@@ -275,7 +266,7 @@ void main(void)
    LPT_BUSY = 0;                /* indicate ready to receive LPT data */
 
    do {
-      watchdog_refresh();
+      watchdog_refresh(0);
 
       /* check if data from PC */
       check_lpt();
