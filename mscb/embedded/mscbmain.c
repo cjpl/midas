@@ -226,7 +226,7 @@ void setup(void)
 #if defined(CPU_C8051F120)
    SFRPAGE   = LEGACY_PAGE;
 #endif
-   WD_RESET = (RSTSRC & 0x08) > 0;
+   WD_RESET = ((RSTSRC & 0x02) == 0 && (RSTSRC & 0x08) > 0);
 
    /* initialize UART(s) */
    uart_init(0, BD_115200);
