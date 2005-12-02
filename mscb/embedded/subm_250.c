@@ -326,6 +326,18 @@ void main(void)
    do {
       watchdog_refresh(0);
 
+      flags = USB0XCN;               // 0xE6
+      UREAD_BYTE(POWER, flags);      // 0x00
+      UREAD_BYTE(CLKREC, flags);     // 0x80
+      UREAD_BYTE(IN1INT, flags);     // 0x00
+      UREAD_BYTE(OUT1INT, flags);    // 0x00
+      UREAD_BYTE(CMINT, flags);      // 0x00
+      UREAD_BYTE(IN1IE, flags);      // 0x0F
+      UREAD_BYTE(OUT1IE, flags);     // 0x0E
+      UREAD_BYTE(CMIE, flags);       // 0x04
+      UREAD_BYTE(E0CSR, flags);      // 0x00
+      UREAD_BYTE(E0CNT, flags);      // 0x00
+      
       /* enable USB reset 3 sec. after start */
       if (time() > 300)
          RSTSRC = 0x86; 
