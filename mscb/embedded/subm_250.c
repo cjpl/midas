@@ -29,7 +29,7 @@ unsigned char rs485_tx_bit9[4];
 
 /*------------------------------------------------------------------*/
 
-extern void watchdog_refresh(void);
+extern void watchdog_refresh(unsigned char from_interrupt);
 
 /*---- MSCB commands -----------------------------------------------*/
 
@@ -85,6 +85,8 @@ void setup(void)
 {
    unsigned char i;
 
+   watchdog_disable();
+   
    XBR0 = 0x01;                 // Enable RX/TX
    XBR1 = 0x40;                 // Enable crossbar
    P0MDOUT = 0x90;              // P0.4: TX, P0.7: RS485 enable Push/Pull
@@ -107,13 +109,8 @@ void setup(void)
    CLKSEL |= USB_4X_CLOCK;      // Select USB clock
    CLKSEL |= SYS_INT_OSC;       // Select system clock
 
-   /* enable watchdog */
-   PCA0MD = 0x00;               // disable watchdog
-   PCA0CPL4 = 255;              // 71.1 msec
-   PCA0MD = 0x40;               // enable watchdog
-
-   /* enable reset pin and watchdog reset */
-   RSTSRC = 0x09;
+   VDM0CN = 0x80;               // VDD monitor enable
+   while ((VDM0CN & 0x40)==0);  // wait for VDD monitor to stabilize
 
    /* start system clock */
    sysclock_init();
@@ -125,8 +122,8 @@ void setup(void)
    uart_init(0, BD_115200);
 
    /* Blink LEDs */
-   led_blink(0, 5, 150);
-   led_blink(1, 5, 150);
+   led_blink(0, 3, 150);
+   led_blink(1, 3, 150);
 
    /* invert first LED */
    led_mode(0, 1);
@@ -297,7 +294,7 @@ unsigned short i, to;
          }
       }
 
-      watchdog_refresh();
+      watchdog_refresh(1);
       delay_us(100);
    }
 
@@ -323,11 +320,15 @@ void main(void)
    n_usb_rx = 0;
 
    /* turn on watchdog */
-   watchdog_enable();
+   watchdog_enable(2);
 
    do {
-      watchdog_refresh();
+      watchdog_refresh(0);
 
+      /* enable USB reset 3 sec. after start */
+      if (time() > 300)
+         RSTSRC = 0x86; 
+   
       /* check for incoming USB data */
       if (n_usb_rx) {
 
@@ -349,7 +350,7 @@ void main(void)
 
             /* wait until sent */
             while (n_rs485_tx)
-               watchdog_refresh();
+               watchdog_refresh(1);
 
             /* wait for data to be received */
             rs485_receive(flags);
