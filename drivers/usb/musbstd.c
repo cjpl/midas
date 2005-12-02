@@ -17,6 +17,7 @@
 
 #include <windows.h>
 #include <conio.h>
+#include <winioctl.h>
 
 #include <setupapi.h>
 #include <initguid.h>           /* Required for GUID definition */
