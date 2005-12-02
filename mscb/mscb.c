@@ -630,7 +630,7 @@ int mscb_out(int index, unsigned char *buffer, int len, int flags)
          if (mscb_fd[index].fd < 0)
             return MSCB_TIMEOUT;
 
-         i = msend_tcp(mscb_fd[index - 1].fd, eth_buf, len + 1);
+         i = msend_tcp(mscb_fd[index - 1].fd, eth_buf, len + 2);
       }
 
       if (i != len + 2)
@@ -1840,7 +1840,7 @@ int mscb_info(int fd, unsigned short adr, MSCB_INFO * info)
 
 \********************************************************************/
 {
-   int i;
+   int i, retry;
    unsigned char buf[256];
 
    if (fd > MSCB_MAX_FD || fd < 1 || !mscb_fd[fd - 1].type)
@@ -1852,19 +1852,24 @@ int mscb_info(int fd, unsigned short adr, MSCB_INFO * info)
    if (mscb_lock(fd) != MSCB_SUCCESS)
       return MSCB_MUTEX;
 
-   buf[0] = MCMD_ADDR_NODE16;
-   buf[1] = (unsigned char) (adr >> 8);
-   buf[2] = (unsigned char) (adr & 0xFF);
-   buf[3] = crc8(buf, 3);
+   for (retry = 0 ; retry < 2 ; retry++) {
+      buf[0] = MCMD_ADDR_NODE16;
+      buf[1] = (unsigned char) (adr >> 8);
+      buf[2] = (unsigned char) (adr & 0xFF);
+      buf[3] = crc8(buf, 3);
 
-   buf[4] = MCMD_GET_INFO;
-   buf[5] = crc8(buf+4, 1);
-   mscb_out(fd, buf, 6, RS485_FLAG_LONG_TO | RS485_FLAG_ADR_CYCLE);
+      buf[4] = MCMD_GET_INFO;
+      buf[5] = crc8(buf+4, 1);
+      mscb_out(fd, buf, 6, RS485_FLAG_LONG_TO | RS485_FLAG_ADR_CYCLE);
 
-   i = mscb_in(fd, buf, sizeof(buf), TO_SHORT);
+      i = mscb_in(fd, buf, sizeof(buf), TO_SHORT);
+
+      if (i == (int) sizeof(MSCB_INFO) + 3)
+         break;
+   }
+
    mscb_release(fd);
-
-   if (i < (int) sizeof(MSCB_INFO) + 2)
+   if (i < (int) sizeof(MSCB_INFO) + 3)
       return MSCB_TIMEOUT;
 
    memcpy(info, buf + 2, sizeof(MSCB_INFO));
@@ -1969,7 +1974,7 @@ int mscb_info_variable(int fd, unsigned short adr, unsigned char index, MSCB_INF
 
 \********************************************************************/
 {
-   int i;
+   int i, retry;
    unsigned char buf[80];
 
    if (fd > MSCB_MAX_FD || fd < 1 || !mscb_fd[fd - 1].type)
@@ -2008,30 +2013,35 @@ int mscb_info_variable(int fd, unsigned short adr, unsigned char index, MSCB_INF
       if (mscb_lock(fd) != MSCB_SUCCESS)
          return MSCB_MUTEX;
 
-      buf[0] = MCMD_ADDR_NODE16;
-      buf[1] = (unsigned char) (adr >> 8);
-      buf[2] = (unsigned char) (adr & 0xFF);
-      buf[3] = crc8(buf, 3);
+      for (retry = 0 ; retry < 2 ; retry++) {
+         buf[0] = MCMD_ADDR_NODE16;
+         buf[1] = (unsigned char) (adr >> 8);
+         buf[2] = (unsigned char) (adr & 0xFF);
+         buf[3] = crc8(buf, 3);
 
-      buf[4] = MCMD_GET_INFO + 1;
-      buf[5] = index;
-      buf[6] = crc8(buf+4, 2);
-      mscb_out(fd, buf, 7, RS485_FLAG_ADR_CYCLE);
+         buf[4] = MCMD_GET_INFO + 1;
+         buf[5] = index;
+         buf[6] = crc8(buf+4, 2);
+         mscb_out(fd, buf, 7, RS485_FLAG_ADR_CYCLE);
 
-      i = mscb_in(fd, buf, sizeof(buf), TO_SHORT);
-      mscb_release(fd);
+         i = mscb_in(fd, buf, sizeof(buf), TO_SHORT);
 
-      if (i < (int) sizeof(MSCB_INFO_VAR) + 3) {
-         cache_info_var[n_cache_info_var++].info.name[0] = 0;
-         return MSCB_NO_VAR;
+         if (i == (int) sizeof(MSCB_INFO_VAR) + 3 || i == 2)
+            break;
       }
 
-      memcpy(info, buf + 2, sizeof(MSCB_INFO_VAR));
+      mscb_release(fd);
+      if (i < (int) sizeof(MSCB_INFO_VAR) + 3) {
+         if (i == 2) // negative acknowledge
+            cache_info_var[n_cache_info_var++].info.name[0] = 0;
+         return MSCB_NO_VAR;
+      }
 
       /* do CRC check */
       if (crc8(buf, sizeof(MSCB_INFO_VAR) + 2) != buf[sizeof(MSCB_INFO_VAR) + 2])
          return MSCB_CRC_ERROR;
 
+      memcpy(info, buf + 2, sizeof(MSCB_INFO_VAR));
       memcpy(&cache_info_var[n_cache_info_var++].info, info, sizeof(MSCB_INFO_VAR));
    }
 
@@ -2352,7 +2362,7 @@ int mscb_write(int fd, unsigned short adr, unsigned char index, void *data, int 
 
 \********************************************************************/
 {
-   int i, n, status;
+   int i, retry, status;
    unsigned char buf[256], crc, ack[2];
    unsigned char *d;
 
@@ -2384,7 +2394,7 @@ int mscb_write(int fd, unsigned short adr, unsigned char index, void *data, int 
    }
 
    /* try 10 times */
-   for (n=0 ; n<10 ; n++) {
+   for (retry=0 ; retry<10 ; retry++) {
 
       buf[0] = MCMD_ADDR_NODE16;
       buf[1] = (unsigned char) (adr >> 8);
