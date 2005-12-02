@@ -397,9 +397,33 @@ int musb_read(MUSB_INTERFACE *musb_interface, int endpoint, void *buf, int count
 
 int musb_reset(MUSB_INTERFACE *musb_interface)
 {
-
 #if defined(_MSC_VER)
-   assert(!"musb_reset: not implemented");
+
+#define IOCTL_BULKUSB_RESET_DEVICE          CTL_CODE(FILE_DEVICE_UNKNOWN,     \
+                                                     1,                       \
+                                                     METHOD_BUFFERED,         \
+                                                     FILE_ANY_ACCESS)
+#define IOCTL_BULKUSB_RESET_PIPE            CTL_CODE(FILE_DEVICE_UNKNOWN,     \
+                                                     2,                       \
+                                                     METHOD_BUFFERED,         \
+                                                     FILE_ANY_ACCESS)
+
+   int status, n_bytes;
+
+   status =  DeviceIoControl(musb_interface->rhandle,
+                  IOCTL_BULKUSB_RESET_DEVICE,
+                  NULL, 0, NULL, 0, &n_bytes, NULL);
+   status =  DeviceIoControl(musb_interface->whandle,
+                  IOCTL_BULKUSB_RESET_DEVICE,
+                  NULL, 0, NULL, 0, &n_bytes, NULL);
+   status =  DeviceIoControl(musb_interface->rhandle,
+                  IOCTL_BULKUSB_RESET_PIPE,
+                  NULL, 0, NULL, 0, &n_bytes, NULL);
+   status =  DeviceIoControl(musb_interface->whandle,
+                  IOCTL_BULKUSB_RESET_PIPE,
+                  NULL, 0, NULL, 0, &n_bytes, NULL);
+   return status;
+
 #elif defined(HAVE_LIBUSB)
 
    /* Causes re-enumeration: After calling usb_reset, the device will need 
