@@ -542,7 +542,7 @@ typedef struct {                // system info stored in EEPROM
 /*---- function declarations ---------------------------------------*/
 
 void watchdog_refresh(unsigned char from_interrupt);
-void watchdog_enable(void);
+void watchdog_enable(unsigned char watchdog_timeout);
 void watchdog_disable(void);
 void yield(void);
 void led_set(unsigned char led, unsigned char flag) reentrant;

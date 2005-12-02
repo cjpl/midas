@@ -300,7 +300,7 @@ void setup(void)
    for (i=0 ; i<N_LED ; i++)
       led_blink(i, 3, 150);
 
-   watchdog_enable();
+   watchdog_enable(0);
 }
 
 /*------------------------------------------------------------------*/

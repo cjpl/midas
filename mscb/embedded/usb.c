@@ -6,7 +6,7 @@
   Contents:     USB routines for Cygnal USB sub-master
                 SUBM250 running on Cygnal C8051F320
 
-  $Id:$
+  $Id$
 
 \********************************************************************/
 
@@ -256,8 +256,9 @@ void USB_ISR() interrupt 8
       Endpoint0();
 
    // Endpoint1 IN
+// SR: outcommented, gets handles by usb_send
 //   if (bInInt & rbIN1)
-//##      BulkOrInterruptIn(&gEp1InStatus);
+//      BulkOrInterruptIn(&gEp1InStatus);
 
    // Endpoint2 OUT
    if (bOutInt & rbOUT2)

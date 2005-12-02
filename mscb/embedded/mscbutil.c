@@ -913,9 +913,10 @@ unsigned long uptime(void)
 /*------------------------------------------------------------------*/
 
 #ifdef USE_WATCHDOG
+#define DEFAULT_WATCHDOG_TIMEOUT 10    // 10 seconds
 unsigned short watchdog_timer;
+unsigned char  watchdog_timeout = DEFAULT_WATCHDOG_TIMEOUT;
 bit            watchdog_on;
-#define WATCHDOG_TIMEOUT 10    // 10 seconds
 #endif
 
 void watchdog_refresh(unsigned char from_interrupt)
@@ -942,7 +943,7 @@ void watchdog_refresh(unsigned char from_interrupt)
    if (from_interrupt == 0)
       watchdog_timer = 0;
 
-   if (watchdog_on && watchdog_timer < WATCHDOG_TIMEOUT*100) {
+   if (watchdog_on && watchdog_timer < watchdog_timeout*100) {
 
 #ifdef EXT_WATCHDOG
       EXT_WATCHDOG_PIN = !EXT_WATCHDOG_PIN;
@@ -961,12 +962,15 @@ void watchdog_refresh(unsigned char from_interrupt)
 
 /*------------------------------------------------------------------*/
 
-void watchdog_enable(void)
+void watchdog_enable(unsigned char timeout)
 /********************************************************************\
 
   Routine: watchdog_enable
 
   Purpose: Enables watchdog
+
+  Input:
+    unsigned char timeout    Watchdog timeout in seconds
 
 \********************************************************************/
 {
@@ -974,14 +978,20 @@ void watchdog_enable(void)
 
    watchdog_on = 1;
    watchdog_timer = 0;
+   if (timeout)
+      watchdog_timeout = timeout;
+   else
+      watchdog_timeout = DEFAULT_WATCHDOG_TIMEOUT;
 
 #ifndef EXT_WATCHDOG
 #if defined(CPU_C8051F310) || defined(CPU_C8051F320)
-   PCA0CPL4 = 255;              // 32.1 msec
+   PCA0MD   = 0x00;             // disable watchdog
+   PCA0CPL4 = 255;              // 65.5 msec @ 12 MHz
    PCA0MD   = 0x40;             // enable watchdog
    PCA0CPH4 = 0x00;             // reset watchdog
 
-   RSTSRC = 0x09;               // enable reset pin and watchdog reset
+   RSTSRC   = 0x06;             // enable missing clock detector and 
+                                // VDD monitor as reset sourse
 #else /* CPU_C8051F310 */
 
    WDTCN    = 0x07;             // 95 msec (11.052 MHz) / 21msec (49 MHz)
@@ -992,6 +1002,7 @@ void watchdog_enable(void)
    RSTSRC  = 0x04;              // enable missing clock detector
 #else
    OSCICN |= 0x80;              // enable missing clock detector
+   RSTSRC  = 0x09;              // enable reset pin and watchdog reset
 #endif
 
 #endif /* not CPU_C8051F310 */
@@ -1017,8 +1028,8 @@ void watchdog_disable(void)
 #if defined(CPU_C8051F310) || defined(CPU_C8051F320)
    PCA0MD = 0x00;
 #else
-   WDTCN = 0xDE;
-   WDTCN = 0xAD;
+   WDTCN  = 0xDE;
+   WDTCN  = 0xAD;
 #endif
 
 #endif
@@ -1039,7 +1050,7 @@ void watchdog_int(void) reentrant
 
    /* timer expires after 10 sec of inactivity */
    watchdog_timer++;
-   if (watchdog_on && watchdog_timer < WATCHDOG_TIMEOUT*100) {
+   if (watchdog_on && watchdog_timer < watchdog_timeout*100) {
 
 #ifdef EXT_WATCHDOG
       EXT_WATCHDOG_PIN = !EXT_WATCHDOG_PIN;
@@ -1208,7 +1219,7 @@ void eeprom_write(void * src, unsigned char len, unsigned short *offset)
    *offset += len;
 
    ENABLE_INTERRUPTS;
-   watchdog_enable();
+   watchdog_enable(0);
 }
 
 /*------------------------------------------------------------------*/
@@ -1269,7 +1280,7 @@ void eeprom_erase(void)
    FLSCL = FLSCL & 0xF0;
 
    ENABLE_INTERRUPTS;
-   watchdog_enable();
+   watchdog_enable(0);
 }
 
 /*------------------------------------------------------------------*/
