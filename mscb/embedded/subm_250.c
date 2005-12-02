@@ -92,6 +92,7 @@ void setup(void)
    P0MDOUT = 0x90;              // P0.4: TX, P0.7: RS485 enable Push/Pull
    P0SKIP  = 0x0C;              // Skip P0.2&3 for Xtal
    P0MDIN  = 0xF3;              // P0.2&3 as analog input for Xtal
+   P2MDOUT = 0x02;              // P2.1 for external watchdog
 
    OSCXCN = 0;
    OSCICN |= 0x03;              // Configure internal oscillator for
