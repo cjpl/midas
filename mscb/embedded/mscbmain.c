@@ -200,6 +200,9 @@ void setup(void)
    /* start system clock */
    sysclock_init();
 
+   /* enable watchdog with default timeout */
+   watchdog_enable(0);
+
    /* default LED mode */
    for (i=0 ; i<N_LED ; i++)
       led_mode(i, 1);
@@ -300,7 +303,6 @@ void setup(void)
    for (i=0 ; i<N_LED ; i++)
       led_blink(i, 3, 150);
 
-   watchdog_enable(0);
 }
 
 /*------------------------------------------------------------------*/
