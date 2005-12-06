@@ -256,7 +256,7 @@ void USB_ISR() interrupt 8
       Endpoint0();
 
    // Endpoint1 IN
-// SR: outcommented, gets handles by usb_send
+// SR: outcommented, gets handled by usb_send
 //   if (bInInt & rbIN1)
 //      BulkOrInterruptIn(&gEp1InStatus);
 
