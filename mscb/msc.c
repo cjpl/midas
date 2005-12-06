@@ -1002,7 +1002,8 @@ void cmd_loop(int fd, char *cmd, unsigned short adr)
                         status = mscb_write_group(fd, (unsigned short) current_group,
                                                   (unsigned char) addr, str,
                                                   strlen(str) + 1);
-                     Sleep(1000);
+                     if (param[3][0])
+                        Sleep(1000);
                   } while (param[3][0] && !kbhit());
 
                } else if (info_var.unit == UNIT_ASCII) {
@@ -1099,6 +1100,9 @@ void cmd_loop(int fd, char *cmd, unsigned short adr)
 
                if (first != last && repeat)
                   printf("\n");
+
+               if (repeat)
+                  Sleep(10);
 
             } while (!kbhit() && repeat);
 
