@@ -270,6 +270,16 @@ void user_init(unsigned char init)
      user_data.preheat = 10;
    }
 
+   /* retrieve backup data from RAM if not reset by power on */
+   SFRPAGE = LEGACY_PAGE;
+   if ((RSTSRC & 0x02) == 0)
+      memcpy(&user_data, &backup_data, sizeof(user_data));
+   user_data.error = 0;
+
+   /* write outputs */
+   for (i=0 ; i<99 ; i++)
+      user_write(i);
+
    /* initialize UART1 for SCS_910 */
    uart_init(1, BD_115200);
 
@@ -295,17 +305,6 @@ void user_init(unsigned char init)
       user_data.ln2_valve_state = 0;
    if (user_data.heater_state > 2) 
       user_data.heater_state = 0;
-
-   /* retrieve backup data from RAM if not reset by power on */
-   SFRPAGE = LEGACY_PAGE;
-   if ((RSTSRC & 0x02) == 0)
-      memcpy(&user_data, &backup_data, sizeof(user_data));
-   user_data.error = 0;
-
-   /* write outputs */
-   for (i=0 ; i<99 ; i++)
-      user_write(i);
-
 }
 
 #pragma NOAREGS
