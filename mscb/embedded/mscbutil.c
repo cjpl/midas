@@ -922,7 +922,7 @@ bit            watchdog_on;
 void watchdog_refresh(unsigned char from_interrupt)
 /********************************************************************\
 
-  Routine: watchdog_refres
+  Routine: watchdog_refresh
 
   Purpose: Resets watchdog, has to be called regularly, otherwise
            the watchdog issues a reset. If called from an interrupt
