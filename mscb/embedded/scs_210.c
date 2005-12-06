@@ -8,7 +8,7 @@
                 Midas Slow Control Bus protocol 
                 for SCS-210 RS232 node
 
-  $Id:$
+  $Id$
 
 \********************************************************************/
 
@@ -64,6 +64,7 @@ void user_init(unsigned char init)
       user_data.baud = BD_9600;    // 9600 by default
 
    uart_init(1, user_data.baud);
+   watchdog_enable(2);
 }
 
 /*---- User write function -----------------------------------------*/
@@ -163,6 +164,7 @@ void user_loop(void)
 
          /* delay for slow modules */
          delay_ms(10);
+         watchdog_refresh(0);
       }
 
       /* remember time */
@@ -176,10 +178,8 @@ void user_loop(void)
          user_data.input[n_in++] = c;
          led_blink(1, 1, 50);
       }
+      watchdog_refresh(0);
    }
-
-   /* toggle external watchdog */
-   EWD = !EWD;
 
    /* go into idle mode, wakeup via UART or 100Hz interrupt */
    PCON |= 0x01;
