@@ -623,7 +623,8 @@ int mscb_out(int index, unsigned char *buffer, int len, int flags)
 
       if (i <= 0) {
          /* Ethernet submaster might have been dis- and reconnected, so reinit */
-         mrpc_disconnect(mscb_fd[index - 1].fd);
+         if (mscb_fd[index - 1].fd > 0)
+            mrpc_disconnect(mscb_fd[index - 1].fd);
 
          mscb_fd[index].fd = mrpc_connect(mscb_fd[index - 1].device, MSCB_NET_PORT);
 
@@ -2432,6 +2433,25 @@ int mscb_write(int fd, unsigned short adr, unsigned char index, void *data, int 
       /* read acknowledge */
       i = mscb_in(fd, ack, 2, TO_SHORT);
       mscb_release(fd);
+      
+      if (i == 1) {
+#ifndef _USRDLL
+         printf("Timeout from RS485 bus\n");
+#endif
+         debug_log("Timeout from RS485 bus\n", 1);
+         status = MSCB_TIMEOUT;
+
+#ifndef _USRDLL
+         printf("Flush node communication\n");
+#endif
+         debug_log("Flush node communication\n", 1);
+         memset(buf, 0, sizeof(buf));
+         mscb_out(fd, buf, 10, RS485_FLAG_BIT9 | RS485_FLAG_NO_ACK);
+         Sleep(100);
+
+         continue;
+      }
+
       if (i < 2) {
          debug_log("return MSCB_TIMEOUT\n", 0);
          status = MSCB_TIMEOUT;
@@ -3316,7 +3336,7 @@ int mscb_read(int fd, unsigned short adr, unsigned char index, void *data, int *
       /* read data */
       i = mscb_in(fd, buf, sizeof(buf), TO_SHORT);
 
-      if (i == 1 && buf[0] == 0xFF) {
+      if (i == 1) {
 #ifndef _USRDLL
          printf("Timeout from RS485 bus\n");
 #endif
@@ -3482,11 +3502,13 @@ int mscb_read_no_retries(int fd, unsigned short adr, unsigned char index, void *
    /* read data */
    i = mscb_in(fd, buf, sizeof(buf), TO_SHORT);
 
-   if (i == 1 && buf[0] == 0xFF) {
+   if (i == 1) {
 #ifndef _USRDLL
       /* show error, but repeat request */
       printf("Timeout from RS485 bus\n");
 #endif
+      memset(buf, 0, sizeof(buf));
+      mscb_out(fd, buf, 10, RS485_FLAG_BIT9 | RS485_FLAG_NO_ACK);
       mscb_release(fd);
       return MSCB_TIMEOUT;
    }
@@ -3714,10 +3736,12 @@ int mscb_read_block(int fd, unsigned short adr, unsigned char index, void *data,
       /* read data */
       i = mscb_in(fd, buf, sizeof(buf), TO_SHORT);
 
-      if (i == 1 && buf[0] == 0xFF) {
+      if (i == 1) {
 #ifndef _USRDLL
          printf("Timeout from RS485 bus.\n");
 #endif
+         memset(buf, 0, sizeof(buf));
+         mscb_out(fd, buf, 10, RS485_FLAG_BIT9 | RS485_FLAG_NO_ACK);
          mscb_release(fd);
          *size = 0;
          return MSCB_TIMEOUT;
