@@ -155,6 +155,7 @@ void serial_int(void) interrupt 4 using 1
          SBUF0 = usb_rx_buf[i_rs485_tx];
       } else {
          /* end of buffer */
+         DELAY_US(10);
          RS485_ENABLE = 0;
          i_rs485_tx = n_rs485_tx = 0;
       }
@@ -331,6 +332,11 @@ void main(void)
       if (time() > 300)
          RSTSRC = 0x86; 
    
+      /* reboot if 10 sec no activity */
+      if (last > 0 && time() - last > 1000) {
+         RSTSRC = 0x10;
+      }
+
       /* check for incoming USB data */
       if (n_usb_rx) {
 
