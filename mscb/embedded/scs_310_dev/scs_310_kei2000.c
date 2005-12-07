@@ -8,7 +8,7 @@
                 Midas Slow Control Bus protocol 
                 for Keithley Model 2000 Multimeter
 
-  $Id:$
+  $Id$
 
 \********************************************************************/
 
@@ -164,7 +164,7 @@ unsigned char send_byte(unsigned char b)
 {
    unsigned int i;
 
-   yield();
+   watchdog_refresh(1);
 
    /* wait for NRFD go high */
    for (i = 0; i < 1000; i++)
@@ -239,7 +239,7 @@ unsigned char enter(unsigned char adr, char *str, unsigned char maxlen)
    unsigned char i, flag;
    unsigned int j;
 
-  /*---- address cycle ----*/
+   /*---- address cycle ----*/
 
    GPIB_ATN = 0;                // assert attention
    send_byte(0x3F);             // unlisten
@@ -248,14 +248,14 @@ unsigned char enter(unsigned char adr, char *str, unsigned char maxlen)
    send_byte(0x40 | adr);       // talk device
    GPIB_ATN = 1;                // remove attention
 
-  /*---- data cycles ----*/
+   /*---- data cycles ----*/
 
    GPIB_NDAC = 0;               // init NDAC line
 
    memset(str, 0, maxlen);
 
    for (i = 0; i < maxlen; i++) {
-      yield();
+      watchdog_refresh(1);
 
       GPIB_NRFD = 1;            // singal ready for data
 
@@ -265,7 +265,7 @@ unsigned char enter(unsigned char adr, char *str, unsigned char maxlen)
          if (GPIB_DAV == 0)
             break;
 
-         yield();
+         watchdog_refresh(1);
 
       } while (time() - t < 100);
 
