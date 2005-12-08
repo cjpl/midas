@@ -465,6 +465,31 @@ unsigned char pp_rdata(int fd)
 
 /*------------------------------------------------------------------*/
 
+int subm250_open(MUSB_INTERFACE **ui, int usb_index)
+{
+   int  i, status, found;
+   char buf[80];
+
+   for (i = found = 0 ; i<127 ; i++) {
+      status = musb_open(ui, 0x10C4, 0x1175, i, 1, 0);
+      if (status != MUSB_SUCCESS)
+         return EMSCB_NOT_FOUND;
+
+      /* check if it's a subm_250 */
+      buf[0] = 0;
+      musb_write(*ui, 0, buf, 1, MUSB_TIMEOUT);
+
+      status = musb_read(*ui, 0, buf, sizeof(buf), MUSB_TIMEOUT);
+      if (strcmp(buf, "SUBM_250") == 0)
+         if (found++ == usb_index)
+            return MSCB_SUCCESS;
+   }
+
+   return EMSCB_NOT_FOUND;
+}
+
+/*------------------------------------------------------------------*/
+
 int mscb_out(int index, unsigned char *buffer, int len, int flags)
 /********************************************************************\
 
@@ -513,7 +538,7 @@ int mscb_out(int index, unsigned char *buffer, int len, int flags)
          /* USB submaster might have been dis- and reconnected, so reinit */
          musb_close(mscb_fd[index - 1].ui);
 
-         i = musb_open(&mscb_fd[index - 1].ui, 0x10C4, 0x1175, atoi(mscb_fd[index - 1].device+3), 1, 0);
+         i = subm250_open(&mscb_fd[index - 1].ui, atoi(mscb_fd[index - 1].device+3));
          if (i < 0)
             return MSCB_TIMEOUT;
 
@@ -1120,7 +1145,7 @@ int mscb_init(char *device, int bufsize, char *password, int debug)
 
 \********************************************************************/
 {
-   int index, usb_index, found, i, n;
+   int index, i, n;
    int status;
    char host[256], port[256], dev3[256], remote_device[256];
    unsigned char buf[64];
@@ -1230,23 +1255,9 @@ int mscb_init(char *device, int bufsize, char *password, int debug)
 
    if (mscb_fd[index].type == MSCB_TYPE_USB) {
 
-      for (usb_index = found = 0 ; usb_index < 127 ; usb_index ++) {
-
-         status = musb_open(&mscb_fd[index].ui, 0x10C4, 0x1175, usb_index, 1, 0);
-         if (status != MUSB_SUCCESS)
-            return EMSCB_NOT_FOUND;
-
-         /* check if it's a subm_250 */
-         buf[0] = 0;
-         musb_write(mscb_fd[index].ui, 0, buf, 1, MUSB_TIMEOUT);
-
-         i = musb_read(mscb_fd[index].ui, 0, buf, sizeof(buf), MUSB_TIMEOUT);
-         if (strcmp(buf, "SUBM_250") == 0)
-            if (found++ == atoi(device + 3))
-               break;
-
-         musb_close(mscb_fd[index].ui);
-      }
+      status = subm250_open(&mscb_fd[index].ui, atoi(device+3));
+      if (status != MSCB_SUCCESS)
+         return EMSCB_NOT_FOUND;
 
       /* mark device descriptor used */
       mscb_fd[index].fd = 1;
@@ -1753,7 +1764,7 @@ int mscb_reset(int fd)
       mscb_out(fd, buf, 1, RS485_FLAG_CMD);
       musb_close(mscb_fd[fd - 1].ui);
       Sleep(1000);
-      musb_open(&mscb_fd[fd - 1].ui, 0x10C4, 0x1175, atoi(mscb_fd[fd - 1].device+3), 1, 0);
+      subm250_open(&mscb_fd[fd - 1].ui, atoi(mscb_fd[fd - 1].device+3));
    }
 
    /* send 0's to overflow partially filled node receive buffer */
