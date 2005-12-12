@@ -8,7 +8,7 @@
                 Midas Slow Control Bus protocol
                 for SCS-700 PT100/PT1000 unit
 
-  $Id:$
+  $Id$
 
 \********************************************************************/
 
@@ -44,7 +44,7 @@ struct {
    float power[N_CHANNEL];
    short ofs[N_CHANNEL];
    unsigned short period;
-} idata user_data;
+} xdata user_data;
 
 MSCB_INFO_VAR code variables[] = {
    2, UNIT_CELSIUS, 0, 0, MSCBF_SIGNED, "Demand0", &user_data.demand[0],
@@ -73,7 +73,7 @@ struct {
    char power[N_CHANNEL];
    float temp[N_CHANNEL];
    short ofs[N_CHANNEL];
-} idata user_data;
+} xdata user_data;
 
 MSCB_INFO_VAR code variables[] = {
    1, UNIT_PERCENT, 0, 0, 0, "Power0", &user_data.power[0],
@@ -239,7 +239,7 @@ unsigned char ca[N_CHANNEL];
 
 void set_power(void)
 {
-   static unsigned long on_time, last_time;
+   static unsigned long xdata on_time, last_time;
 
    unsigned char i;
    float frac;
@@ -293,9 +293,9 @@ void set_power(void)
 
 void do_control(void)
 {
-   unsigned char i;
-   float p;
-   static unsigned long t;
+   unsigned char xdata i;
+   float xdata p;
+   static unsigned long xdata t;
 
    if (user_data.period == 0)
       return;
