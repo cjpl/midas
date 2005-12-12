@@ -675,13 +675,16 @@ void cmd_loop(int fd, char *cmd, unsigned short adr)
       else if (match(param[0], "scan")) {
          do {
             /* decimal search */
-            for (i = 0; i < 0x10000; i++) {
-               printf("Test address %d    \r", i);
+            for (i = -1; i < 0x10000; i++) {
+               if (i == -1)
+                  printf("Test address 0xFFFF\r");
+               else
+                  printf("Test address %d    \r", i);
                fflush(stdout);
 
-               if (i == 0)
+               if (i == -1)
                   /* do the first time with retry, to send '0's */
-                  status = mscb_addr(fd, MCMD_PING16, (unsigned short) i, 2, 1);
+                  status = mscb_addr(fd, MCMD_PING16, (unsigned short) 0xFFFF, 2, 1);
                else
                   status = mscb_ping(fd, (unsigned short) i);
 
@@ -693,7 +696,7 @@ void cmd_loop(int fd, char *cmd, unsigned short adr)
                   if (status == MSCB_SUCCESS) {
                      printf
                          ("Found node \"%s\", node addr. %d (0x%04X), group addr. %d (0x%04X)      \n",
-                          str, i, i, info.group_address, info.group_address);
+                          str, (unsigned short)i, (unsigned short)i, info.group_address, info.group_address);
 
                      mscb_get_version(lib, prot);
                      if (info.protocol_version != atoi(prot)) {
@@ -723,7 +726,7 @@ void cmd_loop(int fd, char *cmd, unsigned short adr)
             }
 
             /* hexadecimal search */
-            for (i = 0x100; i < 0x10000; i++) {
+            for (i = 0x100; i < 0xFFFF; i++) {
                printf("Test address 0x%x    \r", i);
                fflush(stdout);
 
