@@ -7,6 +7,12 @@
                 
   $Log: v1190B.h,v $
 *********************************************************************/
+
+#include "mvmestd.h"
+
+#ifndef V1190B_INCLUDE_H
+#define V1190B_INCLUDE_H
+
 #
 /* V1190 Base address */
 #define  V1190_MAX_CHANNELS      (DWORD) 64
@@ -54,14 +60,16 @@ int  v1190_MicroCheck(MVME_INTERFACE *mvme, const DWORD base, int what);
 int  v1190_MicroWrite(MVME_INTERFACE *mvme, DWORD base, WORD data);
 int  v1190_MicroRead(MVME_INTERFACE *mvme, const DWORD base);
 int  v1190_MicroFlush(MVME_INTERFACE *mvme, const DWORD base);
-int  v1190_TdcIdList(MVME_INTERFACE *mvme, DWORD base);
+void v1190_TdcIdList(MVME_INTERFACE *mvme, DWORD base);
 int  v1190_ResolutionRead(MVME_INTERFACE *mvme, DWORD base);
-int  v1190_TriggerMatchingSet(MVME_INTERFACE *mvme, DWORD base);
-int  v1190_AcqModeRead(MVME_INTERFACE *mvme, DWORD base);
-int  v1190_ContinuousSet(MVME_INTERFACE *mvme, DWORD base);
-int  v1190_WidthSet(MVME_INTERFACE *mvme, DWORD base, WORD width);
-int  v1190_OffsetSet(MVME_INTERFACE *mvme, DWORD base, WORD offset);
+void v1190_TriggerMatchingSet(MVME_INTERFACE *mvme, DWORD base);
+void v1190_AcqModeRead(MVME_INTERFACE *mvme, DWORD base);
+void v1190_ContinuousSet(MVME_INTERFACE *mvme, DWORD base);
+void v1190_WidthSet(MVME_INTERFACE *mvme, DWORD base, WORD width);
+void v1190_OffsetSet(MVME_INTERFACE *mvme, DWORD base, WORD offset);
 int  v1190_GeoWrite(MVME_INTERFACE *mvme, DWORD base, int geo);
 int  v1190_Setup(MVME_INTERFACE *mvme, DWORD base, int mode);
 int  v1190_Status(MVME_INTERFACE *mvme, DWORD base);
 void v1190_SetEdgeDetection(MVME_INTERFACE *mvme, DWORD base, int eLeading, int eTrailing);
+
+#endif // V1190B_INCLUDE_H
