@@ -9,10 +9,10 @@
 *********************************************************************/
 #include <stdio.h>
 #include <string.h>
-#include <stdio.h>
+#include "mvmestd.h"
 
-#ifndef  __V792_INCLUDE_H__
-#define  __V792_INCLUDE_H__
+#ifndef  V792_INCLUDE_H
+#define  V792_INCLUDE_H
 
 #define  V792_MAX_CHANNELS    (DWORD) 32
 #define  V792_REG_BASE        (DWORD) (0x1000)
@@ -47,4 +47,4 @@ void v792_Status(MVME_INTERFACE *mvme, DWORD base);
 int  v792_CSR1Read(MVME_INTERFACE *mvme, DWORD base);
 int  v792_CSR2Read(MVME_INTERFACE *mvme, DWORD base);
 
-#endif
+#endif // V792_INCLUDE_H
