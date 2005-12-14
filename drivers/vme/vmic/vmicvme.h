@@ -18,8 +18,8 @@
 
 #include "mvmestd.h"
 
-#ifndef  __VMICVME_H__
-#define  __VMICVME_H__
+#ifndef  VMICVME_INCLUDE_H
+#define  VMICVME_INCLUDE_H
 
 #ifndef MIDAS_TYPE_DEFINED
 typedef  unsigned long int   DWORD;
@@ -30,6 +30,7 @@ typedef  unsigned short int   WORD;
 #define  SUCCESS             (int) 1
 #endif
 #define  ERROR               (int) -1000
+#define  MVME_ERROR          (int) -1000
 
 #define  MAX_VME_SLOTS       (int) 32
 
@@ -55,4 +56,11 @@ typedef struct {
   void             *dma_ptr;
 } DMA_INFO;
 
-#endif
+typedef struct {
+  vme_interrupt_handle_t  handle;
+  int               level;
+  int               vector;
+  int               flags;
+} INT_INFO;
+
+#endif // VMICVME_INCLUDE_H
