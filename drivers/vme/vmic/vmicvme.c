@@ -13,9 +13,20 @@ VMIC VME driver following the mvmestd
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <signal.h>
+#include <unistd.h>
+#include <vme/universe.h>
 #include <vme/vme.h>
 #include <vme/vme_api.h>
 #include "vmicvme.h"
+
+vme_bus_handle_t bus_handle;
+vme_interrupt_handle_t int_handle;
+
+struct sigevent event;
+struct sigaction handler_act;
+
+INT_INFO int_info;
 
 int vmic_mmap(MVME_INTERFACE *mvme, mvme_addr_t vme_addr, mvme_size_t size);
 int vmic_unmap(MVME_INTERFACE *mvme, mvme_addr_t vme_addr, mvme_size_t size);
@@ -76,16 +87,16 @@ int mvme_open(MVME_INTERFACE **mvme, int index)
   
   /* Create DMA buffer */
   if(0 > vme_dma_buffer_create( (vme_bus_handle_t) (*mvme)->handle
-				, &(info->dma_handle)
-				, DEFAULT_DMA_NBYTES, 0, NULL))  {
+        , &(info->dma_handle)
+        , DEFAULT_DMA_NBYTES, 0, NULL))  {
     perror("Error creating the buffer");
     return(ERROR);
   }
   
   if(NULL == (info->dma_ptr = vme_dma_buffer_map(
-						 (vme_bus_handle_t) (*mvme)->handle
-						 , info->dma_handle
-						 , 0)))
+             (vme_bus_handle_t) (*mvme)->handle
+             , info->dma_handle
+             , 0)))
     {
       perror("Error mapping the buffer");
       vme_dma_buffer_release((vme_bus_handle_t) (*mvme)->handle, info->dma_handle);
@@ -110,7 +121,7 @@ Close and release ALL the opened VME channel.
 */
 int mvme_close(MVME_INTERFACE *mvme)
 {
-  int j, status;
+  int j;
   VME_TABLE *table;
   DMA_INFO  *info;
   
@@ -149,7 +160,7 @@ int mvme_close(MVME_INTERFACE *mvme)
   for (j=0; j< MAX_VME_SLOTS; j++) {
     if (table[j].valid) {
       vme_master_window_release( (vme_bus_handle_t ) mvme->handle
-				 , table[j].wh );
+         , table[j].wh );
     }
   } // scan
   
@@ -219,12 +230,12 @@ int mvme_read(MVME_INTERFACE *mvme, void *dst, mvme_addr_t vme_addr, mvme_size_t
   /*--------------- DMA --------------*/
   if ((mvme->blt_mode == MVME_BLT_BLT32) || (n_bytes > 127)) {
     status = vme_dma_read((vme_bus_handle_t )mvme->handle
-			  , info->dma_handle
-			  , 0
-			  , vme_addr
-			  , mvme->am
-			  , n_bytes
-			  , 0);
+        , info->dma_handle
+        , 0
+        , vme_addr
+        , mvme->am
+        , n_bytes
+        , 0);
     if (status > 0) {
       perror("Error reading data");
       return(ERROR);
@@ -232,15 +243,15 @@ int mvme_read(MVME_INTERFACE *mvme, void *dst, mvme_addr_t vme_addr, mvme_size_t
     
     if (mvme->dmode == MVME_DMODE_D8)
       for (i=0 ; i < n_bytes/sizeof(char) ; i++) {
-	*((char *)dst)++  = cdma_ptr[i];
+  *((char *)dst)++  = cdma_ptr[i];
       }
     else if (mvme->dmode == MVME_DMODE_D16)
       for (i=0 ; i < n_bytes/sizeof(WORD) ; i++) {
-	*((WORD *)dst)++  = sdma_ptr[i];
+  *((WORD *)dst)++  = sdma_ptr[i];
       }
     else if (mvme->dmode == MVME_DMODE_D32)
       for (i=0 ; i < n_bytes/sizeof(DWORD) ; i++) {
-	*((DWORD *)dst)++  = dma_ptr[i];
+  *((DWORD *)dst)++  = dma_ptr[i];
       }
   }
   else
@@ -249,17 +260,17 @@ int mvme_read(MVME_INTERFACE *mvme, void *dst, mvme_addr_t vme_addr, mvme_size_t
       addr = vmic_mapcheck(mvme, vme_addr, n_bytes);
       
       if (mvme->dmode == MVME_DMODE_D8)
-	for (i=0 ; i < n_bytes/sizeof(char) ; i++) {
-	  *((char *)dst)++  = *((char *)addr)++;
-	}
+  for (i=0 ; i < n_bytes/sizeof(char) ; i++) {
+    *((char *)dst)++  = *((char *)addr)++;
+  }
       else if (mvme->dmode == MVME_DMODE_D16)
-	for (i=0 ; i < n_bytes/sizeof(WORD) ; i++) {
-	  *((WORD *)dst)++  = *((WORD *)addr)++;
-	}
+  for (i=0 ; i < n_bytes/sizeof(WORD) ; i++) {
+    *((WORD *)dst)++  = *((WORD *)addr)++;
+  }
       else if (mvme->dmode == MVME_DMODE_D32)
-	for (i=0 ; i < n_bytes/sizeof(DWORD) ; i++) {
-	  *((DWORD *)dst)++  = *((DWORD *)addr)++;
-	}
+  for (i=0 ; i < n_bytes/sizeof(DWORD) ; i++) {
+    *((DWORD *)dst)++  = *((DWORD *)addr)++;
+  }
     }
   return(MVME_SUCCESS);
 }
@@ -314,24 +325,24 @@ int mvme_write(MVME_INTERFACE *mvme, mvme_addr_t vme_addr, void *src, mvme_size_
   if ((mvme->blt_mode == MVME_BLT_BLT32) || (n_bytes > 127)) {
     if (mvme->dmode == MVME_DMODE_D8)
       for (i=0 ; i < n_bytes/sizeof(char) ; i++) {
-	*((char *)(info->dma_ptr))++ = *((char *)src)++;
+  *((char *)(info->dma_ptr))++ = *((char *)src)++;
       }
     else if (mvme->dmode == MVME_DMODE_D16)
       for (i=0 ; i < n_bytes/sizeof(WORD) ; i++) {
-	*((WORD *)(info->dma_ptr))++ = *((WORD *)src)++;
+  *((WORD *)(info->dma_ptr))++ = *((WORD *)src)++;
       }
     else if (mvme->dmode == MVME_DMODE_D32)
       for (i=0 ; i < n_bytes/sizeof(DWORD) ; i++) {
-	*((DWORD *)(info->dma_ptr))++ = *((DWORD *)src)++;
+  *((DWORD *)(info->dma_ptr))++ = *((DWORD *)src)++;
       }
     
     if(0 > vme_dma_write((vme_bus_handle_t )mvme->handle
-			 , info->dma_handle
-			 , 0
-			 , vme_addr
-			 , mvme->am
-			 , n_bytes
-			 , 0)) {
+       , info->dma_handle
+       , 0
+       , vme_addr
+       , mvme->am
+       , n_bytes
+       , 0)) {
       perror("Error writing data");
       return(MVME_ACCESS_ERROR);
     }
@@ -343,15 +354,15 @@ int mvme_write(MVME_INTERFACE *mvme, mvme_addr_t vme_addr, void *src, mvme_size_
     /* Perform write */
     if (mvme->dmode == MVME_DMODE_D8)
       for (i=0 ; i < n_bytes/sizeof(char) ; i++) {
-	*((char *)addr)++  = *((char *)src)++;
+  *((char *)addr)++  = *((char *)src)++;
       }
     else if (mvme->dmode == MVME_DMODE_D16)
       for (i=0 ; i < n_bytes/sizeof(WORD) ; i++) {
-	*((WORD *)addr)++  = *((WORD *)src)++;
+  *((WORD *)addr)++  = *((WORD *)src)++;
       }
     else if (mvme->dmode == MVME_DMODE_D32)
       for (i=0 ; i < n_bytes/sizeof(DWORD) ; i++) {
-	*((DWORD *)addr)++  = *((DWORD *)src)++;
+  *((DWORD *)addr)++  = *((DWORD *)src)++;
       }
   }
   return MVME_SUCCESS;
@@ -427,6 +438,100 @@ int mvme_get_blt(MVME_INTERFACE *mvme, int *mode)
 }
 
 /********************************************************************/
+static void myisr(int sig, siginfo_t * siginfo, void *extra)
+{
+  fprintf(stderr, "myisr interrupt received \n");
+  fprintf(stderr, "interrupt: level:%d Vector:0x%x\n", int_info.level, siginfo->si_value.sival_int & 0xFF);
+}
+
+/********************************************************************/
+int mvme_interrupt_generate(MVME_INTERFACE *mvme, int level, int vector, void *info)
+{
+  if (vme_interrupt_generate((vme_bus_handle_t )mvme->handle, level, vector)) {
+    perror("vme_interrupt_generate");
+    return MVME_ERROR;
+  }
+
+  return MVME_SUCCESS;
+}
+
+/********************************************************************/
+/**
+
+<code>
+static void handler(int sig, siginfo_t * siginfo, void *extra)
+{
+	print_intr_msg(level, siginfo->si_value.sival_int);
+	done = 0;
+}
+</endcode>
+
+*/
+int mvme_interrupt_attach(MVME_INTERFACE *mvme, int level, int vector
+					, void (*isr)(int, siginfo_t*, void *), void *info)
+{
+	struct sigevent event;
+	struct sigaction handler_act;
+
+	/* Set up sigevent struct */
+	event.sigev_signo = SIGIO;
+	event.sigev_notify = SIGEV_SIGNAL;
+	event.sigev_value.sival_int = 0;
+
+	/* Install the signal handler */
+	sigemptyset(&handler_act.sa_mask);
+	handler_act.sa_sigaction = isr;
+	handler_act.sa_flags = SA_SIGINFO;
+
+	if (sigaction(SIGIO, &handler_act, NULL)) {
+		perror("sigaction");
+		return -1;
+	}
+
+	int_info.flags = *((unsigned int *) info);
+
+  if (vme_interrupt_attach((vme_bus_handle_t )mvme->handle
+                      , &int_handle, level, vector
+                      , int_info.flags, &event)) {
+    perror("vme_interrupt_attach");
+    return -1;
+  }
+  int_info.handle = int_handle;
+  int_info.level  = level;
+  int_info.vector = vector;
+
+  return MVME_SUCCESS;
+}
+
+/********************************************************************/
+int mvme_interrupt_detach(MVME_INTERFACE *mvme, int level, int vector, void *info)
+{
+  if (int_info.handle) {
+    
+    if (vme_interrupt_release((vme_bus_handle_t )mvme->handle
+			      , int_info.handle)) {
+      perror("vme_interrupt_release");
+      return -1;
+    }
+  }
+  return MVME_SUCCESS;
+}
+
+/********************************************************************/
+int mvme_interrupt_enable(MVME_INTERFACE *mvme, int level, int vector, void *info)
+{
+  //  vme_interrupt_enable((vme_bus_handle_t )mvme->handle,
+  //		       int_info.handle);
+  return MVME_SUCCESS;
+}
+
+/********************************************************************/
+int mvme_interrupt_disable(MVME_INTERFACE *mvme, int level, int vector, void *info)
+{
+  return MVME_SUCCESS;
+}
+
+/********************************************************************/
 /**
 VME Memory map, uses the driver MVME_INTERFACE for storing the map information.
 @param *mvme VME structure
@@ -454,12 +559,12 @@ int vmic_mmap(MVME_INTERFACE *mvme, mvme_addr_t vme_addr, mvme_size_t n_bytes)
     
     /* Create master window */
     if(0 > vme_master_window_create( (vme_bus_handle_t )mvme->handle
-				     , &(table[j].wh)
-				     , table[j].low
-				     , table[j].am
-				     , table[j].nbytes
-				     , VME_CTL_PWEN
-				     , NULL) ) {
+             , &(table[j].wh)
+             , table[j].low
+             , table[j].am
+             , table[j].nbytes
+             , VME_CTL_PWEN
+             , NULL) ) {
       perror("Error creating the window");
       return(MVME_ACCESS_ERROR);
     }
@@ -468,7 +573,7 @@ int vmic_mmap(MVME_INTERFACE *mvme, mvme_addr_t vme_addr, mvme_size_t n_bytes)
     if(NULL == (table[j].ptr = (DWORD *)vme_master_window_map((vme_bus_handle_t )mvme->handle, table[j].wh, 0) ) ) {
       perror("Error mapping the window");
       vme_master_window_release( (vme_bus_handle_t )mvme->handle
-				 , table[j].wh );
+         , table[j].wh );
       
       /* Cleanup slot */
       table[j].wh = 0;
@@ -477,7 +582,7 @@ int vmic_mmap(MVME_INTERFACE *mvme, mvme_addr_t vme_addr, mvme_size_t n_bytes)
     
     if (NULL == (phys_addr = vme_master_window_phys_addr ((vme_bus_handle_t )mvme->handle, table[j].wh)))
       {
-	perror ("vme_master_window_phys_addr");
+  perror ("vme_master_window_phys_addr");
       }
     printf("Window physical address = 0x%lx\n", (unsigned long) phys_addr);
     table[j].valid = 1;
@@ -593,9 +698,11 @@ mvme_addr_t vmic_mapcheck (MVME_INTERFACE *mvme, mvme_addr_t vme_addr, mvme_size
   Allows code testing, in this case, the VMEIO board has been used. */
 
 #ifdef MAIN_ENABLE
+
 int main () {
+
   int status;
-  int data;
+  int myinfo = VME_INTERRUPT_SIGEVENT;
   
   MVME_INTERFACE *myvme;
   int vmeio_status;
@@ -632,14 +739,31 @@ int main () {
   mvme_write_value(myvme, 0x780008, 0xF);
   
   /* Write to the VMEIO in pulse mode */
-  data = 0xF;
-  for (;;) {
-    status = mvme_write(myvme, 0x78000C, &data, 4);
-    status = mvme_write(myvme, 0x78000C, &data, 4);
-  }
+//  data = 0xF;
+//  for (;;) {
+//    status = mvme_write(myvme, 0x78000C, &data, 4);
+//    status = mvme_write(myvme, 0x78000C, &data, 4);
+//  }
   
+//------------ Interrupt section
+  // IRQ 7, vector from switch 0x0 -> 0x80 -> ch 0 source
+  mvme_interrupt_attach(myvme, 7, 0x10, myisr, &myinfo);
+  
+  //  for (;;) {    
+  //  }
+  //  mvme_interrupt_enable(myvme, 1, 0x00, &myinfo);
+  
+  //  mvme_interrupt_disable(myvme, 1, 0x00, &myinfo);
+  
+  
+  mvme_interrupt_generate(myvme, 7, 0x10, &myinfo);
+
+
+  //  mvme_interrupt_detach(myvme, 1, 0x00, &myinfo);
+
   /* Close VME channel */
   status = mvme_close(myvme);
   return 1;
 }
+
 #endif
