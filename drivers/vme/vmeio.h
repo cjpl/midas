@@ -7,8 +7,11 @@
                 
   $Log: vmeio.h,v $
 *********************************************************************/
-#ifndef __VMEIO_INCLUDE_H__
-#define __VMEIO_INCLUDE_H__
+
+#include "mvmestd.h"
+
+#ifndef VMEIO_INCLUDE_H
+#define VMEIO_INCLUDE_H
 
 #define VMEIO_IRQENBL    (0x00
 #define VMEIO_INTSRC     (0x04)
@@ -28,4 +31,4 @@ int  vmeio_AsyncRead(MVME_INTERFACE *myvme, DWORD base);
 int  vmeio_SyncRead(MVME_INTERFACE *myvme, DWORD base);
 void vmeio_StrobeClear(MVME_INTERFACE *mvme, DWORD base);
 
-#endif
+#endif  //  VMEIO_INCLUDE_H
