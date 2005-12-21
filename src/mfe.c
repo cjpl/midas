@@ -6,7 +6,7 @@
   Contents:     The system part of the MIDAS frontend. Has to be
                 linked with user code to form a complete frontend
 
-  $Id:$
+  $Id$
 
 \********************************************************************/
 
@@ -344,6 +344,10 @@ INT register_equipment(void)
          ss_sleep(3000);
       }
       db_find_key(hDB, 0, str, &hKey);
+      assert(hKey);
+
+      /* open hot link to equipment info */
+      db_open_record(hDB, hKey, eq_info, sizeof(EQUIPMENT_INFO), MODE_READ, NULL, NULL);
 
       if (equal_ustring(eq_info->format, "YBOS"))
          equipment[index].format = FORMAT_YBOS;
@@ -356,13 +360,11 @@ INT register_equipment(void)
       strcpy(eq_info->frontend_name, full_frontend_name);
       strcpy(eq_info->frontend_file_name, frontend_file_name);
 
-      /* set record from equipment[] table in frontend.c */
+      /* update variables in ODB */
       db_set_record(hDB, hKey, eq_info, sizeof(EQUIPMENT_INFO), 0);
 
-      /* open hot link to equipment info */
-      db_open_record(hDB, hKey, eq_info, sizeof(EQUIPMENT_INFO), MODE_READ, NULL, NULL);
-
-    /*---- Create variables record ---------------------------------*/
+      /*---- Create variables record ---------------------------------*/
+      
       sprintf(str, "/Equipment/%s/Variables", equipment[index].name);
       if (equipment[index].event_descrip) {
          if (equipment[index].format == FORMAT_FIXED)
