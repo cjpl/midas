@@ -190,9 +190,6 @@ void setup(void)
    /* Blink LEDs */
    led_blink(0, 3, 150);
    led_blink(1, 3, 150);
-
-   /* invert first LED */
-   led_mode(0, 1);
 }
  
 /*------------------------------------------------------------------*/
@@ -645,6 +642,9 @@ void main(void)
 
    // obtain IP address
    mn_dhcp_start(NULL, DHCP_DEFAULT_LEASE_TIME);
+
+   // invert first LED
+   led_mode(0, 1);
 
    // turn on watchdog
    watchdog_enable(10);
