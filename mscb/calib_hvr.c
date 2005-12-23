@@ -340,19 +340,43 @@ int calib(int fd, unsigned short adr, unsigned short adr_dvm, float rin_dvm, int
 
 /*------------------------------------------------------------------*/
 
-int main()
+int main(int argc, char *argv[])
 {
-   int fd;
+   int i, fd;
    unsigned short adr, adr_start, adr_end, adr_dvm;
-   char str[80];
+   char str[80], device[80], password[80];
    MSCB_INFO_VAR info;
 
+   device[0] = password[0] = 0;
+
+   /* parse command line parameters */
+   for (i = 1; i < argc; i++) {
+      if (argv[i][0] == '-') {
+         if (i + 1 >= argc || argv[i + 1][0] == '-')
+            goto usage;
+         else if (argv[i][1] == 'd')
+            strcpy(device, argv[++i]);
+         else if (argv[i][1] == 'p')
+            strcpy(password, argv[++i]);
+      } else {
+         usage:
+         printf
+               ("usage: calib_hvr [-d host:device] [-p password]]\n\n");
+         printf("       -d     device, usually usb0 for first USB port,\n");
+         printf("              or \"<host>:usb0\" for RPC connection\n");
+         printf
+               ("              or \"mscb<xxx>\" for Ethernet connection to SUBM_260\n");
+         printf("       -p     optional password for SUBM_260\n");
+         return 0;
+      }
+   }
+
+
    /* open port */
-   *str = 0;
-   fd = mscb_init(str, sizeof(str), "", 0);
+   fd = mscb_init(device, sizeof(str), password, 0);
    if (fd < 0) {
-      if (str[0])
-         printf("Cannot connect to device \"%s\".\n", str);
+      if (device[0])
+         printf("Cannot connect to device \"%s\".\n", device);
       else
          printf("No MSCB submaster found.\n");
 
