@@ -1238,7 +1238,7 @@ int mscb_init(char *device, int bufsize, char *password, int debug)
       mscb_fd[index].type = MSCB_TYPE_USB;
 
    /* MSCBxxx */
-   if (strieq(dev3, "msc"))
+   if (strieq(dev3, "msc") || (atoi(device) > 0 && strchr(device, '.')))
       mscb_fd[index].type = MSCB_TYPE_ETH;
 
    if (mscb_fd[index].type == 0)
