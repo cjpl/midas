@@ -9087,7 +9087,7 @@ void interprete(char *cookie_pwd, char *cookie_wpwd, char *path, int refresh)
                for (j = 0; j < key.num_values; j++) {
                   size = key.item_size;
                   sprintf(str, "x%d", n++);
-                  db_sscanf(getparam(str), data, &size, j, key.type);
+                  db_sscanf(getparam(str), data, &size, 0, key.type);
                   db_set_data_index(hDB, hsubkey, data, size + 1, j, key.type);
                }
             }
