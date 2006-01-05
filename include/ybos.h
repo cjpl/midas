@@ -5,7 +5,7 @@
 
   Contents:     Declarations for ybos data format
 
-  $Id:$
+  $Id$
 
 \********************************************************************/
 
@@ -118,8 +118,10 @@ File fragmentation */
 
 /**
 Display mode options */
-#define DSP_RAW    1  /**< Display raw data */
-#define DSP_BANK   2  /**<Display data in bank format */
+#define DSP_RAW    1         /**< Display raw data */
+#define DSP_RAW_SINGLE    2  /**< Display raw data (no single mode) */
+#define DSP_BANK   3         /**< Display data in bank format */
+#define DSP_BANK_SINGLE   4  /**< Display only requested data in bank format */
 
 /**
 Display format */
@@ -367,7 +369,7 @@ extern "C" {
 
    void EXPRT yb_any_bank_display(void *pmbh, void *pbk, INT fmt,
                                   INT dsp_mode, INT dsp_fmt);
-   void EXPRT yb_any_event_display(void *pevt, INT data_fmt, INT dsp_mode, INT dsp_fmt);
+   void EXPRT yb_any_event_display(void *pevt, INT data_fmt, INT dsp_mode, INT dsp_fmt, char * bn);
    INT EXPRT yb_any_all_info_display(INT what);
    INT EXPRT yb_any_physrec_display(INT data_fmt);
 
