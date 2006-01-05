@@ -4,7 +4,7 @@ Created by:   Pierre-Andre Amaudruz
 
 Contents:     Dump event on screen with MIDAS or YBOS data format
 
-  $Id:$
+  $Id$
 
 \********************************************************************/
 
@@ -156,7 +156,7 @@ int replog(int data_fmt, char *rep_file, int bl, int action)
             printf
                 ("------------------------ Event# %i --------------------------------\n",
                  i++);
-            yb_any_event_display(pmyevt, data_fmt, dsp_mode, dsp_fmt);
+            yb_any_event_display(pmyevt, data_fmt, dsp_mode, dsp_fmt, sbank_name);
          } else if (action == REP_EVENT) {
             id = EVENTID_ALL;
             msk = TRIGGER_ALL;
@@ -204,13 +204,13 @@ int replog(int data_fmt, char *rep_file, int bl, int action)
                   printf
                       ("------------------------ Event# %i --------------------------------\n",
                        i++);
-                  yb_any_event_display(pmyevt, data_fmt, dsp_mode, dsp_fmt);
+                  yb_any_event_display(pmyevt, data_fmt, dsp_mode, dsp_fmt, sbank_name);
                }
             } else {            /* no user request ==> display any event */
                printf
                    ("------------------------ Event# %i --------------------------------\n",
                     i++);
-               yb_any_event_display(pmyevt, data_fmt, dsp_mode, dsp_fmt);
+               yb_any_event_display(pmyevt, data_fmt, dsp_mode, dsp_fmt, sbank_name);
             }
          }
       }
@@ -300,7 +300,7 @@ void process_event(HNDLE hBuf, HNDLE request_id, EVENT_HEADER * pheader, void *p
                status = ybk_list(plrl, banklist);
                printf("#banks:%i Bank list:-%s-\n", status, banklist);
             } else
-               yb_any_event_display(plrl, FORMAT_YBOS, dsp_mode, dsp_fmt);
+               yb_any_event_display(plrl, FORMAT_YBOS, dsp_mode, dsp_fmt, sbank_name);
          }
       } else if ((internal_data_fmt == FORMAT_MIDAS) && (yb_any_event_swap(FORMAT_MIDAS, pheader) >= YB_SUCCESS)) {     /* ---- MIDAS FMT ---- */
          if (file_mode != YB_NO_RECOVER)
@@ -325,11 +325,11 @@ void process_event(HNDLE hBuf, HNDLE request_id, EVENT_HEADER * pheader, void *p
                status = bk_list(pmbh, banklist);
                printf("#banks:%i Bank list:-%s-\n", status, banklist);
             } else
-               yb_any_event_display(pheader, FORMAT_MIDAS, dsp_mode, dsp_fmt);
+               yb_any_event_display(pheader, FORMAT_MIDAS, dsp_mode, dsp_fmt, sbank_name);
          }
       } else {                  /* unknown format just dump midas event */
          printf("Data format not supported: %s\n", eq[index].Fmt);
-         yb_any_event_display(pheader, FORMAT_MIDAS, DSP_RAW, dsp_fmt);
+         yb_any_event_display(pheader, FORMAT_MIDAS, DSP_RAW, dsp_fmt, sbank_name);
       }
       if (evt_display == 0) {
          cm_disconnect_experiment();
@@ -350,7 +350,7 @@ int main(int argc, char **argv)
    double rate;
    unsigned int status, start_time, stop_time;
    BOOL debug = FALSE, rep_flag;
-   INT ch, request_id, size, get_flag, action, i;
+   INT ch, request_id, size, get_flag, action, single, i;
    BUFFER_HEADER buffer_header;
 
    /* set default */
@@ -370,6 +370,7 @@ int main(int argc, char **argv)
    rep_flag = FALSE;
    dsp_time = 0;
    speed = 0;
+   single = 0;
    consistency = 0;
    action = REP_EVENT;
 
@@ -393,6 +394,8 @@ int main(int argc, char **argv)
       for (i = 1; i < argc; i++) {
          if (argv[i][0] == '-' && argv[i][1] == 'd')
             debug = TRUE;
+         else if (strncmp(argv[i], "-single", 7) == 0)
+            single = 1;
          else if (argv[i][0] == '-') {
             if (i + 1 >= argc || argv[i + 1][0] == '-')
                goto repusage;
@@ -456,6 +459,8 @@ int main(int argc, char **argv)
                printf
                    ("                  -b bank name    : search for bank name (case sensitive)\n");
                printf("                  -i evt_id (any) : event id from the FE\n");
+               printf
+                   ("                  -single         : Request single bank only (to be used with -b)\n");
                printf
                    ("                  -k mask (any)   : trigger_mask from FE setting\n");
                printf
@@ -584,6 +589,8 @@ int main(int argc, char **argv)
          }
       }
    }
+
+   if ((sbank_name[0] != 0) && single) dsp_mode += 1;
 
    if (rep_flag && data_fmt == 0) {
       char *pext;
