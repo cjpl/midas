@@ -6,7 +6,7 @@
  *         amaudruz@triumf.ca                            Local:           6234
  * ---------------------------------------------------------------------------
 
-  $Id:$
+  $Id$
 
  *
  *  Description : ybos.c : contains support for the YBOS structure.
@@ -137,7 +137,7 @@ INT ybos_physrec_skip(INT bl);
 INT ybos_physrec_get(DWORD ** prec, DWORD * readn);
 INT midas_physrec_get(void *prec, DWORD * readn);
 
-void yb_any_bank_event_display(void *pevent, INT data_fmt, INT dsp_fmt);
+void yb_any_bank_event_display(void *pevent, INT data_fmt, INT dsp_fmt, INT dsp_mode, char *bn);
 void yb_any_raw_event_display(void *pevent, INT data_fmt, INT dsp_fmt);
 
 void yb_any_raw_bank_display(void *pbank, INT data_fmt, INT dsp_fmt);
@@ -2587,7 +2587,7 @@ YB_SUCCESS        Ok
 }
 
 /*------------------------------------------------------------------*/
-void yb_any_event_display(void *pevent, INT data_fmt, INT dsp_mode, INT dsp_fmt)
+void yb_any_event_display(void *pevent, INT data_fmt, INT dsp_mode, INT dsp_fmt, char * bn)
 /********************************************************************\
 Routine: external yb_any_event_display
 Purpose: display on screen the YBOS event in either RAW or YBOS mode
@@ -2605,8 +2605,8 @@ none
 {
    if (dsp_mode == DSP_RAW)
       yb_any_raw_event_display(pevent, data_fmt, dsp_fmt);
-   else if (dsp_mode == DSP_BANK)
-      yb_any_bank_event_display(pevent, data_fmt, dsp_fmt);
+   else if ((dsp_mode == DSP_BANK)||(dsp_mode == DSP_BANK_SINGLE))
+      yb_any_bank_event_display(pevent, data_fmt, dsp_fmt, dsp_mode, bn);
    else
       printf("yb_any_event_display- Unknown format:%i\n", dsp_fmt);
    return;
@@ -2654,7 +2654,7 @@ none
 }
 
 /*------------------------------------------------------------------*/
-void yb_any_bank_event_display(void *pevent, INT data_fmt, INT dsp_fmt)
+void yb_any_bank_event_display(void *pevent, INT data_fmt, INT dsp_fmt, INT dsp_mode, char *bn)
 /********************************************************************\
 Routine: ybos_bank_event_display
 Purpose: display on screen the event header, bank list and bank content
@@ -2672,13 +2672,13 @@ none
 {
    char banklist[YB_STRING_BANKLIST_MAX];
    YBOS_BANK_HEADER *pybk;
-   DWORD *pdata;
+   DWORD *pdata, *pdata1;
    DWORD bklen, bktyp;
-   BANK_HEADER *pbh;
+   BANK_HEADER *pbh = NULL;
    BANK *pmbk;
    BANK32 *pmbk32;
    EVENT_HEADER *pheader;
-   INT status;
+   INT status, single=0;
 
    if (data_fmt == FORMAT_YBOS) {
       /* event header --> No event header in YBOS */
@@ -2714,19 +2714,28 @@ none
           pheader->event_id == EVENTID_EOR || pheader->event_id == EVENTID_MESSAGE)
          return;
 
-      /* event header */
-      printf
+      /* check if format is MIDAS or FIXED */
+      pbh = (BANK_HEADER *) (pheader + 1);
+
+      /* Check for single bank display request */
+      if (dsp_mode == DSP_BANK_SINGLE) {
+        bk_locate(pbh, bn, &pdata1);
+        single = 1;
+      }
+      /* event header (skip it if in single bank display) */
+      if (!single) printf
           ("Evid:%4.4x- Mask:%4.4x- Serial:%li- Time:0x%lx- Dsize:%li/0x%lx",
            (WORD) pheader->event_id, (WORD) pheader->trigger_mask,
            pheader->serial_number, pheader->time_stamp, pheader->data_size,
            pheader->data_size);
 
-      /* check if format is MIDAS or FIXED */
-      pbh = (BANK_HEADER *) (pheader + 1);
       if ((pbh->data_size + 8) == pheader->data_size) {
          /* bank list */
-         status = bk_list((BANK_HEADER *) (pheader + 1), banklist);
+        if (!single) {
+        /* Skip list if in single bank display */
+        status = bk_list((BANK_HEADER *) (pheader + 1), banklist);
          printf("\n#banks:%i - Bank list:-%s-\n", status, banklist);
+        }
 
          /* display bank content */
          if (bk_is32(pbh)) {
@@ -2734,14 +2743,20 @@ none
             do {
                bk_iterate32(pbh, &pmbk32, &pdata);
                if (pmbk32 != NULL)
-                  midas_bank_display32(pmbk32, dsp_fmt);
+                  if (single && (pdata == pdata1)) 
+                     midas_bank_display32(pmbk32, dsp_fmt);
+                  if (!single)
+                     if (pmbk32 != NULL) midas_bank_display32(pmbk32, dsp_fmt);
             } while (pmbk32 != NULL);
          } else {
             pmbk = NULL;
             do {
                bk_iterate(pbh, &pmbk, &pdata);
                if (pmbk != NULL)
-                  midas_bank_display(pmbk, dsp_fmt);
+                  if (single && (pdata == pdata1)) 
+                     midas_bank_display(pmbk, dsp_fmt);
+                 if (!single)
+               if (pmbk != NULL) midas_bank_display(pmbk, dsp_fmt);
             } while (pmbk != NULL);
          }
       } else {
@@ -3042,7 +3057,7 @@ none
    }
    if (type == TID_STRING) {
       length_type = sizeof(char);
-      strcpy(strbktype, "String 8bit ASCI");
+      strcpy(strbktype, "String 8bit ASCII");
    }
    
    printf("\nBank:%s Length: %li(I*1)/%li(I*4)/%li(Type) Type:%s",
