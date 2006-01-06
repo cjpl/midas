@@ -8,7 +8,7 @@
   in the idle task based on circular/alternate on minimum of
   n raised channels + one. See doc for further explanation.
 
-  $Id:$
+  $Id$
 
 \********************************************************************/
 
@@ -81,10 +81,7 @@ static void free_mem(GEN_INFO * gen_info)
 
 INT gen_read(EQUIPMENT * pequipment, int channel)
 {
-   int i, status;
-   float max_diff;
-   DWORD act_time, min_time;
-   BOOL changed;
+   int status;
    GEN_INFO *gen_info;
    HNDLE hDB;
 
@@ -244,7 +241,8 @@ INT gen_init(EQUIPMENT * pequipment)
 
       status = pequipment->driver[i].dd(CMD_INIT, hKey, &pequipment->driver[i].dd_info,
                                         pequipment->driver[i].channels,
-                                        pequipment->driver[i].cmd_disabled);
+                                        pequipment->driver[i].flags,
+                                        pequipment->driver[i].bd);
       if (status != FE_SUCCESS) {
          free_mem(gen_info);
          return status;
@@ -364,8 +362,8 @@ INT gen_idle(EQUIPMENT * pequipment)
    static BOOL odb_update_flag = FALSE;
    static INT last_raised_channel = -1;
    static INT number_raised = 0;
-   INT act, i, next_raised, status;
-   DWORD act_time, loop;
+   INT act, i, next_raised, status, loop;
+   DWORD act_time;
    GEN_INFO *gen_info;
    HNDLE hDB;
 
@@ -406,9 +404,9 @@ INT gen_idle(EQUIPMENT * pequipment)
          gen_info->raised[act] = FALSE;
       }
 
-//    printf("F:%d mes:%f mir:%f th:%f\n", gen_info->raised[act]
-//         , gen_info->measured[act]
-//         ,gen_info->measured_mirror[act], gen_info->update_threshold[act]);
+    printf("F:%d mes:%f mir:%f th:%f\n", gen_info->raised[act]
+         , gen_info->measured[act]
+         ,gen_info->measured_mirror[act], gen_info->update_threshold[act]);
 
       /* hold last value */
       gen_info->measured_mirror[act] = gen_info->measured[act];
