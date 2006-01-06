@@ -59,6 +59,8 @@ int mvme_open(MVME_INTERFACE **vme, int index)
    if (*vme == NULL)
       return MVME_NO_MEM;
 
+   memset(*vme, 0, sizeof(MVME_INTERFACE));
+
 #ifdef OS_WINNT
 	sis1100w_Find_No_Of_sis1100(&n_sis3100);
    if (index >= n_sis3100)
@@ -364,6 +366,11 @@ int mvme_read(MVME_INTERFACE *vme, void *dst, mvme_addr_t vme_addr, mvme_size_t 
                status = vme_A16D32_read(hvme, (u_int32_t) vme_addr, ((u_int32_t *) dst)+i);
       }
 
+      else
+         status = 1;
+
+      if (status == 0)
+         n = n_bytes;
       else
          n = 0;
 
