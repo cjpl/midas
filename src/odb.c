@@ -7433,8 +7433,11 @@ INT db_check_record(HNDLE hDB, HNDLE hKey, char *keyname, char *rec_str, BOOL co
    status = db_find_key(hDB, hKey, keyname, &hKeyRoot);
 
    /* create record if not */
-   if (status == DB_NO_KEY)
-      return db_create_record(hDB, hKey, keyname, rec_str);
+   if (status == DB_NO_KEY) {
+      if (correct)
+         return db_create_record(hDB, hKey, keyname, rec_str);
+      return DB_NO_KEY;
+   }
 
    assert(hKeyRoot);
 

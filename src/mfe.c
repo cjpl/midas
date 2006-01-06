@@ -338,8 +338,12 @@ INT register_equipment(void)
       }
 
       /* Create common subtree */
-      status = db_check_record(hDB, 0, str, EQUIPMENT_COMMON_STR, TRUE);
-      if (status != DB_SUCCESS) {
+      status = db_check_record(hDB, 0, str, EQUIPMENT_COMMON_STR, FALSE);
+      if (status == DB_NO_KEY || status == DB_STRUCT_MISMATCH) {
+         db_create_record(hDB, 0, str, EQUIPMENT_COMMON_STR);
+         db_find_key(hDB, 0, str, &hKey);
+         db_set_record(hDB, hKey, eq_info, sizeof(EQUIPMENT_INFO), 0);
+      } else if (status != DB_SUCCESS) {
          printf("Cannot check equipment record, status = %d\n", status);
          ss_sleep(3000);
       }
