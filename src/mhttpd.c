@@ -8988,6 +8988,27 @@ void interprete(char *cookie_pwd, char *cookie_wpwd, char *path, int refresh)
       return;
    }
 
+   /*---- customscript command --------------------------------------*/
+
+   if (getparam("customscript") && *getparam("customscript")) {
+      sprintf(str, "%s?customscript=%s", path, getparam("customscript"));
+      if (!check_web_password(cookie_wpwd, str, experiment))
+         return;
+
+      sprintf(str, "/CustomScript/%s", getparam("customscript"));
+
+      db_find_key(hDB, 0, str, &hkey);
+
+      if (hkey) {
+         /* for NT: close reply socket before starting subprocess */
+         redirect2("");
+         exec_script(hkey);
+      } else
+         redirect("");
+
+      return;
+   }
+
    /*---- alarms command --------------------------------------------*/
 
    if (equal_ustring(command, "alarms")) {
