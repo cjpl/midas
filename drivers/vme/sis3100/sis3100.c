@@ -188,7 +188,9 @@ int mvme_write(MVME_INTERFACE *vme, mvme_addr_t vme_addr, void *src, mvme_size_t
 
       /* A32 */
       if (vme->am >= 0x08 && vme->am <= 0x0f) {
-         if (vme->blt_mode == MVME_BLT_BLT32)
+         if (vme->blt_mode == MVME_BLT_NONE)
+            status = vme_A32DMA_D32_write(hvme, (u_int32_t) vme_addr, (u_int32_t*) src, (u_int32_t) n_bytes/4, (u_int32_t*)&n);
+         else if (vme->blt_mode == MVME_BLT_BLT32)
             status = vme_A32BLT32_write(hvme, (u_int32_t) vme_addr, (u_int32_t*) src, (u_int32_t) n_bytes/4, (u_int32_t*)&n);
          else if (vme->blt_mode == MVME_BLT_MBLT64)
             status = vme_A32MBLT64_write(hvme, (u_int32_t) vme_addr, (u_int32_t*) src, (u_int32_t) n_bytes/4, (u_int32_t*)&n);
@@ -324,9 +326,13 @@ int mvme_read(MVME_INTERFACE *vme, void *dst, mvme_addr_t vme_addr, mvme_size_t 
 
    } else {
 
+      n = 0;
+
       /* A32 */
       if (vme->am >= 0x08 && vme->am <= 0x0F) {
-         if (vme->blt_mode == MVME_BLT_BLT32)
+         if (vme->blt_mode == MVME_BLT_NONE)
+            status = vme_A32DMA_D32_read(hvme, (u_int32_t) vme_addr, (u_int32_t*) dst, (u_int32_t) n_bytes/4, (u_int32_t*)&n);
+         else if (vme->blt_mode == MVME_BLT_BLT32)
             status = vme_A32BLT32_read(hvme, (u_int32_t) vme_addr, (u_int32_t*) dst, (u_int32_t) n_bytes/4, (u_int32_t*)&n);
          else if (vme->blt_mode == MVME_BLT_BLT32FIFO)
             status = vme_A32BLT32FIFO_read(hvme, (u_int32_t) vme_addr, (u_int32_t*) dst, (u_int32_t) n_bytes/4, (u_int32_t*)&n);
@@ -334,7 +340,6 @@ int mvme_read(MVME_INTERFACE *vme, void *dst, mvme_addr_t vme_addr, mvme_size_t 
             status = vme_A32MBLT64_read(hvme, (u_int32_t) vme_addr, (u_int32_t*) dst, (u_int32_t) n_bytes/4, (u_int32_t*)&n);
          else if (vme->blt_mode == MVME_BLT_MBLT64FIFO)
             status = vme_A32MBLT64FIFO_read(hvme, (u_int32_t) vme_addr, (u_int32_t*) dst, (u_int32_t) n_bytes/4, (u_int32_t*)&n);
-
          else if (vme->blt_mode == MVME_BLT_2EVME)
             status = vme_A32_2EVME_read(hvme, (u_int32_t) vme_addr, (u_int32_t*) dst, (u_int32_t) n_bytes/4, (u_int32_t*)&n);
          else if (vme->blt_mode == MVME_BLT_2EVMEFIFO)
@@ -368,11 +373,6 @@ int mvme_read(MVME_INTERFACE *vme, void *dst, mvme_addr_t vme_addr, mvme_size_t 
 
       else
          status = 1;
-
-      if (status == 0)
-         n = n_bytes;
-      else
-         n = 0;
 
       n = n*4;
    }
