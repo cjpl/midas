@@ -8,7 +8,7 @@
                 Midas Slow Control Bus protocol 
                 for SCS-910 20-chn analog in
 
-  $Id:$
+  $Id$
 
 \********************************************************************/
 
