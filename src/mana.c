@@ -1504,9 +1504,11 @@ INT mana_init()
             bank_list->def_key = hkey;
          } else {
             sprintf(str, "/Equipment/%s/Variables/%s", analyze_request[i].event_name, block_name);
-            dummy = 0;
-            db_set_value(hDB, 0, str, &dummy, rpc_tid_size(bank_list->type), 1, bank_list->type);
-            db_find_key(hDB, 0, str, &hkey);
+            status = db_find_key(hDB, 0, str, &hkey);
+            if (status != DB_SUCCESS) {
+              dummy = 0;
+              db_set_value(hDB, 0, str, &dummy, rpc_tid_size(bank_list->type), 1, bank_list->type);
+            }
             bank_list->def_key = hkey;
          }
       }
