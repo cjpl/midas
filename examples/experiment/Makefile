@@ -18,6 +18,9 @@ missmidas::
 	@echo "...";
 endif
 
+# get OS type from shell
+OSTYPE = $(shell uname)
+
 #--------------------------------------------------------------------
 # The following lines contain specific switches for different UNIX
 # systems. Find the one which matches your OS and outcomment the 
