@@ -5,7 +5,7 @@
 
   Contents:     MIDAS history display utility
 
-  $Id:$
+  $Id$
 
 \********************************************************************/
 
@@ -96,19 +96,19 @@ INT query_params(DWORD * ev_id, DWORD * start_time, DWORD * end_time,
                  DWORD * interval, char *var_name, DWORD * var_type,
                  INT * var_n_data, DWORD * index)
 {
-   DWORD status, hour, i, bytes, n, *var_n, n_bytes;
-   INT var_index, *event_id, name_size, id_size;
+   DWORD status, hour, i, bytes, n, *var_n, n_bytes, name_size, id_size;
+   INT var_index, *event_id;
    char *event_name;
    char *var_names;
 
    status = hs_count_events(0, &n);
    if (status != HS_SUCCESS)
       return status;
-   name_size = n * NAME_LENGTH;
-   id_size = n * sizeof(INT);
+   name_size = (DWORD) (n * NAME_LENGTH);
+   id_size = (DWORD) (n * sizeof(INT));
    event_name = malloc(name_size);
    event_id = malloc(id_size);
-   hs_enum_events(0, event_name, (DWORD *) & name_size, event_id, (DWORD *) & id_size);
+   hs_enum_events(0, event_name, &name_size, event_id, &id_size);
 
    printf("Available events:\n");
    for (i = 0; i < n; i++)
