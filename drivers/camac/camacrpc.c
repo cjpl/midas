@@ -187,7 +187,7 @@ void cam16i_r(const int c, const int n, const int a, const int f, WORD ** d, con
    if (status != RPC_SUCCESS)
       printf("RPC error %d\n", status);
    else
-      ((char *) (*d)) += size;
+      *d += r;
 }
 
 /*------------------------------------------------------------------*/
@@ -203,7 +203,7 @@ void cam24i_r(const int c, const int n, const int a, const int f, DWORD ** d, co
    if (status != RPC_SUCCESS)
       printf("RPC error %d\n", status);
    else
-      ((char *) (*d)) += size;
+      *d += r;
 }
 
 /*------------------------------------------------------------------*/
@@ -217,7 +217,7 @@ void cam16i_rq(const int c, const int n, const int a, const int f, WORD ** d, co
    if (status != RPC_SUCCESS)
       printf("RPC error %d\n", status);
    else
-      ((char *) (*d)) += size;
+      *d += r;
 }
 
 /*------------------------------------------------------------------*/
@@ -232,7 +232,7 @@ void cam24i_rq(const int c, const int n, const int a, const int f,
    if (status != RPC_SUCCESS)
       printf("RPC error %d\n", status);
    else
-      ((char *) (*d)) += size;
+      *d += r;
 }
 
 /*------------------------------------------------------------------*/
@@ -249,7 +249,7 @@ void cam16i_sa(const int c, const int n, const int a, const int f, WORD ** d, co
       if (status != RPC_SUCCESS)
          printf("RPC error %d\n", status);
       else
-         ((char *) (*d)) += size;
+         *d += 1;
    }
 }
 
@@ -268,7 +268,7 @@ void cam24i_sa(const int c, const int n, const int a, const int f,
       if (status != RPC_SUCCESS)
          printf("RPC error %d\n", status);
       else
-         ((char *) (*d)) += size;
+         *d += 1;
    }
 }
 
@@ -286,7 +286,7 @@ void cam16i_sn(const int c, const int n, const int a, const int f, WORD ** d, co
       if (status != RPC_SUCCESS)
          printf("RPC error %d\n", status);
       else
-         ((char *) (*d)) += size;
+         *d += 1;
    }
 }
 
@@ -305,7 +305,7 @@ void cam24i_sn(const int c, const int n, const int a, const int f,
       if (status != RPC_SUCCESS)
          printf("RPC error %d\n", status);
       else
-         ((char *) (*d)) += size;
+         *d += 1;
    }
 }
 
