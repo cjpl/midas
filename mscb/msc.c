@@ -103,10 +103,10 @@ void print_help()
    puts("echo [fc]                  Perform echo test [fast,continuous]");
    puts("flash                      Flash parameters into EEPROM");
    puts("gaddr <addr>               Address group of nodes");
-   puts("info [-a]                  Retrive node info [all variables]");
+   puts("info                       Retrive node info");
    puts("load <file>                Load node variables");
    puts("ping <addr> [r]            Ping node and set address [repeat mode]");
-   puts("read <index> [r]           Read node variable [repeat mode]");
+   puts("read <index> [r] [a]       Read node variable [repeat mode]  [all variables]");
    puts("reboot                     Reboot addressed node");
    puts("reset                      Reboot whole MSCB system");
    puts("sa <addr>                  Set node address of addressed node");
