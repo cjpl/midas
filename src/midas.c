@@ -1795,7 +1795,7 @@ INT cm_connect_experiment1(char *host_name, char *exp_name,
    db_get_value(hDB, 0, "/Logger/Data dir", str, &size, TID_STRING, TRUE);
 
    /* check /runinfo structure */
-   status = db_check_record(hDB, 0, "/Runinfo", strcomb(runinfo_str), FALSE);
+   status = db_check_record(hDB, 0, "/Runinfo", strcomb(runinfo_str), TRUE);
    if (status == DB_STRUCT_MISMATCH) {
       cm_msg(MERROR, "cm_connect_experiment1",
              "Aborting on mismatching /Runinfo structure");
