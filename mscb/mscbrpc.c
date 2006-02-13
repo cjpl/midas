@@ -266,8 +266,8 @@ void debug_log(char *format, int start, ...)
    line[0] = 0;
    if (start) {
       ftime(&tb);
-      strcpy(line, ctime(&tb.time)+11);
-      sprintf(line+8, ".%03d ", tb.millitm);
+      strcpy(line, ctime(&tb.time) + 11);
+      sprintf(line + 8, ".%03d ", tb.millitm);
    }
 
    va_start(argptr, start);
@@ -297,14 +297,35 @@ int mrecv_tcp(int sock, char *buffer, int buffer_size)
    INT param_size, n_received, n;
    NET_COMMAND *nc;
 
+   fd_set readfds;
+   struct timeval timeout;
+   int status;
+   int millisec;
+
    if (buffer_size < sizeof(NET_COMMAND_HEADER)) {
       printf("mrecv_tcp_server: buffer too small\n");
       return -1;
    }
 
+   /* fixed timeout of 2 sec for the moment */
+   millisec = 2000;
+
    /* first receive header */
    n_received = 0;
    do {
+      FD_ZERO(&readfds);
+      FD_SET(sock, &readfds);
+
+      timeout.tv_sec = millisec / 1000;
+      timeout.tv_usec = (millisec % 1000) * 1000;
+
+      do {
+         status = select(FD_SETSIZE, (void *) &readfds, NULL, NULL, (void *) &timeout);
+      } while (status == -1);   /* dont return if an alarm signal was cought */
+
+      if (!FD_ISSET(sock, &readfds))
+         return n_received;
+
       n = recv(sock, buffer + n_received, sizeof(NET_COMMAND_HEADER), 0);
 
       if (n <= 0)
@@ -324,6 +345,19 @@ int mrecv_tcp(int sock, char *buffer, int buffer_size)
       return sizeof(NET_COMMAND_HEADER);
 
    do {
+      FD_ZERO(&readfds);
+      FD_SET(sock, &readfds);
+
+      timeout.tv_sec = millisec / 1000;
+      timeout.tv_usec = (millisec % 1000) * 1000;
+
+      do {
+         status = select(FD_SETSIZE, (void *) &readfds, NULL, NULL, (void *) &timeout);
+      } while (status == -1);   /* dont return if an alarm signal was cought */
+
+      if (!FD_ISSET(sock, &readfds))
+         return n_received;
+
       n = recv(sock, buffer + sizeof(NET_COMMAND_HEADER) + n_received,
                param_size - n_received, 0);
 
@@ -455,7 +489,8 @@ int server_execute(int index, void *prpc_param[])
       break;
 
    case RPC_MSCB_READ_RANGE:
-      status = mscb_read_range(CINT(0), CSHORT(1), CBYTE(2), CBYTE(3), CARRAY(4), CPINT(5));
+      status =
+          mscb_read_range(CINT(0), CSHORT(1), CBYTE(2), CBYTE(3), CARRAY(4), CPINT(5));
       break;
 
    case RPC_MSCB_ECHO:
