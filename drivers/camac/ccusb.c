@@ -175,7 +175,7 @@ int ccusb_readReg(MUSB_INTERFACE *myusbcrate, int ireg)
 int ccusb_writeReg(MUSB_INTERFACE *myusbcrate, int ireg, int value)
 {
   int rd, wr;
-  static char  cmd[8];
+  static char cmd[8];
   cmd[0] = 5;
   cmd[1] = 0;
   cmd[2] = ireg;
@@ -212,7 +212,7 @@ int ccusb_writeReg(MUSB_INTERFACE *myusbcrate, int ireg, int value)
 /********************************************************************/
 int ccusb_reset(MUSB_INTERFACE *myusbcrate)
 {
-  int wr;
+  int rd, wr;
   static char cmd[512];
   static WORD buf[512];
   cmd[0] = 255;
@@ -367,11 +367,19 @@ int ccusb_naf(MUSB_INTERFACE *myusbcrate, int n, int a, int f, int d24, int data
 /********************************************************************/
 int cam_init() // tested KO 16-SEP-2005
 {
-  int status = ccusb_init();
-  if (status == 0)
+  int c, i, status = ccusb_init();
+  if (status == 0) {
+    // Clear the LAM register at initialization PAA-Feb/06
+    for (c=0;c<gNumCrates;c++) {
+      if (ccusb_getCrateStruct(c))
+        for (i=1;i<24;i++)  cam_lam_disable(c,i);
+    }
     return 1; // success
+  }
   else
     return 0; // failure
+
+  
 }
 
 /********************************************************************/
@@ -429,6 +437,7 @@ void cam16i_rq(const int c, const int n, const int a, const int f, WORD ** d, co
 {
    int i, q, x;
    WORD data;
+   WORD csr;
 
    for (i = 0; i < r; i++) {
       cam16i_q(c, n, a, f, &data, &x, &q);
@@ -444,6 +453,7 @@ void cam24i_rq(const int c, const int n, const int a, const int f, DWORD ** d, c
 {
    int i, q, x;
    DWORD data;
+   WORD csr;
 
    for (i = 0; i < r; i++) {
       cam24i_q(c, n, a, f, &data, &x, &q);
@@ -622,13 +632,23 @@ void cam_crate_zinit(const int c) // tested KO 16-SEP-2005
 /********************************************************************/
 void cam_lam_enable(const int c, const int n) // tested KO 16-SEP-2005
 {
+  int mask;
+
+  mask = ccusb_readReg(ccusb_getCrateStruct(c), REG_LAMMASK);
+  mask |= (1 << (n - 1));
+  ccusb_writeReg(ccusb_getCrateStruct(c), REG_LAMMASK, mask);
   camc(c, n, 0, 26);
+  
 }
 
 /********************************************************************/
 void cam_lam_disable(const int c, const int n) // tested KO 16-SEP-2005
 {
+  int mask;
   camc(c, n, 0, 24);
+  mask = ccusb_readReg(ccusb_getCrateStruct(c), REG_LAMMASK);
+  mask &= ~(1 << (n - 1));
+  ccusb_writeReg(ccusb_getCrateStruct(c), REG_LAMMASK, mask);
 }
 
 /********************************************************************/
@@ -668,8 +688,7 @@ int main(int argc,char*argv[])
 {
   int status;
   int c = 0;
-  int n;
-  void* handle;
+  int i, n;
 
   status = cam_init();
   if (status != 1)
@@ -678,52 +697,38 @@ int main(int argc,char*argv[])
       return 1;
     }
 
-  cam_inhibit_clear(c);
-  cam_inhibit_set(c);
-  sleep(1);
-  cam_inhibit_clear(c);
-
-#if 0
-  for (n=0; n<=24; n++)
-    cam_lam_disable(c,n);
+  // Initialization
+#if 1
+  for (i=0;i<4;i++) {
+    cam_inhibit_set(c);
+    printf("Inhibit Set\n");
+    sleep(1);
+    cam_inhibit_clear(c);
+    printf("Inhibit Clear\n");
+    sleep(1);
+  }
 #endif
-
-  cam_lam_enable(c,22);
 
   ccusb_status(ccusb_getCrateStruct(c));
 
-  while (0)
+  // LAM test
+#if 0
+  for (i=1;i<24;i++)  cam_lam_disable(c,i);
+  while (1)
     {
       unsigned long lam;
+      cam_lam_enable(c,22);
+      cam_lam_enable(c,23);
+      ccusb_status(ccusb_getCrateStruct(c));
+      camc(c,22,0,9);
+      camc(c,22,0,25);
+      sleep(1);
       cam_lam_read(c, &lam);
       printf("lam status 0x%x expected 0x%x\n",lam,1<<(22-1));
-      sleep(1);
-      cam_crate_clear(c);
-      sleep(1);
-      ccusb_status(ccusb_getCrateStruct(c));
     }
+#endif
 
-  if (0)
-    {
-      for (n=0; n<=24; n++)
-  {
-    unsigned long val;
-    cam24i(c,n,0,0,&val);
-    printf("station %d, data 0x%x\n",n,val);
-  }
-    }
-
-  while (0)
-    {
-      for (n=20; n<=22; n++)
-  {
-    int q;
-    camc_q(c,n,0,24,&q);
-    printf("station %d, q %d\n",n,q);
-    sleep(1);
-  }
-    }
-
+  // Scan crate for Read 24 /q/x
   while (0)
     {
       for (n=0; n<=24; n++)
@@ -736,26 +741,17 @@ int main(int argc,char*argv[])
   }
     }
 
+  // Access/Speed test  
+  // cami/o ~370us per access (USB limitation in non-block mode)
   while (0)
     {
-      for (n=20; n<=22; n++)
-  {
-    unsigned long data = 0xdeadbeef;
-    int q, x;
-    cam24o_q(c,n,0,16,data,&x,&q);
-    printf("station %d, data 0x%x, q %d, x %d\n",n,data,q,x);
-    sleep(1);
-  }
-    }
-
-  while (0)
-    {
-      static int count = 0;
-      unsigned long data;
-      cam24i(c,21,0,0,&data);
-      if (count%100 == 0 || data == 0xFFFFFF) printf("count %d, data 0x%06x, %d\n",count,data,data);
-      count++;
-      //sleep(1);
+      static unsigned long data;
+      cam24o(c,19,0,16,0x0);
+      cam24o(c,19,0,16,0x1);
+      cam24o(c,19,0,16,0x0);
+      cam24i(c,22,0,0,&data);
+      cam24o(c,19,0,16,0x2);
+      cam24o(c,19,0,16,0x0);
     }
 
   return 0;
