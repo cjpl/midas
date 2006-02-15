@@ -19,6 +19,7 @@
 typedef struct {
    HANDLE rhandle;
    HANDLE whandle;
+   int SerNo;
 } MUSB_INTERFACE;
 
 #elif defined(HAVE_LIBUSB)
@@ -28,6 +29,7 @@ typedef struct {
 typedef struct {
    usb_dev_handle *dev;
    int usbinterface;
+   int SerNo;
 } MUSB_INTERFACE;
 
 #elif defined(OS_DARWIN)
