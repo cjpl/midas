@@ -65,7 +65,7 @@ Switch IRQ2-7
 #define INP(_p) _inp((unsigned short) (_p))
 #define INPW(_p) _inpw((unsigned short) (_p))
 #elif defined(OS_LINUX)
-#include <asm/io.h>
+#include <sys/io.h>
 #include <unistd.h>
 #define OUTP(_p, _d) outb(_d, _p)
 #define OUTPW(_p, _d) outw(_d, _p)

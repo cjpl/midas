@@ -41,11 +41,11 @@
 #define TCR CAMAC_BASE+0xe
 
 /* Control/Status Register (CSR) Bit Fields */
-#define GO		0x01    /* Start a data transfer        */
-#define NOQ		0x02    /* Q status of last operation   */
-#define NOX		0x04    /* X status of last operation   */
-#define ID1		0x08    /* Interface ID1 + ID 2 Ro      */
-#define ID2		0x10
+#define GO    0x01    /* Start a data transfer        */
+#define NOQ   0x02    /* Q status of last operation   */
+#define NOX   0x04    /* X status of last operation   */
+#define ID1   0x08    /* Interface ID1 + ID 2 Ro      */
+#define ID2   0x10
 #define DONE_ENABLE     0x40    /* Done interrupt enable RW */
 #define DONE            0x80    /* Done Ro */
 #define RFS_ENABLE      0x100   /* Request For Service Int Enable RW */
@@ -55,26 +55,26 @@
 #define TMO             0x2000  /* Timeout info Ro */
 #define ABT             0x4000  /* Abort info Ro */
 #define CERROR          0x8000  /* Error = TMO + ABT Ro */
-#define CSR_RESET_VALUE	(DONE | NOX | NOQ)
-#define MCR_RESET_VALUE	0x00
+#define CSR_RESET_VALUE (DONE | NOX | NOQ)
+#define MCR_RESET_VALUE 0x00
 
 /* Mode Control Register (MCR) Bit Fields 15-6 not used */
-#define AD		0x01    /* Disable Abort on DMA tfer    */
-#define WS1		0x02    /* Word size                    */
-#define WS2		0x04    /* 00=24bit 01=16bit 10=8bit    */
-#define TM1		0x08    /* DMA transfer mode            */
-#define	TM2		0x10    /* 00:Q-stop,   01:Q-ignore
+#define AD    0x01    /* Disable Abort on DMA tfer    */
+#define WS1   0x02    /* Word size                    */
+#define WS2   0x04    /* 00=24bit 01=16bit 10=8bit    */
+#define TM1   0x08    /* DMA transfer mode            */
+#define TM2   0x10    /* 00:Q-stop,   01:Q-ignore
                                    10:Q-repeat, 11:Q-scan       */
-#define BM		0x20    /* Block transfer mode          */
+#define BM    0x20    /* Block transfer mode          */
 
-#define WS_24BIT	0x00
-#define WS_16BIT	WS1
-#define WS_8BIT		WS2
+#define WS_24BIT  0x00
+#define WS_16BIT  WS1
+#define WS_8BIT   WS2
 
-#define Q_STOP_BITS	0x00
-#define Q_IGNORE_BITS	TM1
-#define Q_REPEAT_BITS	TM2
-#define Q_SCAN_BITS	(TM1 | TM2)
+#define Q_STOP_BITS 0x00
+#define Q_IGNORE_BITS TM1
+#define Q_REPEAT_BITS TM2
+#define Q_SCAN_BITS (TM1 | TM2)
 
 
 /* CAMAC Crate Address Register (CCR) field 0-2 for crate 0-7*/
@@ -96,14 +96,14 @@
 #define RDNAF           0x8000  /* READ NAF Wo Initiate K-bus NAF */
 
 /* Bit fields in the 3922 Status Register */
-#define ZINIT	       0x0001
-#define CLEAR		     0x0002
-#define INHIBIT		   0x0004
-#define D_INHIBIT	   0x0040
-#define BUFFER_MODE	 0x0080
-#define ENABLE_SRQ	 0x0100
-#define INT_L24		   0x0200
-#define OFFLINE		   0x2000
+#define ZINIT        0x0001
+#define CLEAR        0x0002
+#define INHIBIT      0x0004
+#define D_INHIBIT    0x0040
+#define BUFFER_MODE  0x0080
+#define ENABLE_SRQ   0x0100
+#define INT_L24      0x0200
+#define OFFLINE      0x2000
 #define LAM_PRESENT  0x8000
 
 /* CAMAC DATA LOW  Register (DL)  lower 16bit data */
@@ -133,7 +133,7 @@
 #define INP(_p) _inp((unsigned short) (_p))
 #define INPW(_p) _inpw((unsigned short) (_p))
 #elif defined(OS_LINUX)
-#include <asm/io.h>
+#include <sys/io.h>
 #include <unistd.h>
 #define OUTP(_p, _d) outb(_d, _p)
 #define OUTPW(_p, _d) outw(_d, _p)
