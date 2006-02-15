@@ -6,7 +6,11 @@
                 Following musbstd
 \********************************************************************/
 #include <stdio.h>
+
+#if defined(OS_LINUX)         // Linux includes
 #include <stdint.h>
+#endif
+
 #include <assert.h>
 
 #include "ccusb.h"    // USB Camac controller header
@@ -24,7 +28,7 @@ static int   gNumCrates = 0;
 #define REG_LAM    12
 #define REG_SERNO  15
 
-MUSB_INTERFACE *myusb[MAX_CCUSB];   // replace gHandle[]
+MUSB_INTERFACE *myusb[MAX_CCUSB];
 
 /********************************************************************/
 int ccusb_init_crate(int c)
@@ -82,7 +86,7 @@ MUSB_INTERFACE *ccusb_getCrateStruct(int crate)
 int ccusb_flush(MUSB_INTERFACE *myusbcrate)
 {
   int count, rd;
-  uint8_t buf[16*1024];
+  char buf[16*1024];
 
   for (count=0; count<1000; count++)
     {
@@ -131,8 +135,8 @@ int ccusb_recover(MUSB_INTERFACE *myusbcrate)
 int ccusb_readReg(MUSB_INTERFACE *myusbcrate, int ireg)
 {
   int rd, wr;
-  static uint8_t  cmd[4];
-  static uint16_t buf[4];
+  static char  cmd[4];
+  static WORD buf[4];
   cmd[0] = 1;
   cmd[1] = 0;
   cmd[2] = ireg;
@@ -171,7 +175,7 @@ int ccusb_readReg(MUSB_INTERFACE *myusbcrate, int ireg)
 int ccusb_writeReg(MUSB_INTERFACE *myusbcrate, int ireg, int value)
 {
   int rd, wr;
-  static uint8_t  cmd[8];
+  static char  cmd[8];
   cmd[0] = 5;
   cmd[1] = 0;
   cmd[2] = ireg;
@@ -208,9 +212,9 @@ int ccusb_writeReg(MUSB_INTERFACE *myusbcrate, int ireg, int value)
 /********************************************************************/
 int ccusb_reset(MUSB_INTERFACE *myusbcrate)
 {
-  int rd, wr;
-  static uint8_t cmd[512];
-  static uint16_t buf[512];
+  int wr;
+  static char cmd[512];
+  static WORD buf[512];
   cmd[0] = 255;
   cmd[1] = 255;
   cmd[2] = 0;
@@ -259,8 +263,8 @@ int ccusb_status(MUSB_INTERFACE *myusbcrate)
 int ccusb_naf(MUSB_INTERFACE *myusbcrate, int n, int a, int f, int d24, int data)
 {
   int rd, wr, bcount;
-  static uint8_t cmd[16];
-  static uint8_t buf[16];
+  static char cmd[16];
+  static char buf[16];
   int naf = f | (a<<5) | (n<<9);
 
   if (d24) naf |= 0x4000;
@@ -425,7 +429,6 @@ void cam16i_rq(const int c, const int n, const int a, const int f, WORD ** d, co
 {
    int i, q, x;
    WORD data;
-   WORD csr;
 
    for (i = 0; i < r; i++) {
       cam16i_q(c, n, a, f, &data, &x, &q);
@@ -441,7 +444,6 @@ void cam24i_rq(const int c, const int n, const int a, const int f, DWORD ** d, c
 {
    int i, q, x;
    DWORD data;
-   WORD csr;
 
    for (i = 0; i < r; i++) {
       cam24i_q(c, n, a, f, &data, &x, &q);
