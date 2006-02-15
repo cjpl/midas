@@ -45,7 +45,7 @@
 #if !defined(__OPTIMIZE__)
 #error Please compile hyt1331.c with the -O flag to make port access possible
 #endif
-#include <asm/io.h>
+#include <sys/io.h>
 #include <unistd.h>
 #include <signal.h>
 #define OUTP(_p, _d) outb(_d, _p)

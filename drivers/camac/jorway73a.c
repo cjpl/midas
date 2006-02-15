@@ -67,7 +67,7 @@ $Id$
 #define INP(_p) _inp((unsigned short) (_p))
 #define INPW(_p) _inpw((unsigned short) (_p))
 #elif defined(OS_LINUX)
-#include <asm/io.h>
+#include <sys/io.h>
 #include <unistd.h>
 #define OUTP(_p, _d) outb(_d, _p)
 #define OUTPW(_p, _d) outw(_d, _p)
@@ -1378,12 +1378,12 @@ int ccctype(int branch, int lserial, int lparall)
 /* #define USESEMAPHORES */
 
 #ifdef USESEMAPHORES
-/* sjy_semops.c				jms 6sep94 */
+/* sjy_semops.c       jms 6sep94 */
 /* 21aug97 das Modified vsd_semops for Linux CAMAC */
 
 /* operations on the semaphores - init, get and put. 
-* sjy_inisem()		called in inicam
-* sjy_getsem,putsem	called to reserve the semaphore
+* sjy_inisem()    called in inicam
+* sjy_getsem,putsem called to reserve the semaphore
 *
 */
 
@@ -1402,8 +1402,8 @@ int ccctype(int branch, int lserial, int lparall)
 #define SJY_FILE "/tmp/sjykeyfile"
 SJY_SEM_TYPE sjy_sem = (SJY_SEM_TYPE) - 1;
 /* Note for flags:
-*	IPC_WAIT is default (dont sepecify IPC_NOWAIT)
-*	SEM_UNDO aids clean up on exit(2), by changing semadj
+* IPC_WAIT is default (dont sepecify IPC_NOWAIT)
+* SEM_UNDO aids clean up on exit(2), by changing semadj
 */
 int sjy_inisem()
 {
