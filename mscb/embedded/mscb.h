@@ -164,7 +164,7 @@ sbit RS485_ENABLE = P3 ^ 5;
 sbit RS485_ENABLE = P3 ^ 5;
 
 /*--------------------------------*/
-#elif defined(SCS_520) || defined(SCS_600) || defined(SCS_700) || defined (SCS_800) || defined (SCS_900) || defined (SCS_910)
+#elif defined(SCS_520) || defined(SCS_600) || defined(SCS_700) || defined (SCS_800) || defined (SCS_900) || defined (SCS_910) || defined (SCS_920)
 #include <c8051F000.h>
 #define CPU_C8051F000
 
