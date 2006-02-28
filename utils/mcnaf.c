@@ -5,7 +5,7 @@
  
   Contents:     CAMAC utility
 
-  $Id:$
+  $Id$
              
 \********************************************************************/
 #include <stdio.h>
@@ -27,6 +27,7 @@
 #define  MAIN  78
 
 #define  CAM_OFF     100
+#define  CAMST       CAM_OFF+30
 #define  CAM16I      CAM_OFF+29
 #define  CAM24I      CAM_OFF+28
 #define  CAM16I_Q    CAM_OFF+27
@@ -62,14 +63,14 @@
 #define  CAM_CRATE_ZINIT    CAM_OFF+0
 
 /* MCStd command list */
-char MCStd[31][32] = {
+char MCStd[32][32] = {
    "CAM_CRATE_ZINIT", "CAM_CRATE_CLEAR", "CAM_INHIBIT_SET", "CAM_INHIBIT_CLEAR",
    "CAM_LAM_CLEAR", "CAM_LAM_DISABLE", "CAM_LAM_READ", "CAM_LAM_ENABLE",
    "CAMC_SN", "CAMC_SA", "CAMC_Q", "CAMC",
    "CAM24O_R", "CAM16O_R", "CAM24O_Q", "CAM16O_Q", "CAM24O", "CAM16O",
    "CAM24I_SN", "CAM16I_SN", "CAM24I_SA", "CAM16I_SA",
    "CAM24I_RQ", "CAM16I_RQ", "CAM24I_R", "CAM16I_R",
-   "CAM24I_Q", "CAM16I_Q", "CAM24I", "CAM16I", ""
+   "CAM24I_Q", "CAM16I_Q", "CAM24I", "CAM16I", "CAMST", ""
 };
 
 /* structure for CAMAC definition */
@@ -175,6 +176,10 @@ void mcstd_func(CAMAC * PP)
       pdd24 = dd24;
       switch (status) {
          /* system */
+      case CAMST:
+         printf("camop\n");
+         camop();
+         break;
       case CAM_LAM_ENABLE:
          cam_lam_enable(p->c, p->n);
          printf("cam_lam_enable:C%i-N%i\n", p->c, p->n);
@@ -434,114 +439,123 @@ INT read_job_file(FILE * pF, INT action, void **job, char *name)
 /*--------------------------------------------------------------------*/
 INT cnafsub(BOOL cmd_mode, char *cmd)
 {
-   char str[128], line[128];
-   INT status, j;
-   CAMAC *P, *p = NULL, *job;
+  char str[128], line[128];
+  INT status, j;
+  CAMAC *P, *p = NULL, *job;
 
-   /* Loop return label */
-   if (jobflag) {
-      jobflag = FALSE;
-   }
+  /* Loop return label */
+  if (jobflag) {
+    jobflag = FALSE;
+  }
 
-   /* Load default CAMAC */
-   P = Prompt;
-   while (1) {
-      if (!cmd_mode) {
-         make_display_string(MAIN, P, addr);
-         /* prompt */
-         printf("mCNAF> [%s] :", addr);
-         ss_gets(str, 128);
-      } else {
-         strcpy(str, cmd);
-      }
+  /* Load default CAMAC */
+  P = Prompt;
+  while (1) {
+    if (!cmd_mode) {
+      make_display_string(MAIN, P, addr);
+      /* prompt */
+      printf("mCNAF> [%s] :", addr);
+      ss_gets(str, 128);
+    } else {
+      strcpy(str, cmd);
+    }
 
-      /* decode line */
+    /* decode line */
+    status = decode_line(P, str);
+    if (status == QUIT)
+      return status;
+    else if (status == MCSTD) {
+      mcstd_func(P);
       status = decode_line(P, str);
-      if (status == QUIT)
-         return status;
-      else if (status == MCSTD) {
-         mcstd_func(P);
-         status = decode_line(P, str);
-      } else if (status == HELP)
-         help_page(MAIN);
-      else if (status == JOB) {
-         if (!cmd_mode) {
-            /* interactive session, display default job name */
-            printf("\nmCNAF> Job file name [%s]:", job_name);
-            ss_gets(line, 128);
-            if (strlen(line) == 0)
-               strcpy(line, job_name);  // Use default
-            else {
-               strcpy(job_name, line);
-            }
-         } else {
-            /* from command line, skip @ */
-            strcpy(line, &str[1]);
-         }
-         /* Check if file exists */
-         status = read_job_file(pF, CHECK, (void **) &job, line);
-         if (status == JOB)
-            status = read_job_file(pF, READ, (void **) &job, line);
+    } else if (status == HELP)
+      help_page(MAIN);
+    else if (status == JOB) {
+      if (!cmd_mode) {
+        /* interactive session, display default job name */
+        printf("\nmCNAF> Job file name [%s]:", job_name);
+        ss_gets(line, 128);
+        if (strlen(line) == 0)
+          strcpy(line, job_name);  // Use default
+        else {
+          strcpy(job_name, line);
+        }
+      } else {
+        /* from command line, skip @ */
+        strcpy(line, &str[1]);
       }
+      /* Check if file exists */
+      status = read_job_file(pF, CHECK, (void **) &job, line);
+      if (status == JOB)
+        status = read_job_file(pF, READ, (void **) &job, line);
+    }
 
-      if (status == LOOP || status == JOB) {
-         for (j = 0; j < P->r; j++) {
-            if (status == LOOP)
-               p = P;
-            if (status == JOB)
-               p = job;
-            while (p->m) {
-               if (p->n == 28 || p->n == 29 || p->n == 30)
-                  cc_services(p);
-               else if (p->m == 24)     /* Actual 24 bits CAMAC operation */
-                  if (p->f < 16)
-                     cam24i_q(p->c, p->n, p->a, p->f, &p->d24, &p->x, &p->q);
-                  else
-                     cam24o_q(p->c, p->n, p->a, p->f, p->d24, &p->x, &p->q);
-               else /* Actual 16 bits CAMAC operation */ if (p->f < 16)
-                  cam16i_q(p->c, p->n, p->a, p->f, &p->d16, &p->x, &p->q);
-               else
-                  cam16o_q(p->c, p->n, p->a, p->f, p->d16, &p->x, &p->q);
-               make_display_string(MAIN, p, addr);
+    if (status == LOOP || status == JOB) {
+      for (j = 0; j < P->r; j++) {
+        if (status == LOOP)
+          p = P;
+        if (status == JOB)
+          p = job;
+        while (p->m) {
+          if (p->n == 28 || p->n == 29 || p->n == 30)
+            cc_services(p);
+          else if (p->m == 24) {    /* Actual 24 bits CAMAC operation */
+            if (p->f < 8)
+              cam24i_q(p->c, p->n, p->a, p->f, &p->d24, &p->x, &p->q);
+            else if (p->f < 16)
+              camc_q(p->c, p->n, p->a, p->f, &p->q);
+            else if (p->f < 24)
+              cam24o_q(p->c, p->n, p->a, p->f, p->d24, &p->x, &p->q);
+            else 
+              camc_q(p->c, p->n, p->a, p->f, &p->q);
+          }
+          else {
+            if (p->f < 16)  /* Actual 16 bits CAMAC operation */ 
+              cam16i_q(p->c, p->n, p->a, p->f, &p->d16, &p->x, &p->q);
+            else if (p->f < 24)
+              cam16o_q(p->c, p->n, p->a, p->f, p->d24, &p->x, &p->q);
+            else 
+              camc_q(p->c, p->n, p->a, p->f, &p->q);
+          }
+          make_display_string(MAIN, p, addr);
 
-               /* Result display */
-               if (p->r > 1) {
-                  /* repeat mode */
-                  if (status == JOB) {
-                     if (!cmd_mode)
-                        printf("\nmCNAF> [%s]", addr);
-                     if (p->w != 0)
-                        ss_sleep(p->w);
-                  } else {
-                     if (!cmd_mode)
-                        printf("mCNAF> [%s] <-%03i\n", addr, j + 1);
-                     if (p->w != 0)
-                        ss_sleep(p->w);
-                     if (j > p->r - 1)
-                        break;
-                  }
-               } else {
-                  /* single command */
-                  if (status == JOB) {
-                     if (!cmd_mode)
-                        printf("mCNAF> [%s]\n", addr);
-                     if (p->w != 0)
-                        ss_sleep(p->w);
-                  }
-               }
-               p++;
+          /* Result display */
+          if (p->r > 1) {
+            /* repeat mode */
+            if (status == JOB) {
+              if (!cmd_mode)
+                printf("\nmCNAF> [%s]", addr);
+              if (p->w != 0)
+                ss_sleep(p->w);
+            } else {
+              if (!cmd_mode)
+                printf("mCNAF> [%s] <-%03i\n", addr, j + 1);
+              if (p->w != 0)
+                ss_sleep(p->w);
+              if (j > p->r - 1)
+                break;
             }
-         };
-         if (status == JOB) {
-            free(job);
-            if (!cmd_mode)
-               printf("\n");
-         }
+          } else {
+            /* single command */
+            if (status == JOB) {
+              if (!cmd_mode)
+                printf("mCNAF> [%s]\n", addr);
+              if (p->w != 0)
+                ss_sleep(p->w);
+            }
+          }
+          p++;
+        }
+      };
+      if (status == JOB) {
+        free(job);
+        if (!cmd_mode)
+          printf("\n");
       }
-      if (cmd_mode)
-         break;
-   }
-   return status;
+    }
+    if (cmd_mode)
+      break;
+  }
+  return status;
 }
 
 /*--------------------------------------------------------------------*/
