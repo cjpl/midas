@@ -25,7 +25,7 @@
 #
 #  Author:  Pierre-Andre Amaudruz Data Acquisition Group
 # 
-#  $Id:$
+#  $Id$
 #
 #
 
@@ -76,13 +76,13 @@ mcnaf: mcnaf.o camacrpc.o
 mcnaf.o: mcnaf.c
 	$(CC) $(CFLAGS) $(INCLUDES) $(OSFLAGS) -c -o $@ $<
 
-$(DRIVER).o: $(DRV_DIR)/bus/$(DRIVER).c
+$(DRIVER).o: $(DRV_DIR)/camac/$(DRIVER).c
 	$(CC) $(CFLAGS) $(INCLUDES) $(OSFLAGS) -c -o $@ $<
 
-camacrpc.o: $(DRV_DIR)/bus/camacrpc.c
+camacrpc.o: $(DRV_DIR)/camac/camacrpc.c
 	$(CC) $(CFLAGS) $(INCLUDES) $(OSFLAGS) -c -o $@ $<
 
-camaclx.o: $(DRV_DIR)/bus/camaclx.c
+camaclx.o: $(DRV_DIR)/camac/camaclx.c
 	$(CC) $(CFLAGS) $(INCLUDES) $(OSFLAGS) -c -o $@ $<
 
 install: all
