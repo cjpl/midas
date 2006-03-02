@@ -757,4 +757,7 @@ INLINE void cam_lam_read(const int c, DWORD * lam)
 INLINE void cam_lam_clear(const int c, const int n)
 {
 }
+INLINE void cam_op()
+{
+}
 #endif

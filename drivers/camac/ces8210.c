@@ -536,7 +536,7 @@ void gl(void)
 }
 
 /*---------------------------------------------------------------*/
-void camop(void)
+void cam_op(void)
 {
    csr();
    car();
@@ -573,7 +573,7 @@ int main () {
   // Branch Status
 #if 1
   {
-    camop(); 
+    cam_op(); 
     for(i=1;i<8;i++)
       printf("camc_chk(%d): %d\n", i, camc_chk(i));
   }

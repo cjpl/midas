@@ -560,5 +560,8 @@ void cam_interrupt_attach(const int c, const int n, void (*isr) (void))
 void cam_interrupt_detach(const int c, const int n)
 {
 }
+void cam_op()
+{
+}
 
 /*------------------------------------------------------------------*/

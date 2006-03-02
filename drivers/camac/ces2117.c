@@ -220,6 +220,9 @@ void cam_init(void)
 void cam_exit(void)
 {
 };
+void cam_op()
+{
+};
 INLINE void cam_set_inhibit(int c)
 {
    *((unsigned long *) 0xC9E7A4) = 0;

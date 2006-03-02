@@ -193,3 +193,6 @@ INLINE void cam_glint_attach(int lam, void (*isr) (void))
 INLINE void cam_glint_detach()
 {
 }
+INLINE void cam_op()
+{
+}
