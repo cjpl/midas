@@ -674,3 +674,6 @@ INLINE int cam_init_rpc(char *host_name, char *exp_name, char *fe_name, char *cl
 }
 
 /*------------------------------------------------------------------*/
+INLINE void cam_op()
+{
+}
