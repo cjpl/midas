@@ -13,6 +13,8 @@
 *********************************************************************/
 
 #include    <stdio.h>
+#include    <stdlib.h>
+#include    <string.h>
 
 #ifdef _MSC_VER
 #define BT_NTDRIVER
@@ -138,9 +140,9 @@ DWORD mvme_read_value(MVME_INTERFACE *vme, mvme_addr_t vme_addr)
 
    ptab = ((BT617_TABLE *)vme->table)+vme->handle;
 
-   if (vme->dmode = MVME_DMODE_D8)
+   if (vme->dmode == MVME_DMODE_D8)
       n = 1;
-   else if (vme->dmode = MVME_DMODE_D16)
+   else if (vme->dmode == MVME_DMODE_D16)
       n = 2;
    else
       n = 4;
@@ -180,9 +182,9 @@ int mvme_write_value(MVME_INTERFACE *vme, mvme_addr_t vme_addr, DWORD value)
  
    ptab = ((BT617_TABLE *)vme->table)+vme->handle;
 
-   if (vme->dmode = MVME_DMODE_D8)
+   if (vme->dmode == MVME_DMODE_D8)
       n = 1;
-   else if (vme->dmode = MVME_DMODE_D16)
+   else if (vme->dmode == MVME_DMODE_D16)
       n = 2;
    else
       n = 4;
