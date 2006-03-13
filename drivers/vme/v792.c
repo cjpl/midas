@@ -143,6 +143,40 @@ void v792_EvtCntReset(MVME_INTERFACE *mvme, DWORD base)
 }
 
 /*****************************************************************/
+void v792_RegBit2Set(MVME_INTERFACE *mvme, DWORD base, int pat)
+{
+  int cmode;
+  mvme_get_dmode(mvme, &cmode);
+  mvme_set_dmode(mvme, MVME_DMODE_D16);
+  mvme_write_value(mvme, base+V792_BIT_SET2_RW, pat);
+  mvme_set_dmode(mvme, cmode);
+}
+
+/*****************************************************************/
+void v792_RegBit2Clear(MVME_INTERFACE *mvme, DWORD base, int pat)
+{
+  int cmode;
+  mvme_get_dmode(mvme, &cmode);
+  mvme_set_dmode(mvme, MVME_DMODE_D16);
+  mvme_write_value(mvme, base+V792_BIT_CLEAR2_WO, pat);
+  mvme_set_dmode(mvme, cmode);
+}
+
+/*****************************************************************/
+void v792_DelayClearSet(MVME_INTERFACE *mvme, DWORD base, int delay)
+{
+  int cmode, n;
+
+  if (delay < 7) delay = 7;
+  n = 32 * (delay - 7);
+  if (n > 0x3F0) n = 0x3F0;
+  mvme_get_dmode(mvme, &cmode);
+  mvme_set_dmode(mvme, MVME_DMODE_D16);
+  mvme_write_value(mvme, base+V792_DELAY_CLEAR_RW, n);
+  mvme_set_dmode(mvme, cmode);
+}
+
+/*****************************************************************/
 void v792_SingleShotReset(MVME_INTERFACE *mvme, DWORD base)
 {
   int cmode;
@@ -175,6 +209,8 @@ void  v792_Status(MVME_INTERFACE *mvme, DWORD base)
   printf("v792 Status for %lx\n", base);
   status = mvme_read_value(mvme, base+V792_FIRM_REV);
   printf("Firmware revision: 0x%x\n", status);
+  status = mvme_read_value(mvme, base+V792_DELAY_CLEAR_RW);
+  printf(" Delay Clear  :%d  [%f]\n", (status & 0x1FF), ((float)(status & 0x1FF)/32.) + 7.);
   status = v792_CSR1Read(mvme, base);
   printf("DataReady    :%s\t", status & 0x1 ? "Y" : "N");
   printf(" - Global Dready:%s\t", status & 0x2 ? "Y" : "N");
@@ -213,7 +249,6 @@ int main () {
   int status, csr, i, cnt;
   DWORD    dest[1000];
   WORD     threshold[32];
-
   // Test under vmic   
   status = mvme_open(&myvme, 0);
 
@@ -263,6 +298,6 @@ int main () {
 
   status = mvme_close(myvme);
   return 1;
-}	
+} 
 #endif
 
