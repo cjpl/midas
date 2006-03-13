@@ -133,9 +133,6 @@ data modes
 #define MVME_AM_DEFAULT MVME_AM_A32
 
 /*---- interface structure -----------------------------------------*/
-
-#define MAX_CRATE         10             /**< maximum number of crates */
-
 typedef struct {
    int  handle;              /**< internal handle */
    int  index;               /**< index of interface 0..n */
