@@ -12,7 +12,7 @@
  *  Application : Used in any camac driver
  *  Author:  Pierre-Andre Amaudruz Data Acquisition Group
  *
- *  $Id:$
+ *  $Id$
  *---------------------------------------------------------------------------*/
 
 /**dox***************************************************************/
@@ -743,8 +743,10 @@ Detach service routine from LAM.
 @param n station number
 @return void
 */
-   EXTERNAL INLINE void EXPRT cam_interrupt_detach(const int c, const int n);
-
+  EXTERNAL INLINE void EXPRT cam_interrupt_detach(const int c, const int n);
+  EXTERNAL INLINE void EXPRT camop() {
+  };
+  
 #ifdef __cplusplus
 }
 #endif
