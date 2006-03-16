@@ -18,13 +18,25 @@ OSTYPE = linux
 endif
 
 # directory where mxml.c and strlcpy.c resides
+ifdef NOMIDAS
+MXMLDIR       = mxml/
+else
 MXMLDIR       = ../../mxml/
+endif
 
 # directory where musbstd.h resides
+ifdef NOMIDAS
+MIDASINC      = midas/include
+else
 MIDASINC      = $(MIDASSYS)/include
+endif
 
 # directory where musbstd.c resides
+ifdef NOMIDAS
+USBDIR        = midas/drivers/usb/
+else
 USBDIR        = $(MIDASSYS)/drivers/usb/
+endif
 
 OUTNAME       = msc 
 CC            = gcc -g -O2
