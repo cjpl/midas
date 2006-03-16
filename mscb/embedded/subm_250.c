@@ -333,9 +333,9 @@ void main(void)
          RSTSRC = 0x86; 
    
       /* reboot if 10 sec no activity */
-      if (last > 0 && time() - last > 1000) {
-         RSTSRC = 0x10;
-      }
+      //if (last > 0 && time() - last > 1000) {
+      //   RSTSRC = 0x10;
+      //}
 
       /* check for incoming USB data */
       if (n_usb_rx) {
