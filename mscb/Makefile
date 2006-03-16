@@ -1,10 +1,18 @@
-#
+########################################################
 #  Makefile for msc executable under linux
 #
-#  27.11.2002
-#  Tomasz Brys
-#  tomasz.brys@psi.ch
+#  Enter just 
+#    "make" 
+#  if midas and mxml are already installed on 
+#  your system, or enter
+#    "make NOMIDAS=1" 
+#  if you have no midas installed and got mscb 
+#  from the mscbxxx.zip file. In that case, the 
+#  files the mxml and midas subdirectories below 
+#  the mscb directory are used.
 #
+#
+#  $Id:$
 
 # get OS type from shell
 OSTYPE = $(shell uname)
