@@ -1,18 +1,15 @@
 ########################################################
 #  Makefile for msc executable under linux
 #
-#  Enter just 
-#    "make" 
-#  if midas and mxml are already installed on 
-#  your system, or enter
-#    "make NOMIDAS=1" 
-#  if you have no midas installed and got mscb 
-#  from the mscbxxx.zip file. In that case, the 
-#  files the mxml and midas subdirectories below 
+#  If the environment variable MIDASSYS is defined,
+#  the mxml.c, strlcpy, and musbstd.c files are
+#  taken from there. Otherweise the files from the 
+#  mxml/ and midas/ subdirectories below 
 #  the mscb directory are used.
 #
 #
-#  $Id:$
+#  $Id$
+########################################################
 
 # get OS type from shell
 OSTYPE = $(shell uname)
@@ -26,24 +23,24 @@ OSTYPE = linux
 endif
 
 # directory where mxml.c and strlcpy.c resides
-ifdef NOMIDAS
-MXMLDIR       = mxml/
-else
+ifdef MIDASSYS
 MXMLDIR       = ../../mxml/
+else
+MXMLDIR       = mxml/
 endif
 
 # directory where musbstd.h resides
-ifdef NOMIDAS
-MIDASINC      = midas/include
-else
+ifdef MIDASSYS
 MIDASINC      = $(MIDASSYS)/include
+else
+MIDASINC      = midas/include
 endif
 
 # directory where musbstd.c resides
-ifdef NOMIDAS
-USBDIR        = midas/drivers/usb/
-else
+ifdef MIDASSYS
 USBDIR        = $(MIDASSYS)/drivers/usb/
+else
+USBDIR        = midas/drivers/usb/
 endif
 
 OUTNAME       = msc 
