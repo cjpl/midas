@@ -10,7 +10,12 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <unistd.h>
 #include "vmeio.h"
+
+#if defined(OS_LINUX)
+extern INT_INFO int_info;
+#endif
 
 /********************************************************************/
 /**
@@ -106,10 +111,51 @@ void vmeio_StrobeClear(MVME_INTERFACE *myvme, DWORD base)
 }
 
 /********************************************************************/
+/**
+Enable Interrupt source.
+Only any of the first 8 inputs can generate interrupt.
+@param myvme vme structure
+@param base  VMEIO base address
+@param input inputs 0..7 (LSB)
+@return void
+*/
+void vmeio_IntEnable(MVME_INTERFACE *myvme, DWORD base, int input)
+{
+   mvme_write_value(myvme, base+VMEIO_IRQENBL, input);
+}
+
+/********************************************************************/
+/**
+Select Interrupt source and arm interrupt
+The CSR should be reset before this operation.
+In Sync mode the strobe and the input have to be in coincidence.
+In Async mode a logical level on the input will trigger the interrupt.
+@param myvme vme structure
+@param base  VMEIO base address
+@param input inputs 0..7 if 1=> Sync, 0=> Async
+@return void
+*/
+void vmeio_IntRearm(MVME_INTERFACE *myvme, DWORD base, int input)
+{
+  mvme_write_value(myvme, base+VMEIO_INTSRC, input);
+}
+
+
+/********************************************************************/
+/********************************************************************/
+static void myisrvmeio(int sig, siginfo_t * siginfo, void *extra)
+{
+  fprintf(stderr, "myisrvmeio interrupt received \n");
+  fprintf(stderr, "interrupt: level:%d Vector:0x%x\n"
+	  , int_info.level, siginfo->si_value.sival_int & 0xFF);
+}
+
+
 #ifdef MAIN_ENABLE
 int main () {
   
   MVME_INTERFACE *myvme;
+  int myinfo = VME_INTERRUPT_SIGEVENT;
 
   DWORD VMEIO_BASE = 0x780000;
   int status, csr;
@@ -127,28 +173,67 @@ int main () {
   csr = vmeio_CsrRead(myvme, VMEIO_BASE);
   printf("CSR Buffer: 0x%x\n", csr);
   
-  // Set 0xF in pulse mode
-  vmeio_OutputSet(myvme, VMEIO_BASE, 0xF);
-  
-  // Write latch mode
-  vmeio_AsyncWrite(myvme, VMEIO_BASE, 0xc);
-  vmeio_AsyncWrite(myvme, VMEIO_BASE, 0x0);
-  
-  // Read from the Async Reg
-  data = vmeio_AsyncRead(myvme, VMEIO_BASE);
-  printf("Async Buffer: 0x%x\n", data);
-  
-  // Read from the Sync Reg
-  data = vmeio_SyncRead(myvme, VMEIO_BASE);
-  printf("Sync Buffer: 0x%x\n", data);
-  
-  
-  for (;;) {
-    // Write pulse
-    vmeio_SyncWrite(myvme, VMEIO_BASE, 0xF);
-    vmeio_SyncWrite(myvme, VMEIO_BASE, 0xF);
+  if (0) {
+    // Set 0xF in pulse mode
+    vmeio_OutputSet(myvme, VMEIO_BASE, 0xF);
+    
+    // Write latch mode
+    vmeio_AsyncWrite(myvme, VMEIO_BASE, 0xc);
+    vmeio_AsyncWrite(myvme, VMEIO_BASE, 0x0);
+    
+    // Read from the Async Reg
+    data = vmeio_AsyncRead(myvme, VMEIO_BASE);
+    printf("Async Buffer: 0x%x\n", data);
+    
+    // Read from the Sync Reg
+    data = vmeio_SyncRead(myvme, VMEIO_BASE);
+    printf("Sync Buffer: 0x%x\n", data);
+    
+    for (;;) {
+      // Write pulse
+      vmeio_SyncWrite(myvme, VMEIO_BASE, 0xF);
+      vmeio_SyncWrite(myvme, VMEIO_BASE, 0xF);
+    }
   }
 
+  // Interrupt test 
+  if (0) {
+    mvme_interrupt_attach(myvme, 7, 0x80, myisrvmeio, &myinfo);
+
+    // Pulse on out 2 only
+    vmeio_OutputSet(myvme, VMEIO_BASE, 0x2);
+
+    // Enable Interrupts
+    vmeio_IntEnable(myvme, VMEIO_BASE, 0x3);
+
+    // Clear CSR
+    vmeio_StrobeClear(myvme, VMEIO_BASE);
+
+    // Select type and Rearm
+    vmeio_IntRearm(myvme, VMEIO_BASE, 3);
+
+    // Delay int generation
+    //    udelay(1000000);
+
+    // Write latch mode
+    vmeio_AsyncWrite(myvme, VMEIO_BASE, 0xc);
+    vmeio_AsyncWrite(myvme, VMEIO_BASE, 0x0);
+
+    mvme_interrupt_detach(myvme, 1, 0x00, &myinfo);
+  }
+
+  // Interrupt test 
+  if (1) {
+    mvme_interrupt_attach(myvme, 7, 0x80, myisrvmeio, &myinfo);
+
+    for (;;) {
+      printf(".");
+      sleep(1);
+      fflush(stdout);
+    }
+
+    mvme_interrupt_detach(myvme, 1, 0x00, &myinfo);
+  }
   status = mvme_close(myvme);
   return 1;
 }	
