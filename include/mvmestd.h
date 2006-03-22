@@ -327,8 +327,14 @@ Get current Data mode.
 @param *mode returned BLT mode
 @return MVME_SUCCESS
 */
-int EXPRT mvme_get_blt(MVME_INTERFACE *vme, int *mode);
-
+  int EXPRT mvme_get_blt(MVME_INTERFACE *vme, int *mode);
+  int EXPRT mvme_interrupt_generate(MVME_INTERFACE *mvme, int level, int vector, void *info);
+  int EXPRT mvme_interrupt_attach(MVME_INTERFACE *mvme, int level, int vector
+                                  , void (*isr)(int, siginfo_t*, void *), void *info);
+  int EXPRT mvme_interrupt_detach(MVME_INTERFACE *mvme, int level, int vector, void *info);
+  int EXPRT mvme_interrupt_enable(MVME_INTERFACE *mvme, int level, int vector, void *info);
+  int EXPRT mvme_interrupt_disable(MVME_INTERFACE *mvme, int level, int vector, void *info);
+  
 #ifdef __cplusplus
 }
 #endif
