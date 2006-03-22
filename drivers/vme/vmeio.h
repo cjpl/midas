@@ -7,13 +7,12 @@
                 
   $Log: vmeio.h,v $
 *********************************************************************/
+#include "vmicvme.h"
 
-#include "mvmestd.h"
+#ifndef __VMEIO_INCLUDE_H__
+#define __VMEIO_INCLUDE_H__
 
-#ifndef VMEIO_INCLUDE_H
-#define VMEIO_INCLUDE_H
-
-#define VMEIO_IRQENBL    (0x00
+#define VMEIO_IRQENBL    (0x00)
 #define VMEIO_INTSRC     (0x04)
 #define VMEIO_OUTSET     (0x08)
 #define VMEIO_OUTPULSE   (0x0c)
@@ -30,5 +29,6 @@ int  vmeio_CsrRead(MVME_INTERFACE *mvme, DWORD base);
 int  vmeio_AsyncRead(MVME_INTERFACE *myvme, DWORD base);
 int  vmeio_SyncRead(MVME_INTERFACE *myvme, DWORD base);
 void vmeio_StrobeClear(MVME_INTERFACE *mvme, DWORD base);
-
-#endif  //  VMEIO_INCLUDE_H
+void vmeio_IntEnable(MVME_INTERFACE *myvme, DWORD base, int input);
+void vmeio_IntRearm(MVME_INTERFACE *myvme, DWORD base, int input);
+#endif
