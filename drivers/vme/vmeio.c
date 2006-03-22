@@ -224,6 +224,25 @@ int main () {
 
   // Interrupt test 
   if (1) {
+    /*
+      start the code for listening to the IRQ7 vector:0x80
+      use the script sample below to issue the interrupt.
+      # set output latch mode
+      vme_poke -a VME_A24UD -d VME_D32 -A 0x780008 0x0
+      # write 1 latch on output 1  --> interrupt generated
+      vme_poke -a VME_A24UD -d VME_D32 -A 0x780010 0x1
+      # Enable interrupt 1
+      vme_poke -a VME_A24UD -d VME_D32 -A 0x780000 0x1  
+      # Clear CSR
+      vme_poke -a VME_A24UD -d VME_D32 -A 0x78001c 0x0
+      # Rearm interrupt source for Async
+      vme_poke -a VME_A24UD -d VME_D32 -A 0x780004 0x0
+      # write 0 latch on output 1  
+      vme_poke -a VME_A24UD -d VME_D32 -A 0x780010 0x0
+      # display CSR
+      vme_peek -a VME_A24UD -d VME_D32 -A 0x78001c
+     */
+
     mvme_interrupt_attach(myvme, 7, 0x80, myisrvmeio, &myinfo);
 
     for (;;) {
