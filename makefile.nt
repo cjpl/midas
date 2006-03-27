@@ -6,7 +6,7 @@
 #  Contents:     Makefile for MIDAS binaries and examples under 
 #                Windows NT
 #
-# $Id:$
+# $Id$
 #
 #####################################################################
 
@@ -150,8 +150,8 @@ $(BIN_DIR)/mhist.exe:  $(LIBRARY) $(UTL_DIR)/mhist.c
 	$(CC) $(CFLAGS) $(OSFLAGS) /Fe$(BIN_DIR)/mhist.exe $(UTL_DIR)/mhist.c $(LIBRARY) $(LIBS)
 $(BIN_DIR)/mstat.exe:  $(LIBRARY) $(UTL_DIR)/mstat.c 
 	$(CC) $(CFLAGS) $(OSFLAGS) /Fe$(BIN_DIR)/mstat.exe $(UTL_DIR)/mstat.c $(LIBRARY) $(LIBS) wsock32.lib
-$(BIN_DIR)/mcnaf.exe:$(LIBRARY) $(UTL_DIR)/mcnaf.c $(DRV_DIR)/bus/camacrpc.c
-	$(CC) $(CFLAGS) $(OSFLAGS) /Fe$(BIN_DIR)/mcnaf.exe $(UTL_DIR)/mcnaf.c $(DRV_DIR)/bus/camacrpc.c $(LIBRARY) wsock32.lib $(LIBS)
+$(BIN_DIR)/mcnaf.exe:$(LIBRARY) $(UTL_DIR)/mcnaf.c $(DRV_DIR)/camac/camacrpc.c
+	$(CC) $(CFLAGS) $(OSFLAGS) /Fe$(BIN_DIR)/mcnaf.exe $(UTL_DIR)/mcnaf.c $(DRV_DIR)/camac/camacrpc.c $(LIBRARY) wsock32.lib $(LIBS)
 
 
 clean:
