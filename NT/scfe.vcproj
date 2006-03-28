@@ -344,6 +344,9 @@
 				</FileConfiguration>
 			</File>
 			<File
+				RelativePath="..\drivers\usb\musbstd.c">
+			</File>
+			<File
 				RelativePath="..\..\mxml\mxml.c">
 			</File>
 			<File
