@@ -4535,7 +4535,7 @@ typedef struct {
    Height    Height in pixel                     100
    Direction 0(vertical)/1(horiz.)               0
    Axis      Draw axis 0(none)/1(left)/2(right)  1
-   Logscale  Draw logarithmix axis               n
+   Logscale  Draw logarithmic axis               n
    Min       Min value for axis                  0
    Max       Max value for axis                  10
    FGColor   Foreground color RRGGBB             000000
@@ -7908,7 +7908,7 @@ void show_hist_config_page(char *path)
           ("<tr><td bgcolor=\"#E0E0E0\" colspan=6><input type=checkbox checked name=log_axis value=1>", str);
    else
       rsprintf("<tr><td bgcolor=\"#E0E0E0\" colspan=6><input type=checkbox name=log_axis value=1>", str);
-   rsprintf("&nbsp;&nbsp;Logarighmic Y axis</td></tr>\n");
+   rsprintf("&nbsp;&nbsp;Logarithmic Y axis</td></tr>\n");
 
    /* run_markers */
    if (equal_ustring(cmd, "refresh"))

@@ -269,7 +269,8 @@ struct {
    'd', "              Debug flag when started the analyzer fron a debugger.\n\
                    Prevents the system to kill the analyzer when the\n\
                    debugger stops at a breakpoint", &clp.debug, TID_BOOL, 0}, {
-   'D', "              Start analyzer as a daemon in the background (UNIX only).", &clp.daemon, TID_BOOL, 0}, {
+   'D', "              Start analyzer as a daemon in the background (UNIX only).",
+          &clp.daemon, TID_BOOL, 0}, {
    'e', "<experiment>  MIDAS experiment to connect to", clp.exp_name, TID_STRING, 1}, {
    'f', "              Filter mode. Write original events to output file\n\
                    only if analyzer accepts them (doesn't return ANA_SKIP).\n", &clp.filter, TID_BOOL, 0}, {
@@ -302,14 +303,16 @@ struct {
                    flag must be used with a '%05d' in the input file name.", clp.run_number, TID_INT, 2},
 #ifdef HAVE_PVM
    {
-   't', "<n>           Parallelize analyzer using <n> tasks with PVM.", &clp.n_task, TID_INT, 1}, {
-   'b', "<n>           Buffer size for parallelization in kB.", &clp.pvm_buf_size, TID_INT, 1},
+   't', "<n>           Parallelize analyzer using <n> tasks with PVM.", &clp.n_task,
+          TID_INT, 1}, {
+   'b', "<n>           Buffer size for parallelization in kB.", &clp.pvm_buf_size,
+          TID_INT, 1},
 #endif
 #ifdef USE_ROOT
    {
-   's', "<port>        Start ROOT histo server under <port>. If port==0, don't start server.",
-          &clp.root_port, TID_INT, 1}, {
-   'R', "              Start ROOT interpreter after analysis has finished.", &clp.start_rint, TID_BOOL, 0},
+   's', "<port>        Start ROOT histo server under <port>. If port==0, don't start server.", &clp.root_port, TID_INT, 1}, {
+   'R', "              Start ROOT interpreter after analysis has finished.",
+          &clp.start_rint, TID_BOOL, 0},
 #endif
    {
    'v', "              Verbose output.", &clp.verbose, TID_BOOL, 0}, {
@@ -395,9 +398,11 @@ INT getparam(int argc, char **argv)
 
          do {
             if (clp_descrip[j].type == TID_STRING)
-               strcpy((char *) clp_descrip[j].data + clp_descrip[j].index * 256, argv[index]);
+               strcpy((char *) clp_descrip[j].data + clp_descrip[j].index * 256,
+                      argv[index]);
             else
-               db_sscanf(argv[index], clp_descrip[j].data, &size, clp_descrip[j].index, clp_descrip[j].type);
+               db_sscanf(argv[index], clp_descrip[j].data, &size, clp_descrip[j].index,
+                         clp_descrip[j].type);
 
             if (clp_descrip[j].n > 1)
                clp_descrip[j].index++;
@@ -754,6 +759,7 @@ INT book_ntuples(void)
    INT index, i, j, status, n_tag, size, id;
    HNDLE hkey;
    KEY key;
+   DWORD *t;
    char ch_tags[2000];
    char rw_tag[512][8];
    char str[80], str2[80], key_name[NAME_LENGTH], block_name[NAME_LENGTH];
@@ -786,10 +792,10 @@ INT book_ntuples(void)
    sprintf(str, "/%s/Bank switches", analyzer_name);
    status = db_find_key(hDB, 0, str, &hkey);
    if (status != DB_SUCCESS) {
-     cm_msg(MERROR, "book_ntuples", "Cannot find key \'%s\', status %d", str, status);
-     return SUCCESS;
+      cm_msg(MERROR, "book_ntuples", "Cannot find key \'%s\', status %d", str, status);
+      return SUCCESS;
    }
-   
+
    db_open_record(hDB, hkey, NULL, 0, MODE_READ, banks_changed, NULL);
 
    if (!clp.rwnt) {
@@ -798,17 +804,21 @@ INT book_ntuples(void)
       /* go through all analyzer requests (events) */
       for (index = 0; analyze_request[index].event_name[0]; index++) {
          /* book N-tuple with evend ID */
-         HBNT(analyze_request[index].ar_info.event_id, analyze_request[index].event_name, bstr);
+         HBNT(analyze_request[index].ar_info.event_id, analyze_request[index].event_name,
+              bstr);
 
          /* book run number/event number/time */
          strcpy(str, "Number");
          strcpy(str2, "Run:U*4,Number:U*4,Time:U*4");
-         HBNAME(analyze_request[index].ar_info.event_id, str, (int *) &analyze_request[index].number, str2);
+         t = &analyze_request[index].number.run;
+         HBNAME(analyze_request[index].ar_info.event_id, str, t, str2);
 
          bank_list = analyze_request[index].bank_list;
          if (bank_list == NULL) {
             /* book fixed event */
-            event_def = db_get_event_definition((short int) analyze_request[index].ar_info.event_id);
+            event_def =
+                db_get_event_definition((short int) analyze_request[index].ar_info.
+                                        event_id);
             if (event_def == NULL) {
                cm_msg(MERROR, "book_ntuples", "Cannot find definition of event %s in ODB",
                       analyze_request[index].event_name);
@@ -827,7 +837,8 @@ INT book_ntuples(void)
                strcpy(str, key.name);
                for (j = 0; str[j]; j++) {
                   if (!(str[j] >= 'a' && str[j] <= 'z') &&
-                      !(str[j] >= 'A' && str[j] <= 'Z') && !(str[j] >= '0' && str[j] <= '9'))
+                      !(str[j] >= 'A' && str[j] <= 'Z') && !(str[j] >= '0'
+                                                             && str[j] <= '9'))
                      str[j] = '_';
                }
                strcat(ch_tags, str);
@@ -841,7 +852,8 @@ INT book_ntuples(void)
                else {
                   cm_msg(MERROR, "book_ntuples",
                          "Key %s in event %s is of type %s with no HBOOK correspondence",
-                         key.name, analyze_request[index].event_name, rpc_tid_name(key.type));
+                         key.name, analyze_request[index].event_name,
+                         rpc_tid_name(key.type));
                   return 0;
                }
                strcat(ch_tags, str);
@@ -855,7 +867,8 @@ INT book_ntuples(void)
             strcpy(block_name, analyze_request[index].event_name);
             block_name[8] = 0;
 
-            HBNAME(analyze_request[index].ar_info.event_id, block_name, analyze_request[index].addr, ch_tags);
+            HBNAME(analyze_request[index].ar_info.event_id, block_name,
+                   analyze_request[index].addr, ch_tags);
          } else {
             /* go thorough all banks in bank_list */
             for (; bank_list->name[0]; bank_list++) {
@@ -864,8 +877,9 @@ INT book_ntuples(void)
 
                if (bank_list->type != TID_STRUCT) {
                   sprintf(str, "N%s[0,%ld]", bank_list->name, bank_list->size);
+                  INT *t = (INT *) & bank_list->n_data;
                   HBNAME(analyze_request[index].ar_info.event_id,
-                         bank_list->name, (INT *) & bank_list->n_data, str);
+                         bank_list->name, t, str);
 
                   sprintf(str, "%s(N%s)", bank_list->name, bank_list->name);
 
@@ -880,13 +894,16 @@ INT book_ntuples(void)
                   }
 
                   if (rpc_tid_size(bank_list->type) == 0) {
-                     cm_msg(MERROR, "book_ntuples", "Bank %s is of type with unknown size", bank_list->name);
+                     cm_msg(MERROR, "book_ntuples",
+                            "Bank %s is of type with unknown size", bank_list->name);
                      return 0;
                   }
 
-                  bank_list->addr = calloc(bank_list->size, MAX(4, rpc_tid_size(bank_list->type)));
+                  bank_list->addr =
+                      calloc(bank_list->size, MAX(4, rpc_tid_size(bank_list->type)));
 
-                  HBNAME(analyze_request[index].ar_info.event_id, bank_list->name, bank_list->addr, str);
+                  HBNAME(analyze_request[index].ar_info.event_id, bank_list->name,
+                         bank_list->addr, str);
                } else {
                   /* define structured bank */
                   ch_tags[0] = 0;
@@ -901,7 +918,8 @@ INT book_ntuples(void)
                      strcpy(str, key.name);
                      for (j = 0; str[j]; j++) {
                         if (!(str[j] >= 'a' && str[j] <= 'z') &&
-                            !(str[j] >= 'A' && str[j] <= 'Z') && !(str[j] >= '0' && str[j] <= '9'))
+                            !(str[j] >= 'A' && str[j] <= 'Z') && !(str[j] >= '0'
+                                                                   && str[j] <= '9'))
                            str[j] = '_';
                      }
                      strcat(ch_tags, str);
@@ -925,7 +943,8 @@ INT book_ntuples(void)
                   ch_tags[strlen(ch_tags) - 1] = 0;
                   bank_list->addr = calloc(1, bank_list->size);
 
-                  HBNAME(analyze_request[index].ar_info.event_id, bank_list->name, bank_list->addr, ch_tags);
+                  HBNAME(analyze_request[index].ar_info.event_id, bank_list->name,
+                         bank_list->addr, ch_tags);
                }
             }
          }
@@ -938,7 +957,8 @@ INT book_ntuples(void)
       /* go through all analyzer requests (events) */
       for (index = 0; analyze_request[index].event_name[0]; index++) {
          /* get pointer to event definition */
-         event_def = db_get_event_definition((short int) analyze_request[index].ar_info.event_id);
+         event_def =
+             db_get_event_definition((short int) analyze_request[index].ar_info.event_id);
 
          /* skip if not found */
          if (!event_def)
@@ -988,21 +1008,25 @@ INT book_ntuples(void)
                      strncpy(rw_tag[n_tag++], str, 8);
 
                      if (clp.verbose)
-                        printf("NT #%d-%d: %s\n", analyze_request[index].ar_info.event_id, n_tag + 1, str);
+                        printf("NT #%d-%d: %s\n", analyze_request[index].ar_info.event_id,
+                               n_tag + 1, str);
 
                      if (n_tag >= 512) {
-                        cm_msg(MERROR, "book_ntuples", "Too much tags for RW N-tupeles (512 maximum)");
+                        cm_msg(MERROR, "book_ntuples",
+                               "Too much tags for RW N-tupeles (512 maximum)");
                         return 0;
                      }
                } else {
                   strncpy(rw_tag[n_tag++], key_name, 8);
 
                   if (clp.verbose)
-                     printf("NT #%d-%d: %s\n", analyze_request[index].ar_info.event_id, n_tag, key_name);
+                     printf("NT #%d-%d: %s\n", analyze_request[index].ar_info.event_id,
+                            n_tag, key_name);
                }
 
                if (n_tag >= 512) {
-                  cm_msg(MERROR, "book_ntuples", "Too much tags for RW N-tupeles (512 maximum)");
+                  cm_msg(MERROR, "book_ntuples",
+                         "Too much tags for RW N-tupeles (512 maximum)");
                   return 0;
                }
             }
@@ -1021,9 +1045,11 @@ INT book_ntuples(void)
                      strncpy(rw_tag[n_tag++], str, 8);
 
                      if (clp.verbose)
-                        printf("NT #%d-%d: %s\n", analyze_request[index].ar_info.event_id, n_tag, str);
+                        printf("NT #%d-%d: %s\n", analyze_request[index].ar_info.event_id,
+                               n_tag, str);
                      if (n_tag >= 512) {
-                        cm_msg(MERROR, "book_ntuples", "Too much tags for RW N-tupeles (512 maximum)");
+                        cm_msg(MERROR, "book_ntuples",
+                               "Too much tags for RW N-tupeles (512 maximum)");
                         return 0;
                      }
                   }
@@ -1051,21 +1077,25 @@ INT book_ntuples(void)
                            strncpy(rw_tag[n_tag++], str, 8);
 
                            if (clp.verbose)
-                              printf("NT #%d-%d: %s\n", analyze_request[index].ar_info.event_id, n_tag, str);
+                              printf("NT #%d-%d: %s\n",
+                                     analyze_request[index].ar_info.event_id, n_tag, str);
 
                            if (n_tag >= 512) {
-                              cm_msg(MERROR, "book_ntuples", "Too much tags for RW N-tupeles (512 maximum)");
+                              cm_msg(MERROR, "book_ntuples",
+                                     "Too much tags for RW N-tupeles (512 maximum)");
                               return 0;
                            }
                      } else {
                         strncpy(rw_tag[n_tag++], key_name, 8);
                         if (clp.verbose)
                            printf("NT #%d-%d: %s\n",
-                                  analyze_request[index].ar_info.event_id, n_tag, key_name);
+                                  analyze_request[index].ar_info.event_id, n_tag,
+                                  key_name);
                      }
 
                      if (n_tag >= 512) {
-                        cm_msg(MERROR, "book_ntuples", "Too much tags for RW N-tupeles (512 maximum)");
+                        cm_msg(MERROR, "book_ntuples",
+                               "Too much tags for RW N-tupeles (512 maximum)");
                         return 0;
                      }
                   }
@@ -1082,7 +1112,8 @@ INT book_ntuples(void)
             HDELET(id);
 
          if (clp.online || equal_ustring(clp.output_file_name, "OFLN"))
-            HBOOKN(id, block_name, n_tag, bstr, n_tag * analyze_request[index].rwnt_buffer_size, rw_tag);
+            HBOOKN(id, block_name, n_tag, bstr,
+                   n_tag * analyze_request[index].rwnt_buffer_size, rw_tag);
          else {
             strcpy(str, "//OFFLINE");
             HBOOKN(id, block_name, n_tag, str, 5120, rw_tag);
@@ -1091,7 +1122,8 @@ INT book_ntuples(void)
          if (!HEXIST(id)) {
             printf("\n");
             cm_msg(MINFO, "book_ntuples",
-                   "Cannot book N-tuple #%d. Increase PAWC size via the -s flag or switch off banks", id);
+                   "Cannot book N-tuple #%d. Increase PAWC size via the -s flag or switch off banks",
+                   id);
          }
       }
    }
@@ -1163,8 +1195,8 @@ INT book_ttree()
    sprintf(str, "/%s/Bank switches", analyzer_name);
    status = db_find_key(hDB, 0, str, &hkey);
    if (status != DB_SUCCESS) {
-     cm_msg(MERROR, "book_ttree", "Cannot find key \'%s\', status %d", str, status);
-     return SUCCESS;
+      cm_msg(MERROR, "book_ttree", "Cannot find key \'%s\', status %d", str, status);
+      return SUCCESS;
    }
 
    db_open_record(hDB, hkey, NULL, 0, MODE_READ, banks_changed, NULL);
@@ -1177,7 +1209,8 @@ INT book_ttree()
          tree_struct.event_tree = (EVENT_TREE *) malloc(sizeof(EVENT_TREE));
       else
          tree_struct.event_tree =
-             (EVENT_TREE *) realloc(tree_struct.event_tree, sizeof(EVENT_TREE) * tree_struct.n_tree);
+             (EVENT_TREE *) realloc(tree_struct.event_tree,
+                                    sizeof(EVENT_TREE) * tree_struct.n_tree);
 
       et = tree_struct.event_tree + (tree_struct.n_tree - 1);
 
@@ -1185,7 +1218,8 @@ INT book_ttree()
       et->n_branch = 0;
 
       /* create tree */
-      sprintf(str, "Event \"%s\", ID %d", analyze_request[index].event_name, et->event_id);
+      sprintf(str, "Event \"%s\", ID %d", analyze_request[index].event_name,
+              et->event_id);
       et->tree = new TTree(analyze_request[index].event_name, str);
 #if (ROOT_VERSION_CODE >= 262401)
       et->tree->SetCircular(analyze_request[index].rwnt_buffer_size);
@@ -1198,14 +1232,16 @@ INT book_ttree()
       et->branch_len = (int *) malloc(sizeof(int));
 
       et->branch[et->n_branch] =
-          et->tree->Branch("Number", &analyze_request[index].number, "Run/I:Number/I:Time/i");
+          et->tree->Branch("Number", &analyze_request[index].number,
+                           "Run/I:Number/I:Time/i");
       strcpy(et->branch_name, "Number");
       et->n_branch++;
 
       bank_list = analyze_request[index].bank_list;
       if (bank_list == NULL) {
          /* book fixed event */
-         event_def = db_get_event_definition((short int) analyze_request[index].ar_info.event_id);
+         event_def =
+             db_get_event_definition((short int) analyze_request[index].ar_info.event_id);
          if (event_def == NULL) {
             cm_msg(MERROR, "book_ttree", "Cannot find definition of event %s in ODB",
                    analyze_request[index].event_name);
@@ -1232,7 +1268,8 @@ INT book_ttree()
             else {
                cm_msg(MERROR, "book_ttree",
                       "Key %s in event %s is of type %s with no TTREE correspondence",
-                      key.name, analyze_request[index].event_name, rpc_tid_name(key.type));
+                      key.name, analyze_request[index].event_name,
+                      rpc_tid_name(key.type));
                return 0;
             }
             strcat(leaf_tags, ":");
@@ -1240,13 +1277,19 @@ INT book_ttree()
 
          leaf_tags[strlen(leaf_tags) - 1] = 0;  /* delete last ':' */
 
-         et->branch = (TBranch **) realloc(et->branch, sizeof(TBranch *) * (et->n_branch + 1));
-         et->branch_name = (char *) realloc(et->branch_name, NAME_LENGTH * (et->n_branch + 1));
-         et->branch_filled = (int *) realloc(et->branch_filled, sizeof(int) * (et->n_branch + 1));
-         et->branch_len = (int *) realloc(et->branch_len, sizeof(int) * (et->n_branch + 1));
+         et->branch =
+             (TBranch **) realloc(et->branch, sizeof(TBranch *) * (et->n_branch + 1));
+         et->branch_name =
+             (char *) realloc(et->branch_name, NAME_LENGTH * (et->n_branch + 1));
+         et->branch_filled =
+             (int *) realloc(et->branch_filled, sizeof(int) * (et->n_branch + 1));
+         et->branch_len =
+             (int *) realloc(et->branch_len, sizeof(int) * (et->n_branch + 1));
 
-         et->branch[et->n_branch] = et->tree->Branch(analyze_request[index].event_name, NULL, leaf_tags);
-         strcpy(&et->branch_name[et->n_branch * NAME_LENGTH], analyze_request[index].event_name);
+         et->branch[et->n_branch] =
+             et->tree->Branch(analyze_request[index].event_name, NULL, leaf_tags);
+         strcpy(&et->branch_name[et->n_branch * NAME_LENGTH],
+                analyze_request[index].event_name);
          et->n_branch++;
       } else {
          /* go thorough all banks in bank_list */
@@ -1255,7 +1298,8 @@ INT book_ttree()
                continue;
 
             if (bank_list->type != TID_STRUCT) {
-               sprintf(leaf_tags, "n%s/I:%s[n%s]/", bank_list->name, bank_list->name, bank_list->name);
+               sprintf(leaf_tags, "n%s/I:%s[n%s]/", bank_list->name, bank_list->name,
+                       bank_list->name);
 
                /* define variable length array */
                if (ttree_types[bank_list->type] != NULL)
@@ -1268,16 +1312,23 @@ INT book_ttree()
                }
 
                if (rpc_tid_size(bank_list->type) == 0) {
-                  cm_msg(MERROR, "book_ttree", "Bank %s is of type with unknown size", bank_list->name);
+                  cm_msg(MERROR, "book_ttree", "Bank %s is of type with unknown size",
+                         bank_list->name);
                   return 0;
                }
 
-               et->branch = (TBranch **) realloc(et->branch, sizeof(TBranch *) * (et->n_branch + 1));
-               et->branch_name = (char *) realloc(et->branch_name, NAME_LENGTH * (et->n_branch + 1));
-               et->branch_filled = (int *) realloc(et->branch_filled, sizeof(int) * (et->n_branch + 1));
-               et->branch_len = (int *) realloc(et->branch_len, sizeof(int) * (et->n_branch + 1));
+               et->branch =
+                   (TBranch **) realloc(et->branch,
+                                        sizeof(TBranch *) * (et->n_branch + 1));
+               et->branch_name =
+                   (char *) realloc(et->branch_name, NAME_LENGTH * (et->n_branch + 1));
+               et->branch_filled =
+                   (int *) realloc(et->branch_filled, sizeof(int) * (et->n_branch + 1));
+               et->branch_len =
+                   (int *) realloc(et->branch_len, sizeof(int) * (et->n_branch + 1));
 
-               et->branch[et->n_branch] = et->tree->Branch(bank_list->name, NULL, leaf_tags);
+               et->branch[et->n_branch] =
+                   et->tree->Branch(bank_list->name, NULL, leaf_tags);
                strcpy(&et->branch_name[et->n_branch * NAME_LENGTH], bank_list->name);
                et->n_branch++;
             } else {
@@ -1310,12 +1361,18 @@ INT book_ttree()
 
                leaf_tags[strlen(leaf_tags) - 1] = 0;
 
-               et->branch = (TBranch **) realloc(et->branch, sizeof(TBranch *) * (et->n_branch + 1));
-               et->branch_name = (char *) realloc(et->branch_name, NAME_LENGTH * (et->n_branch + 1));
-               et->branch_filled = (int *) realloc(et->branch_filled, sizeof(int) * (et->n_branch + 1));
-               et->branch_len = (int *) realloc(et->branch_len, sizeof(int) * (et->n_branch + 1));
+               et->branch =
+                   (TBranch **) realloc(et->branch,
+                                        sizeof(TBranch *) * (et->n_branch + 1));
+               et->branch_name =
+                   (char *) realloc(et->branch_name, NAME_LENGTH * (et->n_branch + 1));
+               et->branch_filled =
+                   (int *) realloc(et->branch_filled, sizeof(int) * (et->n_branch + 1));
+               et->branch_len =
+                   (int *) realloc(et->branch_len, sizeof(int) * (et->n_branch + 1));
 
-               et->branch[et->n_branch] = et->tree->Branch(bank_list->name, NULL, leaf_tags);
+               et->branch[et->n_branch] =
+                   et->tree->Branch(bank_list->name, NULL, leaf_tags);
                strcpy(&et->branch_name[et->n_branch * NAME_LENGTH], bank_list->name);
                et->n_branch++;
             }
@@ -1479,7 +1536,8 @@ INT mana_init()
    db_find_key(hDB, 0, str, &hkey);
 
    if (clp.online) {
-      status = db_open_record(hDB, hkey, &out_info, sizeof(out_info), MODE_READ, NULL, NULL);
+      status =
+          db_open_record(hDB, hkey, &out_info, sizeof(out_info), MODE_READ, NULL, NULL);
       if (status != DB_SUCCESS) {
          cm_msg(MERROR, "bor", "Cannot read output info record");
          return 0;
@@ -1498,16 +1556,19 @@ INT mana_init()
          block_name[4] = 0;
 
          if (bank_list->type == TID_STRUCT) {
-            sprintf(str, "/Equipment/%s/Variables/%s", analyze_request[i].event_name, block_name);
+            sprintf(str, "/Equipment/%s/Variables/%s", analyze_request[i].event_name,
+                    block_name);
             db_check_record(hDB, 0, str, strcomb(bank_list->init_str), TRUE);
             db_find_key(hDB, 0, str, &hkey);
             bank_list->def_key = hkey;
          } else {
-            sprintf(str, "/Equipment/%s/Variables/%s", analyze_request[i].event_name, block_name);
+            sprintf(str, "/Equipment/%s/Variables/%s", analyze_request[i].event_name,
+                    block_name);
             status = db_find_key(hDB, 0, str, &hkey);
             if (status != DB_SUCCESS) {
-              dummy = 0;
-              db_set_value(hDB, 0, str, &dummy, rpc_tid_size(bank_list->type), 1, bank_list->type);
+               dummy = 0;
+               db_set_value(hDB, 0, str, &dummy, rpc_tid_size(bank_list->type), 1,
+                            bank_list->type);
             }
             bank_list->def_key = hkey;
          }
@@ -1575,12 +1636,17 @@ INT mana_init()
 #ifdef USE_ROOT
             /* create histo subfolder for module */
             sprintf(str, "Histos for module %s", module[j]->name);
-            module[j]->histo_folder = (TFolder*)gROOT->FindObjectAny(module[j]->name);
+            module[j]->histo_folder = (TFolder *) gROOT->FindObjectAny(module[j]->name);
             if (!module[j]->histo_folder)
-              module[j]->histo_folder = gManaHistosFolder->AddFolder(module[j]->name, str);
-            else if (strcmp(((TObject*)module[j]->histo_folder)->ClassName(),"TFolder")!=0) {
-              cm_msg(MERROR, "mana_init", "Fatal error: ROOT Object \"%s\" of class \"%s\" exists but it is not a TFolder, exiting!",module[j]->name,((TObject*)module[j]->histo_folder)->ClassName());
-              exit(1);
+               module[j]->histo_folder =
+                   gManaHistosFolder->AddFolder(module[j]->name, str);
+            else if (strcmp(((TObject *) module[j]->histo_folder)->ClassName(), "TFolder")
+                     != 0) {
+               cm_msg(MERROR, "mana_init",
+                      "Fatal error: ROOT Object \"%s\" of class \"%s\" exists but it is not a TFolder, exiting!",
+                      module[j]->name,
+                      ((TObject *) module[j]->histo_folder)->ClassName());
+               exit(1);
             }
             gHistoFolderStack->Clear();
             gHistoFolderStack->Add((TObject *) module[j]->histo_folder);
@@ -1690,7 +1756,8 @@ INT bor(INT run_number, char *error)
 #endif
 
    /* open output file if not already open (append mode) and in offline mode */
-   if (!clp.online && out_file == NULL && !pvm_master && !equal_ustring(clp.output_file_name, "OFLN")) {
+   if (!clp.online && out_file == NULL && !pvm_master
+       && !equal_ustring(clp.output_file_name, "OFLN")) {
       if (out_info.filename[0]) {
          strcpy(str, out_info.filename);
          if (strchr(str, '%') != NULL)
@@ -1781,7 +1848,8 @@ INT bor(INT run_number, char *error)
             // ensure the output file is closed
             assert(gManaOutputFile == NULL);
 
-            gManaOutputFile = new TFile(file_name, "RECREATE", "Midas Analyzer output file");
+            gManaOutputFile =
+                new TFile(file_name, "RECREATE", "Midas Analyzer output file");
             if (gManaOutputFile == NULL) {
                sprintf(error, "Cannot open output file %s", out_info.filename);
                cm_msg(MERROR, "bor", error);
@@ -1887,7 +1955,8 @@ INT eor(INT run_number, char *error)
             break;
 
       if (i < (int) strlen(str)) {
-         printf("Error: Due to a limitation in HBOOK, directoy names may not contain uppercase\n");
+         printf
+             ("Error: Due to a limitation in HBOOK, directoy names may not contain uppercase\n");
          printf("       characters. Histogram saving to %s will not work.\n", str);
       } else {
          char str2[256];
@@ -2142,7 +2211,9 @@ INT write_event_ascii(FILE * file, EVENT_HEADER * pevent, ANALYZE_REQUEST * par)
                      STR_INC(pbuf, buffer);
 
                      /* adjust for alignment */
-                     pdata = (void *) VALIGN(pdata, MIN(ss_get_struct_align(), key.item_size));
+                     pdata =
+                         (void *) VALIGN(pdata,
+                                         MIN(ss_get_struct_align(), key.item_size));
 
                      for (j = 0; j < key.num_values; j++) {
                         db_sprintf(pbuf, pdata, key.item_size, j, key.type);
@@ -2161,7 +2232,8 @@ INT write_event_ascii(FILE * file, EVENT_HEADER * pevent, ANALYZE_REQUEST * par)
 
                      /* print header */
                      sprintf(pbuf, "GA %d BF %d CN %d",
-                             lrs1877_header->geo_addr, lrs1877_header->buffer, lrs1877_header->count);
+                             lrs1877_header->geo_addr, lrs1877_header->buffer,
+                             lrs1877_header->count);
                      strcat(pbuf, "\n");
                      STR_INC(pbuf, buffer);
 
@@ -2240,7 +2312,8 @@ INT write_event_ascii(FILE * file, EVENT_HEADER * pevent, ANALYZE_REQUEST * par)
    if (out_gzip)
       status = gzwrite(file, buffer, size) == size ? SS_SUCCESS : SS_FILE_ERROR;
    else
-      status = fwrite(buffer, 1, size, file) == (size_t) size ? SS_SUCCESS : SS_FILE_ERROR;
+      status =
+          fwrite(buffer, 1, size, file) == (size_t) size ? SS_SUCCESS : SS_FILE_ERROR;
 
    return status;
 }
@@ -2356,7 +2429,8 @@ INT write_event_midas(FILE * file, EVENT_HEADER * pevent, ANALYZE_REQUEST * par)
    if (out_gzip)
       status = gzwrite(file, pevent_copy, size) == size ? SUCCESS : SS_FILE_ERROR;
    else
-      status = fwrite(pevent_copy, 1, size, file) == (size_t) size ? SUCCESS : SS_FILE_ERROR;
+      status =
+          fwrite(pevent_copy, 1, size, file) == (size_t) size ? SUCCESS : SS_FILE_ERROR;
 
    return status;
 }
@@ -2447,7 +2521,8 @@ INT write_event_hbook(FILE * file, EVENT_HEADER * pevent, ANALYZE_REQUEST * par)
                   break;
                }
             if (par->bank_list[i].name[0] == 0)
-               cm_msg(MERROR, "write_event_hbook", "Received unknown bank %s", block_name);
+               cm_msg(MERROR, "write_event_hbook", "Received unknown bank %s",
+                      block_name);
          }
 
          /* fill CW N-tuple */
@@ -2456,7 +2531,8 @@ INT write_event_hbook(FILE * file, EVENT_HEADER * pevent, ANALYZE_REQUEST * par)
             if ((bktype & 0xFF) != TID_STRUCT) {
                item_size = rpc_tid_size(bktype & 0xFF);
                if (item_size == 0) {
-                  cm_msg(MERROR, "write_event_hbook", "Received bank %s with unknown item size", block_name);
+                  cm_msg(MERROR, "write_event_hbook",
+                         "Received bank %s with unknown item size", block_name);
                   continue;
                }
 
@@ -2501,7 +2577,8 @@ INT write_event_hbook(FILE * file, EVENT_HEADER * pevent, ANALYZE_REQUEST * par)
                /* check bank size */
                if (n > (INT) pbl->size) {
                   cm_msg(MERROR, "write_event_hbook",
-                         "Bank %s has more (%d) entries than maximum value (%d)", block_name, n, pbl->size);
+                         "Bank %s has more (%d) entries than maximum value (%d)",
+                         block_name, n, pbl->size);
                   continue;
                }
 
@@ -2541,7 +2618,8 @@ INT write_event_hbook(FILE * file, EVENT_HEADER * pevent, ANALYZE_REQUEST * par)
                   db_get_key(hDB, hkey, &key);
 
                   /* align data pointer */
-                  pdata = (void *) VALIGN(pdata, MIN(ss_get_struct_align(), key.item_size));
+                  pdata =
+                      (void *) VALIGN(pdata, MIN(ss_get_struct_align(), key.item_size));
 
                   for (j = 0; j < key.num_values; j++) {
                      switch (key.type & 0xFF) {
@@ -2626,7 +2704,8 @@ INT write_event_hbook(FILE * file, EVENT_HEADER * pevent, ANALYZE_REQUEST * par)
                   break;
                }
             if (par->bank_list[i].name[0] == 0)
-               cm_msg(MERROR, "write_event_hbook", "Received unknown bank %s", block_name);
+               cm_msg(MERROR, "write_event_hbook", "Received unknown bank %s",
+                      block_name);
          }
 
          /* fill CW N-tuple */
@@ -2635,7 +2714,8 @@ INT write_event_hbook(FILE * file, EVENT_HEADER * pevent, ANALYZE_REQUEST * par)
             if ((pybk->type & 0xFF) < MAX_BKTYPE) {
                item_size = ybos_get_tid_size(pybk->type & 0xFF);
                if (item_size == 0) {
-                  cm_msg(MERROR, "write_event_hbook", "Received bank %s with unknown item size", block_name);
+                  cm_msg(MERROR, "write_event_hbook",
+                         "Received bank %s with unknown item size", block_name);
                   continue;
                }
 
@@ -2680,7 +2760,8 @@ INT write_event_hbook(FILE * file, EVENT_HEADER * pevent, ANALYZE_REQUEST * par)
                /* check bank size */
                if (n > (INT) pbl->size) {
                   cm_msg(MERROR, "write_event_hbook",
-                         "Bank %s has more (%d) entries than maximum value (%d)", block_name, n, pbl->size);
+                         "Bank %s has more (%d) entries than maximum value (%d)",
+                         block_name, n, pbl->size);
                   continue;
                }
 
@@ -2842,7 +2923,8 @@ INT write_event_ttree(FILE * file, EVENT_HEADER * pevent, ANALYZE_REQUEST * par)
             break;
 
       if (i == tree_struct.n_tree) {
-         cm_msg(MERROR, "write_event_ttree", "Event #%d not booked by book_ttree()", pevent->event_id);
+         cm_msg(MERROR, "write_event_ttree", "Event #%d not booked by book_ttree()",
+                pevent->event_id);
          return SS_INVALID_FORMAT;
       }
 
@@ -2959,7 +3041,8 @@ INT write_event_ttree(FILE * file, EVENT_HEADER * pevent, ANALYZE_REQUEST * par)
             break;
 
       if (i == tree_struct.n_tree) {
-         cm_msg(MERROR, "write_event_ttree", "Event #%d not booked by book_ttree()", pevent->event_id);
+         cm_msg(MERROR, "write_event_ttree", "Event #%d not booked by book_ttree()",
+                pevent->event_id);
          return SS_INVALID_FORMAT;
       }
 
@@ -3041,7 +3124,8 @@ INT write_event_odb(EVENT_HEADER * pevent)
 
                /* adjust for alignment */
                if (key.type != TID_STRING && key.type != TID_LINK)
-                  pdata = (void *) VALIGN(pdata, MIN(ss_get_struct_align(), key.item_size));
+                  pdata =
+                      (void *) VALIGN(pdata, MIN(ss_get_struct_align(), key.item_size));
 
                status = db_set_data(hDB, hKey, pdata, key.item_size * key.num_values,
                                     key.num_values, key.type);
@@ -3071,7 +3155,9 @@ INT write_event_odb(EVENT_HEADER * pevent)
    /*---- FIXED format ----------------------------------------------*/
 
    if (event_def->format == FORMAT_FIXED && !clp.online) {
-      if (db_set_record(hDB, event_def->hDefKey, (char *) (pevent + 1), pevent->data_size, 0) != DB_SUCCESS)
+      if (db_set_record
+          (hDB, event_def->hDefKey, (char *) (pevent + 1), pevent->data_size,
+           0) != DB_SUCCESS)
          cm_msg(MERROR, "write_event_odb", "event #%d size mismatch", pevent->event_id);
    }
 
@@ -3106,7 +3192,8 @@ INT process_event(ANALYZE_REQUEST * par, EVENT_HEADER * pevent)
    if (clp.verbose)
       printf("event %d, number %d, total size %d\n",
              (int) pevent->event_id,
-             (int) pevent->serial_number, (int) (pevent->data_size + sizeof(EVENT_HEADER)));
+             (int) pevent->serial_number,
+             (int) (pevent->data_size + sizeof(EVENT_HEADER)));
 
    /* save analyze_request for event number correction */
    _current_par = par;
@@ -3271,7 +3358,8 @@ INT process_event(ANALYZE_REQUEST * par, EVENT_HEADER * pevent)
       for (i = 0; i < 50; i++) {
          if (last_time_event[i].event_id == pevent->event_id) {
             if (event_def->type == EQ_PERIODIC ||
-                event_def->type == EQ_SLOW || actual_time - last_time_event[i].last_time > 1000) {
+                event_def->type == EQ_SLOW
+                || actual_time - last_time_event[i].last_time > 1000) {
                last_time_event[i].last_time = actual_time;
                write_event_odb(pevent);
             }
@@ -3290,7 +3378,8 @@ INT process_event(ANALYZE_REQUEST * par, EVENT_HEADER * pevent)
 
 /*------------------------------------------------------------------*/
 
-void receive_event(HNDLE buffer_handle, HNDLE request_id, EVENT_HEADER * pheader, void *pevent)
+void receive_event(HNDLE buffer_handle, HNDLE request_id, EVENT_HEADER * pheader,
+                   void *pevent)
 /* receive online event */
 {
    INT i;
@@ -3303,7 +3392,8 @@ void receive_event(HNDLE buffer_handle, HNDLE request_id, EVENT_HEADER * pheader
       buffer = (char *) malloc(MAX_EVENT_SIZE + sizeof(EVENT_HEADER));
 
       if (buffer == NULL) {
-         cm_msg(MERROR, "receive_event", "Not enough memory to buffer event of size %d", buffer_size);
+         cm_msg(MERROR, "receive_event", "Not enough memory to buffer event of size %d",
+                buffer_size);
          return;
       }
    }
@@ -3378,7 +3468,8 @@ void register_requests(void)
       db_set_record(hDB, hKey, ar_info, sizeof(AR_INFO), 0);
 
       /* open hot link to analyzer request info */
-      db_open_record(hDB, hKey, ar_info, sizeof(AR_INFO), MODE_READ, update_request, NULL);
+      db_open_record(hDB, hKey, ar_info, sizeof(AR_INFO), MODE_READ, update_request,
+                     NULL);
 
       /* create statistics tree */
       sprintf(str, "/%s/%s/Statistics", analyzer_name, analyze_request[index].event_name);
@@ -3391,13 +3482,15 @@ void register_requests(void)
       ar_stats->events_written = 0;
 
       /* open hot link to statistics tree */
-      status = db_open_record(hDB, hKey, ar_stats, sizeof(AR_STATS), MODE_WRITE, NULL, NULL);
+      status =
+          db_open_record(hDB, hKey, ar_stats, sizeof(AR_STATS), MODE_WRITE, NULL, NULL);
       if (status != DB_SUCCESS)
          printf("Cannot open statistics record, probably other analyzer is using it\n");
 
       if (clp.online) {
          /*---- open event buffer ---------------------------------------*/
-         bm_open_buffer(ar_info->buffer, EVENT_BUFFER_SIZE, &analyze_request[index].buffer_handle);
+         bm_open_buffer(ar_info->buffer, EVENT_BUFFER_SIZE,
+                        &analyze_request[index].buffer_handle);
 
          /* set the default buffer cache size */
          bm_set_cache_size(analyze_request[index].buffer_handle, 100000, 0);
@@ -3406,7 +3499,8 @@ void register_requests(void)
          if (ar_info->enabled)
             bm_request_event(analyze_request[index].buffer_handle,
                              (short) ar_info->event_id, (short) ar_info->trigger_mask,
-                             ar_info->sampling_type, &analyze_request[index].request_id, receive_event);
+                             ar_info->sampling_type, &analyze_request[index].request_id,
+                             receive_event);
          else
             analyze_request[index].request_id = -1;
       }
@@ -3434,7 +3528,8 @@ void update_stats()
       ar_stats = &analyze_request[i].ar_stats;
       ar_stats->events_received += analyze_request[i].events_received;
       ar_stats->events_written += analyze_request[i].events_written;
-      ar_stats->events_per_sec = (analyze_request[i].events_received / ((actual_time - last_time) / 1000.0));
+      ar_stats->events_per_sec =
+          (analyze_request[i].events_received / ((actual_time - last_time) / 1000.0));
       analyze_request[i].events_received = 0;
       analyze_request[i].events_written = 0;
    }
@@ -3463,7 +3558,8 @@ TCutG *cut_book(const char *name)
 
    open_subfolder("cuts");
 
-   TFolder *folder(gHistoFolderStack->Last()? (TFolder *) gHistoFolderStack->Last() : gManaHistosFolder);
+   TFolder *folder(gHistoFolderStack->Last()? (TFolder *) gHistoFolderStack->
+                   Last() : gManaHistosFolder);
 
    TCutG *cut((TCutG *) folder->FindObject(name));
 
@@ -3579,7 +3675,8 @@ void load_last_histos()
                break;
 
          if (i < (int) strlen(str)) {
-            printf("Error: Due to a limitation in HBOOK, directoy names may not contain uppercase\n");
+            printf
+                ("Error: Due to a limitation in HBOOK, directoy names may not contain uppercase\n");
             printf("       characters. Histogram loading from %s will not work.\n", str);
          } else {
             f = fopen(str, "r");
@@ -3627,7 +3724,8 @@ void save_last_histos()
             break;
 
       if (i < (int) strlen(str)) {
-         printf("Error: Due to a limitation in HBOOK, directoy names may not contain uppercase\n");
+         printf
+             ("Error: Due to a limitation in HBOOK, directoy names may not contain uppercase\n");
          printf("       characters. Histogram saving to %s will not work.\n", str);
       } else {
          strcpy(str2, "NT");
@@ -3725,7 +3823,8 @@ INT init_module_parameters(BOOL bclose)
                      status = 0;
                }
                if (status != DB_SUCCESS && module[j]->init_str) {
-                  if (db_check_record(hDB, 0, str, strcomb(module[j]->init_str), TRUE) != DB_SUCCESS) {
+                  if (db_check_record(hDB, 0, str, strcomb(module[j]->init_str), TRUE) !=
+                      DB_SUCCESS) {
                      cm_msg(MERROR, "init_module_parameters",
                             "Cannot create/check \"%s\" parameters in ODB", str);
                      return 0;
@@ -3737,7 +3836,8 @@ INT init_module_parameters(BOOL bclose)
 
                if (db_open_record(hDB, hkey, module[j]->parameters, module[j]->param_size,
                                   MODE_READ, NULL, NULL) != DB_SUCCESS) {
-                  cm_msg(MERROR, "init_module_parameters", "Cannot open \"%s\" parameters in ODB", str);
+                  cm_msg(MERROR, "init_module_parameters",
+                         "Cannot open \"%s\" parameters in ODB", str);
                   return 0;
                }
             }
@@ -3934,7 +4034,9 @@ MA_FILE *ma_open(char *file_name)
    else if (strncmp(ext_str, ".ybs", 4) == 0)
       file->format = MA_FORMAT_YBOS;
    else {
-      printf("Unknown input data format \"%s\". Please use file extension .mid or mid.gz.\n", ext_str);
+      printf
+          ("Unknown input data format \"%s\". Please use file extension .mid or mid.gz.\n",
+           ext_str);
       return NULL;
    }
 
@@ -3996,7 +4098,7 @@ int ma_read_event(MA_FILE * file, EVENT_HEADER * pevent, int size)
          DWORD_SWAP(&pevent->serial_number);
          DWORD_SWAP(&pevent->time_stamp);
          DWORD_SWAP(&pevent->data_size);
-#endif         
+#endif
 
          /* read event */
          n = 0;
@@ -4112,7 +4214,9 @@ INT analyze_run(INT run_number, char *input_file_name, char *output_file_name)
    assert(run_number > 0);
 
    /* set run number in ODB */
-   status = db_set_value(hDB, 0, "/Runinfo/Run number", &run_number, sizeof(run_number), 1, TID_INT);
+   status =
+       db_set_value(hDB, 0, "/Runinfo/Run number", &run_number, sizeof(run_number), 1,
+                    TID_INT);
    assert(status == SUCCESS);
 
    /* set file name in out_info */
@@ -4162,7 +4266,9 @@ INT analyze_run(INT run_number, char *input_file_name, char *output_file_name)
             if (out_gzip)
                status = gzwrite(out_file, pevent, size) == size ? SUCCESS : SS_FILE_ERROR;
             else
-               status = fwrite(pevent, 1, size, out_file) == (size_t) size ? SUCCESS : SS_FILE_ERROR;
+               status =
+                   fwrite(pevent, 1, size,
+                          out_file) == (size_t) size ? SUCCESS : SS_FILE_ERROR;
 
             if (status != SUCCESS) {
                cm_msg(MERROR, "analyze_run", "Error writing to file (Disk full?)");
@@ -4210,7 +4316,8 @@ INT analyze_run(INT run_number, char *input_file_name, char *output_file_name)
             if ((par->ar_info.event_id == EVENTID_ALL ||
                  par->ar_info.event_id == pevent->event_id) &&
                 (par->ar_info.trigger_mask == TRIGGER_ALL ||
-                 (par->ar_info.trigger_mask & pevent->trigger_mask)) && par->ar_info.enabled) {
+                 (par->ar_info.trigger_mask & pevent->trigger_mask))
+                && par->ar_info.enabled) {
                /* analyze this event */
                status = process_event(par, pevent);
                if (status == SUCCESS)
@@ -4265,7 +4372,8 @@ INT analyze_run(INT run_number, char *input_file_name, char *output_file_name)
             printf("%s:%d  %s:%d  events, %1.2lfs\n", input_file_name, num_events_in,
                    out_info.filename, num_events_out, start_time / 1000.0);
          else
-            printf("%s:%d  events, %1.2lfs\n", input_file_name, num_events_in, start_time / 1000.0);
+            printf("%s:%d  events, %1.2lfs\n", input_file_name, num_events_in,
+                   start_time / 1000.0);
       }
    } else if (pvm_slave) {
       start_time = ss_millitime() - start_time;
@@ -4276,7 +4384,8 @@ INT analyze_run(INT run_number, char *input_file_name, char *output_file_name)
             printf("%s:%d  %s:%d  events, %1.2lfs\n", input_file_name, num_events_in,
                    out_info.filename, num_events_out, start_time / 1000.0);
          else
-            printf("%s:%d  events, %1.2lfs\n", input_file_name, num_events_in, start_time / 1000.0);
+            printf("%s:%d  events, %1.2lfs\n", input_file_name, num_events_in,
+                   start_time / 1000.0);
       }
 
       eor(current_run_number, error);
@@ -4303,7 +4412,8 @@ INT analyze_run(INT run_number, char *input_file_name, char *output_file_name)
             printf("%s:%d  %s:%d  events, %1.2lfs\n", input_file_name, num_events_in,
                    out_info.filename, num_events_out, start_time / 1000.0);
          else
-            printf("%s:%d  events, %1.2lfs\n", input_file_name, num_events_in, start_time / 1000.0);
+            printf("%s:%d  events, %1.2lfs\n", input_file_name, num_events_in,
+                   start_time / 1000.0);
       }
 
       /* call analyzer eor routines */
@@ -4319,7 +4429,8 @@ INT analyze_run(INT run_number, char *input_file_name, char *output_file_name)
          printf("%s:%d  %s:%d  events, %1.2lfs\n", input_file_name, (int) num_events_in,
                 out_info.filename, (int) num_events_out, start_time / 1000.0);
       else
-         printf("%s:%d  events, %1.2lfs\n", input_file_name, (int) num_events_in, start_time / 1000.0);
+         printf("%s:%d  events, %1.2lfs\n", input_file_name, (int) num_events_in,
+                start_time / 1000.0);
    }
 
    /* call analyzer eor routines */
@@ -4347,12 +4458,14 @@ INT loop_runs_offline()
 
    run_number = 0;
    out_append = ((strchr(clp.input_file_name[0], '%') != NULL) &&
-                 (strchr(clp.output_file_name, '%') == NULL)) || clp.input_file_name[1][0];
+                 (strchr(clp.output_file_name, '%') == NULL))
+       || clp.input_file_name[1][0];
 
    /* loop over range of files */
    if (clp.run_number[0] > 0) {
       if (strchr(clp.input_file_name[0], '%') == NULL) {
-         printf("Input file name must contain a wildcard like \"%%05d\" when using a range.\n");
+         printf
+             ("Input file name must contain a wildcard like \"%%05d\" when using a range.\n");
          return 0;
       }
 
@@ -4553,7 +4666,9 @@ int pvm_main(char *argv[])
       if (pvm_n_task == 1)
          status = pvm_spawn(path, argv + 1, PvmTaskDefault, NULL, pvm_n_task, pvm_tid);
       else
-         status = pvm_spawn(path, argv + 1, PvmTaskHost | PvmHostCompl, ".", pvm_n_task, pvm_tid);
+         status =
+             pvm_spawn(path, argv + 1, PvmTaskHost | PvmHostCompl, ".", pvm_n_task,
+                       pvm_tid);
       if (status == 0) {
          pvm_perror("pvm_spawn");
          pvm_exit();
@@ -4669,7 +4784,8 @@ int pvm_send_event(int index, EVENT_HEADER * pevent)
       return RPC_SHUTDOWN;
    }
    if (bufid == 0) {
-      printf("Timeout receiving data requests from %s, aborting analyzer.\n", pvmc[index].host);
+      printf("Timeout receiving data requests from %s, aborting analyzer.\n",
+             pvmc[index].host);
       return RPC_SHUTDOWN;
    }
 
@@ -4804,7 +4920,8 @@ int pvm_distribute(ANALYZE_REQUEST * par, EVENT_HEADER * pevent)
          }
 
          if (size >= PVM_BUFFER_SIZE) {
-            printf("Event too large (%d) for PVM buffer (%d), analyzer aborted\n", size, PVM_BUFFER_SIZE);
+            printf("Event too large (%d) for PVM buffer (%d), analyzer aborted\n", size,
+                   PVM_BUFFER_SIZE);
             return RPC_SHUTDOWN;
          }
 
@@ -4830,7 +4947,8 @@ int pvm_distribute(ANALYZE_REQUEST * par, EVENT_HEADER * pevent)
       }
 
       if (pvmc[index].wp + size >= PVM_BUFFER_SIZE) {
-         printf("Event too large (%d) for PVM buffer (%d), analyzer aborted\n", size, PVM_BUFFER_SIZE);
+         printf("Event too large (%d) for PVM buffer (%d), analyzer aborted\n", size,
+                PVM_BUFFER_SIZE);
          return RPC_SHUTDOWN;
       }
 
@@ -5050,7 +5168,8 @@ int pvm_merge()
    else if (strncmp(ext, ".rz", 3) == 0)
       out_format = FORMAT_HBOOK;
    else {
-      strcpy(error, "Unknown output data format. Please use file extension .asc, .mid or .rz.\n");
+      strcpy(error,
+             "Unknown output data format. Please use file extension .asc, .mid or .rz.\n");
       cm_msg(MERROR, "pvm_merge", error);
       return 0;
    }
@@ -5242,7 +5361,8 @@ THREADTYPE root_server_thread(void *arg)
             sock->Recv(objName, sizeof(objName));
             sock->Recv(method, sizeof(method));
             TObject *object = gROOT->FindObjectAny(objName);
-            if (object && object->InheritsFrom(TH1::Class()) && strcmp(method, "Reset") == 0)
+            if (object && object->InheritsFrom(TH1::Class())
+                && strcmp(method, "Reset") == 0)
                static_cast < TH1 * >(object)->Reset();
 
          } else if (strncmp(request, "SetCut", 6) == 0) {
@@ -5267,7 +5387,8 @@ THREADTYPE root_server_thread(void *arg)
                   cut->SetPoint(i, newc->GetX()[i], newc->GetY()[i]);
                }
             } else {
-               cm_msg(MERROR, "root server thread", "ignoring receipt of unknown cut %s", newc->GetName());
+               cm_msg(MERROR, "root server thread", "ignoring receipt of unknown cut %s",
+                      newc->GetName());
             }
             delete newc;
 
@@ -5374,7 +5495,8 @@ int main(int argc, char *argv[])
 #endif
 
    /* get default from environment */
-   cm_get_environment(clp.host_name, sizeof(clp.host_name), clp.exp_name, sizeof(clp.exp_name));
+   cm_get_environment(clp.host_name, sizeof(clp.host_name), clp.exp_name,
+                      sizeof(clp.exp_name));
 
 #ifdef HAVE_HBOOK
    /* set default lrec size */
@@ -5438,8 +5560,10 @@ int main(int argc, char *argv[])
    if (status == CM_UNDEF_EXP) {
       printf("\nError: Experiment \"%s\" not defined.\n", clp.exp_name);
       if (getenv("MIDAS_DIR")) {
-         printf("Note that \"MIDAS_DIR\" is defined, which results in a single experiment\n");
-         printf("called \"Default\". If you want to use the \"exptab\" file, undefine \"MIDAS_DIR\".\n");
+         printf
+             ("Note that \"MIDAS_DIR\" is defined, which results in a single experiment\n");
+         printf
+             ("called \"Default\". If you want to use the \"exptab\" file, undefine \"MIDAS_DIR\".\n");
       }
       return 1;
    } else if (status != CM_SUCCESS) {
@@ -5453,15 +5577,18 @@ int main(int argc, char *argv[])
 
    /* set online/offline mode */
    cm_get_experiment_database(&hDB, NULL);
-   db_set_value(hDB, 0, "/Runinfo/Online Mode", &clp.online, sizeof(clp.online), 1, TID_INT);
+   db_set_value(hDB, 0, "/Runinfo/Online Mode", &clp.online, sizeof(clp.online), 1,
+                TID_INT);
 
    if (clp.online) {
       /* check for duplicate name */
       status = cm_exist(analyzer_name, FALSE);
       if (status == CM_SUCCESS) {
          cm_disconnect_experiment();
-         printf("An analyzer named \"%s\" is already running in this experiment.\n", analyzer_name);
-         printf("Please select another analyzer name in analyzer.c or stop other analyzer.\n");
+         printf("An analyzer named \"%s\" is already running in this experiment.\n",
+                analyzer_name);
+         printf
+             ("Please select another analyzer name in analyzer.c or stop other analyzer.\n");
          return 1;
       }
 
@@ -5523,7 +5650,8 @@ int main(int argc, char *argv[])
 
 #ifdef USE_ROOT
    /* create the folder for analyzer histograms */
-   gManaHistosFolder = gROOT->GetRootFolder()->AddFolder("histos", "MIDAS Analyzer Histograms");
+   gManaHistosFolder =
+       gROOT->GetRootFolder()->AddFolder("histos", "MIDAS Analyzer Histograms");
    gHistoFolderStack = new TObjArray();
    gROOT->GetListOfBrowsables()->Add(gManaHistosFolder, "histos");
 
