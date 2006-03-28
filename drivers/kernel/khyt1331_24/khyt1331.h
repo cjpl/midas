@@ -5,7 +5,7 @@
 
   Contents:     IOCTL operation code definitions
 
-  $Id:$
+  $Id$
 
 \********************************************************************/
 

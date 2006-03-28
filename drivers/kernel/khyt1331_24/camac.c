@@ -6,7 +6,7 @@
   Contents:     Linux CAMAC library wrapping calls around /dev/camac
                 driver
 
-  $Id:$
+  $Id$
 
 \********************************************************************/
 

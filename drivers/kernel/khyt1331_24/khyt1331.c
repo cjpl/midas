@@ -5,7 +5,7 @@
 
   Contents:     Kernel mode driver for Hytec 1331 CAMAC interface
 
-  $Id:$
+  $Id$
 
 \********************************************************************/
 
