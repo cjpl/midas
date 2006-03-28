@@ -18,7 +18,7 @@
     display of the data.
     See mchart -h for further info.
 
-  $Id:$
+  $Id$
 
 \********************************************************************/
 
@@ -146,7 +146,7 @@ INT mchart_get_names(HNDLE hDB, char *eqpstr, char *element, char **pname, INT *
    for (i = 0; i < 128; i++)
       strtmp[i] = 0;
    while (*p)
-      *p++ = (char) tolower(*p);
+     *(p++) = (char) tolower(*p);
 
    /* I don't remember what I'm doing here but it's useful! */
    if (strncmp(eqpstr, "equipment/", 10) == 0)

@@ -265,7 +265,7 @@ See @ref The_Equipment_Structure for further explanation.
 EQUIPMENT equipment[] = {
 
   { "Trigger",                                  // equipment name 
-    1, 0,                                       // event ID, trigger mask 
+    {1, 0,                                       // event ID, trigger mask 
     "SYSTEM",                                   // event buffer
 #ifdef USE_INT
     EQ_INTERRUPT,                               // equipment type
@@ -281,7 +281,7 @@ EQUIPMENT equipment[] = {
     0,                                          // stop run after this event limit 
     0,                                          // number of sub events 
     0,                                          // don't log history 
-    "", "", "",}
+    "", "", ""}
     ,
     read_trigger_event,                         // readout routine 
     NULL, NULL,
@@ -455,10 +455,11 @@ and scaler equipment from the sample experiment example frontend.c.
 EQUIPMENT equipment[] = {
 
   { "Trigger",            // equipment name 
-    1, 0,                 // event ID, trigger mask 
+    {1, 0,                 // event ID, trigger mask 
     "SYSTEM",             // event buffer
 #ifdef USE_INT
-    EQ_INTERRUPT,         // equipment type #else
+    EQ_INTERRUPT,         // equipment type 
+#else
     EQ_POLLED,            // equipment type 
 #endif
     LAM_SOURCE(0,0xFFFFFF),// event source crate 0, all stations 
@@ -470,7 +471,7 @@ EQUIPMENT equipment[] = {
     0,                    // stop run after this event limit 
     0,                    // number of sub events 
     0,                    // don't log history 
-    "", "", "",}
+    "", "", ""}
     ,
     read_trigger_event,   // readout routine 
     NULL, NULL,
