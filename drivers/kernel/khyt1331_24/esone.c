@@ -6,7 +6,7 @@
   Contents:     CAMAC interface for ESONE standard using
                 MCSTD (Midas Camac Standard)
 
-  $Id:$
+  $Id$
 
 \********************************************************************/
 
