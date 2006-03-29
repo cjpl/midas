@@ -48,7 +48,7 @@ CC            = gcc -g -O2
 FLAGS         = -Wall -Wuninitialized -I$(MXMLDIR) -I$(MIDASINC)
 
 ifeq ($(OSTYPE),linux)
-CC   += -DOS_LINUX -DHAVE_LIBUSB
+CC   += -DOS_LINUX -DHAVE_LIBUSB -fpic
 LIBS  = -lusb
 endif
 
@@ -79,6 +79,9 @@ mxml.o: $(MXMLDIR)mxml.c
 
 musbstd.o: $(USBDIR)musbstd.c
 	$(CC) $(FLAGS) -o musbstd.o -c $(USBDIR)musbstd.c
+
+shared: mscb.o mscbrpc.o mxml.o musbstd.o strlcpy.o
+	$(CC) -shared -lusb -o mscb.so mscb.o mscbrpc.o mxml.o musbstd.o strlcpy.o
 
 clean:
 	rm *.o $(OUTNAME)
