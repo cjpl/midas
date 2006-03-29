@@ -35,7 +35,7 @@
 #define  V792_EVT_CNT_RST_WO  (DWORD) (0x1040)
 #define  V792_THRES_BASE      (DWORD) (0x1080)
 
-void v792_EvtCntRead(MVME_INTERFACE *mvme, DWORD base, DWORD *evtcnt);
+void v792_EvtCntRead(MVME_INTERFACE *mvme, DWORD base, int *evtcnt);
 void v792_EvtCntReset(MVME_INTERFACE *mvme, DWORD base);
 void v792_CrateSet(MVME_INTERFACE *mvme, DWORD base, DWORD *evtcnt);
 void v792_DelayClearSet(MVME_INTERFACE *mvme, DWORD base, int delay);
@@ -48,7 +48,15 @@ void v792_SingleShotReset(MVME_INTERFACE *mvme, DWORD base);
 void v792_Status(MVME_INTERFACE *mvme, DWORD base);
 int  v792_CSR1Read(MVME_INTERFACE *mvme, DWORD base);
 int  v792_CSR2Read(MVME_INTERFACE *mvme, DWORD base);
+int  v792_BitSet2Read(MVME_INTERFACE *mvme, DWORD base);
+int  v792_DataReady(MVME_INTERFACE *mvme, DWORD base);          
 void v792_RegBit2Set(MVME_INTERFACE *mvme, DWORD base, int pat);
 void v792_RegBit2Clear(MVME_INTERFACE *mvme, DWORD base, int pat);
+void v792_DataClear(MVME_INTERFACE *mvme, DWORD base);
+void v792_OnlineSet(MVME_INTERFACE *mvme, DWORD base);
+void v792_LowThEnable(MVME_INTERFACE *mvme, DWORD base);
+void v792_EmptyEnable(MVME_INTERFACE *mvme, DWORD base);
+void v792_EvtCntReset(MVME_INTERFACE *mvme, DWORD base);
+int  v792_Setup(MVME_INTERFACE *mvme, DWORD base, int mode);
 
 #endif // V792_INCLUDE_H
