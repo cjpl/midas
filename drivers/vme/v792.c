@@ -9,6 +9,11 @@
 *********************************************************************/
 #include <stdio.h>
 #include <string.h>
+#include <stdio.h>
+#if defined(OS_LINUX)
+#include <unistd.h>
+#endif
+#include "vmicvme.h"
 #include "v792.h"
 
 /*****************************************************************/
@@ -97,7 +102,7 @@ int v792_ThresholdRead(MVME_INTERFACE *mvme, DWORD base, WORD *threshold)
 }
 
 /*****************************************************************/
-void v792_EvtCntRead(MVME_INTERFACE *mvme, DWORD base, DWORD *evtcnt)
+void v792_EvtCntRead(MVME_INTERFACE *mvme, DWORD base, int *evtcnt)
 {
   int cmode;
 
@@ -121,6 +126,23 @@ int v792_CSR1Read(MVME_INTERFACE *mvme, DWORD base)
 }
 
 /*****************************************************************/
+int v792_isBusy(MVME_INTERFACE *mvme, DWORD base)
+{
+  int status, busy, timeout, cmode;
+
+  mvme_get_dmode(mvme, &cmode);
+  mvme_set_dmode(mvme, MVME_DMODE_D16);
+  timeout = 1000;
+  do {
+    status = mvme_read_value(mvme, base+V792_CSR1_RO);
+    busy = status & 0x4;
+    timeout--;
+  } while (busy || timeout);
+  mvme_set_dmode(mvme, cmode);
+  return (busy != 0 ? 1 : 0);
+}
+
+/*****************************************************************/
 int v792_CSR2Read(MVME_INTERFACE *mvme, DWORD base)
 {
   int status, cmode;
@@ -133,46 +155,64 @@ int v792_CSR2Read(MVME_INTERFACE *mvme, DWORD base)
 }
 
 /*****************************************************************/
+int v792_BitSet2Read(MVME_INTERFACE *mvme, DWORD base)
+{
+  int status, cmode;
+
+  mvme_get_dmode(mvme, &cmode);
+  mvme_set_dmode(mvme, MVME_DMODE_D16);
+  status = mvme_read_value(mvme, base+V792_BIT_SET2_RW);
+  mvme_set_dmode(mvme, cmode);
+  return status;
+}
+
+/*****************************************************************/
+void v792_DataClear(MVME_INTERFACE *mvme, DWORD base)
+{
+  int cmode;
+  mvme_get_dmode(mvme, &cmode);
+  mvme_set_dmode(mvme, MVME_DMODE_D16);
+  mvme_write_value(mvme, base+V792_BIT_CLEAR2_WO, 0x4);
+  mvme_set_dmode(mvme, cmode);
+}
+
+/*****************************************************************/
+void v792_OnlineSet(MVME_INTERFACE *mvme, DWORD base)
+{
+  int cmode;
+  mvme_get_dmode(mvme, &cmode);
+  mvme_set_dmode(mvme, MVME_DMODE_D16);
+  mvme_write_value(mvme, base+V792_BIT_CLEAR2_WO, 0x2);
+  mvme_set_dmode(mvme, cmode);
+}
+
+/*****************************************************************/
+void v792_LowThEnable(MVME_INTERFACE *mvme, DWORD base)
+{
+  int cmode;
+  mvme_get_dmode(mvme, &cmode);
+  mvme_set_dmode(mvme, MVME_DMODE_D16);
+  mvme_write_value(mvme, base+V792_BIT_SET2_RW, 0x10);
+  mvme_set_dmode(mvme, cmode);
+}
+
+/*****************************************************************/
+void v792_EmptyEnable(MVME_INTERFACE *mvme, DWORD base)
+{
+  int cmode;
+  mvme_get_dmode(mvme, &cmode);
+  mvme_set_dmode(mvme, MVME_DMODE_D16);
+  mvme_write_value(mvme, base+V792_BIT_SET2_RW, 0x1000);
+  mvme_set_dmode(mvme, cmode);
+}
+
+/*****************************************************************/
 void v792_EvtCntReset(MVME_INTERFACE *mvme, DWORD base)
 {
   int cmode;
   mvme_get_dmode(mvme, &cmode);
   mvme_set_dmode(mvme, MVME_DMODE_D16);
   mvme_write_value(mvme, base+V792_EVT_CNT_RST_WO, 1);
-  mvme_set_dmode(mvme, cmode);
-}
-
-/*****************************************************************/
-void v792_RegBit2Set(MVME_INTERFACE *mvme, DWORD base, int pat)
-{
-  int cmode;
-  mvme_get_dmode(mvme, &cmode);
-  mvme_set_dmode(mvme, MVME_DMODE_D16);
-  mvme_write_value(mvme, base+V792_BIT_SET2_RW, pat);
-  mvme_set_dmode(mvme, cmode);
-}
-
-/*****************************************************************/
-void v792_RegBit2Clear(MVME_INTERFACE *mvme, DWORD base, int pat)
-{
-  int cmode;
-  mvme_get_dmode(mvme, &cmode);
-  mvme_set_dmode(mvme, MVME_DMODE_D16);
-  mvme_write_value(mvme, base+V792_BIT_CLEAR2_WO, pat);
-  mvme_set_dmode(mvme, cmode);
-}
-
-/*****************************************************************/
-void v792_DelayClearSet(MVME_INTERFACE *mvme, DWORD base, int delay)
-{
-  int cmode, n;
-
-  if (delay < 7) delay = 7;
-  n = 32 * (delay - 7);
-  if (n > 0x3F0) n = 0x3F0;
-  mvme_get_dmode(mvme, &cmode);
-  mvme_set_dmode(mvme, MVME_DMODE_D16);
-  mvme_write_value(mvme, base+V792_DELAY_CLEAR_RW, n);
   mvme_set_dmode(mvme, cmode);
 }
 
@@ -199,6 +239,48 @@ int  v792_DataReady(MVME_INTERFACE *mvme, DWORD base)
 }
 
 /*****************************************************************/
+/**
+Sets all the necessary paramters for a given configuration.
+The configuration is provided by the mode argument.
+Add your own configuration in the case statement. Let me know
+your setting if you want to include it in the distribution.
+@param *mvme VME structure
+@param  base Module base address
+@param mode  Configuration mode number
+@param *nentry number of entries requested and returned.
+@return MVME_SUCCESS
+*/
+int  v792_Setup(MVME_INTERFACE *mvme, DWORD base, int mode)
+{
+  int  cmode;
+  
+  mvme_get_dmode(mvme, &cmode);
+  mvme_set_dmode(mvme, MVME_DMODE_D16);
+
+//  v1190_MicroFlush(mvme, base);
+  switch (mode) {
+  case 0x1:
+    printf("Default setting after power up (mode:%d)\n", mode);
+    printf("\n");
+    break;
+  case 0x2:
+    printf("Modified setting (mode:%d)\n", mode);
+    printf("Empty Enable, Over Range disable, Low Th Enable\n");
+    v792_OnlineSet(mvme, base);
+    v792_EmptyEnable(mvme, base);
+    v792_LowThEnable(mvme, base);
+    break;
+  default:
+    printf("Unknown setup mode\n");
+    mvme_set_dmode(mvme, cmode);
+    return -1;
+  }
+  v792_Status(mvme, base);
+  mvme_set_dmode(mvme, cmode);
+  return 0;
+}
+
+/*****************************************************************/
 void  v792_Status(MVME_INTERFACE *mvme, DWORD base)
 {
   int status, cmode, i;
@@ -206,11 +288,9 @@ void  v792_Status(MVME_INTERFACE *mvme, DWORD base)
 
   mvme_get_dmode(mvme, &cmode);
   mvme_set_dmode(mvme, MVME_DMODE_D16);
-  printf("v792 Status for %lx\n", base);
+  printf("v792 Status for Base:%lx\n", base);
   status = mvme_read_value(mvme, base+V792_FIRM_REV);
   printf("Firmware revision: 0x%x\n", status);
-  status = mvme_read_value(mvme, base+V792_DELAY_CLEAR_RW);
-  printf(" Delay Clear  :%d  [%f]\n", (status & 0x1FF), ((float)(status & 0x1FF)/32.) + 7.);
   status = v792_CSR1Read(mvme, base);
   printf("DataReady    :%s\t", status & 0x1 ? "Y" : "N");
   printf(" - Global Dready:%s\t", status & 0x2 ? "Y" : "N");
@@ -228,6 +308,16 @@ void  v792_Status(MVME_INTERFACE *mvme, DWORD base)
   printf("Csel1        :%s\t", status & 0x20 ? "Y" : "N");
   printf(" - Dsel0        :%s\t", status & 0x40 ? "Y" : "N");
   printf(" - Dsel1        :%s\n", status & 0x80 ? "Y" : "N");
+  status = v792_BitSet2Read(mvme, base);
+  printf("Test Mem     :%s\t", status & 0x1 ? "Y" : "N");
+  printf(" - Offline      :%s\t", status & 0x2 ? "Y" : "N");
+  printf(" - Clear Data   :%s\n", status & 0x4  ? "Y" : "N");
+  printf("Over Range En:%s\t", status & 0x8  ? "Y" : "N");
+  printf(" - Low Thres En :%s\t", status & 0x10 ? "Y" : "N");
+  printf(" - Auto Incr    :%s\n", status & 0x20 ? "Y" : "N");
+  printf("Empty Enable :%s\t", status & 0x1000 ? "Y" : "N");
+  printf(" - Slide sub En :%s\t", status & 0x2000 ? "Y" : "N");
+  printf(" - All Triggers :%s\n", status & 0x4000 ? "Y" : "N");
   v792_ThresholdRead(mvme, base, threshold);
   for (i=0;i<V792_MAX_CHANNELS;i+=2) {
     printf("Threshold[%i] = 0x%4.4x\t   -  ", i, threshold[i]);
@@ -242,13 +332,14 @@ void  v792_Status(MVME_INTERFACE *mvme, DWORD base)
 int main () {
 
   DWORD VMEIO_BASE = 0x780000;
-  DWORD V792_BASE = 0x110000;
+  DWORD V792_BASE  = 0x500000;
   
   MVME_INTERFACE *myvme;
 
   int status, csr, i, cnt;
   DWORD    dest[1000];
   WORD     threshold[32];
+
   // Test under vmic   
   status = mvme_open(&myvme, 0);
 
@@ -258,21 +349,30 @@ int main () {
   // Set dmode to D32
   mvme_set_dmode(myvme, MVME_DMODE_D32);
 
-  //  v792_SingleShotReset(myvme, V792_BASE);
+  v792_SingleShotReset(myvme, V792_BASE);
 
   for (i=0;i<V792_MAX_CHANNELS;i++) {
-    threshold[i] = i;
+    threshold[i] = 0;
   }
   v792_ThresholdWrite(myvme, V792_BASE, threshold);
+  v792_DataClear(myvme, V792_BASE);
+  v792_Setup(myvme, V792_BASE, 2);
 
-  v792_Status(myvme, V792_BASE);
-
-  csr = v792_DataReady(myvme, V792_BASE);
-  printf("Data Ready: 0x%x\n", csr);
-
+  while (1) {
+  do {
+    csr = v792_CSR1Read(myvme, V792_BASE);
+    printf("CSR1: 0x%x\n", csr);
+    csr = v792_CSR2Read(myvme, V792_BASE);
+    printf("CSR2: 0x%x\n", csr);
+    printf("Busy : %d\n", v792_isBusy(myvme, V792_BASE));
+#if defined(OS_LINUX)
+    sleep(1);
+#endif
+  } while (csr == 0);
+ 
   // Read Event Counter
   v792_EvtCntRead(myvme, V792_BASE, &cnt);
-  printf("Event counter: 0x%lx\n", cnt);
+  printf("Event counter: 0x%x\n", cnt);
 
   // Set 0x3 in pulse mode for timing purpose
   mvme_write_value(myvme, VMEIO_BASE+0x8, 0xF); 
@@ -281,23 +381,23 @@ int main () {
   mvme_write_value(myvme, VMEIO_BASE+0xc, 0x2);
 
   //  cnt=32;
-   v792_DataRead(myvme, V792_BASE, dest, &cnt);
+  //   v792_DataRead(myvme, V792_BASE, dest, &cnt);
 
   // Write pulse for timing purpose
   mvme_write_value(myvme, VMEIO_BASE+0xc, 0x8);
 
-  for (i=0;i<32;i++) {
-    printf("Data[%i]=0x%x\n", i, dest[i]);
-  }
+  //  for (i=0;i<32;i++) {
+  //    printf("Data[%i]=0x%x\n", i, dest[i]);
+  //  }
   
   //  status = 32;
-  // v792_EventRead(myvme, V792_BASE, dest, &status);
-  // printf("count: 0x%x\n", status);
-  // for (i=0;i<status;i++)
-  // printf("Data[%i]=0x%x\n", i, dest[i]);
-
+   v792_EventRead(myvme, V792_BASE, dest, &status);
+   printf("count: 0x%x\n", status);
+   for (i=0;i<status;i++)
+   printf("Data[%i]=0x%lx\n", i, dest[i]);
+  }
   status = mvme_close(myvme);
   return 1;
-} 
+}	
 #endif
 
