@@ -8,15 +8,17 @@ SYSINC_DIR = /vxworks-ppc/include
 INC_DIR  = ../include
 SRC_DIR  = ../src
 DRV_DIR  = ../drivers
+MXML_DIR = ../../mxml
 
 #
 # Midas operating system dependent directories
 OBJ_DIR  = ppcobj
 
 # targets
-OBJS    = $(OBJ_DIR)/midas.o $(OBJ_DIR)/system.o $(OBJ_DIR)/mrpc.o $(OBJ_DIR)/odb.o $(OBJ_DIR)/ybos.o
+OBJS    = $(OBJ_DIR)/midas.o $(OBJ_DIR)/system.o $(OBJ_DIR)/mrpc.o $(OBJ_DIR)/odb.o $(OBJ_DIR)/ybos.o \
+	$(OBJ_DIR)/mxml.o $(OBJ_DIR)/strlcpy.o
 DRIVERS = $(OBJ_DIR)/hv.o $(OBJ_DIR)/multi.o \
-	  $(OBJ_DIR)/ces8210.o $(OBJ_DIR)/lrs1151.o $(OBJ_DIR)/lrs1190.o \
+#	  $(OBJ_DIR)/ces8210.o $(OBJ_DIR)/lrs1151.o $(OBJ_DIR)/lrs1190.o \
 	  $(OBJ_DIR)/vmeio.o $(OBJ_DIR)/esone.o $(OBJ_DIR)/camacnul.o \
       $(OBJ_DIR)/camacrpc.o
 
@@ -38,7 +40,7 @@ LD = /vxworks-ppc/bin/ldppc
 
 # Define Current Configuration
 CC_OPTIM	 = $(CC_OPTIM_NORMAL)
-CC_INCLUDES      = -I$(INC_DIR) -I$(SYSINC_DIR)
+CC_INCLUDES      = -I$(INC_DIR) -I$(MXML_DIR) -I$(SYSINC_DIR)
 CC_WARNINGS	 = $(CC_WARNINGS_NORMAL)
 ##PAA CC_DEFINES	 = -DOS_VXWORKS $(CPU) -DPPCxxx -DDM_DUAL_THREAD
 CC_DEFINES	 = -DOS_VXWORKS $(CPU) -DPPCxxx
@@ -67,16 +69,20 @@ $(LIB): $(OBJ_DIR) $(OBJS)
 	 rm -f $(LIB)
 	 $(LD) -o $(LIB) -r $(OBJS)
 
-$(OBJ_DIR)/midas.o: $(SRC_DIR)/midas.c $(INC_DIR)/msystem.h $(INC_DIR)/midas.h $(INC_DIR)/mrpc.h
+$(OBJ_DIR)/midas.o: $(SRC_DIR)/midas.c $(INC_DIR)/msystem.h $(INC_DIR)/midas.h $(INC_DIR)/mrpc.h $(MXML_DIR)/strlcpy.h
 	$(CC) -c $(CFLAGS) -o $(OBJ_DIR)/midas.o $(SRC_DIR)/midas.c
-$(OBJ_DIR)/system.o: $(SRC_DIR)/system.c $(INC_DIR)/msystem.h $(INC_DIR)/midas.h $(INC_DIR)/mrpc.h
+$(OBJ_DIR)/system.o: $(SRC_DIR)/system.c $(INC_DIR)/msystem.h $(INC_DIR)/midas.h $(INC_DIR)/mrpc.h  $(MXML_DIR)/strlcpy.h
 	$(CC) -c $(CFLAGS) -o $(OBJ_DIR)/system.o $(SRC_DIR)/system.c
-$(OBJ_DIR)/mrpc.o:  $(SRC_DIR)/mrpc.c $(INC_DIR)/msystem.h $(INC_DIR)/midas.h $(INC_DIR)/mrpc.h
+$(OBJ_DIR)/mrpc.o:  $(SRC_DIR)/mrpc.c $(INC_DIR)/msystem.h $(INC_DIR)/midas.h $(INC_DIR)/mrpc.h  $(MXML_DIR)/strlcpy.h
 	$(CC) -c $(CFLAGS) -o $(OBJ_DIR)/mrpc.o $(SRC_DIR)/mrpc.c
-$(OBJ_DIR)/odb.o:   $(SRC_DIR)/odb.c $(INC_DIR)/msystem.h $(INC_DIR)/midas.h $(INC_DIR)/mrpc.h
+$(OBJ_DIR)/odb.o:   $(SRC_DIR)/odb.c $(INC_DIR)/msystem.h $(INC_DIR)/midas.h $(INC_DIR)/mrpc.h $(MXML_DIR)/strlcpy.h
 	$(CC) -c $(CFLAGS) -o $(OBJ_DIR)/odb.o $(SRC_DIR)/odb.c
-$(OBJ_DIR)/ybos.o:   $(SRC_DIR)/ybos.c $(INC_DIR)/msystem.h $(INC_DIR)/midas.h $(INC_DIR)/mrpc.h
+$(OBJ_DIR)/ybos.o:   $(SRC_DIR)/ybos.c $(INC_DIR)/msystem.h $(INC_DIR)/midas.h $(INC_DIR)/mrpc.h $(MXML_DIR)/strlcpy.h
 	$(CC) -c $(CFLAGS) -o $(OBJ_DIR)/ybos.o $(SRC_DIR)/ybos.c
+$(OBJ_DIR)/mxml.o:$(MXML_DIR)/mxml.c
+	$(CC) -c $(CFLAGS) $(OSFLAGS) -o $@ $(MXML_DIR)/mxml.c
+$(OBJ_DIR)/strlcpy.o:$(MXML_DIR)/strlcpy.c
+	$(CC) -c $(CFLAGS) $(OSFLAGS) -o $@ $(MXML_DIR)/strlcpy.c
 
 #
 #  Frontend Midas kernel to be used for user code linking
@@ -102,7 +108,7 @@ $(OBJ_DIR)/camacnul.o:     $(DRV_DIR)/bus/camacnul.c
 	$(CC) $(CFLAGS) $(OSFLAGS) -c -o $(OBJ_DIR)/camacnul.o $(DRV_DIR)/bus/camacnul.c
 $(OBJ_DIR)/camacrpc.o:     $(DRV_DIR)/bus/camacrpc.c
 	$(CC) $(CFLAGS) $(OSFLAGS) -c -o $(OBJ_DIR)/camacrpc.o $(DRV_DIR)/bus/camacrpc.c
-$(OBJ_DIR)/ces8210.o:   $(DRV_DIR)/bus/ces8210.c
+#$(OBJ_DIR)/ces8210.o:   $(DRV_DIR)/bus/ces8210.c
 	$(CC) $(CFLAGS) $(OSFLAGS) -c -o $(OBJ_DIR)/ces8210.o $(DRV_DIR)/bus/ces8210.c
 $(OBJ_DIR)/vmeio.o:     $(DRV_DIR)/divers/vmeio.c
 	$(CC) $(CFLAGS) $(OSFLAGS) -c -o $(OBJ_DIR)/vmeio.o $(DRV_DIR)/divers/vmeio.c
