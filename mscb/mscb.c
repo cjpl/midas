@@ -651,9 +651,9 @@ int mscb_out(int index, unsigned char *buffer, int len, int flags)
          if (mscb_fd[index - 1].fd > 0)
             mrpc_disconnect(mscb_fd[index - 1].fd);
 
-         mscb_fd[index].fd = mrpc_connect(mscb_fd[index - 1].device, MSCB_NET_PORT);
+         mscb_fd[index - 1].fd = mrpc_connect(mscb_fd[index - 1].device, MSCB_NET_PORT);
 
-         if (mscb_fd[index].fd < 0)
+         if (mscb_fd[index - 1].fd < 0)
             return MSCB_TIMEOUT;
 
          i = msend_tcp(mscb_fd[index - 1].fd, eth_buf, len + 2);
