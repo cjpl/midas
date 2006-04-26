@@ -57,7 +57,7 @@ sbit SRSTROBE = P1 ^ 5;
 
 typedef struct {
    unsigned char error;
-   unsigned char bts_state;
+   unsigned char bts_state;          // 0: manual, 1:automatic
    unsigned char ln2_valve_state;
    unsigned char heater_state;
 
@@ -99,11 +99,13 @@ typedef struct {
    float         quench1;
    float         quench2;
 
-   float adc[8];
-   float aofs[8];
-   float again[8];
+   float         lhe_demand;
 
-   float scs_910[20];
+   float         adc[8];
+   float         aofs[8];
+   float         again[8];
+
+   float         scs_910[20];
 
 } USER_DATA;
 
@@ -217,10 +219,6 @@ void user_write(unsigned char index) reentrant;
 
 /*---- User init function ------------------------------------------*/
 
-unsigned char xdata ka_out;
-float xdata jt_forerun_valve;
-float xdata jt_bypass_valve;
-
 void user_init(unsigned char init)
 {
    unsigned char i;
@@ -265,9 +263,10 @@ void user_init(unsigned char init)
          user_data.again[i] = 1;
       }
 
-	  user_data.ln2_on = 20;
-	  user_data.ln2_off = 120;
-     user_data.preheat = 10;
+	  user_data.ln2_on     = 60;
+	  user_data.ln2_off    = 250;
+     user_data.preheat    = 10;
+     user_data.lhe_demand = 60;
    }
 
    /* retrieve backup data from RAM if not reset by power on */
@@ -299,7 +298,7 @@ void user_init(unsigned char init)
 
    user_data.error = 0;
    // keep states from EEPROM if ok
-   if (user_data.bts_state > 2) 
+   if (user_data.bts_state > 3) 
       user_data.bts_state = 0;
    if (user_data.ln2_valve_state > 2) 
       user_data.ln2_valve_state = 0;
@@ -317,6 +316,15 @@ float curr;
 unsigned short d;
 
    switch (index) {
+
+   case 2:  
+      /* propagate LN2 valve on/off to relais value */
+      if (user_data.ln2_valve_state == 0)
+         user_data.ln2_valve = 0;
+      else if (user_data.ln2_valve_state == 1)
+         user_data.ln2_valve = 1;
+      user_write(10);
+	  break;
 
    /* DOUT goes through inverter, bits are switched at KA */
    case 7: 
@@ -393,6 +401,16 @@ unsigned char user_func(unsigned char *data_in, unsigned char *data_out)
    data_out[0] = data_in[0];
    data_out[1] = data_in[1];
    return 2;
+}
+
+/*------------------------------------------------------------------*/
+
+void set_float(float *d, float s)
+{
+  /* copy float value to user_data without intterupt */
+  DISABLE_INTERRUPTS;
+  *d = s;
+  ENABLE_INTERRUPTS;
 }
 
 /*---- ADC read function -------------------------------------------*/
@@ -644,12 +662,36 @@ static long xdata last_ln2time = 0, last_b;
 
 /*------------------------------------------------------------------*/
 
-void set_float(float *d, float s)
+unsigned long last_control = 0;
+
+void lhe_control()
 {
-  /* copy float value to user_data without intterupt */
-  DISABLE_INTERRUPTS;
-  *d = s;
-  ENABLE_INTERRUPTS;
+   float v;
+
+   /* do nothing in manual mode */
+   if (user_data.bts_state == 0)
+      return;
+
+   /* execute once every 60 sec */
+   if (time() > last_control + 5*100) {
+      last_control = time();
+      
+      v = user_data.jt_forerun_valve;
+      if (user_data.lhe_level1 > user_data.lhe_demand ||
+          user_data.ka_level < 55 ||
+          user_data.lhe_bar > 1.4)
+         v = v - 1;
+      else
+         v = v + 0.5; 
+
+      if (v > 17)
+         v = 17;
+      if (v < 8)
+         v = 8;
+
+      set_float(&user_data.jt_forerun_valve, v);
+      user_write(14);
+   }
 }
 
 /*---- User loop function ------------------------------------------*/
@@ -768,6 +810,9 @@ void user_loop(void)
    
    /* manage menu on LCD display */
    lcd_menu();
+
+   /* call LHe control loop */
+   lhe_control();
 
    /* backup data */
    memcpy(&backup_data, &user_data, sizeof(user_data));
