@@ -673,12 +673,12 @@ void lhe_control()
 {
    float v;
 
-   /* do nothing in manual mode */
-   if (user_data.bts_state == 0)
+   /* do nothing in manual and labview mode */
+   if (user_data.bts_state != 1)
       return;
 
    /* execute once every 60 sec */
-   if (time() > last_control + 5*100) {
+   if (time() > last_control + 60*100) {
       last_control = time();
       
       v = user_data.jt_forerun_valve;
