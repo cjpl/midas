@@ -158,6 +158,8 @@ MSCB_INFO_VAR code variables[] = {
    { 4, UNIT_VOLT,    0, 0, MSCBF_FLOAT,               "Quench1",  &user_data.quench1 },                   // 31
    { 4, UNIT_VOLT,    0, 0, MSCBF_FLOAT,               "Quench2",  &user_data.quench2 },                   // 32
 
+   { 4, UNIT_PERCENT, 0, 0, MSCBF_FLOAT,               "LHE Dmd",  &user_data.lhe_demand },                // 33
+
    { 4, UNIT_VOLT,   0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "ADC0",     &user_data.adc[0] },                    
    { 4, UNIT_VOLT,   0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "ADC1",     &user_data.adc[1] },                    
    { 4, UNIT_VOLT,   0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "ADC2",     &user_data.adc[2] },                    
@@ -562,7 +564,10 @@ static long xdata last_ln2time = 0, last_b;
    }
 
    lcd_goto(13, 3);
-   printf("+ HE -");
+   if (user_data.bts_state == 1)
+      printf("+ HEA-");
+   else
+      printf("+ HE -");
 
    /* toggle ln2 valve state with button 0 */
    if (b0 && !b0_old) {
