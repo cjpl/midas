@@ -10,7 +10,7 @@
                 with two banks (ADC0 and TDC0), the scaler event
                 with one bank (SCLR).
 
-  $Id:$
+  $Id$
 
 \********************************************************************/
 
@@ -175,6 +175,8 @@ INT frontend_init()
 
    /* print message and return FE_ERR_HW if frontend should not be started */
 
+
+   cm_deregister_transition(TR_START);
    return SUCCESS;
 }
 

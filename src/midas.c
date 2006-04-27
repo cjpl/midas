@@ -2610,39 +2610,22 @@ INT cm_register_transition(INT transition, INT(*func) (INT, char *), INT sequenc
 
    rpc_register_function(RPC_RC_TRANSITION, rpc_transition_dispatch);
 
-   if (func != NULL) {
-      /* register new transition request */
+   /* register new transition request */
 
-      /* find empty slot */
-      for (i = 0; i < MAX_TRANSITIONS; i++)
-         if (!_trans_table[i].transition)
-            break;
+   /* find empty slot */
+   for (i = 0; i < MAX_TRANSITIONS; i++)
+      if (!_trans_table[i].transition)
+         break;
 
-      if (i == MAX_TRANSITIONS) {
-         cm_msg(MERROR, "cm_register_transition",
-               "To many transition registrations. Please increase MAX_TRANSITIONS and recompile");
-         return CM_TOO_MANY_REQUESTS;
-      }
-
-      _trans_table[i].transition = transition;
-      _trans_table[i].func = func;
-      _trans_table[i].sequence_number = sequence_number;
-   } else {
-      /* remove existing transition request */
-      for (i = 0; i < MAX_TRANSITIONS; i++)
-         if (_trans_table[i].transition == transition)
-            break;
-
-      if (i == MAX_TRANSITIONS) {
-         cm_msg(MERROR, "cm_register_transition",
-            "Cannot de-register transition registration, request not found");
-         return CM_INVALID_TRANSITION;
-      }
-
-      _trans_table[i].transition = 0;
-      _trans_table[i].func = NULL;
-      _trans_table[i].sequence_number = 0;
+   if (i == MAX_TRANSITIONS) {
+      cm_msg(MERROR, "cm_register_transition",
+            "To many transition registrations. Please increase MAX_TRANSITIONS and recompile");
+      return CM_TOO_MANY_REQUESTS;
    }
+
+   _trans_table[i].transition = transition;
+   _trans_table[i].func = func;
+   _trans_table[i].sequence_number = sequence_number;
 
    for (i = 0; i < 13; i++)
       if (trans_name[i].transition == transition)
@@ -2660,20 +2643,67 @@ INT cm_register_transition(INT transition, INT(*func) (INT, char *), INT sequenc
       if (status != DB_SUCCESS)
          return status;
    } else {
-      if (func == NULL) {
-         status = db_delete_key(hDB, hKeyTrans, FALSE);
-         if (status != DB_SUCCESS)
-            return status;
-      } else {
-         status = db_get_key(hDB, hKeyTrans, &key);
-         if (status != DB_SUCCESS)
-            return status;
-         status =
-            db_set_data_index(hDB, hKeyTrans, &sequence_number, sizeof(INT), key.num_values,
-                              TID_INT);
-         if (status != DB_SUCCESS)
-            return status;
-      }
+      status = db_get_key(hDB, hKeyTrans, &key);
+      if (status != DB_SUCCESS)
+         return status;
+      status =
+         db_set_data_index(hDB, hKeyTrans, &sequence_number, sizeof(INT), key.num_values,
+                           TID_INT);
+      if (status != DB_SUCCESS)
+         return status;
+   }
+
+   /* re-lock database */
+   db_set_mode(hDB, hKey, MODE_READ, TRUE);
+
+   return CM_SUCCESS;
+}
+
+INT cm_deregister_transition(INT transition)
+{
+   INT status, i;
+   HNDLE hDB, hKey, hKeyTrans;
+   char str[256];
+
+   /* check for valid transition */
+   if (transition != TR_START && transition != TR_STOP &&
+       transition != TR_PAUSE && transition != TR_RESUME) {
+      cm_msg(MERROR, "cm_deregister_transition", "Invalid transition request \"%d\"", transition);
+      return CM_INVALID_TRANSITION;
+   }
+
+   cm_get_experiment_database(&hDB, &hKey);
+
+   /* remove existing transition request */
+   for (i = 0; i < MAX_TRANSITIONS; i++)
+      if (_trans_table[i].transition == transition)
+         break;
+
+   if (i == MAX_TRANSITIONS) {
+      cm_msg(MERROR, "cm_register_transition",
+         "Cannot de-register transition registration, request not found");
+      return CM_INVALID_TRANSITION;
+   }
+
+   _trans_table[i].transition = 0;
+   _trans_table[i].func = NULL;
+   _trans_table[i].sequence_number = 0;
+
+   for (i = 0; i < 13; i++)
+      if (trans_name[i].transition == transition)
+         break;
+
+   sprintf(str, "Transition %s", trans_name[i].name);
+
+   /* unlock database */
+   db_set_mode(hDB, hKey, MODE_READ | MODE_WRITE | MODE_DELETE, TRUE);
+
+   /* set value */
+   status = db_find_key(hDB, hKey, str, &hKeyTrans);
+   if (hKeyTrans) {
+      status = db_delete_key(hDB, hKeyTrans, FALSE);
+      if (status != DB_SUCCESS)
+         return status;
    }
 
    /* re-lock database */
