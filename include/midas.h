@@ -1491,6 +1491,7 @@ extern "C" {
                                     DWORD watchdog_timeout);
    INT EXPRT cm_disconnect_experiment(void);
    INT EXPRT cm_register_transition(INT transition, INT(*func) (INT, char *), int sequence_number);
+   INT EXPRT cm_deregister_transition(INT transition);
    INT EXPRT cm_set_transition_sequence(INT transition, INT sequence_number);
    INT EXPRT cm_query_transition(int *transition, int *run_number, int *trans_time);
    INT EXPRT cm_register_deferred_transition(INT transition, BOOL(*func) (INT, BOOL));
