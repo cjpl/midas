@@ -8,12 +8,12 @@
   $Log: VF48.h,v $
 *********************************************************************/
 #
-#include <stdio.h>
-#include <string.h>
-#include "vmicvme.h"
- 
 #ifndef  __VF48_INCLUDE_H__
 #define  __VF48_INCLUDE_H__
+#
+#include <stdio.h>
+#include <string.h>
+#include "mvmestd.h"
  
 /* Registers */
 #define  VF48_MAX_CHANNELS         (DWORD) 48
