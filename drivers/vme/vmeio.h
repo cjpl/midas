@@ -7,10 +7,10 @@
                 
   $Log: vmeio.h,v $
 *********************************************************************/
-#include "vmicvme.h"
-
 #ifndef __VMEIO_INCLUDE_H__
 #define __VMEIO_INCLUDE_H__
+
+#include "mvmestd.h"
 
 #define VMEIO_IRQENBL    (0x00)
 #define VMEIO_INTSRC     (0x04)

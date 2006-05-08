@@ -13,7 +13,7 @@
 #if defined(OS_LINUX)
 #include <unistd.h>
 #endif
-#include "vmicvme.h"
+#include "mvmestd.h"
 #include "v792.h"
 
 /*****************************************************************/
