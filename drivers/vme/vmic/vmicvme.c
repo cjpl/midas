@@ -15,6 +15,7 @@ VMIC VME driver following the mvmestd
 #include <stdlib.h>
 #include <signal.h>
 #include <unistd.h>
+#include <assert.h>
 #include <vme/universe.h>
 #include <vme/vme.h>
 #include <vme/vme_api.h>
@@ -78,12 +79,10 @@ int mvme_open(MVME_INTERFACE **mvme, int index)
   }
   
   /* Allocate DMA_INFO */
-  info = (DMA_INFO *) malloc(sizeof(DMA_INFO));
+  info = (DMA_INFO *) calloc(1, sizeof(DMA_INFO));
+  assert(info != NULL);
   
-  (DMA_INFO *)((*mvme)->info) = info;
-  
-  /* initialize the table */
-  memset((char *) info, 0, sizeof(DMA_INFO));
+  (*mvme)->info = info;
   
   /* Create DMA buffer */
   if(0 > vme_dma_buffer_create( (vme_bus_handle_t) (*mvme)->handle
@@ -131,7 +130,7 @@ int mvme_close(MVME_INTERFACE *mvme)
   // Debug
   printf("mvme_close\n");
   printf("Bus handle              = 0x%x\n", mvme->handle);
-  printf("DMA handle              = 0x%x\n", info->dma_handle);
+  printf("DMA handle              = 0x%x\n", (int)info->dma_handle);
   printf("DMA    physical address = %p\n", (unsigned long *) info->dma_ptr);
   
   /*------------------------------------------------------------*/
@@ -285,21 +284,19 @@ Read single data from VME bus.
 DWORD mvme_read_value(MVME_INTERFACE *mvme, mvme_addr_t vme_addr)
 {
   mvme_addr_t addr;
-  DWORD dst;
+  DWORD dst = 0;
   
   addr = vmic_mapcheck(mvme, vme_addr, 4);
   
   /* Perform read */
   if (mvme->dmode == MVME_DMODE_D8)
     dst  = *((char *)addr);
-  
-  if (mvme->dmode == MVME_DMODE_D16)
+  else if (mvme->dmode == MVME_DMODE_D16)
     dst  = *((WORD *)addr);
-  
-  if (mvme->dmode == MVME_DMODE_D32)
+  else if (mvme->dmode == MVME_DMODE_D32)
     dst = *((DWORD *)addr);
-  
-  return(dst);
+
+  return dst;
 }
 
 /********************************************************************/
@@ -468,7 +465,7 @@ static void handler(int sig, siginfo_t * siginfo, void *extra)
 
 */
 int mvme_interrupt_attach(MVME_INTERFACE *mvme, int level, int vector
-					, void (*isr)(int, siginfo_t*, void *), void *info)
+					, void (*isr)(int, void*, void *), void *info)
 {
 	struct sigevent event;
 	struct sigaction handler_act;
@@ -480,7 +477,7 @@ int mvme_interrupt_attach(MVME_INTERFACE *mvme, int level, int vector
 
 	/* Install the signal handler */
 	sigemptyset(&handler_act.sa_mask);
-	handler_act.sa_sigaction = isr;
+	handler_act.sa_sigaction = (void*)isr;
 	handler_act.sa_flags = SA_SIGINFO;
 
 	if (sigaction(SIGIO, &handler_act, NULL)) {
