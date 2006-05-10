@@ -19,7 +19,7 @@
 
 extern unsigned char application_display(bit init);
 extern void user_write(unsigned char index) reentrant;
-extern MSCB_INFO_VAR code variables[];
+extern MSCB_INFO_VAR *variables;
 extern SYS_INFO sys_info;
 extern bit flash_param;
 extern unsigned char idata _flkey;
@@ -280,7 +280,7 @@ void display_name(unsigned char index, MSCB_INFO_VAR *pvar)
 
 /*------------------------------------------------------------------*/
 
-#ifdef SCS_1001
+#if defined(SCS_1001) || defined(SCS_2000)
 
 static xdata unsigned long last_disp = 0, last_b2 = 0, last_b3 = 0;
 static bit b0_old = 0, b1_old = 0, b2_old = 0, b3_old = 0;
