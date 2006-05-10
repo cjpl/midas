@@ -473,6 +473,16 @@ unsigned short i, to;
          break;
       }
 
+      /* check for READ error acknowledge */
+      if ((rs485_tx_buf[1] == MCMD_READ+1 || 
+           (rs485_tx_buf[1] == MCMD_ADDR_NODE16 && rs485_tx_buf[5] == MCMD_READ+1)) &&
+          i_rs485_rx == 1 && rs485_rx_buf[0] == MCMD_ACK) {
+
+         led_blink(1, 1, 50);
+         tcp_send(socket_no, rs485_rx_buf, 1);
+         break;
+      }
+
       /* check for normal acknowledge */
       if (i_rs485_rx > 0 && (rs485_rx_buf[0] & MCMD_ACK) == MCMD_ACK) {
 

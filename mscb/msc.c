@@ -1092,6 +1092,7 @@ void cmd_loop(int fd, char *cmd, unsigned short adr)
                         status =
                               mscb_read(fd, (unsigned short) current_addr,
                                        (unsigned char) i, dbuf, &size);
+
                         if (status == MSCB_SUCCESS)
                            print_channel(i, &info_var, dbuf, first != last);
                      }

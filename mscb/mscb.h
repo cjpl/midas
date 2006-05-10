@@ -189,19 +189,20 @@ extern MSCB_FD mscb_fd[MSCB_MAX_FD];
 
 /*---- status codes ------------------------------------------------*/
 
-#define MSCB_SUCCESS       1
-#define MSCB_CRC_ERROR     2
-#define MSCB_TIMEOUT       3
-#define MSCB_INVAL_PARAM   4
-#define MSCB_MUTEX         5
-#define MSCB_FORMAT_ERROR  6
-#define MSCB_NO_MEM        7
-#define MSCB_SUBM_ERROR    8
-#define MSCB_ADDR_EXISTS   9
-#define MSCB_WRONG_PASS   10
-#define MSCB_SUBADDR      11
-#define MSCB_NOTREADY     12
-#define MSCB_NO_VAR       13
+#define MSCB_SUCCESS        1
+#define MSCB_CRC_ERROR      2
+#define MSCB_TIMEOUT        3
+#define MSCB_INVAL_PARAM    4
+#define MSCB_MUTEX          5
+#define MSCB_FORMAT_ERROR   6
+#define MSCB_NO_MEM         7
+#define MSCB_SUBM_ERROR     8
+#define MSCB_ADDR_EXISTS    9
+#define MSCB_WRONG_PASS    10
+#define MSCB_SUBADDR       11
+#define MSCB_NOTREADY      12
+#define MSCB_NO_VAR        13
+#define MSCB_INVALID_INDEX 14
 
 /*---- error codes ------------------------------------------------*/
 
