@@ -37,7 +37,7 @@ void user_write(unsigned char index) reentrant;
 unsigned char user_read(unsigned char index);
 void user_loop(void);
 
-extern MSCB_INFO_VAR code variables[];
+extern MSCB_INFO_VAR *variables;
 extern unsigned char idata _n_sub_addr;
 
 extern char code node_name[];
@@ -90,7 +90,8 @@ sbit WD_RESET = CSR ^ 3;        // got rebooted by watchdog reset
 bit addressed;                  // true if node addressed
 bit flash_param;                // used for EEPROM flashing
 bit flash_program;              // used for upgrading firmware
-bit configured;                 // TRUE if node is configured
+bit configured_addr;            // TRUE if node address is configured
+bit configured_vars;            // TRUE if variables are configured
 bit flash_allowed;              // TRUE 5 sec after booting node
 bit wrong_cpu;                  // TRUE if code uses xdata and CPU does't have it
 bit out_buf_empty;              // TRUR if out_buf has been sent completely
@@ -102,7 +103,7 @@ static unsigned char idata watchdog_resets;
 
 void setup(void)
 {
-   unsigned char adr;
+   unsigned char adr, flags;
    unsigned short i;
    unsigned char *p;
 
@@ -212,7 +213,6 @@ void setup(void)
    addressed = 0;
    flash_param = 0;
    flash_program = 0;
-   configured = 1;
    flash_allowed = 0;
    wrong_cpu = 0;
    _flkey = 0;
@@ -242,6 +242,10 @@ void setup(void)
    lcd_setup();
 #endif
 
+#ifdef DYN_VARIABLES
+   setup_variables();
+#endif
+
    /* count variables */
    for (n_variables = _var_size = 0;; n_variables++) {
       _var_size += variables[n_variables].width;
@@ -261,15 +265,22 @@ void setup(void)
    }
 
    /* retrieve EEPROM data */
-   if (!eeprom_retrieve()) {
-      configured = 0;
+   flags = eeprom_retrieve();
 
-      /* correct initial value */
+   if ((flags & (1 << 0)) == 0) {
+      configured_addr = 0;
+   
+      /* set initial values */
       sys_info.node_addr = 0xFFFF;
       sys_info.group_addr = 0xFFFF;
       sys_info.watchdog_resets = 0;
       memset(sys_info.node_name, 0, sizeof(sys_info.node_name));
       strncpy(sys_info.node_name, node_name, sizeof(sys_info.node_name));
+   } else
+      configured_addr = 1;
+
+   if ((flags & (1 << 1)) == 0) {
+      configured_vars = 0;
 
       /* init variables */
       for (i = 0; variables[i].width; i++)
@@ -285,7 +296,7 @@ void setup(void)
 
    } else {
       /* remember configured flag */
-      configured = 1;
+      configured_vars = 1;
 
       /* call user initialization routine without initialization */
       user_init(0);
@@ -490,7 +501,7 @@ void addr_node16(unsigned char mode, unsigned int adr, unsigned int node_addr)
 void interprete(void) 
 {
    unsigned char crc, cmd, i, j, n, ch, a1, a2;
-   MSCB_INFO_VAR code *pvar;
+   MSCB_INFO_VAR *pvar;
    unsigned long idata u;
 
    cmd = (in_buf[0] & 0xF8);    // strip length field
@@ -582,13 +593,13 @@ void interprete(void)
 
       if (in_buf[1] < n_variables) {
          pvar = variables + in_buf[1];
-
-         ES0 = 0;               // temporarily disable serial interrupt
+                                  
+         ES0 = 0;                       // temporarily disable serial interrupt
          crc = 0;
          RS485_ENABLE = 1;
 
          send_byte(CMD_ACK + 7, &crc);  // send acknowledge, variable data length
-         send_byte(13, &crc);   // send data length
+         send_byte(13, &crc);           // send data length
          send_byte(pvar->width, &crc);
          send_byte(pvar->unit, &crc);
          send_byte(pvar->prefix, &crc);
@@ -598,11 +609,11 @@ void interprete(void)
          for (i = 0; i < 8; i++)        // send variable name
             send_byte(pvar->name[i], &crc);
 
-         send_byte(crc, NULL);  // send CRC code
+         send_byte(crc, NULL);          // send CRC code
 
          DELAY_US(10);
          RS485_ENABLE = 0;
-         ES0 = 1;               // re-enable serial interrupts
+         ES0 = 1;                       // re-enable serial interrupts
       } else {
          /* just send dummy ack */
          out_buf[0] = CMD_ACK;
@@ -747,7 +758,12 @@ void interprete(void)
                RS485_ENABLE = 0;
                ES0 = 1;            // re-enable serial interrupts
             }
-         }
+         } else {
+            /* just send dummy ack to indicate error */
+            out_buf[0] = CMD_ACK;
+            send_obuf(1);
+         }  
+
       } else if (in_buf[0] == CMD_READ + 2) {   // variable range
 
         if (in_buf[1] < n_variables && in_buf[2] < n_variables && in_buf[1] < in_buf[2]) {
@@ -775,6 +791,10 @@ void interprete(void)
             DELAY_US(10);
             RS485_ENABLE = 0;
             ES0 = 1;            // re-enable serial interrupts
+         } else {
+            /* just send dummy ack to indicate error */
+            out_buf[0] = CMD_ACK;
+            send_obuf(1);
          }
       }
    }
@@ -1364,7 +1384,7 @@ void yield(void)
 #endif
 
    /* blink LED if not configured */
-   if (!configured)
+   if (!configured_addr)
       led_blink(0, 1, 50);
 
    /* blink LED if wrong CPU */
@@ -1379,7 +1399,8 @@ void yield(void)
       flash_param = 0;
 
       eeprom_flash();
-	   configured = 1;
+	   configured_addr = 1;
+	   configured_vars = 1;
    }
 
    if (flash_program && flash_allowed) {

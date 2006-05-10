@@ -62,6 +62,9 @@
 #ifdef scs_1001
 #define SCS_1001
 #endif
+#ifdef scs_2000
+#define SCS_2000
+#endif
 #ifdef hvr_400
 #define HVR_400
 #endif
@@ -213,6 +216,24 @@ sbit EXT_WATCHDOG_PIN = P1 ^ 4;
 #define LCD_SUPPORT
 
 /*--------------------------------*/
+#elif defined(SCS_2000)
+#include <c8051F120.h>
+#define CPU_C8051F120
+
+#define LED_0 P0 ^ 6
+#define LED_1 P0 ^ 7
+#define LED_2 P1 ^ 7 // buzzer
+#define LED_ON 0
+sbit RS485_ENABLE = P0 ^ 5;
+sbit RS485_SEC_ENABLE = P0 ^ 4;
+
+//#define EXT_WATCHDOG              // use external watchdog
+sbit EXT_WATCHDOG_PIN = P2 ^ 0;
+
+#define LCD_SUPPORT
+#define DYN_VARIABLES
+
+/*--------------------------------*/
 #elif defined(HVR_400)
 #include <c8051F310.h>
 #define CPU_C8051F310
@@ -295,7 +316,7 @@ char putchar1(char c);                   // putchar cannot be used with LCD supp
 #endif
 
 #ifndef UART1_DEVICE
-#if defined(SCS_1000) || defined(SCS_1001)
+#if defined(SCS_1000) || defined(SCS_1001) || defined(SCS_2000)
 #define UART1_MSCB                       // UART1 connected as master to MSCB slave bus
 #endif
 #endif
@@ -465,7 +486,7 @@ typedef struct {
    char name[8];                // name
    void *ud;                    // point to user data buffer
 
-#if defined(SCS_1000) || defined(SCS_1001)
+#if defined(SCS_1000) || defined(SCS_1001) || defined(SCS_2000)
    float min, max, delta;       // limits for button control
    unsigned short node_address; // address for remote node on subbus
    unsigned char  channel;      // address for remote channel subbus
@@ -579,6 +600,7 @@ void flush(void);
 
 void eeprom_flash(void);
 unsigned char eeprom_retrieve(void);
+void setup_variables(void);
 
 void uart_init(unsigned char port, unsigned char baud);
 

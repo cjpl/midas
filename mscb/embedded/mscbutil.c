@@ -16,7 +16,7 @@
 #ifdef EEPROM_SUPPORT
 
 extern SYS_INFO sys_info;               // for eeprom functions
-extern MSCB_INFO_VAR code variables[];
+extern MSCB_INFO_VAR *variables;
 
 #endif
 
@@ -135,7 +135,7 @@ void serial_int1(void) interrupt 20
 {
    if (SCON1 & 0x02) {          // TI1
 
-#if defined(SCS_220) || defined(SCS_1000) || defined(SCS_1001)
+#if defined(SCS_220) || defined(SCS_1000) || defined(SCS_1001) || defined(SCS_2000)
       if (sbuf_wp == sbuf_rp)
          RS485_SEC_ENABLE = 0;
 #endif
@@ -170,7 +170,7 @@ void rs232_output(void)
 {
    if (sbuf_wp != sbuf_rp && ti1_shadow == 1) {
       ti1_shadow = 0;
-#if defined(SCS_220) || defined(SCS_1000) || defined(SCS_1001)
+#if defined(SCS_220) || defined(SCS_1000) || defined(SCS_1001) || defined(SCS_2000)
       RS485_SEC_ENABLE = 1;
 #endif
 
@@ -1304,6 +1304,10 @@ void eeprom_flash(void)
    // system info (node address etc...)
    eeprom_write(&sys_info, sizeof(SYS_INFO), &offset);
 
+   // magic
+   magic = 0x1234;
+   eeprom_write(&magic, 2, &offset);
+
    // user channel variables
    for (adr = 0 ; adr < _n_sub_addr ; adr++)
       for (i = 0; variables[i].width; i++)
@@ -1328,13 +1332,19 @@ unsigned char eeprom_retrieve(void)
 
 \********************************************************************/
 {
-   unsigned char i, adr;
+   unsigned char i, adr, status;
    unsigned short magic, offset;
 
    offset = 0;
+   status = 0;
 
    // system info (node address etc...)
    eeprom_read(&sys_info, sizeof(SYS_INFO), &offset);
+
+   // check for first magic
+   eeprom_read(&magic, 2, &offset);
+   if (magic == 0x1234)
+      status |= (1 << 0);
 
    // user channel variables
    for (adr = 0 ; adr < _n_sub_addr ; adr++)
@@ -1342,10 +1352,12 @@ unsigned char eeprom_retrieve(void)
          eeprom_read((char *)variables[i].ud + _var_size*adr,
                      variables[i].width, &offset);
 
-   // check for magic
+   // check for second magic
    eeprom_read(&magic, 2, &offset);
+   if (magic == 0x1234)
+      status |= (1 << 1);
 
-   return (magic == 0x1234);
+   return status;
 }
 
 #endif /* EEPROM_SUPPORT */
@@ -1369,7 +1381,7 @@ bit lcd_present;
 
 #define LCD P2                  // LCD display connected to port2
 
-#if defined(SCS_1000) || defined (SCS_1001) || defined (SCS_900)
+#if defined (SCS_900) || defined(SCS_1000) || defined (SCS_1001) ||  defined(SCS_2000)
 sbit LCD_RS  = LCD ^ 3;
 sbit LCD_R_W = LCD ^ 2;
 sbit LCD_E   = LCD ^ 1;
@@ -1478,7 +1490,7 @@ void lcd_setup()
    PRT2CF = 0xFF;              // all push-pull
 #endif
 
-#if defined(SCS_1001) || defined(SCS_900)  // 4-line LCD display with KS0078 controller
+#if defined(SCS_900) || defined(SCS_1001) || defined(SCS_2000) // 4-line LCD display with KS0078 controller
 
    LCD &= ~(0xFE);
    LCD |= 0x20;  // set 4-bit interface
@@ -1580,7 +1592,7 @@ void lcd_clear()
 void lcd_goto(char x, char y)
 {
 
-#if defined(SCS_1001) || defined(SCS_900)
+#if defined(SCS_900) || defined(SCS_1001) || defined(SCS_2000)
    /* goto position x(0..19), y(0..3) */
    lcd_out((x & 0x1F) | (0x80) | ((y & 0x03) << 5), 0);
 #else
