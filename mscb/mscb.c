@@ -3287,6 +3287,7 @@ int mscb_read(int fd, unsigned short adr, unsigned char index, void *data, int *
     MSCB_CRC_ERROR          CRC error
     MSCB_INVAL_PARAM        Parameter "size" has invalid value
     MSCB_MUTEX              Cannot obtain mutex for mscb
+    MSCB_INVALID_INDEX      index parameter too large
 
 \********************************************************************/
 {
@@ -3349,6 +3350,12 @@ int mscb_read(int fd, unsigned short adr, unsigned char index, void *data, int *
 
       /* read data */
       i = mscb_in(fd, buf, sizeof(buf), TO_SHORT);
+
+      if (i == 1 && buf[0] == MCMD_ACK) {
+         /* variable has been deleted on node, so refresh cache */ 
+         mscb_clear_info_cache(fd);
+         return MSCB_INVALID_INDEX;
+      }
 
       if (i == 1) {
 #ifndef _USRDLL
