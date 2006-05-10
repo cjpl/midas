@@ -182,6 +182,8 @@ typedef struct {
 CACHE_INFO_VAR *cache_info_var;
 int n_cache_info_var;
 
+void mscb_clear_info_cache(int fd);
+
 /*------------------------------------------------------------------*/
 
 /* missing linux functions */
@@ -1700,6 +1702,7 @@ int mscb_reboot(int fd, int addr, int gaddr, int broadcast)
    }
 
    mscb_release(fd);
+   mscb_clear_info_cache(fd);
 
    return MSCB_SUCCESS;
 }
@@ -2045,7 +2048,7 @@ int mscb_info_variable(int fd, unsigned short adr, unsigned char index, MSCB_INF
       mscb_release(fd);
       if (i < (int) sizeof(MSCB_INFO_VAR) + 3) {
          if (i == 2) // negative acknowledge
-            cache_info_var[n_cache_info_var++].info.name[0] = 0;
+            cache_info_var[n_cache_info_var].info.name[0] = 0;
          return MSCB_NO_VAR;
       }
 

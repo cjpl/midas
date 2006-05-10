@@ -1075,7 +1075,7 @@ void cmd_loop(int fd, char *cmd, unsigned short adr)
                for (i = first ; i <= last ; i++) {
 
                   status = mscb_info_variable(fd, (unsigned short) current_addr,
-                                       (unsigned char) i, &info_var);
+                                                  (unsigned char) i, &info_var);
 
                   if (status == MSCB_NO_VAR) {
                      if (first == last)
