@@ -3901,7 +3901,7 @@ int mscb_user(int fd, unsigned short adr, void *param, int size, void *result, i
    n = mscb_in(fd, buf, sizeof(buf), TO_SHORT);
    mscb_release(fd);
 
-   if (n < 0)
+   if (n < 2)
       return MSCB_TIMEOUT;
 
    if (rsize)
