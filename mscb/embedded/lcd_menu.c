@@ -29,13 +29,13 @@ extern unsigned char idata n_variables;
 
 /*------------------------------------------------------------------*/
 
-bit startup = 1;               // true for the first 3 seconds
-bit in_menu = 0;               // false for application display
-bit system_menu = 0;           // true if in system menu
-bit enter_mode = 0;            // true if editing vars
-unsigned char var_index = 0;   // variable to display
+bit startup = 1;                     // true for the first 3 seconds
+bit in_menu = 0;                     // false for application display
+bit system_menu = 0;                 // true if in system menu
+bit enter_mode = 0;                  // true if editing vars
+unsigned char xdata var_index = 0;   // variable to display
 
-xdata float f_var;
+float xdata f_var;
 
 /*------------------------------------------------------------------*/
 
