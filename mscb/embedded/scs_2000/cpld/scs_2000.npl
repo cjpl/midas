@@ -27,7 +27,7 @@ xcpldFitDesTriMode=xstvhd, xbr, VHDL.t_vm6File, 1147071368, Pullup
 xcpldFitDesUnused=xstvhd, xbr, VHDL.t_vm6File, 1147071368, Pullup
 xcpldFitDesVolt=xstvhd, xbr, VHDL.t_vm6File, 1147071368, LVCMOS33
 [STATUS-ALL]
-scs_2000.ngcFile=WARNINGS,1147415596
-scs_2000.vm6File=WARNINGS,1147415608
+scs_2000.jedFile=WARNINGS,1147434993
+scs_2000.ngcFile=WARNINGS,1147434832
 [STRATEGY-LIST]
 Normal=True

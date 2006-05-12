@@ -198,7 +198,7 @@ char xdata * pvardata;
             i = 0;
             while (1) {
                lcd_goto(0, 2);
-               printf("> %02bX %s            ", scs_2000_module[i].id, scs_2000_module[i].name);
+               printf(">%02bX %s            ", scs_2000_module[i].id, scs_2000_module[i].name);
 
                lcd_goto(0, 3);
                if (i == 0)
@@ -319,7 +319,7 @@ unsigned char i, j, n, col;
                next = 1;
                break;
             }
-            printf("P%bd: %02bX %s      ", i, scs_2000_module[j].id, scs_2000_module[j].name);
+            printf("P%bd:%02bX %s      ", i, scs_2000_module[j].id, scs_2000_module[j].name);
          } else
             printf("                    ");
 

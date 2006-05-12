@@ -36,6 +36,7 @@ unsigned char dr_dout_byte(unsigned char id, unsigned char cmd, unsigned char ad
 unsigned char dr_din_bits(unsigned char id, unsigned char cmd, unsigned char addr, unsigned char port, unsigned char chn, void *pd) reentrant;
 unsigned char dr_ltc2600(unsigned char id, unsigned char cmd, unsigned char addr, unsigned char port, unsigned char chn, void *pd) reentrant;
 unsigned char dr_ad7718(unsigned char id, unsigned char cmd, unsigned char addr, unsigned char port, unsigned char chn, void *pd) reentrant;
+unsigned char dr_ads1256(unsigned char id, unsigned char cmd, unsigned char addr, unsigned char port, unsigned char chn, void *pd) reentrant;
 
 MSCB_INFO_VAR code vars_id01[] =
    { 1, UNIT_BYTE,    0,          0, 0,           "P%Out",   1, 0, 255, 1   };
@@ -61,6 +62,9 @@ MSCB_INFO_VAR code vars_dout[] =
 MSCB_INFO_VAR code vars_relais[] =
    { 1, UNIT_BOOLEAN, 0,          0,           0, "P%Rel#",  4, 0,  1,  1 };
 
+MSCB_INFO_VAR code vars_optout[] =
+   { 1, UNIT_BOOLEAN, 0,          0,           0, "P%Out#",  4, 0,  1,  1 };
+
 SCS_2000_MODULE code scs_2000_module[] = {
   /* 0x01-0x1F misc. */
   { 0x01, "LED-Debug",       vars_id01,   dr_dout_byte   },
@@ -72,12 +76,18 @@ SCS_2000_MODULE code scs_2000_module[] = {
   /* 0x40-0x5F digital out */
   { 0x40, "Dout 5V",         vars_dout,   dr_dout_bits   },
   { 0x41, "Relais",          vars_relais, dr_dout_bits   },
+  { 0x42, "OptOut",          vars_optout, dr_dout_bits   },
 
   /* 0x60-0x7F analog in  */
   { 0x60, "Uin 0-2.5V",      vars_uin,    dr_ad7718      },
   { 0x61, "Uin +-10V",       vars_uin,    dr_ad7718      },
   { 0x62, "Iin 0-2.5mA",     vars_iin,    dr_ad7718      },
   { 0x63, "Iin 0-25mA",      vars_iin,    dr_ad7718      },
+
+  { 0x64, "Uin 0-2.5V Fast", vars_uin,    dr_ads1256     },
+  { 0x65, "Uin +-10V Fast",  vars_uin,    dr_ads1256     },
+  { 0x66, "Iin 0-2.5mA Fast",vars_iin,    dr_ads1256     },
+  { 0x67, "Iin 0-25mA Fast", vars_iin,    dr_ads1256     },
 
   /* 0x80-0x9F analog out */
   { 0x80, "UOut 0-2.5V",     vars_uout,   dr_ltc2600     },
@@ -479,7 +489,7 @@ unsigned char i;
 #define AD7718_ADCGAIN    6
 #define AD7718_IOCONTROL  7
 
-void write_ad7718(unsigned char a, unsigned char d) reentrant
+void ad7718_write(unsigned char a, unsigned char d) reentrant
 {
    unsigned char i, m;
 
@@ -526,7 +536,7 @@ void write_ad7718(unsigned char a, unsigned char d) reentrant
    DELAY_CLK;
 }
 
-void read_ad7718(unsigned char a, unsigned long *d) reentrant
+void ad7718_read(unsigned char a, unsigned long *d) reentrant
 {
    unsigned char i, m;
 
@@ -570,7 +580,7 @@ void read_ad7718(unsigned char a, unsigned long *d) reentrant
    DELAY_CLK;
 }
 
-unsigned char xdata last_chn[8];
+unsigned char xdata ad7718_last_chn[8];
 
 unsigned char dr_ad7718(unsigned char id, unsigned char cmd, unsigned char addr, 
                         unsigned char port, unsigned char chn, void *pd) reentrant
@@ -583,11 +593,11 @@ unsigned char status, next_chn;
 
    if (cmd == MC_INIT) {
       address_port(addr, port, AM_RW_SERIAL, 1);
-      write_ad7718(AD7718_FILTER, 82);                // SF value for 50Hz rejection (2 Hz)
-      //write_ad7718(AD7718_FILTER, 13);                // SF value for faster conversion (12 Hz)
-      write_ad7718(AD7718_MODE, 3);                   // continuous conversion
-      write_ad7718(AD7718_CONTROL, (0 << 4) | 0x0F);  // Chn. 0, +2.56V range
-      last_chn[port] = 0;
+      ad7718_write(AD7718_FILTER, 82);                // SF value for 50Hz rejection (2 Hz)
+      //ad7718_write(AD7718_FILTER, 13);                // SF value for faster conversion (12 Hz)
+      ad7718_write(AD7718_MODE, 3);                   // continuous conversion
+      ad7718_write(AD7718_CONTROL, (0 << 4) | 0x0F);  // Chn. 0, +2.56V range
+      ad7718_last_chn[port] = 0;
       DELAY_US(100);
    }
 
@@ -600,23 +610,14 @@ unsigned char status, next_chn;
       address_port(addr, port, AM_RW_SERIAL, 1);
     
       /* read 24-bit data */
-      read_ad7718(AD7718_ADCDATA, &d);
+      ad7718_read(AD7718_ADCDATA, &d);
 
       /* start next conversion */
-      next_chn = (last_chn[port] + 1) % 8;
-      write_ad7718(AD7718_CONTROL, (next_chn << 4) | 0x0F);  // next chn, +2.56V range
+      next_chn = (ad7718_last_chn[port] + 1) % 8;
+      ad7718_write(AD7718_CONTROL, (next_chn << 4) | 0x0F);  // next chn, +2.56V range
 
       /* convert to volts */
       value = 2.56*((float)d / (1l<<24));
-   
-      /* round result to significant digits */
-      if (id == 0x61|| id == 0x63) {
-         d = (unsigned long)(value*1E4+0.5);
-         value = d/1E4;
-      } else {
-         d = (unsigned long)(value*1E5+0.5);
-         value = d/1E5;
-      }
    
       /* apply range */
       if (id == 0x60)
@@ -628,11 +629,251 @@ unsigned char status, next_chn;
       else if (id == 0x63)
          value *= 10;
 
+      /* round result to significant digits */
+      if (id == 0x61|| id == 0x63) {
+         d = (unsigned long)(value*1E4+0.5);
+         value = d/1E4;
+      } else {
+         d = (unsigned long)(value*1E5+0.5);
+         value = d/1E5;
+      }
+
       DISABLE_INTERRUPTS;
-      *((float *)pd + last_chn[port]) = value;
+      *((float *)pd + ad7718_last_chn[port]) = value;
       ENABLE_INTERRUPTS;
 
-      last_chn[port] = next_chn;
+      ad7718_last_chn[port] = next_chn;
+   }
+
+   return 1;
+}
+
+/*---- ADS1256 24-bit fast sigma-delta ADC -------------------------*/
+
+/* ADS1256 commands */
+#define ADS1256_WAKEUP      0x00
+#define ADS1256_RDATA       0x01
+#define ADS1256_RDATAC      0x03
+#define ADS1256_SDATAC      0x0F
+#define ADS1256_RREG        0x10
+#define ADS1256_WREG        0x50
+#define ADS1256_SELFCAL     0xF0
+#define ADS1256_SELFOCAL    0xF1
+#define ADS1256_SELFGCAL    0xF2
+#define ADS1256_SYSOCAL     0xF3
+#define ADS1256_SYSGCAL     0xF4
+#define ADS1256_SYNC        0xFC
+#define ADS1256_STANDBY     0xFD
+#define ADS1256_RESET       0xFE
+
+/* ADS1256 registers */
+#define ADS1256_STATUS      0
+#define ADS1256_MUX         1
+#define ADS1256_ADCON       2
+#define ADS1256_DRATE       3
+#define ADS1256_IO          4
+
+void ads1256_cmd(unsigned char c) reentrant
+{
+   unsigned char i;
+
+   OPT_DATAO = 0;
+   OPT_ALE = 0;
+   DELAY_CLK;
+
+   for (i=0 ; i<8 ; i++) {
+      OPT_CLK   = 1;
+      OPT_DATAO = (c & 0x80) > 0;
+      DELAY_CLK;
+      OPT_CLK   = 0;
+      DELAY_CLK;
+      c <<= 1;
+   }
+
+   OPT_ALE = 1;
+   OPT_DATAO = 0;
+   DELAY_CLK;
+}
+
+void ads1256_write(unsigned char a, unsigned char d) reentrant
+{
+   unsigned char i, c;
+
+   OPT_DATAO = 0;
+   OPT_ALE = 0;
+   DELAY_CLK;
+
+   /* WREG command */
+   c = ADS1256_WREG + a;
+   for (i=0 ; i<8 ; i++) {
+      OPT_CLK   = 1;
+      OPT_DATAO = (c & 0x80) > 0;
+      DELAY_CLK;
+      OPT_CLK   = 0;
+      DELAY_CLK;
+      c <<= 1;
+   }
+
+   /* data length-1 = 0 */
+   c = ADS1256_WREG + a;
+   for (i=0 ; i<8 ; i++) {
+      OPT_CLK   = 1;
+      OPT_DATAO = 0;
+      DELAY_CLK;
+      OPT_CLK   = 0;
+      DELAY_CLK;
+      c <<= 1;
+   }
+
+   /* write one byte for single register */
+   for (i=0 ; i<8 ; i++) {
+      OPT_CLK   = 1;
+      OPT_DATAO = (d & 0x80) > 0;
+      DELAY_CLK;
+      OPT_CLK   = 0;
+      DELAY_CLK;
+      d <<= 1;
+   }
+
+   OPT_ALE = 1;
+   OPT_DATAO = 0;
+   DELAY_CLK;
+}
+
+void ads1256_read(unsigned long *d) reentrant
+{
+   unsigned char i, c;
+
+   OPT_ALE = 0;
+   DELAY_CLK;
+
+   /* RDATA command */
+   c = ADS1256_RDATA;
+   for (i=0 ; i<8 ; i++) {
+      OPT_CLK   = 1;
+      OPT_DATAO = (c & 0x80) > 0;
+      DELAY_CLK;
+      OPT_CLK   = 0;
+      DELAY_CLK;
+      c <<= 1;
+   }
+
+   DELAY_US(10); // Datasheet: 50 tau_clkin = 1/8MHz * 50
+
+   /* read from selected data register */
+   for (i=0,*d=0 ; i<24 ; i++) {
+      OPT_CLK = 1;
+      DELAY_CLK;
+      *d = (*d << 1) | OPT_DATAI;
+      OPT_CLK = 0; 
+      DELAY_CLK; 
+   }
+
+   OPT_ALE = 1;
+   DELAY_CLK;
+}
+
+unsigned long xdata tmp_last = 0;
+
+unsigned char dr_ads1256(unsigned char id, unsigned char cmd, unsigned char addr, 
+                         unsigned char port, unsigned char chn, void *pd) reentrant
+{
+float value;
+unsigned long d;
+unsigned char status;
+
+   if (chn); // suppress compiler warning
+
+   if (cmd == MC_INIT) {
+      address_port(addr, port, AM_RW_SERIAL, 0);
+
+      ads1256_write(ADS1256_STATUS, 0x02);  // Enable buffer
+      ads1256_write(ADS1256_ADCON,  0x01);  // Clock Out OFF, PGA=2
+
+      //ads1256_write(ADS1256_DRATE,  0x23);  // 10 SPS
+      //ads1256_write(ADS1256_DRATE,  0x82);  // 100 SPS
+      //ads1256_write(ADS1256_DRATE,  0xA1);  // 1000 SPS
+      ads1256_write(ADS1256_DRATE,  0xD0);  // 7500 SPS
+      //ads1256_write(ADS1256_DRATE,  0xF0);  // 30000 SPS
+
+      /* do self calibration */
+      ads1256_cmd(ADS1256_SELFCAL);
+
+      /* wait for /DRDY to go low after self calibration */
+      for (d = 0 ; d<100000 ; d++) {
+         if (OPT_STAT == 0)
+            break;
+         DELAY_US(1);
+      }
+   }
+
+   if (cmd == MC_READ) {
+
+      if (time() == tmp_last)
+         return 0;
+
+      tmp_last = time();
+      /*
+      if (time() - tmp_last > 10) {
+         tmp_last = time();
+         address_port(addr, port, AM_RW_SERIAL, 0);
+         DELAY_US(100);
+         if (tmp & 1) {
+            ads1256_write(ADS1256_IO, 0x00);
+         } else {
+            ads1256_write(ADS1256_IO, 0x0F);
+         }
+         tmp++;
+      }
+      return 0;
+      */
+
+      /* read all 8 channels */
+      for (chn = 0 ; chn < 8 ; chn++) {
+
+         address_port(addr, port, AM_RW_SERIAL, 0);
+         ads1256_write(ADS1256_MUX, (chn << 4) | 0x0F);  // Select single ended positive input
+         ads1256_cmd(ADS1256_SYNC);                      // Trigger new conversion
+         ads1256_cmd(ADS1256_WAKEUP);
+   
+         /* Wait for /DRDY with timeout */
+         for (d=0 ; d<100000 ; d++) {
+            if (OPT_STAT == 0)
+               break;
+            DELAY_US(1);
+         }
+         if ((status & 1) > 0)
+            return 0;
+
+         /* read 24-bit data */
+         ads1256_read(&d);
+   
+         /* convert to volts, PGA=2 */
+         value = 5*((float)d / (1l<<24));
+      
+         /* apply range */
+         if (id == 0x64)
+            value *= 1;
+         else if (id == 0x65)
+            value = (value/2.5)*20.0 - 10;
+         else if (id == 0x66)
+            value *= 1;
+         else if (id == 0x67)
+            value *= 10;
+   
+         /* round result to significant digits */
+         if (id == 0x65|| id == 0x67) {
+            d = (unsigned long)(value*1E4+0.5);
+            value = d/1E4;
+         } else {
+            d = (unsigned long)(value*1E5+0.5);
+            value = d/1E5;
+         }
+      
+         DISABLE_INTERRUPTS;
+         *((float *)pd + chn) = value;
+         ENABLE_INTERRUPTS;
+      }
    }
 
    return 1;
