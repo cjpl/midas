@@ -127,7 +127,6 @@ begin
   -- 8:75, 9:66.66, 10:60, 11:60, 12: 50, 13:45, 14:90, 15:40 
   P_O_CLKSEL  <= "0000";
   
-  P_O_UC_STAT     <= '1';
   P_O_UC_SPARE1   <= '1';
   P_O_UC_SPARE2   <= '1';
 
@@ -141,5 +140,8 @@ begin
   P_O_UC_DATA_OUT <= uc_data_out when
                      addr_mod /= "101" and addr_mod /= "110"
                      else P_I_SDO;
+  P_O_UC_STAT     <= P_IO_PORTS(CONV_INTEGER(addr_port)).port_pin(0) when
+                     addr_unit = P_I_ADDR
+                     else '0'; -- change later to slave bus!                   
     
 end Behavioral;

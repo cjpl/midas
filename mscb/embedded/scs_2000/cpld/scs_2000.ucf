@@ -29,6 +29,15 @@ NET "P_I_ADDR<1>" LOC = "P40" ;
 NET "P_I_ADDR<2>" LOC = "P39" ;
 NET "P_I_ADDR<3>" LOC = "P38" ;
 
+#NET "P_IO_EXT<0>" LOC = "P10";
+#NET "P_IO_EXT<1>" LOC = "P9";
+#NET "P_IO_EXT<2>" LOC = "P7";
+#NET "P_IO_EXT<3>" LOC = "P6";
+#NET "P_IO_EXT<4>" LOC = "P5";
+#NET "P_IO_EXT<5>" LOC = "P4";
+#NET "P_IO_EXT<6>" LOC = "P3";
+#NET "P_IO_EXT<7>" LOC = "P2";
+
 NET "P_IO_PORTS<0>_port_pin<0>"  LOC = "P143"  ;
 NET "P_IO_PORTS<0>_port_pin<1>"  LOC = "P142"  ;
 NET "P_IO_PORTS<0>_port_pin<2>"  LOC = "P140"  ;
