@@ -1358,7 +1358,14 @@ void cmd_loop(int fd, char *cmd, unsigned short adr)
 
       /* reboot ---------- */
       else if (match(param[0], "reboot")) {
-         mscb_reboot(fd, current_addr, current_group, broadcast);
+         if (current_addr < 0 && current_group < 0 && !broadcast)
+            printf("You must first address node (s)\n");
+         else {
+            status = mscb_reboot(fd, current_addr, current_group, broadcast);
+
+            if (status != MSCB_SUCCESS)
+               printf("Error: %d\n", status);
+         }
       }
 
       /* reset ---------- */
@@ -1403,6 +1410,25 @@ void cmd_loop(int fd, char *cmd, unsigned short adr)
             printf("%d\n", i);
             while (kbhit())
                getch();
+         }
+      }
+
+      /* call user fundtion ----------- */
+      else if (match(param[0], "user")) {
+         if (current_addr < 0 && current_group < 0 && !broadcast)
+            printf("You must first address node (s)\n");
+         else {
+
+            if (param[1][0]) {
+               data = atoi(param[1]);
+               size = sizeof(status);
+               status = mscb_user(fd, current_addr, &data, 1, &status, &size);
+            } else {
+               status = mscb_user(fd, current_addr, NULL, 0, &data, &size);
+            }
+
+            if (status != MSCB_SUCCESS)
+               printf("Error: %d\n", status);
          }
       }
 
