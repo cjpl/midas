@@ -8,7 +8,7 @@
                 Midas Slow Control Bus protocol 
                 for SCS-600 Digital I/O
 
-  $Id:$
+  $Id$
 
 \********************************************************************/
 
@@ -37,7 +37,7 @@ struct {
    float power[8];
 } idata user_data;
 
-MSCB_INFO_VAR code variables[] = {
+MSCB_INFO_VAR code vars[] = {
    1, UNIT_BOOLEAN, 0, 0, 0, "Out0", &user_data.out[0],
    1, UNIT_BOOLEAN, 0, 0, 0, "Out1", &user_data.out[1],
    1, UNIT_BOOLEAN, 0, 0, 0, "Out2", &user_data.out[2],
@@ -56,6 +56,8 @@ MSCB_INFO_VAR code variables[] = {
    4, UNIT_PERCENT, 0, 0, MSCBF_FLOAT, "Power7", &user_data.power[7],
    0
 };
+
+MSCB_INFO_VAR *variables = vars;
 
 unsigned char output;
 

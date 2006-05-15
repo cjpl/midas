@@ -8,7 +8,7 @@
                 Midas Slow Control Bus protocol 
                 for SCS-520 analog I/O with current option
 
-  $Id:$
+  $Id$
 
 \********************************************************************/
 
@@ -65,7 +65,7 @@ struct {
 */
 
 
-MSCB_INFO_VAR code variables[] = {
+MSCB_INFO_VAR code vars[] = {
    4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "ADC0", &user_data.adc[0],
    4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "ADC1", &user_data.adc[1],
    4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "ADC2", &user_data.adc[2],
@@ -118,6 +118,8 @@ MSCB_INFO_VAR code variables[] = {
 
    0
 };
+
+MSCB_INFO_VAR *variables = vars;
 
 /********************************************************************\
 

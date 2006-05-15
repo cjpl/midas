@@ -8,7 +8,7 @@
                 Midas Slow Control Bus protocol 
                 for SCS-320 VME Crate interface
 
-  $Id:$
+  $Id$
 
 \********************************************************************/
 
@@ -44,7 +44,7 @@ struct {
    float         temperature;
 } idata user_data;
 
-MSCB_INFO_VAR code variables[] = {
+MSCB_INFO_VAR code vars[] = {
    1, UNIT_BOOLEAN, 0, 0,           0, "Fan OK",   &user_data.fan_ok,        // 0
    1, UNIT_BOOLEAN, 0, 0,           0, "SysFail",  &user_data.sys_fail,      // 1
    1, UNIT_BOOLEAN, 0, 0,           0, "ACFail",   &user_data.ac_power_fail, // 2
@@ -55,6 +55,8 @@ MSCB_INFO_VAR code variables[] = {
    4, UNIT_CELSIUS, 0, 0, MSCBF_FLOAT, "Temp",     &user_data.temperature,   // 7
    0
 };
+
+MSCB_INFO_VAR *variables = vars;
 
 /********************************************************************\
 

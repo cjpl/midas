@@ -80,7 +80,7 @@ NAME_TABLE code unit_table[] = {
    {UNIT_RPM, "RPM",},
    {UNIT_FARAD, "F",},
 
-   {UNIT_PERCENT, "%%",},
+   {UNIT_PERCENT, "%",},
    {UNIT_PPM, "RPM",},
    {UNIT_COUNT, "cnt",},
    {UNIT_FACTOR, "x",},

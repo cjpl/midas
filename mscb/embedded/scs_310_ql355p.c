@@ -8,7 +8,7 @@
                 Midas Slow Control Bus protocol 
                 for TTI QL335P Power supply
 
-  $Id:$
+  $Id$
 
 \********************************************************************/
 
@@ -41,7 +41,7 @@ struct {
    char gpib_adr;
 } idata user_data;
 
-MSCB_INFO_VAR code variables[] = {
+MSCB_INFO_VAR code vars[] = {
    1, UNIT_ASCII,   0, 0, MSCBF_DATALESS, "GPIB",                            0,
    1, UNIT_BOOLEAN, 0, 0,              0, "Switch",            &user_data.flag,
    4, UNIT_VOLT,    0, 0,    MSCBF_FLOAT, "Voltage", &user_data.demand_voltage,
@@ -51,6 +51,8 @@ MSCB_INFO_VAR code variables[] = {
    1, UNIT_BYTE,    0, 0,              0, "GPIB Adr",      &user_data.gpib_adr,
    0
 };
+
+MSCB_INFO_VAR *variables = vars;
 
 /********************************************************************\
 

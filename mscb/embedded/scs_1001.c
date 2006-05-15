@@ -60,7 +60,7 @@ struct {
    float again[8];
 } xdata user_data;
 
-MSCB_INFO_VAR code variables[] = {
+MSCB_INFO_VAR code vars[] = {
 
    { 1, UNIT_BOOLEAN, 0, 0, 0,        "Relais0", &user_data.relais[0], 0, 1, 1 }, // 0
    { 1, UNIT_BOOLEAN, 0, 0, 0,        "Relais1", &user_data.relais[1], 0, 1, 1 },
@@ -120,6 +120,8 @@ MSCB_INFO_VAR code variables[] = {
 
    { 0 }
 };
+
+MSCB_INFO_VAR *variables = vars;
 
 /********************************************************************\
 

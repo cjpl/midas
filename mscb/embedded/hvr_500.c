@@ -136,7 +136,7 @@ struct {
    float u_dac;
 } xdata user_data[N_HV_CHN];
 
-MSCB_INFO_VAR code variables[] = {
+MSCB_INFO_VAR code vars[] = {
 
    1, UNIT_BYTE,            0, 0,           0, "Control", &user_data[0].control,     // 0
    4, UNIT_VOLT,            0, 0, MSCBF_FLOAT, "Udemand", &user_data[0].u_demand,    // 1
@@ -162,6 +162,8 @@ MSCB_INFO_VAR code variables[] = {
    4, UNIT_VOLT,            0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "VDAC",    &user_data[0].u_dac,       // 18
    0
 };
+
+MSCB_INFO_VAR *variables = vars;
 
 /********************************************************************\
 

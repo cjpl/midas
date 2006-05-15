@@ -50,7 +50,7 @@ struct {
    char  disable2;
 } xdata user_data;
 
-MSCB_INFO_VAR code variables[] = {
+MSCB_INFO_VAR code vars[] = {
 
    { 4, UNIT_VOLT,    0, 0, MSCBF_FLOAT, "U1", &user_data.u1  },
    { 4, UNIT_VOLT,    0, 0, MSCBF_FLOAT, "U2", &user_data.u2  },
@@ -60,6 +60,8 @@ MSCB_INFO_VAR code variables[] = {
 
    0
 };
+
+MSCB_INFO_VAR *variables = vars;
 
 /********************************************************************\
 

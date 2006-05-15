@@ -8,7 +8,7 @@
                 Midas Slow Control Bus protocol
                 for SCS-800 capacitance meter
 
-  $Id:$
+  $Id$
 
 \********************************************************************/
 
@@ -42,7 +42,7 @@ struct {
 
 unsigned char range[8];
 
-MSCB_INFO_VAR code variables[] = {
+MSCB_INFO_VAR code vars[] = {
    4, UNIT_FARAD, PRFX_NANO, 0, MSCBF_FLOAT, "Cap0", &user_data.cap[0],
    4, UNIT_FARAD, PRFX_NANO, 0, MSCBF_FLOAT, "Cap1", &user_data.cap[1],
    4, UNIT_FARAD, PRFX_NANO, 0, MSCBF_FLOAT, "Cap2", &user_data.cap[2],
@@ -62,6 +62,8 @@ MSCB_INFO_VAR code variables[] = {
    4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT, "Gain", &user_data.gain,
    0
 };
+
+MSCB_INFO_VAR *variables = vars;
 
 /********************************************************************\
 

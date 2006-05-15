@@ -8,7 +8,7 @@
                 Midas Slow Control Bus protocol 
                 for SCS-220 RS-485 node
 
-  $Id:$
+  $Id$
 
 \********************************************************************/
 
@@ -38,13 +38,15 @@ struct {
    unsigned char baud;
 } xdata user_data;
 
-MSCB_INFO_VAR code variables[] = {
+MSCB_INFO_VAR code vars[] = {
    1,   UNIT_ASCII,  0, 0, MSCBF_DATALESS, "RS485", 0,
    32,  UNIT_STRING, 0, 0,              0, "Output", &user_data.output[0],
    32,  UNIT_STRING, 0, 0,              0, "Input", &user_data.input[0],
    1,   UNIT_BAUD,   0, 0,              0, "Baud", &user_data.baud,
    0
 };
+
+MSCB_INFO_VAR *variables = vars;
 
 /********************************************************************\
 

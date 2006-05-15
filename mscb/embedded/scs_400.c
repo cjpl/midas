@@ -8,7 +8,7 @@
                 Midas Slow Control Bus protocol
                 for SCS-400 thermo couple I/O
 
-  $Id:$
+  $Id$
 
 \********************************************************************/
 
@@ -46,7 +46,7 @@ struct {
    unsigned short period;
 } xdata user_data;
 
-MSCB_INFO_VAR code variables[] = {
+MSCB_INFO_VAR code vars[] = {
    2, UNIT_CELSIUS, 0, 0, MSCBF_SIGNED, "Demand0", &user_data.demand[0],
    2, UNIT_CELSIUS, 0, 0, MSCBF_SIGNED, "Demand1", &user_data.demand[1],
    2, UNIT_CELSIUS, 0, 0, MSCBF_SIGNED, "Demand2", &user_data.demand[2],
@@ -117,7 +117,7 @@ struct {
    short ofs[N_CHANNEL];
 } idata user_data;
 
-MSCB_INFO_VAR code variables[] = {
+MSCB_INFO_VAR code vars[] = {
    1, UNIT_PERCENT, 0, 0, 0, "Power0", &user_data.power[0],
    1, UNIT_PERCENT, 0, 0, 0, "Power1", &user_data.power[1],
    1, UNIT_PERCENT, 0, 0, 0, "Power2", &user_data.power[2],
@@ -146,6 +146,8 @@ MSCB_INFO_VAR code variables[] = {
 };
 
 #endif
+
+MSCB_INFO_VAR *variables = vars;
 
 /********************************************************************\
 
