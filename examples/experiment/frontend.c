@@ -175,8 +175,6 @@ INT frontend_init()
 
    /* print message and return FE_ERR_HW if frontend should not be started */
 
-
-   cm_deregister_transition(TR_START);
    return SUCCESS;
 }
 
