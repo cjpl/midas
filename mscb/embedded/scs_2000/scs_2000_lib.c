@@ -34,12 +34,17 @@ sbit OPT_SPARE2 = P3 ^ 7;
 unsigned char dr_dout_bits(unsigned char id, unsigned char cmd, unsigned char addr, unsigned char port, unsigned char chn, void *pd) reentrant;
 unsigned char dr_dout_byte(unsigned char id, unsigned char cmd, unsigned char addr, unsigned char port, unsigned char chn, void *pd) reentrant;
 unsigned char dr_din_bits(unsigned char id, unsigned char cmd, unsigned char addr, unsigned char port, unsigned char chn, void *pd) reentrant;
+unsigned char dr_pulser(unsigned char id, unsigned char cmd, unsigned char addr, unsigned char port, unsigned char chn, void *pd) reentrant;
 unsigned char dr_ltc2600(unsigned char id, unsigned char cmd, unsigned char addr, unsigned char port, unsigned char chn, void *pd) reentrant;
 unsigned char dr_ad7718(unsigned char id, unsigned char cmd, unsigned char addr, unsigned char port, unsigned char chn, void *pd) reentrant;
 unsigned char dr_ads1256(unsigned char id, unsigned char cmd, unsigned char addr, unsigned char port, unsigned char chn, void *pd) reentrant;
 
-MSCB_INFO_VAR code vars_id01[] =
-   { 1, UNIT_BYTE,    0,          0, 0,           "P%Out",   1, 0, 255, 1   };
+MSCB_INFO_VAR code vars_bout[] =
+   { 1, UNIT_BYTE,    0,          0,           0, "P%Out",   1, 0, 255, 1   };
+
+MSCB_INFO_VAR code vars_pulser[] = {
+   { 1, UNIT_PERCENT, 0,          0,           0, "P%Ampl#", 8, 0, 100, 1 },
+};
 
 MSCB_INFO_VAR code vars_uin[] =
    { 4, UNIT_VOLT,    0,          0, MSCBF_FLOAT, "P%Uin#",  8 };
@@ -67,8 +72,8 @@ MSCB_INFO_VAR code vars_optout[] =
 
 SCS_2000_MODULE code scs_2000_module[] = {
   /* 0x01-0x1F misc. */
-  { 0x01, "LED-Debug",       vars_id01,   dr_dout_byte   },
-  { 0x02, "LED-Pulser",      vars_uout,   dr_ltc2600     },
+  { 0x01, "LED-Debug",       vars_bout,   dr_dout_byte   },
+  { 0x02, "LED-Pulser",      vars_pulser, dr_pulser      },
 
   /* 0x20-0x3F digital in  */
   { 0x20, "Din 5V",          vars_din,    dr_din_bits    },
@@ -116,6 +121,13 @@ _nop_(); _nop_(); _nop_(); _nop_(); _nop_(); _nop_(); _nop_(); _nop_(); _nop_();
 #define AM_WRITE_CSR    4 // write CPLD CSR
 #define AM_RW_SERIAL    5 // read/write to serial device on port
 #define AM_RW_EEPROM    6 // read/write to eeprom on port
+
+#define CSR_PORT_DIR    0 // port direction (1=output, 0=input)
+#define CSR_PULSER      1 // led pulser if 1
+#define CSR_PULFREQ0    2 // pulser frequency counter max LSB
+#define CSR_PULFREQ1    3 // pulser frequency counter max
+#define CSR_PULFREQ2    4 // pulser frequency counter max
+#define CSR_PULFREQ3    5 // pulser frequency counter max MSB
 
 /* address port 0-7 in CPLD, with address modifier listed above */
 void address_port(unsigned char addr, unsigned char port_no, unsigned char am, unsigned char clk_level) reentrant
@@ -377,7 +389,7 @@ unsigned char port_dir;
       /* switch port to output */
       read_csr(addr, 0, &port_dir);
       port_dir |= (1 << port);
-      write_csr(addr, 0, port_dir);
+      write_csr(addr, CSR_PORT_DIR, port_dir);
    }
 
    if (cmd == MC_WRITE) {
@@ -421,13 +433,64 @@ unsigned char port_dir;
 
    if (cmd == MC_INIT) {
       /* switch port to output */
-      read_csr(addr, 0, &port_dir);
+      read_csr(addr, CSR_PORT_DIR, &port_dir);
       port_dir |= (1 << port);
-      write_csr(addr, 0, port_dir);
+      write_csr(addr, CSR_PORT_DIR, port_dir);
    }
 
    if (cmd == MC_WRITE)
       write_port(addr, port, *((unsigned char *)pd));
+
+   return 1;   
+}
+
+/*---- LED pulser --------------------------------------------------*/
+
+unsigned char dr_pulser(unsigned char id, unsigned char cmd, unsigned char addr, 
+                        unsigned char port, unsigned char chn, void *pd) reentrant
+{
+float value;
+unsigned char d;
+unsigned long f;
+
+   if (id || chn || pd); // suppress compiler warning
+
+   if (cmd == MC_INIT) {
+      /* switch port to output */
+      read_csr(addr, CSR_PORT_DIR, &d);
+      d |= (1 << port);
+      write_csr(addr, CSR_PORT_DIR, d);
+
+      /* enable LED pulser on for specific port */
+      read_csr(addr, CSR_PULSER, &d);
+      d |= (1 << port);
+      write_csr(addr, CSR_PULSER, d);
+   }
+
+   if (cmd == MC_WRITE) {
+      value = *((unsigned char *)pd);
+      dr_ltc2600(0x02, MC_WRITE, addr, port, chn, &value);
+
+      /* turn LED pulser on/off */
+      read_port_reg(addr, port, &d);
+      if (value == 0)
+         d &= ~(1 << chn);
+      else
+         d |= (1 << chn);
+      write_port(addr, port, d);
+   }
+
+   if (cmd == MC_SPECIAL) {
+     f = *((unsigned long*) pd);
+     write_csr(addr, CSR_PULFREQ0, f & 0xFF);
+     f >>= 8;
+     write_csr(addr, CSR_PULFREQ1, f & 0xFF);
+     f >>= 8;
+     write_csr(addr, CSR_PULFREQ2, f & 0xFF);
+     f >>= 8;
+     write_csr(addr, CSR_PULFREQ3, f & 0xFF);
+     f >>= 8;
+   }
 
    return 1;   
 }
@@ -442,10 +505,13 @@ unsigned short d;
 unsigned char i;
 
    if (cmd == MC_WRITE) {
+
       value = *((float *)pd);
    
       /* convert value to DAC counts */
-      if (id == 0x82)
+      if (id == 0x02)
+         d = value/100 * 65535;  // 0-100%
+      else if (id == 0x82)
          d = value/2.5 * 65535;  // 0-2.5mA
       else if (id == 0x83)
          d = value/25.0 * 65535; // 0-25mA
@@ -631,11 +697,11 @@ unsigned char status, next_chn;
 
       /* round result to significant digits */
       if (id == 0x61|| id == 0x63) {
-         d = (unsigned long)(value*1E4+0.5);
-         value = d/1E4;
-      } else {
          d = (unsigned long)(value*1E5+0.5);
          value = d/1E5;
+      } else {
+         d = (unsigned long)(value*1E6+0.5);
+         value = d/1E6;
       }
 
       DISABLE_INTERRUPTS;
@@ -773,8 +839,6 @@ void ads1256_read(unsigned long *d) reentrant
    DELAY_CLK;
 }
 
-unsigned long xdata tmp_last = 0;
-
 unsigned char dr_ads1256(unsigned char id, unsigned char cmd, unsigned char addr, 
                          unsigned char port, unsigned char chn, void *pd) reentrant
 {
@@ -808,25 +872,6 @@ unsigned char status;
    }
 
    if (cmd == MC_READ) {
-
-      if (time() == tmp_last)
-         return 0;
-
-      tmp_last = time();
-      /*
-      if (time() - tmp_last > 10) {
-         tmp_last = time();
-         address_port(addr, port, AM_RW_SERIAL, 0);
-         DELAY_US(100);
-         if (tmp & 1) {
-            ads1256_write(ADS1256_IO, 0x00);
-         } else {
-            ads1256_write(ADS1256_IO, 0x0F);
-         }
-         tmp++;
-      }
-      return 0;
-      */
 
       /* read all 8 channels */
       for (chn = 0 ; chn < 8 ; chn++) {

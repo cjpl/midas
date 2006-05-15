@@ -45,6 +45,13 @@ MSCB_INFO_VAR *variables;
 float xdata user_data[64];
 float xdata backup_data[64];
 
+
+/* different application display modes */
+unsigned char xdata app_mode;
+
+#define APM_NORMAL   0
+#define APM_PULSER   1
+
 /********************************************************************\
 
   Application specific init and inout/output routines
@@ -129,18 +136,69 @@ void user_init(unsigned char init)
 
 #pragma NOAREGS
 
+/*---- Special data for LED pulser ---------------------------------*/
+
+unsigned char xdata pulser_ampl = 0;
+unsigned char xdata pulser_freq = 0;
+unsigned char xdata n_var_int = 0;
+
+typedef struct {
+  unsigned long  count;
+  unsigned short freq;
+  unsigned char  exp;
+} FREQ_TABLE;
+
+FREQ_TABLE code freq_table[] = {
+   { 100000000,  1, 0 },   //    1 Hz
+   { 50000000,   2, 0 },   //    2 Hz
+   { 20000000,   5, 0 },   //    5 Hz
+   { 10000000,  10, 0 },   //   10 Hz
+   { 5000000,   20, 0 },   //   20 Hz
+   { 2000000,   50, 0 },   //   50 Hz
+   { 1000000,  100, 0 },   //  100 Hz
+   { 500000,   200, 0 },   //  200 Hz
+   { 200000,   500, 0 },   //  500 Hz
+   { 100000,     1, 1 },   //    1 kHz
+   { 50000,      2, 1 },   //    2 kHz
+   { 20000,      5, 1 },   //    5 kHz
+   { 10000,     10, 1 },   //   10 kHz
+   { 5000,      20, 1 },   //   20 kHz
+   { 2000,      50, 1 },   //   50 kHz
+   { 1000,     100, 1 },   //  100 kHz
+   { 500,      200, 1 },   //  200 kHz
+   { 200,      500, 1 },   //  500 kHz
+   { 100,        1, 2 },   //    1 MHz
+   0,
+};
+
+MSCB_INFO_VAR code pulser_var[] = {
+   { 1, UNIT_BYTE,    0, 0, 0, "Freq",  &pulser_freq,  0,  18,  1 },
+   { 1, UNIT_PERCENT, 0, 0, 0, "Ampl",  &pulser_ampl,  0, 100,  1 },
+};
+
 /*---- Module scan -------------------------------------------------*/
 
 void setup_variables(void)
 {
-unsigned char xdata port, id, i, j, n_var, n_mod, n_var_mod;
+unsigned char xdata port, id, i, j, n_var, n_mod, n_var_mod, changed;
 char xdata * pvardata;
 
+   app_mode = APM_NORMAL;
+   changed = 0;
    n_var = n_mod = 0;
    pvardata = (char *)user_data;
 
    /* set "variables" pointer to array in xdata */
    variables = vars;
+
+   /* setup special variables for LED pulser */
+   read_eeprom(0, 0, &id);
+   if (id == 0x02) {
+      app_mode = APM_PULSER;
+      memcpy(variables, pulser_var, sizeof(pulser_var));
+      n_var += sizeof(pulser_var)/sizeof(MSCB_INFO_VAR);
+      n_var_int = n_var;
+   }
 
    for (port=0 ; port<8 ; port++) {
       module_id[port] = 0;
@@ -221,6 +279,7 @@ char xdata * pvardata;
                   write_eeprom(0, port, scs_2000_module[i].id);
                   port--;
                   while (b0) b0 = !B0;
+                  changed = 1;
                   break;
                }
 
@@ -242,6 +301,13 @@ char xdata * pvardata;
 
    /* mark end of variables list */
    variables[n_var].width = 0;
+
+   /* reboot if any module id has been written */
+   if (changed) {
+      SFRPAGE = LEGACY_PAGE;
+      RSTSRC = 0x10;         // force software reset
+   }
+
 }
 
 /*---- User write function -----------------------------------------*/
@@ -250,8 +316,17 @@ void user_write(unsigned char index) reentrant
 {
 unsigned char i, j, port;
 
+   /* internal variables */
+   if (app_mode == APM_PULSER) {
+      if (index == 0) {
+         j = module_index[0];
+         scs_2000_module[j].driver(scs_2000_module[j].id, MC_SPECIAL, 0, 0, 0, &freq_table[pulser_freq].count);
+      }
+   }
+
    /* find module to which this variable belongs */
-   for (i=port=0 ; port<8 ; port++) {
+   i = n_var_int;
+   for (port=0 ; port<8 ; port++) {
       if (i + module_nvars[port] > index) {
          i = index - i;
          j = module_index[port];
@@ -286,14 +361,81 @@ unsigned char user_func(unsigned char *data_in, unsigned char *data_out)
 
 /*---- Application display -----------------------------------------*/
 
+bit b0_old = 0, b1_old = 0, b2_old = 0, b3_old = 0;
+unsigned long xdata last_b2 = 0, last_b3 = 0;
+
+unsigned char ad_pulser()
+{
+unsigned char pulser_ampl_old, pulser_freq_old, i;
+
+   lcd_goto(0, 0);
+   printf("Frequency: %d ", freq_table[pulser_freq].freq);
+   if (freq_table[pulser_freq].exp == 0)
+      printf("Hz   ");
+   else if (freq_table[pulser_freq].exp == 1)
+      printf("kHz   ");
+   else
+      printf("MHz   ");
+
+   lcd_goto(0, 1);
+   printf("Amplitude: %bd %%   ", pulser_ampl);
+
+   lcd_goto(0, 3);
+   printf(" - Hz +     - Amp +");
+
+   if (b0 && !b0_old && pulser_freq > 0)
+      pulser_freq--;
+
+   if (b1 && !b1_old && pulser_freq < 18)
+      pulser_freq++;
+
+   if (b2 && !b2_old && pulser_ampl > 0) {
+      pulser_ampl--;
+      last_b2 = time();
+   }
+
+   if (b2 && time() > last_b2 + 70 && pulser_ampl > 0)
+      pulser_ampl--;
+
+   if (b3 && !b3_old && pulser_ampl < 100) {
+      pulser_ampl++;
+      last_b3 = time();
+   }
+
+   if (b3 && time() > last_b3 + 70 && pulser_ampl < 100)
+      pulser_ampl++;
+
+   if (pulser_freq != pulser_freq_old)
+      user_write(0);
+
+   if (pulser_ampl != pulser_ampl_old) {
+      for (i=2 ; i<n_variables ; i++) {
+         *((unsigned char *)variables[i].ud) = pulser_ampl;
+         user_write(i);
+      }
+   }
+
+   pulser_ampl_old = pulser_ampl;
+   pulser_freq_old = pulser_freq;
+   b0_old = b0;
+   b1_old = b1;
+   b2_old = b2;
+   b3_old = b3;
+
+   return 0;
+}
+
 unsigned char application_display(bit init)
 {
-static bit b0_old = 0, b1_old = 0, b2_old = 0, b3_old = 0, next, prev;
+static bit next, prev;
 static unsigned char xdata index=0, last_index=1;
-unsigned char i, j, n, col;
+unsigned char xdata i, j, n, col;
 
    if (init)
       lcd_clear();
+   
+   if (app_mode == APM_PULSER)
+      return ad_pulser();
 
    /* display list of modules */
    if (index != last_index) {
