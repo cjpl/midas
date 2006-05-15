@@ -29,7 +29,7 @@ NET "P_I_ADDR<1>" LOC = "P40" ;
 NET "P_I_ADDR<2>" LOC = "P39" ;
 NET "P_I_ADDR<3>" LOC = "P38" ;
 
-#NET "P_IO_EXT<0>" LOC = "P10";
+NET "P_IO_EXT<0>" LOC = "P10";
 #NET "P_IO_EXT<1>" LOC = "P9";
 #NET "P_IO_EXT<2>" LOC = "P7";
 #NET "P_IO_EXT<3>" LOC = "P6";

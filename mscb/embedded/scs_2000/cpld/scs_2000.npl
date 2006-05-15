@@ -23,11 +23,13 @@ SOURCE scs_2000_pack.vhd
 STIMULUS scs_2000_tb.vhd
 DEPASSOC scs_2000 scs_2000.ucf
 [Normal]
-xcpldFitDesTriMode=xstvhd, xbr, VHDL.t_vm6File, 1147071368, Pullup
-xcpldFitDesUnused=xstvhd, xbr, VHDL.t_vm6File, 1147071368, Pullup
-xcpldFitDesVolt=xstvhd, xbr, VHDL.t_vm6File, 1147071368, LVCMOS33
+xcpldFitDesTriMode=xstvhd, xbr, Implementation.t_vm6File, 1147071368, Pullup
+xcpldFitDesUnused=xstvhd, xbr, Implementation.t_vm6File, 1147071368, Pullup
+xcpldFitDesVolt=xstvhd, xbr, Implementation.t_vm6File, 1147071368, LVCMOS33
+_SynthOpt=xstvhd, xbr, VHDL.t_synthesize, 1147699901, Area
+_SynthOptEffort=xstvhd, xbr, VHDL.t_synthesize, 1147699901, High
 [STATUS-ALL]
-scs_2000.jedFile=WARNINGS,1147434993
-scs_2000.ngcFile=WARNINGS,1147434832
+scs_2000.ngcFile=WARNINGS,1147701319
+scs_2000.vm6File=WARNINGS,1147701339
 [STRATEGY-LIST]
 Normal=True
