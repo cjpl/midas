@@ -68,7 +68,7 @@ struct {
    float gain[N_CHANNEL];
 } xdata user_data;
 
-MSCB_INFO_VAR code variables[] = {
+MSCB_INFO_VAR code vars[] = {
 
    { 4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "ADC00", &user_data.adc[0] },
    { 4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "ADC01", &user_data.adc[1] },
@@ -160,6 +160,8 @@ MSCB_INFO_VAR code variables[] = {
 
    0
 };
+
+MSCB_INFO_VAR *variables = vars;
 
 /********************************************************************\
 

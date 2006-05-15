@@ -8,7 +8,7 @@
                 Midas Slow Control Bus protocol 
                 for SCS-300 Parallel Port Interface
 
-  $Id:$
+  $Id$
 
 \********************************************************************/
 
@@ -29,13 +29,15 @@ struct {
    float value[4];
 } idata user_data;
 
-MSCB_INFO_VAR code variables[] = {
+MSCB_INFO_VAR code vars[] = {
    4, UNIT_UNDEFINED, 0, 0, MSCBF_FLOAT, "Data0", &user_data.value[0],
    4, UNIT_UNDEFINED, 0, 0, MSCBF_FLOAT, "Data1", &user_data.value[1],
    4, UNIT_UNDEFINED, 0, 0, MSCBF_FLOAT, "Data2", &user_data.value[2],
    4, UNIT_UNDEFINED, 0, 0, MSCBF_FLOAT, "Data3", &user_data.value[3],
    0
 };
+
+MSCB_INFO_VAR *variables = vars;
 
 /********************************************************************\
 

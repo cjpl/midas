@@ -8,7 +8,7 @@
                 Midas Slow Control Bus protocol 
                 for Keithley Model 2000 Multimeter
 
-  $Id:$
+  $Id$
 
 \********************************************************************/
 
@@ -37,12 +37,14 @@ struct {
    char gpib_adr;
 } user_data;
 
-MSCB_INFO_VAR code variables[] = {
+MSCB_INFO_VAR code vars[] = {
    1, UNIT_ASCII, 0, 0, MSCBF_DATALESS, "GPIB",                       0,
    4, UNIT_VOLT,  0, 0,    MSCBF_FLOAT, "Reading",   &user_data.reading,
    1, UNIT_BYTE,  0, 0,              0, "GPIB Adr", &user_data.gpib_adr,
    0
 };
+
+MSCB_INFO_VAR *variables = vars;
 
 /********************************************************************\
 

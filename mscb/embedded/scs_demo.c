@@ -8,7 +8,7 @@
                 Midas Slow Control Bus protocol
                 for SCS-300 standalone node (just for demo)
 
-  $Id:$
+  $Id$
 
 \********************************************************************/
 
@@ -33,12 +33,14 @@ struct {
    unsigned char sw;
 } idata user_data;
 
-MSCB_INFO_VAR code variables[] = {
+MSCB_INFO_VAR code vars[] = {
    4, UNIT_CELSIUS, 0, 0, MSCBF_FLOAT, "Temp0", &user_data.temp[0],
    4, UNIT_CELSIUS, 0, 0, MSCBF_FLOAT, "Temp1", &user_data.temp[1],
    1, UNIT_BOOLEAN, 0, 0, 0, "Switch", &user_data.sw,
    0
 };
+
+MSCB_INFO_VAR *variables = vars;
 
 /********************************************************************\
 

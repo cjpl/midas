@@ -8,7 +8,7 @@
                 Midas Slow Control Bus protocol 
                 for SCS-310 GPIB Adapter
 
-  $Id:$
+  $Id$
 
 \********************************************************************/
 
@@ -41,7 +41,7 @@ struct {
    char gpib_adr;
 } idata user_data;
 
-MSCB_INFO_VAR code variables[] = {
+MSCB_INFO_VAR code vars[] = {
    1,  UNIT_ASCII,  0, 0, MSCBF_DATALESS, "GPIB",                       0, // 0
    32, UNIT_STRING, 0, 0,              0, "Output",  &user_data.output[0], // 1
    32, UNIT_STRING, 0, 0,              0, "Input",    &user_data.input[0], // 2
@@ -50,6 +50,8 @@ MSCB_INFO_VAR code variables[] = {
    1,  UNIT_BYTE,   0, 0,              0, "GPIB Adr", &user_data.gpib_adr, // 5
    0
 };
+
+MSCB_INFO_VAR *variables = vars;
 
 /********************************************************************\
 
