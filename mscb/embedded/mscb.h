@@ -71,6 +71,9 @@
 #ifdef hvr_500
 #define HVR_500
 #endif
+#ifdef splitter
+#define SPLITTER
+#endif
 
 /*---- CPU specific items ------------------------------------------*/
 
@@ -257,6 +260,15 @@ sbit RS485_ENABLE = P0 ^ 7;
 #define LED_4 P2 ^ 3
 #define LED_ON 1
 sbit RS485_ENABLE = P0 ^ 7;
+
+/*--------------------------------*/
+#elif defined(SPLITTER)
+#include <c8051F120.h>
+#define CPU_C8051F120
+
+#define LED_0 P3 ^ 3
+#define LED_ON 1
+sbit RS485_ENABLE = P0 ^ 4;
 
 /*--------------------------------*/
 #else

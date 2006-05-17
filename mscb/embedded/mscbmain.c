@@ -118,12 +118,7 @@ void setup(void)
 
    SFRPAGE   = CONFIG_PAGE;
   
-   P0MDOUT = 0xF5;              // SCS-1000 lines
-   P1MDOUT = 0xBF;
-   P2MDOUT = 0x00;
-   P3MDOUT = 0xFF;
-
-   XBR0 = 0x04;                 // Enable UART0 & UART1
+   XBR0 = 0x04;                 // Enable XBar, UART0 & UART1
    XBR1 = 0x00;
    XBR2 = 0x44;
 
@@ -147,7 +142,7 @@ void setup(void)
    PLL0MUL   = 0x04;
    for (i = 0; i < 15; i++);    // Wait 5us for initialization
    PLL0CN    |= 0x02;
-   while ((PLL0CN & 0x10) == 0);
+   //while ((PLL0CN & 0x10) == 0);
    OSCICN    = 0x83;
    CLKSEL    = 0x02;            // select PLL as sysclk src
 #endif
