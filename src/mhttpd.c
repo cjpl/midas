@@ -4940,6 +4940,13 @@ void show_custom_page(char *path)
 
       } while (p != NULL);
 
+      if (equal_ustring(getparam("cmd"), "Set")) {
+         /* redirect (so that 'reload' does not reset value) */
+         strlen_retbuf = 0;
+         sprintf(str, "CS/%s", path);
+         redirect(str);
+      }
+
    free(ctext);
    } else {
       show_error("Invalid custom page");
