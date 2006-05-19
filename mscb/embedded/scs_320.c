@@ -65,12 +65,12 @@ MSCB_INFO_VAR *variables = vars;
 \********************************************************************/
 
 /* VME control/status bits DB9 connector */
-sbit VME_FAN_OK        = P2 ^ 6; // Pin 2
-sbit VME_SYS_FAIL      = P2 ^ 5; // Pin 3
-sbit VME_AC_POWER_FAIL = P2 ^ 4; // Pin 5
-sbit VME_P5V_OK        = P2 ^ 2; // Pin 9
-sbit VME_SYS_RESET     = P2 ^ 1; // Pin 7
-sbit VME_INHIBIT       = P2 ^ 0; // Pin 8
+sbit VME_FAN_OK        = P1 ^ 4; // Pin 2
+sbit VME_SYS_FAIL      = P1 ^ 3; // Pin 3
+sbit VME_AC_POWER_FAIL = P0 ^ 6; // Pin 5
+sbit VME_P5V_OK        = P0 ^ 7; // Pin 9
+sbit VME_SYS_RESET     = P1 ^ 1; // Pin 7
+sbit VME_INHIBIT       = P1 ^ 0; // Pin 8
 
 /* MAX6662 */
 sbit SCLK              = P0 ^ 0;
