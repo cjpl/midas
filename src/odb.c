@@ -5625,7 +5625,7 @@ int db_paste_node(HNDLE hDB, HNDLE hKeyRoot, PMXML_NODE node)
             }
          }
 
-      } else { // single value
+      } else { /* single value */
          if (tid == TID_STRING || tid == TID_LINK) {
             size = atoi(mxml_get_attribute(node, "size"));
             if (mxml_get_value(node) == NULL)
@@ -6041,7 +6041,7 @@ INT db_save_xml_key(HNDLE hDB, HNDLE hKey, INT level, MXML_WRITER *writer)
             mxml_end_element(writer);
          }
 
-         mxml_end_element(writer); // keyarray
+         mxml_end_element(writer); /* keyarray */
       }
 
       free(data);
