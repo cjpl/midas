@@ -170,7 +170,12 @@ void setup(void)
 
    XBR0 = 0x01;                 // Enable RX/TX
    XBR1 = 0x40;                 // Enable crossbar
-   P0MDOUT = 0x90;              // P0.4: TX, P0.7: RS485 enable Push/Pull
+
+#ifdef SCS_320
+   P0MDOUT = 0x18;              // P0.3:TX, P0.4:RS485 enable Push/Pull
+#else
+   P0MDOUT = 0x90;              // P0.4:TX, P0.7:RS485 enable Push/Pull
+#endif
 
    /* Select internal quartz oscillator */
    OSCICN = 0x83;               // IOSCEN=1, SYSCLK=24.5 MHz
