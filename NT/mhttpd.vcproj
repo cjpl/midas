@@ -267,6 +267,9 @@
 		<Filter
 			Name="Header Files"
 			Filter="h;hpp;hxx;hm;inl">
+			<File
+				RelativePath="..\..\mxml\mxml.h">
+			</File>
 		</Filter>
 		<Filter
 			Name="Resource Files"
