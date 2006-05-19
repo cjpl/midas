@@ -62,8 +62,6 @@ void write_dac(float value) reentrant;
 
 /*---- User init function ------------------------------------------*/
 
-extern SYS_INFO sys_info;
-
 void user_init(unsigned char init)
 {
    unsigned char i;
