@@ -144,9 +144,9 @@ sbit RS485_ENABLE = P3 ^ 5;
 #include <c8051F320.h>
 #define CPU_C8051F320
 
-#define LED_0 P1 ^ 3
+#define LED_0 P2 ^ 7
 #define LED_ON 0
-sbit RS485_ENABLE = P1 ^ 0;
+sbit RS485_ENABLE = P0 ^ 3;
 
 /*--------------------------------*/
 #elif defined(SUBM_300)
