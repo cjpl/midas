@@ -3855,23 +3855,25 @@ INT bevid_2_mheader(EVENT_HEADER * pevent, DWORD * pybos)
    INT status;
    DWORD bklen, bktyp, *pdata;
    YBOS_BANK_HEADER *pybk;
+   void *pvybk;
 
    /* check if EVID is present if so display its content */
-   if ((status = ybk_find(pybos, "EVID", &bklen, &bktyp, (void *) &pybk)) == YB_SUCCESS) {
-      pdata = (DWORD *) ((YBOS_BANK_HEADER *) pybk + 1);
-      if (clp.verbose) {
-         printf("--------- EVID --------- Event# %i ------Run#:%i--------\n",
-                (int) (YBOS_EVID_EVENT_NB(pdata)), (int) (YBOS_EVID_RUN_NUMBER(pdata)));
-         printf("Evid:%4.4x- Mask:%4.4x- Serial:%i- Time:0x%x- Dsize:%i/0x%x",
-                (int) YBOS_EVID_EVENT_ID(pdata), (int) YBOS_EVID_TRIGGER_MASK(pdata)
-                , (int) YBOS_EVID_SERIAL(pdata), (int) YBOS_EVID_TIME(pdata)
-                , (int) pybk->length, (int) pybk->length);
-      }
-      pevent->event_id = YBOS_EVID_EVENT_ID(pdata);
-      pevent->trigger_mask = YBOS_EVID_TRIGGER_MASK(pdata);
-      pevent->serial_number = YBOS_EVID_SERIAL(pdata);
-      pevent->time_stamp = YBOS_EVID_TIME(pdata);
-      pevent->data_size = pybk->length;
+   if ((status = ybk_find(pybos, "EVID", &bklen, &bktyp, &pvybk)) == YB_SUCCESS) {
+     pybk = (YBOS_BANK_HEADER *) pvybk;
+     pdata = (DWORD *) ((YBOS_BANK_HEADER *) pybk + 1);
+     if (clp.verbose) {
+       printf("--------- EVID --------- Event# %i ------Run#:%i--------\n",
+	      (int) (YBOS_EVID_EVENT_NB(pdata)), (int) (YBOS_EVID_RUN_NUMBER(pdata)));
+       printf("Evid:%4.4x- Mask:%4.4x- Serial:%i- Time:0x%x- Dsize:%i/0x%x",
+	      (int) YBOS_EVID_EVENT_ID(pdata), (int) YBOS_EVID_TRIGGER_MASK(pdata)
+	      , (int) YBOS_EVID_SERIAL(pdata), (int) YBOS_EVID_TIME(pdata)
+	      , (int) pybk->length, (int) pybk->length);
+     }
+     pevent->event_id = YBOS_EVID_EVENT_ID(pdata);
+     pevent->trigger_mask = YBOS_EVID_TRIGGER_MASK(pdata);
+     pevent->serial_number = YBOS_EVID_SERIAL(pdata);
+     pevent->time_stamp = YBOS_EVID_TIME(pdata);
+     pevent->data_size = pybk->length;
    }
    return SS_SUCCESS;
 }
