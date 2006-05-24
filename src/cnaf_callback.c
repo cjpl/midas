@@ -7,7 +7,7 @@
   Contents:     The system part of the MIDAS frontend. Has to be
                 linked with user code to form a complete frontend
 
-  $Id:$
+  $Id$
 
 \********************************************************************/
 
@@ -88,20 +88,23 @@ INT cnaf_callback(INT index, void *prpc_param[])
       break;
 
    case CNAF_nQ:
-      if (index == RPC_CNAF16) {
-         if (f < 16)
-            cam16i_rq(c, n, a, f, (WORD **) & pdword, count);
-      } else {
-         if (f < 16)
-            cam24i_rq(c, n, a, f, &pdword, count);
-      }
-
-      /* return reduced return size */
-      *size = (int) pdword - (int) pdata;
-      break;
-
+     if (index == RPC_CNAF16) {
+       if (f < 16) {
+	 cam16i_rq(c, n, a, f, &pword, count);
+	 *size = (int) pword - (int) pdata;
+       }
+     } else {
+       if (f < 16) {
+	 cam24i_rq(c, n, a, f, &pdword, count);
+	 *size = (int) pdword - (int) pdata;
+       }
+     }
+     
+     /* return reduced return size */
+     break;
+     
    default:
-      printf("cnaf: Unknown command 0x%X\n", (unsigned int) cmd);
+     printf("cnaf: Unknown command 0x%X\n", (unsigned int) cmd);
    }
 
    if (cnaf_debug) {
