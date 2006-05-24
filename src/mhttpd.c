@@ -6548,8 +6548,10 @@ void sec_to_label(char *result, int sec, int base, int force_date)
 {
    char mon[80];
    struct tm *tms;
+   time_t t_sec;
 
-   tms = localtime((time_t *) & sec);
+   t_sec = (time_t) sec;
+   tms = localtime(&t_sec);
    strcpy(mon, mname[tms->tm_mon]);
    mon[3] = 0;
 

@@ -128,7 +128,7 @@ int replog(int data_fmt, char *rep_file, int bl, int action)
       if (yb_any_physrec_skip(data_fmt, bl) != YB_SUCCESS)
          return (-1);
       i = 0;
-      while (yb_any_event_get(data_fmt, (void **) &pmyevt, &evtlen) == YB_SUCCESS) {
+      while (yb_any_event_get(data_fmt, (void *) &pmyevt, &evtlen) == YB_SUCCESS) {
          status = yb_any_event_swap(data_fmt, pmyevt);
          if (file_mode != YB_NO_RECOVER)
             if ((status =
