@@ -33,8 +33,8 @@ OSFLAGS = -DOS_LINUX -fPIC
 #-------------------------------------------------------------------
 # The following lines define direcories. Adjust if necessary
 #                 
-INC_DIR 	= /afs/psi.ch/user/r/ritt/midas/include
-LIB_DIR 	= /afs/psi.ch/user/r/ritt/midas/linux/lib
+INC_DIR 	= /usr/local/include
+LIB_DIR 	= /usr/local/lib
 
 ####################################################################
 # Lines below here should not be edited
