@@ -793,8 +793,8 @@ SS_FILE_ERROR       file access error
       }
 
       /* Create Control file bank */
-      if (eqp->format == FORMAT_YBOS)
-         ybk_create(pmy, "CFIL", I4_BKTYPE, (DWORD *) & pbuf);
+      if (eqp->format == FORMAT_YBOS) 
+         ybk_create(pmy, "CFIL", I4_BKTYPE, &pbuf);
       else if (eqp->format == FORMAT_MIDAS)
          bk_create(pmy, "CFIL", TID_DWORD, &pbuf);
 
@@ -808,7 +808,7 @@ SS_FILE_ERROR       file access error
 
       /* Create Path file name bank */
       if (eqp->format == FORMAT_YBOS)
-         ybk_create(pmy, "PFIL", A1_BKTYPE, (DWORD *) & pbuf);
+         ybk_create(pmy, "PFIL", A1_BKTYPE, &pbuf);
       else if (eqp->format == FORMAT_MIDAS)
          bk_create(pmy, "PFIL", TID_CHAR, &pbuf);
       memcpy((char *) pbuf, (char *) &myp_fileh, sizeof(YM_PFILE));
@@ -820,9 +820,9 @@ SS_FILE_ERROR       file access error
 
       /* file content */
       if (eqp->format == FORMAT_YBOS)
-         ybk_create(pmy, "DFIL", A1_BKTYPE, (DWORD *) & pbuf);
+         ybk_create(pmy, "DFIL", A1_BKTYPE, &pbuf);
       else if (eqp->format == FORMAT_MIDAS)
-         bk_create(pmy, "DFIL", TID_CHAR, (DWORD *) & pbuf);
+         bk_create(pmy, "DFIL", TID_CHAR, &pbuf);
       /* compute data length */
       remaining = filesize - myc_fileh.current_read_byte;
       nread =
@@ -1035,7 +1035,7 @@ Function value:
 error, success
 \********************************************************************/
 {
-   short int evid, evmsk;
+   int evid, evmsk;
    BOOL large_evt;
    INT status, left_over_length, datasize;
    YBOS_INFO *ybos;
@@ -1837,10 +1837,8 @@ SS_SUCCESS         Ok
    } else if (type == LOG_TYPE_FTP)
 #ifdef INCLUDE_FTPLIB
    {
-      *written =
-          (DWORD) status =
-          (INT) ftp_send(ftp_con->data, (char *) prec,
-                         (int) nbytes) == (int) nbytes ? SS_SUCCESS : SS_FILE_ERROR;
+      *written = status = ftp_send(ftp_con->data, (char *) prec,
+	(int) nbytes) == (int) nbytes ? SS_SUCCESS : SS_FILE_ERROR;
       return status;
    }
 #else
@@ -2672,6 +2670,7 @@ none
 {
    char banklist[YB_STRING_BANKLIST_MAX];
    YBOS_BANK_HEADER *pybk;
+   void *pvybk, *pvdata;
    DWORD *pdata, *pdata1;
    DWORD bklen, bktyp;
    BANK_HEADER *pbh = NULL;
@@ -2688,65 +2687,64 @@ none
       printf("#banks:%i - Bank list:-%s-\n", status, banklist);
 
       /* check if EVID is present if so display its content */
-      if ((status =
-           ybk_find((DWORD *) pevent, "EVID", &bklen, &bktyp,
-                    (void **) &pybk)) == YB_SUCCESS) {
-         pdata = (DWORD *) ((YBOS_BANK_HEADER *) pybk + 1);
-         printf
-             ("--------- EVID --------- Event# %li ------Run#:%li--------\n",
-              YBOS_EVID_EVENT_NB(pdata), YBOS_EVID_RUN_NUMBER(pdata));
-         printf
-             ("Evid:%4.4x- Mask:%4.4x- Serial:%li- Time:0x%lx- Dsize:%li/0x%lx",
-              (WORD) YBOS_EVID_EVENT_ID(pdata), (WORD) YBOS_EVID_TRIGGER_MASK(pdata)
-              , YBOS_EVID_SERIAL(pdata), YBOS_EVID_TIME(pdata)
-              , ((YBOS_BANK_HEADER *) pybk)->length, ((YBOS_BANK_HEADER *) pybk)->length);
+      if ((status = ybk_find(pevent, "EVID", &bklen, &bktyp, &pvybk)) == YB_SUCCESS) {
+	pybk = (YBOS_BANK_HEADER *) pvybk;
+	pdata = (DWORD *) ((YBOS_BANK_HEADER *) pybk + 1);
+	printf
+	  ("--------- EVID --------- Event# %li ------Run#:%li--------\n",
+	   YBOS_EVID_EVENT_NB(pdata), YBOS_EVID_RUN_NUMBER(pdata));
+	printf
+	  ("Evid:%4.4x- Mask:%4.4x- Serial:%li- Time:0x%lx- Dsize:%li/0x%lx",
+	   (WORD) YBOS_EVID_EVENT_ID(pdata), (WORD) YBOS_EVID_TRIGGER_MASK(pdata)
+	   , YBOS_EVID_SERIAL(pdata), YBOS_EVID_TIME(pdata)
+	   , ((YBOS_BANK_HEADER *) pybk)->length, ((YBOS_BANK_HEADER *) pybk)->length);
       }
-
+      
       /* display bank content */
       pybk = NULL;
-      while ((ybk_iterate((DWORD *) pevent, &pybk, (void **) &pdata) >= 0)
+      while ((ybk_iterate((DWORD *) pevent, &pybk, (void **) &pvdata) >= 0)
              && (pybk != NULL))
-         ybos_bank_display(pybk, dsp_fmt);
+	ybos_bank_display(pybk, dsp_fmt);
    } else if (data_fmt == FORMAT_MIDAS) {
-      /* skip these special events (NO bank structure) */
-      pheader = (EVENT_HEADER *) pevent;
-      if (pheader->event_id == EVENTID_BOR ||
-          pheader->event_id == EVENTID_EOR || pheader->event_id == EVENTID_MESSAGE)
-         return;
-
-      /* check if format is MIDAS or FIXED */
-      pbh = (BANK_HEADER *) (pheader + 1);
-
-      /* Check for single bank display request */
-      if (dsp_mode == DSP_BANK_SINGLE) {
-        bk_locate(pbh, bn, &pdata1);
-        single = 1;
-      }
-      /* event header (skip it if in single bank display) */
-      if (!single) printf
-          ("Evid:%4.4x- Mask:%4.4x- Serial:%li- Time:0x%lx- Dsize:%li/0x%lx",
-           (WORD) pheader->event_id, (WORD) pheader->trigger_mask,
-           pheader->serial_number, pheader->time_stamp, pheader->data_size,
-           pheader->data_size);
-
-      if ((pbh->data_size + 8) == pheader->data_size) {
-         /* bank list */
-        if (!single) {
-        /* Skip list if in single bank display */
-        status = bk_list((BANK_HEADER *) (pheader + 1), banklist);
+     /* skip these special events (NO bank structure) */
+     pheader = (EVENT_HEADER *) pevent;
+     if (pheader->event_id == EVENTID_BOR ||
+	 pheader->event_id == EVENTID_EOR || pheader->event_id == EVENTID_MESSAGE)
+       return;
+     
+     /* check if format is MIDAS or FIXED */
+     pbh = (BANK_HEADER *) (pheader + 1);
+     
+     /* Check for single bank display request */
+     if (dsp_mode == DSP_BANK_SINGLE) {
+       bk_locate(pbh, bn, &pdata1);
+       single = 1;
+     }
+     /* event header (skip it if in single bank display) */
+     if (!single) printf
+		    ("Evid:%4.4x- Mask:%4.4x- Serial:%li- Time:0x%lx- Dsize:%li/0x%lx",
+		     (WORD) pheader->event_id, (WORD) pheader->trigger_mask,
+		     pheader->serial_number, pheader->time_stamp, pheader->data_size,
+		     pheader->data_size);
+     
+     if ((pbh->data_size + 8) == pheader->data_size) {
+       /* bank list */
+       if (!single) {
+	 /* Skip list if in single bank display */
+	 status = bk_list((BANK_HEADER *) (pheader + 1), banklist);
          printf("\n#banks:%i - Bank list:-%s-\n", status, banklist);
-        }
-
-         /* display bank content */
-         if (bk_is32(pbh)) {
-            pmbk32 = NULL;
-            do {
-               bk_iterate32(pbh, &pmbk32, &pdata);
-               if (pmbk32 != NULL)
-                  if (single && (pdata == pdata1)) 
-                     midas_bank_display32(pmbk32, dsp_fmt);
-                  if (!single)
-                     if (pmbk32 != NULL) midas_bank_display32(pmbk32, dsp_fmt);
+       }
+       
+       /* display bank content */
+       if (bk_is32(pbh)) {
+	 pmbk32 = NULL;
+	 do {
+	   bk_iterate32(pbh, &pmbk32, &pdata);
+	   if (pmbk32 != NULL)
+	     if (single && (pdata == pdata1)) 
+	       midas_bank_display32(pmbk32, dsp_fmt);
+	   if (!single)
+	     if (pmbk32 != NULL) midas_bank_display32(pmbk32, dsp_fmt);
             } while (pmbk32 != NULL);
          } else {
             pmbk = NULL;
