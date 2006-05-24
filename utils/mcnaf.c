@@ -107,7 +107,7 @@ char addr[128];
 INT cnafsub(BOOL, char *);
 void help_page(INT which);
 INT decode_line(CAMAC * p, char *str);
-INT read_job_file(FILE * pF, INT action, void **job, char *name);
+INT read_job_file(FILE * pF, INT action, CAMAC **job, char *name);
 void make_display_string(int from, CAMAC * p, char *saddr);
 void cc_services(CAMAC * p);
 void mcstd_func(CAMAC * PP);
@@ -390,7 +390,7 @@ void make_display_string(int from, CAMAC * p, char *saddr)
 }
 
 /*--------------------------------------------------------------------*/
-INT read_job_file(FILE * pF, INT action, void **job, char *name)
+INT read_job_file(FILE * pF, INT action, CAMAC **job, char *name)
 {
    DWORD n;
    char line[128];
@@ -484,9 +484,9 @@ INT cnafsub(BOOL cmd_mode, char *cmd)
         strcpy(line, &str[1]);
       }
       /* Check if file exists */
-      status = read_job_file(pF, CHECK, (void **) &job, line);
+      status = read_job_file(pF, CHECK, &job, line);
       if (status == JOB)
-        status = read_job_file(pF, READ, (void **) &job, line);
+        status = read_job_file(pF, READ, &job, line);
     }
 
     if (status == LOOP || status == JOB) {
