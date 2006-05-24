@@ -5,7 +5,7 @@
 #
 #  Contents:     UNIX Makefile for MIDAS slow control frontend
 #
-#  $Id:$
+#  $Id$
 #
 #####################################################################
 
@@ -33,8 +33,8 @@ OSFLAGS = -DOS_LINUX -fPIC
 #-------------------------------------------------------------------
 # The following lines define direcories. Adjust if necessary
 #                 
-INC_DIR 	= /usr/local/include
-LIB_DIR 	= /usr/local/lib
+INC_DIR 	= /afs/psi.ch/user/r/ritt/midas/include
+LIB_DIR 	= /afs/psi.ch/user/r/ritt/midas/linux/lib
 
 ####################################################################
 # Lines below here should not be edited

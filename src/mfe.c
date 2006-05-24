@@ -564,12 +564,12 @@ and rebuild the system.");
 void update_odb(EVENT_HEADER * pevent, HNDLE hKey, INT format)
 {
    INT size, i, ni4, tsize, status, n_data;
-   void *pdata;
+   char *pdata;
    char name[5];
    BANK_HEADER *pbh;
    BANK *pbk;
    BANK32 *pbk32;
-   void *pydata;
+   char *pydata;
    DWORD odb_type;
    DWORD *pyevt, bkname;
    WORD bktype;
@@ -640,7 +640,8 @@ void update_odb(EVENT_HEADER * pevent, HNDLE hKey, INT format)
                }
 
                /* shift data pointer to next item */
-               (char *) pdata += key.item_size * key.num_values;
+               //((char *) pdata) += key.item_size * key.num_values;
+               ((char *) pdata) += 5;
             }
          } else {
             /* write variable length bank  */
@@ -658,7 +659,7 @@ void update_odb(EVENT_HEADER * pevent, HNDLE hKey, INT format)
       pybkh = NULL;
       do {
          /* scan all banks */
-         ni4 = ybk_iterate(pyevt, &pybkh, &pydata);
+         ni4 = ybk_iterate(pyevt, &pybkh, (void *)(&pydata));
          if (pybkh == NULL || ni4 == 0)
             break;
 
@@ -695,8 +696,10 @@ void update_odb(EVENT_HEADER * pevent, HNDLE hKey, INT format)
                            odb_type & 0xFF)) != DB_SUCCESS) {
             printf("status:%i odb_type:%li name:%s ni4:%i size:%i tsize:%i\n", status,
                    odb_type, name, ni4, size, tsize);
-            for (i = 0; i < 6; i++)
-               printf("data: %f\n", *((float *) (pydata))++);
+            for (i = 0; i < 6; i++) {
+               printf("data: %f\n", *((float *) (pydata)));
+               pydata += sizeof(float);
+            }
          }
       } while (1);
 #endif                          /* YBOS_SUPPORT */

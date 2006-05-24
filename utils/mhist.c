@@ -174,8 +174,8 @@ INT query_params(DWORD * ev_id, DWORD * start_time, DWORD * end_time,
 
 INT display_vars(char *file_name)
 {
-   DWORD status, i, j, bytes, n, nv, ltime, *var_n, n_bytes;
-   INT *event_id, name_size, id_size;
+   DWORD status, i, j, bytes, n, nv, ltime, *var_n, n_bytes, name_size, id_size;
+   INT *event_id;
    char *event_name;
    char *var_names;
 

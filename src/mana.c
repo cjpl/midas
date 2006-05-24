@@ -759,7 +759,7 @@ INT book_ntuples(void)
    INT index, i, j, status, n_tag, size, id;
    HNDLE hkey;
    KEY key;
-   DWORD *t;
+   int *t;
    char ch_tags[2000];
    char rw_tag[512][8];
    char str[80], str2[80], key_name[NAME_LENGTH], block_name[NAME_LENGTH];
@@ -810,7 +810,7 @@ INT book_ntuples(void)
          /* book run number/event number/time */
          strcpy(str, "Number");
          strcpy(str2, "Run:U*4,Number:U*4,Time:U*4");
-         t = &analyze_request[index].number.run;
+         t = (int *)(&analyze_request[index].number.run);
          HBNAME(analyze_request[index].ar_info.event_id, str, t, str2);
 
          bank_list = analyze_request[index].bank_list;
@@ -2446,7 +2446,7 @@ INT write_event_hbook(FILE * file, EVENT_HEADER * pevent, ANALYZE_REQUEST * par)
    BANK32 *pbk32;
    BANK_LIST *pbl;
    BANK_HEADER *pbh;
-   void *pdata;
+   char *pdata;
    BOOL exclude, exclude_all;
    char block_name[5], str[80];
    float rwnt[512];
@@ -2651,7 +2651,7 @@ INT write_event_hbook(FILE * file, EVENT_HEADER * pevent, ANALYZE_REQUEST * par)
                   }
 
                   /* shift data pointer to next item */
-                  (char *) pdata += key.item_size * key.num_values;
+                  pdata += key.item_size * key.num_values;
                }
             }
          }
@@ -2683,7 +2683,7 @@ INT write_event_hbook(FILE * file, EVENT_HEADER * pevent, ANALYZE_REQUEST * par)
       exclude_all = TRUE;
       do {
          /* scan all banks */
-         size = ybk_iterate((DWORD *) (pevent + 1), &pybk, &pdata);
+         size = ybk_iterate((DWORD *) (pevent + 1), &pybk, (void *)(&pdata));
          if (pybk == NULL)
             break;
 
@@ -2812,7 +2812,7 @@ INT write_event_hbook(FILE * file, EVENT_HEADER * pevent, ANALYZE_REQUEST * par)
    if (event_def->format == FORMAT_FIXED) {
       if (clp.rwnt) {
          /* fill N-tuple from structured bank */
-         pdata = pevent + 1;
+         pdata = (char *)(pevent + 1);
          k = 3;                 /* index 0..2 for run/serial/time */
 
          for (i = 0;; i++) {
@@ -3857,7 +3857,7 @@ INT bevid_2_mheader(EVENT_HEADER * pevent, DWORD * pybos)
    YBOS_BANK_HEADER *pybk;
 
    /* check if EVID is present if so display its content */
-   if ((status = ybk_find(pybos, "EVID", &bklen, &bktyp, (void **) &pybk)) == YB_SUCCESS) {
+   if ((status = ybk_find(pybos, "EVID", &bklen, &bktyp, (void *) &pybk)) == YB_SUCCESS) {
       pdata = (DWORD *) ((YBOS_BANK_HEADER *) pybk + 1);
       if (clp.verbose) {
          printf("--------- EVID --------- Event# %i ------Run#:%i--------\n",

@@ -6,7 +6,7 @@
   Contents:     Buffer manager test program. Simple consumer connec-
                 ting to a SYSTEM buffer and receiving some data.
 
-  $Id:$
+  $Id$
 
 \********************************************************************/
 
@@ -143,7 +143,7 @@ main()
    cm_msg_register(process_message);
 
    /* place a request for transition notification */
-   cm_register_transition(TR_START, via_callback? transition : NULL);
+   cm_register_transition(TR_START, via_callback? transition : NULL, 500);
 
    last_time = 0;
 
