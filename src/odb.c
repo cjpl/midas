@@ -5618,7 +5618,10 @@ int db_paste_node(HNDLE hDB, HNDLE hKeyRoot, PMXML_NODE node)
             child = mxml_subnode(node, i);
             if (tid == TID_STRING || tid == TID_LINK) {
                size = atoi(mxml_get_attribute(node, "size"));
-               db_set_data_index(hDB, hKey, mxml_get_value(child), size, i, tid);
+               if (mxml_get_value(child) == NULL)
+                  db_set_data_index(hDB, hKey, "", size, i, tid);
+               else
+                  db_set_data_index(hDB, hKey, mxml_get_value(child), size, i, tid);
             } else {
                db_sscanf(mxml_get_value(child), data, &size, 0, tid);
                db_set_data_index(hDB, hKey, data, rpc_tid_size(tid), i, tid);
