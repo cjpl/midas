@@ -140,12 +140,15 @@ INT query_params(DWORD * ev_id, DWORD * start_time, DWORD * end_time,
       scanf("%d", &var_index);
       if (var_index >= (INT) n)
          var_index = n - 1;
-      if (var_index >= 0)
-         hs_get_var(0, *ev_id, var_names + var_index * NAME_LENGTH, var_type, var_n_data);
-      if (var_index >= 0 && *var_n_data > 1 && *var_type != TID_STRING) {
-         printf("\nSelect index (0..%d): ", *var_n_data - 1);
-         scanf("%ld", index);
-      }
+   } else {
+      var_index = 0;
+   }
+
+   if (var_index >= 0)
+     hs_get_var(0, *ev_id, var_names + var_index * NAME_LENGTH, var_type, var_n_data);
+   if (var_index >= 0 && *var_n_data > 1 && *var_type != TID_STRING) {
+     printf("\nSelect index (0..%d): ", *var_n_data - 1);
+     scanf("%ld", index);
    }
 
    if (var_index < 0)
@@ -391,8 +394,7 @@ DWORD convert_time(char *t)
 
 int main(int argc, char *argv[])
 {
-   DWORD status, event_id, start_time = 0, end_time, interval, index, index1 = 0, index2 =
-       0;
+   DWORD status, event_id, start_time = 0, end_time, interval, index1 = 0, index2 = 0;
    INT i, var_n_data;
    BOOL list_query;
    DWORD var_type;
@@ -413,7 +415,7 @@ int main(int argc, char *argv[])
 
    if (argc == 1) {
       status = query_params(&event_id, &start_time, &end_time,
-                            &interval, var_name, &var_type, &var_n_data, &index);
+                            &interval, var_name, &var_type, &var_n_data, &index1);
       if (status != HS_SUCCESS)
          return 1;
    } else {
@@ -421,7 +423,8 @@ int main(int argc, char *argv[])
       end_time = ss_time();
       start_time = end_time - 3600;
       interval = 1;
-      index = 0, index1 = 0, index2 = 0;
+      index1 = 0;
+      index2 = 0;
       var_type = 0;
       event_id = 0;
       binary_time = FALSE;
