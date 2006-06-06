@@ -8094,7 +8094,7 @@ INT rpc_server_connect(char *host_name, char *exp_name)
    INT sock, lsock1, lsock2, lsock3;
    INT listen_port1, listen_port2, listen_port3;
    INT remote_hw_type, hw_type;
-   int size;
+   unsigned int size;
    char str[200], version[32], v1[32];
    char local_prog_name[NAME_LENGTH];
    struct hostent *phe;
@@ -8173,11 +8173,11 @@ INT rpc_server_connect(char *host_name, char *exp_name)
 
    /* find out which port OS has chosen */
    size = sizeof(bind_addr);
-   getsockname(lsock1, (struct sockaddr *) &bind_addr, (int *) &size);
+   getsockname(lsock1, (struct sockaddr *) &bind_addr, &size);
    listen_port1 = ntohs(bind_addr.sin_port);
-   getsockname(lsock2, (struct sockaddr *) &bind_addr, (int *) &size);
+   getsockname(lsock2, (struct sockaddr *) &bind_addr, &size);
    listen_port2 = ntohs(bind_addr.sin_port);
-   getsockname(lsock3, (struct sockaddr *) &bind_addr, (int *) &size);
+   getsockname(lsock3, (struct sockaddr *) &bind_addr, &size);
    listen_port3 = ntohs(bind_addr.sin_port);
 
    /* create a new socket for connecting to remote server */
@@ -8268,13 +8268,13 @@ INT rpc_server_connect(char *host_name, char *exp_name)
    /* wait for callback on send and recv socket */
    size = sizeof(bind_addr);
    _server_connection.send_sock =
-       accept(lsock1, (struct sockaddr *) &bind_addr, (int *) &size);
+       accept(lsock1, (struct sockaddr *) &bind_addr, &size);
 
    _server_connection.recv_sock =
-       accept(lsock2, (struct sockaddr *) &bind_addr, (int *) &size);
+       accept(lsock2, (struct sockaddr *) &bind_addr, &size);
 
    _server_connection.event_sock =
-       accept(lsock3, (struct sockaddr *) &bind_addr, (int *) &size);
+       accept(lsock3, (struct sockaddr *) &bind_addr, &size);
 
    if (_server_connection.send_sock == -1 ||
        _server_connection.recv_sock == -1 || _server_connection.event_sock == -1) {
@@ -10308,7 +10308,7 @@ INT rpc_register_server(INT server_type, char *name, INT * port,
 {
    struct sockaddr_in bind_addr;
    INT status, flag;
-   int size;
+   unsigned int size;
 
 #ifdef OS_WINNT
    {
@@ -10377,7 +10377,7 @@ INT rpc_register_server(INT server_type, char *name, INT * port,
    /* return port wich OS has choosen */
    if (port && *port == 0) {
       size = sizeof(bind_addr);
-      getsockname(_lsock, (struct sockaddr *) &bind_addr, (int *) &size);
+      getsockname(_lsock, (struct sockaddr *) &bind_addr, &size);
       *port = ntohs(bind_addr.sin_port);
    }
 
@@ -11041,7 +11041,8 @@ INT rpc_server_accept(int lsock)
 \********************************************************************/
 {
    INT index, i;
-   int size, status;
+   unsigned int size;
+   int status;
    char command, version[32], v1[32];
    INT sock, port1, port2, port3;
    struct sockaddr_in acc_addr;
@@ -11057,7 +11058,7 @@ INT rpc_server_accept(int lsock)
 
    if (lsock > 0) {
       size = sizeof(acc_addr);
-      sock = accept(lsock, (struct sockaddr *) &acc_addr, (int *) &size);
+      sock = accept(lsock, (struct sockaddr *) &acc_addr, &size);
 
       if (sock == -1)
          return RPC_NET_ERROR;
@@ -11066,7 +11067,7 @@ INT rpc_server_accept(int lsock)
 
       size = sizeof(acc_addr);
       sock = lsock;
-      getpeername(sock, (struct sockaddr *) &acc_addr, (int *) &size);
+      getpeername(sock, (struct sockaddr *) &acc_addr, &size);
    }
 
    /* receive string with timeout */
@@ -11284,7 +11285,8 @@ INT rpc_client_accept(int lsock)
 \********************************************************************/
 {
    INT index, i, version, status;
-   int size, sock;
+   unsigned int size;
+   int sock;
    struct sockaddr_in acc_addr;
    INT client_hw_type = 0, hw_type;
    char str[100], client_program[NAME_LENGTH];
@@ -11293,7 +11295,7 @@ INT rpc_client_accept(int lsock)
    char net_buffer[256], *p;
 
    size = sizeof(acc_addr);
-   sock = accept(lsock, (struct sockaddr *) &acc_addr, (int *) &size);
+   sock = accept(lsock, (struct sockaddr *) &acc_addr, &size);
 
    if (sock == -1)
       return RPC_NET_ERROR;

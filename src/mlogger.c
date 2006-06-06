@@ -5,7 +5,7 @@
 
   Contents:     MIDAS logger program
 
-  $Id:$
+  $Id$
 
 \********************************************************************/
 
@@ -2880,7 +2880,7 @@ INT log_callback(INT index, void *prpc_param[])
 
 \********************************************************************/
 
-struct {
+static struct {
    DWORD transition;
    DWORD run_number;
 } eb;

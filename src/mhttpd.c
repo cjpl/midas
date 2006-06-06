@@ -2438,8 +2438,8 @@ void show_elog_submit_query(INT last_n)
              ("<tr><td colspan=%d bgcolor=#FFFF00><b>Query result between %s %s %s and %s %d %d</b></tr>\n",
               colspan, getparam("m1"), getparam("d1"), getparam("y1"), mname[m2], d2, y2);
       else {
-         time(&now);
-         ptms = localtime(&now);
+         time((time_t *) &now);
+         ptms = localtime((time_t *) &now);
          ptms->tm_year += 1900;
 
          rsprintf
@@ -2487,9 +2487,9 @@ void show_elog_submit_query(INT last_n)
   /*---- do query ----*/
 
    if (last_n) {
-      time(&now);
+      time((time_t *) &now);
       ltime_start = now - 3600 * last_n;
-      ptms = localtime(&ltime_start);
+      ptms = localtime((time_t *) &ltime_start);
 
       sprintf(tag, "%02d%02d%02d.0", ptms->tm_year % 100, ptms->tm_mon + 1, ptms->tm_mday);
    } else if (*getparam("r1")) {
@@ -9629,7 +9629,8 @@ void server_loop(int daemon)
    int status, i, refresh, n_error;
    struct sockaddr_in bind_addr, acc_addr;
    char cookie_pwd[256], cookie_wpwd[256], boundary[256];
-   int lsock, len, flag, content_length, header_length;
+   int lsock, flag, content_length, header_length;
+   unsigned int len; 
    struct hostent *phe;
    fd_set readfds;
    struct timeval timeout;

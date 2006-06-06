@@ -7,7 +7,7 @@
 
   Contents:     File Transfer Protocol library
 
-  $Id:$
+  $Id$
 
 \********************************************************************/
 
@@ -254,7 +254,8 @@ int ftp_data(FTP_CON * con, char *command, char *file)
    struct hostent *host;
    char host_name[256];
    int listen_socket, data_socket;
-   int len = sizeof(data), one = 1, fromlen = sizeof(from), status;
+   unsigned int len = sizeof(data), fromlen = sizeof(from);
+   int one = 1, status;
    char *a, *b;
 
    memset(&data, 0, sizeof(data));

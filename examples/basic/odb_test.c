@@ -5,7 +5,7 @@
 
   Contents:     Small demo program to show how to connect to the ODB
 
-  $Id:$
+  $Id$
 
 \********************************************************************/
 
@@ -20,7 +20,7 @@ void run_number_changed(HNDLE hDB, HNDLE hKey, void *info)
    printf("New run number: %d\n", run_number);
 }
 
-main()
+int main()
 {
    int status, size;
    HNDLE hDB, hKey;

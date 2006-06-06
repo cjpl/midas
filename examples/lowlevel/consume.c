@@ -23,7 +23,7 @@ char event_buffer[MAX_EVENT_SIZE];
 void process_message(HNDLE hBuf, HNDLE id, EVENT_HEADER * pheader, void *message)
 {
    /* just print message text which comes after event header */
-   printf("%s\n", message);
+   printf("%s\n", (char *) message);
 }
 
 /*----- process_message --------------------------------------------*/
@@ -97,7 +97,7 @@ void process_event(HNDLE hBuf, HNDLE request_id, EVENT_HEADER * pheader, void *p
 
 /*------------------------------------------------------------------*/
 
-main()
+int main()
 {
    INT status, size, trans, run_number;
    char host_name[256], str[32];

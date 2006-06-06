@@ -11,7 +11,7 @@
                 receiving the proper results, one can check that the
                 parameter passing via MIDAS RPCs works correctly.
 
-  $Id:$
+  $Id$
 
 \********************************************************************/
 
@@ -24,7 +24,7 @@
 #ifdef OS_VXWORKS
 rpc_test(char *ahost_name)
 #else
-main()
+int main()
 #endif
 {
    char host_name[256];
@@ -53,7 +53,7 @@ main()
    rpc_call(RPC_TEST, 1, 2, 3l, f, d, &b, &w, &i, &f, &d);
 
    printf("\nResult should be:  2 4 6 7.0 9.0\n");
-   printf("Result is:         %d %d %ld %1.1f %1.1lf\n", b, w, i, f, d);
+   printf("Result is:         %d %d %ld %1.1f %1.1lf\n", b, w, (long int) i, f, d);
 
    printf("\nhit return...");
    b = getchar();
