@@ -6,7 +6,7 @@
   Contents:     MIDAS message dump program. Attaches to the system
                 message buffer and extracts messages.
 
-  $Id:$
+  $Id$
 
 \********************************************************************/
 
@@ -24,7 +24,7 @@ char *type_name[] = {
    "CALL",
 };
 
-main(int argc, char **argv)
+int main(int argc, char **argv)
 {
    int msg_buf, i, status, size, id;
    char event[10000];
@@ -74,7 +74,7 @@ main(int argc, char **argv)
             if (pheader->trigger_mask & (1 << i))
                strcat(type_string, type_name[i]);
 
-         printf("serial %d, type %s, time %1.3lf\n",
+         printf("serial %ld, type %s, time %1.3lf\n",
                 pheader->serial_number, type_string, pheader->time_stamp / 1000.0);
          printf("%s\n\n", pstring);
       } while (1);
@@ -114,7 +114,7 @@ main(int argc, char **argv)
             if (pheader->trigger_mask & (1 << i))
                strcat(type_string, type_name[i]);
 
-         fprintf(f, "serial %d, type %s, time %1.3lf\n",
+         fprintf(f, "serial %ld, type %s, time %1.3lf\n",
                  pheader->serial_number, type_string, pheader->time_stamp / 1000.0);
          fprintf(f, "%s\n\n", pstring);
       } while (1);

@@ -5,7 +5,7 @@
 
   Contents:     Web server for remote PAW display
 
-  $Id:$
+  $Id$
 
 \********************************************************************/
 
@@ -1256,7 +1256,8 @@ void server_loop(int tcp_port, int daemon)
 {
    int status, i, n_error;
    struct sockaddr_in bind_addr, acc_addr;
-   int lsock, len, flag, header_length, authorized;
+   int lsock, flag, header_length, authorized;
+   unsigned int len;
    struct hostent *phe;
    struct linger ling;
    fd_set readfds;

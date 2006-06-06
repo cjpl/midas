@@ -6,7 +6,7 @@
   Contents:     A "Mini-Run Control" program showing the basic concept
                 of starting/stopping runs in the MIDAS system
 
-  $Id:$
+  $Id$
 
 \********************************************************************/
 
@@ -16,7 +16,7 @@
 
 /*------------------------------------------------------------------*/
 
-main()
+int main()
 {
    INT run_number, status;
    char host_name[256];
@@ -37,14 +37,14 @@ main()
    printf("Start run\n");
 
    /* start run */
-   if (cm_transition(TR_START, run_number, str, sizeof(str), SYNC) != CM_SUCCESS)
+   if (cm_transition(TR_START, run_number, str, sizeof(str), SYNC, MT_INFO) != CM_SUCCESS)
       printf(str);
 
    printf("Hit RETURN to stop run");
    getchar();
 
    /* stop run */
-   if (cm_transition(TR_STOP, run_number, str, sizeof(str), SYNC) != CM_SUCCESS)
+   if (cm_transition(TR_STOP, run_number, str, sizeof(str), SYNC, MT_INFO) != CM_SUCCESS)
       printf(str);
 
    cm_disconnect_experiment();

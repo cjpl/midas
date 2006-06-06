@@ -779,7 +779,7 @@ int send_event(INT index)
          pfragment->event_id |= EVENTID_FRAG1;
 
          /* store total event size */
-         pd = (char *) (pfragment + 1);
+         pd = (unsigned char *) (pfragment + 1);
          size = pevent->data_size;
          for (i = 0; i < 4; i++) {
             pd[i] = (unsigned char) (size & 0xFF);      /* little endian, please! */

@@ -256,7 +256,7 @@ void display_single_hist(DWORD event_id, DWORD start_time, DWORD end_time,
          if (binary_time)
             sprintf(str, "%li ", tbuffer[i]);
          else {
-            sprintf(str, "%s", ctime(&tbuffer[i]) + 4);
+            sprintf(str, "%s", ctime((time_t *) &tbuffer[i]) + 4);
             str[20] = '\t';
          }
          if (type == TID_STRING) {
@@ -316,7 +316,7 @@ void display_range_hist(DWORD event_id, DWORD start_time, DWORD end_time,
       if (binary_time)
          sprintf(str, "%li ", tbuffer[i]);
       else {
-         sprintf(str, "%s", ctime(&tbuffer[i]) + 4);
+         sprintf(str, "%s", ctime((time_t *) &tbuffer[i]) + 4);
          str[20] = '\t';
       }
 
@@ -367,7 +367,7 @@ DWORD convert_time(char *t)
    ltime = mktime(&tms);
 
    /* correct for dst */
-   memcpy(&tms, localtime(&ltime), sizeof(tms));
+   memcpy(&tms, localtime((time_t *) &ltime), sizeof(tms));
 
    isdst = tms.tm_isdst;
    memset(&tms, 0, sizeof(tms));

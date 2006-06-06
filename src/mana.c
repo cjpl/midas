@@ -228,7 +228,7 @@ extern INT pawc_size;
 #endif
 
 /* command line parameters */
-struct {
+static struct {
    INT online;
    char host_name[HOST_NAME_LENGTH];
    char exp_name[NAME_LENGTH];
@@ -253,7 +253,7 @@ struct {
    BOOL start_rint;
 } clp;
 
-struct {
+static struct {
    char flag_char;
    char description[1000];
    void *data;
@@ -322,7 +322,7 @@ struct {
 };
 
 /* output file information, maps to /<analyzer>/Output */
-struct {
+static struct {
    char filename[256];
    BOOL rwnt;
    BOOL histo_dump;
@@ -3166,7 +3166,7 @@ INT write_event_odb(EVENT_HEADER * pevent)
 
 /*------------------------------------------------------------------*/
 
-struct {
+static struct {
    short int event_id;
    DWORD last_time;
 } last_time_event[50];
