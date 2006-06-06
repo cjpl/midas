@@ -640,8 +640,7 @@ void update_odb(EVENT_HEADER * pevent, HNDLE hKey, INT format)
                }
 
                /* shift data pointer to next item */
-               //((char *) pdata) += key.item_size * key.num_values;
-               ((char *) pdata) += 5;
+               pdata += key.item_size * key.num_values;
             }
          } else {
             /* write variable length bank  */
