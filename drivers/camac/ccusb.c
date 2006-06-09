@@ -76,9 +76,24 @@ int ccusb_init()
 /********************************************************************/
 MUSB_INTERFACE *ccusb_getCrateStruct(int crate)
 {
-  assert(crate>=0);
-  assert(crate<gNumCrates);
-  assert(myusb[crate]!=NULL);
+  if (crate<0)
+    {
+      fprintf(stderr,"ccusb_getCrateStruct: crate number %d should be positive\n",crate);
+      abort();
+    }
+
+  if (crate>=gNumCrates)
+    {
+      fprintf(stderr,"ccusb_getCrateStruct: crate number %d does not exist: valid crate numbers are 0 through %d\n",crate,gNumCrates-1);
+      abort();
+    }
+
+  if (myusb[crate]==NULL)
+    {
+      fprintf(stderr,"ccusb_getCrateStruct: crate number %d is invalid: USB interface pointer is NULL\n",crate);
+      abort();
+    }
+
   return myusb[crate];
 }
 
@@ -92,7 +107,7 @@ int ccusb_flush(MUSB_INTERFACE *myusbcrate)
     {
       rd = musb_read(myusbcrate,0x86,buf,sizeof(buf),100);
       if (rd < 0)
-  return 0;
+        return 0;
 
       printf("ccusb_flush: count=%d, rd=%d, buf: 0x%02x 0x%02x 0x%02x 0x%02x\n",count,rd,buf[0],buf[1],buf[2],buf[3]);
     }
@@ -135,8 +150,11 @@ int ccusb_recover(MUSB_INTERFACE *myusbcrate)
 int ccusb_readReg(MUSB_INTERFACE *myusbcrate, int ireg)
 {
   int rd, wr;
-  static char  cmd[4];
-  static WORD buf[4];
+  uint8_t  cmd[4];
+  uint16_t buf[4];
+
+  assert(myusbcrate != NULL);
+
   cmd[0] = 1;
   cmd[1] = 0;
   cmd[2] = ireg;
@@ -176,6 +194,9 @@ int ccusb_writeReg(MUSB_INTERFACE *myusbcrate, int ireg, int value)
 {
   int rd, wr;
   static char cmd[8];
+
+  assert(myusbcrate != NULL);
+
   cmd[0] = 5;
   cmd[1] = 0;
   cmd[2] = ireg;
@@ -215,6 +236,9 @@ int ccusb_reset(MUSB_INTERFACE *myusbcrate)
   int rd, wr;
   static char cmd[512];
   static WORD buf[512];
+
+  assert(myusbcrate != NULL);
+
   cmd[0] = 255;
   cmd[1] = 255;
   cmd[2] = 0;
@@ -263,9 +287,13 @@ int ccusb_status(MUSB_INTERFACE *myusbcrate)
 int ccusb_naf(MUSB_INTERFACE *myusbcrate, int n, int a, int f, int d24, int data)
 {
   int rd, wr, bcount;
-  static char cmd[16];
-  static char buf[16];
-  int naf = f | (a<<5) | (n<<9);
+  uint8_t cmd[16];
+  uint8_t buf[16];
+  int naf;
+
+  assert(myusbcrate != NULL);
+
+  naf = f | (a<<5) | (n<<9);
 
   if (d24) naf |= 0x4000;
 
@@ -287,12 +315,12 @@ int ccusb_naf(MUSB_INTERFACE *myusbcrate, int n, int a, int f, int d24, int data
       cmd[6] = (data&0x00FF);      // write data, low 8 bits
       cmd[7] = (data&0xFF00) >> 8; // write data, high 8 bits
       if (d24)
-  {
-    bcount += 2;
-    cmd[2] = 3;
-    cmd[8] = (data&0xFF0000) >> 16; // write data, highest 8 bits
-    cmd[9] = 0;
-  }
+	{
+	  bcount += 2;
+	  cmd[2] = 3;
+	  cmd[8] = (data&0xFF0000) >> 16; // write data, highest 8 bits
+	  cmd[9] = 0;
+	}
     }
 
   wr = musb_write(myusbcrate,2,cmd,bcount,1000);
@@ -308,55 +336,55 @@ int ccusb_naf(MUSB_INTERFACE *myusbcrate, int n, int a, int f, int d24, int data
   if (((f & 0x18) == 0)) // data from read commands
     {
       if (d24==D24)
-  {
-    if (rd != 6)
-      {
-        printf("ccusb_naf: Reply to read command: Unexpected data length, should be 6: wr=%d, rd=%d, buf: 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x\n",wr,rd,buf[0],buf[1],buf[2],buf[3],buf[4],buf[5]);
-
-        ccusb_flush(myusbcrate);
-        ccusb_status(myusbcrate);
-
-        return -1;
-      }
+	{
+	  if (rd != 6)
+	    {
+	      printf("ccusb_naf: Reply to read command: Unexpected data length, should be 6: wr=%d, rd=%d, buf: 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x\n",wr,rd,buf[0],buf[1],buf[2],buf[3],buf[4],buf[5]);
+	      
+	      ccusb_flush(myusbcrate);
+	      ccusb_status(myusbcrate);
+	      
+	      return -1;
+	    }
     
-    return buf[0] | (buf[1]<<8)| (buf[2]<<16)| (buf[3]<<24);
-  }
+	  return buf[0] | (buf[1]<<8)| (buf[2]<<16)| (buf[3]<<24);
+	}
       else
-  {
-    if (rd != 4)
-      {
-        printf("ccusb_naf: Reply to read command: Unexpected data length, should be 4: wr=%d, rd=%d, buf: 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x\n",wr,rd,buf[0],buf[1],buf[2],buf[3],buf[4],buf[5]);
-
+	{
+	  if (rd != 4)
+	    {
+	      printf("ccusb_naf: Reply to read command: Unexpected data length, should be 4: wr=%d, rd=%d, buf: 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x\n",wr,rd,buf[0],buf[1],buf[2],buf[3],buf[4],buf[5]);
+	      
               ccusb_flush(myusbcrate);
-        ccusb_status(myusbcrate);
-
-        return -1;
-      }
-    
-    return buf[0] | (buf[1]<<8);
-  }
+	      ccusb_status(myusbcrate);
+	      
+	      return -1;
+	    }
+	  
+	  return buf[0] | (buf[1]<<8);
+	}
     }
   else if ((f & 0x18) == 0x18) // data from control commands
     {
       if (rd != 4)
-  {
-    printf("ccusb_naf: Reply to control command: Unexpected data length: wr=%d, rd=%d, buf: 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x\n",wr,rd,buf[0],buf[1],buf[2],buf[3],buf[4],buf[5]);
-    return -1;
-  }
+	{
+	  printf("ccusb_naf: Reply to control command: Unexpected data length: wr=%d, rd=%d, buf: 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x\n",wr,rd,buf[0],buf[1],buf[2],buf[3],buf[4],buf[5]);
+	  return -1;
+	}
       
       return buf[0] | (buf[1]<<8);
     }
   else if (((f & 0x18) == 0x10)) // data from write commands
     {
       if (rd != 4)
-  {
-    printf("ccusb_naf: Reply to write command: Unexpected data length: wr=%d, rd=%d, buf: 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x\n",wr,rd,buf[0],buf[1],buf[2],buf[3],buf[4],buf[5]);
-    return -1;
-  }
+	{
+	  printf("ccusb_naf: Reply to write command: Unexpected data length: wr=%d, rd=%d, buf: 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x\n",wr,rd,buf[0],buf[1],buf[2],buf[3],buf[4],buf[5]);
+	  return -1;
+	}
       
       return buf[0] | (buf[1]<<8);
     }
-
+  
   //ccusb_flush(myusbcrate);
   
   return 0;
@@ -563,10 +591,14 @@ void camo(const int c, const int n, const int a, const int f, WORD d)
 /********************************************************************/
 int camc_chk(const int c)
 {
-  if (myusb[c])
-    return 1;
-  else
+  if (c < 0)
     return 0;
+  else if (c >= gNumCrates)
+    return 0;
+  else if (myusb[c] == NULL)
+    return 0;
+  
+  return 1;
 }
 
 /********************************************************************/
@@ -638,7 +670,7 @@ void cam_lam_enable(const int c, const int n) // tested KO 16-SEP-2005
   mask |= (1 << (n - 1));
   ccusb_writeReg(ccusb_getCrateStruct(c), REG_LAMMASK, mask);
   camc(c, n, 0, 26);
-  
+  //ccusb_status(ccusb_getCrateStruct(c));
 }
 
 /********************************************************************/
@@ -654,7 +686,8 @@ void cam_lam_disable(const int c, const int n) // tested KO 16-SEP-2005
 /********************************************************************/
 void cam_lam_read(const int c, DWORD * lam) // tested KO 16-SEP-2005
 {
-  *lam = ccusb_readReg(myusb[c],REG_LAM);
+  *lam = ccusb_readReg(ccusb_getCrateStruct(c),REG_LAM);
+  //ccusb_status(ccusb_getCrateStruct(c));
 }
 
 /********************************************************************/
