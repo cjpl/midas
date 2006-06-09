@@ -196,7 +196,7 @@ int musb_open(MUSB_INTERFACE **musb_interface, int vendor, int product, int inst
                   return MUSB_ACCESS_ERROR;
                }
 
-               *musb_interface = calloc(1, sizeof(MUSB_INTERFACE));
+               *musb_interface = (MUSB_INTERFACE*)calloc(1, sizeof(MUSB_INTERFACE));
                (*musb_interface)->dev = udev;
                (*musb_interface)->usbinterface = usbinterface;
                return MUSB_SUCCESS;
@@ -335,7 +335,8 @@ int musb_write(MUSB_INTERFACE *musb_interface, int endpoint, const void *buf, in
 #if defined(_MSC_VER)
    WriteFile(musb_interface->whandle, buf, count, &n_written, NULL);
 #elif defined(HAVE_LIBUSB)
-   n_written = usb_bulk_write(musb_interface->dev, endpoint, (void *)buf, count, timeout);
+   //fprintf(stderr,"usb_bulk_write: %p %d %p %d %d\n",musb_interface->dev, endpoint, (char*)buf, count, timeout);
+   n_written = usb_bulk_write(musb_interface->dev, endpoint, (char*)buf, count, timeout);
    //usleep(0); // needed for linux not to crash !!!!
 #elif defined(OS_DARWIN)
    IOReturn status;
@@ -380,7 +381,8 @@ int musb_read(MUSB_INTERFACE *musb_interface, int endpoint, void *buf, int count
 
 #elif defined(HAVE_LIBUSB)
 
-   n_read = usb_bulk_read(musb_interface->dev, endpoint, buf, count, timeout);
+   //fprintf(stderr,"usb_bulk_read: %p %d %p %d %d\n",musb_interface->dev, endpoint, (char*)buf, count, timeout);
+   n_read = usb_bulk_read(musb_interface->dev, endpoint, (char*)buf, count, timeout);
 
 #elif defined(OS_DARWIN)
 
