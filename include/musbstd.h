@@ -22,7 +22,9 @@ typedef struct {
    int SerNo;
 } MUSB_INTERFACE;
 
-#elif defined(HAVE_LIBUSB)
+#elif defined(OS_LINUX) || defined(HAVE_LIBUSB)
+
+#define HAVE_LIBUSB
 
 #include <usb.h>
 
