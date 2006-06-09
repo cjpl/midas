@@ -11,19 +11,21 @@
 
 *********************************************************************/
 
+#ifndef  __VMICVME_H__
+#define  __VMICVME_H__
+
 #include <stdio.h>
 #include <string.h>
+#include <vme/universe.h>
 #include <vme/vme.h>
 #include <vme/vme_api.h>
 
 #include "mvmestd.h"
 
-#ifndef  VMICVME_INCLUDE_H
-#define  VMICVME_INCLUDE_H
-
 #ifndef MIDAS_TYPE_DEFINED
 typedef  unsigned long int   DWORD;
 typedef  unsigned short int   WORD;
+typedef  unsigned char        BYTE;
 #endif
 
 #ifndef  SUCCESS
@@ -34,9 +36,9 @@ typedef  unsigned short int   WORD;
 
 #define  MAX_VME_SLOTS       (int) 32
 
-#define  DEFAULT_SRC_ADD     0x200000
-#define  DEFAULT_NBYTES      0x100000    /* 1MB */
-#define  DEFAULT_DMA_NBYTES   0x10000    /* 64KB */
+#define  DEFAULT_SRC_ADD     0x000000
+#define  DEFAULT_NBYTES      0xFFFFFF    /* 16MB */
+#define  DEFAULT_DMA_NBYTES  0x100000    /* max DMA size in bytes */
 
 /* Used for managing the map segments.
    DMA_INFO is setup using internal defined memory block for now. 
@@ -63,4 +65,4 @@ typedef struct {
   int               flags;
 } INT_INFO;
 
-#endif // VMICVME_INCLUDE_H
+#endif

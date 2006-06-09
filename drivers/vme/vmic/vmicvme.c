@@ -16,9 +16,7 @@ VMIC VME driver following the mvmestd
 #include <signal.h>
 #include <unistd.h>
 #include <assert.h>
-#include <vme/universe.h>
-#include <vme/vme.h>
-#include <vme/vme_api.h>
+
 #include "vmicvme.h"
 
 vme_bus_handle_t bus_handle;
@@ -29,9 +27,31 @@ struct sigaction handler_act;
 
 INT_INFO int_info;
 
+mvme_size_t FullWsze (int am);
 int vmic_mmap(MVME_INTERFACE *mvme, mvme_addr_t vme_addr, mvme_size_t size);
-int vmic_unmap(MVME_INTERFACE *mvme, mvme_addr_t vme_addr, mvme_size_t size);
+int vmic_unmap(MVME_INTERFACE *mvme, mvme_addr_t vmE_addr, mvme_size_t size);
 mvme_addr_t vmic_mapcheck (MVME_INTERFACE *mvme, mvme_addr_t vme_addr, mvme_size_t n_bytes);
+
+#define A32_CHUNK 0x00FFFFFF
+
+/********************************************************************/
+/**
+Return the largest window size based on the address modifier.
+For A32, VMIC cannot map a full 32bit address space.
+We map it in chunks of 16 Mbytes instead
+*/
+mvme_size_t FullWsze (int am) {
+  switch (am & 0xF0) {
+  case 0x00:
+    return A32_CHUNK; // map A32 space in chunks of 16Mibytes
+  case 0x30:
+    return 0xFFFFFF; // map all of the A24 address space: 16Mibytes
+  case 0x20:
+    return 0xFFFF; // map all of the A16 address space: 64kibytes
+  default:
+    return 0;
+  }
+}
 
 /********************************************************************/
 /**
@@ -53,8 +73,7 @@ int mvme_open(MVME_INTERFACE **mvme, int index)
   }
   
   /* Allocate MVME_INTERFACE */
-  *mvme = (MVME_INTERFACE *) malloc(sizeof(MVME_INTERFACE));
-  memset((char *) *mvme, 0, sizeof(MVME_INTERFACE));
+  *mvme = (MVME_INTERFACE *) calloc(1, sizeof(MVME_INTERFACE));
   
   /* Going through init once only */
   if(0 > vme_init( (vme_bus_handle_t *) &((*mvme)->handle))) {
@@ -64,23 +83,19 @@ int mvme_open(MVME_INTERFACE **mvme, int index)
   }
   
   /* Allocte VME_TABLE */
-  (*mvme)->table = (char *) malloc(MAX_VME_SLOTS * sizeof(VME_TABLE));
-  
-  /* initialize the table */
-  memset((char *) (*mvme)->table, 0, MAX_VME_SLOTS * sizeof(VME_TABLE));
+  (*mvme)->table = (char *) calloc(MAX_VME_SLOTS, sizeof(VME_TABLE));
   
   /* Set default parameters */
   (*mvme)->am = MVME_AM_DEFAULT;
-  
+
   /* create a default master window */
-  if ((vmic_mmap(*mvme, DEFAULT_SRC_ADD, DEFAULT_NBYTES)) != MVME_SUCCESS) {
-    perror("cannot create vme map window");
+  if (vmic_mmap(*mvme, DEFAULT_SRC_ADD, FullWsze((*mvme)->am)) != MVME_SUCCESS) {
+    printf("mvme_open: cannot create vme map window");
     return(MVME_ACCESS_ERROR);
   }
   
   /* Allocate DMA_INFO */
   info = (DMA_INFO *) calloc(1, sizeof(DMA_INFO));
-  assert(info != NULL);
   
   (*mvme)->info = info;
   
@@ -101,12 +116,12 @@ int mvme_open(MVME_INTERFACE **mvme, int index)
       vme_dma_buffer_release((vme_bus_handle_t) (*mvme)->handle, info->dma_handle);
       return(ERROR);
     }
-  /*
-  printf("mvme_open\n");
+
+  printf("mvme_open:\n");
   printf("Bus handle              = 0x%x\n", (*mvme)->handle);
-  printf("DMA handle              = 0x%x\n", info->dma_handle);
+  printf("DMA handle              = 0x%x\n", (int)info->dma_handle);
+  printf("DMA area size           = %d bytes\n", DEFAULT_DMA_NBYTES);
   printf("DMA    physical address = %p\n", (unsigned long *) info->dma_ptr);
-  */
   
   return(MVME_SUCCESS);
 }
@@ -128,7 +143,7 @@ int mvme_close(MVME_INTERFACE *mvme)
   info  = ((DMA_INFO  *)mvme->info);
   
   // Debug
-  printf("mvme_close\n");
+  printf("mvme_close:\n");
   printf("Bus handle              = 0x%x\n", mvme->handle);
   printf("DMA handle              = 0x%x\n", (int)info->dma_handle);
   printf("DMA    physical address = %p\n", (unsigned long *) info->dma_ptr);
@@ -212,22 +227,31 @@ DMA    read access : 300ns / DMA latency 28us
 */
 int mvme_read(MVME_INTERFACE *mvme, void *dst, mvme_addr_t vme_addr, mvme_size_t n_bytes)
 {
-  int i;
-  mvme_addr_t addr;
   int         status;
-  DMA_INFO   *info;
-  DWORD      *dma_ptr;
-  char *cdma_ptr;
-  WORD *sdma_ptr;
-  
-  info  = ((DMA_INFO  *)mvme->info);
-  dma_ptr = (DWORD *) info->dma_ptr;
-  cdma_ptr = (char *) info->dma_ptr;
-  sdma_ptr = (WORD *) info->dma_ptr;
-  
+
   /* Perform read */
   /*--------------- DMA --------------*/
-  if ((mvme->blt_mode == MVME_BLT_BLT32) || (n_bytes > 127)) {
+  if ((mvme->blt_mode == MVME_BLT_BLT32) ||
+      (mvme->blt_mode == MVME_BLT_MBLT64) ||
+      (n_bytes > 127)) {
+
+#ifdef DO_TIMING
+    struct timeval t1, t2, t3;
+    int dt1, dt2;
+#endif
+
+    DMA_INFO *info = ((DMA_INFO*)mvme->info);
+
+    if (n_bytes >= DEFAULT_DMA_NBYTES)
+      {
+	fprintf(stderr,"mvme_read: Attempt to DMA %d bytes more than DEFAULT_DMA_NBYTES=%d\n", (int)n_bytes, DEFAULT_DMA_NBYTES);
+	return(ERROR);
+      }
+
+#ifdef DO_TIMING
+    gettimeofday(&t1,NULL);
+#endif
+
     status = vme_dma_read((vme_bus_handle_t )mvme->handle
         , info->dma_handle
         , 0
@@ -235,42 +259,54 @@ int mvme_read(MVME_INTERFACE *mvme, void *dst, mvme_addr_t vme_addr, mvme_size_t
         , mvme->am
         , n_bytes
         , 0);
+    //fprintf(stderr,"dma read: addr 0x%x, am 0x%x, bytes: %d, status: %d\n", vme_addr, mvme->am, n_bytes, status);
     if (status > 0) {
       perror("Error reading data");
       return(ERROR);
     }
+
+#ifdef DO_TIMING
+    gettimeofday(&t2,NULL);
+#endif
+
+    memcpy(dst,info->dma_ptr,n_bytes);
+
+#ifdef DO_TIMING
+    gettimeofday(&t3,NULL);
+
+    dt1 = t2.tv_usec - t1.tv_usec;
+    dt2 = t3.tv_usec - t2.tv_usec;
+
+    //fprintf(stderr,"dma read: addr 0x%x, am 0x%x, bytes: %d, status: %d, dma time: %d, memcpy time: %d, dma rate: %f, effective rate: %f\n", vme_addr, mvme->am, n_bytes, status, dt1, dt2, (double)n_bytes/(double)dt1,(double)n_bytes/(double)(dt1+dt2));
+#endif
+  } else {
+    int i;
+    mvme_addr_t addr;
+
+    /*--------------- Single Access -------------*/
+    addr = vmic_mapcheck(mvme, vme_addr, n_bytes);
     
-    if (mvme->dmode == MVME_DMODE_D8)
-      for (i=0 ; i < n_bytes/sizeof(char) ; i++) {
-  *((char *)dst)++  = cdma_ptr[i];
-      }
-    else if (mvme->dmode == MVME_DMODE_D16)
-      for (i=0 ; i < n_bytes/sizeof(WORD) ; i++) {
-  *((WORD *)dst)++  = sdma_ptr[i];
-      }
-    else if (mvme->dmode == MVME_DMODE_D32)
-      for (i=0 ; i < n_bytes/sizeof(DWORD) ; i++) {
-  *((DWORD *)dst)++  = dma_ptr[i];
-      }
-  }
-  else
-    {
-      /*--------------- Single Access -------------*/
-      addr = vmic_mapcheck(mvme, vme_addr, n_bytes);
-      
-      if (mvme->dmode == MVME_DMODE_D8)
-  for (i=0 ; i < n_bytes/sizeof(char) ; i++) {
-    *((char *)dst)++  = *((char *)addr)++;
-  }
-      else if (mvme->dmode == MVME_DMODE_D16)
-  for (i=0 ; i < n_bytes/sizeof(WORD) ; i++) {
-    *((WORD *)dst)++  = *((WORD *)addr)++;
-  }
-      else if (mvme->dmode == MVME_DMODE_D32)
-  for (i=0 ; i < n_bytes/sizeof(DWORD) ; i++) {
-    *((DWORD *)dst)++  = *((DWORD *)addr)++;
-  }
+    if (mvme->dmode == MVME_DMODE_D8) {
+      char* cdst = (char*)dst;
+      char* csrc = (char*)addr;
+      for (i=0; i<n_bytes; i+=sizeof(char))
+        *cdst++  = *csrc++;
+    } else if (mvme->dmode == MVME_DMODE_D16) {
+      WORD* sdst = (WORD*)dst;
+      WORD* ssrc = (WORD*)addr;
+      for (i=0; i<n_bytes; i+=sizeof(WORD))
+        *sdst++  = *ssrc++;
+    } else if (mvme->dmode == MVME_DMODE_D32) {
+      DWORD* ddst = (DWORD*)dst;
+      DWORD* dsrc = (DWORD*)addr;
+      for (i=0; i<n_bytes; i+=sizeof(DWORD))
+        *ddst++  = *dsrc++;
+    } else {
+      fprintf(stderr,"mvme_read: Invalid dmode %d\n",mvme->dmode);
+      return(ERROR);
     }
+  }
+  
   return(MVME_SUCCESS);
 }
 
@@ -284,7 +320,7 @@ Read single data from VME bus.
 DWORD mvme_read_value(MVME_INTERFACE *mvme, mvme_addr_t vme_addr)
 {
   mvme_addr_t addr;
-  DWORD dst = 0;
+  DWORD dst = 0xFFFFFFFF;
   
   addr = vmic_mapcheck(mvme, vme_addr, 4);
   
@@ -295,8 +331,8 @@ DWORD mvme_read_value(MVME_INTERFACE *mvme, mvme_addr_t vme_addr)
     dst  = *((WORD *)addr);
   else if (mvme->dmode == MVME_DMODE_D32)
     dst = *((DWORD *)addr);
-
-  return dst;
+  
+  return(dst);
 }
 
 /********************************************************************/
@@ -311,27 +347,21 @@ or size to transfer larger the 128 bytes (32 DWORD)
 */
 int mvme_write(MVME_INTERFACE *mvme, mvme_addr_t vme_addr, void *src, mvme_size_t n_bytes)
 {
-  int i;
-  mvme_addr_t addr;
-  DMA_INFO  *info;
-  
-  info  = ((DMA_INFO  *)mvme->info);
-  
   /* Perform write */
   /*--------------- DMA --------------*/
-  if ((mvme->blt_mode == MVME_BLT_BLT32) || (n_bytes > 127)) {
-    if (mvme->dmode == MVME_DMODE_D8)
-      for (i=0 ; i < n_bytes/sizeof(char) ; i++) {
-  *((char *)(info->dma_ptr))++ = *((char *)src)++;
+  if ((mvme->blt_mode == MVME_BLT_BLT32) ||
+      (mvme->blt_mode == MVME_BLT_MBLT64) ||
+      (n_bytes > 127)) {
+
+    DMA_INFO  *info = ((DMA_INFO  *)mvme->info);
+
+    if (n_bytes >= DEFAULT_DMA_NBYTES)
+      {
+	fprintf(stderr,"mvme_write: Attempt to DMA %d bytes more than DEFAULT_DMA_NBYTES=%d\n", (int)n_bytes, DEFAULT_DMA_NBYTES);
+	return(ERROR);
       }
-    else if (mvme->dmode == MVME_DMODE_D16)
-      for (i=0 ; i < n_bytes/sizeof(WORD) ; i++) {
-  *((WORD *)(info->dma_ptr))++ = *((WORD *)src)++;
-      }
-    else if (mvme->dmode == MVME_DMODE_D32)
-      for (i=0 ; i < n_bytes/sizeof(DWORD) ; i++) {
-  *((DWORD *)(info->dma_ptr))++ = *((DWORD *)src)++;
-      }
+
+    memcpy(info->dma_ptr, src, n_bytes);
     
     if(0 > vme_dma_write((vme_bus_handle_t )mvme->handle
        , info->dma_handle
@@ -343,24 +373,33 @@ int mvme_write(MVME_INTERFACE *mvme, mvme_addr_t vme_addr, void *src, mvme_size_
       perror("Error writing data");
       return(MVME_ACCESS_ERROR);
     }
-  }
-  else {
+  } else {
+    int i;
+    mvme_addr_t addr;
+  
     /*--------------- Single Access -------------*/
     addr = vmic_mapcheck(mvme, vme_addr, n_bytes);
     
     /* Perform write */
-    if (mvme->dmode == MVME_DMODE_D8)
-      for (i=0 ; i < n_bytes/sizeof(char) ; i++) {
-  *((char *)addr)++  = *((char *)src)++;
-      }
-    else if (mvme->dmode == MVME_DMODE_D16)
-      for (i=0 ; i < n_bytes/sizeof(WORD) ; i++) {
-  *((WORD *)addr)++  = *((WORD *)src)++;
-      }
-    else if (mvme->dmode == MVME_DMODE_D32)
-      for (i=0 ; i < n_bytes/sizeof(DWORD) ; i++) {
-  *((DWORD *)addr)++  = *((DWORD *)src)++;
-      }
+    if (mvme->dmode == MVME_DMODE_D8) {
+      char*dst = (char*)addr;
+      char*sss = (char*)src;
+      for (i=0; i<n_bytes; i+=sizeof(char))
+	*dst++ = *sss++;
+    } else if (mvme->dmode == MVME_DMODE_D16) {
+      WORD*dst = (WORD*)addr;
+      WORD*sss = (WORD*)src;
+      for (i=0; i<n_bytes; i+=sizeof(WORD))
+	*dst++ = *sss++;
+    } else if (mvme->dmode == MVME_DMODE_D32) {
+      DWORD*dst = (DWORD*)addr;
+      DWORD*sss = (DWORD*)src;
+      for (i=0; i<n_bytes; i+=sizeof(DWORD))
+	*dst++ = *sss++;
+    } else {
+      fprintf(stderr,"mvme_write: Invalid dmode %d\n",mvme->dmode);
+      return(ERROR);
+    }
   }
   return MVME_SUCCESS;
 }
@@ -382,11 +421,9 @@ int mvme_write_value(MVME_INTERFACE *mvme, mvme_addr_t vme_addr, DWORD value)
   /* Perform write */
   if (mvme->dmode == MVME_DMODE_D8)
     *((char *)addr)  = (char) (value &  0xFF);
-  
-  if (mvme->dmode == MVME_DMODE_D16)
+  else if (mvme->dmode == MVME_DMODE_D16)
     *((WORD *)addr)  = (WORD) (value &  0xFFFF);
-  
-  if (mvme->dmode == MVME_DMODE_D32)
+  else if (mvme->dmode == MVME_DMODE_D32)
     *((DWORD *)addr)  = value;
   
   return MVME_SUCCESS;
@@ -579,9 +616,9 @@ int vmic_mmap(MVME_INTERFACE *mvme, mvme_addr_t vme_addr, mvme_size_t n_bytes)
     
     if (NULL == (phys_addr = vme_master_window_phys_addr ((vme_bus_handle_t )mvme->handle, table[j].wh)))
       {
-  perror ("vme_master_window_phys_addr");
+	perror ("vme_master_window_phys_addr");
       }
-    printf("Window physical address = 0x%lx\n", (unsigned long) phys_addr);
+    fprintf(stderr, "vmic_mmap: Mapped VME AM 0x%02x addr 0x%08x size 0x%08x at address %p\n", table[j].am, (int)vme_addr, (int)n_bytes, phys_addr);
     table[j].valid = 1;
     table[j].high  = (table[j].low + table[j].nbytes);
   }
@@ -663,12 +700,15 @@ mvme_addr_t vmic_mapcheck (MVME_INTERFACE *mvme, mvme_addr_t vme_addr, mvme_size
   // scan table
   /* Check if handle found or need to create new one */
   if (!table[j].valid) {
-    /* Adjust vme_addr start point */
-    addr = vme_addr & 0xFFF00000;
+    /* Adjust vme_addr start point (split in quarters) */
+    if (vme_addr > A32_CHUNK) 
+      addr = vme_addr & (~A32_CHUNK);
+    else
+      addr = 0x00000000;
     /* Create a new window */
-    if (vmic_mmap(mvme, addr, DEFAULT_NBYTES) != MVME_SUCCESS) {
+    if (vmic_mmap(mvme, addr, FullWsze(mvme->am)) != MVME_SUCCESS) {
       perror("cannot create vme map window");
-      return(MVME_ACCESS_ERROR);
+      abort(); // cannot return anything!
     }
   }
   /* Get index in table in case new mapping has been requested */
@@ -684,7 +724,7 @@ mvme_addr_t vmic_mapcheck (MVME_INTERFACE *mvme, mvme_addr_t vme_addr, mvme_size
   } // scan table
   if (!table[j].valid) {
     perror("Map not found");
-    return MVME_ACCESS_ERROR;
+    abort(); // cannot return anything!
   }
   addr = (mvme_addr_t) (table[j].ptr) + (mvme_addr_t) (vme_addr - table[j].low);
   return addr;
@@ -700,7 +740,7 @@ int main () {
 
   int status;
   int myinfo = VME_INTERRUPT_SIGEVENT;
-  
+
   MVME_INTERFACE *myvme;
   int vmeio_status;
   
@@ -711,29 +751,29 @@ int main () {
   //  status = mvme_sysreset(myvme);
   
   /* Setup AM */
-  status = mvme_set_am(myvme, 0x39);
+  status = mvme_set_am(myvme, 0x09);
   
   /* Setup Data size */
   status = mvme_set_dmode(myvme, MVME_DMODE_D32);
   
   /* Read VMEIO status */
-  status = mvme_read(myvme, &vmeio_status, 0x78001C, 4);
+  status = mvme_read(myvme, &vmeio_status, 0x4078001C, 4);
   printf("VMEIO status : 0x%x\n", vmeio_status);
   
   /* Write Single value */
-  mvme_write_value(myvme, 0x780010, 0x0);
+  mvme_write_value(myvme, 0x40780010, 0x0);
   
   /* Read Single Value */
-  printf("Value : 0x%lx\n", mvme_read_value(myvme, 0x780018));
+  printf("Value : 0x%lx\n", mvme_read_value(myvme, 0x40780018));
   
   /* Write Single value */
-  mvme_write_value(myvme, 0x780010, 0x3);
+  mvme_write_value(myvme, 0x40780010, 0x3);
   
   /* Read Single Value */
-  printf("Value : 0x%lx\n", mvme_read_value(myvme, 0x780018));
+  printf("Value : 0x%lx\n", mvme_read_value(myvme, 0x40780018));
   
   /* Write Single value */
-  mvme_write_value(myvme, 0x780008, 0xF);
+  mvme_write_value(myvme, 0x40780008, 0xF);
   
   /* Write to the VMEIO in pulse mode */
 //  data = 0xF;
