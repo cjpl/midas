@@ -128,8 +128,6 @@ int main(int argc, char **argv)
    char name[256], str[1000];
    BOOL inetd, daemon, debug;
 
-   FILE *f;
-
 #ifdef OS_WINNT
    /* init critical section object for open/close buffer */
    InitializeCriticalSection(&buffer_critial_section);
