@@ -2687,7 +2687,7 @@ none
       printf("#banks:%i - Bank list:-%s-\n", status, banklist);
 
       /* check if EVID is present if so display its content */
-      if ((status = ybk_find(pevent, "EVID", &bklen, &bktyp, &pvybk)) == YB_SUCCESS) {
+      if ((status = ybk_find((DWORD *)pevent, "EVID", &bklen, &bktyp, &pvybk)) == YB_SUCCESS) {
 	pybk = (YBOS_BANK_HEADER *) pvybk;
 	pdata = (DWORD *) ((YBOS_BANK_HEADER *) pybk + 1);
 	printf
