@@ -10,7 +10,7 @@
 #  date         by    modification
 #  ---------    ---   -----------------------------------------------
 #  05-SEP-97    SR    created
-#  $Id:$
+#  $Id$
 #
 #####################################################################
 
@@ -31,7 +31,7 @@ VXW_DIR         = /vxworks-ppc
 # Midas system include
 INC_DIR 	= /usr/local/include
 # Midas VxWorks obj directory 
-LIB_DIR 	= /midas/vxworks/$(OBJ_DIR)
+LIB_DIR 	= ../../vxworks/$(OBJ_DIR)
 # Midas drivers directory (should after install /midas/drivers)
 DRV_DIR         = ../../drivers
 
@@ -63,7 +63,7 @@ CFLAGS = $(CC_OPTIM) $(CC_WARNINGS) $(CC_INCLUDES) $(CC_COMPILER) $(CC_DEFINES)
 # Hardware driver can be (camacnul, kcs2926, kcs2927, hyt1331)
 #
 INTERFACE = vxVME
-DRIVER = camacnul
+DRIVER = ces8210
 
 #-------------------------------------------------------------------
 # Frontend code name defaulted to frontend in this example.
@@ -88,13 +88,13 @@ $(UFE): $(LIB) $(OBJ_DIR)/$(DRIVER).o $(OBJ_DIR)/$(INTERFACE).o $(OBJ_DIR)/esone
 	$(LIB_DIR)/mfe.o $(OBJ_DIR)/$(UFE).o $(OBJ_DIR)/$(DRIVER).o \
 	$(OBJ_DIR)/$(INTERFACE).o $(OBJ_DIR)/esone.o
 
-$(OBJ_DIR)/$(DRIVER).o: $(DRV_DIR)/bus/$(DRIVER).c
+$(OBJ_DIR)/$(DRIVER).o: $(DRV_DIR)/camac/$(DRIVER).c
 	$(CC) $(CFLAGS) $(OSFLAGS) -c -o $@ $<
 
-$(OBJ_DIR)/$(INTERFACE).o: $(DRV_DIR)/bus/$(INTERFACE).c
+$(OBJ_DIR)/$(INTERFACE).o: $(DRV_DIR)/vme/vxworks/$(INTERFACE).c
 	$(CC) $(CFLAGS) $(OSFLAGS) -c -o $@ $<
 
-$(OBJ_DIR)/esone.o: $(DRV_DIR)/bus/esone.c
+$(OBJ_DIR)/esone.o: $(DRV_DIR)/camac/esone.c
 	$(CC) $(CFLAGS) $(OSFLAGS) -c -o $@ $<
 
 $(OBJ_DIR):
