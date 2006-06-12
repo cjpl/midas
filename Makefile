@@ -87,6 +87,12 @@ NEED_STRLCPY=1
 #
 MXML_DIR=../mxml
 
+
+#
+# Optional zlib support for analyzer
+#
+NEED_ZLIB=
+
 #####################################################################
 # Nothing needs to be modified after this line 
 #####################################################################
@@ -210,7 +216,6 @@ SRC_DIR  = src
 UTL_DIR  = utils
 DRV_DIR  = drivers
 EXAM_DIR = examples
-ZLIB_DIR = ./zlib-1.0.4
 
 #
 # Midas operating system dependent directories
@@ -322,6 +327,10 @@ CFLAGS     += -DHAVE_ROOT $(ROOTCFLAGS)
 
 endif # ROOTSYS
 
+ifdef NEED_ZLIB
+CFLAGS     += -DHAVE_ZLIB
+LIBS       += -lz
+endif
 
 $(BIN_DIR)/mlogger: $(BIN_DIR)/%: $(SRC_DIR)/%.c
 	$(CXX) $(CFLAGS) $(OSFLAGS) -o $@ $< $(LIB) $(ROOTLIBS) $(LIBS)
@@ -419,10 +428,10 @@ $(BIN_DIR)/mcnaf: $(UTL_DIR)/mcnaf.c $(DRV_DIR)/camac/camacrpc.c
 	$(CC) $(CFLAGS) $(OSFLAGS) -o $@ $(UTL_DIR)/mcnaf.c $(DRV_DIR)/camac/camacrpc.c $(LIB) $(LIBS)
 
 $(BIN_DIR)/mdump: $(UTL_DIR)/mdump.c
-	$(CC) $(CFLAGS) $(OSFLAGS) -o $@ $(UTL_DIR)/mdump.c $(LIB) -lz $(LIBS)
+	$(CC) $(CFLAGS) $(OSFLAGS) -o $@ $(UTL_DIR)/mdump.c $(LIB) $(LIBS)
 
 $(BIN_DIR)/lazylogger: $(SRC_DIR)/lazylogger.c
-	$(CC) $(CFLAGS) $(OSFLAGS) -o $@ $(SRC_DIR)/lazylogger.c $(LIB) -lz $(LIBS)
+	$(CC) $(CFLAGS) $(OSFLAGS) -o $@ $(SRC_DIR)/lazylogger.c $(LIB) $(LIBS)
 
 $(BIN_DIR)/dio: $(UTL_DIR)/dio.c
 	$(CC) $(CFLAGS) $(OSFLAGS) -o $@ $(UTL_DIR)/dio.c
@@ -492,12 +501,6 @@ ifdef NEED_SHLIB
 else
 	rm -fv $(SYSLIB_DIR)/libmidas.so
 endif
-
-	@if [ -d  $(ZLIB_DIR) ] ; then \
-	  install -v -m 644 $(ZLIB_DIR)/zlib.h $(SYSINC_DIR) ;\
-	  install -v -m 644 $(ZLIB_DIR)/zconf.h $(SYSINC_DIR) ;\
-	  install -v -m 644 $(ZLIB_DIR)/libz.a $(SYSLIB_DIR) ;\
-	fi;
 
 # drivers
 	@echo "... "
