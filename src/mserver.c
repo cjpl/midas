@@ -5,7 +5,7 @@
 
   Contents:     Server program for midas RPC calls
 
-  $Id:$
+  $Id$
 
 \********************************************************************/
 
@@ -128,6 +128,8 @@ int main(int argc, char **argv)
    char name[256], str[1000];
    BOOL inetd, daemon, debug;
 
+   FILE *f;
+
 #ifdef OS_WINNT
    /* init critical section object for open/close buffer */
    InitializeCriticalSection(&buffer_critial_section);
@@ -145,8 +147,11 @@ int main(int argc, char **argv)
 
 #ifdef OS_UNIX
    /* if no full path given, assume /usr/local/bin */
-   if (strchr(name, '/') == 0)
-      strcpy(name, "/usr/local/bin/mserver");
+   if (strchr(name, '/') == 0) {
+      strcpy(str, "/usr/local/bin/");
+      strcat(str, name);
+      strcpy(name, str);
+   }
 #endif
 
    rpc_set_server_option(RPC_OSERVER_NAME, (PTYPE) name);
