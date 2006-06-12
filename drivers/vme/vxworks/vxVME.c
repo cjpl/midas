@@ -107,6 +107,7 @@ int vme_unmap(int vh, void *ptr, int size)
 }
 
 /*------------------------------------------------------------------*/
+/*
 int vme_ioctl(int vh, int request, int *param)
 {
    switch (request) {
@@ -117,3 +118,4 @@ int vme_ioctl(int vh, int request, int *param)
    }
    return SUCCESS;
 }
+*/
