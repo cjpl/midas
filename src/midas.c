@@ -8098,6 +8098,8 @@ INT rpc_server_connect(char *host_name, char *exp_name)
    char str[200], version[32], v1[32];
    char local_prog_name[NAME_LENGTH];
    struct hostent *phe;
+   fd_set readfds;
+   struct timeval timeout;
 
 #ifdef OS_WINNT
    {
@@ -8265,8 +8267,36 @@ INT rpc_server_connect(char *host_name, char *exp_name)
       cm_msg(MERROR, "rpc_server_connect", str);
    }
 
-   /* wait for callback on send and recv socket */
+   /* wait for callback on send and recv socket with timeout */
+   FD_ZERO(&readfds);
+   FD_SET(lsock1, &readfds);
+   FD_SET(lsock2, &readfds);
+   FD_SET(lsock3, &readfds);
+
+   timeout.tv_sec = 5;
+   timeout.tv_usec = 0;
+
+   do {
+      status = select(FD_SETSIZE, &readfds, NULL, NULL, &timeout);
+
+      /* if an alarm signal was cought, restart select with reduced timeout */
+      if (status == -1 && timeout.tv_sec >= WATCHDOG_INTERVAL / 1000)
+         timeout.tv_sec -= WATCHDOG_INTERVAL / 1000;
+
+   } while (status == -1);   /* dont return if an alarm signal was cought */
+
+   if (!FD_ISSET(lsock1, &readfds) ||
+       !FD_ISSET(lsock2, &readfds) ||
+       !FD_ISSET(lsock3, &readfds)) {
+      cm_msg(MERROR, "rpc_server_connect", "mserver subprocess could not be started (check path)");
+      closesocket(lsock1);
+      closesocket(lsock2);
+      closesocket(lsock3);
+      return RPC_NET_ERROR;
+   }
+
    size = sizeof(bind_addr);
+
    _server_connection.send_sock =
        accept(lsock1, (struct sockaddr *) &bind_addr, &size);
 
