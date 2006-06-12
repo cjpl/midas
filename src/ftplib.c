@@ -285,7 +285,7 @@ int ftp_data(FTP_CON * con, char *command, char *file)
       return FTP_NET_ERROR;
    }
 
-   if (getsockname(listen_socket, (struct sockaddr *) &data, &len) < 0) {
+   if (getsockname(listen_socket, (struct sockaddr *) &data, (int *)&len) < 0) {
       closesocket(listen_socket);
       return FTP_NET_ERROR;
    }
@@ -307,7 +307,7 @@ int ftp_data(FTP_CON * con, char *command, char *file)
    if (status >= 0)
       return status;
 
-   data_socket = accept(listen_socket, (struct sockaddr *) &from, &fromlen);
+   data_socket = accept(listen_socket, (struct sockaddr *) &from, (int *)&fromlen);
 
    if (data_socket == -1) {
       closesocket(listen_socket);
