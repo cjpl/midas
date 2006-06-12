@@ -8285,9 +8285,7 @@ INT rpc_server_connect(char *host_name, char *exp_name)
 
    } while (status == -1);   /* dont return if an alarm signal was cought */
 
-   if (!FD_ISSET(lsock1, &readfds) ||
-       !FD_ISSET(lsock2, &readfds) ||
-       !FD_ISSET(lsock3, &readfds)) {
+   if (!FD_ISSET(lsock1, &readfds)) {
       cm_msg(MERROR, "rpc_server_connect", "mserver subprocess could not be started (check path)");
       closesocket(lsock1);
       closesocket(lsock2);
