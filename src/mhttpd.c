@@ -8438,7 +8438,7 @@ void show_hist_page(char *path, char *buffer, int *buffer_size, int refresh)
    /* check if panel exists */
    sprintf(str, "/History/Display/%s", path);
    status = db_find_key(hDB, 0, str, &hkey);
-   if (status != DB_SUCCESS) {
+   if (status != DB_SUCCESS && !equal_ustring(path, "All")) {
       rsprintf("<h1>Error: History panel \"%s\" does not exist</h1>\n", path);
       rsprintf("</table></form></body></html>\r\n");
       return;
