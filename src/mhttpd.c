@@ -8435,6 +8435,15 @@ void show_hist_page(char *path, char *buffer, int *buffer_size, int refresh)
    rsprintf("<input type=submit name=cmd value=Alarms>\n");
    rsprintf("<input type=submit name=cmd value=Status>\n");
 
+   /* check if panel exists */
+   sprintf(str, "/History/Display/%s", path);
+   status = db_find_key(hDB, 0, str, &hkey);
+   if (status != DB_SUCCESS) {
+      rsprintf("<h1>Error: History panel \"%s\" does not exist</h1>\n", path);
+      rsprintf("</table></form></body></html>\r\n");
+      return;
+   }
+
    /* define hidden field for parameters */
    if (pscale && *pscale)
       rsprintf("<input type=hidden name=hscale value=%d>\n", scale);
