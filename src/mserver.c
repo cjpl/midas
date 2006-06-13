@@ -329,10 +329,12 @@ int main(int argc, char **argv)
                   rpc_debug_printf("Unable to set user ID for %s", callback.user);
                   cm_msg(MERROR, "main", "Unable to set user ID for %s", callback.user);
                } else {
-                  rpc_debug_printf("Changed UID to user %s (GID %d, UID %d)",
-                         callback.user, pw->pw_gid, pw->pw_uid);
-                  cm_msg(MLOG, "main", "Changed UID to user %s (GID %d, UID %d)",
-                         callback.user, pw->pw_gid, pw->pw_uid);
+                  if (debug) {
+                     rpc_debug_printf("Changed UID to user %s (GID %d, UID %d)",
+                           callback.user, pw->pw_gid, pw->pw_uid);
+                     cm_msg(MLOG, "main", "Changed UID to user %s (GID %d, UID %d)",
+                           callback.user, pw->pw_gid, pw->pw_uid);
+                  }
                }
             }
          }
