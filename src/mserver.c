@@ -172,10 +172,10 @@ int main(int argc, char **argv)
    if (!inetd && argc < 7)
       printf("%s started interactively\n", argv[0]);
 
-   if (argc < 7) {
-      debug = daemon = FALSE;
-      server_type = ST_MPROCESS;
+   debug = daemon = FALSE;
+   server_type = ST_MPROCESS;
 
+   if (argc < 7) {
       /* parse command line parameters */
       for (i = 1; i < argc; i++) {
          if (argv[i][0] == '-' && argv[i][1] == 'd')
