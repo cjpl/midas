@@ -9860,7 +9860,7 @@ struct linger        ling;
                      net_buffer[header_length - 1] = 0;
                }
 
-               if (header_length > 0 && len >= header_length + content_length)
+               if (header_length > 0 && (int)len >= header_length + content_length)
                   break;
             } else if (strstr(net_buffer, "OPTIONS") != NULL)
                goto error;
