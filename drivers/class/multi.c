@@ -5,7 +5,7 @@
 
   Contents:     Multimeter Class Driver
 
-  $Id:$
+  $Id$
 
 \********************************************************************/
 
@@ -301,19 +301,7 @@ INT multi_init(EQUIPMENT * pequipment)
       return FE_ERR_ODB;
    }
 
-  /*---- Create/Read settings ----*/
-
-   /* Names */
-   for (i = 0; i < m_info->num_channels_input; i++)
-      sprintf(m_info->names_input + NAME_LENGTH * i, "Input Channel %d", i);
-   db_merge_data(hDB, m_info->hKeyRoot, "Settings/Names Input",
-                 m_info->names_input, m_info->num_channels_input * NAME_LENGTH,
-                 m_info->num_channels_input, TID_STRING);
-   for (i = 0; i < m_info->num_channels_output; i++)
-      sprintf(m_info->names_output + NAME_LENGTH * i, "Output Channel %d", i);
-   db_merge_data(hDB, m_info->hKeyRoot, "Settings/Names Output",
-                 m_info->names_output, m_info->num_channels_output * NAME_LENGTH,
-                 m_info->num_channels_output, TID_STRING);
+   /*---- Create/Read settings ----*/
 
    /* Update threshold */
    for (i = 0; i < m_info->num_channels_input; i++)
@@ -371,7 +359,7 @@ INT multi_init(EQUIPMENT * pequipment)
                      m_info->num_channels_output * sizeof(float), MODE_READ, NULL, NULL);
    }
 
-  /*---- Create/Read variables ----*/
+   /*---- Create/Read variables ----*/
 
    /* Input */
    if (m_info->num_channels_input) {
@@ -391,7 +379,7 @@ INT multi_init(EQUIPMENT * pequipment)
       db_find_key(hDB, m_info->hKeyRoot, "Variables/Output", &m_info->hKeyOutput);
    }
 
-  /*---- Initialize device drivers ----*/
+   /*---- Initialize device drivers ----*/
 
    /* call init method */
    for (i = 0; pequipment->driver[i].name[0]; i++) {
@@ -449,26 +437,27 @@ INT multi_init(EQUIPMENT * pequipment)
       m_info->channel_offset_output[i] = ch_offset;
    }
 
-  /*---- get default names from device driver ----*/
-   size = NAME_LENGTH * sizeof(char);
-
-   db_find_key(hDB, m_info->hKeyRoot, "Settings/Names Input", &hKey);
+   /*---- get default names from device driver ----*/
    for (i = 0; i < m_info->num_channels_input; i++) {
+      sprintf(m_info->names_input + NAME_LENGTH * i, "Input Channel %d", i);
       DRIVER_INPUT(i) (CMD_GET_DEFAULT_NAME, m_info->dd_info_input[i],
-                       i - m_info->channel_offset_input[i],
-                       m_info->names_input + NAME_LENGTH * i);
-      db_set_data_index(hDB, hKey, m_info->names_input + NAME_LENGTH * i, size, i,
-                        TID_STRING);
+                 i - m_info->channel_offset_input[i], 
+                 m_info->names_input + NAME_LENGTH * i);
+      printf("%d: %s\n", i, m_info->names_input + NAME_LENGTH * i);
    }
+   db_merge_data(hDB, m_info->hKeyRoot, "Settings/Names Input",
+                 m_info->names_input, NAME_LENGTH * m_info->num_channels_input,
+                 m_info->num_channels_input, TID_STRING);
 
-   db_find_key(hDB, m_info->hKeyRoot, "Settings/Names Output", &hKey);
    for (i = 0; i < m_info->num_channels_output; i++) {
+      sprintf(m_info->names_output + NAME_LENGTH * i, "Output Channel %d", i);
       DRIVER_OUTPUT(i) (CMD_GET_DEFAULT_NAME, m_info->dd_info_output[i],
-                        i - m_info->channel_offset_output[i],
-                        m_info->names_output + NAME_LENGTH * i);
-      db_set_data_index(hDB, hKey, m_info->names_output + NAME_LENGTH * i, size, i,
-                        TID_STRING);
+                 i - m_info->channel_offset_output[i], 
+                 m_info->names_output + NAME_LENGTH * i);
    }
+   db_merge_data(hDB, m_info->hKeyRoot, "Settings/Names Output",
+                 m_info->names_output, NAME_LENGTH * m_info->num_channels_output,
+                 m_info->num_channels_output, TID_STRING);
 
   /*---- set labels form midas SC names ----*/
    for (i = 0; i < m_info->num_channels_input; i++) {
