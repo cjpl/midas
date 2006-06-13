@@ -226,7 +226,7 @@ INT mscbdev_get_default_name(MSCBDEV_INFO * info, INT channel, char *name)
    status = mscb_info_variable(info->fd, info->mscbdev_settings.mscb_address[channel],
                                info->mscbdev_settings.mscb_index[channel], &var_info);
    if (status == MSCB_SUCCESS)
-      strcpy(name, var_info.name);
+      strlcpy(name, var_info.name, NAME_LENGTH);
 
    return status;
 }
@@ -241,6 +241,7 @@ INT mscbdev(INT cmd, ...)
    DWORD flags;
    float value, *pvalue;
    void *info, *bd;
+   char *name;
 
    va_start(argptr, cmd);
    status = FE_SUCCESS;
@@ -275,12 +276,10 @@ INT mscbdev(INT cmd, ...)
       break;
 
    case CMD_GET_DEFAULT_NAME:
-      /*
-         info = va_arg(argptr, void *);
-         channel = va_arg(argptr, INT);
-         name = va_arg(argptr, char *);
-         status = mscbdev_get_default_name(info, channel, name);
-       */
+      info = va_arg(argptr, void *);
+      channel = va_arg(argptr, INT);
+      name = va_arg(argptr, char *);
+      status = mscbdev_get_default_name(info, channel, name);
       break;
 
    default:
