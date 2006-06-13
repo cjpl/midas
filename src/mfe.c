@@ -94,6 +94,7 @@ extern EQUIPMENT equipment[];
 EQUIPMENT *interrupt_eq = NULL;
 EVENT_HEADER *interrupt_odb_buffer;
 BOOL interrupt_odb_buffer_valid;
+BOOL slowcont_eq = FALSE;
 
 int send_event(INT index);
 void send_all_periodic_events(INT transition);
@@ -458,7 +459,8 @@ and rebuild the system.");
       } else
          equipment[index].buffer_handle = 0;
 
-    /*---- evaluate polling count ----------------------------------*/
+      /*---- evaluate polling count ----------------------------------*/
+      
       if (eq_info->eq_type & EQ_POLLED) {
          if (display_period)
             printf("\nCalibrating");
@@ -486,7 +488,8 @@ and rebuild the system.");
             printf("OK\n");
       }
 
-    /*---- initialize interrupt events -----------------------------*/
+      /*---- initialize interrupt events -----------------------------*/
+      
       if (eq_info->eq_type & EQ_INTERRUPT) {
          /* install interrupt for interrupt events */
 
@@ -518,7 +521,8 @@ and rebuild the system.");
          }
       }
 
-    /*---- initialize slow control equipment -----------------------*/
+      /*---- initialize slow control equipment -----------------------*/
+      
       if (eq_info->eq_type & EQ_SLOW) {
          /* resolve duplicate device names */
          for (i = 0; equipment[index].driver[i].name[0]; i++)
@@ -541,6 +545,9 @@ and rebuild the system.");
             cm_msg(MINFO, "register_equipment",
                    "Equipment %s disabled in file \"frontend.c\"", equipment[index].name);
          }
+
+         /* remember that we have slowcontrol equipment (needed later for scheduler) */
+         slowcont_eq = TRUE;
 
          /* let user read error messages */
          if (equipment[index].status != FE_SUCCESS)
@@ -1154,10 +1161,10 @@ INT scheduler(void)
 
          /*---- call idle routine for slow control equipment ----*/
          if ((eq_info->eq_type & EQ_SLOW) && eq->status == FE_SUCCESS) {
-            if (eq_info->event_limit > 0 && run_state == STATE_RUNNING) {
-               if (actual_time - eq->last_idle >= (DWORD) eq_info->event_limit) {
+            if (eq_info->event_limit > 0) {
+               if (actual_millitime - eq->last_idle >= (DWORD) eq_info->event_limit) {
                   eq->cd(CMD_IDLE, eq);
-                  eq->last_idle = actual_time;
+                  eq->last_idle = actual_millitime;
                }
             } else
                eq->cd(CMD_IDLE, eq);
@@ -1548,7 +1555,7 @@ INT scheduler(void)
       }
 
       /*---- check network messages ----------------------------------*/
-      if (run_state == STATE_RUNNING && interrupt_eq == NULL) {
+      if ((run_state == STATE_RUNNING && interrupt_eq == NULL) || slowcont_eq) {
          /* only call yield once every 100ms when running */
          if (actual_millitime - last_time_network > 100) {
             status = cm_yield(0);
