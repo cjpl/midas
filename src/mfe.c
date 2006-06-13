@@ -1373,8 +1373,10 @@ INT scheduler(void)
       /*---- call frontend_loop periodically -------------------------*/
       if (frontend_call_loop) {
          status = frontend_loop();
-         if (status != CM_SUCCESS)
+         if (status == RPC_SHUTDOWN || status == SS_ABORT) {
             status = RPC_SHUTDOWN;
+            break;
+         }
       }
 
       /*---- check for deferred transitions --------------------------*/
