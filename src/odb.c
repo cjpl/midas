@@ -5697,7 +5697,7 @@ INT db_copy_xml(HNDLE hDB, HNDLE hKey, char *buffer, INT * buffer_size)
 #ifdef LOCAL_ROUTINES
    {
    INT len;
-   char *p;
+   char *p, str[256];
    MXML_WRITER *writer;
 
    /* open file */
@@ -5707,8 +5707,11 @@ INT db_copy_xml(HNDLE hDB, HNDLE hKey, char *buffer, INT * buffer_size)
       return DB_NO_MEMORY;
    }
 
+   db_get_path(hDB, hKey, str, sizeof(str));
+
    /* write XML header */
    mxml_start_element(writer, "odb");
+   mxml_write_attribute(writer, "root", str);
    mxml_write_attribute(writer, "xmlns:xsi", "http://www.w3.org/2001/XMLSchema-instance");
    mxml_write_attribute(writer, "xsi:noNamespaceSchemaLocation", "http://midas.psi.ch/odb.xsd");
 
@@ -6080,8 +6083,11 @@ INT db_save_xml(HNDLE hDB, HNDLE hKey, char *filename)
       return DB_FILE_ERROR;
    }
 
+   db_get_path(hDB, hKey, str, sizeof(str));
+
    /* write XML header */
    mxml_start_element(writer, "odb");
+   mxml_write_attribute(writer, "root", str);
    mxml_write_attribute(writer, "filename", filename);
    mxml_write_attribute(writer, "xmlns:xsi", "http://www.w3.org/2001/XMLSchema-instance");
 
