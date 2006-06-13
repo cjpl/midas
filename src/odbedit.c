@@ -5,7 +5,7 @@
 
   Contents:     Command-line interface to the MIDAS online data base.
 
-  $Id:$
+  $Id$
 
 \********************************************************************/
 
@@ -1720,7 +1720,7 @@ void command_loop(char *host_name, char *exp_name, char *cmd, char *start_dir)
          /* check if new one exists */
          getcwd(cwd, sizeof(cwd));
          status = chdir(str);
-         if (status == -1) {
+         if (status == -1 && strcmp(old_dir, str) != 0) {
             printf
                 ("\"/Logger/Data dir = %s\" in file \"%s\" does not exist locally,\nset anyhow? (y/[n]): ",
                  str, param[1]);
