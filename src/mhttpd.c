@@ -2764,7 +2764,7 @@ void show_rawfile(char *path)
 
    rsprintf("</tr>\n\n");
 
-  /*---- open file ----*/
+   /*---- open file ----*/
 
    cm_get_experiment_database(&hDB, NULL);
    file_name[0] = 0;
@@ -2785,7 +2785,7 @@ void show_rawfile(char *path)
       return;
    }
 
-  /*---- file contents ----*/
+   /*---- file contents ----*/
 
    rsprintf("<tr><td colspan=2>\n");
 
@@ -4608,6 +4608,8 @@ void show_custom_gif(char *name)
    }
 
    im = gdImageCreateFromGif(f);
+   fclose(f);
+
    if (im == NULL) {
       sprintf(str, "File \"%s\" is not a GIF image", filename);
       show_error(str);
@@ -4916,6 +4918,7 @@ void show_custom_page(char *path)
          ctext = malloc(size);
          memset(ctext, 0, size);
          read(fh, ctext, size);
+         close(fh);
       }
 
       /* HTTP header */
