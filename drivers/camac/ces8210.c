@@ -26,6 +26,12 @@
 #include "mvmestd.h"     /* Provides VME interface */
 #include "ces8210.h"    /* Provides CBD declaration */
 
+#ifdef OS_VXWORKS
+#include "vxVME.h"
+#else
+#include "vmicvme.h"
+#endif
+
 MVME_INTERFACE *myvme;
 
 #define CAM_CSRCHK(_w){\
@@ -349,19 +355,26 @@ INLINE void camc_sn(const int c, const int n, const int a, const int f, const in
 /*---------------------------------------------------------------*/
 INLINE int cam_init(void)
 {
-  int crate, branch = 0, vmecrate, status;	
+  int crate = 0, status = 0;	
 
-  // VME initialization   
+  /* VME initialization  */ 
   status = mvme_open(&myvme, 0);
 	if (status != MVME_SUCCESS)
 		return status;
 		
-  // Set am to A24 non-privileged Data
+  /* Set am to A24 non-privileged Data */
   mvme_set_am(myvme, MVME_AM_A24_ND);
 
-  // Set dmode to D16
+  /* Set dmode to D16 */
   mvme_set_dmode(myvme, MVME_DMODE_D16);
 
+#ifdef OS_VXWORKS
+    /* vxWorks specific memory-mapping function calls */
+    if (vxworks_mmap(myvme, CBD8210_BASE, 8 * 0x10000) != MVME_SUCCESS) {
+      printf("vxworks_mmap error crate:%d\n", crate);
+    }  
+#else
+  /* VMIC specific memory-mapping function calls */
   /*
   for (crate = 0; crate < 8; crate++) {
     vmecrate = (CBD8210_BASE | branch << 19 | crate << 16);
@@ -378,6 +391,7 @@ INLINE int cam_init(void)
     if (vmic_mmap(myvme, CBD8210_BASE, 8 * 0x10000) != MVME_SUCCESS) {
       printf("vmic_mmap error crate:%d\n", crate);
     }  
+#endif
 
   return SUCCESS;
 }
@@ -532,7 +546,7 @@ void gl(void)
    DWORD online;
 
    CAM_GLCHK(online);
-   printf("GLam     register 0x%6.6x\n", online);
+   printf("GLam     register 0x%6.6lx\n", online);
 }
 
 /*---------------------------------------------------------------*/
@@ -545,6 +559,41 @@ void cam_op(void)
 }
 
 /********************************************************************/
+#ifdef OS_VXWORKS
+int ces8210 () {
+  int status;
+  int i, n;
+
+  status = cam_init();
+  if (status != 1)
+  {
+    printf("Error: Cannot initialize camac: cam_init status %d\n",status);
+    return 1;
+  }
+  /* Branch Status */
+#if 1
+  {
+    cam_op(); 
+    for(i=1;i<8;i++)
+      printf("camc_chk(%d): %d\n", i, camc_chk(i));
+  }
+
+    cam_inhibit_clear(1);
+    cam_inhibit_clear(2);
+
+    for (n=0; n<=24; n++)
+    {
+      unsigned long data;
+      int q, x;
+      cam24i_q(1,n,0,0,&data,&x,&q);
+    }
+
+#endif
+
+  return 0;
+}
+
+#endif
 #ifdef MAIN_ENABLE
 int main () {
   int status;
@@ -558,7 +607,7 @@ int main () {
     return 1;
   }
 
-  // Initialization
+  /* Initialization */
 #if 0
   for (i=1;i<8;i++) {
     cam_inhibit_set(i);
@@ -570,7 +619,7 @@ int main () {
   }
 #endif
 
-  // Branch Status
+  /* Branch Status */
 #if 1
   {
     cam_op(); 
@@ -579,7 +628,7 @@ int main () {
   }
 #endif
 
-  // LAM test
+  /* LAM test */
 #if 0
   for (i=1;i<24;i++)  cam_lam_disable(c,i);
   while (1)
@@ -595,7 +644,7 @@ int main () {
   }
 #endif
 
-  // Scan crate for Read 24 /q/x
+  /* Scan crate for Read 24 /q/x */
   while (0)
   {
     for (n=0; n<=24; n++)
@@ -608,8 +657,8 @@ int main () {
     }
   }
 
-  // Access/Speed test  
-  // cami/o ~2.5us per access.
+  /* Access/Speed test  
+     cami/o ~2.5us per access. */
   c = 4;
   while (0)
   {
@@ -625,4 +674,4 @@ int main () {
 }
 
 #endif
-// end
+/* end */
