@@ -13,13 +13,13 @@
 #define _CES8210_H_
 
 #define CBD8210_BASE       0x800000    /* camac base address */
-#define MAX_CRATE                 8    /* Full branch
+#define MAX_CRATE                 8    /* Full branch */
 #define CBD8210_CRATE_SIZE  0x10000    /* crate range */
 
 #define CBDWL_D16      0x000002
 #define CBDWL_D24      0x000000
 
-// Accessing these registers with the CAMAC address equivalent
+/* Accessing these registers with the CAMAC address equivalent */
 #define CSR_OFFSET     0x0000e800       /* camac control and status reg */
 #define CAR_OFFSET     0x0000e820       /* Crate Address Register */
 #define BTB_OFFSET     0x0000e824       /* on-line status (R) */
