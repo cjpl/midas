@@ -191,7 +191,9 @@ INT mscbdev_get(MSCBDEV_INFO * info, INT channel, float *pvalue)
          /* only produce error once every minute */
          if (ss_time() - last_error >= 60) {
             last_error = ss_time();
-            cm_msg(MERROR, "mscbdev_get", "Error reading MSCB bus");
+            cm_msg(MERROR, "mscbdev_get", "Error reading MSCB bus at %d:%d",
+               info->mscbdev_settings.mscb_address[channel],
+               info->mscbdev_settings.mscb_index[channel]);
          }
          return FE_ERR_HW;
       }
@@ -206,7 +208,9 @@ INT mscbdev_get(MSCBDEV_INFO * info, INT channel, float *pvalue)
          /* only produce error once every minute */
          if (ss_time() - last_error >= 60) {
             last_error = ss_time();
-            cm_msg(MERROR, "mscbdev_get", "Error reading MSCB bus");
+            cm_msg(MERROR, "mscbdev_get", "Error reading MSCB bus at %d:%d",
+               info->mscbdev_settings.mscb_address[channel],
+               info->mscbdev_settings.mscb_index[channel]);
          }
          return FE_ERR_HW;
       }
