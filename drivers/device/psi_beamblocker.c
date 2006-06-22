@@ -1,13 +1,13 @@
 /********************************************************************\
 
-  Name:         bb_psi.c
+  Name:         psi_beamblocker.c
   Created by:   Stefan Ritt
 
   Contents:     Device Driver for PSI beam blocker through 
                 Urs Rohrer's beamline control
-                (http://www1.psi.ch/~rohrer/secblctl.htm)
+                (http://people.web.psi.ch/rohrer_u/secblctl.htm)
 
-  $Id:$
+  $Id$
 
 \********************************************************************/
 
@@ -20,7 +20,7 @@
 /*---- globals -----------------------------------------------------*/
 
 typedef struct {
-   char frontend_pc[32];
+   char beamline_pc[32];
    int port;
    int ncom;
    int acom;
@@ -30,33 +30,50 @@ typedef struct {
    int astat;
    int stat_open;
    int stat_closed;
-} BB_PSI_SETTINGS;
+   int stat_psa;
+} PSI_BEAMBLOCKER_SETTINGS;
 
-/*
+// muE1: pc202
+// piM1: pc235
+// piE1: pc130
+// piE3: pc144
+// piM3: pc231
+// muE4: pc451
+// piE5: pc98
+
+/* 
+PiE1:
 Device Server NCom  ACom ComOpen ComClose NStat AStat StatOpen StatClosed StatPSA  
 KSG51  PC130  15    1    1       2        16    0     1        2          4
+
+PiE5:
+Device Server NCom  ACom ComOpen ComClose NStat AStat StatOpen StatClosed StatPSA  
+KSF41  PC98   17    1    1       2        18    0     1        2          4
+KV41   PC98   17    1    4       8        18    0     8        16         32
 */
 
-#define BB_PSI_SETTINGS_STR "\
-Frontend PC = STRING : [32] PC130\n\
+#define PSI_BEAMBLOCKER_SETTINGS_STR "\
+Beamline PC = STRING : [32] PC98\n\
 Port = INT : 10000\n\
-NCom = INT : 15\n\
+NCom = INT : 17\n\
 ACom = INT : 1\n\
 Com Open = INT : 1\n\
 Com Close = INT : 2\n\
-NStat = INT : 16\n\
+NStat = INT : 18\n\
 AStat = INT : 0\n\
 Stat Open = INT : 1\n\
 Stat Closed = INT : 2\n\
+Stat PSA = INT : 4\n\
 "
 
 typedef struct {
-   BB_PSI_SETTINGS bb_psi_settings;
+   PSI_BEAMBLOCKER_SETTINGS psi_beamblocker_settings;
    float open;
+   float psa;
    INT sock;
-} BB_PSI_INFO;
+} PSI_BEAMBLOCKER_INFO;
 
-INT bb_psi_get(BB_PSI_INFO * info, INT channel, float *pvalue);
+INT psi_beamblocker_get(PSI_BEAMBLOCKER_INFO * info, INT channel, float *pvalue);
 
 static DWORD last_reconnect;
 
@@ -81,7 +98,7 @@ static INT tcp_connect(char *host, int port, int *sock)
    /* create a new socket for connecting to remote server */
    *sock = socket(AF_INET, SOCK_STREAM, 0);
    if (*sock == -1) {
-      cm_msg(MERROR, "tcp_connect", "cannot create socket");
+      cm_msg(MERROR, "tcp_connect", "Cannot create socket");
       return FE_ERR_HW;
    }
 
@@ -93,7 +110,7 @@ static INT tcp_connect(char *host, int port, int *sock)
 
    status = bind(*sock, (void *) &bind_addr, sizeof(bind_addr));
    if (status < 0) {
-      cm_msg(MERROR, "tcp_connect", "cannot bind");
+      cm_msg(MERROR, "tcp_connect", "Cannot bind");
       return RPC_NET_ERROR;
    }
 
@@ -113,7 +130,7 @@ static INT tcp_connect(char *host, int port, int *sock)
 #else
    phe = gethostbyname(host);
    if (phe == NULL) {
-      cm_msg(MERROR, "tcp_connect", "cannot get host name");
+      cm_msg(MERROR, "tcp_connect", "Cannot find host \"%s\"", host);
       return RPC_NET_ERROR;
    }
    memcpy((char *) &(bind_addr.sin_addr), phe->h_addr, phe->h_length);
@@ -132,7 +149,7 @@ static INT tcp_connect(char *host, int port, int *sock)
    if (status != 0) {
       closesocket(*sock);
       *sock = -1;
-      cm_msg(MERROR, "tcp_connect", "cannot connect to %s", host);
+      cm_msg(MERROR, "tcp_connect", "Cannot connect to \"%s\"", host);
       return FE_ERR_HW;
    }
 
@@ -141,48 +158,48 @@ static INT tcp_connect(char *host, int port, int *sock)
 
 /*---- device driver routines --------------------------------------*/
 
-INT bb_psi_init(HNDLE hKey, void **pinfo, INT channels)
+INT psi_beamblocker_init(HNDLE hKey, void **pinfo, INT channels)
 {
    int status, size;
    HNDLE hDB;
-   BB_PSI_INFO *info;
+   PSI_BEAMBLOCKER_INFO *info;
    float value;
 
    /* only allow single channel */
-   if (channels != 1) {
-      cm_msg(MERROR, "bb_psi_init", "Only single channel possible for beam blocker");
+   if (channels != 1 && channels != 2) {
+      cm_msg(MERROR, "psi_beamblocker_init", "Only one or two channels possible for beam blocker");
       return FE_ERR_HW;
    }
 
    /* allocate info structure */
-   info = calloc(1, sizeof(BB_PSI_INFO));
+   info = calloc(1, sizeof(PSI_BEAMBLOCKER_INFO));
    *pinfo = info;
 
    cm_get_experiment_database(&hDB, NULL);
 
-   /* create BB_PSI settings record */
-   status = db_create_record(hDB, hKey, "", BB_PSI_SETTINGS_STR);
+   /* create PSI_BEAMBLOCKER settings record */
+   status = db_create_record(hDB, hKey, "", PSI_BEAMBLOCKER_SETTINGS_STR);
    if (status != DB_SUCCESS)
       return FE_ERR_ODB;
 
-   size = sizeof(info->bb_psi_settings);
-   db_get_record(hDB, hKey, &info->bb_psi_settings, &size, 0);
+   size = sizeof(info->psi_beamblocker_settings);
+   db_get_record(hDB, hKey, &info->psi_beamblocker_settings, &size, 0);
 
-   /* contact frontend pc */
-   status = tcp_connect(info->bb_psi_settings.frontend_pc,
-                        info->bb_psi_settings.port, &info->sock);
+   /* contact beamline pc */
+   status = tcp_connect(info->psi_beamblocker_settings.beamline_pc,
+                        info->psi_beamblocker_settings.port, &info->sock);
    if (status != FE_SUCCESS)
       return status;
 
    /* get initial state */
-   bb_psi_get(info, 0, &value);
+   psi_beamblocker_get(info, 0, &value);
 
    return FE_SUCCESS;
 }
 
 /*------------------------------------------------------------------*/
 
-INT bb_psi_exit(BB_PSI_INFO * info)
+INT psi_beamblocker_exit(PSI_BEAMBLOCKER_INFO * info)
 {
    closesocket(info->sock);
 
@@ -196,20 +213,25 @@ INT bb_psi_exit(BB_PSI_INFO * info)
 static DWORD last_action;
 static int last_demand;
 
-INT bb_psi_set(BB_PSI_INFO * info, INT channel, float value)
+INT psi_beamblocker_set(PSI_BEAMBLOCKER_INFO * info, INT channel, float value)
 {
    char str[80];
    INT status;
 
-   sprintf(str, "WCAM %d %d 16 %d", info->bb_psi_settings.ncom,
-           info->bb_psi_settings.acom,
+   if (channel == 1) {
+      cm_msg(MERROR, "psi_beamblocker_set", "Cannot set PSA status. PSA status can only be read.");
+      return FE_SUCCESS; /* cannot change PSA status */
+   }
+
+   sprintf(str, "WCAM %d %d 16 %d", info->psi_beamblocker_settings.ncom,
+           info->psi_beamblocker_settings.acom,
            ((int) value) ==
-           1 ? info->bb_psi_settings.com_open : info->bb_psi_settings.com_close);
+           1 ? info->psi_beamblocker_settings.com_open : info->psi_beamblocker_settings.com_close);
 
    status = send(info->sock, str, strlen(str) + 1, 0);
    if (status < 0) {
-      cm_msg(MERROR, "bb_psi_get", "cannot read data from %s",
-             info->bb_psi_settings.frontend_pc);
+      cm_msg(MERROR, "psi_beamblocker_set", "Cannot read data from %s",
+             info->psi_beamblocker_settings.beamline_pc);
       return FE_ERR_HW;
    }
    recv_string(info->sock, str, sizeof(str), 500);
@@ -222,7 +244,7 @@ INT bb_psi_set(BB_PSI_INFO * info, INT channel, float value)
 
 /*------------------------------------------------------------------*/
 
-INT bb_psi_get(BB_PSI_INFO * info, INT channel, float *pvalue)
+INT psi_beamblocker_get(PSI_BEAMBLOCKER_INFO * info, INT channel, float *pvalue)
 {
    INT status, i;
    char str[80];
@@ -234,8 +256,8 @@ INT bb_psi_get(BB_PSI_INFO * info, INT channel, float *pvalue)
        (ss_time() - last_action < 60 && ss_time() - last_update > 5)) {
       last_update = ss_time();
 
-      sprintf(str, "RCAM %d %d 0", info->bb_psi_settings.nstat,
-              info->bb_psi_settings.astat);
+      sprintf(str, "RCAM %d %d 0", info->psi_beamblocker_settings.nstat,
+              info->psi_beamblocker_settings.astat);
       status = send(info->sock, str, strlen(str) + 1, 0);
       if (status <= 0) {
          if (info->sock > 0) {
@@ -246,22 +268,22 @@ INT bb_psi_get(BB_PSI_INFO * info, INT channel, float *pvalue)
          /* try to reconnect every 10 minutes */
          if (ss_time() - last_reconnect > 600) {
             last_reconnect = ss_time();
-            status = tcp_connect(info->bb_psi_settings.frontend_pc,
-                                 info->bb_psi_settings.port, &info->sock);
+            status = tcp_connect(info->psi_beamblocker_settings.beamline_pc,
+                                 info->psi_beamblocker_settings.port, &info->sock);
 
             if (status != FE_SUCCESS)
                return FE_ERR_HW;
             else
-               cm_msg(MINFO, "bb_psi_get", "sucessfully reconneccted to %s",
-                      info->bb_psi_settings.frontend_pc);
+               cm_msg(MINFO, "psi_beamblocker_get", "sucessfully reconneccted to %s",
+                      info->psi_beamblocker_settings.beamline_pc);
          } else
             return FE_SUCCESS;
       }
 
       status = recv_string(info->sock, str, sizeof(str), 3000);
       if (status <= 0) {
-         cm_msg(MERROR, "bb_psi_get", "cannot retrieve data from %s",
-                info->bb_psi_settings.frontend_pc);
+         cm_msg(MERROR, "psi_beamblocker_get", "Cannot retrieve data from %s",
+                info->psi_beamblocker_settings.beamline_pc);
          return FE_ERR_HW;
       }
 
@@ -276,14 +298,19 @@ INT bb_psi_get(BB_PSI_INFO * info, INT channel, float *pvalue)
       /* round measured to four digits */
       status = atoi(str + i);
 
-      if ((status & info->bb_psi_settings.stat_open) > 0)
+      if ((status & info->psi_beamblocker_settings.stat_open) > 0)
          info->open = 1.f;
-      else if ((status & info->bb_psi_settings.stat_closed) > 0)
+      else if ((status & info->psi_beamblocker_settings.stat_closed) > 0)
          info->open = 0.f;
       else
          info->open = 0.5f;
 
-      *pvalue = (float) info->open;
+      info->psa = (float)((status & info->psi_beamblocker_settings.stat_psa) > 0);
+
+      if (channel == 0)
+         *pvalue = (float) info->open;
+      else
+         *pvalue = (float) info->psa;
    }
 
    return FE_SUCCESS;
@@ -291,7 +318,7 @@ INT bb_psi_get(BB_PSI_INFO * info, INT channel, float *pvalue)
 
 /*------------------------------------------------------------------*/
 
-INT bb_psi_get_demand(BB_PSI_INFO * info, INT channel, float *pvalue)
+INT psi_beamblocker_get_demand(PSI_BEAMBLOCKER_INFO * info, INT channel, float *pvalue)
 {
    if (ss_time() - last_action < 60)
       *pvalue = (float) last_demand;
@@ -303,7 +330,7 @@ INT bb_psi_get_demand(BB_PSI_INFO * info, INT channel, float *pvalue)
 
 /*---- device driver entry point -----------------------------------*/
 
-INT bb_psi(INT cmd, ...)
+INT psi_beamblocker(INT cmd, ...)
 {
    va_list argptr;
    HNDLE hKey;
@@ -320,40 +347,43 @@ INT bb_psi(INT cmd, ...)
       hKey = va_arg(argptr, HNDLE);
       info = va_arg(argptr, void *);
       channel = va_arg(argptr, INT);
-      status = bb_psi_init(hKey, info, channel);
+      status = psi_beamblocker_init(hKey, info, channel);
       break;
 
    case CMD_EXIT:
       info = va_arg(argptr, void *);
-      status = bb_psi_exit(info);
+      status = psi_beamblocker_exit(info);
       break;
 
    case CMD_SET:
       info = va_arg(argptr, void *);
       channel = va_arg(argptr, INT);
       value = (float) va_arg(argptr, double);
-      status = bb_psi_set(info, channel, value);
+      status = psi_beamblocker_set(info, channel, value);
       break;
 
    case CMD_GET:
       info = va_arg(argptr, void *);
       channel = va_arg(argptr, INT);
       pvalue = va_arg(argptr, float *);
-      status = bb_psi_get(info, channel, pvalue);
+      status = psi_beamblocker_get(info, channel, pvalue);
       break;
 
    case CMD_GET_DEMAND:
       info = va_arg(argptr, void *);
       channel = va_arg(argptr, INT);
       pvalue = va_arg(argptr, float *);
-      status = bb_psi_get_demand(info, channel, pvalue);
+      status = psi_beamblocker_get_demand(info, channel, pvalue);
       break;
 
    case CMD_GET_DEFAULT_NAME:
       info = va_arg(argptr, void *);
       channel = va_arg(argptr, INT);
       name = va_arg(argptr, char *);
-      strcpy(name, "BBlocker");
+      if (channel == 0)
+         strcpy(name, "Beam Blocker (1=open)");
+      else
+         strcpy(name, "PSA (1=ready)");
       status = FE_SUCCESS;
       break;
 
