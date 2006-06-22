@@ -1,13 +1,13 @@
 /********************************************************************\
 
-  Name:         bl_psi.h
+  Name:         psi_beamblocker.h
   Created by:   Stefan Ritt
 
-  Contents:     Urs Rohrer's beamline control device driver function 
+  Contents:     Urs Rohrer's beam blocker control device driver function 
                 declarations
 
-  $Id:$
+  $Id$
 
 \********************************************************************/
 
-INT bl_psi(INT cmd, ...);
+INT psi_beamblocker(INT cmd, ...);

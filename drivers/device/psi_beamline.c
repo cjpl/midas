@@ -1,12 +1,12 @@
 /********************************************************************\
 
-  Name:         bl_psi.c
+  Name:         psi_beamline.c
   Created by:   Stefan Ritt
 
   Contents:     Device Driver for Urs Rohrer's beamline control at PSI
-                (http://www1.psi.ch/~rohrer/secblctl.htm)
+                (http://people.web.psi.ch/rohrer_u/secblctl.htm)
 
-  $Id:$
+  $Id$
 
 \********************************************************************/
 
@@ -19,22 +19,30 @@
 /*---- globals -----------------------------------------------------*/
 
 typedef struct {
-   char frontend_pc[32];
+   char beamline_pc[32];
    int port;
-} BL_PSI_SETTINGS;
+} PSI_BEAMLINE_SETTINGS;
 
-#define BL_PSI_SETTINGS_STR "\
-Frontend PC = STRING : [32] PC130\n\
+// muE1: pc202
+// piM1: pc235
+// piE1: pc130
+// piE3: pc144
+// piM3: pc231
+// muE4: pc451
+// piE5: pc98
+
+#define PSI_BEAMLINE_SETTINGS_STR "\
+Beamline PC = STRING : [32] PCxxx\n\
 Port = INT : 10000\n\
 "
 typedef struct {
-   BL_PSI_SETTINGS bl_psi_settings;
+   PSI_BEAMLINE_SETTINGS psi_beamline_settings;
    INT num_channels;
    char *name;
    float *demand;
    float *measured;
    INT sock;
-} BL_PSI_INFO;
+} PSI_BEAMLINE_INFO;
 
 static DWORD last_update;
 static DWORD last_reconnect;
@@ -120,26 +128,26 @@ static INT tcp_connect(char *host, int port, int *sock)
 
 /*---- device driver routines --------------------------------------*/
 
-INT bl_psi_init(HNDLE hKey, void **pinfo, INT channels)
+INT psi_beamline_init(HNDLE hKey, void **pinfo, INT channels)
 {
    int status, i, j, size;
    HNDLE hDB;
    char str[1024];
-   BL_PSI_INFO *info;
+   PSI_BEAMLINE_INFO *info;
 
    /* allocate info structure */
-   info = calloc(1, sizeof(BL_PSI_INFO));
+   info = calloc(1, sizeof(PSI_BEAMLINE_INFO));
    *pinfo = info;
 
    cm_get_experiment_database(&hDB, NULL);
 
-   /* create BL_PSI settings record */
-   status = db_create_record(hDB, hKey, "", BL_PSI_SETTINGS_STR);
+   /* create PSI_BEAMLINE settings record */
+   status = db_create_record(hDB, hKey, "", PSI_BEAMLINE_SETTINGS_STR);
    if (status != DB_SUCCESS)
       return FE_ERR_ODB;
 
-   size = sizeof(info->bl_psi_settings);
-   db_get_record(hDB, hKey, &info->bl_psi_settings, &size, 0);
+   size = sizeof(info->psi_beamline_settings);
+   db_get_record(hDB, hKey, &info->psi_beamline_settings, &size, 0);
 
    /* initialize driver */
    info->num_channels = channels;
@@ -147,33 +155,39 @@ INT bl_psi_init(HNDLE hKey, void **pinfo, INT channels)
    info->demand = calloc(channels, sizeof(float));
    info->measured = calloc(channels, sizeof(float));
 
-   /* contact frontend pc */
-   status = tcp_connect(info->bl_psi_settings.frontend_pc,
-                        info->bl_psi_settings.port, &info->sock);
+   /* check beamline pc name */
+   if (strcmp(info->psi_beamline_settings.beamline_pc, "PCxxx") == 0) {
+      db_get_path(hDB, hKey, str, sizeof(str));
+      cm_msg(MERROR, "psi_beamline_init", "Please set \"%s/Beamline PC\"", str);
+      return FE_ERR_ODB;
+   }
+   /* contact beamline pc */
+   status = tcp_connect(info->psi_beamline_settings.beamline_pc,
+                        info->psi_beamline_settings.port, &info->sock);
    if (status != FE_SUCCESS)
-      return status;
+      return FE_ERR_HW;
 
    /* switch combis on */
    send(info->sock, "SWON", 5, 0);
    status = recv_string(info->sock, str, sizeof(str), 2000);
    if (status <= 0) {
-      cm_msg(MERROR, "bl_psi", "cannot retrieve data from %s",
-             info->bl_psi_settings.frontend_pc);
+      cm_msg(MERROR, "psi_beamline_init", "cannot retrieve data from %s",
+             info->psi_beamline_settings.beamline_pc);
       return FE_ERR_HW;
    }
 
    /* get channel names and initial values */
    status = send(info->sock, "RALL", 5, 0);
    if (status <= 0) {
-      cm_msg(MERROR, "bl_psi", "cannot retrieve data from %s",
-             info->bl_psi_settings.frontend_pc);
+      cm_msg(MERROR, "psi_beamline_init", "cannot retrieve data from %s",
+             info->psi_beamline_settings.beamline_pc);
       return FE_ERR_HW;
    }
 
    status = recv_string(info->sock, str, sizeof(str), 2000);
    if (status <= 0) {
-      cm_msg(MERROR, "bl_psi", "cannot retrieve data from %s",
-             info->bl_psi_settings.frontend_pc);
+      cm_msg(MERROR, "psi_beamline_init", "cannot retrieve data from %s",
+             info->psi_beamline_settings.beamline_pc);
       return FE_ERR_HW;
    }
 
@@ -199,7 +213,7 @@ INT bl_psi_init(HNDLE hKey, void **pinfo, INT channels)
 
 /*----------------------------------------------------------------------------*/
 
-INT bl_psi_exit(BL_PSI_INFO * info)
+INT psi_beamline_exit(PSI_BEAMLINE_INFO * info)
 {
    closesocket(info->sock);
 
@@ -219,7 +233,7 @@ INT bl_psi_exit(BL_PSI_INFO * info)
 
 /*----------------------------------------------------------------------------*/
 
-INT bl_psi_set(BL_PSI_INFO * info, INT channel, float value)
+INT psi_beamline_set(PSI_BEAMLINE_INFO * info, INT channel, float value)
 {
    char str[80];
    INT status;
@@ -227,8 +241,8 @@ INT bl_psi_set(BL_PSI_INFO * info, INT channel, float value)
    sprintf(str, "WDAC %s %d", info->name + channel * NAME_LENGTH, (int) value);
    status = send(info->sock, str, strlen(str) + 1, 0);
    if (status < 0) {
-      cm_msg(MERROR, "bl_psi_get", "cannot read data from %s",
-             info->bl_psi_settings.frontend_pc);
+      cm_msg(MERROR, "psi_beamline_get", "cannot read data from %s",
+             info->psi_beamline_settings.beamline_pc);
       return FE_ERR_HW;
    }
    recv_string(info->sock, str, sizeof(str), 500);
@@ -240,7 +254,7 @@ INT bl_psi_set(BL_PSI_INFO * info, INT channel, float value)
 
 /*----------------------------------------------------------------------------*/
 
-INT bl_psi_rall(BL_PSI_INFO * info)
+INT psi_beamline_rall(PSI_BEAMLINE_INFO * info)
 {
    INT status, i, j;
    char str[1024];
@@ -258,22 +272,22 @@ INT bl_psi_rall(BL_PSI_INFO * info)
          /* try to reconnect every 10 minutes */
          if (ss_time() - last_reconnect > 600) {
             last_reconnect = ss_time();
-            status = tcp_connect(info->bl_psi_settings.frontend_pc,
-                                 info->bl_psi_settings.port, &info->sock);
+            status = tcp_connect(info->psi_beamline_settings.beamline_pc,
+                                 info->psi_beamline_settings.port, &info->sock);
 
             if (status != FE_SUCCESS)
                return FE_ERR_HW;
             else
-               cm_msg(MINFO, "bl_psi_rall", "sucessfully reconneccted to %s",
-                      info->bl_psi_settings.frontend_pc);
+               cm_msg(MINFO, "psi_beamline_rall", "sucessfully reconneccted to %s",
+                      info->psi_beamline_settings.beamline_pc);
          } else
             return FE_SUCCESS;
       }
 
       status = recv_string(info->sock, str, sizeof(str), 5000);
       if (status <= 0) {
-         cm_msg(MERROR, "bl_psi_rall", "cannot retrieve data from %s",
-                info->bl_psi_settings.frontend_pc);
+         cm_msg(MERROR, "psi_beamline_rall", "cannot retrieve data from %s",
+                info->psi_beamline_settings.beamline_pc);
          return FE_ERR_HW;
       }
 
@@ -297,11 +311,11 @@ INT bl_psi_rall(BL_PSI_INFO * info)
 
 /*----------------------------------------------------------------------------*/
 
-INT bl_psi_get(BL_PSI_INFO * info, INT channel, float *pvalue)
+INT psi_beamline_get(PSI_BEAMLINE_INFO * info, INT channel, float *pvalue)
 {
    INT status;
 
-   status = bl_psi_rall(info);
+   status = psi_beamline_rall(info);
    *pvalue = info->measured[channel];
 
    return status;
@@ -309,11 +323,11 @@ INT bl_psi_get(BL_PSI_INFO * info, INT channel, float *pvalue)
 
 /*----------------------------------------------------------------------------*/
 
-INT bl_psi_get_demand(BL_PSI_INFO * info, INT channel, float *pvalue)
+INT psi_beamline_get_demand(PSI_BEAMLINE_INFO * info, INT channel, float *pvalue)
 {
    INT status;
 
-   status = bl_psi_rall(info);
+   status = psi_beamline_rall(info);
    *pvalue = info->demand[channel];
 
    return status;
@@ -321,7 +335,7 @@ INT bl_psi_get_demand(BL_PSI_INFO * info, INT channel, float *pvalue)
 
 /*----------------------------------------------------------------------------*/
 
-INT bl_psi_get_default_threshold(BL_PSI_INFO * info, INT channel, float *pvalue)
+INT psi_beamline_get_default_threshold(PSI_BEAMLINE_INFO * info, INT channel, float *pvalue)
 {
    /* threshold is 2 bit in 12 bits */
    *pvalue = 0.0005f;
@@ -330,7 +344,7 @@ INT bl_psi_get_default_threshold(BL_PSI_INFO * info, INT channel, float *pvalue)
 
 /*----------------------------------------------------------------------------*/
 
-INT bl_psi_get_default_name(BL_PSI_INFO * info, INT channel, char *name)
+INT psi_beamline_get_default_name(PSI_BEAMLINE_INFO * info, INT channel, char *name)
 {
    strcpy(name, info->name + channel * NAME_LENGTH);
    return FE_SUCCESS;
@@ -338,7 +352,7 @@ INT bl_psi_get_default_name(BL_PSI_INFO * info, INT channel, char *name)
 
 /*---- device driver entry point -----------------------------------*/
 
-INT bl_psi(INT cmd, ...)
+INT psi_beamline(INT cmd, ...)
 {
    va_list argptr;
    HNDLE hKey;
@@ -355,47 +369,47 @@ INT bl_psi(INT cmd, ...)
       hKey = va_arg(argptr, HNDLE);
       info = va_arg(argptr, void *);
       channel = va_arg(argptr, INT);
-      status = bl_psi_init(hKey, info, channel);
+      status = psi_beamline_init(hKey, info, channel);
       break;
 
    case CMD_EXIT:
       info = va_arg(argptr, void *);
-      status = bl_psi_exit(info);
+      status = psi_beamline_exit(info);
       break;
 
    case CMD_SET:
       info = va_arg(argptr, void *);
       channel = va_arg(argptr, INT);
       value = (float) va_arg(argptr, double);
-      status = bl_psi_set(info, channel, value);
+      status = psi_beamline_set(info, channel, value);
       break;
 
    case CMD_GET:
       info = va_arg(argptr, void *);
       channel = va_arg(argptr, INT);
       pvalue = va_arg(argptr, float *);
-      status = bl_psi_get(info, channel, pvalue);
+      status = psi_beamline_get(info, channel, pvalue);
       break;
 
    case CMD_GET_DEMAND:
       info = va_arg(argptr, void *);
       channel = va_arg(argptr, INT);
       pvalue = va_arg(argptr, float *);
-      status = bl_psi_get_demand(info, channel, pvalue);
+      status = psi_beamline_get_demand(info, channel, pvalue);
       break;
 
    case CMD_GET_DEFAULT_NAME:
       info = va_arg(argptr, void *);
       channel = va_arg(argptr, INT);
       name = va_arg(argptr, char *);
-      status = bl_psi_get_default_name(info, channel, name);
+      status = psi_beamline_get_default_name(info, channel, name);
       break;
 
    case CMD_GET_DEFAULT_THRESHOLD:
       info = va_arg(argptr, void *);
       channel = va_arg(argptr, INT);
       pvalue = va_arg(argptr, float *);
-      status = bl_psi_get_default_threshold(info, channel, pvalue);
+      status = psi_beamline_get_default_threshold(info, channel, pvalue);
       break;
 
    default:
