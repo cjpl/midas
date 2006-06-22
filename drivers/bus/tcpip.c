@@ -5,7 +5,7 @@
 
   Contents:     TCP/IP socket communication routines
 
-  $Id:$
+  $Id$
 
 \********************************************************************/
 
@@ -91,7 +91,7 @@ int tcpip_open(char *host, int port)
    status = bind(fd, (void *) &bind_addr, sizeof(bind_addr));
    if (status < 0) {
       perror("tcpip_open:bind");
-      return fd;
+      return -1;
    }
 
    /* connect to remote node */
@@ -111,7 +111,7 @@ int tcpip_open(char *host, int port)
    phe = gethostbyname(host);
    if (phe == NULL) {
       printf("\ntcpip_open: unknown host name %s\n", host);
-      return fd;
+      return -1;
    }
    memcpy((char *) &(bind_addr.sin_addr), phe->h_addr, phe->h_length);
 #endif
