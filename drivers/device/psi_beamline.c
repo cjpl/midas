@@ -169,7 +169,7 @@ INT psi_beamline_init(HNDLE hKey, void **pinfo, INT channels)
 
    /* switch combis on */
    send(info->sock, "SWON", 5, 0);
-   status = recv_string(info->sock, str, sizeof(str), 2000);
+   status = recv_string(info->sock, str, sizeof(str), 10000);
    if (status <= 0) {
       cm_msg(MERROR, "psi_beamline_init", "cannot retrieve data from %s",
              info->psi_beamline_settings.beamline_pc);
@@ -184,7 +184,7 @@ INT psi_beamline_init(HNDLE hKey, void **pinfo, INT channels)
       return FE_ERR_HW;
    }
 
-   status = recv_string(info->sock, str, sizeof(str), 2000);
+   status = recv_string(info->sock, str, sizeof(str), 10000);
    if (status <= 0) {
       cm_msg(MERROR, "psi_beamline_init", "cannot retrieve data from %s",
              info->psi_beamline_settings.beamline_pc);
@@ -192,7 +192,7 @@ INT psi_beamline_init(HNDLE hKey, void **pinfo, INT channels)
    }
 
    for (i = 0; i < channels; i++) {
-      recv_string(info->sock, str, sizeof(str), 500);
+      recv_string(info->sock, str, sizeof(str), 10000);
 
       for (j = 0; j < (int) strlen(str) && str[j] != ' '; j++)
          info->name[i * NAME_LENGTH + j] = str[j];
@@ -245,7 +245,7 @@ INT psi_beamline_set(PSI_BEAMLINE_INFO * info, INT channel, float value)
              info->psi_beamline_settings.beamline_pc);
       return FE_ERR_HW;
    }
-   recv_string(info->sock, str, sizeof(str), 500);
+   recv_string(info->sock, str, sizeof(str), 10000);
 
    info->demand[channel] = value;
 
@@ -284,7 +284,7 @@ INT psi_beamline_rall(PSI_BEAMLINE_INFO * info)
             return FE_SUCCESS;
       }
 
-      status = recv_string(info->sock, str, sizeof(str), 5000);
+      status = recv_string(info->sock, str, sizeof(str), 10000);
       if (status <= 0) {
          cm_msg(MERROR, "psi_beamline_rall", "cannot retrieve data from %s",
                 info->psi_beamline_settings.beamline_pc);
@@ -292,7 +292,7 @@ INT psi_beamline_rall(PSI_BEAMLINE_INFO * info)
       }
 
       for (i = 0; i < info->num_channels; i++) {
-         recv_string(info->sock, str, sizeof(str), 1000);
+         recv_string(info->sock, str, sizeof(str), 10000);
 
          /* skip name */
          for (j = 0; j < (int) strlen(str) && str[j] != ' '; j++)
