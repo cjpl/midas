@@ -5,7 +5,7 @@
 
   Contents:     Generic Class Driver
 
-  $Id:$
+  $Id$
 
 \********************************************************************/
 
@@ -78,7 +78,7 @@ INT gen_read(EQUIPMENT * pequipment, int channel)
    GEN_INFO *gen_info;
    HNDLE hDB;
 
-  /*---- read measured value ----*/
+   /*---- read measured value ----*/
 
    gen_info = (GEN_INFO *) pequipment->cd_info;
    cm_get_experiment_database(&hDB, NULL);
@@ -108,7 +108,7 @@ INT gen_read(EQUIPMENT * pequipment, int channel)
       }
    }
 
-  /*---- read demand value ----*/
+   /*---- read demand value ----*/
 
    status = DRIVER(channel) (CMD_GET_DEMAND, gen_info->dd_info[channel],
                              channel - gen_info->channel_offset[channel],
@@ -232,7 +232,7 @@ INT gen_init(EQUIPMENT * pequipment)
       return FE_ERR_ODB;
    }
 
-  /*---- Initialize device drivers ----*/
+   /*---- Initialize device drivers ----*/
 
    /* call init method */
    for (i = 0; pequipment->driver[i].name[0]; i++) {
@@ -272,7 +272,7 @@ INT gen_init(EQUIPMENT * pequipment)
       gen_info->flags[i] = pequipment->driver[index].flags;
    }
 
-  /*---- create demand variables ----*/
+   /*---- create demand variables ----*/
 
    /* get demand from ODB */
    status =
@@ -304,7 +304,7 @@ INT gen_init(EQUIPMENT * pequipment)
                   gen_info->num_channels * sizeof(float), MODE_READ, gen_demand,
                   pequipment);
 
-  /*---- create measured variables ----*/
+   /*---- create measured variables ----*/
    db_merge_data(hDB, gen_info->hKeyRoot, "Variables/Measured",
                  gen_info->measured, sizeof(float) * gen_info->num_channels,
                  gen_info->num_channels, TID_FLOAT);
@@ -312,7 +312,7 @@ INT gen_init(EQUIPMENT * pequipment)
    memcpy(gen_info->measured_mirror, gen_info->measured,
           gen_info->num_channels * sizeof(float));
 
-  /*---- get default names from device driver ----*/
+   /*---- get default names from device driver ----*/
    for (i = 0; i < gen_info->num_channels; i++) {
       sprintf(gen_info->names + NAME_LENGTH * i, "Default%%CH %d", i);
       DRIVER(i) (CMD_GET_DEFAULT_NAME, gen_info->dd_info[i],
@@ -322,7 +322,7 @@ INT gen_init(EQUIPMENT * pequipment)
                  gen_info->names, NAME_LENGTH * gen_info->num_channels,
                  gen_info->num_channels, TID_STRING);
 
-  /*---- set labels form midas SC names ----*/
+   /*---- set labels form midas SC names ----*/
    for (i = 0; i < gen_info->num_channels; i++) {
       gen_info = (GEN_INFO *) pequipment->cd_info;
       DRIVER(i) (CMD_SET_LABEL, gen_info->dd_info[i],
@@ -334,7 +334,7 @@ INT gen_init(EQUIPMENT * pequipment)
       db_open_record(hDB, hNames, gen_info->names, NAME_LENGTH * gen_info->num_channels,
                      MODE_READ, gen_update_label, pequipment);
 
-  /*---- get default update threshold from device driver ----*/
+   /*---- get default update threshold from device driver ----*/
    for (i = 0; i < gen_info->num_channels; i++) {
       gen_info->update_threshold[i] = 2.f;      /* default 2 units */
       DRIVER(i) (CMD_GET_DEFAULT_THRESHOLD, gen_info->dd_info[i],
@@ -344,7 +344,7 @@ INT gen_init(EQUIPMENT * pequipment)
                  gen_info->update_threshold, sizeof(float) * gen_info->num_channels,
                  gen_info->num_channels, TID_FLOAT);
 
-  /*---- set initial demand values ----*/
+   /*---- set initial demand values ----*/
    gen_demand(hDB, gen_info->hKeyDemand, pequipment);
 
    /* initially read all channels */
