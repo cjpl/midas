@@ -58,6 +58,18 @@ are for @ref Linux_installation and @ref Windows_installation.
     svn co svn+ssh://svn@savannah.psi.ch/afs/psi.ch/project/meg/svn/midas/trunk midas
     svn co svn+ssh://svn@savannah.psi.ch/afs/psi.ch/project/meg/svn/mxml/trunk mxml
     \endcode
+    \n
+    If you expect to run the <a href=http://midas.psi.ch/rome/index.html>ROME analyzer</a>
+    you can extract the SVN package following the same procedure.
+    \code
+    svn co svn+ssh://svn@savannah.psi.ch/afs/psi.ch/project/meg/svn/rome/trunk rome
+    \endcode
+    \n
+    For the Histogram display tool <a href=http://ladd00.triumf.ca/~daqweb/doc/roody/html>
+    ROODY</a> the package still resides under CVS but will be soon moved to SVN.
+    \code
+    cvs -d anoncvs@midas.triumf.ca:/usr/local/cvsroot checkout roody
+    \endcode
 \n\n
 -# <b> Installation: </b>
 The installation consists in placing the image files in the \b /usr/local/ directories.
