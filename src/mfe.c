@@ -1573,6 +1573,10 @@ INT scheduler(void)
       if (fe_stop)
          status = RPC_SHUTDOWN;
 
+      /* exit if CTRL-C pressed */
+      if (cm_is_ctrlc_pressed())
+         status = RPC_SHUTDOWN;
+
    } while (status != RPC_SHUTDOWN && status != SS_ABORT);
 
  net_error:
