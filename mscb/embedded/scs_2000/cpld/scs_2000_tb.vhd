@@ -35,7 +35,12 @@ ARCHITECTURE behavior OF scs_2000_tb IS
 		P_O_SDI : OUT std_logic;
 		P_O_SCLK : OUT std_logic;
 		P_O_CLKSEL : OUT std_logic_vector(3 downto 0);
-		P_I_CLK : IN std_logic
+		P_I_CLK : IN std_logic;
+		P_I_5V_OK : IN std_logic;
+    P_O_BEEPER : OUT std_logic;
+    P_O_24V_EN : OUT std_logic;
+    P_I_24V_OC : IN std_logic
+		
 		);
 	END COMPONENT;
 
@@ -54,6 +59,10 @@ ARCHITECTURE behavior OF scs_2000_tb IS
 	SIGNAL P_I_CLK :  std_logic;
 	SIGNAL P_I_ADDR :  std_logic_vector(3 downto 0);
 	SIGNAL P_IO_PORTS :  type_port_array;
+	SIGNAL P_I_5V_OK : std_logic;
+	SIGNAL P_O_BEEPER : std_logic;
+	SIGNAL P_O_24V_EN : std_logic;
+	SIGNAL P_I_24V_OC : std_logic;
 
 BEGIN
 
@@ -72,9 +81,14 @@ BEGIN
 		P_O_CLKSEL => P_O_CLKSEL,
 		P_I_CLK => P_I_CLK,
 		P_I_ADDR => P_I_ADDR,
-		P_IO_PORTS => P_IO_PORTS
+		P_IO_PORTS => P_IO_PORTS,
+		P_I_5V_OK => P_I_5V_OK, 
+		P_O_BEEPER => P_O_BEEPER,
+		P_O_24V_EN => P_O_24V_EN,
+		P_I_24V_OC => P_I_24V_OC
+		
 	);
-
+  
 -- *** Test Bench - User Defined Section ***
    tb : PROCESS
 
@@ -82,9 +96,7 @@ BEGIN
         (
           constant I_ADDR_UNIT: in std_logic_vector(3 downto 0);
           constant I_ADDR_PORT: in std_logic_vector(2 downto 0);
-          constant I_ADDR_WRITE: in std_logic;
-          constant I_ADDR_SER: in std_logic;
-          constant I_ADDR_EEPROM: in std_logic
+          constant I_ADDR_AM: in std_logic_vector(2 downto 0)
         ) is
       begin
 
@@ -106,23 +118,13 @@ BEGIN
           P_I_UC_CLK <= '0';
         end loop;  
 
-        P_I_UC_DATA_IN <= I_ADDR_WRITE;
-        wait for 100 ns;
-        P_I_UC_CLK <= '1';
-        wait for 100 ns;
-        P_I_UC_CLK <= '0';
-
-        P_I_UC_DATA_IN <= I_ADDR_SER;
-        wait for 100 ns;
-        P_I_UC_CLK <= '1';
-        wait for 100 ns;
-        P_I_UC_CLK <= '0';
-
-        P_I_UC_DATA_IN <= I_ADDR_EEPROM;
-        wait for 100 ns;
-        P_I_UC_CLK <= '1';
-        wait for 100 ns;
-        P_I_UC_CLK <= '0';
+        loop_addr_am: for i in 2 downto 0 loop      
+          P_I_UC_DATA_IN <= I_ADDR_AM(i);
+          wait for 100 ns;
+          P_I_UC_CLK <= '1';
+          wait for 100 ns;
+          P_I_UC_CLK <= '0';
+        end loop;  
 
         -- strobe output
         P_I_UC_STROBE <= '1';
@@ -184,14 +186,24 @@ BEGIN
       end proc_read_cycle;  
 
    BEGIN
-      P_I_ADDR <= "0000";
+      P_I_24V_OC <= '1';
+      P_I_ADDR <= "1111";
       P_I_UC_CLK <= '0';
       P_I_UC_STROBE <= '0';
       
       wait for 100 ns;
-      proc_addr_cycle("0000", "000", '1', '0', '0');
-      proc_write_cycle("01010101");
-      proc_write_cycle("10101010");
+      P_I_24V_OC <= '0';
+      wait for 10 ns;
+      P_I_24V_OC <= '1';
+      wait for 100 ns;
+      
+      proc_addr_cycle("0000", "010", "100"); -- AM_WRITE_CSR, pwr_status
+      proc_write_cycle("00000100");          -- 24V reset
+      proc_write_cycle("00000000");
+
+      --proc_addr_cycle("0000", "000", '1', '0', '0');
+      --proc_write_cycle("01010101");
+      --proc_write_cycle("10101010");
 
       --P_IO_PORTS(0).port_pin <= "11111011";      
       --proc_addr_cycle("0000", "000", '0', '0', '0');

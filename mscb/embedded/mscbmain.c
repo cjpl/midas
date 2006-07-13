@@ -1004,8 +1004,6 @@ unsigned char size;
    memcpy(uart1_buf+2, variables[i].ud, size);
    uart1_buf[2+size] = crc8(uart1_buf, 2+size);
    uart1_send(uart1_buf, 3+size, 0);
-
-   led_blink(1, 1, 50);
 }
 
 /*------------------------------------------------------------------*/

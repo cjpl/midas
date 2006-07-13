@@ -39,4 +39,5 @@ void read_port(unsigned char addr, unsigned char port_no, unsigned char *pd) ree
 void read_eeprom(unsigned char addr, unsigned char port_no, unsigned char *pd) reentrant;
 void write_eeprom(unsigned char addr, unsigned char port_no, unsigned char d) reentrant;
 unsigned char module_present(unsigned char addr, unsigned char port_no) reentrant;
+unsigned char power_mgmt(unsigned char addr, unsigned char reset) reentrant;
 

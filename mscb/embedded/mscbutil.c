@@ -1381,7 +1381,13 @@ bit lcd_present;
 
 #define LCD P2                  // LCD display connected to port2
 
-#if defined (SCS_900) || defined(SCS_1000) || defined (SCS_1001) ||  defined(SCS_2000)
+#if defined (SCS_2000)  // new SCS_2000, different from prototype!
+sbit LCD_RS  = P1 ^ 4;
+sbit LCD_R_W = P1 ^ 5;
+sbit LCD_E   = P1 ^ 6;
+sbit LCD_1D  = P1 ^ 0;
+sbit LCD_2D  = P1 ^ 1;
+#elif defined (SCS_900) || defined(SCS_1000) || defined (SCS_1001)
 sbit LCD_RS  = LCD ^ 3;
 sbit LCD_R_W = LCD ^ 2;
 sbit LCD_E   = LCD ^ 1;
@@ -1413,6 +1419,9 @@ lcd_out(unsigned char d, bit df)
 #if defined(CPU_C8051F120)
    SFRPAGE = CONFIG_PAGE;
    P2MDOUT = 0x0F;
+#ifdef SCS_2000
+   LCD_1D = 0;                  // b to a for data
+#endif
 #else
    PRT2CF = 0x0F;
 #endif
@@ -1431,6 +1440,10 @@ lcd_out(unsigned char d, bit df)
    delay_us(1);
    LCD_R_W = 0;
 #if defined(CPU_C8051F120)
+#ifdef SCS_2000
+   LCD_1D = 1;                  // a to b for data
+#endif
+   SFRPAGE = CONFIG_PAGE;
    P2MDOUT = 0xFF;              // data output
 #else
    PRT2CF = 0xFF;               // data output
@@ -1483,9 +1496,18 @@ void lcd_setup()
 {
    unsigned i=0;
 
+   LCD_E   = 0;
+   LCD_R_W = 0;
+   LCD_RS  = 0;
+
 #if defined(CPU_C8051F120)
    SFRPAGE = CONFIG_PAGE;
    P2MDOUT = 0xFF;             // all push-pull
+#ifdef SCS_2000
+   P1MDOUT = 0xFF;
+   LCD_1D = 1;                 // a to b for data
+   LCD_2D = 1;                 // a to b for control
+#endif
 #else
    PRT2CF = 0xFF;              // all push-pull
 #endif
@@ -1504,7 +1526,11 @@ void lcd_setup()
 
    LCD = LCD | 0xF0;            // data input
 #if defined(CPU_C8051F120)
+   SFRPAGE = CONFIG_PAGE;
    P2MDOUT = 0x0F;
+#ifdef SCS_2000
+   LCD_1D = 0;                  // b to a for data
+#endif
 #else
    PRT2CF = 0x0F;
 #endif
@@ -1556,6 +1582,7 @@ void lcd_setup()
 
    LCD = LCD | 0xF0;            // data input
 #if defined(CPU_C8051F120)
+   SFRPAGE = CONFIG_PAGE;
    P2MDOUT = 0x0F;
 #else
    PRT2CF = 0x0F;
