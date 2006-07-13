@@ -225,15 +225,15 @@ sbit EXT_WATCHDOG_PIN = P1 ^ 4;
 
 #define LED_0 P0 ^ 6
 #define LED_1 P0 ^ 7
-#define LED_2 P1 ^ 7 // buzzer
 #define LED_ON 0
 sbit RS485_ENABLE = P0 ^ 5;
 sbit RS485_SEC_ENABLE = P0 ^ 4;
 
 //#define EXT_WATCHDOG              // use external watchdog
-sbit EXT_WATCHDOG_PIN = P2 ^ 0;
+//sbit EXT_WATCHDOG_PIN = DAC0;
 
 #define LCD_SUPPORT
+#define LCD_8BIT
 #define DYN_VARIABLES
 
 /*--------------------------------*/

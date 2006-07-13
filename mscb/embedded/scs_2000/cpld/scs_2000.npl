@@ -29,7 +29,7 @@ xcpldFitDesVolt=xstvhd, xbr, Implementation.t_vm6File, 1147071368, LVCMOS33
 _SynthOpt=xstvhd, xbr, VHDL.t_synthesize, 1147699901, Area
 _SynthOptEffort=xstvhd, xbr, VHDL.t_synthesize, 1147699901, High
 [STATUS-ALL]
-scs_2000.ngcFile=WARNINGS,1147701319
-scs_2000.vm6File=WARNINGS,1147701339
+scs_2000.ngcFile=WARNINGS,1152787008
+scs_2000.vm6File=WARNINGS,1152787022
 [STRATEGY-LIST]
 Normal=True

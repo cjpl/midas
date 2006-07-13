@@ -333,28 +333,33 @@ void lcd_menu()
                start_index = var_index-1;
          }
 
-         for (i=0 ; i<3 ; i++) {
-
-            lcd_goto(0, i);
-            if (start_index+i == var_index) 
-               putchar('>');
-            else
-               putchar(' ');
-
-            lcd_goto(1, i);
-            if (start_index+i > max_index)
-               printf("                   ");
-            else {
-               display_name(start_index+i, &pvar[start_index+i]);
-               lcd_goto(10, i);
-
-               if (enter_mode && start_index+i == var_index)
-                  display_value(&pvar[start_index+i], &f_var);
+         if (n_variables == 0) {
+            lcd_goto(0, 0);
+            printf("No variables defined");
+         } else {
+            for (i=0 ; i<3 ; i++) {
+   
+               lcd_goto(0, i);
+               if (start_index+i == var_index) 
+                  putchar('>');
                else
-                  display_value(&pvar[start_index+i], pvar[start_index+i].ud);
+                  putchar(' ');
+   
+               lcd_goto(1, i);
+               if (start_index+i > max_index)
+                  printf("                   ");
+               else {
+                  display_name(start_index+i, &pvar[start_index+i]);
+                  lcd_goto(10, i);
+   
+                  if (enter_mode && start_index+i == var_index)
+                     display_value(&pvar[start_index+i], &f_var);
+                  else
+                     display_value(&pvar[start_index+i], pvar[start_index+i].ud);
+               }
             }
          }
-
+   
          if (system_menu)
             pvar = &sysvar[var_index];
          else

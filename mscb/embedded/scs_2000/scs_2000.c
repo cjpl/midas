@@ -30,11 +30,6 @@ extern lcd_menu(void);
 
 /*---- Port definitions ----*/
 
-sbit B0         = P1 ^ 3;
-sbit B1         = P1 ^ 2;
-sbit B2         = P1 ^ 1;
-sbit B3         = P1 ^ 0;
-
 bit b0, b1, b2, b3;
 
 /*---- Define variable parameters returned to CMD_GET_INFO command ----*/
@@ -44,13 +39,6 @@ bit b0, b1, b2, b3;
 MSCB_INFO_VAR *variables;
 float xdata user_data[64];
 float xdata backup_data[64];
-
-
-/* different application display modes */
-unsigned char xdata app_mode;
-
-#define APM_NORMAL   0
-#define APM_PULSER   1
 
 /********************************************************************\
 
@@ -96,6 +84,24 @@ void user_init(unsigned char init)
    P2MDOUT = 0xFF;
    P3MDOUT = 0x00;
 
+   /* enable ADC & DAC */
+   SFRPAGE = ADC0_PAGE;
+   AMX0CF = 0x00;               // select single ended analog inputs
+   ADC0CF = 0x98;               // ADC Clk 2.5 MHz @ 98 MHz, gain 1
+   ADC0CN = 0x80;               // enable ADC 
+   REF0CN = 0x00;               // use external voltage reference
+
+   SFRPAGE = LEGACY_PAGE;
+   REF0CN = 0x03;               // select internal voltage reference
+
+   SFRPAGE = DAC0_PAGE;
+   DAC0CN = 0x80;               // enable DAC0
+   SFRPAGE = DAC1_PAGE;
+   DAC1CN = 0x80;               // enable DAC1
+
+   /* red (upper) LED off by default */
+   led_mode(1, 0);
+
    /* initial EEPROM value */
    if (init) {
    }
@@ -136,45 +142,28 @@ void user_init(unsigned char init)
 
 #pragma NOAREGS
 
-/*---- Special data for LED pulser ---------------------------------*/
+/*---- Front panel button read -------------------------------------*/
 
-unsigned char xdata pulser_ampl = 0;
-unsigned char xdata pulser_freq = 0;
-unsigned char xdata n_var_int = 0;
+unsigned char button(unsigned char i)
+{
+unsigned short xdata value;
 
-typedef struct {
-  unsigned long  count;
-  unsigned short freq;
-  unsigned char  exp;
-} FREQ_TABLE;
+   SFRPAGE = ADC0_PAGE;
+   AMX0SL  = (7-i) & 0x07;
+   DELAY_US(2);       // wait for settling time
 
-FREQ_TABLE code freq_table[] = {
-   { 100000000,  1, 0 },   //    1 Hz
-   { 50000000,   2, 0 },   //    2 Hz
-   { 20000000,   5, 0 },   //    5 Hz
-   { 10000000,  10, 0 },   //   10 Hz
-   { 5000000,   20, 0 },   //   20 Hz
-   { 2000000,   50, 0 },   //   50 Hz
-   { 1000000,  100, 0 },   //  100 Hz
-   { 500000,   200, 0 },   //  200 Hz
-   { 200000,   500, 0 },   //  500 Hz
-   { 100000,     1, 1 },   //    1 kHz
-   { 50000,      2, 1 },   //    2 kHz
-   { 20000,      5, 1 },   //    5 kHz
-   { 10000,     10, 1 },   //   10 kHz
-   { 5000,      20, 1 },   //   20 kHz
-   { 2000,      50, 1 },   //   50 kHz
-   { 1000,     100, 1 },   //  100 kHz
-   { 500,      200, 1 },   //  200 kHz
-   { 200,      500, 1 },   //  500 kHz
-   { 100,        1, 2 },   //    1 MHz
-   0,
-};
+   DISABLE_INTERRUPTS;
+  
+   AD0INT = 0;
+   AD0BUSY = 1;
+   while (!AD0INT);   // wait until conversion ready
 
-MSCB_INFO_VAR code pulser_var[] = {
-   { 1, UNIT_BYTE,    0, 0, 0, "Freq",  &pulser_freq,  0,  18,  1 },
-   { 1, UNIT_PERCENT, 0, 0, 0, "Ampl",  &pulser_ampl,  0, 100,  1 },
-};
+   ENABLE_INTERRUPTS;
+
+   value = (ADC0L | (ADC0H << 8));
+
+   return value < 1000;
+}
 
 /*---- Module scan -------------------------------------------------*/
 
@@ -183,22 +172,12 @@ void setup_variables(void)
 unsigned char xdata port, id, i, j, n_var, n_mod, n_var_mod, changed;
 char xdata * pvardata;
 
-   app_mode = APM_NORMAL;
    changed = 0;
    n_var = n_mod = 0;
    pvardata = (char *)user_data;
 
    /* set "variables" pointer to array in xdata */
    variables = vars;
-
-   /* setup special variables for LED pulser */
-   read_eeprom(0, 0, &id);
-   if (id == 0x02) {
-      app_mode = APM_PULSER;
-      memcpy(variables, pulser_var, sizeof(pulser_var));
-      n_var += sizeof(pulser_var)/sizeof(MSCB_INFO_VAR);
-      n_var_int = n_var;
-   }
 
    for (port=0 ; port<8 ; port++) {
       module_id[port] = 0;
@@ -246,7 +225,7 @@ char xdata * pvardata;
          
          } else {
 
-           /* initialize new/unknown module */
+            /* initialize new/unknown module */
             lcd_clear();
             lcd_goto(0, 0);
             printf("New module in port %bd", port);
@@ -268,17 +247,17 @@ char xdata * pvardata;
 
                do {
                   watchdog_refresh(0);
-                  b0 = !B0;
-                  b1 = !B1;
-                  b2 = !B2;
-                  b3 = !B3;
+                  b0 = button(0);
+                  b1 = button(1);
+                  b2 = button(2);
+                  b3 = button(3);
                } while (!b0 && !b1 && !b2 && !b3);
 
                if (b0) {
                   /* write module id and re-evaluate module */
                   write_eeprom(0, port, scs_2000_module[i].id);
                   port--;
-                  while (b0) b0 = !B0;
+                  while (b0) b0 = button(0);
                   changed = 1;
                   break;
                }
@@ -286,13 +265,13 @@ char xdata * pvardata;
                if (b2) {
                   if (i > 0)
                      i--;
-                  while (b2) b2 = !B2;
+                  while (b2) b2 = button(2);
                }
 
                if (b3) {
                   if (scs_2000_module[i+1].id)
                      i++;
-                  while (b3) b3 = !B3;
+                  while (b3) b3 = button(3);
                }
             }
          }
@@ -305,7 +284,7 @@ char xdata * pvardata;
    /* reboot if any module id has been written */
    if (changed) {
       SFRPAGE = LEGACY_PAGE;
-      RSTSRC = 0x10;         // force software reset
+      RSTSRC  = 0x10;         // force software reset
    }
 
 }
@@ -316,16 +295,8 @@ void user_write(unsigned char index) reentrant
 {
 unsigned char i, j, port;
 
-   /* internal variables */
-   if (app_mode == APM_PULSER) {
-      if (index == 0) {
-         j = module_index[0];
-         scs_2000_module[j].driver(scs_2000_module[j].id, MC_SPECIAL, 0, 0, 0, &freq_table[pulser_freq].count);
-      }
-   }
-
    /* find module to which this variable belongs */
-   i = n_var_int;
+   i = 0;
    for (port=0 ; port<8 ; port++) {
       if (i + module_nvars[port] > index) {
          i = index - i;
@@ -359,71 +330,67 @@ unsigned char user_func(unsigned char *data_in, unsigned char *data_out)
    return 1;
 }
 
+/*---- Power management --------------------------------------------*/
+
+bit trip_5V_old = 0, trip_24V_old = 0;
+
+unsigned char power_management()
+{
+static unsigned long xdata last_pwr = 0;
+unsigned char status;
+
+  /* only 10 Hz */
+  if (time() > last_pwr+10) {
+     last_pwr = time();
+    
+     status = power_mgmt(0, 0);
+     
+     if ((status & 0x01) == 0) {
+        if (!trip_5V_old)
+           lcd_clear();
+        led_blink(1, 1, 100);
+        lcd_goto(0, 0);
+        printf("Overcurrent >0.5A on");
+        lcd_goto(0, 1);
+        printf("    5V output !!!   ");
+        trip_5V_old = 1;
+        return 1;
+     } else if (trip_5V_old) {
+        trip_5V_old = 0;
+        lcd_clear();
+     }
+
+     if ((status & 0x02) == 0) {
+        if (!trip_24V_old)
+           lcd_clear();
+        led_blink(1, 1, 100);
+        lcd_goto(0, 0);
+        printf("   Overcurrent on   ");
+        lcd_goto(0, 1);
+        printf("   24V output !!!   ");
+        lcd_goto(0, 3);
+        printf("RESET               ");
+
+        if (button(0)) {
+           power_mgmt(0, 1);  // issue a reset
+           while (button(0)); // wait for button to be released
+        }
+
+        trip_24V_old = 1;
+        return 1;
+     } else if (trip_24V_old) {
+        trip_24V_old = 0;
+        lcd_clear();
+     }
+  }
+  
+  return 0;
+}
+
 /*---- Application display -----------------------------------------*/
 
 bit b0_old = 0, b1_old = 0, b2_old = 0, b3_old = 0;
 unsigned long xdata last_b2 = 0, last_b3 = 0;
-
-unsigned char ad_pulser()
-{
-unsigned char pulser_ampl_old, pulser_freq_old, i;
-
-   lcd_goto(0, 0);
-   printf("Frequency: %d ", freq_table[pulser_freq].freq);
-   if (freq_table[pulser_freq].exp == 0)
-      printf("Hz   ");
-   else if (freq_table[pulser_freq].exp == 1)
-      printf("kHz   ");
-   else
-      printf("MHz   ");
-
-   lcd_goto(0, 1);
-   printf("Amplitude: %bd %%   ", pulser_ampl);
-
-   lcd_goto(0, 3);
-   printf(" - Hz +     - Amp +");
-
-   if (b0 && !b0_old && pulser_freq > 0)
-      pulser_freq--;
-
-   if (b1 && !b1_old && pulser_freq < 18)
-      pulser_freq++;
-
-   if (b2 && !b2_old && pulser_ampl > 0) {
-      pulser_ampl--;
-      last_b2 = time();
-   }
-
-   if (b2 && time() > last_b2 + 70 && pulser_ampl > 0)
-      pulser_ampl--;
-
-   if (b3 && !b3_old && pulser_ampl < 100) {
-      pulser_ampl++;
-      last_b3 = time();
-   }
-
-   if (b3 && time() > last_b3 + 70 && pulser_ampl < 100)
-      pulser_ampl++;
-
-   if (pulser_freq != pulser_freq_old)
-      user_write(0);
-
-   if (pulser_ampl != pulser_ampl_old) {
-      for (i=2 ; i<n_variables ; i++) {
-         *((unsigned char *)variables[i].ud) = pulser_ampl;
-         user_write(i);
-      }
-   }
-
-   pulser_ampl_old = pulser_ampl;
-   pulser_freq_old = pulser_freq;
-   b0_old = b0;
-   b1_old = b1;
-   b2_old = b2;
-   b3_old = b3;
-
-   return 0;
-}
 
 unsigned char application_display(bit init)
 {
@@ -433,9 +400,11 @@ unsigned char xdata i, j, n, col;
 
    if (init)
       lcd_clear();
-   
-   if (app_mode == APM_PULSER)
-      return ad_pulser();
+
+   if (power_management()) {
+      last_index = 255; // force re-display after trip finished
+      return 0;
+   }
 
    /* display list of modules */
    if (index != last_index) {
@@ -535,10 +504,10 @@ unsigned char xdata i;
    memcpy(&backup_data, &user_data, sizeof(user_data));
 
    /* read buttons */
-   b0 = !B0;
-   b1 = !B1;
-   b2 = !B2;
-   b3 = !B3;
+   b0 = button(0);
+   b1 = button(1);
+   b2 = button(2);
+   b3 = button(3);
 
    /* manage menu on LCD display */
    lcd_menu();
