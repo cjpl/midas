@@ -2127,7 +2127,7 @@ int mscb_set_node_addr(int fd, int addr, int gaddr, int broadcast,
       buf[8] = crc8(buf+4, 4);
       mscb_out(fd, buf, 9, RS485_FLAG_NO_ACK | RS485_FLAG_ADR_CYCLE);
 
-   } if (gaddr >= 0) {
+   } else if (gaddr >= 0) {
       buf[0] = MCMD_ADDR_GRP16;
       buf[1] = (unsigned char) (gaddr >> 8);
       buf[2] = (unsigned char) (gaddr & 0xFF);
@@ -2140,7 +2140,7 @@ int mscb_set_node_addr(int fd, int addr, int gaddr, int broadcast,
       buf[8] = crc8(buf+4, 4);
       mscb_out(fd, buf, 9, RS485_FLAG_NO_ACK | RS485_FLAG_ADR_CYCLE);
 
-   } else if (broadcast ) {
+   } else if (broadcast) {
       buf[0] = MCMD_ADDR_BC;
       buf[1] = crc8(buf, 1);
 
