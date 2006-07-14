@@ -919,7 +919,7 @@ unsigned char  watchdog_timeout = DEFAULT_WATCHDOG_TIMEOUT;
 bit            watchdog_on;
 #endif
 
-void watchdog_refresh(unsigned char from_interrupt)
+void watchdog_refresh(unsigned char from_interrupt) reentrant
 /********************************************************************\
 
   Routine: watchdog_refresh
@@ -936,9 +936,10 @@ void watchdog_refresh(unsigned char from_interrupt)
                                   1 if called from interrupt routine
 
 
-
 \********************************************************************/
 {
+   if (from_interrupt);
+
 #ifdef USE_WATCHDOG
    if (from_interrupt == 0)
       watchdog_timer = 0;
@@ -974,6 +975,7 @@ void watchdog_enable(unsigned char timeout)
 
 \********************************************************************/
 {
+   if (timeout);
 #ifdef USE_WATCHDOG
 
    watchdog_on = 1;
@@ -1024,14 +1026,13 @@ void watchdog_disable(void)
 #ifdef USE_WATCHDOG
    watchdog_on = 0;
    watchdog_timer = 0;
+#endif
 
 #if defined(CPU_C8051F310) || defined(CPU_C8051F320)
    PCA0MD = 0x00;
 #else
    WDTCN  = 0xDE;
    WDTCN  = 0xAD;
-#endif
-
 #endif
 }
 
@@ -1233,7 +1234,7 @@ void eeprom_erase(void)
 
 \********************************************************************/
 {
-   int idata i;
+   unsigned char idata i;
    unsigned char xdata * idata p;
 
    if (_flkey != 0xF1)
