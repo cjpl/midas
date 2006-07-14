@@ -1039,6 +1039,7 @@ sbit led_0 = LED_0;
    SBUF0 = _b; \
    while (TI0 == 0);
 
+#pragma OT(8, SIZE) // 9 would call subroutines in program body -> crash on upgrade
 
 void upgrade()
 {
