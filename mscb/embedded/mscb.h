@@ -56,6 +56,9 @@
 #ifdef scs_910
 #define SCS_910
 #endif
+#ifdef scs_920
+#define SCS_920
+#endif
 #ifdef scs_1000
 #define SCS_1000
 #endif
@@ -70,6 +73,9 @@
 #endif
 #ifdef hvr_500
 #define HVR_500
+#endif
+#ifdef hvr_test
+#define HVR_TEST
 #endif
 #ifdef splitter
 #define SPLITTER
@@ -260,6 +266,15 @@ sbit RS485_ENABLE = P0 ^ 7;
 #define LED_4 P2 ^ 3
 #define LED_ON 1
 sbit RS485_ENABLE = P0 ^ 7;
+
+/*--------------------------------*/
+#elif defined(HVR_TEST)
+#include <c8051F000.h>
+#define CPU_C8051F000
+
+#define LED_0 P3 ^ 4
+#define LED_ON 0
+sbit RS485_ENABLE = P3 ^ 5;
 
 /*--------------------------------*/
 #elif defined(SPLITTER)
@@ -586,7 +601,7 @@ typedef struct {                // system info stored in EEPROM
 
 /*---- function declarations ---------------------------------------*/
 
-void watchdog_refresh(unsigned char from_interrupt);
+void watchdog_refresh(unsigned char from_interrupt) reentrant;
 void watchdog_enable(unsigned char watchdog_timeout);
 void watchdog_disable(void);
 void yield(void);

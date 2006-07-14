@@ -29,7 +29,7 @@ unsigned char rs485_tx_bit9[4];
 
 /*------------------------------------------------------------------*/
 
-extern void watchdog_refresh(unsigned char from_interrupt);
+extern void watchdog_refresh(unsigned char from_interrupt) reentrant;
 
 /*---- MSCB commands -----------------------------------------------*/
 
