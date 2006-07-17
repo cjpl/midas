@@ -558,7 +558,7 @@ int match(char *str, char *cmd)
 void cmd_loop(int fd, char *cmd, unsigned short adr)
 {
    int i, fh, status, size, nparam, current_addr, current_group, first, last, broadcast,
-      read_all, repeat;
+      read_all, repeat, wait;
    unsigned short addr;
    unsigned int data, uptime;
    unsigned char c;
@@ -1070,6 +1070,14 @@ void cmd_loop(int fd, char *cmd, unsigned short adr)
 
             read_all = (param[1][0] == 'a' || param[2][0] == 'a' || param[3][0] == 'a');
             repeat   = (param[1][0] == 'r' || param[2][0] == 'r' || param[3][0] == 'r');
+            if (repeat) {
+               wait = 0;
+               for (i=1 ; i<4 ; i++)
+                  if (param[i][0] == 'r')
+                     break;
+               if (atoi(param[i+1]) > 0)
+                  wait = atoi(param[i+1]);
+            }
 
             do {
                for (i = first ; i <= last ; i++) {
@@ -1106,7 +1114,11 @@ void cmd_loop(int fd, char *cmd, unsigned short adr)
                   printf("\n");
 
                if (repeat)
-                  Sleep(10);
+                  if (wait) {
+                     Sleep(wait);
+                     printf("\n");
+                  } else
+                     Sleep(10);
 
             } while (!kbhit() && repeat);
 
