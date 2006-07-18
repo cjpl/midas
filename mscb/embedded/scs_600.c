@@ -13,7 +13,7 @@
 \********************************************************************/
 
 #include <stdio.h>
-#include "mscb.h"
+#include "mscbemb.h"
 
 extern bit DEBUG_MODE;
 

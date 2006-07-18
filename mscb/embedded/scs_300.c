@@ -14,7 +14,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include "mscb.h"
+#include "mscbemb.h"
 
 char code node_name[] = "SCS-300";
 

@@ -14,7 +14,7 @@
 #include <string.h>
 #include <math.h>
 #include <intrins.h>
-#include "mscb.h"
+#include "mscbemb.h"
 #include "scs_2000.h"
 
 extern bit FREEZE_MODE;
@@ -47,6 +47,9 @@ float xdata backup_data[64];
 \********************************************************************/
 
 MSCB_INFO_VAR xdata vars[65];
+
+unsigned char xdata update_data[64];
+unsigned char xdata erase_module;
 
 unsigned char xdata module_nvars[8];
 unsigned char xdata module_id[8];
@@ -99,6 +102,8 @@ void user_init(unsigned char init)
    SFRPAGE = DAC1_PAGE;
    DAC1CN = 0x80;               // enable DAC1
 
+   erase_module = 0xFF;
+
    /* red (upper) LED off by default */
    led_mode(1, 0);
 
@@ -144,13 +149,24 @@ void user_init(unsigned char init)
 
 /*---- Front panel button read -------------------------------------*/
 
+bit adc_init = 0;
+
 unsigned char button(unsigned char i)
 {
 unsigned short xdata value;
 
    SFRPAGE = ADC0_PAGE;
-   AMX0SL  = (7-i) & 0x07;
-   DELAY_US(2);       // wait for settling time
+   if (!adc_init) {
+      adc_init = 1;
+      SFRPAGE = LEGACY_PAGE;
+      REF0CN  = 0x03;           // use internal voltage reference
+      AMX0CF  = 0x00;           // select single ended analog inputs
+      ADC0CF  = 0x98;           // ADC Clk 2.5 MHz @ 98 MHz, gain 1
+      ADC0CN  = 0x80;           // enable ADC 
+   }
+
+   AMX0SL  = (7-i) & 0x07;      // set multiplexer
+   DELAY_US(2);                 // wait for settling time
 
    DISABLE_INTERRUPTS;
   
@@ -169,7 +185,7 @@ unsigned short xdata value;
 
 void setup_variables(void)
 {
-unsigned char xdata port, id, i, j, n_var, n_mod, n_var_mod, changed;
+unsigned char xdata port, id, i, j, k, n_var, n_mod, n_var_mod, changed;
 char xdata * pvardata;
 
    changed = 0;
@@ -192,29 +208,31 @@ char xdata * pvardata;
          }
 
          if (scs_2000_module[i].id == id) {
-            n_var_mod = (unsigned char)scs_2000_module[i].var[0].ud;
-            
-            if (n_var_mod) {
-               /* clone single variable definition */
-               for (j=0 ; j<n_var_mod ; j++) {
-                  memcpy(variables+n_var, &scs_2000_module[i].var[0], sizeof(MSCB_INFO_VAR));
-                  if (strchr(variables[n_var].name, '%'))
-                     *strchr(variables[n_var].name, '%') = '0'+port;
-                  if (strchr(variables[n_var].name, '#'))
-                     *strchr(variables[n_var].name, '#') = '0'+j;
-                  variables[n_var].ud = pvardata;
-                  pvardata += variables[n_var].width;
-                  n_var++;
-               }
-            } else {
-               /* copy over variable definition */
-               for (j=0 ; scs_2000_module[i].var[j].width > 0 ; j++) {
-                  memcpy(variables+n_var, &scs_2000_module[i].var[j], sizeof(MSCB_INFO_VAR));
-                  if (strchr(variables[n_var].name, '%'))
-                     *strchr(variables[n_var].name, '%') = '0'+port;
-                  variables[n_var].ud = pvardata;
-                  pvardata += variables[n_var].width;
-                  n_var++;
+            for (k=0 ; k<scs_2000_module[i].n_var ; k++) {
+               n_var_mod = (unsigned char)scs_2000_module[i].var[k].ud;
+               
+               if (n_var_mod) {
+                  /* clone single variable definition */
+                  for (j=0 ; j<n_var_mod ; j++) {
+                     memcpy(variables+n_var, &scs_2000_module[i].var[0], sizeof(MSCB_INFO_VAR));
+                     if (strchr(variables[n_var].name, '%'))
+                        *strchr(variables[n_var].name, '%') = '0'+port;
+                     if (strchr(variables[n_var].name, '#'))
+                        *strchr(variables[n_var].name, '#') = '0'+j;
+                     variables[n_var].ud = pvardata;
+                     pvardata += variables[n_var].width;
+                     n_var++;
+                  }
+               } else {
+                  /* copy over variable definition */
+                  for (j=0 ; scs_2000_module[i].var[j].width > 0 ; j++) {
+                     memcpy(variables+n_var, &scs_2000_module[i].var[j], sizeof(MSCB_INFO_VAR));
+                     if (strchr(variables[n_var].name, '%'))
+                        *strchr(variables[n_var].name, '%') = '0'+port;
+                     variables[n_var].ud = pvardata;
+                     pvardata += variables[n_var].width;
+                     n_var++;
+                  }
                }
             }
 
@@ -293,23 +311,8 @@ char xdata * pvardata;
 
 void user_write(unsigned char index) reentrant
 {
-unsigned char i, j, port;
-
-   /* find module to which this variable belongs */
-   i = 0;
-   for (port=0 ; port<8 ; port++) {
-      if (i + module_nvars[port] > index) {
-         i = index - i;
-         j = module_index[port];
-
-         if (j != 0xFF)
-            scs_2000_module[j].driver(scs_2000_module[j].id, MC_WRITE, 0, port, i, variables[index].ud);
-
-         break;
-
-      } else
-         i += module_nvars[port];
-   }
+   /* will be updated in main loop */
+   update_data[index] = 1;
 }
 
 /*---- User read function ------------------------------------------*/
@@ -324,8 +327,8 @@ unsigned char user_read(unsigned char index)
 
 unsigned char user_func(unsigned char *data_in, unsigned char *data_out)
 {
-   /* erase eeprom of specific port */
-   write_eeprom(0, data_in[0], 0xFF);
+   /* erase module eeprom of specific port */
+   erase_module = data_in[0];
    data_out[0] = 1;
    return 1;
 }
@@ -468,6 +471,11 @@ unsigned char xdata i, j, n, col;
       return 1;
    }
 
+   /* erase EEPROM on release of button 1 (hidden functionality) */
+   if (!init && !b1 && b1_old) {
+      write_eeprom(0, index, 0xFF);
+   }
+
    b0_old = b0;
    b1_old = b1;
    b2_old = b2;
@@ -482,7 +490,29 @@ static unsigned char idata port_index = 0, first_var_index = 0;
 
 void user_loop(void)
 {
-unsigned char xdata i;
+unsigned char xdata index, i, j, port;
+
+   /* check if variabled needs to be written */
+   for (index=0 ; index<64 ; index++) {
+      if (update_data[index]) {
+         /* find module to which this variable belongs */
+         i = 0;
+         for (port=0 ; port<8 ; port++) {
+            if (i + module_nvars[port] > index) {
+               i = index - i;
+               j = module_index[port];
+      
+               if (j != 0xFF)
+                  scs_2000_module[j].driver(scs_2000_module[j].id, MC_WRITE, 0, port, i, variables[index].ud);
+      
+               break;
+      
+            } else
+               i += module_nvars[port];
+         }
+         update_data[index] = 0;
+      }
+   }
 
    /* read next port */
    if (module_index[port_index] != 0xFF) {
@@ -498,6 +528,12 @@ unsigned char xdata i;
    if (port_index == 8) {
       port_index = 0;
       first_var_index = 0;
+   }
+
+   /* check for erase module eeprom */
+   if (erase_module != 0xFF) {
+      write_eeprom(0, erase_module, 0xFF);
+      erase_module = 0xFF;
    }
 
    /* backup data */

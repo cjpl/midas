@@ -5,14 +5,14 @@
 
   Contents:     Broadcast program for COBRA magnet
 
-  $Id:$
+  $Id$
 
 \********************************************************************/
 
 #include <stdio.h>
 #include <string.h>
 #include <intrins.h>
-#include "mscb.h"
+#include "mscbemb.h"
 #include "net.h"
 
 /*------------------------------------------------------------------*/

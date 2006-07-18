@@ -22,6 +22,7 @@ typedef struct {
   unsigned char id;                                  // unique module ID, 0xFF for uninitialized 
   char *name;                                        // module name
   MSCB_INFO_VAR *var;                                // list of variables
+  unsigned char n_var;                               // number of variable sets
   unsigned char (*driver)(unsigned char id,          // driver for init/read/wrie
                   unsigned char cmd,                                
                   unsigned char addr, unsigned char port, 

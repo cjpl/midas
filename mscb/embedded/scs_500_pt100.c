@@ -8,12 +8,12 @@
                 Midas Slow Control Bus protocol 
                 for SCS-500 unit modified for PT100 sensors
 
-  $Id:$
+  $Id$
 
 \********************************************************************/
 
 #include <stdio.h>
-#include "mscb.h"
+#include "mscbemb.h"
 
 extern bit FREEZE_MODE;
 extern bit DEBUG_MODE;

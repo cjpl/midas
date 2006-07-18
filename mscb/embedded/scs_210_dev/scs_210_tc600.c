@@ -9,13 +9,13 @@
                 for SCS-210 RS232 node connected to Pfeiffer
                 Turbomolecular Pump with TC600 Electronics
 
-  $Id:$
+  $Id$
 
 \********************************************************************/
 
 #include <stdio.h>
 #include <stdlib.h>             // for atof()
-#include "mscb.h"
+#include "mscbemb.h"
 
 char code node_name[] = "TC600";
 

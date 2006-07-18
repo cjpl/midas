@@ -10,7 +10,7 @@ Group (Include Files)
 File 1,1,<.\mscbmain.c><mscbmain.c> 0x0 
 File 1,1,<.\mscbutil.c><mscbutil.c> 0x0 
 File 1,1,<.\scs_demo.c><scs_demo.c> 0x0 
-File 2,7,<.\mscb.h><mscb.h> 0x0 
+File 2,7,<.\mscbemb.h><mscbemb.h> 0x0 
 
 
 Options 1,0,0  // Target 'Simulator'
@@ -215,7 +215,7 @@ Options 2,0,0  // Target 'Emulator'
  FLASH3 ()
 EndOpt
 
-Options 1,2,4  // File 'mscb.h'
+Options 1,2,4  // File 'mscbemb.h'
  IncBld=0
  AlwaysBuild=2
  GenAsm=2
@@ -227,7 +227,7 @@ Options 1,2,4  // File 'mscb.h'
  BankNo=65535
 EndOpt
 
-Options 2,2,4  // File 'mscb.h'
+Options 2,2,4  // File 'mscbemb.h'
  IncBld=0
  AlwaysBuild=2
  GenAsm=2

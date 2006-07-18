@@ -12,7 +12,7 @@
 
 #include <stdio.h>
 #include <string.h>
-#include "mscb.h"
+#include "mscbemb.h"
 
 /* bit definitions */
 

@@ -15,7 +15,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
-#include "mscb.h"
+#include "mscbemb.h"
 
 extern bit FREEZE_MODE;
 extern bit DEBUG_MODE;
