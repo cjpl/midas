@@ -373,6 +373,12 @@ char putchar1(char c);                   // putchar cannot be used with LCD supp
       for (_j=19 ; _j>0 ; _j--) \
          _nop_(); \
 }
+#define DELAY_US_REENTRANT(_us) { \
+   unsigned char _i,_j; \
+   for (_i = (unsigned char) _us; _i > 0; _i--) \
+      for (_j=3 ; _j>0 ; _j--) \
+         _nop_(); \
+}
 #elif defined(CPU_C8051F310)
 #define DELAY_US(_us) { \
    unsigned char _i,_j; \
