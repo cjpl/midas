@@ -420,7 +420,7 @@ unsigned char port_dir;
       write_port(addr, port, pattern[port]);
    }
 
-   return 1;   
+   return 0;   
 }
 
 unsigned char dr_din_bits(unsigned char id, unsigned char cmd, unsigned char addr, 
