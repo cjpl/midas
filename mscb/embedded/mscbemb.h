@@ -1,6 +1,6 @@
 /********************************************************************\
 
-  Name:         mscb.h
+  Name:         mscbemb.h
   Created by:   Stefan Ritt
 
   Contents:     Midas Slow Control Bus protocol commands

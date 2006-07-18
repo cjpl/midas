@@ -9,13 +9,13 @@
                 for SCS-210 RS232 node connected to a
                 Pfeiffer Dual Gauge TPG262 vacuum sensor
 
-  $Id:$
+  $Id$
 
 \********************************************************************/
 
 #include <stdio.h>
 #include <stdlib.h>             // for atof()
-#include "mscb.h"
+#include "mscbemb.h"
 
 extern bit FREEZE_MODE;
 extern bit DEBUG_MODE;

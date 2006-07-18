@@ -12,7 +12,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <intrins.h>
-#include "mscb.h"
+#include "mscbemb.h"
 
 /* GET_INFO attributes */
 #define GET_INFO_GENERAL  0
@@ -142,7 +142,7 @@ void setup(void)
    PLL0MUL   = 0x04;
    for (i = 0; i < 15; i++);    // Wait 5us for initialization
    PLL0CN    |= 0x02;
-   //while ((PLL0CN & 0x10) == 0);
+   while ((PLL0CN & 0x10) == 0);
    OSCICN    = 0x83;
    CLKSEL    = 0x02;            // select PLL as sysclk src
 #endif

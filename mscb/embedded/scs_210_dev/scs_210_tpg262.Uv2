@@ -9,7 +9,7 @@ Group (Include Files)
 File 1,1,<.\scs_210_tpg262.c><scs_210_tpg262.c> 0x0 
 File 1,1,<..\mscbmain.c><mscbmain.c> 0x0 
 File 1,1,<..\mscbutil.c><mscbutil.c> 0x0 
-File 2,5,<..\mscb.h><mscb.h> 0x0 
+File 2,5,<..\mscbemb.h><mscbemb.h> 0x0 
 
 
 Options 1,0,0  // Target 'Target 1'

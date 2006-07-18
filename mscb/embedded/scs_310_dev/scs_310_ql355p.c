@@ -8,14 +8,14 @@
                 Midas Slow Control Bus protocol 
                 for TTI QL335P Power supply
 
-  $Id:$
+  $Id$
 
 \********************************************************************/
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "mscb.h"
+#include "mscbemb.h"
 
 char code node_name[] = "QL335P";
 

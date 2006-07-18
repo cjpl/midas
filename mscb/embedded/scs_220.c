@@ -14,7 +14,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>             // for atof()
-#include "mscb.h"
+#include "mscbemb.h"
 
 extern bit FREEZE_MODE;
 extern bit DEBUG_MODE;

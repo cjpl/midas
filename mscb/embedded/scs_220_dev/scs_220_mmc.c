@@ -9,14 +9,14 @@
                 for SCS-220 RS-485 node connected to
                 MEG magnet mapping machine
 
-  $Id:$
+  $Id$
 
 \********************************************************************/
 
 #include <stdio.h>
 #include <stdlib.h>             // for atof()
 #include <string.h>
-#include "mscb.h"
+#include "mscbemb.h"
 
 extern bit FREEZE_MODE;
 extern bit DEBUG_MODE;

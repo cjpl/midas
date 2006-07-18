@@ -9,7 +9,7 @@ Group (Include Files)
 File 1,1,<.\mscbmain.c><mscbmain.c>
 File 1,1,<.\mscbutil.c><mscbutil.c>
 File 1,1,<.\scs_500_pt100.c><scs_500_pt100.c>
-File 2,7,<.\mscb.h><mscb.h>
+File 2,7,<.\mscbemb.h><mscbemb.h>
 
 
 Options 1,0,0  // Target 'Target 1'
@@ -105,7 +105,7 @@ Options 1,0,0  // Target 'Target 1'
   OPTDBG 2045,0,()()()()()()()()()() ()()()()
 EndOpt
 
-Options 1,2,4  // File 'mscb.h'
+Options 1,2,4  // File 'mscbemb.h'
  IncBld=0
  AlwaysBuild=2
  GenAsm=2

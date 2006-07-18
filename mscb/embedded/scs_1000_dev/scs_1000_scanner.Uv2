@@ -11,7 +11,7 @@ File 1,1,<.\scs_1000_scanner.c><scs_1000_scanner.c> 0x0
 File 1,1,<..\mscbmain.c><mscbmain.c> 0x0 
 File 1,1,<..\mscbutil.c><mscbutil.c> 0x0 
 File 1,1,<..\lcd_menu.c><lcd_menu.c> 0x0 
-File 2,5,<..\mscb.h><mscb.h> 0x0 
+File 2,5,<..\mscbemb.h><mscbemb.h> 0x0 
 
 
 Options 1,0,0  // Target 'ICE'

@@ -9,7 +9,7 @@ Group (Headers)
 File 1,1,<.\subm_250.c><subm_250.c> 0x0 
 File 1,1,<.\mscbutil.c><mscbutil.c> 0x0 
 File 1,1,<.\usb.c><usb.c> 0x0 
-File 2,5,<.\mscb.h><mscb.h> 0x0 
+File 2,5,<.\mscbemb.h><mscbemb.h> 0x0 
 
 
 Options 1,0,0  // Target 'Target 1'
