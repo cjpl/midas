@@ -14,7 +14,7 @@
 #include <string.h>
 #include <math.h>
 #include <intrins.h>
-#include "mscb.h"
+#include "mscbemb.h"
 #include "scs_2000.h"
 
 /*---- Port definitions ----*/
@@ -37,6 +37,8 @@ unsigned char dr_din_bits(unsigned char id, unsigned char cmd, unsigned char add
 unsigned char dr_ltc2600(unsigned char id, unsigned char cmd, unsigned char addr, unsigned char port, unsigned char chn, void *pd) reentrant;
 unsigned char dr_ad7718(unsigned char id, unsigned char cmd, unsigned char addr, unsigned char port, unsigned char chn, void *pd) reentrant;
 unsigned char dr_ads1256(unsigned char id, unsigned char cmd, unsigned char addr, unsigned char port, unsigned char chn, void *pd) reentrant;
+unsigned char dr_capmeter(unsigned char id, unsigned char cmd, unsigned char addr, unsigned char port, unsigned char chn, void *pd) reentrant;
+unsigned char dr_temp(unsigned char id, unsigned char cmd, unsigned char addr, unsigned char port, unsigned char chn, void *pd) reentrant;
 
 MSCB_INFO_VAR code vars_bout[] =
    { 1, UNIT_BYTE,    0,          0,           0, "P%Out",   1, 0, 255, 1   };
@@ -49,6 +51,14 @@ MSCB_INFO_VAR code vars_uout[] =
 
 MSCB_INFO_VAR code vars_iin[] =
    { 4, UNIT_AMPERE,  PRFX_MILLI, 0, MSCBF_FLOAT, "P%Iin#",  8 };
+
+MSCB_INFO_VAR code vars_cin[] =
+   { 4, UNIT_FARAD,   PRFX_NANO,  0, MSCBF_FLOAT, "P%Cin#",  4 };
+
+MSCB_INFO_VAR code vars_temp[] = {
+   { 4, UNIT_CELSIUS, 0,          0, MSCBF_FLOAT, "P%T#",    8 },
+   { 4, UNIT_AMPERE,  PRFX_MILLI, 0, MSCBF_FLOAT, "P%Excit", 0 },
+};
 
 MSCB_INFO_VAR code vars_iout[] =
    { 4, UNIT_AMPERE,  PRFX_MILLI, 0, MSCBF_FLOAT, "P%Iout#", 8, 0, 20,  0.1 };
@@ -67,33 +77,39 @@ MSCB_INFO_VAR code vars_optout[] =
 
 SCS_2000_MODULE code scs_2000_module[] = {
   /* 0x01-0x1F misc. */
-  { 0x01, "LED-Debug",       vars_bout,   dr_dout_byte   },
-  { 0x02, "LED-Pulser",      NULL,        NULL           },
+  { 0x01, "LED-Debug",       vars_bout,   1, dr_dout_byte   },
+  { 0x02, "LED-Pulser",      NULL,        1, NULL           },
 
   /* 0x20-0x3F digital in  */
-  { 0x20, "Din 5V",          vars_din,    dr_din_bits    },
+  { 0x20, "Din 5V",          vars_din,    1, dr_din_bits    },
 
   /* 0x40-0x5F digital out */
-  { 0x40, "Dout 5V",         vars_dout,   dr_dout_bits   },
-  { 0x41, "Relais",          vars_relais, dr_dout_bits   },
-  { 0x42, "OptOut",          vars_optout, dr_dout_bits   },
+  { 0x40, "Dout 5V",         vars_dout,   1, dr_dout_bits   },
+  { 0x41, "Relais",          vars_relais, 1, dr_dout_bits   },
+  { 0x42, "OptOut",          vars_optout, 1, dr_dout_bits   },
 
   /* 0x60-0x7F analog in  */
-  { 0x60, "Uin 0-2.5V",      vars_uin,    dr_ad7718      },
-  { 0x61, "Uin +-10V",       vars_uin,    dr_ad7718      },
-  { 0x62, "Iin 0-2.5mA",     vars_iin,    dr_ad7718      },
-  { 0x63, "Iin 0-25mA",      vars_iin,    dr_ad7718      },
+  { 0x60, "Uin 0-2.5V",      vars_uin,    1, dr_ad7718      },
+  { 0x61, "Uin +-10V",       vars_uin,    1, dr_ad7718      },
+  { 0x62, "Iin 0-2.5mA",     vars_iin,    1, dr_ad7718      },
+  { 0x63, "Iin 0-25mA",      vars_iin,    1, dr_ad7718      },
 
-  { 0x64, "Uin 0-2.5V Fast", vars_uin,    dr_ads1256     },
-  { 0x65, "Uin +-10V Fast",  vars_uin,    dr_ads1256     },
-  { 0x66, "Iin 0-2.5mA Fast",vars_iin,    dr_ads1256     },
-  { 0x67, "Iin 0-25mA Fast", vars_iin,    dr_ads1256     },
+  { 0x64, "Uin 0-2.5V Fast", vars_uin,    1, dr_ads1256     },
+  { 0x65, "Uin +-10V Fast",  vars_uin,    1, dr_ads1256     },
+  { 0x66, "Iin 0-2.5mA Fast",vars_iin,    1, dr_ads1256     },
+  { 0x67, "Iin 0-25mA Fast", vars_iin,    1, dr_ads1256     },
+
+  { 0x70, "Cin 0-10nF",      vars_cin,    1, dr_capmeter    },
+  { 0x71, "Cin 0-1uF",       vars_cin,    1, dr_capmeter    },
+
+  { 0x72, "PT100",           vars_temp,   2, dr_temp        },
+  { 0x73, "PT1000",          vars_temp,   2, dr_temp        },
 
   /* 0x80-0x9F analog out */
-  { 0x80, "UOut 0-2.5V",     vars_uout,   dr_ltc2600     },
-  { 0x81, "UOut +-10V",      vars_uout,   dr_ltc2600     },
-  { 0x82, "IOut 0-2.5mA",    vars_iout,   dr_ltc2600     },
-  { 0x83, "IOut 0-25mA",     vars_iout,   dr_ltc2600     },
+  { 0x80, "UOut 0-2.5V",     vars_uout,   1, dr_ltc2600     },
+  { 0x81, "UOut +-10V",      vars_uout,   1, dr_ltc2600     },
+  { 0x82, "IOut 0-2.5mA",    vars_iout,   1, dr_ltc2600     },
+  { 0x83, "IOut 0-25mA",     vars_iout,   1, dr_ltc2600     },
 
   { 0 }
 };
@@ -358,7 +374,7 @@ unsigned short t;
    for (t=0 ; t<10000 ; t++) {
       if (OPT_DATAI == 1)
          break;
-      DELAY_US(1);
+      DELAY_US_REENTRANT(1);
    }
 
 }
@@ -507,7 +523,7 @@ unsigned char i;
 #define AD7718_ADCGAIN    6
 #define AD7718_IOCONTROL  7
 
-void ad7718_write(unsigned char a, unsigned char d) reentrant
+void ad7718_write(unsigned char a, unsigned char d)
 {
    unsigned char i, m;
 
@@ -554,7 +570,7 @@ void ad7718_write(unsigned char a, unsigned char d) reentrant
    DELAY_CLK;
 }
 
-void ad7718_read(unsigned char a, unsigned long *d) reentrant
+void ad7718_read(unsigned char a, unsigned long *d)
 {
    unsigned char i, m;
 
@@ -616,7 +632,7 @@ unsigned char status, next_chn;
       ad7718_write(AD7718_MODE, 3);                   // continuous conversion
       ad7718_write(AD7718_CONTROL, (0 << 4) | 0x0F);  // Chn. 0, +2.56V range
       ad7718_last_chn[port] = 0;
-      DELAY_US(100);
+      DELAY_US_REENTRANT(100);
    }
 
    if (cmd == MC_READ) {
@@ -691,44 +707,44 @@ unsigned char status, next_chn;
 #define ADS1256_DRATE       3
 #define ADS1256_IO          4
 
-void ads1256_cmd(unsigned char c) reentrant
+void ads1256_cmd(unsigned char c)
 {
    unsigned char i;
 
    OPT_DATAO = 0;
    OPT_ALE = 0;
-   DELAY_CLK;
+   DELAY_US(1);
 
    for (i=0 ; i<8 ; i++) {
       OPT_CLK   = 1;
       OPT_DATAO = (c & 0x80) > 0;
-      DELAY_CLK;
+      DELAY_US(1);
       OPT_CLK   = 0;
-      DELAY_CLK;
+      DELAY_US(1);
       c <<= 1;
    }
 
    OPT_ALE = 1;
    OPT_DATAO = 0;
-   DELAY_CLK;
+   DELAY_US(1);
 }
 
-void ads1256_write(unsigned char a, unsigned char d) reentrant
+void ads1256_write(unsigned char a, unsigned char d)
 {
    unsigned char i, c;
 
    OPT_DATAO = 0;
    OPT_ALE = 0;
-   DELAY_CLK;
+   DELAY_US(1);
 
    /* WREG command */
    c = ADS1256_WREG + a;
    for (i=0 ; i<8 ; i++) {
       OPT_CLK   = 1;
       OPT_DATAO = (c & 0x80) > 0;
-      DELAY_CLK;
+      DELAY_US(1);
       OPT_CLK   = 0;
-      DELAY_CLK;
+      DELAY_US(1);
       c <<= 1;
    }
 
@@ -737,9 +753,9 @@ void ads1256_write(unsigned char a, unsigned char d) reentrant
    for (i=0 ; i<8 ; i++) {
       OPT_CLK   = 1;
       OPT_DATAO = 0;
-      DELAY_CLK;
+      DELAY_US(1);
       OPT_CLK   = 0;
-      DELAY_CLK;
+      DELAY_US(1);
       c <<= 1;
    }
 
@@ -747,48 +763,48 @@ void ads1256_write(unsigned char a, unsigned char d) reentrant
    for (i=0 ; i<8 ; i++) {
       OPT_CLK   = 1;
       OPT_DATAO = (d & 0x80) > 0;
-      DELAY_CLK;
+      DELAY_US(1);
       OPT_CLK   = 0;
-      DELAY_CLK;
+      DELAY_US(1);
       d <<= 1;
    }
 
    OPT_ALE = 1;
    OPT_DATAO = 0;
-   DELAY_CLK;
+   DELAY_US(1);
 }
 
-void ads1256_read(unsigned long *d) reentrant
+void ads1256_read(unsigned long *d)
 {
    unsigned char i, c;
 
    OPT_ALE = 0;
-   DELAY_CLK;
+   DELAY_US(1);
 
    /* RDATA command */
    c = ADS1256_RDATA;
    for (i=0 ; i<8 ; i++) {
       OPT_CLK   = 1;
       OPT_DATAO = (c & 0x80) > 0;
-      DELAY_CLK;
+      DELAY_US(1);
       OPT_CLK   = 0;
-      DELAY_CLK;
+      DELAY_US(1);
       c <<= 1;
    }
 
-   DELAY_US(10); // Datasheet: 50 tau_clkin = 1/8MHz * 50
+   DELAY_US(5); // Datasheet: 50 tau_clkin = 1/8MHz * 50
 
    /* read from selected data register */
    for (i=0,*d=0 ; i<24 ; i++) {
       OPT_CLK = 1;
-      DELAY_CLK;
+      DELAY_US(1);
       *d = (*d << 1) | OPT_DATAI;
       OPT_CLK = 0; 
-      DELAY_CLK; 
+      DELAY_US(1); 
    }
 
    OPT_ALE = 1;
-   DELAY_CLK;
+   DELAY_US(1);
 }
 
 unsigned char dr_ads1256(unsigned char id, unsigned char cmd, unsigned char addr, 
@@ -818,25 +834,27 @@ unsigned long d;
       for (d = 0 ; d<100000 ; d++) {
          if (OPT_STAT == 0)
             break;
-         DELAY_US(1);
+         DELAY_US_REENTRANT(1);
       }
    }
 
    if (cmd == MC_READ) {
 
+      delay_ms(1);
+      address_port(addr, port, AM_RW_SERIAL, 0);
+
       /* read all 8 channels */
       for (chn = 0 ; chn < 8 ; chn++) {
 
-         address_port(addr, port, AM_RW_SERIAL, 0);
          ads1256_write(ADS1256_MUX, (chn << 4) | 0x0F);  // Select single ended positive input
          ads1256_cmd(ADS1256_SYNC);                      // Trigger new conversion
          ads1256_cmd(ADS1256_WAKEUP);
-   
-         /* Wait for /DRDY with timeout */
-         for (d=0 ; d<100000 ; d++) {
+
+         /* wait for /DRDY to go low after self calibration */
+         for (d = 0 ; d<100000 ; d++) {
             if (OPT_STAT == 0)
                break;
-            DELAY_US(1);
+            DELAY_US_REENTRANT(1);
          }
          if (d == 100000)
             return 0;
@@ -868,6 +886,188 @@ unsigned long d;
       
          DISABLE_INTERRUPTS;
          *((float *)pd + chn) = value;
+         ENABLE_INTERRUPTS;
+      }
+   }
+
+   return 1;
+}
+
+/*---- PT100/1000 via ADS1256 --------------------------------------*/
+
+unsigned char dr_temp(unsigned char id, unsigned char cmd, unsigned char addr, 
+                      unsigned char port, unsigned char chn, void *pd) reentrant
+{
+float value;
+unsigned long d;
+
+   if (chn); // suppress compiler warning
+
+   if (cmd == MC_INIT) {
+      address_port(addr, port, AM_RW_SERIAL, 0);
+
+      ads1256_write(ADS1256_STATUS, 0x02);  // Enable buffer
+      ads1256_write(ADS1256_ADCON,  0x01);  // Clock Out OFF, PGA=2
+
+      //ads1256_write(ADS1256_DRATE,  0x23);  // 10 SPS
+      ads1256_write(ADS1256_DRATE,  0x82);  // 100 SPS
+      //ads1256_write(ADS1256_DRATE,  0xA1);  // 1000 SPS
+      //ads1256_write(ADS1256_DRATE,  0xD0);  // 7500 SPS
+      //ads1256_write(ADS1256_DRATE,  0xF0);  // 30000 SPS
+
+      /* do self calibration */
+      ads1256_cmd(ADS1256_SELFCAL);
+
+      /* wait for /DRDY to go low after self calibration */
+      for (d = 0 ; d<100000 ; d++) {
+         if (OPT_STAT == 0)
+            break;
+         DELAY_US_REENTRANT(1);
+      }
+   }
+
+   if (cmd == MC_READ) {
+
+      /* read all 8 channels */
+      for (chn = 0 ; chn < 8 ; chn++) {
+
+         address_port(addr, port, AM_RW_SERIAL, 0);
+         if (chn == 0)
+            ads1256_write(ADS1256_MUX, 0x0F);                  // AIN0 - AINCOM input
+         else
+            ads1256_write(ADS1256_MUX, (chn << 4) | (chn-1));  // AIN(i) - AIN(i-1) differential input
+         ads1256_cmd(ADS1256_SYNC);                            // Trigger new conversion
+         ads1256_cmd(ADS1256_WAKEUP);
+   
+         /* Wait for /DRDY with timeout */
+         for (d=0 ; d<100000 ; d++) {
+            if (OPT_STAT == 0)
+               break;
+            DELAY_US_REENTRANT(1);
+         }
+         if (d == 100000)
+            return 0;
+
+         /* read 24-bit data */
+         ads1256_read(&d);
+   
+         /* convert to volts, PGA=2 */
+         value = 5*((float)d / (1l<<24));
+      
+         /* convert to Ohms (1mA excitation) */
+         if (id == 0x73)
+            value /= 0.001;
+
+         /* convert to Kelvin, coefficients obtained from table fit (www.lakeshore.com) */
+         value = 5.232935E-7 * value * value * value + 
+                 0.0009 * value * value + 
+                 2.357 * value + 28.288;
+   
+         /* convert to Celsius */
+         value -= 273.15;
+   
+         /* round result to significant digits */
+         d = (unsigned long)(value*1E4+0.5);
+         value = d/1E4;
+      
+         DISABLE_INTERRUPTS;
+         *((float *)pd + chn) = value;
+         ENABLE_INTERRUPTS;
+      }
+   }
+
+   return 1;
+}
+
+/*---- Capacitance meter via TLC555 timer IC -----------------------*/
+
+#define N_CHN 4
+
+unsigned int xdata cap_d[N_CHN];
+unsigned long xdata cap_v[N_CHN];
+
+unsigned char dr_capmeter(unsigned char id, unsigned char cmd, unsigned char addr, 
+                          unsigned char port, unsigned char chn, void *pd) reentrant
+{
+unsigned char i, j, b;
+float c;
+
+
+   if (chn); // suppress compiler warning
+
+   if (cmd == MC_READ) {
+
+      for (j=0 ; j<N_CHN ; j++)
+         cap_v[j] = 0;
+
+      SFRPAGE = TMR3_PAGE;
+
+      /* average 10 times */
+      for (i = 0 ; i < 10 ; i++) {
+   
+         /* init timer 3 */
+         TMR3L = 0;
+         TMR3H = 0;
+   
+         TMR3CF = 0;               // SYSCLK/12
+         TMR3CN = (1 << 2);        // Enable Timer 3
+   
+         for (j=0 ; j<N_CHN ; j++)
+            cap_d[j] = 0xFFFF;
+
+         /* trigger NE555 */
+         address_port(addr, port, AM_RW_SERIAL, 0); // CS0 low
+         address_port(addr, port, AM_READ_PORT, 0); // CS0 high
+   
+         /* wait until NE555 output goes low again */
+         do
+            {
+            watchdog_refresh(0);
+            read_port(addr, port, &b);
+
+            for (j=0 ; j<N_CHN ; j++)
+               if ((b & (1<<j)) == 0 && cap_d[j] == 0xFFFF)
+                 cap_d[j] = TMR3H * 256 + TMR3L;
+
+         } while ((b & 0x0F) != 0x00 && (TMR3CN & 0x80) == 0);
+   
+         /* stop timer 3 */
+         TMR3CN = 0;
+
+         /* accumulate timers */
+         for (j=0 ; j<N_CHN ; j++)
+            cap_v[j] += cap_d[j];
+      }
+   
+      for (j=0 ; j<N_CHN ; j++) {
+
+         /* check for overvlow */
+         if (cap_d[j] == 0xFFFF) {
+            c = 999.999;
+         } else {
+
+            /* time in us, clock = 98MHz/12 */
+            c = (float) cap_v[j] / i / 98 * 12;
+         
+            /* time in s */
+            c /= 1E6;
+         
+            /* convert to nF via t = 1.1 * R * C */
+            if (id == 0x70) {
+               c = c / 1.1 / 560000 * 1E9;  // 560k Ohm
+               c -= 0.078;                  // general offset 78pF
+            } else {
+               c = c / 1.1 / 5600 * 1E9;    // 5600 Ohm
+               c -= 7.8;                    // general offset 7.8nF
+            }
+         
+            /* stip off unsignificant digits */
+            c = ((long) (c * 1000 + 0.5)) / 1000.0;
+         }
+      
+
+         DISABLE_INTERRUPTS;
+         *((float *)pd + j) = c;
          ENABLE_INTERRUPTS;
       }
    }
