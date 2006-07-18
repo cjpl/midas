@@ -57,7 +57,7 @@ MSCB_INFO_VAR code vars_cin[] =
 
 MSCB_INFO_VAR code vars_temp[] = {
    { 4, UNIT_CELSIUS, 0,          0, MSCBF_FLOAT, "P%T#",    8 },
-   { 4, UNIT_AMPERE,  PRFX_MILLI, 0, MSCBF_FLOAT, "P%Excit", 0 },
+   { 4, UNIT_AMPERE,  PRFX_MILLI, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "P%Excit", 0 },
 };
 
 MSCB_INFO_VAR code vars_iout[] =
@@ -438,9 +438,10 @@ unsigned char d;
 
       read_port(addr, port, &d);
       *((unsigned char *)pd) = (d & (1 << chn)) > 0;
+      return 1;
    }
 
-   return 1;   
+   return 0;   
 }
 
 unsigned char dr_dout_byte(unsigned char id, unsigned char cmd, unsigned char addr, 
@@ -460,7 +461,7 @@ unsigned char port_dir;
    if (cmd == MC_WRITE)
       write_port(addr, port, *((unsigned char *)pd));
 
-   return 1;   
+   return 0;   
 }
 
 /*---- LTC2600 16-bit DAC ------------------------------------------*/
@@ -508,7 +509,7 @@ unsigned char i;
       OPT_ALE = 1; 
    }
 
-   return 1;
+   return 0;
 }
 
 /*---- AD7718 24-bit sigma-delta ADC -------------------------------*/
@@ -614,31 +615,39 @@ void ad7718_read(unsigned char a, unsigned long *d)
    DELAY_CLK;
 }
 
-unsigned char xdata ad7718_last_chn[8];
+unsigned char xdata ad7718_cur_chn[8];
 
 unsigned char dr_ad7718(unsigned char id, unsigned char cmd, unsigned char addr, 
                         unsigned char port, unsigned char chn, void *pd) reentrant
 {
 float value;
 unsigned long d;
-unsigned char status, next_chn;
-
-   if (chn); // suppress compiler warning
+unsigned char status;
 
    if (cmd == MC_INIT) {
       address_port(addr, port, AM_RW_SERIAL, 1);
       ad7718_write(AD7718_FILTER, 82);                // SF value for 50Hz rejection (2 Hz)
       //ad7718_write(AD7718_FILTER, 13);                // SF value for faster conversion (12 Hz)
       ad7718_write(AD7718_MODE, 3);                   // continuous conversion
-      ad7718_write(AD7718_CONTROL, (0 << 4) | 0x0F);  // Chn. 0, +2.56V range
-      ad7718_last_chn[port] = 0;
       DELAY_US_REENTRANT(100);
+
+      /* start first conversion */
+      ad7718_write(AD7718_CONTROL, (0 << 4) | 0x0F);  // Channel 0, +2.56V range
+      ad7718_cur_chn[port] = 0;
    }
 
    if (cmd == MC_READ) {
 
+      if (chn > 7)
+         return 0;
+
+      /* return if ADC busy */
       read_port(addr, port, &status);
       if ((status & 1) > 0)
+         return 0;
+
+      /* return if not current channel */
+      if (chn != ad7718_cur_chn[port])
          return 0;
 
       address_port(addr, port, AM_RW_SERIAL, 1);
@@ -647,8 +656,8 @@ unsigned char status, next_chn;
       ad7718_read(AD7718_ADCDATA, &d);
 
       /* start next conversion */
-      next_chn = (ad7718_last_chn[port] + 1) % 8;
-      ad7718_write(AD7718_CONTROL, (next_chn << 4) | 0x0F);  // next chn, +2.56V range
+      ad7718_cur_chn[port] = (ad7718_cur_chn[port] + 1) % 8;
+      ad7718_write(AD7718_CONTROL, (ad7718_cur_chn[port] << 4) | 0x0F);  // next chn, +2.56V range
 
       /* convert to volts */
       value = 2.56*((float)d / (1l<<24));
@@ -672,11 +681,106 @@ unsigned char status, next_chn;
          value = d/1E6;
       }
 
-      DISABLE_INTERRUPTS;
-      *((float *)pd + ad7718_last_chn[port]) = value;
-      ENABLE_INTERRUPTS;
+      *((float *)pd) = value;
+      return 4;
+   }
 
-      ad7718_last_chn[port] = next_chn;
+   return 0;
+}
+
+/*---- PT100/1000 via AD7718 ---------------------------------------*/
+
+static float xdata exc_current = 1; /* 1 mA */
+static float xdata temp_base_value[8];
+static unsigned char xdata temp_cur_chn[8];
+
+unsigned char dr_temp(unsigned char id, unsigned char cmd, unsigned char addr, 
+                      unsigned char port, unsigned char chn, void *pd) reentrant
+{
+float value, new_base_value;
+unsigned char status;
+unsigned long d;
+
+   if (cmd == MC_INIT) {
+      address_port(addr, port, AM_RW_SERIAL, 1);
+      ad7718_write(AD7718_FILTER, 82);                // SF value for 50Hz rejection (2 Hz)
+      //ad7718_write(AD7718_FILTER, 13);                // SF value for faster conversion (12 Hz)
+      ad7718_write(AD7718_MODE, 3);                   // continuous conversion
+      DELAY_US_REENTRANT(100);
+
+      /* start first conversion */
+      ad7718_write(AD7718_CONTROL, (0 << 4) | 0x0F);  // Channel 0, +2.56V range
+      temp_cur_chn[port] = 0;
+   }
+
+   if (cmd == MC_WRITE && chn == 8) {
+      exc_current = *((float *)pd);
+      if (exc_current < 0.01 || exc_current > 10) {
+         exc_current = 1;
+         *((float *)pd) = 1;
+      }
+   }
+
+   if (cmd == MC_READ) {
+
+      if (chn > 7)
+         return 0;
+
+      /* return if ADC busy */
+      read_port(addr, port, &status);
+      if ((status & 1) > 0)
+         return 0;
+
+      /* return if not current channel */
+      if (chn != temp_cur_chn[port])
+         return 0;
+
+      address_port(addr, port, AM_RW_SERIAL, 1);
+    
+      /* read 24-bit data */
+      ad7718_read(AD7718_ADCDATA, &d);
+
+      /* start next conversion */
+      temp_cur_chn[port] = (temp_cur_chn[port] + 1) % 8;
+      ad7718_write(AD7718_CONTROL, (temp_cur_chn[port] << 4) | 0x0F);  // next chn, +2.56V range
+
+      /* convert to volts */
+      value = 2.56*((float)d / (1l<<24));
+
+      new_base_value = value;
+
+      /* subtract base value */
+      if (chn > 0)
+         value -= temp_base_value[port];
+
+      /* remember current value as next base value */
+      temp_base_value[port] = new_base_value;
+
+      /* convert to Ohms (1mA excitation) */
+      value /= (exc_current*0.001);
+
+      /* convert PT1000 to PT100 ??? */
+      if (id == 0x73)
+         value /= 10;
+
+      /* convert to Kelvin, coefficients obtained from table fit (www.lakeshore.com) */
+      value = 5.232935E-7 * value * value * value + 
+              0.0009 * value * value + 
+              2.357 * value + 28.288;
+
+      /* convert to Celsius */
+      value -= 273.15;
+
+      /* round result to significant digits */
+      value = ((long)(value*1E1+0.5))/1E1;
+   
+      if (value > 999)
+         value = 999.9;
+      if (value < -200)
+         value = -999.9;
+
+      *((float *)pd) = value;
+      return 4;
    }
 
    return 1;
@@ -813,8 +917,6 @@ unsigned char dr_ads1256(unsigned char id, unsigned char cmd, unsigned char addr
 float value;
 unsigned long d;
 
-   if (chn); // suppress compiler warning
-
    if (cmd == MC_INIT) {
       address_port(addr, port, AM_RW_SERIAL, 0);
 
@@ -840,83 +942,14 @@ unsigned long d;
 
    if (cmd == MC_READ) {
 
-      delay_ms(1);
+      if (chn > 7)
+         return 0;
+
       address_port(addr, port, AM_RW_SERIAL, 0);
 
-      /* read all 8 channels */
-      for (chn = 0 ; chn < 8 ; chn++) {
-
-         ads1256_write(ADS1256_MUX, (chn << 4) | 0x0F);  // Select single ended positive input
-         ads1256_cmd(ADS1256_SYNC);                      // Trigger new conversion
-         ads1256_cmd(ADS1256_WAKEUP);
-
-         /* wait for /DRDY to go low after self calibration */
-         for (d = 0 ; d<100000 ; d++) {
-            if (OPT_STAT == 0)
-               break;
-            DELAY_US_REENTRANT(1);
-         }
-         if (d == 100000)
-            return 0;
-
-         /* read 24-bit data */
-         ads1256_read(&d);
-   
-         /* convert to volts, PGA=2 */
-         value = 5*((float)d / (1l<<24));
-      
-         /* apply range */
-         if (id == 0x64)
-            value *= 1;
-         else if (id == 0x65)
-            value = (value/2.5)*20.0 - 10;
-         else if (id == 0x66)
-            value *= 1;
-         else if (id == 0x67)
-            value *= 10;
-   
-         /* round result to significant digits */
-         if (id == 0x65|| id == 0x67) {
-            d = (unsigned long)(value*1E4+0.5);
-            value = d/1E4;
-         } else {
-            d = (unsigned long)(value*1E5+0.5);
-            value = d/1E5;
-         }
-      
-         DISABLE_INTERRUPTS;
-         *((float *)pd + chn) = value;
-         ENABLE_INTERRUPTS;
-      }
-   }
-
-   return 1;
-}
-
-/*---- PT100/1000 via ADS1256 --------------------------------------*/
-
-unsigned char dr_temp(unsigned char id, unsigned char cmd, unsigned char addr, 
-                      unsigned char port, unsigned char chn, void *pd) reentrant
-{
-float value;
-unsigned long d;
-
-   if (chn); // suppress compiler warning
-
-   if (cmd == MC_INIT) {
-      address_port(addr, port, AM_RW_SERIAL, 0);
-
-      ads1256_write(ADS1256_STATUS, 0x02);  // Enable buffer
-      ads1256_write(ADS1256_ADCON,  0x01);  // Clock Out OFF, PGA=2
-
-      //ads1256_write(ADS1256_DRATE,  0x23);  // 10 SPS
-      ads1256_write(ADS1256_DRATE,  0x82);  // 100 SPS
-      //ads1256_write(ADS1256_DRATE,  0xA1);  // 1000 SPS
-      //ads1256_write(ADS1256_DRATE,  0xD0);  // 7500 SPS
-      //ads1256_write(ADS1256_DRATE,  0xF0);  // 30000 SPS
-
-      /* do self calibration */
-      ads1256_cmd(ADS1256_SELFCAL);
+      ads1256_write(ADS1256_MUX, (chn << 4) | 0x0F);  // Select single ended positive input
+      ads1256_cmd(ADS1256_SYNC);                      // Trigger new conversion
+      ads1256_cmd(ADS1256_WAKEUP);
 
       /* wait for /DRDY to go low after self calibration */
       for (d = 0 ; d<100000 ; d++) {
@@ -924,56 +957,40 @@ unsigned long d;
             break;
          DELAY_US_REENTRANT(1);
       }
-   }
+      if (d == 100000)
+         return 0;
 
-   if (cmd == MC_READ) {
+      /* read 24-bit data */
+      ads1256_read(&d);
 
-      /* read all 8 channels */
-      for (chn = 0 ; chn < 8 ; chn++) {
-
-         address_port(addr, port, AM_RW_SERIAL, 0);
-         if (chn == 0)
-            ads1256_write(ADS1256_MUX, 0x0F);                  // AIN0 - AINCOM input
-         else
-            ads1256_write(ADS1256_MUX, (chn << 4) | (chn-1));  // AIN(i) - AIN(i-1) differential input
-         ads1256_cmd(ADS1256_SYNC);                            // Trigger new conversion
-         ads1256_cmd(ADS1256_WAKEUP);
-   
-         /* Wait for /DRDY with timeout */
-         for (d=0 ; d<100000 ; d++) {
-            if (OPT_STAT == 0)
-               break;
-            DELAY_US_REENTRANT(1);
-         }
-         if (d == 100000)
-            return 0;
-
-         /* read 24-bit data */
-         ads1256_read(&d);
-   
-         /* convert to volts, PGA=2 */
+      if (id == 0x64)
+         /* convert to volts, PGA=2 (+-2.5V range) */
          value = 5*((float)d / (1l<<24));
-      
-         /* convert to Ohms (1mA excitation) */
-         if (id == 0x73)
-            value /= 0.001;
+      else
+         /* convert to volts, PGA=2 (+-10V range) */
+         value = 20*((float)d / (1l<<24));
+   
+      /* apply range */
+      if (id == 0x64)
+         value *= 1;
+      else if (id == 0x65)
+         value = (value/2.5)*20.0 - 10;
+      else if (id == 0x66)
+         value *= 1;
+      else if (id == 0x67)
+         value *= 10;
 
-         /* convert to Kelvin, coefficients obtained from table fit (www.lakeshore.com) */
-         value = 5.232935E-7 * value * value * value + 
-                 0.0009 * value * value + 
-                 2.357 * value + 28.288;
-   
-         /* convert to Celsius */
-         value -= 273.15;
-   
-         /* round result to significant digits */
-         d = (unsigned long)(value*1E4+0.5);
+      /* round result to significant digits */
+      if (id == 0x65|| id == 0x67) {
+         d = (long)(value*1E4+0.5);
          value = d/1E4;
-      
-         DISABLE_INTERRUPTS;
-         *((float *)pd + chn) = value;
-         ENABLE_INTERRUPTS;
+      } else {
+         d = (long)(value*1E5+0.5);
+         value = d/1E5;
       }
+   
+      *((float *)pd) = value;
+      return 4;
    }
 
    return 1;
@@ -981,29 +998,23 @@ unsigned long d;
 
 /*---- Capacitance meter via TLC555 timer IC -----------------------*/
 
-#define N_CHN 4
-
-unsigned int xdata cap_d[N_CHN];
-unsigned long xdata cap_v[N_CHN];
-
 unsigned char dr_capmeter(unsigned char id, unsigned char cmd, unsigned char addr, 
                           unsigned char port, unsigned char chn, void *pd) reentrant
 {
-unsigned char i, j, b;
+unsigned char i, b, m;
+unsigned long v;
 float c;
-
-
-   if (chn); // suppress compiler warning
 
    if (cmd == MC_READ) {
 
-      for (j=0 ; j<N_CHN ; j++)
-         cap_v[j] = 0;
+      if (chn > 3)
+         return 0;
+
+      m = (1 << chn);
 
       SFRPAGE = TMR3_PAGE;
-
       /* average 10 times */
-      for (i = 0 ; i < 10 ; i++) {
+      for (i = v = 0 ; i < 10 ; i++) {
    
          /* init timer 3 */
          TMR3L = 0;
@@ -1012,9 +1023,6 @@ float c;
          TMR3CF = 0;               // SYSCLK/12
          TMR3CN = (1 << 2);        // Enable Timer 3
    
-         for (j=0 ; j<N_CHN ; j++)
-            cap_d[j] = 0xFFFF;
-
          /* trigger NE555 */
          address_port(addr, port, AM_RW_SERIAL, 0); // CS0 low
          address_port(addr, port, AM_READ_PORT, 0); // CS0 high
@@ -1024,52 +1032,44 @@ float c;
             {
             watchdog_refresh(0);
             read_port(addr, port, &b);
-
-            for (j=0 ; j<N_CHN ; j++)
-               if ((b & (1<<j)) == 0 && cap_d[j] == 0xFFFF)
-                 cap_d[j] = TMR3H * 256 + TMR3L;
-
-         } while ((b & 0x0F) != 0x00 && (TMR3CN & 0x80) == 0);
+         } while ((b & m) != 0x00 && (TMR3CN & 0x80) == 0);
    
          /* stop timer 3 */
          TMR3CN = 0;
 
          /* accumulate timers */
-         for (j=0 ; j<N_CHN ; j++)
-            cap_v[j] += cap_d[j];
+         v += TMR3H * 256 + TMR3L;
       }
    
-      for (j=0 ; j<N_CHN ; j++) {
+      /* check for overvlow */
+      if ((TMR3CN & 0x80) == 1) {
+         if (id == 0x70)
+            c = 9.999999;
+         else
+            c = 999.9999;
+      } else {
 
-         /* check for overvlow */
-         if (cap_d[j] == 0xFFFF) {
-            c = 999.999;
+         /* time in us, clock = 98MHz/12 */
+         c = (float) v / i / 98 * 12;
+      
+         /* time in s */
+         c /= 1E6;
+      
+         /* convert to nF via t = 1.1 * R * C */
+         if (id == 0x70) {
+            c = c / 1.1 / 560000 * 1E9;  // 560k Ohm
+            c -= 0.078;                  // general offset 78pF
          } else {
-
-            /* time in us, clock = 98MHz/12 */
-            c = (float) cap_v[j] / i / 98 * 12;
-         
-            /* time in s */
-            c /= 1E6;
-         
-            /* convert to nF via t = 1.1 * R * C */
-            if (id == 0x70) {
-               c = c / 1.1 / 560000 * 1E9;  // 560k Ohm
-               c -= 0.078;                  // general offset 78pF
-            } else {
-               c = c / 1.1 / 5600 * 1E9;    // 5600 Ohm
-               c -= 7.8;                    // general offset 7.8nF
-            }
-         
-            /* stip off unsignificant digits */
-            c = ((long) (c * 1000 + 0.5)) / 1000.0;
+            c = c / 1.1 / 5600 * 1E9;    // 5600 Ohm
+            c -= 7.8;                    // general offset 7.8nF
          }
       
-
-         DISABLE_INTERRUPTS;
-         *((float *)pd + j) = c;
-         ENABLE_INTERRUPTS;
+         /* stip off unsignificant digits */
+         c = ((long) (c * 1000 + 0.5)) / 1000.0;
       }
+      
+      *((float *)pd) = c;
+      return 4;
    }
 
    return 1;

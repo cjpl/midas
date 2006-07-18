@@ -208,6 +208,7 @@ char xdata * pvardata;
          }
 
          if (scs_2000_module[i].id == id) {
+            module_nvars[port] = 0;
             for (k=0 ; k<scs_2000_module[i].n_var ; k++) {
                n_var_mod = (unsigned char)scs_2000_module[i].var[k].ud;
                
@@ -222,22 +223,21 @@ char xdata * pvardata;
                      variables[n_var].ud = pvardata;
                      pvardata += variables[n_var].width;
                      n_var++;
+                     module_nvars[port]++;
                   }
                } else {
                   /* copy over variable definition */
-                  for (j=0 ; scs_2000_module[i].var[j].width > 0 ; j++) {
-                     memcpy(variables+n_var, &scs_2000_module[i].var[j], sizeof(MSCB_INFO_VAR));
-                     if (strchr(variables[n_var].name, '%'))
-                        *strchr(variables[n_var].name, '%') = '0'+port;
-                     variables[n_var].ud = pvardata;
-                     pvardata += variables[n_var].width;
-                     n_var++;
-                  }
+                  memcpy(variables+n_var, &scs_2000_module[i].var[k], sizeof(MSCB_INFO_VAR));
+                  if (strchr(variables[n_var].name, '%'))
+                     *strchr(variables[n_var].name, '%') = '0'+port;
+                  variables[n_var].ud = pvardata;
+                  pvardata += variables[n_var].width;
+                  n_var++;
+                  module_nvars[port]++;
                }
             }
 
             module_id[port] = id;
-            module_nvars[port] = j;
             module_index[port] = i;
             n_mod++;
          
@@ -398,7 +398,7 @@ unsigned long xdata last_b2 = 0, last_b3 = 0;
 unsigned char application_display(bit init)
 {
 static bit next, prev;
-static unsigned char xdata index=0, last_index=1;
+static unsigned char xdata index=0, last_index=1, port;
 unsigned char xdata i, j, n, col;
 
    if (init)
@@ -473,7 +473,75 @@ unsigned char xdata i, j, n, col;
 
    /* erase EEPROM on release of button 1 (hidden functionality) */
    if (!init && !b1 && b1_old) {
-      write_eeprom(0, index, 0xFF);
+
+      for (port=0,i=0 ; port<8 ; port++)
+         if (module_present(0, port))
+            i++;
+
+      for (port=0 ; port<8 ; port++)
+         if (module_present(0, port))
+            break;
+
+      if (i == 0)
+         return 0;
+      
+      lcd_clear();
+
+      lcd_goto(0, 3);
+      if (i == 0)
+         printf("ESC ERASE           ");
+      else
+         printf("ESC ERASE  PREV NEXT");
+
+      while (1) {
+
+         lcd_goto(0, 0);
+         printf("    Erase module    ");
+         lcd_goto(0, 1);
+         printf("    in port %bd ?   ", port);
+
+         do {
+            watchdog_refresh(0);
+            b0 = button(0);
+            b1 = button(1);
+            b2 = button(2);
+            b3 = button(3);
+         } while (!b0 && !b1 && !b2 && !b3);
+
+         if (b0) {
+            while (b0) b0 = button(0);
+            lcd_clear();
+            last_index = 255; // force re-display
+            b0_old = b1_old = 0;
+            return 0;
+         }
+         
+         if (b1) {
+            write_eeprom(0, port, 0xFF);
+            while (b1) b1 = button(1);
+            SFRPAGE = LEGACY_PAGE;
+            RSTSRC  = 0x10;         // force software reset
+            break;
+         }
+
+         if (b2) {
+            port = (port+7) % 8;;
+
+            while (!module_present(0, port))
+               port = (port+7) % 8;
+
+            while (b2) b2 = button(2);
+         }
+
+         if (b3) {
+            port = (port+1) % 8;;
+
+            while (!module_present(0, port))
+               port = (port+1) % 8;
+
+            while (b3) b3 = button(3);
+         }
+      }
    }
 
    b0_old = b0;
@@ -490,7 +558,8 @@ static unsigned char idata port_index = 0, first_var_index = 0;
 
 void user_loop(void)
 {
-unsigned char xdata index, i, j, port;
+unsigned char xdata index, i, j, n, port;
+float xdata value;
 
    /* check if variabled needs to be written */
    for (index=0 ; index<64 ; index++) {
@@ -518,8 +587,16 @@ unsigned char xdata index, i, j, port;
    if (module_index[port_index] != 0xFF) {
 
       i = module_index[port_index];
-      scs_2000_module[i].driver(scs_2000_module[i].id, MC_READ, 
-                                0, port_index, 0, variables[first_var_index].ud);
+      for (j=0 ; j<module_nvars[port_index] ; j++) {
+         n = scs_2000_module[i].driver(scs_2000_module[i].id, MC_READ, 
+                                       0, port_index, j, &value);
+
+         if (n>0) {
+            DISABLE_INTERRUPTS;
+            memcpy(variables[first_var_index+j].ud, &value, n);
+            ENABLE_INTERRUPTS;
+         }
+      }
    }
 
    /* go to next port */
