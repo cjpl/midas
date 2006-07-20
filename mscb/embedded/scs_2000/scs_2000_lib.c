@@ -35,6 +35,7 @@ unsigned char dr_dout_bits(unsigned char id, unsigned char cmd, unsigned char ad
 unsigned char dr_dout_byte(unsigned char id, unsigned char cmd, unsigned char addr, unsigned char port, unsigned char chn, void *pd) reentrant;
 unsigned char dr_din_bits(unsigned char id, unsigned char cmd, unsigned char addr, unsigned char port, unsigned char chn, void *pd) reentrant;
 unsigned char dr_ltc2600(unsigned char id, unsigned char cmd, unsigned char addr, unsigned char port, unsigned char chn, void *pd) reentrant;
+unsigned char dr_ad5764(unsigned char id, unsigned char cmd, unsigned char addr, unsigned char port, unsigned char chn, void *pd) reentrant;
 unsigned char dr_ad7718(unsigned char id, unsigned char cmd, unsigned char addr, unsigned char port, unsigned char chn, void *pd) reentrant;
 unsigned char dr_ads1256(unsigned char id, unsigned char cmd, unsigned char addr, unsigned char port, unsigned char chn, void *pd) reentrant;
 unsigned char dr_capmeter(unsigned char id, unsigned char cmd, unsigned char addr, unsigned char port, unsigned char chn, void *pd) reentrant;
@@ -107,7 +108,7 @@ SCS_2000_MODULE code scs_2000_module[] = {
 
   /* 0x80-0x9F analog out */
   { 0x80, "UOut 0-2.5V",     vars_uout,   1, dr_ltc2600     },
-  { 0x81, "UOut +-10V",      vars_uout,   1, dr_ltc2600     },
+  { 0x81, "UOut +-10V",      vars_uout,   1, dr_ad5764      },
   { 0x82, "IOut 0-2.5mA",    vars_iout,   1, dr_ltc2600     },
   { 0x83, "IOut 0-25mA",     vars_iout,   1, dr_ltc2600     },
 
@@ -506,6 +507,112 @@ unsigned char i;
       }
    
       /* remove CS to update outputs */
+      OPT_ALE = 1; 
+   }
+
+   return 0;
+}
+
+/*---- AD5764 16-bit DAC -------------------------------------------*/
+
+unsigned char dr_ad5764(unsigned char id, unsigned char cmd, unsigned char addr, 
+                        unsigned char port, unsigned char chn, void *pd) reentrant
+{
+float value;
+unsigned short d;
+unsigned char i;
+
+   if (cmd == MC_WRITE) {
+
+      value = *((float *)pd);
+   
+      /* convert value to DAC counts */
+      if (id == 0x02)
+         d = value/100 * 65535;  // 0-100%
+      else if (id == 0x82)
+         d = value/2.5 * 65535;  // 0-2.5mA
+      else if (id == 0x83)
+         d = value/25.0 * 65535; // 0-25mA
+   
+      address_port(addr, port, AM_RW_SERIAL, 0);
+    
+      /* R/!W = 0 */
+      OPT_DATAO = 0;
+      CLOCK;
+   
+      /* DB22 = 0 */
+      OPT_DATAO = 0;
+      CLOCK;
+
+      /*---- first DAC ----*/
+
+      if (chn > 3) {
+         /* DAC get NOP */
+         for (i=0 ; i<22 ; i++)
+            CLOCK;
+      } else {
+         /* REG2 = 0 */
+         OPT_DATAO = 0;
+         CLOCK;
+         /* REG1 = 1 */
+         OPT_DATAO = 1;
+         CLOCK;
+         /* REG0 = 0 */
+         OPT_DATAO = 0;
+         CLOCK;
+
+         /* A2 = 0 */
+         OPT_DATAO = 0;
+         CLOCK;
+         /* A1 */
+         OPT_DATAO = (chn & 0x02) > 0;
+         CLOCK;
+         /* A0 */
+         OPT_DATAO = (chn & 0x01) > 0;
+         CLOCK;
+      
+         for (i=0 ; i<16 ; i++) {
+            OPT_DATAO = (d & 0x8000) > 0;
+            CLOCK;
+            d <<= 1;
+         }
+      }
+   
+      /*---- second DAC ----*/
+
+      if (chn < 4) {
+         /* DAC get NOP */
+         for (i=0 ; i<22 ; i++)
+            CLOCK;
+      } else {
+         /* REG2 = 0 */
+         OPT_DATAO = 0;
+         CLOCK;
+         /* REG1 = 1 */
+         OPT_DATAO = 1;
+         CLOCK;
+         /* REG0 = 0 */
+         OPT_DATAO = 0;
+         CLOCK;
+
+         /* A2 = 0 */
+         OPT_DATAO = 0;
+         CLOCK;
+         /* A1 */
+         OPT_DATAO = (chn & 0x02) > 0;
+         CLOCK;
+         /* A0 */
+         OPT_DATAO = (chn & 0x01) > 0;
+         CLOCK;
+      
+         for (i=0 ; i<16 ; i++) {
+            OPT_DATAO = (d & 0x8000) > 0;
+            CLOCK;
+            d <<= 1;
+         }
+      }
+
+      /* remove CS to update both DAC outputs */
       OPT_ALE = 1; 
    }
 
@@ -963,12 +1070,8 @@ unsigned long d;
       /* read 24-bit data */
       ads1256_read(&d);
 
-      if (id == 0x64)
-         /* convert to volts, PGA=2 (+-2.5V range) */
-         value = 5*((float)d / (1l<<24));
-      else
-         /* convert to volts, PGA=2 (+-10V range) */
-         value = 20*((float)d / (1l<<24));
+      /* convert to volts, PGA=2 (+-2.5V range) */
+      value = 5*((float)d / (1l<<24));
    
       /* apply range */
       if (id == 0x64)
@@ -982,11 +1085,9 @@ unsigned long d;
 
       /* round result to significant digits */
       if (id == 0x65|| id == 0x67) {
-         d = (long)(value*1E4+0.5);
-         value = d/1E4;
+         value = ((long)(value*1E4+0.5))/1E4;
       } else {
-         d = (long)(value*1E5+0.5);
-         value = d/1E5;
+         value = ((long)(value*1E5+0.5))/1E5;
       }
    
       *((float *)pd) = value;
