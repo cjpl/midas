@@ -31,16 +31,6 @@ sbit OPT_SPARE2 = P3 ^ 7;
 
 /*---- List of modules ---------------------------------------------*/
 
-unsigned char dr_dout_bits(unsigned char id, unsigned char cmd, unsigned char addr, unsigned char port, unsigned char chn, void *pd) reentrant;
-unsigned char dr_dout_byte(unsigned char id, unsigned char cmd, unsigned char addr, unsigned char port, unsigned char chn, void *pd) reentrant;
-unsigned char dr_din_bits(unsigned char id, unsigned char cmd, unsigned char addr, unsigned char port, unsigned char chn, void *pd) reentrant;
-unsigned char dr_ltc2600(unsigned char id, unsigned char cmd, unsigned char addr, unsigned char port, unsigned char chn, void *pd) reentrant;
-unsigned char dr_ad5764(unsigned char id, unsigned char cmd, unsigned char addr, unsigned char port, unsigned char chn, void *pd) reentrant;
-unsigned char dr_ad7718(unsigned char id, unsigned char cmd, unsigned char addr, unsigned char port, unsigned char chn, void *pd) reentrant;
-unsigned char dr_ads1256(unsigned char id, unsigned char cmd, unsigned char addr, unsigned char port, unsigned char chn, void *pd) reentrant;
-unsigned char dr_capmeter(unsigned char id, unsigned char cmd, unsigned char addr, unsigned char port, unsigned char chn, void *pd) reentrant;
-unsigned char dr_temp(unsigned char id, unsigned char cmd, unsigned char addr, unsigned char port, unsigned char chn, void *pd) reentrant;
-
 MSCB_INFO_VAR code vars_bout[] =
    { 1, UNIT_BYTE,    0,          0,           0, "P%Out",   1, 0, 255, 1   };
 
@@ -85,7 +75,7 @@ SCS_2000_MODULE code scs_2000_module[] = {
   { 0x20, "Din 5V",          vars_din,    1, dr_din_bits    },
 
   /* 0x40-0x5F digital out */
-  { 0x40, "Dout 5V",         vars_dout,   1, dr_dout_bits   },
+  { 0x40, "Dout 5V/24V",     vars_dout,   1, dr_dout_bits   },
   { 0x41, "Relais",          vars_relais, 1, dr_dout_bits   },
   { 0x42, "OptOut",          vars_optout, 1, dr_dout_bits   },
 
@@ -320,6 +310,18 @@ unsigned short d;
    *pd = (d >> 8);
 }
 
+/* verify that certain module is plugged into specific port */
+unsigned char verify_module(unsigned char addr, unsigned char port_no, unsigned char id) reentrant
+{
+unsigned char real_id;
+
+   if (!module_present(addr, port_no))
+      return 0;
+
+   read_eeprom(addr, port_no, &real_id);
+   return real_id == id;
+}
+
 /* write 8 bits to eeprom on specific port */
 void write_eeprom(unsigned char addr, unsigned char port_no, unsigned char d) reentrant
 {
@@ -522,17 +524,14 @@ float value;
 unsigned short d;
 unsigned char i;
 
+   if (id);
+
    if (cmd == MC_WRITE) {
 
       value = *((float *)pd);
    
       /* convert value to DAC counts */
-      if (id == 0x02)
-         d = value/100 * 65535;  // 0-100%
-      else if (id == 0x82)
-         d = value/2.5 * 65535;  // 0-2.5mA
-      else if (id == 0x83)
-         d = value/25.0 * 65535; // 0-25mA
+      d = (value+10)/20 * 65535 + 0.5;  // +-10V
    
       address_port(addr, port, AM_RW_SERIAL, 0);
     
@@ -546,7 +545,7 @@ unsigned char i;
 
       /*---- first DAC ----*/
 
-      if (chn > 3) {
+      if (chn < 4) {
          /* DAC get NOP */
          for (i=0 ; i<22 ; i++)
             CLOCK;
@@ -580,7 +579,15 @@ unsigned char i;
    
       /*---- second DAC ----*/
 
-      if (chn < 4) {
+      /* R/!W = 0 */
+      OPT_DATAO = 0;
+      CLOCK;
+   
+      /* DB22 = 0 */
+      OPT_DATAO = 0;
+      CLOCK;
+
+      if (chn > 3) {
          /* DAC get NOP */
          for (i=0 ; i<22 ; i++)
             CLOCK;
@@ -631,7 +638,7 @@ unsigned char i;
 #define AD7718_ADCGAIN    6
 #define AD7718_IOCONTROL  7
 
-void ad7718_write(unsigned char a, unsigned char d)
+void ad7718_write(unsigned char a, unsigned char d) reentrant
 {
    unsigned char i, m;
 
@@ -678,7 +685,7 @@ void ad7718_write(unsigned char a, unsigned char d)
    DELAY_CLK;
 }
 
-void ad7718_read(unsigned char a, unsigned long *d)
+void ad7718_read(unsigned char a, unsigned long *d) reentrant
 {
    unsigned char i, m;
 
@@ -918,7 +925,7 @@ unsigned long d;
 #define ADS1256_DRATE       3
 #define ADS1256_IO          4
 
-void ads1256_cmd(unsigned char c)
+void ads1256_cmd(unsigned char c) reentrant
 {
    unsigned char i;
 
@@ -940,7 +947,7 @@ void ads1256_cmd(unsigned char c)
    DELAY_US(1);
 }
 
-void ads1256_write(unsigned char a, unsigned char d)
+void ads1256_write(unsigned char a, unsigned char d) reentrant
 {
    unsigned char i, c;
 
@@ -985,7 +992,7 @@ void ads1256_write(unsigned char a, unsigned char d)
    DELAY_US(1);
 }
 
-void ads1256_read(unsigned long *d)
+void ads1256_read(unsigned long *d) reentrant
 {
    unsigned char i, c;
 
