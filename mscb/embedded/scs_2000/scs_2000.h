@@ -40,5 +40,18 @@ void read_port(unsigned char addr, unsigned char port_no, unsigned char *pd) ree
 void read_eeprom(unsigned char addr, unsigned char port_no, unsigned char *pd) reentrant;
 void write_eeprom(unsigned char addr, unsigned char port_no, unsigned char d) reentrant;
 unsigned char module_present(unsigned char addr, unsigned char port_no) reentrant;
+unsigned char verify_module(unsigned char addr, unsigned char port_no, unsigned char id) reentrant;
 unsigned char power_mgmt(unsigned char addr, unsigned char reset) reentrant;
+
+/*---- Drivers -----------------------------------------------------*/
+
+unsigned char dr_dout_bits(unsigned char id, unsigned char cmd, unsigned char addr, unsigned char port, unsigned char chn, void *pd) reentrant;
+unsigned char dr_dout_byte(unsigned char id, unsigned char cmd, unsigned char addr, unsigned char port, unsigned char chn, void *pd) reentrant;
+unsigned char dr_din_bits(unsigned char id, unsigned char cmd, unsigned char addr, unsigned char port, unsigned char chn, void *pd) reentrant;
+unsigned char dr_ltc2600(unsigned char id, unsigned char cmd, unsigned char addr, unsigned char port, unsigned char chn, void *pd) reentrant;
+unsigned char dr_ad5764(unsigned char id, unsigned char cmd, unsigned char addr, unsigned char port, unsigned char chn, void *pd) reentrant;
+unsigned char dr_ad7718(unsigned char id, unsigned char cmd, unsigned char addr, unsigned char port, unsigned char chn, void *pd) reentrant;
+unsigned char dr_ads1256(unsigned char id, unsigned char cmd, unsigned char addr, unsigned char port, unsigned char chn, void *pd) reentrant;
+unsigned char dr_capmeter(unsigned char id, unsigned char cmd, unsigned char addr, unsigned char port, unsigned char chn, void *pd) reentrant;
+unsigned char dr_temp(unsigned char id, unsigned char cmd, unsigned char addr, unsigned char port, unsigned char chn, void *pd) reentrant;
 
