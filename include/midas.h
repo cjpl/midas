@@ -820,7 +820,7 @@ typedef struct {
    INT max_client_index;              /**< index of last client       */
    INT size;                          /**< size of data area in bytes */
    INT read_pointer;                  /**< read pointer               */
-   INT write_pointer;                 /**< read pointer               */
+   INT write_pointer;                 /**< write pointer              */
    INT num_in_events;                 /**< no of received events      */
    INT num_out_events;                /**< no of distributed events   */
 
