@@ -225,7 +225,7 @@ unsigned char favicon_ico[] = {
 
 /*------------------------------------------------------------------*/
 
-void show_hist_page(char *path, char *buffer, int *buffer_size, int refresh);
+void show_hist_page(char *path, int path_size, char *buffer, int *buffer_size, int refresh);
 int vaxis(gdImagePtr im, gdFont * font, int col, int gcol,
           int x1, int y1, int width,
           int minor, int major, int text, int label, int grid, double ymin, double ymax, BOOL logaxis);
@@ -238,10 +238,10 @@ void haxis(gdImagePtr im, gdFont * font, int col, int gcol,
 void rsputs(const char *str)
 {
    if (strlen_retbuf + strlen(str) > sizeof(return_buffer)) {
-      strcpy(return_buffer, "<H1>Error: return buffer too small</H1>");
+      strcpy(return_buffer, "<H1>Error: return buffer too small</H1>"); // may overflow KO 26-Jul-2006
       strlen_retbuf = strlen(return_buffer);
    } else {
-      strcpy(return_buffer + strlen_retbuf, str);
+      strcpy(return_buffer + strlen_retbuf, str); // safe KO 26-Jul-2006
       strlen_retbuf += strlen(str);
    }
 }
@@ -254,7 +254,7 @@ void rsputs2(const char *str)
    char *p, link[256];
 
    if (strlen_retbuf + strlen(str) > sizeof(return_buffer)) {
-      strcpy(return_buffer, "<H1>Error: return buffer too small</H1>");
+      strlcpy(return_buffer, "<H1>Error: return buffer too small</H1>", sizeof(return_buffer));
       strlen_retbuf = strlen(return_buffer);
    } else {
       j = strlen_retbuf;
@@ -271,11 +271,11 @@ void rsputs2(const char *str)
          } else
             switch (str[i]) {
             case '<':
-               strcat(return_buffer, "&lt;");
+               strlcat(return_buffer, "&lt;", sizeof(return_buffer));
                j += 4;
                break;
             case '>':
-               strcat(return_buffer, "&gt;");
+               strlcat(return_buffer, "&gt;", sizeof(return_buffer));
                j += 4;
                break;
             default:
@@ -300,9 +300,9 @@ void rsprintf(const char *format, ...)
    va_end(argptr);
 
    if (strlen_retbuf + strlen(str) > sizeof(return_buffer))
-      strcpy(return_buffer, "<H1>Error: return buffer too small</H1>");
+      strcpy(return_buffer, "<H1>Error: return buffer too small</H1>"); // safe KO 26-Jul-2006
    else
-      strcpy(return_buffer + strlen_retbuf, str);
+      strcpy(return_buffer + strlen_retbuf, str); // safe KO 26-Jul-2006
 
    strlen_retbuf += strlen(str);
 }
@@ -336,10 +336,10 @@ void setparam(char *param, char *value)
          break;
 
    if (i < MAX_PARAM) {
-      strcpy(_param[i], param);
+      strlcpy(_param[i], param, PARAM_LENGTH);
 
       if (strlen(value) >= VALUE_SIZE)
-         printf("Error: parameter value too big\n");
+         printf("Error: parameter \"%s\" value too big: %d\n", param, strlen(value));
 
       strlcpy(_value[i], value, VALUE_SIZE);
       _value[i][VALUE_SIZE - 1] = 0;
@@ -429,7 +429,7 @@ void urlDecode(char *p)
    *pD = '\0';
 }
 
-void urlEncode(char *ps)
+void urlEncode(char *ps, int ps_size)
 /********************************************************************\
    Encode the given string in-place by adding %XX escapes
 \********************************************************************/
@@ -448,7 +448,8 @@ void urlEncode(char *ps)
       }
    }
    *pd = '\0';
-   strcpy(ps, str);
+   assert(pd - str < sizeof(str));
+   strlcpy(ps, str, ps_size);
 }
 
 /*------------------------------------------------------------------*/
@@ -457,7 +458,7 @@ char message_buffer[256] = "";
 
 INT print_message(const char *message)
 {
-   strcpy(message_buffer, message);
+   strlcpy(message_buffer, message, sizeof(message_buffer));
    return SUCCESS;
 }
 
@@ -468,11 +469,11 @@ void receive_message(HNDLE hBuf, HNDLE id, EVENT_HEADER * pheader, void *message
 
    /* prepare time */
    time(&tm);
-   strcpy(str, ctime(&tm));
+   strcpy(str, ctime(&tm)); // safe KO 26-Jul-2006
    str[19] = 0;
 
    /* print message text which comes after event header */
-   strcpy(line, str + 11);
+   strlcpy(line, str + 11, sizeof(line));
    strlcat(line, (char *) message, sizeof(line));
    print_message(line);
 }
@@ -677,9 +678,9 @@ INT search_callback(HNDLE hDB, HNDLE hKey, KEY * key, INT level, void *info)
 
    if (strstr(str1, str2) != NULL) {
       db_get_path(hDB, hKey, str1, MAX_ODB_PATH);
-      strcpy(path, str1 + 1);   /* strip leading '/' */
-      strcpy(str1, path);
-      urlEncode(str1);
+      strlcpy(path, str1 + 1, sizeof(path));   /* strip leading '/' */
+      strlcpy(str1, path, sizeof(str1));
+      urlEncode(str1, sizeof(str1));
 
       if (key->type == TID_KEY || key->type == TID_LINK) {
          /* for keys, don't display data value */
@@ -701,7 +702,7 @@ INT search_callback(HNDLE hDB, HNDLE hKey, KEY * key, INT level, void *info)
             size = sizeof(data);
             status = db_get_data(hDB, hKey, data, &size, key->type);
             if (status == DB_NO_ACCESS)
-               strcpy(data_str, "<no read access>");
+               strcpy(data_str, "<no read access>"); // safe KO 26-Jul-2006
             else
                db_sprintf(data_str, data, key->item_size, 0, key->type);
 
@@ -894,9 +895,9 @@ void exec_script(HNDLE hkey)
             db_sprintf(str, data, key.item_size, 0, key.type);
 
             if (i > 0)
-               strcat(command, " ");
+               strlcat(command, " ", sizeof(command));
 
-            strcat(command, str);
+            strlcat(command, str, sizeof(command));
          }
       }
 
@@ -1096,12 +1097,12 @@ void show_status_page(int refresh, char *cookie_wpwd)
                size = sizeof(alarm_class);
                db_get_value(hDB, hsubkey, "Alarm Class", alarm_class, &size, TID_STRING, TRUE);
 
-               strcpy(bgcol, "red");
+               strcpy(bgcol, "red"); // safe KO 26-Jul-2006
                sprintf(str, "/Alarms/Classes/%s/Display BGColor", alarm_class);
                size = sizeof(bgcol);
                db_get_value(hDB, 0, str, bgcol, &size, TID_STRING, TRUE);
 
-               strcpy(fgcol, "black");
+               strcpy(fgcol, "black"); // safe KO 26-Jul-2006
                sprintf(str, "/Alarms/Classes/%s/Display FGColor", alarm_class);
                size = sizeof(fgcol);
                db_get_value(hDB, 0, str, fgcol, &size, TID_STRING, TRUE);
@@ -1165,7 +1166,7 @@ void show_status_page(int refresh, char *cookie_wpwd)
 
          db_get_key(hDB, hsubkey, &key);
 
-         strcpy(name, key.name);
+         strlcpy(name, key.name, sizeof(name));
          new_window = (name[strlen(name) - 1] != '&');
          if (!new_window)
             name[strlen(name) - 1] = 0;
@@ -1208,7 +1209,7 @@ void show_status_page(int refresh, char *cookie_wpwd)
          if (key.type != TID_STRING)
             continue;
 
-         strcpy(name, key.name);
+         strlcpy(name, key.name, sizeof(name));
 
          /* check if hidden page */
          if (name[strlen(name) - 1] == '!')
@@ -1260,7 +1261,7 @@ void show_status_page(int refresh, char *cookie_wpwd)
 
    size = sizeof(flag);
    db_get_value(hDB, 0, "/Alarms/Alarm system active", &flag, &size, TID_BOOL, TRUE);
-   strcpy(str, flag ? "00FF00" : "FFC0C0");
+   strlcpy(str, flag ? "00FF00" : "FFC0C0", sizeof(str));
    rsprintf("<td bgcolor=#%s><a href=\"%s\">Alarms: %s</a>", str, ref, flag ? "On" : "Off");
 
    if (exp_name[0])
@@ -1270,7 +1271,7 @@ void show_status_page(int refresh, char *cookie_wpwd)
 
    size = sizeof(flag);
    db_get_value(hDB, 0, "/Logger/Auto restart", &flag, &size, TID_BOOL, TRUE);
-   strcpy(str, flag ? "00FF00" : "FFFF00");
+   strlcpy(str, flag ? "00FF00" : "FFFF00", sizeof(str));
    rsprintf("<td bgcolor=#%s><a href=\"%s\">Restart: %s</a>", str, ref, flag ? "Yes" : "No");
 
    if (cm_exist("Logger", FALSE) != CM_SUCCESS && cm_exist("FAL", FALSE) != CM_SUCCESS)
@@ -1424,27 +1425,27 @@ void show_status_page(int refresh, char *cookie_wpwd)
 
          /* filename */
 
-         strcpy(str, chn_settings.current_filename);
+         strlcpy(str, chn_settings.current_filename, sizeof(str));
 
          if (equal_ustring(chn_settings.type, "FTP")) {
             char *token, orig[256];
 
-            strcpy(orig, str);
+            strlcpy(orig, str, sizeof(orig));
 
-            strcpy(str, "ftp://");
+            strlcpy(str, "ftp://", sizeof(str));
             token = strtok(orig, ", ");
             if (token) {
-               strcat(str, token);
+               strlcat(str, token, sizeof(str));
                token = strtok(NULL, ", ");
                token = strtok(NULL, ", ");
                token = strtok(NULL, ", ");
                token = strtok(NULL, ", ");
                if (token) {
-                  strcat(str, "/");
-                  strcat(str, token);
-                  strcat(str, "/");
+                  strlcat(str, "/",   sizeof(str));
+                  strlcat(str, token, sizeof(str));
+                  strlcat(str, "/",   sizeof(str));
                   token = strtok(NULL, ", ");
-                  strcat(str, token);
+                  strlcat(str, token, sizeof(str));
                }
             }
          }
@@ -1524,7 +1525,7 @@ void show_status_page(int refresh, char *cookie_wpwd)
                      size = sizeof(str);
                      db_get_value(hDB, hLKey, "Settings/List Label", str, &size, TID_STRING, TRUE);
                      if (str[0] == 0)
-                        strcpy(str, "(empty)");
+                        strcpy(str, "(empty)"); // safe KO 26-Jul-2006
                   }
 
                   if (exp_name[0])
@@ -1680,7 +1681,7 @@ void show_messages_page(int refresh, int n_message)
    eob = FALSE;
 
    do {
-      strncpy(line, pline, sizeof(line));
+      strlcpy(line, pline, sizeof(line));
 
       /* extract single line */
       if (strchr(line, '\n'))
@@ -1816,7 +1817,7 @@ void show_elog_new(char *path, BOOL bedit, char *odb_att)
    run_number = 0;
 
    if (path) {
-      strcpy(str, path);
+      strlcpy(str, path, sizeof(str));
       size = sizeof(text);
       el_retrieve(str, date, &run_number, author, type, system, subject,
                   text, &size, orig_tag, reply_tag, att1, att2, att3, encoding);
@@ -1898,7 +1899,7 @@ void show_elog_new(char *path, BOOL bedit, char *odb_att)
    }
 
    if (bedit) {
-      strcpy(str, author);
+      strlcpy(str, author, sizeof(str));
       if (strchr(str, '@'))
          *strchr(str, '@') = 0;
    } else
@@ -1926,7 +1927,7 @@ void show_elog_new(char *path, BOOL bedit, char *odb_att)
             break;
 
          db_get_key(hDB, hsubkey, &key);
-         strncpy(type_list[j++], key.name, NAME_LENGTH);
+         strlcpy(type_list[j++], key.name, NAME_LENGTH);
       }
 
    /* get system list from ODB */
@@ -2024,8 +2025,8 @@ void show_elog_new(char *path, BOOL bedit, char *odb_att)
    if (odb_att) {
       str[0] = 0;
       if (odb_att[0] != '\\' && odb_att[0] != '/')
-         strcpy(str, "\\");
-      strcat(str, odb_att);
+         strlcpy(str, "\\", sizeof(str));
+      strlcat(str, odb_att, sizeof(str));
       rsprintf
           ("<tr><td colspan=2>Attachment1: <input type=hidden name=attachment0 value=\"%s\"><b>%s</b></tr>\n",
            str, str);
@@ -2345,7 +2346,7 @@ void show_elog_submit_query(INT last_n)
    m1 = m2 = d2 = y2 = 0;
 
    if (!last_n) {
-      strcpy(str, getparam("m1"));
+      strlcpy(str, getparam("m1"), sizeof(str));
       for (m1 = 0; m1 < 12; m1++)
          if (equal_ustring(str, mname[m1]))
             break;
@@ -2354,7 +2355,7 @@ void show_elog_submit_query(INT last_n)
 
       if (*getparam("m2") || *getparam("y2") || *getparam("d2")) {
          if (*getparam("m2")) {
-            strcpy(str, getparam("m2"));
+            strlcpy(str, getparam("m2"), sizeof(str));
             for (m2 = 0; m2 < 12; m2++)
                if (equal_ustring(str, mname[m2]))
                   break;
@@ -2505,7 +2506,7 @@ void show_elog_submit_query(INT last_n)
       status = el_retrieve(tag, date, &run, author, type, system, subject,
                            text, &size, orig_tag, reply_tag,
                            attachment[0], attachment[1], attachment[2], encoding);
-      strcat(tag, "+1");
+      strlcat(tag, "+1", sizeof(tag));
 
       /* check for end run */
       if (*getparam("r2") && atoi(getparam("r2")) < run)
@@ -2543,7 +2544,7 @@ void show_elog_submit_query(INT last_n)
             continue;
 
          if (*getparam("author")) {
-            strcpy(str, getparam("author"));
+            strlcpy(str, getparam("author"), sizeof(str));
             for (i = 0; i < (int) strlen(str); i++)
                str[i] = toupper(str[i]);
             str[i] = 0;
@@ -2556,7 +2557,7 @@ void show_elog_submit_query(INT last_n)
          }
 
          if (*getparam("subject")) {
-            strcpy(str, getparam("subject"));
+            strlcpy(str, getparam("subject"), sizeof(str));
             for (i = 0; i < (int) strlen(str); i++)
                str[i] = toupper(str[i]);
             str[i] = 0;
@@ -2569,7 +2570,7 @@ void show_elog_submit_query(INT last_n)
          }
 
          if (*getparam("subtext")) {
-            strcpy(str, getparam("subtext"));
+            strlcpy(str, getparam("subtext"), sizeof(str));
             for (i = 0; i < (int) strlen(str); i++)
                str[i] = toupper(str[i]);
             str[i] = 0;
@@ -2583,7 +2584,7 @@ void show_elog_submit_query(INT last_n)
 
          /* filter passed: display line */
 
-         strcpy(str, tag);
+         strlcpy(str, tag, sizeof(str));
          if (strchr(str, '+'))
             *strchr(str, '+') = 0;
          if (exp_name[0])
@@ -2591,8 +2592,7 @@ void show_elog_submit_query(INT last_n)
          else
             sprintf(ref, "/EL/%s", str);
 
-         strncpy(str, text, 80);
-         str[80] = 0;
+         strlcpy(str, text, sizeof(str));
 
          if (full) {
             if (display_run_number) {
@@ -2658,8 +2658,8 @@ void show_elog_submit_query(INT last_n)
                            db_get_value(hDB, 0, "/Logger/Data dir", file_name, &size, TID_STRING, TRUE);
                            if (file_name[0] != 0)
                               if (file_name[strlen(file_name) - 1] != DIR_SEPARATOR)
-                                 strcat(file_name, DIR_SEPARATOR_STR);
-                           strcat(file_name, attachment[index]);
+                                 strlcat(file_name, DIR_SEPARATOR_STR, sizeof(file_name));
+                           strlcat(file_name, attachment[index], sizeof(file_name));
 
                            f = fopen(file_name, "rt");
                            if (f != NULL) {
@@ -2774,9 +2774,9 @@ void show_rawfile(char *path)
       db_get_value(hDB, 0, "/Logger/Data dir", file_name, &size, TID_STRING, TRUE);
       if (file_name[0] != 0)
          if (file_name[strlen(file_name) - 1] != DIR_SEPARATOR)
-            strcat(file_name, DIR_SEPARATOR_STR);
+            strlcat(file_name, DIR_SEPARATOR_STR, sizeof(file_name));
    }
-   strcat(file_name, path);
+   strlcat(file_name, path, sizeof(file_name));
 
    f = fopen(file_name, "r");
    if (f == NULL) {
@@ -2924,7 +2924,7 @@ void show_form_query()
 
          db_get_key(hDB, hkey, &key);
 
-         strcpy(str, key.name);
+         strlcpy(str, key.name, sizeof(str));
          if (str[0])
             str[strlen(str) - 1] = 0;
          if (equal_ustring(str, "attachment")) {
@@ -3005,7 +3005,7 @@ void gen_odb_attachment(char *path, char *b)
             db_sprintfh(hex_str, data, key.item_size, 0, key.type);
 
             if (data_str[0] == 0 || equal_ustring(data_str, "<NULL>")) {
-               strcpy(data_str, "(empty)");
+               strcpy(data_str, "(empty)"); // safe KO 26-Jul-2006
                hex_str[0] = 0;
             }
 
@@ -3029,7 +3029,7 @@ void gen_odb_attachment(char *path, char *b)
                db_sprintfh(hex_str, data, key.item_size, 0, key.type);
 
                if (data_str[0] == 0 || equal_ustring(data_str, "<NULL>")) {
-                  strcpy(data_str, "(empty)");
+                  strcpy(data_str, "(empty)"); // safe KO 26-Jul-2006
                   hex_str[0] = 0;
                }
 
@@ -3064,9 +3064,9 @@ void submit_elog()
    char mhttpd_full_url[256];
 
    cm_get_experiment_database(&hDB, NULL);
-   strcpy(att_file[0], getparam("attachment0"));
-   strcpy(att_file[1], getparam("attachment1"));
-   strcpy(att_file[2], getparam("attachment2"));
+   strlcpy(att_file[0], getparam("attachment0"), sizeof(att_file[0]));
+   strlcpy(att_file[1], getparam("attachment1"), sizeof(att_file[1]));
+   strlcpy(att_file[2], getparam("attachment2"), sizeof(att_file[2]));
 
    /* check for author */
    if (*getparam("author") == 0) {
@@ -3087,8 +3087,8 @@ void submit_elog()
       sprintf(str, "attachment%d", i);
       if (getparam(str) && *getparam(str) && _attachment_size[i] == 0) {
          /* replace '\' by '/' */
-         strcpy(path, getparam(str));
-         strcpy(path1, path);
+         strlcpy(path, getparam(str), sizeof(path));
+         strlcpy(path1, path, sizeof(path1));
          while (strchr(path, '\\'))
             *strchr(path, '\\') = '/';
 
@@ -3096,8 +3096,8 @@ void submit_elog()
          if (db_find_key(hDB, 0, path, &hkey) == DB_SUCCESS) {
             buffer[i] = M_MALLOC(100000);
             gen_odb_attachment(path, buffer[i]);
-            strcpy(att_file[i], path);
-            strcat(att_file[i], ".html");
+            strlcpy(att_file[i], path, sizeof(att_file[0]));
+            strlcat(att_file[i], ".html", sizeof(att_file[0]));
             _attachment_buffer[i] = buffer[i];
             _attachment_size[i] = strlen(buffer[i]) + 1;
          }
@@ -3108,13 +3108,13 @@ void submit_elog()
             lseek(fh, 0, SEEK_SET);
             read(fh, buffer[i], size);
             close(fh);
-            strcpy(att_file[i], path);
+            strlcpy(att_file[i], path, sizeof(att_file[0]));
             _attachment_buffer[i] = buffer[i];
             _attachment_size[i] = size;
          } else if (strncmp(path, "/HS/", 4) == 0) {
             buffer[i] = M_MALLOC(100000);
             size = 100000;
-            strcpy(str, path + 4);
+            strlcpy(str, path + 4, sizeof(str));
             if (strchr(str, '?')) {
                p = strchr(str, '?') + 1;
                p = strtok(p, "&");
@@ -3133,8 +3133,8 @@ void submit_elog()
                }
                *strchr(str, '?') = 0;
             }
-            show_hist_page(str, buffer[i], &size, 0);
-            strcpy(att_file[i], str);
+            show_hist_page(str, sizeof(str), buffer[i], &size, 0);
+            strlcpy(att_file[i], str, sizeof(att_file[0]));
             _attachment_buffer[i] = buffer[i];
             _attachment_size[i] = size;
             unsetparam("scale");
@@ -3159,17 +3159,17 @@ void submit_elog()
    phe = gethostbyaddr((char *) &remote_addr, 4, PF_INET);
    if (phe == NULL) {
       /* use IP number instead */
-      strcpy(str, (char *) inet_ntoa(remote_addr));
+      strlcpy(str, (char *) inet_ntoa(remote_addr), sizeof(str));
    } else
-      strcpy(str, phe->h_name);
+      strlcpy(str, phe->h_name, sizeof(str));
 
-   strcpy(author, getparam("author"));
-   strcat(author, "@");
-   strcat(author, str);
+   strlcpy(author, getparam("author"), sizeof(author));
+   strlcat(author, "@", sizeof(author));
+   strlcat(author, str, sizeof(author));
 
    tag[0] = 0;
    if (*getparam("edit"))
-      strcpy(tag, getparam("orig"));
+      strlcpy(tag, getparam("orig"), sizeof(tag));
 
    el_submit(atoi(getparam("run")), author, getparam("type"),
              getparam("system"), getparam("subject"), getparam("text"),
@@ -3210,7 +3210,7 @@ void submit_elog()
 
          p = strtok(mail_list, ",");
          for (i = 0; p; i++) {
-            strcpy(mail_to, p);
+            strlcpy(mail_to, p, sizeof(mail_to));
             sprintf(mail_from, "MIDAS <MIDAS@%s>", host_name);
 
             size = sizeof(str);
@@ -3241,9 +3241,9 @@ void submit_elog()
             sendmail(smtp_host, mail_from, mail_to, getparam("type"), mail_text);
 
             if (mail_param[0] == 0 && exp_name[0] == 0)
-               strcpy(mail_param, "?");
+               strlcpy(mail_param, "?", sizeof(mail_param));
             else
-               strcat(mail_param, "&");
+               strlcat(mail_param, "&", sizeof(mail_param));
             sprintf(mail_param + strlen(mail_param), "mail%d=%s", n_mail++, mail_to);
 
             p = strtok(NULL, ",");
@@ -3309,7 +3309,7 @@ void submit_form()
 
          db_get_key(hDB, hkey, &key);
 
-         strcpy(str, key.name);
+         strlcpy(str, key.name, sizeof(str));
          if (str[0])
             str[strlen(str) - 1] = 0;
          if (equal_ustring(str, "attachment")) {
@@ -3343,7 +3343,7 @@ void submit_form()
 
 /*------------------------------------------------------------------*/
 
-void show_elog_page(char *path)
+void show_elog_page(char *path, int path_size)
 {
    int size, i, run, msg_status, status, fh, length, first_message, last_message, index;
    char str[256], orig_path[256], command[80], ref[256], file_name[256];
@@ -3365,7 +3365,7 @@ void show_elog_page(char *path)
 
    /*---- interprete commands ---------------------------------------*/
 
-   strcpy(command, getparam("cmd"));
+   strlcpy(command, getparam("cmd"), sizeof(command));
 
    if (*getparam("form")) {
       if (*getparam("type")) {
@@ -3389,7 +3389,7 @@ void show_elog_page(char *path)
    }
 
    if (equal_ustring(command, "Create ELog from this page")) {
-      strcpy(str, path);
+      strlcpy(str, path, sizeof(str));
       while (strchr(path, '/'))
          *strchr(path, '/') = '\\';
 
@@ -3463,9 +3463,9 @@ void show_elog_page(char *path)
 
          if (file_name[0] != 0)
             if (file_name[strlen(file_name) - 1] != DIR_SEPARATOR)
-               strcat(file_name, DIR_SEPARATOR_STR);
+               strlcat(file_name, DIR_SEPARATOR_STR, sizeof(file_name));
       }
-      strcat(file_name, path);
+      strlcat(file_name, path, sizeof(file_name));
 
       fh = open(file_name, O_RDONLY | O_BINARY);
       if (fh > 0) {
@@ -3522,13 +3522,13 @@ void show_elog_page(char *path)
 
    last_message = first_message = FALSE;
    if (equal_ustring(command, "next") || equal_ustring(command, "previous") || equal_ustring(command, "last")) {
-      strcpy(orig_path, path);
+      strlcpy(orig_path, path, sizeof(orig_path));
 
       if (equal_ustring(command, "last"))
          path[0] = 0;
 
       do {
-         strcat(path, equal_ustring(command, "next") ? "+1" : "-1");
+         strlcat(path, equal_ustring(command, "next") ? "+1" : "-1", path_size);
          status = el_search_message(path, &fh, TRUE);
          close(fh);
          if (status != EL_SUCCESS) {
@@ -3536,7 +3536,7 @@ void show_elog_page(char *path)
                last_message = TRUE;
             else
                first_message = TRUE;
-            strcpy(path, orig_path);
+            strlcpy(path, orig_path, path_size);
             break;
          }
 
@@ -3553,7 +3553,7 @@ void show_elog_page(char *path)
          if (*getparam("lsystem") == '1' && !equal_ustring(getparam("system"), system))
             continue;
          if (*getparam("lsubject") == '1') {
-            strcpy(str, getparam("subject"));
+            strlcpy(str, getparam("subject"), sizeof(str));
             for (i = 0; i < (int) strlen(str); i++)
                str[i] = toupper(str[i]);
             for (i = 0; i < (int) strlen(subject); i++)
@@ -3567,30 +3567,30 @@ void show_elog_page(char *path)
 
          if (*getparam("lauthor") == '1') {
             if (strchr(str, '?') == NULL)
-               strcat(str, "?lauthor=1");
+               strlcat(str, "?lauthor=1", sizeof(str));
             else
-               strcat(str, "&lauthor=1");
+               strlcat(str, "&lauthor=1", sizeof(str));
          }
 
          if (*getparam("ltype") == '1') {
             if (strchr(str, '?') == NULL)
-               strcat(str, "?ltype=1");
+               strlcat(str, "?ltype=1", sizeof(str));
             else
-               strcat(str, "&ltype=1");
+               strlcat(str, "&ltype=1", sizeof(str));
          }
 
          if (*getparam("lsystem") == '1') {
             if (strchr(str, '?') == NULL)
-               strcat(str, "?lsystem=1");
+               strlcat(str, "?lsystem=1", sizeof(str));
             else
-               strcat(str, "&lsystem=1");
+               strlcat(str, "&lsystem=1", sizeof(str));
          }
 
          if (*getparam("lsubject") == '1') {
             if (strchr(str, '?') == NULL)
-               strcat(str, "?lsubject=1");
+               strlcat(str, "?lsubject=1", sizeof(str));
             else
-               strcat(str, "&lsubject=1");
+               strlcat(str, "&lsubject=1", sizeof(str));
          }
 
          redirect(str);
@@ -3602,7 +3602,7 @@ void show_elog_page(char *path)
   /*---- get current message ---------------------------------------*/
 
    size = sizeof(text);
-   strcpy(str, path);
+   strlcpy(str, path, sizeof(str));
    subject[0] = 0;
    msg_status = el_retrieve(str, date, &run, author, type, system, subject,
                             text, &size, orig_tag, reply_tag,
@@ -3748,7 +3748,7 @@ void show_elog_page(char *path)
 
 
       /* define hidded fields */
-      strcpy(str, author);
+      strlcpy(str, author, sizeof(str));
       if (strchr(str, '@'))
          *strchr(str, '@') = 0;
       rsprintf("<input type=hidden name=author  value=\"%s\">\n", str);
@@ -3824,8 +3824,8 @@ void show_elog_page(char *path)
                   db_get_value(hDB, 0, "/Logger/Data dir", file_name, &size, TID_STRING, TRUE);
                   if (file_name[0] != 0)
                      if (file_name[strlen(file_name) - 1] != DIR_SEPARATOR)
-                        strcat(file_name, DIR_SEPARATOR_STR);
-                  strcat(file_name, attachment[index]);
+                        strlcat(file_name, DIR_SEPARATOR_STR, sizeof(file_name));
+                  strlcat(file_name, attachment[index], sizeof(file_name));
 
                   f = fopen(file_name, "rt");
                   if (f != NULL) {
@@ -3905,10 +3905,10 @@ void show_sc_page(char *path, int refresh)
       i_set = atoi(getparam("index"));
 
    /* split path into equipment and group */
-   strcpy(eq_name, path);
-   strcpy(group, "All");
+   strlcpy(eq_name, path, sizeof(eq_name));
+   strlcpy(group, "All", sizeof(group));
    if (strchr(eq_name, '/')) {
-      strcpy(group, strchr(eq_name, '/') + 1);
+      strlcpy(group, strchr(eq_name, '/') + 1, sizeof(group));
       *strchr(eq_name, '/') = 0;
    }
 
@@ -4039,7 +4039,7 @@ void show_sc_page(char *path, int refresh)
                   break;
             }
             if (group_name[j][0] == 0)
-               strcpy(group_name[j], str);
+               strlcpy(group_name[j], str, sizeof(group_name[0]));
          }
       }
 
@@ -4102,9 +4102,9 @@ void show_sc_page(char *path, int refresh)
          name[0] = 0;
          if (strchr(str, '%')) {
             *strchr(str, '%') = 0;
-            strcpy(name, str + strlen(str) + 1);
+            strlcpy(name, str + strlen(str) + 1, sizeof(name));
          } else
-            strcpy(name, str);
+            strlcpy(name, str, sizeof(name));
 
          if (!equal_ustring(group, "All") && !equal_ustring(str, group))
             continue;
@@ -4124,7 +4124,7 @@ void show_sc_page(char *path, int refresh)
             if (is_editable(eq_name, varkey.name)) {
                if (n_var == i_set) {
                   /* set value */
-                  strcpy(str, getparam("value"));
+                  strlcpy(str, getparam("value"), sizeof(str));
                   db_sscanf(str, data, &size, 0, varkey.type);
                   db_set_data_index(hDB, hkey, data, size, i, varkey.type);
 
@@ -4235,7 +4235,7 @@ void show_sc_page(char *path, int refresh)
                      db_sprintfh(hex_str, data, key.item_size, 0, key.type);
 
                      if (data_str[0] == 0 || equal_ustring(data_str, "<NULL>")) {
-                        strcpy(data_str, "(empty)");
+                        strcpy(data_str, "(empty)"); // safe KO 26-Jul-2006
                         hex_str[0] = 0;
                      }
 
@@ -4256,7 +4256,7 @@ void show_sc_page(char *path, int refresh)
                         db_sprintfh(hex_str, data, key.item_size, 0, key.type);
 
                         if (data_str[0] == 0 || equal_ustring(data_str, "<NULL>")) {
-                           strcpy(data_str, "(empty)");
+                           strcpy(data_str, "(empty)"); // safe KO 26-Jul-2006
                            hex_str[0] = 0;
                         }
 
@@ -4296,7 +4296,7 @@ void show_sc_page(char *path, int refresh)
                   if (is_editable(eq_name, varkey.name)) {
                      if (n_var == i_set) {
                         /* set value */
-                        strcpy(str, getparam("value"));
+                        strlcpy(str, getparam("value"), sizeof(str));
                         db_sscanf(str, data, &size, 0, varkey.type);
                         db_set_data_index(hDB, hkey, data, size, j, varkey.type);
 
@@ -4458,7 +4458,7 @@ void show_odb_tag(char *path, char *keypath, int n_var, BOOL bedit)
       if (bedit) {
          if (n_var == i_set) {
             /* set value */
-            strcpy(str, getparam("value"));
+            strlcpy(str, getparam("value"), sizeof(str));
             db_sscanf(str, data, &size, 0, key.type);
             db_set_data_index(hDB, hkey, data, size, index, key.type);
 
@@ -4838,7 +4838,7 @@ void show_custom_gif(char *name)
          }
 
          size = sizeof(data);
-         strcpy(data, "FFFFFF");
+         strcpy(data, "FFFFFF"); // safe KO 26-Jul-2006
          status = db_get_data_index(hDB, hkeyval, data, &size, i, TID_STRING);
          if (status == DB_SUCCESS) {
             sscanf(data, "%02x%02x%02x", &r, &g, &b);
@@ -5320,7 +5320,7 @@ void show_start_page(void)
             break;
 
          db_get_key(hDB, hsubkey, &key);
-         strcpy(str, key.name);
+         strlcpy(str, key.name, sizeof(str));
 
          if (equal_ustring(str, "Edit run number"))
             continue;
@@ -5372,7 +5372,7 @@ void show_start_page(void)
 
 /*------------------------------------------------------------------*/
 
-void show_odb_page(char *enc_path, char *dec_path)
+void show_odb_page(char *enc_path, int enc_path_size, char *dec_path)
 {
    int i, j, size, status;
    char str[256], tmp_path[256], url_path[256],
@@ -5385,8 +5385,8 @@ void show_odb_page(char *enc_path, char *dec_path)
    cm_get_experiment_database(&hDB, NULL);
 
    if (strcmp(enc_path, "root") == 0) {
-      strcpy(enc_path, "");
-      strcpy(dec_path, "");
+      strcpy(enc_path, ""); // safe KO 26-Jul-2006
+      strcpy(dec_path, ""); // safe KO 26-Jul-2006
    }
 
    show_header(hDB, "MIDAS online database", "GET", enc_path, 1, 0);
@@ -5409,8 +5409,8 @@ void show_odb_page(char *enc_path, char *dec_path)
       if (*p == '/')
          *p = 0;
 
-      strcpy(enc_path, dec_path);
-      urlEncode(enc_path);
+      strlcpy(enc_path, dec_path, enc_path_size);
+      urlEncode(enc_path, enc_path_size);
 
       status = db_find_key(hDB, 0, dec_path, &hkeyroot);
       if (status != DB_SUCCESS) {
@@ -5450,7 +5450,7 @@ void show_odb_page(char *enc_path, char *dec_path)
    else
       rsprintf("<a href=\"/root?\">/</a> \n");
 
-   strcpy(tmp_path, "");
+   strcpy(tmp_path, ""); // safe KO 26-Jul-2006
 
    p = dec_path;
    if (*p == '/')
@@ -5463,16 +5463,16 @@ void show_odb_page(char *enc_path, char *dec_path)
          *pd++ = *p++;
       *pd = 0;
 
-      strcat(tmp_path, str);
-      strcpy(url_path, tmp_path);
-      urlEncode(url_path);
+      strlcat(tmp_path, str, sizeof(tmp_path));
+      strlcpy(url_path, tmp_path, sizeof(url_path));
+      urlEncode(url_path, sizeof(url_path));
 
       if (exp_name[0])
          rsprintf("<a href=\"/%s?&exp=%s\">%s</a>\n / ", url_path, exp_name, str);
       else
          rsprintf("<a href=\"/%s\">%s</a>\n / ", url_path, str);
 
-      strcat(tmp_path, "/");
+      strlcat(tmp_path, "/", sizeof(tmp_path));
       if (*p == '/')
          p++;
    }
@@ -5487,12 +5487,12 @@ void show_odb_page(char *enc_path, char *dec_path)
          break;
       db_get_key(hDB, hkey, &key);
 
-      strcpy(str, dec_path);
+      strlcpy(str, dec_path, sizeof(str));
       if (str[0] && str[strlen(str) - 1] != '/')
-         strcat(str, "/");
-      strcat(str, key.name);
-      urlEncode(str);
-      strcpy(keyname, key.name);
+         strlcat(str, "/", sizeof(str));
+      strlcat(str, key.name, sizeof(str));
+      urlEncode(str, sizeof(str));
+      strlcpy(keyname, key.name, sizeof(keyname));
 
       /* resolve links */
       link_name[0] = 0;
@@ -5524,7 +5524,7 @@ void show_odb_page(char *enc_path, char *dec_path)
                hex_str[0] = 0;
 
             if (data_str[0] == 0 || equal_ustring(data_str, "<NULL>")) {
-               strcpy(data_str, "(empty)");
+               strcpy(data_str, "(empty)"); // safe KO 26-Jul-2006
                hex_str[0] = 0;
             }
 
@@ -5585,7 +5585,7 @@ void show_odb_page(char *enc_path, char *dec_path)
                   db_sprintfh(hex_str, data, key.item_size, 0, key.type);
 
                   if (data_str[0] == 0 || equal_ustring(data_str, "<NULL>")) {
-                     strcpy(data_str, "(empty)");
+                     strcpy(data_str, "(empty)"); // safe KO 26-Jul-2006
                      hex_str[0] = 0;
                   }
 
@@ -5613,7 +5613,7 @@ void show_odb_page(char *enc_path, char *dec_path)
 
 /*------------------------------------------------------------------*/
 
-void show_set_page(char *enc_path, char *dec_path, char *group, int index, char *value)
+void show_set_page(char *enc_path, int enc_path_size, char *dec_path, char *group, int index, char *value)
 {
    int status, size;
    HNDLE hDB, hkey;
@@ -5642,14 +5642,14 @@ void show_set_page(char *enc_path, char *dec_path, char *group, int index, char 
       if (group[0])
          rsprintf("<input type=hidden name=group value=\"%s\">\n", group);
 
-      strcpy(data_str, rpc_tid_name(key.type));
+      strlcpy(data_str, rpc_tid_name(key.type), sizeof(data_str));
       if (key.num_values > 1) {
          sprintf(str, "[%d]", key.num_values);
-         strcat(data_str, str);
+         strlcat(data_str, str, sizeof(data_str));
 
          sprintf(str, "%s[%d]", dec_path, index);
       } else
-         strcpy(str, dec_path);
+         strlcpy(str, dec_path, sizeof(str));
 
       rsprintf("<tr><th bgcolor=#A0A0FF colspan=2>Set new value - type = %s</tr>\n", data_str);
       rsprintf("<tr><td bgcolor=#FFFF00>%s<td>\n", str);
@@ -5701,7 +5701,7 @@ void show_set_page(char *enc_path, char *dec_path, char *group, int index, char 
       memset(data, 0, sizeof(data));
 
       if (*getparam("text"))
-         strncpy(data, getparam("text"), sizeof(data));
+         strlcpy(data, getparam("text"), sizeof(data));
       else
          db_sscanf(value, data, &size, 0, key.type);
 
@@ -5731,8 +5731,8 @@ void show_set_page(char *enc_path, char *dec_path, char *group, int index, char 
       if (*p == '/')
          *p = 0;
 
-      strcpy(enc_path, dec_path);
-      urlEncode(enc_path);
+      strlcpy(enc_path, dec_path, enc_path_size);
+      urlEncode(enc_path, enc_path_size);
 
       /* redirect */
 
@@ -5740,7 +5740,7 @@ void show_set_page(char *enc_path, char *dec_path, char *group, int index, char 
          /* extract equipment name */
          eq_name[0] = 0;
          if (strncmp(enc_path, "Equipment/", 10) == 0) {
-            strcpy(eq_name, enc_path + 10);
+            strlcpy(eq_name, enc_path + 10, sizeof(eq_name));
             if (strchr(eq_name, '/'))
                *strchr(eq_name, '/') = 0;
          }
@@ -5873,20 +5873,19 @@ void show_create_page(char *enc_path, char *dec_path, char *value, int index, in
          }
 
          /* extract key name from destination */
-         strcpy(str, value);
+         strlcpy(str, value, sizeof(str));
          p = str + strlen(str) - 1;
          while (*p && *p != '/')
             p--;
          p++;
 
          /* use it as link name */
-         strcpy(link, p);
+         strlcpy(link, p, sizeof(link));
 
-         strcpy(str, dec_path);
+         strlcpy(str, dec_path, sizeof(str));
          if (str[strlen(str) - 1] != '/')
-            strcat(str, "/");
-         strcat(str, link);
-
+            strlcat(str, "/", sizeof(str));
+         strlcat(str, link, sizeof(str));
 
          status = db_create_link(hDB, 0, str, value);
          if (status != DB_SUCCESS) {
@@ -5895,10 +5894,10 @@ void show_create_page(char *enc_path, char *dec_path, char *value, int index, in
          }
 
       } else {
-         strcpy(str, dec_path);
+         strlcpy(str, dec_path, sizeof(str));
          if (str[strlen(str) - 1] != '/')
-            strcat(str, "/");
-         strcat(str, value);
+            strlcat(str, "/", sizeof(str));
+         strlcat(str, value, sizeof(str));
 
          if (type == TID_ARRAY)
             /* multi-line string */
@@ -5916,7 +5915,7 @@ void show_create_page(char *enc_path, char *dec_path, char *value, int index, in
          if (key.type == TID_STRING || key.type == TID_LINK)
             key.item_size = NAME_LENGTH;
          if (type == TID_ARRAY)
-            strcpy(data, "\n");
+            strcpy(data, "\n"); // safe KO 26-Jul-2006
 
          if (index > 1)
             db_set_data_index(hDB, hkey, data, key.item_size, index - 1, key.type);
@@ -5984,10 +5983,10 @@ void show_delete_page(char *enc_path, char *dec_path, char *value, int index)
 
       rsprintf("</body></html>\r\n");
    } else {
-      strcpy(str, dec_path);
+      strlcpy(str, dec_path, sizeof(str));
       if (str[strlen(str) - 1] != '/')
-         strcat(str, "/");
-      strcat(str, value);
+         strlcat(str, "/", sizeof(str));
+      strlcat(str, value, sizeof(str));
 
       status = db_find_link(hDB, 0, str, &hkey);
       if (status != DB_SUCCESS) {
@@ -6144,7 +6143,7 @@ void show_alarm_page()
             size = sizeof(str);
             db_get_value(hDB, hkey, "Time triggered first", str, &size, TID_STRING, TRUE);
             if (!triggered)
-               strcpy(str, "-");
+               strcpy(str, "-"); // safe KO 26-Jul-2006
             rsprintf("<td align=center>%s", str);
 
             /* class */
@@ -6196,7 +6195,7 @@ void show_alarm_page()
                   size = sizeof(interval);
                   db_get_value(hDB, hkey, "Check interval", &interval, &size, TID_INT, TRUE);
                   last += interval;
-                  strcpy(value, ctime(&last));
+                  strcpy(value, ctime(&last)); // probably safe KO 26-Jul-2006
                   value[16] = 0;
 
                   sprintf(str, "Alarm triggers at %s", value);
@@ -6256,7 +6255,7 @@ void show_programs_page()
       /* for NT: close reply socket before starting subprocess */
       redirect2("?cmd=programs");
 
-      strcpy(name, getparam("Start") + 6);
+      strlcpy(name, getparam("Start") + 6, sizeof(name));
       sprintf(str, "/Programs/%s/Start command", name);
       command[0] = 0;
       size = sizeof(command);
@@ -6555,7 +6554,7 @@ void sec_to_label(char *result, int sec, int base, int force_date)
 
    t_sec = (time_t) sec;
    tms = localtime(&t_sec);
-   strcpy(mon, mname[tms->tm_mon]);
+   strcpy(mon, mname[tms->tm_mon]); // probably safe KO 26-Jul-2006
    mon[3] = 0;
 
    if (force_date) {
@@ -6978,7 +6977,7 @@ void generate_hist_graph(char *path, char *buffer, int *buffer_size,
    gdImageColorTransparent(im, grey);
 
    /* Title */
-   strcpy(panel, path);
+   strlcpy(panel, path, sizeof(panel));
    if (strstr(panel, ".gif"))
       *strstr(panel, ".gif") = 0;
    gdImageString(im, gdFontGiant, width / 2 - (strlen(panel) * gdFontGiant->w) / 2, 2, panel, fgcol);
@@ -7034,13 +7033,13 @@ void generate_hist_graph(char *path, char *buffer, int *buffer_size,
 
       size = sizeof(str);
       db_get_data_index(hDB, hkeydvar, str, &size, i, TID_STRING);
-      strcpy(tag_name[i], str);
+      strlcpy(tag_name[i], str, sizeof(tag_name[0]));
 
       /* split varname in event, variable and index */
       if (strchr(tag_name[i], ':')) {
-         strcpy(event_name[i], tag_name[i]);
+         strlcpy(event_name[i], tag_name[i], sizeof(event_name[0]));
          *strchr(event_name[i], ':') = 0;
-         strcpy(var_name[i], strchr(tag_name[i], ':') + 1);
+         strlcpy(var_name[i], strchr(tag_name[i], ':') + 1, sizeof(var_name[0]));
          var_index[i] = 0;
          if (strchr(var_name[i], '[')) {
             var_index[i] = atoi(strchr(var_name[i], '[') + 1);
@@ -7063,7 +7062,7 @@ void generate_hist_graph(char *path, char *buffer, int *buffer_size,
 
       /* get timescale */
       if (scale == 0) {
-         strcpy(str, "1h");
+         strlcpy(str, "1h", sizeof(str));
          size = NAME_LENGTH;
          status = db_get_value(hDB, hkeypanel, "Timescale", str, &size, TID_STRING, TRUE);
          if (status != DB_SUCCESS) {
@@ -7072,7 +7071,7 @@ void generate_hist_graph(char *path, char *buffer, int *buffer_size,
             if (hkey)
                db_delete_key(hDB, hkey, FALSE);
 
-            strcpy(str, "1h");
+            strcpy(str, "1h"); // safe KO 26-Jul-2006
             size = NAME_LENGTH;
             status = db_get_value(hDB, hkeypanel, "Timescale", str, &size, TID_STRING, TRUE);
          }
@@ -7142,13 +7141,13 @@ void generate_hist_graph(char *path, char *buffer, int *buffer_size,
                db_find_key(hDB, hkeyeq, "Settings/Names", &hkeynames);
                if (hkeynames) {
                   /* extract variable name and Variables/<key> */
-                  strcpy(str, var_name[i]);
+                  strlcpy(str, var_name[i], sizeof(str));
                   p = str + strlen(str) - 1;
                   while (p > str && *p != ' ')
                      p--;
-                  strcpy(key_name, p + 1);
+                  strlcpy(key_name, p + 1, sizeof(key_name));
                   *p = 0;
-                  strcpy(varname, str);
+                  strlcpy(varname, str, sizeof(varname));
 
                   /* find key in single name array */
                   db_get_key(hDB, hkeynames, &key);
@@ -7174,7 +7173,7 @@ void generate_hist_graph(char *path, char *buffer, int *buffer_size,
                         db_get_key(hDB, hkey, &key);
 
                         /* find key in key_name array */
-                        strcpy(key_name, key.name);
+                        strlcpy(key_name, key.name, sizeof(key_name));
                         sprintf(str, "Settings/Names %s", key_name);
 
                         db_find_key(hDB, hkeyeq, str, &hkeynames);
@@ -7438,8 +7437,8 @@ void generate_hist_graph(char *path, char *buffer, int *buffer_size,
 
    /* write run markes if selected */
    if (runmarker) {
-      bsize = sizeof(ybuffer);
-      tsize = sizeof(tbuffer);
+      bsize = hbuffer_size;
+      tsize = hbuffer_size;
 
       /* read run state */
 
@@ -7453,8 +7452,8 @@ void generate_hist_graph(char *path, char *buffer, int *buffer_size,
             state[j] = *((DWORD *) ybuffer + j);
       }
 
-      bsize = sizeof(ybuffer);
-      tsize = sizeof(tbuffer);
+      bsize = hbuffer_size;
+      tsize = hbuffer_size;
 
       /* read run number */
 
@@ -7663,7 +7662,7 @@ void show_query_page(char *path)
       memset(&tms, 0, sizeof(struct tm));
       tms.tm_year = atoi(getparam("y1")) % 100;
 
-      strcpy(str, getparam("m1"));
+      strlcpy(str, getparam("m1"), sizeof(str));
       for (i = 0; i < 12; i++)
          if (equal_ustring(str, mname[i]))
             break;
@@ -7681,7 +7680,7 @@ void show_query_page(char *path)
       memset(&tms, 0, sizeof(struct tm));
       tms.tm_year = atoi(getparam("y2")) % 100;
 
-      strcpy(str, getparam("m2"));
+      strlcpy(str, getparam("m2"), sizeof(str));
       for (i = 0; i < 12; i++)
          if (equal_ustring(str, mname[i]))
             break;
@@ -7789,7 +7788,7 @@ void show_hist_config_page(char *path)
    };
 
    cm_get_experiment_database(&hDB, NULL);
-   strcpy(cmd, getparam("cmd"));
+   strlcpy(cmd, getparam("cmd"), sizeof(cmd));
    hKeyVar = 0;
 
    if (cmd[0] && equal_ustring(cmd, "save")) {
@@ -7797,10 +7796,10 @@ void show_hist_config_page(char *path)
       for (index = 0; index < 10; index++) {
          sprintf(str, "event%d", index);
          if (*getparam(str)) {
-            strcpy(var_name, getparam(str));
-            strcat(var_name, ":");
+            strlcpy(var_name, getparam(str), sizeof(var_name));
+            strlcat(var_name, ":", sizeof(var_name));
             sprintf(str, "var%d", index);
-            strcat(var_name, getparam(str));
+            strlcat(var_name, getparam(str), sizeof(var_name));
 
             sprintf(str, "/History/Display/%s/Variables", path);
             db_find_key(hDB, 0, str, &hKeyVar);
@@ -7843,7 +7842,7 @@ void show_hist_config_page(char *path)
 
       if (*getparam("timescale")) {
          sprintf(ref, "/History/Display/%s/Timescale", path);
-         strcpy(str, getparam("timescale"));
+         strlcpy(str, getparam("timescale"), sizeof(str));
          db_set_value(hDB, 0, ref, str, NAME_LENGTH, 1, TID_STRING);
       }
 
@@ -7882,7 +7881,7 @@ void show_hist_config_page(char *path)
 
    /* time scale */
    if (equal_ustring(cmd, "refresh"))
-      strcpy(str, getparam("timescale"));
+      strlcpy(str, getparam("timescale"), sizeof(str));
    else {
       sprintf(ref, "/History/Display/%s/Timescale", path);
       size = NAME_LENGTH;
@@ -7946,12 +7945,12 @@ void show_hist_config_page(char *path)
       /* from parameters in a refresh */
       for (i = 0; i < 10; i++) {
          sprintf(str, "event%d", i);
-         strcpy(display_name[i], getparam(str));
+         strlcpy(display_name[i], getparam(str), sizeof(display_name[0]));
 
          if (display_name[i][0]) {
-            sprintf(str, "var%d", i);
-            strcat(display_name[i], ":");
-            strcat(display_name[i], getparam(str));
+            sprintf(str, "var%d", i); // safe KO 26-Jul-2006
+            strlcat(display_name[i], ":", sizeof(display_name[0]));
+            strlcat(display_name[i], getparam(str), sizeof(display_name[0]));
          }
       }
    } else {
@@ -8004,7 +8003,7 @@ void show_hist_config_page(char *path)
             /* get equipment name */
             db_get_key(hDB, hKeyEq, &key);
 
-            strcpy(str, display_name[index]);
+            strlcpy(str, display_name[index], sizeof(str));
             str[strlen(key.name)] = 0;
             if (equal_ustring(str, key.name))
                rsprintf("<option selected value=\"%s\">%s\n", key.name, key.name);
@@ -8036,7 +8035,7 @@ void show_hist_config_page(char *path)
 
       status = db_find_key(hDB, 0, "/Equipment", &hKeyRoot);
       if (status == DB_SUCCESS && display_name[index][0]) {
-         strcpy(eq_name, display_name[index]);
+         strlcpy(eq_name, display_name[index], sizeof(eq_name));
          if (strchr(eq_name, ':'))
             *strchr(eq_name, ':') = 0;
 
@@ -8075,7 +8074,7 @@ void show_hist_config_page(char *path)
                db_get_key(hDB, hKey, &varkey);
 
                if (strchr(display_name[index], ':'))
-                  strcpy(str, strchr(display_name[index], ':') + 1);
+                  strlcpy(str, strchr(display_name[index], ':') + 1, sizeof(str));
                else
                   str[0] = 0;
 
@@ -8114,13 +8113,13 @@ void show_hist_config_page(char *path)
 
                      /* append variable key name for single name array */
                      if (single_names) {
-                        strcat(var_name, " ");
-                        strcat(var_name, varkey.name);
+                        strlcat(var_name, " ", sizeof(var_name));
+                        strlcat(var_name, varkey.name, sizeof(var_name));
                      }
 
                      /* get name from ODB */
                      if (strchr(display_name[index], ':'))
-                        strcpy(str, strchr(display_name[index], ':') + 1);
+                        strlcpy(str, strchr(display_name[index], ':') + 1, sizeof(str));
                      else
                         str[0] = 0;
 
@@ -8131,7 +8130,7 @@ void show_hist_config_page(char *path)
                   }
                } else {
                   if (strchr(display_name[index], ':'))
-                     strcpy(str, strchr(display_name[index], ':') + 1);
+                     strlcpy(str, strchr(display_name[index], ':') + 1, sizeof(str));
                   else
                      str[0] = 0;
 
@@ -8203,7 +8202,7 @@ void show_hist_config_page(char *path)
 
 /*------------------------------------------------------------------*/
 
-void show_hist_page(char *path, char *buffer, int *buffer_size, int refresh)
+void show_hist_page(char *path, int path_size, char *buffer, int *buffer_size, int refresh)
 {
    char str[256], ref[256], ref2[256], paramstr[256], scalestr[256], hgroup[256], 
       bgcolor[32], fgcolor[32], gridcolor[32];
@@ -8284,11 +8283,11 @@ void show_hist_page(char *path, char *buffer, int *buffer_size, int refresh)
    }
 
    if (*getparam("panel")) {
-      strcpy(path, getparam("panel"));
-      strcpy(hgroup, getparam("group"));
+      strlcpy(path, getparam("panel"), path_size);
+      strlcpy(hgroup, getparam("group"), sizeof(hgroup));
       /* use new group if present */
       if (isparam("new_group") && *getparam("new_group"))
-         strcpy(hgroup, getparam("new_group"));
+         strlcpy(hgroup, getparam("new_group"), sizeof(hgroup));
 
       /* create new panel */
       sprintf(str, "/History/Display/%s/%s", hgroup, path);
@@ -8319,23 +8318,23 @@ void show_hist_page(char *path, char *buffer, int *buffer_size, int refresh)
          sprintf(str + strlen(str), "?scale=%s", getparam("hscale"));
       if (getparam("hoffset") && *getparam("hoffset")) {
          if (strchr(str, '?'))
-            strcat(str, "&");
+            strlcat(str, "&", sizeof(str));
          else
-            strcat(str, "?");
+            strlcat(str, "?", sizeof(str));
          sprintf(str + strlen(str), "offset=%s", getparam("hoffset"));
       }
       if (getparam("hwidth") && *getparam("hwidth")) {
          if (strchr(str, '?'))
-            strcat(str, "&");
+            strlcat(str, "&", sizeof(str));
          else
-            strcat(str, "?");
+            strlcat(str, "?", sizeof(str));
          sprintf(str + strlen(str), "width=%s", getparam("hwidth"));
       }
       if (getparam("hindex") && *getparam("hindex")) {
          if (strchr(str, '?'))
-            strcat(str, "&");
+            strlcat(str, "&", sizeof(str));
          else
-            strcat(str, "?");
+            strlcat(str, "?", sizeof(str));
          sprintf(str + strlen(str), "index=%s", getparam("hindex"));
       }
 
@@ -8363,17 +8362,17 @@ void show_hist_page(char *path, char *buffer, int *buffer_size, int refresh)
    if (*getparam("bgcolor"))
       strlcpy(bgcolor, getparam("bgcolor"), sizeof(bgcolor));
    else
-      strcpy(bgcolor, "FFFFFF");
+      strcpy(bgcolor, "FFFFFF"); // safe KO 26-Jul-2006
  
    if (*getparam("fgcolor"))
       strlcpy(fgcolor, getparam("fgcolor"), sizeof(fgcolor));
    else
-      strcpy(fgcolor, "000000");
+      strcpy(fgcolor, "000000"); // safe KO 26-Jul-2006
 
    if (*getparam("gcolor"))
       strlcpy(gridcolor, getparam("gcolor"), sizeof(gridcolor));
    else
-      strcpy(gridcolor, "A0A0A0");
+      strcpy(gridcolor, "A0A0A0"); // safe KO 26-Jul-2006
 
    /* evaluate scale and offset */
 
@@ -8455,7 +8454,7 @@ void show_hist_page(char *path, char *buffer, int *buffer_size, int refresh)
       if (path[0] && !equal_ustring(path, "All")) {
          sprintf(str, "/History/Display/%s/Timescale", path);
 
-         strcpy(scalestr, "1h");
+         strcpy(scalestr, "1h"); // safe KO 26-Jul-2006
          size = NAME_LENGTH;
          status = db_get_value(hDB, 0, str, scalestr, &size, TID_STRING, TRUE);
          if (status != DB_SUCCESS) {
@@ -8464,7 +8463,7 @@ void show_hist_page(char *path, char *buffer, int *buffer_size, int refresh)
             if (hkey)
                db_delete_key(hDB, hkey, FALSE);
 
-            strcpy(scalestr, "1h");
+            strcpy(scalestr, "1h"); // safe KO 26-Jul-2006
             size = NAME_LENGTH;
             db_get_value(hDB, 0, str, scalestr, &size, TID_STRING, TRUE);
          }
@@ -8507,11 +8506,11 @@ void show_hist_page(char *path, char *buffer, int *buffer_size, int refresh)
    db_find_key(hDB, 0, "/History/Display", &hkey);
    if (!hkey) {
       /* create default panel */
-      strcpy(str, "System:Trigger per sec.");
-      strcpy(str + 2 * NAME_LENGTH, "System:Trigger kB per sec.");
+      strcpy(str, "System:Trigger per sec."); // safe KO 26-Jul-2006
+      strcpy(str + 2 * NAME_LENGTH, "System:Trigger kB per sec."); // probably safe KO 26-Jul-2006
       db_set_value(hDB, 0, "/History/Display/Default/Trigger rate/Variables",
                    str, NAME_LENGTH * 4, 2, TID_STRING);
-      strcpy(str, "1h");
+      strcpy(str, "1h"); // safe KO 26-Jul-2006
       db_set_value(hDB, 0, "/History/Display/Default/Trigger rate/Time Scale",
                    str, NAME_LENGTH, 1, TID_STRING);
 
@@ -8523,7 +8522,7 @@ void show_hist_page(char *path, char *buffer, int *buffer_size, int refresh)
       factor[1] = 0;
       db_set_value(hDB, 0, "/History/Display/Default/Trigger rate/Offset",
                    factor, 2 * sizeof(float), 2, TID_FLOAT);
-      strcpy(str, "1h");
+      strcpy(str, "1h"); // safe KO 26-Jul-2006
       db_set_value(hDB, 0, "/History/Display/Default/Trigger rate/Timescale",
                    str, NAME_LENGTH, 1, TID_STRING);
       i = 1;
@@ -8557,9 +8556,9 @@ void show_hist_page(char *path, char *buffer, int *buffer_size, int refresh)
             db_get_key(hDB, hikeyp, &ikey);
 
             if (strchr(path, '/'))
-               strcpy(str, strchr(path, '/') + 1);
+               strlcpy(str, strchr(path, '/') + 1, sizeof(str));
             else
-               strcpy(str, path);
+               strlcpy(str, path, sizeof(str));
 
             if (equal_ustring(str, ikey.name))
                rsprintf("<small><b>%s</b></small> &nbsp;", ikey.name);
@@ -8747,9 +8746,9 @@ void get_password(char *password)
    static char last_password[32];
 
    if (strncmp(password, "set=", 4) == 0)
-      strcpy(last_password, password + 4);
+      strlcpy(last_password, password + 4, sizeof(last_password));
    else
-      strcpy(password, last_password);
+      strcpy(password, last_password); // unsafe: do not know size of password string, has to be this way because of cm_connect_experiment() KO 27-Jul-2006
 }
 
 /*------------------------------------------------------------------*/
@@ -8778,7 +8777,7 @@ void send_favicon(char *icon)
    time(&now);
    now += (int) (3600 * 24);
    gmt = gmtime(&now);
-   strcpy(format, "%A, %d-%b-%y %H:%M:%S GMT");
+   strcpy(format, "%A, %d-%b-%y %H:%M:%S GMT"); // probably safe KO 26-Jul-2006
    strftime(str, sizeof(str), format, gmt);
    rsprintf("Expires: %s\r\n", str);
 
@@ -8832,8 +8831,8 @@ void interprete(char *cookie_pwd, char *cookie_wpwd, char *path, int refresh)
    strlcpy(dec_path, path, sizeof(dec_path));
    urlDecode(dec_path);
    // ##urlDecode(dec_path); /* necessary for %2520 -> %20 -> ' ' */
-   strcpy(enc_path, dec_path);
-   urlEncode(enc_path);
+   strlcpy(enc_path, dec_path, sizeof(enc_path));
+   urlEncode(enc_path, sizeof(enc_path));
 
    experiment = getparam("exp");
    password = getparam("pwd");
@@ -8884,7 +8883,7 @@ void interprete(char *cookie_pwd, char *cookie_wpwd, char *path, int refresh)
       }
 
       /* remember experiment */
-      strcpy(exp_name, experiment);
+      strlcpy(exp_name, experiment, sizeof(exp_name));
       connected = TRUE;
 
       /* place a request for system messages */
@@ -9051,7 +9050,7 @@ void interprete(char *cookie_pwd, char *cookie_wpwd, char *path, int refresh)
             return;
       }
 
-      show_hist_page(dec_path + 3, NULL, NULL, refresh);
+      show_hist_page(dec_path + 3, sizeof(dec_path) - 3, NULL, NULL, refresh);
       return;
    }
 
@@ -9180,7 +9179,7 @@ void interprete(char *cookie_pwd, char *cookie_wpwd, char *path, int refresh)
          return;
 
       /* extract equipment name */
-      strcpy(eq_name, command + 8);
+      strlcpy(eq_name, command + 8, sizeof(eq_name));
       if (strchr(eq_name, ' '))
          *strchr(eq_name, ' ') = 0;
 
@@ -9237,7 +9236,7 @@ void interprete(char *cookie_pwd, char *cookie_wpwd, char *path, int refresh)
          /* extract equipment name */
          eq_name[0] = 0;
          if (strncmp(enc_path, "Equipment/", 10) == 0) {
-            strcpy(eq_name, enc_path + 10);
+            strlcpy(eq_name, enc_path + 10, sizeof(eq_name));
             if (strchr(eq_name, '/'))
                *strchr(eq_name, '/') = 0;
          }
@@ -9258,7 +9257,7 @@ void interprete(char *cookie_pwd, char *cookie_wpwd, char *path, int refresh)
       if (!check_web_password(cookie_wpwd, str, experiment))
          return;
 
-      show_set_page(enc_path, dec_path, group, index, value);
+      show_set_page(enc_path, sizeof(enc_path), dec_path, group, index, value);
       return;
    }
 
@@ -9368,12 +9367,12 @@ void interprete(char *cookie_pwd, char *cookie_wpwd, char *path, int refresh)
             return;
       }
 
-      show_elog_page(dec_path + 3);
+      show_elog_page(dec_path + 3, sizeof(dec_path) - 3);
       return;
    }
 
    if (equal_ustring(command, "Create ELog from this page")) {
-      show_elog_page(dec_path);
+      show_elog_page(dec_path, sizeof(dec_path));
       return;
    }
 
@@ -9465,7 +9464,7 @@ void interprete(char *cookie_pwd, char *cookie_wpwd, char *path, int refresh)
    /*---- show ODB --------------------------------------------------*/
 
    if (path[0]) {
-      show_odb_page(enc_path, dec_path);
+      show_odb_page(enc_path, sizeof(enc_path), dec_path);
       return;
    }
 }
@@ -9479,7 +9478,7 @@ void decode_get(char *string, char *cookie_pwd, char *cookie_wpwd, int refresh)
 
    initparam();
 
-   strncpy(path, string + 1, sizeof(path));     /* strip leading '/' */
+   strlcpy(path, string + 1, sizeof(path));     /* strip leading '/' */
    path[255] = 0;
    if (strchr(path, '?'))
       *strchr(path, '?') = 0;
@@ -9699,7 +9698,7 @@ struct linger        ling;
 
    /* if domain name is not in host name, hope to get it from phe */
    if (strchr(host_name, '.') == NULL)
-      strcpy(host_name, phe->h_name);
+      strlcpy(host_name, phe->h_name, sizeof(host_name));
 
 #ifdef OS_UNIX
    /* give up root privilege */
@@ -9756,15 +9755,15 @@ struct linger        ling;
             struct hostent *phe;
             char str[256];
 
-            strcpy(str, ss_asctime());
+            strcpy(str, ss_asctime()); // probably safe KO 26-Jul-2006
             printf(str);
             printf("=== Received request from ");
             phe = gethostbyaddr((char *) &remote_addr, 4, PF_INET);
             if (phe == NULL) {
                /* use IP number instead */
-               strcpy(str, (char *) inet_ntoa(remote_addr));
+               strlcpy(str, (char *) inet_ntoa(remote_addr), sizeof(str));
             } else
-               strcpy(str, phe->h_name);
+               strlcpy(str, phe->h_name, sizeof(str));
             puts(str);
             printf("===========\n");
             fflush(stdout);
@@ -9857,7 +9856,7 @@ struct linger        ling;
 
                   boundary[0] = 0;
                   if (strstr(net_buffer, "boundary=")) {
-                     strncpy(boundary, strstr(net_buffer, "boundary=") + 9, sizeof(boundary));
+                     strlcpy(boundary, strstr(net_buffer, "boundary=") + 9, sizeof(boundary));
                      if (strchr(boundary, '\r'))
                         *strchr(boundary, '\r') = 0;
                   }
@@ -9890,11 +9889,11 @@ struct linger        ling;
          cookie_pwd[0] = 0;
          cookie_wpwd[0] = 0;
          if (strstr(net_buffer, "midas_pwd=") != NULL) {
-            strcpy(cookie_pwd, strstr(net_buffer, "midas_pwd=") + 10);
+            strlcpy(cookie_pwd, strstr(net_buffer, "midas_pwd=") + 10, sizeof(cookie_pwd));
             cookie_pwd[strcspn(cookie_pwd, " ;\r\n")] = 0;
          }
          if (strstr(net_buffer, "midas_wpwd=") != NULL) {
-            strcpy(cookie_wpwd, strstr(net_buffer, "midas_wpwd=") + 11);
+            strlcpy(cookie_wpwd, strstr(net_buffer, "midas_wpwd=") + 11, sizeof(cookie_wpwd));
             cookie_wpwd[strcspn(cookie_wpwd, " ;\r\n")] = 0;
          }
 
@@ -9952,7 +9951,7 @@ struct linger        ling;
 
             if (verbose) {
                char str[256];
-               strcpy(str, ss_asctime());
+               strcpy(str, ss_asctime()); // probably safe KO 26-Jul-2006
                printf(str);
                printf("==== Return buffer %i bytes ===\n", return_length);
                printf("\n\n");
