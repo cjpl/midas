@@ -16,9 +16,10 @@
 
 INT all_flag;
 INT hBufEvent;
+INT event_byte_count;
 char event_buffer[MAX_EVENT_SIZE];
 
-/*----- process_message --------------------------------------------*/
+/*----- Print any system message -----------------------------------*/
 
 void process_message(HNDLE hBuf, HNDLE id, EVENT_HEADER * pheader, void *message)
 {
@@ -26,7 +27,7 @@ void process_message(HNDLE hBuf, HNDLE id, EVENT_HEADER * pheader, void *message
    printf("%s\n", (char *) message);
 }
 
-/*----- process_message --------------------------------------------*/
+/*----- Print any run transition -----------------------------------*/
 
 INT transition(INT run_number, char *error)
 {
@@ -38,19 +39,16 @@ INT transition(INT run_number, char *error)
 
 void process_event(HNDLE hBuf, HNDLE request_id, EVENT_HEADER * pheader, void *pevent)
 {
-   static INT ser[10], count, start_time, jam = 0;
+   static INT ser[10], jam = 0;
 
-   INT stop_time;
    INT size, *pdata, id;
-   BUFFER_HEADER buffer_header;
-   double rate;
 
    /* accumulate received event size */
    size = pheader->data_size;
    id = pheader->event_id;
    if (id > 9)
       id = 9;
-   count += size;
+   event_byte_count += size;
 
    /* check if first and last word inside event is equal
       to size to check that nothing was overwritten... */
@@ -76,29 +74,15 @@ void process_event(HNDLE hBuf, HNDLE request_id, EVENT_HEADER * pheader, void *p
              pheader->serial_number, ser[id], pheader->event_id, pheader->data_size);
 
    ser[id] = pheader->serial_number;
-
-   /* calculate rates each second */
-   if (ss_millitime() - start_time > 1000) {
-      stop_time = ss_millitime();
-      rate = count / 1024.0 / 1024.0 / ((stop_time - start_time) / 1000.0);
-
-      /* get information about filling level of the buffer */
-      bm_get_buffer_info(hBufEvent, &buffer_header);
-      size = buffer_header.read_pointer - buffer_header.write_pointer;
-      if (size <= 0)
-         size += buffer_header.size;
-      printf("Level: %4.1lf %%, ", 100 - 100.0 * size / buffer_header.size);
-
-      printf("Rate: %1.2lf MB/sec\n", rate);
-      start_time = stop_time;
-      count = 0;
-   }
 }
 
 /*------------------------------------------------------------------*/
 
 int main()
 {
+   INT start_time, stop_time;
+   double rate;
+   BUFFER_HEADER buffer_header;
    INT status, size, trans, run_number;
    char host_name[256], str[32];
    INT event_id, request_id;
@@ -146,6 +130,8 @@ int main()
    cm_register_transition(TR_START, via_callback? transition : NULL, 500);
 
    last_time = 0;
+   start_time = 0;
+   event_byte_count = 0;
 
    do {
       if (via_callback)
@@ -167,6 +153,23 @@ int main()
             last_time = ss_millitime();
             status = cm_yield(0);
          }
+      }
+
+      /* calculate rates each second */
+      if (ss_millitime() - start_time > 1000) {
+         stop_time = ss_millitime();
+         rate = event_byte_count / 1024.0 / 1024.0 / ((stop_time - start_time) / 1000.0);
+
+         /* get information about filling level of the buffer */
+         bm_get_buffer_info(hBufEvent, &buffer_header);
+         size = buffer_header.read_pointer - buffer_header.write_pointer;
+         if (size <= 0)
+            size += buffer_header.size;
+         printf("Level: %4.1lf %%, ", 100 - 100.0 * size / buffer_header.size);
+
+         printf("Rate: %1.2lf MB/sec\n", rate);
+         start_time = stop_time;
+         event_byte_count = 0;
       }
 
    } while (status != RPC_SHUTDOWN && status != SS_ABORT);
