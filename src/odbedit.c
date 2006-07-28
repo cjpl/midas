@@ -2690,7 +2690,7 @@ int main(int argc, char *argv[])
    cm_msg_register(process_message);
 
    /* route local messages through print_message */
-   cm_set_msg_print(MT_ALL, MT_ERROR, print_message);
+   cm_set_msg_print(MT_ALL, MT_ALL, print_message);
 
    /* turn off watchdog if in debug mode */
    if (debug)
