@@ -6,7 +6,7 @@
   Contents:     Buffer manager test program. Simple producer connec-
                 ting to a SYSTEM buffer and sending some data.
 
-  $Id:$
+  $Id$
 
 \********************************************************************/
 
@@ -28,8 +28,9 @@ main()
    INT *pdata, count;
    INT start, stop;
    double rate;
-   int id, size, act_size, variable_size, flush = 0;
+   int id, size, event_size, act_size, variable_size, flush = 0;
    char host_name[256];
+   BUFFER_HEADER buffer_header;
 
    /* get parameters */
 
@@ -42,10 +43,10 @@ main()
 
    printf("Event size: ");
    ss_gets(str, 256);
-   size = atoi(str);
-   if (size < 0) {
+   event_size = atoi(str);
+   if (event_size < 0) {
       variable_size = 1;
-      size = -size;
+      event_size = -event_size;
    } else
       variable_size = 0;
 
@@ -61,8 +62,8 @@ main()
    bm_set_cache_size(hBuf, 0, 100000);
 
    /* allocate event buffer */
-   event = (char *) malloc(size + sizeof(EVENT_HEADER));
-   memset(event, 0, size + sizeof(EVENT_HEADER));
+   event = (char *) malloc(event_size + sizeof(EVENT_HEADER));
+   memset(event, 0, event_size + sizeof(EVENT_HEADER));
    if (event == NULL) {
       printf("Not enough memory for event buffer\n");
       goto error;
@@ -76,9 +77,9 @@ main()
       do {
          for (i = 0; i < 10; i++) {
             if (variable_size)
-               act_size = (rand() % (size - 10)) + 10;
+               act_size = (rand() % (event_size - 10)) + 10;
             else
-               act_size = size;
+               act_size = event_size;
 
             /* place the event size in the first and last word of
                the event to check later if data has been overwritten
@@ -91,7 +92,7 @@ main()
                              act_size, ((EVENT_HEADER *) (event))->serial_number + 1);
 
             if (act_size < 0)
-               printf("Error: act_size = %d, size = %d\n", act_size, size);
+               printf("Error: act_size = %d, size = %d\n", act_size, event_size);
 
             /* now send event */
             status = rpc_send_event(hBuf, event, act_size + sizeof(EVENT_HEADER), SYNC);
@@ -103,11 +104,6 @@ main()
                       status, act_size);
                goto error;
             }
-
-/*
-        printf(".");
-        getchar();
-*/
 
             count += act_size;
          }
@@ -121,6 +117,13 @@ main()
          rate = count / 1024.0 / 1024.0 / (stop / 1000.0 - start / 1000.0);
       else
          rate = 0;
+
+      /* get information about filling level of the buffer */
+      bm_get_buffer_info(hBuf, &buffer_header);
+      size = buffer_header.read_pointer - buffer_header.write_pointer;
+      if (size <= 0)
+         size += buffer_header.size;
+      printf("Level: %4.1lf %%, ", 100 - 100.0 * size / buffer_header.size);
 
       printf("Rate: %1.2lf MB/sec\n", rate);
 
