@@ -1215,6 +1215,7 @@ Function value:
    DWORD watchdog_timeout;
    LAZY_INFO *pLch;
    static BOOL eot_reached = FALSE;
+   BOOL haveTape;
 
    /* current channel */
    pLch = &pLall[channel];
@@ -1250,10 +1251,11 @@ Function value:
    /* Check if Tape is OK */
    /* ... */
 
+   haveTape = (lazy.backlabel[0] != '\0');
+
    /* check if space on device (not empty tape label) */
    if (lazy.backlabel[0] == '\0') {
       full_bck_flag = TRUE;
-      return NOTHING_TODO;
    } else {
       if (full_bck_flag) {
          full_bck_flag = FALSE;
@@ -1349,6 +1351,19 @@ Function value:
       donepurge = FALSE;
       svfree = freepercent = 100. * ss_disk_free(lazy.dir) / ss_disk_size(lazy.dir);
 
+      if (!haveTape && freepercent < 5.0)
+	{
+	  char buf[256];
+	  sprintf(buf, "Disk buffer is almost full, free space: %.1f%%", freepercent);
+
+	  al_trigger_alarm("TapeX",
+			   buf,
+			   lazy.alarm, "Disk buffer full", AT_INTERNAL);
+	}
+      else
+	{
+	  al_reset_alarm("TapeX");
+	}
 
       /* check purging action */
       while (freepercent <= (double) lazy.pupercent) {
@@ -1401,6 +1416,9 @@ Function value:
 
    /* check if backup run is beyond keep */
    if (lazyst.cur_run >= (cur_acq_run - abs(lazy.staybehind)))
+      return NOTHING_TODO;
+
+   if (!haveTape)
       return NOTHING_TODO;
 
    /* Compose the proper file name */
@@ -1567,6 +1585,9 @@ int main(int argc, char **argv)
    char expt_name[HOST_NAME_LENGTH];
    BOOL debug, daemon;
    INT i, msg, ch, size, status, mainlast_time;
+
+   setbuf(stdout,NULL);
+   setbuf(stderr,NULL);
 
    /* set default */
    host_name[0] = 0;
