@@ -572,7 +572,8 @@ INT cm_msg(INT message_type, char *filename, INT line,
       sprintf(str, "[%s:%d:%s] ", pc, line, routine);
       strcat(send_message, str);
       strcat(local_message, str);
-   }
+   } else if (message_type == MT_USER)
+      sprintf(local_message, "[%s] ", routine);
 
    /* print argument list into message */
    va_start(argptr, format);
@@ -5740,11 +5741,8 @@ INT bm_send_event(INT buffer_handle, void *source, INT buf_size, INT async_flag)
          }
 
       /* shift read pointer of own client */
-/* 16.4.99 SR, outcommented to receive own messages
-
-  if (pclient[my_client_index].read_pointer == old_write_pointer)
-    pclient[my_client_index].read_pointer = pheader->write_pointer;
-*/
+      if (pclient[my_client_index].read_pointer == old_write_pointer)
+         pclient[my_client_index].read_pointer = pheader->write_pointer;
 
       /* calculate global read pointer as "minimum" of client read pointers */
       min_wp = pheader->write_pointer;
@@ -6060,11 +6058,8 @@ INT bm_flush_cache(INT buffer_handle, INT async_flag)
          }
 
       /* shift read pointer of own client */
-/* 16.4.99 SR, outcommented to receive own messages
-
-  if (pclient[my_client_index].read_pointer == old_write_pointer)
-    pclient[my_client_index].read_pointer = pheader->write_pointer;
-*/
+      if (pclient[my_client_index].read_pointer == old_write_pointer)
+         pclient[my_client_index].read_pointer = pheader->write_pointer;
 
       /* calculate global read pointer as "minimum" of client read pointers */
       min_wp = pheader->write_pointer;
