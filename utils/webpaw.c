@@ -69,6 +69,12 @@ char paw_prompt[80];
 #define O_BINARY 0
 #endif
 
+#if defined(__alpha) || defined(_LP64)
+#define POINTER_T     long int
+#else
+#define POINTER_T     int
+#endif
+
 /*------------------------------------------------------------------*/
 
 void debug_message(char *str)
@@ -1600,7 +1606,7 @@ void create_password(char *pwd)
    if (strstr(cfgbuffer, "Password")) {
       /* replace existing password */
       p = strstr(cfgbuffer, "Password");
-      i = (int) p - (int) cfgbuffer;
+      i = (POINTER_T) p - (POINTER_T) cfgbuffer;
       write(fh, cfgbuffer, i);
       sprintf(str, "Password=%s\n", pwd);
       write(fh, str, strlen(str));
@@ -1616,7 +1622,7 @@ void create_password(char *pwd)
       p = strstr(cfgbuffer, "[Global]") + 9;
       while (*p && (*p == '\r' || *p == '\n'))
          p++;
-      i = (int) p - (int) cfgbuffer;
+      i = (POINTER_T) p - (POINTER_T) cfgbuffer;
       write(fh, cfgbuffer, i);
       sprintf(str, "Password=%s\n", pwd);
       write(fh, str, strlen(str));
