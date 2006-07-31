@@ -6,7 +6,7 @@
   Cotents:      MIDAS FASTBUS standard routines. Has to be combined
                 with either LRS1821.C or STR340.C
                 
-  $Id:$
+  $Id$
 
 *********************************************************************/
 
@@ -17,10 +17,8 @@
 
 typedef unsigned short int WORD;
 
-#ifdef __alpha
+#ifndef _MSC_VER
 typedef unsigned int DWORD;
-#else
-typedef unsigned long int DWORD;
 #endif
 
 #define SUCCESS  1

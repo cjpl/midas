@@ -57,11 +57,8 @@ The Midas CAMAC include file
 
 typedef unsigned char BYTE;
 typedef unsigned short int WORD;
-
-#ifdef __alpha
+#ifndef _MSC_VER
 typedef unsigned int DWORD;
-#else
-typedef unsigned long int DWORD;
 #endif
 
 #define SUCCESS  1
@@ -678,7 +675,7 @@ Reads in lam the lam pattern of the entire crate.
 @param lam LAM pattern of the crate
 @return void
 */
-   EXTERNAL INLINE void EXPRT cam_lam_read(const int c, DWORD * lam);
+   EXTERNAL void cam_lam_read(const int c, DWORD * lam);
 
 /********************************************************************/
 /**
