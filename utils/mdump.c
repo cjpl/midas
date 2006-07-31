@@ -145,7 +145,7 @@ int replog(int data_fmt, char *rep_file, int bl, int action)
                    pme->event_id == EVENTID_EOR || pme->event_id == EVENTID_MESSAGE)
                   continue;
                printf
-                   ("Evid:%4.4hx- Mask:%4.4hx- Serial:%ld- Time:0x%lx- Dsize:%ld/0x%lx\n",
+                   ("Evid:%4.4x- Mask:%4.4x- Serial:%d- Time:0x%x- Dsize:%d/0x%x\n",
                     pme->event_id, pme->trigger_mask, pme->serial_number, pme->time_stamp,
                     pme->data_size, pme->data_size);
                pmbkh = (BANK_HEADER *) (((EVENT_HEADER *) pmyevt) + 1);
@@ -244,15 +244,15 @@ void process_event(HNDLE hBuf, HNDLE request_id, EVENT_HEADER * pheader, void *p
       if (pheader->serial_number != pevh.serial_number + 1) {
          /* event header */
          printf
-             ("\nLast - Evid:%4.4hx- Mask:%4.4hx- Serial:%li- Time:0x%lx- Dsize:%li/0x%lx\n",
+             ("\nLast - Evid:%4.4x- Mask:%4.4x- Serial:%i- Time:0x%x- Dsize:%i/0x%x\n",
               pevh.event_id, pevh.trigger_mask, pevh.serial_number, pevh.time_stamp,
               pevh.data_size, pevh.data_size);
          printf
-             ("Now  - Evid:%4.4hx- Mask:%4.4hx- Serial:%li- Time:0x%lx- Dsize:%li/0x%lx\n",
+             ("Now  - Evid:%4.4x- Mask:%4.4x- Serial:%i- Time:0x%x- Dsize:%i/0x%x\n",
               pheader->event_id, pheader->trigger_mask, pheader->serial_number,
               pheader->time_stamp, pheader->data_size, pheader->data_size);
       } else {
-         printf("Consistency check: %c - %li\r", bars[i_bar++ % 4],
+         printf("Consistency check: %c - %i\r", bars[i_bar++ % 4],
                 pheader->serial_number);
          fflush(stdout);
       }
@@ -282,7 +282,7 @@ void process_event(HNDLE hBuf, HNDLE request_id, EVENT_HEADER * pheader, void *p
             if ((status = ybk_find(plrl, sbank_name, &bklen, &bktyp, (void *) &pybk)) == YB_SUCCESS) {  /* given bank found in list */
                status = ybk_list(plrl, banklist);
                printf("#banks:%i Bank list:-%s-\n", status, banklist);
-               printf("Bank:%s - Length (I*4):%li - Type:%li - pBk:%p\n", sbank_name,
+               printf("Bank:%s - Length (I*4):%i - Type:%i - pBk:%p\n", sbank_name,
                       bklen, bktyp, pybk);
                yb_any_bank_display(NULL, pybk, FORMAT_YBOS, dsp_mode, dsp_fmt);
             } else {
@@ -292,7 +292,7 @@ void process_event(HNDLE hBuf, HNDLE request_id, EVENT_HEADER * pheader, void *p
             }
          } else {               /* Full event */
             /* event header */
-            printf("Evid:%4.4hx- Mask:%4.4hx- Serial:%ld- Time:0x%lx- Dsize:%ld/0x%lx\n",
+            printf("Evid:%4.4x- Mask:%4.4x- Serial:%d- Time:0x%x- Dsize:%d/0x%x\n",
                    pheader->event_id, pheader->trigger_mask, pheader->serial_number,
                    pheader->time_stamp, pheader->data_size, pheader->data_size);
 
@@ -319,7 +319,7 @@ void process_event(HNDLE hBuf, HNDLE request_id, EVENT_HEADER * pheader, void *p
             if (disp_bank_list) {
                /* event header */
                printf
-                   ("Evid:%4.4hx- Mask:%4.4hx- Serial:%ld- Time:0x%lx- Dsize:%ld/0x%lx\n",
+                   ("Evid:%4.4x- Mask:%4.4x- Serial:%d- Time:0x%x- Dsize:%d/0x%x\n",
                     pheader->event_id, pheader->trigger_mask, pheader->serial_number,
                     pheader->time_stamp, pheader->data_size, pheader->data_size);
                status = bk_list(pmbh, banklist);

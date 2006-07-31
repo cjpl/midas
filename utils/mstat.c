@@ -5,7 +5,7 @@
   
   Contents:     Display/log some pertinent information of the ODB
   
-  $Id:$
+  $Id$
 
 \********************************************************************/
 
@@ -153,13 +153,13 @@ void compose_status(HNDLE hDB, HNDLE hKey)
 
       /* time */
       if (rs != STATE_STOPPED) {
-         cm_time((DWORD *) (&full_time));
+         cm_time((void *) (&full_time));
          difftime = full_time - tb;
          if (esc_flag)
-            sprintf(&(ststr[j++][66]), "Run time :%02ld:%02ld:%02ld",
+            sprintf(&(ststr[j++][66]), "Run time :%02d:%02d:%02d",
                     difftime / 3600, difftime % 3600 / 60, difftime % 60);
          else
-            sprintf(&(ststr[j++][54]), "     Run time :%02ld:%02ld:%02ld",
+            sprintf(&(ststr[j++][54]), "     Run time :%02d:%02d:%02d",
                     difftime / 3600, difftime % 3600 / 60, difftime % 60);
       } else if (rs == STATE_STOPPED) {
          if (tsb < tb)
@@ -167,10 +167,10 @@ void compose_status(HNDLE hDB, HNDLE hKey)
          else
             difftime = tsb - tb;
          if (esc_flag)
-            sprintf(&(ststr[j++][54]), "Full Run time :%02ld:%02ld:%02ld",
+            sprintf(&(ststr[j++][54]), "Full Run time :%02d:%02d:%02d",
                     difftime / 3600, difftime % 3600 / 60, difftime % 60);
          else
-            sprintf(&(ststr[j++][54]), "Full Run time :%02ld:%02ld:%02ld",
+            sprintf(&(ststr[j++][54]), "Full Run time :%02d:%02d:%02d",
                     difftime / 3600, difftime % 3600 / 60, difftime % 60);
 
          sprintf(&(ststr[j][42]), " Stop time:%s", spt);
@@ -506,7 +506,7 @@ void compose_status(HNDLE hDB, HNDLE hKey)
 
    if (loop == 1)
       sprintf(ststr[j++],
-              "*- [!<cr>] to Exit --- [R<cr>] to Refresh -------------------- Delay:%2.li [sec]-*",
+              "*- [!<cr>] to Exit --- [R<cr>] to Refresh -------------------- Delay:%2.i [sec]-*",
               delta_time / 1000);
    else
       sprintf(ststr[j++],

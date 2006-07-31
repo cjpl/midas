@@ -80,10 +80,10 @@ INT tape_dir(INT channel, INT count)
       } else {
          blockn = ss_tape_get_blockn(channel);
          if (blockn > 0)
-            printf("Found run #%ld at block#:%d recorded on %s", event->serial_number,
+            printf("Found run #%d at block#:%d recorded on %s", event->serial_number,
                    blockn, ctime((time_t *) &event->time_stamp));
          else
-            printf("Found run #%ld recorded on %s", event->serial_number,
+            printf("Found run #%d recorded on %s", event->serial_number,
                    ctime((time_t *) &event->time_stamp));
       }
       if (index < count - 1) {

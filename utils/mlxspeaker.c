@@ -5,7 +5,7 @@
 
   Contents:     Speaks midas messages (UNIX version)
 
-  $Id:$
+  $Id$
 
 \********************************************************************/
 
@@ -56,7 +56,7 @@ void receive_message(HNDLE hBuf, HNDLE id, EVENT_HEADER * header, void *message)
    }
 
    if (debug) {
-      printf("evID:%hx Mask:%hx Serial:%li Size:%ld\n", header->event_id,
+      printf("evID:%x Mask:%x Serial:%i Size:%d\n", header->event_id,
              header->trigger_mask, header->serial_number, header->data_size);
       pc = strchr((char *) (message), ']') + 2;
    }

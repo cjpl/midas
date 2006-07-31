@@ -190,7 +190,7 @@ void mcstd_func(CAMAC * PP)
          break;
       case CAM_LAM_READ:
          cam_lam_read(p->c, &lam);
-         printf("cam_lam_read:C%i-> 0x%lx\n", p->c, lam);
+         printf("cam_lam_read:C%i-> 0x%x\n", p->c, lam);
          break;
       case CAM_LAM_CLEAR:
          cam_lam_clear(p->c, p->n);
@@ -245,7 +245,7 @@ void mcstd_func(CAMAC * PP)
       case CAM24O:
          do {
             cam24o(p->c, p->n, p->a, p->f, p->d24);
-            printf("cam24o:[R%i]-C%i-N%i-A%i-F%i <- 0x%lx\n", ++i, p->c, p->n, p->a, p->f,
+            printf("cam24o:[R%i]-C%i-N%i-A%i-F%i <- 0x%x\n", ++i, p->c, p->n, p->a, p->f,
                    p->d24);
          } while (i < p->r);
          break;
@@ -259,7 +259,7 @@ void mcstd_func(CAMAC * PP)
       case CAM24O_Q:
          do {
             cam24o_q(p->c, p->n, p->a, p->f, p->d24, &p->x, &p->q);
-            printf("cam24o_q:[R%i]-C%i-N%i-A%i-F%i <- 0x%lx X:%i-Q:%i\n", ++i, p->c, p->n,
+            printf("cam24o_q:[R%i]-C%i-N%i-A%i-F%i <- 0x%x X:%i-Q:%i\n", ++i, p->c, p->n,
                    p->a, p->f, p->d24, p->x, p->q);
          } while (i < p->r);
          break;
@@ -269,7 +269,7 @@ void mcstd_func(CAMAC * PP)
          break;
       case CAM24O_R:
          cam24o_r(p->c, p->n, p->a, p->f, pdd24, p->r);
-         printf("cam24o_r:C%i-N%i-A%i-F%i <- 0x%lx\n", p->c, p->n, p->a, p->f, p->d24);
+         printf("cam24o_r:C%i-N%i-A%i-F%i <- 0x%x\n", p->c, p->n, p->a, p->f, p->d24);
          break;
          /* inputs */
       case CAM16I:
@@ -282,7 +282,7 @@ void mcstd_func(CAMAC * PP)
       case CAM24I:
          do {
             cam24i(p->c, p->n, p->a, p->f, &p->d24);
-            printf("cam24i:[R%i]-C%i-N%i-A%i-F%i-> 0x%6.6lx\n", ++i, p->c, p->n, p->a,
+            printf("cam24i:[R%i]-C%i-N%i-A%i-F%i-> 0x%6.6x\n", ++i, p->c, p->n, p->a,
                    p->f, p->d24);
          } while (i < p->r);
          break;
@@ -296,7 +296,7 @@ void mcstd_func(CAMAC * PP)
       case CAM24I_Q:
          do {
             cam24i_q(p->c, p->n, p->a, p->f, &p->d24, &p->x, &p->q);
-            printf("cam24i_q:[R%i]-C%i-N%i-A%i-F%i-> 0x%6.6lx X:%i-Q:%i\n", ++i, p->c,
+            printf("cam24i_q:[R%i]-C%i-N%i-A%i-F%i-> 0x%6.6x X:%i-Q:%i\n", ++i, p->c,
                    p->n, p->a, p->f, p->d24, p->x, p->q);
          } while (i < p->r);
          break;
@@ -311,7 +311,7 @@ void mcstd_func(CAMAC * PP)
          memset(pdd24, 0, sizeof(dd24));
          cam24i_r(p->c, p->n, p->a, p->f, &pdd24, p->r);
          for (i = 0; i < p->r; i++)
-            printf("cam24i_r:[R%i]-C%i-N%i-A%i-F%i-> 0x%6.6lx\n", i + 1, p->c, p->n, p->a,
+            printf("cam24i_r:[R%i]-C%i-N%i-A%i-F%i-> 0x%6.6x\n", i + 1, p->c, p->n, p->a,
                    p->f, dd24[i]);
          break;
       case CAM16I_RQ:
@@ -325,7 +325,7 @@ void mcstd_func(CAMAC * PP)
          memset(pdd24, 0, sizeof(dd24));
          cam24i_rq(p->c, p->n, p->a, p->f, &pdd24, p->r);
          for (i = 0; i < p->r; i++)
-            printf("cam24i_rq:[R%i]-C%i-N%i-A%i-F%i-> 0x%6.6lx\n", i + 1, p->c, p->n,
+            printf("cam24i_rq:[R%i]-C%i-N%i-A%i-F%i-> 0x%6.6x\n", i + 1, p->c, p->n,
                    p->a, p->f, dd24[i]);
          break;
       case CAM16I_SA:
@@ -339,7 +339,7 @@ void mcstd_func(CAMAC * PP)
          memset(pdd24, 0, sizeof(dd24));
          cam24i_sa(p->c, p->n, p->a, p->f, &pdd24, p->r);
          for (i = 0; i < p->r; i++)
-            printf("cam24i_sa:[R%i]-C%i-N%i-A%i-F%i-> 0x%6.6lx\n", i + 1, p->c, p->n,
+            printf("cam24i_sa:[R%i]-C%i-N%i-A%i-F%i-> 0x%6.6x\n", i + 1, p->c, p->n,
                    p->a + i, p->f, dd24[i]);
          break;
       case CAM16I_SN:
@@ -353,7 +353,7 @@ void mcstd_func(CAMAC * PP)
          memset(pdd24, 0, sizeof(dd24));
          cam24i_sn(p->c, p->n, p->a, p->f, &pdd24, p->r);
          for (i = 0; i < p->r; i++)
-            printf("cam24i_sn:[R%i]-C%i-N%i-A%i-F%i-> 0x%lx\n", i + 1, p->c, p->n + i,
+            printf("cam24i_sn:[R%i]-C%i-N%i-A%i-F%i-> 0x%x\n", i + 1, p->c, p->n + i,
                    p->a, p->f, dd24[i]);
          break;
       case QUIT:
@@ -376,7 +376,7 @@ void make_display_string(int from, CAMAC * p, char *saddr)
 {
    if (from == MAIN) {
       if (p->m == D24)
-         sprintf(saddr, "B%01dC%01dN%02dA%02dF%02d [%ld/0x%06lx Q%01dX%01d] R%dW%dM%2d",
+         sprintf(saddr, "B%01dC%01dN%02dA%02dF%02d [%d/0x%06x Q%01dX%01d] R%dW%dM%2d",
                  p->b, p->c, p->n, p->a, p->f, p->d24, p->d24, p->q, p->x, p->r, p->w,
                  p->m);
       else
@@ -384,7 +384,7 @@ void make_display_string(int from, CAMAC * p, char *saddr)
                  p->b, p->c, p->n, p->a, p->f, p->d16, p->d16, p->q, p->x, p->r, p->w,
                  p->m);
    } else {
-      sprintf(saddr, "B%01dC%01dN%02dA%02dF%02d [%ld/0x%06lx] R%d", p->b, p->c, p->n,
+      sprintf(saddr, "B%01dC%01dN%02dA%02dF%02d [%d/0x%06x] R%d", p->b, p->c, p->n,
               p->a, p->f, p->d24, p->d24, p->r);
    }
 }
