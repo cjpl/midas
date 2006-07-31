@@ -46,6 +46,8 @@ void create_sql_tree();
 #define DEBUG_TRANS 0
 #endif
 
+#define LOGGER_TIMEOUT 60000
+
 #define MAX_CHANNELS 10
 #define MAX_HISTORY  50
 
@@ -3501,6 +3503,9 @@ int main(int argc, char *argv[])
    }
 
    cm_get_experiment_database(&hDB, NULL);
+
+   /* set default watchdog timeout */
+   cm_set_watchdog_params(TRUE, LOGGER_TIMEOUT);
 
    /* turn off watchdog if in debug mode */
    if (debug)
