@@ -8170,11 +8170,11 @@ INT rpc_server_connect(char *host_name, char *exp_name)
 
    /* find out which port OS has chosen */
    size = sizeof(bind_addr);
-   getsockname(lsock1, (struct sockaddr *) &bind_addr, &size);
+   getsockname(lsock1, (struct sockaddr *) &bind_addr, (int *)&size);
    listen_port1 = ntohs(bind_addr.sin_port);
-   getsockname(lsock2, (struct sockaddr *) &bind_addr, &size);
+   getsockname(lsock2, (struct sockaddr *) &bind_addr, (int *)&size);
    listen_port2 = ntohs(bind_addr.sin_port);
-   getsockname(lsock3, (struct sockaddr *) &bind_addr, &size);
+   getsockname(lsock3, (struct sockaddr *) &bind_addr, (int *)&size);
    listen_port3 = ntohs(bind_addr.sin_port);
 
    /* create a new socket for connecting to remote server */
@@ -8291,11 +8291,11 @@ INT rpc_server_connect(char *host_name, char *exp_name)
 
    size = sizeof(bind_addr);
 
-   _server_connection.send_sock = accept(lsock1, (struct sockaddr *) &bind_addr, &size);
+   _server_connection.send_sock = accept(lsock1, (struct sockaddr *) &bind_addr, (int *)&size);
 
-   _server_connection.recv_sock = accept(lsock2, (struct sockaddr *) &bind_addr, &size);
+   _server_connection.recv_sock = accept(lsock2, (struct sockaddr *) &bind_addr, (int *)&size);
 
-   _server_connection.event_sock = accept(lsock3, (struct sockaddr *) &bind_addr, &size);
+   _server_connection.event_sock = accept(lsock3, (struct sockaddr *) &bind_addr, (int *)&size);
 
    if (_server_connection.send_sock == -1 ||
        _server_connection.recv_sock == -1 || _server_connection.event_sock == -1) {
@@ -10398,7 +10398,7 @@ INT rpc_register_server(INT server_type, char *name, INT * port,
    /* return port wich OS has choosen */
    if (port && *port == 0) {
       size = sizeof(bind_addr);
-      getsockname(_lsock, (struct sockaddr *) &bind_addr, &size);
+      getsockname(_lsock, (struct sockaddr *) &bind_addr, (int *)&size);
       *port = ntohs(bind_addr.sin_port);
    }
 
@@ -11082,7 +11082,7 @@ INT rpc_server_accept(int lsock)
 
    if (lsock > 0) {
       size = sizeof(acc_addr);
-      sock = accept(lsock, (struct sockaddr *) &acc_addr, &size);
+      sock = accept(lsock, (struct sockaddr *) &acc_addr, (int *)&size);
 
       if (sock == -1)
          return RPC_NET_ERROR;
@@ -11091,7 +11091,7 @@ INT rpc_server_accept(int lsock)
 
       size = sizeof(acc_addr);
       sock = lsock;
-      getpeername(sock, (struct sockaddr *) &acc_addr, &size);
+      getpeername(sock, (struct sockaddr *) &acc_addr, (int *)&size);
    }
 
    /* receive string with timeout */
@@ -11319,7 +11319,7 @@ INT rpc_client_accept(int lsock)
    char net_buffer[256], *p;
 
    size = sizeof(acc_addr);
-   sock = accept(lsock, (struct sockaddr *) &acc_addr, &size);
+   sock = accept(lsock, (struct sockaddr *) &acc_addr, (int *)&size);
 
    if (sock == -1)
       return RPC_NET_ERROR;
@@ -14062,7 +14062,7 @@ INT hs_read(DWORD event_id, DWORD start_time, DWORD end_time,
          close(fhi);
 
          /* advance one day */
-         tms = localtime((void *) &last_irec_time);
+         tms = localtime((const time_t *)(POINTER_T)&last_irec_time);
          tms->tm_hour = tms->tm_min = tms->tm_sec = 0;
          last_irec_time = mktime(tms);
 
@@ -14309,7 +14309,7 @@ INT hs_dump(DWORD event_id, DWORD start_time, DWORD end_time,
          close(fhi);
 
          /* advance one day */
-         tms = localtime((void *) &last_irec_time);
+         tms = localtime((const time_t *)(POINTER_T)&last_irec_time);
          tms->tm_hour = tms->tm_min = tms->tm_sec = 0;
          last_irec_time = mktime(tms);
 
@@ -14318,7 +14318,7 @@ INT hs_dump(DWORD event_id, DWORD start_time, DWORD end_time,
             break;
 
          /* search next file */
-         status = hs_search_file((void *) &last_irec_time, 1);
+         status = hs_search_file((DWORD *) &last_irec_time, 1);
          if (status != HS_SUCCESS)
             break;
 
