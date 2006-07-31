@@ -56,7 +56,7 @@ static INT _record_list_entries = 0;
 
 extern char *tid_name[];
 
-INT db_save_xml_key(HNDLE hDB, HNDLE hKey, INT level, MXML_WRITER *writer);
+INT db_save_xml_key(HNDLE hDB, HNDLE hKey, INT level, MXML_WRITER * writer);
 
 /*------------------------------------------------------------------*/
 
@@ -116,7 +116,7 @@ void *malloc_key(DATABASE_HEADER * pheader, INT size)
          pfree->size = pfound->size - size;
          pfree->next_free = pfound->next_free;
 
-         pprev->next_free = (PTYPE) pfree - (PTYPE) pheader;
+         pprev->next_free = (POINTER_T) pfree - (POINTER_T) pheader;
       }
    }
 
@@ -144,15 +144,15 @@ void free_key(DATABASE_HEADER * pheader, void *address, INT size)
    memset(address, 0, size);
 
    /* if key comes before first free block, adjust pheader */
-   if ((PTYPE) address - (PTYPE) pheader < pheader->first_free_key) {
+   if ((POINTER_T) address - (POINTER_T) pheader < pheader->first_free_key) {
       pfree->size = size;
       pfree->next_free = pheader->first_free_key;
-      pheader->first_free_key = (PTYPE) address - (PTYPE) pheader;
+      pheader->first_free_key = (POINTER_T) address - (POINTER_T) pheader;
    } else {
       /* find last free block before current block */
       pprev = (FREE_DESCRIP *) ((char *) pheader + pheader->first_free_key);
 
-      while (pprev->next_free < (PTYPE) address - (PTYPE) pheader) {
+      while (pprev->next_free < (POINTER_T) address - (POINTER_T) pheader) {
          if (pprev->next_free <= 0) {
             cm_msg(MERROR, "free_key",
                    "database is corrupted: pprev=0x%x, pprev->next_free=%d",
@@ -165,12 +165,12 @@ void free_key(DATABASE_HEADER * pheader, void *address, INT size)
       pfree->size = size;
       pfree->next_free = pprev->next_free;
 
-      pprev->next_free = (PTYPE) pfree - (PTYPE) pheader;
+      pprev->next_free = (POINTER_T) pfree - (POINTER_T) pheader;
    }
 
    /* try to melt adjacent free blocks after current block */
    pnext = (FREE_DESCRIP *) ((char *) pheader + pfree->next_free);
-   if ((PTYPE) pnext == (PTYPE) pfree + pfree->size) {
+   if ((POINTER_T) pnext == (POINTER_T) pfree + pfree->size) {
       pfree->size += pnext->size;
       pfree->next_free = pnext->next_free;
 
@@ -178,7 +178,7 @@ void free_key(DATABASE_HEADER * pheader, void *address, INT size)
    }
 
    /* try to melt adjacent free blocks before current block */
-   if (pprev && pprev->next_free == (PTYPE) pprev - (PTYPE) pheader + pprev->size) {
+   if (pprev && pprev->next_free == (POINTER_T) pprev - (POINTER_T) pheader + pprev->size) {
       pprev->size += pfree->size;
       pprev->next_free = pfree->next_free;
 
@@ -236,7 +236,7 @@ void *malloc_data(DATABASE_HEADER * pheader, INT size)
          pfree->size = pfound->size - size;
          pfree->next_free = pfound->next_free;
 
-         pprev->next_free = (PTYPE) pfree - (PTYPE) pheader;
+         pprev->next_free = (POINTER_T) pfree - (POINTER_T) pheader;
       }
    }
 
@@ -264,15 +264,15 @@ void free_data(DATABASE_HEADER * pheader, void *address, INT size)
    memset(address, 0, size);
 
    /* if data comes before first free block, adjust pheader */
-   if ((PTYPE) address - (PTYPE) pheader < pheader->first_free_data) {
+   if ((POINTER_T) address - (POINTER_T) pheader < pheader->first_free_data) {
       pfree->size = size;
       pfree->next_free = pheader->first_free_data;
-      pheader->first_free_data = (PTYPE) address - (PTYPE) pheader;
+      pheader->first_free_data = (POINTER_T) address - (POINTER_T) pheader;
    } else {
       /* find last free block before current block */
       pprev = (FREE_DESCRIP *) ((char *) pheader + pheader->first_free_data);
 
-      while (pprev->next_free < (PTYPE) address - (PTYPE) pheader) {
+      while (pprev->next_free < (POINTER_T) address - (POINTER_T) pheader) {
          if (pprev->next_free <= 0) {
             cm_msg(MERROR, "free_data",
                    "database is corrupted: pprev=0x%x, pprev->next_free=%d",
@@ -286,12 +286,12 @@ void free_data(DATABASE_HEADER * pheader, void *address, INT size)
       pfree->size = size;
       pfree->next_free = pprev->next_free;
 
-      pprev->next_free = (PTYPE) pfree - (PTYPE) pheader;
+      pprev->next_free = (POINTER_T) pfree - (POINTER_T) pheader;
    }
 
    /* try to melt adjacent free blocks after current block */
    pnext = (FREE_DESCRIP *) ((char *) pheader + pfree->next_free);
-   if ((PTYPE) pnext == (PTYPE) pfree + pfree->size) {
+   if ((POINTER_T) pnext == (POINTER_T) pfree + pfree->size) {
       pfree->size += pnext->size;
       pfree->next_free = pnext->next_free;
 
@@ -299,7 +299,7 @@ void free_data(DATABASE_HEADER * pheader, void *address, INT size)
    }
 
    /* try to melt adjacent free blocks before current block */
-   if (pprev && pprev->next_free == (PTYPE) pprev - (PTYPE) pheader + pprev->size) {
+   if (pprev && pprev->next_free == (POINTER_T) pprev - (POINTER_T) pheader + pprev->size) {
       pprev->size += pfree->size;
       pprev->next_free = pfree->next_free;
 
@@ -367,8 +367,8 @@ INT print_key_info(HNDLE hDB, HNDLE hKey, KEY * pkey, INT level, void *info)
    p = (char *) info;
 
    sprintf(p + strlen(p), "%08X  %08X  %04X    ",
-           (int)(hKey - sizeof(DATABASE_HEADER)),
-           (int)(pkey->data - sizeof(DATABASE_HEADER)), (int)pkey->total_size);
+           (int) (hKey - sizeof(DATABASE_HEADER)),
+           (int) (pkey->data - sizeof(DATABASE_HEADER)), (int) pkey->total_size);
 
    for (i = 0; i < level; i++)
       sprintf(p + strlen(p), "  ");
@@ -390,7 +390,7 @@ INT db_show_mem(HNDLE hDB, char *result, INT buf_size, BOOL verbose)
 
    sprintf(result,
            "Database header size is 0x%04X, all following values are offset by this!\nKey area  0x00000000 - 0x%08X\nData area 0x%08X - 0x%08X\n\n",
-           (int)sizeof(DATABASE_HEADER), pheader->key_size - 1,
+           (int) sizeof(DATABASE_HEADER), pheader->key_size - 1,
            pheader->key_size, pheader->key_size + pheader->data_size);
 
    strcat(result, "Keylist:\n");
@@ -398,13 +398,13 @@ INT db_show_mem(HNDLE hDB, char *result, INT buf_size, BOOL verbose)
    total_size_key = 0;
    pfree = (FREE_DESCRIP *) ((char *) pheader + pheader->first_free_key);
 
-   while ((PTYPE) pfree != (PTYPE) pheader) {
+   while ((POINTER_T) pfree != (POINTER_T) pheader) {
       total_size_key += pfree->size;
       sprintf(result + strlen(result),
               "Free block at 0x%08X, size 0x%08X, next 0x%08X\n",
-              (int)((PTYPE) pfree - (PTYPE) pheader - sizeof(DATABASE_HEADER)),
+              (int) ((POINTER_T) pfree - (POINTER_T) pheader - sizeof(DATABASE_HEADER)),
               pfree->size,
-              pfree->next_free ? (int)(pfree->next_free - sizeof(DATABASE_HEADER)) : 0);
+              pfree->next_free ? (int) (pfree->next_free - sizeof(DATABASE_HEADER)) : 0);
       pfree = (FREE_DESCRIP *) ((char *) pheader + pfree->next_free);
    }
 
@@ -413,13 +413,13 @@ INT db_show_mem(HNDLE hDB, char *result, INT buf_size, BOOL verbose)
    total_size_data = 0;
    pfree = (FREE_DESCRIP *) ((char *) pheader + pheader->first_free_data);
 
-   while ((PTYPE) pfree != (PTYPE) pheader) {
+   while ((POINTER_T) pfree != (POINTER_T) pheader) {
       total_size_data += pfree->size;
       sprintf(result + strlen(result),
               "Free block at 0x%08X, size 0x%08X, next 0x%08X\n",
-              (int)((PTYPE) pfree - (PTYPE) pheader - sizeof(DATABASE_HEADER)),
+              (int) ((POINTER_T) pfree - (POINTER_T) pheader - sizeof(DATABASE_HEADER)),
               pfree->size,
-              pfree->next_free ? (int)(pfree->next_free - sizeof(DATABASE_HEADER)) : 0);
+              pfree->next_free ? (int) (pfree->next_free - sizeof(DATABASE_HEADER)) : 0);
       pfree = (FREE_DESCRIP *) ((char *) pheader + pfree->next_free);
    }
    sprintf(result + strlen(result),
@@ -480,7 +480,7 @@ static int db_validate_key(DATABASE_HEADER * pheader, int recurse,
    int i;
    static time_t t_min = 0, t_max;
 
-   if (!db_validate_key_offset(pheader, (PTYPE) pkey - (PTYPE) pheader)) {
+   if (!db_validate_key_offset(pheader, (POINTER_T) pkey - (POINTER_T) pheader)) {
       cm_msg(MERROR, "db_validate_key",
              "Warning: database corruption, key \"%s\", data 0x%08X", path,
              pkey->data - sizeof(DATABASE_HEADER));
@@ -611,8 +611,8 @@ static int db_validate_db(DATABASE_HEADER * pheader)
 
    pfree = (FREE_DESCRIP *) ((char *) pheader + pheader->first_free_key);
 
-   while ((PTYPE) pfree != (PTYPE) pheader) {
-      FREE_DESCRIP* nextpfree;
+   while ((POINTER_T) pfree != (POINTER_T) pheader) {
+      FREE_DESCRIP *nextpfree;
 
       if (pfree->next_free != 0 && !db_validate_key_offset(pheader, pfree->next_free)) {
          cm_msg(MERROR, "db_validate_db",
@@ -656,8 +656,8 @@ static int db_validate_db(DATABASE_HEADER * pheader)
 
    pfree = (FREE_DESCRIP *) ((char *) pheader + pheader->first_free_data);
 
-   while ((PTYPE) pfree != (PTYPE) pheader) {
-      FREE_DESCRIP* nextpfree;
+   while ((POINTER_T) pfree != (POINTER_T) pheader) {
+      FREE_DESCRIP *nextpfree;
 
       if (pfree->next_free != 0 && !db_validate_data_offset(pheader, pfree->next_free)) {
          cm_msg(MERROR, "db_validate_db",
@@ -855,19 +855,20 @@ INT db_open_database(char *database_name, INT database_size,
          pkeylist = (KEYLIST *) malloc_key(pheader, sizeof(KEYLIST));
 
          /* store keylist in data field */
-         pkey->data = (PTYPE) pkeylist - (PTYPE) pheader;
+         pkey->data = (POINTER_T) pkeylist - (POINTER_T) pheader;
          pkey->item_size = sizeof(KEYLIST);
          pkey->total_size = sizeof(KEYLIST);
 
-         pkeylist->parent = (PTYPE) pkey - (PTYPE) pheader;
+         pkeylist->parent = (POINTER_T) pkey - (POINTER_T) pheader;
          pkeylist->num_keys = 0;
          pkeylist->first_key = 0;
       }
 
       /* check database version */
       if (pheader->version != DATABASE_VERSION) {
-         cm_msg(MERROR, "db_open_database", "Different database format: Shared memory is %d, program is %d",
-            pheader->version, DATABASE_VERSION);
+         cm_msg(MERROR, "db_open_database",
+                "Different database format: Shared memory is %d, program is %d",
+                pheader->version, DATABASE_VERSION);
          return DB_VERSION_MISMATCH;
       }
 
@@ -1322,21 +1323,25 @@ INT db_lock_database(HNDLE hDB)
    }
 
    if (_database[hDB - 1].protect && _database[hDB - 1].database_header != NULL) {
-      cm_msg(MERROR, "db_lock_database", "internal error: DB already locked, aborting...");
+      cm_msg(MERROR, "db_lock_database",
+             "internal error: DB already locked, aborting...");
       abort();
       return DB_NO_MUTEX;
    }
-   
+
    if (_database[hDB - 1].lock_cnt == 0) {
       /* wait max. 5 minutes for mutex (required if locking process is being debugged) */
-      status = ss_mutex_wait_for(_database[hDB - 1].mutex, 5*60*1000);
+      status = ss_mutex_wait_for(_database[hDB - 1].mutex, 5 * 60 * 1000);
       if (status == SS_TIMEOUT) {
-         cm_msg(MERROR, "db_lock_database", "timeout obtaining lock for database, exiting...");
+         cm_msg(MERROR, "db_lock_database",
+                "timeout obtaining lock for database, exiting...");
          exit(1);
          return DB_TIMEOUT;
       }
       if (status != SS_SUCCESS) {
-         cm_msg(MERROR, "db_lock_database", "cannot lock database, ss_mutex_wait_for() status %d, aborting...",status);
+         cm_msg(MERROR, "db_lock_database",
+                "cannot lock database, ss_mutex_wait_for() status %d, aborting...",
+                status);
          abort();
          return DB_NO_MUTEX;
       }
@@ -1499,7 +1504,7 @@ INT db_create_key(HNDLE hDB, HNDLE hKey, char *key_name, DWORD type)
       do {
          /* extract single key from key_name */
          pkey_name = extract_key(pkey_name, str);
-         
+
          /* do not allow empty names, like '/dir/dir//dir/' */
          if (str[0] == 0) {
             db_unlock_database(hDB);
@@ -1562,16 +1567,16 @@ INT db_create_key(HNDLE hDB, HNDLE hKey, char *key_name, DWORD type)
 
                /* append key to key list */
                if (pprev_key)
-                  pprev_key->next_key = (PTYPE) pkey - (PTYPE) pheader;
+                  pprev_key->next_key = (POINTER_T) pkey - (POINTER_T) pheader;
                else
-                  pkeylist->first_key = (PTYPE) pkey - (PTYPE) pheader;
+                  pkeylist->first_key = (POINTER_T) pkey - (POINTER_T) pheader;
 
                /* set key properties */
                pkey->type = TID_KEY;
                pkey->num_values = 1;
                pkey->access_mode = MODE_READ | MODE_WRITE | MODE_DELETE;
                strcpy(pkey->name, str);
-               pkey->parent_keylist = (PTYPE) pkeylist - (PTYPE) pheader;
+               pkey->parent_keylist = (POINTER_T) pkeylist - (POINTER_T) pheader;
 
                /* find space for new keylist */
                pkeylist = (KEYLIST *) malloc_key(pheader, sizeof(KEYLIST));
@@ -1583,11 +1588,11 @@ INT db_create_key(HNDLE hDB, HNDLE hKey, char *key_name, DWORD type)
                }
 
                /* store keylist in data field */
-               pkey->data = (PTYPE) pkeylist - (PTYPE) pheader;
+               pkey->data = (POINTER_T) pkeylist - (POINTER_T) pheader;
                pkey->item_size = sizeof(KEYLIST);
                pkey->total_size = sizeof(KEYLIST);
 
-               pkeylist->parent = (PTYPE) pkey - (PTYPE) pheader;
+               pkeylist->parent = (POINTER_T) pkey - (POINTER_T) pheader;
                pkeylist->num_keys = 0;
                pkeylist->first_key = 0;
             } else {
@@ -1602,20 +1607,20 @@ INT db_create_key(HNDLE hDB, HNDLE hKey, char *key_name, DWORD type)
 
                /* append key to key list */
                if (pprev_key)
-                  pprev_key->next_key = (PTYPE) pkey - (PTYPE) pheader;
+                  pprev_key->next_key = (POINTER_T) pkey - (POINTER_T) pheader;
                else
-                  pkeylist->first_key = (PTYPE) pkey - (PTYPE) pheader;
+                  pkeylist->first_key = (POINTER_T) pkey - (POINTER_T) pheader;
 
                pkey->type = type;
                pkey->num_values = 1;
                pkey->access_mode = MODE_READ | MODE_WRITE | MODE_DELETE;
                strcpy(pkey->name, str);
-               pkey->parent_keylist = (PTYPE) pkeylist - (PTYPE) pheader;
+               pkey->parent_keylist = (POINTER_T) pkeylist - (POINTER_T) pheader;
 
                /* zero data */
                if (type != TID_STRING && type != TID_LINK) {
                   pkey->item_size = rpc_tid_size(type);
-                  pkey->data = (PTYPE) malloc_data(pheader, pkey->item_size);
+                  pkey->data = (POINTER_T) malloc_data(pheader, pkey->item_size);
                   pkey->total_size = pkey->item_size;
 
                   if (pkey->data == 0) {
@@ -1624,7 +1629,7 @@ INT db_create_key(HNDLE hDB, HNDLE hKey, char *key_name, DWORD type)
                      return DB_FULL;
                   }
 
-                  pkey->data -= (PTYPE) pheader;
+                  pkey->data -= (POINTER_T) pheader;
                } else {
                   /* first data is empty */
                   pkey->item_size = 0;
@@ -1779,16 +1784,16 @@ INT db_delete_key1(HNDLE hDB, HNDLE hKey, INT level, BOOL follow_links)
          pkey = (KEY *) ((char *) pheader + pkeylist->first_key);
 
          do {
-            pnext_key = (KEY *) (PTYPE) pkey->next_key;
+            pnext_key = (KEY *) (POINTER_T) pkey->next_key;
 
-            status = db_delete_key1(hDB, (PTYPE) pkey - (PTYPE) pheader,
+            status = db_delete_key1(hDB, (POINTER_T) pkey - (POINTER_T) pheader,
                                     level + 1, follow_links);
 
             if (status == DB_NO_ACCESS)
                deny_delete = TRUE;
 
             if (pnext_key)
-               pkey = (KEY *) ((char *) pheader + (PTYPE) pnext_key);
+               pkey = (KEY *) ((char *) pheader + (POINTER_T) pnext_key);
          } while (pnext_key);
       }
 
@@ -1832,18 +1837,18 @@ INT db_delete_key1(HNDLE hDB, HNDLE hKey, INT level, BOOL follow_links)
             free_data(pheader, (char *) pheader + pkey->data, pkey->total_size);
 
          /* unlink key from list */
-         pnext_key = (KEY *) (PTYPE) pkey->next_key;
+         pnext_key = (KEY *) (POINTER_T) pkey->next_key;
          pkeylist = (KEYLIST *) ((char *) pheader + pkey->parent_keylist);
 
          if ((KEY *) ((char *) pheader + pkeylist->first_key) == pkey) {
             /* key is first in list */
-            pkeylist->first_key = (PTYPE) pnext_key;
+            pkeylist->first_key = (POINTER_T) pnext_key;
          } else {
             /* find predecessor */
             pkey_tmp = (KEY *) ((char *) pheader + pkeylist->first_key);
             while ((KEY *) ((char *) pheader + pkey_tmp->next_key) != pkey)
                pkey_tmp = (KEY *) ((char *) pheader + pkey_tmp->next_key);
-            pkey_tmp->next_key = (PTYPE) pnext_key;
+            pkey_tmp->next_key = (POINTER_T) pnext_key;
          }
 
          /* delete key */
@@ -1972,7 +1977,7 @@ INT db_find_key(HNDLE hDB, HNDLE hKey, char *key_name, HNDLE * subhKey)
             return DB_NO_ACCESS;
          }
 
-         *subhKey = (PTYPE) pkey - (PTYPE) pheader;
+         *subhKey = (POINTER_T) pkey - (POINTER_T) pheader;
 
          db_unlock_database(hDB);
          return DB_SUCCESS;
@@ -1984,7 +1989,7 @@ INT db_find_key(HNDLE hDB, HNDLE hKey, char *key_name, HNDLE * subhKey)
          pkey_name = extract_key(pkey_name, str);
 
          /* strip trailing '[n]' */
-         if (strchr(str, '[') && str[strlen(str)-1] == ']')
+         if (strchr(str, '[') && str[strlen(str) - 1] == ']')
             *strchr(str, '[') = 0;
 
          /* check if parent or current directory */
@@ -2059,7 +2064,7 @@ INT db_find_key(HNDLE hDB, HNDLE hKey, char *key_name, HNDLE * subhKey)
 
       } while (*pkey_name == '/' && *(pkey_name + 1));
 
-      *subhKey = (PTYPE) pkey - (PTYPE) pheader;
+      *subhKey = (POINTER_T) pkey - (POINTER_T) pheader;
 
       db_unlock_database(hDB);
    }
@@ -2142,7 +2147,7 @@ INT db_find_key1(HNDLE hDB, HNDLE hKey, char *key_name, HNDLE * subhKey)
             return DB_NO_ACCESS;
          }
 
-         *subhKey = (PTYPE) pkey - (PTYPE) pheader;
+         *subhKey = (POINTER_T) pkey - (POINTER_T) pheader;
 
          return DB_SUCCESS;
       }
@@ -2209,7 +2214,7 @@ INT db_find_key1(HNDLE hDB, HNDLE hKey, char *key_name, HNDLE * subhKey)
 
       } while (*pkey_name == '/' && *(pkey_name + 1));
 
-      *subhKey = (PTYPE) pkey - (PTYPE) pheader;
+      *subhKey = (POINTER_T) pkey - (POINTER_T) pheader;
    }
 #endif                          /* LOCAL_ROUTINES */
 
@@ -2294,7 +2299,7 @@ INT db_find_link(HNDLE hDB, HNDLE hKey, char *key_name, HNDLE * subhKey)
             return DB_NO_ACCESS;
          }
 
-         *subhKey = (PTYPE) pkey - (PTYPE) pheader;
+         *subhKey = (POINTER_T) pkey - (POINTER_T) pheader;
 
          db_unlock_database(hDB);
          return DB_SUCCESS;
@@ -2368,7 +2373,7 @@ INT db_find_link(HNDLE hDB, HNDLE hKey, char *key_name, HNDLE * subhKey)
 
       } while (*pkey_name == '/' && *(pkey_name + 1));
 
-      *subhKey = (PTYPE) pkey - (PTYPE) pheader;
+      *subhKey = (POINTER_T) pkey - (POINTER_T) pheader;
 
       db_unlock_database(hDB);
    }
@@ -2447,7 +2452,7 @@ INT db_find_link1(HNDLE hDB, HNDLE hKey, char *key_name, HNDLE * subhKey)
             return DB_NO_ACCESS;
          }
 
-         *subhKey = (PTYPE) pkey - (PTYPE) pheader;
+         *subhKey = (POINTER_T) pkey - (POINTER_T) pheader;
 
          return DB_SUCCESS;
       }
@@ -2516,7 +2521,7 @@ INT db_find_link1(HNDLE hDB, HNDLE hKey, char *key_name, HNDLE * subhKey)
 
       } while (*pkey_name == '/' && *(pkey_name + 1));
 
-      *subhKey = (PTYPE) pkey - (PTYPE) pheader;
+      *subhKey = (POINTER_T) pkey - (POINTER_T) pheader;
    }
 #endif                          /* LOCAL_ROUTINES */
 
@@ -2925,8 +2930,8 @@ INT db_set_value(HNDLE hDB, HNDLE hKeyRoot, char *key_name, void *data,
       /* resize data size if necessary */
       if (pkey->total_size < data_size) {
          pkey->data =
-             (PTYPE) realloc_data(pheader, (char *) pheader + pkey->data,
-                                  pkey->total_size, data_size);
+             (POINTER_T) realloc_data(pheader, (char *) pheader + pkey->data,
+                                      pkey->total_size, data_size);
 
          if (pkey->data == 0) {
             db_unlock_database(hDB);
@@ -2934,7 +2939,7 @@ INT db_set_value(HNDLE hDB, HNDLE hKeyRoot, char *key_name, void *data,
             return DB_FULL;
          }
 
-         pkey->data -= (PTYPE) pheader;
+         pkey->data -= (POINTER_T) pheader;
          pkey->total_size = data_size;
       }
 
@@ -3027,7 +3032,7 @@ INT db_get_value(HNDLE hDB, HNDLE hKeyRoot, char *key_name, void *data,
             *strchr(keyname, '[') = 0;
          }
       }
-      
+
       status = db_find_key(hDB, hKeyRoot, keyname, &hkey);
       if (status == DB_NO_KEY) {
          if (create) {
@@ -3102,7 +3107,8 @@ INT db_get_value(HNDLE hDB, HNDLE hKeyRoot, char *key_name, void *data,
          memcpy(data, (char *) pheader + pkey->data, pkey->num_values * pkey->item_size);
          *buf_size = pkey->num_values * pkey->item_size;
       } else {
-         memcpy(data, (char *) pheader + pkey->data + index * pkey->item_size, pkey->item_size);
+         memcpy(data, (char *) pheader + pkey->data + index * pkey->item_size,
+                pkey->item_size);
          *buf_size = pkey->item_size;
       }
 
@@ -3224,7 +3230,7 @@ INT db_enum_key(HNDLE hDB, HNDLE hKey, INT index, HNDLE * subkey_handle)
          }
       }
 
-      *subkey_handle = (PTYPE) pkey - (PTYPE) pheader;
+      *subkey_handle = (POINTER_T) pkey - (POINTER_T) pheader;
       db_unlock_database(hDB);
    }
 #endif                          /* LOCAL_ROUTINES */
@@ -3315,7 +3321,7 @@ INT db_enum_link(HNDLE hDB, HNDLE hKey, INT index, HNDLE * subkey_handle)
       for (i = 0; i < index; i++)
          pkey = (KEY *) ((char *) pheader + pkey->next_key);
 
-      *subkey_handle = (PTYPE) pkey - (PTYPE) pheader;
+      *subkey_handle = (POINTER_T) pkey - (POINTER_T) pheader;
       db_unlock_database(hDB);
    }
 #endif                          /* LOCAL_ROUTINES */
@@ -3391,7 +3397,7 @@ INT db_get_next_link(HNDLE hDB, HNDLE hKey, HNDLE * subkey_handle)
                pkey = (KEY *) ((char *) pheader + pkey->next_key);
 
                if (pkey->type != TID_KEY) {
-                  *subkey_handle = (PTYPE) pkey - (PTYPE) pheader;
+                  *subkey_handle = (POINTER_T) pkey - (POINTER_T) pheader;
                   db_unlock_database(hDB);
                   return DB_SUCCESS;
                }
@@ -3424,7 +3430,7 @@ INT db_get_next_link(HNDLE hDB, HNDLE hKey, HNDLE * subkey_handle)
                   pkey = (KEY *) ((char *) pheader + pkeylist->first_key);
 
                   if (pkey->type != TID_KEY) {
-                     *subkey_handle = (PTYPE) pkey - (PTYPE) pheader;
+                     *subkey_handle = (POINTER_T) pkey - (POINTER_T) pheader;
                      db_unlock_database(hDB);
                      return DB_SUCCESS;
                   }
@@ -3839,17 +3845,17 @@ INT db_reorder_key(HNDLE hDB, HNDLE hKey, INT index)
       pkeylist = (KEYLIST *) ((char *) pheader + pkey->parent_keylist);
 
       /* first remove key from list */
-      pnext_key = (KEY *) (PTYPE) pkey->next_key;
+      pnext_key = (KEY *) (POINTER_T) pkey->next_key;
 
       if ((KEY *) ((char *) pheader + pkeylist->first_key) == pkey) {
          /* key is first in list */
-         pkeylist->first_key = (PTYPE) pnext_key;
+         pkeylist->first_key = (POINTER_T) pnext_key;
       } else {
          /* find predecessor */
          pkey_tmp = (KEY *) ((char *) pheader + pkeylist->first_key);
          while ((KEY *) ((char *) pheader + pkey_tmp->next_key) != pkey)
             pkey_tmp = (KEY *) ((char *) pheader + pkey_tmp->next_key);
-         pkey_tmp->next_key = (PTYPE) pnext_key;
+         pkey_tmp->next_key = (POINTER_T) pnext_key;
       }
 
       /* add key to list at proper index */
@@ -3863,20 +3869,20 @@ INT db_reorder_key(HNDLE hDB, HNDLE hKey, INT index)
             pkey_tmp = (KEY *) ((char *) pheader + pkey_tmp->next_key);
          }
 
-         pkey_tmp->next_key = (PTYPE) pkey - (PTYPE) pheader;
+         pkey_tmp->next_key = (POINTER_T) pkey - (POINTER_T) pheader;
          pkey->next_key = 0;
       } else {
          if (index == 0) {
             /* add at top */
             pkey->next_key = pkeylist->first_key;
-            pkeylist->first_key = (PTYPE) pkey - (PTYPE) pheader;
+            pkeylist->first_key = (POINTER_T) pkey - (POINTER_T) pheader;
          } else {
             /* add at position index */
             for (i = 0; i < index - 1; i++)
                pkey_tmp = (KEY *) ((char *) pheader + pkey_tmp->next_key);
 
             pkey->next_key = pkey_tmp->next_key;
-            pkey_tmp->next_key = (PTYPE) pkey - (PTYPE) pheader;
+            pkey_tmp->next_key = (POINTER_T) pkey - (POINTER_T) pheader;
          }
       }
 
@@ -4336,8 +4342,8 @@ INT db_set_data(HNDLE hDB, HNDLE hKey,
       /* resize data size if necessary */
       if (pkey->total_size != buf_size) {
          pkey->data =
-             (PTYPE) realloc_data(pheader, (char *) pheader + pkey->data,
-                                  pkey->total_size, buf_size);
+             (POINTER_T) realloc_data(pheader, (char *) pheader + pkey->data,
+                                      pkey->total_size, buf_size);
 
          if (pkey->data == 0) {
             db_unlock_database(hDB);
@@ -4345,7 +4351,7 @@ INT db_set_data(HNDLE hDB, HNDLE hKey,
             return DB_FULL;
          }
 
-         pkey->data -= (PTYPE) pheader;
+         pkey->data -= (POINTER_T) pheader;
          pkey->total_size = buf_size;
       }
 
@@ -4449,8 +4455,8 @@ INT db_set_num_values(HNDLE hDB, HNDLE hKey, INT num_values)
       if (pkey->num_values != num_values) {
          new_size = pkey->item_size * num_values;
          pkey->data =
-             (PTYPE) realloc_data(pheader, (char *) pheader + pkey->data,
-                                  pkey->total_size, new_size);
+             (POINTER_T) realloc_data(pheader, (char *) pheader + pkey->data,
+                                      pkey->total_size, new_size);
 
          if (pkey->data == 0) {
             db_unlock_database(hDB);
@@ -4458,7 +4464,7 @@ INT db_set_num_values(HNDLE hDB, HNDLE hKey, INT num_values)
             return DB_FULL;
          }
 
-         pkey->data -= (PTYPE) pheader;
+         pkey->data -= (POINTER_T) pheader;
          pkey->total_size = new_size;
          pkey->num_values = num_values;
       }
@@ -4561,8 +4567,8 @@ INT db_set_data_index(HNDLE hDB, HNDLE hKey,
       /* increase data size if necessary */
       if (index >= pkey->num_values || pkey->item_size == 0) {
          pkey->data =
-             (PTYPE) realloc_data(pheader, (char *) pheader + pkey->data,
-                                  pkey->total_size, data_size * (index + 1));
+             (POINTER_T) realloc_data(pheader, (char *) pheader + pkey->data,
+                                      pkey->total_size, data_size * (index + 1));
 
          if (pkey->data == 0) {
             db_unlock_database(hDB);
@@ -4570,7 +4576,7 @@ INT db_set_data_index(HNDLE hDB, HNDLE hKey,
             return DB_FULL;
          }
 
-         pkey->data -= (PTYPE) pheader;
+         pkey->data -= (POINTER_T) pheader;
          if (!pkey->item_size)
             pkey->item_size = data_size;
          pkey->total_size = data_size * (index + 1);
@@ -4697,8 +4703,8 @@ INT db_set_data_index2(HNDLE hDB, HNDLE hKey, void *data,
       /* increase key size if necessary */
       if (index >= pkey->num_values) {
          pkey->data =
-             (PTYPE) realloc_data(pheader, (char *) pheader + pkey->data,
-                                  pkey->total_size, data_size * (index + 1));
+             (POINTER_T) realloc_data(pheader, (char *) pheader + pkey->data,
+                                      pkey->total_size, data_size * (index + 1));
 
          if (pkey->data == 0) {
             db_unlock_database(hDB);
@@ -4706,7 +4712,7 @@ INT db_set_data_index2(HNDLE hDB, HNDLE hKey, void *data,
             return DB_FULL;
          }
 
-         pkey->data -= (PTYPE) pheader;
+         pkey->data -= (POINTER_T) pheader;
          if (!pkey->item_size)
             pkey->item_size = data_size;
          pkey->total_size = data_size * (index + 1);
@@ -4851,12 +4857,12 @@ INT db_set_mode(HNDLE hDB, HNDLE hKey, WORD mode, BOOL recurse)
          pkey = (KEY *) ((char *) pheader + pkeylist->first_key);
 
          do {
-            pnext_key = (KEY *) (PTYPE) pkey->next_key;
+            pnext_key = (KEY *) (POINTER_T) pkey->next_key;
 
-            db_set_mode(hDB, (PTYPE) pkey - (PTYPE) pheader, mode, recurse + 1);
+            db_set_mode(hDB, (POINTER_T) pkey - (POINTER_T) pheader, mode, recurse + 1);
 
             if (pnext_key)
-               pkey = (KEY *) ((char *) pheader + (PTYPE) pnext_key);
+               pkey = (KEY *) ((char *) pheader + (POINTER_T) pnext_key);
          } while (pnext_key);
       }
 
@@ -5385,8 +5391,9 @@ INT db_paste(HNDLE hDB, HNDLE hKeyRoot, char *buffer)
                         /* multi-line string */
                         if (strstr(buffer, "\n====#$@$#====\n") != NULL) {
                            string_length =
-                               (PTYPE) strstr(buffer,
-                                              "\n====#$@$#====\n") - (PTYPE) buffer + 1;
+                               (POINTER_T) strstr(buffer,
+                                                  "\n====#$@$#====\n") -
+                               (POINTER_T) buffer + 1;
 
                            if (string_length >= data_size) {
                               data_size += string_length + 100;
@@ -5529,7 +5536,7 @@ int db_paste_node(HNDLE hDB, HNDLE hKeyRoot, PMXML_NODE node)
    PMXML_NODE child;
 
    if (strcmp(mxml_get_name(node), "odb") == 0) {
-      for (i=0 ; i<mxml_get_number_of_children(node) ; i++) {
+      for (i = 0; i < mxml_get_number_of_children(node); i++) {
          status = db_paste_node(hDB, hKeyRoot, mxml_subnode(node, i));
          if (status != DB_SUCCESS)
             return status;
@@ -5546,30 +5553,31 @@ int db_paste_node(HNDLE hDB, HNDLE hKeyRoot, PMXML_NODE node)
       if (status == DB_NO_KEY) {
          status = db_create_key(hDB, hKeyRoot, mxml_get_attribute(node, "name"), TID_KEY);
          if (status == DB_NO_ACCESS)
-            return DB_SUCCESS; /* key or tree is locked, just skip it */
+            return DB_SUCCESS;  /* key or tree is locked, just skip it */
 
          if (status != DB_SUCCESS && status != DB_KEY_EXIST) {
-            cm_msg(MERROR, "db_paste_node", 
-               "cannot create key \"%s\" in ODB, status = %d", mxml_get_attribute(node, "name"), status);
+            cm_msg(MERROR, "db_paste_node",
+                   "cannot create key \"%s\" in ODB, status = %d",
+                   mxml_get_attribute(node, "name"), status);
             return status;
          }
          status = db_find_link(hDB, hKeyRoot, mxml_get_attribute(node, "name"), &hKey);
          if (status != DB_SUCCESS) {
-            cm_msg(MERROR, "db_paste_node", 
-               "cannot find key \"%s\" in ODB", mxml_get_attribute(node, "name"));
+            cm_msg(MERROR, "db_paste_node",
+                   "cannot find key \"%s\" in ODB", mxml_get_attribute(node, "name"));
             return status;
          }
       }
 
       db_get_path(hDB, hKey, data, sizeof(data));
       if (strncmp(data, "/System/Clients", 15) != 0) {
-         for (i=0 ; i<mxml_get_number_of_children(node) ; i++) {
+         for (i = 0; i < mxml_get_number_of_children(node); i++) {
             status = db_paste_node(hDB, hKey, mxml_subnode(node, i));
             if (status != DB_SUCCESS)
                return status;
          }
       }
-   } else if (strcmp(mxml_get_name(node), "key") == 0 || 
+   } else if (strcmp(mxml_get_name(node), "key") == 0 ||
               strcmp(mxml_get_name(node), "keyarray") == 0) {
 
       if (strcmp(mxml_get_name(node), "keyarray") == 0)
@@ -5578,8 +5586,8 @@ int db_paste_node(HNDLE hDB, HNDLE hKeyRoot, PMXML_NODE node)
          num_values = 0;
 
       if (mxml_get_attribute(node, "type") == NULL) {
-         cm_msg(MERROR, "db_paste_node", 
-            "found key \"%s\" with no type in XML data", mxml_get_name(node));
+         cm_msg(MERROR, "db_paste_node",
+                "found key \"%s\" with no type in XML data", mxml_get_name(node));
          return DB_TYPE_MISMATCH;
       }
 
@@ -5588,8 +5596,8 @@ int db_paste_node(HNDLE hDB, HNDLE hKeyRoot, PMXML_NODE node)
          if (strcmp(tid_name[tid], type) == 0)
             break;
       if (tid == TID_LAST) {
-         cm_msg(MERROR, "db_paste_node", 
-            "found unknown data type \"%s\" in XML data", type);
+         cm_msg(MERROR, "db_paste_node",
+                "found unknown data type \"%s\" in XML data", type);
          return DB_TYPE_MISMATCH;
       }
 
@@ -5597,24 +5605,26 @@ int db_paste_node(HNDLE hDB, HNDLE hKeyRoot, PMXML_NODE node)
       if (status == DB_NO_KEY) {
          status = db_create_key(hDB, hKeyRoot, mxml_get_attribute(node, "name"), tid);
          if (status == DB_NO_ACCESS)
-            return DB_SUCCESS; /* key or tree is locked, just skip it */
+            return DB_SUCCESS;  /* key or tree is locked, just skip it */
 
          if (status != DB_SUCCESS) {
-            cm_msg(MERROR, "db_paste_node", 
-               "cannot create key \"%s\" in ODB, status = %d", mxml_get_attribute(node, "name"), status);
+            cm_msg(MERROR, "db_paste_node",
+                   "cannot create key \"%s\" in ODB, status = %d",
+                   mxml_get_attribute(node, "name"), status);
             return status;
          }
          status = db_find_link(hDB, hKeyRoot, mxml_get_attribute(node, "name"), &hKey);
          if (status != DB_SUCCESS) {
-            cm_msg(MERROR, "db_paste_node", 
-               "cannot find key \"%s\" in ODB, status = %d", mxml_get_attribute(node, "name"));
+            cm_msg(MERROR, "db_paste_node",
+                   "cannot find key \"%s\" in ODB, status = %d", mxml_get_attribute(node,
+                                                                                    "name"));
             return status;
          }
       }
 
       if (num_values) {
          /* evaluate array */
-         for (i=0 ; i<mxml_get_number_of_children(node) ; i++) {
+         for (i = 0; i < mxml_get_number_of_children(node); i++) {
             child = mxml_subnode(node, i);
             if (tid == TID_STRING || tid == TID_LINK) {
                size = atoi(mxml_get_attribute(node, "size"));
@@ -5628,7 +5638,7 @@ int db_paste_node(HNDLE hDB, HNDLE hKeyRoot, PMXML_NODE node)
             }
          }
 
-      } else { /* single value */
+      } else {                  /* single value */
          if (tid == TID_STRING || tid == TID_LINK) {
             size = atoi(mxml_get_attribute(node, "size"));
             if (mxml_get_value(node) == NULL)
@@ -5696,39 +5706,41 @@ INT db_copy_xml(HNDLE hDB, HNDLE hKey, char *buffer, INT * buffer_size)
 {
 #ifdef LOCAL_ROUTINES
    {
-   INT len;
-   char *p, str[256];
-   MXML_WRITER *writer;
+      INT len;
+      char *p, str[256];
+      MXML_WRITER *writer;
 
-   /* open file */
-   writer = mxml_open_buffer();
-   if (writer == NULL) {
-      cm_msg(MERROR, "db_copy_xml", "Cannot allocate buffer");
-      return DB_NO_MEMORY;
-   }
+      /* open file */
+      writer = mxml_open_buffer();
+      if (writer == NULL) {
+         cm_msg(MERROR, "db_copy_xml", "Cannot allocate buffer");
+         return DB_NO_MEMORY;
+      }
 
-   db_get_path(hDB, hKey, str, sizeof(str));
+      db_get_path(hDB, hKey, str, sizeof(str));
 
-   /* write XML header */
-   mxml_start_element(writer, "odb");
-   mxml_write_attribute(writer, "root", str);
-   mxml_write_attribute(writer, "xmlns:xsi", "http://www.w3.org/2001/XMLSchema-instance");
-   mxml_write_attribute(writer, "xsi:noNamespaceSchemaLocation", "http://midas.psi.ch/odb.xsd");
+      /* write XML header */
+      mxml_start_element(writer, "odb");
+      mxml_write_attribute(writer, "root", str);
+      mxml_write_attribute(writer, "xmlns:xsi",
+                           "http://www.w3.org/2001/XMLSchema-instance");
+      mxml_write_attribute(writer, "xsi:noNamespaceSchemaLocation",
+                           "http://midas.psi.ch/odb.xsd");
 
-   db_save_xml_key(hDB, hKey, 0, writer);
-   
-   mxml_end_element(writer); // "odb"
-   p = mxml_close_buffer(writer);
+      db_save_xml_key(hDB, hKey, 0, writer);
 
-   strlcpy(buffer, p, *buffer_size);
-   len = strlen(p);
-   free(p);
-   if (len > *buffer_size) {
-      *buffer_size = 0;
-      return DB_TRUNCATED;
-   }
+      mxml_end_element(writer); // "odb"
+      p = mxml_close_buffer(writer);
 
-   *buffer_size -= len;
+      strlcpy(buffer, p, *buffer_size);
+      len = strlen(p);
+      free(p);
+      if (len > *buffer_size) {
+         *buffer_size = 0;
+         return DB_TRUNCATED;
+      }
+
+      *buffer_size -= len;
    }
 #endif                          /* LOCAL_ROUTINES */
 
@@ -5920,6 +5932,7 @@ INT db_save(HNDLE hDB, HNDLE hKey, char *filename, BOOL bRemote)
 
    return DB_SUCCESS;
 }
+
 /*------------------------------------------------------------------*/
 
 void xml_encode(char *src, int size)
@@ -5927,7 +5940,7 @@ void xml_encode(char *src, int size)
    int i;
    char *dst, *p;
 
-   dst = (char *)malloc(size);
+   dst = (char *) malloc(size);
    if (dst == NULL)
       return;
 
@@ -5944,19 +5957,19 @@ void xml_encode(char *src, int size)
          strlcat(dst, "&amp;", size);
          break;
       case '\"':
-         strlcat(dst, "&quot;",size);
+         strlcat(dst, "&quot;", size);
          break;
       case '\'':
-         strlcat(dst, "&apos;",size);
+         strlcat(dst, "&apos;", size);
          break;
       default:
-         if ((int)strlen(dst) >= size) {
+         if ((int) strlen(dst) >= size) {
             free(dst);
             return;
          }
-         p = dst+strlen(dst);
+         p = dst + strlen(dst);
          *p = src[i];
-         *(p+1) = 0;
+         *(p + 1) = 0;
       }
    }
 
@@ -5965,7 +5978,7 @@ void xml_encode(char *src, int size)
 
 /*------------------------------------------------------------------*/
 
-INT db_save_xml_key(HNDLE hDB, HNDLE hKey, INT level, MXML_WRITER *writer)
+INT db_save_xml_key(HNDLE hDB, HNDLE hKey, INT level, MXML_WRITER * writer)
 {
    INT i, index, size, status;
    char str[MAX_STRING_LENGTH * 2], *data;
@@ -5979,7 +5992,7 @@ INT db_save_xml_key(HNDLE hDB, HNDLE hKey, INT level, MXML_WRITER *writer)
    if (key.type == TID_KEY) {
 
       /* save opening tag for subtree */
-      
+
       if (level > 0) {
          mxml_start_element(writer, "dir");
          mxml_write_attribute(writer, "name", key.name);
@@ -6032,14 +6045,14 @@ INT db_save_xml_key(HNDLE hDB, HNDLE hKey, INT level, MXML_WRITER *writer)
       db_get_data(hDB, hKey, data, &size, key.type);
 
       if (key.num_values == 1) {
-      
+
          db_sprintf(str, data, key.item_size, 0, key.type);
          mxml_write_value(writer, str);
          mxml_end_element(writer);
-      
-      } else { /* array of values */
-        
-         for (i=0 ; i<key.num_values ; i++) {
+
+      } else {                  /* array of values */
+
+         for (i = 0; i < key.num_values; i++) {
 
             mxml_start_element(writer, "value");
             db_sprintf(str, data, key.item_size, i, key.type);
@@ -6047,7 +6060,7 @@ INT db_save_xml_key(HNDLE hDB, HNDLE hKey, INT level, MXML_WRITER *writer)
             mxml_end_element(writer);
          }
 
-         mxml_end_element(writer); /* keyarray */
+         mxml_end_element(writer);      /* keyarray */
       }
 
       free(data);
@@ -6072,37 +6085,38 @@ INT db_save_xml(HNDLE hDB, HNDLE hKey, char *filename)
 {
 #ifdef LOCAL_ROUTINES
    {
-   INT status;
-   char str[256];
-   MXML_WRITER *writer;
+      INT status;
+      char str[256];
+      MXML_WRITER *writer;
 
-   /* open file */
-   writer = mxml_open_file(filename);
-   if (writer == NULL) {
-      cm_msg(MERROR, "db_save_xml", "Cannot open file \"%s\"", filename);
-      return DB_FILE_ERROR;
-   }
+      /* open file */
+      writer = mxml_open_file(filename);
+      if (writer == NULL) {
+         cm_msg(MERROR, "db_save_xml", "Cannot open file \"%s\"", filename);
+         return DB_FILE_ERROR;
+      }
 
-   db_get_path(hDB, hKey, str, sizeof(str));
+      db_get_path(hDB, hKey, str, sizeof(str));
 
-   /* write XML header */
-   mxml_start_element(writer, "odb");
-   mxml_write_attribute(writer, "root", str);
-   mxml_write_attribute(writer, "filename", filename);
-   mxml_write_attribute(writer, "xmlns:xsi", "http://www.w3.org/2001/XMLSchema-instance");
+      /* write XML header */
+      mxml_start_element(writer, "odb");
+      mxml_write_attribute(writer, "root", str);
+      mxml_write_attribute(writer, "filename", filename);
+      mxml_write_attribute(writer, "xmlns:xsi",
+                           "http://www.w3.org/2001/XMLSchema-instance");
 
-   if (getenv("MIDASSYS"))
-      strcpy(str, getenv("MIDASSYS"));
-   else
-      strcpy(str, "");
-   strcat(str, DIR_SEPARATOR_STR);
-   strcat(str, "odb.xsd");
-   mxml_write_attribute(writer, "xsi:noNamespaceSchemaLocation", str);
+      if (getenv("MIDASSYS"))
+         strcpy(str, getenv("MIDASSYS"));
+      else
+         strcpy(str, "");
+      strcat(str, DIR_SEPARATOR_STR);
+      strcat(str, "odb.xsd");
+      mxml_write_attribute(writer, "xsi:noNamespaceSchemaLocation", str);
 
-   status = db_save_xml_key(hDB, hKey, 0, writer);
-   
-   mxml_end_element(writer); // "odb"
-   mxml_close_file(writer);
+      status = db_save_xml_key(hDB, hKey, 0, writer);
+
+      mxml_end_element(writer); // "odb"
+      mxml_close_file(writer);
    }
 #endif                          /* LOCAL_ROUTINES */
 
@@ -6316,7 +6330,7 @@ INT db_sprintf(char *string, void *data, INT data_size, INT index, DWORD type)
          sprintf(string, "%d", *(((short *) data) + index));
          break;
       case TID_DWORD:
-         sprintf(string, "%lu", *(((DWORD *) data) + index));
+         sprintf(string, "%u", *(((DWORD *) data) + index));
          break;
       case TID_INT:
          sprintf(string, "%d", *(((INT *) data) + index));
@@ -6391,7 +6405,7 @@ INT db_sprintfh(char *string, void *data, INT data_size, INT index, DWORD type)
          sprintf(string, "0x%hX", *(((short *) data) + index));
          break;
       case TID_DWORD:
-         sprintf(string, "0x%lX", *(((DWORD *) data) + index));
+         sprintf(string, "0x%X", *(((DWORD *) data) + index));
          break;
       case TID_INT:
          sprintf(string, "0x%X", *(((INT *) data) + index));
@@ -6451,7 +6465,7 @@ INT db_sscanf(char *data_str, void *data, INT * data_size, INT i, DWORD tid)
    *data_size = rpc_tid_size(tid);
    if (strncmp(data_str, "0x", 2) == 0) {
       hex = TRUE;
-      sscanf(data_str + 2, "%lx", &value);
+      sscanf(data_str + 2, "%x", &value);
    }
 
    switch (tid) {
@@ -6479,7 +6493,7 @@ INT db_sscanf(char *data_str, void *data, INT * data_size, INT i, DWORD tid)
       break;
    case TID_DWORD:
       if (!hex)
-         sscanf(data_str, "%lu", &value);
+         sscanf(data_str, "%u", &value);
 
       *((DWORD *) data + i) = value;
       break;
@@ -6589,7 +6603,8 @@ static void db_recurse_record_tree(HNDLE hDB, HNDLE hKey, void **data,
 
                   /* notify clients which have key open */
                   if (pkey->notify_count)
-                     db_notify_clients(hDB, (PTYPE) pkey - (PTYPE) pheader, FALSE);
+                     db_notify_clients(hDB, (POINTER_T) pkey - (POINTER_T) pheader,
+                                       FALSE);
                }
             } else {
                /* copy key data if there is read access */
@@ -6620,7 +6635,7 @@ static void db_recurse_record_tree(HNDLE hDB, HNDLE hKey, void **data,
          align = 1;
 
          total_size_tmp = *total_size;
-         db_recurse_record_tree(hDB, (PTYPE) pkey - (PTYPE) pheader,
+         db_recurse_record_tree(hDB, (POINTER_T) pkey - (POINTER_T) pheader,
                                 NULL, &total_size_tmp,
                                 base_align, &align, bSet, convert_flags);
 
@@ -6633,7 +6648,7 @@ static void db_recurse_record_tree(HNDLE hDB, HNDLE hKey, void **data,
             *data = (void *) ((char *) (*data) + corr);
 
          /* now copy subtree */
-         db_recurse_record_tree(hDB, (PTYPE) pkey - (PTYPE) pheader,
+         db_recurse_record_tree(hDB, (POINTER_T) pkey - (POINTER_T) pheader,
                                 data, total_size, base_align, NULL, bSet, convert_flags);
 
          corr = VALIGN(*total_size, align) - *total_size;
@@ -6642,7 +6657,7 @@ static void db_recurse_record_tree(HNDLE hDB, HNDLE hKey, void **data,
             *data = (void *) ((char *) (*data) + corr);
 
          if (bSet && pkey->notify_count)
-            db_notify_clients(hDB, (PTYPE) pkey - (PTYPE) pheader, FALSE);
+            db_notify_clients(hDB, (POINTER_T) pkey - (POINTER_T) pheader, FALSE);
       }
 
       if (!pkey->next_key)
@@ -7130,7 +7145,7 @@ INT db_notify_clients(HNDLE hDB, HNDLE hKey, BOOL bWalk)
 
       pkeylist = (KEYLIST *) ((char *) pheader + pkey->parent_keylist);
       pkey = (KEY *) ((char *) pheader + pkeylist->parent);
-      hKey = (PTYPE) pkey - (PTYPE) pheader;
+      hKey = (POINTER_T) pkey - (POINTER_T) pheader;
    } while (TRUE);
 
 }
@@ -7578,8 +7593,9 @@ INT db_check_record(HNDLE hDB, HNDLE hKey, char *keyname, char *rec_str, BOOL co
                         /* multi-line string */
                         if (strstr(rec_str, "\n====#$@$#====\n") != NULL) {
                            string_length =
-                               (PTYPE) strstr(rec_str,
-                                              "\n====#$@$#====\n") - (PTYPE) rec_str + 1;
+                               (POINTER_T) strstr(rec_str,
+                                                  "\n====#$@$#====\n") -
+                               (POINTER_T) rec_str + 1;
 
                            rec_str =
                                strstr(rec_str,
@@ -8171,7 +8187,7 @@ INT db_send_changed_records()
 /*------------------------------------------------------------------*/
 
 /**dox***************************************************************/
-/** @} */ /* end of odbfunctionc */
+          /** @} *//* end of odbfunctionc */
 
 /**dox***************************************************************/
-/** @} */ /* end of odbcode */
+          /** @} *//* end of odbcode */

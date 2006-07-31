@@ -99,7 +99,7 @@ struct {
    TR_PAUSE, "PAUSE",}, {
    TR_RESUME, "RESUME",}, {
    TR_DEFERRED, "DEFERRED",}, {
-   0, "",},};
+0, "",},};
 
 /* Globals */
 #ifdef OS_MSDOS
@@ -218,8 +218,8 @@ void *dbg_malloc(unsigned int size, char *file, int line)
    f = fopen("mem.txt", "w");
    for (i = 0; i < _n_mem; i++)
       if (_mem_loc[i].adr)
-         fprintf(f, "%s:%d size=%d adr=%X\n", _mem_loc[i].file, _mem_loc[i].line,
-                 _mem_loc[i].size, (unsigned int) _mem_loc[i].adr);
+         fprintf(f, "%s:%d size=%d adr=%p\n", _mem_loc[i].file, _mem_loc[i].line,
+                 _mem_loc[i].size, _mem_loc[i].adr);
    fclose(f);
 
    return adr;
@@ -253,10 +253,9 @@ void dbg_free(void *adr, char *file, int line)
    f = fopen("mem.txt", "w");
    for (i = 0; i < _n_mem; i++)
       if (_mem_loc[i].adr)
-         fprintf(f, "%s:%d size=%d adr=%X\n", _mem_loc[i].file, _mem_loc[i].line,
-                 _mem_loc[i].size, (unsigned int) _mem_loc[i].adr);
+         fprintf(f, "%s:%d size=%d adr=%p\n", _mem_loc[i].file, _mem_loc[i].line,
+                 _mem_loc[i].size, _mem_loc[i].adr);
    fclose(f);
-
 }
 
 /********************************************************************\
@@ -895,7 +894,7 @@ INT cm_msg_retrieve(INT n_message, char *message, INT * buf_size)
             p++;
       }
 
-      *buf_size = (*buf_size - 1) - ((PTYPE) p - (PTYPE) message);
+      *buf_size = (*buf_size - 1) - (p - message);
 
       memmove(message, p, *buf_size);
       message[*buf_size] = 0;
@@ -905,7 +904,7 @@ INT cm_msg_retrieve(INT n_message, char *message, INT * buf_size)
 }
 
 /**dox***************************************************************/
-                   /** @} *//* end of msgfunctionc */
+                            /** @} *//* end of msgfunctionc */
 
 /**dox***************************************************************/
 /** @addtogroup cmfunctionc
@@ -977,7 +976,7 @@ INT cm_time(DWORD * time)
 }
 
 /**dox***************************************************************/
-                   /** @} *//* end of cmfunctionc */
+                            /** @} *//* end of cmfunctionc */
 
 /********************************************************************\
 *                                                                    *
@@ -1043,7 +1042,7 @@ INT cm_get_path(char *path)
 }
 
 /**dox***************************************************************/
-                   /** @} *//* end of cmfunctionc */
+                            /** @} *//* end of cmfunctionc */
 
 /**dox***************************************************************/
 /** @addtogroup cmfunctionc
@@ -2603,7 +2602,8 @@ INT cm_register_transition(INT transition, INT(*func) (INT, char *), INT sequenc
    /* check for valid transition */
    if (transition != TR_START && transition != TR_STOP &&
        transition != TR_PAUSE && transition != TR_RESUME) {
-      cm_msg(MERROR, "cm_register_transition", "Invalid transition request \"%d\"", transition);
+      cm_msg(MERROR, "cm_register_transition", "Invalid transition request \"%d\"",
+             transition);
       return CM_INVALID_TRANSITION;
    }
 
@@ -2620,7 +2620,7 @@ INT cm_register_transition(INT transition, INT(*func) (INT, char *), INT sequenc
 
    if (i == MAX_TRANSITIONS) {
       cm_msg(MERROR, "cm_register_transition",
-            "To many transition registrations. Please increase MAX_TRANSITIONS and recompile");
+             "To many transition registrations. Please increase MAX_TRANSITIONS and recompile");
       return CM_TOO_MANY_REQUESTS;
    }
 
@@ -2648,8 +2648,8 @@ INT cm_register_transition(INT transition, INT(*func) (INT, char *), INT sequenc
       if (status != DB_SUCCESS)
          return status;
       status =
-         db_set_data_index(hDB, hKeyTrans, &sequence_number, sizeof(INT), key.num_values,
-                           TID_INT);
+          db_set_data_index(hDB, hKeyTrans, &sequence_number, sizeof(INT), key.num_values,
+                            TID_INT);
       if (status != DB_SUCCESS)
          return status;
    }
@@ -2669,7 +2669,8 @@ INT cm_deregister_transition(INT transition)
    /* check for valid transition */
    if (transition != TR_START && transition != TR_STOP &&
        transition != TR_PAUSE && transition != TR_RESUME) {
-      cm_msg(MERROR, "cm_deregister_transition", "Invalid transition request \"%d\"", transition);
+      cm_msg(MERROR, "cm_deregister_transition", "Invalid transition request \"%d\"",
+             transition);
       return CM_INVALID_TRANSITION;
    }
 
@@ -2682,7 +2683,7 @@ INT cm_deregister_transition(INT transition)
 
    if (i == MAX_TRANSITIONS) {
       cm_msg(MERROR, "cm_register_transition",
-         "Cannot de-register transition registration, request not found");
+             "Cannot de-register transition registration, request not found");
       return CM_INVALID_TRANSITION;
    }
 
@@ -2729,7 +2730,8 @@ INT cm_set_transition_sequence(INT transition, INT sequence_number)
    /* check for valid transition */
    if (transition != TR_START && transition != TR_STOP &&
        transition != TR_PAUSE && transition != TR_RESUME) {
-      cm_msg(MERROR, "cm_set_transition_sequence", "Invalid transition request \"%d\"", transition);
+      cm_msg(MERROR, "cm_set_transition_sequence", "Invalid transition request \"%d\"",
+             transition);
       return CM_INVALID_TRANSITION;
    }
 
@@ -3024,12 +3026,11 @@ INT cm_transition(INT transition, INT run_number, char *perror, INT strsize,
       }
 
       for (i = 0; trans_name[i].name[0] != 0; i++)
-         if (trans_name[i].transition == transition)
-           {
-             trname = trans_name[i].name;
-             break;
-           }
-      
+         if (trans_name[i].transition == transition) {
+            trname = trans_name[i].name;
+            break;
+         }
+
       sprintf(tr_key_name, "Transition %s DEFERRED", trname);
 
       /* search database for clients with deferred transition request */
@@ -3151,16 +3152,16 @@ INT cm_transition(INT transition, INT run_number, char *perror, INT strsize,
    }
 
    for (i = 0; trans_name[i].name[0] != 0; i++)
-      if (trans_name[i].transition == transition)
-        {
-          trname = trans_name[i].name;
-          break;
-        }
+      if (trans_name[i].transition == transition) {
+         trname = trans_name[i].name;
+         break;
+      }
 
    if (debug_flag == 1)
       printf("---- Transition %s started ----\n", trname);
    if (debug_flag == 2)
-      cm_msg(MDEBUG, "cm_transition", "cm_transition: ---- Transition %s started ----", trname);
+      cm_msg(MDEBUG, "cm_transition", "cm_transition: ---- Transition %s started ----",
+             trname);
 
    sprintf(tr_key_name, "Transition %s", trname);
 
@@ -3289,8 +3290,7 @@ INT cm_transition(INT transition, INT run_number, char *perror, INT strsize,
             cm_msg(MERROR, "cm_transition",
                    "cannot connect to client \"%s\" on host %s, port %d, status %d",
                    tr_client[index].client_name, tr_client[index].host_name,
-                   tr_client[index].port,
-                   status);
+                   tr_client[index].port, status);
             return status;
          }
 
@@ -3685,7 +3685,7 @@ INT cm_register_function(INT id, INT(*func) (INT, void **))
 #endif                          /* DOXYGEN_SHOULD_SKIP_THIS */
 
 /**dox***************************************************************/
-                   /** @} *//* end of cmfunctionc */
+                            /** @} *//* end of cmfunctionc */
 
 /**dox***************************************************************/
 /** @addtogroup bmfunctionc
@@ -4120,7 +4120,7 @@ INT bm_close_all_buffers(void)
 }
 
 /**dox***************************************************************/
-                   /** @} *//* end of bmfunctionc */
+                            /** @} *//* end of bmfunctionc */
 
 /**dox***************************************************************/
 /** @addtogroup cmfunctionc
@@ -4949,7 +4949,7 @@ INT bm_init_buffer_counters(INT buffer_handle)
 #endif                          /* DOXYGEN_SHOULD_SKIP_THIS */
 
 /**dox***************************************************************/
-                   /** @} *//* end of cmfunctionc */
+                            /** @} *//* end of cmfunctionc */
 
 /**dox***************************************************************/
 /** @addtogroup bmfunctionc
@@ -5140,7 +5140,7 @@ INT bm_add_event_request(INT buffer_handle, short int event_id,
 {
    if (rpc_is_remote())
       return rpc_call(RPC_BM_ADD_EVENT_REQUEST, buffer_handle, event_id,
-                      trigger_mask, sampling_type, (INT) func, request_id);
+                      trigger_mask, sampling_type, (INT) (POINTER_T) func, request_id);
 
 #ifdef LOCAL_ROUTINES
    {
@@ -7226,9 +7226,9 @@ void bm_defragment_event(HNDLE buffer_handle, HNDLE request_id,
    static int j = -1;
 
    if ((pevent->event_id & 0xF000) == EVENTID_FRAG1) {
-    /*---- start new event ----*/
+      /*---- start new event ----*/
 
-      printf("First Frag detected : Ser#:%ld ID=0x%x \n", pevent->serial_number,
+      printf("First Frag detected : Ser#:%d ID=0x%x \n", pevent->serial_number,
              pevent->event_id);
       /* check if fragments already stored */
       for (i = 0; i < MAX_DEFRAG_EVENTS; i++)
@@ -7280,7 +7280,7 @@ void bm_defragment_event(HNDLE buffer_handle, HNDLE request_id,
       defrag_buffer[i].pevent->event_id = defrag_buffer[i].event_id;
       defrag_buffer[i].pevent->data_size = defrag_buffer[i].data_size;
 
-      printf("First frag[%d] (ID %d) Ser#:%ld sz:%ld\n", i, defrag_buffer[i].event_id,
+      printf("First frag[%d] (ID %d) Ser#:%d sz:%d\n", i, defrag_buffer[i].event_id,
              pevent->serial_number, defrag_buffer[i].data_size);
       j = 0;
 
@@ -7299,7 +7299,7 @@ void bm_defragment_event(HNDLE buffer_handle, HNDLE request_id,
       cm_msg(MERROR, "bm_defragement_event",
              "Received fragment without first fragment (ID %d) Ser#:%d",
              pevent->event_id & 0x0FFF, pevent->serial_number);
-      printf("Received fragment without first fragment (ID 0x%x) Ser#:%ld Sz:%ld\n",
+      printf("Received fragment without first fragment (ID 0x%x) Ser#:%d Sz:%d\n",
              pevent->event_id, pevent->serial_number, pevent->data_size);
       return;
    }
@@ -7319,7 +7319,7 @@ void bm_defragment_event(HNDLE buffer_handle, HNDLE request_id,
 
    defrag_buffer[i].received += pevent->data_size;
 
-   printf("Other frag[%d][%d] (ID %d) Ser#:%ld sz:%ld\n", i, j++,
+   printf("Other frag[%d][%d] (ID %d) Ser#:%d sz:%d\n", i, j++,
           defrag_buffer[i].event_id, pevent->serial_number, pevent->data_size);
 
 
@@ -7336,7 +7336,7 @@ void bm_defragment_event(HNDLE buffer_handle, HNDLE request_id,
 #endif                          /* DOXYGEN_SHOULD_SKIP_THIS */
 
 /**dox***************************************************************/
-                   /** @} *//* end of bmfunctionc */
+                            /** @} *//* end of bmfunctionc */
 
 /**dox***************************************************************/
 /** @addtogroup rpcfunctionc
@@ -8278,10 +8278,11 @@ INT rpc_server_connect(char *host_name, char *exp_name)
       if (status == -1 && timeout.tv_sec >= WATCHDOG_INTERVAL / 1000)
          timeout.tv_sec -= WATCHDOG_INTERVAL / 1000;
 
-   } while (status == -1);   /* dont return if an alarm signal was cought */
+   } while (status == -1);      /* dont return if an alarm signal was cought */
 
    if (!FD_ISSET(lsock1, &readfds)) {
-      cm_msg(MERROR, "rpc_server_connect", "mserver subprocess could not be started (check path)");
+      cm_msg(MERROR, "rpc_server_connect",
+             "mserver subprocess could not be started (check path)");
       closesocket(lsock1);
       closesocket(lsock2);
       closesocket(lsock3);
@@ -8290,14 +8291,11 @@ INT rpc_server_connect(char *host_name, char *exp_name)
 
    size = sizeof(bind_addr);
 
-   _server_connection.send_sock =
-       accept(lsock1, (struct sockaddr *) &bind_addr, &size);
+   _server_connection.send_sock = accept(lsock1, (struct sockaddr *) &bind_addr, &size);
 
-   _server_connection.recv_sock =
-       accept(lsock2, (struct sockaddr *) &bind_addr, &size);
+   _server_connection.recv_sock = accept(lsock2, (struct sockaddr *) &bind_addr, &size);
 
-   _server_connection.event_sock =
-       accept(lsock3, (struct sockaddr *) &bind_addr, &size);
+   _server_connection.event_sock = accept(lsock3, (struct sockaddr *) &bind_addr, &size);
 
    if (_server_connection.send_sock == -1 ||
        _server_connection.recv_sock == -1 || _server_connection.event_sock == -1) {
@@ -8676,7 +8674,7 @@ INT rpc_set_option(HNDLE hConn, INT item, INT value)
 #ifndef DOXYGEN_SHOULD_SKIP_THIS
 
 /********************************************************************/
-PTYPE rpc_get_server_option(INT item)
+POINTER_T rpc_get_server_option(INT item)
 /********************************************************************\
 
   Routine: rpc_get_server_option
@@ -8700,7 +8698,7 @@ PTYPE rpc_get_server_option(INT item)
       return _server_type;
 
    if (item == RPC_OSERVER_NAME)
-      return (PTYPE) _server_name;
+      return (POINTER_T) _server_name;
 
    /* return 0 for local calls */
    if (_server_type == ST_NONE)
@@ -8734,7 +8732,7 @@ PTYPE rpc_get_server_option(INT item)
 
 
 /********************************************************************/
-INT rpc_set_server_option(INT item, PTYPE value)
+INT rpc_set_server_option(INT item, POINTER_T value)
 /********************************************************************\
 
   Routine: rpc_set_server_option
@@ -9090,10 +9088,10 @@ INT rpc_client_call(HNDLE hConn, const INT routine_id, ...)
          /* always align parameter size */
          param_size = ALIGN8(arg_size);
 
-         if ((PTYPE) param_ptr - (PTYPE) nc + param_size > NET_BUFFER_SIZE) {
+         if ((POINTER_T) param_ptr - (POINTER_T) nc + param_size > NET_BUFFER_SIZE) {
             cm_msg(MERROR, "rpc_client_call",
                    "parameters (%d) too large for network buffer (%d)",
-                   (PTYPE) param_ptr - (PTYPE) nc + param_size, NET_BUFFER_SIZE);
+                   (POINTER_T) param_ptr - (POINTER_T) nc + param_size, NET_BUFFER_SIZE);
             return RPC_EXCEED_BUFFER;
          }
 
@@ -9114,7 +9112,7 @@ INT rpc_client_call(HNDLE hConn, const INT routine_id, ...)
 
    va_end(ap);
 
-   nc->header.param_size = (PTYPE) param_ptr - (PTYPE) nc->param;
+   nc->header.param_size = (POINTER_T) param_ptr - (POINTER_T) nc->param;
 
    send_size = nc->header.param_size + sizeof(NET_COMMAND_HEADER);
 
@@ -9372,10 +9370,10 @@ INT rpc_call(const INT routine_id, ...)
          /* always align parameter size */
          param_size = ALIGN8(arg_size);
 
-         if ((PTYPE) param_ptr - (PTYPE) nc + param_size > NET_BUFFER_SIZE) {
+         if ((POINTER_T) param_ptr - (POINTER_T) nc + param_size > NET_BUFFER_SIZE) {
             cm_msg(MERROR, "rpc_call",
                    "parameters (%d) too large for network buffer (%d)",
-                   (PTYPE) param_ptr - (PTYPE) nc + param_size, NET_BUFFER_SIZE);
+                   (POINTER_T) param_ptr - (POINTER_T) nc + param_size, NET_BUFFER_SIZE);
             return RPC_EXCEED_BUFFER;
          }
 
@@ -9396,7 +9394,7 @@ INT rpc_call(const INT routine_id, ...)
 
    va_end(ap);
 
-   nc->header.param_size = (PTYPE) param_ptr - (PTYPE) nc->param;
+   nc->header.param_size = (POINTER_T) param_ptr - (POINTER_T) nc->param;
 
    send_size = nc->header.param_size + sizeof(NET_COMMAND_HEADER);
 
@@ -10349,7 +10347,7 @@ INT rpc_register_server(INT server_type, char *name, INT * port,
    rpc_register_functions(rpc_get_internal_list(0), func);
 
    if (name != NULL)
-      rpc_set_server_option(RPC_OSERVER_NAME, (PTYPE) name);
+      rpc_set_server_option(RPC_OSERVER_NAME, (POINTER_T) name);
 
    /* in subprocess mode, don't start listener */
    if (server_type == ST_SUBPROCESS)
@@ -10558,10 +10556,12 @@ INT rpc_execute(INT sock, char *buffer, INT convert_flags)
          if (rpc_list[index].param[i].tid == TID_STRUCT)
             param_size = ALIGN8(rpc_list[index].param[i].n);
 
-         if ((PTYPE) out_param_ptr - (PTYPE) nc_out + param_size > NET_BUFFER_SIZE) {
+         if ((POINTER_T) out_param_ptr - (POINTER_T) nc_out + param_size >
+             NET_BUFFER_SIZE) {
             cm_msg(MERROR, "rpc_execute",
                    "return parameters (%d) too large for network buffer (%d)",
-                   (PTYPE) out_param_ptr - (PTYPE) nc_out + param_size, NET_BUFFER_SIZE);
+                   (POINTER_T) out_param_ptr - (POINTER_T) nc_out + param_size,
+                   NET_BUFFER_SIZE);
             return RPC_EXCEED_BUFFER;
          }
 
@@ -10631,8 +10631,8 @@ INT rpc_execute(INT sock, char *buffer, INT convert_flags)
             /* move remaining parameters to end of string */
             memcpy(out_param_ptr + param_size,
                    out_param_ptr + max_size + ALIGN8(sizeof(INT)),
-                   (PTYPE) last_param_ptr -
-                   ((PTYPE) out_param_ptr + max_size + ALIGN8(sizeof(INT))));
+                   (POINTER_T) last_param_ptr -
+                   ((POINTER_T) out_param_ptr + max_size + ALIGN8(sizeof(INT))));
          }
 
          if (flags & RPC_VARARRAY) {
@@ -10650,8 +10650,8 @@ INT rpc_execute(INT sock, char *buffer, INT convert_flags)
             /* move remaining parameters to end of array */
             memcpy(out_param_ptr + param_size,
                    out_param_ptr + max_size + ALIGN8(sizeof(INT)),
-                   (PTYPE) last_param_ptr -
-                   ((PTYPE) out_param_ptr + max_size + ALIGN8(sizeof(INT))));
+                   (POINTER_T) last_param_ptr -
+                   ((POINTER_T) out_param_ptr + max_size + ALIGN8(sizeof(INT))));
          }
 
          if (tid == TID_STRUCT)
@@ -10674,7 +10674,7 @@ INT rpc_execute(INT sock, char *buffer, INT convert_flags)
       }
 
    /* send return parameters */
-   param_size = (PTYPE) out_param_ptr - (PTYPE) nc_out->param;
+   param_size = (POINTER_T) out_param_ptr - (POINTER_T) nc_out->param;
    nc_out->header.routine_id = status;
    nc_out->header.param_size = param_size;
 
@@ -10816,7 +10816,7 @@ INT rpc_execute_ascii(INT sock, char *buffer)
                db_sscanf(arpc_param[index_in++], in_param_ptr, &param_size, 0, array_tid);
                in_param_ptr += param_size;
             }
-            in_param_ptr = (char *) ALIGN8(((PTYPE) in_param_ptr));
+            in_param_ptr = (char *) ALIGN8(((POINTER_T) in_param_ptr));
 
             strcat(debug_line, "<array>");
          } else {
@@ -10847,7 +10847,7 @@ INT rpc_execute_ascii(INT sock, char *buffer)
             in_param_ptr += param_size;
          }
 
-         if ((PTYPE) in_param_ptr - (PTYPE) buffer1 > ASCII_BUFFER_SIZE) {
+         if ((POINTER_T) in_param_ptr - (POINTER_T) buffer1 > ASCII_BUFFER_SIZE) {
             cm_msg(MERROR, "rpc_ascii_execute",
                    "parameters (%d) too large for network buffer (%d)", param_size,
                    ASCII_BUFFER_SIZE);
@@ -10869,10 +10869,11 @@ INT rpc_execute_ascii(INT sock, char *buffer)
       if (rpc_list[index].param[i].tid == TID_STRUCT)
         param_size = ALIGN8( rpc_list[index].param[i].n );
 */
-         if ((PTYPE) out_param_ptr - (PTYPE) buffer2 + param_size > ASCII_BUFFER_SIZE) {
+         if ((POINTER_T) out_param_ptr - (POINTER_T) buffer2 + param_size >
+             ASCII_BUFFER_SIZE) {
             cm_msg(MERROR, "rpc_execute",
                    "return parameters (%d) too large for network buffer (%d)",
-                   (PTYPE) out_param_ptr - (PTYPE) buffer2 + param_size,
+                   (POINTER_T) out_param_ptr - (POINTER_T) buffer2 + param_size,
                    ASCII_BUFFER_SIZE);
             return RPC_EXCEED_BUFFER;
          }
@@ -11002,7 +11003,7 @@ INT rpc_execute_ascii(INT sock, char *buffer)
 
          out_param_ptr += strlen(out_param_ptr);
 
-         if ((PTYPE) out_param_ptr - (PTYPE) return_buffer > ASCII_BUFFER_SIZE) {
+         if ((POINTER_T) out_param_ptr - (POINTER_T) return_buffer > ASCII_BUFFER_SIZE) {
             cm_msg(MERROR, "rpc_execute",
                    "return parameter (%d) too large for network buffer (%d)", param_size,
                    ASCII_BUFFER_SIZE);
@@ -11011,7 +11012,7 @@ INT rpc_execute_ascii(INT sock, char *buffer)
       }
 
    /* send return parameters */
-   param_size = (PTYPE) out_param_ptr - (PTYPE) return_buffer + 1;
+   param_size = (POINTER_T) out_param_ptr - (POINTER_T) return_buffer + 1;
 
    status = send_tcp(sock, return_buffer, param_size, 0);
 
@@ -12031,7 +12032,7 @@ INT rpc_check_channels(void)
 #endif                          /* DOXYGEN_SHOULD_SKIP_THIS */
 
 /**dox***************************************************************/
-                   /** @} *//* end of rpcfunctionc */
+                            /** @} *//* end of rpcfunctionc */
 
 /**dox***************************************************************/
 /** @addtogroup bkfunctionc
@@ -12192,10 +12193,9 @@ int bk_delete(void *event, const char *name)
       do {
          if (*((DWORD *) pbk32->name) == dname) {
             /* bank found, delete it */
-            remaining =
-                (int) ((char *) event + ((BANK_HEADER *) event)->data_size +
-                       sizeof(BANK_HEADER)) - (int) ((char *) (pbk32 + 1) +
-                                                     ALIGN8(pbk32->data_size));
+            remaining = ((char *) event + ((BANK_HEADER *) event)->data_size +
+                         sizeof(BANK_HEADER)) - ((char *) (pbk32 + 1) +
+                                                 ALIGN8(pbk32->data_size));
 
             /* reduce total event size */
             ((BANK_HEADER *) event)->data_size -=
@@ -12208,7 +12208,7 @@ int bk_delete(void *event, const char *name)
          }
 
          pbk32 = (BANK32 *) ((char *) (pbk32 + 1) + ALIGN8(pbk32->data_size));
-      } while ((DWORD) pbk32 - (DWORD) event <
+      } while ((DWORD) ((char *) pbk32 - (char *) event) <
                ((BANK_HEADER *) event)->data_size + sizeof(BANK_HEADER));
    } else {
       /* locate bank */
@@ -12217,10 +12217,9 @@ int bk_delete(void *event, const char *name)
       do {
          if (*((DWORD *) pbk->name) == dname) {
             /* bank found, delete it */
-            remaining =
-                (int) ((char *) event + ((BANK_HEADER *) event)->data_size +
-                       sizeof(BANK_HEADER)) - (int) ((char *) (pbk + 1) +
-                                                     ALIGN8(pbk->data_size));
+            remaining = ((char *) event + ((BANK_HEADER *) event)->data_size +
+                         sizeof(BANK_HEADER)) - ((char *) (pbk + 1) +
+                                                 ALIGN8(pbk->data_size));
 
             /* reduce total event size */
             ((BANK_HEADER *) event)->data_size -= sizeof(BANK) + ALIGN8(pbk->data_size);
@@ -12232,7 +12231,7 @@ int bk_delete(void *event, const char *name)
          }
 
          pbk = (BANK *) ((char *) (pbk + 1) + ALIGN8(pbk->data_size));
-      } while ((DWORD) pbk - (DWORD) event <
+      } while ((DWORD) ((char *) pbk - (char *) event) <
                ((BANK_HEADER *) event)->data_size + sizeof(BANK_HEADER));
    }
 
@@ -12261,7 +12260,7 @@ INT bk_close(void *event, void *pdata)
       pbk32 =
           (BANK32 *) ((char *) (((BANK_HEADER *) event) + 1) +
                       ((BANK_HEADER *) event)->data_size);
-      pbk32->data_size = (DWORD) (INT) pdata - (INT) (pbk32 + 1);
+      pbk32->data_size = (DWORD) ((char *) pdata - (char *) (pbk32 + 1));
       if (pbk32->type == TID_STRUCT && pbk32->data_size == 0)
          printf("Warning: bank %c%c%c%c has zero size\n",
                 pbk32->name[0], pbk32->name[1], pbk32->name[2], pbk32->name[3]);
@@ -12273,7 +12272,7 @@ INT bk_close(void *event, void *pdata)
       pbk =
           (BANK *) ((char *) (((BANK_HEADER *) event) + 1) +
                     ((BANK_HEADER *) event)->data_size);
-      pbk->data_size = (WORD) (INT) pdata - (INT) (pbk + 1);
+      pbk->data_size = (WORD) ((char *) pdata - (char *) (pbk + 1));
       if (pbk->type == TID_STRUCT && pbk->data_size == 0)
          printf("Warning: bank %c%c%c%c has zero size\n",
                 pbk->name[0], pbk->name[1], pbk->name[2], pbk->name[3]);
@@ -12360,8 +12359,8 @@ INT bk_locate(void *event, const char *name, void *pdata)
    if (bk_is32(event)) {
       pbk32 = (BANK32 *) (((BANK_HEADER *) event) + 1);
       strncpy((char *) &dname, name, 4);
-      while ((DWORD) pbk32 - (DWORD) event <
-               ((BANK_HEADER *) event)->data_size + sizeof(BANK_HEADER)) {
+      while ((DWORD) ((char *) pbk32 - (char *) event) <
+             ((BANK_HEADER *) event)->data_size + sizeof(BANK_HEADER)) {
          if (*((DWORD *) pbk32->name) == dname) {
             *((void **) pdata) = pbk32 + 1;
             if (tid_size[pbk32->type & 0xFF] == 0)
@@ -12373,8 +12372,8 @@ INT bk_locate(void *event, const char *name, void *pdata)
    } else {
       pbk = (BANK *) (((BANK_HEADER *) event) + 1);
       strncpy((char *) &dname, name, 4);
-      while ((DWORD) pbk - (DWORD) event <
-               ((BANK_HEADER *) event)->data_size + sizeof(BANK_HEADER)) {
+      while ((DWORD) ((char *) pbk - (char *) event) <
+             ((BANK_HEADER *) event)->data_size + sizeof(BANK_HEADER)) {
          if (*((DWORD *) pbk->name) == dname) {
             *((void **) pdata) = pbk + 1;
             if (tid_size[pbk->type & 0xFF] == 0)
@@ -12423,7 +12422,8 @@ INT bk_find(BANK_HEADER * pbkh, const char *name, DWORD * bklen, DWORD * bktype,
             return 1;
          }
          pbk32 = (BANK32 *) ((char *) (pbk32 + 1) + ALIGN8(pbk32->data_size));
-      } while ((DWORD) pbk32 - (DWORD) pbkh < pbkh->data_size + sizeof(BANK_HEADER));
+      } while ((DWORD) ((char *) pbk32 - (char *) pbkh) <
+               pbkh->data_size + sizeof(BANK_HEADER));
    } else {
       pbk = (BANK *) (pbkh + 1);
       strncpy((char *) &dname, name, 4);
@@ -12439,7 +12439,8 @@ INT bk_find(BANK_HEADER * pbkh, const char *name, DWORD * bklen, DWORD * bktype,
             return 1;
          }
          pbk = (BANK *) ((char *) (pbk + 1) + ALIGN8(pbk->data_size));
-      } while ((DWORD) pbk - (DWORD) pbkh < pbkh->data_size + sizeof(BANK_HEADER));
+      } while ((DWORD) ((char *) pbk - (char *) pbkh) <
+               pbkh->data_size + sizeof(BANK_HEADER));
    }
 
    /* bank not found */
@@ -12492,7 +12493,7 @@ INT bk_iterate(void *event, BANK ** pbk, void *pdata)
 
    *((void **) pdata) = (*pbk) + 1;
 
-   if ((DWORD) * pbk - (DWORD) event >=
+   if ((DWORD) ((char *) *pbk - (char *) event) >=
        ((BANK_HEADER *) event)->data_size + sizeof(BANK_HEADER)) {
       *pbk = *((BANK **) pdata) = NULL;
       return 0;
@@ -12533,7 +12534,7 @@ INT bk_iterate32(void *event, BANK32 ** pbk, void *pdata)
 
    *((void **) pdata) = (*pbk) + 1;
 
-   if ((DWORD) * pbk - (DWORD) event >=
+   if ((DWORD) ((char *) *pbk - (char *) event) >=
        ((BANK_HEADER *) event)->data_size + sizeof(BANK_HEADER)) {
       *pbk = *((BANK32 **) pdata) = NULL;
       return 0;
@@ -12586,7 +12587,7 @@ INT bk_swap(void *event, BOOL force)
    pbk32 = (BANK32 *) pbk;
 
    /* scan event */
-   while ((PTYPE) pbk - (PTYPE) pbh < (INT) pbh->data_size + (INT) sizeof(BANK_HEADER)) {
+   while ((char *) pbk - (char *) pbh < (INT) pbh->data_size + (INT) sizeof(BANK_HEADER)) {
       /* swap bank header */
       if (b32) {
          DWORD_SWAP(&pbk32->type);
@@ -12612,7 +12613,7 @@ INT bk_swap(void *event, BOOL force)
       switch (type) {
       case TID_WORD:
       case TID_SHORT:
-         while ((PTYPE) pdata < (PTYPE) pbk) {
+         while ((char *) pdata < (char *) pbk) {
             WORD_SWAP(pdata);
             pdata = (void *) (((WORD *) pdata) + 1);
          }
@@ -12622,14 +12623,14 @@ INT bk_swap(void *event, BOOL force)
       case TID_INT:
       case TID_BOOL:
       case TID_FLOAT:
-         while ((PTYPE) pdata < (PTYPE) pbk) {
+         while ((char *) pdata < (char *) pbk) {
             DWORD_SWAP(pdata);
             pdata = (void *) (((DWORD *) pdata) + 1);
          }
          break;
 
       case TID_DOUBLE:
-         while ((PTYPE) pdata < (PTYPE) pbk) {
+         while ((char *) pdata < (char *) pbk) {
             QWORD_SWAP(pdata);
             pdata = (void *) (((double *) pdata) + 1);
          }
@@ -12641,7 +12642,7 @@ INT bk_swap(void *event, BOOL force)
 }
 
 /**dox***************************************************************/
-                   /** @} *//* end of bkfunctionc */
+                            /** @} *//* end of bkfunctionc */
 
 /**dox***************************************************************/
 /** @addtogroup hsfunctionc
@@ -12699,10 +12700,11 @@ Open history file belonging to certain date. Internal use
 @param fh             File handle
 @return HS_SUCCESS
 */
-INT hs_open_file(DWORD ltime, char *suffix, INT mode, int *fh)
+INT hs_open_file(time_t ltime, char *suffix, INT mode, int *fh)
 {
    struct tm *tms;
    char file_name[256];
+   time_t ttime;
 
    /* generate new file name YYMMDD.xxx */
 #if !defined(OS_VXWORKS)
@@ -12710,7 +12712,8 @@ INT hs_open_file(DWORD ltime, char *suffix, INT mode, int *fh)
    tzset();
 #endif
 #endif
-   tms = localtime((const time_t *) &ltime);
+   ttime = (time_t) ltime;
+   tms = localtime(&ttime);
 
    sprintf(file_name, "%s%02d%02d%02d.%s", _hs_path_name,
            tms->tm_year % 100, tms->tm_mon + 1, tms->tm_mday, suffix);
@@ -12734,7 +12737,7 @@ INT hs_gen_index(DWORD ltime)
            history file ("hst"). Interal use only.
 
   Input:
-    DWORD  ltime            Date for which a history file should
+    time_t ltime            Date for which a history file should
                             be analyzed.
 
   Output:
@@ -12784,7 +12787,7 @@ INT hs_gen_index(DWORD ltime)
          /* read name */
          read(fh, event_name, sizeof(event_name));
 
-         printf("Event definition %s, ID %ld\n", event_name, rec.event_id);
+         printf("Event definition %s, ID %d\n", event_name, rec.event_id);
 
          /* write definition index record */
          def_rec.event_id = rec.event_id;
@@ -12842,14 +12845,14 @@ INT hs_search_file(DWORD * ltime, INT direction)
 
 \********************************************************************/
 {
-   DWORD lt;
+   time_t lt;
    int fh, fhd, fhi;
    struct tm *tms;
 
    if (*ltime == 0)
       *ltime = time(NULL);
 
-   lt = *ltime;
+   lt = (time_t) * ltime;
    do {
       /* try to open history file for date "lt" */
       hs_open_file(lt, "hst", O_RDONLY, &fh);
@@ -12859,15 +12862,14 @@ INT hs_search_file(DWORD * ltime, INT direction)
          lt += direction * 3600 * 24;
 
       /* stop if more than a year before starting point or in the future */
-   } while (fh < 0 && (INT) * ltime - (INT) lt < 3600 * 24 * 365 &&
-            lt < (DWORD) time(NULL));
+   } while (fh < 0 && (INT) * ltime - (INT) lt < 3600 * 24 * 365 && lt < time(NULL));
 
    if (fh < 0)
       return HS_FILE_ERROR;
 
    if (lt != *ltime) {
       /* if switched to new day, set start_time to 0:00 */
-      tms = localtime((const time_t *) &lt);
+      tms = localtime(&lt);
       tms->tm_hour = tms->tm_min = tms->tm_sec = 0;
       *ltime = mktime(tms);
    }
@@ -14060,7 +14062,7 @@ INT hs_read(DWORD event_id, DWORD start_time, DWORD end_time,
          close(fhi);
 
          /* advance one day */
-         tms = localtime((const time_t *) &last_irec_time);
+         tms = localtime((void *) &last_irec_time);
          tms->tm_hour = tms->tm_min = tms->tm_sec = 0;
          last_irec_time = mktime(tms);
 
@@ -14261,7 +14263,7 @@ INT hs_dump(DWORD event_id, DWORD start_time, DWORD end_time,
 
             /* print time from header */
             if (binary_time)
-               printf("%li ", irec.time);
+               printf("%d ", irec.time);
             else {
                sprintf(str, "%s", ctime((const time_t *) &irec.time) + 4);
                str[20] = '\t';
@@ -14307,7 +14309,7 @@ INT hs_dump(DWORD event_id, DWORD start_time, DWORD end_time,
          close(fhi);
 
          /* advance one day */
-         tms = localtime((const time_t *) &last_irec_time);
+         tms = localtime((void *) &last_irec_time);
          tms->tm_hour = tms->tm_min = tms->tm_sec = 0;
          last_irec_time = mktime(tms);
 
@@ -14316,7 +14318,7 @@ INT hs_dump(DWORD event_id, DWORD start_time, DWORD end_time,
             break;
 
          /* search next file */
-         status = hs_search_file(&last_irec_time, 1);
+         status = hs_search_file((void *) &last_irec_time, 1);
          if (status != HS_SUCCESS)
             break;
 
@@ -14396,20 +14398,20 @@ INT hs_fdump(char *file_name, DWORD id, BOOL binary_time)
          read(fh, event_name, sizeof(event_name));
 
          if (rec.event_id == id || id == 0)
-            printf("Event definition %s, ID %ld\n", event_name, rec.event_id);
+            printf("Event definition %s, ID %d\n", event_name, rec.event_id);
 
          /* skip tags */
          lseek(fh, rec.data_size, SEEK_CUR);
       } else {
          /* print data record */
          if (binary_time)
-            sprintf(str, "%li ", rec.time);
+            sprintf(str, "%d ", rec.time);
          else {
             strcpy(str, ctime((const time_t *) &rec.time) + 4);
             str[15] = 0;
          }
          if (rec.event_id == id || id == 0)
-            printf("ID %ld, %s, size %ld\n", rec.event_id, str, rec.data_size);
+            printf("ID %d, %s, size %d\n", rec.event_id, str, rec.data_size);
 
          /* skip data */
          lseek(fh, rec.data_size, SEEK_CUR);
@@ -14427,7 +14429,7 @@ INT hs_fdump(char *file_name, DWORD id, BOOL binary_time)
 #endif                          /* DOXYGEN_SHOULD_SKIP_THIS */
 
 /**dox***************************************************************/
-                   /** @} *//* end of hsfunctionc */
+                            /** @} *//* end of hsfunctionc */
 
 /**dox***************************************************************/
 /** @addtogroup elfunctionc
@@ -14814,7 +14816,7 @@ INT el_search_message(char *tag, int *fh, BOOL walk)
 {
    int i, size, offset, direction, last, status;
    struct tm *tms, ltms;
-   DWORD lt, ltime, lact;
+   time_t lt, ltime, lact;
    char str[256], file_name[256], dir[256];
    HNDLE hDB;
 
@@ -14887,7 +14889,7 @@ INT el_search_message(char *tag, int *fh, BOOL walk)
          }
 
          /* in forward direction, stop today */
-         if (direction != -1 && ltime > (DWORD) time(NULL) + 3600 * 24)
+         if (direction != -1 && ltime > time(NULL) + 3600 * 24)
             break;
 
          /* in backward direction, go back 10 years */
@@ -15395,7 +15397,7 @@ INT el_delete_message(char *tag)
 #endif                          /* DOXYGEN_SHOULD_SKIP_THIS */
 
 /**dox***************************************************************/
-                   /** @} *//* end of elfunctionc */
+                            /** @} *//* end of elfunctionc */
 
 /**dox***************************************************************/
 /** @addtogroup alfunctionc
@@ -15420,7 +15422,7 @@ BOOL al_evaluate_condition(char *condition, char *value)
    double value1, value2;
    char value1_str[256], value2_str[256], str[256], op[3], function[80];
    char data[10000];
-   DWORD time;
+   DWORD dtime;
 
    strcpy(str, condition);
    op[1] = op[2] = 0;
@@ -15432,7 +15434,7 @@ BOOL al_evaluate_condition(char *condition, char *value)
       if (strchr("<>=!", str[i]) != NULL)
          break;
    op[0] = str[i];
-   for (j=1 ; str[i+j] == ' '; j++);
+   for (j = 1; str[i + j] == ' '; j++);
    strlcpy(value2_str, str + i + j, sizeof(value2_str));
    str[i] = 0;
 
@@ -15482,8 +15484,8 @@ BOOL al_evaluate_condition(char *condition, char *value)
 
    if (equal_ustring(function, "access")) {
       /* check key access time */
-      db_get_key_time(hDB, hkey, &time);
-      sprintf(value1_str, "%ld", time);
+      db_get_key_time(hDB, hkey, &dtime);
+      sprintf(value1_str, "%d", dtime);
       value1 = atof(value1_str);
    } else {
       /* get key data and convert to double */
@@ -15887,7 +15889,7 @@ INT al_check()
       KEY key;
       ALARM alarm;
       char str[256], value[256];
-      DWORD now;
+      time_t now;
       PROGRAM_INFO program_info;
       BOOL flag;
 
@@ -16070,7 +16072,7 @@ INT al_check()
 /**dox***************************************************************/
 #endif                          /* DOXYGEN_SHOULD_SKIP_THIS */
 
-                   /** @} *//* end of alfunctionc */
+                            /** @} *//* end of alfunctionc */
 
 /***** sKIP eb_xxx **************************************************/
 /**dox***************************************************************/
@@ -16180,9 +16182,9 @@ INT eb_free_space(void)
    }
 
    if (_eb_write_pointer >= _eb_read_pointer) {
-      free = _eb_size - ((PTYPE) _eb_write_pointer - (PTYPE) _event_ring_buffer);
+      free = _eb_size - ((POINTER_T) _eb_write_pointer - (POINTER_T) _event_ring_buffer);
    } else if (_eb_write_pointer >= _event_ring_buffer) {
-      free = (PTYPE) _eb_read_pointer - (PTYPE) _eb_write_pointer;
+      free = (POINTER_T) _eb_read_pointer - (POINTER_T) _eb_write_pointer;
    } else if (_eb_end_pointer == _event_ring_buffer) {
       _eb_write_pointer = _event_ring_buffer;
       free = _eb_size;
@@ -16190,7 +16192,7 @@ INT eb_free_space(void)
       free = 0;
    } else {
       _eb_write_pointer = _event_ring_buffer;
-      free = (PTYPE) _eb_read_pointer - (PTYPE) _eb_write_pointer;
+      free = (POINTER_T) _eb_read_pointer - (POINTER_T) _eb_write_pointer;
    }
 
    return free;
@@ -16331,7 +16333,7 @@ INT eb_increment_pointer(INT buffer_handle, INT event_size)
              "event size (%d) exeeds maximum event size (%d)", event_size,
              MAX_EVENT_SIZE);
 
-   if (_eb_size - ((PTYPE) _eb_write_pointer - (PTYPE) _event_ring_buffer) <
+   if (_eb_size - ((POINTER_T) _eb_write_pointer - (POINTER_T) _event_ring_buffer) <
        MAX_EVENT_SIZE + sizeof(EVENT_HEADER) + sizeof(INT)) {
       _eb_write_pointer = _event_ring_buffer;
 
@@ -16374,14 +16376,14 @@ INT eb_send_events(BOOL send_all)
    if (eb_wp == _eb_read_pointer)
       return CM_SUCCESS;
    if (eb_wp > _eb_read_pointer) {
-      size = (PTYPE) eb_wp - (PTYPE) _eb_read_pointer;
+      size = (POINTER_T) eb_wp - (POINTER_T) _eb_read_pointer;
 
       /* don't send if less than optimal TCP buffer size available */
       if (size < (INT) _opt_tcp_size && !send_all)
          return CM_SUCCESS;
    } else {
       /* send last piece of event buffer */
-      size = (PTYPE) eb_ep - (PTYPE) _eb_read_pointer;
+      size = (POINTER_T) eb_ep - (POINTER_T) _eb_read_pointer;
    }
 
    while (size > _opt_tcp_size) {
@@ -16733,7 +16735,7 @@ INLINE BOOL dm_active_full(void)
       as I don't switch buffer here */
    if (dm.pa->full)
       return TRUE;
-   return (((PTYPE) dm.pa->pb - (PTYPE) dm.pa->pw) < (INT)
+   return (((POINTER_T) dm.pa->pb - (POINTER_T) dm.pa->pw) < (INT)
            (dm_user_max_event_size + sizeof(EVENT_HEADER) + sizeof(INT)));
 }
 
@@ -16886,7 +16888,7 @@ INLINE INT dm_buffer_send(DMEM_AREA * larea)
    lpt = larea->pt;
 
    /* Get overall buffer size */
-   tot_size = (PTYPE) larea->pe - (PTYPE) lpt;
+   tot_size = (POINTER_T) larea->pe - (POINTER_T) lpt;
 
    /* shortcut for speed */
    if (tot_size == 0)
@@ -16965,7 +16967,7 @@ INT dm_area_send(void)
       return status;            /* catch transfer error too */
 
    if (dm.pa == NULL) {
-      printf(" sync send dm.pa:%p full 1%li 2%li\n", dm.pa, dm.area1.full, dm.area2.full);
+      printf(" sync send dm.pa:%p full 1%d 2%d\n", dm.pa, dm.area1.full, dm.area2.full);
       dm.pa = &dm.area1;
    }
    return CM_SUCCESS;
@@ -17163,7 +17165,7 @@ INT dm_area_flush(void)
 #endif                          /* DOXYGEN_SHOULD_SKIP_THIS */
 
 /**dox***************************************************************/
-                   /** @} *//* end of dmfunctionc */
+                            /** @} *//* end of dmfunctionc */
 
 /**dox***************************************************************/
-                   /** @} *//* end of midasincludecode */
+                            /** @} *//* end of midasincludecode */

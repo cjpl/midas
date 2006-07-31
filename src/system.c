@@ -265,10 +265,12 @@ INT ss_shm_open(char *name, INT size, void **adr, HNDLE * handle)
          file_size = (INT) ss_file_size(file_name);
          if (file_size > 0) {
             if (file_size < size) {
-               cm_msg(MERROR, "ss_shm_open", "Shared memory segment \'%s\' size %d is smaller than requested size %d. Please remove it and try again",file_name,file_size,size);
+               cm_msg(MERROR, "ss_shm_open",
+                      "Shared memory segment \'%s\' size %d is smaller than requested size %d. Please remove it and try again",
+                      file_name, file_size, size);
                return SS_NO_MEMORY;
             }
-            
+
             size = file_size;
          }
       }
@@ -277,17 +279,19 @@ INT ss_shm_open(char *name, INT size, void **adr, HNDLE * handle)
       shmid = shmget(key, size, 0);
       if (shmid == -1) {
          //cm_msg(MINFO, "ss_shm_open", "Creating shared memory segment, key: 0x%x, size: %d",key,size);
-         shmid = shmget(key, size, IPC_CREAT|IPC_EXCL);
-         if (shmid == -1 && errno == EEXIST)
-           {
-             cm_msg(MERROR, "ss_shm_open", "Shared memory segment with key 0x%x already exists, please remove it manually: ipcrm -M 0x%x",key,key);
-             return SS_NO_MEMORY;
-           }
+         shmid = shmget(key, size, IPC_CREAT | IPC_EXCL);
+         if (shmid == -1 && errno == EEXIST) {
+            cm_msg(MERROR, "ss_shm_open",
+                   "Shared memory segment with key 0x%x already exists, please remove it manually: ipcrm -M 0x%x",
+                   key, key);
+            return SS_NO_MEMORY;
+         }
          status = SS_CREATED;
       }
 
       if (shmid == -1) {
-         cm_msg(MERROR, "ss_shm_open", "shmget(key=0x%x,size=%d) failed, errno %d (%s)", key, size, errno, strerror(errno));
+         cm_msg(MERROR, "ss_shm_open", "shmget(key=0x%x,size=%d) failed, errno %d (%s)",
+                key, size, errno, strerror(errno));
          return SS_NO_MEMORY;
       }
 
@@ -300,7 +304,8 @@ INT ss_shm_open(char *name, INT size, void **adr, HNDLE * handle)
       *handle = (HNDLE) shmid;
 
       if ((*adr) == (void *) (-1)) {
-         cm_msg(MERROR, "ss_shm_open","shmat(shmid=%d) failed, errno %d (%s)", shmid, errno, strerror(errno));
+         cm_msg(MERROR, "ss_shm_open", "shmat(shmid=%d) failed, errno %d (%s)", shmid,
+                errno, strerror(errno));
          return SS_NO_MEMORY;
       }
 
@@ -418,7 +423,8 @@ INT ss_shm_close(char *name, void *adr, HNDLE handle, INT destroy_flag)
 
       /* get info about shared memory */
       if (shmctl(handle, IPC_STAT, &buf) < 0) {
-         cm_msg(MERROR, "ss_shm_close", "shmctl(shmid=%d,IPC_STAT) failed, errno %d (%s)",handle,errno,strerror(errno));
+         cm_msg(MERROR, "ss_shm_close", "shmctl(shmid=%d,IPC_STAT) failed, errno %d (%s)",
+                handle, errno, strerror(errno));
          return SS_INVALID_HANDLE;
       }
 
@@ -438,18 +444,22 @@ INT ss_shm_close(char *name, void *adr, HNDLE handle, INT destroy_flag)
          }
 
          if (shmdt(adr) < 0) {
-            cm_msg(MERROR, "ss_shm_close", "shmdt(shmid=%d) failed, errno %d (%s)",handle,errno,strerror(errno));
+            cm_msg(MERROR, "ss_shm_close", "shmdt(shmid=%d) failed, errno %d (%s)",
+                   handle, errno, strerror(errno));
             return SS_INVALID_ADDRESS;
          }
 
          if (shmctl(handle, IPC_RMID, &buf) < 0) {
-            cm_msg(MERROR, "ss_shm_close", "shmctl(shmid=%d,IPC_RMID) failed, errno %d (%s)",handle,errno,strerror(errno));
+            cm_msg(MERROR, "ss_shm_close",
+                   "shmctl(shmid=%d,IPC_RMID) failed, errno %d (%s)", handle, errno,
+                   strerror(errno));
             return SS_INVALID_ADDRESS;
          }
       } else
          /* only detach if we are not the last */
       if (shmdt(adr) < 0) {
-         cm_msg(MERROR, "ss_shm_close", "shmdt(shmid=%d) failed, errno %d (%s)",handle,errno,strerror(errno));
+         cm_msg(MERROR, "ss_shm_close", "shmdt(shmid=%d) failed, errno %d (%s)", handle,
+                errno, strerror(errno));
          return SS_INVALID_ADDRESS;
       }
 
@@ -658,7 +668,7 @@ INT ss_getthandle(void)
    DuplicateHandle(GetCurrentProcess(), GetCurrentThread(),
                    GetCurrentProcess(), &hThread, THREAD_ALL_ACCESS, TRUE, 0);
 
-   return (INT)hThread;
+   return (INT) hThread;
 
 #endif                          /* OS_WINNT */
 #ifdef OS_VMS
@@ -704,7 +714,7 @@ INT ss_get_struct_align()
 
 \********************************************************************/
 {
-   return (PTYPE) (&test_align.d) - (PTYPE) & test_align.c;
+   return (POINTER_T) (&test_align.d) - (POINTER_T) & test_align.c;
 }
 
 /*------------------------------------------------------------------*/
@@ -1430,7 +1440,7 @@ midas_thread_t ss_thread_create(INT(*thread_func) (void *), void *param)
    status = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE) thread_func,
                          (LPVOID) param, 0, &thread_id);
 
-   return status == NULL ?  0 : (midas_thread_t)thread_id;
+   return status == NULL ? 0 : (midas_thread_t) thread_id;
 
 #elif defined(OS_MSDOS)
 
@@ -2105,7 +2115,7 @@ DWORD ss_settime(DWORD seconds)
 
 #elif defined(OS_UNIX)
 
-   stime((time_t *) & seconds);
+   stime((void *) &seconds);
 
 #elif defined(OS_VXWORKS)
 
@@ -2177,9 +2187,9 @@ INT ss_timezone()
 \********************************************************************/
 {
 #if defined(OS_DARWIN) || defined(OS_VXWORKS)
-  return 0;
+   return 0;
 #else
-  return (INT)timezone; /* on Linux, comes from "#include <time.h>". */
+   return (INT) timezone;       /* on Linux, comes from "#include <time.h>". */
 #endif
 }
 
@@ -5681,11 +5691,12 @@ char *ss_crypt(char *buf, char *salt)
 double ss_nan()
 {
    double nan;
-   
+
    nan = 0;
-   nan = 0/nan;
+   nan = 0 / nan;
    return nan;
 }
+
 #ifdef OS_WINNT
 #include <float.h>
 #ifndef isnan
@@ -5703,6 +5714,5 @@ int ss_isnan(double x)
 /**dox***************************************************************/
 #endif                          /* DOXYGEN_SHOULD_SKIP_THIS */
 
-/** @} */ /* end of msfunctionc */
-/** @} */ /* end of msystemincludecode */
-
+          /** @} *//* end of msfunctionc */
+          /** @} *//* end of msystemincludecode */

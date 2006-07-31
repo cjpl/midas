@@ -815,7 +815,7 @@ INT book_ntuples(void)
          /* book run number/event number/time */
          strcpy(str, "Number");
          strcpy(str2, "Run:U*4,Number:U*4,Time:U*4");
-         t = (int *)(&analyze_request[index].number.run);
+         t = (int *) (&analyze_request[index].number.run);
          HBNAME(analyze_request[index].ar_info.event_id, str, t, str2);
 
          bank_list = analyze_request[index].bank_list;
@@ -1884,7 +1884,7 @@ INT bor(INT run_number, char *error)
 #ifdef HAVE_ZLIB
             if (out_gzip)
                out_file = (FILE *) gzopen(file_name, "wb");
-            else 
+            else
 #endif
             if (out_format == FORMAT_ASCII)
                out_file = fopen(file_name, "wt");
@@ -2360,7 +2360,7 @@ INT write_event_midas(FILE * file, EVENT_HEADER * pevent, ANALYZE_REQUEST * par)
    if (buffer == NULL)
       buffer = (char *) malloc(MAX_EVENT_SIZE);
 
-   pevent_copy = (EVENT_HEADER *) ALIGN8((PTYPE) buffer);
+   pevent_copy = (EVENT_HEADER *) ALIGN8((POINTER_T) buffer);
 
    if (clp.filter) {
       /* use original event */
@@ -2431,7 +2431,7 @@ INT write_event_midas(FILE * file, EVENT_HEADER * pevent, ANALYZE_REQUEST * par)
          } while (1);
 
          /* set event size in header */
-         size = ALIGN8((PTYPE) pdata_copy - (PTYPE) pbuf);
+         size = ALIGN8((POINTER_T) pdata_copy - (POINTER_T) pbuf);
          pevent_copy->data_size = size;
          size += sizeof(EVENT_HEADER);
       }
@@ -2706,7 +2706,7 @@ INT write_event_hbook(FILE * file, EVENT_HEADER * pevent, ANALYZE_REQUEST * par)
       exclude_all = TRUE;
       do {
          /* scan all banks */
-         size = ybk_iterate((DWORD *) (pevent + 1), &pybk, (void *)(&pdata));
+         size = ybk_iterate((DWORD *) (pevent + 1), &pybk, (void *) (&pdata));
          if (pybk == NULL)
             break;
 
@@ -2835,7 +2835,7 @@ INT write_event_hbook(FILE * file, EVENT_HEADER * pevent, ANALYZE_REQUEST * par)
    if (event_def->format == FORMAT_FIXED) {
       if (clp.rwnt) {
          /* fill N-tuple from structured bank */
-         pdata = (char *)(pevent + 1);
+         pdata = (char *) (pevent + 1);
          k = 3;                 /* index 0..2 for run/serial/time */
 
          for (i = 0;; i++) {
@@ -3422,7 +3422,7 @@ void receive_event(HNDLE buffer_handle, HNDLE request_id, EVENT_HEADER * pheader
    }
 
    /* align buffer */
-   pb = (char *) ALIGN8((int) buffer);
+   pb = (char *) ALIGN8((POINTER_T) buffer);
 
    /* copy event to local buffer */
    memcpy(pb, pheader, pheader->data_size + sizeof(EVENT_HEADER));
@@ -3882,21 +3882,21 @@ INT bevid_2_mheader(EVENT_HEADER * pevent, DWORD * pybos)
 
    /* check if EVID is present if so display its content */
    if ((status = ybk_find(pybos, "EVID", &bklen, &bktyp, &pvybk)) == YB_SUCCESS) {
-     pybk = (YBOS_BANK_HEADER *) pvybk;
-     pdata = (DWORD *) ((YBOS_BANK_HEADER *) pybk + 1);
-     if (clp.verbose) {
-       printf("--------- EVID --------- Event# %i ------Run#:%i--------\n",
-	      (int) (YBOS_EVID_EVENT_NB(pdata)), (int) (YBOS_EVID_RUN_NUMBER(pdata)));
-       printf("Evid:%4.4x- Mask:%4.4x- Serial:%i- Time:0x%x- Dsize:%i/0x%x",
-	      (int) YBOS_EVID_EVENT_ID(pdata), (int) YBOS_EVID_TRIGGER_MASK(pdata)
-	      , (int) YBOS_EVID_SERIAL(pdata), (int) YBOS_EVID_TIME(pdata)
-	      , (int) pybk->length, (int) pybk->length);
-     }
-     pevent->event_id = YBOS_EVID_EVENT_ID(pdata);
-     pevent->trigger_mask = YBOS_EVID_TRIGGER_MASK(pdata);
-     pevent->serial_number = YBOS_EVID_SERIAL(pdata);
-     pevent->time_stamp = YBOS_EVID_TIME(pdata);
-     pevent->data_size = pybk->length;
+      pybk = (YBOS_BANK_HEADER *) pvybk;
+      pdata = (DWORD *) ((YBOS_BANK_HEADER *) pybk + 1);
+      if (clp.verbose) {
+         printf("--------- EVID --------- Event# %i ------Run#:%i--------\n",
+                (int) (YBOS_EVID_EVENT_NB(pdata)), (int) (YBOS_EVID_RUN_NUMBER(pdata)));
+         printf("Evid:%4.4x- Mask:%4.4x- Serial:%i- Time:0x%x- Dsize:%i/0x%x",
+                (int) YBOS_EVID_EVENT_ID(pdata), (int) YBOS_EVID_TRIGGER_MASK(pdata)
+                , (int) YBOS_EVID_SERIAL(pdata), (int) YBOS_EVID_TIME(pdata)
+                , (int) pybk->length, (int) pybk->length);
+      }
+      pevent->event_id = YBOS_EVID_EVENT_ID(pdata);
+      pevent->trigger_mask = YBOS_EVID_TRIGGER_MASK(pdata);
+      pevent->serial_number = YBOS_EVID_SERIAL(pdata);
+      pevent->time_stamp = YBOS_EVID_TIME(pdata);
+      pevent->data_size = pybk->length;
    }
    return SS_SUCCESS;
 }
@@ -4056,7 +4056,8 @@ MA_FILE *ma_open(char *file_name)
       while (*ext_str != '.' && ext_str > file_name)
          ext_str--;
 #else
-      cm_msg(MERROR, "ma_open", ".gz extension not possible because zlib support is not compiled in.\n");
+      cm_msg(MERROR, "ma_open",
+             ".gz extension not possible because zlib support is not compiled in.\n");
       return NULL;
 #endif
    }
@@ -4156,7 +4157,6 @@ int ma_read_event(MA_FILE * file, EVENT_HEADER * pevent, int size)
                cm_msg(MERROR, "ma_read_event", "Buffer size too small");
                return -1;
             }
-
 #ifdef HAVE_ZLIB
             n = gzread(file->gzfile, pevent + 1, pevent->data_size);
 #else
@@ -4290,7 +4290,7 @@ INT analyze_run(INT run_number, char *input_file_name, char *output_file_name)
       printf("Not enough memeory\n");
       return -1;
    }
-   pevent = (EVENT_HEADER *) ALIGN8((PTYPE) pevent_unaligned);
+   pevent = (EVENT_HEADER *) ALIGN8((POINTER_T) pevent_unaligned);
 
    /* call analyzer bor routines */
    bor(run_number, error);
@@ -5281,7 +5281,7 @@ TFolder *ReadFolderPointer(TSocket * fSocket)
    //read pointer to current folder
    TMessage *m = 0;
    fSocket->Recv(m);
-   Int_t p;
+   POINTER_T p;
    *m >> p;
    return (TFolder *) p;
 }
@@ -5407,7 +5407,7 @@ THREADTYPE root_server_thread(void *arg)
 
             //write pointer
             message->Reset(kMESS_ANY);
-            int p = (PTYPE) obj;
+            int p = (POINTER_T) obj;
             *message << p;
             sock->Send(*message);
 

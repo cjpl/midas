@@ -54,7 +54,7 @@ void debug_print(char *msg)
    strcpy(file_name, "/tmp/mserver.log");
 #else
    getcwd(file_name, sizeof(file_name));
-   if (file_name[strlen(file_name)-1] != DIR_SEPARATOR)
+   if (file_name[strlen(file_name) - 1] != DIR_SEPARATOR)
       strcat(file_name, DIR_SEPARATOR_STR);
    strcat(file_name, "mserver.log");
 #endif
@@ -63,8 +63,8 @@ void debug_print(char *msg)
    if (!client_name[0])
       cm_get_client_info(client_name);
 
-   sprintf(str, "%10.3lf [%d,%s,%s] ", (ss_millitime()-start_time)/1000.0, 
-      ss_getpid(), callback.host_name, client_name);
+   sprintf(str, "%10.3lf [%d,%s,%s] ", (ss_millitime() - start_time) / 1000.0,
+           ss_getpid(), callback.host_name, client_name);
    strlcat(str, msg, sizeof(str));
    strlcat(str, "\n", sizeof(str));
 
@@ -152,7 +152,7 @@ int main(int argc, char **argv)
    }
 #endif
 
-   rpc_set_server_option(RPC_OSERVER_NAME, (PTYPE) name);
+   rpc_set_server_option(RPC_OSERVER_NAME, (POINTER_T) name);
 
    /* redirect message print */
    cm_set_msg_print(MT_ALL, MT_ALL, msg_print);
@@ -199,7 +199,8 @@ int main(int argc, char **argv)
                printf("               -m    Multi process server (default)\n");
 #ifdef OS_LINUX
                printf("               -D    Become a daemon\n");
-               printf("               -d    Write debug info to stdout or to \"/tmp/mserver.log\"\n\n");
+               printf
+                   ("               -d    Write debug info to stdout or to \"/tmp/mserver.log\"\n\n");
 #else
                printf("               -d    Write debug info\"\n\n");
 #endif
@@ -216,8 +217,8 @@ int main(int argc, char **argv)
             rpc_set_debug((void (*)(char *)) puts, 1);
 
          sprintf(str, "Arguments: ");
-         for (i=0 ; i<argc ; i++)
-            sprintf(str+strlen(str), " %s", argv[i]);
+         for (i = 0; i < argc; i++)
+            sprintf(str + strlen(str), " %s", argv[i]);
          rpc_debug_printf(str);
 
          rpc_debug_printf("Debugging mode is on");
@@ -254,7 +255,7 @@ int main(int argc, char **argv)
       /* run forever */
       while (ss_suspend(5000, 0) != RPC_SHUTDOWN);
    } else {
-      
+
       /* here we come if this program is started as a subprocess */
 
       memset(&callback, 0, sizeof(callback));
@@ -292,7 +293,7 @@ int main(int argc, char **argv)
          if (callback.directory[0]) {
             if (callback.user[0])
                rpc_debug_printf("Start subprocess in %s under user %s",
-                      callback.directory, callback.user);
+                                callback.directory, callback.user);
             else
                rpc_debug_printf("Start subprocess in %s", callback.directory);
 
@@ -303,8 +304,7 @@ int main(int argc, char **argv)
       /* change the directory and uid */
       if (callback.directory[0])
          if (chdir(callback.directory) != 0)
-            rpc_debug_printf("Cannot change to directory \"%s\"",
-                             callback.directory);
+            rpc_debug_printf("Cannot change to directory \"%s\"", callback.directory);
 
 #ifdef OS_UNIX
 
@@ -314,8 +314,7 @@ int main(int argc, char **argv)
 
          pw = getpwnam(callback.user);
          if (pw == NULL) {
-            rpc_debug_printf("Cannot change UID, unknown user \"%s\"",
-                             callback.user);
+            rpc_debug_printf("Cannot change UID, unknown user \"%s\"", callback.user);
             cm_msg(MERROR, "main", "Cannot change UID, unknown user \"%s\"",
                    callback.user);
          } else {
@@ -331,9 +330,9 @@ int main(int argc, char **argv)
                } else {
                   if (debug) {
                      rpc_debug_printf("Changed UID to user %s (GID %d, UID %d)",
-                           callback.user, pw->pw_gid, pw->pw_uid);
+                                      callback.user, pw->pw_gid, pw->pw_uid);
                      cm_msg(MLOG, "main", "Changed UID to user %s (GID %d, UID %d)",
-                           callback.user, pw->pw_gid, pw->pw_uid);
+                            callback.user, pw->pw_gid, pw->pw_uid);
                   }
                }
             }
@@ -544,6 +543,7 @@ INT rpc_server_dispatch(INT index, void *prpc_param[])
       status = bm_add_event_request(CINT(0), CSHORT(1),
                                     CSHORT(2), CINT(3),
                                     (void (*)(HNDLE, HNDLE, EVENT_HEADER *, void *))
+                                    (POINTER_T)
                                     CINT(4), CINT(5));
       break;
 

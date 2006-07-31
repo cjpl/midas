@@ -512,7 +512,7 @@ INT cnafsub(BOOL cmd_mode, char *cmd)
             if (p->f < 16)  /* Actual 16 bits CAMAC operation */ 
               cam16i_q(p->c, p->n, p->a, p->f, &p->d16, &p->x, &p->q);
             else if (p->f < 24)
-              cam16o_q(p->c, p->n, p->a, p->f, p->d24, &p->x, &p->q);
+              cam16o_q(p->c, p->n, p->a, p->f, (WORD)p->d24, &p->x, &p->q);
             else 
               camc_q(p->c, p->n, p->a, p->f, &p->q);
           }

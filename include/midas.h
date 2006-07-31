@@ -43,7 +43,7 @@ The main include file
  *  @{  */
 
 #define MIDAS_VERSION "1.9.5"
-#define DATABASE_VERSION 2   /* has to be changed whenever binary ODB format changes*/
+#define DATABASE_VERSION 2      /* has to be changed whenever binary ODB format changes */
 
 /**dox***************************************************************/
 #ifndef DOXYGEN_SHOULD_SKIP_THIS
@@ -98,11 +98,8 @@ The main include file
 
 typedef unsigned char BYTE;
 typedef unsigned short int WORD;
-
-#ifdef __alpha
+#ifndef OS_WINNT // Windows defines already DWORD
 typedef unsigned int DWORD;
-#else
-typedef unsigned long int DWORD;
 #endif
 
 #ifndef OS_WINNT
@@ -142,16 +139,19 @@ typedef INT HNDLE;
 #endif
 
 /*
-  Definitions depending on pointer types:
+   Conversion from pointer to interger and back.
 
-  Note that the alpha chip uses 64 bit pointers by default.
-  Therefore, when converting pointer to integers, always
-  use the (PTYPE) cast.
+   On 64-bit systems, pointers are long ints
+   On 32-bit systems, pointers are int
+
+   Never use direct casting, since the code might then
+   not be portable between 32-bit and 64-bit systems
+
 */
-#ifdef __alpha
-#define PTYPE              long int
+#if defined(__alpha) || defined(_LP64)
+#define POINTER_T     long int
 #else
-#define PTYPE              int
+#define POINTER_T     int
 #endif
 
 /* need system-dependant thread type */
@@ -360,7 +360,7 @@ Read - On flags */
 #define RO_ODB        (1<<8)   /**< Submit data to ODB only */
 
 /**dox***************************************************************/
-/** @} */ /* end of mdefineh */
+          /** @} *//* end of mdefineh */
 
 /**
 special characters */
@@ -444,11 +444,11 @@ Align macro for data alignment on 8-byte boundary */
 
 /**
 Align macro for variable data alignment */
-#define VALIGN(adr,align)  (((PTYPE) (adr)+align-1) & ~(align-1))
+#define VALIGN(adr,align)  (((POINTER_T) (adr)+align-1) & ~(align-1))
 
 /**dox***************************************************************/
-/** @} */ /* end of mmacroh */
- 
+          /** @} *//* end of mmacroh */
+
 /**dox***************************************************************/
 /** @addtogroup mdefineh
  *  
@@ -478,7 +478,7 @@ System message types */
 #define MCALL              MT_CALL,  __FILE__, __LINE__ /**< info message for telephone call */
 
 /**dox***************************************************************/
-/** @} */ /* end of mdefineh */
+          /** @} *//* end of mdefineh */
 
 
 /**dox***************************************************************/
@@ -507,7 +507,7 @@ System message types */
 #define CM_INVALID_TRANSITION       113 /**< - */
 #define CM_TOO_MANY_REQUESTS        114 /**< - */
 /**dox***************************************************************/
-/** @} */ /* end of err21 */
+          /** @} *//* end of err21 */
 
 /**dox***************************************************************/
 /**
@@ -532,7 +532,7 @@ System message types */
 #define BM_INVALID_MIXING           217   /**< - */
 #define BM_NO_SHM                   218   /**< - */
 /**dox***************************************************************/
-/** @} */ /* end of group 22 */
+          /** @} *//* end of group 22 */
 
 /**dox***************************************************************/
 /**  @defgroup err23 Online Database error codes 
@@ -564,7 +564,7 @@ System message types */
 #define DB_TIMEOUT                  325   /**< - */
 #define DB_VERSION_MISMATCH         326   /**< - */
 /**dox***************************************************************/
-/** @} */ /* end of group 23 */
+          /** @} *//* end of group 23 */
 
 /**dox***************************************************************/
 /**  @defgroup err24 System Services error code
@@ -597,7 +597,7 @@ System message types */
 #define SS_INVALID_FORMAT           426   /**< - */
 #define SS_NO_ROOT                  427   /**< - */
 /**dox***************************************************************/
-/** @} */ /* end of group 24 */
+          /** @} *//* end of group 24 */
 
 /**dox***************************************************************/
 /**  @defgroup err25 Remote Procedure Calls error codes
@@ -615,7 +615,7 @@ System message types */
 #define RPC_NO_MEMORY               510   /**< - */
 #define RPC_DOUBLE_DEFINED          511   /**< - */
 /**dox***************************************************************/
-/** @} */ /* end of group 25 */
+          /** @} *//* end of group 25 */
 
 /**dox***************************************************************/
 /**  @defgroup err26 Other errors
@@ -704,10 +704,10 @@ macros for bus driver access */
 #define BD_WRITES(s)       info->bd(CMD_WRITE, info->bd_info, s)
 
 /**dox***************************************************************/
-/** @} */ /* end of 26 */
+          /** @} *//* end of 26 */
 
 /**dox***************************************************************/
-/** @} */ /* end of mdeferrorh */
+          /** @} *//* end of mdeferrorh */
 
 
 #define ANA_CONTINUE                  1
@@ -871,7 +871,7 @@ typedef struct {
 } KEYLIST;
 
 /**dox***************************************************************/
-/** @} */ /* end of mbufferh */
+          /** @} *//* end of mbufferh */
 
 /*---- Equipment ---------------------------------------------------*/
 
@@ -949,7 +949,7 @@ typedef struct eqpmnt {
    EQUIPMENT_STATS stats;
 } EQUIPMENT;
 /**dox***************************************************************/
-/** @} */ /* end of mequipmenth */
+          /** @} *//* end of mequipmenth */
 
 /*---- Banks -------------------------------------------------------*/
 
@@ -994,7 +994,7 @@ typedef struct {
    HNDLE def_key;                      /**< - */
 } BANK_LIST;
 /**dox***************************************************************/
-/** @} */ /* end of mbank */
+          /** @} *//* end of mbank */
 
 /*---- Analyzer request --------------------------------------------*/
 /**dox***************************************************************/
@@ -1036,7 +1036,7 @@ typedef struct {
 typedef struct {
    char event_name[NAME_LENGTH];      /**< Event name                        */
    AR_INFO ar_info;                   /**< From above                        */
-   INT(*analyzer) (EVENT_HEADER *, void *); /**< Pointer to user analyzer routine  */
+    INT(*analyzer) (EVENT_HEADER *, void *);/**< Pointer to user analyzer routine  */
    ANA_MODULE **ana_module;           /**< List of analyzer modules          */
    BANK_LIST *bank_list;              /**< List of banks for event           */
    INT rwnt_buffer_size;              /**< Size in events of RW N-tuple buf  */
@@ -1048,11 +1048,11 @@ typedef struct {
    HNDLE hkey_variables;              /**< Key to variables subtree in ODB   */
    HNDLE hkey_common;                 /**< Key to common subtree             */
    void *addr;                        /**< Buffer for CWNT filling           */
-   struct {                          
+   struct {
       DWORD run;
       DWORD serial;
       DWORD time;
-   } number;                          /**< Buffer for event number for CWNT  */    
+   } number;                          /**< Buffer for event number for CWNT  */
    DWORD events_received;             /**< number of events sent             */
    DWORD events_written;              /**< number of events written          */
    AR_STATS ar_stats;
@@ -1078,7 +1078,7 @@ typedef struct {
 #define DEF_TEST(t) extern ANA_TEST t;
 #endif
 /**dox***************************************************************/
-/** @} */ /* end of manalyzer */
+          /** @} *//* end of manalyzer */
 
 /*---- History structures ------------------------------------------*/
 
@@ -1121,7 +1121,7 @@ typedef struct {
    DWORD def_offset;
 } HISTORY;
 /**dox***************************************************************/
-/** @} */ /* end of mhistoryh */
+          /** @} *//* end of mhistoryh */
 
 /*---- ODB runinfo -------------------------------------------------*/
 
@@ -1158,7 +1158,7 @@ typedef struct {
 "",\
 NULL }
 /**dox***************************************************************/
-/** @} */ /* end of modbh */
+          /** @} *//* end of modbh */
 
 /*---- Alarm system ------------------------------------------------*/
 /**dox***************************************************************/
@@ -1277,7 +1277,7 @@ NULL }
 NULL }
 
 /**dox***************************************************************/
-/** @} */ /* end of malarmh */
+          /** @} *//* end of malarmh */
 
 /**dox***************************************************************/
 #ifndef DOXYGEN_SHOULD_SKIP_THIS
@@ -1490,7 +1490,8 @@ extern "C" {
                                     void (*func) (char *), INT odb_size,
                                     DWORD watchdog_timeout);
    INT EXPRT cm_disconnect_experiment(void);
-   INT EXPRT cm_register_transition(INT transition, INT(*func) (INT, char *), int sequence_number);
+   INT EXPRT cm_register_transition(INT transition, INT(*func) (INT, char *),
+                                    int sequence_number);
    INT EXPRT cm_deregister_transition(INT transition);
    INT EXPRT cm_set_transition_sequence(INT transition, INT sequence_number);
    INT EXPRT cm_query_transition(int *transition, int *run_number, int *trans_time);
@@ -1816,166 +1817,160 @@ extern "C" {
 
 #ifdef __cplusplus
 }
-
 #ifdef USE_ROOT
-   /* root functions really are C++ functions */
-   extern TFolder *gManaHistosFolder;
-   extern TObjArray *gHistoFolderStack;
+   /* root functions really are C++ functions */ extern TFolder *gManaHistosFolder;
+extern TObjArray *gHistoFolderStack;
 
    // book functions put a root object in a suitable folder
    // for histos, there are a lot of types, so we use templates.
    // for other objects we have one function per object
-   template<typename TH1X>
-   TH1X EXPRT *h1_book(const char *name, const char *title,
-		       int bins, double min, double max)
-   {
-      TH1X *hist;
+template < typename TH1X >
+    TH1X EXPRT * h1_book(const char *name, const char *title,
+                         int bins, double min, double max)
+{
+   TH1X *hist;
 
-      /* check if histo already exists */
+   /* check if histo already exists */
+   if (!gHistoFolderStack->Last())
+      hist = (TH1X *) gManaHistosFolder->FindObjectAny(name);
+   else
+      hist = (TH1X *) ((TFolder *) gHistoFolderStack->Last())->FindObjectAny(name);
+
+   if (hist == NULL) {
+      hist = new TH1X(name, title, bins, min, max);
       if (!gHistoFolderStack->Last())
-         hist = (TH1X *) gManaHistosFolder->FindObjectAny(name);
+         gManaHistosFolder->Add(hist);
       else
-         hist = (TH1X *) ((TFolder *)gHistoFolderStack->Last())->FindObjectAny(name);
-
-      if (hist == NULL) {
-         hist = new TH1X(name, title, bins, min, max);
-         if (!gHistoFolderStack->Last())
-            gManaHistosFolder->Add(hist);
-         else
-            ((TFolder *)gHistoFolderStack->Last())->Add(hist);
-      }
-
-      return hist;
+         ((TFolder *) gHistoFolderStack->Last())->Add(hist);
    }
 
-   template<typename TH1X>
-   TH1X EXPRT *h1_book(const char *name, const char *title,
-		       int bins, double edges[])
-   {
-      TH1X *hist;
+   return hist;
+}
 
-      /* check if histo already exists */
+template < typename TH1X >
+    TH1X EXPRT * h1_book(const char *name, const char *title, int bins, double edges[])
+{
+   TH1X *hist;
+
+   /* check if histo already exists */
+   if (!gHistoFolderStack->Last())
+      hist = (TH1X *) gManaHistosFolder->FindObjectAny(name);
+   else
+      hist = (TH1X *) ((TFolder *) gHistoFolderStack->Last())->FindObjectAny(name);
+
+   if (hist == NULL) {
+      hist = new TH1X(name, title, bins, edges);
       if (!gHistoFolderStack->Last())
-         hist = (TH1X *) gManaHistosFolder->FindObjectAny(name);
+         gManaHistosFolder->Add(hist);
       else
-         hist = (TH1X *) ((TFolder *)gHistoFolderStack->Last())->FindObjectAny(name);
-
-      if (hist == NULL) {
-         hist = new TH1X(name, title, bins, edges);
-         if (!gHistoFolderStack->Last())
-            gManaHistosFolder->Add(hist);
-         else
-            ((TFolder *)gHistoFolderStack->Last())->Add(hist);
-      }
-
-      return hist;
+         ((TFolder *) gHistoFolderStack->Last())->Add(hist);
    }
 
-   template<typename TH2X>
-   TH2X EXPRT *h2_book(const char *name, const char *title,
-	     	       int xbins, double xmin, double xmax,
-                       int ybins, double ymin, double ymax)
-   {
-      TH2X *hist;
+   return hist;
+}
 
-      /* check if histo already exists */
+template < typename TH2X >
+    TH2X EXPRT * h2_book(const char *name, const char *title,
+                         int xbins, double xmin, double xmax,
+                         int ybins, double ymin, double ymax)
+{
+   TH2X *hist;
+
+   /* check if histo already exists */
+   if (!gHistoFolderStack->Last())
+      hist = (TH2X *) gManaHistosFolder->FindObjectAny(name);
+   else
+      hist = (TH2X *) ((TFolder *) gHistoFolderStack->Last())->FindObjectAny(name);
+
+   if (hist == NULL) {
+      hist = new TH2X(name, title, xbins, xmin, xmax, ybins, ymin, ymax);
       if (!gHistoFolderStack->Last())
-         hist = (TH2X *) gManaHistosFolder->FindObjectAny(name);
+         gManaHistosFolder->Add(hist);
       else
-         hist = (TH2X *) ((TFolder *)gHistoFolderStack->Last())->FindObjectAny(name);
-
-      if (hist == NULL) {
-         hist = new TH2X(name, title, xbins, xmin, xmax, ybins, ymin, ymax);
-         if (!gHistoFolderStack->Last())
-            gManaHistosFolder->Add(hist);
-         else
-            ((TFolder *)gHistoFolderStack->Last())->Add(hist);
-      }
-
-      return hist;
+         ((TFolder *) gHistoFolderStack->Last())->Add(hist);
    }
 
-   template<typename TH2X>
-   TH2X EXPRT *h2_book(const char *name, const char *title,
-	  	       int xbins, double xmin, double xmax,
-                       int ybins, double yedges[])
-   {
-      TH2X *hist;
+   return hist;
+}
 
-      /* check if histo already exists */
+template < typename TH2X >
+    TH2X EXPRT * h2_book(const char *name, const char *title,
+                         int xbins, double xmin, double xmax, int ybins, double yedges[])
+{
+   TH2X *hist;
+
+   /* check if histo already exists */
+   if (!gHistoFolderStack->Last())
+      hist = (TH2X *) gManaHistosFolder->FindObjectAny(name);
+   else
+      hist = (TH2X *) ((TFolder *) gHistoFolderStack->Last())->FindObjectAny(name);
+
+   if (hist == NULL) {
+      hist = new TH2X(name, title, xbins, xmin, xmax, ybins, yedges);
       if (!gHistoFolderStack->Last())
-         hist = (TH2X *) gManaHistosFolder->FindObjectAny(name);
+         gManaHistosFolder->Add(hist);
       else
-         hist = (TH2X *) ((TFolder *)gHistoFolderStack->Last())->FindObjectAny(name);
-
-      if (hist == NULL) {
-         hist = new TH2X(name, title, xbins, xmin, xmax, ybins, yedges);
-         if (!gHistoFolderStack->Last())
-            gManaHistosFolder->Add(hist);
-         else
-            ((TFolder *)gHistoFolderStack->Last())->Add(hist);
-      }
-
-      return hist;
+         ((TFolder *) gHistoFolderStack->Last())->Add(hist);
    }
 
-   template<typename TH2X>
-   TH2X EXPRT *h2_book(const char *name, const char *title,
-		       int xbins, double xedges[],
-                       int ybins, double ymin, double ymax)
-   {
-      TH2X *hist;
+   return hist;
+}
 
-      /* check if histo already exists */
+template < typename TH2X >
+    TH2X EXPRT * h2_book(const char *name, const char *title,
+                         int xbins, double xedges[], int ybins, double ymin, double ymax)
+{
+   TH2X *hist;
+
+   /* check if histo already exists */
+   if (!gHistoFolderStack->Last())
+      hist = (TH2X *) gManaHistosFolder->FindObjectAny(name);
+   else
+      hist = (TH2X *) ((TFolder *) gHistoFolderStack->Last())->FindObjectAny(name);
+
+   if (hist == NULL) {
+      hist = new TH2X(name, title, xbins, xedges, ybins, ymin, ymax);
       if (!gHistoFolderStack->Last())
-         hist = (TH2X *) gManaHistosFolder->FindObjectAny(name);
+         gManaHistosFolder->Add(hist);
       else
-         hist = (TH2X *) ((TFolder *)gHistoFolderStack->Last())->FindObjectAny(name);
-
-      if (hist == NULL) {
-         hist = new TH2X(name, title, xbins, xedges, ybins, ymin, ymax);
-         if (!gHistoFolderStack->Last())
-            gManaHistosFolder->Add(hist);
-         else
-            ((TFolder *)gHistoFolderStack->Last())->Add(hist);
-      }
-
-      return hist;
+         ((TFolder *) gHistoFolderStack->Last())->Add(hist);
    }
 
-   template<typename TH2X>
-   TH2X EXPRT *h2_book(const char *name, const char *title,
-		       int xbins, double xedges[],
-                       int ybins, double yedges[])
-   {
-      TH2X *hist;
+   return hist;
+}
 
-      /* check if histo already exists */
+template < typename TH2X >
+    TH2X EXPRT * h2_book(const char *name, const char *title,
+                         int xbins, double xedges[], int ybins, double yedges[])
+{
+   TH2X *hist;
+
+   /* check if histo already exists */
+   if (!gHistoFolderStack->Last())
+      hist = (TH2X *) gManaHistosFolder->FindObjectAny(name);
+   else
+      hist = (TH2X *) ((TFolder *) gHistoFolderStack->Last())->FindObjectAny(name);
+
+   if (hist == NULL) {
+      hist = new TH2X(name, title, xbins, xedges, ybins, yedges);
       if (!gHistoFolderStack->Last())
-         hist = (TH2X *) gManaHistosFolder->FindObjectAny(name);
+         gManaHistosFolder->Add(hist);
       else
-         hist = (TH2X *) ((TFolder *)gHistoFolderStack->Last())->FindObjectAny(name);
-
-      if (hist == NULL) {
-         hist = new TH2X(name, title, xbins, xedges, ybins, yedges);
-         if (!gHistoFolderStack->Last())
-            gManaHistosFolder->Add(hist);
-         else
-            ((TFolder *)gHistoFolderStack->Last())->Add(hist);
-      }
-
-      return hist;
+         ((TFolder *) gHistoFolderStack->Last())->Add(hist);
    }
+
+   return hist;
+}
 
    /*
     * the following two macros allow for simple fortran like usage
     * for the most common histo types
     */
-   #define H1_BOOK(n,t,b,min,max) (h1_book<TH1F>(n,t,b,min,max))
-   #define H2_BOOK(n,t,xb,xmin,xmax,yb,ymin,ymax) (h2_book<TH2F>(n,t,xb,xmin,xmax,yb,ymin,ymax))
+#define H1_BOOK(n,t,b,min,max) (h1_book<TH1F>(n,t,b,min,max))
+#define H2_BOOK(n,t,xb,xmin,xmax,yb,ymin,ymax) (h2_book<TH2F>(n,t,xb,xmin,xmax,yb,ymin,ymax))
 
-   TCutG *cut_book( const char *name);
-#endif /* USE_ROOT */
+TCutG *cut_book(const char *name);
+#endif                          /* USE_ROOT */
 
 #endif
 #endif                          /* _MIDAS_H */
@@ -1983,7 +1978,7 @@ extern "C" {
 #endif                          /* DOXYGEN_SHOULD_SKIP_THIS */
 
 /**dox***************************************************************/
-/** @} */ /* end of msectionh */
+          /** @} *//* end of msectionh */
 
 /**dox***************************************************************/
-/** @} */ /* end of midasincludecode */
+          /** @} *//* end of midasincludecode */

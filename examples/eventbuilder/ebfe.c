@@ -18,7 +18,7 @@
 		But nothing prevent to generate real event using
 		proper driver.
 		
-  $Id:$
+  $Id$
 
 \********************************************************************/
 
@@ -254,7 +254,7 @@ flag is used to time the polling */
 
 /*-- Interrupt configuration ---------------------------------------*/
 
-INT interrupt_configure(INT cmd, INT source, PTYPE adr)
+INT interrupt_configure(INT cmd, INT source, POINTER_T adr)
 {
    switch (cmd) {
    case CMD_INTERRUPT_ENABLE:

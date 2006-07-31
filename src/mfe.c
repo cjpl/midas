@@ -39,7 +39,7 @@ extern INT end_of_run(INT run_number, char *error);
 extern INT pause_run(INT run_number, char *error);
 extern INT resume_run(INT run_number, char *error);
 extern INT poll_event(INT source, INT count, BOOL test);
-extern INT interrupt_configure(INT cmd, INT source, PTYPE adr);
+extern INT interrupt_configure(INT cmd, INT source, POINTER_T adr);
 
 /*------------------------------------------------------------------*/
 
@@ -53,22 +53,22 @@ extern INT interrupt_configure(INT cmd, INT source, PTYPE adr);
 
 #define DEFAULT_FE_TIMEOUT  60000       /* 60 seconds for watchdog timeout */
 
-INT run_state;                     /* STATE_RUNNING, STATE_STOPPED, STATE_PAUSED */
+INT run_state;                  /* STATE_RUNNING, STATE_STOPPED, STATE_PAUSED */
 INT run_number;
-DWORD actual_time;                 /* current time in seconds since 1970 */
-DWORD actual_millitime;            /* current time in milliseconds */
+DWORD actual_time;              /* current time in seconds since 1970 */
+DWORD actual_millitime;         /* current time in milliseconds */
 
 char host_name[HOST_NAME_LENGTH];
 char exp_name[NAME_LENGTH];
 char full_frontend_name[256];
 
 INT max_bytes_per_sec;
-INT optimize = 0;                  /* set this to one to opimize TCP buffer size */
-INT fe_stop = 0;                   /* stop switch for VxWorks */
-BOOL debug;                        /* disable watchdog messages from server */
-DWORD auto_restart = 0;            /* restart run after event limit reached stop */
-INT manual_trigger_event_id = 0;   /* set from the manual_trigger callback */
-INT frontend_index = -1;           /* frontend index for event building */
+INT optimize = 0;               /* set this to one to opimize TCP buffer size */
+INT fe_stop = 0;                /* stop switch for VxWorks */
+BOOL debug;                     /* disable watchdog messages from server */
+DWORD auto_restart = 0;         /* restart run after event limit reached stop */
+INT manual_trigger_event_id = 0;        /* set from the manual_trigger callback */
+INT frontend_index = -1;        /* frontend index for event building */
 
 HNDLE hDB;
 
@@ -313,18 +313,19 @@ INT register_equipment(void)
       if (eq_info->eq_type & EQ_EB) {
 
          if (frontend_index == -1) {
-            printf("\nEquipment \"%s\" has EQ_EB set, but no", equipment[index].name); 
+            printf("\nEquipment \"%s\" has EQ_EB set, but no", equipment[index].name);
             printf(" index specified via \"-i\" flag.\nExiting.");
             cm_disconnect_experiment();
             ss_sleep(5000);
             exit(0);
          }
 
-         /* modify equipment name to <name>xx where xx is the frontend index*/
-         sprintf(equipment[index].name+strlen(equipment[index].name), "%02d", frontend_index);
+         /* modify equipment name to <name>xx where xx is the frontend index */
+         sprintf(equipment[index].name + strlen(equipment[index].name), "%02d",
+                 frontend_index);
 
-         /* modify event buffer name to <name>xx where xx is the frontend index*/
-         sprintf(eq_info->buffer+strlen(eq_info->buffer), "%02d", frontend_index);
+         /* modify event buffer name to <name>xx where xx is the frontend index */
+         sprintf(eq_info->buffer + strlen(eq_info->buffer), "%02d", frontend_index);
       }
 
       sprintf(str, "/Equipment/%s/Common", equipment[index].name);
@@ -369,7 +370,7 @@ INT register_equipment(void)
       db_set_record(hDB, hKey, eq_info, sizeof(EQUIPMENT_INFO), 0);
 
       /*---- Create variables record ---------------------------------*/
-      
+
       sprintf(str, "/Equipment/%s/Variables", equipment[index].name);
       if (equipment[index].event_descrip) {
          if (equipment[index].format == FORMAT_FIXED)
@@ -411,7 +412,7 @@ INT register_equipment(void)
       equipment[index].hkey_variables = hKey;
 
       /*---- Create and initialize statistics tree -------------------*/
-      
+
       sprintf(str, "/Equipment/%s/Statistics", equipment[index].name);
 
       status = db_check_record(hDB, 0, str, EQUIPMENT_STATISTICS_STR, TRUE);
@@ -435,9 +436,9 @@ INT register_equipment(void)
           db_open_record(hDB, hKey, eq_stats, sizeof(EQUIPMENT_STATS), MODE_WRITE, NULL,
                          NULL);
       if (status != DB_SUCCESS) {
-         cm_msg(MERROR, "register_equipment", 
-             "Cannot open statistics record \'%s\', error %d. Probably other FE is using it",
-              str, status);
+         cm_msg(MERROR, "register_equipment",
+                "Cannot open statistics record \'%s\', error %d. Probably other FE is using it",
+                str, status);
          ss_sleep(3000);
       }
 
@@ -460,7 +461,7 @@ and rebuild the system.");
          equipment[index].buffer_handle = 0;
 
       /*---- evaluate polling count ----------------------------------*/
-      
+
       if (eq_info->eq_type & EQ_POLLED) {
          if (display_period)
             printf("\nCalibrating");
@@ -489,7 +490,7 @@ and rebuild the system.");
       }
 
       /*---- initialize interrupt events -----------------------------*/
-      
+
       if (eq_info->eq_type & EQ_INTERRUPT) {
          /* install interrupt for interrupt events */
 
@@ -508,7 +509,7 @@ and rebuild the system.");
                          "Defined more than one equipment with interrupt readout");
                } else {
                   interrupt_configure(CMD_INTERRUPT_ATTACH, eq_info->source,
-                                      (PTYPE) interrupt_routine);
+                                      (POINTER_T) interrupt_routine);
                   interrupt_eq = &equipment[index];
                   interrupt_odb_buffer = malloc(MAX_EVENT_SIZE + sizeof(EVENT_HEADER));
                }
@@ -522,7 +523,7 @@ and rebuild the system.");
       }
 
       /*---- initialize slow control equipment -----------------------*/
-      
+
       if (eq_info->eq_type & EQ_SLOW) {
          /* resolve duplicate device names */
          for (i = 0; equipment[index].driver[i].name[0]; i++)
@@ -665,7 +666,7 @@ void update_odb(EVENT_HEADER * pevent, HNDLE hKey, INT format)
       pybkh = NULL;
       do {
          /* scan all banks */
-         ni4 = ybk_iterate(pyevt, &pybkh, (void *)(&pydata));
+         ni4 = ybk_iterate(pyevt, &pybkh, (void *) (&pydata));
          if (pybkh == NULL || ni4 == 0)
             break;
 
@@ -700,7 +701,7 @@ void update_odb(EVENT_HEADER * pevent, HNDLE hKey, INT format)
          if ((status =
               db_set_value(hDB, hKey, name, pydata, size, ni4,
                            odb_type & 0xFF)) != DB_SUCCESS) {
-            printf("status:%i odb_type:%li name:%s ni4:%i size:%i tsize:%i\n", status,
+            printf("status:%d odb_type:%d name:%s ni4:%d size:%d tsize:%d\n", status,
                    odb_type, name, ni4, size, tsize);
             for (i = 0; i < 6; i++) {
                printf("data: %f\n", *((float *) (pydata)));
@@ -1387,7 +1388,7 @@ INT scheduler(void)
          interrupt_enable(FALSE);
 
          /* readout and send event */
-         status = BM_INVALID_PARAM; 
+         status = BM_INVALID_PARAM;
          for (i = 0; equipment[i].name[0]; i++)
             if (equipment[i].info.event_id == manual_trigger_event_id) {
                status = send_event(i);
@@ -1644,7 +1645,8 @@ int main(int argc, char *argv[])
             frontend_index = atoi(argv[++i]);
          else {
           usage:
-            printf("usage: frontend [-h Hostname] [-e Experiment] [-d] [-D] [-O] [-i n]\n");
+            printf
+                ("usage: frontend [-h Hostname] [-e Experiment] [-d] [-D] [-O] [-i n]\n");
             printf("         [-d]     Used to debug the frontend\n");
             printf("         [-D]     Become a daemon\n");
             printf("         [-O]     Become a daemon but keep stdout\n");
@@ -1695,7 +1697,7 @@ int main(int argc, char *argv[])
    /* add frontend index to frontend name if present */
    strcpy(full_frontend_name, frontend_name);
    if (frontend_index >= 0)
-      sprintf(full_frontend_name+strlen(full_frontend_name), "%02d", frontend_index);
+      sprintf(full_frontend_name + strlen(full_frontend_name), "%02d", frontend_index);
 
    /* inform user of settings */
    printf("Frontend name          :     %s\n", full_frontend_name);

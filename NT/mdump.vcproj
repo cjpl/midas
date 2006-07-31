@@ -20,7 +20,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="\midas\include"
+				AdditionalIncludeDirectories="\midas\include;\mxml"
 				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE"
 				RuntimeLibrary="5"
 				UsePrecompiledHeader="2"

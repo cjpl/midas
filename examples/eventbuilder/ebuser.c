@@ -5,7 +5,7 @@
 
   Contents:     User section for the Event builder
 
-  $Id:$
+  $Id$
 
 \********************************************************************/
 /** @file ebuser.c
@@ -187,7 +187,7 @@ For YBOS format, use the following example.
 INT eb_user(INT nfrag, BOOL mismatch, EBUILDER_CHANNEL * ebch
             , EVENT_HEADER * pheader, void *pevent, INT * dest_size)
 {
-  INT i, dest_serial, frag_size, serial;
+  INT i, frag_size, serial;
   DWORD *psrcData;
   DWORD  *pdata;
 
