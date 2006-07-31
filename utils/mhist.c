@@ -59,11 +59,11 @@ void write_hist_speed()
       bytes += (sizeof(hist) + sizeof(hv)) * i;
       act_time = ss_millitime();
 
-      printf("%ld\n", ss_time());
+      printf("%d\n", ss_time());
 
    } while (act_time - start_time < 10000);
 
-   printf("%ld events (%ld kB) per sec.\n", j / (act_time - start_time) * 1000,
+   printf("%d events (%d kB) per sec.\n", j / (act_time - start_time) * 1000,
           bytes / 1024 / (act_time - start_time) * 1000);
 }
 
@@ -86,7 +86,7 @@ void generate_hist()
       for (j = 0; j < 100; j++)
          hv[j] = j + i / 10.f;
       hs_write_event(2, hv, sizeof(hv));
-      printf("%ld\n", ss_time());
+      printf("%d\n", ss_time());
       ss_sleep(1000);
    }
 }
@@ -116,7 +116,7 @@ INT query_params(DWORD * ev_id, DWORD * start_time, DWORD * end_time,
 
    if (n > 1) {
       printf("\nSelect event ID: ");
-      scanf("%ld", ev_id);
+      scanf("%d", ev_id);
    } else
       *ev_id = event_id[0];
 
@@ -130,13 +130,13 @@ INT query_params(DWORD * ev_id, DWORD * start_time, DWORD * end_time,
    printf("\nAvailable variables:\n");
    for (i = 0; i < n; i++)
       if (var_n[i] > 1)
-         printf("%ld: %s[%ld]\n", i, var_names + i * NAME_LENGTH, var_n[i]);
+         printf("%d: %s[%d]\n", i, var_names + i * NAME_LENGTH, var_n[i]);
       else
-         printf("%ld: %s\n", i, var_names + i * NAME_LENGTH);
+         printf("%d: %s\n", i, var_names + i * NAME_LENGTH);
 
    *index = var_index = 0;
    if (n > 1) {
-      printf("\nSelect variable (0..%ld,-1 for all): ", n - 1);
+      printf("\nSelect variable (0..%d,-1 for all): ", n - 1);
       scanf("%d", &var_index);
       if (var_index >= (INT) n)
          var_index = n - 1;
@@ -148,7 +148,7 @@ INT query_params(DWORD * ev_id, DWORD * start_time, DWORD * end_time,
      hs_get_var(0, *ev_id, var_names + var_index * NAME_LENGTH, var_type, var_n_data);
    if (var_index >= 0 && *var_n_data > 1 && *var_type != TID_STRING) {
      printf("\nSelect index (0..%d): ", *var_n_data - 1);
-     scanf("%ld", index);
+     scanf("%d", index);
    }
 
    if (var_index < 0)
@@ -157,12 +157,12 @@ INT query_params(DWORD * ev_id, DWORD * start_time, DWORD * end_time,
       strcpy(var_name, var_names + var_index * NAME_LENGTH);
 
    printf("\nHow many hours: ");
-   scanf("%ld", &hour);
+   scanf("%d", &hour);
    *start_time = ss_time() - hour * 3600;
    *end_time = ss_time();
 
    printf("\nInterval [sec]: ");
-   scanf("%ld", interval);
+   scanf("%d", interval);
    printf("\n");
 
    free(var_names);
@@ -218,9 +218,9 @@ INT display_vars(char *file_name)
       hs_enum_vars(ltime, event_id[i], var_names, &bytes, var_n, &n_bytes);
       for (j = 0; j < nv; j++)
          if (var_n[j] > 1)
-            printf("%ld: %s[%ld]\n", j, var_names + j * NAME_LENGTH, var_n[j]);
+            printf("%d: %s[%d]\n", j, var_names + j * NAME_LENGTH, var_n[j]);
          else
-            printf("%ld: %s\n", j, var_names + j * NAME_LENGTH);
+            printf("%d: %s\n", j, var_names + j * NAME_LENGTH);
 
       free(var_n);
       free(var_names);
@@ -254,7 +254,7 @@ void display_single_hist(DWORD event_id, DWORD start_time, DWORD end_time,
 
       for (i = 0; i < n; i++) {
          if (binary_time)
-            sprintf(str, "%li ", tbuffer[i]);
+            sprintf(str, "%d ", tbuffer[i]);
          else {
             sprintf(str, "%s", ctime((time_t *) &tbuffer[i]) + 4);
             str[20] = '\t';
@@ -311,10 +311,10 @@ void display_range_hist(DWORD event_id, DWORD start_time, DWORD end_time,
       }
    } while (status == HS_TRUNCATED);
 
-   printf("mhist for Var:%s[%ld:%ld]\n", var_name, index1, index2);
+   printf("mhist for Var:%s[%d:%d]\n", var_name, index1, index2);
    for (i = 0; i < n[0]; i++) {
       if (binary_time)
-         sprintf(str, "%li ", tbuffer[i]);
+         sprintf(str, "%d ", tbuffer[i]);
       else {
          sprintf(str, "%s", ctime((time_t *) &tbuffer[i]) + 4);
          str[20] = '\t';
@@ -367,7 +367,7 @@ DWORD convert_time(char *t)
    ltime = mktime(&tms);
 
    /* correct for dst */
-   memcpy(&tms, localtime((time_t *) &ltime), sizeof(tms));
+   memcpy(&tms, localtime((void *) &ltime), sizeof(tms));
 
    isdst = tms.tm_isdst;
    memset(&tms, 0, sizeof(tms));

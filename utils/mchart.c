@@ -255,7 +255,7 @@ INT mchart_get_array(FILE * f, char *eqpstr, HNDLE hDB, HNDLE hSubkey, KEY key,
          fprintf(f, "%s %d\n", field, *((WORD *) (pdata + (i * key.item_size))));
       } else if (key.type == TID_DWORD) {
          value = (float) *((DWORD *) (pdata + (i * key.item_size)));
-         fprintf(f, "%s %ld\n", field, *((DWORD *) (pdata + (i * key.item_size))));
+         fprintf(f, "%s %d\n", field, *((DWORD *) (pdata + (i * key.item_size))));
       } else if (key.type == TID_FLOAT) {
          value = *((float *) (pdata + (i * key.item_size)));
          fprintf(f, "%s %f\n", field, *((float *) (pdata + (i * key.item_size))));

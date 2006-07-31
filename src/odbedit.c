@@ -303,7 +303,7 @@ INT print_key(HNDLE hDB, HNDLE hKey, KEY * key, INT level, void *info)
 
             db_get_key_time(hDB, hKey, &delta);
             if (delta < 60)
-               sprintf(line + 52, "%lds", delta);
+               sprintf(line + 52, "%ds", delta);
             else if (delta < 3600)
                sprintf(line + 52, "%1.0lfm", delta / 60.0);
             else if (delta < 86400)
@@ -487,7 +487,7 @@ void scan_tree(HNDLE hDB, HNDLE hKey, INT * total_size_key, INT * total_size_dat
 
             db_get_key_time(hDB, hKey, &delta);
             if (delta < 60)
-               sprintf(line + 52, "%lds", delta);
+               sprintf(line + 52, "%ds", delta);
             else if (delta < 3600)
                sprintf(line + 52, "%1.0lfm", delta / 60.0);
             else if (delta < 86400)
@@ -2107,7 +2107,7 @@ void command_loop(char *host_name, char *exp_name, char *cmd, char *start_dir)
                      DWORD timeout, last;
 
                      status = cm_get_watchdog_info(hDB, name, &timeout, &last);
-                     printf("%-10ld %-10ld", timeout, last);
+                     printf("%-10d %-10d", timeout, last);
                   }
 
                   printf("\n");

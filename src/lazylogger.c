@@ -225,7 +225,7 @@ INT lazy_log_update(INT action, INT run, char *label, char *file, DWORD perf_tim
          }
       }
    } else if (action == REMOVE_FILE)
-      sprintf(str, "%i (rm:%ldms) %s file REMOVED", run, perf_time, file);
+      sprintf(str, "%i (rm:%dms) %s file REMOVED", run, perf_time, file);
 
    else if (action == REMOVE_ENTRY)
       sprintf(str, "%s run#%i entry REMOVED", label, run);
