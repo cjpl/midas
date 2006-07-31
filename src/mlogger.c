@@ -46,8 +46,6 @@ void create_sql_tree();
 #define DEBUG_TRANS 0
 #endif
 
-#define LOGGER_TIMEOUT 60000
-
 #define MAX_CHANNELS 10
 #define MAX_HISTORY  50
 
