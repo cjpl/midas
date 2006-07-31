@@ -36,7 +36,9 @@ ifeq ($(OSTYPE),linux)
 
 OS_DIR = linux
 OSFLAGS = -DOS_LINUX -Dextname
-CFLAGS = -m32 -g -O2 -Wall
+CFLAGS = -g -O2 -Wall
+# add to compile in 32-bit mode
+# OSFLAGS += -m32
 LIBS = -lm -lz -lutil -lnsl -lpthread
 endif
 
