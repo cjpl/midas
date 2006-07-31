@@ -137,7 +137,8 @@ INT ybos_physrec_skip(INT bl);
 INT ybos_physrec_get(DWORD ** prec, DWORD * readn);
 INT midas_physrec_get(void *prec, DWORD * readn);
 
-void yb_any_bank_event_display(void *pevent, INT data_fmt, INT dsp_fmt, INT dsp_mode, char *bn);
+void yb_any_bank_event_display(void *pevent, INT data_fmt, INT dsp_fmt, INT dsp_mode,
+                               char *bn);
 void yb_any_raw_event_display(void *pevent, INT data_fmt, INT dsp_fmt);
 
 void yb_any_raw_bank_display(void *pbank, INT data_fmt, INT dsp_fmt);
@@ -287,10 +288,10 @@ void ybk_create(DWORD * plrl, char *bkname, DWORD bktype, void *pbkdat)
 /**dox***************************************************************/
 #ifndef DOXYGEN_SHOULD_SKIP_THIS
 
-static DWORD *__pchaosi4;
+DWORD __pchaosi4;
 
 /********************************************************************/
-void ybk_create_chaos(DWORD * plrl, char *bkname, DWORD bktype, void *pbkdat)
+//void ybk_create_chaos(DWORD * plrl, char *bkname, DWORD bktype, void *pbkdat)
 /********************************************************************\
 Routine: ybk_create
 Purpose: fills up the bank header,
@@ -306,6 +307,7 @@ void    *pbkdat       pointer to first valid data of the created bank
 Function value:
 none
 \********************************************************************/
+/*
 {
    DWORD dname = 0;
    __pbkh = (YBOS_BANK_HEADER *) ((plrl + 1) + (*plrl));
@@ -317,13 +319,13 @@ none
    __pbkh->type = bktype;
 
    *((DWORD **) pbkdat) = (DWORD *) (__pbkh + 1);
-   __pchaosi4 = (DWORD *) (*(DWORD *) pbkdat);
+   __pchaosi4 = (*(DWORD *) pbkdat);
    *((DWORD **) pbkdat) += 1;
    return;
 }
-
+*/
 /*------------------------------------------------------------------*/
-INT ybk_close_chaos(DWORD * plrl, DWORD bktype, void *pbkdat)
+//INT ybk_close_chaos(DWORD * plrl, DWORD bktype, void *pbkdat)
 /********************************************************************\
 Routine: ybk_close_chaos
 Purpose: patch the end of the event to the next 4 byte boundary,
@@ -339,31 +341,32 @@ Output:
 none
 Function value: Number of bytes in the bank.
 \********************************************************************/
+/*
 {
    switch (bktype) {
    case D8_BKTYPE:
-      *__pchaosi4 = (DWORD) ((double *) pbkdat - (double *) __pchaosi4 - 1);
+      __pchaosi4 = ((POINTER_T) ((double *) pbkdat) - (double *) __pchaosi4) - 1;
       break;
    case I4_BKTYPE:
    case F4_BKTYPE:
-      *__pchaosi4 = (DWORD) ((DWORD *) pbkdat - __pchaosi4 - 1);
+      __pchaosi4 = ((POINTER_T) ((DWORD *) pbkdat) - (DWORD *) __pchaosi4) - 1;
       break;
    case I2_BKTYPE:
-      *__pchaosi4 = (DWORD) ((WORD *) pbkdat - (WORD *) __pchaosi4 - 2);
+      __pchaosi4 = ((POINTER_T) ((WORD *) pbkdat) - (WORD *) __pchaosi4) - 2;
       SWAP_D2WORD(__pchaosi4);
       break;
    case I1_BKTYPE:
    case A1_BKTYPE:
-      *__pchaosi4 = (DWORD) ((BYTE *) pbkdat - (BYTE *) __pchaosi4 - 4);
+      __pchaosi4 = ((POINTER_T) ((BYTE *) pbkdat) - (BYTE *) __pchaosi4) - 4;
       break;
    default:
-      printf(" unknown YBOS bank type (%ld)\n", bktype);
+      printf(" unknown YBOS bank type (%d)\n", bktype);
       break;
    }
 
    return ybk_close(plrl, pbkdat);
 }
-
+*/
 /**dox***************************************************************/
 #endif                          /* DOXYGEN_SHOULD_SKIP_THIS */
 
@@ -385,11 +388,11 @@ INT ybk_close(DWORD * plrl, void *pbkdat)
 {
    DWORD tdlen;
    /* align pbkdat to I*4 */
-   if (((DWORD) pbkdat & 0x1) != 0) {
+   if (((POINTER_T) pbkdat & 0x1) != 0) {
       *((BYTE *) pbkdat) = 0x0f;
       pbkdat = (void *) (((BYTE *) pbkdat) + 1);
    }
-   if (((DWORD) pbkdat & 0x2) != 0) {
+   if (((POINTER_T) pbkdat & 0x2) != 0) {
       *((WORD *) pbkdat) = 0x0ffb;
       pbkdat = (void *) (((WORD *) pbkdat) + 1);
    }
@@ -793,7 +796,7 @@ SS_FILE_ERROR       file access error
       }
 
       /* Create Control file bank */
-      if (eqp->format == FORMAT_YBOS) 
+      if (eqp->format == FORMAT_YBOS)
          ybk_create(pmy, "CFIL", I4_BKTYPE, &pbuf);
       else if (eqp->format == FORMAT_MIDAS)
          bk_create(pmy, "CFIL", TID_DWORD, &pbuf);
@@ -1426,9 +1429,8 @@ status : from lower function
    if (!my.zipfile) {
       if (my.type == LOG_TYPE_TAPE) {
          status = ss_tape_open(my.name, O_RDONLY | O_BINARY, &my.handle);
-      }
-      else if ((my.handle = open(my.name, O_RDONLY | O_BINARY | O_LARGEFILE, 0644)) == -1)
-      {
+      } else if ((my.handle = open(my.name, O_RDONLY | O_BINARY | O_LARGEFILE, 0644)) ==
+                 -1) {
          printf("dev name :%s Handle:%d \n", my.name, my.handle);
          return (SS_FILE_ERROR);
       }
@@ -1542,7 +1544,7 @@ status : from lower function
    my.pmp = NULL;
    my.pmh = NULL;
    ptopmrd = NULL;
-   my.pmrd = NULL; /* ptopmrd and my.pmrd point to the same place. K.O. 25-FEB-2005 */
+   my.pmrd = NULL;              /* ptopmrd and my.pmrd point to the same place. K.O. 25-FEB-2005 */
    return (YB_SUCCESS);
 }
 
@@ -1649,7 +1651,8 @@ status : from lower function
                               FILE_ATTRIBUTE_NORMAL |
                               FILE_FLAG_WRITE_THROUGH | FILE_FLAG_SEQUENTIAL_SCAN, 0);
 #else
-         *hDev = open(filename, O_WRONLY | O_CREAT | O_TRUNC | O_BINARY | O_LARGEFILE, 0644);
+         *hDev =
+             open(filename, O_WRONLY | O_CREAT | O_TRUNC | O_BINARY | O_LARGEFILE, 0644);
 #endif
          status = *hDev < 0 ? SS_FILE_ERROR : SS_SUCCESS;
       }
@@ -1838,7 +1841,8 @@ SS_SUCCESS         Ok
 #ifdef INCLUDE_FTPLIB
    {
       *written = status = ftp_send(ftp_con->data, (char *) prec,
-	(int) nbytes) == (int) nbytes ? SS_SUCCESS : SS_FILE_ERROR;
+                                   (int) nbytes) ==
+          (int) nbytes ? SS_SUCCESS : SS_FILE_ERROR;
       return status;
    }
 #else
@@ -2107,7 +2111,7 @@ YB_SUCCESS        Ok
    while (ybos_physrec_get(&prec, &size) == YB_SUCCESS) {
       if ((INT) (my.pyh)->rec_num != bl) {
          printf("Skipping physical record_# ... ");
-         printf("%ld \r", (my.pyh)->rec_num);
+         printf("%d \r", (my.pyh)->rec_num);
          fflush(stdout);
       } else {
          printf("\n");
@@ -2142,7 +2146,7 @@ YB_SUCCESS        Ok
    while (midas_event_get(&pevent, &size) == YB_SUCCESS) {
       if ((INT) my.evtn < evtn) {
          printf("Skipping event_# ... ");
-         printf("%ld \r", my.evtn);
+         printf("%d \r", my.evtn);
          fflush(stdout);
       } else {
          printf("\n");
@@ -2183,7 +2187,7 @@ status          Lower function
          printf("R(%d)[%d] = ", k, i);
          for (j = 0; j < NLINE; j++) {
             if (i + j < bz) {
-               printf("%8.8lx ", *prec);
+               printf("%8.8x ", *prec);
                prec++;
             }
          }
@@ -2218,13 +2222,13 @@ YB_DONE
       switch (what) {
       case D_RECORD:
       case D_HEADER:
-         printf("rec#%ld- ", my.recn);
-         printf("%5ldbz %5ldhyl %5ldybn %5ldof\n", bz, hyl, ybn, of);
+         printf("rec#%d- ", my.recn);
+         printf("%5dbz %5dhyl %5dybn %5dof\n", bz, hyl, ybn, of);
          break;
       case D_EVTLEN:
-         printf("rec#%ld- ", my.recn);
-         printf("%5ldbz %5ldhyl %5ldybn %5ldof ", bz, hyl, ybn, of);
-         printf("%5ldel/x%lx %5ldev\n", my.evtlen, my.evtlen, my.evtn);
+         printf("rec#%d- ", my.recn);
+         printf("%5dbz %5dhyl %5dybn %5dof ", bz, hyl, ybn, of);
+         printf("%5del/x%x %5dev\n", my.evtlen, my.evtlen, my.evtn);
          break;
       }
    } else if (my.fmt == FORMAT_MIDAS) {
@@ -2242,9 +2246,9 @@ YB_DONE
          return YB_DONE;
          break;
       case D_EVTLEN:
-         printf("Evt#%ld- ", my.evtn);
-         printf("%lirun 0x%4.4uxid 0x%4.4uxmsk %5ldmevt#", run, id, msk, mbn);
-         printf("%5ldel/x%lx %5ldserial\n", my.evtlen, my.evtlen, ser);
+         printf("Evt#%d- ", my.evtn);
+         printf("%irun 0x%4.4uxid 0x%4.4uxmsk %5dmevt#", run, id, msk, mbn);
+         printf("%5del/x%x %5dserial\n", my.evtlen, my.evtlen, ser);
          break;
       }
    }
@@ -2363,7 +2367,7 @@ YB_SWAP_ERROR          swapping error
          pevt = pnextb;
          break;
       default:
-         printf("ybos_swap_event-E- Unknown bank type %li\n", bank_type);
+         printf("ybos_swap_event-E- Unknown bank type %i\n", bank_type);
          return (YB_SWAP_ERROR);
          break;
       }
@@ -2473,7 +2477,7 @@ YB_SUCCESS        Ok
       if (my.pyrd != (DWORD *) my.pyh + my.pyh->offset) {
          printf(" event misalignment !! %p  %p \n",
                 my.pyrd, (DWORD *) my.pyh + my.pyh->offset);
-         printf("Event crossed boundary: length %ld\n", evt_length);
+         printf("Event crossed boundary: length %d\n", evt_length);
          my.pyrd = (DWORD *) my.pyh + my.pyh->offset;
       }
 
@@ -2585,7 +2589,7 @@ YB_SUCCESS        Ok
 }
 
 /*------------------------------------------------------------------*/
-void yb_any_event_display(void *pevent, INT data_fmt, INT dsp_mode, INT dsp_fmt, char * bn)
+void yb_any_event_display(void *pevent, INT data_fmt, INT dsp_mode, INT dsp_fmt, char *bn)
 /********************************************************************\
 Routine: external yb_any_event_display
 Purpose: display on screen the YBOS event in either RAW or YBOS mode
@@ -2603,7 +2607,7 @@ none
 {
    if (dsp_mode == DSP_RAW)
       yb_any_raw_event_display(pevent, data_fmt, dsp_fmt);
-   else if ((dsp_mode == DSP_BANK)||(dsp_mode == DSP_BANK_SINGLE))
+   else if ((dsp_mode == DSP_BANK) || (dsp_mode == DSP_BANK_SINGLE))
       yb_any_bank_event_display(pevent, data_fmt, dsp_fmt, dsp_mode, bn);
    else
       printf("yb_any_event_display- Unknown format:%i\n", dsp_fmt);
@@ -2636,13 +2640,13 @@ none
    }
 
    for (i = 0; i < lrl; i += NLINE) {
-      printf("%6.0ld->: ", total);
+      printf("%6.0d->: ", total);
       for (j = 0; j < NLINE; j++) {
          if ((i + j) < lrl) {
             if (dsp_fmt == DSP_DEC)
-               printf("%8.li ", *pevt);
+               printf("%8.i ", *pevt);
             else
-               printf("%8.8lx ", *pevt);
+               printf("%8.8x ", *pevt);
             pevt++;
          }
       }
@@ -2652,7 +2656,8 @@ none
 }
 
 /*------------------------------------------------------------------*/
-void yb_any_bank_event_display(void *pevent, INT data_fmt, INT dsp_fmt, INT dsp_mode, char *bn)
+void yb_any_bank_event_display(void *pevent, INT data_fmt, INT dsp_fmt, INT dsp_mode,
+                               char *bn)
 /********************************************************************\
 Routine: ybos_bank_event_display
 Purpose: display on screen the event header, bank list and bank content
@@ -2677,7 +2682,7 @@ none
    BANK *pmbk;
    BANK32 *pmbk32;
    EVENT_HEADER *pheader;
-   INT status, single=0;
+   INT status, single = 0;
 
    if (data_fmt == FORMAT_YBOS) {
       /* event header --> No event header in YBOS */
@@ -2687,74 +2692,78 @@ none
       printf("#banks:%i - Bank list:-%s-\n", status, banklist);
 
       /* check if EVID is present if so display its content */
-      if ((status = ybk_find((DWORD *)pevent, "EVID", &bklen, &bktyp, &pvybk)) == YB_SUCCESS) {
-	pybk = (YBOS_BANK_HEADER *) pvybk;
-	pdata = (DWORD *) ((YBOS_BANK_HEADER *) pybk + 1);
-	printf
-	  ("--------- EVID --------- Event# %li ------Run#:%li--------\n",
-	   YBOS_EVID_EVENT_NB(pdata), YBOS_EVID_RUN_NUMBER(pdata));
-	printf
-	  ("Evid:%4.4x- Mask:%4.4x- Serial:%li- Time:0x%lx- Dsize:%li/0x%lx",
-	   (WORD) YBOS_EVID_EVENT_ID(pdata), (WORD) YBOS_EVID_TRIGGER_MASK(pdata)
-	   , YBOS_EVID_SERIAL(pdata), YBOS_EVID_TIME(pdata)
-	   , ((YBOS_BANK_HEADER *) pybk)->length, ((YBOS_BANK_HEADER *) pybk)->length);
+      if ((status =
+           ybk_find((DWORD *) pevent, "EVID", &bklen, &bktyp, &pvybk)) == YB_SUCCESS) {
+         pybk = (YBOS_BANK_HEADER *) pvybk;
+         pdata = (DWORD *) ((YBOS_BANK_HEADER *) pybk + 1);
+         printf
+             ("--------- EVID --------- Event# %i ------Run#:%i--------\n",
+              YBOS_EVID_EVENT_NB(pdata), YBOS_EVID_RUN_NUMBER(pdata));
+         printf
+             ("Evid:%4.4x- Mask:%4.4x- Serial:%i- Time:0x%x- Dsize:%i/0x%x",
+              (WORD) YBOS_EVID_EVENT_ID(pdata), (WORD) YBOS_EVID_TRIGGER_MASK(pdata)
+              , YBOS_EVID_SERIAL(pdata), YBOS_EVID_TIME(pdata)
+              , ((YBOS_BANK_HEADER *) pybk)->length, ((YBOS_BANK_HEADER *) pybk)->length);
       }
-      
+
       /* display bank content */
       pybk = NULL;
       while ((ybk_iterate((DWORD *) pevent, &pybk, (void **) &pvdata) >= 0)
              && (pybk != NULL))
-	ybos_bank_display(pybk, dsp_fmt);
+         ybos_bank_display(pybk, dsp_fmt);
    } else if (data_fmt == FORMAT_MIDAS) {
-     /* skip these special events (NO bank structure) */
-     pheader = (EVENT_HEADER *) pevent;
-     if (pheader->event_id == EVENTID_BOR ||
-	 pheader->event_id == EVENTID_EOR || pheader->event_id == EVENTID_MESSAGE)
-       return;
-     
-     /* check if format is MIDAS or FIXED */
-     pbh = (BANK_HEADER *) (pheader + 1);
-     
-     /* Check for single bank display request */
-     if (dsp_mode == DSP_BANK_SINGLE) {
-       bk_locate(pbh, bn, &pdata1);
-       single = 1;
-     }
-     /* event header (skip it if in single bank display) */
-     if (!single) printf
-		    ("Evid:%4.4x- Mask:%4.4x- Serial:%li- Time:0x%lx- Dsize:%li/0x%lx",
-		     (WORD) pheader->event_id, (WORD) pheader->trigger_mask,
-		     pheader->serial_number, pheader->time_stamp, pheader->data_size,
-		     pheader->data_size);
-     
-     if ((pbh->data_size + 8) == pheader->data_size) {
-       /* bank list */
-       if (!single) {
-	 /* Skip list if in single bank display */
-	 status = bk_list((BANK_HEADER *) (pheader + 1), banklist);
-         printf("\n#banks:%i - Bank list:-%s-\n", status, banklist);
-       }
-       
-       /* display bank content */
-       if (bk_is32(pbh)) {
-	 pmbk32 = NULL;
-	 do {
-	   bk_iterate32(pbh, &pmbk32, &pdata);
-	   if (pmbk32 != NULL)
-	     if (single && (pdata == pdata1)) 
-	       midas_bank_display32(pmbk32, dsp_fmt);
-	   if (!single)
-	     if (pmbk32 != NULL) midas_bank_display32(pmbk32, dsp_fmt);
+      /* skip these special events (NO bank structure) */
+      pheader = (EVENT_HEADER *) pevent;
+      if (pheader->event_id == EVENTID_BOR ||
+          pheader->event_id == EVENTID_EOR || pheader->event_id == EVENTID_MESSAGE)
+         return;
+
+      /* check if format is MIDAS or FIXED */
+      pbh = (BANK_HEADER *) (pheader + 1);
+
+      /* Check for single bank display request */
+      if (dsp_mode == DSP_BANK_SINGLE) {
+         bk_locate(pbh, bn, &pdata1);
+         single = 1;
+      }
+      /* event header (skip it if in single bank display) */
+      if (!single)
+         printf
+             ("Evid:%4.4x- Mask:%4.4x- Serial:%i- Time:0x%x- Dsize:%i/0x%x",
+              (WORD) pheader->event_id, (WORD) pheader->trigger_mask,
+              pheader->serial_number, pheader->time_stamp, pheader->data_size,
+              pheader->data_size);
+
+      if ((pbh->data_size + 8) == pheader->data_size) {
+         /* bank list */
+         if (!single) {
+            /* Skip list if in single bank display */
+            status = bk_list((BANK_HEADER *) (pheader + 1), banklist);
+            printf("\n#banks:%i - Bank list:-%s-\n", status, banklist);
+         }
+
+         /* display bank content */
+         if (bk_is32(pbh)) {
+            pmbk32 = NULL;
+            do {
+               bk_iterate32(pbh, &pmbk32, &pdata);
+               if (pmbk32 != NULL)
+                  if (single && (pdata == pdata1))
+                     midas_bank_display32(pmbk32, dsp_fmt);
+               if (!single)
+                  if (pmbk32 != NULL)
+                     midas_bank_display32(pmbk32, dsp_fmt);
             } while (pmbk32 != NULL);
          } else {
             pmbk = NULL;
             do {
                bk_iterate(pbh, &pmbk, &pdata);
                if (pmbk != NULL)
-                  if (single && (pdata == pdata1)) 
+                  if (single && (pdata == pdata1))
                      midas_bank_display(pmbk, dsp_fmt);
-                 if (!single)
-               if (pmbk != NULL) midas_bank_display(pmbk, dsp_fmt);
+               if (!single)
+                  if (pmbk != NULL)
+                     midas_bank_display(pmbk, dsp_fmt);
             } while (pmbk != NULL);
          }
       } else {
@@ -2822,15 +2831,15 @@ none
 
    for (i = 0; i < lrl; i += NLINE) {
       j = 0;
-      printf("\n%4li-> ", i + j + 1);
+      printf("\n%4i-> ", i + j + 1);
       for (j = 0; j < NLINE; j++) {
          if ((i + j) < lrl) {
             if (dsp_fmt == DSP_DEC)
-               printf("%8.li ", *((DWORD *) pdata));
+               printf("%8.i ", *((DWORD *) pdata));
             if (dsp_fmt == DSP_ASC)
-               printf("%8.8lx ", *((DWORD *) pdata));
+               printf("%8.8x ", *((DWORD *) pdata));
             if (dsp_fmt == DSP_HEX)
-               printf("%8.8lx ", *((DWORD *) pdata));
+               printf("%8.8x ", *((DWORD *) pdata));
             pdata++;
          }
       }
@@ -2887,7 +2896,7 @@ none
       length_type = ((pybk->length - 1) << 2);
       strcpy(strbktype, "8 bit ASCII");
    }
-   printf("\nBank:%s Length: %li(I*1)/%li(I*4)/%li(Type) Type:%s",
+   printf("\nBank:%s Length: %i(I*1)/%i(I*4)/%i(Type) Type:%s",
           bank_name, ((pybk->length - 1) << 2), pybk->length - 1, length_type, strbktype);
    j = 16;
 
@@ -2913,7 +2922,7 @@ none
          if ((dsp_fmt == DSP_DEC) || (dsp_fmt == DSP_UNK))
             printf("%8.3e ", *((float *) pdata));
          if (dsp_fmt == DSP_HEX)
-            printf("0x%8.8lx ", *((DWORD *) pdata));
+            printf("0x%8.8x ", *((DWORD *) pdata));
          pdata++;
          j++;
          break;
@@ -2924,9 +2933,9 @@ none
             i += 8;
          }
          if (dsp_fmt == DSP_DEC)
-            printf("%8.1li ", *((DWORD *) pdata));
+            printf("%8.1i ", *((DWORD *) pdata));
          if ((dsp_fmt == DSP_HEX) || (dsp_fmt == DSP_UNK))
-            printf("0x%8.8lx ", *((DWORD *) pdata));
+            printf("0x%8.8x ", *((DWORD *) pdata));
          pdata++;
          j++;
          break;
@@ -2972,7 +2981,7 @@ none
          j++;
          break;
       default:
-         printf("ybos_bak_display-E- Unknown bank type %li\n", pybk->type);
+         printf("ybos_bak_display-E- Unknown bank type %i\n", pybk->type);
          break;
 
       }                         /* switch */
@@ -3057,8 +3066,8 @@ none
       length_type = sizeof(char);
       strcpy(strbktype, "String 8bit ASCII");
    }
-   
-   printf("\nBank:%s Length: %li(I*1)/%li(I*4)/%li(Type) Type:%s",
+
+   printf("\nBank:%s Length: %i(I*1)/%i(I*4)/%i(Type) Type:%s",
           bank_name, lrl, lrl >> 2, lrl / length_type, strbktype);
 
    pendbk = pdata + lrl;
@@ -3083,7 +3092,7 @@ none
          if ((dsp_fmt == DSP_DEC) || (dsp_fmt == DSP_UNK))
             printf("%8.3e ", *((float *) pdata));
          if (dsp_fmt == DSP_HEX)
-            printf("0x%8.8lx ", *((DWORD *) pdata));
+            printf("0x%8.8x ", *((DWORD *) pdata));
          pdata = (char *) (((DWORD *) pdata) + 1);
          j++;
          break;
@@ -3094,9 +3103,9 @@ none
             i += 8;
          }
          if (dsp_fmt == DSP_DEC)
-            printf("%8.1li ", *((DWORD *) pdata));
+            printf("%8.1i ", *((DWORD *) pdata));
          if ((dsp_fmt == DSP_HEX) || (dsp_fmt == DSP_UNK))
-            printf("0x%8.8lx ", *((DWORD *) pdata));
+            printf("0x%8.8x ", *((DWORD *) pdata));
          pdata = (char *) (((DWORD *) pdata) + 1);
          j++;
          break;
@@ -3107,9 +3116,9 @@ none
             i += 8;
          }
          if ((dsp_fmt == DSP_DEC) || (dsp_fmt == DSP_UNK))
-            printf("%8.1li ", *((DWORD *) pdata));
+            printf("%8.1i ", *((DWORD *) pdata));
          if (dsp_fmt == DSP_HEX)
-            printf("0x%8.8lx ", *((DWORD *) pdata));
+            printf("0x%8.8x ", *((DWORD *) pdata));
          pdata = (char *) (((DWORD *) pdata) + 1);
          j++;
          break;
@@ -3279,8 +3288,8 @@ none
       length_type = sizeof(char);
       strcpy(strbktype, "String 8bit ASCI");
    }
-   
-   printf("\nBank:%s Length: %li(I*1)/%li(I*4)/%li(Type) Type:%s",
+
+   printf("\nBank:%s Length: %i(I*1)/%i(I*4)/%i(Type) Type:%s",
           bank_name, lrl, lrl >> 2, lrl / length_type, strbktype);
 
    pendbk = pdata + lrl;
@@ -3292,7 +3301,7 @@ none
             j = 0;
             i += 4;
          }
-         printf("%15.5le    ", *((double *) pdata));
+         printf("%15.5e    ", *((double *) pdata));
          pdata = (char *) (((double *) pdata) + 1);
          j++;
          break;
@@ -3305,7 +3314,7 @@ none
          if ((dsp_fmt == DSP_DEC) || (dsp_fmt == DSP_UNK))
             printf("%8.3e ", *((float *) pdata));
          if (dsp_fmt == DSP_HEX)
-            printf("0x%8.8lx ", *((DWORD *) pdata));
+            printf("0x%8.8x ", *((DWORD *) pdata));
          pdata = (char *) (((DWORD *) pdata) + 1);
          j++;
          break;
@@ -3316,9 +3325,9 @@ none
             i += 8;
          }
          if (dsp_fmt == DSP_DEC)
-            printf("%8.1li ", *((DWORD *) pdata));
+            printf("%8.1i ", *((DWORD *) pdata));
          if ((dsp_fmt == DSP_HEX) || (dsp_fmt == DSP_UNK))
-            printf("0x%8.8lx ", *((DWORD *) pdata));
+            printf("0x%8.8x ", *((DWORD *) pdata));
          pdata = (char *) (((DWORD *) pdata) + 1);
          j++;
          break;
@@ -3329,9 +3338,9 @@ none
             i += 8;
          }
          if ((dsp_fmt == DSP_DEC) || (dsp_fmt == DSP_UNK))
-            printf("%8.1li ", *((DWORD *) pdata));
+            printf("%8.1i ", *((DWORD *) pdata));
          if (dsp_fmt == DSP_HEX)
-            printf("0x%8.8lx ", *((DWORD *) pdata));
+            printf("0x%8.8x ", *((DWORD *) pdata));
          pdata = (char *) (((DWORD *) pdata) + 1);
          j++;
          break;
@@ -3400,7 +3409,7 @@ none
          break;
       case TID_CHAR:
       case TID_STRING:
-	if (j > 15) {
+         if (j > 15) {
             printf("\n%4i-> ", i);
             j = 0;
             i += 16;
@@ -3591,7 +3600,8 @@ YB_NOMORE_SLOT      no more slot for starting dump
 
       /* open device */
       if ((ymfile[i].fHandle =
-           open(ymfile[i].path, O_WRONLY | O_CREAT | O_TRUNC | O_BINARY | O_LARGEFILE, 0644)) == -1) {
+           open(ymfile[i].path, O_WRONLY | O_CREAT | O_TRUNC | O_BINARY | O_LARGEFILE,
+                0644)) == -1) {
          ymfile[i].fHandle = 0;
          printf("File %s cannot be created\n", ymfile[i].path);
          return (SS_FILE_ERROR);
@@ -3707,7 +3717,7 @@ YB_SUCCESS         Successful completion
 #endif                          /* DOXYGEN_SHOULD_SKIP_THIS */
 
 /**dox***************************************************************/
-/** @} */ /* end of ybosbankc */
+          /** @} *//* end of ybosbankc */
 
 /**dox***************************************************************/
-/** @} */ /* end of ybosincludecode */
+          /** @} *//* end of ybosincludecode */

@@ -113,7 +113,7 @@ INT poll_event(INT source[], INT count, BOOL test)
 {
    return 1;
 };
-INT interrupt_configure(INT cmd, INT source[], PTYPE adr)
+INT interrupt_configure(INT cmd, INT source[], POINTER_T adr)
 {
    return 1;
 };

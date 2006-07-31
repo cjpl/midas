@@ -6,7 +6,7 @@
   Contents:     Function declarations and constants for internal
                 routines
 
-  $Id:$
+  $Id$
 
 \********************************************************************/
 
@@ -60,7 +60,7 @@ data representations
 #define DR_ASCII            (1<<7)  /**< - */
 
 /**dox***************************************************************/
-/** @} */ /* end of msdefineh */
+          /** @} *//* end of msdefineh */
 
 /**dox***************************************************************/
 /** @addtogroup msmacroh
@@ -102,7 +102,7 @@ SWAP QWORD macro */
                        *(((BYTE *)(x))+4) = _tmp; }
 
 /**dox***************************************************************/
-/** @} */ /* end of msmacroh */
+          /** @} *//* end of msmacroh */
 
 /**dox***************************************************************/
 #ifndef DOXYGEN_SHOULD_SKIP_THIS
@@ -414,7 +414,7 @@ typedef struct {
 } REQUEST_LIST;
 
 /**dox***************************************************************/
-/** @} */ /* end of mssectionh */
+          /** @} *//* end of mssectionh */
 
 /**dox***************************************************************/
 #ifndef DOXYGEN_SHOULD_SKIP_THIS
@@ -557,8 +557,8 @@ extern "C" {
    INT rpc_client_accept(int sock);
    INT rpc_get_server_acception(void);
    INT rpc_set_server_acception(INT index);
-   INT EXPRT rpc_set_server_option(INT item, PTYPE value);
-   PTYPE EXPRT rpc_get_server_option(INT item);
+   INT EXPRT rpc_set_server_option(INT item, POINTER_T value);
+   POINTER_T EXPRT rpc_get_server_option(INT item);
    INT recv_tcp_check(int sock);
    INT recv_event_check(int sock);
    INT rpc_deregister_functions(void);
@@ -644,6 +644,4 @@ extern "C" {
 #endif
 /**dox***************************************************************/
 #endif                          /* DOXYGEN_SHOULD_SKIP_THIS */
-
-/**dox***************************************************************/
-/** @} */ /* end of msystemincludecode */
+          /**dox***************************************************************//** @} *//* end of msystemincludecode */

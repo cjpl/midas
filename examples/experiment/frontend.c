@@ -255,7 +255,7 @@ INT poll_event(INT source, INT count, BOOL test)
 
 /*-- Interrupt configuration ---------------------------------------*/
 
-INT interrupt_configure(INT cmd, INT source, PTYPE adr)
+INT interrupt_configure(INT cmd, INT source, POINTER_T adr)
 {
    switch (cmd) {
    case CMD_INTERRUPT_ENABLE:
@@ -335,9 +335,10 @@ INT read_trigger_event(char *pevent, INT off)
    camo(CRATE, SLOT_IO, 1, 16, 0xFF);
    camo(CRATE, SLOT_IO, 1, 16, 0);
 
-   ss_sleep(10);
+   //ss_sleep(10);
 
-   return bk_size(pevent);
+   //return bk_size(pevent);
+   return 1000;
 }
 
 /*-- Scaler event --------------------------------------------------*/
