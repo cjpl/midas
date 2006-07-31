@@ -450,6 +450,8 @@ BOOL sql_modify_table(MYSQL * db, char *database, char *table, HNDLE hKeyRoot)
       }
    }
 
+   cm_msg(MINFO, "sql_insert", "SQL table '%s.%s' modified successfully", database, table);
+
    return TRUE;
 }
 
@@ -540,6 +542,8 @@ int sql_insert(MYSQL * db, char *database, char *table, HNDLE hKeyRoot, BOOL cre
                    mysql_error(db));
             return mysql_errno(db);
          }
+         cm_msg(MINFO, "sql_insert", "SQL table '%s.%s' created successfully", database, table);
+
       } else if (mysql_errno(db) == ER_BAD_FIELD_ERROR && create_flag) {
 
          /* if table structure is different, adjust it and try again */
@@ -789,6 +793,7 @@ void write_sql(BOOL bor)
             mysql_close(&db);
             return;
          }
+         cm_msg(MINFO, "write_sql", "Database \"%s\" created successfully", database);
 
       } else {
          cm_msg(MERROR, "write_sql", "Failed to select database: Error: %s",
@@ -3567,6 +3572,23 @@ int main(int argc, char *argv[])
    else
       sprintf(dir, "same as Log");
    printf("ELog    directory is %s\n", dir);
+
+#ifdef HAVE_MYSQL
+   {
+   char sql_host[256], sql_db[256], sql_table[256];
+
+   status = db_find_key(hDB, 0, "/Logger/SQL/Hostname", &hktemp);
+   if (status == DB_SUCCESS) {
+      size = 256;
+      db_get_value(hDB, 0, "/Logger/SQL/Hostname", sql_host, &size, TID_STRING, FALSE);
+      size = 256;
+      db_get_value(hDB, 0, "/Logger/SQL/Database", sql_db, &size, TID_STRING, FALSE);
+      size = 256;
+      db_get_value(hDB, 0, "/Logger/SQL/Table", sql_table, &size, TID_STRING, FALSE);
+      printf("SQL     database is %s/%s/%s", sql_host, sql_db, sql_table);
+   }
+   }
+#endif
 
    printf("\nMIDAS logger started. Stop with \"!\"\n");
 

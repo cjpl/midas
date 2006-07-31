@@ -597,6 +597,8 @@ BOOL sql_modify_table(MYSQL * db, char *database, char *table, HNDLE hKeyRoot)
       }
    }
 
+   cm_msg(MINFO, "sql_insert", "SQL table \"%s\" modified successfully", table);
+
    return TRUE;
 }
 
