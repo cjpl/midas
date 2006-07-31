@@ -188,7 +188,9 @@ ifeq ($(OSTYPE),linux)
 CFLAGS += -D_LARGEFILE64_SOURCE
 
 OS_DIR = linux
-OSFLAGS = -m32 -DOS_LINUX -fPIC -Wno-unused-function
+OSFLAGS = -DOS_LINUX -fPIC -Wno-unused-function
+# add to compile midas in 32-bit mode
+# OSFLAGS += -m32
 LIBS = -lutil -lpthread
 SPECIFIC_OS_PRG = $(BIN_DIR)/mlxspeaker $(BIN_DIR)/dio
 endif
