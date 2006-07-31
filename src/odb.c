@@ -2928,7 +2928,7 @@ INT db_set_value(HNDLE hDB, HNDLE hKeyRoot, char *key_name, void *data,
       }
 
       /* resize data size if necessary */
-      if (pkey->total_size < data_size) {
+      if (pkey->total_size != data_size) {
          pkey->data =
              (POINTER_T) realloc_data(pheader, (char *) pheader + pkey->data,
                                       pkey->total_size, data_size);
@@ -6609,7 +6609,8 @@ static void db_recurse_record_tree(HNDLE hDB, HNDLE hKey, void **data,
             } else {
                /* copy key data if there is read access */
                if (pkey->access_mode & MODE_READ) {
-                  memcpy(*data, (char *) pheader + pkey->data, pkey->total_size);
+                  memcpy(*data, (char *) pheader + pkey->data,
+                         pkey->item_size * pkey->num_values);
 
                   /* convert data */
                   if (convert_flags) {
@@ -8187,7 +8188,7 @@ INT db_send_changed_records()
 /*------------------------------------------------------------------*/
 
 /**dox***************************************************************/
-          /** @} *//* end of odbfunctionc */
+                   /** @} *//* end of odbfunctionc */
 
 /**dox***************************************************************/
-          /** @} *//* end of odbcode */
+                   /** @} *//* end of odbcode */
