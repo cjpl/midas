@@ -38,10 +38,8 @@ The Midas VME include file
 
 typedef unsigned short int WORD;
 
-#ifdef __alpha
+#ifndef _MSC_VER
 typedef unsigned int DWORD;
-#else
-typedef unsigned long int DWORD;
 #endif
 
 #define SUCCESS  1
