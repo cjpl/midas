@@ -91,12 +91,12 @@ INT cnaf_callback(INT index, void *prpc_param[])
      if (index == RPC_CNAF16) {
        if (f < 16) {
 	 cam16i_rq(c, n, a, f, &pword, count);
-	 *size = (int) pword - (int) pdata;
+	 *size = (POINTER_T) pword - (POINTER_T) pdata;
        }
      } else {
        if (f < 16) {
 	 cam24i_rq(c, n, a, f, &pdword, count);
-	 *size = (int) pdword - (int) pdata;
+	 *size = (POINTER_T) pdword - (POINTER_T) pdata;
        }
      }
      
