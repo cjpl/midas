@@ -3833,7 +3833,7 @@ INT bm_open_buffer(char *buffer_name, INT buffer_size, INT * buffer_handle)
          }
       }
 
-      if (buffer_size <= 0 || buffer_size > 10E6) {
+      if (buffer_size <= 0 || buffer_size > 1*1024*1024*1024) {
          cm_msg(MERROR, "bm_open_buffer", "invalid buffer size %d", buffer_size);
          return BM_INVALID_PARAM;
       }
