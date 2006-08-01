@@ -363,30 +363,34 @@ INT cm_msg_log(INT message_type, const char *message)
       cm_get_experiment_database(&hDB, NULL);
 
       if (hDB) {
-         status = db_find_key(hDB, 0, "/Logger/Data dir", &hKey);
-         if (status == DB_SUCCESS) {
-            size = sizeof(dir);
-            memset(dir, 0, size);
-            db_get_value(hDB, 0, "/Logger/Data dir", dir, &size, TID_STRING, TRUE);
-            if (dir[0] != 0)
-               if (dir[strlen(dir) - 1] != DIR_SEPARATOR)
-                  strcat(dir, DIR_SEPARATOR_STR);
+         strcpy(filename, "midas.log");
+         size = sizeof(filename);
+         db_get_value(hDB, 0, "/Logger/Message file", filename, &size, TID_STRING,
+                        TRUE);
 
-            strcpy(filename, "midas.log");
-            size = sizeof(filename);
-            db_get_value(hDB, 0, "/Logger/Message file", filename, &size, TID_STRING,
-                         TRUE);
+         if (strchr(filename, DIR_SEPARATOR) == NULL) {
+            status = db_find_key(hDB, 0, "/Logger/Data dir", &hKey);
+            if (status == DB_SUCCESS) {
+               size = sizeof(dir);
+               memset(dir, 0, size);
+               db_get_value(hDB, 0, "/Logger/Data dir", dir, &size, TID_STRING, TRUE);
+               if (dir[0] != 0)
+                  if (dir[strlen(dir) - 1] != DIR_SEPARATOR)
+                     strcat(dir, DIR_SEPARATOR_STR);
 
-            strcpy(path, dir);
-            strcat(path, filename);
+               strcpy(path, dir);
+               strcat(path, filename);
+            } else {
+               cm_get_path(dir);
+               if (dir[0] != 0)
+                  if (dir[strlen(dir) - 1] != DIR_SEPARATOR)
+                     strcat(dir, DIR_SEPARATOR_STR);
+
+               strcpy(path, dir);
+               strcat(path, "midas.log");
+            }
          } else {
-            cm_get_path(dir);
-            if (dir[0] != 0)
-               if (dir[strlen(dir) - 1] != DIR_SEPARATOR)
-                  strcat(dir, DIR_SEPARATOR_STR);
-
-            strcpy(path, dir);
-            strcat(path, "midas.log");
+            strcpy(path, filename);
          }
       } else
          strcpy(path, "midas.log");
@@ -453,34 +457,50 @@ INT cm_msg_log1(INT message_type, const char *message, const char *facility)
       cm_get_experiment_database(&hDB, NULL);
 
       if (hDB) {
-         status = db_find_key(hDB, 0, "/Logger/Data dir", &hKey);
-         if (status == DB_SUCCESS) {
-            size = sizeof(dir);
-            memset(dir, 0, size);
-            db_get_value(hDB, 0, "/Logger/Data dir", dir, &size, TID_STRING, TRUE);
-            if (dir[0] != 0)
-               if (dir[strlen(dir) - 1] != DIR_SEPARATOR)
-                  strcat(dir, DIR_SEPARATOR_STR);
+         strcpy(filename, "midas.log");
+         size = sizeof(filename);
+         db_get_value(hDB, 0, "/Logger/Message file", filename, &size, TID_STRING,
+                        TRUE);
 
-            if (facility[0]) {
-               strcpy(filename, facility);
-               strcat(filename, ".log");
+         if (strchr(filename, DIR_SEPARATOR) == NULL) {
+
+            status = db_find_key(hDB, 0, "/Logger/Data dir", &hKey);
+            if (status == DB_SUCCESS) {
+               size = sizeof(dir);
+               memset(dir, 0, size);
+               db_get_value(hDB, 0, "/Logger/Data dir", dir, &size, TID_STRING, TRUE);
+               if (dir[0] != 0)
+                  if (dir[strlen(dir) - 1] != DIR_SEPARATOR)
+                     strcat(dir, DIR_SEPARATOR_STR);
+
+               if (facility[0]) {
+                  strcpy(filename, facility);
+                  strcat(filename, ".log");
+               } else {
+                  strcpy(filename, "midas.log");
+                  size = sizeof(filename);
+                  db_get_value(hDB, 0, "/Logger/Message file", filename, &size, TID_STRING,
+                              TRUE);
+               }
+
+               strcpy(path, dir);
+               strcat(path, filename);
             } else {
-               strcpy(filename, "midas.log");
-               size = sizeof(filename);
-               db_get_value(hDB, 0, "/Logger/Message file", filename, &size, TID_STRING,
-                            TRUE);
+               cm_get_path(dir);
+               if (dir[0] != 0)
+                  if (dir[strlen(dir) - 1] != DIR_SEPARATOR)
+                     strcat(dir, DIR_SEPARATOR_STR);
+
+               strcpy(path, dir);
+               if (facility[0]) {
+                  strcat(path, facility);
+                  strcat(path, ".log");
+               } else
+                  strcat(path, "midas.log");
             }
-
-            strcpy(path, dir);
-            strcat(path, filename);
          } else {
-            cm_get_path(dir);
-            if (dir[0] != 0)
-               if (dir[strlen(dir) - 1] != DIR_SEPARATOR)
-                  strcat(dir, DIR_SEPARATOR_STR);
-
-            strcpy(path, dir);
+            strcpy(path, filename);
+            *(strrchr(path, DIR_SEPARATOR)+1) = 0;
             if (facility[0]) {
                strcat(path, facility);
                strcat(path, ".log");
@@ -822,29 +842,38 @@ INT cm_msg_retrieve(INT n_message, char *message, INT * buf_size)
    cm_get_experiment_database(&hDB, NULL);
 
    if (hDB) {
-      status = db_find_key(hDB, 0, "/Logger/Data dir", &hKey);
-      if (status == DB_SUCCESS) {
-         size = sizeof(dir);
-         memset(dir, 0, size);
-         db_get_value(hDB, 0, "/Logger/Data dir", dir, &size, TID_STRING, TRUE);
-         if (dir[0] != 0)
-            if (dir[strlen(dir) - 1] != DIR_SEPARATOR)
-               strcat(dir, DIR_SEPARATOR_STR);
+      strcpy(filename, "midas.log");
+      size = sizeof(filename);
+      db_get_value(hDB, 0, "/Logger/Message file", filename, &size, TID_STRING,
+                     TRUE);
 
-         strcpy(filename, "midas.log");
-         size = sizeof(filename);
-         db_get_value(hDB, 0, "/Logger/Message file", filename, &size, TID_STRING, TRUE);
+      if (strchr(filename, DIR_SEPARATOR) == NULL) {
+         status = db_find_key(hDB, 0, "/Logger/Data dir", &hKey);
+         if (status == DB_SUCCESS) {
+            size = sizeof(dir);
+            memset(dir, 0, size);
+            db_get_value(hDB, 0, "/Logger/Data dir", dir, &size, TID_STRING, TRUE);
+            if (dir[0] != 0)
+               if (dir[strlen(dir) - 1] != DIR_SEPARATOR)
+                  strcat(dir, DIR_SEPARATOR_STR);
 
-         strcpy(path, dir);
-         strcat(path, filename);
+            strcpy(filename, "midas.log");
+            size = sizeof(filename);
+            db_get_value(hDB, 0, "/Logger/Message file", filename, &size, TID_STRING, TRUE);
+
+            strcpy(path, dir);
+            strcat(path, filename);
+         } else {
+            cm_get_path(dir);
+            if (dir[0] != 0)
+               if (dir[strlen(dir) - 1] != DIR_SEPARATOR)
+                  strcat(dir, DIR_SEPARATOR_STR);
+
+            strcpy(path, dir);
+            strcat(path, "midas.log");
+         }
       } else {
-         cm_get_path(dir);
-         if (dir[0] != 0)
-            if (dir[strlen(dir) - 1] != DIR_SEPARATOR)
-               strcat(dir, DIR_SEPARATOR_STR);
-
-         strcpy(path, dir);
-         strcat(path, "midas.log");
+         strcpy(path, filename);
       }
    } else
       strcpy(path, "midas.log");
