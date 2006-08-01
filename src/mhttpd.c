@@ -647,8 +647,12 @@ void redirect(char *path)
          rsprintf("Location: /%s&exp=%s\n\n<html>redir</html>\r\n", path, exp_name);
       else
          rsprintf("Location: /%s?exp=%s\n\n<html>redir</html>\r\n", path, exp_name);
-   } else
-      rsprintf("Location: /%s\r\n\r\n<html>redir</html>\r\n", path);
+   } else {
+      if (strncmp(path, "http:", 5) == 0)
+         rsprintf("Location: %s\r\n\r\n<html>redir</html>\r\n", path);
+      else
+         rsprintf("Location: /%s\r\n\r\n<html>redir</html>\r\n", path);
+   }
 }
 
 void redirect2(char *path)
@@ -3425,14 +3429,17 @@ void submit_form()
 
 void show_elog_page(char *path, int path_size)
 {
-   int size, i, run, msg_status, status, fh, length, first_message, last_message, index;
-   char str[256], orig_path[256], command[80], ref[256], file_name[256];
+   int size, i, run, msg_status, status, fh, length, first_message, last_message, index,
+      fsize;
+   char str[256], orig_path[256], command[80], ref[256], file_name[256], dir[256], *fbuffer;
    char date[80], author[80], type[80], system[80], subject[256], text[10000],
-       orig_tag[80], reply_tag[80], attachment[3][256], encoding[80], att[256];
+       orig_tag[80], reply_tag[80], attachment[3][256], encoding[80], att[256], url[256];
    HNDLE hDB, hkey, hkeyroot, hkeybutton;
    KEY key;
    FILE *f;
    BOOL display_run_number, allow_delete;
+   time_t now;
+   struct tm *tms;
    char def_button[][NAME_LENGTH] = { "8h", "24h", "7d" };
 
    /* get flag for displaying run number and allow delete */
@@ -3470,12 +3477,67 @@ void show_elog_page(char *path, int path_size)
    }
 
    if (equal_ustring(command, "Create ELog from this page")) {
-      strlcpy(str, path, sizeof(str));
-      while (strchr(path, '/'))
-         *strchr(path, '/') = '\\';
 
-      show_elog_new(NULL, FALSE, path);
-      return;
+      size = sizeof(url);
+      if (db_get_value(hDB, 0, "/Elog/URL", url, &size, TID_STRING, FALSE) == DB_SUCCESS) {
+
+         /*---- use external ELOG ----*/
+         fsize = 100000;
+         fbuffer = M_MALLOC(fsize);
+         assert(fbuffer != NULL);
+
+         /* write ODB contents to buffer */
+         gen_odb_attachment(path, fbuffer);
+         fsize = strlen(fbuffer);
+
+         /* save temporary file */
+         size = sizeof(dir);
+         dir[0] = 0;
+         db_get_value(hDB, 0, "/Elog/Logbook Dir", dir, &size, TID_STRING, TRUE);
+         if (strlen(dir) > 0 && dir[strlen(dir)-1] != DIR_SEPARATOR)
+            strlcat(dir, DIR_SEPARATOR_STR, sizeof(dir));
+
+         time(&now);
+         tms = localtime(&now);
+
+         if (strchr(path, '/'))
+            strlcpy(str, strrchr(path, '/') + 1, sizeof(str));
+         else
+            strlcpy(str, path, sizeof(str));
+         sprintf(file_name, "%02d%02d%02d_%02d%02d%02d_%s.html",
+                  tms->tm_year % 100, tms->tm_mon + 1, tms->tm_mday,
+                  tms->tm_hour, tms->tm_min, tms->tm_sec, str);
+         sprintf(str, "%s%s", dir, file_name);
+
+         /* save attachment */
+         fh = open(str, O_CREAT | O_RDWR | O_BINARY, 0644);
+         if (fh < 0) {
+            cm_msg(MERROR, "show_hist_page", "Cannot write attachment file \"%s\"",
+                     str);
+         } else {
+            write(fh, fbuffer, fsize);
+            close(fh);
+         }
+
+         /* redirect to ELOG */
+         if (strlen(url) > 1 && url[strlen(url)-1] != '/')
+            strlcat(url, "/", sizeof(url));
+         strlcat(url, "?cmd=New&fa=", sizeof(url));
+         strlcat(url, file_name, sizeof(url));
+         redirect(url);
+
+         M_FREE(fbuffer);
+         return;
+      
+      } else {
+
+         strlcpy(str, path, sizeof(str));
+         while (strchr(path, '/'))
+            *strchr(path, '/') = '\\';
+
+         show_elog_new(NULL, FALSE, path);
+         return;
+      }
    }
 
    if (equal_ustring(command, "edit")) {
@@ -3948,6 +4010,23 @@ void show_elog_page(char *path, int path_size)
 
    rsprintf("</table>\n");
    rsprintf("</body></html>\r\n");
+}
+
+/*------------------------------------------------------------------*/
+
+void show_elog_redirect() 
+{  
+   HNDLE hDB;
+   char url[256];
+   int size;
+
+   /* redirect to external ELOG if URL present */
+   cm_get_experiment_database(&hDB, NULL);
+   size = sizeof(url);
+   if (db_get_value(hDB, 0, "/Elog/URL", url, &size, TID_STRING, FALSE) == DB_SUCCESS)
+      redirect(url);
+   else
+      redirect("EL/");
 }
 
 /*------------------------------------------------------------------*/
@@ -8454,13 +8533,15 @@ void show_hist_page(char *path, int path_size, char *buffer, int *buffer_size,
                     int refresh)
 {
    char str[256], ref[256], ref2[256], paramstr[256], scalestr[256], hgroup[256],
-       bgcolor[32], fgcolor[32], gridcolor[32];
-   char *poffset, *pscale, *pmag, *pindex;
+       bgcolor[32], fgcolor[32], gridcolor[32], url[256], dir[256], file_name[256];
+   char *poffset, *pscale, *pmag, *pindex, *fbuffer;
    HNDLE hDB, hkey, hikeyp, hkeyp, hkeybutton;
    KEY key, ikey;
-   int i, j, k, scale, offset, index, width, size, status, labels;
+   int i, j, k, scale, offset, index, width, size, status, labels, fh, fsize;
    float factor[2];
    char def_button[][NAME_LENGTH] = { "10m", "1h", "3h", "12h", "24h", "3d", "7d" };
+   time_t now;
+   struct tm *tms;
 
    cm_get_experiment_database(&hDB, NULL);
 
@@ -8562,36 +8643,6 @@ void show_hist_page(char *path, int path_size, char *buffer, int *buffer_size,
       return;
    }
 
-   if (equal_ustring(getparam("cmd"), "Create ELog")) {
-      sprintf(str, "\\HS\\%s.gif", path);
-      if (getparam("hscale") && *getparam("hscale"))
-         sprintf(str + strlen(str), "?scale=%s", getparam("hscale"));
-      if (getparam("hoffset") && *getparam("hoffset")) {
-         if (strchr(str, '?'))
-            strlcat(str, "&", sizeof(str));
-         else
-            strlcat(str, "?", sizeof(str));
-         sprintf(str + strlen(str), "offset=%s", getparam("hoffset"));
-      }
-      if (getparam("hwidth") && *getparam("hwidth")) {
-         if (strchr(str, '?'))
-            strlcat(str, "&", sizeof(str));
-         else
-            strlcat(str, "?", sizeof(str));
-         sprintf(str + strlen(str), "width=%s", getparam("hwidth"));
-      }
-      if (getparam("hindex") && *getparam("hindex")) {
-         if (strchr(str, '?'))
-            strlcat(str, "&", sizeof(str));
-         else
-            strlcat(str, "?", sizeof(str));
-         sprintf(str + strlen(str), "index=%s", getparam("hindex"));
-      }
-
-      show_elog_new(NULL, FALSE, str);
-      return;
-   }
-
    pscale = getparam("scale");
    if (pscale == NULL || *pscale == 0)
       pscale = getparam("hscale");
@@ -8612,17 +8663,17 @@ void show_hist_page(char *path, int path_size, char *buffer, int *buffer_size,
    if (*getparam("bgcolor"))
       strlcpy(bgcolor, getparam("bgcolor"), sizeof(bgcolor));
    else
-      strcpy(bgcolor, "FFFFFF");        // safe KO 26-Jul-2006
+      strcpy(bgcolor, "FFFFFF");
 
    if (*getparam("fgcolor"))
       strlcpy(fgcolor, getparam("fgcolor"), sizeof(fgcolor));
    else
-      strcpy(fgcolor, "000000");        // safe KO 26-Jul-2006
+      strcpy(fgcolor, "000000");
 
    if (*getparam("gcolor"))
       strlcpy(gridcolor, getparam("gcolor"), sizeof(gridcolor));
    else
-      strcpy(gridcolor, "A0A0A0");      // safe KO 26-Jul-2006
+      strcpy(gridcolor, "A0A0A0");
 
    /* evaluate scale and offset */
 
@@ -8636,11 +8687,101 @@ void show_hist_page(char *path, int path_size, char *buffer, int *buffer_size,
    else
       scale = 0;
 
-   if (strstr(path, ".gif")) {
-      index = -1;
-      if (pindex && *pindex)
-         index = atoi(pindex);
+   index = -1;
+   if (pindex && *pindex)
+      index = atoi(pindex);
 
+   if (equal_ustring(getparam("cmd"), "Create ELog")) {
+      size = sizeof(url);
+      if (db_get_value(hDB, 0, "/Elog/URL", url, &size, TID_STRING, FALSE) == DB_SUCCESS) {
+
+         /*---- use external ELOG ----*/
+         fsize = 100000;
+         fbuffer = M_MALLOC(fsize);
+         assert(fbuffer != NULL);
+
+         if (equal_ustring(pmag, "Large"))
+            generate_hist_graph(path, fbuffer, &fsize, 1024, 768, scale, offset, index,
+                              labels, bgcolor, fgcolor, gridcolor);
+         else if (equal_ustring(pmag, "Small"))
+            generate_hist_graph(path, fbuffer, &fsize, 320, 200, scale, offset, index,
+                              labels, bgcolor, fgcolor, gridcolor);
+         else
+            generate_hist_graph(path, fbuffer, &fsize, 640, 400, scale, offset, index,
+                              labels, bgcolor, fgcolor, gridcolor);
+
+         /* save temporary file */
+         size = sizeof(dir);
+         dir[0] = 0;
+         db_get_value(hDB, 0, "/Elog/Logbook Dir", dir, &size, TID_STRING, TRUE);
+         if (strlen(dir) > 0 && dir[strlen(dir)-1] != DIR_SEPARATOR)
+            strlcat(dir, DIR_SEPARATOR_STR, sizeof(dir));
+
+         time(&now);
+         tms = localtime(&now);
+
+         if (strchr(path, '/'))
+            strlcpy(str, strchr(path, '/') + 1, sizeof(str));
+         else
+            strlcpy(str, path, sizeof(str));
+         sprintf(file_name, "%02d%02d%02d_%02d%02d%02d_%s.gif",
+                  tms->tm_year % 100, tms->tm_mon + 1, tms->tm_mday,
+                  tms->tm_hour, tms->tm_min, tms->tm_sec, str);
+         sprintf(str, "%s%s", dir, file_name);
+
+         /* save attachment */
+         fh = open(str, O_CREAT | O_RDWR | O_BINARY, 0644);
+         if (fh < 0) {
+            cm_msg(MERROR, "show_hist_page", "Cannot write attachment file \"%s\"",
+                     str);
+         } else {
+            write(fh, fbuffer, fsize);
+            close(fh);
+         }
+
+         /* redirect to ELOG */
+         if (strlen(url) > 1 && url[strlen(url)-1] != '/')
+            strlcat(url, "/", sizeof(url));
+         strlcat(url, "?cmd=New&fa=", sizeof(url));
+         strlcat(url, file_name, sizeof(url));
+         redirect(url);
+
+         M_FREE(fbuffer);
+         return;
+
+      } else {
+         /*---- use internal ELOG ----*/
+         sprintf(str, "\\HS\\%s.gif", path);
+         if (getparam("hscale") && *getparam("hscale"))
+            sprintf(str + strlen(str), "?scale=%s", getparam("hscale"));
+         if (getparam("hoffset") && *getparam("hoffset")) {
+            if (strchr(str, '?'))
+               strlcat(str, "&", sizeof(str));
+            else
+               strlcat(str, "?", sizeof(str));
+            sprintf(str + strlen(str), "offset=%s", getparam("hoffset"));
+         }
+         if (getparam("hwidth") && *getparam("hwidth")) {
+            if (strchr(str, '?'))
+               strlcat(str, "&", sizeof(str));
+            else
+               strlcat(str, "?", sizeof(str));
+            sprintf(str + strlen(str), "width=%s", getparam("hwidth"));
+         }
+         if (getparam("hindex") && *getparam("hindex")) {
+            if (strchr(str, '?'))
+               strlcat(str, "&", sizeof(str));
+            else
+               strlcat(str, "?", sizeof(str));
+            sprintf(str + strlen(str), "index=%s", getparam("hindex"));
+         }
+
+         show_elog_new(NULL, FALSE, str);
+         return;
+      }
+   }
+
+   if (strstr(path, ".gif")) {
       if (equal_ustring(pmag, "Large"))
          generate_hist_graph(path, buffer, buffer_size, 1024, 768, scale, offset, index,
                              labels, bgcolor, fgcolor, gridcolor);
@@ -8760,11 +8901,11 @@ void show_hist_page(char *path, int path_size, char *buffer, int *buffer_size,
    db_find_key(hDB, 0, "/History/Display", &hkey);
    if (!hkey) {
       /* create default panel */
-      strcpy(str, "System:Trigger per sec.");   // safe KO 26-Jul-2006
-      strcpy(str + 2 * NAME_LENGTH, "System:Trigger kB per sec.");      // probably safe KO 26-Jul-2006
+      strcpy(str, "System:Trigger per sec.");
+      strcpy(str + 2 * NAME_LENGTH, "System:Trigger kB per sec.");
       db_set_value(hDB, 0, "/History/Display/Default/Trigger rate/Variables",
                    str, NAME_LENGTH * 4, 2, TID_STRING);
-      strcpy(str, "1h");        // safe KO 26-Jul-2006
+      strcpy(str, "1h");
       db_set_value(hDB, 0, "/History/Display/Default/Trigger rate/Time Scale",
                    str, NAME_LENGTH, 1, TID_STRING);
 
@@ -8776,7 +8917,7 @@ void show_hist_page(char *path, int path_size, char *buffer, int *buffer_size,
       factor[1] = 0;
       db_set_value(hDB, 0, "/History/Display/Default/Trigger rate/Offset",
                    factor, 2 * sizeof(float), 2, TID_FLOAT);
-      strcpy(str, "1h");        // safe KO 26-Jul-2006
+      strcpy(str, "1h");
       db_set_value(hDB, 0, "/History/Display/Default/Trigger rate/Timescale",
                    str, NAME_LENGTH, 1, TID_STRING);
       i = 1;
@@ -9619,7 +9760,7 @@ void interprete(char *cookie_pwd, char *cookie_wpwd, char *path, int refresh)
   /*---- ELog command ----------------------------------------------*/
 
    if (equal_ustring(command, "elog")) {
-      redirect("EL/");
+      show_elog_redirect();
       return;
    }
 
@@ -10295,7 +10436,7 @@ int main(int argc, char *argv[])
    for (i = 1; i < argc; i++) {
       if (argv[i][0] == '-' && argv[i][1] == 'D')
          daemon = TRUE;
-      else if (argv[i][0] == '-' && argv[i][1] == 'd')
+      else if (argv[i][0] == '-' && argv[i][1] == 'v')
          verbose = TRUE;
       else if (argv[i][0] == '-' && argv[i][1] == 'E')
          elog_mode = TRUE;
@@ -10308,8 +10449,8 @@ int main(int argc, char *argv[])
             tcp_port = atoi(argv[++i]);
          else {
           usage:
-            printf("usage: %s [-p port] [-d] [-D] [-c]\n\n", argv[0]);
-            printf("       -d display HTTP communication\n");
+            printf("usage: %s [-p port] [-v] [-D] [-c]\n\n", argv[0]);
+            printf("       -v display verbose HTTP communication\n");
             printf("       -D become a daemon\n");
             printf("       -E only display ELog system\n");
             printf("       -c don't disconnect from experiment\n");
