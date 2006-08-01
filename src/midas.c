@@ -904,7 +904,7 @@ INT cm_msg_retrieve(INT n_message, char *message, INT * buf_size)
 }
 
 /**dox***************************************************************/
-                            /** @} *//* end of msgfunctionc */
+                                                       /** @} *//* end of msgfunctionc */
 
 /**dox***************************************************************/
 /** @addtogroup cmfunctionc
@@ -976,7 +976,7 @@ INT cm_time(DWORD * time)
 }
 
 /**dox***************************************************************/
-                            /** @} *//* end of cmfunctionc */
+                                                       /** @} *//* end of cmfunctionc */
 
 /********************************************************************\
 *                                                                    *
@@ -1042,7 +1042,7 @@ INT cm_get_path(char *path)
 }
 
 /**dox***************************************************************/
-                            /** @} *//* end of cmfunctionc */
+                                                       /** @} *//* end of cmfunctionc */
 
 /**dox***************************************************************/
 /** @addtogroup cmfunctionc
@@ -3685,7 +3685,7 @@ INT cm_register_function(INT id, INT(*func) (INT, void **))
 #endif                          /* DOXYGEN_SHOULD_SKIP_THIS */
 
 /**dox***************************************************************/
-                            /** @} *//* end of cmfunctionc */
+                                                       /** @} *//* end of cmfunctionc */
 
 /**dox***************************************************************/
 /** @addtogroup bmfunctionc
@@ -3785,9 +3785,27 @@ INT bm_open_buffer(char *buffer_name, INT buffer_size, INT * buffer_handle)
       BOOL shm_created;
       HNDLE shm_handle;
       BUFFER_HEADER *pheader;
+      HNDLE hDB, odb_key;
+      char odb_path[256];
+
+      sprintf(odb_path, "/Experiment/Buffer sizes/%s", buffer_name);
+      /*printf("Looking for %s, default size %d\n", odb_path, buffer_size); */
+      status = cm_get_experiment_database(&hDB, &odb_key);
+      assert(status == SUCCESS);
+      status = db_find_key(hDB, 0, odb_path, &odb_key);
+      if (status == DB_SUCCESS) {
+         DWORD odb_size = 0;
+         int size = sizeof(odb_size);
+         status = db_get_data(hDB, odb_key, &odb_size, &size, TID_DWORD);
+         if (status == DB_SUCCESS) {
+            /*printf("buffer %s requested size %d, ODB size %d\n", buffer_name, buffer_size,
+               odb_size); */
+            buffer_size = odb_size;
+         }
+      }
 
       if (buffer_size <= 0 || buffer_size > 10E6) {
-         cm_msg(MERROR, "bm_open_buffer", "invalid buffer size");
+         cm_msg(MERROR, "bm_open_buffer", "invalid buffer size %d", buffer_size);
          return BM_INVALID_PARAM;
       }
 
@@ -4120,7 +4138,7 @@ INT bm_close_all_buffers(void)
 }
 
 /**dox***************************************************************/
-                            /** @} *//* end of bmfunctionc */
+                                                       /** @} *//* end of bmfunctionc */
 
 /**dox***************************************************************/
 /** @addtogroup cmfunctionc
@@ -4949,7 +4967,7 @@ INT bm_init_buffer_counters(INT buffer_handle)
 #endif                          /* DOXYGEN_SHOULD_SKIP_THIS */
 
 /**dox***************************************************************/
-                            /** @} *//* end of cmfunctionc */
+                                                       /** @} *//* end of cmfunctionc */
 
 /**dox***************************************************************/
 /** @addtogroup bmfunctionc
@@ -7336,7 +7354,7 @@ void bm_defragment_event(HNDLE buffer_handle, HNDLE request_id,
 #endif                          /* DOXYGEN_SHOULD_SKIP_THIS */
 
 /**dox***************************************************************/
-                            /** @} *//* end of bmfunctionc */
+                                                       /** @} *//* end of bmfunctionc */
 
 /**dox***************************************************************/
 /** @addtogroup rpcfunctionc
@@ -8170,11 +8188,11 @@ INT rpc_server_connect(char *host_name, char *exp_name)
 
    /* find out which port OS has chosen */
    size = sizeof(bind_addr);
-   getsockname(lsock1, (struct sockaddr *) &bind_addr, (int *)&size);
+   getsockname(lsock1, (struct sockaddr *) &bind_addr, (int *) &size);
    listen_port1 = ntohs(bind_addr.sin_port);
-   getsockname(lsock2, (struct sockaddr *) &bind_addr, (int *)&size);
+   getsockname(lsock2, (struct sockaddr *) &bind_addr, (int *) &size);
    listen_port2 = ntohs(bind_addr.sin_port);
-   getsockname(lsock3, (struct sockaddr *) &bind_addr, (int *)&size);
+   getsockname(lsock3, (struct sockaddr *) &bind_addr, (int *) &size);
    listen_port3 = ntohs(bind_addr.sin_port);
 
    /* create a new socket for connecting to remote server */
@@ -8291,11 +8309,14 @@ INT rpc_server_connect(char *host_name, char *exp_name)
 
    size = sizeof(bind_addr);
 
-   _server_connection.send_sock = accept(lsock1, (struct sockaddr *) &bind_addr, (int *)&size);
+   _server_connection.send_sock =
+       accept(lsock1, (struct sockaddr *) &bind_addr, (int *) &size);
 
-   _server_connection.recv_sock = accept(lsock2, (struct sockaddr *) &bind_addr, (int *)&size);
+   _server_connection.recv_sock =
+       accept(lsock2, (struct sockaddr *) &bind_addr, (int *) &size);
 
-   _server_connection.event_sock = accept(lsock3, (struct sockaddr *) &bind_addr, (int *)&size);
+   _server_connection.event_sock =
+       accept(lsock3, (struct sockaddr *) &bind_addr, (int *) &size);
 
    if (_server_connection.send_sock == -1 ||
        _server_connection.recv_sock == -1 || _server_connection.event_sock == -1) {
@@ -10398,7 +10419,7 @@ INT rpc_register_server(INT server_type, char *name, INT * port,
    /* return port wich OS has choosen */
    if (port && *port == 0) {
       size = sizeof(bind_addr);
-      getsockname(_lsock, (struct sockaddr *) &bind_addr, (int *)&size);
+      getsockname(_lsock, (struct sockaddr *) &bind_addr, (int *) &size);
       *port = ntohs(bind_addr.sin_port);
    }
 
@@ -11082,7 +11103,7 @@ INT rpc_server_accept(int lsock)
 
    if (lsock > 0) {
       size = sizeof(acc_addr);
-      sock = accept(lsock, (struct sockaddr *) &acc_addr, (int *)&size);
+      sock = accept(lsock, (struct sockaddr *) &acc_addr, (int *) &size);
 
       if (sock == -1)
          return RPC_NET_ERROR;
@@ -11091,7 +11112,7 @@ INT rpc_server_accept(int lsock)
 
       size = sizeof(acc_addr);
       sock = lsock;
-      getpeername(sock, (struct sockaddr *) &acc_addr, (int *)&size);
+      getpeername(sock, (struct sockaddr *) &acc_addr, (int *) &size);
    }
 
    /* receive string with timeout */
@@ -11319,7 +11340,7 @@ INT rpc_client_accept(int lsock)
    char net_buffer[256], *p;
 
    size = sizeof(acc_addr);
-   sock = accept(lsock, (struct sockaddr *) &acc_addr, (int *)&size);
+   sock = accept(lsock, (struct sockaddr *) &acc_addr, (int *) &size);
 
    if (sock == -1)
       return RPC_NET_ERROR;
@@ -12032,7 +12053,7 @@ INT rpc_check_channels(void)
 #endif                          /* DOXYGEN_SHOULD_SKIP_THIS */
 
 /**dox***************************************************************/
-                            /** @} *//* end of rpcfunctionc */
+                                                       /** @} *//* end of rpcfunctionc */
 
 /**dox***************************************************************/
 /** @addtogroup bkfunctionc
@@ -12642,7 +12663,7 @@ INT bk_swap(void *event, BOOL force)
 }
 
 /**dox***************************************************************/
-                            /** @} *//* end of bkfunctionc */
+                                                       /** @} *//* end of bkfunctionc */
 
 /**dox***************************************************************/
 /** @addtogroup hsfunctionc
@@ -14062,7 +14083,7 @@ INT hs_read(DWORD event_id, DWORD start_time, DWORD end_time,
          close(fhi);
 
          /* advance one day */
-         tms = localtime((const time_t *)(POINTER_T)&last_irec_time);
+         tms = localtime((const time_t *) (POINTER_T) & last_irec_time);
          tms->tm_hour = tms->tm_min = tms->tm_sec = 0;
          last_irec_time = mktime(tms);
 
@@ -14309,7 +14330,7 @@ INT hs_dump(DWORD event_id, DWORD start_time, DWORD end_time,
          close(fhi);
 
          /* advance one day */
-         tms = localtime((const time_t *)(POINTER_T)&last_irec_time);
+         tms = localtime((const time_t *) (POINTER_T) & last_irec_time);
          tms->tm_hour = tms->tm_min = tms->tm_sec = 0;
          last_irec_time = mktime(tms);
 
@@ -14318,7 +14339,7 @@ INT hs_dump(DWORD event_id, DWORD start_time, DWORD end_time,
             break;
 
          /* search next file */
-         status = hs_search_file((DWORD *) &last_irec_time, 1);
+         status = hs_search_file((DWORD *) & last_irec_time, 1);
          if (status != HS_SUCCESS)
             break;
 
@@ -14429,7 +14450,7 @@ INT hs_fdump(char *file_name, DWORD id, BOOL binary_time)
 #endif                          /* DOXYGEN_SHOULD_SKIP_THIS */
 
 /**dox***************************************************************/
-                            /** @} *//* end of hsfunctionc */
+                                                       /** @} *//* end of hsfunctionc */
 
 /**dox***************************************************************/
 /** @addtogroup elfunctionc
@@ -15397,7 +15418,7 @@ INT el_delete_message(char *tag)
 #endif                          /* DOXYGEN_SHOULD_SKIP_THIS */
 
 /**dox***************************************************************/
-                            /** @} *//* end of elfunctionc */
+                                                       /** @} *//* end of elfunctionc */
 
 /**dox***************************************************************/
 /** @addtogroup alfunctionc
@@ -16072,7 +16093,7 @@ INT al_check()
 /**dox***************************************************************/
 #endif                          /* DOXYGEN_SHOULD_SKIP_THIS */
 
-                            /** @} *//* end of alfunctionc */
+                                                       /** @} *//* end of alfunctionc */
 
 /***** sKIP eb_xxx **************************************************/
 /**dox***************************************************************/
@@ -17165,7 +17186,7 @@ INT dm_area_flush(void)
 #endif                          /* DOXYGEN_SHOULD_SKIP_THIS */
 
 /**dox***************************************************************/
-                            /** @} *//* end of dmfunctionc */
+                                                       /** @} *//* end of dmfunctionc */
 
 /**dox***************************************************************/
-                            /** @} *//* end of midasincludecode */
+                                                       /** @} *//* end of midasincludecode */
