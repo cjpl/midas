@@ -85,6 +85,21 @@ INT ss_set_async_flag(INT flag)
    return old_flag;
 }
 
+#ifdef OS_UNIX
+/*#define  OS_UNIX_MMAP 1*/
+#define OS_UNIX_SHM  1
+#endif
+
+#ifdef OS_UNIX_MMAP
+
+#include <sys/mman.h>
+
+#define MAX_MMAP 100
+static void *mmap_addr[MAX_MMAP];
+static int mmap_size[MAX_MMAP];
+
+#endif
+
 /*------------------------------------------------------------------*/
 INT ss_shm_open(char *name, INT size, void **adr, HNDLE * handle)
 /********************************************************************\
@@ -232,7 +247,7 @@ INT ss_shm_open(char *name, INT size, void **adr, HNDLE * handle)
    }
 
 #endif                          /* OS_VMS */
-#ifdef OS_UNIX
+#ifdef OS_UNIX_SHM
 
    status = SS_SUCCESS;
 
@@ -322,7 +337,94 @@ INT ss_shm_open(char *name, INT size, void **adr, HNDLE * handle)
       return status;
    }
 
-#endif                          /* OS_UNIX */
+#endif                          /* OS_UNIX_SHM */
+#ifdef OS_UNIX_MMAP
+
+   if (1) {
+      static int once = 1;
+      if (once && strstr(file_name, "ODB")) {
+         once = 0;
+         cm_msg(MINFO, "ss_shm_open",
+                "WARNING: This version of MIDAS system.c uses the experimental mmap() based implementation of MIDAS shared memory.");
+      }
+   }
+
+   status = SS_SUCCESS;
+
+   {
+      int ret;
+      int fh, file_size;
+      int i;
+
+      fh = open(file_name, O_RDWR | O_BINARY | O_LARGEFILE, 0644);
+
+      if (fh < 0) {
+         if (errno == ENOENT) { // file does not exist
+            fh = open(file_name, O_CREAT | O_RDWR | O_BINARY | O_LARGEFILE, 0644);
+         }
+
+         if (fh < 0) {
+            cm_msg(MERROR, "ss_shm_open",
+                   "Cannot create shared memory file \'%s\', errno %d (%s)", file_name,
+                   errno, strerror(errno));
+            return SS_FILE_ERROR;
+         }
+
+         ret = lseek(fh, size - 1, SEEK_SET);
+
+         if (ret == (off_t) - 1) {
+            cm_msg(MERROR, "ss_shm_open",
+                   "Cannot create shared memory file \'%s\', size %d, lseek() errno %d (%s)",
+                   file_name, size, errno, strerror(errno));
+            return SS_FILE_ERROR;
+         }
+
+         ret = 0;
+         ret = write(fh, &ret, 1);
+         assert(ret == 1);
+
+         ret = lseek(fh, 0, SEEK_SET);
+         assert(ret == 0);
+
+         cm_msg(MINFO, "ss_shm_open", "Created shared memory file \'%s\', size %d",
+                file_name, size);
+
+         status = SS_CREATED;
+      }
+
+      /* if file exists, retrieve its size */
+      file_size = (INT) ss_file_size(file_name);
+      if (file_size < size) {
+         cm_msg(MERROR, "ss_shm_open",
+                "Shared memory file \'%s\' size %d is smaller than requested size %d. Please remove it and try again",
+                file_name, file_size, size);
+         return SS_NO_MEMORY;
+      }
+
+      size = file_size;
+
+      *adr = mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_SHARED, fh, 0);
+
+      if ((*adr) == MAP_FAILED) {
+         cm_msg(MERROR, "ss_shm_open", "mmap() failed, errno %d (%s)", errno,
+                strerror(errno));
+         return SS_NO_MEMORY;
+      }
+
+      *handle = -1;
+      for (i = 0; i < MAX_MMAP; i++)
+         if (mmap_addr[i] == NULL) {
+            mmap_addr[i] = *adr;
+            mmap_size[i] = size;
+            *handle = i;
+            break;
+         }
+      assert((*handle) >= 0);
+
+      return status;
+   }
+
+#endif                          /* OS_UNIX_MMAP */
 }
 
 /*------------------------------------------------------------------*/
@@ -415,7 +517,7 @@ INT ss_shm_close(char *name, void *adr, HNDLE handle, INT destroy_flag)
    return SS_INVALID_ADDRESS;
 
 #endif                          /* OS_VMS */
-#ifdef OS_UNIX
+#ifdef OS_UNIX_SHM
 
    {
       struct shmid_ds buf;
@@ -466,7 +568,28 @@ INT ss_shm_close(char *name, void *adr, HNDLE handle, INT destroy_flag)
       return SS_SUCCESS;
    }
 
-#endif                          /* OS_UNIX */
+#endif                          /* OS_UNIX_SHM */
+#ifdef OS_UNIX_MMAP
+
+   if (1) {
+      int ret;
+
+      assert(adr == mmap_addr[handle]);
+
+      ret = munmap(mmap_addr[handle], mmap_size[handle]);
+      if (ret != 0) {
+         cm_msg(MERROR, "ss_shm_protect",
+                "Cannot munmap(): return value %d, errno %d (%s)", ret, errno,
+                strerror(errno));
+         return SS_INVALID_ADDRESS;
+      }
+
+      mmap_addr[handle] = NULL;
+      mmap_size[handle] = 0;
+
+      return SS_SUCCESS;
+   }
+#endif                          /* OS_UNIX_MMAP */
 }
 
 /*------------------------------------------------------------------*/
@@ -497,13 +620,29 @@ INT ss_shm_protect(HNDLE handle, void *adr)
       return SS_INVALID_ADDRESS;
 
 #endif                          /* OS_WINNT */
-#ifdef OS_UNIX
+#ifdef OS_UNIX_SHM
 
    if (shmdt(adr) < 0) {
       cm_msg(MERROR, "ss_shm_protect", "shmdt() failed");
       return SS_INVALID_ADDRESS;
    }
-#endif                          /* OS_UNIX */
+#endif                          /* OS_UNIX_SHM */
+#ifdef OS_UNIX_MMAP
+
+   if (1) {
+      int ret;
+
+      assert(adr == mmap_addr[handle]);
+
+      ret = mprotect(mmap_addr[handle], mmap_size[handle], PROT_NONE);
+      if (ret != 0) {
+         cm_msg(MERROR, "ss_shm_protect",
+                "Cannot mprotect(): return value %d, errno %d (%s)", ret, errno,
+                strerror(errno));
+         return SS_INVALID_ADDRESS;
+      }
+   }
+#endif                          /* OS_UNIX_MMAP */
    return SS_SUCCESS;
 }
 
@@ -538,7 +677,7 @@ INT ss_shm_unprotect(HNDLE handle, void **adr)
       return SS_NO_MEMORY;
    }
 #endif                          /* OS_WINNT */
-#ifdef OS_UNIX
+#ifdef OS_UNIX_SHM
 
    *adr = shmat(handle, 0, 0);
 
@@ -546,7 +685,23 @@ INT ss_shm_unprotect(HNDLE handle, void **adr)
       cm_msg(MERROR, "ss_shm_unprotect", "shmat() failed, errno = %d", errno);
       return SS_NO_MEMORY;
    }
-#endif                          /* OS_UNIX */
+#endif                          /* OS_UNIX_SHM */
+#ifdef OS_UNIX_MMAP
+
+   if (1) {
+      int ret;
+
+      assert(adr == mmap_addr[handle]);
+
+      ret = mprotect(mmap_addr[handle], mmap_size[handle], PROT_READ | PROT_WRITE);
+      if (ret != 0) {
+         cm_msg(MERROR, "ss_shm_unprotect",
+                "Cannot mprotect(): return value %d, errno %d (%s)", ret, errno,
+                strerror(errno));
+         return SS_INVALID_ADDRESS;
+      }
+   }
+#endif                          /* OS_UNIX_MMAP */
 
    return SS_SUCCESS;
 }
@@ -613,7 +768,7 @@ INT ss_shm_flush(char *name, void *adr, INT size)
    return SS_SUCCESS;
 
 #endif                          /* OS_VMS */
-#ifdef OS_UNIX
+#ifdef OS_UNIX_SHM
 
    if (!disable_shm_write) {
       FILE *fh;
@@ -631,7 +786,22 @@ INT ss_shm_flush(char *name, void *adr, INT size)
    }
    return SS_SUCCESS;
 
-#endif                          /* OS_UNIX */
+#endif                          /* OS_UNIX_SHM */
+#ifdef OS_UNIX_MMAP
+
+   if (1) {
+      int ret = msync(adr, size, MS_ASYNC);
+      if (ret != 0) {
+         cm_msg(MERROR, "ss_shm_flush",
+                "Cannot msync(): return value %d, errno %d (%s)", ret, errno,
+                strerror(errno));
+         return SS_INVALID_ADDRESS;
+      }
+   }
+
+   return SS_SUCCESS;
+
+#endif                          /* OS_UNIX_MMAP */
 }
 
 /*------------------------------------------------------------------*/
@@ -5714,5 +5884,5 @@ int ss_isnan(double x)
 /**dox***************************************************************/
 #endif                          /* DOXYGEN_SHOULD_SKIP_THIS */
 
-          /** @} *//* end of msfunctionc */
-          /** @} *//* end of msystemincludecode */
+                            /** @} *//* end of msfunctionc */
+                            /** @} *//* end of msystemincludecode */
