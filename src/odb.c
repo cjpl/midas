@@ -6339,10 +6339,16 @@ INT db_sprintf(char *string, void *data, INT data_size, INT index, DWORD type)
          sprintf(string, "%c", *(((BOOL *) data) + index) ? 'y' : 'n');
          break;
       case TID_FLOAT:
-         sprintf(string, "%g", *(((float *) data) + index));
+         if (ss_isnan(*(((float *) data) + index)))
+            sprintf(string, "NAN");
+         else
+            sprintf(string, "%g", *(((float *) data) + index));
          break;
       case TID_DOUBLE:
-         sprintf(string, "%lg", *(((double *) data) + index));
+         if (ss_isnan(*(((double *) data) + index)))
+            sprintf(string, "NAN");
+         else
+            sprintf(string, "%lg", *(((double *) data) + index));
          break;
       case TID_BITFIELD:
          /* TBD */
@@ -6414,10 +6420,16 @@ INT db_sprintfh(char *string, void *data, INT data_size, INT index, DWORD type)
          sprintf(string, "%c", *(((BOOL *) data) + index) ? 'y' : 'n');
          break;
       case TID_FLOAT:
-         sprintf(string, "%g", *(((float *) data) + index));
+         if (ss_isnan(*(((float *) data) + index)))
+            sprintf(string, "NAN");
+         else
+            sprintf(string, "%g", *(((float *) data) + index));
          break;
       case TID_DOUBLE:
-         sprintf(string, "%lg", *(((double *) data) + index));
+         if (ss_isnan(*(((double *) data) + index)))
+            sprintf(string, "NAN");
+         else
+            sprintf(string, "%lg", *(((double *) data) + index));
          break;
       case TID_BITFIELD:
          /* TBD */
@@ -6510,10 +6522,16 @@ INT db_sscanf(char *data_str, void *data, INT * data_size, INT i, DWORD tid)
          *((BOOL *) data + i) = 0;
       break;
    case TID_FLOAT:
-      *((float *) data + i) = (float) atof(data_str);
+      if (data_str[0] == 'n' || data_str[0] == 'N')
+         *((float *) data + i) = (float) ss_nan();
+      else
+         *((float *) data + i) = (float) atof(data_str);
       break;
    case TID_DOUBLE:
-      *((double *) data + i) = atof(data_str);
+      if (data_str[0] == 'n' || data_str[0] == 'N')
+         *((double *) data + i) = ss_nan();
+      else
+         *((double *) data + i) = atof(data_str);
       break;
    case TID_BITFIELD:
       /* TBD */
