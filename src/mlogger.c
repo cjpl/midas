@@ -311,7 +311,10 @@ int sql_get_columns(HNDLE hKeyRoot, SQL_LIST ** sql_list)
       size = sizeof(data);
       db_get_data(hDB, hKey, data, &size, key.type);
       db_sprintf(str, data, size, 0, key.type);
-      strcpy((*sql_list)[i].data, str);
+      if (key.type == TID_BOOL)
+         strcpy((*sql_list)[i].data, str[0] == 'y' || str[0] == 'Y' ? "1" : "0");
+      else
+         strcpy((*sql_list)[i].data, str);
 
       if (key.type == TID_STRING) {
          /* check if string is date/time */
