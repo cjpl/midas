@@ -881,7 +881,7 @@ INT book_ntuples(void)
                   continue;
 
                if (bank_list->type != TID_STRUCT) {
-                  sprintf(str, "N%s[0,%ld]", bank_list->name, bank_list->size);
+                  sprintf(str, "N%s[0,%d]", bank_list->name, bank_list->size);
                   INT *t = (INT *) & bank_list->n_data;
                   HBNAME(analyze_request[index].ar_info.event_id,
                          bank_list->name, t, str);
