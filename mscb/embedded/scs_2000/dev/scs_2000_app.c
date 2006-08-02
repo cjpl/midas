@@ -389,15 +389,27 @@ unsigned char i;
 
 /*---- User loop function ------------------------------------------*/
 
+void set_float(float *d, float s)
+{
+  /* copy float value to user_data without intterupt */
+  DISABLE_INTERRUPTS;
+  *d = s;
+  ENABLE_INTERRUPTS;
+}
+
 void user_loop(void)
 {
 unsigned char xdata i;
+float xdata value;
 
    /* read ADCs */
    for (i=0 ; i<8 ; i++) {
-      dr_ad7718(0x61, MC_READ, 0, 0, i, &user_data.adc[i]);
-      dr_ad7718(0x61, MC_READ, 0, 1, i, &user_data.adc[8+i]);
-      dr_ad7718(0x61, MC_READ, 0, 2, i, &user_data.adc[16+i]);
+      dr_ad7718(0x61, MC_READ, 0, 0, i, &value);
+      set_float(&user_data.adc[i], value);
+      dr_ad7718(0x61, MC_READ, 0, 1, i, &value);
+      set_float(&user_data.adc[8+i], value);
+      dr_ad7718(0x61, MC_READ, 0, 2, i, &value);
+      set_float(&user_data.adc[16+i], value);
    }
 
    /* do control */
