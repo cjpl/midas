@@ -13,7 +13,6 @@
 
 #include <stdio.h>
 #include <string.h>
-#include "mcstd.h"
 
 /*------------------------------------------------------------------*/
 
@@ -57,6 +56,8 @@
 #define INP_P(_p) inb_p(_p)
 #define INPW_P(_p) inw_p(_p)
 #endif
+
+#include "mcstd.h"
 
 /*---- global variables  -------------------------------------------*/
 

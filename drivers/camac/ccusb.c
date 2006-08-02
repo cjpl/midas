@@ -5,10 +5,14 @@
   Contents:     Wiener CAMAC Controller USB 
                 Following musbstd
 \********************************************************************/
+
 #include <stdio.h>
 
 #if defined(OS_LINUX)         // Linux includes
 #include <stdint.h>
+#endif
+#if defined(OS_WINNT)         // Windows includes
+#include <windows.h>
 #endif
 
 #include <assert.h>
