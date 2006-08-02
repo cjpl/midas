@@ -10,7 +10,7 @@
                 with two banks (ADC0 and TDC0), the scaler event 
                 with one bank (SCLR).
 
-  $Id:$
+  $Id$
 
 \********************************************************************/
 
@@ -274,7 +274,7 @@ INT poll_event(INT source, INT count, BOOL test)
 
 /*-- Interrupt configuration ---------------------------------------*/
 
-INT interrupt_configure(INT cmd, INT source, PTYPE adr)
+INT interrupt_configure(INT cmd, INT source, POINTER_T adr)
 {
    switch (cmd) {
    case CMD_INTERRUPT_ENABLE:
