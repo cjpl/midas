@@ -108,7 +108,7 @@ CC = cc
 CFLAGS += -g -I$(INC_DIR) -I$(DRV_DIR)
 LDFLAGS +=
 
-all: $(UFE) fal analyzer
+all: $(UFE) analyzer
 
 $(UFE): $(LIB) $(LIB_DIR)/mfe.o $(DRIVER).o $(UFE).c
 	$(CC) $(CFLAGS) $(OSFLAGS) -o $(UFE) $(UFE).c $(DRIVER).o \
@@ -121,11 +121,6 @@ analyzer: $(LIB) $(LIB_DIR)/hmana.o analyzer.o $(MODULES)
 	$(FF) $(FFLAGS) -o analyzer $(LIB_DIR)/hmana.o analyzer.o \
 	$(MODULES) $(CERNLIB_PACK) \
 	$(LIB) $(LDFLAGS) $(LIBS)
-
-fal: $(LIB) $(LIB_DIR)/fal.o $(DRIVER).o $(UFE).c $(MODULES) $(UFE).o analyzer.o
-	$(FF) $(FFLAGS) -o fal $(LIB_DIR)/fal.o $(UFE).o $(DRIVER).o \
-	analyzer.o $(MODULES) $(CERNLIB_PACK) \
-	$(LIB) $(LDFEFLAGS) $(LIBS)
 
 .c.o: experim.h
 	$(CC) $(USERFLAGS) $(CFLAGS) $(OSFLAGS) -o $@ -c $<
