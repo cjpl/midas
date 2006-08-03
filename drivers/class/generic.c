@@ -74,7 +74,6 @@ static void free_mem(GEN_INFO * gen_info)
 INT gen_read(EQUIPMENT * pequipment, int channel)
 {
    int i, status;
-   DWORD act_time;
    GEN_INFO *gen_info;
    HNDLE hDB;
 
@@ -86,9 +85,6 @@ INT gen_read(EQUIPMENT * pequipment, int channel)
    status = DRIVER(channel) (CMD_GET, gen_info->dd_info[channel],
                              channel - gen_info->channel_offset[channel],
                              &gen_info->measured[channel]);
-
-   /* check how much channels have changed since last ODB update */
-   act_time = ss_millitime();
 
    /* check for update measured */
    for (i = 0; i < gen_info->num_channels; i++) {
@@ -172,7 +168,7 @@ INT gen_init(EQUIPMENT * pequipment)
 {
    int status, size, i, j, index, offset;
    char str[256];
-   HNDLE hDB, hKey, hNames;
+   HNDLE hDB, hKey, hNames, hThreshold;
    GEN_INFO *gen_info;
 
    /* allocate private data */
@@ -331,18 +327,23 @@ INT gen_init(EQUIPMENT * pequipment)
 
    /* open hotlink on channel names */
    if (db_find_key(hDB, gen_info->hKeyRoot, "Settings/Names", &hNames) == DB_SUCCESS)
-      db_open_record(hDB, hNames, gen_info->names, NAME_LENGTH * gen_info->num_channels,
+      db_open_record(hDB, hNames, gen_info->names, NAME_LENGTH*gen_info->num_channels,
                      MODE_READ, gen_update_label, pequipment);
 
    /*---- get default update threshold from device driver ----*/
    for (i = 0; i < gen_info->num_channels; i++) {
-      gen_info->update_threshold[i] = 2.f;      /* default 2 units */
+      gen_info->update_threshold[i] = 1.f;      /* default 1 unit */
       DRIVER(i) (CMD_GET_DEFAULT_THRESHOLD, gen_info->dd_info[i],
                  i - gen_info->channel_offset[i], &gen_info->update_threshold[i]);
    }
    db_merge_data(hDB, gen_info->hKeyRoot, "Settings/Update Threshold Measured",
-                 gen_info->update_threshold, sizeof(float) * gen_info->num_channels,
+                 gen_info->update_threshold, sizeof(float)*gen_info->num_channels,
                  gen_info->num_channels, TID_FLOAT);
+
+   /* open hotlink on update threshold */
+   if (db_find_key(hDB, gen_info->hKeyRoot, "Settings/Update Threshold Measured", &hThreshold) == DB_SUCCESS)
+      db_open_record(hDB, hThreshold, gen_info->update_threshold, sizeof(float)*gen_info->num_channels,
+                     MODE_READ, NULL, NULL);
 
    /*---- set initial demand values ----*/
    gen_demand(hDB, gen_info->hKeyDemand, pequipment);
@@ -374,13 +375,11 @@ INT gen_exit(EQUIPMENT * pequipment)
 INT gen_idle(EQUIPMENT * pequipment)
 {
    INT act, status;
-   DWORD act_time;
    GEN_INFO *gen_info;
 
    gen_info = (GEN_INFO *) pequipment->cd_info;
 
    /* select next measurement channel */
-   act_time = ss_millitime();
    act = (gen_info->last_channel + 1) % gen_info->num_channels;
 
    /* measure channel */
