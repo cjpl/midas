@@ -642,14 +642,11 @@ void redirect(char *path)
    rsprintf("Server: MIDAS HTTP %s\r\n", cm_get_version());
    rsprintf("Content-Type: text/html; charset=iso-8859-1\r\n");
 
-   if (exp_name[0]) {
-      if (strchr(path, '?'))
-         rsprintf("Location: /%s&exp=%s\n\n<html>redir</html>\r\n", path, exp_name);
-      else
+   if (strncmp(path, "http:", 5) == 0)
+      rsprintf("Location: %s\r\n\r\n<html>redir</html>\r\n", path);
+   else {
+      if (exp_name[0])
          rsprintf("Location: /%s?exp=%s\n\n<html>redir</html>\r\n", path, exp_name);
-   } else {
-      if (strncmp(path, "http:", 5) == 0)
-         rsprintf("Location: %s\r\n\r\n<html>redir</html>\r\n", path);
       else
          rsprintf("Location: /%s\r\n\r\n<html>redir</html>\r\n", path);
    }
