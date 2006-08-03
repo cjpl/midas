@@ -216,10 +216,38 @@ int  v1190_ResolutionRead(MVME_INTERFACE *mvme, DWORD base)
     code = V1190_RESOLUTION_RO | (i & 0x0F);
     value = v1190_MicroWrite(mvme, base, code);
     value = v1190_MicroRead(mvme, base);
-    //    printf("Received RR :code: 0x%04x  0x%08x\n", code, value); 
+    // printf("Received RR :code: 0x%04x  0x%08x\n", code, value); 
   }
   mvme_set_dmode(mvme, cmode);
   return value;
+}
+
+/*****************************************************************/
+void v1190_LEResolutionSet(MVME_INTERFACE *mvme, DWORD base, WORD le)
+{
+  int   cmode, value;
+
+  mvme_get_dmode(mvme, &cmode);
+  mvme_set_dmode(mvme, MVME_DMODE_D16); 
+
+  if ((le == LE_RESOLUTION_100) ||
+      (le == LE_RESOLUTION_200) ||
+      (le == LE_RESOLUTION_800)) {
+    printf("le:%x\n", le);
+    value = v1190_MicroWrite(mvme, base, V1190_LE_RESOLUTION_WO);
+    value = v1190_MicroWrite(mvme, base, le);
+  } else {
+    printf("Wrong Leading Edge Resolution -> Disabled\n");
+    value = v1190_MicroWrite(mvme, base, V1190_LE_RESOLUTION_WO);
+    value = v1190_MicroWrite(mvme, base, 3);
+  }
+  mvme_set_dmode(mvme, cmode);
+}
+
+/*****************************************************************/
+void v1190_LEWResolutionSet(MVME_INTERFACE *mvme, DWORD base, WORD le, WORD width)
+{
+  printf("Not yet implemented\n");
 }
 
 /*****************************************************************/

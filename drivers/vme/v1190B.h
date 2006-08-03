@@ -41,11 +41,17 @@
 #define  V1190_MICRO_RD_OK       (WORD) (0x0002)
 #define  V1190_MICRO_TDCID       (WORD) (0x6000)
 #define  V1190_EDGE_DETECTION_WO (WORD) (0x2200) 
+#define  V1190_LE_RESOLUTION_WO  (WORD) (0x2400)
+#define  V1190_LEW_RESOLUTION_WO (WORD) (0x2500)
 #define  V1190_RESOLUTION_RO     (WORD) (0x2600)
 #define  V1190_TRIGGER_MATCH_WO  (WORD) (0x0000)
 #define  V1190_CONTINUOUS_WO     (WORD) (0x0100)
 #define  V1190_ACQ_MODE_RO       (WORD) (0x0200)
  
+#define  LE_RESOLUTION_100       (WORD) (0x10)
+#define  LE_RESOLUTION_200       (WORD) (0x01)
+#define  LE_RESOLUTION_800       (WORD) (0x00)
+
 int  udelay(int usec);
 int  v1190_EventRead(MVME_INTERFACE *mvme, DWORD base, DWORD *pdest, int *nentry);
 int  v1190_DataRead(MVME_INTERFACE *mvme, DWORD base, DWORD *pdest, int nentry);
@@ -62,6 +68,8 @@ int  v1190_MicroRead(MVME_INTERFACE *mvme, const DWORD base);
 int  v1190_MicroFlush(MVME_INTERFACE *mvme, const DWORD base);
 void v1190_TdcIdList(MVME_INTERFACE *mvme, DWORD base);
 int  v1190_ResolutionRead(MVME_INTERFACE *mvme, DWORD base);
+void v1190_LEResolutionSet(MVME_INTERFACE *mvme, DWORD base, WORD le);
+void v1190_LEWResolutionSet(MVME_INTERFACE *mvme, DWORD base, WORD le, WORD width);
 void v1190_TriggerMatchingSet(MVME_INTERFACE *mvme, DWORD base);
 void v1190_AcqModeRead(MVME_INTERFACE *mvme, DWORD base);
 void v1190_ContinuousSet(MVME_INTERFACE *mvme, DWORD base);
