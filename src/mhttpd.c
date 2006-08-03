@@ -5910,9 +5910,10 @@ void show_set_page(char *enc_path, int enc_path_size, char *dec_path, char *grou
             size = strlen(data_str) + 3;
          if (size > 80)
             size = 80;
-         rsprintf
-             ("<input type=\"text\" size=%d maxlength=256 name=\"value\" value=\"%s\">\n",
-              size, data_str);
+
+         rsprintf("<input type=\"text\" size=%d maxlength=256 name=\"value\" value=\"", size);
+         strencode(data_str);
+         rsprintf("\">\n");
       }
 
       rsprintf("</tr>\n");
