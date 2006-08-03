@@ -309,7 +309,7 @@ void process_event(HNDLE hBuf, HNDLE request_id, EVENT_HEADER * pheader, void *p
             if (bk_find(pmbh, sbank_name, &bklen, &bktyp, (void *) &pmbk) == SS_SUCCESS) {      /* bank name given through argument list */
                status = bk_list(pmbh, banklist);
                printf("#banks:%i Bank list:-%s-", status, banklist);
-               yb_any_bank_display(pmbh, pmbk, FORMAT_MIDAS, dsp_mode, dsp_fmt);
+               yb_any_bank_display(pmbh, pmbk-1, FORMAT_MIDAS, dsp_mode, dsp_fmt);
             } else {
                status = bk_list(pmbh, banklist);
                printf("Bank -%s- not found (%i) in ", sbank_name, status);
