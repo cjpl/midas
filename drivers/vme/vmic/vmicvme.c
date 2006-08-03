@@ -472,12 +472,13 @@ int mvme_get_blt(MVME_INTERFACE *mvme, int *mode)
 }
 
 /********************************************************************/
+/*
 static void myisr(int sig, siginfo_t * siginfo, void *extra)
 {
   fprintf(stderr, "myisr interrupt received \n");
   fprintf(stderr, "interrupt: level:%d Vector:0x%x\n", int_info.level, siginfo->si_value.sival_int & 0xFF);
 }
-
+*/
 /********************************************************************/
 int mvme_interrupt_generate(MVME_INTERFACE *mvme, int level, int vector, void *info)
 {
