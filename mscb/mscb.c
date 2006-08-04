@@ -290,13 +290,79 @@ int strieq(const char *str1, const char *str2)
    return 1;
 }
 
-/*------------------------------------------------------------------*/
+/*---- mutex functions ---------------------------------------------*/
 
+int mscb_mutex_create(char *device)
+{
 #ifdef _MSC_VER
-static HANDLE mutex_handle = 0;
+   HANDLE mutex_handle;
+
+   mutex_handle = CreateMutex(NULL, FALSE, device);
+   if (mutex_handle == 0)
+      return 0;
+
+   return (int)mutex_handle;
+
 #elif defined(OS_LINUX)
-int mutex_handle = 0;
+
+#if (!defined(_SEM_SEMUN_UNDEFINED) && !defined(OS_CYGWIN)) || defined(OS_FREEBSD)
+   union semun arg;
+#else
+   union semun {
+      int val;
+      struct semid_ds *buf;
+      ushort *array;
+   } arg;
 #endif
+
+   struct semid_ds buf;
+   int key, status, fh, mutex_handle;
+   char str[256];
+
+   status = 1;
+
+   /* create a unique key from the file name */
+   sprintf(str, "/tmp/%s.SEM", device);
+   key = ftok(str, 'M');
+   if (key < 0) {
+      fh = open(str, O_CREAT, 0644);
+      close(fh);
+      key = ftok(str, 'M');
+      if (key < 0)
+         return 0;
+   }
+
+   /* create or get semaphore */
+   mutex_handle = semget(key, 1, 0);
+   if (mutex_handle < 0) {
+      mutex_handle = semget(key, 1, IPC_CREAT);
+      status = 2;
+   }
+
+   if (mutex_handle < 0) {
+      printf("semget() failed, errno = %d", errno);
+      return 0;
+   }
+
+   buf.sem_perm.uid = getuid();
+   buf.sem_perm.gid = getgid();
+   buf.sem_perm.mode = 0666;
+   arg.buf = &buf;
+
+   semctl(mutex_handle, 0, IPC_SET, arg);
+
+   /* if semaphore was created, set value to one */
+   if (status == 2) {
+      arg.val = 1;
+      if (semctl(mutex_handle, 0, SETVAL, arg) < 0)
+         return 0;
+   }
+
+   return mutex_handle;
+#endif // OS_LINUX
+}
+
+/*------------------------------------------------------------------*/
 
 int mscb_lock(int fd)
 {
@@ -305,14 +371,8 @@ int mscb_lock(int fd)
 
    if (fd);
 
-   if (mutex_handle == 0)
-      mutex_handle = CreateMutex(NULL, FALSE, "mscb");
-
-   if (mutex_handle == 0)
-      return 0;
-
    /* wait with a timeout of 10 seconds */
-   status = WaitForSingleObject(mutex_handle, 10000);
+   status = WaitForSingleObject((HANDLE)mscb_fd[fd - 1].mutex_handle, 10000);
 
    if (status == WAIT_FAILED)
       return 0;
@@ -343,51 +403,9 @@ int mscb_lock(int fd)
          ushort *array;
       } arg;
 #endif
-
       time_t start_time, now;
       struct sembuf sb;
-      struct semid_ds buf;
-      int key, status, fh;
-
-      if (mutex_handle == 0) {
-         status = 1;
-
-         /* create a unique key from the file name */
-         key = ftok("/tmp/.MSCB.SEM", 'M');
-         if (key < 0) {
-            fh = open("/tmp/.MSCB.SEM", O_CREAT, 0644);
-            close(fh);
-            key = ftok("/tmp/.MSCB.SEM", 'M');
-            if (key < 0)
-               return 0;
-         }
-
-         /* create or get semaphore */
-         mutex_handle = semget(key, 1, 0);
-         if (mutex_handle < 0) {
-            mutex_handle = semget(key, 1, IPC_CREAT);
-            status = 2;
-         }
-
-         if (mutex_handle < 0) {
-            printf("semget() failed, errno = %d", errno);
-            return 0;
-         }
-
-         buf.sem_perm.uid = getuid();
-         buf.sem_perm.gid = getgid();
-         buf.sem_perm.mode = 0666;
-         arg.buf = &buf;
-
-         semctl(mutex_handle, 0, IPC_SET, arg);
-
-         /* if semaphore was created, set value to one */
-         if (status == 2) {
-            arg.val = 1;
-            if (semctl(mutex_handle, 0, SETVAL, arg) < 0)
-               return 0;
-         }
-      }
+      int status;
 
       /* claim semaphore */
       sb.sem_num = 0;
@@ -398,7 +416,7 @@ int mscb_lock(int fd)
       time(&start_time);
 
       do {
-         status = semop(mutex_handle, &sb, 1);
+         status = semop(mscb_fd[fd - 1].mutex_handle, &sb, 1);
 
          /* return on success */
          if (status == 0)
@@ -422,6 +440,8 @@ int mscb_lock(int fd)
    return MSCB_SUCCESS;
 }
 
+/*------------------------------------------------------------------*/
+
 int mscb_release(int fd)
 {
 #ifdef _MSC_VER
@@ -429,7 +449,7 @@ int mscb_release(int fd)
 
    if (fd);
 
-   status = ReleaseMutex(mutex_handle);
+   status = ReleaseMutex((HANDLE)mscb_fd[fd - 1].mutex_handle);
    if (status == FALSE)
       return 0;
 
@@ -458,7 +478,7 @@ int mscb_release(int fd)
       sb.sem_flg = SEM_UNDO;
 
       do {
-         status = semop(mutex_handle, &sb, 1);
+         status = semop(mscb_fd[fd - 1].mutex_handle, &sb, 1);
 
          /* return on success */
          if (status == 0)
@@ -1364,6 +1384,8 @@ int mscb_init(char *device, int bufsize, char *password, int debug)
       return EMSCB_INVAL_PARAM;
 
    /*---- initialize submaster ----*/
+
+   mscb_fd[index].mutex_handle = mscb_mutex_create(device);
 
    if (mscb_fd[index].type == MSCB_TYPE_LPT) {
 
