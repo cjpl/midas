@@ -298,3 +298,10 @@ int kbhit();
 #define Sleep(x) usleep(x*1000)
 
 #endif
+
+/* pointer definition, 64-bit compatible */
+#if defined(__alpha) || defined(_LP64)
+#define POINTER_T     long int
+#else
+#define POINTER_T     int
+#endif
