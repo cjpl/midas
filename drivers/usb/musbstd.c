@@ -51,8 +51,6 @@ DEFINE_GUID(GUID_CLASS_MSCB_BULK, 0xcbeb3fb1, 0xae9f, 0x471c, 0x90, 0x16, 0x9b, 
 #include <string.h>
 #include <stdlib.h>
 
-#define HAVE_LIBUSB 1
-
 #endif
 
 #ifdef HAVE_LIBUSB
