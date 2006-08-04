@@ -206,6 +206,7 @@ INT mscbdev_get(MSCBDEV_INFO * info, INT channel, float *pvalue)
                info->mscbdev_settings.mscb_address[channel],
                info->mscbdev_settings.mscb_index[channel], status);
          }
+         *pvalue = (float)ss_nan();
          return FE_ERR_HW;
       }
       *pvalue = value;
@@ -223,6 +224,7 @@ INT mscbdev_get(MSCBDEV_INFO * info, INT channel, float *pvalue)
                info->mscbdev_settings.mscb_address[channel],
                info->mscbdev_settings.mscb_index[channel]);
          }
+         *pvalue = (float)ss_nan();
          return FE_ERR_HW;
       }
       *pvalue = (float) value_int;
