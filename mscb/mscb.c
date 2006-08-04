@@ -321,7 +321,7 @@ int mscb_lock(int fd)
    } 
 #ifdef HAVE_LIBUSB
      else if (mscb_fd[fd - 1].type == MSCB_TYPE_USB) {
-      if (usb_claim_interface((usb_dev_handle *) mscb_fd[fd - 1].fd, 0) < 0)
+      if (usb_claim_interface((usb_dev_handle *) mscb_fd[fd - 1].ui->dev, 0) < 0)
          return 0;
    }
 #endif // HAVE_LIBUSB
@@ -350,7 +350,7 @@ int mscb_release(int fd)
 
 #ifdef HAVE_LIBUSB
      else if (mscb_fd[fd - 1].type == MSCB_TYPE_USB) {
-      if (usb_release_interface((usb_dev_handle *) mscb_fd[fd - 1].fd, 0) < 0)
+      if (usb_release_interface((usb_dev_handle *) mscb_fd[fd - 1].ui->dev, 0) < 0)
          return 0;
    }
 #endif // HAVE_LIBUSB

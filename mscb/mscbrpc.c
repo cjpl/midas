@@ -586,10 +586,10 @@ int mrpc_execute(int sock, char *buffer)
          if (rpc_list[index].param[i].tid == TID_STRUCT)
             param_size = ALIGN8(rpc_list[index].param[i].n);
 
-         if ((int) out_param_ptr - (int) nc_out + param_size > NET_BUFFER_SIZE) {
+         if ((POINTER_T) out_param_ptr - (POINTER_T) nc_out + param_size > NET_BUFFER_SIZE) {
             printf
                 ("mrpc_execute: return parameters (%d) too large for network buffer (%d)\n",
-                 (int) out_param_ptr - (int) nc_out + param_size, NET_BUFFER_SIZE);
+                 (int)((POINTER_T) out_param_ptr - (POINTER_T) nc_out + param_size), NET_BUFFER_SIZE);
             return RPC_EXCEED_BUFFER;
          }
 
@@ -629,8 +629,8 @@ int mrpc_execute(int sock, char *buffer)
             /* move remaining parameters to end of string */
             memcpy(out_param_ptr + param_size,
                    out_param_ptr + max_size + ALIGN8(sizeof(INT)),
-                   (int) last_param_ptr -
-                   ((int) out_param_ptr + max_size + ALIGN8(sizeof(INT))));
+                   (POINTER_T) last_param_ptr -
+                   ((POINTER_T) out_param_ptr + max_size + ALIGN8(sizeof(INT))));
          }
 
          if (flags & RPC_VARARRAY) {
@@ -646,8 +646,8 @@ int mrpc_execute(int sock, char *buffer)
             /* move remaining parameters to end of array */
             memcpy(out_param_ptr + param_size,
                    out_param_ptr + max_size + ALIGN8(sizeof(INT)),
-                   (int) last_param_ptr -
-                   ((int) out_param_ptr + max_size + ALIGN8(sizeof(INT))));
+                   (POINTER_T) last_param_ptr -
+                   ((POINTER_T) out_param_ptr + max_size + ALIGN8(sizeof(INT))));
          }
 
          if (tid == TID_STRUCT)
@@ -657,7 +657,7 @@ int mrpc_execute(int sock, char *buffer)
       }
 
    /* send return parameters */
-   param_size = (int) out_param_ptr - (int) nc_out->param;
+   param_size = (POINTER_T) out_param_ptr - (POINTER_T) nc_out->param;
    nc_out->header.routine_id = status;
    nc_out->header.param_size = param_size;
 
@@ -871,10 +871,10 @@ int mrpc_call(int sock, const int routine_id, ...)
          /* always align parameter size */
          param_size = ALIGN8(arg_size);
 
-         if ((int) param_ptr - (int) nc + param_size > NET_BUFFER_SIZE) {
+         if ((POINTER_T) param_ptr - (POINTER_T) nc + param_size > NET_BUFFER_SIZE) {
             printf
                 ("mrpc_call: parameters (%d) too large for network buffer (%d)\n",
-                 (int) param_ptr - (int) nc + param_size, NET_BUFFER_SIZE);
+                (int)((POINTER_T) param_ptr - (POINTER_T) nc + param_size), NET_BUFFER_SIZE);
             return RPC_EXCEED_BUFFER;
          }
 
@@ -937,7 +937,7 @@ int mrpc_call(int sock, const int routine_id, ...)
 
    va_end(ap);
 
-   nc->header.param_size = (int) param_ptr - (int) nc->param;
+   nc->header.param_size = (POINTER_T) param_ptr - (POINTER_T) nc->param;
 
    send_size = nc->header.param_size + sizeof(NET_COMMAND_HEADER);
 
