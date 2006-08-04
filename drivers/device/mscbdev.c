@@ -141,10 +141,9 @@ INT mscbdev_init(HNDLE hkey, void **pinfo, INT channels, INT(*bd) (INT cmd, ...)
 
 INT mscbdev_exit(MSCBDEV_INFO * info)
 {
-   mscb_exit(info->fd);
-
    /* free info structure */
    if (info) {
+      mscb_exit(info->fd);
       free(info->mscbdev_settings.mscb_address);
       free(info->mscbdev_settings.mscb_index);
       free(info->mscbdev_settings.var_size);
@@ -177,6 +176,18 @@ INT mscbdev_set(MSCBDEV_INFO * info, INT channel, float value)
 
 /*----------------------------------------------------------------------------*/
 
+INT mscbdev_set_all(MSCBDEV_INFO * info, INT channel, float *pvalue)
+{
+   INT i;
+
+   for (i=0 ; i<info->num_channels ; i++)
+      mscbdev_set(info, i, pvalue[i]);
+
+   return FE_SUCCESS;
+}
+
+/*----------------------------------------------------------------------------*/
+
 INT mscbdev_get(MSCBDEV_INFO * info, INT channel, float *pvalue)
 {
    INT size, value_int, status;
@@ -191,9 +202,9 @@ INT mscbdev_get(MSCBDEV_INFO * info, INT channel, float *pvalue)
          /* only produce error once every minute */
          if (ss_time() - last_error >= 60) {
             last_error = ss_time();
-            cm_msg(MERROR, "mscbdev_get", "Error reading MSCB bus at %d:%d",
+            cm_msg(MERROR, "mscbdev_get", "Error reading MSCB bus at %d:%d, status %d", 
                info->mscbdev_settings.mscb_address[channel],
-               info->mscbdev_settings.mscb_index[channel]);
+               info->mscbdev_settings.mscb_index[channel], status);
          }
          return FE_ERR_HW;
       }
@@ -216,6 +227,18 @@ INT mscbdev_get(MSCBDEV_INFO * info, INT channel, float *pvalue)
       }
       *pvalue = (float) value_int;
    }
+
+   return FE_SUCCESS;
+}
+
+/*----------------------------------------------------------------------------*/
+
+INT mscbdev_get_all(MSCBDEV_INFO * info, INT channel, float *pvalue)
+{
+   int i;
+
+   for (i=0 ; i<info->num_channels ; i++)
+      mscbdev_get(info, i, pvalue+i);
 
    return FE_SUCCESS;
 }
@@ -272,11 +295,25 @@ INT mscbdev(INT cmd, ...)
       status = mscbdev_set(info, channel, value);
       break;
 
+   case CMD_SET_ALL:
+      info = va_arg(argptr, void *);
+      channel = va_arg(argptr, INT);
+      pvalue = (float *) va_arg(argptr, float *);
+      status = mscbdev_set_all(info, channel, pvalue);
+      break;
+
    case CMD_GET:
       info = va_arg(argptr, void *);
       channel = va_arg(argptr, INT);
       pvalue = va_arg(argptr, float *);
       status = mscbdev_get(info, channel, pvalue);
+      break;
+
+   case CMD_GET_ALL:
+      info = va_arg(argptr, void *);
+      channel = va_arg(argptr, INT);
+      pvalue = va_arg(argptr, float *);
+      status = mscbdev_get_all(info, channel, pvalue);
       break;
 
    case CMD_GET_DEFAULT_NAME:
