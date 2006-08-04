@@ -228,9 +228,10 @@ void print_channel_str(int index, MSCB_INFO_VAR * info_chn, void *pdata, int ver
       case 4:
          if (info_chn->flags & MSCBF_FLOAT) {
             if (verbose)
-               sprintf(line + strlen(line), "32bit F %15.6lg", *((float *) &data));
+               sprintf(line + strlen(line), "32bit F %15.6lg",
+                       *((float *) (void *) &data));
             else
-               sprintf(line + strlen(line), "%15.6lg", *((float *) &data));
+               sprintf(line + strlen(line), "%15.6lg", *((float *) (void *) &data));
          } else {
             if (info_chn->flags & MSCBF_SIGNED) {
                if (verbose)
@@ -558,13 +559,13 @@ int match(char *str, char *cmd)
 void cmd_loop(int fd, char *cmd, unsigned short adr)
 {
    int i, fh, status, size, nparam, current_addr, current_group, first, last, broadcast,
-      read_all, repeat, wait;
+       read_all, repeat, wait = 0;
    unsigned short addr;
    unsigned int data, uptime;
    unsigned char c;
    float value;
-   char str[256], line[256], dbuf[100 * 1024], param[10][100], *pc, *buffer,
-       lib[32], prot[32];
+   char str[256], line[256], dbuf[100 * 1024], param[10][100], *pc, *buffer, lib[32],
+       prot[32];
    FILE *cmd_file = NULL;
    MSCB_INFO info;
    MSCB_INFO_VAR info_var;
@@ -696,7 +697,8 @@ void cmd_loop(int fd, char *cmd, unsigned short adr)
                   if (status == MSCB_SUCCESS) {
                      printf
                          ("Found node \"%s\", node addr. %d (0x%04X), group addr. %d (0x%04X)      \n",
-                          str, (unsigned short)i, (unsigned short)i, info.group_address, info.group_address);
+                          str, (unsigned short) i, (unsigned short) i, info.group_address,
+                          info.group_address);
 
                      mscb_get_version(lib, prot);
                      if (info.protocol_version != atoi(prot)) {
@@ -786,12 +788,11 @@ void cmd_loop(int fd, char *cmd, unsigned short adr)
                printf("Watchdog resets  : %d\n", info.watchdog_resets);
 
                status = mscb_uptime(fd, (unsigned short) current_addr, &uptime);
-               if (status == MSCB_SUCCESS) 
+               if (status == MSCB_SUCCESS)
                   printf("Uptime           : %dd %02dh %02dm %02ds\n",
-                     uptime / (3600*24),
-                     (uptime % (3600*24)) / 3600,
-                     (uptime % 3600) / 60,
-                     (uptime % 60));
+                         uptime / (3600 * 24),
+                         (uptime % (3600 * 24)) / 3600, (uptime % 3600) / 60,
+                         (uptime % 60));
 
                mscb_get_version(lib, prot);
                if (info.protocol_version != atoi(prot)) {
@@ -1069,21 +1070,21 @@ void cmd_loop(int fd, char *cmd, unsigned short adr)
             }
 
             read_all = (param[1][0] == 'a' || param[2][0] == 'a' || param[3][0] == 'a');
-            repeat   = (param[1][0] == 'r' || param[2][0] == 'r' || param[3][0] == 'r');
+            repeat = (param[1][0] == 'r' || param[2][0] == 'r' || param[3][0] == 'r');
             if (repeat) {
                wait = 0;
-               for (i=1 ; i<4 ; i++)
+               for (i = 1; i < 4; i++)
                   if (param[i][0] == 'r')
                      break;
-               if (atoi(param[i+1]) > 0)
-                  wait = atoi(param[i+1]);
+               if (atoi(param[i + 1]) > 0)
+                  wait = atoi(param[i + 1]);
             }
 
             do {
-               for (i = first ; i <= last ; i++) {
+               for (i = first; i <= last; i++) {
 
                   status = mscb_info_variable(fd, (unsigned short) current_addr,
-                                                  (unsigned char) i, &info_var);
+                                              (unsigned char) i, &info_var);
 
                   if (status == MSCB_NO_VAR) {
                      if (first == last)
@@ -1094,12 +1095,13 @@ void cmd_loop(int fd, char *cmd, unsigned short adr)
                   else if (status != MSCB_SUCCESS)
                      puts("Timeout or invalid channel number");
                   else {
-                     if ((info_var.flags & MSCBF_HIDDEN) == 0 || read_all || first == last) {
+                     if ((info_var.flags & MSCBF_HIDDEN) == 0 || read_all
+                         || first == last) {
                         size = info_var.width;
                         memset(dbuf, 0, sizeof(dbuf));
                         status =
-                              mscb_read(fd, (unsigned short) current_addr,
-                                       (unsigned char) i, dbuf, &size);
+                            mscb_read(fd, (unsigned short) current_addr,
+                                      (unsigned char) i, dbuf, &size);
 
                         if (status == MSCB_SUCCESS)
                            print_channel(i, &info_var, dbuf, first != last);
@@ -1113,12 +1115,13 @@ void cmd_loop(int fd, char *cmd, unsigned short adr)
                if (first != last && repeat)
                   printf("\n");
 
-               if (repeat)
+               if (repeat) {
                   if (wait) {
                      Sleep(wait);
                      printf("\n");
                   } else
                      Sleep(10);
+               }
 
             } while (!kbhit() && repeat);
 
@@ -1475,7 +1478,7 @@ void cmd_loop(int fd, char *cmd, unsigned short adr)
       /* test1 ---------- */
       else if (match(param[0], "t1")) {
          data = atoi(param[1]);
-         
+
          do {
             mscb_link(fd, (unsigned short) current_addr, 4, &data, 1);
             printf("Data: %d\r", data);
