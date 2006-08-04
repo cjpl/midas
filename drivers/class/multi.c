@@ -38,15 +38,10 @@ typedef struct {
    float *input_mirror;
    float *output_mirror;
 
-   void **driver_input, **driver_output;
+   DEVICE_DRIVER **driver_input, **driver_output;
    INT *channel_offset_input, *channel_offset_output;
-   void **dd_info_input, **dd_info_output;
-   DWORD *flags_input, *flags_output;
 
 } MULTI_INFO;
-
-#define DRIVER_INPUT(_i) ((INT (*)(INT cmd, ...))(m_info->driver_input[_i]))
-#define DRIVER_OUTPUT(_i) ((INT (*)(INT cmd, ...))(m_info->driver_output[_i]))
 
 #ifndef abs
 #define abs(a) (((a) < 0)   ? -(a) : (a))
@@ -71,16 +66,11 @@ static void free_mem(MULTI_INFO * m_info)
    free(m_info->input_mirror);
    free(m_info->output_mirror);
 
-   free(m_info->dd_info_input);
-   free(m_info->dd_info_output);
    free(m_info->channel_offset_input);
    free(m_info->channel_offset_output);
 
    free(m_info->driver_input);
    free(m_info->driver_output);
-
-   free(m_info->flags_input);
-   free(m_info->flags_output);
 
    free(m_info);
 }
@@ -99,18 +89,18 @@ void multi_read(EQUIPMENT * pequipment, int channel)
 
    if (channel == -1)
       for (i = 0; i < m_info->num_channels_input; i++) {
-         status = DRIVER_INPUT(i) (CMD_GET, m_info->dd_info_input[i],
-                                   i - m_info->channel_offset_input[i],
-                                   &m_info->var_input[i]);
+         status = device_driver(m_info->driver_input[i], CMD_GET,
+                                i - m_info->channel_offset_input[i],
+                                &m_info->var_input[i]);
          if (status != FE_SUCCESS)
             m_info->var_input[i] = (float)ss_nan();
          else
             m_info->var_input[i] = m_info->var_input[i] * m_info->factor_input[i] -
                m_info->offset_input[i];
    } else {
-      status = DRIVER_INPUT(channel) (CMD_GET, m_info->dd_info_input[channel],
-                                      channel - m_info->channel_offset_input[channel],
-                                      &m_info->var_input[channel]);
+      status = device_driver(m_info->driver_input[channel], CMD_GET,
+                             channel - m_info->channel_offset_input[channel],
+                             &m_info->var_input[channel]);
       if (status != FE_SUCCESS)
          m_info->var_input[channel] = (float)ss_nan();
       else
@@ -155,8 +145,8 @@ void multi_read_output(EQUIPMENT * pequipment, int channel)
    m_info = (MULTI_INFO *) pequipment->cd_info;
    cm_get_experiment_database(&hDB, NULL);
 
-   DRIVER_OUTPUT(channel) (CMD_GET, m_info->dd_info_output[channel],
-                           channel - m_info->channel_offset_output[channel], &value);
+   device_driver(m_info->driver_output[channel], CMD_GET,
+                 channel - m_info->channel_offset_output[channel], &value);
 
    value = (value + m_info->offset_output[channel]) / m_info->factor_output[channel];
 
@@ -192,9 +182,9 @@ void multi_output(INT hDB, INT hKey, void *info)
          m_info->output_mirror[i] =
              m_info->var_output[i] * m_info->factor_output[i] - m_info->offset_output[i];
 
-         DRIVER_OUTPUT(i) (CMD_SET, m_info->dd_info_output[i],
-                           i - m_info->channel_offset_output[i],
-                           m_info->output_mirror[i]);
+         device_driver(m_info->driver_output[i], CMD_SET,
+                       i - m_info->channel_offset_output[i],
+                       m_info->output_mirror[i]);
       }
    }
 
@@ -214,14 +204,14 @@ void multi_update_label(INT hDB, INT hKey, void *info)
 
    /* update channel labels based on the midas channel names */
    for (i = 0; i < m_info->num_channels_input; i++)
-      status = DRIVER_INPUT(i) (CMD_SET_LABEL, m_info->dd_info_input[i],
-                                i - m_info->channel_offset_input[i],
-                                m_info->names_input + NAME_LENGTH * i);
+      status = device_driver(m_info->driver_input[i], CMD_SET_LABEL,
+                             i - m_info->channel_offset_input[i],
+                             m_info->names_input + NAME_LENGTH * i);
 
    for (i = 0; i < m_info->num_channels_output; i++)
-      status = DRIVER_OUTPUT(i) (CMD_SET_LABEL, m_info->dd_info_output[i],
-                                 i - m_info->channel_offset_output[i],
-                                 m_info->names_output + NAME_LENGTH * i);
+      status = device_driver(m_info->driver_output[i], CMD_SET_LABEL,
+                             i - m_info->channel_offset_output[i],
+                             m_info->names_output + NAME_LENGTH * i);
 }
 
 /*----------------------------------------------------------------------------*/
@@ -284,17 +274,12 @@ INT multi_init(EQUIPMENT * pequipment)
    m_info->input_mirror = (float *) calloc(m_info->num_channels_input, sizeof(float));
    m_info->output_mirror = (float *) calloc(m_info->num_channels_output, sizeof(float));
 
-   m_info->dd_info_input = (void *) calloc(m_info->num_channels_input, sizeof(void *));
-   m_info->dd_info_output = (void *) calloc(m_info->num_channels_output, sizeof(void *));
    m_info->channel_offset_input = (INT *) calloc(m_info->num_channels_input, sizeof(INT));
    m_info->channel_offset_output =
        (INT *) calloc(m_info->num_channels_output, sizeof(DWORD));
 
    m_info->driver_input = (void *) calloc(m_info->num_channels_input, sizeof(void *));
    m_info->driver_output = (void *) calloc(m_info->num_channels_output, sizeof(void *));
-
-   m_info->flags_input = (DWORD *) calloc(m_info->num_channels_input, sizeof(DWORD));
-   m_info->flags_output = (DWORD *) calloc(m_info->num_channels_output, sizeof(DWORD));
 
    if (!m_info->driver_output) {
       cm_msg(MERROR, "multi_init", "Not enough memory");
@@ -396,10 +381,7 @@ INT multi_init(EQUIPMENT * pequipment)
          }
       }
 
-      status = pequipment->driver[i].dd(CMD_INIT, hKey, &pequipment->driver[i].dd_info,
-                                        pequipment->driver[i].channels,
-                                        pequipment->driver[i].flags,
-                                        pequipment->driver[i].bd);
+      status = device_driver(&pequipment->driver[i], CMD_INIT, hKey);
       if (status != FE_SUCCESS) {
          free_mem(m_info);
          return status;
@@ -416,9 +398,7 @@ INT multi_init(EQUIPMENT * pequipment)
          j = 0;
       }
 
-      m_info->flags_input[i] = pequipment->driver[index].flags;
-      m_info->driver_input[i] = pequipment->driver[index].dd;
-      m_info->dd_info_input[i] = pequipment->driver[index].dd_info;
+      m_info->driver_input[i] = &pequipment->driver[index];
       m_info->channel_offset_input[i] = ch_offset;
    }
 
@@ -431,19 +411,16 @@ INT multi_init(EQUIPMENT * pequipment)
          j = 0;
       }
 
-      m_info->flags_output[i] = pequipment->driver[index].flags;
-      m_info->driver_output[i] = pequipment->driver[index].dd;
-      m_info->dd_info_output[i] = pequipment->driver[index].dd_info;
+      m_info->driver_output[i] = &pequipment->driver[index];
       m_info->channel_offset_output[i] = ch_offset;
    }
 
    /*---- get default names from device driver ----*/
    for (i = 0; i < m_info->num_channels_input; i++) {
       sprintf(m_info->names_input + NAME_LENGTH * i, "Input Channel %d", i);
-      DRIVER_INPUT(i) (CMD_GET_DEFAULT_NAME, m_info->dd_info_input[i],
-                 i - m_info->channel_offset_input[i], 
-                 m_info->names_input + NAME_LENGTH * i);
-      printf("%d: %s\n", i, m_info->names_input + NAME_LENGTH * i);
+      device_driver(m_info->driver_input[i], CMD_GET_DEFAULT_NAME,
+                    i - m_info->channel_offset_input[i], 
+                    m_info->names_input + NAME_LENGTH * i);
    }
    db_merge_data(hDB, m_info->hKeyRoot, "Settings/Names Input",
                  m_info->names_input, NAME_LENGTH * m_info->num_channels_input,
@@ -451,9 +428,9 @@ INT multi_init(EQUIPMENT * pequipment)
 
    for (i = 0; i < m_info->num_channels_output; i++) {
       sprintf(m_info->names_output + NAME_LENGTH * i, "Output Channel %d", i);
-      DRIVER_OUTPUT(i) (CMD_GET_DEFAULT_NAME, m_info->dd_info_output[i],
-                 i - m_info->channel_offset_output[i], 
-                 m_info->names_output + NAME_LENGTH * i);
+      device_driver(m_info->driver_output[i], CMD_GET_DEFAULT_NAME, 
+                    i - m_info->channel_offset_output[i], 
+                    m_info->names_output + NAME_LENGTH * i);
    }
    db_merge_data(hDB, m_info->hKeyRoot, "Settings/Names Output",
                  m_info->names_output, NAME_LENGTH * m_info->num_channels_output,
@@ -461,9 +438,9 @@ INT multi_init(EQUIPMENT * pequipment)
 
   /*---- set labels form midas SC names ----*/
    for (i = 0; i < m_info->num_channels_input; i++) {
-      DRIVER_INPUT(i) (CMD_SET_LABEL, m_info->dd_info_input[i],
-                       i - m_info->channel_offset_input[i],
-                       m_info->names_input + NAME_LENGTH * i);
+      device_driver(m_info->driver_input[i], CMD_SET_LABEL,
+                    i - m_info->channel_offset_input[i],
+                    m_info->names_input + NAME_LENGTH * i);
    }
 
    /* open hotlink on input channel names */
@@ -474,9 +451,9 @@ INT multi_init(EQUIPMENT * pequipment)
                      multi_update_label, pequipment);
 
    for (i = 0; i < m_info->num_channels_output; i++) {
-      DRIVER_OUTPUT(i) (CMD_SET_LABEL, m_info->dd_info_output[i],
-                        i - m_info->channel_offset_output[i],
-                        m_info->names_output + NAME_LENGTH * i);
+      device_driver(m_info->driver_output[i], CMD_SET_LABEL,
+                    i - m_info->channel_offset_output[i],
+                    m_info->names_output + NAME_LENGTH * i);
    }
 
    /* open hotlink on output channel names */
@@ -497,17 +474,17 @@ INT multi_init(EQUIPMENT * pequipment)
    for (i = 0; i < m_info->num_channels_output; i++) {
       if (pequipment->driver[index].flags & DF_PRIO_DEVICE) {
          /* read default value from device */
-         DRIVER_OUTPUT(i) (CMD_GET, m_info->dd_info_output[i],
-                           i - m_info->channel_offset_output[i],
-                           &m_info->output_mirror[i]);
+         device_driver(m_info->driver_output[i], CMD_GET,
+                       i - m_info->channel_offset_output[i],
+                       &m_info->output_mirror[i]);
       } else {
          /* use default value from ODB */
          m_info->output_mirror[i] = m_info->var_output[i] * m_info->factor_output[i] -
              m_info->offset_output[i];
 
-         DRIVER_OUTPUT(i) (CMD_SET, m_info->dd_info_output[i],
-                           i - m_info->channel_offset_output[i],
-                           m_info->output_mirror[i]);
+         device_driver(m_info->driver_output[i], CMD_SET,
+                       i - m_info->channel_offset_output[i],
+                       m_info->output_mirror[i]);
       }
    }
 
@@ -531,7 +508,7 @@ INT multi_exit(EQUIPMENT * pequipment)
 
    /* call exit method of device drivers */
    for (i = 0; pequipment->driver[i].dd != NULL; i++)
-      pequipment->driver[i].dd(CMD_EXIT, pequipment->driver[i].dd_info);
+      device_driver(&pequipment->driver[i], CMD_EXIT);
 
    return FE_SUCCESS;
 }
@@ -556,7 +533,7 @@ INT multi_idle(EQUIPMENT * pequipment)
          /* search output channel with DF_PRIO_DEV */
          for (i = m_info->last_channel - m_info->num_channels_input;
               i < m_info->num_channels_output; i++)
-            if (m_info->flags_output[i] & DF_PRIO_DEVICE)
+            if (m_info->driver_output[i]->flags & DF_PRIO_DEVICE)
                break;
 
          if (i < m_info->num_channels_output) {
@@ -656,7 +633,6 @@ INT cd_multi(INT cmd, EQUIPMENT * pequipment)
    case CMD_EXIT:
       status = multi_exit(pequipment);
       break;
-
 
    case CMD_IDLE:
       status = multi_idle(pequipment);

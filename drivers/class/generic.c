@@ -35,14 +35,10 @@ typedef struct {
    float *demand_mirror;
    float *measured_mirror;
 
-   void **driver;
+   DEVICE_DRIVER **driver;
    INT *channel_offset;
-   void **dd_info;
-   INT *flags;
 
 } GEN_INFO;
-
-#define DRIVER(_i) ((INT (*)(INT cmd, ...))(gen_info->driver[_i]))
 
 #ifndef abs
 #define abs(a) (((a) < 0)   ? -(a) : (a))
@@ -61,10 +57,8 @@ static void free_mem(GEN_INFO * gen_info)
    free(gen_info->demand_mirror);
    free(gen_info->measured_mirror);
 
-   free(gen_info->dd_info);
    free(gen_info->channel_offset);
    free(gen_info->driver);
-   free(gen_info->flags);
 
    free(gen_info);
 }
@@ -82,9 +76,9 @@ INT gen_read(EQUIPMENT * pequipment, int channel)
    gen_info = (GEN_INFO *) pequipment->cd_info;
    cm_get_experiment_database(&hDB, NULL);
 
-   status = DRIVER(channel) (CMD_GET, gen_info->dd_info[channel],
-                             channel - gen_info->channel_offset[channel],
-                             &gen_info->measured[channel]);
+   status = device_driver(gen_info->driver[channel], CMD_GET,
+                          channel - gen_info->channel_offset[channel],
+                          &gen_info->measured[channel]);
 
    /* check for update measured */
    for (i = 0; i < gen_info->num_channels; i++) {
@@ -106,9 +100,9 @@ INT gen_read(EQUIPMENT * pequipment, int channel)
 
    /*---- read demand value ----*/
 
-   status = DRIVER(channel) (CMD_GET_DEMAND, gen_info->dd_info[channel],
-                             channel - gen_info->channel_offset[channel],
-                             &gen_info->demand[channel]);
+   status = device_driver(gen_info->driver[channel], CMD_GET_DEMAND,
+                          channel - gen_info->channel_offset[channel],
+                          &gen_info->demand[channel]);
 
    if (gen_info->demand[channel] != gen_info->demand_mirror[channel]) {
       gen_info->demand_mirror[channel] = gen_info->demand[channel];
@@ -134,9 +128,9 @@ void gen_demand(INT hDB, INT hKey, void *info)
    /* set individual channels only if demand value differs */
    for (i = 0; i < gen_info->num_channels; i++)
       if (gen_info->demand[i] != gen_info->demand_mirror[i]) {
-         if ((gen_info->flags[i] & DF_READ_ONLY) == 0) {
-            status = DRIVER(i) (CMD_SET, gen_info->dd_info[i],
-                                i - gen_info->channel_offset[i], gen_info->demand[i]);
+         if ((gen_info->driver[i]->flags & DF_READ_ONLY) == 0) {
+            status = device_driver(gen_info->driver[i], CMD_SET,
+                                   i - gen_info->channel_offset[i], gen_info->demand[i]);
          }
          gen_info->demand_mirror[i] = gen_info->demand[i];
       }
@@ -157,9 +151,9 @@ void gen_update_label(INT hDB, INT hKey, void *info)
 
    /* update channel labels based on the midas channel names */
    for (i = 0; i < gen_info->num_channels; i++)
-      status = DRIVER(i) (CMD_SET_LABEL, gen_info->dd_info[i],
-                          i - gen_info->channel_offset[i],
-                          gen_info->names + NAME_LENGTH * i);
+      status = device_driver(gen_info->driver[i], CMD_SET_LABEL,
+                             i - gen_info->channel_offset[i],
+                             gen_info->names + NAME_LENGTH * i);
 }
 
 /*------------------------------------------------------------------*/
@@ -218,12 +212,10 @@ INT gen_init(EQUIPMENT * pequipment)
    gen_info->demand_mirror = (float *) calloc(gen_info->num_channels, sizeof(float));
    gen_info->measured_mirror = (float *) calloc(gen_info->num_channels, sizeof(float));
 
-   gen_info->dd_info = (void *) calloc(gen_info->num_channels, sizeof(void *));
    gen_info->channel_offset = (INT *) calloc(gen_info->num_channels, sizeof(INT));
    gen_info->driver = (void *) calloc(gen_info->num_channels, sizeof(void *));
-   gen_info->flags = (INT *) calloc(gen_info->num_channels, sizeof(INT));
 
-   if (!gen_info->flags) {
+   if (!gen_info->driver) {
       cm_msg(MERROR, "hv_init", "Not enough memory");
       return FE_ERR_ODB;
    }
@@ -244,10 +236,7 @@ INT gen_init(EQUIPMENT * pequipment)
          }
       }
 
-      status = pequipment->driver[i].dd(CMD_INIT, hKey, &pequipment->driver[i].dd_info,
-                                        pequipment->driver[i].channels,
-                                        pequipment->driver[i].flags,
-                                        pequipment->driver[i].bd);
+      status = device_driver(&pequipment->driver[i], CMD_INIT, hKey);
       if (status != FE_SUCCESS) {
          free_mem(gen_info);
          return status;
@@ -262,10 +251,8 @@ INT gen_init(EQUIPMENT * pequipment)
          j = 0;
       }
 
-      gen_info->driver[i] = pequipment->driver[index].dd;
-      gen_info->dd_info[i] = pequipment->driver[index].dd_info;
+      gen_info->driver[i] = &pequipment->driver[index];
       gen_info->channel_offset[i] = offset;
-      gen_info->flags[i] = pequipment->driver[index].flags;
    }
 
    /*---- create demand variables ----*/
@@ -279,9 +266,9 @@ INT gen_init(EQUIPMENT * pequipment)
    }
    /* let device driver overwrite demand values, if it supports it */
    for (i = 0; i < gen_info->num_channels; i++) {
-      if (gen_info->flags[i] & DF_PRIO_DEVICE) {
-         DRIVER(i) (CMD_GET_DEMAND, gen_info->dd_info[i],
-                    i - gen_info->channel_offset[i], &gen_info->demand[i]);
+      if (gen_info->driver[i]->flags & DF_PRIO_DEVICE) {
+         device_driver(gen_info->driver[i], CMD_GET_DEMAND,
+                       i - gen_info->channel_offset[i], &gen_info->demand[i]);
          gen_info->demand_mirror[i] = gen_info->demand[i];
       } else
          gen_info->demand_mirror[i] = -12345.f; /* use -12345 as invalid value */
@@ -311,8 +298,8 @@ INT gen_init(EQUIPMENT * pequipment)
    /*---- get default names from device driver ----*/
    for (i = 0; i < gen_info->num_channels; i++) {
       sprintf(gen_info->names + NAME_LENGTH * i, "Default%%CH %d", i);
-      DRIVER(i) (CMD_GET_DEFAULT_NAME, gen_info->dd_info[i],
-                 i - gen_info->channel_offset[i], gen_info->names + NAME_LENGTH * i);
+      device_driver(gen_info->driver[i], CMD_GET_DEFAULT_NAME,
+                    i - gen_info->channel_offset[i], gen_info->names + NAME_LENGTH * i);
    }
    db_merge_data(hDB, gen_info->hKeyRoot, "Settings/Names",
                  gen_info->names, NAME_LENGTH * gen_info->num_channels,
@@ -321,8 +308,8 @@ INT gen_init(EQUIPMENT * pequipment)
    /*---- set labels form midas SC names ----*/
    for (i = 0; i < gen_info->num_channels; i++) {
       gen_info = (GEN_INFO *) pequipment->cd_info;
-      DRIVER(i) (CMD_SET_LABEL, gen_info->dd_info[i],
-                 i - gen_info->channel_offset[i], gen_info->names + NAME_LENGTH * i);
+      device_driver(gen_info->driver[i], CMD_SET_LABEL,
+                    i - gen_info->channel_offset[i], gen_info->names + NAME_LENGTH * i);
    }
 
    /* open hotlink on channel names */
@@ -333,8 +320,8 @@ INT gen_init(EQUIPMENT * pequipment)
    /*---- get default update threshold from device driver ----*/
    for (i = 0; i < gen_info->num_channels; i++) {
       gen_info->update_threshold[i] = 1.f;      /* default 1 unit */
-      DRIVER(i) (CMD_GET_DEFAULT_THRESHOLD, gen_info->dd_info[i],
-                 i - gen_info->channel_offset[i], &gen_info->update_threshold[i]);
+      device_driver(gen_info->driver[i], CMD_GET_DEFAULT_THRESHOLD,
+                    i - gen_info->channel_offset[i], &gen_info->update_threshold[i]);
    }
    db_merge_data(hDB, gen_info->hKeyRoot, "Settings/Update Threshold Measured",
                  gen_info->update_threshold, sizeof(float)*gen_info->num_channels,
@@ -365,7 +352,7 @@ INT gen_exit(EQUIPMENT * pequipment)
 
    /* call exit method of device drivers */
    for (i = 0; pequipment->driver[i].dd != NULL; i++)
-      pequipment->driver[i].dd(CMD_EXIT, pequipment->driver[i].dd_info);
+      device_driver(&pequipment->driver[i], CMD_EXIT);
 
    return FE_SUCCESS;
 }

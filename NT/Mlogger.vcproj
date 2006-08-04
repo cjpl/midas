@@ -22,7 +22,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories="\midas\include,\root\include,\mysql\include,\mxml"
-				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;HAVE_MYSQL;DEBUG_TRANS=2;HAVE_ROOT;"
+				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;DEBUG_TRANS=2;HAVE_ROOT;HAVE_MYSQL"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="5"
 				UsePrecompiledHeader="2"
