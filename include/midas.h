@@ -154,6 +154,9 @@ typedef INT HNDLE;
 #define POINTER_T     int
 #endif
 
+/* define old PTYPE for compatibility with old code */
+#define PTYPE POINTER_T
+
 /* need system-dependant thread type */
 #if defined(OS_WINNT)
 typedef HANDLE midas_thread_t;
@@ -661,27 +664,29 @@ Alarm error code */
 #define AL_RESET                   1004   /**< - */
 
 /** 
-Slow control commands error code */
-#define CMD_INIT                    (1<<0)
-#define CMD_EXIT                    (1<<1)
-#define CMD_IDLE                    (1<<2)
-#define CMD_SET                     (1<<3)
-#define CMD_SET_ALL                 (1<<4)
-#define CMD_GET                     (1<<5)
-#define CMD_GET_ALL                 (1<<6)
-#define CMD_GET_CURRENT             (1<<7)
-#define CMD_GET_CURRENT_ALL         (1<<8)
-#define CMD_SET_CURRENT_LIMIT       (1<<9)
-#define CMD_SET_CURRENT_LIMIT_ALL  (1<<10)
-#define CMD_GET_DEMAND             (1<<11)
-#define CMD_GET_DEFAULT_NAME       (1<<12)
-#define CMD_GET_DEFAULT_THRESHOLD  (1<<13)
-#define CMD_SET_LABEL              (1<<14)
-#define CMD_ENABLE_COMMAND         (1<<15)
-#define CMD_DISABLE_COMMAND        (1<<16)
+Slow control device driver commands */
+#define CMD_INIT                      1
+#define CMD_EXIT                      2
+#define CMD_IDLE                      3
+#define CMD_SET                       4
+#define CMD_SET_ALL                   5
+#define CMD_GET                       6
+#define CMD_GET_ALL                   7
+#define CMD_GET_CURRENT               8
+#define CMD_GET_CURRENT_ALL           9
+#define CMD_SET_CURRENT_LIMIT        10
+#define CMD_SET_CURRENT_LIMIT_ALL    11
+#define CMD_GET_DEMAND               12
+#define CMD_GET_DEFAULT_NAME         13
+#define CMD_GET_DEFAULT_THRESHOLD    14
+#define CMD_SET_LABEL                15
+#define CMD_SET_RAMPUP               16
+#define CMD_SET_RAMPDOWN             17
+#define CMD_ENABLE_COMMAND       (1<<14)  /* these two commands can be used to enable/disable */
+#define CMD_DISABLE_COMMAND      (1<<15)  /* one of the other commands                        */
 
 /** 
-Bus driver commands */
+Slow control bus driver commands */
 #define CMD_WRITE                   100
 #define CMD_READ                    101
 #define CMD_PUTS                    102
@@ -690,7 +695,7 @@ Bus driver commands */
 #define CMD_NAME                    105
 
 /** 
-Commands for interrupt events error code */
+Commands for interrupt events */
 #define CMD_INTERRUPT_ENABLE        100
 #define CMD_INTERRUPT_DISABLE       101
 #define CMD_INTERRUPT_ATTACH        102
@@ -883,21 +888,45 @@ typedef struct {
 #define DF_OUTPUT      (1<<1)         /**< channel is output          */
 #define DF_PRIO_DEVICE (1<<2)         /**< get demand values from device instead of ODB */
 #define DF_READ_ONLY   (1<<3)         /**< never write demand values to device */
+#define DF_MULTITHREAD (1<<4)         //*< access device with a dedicated thread */
+#define DF_HW_RAMP     (1<<5)         //*< high voltage device can do hardware ramping */
 
 typedef struct {
    char name[NAME_LENGTH];            /**< Driver name                       */
-    INT(*bd) (INT cmd, ...);          /**< Device driver entry point         */
+   INT(*bd) (INT cmd, ...);           /**< Device driver entry point         */
    void *bd_info;                     /**< Private info for bus driver       */
 } BUS_DRIVER;
 
 typedef struct {
+   float demand;                      /**< Array for demand values           */
+   float measured;                    /**< Array for measured values         */
+   float current;                     /**< Array for current values          */
+   float current_limit;               /**< Array for current limit values    */
+   char  default_name[NAME_LENGTH];   /**< Array for default channel names   */                                
+   float device_demand;               /**< Demand value stored on the device */ 
+} DD_MT_CHANNEL;
+
+typedef struct {
+   INT n_channels;                    /**< Number of channels                */
+   midas_thread_t thread_id;          /**< Thread ID                         */
+   INT status;                        /**< Status passed from device thread  */
+   DD_MT_CHANNEL *channel;            /**< One data set for each channel     */
+
+} DD_MT_BUFFER;
+
+typedef struct {
    char name[NAME_LENGTH];            /**< Driver name                       */
-    INT(*dd) (INT cmd, ...);          /**< Device driver entry point         */
+   INT(*dd) (INT cmd, ...);           /**< Device driver entry point         */
    INT channels;                      /**< Number of channels                */
-    INT(*bd) (INT cmd, ...);          /**< Bus driver entry point            */
+   INT(*bd) (INT cmd, ...);           /**< Bus driver entry point            */
    DWORD flags;                       /**< Combination of DF_xx              */
    void *dd_info;                     /**< Private info for device driver    */
+   DD_MT_BUFFER *mt_buffer;           /**< pointer to multithread buffer     */
+   INT stop_thread;                   /**< flag used to stop the thread      */
+   HNDLE mutex;                       /**< mutex/semaphore handle for buffer */
 } DEVICE_DRIVER;
+
+INT device_driver(DEVICE_DRIVER *device_driver, INT cmd, ...);
 
 typedef struct {
    WORD event_id;                     /**< Event ID associated with equipm.  */
