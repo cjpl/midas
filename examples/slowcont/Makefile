@@ -8,6 +8,18 @@
 #  $Id$
 #
 #####################################################################
+#
+#--------------------------------------------------------------------
+# The MIDASSYS should be defined prior the use of this Makefile
+ifndef MIDASSYS
+missmidas::
+	@echo "...";
+	@echo "Missing definition of environment variable 'MIDASSYS' !";
+	@echo "...";
+endif
+
+# get OS type from shell
+OSTYPE = $(shell uname)
 
 #--------------------------------------------------------------------
 # The following lines contain specific switches for different UNIX
@@ -18,24 +30,12 @@
 LIBS = -lbsd -lm -lutil -lpthread
 OSFLAGS = -DOS_LINUX
 
-# This is for OSF1 -----------------
-#LIBS = -lbsd
-#OSFLAGS = -DOS_OSF1
-
-# This is for Ultrix ---------------
-#LIBS =
-#OSFLAGS = -DOS_ULTRIX -Dextname
-
-# This is for FreeBSD --------------
-#LIBS = -lbsd -lcompat
-#OSFLAGS = -DOS_FREEBSD
-
 #-------------------------------------------------------------------
 # The following lines define direcories. Adjust if necessary
 #                 
-INC_DIR 	= /usr/local/include
-LIB_DIR 	= /usr/local/lib
-DRV_DIR		= ../../drivers
+INC_DIR 	= $(MIDASSYS)/include
+LIB_DIR 	= $(MIDASSYS)/linux/lib
+DRV_DIR		= $(MIDASSYS)/drivers
 
 #-------------------------------------------------------------------
 # Drivers needed by the frontend program
