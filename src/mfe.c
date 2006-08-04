@@ -350,7 +350,7 @@ INT device_driver(DEVICE_DRIVER *device_driver, INT cmd, ...)
       hKey = va_arg(argptr, HNDLE);
 
       if (device_driver->flags & DF_MULTITHREAD) {
-         status = device_driver->dd(cmd, hKey, &device_driver->dd_info, 
+         status = device_driver->dd(CMD_INIT, hKey, &device_driver->dd_info, 
                                     device_driver->channels, device_driver->flags,
                                     device_driver->bd);
 
@@ -376,7 +376,7 @@ INT device_driver(DEVICE_DRIVER *device_driver, INT cmd, ...)
             /* create mutex */
             sprintf(str, "DD_%s", device_driver->name); 
             status = ss_mutex_create(str, &device_driver->mutex);
-            if (status != SS_CREATED)
+            if (status != SS_CREATED && status != SS_SUCCESS)
                return FE_ERR_DRIVER;
             status = FE_SUCCESS;
 
@@ -384,7 +384,7 @@ INT device_driver(DEVICE_DRIVER *device_driver, INT cmd, ...)
             device_driver->mt_buffer->thread_id = ss_thread_create(sc_thread, device_driver);
          }
       } else {
-         status = device_driver->dd(cmd, hKey, &device_driver->dd_info, 
+         status = device_driver->dd(CMD_INIT, hKey, &device_driver->dd_info, 
                                     device_driver->channels, device_driver->flags,
                                     device_driver->bd);
       }
@@ -404,11 +404,12 @@ INT device_driver(DEVICE_DRIVER *device_driver, INT cmd, ...)
          if (i == 1000)
             ss_thread_kill(device_driver->mt_buffer->thread_id);
 
+         ss_mutex_delete(device_driver->mutex, TRUE);
          free(device_driver->mt_buffer->channel);
          free(device_driver->mt_buffer);
       }
 
-      status = device_driver->dd(cmd, device_driver->dd_info);
+      status = device_driver->dd(CMD_EXIT, device_driver->dd_info);
       break;
 
    case CMD_SET:
@@ -420,7 +421,7 @@ INT device_driver(DEVICE_DRIVER *device_driver, INT cmd, ...)
          status = device_driver->mt_buffer->status;
          ss_mutex_release(device_driver->mutex);
       } else
-         status = device_driver->dd(cmd, device_driver->dd_info, channel, value);
+         status = device_driver->dd(CMD_SET, device_driver->dd_info, channel, value);
       break;
 
    case CMD_SET_ALL:
@@ -433,7 +434,7 @@ INT device_driver(DEVICE_DRIVER *device_driver, INT cmd, ...)
          status = device_driver->mt_buffer->status;
          ss_mutex_release(device_driver->mutex);
       } else
-         status = device_driver->dd(cmd, device_driver->dd_info, channel, pvalue);
+         status = device_driver->dd(CMD_SET_ALL, device_driver->dd_info, channel, pvalue);
       break;
 
    case CMD_GET:
@@ -445,7 +446,7 @@ INT device_driver(DEVICE_DRIVER *device_driver, INT cmd, ...)
          status = device_driver->mt_buffer->status;
          ss_mutex_release(device_driver->mutex);
       } else
-         status = device_driver->dd(cmd, device_driver->dd_info, channel, pvalue);
+         status = device_driver->dd(CMD_GET, device_driver->dd_info, channel, pvalue);
       break;
 
    case CMD_GET_ALL:
@@ -458,7 +459,7 @@ INT device_driver(DEVICE_DRIVER *device_driver, INT cmd, ...)
          status = device_driver->mt_buffer->status;
          ss_mutex_release(device_driver->mutex);
       } else
-         status = device_driver->dd(cmd, device_driver->dd_info, channel, pvalue);
+         status = device_driver->dd(CMD_GET_ALL, device_driver->dd_info, channel, pvalue);
       break;
 
    case CMD_GET_CURRENT:
@@ -470,7 +471,7 @@ INT device_driver(DEVICE_DRIVER *device_driver, INT cmd, ...)
          status = device_driver->mt_buffer->status;
          ss_mutex_release(device_driver->mutex);
       } else
-         status = device_driver->dd(cmd, device_driver->dd_info, channel, pvalue);
+         status = device_driver->dd(CMD_GET_CURRENT, device_driver->dd_info, channel, pvalue);
       break;
 
    case CMD_GET_CURRENT_ALL:
@@ -483,7 +484,7 @@ INT device_driver(DEVICE_DRIVER *device_driver, INT cmd, ...)
          status = device_driver->mt_buffer->status;
          ss_mutex_release(device_driver->mutex);
       } else
-         status = device_driver->dd(cmd, device_driver->dd_info, channel, pvalue);
+         status = device_driver->dd(CMD_GET_CURRENT_ALL, device_driver->dd_info, channel, pvalue);
       break;
 
    case CMD_SET_CURRENT_LIMIT:
@@ -495,7 +496,7 @@ INT device_driver(DEVICE_DRIVER *device_driver, INT cmd, ...)
          status = device_driver->mt_buffer->status;
          ss_mutex_release(device_driver->mutex);
       } else
-         status = device_driver->dd(cmd, device_driver->dd_info, channel, value);
+         status = device_driver->dd(CMD_SET_CURRENT_LIMIT, device_driver->dd_info, channel, value);
       break;
 
    case CMD_SET_CURRENT_LIMIT_ALL:
@@ -508,7 +509,7 @@ INT device_driver(DEVICE_DRIVER *device_driver, INT cmd, ...)
          status = device_driver->mt_buffer->status;
          ss_mutex_release(device_driver->mutex);
       } else
-         status = device_driver->dd(cmd, device_driver->dd_info, channel, pvalue);
+         status = device_driver->dd(CMD_SET_CURRENT_LIMIT_ALL, device_driver->dd_info, channel, pvalue);
       break;
 
    case CMD_GET_DEFAULT_NAME:
@@ -520,13 +521,13 @@ INT device_driver(DEVICE_DRIVER *device_driver, INT cmd, ...)
          status = device_driver->mt_buffer->status;
          ss_mutex_release(device_driver->mutex);
       } else
-         status = device_driver->dd(cmd, device_driver->dd_info, channel, name);
+         status = device_driver->dd(CMD_GET_DEFAULT_NAME, device_driver->dd_info, channel, name);
       break;
 
    case CMD_GET_DEFAULT_THRESHOLD:
       channel = va_arg(argptr, INT);
       pvalue = va_arg(argptr, float *);
-      status = device_driver->dd(cmd, device_driver->dd_info, channel, pvalue);
+      status = device_driver->dd(CMD_GET_DEFAULT_THRESHOLD, device_driver->dd_info, channel, pvalue);
       break;
 
    case CMD_GET_DEMAND:
@@ -538,13 +539,13 @@ INT device_driver(DEVICE_DRIVER *device_driver, INT cmd, ...)
          status = device_driver->mt_buffer->status;
          ss_mutex_release(device_driver->mutex);
       } else
-         status = device_driver->dd(cmd, device_driver->dd_info, channel, pvalue);
+         status = device_driver->dd(CMD_GET_DEMAND, device_driver->dd_info, channel, pvalue);
       break;
 
    case CMD_SET_LABEL:
       channel = va_arg(argptr, INT);
       label = va_arg(argptr, char *);
-      status = device_driver->dd(cmd, device_driver->dd_info, channel, label);
+      status = device_driver->dd(CMD_SET_LABEL, device_driver->dd_info, channel, label);
       break;
 
    default:
