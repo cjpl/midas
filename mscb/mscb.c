@@ -21,15 +21,18 @@
 
 #elif defined(OS_LINUX)        // Linux includes
 
+#include <errno.h>
 #include <unistd.h>
 #include <string.h>
 #include <stdlib.h>
 #include <ctype.h>
+#include <time.h>
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <sys/ioctl.h>
 #include <sys/time.h>
 #include <sys/timeb.h>
+#include <sys/sem.h>
 #include <fcntl.h>
 #include <linux/parport.h>
 #include <linux/ppdev.h>
@@ -291,6 +294,8 @@ int strieq(const char *str1, const char *str2)
 
 #ifdef _MSC_VER
 static HANDLE mutex_handle = 0;
+#elif defined(OS_LINUX)
+int mutex_handle = 0;
 #endif
 
 int mscb_lock(int fd)
@@ -306,7 +311,8 @@ int mscb_lock(int fd)
    if (mutex_handle == 0)
       return 0;
 
-   status = WaitForSingleObject(mutex_handle, 1000);
+   /* wait with a timeout of 10 seconds */
+   status = WaitForSingleObject(mutex_handle, 10000);
 
    if (status == WAIT_FAILED)
       return 0;
@@ -320,11 +326,97 @@ int mscb_lock(int fd)
          return 0;
    } 
 #ifdef HAVE_LIBUSB
-     else if (mscb_fd[fd - 1].type == MSCB_TYPE_USB) {
+      else if (mscb_fd[fd - 1].type == MSCB_TYPE_USB) {
       if (usb_claim_interface((usb_dev_handle *) mscb_fd[fd - 1].ui->dev, 0) < 0)
          return 0;
    }
 #endif // HAVE_LIBUSB
+
+   else if (mscb_fd[fd - 1].type == MSCB_TYPE_ETH) {
+
+#if (!defined(_SEM_SEMUN_UNDEFINED) && !defined(OS_CYGWIN)) || defined(OS_FREEBSD)
+      union semun arg;
+#else
+      union semun {
+         int val;
+         struct semid_ds *buf;
+         ushort *array;
+      } arg;
+#endif
+
+      time_t start_time, now;
+      struct sembuf sb;
+      struct semid_ds buf;
+      int key, status, fh;
+
+      if (mutex_handle == 0) {
+         status = 1;
+
+         /* create a unique key from the file name */
+         key = ftok("/tmp/.MSCB.SEM", 'M');
+         if (key < 0) {
+            fh = open("/tmp/.MSCB.SEM", O_CREAT, 0644);
+            close(fh);
+            key = ftok("/tmp/.MSCB.SEM", 'M');
+            if (key < 0)
+               return 0;
+         }
+
+         /* create or get semaphore */
+         mutex_handle = semget(key, 1, 0);
+         if (mutex_handle < 0) {
+            mutex_handle = semget(key, 1, IPC_CREAT);
+            status = 2;
+         }
+
+         if (mutex_handle < 0) {
+            printf("semget() failed, errno = %d", errno);
+            return 0;
+         }
+
+         buf.sem_perm.uid = getuid();
+         buf.sem_perm.gid = getgid();
+         buf.sem_perm.mode = 0666;
+         arg.buf = &buf;
+
+         semctl(mutex_handle, 0, IPC_SET, arg);
+
+         /* if semaphore was created, set value to one */
+         if (status == 2) {
+            arg.val = 1;
+            if (semctl(mutex_handle, 0, SETVAL, arg) < 0)
+               return 0;
+         }
+      }
+
+      /* claim semaphore */
+      sb.sem_num = 0;
+      sb.sem_op = -1;           /* decrement semaphore */
+      sb.sem_flg = SEM_UNDO;
+
+      memset(&arg, 0, sizeof(arg));
+      time(&start_time);
+
+      do {
+         status = semop(mutex_handle, &sb, 1);
+
+         /* return on success */
+         if (status == 0)
+            break;
+
+         /* retry if interrupted by a ss_wake signal */
+         if (errno == EINTR) {
+            /* return if timeout expired */
+            time(&now);
+            if (now - start_time > 10)
+               return 0;
+
+            continue;
+         }
+
+         return 0;
+      } while (1);
+   }
 
 #endif // OS_LINUX
    return MSCB_SUCCESS;
@@ -354,6 +446,31 @@ int mscb_release(int fd)
          return 0;
    }
 #endif // HAVE_LIBUSB
+     
+   else if (mscb_fd[fd - 1].type == MSCB_TYPE_ETH) {
+ 
+      /* release semaphore */
+      struct sembuf sb;
+      int status;
+
+      sb.sem_num = 0;
+      sb.sem_op = 1;            /* increment semaphore */
+      sb.sem_flg = SEM_UNDO;
+
+      do {
+         status = semop(mutex_handle, &sb, 1);
+
+         /* return on success */
+         if (status == 0)
+            break;
+
+         /* retry if interrupted by a ss_wake signal */
+         if (errno == EINTR)
+            continue;
+
+         return 0;
+      } while (1);
+   }
 
 #endif // OS_LINUX
 
