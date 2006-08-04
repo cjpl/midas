@@ -182,6 +182,7 @@ typedef struct {
    int type;
    int fd;
    int remote_fd;
+   int mutex_handle;
    MUSB_INTERFACE *ui;
 } MSCB_FD;
 
