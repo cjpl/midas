@@ -443,6 +443,7 @@ INT psi_separator(INT cmd, ...)
 
    case CMD_SET_LABEL:
       /* ignore ... */
+      status = FE_SUCCESS;
       break;
 
    default:
