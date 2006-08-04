@@ -762,9 +762,9 @@ int recv_eth(int sock, char *buf, int buffer_size, int millisec)
    if (buffer_size > sizeof(buffer))
       buffer_size = sizeof(buffer);
 
-   /* at least 10 sec timeout for slow network connections */
-   if (millisec < 10000)
-      millisec = 10000;
+   /* at least 30 sec timeout for slow network connections */
+   if (millisec < 30000)
+      millisec = 30000;
 
    /* receive buffer in TCP mode, first byte contains remaining bytes */
    n_received = 0;
