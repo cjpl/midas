@@ -24,7 +24,9 @@ typedef struct {
 
 #elif defined(OS_LINUX) || defined(HAVE_LIBUSB)
 
+#ifndef HAVE_LIBUSB
 #define HAVE_LIBUSB
+#endif
 
 #include <usb.h>
 
