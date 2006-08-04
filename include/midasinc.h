@@ -6,7 +6,7 @@
   Purpose:      Centralized file with all #includes
   Contents:     Includes all necessary include files
 
-  $Id:$
+  $Id$
 
 \********************************************************************/
 
@@ -131,6 +131,7 @@
 /* special code for Linux and FreeBSD */
 #if defined(OS_LINUX) || defined(OS_FREEBSD)
 #include <sys/time.h>
+#include <linux/unistd.h>
 #ifdef OS_DARWIN
 #else
 #include <sys/vfs.h>

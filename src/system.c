@@ -942,6 +942,10 @@ void ss_force_single_thread()
    _single_thread = TRUE;
 }
 
+#ifdef OS_LINUX
+_syscall0(pid_t,gettid)
+#endif
+
 INT ss_gettid(void)
 /********************************************************************\
 
@@ -981,7 +985,7 @@ INT ss_gettid(void)
 #endif                          /* OS_VMS */
 #ifdef OS_UNIX
 
-   return ss_getpid();
+   return gettid();
 
 #endif                          /* OS_UNIX */
 #ifdef OS_VXWORKS
