@@ -2066,7 +2066,7 @@ int main(int argc, char *argv[])
 
    /* turn off watchdog if in debug mode */
    if (debug)
-      cm_set_watchdog_params(TRUE, 0);
+      cm_set_watchdog_params(FALSE, 0);
 
    /* increase RPC timeout to 2min for logger with exabyte or blocked disk */
    rpc_set_option(-1, RPC_OTIMEOUT, 120000);
