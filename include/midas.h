@@ -665,30 +665,32 @@ Alarm error code */
 
 /** 
 Slow control device driver commands */
-#define CMD_INIT                      1
+#define CMD_INIT                      1 /* misc. commands must be below 20 !! */
 #define CMD_EXIT                      2
 #define CMD_STOP                      3
 #define CMD_IDLE                      4
-#define CMD_SET                       5
-#define CMD_GET                       6
-#define CMD_SET_ALL                   7
-#define CMD_GET_ALL                   8
-#define CMD_GET_DEMAND                9
-#define CMD_GET_CURRENT              10
-#define CMD_GET_CURRENT_ALL          11
-#define CMD_SET_VOLTAGE_LIMIT        12
-#define CMD_GET_VOLTAGE_LIMIT        13
-#define CMD_SET_CURRENT_LIMIT        14
-#define CMD_GET_CURRENT_LIMIT        15
-#define CMD_SET_CURRENT_LIMIT_ALL    16
-#define CMD_GET_CURRENT_LIMIT_ALL    17
-#define CMD_SET_LABEL                18
-#define CMD_GET_LABEL                19
-#define CMD_GET_DEFAULT_THRESHOLD    20
-#define CMD_SET_RAMPUP               21
-#define CMD_GET_RAMPUP               22
-#define CMD_SET_RAMPDOWN             23
-#define CMD_GET_RAMPDOWN             24
+#define CMD_GET_DEFAULT_THRESHOLD     5
+#define CMD_SET_LABEL                 6
+#define CMD_GET_LABEL                 7
+#define CMD_MISC_LAST                 7 /* update this if you add new commands */
+
+#define CMD_SET_FIRST                CMD_MISC_LAST+1 /* set commands */
+#define CMD_SET                      CMD_SET_FIRST 
+#define CMD_SET_VOLTAGE_LIMIT        CMD_SET_FIRST+1
+#define CMD_SET_CURRENT_LIMIT        CMD_SET_FIRST+2
+#define CMD_SET_RAMPUP               CMD_SET_FIRST+3
+#define CMD_SET_RAMPDOWN             CMD_SET_FIRST+4
+#define CMD_SET_LAST                 CMD_SET_FIRST+4 /* update this if you add new commands */
+
+#define CMD_GET_FIRST                CMD_SET_LAST+1  /* get commands */
+#define CMD_GET                      CMD_GET_FIRST
+#define CMD_GET_DEMAND               CMD_GET_FIRST+1
+#define CMD_GET_CURRENT              CMD_GET_FIRST+2
+#define CMD_GET_VOLTAGE_LIMIT        CMD_GET_FIRST+3
+#define CMD_GET_CURRENT_LIMIT        CMD_GET_FIRST+4
+#define CMD_GET_RAMPUP               CMD_GET_FIRST+5
+#define CMD_GET_RAMPDOWN             CMD_GET_FIRST+6
+#define CMD_GET_LAST                 CMD_GET_FIRST+6 /* update this if you add new commands ! */
 
 #define CMD_ENABLE_COMMAND       (1<<14)  /* these two commands can be used to enable/disable */
 #define CMD_DISABLE_COMMAND      (1<<15)  /* one of the other commands                        */
@@ -906,12 +908,8 @@ typedef struct {
 } BUS_DRIVER;
 
 typedef struct {
-   float demand;                      /**< Array for demand values           */
-   float measured;                    /**< Array for measured values         */
-   float current;                     /**< Array for current values          */
-   float current_limit;               /**< Array for current limit values    */
-   char  default_name[NAME_LENGTH];   /**< Array for default channel names   */                                
-   float device_demand;               /**< Demand value stored on the device */ 
+   float array[CMD_GET_LAST];         /**< Array for various values          */
+   char  label[NAME_LENGTH];          /**< Array for channel labels          */                                
 } DD_MT_CHANNEL;
 
 typedef struct {
