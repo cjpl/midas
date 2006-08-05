@@ -376,7 +376,7 @@ INT psi_beamblocker(INT cmd, ...)
       status = psi_beamblocker_get_demand(info, channel, pvalue);
       break;
 
-   case CMD_GET_DEFAULT_NAME:
+   case CMD_GET_LABEL:
       info = va_arg(argptr, void *);
       channel = va_arg(argptr, INT);
       name = va_arg(argptr, char *);

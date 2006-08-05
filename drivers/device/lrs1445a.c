@@ -359,7 +359,7 @@ INT lrs1445a(INT cmd, ...)
       break;
 
    case CMD_SET_CURRENT_LIMIT_ALL:
-   case CMD_GET_DEFAULT_NAME:
+   case CMD_GET_LABEL:
    case CMD_SET_LABEL:
       break;
 

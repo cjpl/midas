@@ -141,7 +141,7 @@ INT mscbdev_init(HNDLE hkey, void **pinfo, INT channels, INT(*bd) (INT cmd, ...)
 
 INT mscbdev_exit(MSCBDEV_INFO * info)
 {
-   /* free info structure */
+   /* close MSCB bus */
    if (info) {
       mscb_exit(info->fd);
       free(info->mscbdev_settings.mscb_address);
@@ -247,7 +247,7 @@ INT mscbdev_get_all(MSCBDEV_INFO * info, INT channel, float *pvalue)
 
 /*----------------------------------------------------------------------------*/
 
-INT mscbdev_get_default_name(MSCBDEV_INFO * info, INT channel, char *name)
+INT mscbdev_get_label(MSCBDEV_INFO * info, INT channel, char *name)
 {
    int status;
    MSCB_INFO_VAR var_info;
@@ -318,11 +318,11 @@ INT mscbdev(INT cmd, ...)
       status = mscbdev_get_all(info, channel, pvalue);
       break;
 
-   case CMD_GET_DEFAULT_NAME:
+   case CMD_GET_LABEL:
       info = va_arg(argptr, void *);
       channel = va_arg(argptr, INT);
       name = va_arg(argptr, char *);
-      status = mscbdev_get_default_name(info, channel, name);
+      status = mscbdev_get_label(info, channel, name);
       break;
 
    default:

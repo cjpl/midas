@@ -418,7 +418,7 @@ INT multi_init(EQUIPMENT * pequipment)
    /*---- get default names from device driver ----*/
    for (i = 0; i < m_info->num_channels_input; i++) {
       sprintf(m_info->names_input + NAME_LENGTH * i, "Input Channel %d", i);
-      device_driver(m_info->driver_input[i], CMD_GET_DEFAULT_NAME,
+      device_driver(m_info->driver_input[i], CMD_GET_LABEL,
                     i - m_info->channel_offset_input[i], 
                     m_info->names_input + NAME_LENGTH * i);
    }
@@ -428,7 +428,7 @@ INT multi_init(EQUIPMENT * pequipment)
 
    for (i = 0; i < m_info->num_channels_output; i++) {
       sprintf(m_info->names_output + NAME_LENGTH * i, "Output Channel %d", i);
-      device_driver(m_info->driver_output[i], CMD_GET_DEFAULT_NAME, 
+      device_driver(m_info->driver_output[i], CMD_GET_LABEL, 
                     i - m_info->channel_offset_output[i], 
                     m_info->names_output + NAME_LENGTH * i);
    }
@@ -509,6 +509,19 @@ INT multi_exit(EQUIPMENT * pequipment)
    /* call exit method of device drivers */
    for (i = 0; pequipment->driver[i].dd != NULL; i++)
       device_driver(&pequipment->driver[i], CMD_EXIT);
+
+   return FE_SUCCESS;
+}
+
+/*----------------------------------------------------------------------------*/
+
+INT multi_stop(EQUIPMENT * pequipment)
+{
+   INT i;
+
+   /* call close method of device drivers */
+   for (i = 0; pequipment->driver[i].dd != NULL; i++)
+      device_driver(&pequipment->driver[i], CMD_STOP);
 
    return FE_SUCCESS;
 }
@@ -632,6 +645,10 @@ INT cd_multi(INT cmd, EQUIPMENT * pequipment)
 
    case CMD_EXIT:
       status = multi_exit(pequipment);
+      break;
+
+   case CMD_STOP:
+      status = multi_stop(pequipment);
       break;
 
    case CMD_IDLE:

@@ -298,7 +298,7 @@ INT gen_init(EQUIPMENT * pequipment)
    /*---- get default names from device driver ----*/
    for (i = 0; i < gen_info->num_channels; i++) {
       sprintf(gen_info->names + NAME_LENGTH * i, "Default%%CH %d", i);
-      device_driver(gen_info->driver[i], CMD_GET_DEFAULT_NAME,
+      device_driver(gen_info->driver[i], CMD_GET_LABEL,
                     i - gen_info->channel_offset[i], gen_info->names + NAME_LENGTH * i);
    }
    db_merge_data(hDB, gen_info->hKeyRoot, "Settings/Names",

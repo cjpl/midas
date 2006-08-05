@@ -355,7 +355,7 @@ INT psi_separator_get_demand(PSI_SEPARATOR_INFO * info, INT channel,
 //! \param info is a pointer to the DD specific info structure
 //! \param channel of the name to be set
 //! \param name pointer to the ODB name
-INT psi_separator_get_default_name(PSI_SEPARATOR_INFO * info, INT channel,
+INT psi_separator_get_label(PSI_SEPARATOR_INFO * info, INT channel,
                                    char *name)
 {
    if (channel == 0)
@@ -427,11 +427,11 @@ INT psi_separator(INT cmd, ...)
       status = psi_separator_get_demand(info, channel, pvalue);
       break;
 
-   case CMD_GET_DEFAULT_NAME:
+   case CMD_GET_LABEL:
       info = va_arg(argptr, void *);
       channel = va_arg(argptr, INT);
       name = va_arg(argptr, char *);
-      status = psi_separator_get_default_name(info, channel, name);
+      status = psi_separator_get_label(info, channel, name);
       break;
 
    case CMD_GET_DEFAULT_THRESHOLD:

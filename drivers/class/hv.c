@@ -559,7 +559,7 @@ INT hv_init(EQUIPMENT * pequipment)
 
    db_find_key(hDB, hv_info->hKeyRoot, "Settings/Names", &hKey);
    for (i = 0; i < hv_info->num_channels; i++) {
-      DRIVER(i) (CMD_GET_DEFAULT_NAME, hv_info->dd_info[i],
+      DRIVER(i) (CMD_GET_LABEL, hv_info->dd_info[i],
                  i - hv_info->channel_offset[i], hv_info->names + NAME_LENGTH * i);
       db_set_data_index(hDB, hKey, hv_info->names + NAME_LENGTH * i, size, i, TID_STRING);
    }

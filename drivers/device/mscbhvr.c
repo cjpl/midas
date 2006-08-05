@@ -274,7 +274,7 @@ INT mscbhvr(INT cmd, ...)
       status = mscbhvr_set_current_limit_all(info, pvalue);
       break;
 
-   case CMD_GET_DEFAULT_NAME:
+   case CMD_GET_LABEL:
       status = FE_SUCCESS;
       break;
 
