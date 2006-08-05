@@ -343,8 +343,6 @@ INT device_driver(DEVICE_DRIVER *device_driver, INT cmd, ...)
    va_start(argptr, cmd);
    status = FE_SUCCESS;
 
-   ss_sleep(10);
-
    switch (cmd) {
    case CMD_INIT:
       hKey = va_arg(argptr, HNDLE);
@@ -553,6 +551,9 @@ INT device_driver(DEVICE_DRIVER *device_driver, INT cmd, ...)
    default:
       break;
    }
+
+   /* don't eat all CPU in main thread */
+   cm_yield(10);
 
    va_end(argptr);
 
