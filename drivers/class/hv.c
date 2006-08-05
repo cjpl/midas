@@ -500,10 +500,8 @@ INT hv_init(EQUIPMENT * pequipment)
          j = 0;
       }
 
-      hv_info->driver[i] = pequipment->driver[index].dd;
-      hv_info->dd_info[i] = pequipment->driver[index].dd_info;
+      hv_info->driver[i] = &pequipment->driver[index];
       hv_info->channel_offset[i] = offset;
-      hv_info->flags[i] = pequipment->driver[index].flags;
    }
 
    /*---- get default names from device driver ----*/
