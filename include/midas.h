@@ -667,28 +667,29 @@ Alarm error code */
 Slow control device driver commands */
 #define CMD_INIT                      1
 #define CMD_EXIT                      2
-#define CMD_IDLE                      3
-#define CMD_SET                       4
-#define CMD_SET_ALL                   5
+#define CMD_STOP                      3
+#define CMD_IDLE                      4
+#define CMD_SET                       5
 #define CMD_GET                       6
-#define CMD_GET_ALL                   7
-#define CMD_GET_CURRENT               8
-#define CMD_GET_CURRENT_ALL           9
-#define CMD_SET_VOLTAGE_LIMIT        10
-#define CMD_GET_VOLTAGE_LIMIT        11
-#define CMD_SET_CURRENT_LIMIT        12
-#define CMD_GET_CURRENT_LIMIT        13
-#define CMD_SET_CURRENT_LIMIT_ALL    14
-#define CMD_GET_CURRENT_LIMIT_ALL    15
-#define CMD_GET_DEMAND               16
-#define CMD_SET_DEFAULT_NAME         17
-#define CMD_GET_DEFAULT_NAME         18
-#define CMD_GET_DEFAULT_THRESHOLD    19
-#define CMD_SET_LABEL                20
+#define CMD_SET_ALL                   7
+#define CMD_GET_ALL                   8
+#define CMD_GET_DEMAND                9
+#define CMD_GET_CURRENT              10
+#define CMD_GET_CURRENT_ALL          11
+#define CMD_SET_VOLTAGE_LIMIT        12
+#define CMD_GET_VOLTAGE_LIMIT        13
+#define CMD_SET_CURRENT_LIMIT        14
+#define CMD_GET_CURRENT_LIMIT        15
+#define CMD_SET_CURRENT_LIMIT_ALL    16
+#define CMD_GET_CURRENT_LIMIT_ALL    17
+#define CMD_SET_LABEL                18
+#define CMD_GET_LABEL                19
+#define CMD_GET_DEFAULT_THRESHOLD    20
 #define CMD_SET_RAMPUP               21
-#define CMD_SET_RAMPDOWN             22
-#define CMD_GET_RAMPUP               23
+#define CMD_GET_RAMPUP               22
+#define CMD_SET_RAMPDOWN             23
 #define CMD_GET_RAMPDOWN             24
+
 #define CMD_ENABLE_COMMAND       (1<<14)  /* these two commands can be used to enable/disable */
 #define CMD_DISABLE_COMMAND      (1<<15)  /* one of the other commands                        */
 
