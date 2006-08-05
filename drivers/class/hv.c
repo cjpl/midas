@@ -52,8 +52,6 @@ typedef struct {
 
 } HV_INFO;
 
-#define DRIVER(_i) ((INT (*)(INT cmd, ...))(hv_info->driver[_i]))
-
 #ifndef abs
 #define abs(a) (((a) < 0)   ? -(a) : (a))
 #endif
@@ -91,7 +89,7 @@ static void free_mem(HV_INFO * hv_info)
 
 INT hv_read(EQUIPMENT * pequipment, int channel)
 {
-   int i, j, status;
+   int i, status;
    float max_diff;
    DWORD act_time, min_time;
    BOOL changed;
@@ -101,27 +99,12 @@ INT hv_read(EQUIPMENT * pequipment, int channel)
    hv_info = (HV_INFO *) pequipment->cd_info;
    cm_get_experiment_database(&hDB, NULL);
 
-   if (channel == -1) {
-      for (i = 0, j = 0; pequipment->driver[i].name[0]; i++) {
-         status = pequipment->driver[i].dd(CMD_GET_ALL,
-                                           pequipment->driver[i].dd_info,
-                                           pequipment->driver[i].channels,
-                                           hv_info->measured + j);
-         status = pequipment->driver[i].dd(CMD_GET_CURRENT_ALL,
-                                           pequipment->driver[i].dd_info,
-                                           pequipment->driver[i].channels,
-                                           hv_info->current + j);
-
-         j += pequipment->driver[i].channels;
-      }
-   } else {
-      status = DRIVER(channel) (CMD_GET, hv_info->dd_info[channel],
-                                channel - hv_info->channel_offset[channel],
-                                &hv_info->measured[channel]);
-      status = DRIVER(channel) (CMD_GET_CURRENT, hv_info->dd_info[channel],
-                                channel - hv_info->channel_offset[channel],
-                                &hv_info->current[channel]);
-   }
+   status = device_driver(hv_info->driver[channel], CMD_GET,
+                              channel - hv_info->channel_offset[channel],
+                              &hv_info->measured[channel]);
+   status = device_driver(hv_info->driver[channel], CMD_GET_CURRENT,
+                              channel - hv_info->channel_offset[channel],
+                              &hv_info->current[channel]);
 
    /* check how much channels have changed since last ODB update */
    act_time = ss_millitime();
@@ -241,8 +224,8 @@ INT hv_ramp(HV_INFO * hv_info)
                hv_info->demand_mirror[i] =
                    MAX(hv_info->demand[i], hv_info->demand_mirror[i] - delta);
          }
-         status = DRIVER(i) (CMD_SET, hv_info->dd_info[i],
-                             i - hv_info->channel_offset[i], hv_info->demand_mirror[i]);
+         status = device_driver(hv_info->driver[i], CMD_SET,
+                                i - hv_info->channel_offset[i], hv_info->demand_mirror[i]);
          hv_info->last_change[i] = ss_millitime();
       }
    }
@@ -255,7 +238,7 @@ INT hv_ramp(HV_INFO * hv_info)
 
 void hv_demand(INT hDB, INT hKey, void *info)
 {
-   INT i, status, n, offset;
+   INT i;
    HV_INFO *hv_info;
    EQUIPMENT *pequipment;
 
@@ -267,40 +250,12 @@ void hv_demand(INT hDB, INT hKey, void *info)
       if (hv_info->demand[i] > hv_info->voltage_limit[i])
          hv_info->demand[i] = hv_info->voltage_limit[i];
 
-   /* check how many channels differ */
-   for (i = 1, n = 0; i < hv_info->num_channels; i++)
-      if ((fabs(hv_info->demand[i]) > fabs(hv_info->demand_mirror[i])
-           && hv_info->rampup_speed[i] == 0)
-          || (fabs(hv_info->demand[i]) < fabs(hv_info->demand_mirror[i])
-              && hv_info->rampdown_speed[i] == 0))
-         n++;
-
-   /* if more than 10% differ, use SET_ALL command which is faster in that case */
-   if (n > hv_info->num_channels / 10) {
-      for (i = 0, offset = 0; pequipment->driver[i].name[0]; i++) {
-         if ((pequipment->driver[i].flags & DF_READ_ONLY) == 0)
-            status = pequipment->driver[i].dd(CMD_SET_ALL, pequipment->driver[i].dd_info,
-                                              pequipment->driver[i].channels,
-                                              hv_info->demand + offset);
-
-         offset += pequipment->driver[i].channels;
+   /* set individual channels only if demand value differs */
+   for (i = 0; i < hv_info->num_channels; i++)
+      if (hv_info->demand[i] != hv_info->demand_mirror[i] ||
+            fabs(hv_info->measured[i] - hv_info->demand[i]) > 100.f) {
+         hv_info->last_change[i] = ss_millitime();
       }
-
-      for (i = 0; i < hv_info->num_channels; i++) {
-         if (hv_info->demand[i] != hv_info->demand_mirror[i])
-            hv_info->last_change[i] = ss_millitime();
-         hv_info->demand_mirror[i] = hv_info->demand[i];
-      }
-
-      /* read back all channels */
-      hv_read(pequipment, -1);
-   } else
-      /* set individual channels only if demand value differs */
-      for (i = 0; i < hv_info->num_channels; i++)
-         if (hv_info->demand[i] != hv_info->demand_mirror[i] ||
-             fabs(hv_info->measured[i] - hv_info->demand[i]) > 100.f) {
-            hv_info->last_change[i] = ss_millitime();
-         }
 
    pequipment->odb_in++;
 
@@ -323,8 +278,8 @@ void hv_current_limit(INT hDB, INT hKey, void *info)
 
    /* check for voltage limit */
    for (i = 0; i < hv_info->num_channels; i++)
-      DRIVER(i) (CMD_SET_CURRENT_LIMIT, hv_info->dd_info[i],
-                 i - hv_info->channel_offset[i], hv_info->current_limit[i]);
+      device_driver(hv_info->driver[i], CMD_SET_CURRENT_LIMIT,
+                    i - hv_info->channel_offset[i], hv_info->current_limit[i]);
 
    pequipment->odb_in++;
 }
@@ -342,9 +297,9 @@ void hv_update_label(INT hDB, INT hKey, void *info)
 
    /* update channel labels based on the midas channel names */
    for (i = 0; i < hv_info->num_channels; i++)
-      status = DRIVER(i) (CMD_SET_LABEL, hv_info->dd_info[i],
-                          i - hv_info->channel_offset[i],
-                          hv_info->names + NAME_LENGTH * i);
+      status = device_driver(hv_info->driver[i], CMD_SET_LABEL,
+                             i - hv_info->channel_offset[i],
+                             hv_info->names + NAME_LENGTH * i);
 }
 
 /*------------------------------------------------------------------*/
@@ -487,7 +442,7 @@ INT hv_init(EQUIPMENT * pequipment)
    db_open_record(hDB, hKey, hv_info->rampdown_speed,
                   sizeof(float) * hv_info->num_channels, MODE_READ, NULL, NULL);
 
-  /*---- Create/Read variables ----*/
+   /*---- Create/Read variables ----*/
 
    /* Demand */
    db_merge_data(hDB, hv_info->hKeyRoot, "Variables/Demand",
@@ -514,7 +469,7 @@ INT hv_init(EQUIPMENT * pequipment)
    memcpy(hv_info->current_mirror, hv_info->current,
           hv_info->num_channels * sizeof(float));
 
-  /*---- Initialize device drivers ----*/
+   /*---- Initialize device drivers ----*/
 
    /* call init method */
    for (i = 0; pequipment->driver[i].name[0]; i++) {
@@ -530,10 +485,7 @@ INT hv_init(EQUIPMENT * pequipment)
          }
       }
 
-      status = pequipment->driver[i].dd(CMD_INIT, hKey, &pequipment->driver[i].dd_info,
-                                        pequipment->driver[i].channels,
-                                        pequipment->driver[i].flags,
-                                        pequipment->driver[i].bd);
+      status = device_driver(&pequipment->driver[i], CMD_INIT, hKey);
       if (status != FE_SUCCESS) {
          free_mem(hv_info);
          return status;
@@ -559,15 +511,15 @@ INT hv_init(EQUIPMENT * pequipment)
 
    db_find_key(hDB, hv_info->hKeyRoot, "Settings/Names", &hKey);
    for (i = 0; i < hv_info->num_channels; i++) {
-      DRIVER(i) (CMD_GET_LABEL, hv_info->dd_info[i],
-                 i - hv_info->channel_offset[i], hv_info->names + NAME_LENGTH * i);
+      device_driver(hv_info->driver[i], CMD_GET_LABEL,
+                    i - hv_info->channel_offset[i], hv_info->names + NAME_LENGTH * i);
       db_set_data_index(hDB, hKey, hv_info->names + NAME_LENGTH * i, size, i, TID_STRING);
    }
 
    /*---- set labels form midas SC names ----*/
    for (i = 0; i < hv_info->num_channels; i++) {
-      DRIVER(i) (CMD_SET_LABEL, hv_info->dd_info[i],
-                 i - hv_info->channel_offset[i], hv_info->names + NAME_LENGTH * i);
+      device_driver(hv_info->driver[i], CMD_SET_LABEL,
+                    i - hv_info->channel_offset[i], hv_info->names + NAME_LENGTH * i);
    }
 
    /* open hotlink on channel names */
@@ -576,43 +528,38 @@ INT hv_init(EQUIPMENT * pequipment)
                      MODE_READ, hv_update_label, pequipment);
 
    /* set current limits and initial demand values */
-   printf("\n");
    for (i = 0, offset = 0; pequipment->driver[i].name[0]; i++) {
-      for (j = 0; j < pequipment->driver[i].channels; j++)
+      for (j = 0; j < pequipment->driver[i].channels; j++) {
          hv_info->demand_mirror[offset + j] =
              MIN(hv_info->demand[offset + j], hv_info->voltage_limit[offset + j]);
 
-      DRIVER(offset) (CMD_SET_CURRENT_LIMIT_ALL, pequipment->driver[i].dd_info,
-                          pequipment->driver[i].channels,
-                          hv_info->current_limit + offset);
+         device_driver(hv_info->driver[j], CMD_SET_CURRENT_LIMIT,
+                        j, hv_info->current_limit + offset + j);
 
-      printf("\n");
-
-      if ((hv_info->flags[i] & DF_PRIO_DEVICE) == 0)
-         status = DRIVER(offset) (CMD_SET_ALL, pequipment->driver[i].dd_info,
-                                      pequipment->driver[i].channels,
-                                      hv_info->demand_mirror + offset);
-      if (status != FE_SUCCESS)
-         return status;
+         if ((hv_info->flags[j] & DF_PRIO_DEVICE) == 0)
+            status = device_driver(hv_info->driver[i], CMD_SET,
+                                   j, hv_info->demand_mirror + offset + j);
+         if (status != FE_SUCCESS)
+            return status;
+      }
 
       offset += pequipment->driver[i].channels;
    }
-   printf("\n");
 
-   /* get demand valus from device if asked for */
+   /* get demand values from device if asked for */
    for (i = 0; i < hv_info->num_channels; i++) {
       if (hv_info->flags[i] & DF_PRIO_DEVICE) {
-         DRIVER(i) (CMD_GET_DEMAND, hv_info->dd_info[i],
-                    i - hv_info->channel_offset[i], &hv_info->demand[i]);
+         device_driver(hv_info->driver[i], CMD_GET_DEMAND,
+                       i - hv_info->channel_offset[i], &hv_info->demand[i]);
          hv_info->demand_mirror[i] = hv_info->demand[i];
       }
    }
    db_set_record(hDB, hv_info->hKeyDemand, hv_info->demand,
                  hv_info->num_channels * sizeof(float), 0);
 
-   /* initially read all channels if not too much */
-   if (hv_info->num_channels < 256)
-      hv_read(pequipment, -1);
+   /* initially read all channels */
+   for (i=0 ; i<hv_info->num_channels ; i++)
+      hv_read(pequipment, i);
 
    return FE_SUCCESS;
 }
@@ -627,7 +574,7 @@ INT hv_exit(EQUIPMENT * pequipment)
 
    /* call exit method of device drivers */
    for (i = 0; pequipment->driver[i].dd != NULL; i++)
-      pequipment->driver[i].dd(CMD_EXIT, pequipment->driver[i].dd_info);
+      device_driver(&pequipment->driver[i], CMD_EXIT);
 
    return FE_SUCCESS;
 }
@@ -770,7 +717,6 @@ INT cd_hv(INT cmd, PEQUIPMENT pequipment)
       cm_msg(MERROR, "HV class driver", "Received unknown command %d", cmd);
       status = FE_ERR_DRIVER;
       break;
-
    }
 
    return status;
