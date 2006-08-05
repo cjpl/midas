@@ -422,7 +422,7 @@ int mscb_lock(int fd)
          if (status == 0)
             break;
 
-         /* retry if interrupted by a ss_wake signal */
+         /* retry if interrupted by an alarm signal */
          if (errno == EINTR) {
             /* return if timeout expired */
             time(&now);
@@ -1479,8 +1479,14 @@ int mscb_init(char *device, int bufsize, char *password, int debug)
          strcpy(buf+1, password);
       else
          buf[1] = 0;
-      mscb_out(index + 1, buf, 21, RS485_FLAG_CMD);
 
+      if (!mscb_lock(index + 1)) {
+         memset(&mscb_fd[index], 0, sizeof(MSCB_FD));
+         debug_log("return EMSCB_LOCKED\n", 0);
+         return EMSCB_LOCKED;
+      }
+
+      mscb_out(index + 1, buf, 21, RS485_FLAG_CMD);
       n = mscb_in(index + 1, buf, 2, TO_SHORT);
       mscb_release(index + 1);
 
