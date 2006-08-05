@@ -458,8 +458,7 @@ INT device_driver(DEVICE_DRIVER *device_driver, INT cmd, ...)
    }
 
    /* don't eat all CPU in main thread */
-   status = cm_yield(10);
-   if (status == RPC_SHUTDOWN)
+   if (cm_yield(10) == RPC_SHUTDOWN)
       fe_stop = TRUE;
 
    va_end(argptr);
