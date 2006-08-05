@@ -176,18 +176,6 @@ INT mscbdev_set(MSCBDEV_INFO * info, INT channel, float value)
 
 /*----------------------------------------------------------------------------*/
 
-INT mscbdev_set_all(MSCBDEV_INFO * info, INT channel, float *pvalue)
-{
-   INT i;
-
-   for (i=0 ; i<info->num_channels ; i++)
-      mscbdev_set(info, i, pvalue[i]);
-
-   return FE_SUCCESS;
-}
-
-/*----------------------------------------------------------------------------*/
-
 INT mscbdev_get(MSCBDEV_INFO * info, INT channel, float *pvalue)
 {
    INT size, value_int, status;
@@ -229,18 +217,6 @@ INT mscbdev_get(MSCBDEV_INFO * info, INT channel, float *pvalue)
       }
       *pvalue = (float) value_int;
    }
-
-   return FE_SUCCESS;
-}
-
-/*----------------------------------------------------------------------------*/
-
-INT mscbdev_get_all(MSCBDEV_INFO * info, INT channel, float *pvalue)
-{
-   int i;
-
-   for (i=0 ; i<info->num_channels ; i++)
-      mscbdev_get(info, i, pvalue+i);
 
    return FE_SUCCESS;
 }
@@ -297,25 +273,11 @@ INT mscbdev(INT cmd, ...)
       status = mscbdev_set(info, channel, value);
       break;
 
-   case CMD_SET_ALL:
-      info = va_arg(argptr, void *);
-      channel = va_arg(argptr, INT);
-      pvalue = (float *) va_arg(argptr, float *);
-      status = mscbdev_set_all(info, channel, pvalue);
-      break;
-
    case CMD_GET:
       info = va_arg(argptr, void *);
       channel = va_arg(argptr, INT);
       pvalue = va_arg(argptr, float *);
       status = mscbdev_get(info, channel, pvalue);
-      break;
-
-   case CMD_GET_ALL:
-      info = va_arg(argptr, void *);
-      channel = va_arg(argptr, INT);
-      pvalue = va_arg(argptr, float *);
-      status = mscbdev_get_all(info, channel, pvalue);
       break;
 
    case CMD_GET_LABEL:
