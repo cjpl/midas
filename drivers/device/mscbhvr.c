@@ -116,18 +116,6 @@ INT mscbhvr_set(MSCBHVR_INFO * info, INT channel, float value)
 
 /*----------------------------------------------------------------------------*/
 
-INT mscbhvr_set_all(MSCBHVR_INFO * info, INT channels, float *pvalue)
-{
-   INT i;
-
-   for (i = 0; i < channels; i++)
-      mscbhvr_set(info, i, pvalue[i]);
-
-   return FE_SUCCESS;
-}
-
-/*----------------------------------------------------------------------------*/
-
 INT mscbhvr_get(MSCBHVR_INFO * info, INT channel, float *pvalue)
 {
    INT size = 4;
@@ -148,45 +136,9 @@ INT mscbhvr_get_current(MSCBHVR_INFO * info, INT channel, float *pvalue)
 
 /*----------------------------------------------------------------------------*/
 
-INT mscbhvr_get_all(MSCBHVR_INFO * info, INT channels, float *array)
-{
-   int i;
-
-   for (i = 0; i < channels; i++)
-      mscbhvr_get(info, i, array+i);
-
-   return FE_SUCCESS;
-}
-
-/*----------------------------------------------------------------------------*/
-
-INT mscbhvr_get_current_all(MSCBHVR_INFO * info, INT channels, float *array)
-{
-   int i;
-
-   for (i = 0; i < channels; i++)
-      mscbhvr_get_current(info, i, array+i);
-
-   return FE_SUCCESS;
-}
-
-/*----------------------------------------------------------------------------*/
-
 INT mscbhvr_set_current_limit(MSCBHVR_INFO * info, int channel, float limit)
 {
    mscb_write(info->fd, info->settings.base_address + channel, 9, &limit, 4);
-   return FE_SUCCESS;
-}
-
-/*----------------------------------------------------------------------------*/
-
-INT mscbhvr_set_current_limit_all(MSCBHVR_INFO * info, float *plimit)
-{
-   int i;
-
-   for (i=0 ; i<info->num_channels ; i++)
-      mscbhvr_set_current_limit(info, i, plimit[i]);
-
    return FE_SUCCESS;
 }
 
@@ -224,25 +176,11 @@ INT mscbhvr(INT cmd, ...)
       status = mscbhvr_set(info, channel, value);
       break;
 
-   case CMD_SET_ALL:
-      info = va_arg(argptr, void *);
-      channel = va_arg(argptr, INT);
-      pvalue = va_arg(argptr, float *);
-      status = mscbhvr_set_all(info, channel, pvalue);
-      break;
-
    case CMD_GET:
       info = va_arg(argptr, void *);
       channel = va_arg(argptr, INT);
       pvalue = va_arg(argptr, float *);
       status = mscbhvr_get(info, channel, pvalue);
-      break;
-
-   case CMD_GET_ALL:
-      info = va_arg(argptr, void *);
-      channel = va_arg(argptr, INT);
-      pvalue = va_arg(argptr, float *);
-      status = mscbhvr_get_all(info, channel, pvalue);
       break;
 
    case CMD_GET_CURRENT:
@@ -252,26 +190,11 @@ INT mscbhvr(INT cmd, ...)
       status = mscbhvr_get_current(info, channel, pvalue);
       break;
 
-   case CMD_GET_CURRENT_ALL:
-      info = va_arg(argptr, void *);
-      channel = va_arg(argptr, INT);
-      pvalue = va_arg(argptr, float *);
-      status = mscbhvr_get_current_all(info, channel, pvalue);
-      break;
-      break;
-
    case CMD_SET_CURRENT_LIMIT:
       info = va_arg(argptr, void *);
       channel = va_arg(argptr, INT);
       value = (float) va_arg(argptr, double);
       status = mscbhvr_set_current_limit(info, channel, value);
-      break;
-
-   case CMD_SET_CURRENT_LIMIT_ALL:
-      info = va_arg(argptr, void *);
-      channel = va_arg(argptr, INT);
-      pvalue = va_arg(argptr, float *);
-      status = mscbhvr_set_current_limit_all(info, pvalue);
       break;
 
    case CMD_GET_LABEL:

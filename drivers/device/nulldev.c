@@ -132,27 +132,6 @@ INT nulldev_set(NULLDEV_INFO * info, INT channel, float value)
 
 /*----------------------------------------------------------------------------*/
 
-INT nulldev_set_all(NULLDEV_INFO * info, INT channels, float *value)
-{
-   int i;
-   char str[100000];
-
-   /* put here some optimized form of setting all channels simultaneously like ... */
-   strcpy(str, "SETALL ");
-   for (i = 0; i < MIN(info->num_channels, channels); i++)
-      sprintf(str + strlen(str), "%lf ", value[i]);
-   BD_PUTS(str);
-   BD_GETS(str, sizeof(str), ">", DEFAULT_TIMEOUT);
-
-   /* simulate writing by storing values in local array */
-   for (i = 0; i < MIN(info->num_channels, channels); i++)
-      info->array[i] = value[i];
-
-   return FE_SUCCESS;
-}
-
-/*----------------------------------------------------------------------------*/
-
 INT nulldev_get(NULLDEV_INFO * info, INT channel, float *pvalue)
 {
    int status;
@@ -170,30 +149,6 @@ INT nulldev_get(NULLDEV_INFO * info, INT channel, float *pvalue)
       *pvalue = info->array[channel];
    else
       *pvalue = 0.f;
-
-   return FE_SUCCESS;
-}
-
-/*----------------------------------------------------------------------------*/
-
-INT nulldev_get_all(NULLDEV_INFO * info, INT channels, float *pvalue)
-{
-   int i;
-
-   /* put here some optimized form of reading all channels. If the deviced
-      does not support such a function, one can call nulldev_get() in a loop 
-
-      strcpy(str, "GETALL");
-      BD_PUTS(str);
-      BD_GETS(str, sizeof(str), ">", DEFAULT_TIMEOUT);
-
-      for (i=0 ; i<MIN(info->num_channels, channels) ; i++)
-      pvalue[i] = atof(str+i*5); // extract individual values from reply
-    */
-
-   /* simulate reading by copying set data from local array */
-   for (i = 0; i < MIN(info->num_channels, channels); i++)
-      pvalue[i] = info->array[i];
 
    return FE_SUCCESS;
 }
@@ -234,25 +189,11 @@ INT nulldev(INT cmd, ...)
       status = nulldev_set(info, channel, value);
       break;
 
-   case CMD_SET_ALL:
-      info = va_arg(argptr, void *);
-      channel = va_arg(argptr, INT);
-      pvalue = (float *) va_arg(argptr, float *);
-      status = nulldev_set_all(info, channel, pvalue);
-      break;
-
    case CMD_GET:
       info = va_arg(argptr, void *);
       channel = va_arg(argptr, INT);
       pvalue = va_arg(argptr, float *);
       status = nulldev_get(info, channel, pvalue);
-      break;
-
-   case CMD_GET_ALL:
-      info = va_arg(argptr, void *);
-      channel = va_arg(argptr, INT);
-      pvalue = va_arg(argptr, float *);
-      status = nulldev_get_all(info, channel, pvalue);
       break;
 
    default:
