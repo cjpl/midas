@@ -196,7 +196,7 @@ INT mscbdev_get(MSCBDEV_INFO * info, INT channel, float *pvalue)
 
    if (info->mscbdev_settings.var_size[channel] == -1) {
       size = sizeof(float);
-      status = mscb_read_no_retries(info->fd, info->mscbdev_settings.mscb_address[channel],
+      status = mscb_read(info->fd, info->mscbdev_settings.mscb_address[channel],
                 info->mscbdev_settings.mscb_index[channel], &value, &size);
       if (status != MSCB_SUCCESS) {
          /* only produce error once every minute */
@@ -214,7 +214,7 @@ INT mscbdev_get(MSCBDEV_INFO * info, INT channel, float *pvalue)
       /* channel is int */
       size = info->mscbdev_settings.var_size[channel];
       value_int = 0;
-      status = mscb_read_no_retries(info->fd, info->mscbdev_settings.mscb_address[channel],
+      status = mscb_read(info->fd, info->mscbdev_settings.mscb_address[channel],
                          info->mscbdev_settings.mscb_index[channel], &value_int, &size);
       if (status != MSCB_SUCCESS) {
          /* only produce error once every minute */
