@@ -344,7 +344,7 @@ INT psi_beamline_get_default_threshold(PSI_BEAMLINE_INFO * info, INT channel, fl
 
 /*----------------------------------------------------------------------------*/
 
-INT psi_beamline_get_default_name(PSI_BEAMLINE_INFO * info, INT channel, char *name)
+INT psi_beamline_get_label(PSI_BEAMLINE_INFO * info, INT channel, char *name)
 {
    strcpy(name, info->name + channel * NAME_LENGTH);
    return FE_SUCCESS;
@@ -398,11 +398,11 @@ INT psi_beamline(INT cmd, ...)
       status = psi_beamline_get_demand(info, channel, pvalue);
       break;
 
-   case CMD_GET_DEFAULT_NAME:
+   case CMD_GET_LABEL:
       info = va_arg(argptr, void *);
       channel = va_arg(argptr, INT);
       name = va_arg(argptr, char *);
-      status = psi_beamline_get_default_name(info, channel, name);
+      status = psi_beamline_get_label(info, channel, name);
       break;
 
    case CMD_GET_DEFAULT_THRESHOLD:

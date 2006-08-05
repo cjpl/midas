@@ -5,7 +5,7 @@
 
   Contents:     LeCroy LRS1454/1458 Voltage Device Driver
 
-  $Id:$
+  $Id$
 
 \********************************************************************/
 
@@ -513,7 +513,7 @@ INT lrs1454(INT cmd, ...)
       status = lrs1454_set_current_limit_all(info, channel, pvalue);
       break;
 
-   case CMD_GET_DEFAULT_NAME:
+   case CMD_GET_LABEL:
    case CMD_SET_LABEL:
       break;
 
