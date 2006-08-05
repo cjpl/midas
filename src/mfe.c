@@ -366,7 +366,7 @@ INT device_driver(DEVICE_DRIVER *device_driver, INT cmd, ...)
 
             /* get default names and demands for this driver already now */
             for (i=0 ; i<device_driver->channels ; i++) {
-               device_driver->dd(CMD_GET_DEFAULT_NAME, device_driver->dd_info, i, 
+               device_driver->dd(CMD_GET_LABEL, device_driver->dd_info, i, 
                                  device_driver->mt_buffer->channel[i].default_name);
                if (device_driver->flags & DF_PRIO_DEVICE)
                   device_driver->dd(CMD_GET_DEMAND, device_driver->dd_info, i, 
@@ -390,7 +390,7 @@ INT device_driver(DEVICE_DRIVER *device_driver, INT cmd, ...)
       }
       break;
 
-   case CMD_EXIT:
+   case CMD_STOP:
       if (device_driver->flags & DF_MULTITHREAD) {
          device_driver->stop_thread = 1;
          /* wait for max. 10 seconds until thread has gracefully stopped */
@@ -408,7 +408,9 @@ INT device_driver(DEVICE_DRIVER *device_driver, INT cmd, ...)
          free(device_driver->mt_buffer->channel);
          free(device_driver->mt_buffer);
       }
+      break;
 
+   case CMD_EXIT:
       status = device_driver->dd(CMD_EXIT, device_driver->dd_info);
       break;
 
@@ -512,7 +514,7 @@ INT device_driver(DEVICE_DRIVER *device_driver, INT cmd, ...)
          status = device_driver->dd(CMD_SET_CURRENT_LIMIT_ALL, device_driver->dd_info, channel, pvalue);
       break;
 
-   case CMD_GET_DEFAULT_NAME:
+   case CMD_GET_LABEL:
       channel = va_arg(argptr, INT);
       name = va_arg(argptr, char *);
       if (device_driver->flags & DF_MULTITHREAD) {
@@ -521,7 +523,7 @@ INT device_driver(DEVICE_DRIVER *device_driver, INT cmd, ...)
          status = device_driver->mt_buffer->status;
          ss_mutex_release(device_driver->mutex);
       } else
-         status = device_driver->dd(CMD_GET_DEFAULT_NAME, device_driver->dd_info, channel, name);
+         status = device_driver->dd(CMD_GET_LABEL, device_driver->dd_info, channel, name);
       break;
 
    case CMD_GET_DEFAULT_THRESHOLD:
@@ -2141,7 +2143,10 @@ int main(int argc, char *argv[])
    /* close slow control drivers */
    for (i = 0; equipment[i].name[0]; i++)
       if ((equipment[i].info.eq_type & EQ_SLOW) && equipment[i].status == FE_SUCCESS)
-         equipment[i].cd(CMD_EXIT, &equipment[i]);
+         equipment[i].cd(CMD_STOP, &equipment[i]); /* stop all threads */
+   for (i = 0; equipment[i].name[0]; i++)
+      if ((equipment[i].info.eq_type & EQ_SLOW) && equipment[i].status == FE_SUCCESS)
+         equipment[i].cd(CMD_EXIT, &equipment[i]); /* close physical connections */
 
    /* close network connection to server */
    cm_disconnect_experiment();
