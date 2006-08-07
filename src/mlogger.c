@@ -2527,7 +2527,8 @@ INT open_history()
                   tag[i_tag].n_data = 1;
 
                   if (verbose)
-                     printf("Defined tag \"%s\", size 1\n", tag[i_tag].name);
+                     printf("Defined tag \"%s\", type %d, num_values %d\n",
+                            tag[i_tag].name, tag[i_tag].type, tag[i_tag].n_data);
 
                   i_tag++;
                }
@@ -2537,8 +2538,8 @@ INT open_history()
                tag[i_tag].n_data = varkey.num_values;
 
                if (verbose)
-                  printf("Defined tag \"%s\", size %d\n", tag[i_tag].name,
-                         varkey.num_values);
+                  printf("Defined tag \"%s\", type %d, num_values %d\n", tag[i_tag].name,
+                         tag[i_tag].type, tag[i_tag].n_data);
 
                i_tag++;
             }
@@ -2664,8 +2665,8 @@ INT open_history()
                   tag[n_var].n_data = varkey.num_values;
 
                   if (verbose)
-                     printf("Defined tag \"%s\", size %d\n", tag[n_var].name,
-                            varkey.num_values);
+                     printf("Defined tag \"%s\", type %d, num_values %d\n",
+                            tag[n_var].name, tag[n_var].type, tag[n_var].n_data);
 
                   size += varkey.total_size;
                   n_var++;
@@ -2774,6 +2775,8 @@ void log_history(HNDLE hDB, HNDLE hKey, void *info)
       close_history();
       open_history();
    }
+
+   //printf("write event: id %d, buffer %p, size %d\n", hist_log[i].event_id, hist_log[i].buffer, hist_log[i].buffer_size);
 
    hs_write_event(hist_log[i].event_id, hist_log[i].buffer, hist_log[i].buffer_size);
    hist_log[i].last_log = ss_time();
@@ -3464,6 +3467,9 @@ int main(int argc, char *argv[])
    free(rargv);
 
 #endif
+
+   setbuf(stdout,NULL);
+   setbuf(stderr,NULL);
 
    /* get default from environment */
    cm_get_environment(host_name, sizeof(host_name), exp_name, sizeof(exp_name));
