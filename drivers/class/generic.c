@@ -342,6 +342,19 @@ INT gen_init(EQUIPMENT * pequipment)
    return FE_SUCCESS;
 }
 
+/*----------------------------------------------------------------------------*/
+
+INT gen_stop(EQUIPMENT * pequipment)
+{
+   INT i;
+
+   /* call close method of device drivers */
+   for (i = 0; pequipment->driver[i].dd != NULL && pequipment->driver[i].flags & DF_MULTITHREAD ; i++)
+      device_driver(&pequipment->driver[i], CMD_STOP);
+
+   return FE_SUCCESS;
+}
+
 /*------------------------------------------------------------------*/
 
 INT gen_exit(EQUIPMENT * pequipment)
@@ -448,6 +461,10 @@ INT cd_gen(INT cmd, EQUIPMENT * pequipment)
    switch (cmd) {
    case CMD_INIT:
       status = gen_init(pequipment);
+      break;
+
+   case CMD_STOP:
+      status = gen_stop(pequipment);
       break;
 
    case CMD_EXIT:
