@@ -263,7 +263,7 @@ void hv_demand(INT hDB, INT hKey, void *info)
 
 /*------------------------------------------------------------------*/
 
-void hv_current_limit(INT hDB, INT hKey, void *info)
+void hv_set_current_limit(INT hDB, INT hKey, void *info)
 {
    INT i;
    HV_INFO *hv_info;
@@ -276,6 +276,63 @@ void hv_current_limit(INT hDB, INT hKey, void *info)
    for (i = 0; i < hv_info->num_channels; i++)
       device_driver(hv_info->driver[i], CMD_SET_CURRENT_LIMIT,
                     i - hv_info->channel_offset[i], hv_info->current_limit[i]);
+
+   pequipment->odb_in++;
+}
+
+/*------------------------------------------------------------------*/
+
+void hv_set_rampup(INT hDB, INT hKey, void *info)
+{
+   INT i;
+   HV_INFO *hv_info;
+   EQUIPMENT *pequipment;
+
+   pequipment = (EQUIPMENT *) info;
+   hv_info = (HV_INFO *) pequipment->cd_info;
+
+   /* check for voltage limit */
+   for (i = 0; i < hv_info->num_channels; i++)
+      device_driver(hv_info->driver[i], CMD_SET_RAMPUP,
+                    i - hv_info->channel_offset[i], hv_info->rampup_speed[i]);
+
+   pequipment->odb_in++;
+}
+
+/*------------------------------------------------------------------*/
+
+void hv_set_rampdown(INT hDB, INT hKey, void *info)
+{
+   INT i;
+   HV_INFO *hv_info;
+   EQUIPMENT *pequipment;
+
+   pequipment = (EQUIPMENT *) info;
+   hv_info = (HV_INFO *) pequipment->cd_info;
+
+   /* check for voltage limit */
+   for (i = 0; i < hv_info->num_channels; i++)
+      device_driver(hv_info->driver[i], CMD_SET_RAMPDOWN,
+                    i - hv_info->channel_offset[i], hv_info->rampdown_speed[i]);
+
+   pequipment->odb_in++;
+}
+
+/*------------------------------------------------------------------*/
+
+void hv_set_voltage_limit(INT hDB, INT hKey, void *info)
+{
+   INT i;
+   HV_INFO *hv_info;
+   EQUIPMENT *pequipment;
+
+   pequipment = (EQUIPMENT *) info;
+   hv_info = (HV_INFO *) pequipment->cd_info;
+
+   /* check for voltage limit */
+   for (i = 0; i < hv_info->num_channels; i++)
+      device_driver(hv_info->driver[i], CMD_SET_VOLTAGE_LIMIT,
+                    i - hv_info->channel_offset[i], hv_info->voltage_limit[i]);
 
    pequipment->odb_in++;
 }
@@ -383,7 +440,7 @@ INT hv_init(EQUIPMENT * pequipment)
 
    /* Update threshold */
    for (i = 0; i < hv_info->num_channels; i++)
-      hv_info->update_threshold[i] = 2.f;       /* default 2V */
+      hv_info->update_threshold[i] = 0.5f;       /* default 0.5V */
    db_merge_data(hDB, hv_info->hKeyRoot, "Settings/Update Threshold Measured",
                  hv_info->update_threshold, sizeof(float) * hv_info->num_channels,
                  hv_info->num_channels, TID_FLOAT);
@@ -403,7 +460,8 @@ INT hv_init(EQUIPMENT * pequipment)
                  hv_info->num_channels, TID_FLOAT);
    db_find_key(hDB, hv_info->hKeyRoot, "Settings/Voltage Limit", &hKey);
    db_open_record(hDB, hKey, hv_info->voltage_limit,
-                  sizeof(float) * hv_info->num_channels, MODE_READ, NULL, NULL);
+                  sizeof(float) * hv_info->num_channels, MODE_READ, hv_set_voltage_limit, 
+                  pequipment);
 
    /* Current limit */
    for (i = 0; i < hv_info->num_channels; i++)
@@ -413,7 +471,7 @@ INT hv_init(EQUIPMENT * pequipment)
                  hv_info->num_channels, TID_FLOAT);
    db_find_key(hDB, hv_info->hKeyRoot, "Settings/Current Limit", &hKey);
    db_open_record(hDB, hKey, hv_info->current_limit,
-                  sizeof(float) * hv_info->num_channels, MODE_READ, hv_current_limit,
+                  sizeof(float) * hv_info->num_channels, MODE_READ, hv_set_current_limit,
                   pequipment);
 
    /* Ramp speed */
@@ -427,15 +485,17 @@ INT hv_init(EQUIPMENT * pequipment)
                  hv_info->rampup_speed, sizeof(float) * hv_info->num_channels,
                  hv_info->num_channels, TID_FLOAT);
    db_find_key(hDB, hv_info->hKeyRoot, "Settings/Ramp Up Speed", &hKey);
-   db_open_record(hDB, hKey, hv_info->rampup_speed, sizeof(float) * hv_info->num_channels,
-                  MODE_READ, NULL, NULL);
+   db_open_record(hDB, hKey, hv_info->rampup_speed, 
+                  sizeof(float) * hv_info->num_channels, MODE_READ, hv_set_rampup, 
+                  pequipment);
 
    db_merge_data(hDB, hv_info->hKeyRoot, "Settings/Ramp Down Speed",
                  hv_info->rampdown_speed, sizeof(float) * hv_info->num_channels,
                  hv_info->num_channels, TID_FLOAT);
    db_find_key(hDB, hv_info->hKeyRoot, "Settings/Ramp Down Speed", &hKey);
    db_open_record(hDB, hKey, hv_info->rampdown_speed,
-                  sizeof(float) * hv_info->num_channels, MODE_READ, NULL, NULL);
+                  sizeof(float) * hv_info->num_channels, MODE_READ, hv_set_rampdown,
+                  pequipment);
 
    /*---- Create/Read variables ----*/
 
