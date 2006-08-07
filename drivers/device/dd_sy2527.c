@@ -16,7 +16,6 @@ $Id: dd_sy2527.c 2780 2005-10-19 13:20:29Z ritt $
 #include <stdarg.h>
 #include <string.h>
 #include "midas.h"
-// #include "MainWrapp.h"
 #include "CAENHVWrapper.h"
 
 /*---- globals -----------------------------------------------------*/
@@ -332,7 +331,7 @@ INT dd_sy2527_fParam_get (DDSY2527_INFO * info, WORD nchannel, WORD * chlist,
       //         cm_msg(MINFO,"dd_sy2527","Get fParam - chNum:%i Value: %f %f %f", nchannel, fvalue[0], fvalue[1], fvalue[2]);
       cm_msg (MERROR, "fParam", "GetChfParam returns %d", ret);
   }
-  return FE_SUCCESS;
+  return ret;
 }
 
 /*----------------------------------------------------------------------------*/
@@ -343,10 +342,10 @@ INT dd_sy2527_Label_set (DDSY2527_INFO * info, WORD channel, char *label)
   if (strlen (label) < MAX_CH_NAME)
   {
     ret = dd_sy2527_Name_set (info, 1, &channel, label);
-    return FE_SUCCESS;
+    return ret;
   }
   else
-    return 0;
+    return 1;
 }
 
 /*----------------------------------------------------------------------------*/
@@ -577,14 +576,14 @@ INT dd_sy2527 (INT cmd, ...)
   case CMD_GET:  //voltage
     info = va_arg (argptr, void *);
     channel = (WORD) va_arg (argptr, INT);
-    pvalue = va_arg (argptr, float *);
+    pvalue = va_arg(argptr, float *);
     status = dd_sy2527_get (info, channel, pvalue);
     break;
 
   case CMD_GET_CURRENT:
     info = va_arg (argptr, void *);
     channel = (WORD) va_arg (argptr, INT);
-    pvalue = va_arg (argptr, float *);
+    pvalue = va_arg(argptr, float *);
     status = dd_sy2527_current_get (info, channel, pvalue);
     break;
 
@@ -593,8 +592,8 @@ INT dd_sy2527 (INT cmd, ...)
     info = va_arg (argptr, void *);
     icmd = cmd;
     channel = (WORD) va_arg (argptr, INT);
-    pvalue = va_arg (argptr, float *);
-    status = dd_sy2527_ramp_set (info, icmd, channel, pvalue);
+    value = (float) va_arg(argptr, double);	// floats are passed as double
+    status = dd_sy2527_ramp_set (info, icmd, channel, &value);
     break;
 
   case CMD_GET_RAMPUP:
@@ -608,9 +607,9 @@ INT dd_sy2527 (INT cmd, ...)
 
   case CMD_SET_CURRENT_LIMIT:
     info = va_arg (argptr, void *);
-    channel = (WORD) va_arg (argptr, INT);
-    pvalue = (float *) va_arg (argptr, float *);
-    status = dd_sy2527_current_limit_set (info, channel, pvalue);
+    channel = (WORD) va_arg(argptr, INT);
+    value = (float)va_arg(argptr, double);	// floats are passed as double
+    status = dd_sy2527_current_limit_set (info, channel, &value);
     break;
 
   case CMD_GET_CURRENT_LIMIT:
@@ -623,8 +622,8 @@ INT dd_sy2527 (INT cmd, ...)
   case CMD_SET_VOLTAGE_LIMIT:
     info = va_arg (argptr, void *);
     channel = (WORD) va_arg (argptr, INT);
-    pvalue = va_arg (argptr, float *);
-    status = dd_sy2527_voltage_limit_set (info, channel, pvalue);
+    value = (float) va_arg (argptr, double);
+    status = dd_sy2527_voltage_limit_set (info, channel, &value);
     break;
 
   case CMD_GET_VOLTAGE_LIMIT:
