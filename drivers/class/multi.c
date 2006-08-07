@@ -520,7 +520,7 @@ INT multi_stop(EQUIPMENT * pequipment)
    INT i;
 
    /* call close method of device drivers */
-   for (i = 0; pequipment->driver[i].dd != NULL; i++)
+   for (i = 0; pequipment->driver[i].dd != NULL && pequipment->driver[i].flags & DF_MULTITHREAD ; i++)
       device_driver(&pequipment->driver[i], CMD_STOP);
 
    return FE_SUCCESS;
