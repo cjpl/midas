@@ -48,7 +48,6 @@ typedef struct {
    void **driver;
    INT *channel_offset;
    void **dd_info;
-   DWORD *flags;
 
 } HV_INFO;
 
@@ -80,7 +79,6 @@ static void free_mem(HV_INFO * hv_info)
    free(hv_info->dd_info);
    free(hv_info->channel_offset);
    free(hv_info->driver);
-   free(hv_info->flags);
 
    free(hv_info);
 }
@@ -274,8 +272,6 @@ void hv_current_limit(INT hDB, INT hKey, void *info)
    pequipment = (EQUIPMENT *) info;
    hv_info = (HV_INFO *) pequipment->cd_info;
 
-   hv_info = ((EQUIPMENT *) info)->cd_info;
-
    /* check for voltage limit */
    for (i = 0; i < hv_info->num_channels; i++)
       device_driver(hv_info->driver[i], CMD_SET_CURRENT_LIMIT,
@@ -370,14 +366,13 @@ INT hv_init(EQUIPMENT * pequipment)
    hv_info->dd_info = (void *) calloc(hv_info->num_channels, sizeof(void *));
    hv_info->channel_offset = (INT *) calloc(hv_info->num_channels, sizeof(INT));
    hv_info->driver = (void *) calloc(hv_info->num_channels, sizeof(void *));
-   hv_info->flags = (DWORD *) calloc(hv_info->num_channels, sizeof(void *));
 
-   if (!hv_info->flags) {
+   if (!hv_info->driver) {
       cm_msg(MERROR, "hv_init", "Not enough memory");
       return FE_ERR_ODB;
    }
 
-  /*---- Create/Read settings ----*/
+   /*---- Create/Read settings ----*/
 
    /* Names */
    for (i = 0; i < hv_info->num_channels; i++)
@@ -412,7 +407,7 @@ INT hv_init(EQUIPMENT * pequipment)
 
    /* Current limit */
    for (i = 0; i < hv_info->num_channels; i++)
-      hv_info->current_limit[i] = 3000.f;       /* default 3000V */
+      hv_info->current_limit[i] = 3000.f;       /* default 3000uA */
    db_merge_data(hDB, hv_info->hKeyRoot, "Settings/Current Limit",
                  hv_info->current_limit, sizeof(float) * hv_info->num_channels,
                  hv_info->num_channels, TID_FLOAT);
@@ -504,7 +499,7 @@ INT hv_init(EQUIPMENT * pequipment)
       hv_info->channel_offset[i] = offset;
    }
 
-   /*---- get default names from device driver ----*/
+   /*---- get default names from device driver, if driver suports it ----*/
    size = NAME_LENGTH * sizeof(char);
 
    db_find_key(hDB, hv_info->hKeyRoot, "Settings/Names", &hKey);
@@ -531,12 +526,34 @@ INT hv_init(EQUIPMENT * pequipment)
          hv_info->demand_mirror[offset + j] =
              MIN(hv_info->demand[offset + j], hv_info->voltage_limit[offset + j]);
 
-         device_driver(hv_info->driver[j], CMD_SET_CURRENT_LIMIT,
-                        j, hv_info->current_limit + offset + j);
-
-         if ((hv_info->flags[j] & DF_PRIO_DEVICE) == 0)
-            status = device_driver(hv_info->driver[i], CMD_SET,
+         /*---- demand ----*/
+         if ((pequipment->driver[i].flags & DF_PRIO_DEVICE) == 0) {
+            /* set values from ODB */
+            status = device_driver(hv_info->driver[j], CMD_SET,
                                    j, hv_info->demand_mirror + offset + j);
+            status = device_driver(hv_info->driver[j], CMD_SET_CURRENT_LIMIT,
+                                   j, hv_info->current_limit + offset + j);
+            status = device_driver(hv_info->driver[j], CMD_SET_VOLTAGE_LIMIT,
+                                   j, hv_info->voltage_limit + offset + j);
+            status = device_driver(hv_info->driver[j], CMD_SET_RAMPUP,
+                                   j, hv_info->rampup_speed + offset + j);
+            status = device_driver(hv_info->driver[j], CMD_SET_RAMPDOWN,
+                                   j, hv_info->rampdown_speed + offset + j);
+         } else {
+            /* read values from device */
+            status = device_driver(hv_info->driver[j], CMD_GET_DEMAND,
+                                   j, hv_info->demand + offset + j);
+            hv_info->demand_mirror[offset + j] = hv_info->demand[offset + j];
+            status = device_driver(hv_info->driver[i], CMD_GET_CURRENT_LIMIT,
+                                   j, hv_info->current_limit + offset + j);
+            status = device_driver(hv_info->driver[i], CMD_GET_VOLTAGE_LIMIT,
+                                   j, hv_info->voltage_limit + offset + j);
+            status = device_driver(hv_info->driver[j], CMD_GET_RAMPUP,
+                                   j, hv_info->rampup_speed + offset + j);
+            status = device_driver(hv_info->driver[j], CMD_GET_RAMPDOWN,
+                                   j, hv_info->rampdown_speed + offset + j);
+         }
+
          if (status != FE_SUCCESS)
             return status;
       }
@@ -544,15 +561,23 @@ INT hv_init(EQUIPMENT * pequipment)
       offset += pequipment->driver[i].channels;
    }
 
-   /* get demand values from device if asked for */
-   for (i = 0; i < hv_info->num_channels; i++) {
-      if (hv_info->flags[i] & DF_PRIO_DEVICE) {
-         device_driver(hv_info->driver[i], CMD_GET_DEMAND,
-                       i - hv_info->channel_offset[i], &hv_info->demand[i]);
-         hv_info->demand_mirror[i] = hv_info->demand[i];
-      }
-   }
    db_set_record(hDB, hv_info->hKeyDemand, hv_info->demand,
+                 hv_info->num_channels * sizeof(float), 0);
+
+   db_find_key(hDB, hv_info->hKeyRoot, "Settings/Current Limit", &hKey);
+   db_set_record(hDB, hKey, hv_info->current_limit,
+                 hv_info->num_channels * sizeof(float), 0);
+
+   db_find_key(hDB, hv_info->hKeyRoot, "Settings/Voltage Limit", &hKey);
+   db_set_record(hDB, hKey, hv_info->voltage_limit,
+                 hv_info->num_channels * sizeof(float), 0);
+
+   db_find_key(hDB, hv_info->hKeyRoot, "Settings/Ramp Up Speed", &hKey);
+   db_set_record(hDB, hKey, hv_info->rampup_speed,
+                 hv_info->num_channels * sizeof(float), 0);
+
+   db_find_key(hDB, hv_info->hKeyRoot, "Settings/Ramp Down Speed", &hKey);
+   db_set_record(hDB, hKey, hv_info->rampdown_speed,
                  hv_info->num_channels * sizeof(float), 0);
 
    /* initially read all channels */
