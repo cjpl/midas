@@ -438,8 +438,9 @@ INT device_driver(DEVICE_DRIVER *device_driver, INT cmd, ...)
             device_driver->mt_buffer->channel[channel].array[cmd] = value;
             status = device_driver->mt_buffer->status;
             ss_mutex_release(device_driver->mutex);
-         } else
+         } else {
             status = device_driver->dd(cmd, device_driver->dd_info, channel, value);
+         }
       
       } else if (cmd >= CMD_GET_FIRST && cmd <= CMD_GET_LAST) {
 
@@ -451,17 +452,17 @@ INT device_driver(DEVICE_DRIVER *device_driver, INT cmd, ...)
             status = device_driver->mt_buffer->status;
             ss_mutex_release(device_driver->mutex);
          } else
-            status = device_driver->dd(CMD_GET, device_driver->dd_info, channel, pvalue);
+            status = device_driver->dd(cmd, device_driver->dd_info, channel, pvalue);
       }
 
       break;
    }
 
+   va_end(argptr);
+
    /* don't eat all CPU in main thread */
    if (cm_yield(10) == RPC_SHUTDOWN)
       fe_stop = TRUE;
-
-   va_end(argptr);
 
    return status;
 }
@@ -1800,7 +1801,7 @@ int mfe(char *ahost_name, char *aexp_name, BOOL adebug)
 int main(int argc, char *argv[])
 #endif
 {
-   INT status, i, dm_size;
+   INT status, i, j, dm_size;
    INT daemon;
 
    host_name[0] = 0;
@@ -2049,8 +2050,16 @@ int main(int argc, char *argv[])
 
    /* close slow control drivers */
    for (i = 0; equipment[i].name[0]; i++)
-      if ((equipment[i].info.eq_type & EQ_SLOW) && equipment[i].status == FE_SUCCESS)
-         equipment[i].cd(CMD_STOP, &equipment[i]); /* stop all threads */
+      if ((equipment[i].info.eq_type & EQ_SLOW) && equipment[i].status == FE_SUCCESS) {
+
+         for (j = 0; equipment[i].driver[j].name[0]; j++)
+            if (equipment[i].driver[j].flags & DF_MULTITHREAD)
+               break;
+
+         /* stop all threads if multithreaded */
+         if (equipment[i].driver[j].name[0])
+            equipment[i].cd(CMD_STOP, &equipment[i]); /* stop all threads */
+      }
    for (i = 0; equipment[i].name[0]; i++)
       if ((equipment[i].info.eq_type & EQ_SLOW) && equipment[i].status == FE_SUCCESS)
          equipment[i].cd(CMD_EXIT, &equipment[i]); /* close physical connections */
