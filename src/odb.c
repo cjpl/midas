@@ -581,9 +581,8 @@ static int db_validate_key(DATABASE_HEADER * pheader, int recurse,
             return 0;
          }
 
-         if (pkey->type == TID_KEY)
-            if (!db_validate_key(pheader, recurse + 1, buf, pkey))
-               return 0;
+         if (!db_validate_key(pheader, recurse + 1, buf, pkey))
+            return 0;
 
          pkey = (KEY *) ((char *) pheader + pkey->next_key);
       }
@@ -991,7 +990,7 @@ INT db_open_database(char *database_name, INT database_size,
          kill(pheader->client[i].pid, 0);
          if (errno == ESRCH) {
             cm_msg(MERROR, "db_open_database",
-                   "removing client %s, pid %d, index %d because the pid no longer exists",
+                   "Removing client \'%s\', pid %d, index %d because the pid no longer exists",
                    pheader->client[i].name, pheader->client[i].pid, i);
 
             /* decrement notify_count for open records and clear exclusive mode */
@@ -8206,7 +8205,7 @@ INT db_send_changed_records()
 /*------------------------------------------------------------------*/
 
 /**dox***************************************************************/
-                   /** @} *//* end of odbfunctionc */
+                                              /** @} *//* end of odbfunctionc */
 
 /**dox***************************************************************/
-                   /** @} *//* end of odbcode */
+                                              /** @} *//* end of odbcode */
