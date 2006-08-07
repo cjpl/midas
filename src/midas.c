@@ -15486,6 +15486,7 @@ BOOL al_evaluate_condition(char *condition, char *value)
    op[0] = str[i];
    for (j = 1; str[i + j] == ' '; j++);
    strlcpy(value2_str, str + i + j, sizeof(value2_str));
+   value2 = atof(value2_str);
    str[i] = 0;
 
    if (i > 0 && strchr("<>=!", str[i - 1])) {
