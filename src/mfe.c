@@ -280,8 +280,8 @@ int sc_thread(void *info)
    float value;
 
    do {
-      /* read one channel from device*/
-      for (cmd = CMD_GET_FIRST ; cmd <= CMD_GET_LAST ; cmd++) {
+      /* read one channel from device */
+      for (cmd = CMD_GET_FIRST; cmd <= CMD_GET_LAST; cmd++) {
          status = device_driver->dd(cmd, device_driver->dd_info, current_channel, &value);
 
          ss_mutex_wait_for(device_driver->mutex, 1000);
@@ -289,19 +289,19 @@ int sc_thread(void *info)
          device_driver->mt_buffer->status = status;
          ss_mutex_release(device_driver->mutex);
 
-        //printf("TID %d: channel %d, value %f\n", ss_gettid(), current_channel, value);
+         //printf("TID %d: channel %d, value %f\n", ss_gettid(), current_channel, value);
       }
 
       current_channel = (current_channel + 1) % device_driver->channels;
 
       /* check if anything to write to device */
-      for (i=0 ; i<device_driver->channels ; i++) {
+      for (i = 0; i < device_driver->channels; i++) {
 
-         for (cmd = CMD_SET_FIRST ; cmd <= CMD_SET_LAST ; cmd++) {
+         for (cmd = CMD_SET_FIRST; cmd <= CMD_SET_LAST; cmd++) {
             if (!ss_isnan(device_driver->mt_buffer->channel[i].array[cmd])) {
                ss_mutex_wait_for(device_driver->mutex, 1000);
                value = device_driver->mt_buffer->channel[i].array[cmd];
-               device_driver->mt_buffer->channel[i].array[cmd] = (float)ss_nan();
+               device_driver->mt_buffer->channel[i].array[cmd] = (float) ss_nan();
                device_driver->mt_buffer->status = status;
                ss_mutex_release(device_driver->mutex);
 
@@ -320,7 +320,7 @@ int sc_thread(void *info)
 
 /*------------------------------------------------------------------*/
 
-INT device_driver(DEVICE_DRIVER *device_driver, INT cmd, ...)
+INT device_driver(DEVICE_DRIVER * device_driver, INT cmd, ...)
 {
    va_list argptr;
    HNDLE hKey;
@@ -336,7 +336,7 @@ INT device_driver(DEVICE_DRIVER *device_driver, INT cmd, ...)
       hKey = va_arg(argptr, HNDLE);
 
       if (device_driver->flags & DF_MULTITHREAD) {
-         status = device_driver->dd(CMD_INIT, hKey, &device_driver->dd_info, 
+         status = device_driver->dd(CMD_INIT, hKey, &device_driver->dd_info,
                                     device_driver->channels, device_driver->flags,
                                     device_driver->bd);
 
@@ -344,33 +344,37 @@ INT device_driver(DEVICE_DRIVER *device_driver, INT cmd, ...)
             /* create inter-thread data exchange buffers */
             device_driver->mt_buffer = (DD_MT_BUFFER *) calloc(1, sizeof(DD_MT_BUFFER));
             device_driver->mt_buffer->n_channels = device_driver->channels;
-            device_driver->mt_buffer->channel = (DD_MT_CHANNEL *) calloc(device_driver->channels, sizeof(DD_MT_CHANNEL));
-            for (i=0 ; i<device_driver->channels ; i++) {
-               device_driver->mt_buffer->channel[i].array[CMD_SET] = (float)ss_nan();
-               device_driver->mt_buffer->channel[i].array[CMD_SET_CURRENT_LIMIT] = (float)ss_nan();
+            device_driver->mt_buffer->channel =
+                (DD_MT_CHANNEL *) calloc(device_driver->channels, sizeof(DD_MT_CHANNEL));
+            for (i = 0; i < device_driver->channels; i++) {
+               device_driver->mt_buffer->channel[i].array[CMD_SET] = (float) ss_nan();
+               device_driver->mt_buffer->channel[i].array[CMD_SET_CURRENT_LIMIT] =
+                   (float) ss_nan();
             }
 
             /* get default names and demands for this driver already now */
-            for (i=0 ; i<device_driver->channels ; i++) {
-               device_driver->dd(CMD_GET_LABEL, device_driver->dd_info, i, 
+            for (i = 0; i < device_driver->channels; i++) {
+               device_driver->dd(CMD_GET_LABEL, device_driver->dd_info, i,
                                  device_driver->mt_buffer->channel[i].label);
                if (device_driver->flags & DF_PRIO_DEVICE)
-                  device_driver->dd(CMD_GET_DEMAND, device_driver->dd_info, i, 
-                                    device_driver->mt_buffer->channel[i].array[CMD_GET_DEMAND]);
+                  device_driver->dd(CMD_GET_DEMAND, device_driver->dd_info, i,
+                                    device_driver->mt_buffer->channel[i].
+                                    array[CMD_GET_DEMAND]);
             }
 
             /* create mutex */
-            sprintf(str, "DD_%s", device_driver->name); 
+            sprintf(str, "DD_%s", device_driver->name);
             status = ss_mutex_create(str, &device_driver->mutex);
             if (status != SS_CREATED && status != SS_SUCCESS)
                return FE_ERR_DRIVER;
             status = FE_SUCCESS;
 
             /* create dedicated thread for this device */
-            device_driver->mt_buffer->thread_id = ss_thread_create(sc_thread, device_driver);
+            device_driver->mt_buffer->thread_id =
+                ss_thread_create(sc_thread, device_driver);
          }
       } else {
-         status = device_driver->dd(CMD_INIT, hKey, &device_driver->dd_info, 
+         status = device_driver->dd(CMD_INIT, hKey, &device_driver->dd_info,
                                     device_driver->channels, device_driver->flags,
                                     device_driver->bd);
       }
@@ -380,7 +384,7 @@ INT device_driver(DEVICE_DRIVER *device_driver, INT cmd, ...)
       if (device_driver->flags & DF_MULTITHREAD) {
          device_driver->stop_thread = 1;
          /* wait for max. 10 seconds until thread has gracefully stopped */
-         for (i=0 ; i<1000 ; i++) {
+         for (i = 0; i < 1000; i++) {
             if (device_driver->stop_thread == 2)
                break;
             ss_sleep(10);
@@ -421,7 +425,9 @@ INT device_driver(DEVICE_DRIVER *device_driver, INT cmd, ...)
    case CMD_GET_DEFAULT_THRESHOLD:
       channel = va_arg(argptr, INT);
       pvalue = va_arg(argptr, float *);
-      status = device_driver->dd(CMD_GET_DEFAULT_THRESHOLD, device_driver->dd_info, channel, pvalue);
+      status =
+          device_driver->dd(CMD_GET_DEFAULT_THRESHOLD, device_driver->dd_info, channel,
+                            pvalue);
       break;
 
    default:
@@ -429,9 +435,9 @@ INT device_driver(DEVICE_DRIVER *device_driver, INT cmd, ...)
       channel = va_arg(argptr, INT);
 
       if (cmd >= CMD_SET_FIRST && cmd <= CMD_SET_LAST) {
-         
+
          /* transfer data to sc_thread for SET commands */
-         value = (float) va_arg(argptr, double);   // floats are passed as double
+         value = (float) va_arg(argptr, double);        // floats are passed as double
 
          if (device_driver->flags & DF_MULTITHREAD) {
             ss_mutex_wait_for(device_driver->mutex, 1000);
@@ -441,7 +447,7 @@ INT device_driver(DEVICE_DRIVER *device_driver, INT cmd, ...)
          } else {
             status = device_driver->dd(cmd, device_driver->dd_info, channel, value);
          }
-      
+
       } else if (cmd >= CMD_GET_FIRST && cmd <= CMD_GET_LAST) {
 
          /* transfer data from sc_thread for GET commands */
@@ -1093,6 +1099,7 @@ int send_event(INT index)
       cm_msg(MERROR, "send_event", "dm_area_flush: %i", status);
 #endif
 
+   /* why do we flush the cache for all equipments? */
    for (i = 0; equipment[i].name[0]; i++)
       if (equipment[i].buffer_handle) {
          status = bm_flush_cache(equipment[i].buffer_handle, SYNC);
@@ -2058,11 +2065,11 @@ int main(int argc, char *argv[])
 
          /* stop all threads if multithreaded */
          if (equipment[i].driver[j].name[0])
-            equipment[i].cd(CMD_STOP, &equipment[i]); /* stop all threads */
+            equipment[i].cd(CMD_STOP, &equipment[i]);   /* stop all threads */
       }
    for (i = 0; equipment[i].name[0]; i++)
       if ((equipment[i].info.eq_type & EQ_SLOW) && equipment[i].status == FE_SUCCESS)
-         equipment[i].cd(CMD_EXIT, &equipment[i]); /* close physical connections */
+         equipment[i].cd(CMD_EXIT, &equipment[i]);      /* close physical connections */
 
    /* close network connection to server */
    cm_disconnect_experiment();
