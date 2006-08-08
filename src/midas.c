@@ -5528,7 +5528,7 @@ static void bm_wakeup_producers(const BUFFER_HEADER * pheader, const BUFFER_CLIE
 {
    int i;
    int size;
-   BUFFER_CLIENT *pctmp = pheader->client;
+   const BUFFER_CLIENT *pctmp = pheader->client;
 
    /*
       If read pointer has been changed, it may have freed up some space
