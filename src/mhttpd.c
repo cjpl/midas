@@ -645,9 +645,12 @@ void redirect(char *path)
    if (strncmp(path, "http:", 5) == 0)
       rsprintf("Location: %s\r\n\r\n<html>redir</html>\r\n", path);
    else {
-      if (exp_name[0])
-         rsprintf("Location: /%s?exp=%s\n\n<html>redir</html>\r\n", path, exp_name);
-      else
+      if (exp_name[0]) {
+         if (strchr(path, '?'))
+            rsprintf("Location: /%s&exp=%s\n\n<html>redir</html>\r\n", path, exp_name);
+         else
+            rsprintf("Location: /%s?exp=%s\n\n<html>redir</html>\r\n", path, exp_name);
+      } else
          rsprintf("Location: /%s\r\n\r\n<html>redir</html>\r\n", path);
    }
 }
