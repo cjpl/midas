@@ -366,15 +366,18 @@ INT device_driver(DEVICE_DRIVER * device_driver, INT cmd, ...)
             if (status != SS_CREATED && status != SS_SUCCESS)
                return FE_ERR_DRIVER;
             status = FE_SUCCESS;
-
-            /* create dedicated thread for this device */
-            device_driver->mt_buffer->thread_id =
-                ss_thread_create(sc_thread, device_driver);
          }
       } else {
          status = device_driver->dd(CMD_INIT, hKey, &device_driver->dd_info,
                                     device_driver->channels, device_driver->flags,
                                     device_driver->bd);
+      }
+      break;
+
+   case CMD_START:
+      if (device_driver->flags & DF_MULTITHREAD) {
+         /* create dedicated thread for this device */
+         device_driver->mt_buffer->thread_id = ss_thread_create(sc_thread, device_driver);
       }
       break;
 
@@ -416,11 +419,10 @@ INT device_driver(DEVICE_DRIVER * device_driver, INT cmd, ...)
 
    default:
 
-      channel = va_arg(argptr, INT);
-
       if (cmd >= CMD_SET_FIRST && cmd <= CMD_SET_LAST) {
 
          /* transfer data to sc_thread for SET commands */
+         channel = va_arg(argptr, INT);
          value = (float) va_arg(argptr, double);        // floats are passed as double
          if (device_driver->flags & DF_MULTITHREAD) {
             ss_mutex_wait_for(device_driver->mutex, 1000);
@@ -434,6 +436,7 @@ INT device_driver(DEVICE_DRIVER * device_driver, INT cmd, ...)
       } else if (cmd >= CMD_GET_FIRST && cmd <= CMD_GET_LAST) {
 
          /* transfer data from sc_thread for GET commands */
+         channel = va_arg(argptr, INT);
          pvalue = va_arg(argptr, float *);
          if (device_driver->flags & DF_MULTITHREAD) {
             ss_mutex_wait_for(device_driver->mutex, 1000);
@@ -739,6 +742,9 @@ and rebuild the system.");
             cm_msg(MINFO, "register_equipment",
                    "Equipment %s disabled in file \"frontend.c\"", equipment[index].name);
          }
+
+         /* now start threads if requested */
+         equipment[index].cd(CMD_START, &equipment[index]);   /* start threads for this equipment */
 
          /* remember that we have slowcontrol equipment (needed later for scheduler) */
          slowcont_eq = TRUE;

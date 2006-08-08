@@ -667,13 +667,14 @@ Alarm error code */
 Slow control device driver commands */
 #define CMD_INIT                      1 /* misc. commands must be below 20 !! */
 #define CMD_EXIT                      2
-#define CMD_STOP                      3
-#define CMD_IDLE                      4
-#define CMD_GET_THRESHOLD             5
-#define CMD_GET_THRESHOLD_CURRENT     6
-#define CMD_SET_LABEL                 7
-#define CMD_GET_LABEL                 8
-#define CMD_MISC_LAST                 8 /* update this if you add new commands */
+#define CMD_START                     3
+#define CMD_STOP                      4
+#define CMD_IDLE                      5
+#define CMD_GET_THRESHOLD             6
+#define CMD_GET_THRESHOLD_CURRENT     7
+#define CMD_SET_LABEL                 8
+#define CMD_GET_LABEL                 9
+#define CMD_MISC_LAST                 9 /* update this if you add new commands */
 
 #define CMD_SET_FIRST                CMD_MISC_LAST+1 /* set commands */
 #define CMD_SET                      CMD_SET_FIRST 
