@@ -669,10 +669,11 @@ Slow control device driver commands */
 #define CMD_EXIT                      2
 #define CMD_STOP                      3
 #define CMD_IDLE                      4
-#define CMD_GET_DEFAULT_THRESHOLD     5
-#define CMD_SET_LABEL                 6
-#define CMD_GET_LABEL                 7
-#define CMD_MISC_LAST                 7 /* update this if you add new commands */
+#define CMD_GET_THRESHOLD             5
+#define CMD_GET_THRESHOLD_CURRENT     6
+#define CMD_SET_LABEL                 7
+#define CMD_GET_LABEL                 8
+#define CMD_MISC_LAST                 8 /* update this if you add new commands */
 
 #define CMD_SET_FIRST                CMD_MISC_LAST+1 /* set commands */
 #define CMD_SET                      CMD_SET_FIRST 
@@ -682,15 +683,18 @@ Slow control device driver commands */
 #define CMD_SET_RAMPDOWN             CMD_SET_FIRST+4
 #define CMD_SET_LAST                 CMD_SET_FIRST+4 /* update this if you add new commands */
 
-#define CMD_GET_FIRST                CMD_SET_LAST+1  /* get commands */
+#define CMD_GET_FIRST                CMD_SET_LAST+1  /* multithreaded get commands */
 #define CMD_GET                      CMD_GET_FIRST
-#define CMD_GET_DEMAND               CMD_GET_FIRST+1
-#define CMD_GET_CURRENT              CMD_GET_FIRST+2
-#define CMD_GET_VOLTAGE_LIMIT        CMD_GET_FIRST+3
-#define CMD_GET_CURRENT_LIMIT        CMD_GET_FIRST+4
-#define CMD_GET_RAMPUP               CMD_GET_FIRST+5
-#define CMD_GET_RAMPDOWN             CMD_GET_FIRST+6
-#define CMD_GET_LAST                 CMD_GET_FIRST+6 /* update this if you add new commands ! */
+#define CMD_GET_CURRENT              CMD_GET_FIRST+1
+#define CMD_GET_LAST                 CMD_GET_FIRST+2 /* update this if you add new commands ! */
+
+#define CMD_GET_DIRECT               CMD_GET_LAST+1  /* direct get commands */
+#define CMD_GET_DEMAND               CMD_GET_DIRECT
+#define CMD_GET_VOLTAGE_LIMIT        CMD_GET_DIRECT+1
+#define CMD_GET_CURRENT_LIMIT        CMD_GET_DIRECT+2
+#define CMD_GET_RAMPUP               CMD_GET_DIRECT+3
+#define CMD_GET_RAMPDOWN             CMD_GET_DIRECT+4
+#define CMD_GET_DIRECT_LAST          CMD_GET_DIRECT+5 /* update this if you add new commands ! */
 
 #define CMD_ENABLE_COMMAND       (1<<14)  /* these two commands can be used to enable/disable */
 #define CMD_DISABLE_COMMAND      (1<<15)  /* one of the other commands                        */
