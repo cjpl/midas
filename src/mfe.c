@@ -1723,7 +1723,7 @@ INT scheduler(void)
                      rpc_set_option(-1, RPC_OTRANSPORT, RPC_FTCP);
                      rpc_flush_event();
                      err = bm_flush_cache(equipment[i].buffer_handle, ASYNC);
-                     if (err != BM_SUCCESS) {
+                     if ((err != BM_SUCCESS) && (err != BM_ASYNC_RETURN)) {
                         cm_msg(MERROR, "scheduler", "bm_flush_cache(ASYNC) error %d",
                                err);
                         return err;
