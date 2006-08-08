@@ -320,7 +320,7 @@ INT gen_init(EQUIPMENT * pequipment)
    /*---- get default update threshold from device driver ----*/
    for (i = 0; i < gen_info->num_channels; i++) {
       gen_info->update_threshold[i] = 1.f;      /* default 1 unit */
-      device_driver(gen_info->driver[i], CMD_GET_DEFAULT_THRESHOLD,
+      device_driver(gen_info->driver[i], CMD_GET_THRESHOLD,
                     i - gen_info->channel_offset[i], &gen_info->update_threshold[i]);
    }
    db_merge_data(hDB, gen_info->hKeyRoot, "Settings/Update Threshold Measured",
