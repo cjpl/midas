@@ -286,7 +286,19 @@ void hv_demand(INT hDB, INT hKey, void *info)
 
    pequipment->odb_in++;
 
-   /* execute one ramping */
+   for (i = 0; i < hv_info->num_channels; i++) {
+      /* if device can do hardware ramping, just set value */   
+      if (hv_info->driver[i]->flags & DF_HW_RAMP) {
+         if (hv_info->demand[i] != hv_info->demand_mirror[i]) {
+            device_driver(hv_info->driver[i], CMD_SET,
+                          i - hv_info->channel_offset[i], hv_info->demand[i]);
+            hv_info->last_change[i] = ss_millitime();
+            hv_info->demand_mirror[i] = hv_info->demand[i];
+         }
+      }
+   }
+
+   /* execute one ramping for devices which have not hardware ramping */
    hv_ramp(hv_info);
 }
 
@@ -570,7 +582,7 @@ INT hv_init(EQUIPMENT * pequipment)
 
    /* Trip Time */
    validate_odb_array(hDB, hv_info, "Settings/Trip Time", 10, CMD_GET_TRIP_TIME, 
-                      hv_info->current_limit, hv_set_trip_time, pequipment);
+                      hv_info->trip_time, hv_set_trip_time, pequipment);
 
    /* Ramp up */
    validate_odb_array(hDB, hv_info, "Settings/Ramp Up Speed", 0, CMD_GET_RAMPUP, 
