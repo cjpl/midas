@@ -11,6 +11,7 @@
 
 #include <stdio.h>
 #include <math.h>
+#include <assert.h>
 #include "midas.h"
 #include "ybos.h"
 
@@ -45,7 +46,7 @@ typedef struct {
    float *current_mirror;
    DWORD *last_change;
 
-   void **driver;
+   DEVICE_DRIVER **driver;
    INT *channel_offset;
    void **dd_info;
 
@@ -357,11 +358,33 @@ void hv_update_label(INT hDB, INT hKey, void *info)
 
 /*------------------------------------------------------------------*/
 
+void validate_odb_array(HNDLE hDB, HV_INFO *hv_info, char *path, double default_value, int cmd, 
+                        float *array, void (*callback)(INT,INT,void *) ,EQUIPMENT *pequipment)
+{
+   int i;
+   HNDLE hKey;
+
+   for (i = 0; i < hv_info->num_channels; i++)
+      array[i] = (float)default_value;
+   if (db_find_key(hDB, hv_info->hKeyRoot, path, &hKey) != DB_SUCCESS)
+      for (i = 0; i < hv_info->num_channels; i++)
+         device_driver(hv_info->driver[i], cmd,
+                       i - hv_info->channel_offset[i], array + i);
+   db_merge_data(hDB, hv_info->hKeyRoot, path, array, sizeof(float) * hv_info->num_channels,
+                 hv_info->num_channels, TID_FLOAT);
+   db_find_key(hDB, hv_info->hKeyRoot, path, &hKey);
+   assert(hKey);
+   db_open_record(hDB, hKey, array, sizeof(float) * hv_info->num_channels, MODE_READ, 
+                  callback, pequipment);
+}
+
+/*------------------------------------------------------------------*/
+
 INT hv_init(EQUIPMENT * pequipment)
 {
    int status, size, i, j, index, offset;
    char str[256];
-   HNDLE hDB, hKey, hNames;
+   HNDLE hDB, hKey;
    HV_INFO *hv_info;
 
    /* allocate private data */
@@ -429,101 +452,6 @@ INT hv_init(EQUIPMENT * pequipment)
       return FE_ERR_ODB;
    }
 
-   /*---- Create/Read settings ----*/
-
-   /* Names */
-   for (i = 0; i < hv_info->num_channels; i++)
-      sprintf(hv_info->names + NAME_LENGTH * i, "Default%%CH %d", i);
-   db_merge_data(hDB, hv_info->hKeyRoot, "Settings/Names",
-                 hv_info->names, NAME_LENGTH * hv_info->num_channels,
-                 hv_info->num_channels, TID_STRING);
-
-   /* Update threshold */
-   for (i = 0; i < hv_info->num_channels; i++)
-      hv_info->update_threshold[i] = 0.5f;       /* default 0.5V */
-   db_merge_data(hDB, hv_info->hKeyRoot, "Settings/Update Threshold Measured",
-                 hv_info->update_threshold, sizeof(float) * hv_info->num_channels,
-                 hv_info->num_channels, TID_FLOAT);
-
-   /* Update threshold current */
-   for (i = 0; i < hv_info->num_channels; i++)
-      hv_info->update_threshold_current[i] = 2.f;       /* default 2uA */
-   db_merge_data(hDB, hv_info->hKeyRoot, "Settings/Update Threshold Current",
-                 hv_info->update_threshold_current, sizeof(float) * hv_info->num_channels,
-                 hv_info->num_channels, TID_FLOAT);
-
-   /* Voltage limit */
-   for (i = 0; i < hv_info->num_channels; i++)
-      hv_info->voltage_limit[i] = 3000.f;       /* default 3000V */
-   db_merge_data(hDB, hv_info->hKeyRoot, "Settings/Voltage Limit",
-                 hv_info->voltage_limit, sizeof(float) * hv_info->num_channels,
-                 hv_info->num_channels, TID_FLOAT);
-   db_find_key(hDB, hv_info->hKeyRoot, "Settings/Voltage Limit", &hKey);
-   db_open_record(hDB, hKey, hv_info->voltage_limit,
-                  sizeof(float) * hv_info->num_channels, MODE_READ, hv_set_voltage_limit, 
-                  pequipment);
-
-   /* Current limit */
-   for (i = 0; i < hv_info->num_channels; i++)
-      hv_info->current_limit[i] = 3000.f;       /* default 3000uA */
-   db_merge_data(hDB, hv_info->hKeyRoot, "Settings/Current Limit",
-                 hv_info->current_limit, sizeof(float) * hv_info->num_channels,
-                 hv_info->num_channels, TID_FLOAT);
-   db_find_key(hDB, hv_info->hKeyRoot, "Settings/Current Limit", &hKey);
-   db_open_record(hDB, hKey, hv_info->current_limit,
-                  sizeof(float) * hv_info->num_channels, MODE_READ, hv_set_current_limit,
-                  pequipment);
-
-   /* Ramp speed */
-   for (i = 0; i < hv_info->num_channels; i++) {
-      /* disabled by default */
-      hv_info->rampup_speed[i] = 0.f;
-      hv_info->rampdown_speed[i] = 0.f;
-   }
-
-   db_merge_data(hDB, hv_info->hKeyRoot, "Settings/Ramp Up Speed",
-                 hv_info->rampup_speed, sizeof(float) * hv_info->num_channels,
-                 hv_info->num_channels, TID_FLOAT);
-   db_find_key(hDB, hv_info->hKeyRoot, "Settings/Ramp Up Speed", &hKey);
-   db_open_record(hDB, hKey, hv_info->rampup_speed, 
-                  sizeof(float) * hv_info->num_channels, MODE_READ, hv_set_rampup, 
-                  pequipment);
-
-   db_merge_data(hDB, hv_info->hKeyRoot, "Settings/Ramp Down Speed",
-                 hv_info->rampdown_speed, sizeof(float) * hv_info->num_channels,
-                 hv_info->num_channels, TID_FLOAT);
-   db_find_key(hDB, hv_info->hKeyRoot, "Settings/Ramp Down Speed", &hKey);
-   db_open_record(hDB, hKey, hv_info->rampdown_speed,
-                  sizeof(float) * hv_info->num_channels, MODE_READ, hv_set_rampdown,
-                  pequipment);
-
-   /*---- Create/Read variables ----*/
-
-   /* Demand */
-   db_merge_data(hDB, hv_info->hKeyRoot, "Variables/Demand",
-                 hv_info->demand, sizeof(float) * hv_info->num_channels,
-                 hv_info->num_channels, TID_FLOAT);
-   db_find_key(hDB, hv_info->hKeyRoot, "Variables/Demand", &hv_info->hKeyDemand);
-   db_open_record(hDB, hv_info->hKeyDemand, hv_info->demand,
-                  hv_info->num_channels * sizeof(float), MODE_READ, hv_demand,
-                  pequipment);
-
-   /* Measured */
-   db_merge_data(hDB, hv_info->hKeyRoot, "Variables/Measured",
-                 hv_info->measured, sizeof(float) * hv_info->num_channels,
-                 hv_info->num_channels, TID_FLOAT);
-   db_find_key(hDB, hv_info->hKeyRoot, "Variables/Measured", &hv_info->hKeyMeasured);
-   memcpy(hv_info->measured_mirror, hv_info->measured,
-          hv_info->num_channels * sizeof(float));
-
-   /* Current */
-   db_merge_data(hDB, hv_info->hKeyRoot, "Variables/Current",
-                 hv_info->current, sizeof(float) * hv_info->num_channels,
-                 hv_info->num_channels, TID_FLOAT);
-   db_find_key(hDB, hv_info->hKeyRoot, "Variables/Current", &hv_info->hKeyCurrent);
-   memcpy(hv_info->current_mirror, hv_info->current,
-          hv_info->num_channels * sizeof(float));
-
    /*---- Initialize device drivers ----*/
 
    /* call init method */
@@ -559,86 +487,106 @@ INT hv_init(EQUIPMENT * pequipment)
       hv_info->channel_offset[i] = offset;
    }
 
-   /*---- get default names from device driver, if driver suports it ----*/
-   size = NAME_LENGTH * sizeof(char);
+   /*---- Create/Read settings ----*/
 
+   /* Names */
+   for (i = 0; i < hv_info->num_channels; i++)
+      sprintf(hv_info->names + NAME_LENGTH * i, "Default%%CH %d", i);
+   if (db_find_key(hDB, hv_info->hKeyRoot, "Settings/Names", &hKey) != DB_SUCCESS)
+      for (i = 0; i < hv_info->num_channels; i++)
+         device_driver(hv_info->driver[i], CMD_GET_LABEL,
+                       i - hv_info->channel_offset[i], hv_info->names + NAME_LENGTH * i);
+   db_merge_data(hDB, hv_info->hKeyRoot, "Settings/Names",
+                 hv_info->names, NAME_LENGTH * hv_info->num_channels,
+                 hv_info->num_channels, TID_STRING);
    db_find_key(hDB, hv_info->hKeyRoot, "Settings/Names", &hKey);
-   for (i = 0; i < hv_info->num_channels; i++) {
-      device_driver(hv_info->driver[i], CMD_GET_LABEL,
-                    i - hv_info->channel_offset[i], hv_info->names + NAME_LENGTH * i);
-      db_set_data_index(hDB, hKey, hv_info->names + NAME_LENGTH * i, size, i, TID_STRING);
-   }
+   assert(hKey);
+   db_open_record(hDB, hKey, hv_info->names, NAME_LENGTH * hv_info->num_channels,
+                  MODE_READ, hv_update_label, pequipment);
+
+   /* Update threshold */
+   validate_odb_array(hDB, hv_info, "Settings/Update Threshold Measured", 0.5, CMD_GET_THRESHOLD, 
+                      hv_info->update_threshold, NULL, NULL);
+
+   /* Update threshold current */
+   validate_odb_array(hDB, hv_info, "Settings/Update Threshold Current", 1, CMD_GET_THRESHOLD_CURRENT, 
+                      hv_info->update_threshold_current, NULL, NULL);
+
+   /* Voltage limit */
+   validate_odb_array(hDB, hv_info, "Settings/Voltage Limit", 3000, CMD_GET_VOLTAGE_LIMIT, 
+                      hv_info->voltage_limit, hv_set_voltage_limit, pequipment);
+
+   /* Current limit */
+   validate_odb_array(hDB, hv_info, "Settings/Current Limit", 3000, CMD_GET_CURRENT_LIMIT, 
+                      hv_info->current_limit, hv_set_current_limit, pequipment);
+
+   /* Ramp up */
+   validate_odb_array(hDB, hv_info, "Settings/Ramp Up Speed", 0, CMD_GET_RAMPUP, 
+                      hv_info->rampup_speed, hv_set_rampup, pequipment);
+
+   /* Ramp down */
+   validate_odb_array(hDB, hv_info, "Settings/Ramp Down Speed", 0, CMD_GET_RAMPDOWN, 
+                      hv_info->rampdown_speed, hv_set_rampdown, pequipment);
+
+   /*---- Create/Read variables ----*/
+
+   /* Demand */
+   db_merge_data(hDB, hv_info->hKeyRoot, "Variables/Demand",
+                 hv_info->demand, sizeof(float) * hv_info->num_channels,
+                 hv_info->num_channels, TID_FLOAT);
+   db_find_key(hDB, hv_info->hKeyRoot, "Variables/Demand", &hv_info->hKeyDemand);
+   db_open_record(hDB, hv_info->hKeyDemand, hv_info->demand,
+                  hv_info->num_channels * sizeof(float), MODE_READ, hv_demand,
+                  pequipment);
+
+   /* Measured */
+   db_merge_data(hDB, hv_info->hKeyRoot, "Variables/Measured",
+                 hv_info->measured, sizeof(float) * hv_info->num_channels,
+                 hv_info->num_channels, TID_FLOAT);
+   db_find_key(hDB, hv_info->hKeyRoot, "Variables/Measured", &hv_info->hKeyMeasured);
+   memcpy(hv_info->measured_mirror, hv_info->measured,
+          hv_info->num_channels * sizeof(float));
+
+   /* Current */
+   db_merge_data(hDB, hv_info->hKeyRoot, "Variables/Current",
+                 hv_info->current, sizeof(float) * hv_info->num_channels,
+                 hv_info->num_channels, TID_FLOAT);
+   db_find_key(hDB, hv_info->hKeyRoot, "Variables/Current", &hv_info->hKeyCurrent);
+   memcpy(hv_info->current_mirror, hv_info->current,
+          hv_info->num_channels * sizeof(float));
 
    /*---- set labels form midas SC names ----*/
    for (i = 0; i < hv_info->num_channels; i++) {
-      device_driver(hv_info->driver[i], CMD_SET_LABEL,
-                    i - hv_info->channel_offset[i], hv_info->names + NAME_LENGTH * i);
+      status = device_driver(hv_info->driver[i], CMD_SET_LABEL, 
+                             i - hv_info->channel_offset[i], hv_info->names + NAME_LENGTH * i);
    }
 
-   /* open hotlink on channel names */
-   if (db_find_key(hDB, hv_info->hKeyRoot, "Settings/Names", &hNames) == DB_SUCCESS)
-      db_open_record(hDB, hNames, hv_info->names, NAME_LENGTH * hv_info->num_channels,
-                     MODE_READ, hv_update_label, pequipment);
-
-   /* set current limits and initial demand values */
-   for (i = 0, offset = 0; pequipment->driver[i].name[0]; i++) {
-      for (j = 0; j < pequipment->driver[i].channels; j++) {
-         hv_info->demand_mirror[offset + j] =
-             MIN(hv_info->demand[offset + j], hv_info->voltage_limit[offset + j]);
-
-         /*---- demand ----*/
-         if ((pequipment->driver[i].flags & DF_PRIO_DEVICE) == 0) {
-            /* set values from ODB */
-            status = device_driver(hv_info->driver[j], CMD_SET,
-                                   j, hv_info->demand_mirror + offset + j);
-            status = device_driver(hv_info->driver[j], CMD_SET_CURRENT_LIMIT,
-                                   j, hv_info->current_limit + offset + j);
-            status = device_driver(hv_info->driver[j], CMD_SET_VOLTAGE_LIMIT,
-                                   j, hv_info->voltage_limit + offset + j);
-            status = device_driver(hv_info->driver[j], CMD_SET_RAMPUP,
-                                   j, hv_info->rampup_speed + offset + j);
-            status = device_driver(hv_info->driver[j], CMD_SET_RAMPDOWN,
-                                   j, hv_info->rampdown_speed + offset + j);
-         } else {
-            /* read values from device */
-            status = device_driver(hv_info->driver[j], CMD_GET_DEMAND,
-                                   j, hv_info->demand + offset + j);
-            hv_info->demand_mirror[offset + j] = hv_info->demand[offset + j];
-            status = device_driver(hv_info->driver[i], CMD_GET_CURRENT_LIMIT,
-                                   j, hv_info->current_limit + offset + j);
-            status = device_driver(hv_info->driver[i], CMD_GET_VOLTAGE_LIMIT,
-                                   j, hv_info->voltage_limit + offset + j);
-            status = device_driver(hv_info->driver[j], CMD_GET_RAMPUP,
-                                   j, hv_info->rampup_speed + offset + j);
-            status = device_driver(hv_info->driver[j], CMD_GET_RAMPDOWN,
-                                   j, hv_info->rampdown_speed + offset + j);
-         }
-
-         if (status != FE_SUCCESS)
-            return status;
+   /*---- set/get demand value ----*/
+   for (i = 0; i < hv_info->num_channels; i++) {
+      if ((hv_info->driver[i]->flags & DF_PRIO_DEVICE) == 0) {
+         hv_info->demand_mirror[i] = MIN(hv_info->demand[i], hv_info->voltage_limit[i]);
+         status = device_driver(hv_info->driver[i], CMD_SET, 
+                                i - hv_info->channel_offset[i], hv_info->demand_mirror[i]);
+      } else {
+         status = device_driver(hv_info->driver[i], CMD_GET_DEMAND,
+                                i - hv_info->channel_offset[i], hv_info->demand + i);
+         hv_info->demand_mirror[i] = hv_info->demand[i];
       }
-
-      offset += pequipment->driver[i].channels;
    }
-
    db_set_record(hDB, hv_info->hKeyDemand, hv_info->demand,
                  hv_info->num_channels * sizeof(float), 0);
 
-   db_find_key(hDB, hv_info->hKeyRoot, "Settings/Current Limit", &hKey);
-   db_set_record(hDB, hKey, hv_info->current_limit,
-                 hv_info->num_channels * sizeof(float), 0);
-
-   db_find_key(hDB, hv_info->hKeyRoot, "Settings/Voltage Limit", &hKey);
-   db_set_record(hDB, hKey, hv_info->voltage_limit,
-                 hv_info->num_channels * sizeof(float), 0);
-
-   db_find_key(hDB, hv_info->hKeyRoot, "Settings/Ramp Up Speed", &hKey);
-   db_set_record(hDB, hKey, hv_info->rampup_speed,
-                 hv_info->num_channels * sizeof(float), 0);
-
-   db_find_key(hDB, hv_info->hKeyRoot, "Settings/Ramp Down Speed", &hKey);
-   db_set_record(hDB, hKey, hv_info->rampdown_speed,
-                 hv_info->num_channels * sizeof(float), 0);
+   /*---- set limits and ramping speeds ----*/
+   for (i = 0; i < hv_info->num_channels; i++) {
+      status = device_driver(hv_info->driver[i], CMD_SET_CURRENT_LIMIT,
+                             i - hv_info->channel_offset[i], hv_info->current_limit[i]);
+      status = device_driver(hv_info->driver[i], CMD_SET_VOLTAGE_LIMIT,
+                             i - hv_info->channel_offset[i], hv_info->voltage_limit[i]);
+      status = device_driver(hv_info->driver[i], CMD_SET_RAMPUP,
+                             i - hv_info->channel_offset[i], hv_info->rampup_speed[i]);
+      status = device_driver(hv_info->driver[i], CMD_SET_RAMPDOWN,
+                             i - hv_info->channel_offset[i], hv_info->rampdown_speed[i]);
+   }
 
    /* initially read all channels */
    for (i=0 ; i<hv_info->num_channels ; i++)
