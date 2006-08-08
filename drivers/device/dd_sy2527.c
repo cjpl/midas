@@ -41,7 +41,6 @@ typedef struct
   char ip[32];			// IP# for network access
   int linktype;			// Connection type (0:TCP/IP, 1:, 2:)
   int begslot;			// First slot# belonging to this experiment
-  int endslot;			// Last slot# belonging to this experiment
 } DDSY2527_SETTINGS;
 
 #define DDSY2527_SETTINGS_STR "\
@@ -49,7 +48,6 @@ System Name = STRING : [32] sy2527\n\
 IP = STRING : [32] 142.90.111.74\n\
 LinkType = INT : 0\n\
 First Slot = INT : 0\n\
-Last Slot = INT : 0\n\
 "
 
 /* following structure contains private variables to the device
@@ -126,7 +124,7 @@ INT dd_sy2527_init (HNDLE hkey, void **pinfo, WORD channels,
 
   //  Retrieve slot table for channels construction
   for (channels = 0, islot = info->dd_sy2527_settings.begslot;
-    islot < info->dd_sy2527_settings.endslot + 1; islot++)
+    islot < SY2527_MAX_SLOTS; islot++)
   {
     ret =
       CAENHVTestBdPresence (DevName, islot, &NrOfCh, model, descr, &serNumb,
@@ -204,7 +202,8 @@ INT dd_sy2527_exit (DDSY2527_INFO * info)
 /*----------------------------------------------------------------------------*/
 void get_slot (DDSY2527_INFO * info, WORD channel, WORD * chan, WORD * slot)
 {
-  *slot = *chan = 0;
+  *slot = info->dd_sy2527_settings.begslot;
+  *chan = 0;
   while ((channel >= info->slot[*slot].channels) && (*slot < SY2527_MAX_SLOTS)) {
     channel -= info->slot[*slot].channels;
     *slot += 1;
@@ -370,15 +369,14 @@ INT dd_sy2527_Name_set (DDSY2527_INFO * info, WORD nchannel, WORD * chlist,
 /*----------------------------------------------------------------------------*/
 INT dd_sy2527_Label_get (DDSY2527_INFO * info, WORD channel, char *label)
 {
-//  char chnamelist[1][MAX_CH_NAME];
-  char  (*chnamelist)[MAX_CH_NAME];
+  char  chnamelist[1][MAX_CH_NAME];
   WORD nchannel;
+  CAENHVRESULT ret;
 
-  chnamelist = malloc(1*MAX_CH_NAME);
   nchannel = 1;
-  dd_sy2527_Name_get (info, nchannel, &channel, chnamelist);
+  ret = dd_sy2527_Name_get (info, nchannel, &channel, chnamelist);
   strcpy(label, chnamelist[0]);
-  return FE_SUCCESS;
+  return ret == 0 ? FE_SUCCESS : 0;
 }
 
 /*----------------------------------------------------------------------------*/
@@ -515,6 +513,24 @@ INT dd_sy2527_voltage_limit_get (DDSY2527_INFO * info, WORD channel, float *pval
   return ret == 0 ? FE_SUCCESS : 0;
 }
 
+/*----------------------------------------------------------------------------*/
+INT dd_sy2527_trip_time_set (DDSY2527_INFO * info, WORD channel, float *pvalue)
+{
+  CAENHVRESULT ret;
+
+  ret = dd_sy2527_fParam_set (info, 1, &channel, "Trip", pvalue);
+  return ret == 0 ? FE_SUCCESS : 0;
+}
+
+/*----------------------------------------------------------------------------*/
+INT dd_sy2527_trip_time_get (DDSY2527_INFO * info, WORD channel, float *pvalue)
+{
+  CAENHVRESULT ret;
+
+  ret = dd_sy2527_fParam_get (info, 1, &channel, "Trip", pvalue);
+  return ret == 0 ? FE_SUCCESS : 0;
+}
+
 /*---- device driver entry point -----------------------------------*/
 INT dd_sy2527 (INT cmd, ...)
 {
@@ -631,6 +647,20 @@ INT dd_sy2527 (INT cmd, ...)
     channel = (WORD) va_arg (argptr, INT);
     pvalue = va_arg (argptr, float *);
     status = dd_sy2527_voltage_limit_get (info, channel, pvalue);
+    break;
+
+  case CMD_SET_TRIP_TIME:
+    info = va_arg (argptr, void *);
+    channel = (WORD) va_arg (argptr, INT);
+    value = (float) va_arg (argptr, double);
+    status = dd_sy2527_trip_time_set (info, channel, &value);
+    break;
+
+  case CMD_GET_TRIP_TIME:
+    info = va_arg (argptr, void *);
+    channel = (WORD) va_arg (argptr, INT);
+    pvalue = va_arg (argptr, float *);
+    status = dd_sy2527_trip_time_get (info, channel, pvalue);
     break;
 
   default:
