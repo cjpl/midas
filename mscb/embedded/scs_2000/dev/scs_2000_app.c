@@ -399,17 +399,20 @@ void set_float(float *d, float s)
 
 void user_loop(void)
 {
-unsigned char xdata i;
+unsigned char xdata i, n;
 float xdata value;
 
    /* read ADCs */
    for (i=0 ; i<8 ; i++) {
-      dr_ad7718(0x61, MC_READ, 0, 0, i, &value);
-      set_float(&user_data.adc[i], value);
-      dr_ad7718(0x61, MC_READ, 0, 1, i, &value);
-      set_float(&user_data.adc[8+i], value);
-      dr_ad7718(0x61, MC_READ, 0, 2, i, &value);
-      set_float(&user_data.adc[16+i], value);
+      n = dr_ad7718(0x61, MC_READ, 0, 0, i, &value);
+      if (n > 0)
+         set_float(&user_data.adc[i], value);
+      n = dr_ad7718(0x61, MC_READ, 0, 1, i, &value);
+      if (n > 0)
+         set_float(&user_data.adc[8+i], value);
+      n = dr_ad7718(0x61, MC_READ, 0, 2, i, &value);
+      if (n > 0)
+         set_float(&user_data.adc[16+i], value);
    }
 
    /* do control */
