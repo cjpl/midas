@@ -39,6 +39,7 @@ typedef struct {
    float *current_limit;
    float *rampup_speed;
    float *rampdown_speed;
+   float *trip_time;
 
    /* mirror arrays */
    float *demand_mirror;
@@ -71,6 +72,7 @@ static void free_mem(HV_INFO * hv_info)
    free(hv_info->current_limit);
    free(hv_info->rampup_speed);
    free(hv_info->rampdown_speed);
+   free(hv_info->trip_time);
 
    free(hv_info->demand_mirror);
    free(hv_info->measured_mirror);
@@ -290,6 +292,25 @@ void hv_demand(INT hDB, INT hKey, void *info)
 
 /*------------------------------------------------------------------*/
 
+void hv_set_trip_time(INT hDB, INT hKey, void *info)
+{
+   INT i;
+   HV_INFO *hv_info;
+   EQUIPMENT *pequipment;
+
+   pequipment = (EQUIPMENT *) info;
+   hv_info = (HV_INFO *) pequipment->cd_info;
+
+   /* check for voltage limit */
+   for (i = 0; i < hv_info->num_channels; i++)
+      device_driver(hv_info->driver[i], CMD_SET_TRIP_TIME,
+                    i - hv_info->channel_offset[i], hv_info->trip_time[i]);
+
+   pequipment->odb_in++;
+}
+
+/*------------------------------------------------------------------*/
+
 void hv_set_current_limit(INT hDB, INT hKey, void *info)
 {
    INT i;
@@ -463,6 +484,7 @@ INT hv_init(EQUIPMENT * pequipment)
    hv_info->current_limit = (float *) calloc(hv_info->num_channels, sizeof(float));
    hv_info->rampup_speed = (float *) calloc(hv_info->num_channels, sizeof(float));
    hv_info->rampdown_speed = (float *) calloc(hv_info->num_channels, sizeof(float));
+   hv_info->trip_time = (float *) calloc(hv_info->num_channels, sizeof(float));
 
    hv_info->demand_mirror = (float *) calloc(hv_info->num_channels, sizeof(float));
    hv_info->measured_mirror = (float *) calloc(hv_info->num_channels, sizeof(float));
@@ -546,6 +568,10 @@ INT hv_init(EQUIPMENT * pequipment)
    validate_odb_array(hDB, hv_info, "Settings/Current Limit", 3000, CMD_GET_CURRENT_LIMIT, 
                       hv_info->current_limit, hv_set_current_limit, pequipment);
 
+   /* Trip Time */
+   validate_odb_array(hDB, hv_info, "Settings/Trip Time", 10, CMD_GET_TRIP_TIME, 
+                      hv_info->current_limit, hv_set_trip_time, pequipment);
+
    /* Ramp up */
    validate_odb_array(hDB, hv_info, "Settings/Ramp Up Speed", 0, CMD_GET_RAMPUP, 
                       hv_info->rampup_speed, hv_set_rampup, pequipment);
@@ -604,6 +630,8 @@ INT hv_init(EQUIPMENT * pequipment)
 
    /*---- set limits and ramping speeds ----*/
    for (i = 0; i < hv_info->num_channels; i++) {
+      status = device_driver(hv_info->driver[i], CMD_SET_TRIP_TIME,
+                             i - hv_info->channel_offset[i], hv_info->trip_time[i]);
       status = device_driver(hv_info->driver[i], CMD_SET_CURRENT_LIMIT,
                              i - hv_info->channel_offset[i], hv_info->current_limit[i]);
       status = device_driver(hv_info->driver[i], CMD_SET_VOLTAGE_LIMIT,
