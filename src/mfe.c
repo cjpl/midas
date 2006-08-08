@@ -324,7 +324,7 @@ INT device_driver(DEVICE_DRIVER * device_driver, INT cmd, ...)
 {
    va_list argptr;
    HNDLE hKey;
-   INT channel, status, i;
+   INT channel, status, i, j;
    float value, *pvalue;
    char *name, *label, str[256];
 
@@ -344,22 +344,20 @@ INT device_driver(DEVICE_DRIVER * device_driver, INT cmd, ...)
             /* create inter-thread data exchange buffers */
             device_driver->mt_buffer = (DD_MT_BUFFER *) calloc(1, sizeof(DD_MT_BUFFER));
             device_driver->mt_buffer->n_channels = device_driver->channels;
-            device_driver->mt_buffer->channel =
-                (DD_MT_CHANNEL *) calloc(device_driver->channels, sizeof(DD_MT_CHANNEL));
-            for (i = 0; i < device_driver->channels; i++) {
-               device_driver->mt_buffer->channel[i].array[CMD_SET] = (float) ss_nan();
-               device_driver->mt_buffer->channel[i].array[CMD_SET_CURRENT_LIMIT] =
-                   (float) ss_nan();
-            }
+            device_driver->mt_buffer->channel = (DD_MT_CHANNEL *) calloc(device_driver->channels, sizeof(DD_MT_CHANNEL));
+            
+            /* set all set values to NaN */
+            for (i=0 ; i<device_driver->channels ; i++)
+               for (j=CMD_SET_FIRST ; j<=CMD_SET_LAST ; j++)
+                  device_driver->mt_buffer->channel[i].array[j] = (float)ss_nan();
 
             /* get default names and demands for this driver already now */
             for (i = 0; i < device_driver->channels; i++) {
                device_driver->dd(CMD_GET_LABEL, device_driver->dd_info, i,
                                  device_driver->mt_buffer->channel[i].label);
                if (device_driver->flags & DF_PRIO_DEVICE)
-                  device_driver->dd(CMD_GET_DEMAND, device_driver->dd_info, i,
-                                    device_driver->mt_buffer->channel[i].
-                                    array[CMD_GET_DEMAND]);
+                  device_driver->dd(CMD_GET_DEMAND, device_driver->dd_info, i, 
+                                    &device_driver->mt_buffer->channel[i].array[CMD_GET_DEMAND]);
             }
 
             /* create mutex */
@@ -413,21 +411,7 @@ INT device_driver(DEVICE_DRIVER * device_driver, INT cmd, ...)
    case CMD_GET_LABEL:
       channel = va_arg(argptr, INT);
       name = va_arg(argptr, char *);
-      if (device_driver->flags & DF_MULTITHREAD) {
-         ss_mutex_wait_for(device_driver->mutex, 1000);
-         strlcpy(name, device_driver->mt_buffer->channel[channel].label, NAME_LENGTH);
-         status = device_driver->mt_buffer->status;
-         ss_mutex_release(device_driver->mutex);
-      } else
-         status = device_driver->dd(CMD_GET_LABEL, device_driver->dd_info, channel, name);
-      break;
-
-   case CMD_GET_DEFAULT_THRESHOLD:
-      channel = va_arg(argptr, INT);
-      pvalue = va_arg(argptr, float *);
-      status =
-          device_driver->dd(CMD_GET_DEFAULT_THRESHOLD, device_driver->dd_info, channel,
-                            pvalue);
+      status = device_driver->dd(CMD_GET_LABEL, device_driver->dd_info, channel, name);
       break;
 
    default:
@@ -438,7 +422,6 @@ INT device_driver(DEVICE_DRIVER * device_driver, INT cmd, ...)
 
          /* transfer data to sc_thread for SET commands */
          value = (float) va_arg(argptr, double);        // floats are passed as double
-
          if (device_driver->flags & DF_MULTITHREAD) {
             ss_mutex_wait_for(device_driver->mutex, 1000);
             device_driver->mt_buffer->channel[channel].array[cmd] = value;
@@ -459,6 +442,13 @@ INT device_driver(DEVICE_DRIVER * device_driver, INT cmd, ...)
             ss_mutex_release(device_driver->mutex);
          } else
             status = device_driver->dd(cmd, device_driver->dd_info, channel, pvalue);
+
+      } else {
+
+         /* all remaining commands which are passed directly to the device driver */
+         channel = va_arg(argptr, INT);
+         pvalue = va_arg(argptr, float *);
+         status = device_driver->dd(cmd, device_driver->dd_info, channel, pvalue);
       }
 
       break;
