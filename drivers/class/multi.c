@@ -515,6 +515,19 @@ INT multi_exit(EQUIPMENT * pequipment)
 
 /*----------------------------------------------------------------------------*/
 
+INT multi_start(EQUIPMENT * pequipment)
+{
+   INT i;
+
+   /* call close method of device drivers */
+   for (i = 0; pequipment->driver[i].dd != NULL && pequipment->driver[i].flags & DF_MULTITHREAD ; i++)
+      device_driver(&pequipment->driver[i], CMD_START);
+
+   return FE_SUCCESS;
+}
+
+/*----------------------------------------------------------------------------*/
+
 INT multi_stop(EQUIPMENT * pequipment)
 {
    INT i;
@@ -645,6 +658,10 @@ INT cd_multi(INT cmd, EQUIPMENT * pequipment)
 
    case CMD_EXIT:
       status = multi_exit(pequipment);
+      break;
+
+   case CMD_START:
+      status = multi_start(pequipment);
       break;
 
    case CMD_STOP:

@@ -84,6 +84,32 @@ static void free_mem(HV_INFO * hv_info)
    free(hv_info);
 }
 
+/*----------------------------------------------------------------------------*/
+
+INT hv_start(EQUIPMENT * pequipment)
+{
+   INT i;
+
+   /* call close method of device drivers */
+   for (i = 0; pequipment->driver[i].dd != NULL && pequipment->driver[i].flags & DF_MULTITHREAD ; i++)
+      device_driver(&pequipment->driver[i], CMD_START);
+
+   return FE_SUCCESS;
+}
+
+/*----------------------------------------------------------------------------*/
+
+INT hv_stop(EQUIPMENT * pequipment)
+{
+   INT i;
+
+   /* call close method of device drivers */
+   for (i = 0; pequipment->driver[i].dd != NULL && pequipment->driver[i].flags & DF_MULTITHREAD ; i++)
+      device_driver(&pequipment->driver[i], CMD_STOP);
+
+   return FE_SUCCESS;
+}
+
 /*------------------------------------------------------------------*/
 
 INT hv_read(EQUIPMENT * pequipment, int channel)
@@ -738,6 +764,14 @@ INT cd_hv(INT cmd, PEQUIPMENT pequipment)
 
    case CMD_EXIT:
       status = hv_exit(pequipment);
+      break;
+
+   case CMD_START:
+      status = hv_start(pequipment);
+      break;
+
+   case CMD_STOP:
+      status = hv_stop(pequipment);
       break;
 
    case CMD_IDLE:
