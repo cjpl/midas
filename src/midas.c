@@ -4891,7 +4891,7 @@ INT bm_get_buffer_level(INT buffer_handle, INT * n_bytes)
 
       bm_lock_buffer(buffer_handle);
 
-      pclient = &(pheader->client[bm_validate_client_index(&_buffer[buffer_handle - 1])]);
+      pclient = &(pheader->client[bm_validate_client_index(pbuf)]);
 
       *n_bytes = pheader->write_pointer - pclient->read_pointer;
       if (*n_bytes < 0)
@@ -5479,17 +5479,82 @@ INT bm_delete_request(INT request_id)
    return BM_SUCCESS;
 }
 
+static void bm_show_pointers(const BUFFER_HEADER * pheader)
+{
+   int i;
+   const BUFFER_CLIENT *pclient;
+
+   pclient = pheader->client;
+
+   printf("buffer \'%s\', rptr: %d, wptr: %d, size: %d\n", pheader->name, pheader->read_pointer, pheader->write_pointer, pheader->size);
+   for (i = 0; i < pheader->max_client_index; i++)
+      if (pclient[i].pid) {
+	printf("pointers: client %d \'%s\', rptr %d\n", i, pclient[i].name, pclient[i].read_pointer);
+      }
+
+   printf("done\n");
+}
+
+static void bm_validate_client_pointers(BUFFER_HEADER * pheader, BUFFER_CLIENT *pclient)
+{
+  if (pheader->read_pointer <= pheader->write_pointer) {
+
+    if (pclient->read_pointer < pheader->read_pointer) {
+       cm_msg(MINFO, "bm_validate_client_pointers", "Corrected read pointer for client \'%s\' on buffer \'%s\' from %d to %d", pclient->name, pheader->name, pclient->read_pointer, pheader->read_pointer);
+
+       pclient->read_pointer = pheader->read_pointer;
+    }
+
+    if (pclient->read_pointer > pheader->write_pointer) {
+       cm_msg(MINFO, "bm_validate_client_pointers", "Corrected read pointer for client \'%s\' on buffer \'%s\' from %d to %d", pclient->name, pheader->name, pclient->read_pointer, pheader->write_pointer);
+      
+       pclient->read_pointer = pheader->write_pointer;
+    }
+
+  } else {
+    
+    if (pclient->read_pointer < 0) {
+       cm_msg(MINFO, "bm_validate_client_pointers", "Corrected read pointer for client \'%s\' on buffer \'%s\' from %d to %d", pclient->name, pheader->name, pclient->read_pointer, pheader->read_pointer);
+      
+       pclient->read_pointer = pheader->read_pointer;
+    }
+
+    if (pclient->read_pointer >= pheader->size) {
+       cm_msg(MINFO, "bm_validate_client_pointers", "Corrected read pointer for client \'%s\' on buffer \'%s\' from %d to %d", pclient->name, pheader->name, pclient->read_pointer, pheader->read_pointer);
+      
+       pclient->read_pointer = pheader->read_pointer;
+    }
+
+    if (pclient->read_pointer > pheader->write_pointer && pclient->read_pointer < pheader->read_pointer) {
+       cm_msg(MINFO, "bm_validate_client_pointers", "Corrected read pointer for client \'%s\' on buffer \'%s\' from %d to %d", pclient->name, pheader->name, pclient->read_pointer, pheader->read_pointer);
+      
+       pclient->read_pointer = pheader->read_pointer;
+    }
+  }
+}
+
+static void bm_validate_pointers(BUFFER_HEADER * pheader)
+{
+   BUFFER_CLIENT *pclient = pheader->client;
+   int i;
+
+   for (i = 0; i < pheader->max_client_index; i++)
+     if (pclient[i].pid) {
+       bm_validate_client_pointers(pheader, &pclient[i]);
+     }
+}
+
 static BOOL bm_update_read_pointer(const char *caller_name, BUFFER_HEADER * pheader)
 {
    BOOL did_move;
    int i;
-   int min_wp;
+   int min_rp;
    BUFFER_CLIENT *pclient;
 
    pclient = pheader->client;
 
    /* calculate global read pointer as "minimum" of client read pointers */
-   min_wp = pheader->write_pointer;
+   min_rp = pheader->write_pointer;
 
    for (i = 0; i < pheader->max_client_index; i++)
       if (pclient[i].pid) {
@@ -5497,29 +5562,41 @@ static BOOL bm_update_read_pointer(const char *caller_name, BUFFER_HEADER * phea
          cm_msg(MDEBUG, caller_name, "bm_update_read_pointer: client %d rp=%d", i,
                 pclient[i].read_pointer);
 #endif
-         if (pclient[i].read_pointer < min_wp)
-            min_wp = pclient[i].read_pointer;
+         bm_validate_client_pointers(pheader, &pclient[i]);
 
-         if (pclient[i].read_pointer > pheader->write_pointer &&
-             pclient[i].read_pointer - pheader->size < min_wp)
-            min_wp = pclient[i].read_pointer - pheader->size;
+         if (pheader->read_pointer <= pheader->write_pointer) {
+            if (pclient[i].read_pointer < min_rp)
+               min_rp = pclient[i].read_pointer;
+         } else {
+            if (pclient[i].read_pointer <= pheader->write_pointer) {
+               if (pclient[i].read_pointer < min_rp)
+                  min_rp = pclient[i].read_pointer;
+            } else {
+               int xptr = pclient[i].read_pointer - pheader->size;
+               if (xptr < min_rp)
+                  min_rp = xptr;
+            }
+         }
       }
 
-   if (min_wp < 0)
-      min_wp += pheader->size;
+   if (min_rp < 0)
+      min_rp += pheader->size;
+
+   assert(min_rp >= 0);
+   assert(min_rp < pheader->size);
 
 #ifdef DEBUG_MSG
-   if (min_wp == pheader->read_pointer)
+   if (min_rp == pheader->read_pointer)
       cm_msg(MDEBUG, caller_name, "bm_update_read_pointer -> wp=%d",
              pheader->write_pointer);
    else
       cm_msg(MDEBUG, caller_name, "bm_update_read_pointer -> wp=%d, rp %d -> %d, size=%d",
-             pheader->write_pointer, pheader->read_pointer, min_wp, pheader->size);
+             pheader->write_pointer, pheader->read_pointer, min_rp, pheader->size);
 #endif
 
-   did_move = (pheader->read_pointer == min_wp);
+   did_move = (pheader->read_pointer != min_rp);
 
-   pheader->read_pointer = min_wp;
+   pheader->read_pointer = min_rp;
 
    return did_move;
 }
@@ -5657,6 +5734,16 @@ static int bm_wait_for_free_space(int buffer_handle, BUFFER * pbuf, int async_fl
    int status;
    BUFFER_HEADER *pheader = pbuf->buffer_header;
    char *pdata = (char *) (pheader + 1);
+
+   /* make sure the buffer never completely full:
+    * read pointer and write pointer would coincide
+    * and the code cannot tell if it means the
+    * buffer is 100% or 100% empty. It will explode
+    * or lose events */
+   requested_space += 100;
+
+   if (requested_space >= pheader->size)
+      return BM_NO_MEMORY;
 
    while (1) {
 
@@ -5970,6 +6057,15 @@ INT bm_send_event(INT buffer_handle, void *source, INT buf_size, INT async_flag)
          pheader->write_pointer = total_size - size;
       }
 
+      /* write pointer was incremented, but there should
+       * always be some free space in the buffer and the
+       * write pointer should never cacth up to the read pointer:
+       * the rest of the code gets confused this happens (buffer 100% full)
+       * as it is write_pointer == read_pointer can be either
+       * 100% full or 100% empty. My solution: never fill
+       * the buffer to 100% */
+      assert(pheader->write_pointer != pheader->read_pointer);
+
       /* check which clients have a request for this event */
       for (i = 0; i < pheader->max_client_index; i++)
          if (pclient[i].pid) {
@@ -6079,7 +6175,7 @@ INT bm_flush_cache(INT buffer_handle, INT async_flag)
       /* calculate some shorthands */
       pheader = _buffer[buffer_handle - 1].buffer_header;
       pdata = (char *) (pheader + 1);
-      my_client_index = bm_validate_client_index(&_buffer[buffer_handle - 1]);
+      my_client_index = bm_validate_client_index(pbuf);
       pclient = pheader->client;
       pevent = (EVENT_HEADER *) (pbuf->write_cache + pbuf->write_cache_rp);
 
@@ -6133,6 +6229,10 @@ INT bm_flush_cache(INT buffer_handle, INT async_flag)
 
             pheader->write_pointer = total_size - size;
          }
+
+	 /* see comment for the same code in bm_send_event().
+	  * We make sure the buffer is nevere 100% full */
+	 assert(pheader->write_pointer != pheader->read_pointer);
 
          /* this loop does not loop forever because write_cache_rp
           * is monotonously incremented here. write_cache_wp does
