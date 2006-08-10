@@ -20,7 +20,7 @@
 #ifdef OS_VXWORKS
 produce()
 #else
-main()
+int main()
 #endif
 {
    INT hBuf, status, i;
@@ -31,6 +31,9 @@ main()
    int id, size, event_size, act_size, variable_size, flush = 0;
    char host_name[256];
    BUFFER_HEADER buffer_header;
+
+   setbuf(stdout, NULL);
+   setbuf(stderr, NULL);
 
    /* get parameters */
 
@@ -123,7 +126,7 @@ main()
       size = buffer_header.read_pointer - buffer_header.write_pointer;
       if (size <= 0)
          size += buffer_header.size;
-      printf("Level: %4.1lf %%, ", 100 - 100.0 * size / buffer_header.size);
+      printf("Level: %5.1lf %%, ", 100 - 100.0 * size / buffer_header.size);
 
       printf("Rate: %1.2lf MB/sec\n", rate);
 
