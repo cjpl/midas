@@ -17,6 +17,7 @@
 INT all_flag;
 INT hBufEvent;
 INT event_byte_count;
+INT count_mismatches = 0;
 char event_buffer[MAX_EVENT_SIZE];
 
 /*----- Print any system message -----------------------------------*/
@@ -39,9 +40,9 @@ INT transition(INT run_number, char *error)
 
 void process_event(HNDLE hBuf, HNDLE request_id, EVENT_HEADER * pheader, void *pevent)
 {
-   static INT ser[10], jam = 0;
+   static int ser[10], jam = 0;
 
-   INT size, *pdata, id;
+   int size, *pdata, id;
 
    /* accumulate received event size */
    size = pheader->data_size;
@@ -68,10 +69,12 @@ void process_event(HNDLE hBuf, HNDLE request_id, EVENT_HEADER * pheader, void *p
 
    /* if all events are requested, now check the serial number
       if no events are missing */
-   if (all_flag && (INT) pheader->serial_number != ser[id] + 1)
+   if (all_flag && (INT) pheader->serial_number != ser[id] + 1) {
       cm_msg(MERROR, "process_event",
-             "Serial number mismatch: Ser: %ld, OldSer: %ld, ID: %d, size: %ld\n",
+             "Serial number mismatch: Ser: %d, OldSer: %d, ID: %d, size: %d",
              pheader->serial_number, ser[id], pheader->event_id, pheader->data_size);
+      count_mismatches ++;
+   }
 
    ser[id] = pheader->serial_number;
 }
@@ -127,7 +130,7 @@ int main()
    cm_msg_register(process_message);
 
    /* place a request for transition notification */
-   cm_register_transition(TR_START, via_callback? transition : NULL, 500);
+   cm_register_transition(TR_START, via_callback ? transition : NULL, 500);
 
    last_time = 0;
    start_time = 0;
@@ -165,9 +168,9 @@ int main()
          size = buffer_header.read_pointer - buffer_header.write_pointer;
          if (size <= 0)
             size += buffer_header.size;
-         printf("Level: %4.1lf %%, ", 100 - 100.0 * size / buffer_header.size);
+         printf("Level: %5.1lf %%, ", 100 - 100.0 * size / buffer_header.size);
 
-         printf("Rate: %1.2lf MB/sec\n", rate);
+         printf("Rate: %1.2lf MB/sec, ser mismatches: %d\n", rate, count_mismatches);
          start_time = stop_time;
          event_byte_count = 0;
       }

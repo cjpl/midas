@@ -33,8 +33,8 @@ OSFLAGS = -DOS_LINUX -fPIC
 #-------------------------------------------------------------------
 # The following lines define direcories. Adjust if necessary
 #                 
-INC_DIR 	= /usr/local/include
-LIB_DIR 	= /usr/local/lib
+INC_DIR 	= ../../include
+LIB_DIR 	= ../../linux/lib
 
 ####################################################################
 # Lines below here should not be edited
@@ -44,7 +44,7 @@ LIB = $(LIB_DIR)/libmidas.a
 
 # compiler
 CC = cc
-CFLAGS = -g -I$(INC_DIR) -L$(LIB_DIR)
+CFLAGS = -O2 -g -Wall -Wuninitialized -I$(INC_DIR) -L$(LIB_DIR)
 
 PROGS = produce consume rpc_test rpc_clnt rpc_srvr
 all: $(PROGS)
