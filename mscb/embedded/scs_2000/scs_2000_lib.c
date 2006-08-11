@@ -788,11 +788,9 @@ unsigned char status;
 
       /* round result to significant digits */
       if (id == 0x61|| id == 0x63) {
-         d = (unsigned long)(value*1E5+0.5);
-         value = d/1E5;
+         value = (long)(value*1E5+0.5)/1E5;
       } else {
-         d = (unsigned long)(value*1E6+0.5);
-         value = d/1E6;
+         value = (long)(value*1E6+0.5)/1E6;
       }
 
       *((float *)pd) = value;
