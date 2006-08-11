@@ -37,6 +37,11 @@ MSCB_INFO_VAR code vars_bout[] =
 MSCB_INFO_VAR code vars_uin[] =
    { 4, UNIT_VOLT,    0,          0, MSCBF_FLOAT, "P%Uin#",  8 };
 
+MSCB_INFO_VAR code vars_uin_range[] = {
+   { 4, UNIT_VOLT,    0,          0, MSCBF_FLOAT, "P%Uin#",  8 },
+   { 1, UNIT_BYTE,    0,          0, MSCBF_HIDDEN, "P%Range", 0 },
+};
+
 MSCB_INFO_VAR code vars_uout[] =
    { 4, UNIT_VOLT,    0,          0, MSCBF_FLOAT, "P%Uout#", 8, 0, 30,  0.5 };
 
@@ -80,7 +85,7 @@ SCS_2000_MODULE code scs_2000_module[] = {
   { 0x42, "OptOut",          vars_optout, 1, dr_dout_bits   },
 
   /* 0x60-0x7F analog in  */
-  { 0x60, "Uin 0-2.5V",      vars_uin,    1, dr_ad7718      },
+  { 0x60, "Uin 0-2.5V",      vars_uin_range, 2, dr_ad7718   },
   { 0x61, "Uin +-10V",       vars_uin,    1, dr_ad7718      },
   { 0x62, "Iin 0-2.5mA",     vars_iin,    1, dr_ad7718      },
   { 0x63, "Iin 0-25mA",      vars_iin,    1, dr_ad7718      },
@@ -730,6 +735,8 @@ void ad7718_read(unsigned char a, unsigned long *d) reentrant
 }
 
 unsigned char xdata ad7718_cur_chn[8];
+unsigned char xdata ad7718_range[8];
+float code ad7718_full_range[] = { 0.02, 0.04, 0.08, 0.16, 0.32, 0.64, 1.28, 2.56 };
 
 unsigned char dr_ad7718(unsigned char id, unsigned char cmd, unsigned char addr, 
                         unsigned char port, unsigned char chn, void *pd) reentrant
@@ -745,9 +752,16 @@ unsigned char status;
       ad7718_write(AD7718_MODE, 3);                   // continuous conversion
       DELAY_US_REENTRANT(100);
 
+      /* default range */
+      ad7718_range[port] = 0x07;                      // +2.56V range
+
       /* start first conversion */
-      ad7718_write(AD7718_CONTROL, (0 << 4) | 0x0F);  // Channel 0, +2.56V range
+      ad7718_write(AD7718_CONTROL, (0 << 4) | 0x08 | ad7718_range[port]);  // Channel 0, unipolar
       ad7718_cur_chn[port] = 0;
+   }
+
+   if (cmd == MC_WRITE && chn == 8) {
+      ad7718_range[port] = *((unsigned char *)pd);
    }
 
    if (cmd == MC_READ) {
@@ -771,10 +785,10 @@ unsigned char status;
 
       /* start next conversion */
       ad7718_cur_chn[port] = (ad7718_cur_chn[port] + 1) % 8;
-      ad7718_write(AD7718_CONTROL, (ad7718_cur_chn[port] << 4) | 0x0F);  // next chn, +2.56V range
+      ad7718_write(AD7718_CONTROL, (ad7718_cur_chn[port] << 4) | 0x08 | ad7718_range[port]);
 
       /* convert to volts */
-      value = 2.56*((float)d / (1l<<24));
+      value = ad7718_full_range[ad7718_range[port]]*((float)d / (1l<<24));
    
       /* apply range */
       if (id == 0x60)
