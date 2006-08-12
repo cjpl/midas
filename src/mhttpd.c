@@ -15,12 +15,6 @@
 #include "msystem.h"
 #include "mgd.h"
 
-/* deal with finite() function */
-#ifdef OS_WINNT
-#include <float.h>
-#define finite(x) _finite(x)
-#endif
-
 /* refresh times in seconds */
 #define DEFAULT_REFRESH 60
 
@@ -237,11 +231,11 @@ void haxis(gdImagePtr im, gdFont * font, int col, int gcol, int x1, int y1, int 
 
 void rsputs(const char *str)
 {
-   if (strlen_retbuf + strlen(str) > sizeof(return_buffer)) {
-      strcpy(return_buffer, "<H1>Error: return buffer too small</H1>"); // may overflow KO 26-Jul-2006
+   if (strlen_retbuf + strlen(str) > sizeof(return_buffer)-40) {
+      strcpy(return_buffer, "<H1>Error: return buffer too small</H1>");
       strlen_retbuf = strlen(return_buffer);
    } else {
-      strcpy(return_buffer + strlen_retbuf, str);       // safe KO 26-Jul-2006
+      strcpy(return_buffer + strlen_retbuf, str);
       strlen_retbuf += strlen(str);
    }
 }
@@ -301,9 +295,9 @@ void rsprintf(const char *format, ...)
    va_end(argptr);
 
    if (strlen_retbuf + strlen(str) > sizeof(return_buffer))
-      strcpy(return_buffer, "<H1>Error: return buffer too small</H1>"); // safe KO 26-Jul-2006
+      strcpy(return_buffer, "<H1>Error: return buffer too small</H1>");
    else
-      strcpy(return_buffer + strlen_retbuf, str);       // safe KO 26-Jul-2006
+      strcpy(return_buffer + strlen_retbuf, str);
 
    strlen_retbuf += strlen(str);
 }
@@ -471,7 +465,7 @@ void receive_message(HNDLE hBuf, HNDLE id, EVENT_HEADER * pheader, void *message
 
    /* prepare time */
    time(&tm);
-   strcpy(str, ctime(&tm));     // safe KO 26-Jul-2006
+   strcpy(str, ctime(&tm));
    str[19] = 0;
 
    /* print message text which comes after event header */
@@ -709,7 +703,7 @@ INT search_callback(HNDLE hDB, HNDLE hKey, KEY * key, INT level, void *info)
             size = sizeof(data);
             status = db_get_data(hDB, hKey, data, &size, key->type);
             if (status == DB_NO_ACCESS)
-               strcpy(data_str, "<no read access>");    // safe KO 26-Jul-2006
+               strcpy(data_str, "<no read access>");
             else
                db_sprintf(data_str, data, key->item_size, 0, key->type);
 
@@ -1114,12 +1108,12 @@ void show_status_page(int refresh, char *cookie_wpwd)
                db_get_value(hDB, hsubkey, "Alarm Class", alarm_class, &size, TID_STRING,
                             TRUE);
 
-               strcpy(bgcol, "red");    // safe KO 26-Jul-2006
+               strcpy(bgcol, "red");
                sprintf(str, "/Alarms/Classes/%s/Display BGColor", alarm_class);
                size = sizeof(bgcol);
                db_get_value(hDB, 0, str, bgcol, &size, TID_STRING, TRUE);
 
-               strcpy(fgcol, "black");  // safe KO 26-Jul-2006
+               strcpy(fgcol, "black");
                sprintf(str, "/Alarms/Classes/%s/Display FGColor", alarm_class);
                size = sizeof(fgcol);
                db_get_value(hDB, 0, str, fgcol, &size, TID_STRING, TRUE);
@@ -1557,7 +1551,7 @@ void show_status_page(int refresh, char *cookie_wpwd)
                      db_get_value(hDB, hLKey, "Settings/List Label", str, &size,
                                   TID_STRING, TRUE);
                      if (str[0] == 0)
-                        strcpy(str, "(empty)"); // safe KO 26-Jul-2006
+                        strcpy(str, "(empty)");
                   }
 
                   if (exp_name[0])
@@ -3079,7 +3073,7 @@ void gen_odb_attachment(char *path, char *b)
             db_sprintfh(hex_str, data, key.item_size, 0, key.type);
 
             if (data_str[0] == 0 || equal_ustring(data_str, "<NULL>")) {
-               strcpy(data_str, "(empty)");     // safe KO 26-Jul-2006
+               strcpy(data_str, "(empty)");
                hex_str[0] = 0;
             }
 
@@ -3105,7 +3099,7 @@ void gen_odb_attachment(char *path, char *b)
                db_sprintfh(hex_str, data, key.item_size, 0, key.type);
 
                if (data_str[0] == 0 || equal_ustring(data_str, "<NULL>")) {
-                  strcpy(data_str, "(empty)");  // safe KO 26-Jul-2006
+                  strcpy(data_str, "(empty)");
                   hex_str[0] = 0;
                }
 
@@ -4416,7 +4410,7 @@ void show_sc_page(char *path, int refresh)
                      db_sprintfh(hex_str, data, key.item_size, 0, key.type);
 
                      if (data_str[0] == 0 || equal_ustring(data_str, "<NULL>")) {
-                        strcpy(data_str, "(empty)");    // safe KO 26-Jul-2006
+                        strcpy(data_str, "(empty)");
                         hex_str[0] = 0;
                      }
 
@@ -4439,7 +4433,7 @@ void show_sc_page(char *path, int refresh)
                         db_sprintfh(hex_str, data, key.item_size, 0, key.type);
 
                         if (data_str[0] == 0 || equal_ustring(data_str, "<NULL>")) {
-                           strcpy(data_str, "(empty)"); // safe KO 26-Jul-2006
+                           strcpy(data_str, "(empty)");
                            hex_str[0] = 0;
                         }
 
@@ -5046,7 +5040,7 @@ void show_custom_gif(char *name)
          }
 
          size = sizeof(data);
-         strcpy(data, "FFFFFF");        // safe KO 26-Jul-2006
+         strcpy(data, "FFFFFF");
          status = db_get_data_index(hDB, hkeyval, data, &size, i, TID_STRING);
          if (status == DB_SUCCESS) {
             sscanf(data, "%02x%02x%02x", &r, &g, &b);
@@ -5616,8 +5610,8 @@ void show_odb_page(char *enc_path, int enc_path_size, char *dec_path)
    cm_get_experiment_database(&hDB, NULL);
 
    if (strcmp(enc_path, "root") == 0) {
-      strcpy(enc_path, "");     // safe KO 26-Jul-2006
-      strcpy(dec_path, "");     // safe KO 26-Jul-2006
+      strcpy(enc_path, "");
+      strcpy(dec_path, "");
    }
 
    show_header(hDB, "MIDAS online database", "GET", enc_path, 1, 0);
@@ -5681,7 +5675,7 @@ void show_odb_page(char *enc_path, int enc_path_size, char *dec_path)
    else
       rsprintf("<a href=\"/root?\">/</a> \n");
 
-   strcpy(tmp_path, "");        // safe KO 26-Jul-2006
+   strcpy(tmp_path, "");
 
    p = dec_path;
    if (*p == '/')
@@ -5757,7 +5751,7 @@ void show_odb_page(char *enc_path, int enc_path_size, char *dec_path)
                hex_str[0] = 0;
 
             if (data_str[0] == 0 || equal_ustring(data_str, "<NULL>")) {
-               strcpy(data_str, "(empty)");     // safe KO 26-Jul-2006
+               strcpy(data_str, "(empty)");
                hex_str[0] = 0;
             }
 
@@ -5822,7 +5816,7 @@ void show_odb_page(char *enc_path, int enc_path_size, char *dec_path)
                   db_sprintfh(hex_str, data, key.item_size, 0, key.type);
 
                   if (data_str[0] == 0 || equal_ustring(data_str, "<NULL>")) {
-                     strcpy(data_str, "(empty)");       // safe KO 26-Jul-2006
+                     strcpy(data_str, "(empty)");
                      hex_str[0] = 0;
                   }
 
@@ -6158,7 +6152,7 @@ void show_create_page(char *enc_path, char *dec_path, char *value, int index, in
          if (key.type == TID_STRING || key.type == TID_LINK)
             key.item_size = NAME_LENGTH;
          if (type == TID_ARRAY)
-            strcpy(data, "\n"); // safe KO 26-Jul-2006
+            strcpy(data, "\n");
 
          if (index > 1)
             db_set_data_index(hDB, hkey, data, key.item_size, index - 1, key.type);
@@ -6393,7 +6387,7 @@ void show_alarm_page()
             size = sizeof(str);
             db_get_value(hDB, hkey, "Time triggered first", str, &size, TID_STRING, TRUE);
             if (!triggered)
-               strcpy(str, "-");        // safe KO 26-Jul-2006
+               strcpy(str, "-");
             rsprintf("<td align=center>%s", str);
 
             /* class */
@@ -6446,7 +6440,7 @@ void show_alarm_page()
                   db_get_value(hDB, hkey, "Check interval", &interval, &size, TID_INT,
                                TRUE);
                   last += interval;
-                  strcpy(value, ctime(&last));  // probably safe KO 26-Jul-2006
+                  strcpy(value, ctime(&last));
                   value[16] = 0;
 
                   sprintf(str, "Alarm triggers at %s", value);
@@ -6816,7 +6810,7 @@ void sec_to_label(char *result, int sec, int base, int force_date)
 
    t_sec = (time_t) sec;
    tms = localtime(&t_sec);
-   strcpy(mon, mname[tms->tm_mon]);     // probably safe KO 26-Jul-2006
+   strcpy(mon, mname[tms->tm_mon]);
    mon[3] = 0;
 
    if (force_date) {
@@ -7356,7 +7350,7 @@ void generate_hist_graph(char *path, char *buffer, int *buffer_size,
             if (hkey)
                db_delete_key(hDB, hkey, FALSE);
 
-            strcpy(str, "1h");  // safe KO 26-Jul-2006
+            strcpy(str, "1h");
             size = NAME_LENGTH;
             status =
                 db_get_value(hDB, hkeypanel, "Timescale", str, &size, TID_STRING, TRUE);
@@ -7605,7 +7599,7 @@ void generate_hist_graph(char *path, char *buffer, int *buffer_size,
          }
 
          /* skip NaNs */
-         if (!finite(y[i][n_vp]))
+         if (ss_isnan(y[i][n_vp]))
             continue;
 
          /* avoid overflow */
@@ -8266,7 +8260,7 @@ void show_hist_config_page(char *path)
          strlcpy(display_name[i], getparam(str), sizeof(display_name[0]));
 
          if (display_name[i][0]) {
-            sprintf(str, "var%d", i);   // safe KO 26-Jul-2006
+            sprintf(str, "var%d", i);
             strlcat(display_name[i], ":", sizeof(display_name[0]));
             strlcat(display_name[i], getparam(str), sizeof(display_name[0]));
          }
@@ -8530,6 +8524,463 @@ void show_hist_config_page(char *path)
 
 /*------------------------------------------------------------------*/
 
+void export_hist(char *path, int scale, int toffset, int index, int labels)
+{
+   HNDLE hDB, hkey, hkeypanel, hkeyeq, hkeydvar, hkeyvars, hkeyroot, hkeynames;
+   KEY key;
+   int i, j, k, l, n_vars, size, status, n_vp;
+   DWORD bsize, tsize, n_run_number, *state, *run_number, *t_run_number, i_run, *i_var;
+   char str[256], *p, odbpath[256];
+   INT var_index[MAX_VARS];
+   DWORD type, event_id, t, dt;
+   char event_name[MAX_VARS][NAME_LENGTH];
+   char tag_name[MAX_VARS][64], var_name[MAX_VARS][NAME_LENGTH], varname[64],
+       key_name[256];
+   DWORD n_point[MAX_VARS];
+   DWORD *x[MAX_VARS];
+   float *y[MAX_VARS];
+   float factor[MAX_VARS], offset[MAX_VARS];
+   BOOL runmarker;
+   struct tm *tms;
+
+   static char *ybuffer;
+   static DWORD *tbuffer;
+   static int hbuffer_size = 0;
+
+   if (hbuffer_size == 0) {
+      hbuffer_size = 1000 * sizeof(DWORD);
+      tbuffer = malloc(hbuffer_size);
+      ybuffer = malloc(hbuffer_size);
+   }
+
+   /* header */
+   rsprintf("HTTP/1.1 200 Document follows\r\n");
+   rsprintf("Server: MIDAS HTTP %s\r\n", cm_get_version());
+   rsprintf("Accept-Ranges: bytes\r\n");
+   rsprintf("Pragma: no-cache\r\n");
+   rsprintf("Expires: Fri, 01 Jan 1983 00:00:00 GMT\r\n");
+   rsprintf("Content-Type: text/plain\r\n");
+   rsprintf("Content-disposition: attachment; filename=\"export.csv\"\r\n");
+   rsprintf("\r\n");
+
+   cm_get_experiment_database(&hDB, NULL);
+
+   /* set history path */
+   status = db_find_key(hDB, 0, "/Logger/Data dir", &hkey);
+   if (status != DB_SUCCESS) {
+      rsprintf("No data directory defined in ODB");
+      return;
+   }
+
+   /* check dedicated history path */
+   size = sizeof(str);
+   memset(str, 0, size);
+
+   status = db_get_value(hDB, 0, "/Logger/History dir", str, &size, TID_STRING, FALSE);
+   if (status != DB_SUCCESS)
+      db_get_value(hDB, 0, "/Logger/Data dir", str, &size, TID_STRING, TRUE);
+   hs_set_path(str);
+
+   /* check panel name in ODB */
+   sprintf(str, "/History/Display/%s", path);
+   db_find_key(hDB, 0, str, &hkeypanel);
+   if (!hkey) {
+      rsprintf("Cannot find /History/Display/%s in ODB", path);
+      return;
+   }
+
+   db_find_key(hDB, hkeypanel, "Variables", &hkeydvar);
+   if (!hkeydvar) {
+      rsprintf("Cannot find /History/Display/%s/Variables in ODB", str);
+      return;
+   }
+
+   db_get_key(hDB, hkeydvar, &key);
+   n_vars = key.num_values;
+
+   if (n_vars > MAX_VARS) {
+      rsprintf(str, "Too many variables in panel %s", path);
+      return;
+   }
+
+   for (i = 0; i < n_vars; i++) {
+      if (index != -1 && index != i)
+         continue;
+
+      size = sizeof(str);
+      db_get_data_index(hDB, hkeydvar, str, &size, i, TID_STRING);
+      strlcpy(tag_name[i], str, sizeof(tag_name[0]));
+
+      /* split varname in event, variable and index */
+      if (strchr(tag_name[i], ':')) {
+         strlcpy(event_name[i], tag_name[i], sizeof(event_name[0]));
+         *strchr(event_name[i], ':') = 0;
+         strlcpy(var_name[i], strchr(tag_name[i], ':') + 1, sizeof(var_name[0]));
+         var_index[i] = 0;
+         if (strchr(var_name[i], '[')) {
+            var_index[i] = atoi(strchr(var_name[i], '[') + 1);
+            *strchr(var_name[i], '[') = 0;
+         }
+      } else {
+         rsprintf("Tag \"%s\" has wrong format in panel %s", tag_name[i], path);
+         return;
+      }
+
+      /* search event_id */
+      status = hs_get_event_id(0, event_name[i], &event_id);
+
+      if (status != HS_SUCCESS) {
+         rsprintf("Event \"%s\" from panel \"%s\" not found in history",
+                  event_name[i], path);
+         return;
+      }
+
+      /* get timescale */
+      if (scale == 0) {
+         strlcpy(str, "1h", sizeof(str));
+         size = NAME_LENGTH;
+         status = db_get_value(hDB, hkeypanel, "Timescale", str, &size, TID_STRING, TRUE);
+         if (status != DB_SUCCESS) {
+            /* delete old integer key */
+            db_find_key(hDB, hkeypanel, "Timescale", &hkey);
+            if (hkey)
+               db_delete_key(hDB, hkey, FALSE);
+
+            strcpy(str, "1h");
+            size = NAME_LENGTH;
+            status =
+                db_get_value(hDB, hkeypanel, "Timescale", str, &size, TID_STRING, TRUE);
+         }
+
+         scale = time_to_sec(str);
+      }
+
+      for (j = 0; j < MAX_VARS; j++) {
+         factor[j] = 1;
+         offset[j] = 0;
+      }
+
+      /* get factors */
+      size = sizeof(float) * n_vars;
+      db_get_value(hDB, hkeypanel, "Factor", factor, &size, TID_FLOAT, TRUE);
+
+      /* get offsets */
+      size = sizeof(float) * n_vars;
+      db_get_value(hDB, hkeypanel, "Offset", offset, &size, TID_FLOAT, TRUE);
+
+      /* get runmarker flag */
+      size = sizeof(runmarker);
+      runmarker = 1;
+      db_get_value(hDB, hkeypanel, "Show run markers", &runmarker, &size, TID_BOOL, TRUE);
+
+      /* make ODB path from tag name */
+      odbpath[0] = 0;
+      db_find_key(hDB, 0, "/Equipment", &hkeyroot);
+      if (hkeyroot) {
+         for (j = 0;; j++) {
+            db_enum_key(hDB, hkeyroot, j, &hkeyeq);
+
+            if (!hkeyeq)
+               break;
+
+            db_get_key(hDB, hkeyeq, &key);
+            if (equal_ustring(key.name, event_name[i])) {
+               /* check if variable is individual key under variabels/ */
+               sprintf(str, "Variables/%s", var_name[i]);
+               db_find_key(hDB, hkeyeq, str, &hkey);
+               if (hkey) {
+                  sprintf(odbpath, "/Equipment/%s/Variables/%s", event_name[i],
+                          var_name[i]);
+                  break;
+               }
+
+               /* check if variable is in setttins/names array */
+               db_find_key(hDB, hkeyeq, "Settings/Names", &hkeynames);
+               if (hkeynames) {
+                  /* extract variable name and Variables/<key> */
+                  strlcpy(str, var_name[i], sizeof(str));
+                  p = str + strlen(str) - 1;
+                  while (p > str && *p != ' ')
+                     p--;
+                  strlcpy(key_name, p + 1, sizeof(key_name));
+                  *p = 0;
+                  strlcpy(varname, str, sizeof(varname));
+
+                  /* find key in single name array */
+                  db_get_key(hDB, hkeynames, &key);
+                  for (k = 0; k < key.num_values; k++) {
+                     size = sizeof(str);
+                     db_get_data_index(hDB, hkeynames, str, &size, k, TID_STRING);
+                     if (equal_ustring(str, varname)) {
+                        sprintf(odbpath, "/Equipment/%s/Variables/%s[%d]", event_name[i],
+                                key_name, k);
+                        break;
+                     }
+                  }
+               } else {
+                  /* go through /variables/<name> entries */
+                  db_find_key(hDB, hkeyeq, "Variables", &hkeyvars);
+                  if (hkeyvars) {
+                     for (k = 0;; k++) {
+                        db_enum_key(hDB, hkeyvars, k, &hkey);
+
+                        if (!hkey)
+                           break;
+
+                        /* find "settins/names <key>" for this key */
+                        db_get_key(hDB, hkey, &key);
+
+                        /* find key in key_name array */
+                        strlcpy(key_name, key.name, sizeof(key_name));
+                        sprintf(str, "Settings/Names %s", key_name);
+
+                        db_find_key(hDB, hkeyeq, str, &hkeynames);
+                        if (hkeynames) {
+                           db_get_key(hDB, hkeynames, &key);
+                           for (l = 0; l < key.num_values; l++) {
+                              size = sizeof(str);
+                              db_get_data_index(hDB, hkeynames, str, &size, l,
+                                                TID_STRING);
+                              if (equal_ustring(str, var_name[i])) {
+                                 sprintf(odbpath, "/Equipment/%s/Variables/%s[%d]",
+                                         event_name[i], key_name, l);
+                                 break;
+                              }
+                           }
+                        }
+                     }
+                  }
+               }
+
+               break;
+            }
+         }
+
+         if (!hkeyeq) {
+            db_find_key(hDB, 0, "/History/Links", &hkeyroot);
+            if (hkeyroot) {
+               for (j = 0;; j++) {
+                  db_enum_link(hDB, hkeyroot, j, &hkey);
+
+                  if (!hkey)
+                     break;
+
+                  db_get_key(hDB, hkey, &key);
+                  if (equal_ustring(key.name, event_name[i])) {
+                     db_enum_key(hDB, hkeyroot, j, &hkey);
+                     db_find_key(hDB, hkey, var_name[i], &hkey);
+                     if (hkey) {
+                        db_get_key(hDB, hkey, &key);
+                        db_get_path(hDB, hkey, odbpath, sizeof(odbpath));
+                        if (key.num_values > 1)
+                           sprintf(odbpath + strlen(odbpath), "[%d]", var_index[i]);
+                        break;
+                     }
+                  }
+               }
+            }
+         }
+      }
+
+      do {
+         bsize = tsize = hbuffer_size;
+         memset(ybuffer, 0, bsize);
+         status =
+             hs_read(event_id, ss_time() - scale + toffset, ss_time() + toffset,
+                     0, var_name[i], var_index[i], tbuffer, &tsize,
+                     ybuffer, &bsize, &type, &n_point[i]);
+
+         if (status == HS_TRUNCATED) {
+            hbuffer_size *= 2;
+            tbuffer = realloc(tbuffer, hbuffer_size);
+            assert(tbuffer);
+            ybuffer = realloc(ybuffer, hbuffer_size);
+            assert(ybuffer);
+         }
+
+      } while (status == HS_TRUNCATED);
+
+      if (status == HS_UNDEFINED_VAR) {
+         rsprintf("Variable \"%s\" not found in history", var_name[i]);
+         return;
+      }
+
+      x[i] = M_MALLOC(sizeof(DWORD) * n_point[i]);
+      y[i] = M_MALLOC(sizeof(DWORD) * n_point[i]);
+
+      for (j = n_vp = 0; j < (int) n_point[i]; j++) {
+         x[i][n_vp] = tbuffer[j];
+
+         /* convert data to float */
+         switch (type) {
+         case TID_BYTE:
+            y[i][n_vp] = (float) *(((BYTE *) ybuffer) + j);
+            break;
+         case TID_SBYTE:
+            y[i][n_vp] = (float) *(((char *) ybuffer) + j);
+            break;
+         case TID_CHAR:
+            y[i][n_vp] = (float) *(((char *) ybuffer) + j);
+            break;
+         case TID_WORD:
+            y[i][n_vp] = (float) *(((WORD *) ybuffer) + j);
+            break;
+         case TID_SHORT:
+            y[i][n_vp] = (float) *(((short *) ybuffer) + j);
+            break;
+         case TID_DWORD:
+            y[i][n_vp] = (float) *(((DWORD *) ybuffer) + j);
+            break;
+         case TID_INT:
+            y[i][n_vp] = (float) *(((INT *) ybuffer) + j);
+            break;
+         case TID_BOOL:
+            y[i][n_vp] = (float) *(((BOOL *) ybuffer) + j);
+            break;
+         case TID_FLOAT:
+            y[i][n_vp] = (float) *(((float *) ybuffer) + j);
+            break;
+         case TID_DOUBLE:
+            y[i][n_vp] = (float) *(((double *) ybuffer) + j);
+            break;
+         }
+
+         /* skip NaNs */
+         if (ss_isnan(y[i][n_vp]))
+            continue;
+
+         /* apply factor and offset */
+         y[i][n_vp] = y[i][n_vp] * factor[i] + offset[i];
+
+         /* increment number of valid points */
+         n_vp++;
+      }
+
+      n_point[i] = n_vp;
+   }
+
+   /* read run markes if selected */
+   state = run_number = t_run_number = NULL;
+   if (runmarker) {
+      bsize = hbuffer_size;
+      tsize = hbuffer_size;
+
+      /* read run state */
+
+      status = hs_read(0, ss_time() - scale + toffset - scale, ss_time() + toffset, 0,
+                       "State", 0, tbuffer, &tsize, ybuffer, &bsize, &type, &n_run_number);
+
+      if (status != HS_UNDEFINED_VAR) {
+         state = M_MALLOC(sizeof(DWORD) * n_run_number);
+         for (j = 0; j < (int) n_run_number; j++)
+            state[j] = *((DWORD *) ybuffer + j);
+      }
+
+      bsize = hbuffer_size;
+      tsize = hbuffer_size;
+
+      /* read run number */
+
+      status = hs_read(0, ss_time() - scale + toffset - scale, ss_time() + toffset, 0,
+                       "Run number", 0, tbuffer, &tsize, ybuffer, &bsize, &type,
+                       &n_run_number);
+
+      if (status != HS_UNDEFINED_VAR) {
+         run_number = M_MALLOC(sizeof(DWORD) * n_run_number);
+         t_run_number = M_MALLOC(sizeof(DWORD) * n_run_number);
+         for (j = 0; j < (int) n_run_number; j++) {
+            t_run_number[j] = tbuffer[j];
+            run_number[j] = *((DWORD *) ybuffer + j);
+         }
+      }
+
+   }
+
+   /* output header line with variable names */
+   rsprintf("Time, Run, Run State, ");
+   for (i = 0; i < n_vars; i++) {
+      rsprintf(var_name[i]);
+      if (i < n_vars-1)
+         rsprintf(", ");
+   }
+   rsprintf("\n");
+
+   i_var = M_MALLOC(sizeof(DWORD) * n_vars);
+
+   i_run = 0;
+   for (i = 0; i < n_vars; i++) 
+      i_var[i] = 0;
+
+   /* find first time where all variables are available */
+   t = 0;
+   for (i = 1; i < n_vars; i++) 
+      if (n_point[i] > 0 && x[i][0] > t)
+         t = x[i][0];
+
+   if (t == 0) {
+      rsprintf("=== No history available for choosen period ===\n");
+      return;
+   }
+
+   do {
+      /* find run number/state which is valid for t */
+      while (i_run < n_run_number-1 && t_run_number[i_run+1] <= t)
+         i_run++;
+
+      /* find index for all variables which is valid for t */
+      for (i = 0; i < n_vars; i++)
+         while (i_var[i] < n_point[i] - 1 && x[i][i_var[i]+1] <= t)
+            i_var[i]++;
+
+      /* finish if last point for all variables reached */
+      for (i = 0 ; i < n_vars ; i++)
+         if (i_var[i] < n_point[i] - 1)
+            break;
+      if (i == n_vars)
+         break;
+
+      tms = localtime(&t);
+      strftime(str, sizeof(str), "%c", tms);
+
+      if (t_run_number[i_run] <= t)
+         rsprintf("%s, %d, %d, ", str, run_number[i_run], state[i_run]);
+      else
+         rsprintf("%s, N/A, N/A, ", str);
+
+      for (i= 0 ; i < n_vars ; i++) {
+            rsprintf("%lf", y[i][i_var[i]]);
+         if (i < n_vars-1)
+            rsprintf(", ");
+      }
+      rsprintf("\n");
+
+      /* find next t as smallest delta t */
+      dt = x[0][i_var[0]+1] - t;
+      for (i = 1 ; i < n_vars ; i++)
+         if (x[i][i_var[i]+1] - t < dt)
+            dt = x[i][i_var[i]+1] - t;
+      t += dt;
+
+   } while (1);
+
+   M_FREE(i_var);
+   for (i=0 ; i<n_vars ; i++) {
+      M_FREE(x[i]);
+      M_FREE(y[i]);
+   }
+
+   if (state)
+      M_FREE(state);
+
+   if (run_number)
+      M_FREE(run_number);
+
+   if (t_run_number)
+      M_FREE(t_run_number);
+}
+
+/*------------------------------------------------------------------*/
+
 void show_hist_page(char *path, int path_size, char *buffer, int *buffer_size,
                     int refresh)
 {
@@ -8782,6 +9233,11 @@ void show_hist_page(char *path, int path_size, char *buffer, int *buffer_size,
       }
    }
 
+   if (equal_ustring(getparam("cmd"), "Export")) {
+      export_hist(path, scale, offset, index, labels);
+      return;
+   }
+
    if (strstr(path, ".gif")) {
       if (equal_ustring(pmag, "Large"))
          generate_hist_graph(path, buffer, buffer_size, 1024, 768, scale, offset, index,
@@ -8847,10 +9303,10 @@ void show_hist_page(char *path, int path_size, char *buffer, int *buffer_size,
       rsprintf("<input type=hidden name=hscale value=%d>\n", scale);
    else {
       /* if no scale and offset given, get it from default */
-      if (path[0] && !equal_ustring(path, "All")) {
+      if (path[0] && !equal_ustring(path, "All") && strchr(path, '/') != NULL) {
          sprintf(str, "/History/Display/%s/Timescale", path);
 
-         strcpy(scalestr, "1h");        // safe KO 26-Jul-2006
+         strcpy(scalestr, "1h");
          size = NAME_LENGTH;
          status = db_get_value(hDB, 0, str, scalestr, &size, TID_STRING, TRUE);
          if (status != DB_SUCCESS) {
@@ -8859,7 +9315,7 @@ void show_hist_page(char *path, int path_size, char *buffer, int *buffer_size,
             if (hkey)
                db_delete_key(hDB, hkey, FALSE);
 
-            strcpy(scalestr, "1h");     // safe KO 26-Jul-2006
+            strcpy(scalestr, "1h");
             size = NAME_LENGTH;
             db_get_value(hDB, 0, str, scalestr, &size, TID_STRING, TRUE);
          }
@@ -8939,7 +9395,22 @@ void show_hist_page(char *path, int path_size, char *buffer, int *buffer_size,
 
          // Group key
          db_get_key(hDB, hkeyp, &key);
-         rsprintf("<tr><td><b>%s</b></td>\n<td>", key.name);
+
+         if (strchr(path, '/'))
+            strlcpy(str, strchr(path, '/') + 1, sizeof(str));
+         else
+            strlcpy(str, path, sizeof(str));
+
+         if (equal_ustring(str, key.name))
+            rsprintf("<tr><td><b>%s</b></td>\n<td>", key.name);
+         else {
+            if (exp_name[0])
+               rsprintf("<tr><td><b><a href=\"/HS/%s?exp=%s\">%s</a></b></td>\n<td>",
+                        key.name, exp_name, key.name);
+            else
+               rsprintf("<tr><td><b><a href=\"/HS/%s\">%s</a></b></td>\n<td>",
+                        key.name, key.name);
+         }
 
          for (j = 0;; j++) {
             // scan items 
@@ -8976,8 +9447,43 @@ void show_hist_page(char *path, int path_size, char *buffer, int *buffer_size,
 
    rsprintf("</table></tr>\n");
 
+   /* check if whole group should be displayed */
+   if (path[0] && !equal_ustring(path, "ALL") && strchr(path, '/') == NULL) {
+      sprintf(str, "/History/Display/%s", path);
+      db_find_key(hDB, 0, str, &hkey);
+      if (hkey) {
+         for (i = 0 ;; i++) {     // scan group
+            db_enum_link(hDB, hkey, i, &hikeyp);
+
+            if (!hikeyp)
+               break;
+
+            db_get_key(hDB, hikeyp, &key);
+            if (exp_name[0]) {
+               sprintf(ref, "/HS/%s/%s.gif?exp=%s&width=Small", path, key.name,
+                        exp_name);
+               sprintf(ref2, "/HS/%s/%s?exp=%s", key.name, key.name, exp_name);
+            } else {
+               sprintf(ref, "/HS/%s/%s.gif?width=Small", path, key.name);
+               sprintf(ref2, "/HS/%s/%s", path, key.name);
+            }
+
+            if (i % 2 == 0)
+               rsprintf("<tr><td><a href=\"%s\"><img src=\"%s\" alt=\"%s.gif\"></a>\n",
+                        ref2, ref, key.name);
+            else
+               rsprintf
+                     ("<td><a href=\"%s\"><img src=\"%s\" alt=\"%s.gif\"></a></tr>\n",
+                     ref2, ref, key.name);
+         }
+
+      } else {
+         rsprintf("Group \"%s\" not found", path);
+      }
+   }
+
    /* image panel */
-   if (path[0] && !equal_ustring(path, "All")) {
+   else if (path[0] && !equal_ustring(path, "All")) {
       /* navigation links */
       rsprintf("<tr><td bgcolor=\"#A0FFA0\">\n");
 
@@ -9011,6 +9517,7 @@ void show_hist_page(char *path, int path_size, char *buffer, int *buffer_size,
       rsprintf("<input type=submit name=width value=Small>\n");
       rsprintf("<input type=submit name=cmd value=\"Create ELog\">\n");
       rsprintf("<input type=submit name=cmd value=Config>\n");
+      rsprintf("<input type=submit name=cmd value=Export>\n");
       rsprintf("<input type=submit name=cmd value=Query>\n");
 
       rsprintf("</tr>\n");
@@ -9097,7 +9604,7 @@ void show_hist_page(char *path, int path_size, char *buffer, int *buffer_size,
                ref, path, path);
    }
 
-   if (equal_ustring(path, "All")) {
+   else if (equal_ustring(path, "All")) {
       /* Display all panels */
       db_find_key(hDB, 0, "/History/Display", &hkey);
       if (hkey)
@@ -9179,7 +9686,7 @@ void send_favicon(char *icon)
    time(&now);
    now += (int) (3600 * 24);
    gmt = gmtime(&now);
-   strcpy(format, "%A, %d-%b-%y %H:%M:%S GMT"); // probably safe KO 26-Jul-2006
+   strcpy(format, "%A, %d-%b-%y %H:%M:%S GMT");
    strftime(str, sizeof(str), format, gmt);
    rsprintf("Expires: %s\r\n", str);
 
@@ -10161,7 +10668,7 @@ struct linger        ling;
             struct hostent *phe;
             char str[256];
 
-            strcpy(str, ss_asctime());  // probably safe KO 26-Jul-2006
+            strcpy(str, ss_asctime());
             printf(str);
             printf("=== Received request from ");
             phe = gethostbyaddr((char *) &remote_addr, 4, PF_INET);
@@ -10368,7 +10875,7 @@ struct linger        ling;
 
             if (verbose) {
                char str[256];
-               strcpy(str, ss_asctime());       // probably safe KO 26-Jul-2006
+               strcpy(str, ss_asctime());
                printf(str);
                printf("==== Return buffer %i bytes ===\n", return_length);
                printf("\n\n");
