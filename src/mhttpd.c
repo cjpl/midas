@@ -8939,7 +8939,7 @@ void export_hist(char *path, int scale, int toffset, int index, int labels)
       if (i == n_vars)
          break;
 
-      tms = localtime(&t);
+      tms = localtime((void *)&t);
       strftime(str, sizeof(str), "%c", tms);
 
       if (t_run_number[i_run] <= t)
