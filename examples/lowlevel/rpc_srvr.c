@@ -8,7 +8,7 @@
                 This function can be calles remotely by rpc_clnt.
 
 
-  $Id:$
+  $Id$
 
 \********************************************************************/
 
@@ -67,7 +67,7 @@ INT rpc_mytest(BYTE b, WORD w, INT i, float f, double d,
 /* this dispatchers forwards RPC calls to the destination functions */
 INT rpc_dispatch(INT index, void *prpc_param[])
 {
-   INT status;
+   INT status = 1;
 
    switch (index) {
    case RPC_MYTEST:
@@ -84,7 +84,7 @@ INT rpc_dispatch(INT index, void *prpc_param[])
 
 /*------------------------------------------------------------------*/
 
-main()
+int main()
 {
    INT status, port;
 
