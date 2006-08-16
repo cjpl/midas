@@ -16,7 +16,7 @@
 #define MC_INIT         1
 #define MC_WRITE        2
 #define MC_READ         3
-#define MC_SPECIAL      4
+#define MC_GETDEFAULT   4
 
 typedef struct {
   unsigned char id;                                  // unique module ID, 0xFF for uninitialized 
