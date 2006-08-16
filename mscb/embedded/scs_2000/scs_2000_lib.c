@@ -39,7 +39,7 @@ MSCB_INFO_VAR code vars_uin[] =
 
 MSCB_INFO_VAR code vars_uin_range[] = {
    { 4, UNIT_VOLT,    0,          0, MSCBF_FLOAT, "P%Uin#",  8 },
-   { 1, UNIT_BYTE,    0,          0, MSCBF_HIDDEN, "P%Range", 0 },
+   { 1, UNIT_BYTE,    0,          0, MSCBF_HIDDEN,"P%Range", 0 },
 };
 
 MSCB_INFO_VAR code vars_uout[] =
@@ -85,7 +85,7 @@ SCS_2000_MODULE code scs_2000_module[] = {
   { 0x42, "OptOut",          vars_optout, 1, dr_dout_bits   },
 
   /* 0x60-0x7F analog in  */
-  { 0x60, "Uin 0-2.5V",      vars_uin_range, 2, dr_ad7718   },
+  { 0x60, "Uin 0-2.5V",      vars_uin,    1, dr_ad7718      },
   { 0x61, "Uin +-10V",       vars_uin,    1, dr_ad7718      },
   { 0x62, "Iin 0-2.5mA",     vars_iin,    1, dr_ad7718      },
   { 0x63, "Iin 0-25mA",      vars_iin,    1, dr_ad7718      },
@@ -534,6 +534,11 @@ unsigned char i;
    if (cmd == MC_WRITE) {
 
       value = *((float *)pd);
+
+      if (value > 10)
+         value = 10;
+      if (value < -10)
+         value = -10;
    
       /* convert value to DAC counts */
       d = (value+10)/20 * 65535 + 0.5;  // +-10V

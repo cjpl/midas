@@ -67,7 +67,7 @@ extern SYS_INFO sys_info;
 
 void user_init(unsigned char init)
 {
-   unsigned char i;
+   unsigned char xdata i, j, index, var_index;
    char xdata str[6];
 
    /* open drain(*) /push-pull: 
@@ -109,6 +109,19 @@ void user_init(unsigned char init)
 
    /* initial EEPROM value */
    if (init) {
+      var_index = 0;
+      for (i=0 ; i<8 ; i++) {
+         index = module_index[i];
+         if (index != 0xFF && scs_2000_module[index].driver) {
+            for (j=0 ; j<module_nvars[i] ; j++)
+               /* default variables to zero */
+               memset(variables[var_index].ud, 0, variables[var_index].width);
+               /* allow driver to overwrite */
+               scs_2000_module[index].driver(module_id[i], MC_GETDEFAULT, 0, i, j, 
+                  variables[var_index++].ud);
+               var_index++;
+         } 
+      }
    }
 
    /* retrieve backup data from RAM if not reset by power on */
