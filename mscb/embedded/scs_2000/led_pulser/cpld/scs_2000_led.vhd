@@ -48,10 +48,11 @@ signal my_addr      : std_logic_vector(3 downto 0);
 -- 4  100  AM_WRITE_CSR
 --   0       port_dir
 --   1       pwr_status
---   2       freq0
---   3       freq1
---   4       freq2
---   5       freq3
+--   2       pwidth
+--   3       freq0
+--   4       freq1
+--   5       freq2
+--   6       freq3
 -- 5  101  AM_RW_SERIAL
 -- 6  110  AM_RW_EEPROM
 signal addr_mod     : std_logic_vector(2 downto 0);
@@ -73,9 +74,12 @@ signal reset_24V    : std_logic := '0';
 signal pwr_trip     : std_logic;
 
 signal counter      : std_logic_vector(31 downto 0);
-signal maxcnt       : std_logic_vector(31 downto 0) := conv_std_logic_vector(10000000, 32); -- =1E7 -> 100Hz
-signal pwidth       : std_logic_vector(5 downto 0) := "000010"; -- 20ns
+signal maxcnt       : std_logic_vector(31 downto 0) := conv_std_logic_vector(5000000, 32); -- =5E7 -> 100Hz @ 50 MHz
+signal pwidth       : std_logic_vector(5 downto 0) := "000001"; -- 20ns @ 50 MHz
 signal led_pulse    : std_logic;
+signal clk_pulse    : std_logic;
+signal clk_pulse_out: std_logic;
+signal ext_trig     : std_logic;
 
 begin
     
@@ -115,12 +119,14 @@ begin
                   reset_24V <= '1';         -- 24V reset
                end if;
             elsif (addr_port = "010") then  -- 2
-               maxcnt(7 downto 0) <= ser_reg(7 downto 0);
+               pwidth <= ser_reg(5 downto 0);
             elsif (addr_port = "011") then  -- 3
-               maxcnt(15 downto 8) <= ser_reg(7 downto 0);
+               maxcnt(7 downto 0) <= ser_reg(7 downto 0);
             elsif (addr_port = "100") then  -- 4
-               maxcnt(23 downto 16) <= ser_reg(7 downto 0);
+               maxcnt(15 downto 8) <= ser_reg(7 downto 0);
             elsif (addr_port = "101") then  -- 5
+               maxcnt(23 downto 16) <= ser_reg(7 downto 0);
+            elsif (addr_port = "110") then  -- 6
                maxcnt(31 downto 24) <= ser_reg(7 downto 0);
             end if;   
           end if;
@@ -186,7 +192,7 @@ begin
   -- quarz speed in MHz:
   -- 0:100, 1:33.33, 2:30, 3:120, 4:25, 5:20, 6:70, 7:80
   -- 8:75, 9:66.66, 10:60, 11:60, 12: 50, 13:45, 14:90, 15:40 
-  P_O_CLKSEL  <= "0000";
+  P_O_CLKSEL  <= "1100";
 
   -- power management
   pwr_trip   <= not P_I_24V_OC;  -- goes zero in case of current trip
@@ -217,13 +223,17 @@ begin
          counter <= (others => '0');
       end if;
       if (counter = 0) then
-         led_pulse <= '1';
+         clk_pulse <= '1';
       end if;   
       if (counter = pwidth) then
-         led_pulse <= '0';
+         clk_pulse <= '0';
       end if;
     end if;
   end process;
+  
+  clk_pulse_out <= '0' when maxcnt = 0 else clk_pulse;
+  ext_trig <= P_IO_PORTS(5).port_pin(1) and not P_IO_PORTS(5).port_pin(0);
+  led_pulse <= clk_pulse_out or ext_trig; 
   
   P_IO_EXT(0) <= led_pulse;
  

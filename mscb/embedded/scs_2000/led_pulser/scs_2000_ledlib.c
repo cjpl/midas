@@ -51,10 +51,11 @@ _nop_(); _nop_(); _nop_(); _nop_(); _nop_(); _nop_(); _nop_(); _nop_(); _nop_();
 
 #define CSR_PORT_DIR    0 // port direction (1=output, 0=input)
 #define CSR_PWR_STATUS  1 // power status (bit0: 5VOK, bit1: 24VOK, bit3: 24Vreset, bit4: beeper
-#define CSR_PULFREQ0    2 // pulser frequency counter max LSB
-#define CSR_PULFREQ1    3 // pulser frequency counter max
-#define CSR_PULFREQ2    4 // pulser frequency counter max
-#define CSR_PULFREQ3    5 // pulser frequency counter max MSB
+#define CSR_PWIDTH      2 // pulse width in units of 20ns
+#define CSR_PULFREQ0    3 // pulser frequency counter max LSB
+#define CSR_PULFREQ1    4 // pulser frequency counter max
+#define CSR_PULFREQ2    5 // pulser frequency counter max
+#define CSR_PULFREQ3    6 // pulser frequency counter max MSB
 
 /* address port 0-7 in CPLD, with address modifier listed above */
 void address_port(unsigned char addr, unsigned char port_no, unsigned char am, unsigned char clk_level) reentrant
@@ -406,7 +407,7 @@ unsigned long f;
       write_port(addr, port, port_reg[port]);
    }
 
-   if (cmd == MC_SPECIAL) {
+   if (cmd == MC_FREQ) {
      f = *((unsigned long*) pd);
      write_csr(addr, CSR_PULFREQ0, f & 0xFF);
      f >>= 8;
@@ -416,6 +417,13 @@ unsigned long f;
      f >>= 8;
      write_csr(addr, CSR_PULFREQ3, f & 0xFF);
      f >>= 8;
+   }
+
+   if (cmd == MC_PWIDTH) {
+     d = *((unsigned char*) pd);
+     if (d > 20)
+        d = 20;
+     write_csr(addr, CSR_PWIDTH, d);
    }
 
    return 1;   
