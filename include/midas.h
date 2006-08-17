@@ -1757,7 +1757,7 @@ extern "C" {
    BOOL EXPRT ss_kbhit(void);
 
    double EXPRT ss_nan(void);
-   int ss_isnan(double x);
+   int EXPRT ss_isnan(double x);
 
    void EXPRT ss_clear_screen(void);
    void EXPRT ss_printf(INT x, INT y, const char *format, ...);
