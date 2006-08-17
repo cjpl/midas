@@ -21,8 +21,12 @@ GENERATEDSIMULATIONMODELTIME 0
 SOURCE scs_2000_led.vhd
 SOURCE scs_2000_pack.vhd
 DEPASSOC scs_2000_led scs_2000.ucf
+[Normal]
+xcpldFitDesTriMode=xstvhd, xbr, VHDL.t_vm6File, 1155805531, Pullup
+xcpldFitDesUnused=xstvhd, xbr, VHDL.t_vm6File, 1155805531, Pullup
+xcpldFitDesVolt=xstvhd, xbr, VHDL.t_vm6File, 1155805268, LVCMOS33
 [STATUS-ALL]
-scs_2000_led.ngcFile=WARNINGS,1155804494
-scs_2000_led.vm6File=WARNINGS,1155804512
+scs_2000_led.ngcFile=WARNINGS,1155823099
+scs_2000_led.vm6File=WARNINGS,1155823116
 [STRATEGY-LIST]
 Normal=True

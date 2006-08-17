@@ -43,6 +43,7 @@ bit b0, b1, b2, b3;
 
 typedef struct {
    unsigned char freq;
+   unsigned char pwidth;
    unsigned char ampl[40];
 } USER_DATA;
 
@@ -53,6 +54,7 @@ unsigned char xdata update_data[41];
 MSCB_INFO_VAR code vars[] = {
 
    { 1, UNIT_BYTE,    0, 0, 0, "Freq",   &user_data.freq,     0,  18, 1 },
+   { 1, UNIT_BYTE,    0, 0, 0, "PWidth", &user_data.pwidth,   1,  20, 1 },
 
    { 1, UNIT_PERCENT, 0, 0, 0, "Ampl00", &user_data.ampl[0],  0, 100, 1 },
    { 1, UNIT_PERCENT, 0, 0, 0, "Ampl01", &user_data.ampl[1],  0, 100, 1 },
@@ -158,6 +160,8 @@ void user_init(unsigned char init)
    /* initial EEPROM value */
    if (init) {
       memset(&user_data, 0, sizeof(user_data));
+      user_data.freq = 7;
+      user_data.pwidth = 1;
    }
 
    /* retrieve backup data from RAM if not reset by power on */
@@ -292,26 +296,29 @@ typedef struct {
   unsigned char  exp;
 } FREQ_TABLE;
 
+/* frequency table for 50MHz quartz clodk */
+
 FREQ_TABLE code freq_table[] = {
-   { 100000000,  1, 0 },   //    1 Hz
-   { 50000000,   2, 0 },   //    2 Hz
-   { 20000000,   5, 0 },   //    5 Hz
-   { 10000000,  10, 0 },   //   10 Hz
-   { 5000000,   20, 0 },   //   20 Hz
-   { 2000000,   50, 0 },   //   50 Hz
-   { 1000000,  100, 0 },   //  100 Hz
-   { 500000,   200, 0 },   //  200 Hz
-   { 200000,   500, 0 },   //  500 Hz
-   { 100000,     1, 1 },   //    1 kHz
-   { 50000,      2, 1 },   //    2 kHz
-   { 20000,      5, 1 },   //    5 kHz
-   { 10000,     10, 1 },   //   10 kHz
-   { 5000,      20, 1 },   //   20 kHz
-   { 2000,      50, 1 },   //   50 kHz
-   { 1000,     100, 1 },   //  100 kHz
-   { 500,      200, 1 },   //  200 kHz
-   { 200,      500, 1 },   //  500 kHz
-   { 100,        1, 2 },   //    1 MHz
+   { 0,          0, 0 },   //    EXT
+   { 50000000,   1, 0 },   //    1 Hz
+   { 25000000,   2, 0 },   //    2 Hz
+   { 10000000,   5, 0 },   //    5 Hz
+   { 5000000,   10, 0 },   //   10 Hz
+   { 2500000,   20, 0 },   //   20 Hz
+   { 1000000,   50, 0 },   //   50 Hz
+   { 500000,   100, 0 },   //  100 Hz
+   { 250000,   200, 0 },   //  200 Hz
+   { 100000,   500, 0 },   //  500 Hz
+   { 50000,      1, 1 },   //    1 kHz
+   { 25000,      2, 1 },   //    2 kHz
+   { 10000,      5, 1 },   //    5 kHz
+   { 5000,      10, 1 },   //   10 kHz
+   { 2500,      20, 1 },   //   20 kHz
+   { 1000,      50, 1 },   //   50 kHz
+   { 500,      100, 1 },   //  100 kHz
+   { 250,      200, 1 },   //  200 kHz
+   { 100,      500, 1 },   //  500 kHz
+   { 50,         1, 2 },   //    1 MHz
    0,
 };
 
@@ -385,13 +392,17 @@ unsigned char pulser_ampl_old, pulser_freq_old, i;
       return 0;
 
    lcd_goto(0, 0);
-   printf("Frequency: %d ", freq_table[user_data.freq].freq);
-   if (freq_table[user_data.freq].exp == 0)
-      printf("Hz   ");
-   else if (freq_table[user_data.freq].exp == 1)
-      printf("kHz   ");
-   else
-      printf("MHz   ");
+   if (user_data.freq == 0)
+      printf("External Trigger");
+   else {
+      printf("Frequency: %d ", freq_table[user_data.freq].freq);
+      if (freq_table[user_data.freq].exp == 0)
+         printf("Hz   ");
+      else if (freq_table[user_data.freq].exp == 1)
+         printf("kHz   ");
+      else
+         printf("MHz   ");
+      }
 
    lcd_goto(0, 1);
    printf("Amplitude: %bd %%   ", pulser_ampl);
@@ -402,7 +413,7 @@ unsigned char pulser_ampl_old, pulser_freq_old, i;
    if (b0 && !b0_old && user_data.freq > 0)
       user_data.freq--;
 
-   if (b1 && !b1_old && user_data.freq < 18)
+   if (b1 && !b1_old && user_data.freq < 19)
       user_data.freq++;
 
    if (b2 && !b2_old && pulser_ampl > 0) {
@@ -425,7 +436,7 @@ unsigned char pulser_ampl_old, pulser_freq_old, i;
       user_write(0);
 
    if (pulser_ampl != pulser_ampl_old) {
-      for (i=1 ; i<n_variables ; i++) {
+      for (i=2 ; i<n_variables ; i++) {
          *((unsigned char *)variables[i].ud) = pulser_ampl;
          user_write(i);
       }
@@ -452,13 +463,18 @@ unsigned char xdata i;
    /* internal variables */
    if (update_data[0]) {
       update_data[0] = 0;
-      dr_pulser(0x02, MC_SPECIAL, 0, 0, 0, &freq_table[user_data.freq].count);
+      dr_pulser(0x02, MC_FREQ, 0, 0, 0, &freq_table[user_data.freq].count);
    }
 
-   for (i=1 ; i<n_variables ; i++) {
+   if (update_data[1]) {
+      update_data[1] = 0;
+      dr_pulser(0x02, MC_PWIDTH, 0, 0, 0, &user_data.pwidth);
+   }
+
+   for (i=2 ; i<n_variables ; i++) {
       if (update_data[i]) {
          update_data[i] = 0;
-         dr_pulser(0x02, MC_WRITE, 0, (i-1)/8, (i-1)%8, &user_data.ampl[i]);
+         dr_pulser(0x02, MC_WRITE, 0, (i-2)/8, (i-2)%8, &user_data.ampl[i-2]);
       }
    }
 
