@@ -120,6 +120,7 @@ void print_help()
    puts("verify <hex-file>          Compare current firmware with file");
    puts("version                    Display version number");
    puts("write <index> <value> [r]  Write node variable");
+   puts("write <i1>-<i2> <value>    Write range of node variables");
 
    puts("");
 }
@@ -559,7 +560,7 @@ int match(char *str, char *cmd)
 void cmd_loop(int fd, char *cmd, unsigned short adr)
 {
    int i, fh, status, size, nparam, current_addr, current_group, first, last, broadcast,
-       read_all, repeat, wait = 0;
+       read_all, repeat, index, idx1, idx2, wait = 0;
    unsigned short addr;
    unsigned int data, uptime;
    unsigned char c;
@@ -980,74 +981,81 @@ void cmd_loop(int fd, char *cmd, unsigned short adr)
             if (!param[1][0] || !param[2][0])
                puts("Please specify channel number and data");
             else {
-               addr = atoi(param[1]);
+               idx1 = atoi(param[1]);
+               if (strchr(param[1], '-'))
+                  idx2 = atoi(strchr(param[1], '-')+1);
+               else
+                  idx2 = idx1;
 
                if (current_addr < 0) {
                   printf("Enter address of first node in group %d: ", current_group);
                   fgets(str, sizeof(str), stdin);
-                  i = atoi(str);
+                  addr = atoi(str);
                } else
-                  i = current_addr;
+                  addr = current_addr;
 
-               mscb_info_variable(fd, (unsigned short) i, (unsigned char) addr,
-                                  &info_var);
+               for (index=idx1 ; index<=idx2 ; index++) {
+                  mscb_info_variable(fd, (unsigned short) addr, (unsigned char) index,
+                                    &info_var);
 
-               if (info_var.unit == UNIT_STRING) {
-                  memset(str, 0, sizeof(str));
-                  strncpy(str, param[2], info_var.width);
-                  if (strlen(str) > 0 && str[strlen(str) - 1] == '\n')
-                     str[strlen(str) - 1] = 0;
+                  if (info_var.unit == UNIT_STRING) {
+                     memset(str, 0, sizeof(str));
+                     strncpy(str, param[2], info_var.width);
+                     if (strlen(str) > 0 && str[strlen(str) - 1] == '\n')
+                        str[strlen(str) - 1] = 0;
 
-                  do {
-                     if (current_addr >= 0)
-                        status = mscb_write(fd, (unsigned short) current_addr,
-                                            (unsigned char) addr, str, strlen(str) + 1);
-                     else
-                        status = mscb_write_group(fd, (unsigned short) current_group,
-                                                  (unsigned char) addr, str,
-                                                  strlen(str) + 1);
-                     if (param[3][0])
-                        Sleep(1000);
-                  } while (param[3][0] && !kbhit());
+                     do {
+                        if (current_addr >= 0)
+                           status = mscb_write(fd, (unsigned short) current_addr,
+                                             (unsigned char) index, str, strlen(str) + 1);
+                        else
+                           status = mscb_write_group(fd, (unsigned short) current_group,
+                                                   (unsigned char) index, str,
+                                                   strlen(str) + 1);
+                        if (param[3][0])
+                           Sleep(1000);
+                     } while (param[3][0] && !kbhit());
 
-               } else if (info_var.unit == UNIT_ASCII) {
-                  memset(str, 0, sizeof(str));
-                  strncpy(str, param[2], sizeof(str));
-                  if (strlen(str) > 0 && str[strlen(str) - 1] == '\n')
-                     str[strlen(str) - 1] = 0;
+                  } else if (info_var.unit == UNIT_ASCII) {
+                     memset(str, 0, sizeof(str));
+                     strncpy(str, param[2], sizeof(str));
+                     if (strlen(str) > 0 && str[strlen(str) - 1] == '\n')
+                        str[strlen(str) - 1] = 0;
 
-                  do {
-                     if (current_addr >= 0)
-                        status =
-                            mscb_write(fd, (unsigned short) current_addr,
-                                       (unsigned char) addr, str, strlen(str) + 1);
-                     Sleep(100);
-                  } while (param[3][0] && !kbhit());
+                     do {
+                        if (current_addr >= 0)
+                           status =
+                              mscb_write(fd, (unsigned short) current_addr,
+                                          (unsigned char) index, str, strlen(str) + 1);
+                        Sleep(100);
+                     } while (param[3][0] && !kbhit());
 
-               } else {
-                  if (info_var.flags & MSCBF_FLOAT) {
-                     value = (float) atof(param[2]);
-                     memcpy(&data, &value, sizeof(float));
                   } else {
-                     if (param[2][1] == 'x')
-                        sscanf(param[2] + 2, "%x", &data);
-                     else
-                        data = atoi(param[2]);
+                     if (info_var.flags & MSCBF_FLOAT) {
+                        value = (float) atof(param[2]);
+                        memcpy(&data, &value, sizeof(float));
+                     } else {
+                        if (param[2][1] == 'x')
+                           sscanf(param[2] + 2, "%x", &data);
+                        else
+                           data = atoi(param[2]);
+                     }
+
+                     do {
+                        if (current_addr >= 0)
+                           status = mscb_write(fd, (unsigned short) current_addr,
+                                             (unsigned char) index, &data, info_var.width);
+                        else
+                           status = mscb_write_group(fd, (unsigned short) current_group,
+                                                   (unsigned char) index, &data,
+                                                   info_var.width);
+
+                        if (param[3][0])
+                           Sleep(100);
+
+                     } while (param[3][0] && !kbhit());
+
                   }
-
-                  do {
-                     if (current_addr >= 0)
-                        status = mscb_write(fd, (unsigned short) current_addr,
-                                            (unsigned char) addr, &data, info_var.width);
-                     else
-                        status = mscb_write_group(fd, (unsigned short) current_group,
-                                                  (unsigned char) addr, &data,
-                                                  info_var.width);
-
-                     Sleep(100);
-
-                  } while (param[3][0] && !kbhit());
-
                }
 
                if (status != MSCB_SUCCESS)
