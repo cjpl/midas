@@ -6341,13 +6341,13 @@ INT db_sprintf(char *string, void *data, INT data_size, INT index, DWORD type)
          if (ss_isnan(*(((float *) data) + index)))
             sprintf(string, "NAN");
          else
-            sprintf(string, "%g", *(((float *) data) + index));
+            sprintf(string, "%.7g", *(((float *) data) + index));
          break;
       case TID_DOUBLE:
          if (ss_isnan(*(((double *) data) + index)))
             sprintf(string, "NAN");
          else
-            sprintf(string, "%lg", *(((double *) data) + index));
+            sprintf(string, "%.16lg", *(((double *) data) + index));
          break;
       case TID_BITFIELD:
          /* TBD */
@@ -6422,13 +6422,13 @@ INT db_sprintfh(char *string, void *data, INT data_size, INT index, DWORD type)
          if (ss_isnan(*(((float *) data) + index)))
             sprintf(string, "NAN");
          else
-            sprintf(string, "%g", *(((float *) data) + index));
+            sprintf(string, "%.7g", *(((float *) data) + index));
          break;
       case TID_DOUBLE:
          if (ss_isnan(*(((double *) data) + index)))
             sprintf(string, "NAN");
          else
-            sprintf(string, "%lg", *(((double *) data) + index));
+            sprintf(string, "%.16lg", *(((double *) data) + index));
          break;
       case TID_BITFIELD:
          /* TBD */
