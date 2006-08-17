@@ -81,6 +81,7 @@ MSCB_INFO_VAR code vars[] = {
 
 MSCB_INFO_VAR *variables = vars;
 float xdata backup_data[64];
+unsigned char xdata update_data[64];
 
 /********************************************************************\
 
@@ -94,37 +95,27 @@ void user_write(unsigned char index) reentrant;
 
 void setup_variables(void)
 {
+   lcd_goto(0, 0);
    /* check if correct modules are inserted */
    if (!verify_module(0, 0, 0x61)) {
-      lcd_goto(0, 0);
       printf("Please insert module");
       printf(" 'Uin +-10V' (0x61) ");
       printf("     into port 0    ");
       while (1) watchdog_refresh(0);
    }
    if (!verify_module(0, 1, 0x61)) {
-      lcd_goto(0, 0);
       printf("Please insert module");
       printf(" 'Uin +-10V' (0x61) ");
-      printf("     into port 0    ");
+      printf("     into port 1    ");
       while (1) watchdog_refresh(0);
    }
    if (!verify_module(0, 2, 0x61)) {
-      lcd_goto(0, 0);
       printf("Please insert module");
       printf(" 'Uin +-10V' (0x61) ");
-      printf("     into port 0    ");
-      while (1) watchdog_refresh(0);
-   }
-   if (!verify_module(0, 3, 0x40)) {
-      lcd_goto(0, 0);
-      printf("Please insert module");
-      printf("   'Dout' (0x40)    ");
-      printf("    into port 3     ");
+      printf("     into port 2    ");
       while (1) watchdog_refresh(0);
    }
    if (!verify_module(0, 4, 0x40)) {
-      lcd_goto(0, 0);
       printf("Please insert module");
       printf("   'Dout' (0x40)    ");
       printf("    into port 4     ");
@@ -135,7 +126,6 @@ void setup_variables(void)
    dr_ad7718(0x61, MC_INIT, 0, 0, 0, NULL);
    dr_ad7718(0x61, MC_INIT, 0, 1, 0, NULL);
    dr_ad7718(0x61, MC_INIT, 0, 2, 0, NULL);
-   dr_dout_bits(0x40, MC_INIT, 0, 3, 0, NULL);
    dr_dout_bits(0x40, MC_INIT, 0, 4, 0, NULL);
 }
 
@@ -254,8 +244,7 @@ unsigned short xdata value;
 
 void user_write(unsigned char index) reentrant
 {
-   if (index > 23)
-      dr_dout_bits(0x40, MC_WRITE, 0, 0, index-24, &user_data.valve[index-24]);
+   update_data[index] = 1;
 }
 
 /*---- User read function ------------------------------------------*/
@@ -401,6 +390,14 @@ void user_loop(void)
 {
 unsigned char xdata i, n;
 float xdata value;
+
+   /* check if anything to write */
+   for (i=24 ; i<32 ; i++) {
+      if (update_data[i]) {
+         update_data[i] = 0;
+         dr_dout_bits(0x40, MC_WRITE, 0, 4, i-24, &user_data.valve[0]);
+      }
+   }
 
    /* read ADCs */
    for (i=0 ; i<8 ; i++) {
