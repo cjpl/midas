@@ -609,7 +609,6 @@ int subm250_open(MUSB_INTERFACE **ui, int usb_index)
    int  i, status, found;
    char buf[80];
 
-   printf("subm250_open\n");
    for (i = found = 0 ; i<127 ; i++) {
       status = musb_open(ui, 0x10C4, 0x1175, i, 1, 0);
       if (status != MUSB_SUCCESS) {
