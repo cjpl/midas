@@ -9,7 +9,7 @@
 
 \********************************************************************/
 
-#define MSCB_LIBRARY_VERSION   "2.3.0"
+#define MSCB_LIBRARY_VERSION   "2.3.1"
 #define MSCB_PROTOCOL_VERSION  "4"
 #define MSCB_SUBM_VERSION      4
 
@@ -151,7 +151,7 @@ extern void debug_log(char *format, int start, ...);
 #define RS485_FLAG_CMD       (1<<4)
 #define RS485_FLAG_ADR_CYCLE (1<<5)
 
-#define MUSB_TIMEOUT 1000 /* 1 sec */
+#define MUSB_TIMEOUT 3000 /* 3 sec */
 
 /*------------------------------------------------------------------*/
 
@@ -609,10 +609,13 @@ int subm250_open(MUSB_INTERFACE **ui, int usb_index)
    int  i, status, found;
    char buf[80];
 
+   printf("subm250_open\n");
    for (i = found = 0 ; i<127 ; i++) {
       status = musb_open(ui, 0x10C4, 0x1175, i, 1, 0);
-      if (status != MUSB_SUCCESS)
+      if (status != MUSB_SUCCESS) {
+         printf("musb_open returned %d\n", status);
          return EMSCB_NOT_FOUND;
+      }
 
       /* check if it's a subm_250 */
       buf[0] = 0;
@@ -622,6 +625,7 @@ int subm250_open(MUSB_INTERFACE **ui, int usb_index)
       if (strcmp(buf, "SUBM_250") == 0)
          if (found++ == usb_index)
             return MSCB_SUCCESS;
+      printf("buf: %s\n", buf);
    }
 
    return EMSCB_NOT_FOUND;
@@ -1385,7 +1389,8 @@ int mscb_init(char *device, int bufsize, char *password, int debug)
 
    /*---- initialize submaster ----*/
 
-   mscb_fd[index].mutex_handle = mscb_mutex_create(device);
+   if (mscb_fd[index].mutex_handle == 0)
+      mscb_fd[index].mutex_handle = mscb_mutex_create(device);
 
    if (mscb_fd[index].type == MSCB_TYPE_LPT) {
 
@@ -1395,6 +1400,12 @@ int mscb_init(char *device, int bufsize, char *password, int debug)
    }
 
    if (mscb_fd[index].type == MSCB_TYPE_USB) {
+
+      if (!mscb_lock(index + 1)) {
+         debug_log("return EMSCB_LOCKED\n", 0);
+         memset(&mscb_fd[index], 0, sizeof(MSCB_FD));
+         return EMSCB_LOCKED;
+      }
 
       status = subm250_open(&mscb_fd[index].ui, atoi(device+3));
       if (status != MSCB_SUCCESS)
@@ -1407,18 +1418,11 @@ int mscb_init(char *device, int bufsize, char *password, int debug)
 
       /* linux needs some time to start-up ...??? */
       for (i = 0; i < 10; i++) {
-         if (!mscb_lock(index + 1)) {
-            debug_log("return EMSCB_LOCKED\n", 0);
-            memset(&mscb_fd[index], 0, sizeof(MSCB_FD));
-            return EMSCB_LOCKED;
-         }
-
          /* check if submaster alive */
          buf[0] = MCMD_ECHO;
          mscb_out(index + 1, buf, 1, RS485_FLAG_CMD);
 
          n = mscb_in(index + 1, buf, 2, TO_SHORT);
-         mscb_release(index + 1);
 
          if (n == 2 && buf[0] == MCMD_ACK) {
 
@@ -1426,12 +1430,15 @@ int mscb_init(char *device, int bufsize, char *password, int debug)
             if (buf[1] != MSCB_SUBM_VERSION) {
                debug_log("return EMSCB_SUBM_VERSION\n", 0);
                memset(&mscb_fd[index], 0, sizeof(MSCB_FD));
+               mscb_release(index + 1);
                return EMSCB_SUBM_VERSION;
             }
 
             break;
          }
       }
+
+      mscb_release(index + 1);
 
       if (n != 2 || buf[0] != MCMD_ACK) {
          debug_log("return EMSCB_COMM_ERROR\n", 0);
@@ -4316,6 +4323,15 @@ int mscb_select_device(char *device, int size, int select)
       if (status != MUSB_SUCCESS)
          break;
 
+      sprintf(str, "usb%d", found);
+      mscb_fd[index].mutex_handle = mscb_mutex_create(str);
+
+      if (!mscb_lock(index + 1)) {
+         printf("lock failed\n");
+         debug_log("return EMSCB_LOCKED\n", 0);
+         return EMSCB_LOCKED;
+      }
+
       /* check if it's a subm_250 */
       buf[0] = 0;
       musb_write(ui, 0, buf, 1, 1000);
@@ -4323,6 +4339,8 @@ int mscb_select_device(char *device, int size, int select)
       i = musb_read(ui, 0, buf, sizeof(buf), MUSB_TIMEOUT);
       if (strcmp(buf, "SUBM_250") == 0)
          sprintf(list[n++], "usb%d", found++);
+
+      mscb_release(index + 1);
 
       musb_close(ui);
    }

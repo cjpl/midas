@@ -716,13 +716,10 @@ int mrpc_connect(char *host_name, int port)
 
    phe = gethostbyname(host_name);
    if (phe == NULL) {
-#ifdef _MSC_VER
-      perror("mrpc_connect,gethostbyname");
-#else
-      herror("mrpc_connect,gethostbyname");
-#endif
+      printf("Cannot find host name \"%s\"\n", host_name);
       return -1;
    }
+
    memcpy((char *) &(bind_addr.sin_addr), phe->h_addr, phe->h_length);
 
    status = connect(sock, (void *) &bind_addr, sizeof(bind_addr));
