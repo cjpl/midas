@@ -584,7 +584,7 @@ float xdata value;
                i = index - i;
                j = module_index[port];
       
-               if (j != 0xFF)
+               if (j != 0xFF && scs_2000_module[j].driver)
                   scs_2000_module[j].driver(scs_2000_module[j].id, MC_WRITE, 0, port, i, variables[index].ud);
       
                break;
@@ -601,8 +601,11 @@ float xdata value;
 
       i = module_index[port_index];
       for (j=0 ; j<module_nvars[port_index] ; j++) {
-         n = scs_2000_module[i].driver(scs_2000_module[i].id, MC_READ, 
-                                       0, port_index, j, &value);
+         if (scs_2000_module[i].driver)
+            n = scs_2000_module[i].driver(scs_2000_module[i].id, MC_READ, 
+                                          0, port_index, j, &value);
+         else
+            n = 0;
 
          if (n>0) {
             DISABLE_INTERRUPTS;
