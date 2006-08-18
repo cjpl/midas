@@ -4132,7 +4132,7 @@ int ma_read_event(MA_FILE * file, EVENT_HEADER * pevent, int size)
 #ifdef HAVE_ZLIB
          n = gzread(file->gzfile, pevent, sizeof(EVENT_HEADER));
 #else
-         n = fread(pevent, sizeof(EVENT_HEADER), 1, file->file);
+         n = sizeof(EVENT_HEADER)*fread(pevent, sizeof(EVENT_HEADER), 1, file->file);
 #endif
 
          if (n < (int) sizeof(EVENT_HEADER)) {
@@ -4160,7 +4160,7 @@ int ma_read_event(MA_FILE * file, EVENT_HEADER * pevent, int size)
 #ifdef HAVE_ZLIB
             n = gzread(file->gzfile, pevent + 1, pevent->data_size);
 #else
-            n = fread(pevent + 1, pevent->data_size, 1, file->file);
+            n = pevent->data_size*fread(pevent + 1, pevent->data_size, 1, file->file);
 #endif
             if (n != (INT) pevent->data_size) {
                printf("Unexpected end of file %s, last event skipped\n", file->file_name);
