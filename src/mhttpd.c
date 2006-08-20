@@ -2688,6 +2688,8 @@ void show_elog_submit_query(INT last_n)
                   else
                      sprintf(ref, "/EL/%s", attachment[index]);
 
+                  urlEncode(ref, sizeof(ref));
+
                   if (!show_attachments) {
                      rsprintf("<a href=\"%s\"><b>%s</b></a> ", ref,
                               attachment[index] + 14);
@@ -3953,6 +3955,8 @@ void show_elog_page(char *path, int path_size)
                sprintf(ref, "/EL/%s?exp=%s", attachment[index], exp_name);
             else
                sprintf(ref, "/EL/%s", attachment[index]);
+
+            urlEncode(ref, sizeof(ref));
 
             if (strstr(att, ".GIF") || strstr(att, ".PNG") || strstr(att, ".JPG")) {
                rsprintf
@@ -7180,7 +7184,7 @@ void generate_hist_graph(char *path, char *buffer, int *buffer_size,
    int flag, x1, y1, x2, y2, xs, xs_old, ys, xold, yold, xmaxm;
    int white, black, grey, ltgrey, red, green, blue, fgcol, bgcol, gridcol,
        curve_col[MAX_VARS], state_col[3];
-   char str[256], panel[NAME_LENGTH], *p, odbpath[256];
+   char str[256], panel[256], *p, odbpath[256];
    INT var_index[MAX_VARS];
    DWORD type, event_id;
    char event_name[MAX_VARS][NAME_LENGTH];
@@ -9292,7 +9296,7 @@ void show_hist_page(char *path, int path_size, char *buffer, int *buffer_size,
    /* check if panel exists */
    sprintf(str, "/History/Display/%s", path);
    status = db_find_key(hDB, 0, str, &hkey);
-   if (status != DB_SUCCESS && !equal_ustring(path, "All")) {
+   if (status != DB_SUCCESS && !equal_ustring(path, "All") && !equal_ustring(path,"")) {
       rsprintf("<h1>Error: History panel \"%s\" does not exist</h1>\n", path);
       rsprintf("</table></form></body></html>\r\n");
       return;
