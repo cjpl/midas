@@ -2330,7 +2330,7 @@ void show_elog_submit_query(INT last_n)
    char str[256], str2[10000], tag[256], ref[256], file_name[256];
    HNDLE hDB;
    BOOL full, show_attachments, display_run_number;
-   DWORD ltime_start, ltime_end, ltime_current, now;
+   time_t ltime_start, ltime_end, ltime_current, now;
    struct tm tms, *ptms;
    FILE *f;
 
@@ -2493,8 +2493,8 @@ void show_elog_submit_query(INT last_n)
              ("<tr><td colspan=%d bgcolor=#FFFF00><b>Query result between %s %s %s and %s %d %d</b></tr>\n",
               colspan, getparam("m1"), getparam("d1"), getparam("y1"), mname[m2], d2, y2);
       else {
-         time((void *) &now);
-         ptms = localtime((void *) &now);
+         time(&now);
+         ptms = localtime(&now);
          ptms->tm_year += 1900;
 
          rsprintf
@@ -2543,10 +2543,9 @@ void show_elog_submit_query(INT last_n)
   /*---- do query ----*/
 
    if (last_n) {
-      time((void *) &now);
+      time(&now);
       ltime_start = now - 3600 * last_n;
-      ptms = localtime((void *) &ltime_start);
-
+      ptms = localtime(&ltime_start);
       sprintf(tag, "%02d%02d%02d.0", ptms->tm_year % 100, ptms->tm_mon + 1,
               ptms->tm_mday);
    } else if (*getparam("r1")) {
@@ -2679,16 +2678,19 @@ void show_elog_submit_query(INT last_n)
 
             for (index = 0; index < 3; index++) {
                if (attachment[index][0]) {
+                  char ref1[256];
+
                   for (i = 0; i < (int) strlen(attachment[index]); i++)
                      str[i] = toupper(attachment[index][i]);
                   str[i] = 0;
 
+                  strlcpy(ref1, attachment[index], sizeof(ref1));
+                  urlEncode(ref1, sizeof(ref1));
+		  
                   if (exp_name[0])
-                     sprintf(ref, "/EL/%s?exp=%s", attachment[index], exp_name);
+                     sprintf(ref, "/EL/%s?exp=%s", ref1, exp_name);
                   else
-                     sprintf(ref, "/EL/%s", attachment[index]);
-
-                  urlEncode(ref, sizeof(ref));
+                     sprintf(ref, "/EL/%s", ref1);
 
                   if (!show_attachments) {
                      rsprintf("<a href=\"%s\"><b>%s</b></a> ", ref,
@@ -3947,16 +3949,19 @@ void show_elog_page(char *path, int path_size)
 
       for (index = 0; index < 3; index++) {
          if (attachment[index][0]) {
+            char ref1[256];
+
             for (i = 0; i < (int) strlen(attachment[index]); i++)
                att[i] = toupper(attachment[index][i]);
             att[i] = 0;
 
+            strlcpy(ref1, attachment[index], sizeof(ref1));
+            urlEncode(ref1, sizeof(ref1));
+		  
             if (exp_name[0])
-               sprintf(ref, "/EL/%s?exp=%s", attachment[index], exp_name);
+               sprintf(ref, "/EL/%s?exp=%s", ref1, exp_name);
             else
-               sprintf(ref, "/EL/%s", attachment[index]);
-
-            urlEncode(ref, sizeof(ref));
+               sprintf(ref, "/EL/%s", ref1);
 
             if (strstr(att, ".GIF") || strstr(att, ".PNG") || strstr(att, ".JPG")) {
                rsprintf
@@ -8536,7 +8541,8 @@ void export_hist(char *path, int scale, int toffset, int index, int labels)
    DWORD bsize, tsize, n_run_number, *state, *run_number, *t_run_number, i_run, *i_var;
    char str[256], *p, odbpath[256];
    INT var_index[MAX_VARS];
-   DWORD type, event_id, t, dt;
+   DWORD type, event_id, dt;
+   time_t t;
    char event_name[MAX_VARS][NAME_LENGTH];
    char tag_name[MAX_VARS][64], var_name[MAX_VARS][NAME_LENGTH], varname[64],
        key_name[256];
@@ -8943,7 +8949,7 @@ void export_hist(char *path, int scale, int toffset, int index, int labels)
       if (i == n_vars)
          break;
 
-      tms = localtime((void *)&t);
+      tms = localtime(&t);
       strftime(str, sizeof(str), "%c", tms);
 
       if (t_run_number[i_run] <= t)
