@@ -131,9 +131,9 @@
 /* special code for Linux and FreeBSD */
 #if defined(OS_LINUX) || defined(OS_FREEBSD)
 #include <sys/time.h>
-#include <linux/unistd.h>
 #ifdef OS_DARWIN
 #else
+#include <linux/unistd.h>
 #include <sys/vfs.h>
 #endif
 #include <arpa/inet.h>

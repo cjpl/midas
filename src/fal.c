@@ -74,7 +74,7 @@ BOOL verbose = FALSE;
 
 LOG_CHN log_chn[MAX_CHANNELS];
 
-struct {
+struct hist_log_struct {
    WORD event_id;
    void *buffer;
    INT buffer_size;
@@ -4521,7 +4521,7 @@ INT mana_exit()
 
 /*------------------------------------------------------------------*/
 
-struct {
+struct last_time_event_struct {
    short int event_id;
    DWORD last_time;
 } last_time_event[50];
