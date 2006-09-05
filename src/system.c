@@ -942,7 +942,9 @@ void ss_force_single_thread()
    _single_thread = TRUE;
 }
 
-#ifdef OS_LINUX
+#if defined(OS_DARWIN)
+// blank
+#elif defined(OS_LINUX)
 _syscall0(pid_t,gettid)
 #endif
 
@@ -983,6 +985,11 @@ INT ss_gettid(void)
    return ss_getpid();
 
 #endif                          /* OS_VMS */
+#ifdef OS_DARWIN
+
+   return pthread_self();
+
+#endif
 #ifdef OS_UNIX
 
    return gettid();
@@ -1348,7 +1355,7 @@ INT ss_shell(int sock)
          strlcpy(shell, getenv("SHELL"), sizeof(shell));
       else
          strcpy(shell, "/bin/sh");
-      execl(shell, shell, 0);
+      execl(shell, shell, NULL);
    }
 #else
    send(sock, "not implemented\n", 17, 0);
