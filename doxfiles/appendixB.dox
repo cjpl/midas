@@ -4,47 +4,67 @@
 @ref AppendixA - @ref Top - @ref AppendixC 
 \htmlonly <img alt="next.gif" src="next.gif"> \endhtmlonly
  
-Drivers included in the driver's directory of the MIDAS distribution support
-various hardware modules.
-The driver library is continuously extended to suit the needs of various experiments.
-For the slow control system, an example is available in the distribution under
-\b examples/slowcont/frontend.c including the \b hv and \b multi class with
-the \b nulldev device and \b null bus driver.
-Note not all the device drivers implement the triple layer (Class,Device,Bus)
-but includes directly the hardware calls. For some more explanation on the Slow control
-scheme, refer to @ref Slow_Control_system
-Refer to the nulldev.c for a proper example.
+Drivers included in the driver's directory of the MIDAS distribution 
+support various hardware modules. The driver library is continuously 
+extended to suit the needs of various experiments. For the slow control 
+system, an example is available in the distribution under \b 
+examples/slowcont/frontend.c including the \b hv and \b multi class with 
+the \b nulldev device and \b null bus driver. Note: not all the device 
+drivers implement the triple layer (Class,Device,Bus) but some include 
+directly the hardware calls in the device layer. For some more 
+explanation on the Slow control scheme, refer to @ref 
+Slow_Control_system. Refer to the nulldev.c for a proper example.
 
-Follows the class, device, bus and divers directory content under midas/drivers.
+Follows the new  "drivers/" directory structure containing the original
+class, device, bus and divers with the new split for the camac, vme, usb
+directories. Not all the drivers are up-to-date for the latest mvmestd.
+Please contact
+<a href="mailto:midas@psi.ch, midas@triumf.ca?subject=VME support">
+midas</a> for specific support.
 
- * <center> Class, Device, Bus and Divers Driver listing
- *  \image html drivers.jpg
- *  \image latex drivers.eps "Class, Device, Bus and Divers Driver listing" width=12cm
+ * <center> Drivers/ directory structure
+ *  \image html driverlisting.jpg
+ *  \image latex driverlisting.eps "Drivers/ directory structure" width=12cm
  * </center> 
 
-- @ref CAMAC_drivers
-- @ref VME_drivers
+- @ref CAMAC_drivers This section is slowly getting obsolete. But still some ISA
+  and PCI interface are in use. Most recent development is the USB/CAMAC
+  interface from Wiener (<a href=http://www.wiener-d.com/M/17/7.html>CCUSB</a>).
+  While this interface permits <b>CAMAC Command Stacks</b> this option is not
+  yet supported by the Midas API limiting the access speed of a R/W 24bit cycle 
+  to ~360us!
+   
+- @ref VME_drivers The VME API has been revisited for a better function call set.
+  Not all the hardware modules have been ported to this new scheme. DMA and
+  Interrupt support have been included. The main hardware support is for the
+  SBS PCI/VME, SIS PCI/VME, VMIC processor.
+  
+- @ref USB_drivers USB is getting popular in particular for the
+  <a href=http://midas.psi.ch/mscb/>MSCB</a> system. Following the same concept
+  as for the CAMAC and VME, the \b musbstd.h/c is available for USB access.
+
 - @ref GPIB_drivers
-- @ref Other_drivers
+
+- @ref Other_drivers This include the TCP/IP, Serial access layer.
 
 <hr> @section CAMAC_drivers CAMAC drivers
-The CAMAC drivers can be used in different configuration and may have special behaviors
-depending on the type of hardware involved. Below are summurized some remarks about
-these particular hardware modules.
+The CAMAC drivers can be used in different configuration and may have special
+behaviors depending on the type of hardware involved. Below are summurized some
+remarks about these particular hardware modules.
 
 - CAMAC controllers
   - \b [hyt1331.c]
-  This interface uses an ISA board to connect to the crate controller. This card implement
-  a "fast" readout cycle by re-triggering the CAMAC read at the end of the previous one.
-  This feature is unfortunately not reliable when fast processor is used. Wrong returned
-  data can be expected when CPU clocks is above 250MHz. Attempt on "slowing down"
-  the IO through software has not guaranteed perfect result.
+  This interface uses an ISA board to connect to the crate controller. This card
+  implement a "fast" readout cycle by re-triggering the CAMAC read at the end of
+  the previous one. This feature is unfortunately not reliable when fast processor
+  is used. Wrong returned data can be expected when CPU clocks is above 250MHz.
+  Attempt on "slowing down" the IO through software has not guaranteed perfect result.
   Contact has been taken with HYTEC in order to see if possible fix can be applied to
   the interface. First revision of the PC-card PAL has been tested but did not
   show improvement. CVS version of the hyt1331.c until 1.2 contains "fast readout
   cycle" and should not be trusted. CVS 1.3 driver revision contains a patch to
   this problem. In the mean time you can apply your own patch
-  (see @ref AppendixG) and also <a href=http://www.hytec-electronics.co.uk>Hytec</a>)
+  (see @ref AppendixG) and also <a href=http://www.hytec-electronics.co.uk/index.html> Hytec </a>)
   - <b> [hyt1331.c Version >= 1.8.3]</b>
   This version has been modified for 5331 PCI card support running under the @ref dio_task.  
   - <b>[khyt1331.c Version >= 1.8.3]</b>
@@ -63,7 +83,7 @@ these particular hardware modules.
   Both cards can be used also through a proper Linux driver \em camaclx.c.
   This requires to first load a module \em camac-kcs292x.o.
   This software is available but not part of the Midas distribution yet.
-  Please contact <a href=mailto:midas@triumf.ca>midas@triumf.ca</a> for further information.
+  Please contact <a href="mailto:midas@triumf.ca?subject=KCS driver">midas</a> for further information.
   <br><br>
   - <b>[wecc32.c]</b>
   The CAMAC crate controller CC32 interface to a PCI card... you will need the
@@ -118,12 +138,20 @@ This is done by dedicated Midas VME Standard calls from the mvmestd.h files.
   - \b [ces8210.c] CES CAMAC crate controller.
   - \b [vmeio.c] Triumf VMEIO General purpose I/O 24bits.
 
+<hr> @section USB_drivers USB drivers
+This section is under development for the Wiener USB/CAMAC CCUSB controller. 
+Support for Linux and XP is undergo. 
+Please contact <a href="mailto:midas@psi.ch, midas@triumf.ca?subject=USB driver">midas</a> for further information.
+
+For GPIB Linux support please refer to
+<a href=http://www.llp.fu-berlin.de/pool/software/busses/>The Linux Lab Project</a>
+
 <hr> @section GPIB_drivers GPIB drivers
 There is no specific GPIB driver part of the Midas package. But GPIB is used at
 Triumf under WindowsNT for several Slow Control frontends.
 The basic GPIB DLL library is provided by
 <a href=http://www.ni.com/default.htm>National Instrument</a>.
-Please contact <a href=mailto:midas@triumf.ca>midas@triumf.ca</a> for further information.
+Please contact <a href="mailto:midas@triumf.ca?subject=GPIB driver">midas</a> for further information.
 
 For GPIB Linux support please refer to
 <a href=http://www.llp.fu-berlin.de/pool/software/busses/>The Linux Lab Project</a>

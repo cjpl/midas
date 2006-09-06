@@ -36,6 +36,8 @@ Each section is further described below:
 - @ref CNAF_page (CAMAC access page)
 - @ref Message_page (Message Log) 
 - @ref Elog_page (Electronic Log)
+ - @ref Internal_Elog (Internal)
+ - @ref External_Elog (External)
 - @ref Program_page (Program control)
 - @ref History_page (History display)
 - @ref Alarm_page (Alarm control)
@@ -95,7 +97,7 @@ the \<status> button.
     script command to be executed. Further keys will be passed as
    - <b> Arguments </b> to the script. Midas Symbolic link are permitted.
    - <b> Example </b>: The <b> Example </b> below defines a script names
-    \b doit with 2 <b> Arguments </b> (run\# device) which will be invoked when the button
+    doit with 2 <b> Arguments </b> (run\# device) which will be invoked when the button
      <doit> is pressed.
     \code
     odbedit
@@ -261,13 +263,31 @@ defined by the experiment.
  *  \image latex mhmes.eps "Message page." width=12cm
  * </center> 
 
-
+\anchor Elog_200
 <hr> @section Elog_page Elog page
-The Electronic Log page show the most recent Log message recorded in the system. The
-top buttons allows you to either Create/Edit/Reply/Query/Show a message. 
 
-From version 1.9.0, this page contains extra parameters for time selection and Email
-forwarding. Please refer to the ODB structure for further information. 
+The ELOG page provides access to an electronic logbook. This tool can replace the 
+experimental logbook for daily entries. The main advantage of Elog over paper logbook
+is the possiblity to access it remotely and provide a general knowledge of the experiment.
+In the other hand, Elog is not limited strictly to experiments and worldwide Elog
+implementation can be found on the internet.
+
+Since version 2.0.0, Elog comes in two flavors, i.e @ref Internal_Elog where the Elog
+is built in the mhttpd Midas web interface, or @ref External_Elog where the
+Elog runs independently from the experiment and  mhttpd as well.
+While the internal doesn't requires any setup, the latter requires a proper
+Elog installation which is fully described on the
+<a href=http://midas.psi.ch/elog/>Elog</a> web site.
+The External Elog implementation requires to have a dedicated entry in the ODB following
+the code below. It requires also to have the package Elog previously installed and 
+properly configured. Once the ODB entry is existant, the internal ELOG is disabled.
+
+<hr> @subsection Internal_Elog  Internal Elog
+
+By default the mhttpd provides the internal Elog. The entry destination directory is 
+established by the logger key in ODB (see @ref Elog_Dir)
+The Electronic Log page shows the most recent Log message recorded in the system. The
+top buttons allows you to either Create/Edit/Reply/Query/Show a message
 
  * <center> main Elog page.
  *  \image html mhelog.gif
@@ -276,19 +296,50 @@ forwarding. Please refer to the ODB structure for further information.
 
 The format of the message log can be written in HTML format.
 
-
  * <center> HTML Elog message.
  *  \image html mheloghtml.gif
  *  \image latex mheloghtml.eps "HTML Elog message." width=12cm
  * </center> 
 
+- A feature of the Elog entry page is the <b>Shift Check</b> button, this permit for the 
+experimenter in shift to go through a check list and record his findings in the Elog
+system. The check list is user defined and can be found in the ODB under <b>/Elog</b>
 
-The \b runlog button display the content of the file \b runlog.txt which is
-expected to be in the data directory specified by the ODB key \b /Logger/Data Dir .
+ * <center> HTML Elog message.
+ *  \image html melogforms.png
+ *  \image latex melogforms.eps "HTML Elog message." width=12cm
+ * </center> 
+
+- The code below generates the above screen. The key <i>Gas Handling</i> contains all the 
+information for a given form. There is no limit to the number of entries. By specifying
+an entry with the name <i>Attachment0</i>,<i>Attachment1</i>,... and filling it with a fix file
+name, its content will be attached to the Elog entry for every shift report. 
+
+\code
+[local:myexpt:Running]/>cd /Elog/
+[local:myexpt:Running]/Elog>mkdir Forms
+[local:myexpt:Running]/Elog>cd Forms/
+[local:myexpt:Running]Forms>mkdir "Gas Handling"
+[local:myexpt:Running]Forms>cd "Gas Handling"
+[local:myexpt:Running]Gas Handling>create string "N2 Pressure"
+String length [32]: 
+[local:myexpt:Running]Gas Handling>create string "Vessel Temperature"
+String length [32]: 
+[local:myexpt:Running]Gas Handling>ls
+N2 pressure              
+Vessel Temperature              
+[local:myexpt:Running]Gas Handling>
+[local:xenon:Running]Gas Handling>create string Attachment0 
+String length [32]: 64
+[local:xenon:Running]Gas Handling>set Attachment0 Gaslog.txt
+\endcode
+
+- The \b runlog button display the content of the file \b runlog.txt which is
+expected to be in the data directory specified by the ODB key <b>/Logger/Data Dir</b>.
 Regardless of its content, it will be displayed in the web page.
 Its common uses is to \b append lines after every run.
 The task appending this run information can be any of the midas application.
-<b> Example </b> is available in the <b> Example </b>/experiment/analyzer.c which at each
+<b> Example </b> is available in the <i>examples/experiment/analyzer.c</i> which at each
 end-of-run (EOR) will write to the runlog.txt some statistical informations.
 
 
@@ -297,7 +348,7 @@ end-of-run (EOR) will write to the runlog.txt some statistical informations.
  *  \image latex mhelogrun.eps "Elog page, Runlog display." width=12cm
  * </center> 
 
-When composing a new entry into the Elog, several fields are available to specify
+- When composing a new entry into the Elog, several fields are available to specify
 the nature of the message i.e: Author, Type, System, Subject. Under Type and
 System a pulldown menu provides multiple category. These categories are user definable
 through the odb under the tree \b /Elog/Types, \b /Elog/Systems. The number of category
@@ -307,6 +358,121 @@ is fixed to 20 maximum but any remaining field can be left empty.
  *  \image html mhelognew.gif
  *  \image latex mhelognew.eps "Elog page, New Elog entry form." width=12cm
  * </center> 
+
+<hr> @subsection External_Elog  External Elog
+The advantage of using the external Elog over the built-in version is its felxibility.
+This package is used worldwide and impovement is constantly added. A full features
+documentations and standalone installation can be found at the
+<a href=http://midas.psi.ch/elog/>Elog</a> web site.
+
+It's installation requires requires several steps described below.
+- Download the Elog package from the mentioned web site.
+ - Windows, Linux, Mac version can be found there. Simple installation procedures
+   are also described. Its installation can be done at the system level or at the
+   user level. The Elog can service multiple Electronic logbooks in parallel and 
+   therefore an extra entry in its configuration file can provide specific experimental
+   elog in a similar fashion as the internal one.
+ - You need to take note of several consideration for its installation. You need
+   to determine several locations for the different files that elog deals with.
+  - elog resource directory ( ex: /elog_installation_dir where elog is installed)
+  - logbook directory (ex: /myexpt/logbook where the pwd and elog entries are stored).
+    The pwd file uses encryption for the user password.
+ - As this Elog installation is tailored towards an experiment, a restriction applies i.e:
+   Ensure that the mhttpd and elog applications shares at least the same file system.
+   This means that either both applications runs on the same machine or a nsf mount provides
+   file sharing.
+  - You need to now the node and ports for both application. As mhttpd, elogd requires a
+    port number for communication through the web (ex: NodeA:mhttpd -p 8080, NodeB:elogd -p 8081.
+  -# copy the default midas/src/elogd.cfg from the midas distrbution to your operating directory.
+  -# modify the elogd.cfg to reflect your configuration
+  \code
+  # This is a simple elogd configuration file to work with Midas
+  # $Id$ 
+
+  [global]
+  ; port under which elogd should run
+  port = 8081                             
+  ; password file, created under 'logbook dir'
+  password file = elog.pwd                
+  ; directory under which elog was installed (themes etc.)
+  resource dir = /elog_installation_dir     
+  ; directory where the password file will end up
+  logbook dir = /myexpt/logbook     
+  ; anyone can create it's own account
+  self register = 1                       
+  ; URL under which elogd is accessible
+  url = http://ladd00.triumf.ca:8081      
+  ; the "main" tab will bring you back to mhttpd
+  main tab = Xenon                        
+  ; this is the URL of mhttpd which must run on a different port
+  main tab url = http://NodeA:8080
+  ; only needed for email notifications
+  smtp host = your.smtp.host              
+  ; Define one logbook for online use. Severl logbooks can be defined here
+  [MyOnline]
+  ; directory where the logfiles will be written to
+  Data dir = /myexpt/logbook            
+  Comment = My MIDAS Experiment Electronic Logbook
+  ; mimic old mhttpd behaviour
+  Attributes = Run number, Author, Type, System, Subject     
+  Options Type = Routine, Shift Summary, Minor Error, Severe Error, Fix, Question, Info, Modification, Alarm, Test, Other, 
+  Options System = General, DAQ, Detector, Electronics, Target, Beamline
+  Extendable Options = Type, System
+  ; This substitution will enter the current run number
+  Preset Run number = $shell(odbedit -e myexpt -h NodeA -d Runinfo -c 'ls -v \"run number\"')    
+  Preset Author = $long_name
+  Required Attributes = Type, Subject
+  ; Run number and Author cannot be changed
+  Locked Attributes = Run number, Author  
+  Page Title = ELOG - $subject
+  Reverse sort = 1
+  Quick filter = Date, Type, Author
+  ; Don't send any emails
+  Suppress email to users = 1             
+\endcode
+  -# start the elog daemon. <b>-x</b> is for the shell substitution of the
+    command <i>Preset Run number = $shell(...</i>
+    The argument invokes the odbedit remotely if needed to retrieve the current run number.
+    You will have to ensure the proper path to the odbedit and the proper -e, -h argments for
+    the experiment and host. You may want to verify this command from the console.
+\code
+  NodeB:~>/installation_elog_dir/elogd -c elogd.cfg -x
+\endcode
+  -# start the mhttpd at its correct port and possibly in the daemon form.
+\code
+  NodeA:~>mhttpd -p 8080 -D 
+\endcode
+  -# At this point the Elog from the Midas web page is accessing the internal Elog.
+    To activate the external Elog, include in the ODB two entries such as:
+\code
+   NodeX:> odbedit -e myexpt -h NodeA
+   [NodeX:myexpt:Running]/>cd elog
+   [NodeX:myexpt:Running]/Elog>create string Url
+   String length [32]: 64
+   [NodeX:myexpt:Running]/Elog>set Url http://NodeB:8081/MyOnline
+   [NodeX:myexpt:Running]
+   [NodeX:myexpt:Running]/Elog>create string "Logbook Dir"
+   String length [32]: 64
+   [NodeX:myexpt:Running]/Elog>set "Logbook Dir" /myexpt/logbook
+
+   [NodeX:myexpt:Running]/Elog>ls
+Logbook Dir                     /home/myexpt/ElogBook
+Url                             http://NodeB:8081/MyOnline
+\endcode
+  -# Confirm proper operation of the external Elog by creating an entry. You will be
+    prompt for a username and password. Click on New registration. Full control of 
+    these features are described in the Elog documentation.
+  -# Stop and restart the Elogd in the background. 
+\code
+   NodeB:~>/installation_elog_dir/elogd -c elogd.cfg -x -D
+\endcode
+  -# In the event you had previous entry under the internal elog, you can convert the
+    internal to external using the elconv tool.
+\code
+   NodeB:~> cp internal/elog_logbook/*.log /myexpt/logbook/.
+   NodeB:~> cd /myexpt/logbook
+   NodeB:~> /installation_elog_dir/elconv
+\endcode
 
 <hr> @section Program_page Program page
 This page present the current active list of the task attached to the given
@@ -356,7 +522,7 @@ alarms:
 - [Evaluated alarms] Triggered by ODB value on given arithmetical condition.   
 - [Program alarms] Triggered on condition of the state of the defined task.
 - [Internal alarms] Trigger on internal (program) alarm setting through the use
-of the \em al_...()  functions.
+of the <em>al_...()</em>  functions.
 - [Periodic alarms] Triggered by timeout condition defined in the alarm setting.
 
 <hr> @section Custom_page Custom page
@@ -371,10 +537,7 @@ available:
 - @ref Internal_html : The html code is fully stored in the Online Database (ODB). 
        This page is web editable. 
 - @ref External_html : ODB contains a link to an external html document. 
-
-The new @ref External_html feature remove the html code size restriction and support
-multiple custom web page. In addition, to each html document, a dynamic ODB linked 
-image extend the display presentation capability of the controlled experiment.
+- @ref CustomScript_html : External html code with custom script option.
 
 @subsection Internal_html Internal HTML document.
 
@@ -512,6 +675,10 @@ The insertion of a new Custom page requires the following steps:
  
 @subsection External_html External referenced HTML document.
 
+The new @ref External_html feature remove the html code size restriction and support
+multiple custom web page. In addition, to each html document, a dynamic ODB linked 
+image extend the display presentation capability of the controlled experiment.
+
 In the case the custom web page is rather large and complex, it becomes easier to handle
 such file through normal html editor and skip the reloading of the file in the ODB.
 (import/export).
@@ -638,7 +805,7 @@ titles (Midas Doc, Switch pump, etc), By clicking on either box the browser will
 defined html page specified by the map.
 
 * <center> Custom web page with external reference to html document.
-*  \image html mhxcustom01.gif
+*  \image html mhxcustom01.jpg
 *  \image latex mhxcustom01.eps "Custom web external to html document." width=10cm
 * </center> 
 
@@ -722,7 +889,7 @@ This code will setup two ODB values defined by the fields src.
 [local:Default:Stopped]Rate>set max 1e6 
 \endcode
 
-Following the same principle as for the labels, by creating Bars/<bar name>, the
+Following the same principle as for the labels, by creating Bars/\<bar name\>, the
 structure for the rate will be filled with a default setting after refreshing the
 custom midas page. The different parameters are self-explanatory.
 
@@ -748,11 +915,111 @@ Fillcolors = STRING[4] :
 \endcode
 
 * <center> Custom web page with external reference to html document.
-*  \image html mhxcustom02.gif
+*  \image html mhxcustom02.jpg
 *  \image latex mhxcustom02.eps "Custom web external to html document." width=10cm
 * </center> 
+
+@subsection CustomScript_html Custom Script usage.
+
+From 1.9.5, a new feature has been implemented for the creation of secondary web
+page activated by an internal or external custom page. This permit to have
+truly custom page for specific scripts or data display. Use of a new odb key
+is required <b>CustomScript</b> following the same <b>Script</b> syntax.
+
+To be noted that \<script\> language within the .html source file is possible.
+
+In order to provide a new frame holding input parameters with start script
+button using the inputs parameters as arguments the setup is the following:
+- Create the mybutton.html code as described in the @ref Internal_html.
+- Create a new custom (internal or External) in ODB under \b /Custom/mybutton&
+- Create a new custom script (with argument as described in the myscript.html)
+  in ODB under \b /CustomScript/myscript& 
+
+These operations will implement a new button \<mybutton\> in the main
+Status Midas web page (same lne as alias).
+By clicking \b \<mybutton\> a new frame will be created as described in the
+<i>mybutton.html</i>.
+By clicking on the \b \<myscript\> of tht new frame, execution of the script
+using all the argument above will be performed.
+
+- mybutton.html code
+\code
+<!--Custom web page for runall. 
+This webpage displays some experiment data,
+allows the user to enter some experiment parameters,
+and then uses these parameters to run a custom script.-->
+
+<html>
+	<head>
+	<meta http-equiv="Refresh" content="10">
+	<title>RUNALL</title>
+	</head>
+
+	<body>
+	<form method="GET" action="http://<host>:<port>/CS/mybutton&">
+	<input type=hidden name=exp value="default">
+
+	<table border ="3" cellpadding ="5" width ="40%">
+	<tr align ="center"<th bgcolor =#A0A0FF>
+	MIDAS experiment "default"</th>
+	<th bgcolor =#A0A0FF>
+
+ <script>
+	var mydate=new Date()
+	var year=mydate.getYear()
+	if (year < 1000)
+	  year+=1900
+	var day=mydate.getDay()
+	var month=mydate.getMonth()
+	var daym=mydate.getDate()
+	var hour=mydate.getHours()
+	var min=mydate.getMinutes()
+	var sec=mydate.getSeconds()
+	if (daym<10)
+	  daym="0"+daym
+	if (hour<10)
+	  hour="0"+hour
+	if (min<10)
+	  min="0"+min
+	if (sec<10)
+	  sec="0"+sec
+	var dayarray=new Array("Sun","Mon","Tue","Wed","Thur","Fri","Sat")
+	var montharray=new Array("Jan","Feb","Mar","Apr","May","June","July",
+ 	"Aug","Sept","Oct","Nov","Dec")
+	document.writeln(dayarray[day], " ", montharray[month], " ", daym," ", 
+    	hour, ":", min, ":", sec," ", year);  	
+	</script>
+  </th>
+  </tr>
+
+	<tr align ="center"<th colspan ="2" bgcolor=#A0A0A0>
+	<input type=submit name=cmd value=Status>	
+	<input type=submit name=cmd value=ODB></th></tr>
+	<tr align ="center"><th colspan = "2" bgcolor=#CCCCFF>
+        End of Run Parameters</th></tr>
+	<tr align ="center"><th> Key </th>  <th>Value </th></tr>
+	<tr align ="center"><td><b>Run number</b></td>
+	<td><odb src="/runinfo/run number"></td></tr>
+	<tr align ="center"><td><b>Number of Runs</b></td>
+	<td><odb src="/customscript/myscript/Number of Runs" edit=1></td></tr>
+	<tr align ="center"><td><b>Duration in Hours</b></td>
+	<td><odb src="/customscript/myscript/Duration in Hours" edit=1></td></tr>
+	<tr align ="center"<th colspan ="2" bgcolor=#D0D0D0>
+        <input type=submit name=customscript value="myscript">
+        </th></tr>
+	</table>
+	</form> 
+	</body>
+</html>
+\endcode
+
+ * <center> CustomScript usage.
+ *  \image html customscript.jpg
+ *  \image latex customscript.eps "CustomScript usage." width=12cm
+ * </center> 
 
  \htmlonly <img ALIGN="left" alt="previous.gif" src="previous.gif"> \endhtmlonly 
  @ref Utilities - @ref Top - @ref AppendixA
  \htmlonly <img alt="next.gif" src="next.gif"> \endhtmlonly
  */
+
