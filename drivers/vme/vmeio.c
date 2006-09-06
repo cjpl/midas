@@ -7,15 +7,11 @@
                 
   $Log: vmeio.c,v $
 *********************************************************************/
-
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+#include <signal.h>
 #include "vmeio.h"
-
-#if defined(OS_LINUX)
-extern INT_INFO int_info;
-#endif
 
 /********************************************************************/
 /**
@@ -146,8 +142,6 @@ void vmeio_IntRearm(MVME_INTERFACE *myvme, DWORD base, int input)
 static void myisrvmeio(int sig, siginfo_t * siginfo, void *extra)
 {
   fprintf(stderr, "myisrvmeio interrupt received \n");
-  fprintf(stderr, "interrupt: level:%d Vector:0x%x\n"
-	  , int_info.level, siginfo->si_value.sival_int & 0xFF);
 }
 
 
@@ -155,7 +149,7 @@ static void myisrvmeio(int sig, siginfo_t * siginfo, void *extra)
 int main () {
   
   MVME_INTERFACE *myvme;
-  int myinfo = VME_INTERRUPT_SIGEVENT;
+  int myinfo = 1; // VME_INTERRUPT_SIGEVENT;
 
   DWORD VMEIO_BASE = 0x780000;
   int status, csr;
