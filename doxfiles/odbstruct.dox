@@ -288,13 +288,19 @@ Logger                          DIR
 
 \anchor mySQL
 From Midas version 1.9.5, the logger has the possibility to store information to a 
-mySQL database. This is achieved by defining at build time the preprocessor flag
+mySQL database. 
+This option is an alternative to the <b>runlog.txt</b> update hanled by the analyzer.
+The two main advantages using the SQL are:
+ - The recording is done by the logger and therfore independent of the user analyzer.
+ - The definition of the parameters to be recorded in the database is entirely setup 
+   in the ODB under /logger/SQL.
+This SQL option is enabled by defining at build time the preprocessor flag
 @ref HAVE_MYSQL. This option when enabled will create a sub tree \em SQL under
 /Logger in the ODB. This tree contains information for mySQL access with predefined
 mySQL database name \em Midas and table \em Runlog. Under 2 dedicated sub directories
-i.e: BOR and EOR, predefined links exists which will be used respectively at BOR and EOR
-for storing into the database. These elements are ODB links allowing the user to extend the 
-list with any parameter of the ODB database. This logger mySQL option is to replace 
+i.e: Link_BOR and Link_EOR, predefined links exists which will be used respectively at
+BOR and EOR for storing into the database. These elements are ODB links allowing the user
+to extend the list with any parameter of the ODB database. This logger mySQL option is to replace 
 or complement the \em runlog.txt functionality of the ana_end_of_run() function from the
 analyzer.c.
 
@@ -316,9 +322,9 @@ SQL                             DIR
     Links EOR                   DIR
         Stop time               LINK    1     19    4m   0   RWD  /Runinfo/Stop time
 \endcode
-
+ 
   \anchor Data_Dir 
-  - [Data dir] Specifies in which directory files produced by the logger should
+ - [Data dir] Specifies in which directory files produced by the logger should
   be written. Once the Logger in running, this @ref Data_Dir  will be pointing to
   the location of the midas.log , ODB dump files, history files, message files.
   In the case of multiple logging channels, the data path for all the channels is defaulted
@@ -330,12 +336,15 @@ SQL                             DIR
   - [History Dir] This field is optional and doesn't appear by default in
   the logger. If present the location of the @ref History_System  files is reassigned
   to the defined path instead of the default @ref Data_Dir .
+  \anchor Elog_Dir 
   - [Elog Dir] This field is optional and doesn't appear by default in the logger. 
   If present the location of the @ref Electronic_Logbook  files is reassigned to the
   defined path instead of the default @ref Data_Dir.
   - [Message file] Specifies the file name for the log file which contains all messages
   from the MIDAS message system. The message log file is a simple ASCII file, which
   can be viewed at any time to see a history of what happened in an experiment.
+   - <b>2.0.0</b> The location of the ODB dump files can now be specified in this field.
+     If the string contains a DIRECTORY_SEPARATOR, is it considered as an absolute path.
   - [Write data] Global flag which turns data logging on and off for all channels.
   It can be set to zero temporarily to make a short test run without data logging.
   The key "Write data?" is predefined logger key for enabling data logging.
@@ -348,6 +357,32 @@ SQL                             DIR
   with leading zeros like run00002.odb. The ODB dump file is in ASCII format and can
   be used for off-line analysis to check run parameters etc. For a description of the
   ASCII format see db_copy().
+   - <b>2.0.0</b> The location of the ODB dump files can now be specified in this field.
+     If the string contains a DIRECTORY_SEPARATOR, is it considered as an absolute path
+   \code
+  [local:Default:S]/Logger>ls
+  Data dir                        \online\
+  Message file                    midas.log 
+  Auto restart                     n
+  Write data                      y
+  ODB Dump                        n
+  ODB Dump File                   run%05d.odb
+  Tape message                    y 
+  Channels
+  [local:Default:S]/Logger>set OD
+  ODB Dump
+  ODB Dump File
+  [local:Default:S]/Logger>set "ODB Dump File" "/mypath/run%06d.odb"
+  [local:Default:S]/Logger>ls
+  Data dir                        \online\
+  Message file                    midas.log
+  Auto restart                    n
+  Write data                      y
+  ODB Dump                        n
+  ODB Dump File                   /mypath/run%06d.odb
+  Tape message                    y
+  Channels
+   \endcode
   - [Auto restart] When this flag is one, a new run gets automatically restarted
   when the previous run has been stopped by the logger due to an event or byte limit.
   - [Tape message] Specifies if tape messages during mounting and writing of EOF
@@ -356,15 +391,15 @@ SQL                             DIR
   - [channels] Sub-directory which contains settings for individual channels.
   By default, only channel "0" is created. To define other channels, an existing
   channel can be copied:
-\code 
-[loca]]Logger>cd channels
-[local]Channels>ls
-0
-[local]Channels>copy 0 1
-[local]Channels>ls
-0
-1
-\endcode  
+  \code 
+  [loca]]Logger>cd channels
+  [local]Channels>ls 
+  0
+  [local]Channels>copy 0 1
+  [local]Channels>ls 
+  0
+  1
+  \endcode  
   The Settings part of the channel tree has the following meaning:
   - [active] turns a channel on (1) or off (0). Data is only logged to channels that
     are active. 
@@ -461,7 +496,32 @@ facilitate his job on controlling a run. Initially only one empty key is defined
 labeled \b Name  for the experiment name. The user can create four system keys in
 order to provide extra run control flexibility i.e.:
 \b "Run Parameter/", \b "Edit on Start/", \b "Lock when running/"  and \b "Security/".
-\code 
+
+\anchor anchexpt200
+
+- <b>2.0.0</b>, this directory can specify the event buffer size for each
+  buffer involved in the experiment. By default the event buffer is named <i>SYSTEM</i>.
+  Its default size is 2MB. This new parameter may be required to optimize the memory usage
+  at the frontend level in case large data transfer is needed.
+  This method work for all MIDAS buffers, except for ODB, where the size has to be
+  specified at creation time using the odbedit command "-s" argument. There is no need to
+  increase the SYSMSG.SHM buffer as it is used only for messages.
+ -# Shutdown all MIDAS programs, delete the old .SYSTEM.SHM files sitting in the directory
+  specified by either the exptab or $MIDAS_DIR, use ipcrm for share memory segment removal.
+ -# Run odbedit, go to experiment, create a directory key "Buffer Sizes", create a DWORD key of
+  the buffer name to be increased.
+ \code
+  C:\online>odbedit
+  [local:Default:S]/>cd Experiment/
+  [local:Default:S]/Experiment>mkdir "Buffer Sizes"
+  [local:Default:S]/Experiment>cd "Buffer Sizes/
+  [local:Default:S]Buffer Sizes>create DWORD SYSTEM
+  [local:Default:S]Buffer Sizes>set SYSTEM 4000000
+ \endcode
+ -# Starts the rest of the MIDAS programs. Check that the buffer has the correct size by
+  looking at the size of .SYSTEM.SHM (unix, ipcs), SYSTEM.SHM (windows).
+<br>
+\code
 Key name                        Type    #Val  Size  Last Opn Mode Value
 ---------------------------------------------------------------------------
 Experiment                      DIR
@@ -507,29 +567,32 @@ Experiment                      DIR
             mstat               INT     1     4     >99d 0   RWD  0
             mhttpd              INT     1     4     >99d 0   RWD  0
         Web Password            STRING  1     32    16h  0   RWD  pon4@#@%SSDF2
-\endcode  
-  - [Name] Specifies the name of the experiment.
-  - [Run Parameters] Specifies a fix directory name where you can create
-    and define keys which can be presented at Run start for run condition selection.
-    The actual activation of any of those line is done via a "logical link key"
-    defined in the Edit on Start/ sub-tree.
-    The links don't have to point to run parameters
-    necessarily. They can point to any ODB key including the logger settings. It can
-    make sense to create a link to the logger setting which enables/disables writing
-    of data. A quick test run can then be made without data logging for example:
-    \code
-    [local]/>create key "/Experiment/Run parameters"
-    \endcode 
-    Then one or more run parameters can be created in that directory:
-    \code
-    [local]Run parameters>create int "Run mode"
-    [local]Run parameters>create string Comment
-    \endcode 
+    Name                        STRING  1     32    4m   0   RWD  Default
+    Buffer Sizes                DIR
+        SYSTEM                  DWORD   1     4     4m   0   RWD  4000000
+ \endcode  
+- [Name] Specifies the name of the experiment.
+- [Run Parameters] Specifies a fix directory name where you can create
+  and define keys which can be presented at Run start for run condition selection.
+  The actual activation of any of those line is done via a "logical link key"
+  defined in the Edit on Start/ sub-tree.
+  The links don't have to point to run parameters
+  necessarily. They can point to any ODB key including the logger settings. It can
+  make sense to create a link to the logger setting which enables/disables writing
+  of data. A quick test run can then be made without data logging for example:
+  \code
+  [local]/>create key "/Experiment/Run parameters"
+  \endcode 
+  Then one or more run parameters can be created in that directory,
+  \code
+  [local]Run parameters>create int "Run mode"
+  [local]Run parameters>create string Comment
+  \endcode
 - [Edit on Start] Specifies a fix directory name where you can define an
   ODB link (similar to a symbolic link in UNIX) key to the pre-defined directory Run
   Parameters. Any link key present in this directory pointing to a valid ODB
   key will be requested for input during the run start procedure.
-  <br><br>
+  <br>
   A new feature has been added to this section for the possibility of
   preventing the user to change the run number from the web interface during
   the start sequence. By defining the key
@@ -537,7 +600,7 @@ Experiment                      DIR
   as a boolean variable the ability of editing the run number is
   enabled or disabled. By default if this key is not present the run number
   is editable.  
-  <br><br>
+  <br>
   \code 
   [local]/>create key "Experiment/Edit on start"
   [local]/>cd "Experiment/Edit on start"
@@ -575,7 +638,8 @@ Experiment                      DIR
   By default, there is no restriction for user to connect locally or remotely
   to a given experiment. If an access restriction has to be setup in order
   to protect the experiment from unwilling access, a password mechanism has to
-  be defined.
+  be defined. This directory is automatically created when the command <b>passwd</b>
+  is issued in ODB (see below).
 - [Password] Specifies the encrypted password for accessing current experiment.
   \code
   [local]/>passwd
@@ -590,7 +654,6 @@ Experiment                      DIR
   "/Experiment/Security"
   and all its subkeys? (y/[n]) y
   \endcode 
-  <br><br>
   After running the odb command passwd, four new sub-fields will be present under
   the Security tree.
     - Password

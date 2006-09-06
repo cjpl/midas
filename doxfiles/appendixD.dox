@@ -42,7 +42,7 @@ can be done using the @ref USERFLAGS option such as:
 \endcode
 
 - The current OS support is done through fix flag established in the general
-@ref Makefile. Currently the OS supported are:
+   @ref Makefile . Currently the OS supported are:
  - \b OS_OSF1 , \b OS_ULTRIX , \b OS_FREEBSD ,  \b OS_LINUX , \b OS_SOLARIS.
 
 - For \b OS_IRIX please contact Pierre. The \b OS_VMS is not included in the Makefile
@@ -51,7 +51,12 @@ has been dropped.
 \code
 OSFLAGS = -DOS_LINUX ...
 \endcode
-
+- <b>OSFLAGS [2.0.0]</b> For 32 bit built, the OSFLAGS should contains the -m32. By default this flag is not
+enabled. It has to be applied to the Makefile for the frontend examples too.
+\code
+# add to compile midas in 32-bit mode
+# OSFLAGS += -m32
+\endcode
 - Other OS supported are: 
  - OS_WINNT : See file makefile.nt. 
  - OS_VXWORKS : See file makefile.ppc_tri.
@@ -94,7 +99,6 @@ make CERNLIB_PACK=<your path>/libpacklib.a
 <hr> @section HAVE_MYSQL HAVE_MYSQL
 This flag is used for the @ref mlogger_task to building the application with \em mySQL support.
 The build requires to have access to the mysql include files as well as the mysql library.
-Refers to @ref for further information on that option.
 \code
 \endcode
 

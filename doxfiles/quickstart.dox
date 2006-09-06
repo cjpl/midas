@@ -44,7 +44,7 @@ are for @ref Linux_installation and @ref Windows_installation.
     \n    
   - <b>RPM</b>
     Current RPM is not fully up-to-date. We suggest that you use the 
-    compressed files or the \b SVN repository.</b>
+    compressed files or the <b>SVN repository</b>.
     In the case of the \b rpm, the binaries are placed in the /usr/local/bin
     , /usr/local/include, /usr/local/lib.
     \n\n

@@ -12,12 +12,30 @@ of the latest documentation on past and current features. It will also
 mention the wish list documentation on current developments.
  
 
-- Current doc revision: 1.9.5-3 
-- Software version: 1.9.5 
-- Latest tarball : <a href=http://midas.triumf.ca/download> 1.9.5-x </a>
+- Current doc revision: 2.0.0-0 
+- Software version: 2.0.0
+
+
+
+- <b> [2.0.0] </b>
+ - Update the whole midas package for support of 64 bits machine,
+   OSLFAGS should have -m32 for 32bit  (@ref building_option).
+ - Implementation of the external standalone Elog package (@ref External_Elog).
+ - ODB Buffer size parameter (@ref  ODB_Experiment_Tree).  
+ - Fix buffer level handling.
+ - Improve midas.log, ODB Dump file directory destination (@ref Data_Dir).
+ - Multiple minor buf fixes
+  - Buffer level handling.
+  - mdump single bank display.
+  - mhttpd (multiple buggies).
+  - 
+
+
+- <b> [1.9.6] </b>
+ - Latest tarball : <a href=http://midas.triumf.ca/download> 1.9.5-x </a>
   You can retrieve the daily tarball directly from the SVN web interface
   by clicking on the  "tarball" link at the bottom of the main SVN-midas page.
-- Latest RPM : <a href=http://midas.triumf.ca/download> 1.9.2-1  </a>
+ - Latest RPM : <a href=http://midas.triumf.ca/download> 1.9.2-1  </a>
 
 - <b> [Before 1.9.6] </b>
  - Switch from CVS to Subversion for Version control, this change affects 
