@@ -1429,6 +1429,8 @@ BOOL equal_ustring(char *str1, char *str2)
       return FALSE;
    if (str1 == NULL && str2 == NULL)
       return TRUE;
+   if (strlen(str1) != strlen(str2))
+      return FALSE;
 
    while (*str1)
       if (toupper(*str1++) != toupper(*str2++))
