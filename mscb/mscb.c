@@ -899,6 +899,10 @@ int recv_eth(int sock, char *buf, int buffer_size, int millisec)
    fd_set readfds;
    struct timeval timeout;
 
+   /* check for valid socket */
+   if (sock < 0)
+      return 0;
+
    if (buffer_size > sizeof(buffer))
       buffer_size = sizeof(buffer);
 
