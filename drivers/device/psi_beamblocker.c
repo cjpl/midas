@@ -387,7 +387,7 @@ INT psi_beamblocker(INT cmd, ...)
       status = FE_SUCCESS;
       break;
 
-   case CMD_GET_DEFAULT_THRESHOLD:
+   case CMD_GET_THRESHOLD:
       info = va_arg(argptr, void *);
       channel = va_arg(argptr, INT);
       pvalue = va_arg(argptr, float *);
