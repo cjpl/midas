@@ -3512,7 +3512,7 @@ void register_requests(void)
 
       if (clp.online) {
          /*---- open event buffer ---------------------------------------*/
-         bm_open_buffer(ar_info->buffer, EVENT_BUFFER_SIZE,
+         bm_open_buffer(ar_info->buffer, 2*MAX_EVENT_SIZE,
                         &analyze_request[index].buffer_handle);
 
          /* set the default buffer cache size */
