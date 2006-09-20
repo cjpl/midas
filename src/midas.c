@@ -3935,7 +3935,7 @@ INT bm_open_buffer(char *buffer_name, INT buffer_size, INT * buffer_handle)
       status = ss_shm_open(buffer_name, sizeof(BUFFER_HEADER) + buffer_size,
                            (void **) &(_buffer[handle].buffer_header), &shm_handle, FALSE);
 
-      if (status == SS_NO_MEMORY || status == SS_FILE_ERROR) {
+      if (status != SS_SUCCESS && status != SS_CREATED) {
          *buffer_handle = 0;
          return BM_NO_SHM;
       }
