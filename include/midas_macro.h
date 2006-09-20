@@ -5,7 +5,7 @@
 
   Contents:     C macros for writing a MIDAS frontend
 
-  $Id:$
+  $Id$
 
 \********************************************************************/
 
@@ -18,7 +18,6 @@
 /*-- Globals -------------------------------------------------------*/
 
 BOOL frontend_call_loop = FALSE;
-INT event_buffer_size = DEFAULT_EVENT_BUFFER_SIZE;
 HNDLE hdb;
 INT _crate = 0;
 

@@ -3790,7 +3790,7 @@ Two default buffers are created by the system.
 The "SYSTEM" buffer is used to
 exchange events and the "SYSMSG" buffer is used to exchange system messages.
 The name and size of the event buffers is defined in midas.h as
-EVENT_BUFFER_NAME and EVENT_BUFFER_SIZE.
+EVENT_BUFFER_NAME and 2*MAX_EVENT_SIZE.
 Following example opens the "SYSTEM" buffer, requests events with ID 1 and
 enters a main loop. Events are then received in process_event()
 \code
@@ -3809,7 +3809,7 @@ main()
   status = cm_connect_experiment("pc810", "Sample", "Simple Analyzer", NULL);
   if (status != CM_SUCCESS)
   return 1;
-  bm_open_buffer(EVENT_BUFFER_NAME, EVENT_BUFFER_SIZE, &hbuf);
+  bm_open_buffer(EVENT_BUFFER_NAME, 2*MAX_EVENT_SIZE, &hbuf);
   bm_request_event(hbuf, 1, TRIGGER_ALL, GET_ALL, request_id, process_event);
 
   do
@@ -5913,7 +5913,7 @@ main()
  status = cm_connect_experiment("", "Sample", "Producer", NULL);
  if (status != CM_SUCCESS)
  return 1;
- bm_open_buffer(EVENT_BUFFER_NAME, EVENT_BUFFER_SIZE, &hbuf);
+ bm_open_buffer(EVENT_BUFFER_NAME, 2*MAX_EVENT_SIZE, &hbuf);
 
  // create event with ID 1, trigger mask 0, size 100 bytes and serial number 1
  bm_compose_event((EVENT_HEADER *) event, 1, 0, 100, 1);
@@ -5938,7 +5938,7 @@ value of BM_ASYNC_RETURN without writing the event to the buffer
 BM_ASYNC_RETURN Routine called with async_flag == TRUE and
 buffer has not enough space to receive event<br>
 BM_NO_MEMORY   Event is too large for network buffer or event buffer.
-One has to increase MAX_EVENT_SIZE or EVENT_BUFFER_SIZE in midas.h and
+One has to increase MAX_EVENT_SIZE in midas.h and
 recompile.
 */
 INT bm_send_event(INT buffer_handle, void *source, INT buf_size, INT async_flag)
@@ -6134,7 +6134,7 @@ immediately with a value of BM_ASYNC_RETURN without writing the cache.
 BM_ASYNC_RETURN Routine called with async_flag == TRUE
 and buffer has not enough space to receive cache<br>
 BM_NO_MEMORY Event is too large for network buffer or event buffer.
-One has to increase MAX_EVENT_SIZE or EVENT_BUFFER_SIZE in midas.h
+One has to increase MAX_EVENT_SIZE in midas.h
 and recompile.
 */
 INT bm_flush_cache(INT buffer_handle, INT async_flag)
@@ -6306,7 +6306,7 @@ main()
   "Simple Analyzer", NULL);
   if (status != CM_SUCCESS)
    return 1;
-  bm_open_buffer(EVENT_BUFFER_NAME, EVENT_BUFFER_SIZE, &hbuf);
+  bm_open_buffer(EVENT_BUFFER_NAME, 2*MAX_EVENT_SIZE, &hbuf);
   bm_request_event(hbuf, 1, TRIGGER_ALL, GET_ALL, request_id, NULL);
 
   do

@@ -642,11 +642,11 @@ INT register_equipment(void)
 
       if (eq_info->buffer[0]) {
          status =
-             bm_open_buffer(eq_info->buffer, EVENT_BUFFER_SIZE,
+             bm_open_buffer(eq_info->buffer, 2*MAX_EVENT_SIZE,
                             &equipment[index].buffer_handle);
          if (status != BM_SUCCESS && status != BM_CREATED) {
             cm_msg(MERROR, "register_equipment",
-                   "Cannot open event buffer. Try to reduce EVENT_BUFFER_SIZE in midas.h \
+                   "Cannot open event buffer. Try to reduce MAX_EVENT_SIZE in midas.h \
 and rebuild the system.");
             return 0;
          }
