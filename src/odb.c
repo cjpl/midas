@@ -801,7 +801,7 @@ INT db_open_database(char *database_name, INT database_size,
                            sizeof(DATABASE_HEADER) +
                            2 * ALIGN8(database_size / 2),
                            (void **) &(_database[(INT) handle].
-                                       database_header), &shm_handle);
+                                       database_header), &shm_handle, TRUE);
 
       if (status == SS_NO_MEMORY || status == SS_FILE_ERROR) {
          *hDB = 0;

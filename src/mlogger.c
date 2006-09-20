@@ -2968,14 +2968,14 @@ INT tr_start(INT run_number, char *error)
       status = db_create_record(hDB, 0, "/Logger/Channels/0/", strcomb(chn_settings_str));
       if (status != DB_SUCCESS) {
          strcpy(error, "Cannot create channel entry in database");
-         cm_msg(MERROR, "tr_prestart", error);
+         cm_msg(MERROR, "tr_start", error);
          return 0;
       }
 
       status = db_find_key(hDB, 0, "/Logger/Channels", &hKeyRoot);
       if (status != DB_SUCCESS) {
          strcpy(error, "Cannot create channel entry in database");
-         cm_msg(MERROR, "tr_prestart", error);
+         cm_msg(MERROR, "tr_start", error);
          return 0;
       }
    }
@@ -2989,7 +2989,7 @@ INT tr_start(INT run_number, char *error)
       db_get_key(hDB, hKeyChannel, &key);
       status = db_check_record(hDB, hKeyRoot, key.name, strcomb(chn_settings_str), TRUE);
       if (status != DB_SUCCESS && status != DB_OPEN_RECORD) {
-         cm_msg(MERROR, "tr_prestart", "Cannot create/check channel record");
+         cm_msg(MERROR, "tr_start", "Cannot create/check channel record");
          break;
       }
 
@@ -2999,7 +2999,7 @@ INT tr_start(INT run_number, char *error)
          if (log_chn[index].handle) {
             log_close(&log_chn[index], run_number);
             if (log_chn[index].type == LOG_TYPE_DISK) {
-               cm_msg(MINFO, "tr_prestart", "Deleting previous file \"%s\"",
+               cm_msg(MINFO, "tr_start", "Deleting previous file \"%s\"",
                       log_chn[index].path);
                unlink(log_chn[index].path);
             }
@@ -3014,7 +3014,7 @@ INT tr_start(INT run_number, char *error)
              db_find_key(hDB, hKeyChannel, "Settings", &log_chn[index].settings_hkey);
          if (status != DB_SUCCESS) {
             strcpy(error, "Cannot find channel settings info");
-            cm_msg(MERROR, "tr_prestart", error);
+            cm_msg(MERROR, "tr_start", error);
             return 0;
          }
 
@@ -3022,7 +3022,7 @@ INT tr_start(INT run_number, char *error)
          status = db_find_key(hDB, hKeyChannel, "Statistics", &log_chn[index].stats_hkey);
          if (status != DB_SUCCESS) {
             strcpy(error, "Cannot find channel statistics info");
-            cm_msg(MERROR, "tr_prestart", error);
+            cm_msg(MERROR, "tr_start", error);
             return 0;
          }
 
@@ -3044,7 +3044,7 @@ INT tr_start(INT run_number, char *error)
              db_get_record(hDB, log_chn[index].settings_hkey, chn_settings, &size, 0);
          if (status != DB_SUCCESS) {
             strcpy(error, "Cannot read channel info");
-            cm_msg(MERROR, "tr_prestart", error);
+            cm_msg(MERROR, "tr_start", error);
             return 0;
          }
 
@@ -3054,7 +3054,7 @@ INT tr_start(INT run_number, char *error)
              log_chn[index].statistics.bytes_written_total >= chn_settings->tape_capacity)
          {
             strcpy(error, "Tape capacity reached. Please load new tape");
-            cm_msg(MERROR, "tr_prestart", error);
+            cm_msg(MERROR, "tr_start", error);
             return 0;
          }
 
@@ -3073,7 +3073,7 @@ INT tr_start(INT run_number, char *error)
             sprintf(error,
                     "Invalid channel type \"%s\", pease use \"Tape\", \"FTP\" or \"Disk\"",
                     chn_settings->type);
-            cm_msg(MERROR, "tr_prestart", error);
+            cm_msg(MERROR, "tr_start", error);
             return 0;
          }
 
@@ -3109,7 +3109,7 @@ INT tr_start(INT run_number, char *error)
 #endif
 #if !defined(HAVE_MYSQL) && !defined(OS_WINNT)  /* errno not working with mySQL lib */
             if (status == -1 && errno != EEXIST)
-               cm_msg(MERROR, "tr_prestart", "Cannot create subdirectory %s", str);
+               cm_msg(MERROR, "tr_start", "Cannot create subdirectory %s", str);
 #endif
 
             strcat(str, chn_settings->filename);
@@ -3135,7 +3135,7 @@ INT tr_start(INT run_number, char *error)
          if (log_chn[index].type == LOG_TYPE_TAPE &&
              log_chn[index].statistics.bytes_written_total == 0 && tape_message) {
             tape_flag = TRUE;
-            cm_msg(MTALK, "tr_prestart", "mounting tape #%d, please wait", index);
+            cm_msg(MTALK, "tr_start", "mounting tape #%d, please wait", index);
          }
 
          /* open logging channel */
@@ -3163,7 +3163,7 @@ INT tr_start(INT run_number, char *error)
                sprintf(error,
                        "Invalid data format, please use \"MIDAS\", \"YBOS\", \"ASCII\", \"DUMP\" or \"ROOT\"");
 
-            cm_msg(MERROR, "tr_prestart", error);
+            cm_msg(MERROR, "tr_start", error);
             return 0;
          }
 
@@ -3178,7 +3178,7 @@ INT tr_start(INT run_number, char *error)
              db_open_record(hDB, log_chn[index].stats_hkey, &log_chn[index].statistics,
                             sizeof(CHN_STATISTICS), MODE_WRITE, NULL, NULL);
          if (status != DB_SUCCESS)
-            cm_msg(MERROR, "tr_prestart",
+            cm_msg(MERROR, "tr_start",
                    "cannot open statistics record, probably other logger is using it");
 
          /* open hot link to settings tree */
@@ -3186,7 +3186,7 @@ INT tr_start(INT run_number, char *error)
              db_open_record(hDB, log_chn[index].settings_hkey, &log_chn[index].settings,
                             sizeof(CHN_SETTINGS), MODE_READ, NULL, NULL);
          if (status != DB_SUCCESS)
-            cm_msg(MERROR, "tr_prestart",
+            cm_msg(MERROR, "tr_start",
                    "cannot open channel settings record, probably other logger is using it");
 
 #ifndef FAL_MAIN
@@ -3195,8 +3195,8 @@ INT tr_start(INT run_number, char *error)
              bm_open_buffer(chn_settings->buffer, 2*MAX_EVENT_SIZE,
                             &log_chn[index].buffer_handle);
          if (status != BM_SUCCESS && status != BM_CREATED) {
-            sprintf(error, "Cannot open buffer %s", str);
-            cm_msg(MERROR, "tr_prestart", error);
+            sprintf(error, "Cannot open buffer %s", chn_settings->buffer);
+            cm_msg(MERROR, "tr_start", error);
             return 0;
          }
          bm_set_cache_size(log_chn[index].buffer_handle, 100000, 0);
@@ -3209,7 +3209,7 @@ INT tr_start(INT run_number, char *error)
 
          if (status != BM_SUCCESS) {
             sprintf(error, "Cannot place event request");
-            cm_msg(MERROR, "tr_prestart", error);
+            cm_msg(MERROR, "tr_start", error);
             return 0;
          }
 
@@ -3220,7 +3220,7 @@ INT tr_start(INT run_number, char *error)
                                &log_chn[index].msg_buffer_handle);
             if (status != BM_SUCCESS && status != BM_CREATED) {
                sprintf(error, "Cannot open buffer %s", MESSAGE_BUFFER_NAME);
-               cm_msg(MERROR, "tr_prestart", error);
+               cm_msg(MERROR, "tr_start", error);
                return 0;
             }
 
@@ -3233,7 +3233,7 @@ INT tr_start(INT run_number, char *error)
 
             if (status != BM_SUCCESS) {
                sprintf(error, "Cannot place event request");
-               cm_msg(MERROR, "tr_prestart", error);
+               cm_msg(MERROR, "tr_start", error);
                return 0;
             }
          }
@@ -3242,14 +3242,14 @@ INT tr_start(INT run_number, char *error)
    }
 
    if (tape_flag && tape_message)
-      cm_msg(MTALK, "tr_prestart", "tape mounting finished");
+      cm_msg(MTALK, "tr_start", "tape mounting finished");
 
    /* reopen history channels if event definition has changed */
    close_history();
    status = open_history();
    if (status != CM_SUCCESS) {
       sprintf(error, "Error in history system, aborting run start");
-      cm_msg(MERROR, "tr_prestart", error);
+      cm_msg(MERROR, "tr_start", error);
       return 0;
    }
 
@@ -3291,7 +3291,7 @@ INT tr_stop(INT run_number, char *error)
          /* generate MTALK message */
          if (log_chn[i].type == LOG_TYPE_TAPE && tape_message) {
             tape_flag = TRUE;
-            cm_msg(MTALK, "tr_poststop", "closing tape channel #%d, please wait", i);
+            cm_msg(MTALK, "tr_stop", "closing tape channel #%d, please wait", i);
          }
 #ifndef FAL_MAIN
          /* wait until buffer is empty */
@@ -3374,7 +3374,7 @@ INT tr_stop(INT run_number, char *error)
    in_stop_transition = FALSE;
 
    if (tape_flag & tape_message)
-      cm_msg(MTALK, "tr_poststop", "all tape channels closed");
+      cm_msg(MTALK, "tr_stop", "all tape channels closed");
 
    /* write transition event into history */
    eb.transition = STATE_STOPPED;

@@ -101,7 +101,7 @@ static int mmap_size[MAX_MMAP];
 #endif
 
 /*------------------------------------------------------------------*/
-INT ss_shm_open(char *name, INT size, void **adr, HNDLE * handle)
+INT ss_shm_open(char *name, INT size, void **adr, HNDLE *handle, BOOL get_size)
 /********************************************************************\
 
   Routine: ss_shm_open
@@ -113,6 +113,8 @@ INT ss_shm_open(char *name, INT size, void **adr, HNDLE * handle)
     char *name              Name of the shared memory
     INT  size               Initial size of the shared memory in bytes
                             if .SHM file doesn't exist
+    BOOL get_size           If TRUE and shared memory already exists, overwrite
+                            "size" parameter with existing memory size
 
   Output:
     void  *adr              Address of opened shared memory
@@ -123,7 +125,8 @@ INT ss_shm_open(char *name, INT size, void **adr, HNDLE * handle)
     SS_CREATED              Shared memory was created
     SS_FILE_ERROR           Paging file cannot be created
     SS_NO_MEMORY            Not enough memory
-
+    SS_SIZE_MISMATCH        "size" differs from existing size and
+                            get_size is FALSE
 \********************************************************************/
 {
    INT status;
@@ -187,8 +190,16 @@ INT ss_shm_open(char *name, INT size, void **adr, HNDLE * handle)
          }
 
          file_size = GetFileSize(hFile, NULL);
-         if (file_size != 0xFFFFFFFF && file_size > 0)
-            size = file_size;
+         if (get_size) {
+            if (file_size != 0xFFFFFFFF && file_size > 0)
+               size = file_size;
+         } else {
+            if (file_size != 0xFFFFFFFF && file_size > 0 && file_size != size) {
+               cm_msg(MERROR, "ss_shm_open", "Requested size (%d) differs from existing size (%d)",
+                  size, file_size);
+               return SS_SIZE_MISMATCH;
+            }
+         }
 
          hMap = CreateFileMapping(hFile, NULL, PAGE_READWRITE, 0, size, str);
 
@@ -278,15 +289,12 @@ INT ss_shm_open(char *name, INT size, void **adr, HNDLE * handle)
       } else {
          /* if file exists, retrieve its size */
          file_size = (INT) ss_file_size(file_name);
-         if (file_size > 0) {
-            if (file_size < size) {
-               cm_msg(MERROR, "ss_shm_open",
-                      "Shared memory segment \'%s\' size %d is smaller than requested size %d. Please remove it and try again",
-                      file_name, file_size, size);
-               return SS_NO_MEMORY;
-            }
-
+         if (get_size) {
             size = file_size;
+         } else if (size != file_size) {
+            cm_msg(MERROR, "ss_shm_open", "Requested size (%d) differs from existing size (%d)",
+               size, file_size);
+            return SS_SIZE_MISMATCH;
          }
       }
 

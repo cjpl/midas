@@ -597,6 +597,7 @@ System message types */
 #define SS_NO_SPACE                 425   /**< - */
 #define SS_INVALID_FORMAT           426   /**< - */
 #define SS_NO_ROOT                  427   /**< - */
+#define SS_SIZE_MISMATCH            428   /**< - */
 /**dox***************************************************************/
           /** @} *//* end of group 24 */
 
