@@ -1,17 +1,48 @@
-/*! \mainpage Midas documentation
-  \anchor Top <b> Welcome to the world of Midas. </b>
-  
-  @section Introduction
-   Midas is a versatile Data acquisition System for middle range physics experiments.
+/*! \mainpage Midas Data Acquisition
+  <center> 
+   \anchor Top <b> Welcome to the world of Midas. </b>
+   <br>
+   <a HREF=https://daq-plone.triumf.ca/SR/MIDAS/images/midasintro.jpg><b><i>The System</i></b></a>
+  </center>
+
+   Midas is a versatile Data acquisition System for medium scale physics experiments.
    This document will try to answer most of your questions regarding
    installation, setup, running, and development.
    
-   If you think Midas can help you for your projects and you want to get more info on it,
-   feel free to browse through the following Web sites:
-   <a HREF=http://midas.psi.ch> Switzerland </a>, 
-   <a HREF=http://midas.triumf.ca> Canada </a>
-  
-  Chapters are: 
+   If you're looking for a flexible and simple DAQ, you may want to consider Midas and its applications.
+   Feel free to browse through the following links. 
+ 
+   - <b>Midas</b> is a result of a development effort made by Stefan Ritt at 
+     <a HREF=http://www.psi.ch>PSI</a>/Switzerland
+     (<a HREF=http://midas.psi.ch>Midas\@PSI</a>) in collaboration with the members of the Data
+     acquisition group at <a HREF=http://www.triumf.org>Triumf</a>/Canada.
+
+   - Midas has a dedicated discussion forum (Electronic logbook) which provides common place for midas
+   users to report problems, share experience or post improvement wishes. 
+   You can browse this <b><a HREF=https://ladd00.triumf.ca/elog/Midas>Elog</a></b>
+   or register for Email notifications.
+
+   - The Midas source code is subject to the <a HREF=http://www.gnu.org/copyleft/gpl.html>GPL</a> and can be
+   accessed from the <b><a HREF=http://savannah.psi.ch/viewcvs/trunk/?root=midas>SVN</a></b>   
+   repository site in Switzerland either for inspection or download. 
+
+   - The main purpose of the MIDAS DAQ is to provide:
+     - data collection from local and/or remote hardware source.
+     - data recording to common storage media.
+     - Full data flow control.
+   - It does also event-by-event analysis through PAW or Root based application. Please refer to: 
+    - <b><a HREF=http://midas.psi.ch/rome>ROME</a></b> analyzer framework.
+    - <b><a HREF=http://ladd00.triumf.ca/~daqweb/doc/roody/html>Roody</a></b> GUI histogram visualizer
+   application. 
+
+   - The current hardware support is listed at this 
+   <a HREF=http://ladd00.triumf.ca/~daqweb/doc/midas/html/AppendixB.html>location</a>.
+
+   - Other related links can be found <a HREF=http://daq-plone.triumf.ca/SR/MIDAS/>here</a>.
+
+   - The following chapters refer to the online Midas documentation. 
+ 
+  @section Document Content
   \arg @ref NDF : Whats new in Midas.
   \arg @ref Intro : Some initial words and description
   \arg @ref Comp : listing 
