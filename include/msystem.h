@@ -517,7 +517,7 @@ typedef struct {
 extern "C" {
 #endif
 
-/*---- common function ----*/
+   /*---- common function ----*/
    INT EXPRT cm_set_path(char *path);
    INT EXPRT cm_get_path(char *path);
    INT cm_dispatch_ipc(char *message, int socket);
@@ -525,7 +525,7 @@ extern "C" {
    INT EXPRT cm_msg_log1(INT message_type, const char *message, const char *facility);
    void EXPRT name2c(char *str);
 
-/*---- buffer manager ----*/
+   /*---- buffer manager ----*/
    INT bm_lock_buffer(INT buffer_handle);
    INT bm_unlock_buffer(INT buffer_handle);
    INT bm_notify_client(char *buffer_name, int socket);
@@ -538,7 +538,7 @@ extern "C" {
                                   void (*dispatcher) (HNDLE, HNDLE,
                                                       EVENT_HEADER *, void *));
 
-/*---- online database ----*/
+   /*---- online database ----*/
    INT EXPRT db_lock_database(HNDLE database_handle);
    INT EXPRT db_unlock_database(HNDLE database_handle);
    INT db_update_record(INT hDB, INT hKey, int socket);
@@ -549,7 +549,7 @@ extern "C" {
    INT db_delete_key1(HNDLE hDB, HNDLE hKey, INT level, BOOL follow_links);
    INT EXPRT db_show_mem(HNDLE hDB, char *result, INT buf_size, BOOL verbose);
 
-/*---- rpc functions -----*/
+   /*---- rpc functions -----*/
    RPC_LIST EXPRT *rpc_get_internal_list(INT flag);
    INT rpc_server_receive(INT index, int sock, BOOL check);
    INT rpc_server_callback(struct callback_addr *callback);
@@ -570,8 +570,8 @@ extern "C" {
    INT EXPRT rpc_set_opt_tcp_size(INT tcp_size);
    INT EXPRT rpc_get_opt_tcp_size(void);
 
-/*---- system services ----*/
-   INT ss_shm_open(char *name, INT size, void **adr, HNDLE * handle);
+   /*---- system services ----*/
+   INT ss_shm_open(char *name, INT size, void **adr, HNDLE *handle, BOOL get_size);
    INT ss_shm_close(char *name, void *adr, HNDLE handle, INT destroy_flag);
    INT ss_shm_flush(char *name, void *adr, INT size);
    INT ss_shm_protect(HNDLE handle, void *adr);
@@ -604,17 +604,17 @@ extern "C" {
    INT EXPRT ss_get_struct_align(void);
    INT EXPRT ss_timezone(void);
 
-/*---- socket routines ----*/
+   /*---- socket routines ----*/
    INT EXPRT send_tcp(int sock, char *buffer, DWORD buffer_size, INT flags);
    INT EXPRT recv_tcp(int sock, char *buffer, DWORD buffer_size, INT flags);
    INT send_udp(int sock, char *buffer, DWORD buffer_size, INT flags);
    INT recv_udp(int sock, char *buffer, DWORD buffer_size, INT flags);
    INT EXPRT recv_string(int sock, char *buffer, DWORD buffer_size, INT flags);
 
-/*---- system logging ----*/
+   /*---- system logging ----*/
    INT EXPRT ss_syslog(const char *message);
 
-/*---- event buffer routines ----*/
+   /*---- event buffer routines ----*/
    INT EXPRT eb_create_buffer(INT size);
    INT EXPRT eb_free_buffer(void);
    BOOL EXPRT eb_buffer_full(void);
@@ -623,7 +623,7 @@ extern "C" {
    INT EXPRT eb_increment_pointer(INT buffer_handle, INT event_size);
    INT EXPRT eb_send_events(BOOL send_all);
 
-/*---- dual memory event buffer routines ----*/
+   /*---- dual memory event buffer routines ----*/
    INT EXPRT dm_buffer_create(INT size, INT usize);
    INT EXPRT dm_buffer_release(void);
    BOOL EXPRT dm_area_full(void);

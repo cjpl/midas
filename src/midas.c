@@ -3821,7 +3821,7 @@ main()
 }
 \endcode
 @param buffer_name Name of buffer
-@param buffer_size Size of buffer in bytes
+@param buffer_size Default size of buffer in bytes. Can by overwritten with ODB value
 @param buffer_handle Buffer handle returned by function
 @return BM_SUCCESS, BM_CREATED <br>
 BM_NO_SHM Shared memory cannot be created <br>
@@ -3842,7 +3842,7 @@ INT bm_open_buffer(char *buffer_name, INT buffer_size, INT * buffer_handle)
    }
 #ifdef LOCAL_ROUTINES
    {
-      INT i, handle;
+      INT i, handle, size;
       BUFFER_CLIENT *pclient;
       BOOL shm_created;
       HNDLE shm_handle;
@@ -3850,20 +3850,17 @@ INT bm_open_buffer(char *buffer_name, INT buffer_size, INT * buffer_handle)
       HNDLE hDB, odb_key;
       char odb_path[256];
 
+      /* get buffer size from ODB, user parameter as default if not present in ODB */
       sprintf(odb_path, "/Experiment/Buffer sizes/%s", buffer_name);
-      /*printf("Looking for %s, default size %d\n", odb_path, buffer_size); */
       status = cm_get_experiment_database(&hDB, &odb_key);
       assert(status == SUCCESS);
-      status = db_find_key(hDB, 0, odb_path, &odb_key);
-      if (status == DB_SUCCESS) {
-         DWORD odb_size = 0;
-         int size = sizeof(odb_size);
-         status = db_get_data(hDB, odb_key, &odb_size, &size, TID_DWORD);
-         if (status == DB_SUCCESS) {
-            /*printf("buffer %s requested size %d, ODB size %d\n", buffer_name, buffer_size,
-               odb_size); */
-            buffer_size = odb_size;
-         }
+      size = sizeof(INT);
+      status = db_get_value(hDB, 0, odb_path, &buffer_size, &size,TID_DWORD, TRUE);
+
+      if (buffer_size <= 0 || buffer_size > 1 * 1024 * 1024 * 1024) {
+         cm_msg(MERROR, "bm_open_buffer", "Buffer size (%d) must be larger than 2xMAX_EVENT_SIZE (%d)",
+            buffer_size, 2*MAX_EVENT_SIZE);
+         return BM_INVALID_PARAM;
       }
 
       if (buffer_size <= 0 || buffer_size > 1 * 1024 * 1024 * 1024) {
@@ -3921,7 +3918,6 @@ INT bm_open_buffer(char *buffer_name, INT buffer_size, INT * buffer_handle)
                return BM_NO_MEMORY;
             }
          }
-
       }
 
       handle = i;
@@ -3937,7 +3933,7 @@ INT bm_open_buffer(char *buffer_name, INT buffer_size, INT * buffer_handle)
 
       /* open shared memory region */
       status = ss_shm_open(buffer_name, sizeof(BUFFER_HEADER) + buffer_size,
-                           (void **) &(_buffer[handle].buffer_header), &shm_handle);
+                           (void **) &(_buffer[handle].buffer_header), &shm_handle, FALSE);
 
       if (status == SS_NO_MEMORY || status == SS_FILE_ERROR) {
          *buffer_handle = 0;
@@ -3957,24 +3953,10 @@ INT bm_open_buffer(char *buffer_name, INT buffer_size, INT * buffer_handle)
       } else {
          /* check if buffer size is identical */
          if (pheader->size != buffer_size) {
-            buffer_size = pheader->size;
-
-            /* re-open shared memory with proper size */
-
-            status = ss_shm_close(buffer_name, _buffer[handle].buffer_header,
-                                  shm_handle, FALSE);
-            if (status != BM_SUCCESS)
-               return BM_MEMSIZE_MISMATCH;
-
-            status = ss_shm_open(buffer_name, sizeof(BUFFER_HEADER) + buffer_size,
-                                 (void **) &(_buffer[handle].buffer_header), &shm_handle);
-
-            if (status == SS_NO_MEMORY || status == SS_FILE_ERROR) {
-               *buffer_handle = 0;
-               return BM_INVALID_NAME;
-            }
-
-            pheader = _buffer[handle].buffer_header;
+            cm_msg(MERROR, "bm_open_buffer", "Requested buffer size (%d) differs from existing size (%d)",
+               buffer_size, pheader->size);
+            *buffer_handle = 0;
+            return BM_MEMSIZE_MISMATCH;
          }
       }
 
@@ -5704,7 +5686,7 @@ static int bm_copy_from_cache(BUFFER * pbuf, void *destination, int max_size,
       status = BM_SUCCESS;
    }
 
-   bm_convert_event_header(destination, convert_flags);
+   bm_convert_event_header((EVENT_HEADER *)destination, convert_flags);
 
    /* correct size for DWORD boundary */
    size = ALIGN8(size);
@@ -6530,7 +6512,7 @@ INT bm_receive_event(INT buffer_handle, void *destination, INT * buf_size, INT a
 
                   *buf_size = copy_size;
 
-                  bm_convert_event_header(destination, convert_flags);
+                  bm_convert_event_header((EVENT_HEADER *)destination, convert_flags);
                }
 
                /* update statistics */
