@@ -2427,7 +2427,7 @@ void command_loop(char *host_name, char *exp_name, char *cmd, char *start_dir)
          if (param[2][0] == '-' && param[2][1] == 'f')
             force = TRUE;
 
-         bm_open_buffer(EVENT_BUFFER_NAME, EVENT_BUFFER_SIZE, &hBuf);
+         bm_open_buffer(EVENT_BUFFER_NAME, 2*MAX_EVENT_SIZE, &hBuf);
 
          if (param[1][0] && param[1][0] != '-')
             cm_cleanup(param[1], force);

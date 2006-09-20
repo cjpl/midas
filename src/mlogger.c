@@ -3192,7 +3192,7 @@ INT tr_start(INT run_number, char *error)
 #ifndef FAL_MAIN
          /* open buffer */
          status =
-             bm_open_buffer(chn_settings->buffer, EVENT_BUFFER_SIZE,
+             bm_open_buffer(chn_settings->buffer, 2*MAX_EVENT_SIZE,
                             &log_chn[index].buffer_handle);
          if (status != BM_SUCCESS && status != BM_CREATED) {
             sprintf(error, "Cannot open buffer %s", str);

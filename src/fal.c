@@ -3330,7 +3330,7 @@ INT tr_start(INT run_number, char *error)
 #ifndef FAL_MAIN
          /* open buffer */
          status =
-             bm_open_buffer(chn_settings->buffer, EVENT_BUFFER_SIZE,
+             bm_open_buffer(chn_settings->buffer, 2*MAX_EVENT_SIZE,
                             &log_chn[index].buffer_handle);
          if (status != BM_SUCCESS && status != BM_CREATED) {
             sprintf(error, "Cannot open buffer %s", str);
@@ -4787,11 +4787,11 @@ INT register_equipment(void)
     /*---- open event buffer ---------------------------------------*/
       if (eq_info->buffer[0]) {
          status =
-             bm_open_buffer(eq_info->buffer, EVENT_BUFFER_SIZE,
+             bm_open_buffer(eq_info->buffer, 2*MAX_EVENT_SIZE,
                             &equipment[index].buffer_handle);
          if (status != BM_SUCCESS && status != BM_CREATED) {
             cm_msg(MERROR, "register_equipment",
-                   "Cannot open event buffer. Try to reduce EVENT_BUFFER_SIZE in midas.h \
+                   "Cannot open event buffer. Try to reduce MAX_EVENT_SIZE in midas.h \
 and rebuild the system.");
             return 0;
          }
