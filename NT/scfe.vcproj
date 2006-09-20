@@ -138,26 +138,6 @@
 			Name="Source Files"
 			Filter="cpp;c;cxx;rc;def;r;odl;idl;hpj;bat;for;f90">
 			<File
-				RelativePath="..\examples\slowcont\frontend.c">
-				<FileConfiguration
-					Name="Release|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="2"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Debug|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="0"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-						BrowseInformation="1"/>
-				</FileConfiguration>
-			</File>
-			<File
 				RelativePath="..\src\ftplib.c">
 				<FileConfiguration
 					Name="Release|Win32">
@@ -410,6 +390,18 @@
 				</FileConfiguration>
 			</File>
 			<File
+				RelativePath="..\drivers\device\psi_beamblocker.c">
+			</File>
+			<File
+				RelativePath="..\drivers\device\psi_beamline.c">
+			</File>
+			<File
+				RelativePath="..\drivers\device\psi_separator.c">
+			</File>
+			<File
+				RelativePath="..\..\meg\online\slowcontrol\scfe\scfe.c">
+			</File>
+			<File
 				RelativePath="..\..\mxml\strlcpy.c">
 			</File>
 			<File
@@ -431,6 +423,9 @@
 						PreprocessorDefinitions=""
 						BrowseInformation="1"/>
 				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\drivers\bus\tcpip.c">
 			</File>
 			<File
 				RelativePath="..\src\YBOS.C">

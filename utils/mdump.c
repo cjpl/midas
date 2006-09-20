@@ -643,7 +643,7 @@ int main(int argc, char **argv)
 #endif
 
    /* open the "system" buffer, 1M size */
-   status = bm_open_buffer(buf_name, EVENT_BUFFER_SIZE, &hBufEvent);
+   status = bm_open_buffer(buf_name, 2*MAX_EVENT_SIZE, &hBufEvent);
    if (status != BM_SUCCESS && status != BM_CREATED) {
       cm_msg(MERROR, "mdump", "bm_open_buffer, unknown buffer");
       goto error;
