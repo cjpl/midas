@@ -3858,12 +3858,6 @@ INT bm_open_buffer(char *buffer_name, INT buffer_size, INT * buffer_handle)
       status = db_get_value(hDB, 0, odb_path, &buffer_size, &size,TID_DWORD, TRUE);
 
       if (buffer_size <= 0 || buffer_size > 1 * 1024 * 1024 * 1024) {
-         cm_msg(MERROR, "bm_open_buffer", "Buffer size (%d) must be larger than 2xMAX_EVENT_SIZE (%d)",
-            buffer_size, 2*MAX_EVENT_SIZE);
-         return BM_INVALID_PARAM;
-      }
-
-      if (buffer_size <= 0 || buffer_size > 1 * 1024 * 1024 * 1024) {
          cm_msg(MERROR, "bm_open_buffer", "invalid buffer size %d", buffer_size);
          return BM_INVALID_PARAM;
       }
@@ -3937,6 +3931,7 @@ INT bm_open_buffer(char *buffer_name, INT buffer_size, INT * buffer_handle)
 
       if (status != SS_SUCCESS && status != SS_CREATED) {
          *buffer_handle = 0;
+         _buffer_entries--;
          return BM_NO_SHM;
       }
 
@@ -3946,7 +3941,7 @@ INT bm_open_buffer(char *buffer_name, INT buffer_size, INT * buffer_handle)
 
       if (shm_created) {
          /* setup header info if buffer was created */
-         memset(pheader, 0, sizeof(BUFFER_HEADER));
+         memset(pheader, 0, sizeof(BUFFER_HEADER) + buffer_size);
 
          strcpy(pheader->name, buffer_name);
          pheader->size = buffer_size;
@@ -3956,6 +3951,7 @@ INT bm_open_buffer(char *buffer_name, INT buffer_size, INT * buffer_handle)
             cm_msg(MERROR, "bm_open_buffer", "Requested buffer size (%d) differs from existing size (%d)",
                buffer_size, pheader->size);
             *buffer_handle = 0;
+            _buffer_entries--;
             return BM_MEMSIZE_MISMATCH;
          }
       }
@@ -3964,6 +3960,7 @@ INT bm_open_buffer(char *buffer_name, INT buffer_size, INT * buffer_handle)
       status = ss_mutex_create(buffer_name, &(_buffer[handle].mutex));
       if (status != SS_CREATED && status != SS_SUCCESS) {
          *buffer_handle = 0;
+         _buffer_entries--;
          return BM_NO_MUTEX;
       }
 
@@ -10496,9 +10493,11 @@ INT rpc_execute(INT sock, char *buffer, INT convert_flags)
    void *prpc_param[20];
    char str[1024], debug_line[1024];
 
-/* return buffer must be auto for multi-thread servers */
-   char return_buffer[NET_BUFFER_SIZE];
+   /* return buffer must be auto for multi-thread servers */
+   char *return_buffer;
 
+   return_buffer = (char *) M_MALLOC(NET_BUFFER_SIZE);
+   assert(return_buffer);
 
    /* extract pointer array to parameters */
    nc_in = (NET_COMMAND *) buffer;
@@ -10523,6 +10522,7 @@ INT rpc_execute(INT sock, char *buffer, INT convert_flags)
    index = i;
    if (rpc_list[i].id == 0) {
       cm_msg(MERROR, "rpc_execute", "Invalid rpc ID (%d)", routine_id);
+      M_FREE(return_buffer);
       return RPC_INVALID_ID;
    }
 
@@ -10609,6 +10609,7 @@ INT rpc_execute(INT sock, char *buffer, INT convert_flags)
                    "return parameters (%d) too large for network buffer (%d)",
                    (POINTER_T) out_param_ptr - (POINTER_T) nc_out + param_size,
                    NET_BUFFER_SIZE);
+            M_FREE(return_buffer);
             return RPC_EXCEED_BUFFER;
          }
 
@@ -10645,19 +10646,27 @@ INT rpc_execute(INT sock, char *buffer, INT convert_flags)
       status = RPC_SUCCESS;
 
    /* return immediately for closed down client connections */
-   if (!sock && routine_id == RPC_ID_EXIT)
+   if (!sock && routine_id == RPC_ID_EXIT) {
+      M_FREE(return_buffer);
       return SS_EXIT;
+   }
 
-   if (!sock && routine_id == RPC_ID_SHUTDOWN)
+   if (!sock && routine_id == RPC_ID_SHUTDOWN) {
+      M_FREE(return_buffer);
       return RPC_SHUTDOWN;
+   }
 
    /* Return if TCP connection broken */
-   if (status == SS_ABORT)
+   if (status == SS_ABORT) {
+      M_FREE(return_buffer);
       return SS_ABORT;
+   }
 
    /* if sock == 0, we are in FTCP mode and may not sent results */
-   if (!sock)
+   if (!sock) {
+      M_FREE(return_buffer);
       return RPC_SUCCESS;
+   }
 
    /* compress variable length arrays */
    out_param_ptr = nc_out->param;
@@ -10737,6 +10746,7 @@ INT rpc_execute(INT sock, char *buffer, INT convert_flags)
 
    if (status < 0) {
       cm_msg(MERROR, "rpc_execute", "send_tcp() failed");
+      M_FREE(return_buffer);
       return RPC_NET_ERROR;
    }
 
@@ -10752,12 +10762,18 @@ INT rpc_execute(INT sock, char *buffer, INT convert_flags)
     }
 */
    /* return SS_EXIT if RPC_EXIT is called */
-   if (routine_id == RPC_ID_EXIT)
+   if (routine_id == RPC_ID_EXIT) {
+      M_FREE(return_buffer);
       return SS_EXIT;
+   }
 
    /* return SS_SHUTDOWN if RPC_SHUTDOWN is called */
-   if (routine_id == RPC_ID_SHUTDOWN)
+   if (routine_id == RPC_ID_SHUTDOWN) {
+      M_FREE(return_buffer);
       return RPC_SHUTDOWN;
+   }
+
+   M_FREE(return_buffer);
 
    return RPC_SUCCESS;
 }

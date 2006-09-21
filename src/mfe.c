@@ -646,8 +646,7 @@ INT register_equipment(void)
                             &equipment[index].buffer_handle);
          if (status != BM_SUCCESS && status != BM_CREATED) {
             cm_msg(MERROR, "register_equipment",
-                   "Cannot open event buffer. Try to reduce MAX_EVENT_SIZE in midas.h \
-and rebuild the system.");
+                   "Cannot open event buffer");
             return 0;
          }
 
@@ -1480,6 +1479,7 @@ INT scheduler(void)
                             "Event size %ld larger than maximum size %d",
                             (long) (pevent->data_size + sizeof(EVENT_HEADER)),
                             max_event_size);
+                     assert(FALSE);
                   }
 
                   /* increment serial number if event read out sucessfully */

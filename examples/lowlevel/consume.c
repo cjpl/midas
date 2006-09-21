@@ -116,7 +116,7 @@ int main()
       return 1;
 
    /* open the "system" buffer, 1M size */
-   bm_open_buffer("SYSTEM", EVENT_BUFFER_SIZE, &hBufEvent);
+   bm_open_buffer("SYSTEM", 2*MAX_EVENT_SIZE, &hBufEvent);
 
    /* set the buffer cache size */
    bm_set_cache_size(hBufEvent, 100000, 0);
