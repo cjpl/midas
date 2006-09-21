@@ -37,6 +37,9 @@ MSCB_INFO_VAR code vars_bout[] =
 MSCB_INFO_VAR code vars_uin[] =
    { 4, UNIT_VOLT,    0,          0, MSCBF_FLOAT, "P%Uin#",  8 };
 
+MSCB_INFO_VAR code vars_diffin[] =
+   { 4, UNIT_VOLT,    0,          0, MSCBF_FLOAT, "P%Uin#",  4 };
+
 MSCB_INFO_VAR code vars_uin_range[] = {
    { 4, UNIT_VOLT,    0,          0, MSCBF_FLOAT, "P%Uin#",  8 },
    { 1, UNIT_BYTE,    0,          0, MSCBF_HIDDEN,"P%Range", 0 },
@@ -62,6 +65,9 @@ MSCB_INFO_VAR code vars_iout[] =
 MSCB_INFO_VAR code vars_din[] =
    { 1, UNIT_BOOLEAN, 0,          0,           0, "P%Din#",  8 };
 
+MSCB_INFO_VAR code vars_optin[] =
+   { 1, UNIT_BOOLEAN, 0,          0,           0, "P%Din#",  4 };
+
 MSCB_INFO_VAR code vars_dout[] =
    { 1, UNIT_BOOLEAN, 0,          0,           0, "P%Dout#", 8, 0,  1,  1 };
 
@@ -78,6 +84,7 @@ SCS_2000_MODULE code scs_2000_module[] = {
 
   /* 0x20-0x3F digital in  */
   { 0x20, "Din 5V",          vars_din,    1, dr_din_bits    },
+  { 0x21, "OptIn",           vars_optin,  1, dr_din_bits    },
 
   /* 0x40-0x5F digital out */
   { 0x40, "Dout 5V/24V",     vars_dout,   1, dr_dout_bits   },
@@ -94,6 +101,7 @@ SCS_2000_MODULE code scs_2000_module[] = {
   { 0x65, "Uin +-10V Fast",  vars_uin,    1, dr_ads1256     },
   { 0x66, "Iin 0-2.5mA Fast",vars_iin,    1, dr_ads1256     },
   { 0x67, "Iin 0-25mA Fast", vars_iin,    1, dr_ads1256     },
+  { 0x68, "Uin +-10V Diff",  vars_diffin, 1, dr_ad7718      },
 
   { 0x70, "Cin 0-10nF",      vars_cin,    1, dr_capmeter    },
   { 0x71, "Cin 0-1uF",       vars_cin,    1, dr_capmeter    },
@@ -789,7 +797,11 @@ unsigned char status;
       ad7718_read(AD7718_ADCDATA, &d);
 
       /* start next conversion */
-      ad7718_cur_chn[port] = (ad7718_cur_chn[port] + 1) % 8;
+      if (id == 0x68)
+         ad7718_cur_chn[port] = (ad7718_cur_chn[port] + 1) % 4;
+      else
+         ad7718_cur_chn[port] = (ad7718_cur_chn[port] + 1) % 8;
+
       ad7718_write(AD7718_CONTROL, (ad7718_cur_chn[port] << 4) | 0x08 | ad7718_range[port]);
 
       /* convert to volts */
@@ -804,9 +816,11 @@ unsigned char status;
          value *= 1;
       else if (id == 0x63)
          value *= 10;
+      else if (id == 0x68)
+         value = (value/2.5)*20.0 - 10;
 
       /* round result to significant digits */
-      if (id == 0x61|| id == 0x63) {
+      if (id == 0x61 || id == 0x63 || id == 0x68) {
          value = (long)(value*1E5+0.5)/1E5;
       } else {
          value = (long)(value*1E6+0.5)/1E6;
@@ -1082,13 +1096,13 @@ unsigned long d;
       ads1256_cmd(ADS1256_SYNC);                      // Trigger new conversion
       ads1256_cmd(ADS1256_WAKEUP);
 
-      /* wait for /DRDY to go low after self calibration */
-      for (d = 0 ; d<100000 ; d++) {
+      /* wait for /DRDY to go low after conversion */
+      for (d = 0 ; d<10000 ; d++) {
          if (OPT_STAT == 0)
             break;
          DELAY_US_REENTRANT(1);
       }
-      if (d == 100000)
+      if (d == 10000)
          return 0;
 
       /* read 24-bit data */
