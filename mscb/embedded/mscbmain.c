@@ -280,7 +280,6 @@ void setup(void)
       configured_addr = 1;
 
    if ((flags & (1 << 1)) == 0) {
-      configured_vars = 0;
 
       /* init variables */
       for (i = 0; variables[i].width; i++)
@@ -294,12 +293,12 @@ void setup(void)
       /* call user initialization routine with initialization */
       user_init(1);
 
+      /* write current variables to flash later in main routine */
+      configured_vars = 0;
    } else {
-      /* remember configured flag */
-      configured_vars = 1;
-
       /* call user initialization routine without initialization */
       user_init(0);
+      configured_vars = 1;
    }
 
    /* check if reset by watchdog */
@@ -1399,6 +1398,12 @@ void yield(void)
 
       eeprom_flash();
 	   configured_addr = 1;
+   }
+
+   /* flash EEPROM if variables just got initialized */
+   if (!configured_vars && flash_allowed) {
+      _flkey = 0xF1;
+      eeprom_flash();
 	   configured_vars = 1;
    }
 
