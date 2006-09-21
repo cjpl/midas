@@ -8258,7 +8258,7 @@ void show_hist_config_page(char *path)
            str);
    rsprintf("&nbsp;&nbsp;Show run markers</td></tr>\n");
 
-  /*---- events and variables ----*/
+   /*---- events and variables ----*/
 
    /* get display event name */
 
@@ -8539,7 +8539,7 @@ void export_hist(char *path, int scale, int toffset, int index, int labels)
    KEY key;
    int i, j, k, l, n_vars, size, status, n_vp;
    DWORD bsize, tsize, n_run_number, *state, *run_number, *t_run_number, i_run, *i_var;
-   char str[256], *p, odbpath[256];
+   char str[256], fmt[256], *p, odbpath[256];
    INT var_index[MAX_VARS];
    DWORD type, event_id, dt;
    time_t t;
@@ -8924,7 +8924,7 @@ void export_hist(char *path, int scale, int toffset, int index, int labels)
    /* find first time where all variables are available */
    t = 0;
    for (i = 1; i < n_vars; i++) 
-      if (n_point[i] > 0 && x[i][0] > t)
+      if (n_point[i] > 0 && x[i][0] > (DWORD)t)
          t = x[i][0];
 
    if (t == 0) {
@@ -8934,12 +8934,12 @@ void export_hist(char *path, int scale, int toffset, int index, int labels)
 
    do {
       /* find run number/state which is valid for t */
-      while (i_run < n_run_number-1 && t_run_number[i_run+1] <= t)
+      while (i_run < n_run_number-1 && t_run_number[i_run+1] <= (DWORD)t)
          i_run++;
 
       /* find index for all variables which is valid for t */
       for (i = 0; i < n_vars; i++)
-         while (i_var[i] < n_point[i] - 1 && x[i][i_var[i]+1] <= t)
+         while (i_var[i] < n_point[i] - 1 && x[i][i_var[i]+1] <= (DWORD)t)
             i_var[i]++;
 
       /* finish if last point for all variables reached */
@@ -8950,9 +8950,10 @@ void export_hist(char *path, int scale, int toffset, int index, int labels)
          break;
 
       tms = localtime(&t);
-      strftime(str, sizeof(str), "%c", tms);
+      strcpy(fmt, "%c");
+      strftime(str, sizeof(str), fmt, tms);
 
-      if (t_run_number[i_run] <= t)
+      if (t_run_number[i_run] <= (DWORD)t)
          rsprintf("%s, %d, %d, ", str, run_number[i_run], state[i_run]);
       else
          rsprintf("%s, N/A, N/A, ", str);

@@ -5758,7 +5758,7 @@ static int bm_wait_for_free_space(int buffer_handle, BUFFER * pbuf, int async_fl
                   is not really blocking due to a GET_ALL request.
                 */
                BOOL blocking = FALSE;
-               int blocking_request_id;
+               int blocking_request_id = 0;
                int j;
 
                /* check if this request blocks */
