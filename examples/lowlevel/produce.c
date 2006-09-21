@@ -59,7 +59,7 @@ int main()
       return 1;
 
    /* open the event buffer with default size */
-   bm_open_buffer(EVENT_BUFFER_NAME, EVENT_BUFFER_SIZE, &hBuf);
+   bm_open_buffer(EVENT_BUFFER_NAME, 2*MAX_EVENT_SIZE, &hBuf);
 
    /* set the buffer write cache size */
    bm_set_cache_size(hBuf, 0, 100000);

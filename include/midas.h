@@ -214,7 +214,7 @@ typedef INT midas_thread_t;
 #define OPT_TCP_SIZE           8192          /**< optimal TCP buffer size     */
 #define NET_UDP_SIZE           8192          /**< maximum UDP transfer        */
 
-#define MAX_EVENT_SIZE         0x80000       /**< maximum event size 512k     */
+#define MAX_EVENT_SIZE         0x200000      /**< maximum event size 2MB      */
 #define EVENT_BUFFER_NAME      "SYSTEM"      /**< buffer name for commands    */
 #define DEFAULT_ODB_SIZE       0x100000      /**< online database 1M          */
 
