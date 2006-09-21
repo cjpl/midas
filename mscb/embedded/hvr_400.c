@@ -37,17 +37,19 @@ char code node_name[] = "HVR-400";
 #define DIVIDER ((41E6 + 33E3) / 33E3)
 
 /* current resistor */
-#define RCURR 56E3
+#define RCURR_HC 56E3
+#define RCURR_LC 8.2E6
 
 /* current multiplier */
-#define CUR_MULT 15
+#define CUR_MULT_HC 15
+#define CUR_MULT_LC 117.3       // (g=1+50k/430) at INA114
 
 /* delay for opto-couplers in us */
 #define OPT_DELAY 300
 
 /* configuration jumper */
 sbit JU0 = P3 ^ 4;              // negative module if forced to zero
-sbit JU1 = P3 ^ 2;
+sbit JU1 = P3 ^ 2;              // low current module if forced to zero
 sbit JU2 = P3 ^ 1;
 
 /* AD7718 pins */
@@ -176,6 +178,7 @@ void user_init(unsigned char init)
    unsigned char i;
 
    P2MDOUT = 0xF0; // P2.4-7: enable Push/Pull for LEDs
+   P3MDOUT = 0;
 
    /* initial nonzero EEPROM values */
    if (init) {
@@ -221,8 +224,22 @@ void user_init(unsigned char init)
       sys_info.group_addr = 400;
 
    /* jumper as input */
+   JU0 = 1;
    JU1 = 1;
    JU2 = 1;
+
+   /* read node configuration */
+   for (i=0 ; i<N_HV_CHN ; i++) {
+      if (JU0 == 0)
+         user_data[i].status |= STATUS_NEGATIVE;
+      else
+         user_data[i].status &= ~STATUS_NEGATIVE;
+   
+      if (JU1 == 0)
+         user_data[i].status |= STATUS_LOWCUR;
+      else
+         user_data[i].status &= ~STATUS_LOWCUR;
+   }
 
    /* set-up DAC & ADC */
    DAC_CLR  = 1;
@@ -646,7 +663,10 @@ void set_current_limit(float value) reentrant
    unsigned short d;
 
    /* convert current to voltage */
-   value = value / DIVIDER * CUR_MULT * RCURR / 1E6;
+   if (user_data[0].status & STATUS_LOWCUR)
+      value = value / DIVIDER * CUR_MULT_LC * RCURR_LC / 1E6;
+   else
+      value = value / DIVIDER * CUR_MULT_HC * RCURR_HC / 1E6;
 
    /* convert to DAC units */
    d = (unsigned short) ((value / 2.5 * 65536) + 0.5);
@@ -702,8 +722,11 @@ void read_current(unsigned char channel)
       return;
 
    /* correct opamp gain, divider & curr. resist, microamp */
-   current = current / CUR_MULT * DIVIDER / RCURR * 1E6;
-
+   if (user_data[0].status & STATUS_LOWCUR)
+      current = current / CUR_MULT_LC * DIVIDER / RCURR_LC * 1E6;
+   else
+      current = current / CUR_MULT_HC * DIVIDER / RCURR_HC * 1E6;
+      
    /* correct for unbalanced voltage dividers */
    current -= user_data[channel].cur_vgain * user_data[channel].u_meas;
 
@@ -900,17 +923,6 @@ void read_temperature(void)
       DISABLE_INTERRUPTS;
       user_data[i].temperature = temperature;
       ENABLE_INTERRUPTS;
-
-      /* read node configuration */
-      if (JU1 == 0)
-         user_data[i].status |= STATUS_NEGATIVE;
-      else
-         user_data[i].status &= ~STATUS_NEGATIVE;
-
-      if (JU2 == 0)
-         user_data[i].status |= STATUS_LOWCUR;
-      else
-         user_data[i].status &= ~STATUS_LOWCUR;
    }
 }
 
