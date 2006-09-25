@@ -122,12 +122,12 @@ void user_init(unsigned char init)
                var_index++;
          } 
       }
+   } else {
+      /* retrieve backup data from RAM if not reset by power on */
+      SFRPAGE = LEGACY_PAGE;
+      if ((RSTSRC & 0x02) == 0)
+         memcpy(&user_data, &backup_data, sizeof(user_data));
    }
-
-   /* retrieve backup data from RAM if not reset by power on */
-   SFRPAGE = LEGACY_PAGE;
-   if ((RSTSRC & 0x02) == 0)
-      memcpy(&user_data, &backup_data, sizeof(user_data));
 
    /* initialize drivers */
    for (i=0 ; i<8 ; i++)

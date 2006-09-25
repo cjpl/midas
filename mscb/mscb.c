@@ -9,7 +9,7 @@
 
 \********************************************************************/
 
-#define MSCB_LIBRARY_VERSION   "2.3.1"
+#define MSCB_LIBRARY_VERSION   "2.3.2"
 #define MSCB_PROTOCOL_VERSION  "4"
 #define MSCB_SUBM_VERSION      4
 
@@ -3508,6 +3508,7 @@ int mscb_read(int fd, unsigned short adr, unsigned char index, void *data, int *
 
       if (i == 1 && buf[0] == MCMD_ACK) {
          /* variable has been deleted on node, so refresh cache */ 
+         mscb_release(fd);
          mscb_clear_info_cache(fd);
          return MSCB_INVALID_INDEX;
       }
