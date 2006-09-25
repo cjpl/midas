@@ -94,7 +94,7 @@ bit configured_addr;            // TRUE if node address is configured
 bit configured_vars;            // TRUE if variables are configured
 bit flash_allowed;              // TRUE 5 sec after booting node
 bit wrong_cpu;                  // TRUE if code uses xdata and CPU does't have it
-bit out_buf_empty;              // TRUR if out_buf has been sent completely
+bit out_buf_empty;              // TRUE if out_buf has been sent completely
 
 /*------------------------------------------------------------------*/
 
