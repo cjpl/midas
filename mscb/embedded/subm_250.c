@@ -280,6 +280,16 @@ unsigned short i, to;
          break;
       }
 
+      /* check for READ error acknowledge */
+      if ((usb_rx_buf[1] == MCMD_READ+1 || 
+           (usb_rx_buf[1] == MCMD_ADDR_NODE16 && usb_rx_buf[5] == MCMD_READ+1)) &&
+          i_rs485_rx == 1 && usb_tx_buf[0] == MCMD_ACK) {
+
+         led_blink(1, 1, 50);
+         usb_send(usb_tx_buf, 1);
+         break;
+      }
+
       /* check for normal acknowledge */
       if (i_rs485_rx > 0 && (usb_tx_buf[0] & MCMD_ACK) == MCMD_ACK) {
 
