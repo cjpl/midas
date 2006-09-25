@@ -1094,6 +1094,7 @@ void cmd_loop(int fd, char *cmd, unsigned short adr)
                   status = mscb_info_variable(fd, (unsigned short) current_addr,
                                               (unsigned char) i, &info_var);
 
+                  
                   if (status == MSCB_NO_VAR) {
                      if (first == last)
                         printf("Node has no variable #%d\n", first);
