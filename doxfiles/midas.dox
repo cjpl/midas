@@ -47,15 +47,16 @@
   \arg @ref Intro : Some initial words and description
   \arg @ref Comp : listing 
   \arg @ref quickstart : The HowTo for installation.
-  \arg @ref Internal : The main internal components of the system. 
-  \arg @ref Utilities : The Midas applications.
-  \arg @ref AppendixA : Supported data format
-  \arg @ref AppendixB : Supported hardware.
-  \arg @ref AppendixC : CAMAC and VME access function call.
-  \arg @ref AppendixD : Midas build options and operation consideration.
-  \arg @ref AppendixE : Midas Library.
-  \arg @ref AppendixG : Frequently Asked Questions.    
-    
+  \arg @ref Internal   : The main internal components of the system. 
+  \arg @ref analyzer_struct : PAW/Root Analyzer. 
+  \arg @ref Utilities  : The Midas applications.
+  \arg @ref AppendixA  : Supported data format
+  \arg @ref AppendixB  : Supported hardware.
+  \arg @ref AppendixC  : CAMAC and VME access function call.
+  \arg @ref AppendixD  : Midas build options and operation consideration.
+  \arg @ref AppendixE  : Midas Library.
+  \arg @ref AppendixG  : Frequently Asked Questions.    
+     
   <br>
   \htmlonly <center><small> <em>
   Powered by<br><a href=http://www.stack.nl/~dimitri/doxygen/features.html>
