@@ -14720,6 +14720,8 @@ INT el_submit(int run, char *author, char *type, char *system, char *subject,
          }
          lseek(fh, offset, SEEK_SET);
          read(fh, str, 16);
+         assert(strncmp(str, "$Start$", 7) == 0);
+
          size = atoi(str + 9);
          read(fh, message, size);
 
@@ -14741,6 +14743,7 @@ INT el_submit(int run, char *author, char *type, char *system, char *subject,
 
             lseek(fh, offset + size, SEEK_SET);
             n = read(fh, buffer, tail_size);
+            assert(n == tail_size);
          }
          lseek(fh, offset, SEEK_SET);
       } else {
