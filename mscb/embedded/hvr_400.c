@@ -38,11 +38,11 @@ char code node_name[] = "HVR-400";
 
 /* current resistor */
 #define RCURR_HC 56E3
-#define RCURR_LC 8.2E6
+#define RCURR_LC 1E6
 
 /* current multiplier */
 #define CUR_MULT_HC 15
-#define CUR_MULT_LC 117.3       // (g=1+50k/430) at INA114
+#define CUR_MULT_LC 807         // (g=1+50k/62) at INA114
 
 /* delay for opto-couplers in us */
 #define OPT_DELAY 300
