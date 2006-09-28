@@ -40,6 +40,9 @@
 
 #define HV_SET_DELAY   5000 /* five seconds for voltage to stabilize */
 
+#define STATUS_NEGATIVE    (1<<0)
+#define STATUS_LOWCUR      (1<<1)
+
 /*------------------------------------------------------------------*/
 
 void stop()
@@ -62,7 +65,7 @@ float read_voltage(int fd, unsigned short adr)
 
    status = 0;
    value = 0;
-   if (adr > 0) {
+   if (adr != 0xFFFF) {
       size = sizeof(float);
       status = mscb_read(fd, adr, 1, &value, &size);
       if (status != MSCB_SUCCESS)
@@ -110,7 +113,7 @@ int calib(int fd, unsigned short adr, unsigned short adr_dvm, unsigned short adr
           float rin_dvm, int first, int next_adr)
 {
    float f;
-   int size, d, status;
+   int size, d, status, low_current;
    char str[80];
    float v_adc1, v_adc2, v_multi1, v_multi2, adc_gain, adc_ofs, 
       dac_gain, dac_ofs, i1, i2, i_900, i_gain, i_vgain, i_ofs;
@@ -134,6 +137,15 @@ int calib(int fd, unsigned short adr, unsigned short adr_dvm, unsigned short adr
    mscb_write(fd, adr, CH_ADCGAIN, &f, sizeof(float));
    mscb_write(fd, adr, CH_DACGAIN, &f, sizeof(float));
    mscb_write(fd, adr, CH_CURGAIN, &f, sizeof(float));
+
+   /* read status */
+   d = 0;
+   size = 1;
+   mscb_read(fd, adr, CH_STATUS, &d, &size);
+   low_current = (d & STATUS_LOWCUR) > 0;
+
+   if (low_current)
+      printf("#### Found low current module\n");
 
    /* disable hardware current limit */
    f = 9999;
@@ -238,6 +250,14 @@ int calib(int fd, unsigned short adr, unsigned short adr_dvm, unsigned short adr
    mscb_write(fd, adr, CH_ADCOFS, &adc_ofs, sizeof(float));
    mscb_write(fd, adr, CH_DACGAIN, &dac_gain, sizeof(float));
    mscb_write(fd, adr, CH_DACOFS, &dac_ofs, sizeof(float));
+
+   if (low_current) {
+      /* set demand to 0V */
+      f = 0;
+      mscb_write(fd, adr, CH_VDEMAND, &f, sizeof(float));
+      printf("\00Please connect 5GOhm resistor to channel %d and press ENTER\n", adr);
+      fgets(str, sizeof(str), stdin);
+   }
 
    /* set voltage to exactly 900 V with regulation */
    d = 3;
