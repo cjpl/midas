@@ -6,7 +6,7 @@
   Contents:     Example Slow Control Frontend for equipment control
                 through EPICS channel access.
 
-  $Id:$
+  $Id$
 
 \********************************************************************/
 
@@ -26,7 +26,10 @@ char *frontend_file_name = __FILE__;
 BOOL frontend_call_loop = TRUE;
 
 /* a frontend status page is displayed with this frequency in ms    */
-INT display_period = 1000;
+INT display_period = 000;
+
+/* maximum event size for fragmented events (EQ_FRAGMENTED) */
+INT max_event_size_frag = 5 * 1024 * 1024;
 
 /* maximum event size produced by this frontend */
 INT max_event_size = 10000;
@@ -67,8 +70,8 @@ by EPICS.
 
 /* device driver list */
 DEVICE_DRIVER epics_driver[] = {
-   {"Beamline", epics_ca, 10, NULL, 0, CMD_SET_LABEL},  /* disable CMD_SET_LABEL */
-   {""}
+  {"Beamline", epics_ca, 20, NULL},  /* disable CMD_SET_LABEL */
+  {""}
 };
 
 EQUIPMENT equipment[] = {
@@ -127,10 +130,31 @@ INT frontend_exit()
 
 INT frontend_loop()
 {
-   /* slow down frontend not to eat all CPU cycles */
-   ss_sleep(200);
-
-   return CM_SUCCESS;
+  static HNDLE hDB, hWatch=0;
+  static DWORD watchdog_time=0;
+  static float  dog=0.f;
+   
+  /* slow down frontend not to eat all CPU cycles */
+  /* ss_sleep(50); */
+  cm_yield(50); /* 15Feb05 */
+   
+  if (ss_time() - watchdog_time > 1)
+  {
+    watchdog_time = ss_time();
+    if (!hWatch)
+    {
+      cm_get_experiment_database(&hDB, NULL);
+      if (db_find_key(hDB, 0, "/equipment/Beamline/variables/demand", &hWatch) != DB_SUCCESS)
+      {
+       cm_msg(MERROR, "frontend_loop", "key not found");
+       return FE_ERR_HW;
+      }
+    }
+    if (hWatch) 
+      db_set_data_index(hDB, hWatch, &dog, sizeof(float), 19, TID_FLOAT);
+    if (!((INT)++dog % 100)) dog = 0.f;
+  }
+  return CM_SUCCESS;
 }
 
 /*-- Begin of Run --------------------------------------------------*/
