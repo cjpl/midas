@@ -5,7 +5,7 @@
 #
 #  Contents:     UNIX Makefile for MIDAS EPICS slow control frontend
 #
-#  $Id:$
+#  $Id$
 #
 #####################################################################
 
@@ -15,7 +15,7 @@
 # lines below.
 
 # This is for Linux ----------------
-LIBS = -lbsd -lm -lutil
+LIBS = -lbsd -lm -lutil -lpthread -lrt
 OSFLAGS = -DOS_LINUX
 
 # This is for OSF1 -----------------
@@ -33,32 +33,36 @@ OSFLAGS = -DOS_LINUX
 #-------------------------------------------------------------------
 # The following lines define direcories. Adjust if necessary
 #                 
-INC_DIR 	= /usr/local/include
-LIB_DIR 	= /usr/local/lib
-DRV_DIR		= ../../drivers
-EPICS_DIR       = /usr/local/lib
+INC_DIR 	= $(MIDASSYS)/include
+LIB_DIR 	= $(MIDASSYS)/linux/lib
+DRV_DIR		= $(MIDASSYS)/drivers
+EPICS_DIR       = $(HOME)/base
+EPICS_LIBDIR    = $(HOME)/base/lib/linux-x86
 #-------------------------------------------------------------------
 # Drivers needed by the frontend program
 #                 
-DRIVERS         = camacnul.o generic.o epics_ca.o
+DRIVERS         = generic.o epics_ca.o
 
 ####################################################################
 # Lines below here should not be edited
 ####################################################################
 
-LIB = $(LIB_DIR)/libmidas.a $(EPICS_DIR)/libca.a $(EPICS_DIR)/libCom.a
+LIB = $(LIB_DIR)/libmidas.a $(EPICS_LIBDIR)/libca.a $(EPICS_LIBDIR)/libCom.a
 
 # compiler
-CC = cc
-CFLAGS = -g -I. -I$(INC_DIR) -I$(DRV_DIR)
+CC = gcc
+CCXX = g++
+CFLAGS = -g  -D_POSIX_C_SOURCE=199506L -D_POSIX_THREADS -D_XOPEN_SOURCE=500 \
+	-DOSITHREAD_USE_DEFAULT_STACK -D_X86_ -DUNIX -D_BSD_SOURCE -Dlinux \
+	-I. -I$(INC_DIR) -I$(DRV_DIR) -I$(EPICS_DIR)/include -I$(EPICS_DIR)/include/os/Linux/
 LDFLAGS =
 
 all: fe_epics
 
 fe_epics:  $(LIB) $(LIB_DIR)/mfe.o frontend.o $(DRIVERS)
-	$(CC) -o fe_epics frontend.o $(LIB_DIR)/mfe.o $(DRIVERS) $(LIB) $(LDFLAGS) $(LIBS)
+	$(CCXX) $(CFLAGS) -o fe_epics frontend.o $(LIB_DIR)/mfe.o $(DRIVERS) $(LIB) $(LDFLAGS) $(LIBS)
 
-camacnul.o: $(DRV_DIR)/bus/camacnul.c
+frontend.o: frontend.c
 	$(CC) $(CFLAGS) $(OSFLAGS) -c $< -o $@
 
 generic.o: $(DRV_DIR)/class/generic.c
