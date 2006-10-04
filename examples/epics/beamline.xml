@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!-- created by MXML on Tue Oct  3 23:11:28 2006 -->
+<odb filename="beamline.xml" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="/home1/midas/Midas/odb.xsd">
+  <dir name="Common">
+    <key name="Event ID" type="WORD">3</key>
+    <key name="Trigger mask" type="WORD">0</key>
+    <key name="Buffer" type="STRING" size="32">SYSTEM</key>
+    <key name="Type" type="INT">8</key>
+    <key name="Source" type="INT">0</key>
+    <key name="Format" type="STRING" size="8">FIXED</key>
+    <key name="Enabled" type="BOOL">y</key>
+    <key name="Read on" type="INT">121</key>
+    <key name="Period" type="INT">60000</key>
+    <key name="Event limit" type="DOUBLE">0</key>
+    <key name="Num subevents" type="DWORD">0</key>
+    <key name="Log history" type="INT">1</key>
+    <key name="Frontend host" type="STRING" size="32">titan01.triumf.ca</key>
+    <key name="Frontend name" type="STRING" size="32">BL Frontend</key>
+    <key name="Frontend file name" type="STRING" size="256">frontend.c</key>
+  </dir>
+  <dir name="Variables">
+    <keyarray name="Demand" type="FLOAT" num_values="20">
+      <value>0</value>
+      <value>0</value>
+      <value>0</value>
+      <value>82.3</value>
+      <value>0</value>
+      <value>0</value>
+      <value>0</value>
+      <value>0</value>
+      <value>0</value>
+      <value>0</value>
+      <value>-3.465e-12</value>
+      <value>0</value>
+      <value>0</value>
+      <value>0</value>
+      <value>0</value>
+      <value>0</value>
+      <value>0</value>
+      <value>0</value>
+      <value>0</value>
+      <value>29</value>
+    </keyarray>
+    <keyarray name="Measured" type="FLOAT" num_values="20">
+      <value>0</value>
+      <value>0</value>
+      <value>0</value>
+      <value>82.3</value>
+      <value>0</value>
+      <value>0</value>
+      <value>0</value>
+      <value>0</value>
+      <value>0</value>
+      <value>0</value>
+      <value>-3.465e-12</value>
+      <value>0</value>
+      <value>0</value>
+      <value>0</value>
+      <value>0</value>
+      <value>0</value>
+      <value>0</value>
+      <value>0</value>
+      <value>0</value>
+      <value>28</value>
+    </keyarray>
+  </dir>
+  <dir name="Statistics">
+    <key name="Events sent" type="DOUBLE">0</key>
+    <key name="Events per sec." type="DOUBLE">0</key>
+    <key name="kBytes per sec." type="DOUBLE">0</key>
+  </dir>
+  <dir name="Settings">
+    <dir name="Devices">
+      <dir name="Beamline">
+        <keyarray name="Channel name" type="STRING" size="32" num_values="20">
+          <value>TITAN:VAR1</value>
+          <value>TITAN:VAR2</value>
+          <value>TITAN:VAR3</value>
+          <value>TITAN:VAR4</value>
+          <value>TITAN:VAR5</value>
+          <value>TITAN:VAR6</value>
+          <value>TITAN:VAR7</value>
+          <value>TITAN:VAR8</value>
+          <value>TITAN:VAR9</value>
+          <value>TITAN:VAR10</value>
+          <value>TITAN:VAR11</value>
+          <value>TITAN:VAR12</value>
+          <value>TITAN:VAR13</value>
+          <value>TITAN:VAR14</value>
+          <value>TITAN:VAR15</value>
+          <value>TITAN:VAR16</value>
+          <value>TITAN:VAR17</value>
+          <value>TITAN:VAR18</value>
+          <value>TITAN:VAR19</value>
+          <value>TITAN:VAR20</value>
+        </keyarray>
+      </dir>
+    </dir>
+    <keyarray name="Names" type="STRING" size="32" num_values="20">
+      <value>first</value>
+      <value>VAR2</value>
+      <value>VAR3</value>
+      <value>VAR4</value>
+      <value>VAR5</value>
+      <value>VAR6</value>
+      <value>VAR7</value>
+      <value>VAR8</value>
+      <value>VAR9</value>
+      <value>Default%CH 10</value>
+      <value>Default%CH 11</value>
+      <value>Default%CH 12</value>
+      <value>Default%CH 13</value>
+      <value>Default%CH 14</value>
+      <value>Default%CH 15</value>
+      <value>Default%CH 16</value>
+      <value>Default%CH 17</value>
+      <value>Default%CH 18</value>
+      <value>Default%CH 19</value>
+      <value>Watchdog</value>
+    </keyarray>
+    <keyarray name="Update Threshold Measured" type="FLOAT" num_values="20">
+      <value>1</value>
+      <value>1</value>
+      <value>1</value>
+      <value>1</value>
+      <value>1</value>
+      <value>1</value>
+      <value>1</value>
+      <value>1</value>
+      <value>1</value>
+      <value>1</value>
+      <value>1</value>
+      <value>1</value>
+      <value>1</value>
+      <value>1</value>
+      <value>1</value>
+      <value>1</value>
+      <value>1</value>
+      <value>1</value>
+      <value>1</value>
+      <value>1</value>
+    </keyarray>
+  </dir>
+</odb>
