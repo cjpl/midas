@@ -39,12 +39,16 @@ sbit ENABLE   = P0 ^ 7;
 struct {
    unsigned char enable;
    float dac;
+   float offset;
+   float gain;
 } xdata user_data;
 
 MSCB_INFO_VAR code vars[] = {
 
-   { 1, UNIT_BOOLEAN, 0, 0, 0,        "Enable",  &user_data.enable },
-   { 4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "DAC",     &user_data.dac },
+   { 1, UNIT_BOOLEAN, 0, 0, 0,                          "Enable",  &user_data.enable },
+   { 4, UNIT_VOLT,    0, 0, MSCBF_FLOAT,                "DAC",     &user_data.dac    },
+   { 4, UNIT_VOLT,    0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "Offset",  &user_data.offset },
+   { 4, UNIT_FACTOR,  0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "Gain",    &user_data.gain   },
 
    { 0 }
 };
@@ -88,6 +92,7 @@ void user_init(unsigned char init)
    if (init) {
       user_data.enable = 0;
       user_data.dac    = 0;
+      user_data.gain   = 1;
    }
 
    /* write digital output and DAC */
@@ -133,6 +138,8 @@ void write_dac(float value) reentrant
    unsigned short d;
    unsigned char i;
 
+   value -= user_data.offset;
+   value *= user_data.gain;
    d = value/2.5*65535;
 
    DAC_SCK = 1;
