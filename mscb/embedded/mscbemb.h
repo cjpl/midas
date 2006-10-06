@@ -77,8 +77,8 @@
 #ifdef hvr_test
 #define HVR_TEST
 #endif
-#ifdef splitter
-#define SPLITTER
+#ifdef meg_splt_bp   // MEG experiment "Lecce" splitter backplane
+#define MEG_SPLT_BP
 #endif
 
 /*---- CPU specific items ------------------------------------------*/
@@ -277,7 +277,7 @@ sbit RS485_ENABLE = P0 ^ 7;
 sbit RS485_ENABLE = P3 ^ 5;
 
 /*--------------------------------*/
-#elif defined(SPLITTER)
+#elif defined(MEG_SPLT_BP)
 #include <c8051F120.h>
 #define CPU_C8051F120
 

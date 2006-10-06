@@ -1,6 +1,6 @@
 /********************************************************************\
 
-  Name:         splitter.c
+  Name:         meg_splt_bp.c
   Created by:   Stefan Ritt
 
 
