@@ -599,9 +599,6 @@ INT hv_init(EQUIPMENT * pequipment)
                  hv_info->demand, sizeof(float) * hv_info->num_channels,
                  hv_info->num_channels, TID_FLOAT);
    db_find_key(hDB, hv_info->hKeyRoot, "Variables/Demand", &hv_info->hKeyDemand);
-   db_open_record(hDB, hv_info->hKeyDemand, hv_info->demand,
-                  hv_info->num_channels * sizeof(float), MODE_READ, hv_demand,
-                  pequipment);
 
    /* Measured */
    db_merge_data(hDB, hv_info->hKeyRoot, "Variables/Measured",
@@ -639,6 +636,11 @@ INT hv_init(EQUIPMENT * pequipment)
    }
    db_set_record(hDB, hv_info->hKeyDemand, hv_info->demand,
                  hv_info->num_channels * sizeof(float), 0);
+
+   /*--- open hotlink to HV demand values ----*/
+   db_open_record(hDB, hv_info->hKeyDemand, hv_info->demand,
+                  hv_info->num_channels * sizeof(float), MODE_READ, hv_demand,
+                  pequipment);
 
    /*---- set limits and ramping speeds ----*/
    for (i = 0; i < hv_info->num_channels; i++) {
