@@ -292,8 +292,7 @@ INT ss_shm_open(char *name, INT size, void **adr, HNDLE *handle, BOOL get_size)
          if (get_size) {
             size = file_size;
          } else if (size != file_size) {
-            cm_msg(MERROR, "ss_shm_open", "Requested size (%d) differs from existing size (%d)",
-               size, file_size);
+            cm_msg(MERROR, "ss_shm_open", "Existing file \'%s\' has size %d, different from requested size %d", file_name, file_size, size);
             return SS_SIZE_MISMATCH;
          }
       }
@@ -5903,5 +5902,5 @@ int ss_isnan(double x)
 /**dox***************************************************************/
 #endif                          /* DOXYGEN_SHOULD_SKIP_THIS */
 
-                            /** @} *//* end of msfunctionc */
-                            /** @} *//* end of msystemincludecode */
+/** @} *//* end of msfunctionc */
+/** @} *//* end of msystemincludecode */
