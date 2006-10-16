@@ -458,9 +458,9 @@ install:
 	  done
 
 	install -v -m 755 $(UTL_DIR)/mcleanup $(SYSBIN_DIR)
-	chmod +s $(SYSBIN_DIR)/dio
-	chmod +s $(SYSBIN_DIR)/mhttpd
-	chmod +s $(SYSBIN_DIR)/webpaw
+	if [ -f $(SYSBIN_DIR)/dio ]; then chmod +s $(SYSBIN_DIR)/dio ; fi
+	if [ -f $(SYSBIN_DIR)/mhttpd ]; then chmod +s $(SYSBIN_DIR)/mhttpd; fi
+	if [ -f $(SYSBIN_DIR)/webpaw ]; then chmod +s $(SYSBIN_DIR)/webpaw; fi
 	ln -fs $(SYSBIN_DIR)/stripchart.tcl $(SYSBIN_DIR)/stripchart
 
 # include
@@ -518,14 +518,17 @@ minimal_install:
 	@echo "... Minimal Install for programs to $(SYSBIN_DIR)"
 	@echo "... "
 
-	@for i in mserver mhttpd dio ; \
+	@for i in mserver mhttpd; \
 	  do \
 	  install -v -m 755 $(BIN_DIR)/$$i $(SYSBIN_DIR) ; \
 	  done
 
+ifeq ($(OSTYPE),linux)
+	install -v -m 755 $(BIN_DIR)/dio $(SYSBIN_DIR)
+endif
 	install -v -m 755 $(UTL_DIR)/mcleanup $(SYSBIN_DIR)
-	chmod +s $(SYSBIN_DIR)/dio
-	chmod +s $(SYSBIN_DIR)/mhttpd
+	if [ -f $(SYSBIN_DIR)/dio ]; then chmod +s $(SYSBIN_DIR)/dio; fi
+	if [ -f $(SYSBIN_DIR)/mhttpd ]; then chmod +s $(SYSBIN_DIR)/mhttpd; fi
 
 # utilities
 	@echo "... "
