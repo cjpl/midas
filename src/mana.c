@@ -2878,7 +2878,7 @@ INT write_event_hbook(FILE * file, EVENT_HEADER * pevent, ANALYZE_REQUEST * par)
             }
 
             /* shift data pointer to next item */
-            (char *) pdata += key.item_size * key.num_values;
+            (char *) pdata += key.item_size * key.num_values * sizeof(char);
          }
 
          /* fill RW N-tuple */
