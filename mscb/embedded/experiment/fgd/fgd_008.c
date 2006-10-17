@@ -105,13 +105,15 @@ void user_init(unsigned char init)
    EXT_BIAS = 0x1; // Shutdown external voltage path
    INT_BIAS = 0x1; // Shutdown internal voltage path
 
+   PCA0MD   = 0x8;  // Sysclk (24.6MHz)
+    
    /* initial nonzero EEPROM values */
    if (init) {
 
       for (i=0 ; i<N_HV_CHN ; i++) {
          user_data[i].u_demand  = 0;
-         user_data[i].ramp_up   = 5.0;
-         user_data[i].ramp_down = 5.0;
+         user_data[i].ramp_up   = 250.0;
+         user_data[i].ramp_down = 250.0;
          user_data[i].u_limit   = MAX_VOLTAGE;
          user_data[i].i_limit   = MAX_CURRENT;
 
@@ -159,7 +161,9 @@ void user_init(unsigned char init)
 
    /* set-up DAC & ADC */
    DAC_CLR  = 1;
+   DAC_NCS  = 1; // chip select
    ADC_NRES = 1;
+   ADC_NCS  = 1; // chip select
    ADC_NRDY = 1; // input
    ADC_DIN  = 1; // input
 
@@ -349,8 +353,8 @@ unsigned char i, m, b;
       m >>= 1;
       watchdog_refresh(1);
    }
+   DAC_NCS = 1; // chip select
 
-   DAC_NCS = 1; // remove chip select
    delay_us(OPT_DELAY);
    watchdog_refresh(1);
 }
@@ -767,41 +771,7 @@ void ramp_hv(unsigned char channel)
    watchdog_refresh(0);
 }
 
-/*---- User loop function ------------------------------------------*/
-
-void user_loop(void)
-{
-   unsigned char channel;
-
-   state_machine();
-
-   /* loop over all HV channels */
-    for (channel=0 ; channel<N_HV_CHN ; channel++) {
-
-      watchdog_refresh(0);
-
-      if ((user_data[0].control & CONTROL_IDLE) == 0) {
-         /* instead, use software limit */
-         check_current(channel);
-         ramp_hv(channel);
-         read_current(user_data[0].control & CONTROL_ISENSOR, channel);
-
-         if ((user_data[0].control & CONTROL_IDLE) == 0) {
-            process_temperature(user_data[0].control & CONTROL_TSENSOR);
-         }
-
-      }
-    }
-
-
-	// To be moved in PCA_operation once the
-	// init sequence is understood
-	if (once) {
-        PCA0MD   = 0x8;  // Sysclk (24.6MHz)
-   	    once = 0;
-	}
-}
-
+/*---- CTL/Status management ------------------------------------------*/
 void state_machine(void)
 {
     // State machine handling routine. See "STATE TABLE" in fgd_008.h
@@ -866,4 +836,30 @@ void state_machine(void)
         }
     }
 }
+
+/*---- User loop function ------------------------------------------*/
+void user_loop(void)
+{
+   unsigned char channel;
+
+   state_machine();
+
+   /* loop over all HV channels */
+    for (channel=0 ; channel<N_HV_CHN ; channel++) {
+
+      watchdog_refresh(0);
+
+      if ((user_data[0].control & CONTROL_IDLE) == 0) {
+         /* instead, use software limit */
+         check_current(channel);
+         ramp_hv(channel);
+         read_current(user_data[0].control & CONTROL_ISENSOR, channel);
+
+         if ((user_data[0].control & CONTROL_IDLE) == 0) {
+            process_temperature(user_data[0].control & CONTROL_TSENSOR);
+         }
+      }
+   }
+}
+
 
