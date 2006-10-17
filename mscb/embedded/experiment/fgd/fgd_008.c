@@ -1,5 +1,4 @@
 /********************************************************************\
-
   Name:         fgd_008.c
   Created by:   K. Mizouchi/Pierre-André Amaudruz    Sep/20/2006
 
@@ -8,17 +7,17 @@
                 Midas Slow Control Bus protocol
                 for FGD-008 SiPM HV control
 
-  $Id$
+  $Id:$
 
 \********************************************************************/
-//  need to be define FGD_008
+//  need to have FGD_008 defined.
 
 #include <stdio.h>
 #include <math.h>
 #include "mscbemb.h"
 #include "SMBus_handler.h"
 #include "fgd_008.h"
-#include "fgd_008_tsensor.h"  
+#include "fgd_008_tsensor.h"
 
 extern bit FREEZE_MODE;
 extern bit DEBUG_MODE;
@@ -101,9 +100,9 @@ void user_init(unsigned char init)
    P1MDOUT = 0x00;
    P2MDOUT = 0x00;
 
-   // Turn off HV path. These two lines should be placed 
-   // before operating charge-pump. 
-   EXT_BIAS = 0x1; // Shutdown external voltage path 
+   // Turn off HV path. These two lines should be placed
+   // before operating charge-pump.
+   EXT_BIAS = 0x1; // Shutdown external voltage path
    INT_BIAS = 0x1; // Shutdown internal voltage path
 
    /* initial nonzero EEPROM values */
@@ -116,7 +115,7 @@ void user_init(unsigned char init)
          user_data[i].u_limit   = MAX_VOLTAGE;
          user_data[i].i_limit   = MAX_CURRENT;
 
-         // correction factors for DAC control (HV adjust) 
+         // correction factors for DAC control (HV adjust)
          user_data[i].dac_gain   = 1.004;  // slope  correction
          user_data[i].dac_offset = 0.0;    // offset correction
 
@@ -129,7 +128,7 @@ void user_init(unsigned char init)
    /* default control register */
    for (i=0 ; i<N_HV_CHN ; i++) {
       user_data[i].control  = CONTROL_TSENSOR | CONTROL_ISENSOR;
-	                       
+
       user_data[i].status   = 0;
       user_data[i].u_demand = 0;
 
@@ -146,10 +145,10 @@ void user_init(unsigned char init)
 
    address = 0x0;
    /* each device has 8 channels */
-   address *= 8;                   
+   address *= 8;
 
-   
-   /* keep high byte of node address */               
+
+   /* keep high byte of node address */
    address |= (sys_info.node_addr & 0xFF00);
 
    sys_info.node_addr = address;
@@ -172,7 +171,7 @@ void user_init(unsigned char init)
 
    write_adc(REG_FILTER, ADC_SF_VALUE);
 
-   // force update 
+   // force update
    for (i=0 ; i<N_HV_CHN ; i++)
       chn_bits[i] = DEMAND_CHANGED;
 
@@ -181,23 +180,23 @@ void user_init(unsigned char init)
       led_mode(i+2, 0);
    }
 
-	// Other I/O 
+	// Other I/O
     pca_operation(Q_PUMP_INIT);
     pca_operation(Q_PUMP_OFF);
 
     // init SMBus (should be called after pca_operation)
     SMBus_Initialization();
 
-    // init temperature sensor 
-    init_LM95231(0); 
-   
+    // init temperature sensor
+    init_LM95231(0);
+
     // Preset high voltage = 0 V. (Actually, ~2.4 V)
     for (i = 0; i < N_HV_CHN; i++) {
-	    set_hv(i, 0);    
+	    set_hv(i, 0);
     }
-/*	
+/*
 	ET1 = 1; // timer 1 interrupt enable
-	         // for fgd_008_ihander 
+	         // for fgd_008_ihander
 */
 }
 
@@ -207,20 +206,20 @@ void pca_operation(unsigned char mode)
 {
    if (mode == Q_PUMP_INIT) {
 	/* PCA setup for Frequency Output Mode on CEX0 */
-    P0MDOUT  = 0x94; // Keep 4,7 for Rx,Enable + CEX0 output 
-    XBR0     = 0x05; // Enable SMB, UART 
+    P0MDOUT  = 0x94; // Keep 4,7 for Rx,Enable + CEX0 output
+    XBR0     = 0x05; // Enable SMB, UART
 	XBR1     = 0x41; // Enable Xbar , Enable CEX0 on P0.
     PCA0MD   = 0x8;  // Sysclk (24.6MHz)
-	PCA0CPL0 = 0x00; 
+	PCA0CPL0 = 0x00;
     PCA0CPM0 = 0x46; // ECM, TOG, PWM
 	PCA0CPH0 = 0x06; // 6 (for ~2MHz)
     PCA0CN   = 0x40; // Enable PCA Run Control
 
    } else if (mode == Q_PUMP_OFF) {
-    
+
     XBR1 = (XBR1 & 0xF8) | 0x00; // turn off Frequency Output Mode
 
-   } else if (mode == Q_PUMP_ON) {    
+   } else if (mode == Q_PUMP_ON) {
 
     XBR1 = (XBR1 & 0xF8) | 0x01; // turn on Frequency Output Mode
 
@@ -262,7 +261,7 @@ void user_write(unsigned char index) reentrant
    if (index == 0) {
        // preserve common command bits for all channels
        command = user_data[cur_sub_addr()].control;
-       mask    = CONTROL_ISENSOR | CONTROL_TSENSOR | CONTROL_IB_CTL 
+       mask    = CONTROL_ISENSOR | CONTROL_TSENSOR | CONTROL_IB_CTL
                | CONTROL_EXT_IN  | CONTROL_QPUMP   | CONTROL_IDLE; // common bits
 
        for (i = 0; i < N_HV_CHN; i++) {
@@ -324,7 +323,7 @@ unsigned char i, m, b;
       DAC_SCK = 1;
       delay_us(OPT_DELAY);
       m >>= 1;
-      watchdog_refresh(1); 
+      watchdog_refresh(1);
    }
 
    // MSB
@@ -553,7 +552,7 @@ unsigned char adc_read(unsigned char channel, float *value)
    while (ADC_NRDY) {
       yield();
 
-     /* Eamping at this point should be removed, otherwise MSCB 
+     /* Eamping at this point should be removed, otherwise MSCB
 	    communication sometimes timeout.
       for (i=0 ; i<N_HV_CHN ; i++)
          ramp_hv(i);      // do ramping while reading ADC
@@ -591,27 +590,27 @@ void set_hv(unsigned char channel, float value) reentrant
    unsigned short d;
 
    // Turn LED on over 10V
-   // Truning on LED with "led_set" is cleared by the timer-1  
+   // Truning on LED with "led_set" is cleared by the timer-1
    // interruption, thus "led_mode" is used.
    led_mode(channel+2, (value > 10));
 
    // impose software voltage limit
-   if (value >= MAX_VOLTAGE) {  
+   if (value >= MAX_VOLTAGE) {
        value = MAX_VOLTAGE;
    }
 
    // apply voltage correction
    value = value * user_data[channel].dac_gain + user_data[channel].dac_offset;
- 
+
    // convert to DAC voltage by the following equation
    value = 2 * V_ADJ_LT3010 - REGISTER_RATIO * (value - V_ADJ_LT3010);
 
-   // impose DAC range limit 
+   // impose DAC range limit
    if (value > DAC_VREF) {
        value = DAC_VREF;
    }
 
-   // impose ADJ voltage limit 
+   // impose ADJ voltage limit
    if (value > DAC_VMAX_FOR_ADJ) {
        value = DAC_VMAX_FOR_ADJ;
    }
@@ -630,7 +629,7 @@ void set_hv(unsigned char channel, float value) reentrant
 void check_current(unsigned char channel)
 {
    /* do "software" check */
-   if (user_data[channel].i_meas > user_data[channel].i_limit) {  
+   if (user_data[channel].i_meas > user_data[channel].i_limit) {
       // In the case of exceeding the current limit
 
       /* zero output voltage */
@@ -657,20 +656,20 @@ void check_current(unsigned char channel)
 void read_current(unsigned char mode, unsigned char channel)
 {
    float current;
-   
+
    if (mode == 0) return ;
 
-   // read current channel 
+   // read current channel
    if (!adc_read(channel, &current))
       return;
 
-   // conver to current in microamp 
+   // conver to current in microamp
    current = current / AMP_LT1787 / I_SENSE_REGISTER * 1E6;
 
-   // apply for correction factors 
-   current = current * user_data[channel].cur_gain 
+   // apply for correction factors
+   current = current * user_data[channel].cur_gain
                      + user_data[channel].cur_offset;
-   // 0.001 resolution 
+   // 0.001 resolution
    current = floor(current * 1000) / 1000.0;
 
    DISABLE_INTERRUPTS;
@@ -795,7 +794,7 @@ void user_loop(void)
     }
 
 
-	// To be moved in PCA_operation once the 
+	// To be moved in PCA_operation once the
 	// init sequence is understood
 	if (once) {
         PCA0MD   = 0x8;  // Sysclk (24.6MHz)
@@ -803,7 +802,7 @@ void user_loop(void)
 	}
 }
 
-void state_machine(void) 
+void state_machine(void)
 {
     // State machine handling routine. See "STATE TABLE" in fgd_008.h
     // Write down what you want to do here at each state.
@@ -816,25 +815,25 @@ void state_machine(void)
 
         monitor = user_data[i].control;
 
-        if (!(user_data[i].control & CONTROL_EXT_IN) && 
+        if (!(user_data[i].control & CONTROL_EXT_IN) &&
             !(user_data[i].control & CONTROL_QPUMP )) {
 
             // STATE-1 (default state)
-            user_data[i].status &= ~(STATUS_IB_CTL   | STATUS_EXT_BIAS 
+            user_data[i].status &= ~(STATUS_IB_CTL   | STATUS_EXT_BIAS
                                    | STATUS_INT_BIAS | STATUS_QPUMP);
 
   		    pca_operation(Q_PUMP_OFF);
             // not change INT_BIAS, and EXT_BIAS
 	        INT_BIAS = 1;
-	        EXT_BIAS = 1;			
+	        EXT_BIAS = 1;
         }
 
         else if ( !(user_data[i].control & CONTROL_IB_CTL) &&
                   !(user_data[i].control & CONTROL_EXT_IN) &&
                    (user_data[i].control & CONTROL_QPUMP ) ) {
- 
+
             // STATE-2  (internal bias)
-            user_data[i].status &= ~(STATUS_IB_CTL | STATUS_EXT_BIAS); 
+            user_data[i].status &= ~(STATUS_IB_CTL | STATUS_EXT_BIAS);
             user_data[i].status |= STATUS_INT_BIAS | STATUS_QPUMP;
 
   		    pca_operation(Q_PUMP_ON);
@@ -858,7 +857,7 @@ void state_machine(void)
                   (user_data[i].control & CONTROL_QPUMP ) ) {
 
             // STATE-4  (internal bias "control" mode)
-            user_data[i].status |= (STATUS_IB_CTL   | STATUS_EXT_BIAS 
+            user_data[i].status |= (STATUS_IB_CTL   | STATUS_EXT_BIAS
                                   | STATUS_INT_BIAS | STATUS_QPUMP);
 
   		    pca_operation(Q_PUMP_ON);
@@ -866,5 +865,5 @@ void state_machine(void)
 	        EXT_BIAS = 0;
         }
     }
-}   
+}
 
