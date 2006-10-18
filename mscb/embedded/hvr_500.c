@@ -94,6 +94,7 @@ float xdata u_actual[N_HV_CHN];
 unsigned long xdata t_ramp[N_HV_CHN];
 
 bit trip_reset;
+bit trip_disable;
 
 /*---- Define variable parameters returned to CMD_GET_INFO command ----*/
 
@@ -283,6 +284,9 @@ void user_init(unsigned char init)
    /* LED normally off (inverted) */
    for (i=0 ; i<N_HV_CHN ; i++)
       led_mode(i, 1);
+
+   trip_reset = 1;    // reset once
+   trip_disable = 0;  // trip initially enabled
 }
 
 /*---- User write function -----------------------------------------*/
@@ -690,9 +694,17 @@ void set_current_limit(float value)
 {
    unsigned short d;
 
-   if (value == 9999)
-      d = 65535; /* disable current trip */
-   else {
+   if (value == 9999) {
+      /* disable current trip */
+      d = 65535; 
+      trip_disable = 1;
+      write_adc(REG_IOCONTROL, (1 << 4)); // P1DIR=1,P1DAT=0
+   } else {
+      
+      /* remove reset */
+      trip_disable = 0;
+      write_adc(REG_IOCONTROL, (1 << 4) | (1 << 0)); // P1DIR=1,P1DAT=1
+   
       /* "reverse" calibration */
       value = (value - user_data[0].cur_offset) / user_data[0].cur_gain;
    
@@ -731,7 +743,7 @@ unsigned char d;
          return 0; 
       } else {
          /* calibrated */
-         if (user_data[channel].u_meas < 10 && user_data[channel].u_demand > 15)
+         if (user_data[channel].u_meas < 5 && user_data[channel].u_demand >= 5)
             return 1;
 
          return 0;
@@ -745,8 +757,10 @@ unsigned char d;
 
 void reset_hardware_trip()
 {
-   write_adc(REG_IOCONTROL, (1 << 4));            // P1DIR=1,P1DAT=0
-   write_adc(REG_IOCONTROL, (1 << 4) | (1 << 0)); // P1DIR=1,P1DAT=1
+   if (!trip_disable) {
+      write_adc(REG_IOCONTROL, (1 << 4));            // P1DIR=1,P1DAT=0
+      write_adc(REG_IOCONTROL, (1 << 4) | (1 << 0)); // P1DIR=1,P1DAT=1
+   }
 }
 
 /*------------------------------------------------------------------*/
