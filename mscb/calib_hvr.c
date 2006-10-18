@@ -49,7 +49,7 @@ void stop()
 {
    char str[80];
 
-   printf("--- hit any key to exit ---");
+   printf("\007--- hit any key to exit ---");
    fgets(str, sizeof(str), stdin);
 
    exit(0);
@@ -105,6 +105,64 @@ void reset_param(int fd, unsigned short adr)
    mscb_write(fd, adr, CH_ADCGAIN, &f, sizeof(float));
    mscb_write(fd, adr, CH_DACGAIN, &f, sizeof(float));
    mscb_write(fd, adr, CH_CURGAIN, &f, sizeof(float));
+}
+
+/*------------------------------------------------------------------*/
+
+int quick_check(int fd, unsigned short adr, unsigned short adr_dvm, unsigned short adr_mux)
+{
+   float f;
+   int size, d;
+   float v_adc;
+
+   printf("\n**** Checking channel %d ****\n\n", adr);
+
+   /*--- initialization ----*/
+
+   /* init variables */
+   f = 0;
+   d = 0;
+   mscb_write(fd, adr, CH_VDEMAND, &f, sizeof(float));
+   mscb_write(fd, adr, CH_ADCOFS, &f, sizeof(float));
+   mscb_write(fd, adr, CH_DACOFS, &f, sizeof(float));
+   mscb_write(fd, adr, CH_CUROFS, &f, sizeof(float));
+   mscb_write(fd, adr, CH_CURVGAIN, &f, sizeof(float));
+   mscb_write(fd, adr, CH_RAMPUP, &d, sizeof(short));
+   mscb_write(fd, adr, CH_RAMPDOWN, &d, sizeof(short));
+
+   f = 1;
+   mscb_write(fd, adr, CH_ADCGAIN, &f, sizeof(float));
+   mscb_write(fd, adr, CH_DACGAIN, &f, sizeof(float));
+   mscb_write(fd, adr, CH_CURGAIN, &f, sizeof(float));
+
+   /* disable hardware current limit */
+   f = 9999;
+   mscb_write(fd, adr, CH_ILIMIT, &f, sizeof(float));
+
+   /* set CSR to HV on, no regulation */
+   d = 1;
+   mscb_write(fd, adr, CH_CONTROL, &d, 1);
+
+   /* set demand to 500V */
+   printf("Setting       500.0 Volt\n");
+   f = 500;
+   mscb_write(fd, adr, CH_VDEMAND, &f, sizeof(float));
+   Sleep(HV_SET_DELAY);
+
+   /* read ADC */
+   size = sizeof(float);
+   mscb_read(fd, adr, CH_VMEAS, &v_adc, &size);
+   printf("HVR ADC reads %5.1lf Volt\n", v_adc);
+
+   if (v_adc < 300) {
+      printf("HVR ADC voltage too low, aborting.\n");
+      stop();
+   }
+
+   f = 0;
+   mscb_write(fd, adr, CH_VDEMAND, &f, sizeof(float));
+
+   return 1;
 }
 
 /*------------------------------------------------------------------*/
@@ -182,6 +240,11 @@ int calib(int fd, unsigned short adr, unsigned short adr_dvm, unsigned short adr
    if (adr_dvm > 0)
       printf("DVM reads     %5.1lf Volt\n", v_multi1);
 
+   if (v_multi1 < 50) {
+      printf("HVR ADC voltage too low, aborting.\n");
+      stop();
+   }
+
    /* read ADC */
    size = sizeof(float);
    mscb_read(fd, adr, CH_VMEAS, &v_adc1, &size);
@@ -241,7 +304,13 @@ int calib(int fd, unsigned short adr, unsigned short adr_dvm, unsigned short adr
    printf("ADC offset : %10.5lf\n", adc_ofs);
 
    if (fabs(dac_gain) > 3 || fabs(adc_gain) > 3) {
-      printf("\nERROR: The voltage gain is too high,\nprobably voltage measurement is not working\n");
+      printf("\nERROR: The DAC offset is too high,\nprobably voltage measurement is not working\n");
+      printf("Aborting calibration.\n");
+      stop();
+   }
+
+   if (fabs(dac_ofs) > 50) {
+      printf("\nERROR: The ADC offset is too high,\nprobably voltage measurement is not working\n");
       printf("Aborting calibration.\n");
       stop();
    }
@@ -502,10 +571,13 @@ int main(int argc, char *argv[])
    }
 
    for (adr = adr_start; adr <= adr_end; adr++) {
+      if (!quick_check(fd, adr, adr_dvm, adr_mux))
+         break;
+   }
 
+   for (adr = adr_start; adr <= adr_end; adr++) {
       if (!calib(fd, adr, adr_dvm, adr_mux, 10E6, adr == adr_start, adr<adr_end ? adr+1 : -1))
          break;
-
    }
 
    if (adr > adr_end)
