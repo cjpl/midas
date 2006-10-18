@@ -1051,7 +1051,11 @@ void upgrade()
       return;
 
    /* wait for acknowledge to be sent */
-   while (!out_buf_empty);
+   for (i=0 ; i<10000 ; i++) {
+      if (out_buf_empty)
+         break;
+      DELAY_US(10);
+   }
 
    /* disable all interrupts */
    EA = 0;
