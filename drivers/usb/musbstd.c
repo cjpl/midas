@@ -54,6 +54,7 @@ DEFINE_GUID(GUID_CLASS_MSCB_BULK, 0xcbeb3fb1, 0xae9f, 0x471c, 0x90, 0x16, 0x9b, 
 #endif
 
 #ifdef HAVE_LIBUSB
+#include <errno.h>
 #include <usb.h>
 #endif
 
@@ -147,68 +148,68 @@ int musb_open(MUSB_INTERFACE **musb_interface, int vendor, int product, int inst
    return MUSB_NOT_FOUND;
 
 #elif defined(HAVE_LIBUSB)
-
+   
    struct usb_bus *bus;
    struct usb_device *dev;
    int count = 0;
-
+   
    usb_init();
    usb_find_busses();
    usb_find_devices();
-
+   
    for (bus = usb_get_busses(); bus; bus = bus->next)
-      for (dev = bus->devices; dev; dev = dev->next)
-         if (dev->descriptor.idVendor == vendor && dev->descriptor.idProduct == product) {
-            if (count == instance) {
-               int status;
-               usb_dev_handle *udev;
-
-               udev = usb_open(dev);
-               if (!udev) {
-                  fprintf(stderr, "musb_open: usb_open() error\n");
-                  return MUSB_ACCESS_ERROR;
-               }
-
-               status = usb_set_configuration(udev, configuration);
-               if (status < 0) {
-                  fprintf(stderr, "musb_open: usb_set_configuration() error %d (%s)\n", status,
-                          strerror(-status));
-
-                  fprintf(stderr,
-                          "musb_open: Found USB device %04x:%04x instance %d, but cannot initialize it: please check permissions on \"/proc/bus/usb/%s/%s\"\n",
-                          vendor, product, instance, bus->dirname, dev->filename);
-
-                  return MUSB_ACCESS_ERROR;
-               }
-
-               /* see if we have write access */
-               status = usb_claim_interface(udev, usbinterface);
-               if (status < 0) {
-                  fprintf(stderr, "musb_open: usb_claim_interface() error %d (%s)\n", status,
-                          strerror(-status));
-
-                  fprintf(stderr,
-                          "musb_open: Found USB device %04x:%04x instance %d, but cannot initialize it: please check permissions on \"/proc/bus/usb/%s/%s\"\n",
-                          vendor, product, instance, bus->dirname, dev->filename);
-
-                  return MUSB_ACCESS_ERROR;
-               }
-
-               *musb_interface = (MUSB_INTERFACE*)calloc(1, sizeof(MUSB_INTERFACE));
-               (*musb_interface)->dev = udev;
-               (*musb_interface)->usbinterface = usbinterface;
-               return MUSB_SUCCESS;
-            }
-
-            count++;
-         }
-
+     for (dev = bus->devices; dev; dev = dev->next)
+       if (dev->descriptor.idVendor == vendor && dev->descriptor.idProduct == product) {
+	 if (count == instance) {
+	   int status;
+	   usb_dev_handle *udev;
+	   
+	   udev = usb_open(dev);
+	   if (!udev) {
+	     fprintf(stderr, "musb_open: usb_open() error\n");
+	     return MUSB_ACCESS_ERROR;
+	   }
+	   
+	   status = usb_set_configuration(udev, configuration);
+	   if (status < 0) {
+	     fprintf(stderr, "musb_open: usb_set_configuration() error %d (%s)\n", status,
+		     strerror(-status));
+	     
+	     fprintf(stderr,
+		     "musb_open: Found USB device %04x:%04x instance %d, but cannot initialize it: please check permissions on \"/proc/bus/usb/%s/%s\"\n",
+		     vendor, product, instance, bus->dirname, dev->filename);
+	     
+	     return MUSB_ACCESS_ERROR;
+	   }
+	   
+	   /* see if we have write access */
+	   status = usb_claim_interface(udev, usbinterface);
+	   if (status < 0) {
+	     fprintf(stderr, "musb_open: usb_claim_interface() error %d (%s)\n", status,
+		     strerror(-status));
+	     
+	     fprintf(stderr,
+		     "musb_open: Found USB device %04x:%04x instance %d, but cannot initialize it: please check permissions on \"/proc/bus/usb/%s/%s\"\n",
+		     vendor, product, instance, bus->dirname, dev->filename);
+	     
+	     return MUSB_ACCESS_ERROR;
+	   }
+	   
+	   *musb_interface = (MUSB_INTERFACE*)calloc(1, sizeof(MUSB_INTERFACE));
+	   (*musb_interface)->dev = udev;
+	   (*musb_interface)->usbinterface = usbinterface;
+	   return MUSB_SUCCESS;
+	 }
+	 
+	 count++;
+       }
+   
    return MUSB_NOT_FOUND;
-
+   
 #elif defined(OS_DARWIN)
-
+   
    MUSB_INTERFACE *musb_interface = calloc(1, sizeof(MUSB_INTERFACE));
-
+   
    kern_return_t status;
    io_iterator_t iter;
    io_service_t service;
@@ -308,18 +309,23 @@ int musb_open(MUSB_INTERFACE **musb_interface, int vendor, int product, int inst
 int musb_close(MUSB_INTERFACE *musb_interface)
 {
 #if defined(_MSC_VER)
+
    CloseHandle(musb_interface->rhandle);
    CloseHandle(musb_interface->whandle);
+
 #elif defined(HAVE_LIBUSB)
+
    int status;
    status = usb_release_interface(musb_interface->dev, musb_interface->usbinterface);
    if (status < 0)
-      fprintf(stderr, "musb_close: usb_release_interface() error %d\n", status);
+     fprintf(stderr, "musb_close: usb_release_interface() error %d\n", status);
    status = usb_close(musb_interface->dev);
    if (status < 0)
-      fprintf(stderr, "musb_close: usb_close() error %d\n", status);
+     fprintf(stderr, "musb_close: usb_close() error %d\n", status);
+   
 #else
    /* FIXME */
+   
 #endif
    /* free memory allocated in musb_open() */
    free(musb_interface);
@@ -333,9 +339,11 @@ int musb_write(MUSB_INTERFACE *musb_interface, int endpoint, const void *buf, in
 #if defined(_MSC_VER)
    WriteFile(musb_interface->whandle, buf, count, &n_written, NULL);
 #elif defined(HAVE_LIBUSB)
-   //fprintf(stderr,"usb_bulk_write: %p %d %p %d %d\n",musb_interface->dev, endpoint, (char*)buf, count, timeout);
+
    n_written = usb_bulk_write(musb_interface->dev, endpoint, (char*)buf, count, timeout);
-   //usleep(0); // needed for linux not to crash !!!!
+   if (n_written < 0) fprintf(stderr,"usb_bulk_write: n_written:%d [%s]\n", n_written, strerror (-n_written));
+   usleep(10); // needed for linux not to crash !!!!
+
 #elif defined(OS_DARWIN)
    IOReturn status;
    IOUSBInterfaceInterface **device = musb_interface->handle;
@@ -379,8 +387,8 @@ int musb_read(MUSB_INTERFACE *musb_interface, int endpoint, void *buf, int count
 
 #elif defined(HAVE_LIBUSB)
 
-   //fprintf(stderr,"usb_bulk_read: %p %d %p %d %d\n",musb_interface->dev, endpoint, (char*)buf, count, timeout);
    n_read = usb_bulk_read(musb_interface->dev, endpoint, (char*)buf, count, timeout);
+   if (n_read < 0) fprintf(stderr,"after  usb_bulk_read:%d \n", n_read);
 
 #elif defined(OS_DARWIN)
 
