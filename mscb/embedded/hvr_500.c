@@ -725,6 +725,12 @@ unsigned char hardware_current_trip(unsigned char channel)
 {
 unsigned char d;
 
+   /* continuously set FF reset, in case ADC got HV flash */
+   if (trip_disable) {
+      write_adc(REG_IOCONTROL, (1 << 4)); // P1DIR=1,P1DAT=0
+	  return 0;
+   }
+
    read_adc8(REG_IOCONTROL, &d);
    
    /* P2 of AD7718 should be low in case of trip */
