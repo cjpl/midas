@@ -26,6 +26,9 @@
    accessed from the <b><a HREF=http://savannah.psi.ch/viewcvs/trunk/?root=midas>SVN</a></b>   
    repository site in Switzerland either for inspection or download. 
 
+   - Tar and RPMs are also available either from the <a HREF=http://midas.psi.ch/download/>Switzerland</a>
+     or <a HREF=http://ladd00.triumf.ca/~daqweb/ftp/>Canadian</a> sites.
+   
    - The main purpose of the MIDAS DAQ is to provide:
      - data collection from local and/or remote hardware source.
      - data recording to common storage media.
