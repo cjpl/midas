@@ -45,11 +45,31 @@
 
 /*------------------------------------------------------------------*/
 
+void eprintf(const char *format, ...)
+{
+   va_list ap;
+   char msg[1000];
+   FILE *f;
+
+   va_start(ap, format);
+   vsprintf(msg, format, ap);
+   va_end(ap);
+
+   fputs(msg, stdout);
+   f = fopen("calib_hvr.log", "at");
+   if (f) {
+      fprintf(f, "%s", msg);
+      fclose(f);
+   }
+}
+
+/*------------------------------------------------------------------*/
+
 void stop()
 {
    char str[80];
 
-   printf("\007--- hit any key to exit ---");
+   eprintf("\007--- hit any key to exit ---");
    fgets(str, sizeof(str), stdin);
 
    exit(0);
@@ -66,15 +86,19 @@ float read_voltage(int fd, unsigned short adr)
    status = 0;
    value = 0;
    if (adr != 0xFFFF) {
-      size = sizeof(float);
-      status = mscb_read(fd, adr, 1, &value, &size);
-      if (status != MSCB_SUCCESS)
-         printf("Error reading DVM (status=%d)\n", status);
-      value = (float) fabs(value);
+      do {
+         size = sizeof(float);
+         status = mscb_read(fd, adr, 1, &value, &size);
+         if (status != MSCB_SUCCESS)
+            eprintf("Error reading DVM (status=%d)\n", status);
+         value = (float) fabs(value);
+         if (value == 0)
+            eprintf("Error reading DVM, re-trying...\n");
+      } while (value == 0); /* repeat until valid reading */
    }
 
    if (status != MSCB_SUCCESS) {
-      printf("Please enter absolute voltage from DVM: ");
+      eprintf("Please enter absolute voltage from DVM: ");
       fgets(str, sizeof(str), stdin);
       value = (float) atof(str);
       value = (float) fabs(value);
@@ -115,25 +139,12 @@ int quick_check(int fd, unsigned short adr, unsigned short adr_dvm, unsigned sho
    int size, d;
    float v_adc;
 
-   printf("\n**** Checking channel %d ****\n\n", adr);
+   eprintf("\n**** Checking channel %d ****\n\n", adr);
 
    /*--- initialization ----*/
 
    /* init variables */
-   f = 0;
-   d = 0;
-   mscb_write(fd, adr, CH_VDEMAND, &f, sizeof(float));
-   mscb_write(fd, adr, CH_ADCOFS, &f, sizeof(float));
-   mscb_write(fd, adr, CH_DACOFS, &f, sizeof(float));
-   mscb_write(fd, adr, CH_CUROFS, &f, sizeof(float));
-   mscb_write(fd, adr, CH_CURVGAIN, &f, sizeof(float));
-   mscb_write(fd, adr, CH_RAMPUP, &d, sizeof(short));
-   mscb_write(fd, adr, CH_RAMPDOWN, &d, sizeof(short));
-
-   f = 1;
-   mscb_write(fd, adr, CH_ADCGAIN, &f, sizeof(float));
-   mscb_write(fd, adr, CH_DACGAIN, &f, sizeof(float));
-   mscb_write(fd, adr, CH_CURGAIN, &f, sizeof(float));
+   reset_param(fd, adr);
 
    /* disable hardware current limit */
    f = 9999;
@@ -144,7 +155,7 @@ int quick_check(int fd, unsigned short adr, unsigned short adr_dvm, unsigned sho
    mscb_write(fd, adr, CH_CONTROL, &d, 1);
 
    /* set demand to 500V */
-   printf("Setting       500.0 Volt\n");
+   eprintf("Setting       500.0 Volt\n");
    f = 500;
    mscb_write(fd, adr, CH_VDEMAND, &f, sizeof(float));
    Sleep(HV_SET_DELAY);
@@ -152,10 +163,10 @@ int quick_check(int fd, unsigned short adr, unsigned short adr_dvm, unsigned sho
    /* read ADC */
    size = sizeof(float);
    mscb_read(fd, adr, CH_VMEAS, &v_adc, &size);
-   printf("HVR ADC reads %5.1lf Volt\n", v_adc);
+   eprintf("HVR ADC reads %5.1lf Volt\n", v_adc);
 
    if (v_adc < 300) {
-      printf("HVR ADC voltage too low, aborting.\n");
+      eprintf("HVR ADC voltage too low, aborting.\n");
       stop();
    }
 
@@ -176,25 +187,12 @@ int calib(int fd, unsigned short adr, unsigned short adr_dvm, unsigned short adr
    float v_adc1, v_adc2, v_multi1, v_multi2, adc_gain, adc_ofs, 
       dac_gain, dac_ofs, i1, i2, i_900, i_gain, i_vgain, i_ofs;
 
-   printf("\n**** Calibrating channel %d ****\n\n", adr);
+   eprintf("\n**** Calibrating channel %d ****\n\n", adr);
 
    /*--- initialization ----*/
 
    /* init variables */
-   f = 0;
-   d = 0;
-   mscb_write(fd, adr, CH_VDEMAND, &f, sizeof(float));
-   mscb_write(fd, adr, CH_ADCOFS, &f, sizeof(float));
-   mscb_write(fd, adr, CH_DACOFS, &f, sizeof(float));
-   mscb_write(fd, adr, CH_CUROFS, &f, sizeof(float));
-   mscb_write(fd, adr, CH_CURVGAIN, &f, sizeof(float));
-   mscb_write(fd, adr, CH_RAMPUP, &d, sizeof(short));
-   mscb_write(fd, adr, CH_RAMPDOWN, &d, sizeof(short));
-
-   f = 1;
-   mscb_write(fd, adr, CH_ADCGAIN, &f, sizeof(float));
-   mscb_write(fd, adr, CH_DACGAIN, &f, sizeof(float));
-   mscb_write(fd, adr, CH_CURGAIN, &f, sizeof(float));
+   reset_param(fd, adr);
 
    /* read status */
    d = 0;
@@ -203,62 +201,129 @@ int calib(int fd, unsigned short adr, unsigned short adr_dvm, unsigned short adr
    low_current = (d & STATUS_LOWCUR) > 0;
 
    if (low_current)
-      printf("#### Found low current module\n");
+      eprintf("#### Found low current module\n");
 
-   /* disable hardware current limit */
-   f = 9999;
-   mscb_write(fd, adr, CH_ILIMIT, &f, sizeof(float));
-
-   /* set CSR to HV on, no regulation */
-   d = 1;
-   mscb_write(fd, adr, CH_CONTROL, &d, 1);
-
-   if (first) {
-      if (adr_mux == 0xFFFF) {
-         printf("\007Please connect multimeter to channel %d and press ENTER\n", adr);
-         fgets(str, sizeof(str), stdin);
-      } else {
-         d = adr % 10;
-         status = mscb_write(fd, adr_mux, 0, &d, 1);
-         if (status != MSCB_SUCCESS) {
-            printf("Error %d setting multiplexer at address %d.\n", status, adr_mux);
-            stop();
-         }
-         printf("\nMultiplexer set to channel %d\n\n", adr);
-      }
-   }
-
-   /*--- measure U calibration ----*/
-
-   /* set demand to 100V */
-   printf("Setting       100.0 Volt\n");
-   f = 100;
-   mscb_write(fd, adr, CH_VDEMAND, &f, sizeof(float));
-   Sleep(HV_SET_DELAY);
-
-   v_multi1 = read_voltage(fd, adr_dvm);
-   if (adr_dvm > 0)
-      printf("DVM reads     %5.1lf Volt\n", v_multi1);
-
-   if (v_multi1 < 50) {
-      printf("HVR ADC voltage too low, aborting.\n");
-      stop();
-   }
-
-   /* read ADC */
-   size = sizeof(float);
-   mscb_read(fd, adr, CH_VMEAS, &v_adc1, &size);
-   printf("HVR ADC reads %5.1lf Volt\n", v_adc1);
-
-   if (v_adc1 < 50) {
-      printf("HVR ADC voltage too low, aborting.\n");
-      stop();
-   }
-
-   printf("\nSetting       900.0 Volt\n");
+   /* repeat until correct */
    do {
-      /* set demand to 900V */
-      f = 900;
+      /* disable hardware current limit */
+      f = 9999;
+      mscb_write(fd, adr, CH_ILIMIT, &f, sizeof(float));
+
+      /* set CSR to HV on, no regulation */
+      d = 1;
+      mscb_write(fd, adr, CH_CONTROL, &d, 1);
+
+      if (first) {
+         if (adr_mux == 0xFFFF) {
+            eprintf("\007Please connect multimeter to channel %d and press ENTER\n", adr);
+            fgets(str, sizeof(str), stdin);
+         } else {
+            d = adr % 10;
+            status = mscb_write(fd, adr_mux, 0, &d, 1);
+            if (status != MSCB_SUCCESS) {
+               eprintf("Error %d setting multiplexer at address %d.\n", status, adr_mux);
+               stop();
+            }
+            eprintf("\nMultiplexer set to channel %d\n\n", adr);
+         }
+      }
+
+      /*--- measure U calibration ----*/
+
+      /* set demand to 100V */
+      eprintf("Setting       100.0 Volt\n");
+      f = 100;
+      mscb_write(fd, adr, CH_VDEMAND, &f, sizeof(float));
+      Sleep(HV_SET_DELAY);
+
+      v_multi1 = read_voltage(fd, adr_dvm);
+      if (adr_dvm > 0)
+         eprintf("DVM reads     %5.1lf Volt\n", v_multi1);
+
+      if (v_multi1 < 50) {
+         eprintf("HVR ADC voltage too low, aborting.\n");
+         stop();
+      }
+
+      /* read ADC */
+      size = sizeof(float);
+      mscb_read(fd, adr, CH_VMEAS, &v_adc1, &size);
+      eprintf("HVR ADC reads %5.1lf Volt\n", v_adc1);
+
+      if (v_adc1 < 50) {
+         eprintf("HVR ADC voltage too low, aborting.\n");
+         stop();
+      }
+
+      eprintf("\nSetting       900.0 Volt\n");
+      do {
+         /* set demand to 900V */
+         f = 900;
+         mscb_write(fd, adr, CH_VDEMAND, &f, sizeof(float));
+
+         /* wait voltage to settle */
+         Sleep(HV_SET_DELAY);
+
+         /* read voltage */
+         size = sizeof(float);
+         mscb_read(fd, adr, CH_VMEAS, &v_adc2, &size);
+
+         if (v_adc2 < 890) {
+            eprintf("Only %1.1lf V can be reached on output,\n", v_adc2);
+            eprintf("please increase input voltage and press ENTER.\n");
+            fgets(str, sizeof(str), stdin);
+         }
+
+      } while (v_adc2 < 890);
+
+      v_multi2 = read_voltage(fd, adr_dvm);
+      if (adr_dvm > 0)
+         eprintf("DVM reads     %5.1lf Volt\n", v_multi2);
+
+      /* read ADC */
+      size = sizeof(float);
+      mscb_read(fd, adr, CH_VMEAS, &v_adc2, &size);
+      eprintf("HVR ADC reads %5.1lf Volt\n", v_adc2);
+
+      if (v_adc2 < 500) {
+         eprintf("HVR ADC voltage too low, aborting.\n");
+         stop();
+      }
+
+      /* calculate corrections */
+      dac_gain = (float) ((900.0 - 100.0) / (v_multi2 - v_multi1));
+      dac_ofs = (float) (100 - dac_gain * v_multi1);
+
+      adc_gain = (float) ((v_multi2 - v_multi1) / (v_adc2 - v_adc1));
+      adc_ofs = (float) (v_multi1 - adc_gain * v_adc1);
+
+      eprintf("\nCalculated calibration constants:\n");
+      eprintf("DAC gain   : %10.5lf\n", dac_gain);
+      eprintf("DAC offset : %10.5lf\n", dac_ofs);
+      eprintf("ADC gain   : %10.5lf\n", adc_gain);
+      eprintf("ADC offset : %10.5lf\n", adc_ofs);
+
+      if (fabs(dac_gain) > 3 || fabs(adc_gain) > 3) {
+         eprintf("\nERROR: The DAC offset is too high,\nprobably voltage measurement is not working\n");
+         eprintf("Trying again ....\n");
+         continue;
+      }
+
+      if (fabs(dac_ofs) > 50) {
+         eprintf("\nERROR: The ADC offset is too high,\nprobably voltage measurement is not working\n");
+         eprintf("Aborting calibration.\n");
+         continue;
+      }
+
+      mscb_write(fd, adr, CH_ADCGAIN, &adc_gain, sizeof(float));
+      mscb_write(fd, adr, CH_ADCOFS, &adc_ofs, sizeof(float));
+      mscb_write(fd, adr, CH_DACGAIN, &dac_gain, sizeof(float));
+      mscb_write(fd, adr, CH_DACOFS, &dac_ofs, sizeof(float));
+
+      /* now test 500 V */
+
+      eprintf("\nSetting       500.0 Volt\n");
+      f = 500;
       mscb_write(fd, adr, CH_VDEMAND, &f, sizeof(float));
 
       /* wait voltage to settle */
@@ -266,69 +331,31 @@ int calib(int fd, unsigned short adr, unsigned short adr_dvm, unsigned short adr
 
       /* read voltage */
       size = sizeof(float);
-      mscb_read(fd, adr, CH_VMEAS, &v_adc2, &size);
+      mscb_read(fd, adr, CH_VMEAS, &v_adc1, &size);
+      eprintf("HVR ADC reads %5.1lf Volt\n", v_adc1);
 
-      if (v_adc2 < 890) {
-         printf("Only %1.1lf V can be reached on output,\n", v_adc2);
-         printf("please increase input voltage and press ENTER.\n");
-         fgets(str, sizeof(str), stdin);
-      }
+      v_multi1 = read_voltage(fd, adr_dvm);
+      if (adr_dvm > 0)
+         eprintf("DVM reads     %5.1lf Volt\n", v_multi1);
 
-   } while (v_adc2 < 890);
+      if (fabs(v_adc1 - 500) > 1)
+         eprintf("\nERROR: ADC does not read 500V, re-doing calibration\n");
 
-   v_multi2 = read_voltage(fd, adr_dvm);
-   if (adr_dvm > 0)
-      printf("DVM reads     %5.1lf Volt\n", v_multi2);
+      if (fabs(v_multi1 - 500) > 1)
+         eprintf("\nERROR: DVM does not read 500V, re-doing calibration\n");
 
-   /* read ADC */
-   size = sizeof(float);
-   mscb_read(fd, adr, CH_VMEAS, &v_adc2, &size);
-   printf("HVR ADC reads %5.1lf Volt\n", v_adc2);
-
-   if (v_adc2 < 500) {
-      printf("HVR ADC voltage too low, aborting.\n");
-      stop();
-   }
-
-   /* calculate corrections */
-   dac_gain = (float) ((900.0 - 100.0) / (v_multi2 - v_multi1));
-   dac_ofs = (float) (100 - dac_gain * v_multi1);
-
-   adc_gain = (float) ((v_multi2 - v_multi1) / (v_adc2 - v_adc1));
-   adc_ofs = (float) (v_multi1 - adc_gain * v_adc1);
-
-   printf("\nCalculated calibration constants:\n");
-   printf("DAC gain   : %10.5lf\n", dac_gain);
-   printf("DAC offset : %10.5lf\n", dac_ofs);
-   printf("ADC gain   : %10.5lf\n", adc_gain);
-   printf("ADC offset : %10.5lf\n", adc_ofs);
-
-   if (fabs(dac_gain) > 3 || fabs(adc_gain) > 3) {
-      printf("\nERROR: The DAC offset is too high,\nprobably voltage measurement is not working\n");
-      printf("Aborting calibration.\n");
-      stop();
-   }
-
-   if (fabs(dac_ofs) > 50) {
-      printf("\nERROR: The ADC offset is too high,\nprobably voltage measurement is not working\n");
-      printf("Aborting calibration.\n");
-      stop();
-   }
-
-   mscb_write(fd, adr, CH_ADCGAIN, &adc_gain, sizeof(float));
-   mscb_write(fd, adr, CH_ADCOFS, &adc_ofs, sizeof(float));
-   mscb_write(fd, adr, CH_DACGAIN, &dac_gain, sizeof(float));
-   mscb_write(fd, adr, CH_DACOFS, &dac_ofs, sizeof(float));
+   } while (fabs(v_adc1 - 500) > 1 || fabs(v_multi1 - 500) > 1);
 
    if (low_current) {
       /* set demand to 0V */
       f = 0;
       mscb_write(fd, adr, CH_VDEMAND, &f, sizeof(float));
-      printf("\00Please connect 5GOhm resistor to channel %d and press ENTER\n", adr);
+      eprintf("\00Please connect 5GOhm resistor to channel %d and press ENTER\n", adr);
       fgets(str, sizeof(str), stdin);
    }
 
    /* set voltage to exactly 900 V with regulation */
+   eprintf("\nSetting       900.0 Volt\n");
    d = 3;
    mscb_write(fd, adr, CH_CONTROL, &d, 1);
    f = 900;
@@ -340,7 +367,7 @@ int calib(int fd, unsigned short adr, unsigned short adr_dvm, unsigned short adr
    /* read current */
    size = sizeof(float);
    mscb_read(fd, adr, CH_IMEAS, &i_900, &size);
-   printf("\nI at 900V  :  %5.1lf uA\n", i_900);
+   eprintf("\nI at 900V  :  %5.1lf uA\n", i_900);
 
    /* remove voltage */
    f = 0;
@@ -354,9 +381,9 @@ int calib(int fd, unsigned short adr, unsigned short adr_dvm, unsigned short adr
       if (next_adr > 0) {
          f = 0;
          mscb_write(fd, next_adr, CH_VDEMAND, &f, sizeof(float));
-         printf("\n\007Please connect multimeter to channel %d and press ENTER\n", next_adr);
+         eprintf("\n\007Please connect multimeter to channel %d and press ENTER\n", next_adr);
       } else
-         printf("\n\007Please disconnect multimeter from channel %d and press ENTER\n", adr);
+         eprintf("\n\007Please disconnect multimeter from channel %d and press ENTER\n", adr);
       fgets(str, sizeof(str), stdin);
    } else {
       if (next_adr > 0)
@@ -365,13 +392,13 @@ int calib(int fd, unsigned short adr, unsigned short adr_dvm, unsigned short adr
          d = 10;
       status = mscb_write(fd, adr_mux, 0, &d, 1);
       if (status != MSCB_SUCCESS) {
-         printf("Error %d setting multiplexer at address %d.\n", status, adr_mux);
+         eprintf("Error %d setting multiplexer at address %d.\n", status, adr_mux);
          stop();
       }
       if (next_adr > 0)
-         printf("\nMultiplexer set to channel %d\n\n", next_adr);
+         eprintf("\nMultiplexer set to channel %d\n\n", next_adr);
       else
-         printf("\nMultiplexer set to disconnected\n\n");
+         eprintf("\nMultiplexer set to disconnected\n\n");
    }
 
    /* set CSR to HV on, no regulation */
@@ -388,7 +415,7 @@ int calib(int fd, unsigned short adr, unsigned short adr_dvm, unsigned short adr
    /* read current */
    size = sizeof(float);
    mscb_read(fd, adr, CH_IMEAS, &i1, &size);
-   printf("I at 100V  :  %5.1lf uA\n", i1);
+   eprintf("I at 100V  :  %5.1lf uA\n", i1);
 
    do {
       /* set demand to 900V */
@@ -404,8 +431,8 @@ int calib(int fd, unsigned short adr, unsigned short adr_dvm, unsigned short adr
          v_adc2 = 900 - v_adc1 + 100;
          v_adc2 = (float) ((int) (v_adc2 / 100.0) * 100);
 
-         printf("Only %1.1lf V can be reached on output,\n", v_adc1);
-         printf("please increase input voltage by %1.0lf V and press ENTER.\n", v_adc2);
+         eprintf("Only %1.1lf V can be reached on output,\n", v_adc1);
+         eprintf("please increase input voltage by %1.0lf V and press ENTER.\n", v_adc2);
          fgets(str, sizeof(str), stdin);
       }
 
@@ -414,11 +441,11 @@ int calib(int fd, unsigned short adr, unsigned short adr_dvm, unsigned short adr
    /* read current */
    size = sizeof(float);
    mscb_read(fd, adr, CH_IMEAS, &i2, &size);
-   printf("I at 900V  :  %5.1lf uA\n", i2);
+   eprintf("I at 900V  :  %5.1lf uA\n", i2);
 
    if (i_900 - i2 < 10) {
-      printf("\nERROR: The current variation is too small, probably current measurement is not working\n");
-      printf("Aborting calibration.\n");
+      eprintf("\nERROR: The current variation is too small, probably current measurement is not working\n");
+      eprintf("Aborting calibration.\n");
       stop();
    }
 
@@ -431,16 +458,16 @@ int calib(int fd, unsigned short adr, unsigned short adr_dvm, unsigned short adr
    /* calculate current gain */
    i_gain = (float) (900/rin_dvm*1E6) / (i_900 - i2);
 
-   printf("\nI vgain    : %10.5lf\n", i_vgain);
-   printf("I offset   : %10.5lf\n", i_ofs);
-   printf("I gain     : %10.5lf\n", i_gain);
+   eprintf("\nI vgain    : %10.5lf\n", i_vgain);
+   eprintf("I offset   : %10.5lf\n", i_ofs);
+   eprintf("I gain     : %10.5lf\n", i_gain);
    mscb_write(fd, adr, CH_CURVGAIN, &i_vgain, sizeof(float));
    mscb_write(fd, adr, CH_CUROFS, &i_ofs, sizeof(float));
    mscb_write(fd, adr, CH_CURGAIN, &i_gain, sizeof(float));
 
    if (i_ofs < 0) {
-      printf("\nWARNING: The current offset is negative, which means that a current\n");
-      printf("below %1.0lfuA cannot be measured. A compensation resistor to Vref is missing.\n\n", i_ofs);
+      eprintf("\nWARNING: The current offset is negative, which means that a current\n");
+      eprintf("below %1.0lfuA cannot be measured. A compensation resistor to Vref is missing.\n\n", i_ofs);
    }
 
    /* remove voltage */
@@ -478,10 +505,10 @@ int main(int argc, char *argv[])
          usage:
          printf
                ("usage: calib_hvr [-d host:device] [-p password]]\n\n");
-         printf("       -d     device, usually usb0 for first USB port,\n");
-         printf("              or \"<host>:usb0\" for RPC connection\n");
-         printf("              or \"mscb<xxx>\" for Ethernet connection to SUBM_260\n");
-         printf("       -p     optional password for SUBM_260\n");
+         eprintf("       -d     device, usually usb0 for first USB port,\n");
+         eprintf("              or \"<host>:usb0\" for RPC connection\n");
+         eprintf("              or \"mscb<xxx>\" for Ethernet connection to SUBM_260\n");
+         eprintf("       -p     optional password for SUBM_260\n");
          return 0;
       }
    }
@@ -491,12 +518,15 @@ int main(int argc, char *argv[])
    fd = mscb_init(device, sizeof(str), password, 0);
    if (fd < 0) {
       if (device[0])
-         printf("Cannot connect to device \"%s\".\n", device);
+         eprintf("Cannot connect to device \"%s\".\n", device);
       else
-         printf("No MSCB submaster found.\n");
+         eprintf("No MSCB submaster found.\n");
 
       stop();
    }
+
+   /* delete log file */
+   unlink("calib_hvr.log");
 
    printf("Enter address of first HVR-400/500 channel            [  0] : ");
    fgets(str, sizeof(str), stdin);
@@ -532,9 +562,9 @@ int main(int argc, char *argv[])
       if (mscb_ping(fd, 0xFF00) == MSCB_SUCCESS) {
          status = mscb_set_node_addr(fd, 0xFF00, 0, 0, 0);
          if (status == MSCB_SUCCESS)
-            printf("\nHVR found at address 0xFF00, moved to 0\n");
+            eprintf("\nHVR found at address 0xFF00, moved to 0\n");
          else {
-            printf("\nError %d in setting node address\n", status);
+            eprintf("\nError %d in setting node address\n", status);
             stop();
          }
       }
@@ -545,9 +575,9 @@ int main(int argc, char *argv[])
       if (mscb_ping(fd, 0xFF05) == MSCB_SUCCESS) {
          status = mscb_set_node_addr(fd, 0xFF05, 0, 0, 5);
          if (status == MSCB_SUCCESS)
-            printf("HVR found at address 0xFF05, moved to 5\n");
+            eprintf("HVR found at address 0xFF05, moved to 5\n");
          else {
-            printf("Error %d in setting node address\n", status);
+            eprintf("Error %d in setting node address\n", status);
             stop();
          }
       }
@@ -557,7 +587,7 @@ int main(int argc, char *argv[])
    for (adr = adr_start; adr <= adr_end; adr++) {
 
       if (mscb_ping(fd, adr) != MSCB_SUCCESS) {
-         printf("No device at address %d found.\n", adr);
+         eprintf("No device at address %d found.\n", adr);
          stop();
       }
 
@@ -565,14 +595,14 @@ int main(int argc, char *argv[])
       memset(str, 0, sizeof(str));
       memcpy(str, info.name, 8);
       if (strcmp(str, "CURofs") != 0) {
-         printf("Incorrect software version HVR-400/500. Expect \"CURofs\" on var #%d.\n", CH_CUROFS);
+         eprintf("Incorrect software version HVR-400/500. Expect \"CURofs\" on var #%d.\n", CH_CUROFS);
          stop();
       }
    }
 
    for (adr = adr_start; adr <= adr_end; adr++) {
-      if (!quick_check(fd, adr, adr_dvm, adr_mux))
-         break;
+      //if (!quick_check(fd, adr, adr_dvm, adr_mux))
+      //   break;
    }
 
    for (adr = adr_start; adr <= adr_end; adr++) {
@@ -581,7 +611,7 @@ int main(int argc, char *argv[])
    }
 
    if (adr > adr_end)
-      printf("\007\nCalibration finished.\n\n");
+      eprintf("\007\nCalibration finished.\n\n");
 
    mscb_exit(fd);
 
