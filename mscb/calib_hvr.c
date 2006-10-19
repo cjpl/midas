@@ -92,8 +92,10 @@ float read_voltage(int fd, unsigned short adr)
          if (status != MSCB_SUCCESS)
             eprintf("Error reading DVM (status=%d)\n", status);
          value = (float) fabs(value);
-         if (value == 0)
+         if (value == 0) {
             eprintf("Error reading DVM, re-trying...\n");
+            Sleep(1000);
+         }
       } while (value == 0); /* repeat until valid reading */
    }
 
@@ -601,8 +603,8 @@ int main(int argc, char *argv[])
    }
 
    for (adr = adr_start; adr <= adr_end; adr++) {
-      //if (!quick_check(fd, adr, adr_dvm, adr_mux))
-      //   break;
+      if (!quick_check(fd, adr, adr_dvm, adr_mux))
+         break;
    }
 
    for (adr = adr_start; adr <= adr_end; adr++) {
