@@ -674,6 +674,18 @@ sbit led_4 = LED_4;
 #ifdef LED_5
 sbit led_5 = LED_5;
 #endif
+#ifdef LED_6
+sbit led_6 = LED_6;
+#endif
+#ifdef LED_7
+sbit led_7 = LED_7;
+#endif
+#ifdef LED_8
+sbit led_8 = LED_8;
+#endif
+#ifdef LED_9
+sbit led_9 = LED_9;
+#endif
 
 /*------------------------------------------------------------------*/
 
@@ -869,6 +881,22 @@ void led_set(unsigned char led, unsigned char flag) reentrant
 #ifdef LED_5
    if (led == 5)
       led_5 = flag;
+#endif
+#ifdef LED_6
+   if (led == 6)
+      led_6 = flag;
+#endif
+#ifdef LED_7
+   if (led == 7)
+      led_7 = flag;
+#endif
+#ifdef LED_8
+   if (led == 8)
+      led_8 = flag;
+#endif
+#ifdef LED_9
+   if (led == 9)
+      led_9 = flag;
 #endif
 }
 
