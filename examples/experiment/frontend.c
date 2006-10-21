@@ -335,10 +335,9 @@ INT read_trigger_event(char *pevent, INT off)
    camo(CRATE, SLOT_IO, 1, 16, 0xFF);
    camo(CRATE, SLOT_IO, 1, 16, 0);
 
-   //ss_sleep(10);
+   ss_sleep(10);
 
-   //return bk_size(pevent);
-   return 1000;
+   return bk_size(pevent);
 }
 
 /*-- Scaler event --------------------------------------------------*/
