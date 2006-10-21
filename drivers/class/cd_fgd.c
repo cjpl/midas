@@ -18,7 +18,7 @@
   uses the mscbfgd.c and standard mscb suite.
   (mscb, mscbrpc, musbstd)
 
-  $Id$
+  $Id: cd_fgd.c$
 
 \********************************************************************/
 
