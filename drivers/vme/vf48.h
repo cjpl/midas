@@ -126,6 +126,7 @@ ID#   Def Value
 
 int  vf48_Setup(MVME_INTERFACE *mvme, DWORD base, int mode);
 int  vf48_EventRead(MVME_INTERFACE *myvme, DWORD base, DWORD *event, int *elements);
+int  vf48_EventRead64(MVME_INTERFACE *myvme, DWORD base, DWORD *event, int *elements);
 int  vf48_GroupRead(MVME_INTERFACE *myvme, DWORD base, DWORD *event, int grp, int *elements);
 int  vf48_DataRead(MVME_INTERFACE *myvme, DWORD base, DWORD *event, int *elements);
 int  vf48_ExtTrgSet(MVME_INTERFACE *myvme, DWORD base);
