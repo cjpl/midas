@@ -252,7 +252,7 @@ struct sis1100_vme_block_req block_req;
    block_req.size=4;
    block_req.am=0x39;
    block_req.addr=vme_adr ;
-   block_req.data = vme_data ;
+   block_req.data = (u_int8_t*)vme_data ;
 
    if (ioctl(p, SIS3100_VME_BLOCK_READ, &block_req)<0)  return -1 ;   /* NEW */
    *got_num_of_lwords = block_req.num;
@@ -270,7 +270,7 @@ struct sis1100_vme_block_req block_req;
    block_req.size=4;
    block_req.am=0x3b;
    block_req.addr=vme_adr ;
-   block_req.data = vme_data ;
+   block_req.data = (u_int8_t*)vme_data ;
    if (ioctl(p, SIS3100_VME_BLOCK_READ, &block_req)<0)  return -1 ;   /* NEW */
    *got_num_of_lwords = block_req.num;
    return block_req.error ;            /* NEW */
@@ -288,7 +288,7 @@ struct sis1100_vme_block_req block_req;
    block_req.size=4;
    block_req.am=0x38;
    block_req.addr=vme_adr ;
-   block_req.data = vme_data ;
+   block_req.data = (u_int8_t*)vme_data ;
    if (ioctl(p, SIS3100_VME_BLOCK_READ, &block_req)<0)  return -1 ;   /* NEW */
    *got_num_of_lwords = block_req.num;
    return block_req.error ;            /* NEW */
@@ -306,7 +306,7 @@ struct sis1100_vme_block_req block_req;
    block_req.size=4;
    block_req.am=0x3b;
    block_req.addr=vme_adr ;
-   block_req.data = vme_data ;
+   block_req.data = (u_int8_t*)vme_data ;
    if (ioctl(p, SIS3100_VME_BLOCK_READ, &block_req)<0)  return -1 ;   /* NEW */
    *got_num_of_lwords = block_req.num;
    return block_req.error ;            /* NEW */
@@ -324,7 +324,7 @@ struct sis1100_vme_block_req block_req;
    block_req.size=4;
    block_req.am=0x38;
    block_req.addr=vme_adr ;
-   block_req.data = vme_data ;
+   block_req.data = (u_int8_t*)vme_data ;
    if (ioctl(p, SIS3100_VME_BLOCK_READ, &block_req)<0)  return -1 ;   /* NEW */
    *got_num_of_lwords = block_req.num;
    return block_req.error ;            /* NEW */
@@ -388,7 +388,7 @@ struct sis1100_vme_block_req block_req;
    block_req.size=4;
    block_req.am=0x39;
    block_req.addr=vme_adr ;
-   block_req.data = vme_data ;
+   block_req.data = (u_int8_t*)vme_data ;
    if (ioctl(p, SIS3100_VME_BLOCK_WRITE, &block_req)<0)  return -1 ;  /* NEW */
    *put_num_of_lwords = block_req.num;
    return block_req.error ;        /* NEW */
@@ -405,7 +405,7 @@ struct sis1100_vme_block_req block_req;
    block_req.size=4;
    block_req.am=0x3b;
    block_req.addr=vme_adr ;
-   block_req.data = vme_data ;
+   block_req.data = (u_int8_t*)vme_data ;
    if (ioctl(p, SIS3100_VME_BLOCK_WRITE, &block_req)<0)  return -1 ;  /* NEW */
    *put_num_of_lwords = block_req.num;
    return block_req.error ;        /* NEW */
@@ -422,7 +422,7 @@ struct sis1100_vme_block_req block_req;
    block_req.size=4;
    block_req.am=0x38;
    block_req.addr=vme_adr ;
-   block_req.data = vme_data ;
+   block_req.data = (u_int8_t*)vme_data ;
    if (ioctl(p, SIS3100_VME_BLOCK_WRITE, &block_req)<0)  return -1 ;  /* NEW */
    *put_num_of_lwords = block_req.num;
    return block_req.error ;        /* NEW */
@@ -521,7 +521,7 @@ struct sis1100_vme_block_req block_req;
    block_req.size=4;
    block_req.am=0x9;
    block_req.addr=vme_adr ;
-   block_req.data = vme_data ;
+   block_req.data = (u_int8_t*)vme_data ;
 
    if (ioctl(p, SIS3100_VME_BLOCK_READ, &block_req)<0)  return -1 ;   /* NEW */
    *got_num_of_lwords = block_req.num;
@@ -543,7 +543,7 @@ struct sis1100_vme_block_req block_req;
    block_req.size=4;
    block_req.am=0xb;
    block_req.addr=vme_adr ;
-   block_req.data = vme_data ;
+   block_req.data = (u_int8_t*)vme_data ;
 
    if (ioctl(p, SIS3100_VME_BLOCK_READ, &block_req)<0)  return -1 ;   /* NEW */
    *got_num_of_lwords = block_req.num;
@@ -562,7 +562,7 @@ struct sis1100_vme_block_req block_req;
    block_req.size=4;
    block_req.am=0x8;
    block_req.addr=vme_adr ;
-   block_req.data = vme_data ;
+   block_req.data = (u_int8_t*)vme_data ;
    if (ioctl(p, SIS3100_VME_BLOCK_READ, &block_req)<0)  return -1 ;   /* NEW */
    *got_num_of_lwords = block_req.num;
    return block_req.error ;            /* NEW */
@@ -580,7 +580,7 @@ struct sis1100_vme_block_req block_req;
    block_req.size=4;
    block_req.am=0x20;
    block_req.addr=vme_adr ;
-   block_req.data = vme_data ;
+   block_req.data = (u_int8_t*)vme_data ;
    if (ioctl(p, SIS3100_VME_BLOCK_READ, &block_req)<0)  return -1 ;   /* NEW */
    *got_num_of_lwords = block_req.num;
    return block_req.error ;            /* NEW */
@@ -601,7 +601,7 @@ struct sis1100_vme_block_req block_req;
    block_req.size=4;
    block_req.am=0x9;
    block_req.addr=vme_adr ;
-   block_req.data = vme_data ;
+   block_req.data = (u_int8_t*)vme_data ;
    if (ioctl(p, SIS3100_VME_BLOCK_READ, &block_req)<0)  return -1 ;   /* NEW */
    *got_num_of_lwords = block_req.num;
    return block_req.error ;            /* NEW */
@@ -621,7 +621,7 @@ struct sis1100_vme_block_req block_req;
    block_req.size=4;
    block_req.am=0xb;
    block_req.addr=vme_adr ;
-   block_req.data = vme_data ;
+   block_req.data = (u_int8_t*)vme_data ;
    if (ioctl(p, SIS3100_VME_BLOCK_READ, &block_req)<0)  return -1 ;   /* NEW */
    *got_num_of_lwords = block_req.num;
    return block_req.error ;            /* NEW */
@@ -639,7 +639,7 @@ struct sis1100_vme_block_req block_req;
    block_req.size=4;
    block_req.am=0x8;
    block_req.addr=vme_adr ;
-   block_req.data = vme_data ;
+   block_req.data = (u_int8_t*)vme_data ;
    if (ioctl(p, SIS3100_VME_BLOCK_READ, &block_req)<0)  return -1 ;   /* NEW */
    *got_num_of_lwords = block_req.num;
    return block_req.error ;            /* NEW */
@@ -656,7 +656,7 @@ struct sis1100_vme_block_req block_req;
    block_req.size=4;
    block_req.am=0x20;
    block_req.addr=vme_adr ;
-   block_req.data = vme_data ;
+   block_req.data = (u_int8_t*)vme_data ;
    if (ioctl(p, SIS3100_VME_BLOCK_READ, &block_req)<0)  return -1 ;   /* NEW */
    *got_num_of_lwords = block_req.num;
    return block_req.error ;            /* NEW */
@@ -724,7 +724,7 @@ struct sis1100_vme_block_req block_req;
    block_req.size=4;
    block_req.am=0x9;
    block_req.addr=vme_adr ;
-   block_req.data = vme_data ;
+   block_req.data = (u_int8_t*)vme_data ;
    if (ioctl(p, SIS3100_VME_BLOCK_WRITE, &block_req)<0)  return -1 ;  /* NEW */
    *put_num_of_lwords = block_req.num;
    return block_req.error ;        /* NEW */
@@ -740,7 +740,7 @@ struct sis1100_vme_block_req block_req;
    block_req.size=4;
    block_req.am=0xb;
    block_req.addr=vme_adr ;
-   block_req.data = vme_data ;
+   block_req.data = (u_int8_t*)vme_data ;
 
    if (ioctl(p, SIS3100_VME_BLOCK_WRITE, &block_req)<0)  return -1 ;  /* NEW */
    *put_num_of_lwords = block_req.num;
@@ -758,7 +758,7 @@ struct sis1100_vme_block_req block_req;
    block_req.size=4;
    block_req.am=0x8;
    block_req.addr=vme_adr ;
-   block_req.data = vme_data ;
+   block_req.data = (u_int8_t*)vme_data ;
    if (ioctl(p, SIS3100_VME_BLOCK_WRITE, &block_req)<0)  return -1 ;  /* NEW */
    *put_num_of_lwords = block_req.num;
    return block_req.error ;        /* NEW */
