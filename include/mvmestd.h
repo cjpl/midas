@@ -68,8 +68,9 @@ typedef unsigned int DWORD;
 
 /*---- types -------------------------------------------------------*/
 
-typedef unsigned long mvme_addr_t;
-typedef unsigned long mvme_size_t;
+typedef unsigned int mvme_addr_t;
+typedef unsigned int mvme_locaddr_t;
+typedef unsigned int mvme_size_t;
 
 /*---- constants ---------------------------------------------------*/
 
@@ -237,7 +238,7 @@ size of the data. See example in @ref mvme_open()
 @param n_bytes requested transfer size.
 @return MVME_SUCCESS              
 */
-int EXPRT mvme_read(MVME_INTERFACE *vme, void *dst, mvme_addr_t vme_addr, mvme_size_t n_bytes);
+int EXPRT mvme_read(MVME_INTERFACE *vme, mvme_locaddr_t *dst, mvme_addr_t vme_addr, mvme_size_t n_bytes);
 
 /********************************************************************/
 /**
@@ -260,7 +261,7 @@ size of the data. See example in @ref mvme_open()
 @param n_bytes  size of the array in bytes
 @return MVME_SUCCESS               
 */
-int EXPRT mvme_write(MVME_INTERFACE *vme, mvme_addr_t vme_addr, void *src, mvme_size_t n_bytes);
+int EXPRT mvme_write(MVME_INTERFACE *vme, mvme_addr_t vme_addr, mvme_locaddr_t *src, mvme_size_t n_bytes);
 
 /********************************************************************/
 /**

@@ -134,7 +134,7 @@ int mvme_sysreset(MVME_INTERFACE *vme)
 
 /*------------------------------------------------------------------*/
 
-int mvme_write(MVME_INTERFACE *vme, mvme_addr_t vme_addr, void *src, mvme_size_t n_bytes)
+int mvme_write(MVME_INTERFACE *vme, mvme_addr_t vme_addr, mvme_locaddr_t *src, mvme_size_t n_bytes)
 {
    mvme_size_t n;
    DWORD status, data;
@@ -272,7 +272,7 @@ int mvme_write_value(MVME_INTERFACE *vme, mvme_addr_t vme_addr, DWORD value)
 
 /*------------------------------------------------------------------*/
 
-int mvme_read(MVME_INTERFACE *vme, void *dst, mvme_addr_t vme_addr, mvme_size_t n_bytes)
+int mvme_read(MVME_INTERFACE *vme, mvme_locaddr_t *dst, mvme_addr_t vme_addr, mvme_size_t n_bytes)
 {
    mvme_size_t i, n;
    DWORD data;
