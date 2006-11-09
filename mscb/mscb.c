@@ -9,7 +9,7 @@
 
 \********************************************************************/
 
-#define MSCB_LIBRARY_VERSION   "2.3.2"
+#define MSCB_LIBRARY_VERSION   "2.3.3"
 #define MSCB_PROTOCOL_VERSION  "4"
 #define MSCB_SUBM_VERSION      4
 
@@ -796,7 +796,7 @@ int mscb_out(int index, unsigned char *buffer, int len, int flags)
          mscb_fd[index - 1].fd = mrpc_connect(mscb_fd[index - 1].device, MSCB_NET_PORT);
 
          if (mscb_fd[index - 1].fd < 0)
-            return MSCB_TIMEOUT;
+            return MSCB_SUBM_ERROR;
 
          i = msend_tcp(mscb_fd[index - 1].fd, eth_buf, len + 2);
       }
@@ -906,9 +906,9 @@ int recv_eth(int sock, char *buf, int buffer_size, int millisec)
    if (buffer_size > sizeof(buffer))
       buffer_size = sizeof(buffer);
 
-   /* at least 5 sec timeout for slow network connections */
-   if (millisec < 5000)
-      millisec = 5000;
+   /* at least 3 sec timeout for slow network connections */
+   if (millisec < 3000)
+      millisec = 3000;
 
    /* receive buffer in TCP mode, first byte contains remaining bytes */
    n_received = 0;
@@ -1912,8 +1912,8 @@ int mscb_reset(int fd)
       mscb_fd[fd - 1].fd = mrpc_connect(mscb_fd[fd - 1].device, MSCB_NET_PORT);
       if (mscb_fd[fd - 1].fd < 0) {
          mscb_release(fd);
-         debug_log("return MSCB_TIMEOUT (mrpc_connect)\n", 0);
-         return MSCB_TIMEOUT;
+         debug_log("return MSCB_SUBM_ERROR (mrpc_connect)\n", 0);
+         return MSCB_SUBM_ERROR;
       }
 
    } else if (mscb_fd[fd - 1].type == MSCB_TYPE_USB) {
@@ -3470,17 +3470,26 @@ int mscb_read(int fd, unsigned short adr, unsigned char index, void *data, int *
       return MSCB_MUTEX;
    }
 
-   /* try ten times */
-   for (n = i = 0; n < 10 ; n++) {
+   /* try five times */
+   for (n = i = 0; n < 5 ; n++) {
 
-      /* after five times, reset submaster */
-      if (n == 5) {
+      /* after three times, reset submaster */
+      if (n == 3) {
 #ifndef _USRDLL
          printf("Automatic submaster reset\n");
 #endif
          debug_log("Automatic submaster reset\n", 1);
          mscb_release(fd);
-         mscb_reset(fd);
+         status = mscb_reset(fd);
+         if (status == MSCB_SUBM_ERROR) {
+            sprintf(str, "Cannot reconnect to submaster %s\n", mscb_fd[fd - 1].device);
+#ifndef _USRDLL
+            printf(str);
+#endif
+            debug_log(str, 1);
+            mscb_lock(fd);
+            break;
+         }
          mscb_lock(fd);
          Sleep(100);
       }
@@ -3501,6 +3510,14 @@ int mscb_read(int fd, unsigned short adr, unsigned char index, void *data, int *
 #endif
          debug_log("Timeout writing to sumbster\n", 1);
          continue;
+      }
+      if (status == MSCB_SUBM_ERROR) {
+#ifndef _USRDLL
+         /* show error, but repeat 10 times */
+         printf("Connection to submaster broken\n");
+#endif
+         debug_log("Connection to submaster broken\n", 1);
+         break;
       }
 
       /* read data */
@@ -3598,10 +3615,11 @@ int mscb_read(int fd, unsigned short adr, unsigned char index, void *data, int *
 
    debug_log("\n", 0);
    if (status == MSCB_TIMEOUT)
-      debug_log("return MSCB_TIMEOUT\n", 1);
-
+     debug_log("return MSCB_TIMEOUT\n", 1);
    if (status == MSCB_CRC_ERROR)
       debug_log("return MSCB_CRC_ERROR\n", 1);
+   if (status == MSCB_SUBM_ERROR)
+      debug_log("return MSCB_SUBM_ERROR\n", 1);
 
    return status;
 }
