@@ -68,6 +68,9 @@
 #ifdef scs_2000
 #define SCS_2000
 #endif
+#ifdef hvr_200
+#define HVR_200
+#endif
 #ifdef hvr_400
 #define HVR_400
 #endif
@@ -244,6 +247,16 @@ sbit RS485_SEC_ENABLE = P0 ^ 4;
 #define LCD_SUPPORT
 #define LCD_8BIT
 #define DYN_VARIABLES
+
+/*--------------------------------*/
+#elif defined(HVR_200)
+#include <c8051F120.h>
+#define CPU_C8051F120
+
+#define LED_0 P1 ^ 6
+#define LED_1 P1 ^ 7 
+#define LED_ON 1
+sbit RS485_ENABLE = P0 ^ 5;
 
 /*--------------------------------*/
 #elif defined(HVR_400)
