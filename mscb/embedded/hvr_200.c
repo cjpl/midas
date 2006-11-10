@@ -37,10 +37,10 @@ char code node_name[] = "HVR-200";
 #define DIVIDER ((41E6 + 33E3) / 33E3)
 
 /* current resistor */
-#define RCURR 56E3
+#define RCURR 1E3
 
 /* current multiplier */
-#define CUR_MULT 15
+#define CUR_MULT 10
 
 /* delay for opto-couplers in us */
 #define OPT_DELAY 300
@@ -79,7 +79,7 @@ sbit C0ADC_SDO = P0 ^ 2;       // Data out
 /* LTC2400 pins channel 1 */
 sbit C1ADC_SCK = P2 ^ 4;       // Serial Clock
 sbit C1ADC_NCS = P2 ^ 3;       // !Chip select
-sbit C1ADC_SDO = P2 ^ 1;       // Data out ##???
+sbit C1ADC_SDO = P0 ^ 3;       // Data out
 
 /* AD7718 registers */
 #define REG_STATUS     0
@@ -419,6 +419,8 @@ unsigned char i, m, b;
          watchdog_refresh(1);
       }
    
+      C0DAC_SCK = 0;
+      delay_us(OPT_DELAY);
       C0DAC_NCS = 1; // remove chip select
       delay_us(OPT_DELAY);
       watchdog_refresh(1);
@@ -453,6 +455,8 @@ unsigned char i, m, b;
          watchdog_refresh(1);
       }
    
+      C1DAC_SCK = 0;
+      delay_us(OPT_DELAY);
       C1DAC_NCS = 1; // remove chip select
       delay_us(OPT_DELAY);
       watchdog_refresh(1);
@@ -834,10 +838,10 @@ void set_current_limit(unsigned char channel, float value)
       trip_disable = 0;
    
       /* "reverse" calibration */
-      value = (value - user_data[0].cur_offset) / user_data[0].cur_gain;
+      //value = (value - user_data[0].cur_offset) / user_data[0].cur_gain;
    
       /* convert current to voltage */
-      value = value / DIVIDER * CUR_MULT * RCURR / 1E6;
+      //value = value / DIVIDER * CUR_MULT * RCURR / 1E6;
    
       /* convert to DAC units */
       d = (unsigned short) ((value / 2.5 * 65535) + 0.5);
@@ -947,20 +951,17 @@ void read_current(unsigned char channel)
    if (!cadc_read(channel, &current))
       return;
 
-   /* correct opamp gain, divider & curr. resist, microamp */
-   //current = current / CUR_MULT * DIVIDER / RCURR * 1E6;
-
-   /* correct for unbalanced voltage dividers */
-   //current -= user_data[channel].cur_vgain * user_data[channel].u_meas;
+   /* I[uA] = U/R*10^6 */
+   current = current / CUR_MULT / RCURR * 1E6;
 
    /* correct for offset */
-   //current -= user_data[channel].cur_offset;
+   current -= user_data[channel].cur_offset;
 
    /* calibrate gain */
-   //current = current * user_data[channel].cur_gain;
+   current = current * user_data[channel].cur_gain;
 
    /* 0.001 resolution */
-   //current = floor(current * 1000) / 1000.0;
+   current = floor(current * 1000) / 1000.0;
 
    DISABLE_INTERRUPTS;
    user_data[channel].i_meas = current;
@@ -1199,7 +1200,7 @@ void user_loop(void)
          hv_on(channel, 1);
          trip_reset = 0;
       }
-   }
+  }
 
    // read_temperature();
 }
