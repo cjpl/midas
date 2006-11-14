@@ -45,6 +45,9 @@ char code node_name[] = "HVR-200";
 /* delay for opto-couplers in us */
 #define OPT_DELAY 300
 
+/* Jumper1: HIGH for positive, LOW for negative */
+sbit JU1       = P1 ^ 5;
+
 /* main HV switches */
 sbit HV1_OFF   = P3 ^ 5;
 sbit HV2_OFF   = P3 ^ 4;
@@ -237,6 +240,14 @@ void user_init(unsigned char init)
 
       u_actual[i] = 0;
       t_ramp[i] = time();
+
+      /* read pos/neg jumper */
+      JU1 = 1;
+      if (JU1 == 0)
+         user_data[i].status |= STATUS_NEGATIVE;
+      else
+         user_data[i].status &= ~STATUS_NEGATIVE;
+      user_data[i].status |= STATUS_LOWCUR;
    }
 
    /* switch off HVs */
