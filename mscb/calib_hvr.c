@@ -187,7 +187,7 @@ int calib(int fd, unsigned short adr, unsigned short adr_dvm, unsigned short adr
    int size, d, status, low_current;
    char str[80];
    float v_adc1, v_adc2, v_multi1, v_multi2, adc_gain, adc_ofs, 
-      dac_gain, dac_ofs, i1, i2, i_900, i_gain, i_vgain, i_ofs;
+      dac_gain, dac_ofs, i1, i2, i_900, i_200, i_gain, i_vgain, i_ofs;
 
    eprintf("\n**** Calibrating channel %d ****\n\n", adr);
 
@@ -352,7 +352,7 @@ int calib(int fd, unsigned short adr, unsigned short adr_dvm, unsigned short adr
       /* set demand to 0V */
       f = 0;
       mscb_write(fd, adr, CH_VDEMAND, &f, sizeof(float));
-      eprintf("\00Please connect 5GOhm resistor to channel %d and press ENTER\n", adr);
+      eprintf("\007Please connect 5GOhm resistor to channel %d and press ENTER\n", adr);
       fgets(str, sizeof(str), stdin);
    }
 
@@ -369,7 +369,7 @@ int calib(int fd, unsigned short adr, unsigned short adr_dvm, unsigned short adr
    /* read current */
    size = sizeof(float);
    mscb_read(fd, adr, CH_IMEAS, &i_900, &size);
-   eprintf("\nI at 900V  :  %5.1lf uA\n", i_900);
+   eprintf("\nI at 900V  :  %5.3lf uA\n", i_900);
 
    /* remove voltage */
    f = 0;
@@ -379,97 +379,129 @@ int calib(int fd, unsigned short adr, unsigned short adr_dvm, unsigned short adr
    f = 2500;
    mscb_write(fd, adr, CH_ILIMIT, &f, sizeof(float));
 
-   if (adr_mux == 0xFFFF) {
-      if (next_adr > 0) {
-         f = 0;
-         mscb_write(fd, next_adr, CH_VDEMAND, &f, sizeof(float));
-         eprintf("\n\007Please connect multimeter to channel %d and press ENTER\n", next_adr);
-      } else
-         eprintf("\n\007Please disconnect multimeter from channel %d and press ENTER\n", adr);
-      fgets(str, sizeof(str), stdin);
-   } else {
-      if (next_adr > 0)
-         d = next_adr % 10;
-      else
-         d = 10;
-      status = mscb_write(fd, adr_mux, 0, &d, 1);
-      if (status != MSCB_SUCCESS) {
-         eprintf("Error %d setting multiplexer at address %d.\n", status, adr_mux);
-         stop();
+   if (!low_current) {
+      if (adr_mux == 0xFFFF) {
+         if (next_adr > 0) {
+            f = 0;
+            mscb_write(fd, next_adr, CH_VDEMAND, &f, sizeof(float));
+            eprintf("\n\007Please connect multimeter to channel %d and press ENTER\n", next_adr);
+         } else
+            eprintf("\n\007Please disconnect multimeter from channel %d and press ENTER\n", adr);
+         fgets(str, sizeof(str), stdin);
+      } else {
+         if (next_adr > 0)
+            d = next_adr % 10;
+         else
+            d = 10;
+         status = mscb_write(fd, adr_mux, 0, &d, 1);
+         if (status != MSCB_SUCCESS) {
+            eprintf("Error %d setting multiplexer at address %d.\n", status, adr_mux);
+            stop();
+         }
+         if (next_adr > 0)
+            eprintf("\nMultiplexer set to channel %d\n\n", next_adr);
+         else
+            eprintf("\nMultiplexer set to disconnected\n\n");
       }
-      if (next_adr > 0)
-         eprintf("\nMultiplexer set to channel %d\n\n", next_adr);
-      else
-         eprintf("\nMultiplexer set to disconnected\n\n");
    }
 
-   /* set CSR to HV on, no regulation */
-   d = 1;
-   mscb_write(fd, adr, CH_CONTROL, &d, 1);
+   if (low_current) {
 
-   /*---- measure I-V gain ----*/
-
-   /* set demand to 100V */
-   f = 100;
-   mscb_write(fd, adr, CH_VDEMAND, &f, sizeof(float));
-   Sleep(HV_SET_DELAY);
-
-   /* read current */
-   size = sizeof(float);
-   mscb_read(fd, adr, CH_IMEAS, &i1, &size);
-   eprintf("I at 100V  :  %5.1lf uA\n", i1);
-
-   do {
-      /* set demand to 900V */
-      f = 900;
+      /* set demand to 200V */
+      f = 200;
       mscb_write(fd, adr, CH_VDEMAND, &f, sizeof(float));
       Sleep(HV_SET_DELAY);
 
-      /* read voltage */
+      /* read current */
       size = sizeof(float);
-      mscb_read(fd, adr, CH_VMEAS, &v_adc1, &size);
+      mscb_read(fd, adr, CH_IMEAS, &i_200, &size);
+      eprintf("I at 200V  :  %5.3lf uA\n", i_200);
 
-      if (v_adc1 < 890) {
-         v_adc2 = 900 - v_adc1 + 100;
-         v_adc2 = (float) ((int) (v_adc2 / 100.0) * 100);
+      i_vgain = 0;
 
-         eprintf("Only %1.1lf V can be reached on output,\n", v_adc1);
-         eprintf("please increase input voltage by %1.0lf V and press ENTER.\n", v_adc2);
-         fgets(str, sizeof(str), stdin);
+      /* calculate current gain */
+      i_gain = (float) ((900-200)/5E3) / (i_900 - i_200);
+
+      /* calcualte offset */
+      i_ofs = (float) ((i_900 - 900.0/(5E3 * i_gain)));
+
+      eprintf("\nI vgain    : %10.5lf\n", i_vgain);
+      eprintf("I offset   : %10.5lf\n", i_ofs);
+      eprintf("I gain     : %10.5lf\n", i_gain);
+      mscb_write(fd, adr, CH_CURVGAIN, &i_vgain, sizeof(float));
+      mscb_write(fd, adr, CH_CUROFS, &i_ofs, sizeof(float));
+      mscb_write(fd, adr, CH_CURGAIN, &i_gain, sizeof(float));
+
+   } else {
+
+      /* set CSR to HV on, no regulation */
+      d = 1;
+      mscb_write(fd, adr, CH_CONTROL, &d, 1);
+
+      /*---- measure I-V gain ----*/
+
+      /* set demand to 100V */
+      f = 100;
+      mscb_write(fd, adr, CH_VDEMAND, &f, sizeof(float));
+      Sleep(HV_SET_DELAY);
+
+      /* read current */
+      size = sizeof(float);
+      mscb_read(fd, adr, CH_IMEAS, &i1, &size);
+      eprintf("I at 100V  :  %5.1lf uA\n", i1);
+
+      do {
+         /* set demand to 900V */
+         f = 900;
+         mscb_write(fd, adr, CH_VDEMAND, &f, sizeof(float));
+         Sleep(HV_SET_DELAY);
+
+         /* read voltage */
+         size = sizeof(float);
+         mscb_read(fd, adr, CH_VMEAS, &v_adc1, &size);
+
+         if (v_adc1 < 890) {
+            v_adc2 = 900 - v_adc1 + 100;
+            v_adc2 = (float) ((int) (v_adc2 / 100.0) * 100);
+
+            eprintf("Only %1.1lf V can be reached on output,\n", v_adc1);
+            eprintf("please increase input voltage by %1.0lf V and press ENTER.\n", v_adc2);
+            fgets(str, sizeof(str), stdin);
+         }
+
+      } while (v_adc1 < 890);
+
+      /* read current */
+      size = sizeof(float);
+      mscb_read(fd, adr, CH_IMEAS, &i2, &size);
+      eprintf("I at 900V  :  %5.1lf uA\n", i2);
+
+      if (i_900 - i2 < 10) {
+         eprintf("\nERROR: The current variation is too small, probably current measurement is not working\n");
+         eprintf("Aborting calibration.\n");
+         stop();
       }
 
-   } while (v_adc1 < 890);
+      /* calculate voltage-current correction */
+      i_vgain = (float) (i2 - i1) / (900 - 100);
 
-   /* read current */
-   size = sizeof(float);
-   mscb_read(fd, adr, CH_IMEAS, &i2, &size);
-   eprintf("I at 900V  :  %5.1lf uA\n", i2);
+      /* calcualte offset */
+      i_ofs = (float) ((i2 - i1 * 900.0/100.0) / (1 - 900.0/100.0));
 
-   if (i_900 - i2 < 10) {
-      eprintf("\nERROR: The current variation is too small, probably current measurement is not working\n");
-      eprintf("Aborting calibration.\n");
-      stop();
-   }
+      /* calculate current gain */
+      i_gain = (float) (900/rin_dvm*1E6) / (i_900 - i2);
 
-   /* calculate voltage-current correction */
-   i_vgain = (float) (i2 - i1) / (900 - 100);
+      eprintf("\nI vgain    : %10.5lf\n", i_vgain);
+      eprintf("I offset   : %10.5lf\n", i_ofs);
+      eprintf("I gain     : %10.5lf\n", i_gain);
+      mscb_write(fd, adr, CH_CURVGAIN, &i_vgain, sizeof(float));
+      mscb_write(fd, adr, CH_CUROFS, &i_ofs, sizeof(float));
+      mscb_write(fd, adr, CH_CURGAIN, &i_gain, sizeof(float));
 
-   /* calcualte offset */
-   i_ofs = (float) ((i2 - i1 * 900.0/100.0) / (1 - 900.0/100.0));
-
-   /* calculate current gain */
-   i_gain = (float) (900/rin_dvm*1E6) / (i_900 - i2);
-
-   eprintf("\nI vgain    : %10.5lf\n", i_vgain);
-   eprintf("I offset   : %10.5lf\n", i_ofs);
-   eprintf("I gain     : %10.5lf\n", i_gain);
-   mscb_write(fd, adr, CH_CURVGAIN, &i_vgain, sizeof(float));
-   mscb_write(fd, adr, CH_CUROFS, &i_ofs, sizeof(float));
-   mscb_write(fd, adr, CH_CURGAIN, &i_gain, sizeof(float));
-
-   if (i_ofs < 0) {
-      eprintf("\nWARNING: The current offset is negative, which means that a current\n");
-      eprintf("below %1.0lfuA cannot be measured. A compensation resistor to Vref is missing.\n\n", i_ofs);
+      if (i_ofs < 0) {
+         eprintf("\nWARNING: The current offset is negative, which means that a current\n");
+         eprintf("below %1.0lfuA cannot be measured. A compensation resistor to Vref is missing.\n\n", i_ofs);
+      }
    }
 
    /* remove voltage */
@@ -530,11 +562,11 @@ int main(int argc, char *argv[])
    /* delete log file */
    unlink("calib_hvr.log");
 
-   printf("Enter address of first HVR-400/500 channel            [  0] : ");
+   printf("Enter address of first HVR-200/400/500 channel        [  0] : ");
    fgets(str, sizeof(str), stdin);
    adr_start = (unsigned short)atoi(str);
 
-   printf("Enter address of last HVR-400/500 channel             [%3d] : ", adr_start + 9);
+   printf("Enter address of last HVR-200/400/500 channel         [%3d] : ", adr_start + 9);
    fgets(str, sizeof(str), stdin);
    if (!isdigit(str[0]))
       adr_end = adr_start + 9;
@@ -597,7 +629,7 @@ int main(int argc, char *argv[])
       memset(str, 0, sizeof(str));
       memcpy(str, info.name, 8);
       if (strcmp(str, "CURofs") != 0) {
-         eprintf("Incorrect software version HVR-400/500. Expect \"CURofs\" on var #%d.\n", CH_CUROFS);
+         eprintf("Incorrect software version HVR-200/400/500. Expect \"CURofs\" on var #%d.\n", CH_CUROFS);
          stop();
       }
    }
