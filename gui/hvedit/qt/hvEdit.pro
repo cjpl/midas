@@ -33,7 +33,7 @@ CONFIG += qt warn_on debug
 #            needed path.
 HOME = .
 INCLUDEPATH += $${HOME}/Qt_Dlgs
-INCLUDEPATH += $$(MIDAS_ROOT)/include
+INCLUDEPATH += $$(MIDASSYS)/include
 
 #
 # linux standard libs
