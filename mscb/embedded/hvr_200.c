@@ -52,6 +52,10 @@ sbit JU1       = P1 ^ 5;
 sbit HV1_OFF   = P3 ^ 5;
 sbit HV2_OFF   = P3 ^ 4;
 
+/* HV trip signals */
+sbit HV1_TRIP  = P1 ^ 0;
+sbit HV2_TRIP  = P2 ^ 1;
+
 /* AD7718 pins */
 sbit ADC_SCLK  = P3 ^ 6;       // Serial Clock
 sbit ADC_NCS   = P3 ^ 3;       // !Chip select
@@ -124,6 +128,7 @@ bit trip_disable;
 #define STATUS_RAMP_DOWN   (1<<3)
 #define STATUS_VLIMIT      (1<<4)
 #define STATUS_ILIMIT      (1<<5)
+#define STATUS_RILIMIT     (1<<6)
 
 struct {
    unsigned char control;
@@ -133,10 +138,11 @@ struct {
    unsigned char status;
    unsigned char trip_cnt;
 
-   unsigned int ramp_up;
-   unsigned int ramp_down;
+   float ramp_up;
+   float ramp_down;
    float u_limit;
    float i_limit;
+   float ri_limit;
    unsigned char trip_max;
 
    float adc_gain;
@@ -158,21 +164,22 @@ MSCB_INFO_VAR code vars[] = {
    1, UNIT_BYTE,            0, 0,           0, "Status",  &user_data[0].status,      // 4
    1, UNIT_COUNT,           0, 0,           0, "TripCnt", &user_data[0].trip_cnt,    // 5
 
-   2, UNIT_VOLT,            0, 0,           0, "RampUp",  &user_data[0].ramp_up,     // 6
-   2, UNIT_VOLT,            0, 0,           0, "RampDown",&user_data[0].ramp_down,   // 7
+   4, UNIT_VOLT,            0, 0, MSCBF_FLOAT, "RampUp",  &user_data[0].ramp_up,     // 6
+   4, UNIT_VOLT,            0, 0, MSCBF_FLOAT, "RampDown",&user_data[0].ramp_down,   // 7
    4, UNIT_VOLT,            0, 0, MSCBF_FLOAT, "Ulimit",  &user_data[0].u_limit,     // 8
    4, UNIT_AMPERE, PRFX_MICRO, 0, MSCBF_FLOAT, "Ilimit",  &user_data[0].i_limit,     // 9
-   1, UNIT_COUNT,           0, 0,           0, "TripMax", &user_data[0].trip_max,    // 10
+   4, UNIT_AMPERE, PRFX_MICRO, 0, MSCBF_FLOAT, "RIlimit", &user_data[0].ri_limit,    // 10
+   1, UNIT_COUNT,           0, 0,           0, "TripMax", &user_data[0].trip_max,    // 12
 
    /* calibration constants */
-   4, UNIT_FACTOR,          0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "ADCgain", &user_data[0].adc_gain,    // 11
-   4, UNIT_VOLT,            0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "ADCofs",  &user_data[0].adc_offset,  // 12
-   4, UNIT_FACTOR,          0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "DACgain", &user_data[0].dac_gain,    // 13
-   4, UNIT_VOLT,            0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "DACofs",  &user_data[0].dac_offset,  // 14
-   4, UNIT_FACTOR,          0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "CURvgain",&user_data[0].cur_vgain,   // 15
-   4, UNIT_FACTOR,          0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "CURgain", &user_data[0].cur_gain,    // 16
-   4, UNIT_AMPERE, PRFX_MICRO, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "CURofs",  &user_data[0].cur_offset,  // 17
-   4, UNIT_VOLT,            0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "VDAC",    &user_data[0].u_dac,       // 18
+   4, UNIT_FACTOR,          0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "ADCgain", &user_data[0].adc_gain,    // 12
+   4, UNIT_VOLT,            0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "ADCofs",  &user_data[0].adc_offset,  // 13
+   4, UNIT_FACTOR,          0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "DACgain", &user_data[0].dac_gain,    // 14
+   4, UNIT_VOLT,            0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "DACofs",  &user_data[0].dac_offset,  // 15
+   4, UNIT_FACTOR,          0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "CURvgain",&user_data[0].cur_vgain,   // 16
+   4, UNIT_FACTOR,          0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "CURgain", &user_data[0].cur_gain,    // 17
+   4, UNIT_AMPERE, PRFX_MICRO, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "CURofs",  &user_data[0].cur_offset,  // 18
+   4, UNIT_VOLT,            0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "VDAC",    &user_data[0].u_dac,       // 19
    0
 };
 
@@ -208,10 +215,11 @@ void user_init(unsigned char init)
       for (i=0 ; i<N_HV_CHN ; i++) {
          user_data[i].u_demand = 0;
          user_data[i].trip_cnt = 0;
-         user_data[i].ramp_up = 0;
-         user_data[i].ramp_down = 0;
+         user_data[i].ramp_up = 300;
+         user_data[i].ramp_down = 300;
          user_data[i].u_limit = MAX_VOLTAGE;
          user_data[i].i_limit = MAX_CURRENT;
+         user_data[i].ri_limit = MAX_CURRENT;
          user_data[i].trip_max = 0;
 
          user_data[i].adc_gain = 1;
@@ -237,6 +245,9 @@ void user_init(unsigned char init)
 
       if (user_data[i].i_limit > MAX_CURRENT)
          user_data[i].i_limit = MAX_CURRENT;
+
+      if (user_data[i].ri_limit > MAX_CURRENT)
+         user_data[i].ri_limit = MAX_CURRENT;
 
       u_actual[i] = 0;
       t_ramp[i] = time();
@@ -272,7 +283,6 @@ void user_init(unsigned char init)
    for (i=0 ; i<N_HV_CHN ; i++)
       led_mode(i, 1);
 
-   trip_reset = 1;    // reset once
    trip_disable = 0;  // trip initially enabled
 }
 
@@ -282,11 +292,24 @@ void user_init(unsigned char init)
 
 void user_write(unsigned char index) reentrant
 {
-   if (index == 0 || index == 1 || index == 4) {
+   if (index == 0) {
+      /* main HV switch on/off */
+      if (user_data[cur_sub_addr()].control & CONTROL_HV_ON)
+         hv_on(cur_sub_addr(), 1);
+      else
+         hv_on(cur_sub_addr(), 0);
+   }
+
+   if (index == 1) {
+      /* indicate new demand voltage */
+      chn_bits[cur_sub_addr()] |= DEMAND_CHANGED;
+   }
+
+   if (index == 0 || index == 1 || index == 5) {
       /* reset trip */
       user_data[cur_sub_addr()].status &= ~STATUS_ILIMIT;
 
-      /* reset FF's in main loop */
+      /* reset trip in main loop */
       trip_reset = 1;
 
       /* indicate new demand voltage */
@@ -849,10 +872,10 @@ void set_current_limit(unsigned char channel, float value)
       trip_disable = 0;
    
       /* "reverse" calibration */
-      //value = (value - user_data[0].cur_offset) / user_data[0].cur_gain;
+      value = value / user_data[0].cur_gain + user_data[0].cur_offset;
    
       /* convert current to voltage */
-      //value = value / DIVIDER * CUR_MULT * RCURR / 1E6;
+      value = value * CUR_MULT * RCURR / 1E6;
    
       /* convert to DAC units */
       d = (unsigned short) ((value / 2.5 * 65535) + 0.5);
@@ -866,40 +889,10 @@ void set_current_limit(unsigned char channel, float value)
 
 unsigned char hardware_current_trip(unsigned char channel)
 {
-unsigned char d;
-
-   /* continuously set FF reset, in case ADC got HV flash */
-   if (trip_disable) {
-      write_adc(REG_IOCONTROL, (1 << 4)); // P1DIR=1,P1DAT=0
-	  return 0;
-   }
-
-   read_adc8(REG_IOCONTROL, &d);
-   
-   /* P2 of AD7718 should be low in case of trip */
-   if ((d & 2) > 0)
-      return 0;
-
-   /* only check some time after setting/ramping */
-
-   if (time() > t_ramp[channel] + 300) {
-      if (user_data[channel].adc_gain == 1) {
-         /* uncalibrated */
-         if (user_data[channel].u_meas < 100 && 
-             user_data[channel].u_demand > 150)
-            return 1;
-
-         return 0; 
-      } else {
-         /* calibrated */
-         if (user_data[channel].u_meas < 5 && user_data[channel].u_demand >= 5)
-            return 1;
-
-         return 0;
-      }
-   }
-
-   return 0;
+   if (channel == 0)
+      return HV1_TRIP == 0;
+   else
+      return HV2_TRIP == 0;
 }
 
 /*------------------------------------------------------------------*/
@@ -999,6 +992,7 @@ void ramp_hv(unsigned char channel)
             chn_bits[channel] &= ~RAMP_DOWN;
             user_data[channel].status |= STATUS_RAMP_UP;
             user_data[channel].status &= ~STATUS_RAMP_DOWN;
+            user_data[channel].status &= ~STATUS_RILIMIT;
             chn_bits[channel] &= ~DEMAND_CHANGED;
          }
 
@@ -1009,6 +1003,7 @@ void ramp_hv(unsigned char channel)
             chn_bits[channel] |= RAMP_DOWN;
             user_data[channel].status &= ~STATUS_RAMP_UP;
             user_data[channel].status |= STATUS_RAMP_DOWN;
+            user_data[channel].status &= ~STATUS_RILIMIT;
             chn_bits[channel] &= ~DEMAND_CHANGED;
          }
 
@@ -1019,7 +1014,12 @@ void ramp_hv(unsigned char channel)
       /* ramp up */
       if (chn_bits[channel] & RAMP_UP) {
          delta = time() - t_ramp[channel];
-         if (delta) {
+         if (user_data[channel].i_meas > user_data[channel].ri_limit)
+            user_data[channel].status |= STATUS_RILIMIT;
+         else
+            user_data[channel].status &= ~STATUS_RILIMIT;
+
+         if (delta && user_data[channel].i_meas < user_data[channel].ri_limit) {
             u_actual[channel] += (float) user_data[channel].ramp_up * delta / 100.0;
             user_data[channel].u_dac = u_actual[channel];
 
@@ -1030,7 +1030,7 @@ void ramp_hv(unsigned char channel)
                user_data[channel].u_dac = u_actual[channel];
                chn_bits[channel] &= ~RAMP_UP;
                user_data[channel].status &= ~STATUS_RAMP_UP;
-
+               user_data[channel].status &= ~STATUS_RILIMIT;
             }
 
             set_hv(channel, u_actual[channel]);
@@ -1052,7 +1052,6 @@ void ramp_hv(unsigned char channel)
                user_data[channel].u_dac = u_actual[channel];
                chn_bits[channel] &= ~RAMP_DOWN;
                user_data[channel].status &= ~STATUS_RAMP_DOWN;
-
             }
 
             set_hv(channel, u_actual[channel]);
@@ -1199,7 +1198,7 @@ void user_loop(void)
             trip_reset = 1;
          }
 
-         //check_current(channel);
+         check_current(channel);
 
          read_hv(channel);
          ramp_hv(channel);
