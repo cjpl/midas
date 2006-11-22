@@ -5,7 +5,7 @@
 
   Contents:     Mini RPC client program for test purposes.
 
-  $Id:$
+  $Id$
 
 \********************************************************************/
 
@@ -51,7 +51,7 @@ RPC_LIST rpc_list[] = {
 
 /*------------------------------------------------------------------*/
 
-main()
+int main()
 {
    char host_name[80];
    HNDLE hConn;
@@ -82,7 +82,7 @@ main()
    rpc_client_call(hConn, RPC_MYTEST, 1, 2, 3l, f, d, &b, &w, &i, &f, &d);
 
    printf("\nResult should be:  2 4 6 7.0 9.0\n");
-   printf("Result is:         %d %d %ld %1.1f %1.1lf\n", b, w, i, f, d);
+   printf("Result is:         %d %d %d %1.1f %1.1lf\n", b, w, i, f, d);
 
    printf("\nhit return...");
    b = getchar();
