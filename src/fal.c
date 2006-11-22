@@ -46,7 +46,8 @@ void create_sql_tree();
 #ifndef HFNOV
 #define HFNOV(A1,A2)  CCALLSFSUB2(HFNOV,hfnov,INT,FLOATV,A1,A2)
 #endif
-#endif                          // MANA_LITE
+#endif  // MANA_LITE
+
 /*---- globals -----------------------------------------------------*/
 
 #define FAL_MAIN
