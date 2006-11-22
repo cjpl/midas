@@ -38,7 +38,7 @@
     copyright            : (C) 2003 by
     email                : andreas.suter@psi.ch
 
-  $Id:$
+  $Id$
 
 ********************************************************************************************/
 
@@ -91,10 +91,10 @@ hvAdmin::hvAdmin()
   hvA_midas_odb_hv_current = settings.readEntry("/hvEdit/ODB Keys/MIDAS_KEY_HV_CURRENT", "Variables/Current", &b_hvA_midas_odb_hv_current);
   hvA_midas_odb_hv_current_limit = settings.readEntry("/hvEdit/ODB Keys/MIDAS_KEY_HV_CURRENT_LIMIT", "Settings/Current Limit", &b_hvA_midas_odb_hv_current_limit);
 
-  // add $MIDAS_ROOT to hvA_default_dir_docu
-  midas_root = getenv("MIDAS_ROOT");
-  if (midas_root.isNull()) { // haven't found $MIDAS_ROOT use current directory
-    cm_msg(MINFO, "hvAdmin", "hvEdit: Warning: Haven't found $MIDAS_ROOT use current directory.");
+  // add $MIDASSYS to hvA_default_dir_docu
+  midas_root = getenv("MIDASSYS");
+  if (midas_root.isNull()) { // haven't found $MIDASSYS use current directory
+    cm_msg(MINFO, "hvAdmin", "hvEdit: Warning: Haven't found $MIDASSYS use current directory.");
     midas_root = ".";
   }
   hvA_default_dir_docu = midas_root+"/"+hvA_default_dir_docu;
