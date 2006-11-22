@@ -271,8 +271,11 @@ INT ss_shm_open(char *name, INT size, void **adr, HNDLE *handle, BOOL get_size)
 
       /* if file doesn't exist, create it */
       if (key == -1) {
-         fh = open(file_name, O_CREAT | O_TRUNC | O_BINARY, 0644);
-         close(fh);
+         fh = open(file_name, O_CREAT | O_TRUNC | O_BINARY | O_RDWR, 0644);
+         if (fh > 0) {
+            ftruncate(fh, size);
+            close(fh);
+         }
          key = ftok(file_name, 'M');
 
          if (key == -1) {
