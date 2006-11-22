@@ -13,7 +13,7 @@
 #include <stdlib.h>
 #include <stdarg.h>
 #include "midas.h"
-#include "../mscb/mscb.h"
+#include "mscb.h"
 
 /*---- globals -----------------------------------------------------*/
 
