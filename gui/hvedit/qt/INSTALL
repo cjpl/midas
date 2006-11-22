@@ -13,7 +13,7 @@ The Makefile is created by the following command:
    qmake hvEdit.pro
 
 If everything goes smoothly there should be a file Makefile. hvEdit.pro
-assumes that a system variable MIDAS_ROOT exists which points to the current
+assumes that a system variable MIDASSYS exists which points to the current
 midas directory. Furthermore there is a variable HOME in the hvEdit.pro
 file which might be modified by the user beforehand executing qmake. HOME
 points to the directory where hvEdit shall be installed.
