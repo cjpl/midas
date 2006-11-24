@@ -205,6 +205,29 @@ INT mscbhvr(INT cmd, ...)
       status = FE_SUCCESS;
       break;
 
+   case CMD_GET_THRESHOLD:
+      value = 0.1f;
+      break;
+
+   case CMD_GET_THRESHOLD_CURRENT:
+      value = 1;
+      break;
+
+   case CMD_GET_VOLTAGE_LIMIT:
+   case CMD_GET_CURRENT_LIMIT:
+   case CMD_GET_RAMPUP:
+   case CMD_GET_RAMPDOWN:
+   case CMD_GET_TRIP_TIME:
+      status = FE_SUCCESS;
+      break;
+
+   case CMD_SET_VOLTAGE_LIMIT:
+   case CMD_SET_RAMPUP:
+   case CMD_SET_RAMPDOWN:
+   case CMD_SET_TRIP_TIME:
+      status = FE_SUCCESS;
+      break;
+
    default:
       cm_msg(MERROR, "mscbhvr device driver", "Received unknown command %d", cmd);
       status = FE_ERR_DRIVER;
