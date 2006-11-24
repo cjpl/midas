@@ -2860,13 +2860,13 @@ typedef struct {
    INT ipc_port;
    INT ipc_recv_socket;
    INT ipc_send_socket;
-    INT(*ipc_dispatch) (char *, INT);
+   INT(*ipc_dispatch) (char *, INT);
    INT listen_socket;
-    INT(*listen_dispatch) (INT);
+   INT(*listen_dispatch) (INT);
    RPC_SERVER_CONNECTION *server_connection;
-    INT(*client_dispatch) (INT);
+   INT(*client_dispatch) (INT);
    RPC_SERVER_ACCEPTION *server_acception;
-    INT(*server_dispatch) (INT, int, BOOL);
+   INT(*server_dispatch) (INT, int, BOOL);
    struct sockaddr_in bind_addr;
 } SUSPEND_STRUCT;
 
