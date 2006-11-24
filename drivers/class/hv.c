@@ -203,7 +203,7 @@ INT hv_read(EQUIPMENT * pequipment, int channel)
 
 INT hv_ramp(HV_INFO * hv_info)
 {
-   INT i, status, switch_tag;
+   INT i, status = 0, switch_tag;
    float delta, ramp_speed;
 
    for (i = 0; i < hv_info->num_channels; i++) {
