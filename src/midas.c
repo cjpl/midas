@@ -12994,6 +12994,7 @@ INT hs_define_event(DWORD event_id, char *name, TAG * tag, DWORD size)
    {
       HIST_RECORD rec, prev_rec;
       DEF_RECORD def_rec;
+      time_t ltime;
       char str[256], event_name[NAME_LENGTH], *buffer;
       int fh, fhi, fhd;
       INT i, n, len, index;
@@ -13070,7 +13071,8 @@ INT hs_define_event(DWORD event_id, char *name, TAG * tag, DWORD size)
             lseek(fhd, 0, SEEK_END);
          }
 
-         tmb = localtime((const time_t *) &rec.time);
+         ltime = (time_t) rec.time;
+         tmb = localtime(&ltime);
          tmb->tm_hour = tmb->tm_min = tmb->tm_sec = 0;
 
          /* setup history structure */
@@ -13214,6 +13216,7 @@ INT hs_write_event(DWORD event_id, void *data, DWORD size)
    int fh, fhi, fhd;
    INT index;
    struct tm tmb, tmr;
+   time_t ltime;
 
    /* find index to history structure */
    for (index = 0; index < _history_entries; index++)
@@ -13233,8 +13236,10 @@ INT hs_write_event(DWORD event_id, void *data, DWORD size)
    irec.time = rec.time;
 
    /* check if new day */
-   memcpy(&tmr, localtime((const time_t *) &rec.time), sizeof(tmr));
-   memcpy(&tmb, localtime((const time_t *) &_history[index].base_time), sizeof(tmb));
+   ltime = (time_t) rec.time;
+   memcpy(&tmr, localtime(&ltime), sizeof(tmr));
+   ltime = (time_t) _history[index].base_time;
+   memcpy(&tmb, localtime(&ltime), sizeof(tmb));
 
    if (tmr.tm_yday != tmb.tm_yday) {
       /* close current history file */
@@ -13880,6 +13885,7 @@ INT hs_read(DWORD event_id, DWORD start_time, DWORD end_time,
    char str[NAME_LENGTH];
    struct tm *tms;
    char *cache;
+   time_t ltime;
 
    if (rpc_is_remote())
       return rpc_call(RPC_HS_READ, event_id, start_time, end_time, interval,
@@ -14125,7 +14131,8 @@ INT hs_read(DWORD event_id, DWORD start_time, DWORD end_time,
          close(fhi);
 
          /* advance one day */
-         tms = localtime((const time_t *) (POINTER_T) & last_irec_time);
+         ltime = (time_t) last_irec_time;
+         tms = localtime(&ltime);
          tms->tm_hour = tms->tm_min = tms->tm_sec = 0;
          last_irec_time = mktime(tms);
 
@@ -14212,6 +14219,7 @@ INT hs_dump(DWORD event_id, DWORD start_time, DWORD end_time,
 \********************************************************************/
 {
    DWORD prev_time, last_irec_time;
+   time_t ltime;
    int fh, fhd, fhi;
    INT i, j, delta, status, n_tag = 0, old_n_tag = 0;
    INDEX_RECORD irec;
@@ -14328,7 +14336,8 @@ INT hs_dump(DWORD event_id, DWORD start_time, DWORD end_time,
             if (binary_time)
                printf("%d ", irec.time);
             else {
-               sprintf(str, "%s", ctime((const time_t *) &irec.time) + 4);
+	       ltime = (time_t) irec.time;
+               sprintf(str, "%s", ctime(&ltime) + 4);
                str[20] = '\t';
                printf(str);
             }
@@ -14372,7 +14381,8 @@ INT hs_dump(DWORD event_id, DWORD start_time, DWORD end_time,
          close(fhi);
 
          /* advance one day */
-         tms = localtime((const time_t *) (POINTER_T) & last_irec_time);
+         ltime = (time_t) last_irec_time;
+         tms = localtime(&ltime);
          tms->tm_hour = tms->tm_min = tms->tm_sec = 0;
          last_irec_time = mktime(tms);
 
@@ -14666,8 +14676,8 @@ INT el_submit(int run, char *author, char *type, char *system, char *subject,
 #endif
 #endif
 
-               time((time_t *) & now);
-               tms = localtime((const time_t *) &now);
+               time(&now);
+               tms = localtime(&now);
 
                strcpy(str, p);
                sprintf(afile_name[index], "%02d%02d%02d_%02d%02d%02d_%s",
@@ -14751,8 +14761,8 @@ INT el_submit(int run, char *author, char *type, char *system, char *subject,
          lseek(fh, offset, SEEK_SET);
       } else {
          /* create new message */
-         time((time_t *) & now);
-         tms = localtime((const time_t *) &now);
+         time(&now);
+         tms = localtime(&now);
 
          sprintf(file_name, "%s%02d%02d%02d.log", dir,
                  tms->tm_year % 100, tms->tm_mon + 1, tms->tm_mday);
@@ -14936,7 +14946,7 @@ INT el_search_message(char *tag, int *fh, BOOL walk)
          return EL_FILE_ERROR;
 
       do {
-         tms = localtime((const time_t *) &ltime);
+         tms = localtime(&ltime);
 
          sprintf(file_name, "%s%02d%02d%02d.log", dir,
                  tms->tm_year % 100, tms->tm_mon + 1, tms->tm_mday);
@@ -14952,7 +14962,7 @@ INT el_search_message(char *tag, int *fh, BOOL walk)
                ltime += 3600 * 24;      /* go forward one day */
 
             /* set new tag */
-            tms = localtime((const time_t *) &ltime);
+            tms = localtime(&ltime);
             sprintf(tag, "%02d%02d%02d.0", tms->tm_year % 100, tms->tm_mon + 1,
                     tms->tm_mday);
          }
