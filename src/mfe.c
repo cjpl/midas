@@ -1971,7 +1971,6 @@ int main(int argc, char *argv[])
    }
 
    cm_get_experiment_database(&hDB, &status);
-
    /* set time from server */
 #ifdef OS_VXWORKS
    cm_synchronize(NULL);

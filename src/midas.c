@@ -14438,6 +14438,7 @@ INT hs_fdump(char *file_name, DWORD id, BOOL binary_time)
 {
    int fh;
    INT n;
+   time_t ltime;
    HIST_RECORD rec;
    char event_name[NAME_LENGTH];
    char str[256];
@@ -14471,7 +14472,8 @@ INT hs_fdump(char *file_name, DWORD id, BOOL binary_time)
          if (binary_time)
             sprintf(str, "%d ", rec.time);
          else {
-            strcpy(str, ctime((const time_t *) &rec.time) + 4);
+            ltime = (time_t) rec.time;
+            strcpy(str, ctime(&ltime) + 4);
             str[15] = 0;
          }
          if (rec.event_id == id || id == 0)
