@@ -14440,13 +14440,14 @@ INT hs_fdump(char *file_name, DWORD id, BOOL binary_time)
    INT n;
    HIST_RECORD rec;
    char event_name[NAME_LENGTH];
-   char str[80];
+   char str[256];
 
    /* open file, add O_BINARY flag for Windows NT */
-   fh = open(file_name, O_RDONLY | O_BINARY, 0644);
+   sprintf(str, "%s%s", _hs_path_name, file_name);
+   fh = open(str, O_RDONLY | O_BINARY, 0644);
    if (fh < 0) {
-      cm_msg(MERROR, "hs_fdump", "cannot open file %s", file_name);
-      return HS_FILE_ERROR;
+     cm_msg(MERROR, "hs_fdump", "cannot open file %s", str);
+     return HS_FILE_ERROR;
    }
 
    /* loop over file records in .hst file */
