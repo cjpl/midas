@@ -12913,9 +12913,9 @@ INT hs_search_file(DWORD * ltime, INT direction)
    struct tm *tms;
 
    if (*ltime == 0)
-      *ltime = time(NULL);
+      *ltime = ss_time();
 
-   lt = (time_t) * ltime;
+   lt = (time_t) *ltime;
    do {
       /* try to open history file for date "lt" */
       hs_open_file(lt, "hst", O_RDONLY, &fh);
@@ -12925,7 +12925,7 @@ INT hs_search_file(DWORD * ltime, INT direction)
          lt += direction * 3600 * 24;
 
       /* stop if more than a year before starting point or in the future */
-   } while (fh < 0 && (INT) * ltime - (INT) lt < 3600 * 24 * 365 && lt < time(NULL));
+   } while (fh < 0 && (INT) *ltime - (INT) lt < 3600 * 24 * 365 && lt <= (time_t)ss_time());
 
    if (fh < 0)
       return HS_FILE_ERROR;
