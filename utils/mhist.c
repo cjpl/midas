@@ -242,6 +242,7 @@ void display_single_hist(DWORD event_id, DWORD start_time, DWORD end_time,
    DWORD i, size, tbsize, n, type;
    char str[256];
    INT status = 0;
+   time_t ltime;
 
    do {
       size = sizeof(buffer);
@@ -256,7 +257,8 @@ void display_single_hist(DWORD event_id, DWORD start_time, DWORD end_time,
          if (binary_time)
             sprintf(str, "%d ", tbuffer[i]);
          else {
-            sprintf(str, "%s", ctime((time_t *) &tbuffer[i]) + 4);
+            ltime = (time_t) tbuffer[i];
+            sprintf(str, "%s", ctime(&ltime) + 4);
             str[20] = '\t';
          }
          if (type == TID_STRING) {
@@ -287,6 +289,7 @@ void display_range_hist(DWORD event_id, DWORD start_time, DWORD end_time,
    DWORD i, size[50], tbsize, n[50], type[50], idx;
    char str[256];
    INT status = 0, j;
+   time_t ltime;
 
    if (index2 > index1 + 49) {
       printf("Specified range too large (max 50)\n");
@@ -316,7 +319,8 @@ void display_range_hist(DWORD event_id, DWORD start_time, DWORD end_time,
       if (binary_time)
          sprintf(str, "%d ", tbuffer[i]);
       else {
-         sprintf(str, "%s", ctime((time_t *) &tbuffer[i]) + 4);
+         ltime = (time_t) tbuffer[i];
+         sprintf(str, "%s", ctime(&ltime) + 4);
          str[20] = '\t';
       }
 
