@@ -12867,8 +12867,6 @@ INT hs_gen_index(DWORD ltime)
          irec.offset = TELL(fh) - sizeof(rec);
          write(fhi, (char *) &irec, sizeof(irec));
 
-         /* printf("ID %d, %s\n", rec.event_id, ctime((const time_t *)&irec.time)+4); */
-
          /* skip data */
          lseek(fh, rec.data_size, SEEK_CUR);
       }
@@ -15002,7 +15000,7 @@ INT el_search_message(char *tag, int *fh, BOOL walk)
       time((long *) &lt);
       ltime = lt;
       do {
-         tms = localtime((const time_t *) &ltime);
+         tms = localtime(&ltime);
 
          sprintf(file_name, "%s%02d%02d%02d.log", dir,
                  tms->tm_year % 100, tms->tm_mon + 1, tms->tm_mday);
@@ -15035,7 +15033,7 @@ INT el_search_message(char *tag, int *fh, BOOL walk)
          lt = ltime;
          do {
             lt -= 3600 * 24;
-            tms = localtime((const time_t *) &lt);
+            tms = localtime(&lt);
             sprintf(str, "%02d%02d%02d.0",
                     tms->tm_year % 100, tms->tm_mon + 1, tms->tm_mday);
 
@@ -15117,7 +15115,7 @@ INT el_search_message(char *tag, int *fh, BOOL walk)
          lt = ltime;
          do {
             lt += 3600 * 24;
-            tms = localtime((const time_t *) &lt);
+            tms = localtime(&lt);
             sprintf(str, "%02d%02d%02d.0",
                     tms->tm_year % 100, tms->tm_mon + 1, tms->tm_mday);
 
