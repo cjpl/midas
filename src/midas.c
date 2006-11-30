@@ -477,8 +477,7 @@ INT cm_msg_log1(INT message_type, const char *message, const char *facility)
                } else {
                   strcpy(filename, "midas.log");
                   size = sizeof(filename);
-                  db_get_value(hDB, 0, "/Logger/Message file", filename, &size,
-                               TID_STRING, TRUE);
+                  db_get_value(hDB, 0, "/Logger/Message file", filename, &size, TID_STRING, TRUE);
                }
 
                strcpy(path, dir);
@@ -549,8 +548,7 @@ formated line as it is already added by the client on the receiving side.
 @param format message to printout, ... Parameters like for printf()
 @return CM_SUCCESS
 */
-INT cm_msg(INT message_type, char *filename, INT line,
-           const char *routine, const char *format, ...)
+INT cm_msg(INT message_type, char *filename, INT line, const char *routine, const char *format, ...)
 {
    va_list argptr;
    char event[1000], str[256], local_message[256], send_message[256], *pc;
@@ -856,8 +854,7 @@ INT cm_msg_retrieve(INT n_message, char *message, INT * buf_size)
 
             strcpy(filename, "midas.log");
             size = sizeof(filename);
-            db_get_value(hDB, 0, "/Logger/Message file", filename, &size, TID_STRING,
-                         TRUE);
+            db_get_value(hDB, 0, "/Logger/Message file", filename, &size, TID_STRING, TRUE);
 
             strcpy(path, dir);
             strcat(path, filename);
@@ -931,7 +928,7 @@ INT cm_msg_retrieve(INT n_message, char *message, INT * buf_size)
 }
 
 /**dox***************************************************************/
-                                                                                                    /** @} *//* end of msgfunctionc */
+                                                                                                             /** @} *//* end of msgfunctionc */
 
 /**dox***************************************************************/
 /** @addtogroup cmfunctionc
@@ -1003,7 +1000,7 @@ INT cm_time(DWORD * time)
 }
 
 /**dox***************************************************************/
-                                                                                                    /** @} *//* end of cmfunctionc */
+                                                                                                             /** @} *//* end of cmfunctionc */
 
 /********************************************************************\
 *                                                                    *
@@ -1069,7 +1066,7 @@ INT cm_get_path(char *path)
 }
 
 /**dox***************************************************************/
-                                                                                                    /** @} *//* end of cmfunctionc */
+                                                                                                             /** @} *//* end of cmfunctionc */
 
 /**dox***************************************************************/
 /** @addtogroup cmfunctionc
@@ -1275,8 +1272,7 @@ INT cm_check_client(HNDLE hDB, HNDLE hKeyClient)
             cm_msg(MERROR, "cm_check_client", "cannot delete client info");
          else
             cm_msg(MINFO, "cm_check_client",
-                   "Deleted entry \'/System/Clients/%d\' for client \'%s\'\n", client_pid,
-                   name);
+                   "Deleted entry \'/System/Clients/%d\' for client \'%s\'\n", client_pid, name);
 
          return CM_NO_CLIENT;
       }
@@ -1304,8 +1300,7 @@ Set client information in online database and return handle
 @return   CM_SUCCESS
 */
 INT cm_set_client_info(HNDLE hDB, HNDLE * hKeyClient, char *host_name,
-                       char *client_name, INT hw_type, char *password,
-                       DWORD watchdog_timeout)
+                       char *client_name, INT hw_type, char *password, DWORD watchdog_timeout)
 {
    if (rpc_is_remote())
       return rpc_call(RPC_CM_SET_CLIENT_INFO, hDB, hKeyClient,
@@ -1338,11 +1333,9 @@ INT cm_set_client_info(HNDLE hDB, HNDLE * hKeyClient, char *host_name,
             allow = TRUE;
 
          /* now check password */
-         if (!allow &&
-             strcmp(password, pwd) != 0 && strcmp(password, "mid7qBxsNMHux") != 0) {
+         if (!allow && strcmp(password, pwd) != 0 && strcmp(password, "mid7qBxsNMHux") != 0) {
             if (password[0])
-               cm_msg(MINFO, "cm_set_client_info", "Wrong password for host %s",
-                      host_name);
+               cm_msg(MINFO, "cm_set_client_info", "Wrong password for host %s", host_name);
             db_close_all_databases();
             bm_close_all_buffers();
             _msg_buffer = 0;
@@ -1415,16 +1408,14 @@ INT cm_set_client_info(HNDLE hDB, HNDLE * hKeyClient, char *host_name,
       db_find_key(hDB, 0, str, &hKey);
 
       /* set host name */
-      status =
-          db_set_value(hDB, hKey, "Host", host_name, HOST_NAME_LENGTH, 1, TID_STRING);
+      status = db_set_value(hDB, hKey, "Host", host_name, HOST_NAME_LENGTH, 1, TID_STRING);
       if (status != DB_SUCCESS) {
          db_unlock_database(hDB);
          return status;
       }
 
       /* set computer id */
-      status = db_set_value(hDB, hKey, "Hardware type", &hw_type,
-                            sizeof(hw_type), 1, TID_INT);
+      status = db_set_value(hDB, hKey, "Hardware type", &hw_type, sizeof(hw_type), 1, TID_INT);
       if (status != DB_SUCCESS) {
          db_unlock_database(hDB);
          return status;
@@ -1556,8 +1547,7 @@ usage:
 @param exp_name_size      string length
 @return CM_SUCCESS
 */
-INT cm_get_environment(char *host_name, int host_name_size, char *exp_name,
-                       int exp_name_size)
+INT cm_get_environment(char *host_name, int host_name_size, char *exp_name, int exp_name_size)
 {
    host_name[0] = exp_name[0] = 0;
 
@@ -1654,8 +1644,7 @@ usage:
 @return CM_SUCCESS, CM_UNDEF_EXP, CM_SET_ERROR, RPC_NET_ERROR <br> 
 CM_VERSION_MISMATCH MIDAS library version different on local and remote computer
 */
-INT cm_connect_experiment(char *host_name, char *exp_name,
-                          char *client_name, void (*func) (char *))
+INT cm_connect_experiment(char *host_name, char *exp_name, char *client_name, void (*func) (char *))
 {
    INT status;
    char str[256];
@@ -1677,8 +1666,7 @@ Connect to a MIDAS experiment (to the online database) on
 @internal
 */
 INT cm_connect_experiment1(char *host_name, char *exp_name,
-                           char *client_name, void (*func) (char *),
-                           INT odb_size, DWORD watchdog_timeout)
+                           char *client_name, void (*func) (char *), INT odb_size, DWORD watchdog_timeout)
 {
    INT status, i, mutex_elog, mutex_alarm, size;
    char local_host_name[HOST_NAME_LENGTH];
@@ -1783,8 +1771,7 @@ INT cm_connect_experiment1(char *host_name, char *exp_name,
    strcpy(client_name1, client_name);
    password[0] = 0;
    status = cm_set_client_info(hDB, &hKeyClient, local_host_name,
-                               client_name1, rpc_get_option(0, RPC_OHW_TYPE),
-                               password, watchdog_timeout);
+                               client_name1, rpc_get_option(0, RPC_OHW_TYPE), password, watchdog_timeout);
 
    if (status == CM_WRONG_PASSWORD) {
       if (func == NULL)
@@ -1801,8 +1788,7 @@ INT cm_connect_experiment1(char *host_name, char *exp_name,
 
       strcpy(password, ss_crypt(str, "mi"));
       status = cm_set_client_info(hDB, &hKeyClient, local_host_name,
-                                  client_name1, rpc_get_option(0, RPC_OHW_TYPE),
-                                  password, watchdog_timeout);
+                                  client_name1, rpc_get_option(0, RPC_OHW_TYPE), password, watchdog_timeout);
       if (status != CM_SUCCESS) {
          /* disconnect */
          if (rpc_is_remote())
@@ -1825,8 +1811,7 @@ INT cm_connect_experiment1(char *host_name, char *exp_name,
    /* check /runinfo structure */
    status = db_check_record(hDB, 0, "/Runinfo", strcomb(runinfo_str), TRUE);
    if (status == DB_STRUCT_MISMATCH) {
-      cm_msg(MERROR, "cm_connect_experiment1",
-             "Aborting on mismatching /Runinfo structure");
+      cm_msg(MERROR, "cm_connect_experiment1", "Aborting on mismatching /Runinfo structure");
       cm_disconnect_experiment();
       abort();
    }
@@ -1850,8 +1835,7 @@ INT cm_connect_experiment1(char *host_name, char *exp_name,
    /* startup message is not displayed */
    _message_print = NULL;
 
-   cm_msg(MINFO, "cm_connect_experiment", "Program %s on host %s started",
-          client_name, local_host_name);
+   cm_msg(MINFO, "cm_connect_experiment", "Program %s on host %s started", client_name, local_host_name);
 
    /* enable system and user messages to stdout as default */
    cm_set_msg_print(MT_ALL, MT_ALL, puts);
@@ -2109,8 +2093,7 @@ INT cm_disconnect_experiment(void)
    /* disconnect message not displayed */
    _message_print = NULL;
 
-   cm_msg(MINFO, "cm_disconnect_experiment", "Program %s on host %s stopped",
-          client_name, local_host_name);
+   cm_msg(MINFO, "cm_disconnect_experiment", "Program %s on host %s stopped", client_name, local_host_name);
 
    if (rpc_is_remote()) {
       /* close open records */
@@ -2314,8 +2297,7 @@ static int bm_validate_client_index(const BUFFER * buf)
          prevent_recursion = 0;
          cm_msg(MERROR, "bm_validate_client_index",
                 "Invalid client index %d in buffer \'%s\'. Client name \'%s\', pid %d should be %d",
-                buf->client_index, buf->buffer_header->name, bcl->name, bcl->pid,
-                ss_getpid());
+                buf->client_index, buf->buffer_header->name, bcl->name, bcl->pid, ss_getpid());
          cm_msg(MERROR, "bm_validate_client_index",
                 "Maybe this client was removed by a timeout. Cannot continue, exiting.");
       }
@@ -2404,8 +2386,7 @@ INT cm_set_watchdog_params(BOOL call_watchdog, DWORD timeout)
              _buffer[i - 1].index != rpc_get_server_acception())
             continue;
 
-         if (rpc_get_server_option(RPC_OSERVER_TYPE) != ST_SINGLE &&
-             _buffer[i - 1].index != ss_gettid())
+         if (rpc_get_server_option(RPC_OSERVER_TYPE) != ST_SINGLE && _buffer[i - 1].index != ss_gettid())
             continue;
 
          if (!_buffer[i - 1].attached)
@@ -2435,8 +2416,7 @@ INT cm_set_watchdog_params(BOOL call_watchdog, DWORD timeout)
             continue;
          }
 
-         if (rpc_get_server_option(RPC_OSERVER_TYPE) != ST_SINGLE &&
-             _database[i - 1].index != ss_gettid()) {
+         if (rpc_get_server_option(RPC_OSERVER_TYPE) != ST_SINGLE && _database[i - 1].index != ss_gettid()) {
             db_unlock_database(i);
             continue;
          }
@@ -2662,10 +2642,8 @@ INT cm_register_transition(INT transition, INT(*func) (INT, char *), INT sequenc
    char str[256];
 
    /* check for valid transition */
-   if (transition != TR_START && transition != TR_STOP &&
-       transition != TR_PAUSE && transition != TR_RESUME) {
-      cm_msg(MERROR, "cm_register_transition", "Invalid transition request \"%d\"",
-             transition);
+   if (transition != TR_START && transition != TR_STOP && transition != TR_PAUSE && transition != TR_RESUME) {
+      cm_msg(MERROR, "cm_register_transition", "Invalid transition request \"%d\"", transition);
       return CM_INVALID_TRANSITION;
    }
 
@@ -2709,9 +2687,7 @@ INT cm_register_transition(INT transition, INT(*func) (INT, char *), INT sequenc
       status = db_get_key(hDB, hKeyTrans, &key);
       if (status != DB_SUCCESS)
          return status;
-      status =
-          db_set_data_index(hDB, hKeyTrans, &sequence_number, sizeof(INT), key.num_values,
-                            TID_INT);
+      status = db_set_data_index(hDB, hKeyTrans, &sequence_number, sizeof(INT), key.num_values, TID_INT);
       if (status != DB_SUCCESS)
          return status;
    }
@@ -2729,10 +2705,8 @@ INT cm_deregister_transition(INT transition)
    char str[256];
 
    /* check for valid transition */
-   if (transition != TR_START && transition != TR_STOP &&
-       transition != TR_PAUSE && transition != TR_RESUME) {
-      cm_msg(MERROR, "cm_deregister_transition", "Invalid transition request \"%d\"",
-             transition);
+   if (transition != TR_START && transition != TR_STOP && transition != TR_PAUSE && transition != TR_RESUME) {
+      cm_msg(MERROR, "cm_deregister_transition", "Invalid transition request \"%d\"", transition);
       return CM_INVALID_TRANSITION;
    }
 
@@ -2790,10 +2764,8 @@ INT cm_set_transition_sequence(INT transition, INT sequence_number)
    char str[256];
 
    /* check for valid transition */
-   if (transition != TR_START && transition != TR_STOP &&
-       transition != TR_PAUSE && transition != TR_RESUME) {
-      cm_msg(MERROR, "cm_set_transition_sequence", "Invalid transition request \"%d\"",
-             transition);
+   if (transition != TR_START && transition != TR_STOP && transition != TR_PAUSE && transition != TR_RESUME) {
+      cm_msg(MERROR, "cm_set_transition_sequence", "Invalid transition request \"%d\"", transition);
       return CM_INVALID_TRANSITION;
    }
 
@@ -2884,15 +2856,11 @@ INT cm_register_deferred_transition(INT transition, BOOL(*func) (INT, BOOL))
 
    /* hot link requested transition */
    size = sizeof(_requested_transition);
-   db_get_value(hDB, 0, "/Runinfo/Requested Transition", &_requested_transition, &size,
-                TID_INT, TRUE);
+   db_get_value(hDB, 0, "/Runinfo/Requested Transition", &_requested_transition, &size, TID_INT, TRUE);
    db_find_key(hDB, 0, "/Runinfo/Requested Transition", &hKey);
-   status =
-       db_open_record(hDB, hKey, &_requested_transition, sizeof(INT), MODE_READ, NULL,
-                      NULL);
+   status = db_open_record(hDB, hKey, &_requested_transition, sizeof(INT), MODE_READ, NULL, NULL);
    if (status != DB_SUCCESS) {
-      cm_msg(MERROR, "cm_register_deferred_transition",
-             "Cannot hotlink /Runinfo/Requested Transition");
+      cm_msg(MERROR, "cm_register_deferred_transition", "Cannot hotlink /Runinfo/Requested Transition");
       return status;
    }
 
@@ -2925,14 +2893,10 @@ INT cm_check_deferred_transition()
             break;
 
       if (_deferred_trans_table[i].transition == _requested_transition) {
-         if (((BOOL(*)(INT, BOOL)) _deferred_trans_table[i].func) (_requested_transition,
-                                                                   first)) {
-            status =
-                cm_transition(_requested_transition | TR_DEFERRED, 0, str, sizeof(str),
-                              SYNC, FALSE);
+         if (((BOOL(*)(INT, BOOL)) _deferred_trans_table[i].func) (_requested_transition, first)) {
+            status = cm_transition(_requested_transition | TR_DEFERRED, 0, str, sizeof(str), SYNC, FALSE);
             if (status != CM_SUCCESS)
-               cm_msg(MERROR, "cm_check_deferred_transition",
-                      "Cannot perform deferred transition: %s", str);
+               cm_msg(MERROR, "cm_check_deferred_transition", "Cannot perform deferred transition: %s", str);
 
             /* bypass hotlink and set _requested_transition directly to zero */
             _requested_transition = 0;
@@ -3007,14 +2971,12 @@ tapes.
 @param debug_flag If 1 output debugging information, if 2 output via cm_msg().
 @return CM_SUCCESS, \<error\> error code from remote client
 */
-INT cm_transition(INT transition, INT run_number, char *perror, INT strsize,
-                  INT async_flag, INT debug_flag)
+INT cm_transition(INT transition, INT run_number, char *perror, INT strsize, INT async_flag, INT debug_flag)
 {
    INT i, j, status, index, size, sequence_number, port, state, old_timeout, n_tr_clients;
    HNDLE hDB, hRootKey, hSubkey, hKey, hKeylocal, hConn, hKeyTrans;
    DWORD seconds;
-   char host_name[HOST_NAME_LENGTH], client_name[NAME_LENGTH],
-       str[256], error[256], tr_key_name[256];
+   char host_name[HOST_NAME_LENGTH], client_name[NAME_LENGTH], str[256], error[256], tr_key_name[256];
    char *trname = "unknown";
    KEY key;
    BOOL deferred;
@@ -3025,8 +2987,7 @@ INT cm_transition(INT transition, INT run_number, char *perror, INT strsize,
    transition &= ~TR_DEFERRED;
 
    /* check for valid transition */
-   if (transition != TR_START && transition != TR_STOP &&
-       transition != TR_PAUSE && transition != TR_RESUME) {
+   if (transition != TR_START && transition != TR_STOP && transition != TR_PAUSE && transition != TR_RESUME) {
       cm_msg(MERROR, "cm_transition", "Invalid transition request \"%d\"", transition);
       return CM_INVALID_TRANSITION;
    }
@@ -3040,14 +3001,12 @@ INT cm_transition(INT transition, INT run_number, char *perror, INT strsize,
    /* if no run number is given, get it from DB */
    if (run_number == 0) {
       size = sizeof(run_number);
-      status =
-          db_get_value(hDB, 0, "Runinfo/Run number", &run_number, &size, TID_INT, TRUE);
+      status = db_get_value(hDB, 0, "Runinfo/Run number", &run_number, &size, TID_INT, TRUE);
       assert(status == SUCCESS);
    }
 
    if (run_number <= 0) {
-      cm_msg(MERROR, "cm_transition", "aborting on attempt to use invalid run number %d",
-             run_number);
+      cm_msg(MERROR, "cm_transition", "aborting on attempt to use invalid run number %d", run_number);
       abort();
    }
 
@@ -3056,11 +3015,9 @@ INT cm_transition(INT transition, INT run_number, char *perror, INT strsize,
       if (debug_flag == 1)
          printf("Setting run number %d in ODB\n", run_number);
       if (debug_flag == 2)
-         cm_msg(MDEBUG, "cm_transition", "cm_transition: Setting run number %d in ODB",
-                run_number);
+         cm_msg(MDEBUG, "cm_transition", "cm_transition: Setting run number %d in ODB", run_number);
 
-      status = db_set_value(hDB, 0, "Runinfo/Run number",
-                            &run_number, sizeof(run_number), 1, TID_INT);
+      status = db_set_value(hDB, 0, "Runinfo/Run number", &run_number, sizeof(run_number), 1, TID_INT);
       assert(status == SUCCESS);
       if (status != DB_SUCCESS)
          cm_msg(MERROR, "cm_transition", "cannot set Runinfo/Run number in database");
@@ -3103,23 +3060,19 @@ INT cm_transition(INT transition, INT run_number, char *perror, INT strsize,
 
          if (status == DB_SUCCESS) {
             size = sizeof(sequence_number);
-            status = db_get_value(hDB, hSubkey, tr_key_name,
-                                  &sequence_number, &size, TID_INT, FALSE);
+            status = db_get_value(hDB, hSubkey, tr_key_name, &sequence_number, &size, TID_INT, FALSE);
 
             /* if registered for deferred transition, set flag in ODB and return */
             if (status == DB_SUCCESS) {
                size = NAME_LENGTH;
                db_get_value(hDB, hSubkey, "Name", str, &size, TID_STRING, TRUE);
-               db_set_value(hDB, 0, "/Runinfo/Requested transition", &transition,
-                            sizeof(int), 1, TID_INT);
+               db_set_value(hDB, 0, "/Runinfo/Requested transition", &transition, sizeof(int), 1, TID_INT);
 
                if (debug_flag == 1)
-                  printf("---- Transition %s deferred by client \"%s\" ----\n",
-                         trname, str);
+                  printf("---- Transition %s deferred by client \"%s\" ----\n", trname, str);
                if (debug_flag == 2)
                   cm_msg(MDEBUG, "cm_transition",
-                         "cm_transition: ---- Transition %s deferred by client \"%s\" ----",
-                         trname, str);
+                         "cm_transition: ---- Transition %s deferred by client \"%s\" ----", trname, str);
 
                if (perror)
                   sprintf(perror, "Transition %s deferred by client \"%s\"", trname, str);
@@ -3134,8 +3087,7 @@ INT cm_transition(INT transition, INT run_number, char *perror, INT strsize,
    if (transition == TR_START) {
       str[0] = 0;
       size = sizeof(str);
-      db_get_value(hDB, 0, "/Programs/Execute on start run", str, &size, TID_STRING,
-                   TRUE);
+      db_get_value(hDB, 0, "/Programs/Execute on start run", str, &size, TID_STRING, TRUE);
       if (str[0])
          ss_system(str);
 
@@ -3173,13 +3125,11 @@ INT cm_transition(INT transition, INT run_number, char *perror, INT strsize,
 
       /* reset stop time */
       seconds = 0;
-      db_set_value(hDB, 0, "Runinfo/Stop Time binary",
-                   &seconds, sizeof(seconds), 1, TID_DWORD);
+      db_set_value(hDB, 0, "Runinfo/Stop Time binary", &seconds, sizeof(seconds), 1, TID_DWORD);
 
       /* Seconds since 1.1.1970 */
       cm_time(&seconds);
-      db_set_value(hDB, 0, "Runinfo/Start Time binary",
-                   &seconds, sizeof(seconds), 1, TID_DWORD);
+      db_set_value(hDB, 0, "Runinfo/Start Time binary", &seconds, sizeof(seconds), 1, TID_DWORD);
    }
 
    /* set stop time in database */
@@ -3192,18 +3142,15 @@ INT cm_transition(INT transition, INT run_number, char *perror, INT strsize,
       if (state != STATE_STOPPED) {
          /* stop time binary */
          cm_time(&seconds);
-         status = db_set_value(hDB, 0, "Runinfo/Stop Time binary",
-                               &seconds, sizeof(seconds), 1, TID_DWORD);
+         status = db_set_value(hDB, 0, "Runinfo/Stop Time binary", &seconds, sizeof(seconds), 1, TID_DWORD);
          if (status != DB_SUCCESS)
-            cm_msg(MERROR, "cm_transition",
-                   "cannot set \"Runinfo/Stop Time binary\" in database");
+            cm_msg(MERROR, "cm_transition", "cannot set \"Runinfo/Stop Time binary\" in database");
 
          /* stop time ascii */
          cm_asctime(str, sizeof(str));
          status = db_set_value(hDB, 0, "Runinfo/Stop Time", str, 32, 1, TID_STRING);
          if (status != DB_SUCCESS)
-            cm_msg(MERROR, "cm_transition",
-                   "cannot set \"Runinfo/Stop Time\" in database");
+            cm_msg(MERROR, "cm_transition", "cannot set \"Runinfo/Stop Time\" in database");
       }
    }
 
@@ -3222,8 +3169,7 @@ INT cm_transition(INT transition, INT run_number, char *perror, INT strsize,
    if (debug_flag == 1)
       printf("---- Transition %s started ----\n", trname);
    if (debug_flag == 2)
-      cm_msg(MDEBUG, "cm_transition", "cm_transition: ---- Transition %s started ----",
-             trname);
+      cm_msg(MDEBUG, "cm_transition", "cm_transition: ---- Transition %s started ----", trname);
 
    sprintf(tr_key_name, "Transition %s", trname);
 
@@ -3245,16 +3191,13 @@ INT cm_transition(INT transition, INT run_number, char *perror, INT strsize,
 
             for (j = 0; j < key.num_values; j++) {
                size = sizeof(sequence_number);
-               status =
-                   db_get_data_index(hDB, hKeyTrans, &sequence_number, &size, j, TID_INT);
+               status = db_get_data_index(hDB, hKeyTrans, &sequence_number, &size, j, TID_INT);
                assert(status == DB_SUCCESS);
 
                if (tr_client == NULL)
                   tr_client = (TR_CLIENT *) malloc(sizeof(TR_CLIENT));
                else
-                  tr_client =
-                      (TR_CLIENT *) realloc(tr_client,
-                                            sizeof(TR_CLIENT) * (n_tr_clients + 1));
+                  tr_client = (TR_CLIENT *) realloc(tr_client, sizeof(TR_CLIENT) * (n_tr_clients + 1));
                assert(tr_client);
 
                tr_client[n_tr_clients].sequence_number = sequence_number;
@@ -3265,8 +3208,7 @@ INT cm_transition(INT transition, INT run_number, char *perror, INT strsize,
                } else {
                   /* get client info */
                   size = sizeof(client_name);
-                  db_get_value(hDB, hSubkey, "Name", client_name, &size, TID_STRING,
-                               TRUE);
+                  db_get_value(hDB, hSubkey, "Name", client_name, &size, TID_STRING, TRUE);
                   strcpy(tr_client[n_tr_clients].client_name, client_name);
 
                   size = sizeof(port);
@@ -3312,22 +3254,19 @@ INT cm_transition(INT transition, INT run_number, char *perror, INT strsize,
             if (debug_flag == 1)
                printf("Calling local transition callback\n");
             if (debug_flag == 2)
-               cm_msg(MDEBUG, "cm_transition",
-                      "cm_transition: Calling local transition callback");
+               cm_msg(MDEBUG, "cm_transition", "cm_transition: Calling local transition callback");
 
             status = _trans_table[i].func(run_number, error);
 
             if (debug_flag == 1)
                printf("Local transition callback finished\n");
             if (debug_flag == 2)
-               cm_msg(MDEBUG, "cm_transition",
-                      "cm_transition: Local transition callback finished");
+               cm_msg(MDEBUG, "cm_transition", "cm_transition: Local transition callback finished");
          } else
             status = CM_SUCCESS;
 
          if (perror != NULL)
-            memcpy(perror, error, (INT) strlen(error) + 1 < strsize ?
-                   strlen(error) + 1 : strsize);
+            memcpy(perror, error, (INT) strlen(error) + 1 < strsize ? strlen(error) + 1 : strsize);
 
          if (status != CM_SUCCESS) {
             free(tr_client);
@@ -3351,8 +3290,7 @@ INT cm_transition(INT transition, INT run_number, char *perror, INT strsize,
          if (status != RPC_SUCCESS) {
             cm_msg(MERROR, "cm_transition",
                    "cannot connect to client \"%s\" on host %s, port %d, status %d",
-                   tr_client[index].client_name, tr_client[index].host_name,
-                   tr_client[index].port, status);
+                   tr_client[index].client_name, tr_client[index].host_name, tr_client[index].port, status);
             return status;
          }
 
@@ -3381,8 +3319,7 @@ INT cm_transition(INT transition, INT run_number, char *perror, INT strsize,
                    tr_client[index].client_name, tr_client[index].host_name);
 
          status = rpc_client_call(hConn, RPC_RC_TRANSITION, transition,
-                                  run_number, error, strsize,
-                                  tr_client[index].sequence_number);
+                                  run_number, error, strsize, tr_client[index].sequence_number);
 
          /* reset timeout */
          rpc_set_option(hConn, RPC_OTIMEOUT, old_timeout);
@@ -3400,8 +3337,7 @@ INT cm_transition(INT transition, INT run_number, char *perror, INT strsize,
                    tr_client[index].client_name, tr_client[index].host_name, status);
 
          if (perror != NULL)
-            memcpy(perror, error, (INT) strlen(error) + 1 < strsize ?
-                   strlen(error) + 1 : strsize);
+            memcpy(perror, error, (INT) strlen(error) + 1 < strsize ? strlen(error) + 1 : strsize);
 
          if (status != CM_SUCCESS) {
             free(tr_client);
@@ -3416,8 +3352,7 @@ INT cm_transition(INT transition, INT run_number, char *perror, INT strsize,
    if (debug_flag == 1)
       printf("\n---- Transition %s finished ----\n", trname);
    if (debug_flag == 2)
-      cm_msg(MDEBUG, "cm_transition",
-             "cm_transition: ---- Transition %s finished ----", trname);
+      cm_msg(MDEBUG, "cm_transition", "cm_transition: ---- Transition %s finished ----", trname);
 
    /* set new run state in database */
    if (transition == TR_START || transition == TR_RESUME)
@@ -3747,7 +3682,7 @@ INT cm_register_function(INT id, INT(*func) (INT, void **))
 #endif                          /* DOXYGEN_SHOULD_SKIP_THIS */
 
 /**dox***************************************************************/
-                                                                                                    /** @} *//* end of cmfunctionc */
+                                                                                                             /** @} *//* end of cmfunctionc */
 
 /**dox***************************************************************/
 /** @addtogroup bmfunctionc
@@ -3771,8 +3706,7 @@ event id and trigger mask
 */
 INT bm_match_event(short int event_id, short int trigger_mask, EVENT_HEADER * pevent)
 {
-   if ((pevent->event_id & 0xF000) == EVENTID_FRAG1 ||
-       (pevent->event_id & 0xF000) == EVENTID_FRAG)
+   if ((pevent->event_id & 0xF000) == EVENTID_FRAG1 || (pevent->event_id & 0xF000) == EVENTID_FRAG)
       /* fragmented event */
       return ((event_id == EVENTID_ALL ||
                event_id == (pevent->event_id & 0x0FFF)) &&
@@ -3855,7 +3789,7 @@ INT bm_open_buffer(char *buffer_name, INT buffer_size, INT * buffer_handle)
       status = cm_get_experiment_database(&hDB, &odb_key);
       assert(status == SUCCESS);
       size = sizeof(INT);
-      status = db_get_value(hDB, 0, odb_path, &buffer_size, &size,TID_DWORD, TRUE);
+      status = db_get_value(hDB, 0, odb_path, &buffer_size, &size, TID_DWORD, TRUE);
 
       if (buffer_size <= 0 || buffer_size > 1 * 1024 * 1024 * 1024) {
          cm_msg(MERROR, "bm_open_buffer", "invalid buffer size %d", buffer_size);
@@ -3881,14 +3815,12 @@ INT bm_open_buffer(char *buffer_name, INT buffer_size, INT * buffer_handle)
       } else {
          /* check if buffer alreay is open */
          for (i = 0; i < _buffer_entries; i++)
-            if (_buffer[i].attached &&
-                equal_ustring(_buffer[i].buffer_header->name, buffer_name)) {
+            if (_buffer[i].attached && equal_ustring(_buffer[i].buffer_header->name, buffer_name)) {
                if (rpc_get_server_option(RPC_OSERVER_TYPE) == ST_SINGLE &&
                    _buffer[i].index != rpc_get_server_acception())
                   continue;
 
-               if (rpc_get_server_option(RPC_OSERVER_TYPE) != ST_SINGLE &&
-                   _buffer[i].index != ss_gettid())
+               if (rpc_get_server_option(RPC_OSERVER_TYPE) != ST_SINGLE && _buffer[i].index != ss_gettid())
                   continue;
 
                *buffer_handle = i + 1;
@@ -3949,7 +3881,7 @@ INT bm_open_buffer(char *buffer_name, INT buffer_size, INT * buffer_handle)
          /* check if buffer size is identical */
          if (pheader->size != buffer_size) {
             cm_msg(MERROR, "bm_open_buffer", "Requested buffer size (%d) differs from existing size (%d)",
-               buffer_size, pheader->size);
+                   buffer_size, pheader->size);
             *buffer_handle = 0;
             _buffer_entries--;
             return BM_MEMSIZE_MISMATCH;
@@ -4179,7 +4111,7 @@ INT bm_close_all_buffers(void)
 }
 
 /**dox***************************************************************/
-                                                                                                    /** @} *//* end of bmfunctionc */
+                                                                                                             /** @} *//* end of bmfunctionc */
 
 /**dox***************************************************************/
 /** @addtogroup cmfunctionc
@@ -4224,8 +4156,7 @@ void cm_watchdog(int dummy)
 
    /* check if system time has been changed more than 10 min */
    time_changed = interval < 0 || interval > 600000;
-   wrong_interval = interval < 0.8 * WATCHDOG_INTERVAL
-       || interval > 1.2 * WATCHDOG_INTERVAL;
+   wrong_interval = interval < 0.8 * WATCHDOG_INTERVAL || interval > 1.2 * WATCHDOG_INTERVAL;
 
    if (time_changed)
       cm_msg(MINFO, "cm_watchdog",
@@ -4331,8 +4262,7 @@ void cm_watchdog(int dummy)
                   /* decrement notify_count for open records and clear exclusive mode */
                   for (k = 0; k < pdbclient->max_index; k++)
                      if (pdbclient->open_record[k].handle) {
-                        pkey = (KEY *) ((char *) pdbheader +
-                                        pdbclient->open_record[k].handle);
+                        pkey = (KEY *) ((char *) pdbheader + pdbclient->open_record[k].handle);
                         if (pkey->notify_count > 0)
                            pkey->notify_count--;
 
@@ -4470,8 +4400,7 @@ INT cm_shutdown(char *name, BOOL bUnique)
          status = rpc_client_connect(remote_host, port, client_name, &hConn);
          if (status != RPC_SUCCESS) {
             return_status = CM_NO_CLIENT;
-            sprintf(str, "cannot connect to client %s on host %s, port %d",
-                    client_name, remote_host, port);
+            sprintf(str, "cannot connect to client %s on host %s, port %d", client_name, remote_host, port);
             cm_msg(MERROR, "cm_shutdown", str);
          } else {
             /* call disconnect with shutdown=TRUE */
@@ -4611,8 +4540,7 @@ INT cm_cleanup(char *client_name, BOOL ignore_timeout)
             /* update the last_activity entry to show that we are alive */
             pheader = _buffer[i].buffer_header;
             pbclient = pheader->client;
-            pbclient[bm_validate_client_index(&_buffer[i])].last_activity =
-                ss_millitime();
+            pbclient[bm_validate_client_index(&_buffer[i])].last_activity = ss_millitime();
 
             /* now check other clients */
             for (j = 0; j < pheader->max_client_index; j++, pbclient++)
@@ -4634,8 +4562,7 @@ INT cm_cleanup(char *client_name, BOOL ignore_timeout)
                         sprintf(str,
                                 "Client \'%s\' on \'%s\' removed by cm_cleanup (idle %1.1lfs,TO %1.0lfs)",
                                 pbclient->name, pheader->name,
-                                (ss_millitime() - pbclient->last_activity) / 1000.0,
-                                interval / 1000.0);
+                                (ss_millitime() - pbclient->last_activity) / 1000.0, interval / 1000.0);
 
                         /* clear entry from client structure in buffer header */
                         memset(&(pheader->client[j]), 0, sizeof(BUFFER_CLIENT));
@@ -4705,21 +4632,18 @@ INT cm_cleanup(char *client_name, BOOL ignore_timeout)
                         sprintf(str,
                                 "Client \'%s\' on \'%s\' removed by cm_cleanup (idle %1.1lfs,TO %1.0lfs)",
                                 pdbclient->name, pdbheader->name,
-                                (ss_millitime() - pdbclient->last_activity) / 1000.0,
-                                interval / 1000.0);
+                                (ss_millitime() - pdbclient->last_activity) / 1000.0, interval / 1000.0);
 
                         /* decrement notify_count for open records and clear exclusive mode */
                         for (k = 0; k < pdbclient->max_index; k++)
                            if (pdbclient->open_record[k].handle) {
-                              pkey = (KEY *) ((char *) pdbheader +
-                                              pdbclient->open_record[k].handle);
+                              pkey = (KEY *) ((char *) pdbheader + pdbclient->open_record[k].handle);
                               if (pkey->notify_count > 0)
                                  pkey->notify_count--;
 
                               if (pdbclient->open_record[k].access_mode & MODE_WRITE)
                                  db_set_mode(i + 1, pdbclient->open_record[k].handle,
-                                             (WORD) (pkey->access_mode & ~MODE_EXCLUSIVE),
-                                             2);
+                                             (WORD) (pkey->access_mode & ~MODE_EXCLUSIVE), 2);
                            }
 
                         /* clear entry from client structure in buffer header */
@@ -4921,8 +4845,7 @@ INT bm_lock_buffer(INT buffer_handle)
 
    if (status != SS_SUCCESS) {
       cm_msg(MERROR, "bm_lock_buffer",
-             "Cannot lock buffer handle %d, ss_mutex_wait_for() status %d", buffer_handle,
-             status);
+             "Cannot lock buffer handle %d, ss_mutex_wait_for() status %d", buffer_handle, status);
       abort();
       return BM_INVALID_HANDLE;
    }
@@ -4987,14 +4910,12 @@ INT bm_init_buffer_counters(INT buffer_handle)
 #ifdef LOCAL_ROUTINES
 
    if (buffer_handle > _buffer_entries || buffer_handle <= 0) {
-      cm_msg(MERROR, "bm_init_buffer_counters", "invalid buffer handle %d",
-             buffer_handle);
+      cm_msg(MERROR, "bm_init_buffer_counters", "invalid buffer handle %d", buffer_handle);
       return BM_INVALID_HANDLE;
    }
 
    if (!_buffer[buffer_handle - 1].attached) {
-      cm_msg(MERROR, "bm_init_buffer_counters", "invalid buffer handle %d",
-             buffer_handle);
+      cm_msg(MERROR, "bm_init_buffer_counters", "invalid buffer handle %d", buffer_handle);
       return BM_INVALID_HANDLE;
    }
 
@@ -5010,7 +4931,7 @@ INT bm_init_buffer_counters(INT buffer_handle)
 #endif                          /* DOXYGEN_SHOULD_SKIP_THIS */
 
 /**dox***************************************************************/
-                                                                                                    /** @} *//* end of cmfunctionc */
+                                                                                                             /** @} *//* end of cmfunctionc */
 
 /**dox***************************************************************/
 /** @addtogroup bmfunctionc
@@ -5080,8 +5001,7 @@ INT bm_set_cache_size(INT buffer_handle, INT read_size, INT write_size)
       if (read_size > 0) {
          pbuf->read_cache = (char *) M_MALLOC(read_size);
          if (pbuf->read_cache == NULL) {
-            cm_msg(MERROR, "bm_set_cache_size",
-                   "not enough memory to allocate cache buffer");
+            cm_msg(MERROR, "bm_set_cache_size", "not enough memory to allocate cache buffer");
             return BM_NO_MEMORY;
          }
       }
@@ -5096,8 +5016,7 @@ INT bm_set_cache_size(INT buffer_handle, INT read_size, INT write_size)
       if (write_size > 0) {
          pbuf->write_cache = (char *) M_MALLOC(write_size);
          if (pbuf->write_cache == NULL) {
-            cm_msg(MERROR, "bm_set_cache_size",
-                   "not enough memory to allocate cache buffer");
+            cm_msg(MERROR, "bm_set_cache_size", "not enough memory to allocate cache buffer");
             return BM_NO_MEMORY;
          }
       }
@@ -5158,8 +5077,7 @@ INT bm_compose_event(EVENT_HEADER * event_header,
 INT bm_add_event_request(INT buffer_handle, short int event_id,
                          short int trigger_mask,
                          INT sampling_type,
-                         void (*func) (HNDLE, HNDLE, EVENT_HEADER *, void *),
-                         INT request_id)
+                         void (*func) (HNDLE, HNDLE, EVENT_HEADER *, void *), INT request_id)
 /********************************************************************\
 
   Routine:  bm_add_event_request
@@ -5209,21 +5127,18 @@ INT bm_add_event_request(INT buffer_handle, short int event_id,
       BUFFER_CLIENT *pclient;
 
       if (buffer_handle > _buffer_entries || buffer_handle <= 0) {
-         cm_msg(MERROR, "bm_add_event_request", "invalid buffer handle %d",
-                buffer_handle);
+         cm_msg(MERROR, "bm_add_event_request", "invalid buffer handle %d", buffer_handle);
          return BM_INVALID_HANDLE;
       }
 
       if (!_buffer[buffer_handle - 1].attached) {
-         cm_msg(MERROR, "bm_add_event_request", "invalid buffer handle %d",
-                buffer_handle);
+         cm_msg(MERROR, "bm_add_event_request", "invalid buffer handle %d", buffer_handle);
          return BM_INVALID_HANDLE;
       }
 
       /* avoid callback/non callback requests */
       if (func == NULL && _buffer[buffer_handle - 1].callback) {
-         cm_msg(MERROR, "bm_add_event_request",
-                "mixing callback/non callback requests not possible");
+         cm_msg(MERROR, "bm_add_event_request", "mixing callback/non callback requests not possible");
          return BM_INVALID_MIXING;
       }
 
@@ -5316,8 +5231,7 @@ INT bm_request_event(HNDLE buffer_handle, short int event_id,
       _request_list = (REQUEST_LIST *) M_MALLOC(sizeof(REQUEST_LIST));
       memset(_request_list, 0, sizeof(REQUEST_LIST));
       if (_request_list == NULL) {
-         cm_msg(MERROR, "bm_request_event",
-                "not enough memory to allocate request list buffer");
+         cm_msg(MERROR, "bm_request_event", "not enough memory to allocate request list buffer");
          return BM_NO_MEMORY;
       }
 
@@ -5332,11 +5246,9 @@ INT bm_request_event(HNDLE buffer_handle, short int event_id,
       /* if not found, create new one */
       if (index == _request_list_entries) {
          _request_list = (REQUEST_LIST *) realloc(_request_list,
-                                                  sizeof(REQUEST_LIST) *
-                                                  (_request_list_entries + 1));
+                                                  sizeof(REQUEST_LIST) * (_request_list_entries + 1));
          if (_request_list == NULL) {
-            cm_msg(MERROR, "bm_request_event",
-                   "not enough memory to allocate request list buffer");
+            cm_msg(MERROR, "bm_request_event", "not enough memory to allocate request list buffer");
             return BM_NO_MEMORY;
          }
 
@@ -5355,8 +5267,7 @@ INT bm_request_event(HNDLE buffer_handle, short int event_id,
    *request_id = index;
 
    /* add request in buffer structure */
-   status = bm_add_event_request(buffer_handle, event_id, trigger_mask,
-                                 sampling_type, func, index);
+   status = bm_add_event_request(buffer_handle, event_id, trigger_mask, sampling_type, func, index);
    if (status != BM_SUCCESS)
       return status;
 
@@ -5383,14 +5294,12 @@ INT bm_remove_event_request(INT buffer_handle, INT request_id)
       BUFFER_CLIENT *pclient;
 
       if (buffer_handle > _buffer_entries || buffer_handle <= 0) {
-         cm_msg(MERROR, "bm_remove_event_request", "invalid buffer handle %d",
-                buffer_handle);
+         cm_msg(MERROR, "bm_remove_event_request", "invalid buffer handle %d", buffer_handle);
          return BM_INVALID_HANDLE;
       }
 
       if (!_buffer[buffer_handle - 1].attached) {
-         cm_msg(MERROR, "bm_remove_event_request", "invalid buffer handle %d",
-                buffer_handle);
+         cm_msg(MERROR, "bm_remove_event_request", "invalid buffer handle %d", buffer_handle);
          return BM_INVALID_HANDLE;
       }
 
@@ -5403,8 +5312,7 @@ INT bm_remove_event_request(INT buffer_handle, INT request_id)
 
       /* check all requests and set to zero if matching */
       for (i = 0, deleted = 0; i < pclient->max_request_index; i++)
-         if (pclient->event_request[i].valid &&
-             pclient->event_request[i].id == request_id) {
+         if (pclient->event_request[i].valid && pclient->event_request[i].id == request_id) {
             memset(&pclient->event_request[i], 0, sizeof(EVENT_REQUEST));
             deleted++;
          }
@@ -5420,8 +5328,7 @@ INT bm_remove_event_request(INT buffer_handle, INT request_id)
       pclient->all_flag = FALSE;
 
       for (i = 0; i < pclient->max_request_index; i++)
-         if (pclient->event_request[i].valid &&
-             (pclient->event_request[i].sampling_type & GET_ALL)) {
+         if (pclient->event_request[i].valid && (pclient->event_request[i].sampling_type & GET_ALL)) {
             pclient->all_flag = TRUE;
             break;
          }
@@ -5465,51 +5372,62 @@ static void bm_show_pointers(const BUFFER_HEADER * pheader)
 
    pclient = pheader->client;
 
-   printf("buffer \'%s\', rptr: %d, wptr: %d, size: %d\n", pheader->name, pheader->read_pointer, pheader->write_pointer, pheader->size);
+   printf("buffer \'%s\', rptr: %d, wptr: %d, size: %d\n", pheader->name, pheader->read_pointer,
+          pheader->write_pointer, pheader->size);
    for (i = 0; i < pheader->max_client_index; i++)
       if (pclient[i].pid) {
-	printf("pointers: client %d \'%s\', rptr %d\n", i, pclient[i].name, pclient[i].read_pointer);
+         printf("pointers: client %d \'%s\', rptr %d\n", i, pclient[i].name, pclient[i].read_pointer);
       }
 
    printf("done\n");
 }
 
-static void bm_validate_client_pointers(BUFFER_HEADER * pheader, BUFFER_CLIENT *pclient)
+static void bm_validate_client_pointers(BUFFER_HEADER * pheader, BUFFER_CLIENT * pclient)
 {
-  if (pheader->read_pointer <= pheader->write_pointer) {
+   if (pheader->read_pointer <= pheader->write_pointer) {
 
-    if (pclient->read_pointer < pheader->read_pointer) {
-       cm_msg(MINFO, "bm_validate_client_pointers", "Corrected read pointer for client \'%s\' on buffer \'%s\' from %d to %d", pclient->name, pheader->name, pclient->read_pointer, pheader->read_pointer);
+      if (pclient->read_pointer < pheader->read_pointer) {
+         cm_msg(MINFO, "bm_validate_client_pointers",
+                "Corrected read pointer for client \'%s\' on buffer \'%s\' from %d to %d", pclient->name,
+                pheader->name, pclient->read_pointer, pheader->read_pointer);
 
-       pclient->read_pointer = pheader->read_pointer;
-    }
+         pclient->read_pointer = pheader->read_pointer;
+      }
 
-    if (pclient->read_pointer > pheader->write_pointer) {
-       cm_msg(MINFO, "bm_validate_client_pointers", "Corrected read pointer for client \'%s\' on buffer \'%s\' from %d to %d", pclient->name, pheader->name, pclient->read_pointer, pheader->write_pointer);
-      
-       pclient->read_pointer = pheader->write_pointer;
-    }
+      if (pclient->read_pointer > pheader->write_pointer) {
+         cm_msg(MINFO, "bm_validate_client_pointers",
+                "Corrected read pointer for client \'%s\' on buffer \'%s\' from %d to %d", pclient->name,
+                pheader->name, pclient->read_pointer, pheader->write_pointer);
 
-  } else {
-    
-    if (pclient->read_pointer < 0) {
-       cm_msg(MINFO, "bm_validate_client_pointers", "Corrected read pointer for client \'%s\' on buffer \'%s\' from %d to %d", pclient->name, pheader->name, pclient->read_pointer, pheader->read_pointer);
-      
-       pclient->read_pointer = pheader->read_pointer;
-    }
+         pclient->read_pointer = pheader->write_pointer;
+      }
 
-    if (pclient->read_pointer >= pheader->size) {
-       cm_msg(MINFO, "bm_validate_client_pointers", "Corrected read pointer for client \'%s\' on buffer \'%s\' from %d to %d", pclient->name, pheader->name, pclient->read_pointer, pheader->read_pointer);
-      
-       pclient->read_pointer = pheader->read_pointer;
-    }
+   } else {
 
-    if (pclient->read_pointer > pheader->write_pointer && pclient->read_pointer < pheader->read_pointer) {
-       cm_msg(MINFO, "bm_validate_client_pointers", "Corrected read pointer for client \'%s\' on buffer \'%s\' from %d to %d", pclient->name, pheader->name, pclient->read_pointer, pheader->read_pointer);
-      
-       pclient->read_pointer = pheader->read_pointer;
-    }
-  }
+      if (pclient->read_pointer < 0) {
+         cm_msg(MINFO, "bm_validate_client_pointers",
+                "Corrected read pointer for client \'%s\' on buffer \'%s\' from %d to %d", pclient->name,
+                pheader->name, pclient->read_pointer, pheader->read_pointer);
+
+         pclient->read_pointer = pheader->read_pointer;
+      }
+
+      if (pclient->read_pointer >= pheader->size) {
+         cm_msg(MINFO, "bm_validate_client_pointers",
+                "Corrected read pointer for client \'%s\' on buffer \'%s\' from %d to %d", pclient->name,
+                pheader->name, pclient->read_pointer, pheader->read_pointer);
+
+         pclient->read_pointer = pheader->read_pointer;
+      }
+
+      if (pclient->read_pointer > pheader->write_pointer && pclient->read_pointer < pheader->read_pointer) {
+         cm_msg(MINFO, "bm_validate_client_pointers",
+                "Corrected read pointer for client \'%s\' on buffer \'%s\' from %d to %d", pclient->name,
+                pheader->name, pclient->read_pointer, pheader->read_pointer);
+
+         pclient->read_pointer = pheader->read_pointer;
+      }
+   }
 }
 
 static void bm_validate_pointers(BUFFER_HEADER * pheader)
@@ -5518,9 +5436,9 @@ static void bm_validate_pointers(BUFFER_HEADER * pheader)
    int i;
 
    for (i = 0; i < pheader->max_client_index; i++)
-     if (pclient[i].pid) {
-       bm_validate_client_pointers(pheader, &pclient[i]);
-     }
+      if (pclient[i].pid) {
+         bm_validate_client_pointers(pheader, &pclient[i]);
+      }
 }
 
 static BOOL bm_update_read_pointer(const char *caller_name, BUFFER_HEADER * pheader)
@@ -5538,8 +5456,7 @@ static BOOL bm_update_read_pointer(const char *caller_name, BUFFER_HEADER * phea
    for (i = 0; i < pheader->max_client_index; i++)
       if (pclient[i].pid) {
 #ifdef DEBUG_MSG
-         cm_msg(MDEBUG, caller_name, "bm_update_read_pointer: client %d rp=%d", i,
-                pclient[i].read_pointer);
+         cm_msg(MDEBUG, caller_name, "bm_update_read_pointer: client %d rp=%d", i, pclient[i].read_pointer);
 #endif
          bm_validate_client_pointers(pheader, &pclient[i]);
 
@@ -5566,8 +5483,7 @@ static BOOL bm_update_read_pointer(const char *caller_name, BUFFER_HEADER * phea
 
 #ifdef DEBUG_MSG
    if (min_rp == pheader->read_pointer)
-      cm_msg(MDEBUG, caller_name, "bm_update_read_pointer -> wp=%d",
-             pheader->write_pointer);
+      cm_msg(MDEBUG, caller_name, "bm_update_read_pointer -> wp=%d", pheader->write_pointer);
    else
       cm_msg(MDEBUG, caller_name, "bm_update_read_pointer -> wp=%d, rp %d -> %d, size=%d",
              pheader->write_pointer, pheader->read_pointer, min_rp, pheader->size);
@@ -5603,8 +5519,7 @@ static void bm_wakeup_producers(const BUFFER_HEADER * pheader, const BUFFER_CLIE
                                                            && pctmp->tid != ss_gettid()))) {
 #ifdef DEBUG_MSG
             cm_msg(MDEBUG, "Receive wake: rp=%d, wp=%d, level=%1.1lf",
-                   pheader->read_pointer,
-                   pheader->write_pointer, 100 - 100.0 * size / pheader->size);
+                   pheader->read_pointer, pheader->write_pointer, 100 - 100.0 * size / pheader->size);
 #endif
             ss_resume(pctmp->port, "B  ");
          }
@@ -5617,13 +5532,10 @@ static void bm_dispatch_event(int buffer_handle, EVENT_HEADER * pevent)
    /* call dispatcher */
    for (i = 0; i < _request_list_entries; i++)
       if (_request_list[i].buffer_handle == buffer_handle &&
-          bm_match_event(_request_list[i].event_id,
-                         _request_list[i].trigger_mask, pevent)) {
+          bm_match_event(_request_list[i].event_id, _request_list[i].trigger_mask, pevent)) {
          /* if event is fragmented, call defragmenter */
-         if ((pevent->event_id & 0xF000) == EVENTID_FRAG1 ||
-             (pevent->event_id & 0xF000) == EVENTID_FRAG)
-            bm_defragment_event(buffer_handle, i, pevent, (void *) (pevent + 1),
-                                _request_list[i].dispatcher);
+         if ((pevent->event_id & 0xF000) == EVENTID_FRAG1 || (pevent->event_id & 0xF000) == EVENTID_FRAG)
+            bm_defragment_event(buffer_handle, i, pevent, (void *) (pevent + 1), _request_list[i].dispatcher);
          else
             _request_list[i].dispatcher(buffer_handle, i, pevent, (void *) (pevent + 1));
       }
@@ -5673,8 +5585,7 @@ static int bm_copy_from_cache(BUFFER * pbuf, void *destination, int max_size,
 
    if (size > max_size) {
       memcpy(destination, pevent, max_size);
-      cm_msg(MERROR, "bm_receive_event", "event size %d larger than buffer size %d", size,
-             max_size);
+      cm_msg(MERROR, "bm_receive_event", "event size %d larger than buffer size %d", size, max_size);
       *buf_size = max_size;
       status = BM_TRUNCATED;
    } else {
@@ -5683,7 +5594,7 @@ static int bm_copy_from_cache(BUFFER * pbuf, void *destination, int max_size,
       status = BM_SUCCESS;
    }
 
-   bm_convert_event_header((EVENT_HEADER *)destination, convert_flags);
+   bm_convert_event_header((EVENT_HEADER *) destination, convert_flags);
 
    /* correct size for DWORD boundary */
    size = ALIGN8(size);
@@ -5707,8 +5618,7 @@ static int bm_read_cache_has_events(const BUFFER * pbuf)
    return 1;
 }
 
-static int bm_wait_for_free_space(int buffer_handle, BUFFER * pbuf, int async_flag,
-                                  int requested_space)
+static int bm_wait_for_free_space(int buffer_handle, BUFFER * pbuf, int async_flag, int requested_space)
 {
    int status;
    BUFFER_HEADER *pheader = pbuf->buffer_header;
@@ -5740,8 +5650,7 @@ static int bm_wait_for_free_space(int buffer_handle, BUFFER * pbuf, int async_fl
 #if 0
       printf
           ("bm_send_event: buffer pointers: read: %d, write: %d, free space: %d, bufsize: %d, event size: %d\n",
-           pheader->read_pointer, pheader->write_pointer, size, pheader->size,
-           requested_space);
+           pheader->read_pointer, pheader->write_pointer, size, pheader->size, requested_space);
 #endif
 
       if (requested_space < size)       /* note the '<' to avoid 100% filling */
@@ -5768,8 +5677,7 @@ static int bm_wait_for_free_space(int buffer_handle, BUFFER * pbuf, int async_fl
 
                for (j = 0; j < pc->max_request_index; j++, prequest++)
                   if (prequest->valid &&
-                      bm_match_event(prequest->event_id, prequest->trigger_mask,
-                                     pevent_test)) {
+                      bm_match_event(prequest->event_id, prequest->trigger_mask, pevent_test)) {
                      if (prequest->sampling_type & GET_ALL) {
                         blocking = TRUE;
                         blocking_request_id = prequest->id;
@@ -5783,8 +5691,7 @@ static int bm_wait_for_free_space(int buffer_handle, BUFFER * pbuf, int async_fl
                   if (pc->read_wait) {
                      char str[80];
 #ifdef DEBUG_MSG
-                     cm_msg(MDEBUG, "Send wake: rp=%d, wp=%d",
-                            pheader->read_pointer, pheader->write_pointer);
+                     cm_msg(MDEBUG, "Send wake: rp=%d, wp=%d", pheader->read_pointer, pheader->write_pointer);
 #endif
                      sprintf(str, "B %s %d", pheader->name, blocking_request_id);
                      ss_resume(pc->port, str);
@@ -5843,8 +5750,7 @@ static int bm_wait_for_free_space(int buffer_handle, BUFFER * pbuf, int async_fl
 
 #ifdef DEBUG_MSG
       cm_msg(MDEBUG, "Send sleep: rp=%d, wp=%d, level=%1.1lf",
-             pheader->read_pointer,
-             pheader->write_pointer, 100 - 100.0 * size / pheader->size);
+             pheader->read_pointer, pheader->write_pointer, 100 - 100.0 * size / pheader->size);
 #endif
 
       /* signal other clients wait mode */
@@ -5861,8 +5767,7 @@ static int bm_wait_for_free_space(int buffer_handle, BUFFER * pbuf, int async_fl
 
 #ifdef DEBUG_MSG
       cm_msg(MDEBUG, "Send woke up: rp=%d, wp=%d, level=%1.1lf",
-             pheader->read_pointer,
-             pheader->write_pointer, 100 - 100.0 * size / pheader->size);
+             pheader->read_pointer, pheader->write_pointer, 100 - 100.0 * size / pheader->size);
 #endif
 
       bm_lock_buffer(buffer_handle);
@@ -5925,11 +5830,9 @@ INT bm_send_event(INT buffer_handle, void *source, INT buf_size, INT async_flag)
    EVENT_HEADER *pevent;
 
    /* check if event size defined in header matches buf_size */
-   if (ALIGN8(buf_size) != (INT) ALIGN8(((EVENT_HEADER *) source)->data_size +
-                                        sizeof(EVENT_HEADER))) {
+   if (ALIGN8(buf_size) != (INT) ALIGN8(((EVENT_HEADER *) source)->data_size + sizeof(EVENT_HEADER))) {
       cm_msg(MERROR, "bm_send_event", "event size (%d) mismatch in header (%d)",
-             ALIGN8(buf_size), (INT) ALIGN8(((EVENT_HEADER *) source)->data_size +
-                                            sizeof(EVENT_HEADER)));
+             ALIGN8(buf_size), (INT) ALIGN8(((EVENT_HEADER *) source)->data_size + sizeof(EVENT_HEADER)));
       return BM_INVALID_PARAM;
    }
 
@@ -6004,8 +5907,7 @@ INT bm_send_event(INT buffer_handle, void *source, INT buf_size, INT async_flag)
       /* check if buffer is large enough */
       if (total_size >= pheader->size) {
          cm_msg(MERROR, "bm_send_event",
-                "total event size (%d) larger than buffer size (%d)", total_size,
-                pheader->size);
+                "total event size (%d) larger than buffer size (%d)", total_size, pheader->size);
          return BM_NO_MEMORY;
       }
 
@@ -6053,8 +5955,7 @@ INT bm_send_event(INT buffer_handle, void *source, INT buf_size, INT async_flag)
             request_id = -1;
 
             for (j = 0; j < pclient[i].max_request_index; j++, prequest++)
-               if (prequest->valid &&
-                   bm_match_event(prequest->event_id, prequest->trigger_mask, pevent)) {
+               if (prequest->valid && bm_match_event(prequest->event_id, prequest->trigger_mask, pevent)) {
                   if (prequest->sampling_type & GET_ALL)
                      pclient[i].num_waiting_events++;
 
@@ -6066,8 +5967,7 @@ INT bm_send_event(INT buffer_handle, void *source, INT buf_size, INT async_flag)
             if (num_requests_client && pclient[i].read_wait) {
                char str[80];
 #ifdef DEBUG_MSG
-               cm_msg(MDEBUG, "Send wake: rp=%d, wp=%d", pheader->read_pointer,
-                      pheader->write_pointer);
+               cm_msg(MDEBUG, "Send wake: rp=%d, wp=%d", pheader->read_pointer, pheader->write_pointer);
 #endif
                sprintf(str, "B %s %d", pheader->name, request_id);
                ss_resume(pclient[i].port, str);
@@ -6162,12 +6062,10 @@ INT bm_flush_cache(INT buffer_handle, INT async_flag)
       bm_lock_buffer(buffer_handle);
 
 #ifdef DEBUG_MSG
-      cm_msg(MDEBUG, "bm_flush_cache initial: rp=%d, wp=%d", pheader->read_pointer,
-             pheader->write_pointer);
+      cm_msg(MDEBUG, "bm_flush_cache initial: rp=%d, wp=%d", pheader->read_pointer, pheader->write_pointer);
 #endif
 
-      status =
-          bm_wait_for_free_space(buffer_handle, pbuf, async_flag, pbuf->write_cache_wp);
+      status = bm_wait_for_free_space(buffer_handle, pbuf, async_flag, pbuf->write_cache_wp);
       if (status != BM_SUCCESS) {
          bm_unlock_buffer(buffer_handle);
          return status;
@@ -6195,8 +6093,7 @@ INT bm_flush_cache(INT buffer_handle, INT async_flag)
 
          if (pheader->write_pointer + total_size <= pheader->size) {
             memcpy(pdata + pheader->write_pointer, pevent, total_size);
-            pheader->write_pointer = (pheader->write_pointer + total_size) %
-                pheader->size;
+            pheader->write_pointer = (pheader->write_pointer + total_size) % pheader->size;
             if (pheader->write_pointer > pheader->size - (int) sizeof(EVENT_HEADER))
                pheader->write_pointer = 0;
          } else {
@@ -6209,9 +6106,9 @@ INT bm_flush_cache(INT buffer_handle, INT async_flag)
             pheader->write_pointer = total_size - size;
          }
 
-	 /* see comment for the same code in bm_send_event().
-	  * We make sure the buffer is nevere 100% full */
-	 assert(pheader->write_pointer != pheader->read_pointer);
+         /* see comment for the same code in bm_send_event().
+          * We make sure the buffer is nevere 100% full */
+         assert(pheader->write_pointer != pheader->read_pointer);
 
          /* this loop does not loop forever because write_cache_rp
           * is monotonously incremented here. write_cache_wp does
@@ -6227,8 +6124,7 @@ INT bm_flush_cache(INT buffer_handle, INT async_flag)
          if (pclient[i].pid && pclient[i].read_wait) {
             char str[80];
 #ifdef DEBUG_MSG
-            cm_msg(MDEBUG, "Send wake: rp=%d, wp=%d", pheader->read_pointer,
-                   pheader->write_pointer);
+            cm_msg(MDEBUG, "Send wake: rp=%d, wp=%d", pheader->read_pointer, pheader->write_pointer);
 #endif
             sprintf(str, "B %s %d", pheader->name, -1);
             ss_resume(pclient[i].port, str);
@@ -6318,13 +6214,11 @@ INT bm_receive_event(INT buffer_handle, void *destination, INT * buf_size, INT a
 {
    if (rpc_is_remote()) {
       if (*buf_size > NET_BUFFER_SIZE) {
-         cm_msg(MERROR, "bm_receive_event",
-                "max. event size larger than NET_BUFFER_SIZE");
+         cm_msg(MERROR, "bm_receive_event", "max. event size larger than NET_BUFFER_SIZE");
          return RPC_NET_ERROR;
       }
 
-      return rpc_call(RPC_BM_RECEIVE_EVENT, buffer_handle,
-                      destination, buf_size, async_flag);
+      return rpc_call(RPC_BM_RECEIVE_EVENT, buffer_handle, destination, buf_size, async_flag);
    }
 #ifdef LOCAL_ROUTINES
    {
@@ -6401,8 +6295,7 @@ INT bm_receive_event(INT buffer_handle, void *destination, INT * buf_size, INT a
             status = ss_suspend(1000, MSG_BM);
 
 #ifdef DEBUG_MSG
-            cm_msg(MDEBUG, "Receive woke up: rp=%d, wp=%d",
-                   pheader->read_pointer, pheader->write_pointer);
+            cm_msg(MDEBUG, "Receive woke up: rp=%d, wp=%d", pheader->read_pointer, pheader->write_pointer);
 #endif
 
             /* return if TCP connection broken */
@@ -6438,8 +6331,7 @@ INT bm_receive_event(INT buffer_handle, void *destination, INT * buf_size, INT a
           * copy it to the read cache */
 
          for (i = 0; i < pc->max_request_index; i++, prequest++)
-            if (prequest->valid &&
-                bm_match_event(prequest->event_id, prequest->trigger_mask, pevent)) {
+            if (prequest->valid && bm_match_event(prequest->event_id, prequest->trigger_mask, pevent)) {
 
                /* we found a request for this event, so copy it */
 
@@ -6459,8 +6351,7 @@ INT bm_receive_event(INT buffer_handle, void *destination, INT * buf_size, INT a
                      /* event is splitted */
                      size = pheader->size - pc->read_pointer;
                      memcpy(pbuf->read_cache + pbuf->read_cache_wp, pevent, size);
-                     memcpy((char *) pbuf->read_cache + pbuf->read_cache_wp + size,
-                            pdata, total_size - size);
+                     memcpy((char *) pbuf->read_cache + pbuf->read_cache_wp + size, pdata, total_size - size);
                   }
 
                   pbuf->read_cache_wp += total_size;
@@ -6483,8 +6374,7 @@ INT bm_receive_event(INT buffer_handle, void *destination, INT * buf_size, INT a
                   if (copy_size > max_size) {
                      copy_size = max_size;
                      cm_msg(MERROR, "bm_receive_event",
-                            "event size %d larger than buffer size %d", total_size,
-                            max_size);
+                            "event size %d larger than buffer size %d", total_size, max_size);
                      status = BM_TRUNCATED;
                   }
 
@@ -6509,7 +6399,7 @@ INT bm_receive_event(INT buffer_handle, void *destination, INT * buf_size, INT a
 
                   *buf_size = copy_size;
 
-                  bm_convert_event_header((EVENT_HEADER *)destination, convert_flags);
+                  bm_convert_event_header((EVENT_HEADER *) destination, convert_flags);
                }
 
                /* update statistics */
@@ -6537,8 +6427,7 @@ INT bm_receive_event(INT buffer_handle, void *destination, INT * buf_size, INT a
 
 #ifdef DEBUG_MSG
          cm_msg(MDEBUG, "bm_receive_event -> wp=%d, rp %d -> %d (found=%d,size=%d)",
-                pheader->write_pointer, pc->read_pointer, new_read_pointer, found,
-                total_size);
+                pheader->write_pointer, pc->read_pointer, new_read_pointer, found, total_size);
 #endif
 
          pc->read_pointer = new_read_pointer;
@@ -6722,8 +6611,7 @@ INT bm_push_event(char *buffer_name)
           * copy it to the read cache */
 
          for (i = 0; i < pc->max_request_index; i++, prequest++)
-            if (prequest->valid &&
-                bm_match_event(prequest->event_id, prequest->trigger_mask, pevent)) {
+            if (prequest->valid && bm_match_event(prequest->event_id, prequest->trigger_mask, pevent)) {
 
                /* we found a request for this event, so copy it */
 
@@ -6743,8 +6631,7 @@ INT bm_push_event(char *buffer_name)
                      /* event is splitted */
                      size = pheader->size - pc->read_pointer;
                      memcpy(pbuf->read_cache + pbuf->read_cache_wp, pevent, size);
-                     memcpy((char *) pbuf->read_cache + pbuf->read_cache_wp + size,
-                            pdata, total_size - size);
+                     memcpy((char *) pbuf->read_cache + pbuf->read_cache_wp + size, pdata, total_size - size);
                   }
 
                   pbuf->read_cache_wp += total_size;
@@ -6805,8 +6692,7 @@ INT bm_push_event(char *buffer_name)
 
 #ifdef DEBUG_MSG
          cm_msg(MDEBUG, "bm_push_event -> wp=%d, rp %d -> %d (found=%d,size=%d)",
-                pheader->write_pointer, pc->read_pointer, new_read_pointer, found,
-                total_size);
+                pheader->write_pointer, pc->read_pointer, new_read_pointer, found, total_size);
 #endif
 
          pc->read_pointer = new_read_pointer;
@@ -6956,8 +6842,7 @@ INT bm_mark_read_waiting(BOOL flag)
              _buffer[i].index != rpc_get_server_acception())
             continue;
 
-         if (rpc_get_server_option(RPC_OSERVER_TYPE) != ST_SINGLE &&
-             _buffer[i].index != ss_gettid())
+         if (rpc_get_server_option(RPC_OSERVER_TYPE) != ST_SINGLE && _buffer[i].index != ss_gettid())
             continue;
 
          if (!_buffer[i].attached)
@@ -7028,10 +6913,8 @@ INT bm_notify_client(char *buffer_name, int socket)
       nc->header.param_size = 0;
 
       if (convert_flags) {
-         rpc_convert_single(&nc->header.routine_id, TID_DWORD,
-                            RPC_OUTGOING, convert_flags);
-         rpc_convert_single(&nc->header.param_size, TID_DWORD,
-                            RPC_OUTGOING, convert_flags);
+         rpc_convert_single(&nc->header.routine_id, TID_DWORD, RPC_OUTGOING, convert_flags);
+         rpc_convert_single(&nc->header.param_size, TID_DWORD, RPC_OUTGOING, convert_flags);
       }
 
       /* send the update notification to the client */
@@ -7100,8 +6983,7 @@ INT bm_poll_event(INT flag)
       do {
          /* receive event */
          size = _event_buffer_size;
-         status = bm_receive_event(_request_list[request_id].buffer_handle,
-                                   _event_buffer, &size, ASYNC);
+         status = bm_receive_event(_request_list[request_id].buffer_handle, _event_buffer, &size, ASYNC);
 
          /* call user function if successful */
          if (status == BM_SUCCESS)
@@ -7109,8 +6991,7 @@ INT bm_poll_event(INT flag)
             for (i = 0; i < _request_list_entries; i++)
                if ((_request_list[i].buffer_handle ==
                     _request_list[request_id].buffer_handle) &&
-                   bm_match_event(_request_list[i].event_id,
-                                  _request_list[i].trigger_mask, _event_buffer)) {
+                   bm_match_event(_request_list[i].event_id, _request_list[i].trigger_mask, _event_buffer)) {
                   if ((_event_buffer->event_id & 0xF000) == EVENTID_FRAG1 ||
                       (_event_buffer->event_id & 0xF000) == EVENTID_FRAG)
                      bm_defragment_event(_request_list[i].buffer_handle, i, _event_buffer,
@@ -7119,9 +7000,7 @@ INT bm_poll_event(INT flag)
                   else
                      _request_list[i].dispatcher(_request_list[i].buffer_handle, i,
                                                  _event_buffer,
-                                                 (void
-                                                  *) (((EVENT_HEADER *) _event_buffer) +
-                                                      1));
+                                                 (void *) (((EVENT_HEADER *) _event_buffer) + 1));
                }
 
          /* break if no more events */
@@ -7269,8 +7148,7 @@ void bm_defragment_event(HNDLE buffer_handle, HNDLE request_id,
    if ((pevent->event_id & 0xF000) == EVENTID_FRAG1) {
       /*---- start new event ----*/
 
-      printf("First Frag detected : Ser#:%d ID=0x%x \n", pevent->serial_number,
-             pevent->event_id);
+      printf("First Frag detected : Ser#:%d ID=0x%x \n", pevent->serial_number, pevent->event_id);
       /* check if fragments already stored */
       for (i = 0; i < MAX_DEFRAG_EVENTS; i++)
          if (defrag_buffer[i].event_id == (pevent->event_id & 0x0FFF))
@@ -7307,13 +7185,11 @@ void bm_defragment_event(HNDLE buffer_handle, HNDLE request_id,
       defrag_buffer[i].event_id = (pevent->event_id & 0x0FFF);
       defrag_buffer[i].data_size = *(DWORD *) pdata;
       defrag_buffer[i].received = 0;
-      defrag_buffer[i].pevent =
-          (EVENT_HEADER *) malloc(sizeof(EVENT_HEADER) + defrag_buffer[i].data_size);
+      defrag_buffer[i].pevent = (EVENT_HEADER *) malloc(sizeof(EVENT_HEADER) + defrag_buffer[i].data_size);
 
       if (defrag_buffer[i].pevent == NULL) {
          memset(&defrag_buffer[i].event_id, 0, sizeof(EVENT_DEFRAG_BUFFER));
-         cm_msg(MERROR, "bm_defragement_event",
-                "Not enough memory to allocate event defragment buffer");
+         cm_msg(MERROR, "bm_defragement_event", "Not enough memory to allocate event defragment buffer");
          return;
       }
 
@@ -7366,8 +7242,7 @@ void bm_defragment_event(HNDLE buffer_handle, HNDLE request_id,
 
    if (defrag_buffer[i].received == defrag_buffer[i].data_size) {
       /* event complete */
-      dispatcher(buffer_handle, request_id, defrag_buffer[i].pevent,
-                 defrag_buffer[i].pevent + 1);
+      dispatcher(buffer_handle, request_id, defrag_buffer[i].pevent, defrag_buffer[i].pevent + 1);
       free(defrag_buffer[i].pevent);
       memset(&defrag_buffer[i].event_id, 0, sizeof(EVENT_DEFRAG_BUFFER));
    }
@@ -7377,7 +7252,7 @@ void bm_defragment_event(HNDLE buffer_handle, HNDLE request_id,
 #endif                          /* DOXYGEN_SHOULD_SKIP_THIS */
 
 /**dox***************************************************************/
-                                                                                                    /** @} *//* end of bmfunctionc */
+                                                                                                             /** @} *//* end of bmfunctionc */
 
 /**dox***************************************************************/
 /** @addtogroup rpcfunctionc
@@ -7439,8 +7314,7 @@ void rpc_calc_convert_flags(INT hw_type, INT remote_hw_type, INT * convert_flags
 /********************************************************************/
 void rpc_get_convert_flags(INT * convert_flags)
 {
-   rpc_calc_convert_flags(rpc_get_option(0, RPC_OHW_TYPE),
-                          _server_connection.remote_hw_type, convert_flags);
+   rpc_calc_convert_flags(rpc_get_option(0, RPC_OHW_TYPE), _server_connection.remote_hw_type, convert_flags);
 }
 
 /********************************************************************/
@@ -7696,8 +7570,7 @@ INT rpc_register_functions(RPC_LIST * new_list, INT(*func) (INT, void **))
       if (new_list != rpc_get_internal_list(0) &&
           new_list != rpc_get_internal_list(1) &&
           (rpc_list[i].id < RPC_MIN_ID || rpc_list[i].id > RPC_MAX_ID))
-         cm_msg(MERROR, "rpc_register_functions",
-                "registered RPC function with invalid ID");
+         cm_msg(MERROR, "rpc_register_functions", "registered RPC function with invalid ID");
    }
 
    /* mark end of list */
@@ -7901,8 +7774,7 @@ INT rpc_client_connect(char *host_name, INT port, char *client_name, HNDLE * hCo
 
    /* check if cm_connect_experiment was called */
    if (_client_name[0] == 0) {
-      cm_msg(MERROR, "rpc_client_connect",
-             "cm_connect_experiment/rpc_set_name not called");
+      cm_msg(MERROR, "rpc_client_connect", "cm_connect_experiment/rpc_set_name not called");
       return RPC_NOT_REGISTERED;
    }
 
@@ -7912,8 +7784,7 @@ INT rpc_client_connect(char *host_name, INT port, char *client_name, HNDLE * hCo
    /* check if connection already exists */
    for (i = 0; i < MAX_RPC_CONNECTION; i++)
       if (_client_connection[i].send_sock != 0 &&
-          strcmp(_client_connection[i].host_name, host_name) == 0 &&
-          _client_connection[i].port == port) {
+          strcmp(_client_connection[i].host_name, host_name) == 0 && _client_connection[i].port == port) {
          *hConnection = i + 1;
          return RPC_SUCCESS;
       }
@@ -7994,16 +7865,14 @@ INT rpc_client_connect(char *host_name, INT port, char *client_name, HNDLE * hCo
    gethostname(local_host_name, sizeof(local_host_name));
 
    hw_type = rpc_get_option(0, RPC_OHW_TYPE);
-   sprintf(str, "%d %s %s %s", hw_type, cm_get_version(), local_prog_name,
-           local_host_name);
+   sprintf(str, "%d %s %s %s", hw_type, cm_get_version(), local_prog_name, local_host_name);
 
    send(sock, str, strlen(str) + 1, 0);
 
    /* receive remote computer info */
    i = recv_string(sock, str, sizeof(str), 10000);
    if (i <= 0) {
-      cm_msg(MERROR, "rpc_client_connect", "timeout on receive remote computer info: %s",
-             str);
+      cm_msg(MERROR, "rpc_client_connect", "timeout on receive remote computer info: %s", str);
       return RPC_NET_ERROR;
    }
 
@@ -8024,8 +7893,7 @@ INT rpc_client_connect(char *host_name, INT port, char *client_name, HNDLE * hCo
          *strchr(strchr(str, '.') + 1, '.') = 0;
 
    if (strcmp(v1, str) != 0) {
-      sprintf(str, "remote MIDAS version %s differs from local version %s",
-              version, cm_get_version());
+      sprintf(str, "remote MIDAS version %s differs from local version %s", version, cm_get_version());
       cm_msg(MERROR, "rpc_client_connect", str);
    }
 
@@ -8156,8 +8024,7 @@ INT rpc_server_connect(char *host_name, char *exp_name)
 
    /* check if cm_connect_experiment was called */
    if (_client_name[0] == 0) {
-      cm_msg(MERROR, "rpc_server_connect",
-             "cm_connect_experiment/rpc_set_name not called");
+      cm_msg(MERROR, "rpc_server_connect", "cm_connect_experiment/rpc_set_name not called");
       return RPC_NOT_REGISTERED;
    }
 
@@ -8264,11 +8131,9 @@ INT rpc_server_connect(char *host_name, char *exp_name)
 
    /* connect to experiment */
    if (exp_name[0] == 0)
-      sprintf(str, "C %d %d %d %s Default",
-              listen_port1, listen_port2, listen_port3, cm_get_version());
+      sprintf(str, "C %d %d %d %s Default", listen_port1, listen_port2, listen_port3, cm_get_version());
    else
-      sprintf(str, "C %d %d %d %s %s",
-              listen_port1, listen_port2, listen_port3, cm_get_version(), exp_name);
+      sprintf(str, "C %d %d %d %s %s", listen_port1, listen_port2, listen_port3, cm_get_version(), exp_name);
 
    send(sock, str, strlen(str) + 1, 0);
    i = recv_string(sock, str, sizeof(str), 10000);
@@ -8298,8 +8163,7 @@ INT rpc_server_connect(char *host_name, char *exp_name)
          *strchr(strchr(str, '.') + 1, '.') = 0;
 
    if (strcmp(v1, str) != 0) {
-      sprintf(str, "remote MIDAS version %s differs from local version %s",
-              version, cm_get_version());
+      sprintf(str, "remote MIDAS version %s differs from local version %s", version, cm_get_version());
       cm_msg(MERROR, "rpc_server_connect", str);
    }
 
@@ -8322,8 +8186,7 @@ INT rpc_server_connect(char *host_name, char *exp_name)
    } while (status == -1);      /* dont return if an alarm signal was cought */
 
    if (!FD_ISSET(lsock1, &readfds)) {
-      cm_msg(MERROR, "rpc_server_connect",
-             "mserver subprocess could not be started (check path)");
+      cm_msg(MERROR, "rpc_server_connect", "mserver subprocess could not be started (check path)");
       closesocket(lsock1);
       closesocket(lsock2);
       closesocket(lsock3);
@@ -8332,14 +8195,11 @@ INT rpc_server_connect(char *host_name, char *exp_name)
 
    size = sizeof(bind_addr);
 
-   _server_connection.send_sock =
-       accept(lsock1, (struct sockaddr *) &bind_addr, (int *) &size);
+   _server_connection.send_sock = accept(lsock1, (struct sockaddr *) &bind_addr, (int *) &size);
 
-   _server_connection.recv_sock =
-       accept(lsock2, (struct sockaddr *) &bind_addr, (int *) &size);
+   _server_connection.recv_sock = accept(lsock2, (struct sockaddr *) &bind_addr, (int *) &size);
 
-   _server_connection.event_sock =
-       accept(lsock3, (struct sockaddr *) &bind_addr, (int *) &size);
+   _server_connection.event_sock = accept(lsock3, (struct sockaddr *) &bind_addr, (int *) &size);
 
    if (_server_connection.send_sock == -1 ||
        _server_connection.recv_sock == -1 || _server_connection.event_sock == -1) {
@@ -8354,16 +8214,13 @@ INT rpc_server_connect(char *host_name, char *exp_name)
    /* set TCP_NODELAY option for better performance */
 #ifdef OS_VXWORKS
    flag = 1;
-   setsockopt(_server_connection.send_sock,
-              IPPROTO_TCP, TCP_NODELAY, (char *) &flag, sizeof(flag));
-   setsockopt(_server_connection.event_sock,
-              IPPROTO_TCP, TCP_NODELAY, (char *) &flag, sizeof(flag));
+   setsockopt(_server_connection.send_sock, IPPROTO_TCP, TCP_NODELAY, (char *) &flag, sizeof(flag));
+   setsockopt(_server_connection.event_sock, IPPROTO_TCP, TCP_NODELAY, (char *) &flag, sizeof(flag));
 #endif
 
    /* increase send buffer size to 64kB */
    flag = 0x10000;
-   setsockopt(_server_connection.event_sock, SOL_SOCKET, SO_SNDBUF,
-              (char *) &flag, sizeof(flag));
+   setsockopt(_server_connection.event_sock, SOL_SOCKET, SO_SNDBUF, (char *) &flag, sizeof(flag));
 
    /* send local computer info */
    rpc_get_name(local_prog_name);
@@ -8383,8 +8240,7 @@ INT rpc_server_connect(char *host_name, char *exp_name)
    _server_connection.remote_hw_type = remote_hw_type;
 
    /* set dispatcher which receives database updates */
-   ss_suspend_set_dispatch(CH_CLIENT, &_server_connection,
-                           (int (*)(void)) rpc_client_dispatch);
+   ss_suspend_set_dispatch(CH_CLIENT, &_server_connection, (int (*)(void)) rpc_client_dispatch);
 
    return RPC_SUCCESS;
 }
@@ -8698,8 +8554,7 @@ INT rpc_set_option(HNDLE hConn, INT item, INT value)
 
    case RPC_NODELAY:
       if (hConn == -1)
-         setsockopt(_server_connection.send_sock, IPPROTO_TCP,
-                    TCP_NODELAY, (char *) &value, sizeof(value));
+         setsockopt(_server_connection.send_sock, IPPROTO_TCP, TCP_NODELAY, (char *) &value, sizeof(value));
       else
          setsockopt(_client_connection[hConn - 1].send_sock, IPPROTO_TCP,
                     TCP_NODELAY, (char *) &value, sizeof(value));
@@ -9041,8 +8896,7 @@ INT rpc_client_call(HNDLE hConn, const INT routine_id, ...)
    if (_net_send_buffer_size == 0) {
       _net_send_buffer = (char *) M_MALLOC(NET_BUFFER_SIZE);
       if (_net_send_buffer == NULL) {
-         cm_msg(MERROR, "rpc_client_call",
-                "not enough memory to allocate network buffer");
+         cm_msg(MERROR, "rpc_client_call", "not enough memory to allocate network buffer");
          return RPC_EXCEED_BUFFER;
       }
       _net_send_buffer_size = NET_BUFFER_SIZE;
@@ -9479,8 +9333,7 @@ INT rpc_call(const INT routine_id, ...)
       } while (status == -1);   /* dont return if an alarm signal was cought */
 
       if (!FD_ISSET(send_sock, &readfds)) {
-         cm_msg(MERROR, "rpc_call", "rpc timeout, routine = \"%s\"",
-                rpc_list[index].name);
+         cm_msg(MERROR, "rpc_call", "rpc timeout, routine = \"%s\"", rpc_list[index].name);
 
          /* disconnect to avoid that the reply to this rpc_call comes at
             the next rpc_call */
@@ -9494,8 +9347,7 @@ INT rpc_call(const INT routine_id, ...)
    i = recv_tcp(send_sock, _net_send_buffer, NET_BUFFER_SIZE, 0);
 
    if (i <= 0) {
-      cm_msg(MERROR, "rpc_call", "recv_tcp() failed, routine = \"%s\"",
-             rpc_list[index].name);
+      cm_msg(MERROR, "rpc_call", "recv_tcp() failed, routine = \"%s\"", rpc_list[index].name);
       return RPC_NET_ERROR;
    }
 
@@ -9600,8 +9452,7 @@ INT rpc_send_event(INT buffer_handle, void *source, INT buf_size, INT async_flag
 
    aligned_buf_size = ALIGN8(buf_size);
 
-   if (aligned_buf_size !=
-       (INT) ALIGN8(((EVENT_HEADER *) source)->data_size + sizeof(EVENT_HEADER))) {
+   if (aligned_buf_size != (INT) ALIGN8(((EVENT_HEADER *) source)->data_size + sizeof(EVENT_HEADER))) {
       cm_msg(MERROR, "rpc_send_event", "event size mismatch");
       return BM_INVALID_PARAM;
    }
@@ -9636,8 +9487,7 @@ INT rpc_send_event(INT buffer_handle, void *source, INT buf_size, INT async_flag
 #endif
       }
 
-      i = send_tcp(_server_connection.send_sock,
-                   _tcp_buffer + _tcp_rp, _tcp_wp - _tcp_rp, 0);
+      i = send_tcp(_server_connection.send_sock, _tcp_buffer + _tcp_rp, _tcp_wp - _tcp_rp, 0);
 
       if (i < 0)
 #ifdef OS_WINNT
@@ -9686,8 +9536,7 @@ INT rpc_send_event(INT buffer_handle, void *source, INT buf_size, INT async_flag
    /* send events larger than optimal buffer size directly */
    if (aligned_buf_size + 4 * 8 + sizeof(NET_COMMAND_HEADER) >= (DWORD) _opt_tcp_size) {
       /* send header */
-      send_tcp(_server_connection.send_sock,
-               _tcp_buffer + _tcp_wp, sizeof(NET_COMMAND_HEADER) + 16, 0);
+      send_tcp(_server_connection.send_sock, _tcp_buffer + _tcp_wp, sizeof(NET_COMMAND_HEADER) + 16, 0);
 
       /* send data */
       send_tcp(_server_connection.send_sock, (char *) source, aligned_buf_size, 0);
@@ -9786,8 +9635,7 @@ INT rpc_flush_event()
 
    /* empty TCP buffer */
    if (_tcp_wp > 0) {
-      i = send_tcp(_server_connection.send_sock,
-                   _tcp_buffer + _tcp_rp, _tcp_wp - _tcp_rp, 0);
+      i = send_tcp(_server_connection.send_sock, _tcp_buffer + _tcp_rp, _tcp_wp - _tcp_rp, 0);
 
       if (i != _tcp_wp - _tcp_rp) {
          cm_msg(MERROR, "rpc_flush_event", "send_tcp() failed");
@@ -9842,8 +9690,7 @@ static INT rpc_transition_dispatch(INT index, void *prpc_param[])
 
    if (index == RPC_RC_TRANSITION) {
       for (i = 0; i < MAX_TRANSITIONS; i++)
-         if (_trans_table[i].transition == CINT(0) &&
-             _trans_table[i].sequence_number == CINT(4))
+         if (_trans_table[i].transition == CINT(0) && _trans_table[i].sequence_number == CINT(4))
             break;
 
       /* call registerd function */
@@ -9921,8 +9768,7 @@ int cm_query_transition(int *transition, int *run_number, int *trans_time)
 
 
 /********************************************************************/
-INT recv_tcp_server(INT index, char *buffer, DWORD buffer_size, INT flags,
-                    INT * remaining)
+INT recv_tcp_server(INT index, char *buffer, DWORD buffer_size, INT flags, INT * remaining)
 /********************************************************************\
 
   Routine: recv_tcp_server
@@ -9964,8 +9810,7 @@ INT recv_tcp_server(INT index, char *buffer, DWORD buffer_size, INT flags,
       status = recv(sock, buffer, buffer_size, flags);
       if (status == -1)
          cm_msg(MERROR, "recv_tcp_server",
-                "recv(%d,MSG_PEEK) returned %d, errno: %d (%s)", buffer_size, status,
-                errno, strerror(errno));
+                "recv(%d,MSG_PEEK) returned %d, errno: %d (%s)", buffer_size, status, errno, strerror(errno));
       return status;
    }
 
@@ -9975,8 +9820,7 @@ INT recv_tcp_server(INT index, char *buffer, DWORD buffer_size, INT flags,
       else
          _server_acception[index].net_buffer_size = NET_BUFFER_SIZE;
 
-      _server_acception[index].net_buffer =
-          (char *) M_MALLOC(_server_acception[index].net_buffer_size);
+      _server_acception[index].net_buffer = (char *) M_MALLOC(_server_acception[index].net_buffer_size);
       _server_acception[index].write_ptr = 0;
       _server_acception[index].read_ptr = 0;
       _server_acception[index].misalign = 0;
@@ -10004,8 +9848,7 @@ INT recv_tcp_server(INT index, char *buffer, DWORD buffer_size, INT flags,
          if (param_size == -1) {
             if (copied > 0) {
                /* assemble split header */
-               memcpy(buffer + copied, net_buffer + read_ptr,
-                      (INT) sizeof(NET_COMMAND_HEADER) - copied);
+               memcpy(buffer + copied, net_buffer + read_ptr, (INT) sizeof(NET_COMMAND_HEADER) - copied);
                nc = (NET_COMMAND *) (buffer);
             } else
                nc = (NET_COMMAND *) (net_buffer + read_ptr);
@@ -10013,8 +9856,7 @@ INT recv_tcp_server(INT index, char *buffer, DWORD buffer_size, INT flags,
             param_size = (INT) nc->header.param_size;
 
             if (_server_acception[index].convert_flags)
-               rpc_convert_single(&param_size, TID_DWORD, 0,
-                                  _server_acception[index].convert_flags);
+               rpc_convert_single(&param_size, TID_DWORD, 0, _server_acception[index].convert_flags);
          }
 
          /* check if parameters fit in buffer */
@@ -10025,8 +9867,7 @@ INT recv_tcp_server(INT index, char *buffer, DWORD buffer_size, INT flags,
          }
 
          /* check if we have all parameters in buffer */
-         if (write_ptr - read_ptr >=
-             param_size + (INT) sizeof(NET_COMMAND_HEADER) - copied)
+         if (write_ptr - read_ptr >= param_size + (INT) sizeof(NET_COMMAND_HEADER) - copied)
             break;
       }
 
@@ -10040,16 +9881,12 @@ INT recv_tcp_server(INT index, char *buffer, DWORD buffer_size, INT flags,
       }
 #ifdef OS_UNIX
       do {
-         write_ptr =
-             recv(sock, net_buffer + misalign,
-                  _server_acception[index].net_buffer_size - 8, flags);
+         write_ptr = recv(sock, net_buffer + misalign, _server_acception[index].net_buffer_size - 8, flags);
 
          /* don't return if an alarm signal was cought */
       } while (write_ptr == -1 && errno == EINTR);
 #else
-      write_ptr =
-          recv(sock, net_buffer + misalign, _server_acception[index].net_buffer_size - 8,
-               flags);
+      write_ptr = recv(sock, net_buffer + misalign, _server_acception[index].net_buffer_size - 8, flags);
 #endif
 
       /* abort if connection broken */
@@ -10122,8 +9959,7 @@ INT recv_tcp_check(int sock)
 
 
 /********************************************************************/
-INT recv_event_server(INT index, char *buffer, DWORD buffer_size, INT flags,
-                      INT * remaining)
+INT recv_event_server(INT index, char *buffer, DWORD buffer_size, INT flags, INT * remaining)
 /********************************************************************\
 
   Routine: recv_event_server
@@ -10168,8 +10004,7 @@ INT recv_event_server(INT index, char *buffer, DWORD buffer_size, INT flags,
       status = recv(sock, buffer, buffer_size, flags);
       if (status == -1)
          cm_msg(MERROR, "recv_event_server",
-                "recv(%d,MSG_PEEK) returned %d, errno: %d (%s)", buffer_size, status,
-                errno, strerror(errno));
+                "recv(%d,MSG_PEEK) returned %d, errno: %d (%s)", buffer_size, status, errno, strerror(errno));
       return status;
    }
 
@@ -10225,8 +10060,7 @@ INT recv_event_server(INT index, char *buffer, DWORD buffer_size, INT flags,
 
          /* check if data part fits in buffer */
          if ((INT) buffer_size < aligned_event_size + header_size) {
-            cm_msg(MERROR, "recv_event_server",
-                   "parameters too large for network buffer");
+            cm_msg(MERROR, "recv_event_server", "parameters too large for network buffer");
             psa->ev_read_ptr = psa->ev_write_ptr = 0;
             return -1;
          }
@@ -10333,8 +10167,7 @@ INT recv_event_check(int sock)
 
 
 /********************************************************************/
-INT rpc_register_server(INT server_type, char *name, INT * port,
-                        INT(*func) (INT, void **))
+INT rpc_register_server(INT server_type, char *name, INT * port, INT(*func) (INT, void **))
 /********************************************************************\
 
   Routine: rpc_register_server
@@ -10562,8 +10395,7 @@ INT rpc_execute(INT sock, char *buffer, INT convert_flags)
                rpc_convert_data(in_param_ptr, tid, flags, param_size, convert_flags);
             else
                rpc_convert_data(in_param_ptr, tid, flags,
-                                rpc_list[index].param[i].n * tid_size[tid],
-                                convert_flags);
+                                rpc_list[index].param[i].n * tid_size[tid], convert_flags);
          }
 
          db_sprintf(str, in_param_ptr, param_size, 0, rpc_list[index].param[i].tid);
@@ -10603,12 +10435,10 @@ INT rpc_execute(INT sock, char *buffer, INT convert_flags)
          if (rpc_list[index].param[i].tid == TID_STRUCT)
             param_size = ALIGN8(rpc_list[index].param[i].n);
 
-         if ((POINTER_T) out_param_ptr - (POINTER_T) nc_out + param_size >
-             NET_BUFFER_SIZE) {
+         if ((POINTER_T) out_param_ptr - (POINTER_T) nc_out + param_size > NET_BUFFER_SIZE) {
             cm_msg(MERROR, "rpc_execute",
                    "return parameters (%d) too large for network buffer (%d)",
-                   (POINTER_T) out_param_ptr - (POINTER_T) nc_out + param_size,
-                   NET_BUFFER_SIZE);
+                   (POINTER_T) out_param_ptr - (POINTER_T) nc_out + param_size, NET_BUFFER_SIZE);
             M_FREE(return_buffer);
             return RPC_EXCEED_BUFFER;
          }
@@ -10641,8 +10471,7 @@ INT rpc_execute(INT sock, char *buffer, INT convert_flags)
    else
       status = RPC_INVALID_ID;
 
-   if (routine_id == RPC_ID_EXIT || routine_id == RPC_ID_SHUTDOWN ||
-       routine_id == RPC_ID_WATCHDOG)
+   if (routine_id == RPC_ID_EXIT || routine_id == RPC_ID_SHUTDOWN || routine_id == RPC_ID_WATCHDOG)
       status = RPC_SUCCESS;
 
    /* return immediately for closed down client connections */
@@ -10687,8 +10516,7 @@ INT rpc_execute(INT sock, char *buffer, INT convert_flags)
             /* move remaining parameters to end of string */
             memcpy(out_param_ptr + param_size,
                    out_param_ptr + max_size + ALIGN8(sizeof(INT)),
-                   (POINTER_T) last_param_ptr -
-                   ((POINTER_T) out_param_ptr + max_size + ALIGN8(sizeof(INT))));
+                   (POINTER_T) last_param_ptr - ((POINTER_T) out_param_ptr + max_size + ALIGN8(sizeof(INT))));
          }
 
          if (flags & RPC_VARARRAY) {
@@ -10706,8 +10534,7 @@ INT rpc_execute(INT sock, char *buffer, INT convert_flags)
             /* move remaining parameters to end of array */
             memcpy(out_param_ptr + param_size,
                    out_param_ptr + max_size + ALIGN8(sizeof(INT)),
-                   (POINTER_T) last_param_ptr -
-                   ((POINTER_T) out_param_ptr + max_size + ALIGN8(sizeof(INT))));
+                   (POINTER_T) last_param_ptr - ((POINTER_T) out_param_ptr + max_size + ALIGN8(sizeof(INT))));
          }
 
          if (tid == TID_STRUCT)
@@ -10717,13 +10544,11 @@ INT rpc_execute(INT sock, char *buffer, INT convert_flags)
          if (convert_flags) {
             if (flags & RPC_VARARRAY)
                rpc_convert_data(out_param_ptr, tid,
-                                rpc_list[index].param[i].flags | RPC_OUTGOING,
-                                param_size, convert_flags);
+                                rpc_list[index].param[i].flags | RPC_OUTGOING, param_size, convert_flags);
             else
                rpc_convert_data(out_param_ptr, tid,
                                 rpc_list[index].param[i].flags | RPC_OUTGOING,
-                                rpc_list[index].param[i].n * tid_size[tid],
-                                convert_flags);
+                                rpc_list[index].param[i].n * tid_size[tid], convert_flags);
          }
 
          out_param_ptr += param_size;
@@ -10736,10 +10561,8 @@ INT rpc_execute(INT sock, char *buffer, INT convert_flags)
 
    /* convert header format (byte swapping) if necessary */
    if (convert_flags) {
-      rpc_convert_single(&nc_out->header.routine_id, TID_DWORD,
-                         RPC_OUTGOING, convert_flags);
-      rpc_convert_single(&nc_out->header.param_size, TID_DWORD,
-                         RPC_OUTGOING, convert_flags);
+      rpc_convert_single(&nc_out->header.routine_id, TID_DWORD, RPC_OUTGOING, convert_flags);
+      rpc_convert_single(&nc_out->header.param_size, TID_DWORD, RPC_OUTGOING, convert_flags);
    }
 
    status = send_tcp(sock, return_buffer, sizeof(NET_COMMAND_HEADER) + param_size, 0);
@@ -10912,8 +10735,7 @@ INT rpc_execute_ascii(INT sock, char *buffer)
 
          if ((POINTER_T) in_param_ptr - (POINTER_T) buffer1 > ASCII_BUFFER_SIZE) {
             cm_msg(MERROR, "rpc_ascii_execute",
-                   "parameters (%d) too large for network buffer (%d)", param_size,
-                   ASCII_BUFFER_SIZE);
+                   "parameters (%d) too large for network buffer (%d)", param_size, ASCII_BUFFER_SIZE);
             return RPC_EXCEED_BUFFER;
          }
 
@@ -10932,12 +10754,10 @@ INT rpc_execute_ascii(INT sock, char *buffer)
       if (rpc_list[index].param[i].tid == TID_STRUCT)
         param_size = ALIGN8( rpc_list[index].param[i].n );
 */
-         if ((POINTER_T) out_param_ptr - (POINTER_T) buffer2 + param_size >
-             ASCII_BUFFER_SIZE) {
+         if ((POINTER_T) out_param_ptr - (POINTER_T) buffer2 + param_size > ASCII_BUFFER_SIZE) {
             cm_msg(MERROR, "rpc_execute",
                    "return parameters (%d) too large for network buffer (%d)",
-                   (POINTER_T) out_param_ptr - (POINTER_T) buffer2 + param_size,
-                   ASCII_BUFFER_SIZE);
+                   (POINTER_T) out_param_ptr - (POINTER_T) buffer2 + param_size, ASCII_BUFFER_SIZE);
             return RPC_EXCEED_BUFFER;
          }
 
@@ -10970,8 +10790,7 @@ INT rpc_execute_ascii(INT sock, char *buffer)
    else
       status = RPC_INVALID_ID;
 
-   if (routine_id == RPC_ID_EXIT || routine_id == RPC_ID_SHUTDOWN ||
-       routine_id == RPC_ID_WATCHDOG)
+   if (routine_id == RPC_ID_EXIT || routine_id == RPC_ID_SHUTDOWN || routine_id == RPC_ID_WATCHDOG)
       status = RPC_SUCCESS;
 
    /* Return if TCP connection broken */
@@ -11068,8 +10887,7 @@ INT rpc_execute_ascii(INT sock, char *buffer)
 
          if ((POINTER_T) out_param_ptr - (POINTER_T) return_buffer > ASCII_BUFFER_SIZE) {
             cm_msg(MERROR, "rpc_execute",
-                   "return parameter (%d) too large for network buffer (%d)", param_size,
-                   ASCII_BUFFER_SIZE);
+                   "return parameter (%d) too large for network buffer (%d)", param_size, ASCII_BUFFER_SIZE);
             return RPC_EXCEED_BUFFER;
          }
       }
@@ -11181,6 +10999,7 @@ INT rpc_server_accept(int lsock)
          /*----------- return available experiments -----------*/
          cm_scan_experiments();
          for (i = 0; i < MAX_EXPERIMENT && exptab[i].name[0]; i++) {
+            rpc_debug_printf("Return experiment: %s", exptab[i].name);
             sprintf(str, "%s", exptab[i].name);
             send(sock, str, strlen(str) + 1, 0);
          }
@@ -11197,8 +11016,7 @@ INT rpc_server_accept(int lsock)
          port1 = port2 = version[0] = 0;
          sscanf(net_buffer + 2, "%d %d %d %s", &port1, &port2, &port3, version);
          strcpy(callback.experiment,
-                strchr(strchr(strchr(strchr(net_buffer + 2, ' ') + 1, ' ') + 1, ' ') + 1,
-                       ' ') + 1);
+                strchr(strchr(strchr(strchr(net_buffer + 2, ' ') + 1, ' ') + 1, ' ') + 1, ' ') + 1);
 
          /* print warning if version patch level doesn't agree */
          strcpy(v1, version);
@@ -11212,8 +11030,7 @@ INT rpc_server_accept(int lsock)
                *strchr(strchr(str, '.') + 1, '.') = 0;
 
          if (strcmp(v1, str) != 0) {
-            sprintf(str, "client MIDAS version %s differs from local version %s",
-                    version, cm_get_version());
+            sprintf(str, "client MIDAS version %s differs from local version %s", version, cm_get_version());
             cm_msg(MERROR, "rpc_server_accept", str);
 
             sprintf(str, "received string: %s", net_buffer + 2);
@@ -11289,8 +11106,7 @@ INT rpc_server_accept(int lsock)
                              argv[0], argv[1], argv[2], argv[3], argv[4],
                              argv[5], argv[6], argv[7], argv[8], argv[9]);
 
-            status = ss_spawnv(P_NOWAIT,
-                               (char *) rpc_get_server_option(RPC_OSERVER_NAME), argv);
+            status = ss_spawnv(P_NOWAIT, (char *) rpc_get_server_option(RPC_OSERVER_NAME), argv);
 
             if (status != SS_SUCCESS) {
                rpc_debug_printf("Cannot spawn subprocess: %s\n", strerror(errno));
@@ -11462,8 +11278,7 @@ INT rpc_client_accept(int lsock)
    rpc_set_server_option(RPC_CONVERT_FLAGS, convert_flags);
 
    /* set callback function for ss_suspend */
-   ss_suspend_set_dispatch(CH_SERVER, _server_acception,
-                           (int (*)(void)) rpc_server_receive);
+   ss_suspend_set_dispatch(CH_SERVER, _server_acception, (int (*)(void)) rpc_server_receive);
 
    return RPC_SUCCESS;
 }
@@ -11636,13 +11451,11 @@ INT rpc_server_callback(struct callback_addr * pcallback)
    rpc_set_server_option(RPC_CONVERT_FLAGS, convert_flags);
 
    /* set callback function for ss_suspend */
-   ss_suspend_set_dispatch(CH_SERVER, _server_acception,
-                           (int (*)(void)) rpc_server_receive);
+   ss_suspend_set_dispatch(CH_SERVER, _server_acception, (int (*)(void)) rpc_server_receive);
 
    if (rpc_get_server_option(RPC_OSERVER_TYPE) != ST_REMOTE)
       rpc_debug_printf("Connection to %s:%s established\n",
-                       _server_acception[index].host_name,
-                       _server_acception[index].prog_name);
+                       _server_acception[index].host_name, _server_acception[index].prog_name);
 
    return RPC_SUCCESS;
 
@@ -11750,8 +11563,7 @@ INT rpc_server_receive(INT index, int sock, BOOL check)
    if (_net_recv_buffer_size == 0) {
       _net_recv_buffer = (char *) M_MALLOC(NET_BUFFER_SIZE);
       if (_net_recv_buffer == NULL) {
-         cm_msg(MERROR, "rpc_server_receive",
-                "not enough memory to allocate network buffer");
+         cm_msg(MERROR, "rpc_server_receive", "not enough memory to allocate network buffer");
          return RPC_EXCEED_BUFFER;
       }
       _net_recv_buffer_size = NET_BUFFER_SIZE;
@@ -11781,37 +11593,31 @@ INT rpc_server_receive(INT index, int sock, BOOL check)
             n_received = recv_string(_server_acception[index].recv_sock, _net_recv_buffer,
                                      NET_BUFFER_SIZE, 10000);
          else
-            n_received =
-                recv_tcp_server(index, _net_recv_buffer, NET_BUFFER_SIZE, 0, &remaining);
+            n_received = recv_tcp_server(index, _net_recv_buffer, NET_BUFFER_SIZE, 0, &remaining);
 
          if (n_received <= 0) {
             status = SS_ABORT;
-            cm_msg(MERROR, "rpc_server_receive", "recv_tcp_server() returned %d, abort",
-                   n_received);
+            cm_msg(MERROR, "rpc_server_receive", "recv_tcp_server() returned %d, abort", n_received);
             goto error;
          }
 
          rpc_set_server_acception(index + 1);
 
          if (_server_acception[index].remote_hw_type == DR_ASCII)
-            status = rpc_execute_ascii(_server_acception[index].recv_sock,
-                                       _net_recv_buffer);
+            status = rpc_execute_ascii(_server_acception[index].recv_sock, _net_recv_buffer);
          else
             status = rpc_execute(_server_acception[index].recv_sock,
-                                 _net_recv_buffer,
-                                 _server_acception[index].convert_flags);
+                                 _net_recv_buffer, _server_acception[index].convert_flags);
 
          if (status == SS_ABORT) {
-            cm_msg(MERROR, "rpc_server_receive", "rpc_execute() returned %d, abort",
-                   status);
+            cm_msg(MERROR, "rpc_server_receive", "rpc_execute() returned %d, abort", status);
             goto error;
          }
 
          if (status == SS_EXIT || status == RPC_SHUTDOWN) {
             if (rpc_get_server_option(RPC_OSERVER_TYPE) != ST_REMOTE)
                rpc_debug_printf("Connection to %s:%s closed\n",
-                                _server_acception[index].host_name,
-                                _server_acception[index].prog_name);
+                                _server_acception[index].host_name, _server_acception[index].prog_name);
             goto exit;
          }
 
@@ -11822,14 +11628,11 @@ INT rpc_server_receive(INT index, int sock, BOOL check)
          start_time = ss_millitime();
 
          do {
-            n_received =
-                recv_event_server(index, _net_recv_buffer, NET_BUFFER_SIZE, 0,
-                                  &remaining);
+            n_received = recv_event_server(index, _net_recv_buffer, NET_BUFFER_SIZE, 0, &remaining);
 
             if (n_received <= 0) {
                status = SS_ABORT;
-               cm_msg(MERROR, "rpc_server_receive",
-                      "recv_event_server() returned %d, abort", n_received);
+               cm_msg(MERROR, "rpc_server_receive", "recv_event_server() returned %d, abort", n_received);
                goto error;
             }
 
@@ -11837,12 +11640,9 @@ INT rpc_server_receive(INT index, int sock, BOOL check)
             pbh = (INT *) _net_recv_buffer;
             pevent = (EVENT_HEADER *) (pbh + 1);
 
-            status =
-                bm_send_event(*pbh, pevent, pevent->data_size + sizeof(EVENT_HEADER),
-                              SYNC);
+            status = bm_send_event(*pbh, pevent, pevent->data_size + sizeof(EVENT_HEADER), SYNC);
             if (status != BM_SUCCESS)
-               cm_msg(MERROR, "rpc_server_receive", "bm_send_event() returned %d",
-                      status);
+               cm_msg(MERROR, "rpc_server_receive", "bm_send_event() returned %d", status);
 
             /* repeat for maximum 0.5 sec */
          } while (ss_millitime() - start_time < 500 && remaining);
@@ -11942,19 +11742,16 @@ INT rpc_server_shutdown(void)
          /* lingering needed for PCTCP */
          ling.l_onoff = 1;
          ling.l_linger = 0;
-         setsockopt(_server_acception[i].recv_sock,
-                    SOL_SOCKET, SO_LINGER, (char *) &ling, sizeof(ling));
+         setsockopt(_server_acception[i].recv_sock, SOL_SOCKET, SO_LINGER, (char *) &ling, sizeof(ling));
          closesocket(_server_acception[i].recv_sock);
 
          if (_server_acception[i].send_sock) {
-            setsockopt(_server_acception[i].send_sock,
-                       SOL_SOCKET, SO_LINGER, (char *) &ling, sizeof(ling));
+            setsockopt(_server_acception[i].send_sock, SOL_SOCKET, SO_LINGER, (char *) &ling, sizeof(ling));
             closesocket(_server_acception[i].send_sock);
          }
 
          if (_server_acception[i].event_sock) {
-            setsockopt(_server_acception[i].event_sock,
-                       SOL_SOCKET, SO_LINGER, (char *) &ling, sizeof(ling));
+            setsockopt(_server_acception[i].event_sock, SOL_SOCKET, SO_LINGER, (char *) &ling, sizeof(ling));
             closesocket(_server_acception[i].event_sock);
          }
 
@@ -12017,15 +11814,12 @@ INT rpc_check_channels(void)
 
          convert_flags = rpc_get_server_option(RPC_CONVERT_FLAGS);
          if (convert_flags) {
-            rpc_convert_single(&nc.header.routine_id, TID_DWORD, RPC_OUTGOING,
-                               convert_flags);
-            rpc_convert_single(&nc.header.param_size, TID_DWORD, RPC_OUTGOING,
-                               convert_flags);
+            rpc_convert_single(&nc.header.routine_id, TID_DWORD, RPC_OUTGOING, convert_flags);
+            rpc_convert_single(&nc.header.param_size, TID_DWORD, RPC_OUTGOING, convert_flags);
          }
 
          /* send the header to the client */
-         i = send_tcp(_server_acception[index].send_sock,
-                      (char *) &nc, sizeof(NET_COMMAND_HEADER), 0);
+         i = send_tcp(_server_acception[index].send_sock, (char *) &nc, sizeof(NET_COMMAND_HEADER), 0);
 
          if (i < 0)
             goto exit;
@@ -12066,8 +11860,7 @@ INT rpc_check_channels(void)
 
    cm_msg(MINFO, "rpc_check_channels", "client [%s]%s failed watchdog test after %d sec",
           _server_acception[index].host_name,
-          _server_acception[index].prog_name,
-          _server_acception[index].watchdog_timeout / 1000);
+          _server_acception[index].prog_name, _server_acception[index].watchdog_timeout / 1000);
 
    /* disconnect from experiment */
    if (rpc_get_server_option(RPC_OSERVER_TYPE) != ST_REMOTE)
@@ -12095,7 +11888,7 @@ INT rpc_check_channels(void)
 #endif                          /* DOXYGEN_SHOULD_SKIP_THIS */
 
 /**dox***************************************************************/
-                                                                                                    /** @} *//* end of rpcfunctionc */
+                                                                                                             /** @} *//* end of rpcfunctionc */
 
 /**dox***************************************************************/
 /** @addtogroup bkfunctionc
@@ -12201,9 +11994,7 @@ void bk_create(void *event, const char *name, WORD type, void *pdata)
    if (((BANK_HEADER *) event)->flags & BANK_FORMAT_32BIT) {
       BANK32 *pbk32;
 
-      pbk32 =
-          (BANK32 *) ((char *) (((BANK_HEADER *) event) + 1) +
-                      ((BANK_HEADER *) event)->data_size);
+      pbk32 = (BANK32 *) ((char *) (((BANK_HEADER *) event) + 1) + ((BANK_HEADER *) event)->data_size);
       strncpy(pbk32->name, name, 4);
       pbk32->type = type;
       pbk32->data_size = 0;
@@ -12211,9 +12002,7 @@ void bk_create(void *event, const char *name, WORD type, void *pdata)
    } else {
       BANK *pbk;
 
-      pbk =
-          (BANK *) ((char *) (((BANK_HEADER *) event) + 1) +
-                    ((BANK_HEADER *) event)->data_size);
+      pbk = (BANK *) ((char *) (((BANK_HEADER *) event) + 1) + ((BANK_HEADER *) event)->data_size);
       strncpy(pbk->name, name, 4);
       pbk->type = type;
       pbk->data_size = 0;
@@ -12257,12 +12046,10 @@ int bk_delete(void *event, const char *name)
          if (*((DWORD *) pbk32->name) == dname) {
             /* bank found, delete it */
             remaining = ((char *) event + ((BANK_HEADER *) event)->data_size +
-                         sizeof(BANK_HEADER)) - ((char *) (pbk32 + 1) +
-                                                 ALIGN8(pbk32->data_size));
+                         sizeof(BANK_HEADER)) - ((char *) (pbk32 + 1) + ALIGN8(pbk32->data_size));
 
             /* reduce total event size */
-            ((BANK_HEADER *) event)->data_size -=
-                sizeof(BANK32) + ALIGN8(pbk32->data_size);
+            ((BANK_HEADER *) event)->data_size -= sizeof(BANK32) + ALIGN8(pbk32->data_size);
 
             /* copy remaining bytes */
             if (remaining > 0)
@@ -12281,8 +12068,7 @@ int bk_delete(void *event, const char *name)
          if (*((DWORD *) pbk->name) == dname) {
             /* bank found, delete it */
             remaining = ((char *) event + ((BANK_HEADER *) event)->data_size +
-                         sizeof(BANK_HEADER)) - ((char *) (pbk + 1) +
-                                                 ALIGN8(pbk->data_size));
+                         sizeof(BANK_HEADER)) - ((char *) (pbk + 1) + ALIGN8(pbk->data_size));
 
             /* reduce total event size */
             ((BANK_HEADER *) event)->data_size -= sizeof(BANK) + ALIGN8(pbk->data_size);
@@ -12320,9 +12106,7 @@ INT bk_close(void *event, void *pdata)
    if (((BANK_HEADER *) event)->flags & BANK_FORMAT_32BIT) {
       BANK32 *pbk32;
 
-      pbk32 =
-          (BANK32 *) ((char *) (((BANK_HEADER *) event) + 1) +
-                      ((BANK_HEADER *) event)->data_size);
+      pbk32 = (BANK32 *) ((char *) (((BANK_HEADER *) event) + 1) + ((BANK_HEADER *) event)->data_size);
       pbk32->data_size = (DWORD) ((char *) pdata - (char *) (pbk32 + 1));
       if (pbk32->type == TID_STRUCT && pbk32->data_size == 0)
          printf("Warning: bank %c%c%c%c has zero size\n",
@@ -12332,9 +12116,7 @@ INT bk_close(void *event, void *pdata)
    } else {
       BANK *pbk;
 
-      pbk =
-          (BANK *) ((char *) (((BANK_HEADER *) event) + 1) +
-                    ((BANK_HEADER *) event)->data_size);
+      pbk = (BANK *) ((char *) (((BANK_HEADER *) event) + 1) + ((BANK_HEADER *) event)->data_size);
       pbk->data_size = (WORD) ((char *) pdata - (char *) (pbk + 1));
       if (pbk->type == TID_STRUCT && pbk->data_size == 0)
          printf("Warning: bank %c%c%c%c has zero size\n",
@@ -12463,8 +12245,7 @@ Finds a MIDAS bank of given name inside an event.
 @param pdata pointer to data area of bank, NULL if bank not found
 @return 1 if bank found, 0 otherwise
 */
-INT bk_find(BANK_HEADER * pbkh, const char *name, DWORD * bklen, DWORD * bktype,
-            void **pdata)
+INT bk_find(BANK_HEADER * pbkh, const char *name, DWORD * bklen, DWORD * bktype, void **pdata)
 {
    BANK *pbk;
    BANK32 *pbk32;
@@ -12485,8 +12266,7 @@ INT bk_find(BANK_HEADER * pbkh, const char *name, DWORD * bklen, DWORD * bktype,
             return 1;
          }
          pbk32 = (BANK32 *) ((char *) (pbk32 + 1) + ALIGN8(pbk32->data_size));
-      } while ((DWORD) ((char *) pbk32 - (char *) pbkh) <
-               pbkh->data_size + sizeof(BANK_HEADER));
+      } while ((DWORD) ((char *) pbk32 - (char *) pbkh) < pbkh->data_size + sizeof(BANK_HEADER));
    } else {
       pbk = (BANK *) (pbkh + 1);
       strncpy((char *) &dname, name, 4);
@@ -12502,8 +12282,7 @@ INT bk_find(BANK_HEADER * pbkh, const char *name, DWORD * bklen, DWORD * bktype,
             return 1;
          }
          pbk = (BANK *) ((char *) (pbk + 1) + ALIGN8(pbk->data_size));
-      } while ((DWORD) ((char *) pbk - (char *) pbkh) <
-               pbkh->data_size + sizeof(BANK_HEADER));
+      } while ((DWORD) ((char *) pbk - (char *) pbkh) < pbkh->data_size + sizeof(BANK_HEADER));
    }
 
    /* bank not found */
@@ -12556,8 +12335,7 @@ INT bk_iterate(void *event, BANK ** pbk, void *pdata)
 
    *((void **) pdata) = (*pbk) + 1;
 
-   if ((DWORD) ((char *) *pbk - (char *) event) >=
-       ((BANK_HEADER *) event)->data_size + sizeof(BANK_HEADER)) {
+   if ((DWORD) ((char *) *pbk - (char *) event) >= ((BANK_HEADER *) event)->data_size + sizeof(BANK_HEADER)) {
       *pbk = *((BANK **) pdata) = NULL;
       return 0;
    }
@@ -12597,8 +12375,7 @@ INT bk_iterate32(void *event, BANK32 ** pbk, void *pdata)
 
    *((void **) pdata) = (*pbk) + 1;
 
-   if ((DWORD) ((char *) *pbk - (char *) event) >=
-       ((BANK_HEADER *) event)->data_size + sizeof(BANK_HEADER)) {
+   if ((DWORD) ((char *) *pbk - (char *) event) >= ((BANK_HEADER *) event)->data_size + sizeof(BANK_HEADER)) {
       *pbk = *((BANK32 **) pdata) = NULL;
       return 0;
    }
@@ -12705,7 +12482,7 @@ INT bk_swap(void *event, BOOL force)
 }
 
 /**dox***************************************************************/
-                                                                                                    /** @} *//* end of bkfunctionc */
+                                                                                                             /** @} *//* end of bkfunctionc */
 
 /**dox***************************************************************/
 /** @addtogroup hsfunctionc
@@ -12745,8 +12522,7 @@ INT hs_set_path(char *path)
    strcpy(_hs_path_name, path);
 
    /* check for trailing directory seperator */
-   if (strlen(_hs_path_name) > 0 &&
-       _hs_path_name[strlen(_hs_path_name) - 1] != DIR_SEPARATOR)
+   if (strlen(_hs_path_name) > 0 && _hs_path_name[strlen(_hs_path_name) - 1] != DIR_SEPARATOR)
       strcat(_hs_path_name, DIR_SEPARATOR_STR);
 
    return HS_SUCCESS;
@@ -12913,7 +12689,7 @@ INT hs_search_file(DWORD * ltime, INT direction)
    if (*ltime == 0)
       *ltime = ss_time();
 
-   lt = (time_t) *ltime;
+   lt = (time_t) * ltime;
    do {
       /* try to open history file for date "lt" */
       hs_open_file(lt, "hst", O_RDONLY, &fh);
@@ -12923,7 +12699,7 @@ INT hs_search_file(DWORD * ltime, INT direction)
          lt += direction * 3600 * 24;
 
       /* stop if more than a year before starting point or in the future */
-   } while (fh < 0 && (INT) *ltime - (INT) lt < 3600 * 24 * 365 && lt <= (time_t)ss_time());
+   } while (fh < 0 && (INT) * ltime - (INT) lt < 3600 * 24 * 365 && lt <= (time_t) ss_time());
 
    if (fh < 0)
       return HS_FILE_ERROR;
@@ -13015,8 +12791,7 @@ INT hs_define_event(DWORD event_id, char *name, TAG * tag, DWORD size)
 
          /* if not found, create new one */
          if (i == _history_entries) {
-            _history =
-                (HISTORY *) realloc(_history, sizeof(HISTORY) * (_history_entries + 1));
+            _history = (HISTORY *) realloc(_history, sizeof(HISTORY) * (_history_entries + 1));
             memset(&_history[_history_entries], 0, sizeof(HISTORY));
 
             _history_entries++;
@@ -13107,8 +12882,7 @@ INT hs_define_event(DWORD event_id, char *name, TAG * tag, DWORD size)
             read(fh, buffer, size);
             lseek(fh, 0, SEEK_END);
 
-            if (prev_rec.data_size != size ||
-                strcmp(str, event_name) != 0 || memcmp(buffer, tag, size) != 0) {
+            if (prev_rec.data_size != size || strcmp(str, event_name) != 0 || memcmp(buffer, tag, size) != 0) {
                /* write definition to history file */
                write(fh, (char *) &rec, sizeof(rec));
                write(fh, event_name, NAME_LENGTH);
@@ -13152,8 +12926,7 @@ INT hs_define_event(DWORD event_id, char *name, TAG * tag, DWORD size)
          lseek(fh, 0, SEEK_END);
          lseek(fhd, 0, SEEK_END);
 
-         if (prev_rec.data_size != size ||
-             strcmp(str, event_name) != 0 || memcmp(buffer, tag, size) != 0) {
+         if (prev_rec.data_size != size || strcmp(str, event_name) != 0 || memcmp(buffer, tag, size) != 0) {
             /* save new definition offset */
             _history[index].def_offset = TELL(fh);
 
@@ -13312,8 +13085,7 @@ INT hs_write_event(DWORD event_id, void *data, DWORD size)
 
 
 /********************************************************************/
-INT hs_enum_events(DWORD ltime, char *event_name, DWORD * name_size,
-                   INT event_id[], DWORD * id_size)
+INT hs_enum_events(DWORD ltime, char *event_name, DWORD * name_size, INT event_id[], DWORD * id_size)
 /********************************************************************\
 
   Routine: hs_enum_events
@@ -13341,8 +13113,7 @@ INT hs_enum_events(DWORD ltime, char *event_name, DWORD * name_size,
    DEF_RECORD def_rec;
 
    if (rpc_is_remote())
-      return rpc_call(RPC_HS_ENUM_EVENTS, ltime, event_name, name_size, event_id,
-                      id_size);
+      return rpc_call(RPC_HS_ENUM_EVENTS, ltime, event_name, name_size, event_id, id_size);
 
    /* search latest history file */
    status = hs_search_file(&ltime, -1);
@@ -13628,8 +13399,7 @@ INT hs_count_vars(DWORD ltime, DWORD event_id, DWORD * count)
 
 
 /********************************************************************/
-INT hs_enum_vars(DWORD ltime, DWORD event_id, char *var_name, DWORD * size,
-                 DWORD * var_n, DWORD * n_size)
+INT hs_enum_vars(DWORD ltime, DWORD event_id, char *var_name, DWORD * size, DWORD * var_n, DWORD * n_size)
 /********************************************************************\
 
   Routine: hs_enum_vars
@@ -13835,8 +13605,7 @@ INT hs_get_var(DWORD ltime, DWORD event_id, char *var_name, DWORD * type, INT * 
 /********************************************************************/
 INT hs_read(DWORD event_id, DWORD start_time, DWORD end_time,
             DWORD interval, char *tag_name, DWORD var_index,
-            DWORD * time_buffer, DWORD * tbsize,
-            void *data_buffer, DWORD * dbsize, DWORD * type, DWORD * n)
+            DWORD * time_buffer, DWORD * tbsize, void *data_buffer, DWORD * dbsize, DWORD * type, DWORD * n)
 /********************************************************************\
 
   Routine: hs_read
@@ -13887,8 +13656,7 @@ INT hs_read(DWORD event_id, DWORD start_time, DWORD end_time,
 
    if (rpc_is_remote())
       return rpc_call(RPC_HS_READ, event_id, start_time, end_time, interval,
-                      tag_name, var_index, time_buffer, tbsize, data_buffer,
-                      dbsize, type, n);
+                      tag_name, var_index, time_buffer, tbsize, data_buffer, dbsize, type, n);
 
    /* if not time given, use present to one hour in past */
    if (start_time == 0)
@@ -13997,8 +13765,7 @@ INT hs_read(DWORD event_id, DWORD start_time, DWORD end_time,
    do {
       if (irec.time < last_irec_time) {
          cm_msg(MERROR, "hs_read",
-                "corrupted history data: time does not increase: %d -> %d",
-                last_irec_time, irec.time);
+                "corrupted history data: time does not increase: %d -> %d", last_irec_time, irec.time);
          *tbsize = *dbsize = *n = 0;
          return HS_FILE_ERROR;
       }
@@ -14191,8 +13958,7 @@ INT hs_read(DWORD event_id, DWORD start_time, DWORD end_time,
 
 
 /********************************************************************/
-INT hs_dump(DWORD event_id, DWORD start_time, DWORD end_time,
-            DWORD interval, BOOL binary_time)
+INT hs_dump(DWORD event_id, DWORD start_time, DWORD end_time, DWORD interval, BOOL binary_time)
 /********************************************************************\
 
   Routine: hs_dump
@@ -14279,8 +14045,7 @@ INT hs_dump(DWORD event_id, DWORD start_time, DWORD end_time,
    do {
       if (irec.time < last_irec_time) {
          cm_msg(MERROR, "hs_dump",
-                "corrupted history data: time does not increase: %d -> %d",
-                last_irec_time, irec.time);
+                "corrupted history data: time does not increase: %d -> %d", last_irec_time, irec.time);
          return HS_FILE_ERROR;
       }
       last_irec_time = irec.time;
@@ -14306,8 +14071,7 @@ INT hs_dump(DWORD event_id, DWORD start_time, DWORD end_time,
                n_tag = drec.data_size / sizeof(TAG);
 
                /* print tag names if definition has changed */
-               if (old_tag == NULL || old_n_tag != n_tag ||
-                   memcmp(old_tag, tag, drec.data_size) != 0) {
+               if (old_tag == NULL || old_n_tag != n_tag || memcmp(old_tag, tag, drec.data_size) != 0) {
                   printf("Date\t");
                   for (i = 0; i < n_tag; i++) {
                      if (tag[i].n_data == 1 || tag[i].type == TID_STRING)
@@ -14334,7 +14098,7 @@ INT hs_dump(DWORD event_id, DWORD start_time, DWORD end_time,
             if (binary_time)
                printf("%d ", irec.time);
             else {
-	       ltime = (time_t) irec.time;
+               ltime = (time_t) irec.time;
                sprintf(str, "%s", ctime(&ltime) + 4);
                str[20] = '\t';
                printf(str);
@@ -14352,15 +14116,13 @@ INT hs_dump(DWORD event_id, DWORD start_time, DWORD end_time,
                   offset += tag[i].n_data;
                } else if (tag[i].n_data == 1) {
                   /* non-array data */
-                  db_sprintf(str, data_buffer + offset, rpc_tid_size(tag[i].type), 0,
-                             tag[i].type);
+                  db_sprintf(str, data_buffer + offset, rpc_tid_size(tag[i].type), 0, tag[i].type);
                   printf("%s\t", str);
                   offset += rpc_tid_size(tag[i].type);
                } else
                   /* loop over array data */
                   for (j = 0; j < (INT) tag[i].n_data; j++) {
-                     db_sprintf(str, data_buffer + offset, rpc_tid_size(tag[i].type), 0,
-                                tag[i].type);
+                     db_sprintf(str, data_buffer + offset, rpc_tid_size(tag[i].type), 0, tag[i].type);
                      printf("%s\t", str);
                      offset += rpc_tid_size(tag[i].type);
                   }
@@ -14455,8 +14217,8 @@ INT hs_fdump(char *file_name, DWORD id, BOOL binary_time)
    sprintf(str, "%s%s", _hs_path_name, file_name);
    fh = open(str, O_RDONLY | O_BINARY, 0644);
    if (fh < 0) {
-     cm_msg(MERROR, "hs_fdump", "cannot open file %s", str);
-     return HS_FILE_ERROR;
+      cm_msg(MERROR, "hs_fdump", "cannot open file %s", str);
+      return HS_FILE_ERROR;
    }
 
    /* loop over file records in .hst file */
@@ -14503,7 +14265,7 @@ INT hs_fdump(char *file_name, DWORD id, BOOL binary_time)
 #endif                          /* DOXYGEN_SHOULD_SKIP_THIS */
 
 /**dox***************************************************************/
-                                                                                                    /** @} *//* end of hsfunctionc */
+                                                                                                             /** @} *//* end of hsfunctionc */
 
 /**dox***************************************************************/
 /** @addtogroup elfunctionc
@@ -14576,13 +14338,11 @@ INT el_submit(int run, char *author, char *type, char *system, char *subject,
       return rpc_call(RPC_EL_SUBMIT, run, author, type, system, subject,
                       text, reply_to, encoding,
                       afilename1, buffer1, buffer_size1,
-                      afilename2, buffer2, buffer_size2,
-                      afilename3, buffer3, buffer_size3, tag, tag_size);
+                      afilename2, buffer2, buffer_size2, afilename3, buffer3, buffer_size3, tag, tag_size);
 
 #ifdef LOCAL_ROUTINES
    {
-      INT n, size, fh, status, run_number, mutex, buffer_size = 0, index, offset =
-          0, tail_size = 0;
+      INT n, size, fh, status, run_number, mutex, buffer_size = 0, index, offset = 0, tail_size = 0;
       struct tm *tms = NULL;
       char afilename[256], file_name[256], afile_name[3][256], dir[256], str[256],
           start_str[80], end_str[80], last[80], date[80], thread[80], attachment[256];
@@ -14599,8 +14359,7 @@ INT el_submit(int run, char *author, char *type, char *system, char *subject,
       cm_get_experiment_mutex(NULL, &mutex);
       status = ss_mutex_wait_for(mutex, 5 * 60 * 1000);
       if (status != SS_SUCCESS) {
-         cm_msg(MERROR, "el_submit",
-                "Cannot lock experiment mutex, ss_mutex_wait_for() status %d", status);
+         cm_msg(MERROR, "el_submit", "Cannot lock experiment mutex, ss_mutex_wait_for() status %d", status);
          abort();
       }
 
@@ -14610,15 +14369,12 @@ INT el_submit(int run, char *author, char *type, char *system, char *subject,
       else {
          /* get run number */
          size = sizeof(run_number);
-         status =
-             db_get_value(hDB, 0, "/Runinfo/Run number", &run_number, &size, TID_INT,
-                          TRUE);
+         status = db_get_value(hDB, 0, "/Runinfo/Run number", &run_number, &size, TID_INT, TRUE);
          assert(status == SUCCESS);
       }
 
       if (run_number < 0) {
-         cm_msg(MERROR, "el_submit", "aborting on attempt to use invalid run number %d",
-                run_number);
+         cm_msg(MERROR, "el_submit", "aborting on attempt to use invalid run number %d", run_number);
          abort();
       }
 
@@ -14658,12 +14414,9 @@ INT el_submit(int run, char *author, char *type, char *system, char *subject,
                if (hDB > 0) {
                   size = sizeof(dir);
                   memset(dir, 0, size);
-                  status =
-                      db_get_value(hDB, 0, "/Logger/Elog dir", dir, &size, TID_STRING,
-                                   FALSE);
+                  status = db_get_value(hDB, 0, "/Logger/Elog dir", dir, &size, TID_STRING, FALSE);
                   if (status != DB_SUCCESS)
-                     db_get_value(hDB, 0, "/Logger/Data dir", dir, &size, TID_STRING,
-                                  TRUE);
+                     db_get_value(hDB, 0, "/Logger/Data dir", dir, &size, TID_STRING, TRUE);
 
                   if (dir[0] != 0 && dir[strlen(dir) - 1] != DIR_SEPARATOR)
                      strcat(dir, DIR_SEPARATOR_STR);
@@ -14688,8 +14441,7 @@ INT el_submit(int run, char *author, char *type, char *system, char *subject,
                /* save attachment */
                fh = open(file_name, O_CREAT | O_RDWR | O_BINARY, 0644);
                if (fh < 0) {
-                  cm_msg(MERROR, "el_submit", "Cannot write attachment file \"%s\"",
-                         file_name);
+                  cm_msg(MERROR, "el_submit", "Cannot write attachment file \"%s\"", file_name);
                } else {
                   write(fh, buffer, buffer_size);
                   close(fh);
@@ -14762,8 +14514,7 @@ INT el_submit(int run, char *author, char *type, char *system, char *subject,
          time(&now);
          tms = localtime(&now);
 
-         sprintf(file_name, "%s%02d%02d%02d.log", dir,
-                 tms->tm_year % 100, tms->tm_mon + 1, tms->tm_mday);
+         sprintf(file_name, "%s%02d%02d%02d.log", dir, tms->tm_year % 100, tms->tm_mon + 1, tms->tm_mday);
 
          fh = open(file_name, O_CREAT | O_RDWR | O_BINARY, 0644);
          if (fh < 0) {
@@ -14793,8 +14544,7 @@ INT el_submit(int run, char *author, char *type, char *system, char *subject,
       sprintf(message + strlen(message), "Subject: %s\n", subject);
 
       /* keep original attachment if edit and no new attachment */
-      if (bedit && afile_name[0][0] == 0 && afile_name[1][0] == 0 &&
-          afile_name[2][0] == 0)
+      if (bedit && afile_name[0][0] == 0 && afile_name[1][0] == 0 && afile_name[2][0] == 0)
          sprintf(message + strlen(message), "Attachment: %s", attachment);
       else {
          sprintf(message + strlen(message), "Attachment: %s", afile_name[0]);
@@ -14818,8 +14568,7 @@ INT el_submit(int run, char *author, char *type, char *system, char *subject,
       size = strlen(message) + strlen(start_str) + strlen(end_str);
 
       if (tag != NULL && !bedit)
-         sprintf(tag, "%02d%02d%02d.%d", tms->tm_year % 100, tms->tm_mon + 1,
-                 tms->tm_mday, (int) TELL(fh));
+         sprintf(tag, "%02d%02d%02d.%d", tms->tm_year % 100, tms->tm_mon + 1, tms->tm_mday, (int) TELL(fh));
 
       /* size has to fit in 6 digits */
       assert(size < 999999);
@@ -14946,8 +14695,7 @@ INT el_search_message(char *tag, int *fh, BOOL walk)
       do {
          tms = localtime(&ltime);
 
-         sprintf(file_name, "%s%02d%02d%02d.log", dir,
-                 tms->tm_year % 100, tms->tm_mon + 1, tms->tm_mday);
+         sprintf(file_name, "%s%02d%02d%02d.log", dir, tms->tm_year % 100, tms->tm_mon + 1, tms->tm_mday);
          *fh = open(file_name, O_RDWR | O_BINARY, 0644);
 
          if (*fh < 0) {
@@ -14961,8 +14709,7 @@ INT el_search_message(char *tag, int *fh, BOOL walk)
 
             /* set new tag */
             tms = localtime(&ltime);
-            sprintf(tag, "%02d%02d%02d.0", tms->tm_year % 100, tms->tm_mon + 1,
-                    tms->tm_mday);
+            sprintf(tag, "%02d%02d%02d.0", tms->tm_year % 100, tms->tm_mon + 1, tms->tm_mday);
          }
 
          /* in forward direction, stop today */
@@ -15002,8 +14749,7 @@ INT el_search_message(char *tag, int *fh, BOOL walk)
       do {
          tms = localtime(&ltime);
 
-         sprintf(file_name, "%s%02d%02d%02d.log", dir,
-                 tms->tm_year % 100, tms->tm_mon + 1, tms->tm_mday);
+         sprintf(file_name, "%s%02d%02d%02d.log", dir, tms->tm_year % 100, tms->tm_mon + 1, tms->tm_mday);
          *fh = open(file_name, O_RDWR | O_BINARY, 0644);
 
          if (*fh < 0)
@@ -15034,8 +14780,7 @@ INT el_search_message(char *tag, int *fh, BOOL walk)
          do {
             lt -= 3600 * 24;
             tms = localtime(&lt);
-            sprintf(str, "%02d%02d%02d.0",
-                    tms->tm_year % 100, tms->tm_mon + 1, tms->tm_mday);
+            sprintf(str, "%02d%02d%02d.0", tms->tm_year % 100, tms->tm_mon + 1, tms->tm_mday);
 
             status = el_search_message(str, fh, FALSE);
 
@@ -15116,8 +14861,7 @@ INT el_search_message(char *tag, int *fh, BOOL walk)
          do {
             lt += 3600 * 24;
             tms = localtime(&lt);
-            sprintf(str, "%02d%02d%02d.0",
-                    tms->tm_year % 100, tms->tm_mon + 1, tms->tm_mday);
+            sprintf(str, "%02d%02d%02d.0", tms->tm_year % 100, tms->tm_mon + 1, tms->tm_mday);
 
             status = el_search_message(str, fh, FALSE);
 
@@ -15474,7 +15218,7 @@ INT el_delete_message(char *tag)
 #endif                          /* DOXYGEN_SHOULD_SKIP_THIS */
 
 /**dox***************************************************************/
-                                                                                                    /** @} *//* end of elfunctionc */
+                                                                                                             /** @} *//* end of elfunctionc */
 
 /**dox***************************************************************/
 /** @addtogroup alfunctionc
@@ -15553,8 +15297,7 @@ BOOL al_evaluate_condition(char *condition, char *value)
    cm_get_experiment_database(&hDB, NULL);
    db_find_key(hDB, 0, str, &hkey);
    if (!hkey) {
-      cm_msg(MERROR, "al_evaluate_condition",
-             "Cannot find key %s to evaluate alarm condition", str);
+      cm_msg(MERROR, "al_evaluate_condition", "Cannot find key %s to evaluate alarm condition", str);
       if (value)
          strcpy(value, "unknown");
       return FALSE;
@@ -15628,12 +15371,10 @@ Trigger a certain alarm.
 @param type Alarm type, one of AT_xxx
 @return AL_SUCCESS, AL_INVALID_NAME
 */
-INT al_trigger_alarm(char *alarm_name, char *alarm_message, char *default_class,
-                     char *cond_str, INT type)
+INT al_trigger_alarm(char *alarm_name, char *alarm_message, char *default_class, char *cond_str, INT type)
 {
    if (rpc_is_remote())
-      return rpc_call(RPC_AL_TRIGGER_ALARM, alarm_name, alarm_message,
-                      default_class, cond_str, type);
+      return rpc_call(RPC_AL_TRIGGER_ALARM, alarm_name, alarm_message, default_class, cond_str, type);
 
 #ifdef LOCAL_ROUTINES
    {
@@ -15697,8 +15438,7 @@ INT al_trigger_alarm(char *alarm_name, char *alarm_message, char *default_class,
          /* check global alarm flag */
          flag = TRUE;
          size = sizeof(flag);
-         db_get_value(hDB, 0, "/Alarms/Alarm system active", &flag, &size, TID_BOOL,
-                      TRUE);
+         db_get_value(hDB, 0, "/Alarms/Alarm system active", &flag, &size, TID_BOOL, TRUE);
          if (!flag)
             return AL_SUCCESS;
 
@@ -15794,8 +15534,7 @@ INT al_trigger_class(char *alarm_class, char *alarm_message, BOOL first)
    }
 
    /* write system message */
-   if (ac.write_system_message &&
-       (INT) ss_time() - (INT) ac.system_message_last > ac.system_message_interval) {
+   if (ac.write_system_message && (INT) ss_time() - (INT) ac.system_message_last > ac.system_message_interval) {
       sprintf(str, "%s: %s", alarm_class, alarm_message);
       cm_msg(MTALK, "al_trigger_class", str);
       ac.system_message_last = ss_time();
@@ -15808,8 +15547,7 @@ INT al_trigger_class(char *alarm_class, char *alarm_message, BOOL first)
 
    /* execute command */
    if (ac.execute_command[0] &&
-       ac.execute_interval > 0 &&
-       (INT) ss_time() - (INT) ac.execute_last > ac.execute_interval) {
+       ac.execute_interval > 0 && (INT) ss_time() - (INT) ac.execute_last > ac.execute_interval) {
       sprintf(str, "%s: %s", alarm_class, alarm_message);
       sprintf(command, ac.execute_command, str);
       cm_msg(MINFO, "al_trigger_class", "Execute: %s", command);
@@ -15902,8 +15640,7 @@ INT al_reset_alarm(char *alarm_name)
    sprintf(str, "/Alarms/Classes/%s", alarm.alarm_class);
    db_find_key(hDB, 0, str, &hkeyclass);
    if (!hkeyclass) {
-      cm_msg(MERROR, "al_reset_alarm", "Alarm class %s not found in ODB",
-             alarm.alarm_class);
+      cm_msg(MERROR, "al_reset_alarm", "Alarm class %s not found in ODB", alarm.alarm_class);
       return AL_INVALID_NAME;
    }
 
@@ -16004,17 +15741,14 @@ INT al_check()
       db_find_key(hDB, 0, "/Alarms/Alarms", &hkeyroot);
       if (!hkeyroot) {
          /* create default ODB alarm */
-         status =
-             db_create_record(hDB, 0, "/Alarms/Alarms/Demo ODB", strcomb(alarm_odb_str));
+         status = db_create_record(hDB, 0, "/Alarms/Alarms/Demo ODB", strcomb(alarm_odb_str));
          db_find_key(hDB, 0, "/Alarms/Alarms", &hkeyroot);
          if (!hkeyroot) {
             ss_mutex_release(mutex);
             return SUCCESS;
          }
 
-         status =
-             db_create_record(hDB, 0, "/Alarms/Alarms/Demo periodic",
-                              strcomb(alarm_periodic_str));
+         status = db_create_record(hDB, 0, "/Alarms/Alarms/Demo periodic", strcomb(alarm_periodic_str));
          db_find_key(hDB, 0, "/Alarms/Alarms", &hkeyroot);
          if (!hkeyroot) {
             ss_mutex_release(mutex);
@@ -16022,11 +15756,8 @@ INT al_check()
          }
 
          /* create default alarm classes */
-         status =
-             db_create_record(hDB, 0, "/Alarms/Classes/Alarm", strcomb(alarm_class_str));
-         status =
-             db_create_record(hDB, 0, "/Alarms/Classes/Warning",
-                              strcomb(alarm_class_str));
+         status = db_create_record(hDB, 0, "/Alarms/Classes/Alarm", strcomb(alarm_class_str));
+         status = db_create_record(hDB, 0, "/Alarms/Classes/Warning", strcomb(alarm_class_str));
          if (status != DB_SUCCESS) {
             ss_mutex_release(mutex);
             return SUCCESS;
@@ -16056,22 +15787,19 @@ INT al_check()
          /* check periodic alarm only when active */
          if (alarm.active &&
              alarm.type == AT_PERIODIC &&
-             alarm.check_interval > 0 &&
-             (INT) ss_time() - (INT) alarm.checked_last > alarm.check_interval) {
+             alarm.check_interval > 0 && (INT) ss_time() - (INT) alarm.checked_last > alarm.check_interval) {
             /* if checked_last has not been set, set it to current time */
             if (alarm.checked_last == 0) {
                alarm.checked_last = ss_time();
                db_set_record(hDB, hkey, &alarm, size, 0);
             } else
-               al_trigger_alarm(key.name, alarm.alarm_message, alarm.alarm_class, "",
-                                AT_PERIODIC);
+               al_trigger_alarm(key.name, alarm.alarm_message, alarm.alarm_class, "", AT_PERIODIC);
          }
 
          /* check alarm only when active and not internal */
          if (alarm.active &&
              alarm.type == AT_EVALUATED &&
-             alarm.check_interval > 0 &&
-             (INT) ss_time() - (INT) alarm.checked_last > alarm.check_interval) {
+             alarm.check_interval > 0 && (INT) ss_time() - (INT) alarm.checked_last > alarm.check_interval) {
             /* if condition is true, trigger alarm */
             if (al_evaluate_condition(alarm.condition, value)) {
                sprintf(str, alarm.alarm_message, value);
@@ -16112,8 +15840,7 @@ INT al_check()
 
             rpc_get_name(str);
             str[strlen(key.name)] = 0;
-            if (!equal_ustring(str, key.name) &&
-                cm_exist(key.name, FALSE) == CM_NO_CLIENT) {
+            if (!equal_ustring(str, key.name) && cm_exist(key.name, FALSE) == CM_NO_CLIENT) {
                if (program_info.first_failed == 0)
                   program_info.first_failed = now;
 
@@ -16150,7 +15877,7 @@ INT al_check()
 /**dox***************************************************************/
 #endif                          /* DOXYGEN_SHOULD_SKIP_THIS */
 
-                                                                                                    /** @} *//* end of alfunctionc */
+                                                                                                             /** @} *//* end of alfunctionc */
 
 /***** sKIP eb_xxx **************************************************/
 /**dox***************************************************************/
@@ -16357,8 +16084,7 @@ EVENT_HEADER *eb_get_pointer()
 #ifdef OS_VXWORKS
       logMsg("eb_get_pointer(): Event won't fit: read=%d, write=%d, end=%d\n",
              _eb_read_pointer - _event_ring_buffer,
-             _eb_write_pointer - _event_ring_buffer,
-             _eb_end_pointer - _event_ring_buffer, 0, 0, 0);
+             _eb_write_pointer - _event_ring_buffer, _eb_end_pointer - _event_ring_buffer, 0, 0, 0);
 #endif
       return NULL;
    }
@@ -16394,8 +16120,7 @@ INT eb_increment_pointer(INT buffer_handle, INT event_size)
 
    /* if not connected remotely, use bm_send_event */
    if (_send_sock == 0)
-      return bm_send_event(buffer_handle,
-                           _eb_write_pointer + sizeof(INT), event_size, SYNC);
+      return bm_send_event(buffer_handle, _eb_write_pointer + sizeof(INT), event_size, SYNC);
 
    aligned_event_size = ALIGN8(event_size);
 
@@ -16408,8 +16133,7 @@ INT eb_increment_pointer(INT buffer_handle, INT event_size)
 
    if (_eb_write_pointer > _event_ring_buffer + _eb_size)
       cm_msg(MERROR, "eb_increment_pointer",
-             "event size (%d) exeeds maximum event size (%d)", event_size,
-             MAX_EVENT_SIZE);
+             "event size (%d) exeeds maximum event size (%d)", event_size, MAX_EVENT_SIZE);
 
    if (_eb_size - ((POINTER_T) _eb_write_pointer - (POINTER_T) _event_ring_buffer) <
        MAX_EVENT_SIZE + sizeof(EVENT_HEADER) + sizeof(INT)) {
@@ -17243,7 +16967,7 @@ INT dm_area_flush(void)
 #endif                          /* DOXYGEN_SHOULD_SKIP_THIS */
 
 /**dox***************************************************************/
-                                                                                                    /** @} *//* end of dmfunctionc */
+                                                                                                             /** @} *//* end of dmfunctionc */
 
 /**dox***************************************************************/
-                                                                                                    /** @} *//* end of midasincludecode */
+                                                                                                             /** @} *//* end of midasincludecode */
