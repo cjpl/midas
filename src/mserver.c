@@ -161,6 +161,19 @@ int main(int argc, char **argv)
    size = sizeof(int);
    inetd = (getsockopt(0, SOL_SOCKET, SO_TYPE, (void *) &flag, (void *) &size) == 0);
 
+   /* check for debug flag */
+   debug = FALSE;
+   for (i = 1; i < argc; i++)
+      if (argv[i][0] == '-' && argv[i][1] == 'd')
+         debug = TRUE;
+
+   if (debug) {
+      debug_print("mserver startup");
+      for (i = 0; i < argc; i++)
+         debug_print(argv[i]);
+      rpc_set_debug(debug_print, 1);
+   }
+
    if (argc < 7 && inetd) {
       /* accept connection from stdin */
       rpc_set_server_option(RPC_OSERVER_TYPE, ST_MPROCESS);
@@ -199,8 +212,7 @@ int main(int argc, char **argv)
                printf("               -m    Multi process server (default)\n");
 #ifdef OS_LINUX
                printf("               -D    Become a daemon\n");
-               printf
-                   ("               -d    Write debug info to stdout or to \"/tmp/mserver.log\"\n\n");
+               printf("               -d    Write debug info to stdout or to \"/tmp/mserver.log\"\n\n");
 #else
                printf("               -d    Write debug info\"\n\n");
 #endif
@@ -231,8 +243,7 @@ int main(int argc, char **argv)
             return 0;
          }
 
-         printf
-             ("NOTE: THE MULTI THREADED SERVER IS BUGGY, ONLY USE IT FOR TEST PURPOSES\n");
+         printf("NOTE: THE MULTI THREADED SERVER IS BUGGY, ONLY USE IT FOR TEST PURPOSES\n");
          printf("Multi thread server started\n");
       }
 
@@ -243,8 +254,7 @@ int main(int argc, char **argv)
       }
 
       /* register server */
-      if (rpc_register_server(server_type, argv[0],
-                              NULL, rpc_server_dispatch) != RPC_SUCCESS) {
+      if (rpc_register_server(server_type, argv[0], NULL, rpc_server_dispatch) != RPC_SUCCESS) {
          printf("Cannot start server\n");
          return 0;
       }
@@ -292,8 +302,7 @@ int main(int argc, char **argv)
          rpc_set_debug(debug_print, 1);
          if (callback.directory[0]) {
             if (callback.user[0])
-               rpc_debug_printf("Start subprocess in %s under user %s",
-                                callback.directory, callback.user);
+               rpc_debug_printf("Start subprocess in %s under user %s", callback.directory, callback.user);
             else
                rpc_debug_printf("Start subprocess in %s", callback.directory);
 
@@ -315,14 +324,11 @@ int main(int argc, char **argv)
          pw = getpwnam(callback.user);
          if (pw == NULL) {
             rpc_debug_printf("Cannot change UID, unknown user \"%s\"", callback.user);
-            cm_msg(MERROR, "main", "Cannot change UID, unknown user \"%s\"",
-                   callback.user);
+            cm_msg(MERROR, "main", "Cannot change UID, unknown user \"%s\"", callback.user);
          } else {
             if (setgid(pw->pw_gid) < 0 || initgroups(pw->pw_name, pw->pw_gid) < 0) {
-               rpc_debug_printf("Unable to set group premission for user %s",
-                                callback.user);
-               cm_msg(MERROR, "main", "Unable to set group premission for user %s",
-                      callback.user);
+               rpc_debug_printf("Unable to set group premission for user %s", callback.user);
+               cm_msg(MERROR, "main", "Unable to set group premission for user %s", callback.user);
             } else {
                if (setuid(pw->pw_uid) < 0) {
                   rpc_debug_printf("Unable to set user ID for %s", callback.user);
@@ -354,8 +360,7 @@ int main(int argc, char **argv)
 /*------------------------------------------------------------------*/
 
 /* just a small test routine which doubles numbers */
-INT rpc_test(BYTE b, WORD w, INT i, float f, double d,
-             BYTE * b1, WORD * w1, INT * i1, float *f1, double *d1)
+INT rpc_test(BYTE b, WORD w, INT i, float f, double d, BYTE * b1, WORD * w1, INT * i1, float *f1, double *d1)
 {
    printf("rpc_test: %d %d %d %1.1f %1.1lf\n", b, w, i, f, d);
 
@@ -541,8 +546,7 @@ INT rpc_server_dispatch(INT index, void *prpc_param[])
 
    case RPC_BM_ADD_EVENT_REQUEST:
       status = bm_add_event_request(CINT(0), CSHORT(1),
-                                    CSHORT(2), CINT(3),
-                                    (void (*)(HNDLE, HNDLE, EVENT_HEADER *, void *))
+                                    CSHORT(2), CINT(3), (void (*)(HNDLE, HNDLE, EVENT_HEADER *, void *))
                                     (POINTER_T)
                                     CINT(4), CINT(5));
       break;
@@ -657,18 +661,13 @@ INT rpc_server_dispatch(INT index, void *prpc_param[])
 
    case RPC_DB_SET_VALUE:
       rpc_convert_data(CARRAY(3), CDWORD(6), RPC_FIXARRAY, CINT(4), convert_flags);
-      status =
-          db_set_value(CHNDLE(0), CHNDLE(1), CSTRING(2), CARRAY(3), CINT(4), CINT(5),
-                       CDWORD(6));
+      status = db_set_value(CHNDLE(0), CHNDLE(1), CSTRING(2), CARRAY(3), CINT(4), CINT(5), CDWORD(6));
       break;
 
    case RPC_DB_GET_VALUE:
       rpc_convert_data(CARRAY(3), CDWORD(5), RPC_FIXARRAY, CINT(4), convert_flags);
-      status =
-          db_get_value(CHNDLE(0), CHNDLE(1), CSTRING(2), CARRAY(3), CPINT(4), CDWORD(5),
-                       CBOOL(6));
-      rpc_convert_data(CARRAY(3), CDWORD(5), RPC_FIXARRAY | RPC_OUTGOING, CINT(4),
-                       convert_flags);
+      status = db_get_value(CHNDLE(0), CHNDLE(1), CSTRING(2), CARRAY(3), CPINT(4), CDWORD(5), CBOOL(6));
+      rpc_convert_data(CARRAY(3), CDWORD(5), RPC_FIXARRAY | RPC_OUTGOING, CINT(4), convert_flags);
       break;
 
    case RPC_DB_FIND_KEY:
@@ -719,9 +718,7 @@ INT rpc_server_dispatch(INT index, void *prpc_param[])
       break;
 
    case RPC_DB_GET_KEY_INFO:
-      status =
-          db_get_key_info(CHNDLE(0), CHNDLE(1), CSTRING(2), CINT(3), CPINT(4), CPINT(5),
-                          CPINT(6));
+      status = db_get_key_info(CHNDLE(0), CHNDLE(1), CSTRING(2), CINT(3), CPINT(4), CPINT(5), CPINT(6));
       break;
 
    case RPC_DB_GET_KEY_TIME:
@@ -738,21 +735,16 @@ INT rpc_server_dispatch(INT index, void *prpc_param[])
 
    case RPC_DB_GET_DATA:
       status = db_get_data(CHNDLE(0), CHNDLE(1), CARRAY(2), CPINT(3), CDWORD(4));
-      rpc_convert_data(CARRAY(2), CDWORD(4), RPC_FIXARRAY | RPC_OUTGOING, CINT(3),
-                       convert_flags);
+      rpc_convert_data(CARRAY(2), CDWORD(4), RPC_FIXARRAY | RPC_OUTGOING, CINT(3), convert_flags);
       break;
 
    case RPC_DB_GET_DATA1:
-      status =
-          db_get_data1(CHNDLE(0), CHNDLE(1), CARRAY(2), CPINT(3), CDWORD(4), CPINT(5));
-      rpc_convert_data(CARRAY(2), CDWORD(4), RPC_FIXARRAY | RPC_OUTGOING, CINT(3),
-                       convert_flags);
+      status = db_get_data1(CHNDLE(0), CHNDLE(1), CARRAY(2), CPINT(3), CDWORD(4), CPINT(5));
+      rpc_convert_data(CARRAY(2), CDWORD(4), RPC_FIXARRAY | RPC_OUTGOING, CINT(3), convert_flags);
       break;
 
    case RPC_DB_GET_DATA_INDEX:
-      status =
-          db_get_data_index(CHNDLE(0), CHNDLE(1), CARRAY(2), CPINT(3), CINT(4),
-                            CDWORD(5));
+      status = db_get_data_index(CHNDLE(0), CHNDLE(1), CARRAY(2), CPINT(3), CINT(4), CDWORD(5));
       rpc_convert_single(CARRAY(2), CDWORD(5), RPC_OUTGOING, convert_flags);
       break;
 
@@ -763,15 +755,12 @@ INT rpc_server_dispatch(INT index, void *prpc_param[])
 
    case RPC_DB_SET_DATA_INDEX:
       rpc_convert_single(CARRAY(2), CDWORD(5), 0, convert_flags);
-      status =
-          db_set_data_index(CHNDLE(0), CHNDLE(1), CARRAY(2), CINT(3), CINT(4), CDWORD(5));
+      status = db_set_data_index(CHNDLE(0), CHNDLE(1), CARRAY(2), CINT(3), CINT(4), CDWORD(5));
       break;
 
    case RPC_DB_SET_DATA_INDEX2:
       rpc_convert_single(CARRAY(2), CDWORD(5), 0, convert_flags);
-      status =
-          db_set_data_index2(CHNDLE(0), CHNDLE(1), CARRAY(2), CINT(3), CINT(4), CDWORD(5),
-                             CBOOL(6));
+      status = db_set_data_index2(CHNDLE(0), CHNDLE(1), CARRAY(2), CINT(3), CINT(4), CDWORD(5), CBOOL(6));
       break;
 
    case RPC_DB_SET_NUM_VALUES:
@@ -865,9 +854,7 @@ INT rpc_server_dispatch(INT index, void *prpc_param[])
       break;
 
    case RPC_HS_ENUM_VARS:
-      status =
-          hs_enum_vars(CDWORD(0), CDWORD(1), CSTRING(2), CPDWORD(3), CPDWORD(4),
-                       CPDWORD(5));
+      status = hs_enum_vars(CDWORD(0), CDWORD(1), CSTRING(2), CPDWORD(3), CPDWORD(4), CPDWORD(5));
       break;
 
    case RPC_HS_GET_VAR:
@@ -880,8 +867,7 @@ INT rpc_server_dispatch(INT index, void *prpc_param[])
 
    case RPC_HS_READ:
       status = hs_read(CDWORD(0), CDWORD(1), CDWORD(2), CDWORD(3), CSTRING(4),
-                       CDWORD(5), CARRAY(6), CPDWORD(7), CARRAY(8), CPDWORD(9),
-                       CPDWORD(10), CPDWORD(11));
+                       CDWORD(5), CARRAY(6), CPDWORD(7), CARRAY(8), CPDWORD(9), CPDWORD(10), CPDWORD(11));
       if (convert_flags && rpc_tid_size(CDWORD(10)) > 0) {
          rpc_convert_data(CARRAY(6), TID_DWORD, RPC_FIXARRAY | RPC_OUTGOING,
                           CDWORD(7) / sizeof(DWORD), convert_flags);
