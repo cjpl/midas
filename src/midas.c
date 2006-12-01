@@ -5365,6 +5365,7 @@ INT bm_delete_request(INT request_id)
    return BM_SUCCESS;
 }
 
+#if 0 // currently not used
 static void bm_show_pointers(const BUFFER_HEADER * pheader)
 {
    int i;
@@ -5381,6 +5382,7 @@ static void bm_show_pointers(const BUFFER_HEADER * pheader)
 
    printf("done\n");
 }
+#endif
 
 static void bm_validate_client_pointers(BUFFER_HEADER * pheader, BUFFER_CLIENT * pclient)
 {
@@ -5430,6 +5432,7 @@ static void bm_validate_client_pointers(BUFFER_HEADER * pheader, BUFFER_CLIENT *
    }
 }
 
+#if 0 // currently not used
 static void bm_validate_pointers(BUFFER_HEADER * pheader)
 {
    BUFFER_CLIENT *pclient = pheader->client;
@@ -5440,6 +5443,7 @@ static void bm_validate_pointers(BUFFER_HEADER * pheader)
          bm_validate_client_pointers(pheader, &pclient[i]);
       }
 }
+#endif
 
 static BOOL bm_update_read_pointer(const char *caller_name, BUFFER_HEADER * pheader)
 {
