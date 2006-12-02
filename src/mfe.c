@@ -646,7 +646,7 @@ INT register_equipment(void)
                             &equipment[index].buffer_handle);
          if (status != BM_SUCCESS && status != BM_CREATED) {
             cm_msg(MERROR, "register_equipment",
-                   "Cannot open event buffer");
+                   "Cannot open event buffer \"%s\" size %d, bm_open_buffer() status %d", eq_info->buffer, 2*MAX_EVENT_SIZE, status);
             return 0;
          }
 
@@ -782,7 +782,7 @@ void update_odb(EVENT_HEADER * pevent, HNDLE hKey, INT format)
    HNDLE hKeyRoot, hKeyl;
    KEY key;
 
-   /* outcommented sind db_find_key does not work in FTCP mode, SR 25.4.03
+   /* outcommented since db_find_key does not work in FTCP mode, SR 25.4.03
       rpc_set_option(-1, RPC_OTRANSPORT, RPC_FTCP); */
 
    if (format == FORMAT_FIXED) {
