@@ -190,10 +190,11 @@ INT mscbdev_get(MSCBDEV_INFO * info, INT channel, float *pvalue)
          /* only produce error once every minute */
          if (ss_time() - last_error >= 60) {
             last_error = ss_time();
-            cm_msg(MERROR, "mscbdev_get", "Error reading MSCB bus at %s:%d:%d, status %d", 
-               info->mscbdev_settings.device,
+            /* temporarily disabled since it can cause a hangup for unknown reasons...
+            cm_msg(MERROR, "mscbdev_get", "Error reading MSCB bus at %d:%d, status %d", 
                info->mscbdev_settings.mscb_address[channel],
                info->mscbdev_settings.mscb_index[channel], status);
+            */
          }
          *pvalue = (float)ss_nan();
          return FE_ERR_HW;
@@ -209,10 +210,11 @@ INT mscbdev_get(MSCBDEV_INFO * info, INT channel, float *pvalue)
          /* only produce error once every minute */
          if (ss_time() - last_error >= 60) {
             last_error = ss_time();
-            cm_msg(MERROR, "mscbdev_get", "Error reading MSCB bus at %s:%d:%d, status %d", 
-               info->mscbdev_settings.device,
+            /* temporarily disabled since it can cause a hangup for unknown reasons...
+            cm_msg(MERROR, "mscbdev_get", "Error reading MSCB bus at %d:%d",
                info->mscbdev_settings.mscb_address[channel],
                info->mscbdev_settings.mscb_index[channel], status);
+            */
          }
          *pvalue = (float)ss_nan();
          return FE_ERR_HW;
