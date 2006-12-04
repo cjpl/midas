@@ -24,7 +24,7 @@ endif
 
 # directory where mxml.c and strlcpy.c resides
 ifdef MIDASSYS
-MXMLDIR       = ../../mxml/
+MXMLDIR       = $(MIDASSYS)/../mxml/
 else
 MXMLDIR       = mxml/
 endif
@@ -57,31 +57,27 @@ CC   += -DOS_DARWIN
 LIBS  = -lIOKit /System/Library/Frameworks/CoreFoundation.framework/CoreFoundation
 endif
 
+MSCB_OBJ      = msc.o mscb.o mscbrpc.o
+MXML_OBJ      = mxml.o strlcpy.o
+USB_OBJ       = musbstd.o
+OBJECTS       = $(MSCB_OBJ) $(MXML_OBJ) $(USB_OBJ)
+
 all: $(OUTNAME)
 
-$(OUTNAME): mscb.o msc.o mscbrpc.o strlcpy.o mxml.o musbstd.o
-	$(CC) $(FLAGS) mscb.o msc.o mscbrpc.o mxml.o musbstd.o strlcpy.o -o $(OUTNAME) $(LIBS)
+$(OUTNAME): $(OBJECTS)
+	$(CC) $(FLAGS) $(OBJECTS) -o $(OUTNAME) $(LIBS)
 
-mscbrpc.o: mscbrpc.c mscbrpc.h
-	$(CC) $(FLAGS) -c mscbrpc.c
+$(MSCB_OBJ): %.o: %.c
+	$(CC) $(FLAGS) -c $<
 
-mscb.o: mscb.c mscb.h
-	$(CC) $(FLAGS) -c mscb.c 
+$(MXML_OBJ): %.o: $(MXMLDIR)%.c
+	$(CC) $(FLAGS) -c $<
 
-msc.o: msc.c
-	$(CC) $(FLAGS) -c msc.c 
+$(USB_OBJ): %.o: $(USBDIR)%.c
+	$(CC) $(FLAGS) -c $<
 
-strlcpy.o: $(MXMLDIR)strlcpy.c
-	$(CC) $(FLAGS) -o strlcpy.o -c $(MXMLDIR)strlcpy.c
-
-mxml.o: $(MXMLDIR)mxml.c
-	$(CC) $(FLAGS) -o mxml.o -c $(MXMLDIR)mxml.c
-
-musbstd.o: $(USBDIR)musbstd.c
-	$(CC) $(FLAGS) -o musbstd.o -c $(USBDIR)musbstd.c
-
-shared: mscb.o mscbrpc.o mxml.o musbstd.o strlcpy.o
-	$(CC) -shared -lusb -o mscb.so mscb.o mscbrpc.o mxml.o musbstd.o strlcpy.o
+shared: $(OBJECTS)
+	$(CC) -shared -o mscb.so $(OBJECTS) $(LIBS)
 
 clean:
 	rm *.o $(OUTNAME)
