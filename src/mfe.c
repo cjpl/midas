@@ -1898,6 +1898,10 @@ int main(int argc, char *argv[])
       dm_size = 0x4000;         /* 16k */
 #endif
 
+   /* retrieve frontend index from environment if defined */
+   if (getenv("MIDAS_FRONTEND_INDEX"))
+      frontend_index = atoi(getenv("MIDAS_FRONTEND_INDEX"));
+
    /* add frontend index to frontend name if present */
    strcpy(full_frontend_name, frontend_name);
    if (frontend_index >= 0)
