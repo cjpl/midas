@@ -138,9 +138,83 @@ INT mscbhvr_get_current(MSCBHVR_INFO * info, INT channel, float *pvalue)
 
 /*----------------------------------------------------------------------------*/
 
+INT mscbhvr_get_current_limit(MSCBHVR_INFO * info, INT channel, float *pvalue)
+{
+   int size = 4;
+
+   mscb_read(info->fd, info->settings.base_address + channel, 9, pvalue, &size);
+   return FE_SUCCESS;
+}
+
+/*----------------------------------------------------------------------------*/
+
+INT mscbhvr_get_voltage_limit(MSCBHVR_INFO * info, INT channel, float *pvalue)
+{
+   int size = 4;
+
+   mscb_read(info->fd, info->settings.base_address + channel, 8, pvalue, &size);
+   return FE_SUCCESS;
+}
+
+/*----------------------------------------------------------------------------*/
+
+INT mscbhvr_get_rampup(MSCBHVR_INFO * info, INT channel, float *pvalue)
+{
+   int size = 2;
+   unsigned short data;
+
+   mscb_read(info->fd, info->settings.base_address + channel, 6, &data, &size);
+   *pvalue = data;
+   return FE_SUCCESS;
+}
+
+/*----------------------------------------------------------------------------*/
+
+INT mscbhvr_get_rampdown(MSCBHVR_INFO * info, INT channel, float *pvalue)
+{
+   int size = 2;
+   unsigned short data;
+
+   mscb_read(info->fd, info->settings.base_address + channel, 7, &data, &size);
+   *pvalue = data;
+   return FE_SUCCESS;
+}
+
+/*----------------------------------------------------------------------------*/
+
 INT mscbhvr_set_current_limit(MSCBHVR_INFO * info, int channel, float limit)
 {
    mscb_write(info->fd, info->settings.base_address + channel, 9, &limit, 4);
+   return FE_SUCCESS;
+}
+
+/*----------------------------------------------------------------------------*/
+
+INT mscbhvr_set_voltage_limit(MSCBHVR_INFO * info, int channel, float limit)
+{
+   mscb_write(info->fd, info->settings.base_address + channel, 8, &limit, 4);
+   return FE_SUCCESS;
+}
+
+/*----------------------------------------------------------------------------*/
+
+INT mscbhvr_set_rampup(MSCBHVR_INFO * info, int channel, float limit)
+{
+   unsigned short data;
+
+   data = (unsigned short) limit;
+   mscb_write(info->fd, info->settings.base_address + channel, 6, &data, 2);
+   return FE_SUCCESS;
+}
+
+/*----------------------------------------------------------------------------*/
+
+INT mscbhvr_set_rampdown(MSCBHVR_INFO * info, int channel, float limit)
+{
+   unsigned short data;
+
+   data = (unsigned short) limit;
+   mscb_write(info->fd, info->settings.base_address + channel, 7, &data, 2);
    return FE_SUCCESS;
 }
 
@@ -199,6 +273,13 @@ INT mscbhvr(INT cmd, ...)
       status = mscbhvr_set_current_limit(info, channel, value);
       break;
 
+   case CMD_SET_VOLTAGE_LIMIT:
+      info = va_arg(argptr, void *);
+      channel = va_arg(argptr, INT);
+      value = (float) va_arg(argptr, double);
+      status = mscbhvr_set_voltage_limit(info, channel, value);
+      break;
+
    case CMD_GET_LABEL:
       status = FE_SUCCESS;
       break;
@@ -216,16 +297,51 @@ INT mscbhvr(INT cmd, ...)
       break;
 
    case CMD_GET_VOLTAGE_LIMIT:
+      info = va_arg(argptr, void *);
+      channel = va_arg(argptr, INT);
+      pvalue = va_arg(argptr, float *);
+      status = mscbhvr_get_voltage_limit(info, channel, pvalue);
+      break;
+
    case CMD_GET_CURRENT_LIMIT:
+      info = va_arg(argptr, void *);
+      channel = va_arg(argptr, INT);
+      pvalue = va_arg(argptr, float *);
+      status = mscbhvr_get_current_limit(info, channel, pvalue);
+      break;
+
    case CMD_GET_RAMPUP:
+      info = va_arg(argptr, void *);
+      channel = va_arg(argptr, INT);
+      pvalue = va_arg(argptr, float *);
+      status = mscbhvr_get_rampup(info, channel, pvalue);
+      break;
+
    case CMD_GET_RAMPDOWN:
+      info = va_arg(argptr, void *);
+      channel = va_arg(argptr, INT);
+      pvalue = va_arg(argptr, float *);
+      status = mscbhvr_get_rampdown(info, channel, pvalue);
+      break;
+
    case CMD_GET_TRIP_TIME:
       status = FE_SUCCESS;
       break;
 
-   case CMD_SET_VOLTAGE_LIMIT:
    case CMD_SET_RAMPUP:
+      info = va_arg(argptr, void *);
+      channel = va_arg(argptr, INT);
+      value = (float) va_arg(argptr, double);
+      status = mscbhvr_set_rampup(info, channel, value);
+      break;
+
    case CMD_SET_RAMPDOWN:
+      info = va_arg(argptr, void *);
+      channel = va_arg(argptr, INT);
+      value = (float) va_arg(argptr, double);
+      status = mscbhvr_set_rampdown(info, channel, value);
+      break;
+
    case CMD_SET_TRIP_TIME:
       status = FE_SUCCESS;
       break;
