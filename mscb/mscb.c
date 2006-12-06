@@ -1319,7 +1319,7 @@ int mscb_init(char *device, int bufsize, char *password, int debug)
    /* set global debug flag */
    _debug_flag = (debug == 1);
 
-   debug_log("mscb_init(device=%s,bufsize=%d,password=%s,debug=%d) ", 1, device, bufsize, password, debug);
+   debug_log("mscb_init(device=\"%s\",bufsize=%d,password=\"%s\",debug=%d) ", 1, device, bufsize, password, debug);
 
    /* clear caches */
    for (i = 0; i < n_cache; i++)
@@ -2535,13 +2535,24 @@ int mscb_write(int fd, unsigned short adr, unsigned char index, void *data, int 
    int i, retry, status;
    unsigned char buf[256], crc, ack[2];
    unsigned char *d;
+   unsigned int dw;
+   float f;
 
-   for (i=0 ; i<size && ((char *)data)[i] ; i++)
-      if (!isascii(((char *)data)[i]))
-         break;
+   dw = 0;
+   f = 0;
+   if (size == 1)
+      dw = *((unsigned char *)data);
+   else if (size == 2)
+      dw = *((unsigned short *)data);
+   else if (size == 4) {
+      dw = *((unsigned int *)data);
+      f = *((float *)data);
+   }
 
-   if (i < size && ((char *)data)[i])
-      debug_log("mscb_write(fd=%d,adr=%d,index=%d,data=%p,size=%d) ", 1, fd, adr, index, data, size);
+   if (size == 4)
+      debug_log("mscb_write(fd=%d,adr=%d,index=%d,data=%lf/0x%X,size=%d) ", 1, fd, adr, index, f, dw, size);
+   else if (size < 4)
+      debug_log("mscb_write(fd=%d,adr=%d,index=%d,data=0x%X,size=%d) ", 1, fd, adr, index, dw, size);
    else
       debug_log("mscb_write(fd=%d,adr=%d,index=%d,data=\"%s\",size=%d) ", 1, fd, adr, index, (char *)data, size);
 
@@ -2670,15 +2681,20 @@ int mscb_write_no_retries(int fd, unsigned short adr, unsigned char index, void 
    int i;
    unsigned char buf[256], crc, ack[2];
    unsigned char *d;
+   unsigned int dw;
 
-   for (i=0 ; i<size && ((char *)data)[i] ; i++)
-      if (!isascii(((char *)data)[i]))
-         break;
+   dw = 0;
+   if (size == 1)
+      dw = *((unsigned char *)data);
+   else if (size == 2)
+      dw = *((unsigned short *)data);
+   else if (size == 4)
+      dw = *((unsigned int *)data);
 
-   if (i < size && ((char *)data)[i])
-      debug_log("mscb_write_no_retries(fd=%d,adr=%d,index=%d,data=%p,size=%d) ", 1, fd, adr, index, data, size);
+   if (size <= 4)
+      debug_log("mscb_write(fd=%d,adr=%d,index=%d,data=0x%X,size=%d) ", 1, fd, adr, index, dw, size);
    else
-      debug_log("mscb_write_no_retries(fd=%d,adr=%d,index=%d,data=\"%s\",size=%d) ", 1, fd, adr, index, (char *)data, size);
+      debug_log("mscb_write(fd=%d,adr=%d,index=%d,data=\"%s\",size=%d) ", 1, fd, adr, index, (char *)data, size);
 
    if (fd > MSCB_MAX_FD || fd < 1 || !mscb_fd[fd - 1].type) {
       debug_log("return MSCB_INVAL_PARAM\n", 0);
@@ -3449,7 +3465,7 @@ int mscb_read(int fd, unsigned short adr, unsigned char index, void *data, int *
    int i, j, n, status;
    unsigned char buf[256], str[1000], crc;
 
-   debug_log("mscb_read(fd=%d,adr=%d,index=%d,data=%p,size=%d) ", 1, fd, adr, index, data, *size);
+   debug_log("mscb_read(fd=%d,adr=%d,index=%d,size=%d) ", 1, fd, adr, index, *size);
 
    if (*size > 256)
       return MSCB_INVAL_PARAM;
@@ -3655,7 +3671,7 @@ int mscb_read_no_retries(int fd, unsigned short adr, unsigned char index, void *
    int i, j, status;
    unsigned char buf[256], str[1000], crc;
 
-   debug_log("mscb_read_no_retries(fd=%d,adr=%d,index=%d,data=%p,size=%d) ", 1, fd, adr, index, data, *size);
+   debug_log("mscb_read_no_retries(fd=%d,adr=%d,index=%d,size=%d) ", 1, fd, adr, index, *size);
 
    if (*size > 256)
       return MSCB_INVAL_PARAM;
@@ -3897,7 +3913,7 @@ int mscb_read_block(int fd, unsigned short adr, unsigned char index, void *data,
    int i, n, error_count;
    unsigned char buf[256], crc;
 
-   debug_log("mscb_read_block(fd=%d,adr=%d,index=%d,data=%p,size=%d) ", 1, fd, adr, index, data, *size);
+   debug_log("mscb_read_block(fd=%d,adr=%d,index=%d,size=%d) ", 1, fd, adr, index, *size);
 
    if (*size > 256)
       return MSCB_INVAL_PARAM;
