@@ -29,6 +29,7 @@ int strlen_retbuf;
 int return_length;
 char host_name[256];
 char exp_name[32];
+char referer[256];
 BOOL connected, no_disconnect;
 int tcp_port = 80;
 
@@ -4017,18 +4018,27 @@ void show_elog_page(char *path, int path_size)
 
 /*------------------------------------------------------------------*/
 
-void show_elog_redirect() 
-{  
+void show_elog_redirect()
+{
    HNDLE hDB;
-   char url[256];
+   char url[256], str[256], str2[256];
    int size;
 
    /* redirect to external ELOG if URL present */
    cm_get_experiment_database(&hDB, NULL);
-   size = sizeof(url);
-   if (db_get_value(hDB, 0, "/Elog/URL", url, &size, TID_STRING, FALSE) == DB_SUCCESS)
+   size = sizeof(str);
+   if (db_get_value(hDB, 0, "/Elog/URL", str, &size, TID_STRING, FALSE) == DB_SUCCESS) {
+      if (str[0] == ':') {
+         strcpy(str2, referer);
+         if (strrchr(str2+5, ':'))
+            *strrchr(str2+5, ':') = 0;
+         if (str2[strlen(str2)-1] == '/')
+            str2[strlen(str2)-1] = 0;
+         sprintf(url, "%s%s", str2, str);
+      } else
+         strcpy(url, str);
       redirect(url);
-   else
+   } else
       redirect("EL/");
 }
 
@@ -10563,7 +10573,7 @@ void server_loop(int daemon)
 {
    int status, i, refresh, n_error;
    struct sockaddr_in bind_addr, acc_addr;
-   char cookie_pwd[256], cookie_wpwd[256], boundary[256];
+   char cookie_pwd[256], cookie_wpwd[256], boundary[256], *p;
    int lsock, flag, content_length, header_length;
    unsigned int len;
    struct hostent *phe;
@@ -10837,6 +10847,21 @@ struct linger        ling;
             refresh = atoi(strstr(net_buffer, "midas_refr=") + 11);
          else
             refresh = DEFAULT_REFRESH;
+
+         /* extract referer */
+         referer[0] = 0;
+         if ((p = strstr(net_buffer, "Referer:")) != NULL) {
+            p += 9;
+            while (*p && *p == ' ')
+               p++;
+            strlcpy(referer, p, sizeof(referer));
+            if (strchr(referer, '\r'))
+               *strchr(referer, '\r') = 0;
+            if (strchr(referer, '?'))
+               *strchr(referer, '?') = 0;
+            for (p = referer + strlen(referer) - 1; p > referer && *p != '/'; p--)
+               *p = 0;
+         }
 
          memset(return_buffer, 0, sizeof(return_buffer));
          strlen_retbuf = 0;
