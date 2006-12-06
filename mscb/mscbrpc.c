@@ -292,6 +292,41 @@ void debug_log(char *format, int start, ...)
 
 /*------------------------------------------------------------------*/
 
+void mdrain_tcp(int sock)
+/* drain socket connection from any old data */
+{
+   char buffer[100];
+
+   fd_set readfds;
+   struct timeval timeout;
+   int status;
+
+
+   /* first receive header */
+   do {
+      FD_ZERO(&readfds);
+      FD_SET(sock, &readfds);
+
+      timeout.tv_sec = 0;
+      timeout.tv_usec = 0;
+
+      do {
+         status = select(FD_SETSIZE, (void *) &readfds, NULL, NULL, (void *) &timeout);
+      } while (status == -1);   /* dont return if an alarm signal was cought */
+
+      if (!FD_ISSET(sock, &readfds))
+         return;
+
+      status = recv(sock, buffer, sizeof(buffer), 0);
+
+      if (status <= 0)
+         return ;
+
+   } while (1);
+}
+
+/*------------------------------------------------------------------*/
+
 int mrecv_tcp(int sock, char *buffer, int buffer_size)
 {
    INT param_size, n_received, n;
@@ -375,6 +410,9 @@ int mrecv_tcp(int sock, char *buffer, int buffer_size)
 int msend_tcp(int sock, char *buffer, int buffer_size)
 {
    int count, status;
+
+   /* drain receive queue if any late packet arrived in meantime */
+   mdrain_tcp(sock);
 
    /* transfer fragments until complete buffer is transferred */
 
