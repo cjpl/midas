@@ -203,8 +203,8 @@ INT hv_read(EQUIPMENT * pequipment, int channel)
 
 INT hv_ramp(HV_INFO * hv_info)
 {
-   INT i, status = 0, switch_tag;
-   float delta, ramp_speed;
+   INT i, status = 0, switch_tag = FALSE;
+   float delta, ramp_speed = 0;
 
    for (i = 0; i < hv_info->num_channels; i++) {
       if (hv_info->demand[i] != hv_info->demand_mirror[i]) {
