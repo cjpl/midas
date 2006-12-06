@@ -154,4 +154,5 @@ int mrpc_connected(int fd);
 int mrpc_disconnect(int sock);
 int mrpc_call(int fdi, const int routine_id, ...);
 int msend_tcp(int sock, char *buffer, int buffer_size);
+void mdrain_tcp(int sock);
 
