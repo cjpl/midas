@@ -21,12 +21,14 @@ typedef struct {
    char mscb_device[NAME_LENGTH];
    char pwd[NAME_LENGTH];
    int  base_address;
+   BOOL debug;
 } MSCBHVR_SETTINGS;
 
 #define MSCBHVR_SETTINGS_STR "\
 MSCB Device = STRING : [32] usb0\n\
 MSCB Pwd = STRING : [32] \n\
 Base Address = INT : 0\n\
+Debug = BOOL : 0\n\
 "
 
 typedef struct {
@@ -62,7 +64,7 @@ INT mscbhvr_init(HNDLE hkey, void **pinfo, INT channels, INT(*bd) (INT cmd, ...)
    info->num_channels = channels;
 
    /* open device on MSCB */
-   info->fd = mscb_init(info->settings.mscb_device, NAME_LENGTH, info->settings.pwd, FALSE);
+   info->fd = mscb_init(info->settings.mscb_device, NAME_LENGTH, info->settings.pwd, info->settings.debug);
    if (info->fd < 0) {
       cm_msg(MERROR, "mscbhvr_init",
              "Cannot access MSCB submaster at \"%s\". Check power and connection.",
