@@ -2244,7 +2244,6 @@ int mscb_set_node_addr(int fd, int addr, int gaddr, int broadcast,
 {
    unsigned char buf[64];
    int status;
-   MSCB_INFO info;
 
    if (fd > MSCB_MAX_FD || fd < 1 || !mscb_fd[fd - 1].type)
       return MSCB_INVAL_PARAM;
@@ -2267,9 +2266,6 @@ int mscb_set_node_addr(int fd, int addr, int gaddr, int broadcast,
          }
       }
 
-      /* retrieve current group address */
-      mscb_info(fd, (unsigned short)addr, &info);
-                
       buf[0] = MCMD_ADDR_NODE16;
       buf[1] = (unsigned char) (addr >> 8);
       buf[2] = (unsigned char) (addr & 0xFF);
