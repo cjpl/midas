@@ -16971,7 +16971,7 @@ INT dm_area_flush(void)
 #endif                          /* DOXYGEN_SHOULD_SKIP_THIS */
 
 /**dox***************************************************************/
-                                                                                                             /** @} *//* end of dmfunctionc */
+/** @} *//* end of dmfunctionc */
 
 /**dox***************************************************************/
-                                                                                                             /** @} *//* end of midasincludecode */
+/** @} *//* end of midasincludecode */
