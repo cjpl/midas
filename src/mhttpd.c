@@ -227,6 +227,7 @@ int vaxis(gdImagePtr im, gdFont * font, int col, int gcol, int x1, int y1, int w
           BOOL logaxis);
 void haxis(gdImagePtr im, gdFont * font, int col, int gcol, int x1, int y1, int width,
            int minor, int major, int text, int label, int grid, double xmin, double xmax);
+void get_elog_url(char *url, int len);
 
 /*------------------------------------------------------------------*/
 
@@ -3480,6 +3481,8 @@ void show_elog_page(char *path, int path_size)
       size = sizeof(url);
       if (db_get_value(hDB, 0, "/Elog/URL", url, &size, TID_STRING, FALSE) == DB_SUCCESS) {
 
+         get_elog_url(url, sizeof(url));
+
          /*---- use external ELOG ----*/
          fsize = 100000;
          fbuffer = M_MALLOC(fsize);
@@ -4018,10 +4021,10 @@ void show_elog_page(char *path, int path_size)
 
 /*------------------------------------------------------------------*/
 
-void show_elog_redirect()
+void get_elog_url(char *url, int len)
 {
    HNDLE hDB;
-   char url[256], str[256], str2[256];
+   char str[256], str2[256];
    int size;
 
    /* redirect to external ELOG if URL present */
@@ -4036,10 +4039,9 @@ void show_elog_redirect()
             str2[strlen(str2)-1] = 0;
          sprintf(url, "%s%s", str2, str);
       } else
-         strcpy(url, str);
-      redirect(url);
+         strlcpy(url, str, len);
    } else
-      redirect("EL/");
+      strlcpy(url, "EL/", len);
 }
 
 /*------------------------------------------------------------------*/
@@ -9168,6 +9170,8 @@ void show_hist_page(char *path, int path_size, char *buffer, int *buffer_size,
       size = sizeof(url);
       if (db_get_value(hDB, 0, "/Elog/URL", url, &size, TID_STRING, FALSE) == DB_SUCCESS) {
 
+         get_elog_url(url, sizeof(url));
+
          /*---- use external ELOG ----*/
          fsize = 100000;
          fbuffer = M_MALLOC(fsize);
@@ -10289,7 +10293,8 @@ void interprete(char *cookie_pwd, char *cookie_wpwd, char *path, int refresh)
   /*---- ELog command ----------------------------------------------*/
 
    if (equal_ustring(command, "elog")) {
-      show_elog_redirect();
+      get_elog_url(str, sizeof(str));
+      redirect(str);
       return;
    }
 
