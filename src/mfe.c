@@ -508,20 +508,14 @@ INT register_equipment(void)
       /* check for event builder event */
       if (eq_info->eq_type & EQ_EB) {
 
-         if (frontend_index == -1) {
-            printf("\nEquipment \"%s\" has EQ_EB set, but no", equipment[index].name);
-            printf(" index specified via \"-i\" flag.\nExiting.");
-            cm_disconnect_experiment();
-            ss_sleep(5000);
-            exit(0);
+         if (frontend_index != -1) {
+            /* modify equipment name to <name>xx where xx is the frontend index */
+            sprintf(equipment[index].name + strlen(equipment[index].name), "%02d",
+                  frontend_index);
+
+            /* modify event buffer name to <name>xx where xx is the frontend index */
+            sprintf(eq_info->buffer + strlen(eq_info->buffer), "%02d", frontend_index);
          }
-
-         /* modify equipment name to <name>xx where xx is the frontend index */
-         sprintf(equipment[index].name + strlen(equipment[index].name), "%02d",
-                 frontend_index);
-
-         /* modify event buffer name to <name>xx where xx is the frontend index */
-         sprintf(eq_info->buffer + strlen(eq_info->buffer), "%02d", frontend_index);
       }
 
       sprintf(str, "/Equipment/%s/Common", equipment[index].name);
