@@ -15517,7 +15517,7 @@ INT al_trigger_class(char *alarm_class, char *alarm_message, BOOL first)
 {
    int status, size, state;
    HNDLE hDB, hkeyclass;
-   char str[256], command[256], tag[32];
+   char str[256], command[256], tag[32], url[256];
    ALARM_CLASS ac;
 
    cm_get_experiment_database(&hDB, NULL);
@@ -15544,8 +15544,10 @@ INT al_trigger_class(char *alarm_class, char *alarm_message, BOOL first)
       ac.system_message_last = ss_time();
    }
 
-   /* write elog message on first trigger */
-   if (ac.write_elog_message && first)
+   /* write elog message on first trigger if using internal ELOG */
+   size = sizeof(url);
+   if (ac.write_elog_message && first &&
+       db_get_value(hDB, 0, "/Elog/URL", url, &size, TID_STRING, FALSE) != DB_SUCCESS)
       el_submit(0, "Alarm system", "Alarm", "General", alarm_class, str,
                 "", "plain", "", "", 0, "", "", 0, "", "", 0, tag, 32);
 
