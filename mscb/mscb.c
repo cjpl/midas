@@ -2950,7 +2950,8 @@ int mscb_upload(int fd, unsigned short adr, char *buffer, int size, int debug)
 {
    unsigned char buf[512], crc, ack[2], image[0x10000], *line;
    unsigned int len, ofh, ofl, type, d;
-   int i, status, page, subpage, flash_size, n_page, retry, sretry, protected_page;
+   int i, status, page, subpage, flash_size, n_page, retry, sretry, protected_page,
+      n_page_disp;
    unsigned short ofs;
    int page_cont[128];
 
@@ -3008,6 +3009,9 @@ int mscb_upload(int fd, unsigned short adr, char *buffer, int size, int debug)
          }
       }
    }
+
+   /* reduce number of "="'s if too many */
+   n_page_disp = (n_page / 70) + 1;
 
    protected_page = 128;
 
@@ -3083,7 +3087,7 @@ int mscb_upload(int fd, unsigned short adr, char *buffer, int size, int debug)
 
    if (!debug) {
       printf("\n[");
-      for (i=0 ; i<n_page+1 ; i++)
+      for (i=0 ; i<n_page/n_page_disp+1 ; i++)
          printf(" ");
       printf("]\r[");
    }
@@ -3141,7 +3145,8 @@ int mscb_upload(int fd, unsigned short adr, char *buffer, int size, int debug)
       }
 
       if (!debug)
-         printf("-");
+         if (page % n_page_disp == 0)
+            printf("-");
       fflush(stdout);
    }
 
@@ -3242,7 +3247,8 @@ prog_pages:
       }
 
       if (!debug)
-         printf("=");
+         if (page % n_page_disp == 0)
+            printf("=");
       fflush(stdout);
    }
 
