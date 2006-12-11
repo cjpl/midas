@@ -5,7 +5,7 @@
 #
 #  Contents:     Makefile for mevb MIDAS example 
 #
-#  $Id:$
+#  $Id$
 #
 #####################################################################
 
@@ -60,11 +60,11 @@ LDFLAGS +=
 
 all: mevb ebfe
 
-ebfe: $(LIB) $(LIB_DIR)/mfe.o $(DRV_DIR)/bus/$(DRIVER).o ebfe.c
+ebfe: $(LIB) $(LIB_DIR)/mfe.o $(DRV_DIR)/camac/$(DRIVER).o ebfe.c
 	$(CC) $(CFLAGS) $(OSFLAGS) -o ebfe ebfe.c $(DRIVER).o \
 	$(LIB_DIR)/mfe.o $(LIB) $(LDFEFLAGS) $(LIBS)
 
-$(DRIVER).o: $(DRV_DIR)/bus/$(DRIVER).c
+$(DRIVER).o: $(DRV_DIR)/camac/$(DRIVER).c
 	$(CC) $(CFLAGS) $(OSFLAGS) -c -o $(DRIVER).o $(DRV_DIR)/bus/$(DRIVER).c
 
 mevb:   $(LIB) mevb.c ebuser.o
