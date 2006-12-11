@@ -4,7 +4,7 @@ Created by:   Pierre-Andre Amaudruz
 
 Contents:     Main Event builder task.
 
-  $Id$
+  
 
 \********************************************************************/
 
@@ -34,6 +34,7 @@ DWORD last_time;
 DWORD actual_time;                 /* current time in seconds since 1970 */
 DWORD actual_millitime;            /* current time in milliseconds */
 
+char svn_revision[] = "$Id$";
 char host_name[HOST_NAME_LENGTH];
 char expt_name[NAME_LENGTH];
 char full_frontend_name[256];
@@ -308,6 +309,7 @@ INT scan_fragment(void)
   INT fragn, status;
   EQUIPMENT *eq;
   EQUIPMENT_INFO *eq_info;
+  INT ch;
 
   /* Get equipment pointer, only one eqp for now */
   eq_info = &equipment[0].info;
@@ -396,6 +398,15 @@ INT scan_fragment(void)
       db_send_changed_records();
       /* Keep track of last ODB update */
       last_time = ss_millitime();
+    }
+
+    ch = 0;
+    if (ss_kbhit()) {
+      ch = ss_getchar(0);
+      if (ch == -1)
+        ch = getchar();
+      if ((char) ch == '!')
+        break;
     }
   } while (status != RPC_SHUTDOWN && status != SS_ABORT);
 
@@ -1012,9 +1023,12 @@ INT source_scan(INT fmt, EQUIPMENT_INFO *eq_info)
 /*--------------------------------------------------------------------*/
 int main(unsigned int argc, char **argv)
 {
-  INT status;
+  INT status, size, rstate;
   unsigned int i;
   BOOL daemon = FALSE;
+  HNDLE  hEqkey;
+  EBUILDER(ebuilder_str);
+  char   str[128];
   
   /* init structure */
   memset(&ebch[0], 0, sizeof(ebch));
@@ -1047,7 +1061,9 @@ usage:
     }
   }
 
-  printf("Program mevb version 5 started\n\n");
+  // Print SVN revision
+  printf("Program mevb %s\n", svn_revision);
+
   if (daemon) {
     printf("Becoming a daemon...\n");
     ss_daemon_init(FALSE);
@@ -1087,6 +1103,15 @@ usage:
     goto exit;
   }
 
+  /* Check if run in progess if so abort */
+  size = sizeof(rstate);
+  db_get_value(hDB, 0, "/Runinfo/State", &rstate, &size, TID_INT, FALSE);
+  if (rstate != STATE_STOPPED) {
+    cm_msg(MERROR, "Ebuilder", "Run in Progress, EBuilder aborted!.");
+    cm_disconnect_experiment();
+    goto exit;
+  }
+
   if (ebuilder_init() != SUCCESS) {
     cm_disconnect_experiment();
     /* let user read message before window might close */
@@ -1113,6 +1138,12 @@ usage:
     return status;
   if (cm_register_transition(TR_STOP, tr_stop, 600) != CM_SUCCESS)
     goto exit;
+
+  /* Set Initial EB/Settings */
+  sprintf(str, "/Equipment/%s/Settings", equipment[0].name);
+  if (db_find_key(hDB, 0, str, &hEqkey) != DB_SUCCESS) {
+    status = db_create_record(hDB, 0, str, strcomb(ebuilder_str));
+  }
 
   /* Scan fragments... will stay in */
   status = scan_fragment();
