@@ -1409,10 +1409,17 @@ void cmd_loop(int fd, char *cmd, unsigned short adr)
             /* first echo with adressing */
             status = mscb_echo(fd, (unsigned short) current_addr, d1, &d2);
             while (!kbhit()) {
-               d1 = rand();
+               d1 = (d1 + 1) % 256;
 
-               /* following echos without adressing */
-               status = mscb_echo(fd, 0, d1, &d2);
+               /* following echos without adressing if no error */
+               if (status == MSCB_SUCCESS)
+                  status = mscb_echo(fd, 0, d1, &d2);
+               else
+                  status = mscb_echo(fd, (unsigned short) current_addr, d1, &d2);
+
+               if (status != MSCB_SUCCESS) {
+                  printf("Error: %d\n", status);
+               }
 
                if (d2 != d1) {
                   printf("%d\nReceived: %02X, should be %02X, status = %d\n", i, d2, d1,
