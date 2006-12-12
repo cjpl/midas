@@ -329,26 +329,27 @@ INT scan_fragment(void)
       case STATE_RUNNING:
         status = source_scan(equipment[0].format, eq_info);
         switch (status) {
-            case BM_ASYNC_RETURN:  // No event found for now, Check for timeout 
-              for (fragn = 0; fragn < nfragment; fragn++) {
-                if (ebch[fragn].timeout > TIMEOUT) {        /* Timeout */
-                  if (stop_requested) {                     /* Stop */
-                    if (debug) printf("Stop requested on timeout %d\n", status);
-                      status = close_buffers();
-                    break;
-                  } 
-                  else {         /* No stop requested  but timeout */
-                    if (wheel) {
-                      printf("...%c Timoing on %1.0lf\r", bars[i_bar++ % 4],
-                        eq->stats.events_sent);
-                      fflush(stdout);
-                      status = cm_yield(50);
-                    }
-                  }
-                }
-                //else { /* No timeout loop back */
-              } // for loop over all fragments
+      case BM_ASYNC_RETURN:  // No event found for now, Check for timeout 
+        for (fragn = 0; fragn < nfragment; fragn++) {
+          if (ebch[fragn].timeout > TIMEOUT) {        /* Timeout */
+            if (stop_requested) {                     /* Stop */
+              if (debug) printf("Stop requested on timeout %d\n", status);
+              status = close_buffers();
               break;
+            } else {
+             /* No stop requested  but timeout, allow a yield to not
+             eat all the CPU */
+             status = cm_yield(10);
+             if (wheel) {
+                printf("...%c Timoing on %1.0lf\r", bars[i_bar++ % 4],
+                  eq->stats.events_sent);
+                fflush(stdout);
+              }
+            }
+          }
+          //else { /* No timeout loop back */
+        } // for loop over all fragments
+        break;
             case EB_ERROR:
             case EB_USER_ERROR:
               abort_requested = TRUE;
