@@ -29,7 +29,7 @@ unsigned char idata _n_sub_addr = N_HV_CHN;
 char code node_name[] = "HVR-200";
 
 /* maximum current im micro Ampere */
-#define MAX_CURRENT 2000
+#define MAX_CURRENT 200
 
 /* maximum voltage in Volt */
 #define MAX_VOLTAGE 2500
@@ -49,6 +49,10 @@ char code node_name[] = "HVR-200";
 /* Jumper1: HIGH for positive, LOW for negative */
 sbit JU1       = P1 ^ 5;
 
+/* power switches */
+sbit HV1_POWER = P2 ^ 6;
+sbit HV2_POWER = P2 ^ 5;
+
 /* main HV switches */
 sbit HV1_OFF   = P3 ^ 5;
 sbit HV2_OFF   = P3 ^ 4;
@@ -63,11 +67,13 @@ sbit ADC_NCS   = P3 ^ 3;       // !Chip select
 sbit ADC_NRDY  = P3 ^ 0;       // !Ready
 sbit ADC_DOUT  = P3 ^ 1;       // Data out
 sbit ADC_DIN   = P3 ^ 7;       // Data in
+sbit ADC_NRES  = P0 ^ 6;       // !Reset
 
 /* LTC2600 pins */
 sbit DAC_SCK   = P3 ^ 6;       // Serial Clock
 sbit DAC_NCS   = P3 ^ 2;       // !Chip select
 sbit DAC_DIN   = P3 ^ 7;       // Data in
+sbit DAC_NCLR  = P0 ^ 7;       // !Clear
 
 /* LTC1655 pins channel 0 */
 sbit C0DAC_SCK = P2 ^ 4;       // Serial Clock
@@ -114,6 +120,8 @@ bit trip0, trip1;
 bit trip_reset0, trip_reset1;
 bit trip_disable0, trip_disable1;
 
+unsigned long xdata trip_time[N_HV_CHN];
+
 /*---- Define variable parameters returned to CMD_GET_INFO command ----*/
 
 /* data buffer (mirrored in EEPROM) */
@@ -146,6 +154,7 @@ struct {
    float i_limit;
    float ri_limit;
    unsigned char trip_max;
+   unsigned char trip_time;
 
    float adc_gain;
    float adc_offset;
@@ -171,17 +180,18 @@ MSCB_INFO_VAR code vars[] = {
    4, UNIT_VOLT,            0, 0, MSCBF_FLOAT, "Ulimit",  &user_data[0].u_limit,     // 8
    4, UNIT_AMPERE, PRFX_MICRO, 0, MSCBF_FLOAT, "Ilimit",  &user_data[0].i_limit,     // 9
    4, UNIT_AMPERE, PRFX_MICRO, 0, MSCBF_FLOAT, "RIlimit", &user_data[0].ri_limit,    // 10
-   1, UNIT_COUNT,           0, 0,           0, "TripMax", &user_data[0].trip_max,    // 12
+   1, UNIT_COUNT,           0, 0,           0, "TripMax", &user_data[0].trip_max,    // 11
+   1, UNIT_SECOND,          0, 0,           0, "TripTime",&user_data[0].trip_time,   // 12
 
    /* calibration constants */
-   4, UNIT_FACTOR,          0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "ADCgain", &user_data[0].adc_gain,    // 12
-   4, UNIT_VOLT,            0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "ADCofs",  &user_data[0].adc_offset,  // 13
-   4, UNIT_FACTOR,          0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "DACgain", &user_data[0].dac_gain,    // 14
-   4, UNIT_VOLT,            0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "DACofs",  &user_data[0].dac_offset,  // 15
-   4, UNIT_FACTOR,          0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "CURvgain",&user_data[0].cur_vgain,   // 16
-   4, UNIT_FACTOR,          0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "CURgain", &user_data[0].cur_gain,    // 17
-   4, UNIT_AMPERE, PRFX_MICRO, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "CURofs",  &user_data[0].cur_offset,  // 18
-   4, UNIT_VOLT,            0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "VDAC",    &user_data[0].u_dac,       // 19
+   4, UNIT_FACTOR,          0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "ADCgain", &user_data[0].adc_gain,    // 13
+   4, UNIT_VOLT,            0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "ADCofs",  &user_data[0].adc_offset,  // 14
+   4, UNIT_FACTOR,          0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "DACgain", &user_data[0].dac_gain,    // 15
+   4, UNIT_VOLT,            0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "DACofs",  &user_data[0].dac_offset,  // 16
+   4, UNIT_FACTOR,          0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "CURvgain",&user_data[0].cur_vgain,   // 17
+   4, UNIT_FACTOR,          0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "CURgain", &user_data[0].cur_gain,    // 18
+   4, UNIT_AMPERE, PRFX_MICRO, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "CURofs",  &user_data[0].cur_offset,  // 19
+   4, UNIT_VOLT,            0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "VDAC",    &user_data[0].u_dac,       // 20
    0
 };
 
@@ -232,8 +242,8 @@ void user_init(unsigned char init)
    SFRPAGE = CONFIG_PAGE;
 
    P0MDOUT = 0x01;  // P0.0: TX = Push Pull
-   P1MDOUT = 0x00;  // all other open drain
-   P2MDOUT = 0x00;
+   P1MDOUT = 0x00;  // all open drain
+   P2MDOUT = 0x60;  // P2.5/6: HV_POWER
    P3MDOUT = 0x00;
 
    /* initial nonzero EEPROM values */
@@ -247,6 +257,7 @@ void user_init(unsigned char init)
          user_data[i].i_limit = MAX_CURRENT;
          user_data[i].ri_limit = MAX_CURRENT;
          user_data[i].trip_max = 0;
+         user_data[i].trip_time = 10;
 
          user_data[i].adc_gain = 1;
          user_data[i].adc_offset = 0;
@@ -291,6 +302,10 @@ void user_init(unsigned char init)
    hv_on(0, 0);
    hv_on(1, 0);
 
+   /* HV power on */
+   HV1_POWER = 1;
+   HV2_POWER = 1;
+
    /* set default group address */
    if (sys_info.group_addr == 0xFFFF)
       sys_info.group_addr = 200;
@@ -298,6 +313,8 @@ void user_init(unsigned char init)
    /* set-up DAC & ADC */
    ADC_NRDY = 1; // input
    ADC_DIN  = 1; // input
+   ADC_NRES = 1; // remove reset
+   DAC_NCLR = 1; // remove clear
 
    write_adc(REG_FILTER, ADC_SF_VALUE);
 
@@ -323,6 +340,7 @@ void external_int0(void) interrupt 0
 
    /* remember trip */
    trip0 = 1;
+   trip_time[0] = time();
 
    /* clear interrupt flag */
    IE0 = 0;
@@ -335,6 +353,7 @@ void external_int1(void) interrupt 2
 
    /* remember trip */
    trip1 = 1;
+   trip_time[1] = time();
 
    /* clear interrupt flag */
    IE1 = 0;
@@ -350,8 +369,18 @@ void user_write(unsigned char index) reentrant
       /* main HV switch on/off */
       if (user_data[cur_sub_addr()].control & CONTROL_HV_ON)
          hv_on(cur_sub_addr(), 1);
-      else
+      else {
          hv_on(cur_sub_addr(), 0);
+
+         u_actual[cur_sub_addr()] = 0;
+         user_data[cur_sub_addr()].u_dac = 0;
+   
+         /* stop possible ramping */
+         chn_bits[cur_sub_addr()] &= ~DEMAND_CHANGED;
+         chn_bits[cur_sub_addr()] &= ~RAMP_UP;
+         chn_bits[cur_sub_addr()] &= ~RAMP_DOWN;
+         user_data[cur_sub_addr()].status &= ~(STATUS_RAMP_UP | STATUS_RAMP_DOWN);
+      }
    }
 
    if (index == 1) {
@@ -752,6 +781,12 @@ unsigned char adc_read(unsigned char channel, float *value)
       /* abort if no ADC ready after 300ms */
       if (time() - start_time > 30) {
 
+         /* reset ADC */
+         ADC_NRES = 0;
+         delay_ms(100);
+         ADC_NRES = 1;
+         delay_ms(300);
+
          write_adc(REG_FILTER, ADC_SF_VALUE);
 
          return 0;
@@ -784,7 +819,7 @@ unsigned char cadc_read(unsigned char channel, float *value)
       delay_us(OPT_DELAY);
 
       /* wait for conversion ready */
-      while (C0ADC_SDO) {
+      while (!C0ADC_SDO) {
          yield();
          for (i=0 ; i<N_HV_CHN ; i++)
             ramp_hv(i);      // do ramping while reading ADC
@@ -800,7 +835,7 @@ unsigned char cadc_read(unsigned char channel, float *value)
          d <<= 1;
          C0ADC_SCK = 0;
          delay_us(OPT_DELAY);
-         d |= C0ADC_SDO;
+         d |= !C0ADC_SDO;
          C0ADC_SCK = 1;
          delay_us(OPT_DELAY);
          watchdog_refresh(1);
@@ -819,7 +854,7 @@ unsigned char cadc_read(unsigned char channel, float *value)
       delay_us(OPT_DELAY);
 
       /* wait for conversion ready */
-      while (C1ADC_SDO) {
+      while (!C1ADC_SDO) {
          yield();
          for (i=0 ; i<N_HV_CHN ; i++)
             ramp_hv(i);      // do ramping while reading ADC
@@ -835,7 +870,7 @@ unsigned char cadc_read(unsigned char channel, float *value)
          d <<= 1;
          C1ADC_SCK = 0;
          delay_us(OPT_DELAY);
-         d |= C1ADC_SDO;
+         d |= !C1ADC_SDO;
          C1ADC_SCK = 1;
          delay_us(OPT_DELAY);
          watchdog_refresh(1);
@@ -998,7 +1033,8 @@ void check_current(unsigned char channel)
       }
 
       /* check for trip recovery */
-      if (user_data[channel].trip_cnt < user_data[channel].trip_max) {
+      if (user_data[channel].trip_cnt < user_data[channel].trip_max &&
+          time() >= trip_time[channel] + user_data[channel].trip_time*100) {
          /* clear trip */
          user_data[channel].status &= ~STATUS_ILIMIT;
          if (channel == 0)

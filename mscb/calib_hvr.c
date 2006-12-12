@@ -27,16 +27,18 @@
 #define CH_TRIPCNT      5
 #define CH_RAMPUP       6
 #define CH_RAMPDOWN     7
-#define CH_VLIMIT       8
+#define CH_ULIMIT       8
 #define CH_ILIMIT       9
-#define CH_TRIPMAX     10
-#define CH_ADCGAIN     11
-#define CH_ADCOFS      12
-#define CH_DACGAIN     13
-#define CH_DACOFS      14
-#define CH_CURVGAIN    15
-#define CH_CURGAIN     16
-#define CH_CUROFS      17
+#define CH_RILIMIT     10
+#define CH_TRIPMAX     11
+#define CH_TRIPTIME    12
+#define CH_ADCGAIN     13
+#define CH_ADCOFS      14
+#define CH_DACGAIN     15
+#define CH_DACOFS      16
+#define CH_CURVGAIN    17
+#define CH_CURGAIN     18
+#define CH_CUROFS      19
 
 #define HV_SET_DELAY   5000 /* five seconds for voltage to stabilize */
 
@@ -124,8 +126,8 @@ void reset_param(int fd, unsigned short adr)
    mscb_write(fd, adr, CH_DACOFS, &f, sizeof(float));
    mscb_write(fd, adr, CH_CUROFS, &f, sizeof(float));
    mscb_write(fd, adr, CH_CURVGAIN, &f, sizeof(float));
-   mscb_write(fd, adr, CH_RAMPUP, &d, sizeof(short));
-   mscb_write(fd, adr, CH_RAMPDOWN, &d, sizeof(short));
+   mscb_write(fd, adr, CH_RAMPUP, &f, sizeof(float));
+   mscb_write(fd, adr, CH_RAMPDOWN, &f, sizeof(float));
 
    f = 1;
    mscb_write(fd, adr, CH_ADCGAIN, &f, sizeof(float));
