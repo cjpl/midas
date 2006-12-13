@@ -58,7 +58,7 @@ extern BOOL debug;
 /*-- Equipment list ------------------------------------------------*/
 EQUIPMENT equipment[] = {
    {"EB",                /* equipment name */
-    {1, 0,                   /* event ID, trigger mask */
+    {1, 1,                   /* event ID, trigger mask */
      "SYSTEM",               /* event buffer */
      0,                      /* equipment type */
      0,                      /* event source */
