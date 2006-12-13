@@ -40,7 +40,7 @@ extern "C" {
   char *frontend_file_name = __FILE__;
 
   /* frontend_loop is called periodically if this variable is TRUE    */
-  BOOL frontend_call_loop = FALSE;
+  BOOL frontend_call_loop = TRUE;
 
   /* a frontend status page is displayed with this frequency in ms */
   INT display_period = 3000;
@@ -88,7 +88,7 @@ extern "C" {
    EQUIPMENT equipment[] = {
 
       {"Trigger",              /* equipment name */
-       1, TRIGGER_ALL,         /* event ID, trigger mask */
+       2, TRIGGER_ALL,         /* event ID, trigger mask */
        "BUF",                  /* event buffer */
 #ifdef USE_INT
        EQ_INTERRUPT,            /* equipment type */
@@ -109,7 +109,7 @@ extern "C" {
        },
 
       {"Scaler",               /* equipment name */
-       2, TRIGGER_ALL,         /* event ID, trigger mask */
+       3, TRIGGER_ALL,         /* event ID, trigger mask */
        "BIF",                  /* event buffer */
        EQ_PERIODIC | EQ_EB | 
        EQ_MANUAL_TRIG,    /* equipment type */
@@ -221,6 +221,7 @@ INT frontend_loop()
 {
   /* if frontend_call_loop is true, this routine gets called when
   the frontend is idle or once between every event */
+  cm_yield(100);
   return SUCCESS;
 }
 
