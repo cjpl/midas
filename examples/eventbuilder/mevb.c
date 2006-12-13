@@ -38,7 +38,6 @@ DWORD actual_millitime;         /* current time in milliseconds */
 char svn_revision[] = "$Id$";
 char host_name[HOST_NAME_LENGTH];
 char expt_name[NAME_LENGTH];
-char full_frontend_name[256];
 char buffer_name[NAME_LENGTH];
 INT nfragment;
 char *dest_event;
@@ -163,7 +162,7 @@ INT register_equipment(void)
          equipment[index].format = FORMAT_MIDAS;
 
       gethostname(eq_info->frontend_host, sizeof(eq_info->frontend_host));
-      strcpy(eq_info->frontend_name, full_frontend_name);
+      strcpy(eq_info->frontend_name, frontend_name);
       strcpy(eq_info->frontend_file_name, frontend_file_name);
 
       /* set record from equipment[] table in frontend.c */
@@ -281,7 +280,11 @@ INT load_fragment(void)
       }
    }
 
-   printf("Found %d fragment matching EB setting\n", nfragment);
+   if (nfragment > 1)
+      printf("Found %d fragments for event building\n", nfragment);
+   else
+      printf("Found one fragment for event building\n", nfragment);
+
    /* Point to the Ebuilder settings */
    /* Set fragment_add function based on the format */
    if (equipment[0].format == FORMAT_MIDAS)
@@ -297,7 +300,7 @@ INT load_fragment(void)
    dest_event = (char *) malloc(nfragment * (max_event_size + sizeof(EVENT_HEADER)));
    memset(dest_event, 0, nfragment * (max_event_size + sizeof(EVENT_HEADER)));
    if (dest_event == NULL) {
-      cm_msg(MERROR, "load_fragment", "%s: Not enough memory for event buffer", full_frontend_name);
+      cm_msg(MERROR, "load_fragment", "%s: Not enough memory for event buffer", frontend_name);
       return EB_ERROR;
    }
    return EB_SUCCESS;
@@ -355,11 +358,11 @@ INT scan_fragment(void)
             abort_requested = TRUE;
             if (status == EB_USER_ERROR)
                cm_msg(MTALK, "scan_fragment", "%s: Error signaled by user code - stopping run...",
-                      full_frontend_name);
+                      frontend_name);
             else
-               cm_msg(MTALK, "EBuilder", "%s: Event mismatch - Stopping run...", full_frontend_name);
+               cm_msg(MTALK, "EBuilder", "%s: Event mismatch - Stopping run...", frontend_name);
             if (cm_transition(TR_STOP, 0, NULL, 0, ASYNC, 0) != CM_SUCCESS) {
-               cm_msg(MERROR, "scan_fragment", "%s: Stop Transition request failed", full_frontend_name);
+               cm_msg(MERROR, "scan_fragment", "%s: Stop Transition request failed", frontend_name);
                return status;
             }
             if (debug)
@@ -650,7 +653,7 @@ INT tr_start(INT rn, char *error)
    run_number = rn;
    stop_requested = FALSE;
    abort_requested = FALSE;
-   printf("%s-Starting New Run: %d\n", full_frontend_name, rn);
+   printf("%s-Starting New Run: %d\n", frontend_name, rn);
 
    /* Reset global trigger mask */
    return CM_SUCCESS;
@@ -659,7 +662,7 @@ INT tr_start(INT rn, char *error)
 /*--------------------------------------------------------------------*/
 INT tr_stop(INT rn, char *error)
 {
-   printf("\n%s-Stopping Run: %d detected\n", full_frontend_name, rn);
+   printf("\n%s-Stopping Run: %d detected\n", frontend_name, rn);
 
    /* local stop */
    stop_requested = TRUE;
@@ -1007,7 +1010,7 @@ INT source_scan(INT fmt, EQUIPMENT_INFO * eq_info)
       if (status != BM_SUCCESS) {
          if (debug)
             printf("rpc_send_event returned error %d, event_size %d\n", status, act_size);
-         cm_msg(MERROR, "source_scan", "%s: rpc_send_event returned error %d", full_frontend_name, status);
+         cm_msg(MERROR, "source_scan", "%s: rpc_send_event returned error %d", frontend_name, status);
          return EB_ERROR;
       }
 
@@ -1084,24 +1087,15 @@ int main(unsigned int argc, char **argv)
    strcpy(str, svn_revision+17);
    if (strchr(str, ' '))
       *strchr(str, ' ') = 0;
-   printf("%s. Press \"!\" to exit\n", str);
+   printf("%s. Press \"!\" to exit.\n", str);
 
    if (daemon) {
       printf("Becoming a daemon...\n");
       ss_daemon_init(FALSE);
    }
 
-   /* Check buffer arg */
-   if (buffer_name[0] == 0) {
-      printf("Buffer name must be specified with -b argument\n");
-      goto exit;
-   }
-
-   /* Compose frontend name */
-   strcpy(full_frontend_name, frontend_name);
-
    /* Connect to experiment */
-   status = cm_connect_experiment(host_name, expt_name, full_frontend_name, NULL);
+   status = cm_connect_experiment(host_name, expt_name, frontend_name, NULL);
    if (status != CM_SUCCESS) {
       ss_sleep(5000);
       goto exit;
@@ -1118,9 +1112,9 @@ int main(unsigned int argc, char **argv)
    }
 
    /* check if Ebuilder is already running */
-   status = cm_exist(full_frontend_name, FALSE);
+   status = cm_exist(frontend_name, FALSE);
    if (status == CM_SUCCESS) {
-      cm_msg(MERROR, "main", "%s running already!.", full_frontend_name);
+      cm_msg(MERROR, "main", "%s running already!.", frontend_name);
       cm_disconnect_experiment();
       goto exit;
    }
@@ -1169,10 +1163,10 @@ int main(unsigned int argc, char **argv)
 
    /* Scan fragments... will stay in */
    status = scan_fragment();
-   printf("%s-Out of scan_fragment\n", full_frontend_name);
+   printf("%s-Out of scan_fragment\n", frontend_name);
 
    /* Detach all source from midas */
-   printf("%s-Unbooking\n", full_frontend_name);
+   printf("%s-Unbooking\n", frontend_name);
    source_unbooking();
 
    ebuilder_exit();
