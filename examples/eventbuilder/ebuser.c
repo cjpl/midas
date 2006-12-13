@@ -193,15 +193,15 @@ INT eb_user(INT nfrag, BOOL mismatch, EBUILDER_CHANNEL * ebch
 
   //
   // Do some extra fragment consistency check
-  //if (mismatch){
-  //  printf("Serial number do not match across fragments\n");
-  //  for (i = 0; i < nfrag; i++) {
-  //    serial = ((EVENT_HEADER *) ebch[i].pfragment)->serial_number;
-  //    printf("Ser[%i]:%d ", i + 1, serial);
-  //  }
-  //  printf("\n");
-  //  return EB_USER_ERROR;
-  //}
+  if (mismatch){
+    printf("Serial number do not match across fragments\n");
+    for (i = 0; i < nfrag; i++) {
+      serial = ((EVENT_HEADER *) ebch[i].pfragment)->serial_number;
+      printf("Ser[%i]:%d ", i + 1, serial);
+    }
+    printf("\n");
+    return EB_USER_ERROR;
+  }
 
   //
   // Include my own bank
