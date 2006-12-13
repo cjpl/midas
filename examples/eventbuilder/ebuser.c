@@ -189,30 +189,30 @@ INT eb_user(INT nfrag, BOOL mismatch, EBUILDER_CHANNEL * ebch
 {
   INT i, frag_size, serial;
   DWORD *psrcData;
-  DWORD  *pdata;
+//  DWORD  *pdata;
 
   //
   // Do some extra fragment consistency check
-  if (mismatch){
-    printf("Serial number do not match across fragments\n");
-    for (i = 0; i < nfrag; i++) {
-      serial = ((EVENT_HEADER *) ebch[i].pfragment)->serial_number;
-      printf("Ser[%i]:%d ", i + 1, serial);
-    }
-    printf("\n");
-    return EB_USER_ERROR;
-  }
+  //if (mismatch){
+  //  printf("Serial number do not match across fragments\n");
+  //  for (i = 0; i < nfrag; i++) {
+  //    serial = ((EVENT_HEADER *) ebch[i].pfragment)->serial_number;
+  //    printf("Ser[%i]:%d ", i + 1, serial);
+  //  }
+  //  printf("\n");
+  //  return EB_USER_ERROR;
+  //}
 
   //
   // Include my own bank
-  bk_init(pevent);
-  bk_create(pevent, "MYOW", TID_DWORD, &pdata);
-  for (i = 0; i < nfrag; i++) {
-    *pdata++ = ((EVENT_HEADER *) ebch[i].pfragment)->serial_number;
-    *pdata++ = ((EVENT_HEADER *) ebch[i].pfragment)->time_stamp;
-  }
-  *dest_size = bk_close(pevent, pdata);
-  pheader->data_size = *dest_size + sizeof(EVENT_HEADER);
+  //bk_init(pevent);
+  //bk_create(pevent, "MYOW", TID_DWORD, &pdata);
+  //for (i = 0; i < nfrag; i++) {
+  //  *pdata++ = ((EVENT_HEADER *) ebch[i].pfragment)->serial_number;
+  //  *pdata++ = ((EVENT_HEADER *) ebch[i].pfragment)->time_stamp;
+  //}
+  //*dest_size = bk_close(pevent, pdata);
+  //pheader->data_size = *dest_size + sizeof(EVENT_HEADER);
 
 
   //
