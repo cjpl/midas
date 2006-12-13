@@ -345,7 +345,7 @@ INT scan_fragment(void)
                         eat all the CPU */
                      status = cm_yield(10);
                      if (wheel) {
-                        printf("...%c Timoing on %1.0lf\r", bars[i_bar++ % 4], eq->stats.events_sent);
+                        printf("...%c Timing on %1.0lf\r", bars[i_bar++ % 4], eq->stats.events_sent);
                         fflush(stdout);
                      }
                   }
@@ -600,6 +600,8 @@ INT tr_start(INT rn, char *error)
    /* Create or update the fragment request list */
    status = db_find_key(hDB, hEqkey, "Fragment Required", &hEqFRkey);
    status = db_get_key(hDB, hEqFRkey, &key);
+   assert(status == DB_SUCCESS);
+
    if (key.num_values != ebset.nfragment) {
       cm_msg(MINFO, "tr_start", "Number of Fragment mismatch ODB:%d - CUR:%d", key.num_values, ebset.nfragment);
       free(ebset.preqfrag);
@@ -608,7 +610,7 @@ INT tr_start(INT rn, char *error)
       for (i = 0; i < ebset.nfragment; i++)
          ebset.preqfrag[i] = TRUE;
       status =
-          db_set_value(hDB, hEqkey, "Fragment Required", ebset.preqfrag, size, ebset.nfragment, TID_BOOL);
+         db_set_value(hDB, hEqkey, "Fragment Required", ebset.preqfrag, size, ebset.nfragment, TID_BOOL);
    } else {                     // Take from ODBedit
       size = key.total_size;
       free(ebset.preqfrag);
