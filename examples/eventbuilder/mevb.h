@@ -4,7 +4,7 @@ Name:         mevb.h
 
   Contents:     Event builder header file
 
-  $Id:$
+  $Id$
 
 \********************************************************************/
 
@@ -14,8 +14,8 @@ Name:         mevb.h
 "User build = BOOL : n",\
 "User Field = STRING : [64] 100",\
 "Fragment Required = BOOL[2] :",\
-"[0] 0",\
-"[0] 0",\
+"[0] y",\
+"[1] y",\
 "",\
 NULL }
 
