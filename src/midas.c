@@ -3998,6 +3998,11 @@ INT bm_close_buffer(INT buffer_handle)
          return BM_INVALID_HANDLE;
       }
 
+      /* check if buffer got already closed */
+      if (!_buffer[buffer_handle - 1].attached) {
+         return BM_SUCCESS;
+      }
+
       /*
          Check if buffer was opened by current thread. This is necessary
          in the server process where one thread may not close the buffer
