@@ -5,7 +5,7 @@
 
    Contents:     Main Event builder task.
 
-   $Id:$
+   $Id$
 
 \********************************************************************/
 
@@ -618,6 +618,16 @@ INT tr_start(INT rn, char *error)
    for (i = 0; i < ebset.nfragment; i++)
       ebset.received[i] = FALSE;
 
+   /* Check if at least one fragment is requested */
+   for (i = 0; i < ebset.nfragment; i++)
+      if (ebset.preqfrag[i])
+         break;
+
+   if (i == ebset.nfragment) {
+      cm_msg(MERROR, "tr_start", "Run start aborted because no fragment required");
+      return 0;
+   }
+
    /* Call BOR user function */
    status = eb_begin_of_run(run_number, ebset.user_field, error);
    if (status != EB_SUCCESS) {
@@ -711,6 +721,8 @@ INT source_booking()
 
    if (debug)
       printf("Entering booking\n");
+
+   status1 = status2 = 0;
 
    /* Book all the source channels */
    for (i = 0; i < nfragment; i++) {
@@ -1031,6 +1043,9 @@ int main(unsigned int argc, char **argv)
    /* set default */
    cm_get_environment(host_name, sizeof(host_name), expt_name, sizeof(expt_name));
 
+   /* set default buffer name */
+   strcpy(buffer_name, "SYSTEM");
+
    /* get parameters */
    for (i = 1; i < argc; i++) {
       if (argv[i][0] == '-' && argv[i][1] == 'd')
@@ -1050,14 +1065,26 @@ int main(unsigned int argc, char **argv)
             strcpy(buffer_name, argv[++i]);
       } else {
        usage:
-         printf("usage: mevb [-h <Hostname>] [-e <Experiment>] -b <buffername> [-d debug]\n");
-         printf("             -w show wheel -D to start as a daemon\n\n");
+         printf("usage: mevb [-h <Hostname>] [-e <Experiment>] [-b <buffername>] [-d] [-w] [-D]\n");
+         printf("  [-h <Hostname>]    Host where midas experiment is running on\n");
+         printf("  [-e <Experiment>]  Midas experiment if more than one exists\n");
+         printf("  [-b <buffername>]  Specify evnet buffer name, use \"SYSTEM\" by default\n");
+         printf("  [-d]               Print debugging output\n");
+         printf("  [-w]               Show wheel\n");
+         printf("  [-D]               Start as a daemon\n");
          return 0;
       }
    }
 
    // Print SVN revision
-   printf("Program mevb %s\n", svn_revision);
+   strcpy(str, svn_revision+12);
+   if (strchr(str, ' '))
+      *strchr(str, ' ') = 0;
+   printf("Program mevb, revision %s from ", str);
+   strcpy(str, svn_revision+17);
+   if (strchr(str, ' '))
+      *strchr(str, ' ') = 0;
+   printf("%s. Press \"!\" to exit\n", str);
 
    if (daemon) {
       printf("Becoming a daemon...\n");
