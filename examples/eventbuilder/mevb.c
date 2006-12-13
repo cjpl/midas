@@ -289,7 +289,7 @@ INT load_fragment(void)
    else if (equipment[0].format == FORMAT_YBOS)
       meb_fragment_add = eb_yfragment_add;
    else {
-      cm_msg(MERROR, "mevb", "Unknown data format :%d", format);
+      cm_msg(MERROR, "load_fragment", "Unknown data format :%d", format);
       return EB_ERROR;
    }
 
@@ -297,7 +297,7 @@ INT load_fragment(void)
    dest_event = (char *) malloc(nfragment * (max_event_size + sizeof(EVENT_HEADER)));
    memset(dest_event, 0, nfragment * (max_event_size + sizeof(EVENT_HEADER)));
    if (dest_event == NULL) {
-      cm_msg(MERROR, "EBuilder", "%s: Not enough memory for event buffer", full_frontend_name);
+      cm_msg(MERROR, "load_fragment", "%s: Not enough memory for event buffer", full_frontend_name);
       return EB_ERROR;
    }
    return EB_SUCCESS;
@@ -354,12 +354,12 @@ INT scan_fragment(void)
          case EB_USER_ERROR:
             abort_requested = TRUE;
             if (status == EB_USER_ERROR)
-               cm_msg(MTALK, "EBuilder", "%s: Error signaled by user code - stopping run...",
+               cm_msg(MTALK, "scan_fragment", "%s: Error signaled by user code - stopping run...",
                       full_frontend_name);
             else
                cm_msg(MTALK, "EBuilder", "%s: Event mismatch - Stopping run...", full_frontend_name);
             if (cm_transition(TR_STOP, 0, NULL, 0, ASYNC, 0) != CM_SUCCESS) {
-               cm_msg(MERROR, "EBuilder", "%s: Stop Transition request failed", full_frontend_name);
+               cm_msg(MERROR, "scan_fragment", "%s: Stop Transition request failed", full_frontend_name);
                return status;
             }
             if (debug)
@@ -373,7 +373,7 @@ INT scan_fragment(void)
             //   No yield in this case.
             break;
          default:
-            cm_msg(MERROR, "Source_scan", "unexpected return %d", status);
+            cm_msg(MERROR, "scan_fragment", "unexpected return %d", status);
             status = SS_ABORT;
          }                      // switch scan_source
          break;
@@ -579,7 +579,7 @@ INT tr_start(INT rn, char *error)
    /* Keep Key on Ebuilder/Settings */
    sprintf(str, "/Equipment/%s/Settings", equipment[0].name);
    if (db_find_key(hDB, 0, str, &hEqkey) != DB_SUCCESS) {
-      cm_msg(MINFO, "load_fragment", "/Equipment/%s/Settings not found", equipment[0].name);
+      cm_msg(MINFO, "tr_start", "/Equipment/%s/Settings not found", equipment[0].name);
    }
 
    /* Update or Create User_field */
@@ -598,7 +598,7 @@ INT tr_start(INT rn, char *error)
    status = db_find_key(hDB, hEqkey, "Fragment Required", &hEqFRkey);
    status = db_get_key(hDB, hEqFRkey, &key);
    if (key.num_values != ebset.nfragment) {
-      cm_msg(MINFO, "mevb", "Number of Fragment mismatch ODB:%d - CUR:%d", key.num_values, ebset.nfragment);
+      cm_msg(MINFO, "tr_start", "Number of Fragment mismatch ODB:%d - CUR:%d", key.num_values, ebset.nfragment);
       free(ebset.preqfrag);
       size = ebset.nfragment * sizeof(BOOL);
       ebset.preqfrag = malloc(size);
@@ -621,7 +621,7 @@ INT tr_start(INT rn, char *error)
    /* Call BOR user function */
    status = eb_begin_of_run(run_number, ebset.user_field, error);
    if (status != EB_SUCCESS) {
-      cm_msg(MERROR, "eb_prestart", "run start aborted due to eb_begin_of_run (%d)", status);
+      cm_msg(MERROR, "tr_start", "run start aborted due to eb_begin_of_run (%d)", status);
       return status;
    }
 
@@ -631,7 +631,7 @@ INT tr_start(INT rn, char *error)
       return status;
 
    if (!eq_info->enabled) {
-      cm_msg(MINFO, "ebuilder", "Event Builder disabled");
+      cm_msg(MINFO, "tr_start", "Event Builder disabled");
       return CM_SUCCESS;
    }
 
@@ -830,7 +830,7 @@ INT close_buffers(void)
    stop_time = ss_millitime() - request_stop_time;
    sprintf(error, "Run %d Stop after %1.0lf events sent DT:%d[ms]",
            run_number, eq->stats.events_sent, stop_time);
-   cm_msg(MINFO, "EBuilder", "%s", error);
+   cm_msg(MINFO, "close_buffers", "%s", error);
 
    run_state = STATE_STOPPED;
    abort_requested = FALSE;
@@ -907,7 +907,7 @@ INT source_scan(INT fmt, EQUIPMENT_INFO * eq_info)
             }
             break;
          default:              /* Error */
-            cm_msg(MERROR, "event_scan", "bm_receive_event error %d", status);
+            cm_msg(MERROR, "source_scan", "bm_receive_event error %d", status);
             return status;
             break;
          }
@@ -995,7 +995,7 @@ INT source_scan(INT fmt, EQUIPMENT_INFO * eq_info)
       if (status != BM_SUCCESS) {
          if (debug)
             printf("rpc_send_event returned error %d, event_size %d\n", status, act_size);
-         cm_msg(MERROR, "EBuilder", "%s: rpc_send_event returned error %d", full_frontend_name, status);
+         cm_msg(MERROR, "source_scan", "%s: rpc_send_event returned error %d", full_frontend_name, status);
          return EB_ERROR;
       }
 
@@ -1093,7 +1093,7 @@ int main(unsigned int argc, char **argv)
    /* check if Ebuilder is already running */
    status = cm_exist(full_frontend_name, FALSE);
    if (status == CM_SUCCESS) {
-      cm_msg(MERROR, "Ebuilder", "%s running already!.", full_frontend_name);
+      cm_msg(MERROR, "main", "%s running already!.", full_frontend_name);
       cm_disconnect_experiment();
       goto exit;
    }
@@ -1102,7 +1102,7 @@ int main(unsigned int argc, char **argv)
    size = sizeof(rstate);
    db_get_value(hDB, 0, "/Runinfo/State", &rstate, &size, TID_INT, FALSE);
    if (rstate != STATE_STOPPED) {
-      cm_msg(MERROR, "Ebuilder", "Run in Progress, EBuilder aborted!.");
+      cm_msg(MERROR, "main", "Run in Progress, EBuilder aborted!.");
       cm_disconnect_experiment();
       goto exit;
    }
