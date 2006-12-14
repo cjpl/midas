@@ -551,7 +551,7 @@ formated line as it is already added by the client on the receiving side.
 INT cm_msg(INT message_type, char *filename, INT line, const char *routine, const char *format, ...)
 {
    va_list argptr;
-   char event[1000], str[256], local_message[256], send_message[256], *pc;
+   char event[1000], str[1000], format_cpy[900], local_message[1000], send_message[1000], *pc;
    EVENT_HEADER *pevent;
    INT status;
    static BOOL in_routine = FALSE;
@@ -585,10 +585,13 @@ INT cm_msg(INT message_type, char *filename, INT line, const char *routine, cons
    /* preceed error messages with file and line info */
    if (message_type == MT_ERROR) {
       sprintf(str, "[%s:%d:%s] ", pc, line, routine);
-      strcat(send_message, str);
-      strcat(local_message, str);
+      strlcat(send_message, str, sizeof(send_message));
+      strlcat(local_message, str, sizeof(send_message));
    } else if (message_type == MT_USER)
       sprintf(local_message, "[%s] ", routine);
+
+   /* limit length of format */
+   strlcpy(format_cpy, format, sizeof(format_cpy));
 
    /* print argument list into message */
    va_start(argptr, format);
