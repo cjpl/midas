@@ -359,11 +359,11 @@ INT psi_separator_get_label(PSI_SEPARATOR_INFO * info, INT channel,
                                    char *name)
 {
    if (channel == 0)
-      strcpy(name, "Separator HV (kV)");
+      strcpy(name, "Sep. HV (kV)");
    else if (channel == 1)
-      strcpy(name, "Separator current (uA)");
+      strcpy(name, "Sep. current (uA)");
    else if (channel == 2)
-      strcpy(name, "Separator vacuum (mbar)");
+      strcpy(name, "Sep. vacuum (mbar)");
 
    return FE_SUCCESS;
 }
