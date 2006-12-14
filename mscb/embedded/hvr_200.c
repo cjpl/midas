@@ -116,11 +116,11 @@ unsigned char idata chn_bits[N_HV_CHN];
 float xdata u_actual[N_HV_CHN];
 unsigned long xdata t_ramp[N_HV_CHN];
 
-bit trip0, trip1;
-bit trip_reset0, trip_reset1;
-bit trip_disable0, trip_disable1;
-
+bit trip0, trip1;                  // gets set by interrupt routine
+bit trip0_reset, trip1_reset;      // used to reset trip in main routine 
+bit trip0_enabled, trip1_enabled;  // set if trip is enabled
 unsigned long xdata trip_time[N_HV_CHN];
+unsigned long xdata trip_change[N_HV_CHN];
 
 /*---- Define variable parameters returned to CMD_GET_INFO command ----*/
 
@@ -208,6 +208,7 @@ void write_adc(unsigned char a, unsigned char d);
 void user_write(unsigned char index) reentrant;
 void ramp_hv(unsigned char channel);
 void hv_on(unsigned char channel, unsigned char flag) reentrant;
+void trip_enable(unsigned char channel, unsigned char flag);
 
 /*---- User init function ------------------------------------------*/
 
@@ -326,9 +327,13 @@ void user_init(unsigned char init)
    for (i=0 ; i<N_HV_CHN ; i++)
       led_mode(i, 1);
 
-   trip_disable0 = trip_disable1 = 0;  // trip initially enabled
+   /* initially, trips are enabled */
+   trip_enable(0, 1);
+   trip_enable(0, 2);
    trip0 = trip1 = 0;
-   trip_reset0 = trip_reset1 = 0;
+   trip0_reset = trip1_reset = 0;
+   trip_change[0] = trip_change[1] = 0;
+   trip_time[0] = trip_time[1] = 0;
 }
 
 /*---- external interrupt routines ---------------------------------*/
@@ -394,9 +399,9 @@ void user_write(unsigned char index) reentrant
 
       /* reset trip in main loop */
       if (cur_sub_addr() == 0)
-         trip_reset0 = 1;
+         trip0_reset = 1;
       else
-         trip_reset1 = 1;
+         trip1_reset = 1;
 
       /* indicate new demand voltage */
       chn_bits[cur_sub_addr()] |= DEMAND_CHANGED;
@@ -928,7 +933,7 @@ void set_hv(unsigned char channel, float value) reentrant
 
 void read_hv(unsigned char channel)
 {
-   float hv;
+   float xdata hv;
 
    /* read voltage channel */
    if (!adc_read(channel, &hv))
@@ -943,17 +948,6 @@ void read_hv(unsigned char channel)
    /* 0.01 resolution */
    hv = floor(hv * 100) / 100.0;
 
-   /* enable trip interrupt only if voltage above 20 V */
-   if (hv > 20) {
-      if (channel == 0) {
-         IE0 = 0; // clear pending interrupt
-         EX0 = 1; // enable INT0
-      } else {
-         IE1 = 0; // clear pending interrupt
-         EX1 = 1; // enable INT1
-      }
-   }
-
    DISABLE_INTERRUPTS;
    user_data[channel].u_meas = hv;
    ENABLE_INTERRUPTS;
@@ -966,20 +960,21 @@ void set_current_limit(unsigned char channel, float value)
    unsigned short d;
 
    if (value == 9999) {
+      
       /* disable current trip */
-      d = 65535; 
-      if (channel == 0)
-         trip_disable0 = 1;
-      else
-         trip_disable1 = 1;
+      trip_enable(channel, 0);
+      d = 65535;
+
    } else {
       
-      /* remove reset */
+      /* turn off interrupts and remember this time */
       if (channel == 0)
-         trip_disable0 = 0;
+         EX0 = 0; // disable interrupt 0
       else
-         trip_disable1 = 0;
-   
+         EX1 = 0; // disable interrupt 1
+
+      trip_change[channel] = time();
+
       /* "reverse" calibration */
       value = value / user_data[0].cur_gain + user_data[0].cur_offset;
    
@@ -988,24 +983,103 @@ void set_current_limit(unsigned char channel, float value)
    
       /* convert to DAC units */
       d = (unsigned short) ((value / 2.5 * 65535) + 0.5);
-   }
+      
+      /* write current dac */
+      write_cdac(channel, d);
 
-   /* write current dac */
-   write_cdac(channel, d);
+      /* enable current trip */
+      trip_enable(channel, 1);
+   }
 }
 
 /*------------------------------------------------------------------*/
 
 void hv_on(unsigned char channel, unsigned char flag) reentrant
 {
-   SFRPAGE = TIMER01_PAGE;
-
-   if (channel == 0) {
-      EX0 = 0; // disable INT0
+   if (channel == 0)
       HV1_OFF = !flag;
-   } else {
-      EX1 = 0; // disable INT1
+   else
       HV2_OFF = !flag;
+}
+
+/*------------------------------------------------------------------*/
+
+void trip_enable(unsigned char channel, unsigned char flag)
+{
+   if (channel == 0)
+      trip0_enabled = flag;
+   else
+      trip1_enabled = flag;
+}
+
+/*------------------------------------------------------------------*/
+
+void check_trip(unsigned char channel)
+{
+   if (channel == 0) {
+
+      /* turn on interrupt if 
+         trip enabled and 
+         voltage over instable limit and 
+         trip limit change more than 1s ago */
+      if (trip0_enabled && user_data[0].u_meas >= 100 &&  
+          time() > trip_change[0]+100) {
+
+         /* check if trip already on */
+         if (HV1_TRIP == 0) {
+            /* turn off HV */
+            HV1_OFF = 1;
+         
+            /* remember trip */
+            trip0 = 1;
+            trip_time[0] = time();
+         } else {
+            SFRPAGE = TIMER01_PAGE;
+            IE0 = 0; // clear pending interrupt
+            EX0 = 1; // enable interrupt 0
+         }
+      } else
+         EX0 = 0; // disable interrupt 0
+
+      /* reset trip if asked */
+      if (trip0_reset) {
+         trip0_reset = 0;
+         if (trip0) {
+            trip0 = 0;
+            hv_on(0, 1);
+         }
+      }
+
+   } else {
+
+      /* turn on interrupt if trip enabled and voltage over instable limit */
+      if (trip1_enabled && user_data[1].u_meas >= 100 && 
+          time() > trip_change[1]+100) {
+
+         /* check if trip already on */
+         if (HV2_TRIP == 0) {
+            /* turn off HV */
+            HV2_OFF = 1;
+         
+            /* remember trip */
+            trip1 = 1;
+            trip_time[1] = time();
+         } else {
+            SFRPAGE = TIMER01_PAGE;
+            IE1 = 0; // clear pending interrupt
+            EX1 = 1; // enable interrupt 1
+         }
+      } else
+         EX1 = 0; // disable interrupt 1
+
+      /* reset trip if asked */
+      if (trip1_reset) {
+         trip1_reset = 0;
+         if (trip1) {
+            trip1 = 0;
+            hv_on(1, 1);
+         }
+      }
    }
 }
 
@@ -1304,9 +1378,9 @@ void user_loop(void)
             set_current_limit(channel, user_data[channel].i_limit);
             chn_bits[channel] &= ~CUR_LIMIT_CHANGED;
             if (channel == 0)
-               trip_reset0 = 1;
+               trip0_reset = 1;
             else
-               trip_reset1 = 1;
+               trip1_reset = 1;
          }
 
          check_current(channel);
@@ -1317,23 +1391,7 @@ void user_loop(void)
          read_current(channel);
       }
 
-      if (channel == 0) {
-         if (trip_reset0) {
-            trip_reset0 = 0;
-            if (trip0) {
-               trip0 = 0;
-               hv_on(0, 1);
-            }
-         }
-      } else {
-         if (trip_reset1) {
-            trip_reset1 = 0;
-            if (trip1) {
-               trip1 = 0;
-               hv_on(1, 1);
-            }
-         }
-      }
+      check_trip(channel);
   }
 
    // read_temperature();
