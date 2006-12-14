@@ -3290,7 +3290,7 @@ none
    }
 
    printf("\nBank:%s Length: %i(I*1)/%i(I*4)/%i(Type) Type:%s",
-          bank_name, lrl, lrl >> 2, lrl / length_type, strbktype);
+     bank_name, lrl, lrl >> 2, lrl / (length_type==0?1:length_type), strbktype);
 
    pendbk = pdata + lrl;
    while (pdata < pendbk) {
