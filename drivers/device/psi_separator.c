@@ -221,6 +221,10 @@ INT psi_separator_rall(PSI_SEPARATOR_INFO * info)
    // skip name
    for (j = 0; j < (int) strlen(str) && str[j] != ' '; j++);
 
+   // extract demand value
+   info->hvdemand = (float) atof(str + j + 1);
+   for (j++; j < (int) strlen(str) && str[j] != ' '; j++);
+
    // extract measured values
    info->hvmeasured = (float) atof(str + j + 1);
    for (j++; j < (int) strlen(str) && str[j] != ' '; j++);
