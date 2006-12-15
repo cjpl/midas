@@ -982,7 +982,7 @@ void set_current_limit(unsigned char channel, float value)
       value = value * CUR_MULT * RCURR / 1E6;
    
       /* convert to DAC units */
-      d = (unsigned short) ((value / 2.5 * 65535) + 0.5);
+      d = (unsigned short) ((value / 4.096 * 65535) + 0.5);
       
       /* write current dac */
       write_cdac(channel, d);
