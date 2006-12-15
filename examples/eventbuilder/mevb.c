@@ -742,7 +742,7 @@ INT source_booking()
          /* Register for specified channel event ID and Trigger mask */
          status2 =
              bm_request_event(ebch[i].hBuf, ebch[i].event_id,
-                              ebch[i].trigger_mask, GET_ALL, &ebch[i].req_id, NULL);
+                              TRIGGER_ALL, GET_ALL, &ebch[i].req_id, NULL);
          if (debug)
             printf("bm_request_event frag:%d id:%d msk:%d req_id:%d stat:%d\n",
                    i, ebch[i].event_id, ebch[i].trigger_mask, ebch[i].req_id, status2);

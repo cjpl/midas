@@ -87,9 +87,9 @@ extern "C" {
 
    EQUIPMENT equipment[] = {
 
-      {"Trigger",              /* equipment name */
-       2, TRIGGER_ALL,         /* event ID, trigger mask */
-       "BUF",                  /* event buffer */
+      {"Trigger",               /* equipment name */
+       2, 0,                    /* event ID, trigger mask */
+       "BUF",                   /* event buffer */
 #ifdef USE_INT
        EQ_INTERRUPT,            /* equipment type */
 #else
@@ -108,11 +108,11 @@ extern "C" {
        read_trigger_event,      /* readout routine */
        },
 
-      {"Scaler",               /* equipment name */
-       3, TRIGGER_ALL,         /* event ID, trigger mask */
-       "BIF",                  /* event buffer */
+      {"Scaler",                /* equipment name */
+       3, 0,                    /* event ID, trigger mask */
+       "BIF",                   /* event buffer */
        EQ_PERIODIC | EQ_EB | 
-       EQ_MANUAL_TRIG,    /* equipment type */
+       EQ_MANUAL_TRIG,          /* equipment type */
        0,                       /* event source */
        "MIDAS",                 /* format */
        TRUE,                    /* enabled */
