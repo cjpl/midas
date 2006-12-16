@@ -1163,6 +1163,9 @@ int main(unsigned int argc, char **argv)
       status = db_create_record(hDB, 0, str, strcomb(ebuilder_str));
    }
 
+   /* initialize ss_getchar */
+   ss_getchar(0);
+
    /* Scan fragments... will stay in */
    status = scan_fragment();
    printf("%s-Out of scan_fragment\n", frontend_name);
@@ -1170,6 +1173,9 @@ int main(unsigned int argc, char **argv)
    /* Detach all source from midas */
    printf("%s-Unbooking\n", frontend_name);
    source_unbooking();
+
+   /* reset terminal */
+   ss_getchar(TRUE);
 
    ebuilder_exit();
 
