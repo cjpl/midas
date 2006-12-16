@@ -283,7 +283,7 @@ INT load_fragment(void)
    if (nfragment > 1)
       printf("Found %d fragments for event building\n", nfragment);
    else
-      printf("Found one fragment for event building\n", nfragment);
+      printf("Found one fragment for event building\n");
 
    /* Point to the Ebuilder settings */
    /* Set fragment_add function based on the format */
@@ -316,6 +316,8 @@ INT scan_fragment(void)
 
    /* Get equipment pointer, only one eqp for now */
    eq_info = &equipment[0].info;
+   status = 0;
+   eq = NULL;
 
    /* Main event loop */
    do {
@@ -696,7 +698,8 @@ INT handFlush()
    if (debug)
       printf("Hand flushing system buffer... \n");
    for (i = 0; i < nfragment; i++) {
-      do {
+      do { 
+         status = 0;
          if (ebset.preqfrag[i]) {
             size = max_event_size;
             status = bm_receive_event(ebch[i].hBuf, ebch[i].pfragment, &size, ASYNC);
@@ -877,8 +880,6 @@ if different then SUCCESS (bm_compose, rpc_sent error)
 */
 INT source_scan(INT fmt, EQUIPMENT_INFO * eq_info)
 {
-   static char bars[] = "|/-\\";
-   static int i_bar;
    static DWORD serial;
    DWORD *plrl;
    BOOL complete;
@@ -886,6 +887,8 @@ INT source_scan(INT fmt, EQUIPMENT_INFO * eq_info)
    INT act_size;
    BOOL found, event_mismatch;
    BANK_HEADER *psbh;
+
+   status = 0;
 
    /* Scan all channels at least once */
    for (i = 0; i < nfragment; i++) {
@@ -1033,7 +1036,7 @@ INT source_scan(INT fmt, EQUIPMENT_INFO * eq_info)
 }
 
 /*--------------------------------------------------------------------*/
-int main(unsigned int argc, char **argv)
+int main(int argc, char **argv)
 {
    INT status, size, rstate;
    unsigned int i;
@@ -1174,10 +1177,10 @@ int main(unsigned int argc, char **argv)
    printf("%s-Unbooking\n", frontend_name);
    source_unbooking();
 
+   ebuilder_exit();
+
    /* reset terminal */
    ss_getchar(TRUE);
-
-   ebuilder_exit();
 
  exit:
    /* Free local memory */
