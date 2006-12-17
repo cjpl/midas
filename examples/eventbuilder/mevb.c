@@ -944,6 +944,7 @@ INT source_scan(INT fmt, EQUIPMENT_INFO * eq_info)
       complete = TRUE;
       /* Check if serial matches */
       found = event_mismatch = FALSE;
+      serial = 0;
       /* Check Serial, mark first serial */
       for (i = 0; i < nfragment; i++) {
          if (ebset.preqfrag[i] && ebset.received[i] && !found) {
@@ -976,7 +977,7 @@ INT source_scan(INT fmt, EQUIPMENT_INFO * eq_info)
       /* Fill reserved header space of destination event with
          final header information */
       bm_compose_event((EVENT_HEADER *) dest_event, eq_info->event_id, eq_info->trigger_mask,
-                       act_size, ebch[0].serial);
+                       act_size, serial);
 
       /* Pass fragments to user with mismatch flag, for final check before assembly */
       status =
@@ -1039,7 +1040,7 @@ INT source_scan(INT fmt, EQUIPMENT_INFO * eq_info)
 int main(int argc, char **argv)
 {
    INT status, size, rstate;
-   unsigned int i;
+   int i;
    BOOL daemon = FALSE;
    HNDLE hEqkey;
    EBUILDER(ebuilder_str);
