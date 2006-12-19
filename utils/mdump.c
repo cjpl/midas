@@ -632,8 +632,10 @@ int main(int argc, char **argv)
       return -1;
    }
 
-   /* connect to experiment */
+   /* do not produce startup message */
+   cm_set_msg_print(MT_ERROR, 0, NULL);
 
+   /* connect to experiment */
    status = cm_connect_experiment(host_name, expt_name, "mdump", 0);
    if (status != CM_SUCCESS)
       return 1;
@@ -642,7 +644,7 @@ int main(int argc, char **argv)
    cm_set_watchdog_params(TRUE, 0);
 #endif
 
-   /* open the "system" buffer, 1M size */
+   /* open the shared memory buffer with proper size */
    status = bm_open_buffer(buf_name, 2*MAX_EVENT_SIZE, &hBufEvent);
    if (status != BM_SUCCESS && status != BM_CREATED) {
       cm_msg(MERROR, "mdump", "bm_open_buffer, unknown buffer");
@@ -801,6 +803,9 @@ int main(int argc, char **argv)
    } while (status != RPC_SHUTDOWN && status != SS_ABORT);
 
  error:
+   /* do not produce shutdown message */
+   cm_set_msg_print(MT_ERROR, 0, NULL);
+
    cm_disconnect_experiment();
 
    return 1;
