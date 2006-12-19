@@ -1325,6 +1325,11 @@ void show_status_page(int refresh, char *cookie_wpwd)
                     &size, TID_STRING, FALSE) == DB_SUCCESS)
       rsprintf("<tr align=center><td colspan=6 bgcolor=#E0E0FF><b>%s</b></td></tr>\n",
                str);
+   size = sizeof(str);
+   if (db_get_value(hDB, 0, "/Experiment/Run parameters/Run Description", str,
+                    &size, TID_STRING, FALSE) == DB_SUCCESS)
+      rsprintf("<tr align=center><td colspan=6 bgcolor=#E0E0FF><b>%s</b></td></tr>\n",
+               str);
 
    /*---- Equipment list ----*/
 
@@ -2955,7 +2960,7 @@ void show_form_query()
    rsprintf("<input type=reset value=\"Reset Form\">\n");
    rsprintf("</tr>\n\n");
 
-  /*---- entry form ----*/
+   /*---- entry form ----*/
 
    time(&now);
    rsprintf("<tr><td colspan=2 bgcolor=#FFFF00>Entry date: %s", ctime(&now));
@@ -4024,7 +4029,7 @@ void show_elog_page(char *path, int path_size)
 void get_elog_url(char *url, int len)
 {
    HNDLE hDB;
-   char str[256], str2[256];
+   char str[256], str2[256], *p;
    int size;
 
    /* redirect to external ELOG if URL present */
@@ -4033,6 +4038,8 @@ void get_elog_url(char *url, int len)
    if (db_get_value(hDB, 0, "/Elog/URL", str, &size, TID_STRING, FALSE) == DB_SUCCESS) {
       if (str[0] == ':') {
          strcpy(str2, referer);
+         while ((p = strrchr(str2, '/')) != NULL && p > str2 && *(p-1) != '/')
+            *p = 0;
          if (strrchr(str2+5, ':'))
             *strrchr(str2+5, ':') = 0;
          if (str2[strlen(str2)-1] == '/')
