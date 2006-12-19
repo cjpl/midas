@@ -799,26 +799,26 @@ INT source_unbooking()
 {
    INT i, status;
 
-   /* Skip unbooking if already done */
-   if (ebch[0].pfragment == NULL)
-      return EB_SUCCESS;
-
    /* unbook all source channels */
    for (i = 0; i < nfragment; i++) {
-      bm_empty_buffers();
 
-      /* Remove event ID registration */
-      status = bm_delete_request(ebch[i].req_id);
-      if (debug)
-         printf("unbook: bm_delete_req[%d] req_id:%d stat:%d\n", i, ebch[i].req_id, status);
+   /* Skip unbooking if already done */
+      if (ebch[i].pfragment != NULL) {
+         bm_empty_buffers();
 
-      /* Close source buffer */
-      status = bm_close_buffer(ebch[i].hBuf);
-      if (debug)
-         printf("unbook: bm_close_buffer[%d] hndle:%d stat:%d\n", i, ebch[i].hBuf, status);
-      if (status != BM_SUCCESS) {
-         cm_msg(MERROR, "source_unbooking", "Close buffer[%d] stat:", i, status);
-         return status;
+         /* Remove event ID registration */
+         status = bm_delete_request(ebch[i].req_id);
+         if (debug)
+            printf("unbook: bm_delete_req[%d] req_id:%d stat:%d\n", i, ebch[i].req_id, status);
+
+         /* Close source buffer */
+         status = bm_close_buffer(ebch[i].hBuf);
+         if (debug)
+            printf("unbook: bm_close_buffer[%d] hndle:%d stat:%d\n", i, ebch[i].hBuf, status);
+         if (status != BM_SUCCESS) {
+            cm_msg(MERROR, "source_unbooking", "Close buffer[%d] stat:", i, status);
+            return status;
+         }
       }
    }
 
