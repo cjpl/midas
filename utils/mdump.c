@@ -332,6 +332,8 @@ void process_event(HNDLE hBuf, HNDLE request_id, EVENT_HEADER * pheader, void *p
          yb_any_event_display(pheader, FORMAT_MIDAS, DSP_RAW, dsp_fmt, sbank_name);
       }
       if (evt_display == 0) {
+         /* do not produce shutdown message */
+         cm_set_msg_print(MT_ERROR, 0, NULL);
          cm_disconnect_experiment();
          exit(0);
       }
