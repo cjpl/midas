@@ -264,7 +264,7 @@ int mysql_query_debug(MYSQL * db, char *query)
    int status;
 
    /* comment in this line if you need debugging output */
-   /* cm_msg(MERROR, "mysql_query_debug", "SQL query: %s", query); */
+   cm_msg(MINFO, "mysql_query_debug", "SQL query: %s", query);
 
    status = mysql_query(db, query);
 
@@ -706,6 +706,13 @@ void write_sql(BOOL bor)
    BOOL insert;
    HNDLE hKey, hKeyRoot;
    SQL_LIST *sql_list;
+
+   /* do not update SQL if logger does not write data */
+   size = sizeof(BOOL);
+   write_flag = FALSE;
+   db_get_value(hDB, 0, "/Logger/Write data", &write_flag, &size, TID_BOOL, TRUE);
+   if (!write_flag)
+      return;
 
    /* insert SQL on bor, else update */
    insert = bor;
