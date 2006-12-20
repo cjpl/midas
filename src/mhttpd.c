@@ -5547,8 +5547,7 @@ void show_start_page(void)
    status = db_get_value(hDB, 0, "/Runinfo/Run number", &rn, &size, TID_INT, TRUE);
    assert(status == SUCCESS);
 
-   if (rn < 0)                  // value "zero" is okey
-   {
+   if (rn < 0) { // value "zero" is ok
       cm_msg(MERROR, "show_start_page",
              "aborting on attempt to use invalid run number %d", rn);
       abort();
@@ -5607,8 +5606,13 @@ void show_start_page(void)
             if (key.type == TID_STRING)
                maxlength = key.item_size;
 
-            rsprintf
-                ("<td><input type=text size=80 maxlength=%d name=x%d value=\"%s\"></tr>\n",
+            if (key.type == TID_BOOL) {
+               if (data[0] == 1)
+                  rsprintf("<td><input type=checkbox checked name=x%d value=1></td></tr>\n", n++);
+               else
+                  rsprintf("<td><input type=checkbox name=x%d value=1></td></tr>\n", n++);
+            } else
+               rsprintf("<td><input type=text size=80 maxlength=%d name=x%d value=\"%s\"></tr>\n",
                  maxlength, n++, data_str);
          }
       }
