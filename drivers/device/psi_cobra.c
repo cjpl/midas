@@ -116,20 +116,25 @@ struct timeval timeout;
 static float value_ch1 = 0;
 
    if (channel == 0) {
-      FD_ZERO(&readfds);
-      FD_SET(info->sock, &readfds);
 
-      timeout.tv_sec = 0;
-      timeout.tv_usec = 10000;
+      str[0] = 0;
+      /* continue until nothing received to drain old messages */
+      do {
+         FD_ZERO(&readfds);
+         FD_SET(info->sock, &readfds);
 
-      select(FD_SETSIZE, (void *) &readfds, NULL, NULL, (void *) &timeout);
+         timeout.tv_sec = 0;
+         timeout.tv_usec = 0;
 
-      if (!FD_ISSET(info->sock, &readfds))
-         return FE_SUCCESS;
+         select(FD_SETSIZE, (void *) &readfds, NULL, NULL, (void *) &timeout);
 
-      memset(str, 0, sizeof(str));
-      size = sizeof(addr);
-      n = recvfrom(info->sock, str, sizeof(str), 0, (struct sockaddr *)&addr, &size);
+         if (!FD_ISSET(info->sock, &readfds))
+            break;
+
+         memset(str, 0, sizeof(str));
+         size = sizeof(addr);
+         n = recvfrom(info->sock, str, sizeof(str), 0, (struct sockaddr *)&addr, &size);
+      } while (1);
 
       *pvalue = (float)atof(str+10);
       value_ch1 = (float)atof(str+31);
