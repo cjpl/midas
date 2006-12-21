@@ -14,6 +14,14 @@
 #include <stdarg.h>
 #include "midas.h"
 
+#ifndef _MSC_VER
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <errno.h>
+#include <string.h>
+#endif
+
 /*---- globals -----------------------------------------------------*/
 
 /* multicast address */
