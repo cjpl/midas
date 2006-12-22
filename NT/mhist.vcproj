@@ -20,7 +20,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="\midas\include"
+				AdditionalIncludeDirectories="\midas\include;\mxml"
 				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE"
 				RuntimeLibrary="5"
 				UsePrecompiledHeader="2"
@@ -198,13 +198,7 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="..\src\mxml.c">
-				<FileConfiguration
-					Name="Debug|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						PreprocessorDefinitions="HAVE_STRLCPY"/>
-				</FileConfiguration>
+				RelativePath="..\..\mxml\mxml.c">
 			</File>
 			<File
 				RelativePath="..\SRC\ODB.C">
@@ -227,7 +221,7 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="..\src\strlcpy.c">
+				RelativePath="..\..\mxml\strlcpy.c">
 			</File>
 			<File
 				RelativePath="..\SRC\SYSTEM.C">

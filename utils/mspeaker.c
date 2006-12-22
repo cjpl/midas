@@ -5,20 +5,19 @@
 
   Contents:     Speaks midas messages
 
-  $Id:$
+  $Id$
 
 \********************************************************************/
 
+#include <sapi.h>
 #include "midas.h"
 #include "msystem.h"
-#include "c:\provnt21\include\fbvspch.h"
 
 char mtUserStr[128], mtTalkStr[128];
 BOOL debug = FALSE;
 DWORD shutupTime = 10;
 
-LPSTR lpPhonetics;
-LPSPEECHBLOCK lpSCB;
+ISpVoice* Voice = NULL;				// The voice interface
 
 char *type_name[] = {
    "ERROR",
@@ -28,8 +27,6 @@ char *type_name[] = {
    "TALK",
    "CALL",
 };
-
-/*------------------------------------------------------------------*/
 
 /*----- receive_message --------------------------------------------*/
 
@@ -73,8 +70,6 @@ void receive_message(HNDLE hBuf, HNDLE id, EVENT_HEADER * header, void *message)
             break;
          }
 
-         while (SpeechStatus(lpSCB) != 0)
-            ss_sleep(1000);
          ss_sleep(500);
 
          PlaySound(str, NULL, SND_SYNC);
@@ -82,14 +77,10 @@ void receive_message(HNDLE hBuf, HNDLE id, EVENT_HEADER * header, void *message)
          ss_sleep(200);
       }
 
-      while (SpeechStatus(lpSCB) != 0)
-         ss_sleep(1000);
       ss_sleep(500);
 
-      lpPhonetics = TextToPhonetics(lpSCB, pc, 0);
-      SpeakPhonetics(lpSCB, lpPhonetics);
-      //  save phonetics to .wav file
-      //  WritePhonetics(lpSCB, lpPhonetics, "hello.wav");
+      // Speak!
+      Voice->Speak(message, SPF_DEFAULT, NULL );
    }
 
    return;
@@ -138,22 +129,12 @@ main(int argc, char *argv[])
       }
    }
 
-   //  register to SB
-   // lpSCB = OpenSpeech(0, 0, "Esnb1k8"); 
-   lpSCB = OpenSpeech(0, 0, "ESNB2K6");
-   // lpSCB = OpenSpeech(0, 0, NULL); 
-   if (lpSCB == NULL) {
-      printf("Cannot allocate Speech Control Block\n");
-      goto out;
-   } else {
-      status = lpSCB->speechStatus;
-      if ((status <= E_SPEECH_ERROR) && (status > W_SPEECH_WARNING)) {
-         printf("Open Speech error:%d\n", status);
-         goto out;
-      }
-   }
+	// Initialize COM
+	CoInitialize ( NULL );
 
-   lpPhonetics = NULL;
+	// Create the voice interface object
+	CoCreateInstance ( CLSID_SpVoice, NULL, CLSCTX_ALL, IID_ISpVoice, (void**)&Voice );
+
 
  reconnect:
 
@@ -188,9 +169,11 @@ main(int argc, char *argv[])
 
  out:
 
-   CloseSpeech(lpSCB);
-   if (lpPhonetics)
-      FreePhoneticsBuffer(lpPhonetics);
+	// Shutdown the voice
+	if ( Voice != NULL ) Voice -> Release (); Voice = NULL;
+
+	// Shutdown COM
+	CoUninitialize ();
 
    cm_disconnect_experiment();
    return 1;
