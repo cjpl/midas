@@ -20,7 +20,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="\midas\include"
+				AdditionalIncludeDirectories="\midas\include;\mxml;\Program Files\Microsoft Speech SDK 5.1\include;"
 				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE"
 				RuntimeLibrary="5"
 				UsePrecompiledHeader="2"
@@ -138,27 +138,25 @@
 			Name="Source Files"
 			Filter="cpp;c;cxx;rc;def;r;odl;idl;hpj;bat;for;f90">
 			<File
-				RelativePath="LIB\MIDAS.lib">
+				RelativePath="..\src\midas.c">
 			</File>
 			<File
-				RelativePath="..\utils\mspeaker.c">
-				<FileConfiguration
-					Name="Debug|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="0"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-						BrowseInformation="1"/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="2"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""/>
-				</FileConfiguration>
+				RelativePath="..\src\mrpc.c">
+			</File>
+			<File
+				RelativePath="..\utils\mspeaker.cpp">
+			</File>
+			<File
+				RelativePath="..\..\mxml\mxml.c">
+			</File>
+			<File
+				RelativePath="..\src\odb.c">
+			</File>
+			<File
+				RelativePath="..\..\mxml\strlcpy.c">
+			</File>
+			<File
+				RelativePath="..\src\system.c">
 			</File>
 		</Filter>
 		<Filter
@@ -169,9 +167,13 @@
 			Name="Resource Files"
 			Filter="ico;cur;bmp;dlg;rc2;rct;bin;cnt;rtf;gif;jpg;jpeg;jpe">
 		</Filter>
-		<File
-			RelativePath="..\..\provoice\lib\FBVSPCH.LIB">
-		</File>
+		<Filter
+			Name="Library Files"
+			Filter="">
+			<File
+				RelativePath="..\..\Program Files\Microsoft Speech SDK 5.1\Lib\i386\sapi.lib">
+			</File>
+		</Filter>
 	</Files>
 	<Globals>
 	</Globals>

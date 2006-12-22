@@ -21,7 +21,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="\midas\include,\root\include,\mysql\include,\mxml"
+				AdditionalIncludeDirectories="\midas\include,\root\include,\mysql5\include,\mxml"
 				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;DEBUG_TRANS=2;HAVE_ROOT;HAVE_MYSQL"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="5"
@@ -323,7 +323,7 @@
 			Name="Libraries"
 			Filter="">
 			<File
-				RelativePath="..\..\mysql\lib\opt\mysqlclient.lib">
+				RelativePath="..\..\mysql5\lib\opt\mysqlclient.lib">
 			</File>
 		</Filter>
 	</Files>
