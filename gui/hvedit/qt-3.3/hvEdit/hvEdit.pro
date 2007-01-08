@@ -17,7 +17,7 @@
 #                                                                         #
 ###########################################################################
 
-MidasRoot = /home/nemu/midas/midas-1.9.5
+MidasRoot = $$(MIDASSYS)
 myHome    = $${MidasRoot}/gui/hvedit/qt-3.3
 BaseInc   = $${myHome}/base/include
 BaseSrc   = $${myHome}/base/src
@@ -61,7 +61,7 @@ DEFINES += QT_MIDAS_MSG
 # Attention! the variable HOME needs to be set to the
 #            needed path.
 INCLUDEPATH += ./forms
-INCLUDEPATH += $$(MIDAS_ROOT)/include
+INCLUDEPATH += $$(MIDASSYS)/include
 INCLUDEPATH += $${BaseInc}
 INCLUDEPATH += $${BaseForms}
 
