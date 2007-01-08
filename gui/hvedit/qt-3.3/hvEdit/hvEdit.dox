@@ -1,0 +1,21 @@
+/*********************************************************************************************
+
+  name:       hvEdit.dox
+
+  created by: Andreas Suter, 2007/01/08
+
+  content:    Description of the hvEdit GUI.
+
+  $Id$
+
+**********************************************************************************************/
+
+//--------------------------------------------------------------------------------------------
+/*!
+
+ \mainpage hvEdit - a graphical user interface to manipulate high voltage devices under MIDAS
+
+ <p>This GUI is used to set the high voltages (HV) of a midas
+ experiment. The functionality should be straight forward. For details
+ see the online help of hvEdit.
+*/
