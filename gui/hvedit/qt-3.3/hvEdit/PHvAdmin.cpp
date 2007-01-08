@@ -9,8 +9,8 @@
    <?xml version="1.0" encoding="UTF-8"?>
    <hvEdit xmlns="http://midas.web.psi.ch/hvEdit">
      <comment>
-       hvEdit is looking for this file under $MIDAS_ROOT/gui/hvedit/qt-3.3/hvEdit/bin/xmls
-       where $MIDAS_ROOT is the source directory of midas
+       hvEdit is looking for this file under $MIDASSYS/gui/hvedit/qt-3.3/hvEdit/bin/xmls
+       where $MIDASSYS is the source directory of midas
 
       general:                general settings for hvEdit
         default_settings_dir: the path to the hv settings files
@@ -280,8 +280,8 @@ PHvAdmin::PHvAdmin(char *host, char *exp)
   fMidasOdbHvRoot->append(new QString(str));
 
   QString midasRoot;
-  if (getenv("MIDAS_ROOT"))
-    midasRoot = QString(getenv("MIDAS_ROOT"));
+  if (getenv("MIDASSYS"))
+    midasRoot = QString(getenv("MIDASSYS"));
   else
     midasRoot = QString(".");
   
@@ -296,8 +296,7 @@ PHvAdmin::PHvAdmin(char *host, char *exp)
   // XML Parser part
   QString fln = midasRoot+"/gui/hvedit/qt-3.3/hvEdit/bin/xmls/hvEdit-"+fExp+".xml";
   if (!QFile::exists(fln)) { // administrations file not found
-    cm_msg(MINFO, "PHvAdmin", "hvEdit: Warning: couldn't find startup administration file (%s), will \
-           try some default stuff.", fln.ascii());
+    cm_msg(MINFO, "PHvAdmin", "hvEdit: Warning: couldn't find startup administration file (%s), will try some default stuff.", fln.ascii());
   } else {
     PHvAdminXMLParser handler(this);
     QFile xmlFile(fln);
@@ -308,6 +307,10 @@ PHvAdmin::PHvAdmin(char *host, char *exp)
   }
 
   // check if XML startup file could be read
+  if (fNoOdbRoots == 0) {
+    fNoOdbRoots = 1;
+    cm_msg(MINFO, "PHvAdmin", "hvEdit: Warning: Number of ODB HV roots is 0, will try 1.");
+  }
   if (!fb_MidasOdbHvRoot) {
     cm_msg(MINFO, "PHvAdmin", "hvEdit: Warning: Couldn't read ODB HV root path settings, will "
            "try '%s' instead.", fMidasOdbHvRoot->at(0)->ascii());

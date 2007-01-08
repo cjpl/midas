@@ -27,9 +27,6 @@
  *                                                                         *
  ***************************************************************************/
 
-#include <iostream>
-using namespace std; 
- 
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
@@ -262,7 +259,6 @@ PHvEdit::PHvEdit(PHvAdmin *hvA, PExperiment *cmExp, QWidget *parent, const char 
   connect(fExp, SIGNAL(ReceivedShutdownCmd()), this, SLOT(DisconnectAndQuit()));
   connect(fExp, SIGNAL(NetworkConnectionLost()), this, SLOT(NetworkProblems()));
 
-cout << endl << "termination timeout = " << fHvA->GetTerminationTimeout() << endl;    
   // setup termination timeout handler
   if (fHvA->GetTerminationTimeout() > 0) { // only start termination timeout handler if timeout > 0
     fTerminationTimer = new QTimer();
