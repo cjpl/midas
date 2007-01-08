@@ -3,6 +3,7 @@
 	ProjectType="Visual C++"
 	Version="7.10"
 	Name="mspeaker"
+	ProjectGUID="{B1193F27-5AD8-4C2C-B54C-6EFA38ACDB3B}"
 	SccProjectName=""
 	SccLocalPath="">
 	<Platforms>
