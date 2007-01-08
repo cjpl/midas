@@ -26,12 +26,11 @@
   <general>
     <default_settings_dir>/home/nemu/midas/midas-1.9.5/gui/hvedit/qt-3.3/hvEdit/hv_settings</default_settings_dir>
     <default_doc_dir>/home/nemu/midas/midas-1.9.5/gui/hvedit/qt-3.3/hvEdit/doc</default_doc_dir>
-    <no_of_hv_odb_roots>2</no_of_hv_odb_roots>
+    <no_of_hv_odb_roots>1</no_of_hv_odb_roots>
     <termination_timeout>15</termination_timeout>
   </general>
   <odb_keys>
     <hv_root>/Equipment/HV</hv_root>
-    <hv_root>/Equipment/HV Detectors</hv_root>
     <hv_names>Settings/Names</hv_names>
     <hv_demand>Variables/Demand</hv_demand>
     <hv_measured>Variables/Measured</hv_measured>

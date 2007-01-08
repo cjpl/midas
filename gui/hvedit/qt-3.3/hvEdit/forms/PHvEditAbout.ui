@@ -1,4 +1,4 @@
-<!DOCTYPE UI><UI version="3.1" stdsetdef="1">
+<!DOCTYPE UI><UI version="3.3" stdsetdef="1">
 <class>PHvEditAbout</class>
 <widget class="QDialog">
     <property name="name">
@@ -8,8 +8,8 @@
         <rect>
             <x>0</x>
             <y>0</y>
-            <width>225</width>
-            <height>106</height>
+            <width>253</width>
+            <height>134</height>
         </rect>
     </property>
     <property name="caption">
@@ -39,28 +39,12 @@
     </widget>
     <widget class="QLabel">
         <property name="name">
-            <cstring>fHvEdit_textLabel</cstring>
-        </property>
-        <property name="geometry">
-            <rect>
-                <x>100</x>
-                <y>10</y>
-                <width>109</width>
-                <height>34</height>
-            </rect>
-        </property>
-        <property name="text">
-            <string>&lt;b&gt;&lt;font size="+4"&gt;HVEdit...&lt;/font&gt;&lt;/b&gt;</string>
-        </property>
-    </widget>
-    <widget class="QLabel">
-        <property name="name">
             <cstring>fAbout_textLabel</cstring>
         </property>
         <property name="geometry">
             <rect>
                 <x>90</x>
-                <y>50</y>
+                <y>60</y>
                 <width>120</width>
                 <height>70</height>
             </rect>
@@ -71,10 +55,26 @@ Paul Scherrer Institut
 Switzerland&lt;/p&gt;</string>
         </property>
     </widget>
+    <widget class="QLabel">
+        <property name="name">
+            <cstring>fHvEdit_textLabel</cstring>
+        </property>
+        <property name="geometry">
+            <rect>
+                <x>100</x>
+                <y>10</y>
+                <width>145</width>
+                <height>45</height>
+            </rect>
+        </property>
+        <property name="text">
+            <string>&lt;b&gt;&lt;font size="+4"&gt;HVEdit...&lt;/font&gt;&lt;/b&gt;</string>
+        </property>
+    </widget>
 </widget>
 <images>
     <image name="image0">
-        <data format="XPM.GZ" length="1331">789c85d3c14ac4301006e07b9f2234b7225977a5e0223e82e251100f69d2a91e5641d78388efee2493b433d9741d4ae94fbea66933dd74eaf1e14e759be6f3688faf4eb917fba13aff75387c3f3ddffe34edd54ee1b157dbf6a2698d72eafefd6d0cd780d7fa32568896e2f596a2a60840710ab1b7fdbeb721ba105def76343a861828c58162bed7e70810d7104b63596386a51c0d98d9684d8891d2e030169e4f493681247a4292c964318c2c86e2901027c9d834cd908c20cb7b712389347552332511668508a3232985305a2ec67b5f33e2d3f8715c3579bfd78c5926023470ee59d858139a09a06a2299b08221c40c6e5a9e6536a88499d71249d5848fcc48cdc48da037120651364334e63f931b6dcdf0de4b265736b23d61c5f0ae0149c8a0e06dc30d6453b61e009fa6f82f0a04277b5aa804ce185eedef4df30788e346cb</data>
+        <data format="PNG" length="475">89504e470d0a1a0a0000000d4948445200000020000000200806000000737a7af4000001a2494441545885b5974d6ec23010463f575cca23b1e8a287c0dc850587490ed125eae45295dc4564773c8e7fe2904f420222e7bd7186b130cc8cad90259f7cf104f88b0d00587dad127e01e6b2aedbca47171c001e007df78303bc15a37720c29fb940f8de3fd04c80d7aacf04343c6cf9d6f59a442f1c108fa005efcd1e782290dca4008f0df0008c7e44037000b8c4771b37946975fe083c1118ddf22370a0f0087442f5f1eea2098fc0bb054a390aef122855ff0e38209bb090e4ee027e14dc25908c64357cfc2ff99a84b536ae5d9665df599045c1e9fa2f515d67ccfaaa64b809e9babe9a128d740b2c4bbedda5d38e2895d29f659a4d18a227a1fe154888bbb964adbbb9789d392da45ba005d7501d777398e60944e4a5445da0e3c0a96def9644581324aa02facc2f0d9f56f5b5149bd05af206eb2032cf6d78cfd60f09948ede774d3fd99499c0d9709ddd4d78aa80ac9e5fc0cfe778e57777073afa233e020d07da706636d33c8df8e5027be14732cd139239602d7939d7cf86cb5c80635533b3093fa9de99204771f6d76c34350959b53e8cde26a0456434f45481bdf90374f9d7a3e9dcee7f0000000049454e44ae426082</data>
     </image>
 </images>
 <layoutdefaults spacing="6" margin="11"/>
