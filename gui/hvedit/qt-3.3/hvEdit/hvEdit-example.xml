@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<hvEdit-example xmlns="http://midas.web.psi.ch/hvEdit-example">
+  <comment>
+    hvEdit is looking for this file under $MIDAS_ROOT/gui/hvedit/qt-3.3/hvEdit/bin/xmls
+    where $MIDAS_ROOT is the source directory of midas
+
+    general:                general settings for hvEdit
+      default_settings_dir: the path to the hv settings files
+      default_doc_dir:      the path to the hvEdit help files
+      no_of_hv_odb_roots:   number of hv roots. In the LEM experiment there are
+                            2 such roots, one handles the tertiary beam line (FUG's)
+                            the other all the detector high voltages, i.e. MCP's, PM's etc.
+      termination_timeout:  timeout in (min). If within this timeout there is no user action,
+                            hvEdit will terminate. Setting termination_timeout to a negative
+                            number means that this feature will be disabled.
+    odb_key:                MIDAS online data base (ODB) pathes or realtive pathes
+      hv_root:              ODB path to the HV root. Various HV roots are allowed, though the
+                            number must be entered in the general section with the label
+                            no_of_hv_odb_roots.
+      hv_names:             relative ODB path where to find the channel names
+      hv_demand:            relative ODB path where to find the hv demand values
+      hv_measured:          relative ODB path where to find the hv measured values
+      hv_current:           relative ODB path where to find the measured currents
+      hv_current_limit:     relative ODB path where to find the current limits
+  </comment>
+  <general>
+    <default_settings_dir>/home/nemu/midas/midas-1.9.5/gui/hvedit/qt-3.3/hvEdit/hv_settings</default_settings_dir>
+    <default_doc_dir>/home/nemu/midas/midas-1.9.5/gui/hvedit/qt-3.3/hvEdit/doc</default_doc_dir>
+    <no_of_hv_odb_roots>2</no_of_hv_odb_roots>
+    <termination_timeout>15</termination_timeout>
+  </general>
+  <odb_keys>
+    <hv_root>/Equipment/HV</hv_root>
+    <hv_root>/Equipment/HV Detectors</hv_root>
+    <hv_names>Settings/Names</hv_names>
+    <hv_demand>Variables/Demand</hv_demand>
+    <hv_measured>Variables/Measured</hv_measured>
+    <hv_current>Variables/Current</hv_current>
+    <hv_current_limit>Settings/Current Limit</hv_current_limit>
+  </odb_keys>
+</hvEdit-example>

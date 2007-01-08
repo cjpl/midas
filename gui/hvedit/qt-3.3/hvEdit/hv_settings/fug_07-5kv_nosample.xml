@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<HV xmlns="http://nemu.web.psi.ch/HV">
+<comment>
+chHV in (kV),
+chCurrentLimit in (mA)
+</comment>
+<hvDeviceName>
+FUG
+</hvDeviceName>
+<hvCh name="Moderator">
+  <chNo>1</chNo>
+  <name>Moderator</name>
+  <hvDemand>7.5</hvDemand>
+  <currentLimit>0.006</currentLimit>
+</hvCh>
+<hvCh name="Mod_Guard">
+  <chNo>2</chNo>
+  <name>Mod_Guard</name>
+  <hvDemand>6.0</hvDemand>
+  <currentLimit>0.006</currentLimit>
+</hvCh>
+<hvCh name="Mod_Grid">
+  <chNo>3</chNo>
+  <name>Mod_Grid</name>
+  <hvDemand>5.2</hvDemand>
+  <currentLimit>0.005</currentLimit>
+</hvCh>
+<hvCh name="Lense_1">
+  <chNo>4</chNo>
+  <name>Lense_1</name>
+  <hvDemand>4.25</hvDemand>
+  <currentLimit>0.002</currentLimit>
+</hvCh>
+<hvCh name="Mirror">
+  <chNo>5</chNo>
+  <name>Mirror</name>
+  <hvDemand>7.5</hvDemand>
+  <currentLimit>0.002</currentLimit>
+</hvCh>
+<hvCh name="Lense_2">
+  <chNo>6</chNo>
+  <name>Lense_2</name>
+  <hvDemand>7.0</hvDemand>
+  <currentLimit>0.002</currentLimit>
+</hvCh>
+<hvCh name="Lense_3">
+  <chNo>7</chNo>
+  <name>Lense_3</name>
+  <hvDemand>4.11</hvDemand>
+  <currentLimit>0.002</currentLimit>
+</hvCh>
+<hvCh name="RA-L">
+  <chNo>8</chNo>
+  <name>RA-L</name>
+  <hvDemand>5.2</hvDemand>
+  <currentLimit>0.001</currentLimit>
+</hvCh>
+<hvCh name="RA-R">
+  <chNo>9</chNo>
+  <name>RA-R</name>
+  <hvDemand>5.2</hvDemand>
+  <currentLimit>0.001</currentLimit>
+</hvCh>
+<hvCh name="Sample_G1">
+  <chNo>10</chNo>
+  <name>Sample_G1</name>
+  <hvDemand>0</hvDemand>
+  <currentLimit>0.001</currentLimit>
+</hvCh>
+<hvCh name="Sample_G2">
+  <chNo>11</chNo>
+  <name>Sample_G2</name>
+  <hvDemand>0</hvDemand>
+  <currentLimit>0.001</currentLimit>
+</hvCh>
+<hvCh name="Sample">
+  <chNo>12</chNo>
+  <name>Sample</name>
+  <hvDemand>0</hvDemand>
+  <currentLimit>0.001</currentLimit>
+</hvCh>
+</HV>

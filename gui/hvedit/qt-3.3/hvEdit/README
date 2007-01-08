@@ -1,0 +1,50 @@
+---------------------------------------------------------
+README file for hvEdit
+
+$Id$
+---------------------------------------------------------
+
+Before trying to install hvEdit you should read this file
+which explains shortly how hvEdit is working and hence
+what changes needed in order to use it for a particular MIDAS
+experiment.
+
+A few things to know:
+
+* in the hvEdit.pro file two variables 'MidasRoot' and 'myHome' are defined.
+  'MidasRoot' tells where to find the midas source directory, whereas 'myHome'
+  identifies the path to the hvEdit source code. By default the executable
+  and the startup file are installed under $myHome/bin and its subdirectories.
+  
+* hvEdit assumes that a system variable $MIDAS_ROOT exists. $MIDAS_ROOT should
+  hold the path to the midas source directory. Unfortunately, in midas it is
+  only required to have the varialbe $MIDASSYS pointing to the installation
+  directory.
+  
+* hvEdit is working with a startup file 'hvEdit-expName.xml' where 'expName'
+  is the name of the experiment. In this distribution there is an example
+  startup file 'hvEdit-example.xml' holding the necessary tags. It is 
+  installed in a subdirectory 'xmls'.
+  
+  This xml startup file holds the following informations:
+    
+    general:                general settings for hvEdit
+      default_settings_dir: the path to the hv settings files
+      default_doc_dir:      the path to the hvEdit help files
+      no_of_hv_odb_roots:   number of hv roots. In the LEM experiment there are
+                            2 such roots, one handles the tertiary beam line (FUG's)
+                            the other all the detector high voltages, i.e. MCP's, PM's etc.
+      termination_timeout:  timeout in (min). If within this timeout there is no user action,
+                            hvEdit will terminate. Setting termination_timeout to a negative
+                            number means that this feature will be disabled.
+    odb_key:                MIDAS online data base (ODB) pathes or realtive pathes
+      hv_root:              ODB path to the HV root. Various HV roots are allowed, though the
+                            number must be entered in the general section with the label
+                            no_of_hv_odb_roots.
+      hv_names:             relative ODB path where to find the channel names
+      hv_demand:            relative ODB path where to find the hv demand values
+      hv_measured:          relative ODB path where to find the hv measured values
+      hv_current:           relative ODB path where to find the measured currents
+      hv_current_limit:     relative ODB path where to find the current limits
+      
+   

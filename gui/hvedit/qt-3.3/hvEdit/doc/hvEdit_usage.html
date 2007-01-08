@@ -1,0 +1,295 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+  <title>hvEdit Help</title>
+  <meta http-equiv="content-type"
+ content="text/html; charset=ISO-8859-1">
+  <meta name="author" content="PSIUser">
+  <link rel="stylesheet" href="style.css" type="text/css">
+</head>
+<body>
+<table border="0" cellpadding="0" cellspacing="0" width="100%">
+  <tbody>
+    <tr>
+      <td valign="top" width="210"><a
+ href="http://www.psi.ch/index.shtml"><img src="images/psi_logo_150.gif"
+ alt="" align="middle" border="0" height="55" width="150"></a> &nbsp; <br>
+      </td>
+      <td valign="top"><br>
+      </td>
+      <td align="right" valign="middle" width="70"><a
+ href="http://lmu.web.psi.ch/lem/index.html"><img
+ src="images/precess.gif" alt="" align="middle" border="0" height="49"
+ width="40"></a> <br>
+      </td>
+    </tr>
+  </tbody>
+</table>
+<hr size="2" width="100%">
+<div align="right">&nbsp;
+<table border="0" cellpadding="0" cellspacing="0" width="250">
+  <tbody>
+    <tr>
+      <td valign="top" width="75"><a href="hvEdit_install.html">next</a><br>
+      </td>
+      <td valign="top" width="95"><a href="hvEdit_intro.html">previous</a><br>
+      </td>
+      <td valign="top" width="125"><a href="hvEdit_Help.html">table of
+contents</a><br>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</div>
+<h1>Usage</h1>
+<p> This GUI is used to set the high voltages (HV) of a midas
+experiment, especially the low energy muon spin rotation (LEmuSR)
+experiment at PSI. The
+functionality is rather straight forward and hence the different menus
+are
+going to be explained only very briefly.
+</p>
+<p> The startup syntax is:<br>
+<b>
+<pre>   hvEdit [--help | -h hostName -e expName]</pre>
+</b><br>
+where <b><tt>hostName</tt></b> is the name of the host computer
+running the MIDAS high voltage experiment,
+<b><tt>expName</tt></b> is the name of the MIDAS experiment.
+</p>
+<h3>Menus</h3>
+<ol>
+  <li><a href="hvEdit_usage.html#open">Open</a></li>
+  <li><a href="hvEdit_usage.html#save">Save</a></li>
+  <li><a href="hvEdit_usage.html#print">Print</a></li>
+  <li><a href="hvEdit_usage.html#exit">Exit</a></li>
+</ol>
+<p>This will disconnect 'hvEdit' from the current experiment and flash
+the GUI.
+</p>
+<h2><a name="open"><img src="images/fileopen.png" height="22" width="22">
+Open</a></h2>
+<p>An open dialog pops up were one can choose from predefined HV
+settings. They are
+device specific and therefore only a HV table for this specfic device
+will be loaded.
+Details about the structure of the 'hv'-files are found under <a
+ href="hvEdit_usage.html#tech_notes">'Technicalities'</a>.
+</p>
+<h2><a name="save"><img src="images/filesave.png"> Save</a></h2>
+<p>A current HV setting can be saved to a file. The file name has to
+look like
+<strong>deviceName_whatever.xml</strong>, e.g. fug-18kv_nosample.xml
+(for details see
+<a href="hvEdit_usage.html#tech_notes">'Technicalities'</a>).
+</p>
+<h2><a name="print"><img src="images/print.png"> Print</a></h2>
+<p>Prints the current 'HV/Current Limit' settings of the shown device.
+</p>
+<h2><a name="exit"><img src="images/close.png"> Exit</a></h2>
+<p>Closes the connection to <code>midas</code> properly, before
+exiting the
+program.
+</p>
+<h3>Buttons</h3>
+<img src="images/hvEdit_main.png" ismap="ismap" usemap="#img_table_main">
+<h3><a name="hv_cl_tab">HV/Current Limit Tabs</a></h3>
+<p>For each device a tab list exists. In the 'HV' tab the HV
+informations are shown.
+Only the column 'HV Demand' is not read only, i.e. here by click onto a
+cell the
+value can be changed interactively. The same can be achieved by using
+the 'Input:'
+field together with the 'Set' button (to the right of the tabs).
+Analogous the
+'Current Limit' tab shows the informations related to current. Here
+only the column
+'Current Limit' is editable. The editable columns allow multiselect of
+cells, i.e. with mouse cursor whole regions can be selected, the
+'shift' key together with the
+keyboard allow the same. By pressing 'ctrl' multiselection of
+disjointed cells can
+be selected. In case of multiselection the value has to be changed via
+the
+'Input:/Set' facility.
+</p>
+<h3><a name="devices">Device list</a></h3>
+<p>Here the list of <em>all</em> the available HV devcies of the
+experiment
+are shown. To switch from one device to another, just select the
+corresponding
+name and the HV/Current Limit tabs will switch.
+</p>
+<h3><a name="host_exp">Host/Experiment</a></h3>
+<p>This fields show the connection informations, host name and the
+chosen
+experiment. It serves only as an information.
+</p>
+<h3><a name="switch_all_ch_off">Switch All Channels Off</a></h3>
+<p>Switches <strong>all</strong> the HV channels off, i.e. <strong>all</strong>
+channels of <strong>all</strong> devices are going to be set to zero!
+This is a usefull HV emergency exit, so to speak.
+</p>
+<h3><a name="set">Set HV values</a></h3>
+<p>The 'Input' field and the 'Set' button are one unit. A value entered
+will
+change the selected cells of 'HV Demand' or 'Current Limit', <em>only</em>
+if
+the 'Set' button is going to be pressed. This is a measure of
+precaution against
+nervous guys.
+</p>
+<h3><a name="increment">Increments</a></h3>
+<p> The buttons <code>-1.0, -0.1, ...</code> are HV increments in
+units of (kV).
+They act on the selected cells of 'HV Demand'.
+</p>
+<h3><a name="zero">Zero</a></h3>
+<p>This switches the selected (see HV/Current Limit tabs) to <strong>zero</strong>.
+The cell of the 'HV Demand' table is multi selective.
+</p>
+<h3><a name="restore">Restore</a></h3>
+<p>Restores the value of the selected 'HV Demand' cells to their last
+value.
+</p>
+<h3><a name="select_all">Select All</a></h3>
+<p>Select the whole 'HV Demand' column of active device.
+</p>
+<h3><a name="scale_by_factor">Scale by factor</a></h3>
+<p>Scales selected HV demand elements by the factor given in the text
+field. </p>
+<h2><a name="tech_notes">Technicalities</a></h2>
+<p> hvEdit is using a XML startup file in order to get the MIDAS ODB
+pathes and hvEdit specific settings. The name of this XML startup file
+is assumed to be <b><tt>hvEdit-expName.xml</tt></b>
+where
+<b><tt>expName</tt></b> is the MIDAS experiment name, e.g. <b><tt>hvEdit-example.xml</tt></b>.
+This XML startup file should be placed in the directory <b><tt>$HVEDIT_ROOT/bin/xmls</tt></b>.
+<b><tt>$HVEDIT_ROOT</tt></b> is the directory where <b><tt>hvEdit</tt></b> shall be installed 
+(see also the <b><tt>hvEdit.pro</tt></b> file for details). The notation <b><tt>$HVEDIT_ROOT</tt></b> 
+is only used for convenience, no system variable with such a name is needed.<br>
+</p>
+<h3>The file 'hvEdit-expName.xml'</h3>
+<p>The file <b><tt>hvEdit-expName.xml</tt></b> is going to be read at
+the startup of 'hvEdit'. It should
+be placed in <b><tt>$HVEDIT_ROOT/bin/xmls</tt></b>. If <b><tt>hvEdit-expName.xml</tt></b>
+does not
+exist, some hardcoded default values will be tried, which will not
+always work properly. <b><tt>hvEdit-expName.xml</tt></b> serves as an
+startup administration file in which path information etc. are stored.
+The XML syntax tags of the file are:
+</p>
+<ul>
+  <li><b><tt>&lt;comment&gt;&lt;/comment&gt;</tt></b> user friendly
+comments about the purpose and structure of the XML file.</li>
+  <li><b><tt>&lt;general&gt;&lt;/general&gt;</tt></b> a grouping key to
+indicate that the enclosed tags are general setup tags.</li>
+  <li><b><tt>&lt;default_settings_dir&gt;&lt;/default_settings_dir&gt;</tt></b>
+path to where hvEdit is looking for default hv tables (see next
+section).</li>
+  <li><b><tt>&lt;default_doc_dir&gt;&lt;/default_doc_dir&gt;</tt></b>
+path where this docu is found.</li>
+  <li><b><tt>&lt;no_of_hv_odb_roots&gt;&lt;/no_of_hv_odb_roots&gt;</tt></b>
+indicates how many high voltage ODB roots should be handled.</li>
+  <li><b><tt>&lt;termination_timeout&gt;&lt;/termination_timeout&gt;</tt></b>
+timeout in (min). If within this timeout there is no user action, hvEdit will terminate. 
+Setting termination_timeout to a negative number means that this feature will be disabled.</li>
+  <li><b><tt>&lt;odb_keys&gt;&lt;/odb_keys&gt;</tt></b> MIDAS ODB
+specific tag grouping.</li>
+  <li><b><tt>&lt;hv_root&gt;&lt;/hv_root&gt;</tt></b> ODB path to the
+HV root. Various HV roots are allowed, though the number must be
+entered in the general section with the label no_of_hv_odb_roots.</li>
+  <li><b><tt>&lt;hv_names&gt;&lt;/hv_names&gt;</tt></b> relative ODB
+path to the HV channel names</li>
+  <li><b><tt>&lt;hv_demand&gt;&lt;/hv_demand&gt;</tt></b> relative ODB
+path to the HV demand values</li>
+  <li><b><tt>&lt;hv_measured&gt;&lt;/hv_measured&gt;</tt></b> relative
+ODB path to the HV measured values</li>
+  <li><b><tt>&lt;hv_current&gt;&lt;/hv_current&gt;</tt></b> relative
+ODB path to the measured current values</li>
+  <li><b><tt>&lt;hv_current_limit&gt;&lt;/hv_current_limit&gt;</tt></b>
+relative ODB path to the current limit values</li>
+</ul>
+<p>An example XML startup file is:
+</p>
+<table bgcolor="AliceBlue" border="1" cellspacing="0" width="100%">
+  <tbody>
+    <tr>
+      <td>
+      <pre>&lt;?xml version="1.0" encoding="UTF-8"?&gt;<br>&lt;hvEdit-generic xmlns="http://midas.web.psi.ch/hvEdit-generic"&gt;<br>  &lt;comment&gt;<br>    hvEdit is looking for this file under $HOME/midas/bin/.lemXMLs<br><br>    general:                general settings for hvEdit<br>      default_settings_dir: the path to the hv settings files<br>      default_doc_dir:      the path to the hvEdit help files<br>      no_of_hv_odb_roots:   number of hv roots. In the LEM experiment there are<br>                            2 such roots, one handles the tertiary beam line (FUG's)<br>                            the other all the detector high voltages, i.e. MCP's, PM's etc.<br>      termination_timeout:  timeout in (min). If within this timeout there is no user action,<br>                            hvEdit will terminate. Setting termination_timeout to a negative<br>                            number means that this feature will be disabled.<br><br>    odb_key:                MIDAS online data base (ODB) pathes or realtive pathes<br>      hv_root:              ODB path to the HV root. Various HV roots are allowed, though the<br>                            number must be entered in the general section with the label<br>                            no_of_hv_odb_roots.<br>      hv_names:             relative ODB path where to find the channel names<br>      hv_demand:            relative ODB path where to find the hv demand values<br>      hv_measured:          relative ODB path where to find the hv measured values<br>      hv_current:           relative ODB path where to find the measured currents<br>      hv_current_limit:     relative ODB path where to find the current limits<br>  &lt;/comment&gt;<br>  &lt;general&gt;<br>    &lt;default_settings_dir&gt;/home/nemu/midas/midas-1.9.5/gui/hvedit/qt-3.3/hvEdit/hv_settings&lt;/default_settings_dir&gt;<br>    &lt;default_doc_dir&gt;/home/nemu/midas/midas-1.9.5/gui/hvedit/qt-3.3/hvEdit/doc&lt;/default_doc_dir&gt;<br>    &lt;no_of_hv_odb_roots&gt;2&lt;/no_of_hv_odb_roots&gt;<br>    &lt;termination_timeout&gt;15&lt;/termination_timeout&gt;<br>  &lt;/general&gt;<br>  &lt;odb_keys&gt;<br>    &lt;hv_root&gt;/Equipment/HV&lt;/hv_root&gt;<br>    &lt;hv_root&gt;/Equipment/HV Detectors&lt;/hv_root&gt;<br>    &lt;hv_names&gt;Settings/Names&lt;/hv_names&gt;<br>    &lt;hv_demand&gt;Variables/Demand&lt;/hv_demand&gt;<br>    &lt;hv_measured&gt;Variables/Measured&lt;/hv_measured&gt;<br>    &lt;hv_current&gt;Variables/Current&lt;/hv_current&gt;<br>    &lt;hv_current_limit&gt;Settings/Current Limit&lt;/hv_current_limit&gt;<br>  &lt;/odb_keys&gt;<br>&lt;/hvEdit-generic&gt;<br></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+<h3>The 'hv'-file structure</h3>
+<p>'hvEdit' can read default HV settings from files with the extension
+'xml' (in fact, it is a XML file).
+These files do have the following XML key words:</p>
+<ul>
+  <li><b><tt>&lt;HV xmlns="http://nemu.web.psi.ch/HV"&gt;&lt;/HV&gt;</tt></b>
+where xmlns the namesapce tag is.</li>
+  <li><b><tt>&lt;comment&gt;&lt;/comment&gt;</tt></b> encloses any
+usefull comment. This comment is not used by the hvEdit.</li>
+  <li><b><tt>&lt;hvDeviceName&gt;&lt;/hvDeviceName&gt;</tt></b>
+encloses the name of the HV device. hvEdit will check this name against
+the ODB.</li>
+  <li><b><tt>&lt;hvCh name="channel name"&gt;&lt;/hvCh&gt;</tt></b>
+start of a HV channel definition. The attribute name is only there for
+convenience and is the same as the <tt>&lt;name&gt;&lt;/name&gt;</tt>
+label described below. The following tags are part of <b><tt>&lt;hvCh&gt;&lt;/hvCh&gt;</tt></b></li>
+  <ul>
+    <li><b><tt>&lt;chNo&gt;&lt;/chNo&gt;</tt></b> encloses the channel
+number of the HV channel</li>
+    <li><b><tt>&lt;name&gt;&lt;/name&gt;</tt></b> encloses the name of
+the HV channel.</li>
+    <li><b><tt>&lt;hvDemand&gt;&lt;/hvDemand&gt;</tt></b> encloses the
+HV demand value in (kV).</li>
+    <li><b><tt>&lt;currentLimit&gt;&lt;/currentLimit&gt;</tt></b>
+encloses the current limit value in (mA).</li>
+  </ul>
+</ul>
+<p> An example for such a 'hv'-file is:
+</p>
+<table bgcolor="AliceBlue" border="1" cellspacing="0" width="100%">
+  <tbody>
+    <tr>
+      <td>
+      <pre>&lt;?xml version="1.0" encoding="ISO-8859-1"?&gt;<br>&lt;HV xmlns="http://nemu.web.psi.ch/HV"&gt;<br>&lt;comment&gt;<br>chHV in (kV),<br>chCurrentLimit in (mA)<br>&lt;/comment&gt;<br>&lt;hvDeviceName&gt;<br>TD<br>&lt;/hvDeviceName&gt;<br>&lt;hvCh name="C_Foil"&gt;<br>  &lt;chNo&gt;1&lt;/chNo&gt;<br>  &lt;name&gt;C_Foil&lt;/name&gt;<br>  &lt;hvDemand&gt;-3.73&lt;/hvDemand&gt;<br>  &lt;currentLimit&gt;0.001&lt;/currentLimit&gt;<br>&lt;/hvCh&gt;<br>&lt;hvCh name="Front"&gt;<br>  &lt;chNo&gt;2&lt;/chNo&gt;<br>  &lt;name&gt;Front&lt;/name&gt;<br>  &lt;hvDemand&gt;-3.54&lt;/hvDemand&gt;<br>  &lt;currentLimit&gt;0.001&lt;/currentLimit&gt;<br>&lt;/hvCh&gt;<br>&lt;hvCh name="Back"&gt;<br>  &lt;chNo&gt;3&lt;/chNo&gt;<br>  &lt;name&gt;Back&lt;/name&gt;<br>  &lt;hvDemand&gt;-3.95&lt;/hvDemand&gt;<br>  &lt;currentLimit&gt;0.001&lt;/currentLimit&gt;<br>&lt;/hvCh&gt;<br>&lt;hvCh name="MCP3"&gt;<br>  &lt;chNo&gt;4&lt;/chNo&gt;<br>  &lt;name&gt;MCP3&lt;/name&gt;<br>  &lt;hvDemand&gt;-3.35&lt;/hvDemand&gt;<br>  &lt;currentLimit&gt;2&lt;/currentLimit&gt;<br>&lt;/hvCh&gt;<br>&lt;/HV&gt;<br></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+<hr size="2" width="100%">
+<div align="right">&nbsp;
+<table border="0" cellpadding="0" cellspacing="0" width="250">
+  <tbody>
+    <tr>
+      <td valign="top" width="75"><a href="hvEdit_install.html">next</a><br>
+      </td>
+      <td valign="top" width="95"><a href="hvEdit_intro.html">previous</a><br>
+      </td>
+      <td valign="top" width="125"><a href="hvEdit_Help.html">table of
+contents</a><br>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</div>
+<!--
+Here the map table for the image 'images/hvEdit_main.png' is placed 
+-->
+<map name="img_table_main">
+<area coords="1,198,325,542" href="hvEdit_usage.html#hv_cl_tab">
+<area coords="1,83,320,183" href="hvEdit_usage.html#devices">
+<area coords="339,94,480,178" href="hvEdit_usage.html#host_exp">
+<area coords="345,218,468,262"
+ href="hvEdit_usage.html#switch_all_ch_off">
+<area coords="345,267,468,321" href="hvEdit_usage.html#set">
+<area coords="345,322,468,411" href="hvEdit_usage.html#increment">
+<area coords="345,416,405,439" href="hvEdit_usage.html#zero">
+<area coords="410,416,469,439" href="hvEdit_usage.html#restore">
+<area coords="345,443,468,467" href="hvEdit_usage.html#select_all">
+<area coords="345,505,468,534" href="hvEdit_usage.html#scale_by_factor">
+</map>
+</body>
+</html>
