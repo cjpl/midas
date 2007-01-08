@@ -1100,6 +1100,29 @@ typedef struct {
 
 } ANALYZE_REQUEST;
 
+/* output file information, maps to /<analyzer>/Output */
+typedef struct {
+   char filename[256];
+   BOOL rwnt;
+   BOOL histo_dump;
+   char histo_dump_filename[256];
+   BOOL clear_histos;
+   char last_histo_filename[256];
+   BOOL events_to_odb;
+   char global_memory_name[8];
+} ANA_OUTPUT_INFO;
+
+#define ANA_OUTPUT_INFO_STR "\
+Filename = STRING : [256] run%05d.asc\n\
+RWNT = BOOL : 0\n\
+Histo Dump = BOOL : 0\n\
+Histo Dump Filename = STRING : [256] his%05d.rz\n\
+Clear histos = BOOL : 1\n\
+Last Histo Filename = STRING : [256] last.rz\n\
+Events to ODB = BOOL : 1\n\
+Global Memory Name = STRING : [8] ONLN\n\
+"
+
 /*---- Tests -------------------------------------------------------*/
 
 typedef struct {

@@ -47,6 +47,8 @@
 
 #endif                          /* HAVE_HBOOK */
 
+ANA_OUTPUT_INFO out_info;
+
 /*------------------------------------------------------------------*/
 
 #ifdef USE_ROOT
@@ -324,18 +326,6 @@ static struct {
    0}
 };
 
-/* output file information, maps to /<analyzer>/Output */
-static struct {
-   char filename[256];
-   BOOL rwnt;
-   BOOL histo_dump;
-   char histo_dump_filename[256];
-   BOOL clear_histos;
-   char last_histo_filename[256];
-   BOOL events_to_odb;
-   char global_memory_name[8];
-} out_info;
-
 FILE *out_file;
 #ifdef HAVE_ZLIB
 BOOL out_gzip;
@@ -362,17 +352,6 @@ Host = STRING : [32] \n\
 Events received = DOUBLE : 0\n\
 Events per sec. = DOUBLE : 0\n\
 Events written = DOUBLE : 0\n\
-"
-
-#define OUT_INFO_STR "\
-Filename = STRING : [256] run%05d.asc\n\
-RWNT = BOOL : 0\n\
-Histo Dump = BOOL : 0\n\
-Histo Dump Filename = STRING : [256] his%05d.rz\n\
-Clear histos = BOOL : 1\n\
-Last Histo Filename = STRING : [256] last.rz\n\
-Events to ODB = BOOL : 1\n\
-Global Memory Name = STRING : [8] ONLN\n\
 "
 
 /*-- interprete command line parameters ----------------------------*/
@@ -5699,7 +5678,7 @@ int main(int argc, char *argv[])
 
    /* create ODB structure for output */
    sprintf(str, "/%s/Output", analyzer_name);
-   db_check_record(hDB, 0, str, OUT_INFO_STR, TRUE);
+   db_check_record(hDB, 0, str, ANA_OUTPUT_INFO_STR, TRUE);
    db_find_key(hDB, 0, str, &hkey);
    assert(hkey);
    size = sizeof(out_info);
