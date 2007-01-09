@@ -15,12 +15,10 @@
       general:                general settings for hvEdit
         default_settings_dir: the path to the hv settings files
         default_doc_dir:      the path to the hvEdit help files
-        no_of_hv_odb_roots:   number of hv roots. In the LEM experiment there are
-                              2 such roots, one handles the tertiary beam line (FUG's)
-                              the other all the detector high voltages, i.e. MCP's, PM's etc.
         termination_timeout:  timeout in (min). If within this timeout there is no user action,
                               hvEdit will terminate. Setting termination_timeout to a negative
                               number means that this feature will be disabled.
+        demand_in_V:          flag showing if the demand HV's are in V (true) or kV (false)
       odb_key:                MIDAS online data base (ODB) pathes or realtive pathes
         hv_root:              ODB path to the HV root. Various HV roots are allowed, though the
                               number must be entered in the general section with the label
@@ -34,8 +32,8 @@
      <general>
        <default_settings_dir>/home/nemu/midas/experiment/nemu/hv_settings</default_settings_dir>
        <default_doc_dir>/home/nemu/midas/lemQt/hvEdit/doc</default_doc_dir>
-       <no_of_hv_odb_roots>2</no_of_hv_odb_roots>
        <termination_timeout>15</termination_timeout>
+       <demand_in_V>true</demand_in_V>
      </general>
      <odb_keys>
        <hv_root>/Equipment/HV</hv_root>
@@ -126,8 +124,8 @@ bool PHvAdminXMLParser::startElement( const QString&, const QString&,
     fKey = defaultDocDir;
   } else if (qName == "termination_timeout") {
     fKey = terminationTimeout;
-  } else if (qName == "no_of_hv_odb_roots") {
-    fKey = noOdbRoots;
+  } else if (qName == "demand_in_V") {
+    fKey = demandInV;
   } else if (qName == "hv_root") {
     if (fOdbRootCounter == 0)
       fHva->fMidasOdbHvRoot->remove();
@@ -186,8 +184,12 @@ bool PHvAdminXMLParser::characters(const QString& str)
       fHva->fTerminationTimeout = str.toInt();
       fHva->fb_TerminationTimeout = true;
       break;
-    case noOdbRoots:
-      fHva->fNoOdbRoots = str.toInt();
+    case demandInV:
+      if (str == "true")
+        fHva->fDemandInV = true;
+      else
+        fHva->fDemandInV = false;
+      fHva->fb_DemandInVPresent = true;
       break;
     case hvRoot:
       root = QString(str.ascii()).stripWhiteSpace();
@@ -229,10 +231,7 @@ bool PHvAdminXMLParser::characters(const QString& str)
  */
 bool PHvAdminXMLParser::endDocument()
 {
-  if (fOdbRootCounter != fHva->fNoOdbRoots) {
-    cm_msg(MINFO, "PHvAdmin", "hvEdit: Warning: number of ODB roots found (%d) is different from "
-           "what is claimed (%d) in the startup configure file.", fOdbRootCounter, fHva->fNoOdbRoots);
-  }
+  fHva->fNoOdbRoots = fOdbRootCounter;
 
   return TRUE;
 }
@@ -260,6 +259,7 @@ PHvAdmin::PHvAdmin(char *host, char *exp)
   fb_DefaultDirHvSettings    = false;
   fb_DefaultDirDocu          = false;
   fb_TerminationTimeout      = false;
+  fb_DemandInVPresent        = false;
   fb_MidasOdbHvRoot          = false;
   fb_MidasOdbHvNames         = false;
   fb_MidasOdbHvDemand        = false;
@@ -272,6 +272,9 @@ PHvAdmin::PHvAdmin(char *host, char *exp)
 
   // init termination timeout to a 15 (min) default
   fTerminationTimeout = 15;
+  
+  // init demand in V default
+  fDemandInV = true;
 
   // init ODB path strings to some sensible defaults
   QString str("/Equipment/HV");
@@ -338,6 +341,10 @@ PHvAdmin::PHvAdmin(char *host, char *exp)
   if (!fb_TerminationTimeout) {
     cm_msg(MINFO, "PHvAdmin", "hvEdit: Warning: Couldn't read termination timeout, will "
            "try '%d' instead.", fTerminationTimeout);
+  }
+  if (!fb_DemandInVPresent) {
+    cm_msg(MINFO, "PHvAdmin", "hvEdit: Warning: Couldn't read 'demand in V' flag, will "
+           "try '%d' instead.", fDemandInV);
   }
 }
 

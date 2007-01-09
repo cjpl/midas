@@ -165,9 +165,10 @@ is assumed to be <b><tt>hvEdit-expName.xml</tt></b>
 where
 <b><tt>expName</tt></b> is the MIDAS experiment name, e.g. <b><tt>hvEdit-example.xml</tt></b>.
 This XML startup file should be placed in the directory <b><tt>$HVEDIT_ROOT/bin/xmls</tt></b>.
-<b><tt>$HVEDIT_ROOT</tt></b> is the directory where <b><tt>hvEdit</tt></b> shall be installed 
-(see also the <b><tt>hvEdit.pro</tt></b> file for details). The notation <b><tt>$HVEDIT_ROOT</tt></b> 
-is only used for convenience, no system variable with such a name is needed.<br>
+<b><tt>$HVEDIT_ROOT</tt></b> is the directory where <b><tt>hvEdit</tt></b>
+shall be installed (see also the <b><tt>hvEdit.pro</tt></b> file for
+details). The notation <b><tt>$HVEDIT_ROOT</tt></b> is only used for
+convenience, no system variable with such a name is needed.<br>
 </p>
 <h3>The file 'hvEdit-expName.xml'</h3>
 <p>The file <b><tt>hvEdit-expName.xml</tt></b> is going to be read at
@@ -189,11 +190,12 @@ path to where hvEdit is looking for default hv tables (see next
 section).</li>
   <li><b><tt>&lt;default_doc_dir&gt;&lt;/default_doc_dir&gt;</tt></b>
 path where this docu is found.</li>
-  <li><b><tt>&lt;no_of_hv_odb_roots&gt;&lt;/no_of_hv_odb_roots&gt;</tt></b>
-indicates how many high voltage ODB roots should be handled.</li>
   <li><b><tt>&lt;termination_timeout&gt;&lt;/termination_timeout&gt;</tt></b>
-timeout in (min). If within this timeout there is no user action, hvEdit will terminate. 
-Setting termination_timeout to a negative number means that this feature will be disabled.</li>
+timeout in (min). If within this timeout there is no user action,
+hvEdit will terminate. Setting termination_timeout to a negative number
+means that this feature will be disabled.</li>
+  <li><b><tt>&lt;demand_in_V&gt;&lt;demand_in_V&gt; </tt></b>flag
+showing if the demand HV's are in V (true) or kV (false)</li>
   <li><b><tt>&lt;odb_keys&gt;&lt;/odb_keys&gt;</tt></b> MIDAS ODB
 specific tag grouping.</li>
   <li><b><tt>&lt;hv_root&gt;&lt;/hv_root&gt;</tt></b> ODB path to the
@@ -216,7 +218,7 @@ relative ODB path to the current limit values</li>
   <tbody>
     <tr>
       <td>
-      <pre>&lt;?xml version="1.0" encoding="UTF-8"?&gt;<br>&lt;hvEdit-generic xmlns="http://midas.web.psi.ch/hvEdit-generic"&gt;<br>  &lt;comment&gt;<br>    hvEdit is looking for this file under $HOME/midas/bin/.lemXMLs<br><br>    general:                general settings for hvEdit<br>      default_settings_dir: the path to the hv settings files<br>      default_doc_dir:      the path to the hvEdit help files<br>      no_of_hv_odb_roots:   number of hv roots. In the LEM experiment there are<br>                            2 such roots, one handles the tertiary beam line (FUG's)<br>                            the other all the detector high voltages, i.e. MCP's, PM's etc.<br>      termination_timeout:  timeout in (min). If within this timeout there is no user action,<br>                            hvEdit will terminate. Setting termination_timeout to a negative<br>                            number means that this feature will be disabled.<br><br>    odb_key:                MIDAS online data base (ODB) pathes or realtive pathes<br>      hv_root:              ODB path to the HV root. Various HV roots are allowed, though the<br>                            number must be entered in the general section with the label<br>                            no_of_hv_odb_roots.<br>      hv_names:             relative ODB path where to find the channel names<br>      hv_demand:            relative ODB path where to find the hv demand values<br>      hv_measured:          relative ODB path where to find the hv measured values<br>      hv_current:           relative ODB path where to find the measured currents<br>      hv_current_limit:     relative ODB path where to find the current limits<br>  &lt;/comment&gt;<br>  &lt;general&gt;<br>    &lt;default_settings_dir&gt;/home/nemu/midas/midas-1.9.5/gui/hvedit/qt-3.3/hvEdit/hv_settings&lt;/default_settings_dir&gt;<br>    &lt;default_doc_dir&gt;/home/nemu/midas/midas-1.9.5/gui/hvedit/qt-3.3/hvEdit/doc&lt;/default_doc_dir&gt;<br>    &lt;no_of_hv_odb_roots&gt;2&lt;/no_of_hv_odb_roots&gt;<br>    &lt;termination_timeout&gt;15&lt;/termination_timeout&gt;<br>  &lt;/general&gt;<br>  &lt;odb_keys&gt;<br>    &lt;hv_root&gt;/Equipment/HV&lt;/hv_root&gt;<br>    &lt;hv_root&gt;/Equipment/HV Detectors&lt;/hv_root&gt;<br>    &lt;hv_names&gt;Settings/Names&lt;/hv_names&gt;<br>    &lt;hv_demand&gt;Variables/Demand&lt;/hv_demand&gt;<br>    &lt;hv_measured&gt;Variables/Measured&lt;/hv_measured&gt;<br>    &lt;hv_current&gt;Variables/Current&lt;/hv_current&gt;<br>    &lt;hv_current_limit&gt;Settings/Current Limit&lt;/hv_current_limit&gt;<br>  &lt;/odb_keys&gt;<br>&lt;/hvEdit-generic&gt;<br></pre>
+      <pre>&lt;?xml version="1.0" encoding="UTF-8"?&gt;<br>&lt;hvEdit-generic xmlns="http://midas.web.psi.ch/hvEdit-generic"&gt;<br>  &lt;comment&gt;<br>    hvEdit is looking for this file under $MIDASSYS/gui/hvedit/qt-3.3/hvEdit/bin/xmls<br>    where $MIDASSYS is the source directory of midas<br><br>    general:                general settings for hvEdit<br>      default_settings_dir: the path to the hv settings files<br>      default_doc_dir:      the path to the hvEdit help files<br>      termination_timeout:  timeout in (min). If within this timeout there is no user action,<br>                            hvEdit will terminate. Setting termination_timeout to a negative<br>                            number means that this feature will be disabled.<br>      demand_in_V:          flag showing if the demand HV's are in V (true) or kV (false)<br><br>    odb_key:                MIDAS online data base (ODB) pathes or realtive pathes<br>      hv_root:              ODB path to the HV root. Various HV roots are allowed, though the<br>                            number must be entered in the general section with the label<br>                            no_of_hv_odb_roots.<br>      hv_names:             relative ODB path where to find the channel names<br>      hv_demand:            relative ODB path where to find the hv demand values<br>      hv_measured:          relative ODB path where to find the hv measured values<br>      hv_current:           relative ODB path where to find the measured currents<br>      hv_current_limit:     relative ODB path where to find the current limits<br>  &lt;/comment&gt;<br>  &lt;general&gt;<br>    &lt;default_settings_dir&gt;/home/nemu/midas/midas-1.9.5/gui/hvedit/qt-3.3/hvEdit/hv_settings&lt;/default_settings_dir&gt;<br>    &lt;default_doc_dir&gt;/home/nemu/midas/midas-1.9.5/gui/hvedit/qt-3.3/hvEdit/doc&lt;/default_doc_dir&gt;<br>    &lt;termination_timeout&gt;15&lt;/termination_timeout&gt;<br>    &lt;demand_in_V&gt;true&lt;/demand_in_V&gt;<br>  &lt;/general&gt;<br>  &lt;odb_keys&gt;<br>    &lt;hv_root&gt;/Equipment/HV&lt;/hv_root&gt;<br>    &lt;hv_root&gt;/Equipment/HV Detectors&lt;/hv_root&gt;<br>    &lt;hv_names&gt;Settings/Names&lt;/hv_names&gt;<br>    &lt;hv_demand&gt;Variables/Demand&lt;/hv_demand&gt;<br>    &lt;hv_measured&gt;Variables/Measured&lt;/hv_measured&gt;<br>    &lt;hv_current&gt;Variables/Current&lt;/hv_current&gt;<br>    &lt;hv_current_limit&gt;Settings/Current Limit&lt;/hv_current_limit&gt;<br>  &lt;/odb_keys&gt;<br>&lt;/hvEdit-generic&gt;<br></pre>
       </td>
     </tr>
   </tbody>
@@ -243,7 +245,7 @@ number of the HV channel</li>
     <li><b><tt>&lt;name&gt;&lt;/name&gt;</tt></b> encloses the name of
 the HV channel.</li>
     <li><b><tt>&lt;hvDemand&gt;&lt;/hvDemand&gt;</tt></b> encloses the
-HV demand value in (kV).</li>
+HV demand value in (V) or (kV) depending in the 'demand_in_V' flag.</li>
     <li><b><tt>&lt;currentLimit&gt;&lt;/currentLimit&gt;</tt></b>
 encloses the current limit value in (mA).</li>
   </ul>
