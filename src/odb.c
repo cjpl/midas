@@ -6000,7 +6000,7 @@ INT db_save_xml_key(HNDLE hDB, HNDLE hKey, INT level, MXML_WRITER * writer)
       }
 
       for (index = 0;; index++) {
-         db_enum_key(hDB, hKey, index, &hSubkey);
+         db_enum_link(hDB, hKey, index, &hSubkey);
 
          if (!hSubkey)
             break;
