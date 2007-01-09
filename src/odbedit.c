@@ -650,11 +650,18 @@ INT cmd_dir(char *line, INT * cursor)
       while (pc > test_key && (*pc == ' ' || *pc == '"'))
          *pc-- = 0;
       if (db_find_key(hDB, 0, test_key, &hSubkey) == DB_SUCCESS) {
+         if (strlen(key_name) > 0 && key_name[strlen(key_name)-1] != ' ')
+            strcat(key_name, " ");
+
          /* retrieve key data */
          db_get_key(hDB, hSubkey, &key);
          size = sizeof(data);
          db_get_data(hDB, hSubkey, data, &size, key.type);
-         db_sprintf(str, data, size, 0, key.type);
+         
+         if (key.type == TID_STRING || key.type == TID_LINK)
+            sprintf(str, "\"%s\"", data);
+         else
+            db_sprintf(str, data, size, 0, key.type);
 
          strcpy(line, head);
          strcat(line, key_name);
@@ -1601,12 +1608,13 @@ void command_loop(char *host_name, char *exp_name, char *cmd, char *start_dir)
             if (strchr(str, '[')) {
                if (*(strchr(str, '[') + 1) == '*')
                   index1 = -1;
-               else if (strchr((strchr(str, '[') + 1), '.')) {
+               else if (strchr((strchr(str, '[') + 1), '.') || 
+                        strchr((strchr(str, '[') + 1), '-')) {
                   index1 = atoi(strchr(str, '[') + 1);
                   pc = strchr(str, '[') + 1;
-                  while (*pc != '.')
+                  while (*pc != '.' && *pc != '-')
                      pc++;
-                  while (*pc == '.')
+                  while (*pc == '.' || *pc == '-')
                      pc++;
                   index2 = atoi(pc);
                } else
