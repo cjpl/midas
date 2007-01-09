@@ -229,35 +229,52 @@ BOOL check_abort(int flags, int l)
 }
 
 
-INT print_key(HNDLE hDB, HNDLE hKey, KEY * key, INT level, void *info)
+INT print_key(HNDLE hDB, HNDLE hKey, KEY * pkey, INT level, void *info)
 {
    INT i, size, status;
    static char data_str[50000], line[256];
    DWORD delta;
    PRINT_INFO *pi;
+   KEY key;
 
    if (ls_abort)
       return 0;
 
    pi = (PRINT_INFO *) info;
+   memcpy(&key, pkey, sizeof(KEY));
 
    /* if pattern set, check if match */
-   if (pi->pattern[0] && !match(pi->pattern, key->name))
+   if (pi->pattern[0] && !match(pi->pattern, pkey->name))
       return SUCCESS;
 
    size = sizeof(data);
    if (pi->flags & PI_VALUE) {
       /* only print value */
-      if (key->type != TID_KEY) {
-         status = db_get_data(hDB, hKey, data, &size, key->type);
-         if (status == DB_NO_ACCESS)
-            strcpy(data_str, "<no read access>");
+      if (key.type != TID_KEY) {
+         status = db_get_data(hDB, hKey, data, &size, key.type);
+         data_str[0] = 0;
+
+         /* resolve links */
+         if (key.type == TID_LINK) {
+            sprintf(data_str, "%s -> ", data);         
+            status = db_find_key(hDB, 0, data, &hKey);
+            if (status == DB_SUCCESS) {
+               db_get_key(hDB, hKey, &key);
+               size = sizeof(data);
+               status = db_get_data(hDB, hKey, data, &size, key.type);
+            }
+         }
+
+         if (status == DB_NO_KEY)
+            strcat(data_str, "<cannot resolve link>");
+         else if (status == DB_NO_ACCESS)
+            strcat(data_str, "<no read access>");
          else
-            for (i = 0; i < key->num_values; i++) {
+            for (i = 0; i < key.num_values; i++) {
                if (pi->flags & PI_HEX)
-                  db_sprintfh(data_str, data, key->item_size, i, key->type);
+                  db_sprintfh(data_str+strlen(data_str), data, key.item_size, i, key.type);
                else
-                  db_sprintf(data_str, data, key->item_size, i, key->type);
+                  db_sprintf(data_str+strlen(data_str), data, key.item_size, i, key.type);
 
                if ((pi->index != -1 && i == pi->index) || pi->index == -1)
                   printf("%s\n", data_str);
@@ -269,12 +286,12 @@ INT print_key(HNDLE hDB, HNDLE hKey, KEY * key, INT level, void *info)
       /* print key name with value */
       memset(line, ' ', 80);
       line[80] = 0;
-      sprintf(line + level * 4, "%s", key->name);
+      sprintf(line + level * 4, "%s", key.name);
       if (pi->index != -1)
          sprintf(line + strlen(line), "[%d]", pi->index);
       line[strlen(line)] = ' ';
 
-      if (key->type == TID_KEY) {
+      if (key.type == TID_KEY) {
          if (pi->flags & PI_LONG)
             sprintf(line + 32, "DIR");
          else
@@ -283,22 +300,38 @@ INT print_key(HNDLE hDB, HNDLE hKey, KEY * key, INT level, void *info)
          if (check_abort(pi->flags, ls_line++))
             return 0;
       } else {
-         status = db_get_data(hDB, hKey, data, &size, key->type);
-         if (status == DB_NO_ACCESS)
-            strcpy(data_str, "<no read access>");
+
+         status = db_get_data(hDB, hKey, data, &size, key.type);
+         data_str[0] = 0;
+
+         /* resolve links */
+         if (key.type == TID_LINK) {
+            sprintf(data_str, "%s -> ", data);         
+            status = db_find_key(hDB, 0, data, &hKey);
+            if (status == DB_SUCCESS) {
+               db_get_key(hDB, hKey, &key);
+               size = sizeof(data);
+               status = db_get_data(hDB, hKey, data, &size, key.type);
+            }
+         }
+
+         if (status == DB_NO_KEY)
+            strcat(data_str, "<cannot resolve link>");
+         else if (status == DB_NO_ACCESS)
+            strcat(data_str, "<no read access>");
          else {
             if (pi->flags & PI_HEX)
-               db_sprintfh(data_str, data, key->item_size, 0, key->type);
+               db_sprintfh(data_str+strlen(data_str), data, key.item_size, 0, key.type);
             else
-               db_sprintf(data_str, data, key->item_size, 0, key->type);
+               db_sprintf(data_str+strlen(data_str), data, key.item_size, 0, key.type);
          }
 
          if (pi->flags & PI_LONG) {
-            sprintf(line + 32, "%s", rpc_tid_name(key->type));
+            sprintf(line + 32, "%s", rpc_tid_name(key.type));
             line[strlen(line)] = ' ';
-            sprintf(line + 40, "%d", key->num_values);
+            sprintf(line + 40, "%d", key.num_values);
             line[strlen(line)] = ' ';
-            sprintf(line + 46, "%d", key->item_size);
+            sprintf(line + 46, "%d", key.item_size);
             line[strlen(line)] = ' ';
 
             db_get_key_time(hDB, hKey, &delta);
@@ -314,26 +347,26 @@ INT print_key(HNDLE hDB, HNDLE hKey, KEY * key, INT level, void *info)
                sprintf(line + 52, ">99d");
             line[strlen(line)] = ' ';
 
-            sprintf(line + 57, "%d", key->notify_count);
+            sprintf(line + 57, "%d", key.notify_count);
             line[strlen(line)] = ' ';
 
-            if (key->access_mode & MODE_READ)
+            if (key.access_mode & MODE_READ)
                line[61] = 'R';
-            if (key->access_mode & MODE_WRITE)
+            if (key.access_mode & MODE_WRITE)
                line[62] = 'W';
-            if (key->access_mode & MODE_DELETE)
+            if (key.access_mode & MODE_DELETE)
                line[63] = 'D';
-            if (key->access_mode & MODE_EXCLUSIVE)
+            if (key.access_mode & MODE_EXCLUSIVE)
                line[64] = 'E';
 
-            if (key->type == TID_STRING && strchr(data_str, '\n'))
+            if (key.type == TID_STRING && strchr(data_str, '\n'))
                strcpy(line + 66, "<multi-line>");
-            else if (key->num_values == 1)
+            else if (key.num_values == 1)
                strcpy(line + 66, data_str);
             else
                line[66] = 0;
-         } else if (key->num_values == 1)
-            if (key->type == TID_STRING && strchr(data_str, '\n'))
+         } else if (key.num_values == 1)
+            if (key.type == TID_STRING && strchr(data_str, '\n'))
                strcpy(line + 32, "<multi-line>");
             else
                strcpy(line + 32, data_str);
@@ -342,18 +375,18 @@ INT print_key(HNDLE hDB, HNDLE hKey, KEY * key, INT level, void *info)
 
          printf("%s\n", line);
 
-         if (key->type == TID_STRING && strchr(data_str, '\n'))
+         if (key.type == TID_STRING && strchr(data_str, '\n'))
             puts(data_str);
 
          if (check_abort(pi->flags, ls_line++))
             return 0;
 
-         if (key->num_values > 1) {
-            for (i = 0; i < key->num_values; i++) {
+         if (key.num_values > 1) {
+            for (i = 0; i < key.num_values; i++) {
                if (pi->flags & PI_HEX)
-                  db_sprintfh(data_str, data, key->item_size, i, key->type);
+                  db_sprintfh(data_str, data, key.item_size, i, key.type);
                else
-                  db_sprintf(data_str, data, key->item_size, i, key->type);
+                  db_sprintf(data_str, data, key.item_size, i, key.type);
 
                memset(line, ' ', 80);
                line[80] = 0;
