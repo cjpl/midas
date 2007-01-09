@@ -248,7 +248,7 @@ Useful for register access. See example in @ref mvme_open()
 @param vme_addr source address (VME location).
 @return MVME_SUCCESS              
 */
-DWORD EXPRT mvme_read_value(MVME_INTERFACE *vme, mvme_addr_t vme_addr);
+unsigned int EXPRT mvme_read_value(MVME_INTERFACE *vme, mvme_addr_t vme_addr);
 
 /********************************************************************/
 /**
@@ -272,7 +272,7 @@ Useful for register access. See example in @ref mvme_open()
 @param value Value to be written to the VME bus
 @return MVME_SUCCESS
 */
-int EXPRT mvme_write_value(MVME_INTERFACE *vme, mvme_addr_t vme_addr, DWORD value);
+int EXPRT mvme_write_value(MVME_INTERFACE *vme, mvme_addr_t vme_addr, unsigned int value);
 
 /********************************************************************/
 /**
