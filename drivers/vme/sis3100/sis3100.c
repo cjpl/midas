@@ -215,7 +215,7 @@ int mvme_write(MVME_INTERFACE *vme, mvme_addr_t vme_addr, mvme_locaddr_t *src, m
 
 /*------------------------------------------------------------------*/
 
-int mvme_write_value(MVME_INTERFACE *vme, mvme_addr_t vme_addr, DWORD value)
+int mvme_write_value(MVME_INTERFACE *vme, mvme_addr_t vme_addr, unsigned int value)
 {
    mvme_size_t n;
    DWORD status;
@@ -382,9 +382,9 @@ int mvme_read(MVME_INTERFACE *vme, mvme_locaddr_t *dst, mvme_addr_t vme_addr, mv
 
 /*------------------------------------------------------------------*/
 
-DWORD mvme_read_value(MVME_INTERFACE *vme, mvme_addr_t vme_addr)
+unsigned int mvme_read_value(MVME_INTERFACE *vme, mvme_addr_t vme_addr)
 {
-   DWORD data;
+   unsigned int data;
    int status;
 #ifdef OS_WINNT
    struct SIS1100_Device_Struct *hvme;
