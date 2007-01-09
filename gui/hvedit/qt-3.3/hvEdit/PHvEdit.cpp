@@ -250,8 +250,28 @@ PHvEdit::PHvEdit(PHvAdmin *hvA, PExperiment *cmExp, QWidget *parent, const char 
   fCurrentLimit_table->setColumnWidth(CL_NAME, 80);
   fCurrentLimit_table->setColumnWidth(CL_CURRENT, 60);
   fCurrentLimit_table->setColumnWidth(CL_CURRENT_LIMIT, 85);
+  
+  // init flag which is indicating if the demand HV is in 'V' (true) or 'kV' (false) 
+  fDemandInV = fHvA->GetDemandInV();
+  
+  // set increment/decrement labels properly
+  if (fDemandInV) { // everything in V
+    fM100_pushButton->setText("-1000");
+    fM010_pushButton->setText("-100");
+    fM001_pushButton->setText("-10");
+    fP100_pushButton->setText("+1000");
+    fP010_pushButton->setText("+100");
+    fP001_pushButton->setText("+10");
+  } else { // everything in kV
+    fM100_pushButton->setText("-1.0");
+    fM010_pushButton->setText("-0.1");
+    fM001_pushButton->setText("-0.01");
+    fP100_pushButton->setText("+1.0");
+    fP010_pushButton->setText("+0.1");
+    fP001_pushButton->setText("+0.01");
+  }
 
-  fDevName = QString("");
+  fDevName = QString("");  
 
   // connect signals with slots
   connect(fHv_table, SIGNAL(valueChanged(int, int)), SLOT(HvValueChanged(int, int)));
@@ -457,9 +477,10 @@ BOOL PHvEdit::UpdateChannelDefinitions()
  */
 void PHvEdit::UpdateTable(int ch, bool forced_update)
 {
-  int  i, offset;
-  char name[256], demand[256], measured[256], current[256], current_limit[256];
-  bool need_update, device_changed;
+  int   i, offset;
+  char  name[256], demand[256], measured[256], current[256], current_limit[256];
+  bool  need_update, device_changed;
+  float hv_tol;
 
   if (ch>=0) { // channel number given
     // get correct index
@@ -504,12 +525,18 @@ void PHvEdit::UpdateTable(int ch, bool forced_update)
     need_update = FALSE;
     device_changed = FALSE;
 
+    // tolerance depends on the demand HV units
+    if (fDemandInV)
+      hv_tol = 1.0;   // 1 V since V units
+    else
+      hv_tol = 0.001; // 1V since kV units
+    
     if (f_iGroup == f_iGroupCache) {
       for (i=0 ; i<f_nChannels ; i++) {
         if (fGroup[i] == f_iGroup &&
-            ((fabs(fDemand[i]-fDemandCache[i])>0.001) ||
-             (fabs(fMeasured[i]-fMeasuredCache[i])>0.001) ||
-	     (fabs(fCurrent[i]-fCurrentCache[i])>0.001) ||
+            ((fabs(fDemand[i]-fDemandCache[i])>hv_tol) ||
+             (fabs(fMeasured[i]-fMeasuredCache[i])>hv_tol) ||
+             (fabs(fCurrent[i]-fCurrentCache[i])>0.001) ||
              (fabs(fCurrentLimit[i]-fCurrentLimitCache[i])>0.001))) {
           need_update = TRUE;
           break;
@@ -550,19 +577,19 @@ void PHvEdit::UpdateTable(int ch, bool forced_update)
         fCurrentLimit_table->setItem(i-offset, HV_NAME, new QTableItem(fHv_table, QTableItem::Never, name));
       }
 
-      if ((fabs(fDemand[i]-fDemandCache[i])>0.001) || forced_update) {
+      if ((fabs(fDemand[i]-fDemandCache[i])>hv_tol) || forced_update) {
         // overwrite demand cell
         fHv_table->setText(i-offset, HV_DEMAND, QString("%1").arg(fDemand[i],0,'f',3));
         fHv_table->updateCell(i-offset, HV_DEMAND);
       }
 
-      if ((fabs(fMeasured[i]-fMeasuredCache[i])>0.001) || forced_update) {
+      if ((fabs(fMeasured[i]-fMeasuredCache[i])>hv_tol) || forced_update) {
         // overwrite measured cell
         fHv_table->setText(i-offset, HV_MEASURED, QString("%1").arg(fMeasured[i],0,'f',3));
         fHv_table->updateCell(i-offset, HV_MEASURED);
       }
 
-      if ((fabs(fCurrent[i]-fCurrentCache[i])>0.001) || forced_update) {
+      if ((fabs(fCurrent[i]-fCurrentCache[i])>hv_tol) || forced_update) {
         // overwrite current cell
         fHv_table->setText(i-offset, HV_CURRENT, QString("%1").arg(fCurrent[i],0,'f',4));
         fHv_table->updateCell(i-offset, HV_CURRENT);
@@ -570,7 +597,7 @@ void PHvEdit::UpdateTable(int ch, bool forced_update)
         fCurrentLimit_table->updateCell(i-offset, CL_CURRENT);
       }
 
-      if ((fabs(fCurrentLimit[i]-fCurrentLimitCache[i])>0.001) || forced_update) {
+      if ((fabs(fCurrentLimit[i]-fCurrentLimitCache[i])>hv_tol) || forced_update) {
         // overwrite current cell
         fCurrentLimit_table->setText(i-offset, CL_CURRENT_LIMIT, QString("%1").arg(fCurrentLimit[i],0,'f',4));
         fCurrentLimit_table->updateCell(i-offset, CL_CURRENT_LIMIT);
@@ -620,6 +647,13 @@ void PHvEdit::FileOpen()
   reader.parse( source );
 
   PFileList *hvList = new PFileList();
+  
+  // set header properly according to the demand HV units
+  if (fDemandInV)
+    hvList->fHvTable->horizontalHeader()->setLabel(2, tr("HV Demand (V)"));
+  else
+    hvList->fHvTable->horizontalHeader()->setLabel(2, tr("HV Demand (kV)"));
+  
   // check if table is large enough
   if (hvList->fHvTable->numRows()<fNoOfCh) { // add rows
     hvList->fHvTable->insertRows(hvList->fHvTable->numRows(), fNoOfCh-hvList->fHvTable->numRows());
@@ -735,7 +769,10 @@ void PHvEdit::FileSave()
   fputs("<HV xmlns=\"http://midas.web.psi.ch/HV\">\n", fp);
   // write comment
   fputs("<comment>\n", fp);
-  fputs("chHV in (kV),\n", fp);
+  if (fDemandInV)
+    fputs("chHV in (V),\n", fp);
+  else
+    fputs("chHV in (kV),\n", fp);
   fputs("chCurrentLimit in (mA)\n", fp);
   fputs("</comment>\n", fp);
   // write device name
@@ -848,8 +885,12 @@ void PHvEdit::FilePrint()
      p.drawText(kMargin, kMargin+yPos, metrics.width(), fm.lineSpacing(),
                 ExpandTabs | DontClip, "Ch No,  Demand,  Measured,  Current,  CurrentLimit,  Name");
      yPos += fm.lineSpacing();
-     p.drawText(kMargin, kMargin+yPos, metrics.width(), fm.lineSpacing(),
-                ExpandTabs | DontClip, "         (kV)      (kV)       (mA)        (mA)");
+     if (fDemandInV)
+       p.drawText(kMargin, kMargin+yPos, metrics.width(), fm.lineSpacing(),
+                  ExpandTabs | DontClip, "         (V)       (V)        (mA)        (mA)");
+     else
+       p.drawText(kMargin, kMargin+yPos, metrics.width(), fm.lineSpacing(),
+                  ExpandTabs | DontClip, "         (kV)      (kV)       (mA)        (mA)");
      yPos += fm.lineSpacing();
 
      // write data
@@ -862,8 +903,12 @@ void PHvEdit::FilePrint()
        if (str.find(device, 0, FALSE) != -1) { // found
          name = strstr(fName+i*f_nNameLength, "%");
          name++;
-         sprintf(line, "%02d,    %+0.2f,    %+0.2f,     %+0.3f,    %+0.3f,    %s", i-offset+1,
-                 fDemand[i], fMeasured[i], fCurrent[i], fCurrentLimit[i], name);
+         if (fDemandInV)
+           sprintf(line, "%02d,    %+0.2f,    %+0.2f,     %+0.3f,    %+0.3f,    %s", i-offset+1,
+                   fDemand[i], fMeasured[i], fCurrent[i], fCurrentLimit[i], name);
+         else
+           sprintf(line, "%02d,    %+0.1f,    %+0.1f,     %+0.3f,    %+0.3f,    %s", i-offset+1,
+                   fDemand[i], fMeasured[i], fCurrent[i], fCurrentLimit[i], name);
          str = line;
          p.drawText(kMargin, kMargin+yPos, metrics.width(), fm.lineSpacing(),
                     ExpandTabs | DontClip, str);
@@ -1166,7 +1211,10 @@ void PHvEdit::OnRestore()
  */
 void PHvEdit::OnM100()
 {
-  Increment(-1.0f);
+  if (fDemandInV)
+    Increment(-1000.0f);
+  else
+    Increment(-1.0f);
 
   RestartTimeoutTimer();
 }
@@ -1179,7 +1227,10 @@ void PHvEdit::OnM100()
  */
 void PHvEdit::OnM010()
 {
-  Increment(-0.1f);
+  if (fDemandInV)
+    Increment(-100.0f);
+  else
+    Increment(-0.1f);
 
   RestartTimeoutTimer();
 }
@@ -1192,7 +1243,10 @@ void PHvEdit::OnM010()
  */
 void PHvEdit::OnM001()
 {
-  Increment(-0.01f);
+  if (fDemandInV)
+    Increment(-10.0f);
+  else
+    Increment(-0.01f);
 
   RestartTimeoutTimer();
 }
@@ -1205,7 +1259,10 @@ void PHvEdit::OnM001()
  */
 void PHvEdit::OnP100()
 {
-  Increment(1.0f);
+  if (fDemandInV)
+    Increment(1000.0f);
+  else
+    Increment(1.0f);
 
   RestartTimeoutTimer();
 }
@@ -1218,7 +1275,10 @@ void PHvEdit::OnP100()
  */
 void PHvEdit::OnP010()
 {
-  Increment(0.1f);
+  if (fDemandInV)
+    Increment(100.0f);
+  else
+    Increment(0.1f);
 
   RestartTimeoutTimer();
 }
@@ -1231,7 +1291,10 @@ void PHvEdit::OnP010()
  */
 void PHvEdit::OnP001()
 {
-  Increment(0.01f);
+  if (fDemandInV)
+    Increment(10.0f);
+  else
+    Increment(0.01f);
 
   RestartTimeoutTimer();
 }

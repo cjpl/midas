@@ -39,8 +39,8 @@ class PHvAdminXMLParser : public QXmlDefaultHandler
 
   // operations
   private:
-    enum EHvAdminWords {empty, defaultSettingDir, defaultDocDir, noOdbRoots,
-                        terminationTimeout,
+    enum EHvAdminWords {empty, defaultSettingDir, defaultDocDir, 
+                        terminationTimeout, demandInV,
                         hvRoot, hvNames,
                         hvDemand, hvMeasured, hvCurrent, hvCurrentLimit};
 
@@ -72,6 +72,7 @@ class PHvAdmin
     QString fDefaultDirHvSettings;
     QString fDefaultDirDocu;
     int     fTerminationTimeout;
+    bool    fDemandInV;
     QString fMidasOdbHvNames;
     QString fMidasOdbHvDemand;
     QString fMidasOdbHvMeasured;
@@ -80,6 +81,7 @@ class PHvAdmin
     bool    fb_DefaultDirHvSettings;
     bool    fb_DefaultDirDocu;
     bool    fb_TerminationTimeout;
+    bool    fb_DemandInVPresent;
     bool    fb_MidasOdbHvRoot;
     bool    fb_MidasOdbHvNames;
     bool    fb_MidasOdbHvDemand;
@@ -99,6 +101,7 @@ class PHvAdmin
     QString *GetHvDefaultDir() { return &fDefaultDirHvSettings; }
     QString *GetHvDefaultDoc() { return &fDefaultDirDocu; }
     int      GetTerminationTimeout() { return fTerminationTimeout; }
+    bool     GetDemandInV() { return fDemandInV; }
     QString *GetHvOdbNames() { return &fMidasOdbHvNames; }
     QString *GetHvOdbDemand() { return &fMidasOdbHvDemand; }
     QString *GetHvOdbMeasured() { return &fMidasOdbHvMeasured; }

@@ -56,7 +56,7 @@
 typedef struct {
   QString name;         //!< HV channel name
   int     ch;           //!< HV channel number
-  float   demandHV;     //!< HV demand value in (kV)
+  float   demandHV;     //!< HV demand value in (V) or (kV) depending in the demandInV flag
   float   currentLimit; //!< HV current limit (mA)
 } hvLoad;
 
@@ -167,6 +167,8 @@ class PHvEdit : public PHvEditBase
     QString fDevName;            //!< device name found in the HV load file
     int     fNoOfCh;             //!< number of channels found in the HV load file
     hvLoad  fHvLoadData[256];    //!< HV channel information found in the HV load file
+    
+    bool    fDemandInV;          //!< flag indicating if the demand HV is given in V (true) or kV (false)
 
     QTimer  *fTerminationTimer;  //!< timer which terminates hvEdit it there is for too long no user interaction
 

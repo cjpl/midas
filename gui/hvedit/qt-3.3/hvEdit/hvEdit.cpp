@@ -73,7 +73,7 @@ int main(int argc, char *argv[])
     strcpy(exp_name, getenv("MIDAS_EXPT_NAME"));
   else
     strcpy(exp_name, "");
-
+    
   // check argument list
   switch (argc) {
     case 1:
@@ -123,10 +123,23 @@ int main(int argc, char *argv[])
   }
 
   if (strlen(exp_name)==0) {
-    cout << endl << "Cannot obtain experiment name! This needs either to be given explicitly,";
-    cout << endl << "or the environment variable MIDAS_EXPT_NAME needs to be set.";
-    hvEditSyntax(argv[0]);
-    exit(-1);
+    // try to extract the experiment name directly from the ODB
+    INT status;
+    status = cm_connect_experiment1(host_name, exp_name, "hvEdit", NULL,
+                                    DEFAULT_ODB_SIZE, DEFAULT_WATCHDOG_TIMEOUT);
+    HNDLE hDB;
+    status = cm_get_experiment_database(&hDB, NULL);
+    INT  size = NAME_LENGTH;
+    status = db_get_value(hDB, 0, "/Experiment/Name", exp_name, &size, TID_STRING, FALSE);
+    cm_disconnect_experiment();
+    if ((strlen(exp_name)==0) || (status != DB_SUCCESS)) { // failed to extract the name directly from the ODB 
+      cout << endl << "Cannot obtain experiment name! This needs either to be given explicitly,";
+      cout << endl << "or the environment variable MIDAS_EXPT_NAME needs to be set or at least ";
+      cout << endl << "one MIDAS experiment needs to be defined.";
+      cout << endl;
+      hvEditSyntax(argv[0]);
+      exit(-1);
+    }
   }
 
   // host-, exp name to lower case 
