@@ -47,6 +47,7 @@
 #include <qprinter.h>
 #include <qpainter.h>
 #include <qpaintdevicemetrics.h>
+#include <qtooltip.h>
 
 #include "midas.h"
 
@@ -256,12 +257,12 @@ PHvEdit::PHvEdit(PHvAdmin *hvA, PExperiment *cmExp, QWidget *parent, const char 
   
   // set increment/decrement labels properly
   if (fDemandInV) { // everything in V
-    fM100_pushButton->setText("-1000");
-    fM010_pushButton->setText("-100");
-    fM001_pushButton->setText("-10");
-    fP100_pushButton->setText("+1000");
-    fP010_pushButton->setText("+100");
-    fP001_pushButton->setText("+10");
+    fM100_pushButton->setText("-100");
+    fM010_pushButton->setText("-10");
+    fM001_pushButton->setText("-1");
+    fP100_pushButton->setText("+100");
+    fP010_pushButton->setText("+10");
+    fP001_pushButton->setText("+1");
   } else { // everything in kV
     fM100_pushButton->setText("-1.0");
     fM010_pushButton->setText("-0.1");
@@ -269,6 +270,34 @@ PHvEdit::PHvEdit(PHvAdmin *hvA, PExperiment *cmExp, QWidget *parent, const char 
     fP100_pushButton->setText("+1.0");
     fP010_pushButton->setText("+0.1");
     fP001_pushButton->setText("+0.01");
+  }
+  // set the tool tip properly
+  if (fDemandInV) { // everything in V
+    QToolTip::remove(fM100_pushButton);
+    QToolTip::add(fM100_pushButton, "decrease the selected HV by 100 (V)");
+    QToolTip::remove(fM010_pushButton);
+    QToolTip::add(fM010_pushButton, "decrease the selected HV by 10 (V)");
+    QToolTip::remove(fM001_pushButton);
+    QToolTip::add(fM001_pushButton, "decrease the selected HV by 1 (V)");
+    QToolTip::remove(fP100_pushButton);
+    QToolTip::add(fP100_pushButton, "increase the selected HV by 100 (V)");
+    QToolTip::remove(fP010_pushButton);
+    QToolTip::add(fP010_pushButton, "increase the selected HV by 10 (V)");
+    QToolTip::remove(fP001_pushButton);
+    QToolTip::add(fP001_pushButton, "increase the selected HV by 1 (V)");
+  } else { // everything in kV
+    QToolTip::remove(fM100_pushButton);
+    QToolTip::add(fM100_pushButton, "decrease the selected HV by 1.0 (kV)");
+    QToolTip::remove(fM010_pushButton);
+    QToolTip::add(fM010_pushButton, "decrease the selected HV by 0.1 (kV)");
+    QToolTip::remove(fM001_pushButton);
+    QToolTip::add(fM001_pushButton, "decrease the selected HV by 0.01 (kV)");
+    QToolTip::remove(fP100_pushButton);
+    QToolTip::add(fP100_pushButton, "increase the selected HV by 1.0 (kV)");
+    QToolTip::remove(fP010_pushButton);
+    QToolTip::add(fP010_pushButton, "increase the selected HV by 0.1 (kV)");
+    QToolTip::remove(fP001_pushButton);
+    QToolTip::add(fP001_pushButton, "increase the selected HV by 0.01 (kV)");
   }
 
   fDevName = QString("");  
@@ -481,6 +510,7 @@ void PHvEdit::UpdateTable(int ch, bool forced_update)
   char  name[256], demand[256], measured[256], current[256], current_limit[256];
   bool  need_update, device_changed;
   float hv_tol;
+  int   prec;
 
   if (ch>=0) { // channel number given
     // get correct index
@@ -526,10 +556,13 @@ void PHvEdit::UpdateTable(int ch, bool forced_update)
     device_changed = FALSE;
 
     // tolerance depends on the demand HV units
-    if (fDemandInV)
-      hv_tol = 1.0;   // 1 V since V units
-    else
-      hv_tol = 0.001; // 1V since kV units
+    if (fDemandInV) {
+      hv_tol = 0.01;   // 0.01 V since V units
+      prec   = 2;      // 2 significant digits
+    } else {
+      hv_tol = 0.0001; // 0.1V since kV units
+      prec   = 3;      // 3 significant digits
+    }
     
     if (f_iGroup == f_iGroupCache) {
       for (i=0 ; i<f_nChannels ; i++) {
@@ -579,13 +612,13 @@ void PHvEdit::UpdateTable(int ch, bool forced_update)
 
       if ((fabs(fDemand[i]-fDemandCache[i])>hv_tol) || forced_update) {
         // overwrite demand cell
-        fHv_table->setText(i-offset, HV_DEMAND, QString("%1").arg(fDemand[i],0,'f',3));
+        fHv_table->setText(i-offset, HV_DEMAND, QString("%1").arg(fDemand[i],0,'f',prec));
         fHv_table->updateCell(i-offset, HV_DEMAND);
       }
 
       if ((fabs(fMeasured[i]-fMeasuredCache[i])>hv_tol) || forced_update) {
         // overwrite measured cell
-        fHv_table->setText(i-offset, HV_MEASURED, QString("%1").arg(fMeasured[i],0,'f',3));
+        fHv_table->setText(i-offset, HV_MEASURED, QString("%1").arg(fMeasured[i],0,'f',prec));
         fHv_table->updateCell(i-offset, HV_MEASURED);
       }
 
@@ -1207,12 +1240,12 @@ void PHvEdit::OnRestore()
 //  implementation of OnM100 (SLOT)
 //*******************************************************************************************************
 /*!
- * <p>Decrements the selected channels by 1.0 kV
+ * <p>Decrements the selected channels by 100V (fDemandInV=true) and 1.0 kV (fDemandInV=false), repectivly
  */
 void PHvEdit::OnM100()
 {
   if (fDemandInV)
-    Increment(-1000.0f);
+    Increment(-100.0f);
   else
     Increment(-1.0f);
 
@@ -1223,12 +1256,12 @@ void PHvEdit::OnM100()
 //  implementation of OnM010 (SLOT)
 //*******************************************************************************************************
 /*!
- * <p>Decrements the selected channels by 0.1 kV
+ * <p>Decrements the selected channels by 10V (fDemandInV=true) and 0.1 kV (fDemandInV=false), repectivly
  */
 void PHvEdit::OnM010()
 {
   if (fDemandInV)
-    Increment(-100.0f);
+    Increment(-10.0f);
   else
     Increment(-0.1f);
 
@@ -1239,12 +1272,12 @@ void PHvEdit::OnM010()
 //  implementation of OnM001 (SLOT)
 //*******************************************************************************************************
 /*!
- * <p>Decrements the selected channels by 0.01 kV
+ * <p>Decrements the selected channels by 1V (fDemandInV=true) and 0.01 kV (fDemandInV=false), repectivly
  */
 void PHvEdit::OnM001()
 {
   if (fDemandInV)
-    Increment(-10.0f);
+    Increment(-1.0f);
   else
     Increment(-0.01f);
 
@@ -1255,12 +1288,12 @@ void PHvEdit::OnM001()
 //  implementation of OnP100 (SLOT)
 //*******************************************************************************************************
 /*!
- * <p>Increments the selected channels by 1.0 kV
+ * <p>Increments the selected channels by 100V (fDemandInV=true) and 1.0 kV (fDemandInV=false), repectivly
  */
 void PHvEdit::OnP100()
 {
   if (fDemandInV)
-    Increment(1000.0f);
+    Increment(100.0f);
   else
     Increment(1.0f);
 
@@ -1271,12 +1304,12 @@ void PHvEdit::OnP100()
 //  implementation of OnP010 (SLOT)
 //*******************************************************************************************************
 /*!
- * <p>Increments the selected channels by 0.1 kV
+ * <p>Increments the selected channels by 10V (fDemandInV=true) and 0.1 kV (fDemandInV=false), repectivly
  */
 void PHvEdit::OnP010()
 {
   if (fDemandInV)
-    Increment(100.0f);
+    Increment(10.0f);
   else
     Increment(0.1f);
 
@@ -1287,12 +1320,12 @@ void PHvEdit::OnP010()
 //  implementation of OnP001 (SLOT)
 //*******************************************************************************************************
 /*!
- * <p>Increments the selected channels by 0.01 kV
+ * <p>Increments the selected channels by 1V (fDemandInV=true) and 0.01 kV (fDemandInV=false), repectivly
  */
 void PHvEdit::OnP001()
 {
   if (fDemandInV)
-    Increment(10.0f);
+    Increment(1.0f);
   else
     Increment(0.01f);
 
