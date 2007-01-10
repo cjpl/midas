@@ -223,7 +223,7 @@ void user_init(unsigned char init)
       if (user_data[i].u_limit > MAX_VOLTAGE)
          user_data[i].u_limit = MAX_VOLTAGE;
 
-      if (user_data[i].i_limit > MAX_CURRENT)
+      if (user_data[i].i_limit > MAX_CURRENT && user_data[i].i_limit != 9999)
          user_data[i].i_limit = MAX_CURRENT;
 
       u_actual[i] = 0;
