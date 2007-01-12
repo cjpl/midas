@@ -8931,7 +8931,11 @@ void export_hist(char *path, int scale, int toffset, int index, int labels)
    }
 
    /* output header line with variable names */
-   rsprintf("Time, Run, Run State, ");
+   if (runmarker)
+      rsprintf("Time, Run, Run State, ");
+   else
+      rsprintf("Time, ");
+
    for (i = 0; i < n_vars; i++) {
       rsprintf(var_name[i]);
       if (i < n_vars-1)
