@@ -8894,6 +8894,7 @@ void export_hist(char *path, int scale, int toffset, int index, int labels)
 
    /* read run markes if selected */
    state = run_number = t_run_number = NULL;
+   n_run_number = 0;
    if (runmarker) {
       bsize = hbuffer_size;
       tsize = hbuffer_size;
@@ -8950,15 +8951,16 @@ void export_hist(char *path, int scale, int toffset, int index, int labels)
       if (n_point[i] > 0 && x[i][0] > (DWORD)t)
          t = x[i][0];
 
-   if (t == 0) {
+   if (t == 0 && n_vars > 1) {
       rsprintf("=== No history available for choosen period ===\n");
       return;
    }
 
    do {
       /* find run number/state which is valid for t */
-      while (i_run < n_run_number-1 && t_run_number[i_run+1] <= (DWORD)t)
-         i_run++;
+      if (runmarker)
+         while (i_run < n_run_number-1 && t_run_number[i_run+1] <= (DWORD)t)
+            i_run++;
 
       /* find index for all variables which is valid for t */
       for (i = 0; i < n_vars; i++)
@@ -8976,10 +8978,13 @@ void export_hist(char *path, int scale, int toffset, int index, int labels)
       strcpy(fmt, "%c");
       strftime(str, sizeof(str), fmt, tms);
 
-      if (t_run_number[i_run] <= (DWORD)t)
-         rsprintf("%s, %d, %d, ", str, run_number[i_run], state[i_run]);
-      else
-         rsprintf("%s, N/A, N/A, ", str);
+      if (runmarker) {
+         if (t_run_number[i_run] <= (DWORD)t)
+            rsprintf("%s, %d, %d, ", str, run_number[i_run], state[i_run]);
+         else
+            rsprintf("%s, N/A, N/A, ", str);
+      } else
+         rsprintf("%s, ", str);
 
       for (i= 0 ; i < n_vars ; i++) {
             rsprintf("%lf", y[i][i_var[i]]);
