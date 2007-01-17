@@ -560,7 +560,7 @@ int match(char *str, char *cmd)
 void cmd_loop(int fd, char *cmd, unsigned short adr)
 {
    int i, j, fh, status, size, nparam, current_addr, current_group, first, last, broadcast,
-       read_all, repeat, index, idx1, idx2, wait = 0;
+       read_all, repeat, index, idx1, idx2, wait = 0, n_found;
    int ping_addr[0x10000];
    unsigned short addr;
    unsigned int data, uptime;
@@ -689,6 +689,7 @@ void cmd_loop(int fd, char *cmd, unsigned short adr)
       /* scan ---------- */
       else if (match(param[0], "scan")) {
          do {
+            n_found = 0;
             for (i = -1; i < 0x10000; i++) {
                if (param[1][0] != 'a' && param[2][0] != 'a' && i>0 && !ping_addr[i])
                   continue;
@@ -705,6 +706,8 @@ void cmd_loop(int fd, char *cmd, unsigned short adr)
                   status = mscb_ping(fd, (unsigned short) i);
 
                if (status == MSCB_SUCCESS) {
+
+                  n_found++;
 
                   /* node found, search next 100 as well */
                   for (j=i; j<i+100 && j<0x10000 ; j++)
@@ -742,7 +745,10 @@ void cmd_loop(int fd, char *cmd, unsigned short adr)
          while (kbhit())
             getch();
 
-         printf("                            \n");
+         if (n_found > 0)
+            printf("%d nodes found                \n", n_found);
+         else
+            printf("                            \n");
       }
 
       /* info ---------- */
