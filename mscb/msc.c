@@ -559,8 +559,9 @@ int match(char *str, char *cmd)
 
 void cmd_loop(int fd, char *cmd, unsigned short adr)
 {
-   int i, fh, status, size, nparam, current_addr, current_group, first, last, broadcast,
+   int i, j, fh, status, size, nparam, current_addr, current_group, first, last, broadcast,
        read_all, repeat, index, idx1, idx2, wait = 0;
+   int ping_addr[0x10000];
    unsigned short addr;
    unsigned int data, uptime;
    unsigned char c;
@@ -596,6 +597,18 @@ void cmd_loop(int fd, char *cmd, unsigned short adr)
    broadcast = 0;
 
    status = 0;
+
+   /* fill table of possible addresses */
+   for (i=0 ; i<0x10000 ; i++)
+      ping_addr[i] = 0;
+   for (i=0 ; i<100 ; i++)         // 0..99
+      ping_addr[i] = 1;
+   for (i=0 ; i<0x10000 ; i+=100)  // 100, 200, ...
+      ping_addr[i] = 1;
+   for (i=0 ; i<0x10000 ; i+= 0x100)
+      ping_addr[i] = 1;            // 256, 512, ...
+   for (i=0xFF00 ; i<0x10000 ; i++)
+      ping_addr[i] = 1;            // 0xFF00-0xFFFF
 
    do {
       /* print prompt */
@@ -676,12 +689,13 @@ void cmd_loop(int fd, char *cmd, unsigned short adr)
       /* scan ---------- */
       else if (match(param[0], "scan")) {
          do {
-            /* decimal search */
             for (i = -1; i < 0x10000; i++) {
+               if (param[1][0] != 'a' && param[2][0] != 'a' && i>0 && !ping_addr[i])
+                  continue;
                if (i == -1)
-                  printf("Test address 0xFFFF\r");
+                  printf("Test address 65535 (0xFFFF)\r");
                else
-                  printf("Test address %d    \r", i);
+                  printf("Test address %05d (0x%04X)\r", i, i);
                fflush(stdout);
 
                if (i == -1)
@@ -691,6 +705,11 @@ void cmd_loop(int fd, char *cmd, unsigned short adr)
                   status = mscb_ping(fd, (unsigned short) i);
 
                if (status == MSCB_SUCCESS) {
+
+                  /* node found, search next 100 as well */
+                  for (j=i; j<i+100 && j<0x10000 ; j++)
+                     ping_addr[j] = 1;
+
                   status = mscb_info(fd, (unsigned short) i, &info);
                   strncpy(str, info.node_name, sizeof(info.node_name));
                   str[16] = 0;
@@ -714,47 +733,6 @@ void cmd_loop(int fd, char *cmd, unsigned short adr)
                   break;
                }
 
-               if (param[1][0] != 'a' && param[2][0] != 'a')
-                  if (i && i % 1000 == 0 && status != MSCB_SUCCESS) {
-                     i += 999;
-                  }
-
-               if (param[1][0] != 'a' && param[2][0] != 'a')
-                  if (i && i % 100 == 0 && status != MSCB_SUCCESS) {
-                     i += 99;
-                  }
-
-               if (kbhit())
-                  break;
-            }
-
-            /* hexadecimal search */
-            for (i = 0x100; i < 0xFFFF; i++) {
-               printf("Test address 0x%x    \r", i);
-               fflush(stdout);
-
-               status = mscb_ping(fd, (unsigned short) i);
-
-               if (status == MSCB_SUCCESS) {
-                  status = mscb_info(fd, (unsigned short) i, &info);
-                  strncpy(str, info.node_name, sizeof(info.node_name));
-                  str[16] = 0;
-
-                  if (status == MSCB_SUCCESS) {
-                     printf
-                         ("Found node \"%s\", node addr. %d (0x%04X), group addr. %d (0x%04X)      \n",
-                          str, i, i, info.group_address, info.group_address);
-                  }
-               } else if (status == MSCB_SUBM_ERROR) {
-                  printf("Error: Submaster not responding\n");
-                  break;
-               }
-
-               if (param[1][0] != 'a' && param[2][0] != 'a')
-                  if (i && (i & 0xFF) == 0 && i != 0xFF00 && status != MSCB_SUCCESS) {
-                     i += 0xFF;
-                  }
-
                if (kbhit())
                   break;
             }
@@ -764,7 +742,7 @@ void cmd_loop(int fd, char *cmd, unsigned short adr)
          while (kbhit())
             getch();
 
-         printf("                       \n");
+         printf("                            \n");
       }
 
       /* info ---------- */
