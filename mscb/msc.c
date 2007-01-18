@@ -110,7 +110,7 @@ void print_help()
    puts("reboot                     Reboot addressed node");
    puts("reset                      Reboot whole MSCB system");
    puts("sa <addr>                  Set node address of addressed node");
-   puts("save <file>                Save current node variables");
+   puts("save <file> [first last]   Save current node variables [save range]");
    puts("scan [r] [a]               Scan bus for nodes [repeat mode] [all]");
    puts("sg <addr>                  Set group address of addressed node(s)");
    puts("sn <name>                  Set node name (up to 16 characters)");
@@ -1156,11 +1156,19 @@ void cmd_loop(int fd, char *cmd, unsigned short adr)
                printf("Cannot open xml file \"%s\"\n", str);
             else {
                mxml_start_element(writer, "MSCBDump");
-               for (i = first; i <= last; i++) {
-                  printf("%d (0x%04X)\r", i, i);
-                  save_node_xml(writer, fd, i);
+               for (i = first,j=0; i <= last; i++) {
+                  status = mscb_ping(fd, (unsigned short) i);
+                  if (status == MSCB_SUCCESS) {
+                     j++;
+                     printf("Save node %d (0x%04X)     \r", i, i);
+                     save_node_xml(writer, fd, i);
+                  } else
+                     printf("Test address %d (0x%04X)     \r", i, i);
                }
                printf("\n");
+               if (j>1)
+                  printf("%d nodes saved               \n", j);
+
                mxml_end_element(writer);
                mxml_close_file(writer);
             }
