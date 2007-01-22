@@ -6225,12 +6225,25 @@ BM_ASYNC_RETURN No event available
 INT bm_receive_event(INT buffer_handle, void *destination, INT * buf_size, INT async_flag)
 {
    if (rpc_is_remote()) {
+      int status, old_timeout;
+
       if (*buf_size > NET_BUFFER_SIZE) {
          cm_msg(MERROR, "bm_receive_event", "max. event size larger than NET_BUFFER_SIZE");
          return RPC_NET_ERROR;
       }
 
-      return rpc_call(RPC_BM_RECEIVE_EVENT, buffer_handle, destination, buf_size, async_flag);
+      if (!async_flag) {
+         old_timeout = rpc_get_option(-1, RPC_OTIMEOUT);
+         rpc_set_option(-1, RPC_OTIMEOUT, 0);
+      }
+
+      status = rpc_call(RPC_BM_RECEIVE_EVENT, buffer_handle, destination, buf_size, async_flag);
+
+      if (!async_flag) {
+         rpc_set_option(-1, RPC_OTIMEOUT, old_timeout);
+      }
+
+      return status;
    }
 #ifdef LOCAL_ROUTINES
    {
