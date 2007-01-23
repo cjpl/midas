@@ -5,7 +5,7 @@
 
   Contents:     SMTP interface for sending an email
 
-  $Id:$
+  $Id$
 
 \********************************************************************/
 

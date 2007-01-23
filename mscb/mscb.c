@@ -36,6 +36,8 @@
 #include <fcntl.h>
 #include <linux/parport.h>
 #include <linux/ppdev.h>
+#include <netinet/in.h>
+#include <netdb.h>
 
 #ifdef HAVE_LIBUSB
 #include <usb.h>
@@ -646,7 +648,7 @@ int send_udp(int index, char *buffer, int size)
 
    count = sendto(mscb_fd[index-1].fd, buffer, size, 0, 
                   (struct sockaddr *) &mscb_fd[index-1].eth_addr, 
-                  sizeof(struct sockaddr_in));
+                  sizeof(struct sockaddr));
 
    return count;
 }
@@ -1311,6 +1313,7 @@ int mscb_init(char *device, int bufsize, char *password, int debug)
    char host[256], port[256], dev3[256], remote_device[256];
    unsigned char buf[64];
    struct hostent *phe;
+   struct sockaddr_in *psa_in;
 
    if (!device[0]) {
       if (debug == -1)
@@ -1484,10 +1487,11 @@ int mscb_init(char *device, int bufsize, char *password, int debug)
          debug_log("return EMSCB_RPC_ERROR\n", 0);
          return EMSCB_RPC_ERROR;
       }
-      memset(&mscb_fd[index].eth_addr, 0, sizeof(struct sockaddr));
-      memcpy((char *) &(mscb_fd[index].eth_addr.sin_addr), phe->h_addr, phe->h_length);
-      mscb_fd[index].eth_addr.sin_port = htons((short) MSCB_NET_PORT);
-      mscb_fd[index].eth_addr.sin_family = AF_INET;
+      memset(&mscb_fd[index].eth_addr, 0, sizeof(mscb_fd[index].eth_addr));
+      psa_in = (struct sockaddr_in *)mscb_fd[index].eth_addr;
+      memcpy((char *) &(psa_in->sin_addr), phe->h_addr, phe->h_length);
+      psa_in->sin_port = htons((short) MSCB_NET_PORT);
+      psa_in->sin_family = AF_INET;
 
       mscb_fd[index].fd = socket(AF_INET, SOCK_DGRAM, 0);
       if (mscb_fd[index].fd == -1) {

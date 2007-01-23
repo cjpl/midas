@@ -44,7 +44,7 @@ USBDIR        = midas/drivers/usb/
 endif
 
 OUTNAME       = msc 
-CC            = gcc -g -O2
+CC            = gcc -g -O
 FLAGS         = -Wall -Wuninitialized -I$(MXMLDIR) -I$(MIDASINC)
 
 ifeq ($(OSTYPE),linux)
