@@ -184,7 +184,7 @@ typedef struct {
    int remote_fd;
    int mutex_handle;
    int seq_nr;
-   struct sockaddr_in eth_addr;
+   unsigned char eth_addr[16];
    MUSB_INTERFACE *ui;
 } MSCB_FD;
 
