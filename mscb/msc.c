@@ -567,9 +567,10 @@ void cmd_loop(int fd, char *cmd, unsigned short adr)
    unsigned char c;
    float value;
    char str[256], line[256], dbuf[100 * 1024], param[10][100], *pc, *buffer, lib[32],
-       prot[32];
+       prot[32], *pdata;
    FILE *cmd_file = NULL;
    MSCB_INFO info;
+   MSCB_INFO_VAR info_var_array[256];
    MSCB_INFO_VAR info_var;
    time_t start, now;
    MXML_WRITER *writer;
@@ -1483,6 +1484,94 @@ void cmd_loop(int fd, char *cmd, unsigned short adr)
          }
       }
 
+      /* read range test ---------- */
+      else if (match(param[0], "rr")) {
+         if (current_addr < 0)
+            printf("You must first address an individual node\n");
+         else {
+
+            if (!param[1][0] || param[1][0] == 'a' || param[1][0] == 'r') {
+               first = 0;
+               last = 256;
+            } else {
+               first = last = atoi(param[1]);
+            }
+
+            read_all = (param[1][0] == 'a' || param[2][0] == 'a' || param[3][0] == 'a');
+            repeat = (param[1][0] == 'r' || param[2][0] == 'r' || param[3][0] == 'r');
+            if (repeat) {
+               wait = 0;
+               for (i = 1; i < 4; i++)
+                  if (param[i][0] == 'r')
+                     break;
+               if (atoi(param[i + 1]) > 0)
+                  wait = atoi(param[i + 1]);
+            }
+
+            n_found = 0;
+            memset(info_var_array, 0, sizeof(info_var_array));
+            for (i = first; i <= last; i++) {
+               status = mscb_info_variable(fd, (unsigned short) current_addr,
+                                             (unsigned char) i, &info_var_array[i]);
+               if (status == MSCB_NO_VAR) {
+                  if (first == last)
+                     printf("Node has no variable #%d\n", first);
+                  break;
+               } else if (status == MSCB_CRC_ERROR)
+                  puts("CRC Error");
+               else if (status != MSCB_SUCCESS)
+                  puts("Timeout or invalid channel number");
+               else
+                  n_found++;
+            }
+
+            if (n_found) {
+               last = i-1;
+               do {
+
+                  size = sizeof(dbuf);
+                  status = mscb_read_range(fd, (unsigned short) current_addr,
+                                          (unsigned char) first, (unsigned char) last, dbuf, &size);
+
+                  pdata = dbuf;
+                  for (i = first; i <= last; i++) {
+                     size = info_var_array[i].width;
+                     if (size == 2) {
+                        WORD_SWAP(pdata);
+                     } else if (size == 4) {
+                        DWORD_SWAP(pdata);
+                     }
+
+                     if ((info_var_array[i].flags & MSCBF_HIDDEN) == 0 || read_all || first == last)
+                        print_channel(i, &info_var_array[i], pdata, first != last);
+
+                     if (kbhit())
+                        break;
+
+                     pdata += size;
+                  }
+
+                  if (first != last && repeat)
+                     printf("\n");
+
+                  if (repeat) {
+                     if (wait) {
+                        Sleep(wait);
+                        printf("\n");
+                     } else
+                        Sleep(10);
+                  }
+
+               } while (!kbhit() && repeat);
+
+               if (first == last)
+                  printf("\n");
+               while (kbhit())
+                  getch();
+            }
+         }
+      }
+
       /* test1 ---------- */
       else if (match(param[0], "t1")) {
          data = atoi(param[1]);
@@ -1493,6 +1582,13 @@ void cmd_loop(int fd, char *cmd, unsigned short adr)
          } while (!kbhit());
          while (kbhit())
             getch();
+      }
+
+      /* test 2 -----------*/
+      else if (match(param[0], "t2")) {
+         size = sizeof(dbuf);
+         status = mscb_read_range(fd, (unsigned short) current_addr,
+                                 (unsigned char) 0, (unsigned char) 50, dbuf, &size);
       }
 
       /* exit/quit ---------- */

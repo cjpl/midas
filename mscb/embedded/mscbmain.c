@@ -500,6 +500,7 @@ void addr_node16(unsigned char mode, unsigned int adr, unsigned int node_addr)
 void interprete(void) 
 {
    unsigned char crc, cmd, i, j, n, ch, a1, a2;
+   unsigned short size;
    MSCB_INFO_VAR *pvar;
    unsigned long idata u;
 
@@ -767,17 +768,22 @@ void interprete(void)
 
         if (in_buf[1] < n_variables && in_buf[2] < n_variables && in_buf[1] < in_buf[2]) {
             /* calculate number of bytes to return */
-            for (i = in_buf[1], n = 0; i <= in_buf[2]; i++) {
+            for (i = in_buf[1], size = 0; i <= in_buf[2]; i++) {
                user_read(i);
-               n += variables[i].width;
+               size += variables[i].width;
             }
 
             ES0 = 0;            // temporarily disable serial interrupt
             crc = 0;
             RS485_ENABLE = 1;
 
-            send_byte(CMD_ACK + 7, &crc);       // send acknowledge, variable data length
-            send_byte(n, &crc); // send data length
+            send_byte(CMD_ACK + 7, &crc);            // send acknowledge, variable data length
+            if (size < 0x80)
+               send_byte(n, &crc);                   // send data length one byte
+            else {
+               send_byte(0x80 | size / 0x100, &crc); // send data length two bytes
+               send_byte(size & 0xFF, &crc);
+            }
 
             /* loop over all variables */
             for (i = in_buf[1]; i <= in_buf[2]; i++) {
