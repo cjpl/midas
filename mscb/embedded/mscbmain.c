@@ -779,7 +779,7 @@ void interprete(void)
 
             send_byte(CMD_ACK + 7, &crc);            // send acknowledge, variable data length
             if (size < 0x80)
-               send_byte(n, &crc);                   // send data length one byte
+               send_byte(size, &crc);                // send data length one byte
             else {
                send_byte(0x80 | size / 0x100, &crc); // send data length two bytes
                send_byte(size & 0xFF, &crc);

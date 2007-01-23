@@ -183,6 +183,8 @@ typedef struct {
    int fd;
    int remote_fd;
    int mutex_handle;
+   int seq_nr;
+   struct sockaddr_in eth_addr;
    MUSB_INTERFACE *ui;
 } MSCB_FD;
 

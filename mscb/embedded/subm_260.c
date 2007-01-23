@@ -40,9 +40,17 @@ typedef struct {
 SUBM_CFG code  *subm_cfg;
 SUBM_CFG xdata *subm_cfg_write;
 
+typedef struct {
+   unsigned short size;
+   unsigned short seq_num;
+   unsigned char  flags;
+   unsigned char  version;
+} UDP_HEADER;
+
 bit configured;        // set after being configuration
 
-char exclusive_socket_no;        // used for exclusive access (download)
+unsigned char exclusive_addr[4]; // used for exclusive access (download)
+unsigned short exclusive_port;
 unsigned short exclusive_timer;  // timer to reset exclusive access
 
 sbit CS8900A_RESET = P0 ^ 5;
@@ -96,22 +104,25 @@ sbit CS8900A_RESET = P0 ^ 5;
 /*------------------------------------------------------------------*/
 
 void hardware_init(void);
-int tcp_send(char socket_no, unsigned char *buffer, int size);
+int udp_send(char socket_no, unsigned char *buffer, int size);
 
 /*------------------------------------------------------------------*/
 
-#define DATA_BUFF_LEN    64
-#define RX_BUFF_LEN    1024
+#define UDP_TX_SIZE   1030 // 1024+6 bytes header
+#define UDP_RX_SIZE    262 // 256+6 bytes header
 
-unsigned char tcp_tx_buf[NUM_SOCKETS][DATA_BUFF_LEN];
-unsigned char tcp_rx_buf[NUM_SOCKETS][DATA_BUFF_LEN];
+#define RS485_TX_SIZE  256
+#define RS485_RX_SIZE 1024
 
-unsigned char rs485_tx_buf[DATA_BUFF_LEN];
-unsigned char rs485_rx_buf[RX_BUFF_LEN];
+unsigned char udp_tx_buf[UDP_TX_SIZE];
+unsigned char udp_rx_buf[UDP_RX_SIZE];
+
+unsigned char rs485_tx_buf[RS485_TX_SIZE];
+unsigned char rs485_rx_buf[RS485_RX_SIZE];
 
 unsigned char rs485_tx_bit9[4];
 
-unsigned char n_tcp_rx, n_rs485_tx, i_rs485_tx;
+unsigned char n_udp_rx, n_rs485_tx, i_rs485_tx;
 unsigned short i_rs485_rx;
 
 /*------------------------------------------------------------------*/
@@ -228,7 +239,7 @@ void configure()
       PSCTL = 0x00; // unselect scratchpad area
    }
 
-   exclusive_socket_no = -1;
+   exclusive_port = 0;
 }
  
 /*------------------------------------------------------------------*/
@@ -277,7 +288,7 @@ void serial_int(void) interrupt 4 using 1
       if (i_rs485_tx < n_rs485_tx) {
          
          /* set bit9 according to array */
-         if (i_rs485_tx < 5 && rs485_tx_bit9[i_rs485_tx-1])
+         if (i_rs485_tx < 4 && rs485_tx_bit9[i_rs485_tx])
             TB80 = 1;
          else
             TB80 = 0;
@@ -294,7 +305,7 @@ void serial_int(void) interrupt 4 using 1
 
    if (RI0) {
       /* put received unsigned char into buffer */
-      if (i_rs485_rx < RX_BUFF_LEN)
+      if (i_rs485_rx < RS485_RX_SIZE)
          rs485_rx_buf[i_rs485_rx++] = SBUF0;
                              
       RI0 = 0;
@@ -322,49 +333,49 @@ void wd_refresh()
    if (exclusive_timer > 0)
       exclusive_timer--;
    if (exclusive_timer == 0)
-      exclusive_socket_no = -1;
+      exclusive_port = 0;
 }
 
 /*------------------------------------------------------------------*/
 
 unsigned char execute(char socket_no)
 {
-   if (rs485_tx_buf[1] == MCMD_INIT) {
+   if (rs485_tx_buf[0] == MCMD_INIT) {
       /* reboot */
       SFRPAGE = LEGACY_PAGE;
       RSTSRC = 0x10;
    }
 
-   if (rs485_tx_buf[1] == MCMD_ECHO) {
+   if (rs485_tx_buf[0] == MCMD_ECHO) {
       /* return echo */
       led_blink(1, 1, 50);
       rs485_rx_buf[0] = MCMD_ACK;
       rs485_rx_buf[1] = SUBM_VERSION;
-      tcp_send(socket_no, rs485_rx_buf, 2);
+      udp_send(socket_no, rs485_rx_buf, 2);
       return 2;
    }
 
-   if (rs485_tx_buf[1] == MCMD_TOKEN) {
+   if (rs485_tx_buf[0] == MCMD_TOKEN) {
       /* check password */
 
-      if (password[0] == 0 || strcmp(rs485_tx_buf+2, password) == 0)
+      if (password[0] == 0 || strcmp(rs485_tx_buf+1, password) == 0)
          rs485_rx_buf[0] = MCMD_ACK;
       else
          rs485_rx_buf[0] = 0xFF;
          
 
-      tcp_send(socket_no, rs485_rx_buf, 1);
+      udp_send(socket_no, rs485_rx_buf, 1);
       return 1;
    }
 
-   if (rs485_tx_buf[1] == MCMD_FLASH) {
+   if (rs485_tx_buf[0] == MCMD_FLASH) {
       
       /* update configuration in flash */
-      if (set_config((void*)(rs485_tx_buf+2))) {
+      if (set_config((void*)(rs485_tx_buf+1))) {
 
          rs485_rx_buf[0] = MCMD_ACK;
          rs485_rx_buf[1] = 0;  // reserved for future use
-         tcp_send(socket_no, rs485_rx_buf, 2);
+         udp_send(socket_no, rs485_rx_buf, 2);
    
          /* wait until packet sent */
          delay_ms(100);
@@ -375,23 +386,27 @@ unsigned char execute(char socket_no)
 
       } else {
          rs485_rx_buf[0] = 0xFF;
-         tcp_send(socket_no, rs485_rx_buf, 1);
+         udp_send(socket_no, rs485_rx_buf, 1);
          return 1;
       }
    }
 
-   if (rs485_tx_buf[1] == MCMD_FREEZE) {
+   if (rs485_tx_buf[0] == MCMD_FREEZE) {
 
-      if (rs485_tx_buf[2] == 1) {
-         exclusive_socket_no = socket_no;
+      PSOCKET_INFO socket_ptr;
+      socket_ptr = &sock_info[socket_no];
+
+      if (rs485_tx_buf[1] == 1) {
+         memcpy(exclusive_addr, socket_ptr->ip_dest_addr, 4);
+         exclusive_port = socket_ptr->dest_port;
          exclusive_timer = 1000; // expires after 10 sec.
       } else {
-         exclusive_socket_no = -1;
+         exclusive_port = 0;
          exclusive_timer = 0;
       }
 
       rs485_rx_buf[0] = MCMD_ACK;
-      tcp_send(socket_no, rs485_rx_buf, 1);
+      udp_send(socket_no, rs485_rx_buf, 1);
    }
 
    return 0;
@@ -422,12 +437,12 @@ unsigned char rs485_send(char socket_no, unsigned char len, unsigned char flags)
 
       /* set all bit9 if BIT9 flag */
       if (flags & RS485_FLAG_BIT9)
-         for (i=1 ; i<len && i<5 ; i++)
-            rs485_tx_bit9[i-1] = 1;
+         for (i=0 ; i<len && i<4 ; i++)
+            rs485_tx_bit9[i] = 1;
 
       /* set first two/four bit9 if ADR_CYCLE flag */
       if (flags & RS485_FLAG_ADR_CYCLE) {
-         if (rs485_tx_buf[1] == MCMD_ADDR_BC)
+         if (rs485_tx_buf[0] == MCMD_ADDR_BC)
            j = 2;
          else
            j = 4;
@@ -440,8 +455,8 @@ unsigned char rs485_send(char socket_no, unsigned char len, unsigned char flags)
       n_rs485_tx = len;
       DELAY_US(INTERCHAR_DELAY);
       RS485_ENABLE = 1;
-      SBUF0 = rs485_tx_buf[1];
-      i_rs485_tx = 1;
+      SBUF0 = rs485_tx_buf[0];
+      i_rs485_tx = 0;
    }
 
    return 1;
@@ -475,21 +490,21 @@ unsigned short n, i, to, rx_old;
       }
 
       /* check for PING acknowledge (single unsigned char) */
-      if (rs485_tx_buf[1] == MCMD_PING16 &&
+      if (rs485_tx_buf[0] == MCMD_PING16 &&
           i_rs485_rx == 1 && rs485_rx_buf[0] == MCMD_ACK) {
 
          led_blink(1, 1, 50);
-         tcp_send(socket_no, rs485_rx_buf, 1);
+         udp_send(socket_no, rs485_rx_buf, 1);
          break;
       }
 
       /* check for READ error acknowledge */
-      if ((rs485_tx_buf[1] == MCMD_READ+1 || 
-           (rs485_tx_buf[1] == MCMD_ADDR_NODE16 && rs485_tx_buf[5] == MCMD_READ+1)) &&
+      if ((rs485_tx_buf[0] == MCMD_READ+1 || 
+           (rs485_tx_buf[0] == MCMD_ADDR_NODE16 && rs485_tx_buf[4] == MCMD_READ+1)) &&
           i_rs485_rx == 1 && rs485_rx_buf[0] == MCMD_ACK) {
 
          led_blink(1, 1, 50);
-         tcp_send(socket_no, rs485_rx_buf, 1);
+         udp_send(socket_no, rs485_rx_buf, 1);
          break;
       }
 
@@ -504,15 +519,9 @@ unsigned short n, i, to, rx_old;
          } else
             n += 2;                      // add ACK and CRC
 
-         if (i_rs485_rx == n && n > 64) {
-            led_blink(1, 1, 50);
-            tcp_send(socket_no, rs485_rx_buf, n);
-            break;
-         }
-
          if (i_rs485_rx == n) {
             led_blink(1, 1, 50);
-            tcp_send(socket_no, rs485_rx_buf, n);
+            udp_send(socket_no, rs485_rx_buf, n);
             break;
          }
       }
@@ -524,41 +533,30 @@ unsigned short n, i, to, rx_old;
    /* send timeout */
    if (i == to) {
       rs485_rx_buf[0] = 0xFF;
-      tcp_send(socket_no, rs485_rx_buf, 1);
+      udp_send(socket_no, rs485_rx_buf, 1);
    }
 }
 
 /*------------------------------------------------------------------*/
 
-int tcp_receive(unsigned char **data_ptr, char *socket_no_ptr)
+int udp_receive(unsigned char **data_ptr, char *socket_no_ptr)
 {
-   unsigned char packet_type, i, n;
+   unsigned char packet_type;
    PSOCKET_INFO socket_ptr;
-   int recvd, sent;
+   UDP_HEADER *pudp;
+   int recvd;
    unsigned char dhcp_state;
    signed char socket_no;
 
-   /* if no listening socket open, open or reopen it */
-   if (mn_find_socket(MSCB_NET_PORT, 0, null_addr, PROTO_TCP) == NULL) {
+   /* if no listening socket open, open it */
+   if (mn_find_socket(MSCB_NET_PORT, 0, null_addr, PROTO_UDP) == NULL) {
 
-      /* count number of active sockets */
-      for (i=n=0 ; i<NUM_SOCKETS ; i++)
-         if (SOCKET_ACTIVE(i))
-            n++;
-      
-      /* leave one inactive socket for ping and arp requests */
-      if (n < NUM_SOCKETS-1) {
-         socket_no = mn_open(null_addr, MSCB_NET_PORT, 0, NO_OPEN, PROTO_TCP,
-                             STD_TYPE, tcp_rx_buf[0], DATA_BUFF_LEN);
-         if (socket_no >= 0) {
-            socket_ptr = &sock_info[socket_no];
-            socket_ptr->recv_ptr = tcp_rx_buf[socket_no];
-            socket_ptr->recv_end = tcp_rx_buf[socket_no] + DATA_BUFF_LEN - 1;
-         }
-      } else {
-         /* all sockets occupied, do reboot to free possible hanging connections */
-         SFRPAGE = LEGACY_PAGE;
-         RSTSRC = 0x10;
+      socket_no = mn_open(null_addr, MSCB_NET_PORT, 0, NO_OPEN, PROTO_UDP,
+                          STD_TYPE, udp_rx_buf, UDP_RX_SIZE);
+      if (socket_no >= 0) {
+         socket_ptr = &sock_info[socket_no];
+         socket_ptr->send_ptr = udp_tx_buf;
+         socket_ptr->send_len = UDP_TX_SIZE - 1;
       }
    }
 
@@ -571,38 +569,8 @@ int tcp_receive(unsigned char **data_ptr, char *socket_no_ptr)
    if (dhcp_state == DHCP_RENEWING || dhcp_state == DHCP_REBINDING)
       (void) mn_dhcp_renew(dhcp_lease.org_lease_time);
 
-   /* check if any socket has already data (from previous send-ACK) */
-   for (i=0 ; i<NUM_SOCKETS ; i++)
-      if (SOCKET_ACTIVE(i)) {
-         socket_ptr = &sock_info[i];
-         if (socket_ptr->recv_len) {
-            *data_ptr = socket_ptr->recv_ptr;
-            *socket_no_ptr = socket_ptr->socket_no;
-            recvd = socket_ptr->recv_len;
-            socket_ptr->recv_len = 0;
-            return recvd;
-         }
-      }
-
    /* receive packet */
    packet_type = mn_ip_recv();
-
-   if (packet_type & TCP_TYPE) {
-
-      recvd = mn_tcp_recv(&socket_ptr);
-      if (socket_ptr == NULL)
-         return 0;
-
-      if (socket_ptr->tcp_state == TCP_CLOSED) {     /* other side closed */
-         mn_abort(socket_ptr->socket_no);
-         return 0;
-      }
-
-      *data_ptr = socket_ptr->recv_ptr;
-      *socket_no_ptr = socket_ptr->socket_no;
-   
-      return socket_ptr->recv_len;
-   }
 
    if (packet_type & UDP_TYPE) {
 
@@ -610,20 +578,24 @@ int tcp_receive(unsigned char **data_ptr, char *socket_no_ptr)
       if (socket_ptr == NULL)
          return 0;
 
-   }
+      pudp = (UDP_HEADER *)socket_ptr->recv_ptr;
 
-   /* check if a socket has bytes we need to send */
-   for (i = 0; i < NUM_SOCKETS; i++) {
-      socket_ptr = MK_SOCKET_PTR(i);
-      if (socket_ptr->ip_proto == PROTO_TCP && TCP_TIMER_EXPIRED(socket_ptr) &&
-          (socket_ptr->send_len || socket_ptr->tcp_state >= TCP_FIN_WAIT_1)) {
-         sent = mn_tcp_send(socket_ptr);
+      /* check correct size */
+      if (pudp->size + sizeof(UDP_HEADER) != recvd)
+         return 0;
 
-         if (sent == TCP_NO_CONNECT || socket_ptr->tcp_state == TCP_CLOSED)
-            mn_abort(socket_ptr->socket_no);
-
+      /* check correct version */
+      if (pudp->version != SUBM_VERSION && *((unsigned char *)(pudp+1)) != MCMD_ECHO) {
          return 0;
       }
+
+      /* store our own sequence number */
+      socket_ptr->SEG_SEQ.NUMW[0] = pudp->seq_num;
+
+      *data_ptr = socket_ptr->recv_ptr;
+      *socket_no_ptr = socket_ptr->socket_no;
+
+      return socket_ptr->recv_len;
    }
 
    return 0;
@@ -631,62 +603,36 @@ int tcp_receive(unsigned char **data_ptr, char *socket_no_ptr)
 
 /*------------------------------------------------------------------*/
 
-int tcp_send(unsigned char socket_no, unsigned char *buffer, int size)
+int udp_send(unsigned char socket_no, unsigned char *buffer, int size)
 {
    PSOCKET_INFO socket_ptr;
-   unsigned int sent, n, frag_size;
+   UDP_HEADER *pudp;
+   unsigned int n;
 
    if (socket_no < 0 || socket_no >= NUM_SOCKETS)
       return 0;
 
+   if (size > UDP_TX_SIZE)
+      return 0;
+
    socket_ptr = &sock_info[socket_no];
 
+   /* set-up UDP header */
+   pudp = (UDP_HEADER *)udp_tx_buf;
+   pudp->version = SUBM_VERSION;
+   pudp->size    = size;
+   pudp->seq_num = socket_ptr->SEG_SEQ.NUMW[0];
+   pudp->flags   = 0;
+
    /* copy data to tx buffer */
-   for (n=0 ; n<size ; ) {
-      
-      if (n == 0) {
-         frag_size = size-n < DATA_BUFF_LEN-2 ? size-n : DATA_BUFF_LEN-2;
+   memcpy(pudp+1, buffer, size);
+   socket_ptr->send_len = size+sizeof(UDP_HEADER);
+   n = mn_udp_send(socket_ptr);
 
-         if (size < 0x80) {
-            tcp_tx_buf[socket_no][0] = size & 0xFF;
-   
-            memcpy(&tcp_tx_buf[socket_no]+1, buffer, frag_size);
-            socket_ptr->send_ptr = &tcp_tx_buf[socket_no];
-            socket_ptr->send_len = frag_size+1;
-         } else {
-            tcp_tx_buf[socket_no][0] = (size >> 8) | 0x80;
-            tcp_tx_buf[socket_no][1] = size & 0xFF;
-   
-            memcpy(&tcp_tx_buf[socket_no]+2, buffer, frag_size);
-            socket_ptr->send_ptr = &tcp_tx_buf[socket_no];
-            socket_ptr->send_len = frag_size+2;
-         }
-      } else {
-         frag_size = size-n < DATA_BUFF_LEN ? size-n : DATA_BUFF_LEN;
- 
-         memcpy(&tcp_tx_buf[socket_no], buffer+n, frag_size);
-         socket_ptr->send_ptr = &tcp_tx_buf[socket_no];
-         socket_ptr->send_len = frag_size;
-      }
-   
-      sent = mn_send(socket_no, socket_ptr->send_ptr, socket_ptr->send_len);
-      if (sent != UNABLE_TO_SEND) {
-         if ((sent < 0 && sent != TCP_NO_CONNECT) || socket_ptr->tcp_state == TCP_CLOSED) {
-            mn_abort(socket_ptr->socket_no);
-            return 0;
-         }
-      }
+   if (n < sizeof(UDP_HEADER))
+      return n;
 
-      if (n == 0 && sent > 0) {
-         if (size < 0x80)
-            n += sent-1; // minus buffer size
-         else
-            n += sent-2;
-      } else
-         n += sent;
-   }
-
-   return n;
+   return n-sizeof(UDP_HEADER);
 }
 
 /*------------------------------------------------------------------*/
@@ -695,6 +641,7 @@ void main(void)
 {
    unsigned char *ptr, n, flags;
    char socket_no;
+   UDP_HEADER *pudp;
 
    // initialize the C8051F12x
    setup();
@@ -717,33 +664,33 @@ void main(void)
    do {
       watchdog_refresh(0);
 
-      if (!configured || exclusive_socket_no != -1)
+      if (!configured || exclusive_port)
          led_blink(0, 1, 50);
 
       /* receive a TCP package, open socket if necessary */
-      if ((n = tcp_receive(&ptr, &socket_no)) > 0) {
+      if ((n = udp_receive(&ptr, &socket_no)) > 0) {
+
+         pudp = (UDP_HEADER *)ptr;
 
          /* check for exclusive mode */
-         if (exclusive_socket_no != -1 &&
-             exclusive_socket_no != socket_no)
+         if (exclusive_port &&
+             (exclusive_port != sock_info[socket_no].dest_port ||
+              memcmp(exclusive_addr, sock_info[socket_no].ip_dest_addr, 4)))
             continue;
 
-         if (exclusive_socket_no != -1 &&
-             exclusive_socket_no == socket_no)
+         if (exclusive_port &&
+             exclusive_port == sock_info[socket_no].dest_port &&
+             memcmp(exclusive_addr, sock_info[socket_no].ip_dest_addr, 4) == 0)
             exclusive_timer = 1000; // expires after 10 sec. inactivity
 
          /* signal incoming data */
          led_blink(0, 1, 50);
 
-         /* check if buffer complete */
-         if (ptr[0]+1 != n)
-            continue;
+         /* copy buffer after header */
+         memcpy(rs485_tx_buf, pudp+1, n-sizeof(UDP_HEADER));
+         flags = pudp->flags;
 
-         /* copy buffer after first unsigned char (buffer length) */
-         memcpy(rs485_tx_buf, ptr+1, n-1);
-         flags = rs485_tx_buf[0];
-
-         if (rs485_send(socket_no, n-1, flags)) {
+         if (rs485_send(socket_no, n-sizeof(UDP_HEADER), flags)) {
 
             /* wait until sent */
             while (n_rs485_tx)
