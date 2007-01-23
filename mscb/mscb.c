@@ -10,8 +10,8 @@
 \********************************************************************/
 
 #define MSCB_LIBRARY_VERSION   "2.3.3"
-#define MSCB_PROTOCOL_VERSION  "4"
-#define MSCB_SUBM_VERSION      4
+#define MSCB_PROTOCOL_VERSION  "5"
+#define MSCB_SUBM_VERSION      5
 
 #ifdef _MSC_VER                 // Windows includes
 
@@ -894,8 +894,8 @@ int mscb_in1(int fd, unsigned char *c, int timeout)
 
 int recv_eth(int sock, char *buf, int buffer_size, int millisec)
 {
-   int n_received, n, status;
-   unsigned char buffer[65];
+   int n_received, n, status, size, header_size;
+   unsigned char buffer[1026];
    fd_set readfds;
    struct timeval timeout;
 
@@ -911,7 +911,7 @@ int recv_eth(int sock, char *buf, int buffer_size, int millisec)
       millisec = 3000;
 
    /* receive buffer in TCP mode, first byte contains remaining bytes */
-   n_received = 0;
+   n_received = header_size = 0;
    do {
       FD_ZERO(&readfds);
       FD_SET(sock, &readfds);
@@ -928,20 +928,37 @@ int recv_eth(int sock, char *buf, int buffer_size, int millisec)
 
       n = recv(sock, buffer + n_received, sizeof(buffer) - n_received, 0);
 
+#ifdef _MSC_VER
+      /* needed for Windows to send ACK immediately */
+      if (n == 64) {
+         status = 0;
+         send(sock, (char *) &status, 1, 0);
+      }
+#endif
+
       if (n <= 0)
          return n;
 
       n_received += n;
+      
+      if (n_received > 1) {
+         size = buffer[0];
+         header_size = 1;
+         if (size >= 0x80) {
+            size = (buffer[0] & ~0x80) >> 8 | buffer[1];
+            header_size = 2;
+         }
+      }
 
-   } while (n_received < 1 && n_received < buffer[0]+1);
+   } while (n_received < 1 || n_received < size+header_size);
 
-   if (buffer[0] > buffer_size) {
-      memcpy(buf, buffer+1, buffer_size);
+   if (size > buffer_size) {
+      memcpy(buf, buffer+header_size, buffer_size);
       return buffer_size;
    } else
-      memcpy(buf, buffer+1, buffer[0]);
+      memcpy(buf, buffer+header_size, size);
 
-   return buffer[0];
+   return size;
 }
 
 /*------------------------------------------------------------------*/
@@ -3794,9 +3811,9 @@ int mscb_read_no_retries(int fd, unsigned short adr, unsigned char index, void *
 int mscb_read_range(int fd, unsigned short adr, unsigned char index1, unsigned char index2, void *data, int *size)
 /********************************************************************\
 
-  Routine: mscb_read
+  Routine: mscb_read_range
 
-  Purpose: Read data from channel on node
+  Purpose: Read data from multiple channels on node
 
   Input:
     int fd                  File descriptor for connection
@@ -3818,8 +3835,8 @@ int mscb_read_range(int fd, unsigned short adr, unsigned char index1, unsigned c
 
 \********************************************************************/
 {
-   int i, n;
-   unsigned char buf[256], crc;
+   int i, j, n, status;
+   unsigned char buf[1024], str[10000], crc;
 
    memset(data, 0, *size);
 
@@ -3833,16 +3850,25 @@ int mscb_read_range(int fd, unsigned short adr, unsigned char index1, unsigned c
    if (mscb_lock(fd) != MSCB_SUCCESS)
       return MSCB_MUTEX;
 
-   /* try ten times */
-   for (n = i = 0; n < 10; n++) {
+   /* try five times */
+   for (n = i = 0; n < 5; n++) {
       /* after five times, reset submaster */
-      if (n == 5) {
+      if (n == 3) {
 #ifndef _USRDLL
          printf("Automatic submaster reset.\n");
 #endif
-
+         debug_log("Automatic submaster reset\n", 1);
          mscb_release(fd);
-         mscb_reset(fd);
+         status = mscb_reset(fd);
+         if (status == MSCB_SUBM_ERROR) {
+            sprintf(str, "Cannot reconnect to submaster %s\n", mscb_fd[fd - 1].device);
+#ifndef _USRDLL
+            printf(str);
+#endif
+            debug_log(str, 1);
+            mscb_lock(fd);
+            break;
+         }
          mscb_lock(fd);
          Sleep(100);
       }
@@ -3856,32 +3882,126 @@ int mscb_read_range(int fd, unsigned short adr, unsigned char index1, unsigned c
       buf[5] = index1;
       buf[6] = index2;
       buf[7] = crc8(buf+4, 3);
-      mscb_out(fd, buf, 8, RS485_FLAG_ADR_CYCLE);
+      status = mscb_out(fd, buf, 8, RS485_FLAG_ADR_CYCLE);
+      if (status == MSCB_TIMEOUT) {
+#ifndef _USRDLL
+         /* show error, but repeat 10 times */
+         printf("Timeout writing to sumbster\n");
+#endif
+         debug_log("Timeout writing to sumbster\n", 1);
+         continue;
+      }
+      if (status == MSCB_SUBM_ERROR) {
+#ifndef _USRDLL
+         /* show error, but repeat 10 times */
+         printf("Connection to submaster broken\n");
+#endif
+         debug_log("Connection to submaster broken\n", 1);
+         break;
+      }
 
       /* read data */
-      i = mscb_in(fd, buf, 256, TO_SHORT);
+      i = mscb_in(fd, buf, sizeof(buf), TO_SHORT);
 
-      if (i < 2)
+      if (i == 1 && buf[0] == MCMD_ACK) {
+         /* variable has been deleted on node, so refresh cache */ 
+         mscb_release(fd);
+         mscb_clear_info_cache(fd);
+         return MSCB_INVALID_INDEX;
+      }
+
+      if (i == 1) {
+#ifndef _USRDLL
+         printf("Timeout from RS485 bus\n");
+#endif
+         debug_log("Timeout from RS485 bus\n", 1);
+         status = MSCB_TIMEOUT;
+
+#ifndef _USRDLL
+         printf("Flush node communication\n");
+#endif
+         debug_log("Flush node communication\n", 1);
+         memset(buf, 0, sizeof(buf));
+         mscb_out(fd, buf, 10, RS485_FLAG_BIT9 | RS485_FLAG_NO_ACK);
+         Sleep(100);
+
          continue;
+      }
+
+      if (i < 2) {
+#ifndef _USRDLL
+         /* show error, but repeat request */
+         printf("Timeout reading from submaster\n");
+#endif
+         status = MSCB_TIMEOUT;
+         continue;
+      }
 
       crc = crc8(buf, i - 1);
 
-      if (buf[0] != MCMD_ACK + 7 || buf[i - 1] != crc)
+      if ((buf[0] != MCMD_ACK + i - 2 && buf[0] != MCMD_ACK + 7)
+         || buf[i - 1] != crc) {
+         status = MSCB_CRC_ERROR;
+#ifndef _USRDLL
+         /* show error, but repeat 10 times */
+         printf("CRC error on RS485 bus\n");
+#endif
          continue;
+      }
 
-      memcpy(data, buf + 2, i - 3);
-      *size = i - 3;
+      if (buf[0] == MCMD_ACK + 7) {
+         if (i - 3 > *size) {
+            mscb_release(fd);
+            *size = 0;
+            debug_log("return MSCB_NO_MEM, i=%d, *size=%d\n", 0, i, *size);
+            return MSCB_NO_MEM;
+         }
+
+         if (buf[1] & 0x80) {
+            memcpy(data, buf + 3, i - 4);  // variable length with size in two byte
+            *size = i - 4;
+         } else {
+            memcpy(data, buf + 2, i - 3);  // variable length with size in one byte
+            *size = i - 3;
+         }
+      } else {
+         if (i - 2 > *size) {
+            mscb_release(fd);
+            *size = 0;
+            debug_log("return MSCB_NO_MEM, i=%d, *size=%d\n", 0, i, *size);
+            return MSCB_NO_MEM;
+         }
+
+         memcpy(data, buf + 1, i - 2);
+         *size = i - 2;
+      }
 
       mscb_release(fd);
+      sprintf(str, "return %d bytes: ", *size);
+      for (j=0 ; j<*size ; j++) {
+         sprintf(str+strlen(str), "0x%02X ", 
+            *(((unsigned char *)data)+j));
+         if (isalnum(*(((unsigned char *)data)+j)))
+            sprintf(str+strlen(str), "('%c') ", 
+               *(((unsigned char *)data)+j));
+      }
+      strlcat(str, "\n", sizeof(str)); 
+      debug_log(str, 0);
+
       return MSCB_SUCCESS;
    }
 
    mscb_release(fd);
 
-   if (i < 2)
-      return MSCB_TIMEOUT;
+   debug_log("\n", 0);
+   if (status == MSCB_TIMEOUT)
+     debug_log("return MSCB_TIMEOUT\n", 1);
+   if (status == MSCB_CRC_ERROR)
+      debug_log("return MSCB_CRC_ERROR\n", 1);
+   if (status == MSCB_SUBM_ERROR)
+      debug_log("return MSCB_SUBM_ERROR\n", 1);
 
-   return MSCB_CRC_ERROR;
+   return status;
 }
 
 /*------------------------------------------------------------------*/

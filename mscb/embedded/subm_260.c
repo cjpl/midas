@@ -16,7 +16,7 @@
 #include "mscbemb.h"
 #include "net.h"
 
-#define SUBM_VERSION 4  // used for PC-Submaster communication
+#define SUBM_VERSION 5  // used for PC-Submaster communication
 
 /*------------------------------------------------------------------*/
 
@@ -101,15 +101,18 @@ int tcp_send(char socket_no, unsigned char *buffer, int size);
 /*------------------------------------------------------------------*/
 
 #define DATA_BUFF_LEN    64
+#define RX_BUFF_LEN    1024
+
 unsigned char tcp_tx_buf[NUM_SOCKETS][DATA_BUFF_LEN];
 unsigned char tcp_rx_buf[NUM_SOCKETS][DATA_BUFF_LEN];
 
 unsigned char rs485_tx_buf[DATA_BUFF_LEN];
-unsigned char rs485_rx_buf[DATA_BUFF_LEN];
+unsigned char rs485_rx_buf[RX_BUFF_LEN];
 
 unsigned char rs485_tx_bit9[4];
 
-unsigned char n_tcp_rx, n_rs485_tx, i_rs485_tx, i_rs485_rx;
+unsigned char n_tcp_rx, n_rs485_tx, i_rs485_tx;
+unsigned short i_rs485_rx;
 
 /*------------------------------------------------------------------*/
 
@@ -291,8 +294,9 @@ void serial_int(void) interrupt 4 using 1
 
    if (RI0) {
       /* put received unsigned char into buffer */
-      rs485_rx_buf[i_rs485_rx++] = SBUF0;
-
+      if (i_rs485_rx < RX_BUFF_LEN)
+         rs485_rx_buf[i_rs485_rx++] = SBUF0;
+                             
       RI0 = 0;
    }
 }
@@ -447,8 +451,7 @@ unsigned char rs485_send(char socket_no, unsigned char len, unsigned char flags)
 
 void rs485_receive(char socket_no, unsigned char rs485_flags)
 {
-unsigned char  n;
-unsigned short i, to;
+unsigned short n, i, to, rx_old;
 
    if (rs485_flags & RS485_FLAG_NO_ACK)
       return;
@@ -461,8 +464,15 @@ unsigned short i, to;
       to = 100;   // 10 ms for other commands
 
    n = 0;
+   rx_old = 0;
 
    for (i = 0; i<to ; i++) {
+              
+      /* reset timeout if a charactes is received */
+      if (i_rs485_rx > rx_old) {
+         i = 0;
+         rx_old = 0;
+      }
 
       /* check for PING acknowledge (single unsigned char) */
       if (rs485_tx_buf[1] == MCMD_PING16 &&
@@ -487,10 +497,18 @@ unsigned short i, to;
       if (i_rs485_rx > 0 && (rs485_rx_buf[0] & MCMD_ACK) == MCMD_ACK) {
 
          n = rs485_rx_buf[0] & 0x07;     // length is three LSB
-         if (n == 7 && i_rs485_rx > 1)
-            n = rs485_rx_buf[1]+3;       // variable length acknowledge
-         else
+         if (n == 7 && i_rs485_rx > 1) {
+            n = rs485_rx_buf[1]+3;       // variable length acknowledge one byte
+            if ((n & 0x80) && i_rs485_rx > 2)
+               n = (rs485_rx_buf[1] & ~0x80) << 8 | (rs485_rx_buf[2]) + 4; // two bytes
+         } else
             n += 2;                      // add ACK and CRC
+
+         if (i_rs485_rx == n && n > 64) {
+            led_blink(1, 1, 50);
+            tcp_send(socket_no, rs485_rx_buf, n);
+            break;
+         }
 
          if (i_rs485_rx == n) {
             led_blink(1, 1, 50);
@@ -553,6 +571,19 @@ int tcp_receive(unsigned char **data_ptr, char *socket_no_ptr)
    if (dhcp_state == DHCP_RENEWING || dhcp_state == DHCP_REBINDING)
       (void) mn_dhcp_renew(dhcp_lease.org_lease_time);
 
+   /* check if any socket has already data (from previous send-ACK) */
+   for (i=0 ; i<NUM_SOCKETS ; i++)
+      if (SOCKET_ACTIVE(i)) {
+         socket_ptr = &sock_info[i];
+         if (socket_ptr->recv_len) {
+            *data_ptr = socket_ptr->recv_ptr;
+            *socket_no_ptr = socket_ptr->socket_no;
+            recvd = socket_ptr->recv_len;
+            socket_ptr->recv_len = 0;
+            return recvd;
+         }
+      }
+
    /* receive packet */
    packet_type = mn_ip_recv();
 
@@ -603,7 +634,7 @@ int tcp_receive(unsigned char **data_ptr, char *socket_no_ptr)
 int tcp_send(unsigned char socket_no, unsigned char *buffer, int size)
 {
    PSOCKET_INFO socket_ptr;
-   int sent;
+   unsigned int sent, n, frag_size;
 
    if (socket_no < 0 || socket_no >= NUM_SOCKETS)
       return 0;
@@ -611,15 +642,34 @@ int tcp_send(unsigned char socket_no, unsigned char *buffer, int size)
    socket_ptr = &sock_info[socket_no];
 
    /* copy data to tx buffer */
-   memcpy(&tcp_tx_buf[socket_no]+1, buffer, size);
-   tcp_tx_buf[socket_no][0] = size;
-   socket_ptr->send_ptr = &tcp_tx_buf[socket_no];
-   socket_ptr->send_len = size+1;
+   for (n=0 ; n<size ; ) {
+      
+      if (n == 0) {
+         frag_size = size-n < DATA_BUFF_LEN-2 ? size-n : DATA_BUFF_LEN-2;
 
-   if (socket_ptr->ip_proto == PROTO_TCP) {
-
-      sent = mn_tcp_send(socket_ptr);
-
+         if (size < 0x80) {
+            tcp_tx_buf[socket_no][0] = size & 0xFF;
+   
+            memcpy(&tcp_tx_buf[socket_no]+1, buffer, frag_size);
+            socket_ptr->send_ptr = &tcp_tx_buf[socket_no];
+            socket_ptr->send_len = frag_size+1;
+         } else {
+            tcp_tx_buf[socket_no][0] = (size >> 8) | 0x80;
+            tcp_tx_buf[socket_no][1] = size & 0xFF;
+   
+            memcpy(&tcp_tx_buf[socket_no]+2, buffer, frag_size);
+            socket_ptr->send_ptr = &tcp_tx_buf[socket_no];
+            socket_ptr->send_len = frag_size+2;
+         }
+      } else {
+         frag_size = size-n < DATA_BUFF_LEN ? size-n : DATA_BUFF_LEN;
+ 
+         memcpy(&tcp_tx_buf[socket_no], buffer+n, frag_size);
+         socket_ptr->send_ptr = &tcp_tx_buf[socket_no];
+         socket_ptr->send_len = frag_size;
+      }
+   
+      sent = mn_send(socket_no, socket_ptr->send_ptr, socket_ptr->send_len);
       if (sent != UNABLE_TO_SEND) {
          if ((sent < 0 && sent != TCP_NO_CONNECT) || socket_ptr->tcp_state == TCP_CLOSED) {
             mn_abort(socket_ptr->socket_no);
@@ -627,11 +677,16 @@ int tcp_send(unsigned char socket_no, unsigned char *buffer, int size)
          }
       }
 
-      return sent;
-   } else if (socket_ptr->ip_proto == PROTO_UDP)
-      sent = mn_udp_send(socket_ptr);
+      if (n == 0 && sent > 0) {
+         if (size < 0x80)
+            n += sent-1; // minus buffer size
+         else
+            n += sent-2;
+      } else
+         n += sent;
+   }
 
-   return sent;
+   return n;
 }
 
 /*------------------------------------------------------------------*/
