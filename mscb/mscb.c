@@ -153,6 +153,14 @@ extern void debug_log(char *format, int start, ...);
 
 #define MUSB_TIMEOUT 3000 /* 3 sec */
 
+/* header for UDP communication */
+typedef struct {
+   unsigned short size;
+   unsigned short seq_num;
+   unsigned char  flags;
+   unsigned char  version;
+} UDP_HEADER;
+
 /*------------------------------------------------------------------*/
 
 /* cache definitions for mscb_link */
@@ -632,6 +640,72 @@ int subm250_open(MUSB_INTERFACE **ui, int usb_index)
 
 /*------------------------------------------------------------------*/
 
+int send_udp(int index, char *buffer, int size)
+{
+   int count;
+
+   count = sendto(mscb_fd[index-1].fd, buffer, size, 0, 
+                  (struct sockaddr *) &mscb_fd[index-1].eth_addr, 
+                  sizeof(struct sockaddr_in));
+
+   return count;
+}
+
+/*------------------------------------------------------------------*/
+
+int recv_udp(int index, char *buf, int buffer_size, int millisec)
+{
+   int n, status, size;
+   unsigned char buffer[1024+6];
+   fd_set readfds;
+   struct timeval timeout;
+   UDP_HEADER *pudp;
+
+   if (buffer_size > sizeof(buffer))
+      buffer_size = sizeof(buffer);
+
+   /* at least 3 sec timeout for slow network connections */
+   if (millisec < 3000)
+      millisec = 3000;
+
+   /* receive buffer in UDP mode */
+
+   FD_ZERO(&readfds);
+   FD_SET(mscb_fd[index-1].fd, &readfds);
+
+   timeout.tv_sec = millisec / 1000;
+   timeout.tv_usec = (millisec % 1000) * 1000;
+
+   do {
+      status = select(FD_SETSIZE, (void *) &readfds, NULL, NULL, (void *) &timeout);
+   } while (status == -1);        /* dont return if an alarm signal was cought */
+
+   if (!FD_ISSET(mscb_fd[index-1].fd, &readfds))
+      return 0;
+
+   n = recv(mscb_fd[index-1].fd, buffer, sizeof(buffer), 0);
+
+   pudp = (UDP_HEADER *)buffer;
+
+   /* check version */
+   if (pudp->version != MSCB_SUBM_VERSION)
+      return -pudp->version;
+
+   /* check size */
+   size = ntohs(pudp->size);
+   if (size + sizeof(UDP_HEADER) != n)
+      return 0;
+
+   /* check sequence number */
+   if (ntohs(pudp->seq_num) != mscb_fd[index-1].seq_nr)
+      return 0;
+
+   memcpy(buf, pudp+1, size);
+   return size;
+}
+
+/*------------------------------------------------------------------*/
+
 int mscb_out(int index, unsigned char *buffer, int len, int flags)
 /********************************************************************\
 
@@ -658,6 +732,7 @@ int mscb_out(int index, unsigned char *buffer, int len, int flags)
 {
    int i, timeout;
    unsigned char usb_buf[65], eth_buf[65];
+   UDP_HEADER *pudp;
 
    if (index > MSCB_MAX_FD || index < 1 || !mscb_fd[index - 1].type)
       return MSCB_INVAL_PARAM;
@@ -775,33 +850,25 @@ int mscb_out(int index, unsigned char *buffer, int len, int flags)
    /*---- Ethernet code ----*/
 
    if (mscb_fd[index - 1].type == MSCB_TYPE_ETH) {
-      if (len >= 64 || len < 1)
+      if (len >= 256 || len < 1)
          return MSCB_INVAL_PARAM;
 
-      /* write buffer size in first byte */
-      eth_buf[0] = (unsigned char)(len + 1);
+      /* increment and write sequence number */
+      mscb_fd[index - 1].seq_nr = (mscb_fd[index - 1].seq_nr + 1) % 0x10000;
 
-      /* add flags in second byte of Ethernet buffer */
-      eth_buf[1] = (unsigned char)flags;
-      memcpy(eth_buf + 2, buffer, len);
+      /* fill UDP header */
+      pudp = (UDP_HEADER *)eth_buf;
+      pudp->size = htons((short) len);
+      pudp->seq_num = htons((short) mscb_fd[index - 1].seq_nr);
+      pudp->flags = flags;
+      pudp->version = MSCB_SUBM_VERSION;
 
-      /* send over TCP link */
-      i = msend_tcp(mscb_fd[index - 1].fd, eth_buf, len + 2);
+      memcpy(pudp+1, buffer, len);
 
-      if (i <= 0) {
-         /* Ethernet submaster might have been dis- and reconnected, so reinit */
-         if (mscb_fd[index - 1].fd > 0)
-            mrpc_disconnect(mscb_fd[index - 1].fd);
+      /* send over UDP link */
+      i = send_udp(index, eth_buf, len + sizeof(UDP_HEADER));
 
-         mscb_fd[index - 1].fd = mrpc_connect(mscb_fd[index - 1].device, MSCB_NET_PORT);
-
-         if (mscb_fd[index - 1].fd < 0)
-            return MSCB_SUBM_ERROR;
-
-         i = msend_tcp(mscb_fd[index - 1].fd, eth_buf, len + 2);
-      }
-
-      if (i != len + 2)
+      if (i != len + sizeof(UDP_HEADER))
          return MSCB_TIMEOUT;
    }
 
@@ -892,77 +959,6 @@ int mscb_in1(int fd, unsigned char *c, int timeout)
 
 /*------------------------------------------------------------------*/
 
-int recv_eth(int sock, char *buf, int buffer_size, int millisec)
-{
-   int n_received, n, status, size, header_size;
-   unsigned char buffer[1026];
-   fd_set readfds;
-   struct timeval timeout;
-
-   /* check for valid socket */
-   if (sock < 0)
-      return 0;
-
-   if (buffer_size > sizeof(buffer))
-      buffer_size = sizeof(buffer);
-
-   /* at least 3 sec timeout for slow network connections */
-   if (millisec < 3000)
-      millisec = 3000;
-
-   /* receive buffer in TCP mode, first byte contains remaining bytes */
-   n_received = header_size = 0;
-   do {
-      FD_ZERO(&readfds);
-      FD_SET(sock, &readfds);
-
-      timeout.tv_sec = millisec / 1000;
-      timeout.tv_usec = (millisec % 1000) * 1000;
-
-      do {
-         status = select(FD_SETSIZE, (void *) &readfds, NULL, NULL, (void *) &timeout);
-      } while (status == -1);        /* dont return if an alarm signal was cought */
-
-      if (!FD_ISSET(sock, &readfds))
-         return n_received;
-
-      n = recv(sock, buffer + n_received, sizeof(buffer) - n_received, 0);
-
-#ifdef _MSC_VER
-      /* needed for Windows to send ACK immediately */
-      if (n == 64) {
-         status = 0;
-         send(sock, (char *) &status, 1, 0);
-      }
-#endif
-
-      if (n <= 0)
-         return n;
-
-      n_received += n;
-      
-      if (n_received > 1) {
-         size = buffer[0];
-         header_size = 1;
-         if (size >= 0x80) {
-            size = (buffer[0] & ~0x80) >> 8 | buffer[1];
-            header_size = 2;
-         }
-      }
-
-   } while (n_received < 1 || n_received < size+header_size);
-
-   if (size > buffer_size) {
-      memcpy(buf, buffer+header_size, buffer_size);
-      return buffer_size;
-   } else
-      memcpy(buf, buffer+header_size, size);
-
-   return size;
-}
-
-/*------------------------------------------------------------------*/
-
 int mscb_in(int index, char *buffer, int size, int timeout)
 /********************************************************************\
 
@@ -991,6 +987,8 @@ int mscb_in(int index, char *buffer, int size, int timeout)
    if (index > MSCB_MAX_FD || index < 1 || !mscb_fd[index - 1].type)
       return MSCB_INVAL_PARAM;
 
+   memset(buffer, 0, size);
+
    /*---- USB code ----*/
    if (mscb_fd[index - 1].type == MSCB_TYPE_USB) {
 
@@ -1003,7 +1001,7 @@ int mscb_in(int index, char *buffer, int size, int timeout)
    if (mscb_fd[index - 1].type == MSCB_TYPE_ETH) {
 
       /* receive result on IN pipe */
-      n = recv_eth(mscb_fd[index - 1].fd, buffer, size, timeout);
+      n = recv_udp(index, buffer, size, timeout);
    }
 
    /*---- LPT code ----*/
@@ -1312,6 +1310,7 @@ int mscb_init(char *device, int bufsize, char *password, int debug)
    int status;
    char host[256], port[256], dev3[256], remote_device[256];
    unsigned char buf[64];
+   struct hostent *phe;
 
    if (!device[0]) {
       if (debug == -1)
@@ -1469,10 +1468,29 @@ int mscb_init(char *device, int bufsize, char *password, int debug)
 
    if (mscb_fd[index].type == MSCB_TYPE_ETH) {
 
-      mscb_fd[index].fd = mrpc_connect(mscb_fd[index].device, MSCB_NET_PORT);
+#ifdef _MSC_VER
+   {
+      WSADATA WSAData;
 
-      if (mscb_fd[index].fd < 0) {
-         memset(&mscb_fd[index], 0, sizeof(MSCB_FD));
+      /* Start windows sockets */
+      if (WSAStartup(MAKEWORD(1, 1), &WSAData) != 0)
+         return -1;
+   }
+#endif
+
+      /* retrieve destination address */
+      phe = gethostbyname(mscb_fd[index].device);
+      if (phe == NULL) {
+         debug_log("return EMSCB_RPC_ERROR\n", 0);
+         return EMSCB_RPC_ERROR;
+      }
+      memset(&mscb_fd[index].eth_addr, 0, sizeof(struct sockaddr));
+      memcpy((char *) &(mscb_fd[index].eth_addr.sin_addr), phe->h_addr, phe->h_length);
+      mscb_fd[index].eth_addr.sin_port = htons((short) MSCB_NET_PORT);
+      mscb_fd[index].eth_addr.sin_family = AF_INET;
+
+      mscb_fd[index].fd = socket(AF_INET, SOCK_DGRAM, 0);
+      if (mscb_fd[index].fd == -1) {
          debug_log("return EMSCB_RPC_ERROR\n", 0);
          return EMSCB_RPC_ERROR;
       }
@@ -1490,13 +1508,16 @@ int mscb_init(char *device, int bufsize, char *password, int debug)
       n = mscb_in(index + 1, buf, 2, TO_SHORT);
       mscb_release(index + 1);
 
-      if (n == 2 && buf[0] == MCMD_ACK) {
-         /* check version */
-         if (buf[1] != MSCB_SUBM_VERSION) {
-            debug_log("return EMSCB_SUBM_VERSION\n", 0);
-            memset(&mscb_fd[index], 0, sizeof(MSCB_FD));
-            return EMSCB_SUBM_VERSION;
-         }
+      if (n < 0) {
+         /* invalid version */
+         debug_log("return EMSCB_SUBM_VERSION\n", 0);
+         memset(&mscb_fd[index], 0, sizeof(MSCB_FD));
+         return EMSCB_SUBM_VERSION;
+      }
+
+      if (n < 2) {
+         debug_log("return EMSCB_RPC_ERROR\n", 0);
+         return EMSCB_RPC_ERROR;
       }
 
       /* authenticate */
@@ -1898,6 +1919,7 @@ int mscb_reset(int fd)
 \********************************************************************/
 {
    char buf[10];
+   int n;
 
    debug_log("mscb_reset(fd=%d) ", 1, fd);
 
@@ -1924,10 +1946,14 @@ int mscb_reset(int fd)
       buf[0] = MCMD_INIT;
       mscb_out(fd, buf, 1, RS485_FLAG_CMD);
 
-      mrpc_disconnect(fd);
       Sleep(5000);  // let submaster obtain IP address
-      mscb_fd[fd - 1].fd = mrpc_connect(mscb_fd[fd - 1].device, MSCB_NET_PORT);
-      if (mscb_fd[fd - 1].fd < 0) {
+
+      /* check if submaster alive */
+      buf[0] = MCMD_ECHO;
+      mscb_out(fd, buf, 1, RS485_FLAG_CMD);
+
+      n = mscb_in(fd, buf, 2, TO_SHORT);
+      if (n < 2) {
          mscb_release(fd);
          debug_log("return MSCB_SUBM_ERROR (mrpc_connect)\n", 0);
          return MSCB_SUBM_ERROR;

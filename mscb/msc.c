@@ -746,10 +746,12 @@ void cmd_loop(int fd, char *cmd, unsigned short adr)
          while (kbhit())
             getch();
 
-         if (n_found > 0)
-            printf("%d nodes found                \n", n_found);
-         else
-            printf("                            \n");
+         if (n_found == 0)
+            printf("\n\nNo nodes found                \n");
+         else if (n_found == 1)
+            printf("\n\nOne node found                \n");
+         else if (n_found > 0)
+            printf("\n\n%d nodes found                \n", n_found);
       }
 
       /* info ---------- */
@@ -1586,9 +1588,14 @@ void cmd_loop(int fd, char *cmd, unsigned short adr)
 
       /* test 2 -----------*/
       else if (match(param[0], "t2")) {
-         size = sizeof(dbuf);
-         status = mscb_read_range(fd, (unsigned short) current_addr,
-                                 (unsigned char) 0, (unsigned char) 50, dbuf, &size);
+
+         for (i=0 ; i<900 ; i++) {
+            size = sizeof(dbuf);
+            status = mscb_read_range(fd, (unsigned short) current_addr,
+                                    (unsigned char) 0, (unsigned char) 9, dbuf, &size);
+            printf("%d\r", i);
+         }
+         printf("\n");
       }
 
       /* exit/quit ---------- */
