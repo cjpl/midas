@@ -9798,7 +9798,7 @@ void debug_dump(unsigned char *p, int size)
    unsigned char c;
 
    for (i = 0; i < (size-1)/16+1; i++) {
-      printf("%08p ", p + i * 16);
+      printf("%p ", p + i * 16);
       for (j = 0; j < 16; j++)
          if (i * 16 + j < size)
             printf("%02X ", p[i * 16 + j]);
