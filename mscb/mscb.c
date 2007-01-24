@@ -996,7 +996,6 @@ int mscb_in(int index, char *buffer, int size, int timeout)
 
       /* receive result on IN pipe */
       n = musb_read(mscb_fd[index - 1].ui, 0, buffer, size, timeout);
-
    }
 
    /*---- Ethernet code ----*/
@@ -3923,19 +3922,30 @@ int mscb_read_range(int fd, unsigned short adr, unsigned char index1, unsigned c
 \********************************************************************/
 {
    int i, j, n, status;
-   unsigned char buf[1024], str[10000], crc;
+   unsigned char buf[256], str[10000], crc;
+
+   debug_log("mscb_read_range(fd=%d,adr=%d,index1=%d,index2=%dsize=%d) ", 
+      1, fd, adr, index1, index2, *size);
+
+   if (*size > 256)
+      return MSCB_INVAL_PARAM;
 
    memset(data, 0, *size);
+   status = 0;
 
-   if (fd > MSCB_MAX_FD || fd < 1 || !mscb_fd[fd - 1].type)
+   if (fd > MSCB_MAX_FD || fd < 1 || !mscb_fd[fd - 1].type) {
+      debug_log("return MSCB_INVAL_PARAM\n", 0);
       return MSCB_INVAL_PARAM;
+   }
 
    if (mrpc_connected(fd))
       return mrpc_call(mscb_fd[fd - 1].fd, RPC_MSCB_READ_RANGE,
                        mscb_fd[fd - 1].remote_fd, adr, index1, index2, data, size);
 
-   if (mscb_lock(fd) != MSCB_SUCCESS)
+   if (mscb_lock(fd) != MSCB_SUCCESS) {
+      debug_log("return MSCB_MUTEX\n", 0);
       return MSCB_MUTEX;
+   }
 
    /* try five times */
    for (n = i = 0; n < 5; n++) {
