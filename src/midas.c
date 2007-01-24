@@ -9791,6 +9791,30 @@ int cm_query_transition(int *transition, int *run_number, int *trans_time)
 *                        server functions                            *
 \********************************************************************/
 
+void debug_dump(unsigned char *p, int size)
+{
+   int i, j;
+   unsigned char c;
+
+   for (i = 0; i < size/16; i++) {
+      printf("%08X ", p + i * 16);
+      for (j = 0; j < 16; j++)
+         if (i * 16 + j < size)
+            printf("%02X ", p[i * 16 + j]);
+         else
+            printf("   ");
+      printf(" ");
+
+      for (j = 0; j < 16; j++) {
+         c = p[i * 16 + j];
+         if (i * 16 + j < size)
+            printf("%c", (c >= 32 && c < 128) ? p[i * 16 + j] : '.');
+      }
+      printf("\n");
+   }
+
+   printf("\n");
+}
 
 /********************************************************************/
 INT recv_tcp_server(INT index, char *buffer, DWORD buffer_size, INT flags, INT * remaining)
@@ -10548,18 +10572,18 @@ INT rpc_execute(INT sock, char *buffer, INT convert_flags)
             /* store array length at current out_param_ptr */
             max_size = *((INT *) out_param_ptr);
             param_size = *((INT *) prpc_param[i + 1]);
-            *((INT *) out_param_ptr) = param_size;
+            *((INT *) out_param_ptr) = param_size; // store new array size
             if (convert_flags)
                rpc_convert_single(out_param_ptr, TID_INT, RPC_OUTGOING, convert_flags);
 
-            out_param_ptr += ALIGN8(sizeof(INT));
+            out_param_ptr += ALIGN8(sizeof(INT));  // step over array size
 
             param_size = ALIGN8(param_size);
 
             /* move remaining parameters to end of array */
             memcpy(out_param_ptr + param_size,
-                   out_param_ptr + max_size + ALIGN8(sizeof(INT)),
-                   (POINTER_T) last_param_ptr - ((POINTER_T) out_param_ptr + max_size + ALIGN8(sizeof(INT))));
+                   out_param_ptr + max_size,
+                   (POINTER_T) last_param_ptr - ((POINTER_T) out_param_ptr + max_size));
          }
 
          if (tid == TID_STRUCT)
