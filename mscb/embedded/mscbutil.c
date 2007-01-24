@@ -460,7 +460,7 @@ void uart_init(unsigned char port, unsigned char baud)
 
 \********************************************************************/
 {
-#if defined (CPU_C8051F310)        // 24.5 MHz
+#if defined (CPU_C8051F310)           // 24.5 MHz
    unsigned char code baud_table[] =
      {0x100 - 0,    //  N/A
       0x100 - 0,    //  N/A
@@ -472,7 +472,7 @@ void uart_init(unsigned char port, unsigned char baud)
       0x100 - 106,  // 115200
       0x100 - 71,   // 172800
       0x100 - 35 }; // 345600
-#elif defined(CPU_C8051F320)       // 12 MHz
+#elif defined(CPU_C8051F320)          // 12 MHz
    unsigned char code baud_table[] =
      {0x100 - 0,    //  N/A
       0x100 - 0,    //  N/A
@@ -484,7 +484,7 @@ void uart_init(unsigned char port, unsigned char baud)
       0x100 - 52,   // 115200
       0x100 - 35,   // 172800  2% error
       0x100 - 17 }; // 345600  2% error
-#elif defined(SCS_210)             // 24.5 MHz
+#elif defined(SCS_210)                // 24.5 MHz
    unsigned char code baud_table[] =  // UART0 via timer 2
      {0x100 - 0,    //  N/A
       0x100 - 0,    //  N/A
@@ -496,7 +496,7 @@ void uart_init(unsigned char port, unsigned char baud)
       0x100 - 13,   // 115200  2.2% error
       0x100 - 9,    // 172800  1.5% error
       0x100 - 0 };  // N/A
-   unsigned char code baud_table1[] =  // UART1 via timer 1
+   unsigned char code baud_table1[] = // UART1 via timer 1
      {0x100 - 0,    //  N/A
       0x100 - 212,  //   4800  0.3% error
       0x100 - 106,  //   9600  0.3% error
@@ -507,7 +507,19 @@ void uart_init(unsigned char port, unsigned char baud)
       0x100 - 9,    // 115200  1.6% error
       0x100 - 6,    // 172800  1.6% error
       0x100 - 3 };  // 345600  1.6% error
-#elif defined(CPU_C8051F120)       // 98 MHz
+#elif defined(SUBM_260)                // 49 MHz
+   unsigned char code baud_table[] =  // UART0 via timer 2
+     {0xFB, 0x100 - 252,  //   2400
+      0xFD, 0x100 - 126,  //   4800
+      0xFE, 0x100 - 63,   //   9600
+      0xFF, 0x100 - 160,  //  19200  0.3% error
+      0xFF, 0x100 - 106,  //  28800  0.3% error
+      0xFF, 0x100 - 80,   //  38400  0.3% error
+      0xFF, 0x100 - 53,   //  57600  0.3% error
+      0xFF, 0x100 - 27,   // 115200  1.5% error
+      0xFF, 0x100 - 18,   // 172800  1.5% error
+      0xFF, 0x100 - 9 };  // 345600  1.5% error
+#elif defined(CPU_C8051F120)          // 98 MHz
    unsigned char code baud_table[] =  // UART0 via timer 2
      {0x100 - 0,    //  N/A
       0x100 - 0,    //  N/A
@@ -520,7 +532,7 @@ void uart_init(unsigned char port, unsigned char baud)
       0x100 - 35,   // 172800  1.3% error
       0x100 - 18 }; // 345600  1.6% error
 #if defined(UART1_MSCB) || defined(UART1_DEVICE)
-   unsigned char code baud_table1[] =  // UART1 via timer 1
+   unsigned char code baud_table1[] = // UART1 via timer 1
      {0x100 - 0,    //  N/A
       0x100 - 212,  //   4800  0.3% error
       0x100 - 106,  //   9600  0.3% error
@@ -532,7 +544,7 @@ void uart_init(unsigned char port, unsigned char baud)
       0x100 - 6,    // 172800  1.6% error
       0x100 - 3 };  // 345600  1.6% error
 #endif
-#else                              // 11.0592 MHz
+#else                                 // 11.0592 MHz
    unsigned char code baud_table[] =
      {0x100 - 144,  //   2400
       0x100 - 72,   //   4800
@@ -561,8 +573,8 @@ void uart_init(unsigned char port, unsigned char baud)
 
       SFRPAGE = TMR2_PAGE;
       TMR2CF = 0x08;               // use system clock for timer 2
-      RCAP2H = 0xFF;
-      RCAP2L = baud_table[baud - 1];  // load initial values
+      RCAP2H = baud_table[(baud - 1)*2];    // load high byte
+      RCAP2L = baud_table[(baud - 1)*2+1];  // load low byte
       TMR2CN = 0x04;               // start timer 2
       SFRPAGE = UART0_PAGE;
 

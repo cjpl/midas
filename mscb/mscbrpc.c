@@ -510,6 +510,10 @@ int server_execute(int index, void *prpc_param[])
       status = mscb_flash(CINT(0), CINT(1), CINT(2), CINT(3));
       break;
 
+   case RPC_MSCB_SET_BAUD:
+      status = mscb_set_baud(CINT(0), CINT(1));
+      break;
+
    case RPC_MSCB_UPLOAD:
       status = mscb_upload(CINT(0), CSHORT(1), CARRAY(2), CINT(3), CINT(4));
       break;

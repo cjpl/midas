@@ -275,6 +275,7 @@ extern "C" {
    int EXPRT mscb_write_group(int fd, unsigned short adr, unsigned char index, void *data, int size);
    int EXPRT mscb_write_block(int fd, unsigned short adr, unsigned char index, void *data, int size);
    int EXPRT mscb_flash(int fd, int adr, int gaddr, int broadcast);
+   int EXPRT mscb_set_baud(int fd, int baud);
    int EXPRT mscb_upload(int fd, unsigned short adr, char *buffer, int size, int debug);
    int EXPRT mscb_verify(int fd, unsigned short adr, char *buffer, int size);
    int EXPRT mscb_read(int fd, unsigned short adr, unsigned char index, void *data, int *size);
