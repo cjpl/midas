@@ -87,6 +87,8 @@ unsigned char idata chn_bits[N_HV_CHN];
 float xdata u_actual[N_HV_CHN];
 unsigned long xdata t_ramp[N_HV_CHN];
 
+unsigned long xdata trip_time[N_HV_CHN];
+
 /*---- Define variable parameters returned to CMD_GET_INFO command ----*/
 
 /* data buffer (mirrored in EEPROM) */
@@ -103,6 +105,7 @@ unsigned long xdata t_ramp[N_HV_CHN];
 #define STATUS_RAMP_DOWN   (1<<3)
 #define STATUS_VLIMIT      (1<<4)
 #define STATUS_ILIMIT      (1<<5)
+#define STATUS_RILIMIT     (1<<6)
 
 struct {
    unsigned char control;
@@ -116,7 +119,9 @@ struct {
    unsigned int ramp_down;
    float u_limit;
    float i_limit;
+   float ri_limit;
    unsigned char trip_max;
+   unsigned char trip_time;
 
    float adc_gain;
    float adc_offset;
@@ -141,18 +146,19 @@ MSCB_INFO_VAR code vars[] = {
    2, UNIT_VOLT,            0, 0,           0, "RampDown",&user_data[0].ramp_down,   // 7
    4, UNIT_VOLT,            0, 0, MSCBF_FLOAT, "Ulimit",  &user_data[0].u_limit,     // 8
    4, UNIT_AMPERE, PRFX_MICRO, 0, MSCBF_FLOAT, "Ilimit",  &user_data[0].i_limit,     // 9
-   1, UNIT_COUNT,           0, 0,           0, "TripMax", &user_data[0].trip_max,    // 10
+   4, UNIT_AMPERE, PRFX_MICRO, 0, MSCBF_FLOAT, "RIlimit", &user_data[0].i_limit,     // 10
+   1, UNIT_COUNT,           0, 0,           0, "TripMax", &user_data[0].trip_max,    // 11
+   1, UNIT_SECOND,          0, 0,           0, "TripTime",&user_data[0].trip_max,    // 12
 
    /* calibration constants */
-   4, UNIT_FACTOR,          0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "ADCgain", &user_data[0].adc_gain,    // 11
-   4, UNIT_VOLT,            0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "ADCofs",  &user_data[0].adc_offset,  // 12
-   4, UNIT_FACTOR,          0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "DACgain", &user_data[0].dac_gain,    // 13
-   4, UNIT_VOLT,            0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "DACofs",  &user_data[0].dac_offset,  // 14
-   4, UNIT_FACTOR,          0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "CURvgain",&user_data[0].cur_vgain,   // 15
-   4, UNIT_FACTOR,          0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "CURgain", &user_data[0].cur_gain,    // 16
-   4, UNIT_AMPERE, PRFX_MICRO, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "CURofs",  &user_data[0].cur_offset,  // 17
-
-   4, UNIT_VOLT,            0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "UDAC",    &user_data[0].u_dac,       // 18
+   4, UNIT_FACTOR,          0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "ADCgain", &user_data[0].adc_gain,    // 13
+   4, UNIT_VOLT,            0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "ADCofs",  &user_data[0].adc_offset,  // 14
+   4, UNIT_FACTOR,          0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "DACgain", &user_data[0].dac_gain,    // 15
+   4, UNIT_VOLT,            0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "DACofs",  &user_data[0].dac_offset,  // 16
+   4, UNIT_FACTOR,          0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "CURvgain",&user_data[0].cur_vgain,   // 17
+   4, UNIT_FACTOR,          0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "CURgain", &user_data[0].cur_gain,    // 18
+   4, UNIT_AMPERE, PRFX_MICRO, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "CURofs",  &user_data[0].cur_offset,  // 19
+   4, UNIT_VOLT,            0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "UDAC",    &user_data[0].u_dac,       // 20
    0
 };
 
@@ -189,7 +195,9 @@ void user_init(unsigned char init)
          user_data[i].ramp_down = 0;
          user_data[i].u_limit = MAX_VOLTAGE;
          user_data[i].i_limit = MAX_CURRENT;
+         user_data[i].ri_limit = MAX_CURRENT;
          user_data[i].trip_max = 0;
+         user_data[i].trip_time = 10;
 
          user_data[i].adc_gain = 1;
          user_data[i].adc_offset = 0;
@@ -262,6 +270,9 @@ void user_init(unsigned char init)
    /* LED normally off (inverted) */
    for (i=0 ; i<N_HV_CHN ; i++)
       led_mode(i, 1);
+
+   for (i=0 ; i<N_HV_CHN ; i++)
+      trip_time[i] = 0;
 }
 
 /*---- User write function -----------------------------------------*/
@@ -694,13 +705,17 @@ void check_current(unsigned char channel)
       user_data[channel].status &= ~(STATUS_RAMP_UP | STATUS_RAMP_DOWN);
 
       /* raise trip flag */
-      user_data[channel].status |= STATUS_ILIMIT;
-      user_data[channel].trip_cnt++;
+      if ((user_data[channel].status & STATUS_ILIMIT) == 0) {
+         user_data[channel].status |= STATUS_ILIMIT;
+         user_data[channel].trip_cnt++;
+      }
 
       /* check for trip recovery */
-      if (user_data[channel].trip_cnt < user_data[channel].trip_max) {
+      if (user_data[channel].trip_cnt < user_data[channel].trip_max &&
+          time() >= trip_time[channel] + user_data[channel].trip_time*100) {
          /* clear trip */
          user_data[channel].status &= ~STATUS_ILIMIT;
+         trip_time[channel] = 0;
 
          /* force ramp up */
          chn_bits[channel] |= DEMAND_CHANGED;
@@ -764,6 +779,7 @@ void ramp_hv(unsigned char channel)
             chn_bits[channel] &= ~RAMP_DOWN;
             user_data[channel].status |= STATUS_RAMP_UP;
             user_data[channel].status &= ~STATUS_RAMP_DOWN;
+            user_data[channel].status &= ~STATUS_RILIMIT;
             chn_bits[channel] &= ~DEMAND_CHANGED;
          }
 
@@ -774,6 +790,7 @@ void ramp_hv(unsigned char channel)
             chn_bits[channel] |= RAMP_DOWN;
             user_data[channel].status &= ~STATUS_RAMP_UP;
             user_data[channel].status |= STATUS_RAMP_DOWN;
+            user_data[channel].status &= ~STATUS_RILIMIT;
             chn_bits[channel] &= ~DEMAND_CHANGED;
          }
 
@@ -784,7 +801,12 @@ void ramp_hv(unsigned char channel)
       /* ramp up */
       if (chn_bits[channel] & RAMP_UP) {
          delta = time() - t_ramp[channel];
-         if (delta) {
+         if (user_data[channel].i_meas > user_data[channel].ri_limit)
+            user_data[channel].status |= STATUS_RILIMIT;
+         else
+            user_data[channel].status &= ~STATUS_RILIMIT;
+
+         if (delta && user_data[channel].i_meas < user_data[channel].ri_limit) {
             u_actual[channel] += (float) user_data[channel].ramp_up * delta / 100.0;
             user_data[channel].u_dac = u_actual[channel];
 
@@ -795,7 +817,7 @@ void ramp_hv(unsigned char channel)
                user_data[channel].u_dac = u_actual[channel];
                chn_bits[channel] &= ~RAMP_UP;
                user_data[channel].status &= ~STATUS_RAMP_UP;
-
+               user_data[channel].status &= ~STATUS_RILIMIT;
             }
 
             set_hv(channel, u_actual[channel]);
