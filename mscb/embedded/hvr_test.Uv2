@@ -105,7 +105,7 @@ Options 1,0,0  // Target 'Simulator'
  LX51IDB ()
  LX51PRC ()
  LX51STK ()
- LX51COS ()
+ LX51COS (?PR?UPGRADE?MSCBMAIN (0x7000))
  LX51XDS ()
  LX51BIS ()
  LX51DAS ()
