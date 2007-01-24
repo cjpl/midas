@@ -14,6 +14,7 @@
 
 #include <stdio.h>
 #include <math.h>
+#include <string.h>
 #include "mscbemb.h"
 
 extern bit FREEZE_MODE;
@@ -49,6 +50,10 @@ char code node_name[] = "HVR-500";
 sbit JU0 = P3 ^ 4;              // negative module if forced to zero
 sbit JU1 = P3 ^ 2;              // low current module if forced to zero
 sbit JU2 = P3 ^ 1;
+
+/* main switch on crate */
+sbit SW1 = P3 ^ 3;
+sbit SW2 = P2 ^ 2;
 
 /* geographic address */
 sbit GA_A0 = P0 ^ 1;            // 0=top, 1=bottom
@@ -95,6 +100,7 @@ unsigned long xdata t_ramp[N_HV_CHN];
 
 bit trip_reset;
 bit trip_disable;
+bit old_sw1;
 
 unsigned long xdata trip_time[N_HV_CHN];
 
@@ -115,6 +121,7 @@ unsigned long xdata trip_time[N_HV_CHN];
 #define STATUS_VLIMIT      (1<<4)
 #define STATUS_ILIMIT      (1<<5)
 #define STATUS_RILIMIT     (1<<6)
+#define STATUS_DISABLED    (1<<7)
 
 struct {
    unsigned char control;
@@ -200,24 +207,16 @@ void user_init(unsigned char init)
 
    /* initial nonzero EEPROM values */
    if (init) {
+      memset(user_data, 0, sizeof(user_data));
       for (i=0 ; i<N_HV_CHN ; i++) {
-         user_data[i].u_demand = 0;
-         user_data[i].trip_cnt = 0;
-         user_data[i].ramp_up = 0;
-         user_data[i].ramp_down = 0;
          user_data[i].u_limit = MAX_VOLTAGE;
          user_data[i].i_limit = MAX_CURRENT;
          user_data[i].ri_limit = MAX_CURRENT;
-         user_data[i].trip_max = 0;
          user_data[i].trip_time = 10;
 
          user_data[i].adc_gain = 1;
-         user_data[i].adc_offset = 0;
          user_data[i].dac_gain = 1;
-         user_data[i].dac_offset = 0;
-         user_data[i].cur_vgain = 0;
          user_data[i].cur_gain = 1;
-         user_data[i].cur_offset = 0;
       }
    }
 
@@ -242,6 +241,8 @@ void user_init(unsigned char init)
    /* jumper and address bits as input */
    JU1 = 1;
    JU2 = 1;
+   SW1 = 1;
+   SW2 = 1;
    GA_A0 = 1;
    GA_A1 = 1;
    GA_A2 = 1;
@@ -268,6 +269,12 @@ void user_init(unsigned char init)
    /* set default group address */
    if (sys_info.group_addr == 0xFFFF)
       sys_info.group_addr = 400;
+
+   /* sample initial state of switch */
+   old_sw1 = SW1;
+   if (!SW1)
+      for (i=0 ; i<N_HV_CHN ; i++)
+         user_data[i].status |= STATUS_DISABLED;
 
    /* set-up DAC & ADC */
    DAC_CLR  = 1;
@@ -1071,7 +1078,7 @@ void read_temperature(void)
 
 void user_loop(void)
 {
-   unsigned char channel;
+   unsigned char xdata channel, i;
 
    /* loop over all HV channels */
    for (channel=0 ; channel<N_HV_CHN ; channel++) {
@@ -1099,6 +1106,25 @@ void user_loop(void)
       if (trip_reset) {
          reset_hardware_trip();
          trip_reset = 0;
+      }
+
+      /* if crate HV switched off, set DAC to zero */
+      if (!SW1 && old_sw1) {
+         for (i = 0 ; i<N_HV_CHN ; i++ ) {
+            user_data[i].u_dac = 0;
+            user_data[i].status |= STATUS_DISABLED;
+            set_hv(channel, 0);
+         }
+         old_sw1 = 0;
+      }
+   
+      /* if crate HV switched on, indicated changed demand value*/
+      if (SW1 && !old_sw1) {
+         for (i = 0 ; i<N_HV_CHN ; i++ ) {
+            chn_bits[i] |= DEMAND_CHANGED;
+            user_data[i].status &= ~STATUS_DISABLED;
+         }
+         old_sw1 = 0;
       }
    }
 
