@@ -287,7 +287,7 @@ static bit b0_old = 0, b1_old = 0, b2_old = 0, b3_old = 0;
 
 void lcd_menu()
 {
-   MSCB_INFO_VAR *pvar;
+   MSCB_INFO_VAR idata *pvar;
    unsigned char idata i, max_index, start_index;
 
    /* clear startup screen after 3 sec. */
@@ -526,8 +526,8 @@ static bit b0_old = 0, b1_old = 0, b2_old = 0, b3_old = 0;
 
 void lcd_menu()
 {
-   MSCB_INFO_VAR *pvar;
-   unsigned char i;
+   MSCB_INFO_VAR idata *pvar;
+   unsigned char idata i;
 
    /* clear startup screen after 3 sec. */
    if (startup) {
