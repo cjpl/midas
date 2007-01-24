@@ -197,10 +197,6 @@ void setup(void)
    /* initialize UART0 */
    uart_init(0, BD_115200);
 
-   SFRPAGE = TMR2_PAGE;
-   RCAP2L = 0x100 - 27; // 113425 Baud at 49 MHz
-   SFRPAGE = LEGACY_PAGE;
-
    /* Blink LEDs */
    led_blink(0, 3, 150);
    led_blink(1, 3, 150);
@@ -698,6 +694,12 @@ void main(void)
 
             /* wait for data to be received */
             rs485_receive(socket_no, flags);
+
+            /* change baud rate if requested */
+            if (rs485_tx_buf[0] == MCMD_ADDR_BC &&
+                rs485_tx_buf[2] == MCMD_SET_BAUD) {
+               uart_init(0, rs485_tx_buf[3]);
+            }
          }
       }
 

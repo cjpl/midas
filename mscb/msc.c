@@ -14,6 +14,7 @@
 #include <windows.h>
 #include <conio.h>
 #include <io.h>
+#include <sys/timeb.h>
 
 #elif defined(OS_LINUX)
 
@@ -29,6 +30,7 @@
 #include <stdlib.h>
 #include <fcntl.h>
 #include <time.h>
+#include <sys/timeb.h>
 #include "mscb.h"
 #include "mscbrpc.h"
 #include "mxml.h"
@@ -99,6 +101,7 @@ void print_help()
    puts("Available commands:\n");
    puts("addr <addr>                Address individual node");
    puts("baddr                      Address all nodes (broadcast)");
+   puts("baud                       Set baud rate of MSCB bus");
    puts("debug 0/1                  Turn debuggin off/on on node (LCD output)");
    puts("echo [fc]                  Perform echo test [fast,continuous]");
    puts("flash                      Flash parameters into EEPROM");
@@ -943,6 +946,26 @@ void cmd_loop(int fd, char *cmd, unsigned short adr)
             break;              // exit program
       }
 
+      /* baud, set baud rate ---------- */
+      else if (match(param[0], "baud")) {
+         puts("Possible baud rates:\n");
+         puts("   1:    2400");
+         puts("   2:    4800");
+         puts("   3:    9600");
+         puts("   4:   19200");
+         puts("   5:   28800");
+         puts("   6:   38400");
+         puts("   7:   57600");
+         puts("   8:  115200 <= default");
+         puts("   9:  172800");
+         puts("  10:  345600");
+
+         printf("\nSelect rate: ");
+         fgets(str, sizeof(str), stdin);
+         i = atoi(str);
+         mscb_set_baud(fd, i);
+      }
+
       /* debug ---------- */
       else if (match(param[0], "debug")) {
          if (current_addr < 0)
@@ -1588,14 +1611,19 @@ void cmd_loop(int fd, char *cmd, unsigned short adr)
 
       /* test 2 -----------*/
       else if (match(param[0], "t2")) {
-
+         struct timeb tb1, tb2;
+         ftime(&tb1);
+         size = sizeof(dbuf);
          for (i=0 ; i<900 ; i++) {
-            size = sizeof(dbuf);
-            status = mscb_read_range(fd, (unsigned short) current_addr,
-                                    (unsigned char) 0, (unsigned char) 9, dbuf, &size);
+            mscb_read_range(fd, (unsigned short) current_addr, 0, 4, dbuf, &size);
             printf("%d\r", i);
+            if (kbhit())
+               break;
          }
-         printf("\n");
+         ftime(&tb2);
+         printf("\n%3.2lf sec.\n", (tb2.time+tb2.millitm/1000.0) - (tb1.time+tb1.millitm/1000.0));
+         while (kbhit())
+            getch();
       }
 
       /* exit/quit ---------- */

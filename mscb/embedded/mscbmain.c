@@ -668,7 +668,7 @@ void interprete(void)
 
    case CMD_SET_BAUD:
       led_blink(_cur_sub_addr, 1, 50);
-      //uart_init(0, in_buf[1]);
+      uart_init(0, in_buf[1]);
       break;
 
    case CMD_FREEZE:

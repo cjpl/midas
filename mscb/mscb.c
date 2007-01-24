@@ -2970,6 +2970,63 @@ int mscb_flash(int fd, int addr, int gaddr, int broadcast)
 
 /*------------------------------------------------------------------*/
 
+int mscb_set_baud(int fd, int baud)
+/********************************************************************\
+
+  Routine: mscb_set_baud
+
+  Purpose: Set baud rate of a whole MSCB bus
+
+
+  Input:
+    int fd                  File descriptor for connection
+    int baud                Baud rate:
+                              1:    2400
+                              2:    4800
+                              3:    9600
+                              4:   19200
+                              5:   28800
+                              6:   38400
+                              7:   57600
+                              8:  115200
+                              9:  172800
+                             10:  345600
+
+  Function value:
+    MSCB_SUCCESS            Successful completion
+    MSCB_TIMEOUT            Timeout receiving acknowledge
+    MSCB_CRC_ERROR          CRC error
+    MSCB_INVAL_PARAM        Parameter "size" has invalid value
+    MSCB_MUTEX              Cannot obtain mutex for mscb
+
+\********************************************************************/
+{
+   unsigned char buf[64];
+
+   if (fd > MSCB_MAX_FD || fd < 1 || !mscb_fd[fd - 1].type)
+      return MSCB_INVAL_PARAM;
+
+   if (mrpc_connected(fd))
+      return mrpc_call(mscb_fd[fd - 1].fd, RPC_MSCB_SET_BAUD, mscb_fd[fd - 1].remote_fd, baud);
+
+   if (mscb_lock(fd) != MSCB_SUCCESS)
+      return MSCB_MUTEX;
+
+   buf[0] = MCMD_ADDR_BC;
+   buf[1] = crc8(buf, 1);
+
+   buf[2] = MCMD_SET_BAUD;
+   buf[3] = baud;
+   buf[4] = crc8(buf+2, 2);
+   mscb_out(fd, buf, 5, RS485_FLAG_NO_ACK | RS485_FLAG_ADR_CYCLE);
+
+   mscb_release(fd);
+
+   return MSCB_SUCCESS;
+}
+
+/*------------------------------------------------------------------*/
+
 int mscb_upload(int fd, unsigned short adr, char *buffer, int size, int debug)
 /********************************************************************\
 
