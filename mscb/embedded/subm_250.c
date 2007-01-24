@@ -17,7 +17,7 @@
 #include "usb.h"
 
 #define IDENT_STR "SUBM_250"
-#define SUBM_VERSION 4   // used for PC-Submaster communication
+#define SUBM_VERSION 5   // used for PC-Submaster communication
 
 /*------------------------------------------------------------------*/
 
@@ -294,9 +294,11 @@ unsigned short i, to;
       if (i_rs485_rx > 0 && (usb_tx_buf[0] & MCMD_ACK) == MCMD_ACK) {
 
          n = usb_tx_buf[0] & 0x07;       // length is three LSB
-         if (n == 7 && i_rs485_rx > 1)
-            n = usb_tx_buf[1]+3;         // variable length acknowledge
-         else
+         if (n == 7 && i_rs485_rx > 1) {
+            n = usb_tx_buf[1]+3;         // variable length acknowledge one byte
+            if ((n & 0x80) && i_rs485_rx > 2)
+               n = (usb_tx_buf[1] & ~0x80) << 8 | (usb_tx_buf[2]) + 4; // two bytes
+         } else
             n += 2;                      // add ACK and CRC
 
          if (i_rs485_rx == n) {
@@ -374,7 +376,13 @@ void main(void)
 
             /* wait for data to be received */
             rs485_receive(flags);
-         }
+
+            /* change baud rate if requested */
+            if (usb_rx_buf[1] == MCMD_ADDR_BC &&
+                usb_rx_buf[3] == MCMD_SET_BAUD) {
+               uart_init(0, usb_rx_buf[4]);
+            }
+         }                        
 
          /* mark USB receive buffer empty */
          n_usb_rx = 0;

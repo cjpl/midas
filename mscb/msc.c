@@ -1613,9 +1613,9 @@ void cmd_loop(int fd, char *cmd, unsigned short adr)
       else if (match(param[0], "t2")) {
          struct timeb tb1, tb2;
          ftime(&tb1);
-         size = sizeof(dbuf);
+         size = 256;
          for (i=0 ; i<900 ; i++) {
-            mscb_read_range(fd, (unsigned short) current_addr, 0, 4, dbuf, &size);
+            mscb_read_range(fd, (unsigned short) current_addr, 0, 3, dbuf, &size);
             printf("%d\r", i);
             if (kbhit())
                break;
