@@ -163,6 +163,7 @@ static BOOL _server_registered = FALSE;
 static INT rpc_transition_dispatch(INT index, void *prpc_param[]);
 
 void cm_ctrlc_handler(int sig);
+static void debug_dump(unsigned char *p, int size);
 
 typedef struct {
    INT code;
@@ -6225,7 +6226,7 @@ BM_ASYNC_RETURN No event available
 INT bm_receive_event(INT buffer_handle, void *destination, INT * buf_size, INT async_flag)
 {
    if (rpc_is_remote()) {
-      int status, old_timeout;
+      int status, old_timeout = 0;
 
       if (*buf_size > NET_BUFFER_SIZE) {
          cm_msg(MERROR, "bm_receive_event", "max. event size larger than NET_BUFFER_SIZE");
@@ -9796,8 +9797,8 @@ void debug_dump(unsigned char *p, int size)
    int i, j;
    unsigned char c;
 
-   for (i = 0; i < size/16; i++) {
-      printf("%08X ", p + i * 16);
+   for (i = 0; i < (size-1)/16+1; i++) {
+      printf("%08p ", p + i * 16);
       for (j = 0; j < 16; j++)
          if (i * 16 + j < size)
             printf("%02X ", p[i * 16 + j]);
