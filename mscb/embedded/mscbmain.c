@@ -12,6 +12,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <intrins.h>
+#include <stdlib.h>
 #include "mscbemb.h"
 
 /* GET_INFO attributes */
@@ -41,6 +42,8 @@ extern MSCB_INFO_VAR *variables;
 extern unsigned char idata _n_sub_addr;
 
 extern char code node_name[];
+
+char code svn_revision[] = "$Rev$";
 
 /*------------------------------------------------------------------*/
 
@@ -99,7 +102,6 @@ bit out_buf_empty;              // TRUE if out_buf has been sent completely
 /*------------------------------------------------------------------*/
 
 /* put on idata not to be erased on reboot */
-static unsigned char idata watchdog_resets;
 
 void setup(void)
 {
@@ -273,7 +275,7 @@ void setup(void)
       /* set initial values */
       sys_info.node_addr = 0xFFFF;
       sys_info.group_addr = 0xFFFF;
-      sys_info.watchdog_resets = 0;
+      sys_info.svn_revision = atoi(svn_revision+16);
       memset(sys_info.node_name, 0, sizeof(sys_info.node_name));
       strncpy(sys_info.node_name, node_name, sizeof(sys_info.node_name));
    } else
@@ -300,14 +302,6 @@ void setup(void)
       user_init(0);
       configured_vars = 1;
    }
-
-   /* check if reset by watchdog */
-   if (WD_RESET)
-      watchdog_resets++;
-    else
-      watchdog_resets = 0;
-
-   sys_info.watchdog_resets = watchdog_resets;
 
    /* Blink LEDs */
    for (i=0 ; i<N_LED ; i++)
@@ -575,8 +569,8 @@ void interprete(void)
       send_byte(*(((unsigned char *) &sys_info.group_addr) + 0), &crc); // send group address
       send_byte(*(((unsigned char *) &sys_info.group_addr) + 1), &crc);
 
-      send_byte(*(((unsigned char *) &sys_info.watchdog_resets) + 0), &crc);   // send watchdog resets
-      send_byte(*(((unsigned char *) &sys_info.watchdog_resets) + 1), &crc);
+      send_byte(*(((unsigned char *) &sys_info.svn_revision) + 0), &crc);   // send svn revision
+      send_byte(*(((unsigned char *) &sys_info.svn_revision) + 1), &crc);
 
       for (i = 0; i < 16; i++)  // send node name
          send_byte(sys_info.node_name[i], &crc);
@@ -1449,7 +1443,6 @@ void main(void)
    setup();
 
    do {
-
       yield();
       
 #ifdef UART1_MSCB
