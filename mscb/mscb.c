@@ -642,7 +642,7 @@ int subm250_open(MUSB_INTERFACE **ui, int usb_index)
 
 /*------------------------------------------------------------------*/
 
-int send_udp(int index, char *buffer, int size)
+int msend_udp(int index, char *buffer, int size)
 {
    int count;
 
@@ -655,7 +655,7 @@ int send_udp(int index, char *buffer, int size)
 
 /*------------------------------------------------------------------*/
 
-int recv_udp(int index, char *buf, int buffer_size, int millisec)
+int mrecv_udp(int index, char *buf, int buffer_size, int millisec)
 {
    int n, status, size;
    unsigned char buffer[1024+6];
@@ -868,7 +868,7 @@ int mscb_out(int index, unsigned char *buffer, int len, int flags)
       memcpy(pudp+1, buffer, len);
 
       /* send over UDP link */
-      i = send_udp(index, eth_buf, len + sizeof(UDP_HEADER));
+      i = msend_udp(index, eth_buf, len + sizeof(UDP_HEADER));
 
       if (i != len + sizeof(UDP_HEADER))
          return MSCB_TIMEOUT;
@@ -1002,7 +1002,7 @@ int mscb_in(int index, char *buffer, int size, int timeout)
    if (mscb_fd[index - 1].type == MSCB_TYPE_ETH) {
 
       /* receive result on IN pipe */
-      n = recv_udp(index, buffer, size, timeout);
+      n = mrecv_udp(index, buffer, size, timeout);
    }
 
    /*---- LPT code ----*/
