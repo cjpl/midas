@@ -752,12 +752,13 @@ void cmd_loop(int fd, char *cmd, unsigned short adr)
          while (kbhit())
             getch();
 
+         printf("                              \n");
          if (n_found == 0)
-            printf("\n\nNo nodes found                \n");
+            printf("No nodes found                \n");
          else if (n_found == 1)
-            printf("\n\nOne node found                \n");
+            printf("One node found                \n");
          else if (n_found > 0)
-            printf("\n\n%d nodes found                \n", n_found);
+            printf("%d nodes found                \n", n_found);
       }
 
       /* info ---------- */
