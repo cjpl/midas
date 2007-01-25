@@ -698,7 +698,7 @@ void cmd_loop(int fd, char *cmd, unsigned short adr)
          do {
             n_found = 0;
             for (i = -1; i < 0x10000; i++) {
-               if (param[1][0] != 'a' && param[2][0] != 'a' && i>0 && !ping_addr[i])
+               if (i != -1 && param[1][0] != 'a' && param[2][0] != 'a' && i>0 && !ping_addr[i])
                   continue;
                if (i == -1)
                   printf("Test address 65535 (0xFFFF)\r");
@@ -718,7 +718,8 @@ void cmd_loop(int fd, char *cmd, unsigned short adr)
 
                   /* node found, search next 100 as well */
                   for (j=i; j<i+100 && j<0x10000 ; j++)
-                     ping_addr[j] = 1;
+                     if (j >= 0)
+                        ping_addr[j] = 1;
 
                   status = mscb_info(fd, (unsigned short) i, &info);
                   strncpy(str, info.node_name, sizeof(info.node_name));
