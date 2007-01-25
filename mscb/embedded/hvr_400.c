@@ -8,12 +8,19 @@
                 Midas Slow Control Bus protocol
                 for HVR_300 High Voltage Regulator
 
+  Memory usage: 
+    Program code: 0x0000 - 0x31FF (check after each compile!)
+    Upgrade code: 0x3200 - 0x3811
+    EEPROM page:  0x3A00 - 0x3BFF (one page @ 512 bytes)
+                  0x3C00 - 0x3DFF cannot be erased ???
+
   $Id$
 
 \********************************************************************/
 
 #include <stdio.h>
 #include <math.h>
+#include <string.h>
 #include "mscbemb.h"
 
 extern bit FREEZE_MODE;
@@ -115,8 +122,8 @@ struct {
    unsigned char status;
    unsigned char trip_cnt;
 
-   unsigned int ramp_up;
-   unsigned int ramp_down;
+   float ramp_up;
+   float ramp_down;
    float u_limit;
    float i_limit;
    float ri_limit;
@@ -142,13 +149,13 @@ MSCB_INFO_VAR code vars[] = {
    1, UNIT_BYTE,            0, 0,           0, "Status",  &user_data[0].status,      // 4
    1, UNIT_COUNT,           0, 0,           0, "TripCnt", &user_data[0].trip_cnt,    // 5
 
-   2, UNIT_VOLT,            0, 0,           0, "RampUp",  &user_data[0].ramp_up,     // 6
-   2, UNIT_VOLT,            0, 0,           0, "RampDown",&user_data[0].ramp_down,   // 7
+   4, UNIT_VOLT,            0, 0, MSCBF_FLOAT, "RampUp",  &user_data[0].ramp_up,     // 6
+   4, UNIT_VOLT,            0, 0, MSCBF_FLOAT, "RampDown",&user_data[0].ramp_down,   // 7
    4, UNIT_VOLT,            0, 0, MSCBF_FLOAT, "Ulimit",  &user_data[0].u_limit,     // 8
    4, UNIT_AMPERE, PRFX_MICRO, 0, MSCBF_FLOAT, "Ilimit",  &user_data[0].i_limit,     // 9
-   4, UNIT_AMPERE, PRFX_MICRO, 0, MSCBF_FLOAT, "RIlimit", &user_data[0].i_limit,     // 10
+   4, UNIT_AMPERE, PRFX_MICRO, 0, MSCBF_FLOAT, "RIlimit", &user_data[0].ri_limit,    // 10
    1, UNIT_COUNT,           0, 0,           0, "TripMax", &user_data[0].trip_max,    // 11
-   1, UNIT_SECOND,          0, 0,           0, "TripTime",&user_data[0].trip_max,    // 12
+   1, UNIT_SECOND,          0, 0,           0, "TripTime",&user_data[0].trip_time,   // 12
 
    /* calibration constants */
    4, UNIT_FACTOR,          0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "ADCgain", &user_data[0].adc_gain,    // 13
@@ -188,24 +195,16 @@ void user_init(unsigned char init)
 
    /* initial nonzero EEPROM values */
    if (init) {
+      memset(user_data, 0, sizeof(user_data));
       for (i=0 ; i<N_HV_CHN ; i++) {
-         user_data[i].u_demand = 0;
-         user_data[i].trip_cnt = 0;
-         user_data[i].ramp_up = 0;
-         user_data[i].ramp_down = 0;
          user_data[i].u_limit = MAX_VOLTAGE;
          user_data[i].i_limit = MAX_CURRENT;
          user_data[i].ri_limit = MAX_CURRENT;
-         user_data[i].trip_max = 0;
          user_data[i].trip_time = 10;
 
          user_data[i].adc_gain = 1;
-         user_data[i].adc_offset = 0;
          user_data[i].dac_gain = 1;
-         user_data[i].dac_offset = 0;
-         user_data[i].cur_vgain = 0;
          user_data[i].cur_gain = 1;
-         user_data[i].cur_offset = 0;
       }
    }
 
@@ -317,10 +316,8 @@ unsigned char user_read(unsigned char index)
 
 unsigned char user_func(unsigned char *data_in, unsigned char *data_out)
 {
-   /* echo input data */
-   data_out[0] = data_in[0];
-   data_out[1] = data_in[1];
-   return 2;
+   if (data_in || data_out);
+   return 0;
 }
 
 /*---- DAC functions -----------------------------------------------*/
@@ -626,8 +623,6 @@ void set_hv(unsigned char channel, float value) reentrant
    } else
       user_data[channel].status &= ~STATUS_VLIMIT;
 
-   led_mode(channel, !(value > 10));
-
    /* apply correction */
    value = value * user_data[channel].dac_gain + user_data[channel].dac_offset;
    if (value < 0)
@@ -647,7 +642,7 @@ void set_hv(unsigned char channel, float value) reentrant
 
 void read_hv(unsigned char channel)
 {
-   float hv;
+   float xdata hv;
 
    /* read voltage channel */
    if (!adc_read(channel*2, &hv))
@@ -662,28 +657,11 @@ void read_hv(unsigned char channel)
    /* 0.01 resolution */
    hv = floor(hv * 100) / 100.0;
 
+   led_mode(channel, !(hv > 10));
+
    DISABLE_INTERRUPTS;
    user_data[channel].u_meas = hv;
    ENABLE_INTERRUPTS;
-}
-
-/*------------------------------------------------------------------*/
-
-void set_current_limit(float value) reentrant
-{
-   unsigned short d;
-
-   /* convert current to voltage */
-   if (user_data[0].status & STATUS_LOWCUR)
-      value = value / DIVIDER * CUR_MULT_LC * RCURR_LC / 1E6;
-   else
-      value = value / DIVIDER * CUR_MULT_HC * RCURR_HC / 1E6;
-
-   /* convert to DAC units */
-   d = (unsigned short) ((value / 2.5 * 65536) + 0.5);
-
-   /* write current dac */
-   write_dac(7, d);
 }
 
 /*------------------------------------------------------------------*/
@@ -692,6 +670,9 @@ void check_current(unsigned char channel)
 {
    if (user_data[channel].i_meas > user_data[channel].i_limit &&
        user_data[channel].i_limit != 9999) {
+
+      if (trip_time[channel] == 0)
+         trip_time[channel] = time();
 
       /* zero output voltage */
       set_hv(channel, 0);
@@ -709,17 +690,18 @@ void check_current(unsigned char channel)
          user_data[channel].status |= STATUS_ILIMIT;
          user_data[channel].trip_cnt++;
       }
+    }
 
-      /* check for trip recovery */
-      if (user_data[channel].trip_cnt < user_data[channel].trip_max &&
-          time() >= trip_time[channel] + user_data[channel].trip_time*100) {
-         /* clear trip */
-         user_data[channel].status &= ~STATUS_ILIMIT;
-         trip_time[channel] = 0;
+   /* check for trip recovery */
+   if ((user_data[channel].status & STATUS_ILIMIT) &&
+       user_data[channel].trip_cnt < user_data[channel].trip_max &&
+       time() >= trip_time[channel] + user_data[channel].trip_time*100) {
+      /* clear trip */
+      user_data[channel].status &= ~STATUS_ILIMIT;
+      trip_time[channel] = 0;
 
-         /* force ramp up */
-         chn_bits[channel] |= DEMAND_CHANGED;
-      }
+      /* force ramp up */
+      chn_bits[channel] |= DEMAND_CHANGED;
    }
 
    if (user_data[channel].status & STATUS_ILIMIT)
@@ -730,7 +712,7 @@ void check_current(unsigned char channel)
 
 void read_current(unsigned char channel)
 {
-   float current;
+   float xdata current;
 
    /* read current channel */
    if (!adc_read(channel*2+1, &current))
@@ -896,6 +878,7 @@ void regulation(unsigned char channel)
        (chn_bits[channel] & DEMAND_CHANGED)) {
 
       user_data[channel].u_dac = 0;
+      u_actual[channel] = 0;
       set_hv(channel, 0);
       chn_bits[channel] &= ~DEMAND_CHANGED;
    }
@@ -962,17 +945,7 @@ void user_loop(void)
       watchdog_refresh(0);
 
       if ((user_data[0].control & CONTROL_IDLE) == 0) {
-
-         /* outcommented until implemented in HW
-         if (chn_bits[channel] & CUR_LIMIT_CHANGED) {
-            set_current_limit(user_data[channel].i_limit);
-            chn_bits[channel] &= ~CUR_LIMIT_CHANGED;
-         }
-         */
-
-         /* instead, use software limit */
          check_current(channel);
-
          read_hv(channel);
          ramp_hv(channel);
          regulation(channel);

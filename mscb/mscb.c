@@ -9,7 +9,7 @@
 
 \********************************************************************/
 
-#define MSCB_LIBRARY_VERSION   "2.3.3"
+#define MSCB_LIBRARY_VERSION   "2.4.0"
 #define MSCB_PROTOCOL_VERSION  "5"
 #define MSCB_SUBM_VERSION      5
 
@@ -666,9 +666,9 @@ int recv_udp(int index, char *buf, int buffer_size, int millisec)
    if (buffer_size > sizeof(buffer))
       buffer_size = sizeof(buffer);
 
-   /* at least 3 sec timeout for slow network connections */
-   if (millisec < 3000)
-      millisec = 3000;
+   /* at least 1 sec timeout for slow network connections */
+   if (millisec < 1000)
+      millisec = 1000;
 
    /* receive buffer in UDP mode */
 
@@ -2096,7 +2096,7 @@ int mscb_info(int fd, unsigned short adr, MSCB_INFO * info)
 
    WORD_SWAP(&info->node_address);
    WORD_SWAP(&info->group_address);
-   WORD_SWAP(&info->watchdog_resets);
+   WORD_SWAP(&info->svn_revision);
 
    return MSCB_SUCCESS;
 }
@@ -4398,7 +4398,7 @@ int mscb_echo(int fd, unsigned short adr, unsigned char d1, unsigned char *d2)
    n = mscb_in(fd, buf, sizeof(buf), TO_SHORT);
    mscb_release(fd);
 
-   if (n < 0)
+   if (n <= 0)
       return MSCB_TIMEOUT;
 
    *d2 = buf[1];

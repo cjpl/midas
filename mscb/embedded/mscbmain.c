@@ -43,7 +43,7 @@ extern unsigned char idata _n_sub_addr;
 
 extern char code node_name[];
 
-char code svn_revision[] = "$Rev$";
+char code svn_rev[] = "$Rev$";
 
 /*------------------------------------------------------------------*/
 
@@ -275,11 +275,16 @@ void setup(void)
       /* set initial values */
       sys_info.node_addr = 0xFFFF;
       sys_info.group_addr = 0xFFFF;
-      sys_info.svn_revision = atoi(svn_revision+16);
       memset(sys_info.node_name, 0, sizeof(sys_info.node_name));
       strncpy(sys_info.node_name, node_name, sizeof(sys_info.node_name));
    } else
       configured_addr = 1;
+
+   /* store SVN revision */
+   sys_info.svn_revision = (svn_rev[6]-'0')*1000+
+                           (svn_rev[7]-'0')*100+
+                           (svn_rev[8]-'0')*10+
+                           (svn_rev[9]-'0');
 
    if ((flags & (1 << 1)) == 0) {
 

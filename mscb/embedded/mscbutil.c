@@ -1295,11 +1295,6 @@ void eeprom_erase(void)
    PSCTL = 0x03;                        // allow write and erase
 
 #if defined(CPU_C8051F310) || defined(CPU_C8051F320)
-
-// Erasing more than one page crashed the uC ???
-#undef N_EEPROM_PAGE
-#define N_EEPROM_PAGE 1
-
    p = EEPROM_OFFSET;
    for (i=0 ; i<N_EEPROM_PAGE ; i++) {
       FLKEY = 0xA5;                        // write flash key code
