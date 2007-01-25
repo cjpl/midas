@@ -733,8 +733,8 @@ void read_current(unsigned char channel)
    /* calibrate gain */
    current = current * user_data[channel].cur_gain;
 
-   /* 0.001 resolution */
-   current = floor(current * 1000) / 1000.0;
+   /* 1 uA resolution */
+   current = floor(current + 0.5);
 
    DISABLE_INTERRUPTS;
    user_data[channel].i_meas = current;
