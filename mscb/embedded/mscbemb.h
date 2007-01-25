@@ -371,8 +371,8 @@ sbit RS485_ENABLE = P0 ^ 3;
 #endif
 
 #if defined(CPU_C8051F310) || defined(CPU_C8051F320)
-#define EEPROM_OFFSET 0x3A00 // 0x3A00-0x3DFF = 1kB
-#define N_EEPROM_PAGE      2 // 2 pages @ 512 bytes
+#define EEPROM_OFFSET 0x3A00 // 0x3A00-0x3BFF = 0.5kB, 0x3C00 cannot be erased!
+#define N_EEPROM_PAGE      1 // 1 page  @ 512 bytes
 #elif defined(CPU_C8051F120)
 #define EEPROM_OFFSET 0xE000 // 0xE000-0xEFFF = 4kB
 #define N_EEPROM_PAGE      8 // 8 pages @ 512 bytes
@@ -643,7 +643,7 @@ typedef struct {
 typedef struct {                // system info stored in EEPROM
    unsigned int node_addr;
    unsigned int group_addr;
-   unsigned int watchdog_resets;
+   unsigned int svn_revision;
    char node_name[16];
 } SYS_INFO;
 

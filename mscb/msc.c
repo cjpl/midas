@@ -143,8 +143,11 @@ void print_channel_str(int index, MSCB_INFO_VAR * info_chn, void *pdata, int ver
       for (i = strlen(str); i < 9; i++)
          str[i] = ' ';
       sprintf(line + strlen(line), "%3d: %s ", index, str);
-   } else
-      sprintf(line, "%s: ", info_chn->name);
+   } else {
+      memset(str, 0, sizeof(str));
+      strncpy(str, info_chn->name, 8);
+      sprintf(line, "%s: ", str);
+   }
 
    if (info_chn->unit == UNIT_STRING) {
       memset(str, 0, sizeof(str));
@@ -776,7 +779,7 @@ void cmd_loop(int fd, char *cmd, unsigned short adr)
                printf("Group address    : %d (0x%X)\n", info.group_address,
                       info.group_address);
                printf("Protocol version : %d\n", info.protocol_version);
-               printf("Watchdog resets  : %d\n", info.watchdog_resets);
+               printf("SVN revision     : %d\n", info.svn_revision);
 
                status = mscb_uptime(fd, (unsigned short) current_addr, &uptime);
                if (status == MSCB_SUCCESS)
