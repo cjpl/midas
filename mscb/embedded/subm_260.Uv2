@@ -11,7 +11,7 @@ Group (Libraries)
 File 1,1,<..\embedded\mscbutil.c><mscbutil.c> 0x0 
 File 1,1,<.\subm_260.c><subm_260.c> 0x0 
 File 1,1,<..\netlib\tcp.c><tcp.c> 0x0 
-File 1,1,<..\netlib\socket.c><socket.c> 0x0 
+File 1,1,<..\netlib\udp.c><udp.c> 0x0 
 File 2,5,<..\embedded\mscbemb.h><mscbemb.h> 0x0 
 File 2,5,<.\net.h><net.h> 0x0 
 File 3,4,<.\netlib.LIB><netlib.LIB> 0x438DD015 
