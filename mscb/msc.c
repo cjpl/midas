@@ -708,9 +708,9 @@ void cmd_loop(int fd, char *cmd, unsigned short adr)
 
                if (i == -1)
                   /* do the first time with retry, to send '0's */
-                  status = mscb_addr(fd, MCMD_PING16, (unsigned short) 0xFFFF, 2, 1);
+                  status = mscb_ping(fd, (unsigned short) 0xFFFF, 0);
                else
-                  status = mscb_ping(fd, (unsigned short) i);
+                  status = mscb_ping(fd, (unsigned short) i, 1);
 
                if (status == MSCB_SUCCESS) {
 
@@ -814,7 +814,7 @@ void cmd_loop(int fd, char *cmd, unsigned short adr)
                addr = (unsigned short) atoi(param[1]);
 
             do {
-               status = mscb_addr(fd, MCMD_PING16, addr, 10, 1);
+               status = mscb_ping(fd, addr, 1);
 
                if (status != MSCB_SUCCESS) {
                   if (status == MSCB_MUTEX)
@@ -851,7 +851,7 @@ void cmd_loop(int fd, char *cmd, unsigned short adr)
             } else
                addr = (unsigned short) atoi(param[1]);
 
-            mscb_addr(fd, MCMD_ADDR_NODE16, addr, 1, 1);
+            mscb_addr(fd, MCMD_ADDR_NODE16, addr, 10);
             current_addr = addr;
             current_group = -1;
             broadcast = 0;
@@ -1188,7 +1188,7 @@ void cmd_loop(int fd, char *cmd, unsigned short adr)
             else {
                mxml_start_element(writer, "MSCBDump");
                for (i = first,j=0; i <= last; i++) {
-                  status = mscb_ping(fd, (unsigned short) i);
+                  status = mscb_ping(fd, (unsigned short) i, 0);
                   if (status == MSCB_SUCCESS) {
                      j++;
                      printf("Save node %d (0x%04X)     \r", i, i);
@@ -1429,20 +1429,19 @@ void cmd_loop(int fd, char *cmd, unsigned short adr)
             printf("You must first address an individual node\n");
          else {
             d1 = i = 0;
-            /* first echo with adressing */
-            status = mscb_echo(fd, (unsigned short) current_addr, d1, &d2);
             while (!kbhit()) {
                d1 = (d1 + 1) % 256;
 
-               /* following echos without adressing if no error */
-               if (status == MSCB_SUCCESS)
-                  status = mscb_echo(fd, 0, d1, &d2);
-               else
-                  status = mscb_echo(fd, (unsigned short) current_addr, d1, &d2);
+               status = mscb_echo(fd, (unsigned short) current_addr, d1, &d2);
 
-               if (status != MSCB_SUCCESS) {
+               if (status == MSCB_TIMEOUT)
+                  printf("Timeout in submaster communictation\n");
+               else if (status == MSCB_TIMEOUT_BUS)
+                  printf("Timeout from RS485 bus\n");
+               else if (status == MSCB_CRC_ERROR)
+                  printf("CRC Error on RS485 bus\n");
+               else if (status != MSCB_SUCCESS)
                   printf("Error: %d\n", status);
-               }
 
                if (d2 != d1) {
                   printf("%d\nReceived: %02X, should be %02X, status = %d\n", i, d2, d1,

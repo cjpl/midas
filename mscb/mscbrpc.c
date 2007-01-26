@@ -83,6 +83,7 @@ static RPC_LIST rpc_list[] = {
    {RPC_MSCB_PING, "mscb_ping",
     {{TID_INT, RPC_IN},
      {TID_INT, RPC_IN},
+     {TID_INT, RPC_IN},
      {0}}},
 
    {RPC_MSCB_INFO, "mscb_info",
@@ -209,7 +210,6 @@ static RPC_LIST rpc_list[] = {
 
    {RPC_MSCB_ADDR, "mscb_addr",
     {{TID_INT, RPC_IN},
-     {TID_INT, RPC_IN},
      {TID_INT, RPC_IN},
      {TID_INT, RPC_IN},
      {TID_INT, RPC_IN},
@@ -463,7 +463,7 @@ int server_execute(int index, void *prpc_param[])
       break;
 
    case RPC_MSCB_PING:
-      status = mscb_ping(CINT(0), CWORD(1));
+      status = mscb_ping(CINT(0), CWORD(1), CINT(2));
       break;
 
    case RPC_MSCB_INFO:
@@ -544,7 +544,7 @@ int server_execute(int index, void *prpc_param[])
       break;
 
    case RPC_MSCB_ADDR:
-      status = mscb_addr(CINT(0), CINT(1), CSHORT(2), CINT(3), CINT(4));
+      status = mscb_addr(CINT(0), CINT(1), CSHORT(2), CINT(3));
       break;
    }
 

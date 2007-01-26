@@ -193,17 +193,18 @@ extern MSCB_FD mscb_fd[MSCB_MAX_FD];
 #define MSCB_SUCCESS        1
 #define MSCB_CRC_ERROR      2
 #define MSCB_TIMEOUT        3
-#define MSCB_INVAL_PARAM    4
-#define MSCB_MUTEX          5
-#define MSCB_FORMAT_ERROR   6
-#define MSCB_NO_MEM         7
-#define MSCB_SUBM_ERROR     8
-#define MSCB_ADDR_EXISTS    9
-#define MSCB_WRONG_PASS    10
-#define MSCB_SUBADDR       11
-#define MSCB_NOTREADY      12
-#define MSCB_NO_VAR        13
-#define MSCB_INVALID_INDEX 14
+#define MSCB_TIMEOUT_BUS    4
+#define MSCB_INVAL_PARAM    5
+#define MSCB_MUTEX          6
+#define MSCB_FORMAT_ERROR   7
+#define MSCB_NO_MEM         8
+#define MSCB_SUBM_ERROR     9
+#define MSCB_ADDR_EXISTS   10
+#define MSCB_WRONG_PASS    11
+#define MSCB_SUBADDR       12
+#define MSCB_NOTREADY      13
+#define MSCB_NO_VAR        14
+#define MSCB_INVALID_INDEX 15
 
 /*---- error codes ------------------------------------------------*/
 
@@ -258,7 +259,7 @@ extern "C" {
    int EXPRT mscb_exit(int fd);
    int EXPRT mscb_reset(int fd);
    int EXPRT mscb_reboot(int fd, int addr, int gaddr, int broadcast);
-   int EXPRT mscb_ping(int fd, unsigned short adr);
+   int EXPRT mscb_ping(int fd, unsigned short adr, int quick);
    int EXPRT mscb_echo(int fd, unsigned short add, unsigned char d1, unsigned char *d2);
    int EXPRT mscb_info(int fd, unsigned short adr, MSCB_INFO * info);
    int EXPRT mscb_info_variable(int fd, unsigned short adr, unsigned char index, MSCB_INFO_VAR * info);
@@ -280,7 +281,7 @@ extern "C" {
                              unsigned char index2, void *data, int *size);
    int EXPRT mscb_user(int fd, unsigned short adr, void *param, int size, void *result, int *rsize);
    int EXPRT mscb_link(int fd, unsigned short adr, unsigned char index, void *data, int size);
-   int EXPRT mscb_addr(int fd, int cmd, unsigned short adr, int retry, int lock);
+   int EXPRT mscb_addr(int fd, int cmd, unsigned short adr, int retry);
 
    int set_mac_address(int fd);
 
