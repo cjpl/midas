@@ -83,12 +83,12 @@ extern void debug_log(char *format, int start, ...);
 /* RS485 flags for USB submaster */
 #define RS485_FLAG_BIT9      (1<<0)
 #define RS485_FLAG_NO_ACK    (1<<1)
-#define RS485_FLAG_SHORT_TO  (1<<2)
-#define RS485_FLAG_LONG_TO   (1<<3)
+#define RS485_FLAG_SHORT_TO  (1<<2)  /* 400us for ping */
+#define RS485_FLAG_LONG_TO   (1<<3)  /* 5s for upgrade */
 #define RS485_FLAG_CMD       (1<<4)
 #define RS485_FLAG_ADR_CYCLE (1<<5)
 
-#define MUSB_TIMEOUT 3000 /* 3 sec */
+#define MUSB_TIMEOUT 5000 /* 5 sec */
 
 /* header for UDP communication */
 typedef struct {
@@ -529,141 +529,181 @@ int mrecv_udp(int index, char *buf, int buffer_size, int millisec)
 
 /*------------------------------------------------------------------*/
 
-int mscb_out(int index, unsigned char *buffer, int len, int flags)
+int mscb_exchg(int fd, char *buffer, int *size, int len, int flags)
 /********************************************************************\
 
-  Routine: mscb_out
+  Routine: mscb_exchg
 
-  Purpose: Write number of bytes to SM via parallel port or USB
+  Purpose: Exchange one data backe with MSCB submaster through
+           USB, UDP or RPC
 
   Input:
-    int  index              index to file descriptor table
+    int  fd                 file descriptor
     char *buffer            data buffer
     int  len                number of bytes in buffer
+    int  *size              total size of buffer
     int  flags              bit combination of:
                               RS485_FLAG_BIT9      node arressing
                               RS485_FLAG_NO_ACK    no acknowledge
                               RS485_FLAG_SHORT_TO  short/
                               RS485_FLAG_LONG_TO     long timeout
-                              RS485_FLAG_CMD       direct subm_250 command
+                              RS485_FLAG_CMD       direct submaster command
+
+  Output:
+    int *size               number of bytes in buffer returned
 
   Function value:
+    MSCB_INVAL_PARAM        Invalid parameter
     MSCB_SUCCESS            Successful completion
     MSCB_TIMEOUT            Timeout
 
 \********************************************************************/
 {
-   int i;
-   unsigned char usb_buf[65], eth_buf[65];
+   int i, n, retry, timeout;
+   unsigned char usb_buf[65], eth_buf[256], ret_buf[1024];
    UDP_HEADER *pudp;
 
-   if (index > MSCB_MAX_FD || index < 1 || !mscb_fd[index - 1].type)
+   if (fd > MSCB_MAX_FD || fd < 1 || !mscb_fd[fd - 1].type)
       return MSCB_INVAL_PARAM;
+
+   if (mscb_lock(fd) != MSCB_SUCCESS)
+      return MSCB_MUTEX;
 
    /*---- USB code ----*/
 
-   if (mscb_fd[index - 1].type == MSCB_TYPE_USB) {
+   if (mscb_fd[fd - 1].type == MSCB_TYPE_USB) {
 
-      if (len >= 64 || len < 1)
+      if (len >= 64 || len < 1) {
+         mscb_release(fd);
          return MSCB_INVAL_PARAM;
+      }
 
       /* add flags in first byte of USB buffer */
       usb_buf[0] = (unsigned char)flags;
       memcpy(usb_buf + 1, buffer, len);
 
       /* send on OUT pipe */
-      i = musb_write(mscb_fd[index - 1].ui, 0, usb_buf, len + 1, MUSB_TIMEOUT);
+      i = musb_write(mscb_fd[fd - 1].ui, 0, usb_buf, len + 1, MUSB_TIMEOUT);
 
       if (i == 0) {
          /* USB submaster might have been dis- and reconnected, so reinit */
-         musb_close(mscb_fd[index - 1].ui);
+         musb_close(mscb_fd[fd - 1].ui);
 
-         i = subm250_open(&mscb_fd[index - 1].ui, atoi(mscb_fd[index - 1].device+3));
-         if (i < 0)
+         i = subm250_open(&mscb_fd[fd - 1].ui, atoi(mscb_fd[fd - 1].device+3));
+         if (i < 0) {
+            mscb_release(fd);
             return MSCB_TIMEOUT;
+         }
 
-         i = musb_write(mscb_fd[index - 1].ui, 0, usb_buf, len + 1, MUSB_TIMEOUT);
+         i = musb_write(mscb_fd[fd - 1].ui, 0, usb_buf, len + 1, MUSB_TIMEOUT);
       }
 
-      if (i != len + 1)
+      if (i != len + 1) {
+         mscb_release(fd);
          return MSCB_TIMEOUT;
+      }
+
+      if (flags & RS485_FLAG_NO_ACK) {
+         mscb_release(fd);
+         return MSCB_SUCCESS;
+      }
+
+      if (size == NULL) {
+         mscb_release(fd);
+         return MSCB_INVAL_PARAM;
+      }
+
+      memset(buffer, 0, *size);
+
+      /* receive result on IN pipe */
+      n = musb_read(mscb_fd[fd - 1].ui, 0, buffer, *size, MUSB_TIMEOUT);
+      *size = n;
    }
 
    /*---- Ethernet code ----*/
 
-   if (mscb_fd[index - 1].type == MSCB_TYPE_ETH) {
-      if (len >= 256 || len < 1)
+   if (mscb_fd[fd - 1].type == MSCB_TYPE_ETH) {
+      if (len >= 256 || len < 1) {
+         mscb_release(fd);
          return MSCB_INVAL_PARAM;
+      }
 
-      /* increment and write sequence number */
-      mscb_fd[index - 1].seq_nr = (mscb_fd[index - 1].seq_nr + 1) % 0x10000;
+      /* try five times, in case packets got lost */
+      for (retry=0 ; retry<5 ; retry++) {
+         /* increment and write sequence number */
+         mscb_fd[fd - 1].seq_nr = (mscb_fd[fd - 1].seq_nr + 1) % 0x10000;
 
-      /* fill UDP header */
-      pudp = (UDP_HEADER *)eth_buf;
-      pudp->size = htons((short) len);
-      pudp->seq_num = htons((short) mscb_fd[index - 1].seq_nr);
-      pudp->flags = flags;
-      pudp->version = MSCB_SUBM_VERSION;
+         /* fill UDP header */
+         pudp = (UDP_HEADER *)eth_buf;
+         pudp->size = htons((short) len);
+         pudp->seq_num = htons((short) mscb_fd[fd - 1].seq_nr);
+         pudp->flags = flags;
+         pudp->version = MSCB_SUBM_VERSION;
 
-      memcpy(pudp+1, buffer, len);
+         memcpy(pudp+1, buffer, len);
 
-      /* send over UDP link */
-      i = msend_udp(index, eth_buf, len + sizeof(UDP_HEADER));
+         /* send over UDP link */
+         i = msend_udp(fd, eth_buf, len + sizeof(UDP_HEADER));
 
-      if (i != len + sizeof(UDP_HEADER))
-         return MSCB_TIMEOUT;
+         if (i != len + sizeof(UDP_HEADER)) {
+            mscb_release(fd);
+            return MSCB_TIMEOUT;
+         }
+
+         if (flags & RS485_FLAG_NO_ACK) {
+            mscb_release(fd);
+            return MSCB_SUCCESS;
+         }
+
+         if (size == NULL) {
+            mscb_release(fd);
+            return MSCB_INVAL_PARAM;
+         }
+
+         memset(ret_buf, 0, sizeof(ret_buf));
+
+         /* increase timeout with each retry 0.1s, 0.2s, 0.4s, 0.8s, 1.6s */
+         timeout = 100 * (1 << retry);
+
+         if (flags & RS485_FLAG_LONG_TO)
+            timeout = 5000;
+
+         if (retry > 0)
+            printf("retry with %d ms timeout\n", timeout);
+
+         /* receive result on IN pipe */
+         n = mrecv_udp(fd, ret_buf, sizeof(ret_buf), timeout);
+
+         /* return if invalid version */
+         if (n < 0) {
+            mscb_release(fd);
+            *size = 0;
+            return n;
+         }
+
+         if (n > 0) {
+            /* check if retrun data fits into buffer */
+            if (n > *size) {
+               memcpy(buffer, ret_buf, *size);
+            } else {
+               memset(buffer, 0, *size); 
+               memcpy(buffer, ret_buf, n);
+               *size = n;
+            }
+
+            mscb_release(fd);
+            return MSCB_SUCCESS;
+         }
+      }
+
+      /* no reply after all the retries, so return error */
+      mscb_release(fd);
+      return MSCB_TIMEOUT;
    }
+
+   mscb_release(fd);
 
    return MSCB_SUCCESS;
-}
-
-/*------------------------------------------------------------------*/
-
-int mscb_in(int index, char *buffer, int size, int timeout)
-/********************************************************************\
-
-  Routine: mscb_in
-
-  Purpose: Read number of bytes from SM via parallel port
-
-  Input:
-    int  index              index to file descriptor table
-    int  size               size of data buffer
-    int  timeout            timeout in milliseconds
-
-  Output:
-    char *buffer            data buffer
-
-  Function value:
-    int                     number of received bytes, -1 for timeout
-
-\********************************************************************/
-{
-   int n, len;
-
-   n = 0;
-   len = -1;
-
-   if (index > MSCB_MAX_FD || index < 1 || !mscb_fd[index - 1].type)
-      return MSCB_INVAL_PARAM;
-
-   memset(buffer, 0, size);
-
-   /*---- USB code ----*/
-   if (mscb_fd[index - 1].type == MSCB_TYPE_USB) {
-
-      /* receive result on IN pipe */
-      n = musb_read(mscb_fd[index - 1].ui, 0, buffer, size, timeout);
-   }
-
-   /*---- Ethernet code ----*/
-   if (mscb_fd[index - 1].type == MSCB_TYPE_ETH) {
-
-      /* receive result on IN pipe */
-      n = mrecv_udp(index, buffer, size, timeout);
-   }
-
-   return n;
 }
 
 /*------------------------------------------------------------------*/
@@ -826,6 +866,8 @@ int mscb_init(char *device, int bufsize, char *password, int debug)
       }
 
       status = subm250_open(&mscb_fd[index].ui, atoi(device+3));
+      mscb_release(index + 1);
+
       if (status != MSCB_SUCCESS)
          return EMSCB_NOT_FOUND;
 
@@ -838,9 +880,8 @@ int mscb_init(char *device, int bufsize, char *password, int debug)
       for (i = 0; i < 10; i++) {
          /* check if submaster alive */
          buf[0] = MCMD_ECHO;
-         mscb_out(index + 1, buf, 1, RS485_FLAG_CMD);
-
-         n = mscb_in(index + 1, buf, 2, TO_SHORT);
+         n = sizeof(buf);
+         mscb_exchg(index + 1, buf, &n, 1, RS485_FLAG_CMD);
 
          if (n == 2 && buf[0] == MCMD_ACK) {
 
@@ -855,8 +896,6 @@ int mscb_init(char *device, int bufsize, char *password, int debug)
             break;
          }
       }
-
-      mscb_release(index + 1);
 
       if (n != 2 || buf[0] != MCMD_ACK) {
          debug_log("return EMSCB_COMM_ERROR\n", 0);
@@ -900,14 +939,13 @@ int mscb_init(char *device, int bufsize, char *password, int debug)
          debug_log("return EMSCB_LOCKED\n", 0);
          return EMSCB_LOCKED;
       }
+      mscb_release(index + 1);
 
       /* check if submaster alive */
       buf[0] = MCMD_ECHO;
-      mscb_out(index + 1, buf, 1, RS485_FLAG_CMD);
-
-      n = mscb_in(index + 1, buf, 2, TO_SHORT);
-      mscb_release(index + 1);
-
+      n = sizeof(buf);
+      mscb_exchg(index + 1, buf, &n, 1, RS485_FLAG_CMD);
+      
       if (n < 0) {
          /* invalid version */
          debug_log("return EMSCB_SUBM_VERSION\n", 0);
@@ -928,15 +966,8 @@ int mscb_init(char *device, int bufsize, char *password, int debug)
       else
          buf[1] = 0;
 
-      if (!mscb_lock(index + 1)) {
-         memset(&mscb_fd[index], 0, sizeof(MSCB_FD));
-         debug_log("return EMSCB_LOCKED\n", 0);
-         return EMSCB_LOCKED;
-      }
-
-      mscb_out(index + 1, buf, 21, RS485_FLAG_CMD);
-      n = mscb_in(index + 1, buf, 2, TO_SHORT);
-      mscb_release(index + 1);
+      n = sizeof(buf);
+      mscb_exchg(index + 1, buf, &n, 21, RS485_FLAG_CMD);
 
       if (n != 1 || (buf[0] != MCMD_ACK && buf[0] != 0xFF)) {
          mscb_exit(index + 1);
@@ -1043,7 +1074,7 @@ void mscb_get_device(int fd, char *device, int bufsize)
 
 /*------------------------------------------------------------------*/
 
-int mscb_addr(int fd, int cmd, unsigned short adr, int retry, int lock)
+int mscb_addr(int fd, int cmd, unsigned short adr, int retry)
 /********************************************************************\
 
   Routine: mscb_addr
@@ -1065,7 +1096,6 @@ int mscb_addr(int fd, int cmd, unsigned short adr, int retry, int lock)
 
     unsigned short adr      Node or group address
     int retry               Number of retries
-    int lock                Lock MSCB if TRUE
 
   Function value:
     MSCB_SUCCESS            Successful completion
@@ -1075,80 +1105,60 @@ int mscb_addr(int fd, int cmd, unsigned short adr, int retry, int lock)
 \********************************************************************/
 {
    unsigned char buf[64];
-   int i, n, status;
+   int n, size, status;
 
    if (fd > MSCB_MAX_FD || fd < 1 || !mscb_fd[fd - 1].type)
       return MSCB_INVAL_PARAM;
 
    if (mrpc_connected(fd))
-      return mrpc_call(mscb_fd[fd - 1].fd, RPC_MSCB_ADDR, mscb_fd[fd - 1].remote_fd, cmd, adr, retry, lock);
-
-   if (lock) {
-      if (mscb_lock(fd) != MSCB_SUCCESS)
-         return MSCB_MUTEX;
-   }
+      return mrpc_call(mscb_fd[fd - 1].fd, RPC_MSCB_ADDR, mscb_fd[fd - 1].remote_fd, cmd, adr, retry);
 
    for (n = 0; n < retry; n++) {
       buf[0] = (unsigned char)cmd;
-
+      size = sizeof(buf);
       if (cmd == MCMD_ADDR_NODE8 || cmd == MCMD_ADDR_GRP8) {
          buf[1] = (unsigned char) adr;
          buf[2] = crc8(buf, 2);
-         status = mscb_out(fd, buf, 3, RS485_FLAG_BIT9 | RS485_FLAG_SHORT_TO | RS485_FLAG_NO_ACK);
+         status = mscb_exchg(fd, buf, &size, 3, RS485_FLAG_BIT9 | RS485_FLAG_SHORT_TO | RS485_FLAG_NO_ACK); 
       } else if (cmd == MCMD_PING8) {
          buf[1] = (unsigned char) adr;
          buf[2] = crc8(buf, 2);
-         status = mscb_out(fd, buf, 3, RS485_FLAG_BIT9 | RS485_FLAG_SHORT_TO);
+         status = mscb_exchg(fd, buf, &size, 3, RS485_FLAG_BIT9 | RS485_FLAG_SHORT_TO); 
       } else if (cmd == MCMD_ADDR_NODE16 || cmd == MCMD_ADDR_GRP16) {
          buf[1] = (unsigned char) (adr >> 8);
          buf[2] = (unsigned char) (adr & 0xFF);
          buf[3] = crc8(buf, 3);
-         status = mscb_out(fd, buf, 4, RS485_FLAG_BIT9 | RS485_FLAG_SHORT_TO | RS485_FLAG_NO_ACK);
+         status = mscb_exchg(fd, buf, &size, 4, RS485_FLAG_BIT9 | RS485_FLAG_SHORT_TO | RS485_FLAG_NO_ACK); 
       } else if (cmd == MCMD_PING16) {
          buf[1] = (unsigned char) (adr >> 8);
          buf[2] = (unsigned char) (adr & 0xFF);
          buf[3] = crc8(buf, 3);
-         status = mscb_out(fd, buf, 4, RS485_FLAG_BIT9 | RS485_FLAG_SHORT_TO);
+         status = mscb_exchg(fd, buf, &size, 4, RS485_FLAG_BIT9 | RS485_FLAG_SHORT_TO); 
       } else {
          buf[1] = crc8(buf, 1);
-         status = mscb_out(fd, buf, 2, RS485_FLAG_BIT9 | RS485_FLAG_SHORT_TO | RS485_FLAG_NO_ACK);
+         status = mscb_exchg(fd, buf, &size, 2, RS485_FLAG_BIT9 | RS485_FLAG_SHORT_TO | RS485_FLAG_NO_ACK); 
       }
 
-      if (status != MSCB_SUCCESS) {
-         if (lock)
-            mscb_release(fd);
+      if (status != MSCB_SUCCESS)
          return MSCB_SUBM_ERROR;
-      }
 
       if (cmd == MCMD_PING8 || cmd == MCMD_PING16) {
-         /* read back ping reply, 4ms timeout (for USB!) */
-         i = mscb_in(fd, buf, 1, TO_SHORT);
-
-         if (i == MSCB_SUCCESS && buf[0] == MCMD_ACK) {
-            if (lock)
-               mscb_release(fd);
+         if (buf[0] == MCMD_ACK)
             return MSCB_SUCCESS;
-         }
 
          if (retry > 1) {
             /* send 0's to overflow partially filled node receive buffer */
             memset(buf, 0, sizeof(buf));
-            mscb_out(fd, buf, 10, RS485_FLAG_BIT9 | RS485_FLAG_NO_ACK);
+            mscb_exchg(fd, buf, NULL, 10, RS485_FLAG_BIT9 | RS485_FLAG_NO_ACK);
 
             /* wait some time */
             Sleep(10);
          }
 
          /* try again.... */
-      } else {
-         if (lock)
-            mscb_release(fd);
+      } else
          return MSCB_SUCCESS;
-      }
    }
-
-   if (lock)
-      mscb_release(fd);
 
    return MSCB_TIMEOUT;
 }
@@ -1175,6 +1185,7 @@ int mscb_reboot(int fd, int addr, int gaddr, int broadcast)
 
 \********************************************************************/
 {
+   int size;
    unsigned char buf[64];
 
    if (fd > MSCB_MAX_FD || fd < 1 || !mscb_fd[fd - 1].type)
@@ -1183,9 +1194,7 @@ int mscb_reboot(int fd, int addr, int gaddr, int broadcast)
    if (mrpc_connected(fd))
       return mrpc_call(mscb_fd[fd - 1].fd, RPC_MSCB_REBOOT, mscb_fd[fd - 1].remote_fd, addr, gaddr, broadcast);
 
-   if (mscb_lock(fd) != MSCB_SUCCESS)
-      return MSCB_MUTEX;
-
+   size = sizeof(buf);
    if (addr >= 0) {
       buf[0] = MCMD_ADDR_NODE16;
       buf[1] = (unsigned char) (addr >> 8);
@@ -1194,7 +1203,7 @@ int mscb_reboot(int fd, int addr, int gaddr, int broadcast)
 
       buf[4] = MCMD_INIT;
       buf[5] = crc8(buf+4, 1);
-      mscb_out(fd, buf, 6, RS485_FLAG_NO_ACK | RS485_FLAG_ADR_CYCLE);
+      mscb_exchg(fd, buf, &size, 6, RS485_FLAG_NO_ACK | RS485_FLAG_ADR_CYCLE);
    } else if (gaddr >= 0) {
       buf[0] = MCMD_ADDR_GRP16;
       buf[1] = (unsigned char) (gaddr >> 8);
@@ -1203,17 +1212,16 @@ int mscb_reboot(int fd, int addr, int gaddr, int broadcast)
 
       buf[4] = MCMD_INIT;
       buf[5] = crc8(buf+4, 1);
-      mscb_out(fd, buf, 6, RS485_FLAG_NO_ACK | RS485_FLAG_ADR_CYCLE);
+      mscb_exchg(fd, buf, &size, 6, RS485_FLAG_NO_ACK | RS485_FLAG_ADR_CYCLE);
    } else if (broadcast) {
       buf[0] = MCMD_ADDR_BC;
       buf[1] = crc8(buf, 1);
 
       buf[2] = MCMD_INIT;
       buf[3] = crc8(buf+2, 1);
-      mscb_out(fd, buf, 4, RS485_FLAG_NO_ACK | RS485_FLAG_ADR_CYCLE);
+      mscb_exchg(fd, buf, &size, 4, RS485_FLAG_NO_ACK | RS485_FLAG_ADR_CYCLE);
    }
 
-   mscb_release(fd);
    mscb_clear_info_cache(fd);
 
    return MSCB_SUCCESS;
@@ -1238,7 +1246,7 @@ int mscb_reset(int fd)
 \********************************************************************/
 {
    char buf[10];
-   int n;
+   int size;
 
    debug_log("mscb_reset(fd=%d) ", 1, fd);
 
@@ -1250,25 +1258,18 @@ int mscb_reset(int fd)
    if (mrpc_connected(fd))
       return mrpc_call(mscb_fd[fd - 1].fd, RPC_MSCB_RESET, mscb_fd[fd - 1].remote_fd);
 
-   if (mscb_lock(fd) != MSCB_SUCCESS) {
-      debug_log("return MSCB_MUTEX\n", 0);
-      return MSCB_MUTEX;
-   }
-
    if (mscb_fd[fd - 1].type == MSCB_TYPE_ETH) {
 
       buf[0] = MCMD_INIT;
-      mscb_out(fd, buf, 1, RS485_FLAG_CMD);
+      mscb_exchg(fd, buf, NULL, 1, RS485_FLAG_CMD | RS485_FLAG_NO_ACK);
 
       Sleep(5000);  // let submaster obtain IP address
 
       /* check if submaster alive */
+      size = sizeof(buf);
       buf[0] = MCMD_ECHO;
-      mscb_out(fd, buf, 1, RS485_FLAG_CMD);
-
-      n = mscb_in(fd, buf, 2, TO_SHORT);
-      if (n < 2) {
-         mscb_release(fd);
+      mscb_exchg(fd, buf, &size, 1, RS485_FLAG_CMD);
+      if (size < 2) {
          debug_log("return MSCB_SUBM_ERROR (mrpc_connect)\n", 0);
          return MSCB_SUBM_ERROR;
       }
@@ -1276,7 +1277,7 @@ int mscb_reset(int fd)
    } else if (mscb_fd[fd - 1].type == MSCB_TYPE_USB) {
 
       buf[0] = MCMD_INIT;
-      mscb_out(fd, buf, 1, RS485_FLAG_CMD);
+      mscb_exchg(fd, buf, NULL, 1, RS485_FLAG_CMD | RS485_FLAG_NO_ACK);
       musb_close(mscb_fd[fd - 1].ui);
       Sleep(1000);
       subm250_open(&mscb_fd[fd - 1].ui, atoi(mscb_fd[fd - 1].device+3));
@@ -1284,10 +1285,8 @@ int mscb_reset(int fd)
 
    /* send 0's to overflow partially filled node receive buffer */
    memset(buf, 0, sizeof(buf));
-   mscb_out(fd, buf, 10, RS485_FLAG_BIT9 | RS485_FLAG_NO_ACK);
+   mscb_exchg(fd, buf, NULL, 10, RS485_FLAG_BIT9 | RS485_FLAG_NO_ACK);
    Sleep(10);
-
-   mscb_release(fd);
 
    debug_log("return MSCB_SUCCESS\n", 0);
    return MSCB_SUCCESS;
@@ -1295,7 +1294,7 @@ int mscb_reset(int fd)
 
 /*------------------------------------------------------------------*/
 
-int mscb_ping(int fd, unsigned short adr)
+int mscb_ping(int fd, unsigned short adr, int quick)
 /********************************************************************\
 
   Routine: mscb_ping
@@ -1305,6 +1304,7 @@ int mscb_ping(int fd, unsigned short adr)
   Input:
     int fd                  File descriptor for connection
     unsigned short adr      Node address
+    int quick               If 1, do a quick ping without retries
 
   Output:
     none
@@ -1324,12 +1324,9 @@ int mscb_ping(int fd, unsigned short adr)
    if (mrpc_connected(fd))
       return mrpc_call(mscb_fd[fd - 1].fd, RPC_MSCB_PING, mscb_fd[fd - 1].remote_fd, adr);
 
-   if (mscb_lock(fd) != MSCB_SUCCESS)
-      return MSCB_MUTEX;
+   /* call mscb_addr with/without retries */
+   status = mscb_addr(fd, MCMD_PING16, adr, quick ? 1 : 10);
 
-   status = mscb_addr(fd, MCMD_PING16, adr, 1, 0);
-
-   mscb_release(fd);
    return status;
 }
 
@@ -1367,7 +1364,7 @@ int mscb_info(int fd, unsigned short adr, MSCB_INFO * info)
 
 \********************************************************************/
 {
-   int i, retry;
+   int size, retry;
    unsigned char buf[256];
 
    if (fd > MSCB_MAX_FD || fd < 1 || !mscb_fd[fd - 1].type)
@@ -1375,9 +1372,6 @@ int mscb_info(int fd, unsigned short adr, MSCB_INFO * info)
 
    if (mrpc_connected(fd))
       return mrpc_call(mscb_fd[fd - 1].fd, RPC_MSCB_INFO, mscb_fd[fd - 1].remote_fd, adr, info);
-
-   if (mscb_lock(fd) != MSCB_SUCCESS)
-      return MSCB_MUTEX;
 
    for (retry = 0 ; retry < 2 ; retry++) {
       buf[0] = MCMD_ADDR_NODE16;
@@ -1387,22 +1381,21 @@ int mscb_info(int fd, unsigned short adr, MSCB_INFO * info)
 
       buf[4] = MCMD_GET_INFO;
       buf[5] = crc8(buf+4, 1);
-      mscb_out(fd, buf, 6, RS485_FLAG_LONG_TO | RS485_FLAG_ADR_CYCLE);
+      
+      size = sizeof(buf);
+      mscb_exchg(fd, buf, &size, 6, RS485_FLAG_LONG_TO | RS485_FLAG_ADR_CYCLE);
 
-      i = mscb_in(fd, buf, sizeof(buf), TO_SHORT);
-
-      if (i == (int) sizeof(MSCB_INFO) + 3)
+      if (size == (int) sizeof(MSCB_INFO) + 3)
          break;
    }
 
-   mscb_release(fd);
-   if (i < (int) sizeof(MSCB_INFO) + 3)
+   if (size < (int) sizeof(MSCB_INFO) + 3)
       return MSCB_TIMEOUT;
 
    memcpy(info, buf + 2, sizeof(MSCB_INFO));
 
    /* do CRC check */
-   if (crc8(buf, i-1) != buf[i-1])
+   if (crc8(buf, size-1) != buf[size-1])
       return MSCB_CRC_ERROR;
 
    WORD_SWAP(&info->node_address);
@@ -1436,7 +1429,7 @@ int mscb_uptime(int fd, unsigned short adr, unsigned int *uptime)
 
 \********************************************************************/
 {
-   int i;
+   int size;
    unsigned char buf[256];
    unsigned long u;
 
@@ -1446,9 +1439,6 @@ int mscb_uptime(int fd, unsigned short adr, unsigned int *uptime)
    if (mrpc_connected(fd))
       return mrpc_call(mscb_fd[fd - 1].fd, RPC_MSCB_UPTIME, mscb_fd[fd - 1].remote_fd, adr, uptime);
 
-   if (mscb_lock(fd) != MSCB_SUCCESS)
-      return MSCB_MUTEX;
-
    buf[0] = MCMD_ADDR_NODE16;
    buf[1] = (unsigned char) (adr >> 8);
    buf[2] = (unsigned char) (adr & 0xFF);
@@ -1456,16 +1446,14 @@ int mscb_uptime(int fd, unsigned short adr, unsigned int *uptime)
 
    buf[4] = MCMD_GET_UPTIME;
    buf[5] = crc8(buf+4, 1);
-   mscb_out(fd, buf, 6, RS485_FLAG_ADR_CYCLE);
+   size = sizeof(buf);
+   mscb_exchg(fd, buf, &size, 6, RS485_FLAG_ADR_CYCLE);
 
-   i = mscb_in(fd, buf, sizeof(buf), TO_SHORT);
-   mscb_release(fd);
-
-   if (i < 6)
+   if (size < 6)
       return MSCB_TIMEOUT;
 
    /* do CRC check */
-   if (crc8(buf, i-1) != buf[i-1])
+   if (crc8(buf, size-1) != buf[size-1])
       return MSCB_CRC_ERROR;
 
    u = (buf[4]<<0) + (buf[3]<<8) + (buf[2]<<16) + (buf[1]<<24);
@@ -1501,7 +1489,7 @@ int mscb_info_variable(int fd, unsigned short adr, unsigned char index, MSCB_INF
 
 \********************************************************************/
 {
-   int i, retry;
+   int i, size, retry;
    unsigned char buf[80];
 
    if (fd > MSCB_MAX_FD || fd < 1 || !mscb_fd[fd - 1].type)
@@ -1537,9 +1525,6 @@ int mscb_info_variable(int fd, unsigned short adr, unsigned char index, MSCB_INF
          return mrpc_call(mscb_fd[fd - 1].fd, RPC_MSCB_INFO_VARIABLE,
                         mscb_fd[fd - 1].remote_fd, adr, index, info);
 
-      if (mscb_lock(fd) != MSCB_SUCCESS)
-         return MSCB_MUTEX;
-
       for (retry = 0 ; retry < 2 ; retry++) {
          buf[0] = MCMD_ADDR_NODE16;
          buf[1] = (unsigned char) (adr >> 8);
@@ -1549,17 +1534,15 @@ int mscb_info_variable(int fd, unsigned short adr, unsigned char index, MSCB_INF
          buf[4] = MCMD_GET_INFO + 1;
          buf[5] = index;
          buf[6] = crc8(buf+4, 2);
-         mscb_out(fd, buf, 7, RS485_FLAG_ADR_CYCLE);
+         size = sizeof(buf);
+         mscb_exchg(fd, buf, &size, 7, RS485_FLAG_ADR_CYCLE);
 
-         i = mscb_in(fd, buf, sizeof(buf), TO_SHORT);
-
-         if (i == (int) sizeof(MSCB_INFO_VAR) + 3 || i == 2)
+         if (size == (int) sizeof(MSCB_INFO_VAR) + 3 || size == 2)
             break;
       }
 
-      mscb_release(fd);
-      if (i < (int) sizeof(MSCB_INFO_VAR) + 3) {
-         if (i == 2) // negative acknowledge
+      if (size < (int) sizeof(MSCB_INFO_VAR) + 3) {
+         if (size == 2) // negative acknowledge
             cache_info_var[n_cache_info_var].info.name[0] = 0;
          return MSCB_NO_VAR;
       }
@@ -1609,18 +1592,13 @@ int mscb_set_node_addr(int fd, int addr, int gaddr, int broadcast,
       return mrpc_call(mscb_fd[fd - 1].fd, RPC_MSCB_SET_NODE_ADDR, mscb_fd[fd - 1].remote_fd, 
                        addr, gaddr, broadcast, new_addr);
 
-   if (mscb_lock(fd) != MSCB_SUCCESS)
-      return MSCB_MUTEX;
-
    if (addr >= 0) { // individual node
 
       /* check if destination address is alive */
       if (addr >= 0) {
-         status = mscb_addr(fd, MCMD_PING16, new_addr, 10, 0);
-         if (status == MSCB_SUCCESS) {
-            mscb_release(fd);
+         status = mscb_ping(fd, new_addr, 0);
+         if (status == MSCB_SUCCESS)
             return MSCB_ADDR_EXISTS;
-         }
       }
 
       buf[0] = MCMD_ADDR_NODE16;
@@ -1633,7 +1611,7 @@ int mscb_set_node_addr(int fd, int addr, int gaddr, int broadcast,
       buf[6] = (unsigned char) (new_addr >> 8);
       buf[7] = (unsigned char) (new_addr & 0xFF);
       buf[8] = crc8(buf+4, 4);
-      mscb_out(fd, buf, 9, RS485_FLAG_NO_ACK | RS485_FLAG_ADR_CYCLE);
+      mscb_exchg(fd, buf, NULL, 9, RS485_FLAG_NO_ACK | RS485_FLAG_ADR_CYCLE);
 
    } else if (gaddr >= 0) {
       buf[0] = MCMD_ADDR_GRP16;
@@ -1646,7 +1624,7 @@ int mscb_set_node_addr(int fd, int addr, int gaddr, int broadcast,
       buf[6] = (unsigned char) (new_addr >> 8);
       buf[7] = (unsigned char) (new_addr & 0xFF);
       buf[8] = crc8(buf+4, 4);
-      mscb_out(fd, buf, 9, RS485_FLAG_NO_ACK | RS485_FLAG_ADR_CYCLE);
+      mscb_exchg(fd, buf, NULL, 9, RS485_FLAG_NO_ACK | RS485_FLAG_ADR_CYCLE);
 
    } else if (broadcast) {
       buf[0] = MCMD_ADDR_BC;
@@ -1657,11 +1635,10 @@ int mscb_set_node_addr(int fd, int addr, int gaddr, int broadcast,
       buf[4] = (unsigned char) (new_addr >> 8);
       buf[5] = (unsigned char) (new_addr & 0xFF);
       buf[6] = crc8(buf+2, 4);
-      mscb_out(fd, buf, 7, RS485_FLAG_NO_ACK | RS485_FLAG_ADR_CYCLE);
+      mscb_exchg(fd, buf, NULL, 7, RS485_FLAG_NO_ACK | RS485_FLAG_ADR_CYCLE);
 
    }
 
-   mscb_release(fd);
    mscb_clear_info_cache(fd);
 
    return MSCB_SUCCESS;
@@ -1698,9 +1675,6 @@ int mscb_set_group_addr(int fd, int addr, int gaddr, int broadcast, unsigned sho
       return mrpc_call(mscb_fd[fd - 1].fd, RPC_MSCB_SET_GROUP_ADDR, mscb_fd[fd - 1].remote_fd, 
                        gaddr, new_addr);
 
-   if (mscb_lock(fd) != MSCB_SUCCESS)
-      return MSCB_MUTEX;
-
    if (broadcast > 0) {         
       buf[0] = MCMD_ADDR_BC;
       buf[1] = crc8(buf, 1);
@@ -1710,7 +1684,7 @@ int mscb_set_group_addr(int fd, int addr, int gaddr, int broadcast, unsigned sho
       buf[4] = (unsigned char) (new_addr >> 8);
       buf[5] = (unsigned char) (new_addr & 0xFF);
       buf[6] = crc8(buf+2, 4);
-      mscb_out(fd, buf, 7, RS485_FLAG_NO_ACK | RS485_FLAG_ADR_CYCLE);
+      mscb_exchg(fd, buf, NULL, 7, RS485_FLAG_NO_ACK | RS485_FLAG_ADR_CYCLE);
 
    } else if (gaddr >= 0) {
       buf[0] = MCMD_ADDR_GRP16;
@@ -1723,7 +1697,7 @@ int mscb_set_group_addr(int fd, int addr, int gaddr, int broadcast, unsigned sho
       buf[6] = (unsigned char) (new_addr >> 8);
       buf[7] = (unsigned char) (new_addr & 0xFF);
       buf[8] = crc8(buf+4, 4);
-      mscb_out(fd, buf, 9, RS485_FLAG_NO_ACK | RS485_FLAG_ADR_CYCLE);
+      mscb_exchg(fd, buf, NULL, 9, RS485_FLAG_NO_ACK | RS485_FLAG_ADR_CYCLE);
 
    } else if (addr >= 0) {
       buf[0] = MCMD_ADDR_NODE16;
@@ -1736,11 +1710,10 @@ int mscb_set_group_addr(int fd, int addr, int gaddr, int broadcast, unsigned sho
       buf[6] = (unsigned char) (new_addr >> 8);
       buf[7] = (unsigned char) (new_addr & 0xFF);
       buf[8] = crc8(buf+4, 4);
-      mscb_out(fd, buf, 9, RS485_FLAG_NO_ACK | RS485_FLAG_ADR_CYCLE);
+      mscb_exchg(fd, buf, NULL, 9, RS485_FLAG_NO_ACK | RS485_FLAG_ADR_CYCLE);
 
    }
 
-   mscb_release(fd);
    mscb_clear_info_cache(fd);
 
    return MSCB_SUCCESS;
@@ -1774,9 +1747,6 @@ int mscb_set_name(int fd, unsigned short adr, char *name)
    if (mrpc_connected(fd))
       return mrpc_call(mscb_fd[fd - 1].fd, RPC_MSCB_SET_NAME, mscb_fd[fd - 1].remote_fd, adr, name);
 
-   if (mscb_lock(fd) != MSCB_SUCCESS)
-      return MSCB_MUTEX;
-
    buf[0] = MCMD_ADDR_NODE16;
    buf[1] = (unsigned char) (adr >> 8);
    buf[2] = (unsigned char) (adr & 0xFF);
@@ -1792,9 +1762,8 @@ int mscb_set_name(int fd, unsigned short adr, char *name)
    buf[5] = (unsigned char)i; /* varibale buffer length */
 
    buf[6 + i] = crc8(buf+4, 2 + i);
-   mscb_out(fd, buf, 7 + i, RS485_FLAG_NO_ACK | RS485_FLAG_ADR_CYCLE);
+   mscb_exchg(fd, buf, NULL, 7 + i, RS485_FLAG_NO_ACK | RS485_FLAG_ADR_CYCLE);
 
-   mscb_release(fd);
    mscb_clear_info_cache(fd);
 
    return MSCB_SUCCESS;
@@ -1837,9 +1806,6 @@ int mscb_write_group(int fd, unsigned short adr, unsigned char index, void *data
    if (size > 4 || size < 1)
       return MSCB_INVAL_PARAM;
 
-   if (mscb_lock(fd) != MSCB_SUCCESS)
-      return MSCB_MUTEX;
-
    buf[0] = MCMD_ADDR_GRP16;
    buf[1] = (unsigned char) (adr >> 8);
    buf[2] = (unsigned char) (adr & 0xFF);
@@ -1852,9 +1818,7 @@ int mscb_write_group(int fd, unsigned short adr, unsigned char index, void *data
       buf[6 + size - 1 - i] = *d++;
 
    buf[6 + i] = crc8(buf, 6 + i);
-   mscb_out(fd, buf, 7 + i, RS485_FLAG_ADR_CYCLE | RS485_FLAG_NO_ACK);
-
-   mscb_release(fd);
+   mscb_exchg(fd, buf, NULL, 7 + i, RS485_FLAG_ADR_CYCLE | RS485_FLAG_NO_ACK);
 
    return MSCB_SUCCESS;
 }
@@ -1885,8 +1849,8 @@ int mscb_write(int fd, unsigned short adr, unsigned char index, void *data, int 
 
 \********************************************************************/
 {
-   int i, retry, status;
-   unsigned char buf[256], crc, ack[2];
+   int i, len, retry, status;
+   unsigned char buf[256], crc;
    unsigned char *d;
    unsigned int dw;
    float f;
@@ -1922,11 +1886,6 @@ int mscb_write(int fd, unsigned short adr, unsigned char index, void *data, int 
       return MSCB_INVAL_PARAM;
    }
 
-   if (mscb_lock(fd) != MSCB_SUCCESS) {
-      debug_log("return MSCB_MUTEX\n", 0);
-      return MSCB_MUTEX;
-   }
-
    /* try 10 times */
    for (retry=0 ; retry<10 ; retry++) {
 
@@ -1949,7 +1908,8 @@ int mscb_write(int fd, unsigned short adr, unsigned char index, void *data, int 
 
          crc = crc8(buf+4, 2 + i);
          buf[6 + i] = crc;
-         mscb_out(fd, buf, 7 + i, RS485_FLAG_ADR_CYCLE);
+         len = sizeof(buf);
+         status = mscb_exchg(fd, buf, &len, 7 + i, RS485_FLAG_ADR_CYCLE);
       } else {
          buf[4] = MCMD_WRITE_ACK + 7;
          buf[5] = (unsigned char)(size + 1);
@@ -1960,14 +1920,11 @@ int mscb_write(int fd, unsigned short adr, unsigned char index, void *data, int 
 
          crc = crc8(buf+4, 3 + i);
          buf[7 + i] = crc;
-         mscb_out(fd, buf, 8 + i, RS485_FLAG_ADR_CYCLE);
+         len = sizeof(buf);
+         status = mscb_exchg(fd, buf, &len, 8 + i, RS485_FLAG_ADR_CYCLE);
       }
 
-      /* read acknowledge */
-      i = mscb_in(fd, ack, 2, TO_SHORT);
-      mscb_release(fd);
-      
-      if (i == 1) {
+      if (len == 1) {
 #ifndef _USRDLL
          printf("Timeout from RS485 bus\n");
 #endif
@@ -1979,19 +1936,19 @@ int mscb_write(int fd, unsigned short adr, unsigned char index, void *data, int 
 #endif
          debug_log("Flush node communication\n", 1);
          memset(buf, 0, sizeof(buf));
-         mscb_out(fd, buf, 10, RS485_FLAG_BIT9 | RS485_FLAG_NO_ACK);
+         mscb_exchg(fd, buf, NULL, 10, RS485_FLAG_BIT9 | RS485_FLAG_NO_ACK);
          Sleep(100);
 
          continue;
       }
 
-      if (i < 2) {
+      if (status == MSCB_TIMEOUT) {
          debug_log("return MSCB_TIMEOUT\n", 0);
          status = MSCB_TIMEOUT;
          continue;
       }
 
-      if (ack[0] != MCMD_ACK || ack[1] != crc) {
+      if (buf[0] != MCMD_ACK || buf[1] != crc) {
          debug_log("return MSCB_CRC_ERROR\n", 0);
          status = MSCB_CRC_ERROR;
          continue;
@@ -2031,8 +1988,8 @@ int mscb_write_no_retries(int fd, unsigned short adr, unsigned char index, void 
 
 \********************************************************************/
 {
-   int i;
-   unsigned char buf[256], crc, ack[2];
+   int i, len;
+   unsigned char buf[256], crc;
    unsigned char *d;
    unsigned int dw;
 
@@ -2062,11 +2019,6 @@ int mscb_write_no_retries(int fd, unsigned short adr, unsigned char index, void 
       return MSCB_INVAL_PARAM;
    }
 
-   if (mscb_lock(fd) != MSCB_SUCCESS) {
-      debug_log("return MSCB_MUTEX\n", 0);
-      return MSCB_MUTEX;
-   }
-
    buf[0] = MCMD_ADDR_NODE16;
    buf[1] = (unsigned char) (adr >> 8);
    buf[2] = (unsigned char) (adr & 0xFF);
@@ -2086,7 +2038,8 @@ int mscb_write_no_retries(int fd, unsigned short adr, unsigned char index, void 
 
       crc = crc8(buf+4, 2 + i);
       buf[6 + i] = crc;
-      mscb_out(fd, buf, 7 + i, RS485_FLAG_ADR_CYCLE);
+      len = sizeof(buf);
+      mscb_exchg(fd, buf, &len, 7 + i, RS485_FLAG_ADR_CYCLE);
    } else {
       buf[4] = MCMD_WRITE_ACK + 7;
       buf[5] = (unsigned char)(size + 1);
@@ -2097,18 +2050,16 @@ int mscb_write_no_retries(int fd, unsigned short adr, unsigned char index, void 
 
       crc = crc8(buf+4, 3 + i);
       buf[7 + i] = crc;
-      mscb_out(fd, buf, 8 + i, RS485_FLAG_ADR_CYCLE);
+      len = sizeof(buf);
+      mscb_exchg(fd, buf, &len, 8 + i, RS485_FLAG_ADR_CYCLE);
    }
 
-   /* read acknowledge */
-   i = mscb_in(fd, ack, 2, TO_SHORT);
-   mscb_release(fd);
-   if (i < 2) {
+   if (len < 2) {
       debug_log("return MSCB_TIMEOUT\n", 0);
       return MSCB_TIMEOUT;
    }
 
-   if (ack[0] != MCMD_ACK || ack[1] != crc) {
+   if (buf[0] != MCMD_ACK || buf[1] != crc) {
       debug_log("return MSCB_CRC_ERROR\n", 0);
       return MSCB_CRC_ERROR;
    }
@@ -2142,8 +2093,8 @@ int mscb_write_block(int fd, unsigned short adr, unsigned char index, void *data
 
 \********************************************************************/
 {
-   int i, n;
-   unsigned char buf[256], crc, ack[2];
+   int i, n, len;
+   unsigned char buf[256], crc;
 
    if (fd > MSCB_MAX_FD || fd < 1 || !mscb_fd[fd - 1].type)
       return MSCB_INVAL_PARAM;
@@ -2154,9 +2105,6 @@ int mscb_write_block(int fd, unsigned short adr, unsigned char index, void *data
    if (size < 1)
       return MSCB_INVAL_PARAM;
 
-   if (mscb_lock(fd) != MSCB_SUCCESS)
-      return MSCB_MUTEX;
-
    /*
    Bulk test gave 128kb/sec, 10.3.04, SR
 
@@ -2164,7 +2112,6 @@ int mscb_write_block(int fd, unsigned short adr, unsigned char index, void *data
       buf[i] = RS485_FLAG_CMD;
 
    i = msend_usb(mscb_fd[fd - 1].hw, buf, 1024);
-   mscb_release(fd);
    return MSCB_SUCCESS;
    */
 
@@ -2190,22 +2137,14 @@ int mscb_write_block(int fd, unsigned short adr, unsigned char index, void *data
       crc = crc8(buf+4, 3 + n);
       buf[7 + n] = crc;
 
-      mscb_out(fd, buf, n+8, RS485_FLAG_ADR_CYCLE);
-
-      /* read acknowledge */
-      n = mscb_in(fd, ack, 2, TO_SHORT);
-      if (n < 2) {
-         mscb_release(fd);
+      len = sizeof(buf);
+      mscb_exchg(fd, buf, &len, n+8, RS485_FLAG_ADR_CYCLE);
+      if (len < 2)
          return MSCB_TIMEOUT;
-      }
 
-      if (ack[0] != MCMD_ACK || ack[1] != crc) {
-         mscb_release(fd);
+      if (buf[0] != MCMD_ACK || buf[1] != crc)
          return MSCB_CRC_ERROR;
-      }
    }
-
-   mscb_release(fd);
 
    return MSCB_SUCCESS;
 }
@@ -2243,9 +2182,6 @@ int mscb_flash(int fd, int addr, int gaddr, int broadcast)
    if (mrpc_connected(fd))
       return mrpc_call(mscb_fd[fd - 1].fd, RPC_MSCB_FLASH, mscb_fd[fd - 1].remote_fd, addr, gaddr, broadcast);
 
-   if (mscb_lock(fd) != MSCB_SUCCESS)
-      return MSCB_MUTEX;
-
    if (addr >= 0) {
       buf[0] = MCMD_ADDR_NODE16;
       buf[1] = (unsigned char) (addr >> 8);
@@ -2254,7 +2190,7 @@ int mscb_flash(int fd, int addr, int gaddr, int broadcast)
 
       buf[4] = MCMD_FLASH;
       buf[5] = crc8(buf+4, 1);
-      mscb_out(fd, buf, 6, RS485_FLAG_NO_ACK | RS485_FLAG_ADR_CYCLE);
+      mscb_exchg(fd, buf, NULL, 6, RS485_FLAG_NO_ACK | RS485_FLAG_ADR_CYCLE);
    } else if (gaddr >= 0) {
       buf[0] = MCMD_ADDR_GRP16;
       buf[1] = (unsigned char) (gaddr >> 8);
@@ -2263,17 +2199,15 @@ int mscb_flash(int fd, int addr, int gaddr, int broadcast)
 
       buf[4] = MCMD_FLASH;
       buf[5] = crc8(buf+4, 1);
-      mscb_out(fd, buf, 6, RS485_FLAG_NO_ACK | RS485_FLAG_ADR_CYCLE);
+      mscb_exchg(fd, buf, NULL, 6, RS485_FLAG_NO_ACK | RS485_FLAG_ADR_CYCLE);
    } else if (broadcast) {
       buf[0] = MCMD_ADDR_BC;
       buf[1] = crc8(buf, 1);
 
       buf[2] = MCMD_FLASH;
       buf[3] = crc8(buf+2, 1);
-      mscb_out(fd, buf, 4, RS485_FLAG_NO_ACK | RS485_FLAG_ADR_CYCLE);
+      mscb_exchg(fd, buf, NULL, 4, RS485_FLAG_NO_ACK | RS485_FLAG_ADR_CYCLE);
    }
-
-   mscb_release(fd);
 
    return MSCB_SUCCESS;
 }
@@ -2319,18 +2253,13 @@ int mscb_set_baud(int fd, int baud)
    if (mrpc_connected(fd))
       return mrpc_call(mscb_fd[fd - 1].fd, RPC_MSCB_SET_BAUD, mscb_fd[fd - 1].remote_fd, baud);
 
-   if (mscb_lock(fd) != MSCB_SUCCESS)
-      return MSCB_MUTEX;
-
    buf[0] = MCMD_ADDR_BC;
    buf[1] = crc8(buf, 1);
 
    buf[2] = MCMD_SET_BAUD;
    buf[3] = baud;
    buf[4] = crc8(buf+2, 2);
-   mscb_out(fd, buf, 5, RS485_FLAG_NO_ACK | RS485_FLAG_ADR_CYCLE);
-
-   mscb_release(fd);
+   mscb_exchg(fd, buf, NULL, 5, RS485_FLAG_NO_ACK | RS485_FLAG_ADR_CYCLE);
 
    return MSCB_SUCCESS;
 }
@@ -2362,8 +2291,8 @@ int mscb_upload(int fd, unsigned short adr, char *buffer, int size, int debug)
 
 \********************************************************************/
 {
-   unsigned char buf[512], crc, ack[2], image[0x10000], *line;
-   unsigned int len, ofh, ofl, type, d;
+   unsigned char buf[512], crc, image[0x10000], *line;
+   unsigned int len, ofh, ofl, type, d, buflen;
    int i, status, page, subpage, flash_size, n_page, retry, sretry, protected_page,
       n_page_disp;
    unsigned short ofs;
@@ -2376,7 +2305,7 @@ int mscb_upload(int fd, unsigned short adr, char *buffer, int size, int debug)
       return mrpc_call(mscb_fd[fd - 1].fd, RPC_MSCB_UPLOAD, mscb_fd[fd - 1].remote_fd, adr, buffer, size);
 
    /* check if node alive */
-   status = mscb_ping(fd, adr);
+   status = mscb_ping(fd, adr, 0);
    if (status != MSCB_SUCCESS) {
       printf("Error: cannot ping node #%d\n", adr);
       return status;
@@ -2432,67 +2361,56 @@ int mscb_upload(int fd, unsigned short adr, char *buffer, int size, int debug)
    if (debug)
       printf("Found %d valid pages (%d bytes) in HEX file\n", n_page, flash_size);
 
-   if (mscb_lock(fd) != MSCB_SUCCESS)
-      return MSCB_MUTEX;
-
    /* enter exclusive mode */
    buf[0] = MCMD_FREEZE;
    buf[1] = 1;
-   mscb_out(fd, buf, 2, RS485_FLAG_CMD);
+   buflen = sizeof(buf);
+   mscb_exchg(fd, buf, &buflen, 2, RS485_FLAG_CMD);
 
    /* wait for acknowledge */
-   if (mscb_in(fd, buf, 1, TO_SHORT) != 1) {
+   if (buflen != 1) {
       printf("Error: cannot request exlusive access to submaster\n");
-      mscb_release(fd);
       return MSCB_TIMEOUT;
-   }
-
-   /* address node */
-   status = mscb_addr(fd, MCMD_PING16, adr, 10, 0);
-   if (status != MSCB_SUCCESS) {
-      mscb_release(fd);
-      return status;
    }
 
    /* send upgrade command */
-   buf[0] = MCMD_UPGRADE;
-   crc = crc8(buf, 1);
-   buf[1] = crc;
-   mscb_out(fd, buf, 2, RS485_FLAG_LONG_TO);
+   buf[0] = MCMD_ADDR_NODE16;
+   buf[1] = (unsigned char) (adr >> 8);
+   buf[2] = (unsigned char) (adr & 0xFF);
+   buf[3] = crc8(buf, 3);
+   buf[4] = MCMD_UPGRADE;
+   buf[5] = crc8(buf+4, 1);
+   buflen = sizeof(buf);
+   mscb_exchg(fd, buf, &buflen, 6, RS485_FLAG_LONG_TO | RS485_FLAG_ADR_CYCLE);
 
    /* wait for acknowledge */
-   if (mscb_in(fd, buf, 3, TO_LONG) != 3) {
+   if (buflen != 3) {
       printf("Error: timeout receiving acknowledge from remote node\n");
-      mscb_release(fd);
       return MSCB_TIMEOUT;
    }
 
-   if (buf[1] == 2) {
-      mscb_release(fd);
+   if (buf[1] == 2)
       return MSCB_SUBADDR;
-   }
 
-   if (buf[1] == 3) {
-      mscb_release(fd);
+   if (buf[1] == 3)
       return MSCB_NOTREADY;
-   }
 
    /* let main routine enter upgrade() */
    Sleep(500);
 
    /* send echo command */
    buf[0] = UCMD_ECHO;
-   mscb_out(fd, buf, 1, RS485_FLAG_LONG_TO);
+   buflen = sizeof(buf);
+   mscb_exchg(fd, buf, &buflen, 1, RS485_FLAG_LONG_TO);
 
    /* wait for ready */
-   if (mscb_in(fd, ack, 2, TO_LONG) != 2) {
+   if (buflen != 2) {
       printf("Error: timeout receiving upgrade echo test from remote node\n");
 
       /* send exit upgrade command, in case node gets to upgrade routine later */
       buf[0] = UCMD_RETURN;
-      mscb_out(fd, buf, 1, RS485_FLAG_NO_ACK);
+      mscb_exchg(fd, buf, NULL, 1, RS485_FLAG_NO_ACK);
 
-      mscb_release(fd);
       return MSCB_TIMEOUT;
    }
 
@@ -2522,14 +2440,15 @@ int mscb_upload(int fd, unsigned short adr, char *buffer, int size, int debug)
          /* erase page */
          buf[0] = UCMD_ERASE;
          buf[1] = (unsigned char)page;
-         mscb_out(fd, buf, 2, RS485_FLAG_LONG_TO);
+         buflen = sizeof(buf);
+         mscb_exchg(fd, buf, &buflen, 2, RS485_FLAG_LONG_TO);
 
-         if (mscb_in(fd, ack, 2, TO_LONG) != 2) {
+         if (buflen != 2) {
             printf("\nError: timeout from remote node for erase page 0x%04X\n", page * 512);
             continue;
          }
 
-         if (ack[1] == 0xFF) {
+         if (buf[1] == 0xFF) {
             /* protected page, so finish */
             if (debug)
                printf("found protected page, exit\n");
@@ -2540,7 +2459,7 @@ int mscb_upload(int fd, unsigned short adr, char *buffer, int size, int debug)
             goto prog_pages;
          }
 
-         if (ack[0] != MCMD_ACK) {
+         if (buf[0] != MCMD_ACK) {
             printf("\nError: received wrong acknowledge for erase page 0x%04X\n", page * 512);
             continue;
          }
@@ -2599,11 +2518,11 @@ prog_pages:
                for (i = 0; i < 32; i++)
                   buf[i+3] = image[page * 512 + subpage * 32 + i];
 
-               mscb_out(fd, buf, 32+3, RS485_FLAG_LONG_TO);
+               buflen = sizeof(buf);
+               mscb_exchg(fd, buf, &buflen, 32+3, RS485_FLAG_LONG_TO);
 
                /* read acknowledge */
-               ack[0] = 0;
-               if (mscb_in(fd, ack, 2, TO_LONG) != 2 || ack[0] != MCMD_ACK) {
+               if (buflen != 2 || buf[0] != MCMD_ACK) {
                   printf("\nError: timeout from remote node for program page 0x%04X, chunk %d\n", page * 512, i);
                   goto prog_error;
                } else
@@ -2619,7 +2538,7 @@ prog_pages:
          }
 
          /* test if successful completion */
-         if (ack[0] != MCMD_ACK)
+         if (buf[0] != MCMD_ACK)
             continue;
 
          if (debug)
@@ -2633,23 +2552,23 @@ prog_pages:
          /* verify page */
          buf[0] = UCMD_VERIFY;
          buf[1] = (unsigned char)page;
-         mscb_out(fd, buf, 2, RS485_FLAG_LONG_TO);
+         buflen = sizeof(buf);
+         mscb_exchg(fd, buf, &buflen, 2, RS485_FLAG_LONG_TO);
 
-         ack[1] = 0;
-         if (mscb_in(fd, ack, 2, TO_LONG) != 2) {
+         if (buflen != 2) {
             printf("\nError: timeout from remote node for verify page 0x%04X\n", page * 512);
             goto prog_error;
          }
 
          /* compare CRCs */
-         if (ack[1] == crc) {
+         if (buf[1] == crc) {
             if (debug)
                printf("ok (CRC = 0x%02X)\n", crc);
             break;
          }
 
          if (debug)
-            printf("CRC error (0x%02X != 0x%02X)\n", crc, ack[1]);
+            printf("CRC error (0x%02X != 0x%02X)\n", crc, buf[1]);
 
       }
 
@@ -2670,7 +2589,7 @@ prog_pages:
 
    /* reboot node */
    buf[0] = UCMD_REBOOT;
-   mscb_out(fd, buf, 1, RS485_FLAG_NO_ACK);
+   mscb_exchg(fd, buf, NULL, 1, RS485_FLAG_NO_ACK);
 
    if (debug)
       printf("Reboot node\n");
@@ -2682,13 +2601,13 @@ prog_error:
    /* exit exclusive mode */
    buf[0] = MCMD_FREEZE;
    buf[1] = 0;
-   mscb_out(fd, buf, 2, RS485_FLAG_CMD);
+   buflen = sizeof(buf);
+   mscb_exchg(fd, buf, &buflen, 2, RS485_FLAG_CMD);
 
    /* wait for acknowledge */
-   if (mscb_in(fd, buf, 1, TO_SHORT) != 1)
+   if (buflen != 1)
       printf("Error: cannot exit exlusive access at submaster\n");
 
-   mscb_release(fd);
    return MSCB_SUCCESS;
 }
 
@@ -2718,8 +2637,8 @@ int mscb_verify(int fd, unsigned short adr, char *buffer, int size)
 
 \********************************************************************/
 {
-   unsigned char buf[512], crc, ack[2], image[0x10000], *line;
-   unsigned int len, ofh, ofl, type, d;
+   unsigned char buf[512], crc, image[0x10000], *line;
+   unsigned int len, ofh, ofl, type, d, buflen;
    int i, j, n_error, status, page, subpage, flash_size;
    unsigned short ofs;
 
@@ -2728,6 +2647,13 @@ int mscb_verify(int fd, unsigned short adr, char *buffer, int size)
 
    if (mrpc_connected(fd))
       return mrpc_call(mscb_fd[fd - 1].fd, RPC_MSCB_UPLOAD, mscb_fd[fd - 1].remote_fd, adr, buffer, size);
+
+   /* check if node alive */
+   status = mscb_ping(fd, adr, 0);
+   if (status != MSCB_SUCCESS) {
+      printf("Error: cannot ping node #%d\n", adr);
+      return status;
+   }
 
    /* interprete HEX file */
    memset(image, 0xFF, sizeof(image));
@@ -2752,37 +2678,50 @@ int mscb_verify(int fd, unsigned short adr, char *buffer, int size)
 
    } while (*line);
 
-   if (mscb_lock(fd) != MSCB_SUCCESS)
-      return MSCB_MUTEX;
+   /* enter exclusive mode */
+   buf[0] = MCMD_FREEZE;
+   buf[1] = 1;
+   buflen = sizeof(buf);
+   mscb_exchg(fd, buf, &buflen, 2, RS485_FLAG_CMD);
 
-   status = mscb_addr(fd, MCMD_PING16, adr, 10, 0);
-   if (status != MSCB_SUCCESS) {
-      mscb_release(fd);
-      return status;
+   /* wait for acknowledge */
+   if (buflen != 1) {
+      printf("Error: cannot request exlusive access to submaster\n");
+      return MSCB_TIMEOUT;
    }
 
    /* send upgrade command */
-   buf[0] = MCMD_UPGRADE;
-   crc = crc8(buf, 1);
-   buf[1] = crc;
-   mscb_out(fd, buf, 2, RS485_FLAG_NO_ACK);
+   buf[0] = MCMD_ADDR_NODE16;
+   buf[1] = (unsigned char) (adr >> 8);
+   buf[2] = (unsigned char) (adr & 0xFF);
+   buf[3] = crc8(buf, 3);
+   buf[4] = MCMD_UPGRADE;
+   buf[5] = crc8(buf+4, 1);
+   buflen = sizeof(buf);
+   mscb_exchg(fd, buf, &buflen, 6, RS485_FLAG_LONG_TO | RS485_FLAG_ADR_CYCLE);
+
+   /* wait for acknowledge */
+   if (buflen != 3) {
+      printf("Error: timeout receiving acknowledge from remote node\n");
+      return MSCB_TIMEOUT;
+   }
 
    /* let main routine enter upgrade() */
    Sleep(500);
 
    /* send echo command */
    buf[0] = UCMD_ECHO;
-   mscb_out(fd, buf, 1, RS485_FLAG_LONG_TO);
+   buflen = sizeof(buf);
+   mscb_exchg(fd, buf, &buflen, 1, RS485_FLAG_LONG_TO);
 
    /* wait for ready, 1 sec timeout */
-   if (mscb_in(fd, ack, 2, TO_LONG) != 2) {
+   if (buflen != 2) {
       printf("Error: timeout receiving upgrade acknowledge from remote node\n");
 
       /* send exit upgrade command, in case node gets to upgrade routine later */
       buf[0] = UCMD_RETURN;
-      mscb_out(fd, buf, 1, RS485_FLAG_NO_ACK);
+      mscb_exchg(fd, buf, NULL, 1, RS485_FLAG_NO_ACK);
 
-      mscb_release(fd);
       return MSCB_TIMEOUT;
    }
 
@@ -2812,11 +2751,9 @@ int mscb_verify(int fd, unsigned short adr, char *buffer, int size)
          buf[0] = UCMD_READ;
          buf[1] = (unsigned char)page;
          buf[2] = (unsigned char)subpage;
-         mscb_out(fd, buf, 3, RS485_FLAG_LONG_TO);
-
-         memset(buf, 0, sizeof(buf));
-         status = mscb_in(fd, buf, 32+3, TO_LONG);
-         if (status != 32+3) {
+         buflen = sizeof(buf);
+         mscb_exchg(fd, buf, &buflen, 3, RS485_FLAG_LONG_TO);
+         if (buflen != 32+3) {
             printf("\nError: timeout from remote node for verify page 0x%04X\n", page * 512);
             goto ver_error;
           }
@@ -2841,11 +2778,16 @@ ver_error:
 
    /* send exit code */
    buf[0] = UCMD_RETURN;
-   mscb_out(fd, buf, 1, RS485_FLAG_NO_ACK);
+   mscb_exchg(fd, buf, NULL, 1, RS485_FLAG_NO_ACK);
+
+   /* exit exclusive mode */
+   buf[0] = MCMD_FREEZE;
+   buf[1] = 0;
+   buflen = sizeof(buf);
+   mscb_exchg(fd, buf, &buflen, 2, RS485_FLAG_CMD);
 
    printf("Verify finished\n");
 
-   mscb_release(fd);
    return MSCB_SUCCESS;
 }
 
@@ -2878,7 +2820,7 @@ int mscb_read(int fd, unsigned short adr, unsigned char index, void *data, int *
 
 \********************************************************************/
 {
-   int i, j, n, status;
+   int i, j, len, n, status;
    unsigned char buf[256], str[1000], crc;
 
    debug_log("mscb_read(fd=%d,adr=%d,index=%d,size=%d) ", 1, fd, adr, index, *size);
@@ -2897,11 +2839,6 @@ int mscb_read(int fd, unsigned short adr, unsigned char index, void *data, int *
    if (mrpc_connected(fd))
       return mrpc_call(mscb_fd[fd - 1].fd, RPC_MSCB_READ, mscb_fd[fd - 1].remote_fd, adr, index, data, size);
 
-   if (mscb_lock(fd) != MSCB_SUCCESS) {
-      debug_log("return MSCB_MUTEX\n", 0);
-      return MSCB_MUTEX;
-   }
-
    /* try five times */
    for (n = i = 0; n < 5 ; n++) {
 
@@ -2911,7 +2848,6 @@ int mscb_read(int fd, unsigned short adr, unsigned char index, void *data, int *
          printf("Automatic submaster reset\n");
 #endif
          debug_log("Automatic submaster reset\n", 1);
-         mscb_release(fd);
          status = mscb_reset(fd);
          if (status == MSCB_SUBM_ERROR) {
             sprintf(str, "Cannot reconnect to submaster %s\n", mscb_fd[fd - 1].device);
@@ -2919,10 +2855,8 @@ int mscb_read(int fd, unsigned short adr, unsigned char index, void *data, int *
             printf(str);
 #endif
             debug_log(str, 1);
-            mscb_lock(fd);
             break;
          }
-         mscb_lock(fd);
          Sleep(100);
       }
 
@@ -2934,7 +2868,8 @@ int mscb_read(int fd, unsigned short adr, unsigned char index, void *data, int *
       buf[4] = MCMD_READ + 1;
       buf[5] = index;
       buf[6] = crc8(buf+4, 2);
-      status = mscb_out(fd, buf, 7, RS485_FLAG_ADR_CYCLE);
+      len = sizeof(buf);
+      status = mscb_exchg(fd, buf, &len, 7, RS485_FLAG_ADR_CYCLE);
       if (status == MSCB_TIMEOUT) {
 #ifndef _USRDLL
          /* show error, but repeat 10 times */
@@ -2952,17 +2887,13 @@ int mscb_read(int fd, unsigned short adr, unsigned char index, void *data, int *
          break;
       }
 
-      /* read data */
-      i = mscb_in(fd, buf, sizeof(buf), TO_SHORT);
-
-      if (i == 1 && buf[0] == MCMD_ACK) {
+      if (len == 1 && buf[0] == MCMD_ACK) {
          /* variable has been deleted on node, so refresh cache */ 
-         mscb_release(fd);
          mscb_clear_info_cache(fd);
          return MSCB_INVALID_INDEX;
       }
 
-      if (i == 1) {
+      if (len == 1) {
 #ifndef _USRDLL
          printf("Timeout from RS485 bus\n");
 #endif
@@ -2974,13 +2905,13 @@ int mscb_read(int fd, unsigned short adr, unsigned char index, void *data, int *
 #endif
          debug_log("Flush node communication\n", 1);
          memset(buf, 0, sizeof(buf));
-         mscb_out(fd, buf, 10, RS485_FLAG_BIT9 | RS485_FLAG_NO_ACK);
+         mscb_exchg(fd, buf, NULL, 10, RS485_FLAG_BIT9 | RS485_FLAG_NO_ACK);
          Sleep(100);
 
          continue;
       }
 
-      if (i < 2) {
+      if (len < 2) {
 #ifndef _USRDLL
          /* show error, but repeat request */
          printf("Timeout reading from submaster\n");
@@ -2989,46 +2920,43 @@ int mscb_read(int fd, unsigned short adr, unsigned char index, void *data, int *
          continue;
       }
 
-      crc = crc8(buf, i - 1);
+      crc = crc8(buf, len - 1);
 
-      if ((buf[0] != MCMD_ACK + i - 2 && buf[0] != MCMD_ACK + 7)
-         || buf[i - 1] != crc) {
+      if ((buf[0] != MCMD_ACK + len - 2 && buf[0] != MCMD_ACK + 7)
+         || buf[len - 1] != crc) {
          status = MSCB_CRC_ERROR;
 #ifndef _USRDLL
-         /* show error, but repeat 10 times */
+         /* show error, but repeat */
          printf("CRC error on RS485 bus\n");
 #endif
          continue;
       }
 
       if (buf[0] == MCMD_ACK + 7) {
-         if (i - 3 > *size) {
-            mscb_release(fd);
+         if (len - 3 > *size) {
             *size = 0;
-            debug_log("return MSCB_NO_MEM, i=%d, *size=%d\n", 0, i, *size);
+            debug_log("return MSCB_NO_MEM, len=%d, *size=%d\n", 0, len, *size);
             return MSCB_NO_MEM;
          }
 
-         memcpy(data, buf + 2, i - 3);  // variable length
-         *size = i - 3;
+         memcpy(data, buf + 2, len - 3);  // variable length
+         *size = len - 3;
       } else {
-         if (i - 2 > *size) {
-            mscb_release(fd);
+         if (len - 2 > *size) {
             *size = 0;
-            debug_log("return MSCB_NO_MEM, i=%d, *size=%d\n", 0, i, *size);
+            debug_log("return MSCB_NO_MEM, len=%d, *size=%d\n", 0, len, *size);
             return MSCB_NO_MEM;
          }
 
-         memcpy(data, buf + 1, i - 2);
-         *size = i - 2;
+         memcpy(data, buf + 1, len - 2);
+         *size = len - 2;
       }
 
-      if (i - 2 == 2)
+      if (len - 2 == 2)
          WORD_SWAP(data);
-      if (i - 2 == 4)
+      if (len - 2 == 4)
          DWORD_SWAP(data);
 
-      mscb_release(fd);
       sprintf(str, "return %d bytes: ", *size);
       for (j=0 ; j<*size ; j++) {
          sprintf(str+strlen(str), "0x%02X ", 
@@ -3042,8 +2970,6 @@ int mscb_read(int fd, unsigned short adr, unsigned char index, void *data, int *
 
       return MSCB_SUCCESS;
    }
-
-   mscb_release(fd);
 
    debug_log("\n", 0);
    if (status == MSCB_TIMEOUT)
@@ -3084,7 +3010,7 @@ int mscb_read_no_retries(int fd, unsigned short adr, unsigned char index, void *
 
 \********************************************************************/
 {
-   int i, j, status;
+   int j, len, status;
    unsigned char buf[256], str[1000], crc;
 
    debug_log("mscb_read_no_retries(fd=%d,adr=%d,index=%d,size=%d) ", 1, fd, adr, index, *size);
@@ -3103,11 +3029,6 @@ int mscb_read_no_retries(int fd, unsigned short adr, unsigned char index, void *
    if (mrpc_connected(fd))
       return mrpc_call(mscb_fd[fd - 1].fd, RPC_MSCB_READ_NO_RETRIES, mscb_fd[fd - 1].remote_fd, adr, index, data, size);
 
-   if (mscb_lock(fd) != MSCB_SUCCESS) {
-      debug_log("return MSCB_MUTEX\n", 0);
-      return MSCB_MUTEX;
-   }
-
    buf[0] = MCMD_ADDR_NODE16;
    buf[1] = (unsigned char) (adr >> 8);
    buf[2] = (unsigned char) (adr & 0xFF);
@@ -3116,79 +3037,69 @@ int mscb_read_no_retries(int fd, unsigned short adr, unsigned char index, void *
    buf[4] = MCMD_READ + 1;
    buf[5] = index;
    buf[6] = crc8(buf+4, 2);
-   status = mscb_out(fd, buf, 7, RS485_FLAG_ADR_CYCLE);
+   len = sizeof(buf);
+   status = mscb_exchg(fd, buf, &len, 7, RS485_FLAG_ADR_CYCLE);
    if (status == MSCB_TIMEOUT) {
 #ifndef _USRDLL
       /* show error, but repeat 10 times */
       printf("Timeout writing to sumbster\n");
 #endif
-      mscb_release(fd);
       return MSCB_TIMEOUT;
    }
 
-   /* read data */
-   i = mscb_in(fd, buf, sizeof(buf), TO_SHORT);
-
-   if (i == 1) {
+   if (len == 1) {
 #ifndef _USRDLL
-      /* show error, but repeat request */
       printf("Timeout from RS485 bus\n");
 #endif
       memset(buf, 0, sizeof(buf));
-      mscb_out(fd, buf, 10, RS485_FLAG_BIT9 | RS485_FLAG_NO_ACK);
-      mscb_release(fd);
+      mscb_exchg(fd, buf, NULL, 10, RS485_FLAG_BIT9 | RS485_FLAG_NO_ACK);
       return MSCB_TIMEOUT;
    }
 
-   if (i < 2) {
+   if (len < 2) {
 #ifndef _USRDLL
       /* show error, but repeat request */
       printf("Timeout reading from submaster\n");
 #endif
-      mscb_release(fd);
       return MSCB_TIMEOUT;
    }
 
-   crc = crc8(buf, i - 1);
+   crc = crc8(buf, len - 1);
 
-   if ((buf[0] != MCMD_ACK + i - 2 && buf[0] != MCMD_ACK + 7)
-      || buf[i - 1] != crc) {
+   if ((buf[0] != MCMD_ACK + len - 2 && buf[0] != MCMD_ACK + 7)
+      || buf[len - 1] != crc) {
 #ifndef _USRDLL
       /* show error, but repeat 10 times */
       printf("CRC error on RS485 bus\n");
 #endif
-      mscb_release(fd);
       return MSCB_CRC_ERROR;
    }
 
    if (buf[0] == MCMD_ACK + 7) {
-      if (i - 3 > *size) {
-         mscb_release(fd);
+      if (len - 3 > *size) {
          *size = 0;
-         debug_log("return MSCB_NO_MEM, i=%d, *size=%d\n", 0, i, *size);
+         debug_log("return MSCB_NO_MEM, len=%d, *size=%d\n", 0, len, *size);
          return MSCB_NO_MEM;
       }
 
-      memcpy(data, buf + 2, i - 3);  // variable length
-      *size = i - 3;
+      memcpy(data, buf + 2, len - 3);  // variable length
+      *size = len - 3;
    } else {
-      if (i - 2 > *size) {
-         mscb_release(fd);
+      if (len - 2 > *size) {
          *size = 0;
-         debug_log("return MSCB_NO_MEM, i=%d, *size=%d\n", 0, i, *size);
+         debug_log("return MSCB_NO_MEM, len=%d, *size=%d\n", 0, len, *size);
          return MSCB_NO_MEM;
       }
 
-      memcpy(data, buf + 1, i - 2);
-      *size = i - 2;
+      memcpy(data, buf + 1, len - 2);
+      *size = len - 2;
    }
 
-   if (i - 2 == 2)
+   if (len - 2 == 2)
       WORD_SWAP(data);
-   if (i - 2 == 4)
+   if (len - 2 == 4)
       DWORD_SWAP(data);
 
-   mscb_release(fd);
    sprintf(str, "return %d bytes: ", *size);
    for (j=0 ; j<*size ; j++) {
       sprintf(str+strlen(str), "0x%02X ", 
@@ -3232,7 +3143,7 @@ int mscb_read_range(int fd, unsigned short adr, unsigned char index1, unsigned c
 
 \********************************************************************/
 {
-   int i, j, n, status;
+   int i, j, n, len, status;
    unsigned char buf[256], str[10000], crc;
 
    debug_log("mscb_read_range(fd=%d,adr=%d,index1=%d,index2=%dsize=%d) ", 
@@ -3253,11 +3164,6 @@ int mscb_read_range(int fd, unsigned short adr, unsigned char index1, unsigned c
       return mrpc_call(mscb_fd[fd - 1].fd, RPC_MSCB_READ_RANGE,
                        mscb_fd[fd - 1].remote_fd, adr, index1, index2, data, size);
 
-   if (mscb_lock(fd) != MSCB_SUCCESS) {
-      debug_log("return MSCB_MUTEX\n", 0);
-      return MSCB_MUTEX;
-   }
-
    /* try five times */
    for (n = i = 0; n < 5; n++) {
       /* after five times, reset submaster */
@@ -3266,7 +3172,6 @@ int mscb_read_range(int fd, unsigned short adr, unsigned char index1, unsigned c
          printf("Automatic submaster reset.\n");
 #endif
          debug_log("Automatic submaster reset\n", 1);
-         mscb_release(fd);
          status = mscb_reset(fd);
          if (status == MSCB_SUBM_ERROR) {
             sprintf(str, "Cannot reconnect to submaster %s\n", mscb_fd[fd - 1].device);
@@ -3274,10 +3179,8 @@ int mscb_read_range(int fd, unsigned short adr, unsigned char index1, unsigned c
             printf(str);
 #endif
             debug_log(str, 1);
-            mscb_lock(fd);
             break;
          }
-         mscb_lock(fd);
          Sleep(100);
       }
 
@@ -3290,7 +3193,8 @@ int mscb_read_range(int fd, unsigned short adr, unsigned char index1, unsigned c
       buf[5] = index1;
       buf[6] = index2;
       buf[7] = crc8(buf+4, 3);
-      status = mscb_out(fd, buf, 8, RS485_FLAG_ADR_CYCLE);
+      len = sizeof(buf);
+      status = mscb_exchg(fd, buf, &len, 8, RS485_FLAG_ADR_CYCLE);
       if (status == MSCB_TIMEOUT) {
 #ifndef _USRDLL
          /* show error, but repeat 10 times */
@@ -3308,17 +3212,13 @@ int mscb_read_range(int fd, unsigned short adr, unsigned char index1, unsigned c
          break;
       }
 
-      /* read data */
-      i = mscb_in(fd, buf, sizeof(buf), TO_SHORT);
-
-      if (i == 1 && buf[0] == MCMD_ACK) {
+      if (len == 1 && buf[0] == MCMD_ACK) {
          /* variable has been deleted on node, so refresh cache */ 
-         mscb_release(fd);
          mscb_clear_info_cache(fd);
          return MSCB_INVALID_INDEX;
       }
 
-      if (i == 1) {
+      if (len == 1) {
 #ifndef _USRDLL
          printf("Timeout from RS485 bus\n");
 #endif
@@ -3330,13 +3230,13 @@ int mscb_read_range(int fd, unsigned short adr, unsigned char index1, unsigned c
 #endif
          debug_log("Flush node communication\n", 1);
          memset(buf, 0, sizeof(buf));
-         mscb_out(fd, buf, 10, RS485_FLAG_BIT9 | RS485_FLAG_NO_ACK);
+         mscb_exchg(fd, buf, NULL, 10, RS485_FLAG_BIT9 | RS485_FLAG_NO_ACK);
          Sleep(100);
 
          continue;
       }
 
-      if (i < 2) {
+      if (len < 2) {
 #ifndef _USRDLL
          /* show error, but repeat request */
          printf("Timeout reading from submaster\n");
@@ -3345,46 +3245,43 @@ int mscb_read_range(int fd, unsigned short adr, unsigned char index1, unsigned c
          continue;
       }
 
-      crc = crc8(buf, i - 1);
+      crc = crc8(buf, len - 1);
 
-      if ((buf[0] != MCMD_ACK + i - 2 && buf[0] != MCMD_ACK + 7)
-         || buf[i - 1] != crc) {
+      if ((buf[0] != MCMD_ACK + len - 2 && buf[0] != MCMD_ACK + 7)
+         || buf[len - 1] != crc) {
          status = MSCB_CRC_ERROR;
 #ifndef _USRDLL
-         /* show error, but repeat 10 times */
+         /* show error, but repeat */
          printf("CRC error on RS485 bus\n");
 #endif
          continue;
       }
 
       if (buf[0] == MCMD_ACK + 7) {
-         if (i - 3 > *size) {
-            mscb_release(fd);
+         if (len - 3 > *size) {
             *size = 0;
-            debug_log("return MSCB_NO_MEM, i=%d, *size=%d\n", 0, i, *size);
+            debug_log("return MSCB_NO_MEM, len=%d, *size=%d\n", 0, len, *size);
             return MSCB_NO_MEM;
          }
 
          if (buf[1] & 0x80) {
-            memcpy(data, buf + 3, i - 4);  // variable length with size in two byte
-            *size = i - 4;
+            memcpy(data, buf + 3, len - 4);  // variable length with size in two byte
+            *size = len - 4;
          } else {
-            memcpy(data, buf + 2, i - 3);  // variable length with size in one byte
-            *size = i - 3;
+            memcpy(data, buf + 2, len - 3);  // variable length with size in one byte
+            *size = len - 3;
          }
       } else {
-         if (i - 2 > *size) {
-            mscb_release(fd);
+         if (len - 2 > *size) {
             *size = 0;
-            debug_log("return MSCB_NO_MEM, i=%d, *size=%d\n", 0, i, *size);
+            debug_log("return MSCB_NO_MEM, len=%d, *size=%d\n", 0, len, *size);
             return MSCB_NO_MEM;
          }
 
-         memcpy(data, buf + 1, i - 2);
-         *size = i - 2;
+         memcpy(data, buf + 1, len - 2);
+         *size = len - 2;
       }
 
-      mscb_release(fd);
       sprintf(str, "return %d bytes: ", *size);
       for (j=0 ; j<*size ; j++) {
          sprintf(str+strlen(str), "0x%02X ", 
@@ -3399,8 +3296,6 @@ int mscb_read_range(int fd, unsigned short adr, unsigned char index1, unsigned c
       return MSCB_SUCCESS;
    }
 
-   mscb_release(fd);
-
    debug_log("\n", 0);
    if (status == MSCB_TIMEOUT)
      debug_log("return MSCB_TIMEOUT\n", 1);
@@ -3410,140 +3305,6 @@ int mscb_read_range(int fd, unsigned short adr, unsigned char index1, unsigned c
       debug_log("return MSCB_SUBM_ERROR\n", 1);
 
    return status;
-}
-
-/*------------------------------------------------------------------*/
-
-int mscb_read_block(int fd, unsigned short adr, unsigned char index, void *data, int *size)
-/********************************************************************\
-
-  Routine: mscb_read_block
-
-  Purpose: Read data from variable on node
-
-  Input:
-    int fd                  File descriptor for connection
-    unsigend short adr      Node address
-    unsigned char index     Variable index 0..255
-    int size                Buffer size for data
-
-  Output:
-    void *data              Received data
-    int  *size              Number of received bytes
-
-  Function value:
-    MSCB_SUCCESS            Successful completion
-    MSCB_TIMEOUT            Timeout receiving acknowledge
-    MSCB_CRC_ERROR          CRC error
-    MSCB_INVAL_PARAM        Parameter "size" has invalid value
-    MSCB_MUTEX              Cannot obtain mutex for mscb
-
-\********************************************************************/
-{
-   int i, n, error_count;
-   unsigned char buf[256], crc;
-
-   debug_log("mscb_read_block(fd=%d,adr=%d,index=%d,size=%d) ", 1, fd, adr, index, *size);
-
-   if (*size > 256)
-      return MSCB_INVAL_PARAM;
-
-   memset(data, 0, *size);
-
-   if (fd > MSCB_MAX_FD || fd < 1 || !mscb_fd[fd - 1].type) {
-      debug_log("return MSCB_INVAL_PARAM\n", 0);
-      return MSCB_INVAL_PARAM;
-   }
-
-   if (mrpc_connected(fd))
-      return mrpc_call(mscb_fd[fd - 1].fd, RPC_MSCB_READ_BLOCK, mscb_fd[fd - 1].remote_fd, adr, index, data, size);
-
-   if (mscb_lock(fd) != MSCB_SUCCESS)
-      return MSCB_MUTEX;
-
-   n = error_count = 0;
-   do {
-
-      buf[0] = MCMD_ADDR_NODE16;
-      buf[1] = (unsigned char) (adr >> 8);
-      buf[2] = (unsigned char) (adr & 0xFF);
-      buf[3] = crc8(buf, 3);
-
-      buf[4] = MCMD_READ + 1;
-      buf[5] = index;
-      buf[6] = crc8(buf+4, 2);
-      mscb_out(fd, buf, 7, RS485_FLAG_ADR_CYCLE);
-
-      /* read data */
-      i = mscb_in(fd, buf, sizeof(buf), TO_SHORT);
-
-      if (i == 1) {
-#ifndef _USRDLL
-         printf("Timeout from RS485 bus.\n");
-#endif
-         memset(buf, 0, sizeof(buf));
-         mscb_out(fd, buf, 10, RS485_FLAG_BIT9 | RS485_FLAG_NO_ACK);
-         mscb_release(fd);
-         *size = 0;
-         return MSCB_TIMEOUT;
-      }
-      
-      if (i<0) {
-         error_count++;
-         if (error_count > 10) { // too many errors
-#ifndef _USRDLL
-            printf("Too many errors reading from RS485 bus.\n");
-#endif
-            mscb_release(fd);
-            *size = 0;
-            return MSCB_TIMEOUT;
-         }
-         
-         continue; // try again
-      }
-
-      crc = crc8(buf, i - 1);
-
-      if ((buf[0] != MCMD_ACK + i - 2 && buf[0] != MCMD_ACK + 7)
-         || buf[i - 1] != crc) {
-         mscb_release(fd);
-         *size = 0;
-         return MSCB_CRC_ERROR;
-      }
-
-      if (buf[0] == MCMD_ACK + 7) {
-         if (n + i - 3 > *size) {
-            mscb_release(fd);
-            *size = 0;
-            return MSCB_NO_MEM;
-         }
-
-         /* end of data on empty buffer */
-         if (i == 3)
-            break;
-
-         memcpy((char *)data+n, buf + 2, i - 3);  // variable length
-         n += i - 3;
-      } else {
-         if (n + i - 2 > *size) {
-            mscb_release(fd);
-            *size = 0;
-            return MSCB_NO_MEM;
-         }
-
-         /* end of data on empty buffer */
-         if (i == 2)
-            break;
-
-         memcpy((char *)data+n, buf + 1, i - 2);
-         n += i - 2;
-      }
-   } while (TRUE);
-
-   mscb_release(fd);
-   *size = n;
-
-   return MSCB_SUCCESS;
 }
 
 /*------------------------------------------------------------------*/
@@ -3575,7 +3336,7 @@ int mscb_user(int fd, unsigned short adr, void *param, int size, void *result, i
 
 \********************************************************************/
 {
-   int i, n, status;
+   int i, len, status;
    unsigned char buf[80];
 
    memset(result, 0, *rsize);
@@ -3591,9 +3352,6 @@ int mscb_user(int fd, unsigned short adr, void *param, int size, void *result, i
       return mrpc_call(mscb_fd[fd - 1].fd, RPC_MSCB_USER,
                        mscb_fd[fd - 1].remote_fd, adr, param, size, result, rsize);
 
-   if (mscb_lock(fd) != MSCB_SUCCESS)
-      return MSCB_MUTEX;
-
    buf[0] = MCMD_ADDR_NODE16;
    buf[1] = (unsigned char) (adr >> 8);
    buf[2] = (unsigned char) (adr & 0xFF);
@@ -3606,30 +3364,24 @@ int mscb_user(int fd, unsigned short adr, void *param, int size, void *result, i
 
    /* add CRC code and send data */
    buf[5 + i] = crc8(buf+4, 1 + i);
-   status = mscb_out(fd, buf, 6 + i, RS485_FLAG_ADR_CYCLE);
-   if (status != MSCB_SUCCESS) {
-      mscb_release(fd);
+   len = sizeof(buf);
+   status = mscb_exchg(fd, buf, &len, 6 + i, RS485_FLAG_ADR_CYCLE);
+
+   if (status != MSCB_SUCCESS)
       return status;
-   }
 
-   if (result == NULL) {
-      mscb_release(fd);
+   if (result == NULL)
       return MSCB_SUCCESS;
-   }
 
-   /* read result */
-   n = mscb_in(fd, buf, sizeof(buf), TO_SHORT);
-   mscb_release(fd);
-
-   if (n < 2)
+   if (len < 2)
       return MSCB_TIMEOUT;
 
    if (rsize)
-      *rsize = n - 2;
-   for (i = 0; i < n - 2; i++)
+      *rsize = len - 2;
+   for (i = 0; i < len - 2; i++)
       ((char *) result)[i] = buf[1 + i];
 
-   if (buf[n - 1] != crc8(buf, n - 1))
+   if (buf[len - 1] != crc8(buf, len - 1))
       return MSCB_CRC_ERROR;
 
    return MSCB_SUCCESS;
@@ -3661,7 +3413,7 @@ int mscb_echo(int fd, unsigned short adr, unsigned char d1, unsigned char *d2)
 
 \********************************************************************/
 {
-   int n, status;
+   int len, status;
    unsigned char buf[64];
 
    *d2 = 0xFF;
@@ -3672,49 +3424,27 @@ int mscb_echo(int fd, unsigned short adr, unsigned char d1, unsigned char *d2)
    if (mrpc_connected(fd))
       return mrpc_call(mscb_fd[fd - 1].fd, RPC_MSCB_ECHO, mscb_fd[fd - 1].remote_fd, adr, d1, d2);
 
-   if (mscb_lock(fd) != MSCB_SUCCESS)
-      return MSCB_MUTEX;
+   buf[0] = MCMD_ADDR_NODE16;
+   buf[1] = (unsigned char) (adr >> 8);
+   buf[2] = (unsigned char) (adr & 0xFF);
+   buf[3] = crc8(buf, 3);
 
-   if (adr) {
-      buf[0] = MCMD_ADDR_NODE16;
-      buf[1] = (unsigned char) (adr >> 8);
-      buf[2] = (unsigned char) (adr & 0xFF);
-      buf[3] = crc8(buf, 3);
+   buf[4] = MCMD_ECHO;
+   buf[5] = d1;
 
-      buf[4] = MCMD_ECHO;
-      buf[5] = d1;
-
-      /* add CRC code and send data */
-      buf[6] = crc8(buf+4, 2);
-      status = mscb_out(fd, buf, 7, RS485_FLAG_ADR_CYCLE);
-      if (status != MSCB_SUCCESS) {
-         mscb_release(fd);
-         return status;
-      }
-   } else {
-
-      buf[0] = MCMD_ECHO;
-      buf[1] = d1;
-
-      /* add CRC code and send data */
-      buf[2] = crc8(buf, 2);
-      status = mscb_out(fd, buf, 3, 0);
-      if (status != MSCB_SUCCESS) {
-         mscb_release(fd);
-         return status;
-      }
-   }
-
-   /* read result */
-   n = mscb_in(fd, buf, sizeof(buf), TO_SHORT);
-   mscb_release(fd);
-
-   if (n <= 0)
-      return MSCB_TIMEOUT;
+   /* add CRC code and send data */
+   buf[6] = crc8(buf+4, 2);
+   len = sizeof(buf);
+   status = mscb_exchg(fd, buf, &len, 7, RS485_FLAG_ADR_CYCLE);
+   if (status != MSCB_SUCCESS)
+      return status;
 
    *d2 = buf[1];
 
-   if (buf[n - 1] != crc8(buf, n - 1))
+   if (len == 1 && buf[0] == 0xFF)
+      return MSCB_TIMEOUT_BUS;   // timeout RS485 bus
+
+   if (buf[len - 1] != crc8(buf, len - 1))
       return MSCB_CRC_ERROR;
 
    return MSCB_SUCCESS;
@@ -3884,6 +3614,9 @@ int mscb_select_device(char *device, int size, int select)
    if (index == MSCB_MAX_FD)
       return -1;
 
+   if (mscb_lock(index + 1) != MSCB_SUCCESS)
+      return -1;
+
    /* check USB devices */
    for (usb_index = found = 0 ; usb_index < 127 ; usb_index ++) {
 
@@ -3894,12 +3627,6 @@ int mscb_select_device(char *device, int size, int select)
       sprintf(str, "usb%d", found);
       mscb_fd[index].mutex_handle = mscb_mutex_create(str);
 
-      if (!mscb_lock(index + 1)) {
-         printf("lock failed\n");
-         debug_log("return EMSCB_LOCKED\n", 0);
-         return EMSCB_LOCKED;
-      }
-
       /* check if it's a subm_250 */
       buf[0] = 0;
       musb_write(ui, 0, buf, 1, 1000);
@@ -3908,10 +3635,11 @@ int mscb_select_device(char *device, int size, int select)
       if (strcmp(buf, "SUBM_250") == 0)
          sprintf(list[n++], "usb%d", found++);
 
-      mscb_release(index + 1);
-
       musb_close(ui);
    }
+
+   mscb_release(index + 1);
+
 
    /* if only one device, return it */
    if (n == 1 || select == 0) {
@@ -4015,9 +3743,8 @@ int set_mac_address(int fd)
 
    buf[0] = MCMD_FLASH;
    memcpy(buf+1, &cfg, sizeof(cfg));
-   mscb_out(fd, buf, 1+sizeof(cfg), RS485_FLAG_CMD);
-
-   n = mscb_in(fd, buf, 2, TO_SHORT);
+   n = sizeof(buf);
+   mscb_exchg(fd, buf, &n, 1+sizeof(cfg), RS485_FLAG_CMD);
    if (n == 2 && buf[0] == MCMD_ACK) {
       printf("\nConfiguration successfully downloaded.\n");
       return MSCB_SUCCESS;
