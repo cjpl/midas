@@ -535,6 +535,21 @@ unsigned short n, i, to, rx_old;
 
 /*------------------------------------------------------------------*/
 
+void open_udp_socket()
+{
+   signed char socket_no;
+   PSOCKET_INFO socket_ptr;
+
+   socket_no = mn_open(null_addr, MSCB_NET_PORT, 0, NO_OPEN, PROTO_UDP,
+                       STD_TYPE, udp_rx_buf, UDP_RX_SIZE);
+
+   socket_ptr = &sock_info[socket_no];
+   socket_ptr->send_ptr = udp_tx_buf;
+   socket_ptr->send_len = UDP_TX_SIZE - 1;
+}
+
+/*------------------------------------------------------------------*/
+
 int udp_receive(unsigned char **data_ptr, char *socket_no_ptr)
 {
    unsigned char packet_type;
@@ -542,19 +557,6 @@ int udp_receive(unsigned char **data_ptr, char *socket_no_ptr)
    UDP_HEADER *pudp;
    int recvd;
    unsigned char dhcp_state;
-   signed char socket_no;
-
-   /* if no listening socket open, open it */
-   if (mn_find_socket(MSCB_NET_PORT, 0, null_addr, PROTO_UDP) == NULL) {
-
-      socket_no = mn_open(null_addr, MSCB_NET_PORT, 0, NO_OPEN, PROTO_UDP,
-                          STD_TYPE, udp_rx_buf, UDP_RX_SIZE);
-      if (socket_no >= 0) {
-         socket_ptr = &sock_info[socket_no];
-         socket_ptr->send_ptr = udp_tx_buf;
-         socket_ptr->send_len = UDP_TX_SIZE - 1;
-      }
-   }
 
    /* check DHCP status, renew if expired */
    dhcp_state = dhcp_lease.dhcp_state;
@@ -569,6 +571,11 @@ int udp_receive(unsigned char **data_ptr, char *socket_no_ptr)
    packet_type = mn_ip_recv();
 
    if (packet_type & UDP_TYPE) {
+
+      /* prepare socket 0 to accept packets from any destination */
+      sock_info[0].dest_port = 0;
+      memset(sock_info[0].ip_dest_addr, 0, IP_ADDR_LEN);
+      memset(udp_rx_buf, 0, 16);
 
       recvd = mn_udp_recv(&socket_ptr);
       if (socket_ptr == NULL)
@@ -656,6 +663,8 @@ void main(void)
 
    // turn on watchdog
    watchdog_enable(10);
+
+   open_udp_socket();
 
    do {
       watchdog_refresh(0);
