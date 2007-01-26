@@ -72,72 +72,7 @@
 
 MSCB_FD mscb_fd[MSCB_MAX_FD];
 
-/* pin definitions parallel port */
-
-/*
-
-  Ofs Inv   PC     DB25     SM300   DIR   MSCB Name
-
-   0  No    D0 ----- 2 ----- P1.0   <->    |
-   0  No    D1 ----- 3 ----- P1.1   <->    |
-   0  No    D2 ----- 4 ----- P1.2   <->    |  D
-   0  No    D3 ----- 5 ----- P1.3   <->     \ a
-   0  No    D4 ----- 6 ----- P1.4   <->     / t
-   0  No    D5 ----- 7 ----- P1.5   <->    |  a
-   0  No    D6 ----- 8 ----- P1.6   <->    |
-   0  No    D7 ----- 9 ----- P1.7   <->    |
-
-   2  Yes   !STR --- 1  ---- P2.3    ->    /STROBE
-   1  Yes   !BSY --- 11 ---- P2.7   <-     BUSY
-
-   1  Yes   !ACK --- 10 ---- P2.6   <-     /DATAREADY
-   2  Yes   !DSL --- 17 ---- P2.5    ->    /ACK
-
-   1  No    PAP ---- 12 ---- P2.   <-     STATUS
-
-   2  Yes   !ALF --- 14 ---- RESET   ->    /HW RESET
-   2  No    INI ---- 16 ---- P2.4    ->    BIT9
-
-*/
-
-
-/* enumeration of control lines */
-
-#define LPT_STROBE     1
-#define LPT_ACK        2
-#define LPT_RESET      3
-#define LPT_BIT9       4
-#define LPT_READMODE   5
-
-#define LPT_BUSY       6
-#define LPT_DATAREADY  7
-
-/*
-#define LPT_NSTROBE     (1<<0)
-#define LPT_NSTROBE_OFS     2
-
-#define LPT_NBUSY       (1<<7)
-#define LPT_NBUSY_OFS       1
-
-#define LPT_NDATAREADY  (1<<6)
-#define LPT_NDATAREADY_OFS  1
-
-#define LPT_NACK        (1<<3)
-#define LPT_NACK_OFS        2
-
-#define LPT_NRESET      (1<<1)
-#define LPT_NRESET_OFS      2
-
-#define LPT_BIT9        (1<<2)
-#define LPT_BIT9_OFS        2
-
-#define LPT_DIRECTION   (1<<5)
-#define LPT_DIRECTION_OFS   2
-*/
-
-/* other constants */
-
-#define TO_LPT           1000   /* ~1ms   */
+/* constants */
 
 #define TO_SHORT          100   /* 100 ms */
 #define TO_LONG          5000   /* 5 s    */
@@ -391,18 +326,14 @@ int mscb_lock(int fd)
 
 #elif defined(OS_LINUX)
 
-   if (mscb_fd[fd - 1].type == MSCB_TYPE_LPT) {
-      if (ioctl(mscb_fd[fd - 1].fd, PPCLAIM))
-         return 0;
-   } 
 #ifdef HAVE_LIBUSB
-      else if (mscb_fd[fd - 1].type == MSCB_TYPE_USB) {
+   if (mscb_fd[fd - 1].type == MSCB_TYPE_USB) {
       if (usb_claim_interface((usb_dev_handle *) mscb_fd[fd - 1].ui->dev, 0) < 0)
          return 0;
    }
 #endif // HAVE_LIBUSB
 
-   else if (mscb_fd[fd - 1].type == MSCB_TYPE_ETH) {
+   if (mscb_fd[fd - 1].type == MSCB_TYPE_ETH) {
 
 #if (!defined(_SEM_SEMUN_UNDEFINED) && !defined(OS_CYGWIN)) || defined(OS_FREEBSD)
       union semun arg;
@@ -465,13 +396,8 @@ int mscb_release(int fd)
 
 #elif defined(OS_LINUX)
 
-   if (mscb_fd[fd - 1].type == MSCB_TYPE_LPT) {
-      if (ioctl(mscb_fd[fd - 1].fd, PPRELEASE))
-         return 0;
-   } 
-
 #ifdef HAVE_LIBUSB
-     else if (mscb_fd[fd - 1].type == MSCB_TYPE_USB) {
+   if (mscb_fd[fd - 1].type == MSCB_TYPE_USB) {
       if (usb_release_interface((usb_dev_handle *) mscb_fd[fd - 1].ui->dev, 0) < 0)
          return 0;
    }
@@ -507,112 +433,7 @@ int mscb_release(int fd)
    return MSCB_SUCCESS;
 }
 
-/*---- low level functions for direct port access ------------------*/
-
-void pp_wcontrol(int fd, int signal, int flag)
-/* write control signal */
-{
-   static unsigned int mask = 0;
-
-   switch (signal) {
-   case LPT_STROBE:            // negative port, negative MSCB usage
-      mask = flag ? mask | (1 << 0) : mask & ~(1 << 0);
-      break;
-   case LPT_RESET:             // negative port, negative MSCB usage
-      mask = flag ? mask | (1 << 1) : mask & ~(1 << 1);
-      break;
-   case LPT_BIT9:              // positive
-      mask = flag ? mask | (1 << 2) : mask & ~(1 << 2);
-      break;
-   case LPT_ACK:               // negative port, negative MSCB usage
-      mask = flag ? mask | (1 << 3) : mask & ~(1 << 3);
-      break;
-   case LPT_READMODE:          // positive
-      mask = flag ? mask | (1 << 5) : mask & ~(1 << 5);
-      break;
-   }
-
-#if defined(_MSC_VER)
-   _outp((unsigned short) (mscb_fd[fd - 1].fd + 2), mask);
-#elif defined(OS_LINUX)
-   ioctl(mscb_fd[fd - 1].fd, PPWCONTROL, &mask);
-#else
-   /* no-op unsupported operation */
-#endif
-}
-
-/*------------------------------------------------------------------*/
-
-int pp_rstatus(int fd, int signal)
-{
-/* read status signal */
-   unsigned int mask = 0;
-
-#if defined(_MSC_VER)
-   mask = _inp((unsigned short) (mscb_fd[fd - 1].fd + 1));
-#elif defined(OS_LINUX)
-   ioctl(mscb_fd[fd - 1].fd, PPRSTATUS, &mask);
-#else
-   /* no-op unsupported operation */
-#endif
-
-   switch (signal) {
-   case LPT_BUSY:
-      return (mask & (1 << 7)) == 0;
-   case LPT_DATAREADY:
-      return (mask & (1 << 6)) == 0;
-   }
-
-   return 0;
-}
-
-/*------------------------------------------------------------------*/
-
-void pp_setdir(int fd, unsigned int r)
-{
-/* set port direction: r==0:write mode;  r==1:read mode */
-#if defined(_MSC_VER)
-   pp_wcontrol(fd, LPT_READMODE, r);
-#elif defined(OS_LINUX)
-   if (ioctl(mscb_fd[fd - 1].fd, PPDATADIR, &r))
-      perror("PPDATADIR");
-#else
-   /* no-op unsupported operation */
-#endif
-}
-
-/*------------------------------------------------------------------*/
-
-void pp_wdata(int fd, unsigned int data)
-/* output data byte */
-{
-#if defined(_MSC_VER)
-   _outp((unsigned short) mscb_fd[fd - 1].fd, data);
-#elif defined(OS_LINUX)
-   ioctl(mscb_fd[fd - 1].fd, PPWDATA, &data);
-#else
-   /* no-op unsupported operation */
-#endif
-}
-
-/*------------------------------------------------------------------*/
-
-unsigned char pp_rdata(int fd)
-/* intput data byte */
-{
-#if defined(_MSC_VER)
-   return (unsigned char)_inp((unsigned short) mscb_fd[fd - 1].fd);
-#elif defined(OS_LINUX)
-   unsigned char data;
-   if (ioctl(mscb_fd[fd - 1].fd, PPRDATA, &data))
-      perror("PPRDATA");
-   return data;
-#else
-   /* no-op unsupported operation */
-#endif
-}
-
-/*------------------------------------------------------------------*/
+/*---- Low level routines for USB communication --------------------*/
 
 int subm250_open(MUSB_INTERFACE **ui, int usb_index)
 {
@@ -640,7 +461,7 @@ int subm250_open(MUSB_INTERFACE **ui, int usb_index)
    return EMSCB_NOT_FOUND;
 }
 
-/*------------------------------------------------------------------*/
+/*---- Low level routines for UDP communication --------------------*/
 
 int msend_udp(int index, char *buffer, int size)
 {
@@ -732,7 +553,7 @@ int mscb_out(int index, unsigned char *buffer, int len, int flags)
 
 \********************************************************************/
 {
-   int i, timeout;
+   int i;
    unsigned char usb_buf[65], eth_buf[65];
    UDP_HEADER *pudp;
 
@@ -768,87 +589,6 @@ int mscb_out(int index, unsigned char *buffer, int len, int flags)
          return MSCB_TIMEOUT;
    }
 
-   /*---- LPT code ----*/
-
-   if (mscb_fd[index - 1].type == MSCB_TYPE_LPT) {
-
-      /* remove accidental strobe */
-      pp_wcontrol(index, LPT_STROBE, 0);
-
-      for (i = 0; i < len; i++) {
-         /* wait for SM ready */
-         for (timeout = 0; timeout < TO_LPT; timeout++) {
-            if (!pp_rstatus(index, LPT_BUSY))
-               break;
-         }
-         if (timeout == TO_LPT) {
-#ifndef _USRDLL
-            printf("Automatic submaster reset.\n");
-#endif
-
-            mscb_release(index);
-            mscb_reset(index);
-            mscb_lock(index);
-
-            Sleep(100);
-
-            /* wait for SM ready */
-            for (timeout = 0; timeout < TO_LPT; timeout++) {
-               if (!pp_rstatus(index, LPT_BUSY))
-                  break;
-            }
-
-            if (timeout == TO_LPT)
-               return MSCB_TIMEOUT;
-         }
-
-         /* output data byte */
-         pp_wdata(index, buffer[i]);
-
-         /* set bit 9 */
-         if (flags & RS485_FLAG_BIT9)
-            pp_wcontrol(index, LPT_BIT9, 1);
-         else
-            pp_wcontrol(index, LPT_BIT9, 0);
-
-         /* set strobe */
-         pp_wcontrol(index, LPT_STROBE, 1);
-
-         /* wait for busy to become active */
-         for (timeout = 0; timeout < TO_LPT; timeout++) {
-            if (pp_rstatus(index, LPT_BUSY))
-               break;
-         }
-
-         if (timeout == TO_LPT) {
-#ifndef _USRDLL
-            printf("Automatic submaster reset.\n");
-#endif
-
-            mscb_release(index);
-            mscb_reset(index);
-            mscb_lock(index);
-
-            Sleep(100);
-
-            /* try again */
-            return mscb_out(index, buffer, len, flags);
-         }
-
-         if (timeout == TO_LPT) {
-            pp_wdata(index, 0xFF);
-            pp_wcontrol(index, LPT_STROBE, 0);
-            return MSCB_TIMEOUT;
-         }
-
-         /* remove data, make port available for input */
-         pp_wdata(index, 0xFF);
-
-         /* remove strobe */
-         pp_wcontrol(index, LPT_STROBE, 0);
-      }
-   }
-
    /*---- Ethernet code ----*/
 
    if (mscb_fd[index - 1].type == MSCB_TYPE_ETH) {
@@ -879,88 +619,6 @@ int mscb_out(int index, unsigned char *buffer, int len, int flags)
 
 /*------------------------------------------------------------------*/
 
-int mscb_in1(int fd, unsigned char *c, int timeout)
-/********************************************************************\
-
-  Routine: mscb_in1
-
-  Purpose: Read one byte from SM via parallel port
-
-  Input:
-    int  fd                 file descriptor for connection
-    int  timeout            timeout in milliseconds
-
-  Output:
-    char *c                 data bytes
-
-  Function value:
-    MSCB_SUCCESS            Successful completion
-    MSCB_TIMEOUT            Timeout
-
-\********************************************************************/
-{
-   int i;
-
-   /* wait for DATAREADY, each port access takes roughly 1us */
-   timeout = (int) (timeout*1000 / 1.3);
-
-   for (i = 0; i < timeout; i++) {
-      if (pp_rstatus(fd, LPT_DATAREADY))
-         break;
-   }
-   if (i == timeout)
-      return MSCB_TIMEOUT;
-
-   /* switch to input mode */
-   pp_setdir(fd, 1);
-
-   /* signal switch to input */
-   pp_wcontrol(fd, LPT_ACK, 1);
-
-   /* wait for data ready */
-   for (i = 0; i < 1000; i++) {
-      if (!pp_rstatus(fd, LPT_DATAREADY))
-         break;
-   }
-
-   /* read data */
-   *c = pp_rdata(fd);
-
-   /* signal data read */
-   pp_wcontrol(fd, LPT_ACK, 0);
-
-   /* wait for mode switch */
-   for (i = 0; i < 1000; i++) {
-      if (pp_rstatus(fd, LPT_DATAREADY))
-         break;
-   }
-
-   /* switch to output mode */
-   pp_setdir(fd, 0);
-
-   /* indicate mode switch */
-   pp_wcontrol(fd, LPT_ACK, 1);
-
-   /* wait for end of cycle */
-   for (i = 0; i < 1000; i++) {
-      if (!pp_rstatus(fd, LPT_DATAREADY))
-         break;
-   }
-
-   /* remove acknowlege */
-   pp_wcontrol(fd, LPT_ACK, 0);
-
-   if (i == 1000)
-      return MSCB_TIMEOUT;
-
-   for (i = 0; i < 50; i++)
-      pp_rdata(fd);
-
-   return MSCB_SUCCESS;
-}
-
-/*------------------------------------------------------------------*/
-
 int mscb_in(int index, char *buffer, int size, int timeout)
 /********************************************************************\
 
@@ -981,7 +639,7 @@ int mscb_in(int index, char *buffer, int size, int timeout)
 
 \********************************************************************/
 {
-   int i, n, len, status;
+   int n, len;
 
    n = 0;
    len = -1;
@@ -1005,243 +663,7 @@ int mscb_in(int index, char *buffer, int size, int timeout)
       n = mrecv_udp(index, buffer, size, timeout);
    }
 
-   /*---- LPT code ----*/
-   if (mscb_fd[index - 1].type == MSCB_TYPE_LPT) {
-
-      /* wait for MCMD_ACK command */
-      do {
-         status = mscb_in1(index, buffer, timeout);
-
-         /* only read single byte */
-         if (size == 1)
-            return status;
-
-         /* return in case of timeout */
-         if (status != MSCB_SUCCESS)
-            return -1;
-
-         /* check for Acknowledge */
-         if ((buffer[0] & 0xF8) == MCMD_ACK) {
-            len = buffer[n++] & 0x7;
-
-            /* check for variable length data block */
-            if (len == 7) {
-               status = mscb_in1(index, buffer + n, timeout);
-
-               /* return in case of timeout */
-               if (status != MSCB_SUCCESS)
-                  return -1;
-
-               len = buffer[n++];
-            }
-         }
-
-      } while (len == -1);
-
-      /* receive remaining bytes and CRC code */
-      for (i = 0; i < len + 1; i++) {
-         status = mscb_in1(index, buffer + n + i, timeout);
-
-         /* return in case of timeout */
-         if (status != MSCB_SUCCESS)
-            return -1;
-      }
-
-      n += i;
-   }
-
    return n;
-}
-
-/*------------------------------------------------------------------*/
-
-int lpt_init(char *device, int index)
-/********************************************************************\
-
-  Routine: lpt_init
-
-  Purpose: Initialize MSCB submaster on parallel port
-
-  Input:
-    char *device            Device name "lptx"/"/dev/parportx"
-    int  index              Index to mscb_fd[] array
-
-  Output:
-    int  mscb_fd[index].fd  File descriptor for device or
-                            DirectIO address
-  Function value:
-    0                       Successful completion
-    EMSCB_INVAL_PARAM       Invalid "device" parameter
-    EMSCB_COMM_ERROR        Submaster does not respond
-    EMSCB_NO_DIRECTIO       No DirectIO driver
-    EMSCB_LOCKED            MSCB system locked by other user
-    EMSCB_NO_ACCESS         No access to submaster
-
-\********************************************************************/
-{
-   int status;
-   char c;
-
-#ifdef _MSC_VER
-
-   /* under NT, user directio driver */
-
-   OSVERSIONINFO vi;
-   DWORD buffer[4];
-   DWORD size;
-   HANDLE hdio;
-
-   /* derive base address from device name */
-   if (atoi(device + 3) == 1)
-      mscb_fd[index].fd = 0x378;
-   else if (atoi(device + 3) == 2)
-      mscb_fd[index].fd = 0x278;
-   else
-      return EMSCB_INVAL_PARAM;
-
-   buffer[0] = 6;               /* give IO */
-   buffer[1] = mscb_fd[index].fd;
-   buffer[2] = buffer[1] + 4;
-   buffer[3] = 0;
-
-   vi.dwOSVersionInfoSize = sizeof(OSVERSIONINFO);
-   GetVersionEx(&vi);
-
-   /* use DirectIO driver under NT to gain port access */
-   if (vi.dwPlatformId == VER_PLATFORM_WIN32_NT) {
-      hdio = CreateFile("\\\\.\\directio", GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, 0, NULL);
-      if (hdio == INVALID_HANDLE_VALUE) {
-         //printf("mscb.c: Cannot access parallel port (No DirectIO driver installed)\n");
-         return EMSCB_NO_DIRECTIO;
-      }
-
-      if (!DeviceIoControl(hdio, (DWORD) 0x9c406000, &buffer, sizeof(buffer), NULL, 0, &size, NULL))
-         return EMSCB_NO_DIRECTIO;
-   }
-#elif defined(OS_LINUX)
-
-   int i;
-
-   mscb_fd[index].fd = open(device, O_RDWR);
-   if (mscb_fd[index].fd < 0) {
-#ifndef _USRDLL
-      perror("open");
-      printf("Please make sure that device \"%s\" is world readable/writable\n", device);
-#endif
-      return EMSCB_NO_ACCESS;
-   }
-
-   if (ioctl(mscb_fd[index].fd, PPCLAIM)) {
-#ifndef _USRDLL
-      perror("PPCLAIM");
-      printf("Please load driver via \"modprobe parport_pc\" as root\n");
-#endif
-      return EMSCB_NO_ACCESS;
-   }
-
-   if (ioctl(mscb_fd[index].fd, PPRELEASE)) {
-#ifndef _USRDLL
-      perror("PPRELEASE");
-#endif
-      return EMSCB_NO_ACCESS;
-   }
-
-   i = IEEE1284_MODE_BYTE;
-   if (ioctl(mscb_fd[index].fd, PPSETMODE, &i)) {
-#ifndef _USRDLL
-      perror("PPSETMODE");
-#endif
-      return EMSCB_NO_ACCESS;
-   }
-#endif
-
-   status = mscb_lock(index + 1);
-   if (status != MSCB_SUCCESS)
-      return EMSCB_LOCKED;
-
-   /* set initial state of handshake lines */
-   pp_wcontrol(index + 1, LPT_RESET, 0);
-   pp_wcontrol(index + 1, LPT_STROBE, 0);
-
-   /* switch to output mode */
-   pp_setdir(index + 1, 0);
-
-   /* wait for submaster irritated by a stuck LPT_STROBE */
-   Sleep(100);
-
-   /* check if SM alive */
-   if (pp_rstatus(index + 1, LPT_BUSY)) {
-      //printf("mscb.c: No SM present on parallel port\n");
-      mscb_release(index + 1);
-      return EMSCB_LPT_ERROR;
-   }
-
-   /* empty RBuffer of SM */
-   do {
-      status = mscb_in1(index + 1, &c, 1000);
-      if (status == MSCB_SUCCESS)
-         printf("%02X ", c);
-   } while (status == MSCB_SUCCESS);
-
-   mscb_release(index + 1);
-
-   return 0;
-}
-
-/*------------------------------------------------------------------*/
-
-int lpt_close(int fd)
-/********************************************************************\
-
-  Routine: lpt_close
-
-  Purpose: Close handle to MSCB submaster
-
-  Input:
-    int  index              Index to mscb_fd[] array
-
-  Function value:
-    MSCB_SUCCES             Successful completion
-
-\********************************************************************/
-{
-#ifdef _MSC_VER
-
-   /* under NT, user directio driver */
-
-   OSVERSIONINFO vi;
-   DWORD buffer[4];
-   DWORD size;
-   HANDLE hdio;
-
-   buffer[0] = 7;               /* lock port */
-   buffer[1] = fd;
-   buffer[2] = buffer[1] + 4;
-   buffer[3] = 0;
-
-   vi.dwOSVersionInfoSize = sizeof(OSVERSIONINFO);
-   GetVersionEx(&vi);
-
-   /* use DirectIO driver under NT to gain port access */
-   if (vi.dwPlatformId == VER_PLATFORM_WIN32_NT) {
-      hdio = CreateFile("\\\\.\\directio", GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, 0, NULL);
-      if (hdio == INVALID_HANDLE_VALUE) {
-#ifndef _USRDLL
-         printf("mscb.c: Cannot access parallel port (No DirectIO driver installed)\n");
-#endif
-         return -1;
-      }
-
-      if (!DeviceIoControl(hdio, (DWORD) 0x9c406000, &buffer, sizeof(buffer), NULL, 0, &size, NULL))
-         return -1;
-   }
-#elif defined(OS_LINUX)
-
-   close(fd);
-
-#endif
-
-   return MSCB_SUCCESS;
 }
 
 /*------------------------------------------------------------------*/
@@ -1269,9 +691,7 @@ int mscb_init(char *device, int bufsize, char *password, int debug)
   Purpose: Initialize and open MSCB
 
   Input:
-    char *device            Under NT: lpt1 or lpt2
-                            Under Linux: /dev/parport0 or /dev/parport1
-                            "<host>:device" for RPC connection
+    char *device            "<host>:device" for RPC connection
                             usbx for USB connection
                             mscbxxx for Ethernet connection
 
@@ -1295,21 +715,19 @@ int mscb_init(char *device, int bufsize, char *password, int debug)
     EMSCB_NO_MEM            Out of memory for file descriptors
     EMSCB_RPC_ERROR         Cannot talk to RPC server
     EMSCB_COMM_ERROR        Submaster does not reply on echo
-    EMSCB_NO_DIRECTIO       No DirectIO driver for LPT installed
     EMSCB_LOCKED            MSCB system locked by other user
     EMSCB_NO_ACCESS         No access to submaster
     EMSCB_INVAL_PARAM       Invalid parameter
     EMSCB_NOT_FOUND         USB submaster not found
     EMSCB_NO_WRITE_ACCESS   No write access under linux
     EMSCB_WRONG_PASSWORD    Wrong password
-    EMSCB_LPT_ERROR         Error talking to LPT submaster
     EMSCB_SUMB_VERSION      Submaster has wrong protocol version
 
 \********************************************************************/
 {
    int index, i, n;
    int status;
-   char host[256], port[256], dev3[256], remote_device[256];
+   char host[256], dev3[256], remote_device[256];
    unsigned char buf[64];
    struct hostent *phe;
    struct sockaddr_in *psa_in;
@@ -1383,20 +801,6 @@ int mscb_init(char *device, int bufsize, char *password, int debug)
    strcpy(mscb_fd[index].device, device);
    mscb_fd[index].type = 0;
 
-   /* LPT port with direct address */
-   if (device[1] == 'x') {
-      mscb_fd[index].type = MSCB_TYPE_LPT;
-      sscanf(port + 2, "%x", &mscb_fd[index].fd);
-   }
-
-   /* LPTx */
-   if (strieq(dev3, "LPT"))
-      mscb_fd[index].type = MSCB_TYPE_LPT;
-
-   /* /dev/parportx */
-   if (strstr(device, "parport"))
-      mscb_fd[index].type = MSCB_TYPE_LPT;
-
    /* USBx */
    if (strieq(dev3, "usb"))
       mscb_fd[index].type = MSCB_TYPE_USB;
@@ -1412,13 +816,6 @@ int mscb_init(char *device, int bufsize, char *password, int debug)
 
    if (mscb_fd[index].mutex_handle == 0)
       mscb_fd[index].mutex_handle = mscb_mutex_create(device);
-
-   if (mscb_fd[index].type == MSCB_TYPE_LPT) {
-
-      status = lpt_init(device, index);
-      if (status < 0)
-         return status;
-   }
 
    if (mscb_fd[index].type == MSCB_TYPE_USB) {
 
@@ -1594,11 +991,6 @@ int mscb_exit(int fd)
    if (mscb_fd[fd - 1].type == MSCB_TYPE_ETH)
       mrpc_disconnect(mscb_fd[fd - 1].fd);
 
-   /* outcommented, other client (like Labview) could still use LPT ...
-   if (mscb_fd[fd - 1].type == MSCB_TYPE_LPT)
-      lpt_close(mscb_fd[fd - 1].fd);
-   */
-
    memset(&mscb_fd[fd - 1], 0, sizeof(MSCB_FD));
 
    return MSCB_SUCCESS;
@@ -1647,82 +1039,6 @@ void mscb_get_device(int fd, char *device, int bufsize)
    }
 
    strlcpy(device, mscb_fd[fd-1].device, bufsize);
-}
-
-/*------------------------------------------------------------------*/
-
-void mscb_check(char *device, int size)
-/********************************************************************\
-
-  Routine: mscb_check
-
-  Purpose: Check IO pins of port
-
-  Input:
-    char *device            Under NT: lpt1 or lpt2
-                            Under Linux: /dev/parport0 or /dev/parport1
-
-  Function value:
-    int fd                  device descriptor for connection, -1 if
-                            error
-
-\********************************************************************/
-{
-   int i, fd, d;
-
-   mscb_init(device, size, "", 0);
-   fd = 1;
-
-   mscb_lock(fd);
-
-   printf("Toggling %s output pins, hit ENTER to stop.\n", device);
-   printf("GND = 19-25, toggling 2-9, 1, 14, 16 and 17\n\n");
-   do {
-      printf("\r11111111 1111");
-      fflush(stdout);
-      pp_wdata(fd, 0xFF);
-      pp_wcontrol(fd, LPT_STROBE, 1);
-      pp_wcontrol(fd, LPT_ACK, 1);
-      pp_wcontrol(fd, LPT_RESET, 1);
-      pp_wcontrol(fd, LPT_BIT9, 1);
-
-      Sleep(1000);
-
-      printf("\r00000000 0000");
-      fflush(stdout);
-      pp_wdata(fd, 0);
-      pp_wcontrol(fd, LPT_STROBE, 0);
-      pp_wcontrol(fd, LPT_ACK, 0);
-      pp_wcontrol(fd, LPT_RESET, 0);
-      pp_wcontrol(fd, LPT_BIT9, 0);
-
-      Sleep(1000);
-
-   } while (!kbhit());
-
-   while (kbhit())
-      getch();
-
-   printf("\n\n\nInput display, hit ENTER to stop.\n");
-   printf("Pins 2-9, 10 and 11\n\n");
-
-   do {
-      d = pp_rdata(fd);
-      for (i = 0; i < 8; i++) {
-         printf("%d", (d & 1) > 0);
-         d >>= 1;
-      }
-
-      printf(" %d%d\r", !pp_rstatus(fd, LPT_DATAREADY), pp_rstatus(fd, LPT_BUSY));
-      fflush(stdout);
-
-      Sleep(100);
-   } while (!kbhit());
-
-   while (kbhit())
-      getch();
-
-   mscb_release(fd);
 }
 
 /*------------------------------------------------------------------*/
@@ -1939,12 +1255,7 @@ int mscb_reset(int fd)
       return MSCB_MUTEX;
    }
 
-   if (mscb_fd[fd - 1].type == MSCB_TYPE_LPT) {
-      /* toggle reset */
-      pp_wcontrol(fd, LPT_RESET, 1);
-      Sleep(100);               // for elko
-      pp_wcontrol(fd, LPT_RESET, 0);
-   } else if (mscb_fd[fd - 1].type == MSCB_TYPE_ETH) {
+   if (mscb_fd[fd - 1].type == MSCB_TYPE_ETH) {
 
       buf[0] = MCMD_INIT;
       mscb_out(fd, buf, 1, RS485_FLAG_CMD);
@@ -4600,36 +3911,6 @@ int mscb_select_device(char *device, int size, int select)
       mscb_release(index + 1);
 
       musb_close(ui);
-   }
-
-   /* check LPT devices */
-   for (i = 0; i < 1; i++) {
-#ifdef _MSC_VER
-      sprintf(str, "lpt%d", i + 1);
-#else
-      sprintf(str, "/dev/parport%d", i);
-#endif
-
-      mscb_fd[index].type = MSCB_TYPE_LPT;
-
-      status = lpt_init(str, index);
-      if (status < 0)
-         error_code = status;
-      else
-         lpt_close(mscb_fd[index].fd);
-      memset(&mscb_fd[index], 0, sizeof(MSCB_FD));
-      if (status == 0)
-         sprintf(list[n++], str);
-      else
-         break;
-   }
-
-   if (n == 0) {
-      if (error_code == -3)
-         printf("mscb.c: Cannot access parallel port (No DirectIO driver installed)\n");
-      if (error_code == -4)
-         printf("mscb.c: Cannot access parallel port, locked by other application\n");
-      return 0;
    }
 
    /* if only one device, return it */

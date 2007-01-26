@@ -1656,20 +1656,18 @@ int main(int argc, char *argv[])
    int i, fd, server;
    unsigned short adr;
    char cmd[256], device[256], str[256], password[256];
-   int debug, check_io;
+   int debug;
 
    cmd[0] = 0;
    adr = 0;
 
-   debug = check_io = server = 0;
+   debug = server = 0;
    device[0] = password[0] = 0;
 
    /* parse command line parameters */
    for (i = 1; i < argc; i++) {
       if (argv[i][0] == '-' && argv[i][1] == 'v')
          debug = 1;
-      else if (argv[i][0] == '-' && argv[i][1] == 'i')
-         check_io = 1;
       else if (argv[i][0] == '-' && argv[i][1] == 's')
          server = 1;
       else if (argv[i][0] == '-') {
@@ -1700,7 +1698,6 @@ int main(int argc, char *argv[])
             printf("       -a     Address node before executing command\n");
             printf("       -c     Execute command immediately\n");
             printf("       -v     Produce verbose debugging output\n\n");
-            printf("       -i     Check IO pins of port\n\n");
             printf("For a list of valid commands start msc interactively\n");
             printf("and type \"help\".\n");
             return 0;
@@ -1710,11 +1707,6 @@ int main(int argc, char *argv[])
 
    if (server) {
       mrpc_server_loop();
-      return 0;
-   }
-
-   if (check_io) {
-      mscb_check(device, sizeof(device));
       return 0;
    }
 
@@ -1731,25 +1723,7 @@ int main(int argc, char *argv[])
    }
 
    if (fd < 0) {
-      if (fd == EMSCB_LPT_ERROR) {
-         printf("No MSCB submaster present at port \"%s\"\n", device);
-
-         puts("\nMake sure that");
-         puts("");
-         puts("o The MSCB submaster is correctly connected to the parallel port");
-         puts("o The MSCB submaster has power (green LED on)");
-         puts("");
-         puts("If this is a new installation, check in the PC BIOS that");
-         puts("");
-         puts("o LPT1 is in bi-directional (or EPP) mode, NOT ECP mode");
-         puts("o LPT1 is configured to address 0x378 (hex)");
-         puts("o If BIOS seems ok, you can check the pin I/O with a logic probe");
-         puts("  and the \"msc -i\" command which toggles the pins of the parallel port");
-         puts("o If the port is configured to another address than 0x378, use");
-         puts("  \"msc -d 0xabc\" with \"0xabc\" the correct address");
-      } else if (fd == EMSCB_NO_DIRECTIO) {
-         printf("No DirectIO driver installed\n");
-      } else if (fd == EMSCB_COMM_ERROR) {
+      if (fd == EMSCB_COMM_ERROR) {
          printf("\nCannot communicate with MSCB submaster at %s\n", device);
          puts("Please disconnect and reconnect submaster\n");
       } else if (fd == EMSCB_SUBM_VERSION) {

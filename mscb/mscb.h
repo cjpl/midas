@@ -171,11 +171,9 @@ typedef struct {
 
 #define MSCB_MAX_FD      10
 
-#define MSCB_TYPE_LPT     1
-#define MSCB_TYPE_USB     2
-#define MSCB_TYPE_COM     3
-#define MSCB_TYPE_RPC     4
-#define MSCB_TYPE_ETH     5
+#define MSCB_TYPE_USB     1
+#define MSCB_TYPE_ETH     2
+#define MSCB_TYPE_RPC     3
 
 typedef struct {
    char device[256];
@@ -217,12 +215,10 @@ extern MSCB_FD mscb_fd[MSCB_MAX_FD];
 #define EMSCB_NO_SUBM            -6
 #define EMSCB_INVAL_PARAM        -7
 #define EMSCB_WRONG_PASSWORD     -8
-#define EMSCB_NO_DIRECTIO        -9
-#define EMSCB_COMM_ERROR        -10
-#define EMSCB_NOT_FOUND         -11
-#define EMSCB_NO_WRITE_ACCESS   -12
-#define EMSCB_LPT_ERROR         -13
-#define EMSCB_SUBM_VERSION      -14
+#define EMSCB_COMM_ERROR         -9
+#define EMSCB_NOT_FOUND         -10
+#define EMSCB_NO_WRITE_ACCESS   -11
+#define EMSCB_SUBM_VERSION      -12
 
 /*---- Byte and Word swapping big endian <-> little endian ---------*/
 #define WORD_SWAP(x) { unsigned char _tmp;                               \
