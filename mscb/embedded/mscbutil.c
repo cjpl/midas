@@ -467,7 +467,7 @@ void uart_init(unsigned char port, unsigned char baud)
       0x100 - 0,    //  N/A
       0x100 - 0,    //  N/A
       0x100 - 0,    //  N/A
-	  0x100 - 0,    //  N/A
+      0x100 - 0,    //  N/A
       0x100 - 213,  //  57600
       0x100 - 106,  // 115200
       0x100 - 71,   // 172800
@@ -573,8 +573,13 @@ void uart_init(unsigned char port, unsigned char baud)
 
       SFRPAGE = TMR2_PAGE;
       TMR2CF = 0x08;               // use system clock for timer 2
+#ifdef SUBM_260
       RCAP2H = baud_table[(baud - 1)*2];    // load high byte
       RCAP2L = baud_table[(baud - 1)*2+1];  // load low byte
+#else
+      RCAP2H = 0xFF;
+      RCAP2L = baud_table[baud - 1];
+#endif
       TMR2CN = 0x04;               // start timer 2
       SFRPAGE = UART0_PAGE;
 

@@ -214,7 +214,7 @@ void user_init(unsigned char init)
    lcd_goto(0, 1);
    printf("   Address:  %04X", sys_info.node_addr);
    lcd_goto(0, 2);
-   strcpy(str, svn_revision + 20);
+   strcpy(str, svn_revision + 16);
    *strchr(str, ' ') = 0;
    printf("  Revision:  %s", str);
 }
