@@ -487,10 +487,6 @@ int mrecv_udp(int index, char *buf, int buffer_size, int millisec)
    if (buffer_size > sizeof(buffer))
       buffer_size = sizeof(buffer);
 
-   /* at least 1 sec timeout for slow network connections */
-   if (millisec < 1000)
-      millisec = 1000;
-
    /* receive buffer in UDP mode */
 
    FD_ZERO(&readfds);
@@ -668,8 +664,10 @@ int mscb_exchg(int fd, char *buffer, int *size, int len, int flags)
          if (flags & RS485_FLAG_LONG_TO)
             timeout = 5000;
 
-         if (retry > 0)
+#ifndef _USRDLL
+         if (retry > 1)
             printf("retry with %d ms timeout\n", timeout);
+#endif
 
          /* receive result on IN pipe */
          n = mrecv_udp(fd, ret_buf, sizeof(ret_buf), timeout);
