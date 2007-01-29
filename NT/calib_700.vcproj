@@ -22,7 +22,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="c:\mxml"
+				AdditionalIncludeDirectories="c:\mxml;\midas\include;"
 				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="5"
@@ -175,6 +175,9 @@
 			</File>
 			<File
 				RelativePath="..\mscb\mscbrpc.c">
+			</File>
+			<File
+				RelativePath="..\drivers\usb\musbstd.c">
 			</File>
 			<File
 				RelativePath="..\..\mxml\strlcpy.c">

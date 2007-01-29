@@ -32,10 +32,32 @@ Debug = BOOL : 0\n\
 "
 
 typedef struct {
+   unsigned char control;
+   float u_demand;
+   float u_meas;
+   float i_meas;
+   unsigned char status;
+   unsigned char trip_cnt;
+
+   float ramp_up;
+   float ramp_down;
+   float u_limit;
+   float i_limit;
+   float ri_limit;
+   unsigned char trip_max;
+   unsigned char trip_time;
+
+   unsigned char cached;
+} MSCB_NODE_VARS;
+
+typedef struct {
    MSCBHVR_SETTINGS settings;
    int num_channels;
    int fd;
+   MSCB_NODE_VARS *node_vars;
 } MSCBHVR_INFO;
+
+INT mscbhvr_read_all(MSCBHVR_INFO * info, int i);
 
 /*---- device driver routines --------------------------------------*/
 
@@ -45,12 +67,17 @@ INT mscbhvr_init(HNDLE hkey, void **pinfo, INT channels, INT(*bd) (INT cmd, ...)
    HNDLE hDB, hkeydd;
    MSCBHVR_INFO *info;
    MSCB_INFO node_info;
+   KEY key;
 
    /* allocate info structure */
    info = (MSCBHVR_INFO *) calloc(1, sizeof(MSCBHVR_INFO));
+   info->node_vars = (MSCB_NODE_VARS *) calloc(channels, sizeof(MSCB_NODE_VARS));
    *pinfo = info;
 
    cm_get_experiment_database(&hDB, NULL);
+
+   /* retrieve device name */
+   db_get_key(hDB, hkey, &key);
 
    /* create MSCBHVR settings record */
    status = db_create_record(hDB, hkey, "DD", MSCBHVR_SETTINGS_STR);
@@ -72,27 +99,97 @@ INT mscbhvr_init(HNDLE hkey, void **pinfo, INT channels, INT(*bd) (INT cmd, ...)
       return FE_ERR_HW;
    }
 
-   /* check if HVR devices are alive */
-   for (i=info->settings.base_address ; i<info->settings.base_address+channels ; i++) {
-      status = mscb_ping(info->fd, i);
-      if (status != MSCB_SUCCESS) {
-         cm_msg(MERROR, "mscbhvr_init",
-               "Cannot ping MSCB HVR address \"%d\". Check power and connection.", i);
-         return FE_ERR_HW;
-      }
-
-      mscb_info(info->fd, i, &node_info);
-      if (strcmp(node_info.node_name, "HVR-500") != 0 &&
-         strcmp(node_info.node_name, "HVR-400") != 0) {
-         cm_msg(MERROR, "mscbhvr_init",
-               "Found onexpected node \"%s\" at address \"%d\".", node_info.node_name, i);
-         return FE_ERR_HW;
-      }
-
-      /* turn on HV main switch */
-      flag = 3;
-      mscb_write(info->fd, i, 0, &flag, 1);  
+   /* check first node */
+   mscb_info(info->fd, info->settings.base_address, &node_info);
+   if (strcmp(node_info.node_name, "HVR-500") != 0 &&
+      strcmp(node_info.node_name, "HVR-400") != 0) {
+      cm_msg(MERROR, "mscbhvr_init",
+            "Found unexpected node \"%s\" at address \"%d\".", 
+            node_info.node_name, info->settings.base_address);
+      return FE_ERR_HW;
    }
+
+   if (node_info.svn_revision < 3518 || node_info.svn_revision < 10) {
+      cm_msg(MERROR, "mscbhvr_init",
+            "Found node \"%d\" with old firmware %d (SVN revistion >= 3518 required)", 
+            info->settings.base_address, node_info.svn_revision);
+      return FE_ERR_HW;
+   }
+
+   /* read all values from HVR devices */
+   for (i=0 ; i<channels ; i++) {
+
+      if (i % 10 == 0)
+         printf("HV %s: %d\r", key.name, i);
+
+      status = mscbhvr_read_all(info, i);
+      if (status != FE_SUCCESS)
+         return status;
+   }
+   printf("HV %s: %d\n", key.name, i);
+
+   /* turn on HV main switch */
+   flag = 3;
+   mscb_write_group(info->fd, 400, 0, &flag, 1);
+   mscb_write_group(info->fd, 500, 0, &flag, 1);
+
+   return FE_SUCCESS;
+}
+
+/*----------------------------------------------------------------------------*/
+
+INT mscbhvr_read_all(MSCBHVR_INFO * info, int i)
+{
+   int size, status;
+   unsigned char buffer[256], *pbuf;
+
+   size = sizeof(buffer);
+   status = mscb_read_range(info->fd, info->settings.base_address+i % 4, 0, 12, buffer, &size); //##
+   if (status != MSCB_SUCCESS) {
+      cm_msg(MERROR, "mscbhvr_read_all",
+            "Cannot access MSCB HVR address \"%d\". Check power and connection.", 
+            info->settings.base_address+i);
+      return FE_ERR_HW;
+   }
+
+   /* decode variables from buffer */
+   pbuf = buffer;
+   info->node_vars[i].control = *((unsigned char *)pbuf);
+   pbuf += sizeof(char);
+   DWORD_SWAP(pbuf);
+   info->node_vars[i].u_demand = *((float *)pbuf);
+   pbuf += sizeof(float);
+   DWORD_SWAP(pbuf);
+   info->node_vars[i].u_meas = *((float *)pbuf);
+   pbuf += sizeof(float);
+   DWORD_SWAP(pbuf);
+   info->node_vars[i].i_meas = *((float *)pbuf);
+   pbuf += sizeof(float);
+   info->node_vars[i].status = *((unsigned char *)pbuf);
+   pbuf += sizeof(char);
+   info->node_vars[i].trip_cnt = *((unsigned char *)pbuf);
+   pbuf += sizeof(char);
+   DWORD_SWAP(pbuf);
+   info->node_vars[i].ramp_up = *((float *)pbuf);
+   pbuf += sizeof(float);
+   DWORD_SWAP(pbuf);
+   info->node_vars[i].ramp_down = *((float *)pbuf);
+   pbuf += sizeof(float);
+   DWORD_SWAP(pbuf);
+   info->node_vars[i].u_limit = *((float *)pbuf);
+   pbuf += sizeof(float);
+   DWORD_SWAP(pbuf);
+   info->node_vars[i].i_limit = *((float *)pbuf);
+   pbuf += sizeof(float);
+   DWORD_SWAP(pbuf);
+   info->node_vars[i].ri_limit = *((float *)pbuf);
+   pbuf += sizeof(float);
+   info->node_vars[i].trip_max = *((unsigned char *)pbuf);
+   pbuf += sizeof(char);
+   info->node_vars[i].trip_time = *((unsigned char *)pbuf);
+
+   /* mark voltage/current as valid in cache */
+   info->node_vars[i].cached = 1;
 
    return FE_SUCCESS;
 }
@@ -112,7 +209,7 @@ INT mscbhvr_exit(MSCBHVR_INFO * info)
 
 INT mscbhvr_set(MSCBHVR_INFO * info, INT channel, float value)
 {
-   mscb_write(info->fd, info->settings.base_address + channel, 1, &value, 4);
+   mscb_write(info->fd, (info->settings.base_address + channel) % 4, 1, &value, 4); //##
    return FE_SUCCESS;
 }
 
@@ -120,63 +217,36 @@ INT mscbhvr_set(MSCBHVR_INFO * info, INT channel, float value)
 
 INT mscbhvr_get(MSCBHVR_INFO * info, INT channel, float *pvalue)
 {
-   INT size = 4;
+   int size, status;
+   unsigned char buffer[256], *pbuf;
 
-   mscb_read(info->fd, info->settings.base_address + channel, 2, pvalue, &size);
-   return FE_SUCCESS;
-}
+   /* check if value was previously read by mscbhvr_read_all() */
+   if (info->node_vars[channel].cached) {
+      *pvalue = info->node_vars[channel].u_meas;
+      info->node_vars[channel].cached = 0;
+      return FE_SUCCESS;
+   }
 
-/*----------------------------------------------------------------------------*/
+   printf("get: %03d   \r", channel);
 
-INT mscbhvr_get_current(MSCBHVR_INFO * info, INT channel, float *pvalue)
-{
-   int size = 4;
+   size = sizeof(buffer);
+   status = mscb_read_range(info->fd, (info->settings.base_address + channel) % 4, 2, 3, buffer, &size); //##
+   if (status != MSCB_SUCCESS) {
+      cm_msg(MERROR, "mscbhvr_get",
+            "Cannot access MSCB HVR address \"%d\". Check power and connection.", 
+            info->settings.base_address+channel);
+      return FE_ERR_HW;
+   }
 
-   mscb_read(info->fd, info->settings.base_address + channel, 3, pvalue, &size);
-   return FE_SUCCESS;
-}
+   /* decode variables from buffer */
+   pbuf = buffer;
+   DWORD_SWAP(pbuf);
+   info->node_vars[channel].u_meas = *((float *)pbuf);
+   pbuf += sizeof(float);
+   DWORD_SWAP(pbuf);
+   info->node_vars[channel].i_meas = *((float *)pbuf);
 
-/*----------------------------------------------------------------------------*/
-
-INT mscbhvr_get_current_limit(MSCBHVR_INFO * info, INT channel, float *pvalue)
-{
-   int size = 4;
-
-   mscb_read(info->fd, info->settings.base_address + channel, 9, pvalue, &size);
-   return FE_SUCCESS;
-}
-
-/*----------------------------------------------------------------------------*/
-
-INT mscbhvr_get_voltage_limit(MSCBHVR_INFO * info, INT channel, float *pvalue)
-{
-   int size = 4;
-
-   mscb_read(info->fd, info->settings.base_address + channel, 8, pvalue, &size);
-   return FE_SUCCESS;
-}
-
-/*----------------------------------------------------------------------------*/
-
-INT mscbhvr_get_rampup(MSCBHVR_INFO * info, INT channel, float *pvalue)
-{
-   int size = 2;
-   unsigned short data;
-
-   mscb_read(info->fd, info->settings.base_address + channel, 6, &data, &size);
-   *pvalue = data;
-   return FE_SUCCESS;
-}
-
-/*----------------------------------------------------------------------------*/
-
-INT mscbhvr_get_rampdown(MSCBHVR_INFO * info, INT channel, float *pvalue)
-{
-   int size = 2;
-   unsigned short data;
-
-   mscb_read(info->fd, info->settings.base_address + channel, 7, &data, &size);
-   *pvalue = data;
+   *pvalue = info->node_vars[channel].u_meas;
    return FE_SUCCESS;
 }
 
@@ -184,7 +254,7 @@ INT mscbhvr_get_rampdown(MSCBHVR_INFO * info, INT channel, float *pvalue)
 
 INT mscbhvr_set_current_limit(MSCBHVR_INFO * info, int channel, float limit)
 {
-   mscb_write(info->fd, info->settings.base_address + channel, 9, &limit, 4);
+   mscb_write(info->fd, (info->settings.base_address + channel) % 4, 9, &limit, 4); //##
    return FE_SUCCESS;
 }
 
@@ -192,7 +262,7 @@ INT mscbhvr_set_current_limit(MSCBHVR_INFO * info, int channel, float limit)
 
 INT mscbhvr_set_voltage_limit(MSCBHVR_INFO * info, int channel, float limit)
 {
-   mscb_write(info->fd, info->settings.base_address + channel, 8, &limit, 4);
+   mscb_write(info->fd, (info->settings.base_address + channel) % 4, 8, &limit, 4); //##
    return FE_SUCCESS;
 }
 
@@ -203,7 +273,7 @@ INT mscbhvr_set_rampup(MSCBHVR_INFO * info, int channel, float limit)
    unsigned short data;
 
    data = (unsigned short) limit;
-   mscb_write(info->fd, info->settings.base_address + channel, 6, &data, 2);
+   mscb_write(info->fd, (info->settings.base_address + channel) % 4, 6, &data, 2); //##
    return FE_SUCCESS;
 }
 
@@ -214,7 +284,18 @@ INT mscbhvr_set_rampdown(MSCBHVR_INFO * info, int channel, float limit)
    unsigned short data;
 
    data = (unsigned short) limit;
-   mscb_write(info->fd, info->settings.base_address + channel, 7, &data, 2);
+   mscb_write(info->fd, (info->settings.base_address + channel) % 4, 7, &data, 2); //##
+   return FE_SUCCESS;
+}
+
+/*----------------------------------------------------------------------------*/
+
+INT mscbhvr_set_triptime(MSCBHVR_INFO * info, int channel, float limit)
+{
+   unsigned char data;
+
+   data = (unsigned char) limit;
+   mscb_write(info->fd, (info->settings.base_address + channel) % 4, 12, &data, 1); //##
    return FE_SUCCESS;
 }
 
@@ -226,7 +307,8 @@ INT mscbhvr(INT cmd, ...)
    HNDLE hKey;
    INT channel, status;
    float value, *pvalue;
-   void *info, *bd;
+   void *bd;
+   MSCBHVR_INFO *info;
 
    va_start(argptr, cmd);
    status = FE_SUCCESS;
@@ -237,7 +319,7 @@ INT mscbhvr(INT cmd, ...)
       info = va_arg(argptr, void *);
       channel = va_arg(argptr, INT);
       bd = va_arg(argptr, void *);
-      status = mscbhvr_init(hKey, info, channel, bd);
+      status = mscbhvr_init(hKey, (void **)info, channel, bd);
       break;
 
    case CMD_EXIT:
@@ -259,11 +341,18 @@ INT mscbhvr(INT cmd, ...)
       status = mscbhvr_get(info, channel, pvalue);
       break;
 
+   case CMD_GET_DEMAND:
+      info = va_arg(argptr, void *);
+      channel = va_arg(argptr, INT);
+      pvalue = va_arg(argptr, float *);
+      *pvalue = info->node_vars[channel].u_demand;
+      break;
+
    case CMD_GET_CURRENT:
       info = va_arg(argptr, void *);
       channel = va_arg(argptr, INT);
       pvalue = va_arg(argptr, float *);
-      status = mscbhvr_get_current(info, channel, pvalue);
+      *pvalue = info->node_vars[channel].i_meas;
       break;
 
    case CMD_SET_CURRENT_LIMIT:
@@ -289,43 +378,52 @@ INT mscbhvr(INT cmd, ...)
       break;
 
    case CMD_GET_THRESHOLD:
-      value = 0.1f;
+      info = va_arg(argptr, void *);
+      channel = va_arg(argptr, INT);
+      pvalue = va_arg(argptr, float *);
+      *pvalue = 0.1f;
       break;
 
    case CMD_GET_THRESHOLD_CURRENT:
-      value = 1;
+      info = va_arg(argptr, void *);
+      channel = va_arg(argptr, INT);
+      pvalue = va_arg(argptr, float *);
+      *pvalue = 1;
       break;
 
    case CMD_GET_VOLTAGE_LIMIT:
       info = va_arg(argptr, void *);
       channel = va_arg(argptr, INT);
       pvalue = va_arg(argptr, float *);
-      status = mscbhvr_get_voltage_limit(info, channel, pvalue);
+      *pvalue = info->node_vars[channel].u_limit;
       break;
 
    case CMD_GET_CURRENT_LIMIT:
       info = va_arg(argptr, void *);
       channel = va_arg(argptr, INT);
       pvalue = va_arg(argptr, float *);
-      status = mscbhvr_get_current_limit(info, channel, pvalue);
+      *pvalue = info->node_vars[channel].i_limit;
       break;
 
    case CMD_GET_RAMPUP:
       info = va_arg(argptr, void *);
       channel = va_arg(argptr, INT);
       pvalue = va_arg(argptr, float *);
-      status = mscbhvr_get_rampup(info, channel, pvalue);
+      *pvalue = info->node_vars[channel].ramp_up;
       break;
 
    case CMD_GET_RAMPDOWN:
       info = va_arg(argptr, void *);
       channel = va_arg(argptr, INT);
       pvalue = va_arg(argptr, float *);
-      status = mscbhvr_get_rampdown(info, channel, pvalue);
+      *pvalue = info->node_vars[channel].ramp_down;
       break;
 
    case CMD_GET_TRIP_TIME:
-      status = FE_SUCCESS;
+      info = va_arg(argptr, void *);
+      channel = va_arg(argptr, INT);
+      pvalue = va_arg(argptr, float *);
+      *pvalue = info->node_vars[channel].trip_time;
       break;
 
    case CMD_SET_RAMPUP:
@@ -343,7 +441,10 @@ INT mscbhvr(INT cmd, ...)
       break;
 
    case CMD_SET_TRIP_TIME:
-      status = FE_SUCCESS;
+      info = va_arg(argptr, void *);
+      channel = va_arg(argptr, INT);
+      value = (float) va_arg(argptr, double);
+      status = mscbhvr_set_triptime(info, channel, value);
       break;
 
    default:

@@ -277,7 +277,12 @@ int sc_thread(void *info)
    DEVICE_DRIVER *device_driver = info;
    int i, status, cmd;
    int current_channel = 0;
+   int current_priority_channel = 0;
    float value;
+   int *last_update;
+   unsigned int current_time;
+
+   last_update = calloc(device_driver->channels, sizeof(int));
 
    do {
       /* read one channel from device */
@@ -292,7 +297,33 @@ int sc_thread(void *info)
          //printf("TID %d: channel %d, value %f\n", ss_gettid(), current_channel, value);
       }
 
+      /* switch to next channel in next loop */
       current_channel = (current_channel + 1) % device_driver->channels;
+
+      /* check for priority channel */
+      current_time = ss_millitime();
+      i = (current_priority_channel + 1) % device_driver->channels;
+      while (!(current_time - last_update[i] < 10000)) {
+         i = (i + 1) % device_driver->channels;
+         if (i == current_priority_channel) {
+            /* non found, so finish */
+            break;
+         }
+      }
+
+      /* updated channel found, so read it additionally */
+      if (current_time - last_update[i] < 10000) {
+         current_priority_channel = i;
+
+         for (cmd = CMD_GET_FIRST; cmd <= CMD_GET_LAST; cmd++) {
+            status = device_driver->dd(cmd, device_driver->dd_info, i, &value);
+
+            ss_mutex_wait_for(device_driver->mutex, 1000);
+            device_driver->mt_buffer->channel[i].array[cmd] = value;
+            device_driver->mt_buffer->status = status;
+            ss_mutex_release(device_driver->mutex);
+         }
+      }
 
       /* check if anything to write to device */
       for (i = 0; i < device_driver->channels; i++) {
@@ -306,11 +337,14 @@ int sc_thread(void *info)
                ss_mutex_release(device_driver->mutex);
 
                status = device_driver->dd(cmd, device_driver->dd_info, i, value);
+               last_update[i] = ss_millitime();
             }
          }
       }
 
    } while (device_driver->stop_thread == 0);
+
+   free(last_update);
 
    /* signal stopped thread */
    device_driver->stop_thread = 2;
@@ -458,11 +492,6 @@ INT device_driver(DEVICE_DRIVER * device_driver, INT cmd, ...)
    }
 
    va_end(argptr);
-
-   /* don't eat all CPU in main thread */
-   if (cm_yield(10) == RPC_SHUTDOWN)
-      fe_stop = TRUE;
-
    return status;
 }
 
@@ -733,7 +762,7 @@ INT register_equipment(void)
          else {
             equipment[index].status = FE_ERR_DISABLED;
             cm_msg(MINFO, "register_equipment",
-                   "Equipment %s disabled in file \"frontend.c\"", equipment[index].name);
+                   "Equipment %s disabled in ODB", equipment[index].name);
          }
 
          /* now start threads if requested */
@@ -743,7 +772,8 @@ INT register_equipment(void)
          slowcont_eq = TRUE;
 
          /* let user read error messages */
-         if (equipment[index].status != FE_SUCCESS)
+         if (equipment[index].status != FE_SUCCESS && 
+             equipment[index].status != FE_ERR_DISABLED)
             ss_sleep(3000);
       }
 
@@ -1352,13 +1382,13 @@ INT scheduler(void)
          if (!eq_info->enabled)
             continue;
 
-         if (eq->status != FE_SUCCESS) {
-            ss_sleep(10);
+         if (eq->status != FE_SUCCESS)
             continue;
-         }
 
          /*---- call idle routine for slow control equipment ----*/
          if ((eq_info->eq_type & EQ_SLOW) && eq->status == FE_SUCCESS) {
+            /* if equipment is multi-threaded, read all channel in one loop */
+             
             if (eq_info->event_limit > 0) {
                if (actual_millitime - eq->last_idle >= (DWORD) eq_info->event_limit) {
                   eq->cd(CMD_IDLE, eq);
@@ -1398,7 +1428,6 @@ INT scheduler(void)
             }
          }
 
-         /* end of periodic equipments */
          /*---- check polled events ----*/
          if (eq_info->eq_type & EQ_POLLED) {
             readout_start = actual_millitime;
@@ -1919,9 +1948,11 @@ int main(int argc, char *argv[])
    /* now connect to server */
    if (display_period) {
       if (host_name[0])
-         printf("Connect to experiment %s on host %s...", exp_name, host_name);
+         printf("Connect to experiment %s on host %s...\n", exp_name, host_name);
+      else if (exp_name[0])
+         printf("Connect to experiment %s...\n", exp_name);
       else
-         printf("Connect to experiment %s...", exp_name);
+         printf("Connect to experiment...\n");
    }
 
    status = cm_connect_experiment1(host_name, exp_name, full_frontend_name,
@@ -1987,7 +2018,7 @@ int main(int argc, char *argv[])
 
    /* call user init function */
    if (display_period)
-      printf("Init hardware...");
+      printf("Init hardware...\n");
    if (frontend_init() != SUCCESS) {
       if (display_period)
          printf("\n");
