@@ -687,7 +687,7 @@ Slow control device driver commands */
 #define CMD_GET_FIRST                CMD_SET_LAST+1  /* multithreaded get commands */
 #define CMD_GET                      CMD_GET_FIRST   // = 16
 #define CMD_GET_CURRENT              CMD_GET_FIRST+1
-#define CMD_GET_LAST                 CMD_GET_FIRST+2 /* update this if you add new commands ! */
+#define CMD_GET_LAST                 CMD_GET_FIRST+1 /* update this if you add new commands ! */
 
 #define CMD_GET_DIRECT               CMD_GET_LAST+1  /* direct get commands */
 #define CMD_GET_DEMAND               CMD_GET_DIRECT  // = 19

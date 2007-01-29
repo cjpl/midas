@@ -25,6 +25,7 @@ typedef struct {
    INT format;
    DWORD last_update;
    INT last_channel;
+   INT last_channel_updated;
 
    /* items in /Variables record */
    char *names;
@@ -93,8 +94,9 @@ INT hv_start(EQUIPMENT * pequipment)
    INT i;
 
    /* call close method of device drivers */
-   for (i = 0; pequipment->driver[i].dd != NULL && pequipment->driver[i].flags & DF_MULTITHREAD ; i++)
-      device_driver(&pequipment->driver[i], CMD_START);
+   for (i = 0; pequipment->driver[i].dd != NULL ; i++)
+      if (pequipment->driver[i].flags & DF_MULTITHREAD)
+         device_driver(&pequipment->driver[i], CMD_START);
 
    return FE_SUCCESS;
 }
@@ -106,8 +108,9 @@ INT hv_stop(EQUIPMENT * pequipment)
    INT i;
 
    /* call close method of device drivers */
-   for (i = 0; pequipment->driver[i].dd != NULL && pequipment->driver[i].flags & DF_MULTITHREAD ; i++)
-      device_driver(&pequipment->driver[i], CMD_STOP);
+   for (i = 0; pequipment->driver[i].dd != NULL ; i++)
+      if (pequipment->driver[i].flags & DF_MULTITHREAD)
+         device_driver(&pequipment->driver[i], CMD_STOP);
 
    return FE_SUCCESS;
 }
@@ -126,12 +129,27 @@ INT hv_read(EQUIPMENT * pequipment, int channel)
    hv_info = (HV_INFO *) pequipment->cd_info;
    cm_get_experiment_database(&hDB, NULL);
 
-   status = device_driver(hv_info->driver[channel], CMD_GET,
-                              channel - hv_info->channel_offset[channel],
-                              &hv_info->measured[channel]);
-   status = device_driver(hv_info->driver[channel], CMD_GET_CURRENT,
-                              channel - hv_info->channel_offset[channel],
-                              &hv_info->current[channel]);
+   /* if driver is multi-threaded, read all channels at once */
+   for (i=0 ; i < hv_info->num_channels ; i++) {
+      if (hv_info->driver[i]->flags & DF_MULTITHREAD) {
+         status = device_driver(hv_info->driver[i], CMD_GET,
+                                i - hv_info->channel_offset[i],
+                                &hv_info->measured[i]);
+         status = device_driver(hv_info->driver[i], CMD_GET_CURRENT,
+                                i - hv_info->channel_offset[i],
+                                &hv_info->current[i]);
+      }
+   }
+
+   /* else read only single channel */
+   if (!(hv_info->driver[channel]->flags & DF_MULTITHREAD)) {
+      status = device_driver(hv_info->driver[channel], CMD_GET,
+                                 channel - hv_info->channel_offset[channel],
+                                 &hv_info->measured[channel]);
+      status = device_driver(hv_info->driver[channel], CMD_GET_CURRENT,
+                                 channel - hv_info->channel_offset[channel],
+                                 &hv_info->current[channel]);
+   }
 
    /* check how much channels have changed since last ODB update */
    act_time = ss_millitime();
@@ -144,17 +162,18 @@ INT hv_read(EQUIPMENT * pequipment, int channel)
       if (abs(hv_info->measured[i] - hv_info->measured_mirror[i]) > max_diff)
          max_diff = abs(hv_info->measured[i] - hv_info->measured_mirror[i]);
 
+      /* indicate change if variation more than the threshold */
       if (abs(hv_info->measured[i] - hv_info->measured_mirror[i]) >
-          hv_info->update_threshold[i])
+          hv_info->update_threshold[i] && hv_info->measured[i] > 10)
          changed = TRUE;
 
       if (act_time - hv_info->last_change[i] < min_time)
          min_time = act_time - hv_info->last_change[i];
    }
 
-   /* update if change is more than update_sensitivity or less than 2sec ago 
+   /* update if change is more than update_sensitivity or less than 5sec ago 
       or last update is older than a minute */
-   if (changed || (min_time < 2000 && max_diff > 0) ||
+   if (changed || (min_time < 5000 && max_diff > 0) ||
        act_time - hv_info->last_update > 60000) {
       hv_info->last_update = act_time;
 
@@ -184,8 +203,8 @@ INT hv_read(EQUIPMENT * pequipment, int channel)
          min_time = act_time - hv_info->last_change[i];
    }
 
-   /* update if change is more than update_sensitivity or less than 2sec ago */
-   if (changed || (min_time < 2000 && max_diff > 0)) {
+   /* update if change is more than update_sensitivity or less than 5sec ago */
+   if (changed || (min_time < 5000 && max_diff > 0)) {
       for (i = 0; i < hv_info->num_channels; i++)
          hv_info->current_mirror[i] = hv_info->current[i];
 
@@ -279,10 +298,8 @@ void hv_demand(INT hDB, INT hKey, void *info)
 
    /* set individual channels only if demand value differs */
    for (i = 0; i < hv_info->num_channels; i++)
-      if (hv_info->demand[i] != hv_info->demand_mirror[i] ||
-            fabs(hv_info->measured[i] - hv_info->demand[i]) > 100.f) {
+      if (hv_info->demand[i] != hv_info->demand_mirror[i])
          hv_info->last_change[i] = ss_millitime();
-      }
 
    pequipment->odb_in++;
 
@@ -622,16 +639,37 @@ INT hv_init(EQUIPMENT * pequipment)
                              i - hv_info->channel_offset[i], hv_info->names + NAME_LENGTH * i);
    }
 
-   /*---- set/get demand value ----*/
+   /*---- set/get values ----*/
    for (i = 0; i < hv_info->num_channels; i++) {
       if ((hv_info->driver[i]->flags & DF_PRIO_DEVICE) == 0) {
          hv_info->demand_mirror[i] = MIN(hv_info->demand[i], hv_info->voltage_limit[i]);
          status = device_driver(hv_info->driver[i], CMD_SET, 
                                 i - hv_info->channel_offset[i], hv_info->demand_mirror[i]);
+         status = device_driver(hv_info->driver[i], CMD_SET_TRIP_TIME,
+                                i - hv_info->channel_offset[i], hv_info->trip_time[i]);
+         status = device_driver(hv_info->driver[i], CMD_SET_CURRENT_LIMIT,
+                                i - hv_info->channel_offset[i], hv_info->current_limit[i]);
+         status = device_driver(hv_info->driver[i], CMD_SET_VOLTAGE_LIMIT,
+                                i - hv_info->channel_offset[i], hv_info->voltage_limit[i]);
+         status = device_driver(hv_info->driver[i], CMD_SET_RAMPUP,
+                                i - hv_info->channel_offset[i], hv_info->rampup_speed[i]);
+         status = device_driver(hv_info->driver[i], CMD_SET_RAMPDOWN,
+                                i - hv_info->channel_offset[i], hv_info->rampdown_speed[i]);
       } else {
          status = device_driver(hv_info->driver[i], CMD_GET_DEMAND,
                                 i - hv_info->channel_offset[i], hv_info->demand + i);
          hv_info->demand_mirror[i] = hv_info->demand[i];
+
+         status = device_driver(hv_info->driver[i], CMD_GET_TRIP_TIME,
+                                i - hv_info->channel_offset[i], &hv_info->trip_time[i]);
+         status = device_driver(hv_info->driver[i], CMD_GET_CURRENT_LIMIT,
+                                i - hv_info->channel_offset[i], &hv_info->current_limit[i]);
+         status = device_driver(hv_info->driver[i], CMD_GET_VOLTAGE_LIMIT,
+                                i - hv_info->channel_offset[i], &hv_info->voltage_limit[i]);
+         status = device_driver(hv_info->driver[i], CMD_GET_RAMPUP,
+                                i - hv_info->channel_offset[i], &hv_info->rampup_speed[i]);
+         status = device_driver(hv_info->driver[i], CMD_GET_RAMPDOWN,
+                                i - hv_info->channel_offset[i], &hv_info->rampdown_speed[i]);
       }
    }
    db_set_record(hDB, hv_info->hKeyDemand, hv_info->demand,
@@ -642,23 +680,21 @@ INT hv_init(EQUIPMENT * pequipment)
                   hv_info->num_channels * sizeof(float), MODE_READ, hv_demand,
                   pequipment);
 
-   /*---- set limits and ramping speeds ----*/
-   for (i = 0; i < hv_info->num_channels; i++) {
-      status = device_driver(hv_info->driver[i], CMD_SET_TRIP_TIME,
-                             i - hv_info->channel_offset[i], hv_info->trip_time[i]);
-      status = device_driver(hv_info->driver[i], CMD_SET_CURRENT_LIMIT,
-                             i - hv_info->channel_offset[i], hv_info->current_limit[i]);
-      status = device_driver(hv_info->driver[i], CMD_SET_VOLTAGE_LIMIT,
-                             i - hv_info->channel_offset[i], hv_info->voltage_limit[i]);
-      status = device_driver(hv_info->driver[i], CMD_SET_RAMPUP,
-                             i - hv_info->channel_offset[i], hv_info->rampup_speed[i]);
-      status = device_driver(hv_info->driver[i], CMD_SET_RAMPDOWN,
-                             i - hv_info->channel_offset[i], hv_info->rampdown_speed[i]);
-   }
-
    /* initially read all channels */
-   for (i=0 ; i<hv_info->num_channels ; i++)
-      hv_read(pequipment, i);
+   for (i=0 ; i<hv_info->num_channels ; i++) {
+
+      hv_info->driver[i]->dd(CMD_GET, hv_info->driver[i]->dd_info, 
+                             i, &hv_info->measured[i]);
+      hv_info->driver[i]->dd(CMD_GET_CURRENT, hv_info->driver[i]->dd_info, 
+                             i, &hv_info->current[i]);
+
+      hv_info->measured_mirror[i] = hv_info->measured[i];
+      hv_info->current_mirror[i]  = hv_info->current[i];
+   }
+   db_set_data(hDB, hv_info->hKeyCurrent, hv_info->current,
+               sizeof(float) * hv_info->num_channels, hv_info->num_channels,
+               TID_FLOAT);
+   pequipment->odb_out++;
 
    return FE_SUCCESS;
 }
@@ -692,24 +728,29 @@ INT hv_idle(EQUIPMENT * pequipment)
    hv_ramp(hv_info);
 
    /* select next measurement channel */
-   act_time = ss_millitime();
-   act = (hv_info->last_channel + 1) % hv_info->num_channels;
-
-   /* look for the next channel recently updated */
-   while (!(act_time - hv_info->last_change[act] < 5000 ||
-            (act_time - hv_info->last_change[act] < 20000
-             && abs(hv_info->measured[act] - hv_info->demand[act]) >
-             2 * hv_info->update_threshold[act]))) {
-      act = (act + 1) % hv_info->num_channels;
-      if (act == hv_info->last_channel) {
-         act = (hv_info->last_channel + 1) % hv_info->num_channels;
-         break;
-      }
-   }
+   hv_info->last_channel = (hv_info->last_channel + 1) % hv_info->num_channels;
 
    /* measure channel */
-   status = hv_read(pequipment, act);
-   hv_info->last_channel = act;
+   status = hv_read(pequipment, hv_info->last_channel);
+
+   /* additionally read channel recently updated if not multithreaded */
+   if (!(hv_info->driver[hv_info->last_channel]->flags & DF_MULTITHREAD)) {
+
+      act_time = ss_millitime();
+
+      act = (hv_info->last_channel_updated + 1) % hv_info->num_channels;
+      while (!(act_time - hv_info->last_change[act] < 10000)) {
+         act = (act + 1) % hv_info->num_channels;
+         if (act == hv_info->last_channel_updated) {
+            /* non found, so return */
+            return status;
+         }
+      }
+
+      /* updated channel found, so read it additionally */
+      status = hv_read(pequipment, act);
+      hv_info->last_channel_updated = act;
+   }
 
    return status;
 }
