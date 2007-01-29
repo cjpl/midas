@@ -268,7 +268,8 @@ LIB   = -lmidas -Wl,-rpath,$(SYSLIB_DIR)
 endif
 VPATH = $(LIB_DIR):$(INC_DIR)
 
-all:    $(OS_DIR) $(LIB_DIR) $(BIN_DIR) \
+all: check-mxml \
+	$(OS_DIR) $(LIB_DIR) $(BIN_DIR) \
 	$(LIBNAME) $(SHLIB) \
 	$(ANALYZER) \
 	$(LIB_DIR)/mfe.o \
@@ -555,4 +556,17 @@ mrproper : clean
 	rm -rf $(OS_DIR)
 	rm -rf vxworks/68kobj vxworks/ppcobj
 
+check-mxml :
+ifeq ($(NEED_STRLCPY), 1)
+	@if [ ! -e $(MXML_DIR)/strlcpy.h ]; then \
+	  echo "please download mxml."; \
+	  echo "http://midas.psi.ch/htmldoc/quickstart.html"; \
+	  exit 1; \
+	fi
+endif
+	@if [ ! -e $(MXML_DIR)/mxml.h ]; then \
+	  echo "please download mxml."; \
+	  echo "http://midas.psi.ch/htmldoc/quickstart.html"; \
+	  exit 1; \
+	fi
 
