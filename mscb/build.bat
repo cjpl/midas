@@ -11,8 +11,6 @@ nmake -f mscb.mak CFG="mscb - Win32 Release" clean
 nmake -f mscb.mak CFG="mscb - Win32 Release"
 nmake -f msc.mak CFG="msc - Win32 Release" Clean
 nmake -f msc.mak CFG="msc - Win32 Release"
-nmake -f calib_520.mak CFG="calib_520 - Win32 Release" Clean
-nmake -f calib_520.mak CFG="calib_520 - Win32 Release"
 nmake -f calib_700.mak CFG="calib_700 - Win32 Release" Clean
 nmake -f calib_700.mak CFG="calib_700 - Win32 Release"
 nmake -f calib_900.mak CFG="calib_900 - Win32 Release" Clean
@@ -28,7 +26,6 @@ make
 cd \midas\mscb
 
 copy \midas\nt\bin\msc.exe \midas\mscb\
-copy \midas\nt\bin\calib_520.exe \midas\mscb\
 copy \midas\nt\bin\calib_700.exe \midas\mscb\
 copy \midas\nt\bin\calib_900.exe \midas\mscb\
 copy \midas\nt\bin\calib_1000.exe \midas\mscb\
@@ -41,7 +38,6 @@ zip mscb%version%.zip Makefile
 zip mscb%version%.zip *.c
 zip mscb%version%.zip *.h
 zip mscb%version%.zip msc.exe
-zip mscb%version%.zip calib_520.exe
 zip mscb%version%.zip calib_700.exe
 zip mscb%version%.zip calib_900.exe
 zip mscb%version%.zip calib_1000.exe

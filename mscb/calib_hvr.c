@@ -595,7 +595,7 @@ int main(int argc, char *argv[])
 
    /* check if module at 0xFF00 */
    if (adr_start != 0xFF00) {
-      if (mscb_ping(fd, 0xFF00) == MSCB_SUCCESS) {
+      if (mscb_ping(fd, 0xFF00, 0) == MSCB_SUCCESS) {
          status = mscb_set_node_addr(fd, 0xFF00, 0, 0, 0);
          if (status == MSCB_SUCCESS)
             eprintf("\nHVR found at address 0xFF00, moved to 0\n");
@@ -608,7 +608,7 @@ int main(int argc, char *argv[])
 
    /* check if module at 0xFF05 */
    if (adr_start != 0xFF05) {
-      if (mscb_ping(fd, 0xFF05) == MSCB_SUCCESS) {
+      if (mscb_ping(fd, 0xFF05, 0) == MSCB_SUCCESS) {
          status = mscb_set_node_addr(fd, 0xFF05, 0, 0, 5);
          if (status == MSCB_SUCCESS)
             eprintf("HVR found at address 0xFF05, moved to 5\n");
@@ -622,7 +622,7 @@ int main(int argc, char *argv[])
    /* check if all channels alive and of right type */
    for (adr = adr_start; adr <= adr_end; adr++) {
 
-      if (mscb_ping(fd, adr) != MSCB_SUCCESS) {
+      if (mscb_ping(fd, adr, 0) != MSCB_SUCCESS) {
          eprintf("No device at address %d found.\n", adr);
          stop();
       }
