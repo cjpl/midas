@@ -43,7 +43,7 @@ int main(int argc, char *argv[])
    fgets(str, sizeof(str), stdin);
    adr = (unsigned short)atoi(str);
 
-   if (mscb_ping(fd, adr) != MSCB_SUCCESS) {
+   if (mscb_ping(fd, adr, 0) != MSCB_SUCCESS) {
       printf("No device at address %d found.\n", adr);
       return 0;
    }
