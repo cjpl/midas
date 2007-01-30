@@ -83,7 +83,8 @@ sbit DAC_DIN  = P1 ^ 4;         // Data in
 #define REG_ADCGAIN    6
 #define REG_IOCONTROL  7
 
-#define ADC_SF_VALUE  82        // SF value for 50Hz rejection
+#define ADC_SF_VALUE  27        // SF value for 50Hz rejection, 2 Hz total update rate
+//#define ADC_SF_VALUE  82        // SF value for 50Hz rejection, 1 Hz total update rate
 
 unsigned char idata chn_bits[N_HV_CHN];
 #define DEMAND_CHANGED     (1<<0)
