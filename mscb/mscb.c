@@ -455,7 +455,6 @@ int subm250_open(MUSB_INTERFACE **ui, int usb_index)
       if (strcmp(buf, "SUBM_250") == 0)
          if (found++ == usb_index)
             return MSCB_SUCCESS;
-      printf("buf: %s\n", buf);
    }
 
    return EMSCB_NOT_FOUND;
@@ -3612,9 +3611,6 @@ int mscb_select_device(char *device, int size, int select)
    if (index == MSCB_MAX_FD)
       return -1;
 
-   if (mscb_lock(index + 1) != MSCB_SUCCESS)
-      return -1;
-
    /* check USB devices */
    for (usb_index = found = 0 ; usb_index < 127 ; usb_index ++) {
 
@@ -3625,6 +3621,12 @@ int mscb_select_device(char *device, int size, int select)
       sprintf(str, "usb%d", found);
       mscb_fd[index].mutex_handle = mscb_mutex_create(str);
 
+      if (!mscb_lock(index + 1)) {
+         printf("lock failed\n");
+         debug_log("return EMSCB_LOCKED\n", 0);
+         return EMSCB_LOCKED;
+      }
+
       /* check if it's a subm_250 */
       buf[0] = 0;
       musb_write(ui, 0, buf, 1, 1000);
@@ -3633,11 +3635,10 @@ int mscb_select_device(char *device, int size, int select)
       if (strcmp(buf, "SUBM_250") == 0)
          sprintf(list[n++], "usb%d", found++);
 
+      mscb_release(index + 1);
+
       musb_close(ui);
    }
-
-   mscb_release(index + 1);
-
 
    /* if only one device, return it */
    if (n == 1 || select == 0) {
