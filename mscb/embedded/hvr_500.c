@@ -10,10 +10,13 @@
 
 
   Memory usage: 
-    Program code: 0x0000 - 0x31FF (check after each compile!)
-    Upgrade code: 0x3200 - 0x3811
+    Program code: 0x0000 - 0x31FF
+    Upgrade code: 0x3200 - 0x3811 (1554 bytes)
     EEPROM page:  0x3A00 - 0x3BFF (one page @ 512 bytes)
                   0x3C00 - 0x3DFF cannot be erased ???
+
+    Check after each compile that CODE size is less than
+    0x31FF + 0x0611 = 14352
 
   $Id$
 
@@ -280,7 +283,7 @@ void user_init(unsigned char init)
 
    /* sample initial state of switch */
    old_sw1 = SW1;
-   if (!old_sw1)
+   if (old_sw1)
       for (i=0 ; i<N_HV_CHN ; i++)
          user_data[i].status |= STATUS_DISABLED;
 
@@ -706,7 +709,7 @@ void read_hv(unsigned char channel)
    /* 0.01 resolution */
    hv = floor(hv * 100) / 100.0;
 
-   led_mode(channel, !(hv > 10));
+   led_mode(channel, !(hv > 40));
 
    DISABLE_INTERRUPTS;
    user_data[channel].u_meas = hv;
@@ -1111,23 +1114,23 @@ void user_loop(void)
       }
 
       /* if crate HV switched off, set DAC to zero */
-      if (!SW1) {
+      if (SW1) {
          for (i = 0 ; i<N_HV_CHN ; i++ ) {
             user_data[i].u_dac = 0;
             user_data[i].status |= STATUS_DISABLED;
             u_actual[i] = 0;
             set_hv(i, 0);
-        }
-         old_sw1 = 0;
+         }
+         old_sw1 = 1;
       }
    
       /* if crate HV switched on, indicated changed demand value*/
-      if (SW1 && !old_sw1) {
+      if (!SW1 && old_sw1) {
          for (i = 0 ; i<N_HV_CHN ; i++ ) {
             chn_bits[i] |= DEMAND_CHANGED;
             user_data[i].status &= ~STATUS_DISABLED;
          }
-         old_sw1 = 1;
+         old_sw1 = 0;
       }
    }
 
