@@ -775,11 +775,15 @@ int mscb_init(char *device, int bufsize, char *password, int debug)
    struct hostent *phe;
    struct sockaddr_in *psa_in;
 
+   status = 0;
    if (!device[0]) {
       if (debug == -1)
-         mscb_select_device(device, bufsize, 0); /* for LabView */
+         status = mscb_select_device(device, bufsize, 0); /* for LabView */
       else
-         mscb_select_device(device, bufsize, 1); /* interactively ask for device */
+         status = mscb_select_device(device, bufsize, 1); /* interactively ask for device */
+
+      if (status == 0)
+         return EMSCB_NOT_FOUND;
    }
 
    /* search for open file descriptor for same device, used by LabView */
@@ -2644,7 +2648,7 @@ int mscb_verify(int fd, unsigned short adr, char *buffer, int size)
 
 \********************************************************************/
 {
-   unsigned char buf[512], crc, image[0x10000], *line;
+   unsigned char buf[64], crc, image[0x10000], *line;
    unsigned int len, ofh, ofl, type, d, buflen;
    int i, j, n_error, status, page, subpage, flash_size;
    unsigned short ofs;
@@ -3601,6 +3605,7 @@ int mscb_select_device(char *device, int size, int select)
 
   Function value:
     MSCB_SUCCESS            Successful completion
+    EMSCB_LOCKED            Submaster is locked
     0                       No submaster found
 
 \********************************************************************/
@@ -3655,6 +3660,9 @@ int mscb_select_device(char *device, int size, int select)
       strlcpy(device, list[0], size);
       return MSCB_SUCCESS;
    }
+
+   if (n == 0)
+      return 0;
 
    do {
       printf("Found several submasters, please select one:\n\n");
