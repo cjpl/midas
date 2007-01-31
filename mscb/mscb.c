@@ -2212,6 +2212,10 @@ int mscb_flash(int fd, int addr, int gaddr, int broadcast)
       mscb_exchg(fd, buf, NULL, 4, RS485_FLAG_NO_ACK | RS485_FLAG_ADR_CYCLE);
    }
 
+   /* wait until flash has finished, otherwise nodes cannot continue
+      to receive further commands */
+   Sleep(500);
+
    return MSCB_SUCCESS;
 }
 
@@ -3800,6 +3804,7 @@ void mscb_scan_udp()
 
       sprintf(str, "MSCB%03d", i);
       printf("Checking %s...\r", str);
+      fflush(stdout);
 
       /* retrieve destination address */
       phe = gethostbyname(str);
