@@ -87,6 +87,7 @@ extern void debug_log(char *format, int start, ...);
 #define RS485_FLAG_LONG_TO   (1<<3)  /* 5s for upgrade */
 #define RS485_FLAG_CMD       (1<<4)
 #define RS485_FLAG_ADR_CYCLE (1<<5)
+#define RS485_FLAG_NO_RETRY  (1<<6)  /* for mscb_scan_udp */
 
 #define MUSB_TIMEOUT 5000 /* 5 sec */
 
@@ -679,7 +680,7 @@ int mscb_exchg(int fd, char *buffer, int *size, int len, int flags)
          }
 
          if (n > 0) {
-            /* check if retrun data fits into buffer */
+            /* check if return data fits into buffer */
             if (n > *size) {
                memcpy(buffer, ret_buf, *size);
             } else {
@@ -690,6 +691,11 @@ int mscb_exchg(int fd, char *buffer, int *size, int len, int flags)
 
             mscb_release(fd);
             return MSCB_SUCCESS;
+         }
+
+         if (flags & RS485_FLAG_NO_RETRY) {
+            *size = 0;
+            break;
          }
       }
 
@@ -2288,7 +2294,7 @@ int mscb_upload(int fd, unsigned short adr, char *buffer, int size, int debug)
 
 \********************************************************************/
 {
-   unsigned char buf[512], crc, image[0x10000], *line;
+   unsigned char buf[256], crc, image[0x10000], *line;
    unsigned int len, ofh, ofl, type, d, buflen;
    int i, status, page, subpage, flash_size, n_page, retry, sretry, protected_page,
       n_page_disp;
@@ -3752,6 +3758,73 @@ int set_mac_address(int fd)
    printf("Error downloading configuration.\n");
 
    return 0;
+}
+
+/*------------------------------------------------------------------*/
+
+void mscb_scan_udp()
+/********************************************************************\
+
+  Routine: mscb_scan_udp
+
+  Purpose: Scan network for running ethernet submasters
+
+\********************************************************************/
+{
+   char str[256], buf[256];
+   int i, n;
+   struct hostent *phe;
+   struct sockaddr_in *psa_in;
+
+#ifdef _MSC_VER
+   {
+      WSADATA WSAData;
+
+      /* Start windows sockets */
+      if (WSAStartup(MAKEWORD(1, 1), &WSAData) != 0)
+         return;
+   }
+#endif
+
+   mscb_fd[0].type = MSCB_TYPE_ETH; 
+   mscb_fd[0].mutex_handle = mscb_mutex_create("mscb");
+   mscb_fd[0].fd = socket(AF_INET, SOCK_DGRAM, 0);
+   if (mscb_fd[0].fd == -1) {
+      printf("cannot create socket\n");
+      return;
+   }
+
+   for (i=0 ; i<1000 ; i++) {
+      if (kbhit())
+         break;
+
+      sprintf(str, "MSCB%03d", i);
+      printf("Checking %s...\r", str);
+
+      /* retrieve destination address */
+      phe = gethostbyname(str);
+      if (phe == NULL)
+         continue;
+
+      memset(&mscb_fd[0].eth_addr, 0, sizeof(mscb_fd[0].eth_addr));
+      psa_in = (struct sockaddr_in *)mscb_fd[0].eth_addr;
+      memcpy((char *) &(psa_in->sin_addr), phe->h_addr, phe->h_length);
+      psa_in->sin_port = htons((short) MSCB_NET_PORT);
+      psa_in->sin_family = AF_INET;
+
+      buf[0] = MCMD_ECHO;
+      n = sizeof(buf);
+      mscb_exchg(1, buf, &n, 1, RS485_FLAG_CMD | RS485_FLAG_NO_RETRY);
+
+      if (n == 2)
+         printf("Found %s       \n", str);
+   }
+
+   printf("                    \n");
+   while (kbhit())
+      getch();
+
+   mscb_init("mscb004", 0, NULL, 0);
 }
 
 /*------------------------------------------------------------------*/

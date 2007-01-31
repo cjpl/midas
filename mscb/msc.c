@@ -1709,6 +1709,11 @@ int main(int argc, char *argv[])
       return 0;
    }
 
+   if (strcmp(device, "mscb") == 0) {
+      mscb_scan_udp();
+      return 0;
+   }
+
    /* open port */
    fd = mscb_init(device, sizeof(device), password, debug ? 1 : 0);
 

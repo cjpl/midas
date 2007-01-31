@@ -284,6 +284,7 @@ extern "C" {
    int EXPRT mscb_addr(int fd, int cmd, unsigned short adr, int retry);
 
    int set_mac_address(int fd);
+   void mscb_scan_udp();
 
 #ifdef __cplusplus
 }
