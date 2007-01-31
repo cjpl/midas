@@ -537,10 +537,8 @@ void load_nodes_xml(int fd, char *file_name, int flash)
             printf("Variable \"%s\" from file not in node, variable skipped\n", name);
       }
 
-      if (flash) {
+      if (flash)
          mscb_flash(fd, addr, -1, 0);
-         Sleep(200);
-      }
    }
 }
 
