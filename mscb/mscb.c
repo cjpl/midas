@@ -89,7 +89,7 @@ extern void debug_log(char *format, int start, ...);
 #define RS485_FLAG_ADR_CYCLE (1<<5)
 #define RS485_FLAG_NO_RETRY  (1<<6)  /* for mscb_scan_udp */
 
-#define MUSB_TIMEOUT 5000 /* 5 sec */
+#define MUSB_TIMEOUT 6000 /* 6 sec, must be longer than TO_LONG */
 
 /* header for UDP communication */
 typedef struct {
@@ -587,6 +587,8 @@ int mscb_exchg(int fd, char *buffer, int *size, int len, int flags)
 
          i = subm250_open(&mscb_fd[fd - 1].ui, atoi(mscb_fd[fd - 1].device+3));
          if (i < 0) {
+            if (size && *size)
+               memset(buffer, 0, *size);
             mscb_release(fd);
             return MSCB_TIMEOUT;
          }
@@ -595,21 +597,25 @@ int mscb_exchg(int fd, char *buffer, int *size, int len, int flags)
       }
 
       if (i != len + 1) {
+         if (size && *size)
+            memset(buffer, 0, *size);
          mscb_release(fd);
          return MSCB_TIMEOUT;
       }
 
       if (flags & RS485_FLAG_NO_ACK) {
+         if (size && *size)
+            memset(buffer, 0, *size);
          mscb_release(fd);
          return MSCB_SUCCESS;
       }
 
       if (size == NULL) {
+         if (size && *size)
+            memset(buffer, 0, *size);
          mscb_release(fd);
          return MSCB_INVAL_PARAM;
       }
-
-      memset(buffer, 0, *size);
 
       /* receive result on IN pipe */
       n = musb_read(mscb_fd[fd - 1].ui, 0, buffer, *size, MUSB_TIMEOUT);
@@ -642,16 +648,22 @@ int mscb_exchg(int fd, char *buffer, int *size, int len, int flags)
          i = msend_udp(fd, eth_buf, len + sizeof(UDP_HEADER));
 
          if (i != len + sizeof(UDP_HEADER)) {
+            if (size && *size)
+               memset(buffer, 0, *size);
             mscb_release(fd);
             return MSCB_TIMEOUT;
          }
 
          if (flags & RS485_FLAG_NO_ACK) {
+            if (size && *size)
+               memset(buffer, 0, *size);
             mscb_release(fd);
             return MSCB_SUCCESS;
          }
 
          if (size == NULL) {
+            if (size && *size)
+               memset(buffer, 0, *size);
             mscb_release(fd);
             return MSCB_INVAL_PARAM;
          }
@@ -674,6 +686,8 @@ int mscb_exchg(int fd, char *buffer, int *size, int len, int flags)
 
          /* return if invalid version */
          if (n < 0) {
+            if (size && *size)
+               memset(buffer, 0, *size);
             mscb_release(fd);
             *size = 0;
             return n;
@@ -700,6 +714,8 @@ int mscb_exchg(int fd, char *buffer, int *size, int len, int flags)
       }
 
       /* no reply after all the retries, so return error */
+      if (size && *size)
+         memset(buffer, 0, *size);
       mscb_release(fd);
       return MSCB_TIMEOUT;
    }
@@ -2650,7 +2666,7 @@ int mscb_verify(int fd, unsigned short adr, char *buffer, int size)
 {
    unsigned char buf[64], crc, image[0x10000], *line;
    unsigned int len, ofh, ofl, type, d, buflen;
-   int i, j, n_error, status, page, subpage, flash_size;
+   int i, j, retry, n_error, status, page, subpage, flash_size;
    unsigned short ofs;
 
    if (fd > MSCB_MAX_FD || fd < 1 || !mscb_fd[fd - 1].type)
@@ -2759,15 +2775,20 @@ int mscb_verify(int fd, unsigned short adr, char *buffer, int size)
             crc += image[page * 512 + i];
 
          /* read page */
-         buf[0] = UCMD_READ;
-         buf[1] = (unsigned char)page;
-         buf[2] = (unsigned char)subpage;
-         buflen = sizeof(buf);
-         mscb_exchg(fd, buf, &buflen, 3, RS485_FLAG_LONG_TO);
-         if (buflen != 32+3) {
-            printf("\nError: timeout from remote node for verify page 0x%04X\n", page * 512);
-            goto ver_error;
-          }
+         for (retry = 0 ; retry < 5 ; retry++) {
+            buf[0] = UCMD_READ;
+            buf[1] = (unsigned char)page;
+            buf[2] = (unsigned char)subpage;
+            buflen = sizeof(buf);
+            status = mscb_exchg(fd, buf, &buflen, 3, RS485_FLAG_LONG_TO);
+            if (status != MSCB_SUCCESS || buflen != 32+3) {
+               if (retry == 4) {
+                 printf("\nError: timeout from remote node for verify page 0x%04X\n", page * 512);
+                 goto ver_error;
+               }
+            } else
+               break;
+         }
 
          /* compare data */
          for (j=0 ; j<32 ; j++) {

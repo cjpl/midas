@@ -121,6 +121,7 @@ void setup(void)
 
    /* initialize UART0 */
    uart_init(0, BD_115200);
+   PS0 = 1;                     // serial interrupt high priority
 
    /* Blink LEDs */
    led_blink(0, 3, 150);
@@ -308,7 +309,7 @@ unsigned short i, to;
          }
       }
 
-      watchdog_refresh(1);
+      watchdog_refresh(0);
       delay_us(100);
    }
 
@@ -372,7 +373,7 @@ void main(void)
 
             /* wait until sent */
             while (n_rs485_tx)
-               watchdog_refresh(1);
+               watchdog_refresh(0);
 
             /* wait for data to be received */
             rs485_receive(flags);

@@ -719,7 +719,7 @@ void sysclock_init(void)
 
    EA = 1;                      // general interrupt enable
    ET0 = 1;                     // Enable Timer 0 interrupt
-   PT1 = 1;                     // Interrupt priority high
+   PT1 = 0;                     // Interrupt priority low
 
 #ifdef CPU_C8051F120
    SFRPAGE = TIMER01_PAGE;
