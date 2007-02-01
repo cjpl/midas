@@ -25,14 +25,14 @@ hvr_400.hex: hvr_400.c mscbmain.c mscbutil.c mscbemb.h
 	$(CC) hvr_400.c "DEFINE(HVR_400)" $(CFLAGS) 
 	$(CC) mscbmain.c "DEFINE(HVR_400)" $(CFLAGS) 
 	$(CC) mscbutil.c "DEFINE(HVR_400)" $(CFLAGS) 
-	$(LL) mscbmain.obj, mscbutil.obj, hvr_400.obj TO hvr_400 "RAMSIZE (256)" "DISABLEWARNING (16)" "CODE (?PR?UPGRADE?MSCBMAIN (0X3000))"
+	$(LL) mscbmain.obj, mscbutil.obj, hvr_400.obj TO hvr_400 "RAMSIZE (256)" "DISABLEWARNING (16)" "CODE (?PR?UPGRADE?MSCBMAIN (0X3200))"
 	oh51 hvr_400
 
 hvr_500.hex: hvr_500.c mscbmain.c mscbutil.c mscbemb.h
 	$(CC) hvr_500.c "DEFINE(HVR_500)" $(CFLAGS) 
 	$(CC) mscbmain.c "DEFINE(HVR_500)" $(CFLAGS) 
 	$(CC) mscbutil.c "DEFINE(HVR_500)" $(CFLAGS) 
-	$(LL) mscbmain.obj, mscbutil.obj, hvr_500.obj TO hvr_500 "RAMSIZE (256)" "DISABLEWARNING (16)" "CODE (?PR?UPGRADE?MSCBMAIN (0X3000))"
+	$(LL) mscbmain.obj, mscbutil.obj, hvr_500.obj TO hvr_500 "RAMSIZE (256)" "DISABLEWARNING (16)" "CODE (?PR?UPGRADE?MSCBMAIN (0X3200))"
 	oh51 hvr_500
 
 scs_1000.hex: scs_1000.c mscbmain.c mscbutil.c lcd_menu.c mscbemb.h
