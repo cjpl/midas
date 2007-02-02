@@ -100,7 +100,14 @@ INT mscbhvr_init(HNDLE hkey, void **pinfo, INT channels, INT(*bd) (INT cmd, ...)
    }
 
    /* check first node */
-   mscb_info(info->fd, info->settings.base_address, &node_info);
+   status = mscb_info(info->fd, info->settings.base_address, &node_info);
+   if (status != MSCB_SUCCESS) {
+      cm_msg(MERROR, "mscbhvr_init",
+            "Cannot access HVR node at address \"%d\". Please check cabling and power.", 
+            info->settings.base_address);
+      return FE_ERR_HW;
+   }
+
    if (strcmp(node_info.node_name, "HVR-500") != 0 &&
       strcmp(node_info.node_name, "HVR-400") != 0) {
       cm_msg(MERROR, "mscbhvr_init",
@@ -144,7 +151,7 @@ INT mscbhvr_read_all(MSCBHVR_INFO * info, int i)
    unsigned char buffer[256], *pbuf;
 
    size = sizeof(buffer);
-   status = mscb_read_range(info->fd, info->settings.base_address+i % 4, 0, 12, buffer, &size); //##
+   status = mscb_read_range(info->fd, info->settings.base_address+i, 0, 12, buffer, &size);
    if (status != MSCB_SUCCESS) {
       cm_msg(MERROR, "mscbhvr_read_all",
             "Cannot access MSCB HVR address \"%d\". Check power and connection.", 
@@ -209,7 +216,7 @@ INT mscbhvr_exit(MSCBHVR_INFO * info)
 
 INT mscbhvr_set(MSCBHVR_INFO * info, INT channel, float value)
 {
-   mscb_write(info->fd, (info->settings.base_address + channel) % 4, 1, &value, 4); //##
+   mscb_write(info->fd, info->settings.base_address + channel, 1, &value, 4);
    return FE_SUCCESS;
 }
 
@@ -227,10 +234,10 @@ INT mscbhvr_get(MSCBHVR_INFO * info, INT channel, float *pvalue)
       return FE_SUCCESS;
    }
 
-   printf("get: %03d   \r", channel);
+   // printf("get: %d %03d   \r", info->fd, channel);
 
    size = sizeof(buffer);
-   status = mscb_read_range(info->fd, (info->settings.base_address + channel) % 4, 2, 3, buffer, &size); //##
+   status = mscb_read_range(info->fd, info->settings.base_address + channel, 2, 3, buffer, &size);
    if (status != MSCB_SUCCESS) {
       cm_msg(MERROR, "mscbhvr_get",
             "Cannot access MSCB HVR address \"%d\". Check power and connection.", 
@@ -254,7 +261,7 @@ INT mscbhvr_get(MSCBHVR_INFO * info, INT channel, float *pvalue)
 
 INT mscbhvr_set_current_limit(MSCBHVR_INFO * info, int channel, float limit)
 {
-   mscb_write(info->fd, (info->settings.base_address + channel) % 4, 9, &limit, 4); //##
+   mscb_write(info->fd, info->settings.base_address + channel, 9, &limit, 4);
    return FE_SUCCESS;
 }
 
@@ -262,7 +269,7 @@ INT mscbhvr_set_current_limit(MSCBHVR_INFO * info, int channel, float limit)
 
 INT mscbhvr_set_voltage_limit(MSCBHVR_INFO * info, int channel, float limit)
 {
-   mscb_write(info->fd, (info->settings.base_address + channel) % 4, 8, &limit, 4); //##
+   mscb_write(info->fd, info->settings.base_address + channel, 8, &limit, 4);
    return FE_SUCCESS;
 }
 
@@ -273,7 +280,7 @@ INT mscbhvr_set_rampup(MSCBHVR_INFO * info, int channel, float limit)
    unsigned short data;
 
    data = (unsigned short) limit;
-   mscb_write(info->fd, (info->settings.base_address + channel) % 4, 6, &data, 2); //##
+   mscb_write(info->fd, info->settings.base_address + channel, 6, &data, 2);
    return FE_SUCCESS;
 }
 
@@ -284,7 +291,7 @@ INT mscbhvr_set_rampdown(MSCBHVR_INFO * info, int channel, float limit)
    unsigned short data;
 
    data = (unsigned short) limit;
-   mscb_write(info->fd, (info->settings.base_address + channel) % 4, 7, &data, 2); //##
+   mscb_write(info->fd, info->settings.base_address + channel, 7, &data, 2);
    return FE_SUCCESS;
 }
 
@@ -295,7 +302,7 @@ INT mscbhvr_set_triptime(MSCBHVR_INFO * info, int channel, float limit)
    unsigned char data;
 
    data = (unsigned char) limit;
-   mscb_write(info->fd, (info->settings.base_address + channel) % 4, 12, &data, 1); //##
+   mscb_write(info->fd, info->settings.base_address + channel, 12, &data, 1);
    return FE_SUCCESS;
 }
 

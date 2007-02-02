@@ -26,6 +26,7 @@ typedef struct {
    int *mscb_address;
    unsigned char *mscb_index;
    int *var_size;
+   float *var_cache;
 } MSCBDEV_SETTINGS;
 
 typedef struct {
@@ -65,7 +66,7 @@ void addr_changed(HNDLE hDB, HNDLE hKey, void *arg)
 
 INT mscbdev_init(HNDLE hkey, void **pinfo, INT channels, INT(*bd) (INT cmd, ...))
 {
-   int status, size;
+   int i, status, size;
    HNDLE hDB, hsubkey;
    MSCBDEV_INFO *info;
 
@@ -75,6 +76,9 @@ INT mscbdev_init(HNDLE hkey, void **pinfo, INT channels, INT(*bd) (INT cmd, ...)
    info->mscbdev_settings.mscb_address = calloc(channels, sizeof(INT));
    info->mscbdev_settings.mscb_index = calloc(channels, sizeof(INT));
    info->mscbdev_settings.var_size = calloc(channels, sizeof(INT));
+   info->mscbdev_settings.var_cache = calloc(channels, sizeof(float));
+   for (i = 0; i < channels; i++)
+      info->mscbdev_settings.var_cache[i] = (float) ss_nan();
 
    cm_get_experiment_database(&hDB, NULL);
 
@@ -82,60 +86,48 @@ INT mscbdev_init(HNDLE hkey, void **pinfo, INT channels, INT(*bd) (INT cmd, ...)
    size = sizeof(info->mscbdev_settings.device);
    info->mscbdev_settings.device[0] = 0;
 
-   status =
-       db_get_value(hDB, hkey, "Device", &info->mscbdev_settings.device, &size,
-                    TID_STRING, TRUE);
+   status = db_get_value(hDB, hkey, "Device", &info->mscbdev_settings.device, &size, TID_STRING, TRUE);
    if (status != DB_SUCCESS)
       return FE_ERR_ODB;
 
    size = sizeof(info->mscbdev_settings.pwd);
    info->mscbdev_settings.pwd[0] = 0;
-   status =
-       db_get_value(hDB, hkey, "Pwd", &info->mscbdev_settings.pwd, &size,
-                    TID_STRING, TRUE);
+   status = db_get_value(hDB, hkey, "Pwd", &info->mscbdev_settings.pwd, &size, TID_STRING, TRUE);
    if (status != DB_SUCCESS)
       return FE_ERR_ODB;
 
    size = sizeof(info->mscbdev_settings.debug);
    info->mscbdev_settings.debug = 0;
-   status =
-       db_get_value(hDB, hkey, "Debug", &info->mscbdev_settings.debug, &size,
-                    TID_BOOL, TRUE);
+   status = db_get_value(hDB, hkey, "Debug", &info->mscbdev_settings.debug, &size, TID_BOOL, TRUE);
    if (status != DB_SUCCESS)
       return FE_ERR_ODB;
 
    size = sizeof(INT) * channels;
-   db_get_value(hDB, hkey, "MSCB Address", info->mscbdev_settings.mscb_address, &size,
-                TID_INT, TRUE);
+   db_get_value(hDB, hkey, "MSCB Address", info->mscbdev_settings.mscb_address, &size, TID_INT, TRUE);
    db_find_key(hDB, hkey, "MSCB Address", &hsubkey);
    size = sizeof(INT) * channels;
-   db_set_data(hDB, hsubkey, info->mscbdev_settings.mscb_address, size, channels,
-               TID_INT);
-   db_open_record(hDB, hsubkey, info->mscbdev_settings.mscb_address, size, MODE_READ,
-                  addr_changed, info);
+   db_set_data(hDB, hsubkey, info->mscbdev_settings.mscb_address, size, channels, TID_INT);
+   db_open_record(hDB, hsubkey, info->mscbdev_settings.mscb_address, size, MODE_READ, addr_changed, info);
 
    size = sizeof(BYTE) * channels;
-   db_get_value(hDB, hkey, "MSCB Index", info->mscbdev_settings.mscb_index, &size,
-                TID_BYTE, TRUE);
+   db_get_value(hDB, hkey, "MSCB Index", info->mscbdev_settings.mscb_index, &size, TID_BYTE, TRUE);
    db_find_key(hDB, hkey, "MSCB Index", &hsubkey);
    size = sizeof(BYTE) * channels;
    db_set_data(hDB, hsubkey, info->mscbdev_settings.mscb_index, size, channels, TID_BYTE);
-   db_open_record(hDB, hsubkey, info->mscbdev_settings.mscb_index, size, MODE_READ,
-                  addr_changed, info);
+   db_open_record(hDB, hsubkey, info->mscbdev_settings.mscb_index, size, MODE_READ, addr_changed, info);
 
    /* initialize info structure */
    info->num_channels = channels;
 
-   info->fd = mscb_init(info->mscbdev_settings.device, sizeof(info->mscbdev_settings.device), 
+   info->fd = mscb_init(info->mscbdev_settings.device, sizeof(info->mscbdev_settings.device),
                         info->mscbdev_settings.pwd, info->mscbdev_settings.debug);
    if (info->fd < 0) {
-      cm_msg(MERROR, "mscbdev_init", "Cannot connect to MSCB device \"%s\"",
-             info->mscbdev_settings.device);
+      cm_msg(MERROR, "mscbdev_init", "Cannot connect to MSCB device \"%s\"", info->mscbdev_settings.device);
       return FE_ERR_HW;
    }
 
    /* write back device */
-   status = db_set_value(hDB, hkey, "Device", &info->mscbdev_settings.device, 
+   status = db_set_value(hDB, hkey, "Device", &info->mscbdev_settings.device,
                          sizeof(info->mscbdev_settings.device), 1, TID_STRING);
    if (status != DB_SUCCESS)
       return FE_ERR_ODB;
@@ -185,53 +177,99 @@ INT mscbdev_set(MSCBDEV_INFO * info, INT channel, float value)
 
 /*----------------------------------------------------------------------------*/
 
-INT mscbdev_get(MSCBDEV_INFO * info, INT channel, float *pvalue)
+INT mscbdev_read_all(MSCBDEV_INFO * info)
 {
-   INT size, value_int, status;
+   int i, j, status, i_start, i_stop, v_start, v_stop, addr, size;
+   unsigned char buffer[256], *pbuf;
    static DWORD last_error = 0;
-   float value;
 
-   if (info->mscbdev_settings.var_size[channel] == -1) {
-      size = sizeof(float);
-      status = mscb_read(info->fd, info->mscbdev_settings.mscb_address[channel],
-                info->mscbdev_settings.mscb_index[channel], &value, &size);
-      if (status != MSCB_SUCCESS) {
-         /* only produce error once every minute */
-         if (ss_time() - last_error >= 60) {
-            last_error = ss_time();
-            /* temporarily disabled since it can cause a hangup for unknown reasons...
-            cm_msg(MERROR, "mscbdev_get", "Error reading MSCB bus at %d:%d, status %d", 
-               info->mscbdev_settings.mscb_address[channel],
-               info->mscbdev_settings.mscb_index[channel], status);
-            */
+   /* find consecutive ranges in variables */
+   v_start = v_stop = 0;
+   i_start = i_stop = info->mscbdev_settings.mscb_index[0];
+   addr = info->mscbdev_settings.mscb_address[0];
+
+   for (i = 1; i <= info->num_channels; i++) {
+      if (i == info->num_channels ||                            // read last chunk
+          i_stop - i_start >= 60 ||                             // not more than 60 vars (->240 bytes)
+          info->mscbdev_settings.mscb_address[i] != addr ||     // if at different address
+          info->mscbdev_settings.mscb_index[i] != i_stop + 1) { // if non-consecutive index
+
+         /* complete range found, so read it */
+         size = sizeof(buffer);
+         if (i_start == i_stop) {
+            /* read single value (bug in old mscbmain.c) */
+            status = mscb_read(info->fd, addr, i_start, buffer, &size);
+            if (info->mscbdev_settings.var_size[v_start] == -1)
+               DWORD_SWAP(buffer);
+         } else
+            status = mscb_read_range(info->fd, addr, i_start, i_stop, buffer, &size);
+
+         if (status != MSCB_SUCCESS) {
+            /* only produce error once every minute */
+            if (ss_time() - last_error >= 60) {
+               last_error = ss_time();
+               cm_msg(MERROR, "mscbdev_get", "Error reading MSCB bus at %d:%d, status %d",
+                      info->mscbdev_settings.mscb_address[i], info->mscbdev_settings.mscb_index[i], status);
+            }
+            for (j = v_start; j <= v_stop; j++)
+               info->mscbdev_settings.var_cache[j] = (float) ss_nan();
+            return FE_ERR_HW;
          }
-         *pvalue = (float)ss_nan();
-         return FE_ERR_HW;
-      }
-      *pvalue = value;
-   } else {
-      /* channel is int */
-      size = info->mscbdev_settings.var_size[channel];
-      value_int = 0;
-      status = mscb_read(info->fd, info->mscbdev_settings.mscb_address[channel],
-                         info->mscbdev_settings.mscb_index[channel], &value_int, &size);
-      if (status != MSCB_SUCCESS) {
-         /* only produce error once every minute */
-         if (ss_time() - last_error >= 60) {
-            last_error = ss_time();
-            /* temporarily disabled since it can cause a hangup for unknown reasons...
-            cm_msg(MERROR, "mscbdev_get", "Error reading MSCB bus at %d:%d",
-               info->mscbdev_settings.mscb_address[channel],
-               info->mscbdev_settings.mscb_index[channel], status);
-            */
+
+         /* interprete buffer */
+         pbuf = buffer;
+         for (j = v_start; j <= v_stop; j++) {
+            if (info->mscbdev_settings.var_size[j] == -1) {
+               DWORD_SWAP(pbuf);
+               info->mscbdev_settings.var_cache[j] = *((float *) pbuf);
+               pbuf += sizeof(float);
+            } else if (info->mscbdev_settings.var_size[j] == 4) {
+               DWORD_SWAP(pbuf);
+               info->mscbdev_settings.var_cache[j] = (float) *((unsigned int *) pbuf);
+               pbuf += sizeof(unsigned int);
+            } else if (info->mscbdev_settings.var_size[j] == 2) {
+               WORD_SWAP(pbuf);
+               info->mscbdev_settings.var_cache[j] = (float) *((unsigned short *) pbuf);
+               pbuf += sizeof(unsigned short);
+            } else {
+               info->mscbdev_settings.var_cache[j] = (float) *((unsigned char *) pbuf);
+               pbuf += sizeof(unsigned char);
+            }
          }
-         *pvalue = (float)ss_nan();
-         return FE_ERR_HW;
+
+         if (i < info->num_channels) {
+            v_start = v_stop = i;
+            i_start = i_stop = info->mscbdev_settings.mscb_index[i];
+            addr = info->mscbdev_settings.mscb_address[i];
+         }
+      } else {
+         i_stop++;
+         v_stop++;
       }
-      *pvalue = (float) value_int;
+
    }
 
    return FE_SUCCESS;
+}
+
+/*----------------------------------------------------------------------------*/
+
+INT mscbdev_get(MSCBDEV_INFO * info, INT channel, float *pvalue)
+{
+   INT status;
+
+   /* check if value was previously read by mscbhvr_read_all() */
+   if (!ss_isnan(info->mscbdev_settings.var_cache[channel])) {
+      *pvalue = info->mscbdev_settings.var_cache[channel];
+      info->mscbdev_settings.var_cache[channel] = (float) ss_nan();
+      return FE_SUCCESS;
+   }
+
+   status = mscbdev_read_all(info);
+   *pvalue = info->mscbdev_settings.var_cache[channel];
+   info->mscbdev_settings.var_cache[channel] = (float) ss_nan();
+
+   return status;
 }
 
 /*----------------------------------------------------------------------------*/
@@ -243,8 +281,10 @@ INT mscbdev_get_label(MSCBDEV_INFO * info, INT channel, char *name)
 
    status = mscb_info_variable(info->fd, info->mscbdev_settings.mscb_address[channel],
                                info->mscbdev_settings.mscb_index[channel], &var_info);
-   if (status == MSCB_SUCCESS)
+   if (status == MSCB_SUCCESS) {
       strlcpy(name, var_info.name, NAME_LENGTH);
+      name[8] = 0;
+   }
 
    return status;
 }
