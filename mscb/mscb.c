@@ -476,18 +476,17 @@ int msend_udp(int index, char *buffer, int size)
 
 /*------------------------------------------------------------------*/
 
-int mrecv_udp(int index, char *buf, int buffer_size, int millisec)
+int mrecv_udp(int index, char *buf, int *size, int millisec)
 {
-   int n, status, size;
+   int n, status;
    unsigned char buffer[1024+6];
    fd_set readfds;
    struct timeval timeout;
    UDP_HEADER *pudp;
 
-   if (buffer_size > sizeof(buffer))
-      buffer_size = sizeof(buffer);
-
    /* receive buffer in UDP mode */
+
+   memset(buf, 0, *size);
 
    FD_ZERO(&readfds);
    FD_SET(mscb_fd[index-1].fd, &readfds);
@@ -499,28 +498,44 @@ int mrecv_udp(int index, char *buf, int buffer_size, int millisec)
       status = select(FD_SETSIZE, (void *) &readfds, NULL, NULL, (void *) &timeout);
    } while (status == -1);        /* dont return if an alarm signal was cought */
 
-   if (!FD_ISSET(mscb_fd[index-1].fd, &readfds))
-      return 0;
+   if (!FD_ISSET(mscb_fd[index-1].fd, &readfds)) {
+      return MSCB_TIMEOUT;
+   }
 
    n = recv(mscb_fd[index-1].fd, buffer, sizeof(buffer), 0);
 
    pudp = (UDP_HEADER *)buffer;
 
    /* check version */
-   if (pudp->version != MSCB_SUBM_VERSION)
-      return -pudp->version;
+   if (pudp->version != MSCB_SUBM_VERSION) {
+      *size = 0;
+      return MSCB_SUBM_ERROR;
+   }
 
    /* check size */
-   size = ntohs(pudp->size);
-   if (size + sizeof(UDP_HEADER) != n)
-      return 0;
+   if (ntohs(pudp->size) + sizeof(UDP_HEADER) != n) {
+      *size = 0;
+      return MSCB_FORMAT_ERROR;
+   }
+
+   n = ntohs(pudp->size);
 
    /* check sequence number */
-   if (ntohs(pudp->seq_num) != mscb_fd[index-1].seq_nr)
-      return 0;
+   if (ntohs(pudp->seq_num) != mscb_fd[index-1].seq_nr) {
+      *size = 0;
+      return MSCB_FORMAT_ERROR;
+   }
 
-   memcpy(buf, pudp+1, size);
-   return size;
+   /* check size */
+   if (n > *size) {
+      *size = 0;
+      return MSCB_INVAL_PARAM;
+   }
+
+   memcpy(buf, pudp+1, n);
+   *size = n;
+
+   return MSCB_SUCCESS;
 }
 
 /*------------------------------------------------------------------*/
@@ -555,7 +570,7 @@ int mscb_exchg(int fd, char *buffer, int *size, int len, int flags)
 
 \********************************************************************/
 {
-   int i, n, retry, timeout;
+   int i, n, retry, timeout, status;
    unsigned char usb_buf[65], eth_buf[256], ret_buf[1024];
    UDP_HEADER *pudp;
 
@@ -630,6 +645,8 @@ int mscb_exchg(int fd, char *buffer, int *size, int len, int flags)
          return MSCB_INVAL_PARAM;
       }
 
+      status = 0;
+
       /* try five times, in case packets got lost */
       for (retry=0 ; retry<5 ; retry++) {
          /* increment and write sequence number */
@@ -677,15 +694,18 @@ int mscb_exchg(int fd, char *buffer, int *size, int len, int flags)
             timeout = 5000;
 
 #ifndef _USRDLL
-         if (retry > 1)
+         if (retry > 1 && status == MSCB_TIMEOUT)
             printf("retry with %d ms timeout\n", timeout);
+         if (retry > 1 && status == MSCB_FORMAT_ERROR)
+            printf("retry due to reception of invalid package\n");
 #endif
 
          /* receive result on IN pipe */
-         n = mrecv_udp(fd, ret_buf, sizeof(ret_buf), timeout);
+         n = sizeof(ret_buf);
+         status = mrecv_udp(fd, ret_buf, &n, timeout);
 
          /* return if invalid version */
-         if (n < 0) {
+         if (status == MSCB_SUBM_ERROR) {
             if (size && *size)
                memset(buffer, 0, *size);
             mscb_release(fd);
