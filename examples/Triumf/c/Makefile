@@ -5,7 +5,7 @@
 #
 #  Contents:     Makefile for MIDAS example frontend and analyzer
 #
-#  $Id: Makefile 2826 2005-10-25 19:55:44Z amaudruz $
+#  $Id$
 #
 #####################################################################
 #
