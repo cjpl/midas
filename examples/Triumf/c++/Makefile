@@ -1,5 +1,5 @@
 # Makefile
-
+# $Id$
 #MIDASSYS=/home/olchansk/daq/midas/midas
 
 OSFLAGS  = -m32 -DOS_LINUX -Dextname
