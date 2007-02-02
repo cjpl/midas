@@ -1615,7 +1615,7 @@ void cmd_loop(int fd, char *cmd, unsigned short adr)
          ftime(&tb1);
          size = 256;
          for (i=0 ; i<900 ; i++) {
-            mscb_read_range(fd, (unsigned short) current_addr, 0, 3, dbuf, &size);
+            mscb_read_range(fd, (unsigned short) current_addr, 1, 0, dbuf, &size);
             printf("%d\r", i);
             if (kbhit())
                break;

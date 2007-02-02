@@ -523,8 +523,12 @@ int mrecv_udp(int index, char *buf, int *size, int millisec)
 
    /* check sequence number */
    if (ntohs(pudp->seq_num) != mscb_fd[index-1].seq_nr) {
-      *size = 0;
-      return MSCB_FORMAT_ERROR;
+#ifndef _USRDLL
+      printf("mrecv_udp: received wrong sequence number %d instead %d, fd=%d\n", 
+         ntohs(pudp->seq_num), mscb_fd[index-1].seq_nr, index);
+#endif
+      /* try again */
+      return mrecv_udp(index, buffer, size, millisec);
    }
 
    /* check size */
@@ -648,8 +652,8 @@ int mscb_exchg(int fd, char *buffer, int *size, int len, int flags)
 
       status = 0;
 
-      /* try five times, in case packets got lost */
-      for (retry=0 ; retry<5 ; retry++) {
+      /* try ten times, in case packets got lost */
+      for (retry=0 ; retry<10 ; retry++) {
          /* increment and write sequence number */
          mscb_fd[fd - 1].seq_nr = (mscb_fd[fd - 1].seq_nr + 1) % 0x10000;
 
@@ -688,8 +692,8 @@ int mscb_exchg(int fd, char *buffer, int *size, int len, int flags)
 
          memset(ret_buf, 0, sizeof(ret_buf));
 
-         /* increase timeout with each retry 0.1s, 0.2s, 0.4s, 0.8s, 1.6s */
-         timeout = 100 * (1 << retry);
+         /* increase timeout with each retry 0.1s, 0.2s, ... */
+         timeout = 100 * (retry+1);
 
          if (flags & RS485_FLAG_LONG_TO)
             timeout = 5000;
@@ -697,10 +701,7 @@ int mscb_exchg(int fd, char *buffer, int *size, int len, int flags)
 #ifndef _USRDLL
          /* single retries are common, so only print warning for second retry */
          if (retry > 1 && status == MSCB_TIMEOUT)
-            printf("retry with %d ms timeout\n", timeout);
-         /* indicate wron packet immediately */
-         if (retry > 0 && status == MSCB_FORMAT_ERROR)
-            printf("retry due to reception of invalid package\n");
+            printf("mscb_exchg: retry with %d ms timeout, fd = %d\n", timeout, fd);
 #endif
 
          /* receive result on IN pipe */
@@ -1972,13 +1973,13 @@ int mscb_write(int fd, unsigned short adr, unsigned char index, void *data, int 
 
       if (len == 1) {
 #ifndef _USRDLL
-         printf("Timeout from RS485 bus\n");
+         printf("mscb_write: Timeout from RS485 bus\n");
 #endif
          debug_log("Timeout from RS485 bus\n", 1);
          status = MSCB_TIMEOUT;
 
 #ifndef _USRDLL
-         printf("Flush node communication\n");
+         printf("mscb_write: Flush node communication\n");
 #endif
          debug_log("Flush node communication\n", 1);
          memset(buf, 0, sizeof(buf));
@@ -2900,12 +2901,12 @@ int mscb_read(int fd, unsigned short adr, unsigned char index, void *data, int *
       /* after three times, reset submaster */
       if (n == 3) {
 #ifndef _USRDLL
-         printf("Automatic submaster reset\n");
+         printf("mscb_read: Automatic submaster reset\n");
 #endif
          debug_log("Automatic submaster reset\n", 1);
          status = mscb_reset(fd);
          if (status == MSCB_SUBM_ERROR) {
-            sprintf(str, "Cannot reconnect to submaster %s\n", mscb_fd[fd - 1].device);
+            sprintf(str, "mscb_read: Cannot reconnect to submaster %s\n", mscb_fd[fd - 1].device);
 #ifndef _USRDLL
             printf(str);
 #endif
@@ -2928,7 +2929,7 @@ int mscb_read(int fd, unsigned short adr, unsigned char index, void *data, int *
       if (status == MSCB_TIMEOUT) {
 #ifndef _USRDLL
          /* show error, but repeat 10 times */
-         printf("Timeout writing to sumbster\n");
+         printf("mscb_read: Timeout writing to sumbster\n");
 #endif
          debug_log("Timeout writing to sumbster\n", 1);
          continue;
@@ -2936,7 +2937,7 @@ int mscb_read(int fd, unsigned short adr, unsigned char index, void *data, int *
       if (status == MSCB_SUBM_ERROR) {
 #ifndef _USRDLL
          /* show error, but repeat 10 times */
-         printf("Connection to submaster broken\n");
+         printf("mscb_read: Connection to submaster broken\n");
 #endif
          debug_log("Connection to submaster broken\n", 1);
          break;
@@ -2950,13 +2951,13 @@ int mscb_read(int fd, unsigned short adr, unsigned char index, void *data, int *
 
       if (len == 1) {
 #ifndef _USRDLL
-         printf("Timeout from RS485 bus\n");
+         printf("mscb_read: Timeout from RS485 bus\n");
 #endif
          debug_log("Timeout from RS485 bus\n", 1);
          status = MSCB_TIMEOUT;
 
 #ifndef _USRDLL
-         printf("Flush node communication\n");
+         printf("mscb_read: Flush node communication\n");
 #endif
          debug_log("Flush node communication\n", 1);
          memset(buf, 0, sizeof(buf));
@@ -2969,7 +2970,7 @@ int mscb_read(int fd, unsigned short adr, unsigned char index, void *data, int *
       if (len < 2) {
 #ifndef _USRDLL
          /* show error, but repeat request */
-         printf("Timeout reading from submaster\n");
+         printf("mscb_read: Timeout reading from submaster\n");
 #endif
          status = MSCB_TIMEOUT;
          continue;
@@ -2982,7 +2983,7 @@ int mscb_read(int fd, unsigned short adr, unsigned char index, void *data, int *
          status = MSCB_CRC_ERROR;
 #ifndef _USRDLL
          /* show error, but repeat */
-         printf("CRC error on RS485 bus\n");
+         printf("mscb_read: CRC error on RS485 bus\n");
 #endif
          continue;
       }
@@ -3097,14 +3098,14 @@ int mscb_read_no_retries(int fd, unsigned short adr, unsigned char index, void *
    if (status == MSCB_TIMEOUT) {
 #ifndef _USRDLL
       /* show error, but repeat 10 times */
-      printf("Timeout writing to sumbster\n");
+      printf("mscb_read_no_retries: Timeout writing to sumbster\n");
 #endif
       return MSCB_TIMEOUT;
    }
 
    if (len == 1) {
 #ifndef _USRDLL
-      printf("Timeout from RS485 bus\n");
+      printf("mscb_read_no_retries: Timeout from RS485 bus\n");
 #endif
       memset(buf, 0, sizeof(buf));
       mscb_exchg(fd, buf, NULL, 10, RS485_FLAG_BIT9 | RS485_FLAG_NO_ACK);
@@ -3114,7 +3115,7 @@ int mscb_read_no_retries(int fd, unsigned short adr, unsigned char index, void *
    if (len < 2) {
 #ifndef _USRDLL
       /* show error, but repeat request */
-      printf("Timeout reading from submaster\n");
+      printf("mscb_read_no_retries: Timeout reading from submaster\n");
 #endif
       return MSCB_TIMEOUT;
    }
@@ -3125,7 +3126,7 @@ int mscb_read_no_retries(int fd, unsigned short adr, unsigned char index, void *
       || buf[len - 1] != crc) {
 #ifndef _USRDLL
       /* show error, but repeat 10 times */
-      printf("CRC error on RS485 bus\n");
+      printf("mscb_read_no_retries: CRC error on RS485 bus\n");
 #endif
       return MSCB_CRC_ERROR;
    }
@@ -3224,12 +3225,12 @@ int mscb_read_range(int fd, unsigned short adr, unsigned char index1, unsigned c
       /* after five times, reset submaster */
       if (n == 3) {
 #ifndef _USRDLL
-         printf("Automatic submaster reset.\n");
+         printf("mscb_read_range: Automatic submaster reset.\n");
 #endif
          debug_log("Automatic submaster reset\n", 1);
          status = mscb_reset(fd);
          if (status == MSCB_SUBM_ERROR) {
-            sprintf(str, "Cannot reconnect to submaster %s\n", mscb_fd[fd - 1].device);
+            sprintf(str, "mscb_read_range: Cannot reconnect to submaster %s\n", mscb_fd[fd - 1].device);
 #ifndef _USRDLL
             printf(str);
 #endif
@@ -3253,7 +3254,7 @@ int mscb_read_range(int fd, unsigned short adr, unsigned char index1, unsigned c
       if (status == MSCB_TIMEOUT) {
 #ifndef _USRDLL
          /* show error, but repeat 10 times */
-         printf("Timeout writing to sumbster\n");
+         printf("mscb_read_range: Timeout writing to sumbster\n");
 #endif
          debug_log("Timeout writing to sumbster\n", 1);
          continue;
@@ -3261,7 +3262,7 @@ int mscb_read_range(int fd, unsigned short adr, unsigned char index1, unsigned c
       if (status == MSCB_SUBM_ERROR) {
 #ifndef _USRDLL
          /* show error, but repeat 10 times */
-         printf("Connection to submaster broken\n");
+         printf("mscb_read_range: Connection to submaster broken\n");
 #endif
          debug_log("Connection to submaster broken\n", 1);
          break;
@@ -3275,13 +3276,13 @@ int mscb_read_range(int fd, unsigned short adr, unsigned char index1, unsigned c
 
       if (len == 1) {
 #ifndef _USRDLL
-         printf("Timeout from RS485 bus\n");
+         printf("mscb_read_range: Timeout from RS485 bus\n");
 #endif
          debug_log("Timeout from RS485 bus\n", 1);
          status = MSCB_TIMEOUT;
 
 #ifndef _USRDLL
-         printf("Flush node communication\n");
+         printf("mscb_read_range: Flush node communication\n");
 #endif
          debug_log("Flush node communication\n", 1);
          memset(buf, 0, sizeof(buf));
@@ -3294,7 +3295,7 @@ int mscb_read_range(int fd, unsigned short adr, unsigned char index1, unsigned c
       if (len < 2) {
 #ifndef _USRDLL
          /* show error, but repeat request */
-         printf("Timeout reading from submaster\n");
+         printf("mscb_read_range: Timeout reading from submaster\n");
 #endif
          status = MSCB_TIMEOUT;
          continue;
@@ -3307,7 +3308,7 @@ int mscb_read_range(int fd, unsigned short adr, unsigned char index1, unsigned c
          status = MSCB_CRC_ERROR;
 #ifndef _USRDLL
          /* show error, but repeat */
-         printf("CRC error on RS485 bus\n");
+         printf("mscb_read_range: CRC error on RS485 bus\n");
 #endif
          continue;
       }
