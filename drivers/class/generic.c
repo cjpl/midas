@@ -70,15 +70,23 @@ INT gen_read(EQUIPMENT * pequipment, int channel)
    int i, status;
    GEN_INFO *gen_info;
    HNDLE hDB;
-
-   /*---- read measured value ----*/
-
    gen_info = (GEN_INFO *) pequipment->cd_info;
    cm_get_experiment_database(&hDB, NULL);
 
-   status = device_driver(gen_info->driver[channel], CMD_GET,
-                          channel - gen_info->channel_offset[channel],
-                          &gen_info->measured[channel]);
+   /* if driver is multi-threaded, read all channels at once */
+   for (i=0 ; i < gen_info->num_channels ; i++) {
+      if (gen_info->driver[i]->flags & DF_MULTITHREAD) {
+         status = device_driver(gen_info->driver[i], CMD_GET,
+                                i - gen_info->channel_offset[i],
+                                &gen_info->measured[i]);
+      }
+   }
+
+   /* else read only single channel */
+   if (!(gen_info->driver[channel]->flags & DF_MULTITHREAD))
+      status = device_driver(gen_info->driver[channel], CMD_GET,
+                             channel - gen_info->channel_offset[channel],
+                             &gen_info->measured[channel]);
 
    /* check for update measured */
    for (i = 0; i < gen_info->num_channels; i++) {
