@@ -96,11 +96,11 @@ int vf48_EventRead64(MVME_INTERFACE *mvme, DWORD base, DWORD *pdest, int *nentry
       //      timeout--;                // Safe exit
       j = 40000;
       while (j) { j--; }
-      //     usleep(1);
+      // usleep(1);
       inbuf = vf48_NFrameRead(mvme, base);
       vf48_DataRead(mvme,  base, lData, &inbuf);
       idx = 0;
-     //      printf("Data Read Trailer search %d (timeout:%d)\n", inbuf, timeout);
+      // printf("Data Read Trailer search %d (timeout:%d)\n", inbuf, timeout);
     }
     if (timeout == 0) {
       printf("vf48_EventRead: Trailer Loop: Timeout Trailer not found\n");
@@ -114,11 +114,13 @@ int vf48_EventRead64(MVME_INTERFACE *mvme, DWORD base, DWORD *pdest, int *nentry
 }
 
 /********************************************************************/
-/**
+/** vf48_EventRead
    Read one Event (in 32bit mode)
    @param mvme vme structure
    @param base  VF48 base address
-   @return void
+   @param pdest Pointer to destination
+   @param nentry Number of DWORD to transfer
+   @return status ERROR, SUCCESS
 */
 int vf48_EventRead(MVME_INTERFACE *mvme, DWORD base, DWORD *pdest, int *nentry)
 {
@@ -170,8 +172,8 @@ int vf48_EventRead(MVME_INTERFACE *mvme, DWORD base, DWORD *pdest, int *nentry)
 }
 
 /********************************************************************/
-/**
-Read N entries (32bit) from the VF48 data FIFO
+/** vf48_DataRead
+Read N entries (32bit) from the VF48 data FIFO using the MBLT64 mode
 @param mvme vme structure
 @param base  VF48 base address
 @param pdest Destination pointer
@@ -199,9 +201,10 @@ int vf48_DataRead(MVME_INTERFACE *mvme, DWORD base, DWORD *pdest, int *nentry)
   mvme_set_blt(  mvme, MVME_BLT_MBLT64);
   mvme_set_am(   mvme, MVME_AM_A24_NMBLT);
 
-  for (i=0; i<*nentry+2; i++) {
+  /*  for (i=0; i<*nentry+2; i++) {
     pdest[i] = 0xdeadbeef;
   }
+  */
 
   // Transfer in MBLT64 (8bytes), nentry is in 32bits(VF48)
   // *nentry * 8 / 2
@@ -480,6 +483,240 @@ int vf48_GrpRead(MVME_INTERFACE *mvme, DWORD base)
 }
 
 /********************************************************************/
+/**
+Set the segment size for all 6 groups
+ */
+int vf48_SegmentSizeSet(MVME_INTERFACE *mvme, DWORD base, DWORD size)
+{
+  int  cmode, i;
+  
+  mvme_get_dmode(mvme, &cmode);
+  mvme_set_dmode(mvme, MVME_DMODE_D16);
+  for (i=0;i<6;i++)
+    vf48_ParameterWrite(mvme, base, i, VF48_SEGMENT_SIZE, size);
+  mvme_set_dmode(mvme, cmode);
+  return 1;
+}
+
+/********************************************************************/
+/**
+Read the segment size from a given group. This value should be the
+same for all the groups.
+ */
+int vf48_SegmentSizeRead(MVME_INTERFACE *mvme, DWORD base, int grp)
+{
+  int  cmode, val;
+  
+  mvme_get_dmode(mvme, &cmode);
+  mvme_set_dmode(mvme, MVME_DMODE_D16);
+  val =  vf48_ParameterRead(mvme, base, grp, VF48_SEGMENT_SIZE);
+  mvme_set_dmode(mvme, cmode);
+  return val;
+}
+
+/********************************************************************/
+/**
+Set the trigger threshold for the given group. the threshold value
+correspond to the difference of 2 sampling values separated by 2 
+points (s6-s3). It is compared to a  positive value. If the slope 
+of the signal is negative, the signal should be inverted.
+ */
+int vf48_TrgThresholdSet(MVME_INTERFACE *mvme, DWORD base, int grp, DWORD size)
+{
+  int  cmode;
+  
+  mvme_get_dmode(mvme, &cmode);
+  mvme_set_dmode(mvme, MVME_DMODE_D16);
+  vf48_ParameterWrite(mvme, base, grp, VF48_TRIG_THRESHOLD, size);
+  mvme_set_dmode(mvme, cmode);
+  return grp;
+}
+
+/********************************************************************/
+/**
+Read the trigger threshold for a given group.
+*/
+int vf48_TrgThresholdRead(MVME_INTERFACE *mvme, DWORD base, int grp)
+{
+  int  cmode, val;
+  
+  mvme_get_dmode(mvme, &cmode);
+  mvme_set_dmode(mvme, MVME_DMODE_D16);
+  val =  vf48_ParameterRead(mvme, base, grp, VF48_TRIG_THRESHOLD);
+  mvme_set_dmode(mvme, cmode);
+  return val;
+}
+
+/********************************************************************/
+/**
+Set the hit threshold for the given group. the threshold value
+correspond to the difference of 2 sampling values separated by 2 
+points (s6-s3). It is compared to a  positive value. If the slope 
+of the signal is negative, the signal should be inverted.
+The hit threshold is used for channel suppression in case none
+of the described condition is satisfied.
+ */
+int vf48_HitThresholdSet(MVME_INTERFACE *mvme, DWORD base, int grp, DWORD size)
+{
+  int  cmode;
+  
+  mvme_get_dmode(mvme, &cmode);
+  mvme_set_dmode(mvme, MVME_DMODE_D16);
+  vf48_ParameterWrite(mvme, base, grp, VF48_HIT_THRESHOLD, size);
+  mvme_set_dmode(mvme, cmode);
+  return grp;
+}
+
+/********************************************************************/
+/**
+Read the hit threshold for a given group.
+*/
+int vf48_HitThresholdRead(MVME_INTERFACE *mvme, DWORD base, int grp)
+{
+  int  cmode, val;
+  
+  mvme_get_dmode(mvme, &cmode);
+  mvme_set_dmode(mvme, MVME_DMODE_D16);
+  val =  vf48_ParameterRead(mvme, base, grp, VF48_HIT_THRESHOLD);
+  mvme_set_dmode(mvme, cmode);
+  return val;
+}
+
+/********************************************************************/
+/**
+Enable the channel within the given group. By default all 8 channels
+are enabled.
+*/
+int vf48_ActiveChMaskSet(MVME_INTERFACE *mvme, DWORD base, int grp, DWORD size)
+{
+  int  cmode;
+  
+  mvme_get_dmode(mvme, &cmode);
+  mvme_set_dmode(mvme, MVME_DMODE_D16);
+  vf48_ParameterWrite(mvme, base, grp, VF48_ACTIVE_CH_MASK, size);
+  mvme_set_dmode(mvme, cmode);
+  return grp;
+}
+
+/********************************************************************/
+/**
+Read the channel enable mask for a given group.
+ */
+int vf48_ActiveChMaskRead(MVME_INTERFACE *mvme, DWORD base, int grp)
+{
+  int  cmode, val;
+  
+  mvme_get_dmode(mvme, &cmode);
+  mvme_set_dmode(mvme, MVME_DMODE_D16);
+  val =  vf48_ParameterRead(mvme, base, grp, VF48_ACTIVE_CH_MASK);
+  mvme_set_dmode(mvme, cmode);
+  return val;
+}
+
+/********************************************************************/
+/**
+Suppress the transmission of the raw data (wave form) of all the channels
+of a given group. Feature Q,T are always present expect if channel masked.
+ */
+int vf48_RawDataSuppSet(MVME_INTERFACE *mvme, DWORD base, int grp, DWORD size)
+{
+  int  cmode;
+  
+  mvme_get_dmode(mvme, &cmode);
+  mvme_set_dmode(mvme, MVME_DMODE_D16);
+  vf48_ParameterWrite(mvme, base, grp, VF48_MBIT1, size);
+  mvme_set_dmode(mvme, cmode);
+  return grp;
+}
+
+/********************************************************************/
+/**
+Read the flag of the raw data suppression of a given channel.
+ */
+int vf48_RawDataSuppRead(MVME_INTERFACE *mvme, DWORD base, int grp)
+{
+  int  cmode, val;
+  
+  mvme_get_dmode(mvme, &cmode);
+  mvme_set_dmode(mvme, MVME_DMODE_D16);
+  val =  vf48_ParameterRead(mvme, base, grp, VF48_MBIT1);
+  mvme_set_dmode(mvme, cmode);
+  return val;
+}
+
+/********************************************************************/
+/**
+Enable the suppression of channel based on the hit threshold for a
+given group.
+Currently the MBIT2 contains the divisor parameter too.
+This function will overwrite this parameter. Apply this 
+function prior the divisor.
+ */
+int vf48_ChSuppSet(MVME_INTERFACE *mvme, DWORD base, int grp, DWORD size)
+{
+  int  cmode;
+  
+  mvme_get_dmode(mvme, &cmode);
+  mvme_set_dmode(mvme, MVME_DMODE_D16);
+  vf48_ParameterWrite(mvme, base, grp, VF48_MBIT2, size);
+  mvme_set_dmode(mvme, cmode);
+  return grp;
+}
+
+/********************************************************************/
+/**
+Read the channel suppression flag for a given group.
+ */
+int vf48_ChSuppRead(MVME_INTERFACE *mvme, DWORD base, int grp)
+{
+  int  cmode, val;
+  
+  mvme_get_dmode(mvme, &cmode);
+  mvme_set_dmode(mvme, MVME_DMODE_D16);
+  val =  0x1 & vf48_ParameterRead(mvme, base, grp, VF48_MBIT2);
+  mvme_set_dmode(mvme, cmode);
+  return val;
+}
+
+/********************************************************************/
+/**
+write the sub-sampling divisor factor to all 6 groups.
+Value of 0   : base sampling
+Value of x>0 : base sampling / x
+ */
+int vf48_DivisorWrite(MVME_INTERFACE *mvme, DWORD base, DWORD size)
+{
+  int  cmode, i, mbit2;
+  
+  mvme_get_dmode(mvme, &cmode);
+  mvme_set_dmode(mvme, MVME_DMODE_D16);
+  for (i=0;i<6;i++) {
+    mbit2 =  vf48_ParameterRead(mvme, base, i, VF48_MBIT2);
+    mbit2 |= (size << 8);
+    vf48_ParameterWrite(mvme, base, i, VF48_MBIT2, mbit2);
+  }
+  mvme_set_dmode(mvme, cmode);
+  return size;
+}
+
+/********************************************************************/
+/**
+Read the divisor parameter of the given group. All the groups
+should read the same value.
+ */
+int vf48_DivisorRead(MVME_INTERFACE *mvme, DWORD base, int grp)
+{
+  int  cmode, val;
+  
+  mvme_get_dmode(mvme, &cmode);
+  mvme_set_dmode(mvme, MVME_DMODE_D16);
+  val = vf48_ParameterRead(mvme, base, grp, VF48_MBIT2);
+  val = (val >> 8) & 0xff;
+  mvme_set_dmode(mvme, cmode);
+  return val;
+}
+
+/********************************************************************/
 int vf48_Setup(MVME_INTERFACE *mvme, DWORD base, int mode)
 {
   int  cmode, i;
@@ -525,7 +762,7 @@ int main (int argc, char* argv[]) {
   DWORD evt=0;
   int status, i, nframe, nframe1, nframe2, nentry, pnentry;
   int segsize = 10, latency=5, grpmsk = 0x3F, pretrig=0x20;
-  int threshold = 10, evtflag=0;
+  int tthreshold = 10,hthreshold = 10, evtflag=0;
 
   // Test under vmic   
   status = mvme_open(&myvme, 0);
@@ -551,7 +788,10 @@ int main (int argc, char* argv[]) {
 	pretrig = atoi(argv[i+1]);
       }
       else if (argv[i][1] == 't') {
-	threshold = atoi(argv[i+1]);
+	tthreshold = atoi(argv[i+1]);
+      }
+      else if (argv[i][1] == 'u') {
+	hthreshold = atoi(argv[i+1]);
       }
       else if (argv[i][1] == 'r') {
 	i--;
@@ -572,7 +812,8 @@ int main (int argc, char* argv[]) {
 	printf("vf48 -l val  : Setup Latency value & Run [def:5]\n");
 	printf("vf48 -g 0xval: Setup Group Enable pattern & Run [def:0x3F]\n");
 	printf("vf48 -p val  : Setup PreTrigger & Run [def:0x20]\n");
-	printf("vf48 -t val  : Setup Threshold & Run [def:0x0A]\n");
+	printf("vf48 -t val  : Setup Trig Threshold & Run [def:0x0A]\n");
+	printf("vf48 -u val  : Setup Hit Threshold & Run [def:0x0A]\n");
 	printf("Comments     : Setup requires Run stopped\n\n");
 	return 0;
       }
@@ -602,17 +843,36 @@ int main (int argc, char* argv[]) {
     printf("Pre Trigger grp %i:%d\n", i, vf48_ParameterRead(myvme, VF48_BASE, i, VF48_PRE_TRIGGER));
   }
 
-  // Threshold
-  printf("Set Threshold to all grp to %d\n", threshold);
+  // Trigger Threshold
+  printf("Set Trigger Threshold to all grp to %d\n", tthreshold);
   for (i=0;i<6;i++) {
-    vf48_ParameterWrite(myvme, VF48_BASE, i, VF48_THRESHOLD, threshold);
-    printf("Threshold grp %i:%d\n", i, vf48_ParameterRead(myvme, VF48_BASE, i, VF48_THRESHOLD));
+    vf48_ParameterWrite(myvme, VF48_BASE, i, VF48_TRIG_THRESHOLD, tthreshold);
+    printf("Trigger Threshold grp %i:%d\n", i, vf48_ParameterRead(myvme, VF48_BASE, i, VF48_TRIG_THRESHOLD));
   }
 
-  // Operation mode
+  // Hit Threshold
+  printf("Set Hit Threshold to all grp to %d\n", hthreshold);
+  for (i=0;i<6;i++) {
+    vf48_ParameterWrite(myvme, VF48_BASE, i, VF48_HIT_THRESHOLD, hthreshold);
+    printf("Hit Threshold grp %i:%d\n", i, vf48_ParameterRead(myvme, VF48_BASE, i, VF48_HIT_THRESHOLD));
+  }
+
+  // Active Channel Mask
   for (i=0;i<6;i++)
-    vf48_ParameterWrite(myvme, VF48_BASE, i, VF48_OPMODE, VF48_RAW_E | VF48_Q_E | VF48_T_E);
-   
+    vf48_ParameterWrite(myvme, VF48_BASE, i, VF48_ACTIVE_CH_MASK, VF48_ALL_CHANNELS_ACTIVE);
+
+  // Raw Data Suppress (Mbit 1)
+  for (i=0;i<6;i++)
+    vf48_ParameterWrite(myvme, VF48_BASE, i, VF48_MBIT1, VF48_RAW_DISABLE);
+
+  // Inverse Signal (Mbit 1)
+  for (i=0;i<6;i++)
+    vf48_ParameterWrite(myvme, VF48_BASE, i, VF48_MBIT1, VF48_INVERSE_SIGNAL); 
+
+  // Channel Suppress (Mbit 2)
+  for (i=0;i<6;i++)
+    vf48_ParameterWrite(myvme, VF48_BASE, i, VF48_MBIT2, VF48_CH_SUPPRESS_ENABLE); 
+
   // External trigger
   printf("External Trigger\n");
   vf48_ExtTrgSet(myvme, VF48_BASE);
