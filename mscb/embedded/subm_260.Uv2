@@ -10,8 +10,6 @@ Group (Libraries)
 
 File 1,1,<..\embedded\mscbutil.c><mscbutil.c> 0x0 
 File 1,1,<.\subm_260.c><subm_260.c> 0x0 
-File 1,1,<..\netlib\tcp.c><tcp.c> 0x0 
-File 1,1,<..\netlib\udp.c><udp.c> 0x0 
 File 2,5,<..\embedded\mscbemb.h><mscbemb.h> 0x0 
 File 2,5,<.\net.h><net.h> 0x0 
 File 3,4,<.\netlib.LIB><netlib.LIB> 0x438DD015 
@@ -69,7 +67,7 @@ Options 1,0,0  // Target 'Download'
  IRA51 { 0,0,0,0,0,0,1,0,0 }
  XRA51 { 0,0,0,0,0,0,32,0,0 }
  XRA512 { 0,0,0,0,0,0,0,0,0 }
- C51FL=21646608
+ C51FL=17452304
  C51VA=0
  C51MSC ()
  C51DEF (SUBM_260)

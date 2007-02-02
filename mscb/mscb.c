@@ -499,6 +499,7 @@ int mrecv_udp(int index, char *buf, int *size, int millisec)
    } while (status == -1);        /* dont return if an alarm signal was cought */
 
    if (!FD_ISSET(mscb_fd[index-1].fd, &readfds)) {
+      *size = 0;
       return MSCB_TIMEOUT;
    }
 
@@ -694,9 +695,11 @@ int mscb_exchg(int fd, char *buffer, int *size, int len, int flags)
             timeout = 5000;
 
 #ifndef _USRDLL
+         /* single retries are common, so only print warning for second retry */
          if (retry > 1 && status == MSCB_TIMEOUT)
             printf("retry with %d ms timeout\n", timeout);
-         if (retry > 1 && status == MSCB_FORMAT_ERROR)
+         /* indicate wron packet immediately */
+         if (retry > 0 && status == MSCB_FORMAT_ERROR)
             printf("retry due to reception of invalid package\n");
 #endif
 
