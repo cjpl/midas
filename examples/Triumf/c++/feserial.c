@@ -1,7 +1,7 @@
 /********************************************************************\
 
   Name:         feserial.c
-  Created by:   
+  Created by:
   Contents:     Experiment specific readout code (user part) of
                 Midas frontend. This example simulates a "trigger
                 event" and a "scaler event" which are filled with
@@ -9,8 +9,7 @@
                 with two banks (ADC0 and TDC0), the scaler event
                 with one bank (SCLR).
 
-  $Id: frontend.c 3384 2006-10-21 04:29:18Z amaudruz $
-
+  $Id$
 \********************************************************************/
 
 #include <stdio.h>
@@ -137,8 +136,8 @@ INT frontend_init()
   status = db_find_key (hDB, 0, set_str, &hSet);
   if (status != DB_SUCCESS)
     cm_msg(MINFO,"FE","Key %s not found", set_str);
-  
-   
+
+
     rs232(CMD_INIT, hSet, &info);
    /* print message and return FE_ERR_HW if frontend should not be started */
 
