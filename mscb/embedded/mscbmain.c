@@ -765,7 +765,7 @@ void interprete(void)
 
       } else if (in_buf[0] == CMD_READ + 2) {   // variable range
 
-        if (in_buf[1] < n_variables && in_buf[2] < n_variables && in_buf[1] < in_buf[2]) {
+        if (in_buf[1] < n_variables && in_buf[2] < n_variables && in_buf[1] <= in_buf[2]) {
             /* calculate number of bytes to return */
             for (i = in_buf[1], size = 0; i <= in_buf[2]; i++) {
                user_read(i);

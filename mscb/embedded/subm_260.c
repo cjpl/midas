@@ -505,6 +505,16 @@ unsigned short n, i, to, rx_old;
          break;
       }
 
+      /* check for READ range error acknowledge */
+      if ((rs485_tx_buf[0] == MCMD_READ+2 || 
+           (rs485_tx_buf[0] == MCMD_ADDR_NODE16 && rs485_tx_buf[4] == MCMD_READ+2)) &&
+          i_rs485_rx == 1 && rs485_rx_buf[0] == MCMD_ACK) {
+
+         led_blink(1, 1, 50);
+         udp_send(socket_no, rs485_rx_buf, 1);
+         break;
+      }
+
       /* check for normal acknowledge */
       if (i_rs485_rx > 0 && (rs485_rx_buf[0] & MCMD_ACK) == MCMD_ACK) {
 
