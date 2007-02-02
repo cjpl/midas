@@ -4,7 +4,7 @@
 // Name: HandleSIS.cxx
 // Author: R.Hydomako
 //
-// $Id: HandleSIS.cxx,v 1.42 2006/09/13 12:07:24 alpha Exp $
+// $Id$
 //
 // $Log: HandleSIS.cxx,v $
 // Revision 1.42  2006/09/13 12:07:24  alpha

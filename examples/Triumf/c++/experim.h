@@ -18,7 +18,7 @@
                 to setup an ODB structure which matches the C structure.
 
   Created on:   Mon Apr 14 15:27:19 2003
-
+$Id$
 \********************************************************************/
 
 #define EXP_PARAM_DEFINED

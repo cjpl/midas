@@ -5,7 +5,7 @@
 
   Contents:     C++ MIDAS analyzer
 
-  $Id: TMidasOnline.cxx,v 1.3 2006/08/07 09:19:51 alpha Exp $
+  $Id$
 
   $Log: TMidasOnline.cxx,v $
   Revision 1.3  2006/08/07 09:19:51  alpha
