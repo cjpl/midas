@@ -480,10 +480,10 @@ unsigned short n, i, to, rx_old;
 
    for (i = 0; i<to ; i++) {
               
-      /* reset timeout if a charactes is received */
+      /* reset timeout if a charactes has been received */
       if (i_rs485_rx > rx_old) {
          i = 0;
-         rx_old = 0;
+         rx_old = i_rs485_rx;
       }
 
       /* check for PING acknowledge (single unsigned char) */
