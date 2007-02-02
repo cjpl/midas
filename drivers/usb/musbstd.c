@@ -369,14 +369,15 @@ int musb_read(MUSB_INTERFACE *musb_interface, int endpoint, void *buf, int count
    n_read = 0;
 
    status = ReadFile(musb_interface->rhandle, buf, count, &n_read, &overlapped);
+   
    if (!status) {
 
       status = GetLastError();
       if (status != ERROR_IO_PENDING)
          return 0;
 
-      /* wait for completion, 1s timeout */
-      status = WaitForSingleObject(overlapped.hEvent, 1000);
+      /* wait for completion with timeout */
+      status = WaitForSingleObject(overlapped.hEvent, timeout);
       if (status == WAIT_TIMEOUT)
          CancelIo(musb_interface->rhandle);
       else
