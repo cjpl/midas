@@ -1379,8 +1379,6 @@ void cmd_loop(int fd, char *cmd, unsigned short adr)
 
             fh = open(str, O_RDONLY | O_BINARY);
             if (fh > 0) {
-               if (param[2][0])
-                  printf("Uploading file %s\n", str);
                size = lseek(fh, 0, SEEK_END) + 1;
                lseek(fh, 0, SEEK_SET);
                buffer = malloc(size);
