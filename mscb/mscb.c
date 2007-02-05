@@ -524,8 +524,10 @@ int mrecv_udp(int index, char *buf, int *size, int millisec)
    /* check sequence number */
    if (ntohs(pudp->seq_num) != mscb_fd[index-1].seq_nr) {
 #ifndef _USRDLL
+      /*
       printf("mrecv_udp: received wrong sequence number %d instead %d, fd=%d\n", 
          ntohs(pudp->seq_num), mscb_fd[index-1].seq_nr, index);
+      */
 #endif
       /* try again */
       return mrecv_udp(index, buffer, size, millisec);
@@ -700,8 +702,10 @@ int mscb_exchg(int fd, char *buffer, int *size, int len, int flags)
 
 #ifndef _USRDLL
          /* single retries are common, so only print warning for second retry */
+         /*     
          if (retry > 1 && status == MSCB_TIMEOUT)
             printf("mscb_exchg: retry with %d ms timeout, fd = %d\n", timeout, fd);
+         */
 #endif
 
          /* receive result on IN pipe */
@@ -3200,9 +3204,9 @@ int mscb_read_range(int fd, unsigned short adr, unsigned char index1, unsigned c
 \********************************************************************/
 {
    int i, j, n, len, status;
-   unsigned char buf[256], str[10000], crc;
+   unsigned char buf[256], str[1000], crc;
 
-   debug_log("mscb_read_range(fd=%d,adr=%d,index1=%d,index2=%dsize=%d) ", 
+   debug_log("mscb_read_range(fd=%d,adr=%d,index1=%d,index2=%d,size=%d) ", 
       1, fd, adr, index1, index2, *size);
 
    if (*size > 256)
@@ -3828,8 +3832,9 @@ void mscb_scan_udp()
 
 \********************************************************************/
 {
-   char str[256], buf[256];
-   int i, n;
+   char str[256];
+   unsigned char buf[256];
+   int i, n, rev;
    struct hostent *phe;
    struct sockaddr_in *psa_in;
 
@@ -3874,8 +3879,10 @@ void mscb_scan_udp()
       n = sizeof(buf);
       mscb_exchg(1, buf, &n, 1, RS485_FLAG_CMD | RS485_FLAG_NO_RETRY);
 
-      if (n == 2)
-         printf("Found %s       \n", str);
+      if (n == 4) {
+         rev = (buf[2] << 8) + buf[3];
+         printf("Found %s, Protocol version %d, SVN revision %d\n", str, buf[1], rev);
+      }
    }
 
    printf("                    \n");

@@ -18,7 +18,8 @@
 #include "net.h"
 
 #define SUBM_VERSION 5  // used for PC-Submaster communication
-char code svn_revision[] = "$Rev$";
+
+char code svn_revision_subm[] = "$Rev$";
 
 /*------------------------------------------------------------------*/
 
@@ -349,7 +350,7 @@ unsigned char execute(char socket_no)
 
    if (rs485_tx_buf[0] == MCMD_ECHO) {
       /* return echo */
-      svn_rev = atoi(svn_revision+6);
+      svn_rev = atoi(svn_revision_subm+6);
       led_blink(1, 1, 50);
       rs485_rx_buf[0] = MCMD_ACK;
       rs485_rx_buf[1] = SUBM_VERSION;
