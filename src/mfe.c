@@ -409,14 +409,14 @@ INT device_driver(DEVICE_DRIVER * device_driver, INT cmd, ...)
       break;
 
    case CMD_START:
-      if (device_driver->flags & DF_MULTITHREAD) {
+      if (device_driver->flags & DF_MULTITHREAD && device_driver->mt_buffer != NULL) {
          /* create dedicated thread for this device */
          device_driver->mt_buffer->thread_id = ss_thread_create(sc_thread, device_driver);
       }
       break;
 
    case CMD_STOP:
-      if (device_driver->flags & DF_MULTITHREAD) {
+      if (device_driver->flags & DF_MULTITHREAD && device_driver->mt_buffer != NULL) {
          device_driver->stop_thread = 1;
          /* wait for max. 10 seconds until thread has gracefully stopped */
          for (i = 0; i < 1000; i++) {
@@ -766,7 +766,8 @@ INT register_equipment(void)
          }
 
          /* now start threads if requested */
-         equipment[index].cd(CMD_START, &equipment[index]);   /* start threads for this equipment */
+         if (equipment[index].status == FE_SUCCESS)
+            equipment[index].cd(CMD_START, &equipment[index]);   /* start threads for this equipment */
 
          /* remember that we have slowcontrol equipment (needed later for scheduler) */
          slowcont_eq = TRUE;
@@ -2088,7 +2089,7 @@ int main(int argc, char *argv[])
                break;
 
          /* stop all threads if multithreaded */
-         if (equipment[i].driver[j].name[0])
+         if (equipment[i].driver[j].name[0] && equipment[i].status == FE_SUCCESS)
             equipment[i].cd(CMD_STOP, &equipment[i]);   /* stop all threads */
       }
    for (i = 0; equipment[i].name[0]; i++)
