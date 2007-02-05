@@ -997,16 +997,16 @@ int mscb_init(char *device, int bufsize, char *password, int debug)
       n = sizeof(buf);
       mscb_exchg(index + 1, buf, &n, 1, RS485_FLAG_CMD);
       
-      if (n < 0) {
+      if (n < 2) {
+         debug_log("return EMSCB_RPC_ERROR\n", 0);
+         return EMSCB_RPC_ERROR;
+      }
+
+      if (n < 4 || buf[1] != MSCB_SUBM_VERSION) {
          /* invalid version */
          debug_log("return EMSCB_SUBM_VERSION\n", 0);
          memset(&mscb_fd[index], 0, sizeof(MSCB_FD));
          return EMSCB_SUBM_VERSION;
-      }
-
-      if (n < 2) {
-         debug_log("return EMSCB_RPC_ERROR\n", 0);
-         return EMSCB_RPC_ERROR;
       }
 
       /* authenticate */
