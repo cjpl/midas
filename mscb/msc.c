@@ -1554,7 +1554,7 @@ void cmd_loop(int fd, char *cmd, unsigned short adr)
                last = i-1;
                do {
 
-                  size = sizeof(dbuf);
+                  size = 256;
                   status = mscb_read_range(fd, (unsigned short) current_addr,
                                           (unsigned char) first, (unsigned char) last, dbuf, &size);
 
@@ -1648,7 +1648,7 @@ void cmd_loop(int fd, char *cmd, unsigned short adr)
 
 int main(int argc, char *argv[])
 {
-   int i, fd, server;
+   int i, fd, server, scan;
    unsigned short adr;
    char cmd[256], device[256], str[256], password[256];
    int debug;
@@ -1656,15 +1656,17 @@ int main(int argc, char *argv[])
    cmd[0] = 0;
    adr = 0;
 
-   debug = server = 0;
+   debug = server = scan = 0;
    device[0] = password[0] = 0;
 
    /* parse command line parameters */
    for (i = 1; i < argc; i++) {
       if (argv[i][0] == '-' && argv[i][1] == 'v')
          debug = 1;
-      else if (argv[i][0] == '-' && argv[i][1] == 's')
+      else if (argv[i][0] == '-' && argv[i][1] == 'r')
          server = 1;
+      else if (argv[i][0] == '-' && argv[i][1] == 's')
+         scan = 1;
       else if (argv[i][0] == '-') {
          if (i + 1 >= argc || argv[i + 1][0] == '-')
             goto usage;
@@ -1683,16 +1685,17 @@ int main(int argc, char *argv[])
          } else {
           usage:
             printf
-                ("usage: msc [-d host:device] [-p password] [-a addr] [-c Command] [-c @CommandFile] [-v] [-i]\n\n");
+                ("usage: msc [-d host:device] [-p password] [-a addr] [-c Command] [-c @CommandFile] [-v] [-s]\n\n");
             printf("       -d     device, usually usb0 for first USB port,\n");
             printf("              or \"<host>:usb0\" for RPC connection\n");
             printf
                 ("              or \"mscb<xxx>\" for Ethernet connection to SUBM_260\n");
             printf("       -p     optional password for SUBM_260\n");
-            printf("       -s     Start RPC server\n");
+            printf("       -r     Start RPC server\n");
+            printf("       -s     Scan for Ethernet submasters on local net\n");
             printf("       -a     Address node before executing command\n");
             printf("       -c     Execute command immediately\n");
-            printf("       -v     Produce verbose debugging output\n\n");
+            printf("       -v     Produce verbose debugging output into mscb_debug.log\n\n");
             printf("For a list of valid commands start msc interactively\n");
             printf("and type \"help\".\n");
             return 0;
@@ -1705,7 +1708,7 @@ int main(int argc, char *argv[])
       return 0;
    }
 
-   if (strcmp(device, "mscb") == 0) {
+   if (scan) {
       mscb_scan_udp();
       return 0;
    }
