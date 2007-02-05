@@ -18,7 +18,7 @@
 #include "net.h"
 
 #define SUBM_VERSION 5  // used for PC-Submaster communication
-char code svn_revision[] = "$Rev: 2874$";
+char code svn_revision[] = "$Rev$";
 
 /*------------------------------------------------------------------*/
 
