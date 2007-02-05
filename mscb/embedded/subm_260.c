@@ -13,10 +13,12 @@
 #include <stdio.h>
 #include <string.h>
 #include <intrins.h>
+#include <stdlib.h>
 #include "mscbemb.h"
 #include "net.h"
 
 #define SUBM_VERSION 5  // used for PC-Submaster communication
+char code svn_revision[] = "$Rev: 2874$";
 
 /*------------------------------------------------------------------*/
 
@@ -337,6 +339,8 @@ void wd_refresh()
 
 unsigned char execute(char socket_no)
 {
+   unsigned short svn_rev;
+
    if (rs485_tx_buf[0] == MCMD_INIT) {
       /* reboot */
       SFRPAGE = LEGACY_PAGE;
@@ -345,10 +349,13 @@ unsigned char execute(char socket_no)
 
    if (rs485_tx_buf[0] == MCMD_ECHO) {
       /* return echo */
+      svn_rev = atoi(svn_revision+6);
       led_blink(1, 1, 50);
       rs485_rx_buf[0] = MCMD_ACK;
       rs485_rx_buf[1] = SUBM_VERSION;
-      udp_send(socket_no, rs485_rx_buf, 2);
+      rs485_rx_buf[2] = svn_rev >> 8;
+      rs485_rx_buf[3] = svn_rev & 0xFF;
+      udp_send(socket_no, rs485_rx_buf, 4);
       return 2;
    }
 
