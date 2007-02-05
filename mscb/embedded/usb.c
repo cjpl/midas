@@ -13,6 +13,8 @@
 #include "mscbemb.h"
 #include "usb.h"
 
+extern void watchdog_refresh(unsigned char from_interrupt) reentrant;
+
 /*---- Globals -----------------------------------------------------*/
 
 DEVICE_STATUS idata gDeviceStatus;
@@ -1178,40 +1180,41 @@ void usb_send(unsigned char *buffer, unsigned char size)
    PEP_STATUS pEpInStatus;
    BYTE bCsrL, bCsrH;
 
+   if (size == 0)
+      return;
+
    pEpInStatus = &gEp1InStatus;
    UWRITE_BYTE(INDEX, pEpInStatus->bEp);  // Index to current endpoint
    UREAD_BYTE(EINCSRL, bCsrL);
    UREAD_BYTE(EINCSRH, bCsrH);
 
    // Make sure this endpoint is not halted
-   if (pEpInStatus->bEpState != EP_HALTED)
-   {
+   if (pEpInStatus->bEpState != EP_HALTED) {
       // Handle STALL condition sent
-      if (bCsrL & rbInSTSTL)
-      {
+      if (bCsrL & rbInSTSTL) {
          UWRITE_BYTE(EINCSRL, rbInCLRDT); // Clear Send Stall and Sent Stall,
                                           // and clear data toggle
       }
 
-      // If a FIFO slot is open, write a new packet to the IN FIFO
-      if (!(bCsrL & rbInINPRDY))
-      {
-         // If data available, copy it to IN FIFO
-         if (size > 0) {
-            pEpInStatus->uNumBytes = size;
-            pEpInStatus->pData = (BYTE*)buffer;
-
-            // Write <uNumBytes> bytes to the <bEp> FIFO
-            FIFOWrite(pEpInStatus->bEp, pEpInStatus->uNumBytes,
-               (BYTE*)pEpInStatus->pData);
-
-            // Set Packet Ready bit (INPRDY)
-            UWRITE_BYTE(EINCSRL, rbInINPRDY);
-
-            // Check updated endopint status
-            UREAD_BYTE(EINCSRL, bCsrL);
-         }
+      // Wait until FIFO slot is open
+      while (bCsrL & rbInINPRDY) {
+         watchdog_refresh(0);
+         UREAD_BYTE(EINCSRL, bCsrL);
       }
+
+      // write a new packet to the IN FIFO
+      pEpInStatus->uNumBytes = size;
+      pEpInStatus->pData = (BYTE*)buffer;
+
+      // Write <uNumBytes> bytes to the <bEp> FIFO
+      FIFOWrite(pEpInStatus->bEp, pEpInStatus->uNumBytes,
+         (BYTE*)pEpInStatus->pData);
+
+      // Set Packet Ready bit (INPRDY)
+      UWRITE_BYTE(EINCSRL, rbInINPRDY);
+
+      // Check updated endopint status
+      UREAD_BYTE(EINCSRL, bCsrL);
    }
 }
 

@@ -640,7 +640,15 @@ int mscb_exchg(int fd, char *buffer, int *size, int len, int flags)
       }
 
       /* receive result on IN pipe */
-      n = musb_read(mscb_fd[fd - 1].ui, 0, buffer, *size, MUSB_TIMEOUT);
+      n = 0;
+      do {
+         i = musb_read(mscb_fd[fd - 1].ui, 0, buffer+n, *size-n > 61 ? 61 : *size - n, MUSB_TIMEOUT);
+         if (i == 61) {
+            n += 60;
+            break;
+         }
+         n += i;
+      } while (i == 60);
       *size = n;
    }
 
@@ -934,24 +942,21 @@ int mscb_init(char *device, int bufsize, char *password, int debug)
          n = sizeof(buf);
          mscb_exchg(index + 1, buf, &n, 1, RS485_FLAG_CMD);
 
-         if (n == 2 && buf[0] == MCMD_ACK) {
-
-            /* check version */
-            if (buf[1] != MSCB_SUBM_VERSION) {
-               debug_log("return EMSCB_SUBM_VERSION\n", 0);
-               memset(&mscb_fd[index], 0, sizeof(MSCB_FD));
-               mscb_release(index + 1);
-               return EMSCB_SUBM_VERSION;
-            }
-
-            break;
+         if (n > 0 && n < 2) {
+            debug_log("return EMSCB_RPC_ERROR\n", 0);
+            memset(&mscb_fd[index], 0, sizeof(MSCB_FD));
+            return EMSCB_RPC_ERROR;
          }
-      }
 
-      if (n != 2 || buf[0] != MCMD_ACK) {
-         debug_log("return EMSCB_COMM_ERROR\n", 0);
-         memset(&mscb_fd[index], 0, sizeof(MSCB_FD));
-         return EMSCB_COMM_ERROR;
+         if (n > 0 && (n < 4 || buf[1] != MSCB_SUBM_VERSION)) {
+            /* invalid version */
+            debug_log("return EMSCB_SUBM_VERSION\n", 0);
+            memset(&mscb_fd[index], 0, sizeof(MSCB_FD));
+            return EMSCB_SUBM_VERSION;
+         }
+
+         if (n == 4)
+            break;
       }
    }
 
@@ -2982,8 +2987,16 @@ int mscb_read(int fd, unsigned short adr, unsigned char index, void *data, int *
 
       crc = crc8(buf, len - 1);
 
-      if ((buf[0] != MCMD_ACK + len - 2 && buf[0] != MCMD_ACK + 7)
-         || buf[len - 1] != crc) {
+      if (buf[0] != MCMD_ACK + len - 2 && buf[0] != MCMD_ACK + 7) {
+         status = MSCB_FORMAT_ERROR;
+#ifndef _USRDLL
+         /* show error, but repeat */
+         printf("mscb_read: Read error on RS485 bus\n");
+#endif
+         continue;
+      }
+
+      if (buf[len - 1] != crc) {
          status = MSCB_CRC_ERROR;
 #ifndef _USRDLL
          /* show error, but repeat */
@@ -3036,6 +3049,8 @@ int mscb_read(int fd, unsigned short adr, unsigned char index, void *data, int *
      debug_log("return MSCB_TIMEOUT\n", 1);
    if (status == MSCB_CRC_ERROR)
       debug_log("return MSCB_CRC_ERROR\n", 1);
+   if (status == MSCB_FORMAT_ERROR)
+      debug_log("return MSCB_FORMAT_ERROR\n", 1);
    if (status == MSCB_SUBM_ERROR)
       debug_log("return MSCB_SUBM_ERROR\n", 1);
 
@@ -3307,8 +3322,16 @@ int mscb_read_range(int fd, unsigned short adr, unsigned char index1, unsigned c
 
       crc = crc8(buf, len - 1);
 
-      if ((buf[0] != MCMD_ACK + len - 2 && buf[0] != MCMD_ACK + 7)
-         || buf[len - 1] != crc) {
+      if (buf[0] != MCMD_ACK + len - 2 && buf[0] != MCMD_ACK + 7) {
+         status = MSCB_FORMAT_ERROR;
+#ifndef _USRDLL
+         /* show error, but repeat */
+         printf("mscb_read_range: Read error on RS485 bus\n");
+#endif
+         continue;
+      }
+
+      if (buf[len - 1] != crc) {
          status = MSCB_CRC_ERROR;
 #ifndef _USRDLL
          /* show error, but repeat */
@@ -3361,6 +3384,8 @@ int mscb_read_range(int fd, unsigned short adr, unsigned char index1, unsigned c
      debug_log("return MSCB_TIMEOUT\n", 1);
    if (status == MSCB_CRC_ERROR)
       debug_log("return MSCB_CRC_ERROR\n", 1);
+   if (status == MSCB_FORMAT_ERROR)
+      debug_log("return MSCB_FORMAT_ERROR\n", 1);
    if (status == MSCB_SUBM_ERROR)
       debug_log("return MSCB_SUBM_ERROR\n", 1);
 

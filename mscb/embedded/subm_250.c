@@ -13,15 +13,23 @@
 #include <stdio.h>
 #include <string.h>
 #include <intrins.h>
+#include <stdlib.h>
 #include "mscbemb.h"
 #include "usb.h"
 
 #define IDENT_STR "SUBM_250"
+
 #define SUBM_VERSION 5   // used for PC-Submaster communication
+
+char code svn_revision_subm[] = "$Rev$";
 
 /*------------------------------------------------------------------*/
 
-unsigned char xdata usb_tx_buf[EP1_PACKET_SIZE];
+#define RS485_RX_SIZE 512
+
+unsigned char xdata rs485_rx_buf[RS485_RX_SIZE];
+
+//unsigned char xdata usb_tx_buf[EP1_PACKET_SIZE];
 unsigned char xdata usb_rx_buf[EP2_PACKET_SIZE];
 unsigned char n_usb_rx, n_rs485_tx, i_rs485_tx, i_rs485_rx;
 
@@ -164,7 +172,8 @@ void serial_int(void) interrupt 4 using 1
 
    if (RI0) {
       /* put received byte into buffer */
-      usb_tx_buf[i_rs485_rx++] = SBUF0;
+      if (i_rs485_rx < RS485_RX_SIZE)
+         rs485_rx_buf[i_rs485_rx++] = SBUF0;
 
       RI0 = 0;
    }
@@ -177,6 +186,8 @@ sbit led_1 = LED_1;
 
 void execute()
 {
+   unsigned short svn_rev;
+
    if (usb_rx_buf[1] == MCMD_INIT) {
       /* reboot */
       RSTSRC = 0x10;
@@ -184,10 +195,13 @@ void execute()
 
    if (usb_rx_buf[1] == MCMD_ECHO) {
       /* return echo */
+      svn_rev = atoi(svn_revision_subm+6);
       led_blink(1, 1, 50);
-      usb_tx_buf[0] = MCMD_ACK;
-      usb_tx_buf[1] = SUBM_VERSION;
-      usb_send(usb_tx_buf, 2);
+      rs485_rx_buf[0] = MCMD_ACK;
+      rs485_rx_buf[1] = SUBM_VERSION;
+      rs485_rx_buf[2] = svn_rev >> 8;
+      rs485_rx_buf[3] = svn_rev & 0xFF;
+      usb_send(rs485_rx_buf, 4);
    }
 
    if (usb_rx_buf[1] == RS485_FLAG_CMD) {
@@ -198,8 +212,8 @@ void execute()
    if (usb_rx_buf[1] == MCMD_FREEZE) {
 
       /* just send ack */
-      usb_tx_buf[0] = MCMD_ACK;
-      usb_send(usb_tx_buf, 1);
+      rs485_rx_buf[0] = MCMD_ACK;
+      usb_send(rs485_rx_buf, 1);
    }
 
 }
@@ -255,7 +269,7 @@ unsigned char rs485_send(unsigned char len, unsigned char flags)
 void rs485_receive(unsigned char rs485_flags)
 {
 unsigned char  n;
-unsigned short i, to;
+unsigned short i, j, k, to, rx_old;
 
    if (rs485_flags & RS485_FLAG_NO_ACK)
       return;
@@ -268,43 +282,56 @@ unsigned short i, to;
       to = 100;   // 10 ms for other commands
 
    n = 0;
+   rx_old = 0;
 
    for (i = 0; i<to ; i++) {
+
+      /* reset timeout if a charactes has been received */
+      if (i_rs485_rx > rx_old) {
+         i = 0;
+         rx_old = i_rs485_rx;
+      }
 
       /* check for PING acknowledge (single byte) */
       if ((usb_rx_buf[1] == MCMD_PING16 ||
            usb_rx_buf[1] == MCMD_PING16) &&
-          i_rs485_rx == 1 && usb_tx_buf[0] == MCMD_ACK) {
+          i_rs485_rx == 1 && rs485_rx_buf[0] == MCMD_ACK) {
 
          led_blink(1, 1, 50);
-         usb_send(usb_tx_buf, 1);
+         usb_send(rs485_rx_buf, 1);
          break;
       }
 
       /* check for READ error acknowledge */
       if ((usb_rx_buf[1] == MCMD_READ+1 || 
            (usb_rx_buf[1] == MCMD_ADDR_NODE16 && usb_rx_buf[5] == MCMD_READ+1)) &&
-          i_rs485_rx == 1 && usb_tx_buf[0] == MCMD_ACK) {
+          i_rs485_rx == 1 && rs485_rx_buf[0] == MCMD_ACK) {
 
          led_blink(1, 1, 50);
-         usb_send(usb_tx_buf, 1);
+         usb_send(rs485_rx_buf, 1);
          break;
       }
 
       /* check for normal acknowledge */
-      if (i_rs485_rx > 0 && (usb_tx_buf[0] & MCMD_ACK) == MCMD_ACK) {
+      if (i_rs485_rx > 0 && (rs485_rx_buf[0] & MCMD_ACK) == MCMD_ACK) {
 
-         n = usb_tx_buf[0] & 0x07;       // length is three LSB
+         n = rs485_rx_buf[0] & 0x07;       // length is three LSB
          if (n == 7 && i_rs485_rx > 1) {
-            n = usb_tx_buf[1]+3;         // variable length acknowledge one byte
+            n = rs485_rx_buf[1]+3;         // variable length acknowledge one byte
             if ((n & 0x80) && i_rs485_rx > 2)
-               n = (usb_tx_buf[1] & ~0x80) << 8 | (usb_tx_buf[2]) + 4; // two bytes
+               n = (rs485_rx_buf[1] & ~0x80) << 8 | (rs485_rx_buf[2]) + 4; // two bytes
          } else
             n += 2;                      // add ACK and CRC
 
          if (i_rs485_rx == n) {
             led_blink(1, 1, 50);
-            usb_send(usb_tx_buf, n);
+            for (j=0 ; j<n ; j+=60) {
+               if (n-j == 60)
+                  k = 61;
+               else
+                  k = n-j > 60 ? 60 : n-j;
+               usb_send(rs485_rx_buf+j, k);
+            }
             break;
          }
       }
@@ -315,8 +342,8 @@ unsigned short i, to;
 
    /* send timeout */
    if (i == to) {
-      usb_tx_buf[0] = 0xFF;
-      usb_send(usb_tx_buf, 1);
+      rs485_rx_buf[0] = 0xFF;
+      usb_send(rs485_rx_buf, 1);
    }
 }
 
