@@ -10,11 +10,6 @@
 
 \********************************************************************/
 
-/* MIDAS library version number. This value is returned by 
-   cm_get_version and will be incremented whenever changes are done
-   to the MIDAS library. First digit is major release, second
-   digit is minor release, third digit is patch level */
-
 /**dox***************************************************************/
 /** @file msystem.h
 The Midas System include file

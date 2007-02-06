@@ -2498,7 +2498,8 @@ void command_loop(char *host_name, char *exp_name, char *cmd, char *start_dir)
 
       /* ver */
       else if (param[0][0] == 'v' && param[0][1] == 'e') {
-         printf("MIDAS library version %s\n", cm_get_version());
+         printf("MIDAS version %s\n", cm_get_version());
+         printf("SVN revision %d\n", cm_get_revision());
          printf("ODB version %d\n", DATABASE_VERSION);
       }
 
