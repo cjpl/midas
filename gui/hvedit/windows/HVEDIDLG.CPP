@@ -10,7 +10,7 @@
 #include "hvconfig.h"
 #include "hvview.h"
 #include "printdlg.h"
-
+#include "hveditdoc.h"
 
 #ifdef _DEBUG
 #undef THIS_FILE
@@ -64,14 +64,17 @@ CString str;
   m_Group = NULL;
   m_Demand = NULL;
   m_Measured = NULL;
+  m_Current = NULL;
   m_Restore = NULL;
   m_DemandCache = NULL;
   m_MeasuredCache = NULL;
+  m_CurrentCache = NULL;
 
   m_pRootKey = NULL;
   m_pNamesKey = NULL;
   m_pDemandKey = NULL;
   m_pMeasuredKey = NULL;
+  m_pCurrentKey = NULL;
 
   m_nChannels = m_nGroups = 0; 
   m_iGroup = 0;
@@ -156,7 +159,12 @@ BOOL CHveditDlg::OpenKeys()
   if (!m_pMeasuredKey->IsValid())
     return FALSE;
 
-	return TRUE;
+  // Current key
+  m_pCurrentKey = new CMKey(m_pRootKey, "Variables/Current");
+  if (!m_pCurrentKey->IsValid())
+    return FALSE;
+
+  return TRUE;
 }
 
 /*----------------------------------------------------------------------------*/
@@ -171,6 +179,8 @@ void CHveditDlg::CloseKeys()
     delete m_pDemandKey;
   if (m_pMeasuredKey)
     delete m_pMeasuredKey;
+  if (m_pCurrentKey)
+    delete m_pCurrentKey;
 }
 
 /*----------------------------------------------------------------------------*/
@@ -185,6 +195,7 @@ void CHveditDlg::FreeMem()
     free(m_Restore);
     free(m_DemandCache);
     free(m_MeasuredCache);
+    free(m_CurrentCache);
     m_Selection = NULL;
     }
 }
@@ -223,7 +234,8 @@ int      x, y;
   // Set tabs in listbox
   tabs[0] = 37;
   tabs[1] = 71;
-  m_ctlChannels.SetTabStops(2, tabs);
+  tabs[2] = 105;
+  m_ctlChannels.SetTabStops(3, tabs);
 
   if (!UpdateChannelDefinition())
     return FALSE;
@@ -324,11 +336,13 @@ char     str[80];
   m_pNamesKey->Unlink();
   m_pDemandKey->Unlink();
   m_pMeasuredKey->Unlink();
+  m_pCurrentKey->Unlink();
   
   // Update keys
   m_pNamesKey->UpdateKey();
   m_pDemandKey->UpdateKey();
   m_pMeasuredKey->UpdateKey();
+  m_pCurrentKey->UpdateKey();
 
   m_nChannels   = m_pNamesKey->GetNumValues();
   m_nNameLength = m_pNamesKey->GetItemSize();
@@ -339,6 +353,7 @@ char     str[80];
   m_Restore = (float*) calloc(m_nChannels, sizeof(float));
   m_DemandCache = (float *) calloc(m_nChannels, sizeof(float));
   m_MeasuredCache = (float *) calloc(m_nChannels, sizeof(float));
+  m_CurrentCache = (float *) calloc(m_nChannels, sizeof(float));
   
   // Link names entry to m_Name array
   m_pNamesKey->HotLink((void **) &m_Name, MODE_READ | MODE_ALLOC, NamesChanged);
@@ -381,6 +396,14 @@ char     str[80];
     return FALSE;
     }
   m_pMeasuredKey->HotLink((void **) &m_Measured, MODE_READ | MODE_ALLOC, HVChanged);
+
+  // Link current entry to m_Current array
+  if (m_pCurrentKey->GetNumValues() != m_nChannels || m_pCurrentKey->GetType() != TID_FLOAT)
+    {
+    MessageBox("Wrong 'current' entry in HV values");
+    return FALSE;
+    }
+  m_pCurrentKey->HotLink((void **) &m_Current, MODE_READ | MODE_ALLOC, HVChanged);
 
   return TRUE;
 }
@@ -435,6 +458,9 @@ BOOL   bNeedUpdate;
     strcat(full_line, "\t");
     db_sprintf(data_str, m_Measured, sizeof(float), i, TID_FLOAT);
     strcat(full_line, data_str);
+    strcat(full_line, "\t");
+    db_sprintf(data_str, m_Current, sizeof(float), i, TID_FLOAT);
+    strcat(full_line, data_str);
 
     m_ctlChannels.DeleteString(ch);
     m_ctlChannels.InsertString(ch, full_line);
@@ -443,6 +469,7 @@ BOOL   bNeedUpdate;
     // Update cache
     m_DemandCache[i] = m_Demand[i];
     m_MeasuredCache[i] = m_Measured[i];
+    m_CurrentCache[i] = m_Current[i];
     }
   else
     {
@@ -455,7 +482,8 @@ BOOL   bNeedUpdate;
         {
         if (m_Group[i] == m_iGroup &&
            (m_Demand[i] != m_DemandCache[i] ||
-            m_Measured[i] != m_MeasuredCache[i]))
+            m_Measured[i] != m_MeasuredCache[i] ||
+            m_Current[i] != m_CurrentCache[i]))
           {
           bNeedUpdate = TRUE;
           break;
@@ -482,6 +510,7 @@ BOOL   bNeedUpdate;
       // Update cache
       m_DemandCache[i] = m_Demand[i];
       m_MeasuredCache[i] = m_Measured[i];
+      m_CurrentCache[i] = m_Current[i];
 
       if (strchr(data_str, '%'))
         strcpy(data_str, strchr(data_str, '%')+1);
@@ -492,6 +521,9 @@ BOOL   bNeedUpdate;
       strcat(full_line, data_str);
       strcat(full_line, "\t");
       db_sprintf(data_str, m_Measured, sizeof(float), i, TID_FLOAT);
+      strcat(full_line, data_str);
+      strcat(full_line, "\t");
+      db_sprintf(data_str, m_Current, sizeof(float), i, TID_FLOAT);
       strcat(full_line, data_str);
 
       m_ctlChannels.AddString(full_line);
@@ -570,15 +602,14 @@ HCURSOR CHveditDlg::OnQueryDragIcon()
 void CHveditDlg::OnPrint() 
 {
 CHVView hvview;
-CDocument doc;
 CPrintDlg dlgPrint;
+CHVeditDoc doc;
 
   dlgPrint.m_nWhat = 0;
   dlgPrint.DoModal();
   m_bPrintAll = (dlgPrint.m_nWhat == 1);
 
   doc.SetTitle("HV Voltages");
-
   hvview.m_pDocument = &doc;
   hvview.OnFilePrint(this);
   hvview.m_pDocument = NULL;
