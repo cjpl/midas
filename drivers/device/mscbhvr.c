@@ -12,6 +12,7 @@
 #include <stdio.h>
 #include <math.h>
 #include <stdarg.h>
+#include <string.h>
 #include "midas.h"
 #include "mscb.h"
 
