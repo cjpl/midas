@@ -15,18 +15,8 @@ mkdir $dir
 
 # checkout files
 echo Checkout files...
-cvs export -d $dir -D now midas
-cvs export -d $dir/../ -D now mxml
-
-# add some files manually
-cp doc/install.txt $dir/INSTALL
-cp doc/readme.txt $dir/README
-cp doc/overview.txt $dir/OVERVIEW
-cp doc/CHANGELOG.TXT $dir/CHANGELOG
-cp mcleanup $dir
-
-# remove some files
-rm $dir/doc/course/*.ppt
+svn export --force file:///afs/psi.ch/project/meg/svn/midas/trunk $dir
+svn export --force file:///afs/psi.ch/project/meg/svn/mxml/trunk /tmp/mxml
 
 # create midas-x.xx.tar.gz file
 echo Creating archive...
@@ -35,12 +25,13 @@ tar -cvzf $archive midas-$version/ mxml/
 
 # remove temporary files
 rm -Rf $dir
+rm -Rf /tmp/mxml
 
 # copy to download area
-cp /tmp/$archive ~/html/download/tar/$archive
-cp /tmp/$archive ~/html/download/tar/midas-latest.tar.gz
+cp /tmp/$archive ~/html/midas/download/tar/$archive
+cp /tmp/$archive ~/html/midas/download/tar/midas-latest.tar.gz
 cd ~/midas
-cp doc/CHANGELOG.TXT ~/html/download/CHANGELOG
+cp doc/CHANGELOG.TXT ~/html/midas/download/CHANGELOG
 
 # remove archive
 rm -f /tmp/$archive
