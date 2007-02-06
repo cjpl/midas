@@ -11,7 +11,9 @@
 \********************************************************************/
 
 #ifdef __linux__
+#ifndef OS_LINUX
 #define OS_LINUX
+#endif
 #endif
 #ifdef _MSC_VER
 #define OS_WINNT
@@ -53,8 +55,6 @@
 
 int mvme_open(MVME_INTERFACE **vme, int index)
 {
-   int n_sis3100;
-
    *vme = (MVME_INTERFACE *) malloc(sizeof(MVME_INTERFACE));
    if (*vme == NULL)
       return MVME_NO_MEM;
@@ -62,7 +62,10 @@ int mvme_open(MVME_INTERFACE **vme, int index)
    memset(*vme, 0, sizeof(MVME_INTERFACE));
 
 #ifdef OS_WINNT
-	sis1100w_Find_No_Of_sis1100(&n_sis3100);
+   {
+   int n_sis3100;
+
+   sis1100w_Find_No_Of_sis1100(&n_sis3100);
    if (index >= n_sis3100)
       return MVME_NO_INTERFACE;
 
@@ -78,9 +81,11 @@ int mvme_open(MVME_INTERFACE **vme, int index)
 
    if (sis1100w_Init_sis3100((struct SIS1100_Device_Struct *) (*vme)->info, 0) != 0)
       return MVME_NO_CRATE; 
+   }
 #endif // OS_WINNT
 
 #ifdef OS_LINUX
+   {
    char str[256];
 
    /* open VME */
@@ -92,6 +97,7 @@ int mvme_open(MVME_INTERFACE **vme, int index)
    (*vme)->handle = open(str, O_RDWR, 0);
    if ((*vme)->handle < 0)
       return MVME_NO_INTERFACE;
+   }
 #endif
 
    /* default values */
@@ -137,7 +143,7 @@ int mvme_sysreset(MVME_INTERFACE *vme)
 int mvme_write(MVME_INTERFACE *vme, mvme_addr_t vme_addr, mvme_locaddr_t *src, mvme_size_t n_bytes)
 {
    mvme_size_t n;
-   DWORD status, data;
+   DWORD status=0, data;
 #ifdef OS_WINNT
    struct SIS1100_Device_Struct *hvme;
    hvme = (struct SIS1100_Device_Struct *) vme->info;
@@ -218,7 +224,7 @@ int mvme_write(MVME_INTERFACE *vme, mvme_addr_t vme_addr, mvme_locaddr_t *src, m
 int mvme_write_value(MVME_INTERFACE *vme, mvme_addr_t vme_addr, unsigned int value)
 {
    mvme_size_t n;
-   DWORD status;
+   DWORD status=0;
 #ifdef OS_WINNT
    struct SIS1100_Device_Struct *hvme;
    hvme = (struct SIS1100_Device_Struct *) vme->info;
@@ -276,7 +282,8 @@ int mvme_read(MVME_INTERFACE *vme, mvme_locaddr_t *dst, mvme_addr_t vme_addr, mv
 {
    mvme_size_t i, n;
    DWORD data;
-   int status;
+   WORD data16;
+   int status=0;
 #ifdef OS_WINNT
    struct SIS1100_Device_Struct *hvme;
    hvme = (struct SIS1100_Device_Struct *) vme->info;
@@ -292,9 +299,10 @@ int mvme_read(MVME_INTERFACE *vme, mvme_locaddr_t *dst, mvme_addr_t vme_addr, mv
       if (vme->am >= 0x08 && vme->am <= 0x0F) {
          if (vme->dmode == MVME_DMODE_D8)
             status = vme_A32D8_read(hvme, (u_int32_t) vme_addr, (u_int8_t *) &data);
-         else if (vme->dmode == MVME_DMODE_D16)
-            status = vme_A32D16_read(hvme, (u_int32_t) vme_addr, (u_int16_t *) &data);
-         else if (vme->dmode == MVME_DMODE_D32)
+         else if (vme->dmode == MVME_DMODE_D16) {
+            status = vme_A32D16_read(hvme, (u_int32_t) vme_addr, (u_int16_t *) &data16);
+            data = (DWORD)data16;
+         } else if (vme->dmode == MVME_DMODE_D32)
             status = vme_A32D32_read(hvme, (u_int32_t) vme_addr, (u_int32_t *) &data);
       }
 
@@ -302,9 +310,10 @@ int mvme_read(MVME_INTERFACE *vme, mvme_locaddr_t *dst, mvme_addr_t vme_addr, mv
       else if (vme->am >= 0x29 && vme->am <= 0x2D) {
          if (vme->dmode == MVME_DMODE_D8)
             status = vme_A16D8_read(hvme, (u_int32_t) vme_addr, (u_int8_t *) &data);
-         else if (vme->dmode == MVME_DMODE_D16)
-            status = vme_A16D16_read(hvme, (u_int32_t) vme_addr, (u_int16_t *) &data);
-         else if (vme->dmode == MVME_DMODE_D32)
+         else if (vme->dmode == MVME_DMODE_D16) {
+            status = vme_A16D16_read(hvme, (u_int32_t) vme_addr, (u_int16_t *) &data16);
+            data = (DWORD)data16;
+         } else if (vme->dmode == MVME_DMODE_D32)
             status = vme_A16D32_read(hvme, (u_int32_t) vme_addr, (u_int32_t *) &data);
       }
       
@@ -312,9 +321,10 @@ int mvme_read(MVME_INTERFACE *vme, mvme_locaddr_t *dst, mvme_addr_t vme_addr, mv
       else if (vme->am >= 0x38 && vme->am <= 0x3F) {
          if (vme->dmode == MVME_DMODE_D8)
             status = vme_A24D8_read(hvme, (u_int32_t) vme_addr, (u_int8_t *) &data);
-         else if (vme->dmode == MVME_DMODE_D16)
-            status = vme_A24D16_read(hvme, (u_int32_t) vme_addr, (u_int16_t *) &data);
-         else if (vme->dmode == MVME_DMODE_D32)
+         else if (vme->dmode == MVME_DMODE_D16) {
+            status = vme_A24D16_read(hvme, (u_int32_t) vme_addr, (u_int16_t *) &data16);
+            data = (DWORD)data16;
+         } else if (vme->dmode == MVME_DMODE_D32)
             status = vme_A24D32_read(hvme, (u_int32_t) vme_addr, (u_int32_t *) &data);
       }
       
@@ -385,6 +395,7 @@ int mvme_read(MVME_INTERFACE *vme, mvme_locaddr_t *dst, mvme_addr_t vme_addr, mv
 unsigned int mvme_read_value(MVME_INTERFACE *vme, mvme_addr_t vme_addr)
 {
    unsigned int data;
+   WORD data16;
    int status;
 #ifdef OS_WINNT
    struct SIS1100_Device_Struct *hvme;
@@ -400,9 +411,10 @@ unsigned int mvme_read_value(MVME_INTERFACE *vme, mvme_addr_t vme_addr)
    if (vme->am >= 0x29 && vme->am <= 0x2D) {
       if (vme->dmode == MVME_DMODE_D8)
          status = vme_A16D8_read(hvme, (u_int32_t) vme_addr, (u_int8_t *) &data);
-      else if (vme->dmode == MVME_DMODE_D16)
-         status = vme_A16D16_read(hvme, (u_int32_t) vme_addr, (u_int16_t *) &data);
-      else if (vme->dmode == MVME_DMODE_D32)
+      else if (vme->dmode == MVME_DMODE_D16) {
+         status = vme_A16D16_read(hvme, (u_int32_t) vme_addr, (u_int16_t *) &data16);
+         data = (DWORD)data16;
+      } else if (vme->dmode == MVME_DMODE_D32)
          status = vme_A16D32_read(hvme, (u_int32_t) vme_addr, (u_int32_t *) &data);
    }
 
@@ -410,9 +422,10 @@ unsigned int mvme_read_value(MVME_INTERFACE *vme, mvme_addr_t vme_addr)
    else if (vme->am >= 0x38 && vme->am <= 0x3F) {
       if (vme->dmode == MVME_DMODE_D8)
          status = vme_A24D8_read(hvme, (u_int32_t) vme_addr, (u_int8_t *) &data);
-      else if (vme->dmode == MVME_DMODE_D16)
-         status = vme_A24D16_read(hvme, (u_int32_t) vme_addr, (u_int16_t *) &data);
-      else if (vme->dmode == MVME_DMODE_D32)
+      else if (vme->dmode == MVME_DMODE_D16) {
+         status = vme_A24D16_read(hvme, (u_int32_t) vme_addr, (u_int16_t *) &data16);
+         data = (DWORD)data16;
+      } else if (vme->dmode == MVME_DMODE_D32)
          status = vme_A24D32_read(hvme, (u_int32_t) vme_addr, (u_int32_t *) &data);
    }
 
@@ -420,9 +433,10 @@ unsigned int mvme_read_value(MVME_INTERFACE *vme, mvme_addr_t vme_addr)
    else if (vme->am >= 0x08 && vme->am <= 0x0F) {
       if (vme->dmode == MVME_DMODE_D8)
          status = vme_A32D8_read(hvme, (u_int32_t) vme_addr, (u_int8_t *) &data);
-      else if (vme->dmode == MVME_DMODE_D16)
-         status = vme_A32D16_read(hvme, (u_int32_t) vme_addr, (u_int16_t *) &data);
-      else if (vme->dmode == MVME_DMODE_D32)
+      else if (vme->dmode == MVME_DMODE_D16) {
+         status = vme_A32D16_read(hvme, (u_int32_t) vme_addr, (u_int16_t *) &data16);
+         data = (DWORD)data16;
+      } else if (vme->dmode == MVME_DMODE_D32)
          status = vme_A32D32_read(hvme, (u_int32_t) vme_addr, (u_int32_t *) &data);
    }
 
