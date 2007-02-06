@@ -5386,7 +5386,7 @@ THREADTYPE root_server_thread(void *arg)
 
             //write pointer
             message->Reset(kMESS_ANY);
-            int p = (POINTER_T) obj;
+            POINTER_T p = (POINTER_T) obj;
             *message << p;
             sock->Send(*message);
 
