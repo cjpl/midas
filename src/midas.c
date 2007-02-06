@@ -7779,8 +7779,9 @@ INT rpc_client_connect(char *host_name, INT port, char *client_name, HNDLE * hCo
    INT i, status, index;
    struct sockaddr_in bind_addr;
    INT sock;
-   INT remote_hw_type, hw_type, remote_revision;
+   INT remote_hw_type, hw_type;
    char str[200];
+   char version[32], v1[32];
    char local_prog_name[NAME_LENGTH];
    char local_host_name[HOST_NAME_LENGTH];
    struct hostent *phe;
@@ -7888,7 +7889,7 @@ INT rpc_client_connect(char *host_name, INT port, char *client_name, HNDLE * hCo
    gethostname(local_host_name, sizeof(local_host_name));
 
    hw_type = rpc_get_option(0, RPC_OHW_TYPE);
-   sprintf(str, "%d %d %s %s", hw_type, cm_get_revision(), local_prog_name, local_host_name);
+   sprintf(str, "%d %s %s %s", hw_type, cm_get_version(), local_prog_name, local_host_name);
 
    send(sock, str, strlen(str) + 1, 0);
 
@@ -7899,15 +7900,24 @@ INT rpc_client_connect(char *host_name, INT port, char *client_name, HNDLE * hCo
       return RPC_NET_ERROR;
    }
 
-   remote_hw_type = remote_revision = 0;
-   sscanf(str, "%d %d", &remote_hw_type, &remote_revision);
+   remote_hw_type = version[0] = 0;
+   sscanf(str, "%d %s", &remote_hw_type, version);
    _client_connection[index].remote_hw_type = remote_hw_type;
    _client_connection[index].send_sock = sock;
 
-   /* print warning if revision doesn't agree */
-   if (remote_revision != cm_get_revision()) {
-      sprintf(str, "remote MIDAS revision %d differs from local revision %d", 
-              remote_revision, cm_get_revision());
+   /* print warning if version patch level doesn't agree */
+   strcpy(v1, version);
+   if (strchr(v1, '.'))
+      if (strchr(strchr(v1, '.') + 1, '.'))
+         *strchr(strchr(v1, '.') + 1, '.') = 0;
+
+   strcpy(str, cm_get_version());
+   if (strchr(str, '.'))
+      if (strchr(strchr(str, '.') + 1, '.'))
+         *strchr(strchr(str, '.') + 1, '.') = 0;
+
+   if (strcmp(v1, str) != 0) {
+      sprintf(str, "remote MIDAS version %s differs from local version %s", version, cm_get_version());
       cm_msg(MERROR, "rpc_client_connect", str);
    }
 
@@ -7915,7 +7925,6 @@ INT rpc_client_connect(char *host_name, INT port, char *client_name, HNDLE * hCo
 
    return RPC_SUCCESS;
 }
-
 
 /********************************************************************/
 void rpc_client_check()
@@ -8011,9 +8020,9 @@ INT rpc_server_connect(char *host_name, char *exp_name)
    struct sockaddr_in bind_addr;
    INT sock, lsock1, lsock2, lsock3;
    INT listen_port1, listen_port2, listen_port3;
-   INT remote_hw_type, hw_type, revision;
+   INT remote_hw_type, hw_type;
    unsigned int size;
-   char str[200];
+   char str[200], version[32], v1[32];
    char local_prog_name[NAME_LENGTH];
    struct hostent *phe;
    fd_set readfds;
@@ -8145,9 +8154,9 @@ INT rpc_server_connect(char *host_name, char *exp_name)
 
    /* connect to experiment */
    if (exp_name[0] == 0)
-      sprintf(str, "C %d %d %d %d Default", listen_port1, listen_port2, listen_port3, cm_get_revision());
+      sprintf(str, "C %d %d %d %s Default", listen_port1, listen_port2, listen_port3, cm_get_version());
    else
-      sprintf(str, "C %d %d %d %d %s", listen_port1, listen_port2, listen_port3, cm_get_revision(), exp_name);
+      sprintf(str, "C %d %d %d %s %s", listen_port1, listen_port2, listen_port3, cm_get_version(), exp_name);
 
    send(sock, str, strlen(str) + 1, 0);
    i = recv_string(sock, str, sizeof(str), 10000);
@@ -8157,17 +8166,27 @@ INT rpc_server_connect(char *host_name, char *exp_name)
       return RPC_NET_ERROR;
    }
 
-   status = revision = 0;
-   sscanf(str, "%d %d", &status, &revision);
+   status = version[0] = 0;
+   sscanf(str, "%d %s", &status, version);
 
    if (status == 2) {
-      /* message "undefined experiment" should be displayed by application */
+/*  message "undefined experiment" should be displayed by application */
       return CM_UNDEF_EXP;
    }
 
    /* print warning if version patch level doesn't agree */
-   if (revision != cm_get_revision()) {
-      sprintf(str, "remote MIDAS revision %d differs from local revision %d", revision, cm_get_revision());
+   strcpy(v1, version);
+   if (strchr(v1, '.'))
+      if (strchr(strchr(v1, '.') + 1, '.'))
+         *strchr(strchr(v1, '.') + 1, '.') = 0;
+
+   strcpy(str, cm_get_version());
+   if (strchr(str, '.'))
+      if (strchr(strchr(str, '.') + 1, '.'))
+         *strchr(strchr(str, '.') + 1, '.') = 0;
+
+   if (strcmp(v1, str) != 0) {
+      sprintf(str, "remote MIDAS version %s differs from local version %s", version, cm_get_version());
       cm_msg(MERROR, "rpc_server_connect", str);
    }
 
@@ -8248,7 +8267,6 @@ INT rpc_server_connect(char *host_name, char *exp_name)
 
    return RPC_SUCCESS;
 }
-
 
 /********************************************************************/
 INT rpc_client_disconnect(HNDLE hConn, BOOL bShutdown)
@@ -10975,8 +10993,8 @@ INT rpc_server_accept(int lsock)
 {
    INT index, i;
    unsigned int size;
-   int status, revision;
-   char command;
+   int status;
+   char command, version[32], v1[32];
    INT sock, port1, port2, port3;
    struct sockaddr_in acc_addr;
    struct hostent *phe;
@@ -11041,15 +11059,24 @@ INT rpc_server_accept(int lsock)
 
          /* get callback information */
          callback.experiment[0] = 0;
-         port1 = port2 = revision = 0;
-         sscanf(net_buffer + 2, "%d %d %d %d", &port1, &port2, &port3, &revision);
+         port1 = port2 = version[0] = 0;
+         sscanf(net_buffer + 2, "%d %d %d %s", &port1, &port2, &port3, version);
          strcpy(callback.experiment,
                 strchr(strchr(strchr(strchr(net_buffer + 2, ' ') + 1, ' ') + 1, ' ') + 1, ' ') + 1);
 
          /* print warning if version patch level doesn't agree */
-         if (revision != cm_get_revision()) {
-            sprintf(str, "client MIDAS revision %d differs from local revision %d", 
-                    revision, cm_get_revision());
+         strcpy(v1, version);
+         if (strchr(v1, '.'))
+            if (strchr(strchr(v1, '.') + 1, '.'))
+               *strchr(strchr(v1, '.') + 1, '.') = 0;
+
+         strcpy(str, cm_get_version());
+         if (strchr(str, '.'))
+            if (strchr(strchr(str, '.') + 1, '.'))
+               *strchr(strchr(str, '.') + 1, '.') = 0;
+
+         if (strcmp(v1, str) != 0) {
+            sprintf(str, "client MIDAS version %s differs from local version %s", version, cm_get_version());
             cm_msg(MERROR, "rpc_server_accept", str);
 
             sprintf(str, "received string: %s", net_buffer + 2);
@@ -11136,11 +11163,11 @@ INT rpc_server_accept(int lsock)
                break;
             }
 
-            sprintf(str, "1 %d", cm_get_revision());     /* 1 means ok */
+            sprintf(str, "1 %s", cm_get_version());     /* 1 means ok */
             send(sock, str, strlen(str) + 1, 0);
             closesocket(sock);
          } else {
-            sprintf(str, "1 %d", cm_get_revision());     /* 1 means ok */
+            sprintf(str, "1 %s", cm_get_version());     /* 1 means ok */
             send(sock, str, strlen(str) + 1, 0);
             closesocket(sock);
          }
@@ -11181,7 +11208,6 @@ INT rpc_server_accept(int lsock)
 
    return RPC_SUCCESS;
 }
-
 
 /********************************************************************/
 INT rpc_client_accept(int lsock)
@@ -11287,7 +11313,7 @@ INT rpc_client_accept(int lsock)
 
    /* send my own computer id */
    hw_type = rpc_get_option(0, RPC_OHW_TYPE);
-   sprintf(str, "%d %d", hw_type, cm_get_revision());
+   sprintf(str, "%d %s", hw_type, cm_get_version());
    status = send(sock, str, strlen(str) + 1, 0);
    if (status != (INT) strlen(str) + 1)
       return RPC_NET_ERROR;
@@ -11301,7 +11327,6 @@ INT rpc_client_accept(int lsock)
 
    return RPC_SUCCESS;
 }
-
 
 /********************************************************************/
 INT rpc_server_callback(struct callback_addr * pcallback)
