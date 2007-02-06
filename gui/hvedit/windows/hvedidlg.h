@@ -41,6 +41,7 @@ class CHveditDlg:public CDialog {
    CMKey *m_pNamesKey;
    CMKey *m_pDemandKey;
    CMKey *m_pMeasuredKey;
+   CMKey *m_pCurrentKey;
 
    CString m_HostName, m_ExperimentName;
    CString m_EquipmentName;
@@ -48,8 +49,8 @@ class CHveditDlg:public CDialog {
    HICON m_hIcon;
    INT m_nChannels, m_nNameLength, m_nGroups, m_iGroup, m_iGroupCache;
    char *m_Name;
-   float *m_Demand, *m_Measured, *m_Restore;
-   float *m_DemandCache, *m_MeasuredCache;
+   float *m_Demand, *m_Measured, *m_Current, *m_Restore;
+   float *m_DemandCache, *m_MeasuredCache, *m_CurrentCache;
    INT *m_Selection, *m_Group;
    float m_Voltage;
    BOOL m_bPrintAll;

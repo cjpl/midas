@@ -45,7 +45,7 @@ class CMExperiment {
 
  protected:
    BOOL HostDlg(void);
-   Connect(CString, CString, CString);
+   BOOL Connect(CString, CString, CString);
 };
 
 /////////////////////////////////////////////////////////////////////////////

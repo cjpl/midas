@@ -30,19 +30,19 @@ END_MESSAGE_MAP()
 
 BOOL CHVView::OnPreparePrinting(CPrintInfo* pInfo) 
 {
-  // default preparation
-  pInfo->SetMaxPage(1);
+   // default preparation
+   pInfo->SetMaxPage(1);
 
 	return DoPreparePrinting(pInfo);
 }
 
 void CHVView::OnFilePrint(CHveditDlg *pHveditDlg)
 {
-  m_pHveditDlg = pHveditDlg; 
-  CView::OnFilePrint();
+   m_pHveditDlg = pHveditDlg; 
+   CView::OnFilePrint();
 }
 
 void CHVView::OnDraw(CDC* pDC)
 {
-  m_pHveditDlg->Print(pDC);
+   m_pHveditDlg->Print(pDC);
 }

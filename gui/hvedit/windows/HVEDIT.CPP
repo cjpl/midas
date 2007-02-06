@@ -55,7 +55,6 @@ BOOL CHveditApp::InitInstance()
 	//  of your final executable, you should remove from the following
 	//  the specific initialization routines you do not need.
 
-	Enable3dControls();
 	LoadStdProfileSettings();  // Load standard INI file options (including MRU)
 
 	CHveditDlg dlg(m_lpCmdLine);
