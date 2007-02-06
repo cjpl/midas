@@ -1,6 +1,15 @@
 Revision History
 ================
 
+Version 2.0.0, released Jan 2nd, 2007
+-------------------------------------
+
+This is a major release with all the accumulated additions from
+the last years. For a list please visit:
+
+http://ladd00.triumf.ca/~daqweb/doc/midas/html/NDF.html
+https://ladd00.triumf.ca/elog/Midas/293
+
 Version 1.9.5, released Oct 7th, 2004
 -------------------------------------
 
