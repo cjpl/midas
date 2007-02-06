@@ -16,11 +16,6 @@
 
 /*------------------------------------------------------------------*/
 
-/* MIDAS library version number. This value is returned by 
-   cm_get_version and will be incremented whenever changes are done
-   to the MIDAS library. First digit is major release, second
-   digit is minor release, third digit is patch level */
-
 /**dox***************************************************************/
 /** @file midas.h
 The main include file
@@ -42,7 +37,6 @@ The main include file
  *  
  *  @{  */
 
-#define MIDAS_VERSION "1.9.5"
 #define DATABASE_VERSION 2      /* has to be changed whenever binary ODB format changes */
 
 /**dox***************************************************************/
@@ -1542,6 +1536,7 @@ extern "C" {
    /*---- common routines ----*/
    INT EXPRT cm_get_error(INT code, char *string);
    char EXPRT *cm_get_version(void);
+   INT EXPRT cm_get_revision(void);
    INT EXPRT cm_get_environment(char *host_name, int host_name_size,
                                 char *exp_name, int exp_name_size);
    INT EXPRT cm_list_experiments(char *host_name,

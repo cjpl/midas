@@ -779,8 +779,8 @@ INT decode_line(CAMAC * P, char *ss)
 void help_page(INT which)
 {
    if (which == MAIN) {
-      printf("\n*-v%s----------- H E L P   C N A F -------------------*\n",
-             cm_get_version());
+      printf("\n*-v%d----------- H E L P   C N A F -------------------*\n",
+             cm_get_revision());
       printf("          Interactive Midas CAMAC command\n");
       printf("          ===============================\n");
       printf(" Output : Data [dec/hex X=0/1 - Q=0/1 ]\n");
@@ -813,8 +813,8 @@ void help_page(INT which)
       printf("      CNAF> [B0C1N30A00F00 [0/0x000000 Q0X0] R1W0M24] :n30a9f24\n");
       printf("      CNAF> [B0C1N06A00F24 [0/0x000000 Q1X1] R1W0M24] :n6f9a0\n");
    } else {
-      printf("\n*-v%s----------- H E L P   C N A F -------------------*\n",
-             cm_get_version());
+      printf("\n*-v%d----------- H E L P   C N A F -------------------*\n",
+             cm_get_revision());
       printf("          Interactive MCStd CAMAC command\n");
       printf("The action taken is dependent on the driver implementation\n");
       printf("[Q/E]            : Exit this level\n");
