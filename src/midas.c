@@ -102,6 +102,8 @@ struct {
 0, "",},};
 
 /* Globals */
+char *svn_revision = "$Rev$";
+
 #ifdef OS_MSDOS
 extern unsigned _stklen = 60000U;
 #endif
@@ -1028,12 +1030,12 @@ INT _mutex_alarm, _mutex_elog;
  *  @{  */
 
 /**
-Return version number of current MIDAS library as a string
+Return svn revision number of current MIDAS library as a string
 @return version number * 100
 */
 char *cm_get_version()
 {
-   return MIDAS_VERSION;
+   return svn_revision+5;
 }
 
 /********************************************************************/
