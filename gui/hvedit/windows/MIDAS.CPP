@@ -51,30 +51,29 @@ int   i, size, type;
 
 midas_connect(char *host_name, char *experiment_name)
 {
-HNDLE           m_hDB, m_hKey;
-INT             status;
-char            str[256];
+   HNDLE m_hDB, m_hKey;
+   INT status;
+   char str[256];
 
-  /* route all messages to MessageBox */
-  //cm_set_msg_print(10, DoMessageBox);
+   /* route all messages to MessageBox */
+   //cm_set_msg_print(10, DoMessageBox);
 
-  status = cm_connect_experiment(host_name, experiment_name, "HVEdit", 0);
-  if (status != CM_SUCCESS)
-    {
-    cm_get_error(status, str);
-    DoMessageBox(str);
-    return 0;
-    }
+   status = cm_connect_experiment(host_name, experiment_name, "HVEdit", 0);
+   if (status != CM_SUCCESS) {
+      cm_get_error(status, str);
+      DoMessageBox(str);
+      return 0;
+   }
 
-  cm_get_experiment_database(&m_hDB, &m_hKey);
-  
-  return CM_SUCCESS;
+   cm_get_experiment_database(&m_hDB, &m_hKey);
+
+   return CM_SUCCESS;
 }
 
 
 midas_disconnect()
 {
-  return cm_disconnect_experiment();
+   return cm_disconnect_experiment();
 }
 
 
@@ -96,4 +95,4 @@ midas_disconnect()
   return 1;
 }
 
-*/  
+*/

@@ -12,8 +12,7 @@ class CHveditDlg:public CDialog {
    BOOL UpdateChannelDefinition();
    CMKey *GetNameKey() {
       return m_pNamesKey;
-   }
-   int GetNumChannels() {
+   } int GetNumChannels() {
       return m_nChannels;
    }
    void Print(CDC * pDC);
