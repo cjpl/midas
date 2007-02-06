@@ -80,7 +80,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				InlineFunctionExpansion="1"
-				AdditionalIncludeDirectories="..\include"
+				AdditionalIncludeDirectories="\midas\include;\mxml"
 				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE;_X86_"
 				StringPooling="TRUE"
 				RuntimeLibrary="4"
@@ -136,25 +136,7 @@
 			Name="Source Files"
 			Filter="cpp;c;cxx;rc;def;r;odl;idl;hpj;bat;for;f90">
 			<File
-				RelativePath="..\SRC\MIDAS.C">
-				<FileConfiguration
-					Name="Debug|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="0"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-						BrowseInformation="1"/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="2"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-						BrowseInformation="1"/>
-				</FileConfiguration>
+				RelativePath="..\src\midas.c">
 			</File>
 			<File
 				RelativePath="..\SRC\MRPC.C">
@@ -255,6 +237,9 @@
 			</File>
 			<File
 				RelativePath="..\include\msystem.h">
+			</File>
+			<File
+				RelativePath="..\..\mxml\strlcpy.h">
 			</File>
 		</Filter>
 		<Filter
