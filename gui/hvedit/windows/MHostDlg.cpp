@@ -16,91 +16,82 @@ static char THIS_FILE[] = __FILE__;
 // CMHostDlg dialog
 
 
-CMHostDlg::CMHostDlg(CWnd* pParent /*=NULL*/)
-	: CDialog(CMHostDlg::IDD, pParent)
+CMHostDlg::CMHostDlg(CWnd * pParent /*=NULL*/ )
+:  CDialog(CMHostDlg::IDD, pParent)
 {
-  m_ValidHost = FALSE;
+   m_ValidHost = FALSE;
 
-  //{{AFX_DATA_INIT(CMHostDlg)
-	m_HostName = _T("");
-	//}}AFX_DATA_INIT
+   //{{AFX_DATA_INIT(CMHostDlg)
+   m_HostName = _T("");
+   //}}AFX_DATA_INIT
 }
 
 
-void CMHostDlg::DoDataExchange(CDataExchange* pDX)
+void CMHostDlg::DoDataExchange(CDataExchange * pDX)
 {
-	CDialog::DoDataExchange(pDX);
-	//{{AFX_DATA_MAP(CMHostDlg)
-	DDX_Control(pDX, IDC_EXPERIMENT, m_ListExperiment);
-	DDX_Text(pDX, IDC_HOST, m_strHostName);
-	//}}AFX_DATA_MAP
+   CDialog::DoDataExchange(pDX);
+   //{{AFX_DATA_MAP(CMHostDlg)
+   DDX_Control(pDX, IDC_EXPERIMENT, m_ListExperiment);
+   DDX_Text(pDX, IDC_HOST, m_strHostName);
+   //}}AFX_DATA_MAP
 }
 
 
 BEGIN_MESSAGE_MAP(CMHostDlg, CDialog)
-	//{{AFX_MSG_MAP(CMHostDlg)
-	ON_EN_KILLFOCUS(IDC_HOST, OnKillfocusHost)
-	//}}AFX_MSG_MAP
+    //{{AFX_MSG_MAP(CMHostDlg)
+ON_EN_KILLFOCUS(IDC_HOST, OnKillfocusHost)
+    //}}AFX_MSG_MAP
 END_MESSAGE_MAP()
-
 /////////////////////////////////////////////////////////////////////////////
 // CHostDlg message handlers
-
-void CMHostDlg::OnKillfocusHost() 
+void CMHostDlg::OnKillfocusHost()
 {
-char   expts[MAX_EXPERIMENT][NAME_LENGTH];
-int    status, i;
-static BOOL bActive=FALSE;
-	
-  /* avoid recursive calls */
-  if (bActive)
-    return;
-  bActive = TRUE;
+   char expts[MAX_EXPERIMENT][NAME_LENGTH];
+   int status, i;
+   static BOOL bActive = FALSE;
 
-  /* get list of experiments on host */
-  UpdateData(TRUE);
+   /* avoid recursive calls */
+   if (bActive)
+      return;
+   bActive = TRUE;
 
-  /* retrieve list of experiments and make selection */
-  status = cm_list_experiments((char *) (LPCTSTR) m_strHostName, expts);
+   /* get list of experiments on host */
+   UpdateData(TRUE);
 
-  if (status != CM_SUCCESS)
-    {
-    AfxMessageBox(CString("Cannot connect to host ")+m_strHostName);
-    m_ListExperiment.ResetContent();
-    m_ValidHost = FALSE;
-    }
-  else
-    {
-    m_ValidHost = TRUE;
+   /* retrieve list of experiments and make selection */
+   status = cm_list_experiments((char *) (LPCTSTR) m_strHostName, expts);
 
-    /* fill list box */
-    m_ListExperiment.ResetContent();
-    for (i=0 ; expts[i][0] ; i++)
-      m_ListExperiment.AddString(expts[i]);
-    }
+   if (status != CM_SUCCESS) {
+      AfxMessageBox(CString("Cannot connect to host ") + m_strHostName);
+      m_ListExperiment.ResetContent();
+      m_ValidHost = FALSE;
+   } else {
+      m_ValidHost = TRUE;
 
-  bActive = FALSE;
+      /* fill list box */
+      m_ListExperiment.ResetContent();
+      for (i = 0; expts[i][0]; i++)
+         m_ListExperiment.AddString(expts[i]);
+   }
+
+   bActive = FALSE;
 }
 
-void CMHostDlg::OnOK() 
+void CMHostDlg::OnOK()
 {
-  UpdateData(TRUE);
+   UpdateData(TRUE);
 
-  if (m_ListExperiment.GetCount() == 0 ||
-      (m_ListExperiment.GetCurSel() == LB_ERR && 
-       m_ListExperiment.GetCount()>1))
-    {
-    /* if experiment list is missing or not selected get it */
-    OnKillfocusHost();
-    }
-  else
-    {
-    /* set experiment and return */
-    if (m_ListExperiment.GetCurSel() == LB_ERR)
-      m_ListExperiment.GetText(0, m_strExperimentName);
-    else
-      m_ListExperiment.GetText(m_ListExperiment.GetCurSel(), m_strExperimentName);
+   if (m_ListExperiment.GetCount() == 0 ||
+       (m_ListExperiment.GetCurSel() == LB_ERR && m_ListExperiment.GetCount() > 1)) {
+      /* if experiment list is missing or not selected get it */
+      OnKillfocusHost();
+   } else {
+      /* set experiment and return */
+      if (m_ListExperiment.GetCurSel() == LB_ERR)
+         m_ListExperiment.GetText(0, m_strExperimentName);
+      else
+         m_ListExperiment.GetText(m_ListExperiment.GetCurSel(), m_strExperimentName);
 
-		CDialog::OnOK();
-    }
+      CDialog::OnOK();
+   }
 }

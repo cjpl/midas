@@ -19,30 +19,28 @@ static char BASED_CODE THIS_FILE[] = __FILE__;
 
 IMPLEMENT_DYNCREATE(CHVView, CView)
 
-BEGIN_MESSAGE_MAP(CHVView, CView)
-	//{{AFX_MSG_MAP(CHVView)
-		// NOTE - the ClassWizard will add and remove mapping macros here.
-	//}}AFX_MSG_MAP
-END_MESSAGE_MAP()
-
+    BEGIN_MESSAGE_MAP(CHVView, CView)
+    //{{AFX_MSG_MAP(CHVView)
+    // NOTE - the ClassWizard will add and remove mapping macros here.
+    //}}AFX_MSG_MAP
+    END_MESSAGE_MAP()
 /////////////////////////////////////////////////////////////////////////////
 // Drawing code
-
-BOOL CHVView::OnPreparePrinting(CPrintInfo* pInfo) 
+BOOL CHVView::OnPreparePrinting(CPrintInfo * pInfo)
 {
    // default preparation
    pInfo->SetMaxPage(1);
 
-	return DoPreparePrinting(pInfo);
+   return DoPreparePrinting(pInfo);
 }
 
-void CHVView::OnFilePrint(CHveditDlg *pHveditDlg)
+void CHVView::OnFilePrint(CHveditDlg * pHveditDlg)
 {
-   m_pHveditDlg = pHveditDlg; 
+   m_pHveditDlg = pHveditDlg;
    CView::OnFilePrint();
 }
 
-void CHVView::OnDraw(CDC* pDC)
+void CHVView::OnDraw(CDC * pDC)
 {
    m_pHveditDlg->Print(pDC);
 }

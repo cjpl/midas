@@ -50,6 +50,7 @@ class CMKey {
    INT SetDataIndex(void *data, INT index, DWORD type);
    INT Load(CString strFileName, BOOL bRemote = FALSE);
    INT Save(CString strFileName, BOOL bRemote = FALSE);
+   INT SaveXML(CString strFileName);
    DWORD GetKeyTime();
 
 // Implementation
