@@ -37,7 +37,11 @@ The main include file
  *  
  *  @{  */
 
-#define DATABASE_VERSION 2      /* has to be changed whenever binary ODB format changes */
+/* has to be changed whenever binary ODB format changes */
+#define DATABASE_VERSION 2      
+
+/* MIDAS version number which will be incremented for every release */
+#define MIDAS_VERSION "2.0.0"
 
 /**dox***************************************************************/
 #ifndef DOXYGEN_SHOULD_SKIP_THIS

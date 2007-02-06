@@ -20,9 +20,6 @@
    command */
 char *svn_revision = "$Rev$";
 
-/* MIDAS version number. Will be incremented for every release */
-char *midas_version = "1.9.5";
-
 /**dox***************************************************************/
 /** @file midas.c
 The main core C-code for Midas.
@@ -1042,7 +1039,7 @@ Return version number of current MIDAS library as a string
 */
 char *cm_get_version()
 {
-   return midas_version;
+   return MIDAS_VERSION;
 }
 
 /**
