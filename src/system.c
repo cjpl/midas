@@ -952,12 +952,6 @@ void ss_force_single_thread()
    _single_thread = TRUE;
 }
 
-#if defined(OS_DARWIN)
-// blank
-#elif defined(OS_LINUX)
-_syscall0(pid_t,gettid)
-#endif
-
 INT ss_gettid(void)
 /********************************************************************\
 
@@ -1002,7 +996,7 @@ INT ss_gettid(void)
 #endif
 #ifdef OS_UNIX
 
-   return gettid();
+   return syscall(SYS_gettid);
 
 #endif                          /* OS_UNIX */
 #ifdef OS_VXWORKS

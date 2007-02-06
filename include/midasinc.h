@@ -125,6 +125,7 @@
 #include <sys/timeb.h>
 #include <sys/stat.h>
 #include <sys/mtio.h>
+#include <sys/syscall.h>
 #include <dirent.h>
 #include <pthread.h>
 
