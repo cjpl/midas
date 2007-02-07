@@ -1000,9 +1000,9 @@ int mscb_init(char *device, int bufsize, char *password, int debug)
       /* check if submaster alive */
       buf[0] = MCMD_ECHO;
       n = sizeof(buf);
-      mscb_exchg(index + 1, buf, &n, 1, RS485_FLAG_CMD);
+      status = mscb_exchg(index + 1, buf, &n, 1, RS485_FLAG_CMD);
       
-      if (n < 2) {
+      if (status == MSCB_TIMEOUT || n < 2) {
          debug_log("return EMSCB_RPC_ERROR\n", 0);
          return EMSCB_RPC_ERROR;
       }
