@@ -1514,6 +1514,8 @@ lcd_out(unsigned char d, bit df)
 
 /*------------------------------------------------------------------*/
 
+#if defined(SCS_900) || defined(SCS_1001) || defined(SCS_2000) // 4-line LCD display with KS0078 controller
+
 void lcd_nibble(unsigned char d)
 {
    LCD &= ~(0xF0);
@@ -1532,6 +1534,8 @@ void lcd_nibble(unsigned char d)
 
    delay_us(100);
 }
+
+#endif
 
 void lcd_setup()
 {
