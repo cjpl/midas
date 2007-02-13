@@ -84,8 +84,7 @@ INT mscbdev_init(HNDLE hkey, void **pinfo, INT channels, INT(*bd) (INT cmd, ...)
 
    /* create settings record */
    size = sizeof(info->mscbdev_settings.device);
-   info->mscbdev_settings.device[0] = 0;
-
+   strcpy(info->mscbdev_settings.device, "usb0");
    status = db_get_value(hDB, hkey, "Device", &info->mscbdev_settings.device, &size, TID_STRING, TRUE);
    if (status != DB_SUCCESS)
       return FE_ERR_ODB;
