@@ -684,9 +684,9 @@ INT hv_init(EQUIPMENT * pequipment)
    for (i=0 ; i<hv_info->num_channels ; i++) {
 
       hv_info->driver[i]->dd(CMD_GET, hv_info->driver[i]->dd_info, 
-                             i, &hv_info->measured[i]);
+                             i - hv_info->channel_offset[i], &hv_info->measured[i]);
       hv_info->driver[i]->dd(CMD_GET_CURRENT, hv_info->driver[i]->dd_info, 
-                             i, &hv_info->current[i]);
+                             i - hv_info->channel_offset[i], &hv_info->current[i]);
 
       hv_info->measured_mirror[i] = hv_info->measured[i];
       hv_info->current_mirror[i]  = hv_info->current[i];
