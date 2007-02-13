@@ -169,7 +169,6 @@ static BOOL _server_registered = FALSE;
 static INT rpc_transition_dispatch(INT index, void *prpc_param[]);
 
 void cm_ctrlc_handler(int sig);
-static void debug_dump(unsigned char *p, int size);
 
 typedef struct {
    INT code;
@@ -9785,6 +9784,7 @@ int cm_query_transition(int *transition, int *run_number, int *trans_time)
 *                        server functions                            *
 \********************************************************************/
 
+#if 0
 void debug_dump(unsigned char *p, int size)
 {
    int i, j;
@@ -9809,6 +9809,7 @@ void debug_dump(unsigned char *p, int size)
 
    printf("\n");
 }
+#endif
 
 /********************************************************************/
 INT recv_tcp_server(INT index, char *buffer, DWORD buffer_size, INT flags, INT * remaining)
