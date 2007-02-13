@@ -1190,9 +1190,12 @@ void cmd_loop(int fd, char *cmd, unsigned short adr)
                   if (status == MSCB_SUCCESS) {
                      j++;
                      printf("Save node %d (0x%04X)     \r", i, i);
+                     fflush(stdout);
                      save_node_xml(writer, fd, i);
-                  } else
+                  } else {
                      printf("Test address %d (0x%04X)     \r", i, i);
+                     fflush(stdout);
+                  }
                }
                printf("\n");
                if (j>1)
