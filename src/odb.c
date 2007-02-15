@@ -4045,7 +4045,7 @@ INT db_get_data1(HNDLE hDB, HNDLE hKey, void *data, INT * buf_size,
 \********************************************************************/
 {
    if (rpc_is_remote())
-      return rpc_call(RPC_DB_GET_DATA, hDB, hKey, data, buf_size, type);
+      return rpc_call(RPC_DB_GET_DATA1, hDB, hKey, data, buf_size, type, num_values);
 
 #ifdef LOCAL_ROUTINES
    {
