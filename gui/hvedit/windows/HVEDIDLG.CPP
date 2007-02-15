@@ -779,17 +779,10 @@ void CHveditDlg::OnSave()
 
       w = mxml_open_file(m_LastFileName);
       mxml_start_element(w, "HV");
-
       mxml_start_element(w, "units");
-      mxml_start_element(w, "demand");
-      mxml_write_value(w, "Volt");
-      mxml_end_element(w);
-      mxml_start_element(w, "measured");
-      mxml_write_value(w, "Volt");
-      mxml_end_element(w);
-      mxml_start_element(w, "current");
-      mxml_write_value(w, "micro Ampere");
-      mxml_end_element(w);
+      mxml_write_element(w, "demand", "Volt");
+      mxml_write_element(w, "measured", "Volt");
+      mxml_write_element(w, "current", "micro Ampere");
       mxml_end_element(w);
 
       for (i = 0; i < m_nChannels; i++) {
@@ -800,36 +793,25 @@ void CHveditDlg::OnSave()
          mxml_start_element(w, "channel");
 
          /* channel number */
-         mxml_start_element(w, "no");
          sprintf(str, "%d", i);
-         mxml_write_value(w, str);
-         mxml_end_element(w);
+         mxml_write_element(w, "no", str);
 
          /* channel name */
-         mxml_start_element(w, "name");
-         mxml_write_value(w, m_Name + i * m_nNameLength);
-         mxml_end_element(w);
+         mxml_write_element(w, "name", m_Name + i * m_nNameLength);
 
          /* demand value */
-         mxml_start_element(w, "demand");
          sprintf(str, "%1.2lf", m_Demand[i]);
-         mxml_write_value(w, str);
-         mxml_end_element(w);
+         mxml_write_element(w, "demand", str);
 
          /* measured value */
-         mxml_start_element(w, "measured");
          sprintf(str, "%1.2lf", m_Measured[i]);
-         mxml_write_value(w, str);
-         mxml_end_element(w);
+         mxml_write_element(w, "measured", str);
 
          /* current */
-         mxml_start_element(w, "current");
          sprintf(str, "%1.2lf", m_Current[i]);
-         mxml_write_value(w, str);
-         mxml_end_element(w);
+         mxml_write_element(w, "current", str);
 
          mxml_end_element(w);   // channel
-
       }
 
       mxml_end_element(w);      // HV
