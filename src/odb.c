@@ -5531,7 +5531,7 @@ INT db_paste(HNDLE hDB, HNDLE hKeyRoot, char *buffer)
 */
 int db_paste_node(HNDLE hDB, HNDLE hKeyRoot, PMXML_NODE node)
 {
-   char type[256], data[256], test_str[256];
+   char type[256], data[256], test_str[256], buf[10000];
    int i, status, size, tid, num_values;
    HNDLE hKey;
    PMXML_NODE child;
@@ -5631,8 +5631,10 @@ int db_paste_node(HNDLE hDB, HNDLE hKeyRoot, PMXML_NODE node)
                size = atoi(mxml_get_attribute(node, "size"));
                if (mxml_get_value(child) == NULL)
                   db_set_data_index(hDB, hKey, "", size, i, tid);
-               else
-                  db_set_data_index(hDB, hKey, mxml_get_value(child), size, i, tid);
+               else  {
+                  strlcpy(buf, mxml_get_value(child), sizeof(buf));
+                  db_set_data_index(hDB, hKey, buf, size, i, tid);
+               }
             } else {
                db_sscanf(mxml_get_value(child), data, &size, 0, tid);
                db_set_data_index(hDB, hKey, data, rpc_tid_size(tid), i, tid);
