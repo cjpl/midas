@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include "vf48.h"
 
 /********************************************************************/
@@ -20,27 +21,32 @@
     @param base  VF48 base address
     @param pdest Pointer to destination
     @param nentry Number of DWORD to transfer
-    @return status ERROR, SUCCESS
+    @return status VF48_ERR_HW, SUCCESS
 */
-int   idx = 0, inbuf;
+int   idx = 0, nframe;
 int vf48_EventRead64(MVME_INTERFACE *mvme, DWORD base, DWORD *pdest, int *nentry)
 {
   int   markerfound, j;
   DWORD lData[VF48_IDXMAX];
-  DWORD *phead;
+  DWORD *phead=NULL;
   
   int cmode, timeout;
   
   mvme_get_dmode(mvme, &cmode);
   mvme_set_dmode(mvme, MVME_DMODE_D32);
   
-  if (inbuf > VF48_IDXMAX) idx = 0;
+  if (nframe > VF48_IDXMAX) idx = 0;
   
   if (idx == 0) {
-    inbuf = vf48_NFrameRead(mvme, base);
+    nframe = vf48_NFrameRead(mvme, base);
+    //    if (nframe > 512) nframe = 512;
+    if (nframe == 0) {
+      *nentry = 0;
+      mvme_set_dmode(mvme, cmode);
+      return VF48_NO_DATA;
+    }
     // max readout buffer (HW dependent)
-    vf48_DataRead(mvme, base, lData, &inbuf);
-    //    printf("Data Read Idx=0 %d\n", inbuf);
+    vf48_DataRead(mvme, base, lData, &nframe);
   }
   
   // Check if available event found in local buffer 
@@ -48,10 +54,12 @@ int vf48_EventRead64(MVME_INTERFACE *mvme, DWORD base, DWORD *pdest, int *nentry
   markerfound = 0;
   while (timeout) {
     // Scan local buffer from current index to top for Header
-    while ((idx < inbuf) && ((lData[idx] & 0xF0000000) != VF48_HEADER)) {
+    while ((idx < nframe) && ((lData[idx] & 0xF0000000) != VF48_HEADER)) {
+      if ((lData[idx] & 0xF0000000) == 0xB0000000)
+	printf("Searching for Header found 0xB (data[%d]:0x%x), Nframe:%d\n", idx, lData[idx], nframe); 
       idx++;
     }
-    if (idx < inbuf) {
+    if (idx < nframe) {
       // Header found, save head, flag header, cp header
       timeout = 0;              // Reset to force exit on next test
       phead = pdest;            // Save top of event for evt length
@@ -63,54 +71,60 @@ int vf48_EventRead64(MVME_INTERFACE *mvme, DWORD base, DWORD *pdest, int *nentry
     } else {
       // No header found, request VME data (start at idx = 0)
       timeout--;               // Safe exit
-      inbuf = vf48_NFrameRead(mvme, base);
+      nframe = vf48_NFrameRead(mvme, base);
+      //      if (nframe > 512) nframe = 512;
       // max readout buffer (HW dependent)
+      //      memset(&lData, 0, VF48_IDXMAX);
+      if (nframe) 
+	vf48_DataRead(mvme, base, lData, &nframe);
       idx = 0;
-      vf48_DataRead(mvme, base, lData, &inbuf);
-      //      printf("Data Read Header search %d (timeout %d)\n", inbuf, timeout);
+      //      printf("Data Read Header search %d (timeout %d)\n", nframe, timeout);
     }
   }
   if ((timeout == 0) && !markerfound) {
     //    printf("vf48_EventRead: Header Loop: Timeout Header not found\n");
     idx = 0;         // make sure we read VME on next call
     *nentry = 0;               // Set returned event length
-    return ERROR;
+    return VF48_NO_DATA;
   }
   
-  //  printf("Starting data copy\n");
-  timeout = 64;
+  //  printf("Starting data copy nframe:%d idx:%d\n", nframe, idx);
+  timeout = 256;
   while(timeout) {
     timeout--;
     // copy rest of event until Trailer (nentry: valid# from last vme data)
-    while ((idx < inbuf) && ((lData[idx] & 0xF0000000) != VF48_TRAILER)) {
+    while ((idx < nframe) && ((lData[idx] & 0xF0000000) != VF48_TRAILER)) {
+      if ((lData[idx] & 0xF0000000) == 0xB0000000) {
+	printf("Searching for Trailer found 0xB (data[%d]:0x%x), Nframe:%d\n", idx, lData[idx], nframe); 
+      }
       *pdest++ = lData[idx++];
     }
     if ((lData[idx] & 0xF0000000) == VF48_TRAILER) { 
       // Event complete return
       *pdest++ = lData[idx++];  // copy Trailer
       *nentry = pdest - phead;  // Compute event length
-      //      printf("Event complete idx:%d last inbuf:%d evt len:%d\n", idx, inbuf, *nentry);
-      return SUCCESS;
+      //      printf("Event complete idx:%d last nframe:%d evt len:%d\n", idx, nframe, *nentry);
+      return VF48_SUCCESS;
     } else {
-      // No Trailer found, request VME data (start at idx = 0)
-      //      timeout--;                // Safe exit
-      j = 40000;
+      j = 80000;
       while (j) { j--; }
-      // usleep(1);
-      inbuf = vf48_NFrameRead(mvme, base);
-      vf48_DataRead(mvme,  base, lData, &inbuf);
+      //      usleep(1);
+      nframe = vf48_NFrameRead(mvme, base);
+      //     if (nframe > 512) nframe = 512;
+      if (nframe)
+	vf48_DataRead(mvme,  base, lData, &nframe);
       idx = 0;
-      // printf("Data Read Trailer search %d (timeout:%d)\n", inbuf, timeout);
+      // printf("Data Read Trailer search %d (timeout:%d)\n", nframe, timeout);
     }
     if (timeout == 0) {
       printf("vf48_EventRead: Trailer Loop: Timeout Trailer not found\n");
       idx = 0;                // make sure we read VME on next call
       *nentry = 0;               // Set returned event length
-      return ERROR;
+      return VF48_NO_TRAILER;
     }
   }
   printf(" coming out from here\n");
-  return ERROR;
+  return VF48_ERR_HW;
 }
 
 /********************************************************************/
@@ -120,7 +134,7 @@ int vf48_EventRead64(MVME_INTERFACE *mvme, DWORD base, DWORD *pdest, int *nentry
    @param base  VF48 base address
    @param pdest Pointer to destination
    @param nentry Number of DWORD to transfer
-   @return status ERROR, SUCCESS
+   @return status VF48_ERR_HW, SUCCESS
 */
 int vf48_EventRead(MVME_INTERFACE *mvme, DWORD base, DWORD *pdest, int *nentry)
 {
@@ -145,7 +159,7 @@ int vf48_EventRead(MVME_INTERFACE *mvme, DWORD base, DWORD *pdest, int *nentry)
       *nentry = 0;
       //      printf("timeout on header  data:0x%lx\n", hdata);
       mvme_set_dmode(mvme, cmode);
-      return VF48_ERR_NODATA;
+      return VF48_NO_DATA;
     }
     //    channel = (hdata >> 24) & 0xF;
     //    printf(">>>>>>>>>>>>>>> Channel : %d \n", channel);
@@ -163,7 +177,7 @@ int vf48_EventRead(MVME_INTERFACE *mvme, DWORD base, DWORD *pdest, int *nentry)
       printf("timeout on Trailer  data:0x%x\n", pdest[*nentry-1]);
       printf("nentry:%d data:0x%x base:0x%x \n", *nentry, pdest[*nentry], base+VF48_DATA_FIFO_R);
       *nentry = 0;
-      return ERROR;
+      return VF48_NO_TRAILER;
     }
     nentry--;
   }
@@ -181,35 +195,22 @@ Read N entries (32bit) from the VF48 data FIFO using the MBLT64 mode
  */
 int vf48_DataRead(MVME_INTERFACE *mvme, DWORD base, DWORD *pdest, int *nentry)
 {
-  int cmode, save_am;  
-  int i;
+  int cmode, save_am, nbytes, status;  
 
   mvme_get_dmode(mvme, &cmode);
   mvme_set_dmode(mvme, MVME_DMODE_D32);
 
-#if 0 
-  status = mvme_read_value(mvme, base+VF48_NFRAME_R);
-  if (*nentry > 256) *nentry = 256;  // limit for the FIFO size
-  printf("DataRead:%d\n", *nentry);
-#endif
-
-  //  *nentry = 1024;
-  //  printf("DataRead:%d\n", *nentry);
-
   mvme_get_am(mvme,&save_am);
-
-  mvme_set_blt(  mvme, MVME_BLT_MBLT64);
   mvme_set_am(   mvme, MVME_AM_A24_NMBLT);
 
-  /*  for (i=0; i<*nentry+2; i++) {
-    pdest[i] = 0xdeadbeef;
-  }
-  */
-
   // Transfer in MBLT64 (8bytes), nentry is in 32bits(VF48)
-  // *nentry * 8 / 2
-  mvme_read(mvme, pdest, base+VF48_DATA_FIFO_R, *nentry<<2);
-  
+  mvme_set_blt(  mvme, MVME_BLT_MBLT64);
+  nbytes = ((*nentry + 1) / 2) * 8;
+  //  nbytes = ((*nentry << 2));
+
+  status = mvme_read(mvme, pdest, base+VF48_DATA_FIFO_R, nbytes);
+  if (status != 1)
+    printf("vme_read error %d\n", status);
   mvme_set_am(mvme, save_am);
   mvme_set_dmode(mvme, cmode);
   return (*nentry);
