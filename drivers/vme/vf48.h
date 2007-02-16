@@ -10,19 +10,21 @@
 #
 #include <stdio.h>
 #include <string.h>
-#include "vmicvme.h"
- 
+// #include "vmicvme.h"
+#include "mvmestd.h"
+
 #ifndef  __VF48_INCLUDE_H__
 #define  __VF48_INCLUDE_H__
 
 /* Definitions */
-#define VF48_IDXMAX 1024
+#define VF48_IDXMAX 4096
  
 /* Registers */
 #define  VF48_MAX_CHANNELS         (DWORD) 48
 #define  VF48_SUCCESS              (int)   (1)
+#define  VF48_NO_DATA              (int)   (2)
 #define  VF48_ERR_PARM             (int)   (-1)
-#define  VF48_ERR_NODATA           (int)   (503)
+#define  VF48_NO_TRAILER           (int)   (-2)
 #define  VF48_ERR_HW               (int)   (603)
 #define  VF48_CSR_REG_RW           (DWORD) (0)          /**< -RW-D16/32 */
 #define  VF48_SELECTIVE_SET_W      (DWORD) (0x0010)
@@ -35,7 +37,7 @@
 #define  VF48_GRP_REG_RW           (DWORD) (0x0090)
 #define  VF48_NFRAME_R             (DWORD) (0x00A0)  /**< -R-D16/32 */
 #define  VF48_GLOBAL_RESET_W       (DWORD) (0x00B0)  /**< -W */
-#define  VF48_DATA_FIFO_R          (DWORD) (0x0100)  /**< -R-D32 */
+#define  VF48_DATA_FIFO_R          (DWORD) (0x1000)  /**< -R-D32 */
 /*
 Parameter frame
 15 ...    ...  
