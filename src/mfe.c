@@ -95,6 +95,7 @@ EQUIPMENT *interrupt_eq = NULL;
 EVENT_HEADER *interrupt_odb_buffer;
 BOOL interrupt_odb_buffer_valid;
 BOOL slowcont_eq = FALSE;
+void *event_buffer;
 
 int send_event(INT index);
 void send_all_periodic_events(INT transition);
@@ -966,7 +967,7 @@ int send_event(INT index)
       pevent = frag_buffer;
    } else {
       /* return value should be valid pointer. if NULL BIG error ==> abort  */
-      pevent = dm_pointer_get();
+      pevent = (EVENT_HEADER *)event_buffer;
       if (pevent == NULL) {
          cm_msg(MERROR, "send_event", "dm_pointer_get not returning valid pointer");
          return SS_NO_MEMORY;
@@ -1042,10 +1043,6 @@ int send_event(INT index)
 
             /* send event to buffer */
             if (equipment[index].buffer_handle) {
-#ifdef USE_EVENT_CHANNEL
-               dm_pointer_increment(equipment[index].buffer_handle,
-                                    pfragment->data_size + sizeof(EVENT_HEADER));
-#else
                rpc_flush_event();
                status = bm_send_event(equipment[index].buffer_handle, pfragment,
                                       pfragment->data_size + sizeof(EVENT_HEADER), SYNC);
@@ -1053,7 +1050,6 @@ int send_event(INT index)
                   cm_msg(MERROR, "send_event", "bm_send_event(SYNC) error %d", status);
                   return status;
                }
-#endif
             }
          }
 
@@ -1077,10 +1073,6 @@ int send_event(INT index)
 
          /* send event to buffer */
          if (equipment[index].buffer_handle) {
-#ifdef USE_EVENT_CHANNEL
-            dm_pointer_increment(equipment[index].buffer_handle,
-                                 pevent->data_size + sizeof(EVENT_HEADER));
-#else
             rpc_flush_event();
             status = bm_send_event(equipment[index].buffer_handle, pevent,
                                    pevent->data_size + sizeof(EVENT_HEADER), SYNC);
@@ -1093,7 +1085,6 @@ int send_event(INT index)
                cm_msg(MERROR, "send_event", "bm_flush_cache(SYNC) error %d", status);
                return status;
             }
-#endif
          }
 
          /* send event to ODB if RO_ODB flag is set or history is on. Do not
@@ -1112,12 +1103,6 @@ int send_event(INT index)
       equipment[index].events_sent = 0;
    } else
       equipment[index].serial_number--;
-
-   /* emtpy event buffer */
-#ifdef USE_EVENT_CHANNEL
-   if ((status = dm_area_flush()) != CM_SUCCESS)
-      cm_msg(MERROR, "send_event", "dm_area_flush: %i", status);
-#endif
 
    /* why do we flush the cache for all equipments? */
    for (i = 0; equipment[i].name[0]; i++)
@@ -1201,13 +1186,8 @@ void interrupt_routine(void)
       interrupt_eq->events_sent++;
 
       if (interrupt_eq->buffer_handle) {
-#ifdef USE_EVENT_CHANNEL
-         dm_pointer_increment(interrupt_eq->buffer_handle,
-                              pevent->data_size + sizeof(EVENT_HEADER));
-#else
          rpc_send_event(interrupt_eq->buffer_handle, pevent,
                         pevent->data_size + sizeof(EVENT_HEADER), SYNC);
-#endif
       }
 
       /* send event to ODB */
@@ -1435,13 +1415,7 @@ INT scheduler(void)
             pevent = NULL;
 
             while ((source = poll_event(eq_info->source, eq->poll_count, FALSE)) > 0) {
-               pevent = dm_pointer_get();
-               if (pevent == NULL) {
-                  cm_msg(MERROR, "scheduler",
-                         "polled, dm_pointer_get not returning valid pointer");
-                  status = SS_NO_MEMORY;
-                  goto net_error;
-               }
+               pevent = (EVENT_HEADER *)event_buffer;
 
                /* compose MIDAS event header */
                pevent->event_id = eq_info->event_id;
@@ -1520,8 +1494,9 @@ INT scheduler(void)
                            update_odb(pevent, eq->hkey_variables, eq->format);
 
 #ifdef USE_EVENT_CHANNEL
-                     dm_pointer_increment(eq->buffer_handle,
-                                          pevent->data_size + sizeof(EVENT_HEADER));
+                     // eq->buffer_handle???
+                     send_tcp(rpc_get_event_sock(), event_buffer,
+                              pevent->data_size + sizeof(EVENT_HEADER));
 #else
                      status = rpc_send_event(eq->buffer_handle, pevent,
                                              pevent->data_size + sizeof(EVENT_HEADER),
@@ -1555,7 +1530,7 @@ INT scheduler(void)
             }
 
             /* send event to ODB */
-            if (pevent && (eq_info->read_on & RO_ODB || eq_info->history)) {
+            if (pevent && pevent->data_size && (eq_info->read_on & RO_ODB || eq_info->history)) {
                if (actual_millitime - eq->last_called > ODB_UPDATE_TIME && pevent != NULL) {
                   eq->last_called = actual_millitime;
                   update_odb(pevent, eq->hkey_variables, eq->format);
@@ -1724,11 +1699,6 @@ INT scheduler(void)
          if (max_bytes_per_sec < SERVER_CACHE_SIZE) {
             interrupt_enable(FALSE);
 
-#ifdef USE_EVENT_CHANNEL
-            if ((status = dm_area_flush()) != CM_SUCCESS)
-               cm_msg(MERROR, "scheduler", "dm_area_flush: %i", status);
-#endif
-
             for (i = 0; equipment[i].name[0]; i++) {
                if (equipment[i].buffer_handle) {
                   /* check if buffer already flushed */
@@ -1828,7 +1798,7 @@ int mfe(char *ahost_name, char *aexp_name, BOOL adebug)
 int main(int argc, char *argv[])
 #endif
 {
-   INT status, i, j, dm_size;
+   INT status, i, j;
    INT daemon;
 
    host_name[0] = 0;
@@ -1887,39 +1857,28 @@ int main(int argc, char *argv[])
 
    /* check event and buffer sizes */
    if (event_buffer_size < 2 * max_event_size) {
-      printf("event_buffer_size too small for max. event size\n");
+      cm_msg(MERROR, "mainFE", "event_buffer_size too small for max. event size\n");
       ss_sleep(5000);
       return 1;
    }
 
    if (max_event_size > MAX_EVENT_SIZE) {
-      printf("Requested max_event_size (%d) exceeds max. system event size (%d)",
+      cm_msg(MERROR, "mainFE", "Requested max_event_size (%d) exceeds max. system event size (%d)",
              max_event_size, MAX_EVENT_SIZE);
       ss_sleep(5000);
       return 1;
    }
 
-   dm_size = event_buffer_size;
-
 #ifdef OS_VXWORKS
-   /* override dm_size in case of VxWorks
-      take remaining free memory and use 20% of it for dm_ */
-   dm_size = 2 * 10 * (max_event_size + sizeof(EVENT_HEADER) + sizeof(INT));
-   if (dm_size > memFindMax()) {
+   /* override event_buffer_size in case of VxWorks
+      take remaining free memory and use 20% of it for rb_ */
+   event_buffer_size = 2 * 10 * (max_event_size + sizeof(EVENT_HEADER) + sizeof(INT));
+   if (event_buffer_size > memFindMax()) {
       cm_msg(MERROR, "mainFE", "Not enough mem space for event size");
       return 0;
    }
-   /* takes overall 20% of the available memory resource for dm_() */
-   dm_size = 0.2 * memFindMax();
-
-   /* there are two buffers */
-   dm_size /= 2;
-#endif
-
-   /* reduce memory size for MS-DOS */
-#ifdef OS_MSDOS
-   if (dm_size > 0x4000)
-      dm_size = 0x4000;         /* 16k */
+   /* takes overall 20% of the available memory resource for rb_() */
+   event_buffer_size = 0.2 * memFindMax();
 #endif
 
    /* retrieve frontend index from environment if defined */
@@ -1934,12 +1893,11 @@ int main(int argc, char *argv[])
    /* inform user of settings */
    printf("Frontend name          :     %s\n", full_frontend_name);
    printf("Event buffer size      :     %d\n", event_buffer_size);
-   printf("Buffer allocation      : 2 x %d\n", dm_size);
    printf("System max event size  :     %d\n", MAX_EVENT_SIZE);
    printf("User max event size    :     %d\n", max_event_size);
    if (max_event_size_frag > 0)
       printf("User max frag. size    :     %d\n", max_event_size_frag);
-   printf("# of events per buffer :     %d\n\n", dm_size / max_event_size);
+   printf("# of events per buffer :     %d\n\n", event_buffer_size / max_event_size);
 
    if (daemon) {
       printf("\nBecoming a daemon...\n");
@@ -1967,10 +1925,10 @@ int main(int argc, char *argv[])
    if (display_period)
       printf("OK\n");
 
-   /* book buffer space */
-   status = dm_buffer_create(dm_size, max_event_size);
-   if (status != CM_SUCCESS) {
-      printf("dm_buffer_create: Not enough memory or event too big\n");
+   /* allocate buffer space */
+   event_buffer = malloc(event_buffer_size);
+   if (event_buffer == NULL) {
+      cm_msg(MERROR, "mainFE", "mfe: Not enough memory or event too big\n");
       return 1;
    }
 
@@ -2053,7 +2011,7 @@ int main(int argc, char *argv[])
    }
 
    /* switch on interrupts if running */
-   if (interrupt_eq && run_state == STATE_RUNNING)
+   if (run_state == STATE_RUNNING)
       interrupt_enable(TRUE);
 
    /* initialize ss_getchar */
