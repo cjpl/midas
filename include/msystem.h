@@ -631,13 +631,11 @@ extern "C" {
    INT EXPRT dm_async_area_send(void *pointer);
 
    /*---- ring buffer routines ----*/
-   int EXPRT rb_create(int size, int *ring_buffer_handle);
+   int EXPRT rb_create(int size, int max_event_size, int *ring_buffer_handle);
    int EXPRT rb_delete(int ring_buffer_handle);
-   int EXPRT rb_create(int size, int *ring_buffer_handle);
-   int EXPRT rb_delete(int handle);
-   int EXPRT rb_get_wp(int handle, char **p, int millisec);
+   int EXPRT rb_get_wp(int handle, void **p, int millisec);
    int EXPRT rb_increment_wp(int handle, int size);
-   int EXPRT rb_get_rp(int handle, char **p, int millisec);
+   int EXPRT rb_get_rp(int handle, void **p, int millisec);
    int EXPRT rb_increment_rp(int handle, int size);
 
 /*---- Include RPC identifiers -------------------------------------*/

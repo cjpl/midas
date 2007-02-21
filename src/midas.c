@@ -17007,6 +17007,369 @@ INT dm_area_flush(void)
 
 /********************************************************************/
 
+/********************************************************************\
+*                                                                    *
+*                 Ring buffer functions                              *
+*                                                                    *
+* Provide an inter-thread buffer scheme for handling front-end       *
+* events. This code allows concurrent data acquisition, calibration  *
+* and network transfer on a multi-CPU machine. One thread reads      *
+* out the data, passes it vis the ring buffer functions              *
+* to another thread running on the other CPU, which can then         *
+* calibrate and/or send the data over the network.                   *
+*                                                                    *
+\********************************************************************/
+
+typedef struct {
+   unsigned char *buffer;
+   unsigned int  size;
+   unsigned int  max_event_size;
+   unsigned char *rp;
+   unsigned char *wp;
+   int           mutex;
+} RING_BUFFER;
+
+#define MAX_RING_BUFFER 10
+
+RING_BUFFER rb[MAX_RING_BUFFER];
+
+#undef RB_DEBUG
+
+/********************************************************************/
+int rb_create(int size, int max_event_size, int *handle)
+/********************************************************************\
+  
+  Routine: rb_create
+
+  Purpose: Create a ring buffer with a given size
+
+  Input:
+    int size             Size of ring buffer, must be larger than
+                         2*max_event_size
+    int max_event_size   Maximum event size to be placed into
+                         ring buffer
+  Output:
+    int *handle          Handle to ring buffer
+
+  Function value:
+    DB_SUCCESS           Successful completion
+    DB_NO_MEMORY         Maximum number of ring buffers exceeded
+    DB_INVALID_PARAM     Invalid event size specified
+
+\********************************************************************/
+{
+   int i, status;
+   char str[80];
+
+   for (i=0 ; i<MAX_RING_BUFFER ; i++)
+      if (rb[i].buffer == NULL)
+         break;
+
+   if (i == MAX_RING_BUFFER)
+      return DB_NO_MEMORY;
+
+   if (size < max_event_size * 2)
+      return DB_INVALID_PARAM;
+
+   memset(&rb[i], 0, sizeof(RING_BUFFER));
+   rb[i].buffer = M_MALLOC(size);
+   assert(rb[i].buffer);
+   rb[i].size = size;
+   rb[i].max_event_size = max_event_size;
+   rb[i].rp = rb[i].buffer;
+   rb[i].wp = rb[i].buffer;
+
+   sprintf(str, "RB%d", i);
+   status = ss_mutex_create(str, &rb[i].mutex);
+   assert(status == SS_SUCCESS || status == SS_CREATED);
+
+   *handle = i+1;
+
+   return DB_SUCCESS;
+}
+
+/********************************************************************/
+int rb_delete(int handle)
+/********************************************************************\
+
+  Routine: rb_create
+
+  Purpose: Create a ring buffer with a given size
+
+  Input:
+    none
+  Output:
+    int handle       Handle to ring buffer
+
+  Function value:
+    DB_SUCCESS       Successful completion
+
+\********************************************************************/
+{
+   if (handle < 0 || handle >= MAX_RING_BUFFER || rb[handle-1].buffer == NULL)
+      return DB_INVALID_HANDLE;
+
+   ss_mutex_delete(rb[handle-1].mutex, TRUE);
+   M_FREE(rb[handle-1].buffer);
+   memset(&rb[handle-1], 0, sizeof(RING_BUFFER));
+
+   return DB_SUCCESS;
+}
+
+/********************************************************************/
+int rb_get_wp(int handle, void **p, int millisec)
+/********************************************************************\
+
+Routine: rb_get_wp
+
+  Purpose: Retrieve write pointer where new data can be written
+
+  Input:
+     int handle               Ring buffer handle
+     int millisec             Optional timeout in milliseconds if
+                              buffer is full. Zero to wait infinitely.
+
+  Output:
+    char **p                  Write pointer
+
+  Function value:
+    DB_SUCCESS       Successful completion
+
+\********************************************************************/
+{
+   int h, i;
+   char *rp;
+   
+   if (handle < 1 || handle > MAX_RING_BUFFER || rb[handle-1].buffer == NULL)
+      return DB_INVALID_HANDLE;
+
+   h = handle - 1;
+
+   for (i=0 ; i<=millisec/10 ; i++) {
+
+      /* protect pointer modification by mutex */
+      //ss_mutex_wait_for(rb[h].mutex, 0);
+
+      rp = rb[h].rp; // keep local copy, rb[h].rp might be changed by other thread
+
+      /* check if enough size for wp >= rp without wrap-around */
+      if (rb[h].wp >= rp && 
+          rb[h].wp + rb[h].max_event_size <= rb[h].buffer + rb[h].size - rb[h].max_event_size) {
+         *p = rb[h].wp;
+         //ss_mutex_release(rb[h].mutex);
+         return DB_SUCCESS;
+      }
+
+      /* check if enough size for wp >= rp with wrap-around */
+      if (rb[h].wp >= rp && 
+          rb[h].wp + rb[h].max_event_size > rb[h].buffer + rb[h].size - rb[h].max_event_size &&
+          rb[h].rp > rb[h].buffer) {  // next increment of wp wraps around, so need space at beginning
+         *p = rb[h].wp;
+         //ss_mutex_release(rb[h].mutex);
+         return DB_SUCCESS;
+      }
+
+      /* check if enough size for wp < rp */
+      if (rb[h].wp < rp && rb[h].wp + rb[h].max_event_size < rp) {
+         *p = rb[h].wp;
+         //ss_mutex_release(rb[h].mutex);
+         return DB_SUCCESS;
+      }
+
+      //ss_mutex_release(rb[h].mutex);
+
+      if (millisec = 0)
+         return DB_TIMEOUT;
+
+      /* wait one time slice */
+      ss_sleep(10);
+   }
+
+   return DB_TIMEOUT;
+}
+
+/********************************************************************/
+int rb_increment_wp(int handle, int size)
+/********************************************************************\
+
+  Routine: rb_increment_wp
+
+  Purpose: Increment current write pointer, making the data at 
+           the write pointer available to the receiving thread                            
+
+  Input:
+     int handle               Ring buffer handle
+     int size                 Number of bytes placed at the WP
+
+  Output:
+    NONE
+
+  Function value:
+    DB_SUCCESS       Successful completion
+
+\********************************************************************/
+{
+   int h;
+   unsigned char *old_wp, *new_wp;
+
+   if (handle < 1 || handle > MAX_RING_BUFFER || rb[handle-1].buffer == NULL)
+      return DB_INVALID_HANDLE;
+
+   h = handle - 1;
+
+   if ((DWORD) size > rb[h].max_event_size)
+      return DB_INVALID_PARAM;
+
+   /* protect pointer modification by mutex */
+   //ss_mutex_wait_for(rb[h].mutex, 0);
+
+   old_wp = rb[h].wp;
+   new_wp = rb[h].wp + size;
+
+   /* wrap around wp if not enough space */
+   if (new_wp > rb[h].buffer + rb[h].size - rb[h].max_event_size) {
+      new_wp = rb[h].buffer;
+      if (rb[h].rp == rb[h].buffer)
+         printf("################ internal error, rp=buffer on wp wrap around ##############\n");
+   }
+
+   rb[h].wp = new_wp;
+
+   //ss_mutex_release(rb[h].mutex);
+
+#ifdef RB_DEBUG
+   ss_mutex_wait_for(rb[h].mutex, 0);
+   printf("rb_increment_wp: rp=%p, wp=%p->%p\n", 
+          rb[h].rp-rb[h].buffer, old_wp-rb[h].buffer, 
+          rb[h].wp-rb[h].buffer);
+   ss_mutex_release(rb[h].mutex);
+#endif
+
+   return DB_SUCCESS;
+}
+
+/********************************************************************/
+int rb_get_rp(int handle, void **p, int millisec)
+/********************************************************************\
+
+  Routine: rb_get_rp
+
+  Purpose: Obtain the current read pointer at which new data is 
+           available with optional timeout
+
+  Input:
+    int handle               Ring buffer handle
+    int millisec             Optional timeout in milliseconds if
+                             buffer is empty. Zero to wait infinitely.
+
+  Output:
+    char **p                 Address of pointer pointing to newly
+                             available data. If p == NULL, only
+                             return status.
+
+  Function value:
+    DB_SUCCESS       Successful completion
+
+\********************************************************************/
+{
+   int i, h;
+
+   if (handle < 1 || handle > MAX_RING_BUFFER || rb[handle-1].buffer == NULL)
+      return DB_INVALID_HANDLE;
+
+   h = handle - 1;
+
+   for (i=0 ; i <= millisec/10 ; i++) {
+
+      /* protect pointer access by mutex */
+      //ss_mutex_wait_for(rb[h].mutex, 0);
+
+      if (rb[h].wp != rb[h].rp) {
+         if (p != NULL)
+            *p = rb[handle-1].rp;
+
+         //ss_mutex_release(rb[h].mutex);
+
+#ifdef RB_DEBUG
+         ss_mutex_wait_for(rb[h].mutex, 0);
+         printf("rb_get_rp: return rp=%p, wp=%p\n", rb[h].rp-rb[h].buffer, 
+                                                    rb[h].wp-rb[h].buffer);
+         ss_mutex_release(rb[h].mutex);
+#endif
+         return DB_SUCCESS;
+      }
+
+      //ss_mutex_release(rb[h].mutex);
+
+      if (millisec == 0)
+         return DB_TIMEOUT;
+
+      /* wait one time slice */
+      ss_sleep(10);
+   }
+
+   return DB_TIMEOUT;
+}
+
+/********************************************************************/
+int rb_increment_rp(int handle, int size)
+/********************************************************************\
+
+  Routine: rb_increment_rp
+
+  Purpose: Increment current read pointer, freeing up space for
+           the writing thread.
+
+  Input:
+     int handle               Ring buffer handle
+     int size                 Number of bytes to free up at current
+                              read pointer
+
+  Output:
+    NONE
+
+  Function value:
+    DB_SUCCESS       Successful completion
+
+\********************************************************************/
+{
+   int h;
+
+   unsigned char *new_rp, *old_rp;
+
+   if (handle < 1 || handle > MAX_RING_BUFFER || rb[handle-1].buffer == NULL)
+      return DB_INVALID_HANDLE;
+
+   h = handle - 1;
+
+   /* protect pointer modification by mutex */
+   //ss_mutex_wait_for(rb[h].mutex, 0);
+
+   old_rp = rb[h].rp;
+   new_rp = rb[h].rp + size;
+
+   /* wrap around if not enough space left */
+   if (new_rp + rb[h].max_event_size > rb[h].buffer + rb[h].size)
+      new_rp = rb[h].buffer;
+
+   rb[handle-1].rp = new_rp;
+
+   //ss_mutex_release(rb[h].mutex);
+
+#ifdef RB_DEBUG
+   ss_mutex_wait_for(rb[h].mutex, 0);
+   printf("rb_increment_rp: rp=%p->%p, wp=%p\n", 
+      old_rp-rb[h].buffer, 
+      rb[h].rp-rb[h].buffer, 
+      rb[h].wp-rb[h].buffer);
+   ss_mutex_release(rb[h].mutex);
+#endif
+
+   return DB_SUCCESS;
+}
+
+
+
 /**dox***************************************************************/
 #endif                          /* DOXYGEN_SHOULD_SKIP_THIS */
 
