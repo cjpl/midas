@@ -164,24 +164,6 @@
 			</File>
 			<File
 				RelativePath="..\examples\experiment\frontend.c">
-				<FileConfiguration
-					Name="Debug|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="0"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-						BrowseInformation="1"/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="2"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-						BrowseInformation="1"/>
-				</FileConfiguration>
 			</File>
 			<File
 				RelativePath="..\src\ftplib.c">
@@ -342,6 +324,9 @@
 			Filter="h;hpp;hxx;hm;inl;fi;fd">
 			<File
 				RelativePath="..\include\midas.h">
+			</File>
+			<File
+				RelativePath="..\include\msystem.h">
 			</File>
 			<File
 				RelativePath="..\include\mvmestd.h">
