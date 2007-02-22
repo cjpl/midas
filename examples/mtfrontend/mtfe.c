@@ -308,8 +308,6 @@ int readout_thread(void *param)
                data_size = read_trigger_event(( char *) (pevent + 1), 0);
                pevent->data_size = data_size;
 
-               //printf("Write %p - %p\n", pevent, (char *)pevent + sizeof(EVENT_HEADER) + data_size); //##
-
                if (data_size > 0)
                   /* put event into ring buffer */
                   rb_increment_wp(rb_handle, sizeof(EVENT_HEADER) + data_size);
@@ -339,8 +337,6 @@ INT receive_trigger_event(char *pevent, INT off)
       return 0;
 
    data_size = prb->data_size;
-
-   //printf("Read %p - %p\n", prb, (char *)prb + sizeof(EVENT_HEADER) + data_size); //##
 
    memcpy(pevent, prb+1, data_size);
 
@@ -420,8 +416,7 @@ INT read_trigger_event(char *pevent, INT off)
 
    //ss_sleep(10);
 
-   //return bk_size(pevent);
-   return 990000;
+   return bk_size(pevent);
 }
 
 /*-- Scaler event --------------------------------------------------*/
