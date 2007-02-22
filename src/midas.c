@@ -17026,14 +17026,11 @@ typedef struct {
    unsigned int  max_event_size;
    unsigned char *rp;
    unsigned char *wp;
-   int           mutex;
 } RING_BUFFER;
 
 #define MAX_RING_BUFFER 10
 
 RING_BUFFER rb[MAX_RING_BUFFER];
-
-#undef RB_DEBUG
 
 /********************************************************************/
 int rb_create(int size, int max_event_size, int *handle)
@@ -17058,8 +17055,7 @@ int rb_create(int size, int max_event_size, int *handle)
 
 \********************************************************************/
 {
-   int i, status;
-   char str[80];
+   int i;
 
    for (i=0 ; i<MAX_RING_BUFFER ; i++)
       if (rb[i].buffer == NULL)
@@ -17078,10 +17074,6 @@ int rb_create(int size, int max_event_size, int *handle)
    rb[i].max_event_size = max_event_size;
    rb[i].rp = rb[i].buffer;
    rb[i].wp = rb[i].buffer;
-
-   sprintf(str, "RB%d", i);
-   status = ss_mutex_create(str, &rb[i].mutex);
-   assert(status == SS_SUCCESS || status == SS_CREATED);
 
    *handle = i+1;
 
@@ -17109,7 +17101,6 @@ int rb_delete(int handle)
    if (handle < 0 || handle >= MAX_RING_BUFFER || rb[handle-1].buffer == NULL)
       return DB_INVALID_HANDLE;
 
-   ss_mutex_delete(rb[handle-1].mutex, TRUE);
    M_FREE(rb[handle-1].buffer);
    memset(&rb[handle-1], 0, sizeof(RING_BUFFER));
 
@@ -17147,16 +17138,12 @@ Routine: rb_get_wp
 
    for (i=0 ; i<=millisec/10 ; i++) {
 
-      /* protect pointer modification by mutex */
-      //ss_mutex_wait_for(rb[h].mutex, 0);
-
       rp = rb[h].rp; // keep local copy, rb[h].rp might be changed by other thread
 
       /* check if enough size for wp >= rp without wrap-around */
       if (rb[h].wp >= rp && 
           rb[h].wp + rb[h].max_event_size <= rb[h].buffer + rb[h].size - rb[h].max_event_size) {
          *p = rb[h].wp;
-         //ss_mutex_release(rb[h].mutex);
          return DB_SUCCESS;
       }
 
@@ -17165,18 +17152,14 @@ Routine: rb_get_wp
           rb[h].wp + rb[h].max_event_size > rb[h].buffer + rb[h].size - rb[h].max_event_size &&
           rb[h].rp > rb[h].buffer) {  // next increment of wp wraps around, so need space at beginning
          *p = rb[h].wp;
-         //ss_mutex_release(rb[h].mutex);
          return DB_SUCCESS;
       }
 
       /* check if enough size for wp < rp */
       if (rb[h].wp < rp && rb[h].wp + rb[h].max_event_size < rp) {
          *p = rb[h].wp;
-         //ss_mutex_release(rb[h].mutex);
          return DB_SUCCESS;
       }
-
-      //ss_mutex_release(rb[h].mutex);
 
       if (millisec == 0)
          return DB_TIMEOUT;
@@ -17220,30 +17203,16 @@ int rb_increment_wp(int handle, int size)
    if ((DWORD) size > rb[h].max_event_size)
       return DB_INVALID_PARAM;
 
-   /* protect pointer modification by mutex */
-   //ss_mutex_wait_for(rb[h].mutex, 0);
-
    old_wp = rb[h].wp;
    new_wp = rb[h].wp + size;
 
    /* wrap around wp if not enough space */
    if (new_wp > rb[h].buffer + rb[h].size - rb[h].max_event_size) {
       new_wp = rb[h].buffer;
-      if (rb[h].rp == rb[h].buffer)
-         printf("################ internal error, rp=buffer on wp wrap around ##############\n");
+      assert(rb[h].rp != rb[h].buffer);
    }
 
    rb[h].wp = new_wp;
-
-   //ss_mutex_release(rb[h].mutex);
-
-#ifdef RB_DEBUG
-   ss_mutex_wait_for(rb[h].mutex, 0);
-   printf("rb_increment_wp: rp=%p, wp=%p->%p\n", 
-          rb[h].rp-rb[h].buffer, old_wp-rb[h].buffer, 
-          rb[h].wp-rb[h].buffer);
-   ss_mutex_release(rb[h].mutex);
-#endif
 
    return DB_SUCCESS;
 }
@@ -17281,25 +17250,11 @@ int rb_get_rp(int handle, void **p, int millisec)
 
    for (i=0 ; i <= millisec/10 ; i++) {
 
-      /* protect pointer access by mutex */
-      //ss_mutex_wait_for(rb[h].mutex, 0);
-
       if (rb[h].wp != rb[h].rp) {
          if (p != NULL)
             *p = rb[handle-1].rp;
-
-         //ss_mutex_release(rb[h].mutex);
-
-#ifdef RB_DEBUG
-         ss_mutex_wait_for(rb[h].mutex, 0);
-         printf("rb_get_rp: return rp=%p, wp=%p\n", rb[h].rp-rb[h].buffer, 
-                                                    rb[h].wp-rb[h].buffer);
-         ss_mutex_release(rb[h].mutex);
-#endif
          return DB_SUCCESS;
       }
-
-      //ss_mutex_release(rb[h].mutex);
 
       if (millisec == 0)
          return DB_TIMEOUT;
@@ -17342,9 +17297,6 @@ int rb_increment_rp(int handle, int size)
 
    h = handle - 1;
 
-   /* protect pointer modification by mutex */
-   //ss_mutex_wait_for(rb[h].mutex, 0);
-
    old_rp = rb[h].rp;
    new_rp = rb[h].rp + size;
 
@@ -17353,17 +17305,6 @@ int rb_increment_rp(int handle, int size)
       new_rp = rb[h].buffer;
 
    rb[handle-1].rp = new_rp;
-
-   //ss_mutex_release(rb[h].mutex);
-
-#ifdef RB_DEBUG
-   ss_mutex_wait_for(rb[h].mutex, 0);
-   printf("rb_increment_rp: rp=%p->%p, wp=%p\n", 
-      old_rp-rb[h].buffer, 
-      rb[h].rp-rb[h].buffer, 
-      rb[h].wp-rb[h].buffer);
-   ss_mutex_release(rb[h].mutex);
-#endif
 
    return DB_SUCCESS;
 }
