@@ -286,6 +286,7 @@ int readout_thread(void *param)
    int status;
    DWORD lam, data_size;
    EVENT_HEADER *pevent;
+   void *p;
 
    do {
       if (interrupt_enabled) {
@@ -294,7 +295,8 @@ int readout_thread(void *param)
          if (lam & LAM_SOURCE_STATION(LAM_SOURCE(0, 0xFFFFFF))) {
 
             /* obtain buffer space */
-            status = rb_get_wp(rb_handle, (void **)&pevent, 100);
+            status = rb_get_wp(rb_handle, &p, 100);
+            pevent = (EVENT_HEADER *)p;
 
             if (status == DB_SUCCESS) {
                /* compose event header */
@@ -329,8 +331,10 @@ INT receive_trigger_event(char *pevent, INT off)
 {
    int status, data_size;
    EVENT_HEADER *prb;
+   void *p;
 
-   status = rb_get_rp(rb_handle, (void **)&prb, 10);
+   status = rb_get_rp(rb_handle, &p, 10);
+   prb = (EVENT_HEADER *)p;
    if (status == DB_TIMEOUT)
       return 0;
 
