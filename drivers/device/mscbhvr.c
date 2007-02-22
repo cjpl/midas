@@ -108,7 +108,7 @@ INT mscbhvr_init(HNDLE hkey, void **pinfo, INT channels, INT(*bd) (INT cmd, ...)
          status = db_get_data_index(hDB, hsubkey, &block_channels, &size, i, TID_INT);
          assert(status == DB_SUCCESS);
 
-         for (j = 0 ; j<block_channels ; j++)
+         for (j = 0 ; j<block_channels && index < channels ; j++)
             info->settings.address[index++] = block_address + j;
       }
    } else {
