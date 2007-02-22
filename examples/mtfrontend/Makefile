@@ -91,7 +91,6 @@ LIB = $(LIB_DIR)/libmidas.a
 
 # compiler
 CC = gcc
-CXX = g++
 CFLAGS += -g -I$(INC_DIR) -I$(DRV_DIR)
 LDFLAGS +=
 
@@ -106,7 +105,7 @@ $(DRIVER).o: $(DRV_DIR)/$(DRIVER).c
 	$(CC) $(CFLAGS) $(OSFLAGS) -c -o $(DRIVER).o $(DRV_DIR)/$(DRIVER).c
 
 %.o: %.c experim.h
-	$(CXX) $(USERFLAGS) $(ROOTCFLAGS) $(CFLAGS) $(OSFLAGS) -o $@ -c $<
+	$(CC) $(USERFLAGS) $(ROOTCFLAGS) $(CFLAGS) $(OSFLAGS) -o $@ -c $<
 
 clean::
 	rm -f *.o *~ \#*
