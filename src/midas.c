@@ -17138,7 +17138,7 @@ Routine: rb_get_wp
 \********************************************************************/
 {
    int h, i;
-   char *rp;
+   unsigned char *rp;
    
    if (handle < 1 || handle > MAX_RING_BUFFER || rb[handle-1].buffer == NULL)
       return DB_INVALID_HANDLE;
@@ -17178,7 +17178,7 @@ Routine: rb_get_wp
 
       //ss_mutex_release(rb[h].mutex);
 
-      if (millisec = 0)
+      if (millisec == 0)
          return DB_TIMEOUT;
 
       /* wait one time slice */
