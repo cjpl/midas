@@ -5,7 +5,7 @@
 
   Contents:     Multi-threaded version of example frontend code.
 
-  $Id: frontend.c 3384 2006-10-21 04:29:18Z amaudruz $
+  $Id$
 
 \********************************************************************/
 
