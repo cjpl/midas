@@ -29,7 +29,6 @@ rm -Rf /tmp/mxml
 
 # copy to download area
 cp /tmp/$archive ~/html/midas/download/tar/$archive
-cp /tmp/$archive ~/html/midas/download/tar/midas-latest.tar.gz
 cd ~/midas
 cp doc/CHANGELOG.TXT ~/html/midas/download/CHANGELOG
 
