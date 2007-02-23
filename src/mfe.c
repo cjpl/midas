@@ -92,16 +92,24 @@ struct {
 extern EQUIPMENT equipment[];
 
 EQUIPMENT *interrupt_eq = NULL;
-EVENT_HEADER *interrupt_odb_buffer;
-BOOL interrupt_odb_buffer_valid;
+EQUIPMENT *multithread_eq = NULL;
 BOOL slowcont_eq = FALSE;
 void *event_buffer;
 
+/* inter-thread communication */
+int rbh1, rbh2;
+int stop_readout_thread;
+int readout_thread(void *param);
+int readout_thread_active;
+
 int send_event(INT index);
+int receive_trigger_event(EQUIPMENT *eq);
 void send_all_periodic_events(INT transition);
 void interrupt_routine(void);
-void interrupt_enable(BOOL flag);
+void readout_enable(BOOL flag);
+int readout_enabled(void);
 void display(BOOL bInit);
+BOOL logger_root();
 
 /*---- ODB records -------------------------------------------------*/
 
@@ -139,7 +147,7 @@ INT tr_start(INT rn, char *error)
 
    /* reset serial numbers */
    for (i = 0; equipment[i].name[0]; i++) {
-      equipment[i].serial_number = 1;
+      equipment[i].serial_number = 0;
       equipment[i].subevent_number = 0;
       equipment[i].stats.events_sent = 0;
       equipment[i].odb_in = equipment[i].odb_out = 0;
@@ -158,8 +166,8 @@ INT tr_start(INT rn, char *error)
          ss_printf(36, 2, "%d", rn);
       }
 
-      /* enable interrupts */
-      interrupt_enable(TRUE);
+      /* enable interrupts or readout thread */
+      readout_enable(TRUE);
    }
 
    return status;
@@ -172,8 +180,8 @@ INT tr_stop(INT rn, char *error)
    INT status, i;
    EQUIPMENT *eq;
 
-   /* disable interrupts */
-   interrupt_enable(FALSE);
+   /* disable interrupts or readout thread */
+   readout_enable(FALSE);
 
    status = end_of_run(rn, error);
 
@@ -188,11 +196,16 @@ INT tr_stop(INT rn, char *error)
       if (display_period)
          ss_printf(14, 2, "Stopped ");
    } else
-      interrupt_enable(TRUE);
+      readout_enable(TRUE);
 
-   /* flush remaining buffered events */
-   rpc_flush_event();
    for (i = 0; equipment[i].name[0]; i++)
+      /* read remaining events from ring buffers */
+      if (equipment[i].info.eq_type & (EQ_MULTITHREAD | EQ_INTERRUPT)) {
+         while (receive_trigger_event(equipment+i) > 0);
+      }
+
+      /* flush remaining buffered events */
+      rpc_flush_event();
       if (equipment[i].buffer_handle) {
          INT err = bm_flush_cache(equipment[i].buffer_handle, SYNC);
          if (err != BM_SUCCESS) {
@@ -220,8 +233,8 @@ INT tr_pause(INT rn, char *error)
 {
    INT status;
 
-   /* disable interrupts */
-   interrupt_enable(FALSE);
+   /* disable interrupts or readout thread */
+   readout_enable(FALSE);
 
    status = pause_run(rn, error);
 
@@ -234,7 +247,7 @@ INT tr_pause(INT rn, char *error)
       if (display_period)
          ss_printf(14, 2, "Paused  ");
    } else
-      interrupt_enable(TRUE);
+      readout_enable(TRUE);
 
    return status;
 }
@@ -256,8 +269,8 @@ INT tr_resume(INT rn, char *error)
       if (display_period)
          ss_printf(14, 2, "Running ");
 
-      /* enable interrupts */
-      interrupt_enable(TRUE);
+      /* enable interrupts or readout thread */
+      readout_enable(TRUE);
    }
 
    return status;
@@ -380,7 +393,8 @@ INT device_driver(DEVICE_DRIVER * device_driver, INT cmd, ...)
             device_driver->mt_buffer = (DD_MT_BUFFER *) calloc(1, sizeof(DD_MT_BUFFER));
             device_driver->mt_buffer->n_channels = device_driver->channels;
             device_driver->mt_buffer->channel = (DD_MT_CHANNEL *) calloc(device_driver->channels, sizeof(DD_MT_CHANNEL));
-            
+            assert(device_driver->mt_buffer->channel);
+
             /* set all set values to NaN */
             for (i=0 ; i<device_driver->channels ; i++)
                for (j=CMD_SET_FIRST ; j<=CMD_SET_LAST ; j++)
@@ -681,7 +695,7 @@ INT register_equipment(void)
 
       /*---- evaluate polling count ----------------------------------*/
 
-      if (eq_info->eq_type & EQ_POLLED) {
+      if (eq_info->eq_type & (EQ_POLLED | EQ_MULTITHREAD)) {
          if (display_period)
             printf("\nCalibrating");
 
@@ -727,10 +741,15 @@ INT register_equipment(void)
                   cm_msg(MINFO, "register_equipment",
                          "Defined more than one equipment with interrupt readout");
                } else {
+                  interrupt_eq = &equipment[index];
+
+                  /* create ring buffer for inter-thread data transfer */
+                  rb_create(event_buffer_size, max_event_size, &rbh1);
+                  rbh2 = rbh1;
+
+                  /* establish interrupt handler */
                   interrupt_configure(CMD_INTERRUPT_ATTACH, eq_info->source,
                                       (POINTER_T) interrupt_routine);
-                  interrupt_eq = &equipment[index];
-                  interrupt_odb_buffer = malloc(MAX_EVENT_SIZE + sizeof(EVENT_HEADER));
                }
             } else {
                equipment[index].status = FE_ERR_DISABLED;
@@ -741,7 +760,46 @@ INT register_equipment(void)
          }
       }
 
-      /*---- initialize slow control equipment -----------------------*/
+      /*---- initialize multithread events -------------------------*/
+
+      if (eq_info->eq_type & EQ_MULTITHREAD) {
+         /* install interrupt for interrupt events */
+
+         for (i = 0; equipment[i].name[0]; i++)
+            if (equipment[i].info.eq_type & EQ_POLLED) {
+               equipment[index].status = FE_ERR_DISABLED;
+               cm_msg(MINFO, "register_equipment",
+                      "Multi-threaded readout cannot be combined with polled readout");
+            }
+
+         if (equipment[index].status != FE_ERR_DISABLED) {
+            if (eq_info->enabled) {
+               if (multithread_eq) {
+                  equipment[index].status = FE_ERR_DISABLED;
+                  cm_msg(MINFO, "register_equipment",
+                         "Defined more than one equipment with multi-threaded readout");
+               } else {
+                  multithread_eq = &equipment[index];
+
+                  /* create ring buffer for inter-thread data transfer */
+                  rb_create(event_buffer_size, max_event_size, &rbh1);
+                  rbh2 = rbh1;
+
+                  /* create hardware reading thread */
+                  stop_readout_thread = 0;
+                  readout_enable(FALSE);
+                  ss_thread_create(readout_thread, multithread_eq);
+               }
+            } else {
+               equipment[index].status = FE_ERR_DISABLED;
+               cm_msg(MINFO, "register_equipment",
+                      "Equipment %s disabled in file \"frontend.c\"",
+                      equipment[index].name);
+            }
+         }
+      }
+
+      /*---- initialize slow control equipment ---------------------*/
 
       if (eq_info->eq_type & EQ_SLOW) {
          /* resolve duplicate device names */
@@ -966,12 +1024,7 @@ int send_event(INT index)
 
       pevent = frag_buffer;
    } else {
-      /* return value should be valid pointer. if NULL BIG error ==> abort  */
       pevent = (EVENT_HEADER *)event_buffer;
-      if (pevent == NULL) {
-         cm_msg(MERROR, "send_event", "dm_pointer_get not returning valid pointer");
-         return SS_NO_MEMORY;
-      }
    }
 
    /* compose MIDAS event header */
@@ -1000,11 +1053,7 @@ int send_event(INT index)
          }
 
          /* compose fragments */
-         pfragment = dm_pointer_get();
-         if (pfragment == NULL) {
-            cm_msg(MERROR, "send_event", "dm_pointer_get not returning valid pointer");
-            return SS_NO_MEMORY;
-         }
+         pfragment = event_buffer;
 
          /* compose MIDAS event header */
          memcpy(pfragment, pevent, sizeof(EVENT_HEADER));
@@ -1024,7 +1073,7 @@ int send_event(INT index)
 
          for (i = 0, sent = 0; sent < pevent->data_size; i++) {
             if (i > 0) {
-               pfragment = dm_pointer_get();
+               pfragment = event_buffer;
 
                /* compose MIDAS event header */
                memcpy(pfragment, pevent, sizeof(EVENT_HEADER));
@@ -1145,17 +1194,28 @@ void send_all_periodic_events(INT transition)
 
 /*------------------------------------------------------------------*/
 
-BOOL interrupt_enabled;
+static _readout_enabled_flag = 0;
 
-void interrupt_enable(BOOL flag)
+int readout_enabled()
 {
-   interrupt_enabled = flag;
+   return _readout_enabled_flag;
+}
+
+void readout_enable(BOOL flag)
+{
+   _readout_enabled_flag = flag;
 
    if (interrupt_eq) {
-      if (interrupt_enabled)
+      if (flag)
          interrupt_configure(CMD_INTERRUPT_ENABLE, 0, 0);
       else
          interrupt_configure(CMD_INTERRUPT_DISABLE, 0, 0);
+   }
+
+   if (multithread_eq) {
+      /* readout thread might still be in readout, so wait until finished */
+      if (flag = 0)
+         while (readout_thread_active);
    }
 }
 
@@ -1163,46 +1223,146 @@ void interrupt_enable(BOOL flag)
 
 void interrupt_routine(void)
 {
+   int status;
    EVENT_HEADER *pevent;
+   void *p;
 
    /* get pointer for upcoming event.
       This is a blocking call if no space available */
-   if ((pevent = dm_pointer_get()) == NULL)
-      cm_msg(MERROR, "interrupt_routine", "interrupt, dm_pointer_get returned NULL");
+   status = rb_get_wp(rbh1, &p, 0);
 
-   /* compose MIDAS event header */
-   pevent->event_id = interrupt_eq->info.event_id;
-   pevent->trigger_mask = interrupt_eq->info.trigger_mask;
-   pevent->data_size = 0;
-   pevent->time_stamp = actual_time;
-   pevent->serial_number = interrupt_eq->serial_number++;
+   if (status == DB_SUCCESS) {
+      pevent = (EVENT_HEADER *)p;
 
-   /* call user readout routine */
-   pevent->data_size = interrupt_eq->readout((char *) (pevent + 1), 0);
+      /* compose MIDAS event header */
+      pevent->event_id = interrupt_eq->info.event_id;
+      pevent->trigger_mask = interrupt_eq->info.trigger_mask;
+      pevent->data_size = 0;
+      pevent->time_stamp = actual_time;
+      pevent->serial_number = interrupt_eq->serial_number++;
+
+      /* call user readout routine */
+      pevent->data_size = interrupt_eq->readout((char *) (pevent + 1), 0);
+
+      /* send event */
+      if (pevent->data_size) {
+
+         /* put event into ring buffer */
+         rb_increment_wp(rbh1, sizeof(EVENT_HEADER) + pevent->data_size);
+
+      } else
+         interrupt_eq->serial_number--;
+   }
+}
+
+/*------------------------------------------------------------------*/
+
+int readout_thread(void *param)
+{
+   int status, source;
+   EVENT_HEADER *pevent;
+   void *p;
+
+   do {
+      if (readout_enabled()) {
+        
+         /* indicate activity for readout_enable() */
+         readout_thread_active = 1;
+
+         /* check for new event */
+         if ((source = poll_event(multithread_eq->info.source, multithread_eq->poll_count, FALSE)) > 0) {
+
+            /* obtain buffer space */
+            status = rb_get_wp(rbh1, &p, 100);
+            if (status == DB_SUCCESS) {
+               pevent = (EVENT_HEADER *)p;
+               /* put source at beginning of event, will be overwritten by 
+                  user readout code, just a special feature used by some 
+                  multi-source applications */
+               *(INT *) (pevent + 1) = source;
+               
+               /* compose MIDAS event header */
+               pevent->event_id = multithread_eq->info.event_id;
+               pevent->trigger_mask = multithread_eq->info.trigger_mask;
+               pevent->data_size = 0;
+               pevent->time_stamp = actual_time;
+               pevent->serial_number = multithread_eq->serial_number++;
+
+               /* call user readout routine */
+               pevent->data_size = multithread_eq->readout((char *) (pevent + 1), 0);
+
+               if (pevent->data_size > 0) {
+                  /* put event into ring buffer */
+                  rb_increment_wp(rbh1, sizeof(EVENT_HEADER) + pevent->data_size);
+               } else
+                  multithread_eq->serial_number--;
+            }
+         }
+
+         readout_thread_active = 0;
+
+      } else // readout_enabled
+        ss_sleep(10);
+
+   } while (!stop_readout_thread);
+
+   return 0;
+}
+
+/*-- Receive event from readout thread or interrupt routine --------*/
+
+int receive_trigger_event(EQUIPMENT *eq)
+{
+   int status;
+   EVENT_HEADER *prb, *pevent;
+   void *p;
+
+   status = rb_get_rp(rbh2, &p, 10);
+   prb = (EVENT_HEADER *)p;
+   if (status == DB_TIMEOUT)
+      return 0;
+
+   pevent = (EVENT_HEADER *)event_buffer;
+
+   /* copy event from ring buffer to local buffer */
+   memcpy(pevent, prb, prb->data_size + sizeof(EVENT_HEADER));
+
+   /* free up space in ring buffer */
+   rb_increment_rp(rbh2, sizeof(EVENT_HEADER) + prb->data_size);
 
    /* send event */
    if (pevent->data_size) {
-      interrupt_eq->bytes_sent += pevent->data_size + sizeof(EVENT_HEADER);
-      interrupt_eq->events_sent++;
+      if (eq->buffer_handle) {
+         /* send first event to ODB if logger writes in root format */
+         if (pevent->serial_number == 0)
+            if (logger_root())
+               update_odb(pevent, eq->hkey_variables, eq->format);
 
-      if (interrupt_eq->buffer_handle) {
-         rpc_send_event(interrupt_eq->buffer_handle, pevent,
-                        pevent->data_size + sizeof(EVENT_HEADER), SYNC);
-      }
+#ifdef USE_EVENT_CHANNEL
+         // eq->buffer_handle???
+         send_tcp(rpc_get_event_sock(), event_buffer,
+                  pevent->data_size + sizeof(EVENT_HEADER));
+#else
+         status = rpc_send_event(eq->buffer_handle, pevent,
+                                 pevent->data_size + sizeof(EVENT_HEADER),
+                                 SYNC);
 
-      /* send event to ODB */
-      if (interrupt_eq->info.read_on & RO_ODB || interrupt_eq->info.history) {
-         if (actual_millitime - interrupt_eq->last_called > ODB_UPDATE_TIME) {
-            interrupt_eq->last_called = actual_millitime;
-            memcpy(interrupt_odb_buffer, pevent,
-                   pevent->data_size + sizeof(EVENT_HEADER));
-            interrupt_odb_buffer_valid = TRUE;
-            interrupt_eq->odb_out++;
+         if (status != SUCCESS) {
+            cm_msg(MERROR, "scheduler", "rpc_send_event error %d", status);
+            return -1;
          }
-      }
-   } else
-      interrupt_eq->serial_number--;
+#endif
 
+         eq->bytes_sent += pevent->data_size + sizeof(EVENT_HEADER);
+
+         if (eq->info.num_subevents)
+            eq->events_sent += eq->subevent_number;
+         else
+            eq->events_sent++;
+      }
+   }
+
+   return prb->data_size;
 }
 
 /*------------------------------------------------------------------*/
@@ -1331,7 +1491,7 @@ INT scheduler(void)
    EQUIPMENT *eq;
    EVENT_HEADER *pevent;
    DWORD last_time_network = 0, last_time_display = 0, last_time_flush = 0, readout_start;
-   INT i, j, index, status, ch, source, size, state;
+   INT i, j, index, status, ch, source, size, state, old_flag;
    char str[80];
    BOOL buffer_done, flag, force_update = FALSE;
 
@@ -1393,8 +1553,10 @@ INT scheduler(void)
 
             /* check if period over */
             if (actual_millitime - eq->last_called >= (DWORD) eq_info->period) {
-               /* disable interrupts during readout */
-               interrupt_enable(FALSE);
+               /* disable interrupts or readout thread during this event */
+               old_flag = readout_enabled();
+               if (old_flag)
+                  readout_enable(FALSE);
 
                /* readout and send event */
                status = send_event(index);
@@ -1404,8 +1566,9 @@ INT scheduler(void)
                   goto net_error;
                }
 
-               /* re-enable the interrupt after periodic */
-               interrupt_enable(TRUE);
+               /* re-enable the interrupt or readout thread after periodic */
+               if (old_flag)
+                  readout_enable(TRUE);
             }
          }
 
@@ -1489,7 +1652,7 @@ INT scheduler(void)
                if (pevent->data_size) {
                   if (eq->buffer_handle) {
                      /* send first event to ODB if logger writes in root format */
-                     if (pevent->serial_number == 1)
+                     if (pevent->serial_number == 0)
                         if (logger_root())
                            update_odb(pevent, eq->hkey_variables, eq->format);
 
@@ -1529,27 +1692,39 @@ INT scheduler(void)
                   break;
             }
 
+         }
+
+         /*---- send interrupt events ----*/
+         if (eq_info->eq_type & (EQ_INTERRUPT | EQ_MULTITHREAD)) {
+            readout_start = actual_millitime;
+
+            do {
+               size = receive_trigger_event(eq);
+               if (status == -1)
+                  goto net_error;
+
+               actual_millitime = ss_millitime();
+
+               /* repeat no more than period */
+               if (actual_millitime - readout_start > (DWORD) eq_info->period)
+                  break;
+
+               /* quit if event limit is reached */
+               if (eq_info->event_limit > 0 &&
+                   eq->stats.events_sent + eq->events_sent >= eq_info->event_limit)
+                  break;
+
+            } while (size > 0);
+
             /* send event to ODB */
-            if (pevent && pevent->data_size && (eq_info->read_on & RO_ODB || eq_info->history)) {
+            pevent = (EVENT_HEADER *)event_buffer;
+            if (size > 0 && pevent->data_size && (eq_info->read_on & RO_ODB || eq_info->history)) {
                if (actual_millitime - eq->last_called > ODB_UPDATE_TIME && pevent != NULL) {
                   eq->last_called = actual_millitime;
                   update_odb(pevent, eq->hkey_variables, eq->format);
                   eq->odb_out++;
                }
             }
-         }
-
-         /*---- send interrupt events ----*/
-         if (eq_info->eq_type & EQ_INTERRUPT) {
-            /* not much to do as work being done independently in interrupt_routine() */
-
-            /* update ODB */
-            if (interrupt_odb_buffer_valid) {
-               update_odb(interrupt_odb_buffer, interrupt_eq->hkey_variables,
-                          interrupt_eq->format);
-               interrupt_odb_buffer_valid = FALSE;
-            }
-
          }
 
          /*---- check if event limit is reached ----*/
@@ -1588,7 +1763,9 @@ INT scheduler(void)
 
       /*---- check for manual triggered events -----------------------*/
       if (manual_trigger_event_id) {
-         interrupt_enable(FALSE);
+         old_flag = readout_enabled();
+         if (old_flag)
+            readout_enable(FALSE);
 
          /* readout and send event */
          status = BM_INVALID_PARAM;
@@ -1606,7 +1783,8 @@ INT scheduler(void)
          }
 
          /* re-enable the interrupt after periodic */
-         interrupt_enable(TRUE);
+         if (old_flag)
+            readout_enable(TRUE);
       }
 
       /*---- calculate rates and update status page periodically -----*/
@@ -1697,7 +1875,9 @@ INT scheduler(void)
             data rate, flush it now to make events available to consumers */
 
          if (max_bytes_per_sec < SERVER_CACHE_SIZE) {
-            interrupt_enable(FALSE);
+            old_flag = readout_enabled();
+            if (old_flag)
+               readout_enable(FALSE);
 
             for (i = 0; equipment[i].name[0]; i++) {
                if (equipment[i].buffer_handle) {
@@ -1722,7 +1902,9 @@ INT scheduler(void)
                   }
                }
             }
-            interrupt_enable(TRUE);
+
+            if (old_flag)
+               readout_enable(TRUE);
          }
       }
 
@@ -1926,7 +2108,7 @@ int main(int argc, char *argv[])
       printf("OK\n");
 
    /* allocate buffer space */
-   event_buffer = malloc(event_buffer_size);
+   event_buffer = malloc(max_event_size);
    if (event_buffer == NULL) {
       cm_msg(MERROR, "mainFE", "mfe: Not enough memory or event too big\n");
       return 1;
@@ -1951,7 +2133,6 @@ int main(int argc, char *argv[])
        cm_register_transition(TR_RESUME, tr_resume, 500) != CM_SUCCESS) {
       printf("Failed to start local RPC server");
       cm_disconnect_experiment();
-      dm_buffer_release();
 
       /* let user read message before window might close */
       ss_sleep(5000);
@@ -1982,7 +2163,6 @@ int main(int argc, char *argv[])
       if (display_period)
          printf("\n");
       cm_disconnect_experiment();
-      dm_buffer_release();
 
       /* let user read message before window might close */
       ss_sleep(5000);
@@ -1994,7 +2174,6 @@ int main(int argc, char *argv[])
       if (display_period)
          printf("\n");
       cm_disconnect_experiment();
-      dm_buffer_release();
 
       /* let user read message before window might close */
       ss_sleep(5000);
@@ -2010,9 +2189,9 @@ int main(int argc, char *argv[])
       display(TRUE);
    }
 
-   /* switch on interrupts if running */
+   /* switch on interrupts or readout thread if running */
    if (run_state == STATE_RUNNING)
-      interrupt_enable(TRUE);
+      readout_enable(TRUE);
 
    /* initialize ss_getchar */
    ss_getchar(0);
@@ -2027,8 +2206,6 @@ int main(int argc, char *argv[])
    if (interrupt_eq) {
       interrupt_configure(CMD_INTERRUPT_DISABLE, 0, 0);
       interrupt_configure(CMD_INTERRUPT_DETACH, 0, 0);
-      if (interrupt_odb_buffer)
-         free(interrupt_odb_buffer);
    }
 
    /* detach interrupts */
@@ -2067,8 +2244,6 @@ int main(int argc, char *argv[])
 
    if (status != RPC_SHUTDOWN)
       printf("Network connection aborted.\n");
-
-   dm_buffer_release();
 
    return 0;
 }

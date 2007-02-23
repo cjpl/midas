@@ -334,13 +334,14 @@ Transitions values */
 
 /** 
 Equipment types */
-#define EQ_PERIODIC   (1<<0)   /**< Periodic Event */
-#define EQ_POLLED     (1<<1)   /**< Polling Event */
-#define EQ_INTERRUPT  (1<<2)   /**< Interrupt Event */
-#define EQ_SLOW       (1<<3)   /**< Slow Control Event */
-#define EQ_MANUAL_TRIG (1<<4)  /**< Manual triggered Event */
-#define EQ_FRAGMENTED (1<<5)   /**< Fragmented Event */
-#define EQ_EB         (1<<6)   /**< Event run through the event builder */
+#define EQ_PERIODIC    (1<<0)   /**< Periodic Event */
+#define EQ_POLLED      (1<<1)   /**< Polling Event */
+#define EQ_INTERRUPT   (1<<2)   /**< Interrupt Event */
+#define EQ_MULTITHREAD (1<<3)   /**< Multithread Event readout */
+#define EQ_SLOW        (1<<4)   /**< Slow Control Event */
+#define EQ_MANUAL_TRIG (1<<5)   /**< Manual triggered Event */
+#define EQ_FRAGMENTED  (1<<6)   /**< Fragmented Event */
+#define EQ_EB          (1<<7)   /**< Event run through the event builder */
 
 
 /** 

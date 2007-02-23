@@ -1508,7 +1508,7 @@ INT ascii_write(LOG_CHN * log_chn, EVENT_HEADER * pevent, INT evt_size)
    DWORD bkname;
    WORD bktype;
 
-   if (pevent->serial_number == 1)
+   if (pevent->serial_number == 0)
       last_event_id = -1;
 
    event_def = db_get_event_definition(pevent->event_id);
@@ -1944,7 +1944,7 @@ INT root_write(LOG_CHN * log_chn, EVENT_HEADER * pevent, INT evt_size)
    WORD bktype;
    TBranch *branch;
 
-   if (pevent->serial_number == 1)
+   if (pevent->serial_number == 0)
       last_event_id = -1;
 
    event_def = db_get_event_definition(pevent->event_id);
