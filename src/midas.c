@@ -17026,6 +17026,7 @@ typedef struct {
    unsigned int  max_event_size;
    unsigned char *rp;
    unsigned char *wp;
+   unsigned char *ep;
 } RING_BUFFER;
 
 #define MAX_RING_BUFFER 10
@@ -17074,6 +17075,7 @@ int rb_create(int size, int max_event_size, int *handle)
    rb[i].max_event_size = max_event_size;
    rb[i].rp = rb[i].buffer;
    rb[i].wp = rb[i].buffer;
+   rb[i].ep = rb[i].buffer;
 
    *handle = i+1;
 
@@ -17208,6 +17210,7 @@ int rb_increment_wp(int handle, int size)
 
    /* wrap around wp if not enough space */
    if (new_wp > rb[h].buffer + rb[h].size - rb[h].max_event_size) {
+      rb[h].ep = new_wp;
       new_wp = rb[h].buffer;
       assert(rb[h].rp != rb[h].buffer);
    }
@@ -17309,7 +17312,40 @@ int rb_increment_rp(int handle, int size)
    return DB_SUCCESS;
 }
 
+/********************************************************************/
+int rb_get_buffer_level(int handle, int * n_bytes)
+/********************************************************************\
 
+  Routine: rb_get_buffer_level
+
+  Purpose: Return number of bytes in a ring buffer
+
+  Input:
+    int handle              Handle of the buffer to get the info
+
+  Output:
+    int *n_bytes            Number of bytes in buffer
+
+  Function value:
+    DB_SUCCESS              Successful completion
+    DB_INVALID_HANDLE       Buffer handle is invalid
+
+\********************************************************************/
+{
+   int h;
+
+   if (handle < 1 || handle > MAX_RING_BUFFER || rb[handle-1].buffer == NULL)
+      return DB_INVALID_HANDLE;
+
+   h = handle - 1;
+
+   if (rb[h].wp >= rb[h].rp)
+      *n_bytes = (POINTER_T)rb[h].wp - (POINTER_T)rb[h].rp;
+   else
+      *n_bytes = (POINTER_T)rb[h].ep - (POINTER_T)rb[h].rp + (POINTER_T)rb[h].wp - (POINTER_T)rb[h].buffer;
+
+   return DB_SUCCESS;
+}
 
 /**dox***************************************************************/
 #endif                          /* DOXYGEN_SHOULD_SKIP_THIS */

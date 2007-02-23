@@ -91,10 +91,6 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "produce", "produce.vcproj",
 	ProjectSection(ProjectDependencies) = postProject
 	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "mtfrontend", "mtfrontend.vcproj", "{7F28C913-B6EA-4C15-8B64-35C3BFB524CC}"
-	ProjectSection(ProjectDependencies) = postProject
-	EndProjectSection
-EndProject
 Global
 	GlobalSection(SolutionConfiguration) = preSolution
 		Debug = Debug
@@ -109,6 +105,7 @@ Global
 		{DE03D92E-D655-4EFB-9386-987F239EC521}.Debug.ActiveCfg = Debug|Win32
 		{DE03D92E-D655-4EFB-9386-987F239EC521}.Release.ActiveCfg = Release|Win32
 		{F9A0AEF8-2517-4112-9B61-322E77669331}.Debug.ActiveCfg = Debug|Win32
+		{F9A0AEF8-2517-4112-9B61-322E77669331}.Debug.Build.0 = Debug|Win32
 		{F9A0AEF8-2517-4112-9B61-322E77669331}.Release.ActiveCfg = Release|Win32
 		{52866344-7125-44C5-8D44-C99CE9763B05}.Debug.ActiveCfg = Debug|Win32
 		{52866344-7125-44C5-8D44-C99CE9763B05}.Release.ActiveCfg = Release|Win32
@@ -145,14 +142,11 @@ Global
 		{B1193F27-5AD8-4C2C-B54C-6EFA38ACDB3B}.Debug.ActiveCfg = Debug|Win32
 		{B1193F27-5AD8-4C2C-B54C-6EFA38ACDB3B}.Release.ActiveCfg = Release|Win32
 		{346C9CE6-4B20-4DBF-9174-EBA9DE9BE5DB}.Debug.ActiveCfg = Debug|Win32
+		{346C9CE6-4B20-4DBF-9174-EBA9DE9BE5DB}.Debug.Build.0 = Debug|Win32
 		{346C9CE6-4B20-4DBF-9174-EBA9DE9BE5DB}.Release.ActiveCfg = Release|Win32
 		{9A094AEB-C3DB-4EC1-8BA0-13844C3C4B10}.Debug.ActiveCfg = Debug|Win32
 		{9A094AEB-C3DB-4EC1-8BA0-13844C3C4B10}.Release.ActiveCfg = Release|Win32
 		{9A094AEB-C3DB-4EC1-8BA0-13844C3C4B10}.Release.Build.0 = Release|Win32
-		{7F28C913-B6EA-4C15-8B64-35C3BFB524CC}.Debug.ActiveCfg = Debug|Win32
-		{7F28C913-B6EA-4C15-8B64-35C3BFB524CC}.Debug.Build.0 = Debug|Win32
-		{7F28C913-B6EA-4C15-8B64-35C3BFB524CC}.Release.ActiveCfg = Release|Win32
-		{7F28C913-B6EA-4C15-8B64-35C3BFB524CC}.Release.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 	EndGlobalSection

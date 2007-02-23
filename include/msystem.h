@@ -637,6 +637,7 @@ extern "C" {
    int EXPRT rb_increment_wp(int handle, int size);
    int EXPRT rb_get_rp(int handle, void **p, int millisec);
    int EXPRT rb_increment_rp(int handle, int size);
+   int EXPRT rb_get_buffer_level(int handle, int * n_bytes);
 
 /*---- Include RPC identifiers -------------------------------------*/
 

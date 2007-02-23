@@ -45,7 +45,7 @@ INT max_event_size = 10000;
 INT max_event_size_frag = 5 * 1024 * 1024;
 
 /* buffer size to hold events */
-INT event_buffer_size = 10 * 10000;
+INT event_buffer_size = 100 * 10000;
 
 /* number of channels */
 #define N_ADC  4
@@ -76,18 +76,14 @@ void register_cnaf_callback(int debug);
 
 /*-- Equipment list ------------------------------------------------*/
 
-#undef USE_INT
-
 EQUIPMENT equipment[] = {
 
    {"Trigger",               /* equipment name */
     {1, 0,                   /* event ID, trigger mask */
      "SYSTEM",               /* event buffer */
-#ifdef USE_INT
-     EQ_INTERRUPT,           /* equipment type */
-#else
-     EQ_POLLED,              /* equipment type */
-#endif
+//     EQ_INTERRUPT,           /* equipment type */
+     EQ_MULTITHREAD,         /* equipment type */
+//     EQ_POLLED,              /* equipment type */
      LAM_SOURCE(0, 0xFFFFFF),        /* event source crate 0, all stations */
      "MIDAS",                /* format */
      TRUE,                   /* enabled */

@@ -12,7 +12,7 @@
 	<Configurations>
 		<Configuration
 			Name="Debug|Win32"
-			OutputDirectory="\midas\nt\bin"
+			OutputDirectory=".\debug"
 			IntermediateDirectory=".\debug"
 			ConfigurationType="1"
 			UseOfMFC="0"
@@ -20,7 +20,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..\include,..\drivers\camac,..\..\mxml"
+				AdditionalIncludeDirectories="..\include,..\drivers,\mxml,"
 				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE"
 				RuntimeLibrary="5"
 				UsePrecompiledHeader="2"
@@ -81,7 +81,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				InlineFunctionExpansion="1"
-				AdditionalIncludeDirectories="..\include,..\drivers\camac"
+				AdditionalIncludeDirectories="..\include,..\drivers"
 				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE"
 				StringPooling="TRUE"
 				RuntimeLibrary="4"
@@ -140,6 +140,12 @@
 			Filter="cpp;c;cxx;rc;def;r;odl;idl;hpj;bat;for;f90">
 			<File
 				RelativePath="..\drivers\camac\camacnul.c">
+			</File>
+			<File
+				RelativePath="..\src\cnaf_callback.c">
+			</File>
+			<File
+				RelativePath="..\examples\experiment\frontend.c">
 				<FileConfiguration
 					Name="Debug|Win32">
 					<Tool
@@ -158,12 +164,6 @@
 						PreprocessorDefinitions=""
 						BrowseInformation="1"/>
 				</FileConfiguration>
-			</File>
-			<File
-				RelativePath="..\src\cnaf_callback.c">
-			</File>
-			<File
-				RelativePath="..\examples\experiment\frontend.c">
 			</File>
 			<File
 				RelativePath="..\src\ftplib.c">
@@ -327,9 +327,6 @@
 			</File>
 			<File
 				RelativePath="..\include\msystem.h">
-			</File>
-			<File
-				RelativePath="..\include\mvmestd.h">
 			</File>
 		</Filter>
 		<Filter
