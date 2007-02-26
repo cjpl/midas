@@ -45,7 +45,7 @@ extern INT interrupt_configure(INT cmd, INT source, POINTER_T adr);
 
 /* globals */
 
-#undef USE_EVENT_CHANNEL
+INT rpc_mode = 1; // 0 for RPC socket, 1 for event socket
 
 #define SERVER_CACHE_SIZE  100000       /* event cache before buffer */
 
@@ -1103,13 +1103,11 @@ int send_event(INT index)
          }
 
          if (equipment[index].buffer_handle) {
-#ifndef USE_EVENT_CHANNEL
             status = bm_flush_cache(equipment[index].buffer_handle, SYNC);
             if (status != BM_SUCCESS) {
                cm_msg(MERROR, "send_event", "bm_flush_cache(SYNC) error %d", status);
                return status;
             }
-#endif
          }
       } else {
          /* send unfragmented event */
@@ -1338,20 +1336,14 @@ int receive_trigger_event(EQUIPMENT *eq)
             if (logger_root())
                update_odb(pevent, eq->hkey_variables, eq->format);
 
-#ifdef USE_EVENT_CHANNEL
-         // eq->buffer_handle???
-         send_tcp(rpc_get_event_sock(), event_buffer,
-                  pevent->data_size + sizeof(EVENT_HEADER));
-#else
          status = rpc_send_event(eq->buffer_handle, pevent,
                                  pevent->data_size + sizeof(EVENT_HEADER),
-                                 SYNC);
+                                 SYNC, rpc_mode);
 
          if (status != SUCCESS) {
             cm_msg(MERROR, "scheduler", "rpc_send_event error %d", status);
             return -1;
          }
-#endif
 
          eq->bytes_sent += pevent->data_size + sizeof(EVENT_HEADER);
 
@@ -1656,20 +1648,14 @@ INT scheduler(void)
                         if (logger_root())
                            update_odb(pevent, eq->hkey_variables, eq->format);
 
-#ifdef USE_EVENT_CHANNEL
-                     // eq->buffer_handle???
-                     send_tcp(rpc_get_event_sock(), event_buffer,
-                              pevent->data_size + sizeof(EVENT_HEADER));
-#else
                      status = rpc_send_event(eq->buffer_handle, pevent,
                                              pevent->data_size + sizeof(EVENT_HEADER),
-                                             SYNC);
+                                             SYNC, rpc_mode);
 
                      if (status != SUCCESS) {
                         cm_msg(MERROR, "scheduler", "rpc_send_event error %d", status);
                         goto net_error;
                      }
-#endif
 
                      eq->bytes_sent += pevent->data_size + sizeof(EVENT_HEADER);
 
@@ -2088,9 +2074,12 @@ int main(int argc, char *argv[])
 
    /* now connect to server */
    if (display_period) {
-      if (host_name[0])
-         printf("Connect to experiment %s on host %s...\n", exp_name, host_name);
-      else if (exp_name[0])
+      if (host_name[0]) {
+         if (exp_name[0])
+            printf("Connect to experiment %s on host %s...\n", exp_name, host_name);
+         else
+            printf("Connect to experiment on host %s...\n", host_name);
+      } else if (exp_name[0])
          printf("Connect to experiment %s...\n", exp_name);
       else
          printf("Connect to experiment...\n");

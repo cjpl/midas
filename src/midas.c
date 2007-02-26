@@ -136,6 +136,7 @@ static INT _net_send_buffer_size = 0;
 static char *_tcp_buffer = NULL;
 static INT _tcp_wp = 0;
 static INT _tcp_rp = 0;
+static INT _rpc_sock = 0;
 
 static INT _send_sock;
 
@@ -9447,20 +9448,24 @@ INT rpc_get_opt_tcp_size()
 Fast send_event routine which bypasses the RPC layer and
            sends the event directly at the TCP level.
 @param buffer_handle      Handle of the buffer to send the event to.
-                            Must be obtained via bm_open_buffer.
-@param source            Address of the event to send. It must have
-                            a proper event header.
+                          Must be obtained via bm_open_buffer.
+@param source             Address of the event to send. It must have
+                          a proper event header.
 @param buf_size           Size of event in bytes with header.
 @param async_flag         SYNC / ASYNC flag. In ASYNC mode, the
-                            function returns immediately if it cannot
-                            send the event over the network. In SYNC
-                            mode, it waits until the packet is sent
-                            (blocking).
+                          function returns immediately if it cannot
+                          send the event over the network. In SYNC
+                          mode, it waits until the packet is sent
+                          (blocking).
+@param mode               Determines in which mode the event is sent.
+                          If zero, use RPC socket, if one, use special
+                          event socket to bypass RPC layer on the
+                          server side.
 
 @return BM_INVALID_PARAM, BM_ASYNC_RETURN, RPC_SUCCESS, RPC_NET_ERROR, 
         RPC_NO_CONNECTION, RPC_EXCEED_BUFFER       
 */
-INT rpc_send_event(INT buffer_handle, void *source, INT buf_size, INT async_flag)
+INT rpc_send_event(INT buffer_handle, void *source, INT buf_size, INT async_flag, INT mode)
 {
    INT i;
    NET_COMMAND *nc;
@@ -9469,6 +9474,7 @@ INT rpc_send_event(INT buffer_handle, void *source, INT buf_size, INT async_flag
    DWORD aligned_buf_size;
 
    aligned_buf_size = ALIGN8(buf_size);
+   _rpc_sock = mode == 0 ? _server_connection.send_sock : _server_connection.event_sock;
 
    if (aligned_buf_size != (INT) ALIGN8(((EVENT_HEADER *) source)->data_size + sizeof(EVENT_HEADER))) {
       cm_msg(MERROR, "rpc_send_event", "event size mismatch");
@@ -9499,13 +9505,13 @@ INT rpc_send_event(INT buffer_handle, void *source, INT buf_size, INT async_flag
       if (async_flag == ASYNC) {
          flag = 1;
 #ifdef OS_VXWORKS
-         ioctlsocket(_server_connection.send_sock, FIONBIO, (int) &flag);
+         ioctlsocket(_rpc_sock, FIONBIO, (int) &flag);
 #else
-         ioctlsocket(_server_connection.send_sock, FIONBIO, &flag);
+         ioctlsocket(_rpc_sock, FIONBIO, &flag);
 #endif
       }
 
-      i = send_tcp(_server_connection.send_sock, _tcp_buffer + _tcp_rp, _tcp_wp - _tcp_rp, 0);
+      i = send_tcp(_rpc_sock, _tcp_buffer + _tcp_rp, _tcp_wp - _tcp_rp, 0);
 
       if (i < 0)
 #ifdef OS_WINNT
@@ -9518,9 +9524,9 @@ INT rpc_send_event(INT buffer_handle, void *source, INT buf_size, INT async_flag
       if (async_flag == ASYNC) {
          flag = 0;
 #ifdef OS_VXWORKS
-         ioctlsocket(_server_connection.send_sock, FIONBIO, (int) &flag);
+         ioctlsocket(_rpc_sock, FIONBIO, (int) &flag);
 #else
-         ioctlsocket(_server_connection.send_sock, FIONBIO, &flag);
+         ioctlsocket(_rpc_sock, FIONBIO, &flag);
 #endif
       }
 
@@ -9543,40 +9549,59 @@ INT rpc_send_event(INT buffer_handle, void *source, INT buf_size, INT async_flag
          return BM_ASYNC_RETURN;
    }
 
-   nc = (NET_COMMAND *) (_tcp_buffer + _tcp_wp);
-   nc->header.routine_id = RPC_BM_SEND_EVENT | TCP_FAST;
-   nc->header.param_size = 4 * 8 + aligned_buf_size;
+   if (mode == 0) {
+      nc = (NET_COMMAND *) (_tcp_buffer + _tcp_wp);
+      nc->header.routine_id = RPC_BM_SEND_EVENT | TCP_FAST;
+      nc->header.param_size = 4 * 8 + aligned_buf_size;
 
-   /* assemble parameters manually */
-   *((INT *) (&nc->param[0])) = buffer_handle;
-   *((INT *) (&nc->param[8])) = buf_size;
+      /* assemble parameters manually */
+      *((INT *) (&nc->param[0])) = buffer_handle;
+      *((INT *) (&nc->param[8])) = buf_size;
 
-   /* send events larger than optimal buffer size directly */
-   if (aligned_buf_size + 4 * 8 + sizeof(NET_COMMAND_HEADER) >= (DWORD) _opt_tcp_size) {
-      /* send header */
-      send_tcp(_server_connection.send_sock, _tcp_buffer + _tcp_wp, sizeof(NET_COMMAND_HEADER) + 16, 0);
+      /* send events larger than optimal buffer size directly */
+      if (aligned_buf_size + 4 * 8 + sizeof(NET_COMMAND_HEADER) >= (DWORD) _opt_tcp_size) {
+         /* send header */
+         send_tcp(_rpc_sock, _tcp_buffer + _tcp_wp, sizeof(NET_COMMAND_HEADER) + 16, 0);
 
-      /* send data */
-      send_tcp(_server_connection.send_sock, (char *) source, aligned_buf_size, 0);
+         /* send data */
+         send_tcp(_rpc_sock, (char *) source, aligned_buf_size, 0);
 
-      /* send last two parameters */
-      *((INT *) (&nc->param[0])) = buf_size;
-      *((INT *) (&nc->param[8])) = 0;
-      send_tcp(_server_connection.send_sock, &nc->param[0], 16, 0);
+         /* send last two parameters */
+         *((INT *) (&nc->param[0])) = buf_size;
+         *((INT *) (&nc->param[8])) = 0;
+         send_tcp(_rpc_sock, &nc->param[0], 16, 0);
+      } else {
+         /* copy event */
+         memcpy(&nc->param[16], source, buf_size);
+
+         /* last two parameters (buf_size and async_flag */
+         *((INT *) (&nc->param[16 + aligned_buf_size])) = buf_size;
+         *((INT *) (&nc->param[24 + aligned_buf_size])) = 0;
+
+         _tcp_wp += nc->header.param_size + sizeof(NET_COMMAND_HEADER);
+      }
+
    } else {
-      /* copy event */
-      memcpy(&nc->param[16], source, buf_size);
 
-      /* last two parameters (buf_size and async_flag */
-      *((INT *) (&nc->param[16 + aligned_buf_size])) = buf_size;
-      *((INT *) (&nc->param[24 + aligned_buf_size])) = 0;
+      /* send events larger than optimal buffer size directly */
+      if (aligned_buf_size + 4 * 8 + sizeof(INT) >= (DWORD) _opt_tcp_size) {
+         /* send buffer */
+         send_tcp(_rpc_sock, (char *) &buffer_handle, sizeof(INT), 0);
 
-      _tcp_wp += nc->header.param_size + sizeof(NET_COMMAND_HEADER);
+         /* send data */
+         send_tcp(_rpc_sock, (char *) source, aligned_buf_size, 0);
+      } else {
+         /* copy event */
+         *((INT *) (_tcp_buffer + _tcp_wp)) = buffer_handle;
+         _tcp_wp += sizeof(INT);
+         memcpy(_tcp_buffer + _tcp_wp, source, buf_size);
+
+         _tcp_wp += aligned_buf_size;
+      }
    }
 
    return RPC_SUCCESS;
 }
-
 
 
 /**dox***************************************************************/
@@ -9653,7 +9678,7 @@ INT rpc_flush_event()
 
    /* empty TCP buffer */
    if (_tcp_wp > 0) {
-      i = send_tcp(_server_connection.send_sock, _tcp_buffer + _tcp_rp, _tcp_wp - _tcp_rp, 0);
+      i = send_tcp(_rpc_sock, _tcp_buffer + _tcp_rp, _tcp_wp - _tcp_rp, 0);
 
       if (i != _tcp_wp - _tcp_rp) {
          cm_msg(MERROR, "rpc_flush_event", "send_tcp() failed");
@@ -17069,7 +17094,7 @@ int rb_create(int size, int max_event_size, int *handle)
       return DB_INVALID_PARAM;
 
    memset(&rb[i], 0, sizeof(RING_BUFFER));
-   rb[i].buffer = M_MALLOC(size);
+   rb[i].buffer = (unsigned char *) M_MALLOC(size);
    assert(rb[i].buffer);
    rb[i].size = size;
    rb[i].max_event_size = max_event_size;
