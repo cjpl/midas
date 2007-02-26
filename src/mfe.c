@@ -1092,17 +1092,20 @@ int send_event(INT index)
 
             /* send event to buffer */
             if (equipment[index].buffer_handle) {
-               rpc_flush_event();
-               status = bm_send_event(equipment[index].buffer_handle, pfragment,
-                                      pfragment->data_size + sizeof(EVENT_HEADER), SYNC);
-               if (status != BM_SUCCESS) {
-                  cm_msg(MERROR, "send_event", "bm_send_event(SYNC) error %d", status);
+               status = rpc_send_event(equipment[index].buffer_handle, pfragment,
+                                       pfragment->data_size + sizeof(EVENT_HEADER), SYNC, rpc_mode);
+               if (status != RPC_SUCCESS) {
+                  cm_msg(MERROR, "send_event", "rpc_send_event(SYNC) error %d", status);
                   return status;
                }
+
+               /* flush events from buffer */
+               rpc_flush_event();
             }
          }
 
          if (equipment[index].buffer_handle) {
+            /* flush buffer cache on server side */
             status = bm_flush_cache(equipment[index].buffer_handle, SYNC);
             if (status != BM_SUCCESS) {
                cm_msg(MERROR, "send_event", "bm_flush_cache(SYNC) error %d", status);
@@ -1120,13 +1123,13 @@ int send_event(INT index)
 
          /* send event to buffer */
          if (equipment[index].buffer_handle) {
-            rpc_flush_event();
-            status = bm_send_event(equipment[index].buffer_handle, pevent,
-                                   pevent->data_size + sizeof(EVENT_HEADER), SYNC);
+            status = rpc_send_event(equipment[index].buffer_handle, pevent,
+                                    pevent->data_size + sizeof(EVENT_HEADER), SYNC, rpc_mode);
             if (status != BM_SUCCESS) {
                cm_msg(MERROR, "send_event", "bm_send_event(SYNC) error %d", status);
                return status;
             }
+            rpc_flush_event();
             status = bm_flush_cache(equipment[index].buffer_handle, SYNC);
             if (status != BM_SUCCESS) {
                cm_msg(MERROR, "send_event", "bm_flush_cache(SYNC) error %d", status);
