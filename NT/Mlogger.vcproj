@@ -12,7 +12,7 @@
 	<Configurations>
 		<Configuration
 			Name="Debug|Win32"
-			OutputDirectory="\midas\nt\bin"
+			OutputDirectory=".\Debug"
 			IntermediateDirectory=".\Debug"
 			ConfigurationType="1"
 			UseOfMFC="0"
@@ -21,12 +21,12 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="\midas\include,\root\include,\mysql5\include,\mxml"
-				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;DEBUG_TRANS=2;HAVE_ROOT;HAVE_MYSQL"
+				AdditionalIncludeDirectories="\midas\include,\root\include;\mxml"
+				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;HAVE_ROOT"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="5"
 				UsePrecompiledHeader="2"
-				PrecompiledHeaderFile=".\Debug/Mlogger.pch"
+				PrecompiledHeaderFile=".\Debug/mlogger.pch"
 				AssemblerListingLocation=".\Debug/"
 				ObjectFile=".\Debug/"
 				ProgramDataBaseFileName=".\Debug/"
@@ -41,17 +41,16 @@
 				Name="VCLinkerTool"
 				AdditionalDependencies="wsock32.lib winmm.lib libCore.lib libTree.lib"
 				OutputFile="\midas\NT\bin\mlogger.exe"
-				LinkIncremental="2"
+				LinkIncremental="1"
 				SuppressStartupBanner="TRUE"
 				AdditionalLibraryDirectories="\root\lib"
-				IgnoreDefaultLibraryNames="libcd"
 				GenerateDebugInformation="TRUE"
 				ProgramDatabaseFile=".\Debug/mlogger.pdb"
 				SubSystem="1"
 				TargetMachine="1"/>
 			<Tool
 				Name="VCMIDLTool"
-				TypeLibraryName=".\Debug/Mlogger.tlb"
+				TypeLibraryName=".\Debug/mlogger.tlb"
 				HeaderFileName=""/>
 			<Tool
 				Name="VCPostBuildEventTool"/>
@@ -91,7 +90,7 @@
 				RuntimeLibrary="4"
 				EnableFunctionLevelLinking="TRUE"
 				UsePrecompiledHeader="2"
-				PrecompiledHeaderFile=".\Release/Mlogger.pch"
+				PrecompiledHeaderFile=".\Release/mlogger.pch"
 				AssemblerListingLocation=".\Release/"
 				ObjectFile=".\Release/"
 				ProgramDataBaseFileName=".\Release/"
@@ -101,15 +100,15 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLinkerTool"
-				OutputFile=".\Release/Mlogger.exe"
+				OutputFile=".\Release/mlogger.exe"
 				LinkIncremental="1"
 				SuppressStartupBanner="TRUE"
-				ProgramDatabaseFile=".\Release/Mlogger.pdb"
+				ProgramDatabaseFile=".\Release/mlogger.pdb"
 				SubSystem="1"
 				TargetMachine="1"/>
 			<Tool
 				Name="VCMIDLTool"
-				TypeLibraryName=".\Release/Mlogger.tlb"
+				TypeLibraryName=".\Release/mlogger.tlb"
 				HeaderFileName=""/>
 			<Tool
 				Name="VCPostBuildEventTool"/>
@@ -300,31 +299,12 @@
 				RelativePath="..\include\midas.h">
 			</File>
 			<File
-				RelativePath="..\include\midasinc.h">
-			</File>
-			<File
 				RelativePath="..\include\msystem.h">
-			</File>
-			<File
-				RelativePath="..\include\mxml.h">
-			</File>
-			<File
-				RelativePath="..\..\mysql\include\mysql.h">
-			</File>
-			<File
-				RelativePath="..\..\mysql\include\mysqld_error.h">
 			</File>
 		</Filter>
 		<Filter
 			Name="Resource Files"
 			Filter="ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe">
-		</Filter>
-		<Filter
-			Name="Libraries"
-			Filter="">
-			<File
-				RelativePath="..\..\mysql5\lib\opt\mysqlclient.lib">
-			</File>
 		</Filter>
 	</Files>
 	<Globals>
