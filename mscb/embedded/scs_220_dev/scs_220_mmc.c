@@ -40,12 +40,14 @@ struct {
 } idata user_data;
 
 
-MSCB_INFO_VAR code variables[] = {
+MSCB_INFO_VAR code vars[] = {
    4, UNIT_METER, PRFX_MILLI, 0,    MSCBF_FLOAT, "Z",      &user_data.z,
    4, UNIT_METER, PRFX_MILLI, 0,    MSCBF_FLOAT, "R",      &user_data.r,
    4, UNIT_METER, PRFX_MILLI, 0,    MSCBF_FLOAT, "PHI",  &user_data.phi,
    0
 };
+
+MSCB_INFO_VAR *variables = vars;
 
 /********************************************************************\
 
