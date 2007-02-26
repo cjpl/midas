@@ -208,7 +208,7 @@ typedef INT midas_thread_t;
 #else
 #define TAPE_BUFFER_SIZE       0x8000        /**< buffer size for taping data */
 #endif
-#define NET_TCP_SIZE           0xFFFF        /**< maximum TCP transfer        */
+#define NET_TCP_SIZE           0xFFFF        /**< maximum TCP transfer size   */
 #define OPT_TCP_SIZE           8192          /**< optimal TCP buffer size     */
 #define NET_UDP_SIZE           8192          /**< maximum UDP transfer        */
 
@@ -1762,7 +1762,7 @@ extern "C" {
    INT EXPRT rpc_client_disconnect(HNDLE hConn, BOOL bShutdown);
 
    INT EXPRT rpc_send_event(INT buffer_handle, void *source, INT buf_size,
-                            INT async_flag);
+                            INT async_flag, INT mode);
    INT EXPRT rpc_flush_event(void);
 
    void EXPRT rpc_get_convert_flags(INT * convert_flags);
