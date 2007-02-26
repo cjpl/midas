@@ -5134,7 +5134,7 @@ void interrupt_routine(void)
 
       if (interrupt_eq->buffer_handle) {
          rpc_send_event(interrupt_eq->buffer_handle, pevent,
-                        pevent->data_size + sizeof(EVENT_HEADER), 0);
+                        pevent->data_size + sizeof(EVENT_HEADER), SYNC, 0);
       }
 
       /* send event to ODB */
