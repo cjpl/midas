@@ -1192,7 +1192,7 @@ void send_all_periodic_events(INT transition)
 
 /*------------------------------------------------------------------*/
 
-static _readout_enabled_flag = 0;
+static int _readout_enabled_flag = 0;
 
 int readout_enabled()
 {
@@ -1212,7 +1212,7 @@ void readout_enable(BOOL flag)
 
    if (multithread_eq) {
       /* readout thread might still be in readout, so wait until finished */
-      if (flag = 0)
+      if (flag == 0)
          while (readout_thread_active);
    }
 }
@@ -1483,7 +1483,7 @@ INT scheduler(void)
    EQUIPMENT *eq;
    EVENT_HEADER *pevent;
    DWORD last_time_network = 0, last_time_display = 0, last_time_flush = 0, readout_start;
-   INT i, j, index, status, ch, source, size, state, old_flag;
+   INT i, j, index, status = 0, ch, source, size, state, old_flag;
    char str[80];
    BOOL buffer_done, flag, force_update = FALSE;
 
