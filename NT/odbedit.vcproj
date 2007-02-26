@@ -12,7 +12,7 @@
 	<Configurations>
 		<Configuration
 			Name="Debug|Win32"
-			OutputDirectory="\midas\nt\bin"
+			OutputDirectory=".\debug"
 			IntermediateDirectory=".\debug"
 			ConfigurationType="1"
 			UseOfMFC="0"
@@ -41,7 +41,7 @@
 				Name="VCLinkerTool"
 				AdditionalDependencies="winmm.lib wsock32.lib"
 				OutputFile="\midas\nt\bin\odbedit.exe"
-				LinkIncremental="2"
+				LinkIncremental="1"
 				SuppressStartupBanner="TRUE"
 				GenerateDebugInformation="TRUE"
 				ProgramDatabaseFile=".\debug/odbedit.pdb"
@@ -198,12 +198,6 @@
 			</File>
 			<File
 				RelativePath="..\..\mxml\mxml.c">
-				<FileConfiguration
-					Name="Debug|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						PreprocessorDefinitions="HAVE_STRLCPY"/>
-				</FileConfiguration>
 			</File>
 			<File
 				RelativePath="..\src\ODB.C">
@@ -272,18 +266,6 @@
 		<Filter
 			Name="Header Files"
 			Filter="h;hpp;hxx;hm;inl;fi;fd">
-			<File
-				RelativePath="..\include\midas.h">
-			</File>
-			<File
-				RelativePath="..\include\midasinc.h">
-			</File>
-			<File
-				RelativePath="..\include\msystem.h">
-			</File>
-			<File
-				RelativePath="..\..\mxml\mxml.h">
-			</File>
 		</Filter>
 		<Filter
 			Name="Resource Files"
