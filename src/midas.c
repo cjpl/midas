@@ -7169,7 +7169,8 @@ void bm_defragment_event(HNDLE buffer_handle, HNDLE request_id,
    if ((pevent->event_id & 0xF000) == EVENTID_FRAG1) {
       /*---- start new event ----*/
 
-      printf("First Frag detected : Ser#:%d ID=0x%x \n", pevent->serial_number, pevent->event_id);
+      //printf("First Frag detected : Ser#:%d ID=0x%x \n", pevent->serial_number, pevent->event_id);
+
       /* check if fragments already stored */
       for (i = 0; i < MAX_DEFRAG_EVENTS; i++)
          if (defrag_buffer[i].event_id == (pevent->event_id & 0x0FFF))
@@ -7218,8 +7219,9 @@ void bm_defragment_event(HNDLE buffer_handle, HNDLE request_id,
       defrag_buffer[i].pevent->event_id = defrag_buffer[i].event_id;
       defrag_buffer[i].pevent->data_size = defrag_buffer[i].data_size;
 
-      printf("First frag[%d] (ID %d) Ser#:%d sz:%d\n", i, defrag_buffer[i].event_id,
-             pevent->serial_number, defrag_buffer[i].data_size);
+      // printf("First frag[%d] (ID %d) Ser#:%d sz:%d\n", i, defrag_buffer[i].event_id,
+      //       pevent->serial_number, defrag_buffer[i].data_size);
+
       j = 0;
 
       return;
@@ -7237,8 +7239,6 @@ void bm_defragment_event(HNDLE buffer_handle, HNDLE request_id,
       cm_msg(MERROR, "bm_defragement_event",
              "Received fragment without first fragment (ID %d) Ser#:%d",
              pevent->event_id & 0x0FFF, pevent->serial_number);
-      printf("Received fragment without first fragment (ID 0x%x) Ser#:%d Sz:%d\n",
-             pevent->event_id, pevent->serial_number, pevent->data_size);
       return;
    }
 
@@ -7257,9 +7257,8 @@ void bm_defragment_event(HNDLE buffer_handle, HNDLE request_id,
 
    defrag_buffer[i].received += pevent->data_size;
 
-   printf("Other frag[%d][%d] (ID %d) Ser#:%d sz:%d\n", i, j++,
-          defrag_buffer[i].event_id, pevent->serial_number, pevent->data_size);
-
+   //printf("Other frag[%d][%d] (ID %d) Ser#:%d sz:%d\n", i, j++,
+   //       defrag_buffer[i].event_id, pevent->serial_number, pevent->data_size);
 
    if (defrag_buffer[i].received == defrag_buffer[i].data_size) {
       /* event complete */
