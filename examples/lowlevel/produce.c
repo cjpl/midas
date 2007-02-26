@@ -28,7 +28,7 @@ int main()
    INT *pdata, count;
    INT start, stop;
    double rate;
-   int id, size, event_size, act_size, variable_size, flush = 0;
+   int id, size, event_size, act_size, variable_size, rpc_mode, flush = 0;
    char host_name[256];
    BUFFER_HEADER buffer_header;
 
@@ -52,6 +52,10 @@ int main()
       event_size = -event_size;
    } else
       variable_size = 0;
+
+   printf("RPC mode ([0]/1): ");
+   ss_gets(str, 32);
+   rpc_mode = atoi(str);
 
    /* connect to experiment */
    status = cm_connect_experiment(host_name, "", "Producer", NULL);
@@ -98,9 +102,7 @@ int main()
                printf("Error: act_size = %d, size = %d\n", act_size, event_size);
 
             /* now send event */
-            status = rpc_send_event(hBuf, event, act_size + sizeof(EVENT_HEADER), SYNC);
-            /* status = bm_send_event(hBuf, event, 
-               act_size+sizeof(EVENT_HEADER), SYNC); */
+            status = rpc_send_event(hBuf, event, act_size + sizeof(EVENT_HEADER), SYNC, rpc_mode);
 
             if (status != BM_SUCCESS) {
                printf("rpc_send_event returned error %d, event_size %d\n",
