@@ -99,9 +99,9 @@ void *frag_buffer = NULL;
 
 /* inter-thread communication */
 int rbh1, rbh2=0;
-int stop_readout_thread;
+int volatile stop_readout_thread;
 int readout_thread(void *param);
-int readout_thread_active = 0;
+int volatile readout_thread_active = 0;
 
 int send_event(INT index);
 int receive_trigger_event(EQUIPMENT *eq);
@@ -1782,7 +1782,7 @@ INT scheduler(void)
 
             do {
                size = receive_trigger_event(eq);
-               if (status == -1)
+               if (size == -1)
                   goto net_error;
 
                actual_millitime = ss_millitime();
