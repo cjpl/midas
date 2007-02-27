@@ -98,10 +98,10 @@ void *event_buffer;
 void *frag_buffer = NULL;
 
 /* inter-thread communication */
-int rbh1, rbh2;
+int rbh1, rbh2=0;
 int stop_readout_thread;
 int readout_thread(void *param);
-int readout_thread_active;
+int readout_thread_active = 0;
 
 int send_event(INT index);
 int receive_trigger_event(EQUIPMENT *eq);
@@ -761,8 +761,10 @@ INT register_equipment(void)
                   interrupt_eq = &equipment[index];
 
                   /* create ring buffer for inter-thread data transfer */
-                  rb_create(event_buffer_size, max_event_size, &rbh1);
-                  rbh2 = rbh1;
+                  if (!rbh1) {
+                     rb_create(event_buffer_size, max_event_size, &rbh1);
+                     rbh2 = rbh1;
+                  }
 
                   /* establish interrupt handler */
                   interrupt_configure(CMD_INTERRUPT_ATTACH, eq_info->source,
@@ -799,8 +801,10 @@ INT register_equipment(void)
                   multithread_eq = &equipment[index];
 
                   /* create ring buffer for inter-thread data transfer */
-                  rb_create(event_buffer_size, max_event_size, &rbh1);
-                  rbh2 = rbh1;
+                  if (!rbh1) {
+                     rb_create(event_buffer_size, max_event_size, &rbh1);
+                     rbh2 = rbh1;
+                  }
 
                   /* create hardware reading thread */
                   stop_readout_thread = 0;
@@ -2279,6 +2283,10 @@ int main(int argc, char *argv[])
 
    /* call main scheduler loop */
    status = scheduler();
+
+   /* stop readout thread */
+   stop_readout_thread = 1;
+   while (readout_thread_active);
 
    /* reset terminal */
    ss_getchar(TRUE);
