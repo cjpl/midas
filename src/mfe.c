@@ -1240,7 +1240,7 @@ void interrupt_routine(void)
 
    /* get pointer for upcoming event.
       This is a blocking call if no space available */
-   status = rb_get_wp(rbh1, &p, 0);
+   status = rb_get_wp(rbh1, &p, 100000);
 
    if (status == DB_SUCCESS) {
       pevent = (EVENT_HEADER *)p;
@@ -1284,39 +1284,39 @@ int readout_thread(void *param)
          if ((source = poll_event(multithread_eq->info.source, multithread_eq->poll_count, FALSE)) > 0) {
 
             /* obtain buffer space */
-            status = rb_get_wp(rbh1, &p, 100);
-            if (status == DB_SUCCESS) {
-               pevent = (EVENT_HEADER *)p;
-               /* put source at beginning of event, will be overwritten by 
-                  user readout code, just a special feature used by some 
-                  multi-source applications */
-               *(INT *) (pevent + 1) = source;
-               
-               /* compose MIDAS event header */
-               pevent->event_id = multithread_eq->info.event_id;
-               pevent->trigger_mask = multithread_eq->info.trigger_mask;
-               pevent->data_size = 0;
-               pevent->time_stamp = actual_time;
-               pevent->serial_number = multithread_eq->serial_number++;
+            status = rb_get_wp(rbh1, &p, 10000);
+            assert(status == DB_SUCCESS);
 
-               /* call user readout routine */
-               pevent->data_size = multithread_eq->readout((char *) (pevent + 1), 0);
+            pevent = (EVENT_HEADER *)p;
+            /* put source at beginning of event, will be overwritten by 
+               user readout code, just a special feature used by some 
+               multi-source applications */
+            *(INT *) (pevent + 1) = source;
+            
+            /* compose MIDAS event header */
+            pevent->event_id = multithread_eq->info.event_id;
+            pevent->trigger_mask = multithread_eq->info.trigger_mask;
+            pevent->data_size = 0;
+            pevent->time_stamp = actual_time;
+            pevent->serial_number = multithread_eq->serial_number++;
 
-               /* check event size */
-               if (pevent->data_size + sizeof(EVENT_HEADER) > (DWORD) max_event_size) {
-                  cm_msg(MERROR, "readout_thread",
-                           "Event size %ld larger than maximum size %d",
-                           (long) (pevent->data_size + sizeof(EVENT_HEADER)),
-                           max_event_size);
-                  assert(FALSE);
-               }
+            /* call user readout routine */
+            pevent->data_size = multithread_eq->readout((char *) (pevent + 1), 0);
 
-               if (pevent->data_size > 0) {
-                  /* put event into ring buffer */
-                  rb_increment_wp(rbh1, sizeof(EVENT_HEADER) + pevent->data_size);
-               } else
-                  multithread_eq->serial_number--;
+            /* check event size */
+            if (pevent->data_size + sizeof(EVENT_HEADER) > (DWORD) max_event_size) {
+               cm_msg(MERROR, "readout_thread",
+                        "Event size %ld larger than maximum size %d",
+                        (long) (pevent->data_size + sizeof(EVENT_HEADER)),
+                        max_event_size);
+               assert(FALSE);
             }
+
+            if (pevent->data_size > 0) {
+               /* put event into ring buffer */
+               rb_increment_wp(rbh1, sizeof(EVENT_HEADER) + pevent->data_size);
+            } else
+               multithread_eq->serial_number--;
          }
 
          readout_thread_active = 0;
