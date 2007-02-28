@@ -99,9 +99,9 @@ void *frag_buffer = NULL;
 
 /* inter-thread communication */
 int rbh1, rbh2=0;
-int volatile stop_readout_thread;
+volatile int stop_all_threads = 0;
 int readout_thread(void *param);
-int volatile readout_thread_active = 0;
+volatile int readout_thread_active = 0;
 
 int send_event(INT index);
 int receive_trigger_event(EQUIPMENT *eq);
@@ -807,7 +807,6 @@ INT register_equipment(void)
                   }
 
                   /* create hardware reading thread */
-                  stop_readout_thread = 0;
                   readout_enable(FALSE);
                   ss_thread_create(readout_thread, multithread_eq);
                }
@@ -1283,8 +1282,13 @@ int readout_thread(void *param)
          /* check for new event */
          if ((source = poll_event(multithread_eq->info.source, multithread_eq->poll_count, FALSE)) > 0) {
 
+            if (stop_all_threads)
+               break;
+
             /* obtain buffer space */
             status = rb_get_wp(rbh1, &p, 10000);
+            if (stop_all_threads)
+               break;
             assert(status == DB_SUCCESS);
 
             pevent = (EVENT_HEADER *)p;
@@ -1324,7 +1328,9 @@ int readout_thread(void *param)
       } else // readout_enabled
         ss_sleep(10);
 
-   } while (!stop_readout_thread);
+   } while (!stop_all_threads);
+
+   readout_thread_active = 0;
 
    return 0;
 }
@@ -2285,8 +2291,10 @@ int main(int argc, char *argv[])
    status = scheduler();
 
    /* stop readout thread */
-   stop_readout_thread = 1;
-   while (readout_thread_active);
+   stop_all_threads = 1;
+   rb_set_nonblocking();
+   while (readout_thread_active)
+      ss_sleep(100);
 
    /* reset terminal */
    ss_getchar(TRUE);

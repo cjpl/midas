@@ -17057,6 +17057,33 @@ typedef struct {
 
 RING_BUFFER rb[MAX_RING_BUFFER];
 
+volatile int _rb_nonblocking = 0;
+
+/********************************************************************/
+int rb_set_nonblocking()
+/********************************************************************\
+
+  Routine: rb_set_nonblocking
+
+  Purpose: Set all rb_get_xx to nonblocking. Needed in multi-thread
+           environments for stopping all theads without deadlock
+
+  Input:
+    NONE
+
+  Output:
+    NONE
+
+  Function value:
+    DB_SUCCESS       Successful completion
+
+\********************************************************************/
+{
+   _rb_nonblocking = 1;
+
+   return DB_SUCCESS;
+}
+
 /********************************************************************/
 int rb_create(int size, int max_event_size, int *handle)
 /********************************************************************\
@@ -17191,6 +17218,9 @@ Routine: rb_get_wp
       if (millisec == 0)
          return DB_TIMEOUT;
 
+      if (_rb_nonblocking)
+         return DB_TIMEOUT;
+
       /* wait one time slice */
       ss_sleep(10);
    }
@@ -17215,8 +17245,8 @@ int rb_increment_wp(int handle, int size)
     NONE
 
   Function value:
-    DB_SUCCESS       Successful completion
-
+    DB_SUCCESS                Successful completion
+    DB_INVALID_PARAM          Event size too large or invalid handle
 \********************************************************************/
 {
    int h;
@@ -17288,6 +17318,9 @@ int rb_get_rp(int handle, void **p, int millisec)
       if (millisec == 0)
          return DB_TIMEOUT;
 
+      if (_rb_nonblocking)
+         return DB_TIMEOUT;
+
       /* wait one time slice */
       ss_sleep(10);
    }
@@ -17313,7 +17346,8 @@ int rb_increment_rp(int handle, int size)
     NONE
 
   Function value:
-    DB_SUCCESS       Successful completion
+    DB_SUCCESS                Successful completion
+    DB_INVALID_PARAM          Event size too large or invalid handle
 
 \********************************************************************/
 {
@@ -17325,6 +17359,9 @@ int rb_increment_rp(int handle, int size)
       return DB_INVALID_HANDLE;
 
    h = handle - 1;
+
+   if ((DWORD) size > rb[h].max_event_size)
+      return DB_INVALID_PARAM;
 
    old_rp = rb[h].rp;
    new_rp = rb[h].rp + size;
