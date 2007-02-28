@@ -17144,7 +17144,8 @@ Routine: rb_get_wp
   Input:
      int handle               Ring buffer handle
      int millisec             Optional timeout in milliseconds if
-                              buffer is full. Zero to wait infinitely.
+                              buffer is full. Zero to not wait at 
+                              all (non-blocking)
 
   Output:
     char **p                  Write pointer
@@ -17256,7 +17257,8 @@ int rb_get_rp(int handle, void **p, int millisec)
   Input:
     int handle               Ring buffer handle
     int millisec             Optional timeout in milliseconds if
-                             buffer is empty. Zero to wait infinitely.
+                             buffer is full. Zero to not wait at 
+                             all (non-blocking)
 
   Output:
     char **p                 Address of pointer pointing to newly
