@@ -2405,11 +2405,6 @@ See examples in ss_time()
 */
 INT ss_sleep(INT millisec)
 {
-   fd_set readfds;
-   struct timeval timeout;
-   int status;
-   static int sock = 0;
-
    if (millisec == 0) {
 #ifdef OS_WINNT
       SuspendThread(GetCurrentThread());
@@ -2423,32 +2418,21 @@ INT ss_sleep(INT millisec)
 #endif
       return SS_SUCCESS;
    }
+
 #ifdef OS_WINNT
-   {
-      WSADATA WSAData;
-
-      /* Start windows sockets */
-      if (WSAStartup(MAKEWORD(1, 1), &WSAData) != 0)
-         return SS_SOCKET_ERROR;
-   }
+   Sleep(millisec);
 #endif
+#ifdef OS_UNIX
+   struct timespec ts;
+   int status;
 
-   timeout.tv_sec = millisec / 1000;
-   timeout.tv_usec = (millisec % 1000) * 1000;
+   ts.tv_sec = millisec / 1000;
+   ts.tv_nsec = (millisec % 1000) * 1E6;
 
-   if (!sock)
-      sock = socket(AF_INET, SOCK_DGRAM, 0);
-
-   FD_ZERO(&readfds);
-   FD_SET(sock, &readfds);
    do {
-      status = select(FD_SETSIZE, &readfds, NULL, NULL, &timeout);
-
-      /* if an alarm signal was cought, restart select with reduced timeout */
-      if (status == -1 && timeout.tv_sec >= WATCHDOG_INTERVAL / 1000)
-         timeout.tv_sec -= WATCHDOG_INTERVAL / 1000;
-
-   } while (status == -1);      /* dont return if an alarm signal was cought */
+      status = nanosleep(&ts, &ts);
+   } while (status == -1 && errno == EINTR);
+#endif
 
    return SS_SUCCESS;
 }
