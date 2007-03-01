@@ -727,13 +727,20 @@ INT register_equipment(void)
 
             delta_time = ss_millitime() - start_time;
 
+            if (count == 1 && delta_time > eq_info->period * 1.2) {
+               cm_msg(MERROR, "register_equipment", "Polling routine with count=1 takes %d ms", delta_time);
+               ss_sleep(3000);
+               break;
+            }
+
             if (delta_time > 0)
-               count = (INT) ((double) count * 100 / delta_time);
+               count = (INT) ((double) count * eq_info->period / delta_time);
             else
                count *= 100;
-         } while (delta_time > 120 || delta_time < 80);
 
-         equipment[index].poll_count = (INT) ((double) eq_info->period / 100 * count);
+         } while (delta_time > eq_info->period * 1.2 || delta_time < eq_info->period * 0.8);
+
+         equipment[index].poll_count = count;
 
          if (display_period)
             printf("OK\n");
