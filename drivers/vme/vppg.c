@@ -6,14 +6,14 @@
 
   Contents:     PPG Pulse Programmer
                 
-  $Log: vppg.c,v $
+  $Id$
 *********************************************************************/
 #include <stdio.h>
 #include <string.h>
 #include <stdio.h>
 #include <ctype.h>
-#include "vppg.h"
 #include "unistd.h" // for sleep
+#include "vppg.h"
 
 int ddd=1; //debug
 FILE  *ppginput;
