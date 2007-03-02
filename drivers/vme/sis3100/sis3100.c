@@ -384,10 +384,6 @@ int mvme_read(MVME_INTERFACE *vme, mvme_locaddr_t *dst, mvme_addr_t vme_addr, mv
       else
          status = 1;
 
-      /* indicate invalid status by returning zero bytes */
-      if (status != 0)
-         n = 0;
-
       n = n*4;
    }
 
