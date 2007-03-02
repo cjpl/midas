@@ -49,7 +49,7 @@ void process_event(HNDLE hBuf, HNDLE request_id, EVENT_HEADER * pheader, void *p
    id = pheader->event_id;
    if (id > 9)
       id = 9;
-   event_byte_count += size;
+   event_byte_count += size + sizeof(EVENT_HEADER);
 
    /* check if first and last word inside event is equal
       to size to check that nothing was overwritten... */

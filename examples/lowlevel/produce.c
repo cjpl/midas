@@ -110,7 +110,7 @@ int main()
                goto error;
             }
 
-            count += act_size;
+            count += act_size + sizeof(EVENT_HEADER);
          }
 
          /* repeat this loop for 1s */
