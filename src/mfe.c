@@ -98,7 +98,7 @@ void *event_buffer;
 void *frag_buffer = NULL;
 
 /* inter-thread communication */
-int rbh1, rbh2=0;
+int rbh1=0, rbh2=0, rbh1_next=0, rbh2_next=0;
 volatile int stop_all_threads = 0;
 int readout_thread(void *param);
 volatile int readout_thread_active = 0;
@@ -1283,6 +1283,9 @@ int readout_thread(void *param)
 
    do {
       /* obtain buffer space */
+      if (rbh1_next) // if set by user code, use it
+         rbh1 = rbh1_next;
+
       status = rb_get_wp(rbh1, &p, 10000);
       if (stop_all_threads)
          break;
