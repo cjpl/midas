@@ -7875,10 +7875,8 @@ INT rpc_client_connect(char *host_name, INT port, char *client_name, HNDLE * hCo
    }
 
    /* set TCP_NODELAY option for better performance */
-#ifdef OS_VXWORKS
    i = 1;
    setsockopt(sock, IPPROTO_TCP, TCP_NODELAY, (char *) &i, sizeof(i));
-#endif
 
    /* send local computer info */
    rpc_get_name(local_prog_name);
@@ -8231,11 +8229,9 @@ INT rpc_server_connect(char *host_name, char *exp_name)
    closesocket(lsock3);
 
    /* set TCP_NODELAY option for better performance */
-#ifdef OS_VXWORKS
    flag = 1;
    setsockopt(_server_connection.send_sock, IPPROTO_TCP, TCP_NODELAY, (char *) &flag, sizeof(flag));
    setsockopt(_server_connection.event_sock, IPPROTO_TCP, TCP_NODELAY, (char *) &flag, sizeof(flag));
-#endif
 
    /* increase send buffer size to 64kB */
    flag = 0x10000;
