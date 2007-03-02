@@ -590,6 +590,7 @@ INT register_equipment(void)
       /* set fixed parameters from user structure */
       db_set_value(hDB, hKey, "Event ID", &eq_info->event_id, sizeof(WORD), 1, TID_WORD);
       db_set_value(hDB, hKey, "Type", &eq_info->eq_type, sizeof(INT), 1, TID_INT);
+      db_set_value(hDB, hKey, "Source", &eq_info->source, sizeof(INT), 1, TID_INT);
 
       /* open hot link to equipment info */
       db_open_record(hDB, hKey, eq_info, sizeof(EQUIPMENT_INFO), MODE_READ, NULL, NULL);
@@ -1281,6 +1282,12 @@ int readout_thread(void *param)
    void *p;
 
    do {
+      /* obtain buffer space */
+      status = rb_get_wp(rbh1, &p, 10000);
+      if (stop_all_threads)
+         break;
+      assert(status == DB_SUCCESS);
+
       if (readout_enabled()) {
         
          /* indicate activity for readout_enable() */
@@ -1291,12 +1298,6 @@ int readout_thread(void *param)
 
             if (stop_all_threads)
                break;
-
-            /* obtain buffer space */
-            status = rb_get_wp(rbh1, &p, 10000);
-            if (stop_all_threads)
-               break;
-            assert(status == DB_SUCCESS);
 
             pevent = (EVENT_HEADER *)p;
             /* put source at beginning of event, will be overwritten by 
