@@ -1,18 +1,16 @@
 /*   vppg.h
-     Author:  
+     Author: Suzannah Daviel 
 
-     Include file for  PPG (Pulse Programmer) for BNMR
+     Include file for PPG (Pulse Programmer) for BNMR
 
-  $Log: vppg.h,v $
-
+  $Id$
 */
 #ifndef _VPPG_INCLUDE_H_
 #define _VPPG_INCLUDE_H_
 
-#include<stdio.h>
-#include<stdlib.h>
-#include<string.h>
-#include "vmicvme.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 #ifndef MIDAS_TYPE_DEFINED
 #define MIDAS_TYPE_DEFINED
@@ -25,6 +23,8 @@ typedef unsigned int       DWORD;
 typedef unsigned long int  DWORD;
 #endif
 #endif /* MIDAS_TYPE_DEFINED */
+
+#include "vmicvme.h"
 
 // Masks
 #define VPPG_DEFAULT_PPG_POL_MSK 0x000000  
@@ -70,32 +70,32 @@ struct parameters
 };
 typedef struct parameters PARAM;
 
-  void VPPGInit(MVME_INTERFACE *mvme, const DWORD base_adr);
-  int   VPPGLoad(MVME_INTERFACE *mvme,const DWORD base_adr, char *file);
-  DWORD VPPGPolmskWrite(MVME_INTERFACE *mvme, const DWORD base_adr, const DWORD pol);
-  DWORD VPPGPolmskRead(MVME_INTERFACE *mvme, const DWORD base_adr);
-  void  VPPGDisable(MVME_INTERFACE *mvme, const DWORD base_adr);
-  void  VPPGEnable(MVME_INTERFACE *mvme, const DWORD base_adr);
-  BYTE  VPPGStatusRead(MVME_INTERFACE *mvme, const DWORD base_adr);
-  PARAM lineRead( FILE *input);
-  void  byteOutputOrder(PARAM data, char *array);
-  BYTE  VPPGRegWrite(MVME_INTERFACE *mvme, const DWORD base_adr, 
+void  VPPGInit(MVME_INTERFACE *mvme, const DWORD base_adr);
+int   VPPGLoad(MVME_INTERFACE *mvme,const DWORD base_adr, char *file);
+DWORD VPPGPolmskWrite(MVME_INTERFACE *mvme, const DWORD base_adr, const DWORD pol);
+DWORD VPPGPolmskRead(MVME_INTERFACE *mvme, const DWORD base_adr);
+void  VPPGDisable(MVME_INTERFACE *mvme, const DWORD base_adr);
+void  VPPGEnable(MVME_INTERFACE *mvme, const DWORD base_adr);
+BYTE  VPPGStatusRead(MVME_INTERFACE *mvme, const DWORD base_adr);
+PARAM lineRead( FILE *input);
+void  byteOutputOrder(PARAM data, char *array);
+BYTE  VPPGRegWrite(MVME_INTERFACE *mvme, const DWORD base_adr, 
 			 DWORD reg_offset, BYTE value);
-  BYTE  VPPGRegRead(MVME_INTERFACE *mvme, const DWORD base_adr, 
+BYTE  VPPGRegRead(MVME_INTERFACE *mvme, const DWORD base_adr, 
 			 DWORD reg_offset);
-  void  VPPGPolzSet(MVME_INTERFACE *mvme, const DWORD base_adr, BYTE value );
-  BYTE  VPPGPolzFlip(MVME_INTERFACE *mvme, const DWORD base_adr);
-  BYTE  VPPGPolzRead(MVME_INTERFACE *mvme, const DWORD base_adr);
-  void  VPPGBeamOn(MVME_INTERFACE *mvme, const DWORD base_adr);
-  void  VPPGBeamOff(MVME_INTERFACE *mvme, const DWORD base_adr);
-  void  VPPGBeamCtlPPG(MVME_INTERFACE *mvme, const DWORD base_adr);
-  BYTE  VPPGBeamCtlRegRead(MVME_INTERFACE *mvme, const DWORD base_adr);
-  void  VPPGPolzCtlVME(MVME_INTERFACE *mvme, const DWORD base_adr);
-  void  VPPGPolzCtlPPG(MVME_INTERFACE *mvme, const DWORD base_adr);
-  BYTE VPPGDisableExtTrig(MVME_INTERFACE *mvme, const DWORD base_adr);
-  BYTE VPPGEnableExtTrig(MVME_INTERFACE *mvme, const DWORD base_adr);
-void VPPGStopSequencer(MVME_INTERFACE *mvme, const DWORD base_adr);
-void VPPGStartSequencer(MVME_INTERFACE *mvme, const DWORD base_adr);
+void  VPPGPolzSet(MVME_INTERFACE *mvme, const DWORD base_adr, BYTE value );
+BYTE  VPPGPolzFlip(MVME_INTERFACE *mvme, const DWORD base_adr);
+BYTE  VPPGPolzRead(MVME_INTERFACE *mvme, const DWORD base_adr);
+void  VPPGBeamOn(MVME_INTERFACE *mvme, const DWORD base_adr);
+void  VPPGBeamOff(MVME_INTERFACE *mvme, const DWORD base_adr);
+void  VPPGBeamCtlPPG(MVME_INTERFACE *mvme, const DWORD base_adr);
+BYTE  VPPGBeamCtlRegRead(MVME_INTERFACE *mvme, const DWORD base_adr);
+void  VPPGPolzCtlVME(MVME_INTERFACE *mvme, const DWORD base_adr);
+void  VPPGPolzCtlPPG(MVME_INTERFACE *mvme, const DWORD base_adr);
+BYTE  VPPGDisableExtTrig(MVME_INTERFACE *mvme, const DWORD base_adr);
+BYTE  VPPGEnableExtTrig(MVME_INTERFACE *mvme, const DWORD base_adr);
+void  VPPGStopSequencer(MVME_INTERFACE *mvme, const DWORD base_adr);
+void  VPPGStartSequencer(MVME_INTERFACE *mvme, const DWORD base_adr);
 BYTE  VPPGExtTrigRegRead(MVME_INTERFACE *mvme, const DWORD base_adr);
 
 #endif
