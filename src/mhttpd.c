@@ -34,7 +34,8 @@ BOOL connected, no_disconnect;
 int tcp_port = 80;
 
 #define MAX_GROUPS    32
-#define MAX_PARAM    100
+#define MAX_VARS     100
+#define MAX_PARAM    500
 #define VALUE_SIZE   256
 #define PARAM_LENGTH 256
 #define TEXT_SIZE  50000
@@ -7196,8 +7197,6 @@ int time_to_sec(char *str)
 
 /*------------------------------------------------------------------*/
 
-#define MAX_VARS 10
-
 void generate_hist_graph(char *path, char *buffer, int *buffer_size,
                          int width, int height, int scale, int toffset, int index,
                          int labels, char *bgcolor, char *fgcolor, char *gridcolor)
@@ -8203,9 +8202,9 @@ void show_hist_config_page(char *path)
    HNDLE hDB, hKeyRoot, hKeyEq, hKeyVar, hKey, hKeyNames;
    KEY key, varkey;
    char str[256], eq_name[256], var_name[256], cmd[256], ref[256];
-   char display_name[10][2 * NAME_LENGTH];
+   char display_name[MAX_VARS][2 * NAME_LENGTH];
    float value;
-   char *hist_col[] = { "#0000FF", "#00C000", "#FF0000", "#00C0C0", "#FF00FF",
+   char hist_col[MAX_VARS][NAME_LENGTH] = { "#0000FF", "#00C000", "#FF0000", "#00C0C0", "#FF00FF",
       "#C0C000", "#808080", "#80FF80", "#FF8080", "#8080FF"
    };
 
@@ -8215,7 +8214,7 @@ void show_hist_config_page(char *path)
 
    if (cmd[0] && equal_ustring(cmd, "save")) {
       /* copy parameters to their ODB location */
-      for (index = 0; index < 10; index++) {
+      for (index = 0; index < MAX_VARS; index++) {
          sprintf(str, "event%d", index);
          if (*getparam(str)) {
             strlcpy(var_name, getparam(str), sizeof(var_name));
@@ -8249,6 +8248,17 @@ void show_hist_config_page(char *path)
             value = (float) atof(getparam(str));
             if (hKey)
                db_set_data_index(hDB, hKey, &value, sizeof(float), index, TID_FLOAT);
+
+            sprintf(str, "/History/Display/%s/Colour", path);
+            db_find_key(hDB, 0, str, &hKey);
+            if (!hKey) {
+               db_create_key(hDB, 0, str, TID_STRING);
+               db_find_key(hDB, 0, str, &hKey);
+            }
+            sprintf(str, "col%d", index);
+            strlcpy(hist_col[index], getparam(str), NAME_LENGTH);
+            if (hKey)
+               db_set_data_index(hDB, hKey, hist_col[index], NAME_LENGTH, index, TID_STRING);
          } else {
             sprintf(str, "/History/Display/%s/Variables", path);
             db_find_key(hDB, 0, str, &hKey);
@@ -8259,6 +8269,9 @@ void show_hist_config_page(char *path)
             sprintf(str, "/History/Display/%s/Offset", path);
             db_find_key(hDB, 0, str, &hKey);
             db_set_num_values(hDB, hKey, index);
+            sprintf(str, "/History/Display/%s/Colour", path);
+            db_find_key(hDB, 0, str, &hKey);
+            db_set_num_values(hDB, hKey, index);
             break;
          }
       }
@@ -8267,6 +8280,18 @@ void show_hist_config_page(char *path)
          sprintf(ref, "/History/Display/%s/Timescale", path);
          strlcpy(str, getparam("timescale"), sizeof(str));
          db_set_value(hDB, 0, ref, str, NAME_LENGTH, 1, TID_STRING);
+      }
+
+      if (*getparam("minimum")) {
+         float val = strtod(getparam("minimum"),NULL);
+         sprintf(ref, "/History/Display/%s/Minimum", path);
+         db_set_value(hDB, 0, ref, &val, sizeof(val), 1, TID_FLOAT);
+      }
+
+      if (*getparam("maximum")) {
+         float val = strtod(getparam("maximum"),NULL);
+         sprintf(ref, "/History/Display/%s/Maximum", path);
+         db_set_value(hDB, 0, ref, &val, sizeof(val), 1, TID_FLOAT);
       }
 
       sprintf(ref, "/History/Display/%s/Zero ylow", path);
@@ -8290,14 +8315,14 @@ void show_hist_config_page(char *path)
    show_header(hDB, "History Config", "GET", str, 3, 0);
 
    /* menu buttons */
-   rsprintf("<tr><td colspan=6 bgcolor=\"#C0C0C0\">\n");
+   rsprintf("<tr><td colspan=7 bgcolor=\"#C0C0C0\">\n");
    rsprintf("<input type=submit name=cmd value=Save>\n");
    rsprintf("<input type=submit name=cmd value=Cancel>\n");
    rsprintf("<input type=submit name=cmd value=Refresh>\n");
    rsprintf("<input type=submit name=cmd value=\"Delete Panel\">\n");
    rsprintf("</td></tr>\n");
 
-   rsprintf("<tr><td colspan=6 bgcolor=\"#FFFF00\" align=center><b>Panel \"%s\"</b>\n",
+   rsprintf("<tr><td colspan=7 bgcolor=\"#FFFF00\" align=center><b>Panel \"%s\"</b>\n",
             path);
 
    /* hidden command for refresh */
@@ -8312,7 +8337,7 @@ void show_hist_config_page(char *path)
       db_get_value(hDB, 0, ref, str, &size, TID_STRING, TRUE);
    }
    rsprintf
-       ("<tr><td bgcolor=\"#E0E0E0\" colspan=6>Time scale: &nbsp;&nbsp;<input type=text name=timescale value=%s></td></tr>\n",
+       ("<tr><td bgcolor=\"#E0E0E0\" colspan=7>Time scale: &nbsp;&nbsp;<input type=text name=timescale value=%s></td></tr>\n",
         str);
 
    /* ylow_zero */
@@ -8325,13 +8350,41 @@ void show_hist_config_page(char *path)
    }
    if (flag)
       rsprintf
-          ("<tr><td bgcolor=\"#E0E0E0\" colspan=6><input type=checkbox checked name=zero_ylow value=1>",
+          ("<tr><td bgcolor=\"#E0E0E0\" colspan=7><input type=checkbox checked name=zero_ylow value=1>",
            str);
    else
       rsprintf
-          ("<tr><td bgcolor=\"#E0E0E0\" colspan=6><input type=checkbox name=zero_ylow value=1>",
+          ("<tr><td bgcolor=\"#E0E0E0\" colspan=7><input type=checkbox name=zero_ylow value=1>",
            str);
    rsprintf("&nbsp;&nbsp;Zero Ylow</td></tr>\n");
+
+   /* minimum */
+   if (equal_ustring(cmd, "refresh"))
+      strlcpy(str, getparam("minimum"), sizeof(str));
+   else {
+      float xxminimum = 0;
+      sprintf(ref, "/History/Display/%s/Minimum", path);
+      size = sizeof(float);
+      db_get_value(hDB, 0, ref, &xxminimum, &size, TID_FLOAT, TRUE);
+      sprintf(str, "%f", xxminimum);
+   }
+   rsprintf
+       ("<tr><td bgcolor=\"#E0E0E0\" colspan=7>Minimum: &nbsp;&nbsp;<input type=text name=minimum value=%s></td></tr>\n",
+        str);
+
+   /* maximum */
+   if (equal_ustring(cmd, "refresh"))
+      strlcpy(str, getparam("maximum"), sizeof(str));
+   else {
+      float xxmaximum = 0;
+      sprintf(ref, "/History/Display/%s/Maximum", path);
+      size = sizeof(float);
+      db_get_value(hDB, 0, ref, &xxmaximum, &size, TID_FLOAT, TRUE);
+      sprintf(str, "%f", xxmaximum);
+   }
+   rsprintf
+       ("<tr><td bgcolor=\"#E0E0E0\" colspan=7>Maximum: &nbsp;&nbsp;<input type=text name=maximum value=%s></td></tr>\n",
+        str);
 
    /* log_axis */
    if (equal_ustring(cmd, "refresh"))
@@ -8343,11 +8396,11 @@ void show_hist_config_page(char *path)
    }
    if (flag)
       rsprintf
-          ("<tr><td bgcolor=\"#E0E0E0\" colspan=6><input type=checkbox checked name=log_axis value=1>",
+          ("<tr><td bgcolor=\"#E0E0E0\" colspan=7><input type=checkbox checked name=log_axis value=1>",
            str);
    else
       rsprintf
-          ("<tr><td bgcolor=\"#E0E0E0\" colspan=6><input type=checkbox name=log_axis value=1>",
+          ("<tr><td bgcolor=\"#E0E0E0\" colspan=7><input type=checkbox name=log_axis value=1>",
            str);
    rsprintf("&nbsp;&nbsp;Logarithmic Y axis</td></tr>\n");
 
@@ -8361,11 +8414,11 @@ void show_hist_config_page(char *path)
    }
    if (flag)
       rsprintf
-          ("<tr><td bgcolor=\"#E0E0E0\" colspan=6><input type=checkbox checked name=run_markers value=1>",
+          ("<tr><td bgcolor=\"#E0E0E0\" colspan=7><input type=checkbox checked name=run_markers value=1>",
            str);
    else
       rsprintf
-          ("<tr><td bgcolor=\"#E0E0E0\" colspan=6><input type=checkbox name=run_markers value=1>",
+          ("<tr><td bgcolor=\"#E0E0E0\" colspan=7><input type=checkbox name=run_markers value=1>",
            str);
    rsprintf("&nbsp;&nbsp;Show run markers</td></tr>\n");
 
@@ -8375,7 +8428,7 @@ void show_hist_config_page(char *path)
 
    if (equal_ustring(cmd, "refresh")) {
       /* from parameters in a refresh */
-      for (i = 0; i < 10; i++) {
+      for (i = 0; i < MAX_VARS; i++) {
          sprintf(str, "event%d", i);
          strlcpy(display_name[i], getparam(str), sizeof(display_name[0]));
 
@@ -8401,9 +8454,31 @@ void show_hist_config_page(char *path)
       }
    }
 
-   rsprintf("<tr><th>Col<th>Event<th colspan=2>Variable<th>Factor<th>Offset</tr>\n");
+   rsprintf("<tr><th>Col<th>Event<th colspan=2>Variable<th>Factor<th>Offset<th>Colour</tr>\n");
 
-   for (index = 0; index < 10; index++) {
+   /* extract colours */
+   for (index = 0; index < MAX_VARS; index++) {
+
+      if (equal_ustring(cmd, "refresh")) {
+         /* get value from parameters */
+         sprintf(str, "col%d", index);
+         if (*getparam(str))
+            strlcpy(hist_col[index], getparam(str), NAME_LENGTH);
+      } else {
+         /* get value from ODB */
+         sprintf(str, "/History/Display/%s/Colour", path);
+         db_find_key(hDB, 0, str, &hKey);
+         size = NAME_LENGTH;
+         if (hKey) {
+            db_get_key(hDB, hKey, &key);
+            if (index < key.num_values)
+               db_get_data_index(hDB, hKey, hist_col[index], &size, index, TID_STRING);
+         }
+      }
+
+      if (!hist_col[index][0])
+         strlcpy(hist_col[index], "#808080", NAME_LENGTH);
+
       rsprintf("<tr><td bgcolor=\"%s\">&nbsp;<td>\n", hist_col[index]);
 
       rsprintf("<select name=\"event%d\" size=1 onChange=\"document.form1.submit()\">\n",
@@ -8445,7 +8520,7 @@ void show_hist_config_page(char *path)
          }
       }
 
-      /* loop over history links to displayh event name */
+      /* loop over history links to display event name */
       status = db_find_key(hDB, 0, "/History/Links", &hKeyRoot);
       if (status == DB_SUCCESS) {
          for (i = 0;; i++) {
@@ -8598,7 +8673,10 @@ void show_hist_config_page(char *path)
       if (equal_ustring(cmd, "refresh")) {
          /* get value from parameters */
          sprintf(str, "fac%d", index);
-         value = (float) atof(getparam(str));
+         if (*getparam(str))
+            value = (float) atof(getparam(str));
+         else
+            value = 1.0;
       } else {
          /* get value from ODB */
          value = 1;
@@ -8611,6 +8689,7 @@ void show_hist_config_page(char *path)
                db_get_data_index(hDB, hKey, &value, &size, index, TID_FLOAT);
          }
       }
+
       rsprintf
           ("<td><input type=text size=10 maxlength=10 name=\"fac%d\" value=%g></td>\n",
            index, value);
@@ -8635,7 +8714,32 @@ void show_hist_config_page(char *path)
           ("<td><input type=text size=10 maxlength=10 name=\"ofs%d\" value=%g></td>\n",
            index, value);
 
+      if (equal_ustring(cmd, "refresh")) {
+         /* get value from parameters */
+         sprintf(str, "col%d", index);
+         if (*getparam(str))
+            strlcpy(hist_col[index], getparam(str), NAME_LENGTH);
+      } else {
+         /* get value from ODB */
+         sprintf(str, "/History/Display/%s/Colour", path);
+         db_find_key(hDB, 0, str, &hKey);
+         size = NAME_LENGTH;
+         if (hKey) {
+            db_get_key(hDB, hKey, &key);
+            if (index < key.num_values)
+               db_get_data_index(hDB, hKey, hist_col[index], &size, index, TID_STRING);
+         }
+      }
+      rsprintf
+          ("<td><input type=text size=10 maxlength=10 name=\"col%d\" value=%s></td>\n",
+           index, hist_col[index]);
+
       rsprintf("</tr>\n");
+
+      /* loop over all already defined entries,
+       * show one "empty" entry and exit */
+      if (!display_name[index][0])
+         break;
    }
 
    rsprintf("</table></form>\n");
