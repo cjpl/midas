@@ -48,7 +48,10 @@ INT _attachment_size[3];
 struct in_addr remote_addr;
 INT _sock;
 BOOL elog_mode = FALSE;
+BOOL history_mode = FALSE;
 BOOL verbose = FALSE;
+char midas_hostname[256];
+char midas_expt[256];
 
 char *mname[] = {
    "January",
@@ -9221,6 +9224,7 @@ void show_hist_page(char *path, int path_size, char *buffer, int *buffer_size,
 {
    char str[256], ref[256], ref2[256], paramstr[256], scalestr[256], hgroup[256],
        bgcolor[32], fgcolor[32], gridcolor[32], url[256], dir[256], file_name[256];
+   char hurl[256];
    char *poffset, *pscale, *pmag, *pindex, *fbuffer;
    HNDLE hDB, hkey, hikeyp, hkeyp, hkeybutton;
    KEY key, ikey;
@@ -9378,6 +9382,13 @@ void show_hist_page(char *path, int path_size, char *buffer, int *buffer_size,
    if (pindex && *pindex)
       index = atoi(pindex);
 
+   size = sizeof(hurl);
+   status = db_get_value(hDB, 0, "/History/URL", hurl, &size, TID_STRING, FALSE);
+   if (status != DB_SUCCESS)
+      hurl[0] = 0;
+
+   //printf("history URL is [%s], status %d\n", hurl, status);
+
    if (equal_ustring(getparam("cmd"), "Create ELog")) {
       size = sizeof(url);
       if (db_get_value(hDB, 0, "/Elog/URL", url, &size, TID_STRING, FALSE) == DB_SUCCESS) {
@@ -9492,6 +9503,9 @@ void show_hist_page(char *path, int path_size, char *buffer, int *buffer_size,
 
       return;
    }
+
+   if (history_mode && index < 0)
+      return;
 
    /* evaluate offset shift */
    if (equal_ustring(getparam("shift"), "<"))
@@ -9697,12 +9711,12 @@ void show_hist_page(char *path, int path_size, char *buffer, int *buffer_size,
 
             db_get_key(hDB, hikeyp, &key);
             if (exp_name[0]) {
-               sprintf(ref, "/HS/%s/%s.gif?exp=%s&width=Small", path, key.name,
+               sprintf(ref, "%s/HS/%s/%s.gif?exp=%s&width=Small", hurl, path, key.name,
                         exp_name);
-               sprintf(ref2, "/HS/%s/%s?exp=%s", key.name, key.name, exp_name);
+               sprintf(ref2, "%s/HS/%s/%s?exp=%s", hurl, key.name, key.name, exp_name);
             } else {
-               sprintf(ref, "/HS/%s/%s.gif?width=Small", path, key.name);
-               sprintf(ref2, "/HS/%s/%s", path, key.name);
+               sprintf(ref, "%s/HS/%s/%s.gif?width=Small", hurl, path, key.name);
+               sprintf(ref2, "%s/HS/%s/%s", hurl, path, key.name);
             }
 
             if (i % 2 == 0)
@@ -9826,14 +9840,14 @@ void show_hist_page(char *path, int path_size, char *buffer, int *buffer_size,
          sprintf(paramstr + strlen(paramstr), "&index=%s", pindex);
       if (paramstr[0]) {
          if (exp_name[0])
-            sprintf(ref, "/HS/%s.gif?exp=%s%s", path, exp_name, paramstr);
+            sprintf(ref, "%s/HS/%s.gif?exp=%s%s", hurl, path, exp_name, paramstr);
          else
-            sprintf(ref, "/HS/%s.gif?%s", path, paramstr);
+            sprintf(ref, "%s/HS/%s.gif?%s", hurl, path, paramstr);
       } else {
          if (exp_name[0])
-            sprintf(ref, "/HS/%s.gif?exp=%s", path, exp_name);
+            sprintf(ref, "%s/HS/%s.gif?exp=%s", hurl, path, exp_name);
          else
-            sprintf(ref, "/HS/%s.gif", path);
+            sprintf(ref, "%s/HS/%s.gif", hurl, path);
       }
 
       /* put reference to graph */
@@ -9862,12 +9876,12 @@ void show_hist_page(char *path, int path_size, char *buffer, int *buffer_size,
 
                db_get_key(hDB, hikeyp, &ikey);
                if (exp_name[0]) {
-                  sprintf(ref, "/HS/%s/%s.gif?exp=%s&width=Small", key.name, ikey.name,
+                  sprintf(ref, "%s/HS/%s/%s.gif?exp=%s&width=Small", hurl, key.name, ikey.name,
                           exp_name);
-                  sprintf(ref2, "/HS/%s/%s?exp=%s", key.name, ikey.name, exp_name);
+                  sprintf(ref2, "%s/HS/%s/%s?exp=%s", hurl, key.name, ikey.name, exp_name);
                } else {
-                  sprintf(ref, "/HS/%s/%s.gif?width=Small", key.name, ikey.name);
-                  sprintf(ref2, "/HS/%s/%s", key.name, ikey.name);
+                  sprintf(ref, "%s/HS/%s/%s.gif?width=Small", hurl, key.name, ikey.name);
+                  sprintf(ref2, "%s/HS/%s/%s", hurl, key.name, ikey.name);
                }
 
                if (k % 2 == 0)
@@ -10017,7 +10031,10 @@ void interprete(char *cookie_pwd, char *cookie_wpwd, char *path, int refresh)
          sprintf(str, "set=");
 
       get_password(str);
-      status = cm_connect_experiment("", experiment, "mhttpd", get_password);
+      if (history_mode)
+         status = cm_connect_experiment(midas_hostname, experiment, "mhttpd_history", get_password);
+      else
+         status = cm_connect_experiment(midas_hostname, experiment, "mhttpd", get_password);
       if (status == CM_WRONG_PASSWORD) {
          show_password_page(password, experiment);
          return;
@@ -10038,14 +10055,29 @@ void interprete(char *cookie_pwd, char *cookie_wpwd, char *path, int refresh)
       /* redirect message display, turn on message logging */
       cm_set_msg_print(MT_ALL, MT_ALL, print_message);
 
-      /* retrieve last message */
-      size = 1000;
-      cm_msg_retrieve(1, data, &size);
+      if (!history_mode) {
+         /* retrieve last message */
+         size = 1000;
+         cm_msg_retrieve(1, data, &size);
 
-      receive_message(0, 0, NULL, data + 25);
+         receive_message(0, 0, NULL, data + 25);
+      }
    }
 
    cm_get_experiment_database(&hDB, NULL);
+
+   if (history_mode) {
+      if (strncmp(path, "HS/", 3) == 0) {
+         if (equal_ustring(command, "config")) {
+            return;
+         }
+
+         show_hist_page(dec_path + 3, sizeof(dec_path) - 3, NULL, NULL, refresh);
+         return;
+      }
+      
+      return;
+   }
 
    /* check for password */
    db_find_key(hDB, 0, "/Experiment/Security/Password", &hkey);
@@ -11192,6 +11224,9 @@ int main(int argc, char *argv[])
    signal(SIGPIPE, SIG_IGN);
 #endif
 
+   /* get default from environment */
+   cm_get_environment(midas_hostname, sizeof(midas_hostname), midas_expt, sizeof(midas_expt));
+
    /* parse command line parameters */
    no_disconnect = FALSE;
    for (i = 1; i < argc; i++) {
@@ -11201,6 +11236,8 @@ int main(int argc, char *argv[])
          verbose = TRUE;
       else if (argv[i][0] == '-' && argv[i][1] == 'E')
          elog_mode = TRUE;
+      else if (argv[i][0] == '-' && argv[i][1] == 'H')
+         history_mode = TRUE;
       else if (argv[i][0] == '-' && argv[i][1] == 'c')
          no_disconnect = TRUE;
       else if (argv[i][0] == '-') {
@@ -11208,12 +11245,16 @@ int main(int argc, char *argv[])
             goto usage;
          if (argv[i][1] == 'p')
             tcp_port = atoi(argv[++i]);
+         else if (argv[i][1] == 'h')
+            strlcpy(midas_hostname, argv[++i], sizeof(midas_hostname));
          else {
           usage:
-            printf("usage: %s [-p port] [-v] [-D] [-c]\n\n", argv[0]);
+            printf("usage: %s [-h Hostname] [-p port] [-v] [-D] [-c]\n\n", argv[0]);
             printf("       -v display verbose HTTP communication\n");
+            printf("       -h connect to midas server (mserver) on given host\n");
             printf("       -D become a daemon\n");
             printf("       -E only display ELog system\n");
+            printf("       -H only display history plots\n");
             printf("       -c don't disconnect from experiment\n");
             return 0;
          }
