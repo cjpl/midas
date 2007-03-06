@@ -7207,7 +7207,7 @@ void generate_hist_graph(char *path, char *buffer, int *buffer_size,
    gdImagePtr im;
    gdGifBuffer gb;
    int i, j, k, l, n_vars, size, status, row, x_marker, n_vp, r, g, b;
-   DWORD bsize, tsize, n_marker, *state, run_number;
+   DWORD bsize, tsize, n_marker, *state;
    int length, aoffset;
    int flag, x1, y1, x2, y2, xs, xs_old, ys, xold, yold, xmaxm;
    int white, black, grey, ltgrey, red, green, blue, fgcol, bgcol, gridcol,
@@ -7271,6 +7271,8 @@ void generate_hist_graph(char *path, char *buffer, int *buffer_size,
    curve_col[7] = gdImageColorAllocate(im, 128, 255, 128);
    curve_col[8] = gdImageColorAllocate(im, 255, 128, 128);
    curve_col[9] = gdImageColorAllocate(im, 128, 128, 255);
+   for (i=10; i<MAX_VARS; i++)
+      curve_col[i] = gdImageColorAllocate(im, 128, 128, 128);
 
    state_col[0] = gdImageColorAllocate(im, 255, 0, 0);
    state_col[1] = gdImageColorAllocate(im, 255, 255, 0);
@@ -7290,7 +7292,7 @@ void generate_hist_graph(char *path, char *buffer, int *buffer_size,
    status = db_find_key(hDB, 0, "/Logger/Data dir", &hkey);
    if (status != DB_SUCCESS) {
       sprintf(str, "No data directory defined in ODB");
-      gdImageString(im, gdFontGiant, width / 2 - (strlen(str) * gdFontGiant->w) / 2,
+      gdImageString(im, gdFontSmall, width / 2 - (strlen(str) * gdFontSmall->w) / 2,
                     height / 2, str, red);
       goto error;
    }
@@ -7309,7 +7311,7 @@ void generate_hist_graph(char *path, char *buffer, int *buffer_size,
    db_find_key(hDB, 0, str, &hkeypanel);
    if (!hkey) {
       sprintf(str, "Cannot find /History/Display/%s in ODB", panel);
-      gdImageString(im, gdFontGiant, width / 2 - (strlen(str) * gdFontGiant->w) / 2,
+      gdImageString(im, gdFontSmall, width / 2 - (strlen(str) * gdFontSmall->w) / 2,
                     height / 2, str, red);
       goto error;
    }
@@ -7317,7 +7319,7 @@ void generate_hist_graph(char *path, char *buffer, int *buffer_size,
    db_find_key(hDB, hkeypanel, "Variables", &hkeydvar);
    if (!hkeydvar) {
       sprintf(str, "Cannot find /History/Display/%s/Variables in ODB", panel);
-      gdImageString(im, gdFontGiant, width / 2 - (strlen(str) * gdFontGiant->w) / 2,
+      gdImageString(im, gdFontSmall, width / 2 - (strlen(str) * gdFontSmall->w) / 2,
                     height / 2, str, red);
       goto error;
    }
@@ -7327,7 +7329,7 @@ void generate_hist_graph(char *path, char *buffer, int *buffer_size,
 
    if (n_vars > MAX_VARS) {
       sprintf(str, "Too many variables in panel %s", panel);
-      gdImageString(im, gdFontGiant, width / 2 - (strlen(str) * gdFontGiant->w) / 2,
+      gdImageString(im, gdFontSmall, width / 2 - (strlen(str) * gdFontSmall->w) / 2,
                     height / 2, str, red);
       goto error;
    }
@@ -7340,7 +7342,14 @@ void generate_hist_graph(char *path, char *buffer, int *buffer_size,
          continue;
 
       size = sizeof(str);
-      db_get_data_index(hDB, hkeydvar, str, &size, i, TID_STRING);
+      status = db_get_data_index(hDB, hkeydvar, str, &size, i, TID_STRING);
+      if (status != DB_SUCCESS) {
+         sprintf(str, "Cannot read tag %d in panel %s, status %d", i, panel, status);
+         gdImageString(im, gdFontSmall, width / 2 - (strlen(str) * gdFontSmall->w) / 2,
+                       height / 2, str, red);
+         goto error;
+      }
+
       strlcpy(tag_name[i], str, sizeof(tag_name[0]));
 
       /* split varname in event, variable and index */
@@ -7354,10 +7363,37 @@ void generate_hist_graph(char *path, char *buffer, int *buffer_size,
             *strchr(var_name[i], '[') = 0;
          }
       } else {
-         sprintf(str, "Tag \"%s\" has wrong format in panel %s", tag_name[i], panel);
-         gdImageString(im, gdFontGiant, width / 2 - (strlen(str) * gdFontGiant->w) / 2,
+         sprintf(str, "Tag \"%s\" has wrong format in panel \"%s\"", tag_name[i], panel);
+         gdImageString(im, gdFontSmall, width / 2 - (strlen(str) * gdFontSmall->w) / 2,
                        height / 2, str, red);
          goto error;
+      }
+
+      db_find_key(hDB, hkeypanel, "Colour", &hkey);
+      if (hkey) {
+	 size = sizeof(str);
+	 status = db_get_data_index(hDB, hkey, str, &size, i, TID_STRING);
+	 if (status == DB_SUCCESS) {
+	    if (str[0] == '#') {
+	       char sss[3];
+	       int r, g, b;
+
+	       sss[0] = str[1];
+	       sss[1] = str[2];
+	       sss[2] = 0;
+	       r = strtoul(sss, NULL, 16);
+	       sss[0] = str[3];
+	       sss[1] = str[4];
+	       sss[2] = 0;
+	       g = strtoul(sss, NULL, 16);
+	       sss[0] = str[5];
+	       sss[1] = str[6];
+	       sss[2] = 0;
+	       b = strtoul(sss, NULL, 16);
+
+	       curve_col[i] = gdImageColorAllocate(im, r, g, b);
+	    }
+	 }
       }
 
       /* search event_id */
@@ -7366,7 +7402,7 @@ void generate_hist_graph(char *path, char *buffer, int *buffer_size,
       if (status != HS_SUCCESS) {
          sprintf(str, "Event \"%s\" from panel \"%s\" not found in history",
                  event_name[i], panel);
-         gdImageString(im, gdFontGiant, width / 2 - (strlen(str) * gdFontGiant->w) / 2,
+         gdImageString(im, gdFontSmall, width / 2 - (strlen(str) * gdFontSmall->w) / 2,
                        height / 2, str, red);
          goto error;
       }
@@ -7441,7 +7477,7 @@ void generate_hist_graph(char *path, char *buffer, int *buffer_size,
 
             db_get_key(hDB, hkeyeq, &key);
             if (equal_ustring(key.name, event_name[i])) {
-               /* check if variable is individual key under variabels/ */
+               /* check if variable is individual key under variables/ */
                sprintf(str, "Variables/%s", var_name[i]);
                db_find_key(hDB, hkeyeq, str, &hkey);
                if (hkey) {
@@ -7588,7 +7624,7 @@ void generate_hist_graph(char *path, char *buffer, int *buffer_size,
 
       if (status == HS_UNDEFINED_VAR) {
          sprintf(str, "Variable \"%s\" not found in history", var_name[i]);
-         gdImageString(im, gdFontGiant, width / 2 - (strlen(str) * gdFontGiant->w) / 2,
+         gdImageString(im, gdFontSmall, width / 2 - (strlen(str) * gdFontSmall->w) / 2,
                        height / 2, str, red);
          goto error;
       }
@@ -7641,12 +7677,14 @@ void generate_hist_graph(char *path, char *buffer, int *buffer_size,
          /* apply factor and offset */
          y[i][n_vp] = y[i][n_vp] * factor[i] + offset[i];
 
+#if 0
          /* apply minimum and maximum clamping */
          if (y[i][n_vp] > maxvalue)
             y[i][n_vp] = maxvalue;
 
          if (y[i][n_vp] < minvalue)
             y[i][n_vp] = minvalue;
+#endif
 
          /* calculate ymin and ymax */
          if ((i == 0 || index != -1) && n_vp == 0)
@@ -7664,6 +7702,12 @@ void generate_hist_graph(char *path, char *buffer, int *buffer_size,
 
       n_point[i] = n_vp;
    }
+
+   if (ymin < minvalue)
+      ymin = minvalue;
+
+   if (ymax > maxvalue)
+      ymax = maxvalue;
 
    /* check if ylow = 0 */
    if (index == -1) {
@@ -7719,8 +7763,8 @@ void generate_hist_graph(char *path, char *buffer, int *buffer_size,
          ymax *= 2;
          ymin /= 2;
       } else {
-         ymax += 1;
-         ymin -= 1;
+         ymax += 10;
+         ymin -= 10;
       }
    }
 
@@ -7784,9 +7828,17 @@ void generate_hist_graph(char *path, char *buffer, int *buffer_size,
          xs_old = -1;
          xmaxm = x1;
          for (j = 0; j < (int) n_marker; j++) {
+            int run_number;
+            int col;
+
             x_marker = tbuffer[j] - ss_time();
             xs = (int) ((x_marker / 3600.0 - xmin) / (xmax - xmin) * (x2 - x1) + x1 +
                         0.5);
+
+            if (xs < 0)
+               xs = 0;
+            if (xs >= width)
+               xs = width-1;
 
             run_number = *((DWORD *) ybuffer + j);
 
@@ -7794,7 +7846,16 @@ void generate_hist_graph(char *path, char *buffer, int *buffer_size,
                xs = xs_old + 1;
             xs_old = xs;
 
-            gdImageDashedLine(im, xs, y1, xs, y2, state_col[state[j] - 1]);
+            if (state[j] == 1)
+               col = state_col[0];
+            else if (state[j] == 2)
+               col = state_col[1];
+            else if (state[j] == 3)
+               col = state_col[2];
+            else
+               col = state_col[0];
+
+            gdImageDashedLine(im, xs, y1, xs, y2, col);
 
             sprintf(str, "%d", run_number);
 
@@ -7835,6 +7896,15 @@ void generate_hist_graph(char *path, char *buffer, int *buffer_size,
          } else
             ys = (int) (y1 - (lower_limit[i] - ymin) / (ymax - ymin) * (y1 - y2) + 0.5);
 
+         if (xs < 0)
+            xs = 0;
+         if (xs >= width)
+            xs = width-1;
+         if (ys < 0)
+            ys = 0;
+         if (ys >= height)
+            ys = height-1;
+
          gdImageDashedLine(im, x1, ys, x2, ys, curve_col[i]);
 
          poly[0].x = x1;
@@ -7857,6 +7927,15 @@ void generate_hist_graph(char *path, char *buffer, int *buffer_size,
                            0.5);
          } else
             ys = (int) (y1 - (upper_limit[i] - ymin) / (ymax - ymin) * (y1 - y2) + 0.5);
+
+         if (xs < 0)
+            xs = 0;
+         if (xs >= width)
+            xs = width-1;
+         if (ys < 0)
+            ys = 0;
+         if (ys >= height)
+            ys = height-1;
 
          gdImageDashedLine(im, x1, ys, x2, ys, curve_col[i]);
 
@@ -7883,6 +7962,15 @@ void generate_hist_graph(char *path, char *buffer, int *buffer_size,
                            0.5);
          } else
             ys = (int) (y1 - (y[i][j] - ymin) / (ymax - ymin) * (y1 - y2) + 0.5);
+
+         if (xs < 0)
+            xs = 0;
+         if (xs >= width)
+            xs = width-1;
+         if (ys < 0)
+            ys = 0;
+         if (ys >= height)
+            ys = height-1;
 
          if (j > 0)
             gdImageLine(im, xold, yold, xs, ys, curve_col[i]);
