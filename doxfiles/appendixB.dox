@@ -4,25 +4,26 @@
 @ref AppendixA - @ref Top - @ref AppendixC 
 \htmlonly <img alt="next.gif" src="next.gif"> \endhtmlonly
  
-Drivers included in the driver's directory of the MIDAS distribution 
-support various hardware modules. The driver library is continuously 
-extended to suit the needs of various experiments. For the slow control 
-system, an example is available in the distribution under \b 
-examples/slowcont/frontend.c including the \b hv and \b multi class with 
-the \b nulldev device and \b null bus driver. Note: not all the device 
-drivers implement the triple layer (Class,Device,Bus) but some include 
-directly the hardware calls in the device layer. For some more 
-explanation on the Slow control scheme, refer to @ref 
-Slow_Control_system. Refer to the nulldev.c for a proper example.
+The driver library is continuously extended to suit the needs of various
+experiments based on the selected hardware modules. Not all commercially 
+available modules are included as we don't have all the modules in hand.
+But you're more than welcome to contribute by providing your driver code 
+if the module that you're using is not yet listed. 
 
-Follows the new  "drivers/" directory structure containing the original
-class, device, bus and divers with the new split for the camac, vme, usb
-directories. Not all the drivers are up-to-date for the latest mvmestd.
+The <b>/drivers</b> directory is subdivided in several directories which 
+refers to either the type of bus ie: CAMAC, FastBus, VME, PCI, USB or type
+of software layer such as Class, Device, Bus. 
+
+The software layers sections are used in particular for @ref Slow_Control_system.
+Example are available in the distribution under \b examples/slowcont/frontend.c 
+including the \b hv and \b multi class with the \b nulldev device and \b null 
+bus driver. Note: not all the device drivers implement the triple layer 
+(Class,Device,Bus) as some include directly the hardware calls in the device layer.
 Please contact
 <a href="mailto:midas@psi.ch, midas@triumf.ca?subject=VME support">
-midas</a> for specific support.
+midas</a> for specific support or for submitting new drivers.
 
- * <center> Drivers/ directory structure
+ * <center> Non exhaustive Drivers/ directory structure
  *  \image html driverlisting.jpg
  *  \image latex driverlisting.eps "Drivers/ directory structure" width=12cm
  * </center> 
