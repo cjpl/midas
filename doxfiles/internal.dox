@@ -494,19 +494,21 @@ for example) in one run and identify them later. Both parameters are declared as
 value. If the Trigger mask is used in a single bit-wise mode, only up to 16 masks are
 possible.
 
-- <b>["SYSTEM"]</b> After composition of an "equipment", the Midas frontend mfe.c
+ - <b>["SYSTEM"]</b> After composition of an "equipment", the Midas frontend mfe.c
 takes over the sending of this event to the "system buffer" on the back-end computer.
 Dedicated buffer can be specified on those lines allowing a secondary stage on the
 back-end (Event builder to collect and assemble these events coming from different
 buffers in order to compose a larger event. In this case the events coming from the
 frontend are called fragment). In this example both events are placed in the same
 buffer called "SYSTEM" (default).
+
   - <b> [Remark]  </b>If this field is left empty ("") the readout function associated to
 that equipment will still be performed, but the actual event won't be sent to the
 buffer. The positive side-effect of that configuration is to allow that particular
 equipment to be mirrored in the ODB if the RO_ODB is turned on.
-  \anchor EQ_xxx 
-- <b>[EQ_xxx]</b> The field specify the type of equipment. It can be of a single type
+
+\anchor EQ_xxx 
+  - <b>[EQ_xxx]</b> The field specify the type of equipment. It can be of a single type
 such as @ref EQ_POLLED, @ref EQ_INTERRUPT, @ref EQ_MULTITHREAD, and @ref EQ_SLOW.
 EQ_POLLED and EQ_MULTITHREAD are similar expect for the polling function which in the case
 of EQ_MULTITHREAD resides in a separate thread. This new type has been added to take
