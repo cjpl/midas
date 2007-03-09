@@ -4867,6 +4867,8 @@ void show_custom_gif(char *name)
                sprintf(value, label.format, *(((float *) data)));
             else if (vkey.type == TID_DOUBLE)
                sprintf(value, label.format, *(((double *) data)));
+            else if (vkey.type == TID_INT)
+               sprintf(value, label.format, *(((INT *) data)));
             else
                db_sprintf(value, data, size, 0, vkey.type);
          } else
