@@ -12,9 +12,8 @@ of the latest documentation on past and current features. It will also
 mention the wish list documentation on current developments.
  
 
-- Current doc revision: 2.0.0-0 
+- Current doc revision: 2.0.1 
 - Software version: 2.0.0
-
 
 
 - <b> [2.0.0] </b>
@@ -28,8 +27,8 @@ mention the wish list documentation on current developments.
   - Buffer level handling.
   - mdump single bank display.
   - mhttpd (multiple buggies).
-  - 
-
+ - EQ_MULTITHREAD frontend type (see @ref EQ_xxx).
+ - Ring Buffer fonctions (rb_create(),...) for multi-threading and cascading data transfer.
 
 - <b> [1.9.6] </b>
  - Latest tarball : <a href=http://midas.triumf.ca/download> 1.9.5-x </a>
