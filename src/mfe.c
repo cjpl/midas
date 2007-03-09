@@ -714,6 +714,18 @@ INT register_equipment(void)
       /*---- evaluate polling count ----------------------------------*/
 
       if (eq_info->eq_type & (EQ_POLLED | EQ_MULTITHREAD)) {
+         if (eq_info->eq_type & EQ_INTERRUPT) {
+            if (eq_info->eq_type & EQ_POLLED)
+               cm_msg(MERROR, "register_equipment",
+                  "Equipment \"%s\" cannot be of type EQ_INTERRUPT and EQ_POLLED at the same time", 
+                  equipment[index].name);
+            else
+               cm_msg(MERROR, "register_equipment",
+                  "Equipment \"%s\" cannot be of type EQ_INTERRUPT and EQ_MULTITHREAD at the same time", 
+                  equipment[index].name);
+            return 0;
+         }
+
          if (display_period)
             printf("\nCalibrating");
 
