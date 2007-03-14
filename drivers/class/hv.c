@@ -36,6 +36,7 @@ typedef struct {
    /* items in /Settings */
    float *update_threshold;
    float *update_threshold_current;
+   float *zero_threshold;
    float *voltage_limit;
    float *current_limit;
    float *rampup_speed;
@@ -69,6 +70,7 @@ static void free_mem(HV_INFO * hv_info)
 
    free(hv_info->update_threshold);
    free(hv_info->update_threshold_current);
+   free(hv_info->zero_threshold);
    free(hv_info->voltage_limit);
    free(hv_info->current_limit);
    free(hv_info->rampup_speed);
@@ -156,7 +158,7 @@ INT hv_read(EQUIPMENT * pequipment, int channel)
 
    /* check for update measured */
    max_diff = 0.f;
-   min_time = 10000;
+   min_time = 60000;
    changed = FALSE;
    for (i = 0; i < hv_info->num_channels; i++) {
       if (abs(hv_info->measured[i] - hv_info->measured_mirror[i]) > max_diff)
@@ -164,16 +166,16 @@ INT hv_read(EQUIPMENT * pequipment, int channel)
 
       /* indicate change if variation more than the threshold */
       if (abs(hv_info->measured[i] - hv_info->measured_mirror[i]) >
-          hv_info->update_threshold[i] && hv_info->measured[i] > 10)
+          hv_info->update_threshold[i] && hv_info->measured[i] > hv_info->zero_threshold[i])
          changed = TRUE;
 
       if (act_time - hv_info->last_change[i] < min_time)
          min_time = act_time - hv_info->last_change[i];
    }
 
-   /* update if change is more than update_sensitivity or less than 5sec ago 
+   /* update if change is more than update_sensitivity or less than 20 seconds ago 
       or last update is older than a minute */
-   if (changed || (min_time < 5000 && max_diff > 0) ||
+   if (changed || (min_time < 20000 && max_diff > 0) ||
        act_time - hv_info->last_update > 60000) {
       hv_info->last_update = act_time;
 
@@ -509,6 +511,7 @@ INT hv_init(EQUIPMENT * pequipment)
    hv_info->update_threshold = (float *) calloc(hv_info->num_channels, sizeof(float));
    hv_info->update_threshold_current =
        (float *) calloc(hv_info->num_channels, sizeof(float));
+   hv_info->zero_threshold = (float *) calloc(hv_info->num_channels, sizeof(float));
    hv_info->voltage_limit = (float *) calloc(hv_info->num_channels, sizeof(float));
    hv_info->current_limit = (float *) calloc(hv_info->num_channels, sizeof(float));
    hv_info->rampup_speed = (float *) calloc(hv_info->num_channels, sizeof(float));
@@ -588,6 +591,10 @@ INT hv_init(EQUIPMENT * pequipment)
    /* Update threshold current */
    validate_odb_array(hDB, hv_info, "Settings/Update Threshold Current", 1, CMD_GET_THRESHOLD_CURRENT, 
                       hv_info->update_threshold_current, NULL, NULL);
+
+   /* Zero threshold */
+   validate_odb_array(hDB, hv_info, "Settings/Zero Threshold", 20, CMD_GET_THRESHOLD_ZERO, 
+                      hv_info->zero_threshold, NULL, NULL);
 
    /* Voltage limit */
    validate_odb_array(hDB, hv_info, "Settings/Voltage Limit", 3000, CMD_GET_VOLTAGE_LIMIT, 
