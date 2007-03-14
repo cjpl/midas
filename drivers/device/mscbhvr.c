@@ -435,6 +435,13 @@ INT mscbhvr(INT cmd, ...)
       *pvalue = 1;
       break;
 
+   case CMD_GET_THRESHOLD_ZERO:
+      info = va_arg(argptr, void *);
+      channel = va_arg(argptr, INT);
+      pvalue = va_arg(argptr, float *);
+      *pvalue = 20;
+      break;
+
    case CMD_GET_VOLTAGE_LIMIT:
       info = va_arg(argptr, void *);
       channel = va_arg(argptr, INT);
