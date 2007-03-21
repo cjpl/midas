@@ -94,7 +94,7 @@ DRIVER = vmeio v1190B
 # comment out the line and run your own frontend as follow:
 # gmake UFE=my_frontend
 #
-UFE = fevf48
+UFE = fevmemodules
 
 ####################################################################
 # Lines below here should not be edited
@@ -117,22 +117,22 @@ $(UFE): $(LIB) $(LIB_DIR)/mfe.o vmicvme.o vmeio.o v1190B.o v792.o v1729.o vf48.o
 	$(LDFEFLAGS) $(LIBS)
 
 vmicvme.o: $(DRV_DIR)/vmic/vmicvme.c
-	$(CC) $(CFLAGS) $(OSFLAGS) -c -o vmicvme.o $(DRV_DIR)/vmic/vmicvme.c
+	$(CC) $(CFLAGS) $(OSFLAGS) -o $@ -c $<
 
 vmeio.o: $(DRV_DIR)/vmeio.c
-	$(CC) $(CFLAGS) $(OSFLAGS) -c -o vmeio.o $(DRV_DIR)/vmeio.c
+	$(CC) $(CFLAGS) $(OSFLAGS) -o $@ -c $<
 
 v1190B.o: $(DRV_DIR)/v1190B.c
-	$(CC) $(CFLAGS) $(OSFLAGS) -c -o v1190B.o $(DRV_DIR)/v1190B.c
+	$(CC) $(CFLAGS) $(OSFLAGS) -o $@ -c $<
 
 v792.o: $(DRV_DIR)/v792.c
-	$(CC) $(CFLAGS) $(OSFLAGS) -c -o v792.o $(DRV_DIR)/v792.c
+	$(CC) $(CFLAGS) $(OSFLAGS) -o $@ -c $<
 
-vf48.o: vf48.c
-	$(CC) $(CFLAGS) $(OSFLAGS) -c -o vf48.o vf48.c
+vf48.o: $(DRV_DIR)/vf48.c
+	$(CC) $(CFLAGS) $(OSFLAGS) -o $@ -c $<
 
-v1729.o: v1729.c
-	$(CC) $(CFLAGS) $(OSFLAGS) -c -o v1729.o v1729.c
+v1729.o: $(DRV_DIR)/v1729.c
+	$(CC) $(CFLAGS) $(OSFLAGS) -o $@ -c $<
 
 # $(DRIVER).o: $(DRV_DIR)/$(DRIVER).c
 # 	$(CC) $(CFLAGS) $(OSFLAGS) -c -o $(DRIVER).o $(DRV_DIR)/$(DRIVER).c
