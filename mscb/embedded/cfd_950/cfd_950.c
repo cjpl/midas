@@ -8,6 +8,8 @@
                 Midas Slow Control Bus protocol
                 for CFD-950/VME Contant Fraction Discriminator
 
+  $Id$
+
 \********************************************************************/
 
 #include <stdio.h>
