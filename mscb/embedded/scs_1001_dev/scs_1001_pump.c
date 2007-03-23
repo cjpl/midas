@@ -90,7 +90,7 @@ struct {
    float again[8];
 } xdata user_data;
 
-MSCB_INFO_VAR code variables[] = {
+MSCB_INFO_VAR code vars[] = {
 
    { 1, UNIT_BYTE,    0, 0, 0,                               "Error",    &user_data.error },                        // 0
                                                                                                                
@@ -155,6 +155,8 @@ MSCB_INFO_VAR code variables[] = {
 
    { 0 }
 };
+
+MSCB_INFO_VAR *variables = vars;
 
 /********************************************************************\
 
