@@ -8288,13 +8288,13 @@ void show_hist_config_page(char *path)
       }
 
       if (*getparam("minimum")) {
-         float val = strtod(getparam("minimum"),NULL);
+         float val = (float) strtod(getparam("minimum"),NULL);
          sprintf(ref, "/History/Display/%s/Minimum", path);
          db_set_value(hDB, 0, ref, &val, sizeof(val), 1, TID_FLOAT);
       }
 
       if (*getparam("maximum")) {
-         float val = strtod(getparam("maximum"),NULL);
+         float val = (float) strtod(getparam("maximum"),NULL);
          sprintf(ref, "/History/Display/%s/Maximum", path);
          db_set_value(hDB, 0, ref, &val, sizeof(val), 1, TID_FLOAT);
       }
@@ -9195,10 +9195,10 @@ void export_hist(char *path, int scale, int toffset, int index, int labels)
       rsprintf("\n");
 
       /* find next t as smallest delta t */
-      dt = x[0][i_var[0]+1] - t;
+      dt = (DWORD) (x[0][i_var[0]+1] - t);
       for (i = 1 ; i < n_vars ; i++)
          if (x[i][i_var[i]+1] - t < dt)
-            dt = x[i][i_var[i]+1] - t;
+            dt = (DWORD) (x[i][i_var[i]+1] - t);
       t += dt;
 
    } while (1);

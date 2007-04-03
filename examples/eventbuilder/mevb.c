@@ -35,7 +35,7 @@ DWORD last_time;
 DWORD actual_time;              /* current time in seconds since 1970 */
 DWORD actual_millitime;         /* current time in milliseconds */
 
-char svn_revision[] = "$Id$";
+char mevb_svn_revision[] = "$Id$";
 char host_name[HOST_NAME_LENGTH];
 char expt_name[NAME_LENGTH];
 char buffer_name[NAME_LENGTH];
@@ -1012,7 +1012,7 @@ INT source_scan(INT fmt, EQUIPMENT_INFO * eq_info)
       act_size = ((EVENT_HEADER *) dest_event)->data_size + sizeof(EVENT_HEADER);
 
       /* Send event and wait for completion */
-      status = rpc_send_event(equipment[0].buffer_handle, dest_event, act_size, SYNC);
+      status = rpc_send_event(equipment[0].buffer_handle, dest_event, act_size, SYNC, 0);
       if (status != BM_SUCCESS) {
          if (debug)
             printf("rpc_send_event returned error %d, event_size %d\n", status, act_size);
@@ -1086,11 +1086,11 @@ int main(int argc, char **argv)
    }
 
    // Print SVN revision
-   strcpy(str, svn_revision+12);
+   strcpy(str, mevb_svn_revision+12);
    if (strchr(str, ' '))
       *strchr(str, ' ') = 0;
    printf("Program mevb, revision %s from ", str);
-   strcpy(str, svn_revision+17);
+   strcpy(str, mevb_svn_revision+17);
    if (strchr(str, ' '))
       *strchr(str, ' ') = 0;
    printf("%s. Press \"!\" to exit.\n", str);
