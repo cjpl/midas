@@ -3463,14 +3463,12 @@ int main(int argc, char *argv[])
    rargc++;
 
    /* append argument "-b" for batch mode without graphics */
-   rargv[rargc] = (char *) malloc(3);
    rargv[rargc++] = "-b";
 
    TApplication theApp("mlogger", &rargc, rargv);
 
    /* free argument memory */
    free(rargv[0]);
-   free(rargv[1]);
    free(rargv);
 
 #endif
