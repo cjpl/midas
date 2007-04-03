@@ -154,7 +154,7 @@ void compose_status(HNDLE hDB, HNDLE hKey)
       /* time */
       if (rs != STATE_STOPPED) {
          cm_time((void *) (&full_time));
-         difftime = full_time - tb;
+         difftime = (DWORD) full_time - tb;
          if (esc_flag)
             sprintf(&(ststr[j++][66]), "Run time :%02d:%02d:%02d",
                     difftime / 3600, difftime % 3600 / 60, difftime % 60);

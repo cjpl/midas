@@ -1,9 +1,13 @@
 /********************************************************************\
 
   Name:         mspeaker.c
-  Created by:   Pierre-Andre Amaudruz
+  Created by:   Pierre-Andre Amaudruz, Stefan Ritt
 
   Contents:     Speaks midas messages
+
+  Requires Microsoft Speech SDK 5.1 to be installed under
+
+  \Program Files\Microsoft Speech SDK 5.1\
 
   $Id$
 
@@ -81,7 +85,7 @@ void receive_message(HNDLE hBuf, HNDLE id, EVENT_HEADER * header, void *message)
 
 /*------------------------------------------------------------------*/
 
-main(int argc, char *argv[])
+int main(int argc, char *argv[])
 {
    INT status, i, ch;
    char host_name[NAME_LENGTH];

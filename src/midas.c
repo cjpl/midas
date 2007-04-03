@@ -12662,7 +12662,7 @@ INT hs_gen_index(DWORD ltime)
    printf("Recovering index files...\n");
 
    if (ltime == 0)
-      ltime = time(NULL);
+      ltime = (DWORD) time(NULL);
 
    /* open new index file */
    hs_open_file(ltime, "idx", O_RDWR | O_CREAT | O_TRUNC, &fhi);
@@ -12772,7 +12772,7 @@ INT hs_search_file(DWORD * ltime, INT direction)
       /* if switched to new day, set start_time to 0:00 */
       tms = localtime(&lt);
       tms->tm_hour = tms->tm_min = tms->tm_sec = 0;
-      *ltime = mktime(tms);
+      *ltime = (DWORD) mktime(tms);
    }
 
    /* check if index files are there */
@@ -12870,7 +12870,7 @@ INT hs_define_event(DWORD event_id, char *name, TAG * tag, DWORD size)
       /* assemble definition record header */
       rec.record_type = RT_DEF;
       rec.event_id = event_id;
-      rec.time = time(NULL);
+      rec.time = (DWORD) time(NULL);
       rec.data_size = size;
       strncpy(event_name, name, NAME_LENGTH);
 
@@ -12919,7 +12919,7 @@ INT hs_define_event(DWORD event_id, char *name, TAG * tag, DWORD size)
          _history[index].def_offset = TELL(fh);
          _history[index].event_id = event_id;
          strcpy(_history[index].event_name, event_name);
-         _history[index].base_time = mktime(tmb);
+         _history[index].base_time = (DWORD) mktime(tmb);
          _history[index].n_tag = size / sizeof(TAG);
          _history[index].tag = (TAG *) M_MALLOC(size);
          memcpy(_history[index].tag, tag, size);
@@ -13063,7 +13063,7 @@ INT hs_write_event(DWORD event_id, void *data, DWORD size)
    /* assemble record header */
    rec.record_type = RT_DATA;
    rec.event_id = _history[index].event_id;
-   rec.time = time(NULL);
+   rec.time = (DWORD) time(NULL);
    rec.def_offset = _history[index].def_offset;
    rec.data_size = size;
 
@@ -13110,7 +13110,7 @@ INT hs_write_event(DWORD event_id, void *data, DWORD size)
       rec.def_offset = _history[index].def_offset;
 
       tmr.tm_hour = tmr.tm_min = tmr.tm_sec = 0;
-      _history[index].base_time = mktime(&tmr);
+      _history[index].base_time = (DWORD) mktime(&tmr);
 
       /* write definition from _history structure */
       drec.record_type = RT_DEF;
@@ -13345,7 +13345,7 @@ INT hs_get_event_id(DWORD ltime, char *name, DWORD * id)
 
    /* search latest history file */
    if (ltime == 0)
-      ltime = time(NULL);
+      ltime = (DWORD) time(NULL);
 
    lt = ltime;
 
@@ -13724,9 +13724,9 @@ INT hs_read(DWORD event_id, DWORD start_time, DWORD end_time,
 
    /* if not time given, use present to one hour in past */
    if (start_time == 0)
-      start_time = time(NULL) - 3600;
+      start_time = (DWORD) time(NULL) - 3600;
    if (end_time == 0)
-      end_time = time(NULL);
+      end_time = (DWORD) time(NULL);
 
    /* search history file for start_time */
    status = hs_search_file(&start_time, 1);
@@ -13963,7 +13963,7 @@ INT hs_read(DWORD event_id, DWORD start_time, DWORD end_time,
          ltime = (time_t) last_irec_time;
          tms = localtime(&ltime);
          tms->tm_hour = tms->tm_min = tms->tm_sec = 0;
-         last_irec_time = mktime(tms);
+         last_irec_time = (DWORD) mktime(tms);
 
          last_irec_time += 3600 * 24;
 
@@ -14059,9 +14059,9 @@ INT hs_dump(DWORD event_id, DWORD start_time, DWORD end_time, DWORD interval, BO
 
    /* if not time given, use present to one hour in past */
    if (start_time == 0)
-      start_time = time(NULL) - 3600;
+      start_time = (DWORD) time(NULL) - 3600;
    if (end_time == 0)
-      end_time = time(NULL);
+      end_time = (DWORD) time(NULL);
 
    /* search history file for start_time */
    status = hs_search_file(&start_time, 1);
@@ -14208,7 +14208,7 @@ INT hs_dump(DWORD event_id, DWORD start_time, DWORD end_time, DWORD interval, BO
          ltime = (time_t) last_irec_time;
          tms = localtime(&ltime);
          tms->tm_hour = tms->tm_min = tms->tm_sec = 0;
-         last_irec_time = mktime(tms);
+         last_irec_time = (DWORD) mktime(tms);
 
          last_irec_time += 3600 * 24;
          if (last_irec_time > end_time)
@@ -14808,7 +14808,7 @@ INT el_search_message(char *tag, int *fh, BOOL walk)
 
    /* open most recent file if no tag given */
    if (tag[0] == 0) {
-      time((long *) &lt);
+      time((time_t *) &lt);
       ltime = lt;
       do {
          tms = localtime(&ltime);
@@ -14919,7 +14919,7 @@ INT el_search_message(char *tag, int *fh, BOOL walk)
       i = read(*fh, str, 15);
       if (i < 15) {
          close(*fh);
-         time((long *) &lact);
+         time((time_t *) &lact);
 
          lt = ltime;
          do {
@@ -15908,7 +15908,7 @@ INT al_check()
             str[strlen(key.name)] = 0;
             if (!equal_ustring(str, key.name) && cm_exist(key.name, FALSE) == CM_NO_CLIENT) {
                if (program_info.first_failed == 0)
-                  program_info.first_failed = now;
+                  program_info.first_failed = (DWORD) now;
 
                /* fire alarm when not running for more than what specified in check interval */
                if (now - program_info.first_failed >= program_info.check_interval / 1000) {

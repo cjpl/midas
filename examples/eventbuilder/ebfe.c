@@ -275,7 +275,6 @@ INT interrupt_configure(INT cmd, INT source, POINTER_T adr)
 INT read_trigger_event(char *pevent, INT off)
 {
    WORD *pdata, a;
-   INT q, timeout;
 
    /* init bank structure */
    bk_init(pevent);
