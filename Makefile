@@ -254,7 +254,8 @@ endif
 
 OBJS =  $(LIB_DIR)/midas.o $(LIB_DIR)/system.o $(LIB_DIR)/mrpc.o \
 	$(LIB_DIR)/odb.o $(LIB_DIR)/ybos.o $(LIB_DIR)/ftplib.o \
-	$(LIB_DIR)/mxml.o $(LIB_DIR)/cnaf_callback.o
+	$(LIB_DIR)/mxml.o $(LIB_DIR)/cnaf_callback.o \
+	$(LIB_DIR)/history.o $(LIB_DIR)/alarm.o $(LIB_DIR)/elog.o
 
 ifdef NEED_STRLCPY
 OBJS += $(LIB_DIR)/strlcpy.o
