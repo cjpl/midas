@@ -258,6 +258,10 @@
 				</FileConfiguration>
 			</File>
 			<File
+				RelativePath="..\src\alarm.c"
+				>
+			</File>
+			<File
 				RelativePath="..\examples\hbookexpt\analyzer.c"
 				>
 				<FileConfiguration
@@ -289,6 +293,10 @@
 			</File>
 			<File
 				RelativePath="..\src\cnaf_callback.c"
+				>
+			</File>
+			<File
+				RelativePath="..\src\elog.c"
 				>
 			</File>
 			<File
@@ -368,6 +376,10 @@
 						BrowseInformation="1"
 					/>
 				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\src\history.c"
+				>
 			</File>
 			<File
 				RelativePath="..\src\midas.c"

@@ -201,6 +201,10 @@
 			Filter="cpp;c;cxx;rc;def;r;odl;idl;hpj;bat;for;f90"
 			>
 			<File
+				RelativePath="..\src\alarm.c"
+				>
+			</File>
+			<File
 				RelativePath="..\SRC\cmdedit.c"
 				>
 				<FileConfiguration
@@ -224,6 +228,14 @@
 						PreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\src\elog.c"
+				>
+			</File>
+			<File
+				RelativePath="..\src\history.c"
+				>
 			</File>
 			<File
 				RelativePath="..\src\MIDAS.C"

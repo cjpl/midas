@@ -256,6 +256,10 @@
 				</FileConfiguration>
 			</File>
 			<File
+				RelativePath="..\src\alarm.c"
+				>
+			</File>
+			<File
 				RelativePath="..\examples\experiment\analyzer.c"
 				>
 				<FileConfiguration
@@ -282,6 +286,10 @@
 				</FileConfiguration>
 			</File>
 			<File
+				RelativePath="..\src\elog.c"
+				>
+			</File>
+			<File
 				RelativePath="..\src\ftplib.c"
 				>
 				<FileConfiguration
@@ -306,6 +314,10 @@
 						CompileAs="2"
 					/>
 				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\src\history.c"
+				>
 			</File>
 			<File
 				RelativePath="..\src\mana.c"

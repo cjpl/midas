@@ -203,11 +203,19 @@
 			Filter="cpp;c;cxx;rc;def;r;odl;idl;hpj;bat;for;f90"
 			>
 			<File
+				RelativePath="..\src\alarm.c"
+				>
+			</File>
+			<File
 				RelativePath="..\drivers\camac\camacnul.c"
 				>
 			</File>
 			<File
 				RelativePath="..\src\cnaf_callback.c"
+				>
+			</File>
+			<File
+				RelativePath="..\src\elog.c"
 				>
 			</File>
 			<File
@@ -261,6 +269,10 @@
 						BrowseInformation="1"
 					/>
 				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\src\history.c"
+				>
 			</File>
 			<File
 				RelativePath="..\src\mfe.c"

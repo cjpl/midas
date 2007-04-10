@@ -132,7 +132,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="\midas\include,\midas\drivers"
+				AdditionalIncludeDirectories="\midas\include,\midas\drivers;\mxml;"
 				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_DEPRECATE"
 				RuntimeLibrary="1"
 				UsePrecompiledHeader="0"
@@ -202,7 +202,19 @@
 			Filter="cpp;c;cxx;rc;def;r;odl;idl;hpj;bat;for;f90"
 			>
 			<File
+				RelativePath="..\src\alarm.c"
+				>
+			</File>
+			<File
 				RelativePath="..\drivers\camac\camacrpc.c"
+				>
+			</File>
+			<File
+				RelativePath="..\src\elog.c"
+				>
+			</File>
+			<File
+				RelativePath="..\src\history.c"
 				>
 			</File>
 			<File
