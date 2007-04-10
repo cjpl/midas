@@ -204,6 +204,18 @@
 			Filter="cpp;c;cxx;rc;def;r;odl;idl;hpj;bat"
 			>
 			<File
+				RelativePath="..\src\alarm.c"
+				>
+			</File>
+			<File
+				RelativePath="..\src\elog.c"
+				>
+			</File>
+			<File
+				RelativePath="..\src\history.c"
+				>
+			</File>
+			<File
 				RelativePath="..\src\midas.c"
 				>
 				<FileConfiguration

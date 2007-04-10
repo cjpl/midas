@@ -43,7 +43,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="\midas\include"
+				AdditionalIncludeDirectories="\midas\include;\mxml;"
 				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_DEPRECATE"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
@@ -201,6 +201,18 @@
 			Filter="cpp;c;cxx;rc;def;r;odl;idl;hpj;bat"
 			>
 			<File
+				RelativePath="..\src\alarm.c"
+				>
+			</File>
+			<File
+				RelativePath="..\src\elog.c"
+				>
+			</File>
+			<File
+				RelativePath="..\src\history.c"
+				>
+			</File>
+			<File
 				RelativePath="..\src\midas.c"
 				>
 				<FileConfiguration
@@ -273,16 +285,8 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="..\src\mxml.c"
+				RelativePath="..\..\mxml\mxml.c"
 				>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						PreprocessorDefinitions="HAVE_STRLCPY"
-					/>
-				</FileConfiguration>
 			</File>
 			<File
 				RelativePath="..\src\odb.c"
@@ -309,7 +313,7 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="..\src\strlcpy.c"
+				RelativePath="..\..\mxml\strlcpy.c"
 				>
 			</File>
 			<File
