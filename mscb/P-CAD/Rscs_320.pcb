@@ -1,0 +1,3439 @@
+ACCEL_ASCII "C:\stefan\crate_det\Rcrate_det.pcb"
+
+(asciiHeader 
+  (asciiVersion 3 0)
+  (timeStamp 2006 5 19 9 29 26)
+  (program "P-CAD 2004 PCB" "18.00.2690")
+  (copyright "Copyright © 1991-2004 Altium Limited")
+  (fileAuthor "")
+  (headerString "")
+  (fileUnits Mil)
+  (guidString "{20794D4C-0684-4A13-9635-F1C5F2F949F9}")
+)
+
+(library "Library_1"
+  (padStyleDef "(Default)"
+    (holeDiam 38.0)
+    (StartRange 1)
+    (EndRange 2)
+    (padShape (layerNumRef 1) (padShapeType Ellipse) (shapeWidth 60.0) (shapeHeight 60.0) )
+    (padShape (layerNumRef 2) (padShapeType Ellipse) (shapeWidth 60.0) (shapeHeight 60.0) )
+    (padShape (layerType Signal) (padShapeType Ellipse) (shapeWidth 60.0) (shapeHeight 60.0) )
+    (padShape (layerType Plane) (padShapeType Thrm4_45) (outsideDiam 84.0) (insideDiam 60.0) (spokeWidth 15.0) )
+    (padShape (layerType NonSignal) (padShapeType Ellipse) (shapeWidth 0.0) (shapeHeight 0.0) )
+  )
+  (padStyleDef "P:SX80Y26D0T"
+    (holeDiam 0.0)
+    (isHolePlated False)
+    (StartRange 1)
+    (EndRange 2)
+    (padShape (layerNumRef 1) (padShapeType Rect) (shapeWidth 80.0) (shapeHeight 26.0) )
+    (padShape (layerNumRef 2) (padShapeType Rect) (shapeWidth 0.0) (shapeHeight 0.0) )
+    (padShape (layerType Signal) (padShapeType Rect) (shapeWidth 0.0) (shapeHeight 0.0) )
+    (padShape (layerType Plane) (padShapeType Thrm4_45) (outsideDiam 0.0) (insideDiam 0.0) )
+    (padShape (layerType NonSignal) (padShapeType Ellipse) (shapeWidth 0.0) (shapeHeight 0.0) )
+  )
+  (padStyleDef "D50H32"
+    (holeDiam 0.8 mm)
+    (StartRange 1)
+    (EndRange 2)
+    (padShape (layerNumRef 1) (padShapeType Ellipse) (shapeWidth 50.0) (shapeHeight 50.0) )
+    (padShape (layerNumRef 2) (padShapeType Ellipse) (shapeWidth 50.0) (shapeHeight 50.0) )
+    (padShape (layerType Signal) (padShapeType Ellipse) (shapeWidth 50.0) (shapeHeight 50.0) )
+    (padShape (layerType Plane) (padShapeType Thrm4_45) (outsideDiam 1.6 mm) (insideDiam 1.2 mm) (spokeWidth 0.26666 mm) )
+    (padShape (layerType NonSignal) (padShapeType Ellipse) (shapeWidth 0.0) (shapeHeight 0.0) )
+  )
+  (padStyleDef "c1660rv.ps [1]"
+    (holeDiam 0.0)
+    (isHolePlated False)
+    (StartRange 1)
+    (EndRange 2)
+    (padShape (layerNumRef 1) (padShapeType Rect) (shapeWidth 16.0) (shapeHeight 60.0) )
+    (padShape (layerNumRef 2) (padShapeType Ellipse) (shapeWidth 0.0) (shapeHeight 0.0) )
+    (padShape (layerType Signal) (padShapeType Ellipse) (shapeWidth 0.0) (shapeHeight 0.0) )
+    (padShape (layerType Plane) (padShapeType Ellipse) (shapeWidth 0.0) (shapeHeight 0.0) )
+    (padShape (layerType NonSignal) (padShapeType Ellipse) (shapeWidth 0.0) (shapeHeight 0.0) )
+  )
+  (padStyleDef "c6016rh.ps [1]"
+    (holeDiam 0.0)
+    (isHolePlated False)
+    (StartRange 1)
+    (EndRange 2)
+    (padShape (layerNumRef 1) (padShapeType Rect) (shapeWidth 60.0) (shapeHeight 16.0) )
+    (padShape (layerNumRef 2) (padShapeType Ellipse) (shapeWidth 0.0) (shapeHeight 0.0) )
+    (padShape (layerType Signal) (padShapeType Ellipse) (shapeWidth 0.0) (shapeHeight 0.0) )
+    (padShape (layerType Plane) (padShapeType Ellipse) (shapeWidth 0.0) (shapeHeight 0.0) )
+    (padShape (layerType NonSignal) (padShapeType Ellipse) (shapeWidth 0.0) (shapeHeight 0.0) )
+  )
+  (padStyleDef "c3830rh.ps [1]"
+    (holeDiam 0.0)
+    (isHolePlated False)
+    (StartRange 1)
+    (EndRange 2)
+    (padShape (layerNumRef 1) (padShapeType Rect) (shapeWidth 38.0) (shapeHeight 30.0) )
+    (padShape (layerNumRef 2) (padShapeType Ellipse) (shapeWidth 0.0) (shapeHeight 0.0) )
+    (padShape (layerType Signal) (padShapeType Ellipse) (shapeWidth 0.0) (shapeHeight 0.0) )
+    (padShape (layerType Plane) (padShapeType Ellipse) (shapeWidth 0.0) (shapeHeight 0.0) )
+    (padShape (layerType NonSignal) (padShapeType Ellipse) (shapeWidth 0.0) (shapeHeight 0.0) )
+  )
+  (padStyleDef "M2.5 [3]"
+    (holeDiam 110.0)
+    (StartRange 1)
+    (EndRange 2)
+    (padShape (layerNumRef 1) (padShapeType Ellipse) (shapeWidth 180.0) (shapeHeight 180.0) )
+    (padShape (layerNumRef 2) (padShapeType Ellipse) (shapeWidth 180.0) (shapeHeight 180.0) )
+    (padShape (layerType Signal) (padShapeType Ellipse) (shapeWidth 180.0) (shapeHeight 180.0) )
+    (padShape (layerType Plane) (padShapeType Thrm4_45) (outsideDiam 220.0) (insideDiam 165.0) (spokeWidth 0.93133 mm) )
+    (padShape (layerType NonSignal) (padShapeType Ellipse) (shapeWidth 0.0) (shapeHeight 0.0) )
+  )
+  (padStyleDef "EF87X24TOPA"
+    (holeDiam 0.0)
+    (isHolePlated False)
+    (StartRange 1)
+    (EndRange 2)
+    (padShape (layerNumRef 1) (padShapeType Rect) (shapeWidth 2.2 mm) (shapeHeight 0.6 mm) )
+    (padShape (layerNumRef 2) (padShapeType Ellipse) (shapeWidth 0.0) (shapeHeight 0.0) )
+    (padShape (layerType Signal) (padShapeType Rect) (shapeWidth 0.0) (shapeHeight 0.0) )
+    (padShape (layerType Plane) (padShapeType NoConnect) (shapeWidth 0.0) (shapeHeight 0.0) )
+    (padShape (layerType NonSignal) (padShapeType Oval) (shapeWidth 0.0) (shapeHeight 0.0) )
+  )
+  (padStyleDef "L150H50 [1]"
+    (holeDiam 0.0)
+    (isHolePlated False)
+    (StartRange 1)
+    (EndRange 2)
+    (padShape (layerNumRef 1) (padShapeType RndRect) (shapeWidth 150.0) (shapeHeight 50.0) )
+    (padShape (layerNumRef 2) (padShapeType RndRect) (shapeWidth 0.0) (shapeHeight 0.0) )
+    (padShape (layerType Signal) (padShapeType RndRect) (shapeWidth 0.0) (shapeHeight 0.0) )
+    (padShape (layerType Plane) (padShapeType Thrm4_45) (outsideDiam 0.0) (insideDiam 0.0) )
+    (padShape (layerType NonSignal) (padShapeType Ellipse) (shapeWidth 0.0) (shapeHeight 0.0) )
+  )
+  (padStyleDef "c3630rh.ps [1]"
+    (holeDiam 0.0)
+    (isHolePlated False)
+    (StartRange 1)
+    (EndRange 2)
+    (padShape (layerNumRef 1) (padShapeType Rect) (shapeWidth 36.0) (shapeHeight 30.0) )
+    (padShape (layerNumRef 2) (padShapeType Rect) (shapeWidth 0.0) (shapeHeight 0.0) )
+    (padShape (layerType Signal) (padShapeType Rect) (shapeWidth 0.0) (shapeHeight 0.0) )
+    (padShape (layerType Plane) (padShapeType Ellipse) (shapeWidth 0.0) (shapeHeight 0.0) )
+    (padShape (layerType NonSignal) (padShapeType Ellipse) (shapeWidth 0.0) (shapeHeight 0.0) )
+  )
+  (viaStyleDef "(Default)"
+    (holeDiam 18.0)
+    (StartRange 1)
+    (EndRange 2)
+    (viaShape (layerNumRef 1) (viaShapeType Ellipse) (shapeWidth 40.0) (shapeHeight 40.0) )
+    (viaShape (layerNumRef 2) (viaShapeType Ellipse) (shapeWidth 40.0) (shapeHeight 40.0) )
+    (viaShape (layerType Signal) (viaShapeType Ellipse) (shapeWidth 40.0) (shapeHeight 40.0) )
+    (viaShape (layerType Plane) (viaShapeType Thrm4_45) (outsideDiam 64.0) (insideDiam 40.0) (spokeWidth 15.0) )
+    (viaShape (layerType NonSignal) (viaShapeType Ellipse) (shapeWidth 0.0) (shapeHeight 0.0) )
+  )
+  (viaStyleDef "R28H14"
+    (holeDiam 14.0)
+    (StartRange 1)
+    (EndRange 2)
+    (viaShape (layerNumRef 1) (viaShapeType Ellipse) (shapeWidth 28.0) (shapeHeight 28.0) )
+    (viaShape (layerNumRef 2) (viaShapeType Ellipse) (shapeWidth 28.0) (shapeHeight 28.0) )
+    (viaShape (layerType Signal) (viaShapeType Ellipse) (shapeWidth 28.0) (shapeHeight 28.0) )
+    (viaShape (layerType Plane) (viaShapeType Thrm4_45) (outsideDiam 28.0) (insideDiam 21.0) (spokeWidth 0.11853 mm) )
+    (viaShape (layerType NonSignal) (viaShapeType Ellipse) (shapeWidth 0.0) (shapeHeight 0.0) )
+  )
+  (textStyleDef "(Default)"
+    (font 
+      (fontType Stroke)
+      (fontFamily SanSerif)
+      (fontFace "QUALITY")
+      (fontHeight 100.0)
+      (strokeWidth 10.0)
+    )
+    (textStyleAllowTType False)
+    (textStyleDisplayTType False)
+  )
+  (textStyleDef "(DefaultTTF)"
+    (font 
+      (fontType Stroke)
+      (fontFamily SanSerif)
+      (fontFace "QUALITY")
+      (fontHeight 100.0)
+      (strokeWidth 10.0)
+    )
+    (font 
+      (fontType TrueType)
+      (fontFamily Modern)
+      (fontFace "Arial")
+      (fontHeight 125.0)
+      (strokeWidth 0.19843 mm)
+      (fontWeight 400)
+      (fontCharSet 0)
+      (fontOutPrecision 7)
+      (fontClipPrecision 32)
+      (fontQuality 1)
+      (fontPitchAndFamily 6)
+    )
+    (textStyleAllowTType True)
+    (textStyleDisplayTType True)
+  )
+  (textStyleDef "T:H91W10"
+    (font 
+      (fontType Stroke)
+      (fontFamily SanSerif)
+      (fontFace "QUALITY")
+      (fontHeight 91.0)
+      (strokeWidth 10.0)
+    )
+    (textStyleAllowTType False)
+    (textStyleDisplayTType False)
+  )
+  (textStyleDef "T:H40W4"
+    (font 
+      (fontType Stroke)
+      (fontFamily SanSerif)
+      (fontFace "Quality")
+      (fontHeight 40.0)
+      (strokeWidth 3.5)
+    )
+    (textStyleAllowTType False)
+    (textStyleDisplayTType False)
+  )
+  (textStyleDef "Small"
+    (font 
+      (fontType Stroke)
+      (fontFamily SanSerif)
+      (fontFace "Quality")
+      (fontHeight 1.5 mm)
+      (strokeWidth 0.1 mm)
+    )
+    (textStyleAllowTType False)
+    (textStyleDisplayTType False)
+  )
+  (patternDefExtended "0603_2"
+  (originalName "0603")
+    (patternGraphicsNameRef "Primary")
+
+    (patternGraphicsDef 
+      (patternGraphicsNameDef "Primary")
+      (multiLayer 
+        (pad (padNum 1) (padStyleRef "c3830rh.ps [1]") (pt -31.0 0.0) )
+        (pad (padNum 2) (padStyleRef "c3830rh.ps [1]") (pt 31.0 0.0) )
+      )
+      (layerContents  (layerNumRef  6)
+        (attr "Type" "" (pt -100.0 -25.0) (textStyleRef "(Default)") )
+        (attr "Value" "" (rotation 270.0) (textStyleRef "(Default)") )
+        (attr "RefDes" "" (pt -75.0 0.0) (isVisible True) (justify Center) (textStyleRef "T:H40W4") )
+      )
+    )
+  )
+  (patternDefExtended "0603_1"
+  (originalName "0603")
+    (patternGraphicsNameRef "Primary")
+
+    (patternGraphicsDef 
+      (patternGraphicsNameDef "Primary")
+      (multiLayer 
+        (pad (padNum 1) (padStyleRef "c3630rh.ps [1]") (pt -31.0 0.0) )
+        (pad (padNum 2) (padStyleRef "c3630rh.ps [1]") (pt 31.0 0.0) )
+        (pickpoint (pt 0.0 0.0) (isVisible False) )
+        (gluepoint (pt 0.0 0.0) (isVisible False) )
+      )
+      (layerContents  (layerNumRef  6)
+        (line (pt -12.5 0.0) (pt 12.5 0.0) (width 10.0) )
+        (attr "Type" "" (pt -100.0 -25.0) (textStyleRef "(Default)") )
+        (attr "Value" "" (textStyleRef "(Default)") )
+        (attr "RefDes" "" (pt 0.0 37.5) (isVisible True) (justify Center) (textStyleRef "T:H40W4") )
+      )
+    )
+  )
+  (patternDefExtended "M2.5_1"
+  (originalName "M2.5")
+    (patternGraphicsNameRef "Primary")
+
+    (patternGraphicsDef 
+      (patternGraphicsNameDef "Primary")
+      (multiLayer 
+        (pad (padNum 1) (padStyleRef "M2.5 [3]") (pt 0.0 0.0) (defaultPinDes "1") )
+      )
+      (layerContents  (layerNumRef  6)
+        (attr "RefDes" "" (pt -100.0 -200.0) (textStyleRef "(Default)") )
+        (attr "Type" "" (pt -100.0 100.0) (textStyleRef "(Default)") )
+      )
+    )
+  )
+  (patternDefExtended "SO8_1"
+  (originalName "SO8")
+    (patternGraphicsNameRef "Primary")
+
+    (patternGraphicsDef 
+      (patternGraphicsNameDef "Primary")
+      (multiLayer 
+        (pad (padNum 5) (padStyleRef "P:SX80Y26D0T") (pt 220.0 -150.0) )
+        (pad (padNum 6) (padStyleRef "P:SX80Y26D0T") (pt 220.0 -100.0) )
+        (pad (padNum 7) (padStyleRef "P:SX80Y26D0T") (pt 220.0 -50.0) )
+        (pad (padNum 8) (padStyleRef "P:SX80Y26D0T") (pt 220.0 0.0) )
+        (pad (padNum 4) (padStyleRef "P:SX80Y26D0T") (pt 0.0 -150.0) )
+        (pad (padNum 3) (padStyleRef "P:SX80Y26D0T") (pt 0.0 -100.0) )
+        (pad (padNum 2) (padStyleRef "P:SX80Y26D0T") (pt 0.0 -50.0) )
+        (pad (padNum 1) (padStyleRef "P:SX80Y26D0T") (pt 0.0 0.0) )
+      )
+      (layerContents  (layerNumRef  6)
+        (pcbPoly 
+          (pt -75.0 25.0) 
+          (pt -50.0 25.0) 
+          (pt -50.0 50.0) 
+          (pt -75.0 50.0) 
+        )
+        (attr "RefDes" "" (pt -25.0 31.0) (isVisible True) (textStyleRef "T:H40W4") )
+        (attr "Type" "" (pt -25.0 -269.0) (textStyleRef "T:H91W10") )
+      )
+    )
+  )
+  (patternDefExtended "SO-G8_1"
+  (originalName "SO-G8")
+    (patternGraphicsNameRef "Primary")
+
+    (patternGraphicsDef 
+      (patternGraphicsNameDef "Primary")
+      (multiLayer 
+        (pad (padNum 4) (padStyleRef "EF87X24TOPA") (pt 0.0 -150.0) )
+        (pad (padNum 1) (padStyleRef "EF87X24TOPA") (pt 0.0 0.0) )
+        (pad (padNum 2) (padStyleRef "EF87X24TOPA") (pt 0.0 -50.0) )
+        (pad (padNum 5) (padStyleRef "EF87X24TOPA") (pt 5.19999 mm -150.0) )
+        (pad (padNum 7) (padStyleRef "EF87X24TOPA") (pt 5.19999 mm -50.0) )
+        (pad (padNum 8) (padStyleRef "EF87X24TOPA") (pt 5.19999 mm 0.0) )
+        (pad (padNum 3) (padStyleRef "EF87X24TOPA") (pt 0.0 -100.0) )
+        (pad (padNum 6) (padStyleRef "EF87X24TOPA") (pt 5.19999 mm -100.0) )
+      )
+      (layerContents  (layerNumRef  6)
+        (line (pt 1.5 mm 0.595 mm) (pt 2.23335 mm 0.595 mm) (width 0.24999 mm) )
+        (line (pt 2.96667 mm 0.595 mm) (pt 3.69999 mm 0.595 mm) (width 0.24999 mm) )
+        (line (pt 1.5 mm -4.405 mm) (pt 1.5 mm 0.595 mm) (width 0.24999 mm) )
+        (line (pt 3.69999 mm -4.405 mm) (pt 3.69999 mm 0.595 mm) (width 0.24999 mm) )
+        (line (pt 1.5 mm -4.405 mm) (pt 3.69999 mm -4.405 mm) (width 0.24999 mm) )
+        (triplePointArc (pt 2.59999 mm 0.595 mm) (pt 2.23332 mm 0.595 mm) (pt 2.96666 mm 0.595 mm) (width 0.24999 mm) )
+        (attr "Type" "" (pt 100.0 -200.0) (justify UpperCenter) (textStyleRef "Small") )
+        (attr "RefDes" "" (pt 0.0 25.0) (isVisible True) (justify LowerCenter) (textStyleRef "T:H40W4") )
+      )
+    )
+  )
+  (patternDefExtended "LQFP32_1"
+  (originalName "LQFP32")
+    (patternGraphicsNameRef "Primary")
+
+    (patternGraphicsDef 
+      (patternGraphicsNameDef "Primary")
+      (multiLayer 
+        (pad (padNum 14) (padStyleRef "c1660rv.ps [1]") (pt 1.24 mm -4.4 mm) )
+        (pad (padNum 15) (padStyleRef "c1660rv.ps [1]") (pt 2.04 mm -4.4 mm) )
+        (pad (padNum 11) (padStyleRef "c1660rv.ps [1]") (pt -1.16 mm -4.4 mm) )
+        (pad (padNum 10) (padStyleRef "c1660rv.ps [1]") (pt -1.96 mm -4.4 mm) )
+        (pad (padNum 12) (padStyleRef "c1660rv.ps [1]") (pt -0.36 mm -4.4 mm) )
+        (pad (padNum 13) (padStyleRef "c1660rv.ps [1]") (pt 0.44 mm -4.4 mm) )
+        (pad (padNum 9) (padStyleRef "c1660rv.ps [1]") (pt -2.76 mm -4.4 mm) )
+        (pad (padNum 28) (padStyleRef "c1660rv.ps [1]") (pt 0.44 mm 4.6 mm) )
+        (pad (padNum 29) (padStyleRef "c1660rv.ps [1]") (pt -0.36 mm 4.6 mm) )
+        (pad (padNum 27) (padStyleRef "c1660rv.ps [1]") (pt 1.24 mm 4.6 mm) )
+        (pad (padNum 26) (padStyleRef "c1660rv.ps [1]") (pt 2.04 mm 4.6 mm) )
+        (pad (padNum 30) (padStyleRef "c1660rv.ps [1]") (pt -1.16 mm 4.6 mm) )
+        (pad (padNum 31) (padStyleRef "c1660rv.ps [1]") (pt -1.96 mm 4.6 mm) )
+        (pad (padNum 32) (padStyleRef "c1660rv.ps [1]") (pt -2.76 mm 4.6 mm) )
+        (pad (padNum 19) (padStyleRef "c6016rh.ps [1]") (pt 4.54 mm -1.1 mm) )
+        (pad (padNum 18) (padStyleRef "c6016rh.ps [1]") (pt 4.54 mm -1.9 mm) )
+        (pad (padNum 17) (padStyleRef "c6016rh.ps [1]") (pt 4.54 mm -2.7 mm) )
+        (pad (padNum 21) (padStyleRef "c6016rh.ps [1]") (pt 4.54 mm 0.5 mm) )
+        (pad (padNum 22) (padStyleRef "c6016rh.ps [1]") (pt 4.54 mm 1.3 mm) )
+        (pad (padNum 23) (padStyleRef "c6016rh.ps [1]") (pt 4.54 mm 2.1 mm) )
+        (pad (padNum 24) (padStyleRef "c6016rh.ps [1]") (pt 4.54 mm 2.9 mm) )
+        (pad (padNum 20) (padStyleRef "c6016rh.ps [1]") (pt 4.54 mm -0.3 mm) )
+        (pad (padNum 16) (padStyleRef "c1660rv.ps [1]") (pt 2.84 mm -4.4 mm) )
+        (pad (padNum 6) (padStyleRef "c6016rh.ps [1]") (pt -4.46 mm -1.1 mm) )
+        (pad (padNum 7) (padStyleRef "c6016rh.ps [1]") (pt -4.46 mm -1.9 mm) )
+        (pad (padNum 8) (padStyleRef "c6016rh.ps [1]") (pt -4.46 mm -2.7 mm) )
+        (pad (padNum 3) (padStyleRef "c6016rh.ps [1]") (pt -4.46 mm 1.3 mm) )
+        (pad (padNum 2) (padStyleRef "c6016rh.ps [1]") (pt -4.46 mm 2.1 mm) )
+        (pad (padNum 1) (padStyleRef "c6016rh.ps [1]") (pt -4.46 mm 2.9 mm) )
+        (pad (padNum 4) (padStyleRef "c6016rh.ps [1]") (pt -4.46 mm 0.5 mm) )
+        (pad (padNum 25) (padStyleRef "c1660rv.ps [1]") (pt 2.84 mm 4.6 mm) )
+        (pad (padNum 5) (padStyleRef "c6016rh.ps [1]") (pt -4.46 mm -0.3 mm) )
+      )
+      (layerContents  (layerNumRef  6)
+        (line (pt -3.06 mm -3.4 mm) (pt -3.46 mm -3.0 mm) (width 10.0) )
+        (triplePointArc (pt -150.0 150.0) (pt -145.0 150.0) (pt -145.0 150.0) (width 10.0) )
+        (line (pt -3.46 mm 3.2 mm) (pt -3.06 mm 3.6 mm) (width 10.0) )
+        (line (pt 3.14 mm -3.4 mm) (pt 3.54 mm -3.0 mm) (width 10.0) )
+        (line (pt 3.54 mm 3.2 mm) (pt 3.14 mm 3.6 mm) (width 10.0) )
+        (line (pt -3.46 mm -3.0 mm) (pt -3.46 mm 3.2 mm) (width 10.0) )
+        (line (pt 3.54 mm 3.2 mm) (pt 3.54 mm -3.0 mm) (width 10.0) )
+        (line (pt -3.06 mm -3.4 mm) (pt 3.14 mm -3.4 mm) (width 10.0) )
+        (line (pt -3.06 mm 3.6 mm) (pt 3.14 mm 3.6 mm) (width 10.0) )
+        (attr "Type" "" (textStyleRef "(Default)") )
+        (attr "RefDes" "" (pt -187.5 175.0) (rotation 270.0) (isVisible True) (justify Center) (textStyleRef "T:H40W4") )
+      )
+    )
+  )
+  (patternDefExtended "FREEPIN2_2"
+  (originalName "FREEPIN2")
+    (patternGraphicsNameRef "Primary")
+
+    (patternGraphicsDef 
+      (patternGraphicsNameDef "Primary")
+      (multiLayer 
+        (pad (padNum 1) (padStyleRef "L150H50 [1]") (pt 0.0 0.0) )
+      )
+      (layerContents  (layerNumRef  6)
+        (attr "Type" "" (pt 50.0 -75.0) (justify UpperCenter) (textStyleRef "T:H91W10") )
+        (attr "RefDes" "" (pt 0.0 112.5) (justify Center) (textStyleRef "T:H91W10") )
+      )
+    )
+  )
+  (patternDefExtended "FREEPIN2_1"
+  (originalName "FREEPIN2")
+    (patternGraphicsNameRef "Primary")
+
+    (patternGraphicsDef 
+      (patternGraphicsNameDef "Primary")
+      (multiLayer 
+        (pad (padNum 1) (padStyleRef "L150H50 [1]") (pt 0.0 0.0) )
+      )
+      (layerContents  (layerNumRef  6)
+        (attr "Type" "" (pt 50.0 -75.0) (justify UpperCenter) (textStyleRef "T:H91W10") )
+        (attr "RefDes" "" (pt 0.0 112.5) (justify Center) (textStyleRef "T:H91W10") )
+        (attr "Value" "" (textStyleRef "(Default)") )
+      )
+    )
+  )
+  (patternDefExtended "LED_1"
+  (originalName "LED")
+    (patternGraphicsNameRef "Primary")
+
+    (patternGraphicsDef 
+      (patternGraphicsNameDef "Primary")
+      (multiLayer 
+        (pad (padNum 1) (padStyleRef "D50H32") (pt 0.0 0.0) (defaultPinDes "1") )
+        (pad (padNum 2) (padStyleRef "D50H32") (pt 100.0 0.0) (defaultPinDes "2") )
+      )
+      (layerContents  (layerNumRef  6)
+        (line (pt 37.5 25.0) (pt 37.5 -25.0) (width 0.2 mm) )
+        (line (pt 62.5 -25.0) (pt 62.5 25.0) (width 0.2 mm) )
+        (line (pt 37.5 0.0) (pt 62.5 25.0) (width 0.2 mm) )
+        (line (pt 37.5 0.0) (pt 62.5 -25.0) (width 0.2 mm) )
+        (line (pt 0.0 0.0) (pt 100.0 0.0) (width 0.2 mm) )
+        (attr "Type" "" (pt 50.0 -75.0) (justify UpperCenter) (textStyleRef "T:H91W10") )
+        (attr "RefDes" "" (pt 50.0 75.0) (justify Center) (textStyleRef "T:H91W10") )
+        (attr "Value" "" (textStyleRef "(Default)") )
+      )
+    )
+  )
+  (compDef "M2.5_1"
+    (originalName "M2.5")
+    (compHeader 
+      (sourceLibrary "RSMAIN.LIB")
+      (numPins 1)
+      (numParts 1)
+      (alts (ieeeAlt False) (deMorganAlt False))
+      (refDesPrefix "MH")
+    )
+    (compPin "1" (pinName "FP") (partNum 1) (symPinNum 1) (gateEq 0) (pinEq 0) (pinType Passive) )
+    (attachedSymbol (partNum 1) (altType Normal) (symbolName "M2.5") )
+    (attachedPattern (patternNum 1) (patternName "M2.5")
+      (numPads 1)
+      (padPinMap 
+        (padNum  1) (compPinRef "1")
+      )
+    )
+  )
+  (compDef "MAX6662_1"
+    (originalName "MAX6662")
+    (compHeader 
+      (sourceLibrary "SR.LIB")
+      (numPins 8)
+      (numParts 1)
+      (alts (ieeeAlt False) (deMorganAlt False))
+      (refDesPrefix "U")
+    )
+    (compPin "1" (pinName "SCLK") (partNum 1) (symPinNum 1) (gateEq 0) (pinEq 0) (pinType Input) )
+    (compPin "2" (pinName "~CS~") (partNum 1) (symPinNum 2) (gateEq 0) (pinEq 0) (pinType Input) )
+    (compPin "3" (pinName "SIO") (partNum 1) (symPinNum 3) (gateEq 0) (pinEq 0) (pinType Output) )
+    (compPin "4" (pinName "GND") (partNum 1) (symPinNum 4) (gateEq 0) (pinEq 0) (pinType Power) )
+    (compPin "5" (pinName "~OT~") (partNum 1) (symPinNum 5) (gateEq 0) (pinEq 0) (pinType Output) )
+    (compPin "6" (pinName "~AL~") (partNum 1) (symPinNum 6) (gateEq 0) (pinEq 0) (pinType Output) )
+    (compPin "7" (partNum 1) (symPinNum 7) (gateEq 0) (pinEq 0) (pinType Passive) )
+    (compPin "8" (pinName "VCC") (partNum 1) (symPinNum 8) (gateEq 0) (pinEq 0) (pinType Power) )
+    (attachedSymbol (partNum 1) (altType Normal) (symbolName "MAX6662") )
+    (attachedPattern (patternNum 1) (patternName "SO-G8")
+      (numPads 8)
+      (padPinMap 
+        (padNum  1) (compPinRef "1")
+        (padNum  2) (compPinRef "2")
+        (padNum  3) (compPinRef "3")
+        (padNum  4) (compPinRef "4")
+        (padNum  5) (compPinRef "5")
+        (padNum  6) (compPinRef "6")
+        (padNum  7) (compPinRef "7")
+        (padNum  8) (compPinRef "8")
+      )
+    )
+  )
+  (compDef "C8051F320_1"
+    (originalName "C8051F320")
+    (compHeader 
+      (sourceLibrary "RSMAIN.LIB")
+      (numPins 32)
+      (numParts 1)
+      (alts (ieeeAlt False) (deMorganAlt False))
+      (refDesPrefix "IC")
+    )
+    (compPin "1" (pinName "P0.1") (partNum 1) (symPinNum 1) (gateEq 1) (pinEq 0) (pinType Passive) )
+    (compPin "2" (pinName "P0.0") (partNum 1) (symPinNum 2) (gateEq 1) (pinEq 0) (pinType Passive) )
+    (compPin "3" (pinName "GND") (partNum 1) (symPinNum 3) (gateEq 1) (pinEq 0) (pinType Passive) )
+    (compPin "4" (pinName "D+") (partNum 1) (symPinNum 4) (gateEq 1) (pinEq 0) (pinType Passive) )
+    (compPin "5" (pinName "D-") (partNum 1) (symPinNum 5) (gateEq 1) (pinEq 0) (pinType Passive) )
+    (compPin "6" (pinName "VDD") (partNum 1) (symPinNum 6) (gateEq 1) (pinEq 0) (pinType Passive) )
+    (compPin "7" (pinName "REGIN") (partNum 1) (symPinNum 7) (gateEq 1) (pinEq 0) (pinType Passive) )
+    (compPin "8" (pinName "VBUS") (partNum 1) (symPinNum 8) (gateEq 1) (pinEq 0) (pinType Passive) )
+    (compPin "9" (pinName "C2CK") (partNum 1) (symPinNum 9) (gateEq 1) (pinEq 0) (pinType Passive) )
+    (compPin "10" (pinName "C2D") (partNum 1) (symPinNum 10) (gateEq 1) (pinEq 0) (pinType Passive) )
+    (compPin "11" (pinName "P2.7") (partNum 1) (symPinNum 11) (gateEq 1) (pinEq 0) (pinType Passive) )
+    (compPin "12" (pinName "P2.6") (partNum 1) (symPinNum 12) (gateEq 1) (pinEq 0) (pinType Passive) )
+    (compPin "13" (pinName "P2.5") (partNum 1) (symPinNum 13) (gateEq 1) (pinEq 0) (pinType Passive) )
+    (compPin "14" (pinName "P2.4") (partNum 1) (symPinNum 14) (gateEq 1) (pinEq 0) (pinType Passive) )
+    (compPin "15" (pinName "P2.3") (partNum 1) (symPinNum 15) (gateEq 1) (pinEq 0) (pinType Passive) )
+    (compPin "16" (pinName "P2.2") (partNum 1) (symPinNum 16) (gateEq 1) (pinEq 0) (pinType Passive) )
+    (compPin "17" (pinName "P2.1") (partNum 1) (symPinNum 17) (gateEq 1) (pinEq 0) (pinType Passive) )
+    (compPin "18" (pinName "P2.0") (partNum 1) (symPinNum 18) (gateEq 1) (pinEq 0) (pinType Passive) )
+    (compPin "19" (pinName "P1.7") (partNum 1) (symPinNum 19) (gateEq 1) (pinEq 0) (pinType Passive) )
+    (compPin "20" (pinName "P1.6") (partNum 1) (symPinNum 20) (gateEq 1) (pinEq 0) (pinType Passive) )
+    (compPin "21" (pinName "P1.5") (partNum 1) (symPinNum 21) (gateEq 1) (pinEq 0) (pinType Passive) )
+    (compPin "22" (pinName "P1.4") (partNum 1) (symPinNum 22) (gateEq 1) (pinEq 0) (pinType Passive) )
+    (compPin "23" (pinName "P1.3") (partNum 1) (symPinNum 23) (gateEq 1) (pinEq 0) (pinType Passive) )
+    (compPin "24" (pinName "P1.2") (partNum 1) (symPinNum 24) (gateEq 1) (pinEq 0) (pinType Passive) )
+    (compPin "25" (pinName "P1.1") (partNum 1) (symPinNum 25) (gateEq 1) (pinEq 0) (pinType Passive) )
+    (compPin "26" (pinName "P1.0") (partNum 1) (symPinNum 26) (gateEq 1) (pinEq 0) (pinType Passive) )
+    (compPin "27" (pinName "P0.7") (partNum 1) (symPinNum 27) (gateEq 1) (pinEq 0) (pinType Passive) )
+    (compPin "28" (pinName "P0.6") (partNum 1) (symPinNum 28) (gateEq 1) (pinEq 0) (pinType Passive) )
+    (compPin "29" (pinName "P0.5") (partNum 1) (symPinNum 29) (gateEq 1) (pinEq 0) (pinType Passive) )
+    (compPin "30" (pinName "P0.4") (partNum 1) (symPinNum 30) (gateEq 1) (pinEq 0) (pinType Passive) )
+    (compPin "31" (pinName "P0.3") (partNum 1) (symPinNum 31) (gateEq 1) (pinEq 0) (pinType Passive) )
+    (compPin "32" (pinName "P0.2") (partNum 1) (symPinNum 32) (gateEq 1) (pinEq 0) (pinType Passive) )
+    (attachedSymbol (partNum 1) (altType Normal) (symbolName "C8051F320") )
+    (attachedPattern (patternNum 1) (patternName "LQFP32")
+      (numPads 32)
+      (padPinMap 
+        (padNum  1) (compPinRef "1")
+        (padNum  2) (compPinRef "2")
+        (padNum  3) (compPinRef "3")
+        (padNum  4) (compPinRef "4")
+        (padNum  5) (compPinRef "5")
+        (padNum  6) (compPinRef "6")
+        (padNum  7) (compPinRef "7")
+        (padNum  8) (compPinRef "8")
+        (padNum  9) (compPinRef "9")
+        (padNum 10) (compPinRef "10")
+        (padNum 11) (compPinRef "11")
+        (padNum 12) (compPinRef "12")
+        (padNum 13) (compPinRef "13")
+        (padNum 14) (compPinRef "14")
+        (padNum 15) (compPinRef "15")
+        (padNum 16) (compPinRef "16")
+        (padNum 17) (compPinRef "17")
+        (padNum 18) (compPinRef "18")
+        (padNum 19) (compPinRef "19")
+        (padNum 20) (compPinRef "20")
+        (padNum 21) (compPinRef "21")
+        (padNum 22) (compPinRef "22")
+        (padNum 23) (compPinRef "23")
+        (padNum 24) (compPinRef "24")
+        (padNum 25) (compPinRef "25")
+        (padNum 26) (compPinRef "26")
+        (padNum 27) (compPinRef "27")
+        (padNum 28) (compPinRef "28")
+        (padNum 29) (compPinRef "29")
+        (padNum 30) (compPinRef "30")
+        (padNum 31) (compPinRef "31")
+        (padNum 32) (compPinRef "32")
+      )
+    )
+  )
+  (compDef "FREEPIN2_1"
+    (originalName "FREEPIN2")
+    (compHeader 
+      (sourceLibrary "RSMAIN.LIB")
+      (numPins 1)
+      (numParts 1)
+      (alts (ieeeAlt False) (deMorganAlt False))
+      (refDesPrefix "FPR")
+    )
+    (compPin "1" (pinName "FP") (partNum 1) (symPinNum 1) (gateEq 0) (pinEq 0) (pinType Passive) )
+    (attachedSymbol (partNum 1) (altType Normal) (symbolName "FREEPIN2") )
+    (attachedPattern (patternNum 1) (patternName "FREEPIN2")
+      (numPads 1)
+      (padPinMap 
+        (padNum  1) (compPinRef "1")
+      )
+    )
+  )
+  (compDef "MAX1483_1"
+    (originalName "MAX1483")
+    (compHeader 
+      (sourceLibrary "RSMAIN.LIB")
+      (numPins 8)
+      (numParts 1)
+      (alts (ieeeAlt False) (deMorganAlt False))
+      (refDesPrefix "IC")
+    )
+    (compPin "1" (pinName "RO") (partNum 1) (symPinNum 1) (gateEq 0) (pinEq 0) (pinType Passive) )
+    (compPin "2" (pinName "RE") (partNum 1) (symPinNum 2) (gateEq 0) (pinEq 0) (pinType Passive) )
+    (compPin "3" (pinName "DE") (partNum 1) (symPinNum 3) (gateEq 0) (pinEq 0) (pinType Passive) )
+    (compPin "4" (pinName "DI") (partNum 1) (symPinNum 4) (gateEq 0) (pinEq 0) (pinType Passive) )
+    (compPin "5" (pinName "GND") (partNum 1) (symPinNum 5) (gateEq 0) (pinEq 0) (pinType Passive) )
+    (compPin "6" (pinName "A") (partNum 1) (symPinNum 6) (gateEq 0) (pinEq 0) (pinType Passive) )
+    (compPin "7" (pinName "B") (partNum 1) (symPinNum 7) (gateEq 0) (pinEq 0) (pinType Passive) )
+    (compPin "8" (pinName "+5V") (partNum 1) (symPinNum 8) (gateEq 0) (pinEq 0) (pinType Passive) )
+    (attachedSymbol (partNum 1) (altType Normal) (symbolName "MAX1483") )
+    (attachedPattern (patternNum 1) (patternName "SO8")
+      (numPads 8)
+      (padPinMap 
+        (padNum  1) (compPinRef "1")
+        (padNum  2) (compPinRef "2")
+        (padNum  3) (compPinRef "3")
+        (padNum  4) (compPinRef "4")
+        (padNum  5) (compPinRef "5")
+        (padNum  6) (compPinRef "6")
+        (padNum  7) (compPinRef "7")
+        (padNum  8) (compPinRef "8")
+      )
+    )
+  )
+  (compDef "RES0603_1"
+    (originalName "RES0603")
+    (compHeader 
+      (sourceLibrary "RSMAIN.LIB")
+      (numPins 2)
+      (numParts 1)
+      (alts (ieeeAlt False) (deMorganAlt False))
+      (refDesPrefix "R")
+    )
+    (compPin "1" (pinName "A") (partNum 1) (symPinNum 2) (gateEq 1) (pinEq 1) (pinType Passive) )
+    (compPin "2" (pinName "B") (partNum 1) (symPinNum 1) (gateEq 1) (pinEq 1) (pinType Passive) )
+    (attachedSymbol (partNum 1) (altType Normal) (symbolName "RES") )
+    (attachedPattern (patternNum 1) (patternName "0603")
+      (numPads 2)
+      (padPinMap 
+        (padNum  1) (compPinRef "1")
+        (padNum  2) (compPinRef "2")
+      )
+    )
+  )
+  (compDef "CAP0603_1"
+    (originalName "CAP0603")
+    (compHeader 
+      (sourceLibrary "RSMAIN.LIB")
+      (numPins 2)
+      (numParts 1)
+      (alts (ieeeAlt False) (deMorganAlt False))
+      (refDesPrefix "U")
+    )
+    (compPin "1" (pinName "B") (partNum 1) (symPinNum 1) (gateEq 0) (pinEq 0) (pinType Passive) )
+    (compPin "2" (pinName "A") (partNum 1) (symPinNum 2) (gateEq 0) (pinEq 0) (pinType Passive) )
+    (attachedSymbol (partNum 1) (altType Normal) (symbolName "CAP1") )
+    (attachedPattern (patternNum 1) (patternName "0603")
+      (numPads 2)
+      (padPinMap 
+        (padNum  1) (compPinRef "1")
+        (padNum  2) (compPinRef "2")
+      )
+    )
+  )
+  (compDef "LED_1"
+    (originalName "LED")
+    (compHeader 
+      (sourceLibrary "RSMAIN.LIB")
+      (numPins 2)
+      (numParts 1)
+      (alts (ieeeAlt False) (deMorganAlt False))
+      (refDesPrefix "D")
+    )
+    (compPin "1" (pinName "K") (partNum 1) (symPinNum 1) (gateEq 0) (pinEq 0) (pinType Passive) )
+    (compPin "2" (pinName "A") (partNum 1) (symPinNum 2) (gateEq 0) (pinEq 0) (pinType Passive) )
+    (attachedSymbol (partNum 1) (altType Normal) (symbolName "LED") )
+    (attachedPattern (patternNum 1) (patternName "LED")
+      (numPads 2)
+      (padPinMap 
+        (padNum  1) (compPinRef "1")
+        (padNum  2) (compPinRef "2")
+      )
+    )
+  )
+)
+
+(netlist "Netlist_1"
+  (globalAttrs 
+    (attr "BoardEdgeClearance" "8MIL" (isVisible True) (textStyleRef "(Default)") (constraintUnits mil) )
+    (attr "SilkscreenClearance" "12.0mil" (textStyleRef "(Default)") (constraintUnits mil) )
+    (attr "HoleToHoleClearance" "13.0mil" (textStyleRef "(Default)") (constraintUnits mil) )
+  )
+  (compInst "FPR15"
+    (compRef "FREEPIN2_1")
+    (originalName "FREEPIN2")
+  )
+  (compInst "FPR14"
+    (compRef "FREEPIN2_1")
+    (originalName "FREEPIN2")
+    (compValue "TCK")
+  )
+  (compInst "FPR11"
+    (compRef "FREEPIN2_1")
+    (originalName "FREEPIN2")
+  )
+  (compInst "FPR10"
+    (compRef "FREEPIN2_1")
+    (originalName "FREEPIN2")
+  )
+  (compInst "FPR13"
+    (compRef "FREEPIN2_1")
+    (originalName "FREEPIN2")
+  )
+  (compInst "FPR12"
+    (compRef "FREEPIN2_1")
+    (originalName "FREEPIN2")
+  )
+  (compInst "C2"
+    (compRef "CAP0603_1")
+    (originalName "CAP0603")
+    (compValue "1uF")
+    (attr "PDIF_PREFIX" "U" (rotation 180.0) (textStyleRef "(Default)") )
+  )
+  (compInst "C1"
+    (compRef "CAP0603_1")
+    (originalName "CAP0603")
+    (compValue "1uF")
+    (attr "PDIF_PREFIX" "U" (textStyleRef "(Default)") )
+  )
+  (compInst "D2"
+    (compRef "LED_1")
+    (originalName "LED")
+    (compValue "RED_LED")
+  )
+  (compInst "IC2"
+    (compRef "C8051F320_1")
+    (originalName "C8051F320")
+    (attr "PDIF_PREFIX" "U" (rotation 90.0) (textStyleRef "(Default)") )
+    (attr "OriginalName" "DRS2" (rotation 90.0) (textStyleRef "(Default)") )
+    (attr "ComponentField7" "Published Jan-2004" (rotation 90.0) (textStyleRef "(Default)") )
+    (attr "Description" "Domino Ring Sampling Chip V2" (rotation 90.0) (textStyleRef "(Default)") (constraintUnits string) )
+  )
+  (compInst "IC1"
+    (compRef "MAX1483_1")
+    (originalName "MAX1483")
+  )
+  (compInst "MH1"
+    (compRef "M2.5_1")
+    (originalName "M2.5")
+  )
+  (compInst "U1"
+    (compRef "MAX6662_1")
+    (originalName "MAX6662")
+  )
+  (compInst "FPR4"
+    (compRef "FREEPIN2_1")
+    (originalName "FREEPIN2")
+  )
+  (compInst "FPR5"
+    (compRef "FREEPIN2_1")
+    (originalName "FREEPIN2")
+  )
+  (compInst "FPR6"
+    (compRef "FREEPIN2_1")
+    (originalName "FREEPIN2")
+  )
+  (compInst "FPR7"
+    (compRef "FREEPIN2_1")
+    (originalName "FREEPIN2")
+  )
+  (compInst "FPR1"
+    (compRef "FREEPIN2_1")
+    (originalName "FREEPIN2")
+  )
+  (compInst "FPR2"
+    (compRef "FREEPIN2_1")
+    (originalName "FREEPIN2")
+  )
+  (compInst "FPR3"
+    (compRef "FREEPIN2_1")
+    (originalName "FREEPIN2")
+  )
+  (compInst "FPR8"
+    (compRef "FREEPIN2_1")
+    (originalName "FREEPIN2")
+  )
+  (compInst "FPR9"
+    (compRef "FREEPIN2_1")
+    (originalName "FREEPIN2")
+  )
+  (compInst "R2"
+    (compRef "RES0603_1")
+    (originalName "RES0603")
+    (compValue "4K7")
+    (attr "PDIF_PREFIX" "U" (textStyleRef "(Default)") )
+  )
+  (compInst "R3"
+    (compRef "RES0603_1")
+    (originalName "RES0603")
+    (compValue "4K7")
+    (attr "PDIF_PREFIX" "U" (rotation 90.0) (textStyleRef "(Default)") )
+  )
+  (compInst "R1"
+    (compRef "RES0603_1")
+    (originalName "RES0603")
+    (compValue "270")
+    (attr "PDIF_PREFIX" "U" (rotation 270.0) (textStyleRef "(Default)") )
+  )
+  (compInst "R6"
+    (compRef "RES0603_1")
+    (originalName "RES0603")
+    (compValue "4K7")
+    (attr "PDIF_PREFIX" "U" (rotation 180.0) (isFlipped True) (textStyleRef "(Default)") )
+  )
+  (compInst "R7"
+    (compRef "RES0603_1")
+    (originalName "RES0603")
+    (compValue "4K7")
+    (attr "PDIF_PREFIX" "U" (rotation 180.0) (textStyleRef "(Default)") )
+  )
+  (compInst "R4"
+    (compRef "RES0603_1")
+    (originalName "RES0603")
+    (compValue "4K7")
+    (attr "PDIF_PREFIX" "U" (rotation 270.0) (textStyleRef "(Default)") )
+  )
+  (compInst "R5"
+    (compRef "RES0603_1")
+    (originalName "RES0603")
+    (compValue "4K7")
+    (attr "PDIF_PREFIX" "U" (rotation 180.0) (isFlipped True) (textStyleRef "(Default)") )
+  )
+  (net "NET00029" 
+    (node "R1" "1")
+    (node "D2" "2")
+  )
+  (net "NET00000" 
+    (node "FPR11" "1")
+    (node "IC1" "7")
+  )
+  (net "NET00001" 
+    (node "IC2" "32")
+    (node "U1" "2")
+  )
+  (net "NET00014" 
+    (node "IC2" "9")
+    (node "FPR13" "1")
+    (node "R7" "1")
+  )
+  (net "NET00022" 
+    (node "IC2" "24")
+    (node "FPR6" "1")
+    (node "R5" "1")
+  )
+  (net "NET00023" 
+    (node "IC2" "28")
+    (node "FPR5" "1")
+    (node "R4" "1")
+  )
+  (net "NET00024" 
+    (node "IC2" "23")
+    (node "FPR3" "1")
+    (node "R3" "1")
+  )
+  (net "NET00016" 
+    (node "IC2" "11")
+    (node "D2" "1")
+  )
+  (net "+5V" 
+    (node "IC2" "8")
+    (node "IC2" "7")
+    (node "C1" "1")
+    (node "FPR14" "1")
+    (node "FPR1" "1")
+    (node "R7" "2")
+    (node "IC1" "8")
+  )
+  (net "NET00025" 
+    (node "IC2" "22")
+    (node "FPR2" "1")
+    (node "R2" "1")
+  )
+  (net "NET00026" 
+    (node "IC2" "2")
+    (node "U1" "1")
+  )
+  (net "NET00027" 
+    (node "IC2" "1")
+    (node "U1" "3")
+  )
+  (net "NET00028" 
+    (node "FPR10" "1")
+    (node "IC1" "6")
+  )
+  (net "+3V" 
+    (node "IC2" "6")
+    (node "C2" "1")
+    (node "U1" "8")
+    (node "R1" "2")
+  )
+  (net "NET00002" 
+    (node "IC2" "25")
+    (node "FPR7" "1")
+  )
+  (net "NET00003" 
+    (node "IC2" "26")
+    (node "FPR8" "1")
+  )
+  (net "NET00015" 
+    (node "IC2" "27")
+    (node "FPR9" "1")
+    (node "R6" "1")
+  )
+  (net "DGND" 
+    (node "IC2" "3")
+    (node "C1" "2")
+    (node "C2" "2")
+    (node "FPR15" "1")
+    (node "U1" "4")
+    (node "R5" "2")
+    (node "R6" "2")
+    (node "R2" "2")
+    (node "R3" "2")
+    (node "R4" "2")
+    (node "IC1" "5")
+  )
+  (net "NET00006" 
+    (node "IC2" "31")
+    (node "IC1" "3")
+    (node "IC1" "2")
+  )
+  (net "NET00007" 
+    (node "IC2" "30")
+    (node "IC1" "4")
+  )
+  (net "NET00008" 
+    (node "IC2" "29")
+    (node "IC1" "1")
+  )
+  (net "NET00009" 
+    (node "IC2" "10")
+    (node "FPR12" "1")
+  )
+  (netClass "7" 
+    (netNameRef "NET00000")
+    (netNameRef "NET00001")
+    (netNameRef "NET00006")
+    (netNameRef "NET00007")
+    (netNameRef "NET00008")
+    (netNameRef "NET00009")
+    (netNameRef "NET00014")
+    (netNameRef "NET00016")
+    (netNameRef "NET00022")
+    (netNameRef "NET00023")
+    (netNameRef "NET00024")
+    (netNameRef "NET00025")
+    (netNameRef "NET00026")
+    (netNameRef "NET00027")
+    (netNameRef "NET00028")
+    (netNameRef "NET00029")
+    (netNameRef "NET00002")
+    (netNameRef "NET00003")
+    (netNameRef "NET00015")
+    (attr "Width" "7" (textStyleRef "(Default)") (constraintUnits mil) )
+  )
+  (netClass "10" 
+    (netNameRef "+3V")
+    (netNameRef "+5V")
+    (attr "Width" "10" (textStyleRef "(Default)") (constraintUnits mil) )
+  )
+  (netClass "12" 
+    (netNameRef "DGND")
+    (attr "Width" "12" (textStyleRef "(Default)") (constraintUnits mil) )
+  )
+)
+
+(pcbDesign "PcbDesign_1"
+  (pcbDesignHeader 
+    (workspaceSize 10000.0 10000.0)
+    (gridDfns 
+      (grid "25.0mil")
+      (grid "1.0mil")
+      (grid "50.0mil")
+      (grid "12.5mil")
+      (grid "0.15875mm")
+      (grid "3.1mil")
+      (grid "2.5mil")
+      (grid "100.0mil")
+    )
+    (designInfo 
+      (fieldSet "(Default)"
+        (fieldDef "Date" "")
+        (fieldDef "Time" "")
+        (fieldDef "Author" "")
+        (fieldDef "Revision" "")
+        (fieldDef "Title" "")
+        (fieldDef "Approved By" "")
+        (fieldDef "Checked By" "")
+        (fieldDef "Company Name" "")
+        (fieldDef "Drawing Number" "")
+        (fieldDef "Drawn By" "")
+        (fieldDef "Engineer" "")
+      )
+    )
+    (solderSwell 0.0)
+    (pasteSwell 0.0)
+    (planeSwell 10.0)
+    (refPointSize 100.0)
+    (infoPointSize 100.0)
+    (gluePointSize 100.0)
+    (pickPointSize 100.0)
+    (testPointSize 100.0)
+    (refPointSizePrint 100.0)
+    (infoPointSizePrint 100.0)
+    (gluePointSizePrint 100.0)
+    (pickPointSizePrint 100.0)
+    (testPointSizePrint 100.0)
+    (solderFlowDirection solderFlowTopToBottom)
+  )
+  (layerDef "Top Assy"
+    (layerNum 10)
+    (layerType NonSignal)
+    (fieldSetRef "(Default)")
+  )
+  (layerDef "Top Silk"
+    (layerNum 6)
+    (layerType NonSignal)
+    (fieldSetRef "(Default)")
+  )
+  (layerDef "Top Paste"
+    (layerNum 8)
+    (layerType NonSignal)
+    (fieldSetRef "(Default)")
+  )
+  (layerDef "Top Mask"
+    (layerNum 4)
+    (layerType NonSignal)
+    (fieldSetRef "(Default)")
+  )
+  (layerDef "Top"
+    (layerNum 1)
+    (layerType Signal)
+    (attr "PadToPadClearance" "8.0mil" (textStyleRef "(Default)") (constraintUnits mil) )
+    (attr "ViaToViaClearance" "8.0mil" (textStyleRef "(Default)") (constraintUnits mil) )
+    (attr "PadToLineClearance" "7.0mil" (textStyleRef "(Default)") (constraintUnits mil) )
+    (attr "LineToLineClearance" "7.0mil" (textStyleRef "(Default)") (constraintUnits mil) )
+    (attr "ViaToPadClearance" "7.0mil" (textStyleRef "(Default)") (constraintUnits mil) )
+    (attr "ViaToLineClearance" "7.0mil" (textStyleRef "(Default)") (constraintUnits mil) )
+    (fieldSetRef "(Default)")
+  )
+  (layerDef "Bottom"
+    (layerNum 2)
+    (layerType Signal)
+    (attr "PadToPadClearance" "8.0mil" (textStyleRef "(Default)") (constraintUnits mil) )
+    (attr "ViaToViaClearance" "8.0mil" (textStyleRef "(Default)") (constraintUnits mil) )
+    (attr "PadToLineClearance" "7.0mil" (textStyleRef "(Default)") (constraintUnits mil) )
+    (attr "LineToLineClearance" "7.0mil" (textStyleRef "(Default)") (constraintUnits mil) )
+    (attr "ViaToPadClearance" "7.0mil" (textStyleRef "(Default)") (constraintUnits mil) )
+    (attr "ViaToLineClearance" "7.0mil" (textStyleRef "(Default)") (constraintUnits mil) )
+    (fieldSetRef "(Default)")
+  )
+  (layerDef "Bot Mask"
+    (layerNum 5)
+    (layerType NonSignal)
+    (fieldSetRef "(Default)")
+  )
+  (layerDef "Bot Paste"
+    (layerNum 9)
+    (layerType NonSignal)
+    (fieldSetRef "(Default)")
+  )
+  (layerDef "Bot Silk"
+    (layerNum 7)
+    (layerType NonSignal)
+    (fieldSetRef "(Default)")
+  )
+  (layerDef "Bot Assy"
+    (layerNum 11)
+    (layerType NonSignal)
+    (fieldSetRef "(Default)")
+  )
+  (layerDef "Board"
+    (layerNum 3)
+    (layerType NonSignal)
+    (fieldSetRef "(Default)")
+  )
+  (layerDef "Dimensions"
+    (layerNum 12)
+    (layerType NonSignal)
+    (fieldSetRef "(Default)")
+  )
+  (multiLayer 
+    (pattern (patternRef "FREEPIN2_2") (refDesRef "FPR4") (pt 4612.5 88.74125 mm) (patternGraphicsNameRef "Primary")
+      (patternGraphicsRef 
+        (patternGraphicsNameRef "Primary")
+        (attr "Type" "FREEPIN2" (pt 50.0 -75.0) (justify UpperCenter) (textStyleRef "T:H91W10") )
+        (attr "RefDes" "FPR4" (pt 0.0 112.5) (justify Center) (textStyleRef "T:H91W10") )
+      )
+    )
+    (pattern (patternRef "FREEPIN2_2") (refDesRef "FPR5") (pt 4612.5 3387.5) (patternGraphicsNameRef "Primary")
+      (patternGraphicsRef 
+        (patternGraphicsNameRef "Primary")
+        (attr "Type" "FREEPIN2" (pt 50.0 -75.0) (justify UpperCenter) (textStyleRef "T:H91W10") )
+        (attr "RefDes" "FPR5" (pt 0.0 112.5) (justify Center) (textStyleRef "T:H91W10") )
+      )
+    )
+    (pattern (patternRef "FREEPIN2_2") (refDesRef "FPR9") (pt 4612.5 3437.5) (isFlipped True)(patternGraphicsNameRef "Primary")
+      (patternGraphicsRef 
+        (patternGraphicsNameRef "Primary")
+        (attr "Type" "FREEPIN2" (pt -50.0 -75.0) (isFlipped True) (justify UpperCenter) (textStyleRef "T:H91W10") )
+        (attr "RefDes" "FPR9" (pt 0.0 112.5) (isFlipped True) (justify Center) (textStyleRef "T:H91W10") )
+      )
+    )
+    (pattern (patternRef "0603_2") (refDesRef "R6") (pt 117.95125 mm 3350.0) (rotation 180.0) (isFlipped True)(patternGraphicsNameRef "Primary")
+      (patternGraphicsRef 
+        (patternGraphicsNameRef "Primary")
+        (attr "Type" "RES0603" (pt -100.0 25.0) (rotation 180.0) (isFlipped True) (textStyleRef "(Default)") )
+        (attr "Value" "4K7" (textStyleRef "(Default)") )
+        (attr "RefDes" "R6" (pt 2.06375 mm 0.0) (isFlipped True) (isVisible True) (justify Center) (textStyleRef "T:H40W4") )
+        (attr "PDIF_PREFIX" "U" (rotation 180.0) (isFlipped True) (textStyleRef "(Default)") )
+      )
+    )
+    (pattern (patternRef "0603_2") (refDesRef "R4") (pt 4725.0 3387.5) (rotation 270.0) (patternGraphicsNameRef "Primary")
+      (patternGraphicsRef 
+        (patternGraphicsNameRef "Primary")
+        (attr "Type" "RES0603" (pt -25.0 100.0) (rotation 270.0) (textStyleRef "(Default)") )
+        (attr "Value" "4K7" (rotation 270.0) (textStyleRef "(Default)") )
+        (attr "RefDes" "R4" (pt 0.0 87.5) (rotation 90.0) (isVisible True) (justify Center) (textStyleRef "T:H40W4") )
+        (attr "PDIF_PREFIX" "U" (rotation 270.0) (textStyleRef "(Default)") )
+      )
+    )
+    (via (viaStyleRef "R28H14") (pt 4712.0 3567.0) (netNameRef "NET00015") )
+    (via (viaStyleRef "R28H14") (pt 4760.0 3459.0) (netNameRef "NET00001") )
+    (via (viaStyleRef "R28H14") (pt 4761.0 3354.0) (netNameRef "DGND") )
+    (pattern (patternRef "FREEPIN2_2") (refDesRef "FPR1") (pt 4612.5 3825.0) (patternGraphicsNameRef "Primary")
+      (patternGraphicsRef 
+        (patternGraphicsNameRef "Primary")
+        (attr "Type" "FREEPIN2" (pt 50.0 -75.0) (justify UpperCenter) (textStyleRef "T:H91W10") )
+        (attr "RefDes" "FPR1" (pt 0.0 112.5) (justify Center) (textStyleRef "T:H91W10") )
+      )
+    )
+    (pattern (patternRef "FREEPIN2_2") (refDesRef "FPR2") (pt 4612.5 94.45625 mm) (patternGraphicsNameRef "Primary")
+      (patternGraphicsRef 
+        (patternGraphicsNameRef "Primary")
+        (attr "Type" "FREEPIN2" (pt 50.0 -75.0) (justify UpperCenter) (textStyleRef "T:H91W10") )
+        (attr "RefDes" "FPR2" (pt 0.0 112.5) (justify Center) (textStyleRef "T:H91W10") )
+      )
+    )
+    (pattern (patternRef "FREEPIN2_2") (refDesRef "FPR6") (pt 4612.5 95.72625 mm) (isFlipped True)(patternGraphicsNameRef "Primary")
+      (patternGraphicsRef 
+        (patternGraphicsNameRef "Primary")
+        (attr "Type" "FREEPIN2" (pt -50.0 -75.0) (isFlipped True) (justify UpperCenter) (textStyleRef "T:H91W10") )
+        (attr "RefDes" "FPR6" (pt 0.0 112.5) (isFlipped True) (justify Center) (textStyleRef "T:H91W10") )
+      )
+    )
+    (pattern (patternRef "FREEPIN2_2") (refDesRef "FPR7") (pt 4612.5 3662.5) (isFlipped True)(patternGraphicsNameRef "Primary")
+      (patternGraphicsRef 
+        (patternGraphicsNameRef "Primary")
+        (attr "Type" "FREEPIN2" (pt -50.0 -75.0) (isFlipped True) (justify UpperCenter) (textStyleRef "T:H91W10") )
+        (attr "RefDes" "FPR7" (pt 0.0 112.5) (isFlipped True) (justify Center) (textStyleRef "T:H91W10") )
+      )
+    )
+    (pattern (patternRef "0603_2") (refDesRef "R3") (pt 4725.0 3825.0) (rotation 90.0) (patternGraphicsNameRef "Primary")
+      (patternGraphicsRef 
+        (patternGraphicsNameRef "Primary")
+        (attr "Type" "RES0603" (pt 25.0 -100.0) (rotation 90.0) (textStyleRef "(Default)") )
+        (attr "Value" "4K7" (rotation 90.0) (textStyleRef "(Default)") )
+        (attr "RefDes" "R3" (pt 0.0 -77.5) (rotation 90.0) (isVisible True) (justify Center) (textStyleRef "T:H40W4") )
+        (attr "PDIF_PREFIX" "U" (rotation 90.0) (textStyleRef "(Default)") )
+      )
+    )
+    (via (viaStyleRef "R28H14") (pt 4742.0 3737.0) (netNameRef "NET00025") )
+    (via (viaStyleRef "R28H14") (pt 4709.0 3647.0) (netNameRef "NET00024") )
+    (via (viaStyleRef "R28H14") (pt 4709.0 3684.0) (netNameRef "NET00002") )
+    (via (viaStyleRef "R28H14") (pt 4761.0 3863.0) (netNameRef "DGND") )
+    (pattern (patternRef "0603_1") (refDesRef "C2") (pt 4975.0 3350.0) (rotation 180.0) (patternGraphicsNameRef "Primary")
+      (patternGraphicsRef 
+        (patternGraphicsNameRef "Primary")
+        (attr "Type" "CAP0603" (pt 100.0 25.0) (rotation 180.0) (textStyleRef "(Default)") )
+        (attr "Value" "1uF" (rotation 180.0) (textStyleRef "(Default)") )
+        (attr "RefDes" "C2" (pt 87.5 0.0) (isVisible True) (justify Center) (textStyleRef "T:H40W4") )
+        (attr "PDIF_PREFIX" "U" (rotation 180.0) (textStyleRef "(Default)") )
+      )
+    )
+    (via (viaStyleRef "R28H14") (pt 4890.0 3491.0) (netNameRef "NET00027") )
+    (via (viaStyleRef "R28H14") (pt 4879.0 3354.0) (netNameRef "NET00026") )
+    (via (viaStyleRef "R28H14") (pt 4848.0 3582.0) (netNameRef "NET00008") )
+    (via (viaStyleRef "R28H14") (pt 4924.0 3564.0) (netNameRef "NET00007") )
+    (via (viaStyleRef "R28H14") (pt 4926.0 3497.0) (netNameRef "DGND") )
+    (via (viaStyleRef "R28H14") (pt 5071.0 3571.0) (netNameRef "+5V") )
+    (via (viaStyleRef "R28H14") (pt 4986.0 3571.0) (netNameRef "+5V") )
+    (via (viaStyleRef "R28H14") (pt 4888.0 3727.0) (netNameRef "NET00025") )
+    (via (viaStyleRef "R28H14") (pt 4896.0 3830.0) (netNameRef "NET00024") )
+    (via (viaStyleRef "R28H14") (pt 4825.0 3836.0) (netNameRef "NET00022") )
+    (via (viaStyleRef "R28H14") (pt 4899.0 3658.0) (netNameRef "NET00006") )
+    (via (viaStyleRef "R28H14") (pt 5059.0 3863.0) (netNameRef "DGND") )
+    (pattern (patternRef "M2.5_1") (refDesRef "MH1") (pt 5275.0 3412.5) (patternGraphicsNameRef "Primary")
+      (patternGraphicsRef 
+        (patternGraphicsNameRef "Primary")
+        (attr "RefDes" "MH1" (pt -100.0 -200.0) (textStyleRef "(Default)") )
+        (attr "Type" "M2.5" (pt -100.0 100.0) (textStyleRef "(Default)") )
+      )
+    )
+    (via (viaStyleRef "R28H14") (pt 5373.0 3731.0) (netNameRef "NET00028") )
+    (pattern (patternRef "0603_1") (refDesRef "C1") (pt 5487.5 3512.5) (patternGraphicsNameRef "Primary")
+      (patternGraphicsRef 
+        (patternGraphicsNameRef "Primary")
+        (attr "Type" "CAP0603" (pt -100.0 -25.0) (textStyleRef "(Default)") )
+        (attr "Value" "1uF" (textStyleRef "(Default)") )
+        (attr "RefDes" "C1" (pt 0.0 37.5) (isVisible True) (justify Center) (textStyleRef "T:H40W4") )
+        (attr "PDIF_PREFIX" "U" (textStyleRef "(Default)") )
+      )
+    )
+    (via (viaStyleRef "R28H14") (pt 5650.0 3560.0) (netNameRef "NET00014") )
+    (via (viaStyleRef "R28H14") (pt 5554.0 3476.0) (netNameRef "DGND") )
+    (via (viaStyleRef "R28H14") (pt 5425.0 3549.0) (netNameRef "+5V") )
+    (pattern (patternRef "FREEPIN2_2") (refDesRef "FPR3") (pt 4612.5 91.59875 mm) (patternGraphicsNameRef "Primary")
+      (patternGraphicsRef 
+        (patternGraphicsNameRef "Primary")
+        (attr "Type" "FREEPIN2" (pt 50.0 -75.0) (justify UpperCenter) (textStyleRef "T:H91W10") )
+        (attr "RefDes" "FPR3" (pt 0.0 112.5) (justify Center) (textStyleRef "T:H91W10") )
+      )
+    )
+    (pattern (patternRef "FREEPIN2_2") (refDesRef "FPR8") (pt 4612.5 3550.0) (isFlipped True)(patternGraphicsNameRef "Primary")
+      (patternGraphicsRef 
+        (patternGraphicsNameRef "Primary")
+        (attr "Type" "FREEPIN2" (pt -50.0 -75.0) (isFlipped True) (justify UpperCenter) (textStyleRef "T:H91W10") )
+        (attr "RefDes" "FPR8" (pt 0.0 112.5) (isFlipped True) (justify Center) (textStyleRef "T:H91W10") )
+      )
+    )
+    (pattern (patternRef "0603_2") (refDesRef "R5") (pt 4625.0 3862.5) (rotation 180.0) (isFlipped True)(patternGraphicsNameRef "Primary")
+      (patternGraphicsRef 
+        (patternGraphicsNameRef "Primary")
+        (attr "Type" "RES0603" (pt -100.0 25.0) (rotation 180.0) (isFlipped True) (textStyleRef "(Default)") )
+        (attr "Value" "4K7" (textStyleRef "(Default)") )
+        (attr "RefDes" "R5" (pt 87.5 0.0) (isFlipped True) (isVisible True) (justify Center) (textStyleRef "T:H40W4") )
+        (attr "PDIF_PREFIX" "U" (rotation 180.0) (isFlipped True) (textStyleRef "(Default)") )
+      )
+    )
+    (via (viaStyleRef "R28H14") (pt 4874.0 3608.0) (netNameRef "NET00003") )
+    (pattern (patternRef "0603_2") (refDesRef "R2") (pt 4987.5 3862.5) (patternGraphicsNameRef "Primary")
+      (patternGraphicsRef 
+        (patternGraphicsNameRef "Primary")
+        (attr "Type" "RES0603" (pt -100.0 -25.0) (textStyleRef "(Default)") )
+        (attr "Value" "4K7" (rotation 270.0) (textStyleRef "(Default)") )
+        (attr "RefDes" "R2" (pt -75.0 0.0) (isVisible True) (justify Center) (textStyleRef "T:H40W4") )
+        (attr "PDIF_PREFIX" "U" (textStyleRef "(Default)") )
+      )
+    )
+    (pattern (patternRef "0603_2") (refDesRef "R1") (pt 5287.5 3612.5) (rotation 270.0) (patternGraphicsNameRef "Primary")
+      (patternGraphicsRef 
+        (patternGraphicsNameRef "Primary")
+        (attr "Type" "RES0603" (pt -25.0 100.0) (rotation 270.0) (textStyleRef "(Default)") )
+        (attr "Value" "270" (rotation 90.0) (textStyleRef "(Default)") )
+        (attr "RefDes" "R1" (pt -12.5 75.0) (rotation 90.0) (isVisible True) (justify Center) (textStyleRef "T:H40W4") )
+        (attr "PDIF_PREFIX" "U" (rotation 270.0) (textStyleRef "(Default)") )
+      )
+    )
+    (pattern (patternRef "LED_1") (refDesRef "D2") (pt 5225.0 3562.5) (rotation 90.0) (patternGraphicsNameRef "Primary")
+      (patternGraphicsRef 
+        (patternGraphicsNameRef "Primary")
+        (attr "Type" "LED" (pt 75.0 50.0) (rotation 90.0) (justify UpperCenter) (textStyleRef "T:H91W10") )
+        (attr "RefDes" "D2" (pt -75.0 50.0) (rotation 90.0) (justify Center) (textStyleRef "T:H91W10") )
+        (attr "Value" "RED_LED" (rotation 90.0) (textStyleRef "(Default)") )
+      )
+    )
+    (pattern (patternRef "0603_2") (refDesRef "R7") (pt 5487.5 3600.0) (rotation 180.0) (patternGraphicsNameRef "Primary")
+      (patternGraphicsRef 
+        (patternGraphicsNameRef "Primary")
+        (attr "Type" "RES0603" (pt 100.0 25.0) (rotation 180.0) (textStyleRef "(Default)") )
+        (attr "Value" "4K7" (rotation 90.0) (textStyleRef "(Default)") )
+        (attr "RefDes" "R7" (pt 0.0 37.5) (isVisible True) (justify Center) (textStyleRef "T:H40W4") )
+        (attr "PDIF_PREFIX" "U" (rotation 180.0) (textStyleRef "(Default)") )
+      )
+    )
+    (pattern (patternRef "FREEPIN2_1") (refDesRef "FPR14") (pt 5650.0 89.05875 mm) (patternGraphicsNameRef "Primary")
+      (patternGraphicsRef 
+        (patternGraphicsNameRef "Primary")
+        (attr "Type" "FREEPIN2" (pt 50.0 -75.0) (justify UpperCenter) (textStyleRef "T:H91W10") )
+        (attr "RefDes" "FPR14" (pt 0.0 112.5) (justify Center) (textStyleRef "T:H91W10") )
+        (attr "Value" "TCK" (textStyleRef "(Default)") )
+      )
+    )
+    (pattern (patternRef "FREEPIN2_2") (refDesRef "FPR15") (pt 5650.0 89.05875 mm) (isFlipped True)(patternGraphicsNameRef "Primary")
+      (patternGraphicsRef 
+        (patternGraphicsNameRef "Primary")
+        (attr "Type" "FREEPIN2" (pt -50.0 -75.0) (isFlipped True) (justify UpperCenter) (textStyleRef "T:H91W10") )
+        (attr "RefDes" "FPR15" (pt 0.0 112.5) (isFlipped True) (justify Center) (textStyleRef "T:H91W10") )
+      )
+    )
+    (via (viaStyleRef "R28H14") (pt 5113.0 3394.0) (netNameRef "+3V") )
+    (pattern (patternRef "FREEPIN2_2") (refDesRef "FPR10") (pt 5650.0 94.13875 mm) (patternGraphicsNameRef "Primary")
+      (patternGraphicsRef 
+        (patternGraphicsNameRef "Primary")
+        (attr "Type" "FREEPIN2" (pt 50.0 -75.0) (justify UpperCenter) (textStyleRef "T:H91W10") )
+        (attr "RefDes" "FPR10" (pt 0.0 112.5) (justify Center) (textStyleRef "T:H91W10") )
+      )
+    )
+    (pattern (patternRef "FREEPIN2_2") (refDesRef "FPR11") (pt 5650.0 94.13875 mm) (isFlipped True)(patternGraphicsNameRef "Primary")
+      (patternGraphicsRef 
+        (patternGraphicsNameRef "Primary")
+        (attr "Type" "FREEPIN2" (pt -50.0 -75.0) (isFlipped True) (justify UpperCenter) (textStyleRef "T:H91W10") )
+        (attr "RefDes" "FPR11" (pt 0.0 112.5) (isFlipped True) (justify Center) (textStyleRef "T:H91W10") )
+      )
+    )
+    (via (viaStyleRef "R28H14") (pt 5097.0 3628.0) (netNameRef "NET00014") )
+    (via (viaStyleRef "R28H14") (pt 5094.0 3664.0) (netNameRef "+5V") )
+    (pattern (patternRef "FREEPIN2_2") (refDesRef "FPR12") (pt 5650.0 91.59875 mm) (patternGraphicsNameRef "Primary")
+      (patternGraphicsRef 
+        (patternGraphicsNameRef "Primary")
+        (attr "Type" "FREEPIN2" (pt 50.0 -75.0) (justify UpperCenter) (textStyleRef "T:H91W10") )
+        (attr "RefDes" "FPR12" (pt 0.0 112.5) (justify Center) (textStyleRef "T:H91W10") )
+      )
+    )
+    (pattern (patternRef "FREEPIN2_2") (refDesRef "FPR13") (pt 5650.0 91.59875 mm) (isFlipped True)(patternGraphicsNameRef "Primary")
+      (patternGraphicsRef 
+        (patternGraphicsNameRef "Primary")
+        (attr "Type" "FREEPIN2" (pt -50.0 -75.0) (isFlipped True) (justify UpperCenter) (textStyleRef "T:H91W10") )
+        (attr "RefDes" "FPR13" (pt 0.0 112.5) (isFlipped True) (justify Center) (textStyleRef "T:H91W10") )
+      )
+    )
+    (pattern (patternRef "SO-G8_1") (refDesRef "U1") (pt 4825.0 3387.5) (rotation 180.0) (isFlipped True)(patternGraphicsNameRef "Primary")
+      (patternGraphicsRef 
+        (patternGraphicsNameRef "Primary")
+        (attr "Type" "MAX6662" (pt 100.0 200.0) (rotation 180.0) (isFlipped True) (justify UpperCenter) (textStyleRef "Small") )
+        (attr "RefDes" "U1" (pt 0.0 -25.0) (rotation 180.0) (isFlipped True) (isVisible True) (justify LowerCenter) (textStyleRef "T:H40W4") )
+      )
+    )
+    (pattern (patternRef "SO8_1") (refDesRef "IC1") (pt 4812.5 3637.5) (rotation 180.0) (isFlipped True)(patternGraphicsNameRef "Primary")
+      (patternGraphicsRef 
+        (patternGraphicsNameRef "Primary")
+        (attr "RefDes" "IC1" (pt -25.0 -31.0) (rotation 180.0) (isFlipped True) (isVisible True) (textStyleRef "T:H40W4") )
+        (attr "Type" "MAX1483" (pt -25.0 269.0) (rotation 180.0) (isFlipped True) (textStyleRef "T:H91W10") )
+      )
+    )
+    (pattern (patternRef "LQFP32_1") (refDesRef "IC2") (pt 4975.0 3600.0) (rotation 90.0) (patternGraphicsNameRef "Primary")
+      (patternGraphicsRef 
+        (patternGraphicsNameRef "Primary")
+        (attr "Type" "C8051F320" (rotation 90.0) (textStyleRef "(Default)") )
+        (attr "RefDes" "IC2" (pt -175.0 -187.5) (isVisible True) (justify Center) (textStyleRef "T:H40W4") )
+        (attr "PDIF_PREFIX" "U" (rotation 90.0) (textStyleRef "(Default)") )
+        (attr "OriginalName" "DRS2" (rotation 90.0) (textStyleRef "(Default)") )
+        (attr "ComponentField7" "Published Jan-2004" (rotation 90.0) (textStyleRef "(Default)") )
+        (attr "Description" "Domino Ring Sampling Chip V2" (rotation 90.0) (textStyleRef "(Default)") (constraintUnits string) )
+      )
+    )
+  )
+  (layerContents (layerNumRef 1)
+    (line (pt 4748.0 3523.0) (pt 4725.0 3500.0) (width 7.0) (netNameRef "NET00023") )
+    (line (pt 4725.0 3500.0) (pt 4725.0 3418.5) (width 7.0) (netNameRef "NET00023") )
+    (line (pt 4612.5 3387.5) (pt 4725.0 3387.5) (width 7.0) (netNameRef "NET00023") )
+    (line (pt 4725.0 3387.5) (pt 4725.0 3418.5) (width 7.0) (netNameRef "NET00023") )
+    (line (pt 4718.0 3592.0) (pt 4712.0 3592.0) (width 7.0) (netNameRef "NET00015") )
+    (line (pt 4712.0 3592.0) (pt 4712.0 3567.0) (width 7.0) (netNameRef "NET00015") )
+    (line (pt 4725.0 3356.5) (pt 4758.5 3356.5) (width 12.0) (netNameRef "DGND") )
+    (line (pt 4758.5 3356.5) (pt 4761.0 3354.0) (width 12.0) (netNameRef "DGND") )
+    (line (pt 4612.5 94.45625 mm) (pt 4658.0 94.45625 mm) (width 7.0) (netNameRef "NET00025") )
+    (line (pt 4658.0 94.45625 mm) (pt 118.77675 mm 3737.0) (width 7.0) (netNameRef "NET00025") )
+    (line (pt 118.77675 mm 3737.0) (pt 4742.0 3737.0) (width 7.0) (netNameRef "NET00025") )
+    (line (pt 4612.5 91.59875 mm) (pt 119.38635 mm 91.59875 mm) (width 7.0) (netNameRef "NET00024") )
+    (line (pt 119.38635 mm 91.59875 mm) (pt 4709.0 3615.0) (width 7.0) (netNameRef "NET00024") )
+    (line (pt 4709.0 3615.0) (pt 4709.0 3647.0) (width 7.0) (netNameRef "NET00024") )
+    (line (pt 4725.0 3794.0) (pt 4768.0 3794.0) (width 7.0) (netNameRef "NET00024") )
+    (line (pt 121.765 mm 91.88 mm) (pt 4748.0 91.88 mm) (width 7.0) (netNameRef "NET00023") )
+    (line (pt 121.765 mm 92.68 mm) (pt 120.6454 mm 92.68 mm) (width 7.0) (netNameRef "NET00015") )
+    (line (pt 120.6454 mm 92.68 mm) (pt 4734.0 3633.0) (width 7.0) (netNameRef "NET00015") )
+    (line (pt 4734.0 3633.0) (pt 4734.0 3608.0) (width 7.0) (netNameRef "NET00015") )
+    (line (pt 121.765 mm 93.48 mm) (pt 121.765 mm 3676.0) (width 7.0) (netNameRef "NET00003") )
+    (line (pt 121.765 mm 94.28 mm) (pt 120.315 mm 94.28 mm) (width 7.0) (netNameRef "NET00002") )
+    (line (pt 120.315 mm 94.28 mm) (pt 4709.0 3684.0) (width 7.0) (netNameRef "NET00002") )
+    (line (pt 4725.0 3856.0) (pt 4725.0 3863.0) (width 12.0) (netNameRef "DGND") )
+    (line (pt 4725.0 3863.0) (pt 4761.0 3863.0) (width 12.0) (netNameRef "DGND") )
+    (line (pt 4612.5 3825.0) (pt 4612.5 3779.5) (width 10.0) (netNameRef "+5V") )
+    (line (pt 4612.5 3779.5) (pt 4629.0 3763.0) (width 10.0) (netNameRef "+5V") )
+    (line (pt 123.465 mm 86.98 mm) (pt 123.465 mm 3491.0) (width 7.0) (netNameRef "NET00027") )
+    (line (pt 123.465 mm 3491.0) (pt 4890.0 3491.0) (width 7.0) (netNameRef "NET00027") )
+    (line (pt 124.265 mm 86.98 mm) (pt 124.265 mm 3379.0) (width 7.0) (netNameRef "NET00026") )
+    (line (pt 124.265 mm 3379.0) (pt 4879.0 3379.0) (width 7.0) (netNameRef "NET00026") )
+    (line (pt 4879.0 3379.0) (pt 4879.0 3354.0) (width 7.0) (netNameRef "NET00026") )
+    (line (pt 4811.0 91.08 mm) (pt 122.2966 mm 3582.0) (width 7.0) (netNameRef "NET00008") )
+    (line (pt 122.2966 mm 3582.0) (pt 4848.0 3582.0) (width 7.0) (netNameRef "NET00008") )
+    (line (pt 124.189 mm 90.28 mm) (pt 4899.0 3564.0) (width 7.0) (netNameRef "NET00007") )
+    (line (pt 4899.0 3564.0) (pt 4924.0 3564.0) (width 7.0) (netNameRef "NET00007") )
+    (line (pt 125.294 mm 89.48 mm) (pt 4949.0 3539.0) (width 7.0) (netNameRef "NET00006") )
+    (line (pt 4835.0 88.68 mm) (pt 4835.0 3475.0) (width 7.0) (netNameRef "NET00001") )
+    (line (pt 4835.0 3475.0) (pt 4819.0 3459.0) (width 7.0) (netNameRef "NET00001") )
+    (line (pt 4926.0 3497.0) (pt 4926.0 3470.0) (width 12.0) (netNameRef "DGND") )
+    (line (pt 4926.0 3470.0) (pt 125.065 mm 88.0826 mm) (width 12.0) (netNameRef "DGND") )
+    (line (pt 125.065 mm 88.0826 mm) (pt 125.065 mm 86.98 mm) (width 12.0) (netNameRef "DGND") )
+    (line (pt 4944.0 3350.0) (pt 4944.0 3378.0) (width 12.0) (netNameRef "DGND") )
+    (line (pt 4944.0 3378.0) (pt 125.065 mm 3378.0) (width 12.0) (netNameRef "DGND") )
+    (line (pt 125.065 mm 3378.0) (pt 125.065 mm 86.98 mm) (width 12.0) (netNameRef "DGND") )
+    (line (pt 129.065 mm 86.98 mm) (pt 5071.0 86.98 mm) (width 10.0) (netNameRef "+5V") )
+    (line (pt 5071.0 86.98 mm) (pt 5071.0 3467.0) (width 10.0) (netNameRef "+5V") )
+    (line (pt 5071.0 3467.0) (pt 5071.0 3571.0) (width 10.0) (netNameRef "+5V") )
+    (line (pt 128.265 mm 86.98 mm) (pt 128.265 mm 3467.0) (width 10.0) (netNameRef "+5V") )
+    (line (pt 128.265 mm 3467.0) (pt 5071.0 3467.0) (width 10.0) (netNameRef "+5V") )
+    (line (pt 5036.0 3377.0) (pt 127.465 mm 3377.0) (width 10.0) (netNameRef "+3V") )
+    (line (pt 127.465 mm 3377.0) (pt 127.465 mm 86.98 mm) (width 10.0) (netNameRef "+3V") )
+    (line (pt 5006.0 3350.0) (pt 5036.0 3350.0) (width 10.0) (netNameRef "+3V") )
+    (line (pt 5036.0 3350.0) (pt 5036.0 3377.0) (width 10.0) (netNameRef "+3V") )
+    (line (pt 4888.0 3727.0) (pt 124.8618 mm 3727.0) (width 7.0) (netNameRef "NET00025") )
+    (line (pt 124.8618 mm 3727.0) (pt 125.065 mm 3735.0) (width 7.0) (netNameRef "NET00025") )
+    (line (pt 125.065 mm 3735.0) (pt 125.065 mm 95.98 mm) (width 7.0) (netNameRef "NET00025") )
+    (line (pt 4956.5 3862.5) (pt 125.065 mm 3862.5) (width 7.0) (netNameRef "NET00025") )
+    (line (pt 125.065 mm 3862.5) (pt 125.065 mm 95.98 mm) (width 7.0) (netNameRef "NET00025") )
+    (line (pt 124.265 mm 95.98 mm) (pt 124.265 mm 3796.0) (width 7.0) (netNameRef "NET00024") )
+    (line (pt 124.265 mm 3796.0) (pt 4896.0 96.5118 mm) (width 7.0) (netNameRef "NET00024") )
+    (line (pt 4896.0 96.5118 mm) (pt 4896.0 3830.0) (width 7.0) (netNameRef "NET00024") )
+    (line (pt 4808.0 3861.0) (pt 4865.0 3861.0) (width 7.0) (netNameRef "NET00024") )
+    (line (pt 4865.0 3861.0) (pt 4896.0 3830.0) (width 7.0) (netNameRef "NET00024") )
+    (line (pt 123.465 mm 95.98 mm) (pt 123.465 mm 97.2356 mm) (width 7.0) (netNameRef "NET00022") )
+    (line (pt 123.465 mm 97.2356 mm) (pt 4853.0 3836.0) (width 7.0) (netNameRef "NET00022") )
+    (line (pt 4853.0 3836.0) (pt 4825.0 3836.0) (width 7.0) (netNameRef "NET00022") )
+    (line (pt 4949.0 3608.0) (pt 4899.0 3658.0) (width 7.0) (netNameRef "NET00006") )
+    (line (pt 4842.0 3676.0) (pt 4874.0 3644.0) (width 7.0) (netNameRef "NET00003") )
+    (line (pt 4874.0 3644.0) (pt 4874.0 3608.0) (width 7.0) (netNameRef "NET00003") )
+    (line (pt 5018.5 3862.5) (pt 5018.5 3863.0) (width 12.0) (netNameRef "DGND") )
+    (line (pt 5018.5 3863.0) (pt 5059.0 3863.0) (width 12.0) (netNameRef "DGND") )
+    (line (pt 5094.0 3664.0) (pt 5071.0 3641.0) (width 10.0) (netNameRef "+5V") )
+    (line (pt 4870.0 3695.0) (pt 4923.0 3695.0) (width 10.0) (netNameRef "+5V") )
+    (line (pt 4923.0 3695.0) (pt 4986.0 3632.0) (width 10.0) (netNameRef "+5V") )
+    (line (pt 129.0652 mm 3732.0) (pt 127.465 mm 3669.0) (width 10.0) (netNameRef "+3V") )
+    (line (pt 130.765 mm 90.28 mm) (pt 5189.0 90.28 mm) (width 7.0) (netNameRef "NET00016") )
+    (line (pt 5189.0 90.28 mm) (pt 5189.0 3562.5) (width 7.0) (netNameRef "NET00016") )
+    (line (pt 5189.0 3562.5) (pt 5225.0 3562.5) (width 7.0) (netNameRef "NET00016") )
+    (line (pt 130.765 mm 88.68 mm) (pt 129.6838 mm 88.68 mm) (width 7.0) (netNameRef "NET00014") )
+    (line (pt 135.0984 mm 89.48 mm) (pt 130.765 mm 89.48 mm) (width 7.0) (netNameRef "NET00009") )
+    (line (pt 5287.5 3581.5) (pt 5287.5 3550.0) (width 10.0) (netNameRef "+3V") )
+    (line (pt 5287.5 3550.0) (pt 5310.0 3550.0) (width 10.0) (netNameRef "+3V") )
+    (line (pt 5310.0 3550.0) (pt 5318.0 3558.0) (width 10.0) (netNameRef "+3V") )
+    (line (pt 5287.5 3643.5) (pt 5287.5 3681.5) (width 7.0) (netNameRef "NET00029") )
+    (line (pt 5287.5 3681.5) (pt 5271.0 3698.0) (width 7.0) (netNameRef "NET00029") )
+    (line (pt 5271.0 3698.0) (pt 5250.0 3698.0) (width 7.0) (netNameRef "NET00029") )
+    (line (pt 5250.0 3698.0) (pt 5225.0 3673.0) (width 7.0) (netNameRef "NET00029") )
+    (line (pt 5225.0 3673.0) (pt 5225.0 3662.5) (width 7.0) (netNameRef "NET00029") )
+    (line (pt 5318.0 3700.0) (pt 5286.0 3732.0) (width 10.0) (netNameRef "+3V") )
+    (line (pt 5561.0 3592.0) (pt 5561.0 3576.0) (width 7.0) (netNameRef "NET00014") )
+    (line (pt 5561.0 3576.0) (pt 5577.0 3560.0) (width 7.0) (netNameRef "NET00014") )
+    (line (pt 5577.0 3560.0) (pt 5650.0 3560.0) (width 7.0) (netNameRef "NET00014") )
+    (line (pt 5518.5 3512.5) (pt 5518.5 3504.0) (width 12.0) (netNameRef "DGND") )
+    (line (pt 5518.5 3504.0) (pt 5540.0 3504.0) (width 12.0) (netNameRef "DGND") )
+    (line (pt 5540.0 3504.0) (pt 5554.0 3490.0) (width 12.0) (netNameRef "DGND") )
+    (line (pt 5554.0 3490.0) (pt 5554.0 3476.0) (width 12.0) (netNameRef "DGND") )
+    (line (pt 5456.5 3512.5) (pt 5425.0 3512.5) (width 10.0) (netNameRef "+5V") )
+    (line (pt 5425.0 3512.5) (pt 5425.0 3549.0) (width 10.0) (netNameRef "+5V") )
+    (line (pt 5650.0 89.05875 mm) (pt 5650.0 3526.0) (width 10.0) (netNameRef "+5V") )
+    (line (pt 5650.0 3526.0) (pt 5560.0 3526.0) (width 10.0) (netNameRef "+5V") )
+    (line (pt 5560.0 3526.0) (pt 5537.0 3549.0) (width 10.0) (netNameRef "+5V") )
+    (line (pt 5537.0 3549.0) (pt 5425.0 3549.0) (width 10.0) (netNameRef "+5V") )
+    (line (pt 5650.0 91.59875 mm) (pt 5650.0 3626.0) (width 7.0) (netNameRef "NET00009") )
+    (line (pt 5650.0 3626.0) (pt 5422.0 3626.0) (width 7.0) (netNameRef "NET00009") )
+    (line (pt 4748.0 91.88 mm) (pt 4748.0 3523.0) (width 7.0) (netNameRef "NET00023") )
+    (line (pt 4734.0 3608.0) (pt 4718.0 3592.0) (width 7.0) (netNameRef "NET00015") )
+    (line (pt 4949.0 3539.0) (pt 4949.0 3608.0) (width 7.0) (netNameRef "NET00006") )
+    (line (pt 5071.0 3641.0) (pt 5071.0 3571.0) (width 10.0) (netNameRef "+5V") )
+    (line (pt 4986.0 3632.0) (pt 4986.0 3571.0) (width 10.0) (netNameRef "+5V") )
+    (line (pt 127.465 mm 3669.0) (pt 127.465 mm 86.98 mm) (width 10.0) (netNameRef "+3V") )
+    (line (pt 5318.0 3558.0) (pt 5318.0 3700.0) (width 10.0) (netNameRef "+3V") )
+    (line (pt 5518.5 3600.0) (pt 5553.0 3600.0) (width 7.0) (netNameRef "NET00014") )
+    (line (pt 5553.0 3600.0) (pt 5561.0 3592.0) (width 7.0) (netNameRef "NET00014") )
+    (line (pt 5456.5 3600.0) (pt 5425.0 3600.0) (width 10.0) (netNameRef "+5V") )
+    (line (pt 5425.0 3600.0) (pt 5425.0 3549.0) (width 10.0) (netNameRef "+5V") )
+    (line (pt 121.765 mm 91.08 mm) (pt 4811.0 91.08 mm) (width 7.0) (netNameRef "NET00008") )
+    (line (pt 121.765 mm 90.28 mm) (pt 124.189 mm 90.28 mm) (width 7.0) (netNameRef "NET00007") )
+    (line (pt 121.765 mm 89.48 mm) (pt 125.294 mm 89.48 mm) (width 7.0) (netNameRef "NET00006") )
+    (line (pt 121.765 mm 88.68 mm) (pt 4835.0 88.68 mm) (width 7.0) (netNameRef "NET00001") )
+    (line (pt 4819.0 3459.0) (pt 4760.0 3459.0) (width 7.0) (netNameRef "NET00001") )
+    (line (pt 4768.0 3794.0) (pt 4800.0 3826.0) (width 7.0) (netNameRef "NET00024") )
+    (line (pt 4800.0 3826.0) (pt 4800.0 3853.0) (width 7.0) (netNameRef "NET00024") )
+    (line (pt 4800.0 3853.0) (pt 4808.0 3861.0) (width 7.0) (netNameRef "NET00024") )
+    (line (pt 121.765 mm 3676.0) (pt 4842.0 3676.0) (width 7.0) (netNameRef "NET00003") )
+    (line (pt 4629.0 3763.0) (pt 4802.0 3763.0) (width 10.0) (netNameRef "+5V") )
+    (line (pt 4802.0 3763.0) (pt 4870.0 3695.0) (width 10.0) (netNameRef "+5V") )
+    (line (pt 129.6838 mm 88.68 mm) (pt 5097.0 3500.0) (width 7.0) (netNameRef "NET00014") )
+    (line (pt 5036.0 3377.0) (pt 5096.0 3377.0) (width 10.0) (netNameRef "+3V") )
+    (line (pt 5096.0 3377.0) (pt 5113.0 3394.0) (width 10.0) (netNameRef "+3V") )
+    (line (pt 5650.0 94.13875 mm) (pt 137.10285 mm 94.13875 mm) (width 7.0) (netNameRef "NET00028") )
+    (line (pt 137.10285 mm 94.13875 mm) (pt 5373.0 3731.0) (width 7.0) (netNameRef "NET00028") )
+    (line (pt 5286.0 3732.0) (pt 129.0652 mm 3732.0) (width 10.0) (netNameRef "+3V") )
+    (line (pt 5097.0 3500.0) (pt 5097.0 3628.0) (width 7.0) (netNameRef "NET00014") )
+    (line (pt 5422.0 3626.0) (pt 135.0984 mm 89.48 mm) (width 7.0) (netNameRef "NET00009") )
+  )
+  (layerContents (layerNumRef 2)
+    (line (pt 4612.5 3437.5) (pt 4643.0 3437.5) (width 7.0) (netNameRef "NET00015") )
+    (line (pt 117.16385 mm 3350.0) (pt 4643.0 3350.0) (width 7.0) (netNameRef "NET00015") )
+    (line (pt 4643.0 3350.0) (pt 4643.0 3437.5) (width 7.0) (netNameRef "NET00015") )
+    (line (pt 4643.0 3437.5) (pt 4703.5 3437.5) (width 7.0) (netNameRef "NET00015") )
+    (line (pt 4703.5 3437.5) (pt 4712.0 3446.0) (width 7.0) (netNameRef "NET00015") )
+    (line (pt 4712.0 3446.0) (pt 4712.0 3567.0) (width 7.0) (netNameRef "NET00015") )
+    (line (pt 4612.5 3550.0) (pt 4612.5 3591.5) (width 7.0) (netNameRef "NET00003") )
+    (line (pt 4774.0 3437.5) (pt 4760.0 3451.5) (width 7.0) (netNameRef "NET00001") )
+    (line (pt 4760.0 3451.5) (pt 4760.0 3459.0) (width 7.0) (netNameRef "NET00001") )
+    (line (pt 4734.0 3354.0) (pt 4761.0 3354.0) (width 12.0) (netNameRef "DGND") )
+    (line (pt 118.73865 mm 3350.0) (pt 4730.0 3350.0) (width 12.0) (netNameRef "DGND") )
+    (line (pt 4730.0 3350.0) (pt 4734.0 3354.0) (width 12.0) (netNameRef "DGND") )
+    (line (pt 4734.0 3354.0) (pt 4733.0 3355.0) (width 12.0) (netNameRef "DGND") )
+    (line (pt 4733.0 3355.0) (pt 4733.0 3505.5) (width 12.0) (netNameRef "DGND") )
+    (line (pt 4733.0 3505.5) (pt 4765.0 3537.5) (width 12.0) (netNameRef "DGND") )
+    (line (pt 4742.0 3737.0) (pt 4766.0 3761.0) (width 7.0) (netNameRef "NET00025") )
+    (line (pt 4709.0 3647.0) (pt 4734.0 3672.0) (width 7.0) (netNameRef "NET00024") )
+    (line (pt 4734.0 3672.0) (pt 4734.0 3701.0) (width 7.0) (netNameRef "NET00024") )
+    (line (pt 4734.0 3701.0) (pt 4717.0 3718.0) (width 7.0) (netNameRef "NET00024") )
+    (line (pt 4717.0 3718.0) (pt 4717.0 3779.0) (width 7.0) (netNameRef "NET00024") )
+    (line (pt 4717.0 3779.0) (pt 4749.0 3811.0) (width 7.0) (netNameRef "NET00024") )
+    (line (pt 4712.0 3836.0) (pt 4698.0 3822.0) (width 7.0) (netNameRef "NET00022") )
+    (line (pt 4594.0 3862.5) (pt 4594.0 3830.0) (width 7.0) (netNameRef "NET00022") )
+    (line (pt 4594.0 3830.0) (pt 4602.0 3822.0) (width 7.0) (netNameRef "NET00022") )
+    (line (pt 4602.0 3822.0) (pt 4698.0 3822.0) (width 7.0) (netNameRef "NET00022") )
+    (line (pt 4612.5 95.72625 mm) (pt 4698.0 95.72625 mm) (width 7.0) (netNameRef "NET00022") )
+    (line (pt 4698.0 95.72625 mm) (pt 4698.0 3822.0) (width 7.0) (netNameRef "NET00022") )
+    (line (pt 4612.5 3662.5) (pt 4658.0 3662.5) (width 7.0) (netNameRef "NET00002") )
+    (line (pt 4658.0 3662.5) (pt 4679.5 3684.0) (width 7.0) (netNameRef "NET00002") )
+    (line (pt 4679.5 3684.0) (pt 4709.0 3684.0) (width 7.0) (netNameRef "NET00002") )
+    (line (pt 4656.0 3862.5) (pt 4733.5 3862.5) (width 12.0) (netNameRef "DGND") )
+    (line (pt 4733.5 3862.5) (pt 4734.0 3863.0) (width 12.0) (netNameRef "DGND") )
+    (line (pt 4734.0 3863.0) (pt 4761.0 3863.0) (width 12.0) (netNameRef "DGND") )
+    (line (pt 4925.0 3387.5) (pt 4925.0 3445.0) (width 50.0) )
+    (line (pt 4950.0 3362.5) (pt 4925.0 3387.5) (width 50.0) )
+    (line (pt 4825.0 3487.5) (pt 4886.5 3487.5) (width 7.0) (netNameRef "NET00027") )
+    (line (pt 4886.5 3487.5) (pt 4890.0 3491.0) (width 7.0) (netNameRef "NET00027") )
+    (line (pt 4825.0 3387.5) (pt 4879.0 3387.5) (width 7.0) (netNameRef "NET00026") )
+    (line (pt 4879.0 3387.5) (pt 4879.0 3354.0) (width 7.0) (netNameRef "NET00026") )
+    (line (pt 4883.0 3582.0) (pt 4848.0 3582.0) (width 7.0) (netNameRef "NET00008") )
+    (line (pt 4926.0 3497.0) (pt 4886.0 3537.0) (width 12.0) (netNameRef "DGND") )
+    (line (pt 4886.0 3537.0) (pt 4825.0 3537.0) (width 12.0) (netNameRef "DGND") )
+    (line (pt 4825.0 3537.0) (pt 4825.0 3537.5) (width 12.0) (netNameRef "DGND") )
+    (line (pt 4959.0 3530.0) (pt 4926.0 3497.0) (width 12.0) (netNameRef "DGND") )
+    (line (pt 4986.0 3571.0) (pt 5071.0 3571.0) (width 10.0) (netNameRef "+5V") )
+    (line (pt 127.75499 mm 3387.5) (pt 5055.0 3387.5) (width 10.0) (netNameRef "+3V") )
+    (line (pt 5055.0 3387.5) (pt 5061.5 3394.0) (width 10.0) (netNameRef "+3V") )
+    (line (pt 5032.5 3737.5) (pt 5055.0 3737.5) (width 7.0) (netNameRef "NET00028") )
+    (line (pt 5055.0 3737.5) (pt 5061.5 3731.0) (width 7.0) (netNameRef "NET00028") )
+    (line (pt 4880.0 3761.0) (pt 4888.0 3753.0) (width 7.0) (netNameRef "NET00025") )
+    (line (pt 4888.0 3753.0) (pt 4888.0 3727.0) (width 7.0) (netNameRef "NET00025") )
+    (line (pt 4845.0 3811.0) (pt 4864.0 3830.0) (width 7.0) (netNameRef "NET00024") )
+    (line (pt 4864.0 3830.0) (pt 4896.0 3830.0) (width 7.0) (netNameRef "NET00024") )
+    (line (pt 4812.5 3637.5) (pt 4812.5 3633.0) (width 7.0) (netNameRef "NET00008") )
+    (line (pt 4812.5 3633.0) (pt 4891.0 3633.0) (width 7.0) (netNameRef "NET00008") )
+    (line (pt 4891.0 3633.0) (pt 4899.0 3625.0) (width 7.0) (netNameRef "NET00008") )
+    (line (pt 4812.5 3787.5) (pt 4892.5 3787.5) (width 7.0) (netNameRef "NET00007") )
+    (line (pt 4892.5 3787.5) (pt 4924.0 3756.0) (width 7.0) (netNameRef "NET00007") )
+    (line (pt 4899.0 3658.0) (pt 4899.0 3686.0) (width 7.0) (netNameRef "NET00006") )
+    (line (pt 4899.0 3686.0) (pt 4883.0 3702.0) (width 7.0) (netNameRef "NET00006") )
+    (line (pt 4883.0 3702.0) (pt 4863.0 3702.0) (width 7.0) (netNameRef "NET00006") )
+    (line (pt 4812.5 3687.5) (pt 4812.5 3688.0) (width 7.0) (netNameRef "NET00006") )
+    (line (pt 4812.5 3688.0) (pt 4863.0 3688.0) (width 7.0) (netNameRef "NET00006") )
+    (line (pt 4863.0 3688.0) (pt 4863.0 3702.0) (width 7.0) (netNameRef "NET00006") )
+    (line (pt 4812.5 3737.5) (pt 4863.0 3737.5) (width 7.0) (netNameRef "NET00006") )
+    (line (pt 4863.0 3737.5) (pt 4863.0 3702.0) (width 7.0) (netNameRef "NET00006") )
+    (line (pt 5092.0 3697.0) (pt 5032.5 3697.0) (width 7.0) (netNameRef "NET00000") )
+    (line (pt 5032.5 3697.0) (pt 5032.5 3687.5) (width 7.0) (netNameRef "NET00000") )
+    (line (pt 4959.0 3863.0) (pt 5059.0 3863.0) (width 12.0) (netNameRef "DGND") )
+    (line (pt 5032.5 3787.5) (pt 4959.0 3787.5) (width 12.0) (netNameRef "DGND") )
+    (line (pt 4959.0 3787.5) (pt 4959.0 3863.0) (width 12.0) (netNameRef "DGND") )
+    (line (pt 5032.5 3637.5) (pt 5032.5 3655.0) (width 10.0) (netNameRef "+5V") )
+    (line (pt 5032.5 3655.0) (pt 5085.0 3655.0) (width 10.0) (netNameRef "+5V") )
+    (line (pt 5085.0 3655.0) (pt 5094.0 3664.0) (width 10.0) (netNameRef "+5V") )
+    (line (pt 5275.0 3412.5) (pt 5187.5 3412.5) (width 30.0) )
+    (line (pt 5187.5 3412.5) (pt 5125.0 3350.0) (width 30.0) )
+    (line (pt 5150.0 3571.0) (pt 5199.0 3522.0) (width 10.0) (netNameRef "+5V") )
+    (line (pt 5122.0 3628.0) (pt 5123.0 3627.0) (width 7.0) (netNameRef "NET00014") )
+    (line (pt 5650.0 89.05875 mm) (pt 5554.0 89.05875 mm) (width 12.0) (netNameRef "DGND") )
+    (line (pt 5554.0 89.05875 mm) (pt 5554.0 3476.0) (width 12.0) (netNameRef "DGND") )
+    (line (pt 5650.0 3627.0) (pt 5650.0 91.59875 mm) (width 7.0) (netNameRef "NET00014") )
+    (line (pt 4612.5 3591.5) (pt 4629.0 3608.0) (width 7.0) (netNameRef "NET00003") )
+    (line (pt 4899.0 3625.0) (pt 4899.0 3598.0) (width 7.0) (netNameRef "NET00008") )
+    (line (pt 4899.0 3598.0) (pt 4883.0 3582.0) (width 7.0) (netNameRef "NET00008") )
+    (line (pt 4959.0 3601.0) (pt 4959.0 3530.0) (width 12.0) (netNameRef "DGND") )
+    (line (pt 5650.0 3560.0) (pt 5650.0 91.59875 mm) (width 7.0) (netNameRef "NET00014") )
+    (line (pt 5554.0 89.05875 mm) (pt 138.66495 mm 3601.0) (width 12.0) (netNameRef "DGND") )
+    (line (pt 4924.0 3756.0) (pt 4924.0 3564.0) (width 7.0) (netNameRef "NET00007") )
+    (line (pt 4959.0 3787.5) (pt 4959.0 3601.0) (width 12.0) (netNameRef "DGND") )
+    (line (pt 4825.0 3437.5) (pt 4774.0 3437.5) (width 7.0) (netNameRef "NET00001") )
+    (line (pt 4765.0 3537.5) (pt 4825.0 3537.5) (width 12.0) (netNameRef "DGND") )
+    (line (pt 4766.0 3761.0) (pt 4880.0 3761.0) (width 7.0) (netNameRef "NET00025") )
+    (line (pt 4749.0 3811.0) (pt 4845.0 3811.0) (width 7.0) (netNameRef "NET00024") )
+    (line (pt 4825.0 3836.0) (pt 4712.0 3836.0) (width 7.0) (netNameRef "NET00022") )
+    (line (pt 4629.0 3608.0) (pt 4874.0 3608.0) (width 7.0) (netNameRef "NET00003") )
+    (line (pt 5071.0 3571.0) (pt 5150.0 3571.0) (width 10.0) (netNameRef "+5V") )
+    (line (pt 5199.0 3522.0) (pt 5398.0 3522.0) (width 10.0) (netNameRef "+5V") )
+    (line (pt 5398.0 3522.0) (pt 5425.0 3549.0) (width 10.0) (netNameRef "+5V") )
+    (line (pt 5061.5 3394.0) (pt 5113.0 3394.0) (width 10.0) (netNameRef "+3V") )
+    (line (pt 5061.5 3731.0) (pt 5373.0 3731.0) (width 7.0) (netNameRef "NET00028") )
+    (line (pt 5097.0 3628.0) (pt 5122.0 3628.0) (width 7.0) (netNameRef "NET00014") )
+    (line (pt 5123.0 3627.0) (pt 5650.0 3627.0) (width 7.0) (netNameRef "NET00014") )
+    (line (pt 5650.0 94.13875 mm) (pt 129.57175 mm 94.13875 mm) (width 7.0) (netNameRef "NET00000") )
+    (line (pt 129.57175 mm 94.13875 mm) (pt 5092.0 3697.0) (width 7.0) (netNameRef "NET00000") )
+    (line (pt 138.66495 mm 3601.0) (pt 4959.0 3601.0) (width 12.0) (netNameRef "DGND") )
+    (line (pt 5125.0 3350.0) (pt 4950.0 3350.0) (width 30.0) )
+    (line (pt 4959.0 3863.0) (pt 4761.0 3863.0) (width 12.0) (netNameRef "DGND") )
+  )
+  (layerContents (layerNumRef 3)
+    (line (pt 5375.0 3387.5) (pt 5375.0 3312.5) (width 10.0) )
+    (line (pt 5375.0 3825.0) (pt 5375.0 3900.0) (width 10.0) )
+    (line (pt 4537.5 3900.0) (pt 4537.5 3312.5) (width 10.0) )
+    (line (pt 5725.0 3800.0) (pt 5725.0 3412.5) (width 10.0) )
+    (line (pt 5550.0 3412.5) (pt 5725.0 3412.5) (width 10.0) )
+    (triplePointArc (pt 138.74749 mm 3387.5) (pt 140.88497 mm 86.65137 mm) (pt 5375.0 3387.5) (width 10.0) )
+    (line (pt 5550.0 3800.0) (pt 5725.0 3800.0) (width 10.0) )
+    (triplePointArc (pt 138.74749 mm 3825.0) (pt 5375.0 3825.0) (pt 140.88497 mm 96.54613 mm) (width 10.0) )
+    (line (pt 5375.0 3312.5) (pt 4537.5 3312.5) (width 10.0) )
+    (line (pt 4537.5 3900.0) (pt 5375.0 3900.0) (width 10.0) )
+  )
+  (layerContents (layerNumRef 5)
+    (line (pt 4925.0 3450.0) (pt 4925.0 3387.5) (width 50.0) )
+  )
+  (layerContents (layerNumRef 6)
+    (text (pt 4600.0 3887.5) "1" (textStyleRef "T:H40W4") (rotation 270.0) (extent 33.5 53.5) )
+    (line (pt 5375.0 3475.0) (pt 5375.0 3500.0) (width 16.0) )
+    (line (pt 5350.0 3500.0) (pt 5350.0 3475.0) (width 16.0) )
+    (line (pt 5350.0 3537.5) (pt 5350.0 3562.5) (width 16.0) )
+    (line (pt 5350.0 3475.0) (pt 5375.0 3475.0) (width 16.0) )
+    (line (pt 5362.5 3500.0) (pt 5362.5 3487.5) (width 16.0) )
+    (line (pt 5375.0 3725.0) (pt 5375.0 3750.0) (width 16.0) )
+    (line (pt 5350.0 3687.5) (pt 5350.0 3637.5) (width 16.0) )
+    (line (pt 5350.0 3725.0) (pt 5350.0 3750.0) (width 16.0) )
+    (line (pt 5362.5 3750.0) (pt 5362.5 3725.0) (width 16.0) )
+    (line (pt 5350.0 3750.0) (pt 5375.0 3750.0) (width 16.0) )
+    (line (pt 5425.0 3500.0) (pt 5425.0 3537.5) (width 16.0) )
+    (text (pt 5675.0 3750.0) "1" (textStyleRef "T:H40W4") (rotation 90.0) (extent 33.5 53.5) )
+    (line (pt 5425.0 3725.0) (pt 5425.0 3687.5) (width 16.0) )
+    (line (pt 5387.5 3537.5) (pt 5387.5 3600.0) (width 16.0) )
+    (line (pt 5387.5 3600.0) (pt 5387.5 3650.0) (width 16.0) )
+    (line (pt 5312.5 3500.0) (pt 5312.5 3725.0) (width 16.0) )
+    (line (pt 5425.0 3687.5) (pt 5425.0 3600.0) (width 16.0) )
+    (line (pt 5425.0 3537.5) (pt 5387.5 3537.5) (width 16.0) )
+    (line (pt 5312.5 3500.0) (pt 5425.0 3500.0) (width 16.0) )
+    (line (pt 5312.5 3687.5) (pt 5425.0 3687.5) (width 16.0) )
+    (line (pt 5312.5 3725.0) (pt 5425.0 3725.0) (width 16.0) )
+    (line (pt 5312.5 3600.0) (pt 5425.0 3600.0) (width 16.0) )
+  )
+  (pcbPrintSettings 
+    (printQueueEntry "TOP"
+      (layerList 
+        (layerNumRef 1)
+        (layerNumRef 3)
+      )
+      (isThinStrokeText False)
+      (isSelected True)
+      (drillSymSize 80.0)
+      (outputPads True)
+      (PrintRegion 
+        (pt 3960.0 3002.5) (pt 6085.1 4784.0) )
+    )
+  )
+  (drillSymSettings 
+    (drillSym Cross (holeDiam 14.0))
+    (drillSym X (holeDiam 0.8 mm))
+    (drillSym Y (holeDiam 35.0))
+    (drillSym T (holeDiam 38.0))
+    (drillSym Hour (holeDiam 40.0))
+  )
+  (gerberSettings 
+    (units in)
+    (numFormat gbr44)
+    (autoDrawApertureSize 10.0)
+    (outputPath "C:\\TEMP\\scs210\\GERBER")
+    (viewLog False)
+    (autoClear True)
+    (g54Option True)
+    (useArcs False)
+    (embedApertures True)
+    (useApertureHoles False)
+    (drawRotated True)
+    (drawPolygons True)
+    (apertureDef 
+      (dCode 10)
+      (apertureShape Ellipse)
+      (width 10.0)
+      (height 10.0)
+      (holeDiam 0.0)
+      (desc "Ellipse X10.0mil Y10.0mil H0.0mil 0.0deg (0.0mil,0.0mil) Draw")
+      (apertureType draw)
+    )
+    (apertureDef 
+      (dCode 11)
+      (apertureShape MtHole)
+      (width 250.0)
+      (height 250.0)
+      (holeDiam 0.0)
+      (desc "Mounting Hole X250.0mil Y250.0mil H0.0mil 0.0deg (0.0mil,0.0mil) Flash")
+    )
+    (apertureDef 
+      (dCode 12)
+      (apertureShape Ellipse)
+      (width 16.0)
+      (height 16.0)
+      (holeDiam 0.0)
+      (desc "Ellipse X16.0mil Y16.0mil H0.0mil 0.0deg (0.0mil,0.0mil) Draw")
+      (apertureType draw)
+    )
+    (apertureDef 
+      (dCode 13)
+      (apertureShape Ellipse)
+      (width 20.0)
+      (height 20.0)
+      (holeDiam 0.0)
+      (desc "Ellipse X20.0mil Y20.0mil H0.0mil 0.0deg (0.0mil,0.0mil) Draw")
+      (apertureType draw)
+    )
+    (apertureDef 
+      (dCode 14)
+      (apertureShape Ellipse)
+      (width 24.0)
+      (height 24.0)
+      (holeDiam 0.0)
+      (desc "Ellipse X24.0mil Y24.0mil H0.0mil 0.0deg (0.0mil,0.0mil) Draw")
+      (apertureType draw)
+    )
+    (apertureDef 
+      (dCode 15)
+      (apertureShape Ellipse)
+      (width 30.0)
+      (height 30.0)
+      (holeDiam 0.0)
+      (desc "Ellipse X30.0mil Y30.0mil H0.0mil 0.0deg (0.0mil,0.0mil) Draw")
+      (apertureType draw)
+    )
+    (apertureDef 
+      (dCode 16)
+      (apertureShape Ellipse)
+      (width 34.0)
+      (height 34.0)
+      (holeDiam 0.0)
+      (desc "Ellipse X34.0mil Y34.0mil H0.0mil 0.0deg (0.0mil,0.0mil) Draw")
+      (apertureType draw)
+    )
+    (apertureDef 
+      (dCode 17)
+      (apertureShape Ellipse)
+      (width 5.0)
+      (height 5.0)
+      (holeDiam 0.0)
+      (desc "Ellipse X5.0mil Y5.0mil H0.0mil 0.0deg (0.0mil,0.0mil) Draw")
+      (apertureType draw)
+    )
+    (apertureDef 
+      (dCode 18)
+      (apertureShape Ellipse)
+      (width 50.0)
+      (height 50.0)
+      (holeDiam 0.0)
+      (desc "Ellipse X50.0mil Y50.0mil H0.0mil 0.0deg (0.0mil,0.0mil) Draw")
+      (apertureType draw)
+    )
+    (apertureDef 
+      (dCode 19)
+      (apertureShape Ellipse)
+      (width 6.0)
+      (height 6.0)
+      (holeDiam 0.0)
+      (desc "Ellipse X6.0mil Y6.0mil H0.0mil 0.0deg (0.0mil,0.0mil) Draw")
+      (apertureType draw)
+    )
+    (apertureDef 
+      (dCode 20)
+      (apertureShape Ellipse)
+      (width 7.0)
+      (height 7.0)
+      (holeDiam 0.0)
+      (desc "Ellipse X7.0mil Y7.0mil H0.0mil 0.0deg (0.0mil,0.0mil) Draw")
+      (apertureType draw)
+    )
+    (apertureDef 
+      (dCode 21)
+      (apertureShape Ellipse)
+      (width 7.5)
+      (height 7.5)
+      (holeDiam 0.0)
+      (desc "Ellipse X7.5mil Y7.5mil H0.0mil 0.0deg (0.0mil,0.0mil) Draw")
+      (apertureType draw)
+    )
+    (apertureDef 
+      (dCode 22)
+      (apertureShape Ellipse)
+      (width 0.2 mm)
+      (height 0.2 mm)
+      (holeDiam 0.0)
+      (desc "Ellipse X7.9mil Y7.9mil H0.0mil 0.0deg (0.0mil,0.0mil) Draw")
+      (apertureType draw)
+    )
+    (apertureDef 
+      (dCode 23)
+      (apertureShape Ellipse)
+      (width 8.0)
+      (height 8.0)
+      (holeDiam 0.0)
+      (desc "Ellipse X8.0mil Y8.0mil H0.0mil 0.0deg (0.0mil,0.0mil) Draw")
+      (apertureType draw)
+    )
+    (apertureDef 
+      (dCode 24)
+      (apertureShape Ellipse)
+      (width 50.0)
+      (height 50.0)
+      (holeDiam 0.0)
+      (desc "Ellipse X50.0mil Y50.0mil H0.0mil 0.0deg (0.0mil,0.0mil) Flash")
+    )
+    (apertureDef 
+      (dCode 25)
+      (apertureShape Ellipse)
+      (width 60.0)
+      (height 60.0)
+      (holeDiam 0.0)
+      (desc "Ellipse X60.0mil Y60.0mil H0.0mil 0.0deg (0.0mil,0.0mil) Flash")
+    )
+    (apertureDef 
+      (dCode 26)
+      (apertureShape Ellipse)
+      (width 65.0)
+      (height 65.0)
+      (holeDiam 0.0)
+      (desc "Ellipse X65.0mil Y65.0mil H0.0mil 0.0deg (0.0mil,0.0mil) Flash")
+    )
+    (apertureDef 
+      (dCode 27)
+      (apertureShape Ellipse)
+      (width 75.0)
+      (height 75.0)
+      (holeDiam 0.0)
+      (desc "Ellipse X75.0mil Y75.0mil H0.0mil 0.0deg (0.0mil,0.0mil) Flash")
+    )
+    (apertureDef 
+      (dCode 28)
+      (apertureShape RndRect)
+      (width 175.0)
+      (height 50.0)
+      (holeDiam 0.0)
+      (desc "Rounded Rectangle X175.0mil Y50.0mil H0.0mil 0.0deg (0.0mil,0.0mil) Flash")
+    )
+    (apertureDef 
+      (dCode 29)
+      (apertureShape RndRect)
+      (width 190.0)
+      (height 65.0)
+      (holeDiam 0.0)
+      (desc "Rounded Rectangle X190.0mil Y65.0mil H0.0mil 0.0deg (0.0mil,0.0mil) Flash")
+    )
+    (apertureDef 
+      (dCode 30)
+      (apertureShape Rect)
+      (width 10.0)
+      (height 65.0)
+      (holeDiam 0.0)
+      (desc "Rectangle X10.0mil Y65.0mil H0.0mil 0.0deg (0.0mil,0.0mil) Flash")
+    )
+    (apertureDef 
+      (dCode 31)
+      (apertureShape Rect)
+      (width 65.0)
+      (height 10.0)
+      (holeDiam 0.0)
+      (desc "Rectangle X65.0mil Y10.0mil H0.0mil 0.0deg (0.0mil,0.0mil) Flash")
+    )
+    (apertureDef 
+      (dCode 32)
+      (apertureShape Rect)
+      (width 120.0)
+      (height 90.0)
+      (holeDiam 0.0)
+      (desc "Rectangle X120.0mil Y90.0mil H0.0mil 0.0deg (0.0mil,0.0mil) Flash")
+    )
+    (apertureDef 
+      (dCode 33)
+      (apertureShape Rect)
+      (width 135.0)
+      (height 105.0)
+      (holeDiam 0.0)
+      (desc "Rectangle X135.0mil Y105.0mil H0.0mil 0.0deg (0.0mil,0.0mil) Flash")
+    )
+    (apertureDef 
+      (dCode 34)
+      (apertureShape Rect)
+      (width 20.0)
+      (height 50.0)
+      (holeDiam 0.0)
+      (desc "Rectangle X20.0mil Y50.0mil H0.0mil 0.0deg (0.0mil,0.0mil) Flash")
+    )
+    (apertureDef 
+      (dCode 35)
+      (apertureShape Rect)
+      (width 25.0)
+      (height 80.0)
+      (holeDiam 0.0)
+      (desc "Rectangle X25.0mil Y80.0mil H0.0mil 0.0deg (0.0mil,0.0mil) Flash")
+    )
+    (apertureDef 
+      (dCode 36)
+      (apertureShape Rect)
+      (width 80.0)
+      (height 25.0)
+      (holeDiam 0.0)
+      (desc "Rectangle X80.0mil Y25.0mil H0.0mil 0.0deg (0.0mil,0.0mil) Flash")
+    )
+    (apertureDef 
+      (dCode 37)
+      (apertureShape Rect)
+      (width 34.0)
+      (height 100.0)
+      (holeDiam 0.0)
+      (desc "Rectangle X34.0mil Y100.0mil H0.0mil 0.0deg (0.0mil,0.0mil) Flash")
+    )
+    (apertureDef 
+      (dCode 38)
+      (apertureShape Rect)
+      (width 34.0)
+      (height 175.0)
+      (holeDiam 0.0)
+      (desc "Rectangle X34.0mil Y175.0mil H0.0mil 0.0deg (0.0mil,0.0mil) Flash")
+    )
+    (apertureDef 
+      (dCode 39)
+      (apertureShape Rect)
+      (width 35.0)
+      (height 65.0)
+      (holeDiam 0.0)
+      (desc "Rectangle X35.0mil Y65.0mil H0.0mil 0.0deg (0.0mil,0.0mil) Flash")
+    )
+    (apertureDef 
+      (dCode 40)
+      (apertureShape Rect)
+      (width 49.0)
+      (height 115.0)
+      (holeDiam 0.0)
+      (desc "Rectangle X49.0mil Y115.0mil H0.0mil 0.0deg (0.0mil,0.0mil) Flash")
+    )
+    (apertureDef 
+      (dCode 41)
+      (apertureShape Rect)
+      (width 49.0)
+      (height 190.0)
+      (holeDiam 0.0)
+      (desc "Rectangle X49.0mil Y190.0mil H0.0mil 0.0deg (0.0mil,0.0mil) Flash")
+    )
+    (apertureDef 
+      (dCode 42)
+      (apertureShape Rect)
+      (width 60.0)
+      (height 50.0)
+      (holeDiam 0.0)
+      (desc "Rectangle X60.0mil Y50.0mil H0.0mil 0.0deg (0.0mil,0.0mil) Flash")
+    )
+    (apertureDef 
+      (dCode 43)
+      (apertureShape Rect)
+      (width 60.0)
+      (height 60.0)
+      (holeDiam 0.0)
+      (desc "Rectangle X60.0mil Y60.0mil H0.0mil 0.0deg (0.0mil,0.0mil) Flash")
+    )
+    (apertureDef 
+      (dCode 44)
+      (apertureShape Rect)
+      (width 60.0)
+      (height 65.0)
+      (holeDiam 0.0)
+      (desc "Rectangle X60.0mil Y65.0mil H0.0mil 0.0deg (0.0mil,0.0mil) Flash")
+    )
+    (apertureDef 
+      (dCode 45)
+      (apertureShape Rect)
+      (width 65.0)
+      (height 60.0)
+      (holeDiam 0.0)
+      (desc "Rectangle X65.0mil Y60.0mil H0.0mil 0.0deg (0.0mil,0.0mil) Flash")
+    )
+    (apertureDef 
+      (dCode 46)
+      (apertureShape Rect)
+      (width 24.0)
+      (height 74.0)
+      (holeDiam 0.0)
+      (desc "Rectangle X24.0mil Y74.0mil H0.0mil 0.0deg (0.0mil,0.0mil) Flash")
+    )
+    (apertureDef 
+      (dCode 47)
+      (apertureShape Rect)
+      (width 75.0)
+      (height 65.0)
+      (holeDiam 0.0)
+      (desc "Rectangle X75.0mil Y65.0mil H0.0mil 0.0deg (0.0mil,0.0mil) Flash")
+    )
+    (apertureDef 
+      (dCode 48)
+      (apertureShape Rect)
+      (width 75.0)
+      (height 75.0)
+      (holeDiam 0.0)
+      (desc "Rectangle X75.0mil Y75.0mil H0.0mil 0.0deg (0.0mil,0.0mil) Flash")
+    )
+    (apertureDef 
+      (dCode 49)
+      (apertureShape Rect)
+      (width 75.0)
+      (height 80.0)
+      (holeDiam 0.0)
+      (desc "Rectangle X75.0mil Y80.0mil H0.0mil 0.0deg (0.0mil,0.0mil) Flash")
+    )
+    (apertureDef 
+      (dCode 50)
+      (apertureShape Rect)
+      (width 80.0)
+      (height 75.0)
+      (holeDiam 0.0)
+      (desc "Rectangle X80.0mil Y75.0mil H0.0mil 0.0deg (0.0mil,0.0mil) Flash")
+    )
+    (apertureDef 
+      (dCode 51)
+      (apertureShape Rect)
+      (width 39.0)
+      (height 89.0)
+      (holeDiam 0.0)
+      (desc "Rectangle X39.0mil Y89.0mil H0.0mil 0.0deg (0.0mil,0.0mil) Flash")
+    )
+    (apertureDef 
+      (dCode 52)
+      (apertureShape Ellipse)
+      (width 24.0)
+      (height 24.0)
+      (holeDiam 0.0)
+      (desc "Ellipse X24.0mil Y24.0mil H0.0mil 0.0deg (0.0mil,0.0mil) Flash")
+    )
+    (apertureDef 
+      (dCode 53)
+      (apertureShape Ellipse)
+      (width 39.0)
+      (height 39.0)
+      (holeDiam 0.0)
+      (desc "Ellipse X39.0mil Y39.0mil H0.0mil 0.0deg (0.0mil,0.0mil) Flash")
+    )
+    (apertureAssn 
+      (apertureRef (dCode 10))
+      (itemMnemonic 
+        "[Drawn Symbols]"
+        "[Drawn Symbols]"
+        "[Drawn Symbols]"
+      )
+    )
+    (apertureAssn 
+      (apertureRef (dCode 10))
+      (itemMnemonic 
+        "[Polygons]"
+        "[Polygons]"
+        "[Polygons]"
+      )
+    )
+    (apertureAssn 
+      (apertureRef (dCode 10))
+      (itemMnemonic 
+        "LINE 10.0mil"
+        "LINE 0.25mm"
+        "LINE 25400app"
+      )
+    )
+    (apertureAssn 
+      (apertureRef (dCode 11))
+      (itemMnemonic 
+        "LINE 12.0mil"
+        "LINE 0.30mm"
+        "LINE 30480app"
+      )
+    )
+    (apertureAssn 
+      (apertureRef (dCode 12))
+      (itemMnemonic 
+        "LINE 16.0mil"
+        "LINE 0.41mm"
+        "LINE 40640app"
+      )
+    )
+    (apertureAssn 
+      (apertureRef (dCode 13))
+      (itemMnemonic 
+        "LINE 20.0mil"
+        "LINE 0.51mm"
+        "LINE 50800app"
+      )
+    )
+    (apertureAssn 
+      (apertureRef (dCode 14))
+      (itemMnemonic 
+        "LINE 24.0mil"
+        "LINE 0.61mm"
+        "LINE 60960app"
+      )
+    )
+    (apertureAssn 
+      (apertureRef (dCode 15))
+      (itemMnemonic 
+        "LINE 30.0mil"
+        "LINE 0.76mm"
+        "LINE 76200app"
+      )
+    )
+    (apertureAssn 
+      (apertureRef (dCode 16))
+      (itemMnemonic 
+        "LINE 34.0mil"
+        "LINE 0.86mm"
+        "LINE 86360app"
+      )
+    )
+    (apertureAssn 
+      (apertureRef (dCode 17))
+      (itemMnemonic 
+        "LINE 5.0mil"
+        "LINE 0.13mm"
+        "LINE 12700app"
+      )
+    )
+    (apertureAssn 
+      (apertureRef (dCode 18))
+      (itemMnemonic 
+        "LINE 50.0mil"
+        "LINE 1.27mm"
+        "LINE 127000app"
+      )
+    )
+    (apertureAssn 
+      (apertureRef (dCode 19))
+      (itemMnemonic 
+        "LINE 6.0mil"
+        "LINE 0.15mm"
+        "LINE 15240app"
+      )
+    )
+    (apertureAssn 
+      (apertureRef (dCode 20))
+      (itemMnemonic 
+        "LINE 7.0mil"
+        "LINE 0.18mm"
+        "LINE 17780app"
+      )
+    )
+    (apertureAssn 
+      (apertureRef (dCode 21))
+      (itemMnemonic 
+        "LINE 7.5mil"
+        "LINE 0.19mm"
+        "LINE 19050app"
+      )
+    )
+    (apertureAssn 
+      (apertureRef (dCode 22))
+      (itemMnemonic 
+        "LINE 7.9mil"
+        "LINE 0.20mm"
+        "LINE 20000app"
+      )
+    )
+    (apertureAssn 
+      (apertureRef (dCode 23))
+      (itemMnemonic 
+        "LINE 8.0mil"
+        "LINE 0.20mm"
+        "LINE 20320app"
+      )
+    )
+    (apertureAssn 
+      (apertureRef (dCode 24))
+      (itemMnemonic 
+        "PAD EL 50.0mil 50.0mil 31.5mil 315.0deg (0.0mil,0.0mil)"
+        "PAD EL 1.27mm 1.27mm 0.80mm 315.0deg (0.00mm,0.00mm)"
+        "PAD EL 127000app 127000app 80000app 315.0deg (0app,0app)"
+      )
+    )
+    (apertureAssn 
+      (apertureRef (dCode 24))
+      (itemMnemonic 
+        "PAD EL 50.0mil 50.0mil 31.5mil 45.0deg (0.0mil,0.0mil)"
+        "PAD EL 1.27mm 1.27mm 0.80mm 45.0deg (0.00mm,0.00mm)"
+        "PAD EL 127000app 127000app 80000app 45.0deg (0app,0app)"
+      )
+    )
+    (apertureAssn 
+      (apertureRef (dCode 24))
+      (itemMnemonic 
+        "PAD EL 50.0mil 50.0mil 35.0mil 0.0deg (0.0mil,0.0mil)"
+        "PAD EL 1.27mm 1.27mm 0.89mm 0.0deg (0.00mm,0.00mm)"
+        "PAD EL 127000app 127000app 88900app 0.0deg (0app,0app)"
+      )
+    )
+    (apertureAssn 
+      (apertureRef (dCode 25))
+      (itemMnemonic 
+        "PAD EL 60.0mil 60.0mil 38.0mil 90.0deg (0.0mil,0.0mil)"
+        "PAD EL 1.52mm 1.52mm 0.97mm 90.0deg (0.00mm,0.00mm)"
+        "PAD EL 152400app 152400app 96520app 90.0deg (0app,0app)"
+      )
+    )
+    (apertureAssn 
+      (apertureRef (dCode 25))
+      (itemMnemonic 
+        "PAD EL 60.0mil 60.0mil 40.0mil 0.0deg (0.0mil,0.0mil)"
+        "PAD EL 1.52mm 1.52mm 1.02mm 0.0deg (0.00mm,0.00mm)"
+        "PAD EL 152400app 152400app 101600app 0.0deg (0app,0app)"
+      )
+    )
+    (apertureAssn 
+      (apertureRef (dCode 25))
+      (itemMnemonic 
+        "PAD EL 60.0mil 60.0mil 40.0mil 90.0deg (0.0mil,0.0mil)"
+        "PAD EL 1.52mm 1.52mm 1.02mm 90.0deg (0.00mm,0.00mm)"
+        "PAD EL 152400app 152400app 101600app 90.0deg (0app,0app)"
+      )
+    )
+    (apertureAssn 
+      (apertureRef (dCode 26))
+      (itemMnemonic 
+        "PAD EL 65.0mil 65.0mil 31.5mil 315.0deg (0.0mil,0.0mil)"
+        "PAD EL 1.65mm 1.65mm 0.80mm 315.0deg (0.00mm,0.00mm)"
+        "PAD EL 165100app 165100app 80000app 315.0deg (0app,0app)"
+      )
+    )
+    (apertureAssn 
+      (apertureRef (dCode 26))
+      (itemMnemonic 
+        "PAD EL 65.0mil 65.0mil 31.5mil 45.0deg (0.0mil,0.0mil)"
+        "PAD EL 1.65mm 1.65mm 0.80mm 45.0deg (0.00mm,0.00mm)"
+        "PAD EL 165100app 165100app 80000app 45.0deg (0app,0app)"
+      )
+    )
+    (apertureAssn 
+      (apertureRef (dCode 26))
+      (itemMnemonic 
+        "PAD EL 65.0mil 65.0mil 35.0mil 0.0deg (0.0mil,0.0mil)"
+        "PAD EL 1.65mm 1.65mm 0.89mm 0.0deg (0.00mm,0.00mm)"
+        "PAD EL 165100app 165100app 88900app 0.0deg (0app,0app)"
+      )
+    )
+    (apertureAssn 
+      (apertureRef (dCode 27))
+      (itemMnemonic 
+        "PAD EL 75.0mil 75.0mil 38.0mil 90.0deg (0.0mil,0.0mil)"
+        "PAD EL 1.91mm 1.91mm 0.97mm 90.0deg (0.00mm,0.00mm)"
+        "PAD EL 190500app 190500app 96520app 90.0deg (0app,0app)"
+      )
+    )
+    (apertureAssn 
+      (apertureRef (dCode 27))
+      (itemMnemonic 
+        "PAD EL 75.0mil 75.0mil 40.0mil 0.0deg (0.0mil,0.0mil)"
+        "PAD EL 1.91mm 1.91mm 1.02mm 0.0deg (0.00mm,0.00mm)"
+        "PAD EL 190500app 190500app 101600app 0.0deg (0app,0app)"
+      )
+    )
+    (apertureAssn 
+      (apertureRef (dCode 27))
+      (itemMnemonic 
+        "PAD EL 75.0mil 75.0mil 40.0mil 90.0deg (0.0mil,0.0mil)"
+        "PAD EL 1.91mm 1.91mm 1.02mm 90.0deg (0.00mm,0.00mm)"
+        "PAD EL 190500app 190500app 101600app 90.0deg (0app,0app)"
+      )
+    )
+    (apertureAssn 
+      (apertureRef (dCode 28))
+      (itemMnemonic 
+        "PAD RR 175.0mil 50.0mil 0.0mil 0.0deg (0.0mil,0.0mil)"
+        "PAD RR 4.45mm 1.27mm 0.00mm 0.0deg (0.00mm,0.00mm)"
+        "PAD RR 444500app 127000app 0app 0.0deg (0app,0app)"
+      )
+    )
+    (apertureAssn 
+      (apertureRef (dCode 28))
+      (itemMnemonic 
+        "PAD RR 175.0mil 50.0mil 0.0mil 180.0deg (0.0mil,0.0mil)"
+        "PAD RR 4.45mm 1.27mm 0.00mm 180.0deg (0.00mm,0.00mm)"
+        "PAD RR 444500app 127000app 0app 180.0deg (0app,0app)"
+      )
+    )
+    (apertureAssn 
+      (apertureRef (dCode 29))
+      (itemMnemonic 
+        "PAD RR 190.0mil 65.0mil 0.0mil 0.0deg (0.0mil,0.0mil)"
+        "PAD RR 4.83mm 1.65mm 0.00mm 0.0deg (0.00mm,0.00mm)"
+        "PAD RR 482600app 165100app 0app 0.0deg (0app,0app)"
+      )
+    )
+    (apertureAssn 
+      (apertureRef (dCode 29))
+      (itemMnemonic 
+        "PAD RR 190.0mil 65.0mil 0.0mil 180.0deg (0.0mil,0.0mil)"
+        "PAD RR 4.83mm 1.65mm 0.00mm 180.0deg (0.00mm,0.00mm)"
+        "PAD RR 482600app 165100app 0app 180.0deg (0app,0app)"
+      )
+    )
+    (apertureAssn 
+      (apertureRef (dCode 30))
+      (itemMnemonic 
+        "PAD SQ 10.0mil 65.0mil 0.0mil 0.0deg (0.0mil,0.0mil)"
+        "PAD SQ 0.25mm 1.65mm 0.00mm 0.0deg (0.00mm,0.00mm)"
+        "PAD SQ 25400app 165100app 0app 0.0deg (0app,0app)"
+      )
+    )
+    (apertureAssn 
+      (apertureRef (dCode 30))
+      (itemMnemonic 
+        "PAD SQ 10.0mil 65.0mil 0.0mil 180.0deg (0.0mil,0.0mil)"
+        "PAD SQ 0.25mm 1.65mm 0.00mm 180.0deg (0.00mm,0.00mm)"
+        "PAD SQ 25400app 165100app 0app 180.0deg (0app,0app)"
+      )
+    )
+    (apertureAssn 
+      (apertureRef (dCode 31))
+      (itemMnemonic 
+        "PAD SQ 10.0mil 65.0mil 0.0mil 270.0deg (0.0mil,0.0mil)"
+        "PAD SQ 0.25mm 1.65mm 0.00mm 270.0deg (0.00mm,0.00mm)"
+        "PAD SQ 25400app 165100app 0app 270.0deg (0app,0app)"
+      )
+    )
+    (apertureAssn 
+      (apertureRef (dCode 31))
+      (itemMnemonic 
+        "PAD SQ 10.0mil 65.0mil 0.0mil 90.0deg (0.0mil,0.0mil)"
+        "PAD SQ 0.25mm 1.65mm 0.00mm 90.0deg (0.00mm,0.00mm)"
+        "PAD SQ 25400app 165100app 0app 90.0deg (0app,0app)"
+      )
+    )
+    (apertureAssn 
+      (apertureRef (dCode 32))
+      (itemMnemonic 
+        "PAD SQ 120.0mil 90.0mil 0.0mil 180.0deg (0.0mil,0.0mil)"
+        "PAD SQ 3.05mm 2.29mm 0.00mm 180.0deg (0.00mm,0.00mm)"
+        "PAD SQ 304800app 228600app 0app 180.0deg (0app,0app)"
+      )
+    )
+    (apertureAssn 
+      (apertureRef (dCode 33))
+      (itemMnemonic 
+        "PAD SQ 135.0mil 105.0mil 0.0mil 180.0deg (0.0mil,0.0mil)"
+        "PAD SQ 3.43mm 2.67mm 0.00mm 180.0deg (0.00mm,0.00mm)"
+        "PAD SQ 342900app 266700app 0app 180.0deg (0app,0app)"
+      )
+    )
+    (apertureAssn 
+      (apertureRef (dCode 34))
+      (itemMnemonic 
+        "PAD SQ 20.0mil 50.0mil 0.0mil 0.0deg (0.0mil,0.0mil)"
+        "PAD SQ 0.51mm 1.27mm 0.00mm 0.0deg (0.00mm,0.00mm)"
+        "PAD SQ 50800app 127000app 0app 0.0deg (0app,0app)"
+      )
+    )
+    (apertureAssn 
+      (apertureRef (dCode 35))
+      (itemMnemonic 
+        "PAD SQ 25.0mil 80.0mil 0.0mil 0.0deg (0.0mil,0.0mil)"
+        "PAD SQ 0.64mm 2.03mm 0.00mm 0.0deg (0.00mm,0.00mm)"
+        "PAD SQ 63500app 203200app 0app 0.0deg (0app,0app)"
+      )
+    )
+    (apertureAssn 
+      (apertureRef (dCode 35))
+      (itemMnemonic 
+        "PAD SQ 25.0mil 80.0mil 0.0mil 180.0deg (0.0mil,0.0mil)"
+        "PAD SQ 0.64mm 2.03mm 0.00mm 180.0deg (0.00mm,0.00mm)"
+        "PAD SQ 63500app 203200app 0app 180.0deg (0app,0app)"
+      )
+    )
+    (apertureAssn 
+      (apertureRef (dCode 36))
+      (itemMnemonic 
+        "PAD SQ 25.0mil 80.0mil 0.0mil 270.0deg (0.0mil,0.0mil)"
+        "PAD SQ 0.64mm 2.03mm 0.00mm 270.0deg (0.00mm,0.00mm)"
+        "PAD SQ 63500app 203200app 0app 270.0deg (0app,0app)"
+      )
+    )
+    (apertureAssn 
+      (apertureRef (dCode 36))
+      (itemMnemonic 
+        "PAD SQ 25.0mil 80.0mil 0.0mil 90.0deg (0.0mil,0.0mil)"
+        "PAD SQ 0.64mm 2.03mm 0.00mm 90.0deg (0.00mm,0.00mm)"
+        "PAD SQ 63500app 203200app 0app 90.0deg (0app,0app)"
+      )
+    )
+    (apertureAssn 
+      (apertureRef (dCode 37))
+      (itemMnemonic 
+        "PAD SQ 34.0mil 100.0mil 0.0mil 0.0deg (0.0mil,0.0mil)"
+        "PAD SQ 0.86mm 2.54mm 0.00mm 0.0deg (0.00mm,0.00mm)"
+        "PAD SQ 86360app 254000app 0app 0.0deg (0app,0app)"
+      )
+    )
+    (apertureAssn 
+      (apertureRef (dCode 38))
+      (itemMnemonic 
+        "PAD SQ 34.0mil 175.0mil 0.0mil 0.0deg (0.0mil,0.0mil)"
+        "PAD SQ 0.86mm 4.45mm 0.00mm 0.0deg (0.00mm,0.00mm)"
+        "PAD SQ 86360app 444500app 0app 0.0deg (0app,0app)"
+      )
+    )
+    (apertureAssn 
+      (apertureRef (dCode 39))
+      (itemMnemonic 
+        "PAD SQ 35.0mil 65.0mil 0.0mil 0.0deg (0.0mil,0.0mil)"
+        "PAD SQ 0.89mm 1.65mm 0.00mm 0.0deg (0.00mm,0.00mm)"
+        "PAD SQ 88900app 165100app 0app 0.0deg (0app,0app)"
+      )
+    )
+    (apertureAssn 
+      (apertureRef (dCode 40))
+      (itemMnemonic 
+        "PAD SQ 49.0mil 115.0mil 0.0mil 0.0deg (0.0mil,0.0mil)"
+        "PAD SQ 1.24mm 2.92mm 0.00mm 0.0deg (0.00mm,0.00mm)"
+        "PAD SQ 124460app 292100app 0app 0.0deg (0app,0app)"
+      )
+    )
+    (apertureAssn 
+      (apertureRef (dCode 41))
+      (itemMnemonic 
+        "PAD SQ 49.0mil 190.0mil 0.0mil 0.0deg (0.0mil,0.0mil)"
+        "PAD SQ 1.24mm 4.83mm 0.00mm 0.0deg (0.00mm,0.00mm)"
+        "PAD SQ 124460app 482600app 0app 0.0deg (0app,0app)"
+      )
+    )
+    (apertureAssn 
+      (apertureRef (dCode 42))
+      (itemMnemonic 
+        "PAD SQ 60.0mil 50.0mil 0.0mil 0.0deg (0.0mil,0.0mil)"
+        "PAD SQ 1.52mm 1.27mm 0.00mm 0.0deg (0.00mm,0.00mm)"
+        "PAD SQ 152400app 127000app 0app 0.0deg (0app,0app)"
+      )
+    )
+    (apertureAssn 
+      (apertureRef (dCode 42))
+      (itemMnemonic 
+        "PAD SQ 60.0mil 50.0mil 0.0mil 180.0deg (0.0mil,0.0mil)"
+        "PAD SQ 1.52mm 1.27mm 0.00mm 180.0deg (0.00mm,0.00mm)"
+        "PAD SQ 152400app 127000app 0app 180.0deg (0app,0app)"
+      )
+    )
+    (apertureAssn 
+      (apertureRef (dCode 10))
+      (itemMnemonic 
+        "PAD SQ 60.0mil 50.0mil 0.0mil 315.0deg (0.0mil,0.0mil)"
+        "PAD SQ 1.52mm 1.27mm 0.00mm 315.0deg (0.00mm,0.00mm)"
+        "PAD SQ 152400app 127000app 0app 315.0deg (0app,0app)"
+      )
+    )
+    (apertureAssn 
+      (apertureRef (dCode 10))
+      (itemMnemonic 
+        "PAD SQ 60.0mil 50.0mil 0.0mil 45.0deg (0.0mil,0.0mil)"
+        "PAD SQ 1.52mm 1.27mm 0.00mm 45.0deg (0.00mm,0.00mm)"
+        "PAD SQ 152400app 127000app 0app 45.0deg (0app,0app)"
+      )
+    )
+    (apertureAssn 
+      (apertureRef (dCode 43))
+      (itemMnemonic 
+        "PAD SQ 60.0mil 60.0mil 40.0mil 0.0deg (0.0mil,0.0mil)"
+        "PAD SQ 1.52mm 1.52mm 1.02mm 0.0deg (0.00mm,0.00mm)"
+        "PAD SQ 152400app 152400app 101600app 0.0deg (0app,0app)"
+      )
+    )
+    (apertureAssn 
+      (apertureRef (dCode 44))
+      (itemMnemonic 
+        "PAD SQ 60.0mil 65.0mil 0.0mil 0.0deg (0.0mil,0.0mil)"
+        "PAD SQ 1.52mm 1.65mm 0.00mm 0.0deg (0.00mm,0.00mm)"
+        "PAD SQ 152400app 165100app 0app 0.0deg (0app,0app)"
+      )
+    )
+    (apertureAssn 
+      (apertureRef (dCode 44))
+      (itemMnemonic 
+        "PAD SQ 60.0mil 65.0mil 0.0mil 180.0deg (0.0mil,0.0mil)"
+        "PAD SQ 1.52mm 1.65mm 0.00mm 180.0deg (0.00mm,0.00mm)"
+        "PAD SQ 152400app 165100app 0app 180.0deg (0app,0app)"
+      )
+    )
+    (apertureAssn 
+      (apertureRef (dCode 45))
+      (itemMnemonic 
+        "PAD SQ 60.0mil 65.0mil 0.0mil 270.0deg (0.0mil,0.0mil)"
+        "PAD SQ 1.52mm 1.65mm 0.00mm 270.0deg (0.00mm,0.00mm)"
+        "PAD SQ 152400app 165100app 0app 270.0deg (0app,0app)"
+      )
+    )
+    (apertureAssn 
+      (apertureRef (dCode 45))
+      (itemMnemonic 
+        "PAD SQ 60.0mil 65.0mil 0.0mil 90.0deg (0.0mil,0.0mil)"
+        "PAD SQ 1.52mm 1.65mm 0.00mm 90.0deg (0.00mm,0.00mm)"
+        "PAD SQ 152400app 165100app 0app 90.0deg (0app,0app)"
+      )
+    )
+    (apertureAssn 
+      (apertureRef (dCode 30))
+      (itemMnemonic 
+        "PAD SQ 65.0mil 10.0mil 0.0mil 270.0deg (0.0mil,0.0mil)"
+        "PAD SQ 1.65mm 0.25mm 0.00mm 270.0deg (0.00mm,0.00mm)"
+        "PAD SQ 165100app 25400app 0app 270.0deg (0app,0app)"
+      )
+    )
+    (apertureAssn 
+      (apertureRef (dCode 30))
+      (itemMnemonic 
+        "PAD SQ 65.0mil 10.0mil 0.0mil 90.0deg (0.0mil,0.0mil)"
+        "PAD SQ 1.65mm 0.25mm 0.00mm 90.0deg (0.00mm,0.00mm)"
+        "PAD SQ 165100app 25400app 0app 90.0deg (0app,0app)"
+      )
+    )
+    (apertureAssn 
+      (apertureRef (dCode 46))
+      (itemMnemonic 
+        "PAD SQ 74.0mil 24.0mil 0.0mil 90.0deg (0.0mil,0.0mil)"
+        "PAD SQ 1.88mm 0.61mm 0.00mm 90.0deg (0.00mm,0.00mm)"
+        "PAD SQ 187960app 60960app 0app 90.0deg (0app,0app)"
+      )
+    )
+    (apertureAssn 
+      (apertureRef (dCode 47))
+      (itemMnemonic 
+        "PAD SQ 75.0mil 65.0mil 0.0mil 0.0deg (0.0mil,0.0mil)"
+        "PAD SQ 1.91mm 1.65mm 0.00mm 0.0deg (0.00mm,0.00mm)"
+        "PAD SQ 190500app 165100app 0app 0.0deg (0app,0app)"
+      )
+    )
+    (apertureAssn 
+      (apertureRef (dCode 47))
+      (itemMnemonic 
+        "PAD SQ 75.0mil 65.0mil 0.0mil 180.0deg (0.0mil,0.0mil)"
+        "PAD SQ 1.91mm 1.65mm 0.00mm 180.0deg (0.00mm,0.00mm)"
+        "PAD SQ 190500app 165100app 0app 180.0deg (0app,0app)"
+      )
+    )
+    (apertureAssn 
+      (apertureRef (dCode 10))
+      (itemMnemonic 
+        "PAD SQ 75.0mil 65.0mil 0.0mil 315.0deg (0.0mil,0.0mil)"
+        "PAD SQ 1.91mm 1.65mm 0.00mm 315.0deg (0.00mm,0.00mm)"
+        "PAD SQ 190500app 165100app 0app 315.0deg (0app,0app)"
+      )
+    )
+    (apertureAssn 
+      (apertureRef (dCode 10))
+      (itemMnemonic 
+        "PAD SQ 75.0mil 65.0mil 0.0mil 45.0deg (0.0mil,0.0mil)"
+        "PAD SQ 1.91mm 1.65mm 0.00mm 45.0deg (0.00mm,0.00mm)"
+        "PAD SQ 190500app 165100app 0app 45.0deg (0app,0app)"
+      )
+    )
+    (apertureAssn 
+      (apertureRef (dCode 48))
+      (itemMnemonic 
+        "PAD SQ 75.0mil 75.0mil 40.0mil 0.0deg (0.0mil,0.0mil)"
+        "PAD SQ 1.91mm 1.91mm 1.02mm 0.0deg (0.00mm,0.00mm)"
+        "PAD SQ 190500app 190500app 101600app 0.0deg (0app,0app)"
+      )
+    )
+    (apertureAssn 
+      (apertureRef (dCode 49))
+      (itemMnemonic 
+        "PAD SQ 75.0mil 80.0mil 0.0mil 0.0deg (0.0mil,0.0mil)"
+        "PAD SQ 1.91mm 2.03mm 0.00mm 0.0deg (0.00mm,0.00mm)"
+        "PAD SQ 190500app 203200app 0app 0.0deg (0app,0app)"
+      )
+    )
+    (apertureAssn 
+      (apertureRef (dCode 49))
+      (itemMnemonic 
+        "PAD SQ 75.0mil 80.0mil 0.0mil 180.0deg (0.0mil,0.0mil)"
+        "PAD SQ 1.91mm 2.03mm 0.00mm 180.0deg (0.00mm,0.00mm)"
+        "PAD SQ 190500app 203200app 0app 180.0deg (0app,0app)"
+      )
+    )
+    (apertureAssn 
+      (apertureRef (dCode 50))
+      (itemMnemonic 
+        "PAD SQ 75.0mil 80.0mil 0.0mil 270.0deg (0.0mil,0.0mil)"
+        "PAD SQ 1.91mm 2.03mm 0.00mm 270.0deg (0.00mm,0.00mm)"
+        "PAD SQ 190500app 203200app 0app 270.0deg (0app,0app)"
+      )
+    )
+    (apertureAssn 
+      (apertureRef (dCode 50))
+      (itemMnemonic 
+        "PAD SQ 75.0mil 80.0mil 0.0mil 90.0deg (0.0mil,0.0mil)"
+        "PAD SQ 1.91mm 2.03mm 0.00mm 90.0deg (0.00mm,0.00mm)"
+        "PAD SQ 190500app 203200app 0app 90.0deg (0app,0app)"
+      )
+    )
+    (apertureAssn 
+      (apertureRef (dCode 35))
+      (itemMnemonic 
+        "PAD SQ 80.0mil 25.0mil 0.0mil 270.0deg (0.0mil,0.0mil)"
+        "PAD SQ 2.03mm 0.64mm 0.00mm 270.0deg (0.00mm,0.00mm)"
+        "PAD SQ 203200app 63500app 0app 270.0deg (0app,0app)"
+      )
+    )
+    (apertureAssn 
+      (apertureRef (dCode 35))
+      (itemMnemonic 
+        "PAD SQ 80.0mil 25.0mil 0.0mil 90.0deg (0.0mil,0.0mil)"
+        "PAD SQ 2.03mm 0.64mm 0.00mm 90.0deg (0.00mm,0.00mm)"
+        "PAD SQ 203200app 63500app 0app 90.0deg (0app,0app)"
+      )
+    )
+    (apertureAssn 
+      (apertureRef (dCode 51))
+      (itemMnemonic 
+        "PAD SQ 89.0mil 39.0mil 0.0mil 90.0deg (0.0mil,0.0mil)"
+        "PAD SQ 2.26mm 0.99mm 0.00mm 90.0deg (0.00mm,0.00mm)"
+        "PAD SQ 226060app 99060app 0app 90.0deg (0app,0app)"
+      )
+    )
+    (apertureAssn 
+      (apertureRef (dCode 52))
+      (itemMnemonic 
+        "VIA EL 24.0mil 24.0mil 14.0mil 0.0deg (0.0mil,0.0mil)"
+        "VIA EL 0.61mm 0.61mm 0.36mm 0.0deg (0.00mm,0.00mm)"
+        "VIA EL 60960app 60960app 35560app 0.0deg (0app,0app)"
+      )
+    )
+    (apertureAssn 
+      (apertureRef (dCode 53))
+      (itemMnemonic 
+        "VIA EL 39.0mil 39.0mil 14.0mil 0.0deg (0.0mil,0.0mil)"
+        "VIA EL 0.99mm 0.99mm 0.36mm 0.0deg (0.00mm,0.00mm)"
+        "VIA EL 99060app 99060app 35560app 0.0deg (0app,0app)"
+      )
+    )
+    (camQueueEntry "TOP"
+      (layerList 
+        (layerNumRef 1)
+        (layerNumRef 3)
+      )
+      (isSelected True)
+      (drillSymSize 80.0)
+      (outputPads True)
+      (outputVias True)
+    )
+    (camQueueEntry "BOT"
+      (layerList 
+        (layerNumRef 2)
+        (layerNumRef 3)
+      )
+      (isSelected True)
+      (drillSymSize 80.0)
+      (outputPads True)
+      (outputVias True)
+    )
+    (camQueueEntry "TSLK"
+      (layerList 
+        (layerNumRef 3)
+        (layerNumRef 6)
+      )
+      (isSelected True)
+      (drillSymSize 80.0)
+      (outputPads True)
+      (outputVias True)
+      (outputRefDes True)
+    )
+    (camQueueEntry "TMSK"
+      (layerList 
+        (layerNumRef 3)
+        (layerNumRef 4)
+      )
+      (isSelected True)
+      (drillSymSize 80.0)
+      (outputPads True)
+    )
+    (camQueueEntry "BMSK"
+      (layerList 
+        (layerNumRef 3)
+        (layerNumRef 5)
+      )
+      (isSelected True)
+      (drillSymSize 80.0)
+      (outputPads True)
+    )
+  )
+  (ncDrillSettings 
+    (units in)
+    (codeFormat AsciiNone)
+    (zeroFormat Leading)
+    (outputPath "C:\\TEMP\\SCS210\\GERBER")
+    (viewLog True)
+    (autoClear True)
+    (toolDef (toolCode 1) (toolDiam 14.0) )
+    (toolDef (toolCode 2) (toolDiam 0.8 mm) )
+    (toolDef (toolCode 3) (toolDiam 35.0) )
+    (toolDef (toolCode 4) (toolDiam 38.0) )
+    (toolDef (toolCode 5) (toolDiam 40.0) )
+    (toolAssn (holeDiam 14.0) (toolRef (toolCode 1)))
+    (toolAssn (holeDiam 0.8 mm) (toolRef (toolCode 2)))
+    (toolAssn (holeDiam 35.0) (toolRef (toolCode 3)))
+    (toolAssn (holeDiam 38.0) (toolRef (toolCode 4)))
+    (toolAssn (holeDiam 40.0) (toolRef (toolCode 5)))
+    (camQueueEntry "DRL"
+      (layerList 
+        (layerNumRef 1)
+        (layerNumRef 2)
+      )
+      (isSelected True)
+      (drillSymSize 80.0)
+    )
+  )
+  (programState 
+    (layerState 
+      (currentLayer (layerNumRef 1))
+    )
+    (gridState 
+      (currentAbsGrid "12.5mil")
+      (currentRelGrid "12.5mil")
+      (currentViaGrid "1.0mil")
+      (isAbsoluteGrid True)
+      (isDottedGrid True)
+      (isVisibleGrid True)
+      (isPromptForRel False)
+      (viaGridVisibility show_at_plowing )
+    )
+    (ecoState (ecoRecording False))
+    (onlineDrcState 
+      (onlineDrcEnabled False)
+      (onlineDrcReport False)
+      (onlineDrcClearanceEnabled True)
+      (onlineDrcTextEnabled False)
+      (onlineDrcComponentEnabled False)
+      (onlineDrcSilkEnabled False)
+      (onlineDrcNetlistEnabled True)
+      (onlineDrcWidthEnabled True)
+    )
+    (drcState 
+      (drcRegion 
+        (pt 0.0 0.0) (pt 0.0 0.0) )
+    )
+    (currentTextStyle "T:H40W4")
+    (currentPadStyle "(Default)")
+    (currentViaStyle "R28H14")
+  )
+
+  (layerSets 
+    (layerSet "All Layers" "1" "1" "2" "3" "4" "5" "6" "7" "8" "9" "10" "11" "12")
+    (layerSet "Signal Layers" "1" "1" "2")
+    (layerSet "Plane Layers" "-1")
+    (layerSet "Nonsignal Layers" "6" "6" "3" "4" "5" "7" "8" "9" "10" "11" "12")
+    (layerSet "bot" "2" "2" "3")
+    (layerSet "top" "6" "6" "1" "3")
+    (layerSet "bottom" "2" "2" "3" "7")
+    (layerSet "top-bot" "6" "6" "1" "2" "7" "3")
+    (layerSet "top_bottom" "1" "1" "2" "3")
+  )
+  (reportSettings 
+    (reportStyle reportStyleAccel)
+    (reportDestination DestinationScreen)
+    (pt 0.0 0.0) 
+    (reportDefinitions 
+      (reportDefinition 
+        (reportName "Aperture Information")
+        (reportExtension "apr")
+        (reportShowFlag True)
+        (reportType ReportTypeApertures)
+        (reportLinesPerPage 60)
+        (reportColumnWidth 15)
+        (reportHeader "")
+        (reportFooter "")
+        (reportShowCDFPreface True)
+        (reportShowColumnNames True)
+        (reportFieldsSections 
+          (reportFields 
+            (reportField 
+              (reportFieldName "DCode")
+              (reportFieldType PropertyTypeDCode)
+              (reportFieldSortOrder 1)
+              (reportFieldSortType ascending)
+              (reportFieldShowFlag True)
+              (reportFieldColumnWidth 5)
+            )
+            (reportField 
+              (reportFieldName "Shape")
+              (reportFieldType PropertyTypeShape)
+              (reportFieldSortOrder 0)
+              (reportFieldSortType None)
+              (reportFieldShowFlag True)
+              (reportFieldColumnWidth 5)
+            )
+            (reportField 
+              (reportFieldName "DimX")
+              (reportFieldType PropertyTypeDimX)
+              (reportFieldSortOrder 0)
+              (reportFieldSortType None)
+              (reportFieldShowFlag True)
+              (reportFieldColumnWidth 4)
+            )
+            (reportField 
+              (reportFieldName "DimY")
+              (reportFieldType PropertyTypeDimY)
+              (reportFieldSortOrder 0)
+              (reportFieldSortType None)
+              (reportFieldShowFlag True)
+              (reportFieldColumnWidth 4)
+            )
+            (reportField 
+              (reportFieldName "Diameter")
+              (reportFieldType PropertyTypeDiameter)
+              (reportFieldSortOrder 0)
+              (reportFieldSortType None)
+              (reportFieldShowFlag True)
+              (reportFieldColumnWidth 8)
+            )
+            (reportField 
+              (reportFieldName "Type")
+              (reportFieldType PropertyTypeType)
+              (reportFieldSortOrder 0)
+              (reportFieldSortType None)
+              (reportFieldShowFlag True)
+              (reportFieldColumnWidth 4)
+            )
+            (reportField 
+              (reportFieldName "Angle")
+              (reportFieldType PropertyTypeAngle)
+              (reportFieldSortOrder 0)
+              (reportFieldSortType None)
+              (reportFieldShowFlag True)
+              (reportFieldColumnWidth 5)
+            )
+            (reportField 
+              (reportFieldName "OffsetX")
+              (reportFieldType PropertyTypeOffsetX)
+              (reportFieldSortOrder 0)
+              (reportFieldSortType None)
+              (reportFieldShowFlag True)
+              (reportFieldColumnWidth 7)
+            )
+            (reportField 
+              (reportFieldName "OffsetY")
+              (reportFieldType PropertyTypeOffsetY)
+              (reportFieldSortOrder 0)
+              (reportFieldSortType None)
+              (reportFieldShowFlag True)
+              (reportFieldColumnWidth 7)
+            )
+          )
+          (reportFields 
+            (reportField 
+              (reportFieldName "Shape")
+              (reportFieldType PropertyTypeShape)
+              (reportFieldSortOrder 1)
+              (reportFieldSortType ascending)
+              (reportFieldShowFlag True)
+              (reportFieldColumnWidth 5)
+            )
+            (reportField 
+              (reportFieldName "DimX")
+              (reportFieldType PropertyTypeDimX)
+              (reportFieldSortOrder 0)
+              (reportFieldSortType None)
+              (reportFieldShowFlag True)
+              (reportFieldColumnWidth 4)
+            )
+            (reportField 
+              (reportFieldName "DimY")
+              (reportFieldType PropertyTypeDimY)
+              (reportFieldSortOrder 0)
+              (reportFieldSortType None)
+              (reportFieldShowFlag True)
+              (reportFieldColumnWidth 4)
+            )
+            (reportField 
+              (reportFieldName "Diameter")
+              (reportFieldType PropertyTypeDiameter)
+              (reportFieldSortOrder 0)
+              (reportFieldSortType None)
+              (reportFieldShowFlag True)
+              (reportFieldColumnWidth 8)
+            )
+            (reportField 
+              (reportFieldName "Angle")
+              (reportFieldType PropertyTypeAngle)
+              (reportFieldSortOrder 0)
+              (reportFieldSortType None)
+              (reportFieldShowFlag True)
+              (reportFieldColumnWidth 5)
+            )
+            (reportField 
+              (reportFieldName "OffsetX")
+              (reportFieldType PropertyTypeOffsetX)
+              (reportFieldSortOrder 0)
+              (reportFieldSortType None)
+              (reportFieldShowFlag True)
+              (reportFieldColumnWidth 7)
+            )
+            (reportField 
+              (reportFieldName "OffsetY")
+              (reportFieldType PropertyTypeOffsetY)
+              (reportFieldSortOrder 0)
+              (reportFieldSortType None)
+              (reportFieldShowFlag True)
+              (reportFieldColumnWidth 7)
+            )
+            (reportField 
+              (reportFieldName "DCode")
+              (reportFieldType PropertyTypeDCode)
+              (reportFieldSortOrder 0)
+              (reportFieldSortType None)
+              (reportFieldShowFlag True)
+              (reportFieldColumnWidth 5)
+            )
+          )
+        )
+      )
+      (reportDefinition 
+        (reportName "Attributes")
+        (reportExtension "atr")
+        (reportShowFlag True)
+        (reportType ReportTypeAttributes)
+        (reportLinesPerPage 60)
+        (reportColumnWidth 15)
+        (reportHeader "")
+        (reportFooter "")
+        (reportShowCDFPreface True)
+        (reportShowColumnNames True)
+        (reportFieldsSections 
+          (reportFields 
+            (reportField 
+              (reportFieldName "RefDes")
+              (reportFieldType PropertyTypeRefdes)
+              (reportFieldSortOrder 1)
+              (reportFieldSortType ascending)
+              (reportFieldShowFlag True)
+              (reportFieldColumnWidth 6)
+            )
+            (reportField 
+              (reportFieldName "Type")
+              (reportFieldType PropertyTypeType)
+              (reportFieldSortOrder 0)
+              (reportFieldSortType None)
+              (reportFieldShowFlag True)
+              (reportFieldColumnWidth 4)
+            )
+            (reportField 
+              (reportFieldName "Value")
+              (reportFieldType PropertyTypeCompValue)
+              (reportFieldSortOrder 0)
+              (reportFieldSortType None)
+              (reportFieldShowFlag True)
+              (reportFieldColumnWidth 5)
+            )
+          )
+          (reportFields 
+            (reportField 
+              (reportFieldName "NetName")
+              (reportFieldType PropertyTypeNetname)
+              (reportFieldSortOrder 1)
+              (reportFieldSortType ascending)
+              (reportFieldShowFlag True)
+              (reportFieldColumnWidth 7)
+            )
+          )
+        )
+      )
+      (reportDefinition 
+        (reportName "Bill of Materials")
+        (reportExtension "bom")
+        (reportShowFlag True)
+        (reportType ReportTypeBillOfMaterials)
+        (reportLinesPerPage 60)
+        (reportColumnWidth 15)
+        (reportHeader "")
+        (reportFooter "")
+        (reportShowCDFPreface True)
+        (reportShowColumnNames True)
+        (reportFieldsSections 
+          (reportFields 
+            (reportField 
+              (reportFieldName "_Count")
+              (reportFieldType PropertyTypeCount)
+              (reportFieldSortOrder 0)
+              (reportFieldSortType None)
+              (reportFieldShowFlag True)
+              (reportFieldColumnWidth 6)
+            )
+            (reportField 
+              (reportFieldName "ComponentName")
+              (reportFieldType PropertyTypeComponentName)
+              (reportFieldSortOrder 1)
+              (reportFieldSortType ascending)
+              (reportFieldShowFlag True)
+              (reportFieldColumnWidth 13)
+            )
+            (reportField 
+              (reportFieldName "RefDes")
+              (reportFieldType PropertyTypeRefdes)
+              (reportFieldSortOrder 0)
+              (reportFieldSortType None)
+              (reportFieldShowFlag True)
+              (reportFieldColumnWidth 6)
+            )
+            (reportField 
+              (reportFieldName "PatternName")
+              (reportFieldType PropertyTypePatternName)
+              (reportFieldSortOrder 0)
+              (reportFieldSortType None)
+              (reportFieldShowFlag True)
+              (reportFieldColumnWidth 11)
+            )
+            (reportField 
+              (reportFieldName "Value")
+              (reportFieldType PropertyTypeCompValue)
+              (reportFieldSortOrder 2)
+              (reportFieldSortType ascending)
+              (reportFieldShowFlag True)
+              (reportFieldColumnWidth 5)
+            )
+          )
+        )
+      )
+      (reportDefinition 
+        (reportName "Component Locations")
+        (reportExtension "cpl")
+        (reportShowFlag True)
+        (reportType ReportTypeComponentsLocations)
+        (reportLinesPerPage 60)
+        (reportColumnWidth 15)
+        (reportHeader "")
+        (reportFooter "")
+        (reportShowCDFPreface True)
+        (reportShowColumnNames True)
+        (reportFieldsSections 
+          (reportFields 
+            (reportField 
+              (reportFieldName "RefDes")
+              (reportFieldType PropertyTypeRefdes)
+              (reportFieldSortOrder 1)
+              (reportFieldSortType ascending)
+              (reportFieldShowFlag True)
+              (reportFieldColumnWidth 6)
+            )
+            (reportField 
+              (reportFieldName "Layer")
+              (reportFieldType PropertyTypeLayer)
+              (reportFieldSortOrder 0)
+              (reportFieldSortType None)
+              (reportFieldShowFlag True)
+              (reportFieldColumnWidth 5)
+            )
+            (reportField 
+              (reportFieldName "LocationX")
+              (reportFieldType PropertyTypeLocationX)
+              (reportFieldSortOrder 0)
+              (reportFieldSortType None)
+              (reportFieldShowFlag True)
+              (reportFieldColumnWidth 9)
+            )
+            (reportField 
+              (reportFieldName "LocationY")
+              (reportFieldType PropertyTypeLocationY)
+              (reportFieldSortOrder 0)
+              (reportFieldSortType None)
+              (reportFieldShowFlag True)
+              (reportFieldColumnWidth 9)
+            )
+            (reportField 
+              (reportFieldName "Rotation")
+              (reportFieldType PropertyTypeRotation)
+              (reportFieldSortOrder 0)
+              (reportFieldSortType None)
+              (reportFieldShowFlag True)
+              (reportFieldColumnWidth 8)
+            )
+            (reportField 
+              (reportFieldName "Fixed")
+              (reportFieldType PropertyTypeFixed)
+              (reportFieldSortOrder 0)
+              (reportFieldSortType None)
+              (reportFieldShowFlag True)
+              (reportFieldColumnWidth 5)
+            )
+          )
+        )
+      )
+      (reportDefinition 
+        (reportName "DRC Error Indicators")
+        (reportExtension "dei")
+        (reportShowFlag True)
+        (reportType ReportTypeDrcErrors)
+        (reportLinesPerPage 60)
+        (reportColumnWidth 15)
+        (reportHeader "")
+        (reportFooter "")
+        (reportShowCDFPreface True)
+        (reportShowColumnNames True)
+        (reportFieldsSections 
+          (reportFields 
+            (reportField 
+              (reportFieldName "ErrorNum")
+              (reportFieldType PropertyTypeErrorNumber)
+              (reportFieldSortOrder 1)
+              (reportFieldSortType ascending)
+              (reportFieldShowFlag True)
+              (reportFieldColumnWidth 8)
+            )
+            (reportField 
+              (reportFieldName "LocationX")
+              (reportFieldType PropertyTypeLocationX)
+              (reportFieldSortOrder 0)
+              (reportFieldSortType None)
+              (reportFieldShowFlag True)
+              (reportFieldColumnWidth 9)
+            )
+            (reportField 
+              (reportFieldName "LocationY")
+              (reportFieldType PropertyTypeLocationY)
+              (reportFieldSortOrder 0)
+              (reportFieldSortType None)
+              (reportFieldShowFlag True)
+              (reportFieldColumnWidth 9)
+            )
+            (reportField 
+              (reportFieldName "Error")
+              (reportFieldType PropertyTypeError)
+              (reportFieldSortOrder 0)
+              (reportFieldSortType None)
+              (reportFieldShowFlag True)
+              (reportFieldColumnWidth 5)
+            )
+          )
+        )
+      )
+      (reportDefinition 
+        (reportName "Glue Dot Locations")
+        (reportExtension "glu")
+        (reportShowFlag True)
+        (reportType ReportTypeGlueDots)
+        (reportLinesPerPage 60)
+        (reportColumnWidth 15)
+        (reportHeader "")
+        (reportFooter "")
+        (reportShowCDFPreface True)
+        (reportShowColumnNames True)
+        (reportFieldsSections 
+          (reportFields 
+            (reportField 
+              (reportFieldName "RefDes")
+              (reportFieldType PropertyTypeRefdes)
+              (reportFieldSortOrder 1)
+              (reportFieldSortType ascending)
+              (reportFieldShowFlag True)
+              (reportFieldColumnWidth 6)
+            )
+            (reportField 
+              (reportFieldName "PatternName")
+              (reportFieldType PropertyTypePatternName)
+              (reportFieldSortOrder 0)
+              (reportFieldSortType None)
+              (reportFieldShowFlag True)
+              (reportFieldColumnWidth 11)
+            )
+            (reportField 
+              (reportFieldName "Type")
+              (reportFieldType PropertyTypeType)
+              (reportFieldSortOrder 0)
+              (reportFieldSortType None)
+              (reportFieldShowFlag True)
+              (reportFieldColumnWidth 4)
+            )
+            (reportField 
+              (reportFieldName "Value")
+              (reportFieldType PropertyTypeCompValue)
+              (reportFieldSortOrder 0)
+              (reportFieldSortType None)
+              (reportFieldShowFlag True)
+              (reportFieldColumnWidth 5)
+            )
+            (reportField 
+              (reportFieldName "Layer")
+              (reportFieldType PropertyTypeLayer)
+              (reportFieldSortOrder 0)
+              (reportFieldSortType None)
+              (reportFieldShowFlag True)
+              (reportFieldColumnWidth 5)
+            )
+            (reportField 
+              (reportFieldName "LocationX")
+              (reportFieldType PropertyTypeLocationX)
+              (reportFieldSortOrder 0)
+              (reportFieldSortType None)
+              (reportFieldShowFlag True)
+              (reportFieldColumnWidth 9)
+            )
+            (reportField 
+              (reportFieldName "LocationY")
+              (reportFieldType PropertyTypeLocationY)
+              (reportFieldSortOrder 0)
+              (reportFieldSortType None)
+              (reportFieldShowFlag True)
+              (reportFieldColumnWidth 9)
+            )
+          )
+        )
+      )
+      (reportDefinition 
+        (reportName "Library Contents")
+        (reportExtension "lct")
+        (reportShowFlag True)
+        (reportType ReportTypeLibrary)
+        (reportLinesPerPage 60)
+        (reportColumnWidth 15)
+        (reportHeader "")
+        (reportFooter "")
+        (reportShowCDFPreface True)
+        (reportShowColumnNames True)
+      )
+      (reportDefinition 
+        (reportName "Pick and Place Locations")
+        (reportExtension "pnp")
+        (reportShowFlag True)
+        (reportType ReportTypePickAndPlace)
+        (reportLinesPerPage 60)
+        (reportColumnWidth 15)
+        (reportHeader "")
+        (reportFooter "")
+        (reportShowCDFPreface True)
+        (reportShowColumnNames True)
+        (reportFieldsSections 
+          (reportFields 
+            (reportField 
+              (reportFieldName "RefDes")
+              (reportFieldType PropertyTypeRefdes)
+              (reportFieldSortOrder 1)
+              (reportFieldSortType ascending)
+              (reportFieldShowFlag True)
+              (reportFieldColumnWidth 6)
+            )
+            (reportField 
+              (reportFieldName "PatternName")
+              (reportFieldType PropertyTypePatternName)
+              (reportFieldSortOrder 0)
+              (reportFieldSortType None)
+              (reportFieldShowFlag True)
+              (reportFieldColumnWidth 11)
+            )
+            (reportField 
+              (reportFieldName "Type")
+              (reportFieldType PropertyTypeType)
+              (reportFieldSortOrder 0)
+              (reportFieldSortType None)
+              (reportFieldShowFlag True)
+              (reportFieldColumnWidth 4)
+            )
+            (reportField 
+              (reportFieldName "Value")
+              (reportFieldType PropertyTypeCompValue)
+              (reportFieldSortOrder 0)
+              (reportFieldSortType None)
+              (reportFieldShowFlag True)
+              (reportFieldColumnWidth 5)
+            )
+            (reportField 
+              (reportFieldName "Layer")
+              (reportFieldType PropertyTypeLayer)
+              (reportFieldSortOrder 0)
+              (reportFieldSortType None)
+              (reportFieldShowFlag True)
+              (reportFieldColumnWidth 5)
+            )
+            (reportField 
+              (reportFieldName "LocationX")
+              (reportFieldType PropertyTypeLocationX)
+              (reportFieldSortOrder 0)
+              (reportFieldSortType None)
+              (reportFieldShowFlag True)
+              (reportFieldColumnWidth 9)
+            )
+            (reportField 
+              (reportFieldName "LocationY")
+              (reportFieldType PropertyTypeLocationY)
+              (reportFieldSortOrder 0)
+              (reportFieldSortType None)
+              (reportFieldShowFlag True)
+              (reportFieldColumnWidth 9)
+            )
+            (reportField 
+              (reportFieldName "Rotation")
+              (reportFieldType PropertyTypeRotation)
+              (reportFieldSortOrder 0)
+              (reportFieldSortType None)
+              (reportFieldShowFlag True)
+              (reportFieldColumnWidth 8)
+            )
+          )
+        )
+      )
+      (reportDefinition 
+        (reportName "Rooms")
+        (reportExtension "rom")
+        (reportShowFlag True)
+        (reportType ReportTypeRooms)
+        (reportLinesPerPage 60)
+        (reportColumnWidth 15)
+        (reportHeader "")
+        (reportFooter "")
+        (reportShowCDFPreface True)
+        (reportShowColumnNames True)
+        (reportFieldsSections 
+          (reportFields 
+            (reportField 
+              (reportFieldName "Room")
+              (reportFieldType PropertyTypeRoom)
+              (reportFieldSortOrder 1)
+              (reportFieldSortType ascending)
+              (reportFieldShowFlag True)
+              (reportFieldColumnWidth 4)
+            )
+            (reportField 
+              (reportFieldName "Side")
+              (reportFieldType PropertyTypeBoardside)
+              (reportFieldSortOrder 0)
+              (reportFieldSortType None)
+              (reportFieldShowFlag True)
+              (reportFieldColumnWidth 4)
+            )
+            (reportField 
+              (reportFieldName "Components")
+              (reportFieldType PropertyTypeComponents)
+              (reportFieldSortOrder 0)
+              (reportFieldSortType None)
+              (reportFieldShowFlag True)
+              (reportFieldColumnWidth 10)
+            )
+          )
+          (reportFields 
+            (reportField 
+              (reportFieldName "Components")
+              (reportFieldType PropertyTypeComponents)
+              (reportFieldSortOrder 1)
+              (reportFieldSortType ascending)
+              (reportFieldShowFlag True)
+              (reportFieldColumnWidth 10)
+            )
+            (reportField 
+              (reportFieldName "Room")
+              (reportFieldType PropertyTypeRoom)
+              (reportFieldSortOrder 0)
+              (reportFieldSortType None)
+              (reportFieldShowFlag True)
+              (reportFieldColumnWidth 4)
+            )
+            (reportField 
+              (reportFieldName "Unassigned Components")
+              (reportFieldType PropertyTypeUnassignedComps)
+              (reportFieldSortOrder 2)
+              (reportFieldSortType ascending)
+              (reportFieldShowFlag True)
+              (reportFieldColumnWidth 21)
+            )
+          )
+        )
+      )
+      (reportDefinition 
+        (reportName "Statistics")
+        (reportExtension "sta")
+        (reportShowFlag True)
+        (reportType ReportTypeStatistics)
+        (reportLinesPerPage 60)
+        (reportColumnWidth 15)
+        (reportHeader "")
+        (reportFooter "")
+        (reportShowCDFPreface True)
+        (reportShowColumnNames True)
+      )
+      (reportDefinition 
+        (reportName "Test Point")
+        (reportExtension "tst")
+        (reportShowFlag True)
+        (reportType ReportTypeTestPoint)
+        (reportLinesPerPage 60)
+        (reportColumnWidth 15)
+        (reportHeader "")
+        (reportFooter "")
+        (reportShowCDFPreface True)
+        (reportShowColumnNames True)
+        (reportFieldsSections 
+          (reportFields 
+            (reportField 
+              (reportFieldName "NetName")
+              (reportFieldType PropertyTypeNetname)
+              (reportFieldSortOrder 2)
+              (reportFieldSortType ascending)
+              (reportFieldShowFlag True)
+              (reportFieldColumnWidth 7)
+            )
+            (reportField 
+              (reportFieldName "Side")
+              (reportFieldType PropertyTypeBoardside)
+              (reportFieldSortOrder 1)
+              (reportFieldSortType descending)
+              (reportFieldShowFlag True)
+              (reportFieldColumnWidth 4)
+            )
+            (reportField 
+              (reportFieldName "Fixed")
+              (reportFieldType PropertyTypeFixed)
+              (reportFieldSortOrder 0)
+              (reportFieldSortType None)
+              (reportFieldShowFlag True)
+              (reportFieldColumnWidth 5)
+            )
+            (reportField 
+              (reportFieldName "LocationX")
+              (reportFieldType PropertyTypeLocationX)
+              (reportFieldSortOrder 0)
+              (reportFieldSortType None)
+              (reportFieldShowFlag True)
+              (reportFieldColumnWidth 9)
+            )
+            (reportField 
+              (reportFieldName "LocationY")
+              (reportFieldType PropertyTypeLocationY)
+              (reportFieldSortOrder 0)
+              (reportFieldSortType None)
+              (reportFieldShowFlag True)
+              (reportFieldColumnWidth 9)
+            )
+          )
+        )
+      )
+    )
+  )
+  (odbSettings 
+    (outputPath "")
+    (viewLog False)
+  )
+  (layersStackup 
+    (layerStackupData 
+      (layerStackupName "Top Plating")
+      (layerStackupMaterial "Copper")
+      (layerStackupThickness "1.4mil")
+      (layerStackupDielectricConstant "0.0")
+    )
+    (layerStackupData 
+      (layerStackupName "Top")
+      (layerStackupMaterial "Copper")
+      (layerStackupThickness "0.7mil")
+      (layerStackupDielectricConstant "0.0")
+    )
+    (layerStackupData 
+      (layerStackupName "Substrate1")
+      (layerStackupMaterial "FR-4")
+      (layerStackupThickness "20mil")
+      (layerStackupDielectricConstant "4.7")
+    )
+    (layerStackupData 
+      (layerStackupName "Bottom")
+      (layerStackupMaterial "Copper")
+      (layerStackupThickness "0.7mil")
+      (layerStackupDielectricConstant "0.0")
+    )
+    (layerStackupData 
+      (layerStackupName "Bottom Plating")
+      (layerStackupMaterial "Copper")
+      (layerStackupThickness "1.4mil")
+      (layerStackupDielectricConstant "0.0")
+    )
+    )
+)
