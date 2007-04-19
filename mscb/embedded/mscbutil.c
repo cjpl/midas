@@ -297,6 +297,8 @@ void uart1_init_buffer()
 {
    rbuf_rp = rbuf_wp = rbuf;
    sbuf_rp = sbuf_wp = sbuf;
+   memset(rbuf, 0, sizeof(rbuf));
+   memset(sbuf, 0, sizeof(sbuf));
 
    ti1_shadow = 1;
 }
@@ -497,16 +499,16 @@ void uart_init(unsigned char port, unsigned char baud)
       0x100 - 9,    // 172800  1.5% error
       0x100 - 0 };  // N/A
    unsigned char code baud_table1[] = // UART1 via timer 1
-     {0x100 - 0,    //  N/A
-      0x100 - 212,  //   4800  0.3% error
-      0x100 - 106,  //   9600  0.3% error
-      0x100 - 53,   //  19200  0.3% error
-      0x100 - 35,   //  28800  1.3% error
-      0x100 - 27,   //  38400  1.6% error
-      0x100 - 18,   //  57600  1.6% error
-      0x100 - 9,    // 115200  1.6% error
-      0x100 - 6,    // 172800  1.6% error
-      0x100 - 3 };  // 345600  1.6% error
+     {0x100 - 106,  //   2400  0.3% error
+      0x100 - 53,   //   4800  0.3% error
+      0x100 - 27,   //   9600  1.5% error
+      0x100 - 13,   //  19200  2.2% error
+      0x100 - 9,    //  28800  1.5% error
+      0x100 - 7,    //  38400  5.1% error
+      0x100 - 0,    //  N/A
+      0x100 - 0,    //  N/A
+      0x100 - 0,    //  N/A
+      0x100 - 0};   //  N/A
 #elif defined(SUBM_260)                // 49 MHz
    unsigned char code baud_table[] =  // UART0 via timer 2
      {0xFB, 0x100 - 252,  //   2400
@@ -624,7 +626,7 @@ void uart_init(unsigned char port, unsigned char baud)
 
       SFRPAGE = TIMER01_PAGE;
       TMOD  = (TMOD & 0x0F)| 0x20; // Timer 1 8-bit counter with auto reload
-      CKCON = 0x00;                // use SYSCLK/12 (needed by timer 0)
+      CKCON = 0x02;                // use SYSCLK/48 (needed by timer 0)
 
       TH1 = baud_table1[baud - 1];
       TR1 = 1;                     // start timer 1
@@ -727,8 +729,8 @@ void sysclock_init(void)
 
    TMOD = (TMOD & 0x0F) | 0x01; // 16-bit counter
 #if defined(SCS_210)
-   CKCON = 0x00;                // use SYSCLK/12
-   TH0 = 0xAF;                  // load initial value (24.5 MHz SYSCLK)
+   CKCON = 0x02;                // use SYSCLK/48
+   TH0 = 0xEC;                  // load initial value (24.5 MHz SYSCLK)
 #elif defined(CPU_C8051F120)
    CKCON = 0x02;                // use SYSCLK/48 (98 MHz SYSCLK)
    TH0 = 0xAF;                  // load initial value
@@ -802,10 +804,12 @@ void timer0_int(void) interrupt 1
    tcp_timer();
 #else /* SUBM_260 */
 
-#if defined(CPU_C8051F120)
-   TH0 = 0xAF;                  // for 98 MHz clock
+#if defined(SCS_210)
+   TH0 = 0xEC;                  // for 24.5 MHz clock / 48
+#elif defined(CPU_C8051F120)
+   TH0 = 0xAF;                  // for 98 MHz clock   / 48
 #elif defined(CPU_C8051F310)
-   TH0 = 0xAF;                  // for 24.5 MHz clock
+   TH0 = 0xAF;                  // for 24.5 MHz clock / 12 
 #else
    TH0 = 0xDC;                  // reload timer values, let LSB freely run
 #endif
