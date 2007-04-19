@@ -18,7 +18,7 @@ void tmp()
 
    time(&tm);
    tm = ss_time();
-   hs_dump(1, tm - 3600, tm, 0, FALSE);
+   hs_dump(1, (DWORD) tm - 3600, (DWORD) tm, 0, FALSE);
 }
 
 /*------------------------------------------------------------------*/
@@ -193,7 +193,7 @@ INT display_vars(char *file_name)
          tms.tm_year += 100;
       tms.tm_mon = 10 * (file_name[2] - '0') + (file_name[3] - '0') - 1;
       tms.tm_mday = 10 * (file_name[4] - '0') + (file_name[5] - '0');
-      ltime = mktime(&tms);
+      ltime = (DWORD) mktime(&tms);
    }
 
    status = hs_count_events(ltime, &n);
@@ -368,7 +368,7 @@ DWORD convert_time(char *t)
          tms.tm_sec = 10 * (t[11] - '0') + (t[12] - '0');
    }
 
-   ltime = mktime(&tms);
+   ltime = (DWORD) mktime(&tms);
 
    /* correct for dst */
    memcpy(&tms, localtime((void *) &ltime), sizeof(tms));
@@ -389,7 +389,7 @@ DWORD convert_time(char *t)
          tms.tm_sec = 10 * (t[11] - '0') + (t[12] - '0');
    }
 
-   ltime = mktime(&tms);
+   ltime = (DWORD) mktime(&tms);
 
    return ltime;
 }
