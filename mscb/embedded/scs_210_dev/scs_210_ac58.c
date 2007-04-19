@@ -1,13 +1,13 @@
 /********************************************************************\
 
-  Name:         scs_210_pds60.c
+  Name:         scs_210_ac58.c
   Created by:   Stefan Ritt
 
 
   Contents:     Application specific (user) part of
                 Midas Slow Control Bus protocol 
-                for SCS-210 RS232 node connected to Kenwood
-                PDS60-6 regulated power supply
+                for SCS-210 RS232 node connected to Hengstler
+                AC58 angular encoder
 
   $Id: scs_210.c 3178 2006-07-18 09:11:28Z ritt $
 
@@ -20,12 +20,10 @@
 extern bit FREEZE_MODE;
 extern bit DEBUG_MODE;
 
-char code node_name[] = "PDS60";
+char code node_name[] = "AC58";
 
 /* declare number of sub-addresses to framework */
 unsigned char idata _n_sub_addr = 1;
-
-bit output_flag;
 
 /*---- Define channels and configuration parameters returned to
        the CMD_GET_INFO command                                 ----*/
@@ -33,17 +31,15 @@ bit output_flag;
 /* data buffer (mirrored in EEPROM) */
 
 struct {
-   float demand_voltage;
-   float demand_current;
-   float voltage;
-   float current;
+   float position;
+   float offset;
+   float factor;
 } xdata user_data;
 
 MSCB_INFO_VAR code vars[] = {
-   4,  UNIT_VOLT,   0, 0,  MSCBF_FLOAT, "DmdVolt", &user_data.demand_voltage,
-   4,  UNIT_AMPERE, 0, 0,  MSCBF_FLOAT, "DmdCurr", &user_data.demand_current,
-   4,  UNIT_VOLT,   0, 0,  MSCBF_FLOAT, "Volt",    &user_data.voltage,
-   4,  UNIT_AMPERE, 0, 0,  MSCBF_FLOAT, "Curr",    &user_data.current,
+   4,  UNIT_METER,  0, 0,  MSCBF_FLOAT, "Position",&user_data.position,
+   4,  UNIT_METER,  0, 0,  MSCBF_FLOAT, "Offset",  &user_data.offset,
+   4,  UNIT_FACTOR, 0, 0,  MSCBF_FLOAT, "Factor",  &user_data.factor,
    0
 };
 
@@ -63,16 +59,13 @@ void write_gain(void);
 void user_init(unsigned char init)
 {
    if (init) {
-      user_data.demand_voltage = 0;
-	  user_data.demand_current = 0;
+      user_data.offset = 0;
+	  user_data.factor = 1;
    }
 
    /* initialize UART1 */
-   uart_init(1, BD_9600);
+   uart_init(1, BD_2400);
    watchdog_enable(2);
-
-   puts("SW1\r\n"); // turn output on
-   output_flag = 1;
 }
 
 /*---- User write function -----------------------------------------*/
@@ -86,8 +79,7 @@ char idata obuf[8];
 
 void user_write(unsigned char index) reentrant
 {
-   if (index == 0 || index == 1) 
-      output_flag = 1;
+   if (index == 0);
 }
 
 /*---- User read function ------------------------------------------*/
@@ -132,32 +124,59 @@ sbit led_0 = LED_0;
 void user_loop(void)
 {
 static unsigned long xdata last_read = 0;
-char xdata str[80], i;
+unsigned char xdata str[80], i, bcc;
+unsigned long int xdata d;
+float xdata p;
 
-   if (output_flag)
-      {
-      output_flag = 0;
-
-      printf("VA%1.2f\n", user_data.demand_voltage);
-      flush();
-      printf("AA%1.2f\n", user_data.demand_current);
-	  flush();
-   }
-
-   /* read parameters once each second */
-   if (time() > last_read + 100) {
+   /* read parameters once each 100 ms */
+   if (time() > last_read + 10) {
       last_read = time();
 
-	  printf("ST0\n");
-	  flush();
+      putchar(0x02); // STX
+      flush();
 
-      i = gets_wait(str, sizeof(str), 200);
-      if (i == 18) {
-	     user_data.voltage = atof(str+7);
-		 user_data.current = atof(str+13);
-	  }
+      i = gets_wait(str, 1, 200);
+      if (i == 1 && str[0] == 0x10) {
+         putchar(0x80); // read position value
+         putchar(0x00);
+         putchar(0x00);
+         putchar(0x00);
+
+         putchar(0x10); // DLE
+         putchar(0x03); // ETX
+
+         // checksum = xor of data bytes
+         //bcc = 0x80 ^ 0 ^ 0x10 ^ 0x03;
+         bcc = 0x80 ^ 0x10 ^ 0x03;
+         putchar(bcc);
+
+         // receive DLE
+         str[0] = str[1] = 0;
+         i = gets_wait(str, 1, 200);
+         if (i == 1 && str[0] == 0x10) {
+
+            // receive STX
+            i = gets_wait(str, 1, 200);
+            if (i == 1 && str[0] == 0x02) {
+               putchar(0x10); // DLE
+               i = gets_wait(str, 7, 200);
+               if (i == 7) {
+                  putchar(0x06); // ACK
+
+                  d = str[0];            // MSB
+                  d = (d << 8) | str[1]; // MB
+                  d = (d << 8) | str[2]; // LSB
+
+                  p = d*user_data.factor + user_data.offset;
+                  DISABLE_INTERRUPTS;
+                  user_data.position = p;
+                  ENABLE_INTERRUPTS;
+               }
+            }
+         }
+      }
    }
 
    /* go into idle mode, wakeup via UART or 100Hz interrupt */
-   PCON |= 0x01;
+   //PCON |= 0x01;
 }
