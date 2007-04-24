@@ -837,8 +837,11 @@ void PHvEdit::FileSave()
       // name
       str = "  <name>"+QString(sub)+"</name>\n";
       fputs((char *)str.ascii(), fp);
-      // hv
+      // hv demand
       str = QString("  <hvDemand>%1</hvDemand>\n").arg(fDemand[i]);
+      fputs((char *)str.ascii(), fp);
+      // hv measured
+      str = QString("  <hvMeasured>%1</hvMeasured>\n").arg(fMeasured[i]);
       fputs((char *)str.ascii(), fp);
       // current limit
       str = QString("  <currentLimit>%1</currentLimit>\n").arg(fCurrentLimit[i]);
