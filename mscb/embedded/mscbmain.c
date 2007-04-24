@@ -989,7 +989,7 @@ unsigned char i, n;
          DISABLE_INTERRUPTS;
          memcpy(variables[i].ud, uart1_buf+1, variables[i].width);
          ENABLE_INTERRUPTS;
-  	   }
+      }
 
 }
 
@@ -1405,15 +1405,15 @@ void yield(void)
 
       flash_param = 0;
 
-      eeprom_flash();
-	   configured_addr = 1;
+      eeprom_flash(); 
+      configured_addr = 1;
    }
 
    /* flash EEPROM if variables just got initialized */
    if (!configured_vars && flash_allowed) {
       _flkey = 0xF1;
       eeprom_flash();
-	   configured_vars = 1;
+      configured_vars = 1;
    }
 
    if (flash_program && flash_allowed) {
