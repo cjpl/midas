@@ -1560,7 +1560,7 @@ INT yb_ftp_open(char *destination, FTP_CON ** con)
 
    /* 
       destination should have the form:
-      host, port, user, password, directory, run%05d.mid
+      host, port, user, password, directory, run%05d.mid, file_mode, command, ...
     */
 
    /* break destination in components */
@@ -1568,27 +1568,27 @@ INT yb_ftp_open(char *destination, FTP_CON ** con)
    if (token)
       strcpy(host_name, token);
 
-   token = strtok(NULL, ", ");
+   token = strtok(NULL, ",");
    if (token)
       port = atoi(token);
 
-   token = strtok(NULL, ", ");
+   token = strtok(NULL, ",");
    if (token)
       strcpy(user, token);
 
-   token = strtok(NULL, ", ");
+   token = strtok(NULL, ",");
    if (token)
       strcpy(pass, token);
 
-   token = strtok(NULL, ", ");
+   token = strtok(NULL, ",");
    if (token)
       strcpy(directory, token);
 
-   token = strtok(NULL, ", ");
+   token = strtok(NULL, ",");
    if (token)
       strcpy(file_name, token);
 
-   token = strtok(NULL, ", ");
+   token = strtok(NULL, ",");
    file_mode[0] = 0;
    if (token)
       strcpy(file_mode, token);
@@ -1609,6 +1609,15 @@ INT yb_ftp_open(char *destination, FTP_CON ** con)
       status = ftp_command(*con, "umask %s", file_mode, 200, 250, EOF);
       if (status >= 0)
          return status;
+   }
+
+   while (token) {
+      token = strtok(NULL, ",");
+      if (token) {
+         status = ftp_command(*con, token, NULL, 200, 250, EOF);
+         if (status >= 0)
+            return status;
+      }
    }
 
    if (ftp_open_write(*con, file_name) >= 0)
