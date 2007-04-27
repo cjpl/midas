@@ -139,8 +139,8 @@ void lazy_maintain_check(HNDLE hKey, LAZY_INFO * pLall);
 INT ss_run_extract(char *name)
 /********************************************************************\
 Routine: ss_run_extract
-Purpose: extract the contigious digit from the string to make up a
-run number.
+Purpose: extract the contigious digit at the right side from the 
+string to make up a run number.
 Input:
 char * name    string to search
 Output:
@@ -149,24 +149,19 @@ INT        run number
 0 if no extraction
 \********************************************************************/
 {
-   char run_str[32], *pb, *pe;
-   int j = 0, found = 0;
+   char run_str[256];
+   int j;
 
-   pb = pe = NULL;
-   memset(run_str, 0, sizeof(run_str));
-   for (j = 0; j < (int) strlen(name); j++) {
-      if (!found) {
-         if (isdigit(name[j])) {
-            found = 1;
-            pb = name + j;
-         }
-      } else if (isdigit(name[j]) == 0) {
-         pe = name + j;
-         break;
-      }
-   }
-   strncpy(run_str, pb, pe - pb);
-   return (atoi(run_str));
+   strlcpy(run_str, name, sizeof(run_str));
+   if (strlen(run_str)<2)
+      return 0;
+
+   for (j = strlen(run_str)-1; j >= 0 && !isdigit(run_str[j]) ; j--)
+      run_str[j] = 0;
+
+   for (j = strlen(run_str)-1; j >= 0 && isdigit(run_str[j]) ; j--);
+
+   return atoi(run_str+j+1);
 }
 
 /*------------------------------------------------------------------*/
