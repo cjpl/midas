@@ -5613,7 +5613,7 @@ void show_start_page(void)
                maxlength = key.item_size;
 
             if (key.type == TID_BOOL) {
-               if (data[0] == 1)
+               if (((DWORD*)data)[j])
                   rsprintf("<td><input type=checkbox checked name=x%d value=1></td></tr>\n", n++);
                else
                   rsprintf("<td><input type=checkbox name=x%d value=1></td></tr>\n", n++);
