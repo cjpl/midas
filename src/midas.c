@@ -2992,7 +2992,7 @@ tapes.
 @param debug_flag If 1 output debugging information, if 2 output via cm_msg().
 @return CM_SUCCESS, \<error\> error code from remote client
 */
-INT cm_transition(INT transition, INT run_number, char *perror, INT strsize, INT async_flag, INT debug_flag)
+INT cm_transition(INT transition, INT run_number, char *errstr, INT errstr_size, INT async_flag, INT debug_flag)
 {
    INT i, j, status, index, size, sequence_number, port, state, old_timeout, n_tr_clients;
    HNDLE hDB, hRootKey, hSubkey, hKey, hKeylocal, hConn, hKeyTrans;
@@ -3010,14 +3010,16 @@ INT cm_transition(INT transition, INT run_number, char *perror, INT strsize, INT
    /* check for valid transition */
    if (transition != TR_START && transition != TR_STOP && transition != TR_PAUSE && transition != TR_RESUME) {
       cm_msg(MERROR, "cm_transition", "Invalid transition request \"%d\"", transition);
+      if (errstr != NULL)
+         strlcpy(errstr, "Invalid transition request", errstr_size);
       return CM_INVALID_TRANSITION;
    }
 
    /* get key of local client */
    cm_get_experiment_database(&hDB, &hKeylocal);
 
-   if (perror != NULL)
-      strcpy(perror, "Success");
+   if (errstr != NULL)
+     strlcpy(errstr, "Unknown error", errstr_size);
 
    /* if no run number is given, get it from DB */
    if (run_number == 0) {
@@ -3052,6 +3054,8 @@ INT cm_transition(INT transition, INT run_number, char *perror, INT strsize, INT
       status = db_find_key(hDB, 0, "System/Clients", &hRootKey);
       if (status != DB_SUCCESS) {
          cm_msg(MERROR, "cm_transition", "cannot find System/Clients entry in database");
+         if (errstr != NULL)
+            strlcpy(errstr, "Cannot find /System/Clients in ODB", errstr_size);
          return status;
       }
 
@@ -3059,9 +3063,8 @@ INT cm_transition(INT transition, INT run_number, char *perror, INT strsize, INT
       size = sizeof(INT);
       db_get_value(hDB, 0, "/Runinfo/Requested transition", &i, &size, TID_INT, TRUE);
       if (i) {
-         if (perror)
-            sprintf(perror, "Deferred transition already in progress");
-
+         if (errstr != NULL)
+            strlcpy(errstr, "Deferred transition already in progress", errstr_size);
          return CM_TRANSITION_IN_PROGRESS;
       }
 
@@ -3095,8 +3098,8 @@ INT cm_transition(INT transition, INT run_number, char *perror, INT strsize, INT
                   cm_msg(MDEBUG, "cm_transition",
                          "cm_transition: ---- Transition %s deferred by client \"%s\" ----", trname, str);
 
-               if (perror)
-                  sprintf(perror, "Transition %s deferred by client \"%s\"", trname, str);
+               if (errstr)
+                  sprintf(errstr, "Transition %s deferred by client \"%s\"", trname, str);
 
                return CM_DEFERRED_TRANSITION;
             }
@@ -3178,6 +3181,8 @@ INT cm_transition(INT transition, INT run_number, char *perror, INT strsize, INT
    status = db_find_key(hDB, 0, "System/Clients", &hRootKey);
    if (status != DB_SUCCESS) {
       cm_msg(MERROR, "cm_transition", "cannot find System/Clients entry in database");
+      if (errstr)
+         strlcpy(errstr, "Cannot find /System/Clients in ODB", errstr_size);
       return status;
    }
 
@@ -3286,8 +3291,8 @@ INT cm_transition(INT transition, INT run_number, char *perror, INT strsize, INT
          } else
             status = CM_SUCCESS;
 
-         if (perror != NULL)
-            memcpy(perror, error, (INT) strlen(error) + 1 < strsize ? strlen(error) + 1 : strsize);
+         if (errstr != NULL)
+            memcpy(errstr, error, (INT) strlen(error) + 1 < errstr_size ? strlen(error) + 1 : errstr_size);
 
          if (status != CM_SUCCESS) {
             free(tr_client);
@@ -3312,6 +3317,8 @@ INT cm_transition(INT transition, INT run_number, char *perror, INT strsize, INT
             cm_msg(MERROR, "cm_transition",
                    "cannot connect to client \"%s\" on host %s, port %d, status %d",
                    tr_client[index].client_name, tr_client[index].host_name, tr_client[index].port, status);
+            if (errstr != NULL)
+               strlcpy(errstr, "Cannot connect to client", errstr_size);
             return status;
          }
 
@@ -3340,7 +3347,7 @@ INT cm_transition(INT transition, INT run_number, char *perror, INT strsize, INT
                    tr_client[index].client_name, tr_client[index].host_name);
 
          status = rpc_client_call(hConn, RPC_RC_TRANSITION, transition,
-                                  run_number, error, strsize, tr_client[index].sequence_number);
+                                  run_number, error, errstr_size, tr_client[index].sequence_number);
 
          /* reset timeout */
          rpc_set_option(hConn, RPC_OTIMEOUT, old_timeout);
@@ -3357,8 +3364,12 @@ INT cm_transition(INT transition, INT run_number, char *perror, INT strsize, INT
                    "cm_transition: RPC transition finished client \"%s\" on host %s with status %d",
                    tr_client[index].client_name, tr_client[index].host_name, status);
 
-         if (perror != NULL)
-            memcpy(perror, error, (INT) strlen(error) + 1 < strsize ? strlen(error) + 1 : strsize);
+         if (errstr != NULL) {
+            if (strlen(error) < 2)
+               sprintf(errstr, "Unknown error %d from client \'%s\' on host %s", status, tr_client[index].client_name, tr_client[index].host_name);
+            else
+               memcpy(errstr, error, (INT) strlen(error) + 1 < errstr_size ? strlen(error) + 1 : errstr_size);
+         }
 
          if (status != CM_SUCCESS) {
             free(tr_client);
@@ -3448,6 +3459,9 @@ INT cm_transition(INT transition, INT run_number, char *perror, INT strsize, INT
          }
       }
    }
+
+   if (errstr != NULL)
+     strlcpy(errstr, "Success", errstr_size);
 
    return CM_SUCCESS;
 }
