@@ -16,6 +16,23 @@
 #ifndef  __VT2_INCLUDE_H__
 #define  __VT2_INCLUDE_H__
 
+#ifndef MIDAS_TYPE_DEFINED
+#define MIDAS_TYPE_DEFINED
+
+typedef unsigned char BYTE;
+typedef unsigned short int WORD;
+#ifndef OS_WINNT // Windows defines already DWORD
+typedef unsigned int DWORD;
+#endif
+
+#ifndef OS_WINNT
+#ifndef OS_VXWORKS
+typedef DWORD BOOL;
+#endif
+#endif
+
+#endif                          /* MIDAS_TYPE_DEFINED */
+
 #define  VT2_MAX_CHANNELS    (DWORD) 2
 #define  VT2_CSR_RO          (DWORD) (0x0)
 #define  VT2_FIFOSTATUS_RO   (DWORD) (0x4)
