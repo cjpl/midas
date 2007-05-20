@@ -11038,8 +11038,12 @@ INT rpc_server_accept(int lsock)
    INT index, i;
    unsigned int size;
    int status;
-   char command, version[32], v1[32];
-   INT sock, port1, port2, port3;
+   char command;
+   INT sock;
+   char version[NAME_LENGTH], v1[32];
+   char experiment[NAME_LENGTH];
+   INT port1, port2, port3;
+   char *ptr;
    struct sockaddr_in acc_addr;
    struct hostent *phe;
    char str[100];
@@ -11104,17 +11108,51 @@ INT rpc_server_accept(int lsock)
          /* get callback information */
          callback.experiment[0] = 0;
          port1 = port2 = version[0] = 0;
-         sscanf(net_buffer + 2, "%d %d %d %s", &port1, &port2, &port3, version);
-         strcpy(callback.experiment,
-                strchr(strchr(strchr(strchr(net_buffer + 2, ' ') + 1, ' ') + 1, ' ') + 1, ' ') + 1);
+
+	 //printf("net buffer \'%s\'\n", net_buffer);
+
+	 /* parse string in format "C port1 port2 port3 version expt" */
+	 /* example: C 51046 45838 56832 2.0.0 alpha */
+	 
+	 port1 = strtoul(net_buffer + 2, &ptr, 0);
+	 port2 = strtoul(ptr, &ptr, 0);
+	 port3 = strtoul(ptr, &ptr, 0);
+
+	 while (*ptr == ' ')
+	   ptr++;
+
+	 i = 0;
+	 for (; *ptr!=0 && *ptr!=' ' && i<sizeof(version)-1; )
+	   version[i++] = *ptr++;
+
+	 // ensure that we do not overwrite buffer "version"
+	 assert(i<sizeof(version));
+	 version[i] = 0;
+
+	 // skip wjatever is left from the "version" string
+	 for (; *ptr!=0 && *ptr!=' '; )
+	   ptr++;
+
+	 while (*ptr == ' ')
+	   ptr++;
+
+	 i = 0;
+	 for (; *ptr!=0 && *ptr!=' ' && *ptr!='\n' && *ptr!='\r' && i<sizeof(experiment)-1; )
+	   experiment[i++] = *ptr++;
+
+	 // ensure that we do not overwrite buffer "experiment"
+	 assert(i<sizeof(experiment));
+	 experiment[i] = 0;
+
+         strlcpy(callback.experiment, experiment, NAME_LENGTH);
 
          /* print warning if version patch level doesn't agree */
-         strcpy(v1, version);
+         strlcpy(v1, version, sizeof(v1));
          if (strchr(v1, '.'))
             if (strchr(strchr(v1, '.') + 1, '.'))
                *strchr(strchr(v1, '.') + 1, '.') = 0;
 
-         strcpy(str, cm_get_version());
+         strlcpy(str, cm_get_version(), sizeof(str));
          if (strchr(str, '.'))
             if (strchr(strchr(str, '.') + 1, '.'))
                *strchr(strchr(str, '.') + 1, '.') = 0;
@@ -11146,9 +11184,9 @@ INT rpc_server_accept(int lsock)
          phe = gethostbyaddr((char *) &acc_addr.sin_addr, 4, PF_INET);
          if (phe == NULL) {
             /* use IP number instead */
-            strcpy(callback.host_name, (char *) inet_ntoa(acc_addr.sin_addr));
+            strlcpy(callback.host_name, (char *) inet_ntoa(acc_addr.sin_addr), HOST_NAME_LENGTH);
          } else
-            strcpy(callback.host_name, phe->h_name);
+            strlcpy(callback.host_name, phe->h_name, HOST_NAME_LENGTH);
 #endif
 
          if (rpc_get_server_option(RPC_OSERVER_TYPE) == ST_MPROCESS) {
@@ -11164,7 +11202,7 @@ INT rpc_server_accept(int lsock)
                      break;
 
             if (index == MAX_EXPERIMENT || exptab[index].name[0] == 0) {
-               sprintf(str, "experiment %s not defined in exptab\r", callback.experiment);
+               sprintf(str, "experiment \'%s\' not defined in exptab\r", callback.experiment);
                cm_msg(MERROR, "rpc_server_accept", str);
 
                send(sock, "2", 2, 0);   /* 2 means exp. not found */
@@ -11172,8 +11210,8 @@ INT rpc_server_accept(int lsock)
                break;
             }
 
-            strcpy(callback.directory, exptab[index].directory);
-            strcpy(callback.user, exptab[index].user);
+            strlcpy(callback.directory, exptab[index].directory, MAX_STRING_LENGTH);
+            strlcpy(callback.user, exptab[index].user, NAME_LENGTH);
 
             /* create a new process */
             sprintf(host_port1_str, "%d", callback.host_port1);
@@ -11336,13 +11374,16 @@ INT rpc_client_accept(int lsock)
       p = strtok(NULL, " ");
    }
    if (p != NULL) {
-      strcpy(client_program, p);
+      strlcpy(client_program, p, sizeof(client_program));
       p = strtok(NULL, " ");
    }
    if (p != NULL) {
-      strcpy(host_name, p);
+      strlcpy(host_name, p, sizeof(host_name));
       p = strtok(NULL, " ");
    }
+
+   if (0)
+      printf("rpc_client_accept: client_hw_type %d, version %d, client_name \'%s\', hostname \'%s\'\n", client_hw_type, version, client_program, host_name);
 
    /* save information in _server_acception structure */
    _server_acception[index].recv_sock = sock;
@@ -11403,6 +11444,7 @@ INT rpc_server_callback(struct callback_addr * pcallback)
    INT convert_flags;
    char net_buffer[256];
    struct callback_addr callback;
+   char *p;
    int flag;
 
    /* copy callback information */
@@ -11500,10 +11542,17 @@ INT rpc_server_callback(struct callback_addr * pcallback)
       goto error;
    }
 
-   /* get remote computer info */
-   sscanf(net_buffer, "%d", &client_hw_type);
+   //printf("rpc_server_callback: \'%s\'\n", net_buffer);
 
-   strcpy(client_program, strchr(net_buffer, ' ') + 1);
+   /* get remote computer info */
+   client_hw_type = strtoul(net_buffer, &p, 0);
+
+   while (*p == ' ')
+     p++;
+
+   strlcpy(client_program, p, sizeof(client_program));
+
+   //printf("hw type %d, name \'%s\'\n", client_hw_type, client_program);
 
    /* get the name of the remote host */
 #ifdef OS_VXWORKS
