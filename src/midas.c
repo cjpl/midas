@@ -2312,6 +2312,16 @@ static int bm_validate_client_index(const BUFFER * buf)
          badindex = 1;
    }
 
+#if 0
+   printf("bm_validate_client_index: badindex=%d, buf=%p, client_index=%d, max_client_index=%d, client_name=\'%s\', client_pid=%d, pid=%d\n",
+	  badindex,
+	  buf,
+	  buf->client_index,
+	  buf->buffer_header->max_client_index,
+	  buf->buffer_header->client[buf->client_index].name,
+	  buf->buffer_header->client[buf->client_index].pid, ss_getpid());
+#endif
+
    if (badindex) {
       static int prevent_recursion = 1;
       if (prevent_recursion) {
@@ -11069,10 +11079,10 @@ INT rpc_server_accept(int lsock)
          closesocket(sock);
          return RPC_SHUTDOWN;
 
-      case 7:
-         ss_shell(sock);
-         closesocket(sock);
-         break;
+	 //      case 7:
+         //ss_shell(sock);
+         //closesocket(sock);
+         //break;
 
       case 'I':
 
@@ -11226,7 +11236,7 @@ INT rpc_server_accept(int lsock)
          break;
 
       default:
-         cm_msg(MERROR, "rpc_server_accept", "received unknown command '%c'", command);
+         cm_msg(MERROR, "rpc_server_accept", "received unknown command '%c' code %d", command, command);
          closesocket(sock);
          break;
 
