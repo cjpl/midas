@@ -808,7 +808,7 @@ INT register_equipment(void)
             if (equipment[i].info.eq_type & EQ_POLLED) {
                equipment[index].status = FE_ERR_DISABLED;
                cm_msg(MINFO, "register_equipment",
-                      "Multi-threaded readout cannot be combined with polled readout");
+                      "Multi-threaded readout cannot be combined with polled readout for equipment \'%s\'", equipment[i].name);
             }
 
          if (equipment[index].status != FE_ERR_DISABLED) {
@@ -816,7 +816,7 @@ INT register_equipment(void)
                if (multithread_eq) {
                   equipment[index].status = FE_ERR_DISABLED;
                   cm_msg(MINFO, "register_equipment",
-                         "Defined more than one equipment with multi-threaded readout");
+                         "Defined more than one equipment with multi-threaded readout for equipment \'%s\'", equipment[i].name);
                } else {
                   multithread_eq = &equipment[index];
 
