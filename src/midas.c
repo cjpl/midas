@@ -11083,11 +11083,6 @@ INT rpc_server_accept(int lsock)
          closesocket(sock);
          return RPC_SHUTDOWN;
 
-	 //      case 7:
-         //ss_shell(sock);
-         //closesocket(sock);
-         //break;
-
       case 'I':
 
          /*----------- return available experiments -----------*/
