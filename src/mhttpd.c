@@ -644,6 +644,8 @@ void redirect(char *path)
 
    if (strncmp(path, "http:", 5) == 0)
       rsprintf("Location: %s\r\n\r\n<html>redir</html>\r\n", path);
+   else if (strncmp(path, "https:", 6) == 0)
+      rsprintf("Location: %s\r\n\r\n<html>redir</html>\r\n", path);
    else {
       if (exp_name[0]) {
          if (strchr(path, '?'))
