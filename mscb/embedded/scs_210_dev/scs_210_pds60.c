@@ -37,6 +37,7 @@ struct {
    float demand_current;
    float voltage;
    float current;
+   unsigned char on;
 } xdata user_data;
 
 MSCB_INFO_VAR code vars[] = {
@@ -44,6 +45,7 @@ MSCB_INFO_VAR code vars[] = {
    4,  UNIT_AMPERE, 0, 0,  MSCBF_FLOAT, "DmdCurr", &user_data.demand_current,
    4,  UNIT_VOLT,   0, 0,  MSCBF_FLOAT, "Volt",    &user_data.voltage,
    4,  UNIT_AMPERE, 0, 0,  MSCBF_FLOAT, "Curr",    &user_data.current,
+   1,  UNIT_BOOLEAN,0, 0,            0, "On",      &user_data.on,
    0
 };
 
@@ -64,14 +66,14 @@ void user_init(unsigned char init)
 {
    if (init) {
       user_data.demand_voltage = 0;
-	  user_data.demand_current = 0;
+      user_data.demand_current = 0;
+      user_data.on = 0;
    }
 
    /* initialize UART1 */
    uart_init(1, BD_9600);
    watchdog_enable(2);
 
-   puts("SW1\r\n"); // turn output on
    output_flag = 1;
 }
 
@@ -86,7 +88,7 @@ char idata obuf[8];
 
 void user_write(unsigned char index) reentrant
 {
-   if (index == 0 || index == 1) 
+   if (index == 0 || index == 1 || index == 4) 
       output_flag = 1;
 }
 
@@ -134,28 +136,31 @@ void user_loop(void)
 static unsigned long xdata last_read = 0;
 char xdata str[80], i;
 
-   if (output_flag)
-      {
+   if (output_flag) {
       output_flag = 0;
 
       printf("VA%1.2f\n", user_data.demand_voltage);
       flush();
       printf("AA%1.2f\n", user_data.demand_current);
-	  flush();
+      flush();
+      if (user_data.on)
+         puts("SW1\r\n"); // turn output on
+      else
+         puts("SW0\r\n"); // turn output off
    }
 
    /* read parameters once each second */
    if (time() > last_read + 100) {
       last_read = time();
 
-	  printf("ST0\n");
-	  flush();
+      printf("ST0\n");
+      flush();
 
       i = gets_wait(str, sizeof(str), 200);
       if (i == 18) {
-	     user_data.voltage = atof(str+7);
-		 user_data.current = atof(str+13);
-	  }
+         user_data.voltage = atof(str+7);
+         user_data.current = atof(str+13);
+      }
    }
 
    /* go into idle mode, wakeup via UART or 100Hz interrupt */
