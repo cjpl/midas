@@ -7204,6 +7204,75 @@ int time_to_sec(char *str)
 
 /*------------------------------------------------------------------*/
 
+static void getEventName(WORD event_id, char evname[NAME_LENGTH])
+{
+   int status, size;
+   HNDLE hDB;
+   char path[256];
+   char *s;
+
+   sprintf(path,"/History/Tags/%d", event_id);
+   
+   cm_get_experiment_database(&hDB, NULL);
+    
+   size = NAME_LENGTH;
+   status = db_get_value(hDB, 0, path, evname, &size, TID_STRING, FALSE);
+   assert(status == DB_SUCCESS);
+
+   s = strchr(evname,'/');
+   if (s)
+      *s = 0;
+}
+
+static WORD getVariableId(const char* evname, const char* tagname)
+{
+   HNDLE hDB, hKeyRoot;
+   int status, i;
+
+   cm_get_experiment_database(&hDB, NULL);
+   
+   status = db_find_key(hDB, 0, "/History/Tags", &hKeyRoot);
+   if (status != DB_SUCCESS) {
+      return 0;
+   }
+
+   for (i = 0;; i++) {
+     HNDLE hKey, hKey1;
+      KEY key;
+      WORD evid;
+      char xname[NAME_LENGTH];
+
+      status = db_enum_key(hDB, hKeyRoot, i, &hKey);
+      if (status != DB_SUCCESS)
+	 break;
+
+      status = db_get_key(hDB, hKey, &key);
+      assert(status == DB_SUCCESS);
+
+      if (strncmp(key.name, "Tags ", 5) != 0)
+         continue;
+
+      evid = atoi(key.name + 5);
+
+      getEventName(evid, xname);
+
+      if (strcasecmp(evname, xname) != 0)
+         continue;
+
+      //printf("key \'%s\', evid %d (%s)\n", key.name, evid, xname);
+
+      status = db_find_key(hDB, hKey, tagname, &hKey1);
+      if (status != DB_SUCCESS)
+         continue;
+
+      return evid;
+   }
+
+   return 0;
+}
+
+/*------------------------------------------------------------------*/
+
 void generate_hist_graph(char *path, char *buffer, int *buffer_size,
                          int width, int height, int scale, int toffset, int index,
                          int labels, char *bgcolor, char *fgcolor, char *gridcolor)
@@ -7377,33 +7446,38 @@ void generate_hist_graph(char *path, char *buffer, int *buffer_size,
 
       db_find_key(hDB, hkeypanel, "Colour", &hkey);
       if (hkey) {
-	 size = sizeof(str);
-	 status = db_get_data_index(hDB, hkey, str, &size, i, TID_STRING);
-	 if (status == DB_SUCCESS) {
-	    if (str[0] == '#') {
-	       char sss[3];
-	       int r, g, b;
+         size = sizeof(str);
+         status = db_get_data_index(hDB, hkey, str, &size, i, TID_STRING);
+         if (status == DB_SUCCESS) {
+            if (str[0] == '#') {
+               char sss[3];
+               int r, g, b;
 
-	       sss[0] = str[1];
-	       sss[1] = str[2];
-	       sss[2] = 0;
-	       r = strtoul(sss, NULL, 16);
-	       sss[0] = str[3];
-	       sss[1] = str[4];
-	       sss[2] = 0;
-	       g = strtoul(sss, NULL, 16);
-	       sss[0] = str[5];
-	       sss[1] = str[6];
-	       sss[2] = 0;
-	       b = strtoul(sss, NULL, 16);
+               sss[0] = str[1];
+               sss[1] = str[2];
+               sss[2] = 0;
+               r = strtoul(sss, NULL, 16);
+               sss[0] = str[3];
+               sss[1] = str[4];
+               sss[2] = 0;
+               g = strtoul(sss, NULL, 16);
+               sss[0] = str[5];
+               sss[1] = str[6];
+               sss[2] = 0;
+               b = strtoul(sss, NULL, 16);
 
-	       curve_col[i] = gdImageColorAllocate(im, r, g, b);
+               curve_col[i] = gdImageColorAllocate(im, r, g, b);
 	    }
 	 }
       }
 
       /* search event_id */
-      status = hs_get_event_id(0, event_name[i], &event_id);
+      event_id = getVariableId(event_name[i], var_name[i]);
+      if (event_id != 0) {
+         status = HS_SUCCESS;
+      } else {
+         status = hs_get_event_id(0, event_name[i], &event_id);
+      }
 
       if (status != HS_SUCCESS) {
          sprintf(str, "Event \"%s\" from panel \"%s\" not found in history",
@@ -7412,6 +7486,8 @@ void generate_hist_graph(char *path, char *buffer, int *buffer_size,
                        height / 2, str, red);
          goto error;
       }
+
+      //printf("Looking for event %d tag \'%s\' [%d]\n", event_id, var_name[i], var_index[i]);
 
       /* get timescale */
       if (scale == 0) {
@@ -7618,6 +7694,8 @@ void generate_hist_graph(char *path, char *buffer, int *buffer_size,
                      scale / 1000 + 1, var_name[i], var_index[i], tbuffer, &tsize,
                      ybuffer, &bsize, &type, &n_point[i]);
 
+         //printf("hs_read %d \'%s\' [%d] returned %d, %d entries\n", event_id, var_name[i], var_index[i], status, n_point[i]);
+
          if (status == HS_TRUNCATED) {
             hbuffer_size *= 2;
             tbuffer = realloc(tbuffer, hbuffer_size);
@@ -7630,6 +7708,11 @@ void generate_hist_graph(char *path, char *buffer, int *buffer_size,
 
       if (status == HS_UNDEFINED_VAR) {
          sprintf(str, "Variable \"%s\" not found in history", var_name[i]);
+         gdImageString(im, gdFontSmall, width / 2 - (strlen(str) * gdFontSmall->w) / 2,
+                       height / 2, str, red);
+         goto error;
+      } else if (status != HS_SUCCESS) {
+         sprintf(str, "Variable \"%s\" history error %d", var_name[i], status);
          gdImageString(im, gdFontSmall, width / 2 - (strlen(str) * gdFontSmall->w) / 2,
                        height / 2, str, red);
          goto error;
@@ -8202,15 +8285,391 @@ void show_query_page(char *path)
 
 /*------------------------------------------------------------------*/
 
+static void show_hist_config_events_tags(HNDLE hDB, HNDLE hKeyRoot, const char* selectedName)
+{
+   int numEvents = 0;
+   char names[MAX_VARS][NAME_LENGTH];
+   int i;
+   
+   /* loop over tags to display event names */
+   for (i = 0;; i++) {
+      HNDLE hKeyEq;
+      KEY key;
+      char *s;
+      WORD event_id;
+      char evname[NAME_LENGTH];
+      char str[NAME_LENGTH];
+      int j;
+      int status;
+      
+      status = db_enum_key(hDB, hKeyRoot, i, &hKeyEq);
+      if (status != DB_SUCCESS)
+         break;
+    
+      /* get event name */
+      db_get_key(hDB, hKeyEq, &key);
+      
+      //printf("key \'%s\'\n", key.name);
+      
+      /* parse event name in format: "event_id" or "event_id:var_name" */
+      s = key.name;
+      
+      event_id = strtoul(s,&s,0);
+      if (event_id == 0)
+         continue;
+      if (s[0] != 0)
+         continue;
+    
+      getEventName(event_id, evname);
+      
+      for (j=0; j<numEvents; j++)
+         if (strcmp(evname, names[j]) == 0)
+            break;
+    
+      //printf("event %d %s, j %d %d\n", event_id, evname, j, numEvents);
+      
+      /* skip duplicated event names */
+      if (j<numEvents)
+         continue;
+    
+      strlcpy(names[j], evname, NAME_LENGTH);
+      numEvents++;
+    
+      //printf("event %d \'%s\'\n", event_id, evname);
+    
+      strlcpy(str, selectedName, sizeof(str));
+      s = strchr(str,':');
+      if (s)
+         *s = 0;
+    
+      if (equal_ustring(str, evname))
+         s = "selected";
+      else
+         s = "";
+      rsprintf("<option %s value=\"%s\">%s\n", s, evname, evname);
+   }
+}
+
+/*------------------------------------------------------------------*/
+
+static void show_hist_config_variables_tags(HNDLE hDB, HNDLE hKeyRoot, const char* selectedName)
+{
+   int i, j;
+   int status;
+   char *s;
+   char selectedEvent[NAME_LENGTH];
+   char selectedTag[NAME_LENGTH];
+   
+   strlcpy(selectedEvent, selectedName, sizeof(selectedEvent));
+   s = strchr(selectedEvent, ':');
+   if (s)
+      *s = 0;
+   
+   /* get name from ODB */
+   s = strchr(selectedName, ':');
+   if (s)
+      strlcpy(selectedTag, s + 1, sizeof(selectedTag));
+   else
+      selectedTag[0] = 0;
+   
+   //printf("Selected event (%s) tag (%s)\n", selectedEvent, selectedTag);
+   
+   /* loop over equipment to display event name */
+   for (i = 0;; i++) {
+      HNDLE hKeyEq;
+      KEY key;
+      WORD event_id;
+      char ev_name[NAME_LENGTH];
+      
+      status = db_enum_key(hDB, hKeyRoot, i, &hKeyEq);
+      if (status != DB_SUCCESS)
+         break;
+    
+      /* get event name */
+      status = db_get_key(hDB, hKeyEq, &key);
+      assert(status == DB_SUCCESS);
+      
+      /* parse event name in format: "Tags event_id" */
+      if (strncmp(key.name, "Tags ", 5) != 0)
+         continue;
+
+      event_id = strtoul(key.name + 5, NULL, 0);
+      if (event_id == 0)
+         continue;
+
+      getEventName(event_id, ev_name);
+    
+      if (!equal_ustring(ev_name, selectedEvent))
+         continue;
+
+      /* loop over tags */
+      for (j=0; ; j++) {
+         HNDLE hKey;
+         WORD array;
+         int size;
+         char var_name[NAME_LENGTH];
+         char *selected;
+         
+         status = db_enum_key(hDB, hKeyEq, j, &hKey);
+         if (status != DB_SUCCESS)
+            break;
+      
+         /* get event name */
+         status = db_get_key(hDB, hKey, &key);
+         assert(status == DB_SUCCESS);
+
+         array = 1;
+         size  = sizeof(array);
+         status = db_get_data(hDB, hKey, &array, &size, TID_WORD);
+         assert(status == DB_SUCCESS);
+         
+         strlcpy(var_name, key.name, sizeof(var_name));
+
+         //printf("Found %s, event %d (%s), tag (%s) array %d\n", key.name, event_id, ev_name, var_name, array);
+
+         if (array == 1) {
+            selected = "";
+            if (equal_ustring(var_name, selectedTag))
+               selected = "selected";
+            rsprintf("<option %s value=\"%s\">%s\n", selected, var_name, var_name);
+         } else {
+            int ii;
+            for (ii=0; ii<array; ii++) {
+               char vvv[NAME_LENGTH];
+               snprintf(vvv, sizeof(vvv), "%s[%d]", var_name, ii);
+
+               selected = "";
+               if (equal_ustring(vvv, selectedTag))
+                  selected = "selected";
+
+               snprintf(vvv, sizeof(vvv), "%s[%d]", var_name, ii);
+
+               rsprintf("<option %s value=\"%s\">%s\n", selected, vvv, vvv);
+            }
+         }
+      }
+   }
+}
+
+/*------------------------------------------------------------------*/
+
+static void show_hist_config_events_equipment(HNDLE hDB, HNDLE hKeyRoot, const char* selectedName)
+{
+   int i;
+   int status;
+
+   /* loop over equipment to display event name */
+   for (i = 0;; i++) {
+      HNDLE hKeyEq;
+      int history;
+      int size;
+      
+      status = db_enum_key(hDB, hKeyRoot, i, &hKeyEq);
+      if (status != DB_SUCCESS)
+         break;
+    
+      /* check history flag */
+      size = sizeof(history);
+      db_get_value(hDB, hKeyEq, "Common/Log history", &history, &size, TID_INT, TRUE);
+    
+      /* show event only if log history flag is on */
+      if (history > 0) {
+         KEY key;
+         char str[NAME_LENGTH];
+
+         /* get equipment name */
+         db_get_key(hDB, hKeyEq, &key);
+         
+         strlcpy(str, selectedName, sizeof(str));
+         str[strlen(key.name)] = 0;
+         if (equal_ustring(str, key.name))
+            rsprintf("<option selected value=\"%s\">%s\n", key.name, key.name);
+         else
+            rsprintf("<option value=\"%s\">%s\n", key.name, key.name);
+      }
+   }
+   
+   /* loop over history links to display event name */
+   status = db_find_key(hDB, 0, "/History/Links", &hKeyRoot);
+   if (status == DB_SUCCESS) {
+      for (i = 0;; i++) {
+         HNDLE hKey;
+         KEY key;
+
+         status = db_enum_link(hDB, hKeyRoot, i, &hKey);
+         if (status == DB_NO_MORE_SUBKEYS)
+            break;
+      
+         db_get_key(hDB, hKey, &key);
+      
+         if (strncmp(selectedName, key.name, strlen(key.name)) == 0)
+            rsprintf("<option selected value=\"%s\">%s\n", key.name, key.name);
+         else
+            rsprintf("<option value=\"%s\">%s\n", key.name, key.name);
+      }
+   }
+}
+
+static void show_hist_config_variables_equipment(HNDLE hDB, HNDLE hKeyRoot, const char* selectedName)
+{
+   HNDLE hKey, hKeyEq, hKeyVar;
+   BOOL is_link = FALSE;
+   int status;
+   int i;
+   char eq_name[NAME_LENGTH];
+   char str[256];
+   
+   /* display variables for selected event */
+   
+   strlcpy(eq_name, selectedName, sizeof(eq_name));
+   if (strchr(eq_name, ':'))
+      *strchr(eq_name, ':') = 0;
+  
+   is_link = FALSE;
+   db_find_key(hDB, hKeyRoot, eq_name, &hKeyEq);
+   if (!hKeyEq) {
+      sprintf(str, "/History/Links/%s", eq_name);
+      status = db_find_link(hDB, 0, str, &hKeyVar);
+      if (status != DB_SUCCESS) {
+         sprintf(str, "Cannot find /Equipment/%s or /History/Links/%s in ODB",
+                 eq_name, eq_name);
+         show_error(str);
+         return;
+      } else
+         is_link = TRUE;
+   }
+  
+   /* go through variables for selected event */
+   if (!is_link) {
+      sprintf(str, "/Equipment/%s/Variables", eq_name);
+      status = db_find_key(hDB, 0, str, &hKeyVar);
+      if (status != DB_SUCCESS) {
+         sprintf(str, "Cannot find /Equipment/%s/Variables in ODB", eq_name);
+         show_error(str);
+         return;
+      }
+   }
+  
+   for (i = 0;; i++) {
+      KEY varkey;
+
+      status = db_enum_link(hDB, hKeyVar, i, &hKey);
+      if (status == DB_NO_MORE_SUBKEYS)
+         break;
+
+      if (is_link) {
+
+         db_get_key(hDB, hKey, &varkey);
+
+         if (strchr(selectedName, ':'))
+            strlcpy(str, strchr(selectedName, ':') + 1, sizeof(str));
+         else
+            str[0] = 0;
+
+         if (equal_ustring(str, varkey.name))
+            rsprintf("<option selected value=\"%s\">%s\n", varkey.name,
+                     varkey.name);
+         else
+            rsprintf("<option value=\"%s\">%s\n", varkey.name, varkey.name);
+      } else {
+         int n_names;
+         int single_names;
+         HNDLE hKeyNames;
+         char var_name[NAME_LENGTH];
+         
+         /* get variable key */
+         db_get_key(hDB, hKey, &varkey);
+         n_names = 0;
+         
+         /* look for names */
+         db_find_key(hDB, hKeyEq, "Settings/Names", &hKeyNames);
+         single_names = (hKeyNames > 0);
+         if (hKeyNames) {
+            KEY key;
+            /* get variables from names list */
+            db_get_key(hDB, hKeyNames, &key);
+            n_names = key.num_values;
+         } else {
+            KEY key;
+            sprintf(str, "Settings/Names %s", varkey.name);
+            db_find_key(hDB, hKeyEq, str, &hKeyNames);
+            if (hKeyNames) {
+               /* get variables from names list */
+              db_get_key(hDB, hKeyNames, &key);
+              n_names = key.num_values;
+            }
+         }
+      
+         if (hKeyNames) {
+            int j;
+
+            /* loop over array elements */
+            for (j = 0; j < n_names; j++) {
+               int size;
+               /* get name #j */
+               size = NAME_LENGTH;
+               db_get_data_index(hDB, hKeyNames, var_name, &size, j, TID_STRING);
+               
+               /* append variable key name for single name array */
+               if (single_names) {
+                  strlcat(var_name, " ", sizeof(var_name));
+                  strlcat(var_name, varkey.name, sizeof(var_name));
+               }
+	  
+               /* get name from ODB */
+               if (strchr(selectedName, ':'))
+                  strlcpy(str, strchr(selectedName, ':') + 1, sizeof(str));
+               else
+                  str[0] = 0;
+
+               if (equal_ustring(str, var_name))
+                  rsprintf("<option selected value=\"%s\">%s\n", var_name,
+                           var_name);
+               else
+                  rsprintf("<option value=\"%s\">%s\n", var_name, var_name);
+            }
+         } else {
+            if (strchr(selectedName, ':'))
+               strlcpy(str, strchr(selectedName, ':') + 1, sizeof(str));
+            else
+               str[0] = 0;
+
+            if (varkey.num_values > 0) {
+               int j;
+               for (j = 0; j < varkey.num_values; j++) {
+                  sprintf(var_name, "%s[%d]", varkey.name, j);
+    
+                  if (equal_ustring(str, var_name))
+                     rsprintf("<option selected value=\"%s\">%s\n", var_name,
+                              var_name);
+                  else
+                     rsprintf("<option value=\"%s\">%s\n", var_name, var_name);
+               }
+            } else {
+               if (equal_ustring(str, var_name))
+                  rsprintf("<option selected value=\"%s\">%s\n", varkey.name,
+                           varkey.name);
+               else
+                  rsprintf("<option value=\"%s\">%s\n", varkey.name, varkey.name);
+            }
+         }
+      }
+   }
+}
+
+/*------------------------------------------------------------------*/
+
 void show_hist_config_page(char *path)
 {
-   int i, j, max_event_id, status, size, index, history, n_names;
-   BOOL single_names, flag, is_link;
-   HNDLE hDB, hKeyRoot, hKeyEq, hKeyVar, hKey, hKeyNames;
-   KEY key, varkey;
-   char str[256], eq_name[256], var_name[256], cmd[256], ref[256];
+   int i, status, size, index;
+   BOOL flag;
+   HNDLE hDB, hKeyRoot, hKeyVar, hKey;
+   KEY key;
+   char str[256], var_name[256], cmd[256], ref[256];
    char display_name[MAX_VARS][2 * NAME_LENGTH];
    float value;
+   int useTags = 0;
+   int useEquipmentList = 0;
    char hist_col[MAX_VARS][NAME_LENGTH] = { "#0000FF", "#00C000", "#FF0000", "#00C0C0", "#FF00FF",
       "#C0C000", "#808080", "#80FF80", "#FF8080", "#8080FF"
    };
@@ -8488,192 +8947,49 @@ void show_hist_config_page(char *path)
 
       rsprintf("<tr><td bgcolor=\"%s\">&nbsp;<td>\n", hist_col[index]);
 
-      rsprintf("<select name=\"event%d\" size=1 onChange=\"document.form1.submit()\">\n",
-               index);
+      /* select which list of events and variables to use */
+
+      status = db_find_key(hDB, 0, "/History/Tags", &hKeyRoot);
+      if (status == DB_SUCCESS) {
+         useTags = 1;
+      } else {
+         status = db_find_key(hDB, 0, "/Equipment", &hKeyRoot);
+         if (status == DB_SUCCESS) {
+            useEquipmentList = 1;
+         }
+      }
+
+      /* event and variable selection */
+
+      rsprintf("<select name=\"event%d\" size=1 onChange=\"document.form1.submit()\">\n", index);
 
       /* enumerate events */
-      max_event_id = 0;
-
-      status = db_find_key(hDB, 0, "/Equipment", &hKeyRoot);
-      if (status != DB_SUCCESS) {
-         show_error("Cannot find /Equipment entry in database");
-         return;
-      }
 
       /* empty option */
       rsprintf("<option value=\"\">&lt;empty&gt;\n");
 
-      /* loop over equipment to display event name */
-      for (i = 0;; i++) {
-         status = db_enum_key(hDB, hKeyRoot, i, &hKeyEq);
-         if (status != DB_SUCCESS)
-            break;
-
-         /* check history flag */
-         size = sizeof(history);
-         db_get_value(hDB, hKeyEq, "Common/Log history", &history, &size, TID_INT, TRUE);
-
-         /* show event only if log history flag is on */
-         if (history > 0) {
-            /* get equipment name */
-            db_get_key(hDB, hKeyEq, &key);
-
-            strlcpy(str, display_name[index], sizeof(str));
-            str[strlen(key.name)] = 0;
-            if (equal_ustring(str, key.name))
-               rsprintf("<option selected value=\"%s\">%s\n", key.name, key.name);
-            else
-               rsprintf("<option value=\"%s\">%s\n", key.name, key.name);
-         }
-      }
-
-      /* loop over history links to display event name */
-      status = db_find_key(hDB, 0, "/History/Links", &hKeyRoot);
-      if (status == DB_SUCCESS) {
-         for (i = 0;; i++) {
-            status = db_enum_link(hDB, hKeyRoot, i, &hKey);
-            if (status == DB_NO_MORE_SUBKEYS)
-               break;
-
-            db_get_key(hDB, hKey, &key);
-
-            if (strncmp(display_name[index], key.name, strlen(key.name)) == 0)
-               rsprintf("<option selected value=\"%s\">%s\n", key.name, key.name);
-            else
-               rsprintf("<option value=\"%s\">%s\n", key.name, key.name);
-         }
+      if (useTags)
+         show_hist_config_events_tags(hDB, hKeyRoot, display_name[index]);
+      else if (useEquipmentList)
+         show_hist_config_events_equipment(hDB, hKeyRoot, display_name[index]);
+      else {
+         show_error("Cannot find /History/Tags or /Equipment in ODB");
+         return;
       }
 
       rsprintf("</select></td>\n");
 
-      /* display variables for selected event */
-
-      status = db_find_key(hDB, 0, "/Equipment", &hKeyRoot);
-      if (status == DB_SUCCESS && display_name[index][0]) {
-         strlcpy(eq_name, display_name[index], sizeof(eq_name));
-         if (strchr(eq_name, ':'))
-            *strchr(eq_name, ':') = 0;
-
-         is_link = FALSE;
-         db_find_key(hDB, hKeyRoot, eq_name, &hKeyEq);
-         if (!hKeyEq) {
-            sprintf(str, "/History/Links/%s", eq_name);
-            status = db_find_link(hDB, 0, str, &hKeyVar);
-            if (status != DB_SUCCESS) {
-               sprintf(str, "Cannot find /Equipment/%s or /History/Links/%s in ODB",
-                       eq_name, eq_name);
-               show_error(str);
-               return;
-            } else
-               is_link = TRUE;
-         }
+      if (display_name[index][0]) {
 
          rsprintf("<td colspan=2><select name=\"var%d\">\n", index);
 
-         /* go through variables for selected event */
-         if (!is_link) {
-            sprintf(str, "/Equipment/%s/Variables", eq_name);
-            status = db_find_key(hDB, 0, str, &hKeyVar);
-            if (status != DB_SUCCESS) {
-               sprintf(str, "Cannot find /Equipment/%s/Variables in ODB", eq_name);
-               show_error(str);
-               return;
-            }
-         }
-
-         for (i = 0;; i++) {
-            status = db_enum_link(hDB, hKeyVar, i, &hKey);
-            if (status == DB_NO_MORE_SUBKEYS)
-               break;
-
-            if (is_link) {
-               db_get_key(hDB, hKey, &varkey);
-
-               if (strchr(display_name[index], ':'))
-                  strlcpy(str, strchr(display_name[index], ':') + 1, sizeof(str));
-               else
-                  str[0] = 0;
-
-               if (equal_ustring(str, varkey.name))
-                  rsprintf("<option selected value=\"%s\">%s\n", varkey.name,
-                           varkey.name);
-               else
-                  rsprintf("<option value=\"%s\">%s\n", varkey.name, varkey.name);
-            } else {
-               /* get variable key */
-               db_get_key(hDB, hKey, &varkey);
-               n_names = 0;
-
-               /* look for names */
-               db_find_key(hDB, hKeyEq, "Settings/Names", &hKeyNames);
-               single_names = (hKeyNames > 0);
-               if (hKeyNames) {
-                  /* get variables from names list */
-                  db_get_key(hDB, hKeyNames, &key);
-                  n_names = key.num_values;
-               } else {
-                  sprintf(str, "Settings/Names %s", varkey.name);
-                  db_find_key(hDB, hKeyEq, str, &hKeyNames);
-                  if (hKeyNames) {
-                     /* get variables from names list */
-                     db_get_key(hDB, hKeyNames, &key);
-                     n_names = key.num_values;
-                  }
-               }
-
-               if (hKeyNames) {
-                  /* loop over array elements */
-                  for (j = 0; j < n_names; j++) {
-                     /* get name #j */
-                     size = NAME_LENGTH;
-                     db_get_data_index(hDB, hKeyNames, var_name, &size, j, TID_STRING);
-
-                     /* append variable key name for single name array */
-                     if (single_names) {
-                        strlcat(var_name, " ", sizeof(var_name));
-                        strlcat(var_name, varkey.name, sizeof(var_name));
-                     }
-
-                     /* get name from ODB */
-                     if (strchr(display_name[index], ':'))
-                        strlcpy(str, strchr(display_name[index], ':') + 1, sizeof(str));
-                     else
-                        str[0] = 0;
-
-                     if (equal_ustring(str, var_name))
-                        rsprintf("<option selected value=\"%s\">%s\n", var_name,
-                                 var_name);
-                     else
-                        rsprintf("<option value=\"%s\">%s\n", var_name, var_name);
-                  }
-               } else {
-                  if (strchr(display_name[index], ':'))
-                     strlcpy(str, strchr(display_name[index], ':') + 1, sizeof(str));
-                  else
-                     str[0] = 0;
-
-                  if (varkey.num_values > 0) {
-                     for (j = 0; j < varkey.num_values; j++) {
-                        sprintf(var_name, "%s[%d]", varkey.name, j);
-
-                        if (equal_ustring(str, var_name))
-                           rsprintf("<option selected value=\"%s\">%s\n", var_name,
-                                    var_name);
-                        else
-                           rsprintf("<option value=\"%s\">%s\n", var_name, var_name);
-                     }
-                  } else {
-                     if (equal_ustring(str, var_name))
-                        rsprintf("<option selected value=\"%s\">%s\n", varkey.name,
-                                 varkey.name);
-                     else
-                        rsprintf("<option value=\"%s\">%s\n", varkey.name, varkey.name);
-                  }
-               }
-            }
-         }
+         if (useTags)
+            show_hist_config_variables_tags(hDB, hKeyRoot, display_name[index]);
+         else if (useEquipmentList)
+            show_hist_config_variables_equipment(hDB, hKeyRoot, display_name[index]);
 
          rsprintf("</select></td>\n");
+
       } else
          rsprintf("<td colspan=2></td>\n");
 
