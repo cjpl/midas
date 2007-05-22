@@ -90,6 +90,8 @@ INT hs_open_file(time_t ltime, char *suffix, INT mode, int *fh)
    /* open file, add O_BINARY flag for Windows NT */
    *fh = open(file_name, mode | O_BINARY, 0644);
 
+   //printf("hs_open_file: time %d, file \'%s\', fh %d\n", (int)ltime, file_name, *fh);
+   
    return HS_SUCCESS;
 }
 
@@ -1183,16 +1185,25 @@ INT hs_read(DWORD event_id, DWORD start_time, DWORD end_time,
    struct tm *tms;
    char *cache;
    time_t ltime;
+   int rd;
 
+   //printf("hs_read event %d, time %d:%d, tagname: \'%s\', varindex: %d\n", event_id, start_time, end_time, tag_name, var_index);
+
+#if 0
    if (rpc_is_remote())
       return rpc_call(RPC_HS_READ, event_id, start_time, end_time, interval,
                       tag_name, var_index, time_buffer, tbsize, data_buffer, dbsize, type, n);
+#endif
 
    /* if not time given, use present to one hour in past */
    if (start_time == 0)
       start_time = (DWORD) time(NULL) - 3600;
    if (end_time == 0)
       end_time = (DWORD) time(NULL);
+
+   *n = 0;
+   prev_time = 0;
+   last_irec_time = start_time;
 
    /* search history file for start_time */
    status = hs_search_file(&start_time, 1);
@@ -1216,6 +1227,10 @@ INT hs_read(DWORD event_id, DWORD start_time, DWORD end_time,
    lseek(fhi, 0, SEEK_END);
    cache_size = TELL(fhi);
 
+   if (cache_size == 0) {
+      goto nextday;
+   }
+
    if (cache_size > 0) {
       cache = (char *) M_MALLOC(cache_size);
       if (cache) {
@@ -1237,13 +1252,15 @@ INT hs_read(DWORD event_id, DWORD start_time, DWORD end_time,
          lseek(fhi, delta * sizeof(irec), SEEK_SET);
          do {
             delta = (int) (abs(delta) / 2.0 + 0.5);
-            read(fhi, (char *) &irec, sizeof(irec));
+            rd = read(fhi, (char *) &irec, sizeof(irec));
+            assert(rd == sizeof(irec));
             if (irec.time > start_time)
                delta = -delta;
 
             lseek(fhi, (delta - 1) * sizeof(irec), SEEK_CUR);
          } while (abs(delta) > 1 && irec.time != start_time);
-         read(fhi, (char *) &irec, sizeof(irec));
+         rd = read(fhi, (char *) &irec, sizeof(irec));
+         assert(rd == sizeof(irec));
          if (irec.time > start_time)
             delta = -abs(delta);
 
@@ -1252,17 +1269,24 @@ INT hs_read(DWORD event_id, DWORD start_time, DWORD end_time,
             lseek(fhi, 0, SEEK_SET);
          else
             lseek(fhi, (delta - 1) * sizeof(irec), SEEK_CUR);
-         read(fhi, (char *) &irec, sizeof(irec));
+         rd = read(fhi, (char *) &irec, sizeof(irec));
+         assert(rd == sizeof(irec));
       } else {
          delta = (cache_size / sizeof(irec)) / 2;
          cp = delta * sizeof(irec);
          do {
             delta = (int) (abs(delta) / 2.0 + 0.5);
             pirec = (INDEX_RECORD *) (cache + cp);
+
+            //printf("pirec %p, cache %p, cp %d\n", pirec, cache, cp);
+
             if (pirec->time > start_time)
                delta = -delta;
 
             cp = cp + delta * sizeof(irec);
+
+            if (cp < 0)
+               cp = 0;
          } while (abs(delta) > 1 && pirec->time != start_time);
          pirec = (INDEX_RECORD *) (cache + cp);
          if (pirec->time > start_time)
@@ -1289,15 +1313,15 @@ INT hs_read(DWORD event_id, DWORD start_time, DWORD end_time,
 
    /* read records, skip wrong IDs */
    old_def_offset = -1;
-   *n = 0;
-   prev_time = 0;
    last_irec_time = 0;
    do {
+      //printf("time %d -> %d\n", last_irec_time, irec.time);
+
       if (irec.time < last_irec_time) {
          cm_msg(MERROR, "hs_read",
                 "corrupted history data: time does not increase: %d -> %d", last_irec_time, irec.time);
-         *tbsize = *dbsize = *n = 0;
-         return HS_FILE_ERROR;
+         //*tbsize = *dbsize = *n = 0;
+         return HS_SUCCESS;
       }
       last_irec_time = irec.time;
       if (irec.event_id == event_id && irec.time <= end_time && irec.time >= start_time) {
@@ -1305,7 +1329,8 @@ INT hs_read(DWORD event_id, DWORD start_time, DWORD end_time,
          if (irec.time >= prev_time + interval) {
             prev_time = irec.time;
             lseek(fh, irec.offset, SEEK_SET);
-            read(fh, (char *) &rec, sizeof(rec));
+            rd = read(fh, (char *) &rec, sizeof(rec));
+            assert(rd == sizeof(rec));
 
             /* if definition changed, read new definition */
             if ((INT) rec.def_offset != old_def_offset) {
@@ -1425,6 +1450,8 @@ INT hs_read(DWORD event_id, DWORD start_time, DWORD end_time,
          close(fhd);
          close(fhi);
 
+      nextday:
+
          /* advance one day */
          ltime = (time_t) last_irec_time;
          tms = localtime(&ltime);
@@ -1453,6 +1480,11 @@ INT hs_read(DWORD event_id, DWORD start_time, DWORD end_time,
          /* try to read index file into cache */
          lseek(fhi, 0, SEEK_END);
          cache_size = TELL(fhi);
+
+         if (cache_size == 0) {
+            goto nextday;
+         }
+
          lseek(fhi, 0, SEEK_SET);
          cache = (char *) M_MALLOC(cache_size);
          if (cache) {
@@ -1467,6 +1499,7 @@ INT hs_read(DWORD event_id, DWORD start_time, DWORD end_time,
             i = read(fhi, (char *) &irec, sizeof(irec));
             if (i <= 0)
                break;
+            assert(i == sizeof(irec));
          }
 
          /* old definition becomes invalid */
