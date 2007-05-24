@@ -38,13 +38,19 @@ int vt2_FifoRead(MVME_INTERFACE *mvme, DWORD base, DWORD *pdest, int nentry)
   mvme_set_dmode(mvme, MVME_DMODE_D32);
   for (i=0 ; i<nentry ; i++) {
     pdest[i] = mvme_read_value(mvme, base+VT2_FIFO_RO);
-    printf("pdest[%i] = %lx\n", i, pdest[i]);
+    //    printf("pdest[%i] = %lx\n", i, pdest[i]);
   }
   mvme_set_dmode(mvme, cmode);
   return nentry;
 }
 
 /*****************************************************************/
+/**
+ return the Fifo level which is 64bits x 2048 with Almost full at 2000.
+ the returned value is on 11 bits. It should be used as 2*level during read 
+ as the data is 64 bit wide.
+ Data field 20bits : [0eaf][0000 0] 7FF fEmpty, fAlmostFull, Full, level
+*/
 int vt2_FifoLevelRead(MVME_INTERFACE *mvme, DWORD base)
 {
   int  status, cmode;
@@ -55,7 +61,23 @@ int vt2_FifoLevelRead(MVME_INTERFACE *mvme, DWORD base)
   if (status & VT2_FULL_FLAG)
     status = -1;
   else
-    status &= 0x3FF; 
+    status &= 0x7FF; 
+  mvme_set_dmode(mvme, cmode);
+  return 2*status;
+}
+
+/*****************************************************************/
+/**
+ return the cycle number (10 bit)
+*/
+int vt2_CycleNumberRead(MVME_INTERFACE *mvme, DWORD base)
+{
+  int  status, cmode;
+
+  mvme_get_dmode(mvme, &cmode);
+  mvme_set_dmode(mvme, MVME_DMODE_D32);
+  status = mvme_read_value(mvme, base+VT2_CYCLENUMBER_RO);
+  status &= 0x3FF; 
   mvme_set_dmode(mvme, cmode);
   return status;
 }
@@ -120,7 +142,7 @@ void vt2_CycleReset(MVME_INTERFACE *mvme, DWORD base, int fset)
     flag = (VT2_CYCLERESET<<16);
   else
     flag = VT2_CYCLERESET;
-  printf("0x%lx  flag:0x%x\n", base+VT2_CTL_WO, flag);
+  printf("0x%x  flag:0x%x\n", base+VT2_CTL_WO, flag);
   mvme_write_value(mvme, base+VT2_CTL_WO, flag);
   mvme_set_dmode(mvme, cmode);
 }
@@ -176,11 +198,15 @@ int main () {
     vt2_CycleReset(myvme, VT2_BASE, 0);
   }
   
-  udelay(1000000);
+  udelay(100000);
   if (1) {
     printf("Read Fifo status\n");
+    csr = vt2_CSRRead(myvme, VT2_BASE);
+    printf("CSR : 0x%x\n", csr);
+    csr = vt2_CycleNumberRead(myvme, VT2_BASE);
+    printf("Read Cycle Number: %d\n", csr);
     csr = vt2_FifoLevelRead(myvme, VT2_BASE);
-    printf("FifoStatus: 0x%x\n", csr);
+    printf("Read Fifo Level: %d\n", csr);
   }
 
   if (1) {
