@@ -36,9 +36,10 @@ typedef DWORD BOOL;
 #define  VT2_MAX_CHANNELS    (DWORD) 2
 #define  VT2_CSR_RO          (DWORD) (0x0)
 #define  VT2_FIFOSTATUS_RO   (DWORD) (0x4)
-#define  VT2_CTL_WO          (DWORD) (0x8)
-#define  VT2_INTREG          (DWORD) (0xc)  
-#define  VT2_FIFO_RO         (DWORD) (0x10)
+#define  VT2_CYCLENUMBER_RO  (DWORD) (0x8)
+#define  VT2_CTL_WO          (DWORD) (0xc)
+#define  VT2_INTREG          (DWORD) (0x10)  
+#define  VT2_FIFO_RO         (DWORD) (0x14)
 #define  VT2_MANRESET        (DWORD) (0x1)
 #define  VT2_CYCLERESET      (DWORD) (0x2)
 #define  VT2_KEEPALIVE       (DWORD) (0x4)
@@ -60,6 +61,7 @@ int  vt2_CSRRead(MVME_INTERFACE *mvme, DWORD base);
 void vt2_ManReset(MVME_INTERFACE *mvme, DWORD base);
 int  vt2_FifoLevelRead(MVME_INTERFACE *mvme, DWORD base);
 int  vt2_FifoRead(MVME_INTERFACE *mvme, DWORD base, DWORD *pdest, int evtcnt);
+int  vt2_CycleNumberRead(MVME_INTERFACE *mvme, DWORD base);
 void vt2_CycleReset(MVME_INTERFACE *mvme, DWORD base, int fset);
 void vt2_KeepAlive(MVME_INTERFACE *mvme, DWORD base, int fset);
 #endif
