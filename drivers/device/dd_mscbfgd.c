@@ -80,7 +80,7 @@ INT mscbfgd_init(HNDLE hkey, void **pinfo, INT channels, INT(*bd) (INT cmd, ...)
 
    /* check if FGD devices are alive */
    for (i=info->settings.base_address ; i<info->settings.base_address+channels ; i++) {
-      status = mscb_ping(info->fd, i);
+      status = mscb_ping(info->fd, i, 0);
       if (status != MSCB_SUCCESS) {
          cm_msg(MERROR, "mscbfgd_init",
                "Cannot ping MSCB FGD address \"%d\". Check power and connection.", i);
@@ -143,7 +143,7 @@ INT mscbfgd_get_temperature(MSCBFGD_INFO * info, INT channel, float *pvalue, int
 
   switch (cmd) {
    case CMD_GET_TEMPERATURE1:  // Temp1 
-     mscb_read(info->fd, info->settings.base_address + channel, 8, pvalue, &size);
+     mscb_read(info->fd, info->settings.base_address + channel, 7, pvalue, &size);
      break;
    case CMD_GET_TEMPERATURE2:  // Temp2 
      mscb_read(info->fd, info->settings.base_address + channel, 9, pvalue, &size);
