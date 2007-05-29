@@ -32,13 +32,13 @@ unsigned char idata _n_sub_addr = 1;
 
 struct {
    float position;
-   float offset;
+   unsigned long offset;
    float factor;
 } xdata user_data;
 
 MSCB_INFO_VAR code vars[] = {
    4,  UNIT_METER,  0, 0,  MSCBF_FLOAT, "Position",&user_data.position,
-   4,  UNIT_METER,  0, 0,  MSCBF_FLOAT, "Offset",  &user_data.offset,
+   4,  UNIT_METER,  0, 0,            0, "Offset",  &user_data.offset,
    4,  UNIT_FACTOR, 0, 0,  MSCBF_FLOAT, "Factor",  &user_data.factor,
    0
 };
@@ -60,7 +60,7 @@ void user_init(unsigned char init)
 {
    if (init) {
       user_data.offset = 0;
-	  user_data.factor = 1;
+      user_data.factor = 1;
    }
 
    /* initialize UART1 */
@@ -128,8 +128,8 @@ unsigned char xdata str[80], i, bcc;
 unsigned long int xdata d;
 float xdata p;
 
-   /* read parameters once each 100 ms */
-   if (time() > last_read + 10) {
+   /* read parameters once each 1000 ms */
+   if (time() > last_read + 100) {
       last_read = time();
 
       putchar(0x02); // STX
@@ -146,7 +146,6 @@ float xdata p;
          putchar(0x03); // ETX
 
          // checksum = xor of data bytes
-         //bcc = 0x80 ^ 0 ^ 0x10 ^ 0x03;
          bcc = 0x80 ^ 0x10 ^ 0x03;
          putchar(bcc);
 
@@ -161,13 +160,14 @@ float xdata p;
                putchar(0x10); // DLE
                i = gets_wait(str, 7, 200);
                if (i == 7) {
-                  putchar(0x06); // ACK
+                  putchar(0x10); // DLE
 
                   d = str[0];            // MSB
                   d = (d << 8) | str[1]; // MB
                   d = (d << 8) | str[2]; // LSB
 
-                  p = d*user_data.factor + user_data.offset;
+                  d = d - user_data.offset;
+                  p = d*user_data.factor;
                   DISABLE_INTERRUPTS;
                   user_data.position = p;
                   ENABLE_INTERRUPTS;
