@@ -25,6 +25,9 @@ char code node_name[] = "PDS60";
 /* declare number of sub-addresses to framework */
 unsigned char idata _n_sub_addr = 1;
 
+sbit CTS = P0 ^ 7;
+sbit RTS = P0 ^ 6;
+
 bit output_flag;
 
 /*---- Define channels and configuration parameters returned to
@@ -73,6 +76,13 @@ void user_init(unsigned char init)
    /* initialize UART1 */
    uart_init(1, BD_9600);
    watchdog_enable(2);
+
+
+   SFRPAGE = CONFIG_PAGE;
+   P0MDOUT = 0x81;      // P0.0: TX = Push Pull, P0.7 = Push Pull
+
+   /* indicate we can receive data */
+   CTS = 0;
 
    output_flag = 1;
 }
@@ -158,6 +168,9 @@ char xdata str[80], i;
 
       i = gets_wait(str, sizeof(str), 200);
       if (i == 18) {
+         user_data.voltage = atof(str+7);
+         user_data.current = atof(str+12);
+      } else if (i == 19) {
          user_data.voltage = atof(str+7);
          user_data.current = atof(str+13);
       }
