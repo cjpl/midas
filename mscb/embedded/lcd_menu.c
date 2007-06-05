@@ -79,6 +79,7 @@ NAME_TABLE code unit_table[] = {
    {UNIT_LITERPERSEC, "l/s",},
    {UNIT_RPM, "RPM",},
    {UNIT_FARAD, "F",},
+   {UNIT_JOULE, "J",},
 
    {UNIT_PERCENT, "%",},
    {UNIT_PPM, "RPM",},
@@ -294,8 +295,8 @@ void lcd_menu()
    if (startup) {
       if(time() > 300) {
          startup = 0;
-         lcd_clear();
-      } else
+         application_display(1);
+      } else                
         return;
    }
 
