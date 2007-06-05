@@ -645,6 +645,7 @@ typedef struct {
 #define UNIT_LITERPERSEC 27
 #define UNIT_RPM         28
 #define UNIT_FARAD       29
+#define UNIT_JOULE       30
 
 // computer units
 
