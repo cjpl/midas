@@ -12,6 +12,8 @@
 				- Got rid of exp function, replaced with different and simpler algorithm
 				- Separated some funtions to another file called ADT7486A_tsensor.c and .h
 					(Rev 1.1)
+
+  $id$
 \**********************************************************************************/
 
 // --------------------------------------------------------
