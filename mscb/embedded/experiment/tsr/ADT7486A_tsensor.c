@@ -12,6 +12,8 @@
 				- Got rid of exp function, replaced with different and simpler algorithm
 					(Rev 1.1)
 				- added averaging scheme
+
+  $Id$
 \**********************************************************************************/
 
 // --------------------------------------------------------
