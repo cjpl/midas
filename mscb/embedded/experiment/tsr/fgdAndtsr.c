@@ -7,7 +7,7 @@
                 Midas Slow Control Bus protocol
                 for FGD-008 SiPM HV control
 
-  $Id:$
+  $Id$
 
 \********************************************************************/
 //  need to have FGD_008 defined.

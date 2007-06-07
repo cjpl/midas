@@ -3,6 +3,7 @@
 //      - Writtern for Temperature Sensor Array board
 //      - Brian Lee   (May/11/2007)
 //
+//  $id$
 // --------------------------------------------------------
 #ifndef  _ADT7486A_TSENSOR_H
 #define  _ADT7486A_TSENSOR_H
