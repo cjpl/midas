@@ -1335,7 +1335,7 @@ INT cm_set_client_info(HNDLE hDB, HNDLE * hKeyClient, char *host_name,
       BOOL call_watchdog, allow;
       PROGRAM_INFO_STR(program_info_str);
 
-      /* check security if password is presend */
+      /* check security if password is present */
       status = db_find_key(hDB, 0, "/Experiment/Security/Password", &hKey);
       if (hKey) {
          /* get password */
@@ -1354,7 +1354,7 @@ INT cm_set_client_info(HNDLE hDB, HNDLE * hKeyClient, char *host_name,
             allow = TRUE;
 
          /* now check password */
-         if (!allow && strcmp(password, pwd) != 0 && strcmp(password, "mid7qBxsNMHux") != 0) {
+         if (!allow && strcmp(password, pwd) != 0) {
             if (password[0])
                cm_msg(MINFO, "cm_set_client_info", "Wrong password for host %s", host_name);
             db_close_all_databases();
