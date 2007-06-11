@@ -1496,6 +1496,7 @@ INT CloseRootOutputFile()
    /* delete event tree */
    free(tree_struct.event_tree);
    tree_struct.event_tree = NULL;
+   tree_struct.n_tree = 0;
 
    // go to ROOT root directory
    gROOT->cd();
