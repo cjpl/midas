@@ -252,8 +252,8 @@ void process_event(HNDLE hBuf, HNDLE request_id, EVENT_HEADER * pheader, void *p
               pheader->event_id, pheader->trigger_mask, pheader->serial_number,
               pheader->time_stamp, pheader->data_size, pheader->data_size);
       } else {
-         printf("Consistency check: %c - %i\r", bars[i_bar++ % 4],
-                pheader->serial_number);
+         printf("Consistency check: %c - %i (Data size:%i)\r", bars[i_bar++ % 4],
+                pheader->serial_number, pheader->data_size);
          fflush(stdout);
       }
       memcpy((char *) &pevh, (char *) pheader, sizeof(EVENT_HEADER));
