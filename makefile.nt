@@ -50,7 +50,10 @@ OBJS =  $(LIB_DIR)/midas.obj \
   $(LIB_DIR)/ybos.obj \
   $(LIB_DIR)/ftplib.obj \
   $(LIB_DIR)/mxml.obj \
-  $(LIB_DIR)/strlcpy.obj
+  $(LIB_DIR)/alarm.obj \
+  $(LIB_DIR)/elog.obj \
+  $(LIB_DIR)/history.obj \
+$(LIB_DIR)/strlcpy.obj
 
 LIBRARY =   $(LIB_DIR)/midas.lib
 
@@ -122,6 +125,12 @@ $(LIB_DIR)/system.obj: $(SRC_DIR)/system.c $(INC_DIR)/msystem.h $(INC_DIR)/midas
 	$(CC) /c /DMIDAS_DLL $(CFLAGS) /Fo$(LIB_DIR)/system.obj $(SRC_DIR)/system.c
 $(LIB_DIR)/mrpc.obj: $(SRC_DIR)/mrpc.c $(INC_DIR)/msystem.h $(INC_DIR)/midas.h $(INC_DIR)/mrpc.h
 	$(CC) /c /DMIDAS_DLL $(CFLAGS) /Fo$(LIB_DIR)/mrpc.obj $(SRC_DIR)/mrpc.c
+$(LIB_DIR)/alarm.obj: $(SRC_DIR)/alarm.c $(INC_DIR)/msystem.h $(INC_DIR)/midas.h $(INC_DIR)/mrpc.h
+	$(CC) /c /DMIDAS_DLL $(CFLAGS) /Fo$(LIB_DIR)/alarm.obj $(SRC_DIR)/alarm.c
+$(LIB_DIR)/elog.obj: $(SRC_DIR)/elog.c $(INC_DIR)/msystem.h $(INC_DIR)/midas.h $(INC_DIR)/mrpc.h
+	$(CC) /c /DMIDAS_DLL $(CFLAGS) /Fo$(LIB_DIR)/elog.obj $(SRC_DIR)/elog.c
+$(LIB_DIR)/history.obj: $(SRC_DIR)/history.c $(INC_DIR)/msystem.h $(INC_DIR)/midas.h $(INC_DIR)/mrpc.h
+	$(CC) /c /DMIDAS_DLL $(CFLAGS) /Fo$(LIB_DIR)/history.obj $(SRC_DIR)/history.c
 $(LIB_DIR)/odb.obj: $(SRC_DIR)/odb.c $(INC_DIR)/msystem.h $(INC_DIR)/midas.h $(INC_DIR)/midasinc.h $(INC_DIR)/mrpc.h
 	$(CC) /c /DMIDAS_DLL $(CFLAGS) /Fo$(LIB_DIR)/odb.obj $(SRC_DIR)/odb.c
 $(LIB_DIR)/ybos.obj: $(SRC_DIR)/ybos.c $(INC_DIR)/msystem.h $(INC_DIR)/midas.h $(INC_DIR)/midasinc.h $(INC_DIR)/mrpc.h
@@ -152,7 +161,6 @@ $(BIN_DIR)/mstat.exe:  $(LIBRARY) $(UTL_DIR)/mstat.c
 	$(CC) $(CFLAGS) $(OSFLAGS) /Fe$(BIN_DIR)/mstat.exe $(UTL_DIR)/mstat.c $(LIBRARY) $(LIBS) wsock32.lib
 $(BIN_DIR)/mcnaf.exe:$(LIBRARY) $(UTL_DIR)/mcnaf.c $(DRV_DIR)/camac/camacrpc.c
 	$(CC) $(CFLAGS) $(OSFLAGS) /Fe$(BIN_DIR)/mcnaf.exe $(UTL_DIR)/mcnaf.c $(DRV_DIR)/camac/camacrpc.c $(LIBRARY) wsock32.lib $(LIBS)
-
 
 clean:
 	del $(LIB_DIR)\*.obj
