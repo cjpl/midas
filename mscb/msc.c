@@ -26,6 +26,7 @@
 #endif
 
 #include <stdio.h>
+#include <assert.h>
 #include <string.h>
 #include <stdlib.h>
 #include <fcntl.h>
@@ -1615,7 +1616,11 @@ void cmd_loop(int fd, char *cmd, unsigned short adr)
       /* test 2 -----------*/
       else if (match(param[0], "t2")) {
          struct timeb tb1, tb2;
+#ifdef OS_DARWIN
+         assert(!"ftime() is obsolete!");
+#else
          ftime(&tb1);
+#endif
          size = 256;
          for (i=0 ; i<900 ; i++) {
             mscb_read_range(fd, (unsigned short) current_addr, 1, 0, dbuf, &size);
@@ -1623,7 +1628,11 @@ void cmd_loop(int fd, char *cmd, unsigned short adr)
             if (kbhit())
                break;
          }
+#ifdef OS_DARWIN
+         assert(!"ftime() is obsolete!");
+#else
          ftime(&tb2);
+#endif
          printf("\n%3.2lf sec.\n", (tb2.time+tb2.millitm/1000.0) - (tb1.time+tb1.millitm/1000.0));
          while (kbhit())
             getch();
