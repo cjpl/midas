@@ -12,21 +12,7 @@
 #ifndef MUSBSTD_H
 #define MUSBSTD_H
 
-#if defined(_MSC_VER)
-
-#include <windows.h>
-
-typedef struct {
-   HANDLE rhandle;
-   HANDLE whandle;
-   int SerNo;
-} MUSB_INTERFACE;
-
-#elif defined(OS_LINUX) || defined(HAVE_LIBUSB)
-
-#ifndef HAVE_LIBUSB
-#define HAVE_LIBUSB
-#endif
+#if defined(HAVE_LIBUSB)
 
 #include <usb.h>
 
@@ -36,12 +22,24 @@ typedef struct {
    int SerNo;
 } MUSB_INTERFACE;
 
+#elif defined(_MSC_VER)
+
+#include <windows.h>
+
+typedef struct {
+   HANDLE rhandle;
+   HANDLE whandle;
+   int SerNo;
+} MUSB_INTERFACE;
+
 #elif defined(OS_DARWIN)
 
 typedef struct {
-   IOUSBInterfaceInterface **handle;
+   void **handle;
 } MUSB_INTERFACE;
 
+#else
+#error Do not know how to access USB devices
 #endif
 
 /*---- status codes ------------------------------------------------*/
