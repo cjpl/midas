@@ -26,26 +26,28 @@ endif
 ifdef MIDASSYS
 MXMLDIR       = $(MIDASSYS)/../mxml/
 else
-MXMLDIR       = mxml/
+MXMLDIR       = ../../mxml/
 endif
 
 # directory where musbstd.h resides
 ifdef MIDASSYS
 MIDASINC      = $(MIDASSYS)/include
 else
-MIDASINC      = midas/include
+MIDASINC      = ../include
 endif
 
 # directory where musbstd.c resides
 ifdef MIDASSYS
 USBDIR        = $(MIDASSYS)/drivers/usb/
 else
-USBDIR        = midas/drivers/usb/
+USBDIR        = ../drivers/usb/
 endif
 
 OUTNAME       = msc 
 CC            = gcc -g -O
 FLAGS         = -Wall -Wuninitialized -I$(MXMLDIR) -I$(MIDASINC)
+
+STRLCPY       = strlcpy.o
 
 ifeq ($(OSTYPE),linux)
 CC   += -DOS_LINUX -DHAVE_LIBUSB -fpic
@@ -53,12 +55,13 @@ LIBS  = -lusb
 endif
 
 ifeq ($(OSTYPE),darwin)
-CC   += -DOS_DARWIN
+CC   += -DOS_DARWIN -DOS_LINUX
 LIBS  = -lIOKit /System/Library/Frameworks/CoreFoundation.framework/CoreFoundation
+STRLCPY       =
 endif
 
 MSCB_OBJ      = msc.o mscb.o mscbrpc.o
-MXML_OBJ      = mxml.o strlcpy.o
+MXML_OBJ      = mxml.o $(STRLCPY)
 USB_OBJ       = musbstd.o
 OBJECTS       = $(MSCB_OBJ) $(MXML_OBJ) $(USB_OBJ)
 
