@@ -90,8 +90,8 @@ MSCB_FD mscb_fd[MSCB_MAX_FD];
 
 #elif defined(OS_LINUX)
 
-#define EP_READ  -999
-#define EP_WRITE -999
+#define EP_READ  0x81
+#define EP_WRITE 0x02
 
 #else
 #error Do not know which endpoint numbers to use!
@@ -353,10 +353,10 @@ int mscb_lock(int fd)
 #elif defined(OS_LINUX)
 
 #ifdef HAVE_LIBUSB
-   if (mscb_fd[fd - 1].type == MSCB_TYPE_USB) {
-      if (usb_claim_interface((usb_dev_handle *) mscb_fd[fd - 1].ui->dev, 0) < 0)
-         return 0;
-   }
+   //if (mscb_fd[fd - 1].type == MSCB_TYPE_USB) {
+   //   if (usb_claim_interface((usb_dev_handle *) mscb_fd[fd - 1].ui->dev, 0) < 0)
+   //     return 0;
+   //}
 #endif // HAVE_LIBUSB
 
    if (mscb_fd[fd - 1].type == MSCB_TYPE_ETH) {
@@ -424,8 +424,8 @@ int mscb_release(int fd)
 
    if (mscb_fd[fd - 1].type == MSCB_TYPE_USB) {
 #ifdef HAVE_LIBUSB
-      if (usb_release_interface((usb_dev_handle *) mscb_fd[fd - 1].ui->dev, 0) < 0)
-         return 0;
+     //      if (usb_release_interface((usb_dev_handle *) mscb_fd[fd - 1].ui->dev, 0) < 0)
+     //    return 0;
 #endif // HAVE_LIBUSB
    }
      

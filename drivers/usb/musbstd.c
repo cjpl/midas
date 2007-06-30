@@ -166,20 +166,18 @@ int musb_open(MUSB_INTERFACE **musb_interface, int vendor, int product, int inst
 	   
 	   udev = usb_open(dev);
 	   if (!udev) {
-	     fprintf(stderr, "musb_open: usb_open() error\n");
-	     return MUSB_ACCESS_ERROR;
-	   }
+             fprintf(stderr, "musb_open: usb_open() error\n");
+             return MUSB_ACCESS_ERROR;
+           }
 	   
 	   status = usb_set_configuration(udev, configuration);
 	   if (status < 0) {
 	     fprintf(stderr, "musb_open: usb_set_configuration() error %d (%s)\n", status,
 		     strerror(-status));
-	     
-	     fprintf(stderr,
-		     "musb_open: Found USB device %04x:%04x instance %d, but cannot initialize it: please check permissions on \"/proc/bus/usb/%s/%s\"\n",
-		     vendor, product, instance, bus->dirname, dev->filename);
-	     
-	     return MUSB_ACCESS_ERROR;
+             fprintf(stderr,
+                     "musb_open: Found USB device %04x:%04x instance %d, but cannot initialize it: please check permissions on \"/proc/bus/usb/%s/%s\" and \"/dev/bus/usb/%s/%s\"\n",
+                     vendor, product, instance, bus->dirname, dev->filename, bus->dirname, dev->filename);
+             return MUSB_ACCESS_ERROR;
 	   }
 	   
 	   /* see if we have write access */
@@ -352,15 +350,17 @@ int musb_write(MUSB_INTERFACE *musb_interface, int endpoint, const void *buf, in
 #elif defined(HAVE_LIBUSB)
 
    n_written = usb_bulk_write(musb_interface->dev, endpoint, (char*)buf, count, timeout);
-   if (n_written < 0) fprintf(stderr,"usb_bulk_write: n_written:%d [%s]\n", n_written, strerror (-n_written));
-   usleep(10); // needed for linux not to crash !!!!
+   if (n_written != count) {
+      fprintf(stderr, "musb_write: requested %d, wrote %d, errno %d (%s)\n", count, n_written, errno, strerror(errno));
+   }
 
 #elif defined(OS_DARWIN)
    IOReturn status;
    IOUSBInterfaceInterface182 **device = musb_interface->handle;
    status = (*device)->WritePipeTO(device, endpoint, buf, count, 0, timeout);
-   if (status != 0)
+   if (status != 0) {
       printf("musb_write: WritePipe() status %d 0x%x\n", status, status);
+   }
    n_written = count;
 #endif
 
@@ -403,7 +403,9 @@ int musb_read(MUSB_INTERFACE *musb_interface, int endpoint, void *buf, int count
 #elif defined(HAVE_LIBUSB)
 
    n_read = usb_bulk_read(musb_interface->dev, endpoint, (char*)buf, count, timeout);
-   if (n_read < 0) fprintf(stderr,"after  usb_bulk_read:%d \n", n_read);
+   if (n_read <= 0) {
+      fprintf(stderr, "musb_read: requested %d, read %d, errno %d (%s)\n", count, n_read, errno, strerror(errno));
+   }
 
 #elif defined(OS_DARWIN)
 
