@@ -290,7 +290,7 @@ extern "C" {
 }
 #endif
 /* define missing linux functions */
-#if defined(__linux__)
+#if defined(OS_LINUX)
 #ifndef TRUE
 #define TRUE 1
 #define FALSE 0
