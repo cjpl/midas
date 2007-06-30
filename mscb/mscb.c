@@ -19,6 +19,27 @@
 #include <conio.h>
 #include <sys/timeb.h>
 
+#elif defined(OS_DARWIN)
+
+#include <unistd.h>
+#include <string.h>
+#include <stdlib.h>
+#include <ctype.h>
+#include <sys/types.h>
+#include <sys/ioctl.h>
+#include <sys/time.h>
+#include <fcntl.h>
+#include <sys/sem.h>
+#include <errno.h>
+#include <netinet/in.h>
+#include <netdb.h>
+
+#include <assert.h>
+#include <mach/mach.h>
+#include <IOKit/IOKitLib.h>
+#include <IOKit/IOCFPlugIn.h>
+#include <IOKit/usb/IOUSBLib.h>
+
 #elif defined(OS_LINUX)        // Linux includes
 
 #include <errno.h>
@@ -43,23 +64,6 @@
 #include <usb.h>
 #endif
 
-#elif defined(OS_DARWIN)
-
-#include <unistd.h>
-#include <string.h>
-#include <stdlib.h>
-#include <ctype.h>
-#include <sys/types.h>
-#include <sys/ioctl.h>
-#include <sys/time.h>
-#include <fcntl.h>
-
-#include <assert.h>
-#include <mach/mach.h>
-#include <IOKit/IOKitLib.h>
-#include <IOKit/IOCFPlugIn.h>
-#include <IOKit/usb/IOUSBLib.h>
-
 #endif
 
 #include <stdio.h>
@@ -71,6 +75,27 @@
 /*------------------------------------------------------------------*/
 
 MSCB_FD mscb_fd[MSCB_MAX_FD];
+
+/* usb endpoints */
+
+#if defined(_MSC_VER)
+
+#define EP_READ  0
+#define EP_WRITE 0
+
+#elif defined(OS_DARWIN)
+
+#define EP_READ  1
+#define EP_WRITE 2
+
+#elif defined(OS_LINUX)
+
+#define EP_READ  -999
+#define EP_WRITE -999
+
+#else
+#error Do not know which endpoint numbers to use!
+#endif
 
 /* constants */
 
@@ -397,12 +422,12 @@ int mscb_release(int fd)
 
 #elif defined(OS_LINUX)
 
-#ifdef HAVE_LIBUSB
    if (mscb_fd[fd - 1].type == MSCB_TYPE_USB) {
+#ifdef HAVE_LIBUSB
       if (usb_release_interface((usb_dev_handle *) mscb_fd[fd - 1].ui->dev, 0) < 0)
          return 0;
-   }
 #endif // HAVE_LIBUSB
+   }
      
    else if (mscb_fd[fd - 1].type == MSCB_TYPE_ETH) {
  
@@ -444,15 +469,15 @@ int subm250_open(MUSB_INTERFACE **ui, int usb_index)
    for (i = found = 0 ; i<127 ; i++) {
       status = musb_open(ui, 0x10C4, 0x1175, i, 1, 0);
       if (status != MUSB_SUCCESS) {
-         printf("musb_open returned %d\n", status);
+         //printf("musb_open returned %d\n", status);
          return EMSCB_NOT_FOUND;
       }
 
       /* check if it's a subm_250 */
       buf[0] = 0;
-      musb_write(*ui, 0, buf, 1, MUSB_TIMEOUT);
+      musb_write(*ui, EP_WRITE, buf, 1, MUSB_TIMEOUT);
 
-      status = musb_read(*ui, 0, buf, sizeof(buf), MUSB_TIMEOUT);
+      status = musb_read(*ui, EP_READ, buf, sizeof(buf), MUSB_TIMEOUT);
       if (strcmp(buf, "SUBM_250") == 0)
          if (found++ == usb_index)
             return MSCB_SUCCESS;
@@ -601,7 +626,7 @@ int mscb_exchg(int fd, char *buffer, int *size, int len, int flags)
       memcpy(usb_buf + 1, buffer, len);
 
       /* send on OUT pipe */
-      i = musb_write(mscb_fd[fd - 1].ui, 0, usb_buf, len + 1, MUSB_TIMEOUT);
+      i = musb_write(mscb_fd[fd - 1].ui, EP_WRITE, usb_buf, len + 1, MUSB_TIMEOUT);
 
       if (i == 0) {
          /* USB submaster might have been dis- and reconnected, so reinit */
@@ -615,7 +640,7 @@ int mscb_exchg(int fd, char *buffer, int *size, int len, int flags)
             return MSCB_TIMEOUT;
          }
 
-         i = musb_write(mscb_fd[fd - 1].ui, 0, usb_buf, len + 1, MUSB_TIMEOUT);
+         i = musb_write(mscb_fd[fd - 1].ui, EP_WRITE, usb_buf, len + 1, MUSB_TIMEOUT);
       }
 
       if (i != len + 1) {
@@ -642,7 +667,7 @@ int mscb_exchg(int fd, char *buffer, int *size, int len, int flags)
       /* receive result on IN pipe */
       n = 0;
       do {
-         i = musb_read(mscb_fd[fd - 1].ui, 0, buffer+n, *size-n > 61 ? 61 : *size - n, MUSB_TIMEOUT);
+         i = musb_read(mscb_fd[fd - 1].ui, EP_READ, buffer+n, *size-n > 61 ? 61 : *size - n, MUSB_TIMEOUT);
          if (i == 61) {
             n += 60;
             break;
@@ -3688,6 +3713,10 @@ int mscb_select_device(char *device, int size, int select)
    int status, usb_index, found, i, n, index, error_code;
    MUSB_INTERFACE *ui;
 
+#ifdef OS_DARWIN
+   assert(!"mscb_select_device is not permitted.");
+#endif
+
    n = 0;
    *device = 0;
    error_code = 0;
@@ -3707,6 +3736,8 @@ int mscb_select_device(char *device, int size, int select)
       if (status != MUSB_SUCCESS)
          break;
 
+      //printf("musb_open: status %d, ui %p\n", status, ui);
+
       sprintf(str, "usb%d", found);
       mscb_fd[index].mutex_handle = mscb_mutex_create(str);
 
@@ -3718,9 +3749,9 @@ int mscb_select_device(char *device, int size, int select)
 
       /* check if it's a subm_250 */
       buf[0] = 0;
-      musb_write(ui, 0, buf, 1, 1000);
+      musb_write(ui, EP_WRITE, buf, 1, 1000);
 
-      i = musb_read(ui, 0, buf, sizeof(buf), MUSB_TIMEOUT);
+      i = musb_read(ui, EP_READ, buf, sizeof(buf), MUSB_TIMEOUT);
       if (strcmp(buf, "SUBM_250") == 0)
          sprintf(list[n++], "usb%d", found++);
 
