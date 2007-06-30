@@ -17,7 +17,7 @@
 #include <time.h>
 #include <sys/timeb.h>
 
-#elif defined(__linux__)
+#elif defined(OS_LINUX)
 
 #include <unistd.h>
 #include <stdarg.h>
@@ -39,6 +39,7 @@
 #endif
 
 #include <stdio.h>
+#include <assert.h>
 #include <musbstd.h>
 #include "mscb.h"
 #include "mscbrpc.h"
@@ -265,7 +266,11 @@ void debug_log(char *format, int start, ...)
 
    line[0] = 0;
    if (start) {
+#ifdef OS_DARWIN
+      assert(!"No ftime(), sorry!");
+#else
       ftime(&tb);
+#endif
       strcpy(line, ctime(&tb.time) + 11);
       sprintf(line + 8, ".%03d ", tb.millitm);
    }
