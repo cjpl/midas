@@ -974,36 +974,33 @@ INT ss_gettid(void)
    if (_single_thread)
       return 1;
 
-#ifdef OS_MSDOS
+#if defined OS_MSDOS
 
    return 0;
 
-#endif                          /* OS_MSDOS */
-#ifdef OS_WINNT
+#elif defined OS_WINNT
 
    return (int) GetCurrentThreadId();
 
-#endif                          /* OS_WINNT */
-#ifdef OS_VMS
+#elif defined OS_VMS
 
    return ss_getpid();
 
-#endif                          /* OS_VMS */
-#ifdef OS_DARWIN
+#elif defined OS_DARWIN
 
    return pthread_self();
 
-#endif
-#ifdef OS_UNIX
+#elif defined OS_UNIX
 
    return syscall(SYS_gettid);
 
-#endif                          /* OS_UNIX */
-#ifdef OS_VXWORKS
+#elif defined OS_VXWORKS
 
    return ss_getpid();
 
-#endif                          /* OS_VXWORKS */
+#else
+#error Do not know how to do ss_gettid()
+#endif
 }
 
 /*------------------------------------------------------------------*/
