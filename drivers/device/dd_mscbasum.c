@@ -18,6 +18,25 @@
 #include "midas.h"
 #include "mscb.h"
 
+#undef CMD_GET_LAST
+#define CMD_GET_EXTERNALTEMP         CMD_GET_FIRST+6
+#define CMD_GET_INTERNALTEMP         CMD_GET_FIRST+7
+#define CMD_GET_ADCMEAS              CMD_GET_FIRST+8
+#define CMD_GET_CONTROL              CMD_GET_FIRST+9
+#define CMD_GET_BIASEN               CMD_GET_FIRST+10
+#define CMD_GET_CHPUMPDAC				 CMD_GET_FIRST+11
+#define CMD_GET_ASUMDACTH				 CMD_GET_FIRST+12
+#define CMD_GET_LAST						 CMD_GET_FIRST+12
+
+
+#undef CMD_SET_LAST
+#define CMD_SET_CONTROL              CMD_SET_FIRST+5 
+#define CMD_SET_ASUMDACTH            CMD_SET_FIRST+6
+#define CMD_SET_CHPUMPDAC            CMD_SET_FIRST+7
+#define CMD_SET_BIAS_EN					 CMD_SET_FIRST+8
+#define CMD_SET_LAST						 CMD_SET_FIRST+8
+
+
 /*---- globals -----------------------------------------------------*/
 extern indexNum;
 extern indexNumADC;
@@ -314,28 +333,28 @@ INT mscbasum(INT cmd, ...)
       //ss_sleep(10);
       break;
 
-	case CMD_CONTROL_READ:
+	case CMD_GET_CONTROL:
 		info = va_arg(argptr, void *);
       channel = va_arg(argptr, INT);
       rvalue = (char *) va_arg(argptr, char *);
       status = mscbasum_getControl(info, channel, rvalue);
       break;
 
-   case CMD_CONTROL:  // Update control variable
+   case CMD_SET_CONTROL:  // Update control variable
       info = va_arg(argptr, void *);
       channel = va_arg(argptr, INT);
       value = (float) va_arg(argptr, double);
       status = mscbasum_controlUpdate(info, channel, value);
       break;
 
-	case CMD_BIASEN_READ:
+	case CMD_GET_BIASEN:
 		info = va_arg(argptr, void *);
       channel = va_arg(argptr, INT);
       rvalue = (char *) va_arg(argptr, char *);
       status = mscbasum_getbiasEn(info, channel, rvalue);
       break;
 
-	case CMD_BIAS_EN:  // Update Bias Enable variable
+	case CMD_SET_BIAS_EN:  // Update Bias Enable variable
 		info = va_arg(argptr, void *);
 		channel = va_arg(argptr, INT);
 		value = (float) va_arg(argptr, double);
@@ -350,14 +369,14 @@ INT mscbasum(INT cmd, ...)
       status = mscgasum_setasumDacTh(info, channel, value);
       break;
 
-	case CMD_ASUMDACTH_READ:
+	case CMD_GET_ASUMDACTH:
 		info = va_arg(argptr, void *);
       channel = va_arg(argptr, INT);
       pvalue = va_arg(argptr, float *);
       status = mscbasum_getasumDacTh(info, channel, pvalue);
       break;
 
-	case CMD_CHPUMPDAC_READ:
+	case CMD_GET_CHPUMPDAC:
 		info = va_arg(argptr, void *);
       channel = va_arg(argptr, INT);
       pvalue = va_arg(argptr, float *);
