@@ -1,15 +1,15 @@
 /**********************************************************************************\
   Name:         SPI_handler.c
-  Created by:   Brian Lee						     Jun/14/2007
+  Created by:   Brian Lee                Jun/14/2007
 
 
   Contents:     SPI protocol for T2K-FGD experiment
 
-  Version:		Rev 1.0
+  Version:    Rev 1.0
 
-  Last updated: 
+  Last updated:
 
-  $id$
+  $Id$
 \**********************************************************************************/
 //  need to have T2KASUM defined
 
