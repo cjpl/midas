@@ -27,6 +27,24 @@
 #include "midas.h"
 #include "ybos.h"
 
+#undef CMD_GET_LAST
+#define CMD_GET_EXTERNALTEMP         CMD_GET_FIRST+6
+#define CMD_GET_INTERNALTEMP         CMD_GET_FIRST+7
+#define CMD_GET_ADCMEAS              CMD_GET_FIRST+8
+#define CMD_GET_CONTROL              CMD_GET_FIRST+9
+#define CMD_GET_BIASEN               CMD_GET_FIRST+10
+#define CMD_GET_CHPUMPDAC				 CMD_GET_FIRST+11
+#define CMD_GET_ASUMDACTH				 CMD_GET_FIRST+12
+#define CMD_GET_LAST						 CMD_GET_FIRST+12
+
+
+#undef CMD_SET_LAST
+#define CMD_SET_CONTROL              CMD_SET_FIRST+5 
+#define CMD_SET_ASUMDACTH            CMD_SET_FIRST+6
+#define CMD_SET_CHPUMPDAC            CMD_SET_FIRST+7
+#define CMD_SET_BIAS_EN					 CMD_SET_FIRST+8
+#define CMD_SET_LAST						 CMD_SET_FIRST+8
+
 int indexNum;
 int indexNumADC;
 int controlFlag;
@@ -285,7 +303,7 @@ void control_update(INT hDB, INT hKey, void *info)
 
 					controlToBeSent = (float) (1.0 * pow(2, numChannel));
 
-               status = device_driver(asum_info->driver[i], CMD_CONTROL,  // Control
+               status = device_driver(asum_info->driver[i], CMD_SET_CONTROL,  // Control
                                     i - asum_info->channel_offset[i], controlToBeSent);
             }
 				*(asum_info->control_mirror[numChannel]) = *(asum_info->control[numChannel]);
@@ -330,7 +348,7 @@ void biasEn_update(INT hDB, INT hKey, void *info)
 
 					biasEnToBeSent = (float) (1.0 * pow(2, numChannel));
 
-               status = device_driver(asum_info->driver[i], CMD_BIAS_EN,  // biasEn
+               status = device_driver(asum_info->driver[i], CMD_SET_BIAS_EN,  // biasEn
                                     i - asum_info->channel_offset[i], biasEnToBeSent);
             }
 				*(asum_info->biasEn_mirror[numChannel]) = *(asum_info->biasEn[numChannel]);
@@ -527,7 +545,7 @@ INT asum_init(EQUIPMENT * pequipment)
 		db_find_key(hDB, asum_info->hKeyRoot, "Variables/asumDacTh", &asum_info->hKeyasumDacTh);
 	}
 	//Update asumDacTh value with the latest mscb value
-	device_driver(asum_info->driver[0], CMD_ASUMDACTH_READ, asum_info->channel_offset[0], asum_info->asumDacTh);
+	device_driver(asum_info->driver[0], CMD_GET_ASUMDACTH, asum_info->channel_offset[0], asum_info->asumDacTh);
 
 	size = sizeof(float) * asum_info->num_channels;
 
@@ -551,7 +569,7 @@ INT asum_init(EQUIPMENT * pequipment)
 		db_find_key(hDB, asum_info->hKeyRoot, "Variables/ChPumpDac", &asum_info->hKeyChPumpDac);
 	}
 	//Update with the latest mscb value
-	device_driver(asum_info->driver[0], CMD_CHPUMPDAC_READ, asum_info->channel_offset[0], asum_info->ChPumpDac);
+	device_driver(asum_info->driver[0], CMD_GET_CHPUMPDAC, asum_info->channel_offset[0], asum_info->ChPumpDac);
 	size = sizeof(float) * asum_info->num_channels;
 
 	db_set_data(hDB, asum_info->hKeyChPumpDac, asum_info->ChPumpDac, size,
@@ -603,7 +621,7 @@ INT asum_init(EQUIPMENT * pequipment)
    /*---- create control variables ----*/
 	//initially read in the current control values
    controlRead = calloc(1, sizeof(char *));
-	device_driver(asum_info->driver[0], CMD_CONTROL_READ, asum_info->channel_offset[0], controlRead); // Control
+	device_driver(asum_info->driver[0], CMD_GET_CONTROL, asum_info->channel_offset[0], controlRead); // Control
 
 	for(j = 0; j < 8; j++)
    {
@@ -643,7 +661,7 @@ INT asum_init(EQUIPMENT * pequipment)
 	/*---- create biasEn variables ----*/
 	//initially read in the current biasEn values
    biasEnRead = calloc(1, sizeof(char *));
-	device_driver(asum_info->driver[0], CMD_BIASEN_READ, asum_info->channel_offset[0], biasEnRead);
+	device_driver(asum_info->driver[0], CMD_GET_BIASEN, asum_info->channel_offset[0], biasEnRead);
 
 	for(j = 0; j < 8; j++)
    {
