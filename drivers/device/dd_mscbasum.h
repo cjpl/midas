@@ -5,7 +5,7 @@
 
   Contents:     Device driver function declarations for T2K-ASUM device
 
-  $Id:  $
+  $Id$
 
 \********************************************************************/
 
