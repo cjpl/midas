@@ -1,10 +1,11 @@
 // --------------------------------------------------------
 //  SMBus handling routines for T2K-FGD experiment
-//      - Writtern for T2K-ASUM test board 
+//      - Writtern for T2K-ASUM test board
 //      - Brian Lee   (Jun/08/2006)
 //
+//  $Id$
 // --------------------------------------------------------
-#ifndef  _SMBUS_HANDLER_H   
+#ifndef  _SMBUS_HANDLER_H
 #define  _SMBUS_HANDLER_H
 
 #define WRITE 0
