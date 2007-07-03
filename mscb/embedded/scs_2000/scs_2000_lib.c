@@ -413,7 +413,7 @@ unsigned char xdata pattern[8];
 unsigned char dr_dout_bits(unsigned char id, unsigned char cmd, unsigned char addr, 
                            unsigned char port, unsigned char chn, void *pd) reentrant
 {
-unsigned char port_dir;
+unsigned char port_dir, d;
 
    if (id || chn || pd); // suppress compiler warning
 
@@ -428,7 +428,14 @@ unsigned char port_dir;
    }
 
    if (cmd == MC_WRITE) {
-      if (*((unsigned char *)pd))
+
+      d = *((unsigned char *)pd);
+
+      /* relais has inverter */
+      if (id == 0x41)
+         d = !d;
+   
+      if (d)
          pattern[port] |= (1 << chn);
       else
          pattern[port] &= ~(1 << chn);
