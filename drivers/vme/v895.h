@@ -5,7 +5,7 @@
 
   Contents:     V895 16ch. VME discriminator include
 
-  $Id:$
+  $Id$
 
 *********************************************************************/
 #include <stdio.h>
