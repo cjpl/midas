@@ -418,8 +418,20 @@ unsigned char port_dir, d;
    if (id || chn || pd); // suppress compiler warning
 
    if (cmd == MC_INIT) {
-      /* read previous pattern */
-      read_port_reg(addr, port, &pattern[port]);
+
+      /* default pattern */
+      if (id == 0x41)
+         pattern[port] = 0xFF; /* relais has inverter */
+      else
+         pattern[port] = 0;
+
+      /* retrieve previous pattern if not reset by power on */
+      SFRPAGE = LEGACY_PAGE;
+      if ((RSTSRC & 0x02) == 0)
+         read_port_reg(addr, port, &pattern[port]);
+
+      /* set default value before switching to putput */   
+      write_port(addr, port, pattern[port]);
 
       /* switch port to output */
       read_csr(addr, 0, &port_dir);
