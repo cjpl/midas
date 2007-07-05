@@ -220,14 +220,16 @@ void user_init(unsigned char init)
    if (init) {
       memset(user_data, 0, sizeof(user_data));
       for (i=0 ; i<N_HV_CHN ; i++) {
-         user_data[i].u_limit = MAX_VOLTAGE;
-         user_data[i].i_limit = MAX_CURRENT;
-         user_data[i].ri_limit = MAX_CURRENT;
-         user_data[i].trip_time = 10;
+         user_data[i].ramp_up    = 300;
+         user_data[i].ramp_down  = 300;
+         user_data[i].u_limit    = MAX_VOLTAGE;
+         user_data[i].i_limit    = MAX_CURRENT;
+         user_data[i].ri_limit   = MAX_CURRENT;
+         user_data[i].trip_time  = 10;
 
-         user_data[i].adc_gain = 1;
-         user_data[i].dac_gain = 1;
-         user_data[i].cur_gain = 1;
+         user_data[i].adc_gain   = 1;
+         user_data[i].dac_gain   = 1;
+         user_data[i].cur_gain   = 1;
       }
    }
 
