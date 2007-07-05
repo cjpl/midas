@@ -19,6 +19,8 @@ extern bit DEBUG_MODE;
 
 char code node_name[] = "SCS-600-P1";
 
+/* declare number of sub-addresses to framework */
+unsigned char idata _n_sub_addr = 1;
 
 sbit SR_CLOCK = P0 ^ 2;         // Shift register clock
 sbit SR_STROBE = P0 ^ 5;        // Storage register clock
