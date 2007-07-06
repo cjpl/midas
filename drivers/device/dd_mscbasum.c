@@ -116,7 +116,7 @@ INT mscbasum_init(HNDLE hkey, void **pinfo, INT channels, INT(*bd) (INT cmd, ...
       /* turn on HV main switch */
       flag = 0x31;
       // Set rampup/dwn (don't need ramping)
-      mscb_write(info->fd, i, 0, &flag, 1);
+      //mscb_write(info->fd, i, 0, &flag, 1);
       //ramp = 200;
       //mscb_write(info->fd, i, 4, &ramp, 2);
       //mscb_write(info->fd, i, 5, &ramp, 2);
@@ -193,10 +193,9 @@ INT mscbasum_controlUpdate(MSCBFGD_INFO * info, INT channel, float value)
 }
 
 /*----------------------------------------------------------------------------*/
-INT mscbasum_getControl(MSCBFGD_INFO * info, INT channel,char *rvalue)
+INT mscbasum_getControl(MSCBFGD_INFO * info, INT channel, unsigned char *rvalue)
 {
   int size = 1;
-  char read = 0;
 
   mscb_read(info->fd, info->settings.base_address + channel, 0, rvalue, &size);
 
@@ -224,7 +223,7 @@ INT mscbasum_biasEnUpdate(MSCBFGD_INFO * info, INT channel, float value)
 }
 
 /*----------------------------------------------------------------------------*/
-INT mscbasum_getbiasEn(MSCBFGD_INFO * info, INT channel,char *rvalue)
+INT mscbasum_getbiasEn(MSCBFGD_INFO * info, INT channel, unsigned char *rvalue)
 {
   int size = 1;
 
@@ -250,7 +249,7 @@ INT mscbasum_getasumDacTh(MSCBFGD_INFO * info, INT channel,float *pvalue)
 INT mscbasum_getchPumpDac(MSCBFGD_INFO * info, INT channel,float *pvalue)
 {
   int size = 1;
-  char readValue=0;
+  unsigned char readValue=0;
 
   mscb_read(info->fd, info->settings.base_address + channel, 4, &readValue, &size);
 
@@ -304,7 +303,7 @@ INT mscbasum(INT cmd, ...)
    INT channel, status;
    float value, *pvalue;
    void *info, *bd;
-  char * rvalue;
+   unsigned char * rvalue;
 
 
    va_start(argptr, cmd);
@@ -336,7 +335,7 @@ INT mscbasum(INT cmd, ...)
   case CMD_GET_CONTROL:
     info = va_arg(argptr, void *);
       channel = va_arg(argptr, INT);
-      rvalue = (char *) va_arg(argptr, char *);
+      rvalue = (unsigned char *) va_arg(argptr, unsigned char *);
       status = mscbasum_getControl(info, channel, rvalue);
       break;
 
@@ -350,7 +349,7 @@ INT mscbasum(INT cmd, ...)
   case CMD_GET_BIASEN:
     info = va_arg(argptr, void *);
       channel = va_arg(argptr, INT);
-      rvalue = (char *) va_arg(argptr, char *);
+      rvalue = (unsigned char *) va_arg(argptr, unsigned char *);
       status = mscbasum_getbiasEn(info, channel, rvalue);
       break;
 
