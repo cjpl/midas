@@ -343,7 +343,7 @@ void biasEn_update(INT hDB, INT hKey, void *info)
             *(asum_info->biasEn[numChannel]) = (float) 0;
           }
 
-          if(*(asum_info->biasEn[numChannel]) == 1) biasEnFlag = 1;
+          if(*(asum_info->biasEn[numChannel]) == 0) biasEnFlag = 1;
           else biasEnFlag = 0;
 
           biasEnToBeSent = (float) (1.0 * pow(2, numChannel));
@@ -389,11 +389,12 @@ INT asum_init(EQUIPMENT * pequipment)
   char measString[32];
   char ctrlString[32];
   char biasEnString[32];
-  char *controlRead;
-  char *biasEnRead;
+  unsigned char *controlRead;
+  unsigned char *biasEnRead;
 
    /* allocate private data */
-   pequipment->cd_info = calloc(1, sizeof(FGD_INFO));
+
+  pequipment->cd_info = calloc(1, sizeof(FGD_INFO));
    asum_info = (FGD_INFO *) pequipment->cd_info;
 
    /* get class driver root key */
@@ -620,7 +621,7 @@ INT asum_init(EQUIPMENT * pequipment)
 
    /*---- create control variables ----*/
   //initially read in the current control values
-   controlRead = calloc(1, sizeof(char *));
+   controlRead = calloc(1, sizeof(unsigned char *));
   device_driver(asum_info->driver[0], CMD_GET_CONTROL, asum_info->channel_offset[0], controlRead); // Control
 
   for(j = 0; j < 8; j++)
@@ -642,7 +643,7 @@ INT asum_init(EQUIPMENT * pequipment)
     }
 
   //distribute the read control values to each element in the control[] array
-  if((*controlRead & (char)pow(2, j))) *(asum_info->control[j]) = 1;
+  if((*controlRead & (unsigned char)pow(2, j))) *(asum_info->control[j]) = 1;
   //update the Variables (Control, 8bits)
   db_set_data(hDB, asum_info->hKeyControl[j], asum_info->control[j],
        sizeof(float) * asum_info->num_channels, asum_info->num_channels,
@@ -660,7 +661,7 @@ INT asum_init(EQUIPMENT * pequipment)
 
   /*---- create biasEn variables ----*/
   //initially read in the current biasEn values
-   biasEnRead = calloc(1, sizeof(char *));
+   biasEnRead = calloc(1, sizeof(unsigned char *));
   device_driver(asum_info->driver[0], CMD_GET_BIASEN, asum_info->channel_offset[0], biasEnRead);
 
   for(j = 0; j < 8; j++)
@@ -682,7 +683,8 @@ INT asum_init(EQUIPMENT * pequipment)
     }
 
   //distribute the read biasEn values to each element in the biasEn[] array
-  if((*biasEnRead & (char)pow(2, j))) *(asum_info->biasEn[j]) = 1;
+  if((*biasEnRead & (unsigned char)pow(2, j))) *(asum_info->biasEn[j]) = 0; //0 means OFF in MIDAS interface (on the circuit, 1 means OFF)
+  else *(asum_info->biasEn[j]) = 1; //1 means ON in MIDAS interface (on the circuit, 0 means ON)
 
   //update the Variables (Control, 8bits)
   db_set_data(hDB, asum_info->hKeybiasEn[j], asum_info->biasEn[j],
