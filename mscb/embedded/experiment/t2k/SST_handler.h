@@ -3,11 +3,11 @@
 //      - Writtern for Temperature Sensor Array board
 //      - Brian Lee   (May/11/2007)
 //
-//  Version:		Rev 1.2
+//  Version:    Rev 1.2
 //
-//  $id$
+//  $Id$
 // --------------------------------------------------------
-#ifndef  _SST_HANDLER_H   
+#ifndef  _SST_HANDLER_H
 #define  _SST_HANDLER_H
 
 // --------------------------------------------------------
