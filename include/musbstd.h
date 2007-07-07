@@ -18,8 +18,8 @@
 
 typedef struct {
    usb_dev_handle *dev;
-   int usbinterface;
-   int SerNo;
+   int usb_configuration;
+   int usb_interface;
 } MUSB_INTERFACE;
 
 #elif defined(_MSC_VER)
@@ -29,13 +29,15 @@ typedef struct {
 typedef struct {
    HANDLE rhandle;
    HANDLE whandle;
-   int SerNo;
 } MUSB_INTERFACE;
 
 #elif defined(OS_DARWIN)
 
 typedef struct {
-   void **handle;
+   void *device;
+   void *interface;
+   int usb_configuration;
+   int usb_interface;
 } MUSB_INTERFACE;
 
 #else
