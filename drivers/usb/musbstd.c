@@ -99,25 +99,25 @@ IOReturn darwin_configure_device(MUSB_INTERFACE* musb)
       
       
       status = (*uinterface)->USBInterfaceOpen(uinterface);
-      printf("musb_open: USBInterfaceOpen status 0x%x\n", status);
+      fprintf(stderr, "musb_open: USBInterfaceOpen status 0x%x\n", status);
       assert(status == kIOReturnSuccess);
       
       status = (*uinterface)->GetNumEndpoints(uinterface, &numend);
       assert(status == kIOReturnSuccess);
       
-      printf("musb_open: endpoints: %d\n", numend);
+      fprintf(stderr, "musb_open: endpoints: %d\n", numend);
       
       for (i=1; i<=numend; i++) {
          status = (*uinterface)->GetPipeStatus(uinterface, i);
-         printf("musb_open: pipe %d status: 0x%x\n", i, status);
+         fprintf(stderr, "musb_open: pipe %d status: 0x%x\n", i, status);
       
 #if 0
          status = (*uinterface)->ClearPipeStall(uinterface, i);
-         printf("musb_open: pipe %d ClearPipeStall() status: 0x%x\n", i, status);
+         fprintf(stderr, "musb_open: pipe %d ClearPipeStall() status: 0x%x\n", i, status);
          status = (*uinterface)->ResetPipe(uinterface, i);
-         printf("musb_open: pipe %d ResetPipe() status: 0x%x\n", i, status);
+         fprintf(stderr, "musb_open: pipe %d ResetPipe() status: 0x%x\n", i, status);
          status = (*uinterface)->AbortPipe(uinterface, i);
-         printf("musb_open: pipe %d AbortPipe() status: 0x%x\n", i, status);
+         fprintf(stderr, "musb_open: pipe %d AbortPipe() status: 0x%x\n", i, status);
 #endif
       }
 
@@ -243,12 +243,14 @@ int musb_open(MUSB_INTERFACE **musb_interface, int vendor, int product, int inst
              return MUSB_ACCESS_ERROR;
            }
 	   
+           fprintf(stderr, "musb_open: Found USB device 0x%04x:0x%04x instance %d\n", vendor, product, instance);
+
 	   status = usb_set_configuration(udev, configuration);
 	   if (status < 0) {
 	     fprintf(stderr, "musb_open: usb_set_configuration() error %d (%s)\n", status,
 		     strerror(-status));
              fprintf(stderr,
-                     "musb_open: Found USB device %04x:%04x instance %d, but cannot initialize it: please check permissions on \"/proc/bus/usb/%s/%s\" and \"/dev/bus/usb/%s/%s\"\n",
+                     "musb_open: Found USB device 0x%04x:0x%04x instance %d, but cannot initialize it: please check permissions on \"/proc/bus/usb/%s/%s\" and \"/dev/bus/usb/%s/%s\"\n",
                      vendor, product, instance, bus->dirname, dev->filename, bus->dirname, dev->filename);
              return MUSB_ACCESS_ERROR;
 	   }
@@ -260,7 +262,7 @@ int musb_open(MUSB_INTERFACE **musb_interface, int vendor, int product, int inst
 		     strerror(-status));
 	     
 	     fprintf(stderr,
-		     "musb_open: Found USB device %04x:%04x instance %d, but cannot initialize it: please check permissions on \"/proc/bus/usb/%s/%s\"\n",
+		     "musb_open: Found USB device 0x%04x:0x%04x instance %d, but cannot initialize it: please check permissions on \"/proc/bus/usb/%s/%s\"\n",
 		     vendor, product, instance, bus->dirname, dev->filename);
 	     
 	     return MUSB_ACCESS_ERROR;
@@ -314,12 +316,16 @@ int musb_open(MUSB_INTERFACE **musb_interface, int vendor, int product, int inst
       status = (*device)->GetDeviceProduct(device, &xproduct);
       assert(status == kIOReturnSuccess);
 
-      //printf("musb_open: Found USB device: vendor 0x%04x, product 0x%04x\n", xvendor, xproduct);
+      //fprintf(stderr, "musb_open: Found USB device: vendor 0x%04x, product 0x%04x\n", xvendor, xproduct);
 
       if (xvendor == vendor && xproduct == product) {
          if (count == instance) {
+
+            fprintf(stderr, "musb_open: Found USB device: vendor 0x%04x, product 0x%04x, instance %d\n", xvendor, xproduct, instance);
+
             status = (*device)->USBDeviceOpen(device);
-            printf("musb_open: USBDeviceOpen status 0x%x\n", status);
+            fprintf(stderr, "musb_open: USBDeviceOpen status 0x%x\n", status);
+
             assert(status == kIOReturnSuccess);
 
             (*musb_interface)->usb_configuration = configuration;
@@ -356,7 +362,7 @@ int musb_close(MUSB_INTERFACE *musb_interface)
 #elif defined(HAVE_LIBUSB)
 
    int status;
-   status = usb_release_interface(musb_interface->dev, musb_interface->usbinterface);
+   status = usb_release_interface(musb_interface->dev, musb_interface->usb_interface);
    if (status < 0)
      fprintf(stderr, "musb_close: usb_release_interface() error %d\n", status);
    status = usb_close(musb_interface->dev);
@@ -370,20 +376,20 @@ int musb_close(MUSB_INTERFACE *musb_interface)
 
    status = (*interface)->USBInterfaceClose(interface);
    if (status != kIOReturnSuccess)
-      printf("musb_close: USBInterfaceClose() status %d 0x%x\n", status, status);
+      fprintf(stderr, "musb_close: USBInterfaceClose() status %d 0x%x\n", status, status);
 
    status = (*interface)->Release(interface);
    if (status != kIOReturnSuccess)
-      printf("musb_close: USB Interface Release() status %d 0x%x\n", status, status);
+      fprintf(stderr, "musb_close: USB Interface Release() status %d 0x%x\n", status, status);
 
    IOUSBDeviceInterface **device = (IOUSBDeviceInterface**)musb_interface->device;
    status = (*device)->USBDeviceClose(device);
    if (status != kIOReturnSuccess)
-      printf("musb_close: USBDeviceClose() status %d 0x%x\n", status, status);
+      fprintf(stderr, "musb_close: USBDeviceClose() status %d 0x%x\n", status, status);
 
    status = (*device)->Release(device);
    if (status != kIOReturnSuccess)
-      printf("musb_close: USB Device Release() status %d 0x%x\n", status, status);
+      fprintf(stderr, "musb_close: USB Device Release() status %d 0x%x\n", status, status);
 
 #else
    assert(!"musb_close() is not implemented");
@@ -412,13 +418,13 @@ int musb_write(MUSB_INTERFACE *musb_interface, int endpoint, const void *buf, in
    IOUSBInterfaceInterface182 **interface = (IOUSBInterfaceInterface182 **)musb_interface->interface;
    status = (*interface)->WritePipeTO(interface, endpoint, buf, count, 0, timeout);
    if (status != 0) {
-      printf("musb_write: WritePipe() status %d 0x%x\n", status, status);
+      fprintf(stderr, "musb_write: WritePipe() status %d 0x%x\n", status, status);
       return -1;
    }
    n_written = count;
 #endif
 
-   //printf("musb_write(ep %d, %d bytes) (%s) returns %d\n", endpoint, count, buf, n_written); 
+   //fprintf(stderr, "musb_write(ep %d, %d bytes) (%s) returns %d\n", endpoint, count, buf, n_written); 
 
    return n_written;
 }
@@ -469,7 +475,7 @@ int musb_read(MUSB_INTERFACE *musb_interface, int endpoint, void *buf, int count
 
    status = (*interface)->ReadPipeTO(interface, endpoint, buf, &xcount, 0, timeout);
    if (status != kIOReturnSuccess) {
-      printf("musb_read: requested %d, read %d, ReadPipe() status %d 0x%x (%s)\n", count, n_read, status, status, strerror(status));
+      fprintf(stderr, "musb_read: requested %d, read %d, ReadPipe() status %d 0x%x (%s)\n", count, n_read, status, status, strerror(status));
       return -1;
    }
 
@@ -477,7 +483,7 @@ int musb_read(MUSB_INTERFACE *musb_interface, int endpoint, void *buf, int count
 
 #endif
 
-   //printf("musb_read(ep %d, %d bytes) returns %d (%s)\n", endpoint, count, n_read, buf); 
+   //fprintf(stderr, "musb_read(ep %d, %d bytes) returns %d (%s)\n", endpoint, count, n_read, buf); 
 
    return n_read;
 }
@@ -516,7 +522,10 @@ int musb_reset(MUSB_INTERFACE *musb_interface)
    /* Causes re-enumeration: After calling usb_reset, the device will need 
       to re-enumerate and thusly, requires you to find the new device and 
       open a new handle. The handle used to call usb_reset will no longer work */
-   return usb_reset(musb_interface->dev);
+
+   int status;
+   status = usb_reset(musb_interface->dev);
+   fprintf(stderr, "musb_reset: usb_reset() status %d\n", status);
 
 #elif defined(OS_DARWIN)
 
@@ -524,7 +533,7 @@ int musb_reset(MUSB_INTERFACE *musb_interface)
    IOUSBDeviceInterface **device = (IOUSBDeviceInterface**)musb_interface->device;
 
    status = (*device)->ResetDevice(device);
-   printf("musb_reset: ResetDevice() status 0x%x\n", status);
+   fprintf(stderr, "musb_reset: ResetDevice() status 0x%x\n", status);
 
    status = darwin_configure_device(musb_interface);
    assert(status == kIOReturnSuccess);
