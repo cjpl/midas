@@ -464,10 +464,35 @@ int mscb_release(int fd)
 
 /*---- Low level routines for USB communication --------------------*/
 
+int subm250_check(MUSB_INTERFACE *ui)
+{
+   int  j, status, nwrite;
+   char buf[80];
+
+   for (j=0; j<2; j++) {
+      /* check if it's a subm_250 */
+      nwrite = 1;
+      buf[0] = 0;
+      status = musb_write(ui, EP_WRITE, buf, nwrite, MUSB_TIMEOUT);
+      if (status != nwrite) {
+         fprintf(stderr,"mscb.c::subm250_open(): musb_write() error %d\n", status);
+         return EMSCB_NOT_FOUND;
+      }
+
+      status = musb_read(ui, EP_READ, buf, sizeof(buf), MUSB_TIMEOUT);
+      if (strcmp(buf, "SUBM_250") == 0)
+         return MSCB_SUCCESS;
+
+      fprintf(stderr,"mscb.c::subm250_open(): USB device is present, but not responding, trying USB reset\n");
+      musb_reset(ui);
+   }
+
+   return EMSCB_NOT_FOUND;
+}
+
 int subm250_open(MUSB_INTERFACE **ui, int usb_index)
 {
    int  i, status, found;
-   char buf[80];
 
    for (i = found = 0 ; i<127 ; i++) {
       status = musb_open(ui, 0x10C4, 0x1175, i, 1, 0);
@@ -476,12 +501,7 @@ int subm250_open(MUSB_INTERFACE **ui, int usb_index)
          return EMSCB_NOT_FOUND;
       }
 
-      /* check if it's a subm_250 */
-      buf[0] = 0;
-      musb_write(*ui, EP_WRITE, buf, 1, MUSB_TIMEOUT);
-
-      status = musb_read(*ui, EP_READ, buf, sizeof(buf), MUSB_TIMEOUT);
-      if (strcmp(buf, "SUBM_250") == 0)
+      if (subm250_check(*ui) == MSCB_SUCCESS)
          if (found++ == usb_index)
             return MSCB_SUCCESS;
    }
@@ -3712,7 +3732,7 @@ int mscb_select_device(char *device, int size, int select)
 
 \********************************************************************/
 {
-   char list[10][256], str[256], buf[64];
+   char list[10][256], str[256];
    int status, usb_index, found, i, n, index, error_code;
    MUSB_INTERFACE *ui;
 
@@ -3739,8 +3759,6 @@ int mscb_select_device(char *device, int size, int select)
       if (status != MUSB_SUCCESS)
          break;
 
-      //printf("musb_open: status %d, ui %p\n", status, ui);
-
       sprintf(str, "usb%d", found);
       mscb_fd[index].mutex_handle = mscb_mutex_create(str);
 
@@ -3750,12 +3768,7 @@ int mscb_select_device(char *device, int size, int select)
          return EMSCB_LOCKED;
       }
 
-      /* check if it's a subm_250 */
-      buf[0] = 0;
-      musb_write(ui, EP_WRITE, buf, 1, 1000);
-
-      i = musb_read(ui, EP_READ, buf, sizeof(buf), MUSB_TIMEOUT);
-      if (strcmp(buf, "SUBM_250") == 0)
+      if (subm250_check(ui) == MSCB_SUCCESS)
          sprintf(list[n++], "usb%d", found++);
 
       mscb_release(index + 1);
