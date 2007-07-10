@@ -4,8 +4,8 @@
   Created by:   K.Olchanski
 
   Contents:     CAEN V560 16-channel 32-bit scaler
-                
-  $Log$
+
+  $Id$
 *********************************************************************/
 #include <stdio.h>
 #include <stdint.h>

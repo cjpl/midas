@@ -4,7 +4,7 @@
 
   Contents:     48 ch Flash ADC / 20..64 Msps from J.-P. Martin
 
-  $Log: vf48.c,v $
+  $Id$
 *********************************************************************/
 #include <stdio.h>
 #include <string.h>

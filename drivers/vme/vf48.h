@@ -4,8 +4,8 @@
   Created by:   Pierre-Andre Amaudruz / Jean-Pierre Martin
 
   Contents:     48 ch Flash ADC / 20-64 Msps from J.-P. Martin
-                
-  $Log: vf48.h,v $
+
+  $Id$
 *********************************************************************/
 #
 #include <stdio.h>
@@ -18,7 +18,7 @@
 
 /* Definitions */
 #define VF48_IDXMAX 4096
- 
+
 /* Registers */
 #define  VF48_MAX_CHANNELS         (DWORD) 48
 #define  VF48_SUCCESS              (int)   (1)
@@ -40,33 +40,33 @@
 #define  VF48_DATA_FIFO_R          (DWORD) (0x1000)  /**< -R-D32 */
 /*
 Parameter frame
-15 ...    ...  
+15 ...    ...
 CCCCDDDD RVPP PPPP
 C: Destination Card/Port N/A
 R: Read bit (0:Write, 1:Read)
 D: Destination channels (0..5)
-	 bit 11..8
-	        0: channel 1..8
-	        1: channel 9..16
-	        2: channel 17..24
-	        3: channel 25..32
-	        4: channel 33..40
-	        5: channel 41..48
-	        6: channel N/C
-	    7..15: channel N/C
+   bit 11..8
+          0: channel 1..8
+          1: channel 9..16
+          2: channel 17..24
+          3: channel 25..32
+          4: channel 33..40
+          5: channel 41..48
+          6: channel N/C
+      7..15: channel N/C
 V: Version 0 for now (0:D16, 1:D32(extended))
 P: Parameter ID
-	Default values for the different PIDs
+  Default values for the different PIDs
 ID#   Def Value
 1     0x0000 Pedestal
 2     0x000A Hit Det Threshold
-3	    0x0028 Clip Delay
-4	    0x0020 Pre-Trigger
-5	    0x0100 Segment size
-6	    0x0190 K-coeff 
-7	    0x0200 L-coeff
-8	    0x1000 M-coeff
-9	    0x0005 Feature Delay A
+3     0x0028 Clip Delay
+4     0x0020 Pre-Trigger
+5     0x0100 Segment size
+6     0x0190 K-coeff
+7     0x0200 L-coeff
+8     0x1000 M-coeff
+9     0x0005 Feature Delay A
 10    0x0000 Mbit1
           0x1: Data simulation
           0x2: Supress Raw Data
@@ -83,8 +83,8 @@ ID#   Def Value
 */
 
 /* Parameters ID for Frontend */
-#define  VF48_GRP_OFFSET           (DWORD) (12)   
-#define  VF48_PARMA_BIT_RD         (DWORD) (0x80) 
+#define  VF48_GRP_OFFSET           (DWORD) (12)
+#define  VF48_PARMA_BIT_RD         (DWORD) (0x80)
 #define  VF48_PEDESTAL             (DWORD) (1)    //** 0x0000
 #define  VF48_HIT_THRESHOLD        (DWORD) (2)    //** 0x000A
 #define  VF48_CLIP_DELAY           (DWORD) (3)    //** 0x0028
@@ -109,10 +109,10 @@ ID#   Def Value
 /* CSR bit assignment */
 /*
   CSR setting:
-  	0: Run  0:stop, 1:start
-  	1: Parameter ID ready
-  	2: Parameter Data ready
-  	3: Event Fifo Not empty	
+    0: Run  0:stop, 1:start
+    1: Parameter ID ready
+    2: Parameter Data ready
+    3: Event Fifo Not empty
 */
 #define  VF48_CSR_START_ACQ        (DWORD) (0x00000001)
 #define  VF48_CSR_PARM_ID_RDY      (DWORD) (0x00000002)
@@ -147,13 +147,13 @@ int  vf48_ExtTrgClr(MVME_INTERFACE *myvme, DWORD base);
 void vf48_Reset(MVME_INTERFACE *myvme, DWORD base);
 int  vf48_AcqStart(MVME_INTERFACE *myvme, DWORD base);
 int  vf48_AcqStop(MVME_INTERFACE *myvme, DWORD base);
-int  vf48_NFrameRead(MVME_INTERFACE *myvme, DWORD base); 
-int  vf48_CsrRead(MVME_INTERFACE *myvme, DWORD base); 
-int  vf48_GrpRead(MVME_INTERFACE *myvme, DWORD base); 
-int  vf48_FeFull(MVME_INTERFACE *myvme, DWORD base); 
-int  vf48_EvtEmpty(MVME_INTERFACE *myvme, DWORD base); 
+int  vf48_NFrameRead(MVME_INTERFACE *myvme, DWORD base);
+int  vf48_CsrRead(MVME_INTERFACE *myvme, DWORD base);
+int  vf48_GrpRead(MVME_INTERFACE *myvme, DWORD base);
+int  vf48_FeFull(MVME_INTERFACE *myvme, DWORD base);
+int  vf48_EvtEmpty(MVME_INTERFACE *myvme, DWORD base);
 int  vf48_GrpEnable(MVME_INTERFACE *myvme, DWORD base, int grpbit);
-int  vf48_GrpRead(MVME_INTERFACE *myvme, DWORD base); 
+int  vf48_GrpRead(MVME_INTERFACE *myvme, DWORD base);
 int  vf48_GrpOperationMode(MVME_INTERFACE *myvme, DWORD base, int grp, int opmode);
 int  vf48_ParameterRead(MVME_INTERFACE *myvme, DWORD base, int grp, int param);
 int  vf48_ParameterWrite(MVME_INTERFACE *myvme, DWORD base, int grp, int param, int value);

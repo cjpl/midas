@@ -10,8 +10,8 @@
                 v792_ identifies commands supported by both
                 v792_ identifies commands supported by V792 only
                 v785_ identifies commands supported by V785 only
-                
-  $Log: v792.h,v $
+
+  $Id$
 *********************************************************************/
 #ifndef  V792_INCLUDE_H
 #define  V792_INCLUDE_H
@@ -34,7 +34,7 @@ extern "C" {
 #define  V792_INT_LEVEL_WO    (DWORD) (0x100A)
 #define  V792_INT_VECTOR_WO   (DWORD) (0x100C)
 #define  V792_CSR1_RO         (DWORD) (0x100E)
-#define  V792_CR1_RW	        (DWORD) (0x1010)
+#define  V792_CR1_RW          (DWORD) (0x1010)
 #define  V792_SINGLE_RST_WO   (DWORD) (0x1016)
 #define  V792_EVTRIG_REG_RW   (DWORD) (0x1020)
 #define  V792_CSR2_RO         (DWORD) (0x1022)
@@ -69,7 +69,7 @@ int  v792_CSR2Read(MVME_INTERFACE *mvme, DWORD base);
 int  v792_BitSet2Read(MVME_INTERFACE *mvme, DWORD base);
 void v792_BitSet2Set(MVME_INTERFACE *mvme, DWORD base, WORD pat);
 void v792_BitSet2Clear(MVME_INTERFACE *mvme, DWORD base, WORD pat);
-int  v792_DataReady(MVME_INTERFACE *mvme, DWORD base);          
+int  v792_DataReady(MVME_INTERFACE *mvme, DWORD base);
 int  v792_isEvtReady(MVME_INTERFACE *mvme, DWORD base);
 void v792_EvtTriggerSet(MVME_INTERFACE *mvme, DWORD base, int count);
 void v792_DataClear(MVME_INTERFACE *mvme, DWORD base);
@@ -115,7 +115,7 @@ WORD v792_ControlRegister1Read(MVME_INTERFACE *mvme, DWORD base);
       unsigned type:3;
       unsigned geo:5;
     } footer;
-  } v792_Data;    
+  } v792_Data;
 
   typedef union {
     DWORD raw;
@@ -177,7 +177,7 @@ WORD v792_ControlRegister1Read(MVME_INTERFACE *mvme, DWORD base);
   } v792_BitSet2Register;
 
   void v792_printEntry(const v792_Data* v);
-  
+
 #ifdef __cplusplus
 }
 #endif
