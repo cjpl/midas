@@ -5,7 +5,7 @@
 
   Contents:      Routines for accessing the vpc6 Triumf board
 
-  $Log: vpc6.h,v $
+  $Id$
 *********************************************************************/
 #ifndef __VPC6_INCLUDE_H__
 #define __VPC6_INCLUDE_H__
@@ -18,7 +18,7 @@
 extern "C" {
 #endif
 
-#define VPC6_SUCCESS                    1 // 
+#define VPC6_SUCCESS                    1 //
 #define VPC6_PARAM_ERROR              100 // parameters error
 #define VPC6_SR_RO         (WORD) (0x0000)
 #define VPC6_CR_RW         (WORD) (0x0004)
@@ -34,12 +34,12 @@ extern "C" {
 #define ALL_CHANNELS       -1
 
 
-/*-------------------------------------------*/  
+/*-------------------------------------------*/
   enum vpc6_ASDDataType {
     vpc6_asd_ch1_8 =0,
     vpc6_asd_ch9_16 =1,
   };
-  
+
   typedef union {
     DWORD asdcfg;
     struct Entry1 {
@@ -59,8 +59,8 @@ extern "C" {
       unsigned notused:10;
     } asdx2;
   } vpc6_Reg;
-  
-/*-------------------------------------------*/  
+
+/*-------------------------------------------*/
 #define VPC6_BUCKEYE       1
 #define VPC6_NORMAL        0x0
 #define VPC6_SMALLCAP      0x1
@@ -68,8 +68,8 @@ extern "C" {
 #define VPC6_LARGECAP      0x3
 #define VPC6_EXTERNALCAP   0x4
 #define VPC6_KILL          0x7
-  
-  
+
+
   int  vpc6_isPortBusy(MVME_INTERFACE *mvme, DWORD base, WORD port);
   void vpc6_PATypeWrite(MVME_INTERFACE *mvme, DWORD base, WORD data);
   int  vpc6_PortTypeRead(MVME_INTERFACE *mvme, DWORD base, WORD port);
