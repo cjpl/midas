@@ -4,8 +4,8 @@
   Created by:   Pierre-Andre Amaudruz
 
   Contents:     V1190B 64ch. TDC
-                
-  $Log: v1190B.c,v $
+
+  $Id$
 *********************************************************************/
 #include <stdio.h>
 #include <string.h>
@@ -26,9 +26,9 @@ int v1190_EventRead(MVME_INTERFACE *mvme, DWORD base, DWORD *pdest, int *nentry)
 {
   int cmode;
   DWORD hdata;
-  
+
   *nentry = 0;
-  mvme_get_dmode(mvme, &cmode); 
+  mvme_get_dmode(mvme, &cmode);
   mvme_set_dmode(mvme, MVME_DMODE_D32);
   if (v1190_DataReady(mvme, base)) {
     do {
@@ -36,22 +36,20 @@ int v1190_EventRead(MVME_INTERFACE *mvme, DWORD base, DWORD *pdest, int *nentry)
     } while (!(hdata & 0x40000000));
     pdest[*nentry] = hdata;
     *nentry += 1;
-    
+
     do {
       pdest[*nentry] = mvme_read_value(mvme, base);
       *nentry += 1;
-    } while (!(pdest[*nentry-1] & 0xc0000000)); 
-
-    nentry--;
+    } while (!(pdest[*nentry-1] & 0xc0000000));
   }
   mvme_set_dmode(mvme, cmode);
   return *nentry;
 
 /*
   header = *pbase & 0xFF000000;
-  
+
   switch (header) {
-  case 0x40000000:  // Global Header 
+  case 0x40000000:  // Global Header
     break;
   case 0x00000000:  // TDC Header
     break;
@@ -64,7 +62,7 @@ int v1190_EventRead(MVME_INTERFACE *mvme, DWORD base, DWORD *pdest, int *nentry)
   case 0xc0000000:  // Filler
     break;
   }
-  
+
   return *nentry;
 */
 }
@@ -81,15 +79,15 @@ Read data buffer for nentry data.
 int v1190_DataRead(MVME_INTERFACE *mvme, DWORD base, DWORD *pdest, int nentry)
 {
   int cmode, status;
-  
-    mvme_get_dmode(mvme, &cmode); 
+
+    mvme_get_dmode(mvme, &cmode);
     mvme_set_dmode(mvme, MVME_DMODE_D32);
-    
-    status = mvme_read(mvme, pdest, base, sizeof(DWORD) * nentry); 
-    
+
+    status = mvme_read(mvme, pdest, base, sizeof(DWORD) * nentry);
+
     mvme_set_dmode(mvme, cmode);
     return nentry;
-    
+
     /*
       for (i=0 ; i<nentry ; i++) {
       if (!v1190_DataReady(mvme, base))
@@ -105,21 +103,21 @@ int v1190_DataRead(MVME_INTERFACE *mvme, DWORD base, DWORD *pdest, int nentry)
 int v1190_GeoWrite(MVME_INTERFACE *mvme, DWORD base, int geo)
 {
   int cmode, data;
- 
+
   mvme_get_dmode(mvme, &cmode);
   mvme_set_dmode(mvme, MVME_DMODE_D16);
   mvme_write_value(mvme, base+V1190_GEO_REG_RW, (geo & 0x1F));
   data = mvme_read_value(mvme, base+V1190_GEO_REG_RW);
   mvme_set_dmode(mvme, cmode);
 
-  return (int) (data & 0x1F); 
+  return (int) (data & 0x1F);
 }
 
 /*****************************************************************/
 void v1190_SoftReset(MVME_INTERFACE *mvme, DWORD base)
 {
   int cmode;
- 
+
   mvme_get_dmode(mvme, &cmode);
   mvme_set_dmode(mvme, MVME_DMODE_D16);
   mvme_write_value(mvme, base+V1190_MODULE_RESET_WO, 0);
@@ -130,7 +128,7 @@ void v1190_SoftReset(MVME_INTERFACE *mvme, DWORD base)
 void v1190_SoftClear(MVME_INTERFACE *mvme, DWORD base)
 {
   int cmode;
- 
+
   mvme_get_dmode(mvme, &cmode);
   mvme_set_dmode(mvme, MVME_DMODE_D16);
   mvme_write_value(mvme, base+V1190_SOFT_CLEAR_WO, 0);
@@ -141,7 +139,7 @@ void v1190_SoftClear(MVME_INTERFACE *mvme, DWORD base)
 void v1190_SoftTrigger(MVME_INTERFACE *mvme, DWORD base)
 {
   int cmode;
- 
+
   mvme_get_dmode(mvme, &cmode);
   mvme_set_dmode(mvme, MVME_DMODE_D16);
   mvme_write_value(mvme, base+V1190_SOFT_TRIGGER_WO, 0);
@@ -152,7 +150,7 @@ void v1190_SoftTrigger(MVME_INTERFACE *mvme, DWORD base)
 int  v1190_DataReady(MVME_INTERFACE *mvme, DWORD base)
 {
   int cmode, data;
- 
+
   mvme_get_dmode(mvme, &cmode);
   mvme_set_dmode(mvme, MVME_DMODE_D16);
   data = mvme_read_value(mvme, base+V1190_SR_RO);
@@ -164,7 +162,7 @@ int  v1190_DataReady(MVME_INTERFACE *mvme, DWORD base)
 int  v1190_EvtStored(MVME_INTERFACE *mvme, DWORD base)
 {
   int cmode, data;
- 
+
   mvme_get_dmode(mvme, &cmode);
   mvme_set_dmode(mvme, MVME_DMODE_D16);
   data = mvme_read_value(mvme, base+V1190_EVT_STORED_RO);
@@ -176,7 +174,7 @@ int  v1190_EvtStored(MVME_INTERFACE *mvme, DWORD base)
 int  v1190_EvtCounter(MVME_INTERFACE *mvme, DWORD base)
 {
   int cmode, data;
- 
+
   mvme_get_dmode(mvme, &cmode);
   mvme_set_dmode(mvme, MVME_DMODE_D32);
   data = mvme_read_value(mvme, base+V1190_EVT_CNT_RO);
@@ -198,7 +196,7 @@ void v1190_TdcIdList(MVME_INTERFACE *mvme, DWORD base)
     value  = v1190_MicroWrite(mvme, base, code);
     value  = v1190_MicroRead(mvme, base);
     value = (v1190_MicroRead(mvme, base) << 16) | value;
-    //    printf("Received :code: 0x%04x  0x%08lx\n", code, value); 
+    //    printf("Received :code: 0x%04x  0x%08lx\n", code, value);
   }
   mvme_set_dmode(mvme, cmode);
 }
@@ -216,7 +214,7 @@ int  v1190_ResolutionRead(MVME_INTERFACE *mvme, DWORD base)
     code = V1190_RESOLUTION_RO | (i & 0x0F);
     value = v1190_MicroWrite(mvme, base, code);
     value = v1190_MicroRead(mvme, base);
-    // printf("Received RR :code: 0x%04x  0x%08x\n", code, value); 
+    // printf("Received RR :code: 0x%04x  0x%08x\n", code, value);
   }
   mvme_set_dmode(mvme, cmode);
   return value;
@@ -228,7 +226,7 @@ void v1190_LEResolutionSet(MVME_INTERFACE *mvme, DWORD base, WORD le)
   int   cmode, value;
 
   mvme_get_dmode(mvme, &cmode);
-  mvme_set_dmode(mvme, MVME_DMODE_D16); 
+  mvme_set_dmode(mvme, MVME_DMODE_D16);
 
   if ((le == LE_RESOLUTION_100) ||
       (le == LE_RESOLUTION_200) ||
@@ -260,7 +258,7 @@ void v1190_AcqModeRead(MVME_INTERFACE *mvme, DWORD base)
 
   value = v1190_MicroWrite(mvme, base, V1190_ACQ_MODE_RO);
   value = v1190_MicroRead(mvme, base);
-  //  printf("Received AR :code: 0x%04x  0x%08x\n", V1190_ACQ_MODE_RO, value); 
+  //  printf("Received AR :code: 0x%04x  0x%08x\n", V1190_ACQ_MODE_RO, value);
   mvme_set_dmode(mvme, cmode);
 }
 
@@ -273,8 +271,8 @@ void v1190_TriggerMatchingSet(MVME_INTERFACE *mvme, DWORD base)
   mvme_set_dmode(mvme, MVME_DMODE_D16);
 
   value = v1190_MicroWrite(mvme, base, V1190_TRIGGER_MATCH_WO);
-  //  printf("Received MS :code: 0x%04x  0x%08x\n", V1190_TRIGGER_MATCH_WO, value); 
-  
+  //  printf("Received MS :code: 0x%04x  0x%08x\n", V1190_TRIGGER_MATCH_WO, value);
+
   mvme_set_dmode(mvme, cmode);
 }
 
@@ -287,14 +285,14 @@ void v1190_ContinuousSet(MVME_INTERFACE *mvme, DWORD base)
   mvme_set_dmode(mvme, MVME_DMODE_D16);
 
   value = v1190_MicroWrite(mvme, base, V1190_CONTINUOUS_WO);
-  //  printf("Received CS :code: 0x%04x  0x%08x\n", V1190_CONTINUOUS_WO, value); 
-  
+  //  printf("Received CS :code: 0x%04x  0x%08x\n", V1190_CONTINUOUS_WO, value);
+
   mvme_set_dmode(mvme, cmode);
 }
 
 /*****************************************************************/
 /**
-Set the width of the matching Window. The width parameter should be 
+Set the width of the matching Window. The width parameter should be
 in the range of 1 to 4095 (0xFFF). Example 0x14 == 500ns.
 @param *mvme VME structure
 @param  base Module base address
@@ -306,13 +304,13 @@ void v1190_WidthSet(MVME_INTERFACE *mvme, DWORD base, WORD width)
   int   cmode, value;
 
   mvme_get_dmode(mvme, &cmode);
-  mvme_set_dmode(mvme, MVME_DMODE_D16); 
+  mvme_set_dmode(mvme, MVME_DMODE_D16);
 
   //  v1190_MicroFlush(mvme, base);
   value = v1190_MicroWrite(mvme, base, V1190_WINDOW_WIDTH_WO);
   value = v1190_MicroWrite(mvme, base, width);
-  //  printf("Received WS :code: 0x%04x  0x%08x\n", V1190_WINDOW_WIDTH_WO, value); 
-  
+  //  printf("Received WS :code: 0x%04x  0x%08x\n", V1190_WINDOW_WIDTH_WO, value);
+
   mvme_set_dmode(mvme, cmode);
 }
 
@@ -335,8 +333,8 @@ void v1190_OffsetSet(MVME_INTERFACE *mvme, DWORD base, WORD offset)
   //  v1190_MicroFlush(mvme, base);
   value = v1190_MicroWrite(mvme, base, V1190_WINDOW_OFFSET_WO);
   value = v1190_MicroWrite(mvme, base, offset);
-  //  printf("Received OS :code: 0x%04x  0x%08x\n", V1190_WINDOW_OFFSET_WO, value); 
-  
+  //  printf("Received OS :code: 0x%04x  0x%08x\n", V1190_WINDOW_OFFSET_WO, value);
+
   mvme_set_dmode(mvme, cmode);
 }
 
@@ -379,7 +377,7 @@ int v1190_MicroWrite(MVME_INTERFACE *mvme, DWORD base, WORD data)
     }
     udelay(500);
   }
-  
+
   printf("v1190_MicroWrite: Micro not ready for writing!\n");
   mvme_set_dmode(mvme, cmode);
   return -1;
@@ -420,7 +418,7 @@ int v1190_MicroFlush(MVME_INTERFACE *mvme, const DWORD base)
       int data = v1190_MicroRead(mvme, base);
       printf("microData[%d]: 0x%04x\n",count,data);
       if (data < 0)
-	break;
+  break;
       count++;
     }
   mvme_set_dmode(mvme, cmode);
@@ -443,7 +441,7 @@ int  v1190_Setup(MVME_INTERFACE *mvme, DWORD base, int mode)
 {
   WORD code, value;
   int      cmode, status = -1;
-  
+
   mvme_get_dmode(mvme, &cmode);
   mvme_set_dmode(mvme, MVME_DMODE_D16);
 
@@ -492,7 +490,7 @@ int v1190_Status(MVME_INTERFACE *mvme, DWORD base)
 {
   WORD  i, code, pair=0;
   int   cmode, value;
-  
+
   mvme_get_dmode(mvme, &cmode);
   mvme_set_dmode(mvme, MVME_DMODE_D16);
 
@@ -502,94 +500,94 @@ int v1190_Status(MVME_INTERFACE *mvme, DWORD base)
   if ((value = v1190_MicroWrite(mvme, base, code)) < 0)
     return -value;
   value = v1190_MicroRead(mvme, base);
-  printf("  Match Window width       : 0x%04x\n", value);  
+  printf("  Match Window width       : 0x%04x\n", value);
   value = v1190_MicroRead(mvme, base);
-  printf("  Window offset            : 0x%04x\n", value);  
+  printf("  Window offset            : 0x%04x\n", value);
   value = v1190_MicroRead(mvme, base);
-  printf("  Extra Search Window Width: 0x%04x\n", value);  
+  printf("  Extra Search Window Width: 0x%04x\n", value);
   value = v1190_MicroRead(mvme, base);
-  printf("  Reject Margin            : 0x%04x\n", value);  
+  printf("  Reject Margin            : 0x%04x\n", value);
   value = v1190_MicroRead(mvme, base);
-  printf("  Trigger Time subtration  : %s\n",(value & 0x1) ? "y" : "n");  
+  printf("  Trigger Time subtration  : %s\n",(value & 0x1) ? "y" : "n");
 
   //-------------------------------------------------
   printf("\n--- Edge Detection & Resolution Section[0x2300/26/29]:\n");
   code = 0x2300;
   value = v1190_MicroWrite(mvme, base, code);
   pair = value = v1190_MicroRead(mvme, base);
-  printf("  Edge Detection (1:T/2:L/3:TL)           : 0x%02x\n", (value&0x3));  
+  printf("  Edge Detection (1:T/2:L/3:TL)           : 0x%02x\n", (value&0x3));
   code = 0x2600;
   value = v1190_MicroWrite(mvme, base, code);
   value = v1190_MicroRead(mvme, base);
   if (pair==0x3) {
     value = v1190_MicroRead(mvme, base);
-    printf("  Leading Edge Resolution (see table)     : 0x%02x\n", (value&0x3));  
-    printf("  Pulse Width Resolution (see table)      : 0x%02x\n", ((value>>8)&0xF));  
+    printf("  Leading Edge Resolution (see table)     : 0x%02x\n", (value&0x3));
+    printf("  Pulse Width Resolution (see table)      : 0x%02x\n", ((value>>8)&0xF));
   } else {
-    printf("  Resolution [ps] (0:800/1:200/2:100)     : 0x%02x\n", (value&0x3));  
+    printf("  Resolution [ps] (0:800/1:200/2:100)     : 0x%02x\n", (value&0x3));
   }
   code = 0x2900;
   value = v1190_MicroWrite(mvme, base, code);
   value = v1190_MicroRead(mvme, base);
-  printf("  Dead Time between hit [~ns](5/10/30/100): 0x%02x\n", (value&0x3));  
-  
+  printf("  Dead Time between hit [~ns](5/10/30/100): 0x%02x\n", (value&0x3));
+
   //-------------------------------------------------
   printf("\n--- Readout Section[0x3200/34/3a/3c]:\n");
   code = 0x3200;
   value = v1190_MicroWrite(mvme, base, code);
   value = v1190_MicroRead(mvme, base);
-  printf("  Header/Trailer                            : %s\n",(value & 0x1) ? "y" : "n");  
+  printf("  Header/Trailer                            : %s\n",(value & 0x1) ? "y" : "n");
   code = 0x3400;
   value = v1190_MicroWrite(mvme, base, code);
   value = v1190_MicroRead(mvme, base);
-  printf("  Max #hits per event 2^n-1 (>128:no limit) : %d\n", value&0xF);  
+  printf("  Max #hits per event 2^n-1 (>128:no limit) : %d\n", value&0xF);
   code = 0x3a00;
   value = v1190_MicroWrite(mvme, base, code);
   value = v1190_MicroRead(mvme, base);
-  printf("  Internal TDC error type (see doc)         : 0x%04x\n", (value&0x7FF));  
+  printf("  Internal TDC error type (see doc)         : 0x%04x\n", (value&0x7FF));
   code = 0x3c00;
   value = v1190_MicroWrite(mvme, base, code);
   value = v1190_MicroRead(mvme, base);
-  printf("  Effective size of readout Fifo 2^n-1      : 0x%04x\n", (value&0xF));  
-  
+  printf("  Effective size of readout Fifo 2^n-1      : 0x%04x\n", (value&0xF));
+
   //-------------------------------------------------
   printf("\n--- Channel Enable Section[0x4500/47/49]:\n");
   code = 0x4500;
   value = v1190_MicroWrite(mvme, base, code);
   value = v1190_MicroRead(mvme, base);
-  printf("  Read Enable Pattern [  0..15 ] : 0x%04x\n", value);  
+  printf("  Read Enable Pattern [  0..15 ] : 0x%04x\n", value);
   value = v1190_MicroRead(mvme, base);
-  printf("  Read Enable Pattern [ 16..31 ] : 0x%04x\n", value);  
+  printf("  Read Enable Pattern [ 16..31 ] : 0x%04x\n", value);
   value = v1190_MicroRead(mvme, base);
-  printf("  Read Enable Pattern [ 32..47 ] : 0x%04x\n", value);  
+  printf("  Read Enable Pattern [ 32..47 ] : 0x%04x\n", value);
   value = v1190_MicroRead(mvme, base);
-  printf("  Read Enable Pattern [ 48..63 ] : 0x%04x\n", value);  
+  printf("  Read Enable Pattern [ 48..63 ] : 0x%04x\n", value);
   code = 0x4700;
   value = v1190_MicroWrite(mvme, base, code);
   value = v1190_MicroRead(mvme, base);
   value = (v1190_MicroRead(mvme, base)<<16) | value;
-  printf("  Read Enable Pattern 32 (0) : 0x%08x\n", value);  
+  printf("  Read Enable Pattern 32 (0) : 0x%08x\n", value);
   code = 0x4701;
   value = v1190_MicroWrite(mvme, base, code);
   value = v1190_MicroRead(mvme, base);
   value = (v1190_MicroRead(mvme, base)<<16) | value;
-  printf("  Read Enable Pattern 32 (1) : 0x%08x\n", value);  
+  printf("  Read Enable Pattern 32 (1) : 0x%08x\n", value);
 
   //-------------------------------------------------
   printf("\n--- Adjust Section[0x5100/60]:\n");
   code = 0x5100;
   value = v1190_MicroWrite(mvme, base, code);
   value = v1190_MicroRead(mvme, base);
-  printf("  Coarse Counter Offset: 0x%04x\n", (value&0x7FF));  
+  printf("  Coarse Counter Offset: 0x%04x\n", (value&0x7FF));
   value = v1190_MicroRead(mvme, base);
-  printf("  Fine   Counter Offset: 0x%04x\n", (value&0x1F));  
+  printf("  Fine   Counter Offset: 0x%04x\n", (value&0x1F));
   printf("\nMiscellaneous Section:\n");
   for (i=0; i<2 ; i++) {
     code = 0x6000 | (i & 0x0F);
     value = v1190_MicroWrite(mvme, base, code);
     value = v1190_MicroRead(mvme, base);
     value = (v1190_MicroRead(mvme, base) << 16) | value;
-    printf("  TDC ID(%i)  0x%08x  [code:0x%04x]\n", i, value, code);  
+    printf("  TDC ID(%i)  0x%08x  [code:0x%04x]\n", i, value, code);
   }
   mvme_set_dmode(mvme, cmode);
   return 0;
@@ -612,7 +610,7 @@ int udelay(int usec)
 /*-PAA- For test purpose only */
 #ifdef MAIN_ENABLE
 int main () {
-  
+
   MVME_INTERFACE *myvme;
 
   DWORD VMEIO_BASE = 0x780000;
@@ -621,7 +619,7 @@ int main () {
   DWORD    cnt, array[10000];
 
 
-  // Test under vmic   
+  // Test under vmic
   status = mvme_open(&myvme, 0);
 
   // Set am to A24 non-privileged Data
@@ -633,8 +631,8 @@ int main () {
   // Get Firmware revision
   csr = mvme_read_value(myvme, V1190_BASE+V1190_FIRM_REV_RO);
   printf("Firmware revision: 0x%x\n", csr);
-  
-  // Print Current status 
+
+  // Print Current status
   v1190_Status(myvme, V1190_BASE);
 
   // Set mode 1
@@ -653,7 +651,7 @@ int main () {
   mvme_set_dmode(myvme, MVME_DMODE_D32);
 
   // Set 0x3 in pulse mode for timing purpose
-  mvme_write_value(myvme, VMEIO_BASE+0x8, 0xF); 
+  mvme_write_value(myvme, VMEIO_BASE+0x8, 0xF);
 
   // Write pulse for timing purpose
   mvme_write_value(myvme, VMEIO_BASE+0xc, 0x2);
@@ -682,6 +680,6 @@ int main () {
 
   status = mvme_close(myvme);
   return 0;
-}	
+}
 #endif
 

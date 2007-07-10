@@ -5,7 +5,7 @@
 
   Contents:      Routines for accessing the vpc6 Triumf board
 
-  $Log: vpc6.c,v $
+  $Id$
 *********************************************************************/
 #include <stdio.h>
 #include <string.h>
@@ -92,7 +92,7 @@ int vpc6_PortCfgLoad(MVME_INTERFACE *mvme, DWORD base, WORD port)
   }
   else
     return VPC6_PARAM_ERROR;
-  
+
   do {
     if (~(vpc6_isPortBusy(mvme, base, port))) {
       // Not busy, load bit string to PA
@@ -104,10 +104,10 @@ int vpc6_PortCfgLoad(MVME_INTERFACE *mvme, DWORD base, WORD port)
     else
       usleep(10000);
   } while (timeout--);
-  
+
   if (timeout == 0)
     printf("Port %d still busy\n", port);
-  
+
   mvme_set_dmode(mvme, cmode);
   return VPC6_SUCCESS;
 }
@@ -121,13 +121,13 @@ int vpc6_PortCfgLoad(MVME_INTERFACE *mvme, DWORD base, WORD port)
 int vpc6_CfgRetrieve(MVME_INTERFACE *mvme, DWORD base, WORD port)
 {
   int cmode, action, timeout=100;
-  
+
   mvme_get_dmode(mvme, &cmode);
   mvme_set_dmode(mvme, MVME_DMODE_D32);
   if ((port > 0) && (port < 7)) {
     action = (0x10) | port;
   }
-  
+
   do {
     if (~(vpc6_isPortBusy(mvme, base, port))) {
       // Not busy, read bit string from PA
@@ -139,10 +139,10 @@ int vpc6_CfgRetrieve(MVME_INTERFACE *mvme, DWORD base, WORD port)
     }
     usleep(10000);
   } while (timeout--);
-  
+
   if (timeout == 0)
     printf(" Port %d still busy\n", port);
-  
+
   mvme_set_dmode(mvme, cmode);
   return VPC6_SUCCESS;
 }
@@ -157,10 +157,10 @@ int vpc6_PortRegRBRead(MVME_INTERFACE *mvme, DWORD base, WORD port)
   int cmode, timeout=100;
   WORD type;
   DWORD reg[4];
-  
+
   mvme_get_dmode(mvme, &cmode);
   mvme_set_dmode(mvme, MVME_DMODE_D32);
-  
+
   do {
     if (~(vpc6_isPortBusy(mvme, base, port))) {
       type  = mvme_read_value(mvme, base+VPC6_CR_RW);
@@ -173,13 +173,13 @@ int vpc6_PortRegRBRead(MVME_INTERFACE *mvme, DWORD base, WORD port)
       break;
     }
   } while (timeout--);
-  
+
   //  printf("DEBUG Readback Register:\n reg[0]=0x%8lx \n reg[1]=0x%8lx \n reg[2]=0x%8lx \n reg[3]=0x%8lx \n"
   //     , reg[0], reg[1], reg[2], reg[3]);
 
   if (timeout == 0)
     printf(" Port %d busy\n", port);
-  
+
   mvme_set_dmode(mvme, cmode);
   return VPC6_SUCCESS;
 }
@@ -194,10 +194,10 @@ int vpc6_PortRegRead(MVME_INTERFACE *mvme, DWORD base, WORD port)
   int cmode;
   WORD type;
   DWORD reg[4];
-  
+
   mvme_get_dmode(mvme, &cmode);
   mvme_set_dmode(mvme, MVME_DMODE_D32);
-  
+
   type  = mvme_read_value(mvme, base+VPC6_CR_RW);
   type  = ((type >> (2*(port-1))) & 0x03);   // ASD or Buck
   reg[0] = mvme_read_value(mvme, base+VPC6_CFG_RW+(0x10*(port-1))+0x00);
@@ -220,7 +220,7 @@ int vpc6_PortRegRead(MVME_INTERFACE *mvme, DWORD base, WORD port)
 void vpc6_PortDisplay(WORD type, WORD port, DWORD * reg)
 {
   printf("\n---- Port:%d Type:%s ----------------------------\n"
-	 , port, type == VPC6_ASD01 ? "ASD01" : "Buckeye");
+   , port, type == VPC6_ASD01 ? "ASD01" : "Buckeye");
   vpc6_EntryPrint(type, 0, (vpc6_Reg *)&reg[0]);
   if (type == VPC6_ASD01) {
     vpc6_EntryPrint(type, 1, (vpc6_Reg *)&reg[2]);
@@ -238,7 +238,7 @@ void vpc6_PortDisplay(WORD type, WORD port, DWORD * reg)
 void vpc6_EntryPrint(WORD type, WORD chip, const vpc6_Reg* v)
 {
   vpc6_Reg * v2 = v+1;
-  
+
 
   if (type == VPC6_ASD01) {
     switch (chip) {
@@ -247,12 +247,12 @@ void vpc6_EntryPrint(WORD type, WORD chip, const vpc6_Reg* v)
       printf("Chip mode    :%s ", v->asdx1.chipmode == 0 ? "ADC" : "TOT");
       printf("     Channel mode :0x%04x \n", v->asdx1.channelmode);
       printf("Threshold    :0x%02x     Hysteresis   :0x%02x     CalInjCap    :0x%02x     CalMaskReg   :0x%02x\n"
-	     , v2->asdx2.mainThresholdDAC, v->asdx1.hysteresisDAC
-	     , v2->asdx2.capInjCapSel, v2->asdx2.calMaskReg);
+       , v2->asdx2.mainThresholdDAC, v->asdx1.hysteresisDAC
+       , v2->asdx2.capInjCapSel, v2->asdx2.calMaskReg);
       if (v->asdx1.chipmode == 0) {
-	printf("ADC Threshold:0x%02x     Dead Time    :0x%02x WADC Run Current :0x%02x     WADC Int Gate:0x%02x\n"
-	       , ((v2->asdx2.wilkinsonADC << 1) | v ->asdx1.wilkinsonADC), v->asdx1.deadtime
-	       , v->asdx1.wilkinsonRCurrent, v->asdx1.wilkinsonIGate);
+  printf("ADC Threshold:0x%02x     Dead Time    :0x%02x WADC Run Current :0x%02x     WADC Int Gate:0x%02x\n"
+         , ((v2->asdx2.wilkinsonADC << 1) | v ->asdx1.wilkinsonADC), v->asdx1.deadtime
+         , v->asdx1.wilkinsonRCurrent, v->asdx1.wilkinsonIGate);
       }
       break;
     case vpc6_asd_ch9_16:
@@ -260,12 +260,12 @@ void vpc6_EntryPrint(WORD type, WORD chip, const vpc6_Reg* v)
       printf("Chip mode    :%s ", v->asdx1.chipmode == 0 ? "ADC" : "TOT");
       printf("     Channel mode :0x%04x \n", v->asdx1.channelmode);
       printf("Threshold    :0x%02x     Hysteresis   :0x%02x     CalInjCap    :0x%02x     CalMaskReg   :0x%02x\n"
-	     , v2->asdx2.mainThresholdDAC, v->asdx1.hysteresisDAC
-	     , v2->asdx2.capInjCapSel, v2->asdx2.calMaskReg);
+       , v2->asdx2.mainThresholdDAC, v->asdx1.hysteresisDAC
+       , v2->asdx2.capInjCapSel, v2->asdx2.calMaskReg);
       if (v->asdx1.chipmode == 0) {
-	printf("ADC Threshold:0x%02x     Dead Time    :0x%02x WADC Run Current :0x%02x     WADC Int Gate:0x%02x\n"
-	       , ((v2->asdx2.wilkinsonADC << 1) | v ->asdx1.wilkinsonADC), v->asdx1.deadtime
-	       , v->asdx1.wilkinsonRCurrent, v->asdx1.wilkinsonIGate);
+  printf("ADC Threshold:0x%02x     Dead Time    :0x%02x WADC Run Current :0x%02x     WADC Int Gate:0x%02x\n"
+         , ((v2->asdx2.wilkinsonADC << 1) | v ->asdx1.wilkinsonADC), v->asdx1.deadtime
+         , v->asdx1.wilkinsonRCurrent, v->asdx1.wilkinsonIGate);
       }
       break;
     }
@@ -344,7 +344,7 @@ void  vpc6_Status(MVME_INTERFACE *mvme, DWORD base, WORD port)
 void  vpc6_ASDDefaultLoad(MVME_INTERFACE *mvme, DWORD base, WORD port)
 {
   vpc6_Reg def;
-  
+
   def.asdx1.chipmode          = 1; // ToT
   def.asdx1.channelmode       = 0; // All on
   def.asdx1.deadtime          = 0; // 300ns
@@ -352,14 +352,14 @@ void  vpc6_ASDDefaultLoad(MVME_INTERFACE *mvme, DWORD base, WORD port)
   def.asdx1.wilkinsonIGate    = 0; // N/A
   def.asdx1.hysteresisDAC     = 7; // ~10mV hysteresis
   def.asdx1.wilkinsonADC      = 0; // bit0 here  N/A
-  vpc6_ASDRegSet(mvme, base, port, 0, &def); 
+  vpc6_ASDRegSet(mvme, base, port, 0, &def);
 
   def.asdx2.wilkinsonADC      = 0; // bits2..1 here  N/A
   def.asdx2.mainThresholdDAC  = 108; // N/A
   def.asdx2.capInjCapSel      = 0; // N/A
   def.asdx2.calMaskReg        = 0; // N/A
-  def.asdx2.notused           = 0; 
-  vpc6_ASDRegSet(mvme, base, port, 1, &def); 
+  def.asdx2.notused           = 0;
+  vpc6_ASDRegSet(mvme, base, port, 1, &def);
 
   def.asdx1.chipmode          = 1; // ToT
   def.asdx1.channelmode       = 0;
@@ -368,28 +368,28 @@ void  vpc6_ASDDefaultLoad(MVME_INTERFACE *mvme, DWORD base, WORD port)
   def.asdx1.wilkinsonIGate    = 0;
   def.asdx1.hysteresisDAC     = 7;
   def.asdx1.wilkinsonADC      = 0; // bit0 here  N/A
-  vpc6_ASDRegSet(mvme, base, port, 2, &def); 
+  vpc6_ASDRegSet(mvme, base, port, 2, &def);
 
   def.asdx2.wilkinsonADC      = 0; // bits2..1 here  N/A
   def.asdx2.mainThresholdDAC  = 108;
   def.asdx2.capInjCapSel      = 0;
   def.asdx2.calMaskReg        = 0;
   def.asdx2.notused           = 0;
-  vpc6_ASDRegSet(mvme, base, port, 3, &def); 
+  vpc6_ASDRegSet(mvme, base, port, 3, &def);
 }
 
 /*****************************************************************/
 void  vpc6_ASDRegSet(MVME_INTERFACE *mvme, DWORD base, WORD port
-		     , WORD reg, vpc6_Reg * Reg)
+         , WORD reg, vpc6_Reg * Reg)
 {
   int  cmode;
 
   mvme_get_dmode(mvme, &cmode);
   mvme_set_dmode(mvme, MVME_DMODE_D32);
-  
+
   mvme_write_value(mvme, base+VPC6_CFG_RW+((port-1)*0x10)+(reg*0x04), Reg->asdcfg);
   //DEBUG
-  //printf("port:%d reg:%d addr: 0x%x\n",port, reg, VPC6_CFG_RW+((port-1)*0x10)+(reg*0x04)); 
+  //printf("port:%d reg:%d addr: 0x%x\n",port, reg, VPC6_CFG_RW+((port-1)*0x10)+(reg*0x04));
   mvme_set_dmode(mvme, cmode);
 }
 
@@ -411,10 +411,10 @@ int vpc6_ASDModeSet(MVME_INTERFACE *mvme, DWORD base, WORD port, int channel,  i
       reg[0].asdx1.channelmode = 0x0000;
       reg[1].asdx1.channelmode = 0x0000;
       for (ch=0; ch<8; ch++) {
-	reg[0].asdx1.channelmode |= mode << ch*2;
+  reg[0].asdx1.channelmode |= mode << ch*2;
       }
       for (ch=0; ch<8; ch++) {
-	reg[1].asdx1.channelmode |= mode << ch*2;
+  reg[1].asdx1.channelmode |= mode << ch*2;
       }
     }
     else if ((channel >= 0) && (channel < 8)) {
@@ -439,8 +439,8 @@ int vpc6_ASDModeSet(MVME_INTERFACE *mvme, DWORD base, WORD port, int channel,  i
     return -1;
   }
 
-  vpc6_ASDRegSet(mvme, base, port, 0, &reg[0]); 
-  vpc6_ASDRegSet(mvme, base, port, 2, &reg[1]); 
+  vpc6_ASDRegSet(mvme, base, port, 0, &reg[0]);
+  vpc6_ASDRegSet(mvme, base, port, 2, &reg[1]);
   vpc6_PortCfgLoad(mvme, base, port);
   vpc6_CfgRetrieve(mvme, base, port);
   mvme_set_dmode(mvme, cmode);
@@ -472,8 +472,8 @@ int vpc6_ASDThresholdSet(MVME_INTERFACE *mvme, DWORD base, WORD port, int value)
     return -1;
   }
 
-  vpc6_ASDRegSet(mvme, base, port, 1, &reg[0]); 
-  vpc6_ASDRegSet(mvme, base, port, 3, &reg[1]); 
+  vpc6_ASDRegSet(mvme, base, port, 1, &reg[0]);
+  vpc6_ASDRegSet(mvme, base, port, 3, &reg[1]);
 
   vpc6_PortCfgLoad(mvme, base, port);
   vpc6_CfgRetrieve(mvme, base, port);
@@ -490,13 +490,13 @@ int vpc6_ASDHysteresisSet(MVME_INTERFACE *mvme, DWORD base, WORD port, float val
   int  cmode;
   int ivalue;
   vpc6_Reg reg[2];
-  
+
   mvme_get_dmode(mvme, &cmode);
   mvme_set_dmode(mvme, MVME_DMODE_D32);
-  
+
   reg[0] = (vpc6_Reg) mvme_read_value(mvme, base+VPC6_CFG_RW+(0x10*(port-1))+0x00);
   reg[1] = (vpc6_Reg) mvme_read_value(mvme, base+VPC6_CFG_RW+(0x10*(port-1))+0x08);
-  
+
   // Hysteresis Value
   ivalue = (int) (value / 1.25);
   if ((ivalue >= 0x0) && (ivalue <= 0xF)) {
@@ -510,8 +510,8 @@ int vpc6_ASDHysteresisSet(MVME_INTERFACE *mvme, DWORD base, WORD port, float val
     return -1;
   }
 
-  vpc6_ASDRegSet(mvme, base, port, 0, &reg[0]); 
-  vpc6_ASDRegSet(mvme, base, port, 2, &reg[1]); 
+  vpc6_ASDRegSet(mvme, base, port, 0, &reg[0]);
+  vpc6_ASDRegSet(mvme, base, port, 2, &reg[1]);
   vpc6_PortCfgLoad(mvme, base, port);
   vpc6_CfgRetrieve(mvme, base, port);
   mvme_set_dmode(mvme, cmode);
@@ -575,90 +575,90 @@ int main (int argc, char* argv[]) {
 
     while (argindex < argc) {
       if ((strncmp(argv[argindex],"-help",2) == 0) && (argc == 2)) {
-	printf("vpc6 command line usage...\n");
-	printf("vpc6 -help -baseaddr [a] -port [p] -threshold [t] -hysteresis [h]\n");
-	printf("     -channelmode [c] [m] -readback\n");
-	printf("[a]: base address of vpc6 module (eg. 0x300000)\n");
-	printf("[p]: port number (1..6; 0 for all ports!!! '0' NOT IMPLEMENTED IN FIRMWARE YET)\n");
-	printf("[t]: theshold setting (-256..254 [mV])\n");
-	printf("[h]: hysteresis setting (0x0..0xF [0-18.75mV])\n");
-	printf("[c]: channel number (0..15; -1 for all channels)\n");
-	printf("[m]: channel mode (0,1=On; 2=Forced Low; 3=Forced High)\n"); 
+  printf("vpc6 command line usage...\n");
+  printf("vpc6 -help -baseaddr [a] -port [p] -threshold [t] -hysteresis [h]\n");
+  printf("     -channelmode [c] [m] -readback\n");
+  printf("[a]: base address of vpc6 module (eg. 0x300000)\n");
+  printf("[p]: port number (1..6; 0 for all ports!!! '0' NOT IMPLEMENTED IN FIRMWARE YET)\n");
+  printf("[t]: theshold setting (-256..254 [mV])\n");
+  printf("[h]: hysteresis setting (0x0..0xF [0-18.75mV])\n");
+  printf("[c]: channel number (0..15; -1 for all channels)\n");
+  printf("[m]: channel mode (0,1=On; 2=Forced Low; 3=Forced High)\n");
       }
       else if (strncmp(argv[argindex],"-baseaddr",2) == 0) {
-	if ((argindex+1) < argc) {
-	  argindex = argindex + 1;
-	  sscanf(argv[argindex],"%lx",&VPC6_BASE);
-	  printf("Base Set... 0x%lx\n", VPC6_BASE);
-	}
-	else {
-	  printf("Invalid number of arguments for %s modifier\n",argv[argindex]);
-	  break;
-	}
+  if ((argindex+1) < argc) {
+    argindex = argindex + 1;
+    sscanf(argv[argindex],"%lx",&VPC6_BASE);
+    printf("Base Set... 0x%lx\n", VPC6_BASE);
+  }
+  else {
+    printf("Invalid number of arguments for %s modifier\n",argv[argindex]);
+    break;
+  }
       }
       else if (strncmp(argv[argindex],"-port",2) == 0) {
-	if ((argindex+1) < argc) {
-	  argindex = argindex + 1;
-	  sscanf(argv[argindex],"%d",&port);
-	  printf("Port Set... %d\n", port);
-	}
-	else {
-	  printf("Invalid number of arguments for %s modifier\n",argv[argindex]);
-	  break;
-	}
+  if ((argindex+1) < argc) {
+    argindex = argindex + 1;
+    sscanf(argv[argindex],"%d",&port);
+    printf("Port Set... %d\n", port);
+  }
+  else {
+    printf("Invalid number of arguments for %s modifier\n",argv[argindex]);
+    break;
+  }
       }
       else if (strncmp(argv[argindex],"-threshold",2) == 0) {
-	if ((argindex+1) < argc) {
-	  argindex = argindex + 1;
-	  sscanf(argv[argindex],"%d",&value);
-	  vpc6_ASDThresholdSet(myvme, VPC6_BASE, port, value);
-	  printf("Threshold Set... %4.0d mV\n", value);
-	}
-	else {
-	  printf("Invalid number of arguments for %s modifier\n",argv[argindex]);
-	  break;
-	}
+  if ((argindex+1) < argc) {
+    argindex = argindex + 1;
+    sscanf(argv[argindex],"%d",&value);
+    vpc6_ASDThresholdSet(myvme, VPC6_BASE, port, value);
+    printf("Threshold Set... %4.0d mV\n", value);
+  }
+  else {
+    printf("Invalid number of arguments for %s modifier\n",argv[argindex]);
+    break;
+  }
       }
       else if (strncmp(argv[argindex],"-hysteresis",3) == 0) {
-	if ((argindex+1) < argc) {
-	  argindex = argindex + 1;
-	  sscanf(argv[argindex],"%f",&fvalue);
-	  vpc6_ASDHysteresisSet(myvme, VPC6_BASE, port, fvalue);
-	  printf("Hysteresis Set... %4.2f\n", fvalue);	
-	}
-	else {
-	  printf("Invalid number of arguments for %s modifier\n",argv[argindex]);
-	  break;
-	}
+  if ((argindex+1) < argc) {
+    argindex = argindex + 1;
+    sscanf(argv[argindex],"%f",&fvalue);
+    vpc6_ASDHysteresisSet(myvme, VPC6_BASE, port, fvalue);
+    printf("Hysteresis Set... %4.2f\n", fvalue);
+  }
+  else {
+    printf("Invalid number of arguments for %s modifier\n",argv[argindex]);
+    break;
+  }
       }
       else if (strncmp(argv[argindex],"-channelmode",2) == 0) {
-	if ((argindex+2) < argc) {
-	  argindex = argindex + 1;
-	  sscanf(argv[argindex],"%d",&channel);
-	  argindex = argindex + 1;
-	  sscanf(argv[argindex],"%d",&value);
-	  vpc6_ASDModeSet(myvme, VPC6_BASE, port, channel, value);
-	  if (channel == -1) {
-	    printf("ALL Channels Set... %d\n", value);	
-	  }
-	  else {
-	    printf("Channel %d Set... %d\n", channel, value);	
-	  }
-	}
-	else {
-	  printf("Invalid number of arguments for %s modifier\n",argv[argindex]);
-	  break;
-	}
-	printf("Channel Mode Set...\n");	
+  if ((argindex+2) < argc) {
+    argindex = argindex + 1;
+    sscanf(argv[argindex],"%d",&channel);
+    argindex = argindex + 1;
+    sscanf(argv[argindex],"%d",&value);
+    vpc6_ASDModeSet(myvme, VPC6_BASE, port, channel, value);
+    if (channel == -1) {
+      printf("ALL Channels Set... %d\n", value);
+    }
+    else {
+      printf("Channel %d Set... %d\n", channel, value);
+    }
+  }
+  else {
+    printf("Invalid number of arguments for %s modifier\n",argv[argindex]);
+    break;
+  }
+  printf("Channel Mode Set...\n");
       }
 
-      else if (strncmp(argv[argindex],"-readback",2) == 0) {	
-	vpc6_PortRegRBRead(myvme, VPC6_BASE, 1);    
+      else if (strncmp(argv[argindex],"-readback",2) == 0) {
+  vpc6_PortRegRBRead(myvme, VPC6_BASE, 1);
       }
       else {
-	printf("Invalid Argument... %s\n", argv[argindex]);
-	printf("'vpc6 -help' for command line usage...\n");
-	break;
+  printf("Invalid Argument... %s\n", argv[argindex]);
+  printf("'vpc6 -help' for command line usage...\n");
+  break;
      }
       argindex++;
     }
@@ -666,17 +666,17 @@ int main (int argc, char* argv[]) {
   }
 
 
-  
+
 
   //  vpc6_PortRegRead(myvme, VPC6_BASE, 1);
   //  vpc6_PortRegRBRead(myvme, VPC6_BASE, 1);
   printf("\n\n");
 
 
-       
 
 
-  
+
+
 
 
   /*** FOR TESTING ***/

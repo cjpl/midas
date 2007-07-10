@@ -4,8 +4,8 @@
   Created by:   Pierre-Andre Amaudruz
 
   Cotents:      Routines for accessing the VMEIO Triumf board
-                
-  $Log: vmeio.h,v $
+
+  $Id$
 *********************************************************************/
 #ifndef __VMEIO_INCLUDE_H__
 #define __VMEIO_INCLUDE_H__
