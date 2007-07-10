@@ -1,10 +1,10 @@
 /*********************************************************************
   Name:         lrs1190.h
   Created by:   Pierre-Andre Amaudruz
-  
+
   Contents:     lrs1190 LeCroy 32bits Dual port memory (32K)
 
-  $Log: lrs1190.h,v $
+  $Id$
 *********************************************************************/
 #ifndef  LRS1190_INCLUDE_H
 #define  LRS1190_INCLUDE_H
@@ -29,7 +29,7 @@ int  lrs1190_CountRead(MVME_INTERFACE *mvme, DWORD base);
 int  LRS1190_I4DataRead(MVME_INTERFACE *mvme, DWORD base, DWORD *data);
 int  LRS1190_L2DataRead(MVME_INTERFACE *mvme, DWORD base, WORD *data);
 int  LRS1190_H2DataRead(MVME_INTERFACE *mvme, DWORD base, WORD *data);
-  
+
 #ifdef __cplusplus
 }
 #endif

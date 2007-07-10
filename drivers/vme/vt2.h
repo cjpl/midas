@@ -2,12 +2,12 @@
   Name:         vt2.h
   Created by:   Pierre-Andre Amaudruz
 
-  Contents: Simple interface to a VME TDC function     
+  Contents: Simple interface to a VME TDC function
   vme_poke -a VME_A24UD -d VME_D32 -A 0xe00008 0x1
-  vme_peek -a VME_A24UD -d VME_D32 -A 0xe00004                
+  vme_peek -a VME_A24UD -d VME_D32 -A 0xe00004
   vme_peek -a VME_A24UD -d VME_D32 -A 0xe0000c
 
-  $Log: vt2.h,v $
+  $Id$
 *********************************************************************/
 #include <stdio.h>
 #include <string.h>
@@ -38,7 +38,7 @@ typedef DWORD BOOL;
 #define  VT2_FIFOSTATUS_RO   (DWORD) (0x4)
 #define  VT2_CYCLENUMBER_RO  (DWORD) (0x8)
 #define  VT2_CTL_WO          (DWORD) (0xc)
-#define  VT2_INTREG          (DWORD) (0x10)  
+#define  VT2_INTREG          (DWORD) (0x10)
 #define  VT2_FIFO_RO         (DWORD) (0x14)
 #define  VT2_MANRESET        (DWORD) (0x1)
 #define  VT2_CYCLERESET      (DWORD) (0x2)

@@ -4,8 +4,8 @@
   Created by:   K.Olchanski
 
   Contents:     CAEN V513 16-channel NIM I/O register
-                
-  $Log$
+
+  $Id$
 *********************************************************************/
 #include <stdio.h>
 #include <stdint.h>

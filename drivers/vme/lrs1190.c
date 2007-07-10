@@ -3,7 +3,7 @@
   Name:         lrs1190.c
   Created by:   Pierre-Andre Amaudruz
   Content:      LeCroy 32bit Dual port memory
-  $Log: lrs1190.c,v $
+  $Id$
 *********************************************************************/
 #include <stdio.h>
 #include <string.h>
@@ -14,15 +14,15 @@
 
 /*****************************************************************/
 /*
-Reset the LRS1190 
+Reset the LRS1190
 */
 void lrs1190_Reset(MVME_INTERFACE *mvme, DWORD base)
 {
   int   cmode, status;
-  
+
   mvme_get_dmode(mvme, &cmode);
   mvme_set_dmode(mvme, MVME_DMODE_D16);
- 
+
   status = mvme_read_value(mvme, base+LRS1190_RESET_WO);
   mvme_set_dmode(mvme, cmode);
   return;
@@ -35,10 +35,10 @@ Enable the LRS1190 FPP
 void lrs1190_Enable(MVME_INTERFACE *mvme, DWORD base)
 {
   int   cmode;
-  
+
   mvme_get_dmode(mvme, &cmode);
   mvme_set_dmode(mvme, MVME_DMODE_D16);
- 
+
   mvme_write_value(mvme, base+LRS1190_ENABLE_RW, 0x1);
   mvme_set_dmode(mvme, cmode);
   return;
@@ -51,10 +51,10 @@ Disable the LRS1190 FPP
 void lrs1190_Disable(MVME_INTERFACE *mvme, DWORD base)
 {
   int   cmode;
-  
+
   mvme_get_dmode(mvme, &cmode);
   mvme_set_dmode(mvme, MVME_DMODE_D16);
- 
+
   mvme_write_value(mvme, base+LRS1190_ENABLE_RW, 0x0);
   mvme_set_dmode(mvme, cmode);
   return;
@@ -67,10 +67,10 @@ Read the counter
 int lrs1190_CountRead(MVME_INTERFACE *mvme, DWORD base)
 {
   int   cmode, count;
-  
+
   mvme_get_dmode(mvme, &cmode);
   mvme_set_dmode(mvme, MVME_DMODE_D16);
- 
+
   count = mvme_read_value(mvme, base+LRS1190_COUNT_RO);
   mvme_set_dmode(mvme, cmode);
   return count;
@@ -83,7 +83,7 @@ Read the I4 data
 int lrs1190_I4Read(MVME_INTERFACE *mvme, DWORD base, DWORD * data, int r)
 {
   int  cmode, count;
-  
+
   mvme_get_dmode(mvme, &cmode);
   mvme_set_dmode(mvme, MVME_DMODE_D16);
   count = mvme_read_value(mvme, base+LRS1190_COUNT_RO);
@@ -154,16 +154,16 @@ int main (int argc, char* argv[]) {
   WORD data[1000];
   int status, count, i;
   DWORD LRS1190_BASE = 0x780000;
-  
+
   MVME_INTERFACE *myvme;
-  
+
   if (argc>1) {
     sscanf(argv[1],"%lx",&LRS1190_BASE);
   }
-  
-  // Test under vmic   
+
+  // Test under vmic
   status = mvme_open(&myvme, 0);
-  
+
   // Set am to A24 non-privileged Data
   mvme_set_am(myvme, MVME_AM_A24_ND);
 
@@ -174,13 +174,13 @@ int main (int argc, char* argv[]) {
   // Test Enable/Disable
     printf("\nReset \n");
     lrs1190_Reset(myvme, LRS1190_BASE);
-    usleep(100000);  
+    usleep(100000);
     printf("Enable \n");
     lrs1190_Enable(myvme, LRS1190_BASE);
-    usleep(1000000);  
+    usleep(1000000);
     printf("Disable \n");
     lrs1190_Disable(myvme, LRS1190_BASE);
-    usleep(100000);  
+    usleep(100000);
     count = lrs1190_CountRead(myvme, LRS1190_BASE);
     printf("Count : 0x%x\n", count);
     if (count > 1000) count = 1000;

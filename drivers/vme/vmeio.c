@@ -4,8 +4,8 @@
   Created by:   Pierre-Andre Amaudruz
 
   Cotents:      Routines for accessing the VMEIO Triumf board
-                
-  $Log: vmeio.c,v $
+
+  $Id$
 *********************************************************************/
 #include <stdio.h>
 #include <string.h>
@@ -15,7 +15,7 @@
 
 /********************************************************************/
 /**
-Set output in pulse mode 
+Set output in pulse mode
 @param myvme vme structure
 @param base  VMEIO base address
 @param data  data to be written
@@ -57,7 +57,7 @@ void vmeio_AsyncWrite(MVME_INTERFACE *myvme, DWORD base, DWORD data)
 Read the CSR register
 @param myvme vme structure
 @param base  VMEIO base address
-@return CSR status 
+@return CSR status
 */
 int vmeio_CsrRead(MVME_INTERFACE *myvme, DWORD base)
 {
@@ -147,7 +147,7 @@ static void myisrvmeio(int sig, siginfo_t * siginfo, void *extra)
 
 #ifdef MAIN_ENABLE
 int main () {
-  
+
   MVME_INTERFACE *myvme;
   int myinfo = 1; // VME_INTERRUPT_SIGEVENT;
 
@@ -155,7 +155,7 @@ int main () {
   int status, csr;
   int      data=0xf;
 
-  // Test under vmic   
+  // Test under vmic
   status = mvme_open(&myvme, 0);
 
   // Set am to A24 non-privileged Data
@@ -166,23 +166,23 @@ int main () {
 
   csr = vmeio_CsrRead(myvme, VMEIO_BASE);
   printf("CSR Buffer: 0x%x\n", csr);
-  
+
   if (0) {
     // Set 0xF in pulse mode
     vmeio_OutputSet(myvme, VMEIO_BASE, 0xF);
-    
+
     // Write latch mode
     vmeio_AsyncWrite(myvme, VMEIO_BASE, 0xc);
     vmeio_AsyncWrite(myvme, VMEIO_BASE, 0x0);
-    
+
     // Read from the Async Reg
     data = vmeio_AsyncRead(myvme, VMEIO_BASE);
     printf("Async Buffer: 0x%x\n", data);
-    
+
     // Read from the Sync Reg
     data = vmeio_SyncRead(myvme, VMEIO_BASE);
     printf("Sync Buffer: 0x%x\n", data);
-    
+
     for (;;) {
       // Write pulse
       vmeio_SyncWrite(myvme, VMEIO_BASE, 0xF);
@@ -190,7 +190,7 @@ int main () {
     }
   }
 
-  // Interrupt test 
+  // Interrupt test
   if (0) {
     mvme_interrupt_attach(myvme, 7, 0x80, myisrvmeio, &myinfo);
 
@@ -216,7 +216,7 @@ int main () {
     mvme_interrupt_detach(myvme, 1, 0x00, &myinfo);
   }
 
-  // Interrupt test 
+  // Interrupt test
   if (1) {
     /*
       start the code for listening to the IRQ7 vector:0x80
@@ -226,12 +226,12 @@ int main () {
       # write 1 latch on output 1  --> interrupt generated
       vme_poke -a VME_A24UD -d VME_D32 -A 0x780010 0x1
       # Enable interrupt 1
-      vme_poke -a VME_A24UD -d VME_D32 -A 0x780000 0x1  
+      vme_poke -a VME_A24UD -d VME_D32 -A 0x780000 0x1
       # Clear CSR
       vme_poke -a VME_A24UD -d VME_D32 -A 0x78001c 0x0
       # Rearm interrupt source for Async
       vme_poke -a VME_A24UD -d VME_D32 -A 0x780004 0x0
-      # write 0 latch on output 1  
+      # write 0 latch on output 1
       vme_poke -a VME_A24UD -d VME_D32 -A 0x780010 0x0
       # display CSR
       vme_peek -a VME_A24UD -d VME_D32 -A 0x78001c
@@ -249,5 +249,5 @@ int main () {
   }
   status = mvme_close(myvme);
   return 1;
-}	
+}
 #endif

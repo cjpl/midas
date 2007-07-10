@@ -10,8 +10,8 @@
                 v792_ identifies commands supported by both
                 v792_ identifies commands supported by V792 only
                 v785_ identifies commands supported by V785 only
-                
-  $Log: v792.c,v $
+
+  $Id$
 *********************************************************************/
 #include <stdio.h>
 #include <string.h>
@@ -28,26 +28,24 @@ Uses single vme access! (1us/D32)
 */
 int v792_EventRead(MVME_INTERFACE *mvme, DWORD base, DWORD *pdest, int *nentry)
 {
-  DWORD hdata; 
+  DWORD hdata;
   int   cmode;
-  
+
   mvme_get_dmode(mvme, &cmode);
   mvme_set_dmode(mvme, MVME_DMODE_D32);
- 
+
   *nentry = 0;
   if (v792_DataReady(mvme, base)) {
     do {
       hdata = mvme_read_value(mvme, base);
     } while (!(hdata & 0x02000000)); // skip up to the header
-    
+
     pdest[*nentry] = hdata;
     *nentry += 1;
     do {
       pdest[*nentry] = mvme_read_value(mvme, base);
       *nentry += 1;
     } while (!(pdest[*nentry-1] & 0x04000000)); // copy until the trailer
-
-    nentry--;
   }
   mvme_set_dmode(mvme, cmode);
   return *nentry;
@@ -56,12 +54,12 @@ int v792_EventRead(MVME_INTERFACE *mvme, DWORD base, DWORD *pdest, int *nentry)
 /*****************************************************************/
 /*
 Read nentry of data from the data buffer. Will use the DMA engine
-if size is larger then 127 bytes. 
+if size is larger then 127 bytes.
 */
 int v792_DataRead(MVME_INTERFACE *mvme, DWORD base, DWORD *pdest, int *nentry)
 {
   int  cmode;
-  
+
   mvme_get_dmode(mvme, &cmode);
   mvme_set_dmode(mvme, MVME_DMODE_D32);
   *nentry = 128;
@@ -79,13 +77,13 @@ int v792_DataRead(MVME_INTERFACE *mvme, DWORD base, DWORD *pdest, int *nentry)
 int v792_ThresholdWrite(MVME_INTERFACE *mvme, DWORD base, WORD *threshold)
 {
   int k, cmode;
-  
+
   mvme_get_dmode(mvme, &cmode);
   mvme_set_dmode(mvme, MVME_DMODE_D16);
   for (k=0; k<V792_MAX_CHANNELS ; k++) {
     mvme_write_value(mvme, base+V792_THRES_BASE+2*k, threshold[k] & 0x1FF);
   }
-  
+
   for (k=0; k<V792_MAX_CHANNELS ; k++) {
     threshold[k] = mvme_read_value(mvme, base+V792_THRES_BASE+2*k) & 0x1FF;
   }
@@ -101,10 +99,10 @@ int v792_ThresholdWrite(MVME_INTERFACE *mvme, DWORD base, WORD *threshold)
 int v792_ThresholdRead(MVME_INTERFACE *mvme, DWORD base, WORD *threshold)
 {
   int k, cmode;
-  
+
   mvme_get_dmode(mvme, &cmode);
   mvme_set_dmode(mvme, MVME_DMODE_D16);
-  
+
   for (k=0; k<V792_MAX_CHANNELS ; k++) {
     threshold[k] = mvme_read_value(mvme, base+V792_THRES_BASE+2*k) & 0x1FF;
   }
@@ -248,7 +246,7 @@ void v792_LowThEnable(MVME_INTERFACE *mvme, DWORD base)
   int cmode;
   mvme_get_dmode(mvme, &cmode);
   mvme_set_dmode(mvme, MVME_DMODE_D16);
-  mvme_write_value(mvme, base+V792_BIT_SET2_RW, 0x10);
+  mvme_write_value(mvme, base+V792_BIT_CLEAR2_RO, 0x10);
   mvme_set_dmode(mvme, cmode);
 }
 
@@ -299,7 +297,7 @@ int  v792_isEvtReady(MVME_INTERFACE *mvme, DWORD base)
 {
   int csr;
   csr = v792_CSR1Read(mvme, base);
-  return (csr & 0x100);  
+  return (csr & 0x100);
 }
 
 /*****************************************************************/
@@ -381,7 +379,7 @@ your setting if you want to include it in the distribution.
 int  v792_Setup(MVME_INTERFACE *mvme, DWORD base, int mode)
 {
   int  cmode;
-  
+
   mvme_get_dmode(mvme, &cmode);
   mvme_set_dmode(mvme, MVME_DMODE_D16);
 
@@ -457,22 +455,22 @@ void  v792_Status(MVME_INTERFACE *mvme, DWORD base)
  * decoded printout of readout entry
  * Not to be trusted for data decoding but acceptable for display
  * purpose as its implementation is strongly compiler dependent and
- * not flawless. 
+ * not flawless.
  * @param v
  */
 void v792_printEntry(const v792_Data* v) {
   switch (v->data.type) {
   case v792_typeMeasurement:
     printf("Data=0x%08lx Measurement ch=%3d v=%6d over=%1d under=%1d\n",
-	   v->raw,v->data.channel,v->data.adc,v->data.ov,v->data.un);
+     v->raw,v->data.channel,v->data.adc,v->data.ov,v->data.un);
     break;
   case v792_typeHeader:
     printf("Data=0x%08lx Header geo=%2x crate=%2x cnt=%2d\n",
-    	   v->raw,v->header.geo,v->header.crate,v->header.cnt);
+         v->raw,v->header.geo,v->header.crate,v->header.cnt);
     break;
   case v792_typeFooter:
     printf("Data=0x%08lx Footer geo=%2x evtCnt=%7d\n",
-    	   v->raw,v->footer.geo,v->footer.evtCnt);
+         v->raw,v->footer.geo,v->footer.evtCnt);
     break;
   case v792_typeFiller:
     printf("Data=0x%08lx Filler\n",v->raw);
@@ -490,7 +488,7 @@ int main (int argc, char* argv[]) {
 
   DWORD VMEIO_BASE = 0x780000;
   DWORD V792_BASE  = 0x500000;
-  
+
   MVME_INTERFACE *myvme;
 
   int status, csr, i;
@@ -502,7 +500,7 @@ int main (int argc, char* argv[]) {
     sscanf(argv[1],"%lx",&V792_BASE);
   }
 
-  // Test under vmic   
+  // Test under vmic
   status = mvme_open(&myvme, 0);
 
   // Set am to A24 non-privileged Data
@@ -533,13 +531,13 @@ int main (int argc, char* argv[]) {
       sleep(1);
 #endif
     } while (csr == 0);
- 
+
     // Read Event Counter
     v792_EvtCntRead(myvme, V792_BASE, &cnt);
     printf("Event counter: 0x%lx\n", cnt);
 
     // Set 0x3 in pulse mode for timing purpose
-    mvme_write_value(myvme, VMEIO_BASE+0x8, 0xF); 
+    mvme_write_value(myvme, VMEIO_BASE+0x8, 0xF);
 
     // Write pulse for timing purpose
     mvme_write_value(myvme, VMEIO_BASE+0xc, 0x2);
@@ -553,7 +551,7 @@ int main (int argc, char* argv[]) {
     //  for (i=0;i<32;i++) {
     //    printf("Data[%i]=0x%x\n", i, dest[i]);
     //  }
-  
+
     //  status = 32;
     v792_EventRead(myvme, V792_BASE, dest, &status);
     printf("count: 0x%x\n", status);

@@ -3,9 +3,9 @@
   Name:         vt2.c
   Created by:   Pierre-Andre Amaudruz
 
-  Contents:     
-                
-  $Log: vt2.c,v $
+  Contents:
+
+  $Id$
 *********************************************************************/
 #include <stdio.h>
 #include <string.h>
@@ -47,7 +47,7 @@ int vt2_FifoRead(MVME_INTERFACE *mvme, DWORD base, DWORD *pdest, int nentry)
 /*****************************************************************/
 /**
  return the Fifo level which is 64bits x 2048 with Almost full at 2000.
- the returned value is on 11 bits. It should be used as 2*level during read 
+ the returned value is on 11 bits. It should be used as 2*level during read
  as the data is 64 bit wide.
  Data field 20bits : [0eaf][0000 0] 7FF fEmpty, fAlmostFull, Full, level
 */
@@ -61,7 +61,7 @@ int vt2_FifoLevelRead(MVME_INTERFACE *mvme, DWORD base)
   if (status & VT2_FULL_FLAG)
     status = -1;
   else
-    status &= 0x7FF; 
+    status &= 0x7FF;
   mvme_set_dmode(mvme, cmode);
   return 2*status;
 }
@@ -77,7 +77,7 @@ int vt2_CycleNumberRead(MVME_INTERFACE *mvme, DWORD base)
   mvme_get_dmode(mvme, &cmode);
   mvme_set_dmode(mvme, MVME_DMODE_D32);
   status = mvme_read_value(mvme, base+VT2_CYCLENUMBER_RO);
-  status &= 0x3FF; 
+  status &= 0x3FF;
   mvme_set_dmode(mvme, cmode);
   return status;
 }
@@ -160,7 +160,7 @@ int main () {
 
   int status, csr, i;
 
-  // Test under vmic   
+  // Test under vmic
   status = mvme_open(&myvme, 0);
 
   // Set am to A24 non-privileged Data
@@ -177,27 +177,27 @@ int main () {
     printf("Manual Reset\n");
     vt2_ManReset(myvme, VT2_BASE);
   }
-  
+
   if (0) {
     printf("Set Keep alive\n");
     vt2_KeepAlive(myvme, VT2_BASE, 1);
   }
-  
+
   if (0) {
     printf("ReSet Keep alive\n");
     vt2_KeepAlive(myvme, VT2_BASE, 0);
   }
-  
+
   if (0) {
     printf("Set Cycle Reset\n");
     vt2_CycleReset(myvme, VT2_BASE, 1);
   }
-  
+
   if (0) {
     printf("ReSet Cycle Reset\n");
     vt2_CycleReset(myvme, VT2_BASE, 0);
   }
-  
+
   udelay(100000);
   if (1) {
     printf("Read Fifo status\n");
@@ -215,12 +215,12 @@ int main () {
     vt2_FifoRead(myvme, VT2_BASE, &(dest[0]), n);
     for (i=0;i<n;i+=4) {
       printf("Data[%i]=%lx %lx %lx %lx  Diff:%ld (0x%lx)\n", i, dest[i], dest[i+1], dest[i+2], dest[i+3]
-	     , dest[i+3]-dest[i+1], dest[i+3]-dest[i+1]);
+       , dest[i+3]-dest[i+1], dest[i+3]-dest[i+1]);
     }
   }
-  
+
   status = mvme_close(myvme);
   return 1;
-}	
+}
 #endif
 

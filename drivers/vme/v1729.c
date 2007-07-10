@@ -5,7 +5,7 @@
 
   Contents:     V1729 4channel /12 bit sampling ADC (1,2Gsps)
 
-  $Log: v1729.c,v $
+  $Id$
 *********************************************************************/
 #include <stdio.h>
 #include <string.h>
