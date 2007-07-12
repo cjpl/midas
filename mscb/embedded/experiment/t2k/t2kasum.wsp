@@ -380,7 +380,7 @@ MRUDockID=59422
 MRUDockLeftPos=1
 MRUDockTopPos=5
 MRUDockRightPos=1280
-MRUDockBottomPos=257
+MRUDockBottomPos=363
 MRUFloatStyle=4
 MRUFloatXPos=-1508246404
 MRUFloatYPos=0
@@ -392,7 +392,7 @@ PctWidth=1000000
 MRUFloatCX=300
 MRUFloatCY=180
 MRUHorzDockCX=1279
-MRUHorzDockCY=252
+MRUHorzDockCY=358
 MRUVertDockCX=300
 MRUVertDockCY=180
 MRUDockingState=0
@@ -404,13 +404,13 @@ ResourceID=0
 [WorkState_v1_1.DockState.Bar-6]
 BarID=59141
 XPos=5
-YPos=320
+YPos=267
 Docking=True
 MRUDockID=0
 MRUDockLeftPos=5
-MRUDockTopPos=320
-MRUDockRightPos=214
-MRUDockBottomPos=638
+MRUDockTopPos=267
+MRUDockRightPos=101
+MRUDockBottomPos=532
 MRUFloatStyle=4
 MRUFloatXPos=-1508246404
 MRUFloatYPos=0
@@ -423,8 +423,8 @@ MRUFloatCX=300
 MRUFloatCY=180
 MRUHorzDockCX=300
 MRUHorzDockCY=180
-MRUVertDockCX=209
-MRUVertDockCY=318
+MRUVertDockCX=96
+MRUVertDockCY=265
 MRUDockingState=0
 DockingStyle=61440
 TypeID=0
@@ -454,7 +454,7 @@ MRUFloatCX=300
 MRUFloatCY=180
 MRUHorzDockCX=300
 MRUHorzDockCY=180
-MRUVertDockCX=209
+MRUVertDockCX=96
 MRUVertDockCY=180
 MRUDockingState=0
 DockingStyle=61440
@@ -485,7 +485,7 @@ MRUFloatCX=300
 MRUFloatCY=180
 MRUHorzDockCX=300
 MRUHorzDockCY=180
-MRUVertDockCX=209
+MRUVertDockCX=96
 MRUVertDockCY=180
 MRUDockingState=0
 DockingStyle=61440
@@ -516,7 +516,7 @@ MRUFloatCX=300
 MRUFloatCY=180
 MRUHorzDockCX=300
 MRUHorzDockCY=180
-MRUVertDockCX=209
+MRUVertDockCX=96
 MRUVertDockCY=180
 MRUDockingState=0
 DockingStyle=61440
@@ -547,7 +547,7 @@ MRUFloatCX=300
 MRUFloatCY=180
 MRUHorzDockCX=300
 MRUHorzDockCY=180
-MRUVertDockCX=209
+MRUVertDockCX=96
 MRUVertDockCY=180
 MRUDockingState=0
 DockingStyle=61440
@@ -578,7 +578,7 @@ MRUFloatCX=300
 MRUFloatCY=180
 MRUHorzDockCX=300
 MRUHorzDockCY=180
-MRUVertDockCX=209
+MRUVertDockCX=96
 MRUVertDockCY=180
 MRUDockingState=0
 DockingStyle=61440
@@ -609,7 +609,7 @@ MRUFloatCX=300
 MRUFloatCY=180
 MRUHorzDockCX=300
 MRUHorzDockCY=180
-MRUVertDockCX=209
+MRUVertDockCX=96
 MRUVertDockCY=180
 MRUDockingState=0
 DockingStyle=61440
@@ -640,7 +640,7 @@ MRUFloatCX=300
 MRUFloatCY=180
 MRUHorzDockCX=300
 MRUHorzDockCY=180
-MRUVertDockCX=209
+MRUVertDockCX=96
 MRUVertDockCY=180
 MRUDockingState=0
 DockingStyle=61440
@@ -1060,7 +1060,7 @@ MRUDockID=0
 MRUDockLeftPos=0
 MRUDockTopPos=-2
 MRUDockRightPos=240
-MRUDockBottomPos=638
+MRUDockBottomPos=532
 MRUFloatStyle=4
 MRUFloatXPos=-1508246404
 MRUFloatYPos=992
@@ -1074,7 +1074,7 @@ MRUFloatCY=180
 MRUHorzDockCX=300
 MRUHorzDockCY=180
 MRUVertDockCX=240
-MRUVertDockCY=640
+MRUVertDockCY=534
 MRUDockingState=0
 DockingStyle=61440
 TypeID=0
@@ -1104,7 +1104,7 @@ MRUFloatCX=300
 MRUFloatCY=180
 MRUHorzDockCX=300
 MRUHorzDockCY=180
-MRUVertDockCX=209
+MRUVertDockCX=96
 MRUVertDockCY=180
 MRUDockingState=0
 DockingStyle=61440
@@ -1135,7 +1135,7 @@ MRUFloatCX=300
 MRUFloatCY=180
 MRUHorzDockCX=300
 MRUHorzDockCY=180
-MRUVertDockCX=209
+MRUVertDockCX=96
 MRUVertDockCY=180
 MRUDockingState=0
 DockingStyle=61440
@@ -1166,7 +1166,7 @@ MRUFloatCX=300
 MRUFloatCY=180
 MRUHorzDockCX=300
 MRUHorzDockCY=180
-MRUVertDockCX=209
+MRUVertDockCX=96
 MRUVertDockCY=180
 MRUDockingState=0
 DockingStyle=61440
@@ -1197,7 +1197,7 @@ MRUFloatCX=300
 MRUFloatCY=180
 MRUHorzDockCX=300
 MRUHorzDockCY=180
-MRUVertDockCX=209
+MRUVertDockCX=96
 MRUVertDockCY=180
 MRUDockingState=0
 DockingStyle=61440
@@ -1228,7 +1228,7 @@ MRUFloatCX=300
 MRUFloatCY=180
 MRUHorzDockCX=300
 MRUHorzDockCY=180
-MRUVertDockCX=209
+MRUVertDockCX=96
 MRUVertDockCY=180
 MRUDockingState=0
 DockingStyle=61440
@@ -1244,8 +1244,8 @@ Docking=True
 MRUDockID=0
 MRUDockLeftPos=5
 MRUDockTopPos=-2
-MRUDockRightPos=214
-MRUDockBottomPos=314
+MRUDockRightPos=101
+MRUDockBottomPos=261
 MRUFloatStyle=4
 MRUFloatXPos=-1508246404
 MRUFloatYPos=992
@@ -1258,8 +1258,8 @@ MRUFloatCX=300
 MRUFloatCY=180
 MRUHorzDockCX=300
 MRUHorzDockCY=180
-MRUVertDockCX=209
-MRUVertDockCY=316
+MRUVertDockCX=96
+MRUVertDockCY=263
 MRUDockingState=0
 DockingStyle=61440
 TypeID=0
@@ -1289,7 +1289,7 @@ MRUFloatCX=300
 MRUFloatCY=180
 MRUHorzDockCX=300
 MRUHorzDockCY=180
-MRUVertDockCX=179
+MRUVertDockCX=66
 MRUVertDockCY=180
 MRUDockingState=0
 DockingStyle=61440
@@ -1320,7 +1320,7 @@ MRUFloatCX=300
 MRUFloatCY=180
 MRUHorzDockCX=300
 MRUHorzDockCY=180
-MRUVertDockCX=209
+MRUVertDockCX=96
 MRUVertDockCY=75
 MRUDockingState=0
 DockingStyle=61440
@@ -1351,7 +1351,7 @@ MRUFloatCX=300
 MRUFloatCY=180
 MRUHorzDockCX=300
 MRUHorzDockCY=180
-MRUVertDockCX=179
+MRUVertDockCX=66
 MRUVertDockCY=180
 MRUDockingState=0
 DockingStyle=61440
@@ -1382,7 +1382,7 @@ MRUFloatCX=300
 MRUFloatCY=180
 MRUHorzDockCX=300
 MRUHorzDockCY=180
-MRUVertDockCX=179
+MRUVertDockCX=66
 MRUVertDockCY=180
 MRUDockingState=0
 DockingStyle=61440
@@ -1413,7 +1413,7 @@ MRUFloatCX=300
 MRUFloatCY=180
 MRUHorzDockCX=300
 MRUHorzDockCY=180
-MRUVertDockCX=179
+MRUVertDockCX=66
 MRUVertDockCY=180
 MRUDockingState=0
 DockingStyle=61440
@@ -1444,7 +1444,7 @@ MRUFloatCX=300
 MRUFloatCY=180
 MRUHorzDockCX=300
 MRUHorzDockCY=180
-MRUVertDockCX=179
+MRUVertDockCX=66
 MRUVertDockCY=180
 MRUDockingState=0
 DockingStyle=61440
@@ -1475,7 +1475,7 @@ MRUFloatCX=300
 MRUFloatCY=180
 MRUHorzDockCX=300
 MRUHorzDockCY=180
-MRUVertDockCX=179
+MRUVertDockCX=66
 MRUVertDockCY=180
 MRUDockingState=0
 DockingStyle=61440
@@ -1506,7 +1506,7 @@ MRUFloatCX=300
 MRUFloatCY=180
 MRUHorzDockCX=300
 MRUHorzDockCY=180
-MRUVertDockCX=179
+MRUVertDockCX=66
 MRUVertDockCY=180
 MRUDockingState=0
 DockingStyle=61440
@@ -1516,12 +1516,13 @@ WindowName=Cache Data
 ResourceID=0
 [WorkState_v1_1.DockState.Bar-42]
 BarID=59647
+XPos=0
 MRUWidth=239
 Docking=True
 MRUDockID=59419
-MRUDockLeftPos=-1
+MRUDockLeftPos=0
 MRUDockTopPos=-1
-MRUDockRightPos=1279
+MRUDockRightPos=1280
 MRUDockBottomPos=26
 MRUFloatStyle=8196
 MRUFloatXPos=-1508246404
@@ -1653,7 +1654,7 @@ Buttons=ILAIAAAAAAOBBIAAAAAAIKAIAAAAAAFFAIAAAAAADGBIAAAAAAKMAIAAAAAA
 BarID=59398
 XPos=371
 YPos=26
-MRUWidth=24952
+MRUWidth=25366
 Docking=True
 MRUDockID=59419
 MRUDockLeftPos=371
@@ -1688,7 +1689,7 @@ Buttons=FJAIAAAAAAHJAIAAAAAACNAIAAAAAAGNAIAAAAAALBAIAAAAAAAAAAAAAAAADHAIAAAAAAPG
 BarID=59399
 XPos=237
 YPos=26
-MRUWidth=22973
+MRUWidth=45927
 Docking=True
 MRUDockID=59419
 MRUDockLeftPos=237
@@ -1762,11 +1763,11 @@ Docking=True
 MRUDockID=0
 MRUDockLeftPos=0
 MRUDockTopPos=0
-MRUDockRightPos=327682
-MRUDockBottomPos=196609
+MRUDockRightPos=0
+MRUDockBottomPos=0
 MRUFloatStyle=4
 MRUFloatXPos=-2147483648
-MRUFloatYPos=992
+MRUFloatYPos=0
 Style=20372
 ExStyle=3857
 PrevFloating=False
@@ -1793,8 +1794,8 @@ Docking=True
 MRUDockID=0
 MRUDockLeftPos=0
 MRUDockTopPos=0
-MRUDockRightPos=196609
-MRUDockBottomPos=4
+MRUDockRightPos=0
+MRUDockBottomPos=0
 MRUFloatStyle=4
 MRUFloatXPos=-2147483648
 MRUFloatYPos=0
@@ -1824,11 +1825,11 @@ Docking=True
 MRUDockID=0
 MRUDockLeftPos=0
 MRUDockTopPos=0
-MRUDockRightPos=4
-MRUDockBottomPos=196609
+MRUDockRightPos=261
+MRUDockBottomPos=1
 MRUFloatStyle=4
 MRUFloatXPos=-2147483648
-MRUFloatYPos=0
+MRUFloatYPos=992
 Style=20372
 ExStyle=3857
 PrevFloating=False
@@ -1855,11 +1856,11 @@ Docking=True
 MRUDockID=0
 MRUDockLeftPos=0
 MRUDockTopPos=0
-MRUDockRightPos=15109624
-MRUDockBottomPos=15083384
+MRUDockRightPos=0
+MRUDockBottomPos=0
 MRUFloatStyle=4
 MRUFloatXPos=-2147483648
-MRUFloatYPos=992
+MRUFloatYPos=0
 Style=20372
 ExStyle=3857
 PrevFloating=False
@@ -1886,8 +1887,8 @@ Docking=True
 MRUDockID=0
 MRUDockLeftPos=0
 MRUDockTopPos=0
-MRUDockRightPos=9
-MRUDockBottomPos=1376259
+MRUDockRightPos=16338152
+MRUDockBottomPos=35315488
 MRUFloatStyle=4
 MRUFloatXPos=-2147483648
 MRUFloatYPos=992
@@ -1918,10 +1919,10 @@ MRUDockID=0
 MRUDockLeftPos=0
 MRUDockTopPos=0
 MRUDockRightPos=0
-MRUDockBottomPos=1376259
+MRUDockBottomPos=0
 MRUFloatStyle=4
 MRUFloatXPos=-2147483648
-MRUFloatYPos=992
+MRUFloatYPos=0
 Style=20372
 ExStyle=3857
 PrevFloating=False
@@ -1948,8 +1949,8 @@ Docking=True
 MRUDockID=0
 MRUDockLeftPos=0
 MRUDockTopPos=0
-MRUDockRightPos=34341314
-MRUDockBottomPos=1376259
+MRUDockRightPos=0
+MRUDockBottomPos=10747908
 MRUFloatStyle=4
 MRUFloatXPos=-2147483648
 MRUFloatYPos=992
@@ -1979,8 +1980,8 @@ Docking=True
 MRUDockID=0
 MRUDockLeftPos=0
 MRUDockTopPos=0
-MRUDockRightPos=155
-MRUDockBottomPos=638
+MRUDockRightPos=15907128
+MRUDockBottomPos=15904760
 MRUFloatStyle=4
 MRUFloatXPos=-2147483648
 MRUFloatYPos=992
@@ -2041,8 +2042,8 @@ Docking=True
 MRUDockID=0
 MRUDockLeftPos=0
 MRUDockTopPos=0
-MRUDockRightPos=15907128
-MRUDockBottomPos=15904760
+MRUDockRightPos=34341314
+MRUDockBottomPos=1376259
 MRUFloatStyle=4
 MRUFloatXPos=-2147483648
 MRUFloatYPos=992
@@ -2073,7 +2074,7 @@ MRUDockID=0
 MRUDockLeftPos=0
 MRUDockTopPos=0
 MRUDockRightPos=0
-MRUDockBottomPos=10747908
+MRUDockBottomPos=1376259
 MRUFloatStyle=4
 MRUFloatXPos=-2147483648
 MRUFloatYPos=992
@@ -2103,11 +2104,11 @@ Docking=True
 MRUDockID=0
 MRUDockLeftPos=0
 MRUDockTopPos=0
-MRUDockRightPos=0
-MRUDockBottomPos=0
+MRUDockRightPos=9
+MRUDockBottomPos=1376259
 MRUFloatStyle=4
 MRUFloatXPos=-2147483648
-MRUFloatYPos=0
+MRUFloatYPos=992
 Style=20372
 ExStyle=3857
 PrevFloating=False
@@ -2134,11 +2135,11 @@ Docking=True
 MRUDockID=0
 MRUDockLeftPos=0
 MRUDockTopPos=0
-MRUDockRightPos=16338152
-MRUDockBottomPos=35315488
+MRUDockRightPos=15083616
+MRUDockBottomPos=38613584
 MRUFloatStyle=4
 MRUFloatXPos=-2147483648
-MRUFloatYPos=35315488
+MRUFloatYPos=38613584
 Style=20372
 ExStyle=3857
 PrevFloating=False
@@ -2164,8 +2165,8 @@ LargeButtons=False
 ptn_Child1=MainFrame
 ptn_Child2=ChildFrames
 [WorkState_v1_1.Frames.MainFrame]
-WindowPlacement=MCAAAAAACAAAAAAADAAAAAAAPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPAEBAAAAALFAAAAAAAAFAAAAAJEDAAAAA
-Title=Silicon Laboratories IDE - [t2k-asum.h]
+WindowPlacement=MCAAAAAACAAAAAAADAAAAAAAPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPAEBAAAAAPFAAAAAAAAFAAAAANEDAAAAA
+Title=Silicon Laboratories IDE - [t2k-asum.c]
 [WorkState_v1_1.Frames.ChildFrames]
 ptn_Child1=Document-0
 ptn_Child2=Document-1
@@ -2179,187 +2180,106 @@ ptn_Child9=Document-8
 ptn_Child10=Document-9
 ptn_Child11=Document-10
 ptn_Child12=Document-11
-ptn_Child13=Document-12
-ptn_Child14=Document-13
-ptn_Child15=Document-14
-ptn_Child16=Document-15
-ptn_Child17=Document-16
-ptn_Child18=Document-17
-ptn_Child19=Document-18
-ptn_Child20=Document-19
-ptn_Child21=Document-20
 [WorkState_v1_1.Frames.ChildFrames.Document-0]
 ptn_Child1=ViewFrame-0
 [WorkState_v1_1.Frames.ChildFrames.Document-0.ViewFrame-0]
-DocPathName=C:\midas\mscb\embedded\experiment\T2K-ASUM\LTC_dac.c
+DocPathName=C:\midas\mscb\embedded\experiment\t2k\AD7718_adc.c
 DocumentString=Source File
 DocTemplateIndex=0
-WindowPlacement=MCAAAAAAAAAAAAAABAAAAAAAPPPPPPPPPPPPPPPPMPPPPPPPGOPPPPPPMCAAAAAACDAAAAAAKACAAAAAPMBAAAAA
+WindowPlacement=MCAAAAAAAAAAAAAABAAAAAAAPPPPPPPPPPPPPPPPMPPPPPPPGOPPPPPPGBAAAAAAJBAAAAAAAJCAAAAAGLBAAAAA
 IsActiveChildFrame=False
 [WorkState_v1_1.Frames.ChildFrames.Document-1]
 ptn_Child1=ViewFrame-0
 [WorkState_v1_1.Frames.ChildFrames.Document-1.ViewFrame-0]
-DocPathName=C:\midas\mscb\embedded\experiment\T2K-ASUM\LTC_dac.h
+DocPathName=C:\midas\mscb\embedded\experiment\t2k\ADT7486A_tsensor.c
 DocumentString=Source File
 DocTemplateIndex=0
-WindowPlacement=MCAAAAAAAAAAAAAABAAAAAAAPPPPPPPPPPPPPPPPMPPPPPPPGOPPPPPPCEAAAAAALEAAAAAAACCAAAAAIOBAAAAA
+WindowPlacement=MCAAAAAAAAAAAAAABAAAAAAAPPPPPPPPPPPPPPPPMPPPPPPPGOPPPPPPMCAAAAAACDAAAAAAKKCAAAAADNBAAAAA
 IsActiveChildFrame=False
 [WorkState_v1_1.Frames.ChildFrames.Document-2]
 ptn_Child1=ViewFrame-0
 [WorkState_v1_1.Frames.ChildFrames.Document-2.ViewFrame-0]
-DocPathName=C:\midas\mscb\embedded\experiment\T2K-ASUM\SPI_handler.c
+DocPathName=C:\midas\mscb\embedded\experiment\t2k\t2k-asum.c
 DocumentString=Source File
 DocTemplateIndex=0
-WindowPlacement=MCAAAAAAAAAAAAAABAAAAAAAPPPPPPPPPPPPPPPPMPPPPPPPGOPPPPPPIFAAAAAAEGAAAAAAKDCAAAAAFACAAAAA
-IsActiveChildFrame=False
+WindowPlacement=MCAAAAAACAAAAAAADAAAAAAAPPPPPPPPPPPPPPPPMPPPPPPPGOPPPPPPCEAAAAAALEAAAAAAAMCAAAAAMOBAAAAA
+IsActiveChildFrame=True
 [WorkState_v1_1.Frames.ChildFrames.Document-3]
 ptn_Child1=ViewFrame-0
 [WorkState_v1_1.Frames.ChildFrames.Document-3.ViewFrame-0]
-DocPathName=C:\midas\mscb\embedded\experiment\T2K-ASUM\AD7718_adc.c
-DocumentString=Source File
-DocTemplateIndex=0
-WindowPlacement=MCAAAAAAAAAAAAAABAAAAAAAPPPPPPPPPPPPPPPPMPPPPPPPGOPPPPPPOGAAAAAANHAAAAAAAFCAAAAAOBCAAAAA
-IsActiveChildFrame=False
-[WorkState_v1_1.Frames.ChildFrames.Document-4]
-ptn_Child1=ViewFrame-0
-[WorkState_v1_1.Frames.ChildFrames.Document-4.ViewFrame-0]
-DocPathName=C:\midas\mscb\embedded\experiment\T2K-ASUM\ADT7486A_tsensor.c
-DocumentString=Source File
-DocTemplateIndex=0
-WindowPlacement=MCAAAAAAAAAAAAAABAAAAAAAPPPPPPPPPPPPPPPPMPPPPPPPGOPPPPPPEIAAAAAAGJAAAAAAGGCAAAAAHDCAAAAA
-IsActiveChildFrame=False
-[WorkState_v1_1.Frames.ChildFrames.Document-5]
-ptn_Child1=ViewFrame-0
-[WorkState_v1_1.Frames.ChildFrames.Document-5.ViewFrame-0]
-DocPathName=C:\midas\mscb\embedded\experiment\T2K-ASUM\AD7718_adc.h
-DocumentString=Source File
-DocTemplateIndex=0
-WindowPlacement=MCAAAAAAAAAAAAAABAAAAAAAPPPPPPPPPPPPPPPPMPPPPPPPGOPPPPPPKJAAAAAAPKAAAAAAMHCAAAAAAFCAAAAA
-IsActiveChildFrame=False
-[WorkState_v1_1.Frames.ChildFrames.Document-6]
-ptn_Child1=ViewFrame-0
-[WorkState_v1_1.Frames.ChildFrames.Document-6.ViewFrame-0]
-DocPathName=C:\midas\mscb\embedded\experiment\T2K-ASUM\ADT7486A_tsensor.h
-DocumentString=Source File
-DocTemplateIndex=0
-WindowPlacement=MCAAAAAAAAAAAAAABAAAAAAAPPPPPPPPPPPPPPPPMPPPPPPPGOPPPPPPAAAAAAAAAAAAAAAACOBAAAAABKBAAAAA
-IsActiveChildFrame=False
-[WorkState_v1_1.Frames.ChildFrames.Document-7]
-ptn_Child1=ViewFrame-0
-[WorkState_v1_1.Frames.ChildFrames.Document-7.ViewFrame-0]
-DocPathName=C:\midas\mscb\embedded\experiment\T2K-ASUM\SST_handler.h
-DocumentString=Source File
-DocTemplateIndex=0
-WindowPlacement=MCAAAAAAAAAAAAAABAAAAAAAPPPPPPPPPPPPPPPPMPPPPPPPGOPPPPPPGBAAAAAAJBAAAAAAIPBAAAAAKLBAAAAA
-IsActiveChildFrame=False
-[WorkState_v1_1.Frames.ChildFrames.Document-8]
-ptn_Child1=ViewFrame-0
-[WorkState_v1_1.Frames.ChildFrames.Document-8.ViewFrame-0]
-DocPathName=C:\midas\mscb\embedded\experiment\T2K-ASUM\AD5301_dac.c
-DocumentString=Source File
-DocTemplateIndex=0
-WindowPlacement=MCAAAAAAAAAAAAAABAAAAAAAPPPPPPPPPPPPPPPPMPPPPPPPGOPPPPPPMCAAAAAACDAAAAAAOACAAAAADNBAAAAA
-IsActiveChildFrame=False
-[WorkState_v1_1.Frames.ChildFrames.Document-9]
-ptn_Child1=ViewFrame-0
-[WorkState_v1_1.Frames.ChildFrames.Document-9.ViewFrame-0]
-DocPathName=C:\midas\mscb\embedded\experiment\T2K-ASUM\AD5301_dac.h
-DocumentString=Source File
-DocTemplateIndex=0
-WindowPlacement=MCAAAAAAAAAAAAAABAAAAAAAPPPPPPPPPPPPPPPPMPPPPPPPGOPPPPPPCEAAAAAALEAAAAAAECCAAAAAMOBAAAAA
-IsActiveChildFrame=False
-[WorkState_v1_1.Frames.ChildFrames.Document-10]
-ptn_Child1=ViewFrame-0
-[WorkState_v1_1.Frames.ChildFrames.Document-10.ViewFrame-0]
-DocPathName=C:\midas\mscb\embedded\experiment\T2K-ASUM\t2k-asum.c
-DocumentString=Source File
-DocTemplateIndex=0
-WindowPlacement=MCAAAAAAAAAAAAAABAAAAAAAPPPPPPPPPPPPPPPPMPPPPPPPGOPPPPPPIFAAAAAAEGAAAAAAKDCAAAAAFACAAAAA
-IsActiveChildFrame=False
-[WorkState_v1_1.Frames.ChildFrames.Document-11]
-ptn_Child1=ViewFrame-0
-[WorkState_v1_1.Frames.ChildFrames.Document-11.ViewFrame-0]
-DocPathName=C:\midas\mscb\embedded\experiment\T2K-ASUM\t2k-asum.h
-DocumentString=Source File
-DocTemplateIndex=0
-WindowPlacement=MCAAAAAACAAAAAAADAAAAAAAPPPPPPPPPPPPPPPPMPPPPPPPGOPPPPPPOGAAAAAANHAAAAAAAFCAAAAAOBCAAAAA
-IsActiveChildFrame=True
-[WorkState_v1_1.Frames.ChildFrames.Document-12]
-ptn_Child1=ViewFrame-0
-[WorkState_v1_1.Frames.ChildFrames.Document-12.ViewFrame-0]
-DocPathName=C:\midas\mscb\embedded\mscbutil.c
-DocumentString=Source File
-DocTemplateIndex=0
-WindowPlacement=MCAAAAAAAAAAAAAABAAAAAAAPPPPPPPPPPPPPPPPMPPPPPPPGOPPPPPPEIAAAAAAGJAAAAAAGGCAAAAAHDCAAAAA
-IsActiveChildFrame=False
-[WorkState_v1_1.Frames.ChildFrames.Document-13]
-ptn_Child1=ViewFrame-0
-[WorkState_v1_1.Frames.ChildFrames.Document-13.ViewFrame-0]
-DocPathName=C:\midas\mscb\embedded\mscbmain.c
-DocumentString=Source File
-DocTemplateIndex=0
-WindowPlacement=MCAAAAAAAAAAAAAABAAAAAAAPPPPPPPPPPPPPPPPMPPPPPPPGOPPPPPPKJAAAAAAPKAAAAAAMHCAAAAAAFCAAAAA
-IsActiveChildFrame=False
-[WorkState_v1_1.Frames.ChildFrames.Document-14]
-ptn_Child1=ViewFrame-0
-[WorkState_v1_1.Frames.ChildFrames.Document-14.ViewFrame-0]
-DocPathName=C:\midas\mscb\embedded\experiment\T2K-ASUM\SST_handler.c
-DocumentString=Source File
-DocTemplateIndex=0
-WindowPlacement=MCAAAAAAAAAAAAAABAAAAAAAPPPPPPPPPPPPPPPPMPPPPPPPGOPPPPPPAAAAAAAAAAAAAAAACOBAAAAABKBAAAAA
-IsActiveChildFrame=False
-[WorkState_v1_1.Frames.ChildFrames.Document-15]
-ptn_Child1=ViewFrame-0
-[WorkState_v1_1.Frames.ChildFrames.Document-15.ViewFrame-0]
-DocPathName=C:\midas\mscb\embedded\c8051F310.h
-DocumentString=Source File
-DocTemplateIndex=0
-WindowPlacement=MCAAAAAAAAAAAAAABAAAAAAAPPPPPPPPPPPPPPPPMPPPPPPPGOPPPPPPKJAAAAAAPKAAAAAAMHCAAAAAAFCAAAAA
-IsActiveChildFrame=False
-[WorkState_v1_1.Frames.ChildFrames.Document-16]
-ptn_Child1=ViewFrame-0
-[WorkState_v1_1.Frames.ChildFrames.Document-16.ViewFrame-0]
-DocPathName=C:\midas\mscb\embedded\mscbemb.h
-DocumentString=Source File
-DocTemplateIndex=0
-WindowPlacement=MCAAAAAAAAAAAAAABAAAAAAAPPPPPPPPPPPPPPPPMPPPPPPPGOPPPPPPAAAAAAAAAAAAAAAACOBAAAAABKBAAAAA
-IsActiveChildFrame=False
-[WorkState_v1_1.Frames.ChildFrames.Document-17]
-ptn_Child1=ViewFrame-0
-[WorkState_v1_1.Frames.ChildFrames.Document-17.ViewFrame-0]
-DocPathName=C:\midas\mscb\embedded\experiment\T2K-ASUM\SPI_handler.h
+DocPathName=C:\midas\mscb\embedded\experiment\t2k\LTC_dac.c
 DocumentString=Source File
 DocTemplateIndex=0
 WindowPlacement=MCAAAAAAAAAAAAAABAAAAAAAPPPPPPPPPPPPPPPPMPPPPPPPGOPPPPPPIFAAAAAAEGAAAAAAGNCAAAAAFACAAAAA
 IsActiveChildFrame=False
-[WorkState_v1_1.Frames.ChildFrames.Document-18]
+[WorkState_v1_1.Frames.ChildFrames.Document-4]
 ptn_Child1=ViewFrame-0
-[WorkState_v1_1.Frames.ChildFrames.Document-18.ViewFrame-0]
-DocPathName=C:\midas\mscb\embedded\experiment\T2K-ASUM\SMBus_handler.h
+[WorkState_v1_1.Frames.ChildFrames.Document-4.ViewFrame-0]
+DocPathName=C:\midas\mscb\embedded\experiment\t2k\PCA9539_io.c
 DocumentString=Source File
 DocTemplateIndex=0
 WindowPlacement=MCAAAAAAAAAAAAAABAAAAAAAPPPPPPPPPPPPPPPPMPPPPPPPGOPPPPPPOGAAAAAANHAAAAAAMOCAAAAAOBCAAAAA
 IsActiveChildFrame=False
-[WorkState_v1_1.Frames.ChildFrames.Document-19]
+[WorkState_v1_1.Frames.ChildFrames.Document-5]
 ptn_Child1=ViewFrame-0
-[WorkState_v1_1.Frames.ChildFrames.Document-19.ViewFrame-0]
-DocPathName=C:\midas\mscb\embedded\experiment\T2K-ASUM\SMBus_handler.c
+[WorkState_v1_1.Frames.ChildFrames.Document-5.ViewFrame-0]
+DocPathName=C:\midas\mscb\embedded\experiment\t2k\AD5301_dac.c
 DocumentString=Source File
 DocTemplateIndex=0
 WindowPlacement=MCAAAAAAAAAAAAAABAAAAAAAPPPPPPPPPPPPPPPPMPPPPPPPGOPPPPPPEIAAAAAAGJAAAAAACADAAAAAHDCAAAAA
 IsActiveChildFrame=False
-[WorkState_v1_1.Frames.ChildFrames.Document-20]
+[WorkState_v1_1.Frames.ChildFrames.Document-6]
 ptn_Child1=ViewFrame-0
-[WorkState_v1_1.Frames.ChildFrames.Document-20.ViewFrame-0]
-DocPathName=C:\midas\mscb\embedded\experiment\T2K-ASUM\PCA9539_io.c
+[WorkState_v1_1.Frames.ChildFrames.Document-6.ViewFrame-0]
+DocPathName=C:\midas\mscb\embedded\experiment\t2k\t2k-asum.h
 DocumentString=Source File
 DocTemplateIndex=0
-WindowPlacement=MCAAAAAAAAAAAAAABAAAAAAAPPPPPPPPPPPPPPPPMPPPPPPPGOPPPPPPKJAAAAAAPKAAAAAAMHCAAAAAAFCAAAAA
+WindowPlacement=MCAAAAAAAAAAAAAABAAAAAAAPPPPPPPPPPPPPPPPMPPPPPPPGOPPPPPPKJAAAAAAPKAAAAAAIBDAAAAAAFCAAAAA
+IsActiveChildFrame=False
+[WorkState_v1_1.Frames.ChildFrames.Document-7]
+ptn_Child1=ViewFrame-0
+[WorkState_v1_1.Frames.ChildFrames.Document-7.ViewFrame-0]
+DocPathName=C:\midas\mscb\embedded\mscbmain.c
+DocumentString=Source File
+DocTemplateIndex=0
+WindowPlacement=MCAAAAAAAAAAAAAABAAAAAAAPPPPPPPPPPPPPPPPMPPPPPPPGOPPPPPPAAAAAAAAAAAAAAAAOHCAAAAABKBAAAAA
+IsActiveChildFrame=False
+[WorkState_v1_1.Frames.ChildFrames.Document-8]
+ptn_Child1=ViewFrame-0
+[WorkState_v1_1.Frames.ChildFrames.Document-8.ViewFrame-0]
+DocPathName=C:\midas\mscb\embedded\mscbutil.c
+DocumentString=Source File
+DocTemplateIndex=0
+WindowPlacement=MCAAAAAAAAAAAAAABAAAAAAAPPPPPPPPPPPPPPPPMPPPPPPPGOPPPPPPGBAAAAAAJBAAAAAAEJCAAAAAKLBAAAAA
+IsActiveChildFrame=False
+[WorkState_v1_1.Frames.ChildFrames.Document-9]
+ptn_Child1=ViewFrame-0
+[WorkState_v1_1.Frames.ChildFrames.Document-9.ViewFrame-0]
+DocPathName=C:\midas\mscb\embedded\mscbemb.h
+DocumentString=Source File
+DocTemplateIndex=0
+WindowPlacement=MCAAAAAAAAAAAAAABAAAAAAAPPPPPPPPPPPPPPPPMPPPPPPPGOPPPPPPMCAAAAAACDAAAAAAKKCAAAAADNBAAAAA
+IsActiveChildFrame=False
+[WorkState_v1_1.Frames.ChildFrames.Document-10]
+ptn_Child1=ViewFrame-0
+[WorkState_v1_1.Frames.ChildFrames.Document-10.ViewFrame-0]
+DocPathName=C:\midas\mscb\msc.c
+DocumentString=Source File
+DocTemplateIndex=0
+WindowPlacement=MCAAAAAAAAAAAAAABAAAAAAAPPPPPPPPPPPPPPPPMPPPPPPPGOPPPPPPOGAAAAAANHAAAAAADHDAAAAANMBAAAAA
+IsActiveChildFrame=False
+[WorkState_v1_1.Frames.ChildFrames.Document-11]
+ptn_Child1=ViewFrame-0
+[WorkState_v1_1.Frames.ChildFrames.Document-11.ViewFrame-0]
+DocPathName=C:\midas\mscb\mscb.c
+DocumentString=Source File
+DocTemplateIndex=0
+WindowPlacement=MCAAAAAAAAAAAAAABAAAAAAAPPPPPPPPPPPPPPPPMPPPPPPPGOPPPPPPEIAAAAAAGJAAAAAAJIDAAAAAGOBAAAAA
 IsActiveChildFrame=False
 [WorkState_v1_1.ProjectTarget]
 ProjectTarget=SC88F000
 [WorkState_v1_1.WorkSpaceName]
-WorkSpaceName=C:\midas\mscb\embedded\experiment\T2K-ASUM\t2kasum.wsp
+WorkSpaceName=C:\midas\mscb\embedded\experiment\t2k\t2kasum.wsp
 [WorkState_v1_1.SerialPort]
 SerialPort=1
 [WorkState_v1_1.StepInc]
@@ -2389,7 +2309,7 @@ RunOptimizer=0
 [WorkState_v1_1.Linker]
 Linker=C:\Keil\C51\BIN\bl51.EXE
 [WorkState_v1_1.LinkFlag]
-LinkFlag=RS(256) PL(68) PW(78) IX
+LinkFlag=RS(256) PL(68) PW(78) CODE( ?PR?UPGRADE?MSCBMAIN (0x3000) )
 [WorkState_v1_1.LinkFormat]
 LinkFormat=<Executable Name> <Input File(s)> TO <Output File> <Flags> 
 [WorkState_v1_1.PreprocFlag]
@@ -2420,7 +2340,7 @@ BitsBeforeTargetIR=0
 [WorkState_v1_1.BankingPN]
 BankingPN=32767
 [WorkState_v1_1.OutputFile]
-OutputFile=ADT7486A_tsensor
+OutputFile=T2K-ASUM
 [WorkState_v1_1.MakeFile]
 MakeFile=
 [WorkState_v1_1.CExt]
