@@ -18,12 +18,19 @@
 extern "C" {
 #endif
 
-#define VT48_SUCCESS                    1 //
+#define VT48_SUCCESS                    1 // 
+#define VT48_ERR_NODATA                10 // no data error... timeout 
 #define VT48_PARAM_ERROR              100 // parameters error
+#define VT48_CSR_RO            (DWORD) (0x0000) 
+#define VT48_OCCUPANCY_RO      (DWORD) (0x0000) 
 #define VT48_CMD_REG           (DWORD) (0x0004)
+#define VT48_DATA_FIFO         (DWORD) (0x1000)
 #define VT48_AMT_CFG_RW        (WORD)  (0x1)
 #define VT48_AMT_STATUS_R      (WORD)  (0x2)
 #define VT48_AMT_ID_R          (WORD)  (0x3)
+
+#define VT48_HEADER            (DWORD) (0x10000000)
+#define VT48_TRAILER           (DWORD) (0x80000000)
 
 #define VT48_ID1_REG_RO        (DWORD) (0x0008)
 #define VT48_ID2_REG_RO        (DWORD) (0x000C)
@@ -68,14 +75,14 @@ extern "C" {
 #define VT48_CSR13_RB_REG      (DWORD) (0x00B4)
 #define VT48_CSR14_RB_REG      (DWORD) (0x00B8)
 
-/*-------------------------------------------*/
+/*-------------------------------------------*/  
 /*
   enum vt48_DataType {
     vt48_typeasdx1 =0,
     vt48_typeasdx2 =1,
   };
 */
-
+  
 typedef union {
   DWORD id;
   struct Entry1 {
@@ -90,14 +97,17 @@ typedef union {
   } vtr1;
 } vt48_Reg;
 
-
-  void vt48_RegWrite(MVME_INTERFACE *mvme, DWORD base, DWORD reg, DWORD data);
-  DWORD vt48_RegRead(MVME_INTERFACE *mvme, DWORD base, WORD reg);
-  void vt48_StatusPrint(MVME_INTERFACE *mvme, DWORD base);
-  void  vt48_Status(MVME_INTERFACE *mvme, DWORD base);
-  int  vt48_Setup(MVME_INTERFACE *mvme, DWORD base, int mode);
-  void vt48_RegPrint(MVME_INTERFACE *mvme, DWORD base);
-
+  
+int   vt48_EventRead(MVME_INTERFACE *myvme, DWORD base, DWORD *pdest, int *nentry);
+void  vt48_RegWrite(MVME_INTERFACE *mvme, DWORD base, DWORD reg, DWORD data);
+DWORD vt48_RegRead(MVME_INTERFACE *mvme, DWORD base, WORD reg);
+void  vt48_StatusPrint(MVME_INTERFACE *mvme, DWORD base);
+void  vt48_Status(MVME_INTERFACE *mvme, DWORD base);
+int   vt48_Setup(MVME_INTERFACE *mvme, DWORD base, int mode); 
+void  vt48_RegPrint(MVME_INTERFACE *mvme, DWORD base);
+void  vt48_WindowSet(MVME_INTERFACE *mvme, DWORD base, float window);
+void  vt48_WindowOffsetSet(MVME_INTERFACE *mvme, DWORD base, float offset);
+      
 #ifdef __cplusplus
 }
 #endif
