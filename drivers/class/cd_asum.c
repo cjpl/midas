@@ -35,25 +35,27 @@
 #define CMD_GET_BIASEN               CMD_GET_FIRST+10
 #define CMD_GET_CHPUMPDAC        CMD_GET_FIRST+11
 #define CMD_GET_ASUMDACTH        CMD_GET_FIRST+12
-#define CMD_GET_LAST             CMD_GET_FIRST+12
+#define CMD_GET_VBIAS				CMD_GET_FIRST+13
+#define CMD_GET_LAST             CMD_GET_FIRST+13
 
 
 #undef CMD_SET_LAST
-#define CMD_SET_CONTROL              CMD_SET_FIRST+5
-#define CMD_SET_ASUMDACTH            CMD_SET_FIRST+6
-#define CMD_SET_CHPUMPDAC            CMD_SET_FIRST+7
-#define CMD_SET_BIAS_EN          CMD_SET_FIRST+8
-#define CMD_SET_LAST             CMD_SET_FIRST+8
+#define CMD_SET_VBIAS				CMD_SET_FIRST+5
+#define CMD_SET_CONTROL              CMD_SET_FIRST+6
+#define CMD_SET_ASUMDACTH            CMD_SET_FIRST+7
+#define CMD_SET_CHPUMPDAC            CMD_SET_FIRST+8
+#define CMD_SET_BIAS_EN          CMD_SET_FIRST+9
+#define CMD_SET_LAST             CMD_SET_FIRST+10
 
-int indexNum;
-int indexNumADC;
-int controlFlag;
-int biasEnFlag;
+int indexNum = 0;
+int indexNumADC = 0;
+int controlFlag = 0;
+int biasEnFlag = 0;
 
 typedef struct {
 
    /* ODB keys */
-   HNDLE hKeyRoot, hKeyDacBiasDemand[8], hKeyMeasured[9], hKeyIntTemp, hKeyExtTemp, hKeyControl[8], hKeyasumDacTh, hKeybiasEn[8], hKeyChPumpDac;
+   HNDLE hKeyRoot, hKeyvBias[8], hKeyMeasured[9], hKeyIntTemp, hKeyExtTemp, hKeyControl[8], hKeyasumDacTh, hKeybiasEn[8], hKeyChPumpDac;
 
    /* globals */
    INT num_channels;
@@ -166,6 +168,20 @@ INT asum_read(EQUIPMENT * pequipment, int channel)
     }
   }
 
+	// Get vBias values
+	for (numChannel = 0; numChannel < 8; numChannel++)
+	{
+		indexNum = 5 + numChannel;
+		status = device_driver(asum_info->driver[channel], CMD_GET_VBIAS,
+							channel - asum_info->channel_offset[channel],
+							asum_info->vBias[numChannel]);
+		db_set_data(hDB, asum_info->hKeyvBias[numChannel], asum_info->vBias[numChannel],
+                sizeof(float) * asum_info->num_channels, asum_info->num_channels,
+                TID_FLOAT);
+		*(asum_info->vBias_mirror[numChannel]) = *(asum_info->vBias[numChannel]);
+		pequipment->odb_out++;
+	}
+
    // Get the temperatures
    if ((ss_time() - last_time) > 1) {
      channel = 0;
@@ -208,12 +224,13 @@ void asum_vBias(INT hDB, INT hKey, void *info)
             if ((asum_info->driver[i]->flags & DF_READ_ONLY) == 0)
             {
           indexNum = numChannel + 5;
-          if(*(asum_info->vBias[numChannel]) > 4.96)
+			 if(*(asum_info->vBias[numChannel]) < ((*(asum_info->measured[3])) - 4.962))
           {
-            printf("Demanded Bias Voltage shouldn't exceed 4.95V, setting to 4.96V");
-            *(asum_info->vBias[numChannel]) = (float) 4.96;
+            printf("Demanded Bias Voltage should be less or more than the current charge pump voltage minus 4.962\n");
+				printf("Setting Demanded Bias Voltage to the charge Pump Value\n");
+            *(asum_info->vBias[numChannel]) = (float) (*(asum_info->measured[3]));
           }
-               status = device_driver(asum_info->driver[i], CMD_SET,  // Voltage
+               status = device_driver(asum_info->driver[i], CMD_SET_VBIAS,  // Voltage
                                     i - asum_info->channel_offset[i], *(asum_info->vBias[numChannel]));
             }
             *(asum_info->vBias_mirror[numChannel]) = *(asum_info->vBias[numChannel]);
@@ -509,25 +526,24 @@ INT asum_init(EQUIPMENT * pequipment)
     if(j == 7) strcpy(vBiasString, "Variables/vBias8");
 
     /* find the key and get data */
-    status = db_find_key(hDB, asum_info->hKeyRoot, vBiasString, &asum_info->hKeyDacBiasDemand[j]);
+    status = db_find_key(hDB, asum_info->hKeyRoot, vBiasString, &asum_info->hKeyvBias[j]);
     if (status == DB_SUCCESS) {
       size = sizeof(float) * asum_info->num_channels;
-      db_get_data(hDB, asum_info->hKeyDacBiasDemand[j], asum_info->vBias[j], &size, TID_FLOAT);
+      db_get_data(hDB, asum_info->hKeyvBias[j], asum_info->vBias[j], &size, TID_FLOAT);
     }
 
     /* write back vBias values */
-    status = db_find_key(hDB, asum_info->hKeyRoot, vBiasString, &asum_info->hKeyDacBiasDemand[j]);
+    status = db_find_key(hDB, asum_info->hKeyRoot, vBiasString, &asum_info->hKeyvBias[j]);
     if (status != DB_SUCCESS) {
       db_create_key(hDB, asum_info->hKeyRoot, vBiasString, TID_FLOAT);
-      db_find_key(hDB, asum_info->hKeyRoot, vBiasString, &asum_info->hKeyDacBiasDemand[j]);
+      db_find_key(hDB, asum_info->hKeyRoot, vBiasString, &asum_info->hKeyvBias[j]);
     }
 
+	 size = sizeof(float) * asum_info->num_channels;
 
-    size = sizeof(float) * asum_info->num_channels;
-
-    db_set_data(hDB, asum_info->hKeyDacBiasDemand[j], asum_info->vBias[j], size,
+    db_set_data(hDB, asum_info->hKeyvBias[j], asum_info->vBias[j], size,
               asum_info->num_channels, TID_FLOAT);
-    db_open_record(hDB, asum_info->hKeyDacBiasDemand[j], asum_info->vBias[j],
+    db_open_record(hDB, asum_info->hKeyvBias[j], asum_info->vBias[j],
                 asum_info->num_channels * sizeof(float), MODE_READ, asum_vBias,
                 pequipment);
    }
@@ -740,7 +756,7 @@ INT asum_init(EQUIPMENT * pequipment)
         MODE_READ, NULL, NULL);
 
    /*---- set initial vBias values ----*/
-   // asum_vBias(hDB, asum_info->hKeyDacBiasDemand[j], pequipment);
+   // asum_vBias(hDB, asum_info->hKeyvBias[j], pequipment);
 
    /* initially read all channels */
    for (i = 0; i < asum_info->num_channels; i++)
