@@ -3856,15 +3856,29 @@ int set_mac_address(int fd)
    }
    sprintf(cfg.host_name, "MSCB%03d", n);
 
-   cfg.eth_mac_addr[0] = 0x00;
-   cfg.eth_mac_addr[1] = 0x50;
-   cfg.eth_mac_addr[2] = 0xC2;
-   cfg.eth_mac_addr[3] = 0x46;
-   cfg.eth_mac_addr[4] = (unsigned char)(0xD0 | (n >> 8));
-   cfg.eth_mac_addr[5] = (unsigned char)(n & 0xFF);
+   if (n < 500) {
+      /* PSI MAC pool */    
+      cfg.eth_mac_addr[0] = 0x00;
+      cfg.eth_mac_addr[1] = 0x50;
+      cfg.eth_mac_addr[2] = 0xC2;
+      cfg.eth_mac_addr[3] = 0x46;
+      cfg.eth_mac_addr[4] = (unsigned char)(0xD0 | (n >> 8));
+      cfg.eth_mac_addr[5] = (unsigned char)(n & 0xFF);
 
-   printf("MAC Address is 00-50-C2-46-%02X-%02X\n",
+      printf("MAC Address is 00-50-C2-46-%02X-%02X\n",
+             cfg.eth_mac_addr[4], cfg.eth_mac_addr[5]);
+   } else {
+      /* TRIUMF MAC pool */    
+      cfg.eth_mac_addr[0] = 0x00;
+      cfg.eth_mac_addr[1] = 0x50;
+      cfg.eth_mac_addr[2] = 0xC2;
+      cfg.eth_mac_addr[3] = 0x6B;
+      cfg.eth_mac_addr[4] = (unsigned char)(0x50 | ((n-500) >> 8));
+      cfg.eth_mac_addr[5] = (unsigned char)((n-500) & 0xFF);
+
+      printf("MAC Address is 00-50-C2-6B-%02X-%02X\n",
            cfg.eth_mac_addr[4], cfg.eth_mac_addr[5]);
+   }
 
    printf("Enter optional password        : ");
    fgets(str, sizeof(str), stdin);
