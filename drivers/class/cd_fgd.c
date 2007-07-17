@@ -96,30 +96,30 @@ INT fgd_read(EQUIPMENT * pequipment, int channel)
    fgd_info = (FGD_INFO *) pequipment->cd_info;
    cm_get_experiment_database(&hDB, NULL);
 
-   status = device_driver(fgd_info->driver[channel], CMD_GET_CURRENT,
-                          channel - fgd_info->channel_offset[channel],
-                          &fgd_info->measured[channel]);
+   //status = device_driver(fgd_info->driver[channel], CMD_GET_CURRENT,
+   //                       channel - fgd_info->channel_offset[channel],
+   //                       &fgd_info->measured[channel]);
 
-   /* check for update measured */
-   for (i = 0; i < fgd_info->num_channels; i++) {
-      /* update if change is more than update_threshold */
-      if (abs(fgd_info->measured[i] - fgd_info->measured_mirror[i]) >
-          fgd_info->update_threshold[i]) {
-         for (i = 0; i < fgd_info->num_channels; i++)
-            fgd_info->measured_mirror[i] = fgd_info->measured[i];
+   ///* check for update measured */
+   //for (i = 0; i < fgd_info->num_channels; i++) {
+   //   /* update if change is more than update_threshold */
+   //   if (abs(fgd_info->measured[i] - fgd_info->measured_mirror[i]) >
+   //       fgd_info->update_threshold[i]) {
+   //      for (i = 0; i < fgd_info->num_channels; i++)
+   //         fgd_info->measured_mirror[i] = fgd_info->measured[i];
 
-         db_set_data(hDB, fgd_info->hKeyMeasured, fgd_info->measured,
-                     sizeof(float) * fgd_info->num_channels, fgd_info->num_channels,
-                     TID_FLOAT);
+   //      db_set_data(hDB, fgd_info->hKeyMeasured, fgd_info->measured,
+   //                  sizeof(float) * fgd_info->num_channels, fgd_info->num_channels,
+   //                  TID_FLOAT);
 
-         pequipment->odb_out++;
+   //      pequipment->odb_out++;
 
-         break;
-      }
-   }
+   //      break;
+   //   }
+   //}
 
    // Get the temperatures
-   if ((ss_time() - last_time) > 3) {
+   if ((ss_time() - last_time) > 1) {
      channel = 0;
      status = device_driver(fgd_info->driver[channel], CMD_GET_TEMPERATURE1,
        channel - fgd_info->channel_offset[channel],
@@ -395,7 +395,7 @@ INT fgd_init(EQUIPMENT * pequipment)
 
 /*----------------------------------------------------------------------------*/
 
-INT hv_start(EQUIPMENT * pequipment)
+INT fgd_start(EQUIPMENT * pequipment)
 {
    INT i;
 
@@ -525,7 +525,7 @@ INT cd_fgd(INT cmd, EQUIPMENT * pequipment)
       break;
 
    case CMD_START:
-      status = hv_start(pequipment);
+      status = fgd_start(pequipment);
       break;
 
    case CMD_STOP:
