@@ -26,15 +26,17 @@
 #define CMD_GET_BIASEN               CMD_GET_FIRST+10
 #define CMD_GET_CHPUMPDAC        CMD_GET_FIRST+11
 #define CMD_GET_ASUMDACTH        CMD_GET_FIRST+12
-#define CMD_GET_LAST             CMD_GET_FIRST+12
+#define CMD_GET_VBIAS				CMD_GET_FIRST+13
+#define CMD_GET_LAST             CMD_GET_FIRST+13
 
 
 #undef CMD_SET_LAST
-#define CMD_SET_CONTROL              CMD_SET_FIRST+5
-#define CMD_SET_ASUMDACTH            CMD_SET_FIRST+6
-#define CMD_SET_CHPUMPDAC            CMD_SET_FIRST+7
-#define CMD_SET_BIAS_EN          CMD_SET_FIRST+8
-#define CMD_SET_LAST             CMD_SET_FIRST+8
+#define CMD_SET_VBIAS				CMD_SET_FIRST+5
+#define CMD_SET_CONTROL              CMD_SET_FIRST+6
+#define CMD_SET_ASUMDACTH            CMD_SET_FIRST+7
+#define CMD_SET_CHPUMPDAC            CMD_SET_FIRST+8
+#define CMD_SET_BIAS_EN          CMD_SET_FIRST+9
+#define CMD_SET_LAST             CMD_SET_FIRST+10
 
 
 /*---- globals -----------------------------------------------------*/
@@ -141,8 +143,12 @@ INT mscbasum_exit(MSCBFGD_INFO * info)
 INT mscbasum_setDacBias(MSCBFGD_INFO * info, INT channel, float value)
 {
    unsigned char toBeSent = 0;
+	int size = 4;
+	float chPumpVoltage = 0.0;
 
-   toBeSent = (unsigned char)(value * 255 / 4.962);
+   mscb_read(info->fd, info->settings.base_address + channel, 16, &chPumpVoltage, &size);
+
+   toBeSent = (unsigned char)((chPumpVoltage - value) * 255 / 4.962);
 
    mscb_write(info->fd, info->settings.base_address + channel, indexNum, &toBeSent, 1);
    return FE_SUCCESS;
@@ -246,6 +252,24 @@ INT mscbasum_getasumDacTh(MSCBFGD_INFO * info, INT channel,float *pvalue)
 }
 
 /*----------------------------------------------------------------------------*/
+INT mscbasum_getDacBias(MSCBFGD_INFO * info, INT channel,float *pvalue)
+{
+  int size = 0;
+  unsigned char readValue=0;
+  float chPumpVoltage = 0.0;
+
+  size = 4; //4bytes for float of readBias
+  mscb_read(info->fd, info->settings.base_address + channel, 16, &chPumpVoltage, &size);
+
+  size = 1; //1byte
+  mscb_read(info->fd, info->settings.base_address + channel, indexNum, &readValue, &size);
+
+  *pvalue = (float)(chPumpVoltage - (readValue * 4.962 / 255));
+
+   return FE_SUCCESS;
+}
+
+/*----------------------------------------------------------------------------*/
 INT mscbasum_getchPumpDac(MSCBFGD_INFO * info, INT channel,float *pvalue)
 {
   int size = 1;
@@ -323,7 +347,15 @@ INT mscbasum(INT cmd, ...)
       status = mscbasum_exit(info);
       break;
 
-   case CMD_SET:  // Voltage
+	case CMD_GET_VBIAS:  // Voltage
+      info = va_arg(argptr, void *);
+      channel = va_arg(argptr, INT);
+      pvalue = (float *) va_arg(argptr, float *);
+      status = mscbasum_getDacBias(info, channel, pvalue);
+      //ss_sleep(10);
+      break;
+
+   case CMD_SET_VBIAS:  // Voltage
       info = va_arg(argptr, void *);
       channel = va_arg(argptr, INT);
       value = (float) va_arg(argptr, double);
@@ -332,7 +364,7 @@ INT mscbasum(INT cmd, ...)
       //ss_sleep(10);
       break;
 
-  case CMD_GET_CONTROL:
+	case CMD_GET_CONTROL:
     info = va_arg(argptr, void *);
       channel = va_arg(argptr, INT);
       rvalue = (unsigned char *) va_arg(argptr, unsigned char *);
