@@ -681,22 +681,34 @@ Slow control device driver commands */
 #define CMD_SET_CURRENT_LIMIT        CMD_SET_FIRST+2
 #define CMD_SET_RAMPUP               CMD_SET_FIRST+3
 #define CMD_SET_RAMPDOWN             CMD_SET_FIRST+4
-#define CMD_SET_TRIP_TIME            CMD_SET_FIRST+5
-#define CMD_SET_LAST                 CMD_SET_FIRST+5 /* update this if you add new commands */
+#define CMD_SET_VBIAS					 CMD_SET_FIRST+5
+#define CMD_SET_CONTROL					 CMD_SET_FIRST+6
+#define CMD_SET_ASUMDACTH				 CMD_SET_FIRST+7
+#define CMD_SET_CHPUMPDAC				 CMD_SET_FIRST+8
+#define CMD_SET_BIAS_EN					 CMD_SET_FIRST+9
+#define CMD_SET_LAST                 CMD_SET_FIRST+9 /* update this if you add new commands */
 
 #define CMD_GET_FIRST                CMD_SET_LAST+1  /* multithreaded get commands */
 #define CMD_GET                      CMD_GET_FIRST   // = 17
-#define CMD_GET_CURRENT              CMD_GET_FIRST+1
-#define CMD_GET_LAST                 CMD_GET_FIRST+1 /* update this if you add new commands ! */
+#define CMD_GET_EXTERNALTEMP			 CMD_GET_FIRST+1
+#define CMD_GET_INTERNALTEMP			 CMD_GET_FIRST+2
+#define CMD_GET_ADCMEAS					 CMD_GET_FIRST+3
+#define CMD_GET_CONTROL					 CMD_GET_FIRST+4
+#define CMD_GET_BIASEN					 CMD_GET_FIRST+5
+#define CMD_GET_CHPUMPDAC				 CMD_GET_FIRST+6
+#define CMD_GET_ASUMDACTH			    CMD_GET_FIRST+7
+#define CMD_GET_VBIAS					 CMD_GET_FIRST+8
+#define CMD_GET_ACTUALVBIAS			 CMD_GET_FIRST+9
+#define CMD_GET_LAST                 CMD_GET_FIRST+9 /* update this if you add new commands ! */
 
 #define CMD_GET_DIRECT               CMD_GET_LAST+1  /* direct get commands */
 #define CMD_GET_DEMAND               CMD_GET_DIRECT  // = 20
 #define CMD_GET_VOLTAGE_LIMIT        CMD_GET_DIRECT+1
-#define CMD_GET_CURRENT_LIMIT        CMD_GET_DIRECT+2
+#define CMD_GET_ADCMEAS_LIMIT        CMD_GET_DIRECT+2
 #define CMD_GET_RAMPUP               CMD_GET_DIRECT+3
 #define CMD_GET_RAMPDOWN             CMD_GET_DIRECT+4
 #define CMD_GET_TRIP_TIME            CMD_GET_DIRECT+5 
-#define CMD_GET_DIRECT_LAST          CMD_GET_DIRECT+5 /* update this if you add new commands ! */
+#define CMD_GET_TRIP_TIME            CMD_GET_DIRECT+5 
 
 #define CMD_ENABLE_COMMAND       (1<<14)  /* these two commands can be used to enable/disable */
 #define CMD_DISABLE_COMMAND      (1<<15)  /* one of the other commands                        */
