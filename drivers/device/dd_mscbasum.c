@@ -18,26 +18,6 @@
 #include "midas.h"
 #include "mscb.h"
 
-#undef CMD_GET_LAST
-#define CMD_GET_EXTERNALTEMP         CMD_GET_FIRST+6
-#define CMD_GET_INTERNALTEMP         CMD_GET_FIRST+7
-#define CMD_GET_ADCMEAS              CMD_GET_FIRST+8
-#define CMD_GET_CONTROL              CMD_GET_FIRST+9
-#define CMD_GET_BIASEN               CMD_GET_FIRST+10
-#define CMD_GET_CHPUMPDAC        CMD_GET_FIRST+11
-#define CMD_GET_ASUMDACTH        CMD_GET_FIRST+12
-#define CMD_GET_VBIAS				CMD_GET_FIRST+13
-#define CMD_GET_LAST             CMD_GET_FIRST+13
-
-
-#undef CMD_SET_LAST
-#define CMD_SET_VBIAS				CMD_SET_FIRST+5
-#define CMD_SET_CONTROL              CMD_SET_FIRST+6
-#define CMD_SET_ASUMDACTH            CMD_SET_FIRST+7
-#define CMD_SET_CHPUMPDAC            CMD_SET_FIRST+8
-#define CMD_SET_BIAS_EN          CMD_SET_FIRST+9
-#define CMD_SET_LAST             CMD_SET_FIRST+10
-
 
 /*---- globals -----------------------------------------------------*/
 extern indexNum;
