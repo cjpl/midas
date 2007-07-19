@@ -27,26 +27,6 @@
 #include "midas.h"
 #include "ybos.h"
 
-#undef CMD_GET_LAST
-#define CMD_GET_EXTERNALTEMP         CMD_GET_FIRST+6
-#define CMD_GET_INTERNALTEMP         CMD_GET_FIRST+7
-#define CMD_GET_ADCMEAS              CMD_GET_FIRST+8
-#define CMD_GET_CONTROL              CMD_GET_FIRST+9
-#define CMD_GET_BIASEN               CMD_GET_FIRST+10
-#define CMD_GET_CHPUMPDAC        CMD_GET_FIRST+11
-#define CMD_GET_ASUMDACTH        CMD_GET_FIRST+12
-#define CMD_GET_VBIAS				CMD_GET_FIRST+13
-#define CMD_GET_LAST             CMD_GET_FIRST+13
-
-
-#undef CMD_SET_LAST
-#define CMD_SET_VBIAS				CMD_SET_FIRST+5
-#define CMD_SET_CONTROL              CMD_SET_FIRST+6
-#define CMD_SET_ASUMDACTH            CMD_SET_FIRST+7
-#define CMD_SET_CHPUMPDAC            CMD_SET_FIRST+8
-#define CMD_SET_BIAS_EN          CMD_SET_FIRST+9
-#define CMD_SET_LAST             CMD_SET_FIRST+10
-
 int indexNum = 0;
 int indexNumADC = 0;
 int controlFlag = 0;
@@ -55,7 +35,7 @@ int biasEnFlag = 0;
 typedef struct {
 
    /* ODB keys */
-   HNDLE hKeyRoot, hKeyvBias[8], hKeyMeasured[9], hKeyIntTemp, hKeyExtTemp, hKeyControl[8], hKeyasumDacTh, hKeybiasEn[8], hKeyChPumpDac;
+   HNDLE hKeyRoot, hKeyvBias[8], hKeyactualvBias[8], hKeyMeasured[9], hKeyIntTemp, hKeyExtTemp, hKeyControl[8], hKeyasumDacTh, hKeybiasEn[8], hKeyChPumpDac;
 
    /* globals */
    INT num_channels;
@@ -64,6 +44,7 @@ typedef struct {
 
    /* items in /Variables record */
    float *vBias[8];
+	float *actualvBias[8];
    float *measured[9];
    float *internalTemp;
    float *externalTemp;
@@ -78,6 +59,7 @@ typedef struct {
 
    /* mirror arrays */
    float *vBias_mirror[8];
+	float *actualvBias_mirror[8];
    float *measured_mirror[9];
    float *control_mirror[8];
   float *biasEn_mirror[8];
@@ -101,6 +83,7 @@ static void free_mem(FGD_INFO * asum_info)
 
    free(asum_info->names);
    for(i = 0; i < 8; i++) free(asum_info->vBias[i]);
+	for(i = 0; i < 8; i++) free(asum_info->actualvBias[i]);
    for(i = 0; i < 9; i++) free(asum_info->measured[i]);
    free(asum_info->internalTemp);
    free(asum_info->externalTemp);
@@ -112,6 +95,7 @@ static void free_mem(FGD_INFO * asum_info)
    free(asum_info->update_threshold);
 
    for(i = 0; i < 8; i++) free(asum_info->vBias_mirror[i]);
+	for(i = 0; i < 8; i++) free(asum_info->actualvBias_mirror[i]);
    for(i = 0; i < 9; i++) free(asum_info->measured_mirror[i]);
    for(i = 0; i < 8; i++) free(asum_info->control_mirror[i]);
   for(i = 0; i < 8; i++) free(asum_info->biasEn_mirror[i]);
@@ -171,15 +155,24 @@ INT asum_read(EQUIPMENT * pequipment, int channel)
 	// Get vBias values
 	for (numChannel = 0; numChannel < 8; numChannel++)
 	{
-		indexNum = 5 + numChannel;
-		status = device_driver(asum_info->driver[channel], CMD_GET_VBIAS,
-							channel - asum_info->channel_offset[channel],
-							asum_info->vBias[numChannel]);
-		db_set_data(hDB, asum_info->hKeyvBias[numChannel], asum_info->vBias[numChannel],
-                sizeof(float) * asum_info->num_channels, asum_info->num_channels,
-                TID_FLOAT);
-		*(asum_info->vBias_mirror[numChannel]) = *(asum_info->vBias[numChannel]);
+		if(*(asum_info->biasEn[numChannel]) == 0) //if the bias Enable for the currently specified channel is 0 (OFF)
+		{
+			//then set the actual v_bias readout value to 0V to avoid any confusion
+			*(asum_info->actualvBias[numChannel]) = 0;
+		}
+		else
+		{				
+			indexNum = 5 + numChannel;
+			status = device_driver(asum_info->driver[channel], CMD_GET_VBIAS,
+								channel - asum_info->channel_offset[channel],
+								asum_info->actualvBias[numChannel]);
+		}
+		db_set_data(hDB, asum_info->hKeyactualvBias[numChannel], asum_info->actualvBias[numChannel],
+					sizeof(float) * asum_info->num_channels, asum_info->num_channels,
+					TID_FLOAT);
+		*(asum_info->actualvBias_mirror[numChannel]) = *(asum_info->actualvBias[numChannel]);
 		pequipment->odb_out++;
+	
 	}
 
    // Get the temperatures
@@ -403,6 +396,7 @@ INT asum_init(EQUIPMENT * pequipment)
    HNDLE hDB, hKey, hNames, hThreshold;
    FGD_INFO *asum_info;
   char vBiasString[32];
+  char actualvBiasString[32];
   char measString[32];
   char ctrlString[32];
   char biasEnString[32];
@@ -450,6 +444,7 @@ INT asum_init(EQUIPMENT * pequipment)
    asum_info->names = (char *) calloc(asum_info->num_channels, NAME_LENGTH);
 
    for(i = 0; i < 8; i++) asum_info->vBias[i] = (float *) calloc(asum_info->num_channels, sizeof(float));
+	for(i = 0; i < 8; i++) asum_info->actualvBias[i] = (float *) calloc(asum_info->num_channels, sizeof(float));
    for(i = 0; i < 9; i++) asum_info->measured[i] = (float *) calloc(asum_info->num_channels, sizeof(float));
 
    asum_info->internalTemp = (float *) calloc(asum_info->num_channels, sizeof(float));
@@ -462,6 +457,7 @@ INT asum_init(EQUIPMENT * pequipment)
    asum_info->update_threshold = (float *) calloc(asum_info->num_channels, sizeof(float));
 
    for(i = 0; i < 8; i++) asum_info->vBias_mirror[i] = (float *) calloc(asum_info->num_channels, sizeof(float));
+	for(i = 0; i < 8; i++) asum_info->actualvBias_mirror[i] = (float *) calloc(asum_info->num_channels, sizeof(float));
    for(i = 0; i < 9; i++) asum_info->measured_mirror[i] = (float *) calloc(asum_info->num_channels, sizeof(float));
    for(i = 0; i < 8; i++) asum_info->control_mirror[i] = (float *) calloc(asum_info->num_channels, sizeof(float));
   for(i = 0; i < 8; i++) asum_info->biasEn_mirror[i] = (float *) calloc(asum_info->num_channels, sizeof(float));
@@ -544,6 +540,43 @@ INT asum_init(EQUIPMENT * pequipment)
     db_set_data(hDB, asum_info->hKeyvBias[j], asum_info->vBias[j], size,
               asum_info->num_channels, TID_FLOAT);
     db_open_record(hDB, asum_info->hKeyvBias[j], asum_info->vBias[j],
+                asum_info->num_channels * sizeof(float), MODE_READ, asum_vBias,
+                pequipment);
+   }
+
+	/*---- create actualvBias variables ----*/
+   /* get vBias from ODB */
+  for(j = 0; j < 8; j++)
+   {
+    /* Assign actualvBias names */
+    if(j == 0) strcpy(actualvBiasString, "Variables/actualvBias1");
+    if(j == 1) strcpy(actualvBiasString, "Variables/actualvBias2");
+    if(j == 2) strcpy(actualvBiasString, "Variables/actualvBias3");
+    if(j == 3) strcpy(actualvBiasString, "Variables/actualvBias4");
+    if(j == 4) strcpy(actualvBiasString, "Variables/actualvBias5");
+    if(j == 5) strcpy(actualvBiasString, "Variables/actualvBias6");
+    if(j == 6) strcpy(actualvBiasString, "Variables/actualvBias7");
+    if(j == 7) strcpy(actualvBiasString, "Variables/actualvBias8");
+
+    /* find the key and get data */
+    status = db_find_key(hDB, asum_info->hKeyRoot, actualvBiasString, &asum_info->hKeyactualvBias[j]);
+    if (status == DB_SUCCESS) {
+      size = sizeof(float) * asum_info->num_channels;
+      db_get_data(hDB, asum_info->hKeyactualvBias[j], asum_info->actualvBias[j], &size, TID_FLOAT);
+    }
+
+    /* write back actualvBias values */
+    status = db_find_key(hDB, asum_info->hKeyRoot, actualvBiasString, &asum_info->hKeyactualvBias[j]);
+    if (status != DB_SUCCESS) {
+      db_create_key(hDB, asum_info->hKeyRoot, actualvBiasString, TID_FLOAT);
+      db_find_key(hDB, asum_info->hKeyRoot, actualvBiasString, &asum_info->hKeyactualvBias[j]);
+    }
+
+	 size = sizeof(float) * asum_info->num_channels;
+
+    db_set_data(hDB, asum_info->hKeyactualvBias[j], asum_info->actualvBias[j], size,
+              asum_info->num_channels, TID_FLOAT);
+    db_open_record(hDB, asum_info->hKeyactualvBias[j], asum_info->actualvBias[j],
                 asum_info->num_channels * sizeof(float), MODE_READ, asum_vBias,
                 pequipment);
    }
