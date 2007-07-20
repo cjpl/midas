@@ -23,7 +23,7 @@ void lrs1190_Reset(MVME_INTERFACE *mvme, DWORD base)
   mvme_get_dmode(mvme, &cmode);
   mvme_set_dmode(mvme, MVME_DMODE_D16);
 
-  status = mvme_write_value(mvme, base+LRS1190_RESET_WO, 0x0);
+  status = mvme_read_value(mvme, base+LRS1190_RESET_WO);
   mvme_set_dmode(mvme, cmode);
   return;
 }
@@ -83,16 +83,19 @@ Read the I4 data
 int lrs1190_I4Read(MVME_INTERFACE *mvme, DWORD base, DWORD * data, int r)
 {
   int  cmode, count;
-
+  DWORD add;
   mvme_get_dmode(mvme, &cmode);
   mvme_set_dmode(mvme, MVME_DMODE_D16);
   count = mvme_read_value(mvme, base+LRS1190_COUNT_RO);
   mvme_write_value(mvme, base+LRS1190_ENABLE_RW, 0x0);
-
   mvme_set_dmode(mvme, MVME_DMODE_D32);
+  printf("internal count:%d\n", count);
   if (r > count) r = count;
+  add = base+LRS1190_DATA_RO;
   while (r > 0) {
-    *data = mvme_read_value(mvme, base+LRS1190_DATA_RO);
+    *data = mvme_read_value(mvme, add);
+    add += 4;
+    printf("data:0x%x\n", *data);
     data++;
     r--;
   }
@@ -115,7 +118,6 @@ int lrs1190_L2Read(MVME_INTERFACE *mvme, DWORD base, WORD * data, int r)
   mvme_get_dmode(mvme, &cmode);
   mvme_set_dmode(mvme, MVME_DMODE_D16);
   count = mvme_read_value(mvme, base+LRS1190_COUNT_RO);
-  mvme_write_value(mvme, base+LRS1190_ENABLE_RW, 0x0);
   mvme_set_dmode(mvme, MVME_DMODE_D32);
   if (r > count) r = count;
   while (r > 0) {
@@ -124,9 +126,6 @@ int lrs1190_L2Read(MVME_INTERFACE *mvme, DWORD base, WORD * data, int r)
     data++;
     r--;
   }
-  mvme_set_dmode(mvme, MVME_DMODE_D16);
-  mvme_write_value(mvme, base+LRS1190_RESET_WO, 0);
-  mvme_write_value(mvme, base+LRS1190_ENABLE_RW, 0x1);
   mvme_set_dmode(mvme, cmode);
   return count;
 }
@@ -143,7 +142,6 @@ int lrs1190_H2Read(MVME_INTERFACE *mvme, DWORD base, WORD * data, int r)
   mvme_get_dmode(mvme, &cmode);
   mvme_set_dmode(mvme, MVME_DMODE_D16);
   count = mvme_read_value(mvme, base+LRS1190_COUNT_RO);
-  mvme_write_value(mvme, base+LRS1190_ENABLE_RW, 0x0);
   mvme_set_dmode(mvme, MVME_DMODE_D32);
   if (r > count) r = count;
   while (r > 0) {
@@ -152,9 +150,6 @@ int lrs1190_H2Read(MVME_INTERFACE *mvme, DWORD base, WORD * data, int r)
     data++;
     r--;
   }
-  mvme_set_dmode(mvme, MVME_DMODE_D16);
-  mvme_write_value(mvme, base+LRS1190_RESET_WO, 0);
-  mvme_write_value(mvme, base+LRS1190_ENABLE_RW, 0x1);
   mvme_set_dmode(mvme, cmode);
   return count;
 }
