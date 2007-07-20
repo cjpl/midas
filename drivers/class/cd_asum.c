@@ -48,8 +48,8 @@ typedef struct {
    float *measured[9];
    float *internalTemp;
    float *externalTemp;
-   float *control[8];
-  float *biasEn[8];
+   double *control[8];
+  double *biasEn[8];
   float *asumDacTh;
   float *ChPumpDac;
 
@@ -61,8 +61,8 @@ typedef struct {
    float *vBias_mirror[8];
 	float *actualvBias_mirror[8];
    float *measured_mirror[9];
-   float *control_mirror[8];
-  float *biasEn_mirror[8];
+   double *control_mirror[8];
+  double *biasEn_mirror[8];
   float *asumDacTh_mirror;
   float *ChPumpDac_mirror;
 
@@ -288,7 +288,7 @@ void control_update(INT hDB, INT hKey, void *info)
    INT i, status;
    FGD_INFO *asum_info;
    EQUIPMENT *pequipment;
-  float controlToBeSent = 0.0;
+  double controlToBeSent = 0.0;
 
    pequipment = (EQUIPMENT *) info;
    asum_info = (FGD_INFO *) pequipment->cd_info;
@@ -305,13 +305,13 @@ void control_update(INT hDB, INT hKey, void *info)
           if((*(asum_info->control[numChannel]) != 1) && (*(asum_info->control[numChannel]) != 0))
           {
             printf("Input only 1 or 0, setting to 0 \n");
-            *(asum_info->control[numChannel]) = (float) 0;
+            *(asum_info->control[numChannel]) = (double) 0;
           }
           //move the received control bit to the correct position
           if(*(asum_info->control[numChannel]) == 1) controlFlag = 1;
           else controlFlag = 0;
 
-          controlToBeSent = (float) (1.0 * pow(2, numChannel));
+          controlToBeSent = (double) (1 << numChannel);
 
                status = device_driver(asum_info->driver[i], CMD_SET_CONTROL,  // Control
                                     i - asum_info->channel_offset[i], controlToBeSent);
@@ -333,7 +333,7 @@ void biasEn_update(INT hDB, INT hKey, void *info)
    INT i, status;
    FGD_INFO *asum_info;
    EQUIPMENT *pequipment;
-  float biasEnToBeSent = 0.0;
+  double biasEnToBeSent = 0.0;
 
    pequipment = (EQUIPMENT *) info;
    asum_info = (FGD_INFO *) pequipment->cd_info;
@@ -350,13 +350,13 @@ void biasEn_update(INT hDB, INT hKey, void *info)
           if((*(asum_info->biasEn[numChannel]) != 1) && (*(asum_info->biasEn[numChannel]) != 0))
           {
             printf("Input only 1 or 0, setting to 0 \n");
-            *(asum_info->biasEn[numChannel]) = (float) 0;
+            *(asum_info->biasEn[numChannel]) = (double) 0;
           }
 
           if(*(asum_info->biasEn[numChannel]) == 0) biasEnFlag = 1;
           else biasEnFlag = 0;
 
-          biasEnToBeSent = (float) (1.0 * pow(2, numChannel));
+          biasEnToBeSent = (double) (1.0 * (1 << numChannel));
 
                status = device_driver(asum_info->driver[i], CMD_SET_BIAS_EN,  // biasEn
                                     i - asum_info->channel_offset[i], biasEnToBeSent);
@@ -449,8 +449,8 @@ INT asum_init(EQUIPMENT * pequipment)
 
    asum_info->internalTemp = (float *) calloc(asum_info->num_channels, sizeof(float));
    asum_info->externalTemp = (float *) calloc(asum_info->num_channels, sizeof(float));
-   for(i = 0; i < 8; i++) asum_info->control[i] = (float *) calloc(asum_info->num_channels, sizeof(float));
-  for(i = 0; i < 8; i++) asum_info->biasEn[i] = (float *) calloc(asum_info->num_channels, sizeof(float));
+   for(i = 0; i < 8; i++) asum_info->control[i] = (double *) calloc(asum_info->num_channels, sizeof(double));
+  for(i = 0; i < 8; i++) asum_info->biasEn[i] = (double *) calloc(asum_info->num_channels, sizeof(double));
   asum_info->asumDacTh = (float *) calloc(asum_info->num_channels, sizeof(float));
   asum_info->ChPumpDac = (float *) calloc(asum_info->num_channels, sizeof(float));
 
@@ -459,8 +459,8 @@ INT asum_init(EQUIPMENT * pequipment)
    for(i = 0; i < 8; i++) asum_info->vBias_mirror[i] = (float *) calloc(asum_info->num_channels, sizeof(float));
 	for(i = 0; i < 8; i++) asum_info->actualvBias_mirror[i] = (float *) calloc(asum_info->num_channels, sizeof(float));
    for(i = 0; i < 9; i++) asum_info->measured_mirror[i] = (float *) calloc(asum_info->num_channels, sizeof(float));
-   for(i = 0; i < 8; i++) asum_info->control_mirror[i] = (float *) calloc(asum_info->num_channels, sizeof(float));
-  for(i = 0; i < 8; i++) asum_info->biasEn_mirror[i] = (float *) calloc(asum_info->num_channels, sizeof(float));
+   for(i = 0; i < 8; i++) asum_info->control_mirror[i] = (double *) calloc(asum_info->num_channels, sizeof(double));
+  for(i = 0; i < 8; i++) asum_info->biasEn_mirror[i] = (double *) calloc(asum_info->num_channels, sizeof(double));
   asum_info->asumDacTh_mirror = (float *) calloc(asum_info->num_channels, sizeof(float));
   asum_info->ChPumpDac_mirror = (float *) calloc(asum_info->num_channels, sizeof(float));
 
@@ -686,22 +686,23 @@ INT asum_init(EQUIPMENT * pequipment)
     if(j == 7) strcpy(ctrlString, "Variables/KeepRefAll");
 
     status = db_find_key(hDB, asum_info->hKeyRoot, ctrlString, &asum_info->hKeyControl[j]);
-    if (status != DB_SUCCESS) {
-      db_create_key(hDB, asum_info->hKeyRoot, ctrlString, TID_FLOAT);
+	
+    if (status != DB_SUCCESS) {		
+      db_create_key(hDB, asum_info->hKeyRoot, ctrlString, TID_DOUBLE);
       db_find_key(hDB, asum_info->hKeyRoot, ctrlString, &asum_info->hKeyControl[j]);
     }
 
   //distribute the read control values to each element in the control[] array
-  if((*controlRead & (unsigned char)pow(2, j))) *(asum_info->control[j]) = 1;
+  if((*controlRead & (unsigned char)(1 << j))) *(asum_info->control[j]) = 1;
   //update the Variables (Control, 8bits)
   db_set_data(hDB, asum_info->hKeyControl[j], asum_info->control[j],
-       sizeof(float) * asum_info->num_channels, asum_info->num_channels,
-       TID_FLOAT);
+       sizeof(double) * asum_info->num_channels, asum_info->num_channels,
+       TID_DOUBLE);
 
-  size = sizeof(float) * asum_info->num_channels;
-  db_get_data(hDB, asum_info->hKeyControl[j], asum_info->control[j], &size, TID_FLOAT);
+  size = sizeof(double) * asum_info->num_channels;
+  db_get_data(hDB, asum_info->hKeyControl[j], asum_info->control[j], &size, TID_DOUBLE);
   db_open_record(hDB, asum_info->hKeyControl[j], asum_info->control[j],
-            asum_info->num_channels * sizeof(float), MODE_READ, control_update,
+            asum_info->num_channels * sizeof(double), MODE_READ, control_update,
             pequipment);
 
   //copy all control values into the control mirror
@@ -727,23 +728,23 @@ INT asum_init(EQUIPMENT * pequipment)
 
     status = db_find_key(hDB, asum_info->hKeyRoot, biasEnString, &asum_info->hKeybiasEn[j]);
     if (status != DB_SUCCESS) {
-      db_create_key(hDB, asum_info->hKeyRoot, biasEnString, TID_FLOAT);
+      db_create_key(hDB, asum_info->hKeyRoot, biasEnString, TID_DOUBLE);
       db_find_key(hDB, asum_info->hKeyRoot, biasEnString, &asum_info->hKeybiasEn[j]);
     }
 
   //distribute the read biasEn values to each element in the biasEn[] array
-  if((*biasEnRead & (unsigned char)pow(2, j))) *(asum_info->biasEn[j]) = 0; //0 means OFF in MIDAS interface (on the circuit, 1 means OFF)
+  if((*biasEnRead & (unsigned char)(1 << j))) *(asum_info->biasEn[j]) = 0; //0 means OFF in MIDAS interface (on the circuit, 1 means OFF)
   else *(asum_info->biasEn[j]) = 1; //1 means ON in MIDAS interface (on the circuit, 0 means ON)
 
   //update the Variables (Control, 8bits)
   db_set_data(hDB, asum_info->hKeybiasEn[j], asum_info->biasEn[j],
-       sizeof(float) * asum_info->num_channels, asum_info->num_channels,
-       TID_FLOAT);
+       sizeof(double) * asum_info->num_channels, asum_info->num_channels,
+       TID_DOUBLE);
 
-  size = sizeof(float) * asum_info->num_channels;
-  db_get_data(hDB, asum_info->hKeybiasEn[j], asum_info->biasEn[j], &size, TID_FLOAT);
+  size = sizeof(double) * asum_info->num_channels;
+  db_get_data(hDB, asum_info->hKeybiasEn[j], asum_info->biasEn[j], &size, TID_DOUBLE);
   db_open_record(hDB, asum_info->hKeybiasEn[j], asum_info->biasEn[j],
-            asum_info->num_channels * sizeof(float), MODE_READ, biasEn_update,
+            asum_info->num_channels * sizeof(double), MODE_READ, biasEn_update,
             pequipment);
 
   //copy all biasEn values into the biasEn mirror
