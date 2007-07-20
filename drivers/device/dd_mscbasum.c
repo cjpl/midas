@@ -338,7 +338,7 @@ INT mscbasum(INT cmd, ...)
    case CMD_SET_VBIAS:  // Voltage
       info = va_arg(argptr, void *);
       channel = va_arg(argptr, INT);
-      value = (float) va_arg(argptr, double);
+      value = (float) va_arg(argptr, float);
     printf("Set Bias Voltage %d :[%i]%f\n", (indexNum-4), channel, value);
     status = mscbasum_setDacBias(info, channel, value);
       //ss_sleep(10);
@@ -354,7 +354,7 @@ INT mscbasum(INT cmd, ...)
    case CMD_SET_CONTROL:  // Update control variable
       info = va_arg(argptr, void *);
       channel = va_arg(argptr, INT);
-      value = (float) va_arg(argptr, double);
+      value = (float) va_arg(argptr, float);
       status = mscbasum_controlUpdate(info, channel, value);
       break;
 
@@ -368,14 +368,14 @@ INT mscbasum(INT cmd, ...)
   case CMD_SET_BIAS_EN:  // Update Bias Enable variable
     info = va_arg(argptr, void *);
     channel = va_arg(argptr, INT);
-    value = (float) va_arg(argptr, double);
+    value = (float) va_arg(argptr, float);
     status = mscbasum_biasEnUpdate(info, channel, value);
     break;
 
   case CMD_SET_ASUMDACTH:
     info = va_arg(argptr, void *);
       channel = va_arg(argptr, INT);
-      value = (float) va_arg(argptr, double);
+      value = (float) va_arg(argptr, float);
       printf("Set ASUM DAC Threshold voltage:[%i]%f\n", channel, value);
       status = mscgasum_setasumDacTh(info, channel, value);
       break;
@@ -397,7 +397,7 @@ INT mscbasum(INT cmd, ...)
   case CMD_SET_CHPUMPDAC:
   info = va_arg(argptr, void *);
    channel = va_arg(argptr, INT);
-   value = (float) va_arg(argptr, double);
+   value = (float) va_arg(argptr, float);
    printf("Set Charge Pump DAC voltage:[%i]%f\n", channel, value);
    status = mscgasum_setChPumpDac(info, channel, value);
    break;
@@ -420,7 +420,7 @@ INT mscbasum(INT cmd, ...)
    case CMD_SET_CURRENT_LIMIT:
       info = va_arg(argptr, void *);
       channel = va_arg(argptr, INT);
-      value = (float) va_arg(argptr, double);
+      value = (float) va_arg(argptr, float);
       status = mscbasum_setDacBias_current_limit(info, channel, value);
       break;
 
