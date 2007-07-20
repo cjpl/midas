@@ -23,7 +23,7 @@ void lrs1190_Reset(MVME_INTERFACE *mvme, DWORD base)
   mvme_get_dmode(mvme, &cmode);
   mvme_set_dmode(mvme, MVME_DMODE_D16);
 
-  status = mvme_read_value(mvme, base+LRS1190_RESET_WO);
+  status = mvme_write_value(mvme, base+LRS1190_RESET_WO, 0x0);
   mvme_set_dmode(mvme, cmode);
   return;
 }
@@ -87,14 +87,18 @@ int lrs1190_I4Read(MVME_INTERFACE *mvme, DWORD base, DWORD * data, int r)
   mvme_get_dmode(mvme, &cmode);
   mvme_set_dmode(mvme, MVME_DMODE_D16);
   count = mvme_read_value(mvme, base+LRS1190_COUNT_RO);
+  mvme_write_value(mvme, base+LRS1190_ENABLE_RW, 0x0);
+
   mvme_set_dmode(mvme, MVME_DMODE_D32);
-  printf("internal count:%d\n", count);
   if (r > count) r = count;
   while (r > 0) {
     *data = mvme_read_value(mvme, base+LRS1190_DATA_RO);
     data++;
     r--;
   }
+  mvme_set_dmode(mvme, MVME_DMODE_D16);
+  mvme_write_value(mvme, base+LRS1190_RESET_WO, 0);
+  mvme_write_value(mvme, base+LRS1190_ENABLE_RW, 0x1);
   mvme_set_dmode(mvme, cmode);
   return count;
 }
@@ -111,6 +115,7 @@ int lrs1190_L2Read(MVME_INTERFACE *mvme, DWORD base, WORD * data, int r)
   mvme_get_dmode(mvme, &cmode);
   mvme_set_dmode(mvme, MVME_DMODE_D16);
   count = mvme_read_value(mvme, base+LRS1190_COUNT_RO);
+  mvme_write_value(mvme, base+LRS1190_ENABLE_RW, 0x0);
   mvme_set_dmode(mvme, MVME_DMODE_D32);
   if (r > count) r = count;
   while (r > 0) {
@@ -119,6 +124,9 @@ int lrs1190_L2Read(MVME_INTERFACE *mvme, DWORD base, WORD * data, int r)
     data++;
     r--;
   }
+  mvme_set_dmode(mvme, MVME_DMODE_D16);
+  mvme_write_value(mvme, base+LRS1190_RESET_WO, 0);
+  mvme_write_value(mvme, base+LRS1190_ENABLE_RW, 0x1);
   mvme_set_dmode(mvme, cmode);
   return count;
 }
@@ -135,6 +143,7 @@ int lrs1190_H2Read(MVME_INTERFACE *mvme, DWORD base, WORD * data, int r)
   mvme_get_dmode(mvme, &cmode);
   mvme_set_dmode(mvme, MVME_DMODE_D16);
   count = mvme_read_value(mvme, base+LRS1190_COUNT_RO);
+  mvme_write_value(mvme, base+LRS1190_ENABLE_RW, 0x0);
   mvme_set_dmode(mvme, MVME_DMODE_D32);
   if (r > count) r = count;
   while (r > 0) {
@@ -143,6 +152,9 @@ int lrs1190_H2Read(MVME_INTERFACE *mvme, DWORD base, WORD * data, int r)
     data++;
     r--;
   }
+  mvme_set_dmode(mvme, MVME_DMODE_D16);
+  mvme_write_value(mvme, base+LRS1190_RESET_WO, 0);
+  mvme_write_value(mvme, base+LRS1190_ENABLE_RW, 0x1);
   mvme_set_dmode(mvme, cmode);
   return count;
 }
@@ -151,8 +163,8 @@ int lrs1190_H2Read(MVME_INTERFACE *mvme, DWORD base, WORD * data, int r)
 /*-PAA- For test purpose only */
 #ifdef MAIN_ENABLE
 int main (int argc, char* argv[]) {
-  WORD data[1000];
-  int status, count, i;
+  DWORD localbuf[1000], data[1000];
+  int status, count, newcount, i;
   DWORD LRS1190_BASE = 0x780000;
 
   MVME_INTERFACE *myvme;
@@ -170,25 +182,51 @@ int main (int argc, char* argv[]) {
   // Set dmode to D32
   mvme_set_dmode(myvme, MVME_DMODE_D32);
 
+  printf("\nReset \n");
+  
   while(1) {
+    //  lrs1190_Reset(myvme, LRS1190_BASE);
   // Test Enable/Disable
-    printf("\nReset \n");
-    lrs1190_Reset(myvme, LRS1190_BASE);
     usleep(100000);
     printf("Enable \n");
-    lrs1190_Enable(myvme, LRS1190_BASE);
+    //    lrs1190_Enable(myvme, LRS1190_BASE);
     usleep(1000000);
     printf("Disable \n");
-    lrs1190_Disable(myvme, LRS1190_BASE);
+    //    lrs1190_Disable(myvme, LRS1190_BASE);
     usleep(100000);
     count = lrs1190_CountRead(myvme, LRS1190_BASE);
     printf("Count : 0x%x\n", count);
+
+#if 0
     if (count > 1000) count = 1000;
-    lrs1190_L2Read(myvme, LRS1190_BASE, data, count);
+    if (count > 0) {
+      if (count == 1) {
+	lrs1190_I4Read(myvme, LRS1190_BASE, &(data[0]), count);
+      } else {
+	lrs1190_I4Read(myvme, LRS1190_BASE, &(localbuf[0]), count);
+	data[0] = localbuf[0];
+	newcount = 1;
+	for (i=1;i<count;i++) {
+	  if (localbuf[i] != localbuf[i-1]) {
+	    data[i] = localbuf[i];
+	    newcount += 1;
+	  }
+	}
+      }
+      for (i=0;i<newcount;i++) {
+	printf("Data[%i]=0x%x\n", i, data[i]);
+      }
+    }
+#endif
+#if 1
+    if (count > 1000) count = 1000;
+    lrs1190_I4Read(myvme, LRS1190_BASE, data, count);
     for (i=0;i<count;i++) {
       printf("Data[%i]=0x%x\n", i, data[i]);
     }
-  }
+#endif
+
+    }
   status = mvme_close(myvme);
   return 1;
 }
