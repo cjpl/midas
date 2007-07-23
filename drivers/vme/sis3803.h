@@ -10,7 +10,7 @@
  * Description	: Header file for SIS3803 Standard 200MHz 16 channels scaler
  *
  * Author:  Pierre-Andre Amaudruz Data Acquisition Group
-  $Id:$
+  $Id$
 
  *---------------------------------------------------------------------------*/
 #ifndef SIS3803_INCLUDE
