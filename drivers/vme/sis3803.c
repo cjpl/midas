@@ -12,7 +12,7 @@
  *  Requires 	: sis3803.h
  *  Application : VME
  *  Author      : Pierre-Andre Amaudruz Data Acquisition Group
-  $Id:$
+  $Id$
 
  *
  *---------------------------------------------------------------------------*/
