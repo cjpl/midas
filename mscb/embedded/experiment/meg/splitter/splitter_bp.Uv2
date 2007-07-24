@@ -7,10 +7,10 @@ Target (Simulator), 0x0000 // Tools: 'MCS-51'
 Group (Source Files)
 Group (Include Files)
 
-File 1,1,<..\..\mscbmain.c><mscbmain.c> 0x0 
-File 1,1,<..\..\mscbutil.c><mscbutil.c> 0x0 
 File 1,1,<.\splitter_bp.c><splitter_bp.c> 0x0 
-File 2,5,<..\..\mscbemb.h><mscbemb.h> 0x0 
+File 1,1,<..\..\..\mscbmain.c><mscbmain.c> 0x0 
+File 1,1,<..\..\..\mscbutil.c><mscbutil.c> 0x0 
+File 2,5,<..\..\..\mscbemb.h><mscbemb.h> 0x0 
 
 
 Options 1,0,0  // Target 'ICE'
@@ -34,7 +34,7 @@ Options 1,0,0  // Target 'ICE'
  OrgReg (ÿCygnal\)
  TgStat=0
  OutDir (.\)
- OutName (meg_splt_bp)
+ OutName (splitter_bp)
  GenApp=1
  GenLib=0
  GenHex=1

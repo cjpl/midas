@@ -16,6 +16,8 @@
 #include <intrins.h>
 #include "mscbemb.h"
 
+#define DUAL_THRESHOLD /* define for combined backplane Lecce/Pavia */
+
 extern bit FREEZE_MODE;
 extern bit DEBUG_MODE;
 
@@ -25,12 +27,21 @@ char code svn_revision[] = "$Id: splitter.c 3104 2006-05-15 15:22:03Z ritt $";
 /* declare number of sub-addresses to framework */
 unsigned char idata _n_sub_addr = 1;
 
+bit update;
+
+void write_tdac(void);
+
 /*---- Port definitions ----*/
 
 sbit DAC_DIN  = P3 ^ 2;
 sbit DAC_SCK  = P3 ^ 1;
 sbit DAC_NCS  = P3 ^ 0;
 sbit ENABLE   = P0 ^ 7;
+
+sbit TDAC_NCS = P1 ^ 0;
+sbit TDAC_SDI = P0 ^ 5;
+sbit TDAC_CLR = P0 ^ 6;
+sbit TDAC_CLK = P0 ^ 3;
 
 sbit FAN1     = P2 ^ 7;
 sbit FAN2     = P2 ^ 6;
@@ -43,6 +54,9 @@ sbit FAN3     = P2 ^ 5;
 struct {
    unsigned char enable;
    float dac;
+#ifdef DUAL_THRESHOLD
+   float hlt, llt;
+#endif
    unsigned int fan1, fan2, fan3;
    float offset;
    float gain;
@@ -51,7 +65,11 @@ struct {
 MSCB_INFO_VAR code vars[] = {
 
    { 1, UNIT_BOOLEAN, 0, 0, 0,                          "Enable",  &user_data.enable },
-   { 4, UNIT_VOLT,    0, 0, MSCBF_FLOAT,                "DAC",     &user_data.dac    },
+   { 4, UNIT_VOLT,    0, 0, MSCBF_FLOAT,                "Utest",   &user_data.dac    },
+#ifdef DUAL_THRESHOLD
+   { 4, UNIT_VOLT,    0, 0, MSCBF_FLOAT,                "HLT",     &user_data.hlt    },
+   { 4, UNIT_VOLT,    0, 0, MSCBF_FLOAT,                "LLT",     &user_data.llt    },
+#endif
    { 2, UNIT_RPM,     0, 0, 0,                          "Fan1",    &user_data.fan1   },
    { 2, UNIT_RPM,     0, 0, 0,                          "Fan2",    &user_data.fan2   },
    { 2, UNIT_RPM,     0, 0, 0,                          "Fan3",    &user_data.fan3   },
@@ -80,22 +98,25 @@ void user_init(unsigned char init)
 
 
    /* open drain(*) /push-pull: 
-      P0.0 TX1      P2.0          P3.0 SSYNC
-      P0.1*RX1      P2.1          P3.1 SCLK 
-      P0.2 TX2      P2.2          P3.2 SOUT 
-      P0.3*RX2      P2.3          P3.3 LED  
-                                            
-      P0.4          P2.4 *PIC     P3.4*TRIN0
-      P0.5          P2.5 *FAN1    P3.5*TRIN1
-      P0.6          P2.6 *FAN1    P3.6*TRIN2
-      P0.7 ENABLE   P2.7 *FAN1    P3.7*TRIN3
+      P0.0 TX1       P1.0 TDAC_NCS   P2.0          P3.0 SSYNC
+      P0.1*RX1       P1.0            P2.1          P3.1 SCLK 
+      P0.2           P1.0            P2.2          P3.2 SOUT 
+      P0.3 TDAC_CLK  P1.0            P2.3          P3.3 LED  
+                                                           
+      P0.4           P1.0            P2.4 *PIC     P3.4*TRIN0
+      P0.5 TDAC_SDI  P1.0            P2.5 *FAN1    P3.5*TRIN1
+      P0.6 TDAC_CLR  P1.0            P2.6 *FAN1    P3.6*TRIN2
+      P0.7 ENABLE    P1.0            P2.7 *FAN1    P3.7*TRIN3
     */
    SFRPAGE = CONFIG_PAGE;
-   P0MDOUT = 0xF5;
+   P0MDOUT = 0xFD;
    P1MDOUT = 0xFF;
-   P2MDOUT = 0xF0;
+   P2MDOUT = 0x0F;
    P3MDOUT = 0x0F;
 
+   XBR2 = 0x40; // disable UART1
+
+   P1 = 0xFF;
    P2 = 0xFF;
    P3 = 0xFF;
 
@@ -105,6 +126,8 @@ void user_init(unsigned char init)
       user_data.dac    = 0;
       user_data.gain   = 1;
    }
+
+   write_tdac();
 
    /* write digital output and DAC */
    for (i=0 ; i<2 ; i++)
@@ -121,7 +144,10 @@ void user_write(unsigned char index) reentrant
 
    case 0: ENABLE = user_data.enable; break;
    case 1: write_dac(user_data.dac);  break;
+   case 2: update = 1;  break;
+   case 3: update = 1;  break;
    }
+
 }
 
 /*---- User read function ------------------------------------------*/
@@ -148,6 +174,9 @@ void write_dac(float value) reentrant
 {
    unsigned short d;
    unsigned char i;
+
+   if (value > 2.5)
+      value = 2.5;
 
    value -= user_data.offset;
    value *= user_data.gain;
@@ -178,6 +207,104 @@ void write_dac(float value) reentrant
    DAC_NCS = 1; // remove chip select
 }
 
+/*---- TDAC function ------------------------------------------------*/
+
+void write_tdac(void)
+{
+unsigned short dllt, dhlt;
+unsigned char i, m, b, slot;
+
+   /* convert to bits */
+   if (user_data.llt > 2.048)
+      user_data.llt = 2.048;
+   if (user_data.hlt > 2.048)
+      user_data.hlt = 2.048;
+   dllt = user_data.llt/2.048*65535;
+   dhlt = user_data.hlt/2.048*65535;
+
+   TDAC_NCS = 0; // chip select
+
+   for (slot = 0 ; slot < 8 ; slot++) {
+
+      //==== high level threshold
+ 
+      // command 3: write and update
+      for (i=0,m=8 ; i<4 ; i++) {
+         TDAC_CLK = 0;
+         TDAC_SDI = (3 & m) > 0;
+         TDAC_CLK = 1;
+         m >>= 1;
+      }
+   
+      // address all channels
+      for (i=0,m=8 ; i<4 ; i++) {
+         TDAC_CLK = 0;
+         TDAC_SDI = 1;
+         TDAC_CLK = 1;
+         m >>= 1;
+      }
+   
+      // MSB
+      b = dhlt >> 8;
+      for (i=0,m=0x80 ; i<8 ; i++) {
+         TDAC_CLK = 0;
+         TDAC_SDI = (b & m) > 0;
+         TDAC_CLK = 1;
+         m >>= 1;
+      }
+   
+      // LSB
+      b = dhlt & 0xFF;
+      for (i=0,m=0x80 ; i<8 ; i++) {
+         TDAC_CLK = 0;
+         TDAC_SDI = (b & m) > 0;
+         TDAC_CLK = 1;
+         m >>= 1;
+      }
+
+      //==== low level threshold
+
+      // command 3: write and update
+      for (i=0,m=8 ; i<4 ; i++) {
+         TDAC_CLK = 0;
+         TDAC_SDI = (3 & m) > 0;
+         TDAC_CLK = 1;
+         m >>= 1;
+      }
+   
+      // address all channels
+      for (i=0,m=8 ; i<4 ; i++) {
+         TDAC_CLK = 0;
+         TDAC_SDI = 1;
+         TDAC_CLK = 1;
+         m >>= 1;
+      }
+   
+      // MSB
+      b = dllt >> 8;
+      for (i=0,m=0x80 ; i<8 ; i++) {
+         TDAC_CLK = 0;
+         TDAC_SDI = (b & m) > 0;
+         TDAC_CLK = 1;
+         m >>= 1;
+      }
+   
+      // LSB
+      b = dllt & 0xFF;
+      for (i=0,m=0x80 ; i<8 ; i++) {
+         TDAC_CLK = 0;
+         TDAC_SDI = (b & m) > 0;
+         TDAC_CLK = 1;
+         m >>= 1;
+      }
+
+      watchdog_refresh(1);
+   }
+
+   TDAC_NCS = 1; // remove chip select
+   watchdog_refresh(1);
+}
+
 /*---- User loop function ------------------------------------------*/
 
 unsigned short fan1, fan2, fan3;
@@ -199,7 +326,13 @@ void user_loop(void)
    old_fan2 = FAN2;
    old_fan3 = FAN3;
 
+   if (update) {
+      update = 0;
+      write_tdac();
+   }
+
    if (time() - fan_last >= 100) {
+      update = 1;
       DISABLE_INTERRUPTS;
       user_data.fan1 = fan1*60;
       user_data.fan2 = fan2*60;
