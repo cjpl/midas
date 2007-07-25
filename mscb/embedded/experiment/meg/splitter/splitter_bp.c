@@ -217,88 +217,130 @@ unsigned char i, m, b, slot;
    /* convert to bits */
    if (user_data.llt > 2.048)
       user_data.llt = 2.048;
-   if (user_data.hlt > 2.048)
-      user_data.hlt = 2.048;
+   if (user_data.hlt > 4.096)
+      user_data.hlt = 4.096;
    dllt = user_data.llt/2.048*65535;
-   dhlt = user_data.hlt/2.048*65535;
+   dhlt = user_data.hlt/4.096*65535;
 
+   TDAC_CLK = 0;
    TDAC_NCS = 0; // chip select
+   DELAY_US(1);
 
    for (slot = 0 ; slot < 8 ; slot++) {
-
+      
       //==== high level threshold
  
+      // 8 bits don't care
+      for (i=0 ; i<8 ; i++) {
+         TDAC_SDI = 0;
+         DELAY_US(1);
+         TDAC_CLK = 1;
+         DELAY_US(1);
+         TDAC_CLK = 0;
+         m >>= 1;
+      }
+
       // command 3: write and update
       for (i=0,m=8 ; i<4 ; i++) {
-         TDAC_CLK = 0;
          TDAC_SDI = (3 & m) > 0;
+         DELAY_US(1);
          TDAC_CLK = 1;
+         DELAY_US(1);
+         TDAC_CLK = 0;
          m >>= 1;
       }
    
       // address all channels
       for (i=0,m=8 ; i<4 ; i++) {
-         TDAC_CLK = 0;
          TDAC_SDI = 1;
+         DELAY_US(1);
          TDAC_CLK = 1;
+         DELAY_US(1);
+         TDAC_CLK = 0;
          m >>= 1;
       }
    
       // MSB
       b = dhlt >> 8;
       for (i=0,m=0x80 ; i<8 ; i++) {
-         TDAC_CLK = 0;
          TDAC_SDI = (b & m) > 0;
+         DELAY_US(1);
          TDAC_CLK = 1;
+         DELAY_US(1);
+         TDAC_CLK = 0;
          m >>= 1;
       }
    
       // LSB
       b = dhlt & 0xFF;
       for (i=0,m=0x80 ; i<8 ; i++) {
-         TDAC_CLK = 0;
          TDAC_SDI = (b & m) > 0;
+         DELAY_US(1);
          TDAC_CLK = 1;
+         DELAY_US(1);
+         TDAC_CLK = 0;
          m >>= 1;
       }
 
+      watchdog_refresh(1);
+      DELAY_US(10);
+
       //==== low level threshold
+
+      // 8 bits don't care
+      for (i=0 ; i<8 ; i++) {
+         TDAC_SDI = 0;
+         DELAY_US(1);
+         TDAC_CLK = 1;
+         DELAY_US(1);
+         TDAC_CLK = 0;
+         m >>= 1;
+      }
 
       // command 3: write and update
       for (i=0,m=8 ; i<4 ; i++) {
-         TDAC_CLK = 0;
          TDAC_SDI = (3 & m) > 0;
+         DELAY_US(1);
          TDAC_CLK = 1;
+         DELAY_US(1);
+         TDAC_CLK = 0;
          m >>= 1;
       }
    
       // address all channels
       for (i=0,m=8 ; i<4 ; i++) {
-         TDAC_CLK = 0;
          TDAC_SDI = 1;
+         DELAY_US(1);
          TDAC_CLK = 1;
+         DELAY_US(1);
+         TDAC_CLK = 0;
          m >>= 1;
       }
    
       // MSB
       b = dllt >> 8;
       for (i=0,m=0x80 ; i<8 ; i++) {
-         TDAC_CLK = 0;
          TDAC_SDI = (b & m) > 0;
+         DELAY_US(1);
          TDAC_CLK = 1;
+         DELAY_US(1);
+         TDAC_CLK = 0;
          m >>= 1;
       }
    
       // LSB
       b = dllt & 0xFF;
       for (i=0,m=0x80 ; i<8 ; i++) {
-         TDAC_CLK = 0;
          TDAC_SDI = (b & m) > 0;
+         DELAY_US(1);
          TDAC_CLK = 1;
+         DELAY_US(1);
+         TDAC_CLK = 0;
          m >>= 1;
       }
 
       watchdog_refresh(1);
+      DELAY_US(10);
    }
 
    TDAC_NCS = 1; // remove chip select
