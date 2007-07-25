@@ -21,7 +21,11 @@
 extern bit FREEZE_MODE;
 extern bit DEBUG_MODE;
 
+#ifdef DUAL_THRESHOLD
+char code node_name[] = "SplitterDual";
+#else
 char code node_name[] = "Splitter";
+#endif
 char code svn_revision[] = "$Id: splitter.c 3104 2006-05-15 15:22:03Z ritt $";
 
 /* declare number of sub-addresses to framework */
