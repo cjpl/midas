@@ -146,7 +146,7 @@ void log_odb_dump(LOG_CHN * log_chn, short int event_id, INT run_number)
    EVENT_HEADER *pevent;
 
    /* write ODB dump */
-   buffer_size = 10000;
+   buffer_size = 100000;
    do {
       pevent = (EVENT_HEADER *) malloc(buffer_size);
       if (pevent == NULL) {
@@ -169,7 +169,7 @@ void log_odb_dump(LOG_CHN * log_chn, short int event_id, INT run_number)
 
       /* increase buffer size if truncated */
       free(pevent);
-      buffer_size *= 2;
+      buffer_size *= 10;
    } while (1);
 }
 
