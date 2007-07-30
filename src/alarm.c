@@ -32,7 +32,7 @@
 BOOL al_evaluate_condition(char *condition, char *value)
 {
    HNDLE hDB, hkey;
-   int i, j, index, size;
+   int i, j, idx, size;
    KEY key;
    double value1, value2;
    char value1_str[256], value2_str[256], str[256], op[3], function[80];
@@ -42,7 +42,7 @@ BOOL al_evaluate_condition(char *condition, char *value)
    strcpy(str, condition);
    op[1] = op[2] = 0;
    value1 = value2 = 0;
-   index = 0;
+   idx = 0;
 
    /* find value and operator */
    for (i = strlen(str) - 1; i > 0; i--)
@@ -84,7 +84,7 @@ BOOL al_evaluate_condition(char *condition, char *value)
       str[i--] = 0;
       while (i > 0 && isdigit(str[i]))
          i--;
-      index = atoi(str + i + 1);
+      idx = atoi(str + i + 1);
       str[i] = 0;
    }
 
@@ -107,7 +107,7 @@ BOOL al_evaluate_condition(char *condition, char *value)
       db_get_key(hDB, hkey, &key);
       size = sizeof(data);
       db_get_data(hDB, hkey, data, &size, key.type);
-      db_sprintf(value1_str, data, size, index, key.type);
+      db_sprintf(value1_str, data, size, idx, key.type);
       value1 = atof(value1_str);
    }
 
@@ -175,7 +175,7 @@ INT al_trigger_alarm(char *alarm_name, char *alarm_message, char *default_class,
       int status, size;
       HNDLE hDB, hkeyalarm;
       char str[256];
-      ALARM alarm;
+      ALARM a;
       BOOL flag;
       ALARM_ODB_STR(alarm_odb_str);
 
@@ -213,14 +213,14 @@ INT al_trigger_alarm(char *alarm_name, char *alarm_message, char *default_class,
          db_set_value(hDB, hkeyalarm, "Condition", str, 256, 1, TID_STRING);
       }
 
-      size = sizeof(alarm);
-      status = db_get_record(hDB, hkeyalarm, &alarm, &size, 0);
-      if (status != DB_SUCCESS || alarm.type < 1 || alarm.type > AT_LAST) {
+      size = sizeof(a);
+      status = db_get_record(hDB, hkeyalarm, &a, &size, 0);
+      if (status != DB_SUCCESS || a.type < 1 || a.type > AT_LAST) {
          /* make sure alarm record has right structure */
          db_check_record(hDB, hkeyalarm, "", strcomb(alarm_odb_str), TRUE);
 
-         size = sizeof(alarm);
-         status = db_get_record(hDB, hkeyalarm, &alarm, &size, 0);
+         size = sizeof(a);
+         status = db_get_record(hDB, hkeyalarm, &a, &size, 0);
          if (status != DB_SUCCESS) {
             cm_msg(MERROR, "al_trigger_alarm", "Cannot get alarm record");
             return AL_ERROR_ODB;
@@ -228,7 +228,7 @@ INT al_trigger_alarm(char *alarm_name, char *alarm_message, char *default_class,
       }
 
       /* if internal alarm, check if active and check interval */
-      if (alarm.type != AT_EVALUATED && alarm.type != AT_PERIODIC) {
+      if (a.type != AT_EVALUATED && a.type != AT_PERIODIC) {
          /* check global alarm flag */
          flag = TRUE;
          size = sizeof(flag);
@@ -236,38 +236,38 @@ INT al_trigger_alarm(char *alarm_name, char *alarm_message, char *default_class,
          if (!flag)
             return AL_SUCCESS;
 
-         if (!alarm.active)
+         if (!a.active)
             return AL_SUCCESS;
 
-         if ((INT) ss_time() - (INT) alarm.checked_last < alarm.check_interval)
+         if ((INT) ss_time() - (INT) a.checked_last < a.check_interval)
             return AL_SUCCESS;
 
          /* now the alarm will be triggered, so save time */
-         alarm.checked_last = ss_time();
+         a.checked_last = ss_time();
       }
 
       /* write back alarm message for internal alarms */
-      if (alarm.type != AT_EVALUATED && alarm.type != AT_PERIODIC) {
-         strncpy(alarm.alarm_message, alarm_message, 79);
-         alarm.alarm_message[79] = 0;
+      if (a.type != AT_EVALUATED && a.type != AT_PERIODIC) {
+         strncpy(a.alarm_message, alarm_message, 79);
+         a.alarm_message[79] = 0;
       }
 
       /* now trigger alarm class defined in this alarm */
-      if (alarm.alarm_class[0])
-         al_trigger_class(alarm.alarm_class, alarm_message, alarm.triggered > 0);
+      if (a.alarm_class[0])
+         al_trigger_class(a.alarm_class, alarm_message, a.triggered > 0);
 
       /* signal alarm being triggered */
       cm_asctime(str, sizeof(str));
 
-      if (!alarm.triggered)
-         strcpy(alarm.time_triggered_first, str);
+      if (!a.triggered)
+         strcpy(a.time_triggered_first, str);
 
-      alarm.triggered++;
-      strcpy(alarm.time_triggered_last, str);
+      a.triggered++;
+      strcpy(a.time_triggered_last, str);
 
-      alarm.checked_last = ss_time();
+      a.checked_last = ss_time();
 
-      status = db_set_record(hDB, hkeyalarm, &alarm, sizeof(alarm), 0);
+      status = db_set_record(hDB, hkeyalarm, &a, sizeof(a), 0);
       if (status != DB_SUCCESS) {
          cm_msg(MERROR, "al_trigger_alarm", "Cannot update alarm record");
          return AL_ERROR_ODB;
@@ -396,7 +396,7 @@ INT al_reset_alarm(char *alarm_name)
    HNDLE hDB, hkeyalarm, hkeyclass, hsubkey;
    KEY key;
    char str[256];
-   ALARM alarm;
+   ALARM a;
    ALARM_CLASS ac;
 
    cm_get_experiment_database(&hDB, NULL);
@@ -426,17 +426,17 @@ INT al_reset_alarm(char *alarm_name)
       return AL_INVALID_NAME;
    }
 
-   size = sizeof(alarm);
-   status = db_get_record(hDB, hkeyalarm, &alarm, &size, 0);
+   size = sizeof(a);
+   status = db_get_record(hDB, hkeyalarm, &a, &size, 0);
    if (status != DB_SUCCESS) {
       cm_msg(MERROR, "al_reset_alarm", "Cannot get alarm record");
       return AL_ERROR_ODB;
    }
 
-   sprintf(str, "/Alarms/Classes/%s", alarm.alarm_class);
+   sprintf(str, "/Alarms/Classes/%s", a.alarm_class);
    db_find_key(hDB, 0, str, &hkeyclass);
    if (!hkeyclass) {
-      cm_msg(MERROR, "al_reset_alarm", "Alarm class %s not found in ODB", alarm.alarm_class);
+      cm_msg(MERROR, "al_reset_alarm", "Alarm class %s not found in ODB", a.alarm_class);
       return AL_INVALID_NAME;
    }
 
@@ -447,16 +447,16 @@ INT al_reset_alarm(char *alarm_name)
       return AL_ERROR_ODB;
    }
 
-   if (alarm.triggered) {
-      alarm.triggered = 0;
-      alarm.time_triggered_first[0] = 0;
-      alarm.time_triggered_last[0] = 0;
-      alarm.checked_last = 0;
+   if (a.triggered) {
+      a.triggered = 0;
+      a.time_triggered_first[0] = 0;
+      a.time_triggered_last[0] = 0;
+      a.checked_last = 0;
 
       ac.system_message_last = 0;
       ac.execute_last = 0;
 
-      status = db_set_record(hDB, hkeyalarm, &alarm, sizeof(alarm), 0);
+      status = db_set_record(hDB, hkeyalarm, &a, sizeof(a), 0);
       if (status != DB_SUCCESS) {
          cm_msg(MERROR, "al_reset_alarm", "Cannot update alarm record");
          return AL_ERROR_ODB;
@@ -498,7 +498,7 @@ INT al_check()
       INT i, status, size, mutex;
       HNDLE hDB, hkeyroot, hkey;
       KEY key;
-      ALARM alarm;
+      ALARM a;
       char str[256], value[256];
       time_t now;
       PROGRAM_INFO program_info;
@@ -567,42 +567,42 @@ INT al_check()
 
          db_get_key(hDB, hkey, &key);
 
-         size = sizeof(alarm);
-         status = db_get_record(hDB, hkey, &alarm, &size, 0);
-         if (status != DB_SUCCESS || alarm.type < 1 || alarm.type > AT_LAST) {
+         size = sizeof(a);
+         status = db_get_record(hDB, hkey, &a, &size, 0);
+         if (status != DB_SUCCESS || a.type < 1 || a.type > AT_LAST) {
             /* make sure alarm record has right structure */
             db_check_record(hDB, hkey, "", strcomb(alarm_odb_str), TRUE);
-            size = sizeof(alarm);
-            status = db_get_record(hDB, hkey, &alarm, &size, 0);
-            if (status != DB_SUCCESS || alarm.type < 1 || alarm.type > AT_LAST) {
+            size = sizeof(a);
+            status = db_get_record(hDB, hkey, &a, &size, 0);
+            if (status != DB_SUCCESS || a.type < 1 || a.type > AT_LAST) {
                cm_msg(MERROR, "al_check", "Cannot get alarm record");
                continue;
             }
          }
 
          /* check periodic alarm only when active */
-         if (alarm.active &&
-             alarm.type == AT_PERIODIC &&
-             alarm.check_interval > 0 && (INT) ss_time() - (INT) alarm.checked_last > alarm.check_interval) {
+         if (a.active &&
+             a.type == AT_PERIODIC &&
+             a.check_interval > 0 && (INT) ss_time() - (INT) a.checked_last > a.check_interval) {
             /* if checked_last has not been set, set it to current time */
-            if (alarm.checked_last == 0) {
-               alarm.checked_last = ss_time();
-               db_set_record(hDB, hkey, &alarm, size, 0);
+            if (a.checked_last == 0) {
+               a.checked_last = ss_time();
+               db_set_record(hDB, hkey, &a, size, 0);
             } else
-               al_trigger_alarm(key.name, alarm.alarm_message, alarm.alarm_class, "", AT_PERIODIC);
+               al_trigger_alarm(key.name, a.alarm_message, a.alarm_class, "", AT_PERIODIC);
          }
 
          /* check alarm only when active and not internal */
-         if (alarm.active &&
-             alarm.type == AT_EVALUATED &&
-             alarm.check_interval > 0 && (INT) ss_time() - (INT) alarm.checked_last > alarm.check_interval) {
+         if (a.active &&
+             a.type == AT_EVALUATED &&
+             a.check_interval > 0 && (INT) ss_time() - (INT) a.checked_last > a.check_interval) {
             /* if condition is true, trigger alarm */
-            if (al_evaluate_condition(alarm.condition, value)) {
-               sprintf(str, alarm.alarm_message, value);
-               al_trigger_alarm(key.name, str, alarm.alarm_class, "", AT_EVALUATED);
+            if (al_evaluate_condition(a.condition, value)) {
+               sprintf(str, a.alarm_message, value);
+               al_trigger_alarm(key.name, str, a.alarm_class, "", AT_EVALUATED);
             } else {
-               alarm.checked_last = ss_time();
-               status = db_set_record(hDB, hkey, &alarm, sizeof(alarm), 0);
+               a.checked_last = ss_time();
+               status = db_set_record(hDB, hkey, &a, sizeof(a), 0);
                if (status != DB_SUCCESS) {
                   cm_msg(MERROR, "al_check", "Cannot write back alarm record");
                   continue;
