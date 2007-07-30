@@ -123,6 +123,8 @@ typedef long int INT;
 #include <windows.h>
 #endif
 
+#undef DB_TRUNCATED 
+
 #else
 typedef int INT;
 #endif
@@ -1589,7 +1591,7 @@ extern "C" {
    INT EXPRT cm_execute(char *command, char *result, INT buf_size);
    INT EXPRT cm_synchronize(DWORD * sec);
    INT EXPRT cm_asctime(char *str, INT buf_size);
-   INT EXPRT cm_time(DWORD * time);
+   INT EXPRT cm_time(DWORD * t);
    BOOL EXPRT cm_is_ctrlc_pressed();
    void EXPRT cm_ack_ctrlc_pressed();
 

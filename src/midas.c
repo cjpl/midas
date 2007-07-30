@@ -160,16 +160,16 @@ typedef struct {
 TRANS_TABLE _trans_table[MAX_TRANSITIONS];
 
 TRANS_TABLE _deferred_trans_table[] = {
-   {TR_START},
-   {TR_STOP},
-   {TR_PAUSE},
-   {TR_RESUME},
-   {0}
+   {TR_START,0,NULL},
+   {TR_STOP,0,NULL},
+   {TR_PAUSE,0,NULL},
+   {TR_RESUME,0,NULL},
+   {0,0,NULL}
 };
 
 static BOOL _server_registered = FALSE;
 
-static INT rpc_transition_dispatch(INT index, void *prpc_param[]);
+static INT rpc_transition_dispatch(INT idx, void *prpc_param[]);
 
 void cm_ctrlc_handler(int sig);
 
@@ -262,8 +262,8 @@ void dbg_free(void *adr, char *file, int line)
    f = fopen("mem.txt", "w");
    for (i = 0; i < _n_mem; i++)
       if (_mem_loc[i].adr)
-         fprintf(f, "%s:%d size=%d adr=%p\n", _mem_loc[i].file, _mem_loc[i].line,
-                 _mem_loc[i].size, _mem_loc[i].adr);
+         fprintf(f, "%s:%d %s:%d size=%d adr=%p\n", _mem_loc[i].file, _mem_loc[i].line, 
+                 file, line, _mem_loc[i].size, _mem_loc[i].adr);
    fclose(f);
 }
 
@@ -999,14 +999,14 @@ Get time from ss_time on server.
 @param    time string
 @return   CM_SUCCESS
 */
-INT cm_time(DWORD * time)
+INT cm_time(DWORD * t)
 {
    /* if connected to server, get time from there */
    if (rpc_is_remote())
-      return rpc_call(RPC_CM_TIME, time);
+      return rpc_call(RPC_CM_TIME, t);
 
    /* return local time */
-   *time = ss_time();
+   *t = ss_time();
 
    return CM_SUCCESS;
 }
@@ -1329,7 +1329,7 @@ INT cm_set_client_info(HNDLE hDB, HNDLE * hKeyClient, char *host_name,
 
 #ifdef LOCAL_ROUTINES
    {
-      INT status, pid, data, i, index, size;
+      INT status, pid, data, i, idx, size;
       HNDLE hKey, hSubkey;
       char str[256], name[NAME_LENGTH], orig_name[NAME_LENGTH], pwd[NAME_LENGTH];
       BOOL call_watchdog, allow;
@@ -1386,7 +1386,7 @@ INT cm_set_client_info(HNDLE hDB, HNDLE * hKeyClient, char *host_name,
       /* check if client name already exists */
       status = db_find_key(hDB, 0, "System/Clients", &hKey);
 
-      for (index = 1; status != DB_NO_MORE_SUBKEYS; index++) {
+      for (idx = 1; status != DB_NO_MORE_SUBKEYS; idx++) {
          for (i = 0;; i++) {
             status = db_enum_key(hDB, hKey, i, &hSubkey);
             if (status == DB_NO_MORE_SUBKEYS)
@@ -1402,7 +1402,7 @@ INT cm_set_client_info(HNDLE hDB, HNDLE * hKeyClient, char *host_name,
                continue;
 
             if (equal_ustring(str, name)) {
-               sprintf(name, "%s%d", client_name, index);
+               sprintf(name, "%s%d", client_name, idx);
                break;
             }
          }
@@ -2407,11 +2407,11 @@ INT cm_set_watchdog_params(BOOL call_watchdog, DWORD timeout)
       for (i = _buffer_entries; i > 0; i--) {
          BUFFER_CLIENT *pclient;
          BUFFER_HEADER *pheader;
-         INT index;
+         INT idx;
 
-         index = bm_validate_client_index(&_buffer[i - 1]);
+         idx = bm_validate_client_index(&_buffer[i - 1]);
          pheader = _buffer[i - 1].buffer_header;
-         pclient = &pheader->client[index];
+         pclient = &pheader->client[idx];
 
          if (rpc_get_server_option(RPC_OSERVER_TYPE) == ST_SINGLE &&
              _buffer[i - 1].index != rpc_get_server_acception())
@@ -2434,12 +2434,12 @@ INT cm_set_watchdog_params(BOOL call_watchdog, DWORD timeout)
       for (i = _database_entries; i > 0; i--) {
          DATABASE_HEADER *pheader;
          DATABASE_CLIENT *pclient;
-         INT index;
+         INT idx;
 
          db_lock_database(i);
-         index = _database[i - 1].client_index;
+         idx = _database[i - 1].client_index;
          pheader = _database[i - 1].database_header;
-         pclient = &pheader->client[index];
+         pclient = &pheader->client[idx];
 
          if (rpc_get_server_option(RPC_OSERVER_TYPE) == ST_SINGLE &&
              _database[i - 1].index != rpc_get_server_acception()) {
@@ -3004,7 +3004,7 @@ tapes.
 */
 INT cm_transition(INT transition, INT run_number, char *errstr, INT errstr_size, INT async_flag, INT debug_flag)
 {
-   INT i, j, status, index, size, sequence_number, port, state, old_timeout, n_tr_clients;
+   INT i, j, status, idx, size, sequence_number, port, state, old_timeout, n_tr_clients;
    HNDLE hDB, hRootKey, hSubkey, hKey, hKeylocal, hConn, hKeyTrans;
    DWORD seconds;
    char host_name[HOST_NAME_LENGTH], client_name[NAME_LENGTH], str[256], error[256], tr_key_name[256];
@@ -3267,20 +3267,20 @@ INT cm_transition(INT transition, INT run_number, char *errstr, INT errstr_size,
       qsort(tr_client, n_tr_clients, sizeof(TR_CLIENT), tr_compare);
 
    /* contact ordered clients for transition */
-   for (index = 0; index < n_tr_clients; index++) {
+   for (idx = 0; idx < n_tr_clients; idx++) {
       /* erase error string */
       error[0] = 0;
 
       if (debug_flag == 1)
          printf("\n==== Found client \"%s\" with sequence number %d\n",
-                tr_client[index].client_name, tr_client[index].sequence_number);
+                tr_client[idx].client_name, tr_client[idx].sequence_number);
       if (debug_flag == 2)
          cm_msg(MDEBUG, "cm_transition",
                 "cm_transition: ==== Found client \"%s\" with sequence number %d",
-                tr_client[index].client_name, tr_client[index].sequence_number);
+                tr_client[idx].client_name, tr_client[idx].sequence_number);
 
       /* if own client call transition callback directly */
-      if (tr_client[index].port == 0) {
+      if (tr_client[idx].port == 0) {
          for (i = 0; _trans_table[i].transition; i++)
             if (_trans_table[i].transition == transition)
                break;
@@ -3302,7 +3302,7 @@ INT cm_transition(INT transition, INT run_number, char *errstr, INT errstr_size,
             status = CM_SUCCESS;
 
          if (errstr != NULL)
-            memcpy(errstr, error, (INT) strlen(error) + 1 < errstr_size ? strlen(error) + 1 : errstr_size);
+            memcpy(errstr, error, (INT) strlen(error) + 1 < errstr_size ? (INT) strlen(error) + 1 : errstr_size);
 
          if (status != CM_SUCCESS) {
             free(tr_client);
@@ -3314,19 +3314,19 @@ INT cm_transition(INT transition, INT run_number, char *errstr, INT errstr_size,
          /* contact client if transition mask set */
          if (debug_flag == 1)
             printf("Connecting to client \"%s\" on host %s...\n",
-                   tr_client[index].client_name, tr_client[index].host_name);
+                   tr_client[idx].client_name, tr_client[idx].host_name);
          if (debug_flag == 2)
             cm_msg(MDEBUG, "cm_transition",
                    "cm_transition: Connecting to client \"%s\" on host %s...",
-                   tr_client[index].client_name, tr_client[index].host_name);
+                   tr_client[idx].client_name, tr_client[idx].host_name);
 
          /* client found -> connect to its server port */
-         status = rpc_client_connect(tr_client[index].host_name, tr_client[index].port,
-                                     tr_client[index].client_name, &hConn);
+         status = rpc_client_connect(tr_client[idx].host_name, tr_client[idx].port,
+                                     tr_client[idx].client_name, &hConn);
          if (status != RPC_SUCCESS) {
             cm_msg(MERROR, "cm_transition",
                    "cannot connect to client \"%s\" on host %s, port %d, status %d",
-                   tr_client[index].client_name, tr_client[index].host_name, tr_client[index].port, status);
+                   tr_client[idx].client_name, tr_client[idx].host_name, tr_client[idx].port, status);
             if (errstr != NULL)
                strlcpy(errstr, "Cannot connect to client", errstr_size);
             return status;
@@ -3334,11 +3334,11 @@ INT cm_transition(INT transition, INT run_number, char *errstr, INT errstr_size,
 
          if (debug_flag == 1)
             printf("Connection established to client \"%s\" on host %s\n",
-                   tr_client[index].client_name, tr_client[index].host_name);
+                   tr_client[idx].client_name, tr_client[idx].host_name);
          if (debug_flag == 2)
             cm_msg(MDEBUG, "cm_transition",
                    "cm_transition: Connection established to client \"%s\" on host %s",
-                   tr_client[index].client_name, tr_client[index].host_name);
+                   tr_client[idx].client_name, tr_client[idx].host_name);
 
          /* call RC_TRANSITION on remote client with increased timeout */
          old_timeout = rpc_get_option(hConn, RPC_OTIMEOUT);
@@ -3350,14 +3350,14 @@ INT cm_transition(INT transition, INT run_number, char *errstr, INT errstr_size,
 
          if (debug_flag == 1)
             printf("Executing RPC transition client \"%s\" on host %s...\n",
-                   tr_client[index].client_name, tr_client[index].host_name);
+                   tr_client[idx].client_name, tr_client[idx].host_name);
          if (debug_flag == 2)
             cm_msg(MDEBUG, "cm_transition",
                    "cm_transition: Executing RPC transition client \"%s\" on host %s...",
-                   tr_client[index].client_name, tr_client[index].host_name);
+                   tr_client[idx].client_name, tr_client[idx].host_name);
 
          status = rpc_client_call(hConn, RPC_RC_TRANSITION, transition,
-                                  run_number, error, errstr_size, tr_client[index].sequence_number);
+                                  run_number, error, errstr_size, tr_client[idx].sequence_number);
 
          /* reset timeout */
          rpc_set_option(hConn, RPC_OTIMEOUT, old_timeout);
@@ -3368,17 +3368,17 @@ INT cm_transition(INT transition, INT run_number, char *errstr, INT errstr_size,
 
          if (debug_flag == 1)
             printf("RPC transition finished client \"%s\" on host %s with status %d\n",
-                   tr_client[index].client_name, tr_client[index].host_name, status);
+                   tr_client[idx].client_name, tr_client[idx].host_name, status);
          if (debug_flag == 2)
             cm_msg(MDEBUG, "cm_transition",
                    "cm_transition: RPC transition finished client \"%s\" on host %s with status %d",
-                   tr_client[index].client_name, tr_client[index].host_name, status);
+                   tr_client[idx].client_name, tr_client[idx].host_name, status);
 
          if (errstr != NULL) {
             if (strlen(error) < 2)
-               sprintf(errstr, "Unknown error %d from client \'%s\' on host %s", status, tr_client[index].client_name, tr_client[index].host_name);
+               sprintf(errstr, "Unknown error %d from client \'%s\' on host %s", status, tr_client[idx].client_name, tr_client[idx].host_name);
             else
-               memcpy(errstr, error, (INT) strlen(error) + 1 < errstr_size ? strlen(error) + 1 : errstr_size);
+               memcpy(errstr, error, (INT) strlen(error) + 1 < (INT) errstr_size ? (INT) strlen(error) + 1 : errstr_size);
          }
 
          if (status != CM_SUCCESS) {
@@ -3482,7 +3482,7 @@ INT cm_transition(INT transition, INT run_number, char *errstr, INT errstr_size,
 #ifndef DOXYGEN_SHOULD_SKIP_THIS
 
 /********************************************************************/
-INT cm_dispatch_ipc(char *message, int socket)
+INT cm_dispatch_ipc(char *message, int s)
 /********************************************************************\
 
   Routine: cm_dispatch_ipc
@@ -3492,7 +3492,7 @@ INT cm_dispatch_ipc(char *message, int socket)
   Input:
     INT   msg               IPC message we got, MSG_ODB/MSG_BM
     INT   p1, p2            Optional parameters
-    int   socket            Optional server socket
+    int   s                 Optional server socket
 
   Output:
     none
@@ -3505,7 +3505,7 @@ INT cm_dispatch_ipc(char *message, int socket)
    if (message[0] == 'O') {
       HNDLE hDB, hKey;
       sscanf(message + 2, "%d %d", &hDB, &hKey);
-      return db_update_record(hDB, hKey, socket);
+      return db_update_record(hDB, hKey, s);
    }
 
    /* message == "B  " means "resume event sender" */
@@ -3516,8 +3516,8 @@ INT cm_dispatch_ipc(char *message, int socket)
       if (strchr(str, ' '))
          *strchr(str, ' ') = 0;
 
-      if (socket)
-         return bm_notify_client(str, socket);
+      if (s)
+         return bm_notify_client(str, s);
       else
          return bm_push_event(str);
    }
@@ -3530,6 +3530,10 @@ static BOOL _ctrlc_pressed = FALSE;
 
 void cm_ctrlc_handler(int sig)
 {
+   int i;
+
+   i = sig; /* avoid compiler warning */
+
    if (_ctrlc_pressed) {
       printf("Received 2nd break. Hard abort.\n");
       exit(0);
@@ -4016,7 +4020,7 @@ INT bm_close_buffer(INT buffer_handle)
    {
       BUFFER_CLIENT *pclient;
       BUFFER_HEADER *pheader;
-      INT i, j, index, destroy_flag;
+      INT i, j, idx, destroy_flag;
 
       if (buffer_handle > _buffer_entries || buffer_handle <= 0) {
          cm_msg(MERROR, "bm_close_buffer", "invalid buffer handle %d", buffer_handle);
@@ -4034,7 +4038,7 @@ INT bm_close_buffer(INT buffer_handle)
          of other threads.
        */
 
-      index = bm_validate_client_index(&_buffer[buffer_handle - 1]);
+      idx = bm_validate_client_index(&_buffer[buffer_handle - 1]);
       pheader = _buffer[buffer_handle - 1].buffer_header;
 
       if (rpc_get_server_option(RPC_OSERVER_TYPE) == ST_SINGLE &&
@@ -4063,7 +4067,7 @@ INT bm_close_buffer(INT buffer_handle)
       _buffer[buffer_handle - 1].attached = FALSE;
 
       /* clear entry from client structure in buffer header */
-      memset(&(pheader->client[index]), 0, sizeof(BUFFER_CLIENT));
+      memset(&(pheader->client[idx]), 0, sizeof(BUFFER_CLIENT));
 
       /* calculate new max_client_index entry */
       for (i = MAX_CLIENTS - 1; i >= 0; i--)
@@ -4170,6 +4174,8 @@ void cm_watchdog(int dummy)
    BOOL bDeleted, time_changed, wrong_interval;
    char str[256];
 
+   i = dummy; /* avoid compiler warning */
+
    /* return immediately if watchdog has been disabled in meantime */
    if (!_call_watchdog)
       return;
@@ -4185,7 +4191,7 @@ void cm_watchdog(int dummy)
    interval = actual_time - _watchdog_last_called;
 
    /* check if system time has been changed more than 10 min */
-   time_changed = interval < 0 || interval > 600000;
+   time_changed = interval > 600000;
    wrong_interval = interval < 0.8 * WATCHDOG_INTERVAL || interval > 1.2 * WATCHDOG_INTERVAL;
 
    if (time_changed)
@@ -5254,7 +5260,7 @@ INT bm_request_event(HNDLE buffer_handle, short int event_id,
                      INT sampling_type, HNDLE * request_id,
                      void (*func) (HNDLE, HNDLE, EVENT_HEADER *, void *))
 {
-   INT index, status;
+   INT idx, status;
 
    /* allocate new space for the local request list */
    if (_request_list_entries == 0) {
@@ -5266,15 +5272,15 @@ INT bm_request_event(HNDLE buffer_handle, short int event_id,
       }
 
       _request_list_entries = 1;
-      index = 0;
+      idx = 0;
    } else {
       /* check for a deleted entry */
-      for (index = 0; index < _request_list_entries; index++)
-         if (!_request_list[index].buffer_handle)
+      for (idx = 0; idx < _request_list_entries; idx++)
+         if (!_request_list[idx].buffer_handle)
             break;
 
       /* if not found, create new one */
-      if (index == _request_list_entries) {
+      if (idx == _request_list_entries) {
          _request_list = (REQUEST_LIST *) realloc(_request_list,
                                                   sizeof(REQUEST_LIST) * (_request_list_entries + 1));
          if (_request_list == NULL) {
@@ -5289,15 +5295,15 @@ INT bm_request_event(HNDLE buffer_handle, short int event_id,
    }
 
    /* initialize request list */
-   _request_list[index].buffer_handle = buffer_handle;
-   _request_list[index].event_id = event_id;
-   _request_list[index].trigger_mask = trigger_mask;
-   _request_list[index].dispatcher = func;
+   _request_list[idx].buffer_handle = buffer_handle;
+   _request_list[idx].event_id = event_id;
+   _request_list[idx].trigger_mask = trigger_mask;
+   _request_list[idx].dispatcher = func;
 
-   *request_id = index;
+   *request_id = idx;
 
    /* add request in buffer structure */
-   status = bm_add_event_request(buffer_handle, event_id, trigger_mask, sampling_type, func, index);
+   status = bm_add_event_request(buffer_handle, event_id, trigger_mask, sampling_type, func, idx);
    if (status != BM_SUCCESS)
       return status;
 
@@ -5482,6 +5488,7 @@ static BOOL bm_update_read_pointer(const char *caller_name, BUFFER_HEADER * phea
    int min_rp;
    BUFFER_CLIENT *pclient;
 
+   assert(caller_name);
    pclient = pheader->client;
 
    /* calculate global read pointer as "minimum" of client read pointers */
@@ -6249,7 +6256,7 @@ INT bm_receive_event(INT buffer_handle, void *destination, INT * buf_size, INT a
    if (rpc_is_remote()) {
       int status, old_timeout = 0;
 
-      if (*buf_size > NET_BUFFER_SIZE) {
+      if (*buf_size > (INT) NET_BUFFER_SIZE) {
          cm_msg(MERROR, "bm_receive_event", "max. event size larger than NET_BUFFER_SIZE");
          return RPC_NET_ERROR;
       }
@@ -6792,7 +6799,7 @@ INT bm_check_buffers()
 {
 #ifdef LOCAL_ROUTINES
    {
-      INT index, status = 0;
+      INT idx, status = 0;
       INT server_type, server_conn, tid;
       BOOL bMore;
       DWORD start_time;
@@ -6810,14 +6817,14 @@ INT bm_check_buffers()
       start_time = ss_millitime();
 
       /* go through all buffers */
-      for (index = 0; index < _buffer_entries; index++) {
-         if (server_type == ST_SINGLE && _buffer[index].index != server_conn)
+      for (idx = 0; idx < _buffer_entries; idx++) {
+         if (server_type == ST_SINGLE && _buffer[idx].index != server_conn)
             continue;
 
-         if (server_type != ST_SINGLE && _buffer[index].index != tid)
+         if (server_type != ST_SINGLE && _buffer[idx].index != tid)
             continue;
 
-         if (!_buffer[index].attached)
+         if (!_buffer[idx].attached)
             continue;
 
          do {
@@ -6825,8 +6832,8 @@ INT bm_check_buffers()
             /* one bm_push_event could cause a run stop and a buffer close, which
                would crash the next call to bm_push_event(). So check for valid
                buffer on each call */
-            if (index < _buffer_entries && _buffer[index].buffer_header->name != NULL)
-               status = bm_push_event(_buffer[index].buffer_header->name);
+            if (idx < _buffer_entries && _buffer[idx].buffer_header->name != NULL)
+               status = bm_push_event(_buffer[idx].buffer_header->name);
 
             if (status != BM_MORE_EVENTS)
                break;
@@ -6906,7 +6913,7 @@ INT bm_mark_read_waiting(BOOL flag)
 }
 
 /********************************************************************/
-INT bm_notify_client(char *buffer_name, int socket)
+INT bm_notify_client(char *buffer_name, int s)
 /********************************************************************\
 
   Routine: bm_notify_client
@@ -6916,7 +6923,7 @@ INT bm_notify_client(char *buffer_name, int socket)
 
   Input:
     char  *buffer_name      Name of buffer
-    int   socket            Network socket to client
+    int   s                 Network socket to client
 
   Output:
     none
@@ -6952,7 +6959,7 @@ INT bm_notify_client(char *buffer_name, int socket)
 
    if (convert_flags & CF_ASCII) {
       sprintf(buffer, "MSG_BM&%s", buffer_name);
-      send_tcp(socket, buffer, strlen(buffer) + 1, 0);
+      send_tcp(s, buffer, strlen(buffer) + 1, 0);
    } else {
       nc = (NET_COMMAND *) buffer;
 
@@ -6965,7 +6972,7 @@ INT bm_notify_client(char *buffer_name, int socket)
       }
 
       /* send the update notification to the client */
-      send_tcp(socket, (char *) buffer, sizeof(NET_COMMAND_HEADER), 0);
+      send_tcp(s, (char *) buffer, sizeof(NET_COMMAND_HEADER), 0);
    }
 
    return BM_SUCCESS;
@@ -7110,7 +7117,7 @@ INT bm_empty_buffers()
 
 #ifdef LOCAL_ROUTINES
    {
-      INT index, server_type, server_conn, tid;
+      INT idx, server_type, server_conn, tid;
       BUFFER *pbuf;
       BUFFER_CLIENT *pclient;
 
@@ -7119,26 +7126,26 @@ INT bm_empty_buffers()
       tid = ss_gettid();
 
       /* go through all buffers */
-      for (index = 0; index < _buffer_entries; index++) {
-         if (server_type == ST_SINGLE && _buffer[index].index != server_conn)
+      for (idx = 0; idx < _buffer_entries; idx++) {
+         if (server_type == ST_SINGLE && _buffer[idx].index != server_conn)
             continue;
 
-         if (server_type != ST_SINGLE && _buffer[index].index != tid)
+         if (server_type != ST_SINGLE && _buffer[idx].index != tid)
             continue;
 
-         if (!_buffer[index].attached)
+         if (!_buffer[idx].attached)
             continue;
 
-         pbuf = &_buffer[index];
+         pbuf = &_buffer[idx];
 
          /* empty cache */
          pbuf->read_cache_rp = pbuf->read_cache_wp = 0;
 
          /* set read pointer to write pointer */
          pclient = (pbuf->buffer_header)->client + bm_validate_client_index(pbuf);
-         bm_lock_buffer(index + 1);
+         bm_lock_buffer(idx + 1);
          pclient->read_pointer = (pbuf->buffer_header)->write_pointer;
-         bm_unlock_buffer(index + 1);
+         bm_unlock_buffer(idx + 1);
       }
 
    }
@@ -7798,7 +7805,7 @@ INT rpc_client_connect(char *host_name, INT port, char *client_name, HNDLE * hCo
 
 \********************************************************************/
 {
-   INT i, status, index;
+   INT i, status, idx;
    struct sockaddr_in bind_addr;
    INT sock;
    INT remote_hw_type, hw_type;
@@ -7853,14 +7860,14 @@ INT rpc_client_connect(char *host_name, INT port, char *client_name, HNDLE * hCo
       return RPC_NET_ERROR;
    }
 
-   index = i;
-   strcpy(_client_connection[index].host_name, host_name);
-   strcpy(_client_connection[index].client_name, client_name);
-   _client_connection[index].port = port;
-   _client_connection[index].exp_name[0] = 0;
-   _client_connection[index].transport = RPC_TCP;
-   _client_connection[index].rpc_timeout = DEFAULT_RPC_TIMEOUT;
-   _client_connection[index].rpc_timeout = DEFAULT_RPC_TIMEOUT;
+   idx = i;
+   strcpy(_client_connection[idx].host_name, host_name);
+   strcpy(_client_connection[idx].client_name, client_name);
+   _client_connection[idx].port = port;
+   _client_connection[idx].exp_name[0] = 0;
+   _client_connection[idx].transport = RPC_TCP;
+   _client_connection[idx].rpc_timeout = DEFAULT_RPC_TIMEOUT;
+   _client_connection[idx].rpc_timeout = DEFAULT_RPC_TIMEOUT;
 
    /* connect to remote node */
    memset(&bind_addr, 0, sizeof(bind_addr));
@@ -7922,8 +7929,8 @@ INT rpc_client_connect(char *host_name, INT port, char *client_name, HNDLE * hCo
 
    remote_hw_type = version[0] = 0;
    sscanf(str, "%d %s", &remote_hw_type, version);
-   _client_connection[index].remote_hw_type = remote_hw_type;
-   _client_connection[index].send_sock = sock;
+   _client_connection[idx].remote_hw_type = remote_hw_type;
+   _client_connection[idx].send_sock = sock;
 
    /* print warning if version patch level doesn't agree */
    strcpy(v1, version);
@@ -7941,7 +7948,7 @@ INT rpc_client_connect(char *host_name, INT port, char *client_name, HNDLE * hCo
       cm_msg(MERROR, "rpc_client_connect", str);
    }
 
-   *hConnection = index + 1;
+   *hConnection = idx + 1;
 
    return RPC_SUCCESS;
 }
@@ -8432,7 +8439,7 @@ INT rpc_get_server_acception(void)
 
 
 /********************************************************************/
-INT rpc_set_server_acception(INT index)
+INT rpc_set_server_acception(INT idx)
 /********************************************************************\
 
   Routine: rpc_set_server_acception
@@ -8440,7 +8447,7 @@ INT rpc_set_server_acception(INT index)
   Purpose: Set actual RPC server connection index
 
   Input:
-    INT  index              Server index
+    INT  idx                Server index
 
   Output:
     none
@@ -8450,7 +8457,7 @@ INT rpc_set_server_acception(INT index)
 
 \********************************************************************/
 {
-   _server_acception_index = index;
+   _server_acception_index = idx;
    return RPC_SUCCESS;
 }
 
@@ -8911,7 +8918,7 @@ INT rpc_client_call(HNDLE hConn, const INT routine_id, ...)
    va_list ap, aptmp;
    char arg[8], arg_tmp[8];
    INT arg_type, transport, rpc_timeout;
-   INT i, index, status, rpc_index;
+   INT i, idx, status, rpc_index;
    INT param_size, arg_size, send_size;
    INT tid, flags;
    fd_set readfds;
@@ -8921,16 +8928,16 @@ INT rpc_client_call(HNDLE hConn, const INT routine_id, ...)
    NET_COMMAND *nc;
    int send_sock;
 
-   index = hConn - 1;
+   idx = hConn - 1;
 
-   if (_client_connection[index].send_sock == 0) {
+   if (_client_connection[idx].send_sock == 0) {
       cm_msg(MERROR, "rpc_client_call", "no rpc connection");
       return RPC_NO_CONNECTION;
    }
 
-   send_sock = _client_connection[index].send_sock;
-   rpc_timeout = _client_connection[index].rpc_timeout;
-   transport = _client_connection[index].transport;
+   send_sock = _client_connection[idx].send_sock;
+   rpc_timeout = _client_connection[idx].rpc_timeout;
+   transport = _client_connection[idx].transport;
 
    /* init network buffer */
    if (_net_send_buffer_size == 0) {
@@ -9026,7 +9033,7 @@ INT rpc_client_call(HNDLE hConn, const INT routine_id, ...)
          /* always align parameter size */
          param_size = ALIGN8(arg_size);
 
-         if ((POINTER_T) param_ptr - (POINTER_T) nc + param_size > NET_BUFFER_SIZE) {
+         if ((POINTER_T) param_ptr - (POINTER_T) nc + param_size > (INT) NET_BUFFER_SIZE) {
             cm_msg(MERROR, "rpc_client_call",
                    "parameters (%d) too large for network buffer (%d)",
                    (POINTER_T) param_ptr - (POINTER_T) nc + param_size, NET_BUFFER_SIZE);
@@ -9071,7 +9078,7 @@ INT rpc_client_call(HNDLE hConn, const INT routine_id, ...)
    if (i != send_size) {
       cm_msg(MERROR, "rpc_client_call",
              "send_tcp() failed, routine = \"%s\", host = \"%s\"",
-             rpc_list[rpc_index].name, _client_connection[index].host_name);
+             rpc_list[rpc_index].name, _client_connection[idx].host_name);
       return RPC_NET_ERROR;
    }
 
@@ -9094,7 +9101,7 @@ INT rpc_client_call(HNDLE hConn, const INT routine_id, ...)
 
       if (!FD_ISSET(send_sock, &readfds)) {
          cm_msg(MERROR, "rpc_client_call", "rpc timeout, routine = \"%s\", host = \"%s\"",
-                rpc_list[rpc_index].name, _client_connection[index].host_name);
+                rpc_list[rpc_index].name, _client_connection[idx].host_name);
 
          /* disconnect to avoid that the reply to this rpc_call comes at
             the next rpc_call */
@@ -9110,7 +9117,7 @@ INT rpc_client_call(HNDLE hConn, const INT routine_id, ...)
    if (i <= 0) {
       cm_msg(MERROR, "rpc_client_call",
              "recv_tcp() failed, routine = \"%s\", host = \"%s\"",
-             rpc_list[rpc_index].name, _client_connection[index].host_name);
+             rpc_list[rpc_index].name, _client_connection[idx].host_name);
       return RPC_NET_ERROR;
    }
 
@@ -9200,7 +9207,7 @@ INT rpc_call(const INT routine_id, ...)
    va_list ap, aptmp;
    char arg[8], arg_tmp[8];
    INT arg_type, transport, rpc_timeout;
-   INT i, index, status;
+   INT i, idx, status;
    INT param_size, arg_size, send_size;
    INT tid, flags;
    fd_set readfds;
@@ -9233,7 +9240,7 @@ INT rpc_call(const INT routine_id, ...)
    for (i = 0;; i++)
       if (rpc_list[i].id == routine_id || rpc_list[i].id == 0)
          break;
-   index = i;
+   idx = i;
    if (rpc_list[i].id == 0) {
       sprintf(str, "invalid rpc ID (%d)", routine_id);
       cm_msg(MERROR, "rpc_call", str);
@@ -9246,9 +9253,9 @@ INT rpc_call(const INT routine_id, ...)
    /* find out if we are on a big endian system */
    bbig = ((rpc_get_option(0, RPC_OHW_TYPE) & DRI_BIG_ENDIAN) > 0);
 
-   for (i = 0, param_ptr = nc->param; rpc_list[index].param[i].tid != 0; i++) {
-      tid = rpc_list[index].param[i].tid;
-      flags = rpc_list[index].param[i].flags;
+   for (i = 0, param_ptr = nc->param; rpc_list[idx].param[i].tid != 0; i++) {
+      tid = rpc_list[idx].param[i].tid;
+      flags = rpc_list[idx].param[i].flags;
 
       bpointer = (flags & RPC_POINTER) || (flags & RPC_OUT) ||
           (flags & RPC_FIXARRAY) || (flags & RPC_VARARRAY) ||
@@ -9303,12 +9310,12 @@ INT rpc_call(const INT routine_id, ...)
          }
 
          if (tid == TID_STRUCT || (flags & RPC_FIXARRAY))
-            arg_size = rpc_list[index].param[i].n;
+            arg_size = rpc_list[idx].param[i].n;
 
          /* always align parameter size */
          param_size = ALIGN8(arg_size);
 
-         if ((POINTER_T) param_ptr - (POINTER_T) nc + param_size > NET_BUFFER_SIZE) {
+         if ((POINTER_T) param_ptr - (POINTER_T) nc + param_size > (INT) NET_BUFFER_SIZE) {
             cm_msg(MERROR, "rpc_call",
                    "parameters (%d) too large for network buffer (%d)",
                    (POINTER_T) param_ptr - (POINTER_T) nc + param_size, NET_BUFFER_SIZE);
@@ -9373,7 +9380,7 @@ INT rpc_call(const INT routine_id, ...)
       } while (status == -1);   /* dont return if an alarm signal was cought */
 
       if (!FD_ISSET(send_sock, &readfds)) {
-         cm_msg(MERROR, "rpc_call", "rpc timeout, routine = \"%s\"", rpc_list[index].name);
+         cm_msg(MERROR, "rpc_call", "rpc timeout, routine = \"%s\"", rpc_list[idx].name);
 
          /* disconnect to avoid that the reply to this rpc_call comes at
             the next rpc_call */
@@ -9387,7 +9394,7 @@ INT rpc_call(const INT routine_id, ...)
    i = recv_tcp(send_sock, _net_send_buffer, NET_BUFFER_SIZE, 0);
 
    if (i <= 0) {
-      cm_msg(MERROR, "rpc_call", "recv_tcp() failed, routine = \"%s\"", rpc_list[index].name);
+      cm_msg(MERROR, "rpc_call", "recv_tcp() failed, routine = \"%s\"", rpc_list[idx].name);
       return RPC_NET_ERROR;
    }
 
@@ -9396,9 +9403,9 @@ INT rpc_call(const INT routine_id, ...)
 
    va_start(ap, routine_id);
 
-   for (i = 0, param_ptr = nc->param; rpc_list[index].param[i].tid != 0; i++) {
-      tid = rpc_list[index].param[i].tid;
-      flags = rpc_list[index].param[i].flags;
+   for (i = 0, param_ptr = nc->param; rpc_list[idx].param[i].tid != 0; i++) {
+      tid = rpc_list[idx].param[i].tid;
+      flags = rpc_list[idx].param[i].flags;
 
       bpointer = (flags & RPC_POINTER) || (flags & RPC_OUT) ||
           (flags & RPC_FIXARRAY) || (flags & RPC_VARARRAY) ||
@@ -9407,15 +9414,15 @@ INT rpc_call(const INT routine_id, ...)
       if (bpointer)
          arg_type = TID_ARRAY;
       else
-         arg_type = rpc_list[index].param[i].tid;
+         arg_type = rpc_list[idx].param[i].tid;
 
       if (tid == TID_FLOAT && !bpointer)
          arg_type = TID_DOUBLE;
 
       rpc_va_arg(&ap, arg_type, arg);
 
-      if (rpc_list[index].param[i].flags & RPC_OUT) {
-         tid = rpc_list[index].param[i].tid;
+      if (rpc_list[idx].param[i].flags & RPC_OUT) {
+         tid = rpc_list[idx].param[i].tid;
          arg_size = tid_size[tid];
 
          if (tid == TID_STRING || tid == TID_LINK)
@@ -9427,7 +9434,7 @@ INT rpc_call(const INT routine_id, ...)
          }
 
          if (tid == TID_STRUCT || (flags & RPC_FIXARRAY))
-            arg_size = rpc_list[index].param[i].n;
+            arg_size = rpc_list[idx].param[i].n;
 
          /* return parameters are always pointers */
          if (*((char **) arg))
@@ -9497,7 +9504,7 @@ INT rpc_send_event(INT buffer_handle, void *source, INT buf_size, INT async_flag
    aligned_buf_size = ALIGN8(buf_size);
    _rpc_sock = mode == 0 ? _server_connection.send_sock : _server_connection.event_sock;
 
-   if (aligned_buf_size != (INT) ALIGN8(((EVENT_HEADER *) source)->data_size + sizeof(EVENT_HEADER))) {
+   if ((INT)aligned_buf_size != (INT) (ALIGN8(((EVENT_HEADER *) source)->data_size + sizeof(EVENT_HEADER)))) {
       cm_msg(MERROR, "rpc_send_event", "event size mismatch");
       return BM_INVALID_PARAM;
    }
@@ -9727,7 +9734,7 @@ typedef struct {
 static TR_FIFO tr_fifo[10];
 static int trf_wp, trf_rp;
 
-static INT rpc_transition_dispatch(INT index, void *prpc_param[])
+static INT rpc_transition_dispatch(INT idx, void *prpc_param[])
 /********************************************************************\
 
   Routine: rpc_transition_dispatch
@@ -9736,7 +9743,7 @@ static INT rpc_transition_dispatch(INT index, void *prpc_param[])
            a transition occured. Internal use only.
 
   Input:
-    INT    index            RPC function ID
+    INT    idx              RPC function ID
     void   *prpc_param      RPC parameters
 
   Output:
@@ -9752,7 +9759,7 @@ static INT rpc_transition_dispatch(INT index, void *prpc_param[])
    /* erase error string */
    *(CSTRING(2)) = 0;
 
-   if (index == RPC_RC_TRANSITION) {
+   if (idx == RPC_RC_TRANSITION) {
       for (i = 0; i < MAX_TRANSITIONS; i++)
          if (_trans_table[i].transition == CINT(0) && _trans_table[i].sequence_number == CINT(4))
             break;
@@ -9858,7 +9865,7 @@ void debug_dump(unsigned char *p, int size)
 #endif
 
 /********************************************************************/
-INT recv_tcp_server(INT index, char *buffer, DWORD buffer_size, INT flags, INT * remaining)
+INT recv_tcp_server(INT idx, char *buffer, DWORD buffer_size, INT flags, INT * remaining)
 /********************************************************************\
 
   Routine: recv_tcp_server
@@ -9872,7 +9879,7 @@ INT recv_tcp_server(INT index, char *buffer, DWORD buffer_size, INT flags, INT *
            Clients should call recv_tcp instead.
 
   Input:
-    INT   index              Index of server connection
+    INT   idx                Index of server connection
     DWORD buffer_size        Size of the buffer in bytes.
     INT   flags              Flags passed to recv()
     INT   convert_flags      Convert flags needed for big/little
@@ -9894,7 +9901,7 @@ INT recv_tcp_server(INT index, char *buffer, DWORD buffer_size, INT flags, INT *
    INT copied, status;
    INT sock;
 
-   sock = _server_acception[index].recv_sock;
+   sock = _server_acception[idx].recv_sock;
 
    if (flags & MSG_PEEK) {
       status = recv(sock, buffer, buffer_size, flags);
@@ -9904,18 +9911,18 @@ INT recv_tcp_server(INT index, char *buffer, DWORD buffer_size, INT flags, INT *
       return status;
    }
 
-   if (!_server_acception[index].net_buffer) {
+   if (!_server_acception[idx].net_buffer) {
       if (rpc_get_server_option(RPC_OSERVER_TYPE) != ST_REMOTE)
-         _server_acception[index].net_buffer_size = NET_TCP_SIZE;
+         _server_acception[idx].net_buffer_size = NET_TCP_SIZE;
       else
-         _server_acception[index].net_buffer_size = NET_BUFFER_SIZE;
+         _server_acception[idx].net_buffer_size = NET_BUFFER_SIZE;
 
-      _server_acception[index].net_buffer = (char *) M_MALLOC(_server_acception[index].net_buffer_size);
-      _server_acception[index].write_ptr = 0;
-      _server_acception[index].read_ptr = 0;
-      _server_acception[index].misalign = 0;
+      _server_acception[idx].net_buffer = (char *) M_MALLOC(_server_acception[idx].net_buffer_size);
+      _server_acception[idx].write_ptr = 0;
+      _server_acception[idx].read_ptr = 0;
+      _server_acception[idx].misalign = 0;
    }
-   if (!_server_acception[index].net_buffer) {
+   if (!_server_acception[idx].net_buffer) {
       cm_msg(MERROR, "recv_tcp_server", "not enough memory to allocate network buffer");
       return -1;
    }
@@ -9928,10 +9935,10 @@ INT recv_tcp_server(INT index, char *buffer, DWORD buffer_size, INT flags, INT *
    copied = 0;
    param_size = -1;
 
-   write_ptr = _server_acception[index].write_ptr;
-   read_ptr = _server_acception[index].read_ptr;
-   misalign = _server_acception[index].misalign;
-   net_buffer = _server_acception[index].net_buffer;
+   write_ptr = _server_acception[idx].write_ptr;
+   read_ptr = _server_acception[idx].read_ptr;
+   misalign = _server_acception[idx].misalign;
+   net_buffer = _server_acception[idx].net_buffer;
 
    do {
       if (write_ptr - read_ptr >= (INT) sizeof(NET_COMMAND_HEADER) - copied) {
@@ -9945,14 +9952,14 @@ INT recv_tcp_server(INT index, char *buffer, DWORD buffer_size, INT flags, INT *
 
             param_size = (INT) nc->header.param_size;
 
-            if (_server_acception[index].convert_flags)
-               rpc_convert_single(&param_size, TID_DWORD, 0, _server_acception[index].convert_flags);
+            if (_server_acception[idx].convert_flags)
+               rpc_convert_single(&param_size, TID_DWORD, 0, _server_acception[idx].convert_flags);
          }
 
          /* check if parameters fit in buffer */
          if (buffer_size < param_size + sizeof(NET_COMMAND_HEADER)) {
             cm_msg(MERROR, "recv_tcp_server", "parameters too large for network buffer");
-            _server_acception[index].read_ptr = _server_acception[index].write_ptr = 0;
+            _server_acception[idx].read_ptr = _server_acception[idx].write_ptr = 0;
             return -1;
          }
 
@@ -9971,12 +9978,12 @@ INT recv_tcp_server(INT index, char *buffer, DWORD buffer_size, INT flags, INT *
       }
 #ifdef OS_UNIX
       do {
-         write_ptr = recv(sock, net_buffer + misalign, _server_acception[index].net_buffer_size - 8, flags);
+         write_ptr = recv(sock, net_buffer + misalign, _server_acception[idx].net_buffer_size - 8, flags);
 
          /* don't return if an alarm signal was cought */
       } while (write_ptr == -1 && errno == EINTR);
 #else
-      write_ptr = recv(sock, net_buffer + misalign, _server_acception[index].net_buffer_size - 8, flags);
+      write_ptr = recv(sock, net_buffer + misalign, _server_acception[idx].net_buffer_size - 8, flags);
 #endif
 
       /* abort if connection broken */
@@ -10009,9 +10016,9 @@ INT recv_tcp_server(INT index, char *buffer, DWORD buffer_size, INT flags, INT *
          *remaining = write_ptr - read_ptr;
    }
 
-   _server_acception[index].write_ptr = write_ptr;
-   _server_acception[index].read_ptr = read_ptr;
-   _server_acception[index].misalign = misalign;
+   _server_acception[idx].write_ptr = write_ptr;
+   _server_acception[idx].read_ptr = read_ptr;
+   _server_acception[idx].misalign = misalign;
 
    return size + copied;
 }
@@ -10037,19 +10044,19 @@ INT recv_tcp_check(int sock)
 
 \********************************************************************/
 {
-   INT index;
+   INT idx;
 
    /* figure out to which connection socket belongs */
-   for (index = 0; index < MAX_RPC_CONNECTION; index++)
-      if (_server_acception[index].recv_sock == sock)
+   for (idx = 0; idx < MAX_RPC_CONNECTION; idx++)
+      if (_server_acception[idx].recv_sock == sock)
          break;
 
-   return _server_acception[index].write_ptr - _server_acception[index].read_ptr;
+   return _server_acception[idx].write_ptr - _server_acception[idx].read_ptr;
 }
 
 
 /********************************************************************/
-INT recv_event_server(INT index, char *buffer, DWORD buffer_size, INT flags, INT * remaining)
+INT recv_event_server(INT idx, char *buffer, DWORD buffer_size, INT flags, INT * remaining)
 /********************************************************************\
 
   Routine: recv_event_server
@@ -10064,7 +10071,7 @@ INT recv_event_server(INT index, char *buffer, DWORD buffer_size, INT flags, INT
            Clients should call recv_tcp instead.
 
   Input:
-    INT   index              Index of server connection
+    INT   idx                Index of server connection
     DWORD buffer_size        Size of the buffer in bytes.
     INT   flags              Flags passed to recv()
     INT   convert_flags      Convert flags needed for big/little
@@ -10087,7 +10094,7 @@ INT recv_event_server(INT index, char *buffer, DWORD buffer_size, INT flags, INT
    INT sock;
    RPC_SERVER_ACCEPTION *psa;
 
-   psa = &_server_acception[index];
+   psa = &_server_acception[idx];
    sock = psa->event_sock;
 
    if (flags & MSG_PEEK) {
@@ -10245,14 +10252,14 @@ INT recv_event_check(int sock)
 
 \********************************************************************/
 {
-   INT index;
+   INT idx;
 
    /* figure out to which connection socket belongs */
-   for (index = 0; index < MAX_RPC_CONNECTION; index++)
-      if (_server_acception[index].event_sock == sock)
+   for (idx = 0; idx < MAX_RPC_CONNECTION; idx++)
+      if (_server_acception[idx].event_sock == sock)
          break;
 
-   return _server_acception[index].ev_write_ptr - _server_acception[index].ev_read_ptr;
+   return _server_acception[idx].ev_write_ptr - _server_acception[idx].ev_read_ptr;
 }
 
 
@@ -10408,7 +10415,7 @@ INT rpc_execute(INT sock, char *buffer, INT convert_flags)
 
 \********************************************************************/
 {
-   INT i, index, routine_id, status;
+   INT i, idx, routine_id, status;
    char *in_param_ptr, *out_param_ptr, *last_param_ptr;
    INT tid, flags;
    NET_COMMAND *nc_in, *nc_out;
@@ -10442,7 +10449,7 @@ INT rpc_execute(INT sock, char *buffer, INT convert_flags)
    for (i = 0;; i++)
       if (rpc_list[i].id == 0 || rpc_list[i].id == routine_id)
          break;
-   index = i;
+   idx = i;
    if (rpc_list[i].id == 0) {
       cm_msg(MERROR, "rpc_execute", "Invalid rpc ID (%d)", routine_id);
       M_FREE(return_buffer);
@@ -10452,11 +10459,11 @@ INT rpc_execute(INT sock, char *buffer, INT convert_flags)
    in_param_ptr = nc_in->param;
    out_param_ptr = nc_out->param;
 
-   sprintf(debug_line, "%s(", rpc_list[index].name);
+   sprintf(debug_line, "%s(", rpc_list[idx].name);
 
-   for (i = 0; rpc_list[index].param[i].tid != 0; i++) {
-      tid = rpc_list[index].param[i].tid;
-      flags = rpc_list[index].param[i].flags;
+   for (i = 0; rpc_list[idx].param[i].tid != 0; i++) {
+      tid = rpc_list[idx].param[i].tid;
+      flags = rpc_list[idx].param[i].flags;
 
       if (flags & RPC_IN) {
          param_size = ALIGN8(tid_size[tid]);
@@ -10475,7 +10482,7 @@ INT rpc_execute(INT sock, char *buffer, INT convert_flags)
          }
 
          if (tid == TID_STRUCT)
-            param_size = ALIGN8(rpc_list[index].param[i].n);
+            param_size = ALIGN8(rpc_list[idx].param[i].n);
 
          prpc_param[i] = in_param_ptr;
 
@@ -10485,11 +10492,11 @@ INT rpc_execute(INT sock, char *buffer, INT convert_flags)
                rpc_convert_data(in_param_ptr, tid, flags, param_size, convert_flags);
             else
                rpc_convert_data(in_param_ptr, tid, flags,
-                                rpc_list[index].param[i].n * tid_size[tid], convert_flags);
+                                rpc_list[idx].param[i].n * tid_size[tid], convert_flags);
          }
 
-         db_sprintf(str, in_param_ptr, param_size, 0, rpc_list[index].param[i].tid);
-         if (rpc_list[index].param[i].tid == TID_STRING) {
+         db_sprintf(str, in_param_ptr, param_size, 0, rpc_list[idx].param[i].tid);
+         if (rpc_list[idx].param[i].tid == TID_STRING) {
             /* check for long strings (db_create_record...) */
             if (strlen(debug_line) + strlen(str) + 2 < sizeof(debug_line)) {
                strcat(debug_line, "\"");
@@ -10522,10 +10529,10 @@ INT rpc_execute(INT sock, char *buffer, INT convert_flags)
             param_size += max_size;
          }
 
-         if (rpc_list[index].param[i].tid == TID_STRUCT)
-            param_size = ALIGN8(rpc_list[index].param[i].n);
+         if (rpc_list[idx].param[i].tid == TID_STRUCT)
+            param_size = ALIGN8(rpc_list[idx].param[i].n);
 
-         if ((POINTER_T) out_param_ptr - (POINTER_T) nc_out + param_size > NET_BUFFER_SIZE) {
+         if ((POINTER_T) out_param_ptr - (POINTER_T) nc_out + param_size > (INT) NET_BUFFER_SIZE) {
             cm_msg(MERROR, "rpc_execute",
                    "return parameters (%d) too large for network buffer (%d)",
                    (POINTER_T) out_param_ptr - (POINTER_T) nc_out + param_size, NET_BUFFER_SIZE);
@@ -10534,7 +10541,7 @@ INT rpc_execute(INT sock, char *buffer, INT convert_flags)
          }
 
          /* if parameter goes both directions, copy input to output */
-         if (rpc_list[index].param[i].flags & RPC_IN)
+         if (rpc_list[idx].param[i].flags & RPC_IN)
             memcpy(out_param_ptr, prpc_param[i], param_size);
 
          if (_debug_print && !(flags & RPC_IN))
@@ -10544,7 +10551,7 @@ INT rpc_execute(INT sock, char *buffer, INT convert_flags)
          out_param_ptr += param_size;
       }
 
-      if (rpc_list[index].param[i + 1].tid)
+      if (rpc_list[idx].param[i + 1].tid)
          strcat(debug_line, ", ");
    }
 
@@ -10556,8 +10563,8 @@ INT rpc_execute(INT sock, char *buffer, INT convert_flags)
   /*********************************\
   *   call dispatch function        *
   \*********************************/
-   if (rpc_list[index].dispatch)
-      status = rpc_list[index].dispatch(routine_id, prpc_param);
+   if (rpc_list[idx].dispatch)
+      status = rpc_list[idx].dispatch(routine_id, prpc_param);
    else
       status = RPC_INVALID_ID;
 
@@ -10589,10 +10596,10 @@ INT rpc_execute(INT sock, char *buffer, INT convert_flags)
 
    /* compress variable length arrays */
    out_param_ptr = nc_out->param;
-   for (i = 0; rpc_list[index].param[i].tid != 0; i++)
-      if (rpc_list[index].param[i].flags & RPC_OUT) {
-         tid = rpc_list[index].param[i].tid;
-         flags = rpc_list[index].param[i].flags;
+   for (i = 0; rpc_list[idx].param[i].tid != 0; i++)
+      if (rpc_list[idx].param[i].flags & RPC_OUT) {
+         tid = rpc_list[idx].param[i].tid;
+         flags = rpc_list[idx].param[i].flags;
          param_size = ALIGN8(tid_size[tid]);
 
          if (tid == TID_STRING) {
@@ -10628,17 +10635,17 @@ INT rpc_execute(INT sock, char *buffer, INT convert_flags)
          }
 
          if (tid == TID_STRUCT)
-            param_size = ALIGN8(rpc_list[index].param[i].n);
+            param_size = ALIGN8(rpc_list[idx].param[i].n);
 
          /* convert data format */
          if (convert_flags) {
             if (flags & RPC_VARARRAY)
                rpc_convert_data(out_param_ptr, tid,
-                                rpc_list[index].param[i].flags | RPC_OUTGOING, param_size, convert_flags);
+                                rpc_list[idx].param[i].flags | RPC_OUTGOING, param_size, convert_flags);
             else
                rpc_convert_data(out_param_ptr, tid,
-                                rpc_list[index].param[i].flags | RPC_OUTGOING,
-                                rpc_list[index].param[i].n * tid_size[tid], convert_flags);
+                                rpc_list[idx].param[i].flags | RPC_OUTGOING,
+                                rpc_list[idx].param[i].n * tid_size[tid], convert_flags);
          }
 
          out_param_ptr += param_size;
@@ -10724,7 +10731,7 @@ INT rpc_execute_ascii(INT sock, char *buffer)
 #define ASCII_BUFFER_SIZE 64500
 #define N_APARAM           1024
 
-   INT i, j, index, status, index_in;
+   INT i, j, idx, status, index_in;
    char *in_param_ptr, *out_param_ptr, *last_param_ptr;
    INT routine_id, tid, flags, array_tid, n_param;
    INT param_size, item_size, num_values;
@@ -10766,7 +10773,7 @@ INT rpc_execute_ascii(INT sock, char *buffer)
    for (i = 0;; i++)
       if (rpc_list[i].id == 0 || strcmp(arpc_param[0], rpc_list[i].name) == 0)
          break;
-   index = i;
+   idx = i;
    routine_id = rpc_list[i].id;
    if (rpc_list[i].id == 0) {
       cm_msg(MERROR, "rpc_execute", "Invalid rpc name (%s)", arpc_param[0]);
@@ -10777,11 +10784,11 @@ INT rpc_execute_ascii(INT sock, char *buffer)
    out_param_ptr = buffer2;
    index_in = 1;
 
-   sprintf(debug_line, "%s(", rpc_list[index].name);
+   sprintf(debug_line, "%s(", rpc_list[idx].name);
 
-   for (i = 0; rpc_list[index].param[i].tid != 0; i++) {
-      tid = rpc_list[index].param[i].tid;
-      flags = rpc_list[index].param[i].flags;
+   for (i = 0; rpc_list[idx].param[i].tid != 0; i++) {
+      tid = rpc_list[idx].param[i].tid;
+      flags = rpc_list[idx].param[i].flags;
 
       if (flags & RPC_IN) {
          if (flags & RPC_VARARRAY) {
@@ -10804,12 +10811,12 @@ INT rpc_execute_ascii(INT sock, char *buffer)
 
             /*
                if (tid == TID_STRUCT)
-               param_size = ALIGN8( rpc_list[index].param[i].n );
+               param_size = ALIGN8( rpc_list[idx].param[i].n );
              */
             prpc_param[i] = in_param_ptr;
 
-            db_sprintf(str, in_param_ptr, param_size, 0, rpc_list[index].param[i].tid);
-            if (rpc_list[index].param[i].tid == TID_STRING) {
+            db_sprintf(str, in_param_ptr, param_size, 0, rpc_list[idx].param[i].tid);
+            if (rpc_list[idx].param[i].tid == TID_STRING) {
                /* check for long strings (db_create_record...) */
                if (strlen(debug_line) + strlen(str) + 2 < sizeof(debug_line)) {
                   strcat(debug_line, "\"");
@@ -10841,8 +10848,8 @@ INT rpc_execute_ascii(INT sock, char *buffer)
          }
 
 /*
-      if (rpc_list[index].param[i].tid == TID_STRUCT)
-        param_size = ALIGN8( rpc_list[index].param[i].n );
+      if (rpc_list[idx].param[i].tid == TID_STRUCT)
+        param_size = ALIGN8( rpc_list[idx].param[i].n );
 */
          if ((POINTER_T) out_param_ptr - (POINTER_T) buffer2 + param_size > ASCII_BUFFER_SIZE) {
             cm_msg(MERROR, "rpc_execute",
@@ -10852,7 +10859,7 @@ INT rpc_execute_ascii(INT sock, char *buffer)
          }
 
          /* if parameter goes both directions, copy input to output */
-         if (rpc_list[index].param[i].flags & RPC_IN)
+         if (rpc_list[idx].param[i].flags & RPC_IN)
             memcpy(out_param_ptr, prpc_param[i], param_size);
 
          if (!(flags & RPC_IN))
@@ -10862,7 +10869,7 @@ INT rpc_execute_ascii(INT sock, char *buffer)
          out_param_ptr += param_size;
       }
 
-      if (rpc_list[index].param[i + 1].tid)
+      if (rpc_list[idx].param[i + 1].tid)
          strcat(debug_line, ", ");
    }
 
@@ -10875,8 +10882,8 @@ INT rpc_execute_ascii(INT sock, char *buffer)
    *   call dispatch function        *
    \*********************************/
 
-   if (rpc_list[index].dispatch)
-      status = rpc_list[index].dispatch(routine_id, prpc_param);
+   if (rpc_list[idx].dispatch)
+      status = rpc_list[idx].dispatch(routine_id, prpc_param);
    else
       status = RPC_INVALID_ID;
 
@@ -10897,12 +10904,12 @@ INT rpc_execute_ascii(INT sock, char *buffer)
    out_param_ptr += strlen(out_param_ptr);
 
    /* convert return parameters */
-   for (i = 0; rpc_list[index].param[i].tid != 0; i++)
-      if (rpc_list[index].param[i].flags & RPC_OUT) {
+   for (i = 0; rpc_list[idx].param[i].tid != 0; i++)
+      if (rpc_list[idx].param[i].flags & RPC_OUT) {
          *out_param_ptr++ = '&';
 
-         tid = rpc_list[index].param[i].tid;
-         flags = rpc_list[index].param[i].flags;
+         tid = rpc_list[idx].param[i].tid;
+         flags = rpc_list[idx].param[i].flags;
          param_size = ALIGN8(tid_size[tid]);
 
          if (tid == TID_STRING && !(flags & RPC_VARARRAY)) {
@@ -10911,7 +10918,7 @@ INT rpc_execute_ascii(INT sock, char *buffer)
          }
 
          else if (flags & RPC_VARARRAY) {
-            if (rpc_list[index].id == RPC_BM_RECEIVE_EVENT) {
+            if (rpc_list[idx].id == RPC_BM_RECEIVE_EVENT) {
                param_size = *((INT *) prpc_param[i + 1]);
                /* write number of bytes to output */
                sprintf(out_param_ptr, "%d", param_size);
@@ -10920,15 +10927,15 @@ INT rpc_execute_ascii(INT sock, char *buffer)
                out_param_ptr += param_size;
                *out_param_ptr = 0;
             } else {
-               if (rpc_list[index].id == RPC_DB_GET_DATA1) {
+               if (rpc_list[idx].id == RPC_DB_GET_DATA1) {
                   param_size = *((INT *) prpc_param[i + 1]);
                   array_tid = *((INT *) prpc_param[i + 2]);
                   num_values = *((INT *) prpc_param[i + 3]);
-               } else if (rpc_list[index].id == RPC_DB_GET_DATA_INDEX) {
+               } else if (rpc_list[idx].id == RPC_DB_GET_DATA_INDEX) {
                   param_size = *((INT *) prpc_param[i + 1]);
                   array_tid = *((INT *) prpc_param[i + 3]);
                   num_values = 1;
-               } else if (rpc_list[index].id == RPC_HS_READ) {
+               } else if (rpc_list[idx].id == RPC_HS_READ) {
                   param_size = *((INT *) prpc_param[i + 1]);
                   if (i == 6) {
                      array_tid = TID_DWORD;
@@ -10968,7 +10975,7 @@ INT rpc_execute_ascii(INT sock, char *buffer)
 
 /*
       else if (tid == TID_STRUCT)
-        param_size = ALIGN8( rpc_list[index].param[i].n );
+        param_size = ALIGN8( rpc_list[idx].param[i].n );
 */
          else
             db_sprintf(out_param_ptr, prpc_param[i], param_size, 0, tid);
@@ -11035,7 +11042,7 @@ INT rpc_server_accept(int lsock)
 
 \********************************************************************/
 {
-   INT index, i;
+   INT idx, i;
    unsigned int size;
    int status;
    char command;
@@ -11117,11 +11124,11 @@ INT rpc_server_accept(int lsock)
 	   ptr++;
 
 	 i = 0;
-	 for (; *ptr!=0 && *ptr!=' ' && i<sizeof(version)-1; )
+	 for (; *ptr!=0 && *ptr!=' ' && i<(int)sizeof(version)-1; )
 	   version[i++] = *ptr++;
 
 	 // ensure that we do not overwrite buffer "version"
-	 assert(i<sizeof(version));
+	 assert(i<(int)sizeof(version));
 	 version[i] = 0;
 
 	 // skip wjatever is left from the "version" string
@@ -11132,11 +11139,11 @@ INT rpc_server_accept(int lsock)
 	   ptr++;
 
 	 i = 0;
-	 for (; *ptr!=0 && *ptr!=' ' && *ptr!='\n' && *ptr!='\r' && i<sizeof(experiment)-1; )
+	 for (; *ptr!=0 && *ptr!=' ' && *ptr!='\n' && *ptr!='\r' && i<(int)sizeof(experiment)-1; )
 	   experiment[i++] = *ptr++;
 
 	 // ensure that we do not overwrite buffer "experiment"
-	 assert(i<sizeof(experiment));
+	 assert(i<(int)sizeof(experiment));
 	 experiment[i] = 0;
 
          strlcpy(callback.experiment, experiment, NAME_LENGTH);
@@ -11190,13 +11197,13 @@ INT rpc_server_accept(int lsock)
 
             /* lookup experiment */
             if (equal_ustring(callback.experiment, "Default"))
-               index = 0;
+               idx = 0;
             else
-               for (index = 0; index < MAX_EXPERIMENT && exptab[index].name[0]; index++)
-                  if (equal_ustring(callback.experiment, exptab[index].name))
+               for (idx = 0; idx < MAX_EXPERIMENT && exptab[idx].name[0]; idx++)
+                  if (equal_ustring(callback.experiment, exptab[idx].name))
                      break;
 
-            if (index == MAX_EXPERIMENT || exptab[index].name[0] == 0) {
+            if (idx == MAX_EXPERIMENT || exptab[idx].name[0] == 0) {
                sprintf(str, "experiment \'%s\' not defined in exptab\r", callback.experiment);
                cm_msg(MERROR, "rpc_server_accept", str);
 
@@ -11205,8 +11212,8 @@ INT rpc_server_accept(int lsock)
                break;
             }
 
-            strlcpy(callback.directory, exptab[index].directory, MAX_STRING_LENGTH);
-            strlcpy(callback.user, exptab[index].user, NAME_LENGTH);
+            strlcpy(callback.directory, exptab[idx].directory, MAX_STRING_LENGTH);
+            strlcpy(callback.user, exptab[idx].user, NAME_LENGTH);
 
             /* create a new process */
             sprintf(host_port1_str, "%d", callback.host_port1);
@@ -11250,12 +11257,12 @@ INT rpc_server_accept(int lsock)
          }
 
          /* look for next free entry */
-         for (index = 0; index < MAX_RPC_CONNECTION; index++)
-            if (_server_acception[index].recv_sock == 0)
+         for (idx = 0; idx < MAX_RPC_CONNECTION; idx++)
+            if (_server_acception[idx].recv_sock == 0)
                break;
-         if (index == MAX_RPC_CONNECTION)
+         if (idx == MAX_RPC_CONNECTION)
             return RPC_NET_ERROR;
-         callback.index = index;
+         callback.index = idx;
 
         /*----- multi thread server ------------------------*/
          if (rpc_get_server_option(RPC_OSERVER_TYPE) == ST_MTHREAD)
@@ -11309,7 +11316,7 @@ INT rpc_client_accept(int lsock)
 
 \********************************************************************/
 {
-   INT index, i, version, status;
+   INT idx, i, version, status;
    unsigned int size;
    int sock;
    struct sockaddr_in acc_addr;
@@ -11343,10 +11350,10 @@ INT rpc_client_accept(int lsock)
    strcpy(host_name, "");
 
    /* look for next free entry */
-   for (index = 0; index < MAX_RPC_CONNECTION; index++)
-      if (_server_acception[index].recv_sock == 0)
+   for (idx = 0; idx < MAX_RPC_CONNECTION; idx++)
+      if (_server_acception[idx].recv_sock == 0)
          break;
-   if (index == MAX_RPC_CONNECTION) {
+   if (idx == MAX_RPC_CONNECTION) {
       closesocket(sock);
       return RPC_NET_ERROR;
    }
@@ -11381,15 +11388,15 @@ INT rpc_client_accept(int lsock)
       printf("rpc_client_accept: client_hw_type %d, version %d, client_name \'%s\', hostname \'%s\'\n", client_hw_type, version, client_program, host_name);
 
    /* save information in _server_acception structure */
-   _server_acception[index].recv_sock = sock;
-   _server_acception[index].send_sock = 0;
-   _server_acception[index].event_sock = 0;
-   _server_acception[index].remote_hw_type = client_hw_type;
-   strcpy(_server_acception[index].host_name, host_name);
-   strcpy(_server_acception[index].prog_name, client_program);
-   _server_acception[index].tid = ss_gettid();
-   _server_acception[index].last_activity = ss_millitime();
-   _server_acception[index].watchdog_timeout = 0;
+   _server_acception[idx].recv_sock = sock;
+   _server_acception[idx].send_sock = 0;
+   _server_acception[idx].event_sock = 0;
+   _server_acception[idx].remote_hw_type = client_hw_type;
+   strcpy(_server_acception[idx].host_name, host_name);
+   strcpy(_server_acception[idx].prog_name, client_program);
+   _server_acception[idx].tid = ss_gettid();
+   _server_acception[idx].last_activity = ss_millitime();
+   _server_acception[idx].watchdog_timeout = 0;
 
    /* send my own computer id */
    hw_type = rpc_get_option(0, RPC_OHW_TYPE);
@@ -11398,7 +11405,7 @@ INT rpc_client_accept(int lsock)
    if (status != (INT) strlen(str) + 1)
       return RPC_NET_ERROR;
 
-   rpc_set_server_acception(index + 1);
+   rpc_set_server_acception(idx + 1);
    rpc_calc_convert_flags(hw_type, client_hw_type, &convert_flags);
    rpc_set_server_option(RPC_CONVERT_FLAGS, convert_flags);
 
@@ -11429,7 +11436,7 @@ INT rpc_server_callback(struct callback_addr * pcallback)
 
 \********************************************************************/
 {
-   INT index, status;
+   INT idx, status;
    int recv_sock, send_sock, event_sock;
    struct sockaddr_in bind_addr;
    struct hostent *phe;
@@ -11444,7 +11451,7 @@ INT rpc_server_callback(struct callback_addr * pcallback)
 
    /* copy callback information */
    memcpy(&callback, pcallback, sizeof(callback));
-   index = callback.index;
+   idx = callback.index;
 
    /* create new sockets for TCP */
    recv_sock = socket(AF_INET, SOCK_STREAM, 0);
@@ -11563,22 +11570,22 @@ INT rpc_server_callback(struct callback_addr * pcallback)
 #endif
 
    /* save information in _server_acception structure */
-   _server_acception[index].recv_sock = recv_sock;
-   _server_acception[index].send_sock = send_sock;
-   _server_acception[index].event_sock = event_sock;
-   _server_acception[index].remote_hw_type = client_hw_type;
-   strcpy(_server_acception[index].host_name, host_name);
-   strcpy(_server_acception[index].prog_name, client_program);
-   _server_acception[index].tid = ss_gettid();
-   _server_acception[index].last_activity = ss_millitime();
-   _server_acception[index].watchdog_timeout = 0;
+   _server_acception[idx].recv_sock = recv_sock;
+   _server_acception[idx].send_sock = send_sock;
+   _server_acception[idx].event_sock = event_sock;
+   _server_acception[idx].remote_hw_type = client_hw_type;
+   strcpy(_server_acception[idx].host_name, host_name);
+   strcpy(_server_acception[idx].prog_name, client_program);
+   _server_acception[idx].tid = ss_gettid();
+   _server_acception[idx].last_activity = ss_millitime();
+   _server_acception[idx].watchdog_timeout = 0;
 
    /* send my own computer id */
    hw_type = rpc_get_option(0, RPC_OHW_TYPE);
    sprintf(str, "%d", hw_type);
    send(recv_sock, str, strlen(str) + 1, 0);
 
-   rpc_set_server_acception(index + 1);
+   rpc_set_server_acception(idx + 1);
    rpc_calc_convert_flags(hw_type, client_hw_type, &convert_flags);
    rpc_set_server_option(RPC_CONVERT_FLAGS, convert_flags);
 
@@ -11587,7 +11594,7 @@ INT rpc_server_callback(struct callback_addr * pcallback)
 
    if (rpc_get_server_option(RPC_OSERVER_TYPE) != ST_REMOTE)
       rpc_debug_printf("Connection to %s:%s established\n",
-                       _server_acception[index].host_name, _server_acception[index].prog_name);
+                       _server_acception[idx].host_name, _server_acception[idx].prog_name);
 
    return RPC_SUCCESS;
 
@@ -11659,7 +11666,7 @@ INT rpc_server_thread(void *pointer)
 
 
 /********************************************************************/
-INT rpc_server_receive(INT index, int sock, BOOL check)
+INT rpc_server_receive(INT idx, int sock, BOOL check)
 /********************************************************************\
 
   Routine: rpc_server_receive
@@ -11668,7 +11675,7 @@ INT rpc_server_receive(INT index, int sock, BOOL check)
            if client has broken TCP pipe.
 
   Input:
-    INT    index            Index to _server_acception structure in-
+    INT    idx              Index to _server_acception structure in-
                             dicating which connection got data.
     int    sock             Socket which got data
     BOOL   check            If TRUE, only check if connection is
@@ -11719,13 +11726,13 @@ INT rpc_server_receive(INT index, int sock, BOOL check)
    remaining = 0;
 
    /* receive command */
-   if (sock == _server_acception[index].recv_sock) {
+   if (sock == _server_acception[idx].recv_sock) {
       do {
-         if (_server_acception[index].remote_hw_type == DR_ASCII)
-            n_received = recv_string(_server_acception[index].recv_sock, _net_recv_buffer,
+         if (_server_acception[idx].remote_hw_type == DR_ASCII)
+            n_received = recv_string(_server_acception[idx].recv_sock, _net_recv_buffer,
                                      NET_BUFFER_SIZE, 10000);
          else
-            n_received = recv_tcp_server(index, _net_recv_buffer, NET_BUFFER_SIZE, 0, &remaining);
+            n_received = recv_tcp_server(idx, _net_recv_buffer, NET_BUFFER_SIZE, 0, &remaining);
 
          if (n_received <= 0) {
             status = SS_ABORT;
@@ -11733,13 +11740,13 @@ INT rpc_server_receive(INT index, int sock, BOOL check)
             goto error;
          }
 
-         rpc_set_server_acception(index + 1);
+         rpc_set_server_acception(idx + 1);
 
-         if (_server_acception[index].remote_hw_type == DR_ASCII)
-            status = rpc_execute_ascii(_server_acception[index].recv_sock, _net_recv_buffer);
+         if (_server_acception[idx].remote_hw_type == DR_ASCII)
+            status = rpc_execute_ascii(_server_acception[idx].recv_sock, _net_recv_buffer);
          else
-            status = rpc_execute(_server_acception[index].recv_sock,
-                                 _net_recv_buffer, _server_acception[index].convert_flags);
+            status = rpc_execute(_server_acception[idx].recv_sock,
+                                 _net_recv_buffer, _server_acception[idx].convert_flags);
 
          if (status == SS_ABORT) {
             cm_msg(MERROR, "rpc_server_receive", "rpc_execute() returned %d, abort", status);
@@ -11749,18 +11756,18 @@ INT rpc_server_receive(INT index, int sock, BOOL check)
          if (status == SS_EXIT || status == RPC_SHUTDOWN) {
             if (rpc_get_server_option(RPC_OSERVER_TYPE) != ST_REMOTE)
                rpc_debug_printf("Connection to %s:%s closed\n",
-                                _server_acception[index].host_name, _server_acception[index].prog_name);
+                                _server_acception[idx].host_name, _server_acception[idx].prog_name);
             goto exit;
          }
 
       } while (remaining);
    } else {
       /* receive event */
-      if (sock == _server_acception[index].event_sock) {
+      if (sock == _server_acception[idx].event_sock) {
          start_time = ss_millitime();
 
          do {
-            n_received = recv_event_server(index, _net_recv_buffer, NET_BUFFER_SIZE, 0, &remaining);
+            n_received = recv_event_server(idx, _net_recv_buffer, NET_BUFFER_SIZE, 0, &remaining);
 
             if (n_received <= 0) {
                status = SS_ABORT;
@@ -11785,11 +11792,11 @@ INT rpc_server_receive(INT index, int sock, BOOL check)
 
  error:
 
-   strcpy(str, _server_acception[index].host_name);
+   strcpy(str, _server_acception[idx].host_name);
    if (strchr(str, '.'))
       *strchr(str, '.') = 0;
    cm_msg(MTALK, "rpc_server_receive", "Program %s on host %s aborted",
-          _server_acception[index].prog_name, str);
+          _server_acception[idx].prog_name, str);
 
  exit:
 
@@ -11820,19 +11827,19 @@ INT rpc_server_receive(INT index, int sock, BOOL check)
    }
 
    /* close server connection */
-   if (_server_acception[index].recv_sock)
-      closesocket(_server_acception[index].recv_sock);
-   if (_server_acception[index].send_sock)
-      closesocket(_server_acception[index].send_sock);
-   if (_server_acception[index].event_sock)
-      closesocket(_server_acception[index].event_sock);
+   if (_server_acception[idx].recv_sock)
+      closesocket(_server_acception[idx].recv_sock);
+   if (_server_acception[idx].send_sock)
+      closesocket(_server_acception[idx].send_sock);
+   if (_server_acception[idx].event_sock)
+      closesocket(_server_acception[idx].event_sock);
 
    /* free TCP cache */
-   M_FREE(_server_acception[index].net_buffer);
-   _server_acception[index].net_buffer = NULL;
+   M_FREE(_server_acception[idx].net_buffer);
+   _server_acception[idx].net_buffer = NULL;
 
    /* mark this entry as invalid */
-   memset(&_server_acception[index], 0, sizeof(RPC_SERVER_ACCEPTION));
+   memset(&_server_acception[idx], 0, sizeof(RPC_SERVER_ACCEPTION));
 
    /* signal caller a shutdonw */
    if (status == RPC_SHUTDOWN)
@@ -11925,20 +11932,20 @@ INT rpc_check_channels(void)
 
 \********************************************************************/
 {
-   INT status, index, i, convert_flags;
+   INT status, idx, i, convert_flags;
    NET_COMMAND nc;
    fd_set readfds;
    struct timeval timeout;
 
-   for (index = 0; index < MAX_RPC_CONNECTION; index++) {
-      if (_server_acception[index].recv_sock &&
-          _server_acception[index].tid == ss_gettid() &&
-          _server_acception[index].watchdog_timeout &&
-          (ss_millitime() - _server_acception[index].last_activity >
-           (DWORD) _server_acception[index].watchdog_timeout)) {
+   for (idx = 0; idx < MAX_RPC_CONNECTION; idx++) {
+      if (_server_acception[idx].recv_sock &&
+          _server_acception[idx].tid == ss_gettid() &&
+          _server_acception[idx].watchdog_timeout &&
+          (ss_millitime() - _server_acception[idx].last_activity >
+           (DWORD) _server_acception[idx].watchdog_timeout)) {
 /* printf("Send watchdog message to %s on %s\n",
-                _server_acception[index].prog_name,
-                _server_acception[index].host_name); */
+                _server_acception[idx].prog_name,
+                _server_acception[idx].host_name); */
 
          /* send a watchdog message */
          nc.header.routine_id = MSG_WATCHDOG;
@@ -11951,18 +11958,18 @@ INT rpc_check_channels(void)
          }
 
          /* send the header to the client */
-         i = send_tcp(_server_acception[index].send_sock, (char *) &nc, sizeof(NET_COMMAND_HEADER), 0);
+         i = send_tcp(_server_acception[idx].send_sock, (char *) &nc, sizeof(NET_COMMAND_HEADER), 0);
 
          if (i < 0)
             goto exit;
 
          /* make some timeout checking */
          FD_ZERO(&readfds);
-         FD_SET(_server_acception[index].send_sock, &readfds);
-         FD_SET(_server_acception[index].recv_sock, &readfds);
+         FD_SET(_server_acception[idx].send_sock, &readfds);
+         FD_SET(_server_acception[idx].recv_sock, &readfds);
 
-         timeout.tv_sec = _server_acception[index].watchdog_timeout / 1000;
-         timeout.tv_usec = (_server_acception[index].watchdog_timeout % 1000) * 1000;
+         timeout.tv_sec = _server_acception[idx].watchdog_timeout / 1000;
+         timeout.tv_usec = (_server_acception[idx].watchdog_timeout % 1000) * 1000;
 
          do {
             status = select(FD_SETSIZE, &readfds, NULL, NULL, &timeout);
@@ -11973,13 +11980,13 @@ INT rpc_check_channels(void)
 
          } while (status == -1);        /* dont return if an alarm signal was cought */
 
-         if (!FD_ISSET(_server_acception[index].send_sock, &readfds) &&
-             !FD_ISSET(_server_acception[index].recv_sock, &readfds))
+         if (!FD_ISSET(_server_acception[idx].send_sock, &readfds) &&
+             !FD_ISSET(_server_acception[idx].recv_sock, &readfds))
             goto exit;
 
          /* receive result on send socket */
-         if (FD_ISSET(_server_acception[index].send_sock, &readfds)) {
-            i = recv_tcp(_server_acception[index].send_sock, (char *) &nc, sizeof(nc), 0);
+         if (FD_ISSET(_server_acception[idx].send_sock, &readfds)) {
+            i = recv_tcp(_server_acception[idx].send_sock, (char *) &nc, sizeof(nc), 0);
             if (i <= 0)
                goto exit;
          }
@@ -11991,27 +11998,27 @@ INT rpc_check_channels(void)
  exit:
 
    cm_msg(MINFO, "rpc_check_channels", "client [%s]%s failed watchdog test after %d sec",
-          _server_acception[index].host_name,
-          _server_acception[index].prog_name, _server_acception[index].watchdog_timeout / 1000);
+          _server_acception[idx].host_name,
+          _server_acception[idx].prog_name, _server_acception[idx].watchdog_timeout / 1000);
 
    /* disconnect from experiment */
    if (rpc_get_server_option(RPC_OSERVER_TYPE) != ST_REMOTE)
       cm_disconnect_experiment();
 
    /* close server connection */
-   if (_server_acception[index].recv_sock)
-      closesocket(_server_acception[index].recv_sock);
-   if (_server_acception[index].send_sock)
-      closesocket(_server_acception[index].send_sock);
-   if (_server_acception[index].event_sock)
-      closesocket(_server_acception[index].event_sock);
+   if (_server_acception[idx].recv_sock)
+      closesocket(_server_acception[idx].recv_sock);
+   if (_server_acception[idx].send_sock)
+      closesocket(_server_acception[idx].send_sock);
+   if (_server_acception[idx].event_sock)
+      closesocket(_server_acception[idx].event_sock);
 
    /* free TCP cache */
-   M_FREE(_server_acception[index].net_buffer);
-   _server_acception[index].net_buffer = NULL;
+   M_FREE(_server_acception[idx].net_buffer);
+   _server_acception[idx].net_buffer = NULL;
 
    /* mark this entry as invalid */
-   memset(&_server_acception[index], 0, sizeof(RPC_SERVER_ACCEPTION));
+   memset(&_server_acception[idx], 0, sizeof(RPC_SERVER_ACCEPTION));
 
    return RPC_NET_ERROR;
 }
@@ -12716,7 +12723,7 @@ INT eb_free_space(void)
 
 \********************************************************************/
 {
-   INT free;
+   INT free_space;
 
    if (_event_ring_buffer == NULL) {
       cm_msg(MERROR, "eb_get_pointer", "please call eb_create_buffer first");
@@ -12724,20 +12731,20 @@ INT eb_free_space(void)
    }
 
    if (_eb_write_pointer >= _eb_read_pointer) {
-      free = _eb_size - ((POINTER_T) _eb_write_pointer - (POINTER_T) _event_ring_buffer);
+      free_space = _eb_size - ((POINTER_T) _eb_write_pointer - (POINTER_T) _event_ring_buffer);
    } else if (_eb_write_pointer >= _event_ring_buffer) {
-      free = (POINTER_T) _eb_read_pointer - (POINTER_T) _eb_write_pointer;
+      free_space = (POINTER_T) _eb_read_pointer - (POINTER_T) _eb_write_pointer;
    } else if (_eb_end_pointer == _event_ring_buffer) {
       _eb_write_pointer = _event_ring_buffer;
-      free = _eb_size;
+      free_space = _eb_size;
    } else if (_eb_read_pointer == _event_ring_buffer) {
-      free = 0;
+      free_space = 0;
    } else {
       _eb_write_pointer = _event_ring_buffer;
-      free = (POINTER_T) _eb_read_pointer - (POINTER_T) _eb_write_pointer;
+      free_space = (POINTER_T) _eb_read_pointer - (POINTER_T) _eb_write_pointer;
    }
 
-   return free;
+   return free_space;
 }
 
 
@@ -12788,12 +12795,12 @@ BOOL eb_buffer_full(void)
 
 \********************************************************************/
 {
-   INT free;
+   DWORD free_space;
 
-   free = eb_free_space();
+   free_space = eb_free_space();
 
    /* if max. event won't fit, return zero */
-   return (free < MAX_EVENT_SIZE + sizeof(EVENT_HEADER) + sizeof(INT));
+   return (free_space < MAX_EVENT_SIZE + sizeof(EVENT_HEADER) + sizeof(INT));
 }
 
 
@@ -12873,7 +12880,7 @@ INT eb_increment_pointer(INT buffer_handle, INT event_size)
              "event size (%d) exeeds maximum event size (%d)", event_size, MAX_EVENT_SIZE);
 
    if (_eb_size - ((POINTER_T) _eb_write_pointer - (POINTER_T) _event_ring_buffer) <
-       MAX_EVENT_SIZE + sizeof(EVENT_HEADER) + sizeof(INT)) {
+       (int)(MAX_EVENT_SIZE + sizeof(EVENT_HEADER) + sizeof(INT))) {
       _eb_write_pointer = _event_ring_buffer;
 
       /* avoid rp==wp */
@@ -13628,7 +13635,7 @@ INT dm_task(void *pointer)
    exit;
    return 1;
 #else
-   printf("DM_DUAL_THREAD not defined\n");
+   printf("DM_DUAL_THREAD not defined %p\n", pointer);
    return 0;
 #endif
 }
