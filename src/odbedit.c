@@ -2266,7 +2266,7 @@ void command_loop(char *host_name, char *exp_name, char *cmd, char *start_dir)
                      /* in case of error, reset run number */
                      status =
                          db_set_value(hDB, 0, "/Runinfo/Run number", &old_run_number,
-                                      size, 1, TID_INT);
+                                      sizeof(old_run_number), 1, TID_INT);
                      assert(status == SUCCESS);
 
                      printf("Error: %s\n", str);
