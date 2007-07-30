@@ -352,7 +352,7 @@ BOOL CHveditDlg::UpdateChannelDefinition()
    for (i = 0; i < m_nChannels; i++) {
       if (strchr((const char *) m_Name + i * m_nNameLength, '%')) {
          strcpy(str, (const char *) m_Name + i * m_nNameLength);
-         *strchr((const char *) str, '%') = 0;
+         *strchr(str, '%') = 0;
          j = m_ctlGroups.FindStringExact(-1, str);
          if (j == LB_ERR) {
             m_ctlGroups.AddString(str);
