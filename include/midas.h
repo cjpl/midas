@@ -682,12 +682,12 @@ Slow control device driver commands */
 #define CMD_SET_RAMPUP               CMD_SET_FIRST+3
 #define CMD_SET_RAMPDOWN             CMD_SET_FIRST+4
 #define CMD_SET_TRIP_TIME            CMD_SET_FIRST+5
-#define CMD_SET_LAST                 CMD_SET_FIRST+5 /* update this if you add new commands */
+#define CMD_SET_LAST                 CMD_SET_FIRST+99
 
 #define CMD_GET_FIRST                200 /* multithreaded get commands */
 #define CMD_GET                      CMD_GET_FIRST
 #define CMD_GET_CURRENT              CMD_GET_FIRST+1
-#define CMD_GET_LAST                 CMD_GET_FIRST+1 /* update this if you add new commands ! */
+#define CMD_GET_LAST                 CMD_GET_FIRST+99
 
 #define CMD_GET_DIRECT               300 /* direct get commands */
 #define CMD_GET_DEMAND               CMD_GET_DIRECT
@@ -696,7 +696,7 @@ Slow control device driver commands */
 #define CMD_GET_RAMPUP               CMD_GET_DIRECT+3
 #define CMD_GET_RAMPDOWN             CMD_GET_DIRECT+4
 #define CMD_GET_TRIP_TIME            CMD_GET_DIRECT+5 
-#define CMD_GET_DIRECT_LAST          CMD_GET_DIRECT+5 /* update this if you add new commands ! */
+#define CMD_GET_DIRECT_LAST          CMD_GET_DIRECT+99
 
 #define CMD_ENABLE_COMMAND       (1<<14)  /* these two commands can be used to enable/disable */
 #define CMD_DISABLE_COMMAND      (1<<15)  /* one of the other commands                        */
