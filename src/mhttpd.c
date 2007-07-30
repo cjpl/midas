@@ -7261,7 +7261,7 @@ static WORD getVariableId(const char* evname, const char* tagname)
 
       //printf("key \'%s\', evid %d (%s)\n", key.name, evid, xname);
 
-      status = db_find_key(hDB, hKey, tagname, &hKey1);
+      status = db_find_key(hDB, hKey, (char *)tagname, &hKey1);
       if (status != DB_SUCCESS)
          continue;
 
