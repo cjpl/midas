@@ -75,21 +75,21 @@ Submit an ELog entry.
 @param tag_size     Maximum size of tag.
 @return EL_SUCCESS
 */
-INT el_submit(int run, char *author, char *type, char *system, char *subject,
+INT el_submit(int run, char *author, char *type, char *syst, char *subject,
               char *text, char *reply_to, char *encoding,
               char *afilename1, char *buffer1, INT buffer_size1,
               char *afilename2, char *buffer2, INT buffer_size2,
               char *afilename3, char *buffer3, INT buffer_size3, char *tag, INT tag_size)
 {
    if (rpc_is_remote())
-      return rpc_call(RPC_EL_SUBMIT, run, author, type, system, subject,
+      return rpc_call(RPC_EL_SUBMIT, run, author, type, syst, subject,
                       text, reply_to, encoding,
                       afilename1, buffer1, buffer_size1,
                       afilename2, buffer2, buffer_size2, afilename3, buffer3, buffer_size3, tag, tag_size);
 
 #ifdef LOCAL_ROUTINES
    {
-      INT n, size, fh, status, run_number, mutex, buffer_size = 0, index, offset = 0, tail_size = 0;
+      INT n, size, fh, status, run_number, mutex, buffer_size = 0, idx, offset = 0, tail_size = 0;
       struct tm *tms = NULL;
       char afilename[256], file_name[256], afile_name[3][256], dir[256], str[256],
           start_str[80], end_str[80], last[80], date[80], thread[80], attachment[256];
@@ -125,19 +125,19 @@ INT el_submit(int run, char *author, char *type, char *system, char *subject,
          abort();
       }
 
-      for (index = 0; index < 3; index++) {
+      for (idx = 0; idx < 3; idx++) {
          /* generate filename for attachment */
-         afile_name[index][0] = file_name[0] = 0;
+         afile_name[idx][0] = file_name[0] = 0;
 
-         if (index == 0) {
+         if (idx == 0) {
             strcpy(afilename, afilename1);
             buffer = buffer1;
             buffer_size = buffer_size1;
-         } else if (index == 1) {
+         } else if (idx == 1) {
             strcpy(afilename, afilename2);
             buffer = buffer2;
             buffer_size = buffer_size2;
-         } else if (index == 2) {
+         } else if (idx == 2) {
             strcpy(afilename, afilename3);
             buffer = buffer3;
             buffer_size = buffer_size3;
@@ -178,7 +178,7 @@ INT el_submit(int run, char *author, char *type, char *system, char *subject,
                tms = localtime(&now);
 
                strcpy(str, p);
-               sprintf(afile_name[index], "%02d%02d%02d_%02d%02d%02d_%s",
+               sprintf(afile_name[idx], "%02d%02d%02d_%02d%02d%02d_%s",
                        tms->tm_year % 100, tms->tm_mon + 1, tms->tm_mday,
                        tms->tm_hour, tms->tm_min, tms->tm_sec, str);
                sprintf(file_name, "%s%02d%02d%02d_%02d%02d%02d_%s", dir,
@@ -287,7 +287,7 @@ INT el_submit(int run, char *author, char *type, char *system, char *subject,
       sprintf(message + strlen(message), "Run: %d\n", run_number);
       sprintf(message + strlen(message), "Author: %s\n", author);
       sprintf(message + strlen(message), "Type: %s\n", type);
-      sprintf(message + strlen(message), "System: %s\n", system);
+      sprintf(message + strlen(message), "System: %s\n", syst);
       sprintf(message + strlen(message), "Subject: %s\n", subject);
 
       /* keep original attachment if edit and no new attachment */
@@ -635,7 +635,7 @@ INT el_search_message(char *tag, int *fh, BOOL walk)
 
 /********************************************************************/
 INT el_retrieve(char *tag, char *date, int *run, char *author, char *type,
-                char *system, char *subject, char *text, int *textsize,
+                char *syst, char *subject, char *text, int *textsize,
                 char *orig_tag, char *reply_tag,
                 char *attachment1, char *attachment2, char *attachment3, char *encoding)
 /********************************************************************\
@@ -654,7 +654,7 @@ INT el_retrieve(char *tag, char *date, int *run, char *author, char *type,
     int    *run             Run number
     char   *author          Message author
     char   *type            Message type
-    char   *system          Message system
+    char   *syst            Message system
     char   *subject         Subject
     char   *text            Message text
     char   *orig_tag        Original message if this one is a reply
@@ -698,7 +698,7 @@ INT el_retrieve(char *tag, char *date, int *run, char *author, char *type,
 
    assert(strncmp(str, "$Start$:", 8) == 0);
    assert(size > 15);
-   assert(size < sizeof(message));
+   assert(size < (int)sizeof(message));
 
    memset(message, 0, sizeof(message));
 
@@ -716,7 +716,7 @@ INT el_retrieve(char *tag, char *date, int *run, char *author, char *type,
    el_decode(message, "Thread: ", thread, sizeof(thread));
    el_decode(message, "Author: ", author, 80);  /* size from show_elog_submit_query() */
    el_decode(message, "Type: ", type, 80);      /* size from show_elog_submit_query() */
-   el_decode(message, "System: ", system, 80);  /* size from show_elog_submit_query() */
+   el_decode(message, "System: ", syst, 80);  /* size from show_elog_submit_query() */
    el_decode(message, "Subject: ", subject, 256);       /* size from show_elog_submit_query() */
    el_decode(message, "Attachment: ", attachment_all, sizeof(attachment_all));
    el_decode(message, "Encoding: ", encoding, 80);      /* size from show_elog_submit_query() */

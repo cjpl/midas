@@ -239,28 +239,28 @@ The current type of EVID bank are:
 /**
 pevt Evt# id/msk serial run# */
 #define YBOS_EVID_BANK(__a, __b, __c,   __d,   __e) {\
-      DWORD * pbuf;\
-      ybk_create(__a, "EVID", I4_BKTYPE, &pbuf);\
-      *(pbuf)++ = (DWORD)__b;\
-      *(pbuf)++ = (DWORD)__c;\
-      *(pbuf)++ = (DWORD)__d;\
-      *(pbuf)++ = (DWORD)ss_millitime();\
-      *(pbuf)++ = (DWORD)__e;\
-      ybk_close(__a, pbuf);\
+      DWORD * _pbuf;\
+      ybk_create(__a, "EVID", I4_BKTYPE, &_pbuf);\
+      *(_pbuf)++ = (DWORD)__b;\
+      *(_pbuf)++ = (DWORD)__c;\
+      *(_pbuf)++ = (DWORD)__d;\
+      *(_pbuf)++ = (DWORD)ss_millitime();\
+      *(_pbuf)++ = (DWORD)__e;\
+      ybk_close(__a, _pbuf);\
         }
 
 /********************************************************************/
 /**
 pevt Evt# id/msk serial run# */
 #define MIDAS_EVID_BANK(__a, __b, __c,   __d,   __e) {\
-      DWORD * pbuf;\
-      bk_create(__a, "EVID", TID_DWORD, &pbuf);\
-      *(pbuf)++ = (DWORD)__b;\
-      *(pbuf)++ = (DWORD)__c;\
-      *(pbuf)++ = (DWORD)__d;\
-      *(pbuf)++ = (DWORD)ss_millitime();\
-      *(pbuf)++ = (DWORD)__e;\
-      bk_close(__a, pbuf);\
+      DWORD * _pbuf;\
+      bk_create(__a, "EVID", TID_DWORD, &_pbuf);\
+      *(_pbuf)++ = (DWORD)__b;\
+      *(_pbuf)++ = (DWORD)__c;\
+      *(_pbuf)++ = (DWORD)__d;\
+      *(_pbuf)++ = (DWORD)ss_millitime();\
+      *(_pbuf)++ = (DWORD)__e;\
+      bk_close(__a, _pbuf);\
         }
 
 /**dox***************************************************************/

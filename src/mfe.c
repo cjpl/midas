@@ -85,7 +85,7 @@ struct {
    I4_BKTYPE, TID_DWORD, 4}, {
    F4_BKTYPE, TID_FLOAT, 4}, {
    D8_BKTYPE, TID_DOUBLE, 8}, {
-   0, 0}
+   0, 0, 0}
 };
 #endif
 
@@ -103,7 +103,7 @@ volatile int stop_all_threads = 0;
 int readout_thread(void *param);
 volatile int readout_thread_active = 0;
 
-int send_event(INT index);
+int send_event(INT idx);
 int receive_trigger_event(EQUIPMENT *eq);
 void send_all_periodic_events(INT transition);
 void interrupt_routine(void);
@@ -279,8 +279,11 @@ INT tr_resume(INT rn, char *error)
 
 /*------------------------------------------------------------------*/
 
-INT manual_trigger(INT index, void *prpc_param[])
+INT manual_trigger(INT idx, void *prpc_param[])
 {
+   int i;
+
+   i = idx; /* avoid compiler warning */
    manual_trigger_event_id = CWORD(0);
    return SUCCESS;
 }
@@ -289,7 +292,7 @@ INT manual_trigger(INT index, void *prpc_param[])
 
 int sc_thread(void *info)
 {
-   DEVICE_DRIVER *device_driver = info;
+   DEVICE_DRIVER *device_drv = info;
    int i, status, cmd;
    int current_channel = 0;
    int current_priority_channel = 0;
@@ -297,29 +300,29 @@ int sc_thread(void *info)
    int *last_update;
    unsigned int current_time;
 
-   last_update = calloc(device_driver->channels, sizeof(int));
+   last_update = calloc(device_drv->channels, sizeof(int));
 
    do {
       /* read one channel from device */
       for (cmd = CMD_GET_FIRST; cmd <= CMD_GET_LAST; cmd++) {
-         status = device_driver->dd(cmd, device_driver->dd_info, current_channel, &value);
+         status = device_drv->dd(cmd, device_drv->dd_info, current_channel, &value);
 
-         ss_mutex_wait_for(device_driver->mutex, 1000);
-         device_driver->mt_buffer->channel[current_channel].array[cmd] = value;
-         device_driver->mt_buffer->status = status;
-         ss_mutex_release(device_driver->mutex);
+         ss_mutex_wait_for(device_drv->mutex, 1000);
+         device_drv->mt_buffer->channel[current_channel].array[cmd] = value;
+         device_drv->mt_buffer->status = status;
+         ss_mutex_release(device_drv->mutex);
 
          //printf("TID %d: channel %d, value %f\n", ss_gettid(), current_channel, value);
       }
 
       /* switch to next channel in next loop */
-      current_channel = (current_channel + 1) % device_driver->channels;
+      current_channel = (current_channel + 1) % device_drv->channels;
 
       /* check for priority channel */
       current_time = ss_millitime();
-      i = (current_priority_channel + 1) % device_driver->channels;
+      i = (current_priority_channel + 1) % device_drv->channels;
       while (!(current_time - last_update[i] < 10000)) {
-         i = (i + 1) % device_driver->channels;
+         i = (i + 1) % device_drv->channels;
          if (i == current_priority_channel) {
             /* non found, so finish */
             break;
@@ -331,45 +334,45 @@ int sc_thread(void *info)
          current_priority_channel = i;
 
          for (cmd = CMD_GET_FIRST; cmd <= CMD_GET_LAST; cmd++) {
-            status = device_driver->dd(cmd, device_driver->dd_info, i, &value);
+            status = device_drv->dd(cmd, device_drv->dd_info, i, &value);
 
-            ss_mutex_wait_for(device_driver->mutex, 1000);
-            device_driver->mt_buffer->channel[i].array[cmd] = value;
-            device_driver->mt_buffer->status = status;
-            ss_mutex_release(device_driver->mutex);
+            ss_mutex_wait_for(device_drv->mutex, 1000);
+            device_drv->mt_buffer->channel[i].array[cmd] = value;
+            device_drv->mt_buffer->status = status;
+            ss_mutex_release(device_drv->mutex);
          }
       }
 
       /* check if anything to write to device */
-      for (i = 0; i < device_driver->channels; i++) {
+      for (i = 0; i < device_drv->channels; i++) {
 
          for (cmd = CMD_SET_FIRST; cmd <= CMD_SET_LAST; cmd++) {
-            if (!ss_isnan(device_driver->mt_buffer->channel[i].array[cmd])) {
-               ss_mutex_wait_for(device_driver->mutex, 1000);
-               value = device_driver->mt_buffer->channel[i].array[cmd];
-               device_driver->mt_buffer->channel[i].array[cmd] = (float) ss_nan();
-               device_driver->mt_buffer->status = status;
-               ss_mutex_release(device_driver->mutex);
+            if (!ss_isnan(device_drv->mt_buffer->channel[i].array[cmd])) {
+               ss_mutex_wait_for(device_drv->mutex, 1000);
+               value = device_drv->mt_buffer->channel[i].array[cmd];
+               device_drv->mt_buffer->channel[i].array[cmd] = (float) ss_nan();
+               device_drv->mt_buffer->status = status;
+               ss_mutex_release(device_drv->mutex);
 
-               status = device_driver->dd(cmd, device_driver->dd_info, i, value);
+               status = device_drv->dd(cmd, device_drv->dd_info, i, value);
                last_update[i] = ss_millitime();
             }
          }
       }
 
-   } while (device_driver->stop_thread == 0);
+   } while (device_drv->stop_thread == 0);
 
    free(last_update);
 
    /* signal stopped thread */
-   device_driver->stop_thread = 2;
+   device_drv->stop_thread = 2;
 
    return SUCCESS;
 }
 
 /*------------------------------------------------------------------*/
 
-INT device_driver(DEVICE_DRIVER * device_driver, INT cmd, ...)
+INT device_driver(DEVICE_DRIVER * device_drv, INT cmd, ...)
 {
    va_list argptr;
    HNDLE hKey;
@@ -384,87 +387,87 @@ INT device_driver(DEVICE_DRIVER * device_driver, INT cmd, ...)
    case CMD_INIT:
       hKey = va_arg(argptr, HNDLE);
 
-      if (device_driver->flags & DF_MULTITHREAD) {
-         status = device_driver->dd(CMD_INIT, hKey, &device_driver->dd_info,
-                                    device_driver->channels, device_driver->flags,
-                                    device_driver->bd);
+      if (device_drv->flags & DF_MULTITHREAD) {
+         status = device_drv->dd(CMD_INIT, hKey, &device_drv->dd_info,
+                                    device_drv->channels, device_drv->flags,
+                                    device_drv->bd);
 
-         if (status == FE_SUCCESS && (device_driver->flags & DF_MULTITHREAD)) {
+         if (status == FE_SUCCESS && (device_drv->flags & DF_MULTITHREAD)) {
             /* create inter-thread data exchange buffers */
-            device_driver->mt_buffer = (DD_MT_BUFFER *) calloc(1, sizeof(DD_MT_BUFFER));
-            device_driver->mt_buffer->n_channels = device_driver->channels;
-            device_driver->mt_buffer->channel = (DD_MT_CHANNEL *) calloc(device_driver->channels, sizeof(DD_MT_CHANNEL));
-            assert(device_driver->mt_buffer->channel);
+            device_drv->mt_buffer = (DD_MT_BUFFER *) calloc(1, sizeof(DD_MT_BUFFER));
+            device_drv->mt_buffer->n_channels = device_drv->channels;
+            device_drv->mt_buffer->channel = (DD_MT_CHANNEL *) calloc(device_drv->channels, sizeof(DD_MT_CHANNEL));
+            assert(device_drv->mt_buffer->channel);
 
             /* set all set values to NaN */
-            for (i=0 ; i<device_driver->channels ; i++)
+            for (i=0 ; i<device_drv->channels ; i++)
                for (j=CMD_SET_FIRST ; j<=CMD_SET_LAST ; j++)
-                  device_driver->mt_buffer->channel[i].array[j] = (float)ss_nan();
+                  device_drv->mt_buffer->channel[i].array[j] = (float)ss_nan();
 
             /* get default names and demands for this driver already now */
-            for (i = 0; i < device_driver->channels; i++) {
-               device_driver->dd(CMD_GET_LABEL, device_driver->dd_info, i,
-                                 device_driver->mt_buffer->channel[i].label);
-               if (device_driver->flags & DF_PRIO_DEVICE)
-                  device_driver->dd(CMD_GET_DEMAND, device_driver->dd_info, i, 
-                                    &device_driver->mt_buffer->channel[i].array[CMD_GET_DEMAND]);
+            for (i = 0; i < device_drv->channels; i++) {
+               device_drv->dd(CMD_GET_LABEL, device_drv->dd_info, i,
+                                 device_drv->mt_buffer->channel[i].label);
+               if (device_drv->flags & DF_PRIO_DEVICE)
+                  device_drv->dd(CMD_GET_DEMAND, device_drv->dd_info, i, 
+                                    &device_drv->mt_buffer->channel[i].array[CMD_GET_DEMAND]);
             }
 
             /* create mutex */
-            sprintf(str, "DD_%s", device_driver->name);
-            status = ss_mutex_create(str, &device_driver->mutex);
+            sprintf(str, "DD_%s", device_drv->name);
+            status = ss_mutex_create(str, &device_drv->mutex);
             if (status != SS_CREATED && status != SS_SUCCESS)
                return FE_ERR_DRIVER;
             status = FE_SUCCESS;
          }
       } else {
-         status = device_driver->dd(CMD_INIT, hKey, &device_driver->dd_info,
-                                    device_driver->channels, device_driver->flags,
-                                    device_driver->bd);
+         status = device_drv->dd(CMD_INIT, hKey, &device_drv->dd_info,
+                                    device_drv->channels, device_drv->flags,
+                                    device_drv->bd);
       }
       break;
 
    case CMD_START:
-      if (device_driver->flags & DF_MULTITHREAD && device_driver->mt_buffer != NULL) {
+      if (device_drv->flags & DF_MULTITHREAD && device_drv->mt_buffer != NULL) {
          /* create dedicated thread for this device */
-         device_driver->mt_buffer->thread_id = ss_thread_create(sc_thread, device_driver);
+         device_drv->mt_buffer->thread_id = ss_thread_create(sc_thread, device_drv);
       }
       break;
 
    case CMD_STOP:
-      if (device_driver->flags & DF_MULTITHREAD && device_driver->mt_buffer != NULL) {
-         device_driver->stop_thread = 1;
+      if (device_drv->flags & DF_MULTITHREAD && device_drv->mt_buffer != NULL) {
+         device_drv->stop_thread = 1;
          /* wait for max. 10 seconds until thread has gracefully stopped */
          for (i = 0; i < 1000; i++) {
-            if (device_driver->stop_thread == 2)
+            if (device_drv->stop_thread == 2)
                break;
             ss_sleep(10);
          }
 
          /* if timeout expired, kill thread */
          if (i == 1000)
-            ss_thread_kill(device_driver->mt_buffer->thread_id);
+            ss_thread_kill(device_drv->mt_buffer->thread_id);
 
-         ss_mutex_delete(device_driver->mutex, TRUE);
-         free(device_driver->mt_buffer->channel);
-         free(device_driver->mt_buffer);
+         ss_mutex_delete(device_drv->mutex, TRUE);
+         free(device_drv->mt_buffer->channel);
+         free(device_drv->mt_buffer);
       }
       break;
 
    case CMD_EXIT:
-      status = device_driver->dd(CMD_EXIT, device_driver->dd_info);
+      status = device_drv->dd(CMD_EXIT, device_drv->dd_info);
       break;
 
    case CMD_SET_LABEL:
       channel = va_arg(argptr, INT);
       label = va_arg(argptr, char *);
-      status = device_driver->dd(CMD_SET_LABEL, device_driver->dd_info, channel, label);
+      status = device_drv->dd(CMD_SET_LABEL, device_drv->dd_info, channel, label);
       break;
 
    case CMD_GET_LABEL:
       channel = va_arg(argptr, INT);
       name = va_arg(argptr, char *);
-      status = device_driver->dd(CMD_GET_LABEL, device_driver->dd_info, channel, name);
+      status = device_drv->dd(CMD_GET_LABEL, device_drv->dd_info, channel, name);
       break;
 
    default:
@@ -474,13 +477,13 @@ INT device_driver(DEVICE_DRIVER * device_driver, INT cmd, ...)
          /* transfer data to sc_thread for SET commands */
          channel = va_arg(argptr, INT);
          value = (float) va_arg(argptr, double);        // floats are passed as double
-         if (device_driver->flags & DF_MULTITHREAD) {
-            ss_mutex_wait_for(device_driver->mutex, 1000);
-            device_driver->mt_buffer->channel[channel].array[cmd] = value;
-            status = device_driver->mt_buffer->status;
-            ss_mutex_release(device_driver->mutex);
+         if (device_drv->flags & DF_MULTITHREAD) {
+            ss_mutex_wait_for(device_drv->mutex, 1000);
+            device_drv->mt_buffer->channel[channel].array[cmd] = value;
+            status = device_drv->mt_buffer->status;
+            ss_mutex_release(device_drv->mutex);
          } else {
-            status = device_driver->dd(cmd, device_driver->dd_info, channel, value);
+            status = device_drv->dd(cmd, device_drv->dd_info, channel, value);
          }
 
       } else if (cmd >= CMD_GET_FIRST && cmd <= CMD_GET_LAST) {
@@ -488,20 +491,20 @@ INT device_driver(DEVICE_DRIVER * device_driver, INT cmd, ...)
          /* transfer data from sc_thread for GET commands */
          channel = va_arg(argptr, INT);
          pvalue = va_arg(argptr, float *);
-         if (device_driver->flags & DF_MULTITHREAD) {
-            ss_mutex_wait_for(device_driver->mutex, 1000);
-            *pvalue = device_driver->mt_buffer->channel[channel].array[cmd];
-            status = device_driver->mt_buffer->status;
-            ss_mutex_release(device_driver->mutex);
+         if (device_drv->flags & DF_MULTITHREAD) {
+            ss_mutex_wait_for(device_drv->mutex, 1000);
+            *pvalue = device_drv->mt_buffer->channel[channel].array[cmd];
+            status = device_drv->mt_buffer->status;
+            ss_mutex_release(device_drv->mutex);
          } else
-            status = device_driver->dd(cmd, device_driver->dd_info, channel, pvalue);
+            status = device_drv->dd(cmd, device_drv->dd_info, channel, pvalue);
 
       } else {
 
          /* all remaining commands which are passed directly to the device driver */
          channel = va_arg(argptr, INT);
          pvalue = va_arg(argptr, float *);
-         status = device_driver->dd(cmd, device_driver->dd_info, channel, pvalue);
+         status = device_drv->dd(cmd, device_drv->dd_info, channel, pvalue);
       }
 
       break;
@@ -515,7 +518,7 @@ INT device_driver(DEVICE_DRIVER * device_driver, INT cmd, ...)
 
 INT register_equipment(void)
 {
-   INT index, count, size, status, i, j, k, n;
+   INT idx, count, size, status, i, j, k, n;
    char str[256];
    EQUIPMENT_INFO *eq_info;
    EQUIPMENT_STATS *eq_stats;
@@ -536,26 +539,26 @@ INT register_equipment(void)
    assert(status == SUCCESS);
 
    /* scan EQUIPMENT table from FRONTEND.C */
-   for (index = 0; equipment[index].name[0]; index++) {
-      eq_info = &equipment[index].info;
-      eq_stats = &equipment[index].stats;
+   for (idx = 0; equipment[idx].name[0]; idx++) {
+      eq_info = &equipment[idx].info;
+      eq_stats = &equipment[idx].stats;
 
       if (eq_info->event_id == 0) {
-         printf("\nEvent ID 0 for %s not allowed\n", equipment[index].name);
+         printf("\nEvent ID 0 for %s not allowed\n", equipment[idx].name);
          cm_disconnect_experiment();
          ss_sleep(5000);
          exit(0);
       }
 
       /* init status */
-      equipment[index].status = FE_SUCCESS;
+      equipment[idx].status = FE_SUCCESS;
 
       /* check for event builder event */
       if (eq_info->eq_type & EQ_EB) {
 
          if (frontend_index != -1) {
             /* modify equipment name to <name>xx where xx is the frontend index */
-            sprintf(equipment[index].name + strlen(equipment[index].name), "%02d",
+            sprintf(equipment[idx].name + strlen(equipment[idx].name), "%02d",
                   frontend_index);
 
             /* modify event buffer name to <name>xx where xx is the frontend index */
@@ -563,7 +566,7 @@ INT register_equipment(void)
          }
       }
 
-      sprintf(str, "/Equipment/%s/Common", equipment[index].name);
+      sprintf(str, "/Equipment/%s/Common", equipment[idx].name);
 
       /* get last event limit from ODB */
       if (eq_info->eq_type != EQ_SLOW) {
@@ -596,11 +599,11 @@ INT register_equipment(void)
       db_open_record(hDB, hKey, eq_info, sizeof(EQUIPMENT_INFO), MODE_READ, NULL, NULL);
 
       if (equal_ustring(eq_info->format, "YBOS"))
-         equipment[index].format = FORMAT_YBOS;
+         equipment[idx].format = FORMAT_YBOS;
       else if (equal_ustring(eq_info->format, "FIXED"))
-         equipment[index].format = FORMAT_FIXED;
+         equipment[idx].format = FORMAT_FIXED;
       else                      /* default format is MIDAS */
-         equipment[index].format = FORMAT_MIDAS;
+         equipment[idx].format = FORMAT_MIDAS;
 
       gethostname(eq_info->frontend_host, sizeof(eq_info->frontend_host));
       strcpy(eq_info->frontend_name, full_frontend_name);
@@ -611,13 +614,13 @@ INT register_equipment(void)
 
       /*---- Create variables record ---------------------------------*/
 
-      sprintf(str, "/Equipment/%s/Variables", equipment[index].name);
-      if (equipment[index].event_descrip) {
-         if (equipment[index].format == FORMAT_FIXED)
-            db_check_record(hDB, 0, str, (char *) equipment[index].event_descrip, TRUE);
+      sprintf(str, "/Equipment/%s/Variables", equipment[idx].name);
+      if (equipment[idx].event_descrip) {
+         if (equipment[idx].format == FORMAT_FIXED)
+            db_check_record(hDB, 0, str, (char *) equipment[idx].event_descrip, TRUE);
          else {
             /* create bank descriptions */
-            bank_list = (BANK_LIST *) equipment[index].event_descrip;
+            bank_list = (BANK_LIST *) equipment[idx].event_descrip;
 
             for (; bank_list->name[0]; bank_list++) {
                /* mabye needed later...
@@ -626,7 +629,7 @@ INT register_equipment(void)
                 */
 
                if (bank_list->type == TID_STRUCT) {
-                  sprintf(str, "/Equipment/%s/Variables/%s", equipment[index].name,
+                  sprintf(str, "/Equipment/%s/Variables/%s", equipment[idx].name,
                           bank_list->name);
                   status =
                       db_check_record(hDB, 0, str, strcomb(bank_list->init_str), TRUE);
@@ -636,7 +639,7 @@ INT register_equipment(void)
                      ss_sleep(3000);
                   }
                } else {
-                  sprintf(str, "/Equipment/%s/Variables/%s", equipment[index].name,
+                  sprintf(str, "/Equipment/%s/Variables/%s", equipment[idx].name,
                           bank_list->name);
                   dummy = 0;
                   db_set_value(hDB, 0, str, &dummy, rpc_tid_size(bank_list->type), 1,
@@ -647,13 +650,13 @@ INT register_equipment(void)
       } else
          db_create_key(hDB, 0, str, TID_KEY);
 
-      sprintf(str, "/Equipment/%s/Variables", equipment[index].name);
+      sprintf(str, "/Equipment/%s/Variables", equipment[idx].name);
       db_find_key(hDB, 0, str, &hKey);
-      equipment[index].hkey_variables = hKey;
+      equipment[idx].hkey_variables = hKey;
 
       /*---- Create and initialize statistics tree -------------------*/
 
-      sprintf(str, "/Equipment/%s/Statistics", equipment[index].name);
+      sprintf(str, "/Equipment/%s/Statistics", equipment[idx].name);
 
       status = db_check_record(hDB, 0, str, EQUIPMENT_STATISTICS_STR, TRUE);
       if (status != DB_SUCCESS) {
@@ -690,7 +693,7 @@ INT register_equipment(void)
             frag_buffer = malloc(max_event_size_frag);
 
          if (frag_buffer == NULL) {
-            cm_msg(MERROR, "send_event",
+            cm_msg(MERROR, "register_equipment",
                   "Not enough memory to allocate buffer for fragmented events");
             return SS_NO_MEMORY;
          }
@@ -699,7 +702,7 @@ INT register_equipment(void)
       if (eq_info->buffer[0]) {
          status =
              bm_open_buffer(eq_info->buffer, 2*MAX_EVENT_SIZE,
-                            &equipment[index].buffer_handle);
+                            &equipment[idx].buffer_handle);
          if (status != BM_SUCCESS && status != BM_CREATED) {
             cm_msg(MERROR, "register_equipment",
                    "Cannot open event buffer \"%s\" size %d, bm_open_buffer() status %d", eq_info->buffer, 2*MAX_EVENT_SIZE, status);
@@ -707,9 +710,9 @@ INT register_equipment(void)
          }
 
          /* set the default buffer cache size */
-         bm_set_cache_size(equipment[index].buffer_handle, 0, SERVER_CACHE_SIZE);
+         bm_set_cache_size(equipment[idx].buffer_handle, 0, SERVER_CACHE_SIZE);
       } else
-         equipment[index].buffer_handle = 0;
+         equipment[idx].buffer_handle = 0;
 
       /*---- evaluate polling count ----------------------------------*/
 
@@ -718,11 +721,11 @@ INT register_equipment(void)
             if (eq_info->eq_type & EQ_POLLED)
                cm_msg(MERROR, "register_equipment",
                   "Equipment \"%s\" cannot be of type EQ_INTERRUPT and EQ_POLLED at the same time", 
-                  equipment[index].name);
+                  equipment[idx].name);
             else
                cm_msg(MERROR, "register_equipment",
                   "Equipment \"%s\" cannot be of type EQ_INTERRUPT and EQ_MULTITHREAD at the same time", 
-                  equipment[index].name);
+                  equipment[idx].name);
             return 0;
          }
 
@@ -736,7 +739,7 @@ INT register_equipment(void)
 
             start_time = ss_millitime();
 
-            poll_event(equipment[index].info.source, count, TRUE);
+            poll_event(equipment[idx].info.source, count, TRUE);
 
             delta_time = ss_millitime() - start_time;
 
@@ -753,7 +756,7 @@ INT register_equipment(void)
 
          } while (delta_time > eq_info->period * 1.2 || delta_time < eq_info->period * 0.8);
 
-         equipment[index].poll_count = count;
+         equipment[idx].poll_count = count;
 
          if (display_period)
             printf("OK\n");
@@ -766,19 +769,19 @@ INT register_equipment(void)
 
          for (i = 0; equipment[i].name[0]; i++)
             if (equipment[i].info.eq_type & EQ_POLLED) {
-               equipment[index].status = FE_ERR_DISABLED;
+               equipment[idx].status = FE_ERR_DISABLED;
                cm_msg(MINFO, "register_equipment",
                       "Interrupt readout cannot be combined with polled readout");
             }
 
-         if (equipment[index].status != FE_ERR_DISABLED) {
+         if (equipment[idx].status != FE_ERR_DISABLED) {
             if (eq_info->enabled) {
                if (interrupt_eq) {
-                  equipment[index].status = FE_ERR_DISABLED;
+                  equipment[idx].status = FE_ERR_DISABLED;
                   cm_msg(MINFO, "register_equipment",
                          "Defined more than one equipment with interrupt readout");
                } else {
-                  interrupt_eq = &equipment[index];
+                  interrupt_eq = &equipment[idx];
 
                   /* create ring buffer for inter-thread data transfer */
                   if (!rbh1) {
@@ -791,10 +794,10 @@ INT register_equipment(void)
                                       (POINTER_T) interrupt_routine);
                }
             } else {
-               equipment[index].status = FE_ERR_DISABLED;
+               equipment[idx].status = FE_ERR_DISABLED;
                cm_msg(MINFO, "register_equipment",
                       "Equipment %s disabled in file \"frontend.c\"",
-                      equipment[index].name);
+                      equipment[idx].name);
             }
          }
       }
@@ -806,19 +809,19 @@ INT register_equipment(void)
 
          for (i = 0; equipment[i].name[0]; i++)
             if (equipment[i].info.eq_type & EQ_POLLED) {
-               equipment[index].status = FE_ERR_DISABLED;
+               equipment[idx].status = FE_ERR_DISABLED;
                cm_msg(MINFO, "register_equipment",
                       "Multi-threaded readout cannot be combined with polled readout for equipment \'%s\'", equipment[i].name);
             }
 
-         if (equipment[index].status != FE_ERR_DISABLED) {
+         if (equipment[idx].status != FE_ERR_DISABLED) {
             if (eq_info->enabled) {
                if (multithread_eq) {
-                  equipment[index].status = FE_ERR_DISABLED;
+                  equipment[idx].status = FE_ERR_DISABLED;
                   cm_msg(MINFO, "register_equipment",
                          "Defined more than one equipment with multi-threaded readout for equipment \'%s\'", equipment[i].name);
                } else {
-                  multithread_eq = &equipment[index];
+                  multithread_eq = &equipment[idx];
 
                   /* create ring buffer for inter-thread data transfer */
                   if (!rbh1) {
@@ -831,10 +834,10 @@ INT register_equipment(void)
                   ss_thread_create(readout_thread, multithread_eq);
                }
             } else {
-               equipment[index].status = FE_ERR_DISABLED;
+               equipment[idx].status = FE_ERR_DISABLED;
                cm_msg(MINFO, "register_equipment",
                       "Equipment %s disabled in file \"frontend.c\"",
-                      equipment[index].name);
+                      equipment[idx].name);
             }
          }
       }
@@ -843,37 +846,37 @@ INT register_equipment(void)
 
       if (eq_info->eq_type & EQ_SLOW) {
          /* resolve duplicate device names */
-         for (i = 0; equipment[index].driver[i].name[0]; i++)
-            for (j = i + 1; equipment[index].driver[j].name[0]; j++)
-               if (equal_ustring(equipment[index].driver[i].name,
-                                 equipment[index].driver[j].name)) {
-                  strcpy(str, equipment[index].driver[i].name);
-                  for (k = 0, n = 0; equipment[index].driver[k].name[0]; k++)
-                     if (equal_ustring(str, equipment[index].driver[k].name))
-                        sprintf(equipment[index].driver[k].name, "%s_%d", str, n++);
+         for (i = 0; equipment[idx].driver[i].name[0]; i++)
+            for (j = i + 1; equipment[idx].driver[j].name[0]; j++)
+               if (equal_ustring(equipment[idx].driver[i].name,
+                                 equipment[idx].driver[j].name)) {
+                  strcpy(str, equipment[idx].driver[i].name);
+                  for (k = 0, n = 0; equipment[idx].driver[k].name[0]; k++)
+                     if (equal_ustring(str, equipment[idx].driver[k].name))
+                        sprintf(equipment[idx].driver[k].name, "%s_%d", str, n++);
 
                   break;
                }
 
          /* loop over equipment list and call class driver's init method */
          if (eq_info->enabled)
-            equipment[index].status = equipment[index].cd(CMD_INIT, &equipment[index]);
+            equipment[idx].status = equipment[idx].cd(CMD_INIT, &equipment[idx]);
          else {
-            equipment[index].status = FE_ERR_DISABLED;
+            equipment[idx].status = FE_ERR_DISABLED;
             cm_msg(MINFO, "register_equipment",
-                   "Equipment %s disabled in ODB", equipment[index].name);
+                   "Equipment %s disabled in ODB", equipment[idx].name);
          }
 
          /* now start threads if requested */
-         if (equipment[index].status == FE_SUCCESS)
-            equipment[index].cd(CMD_START, &equipment[index]);   /* start threads for this equipment */
+         if (equipment[idx].status == FE_SUCCESS)
+            equipment[idx].cd(CMD_START, &equipment[idx]);   /* start threads for this equipment */
 
          /* remember that we have slowcontrol equipment (needed later for scheduler) */
          slowcont_eq = TRUE;
 
          /* let user read error messages */
-         if (equipment[index].status != FE_SUCCESS && 
-             equipment[index].status != FE_ERR_DISABLED)
+         if (equipment[idx].status != FE_SUCCESS && 
+             equipment[idx].status != FE_ERR_DISABLED)
             ss_sleep(3000);
       }
 
@@ -1039,7 +1042,7 @@ void update_odb(EVENT_HEADER * pevent, HNDLE hKey, INT format)
 
 /*------------------------------------------------------------------*/
 
-int send_event(INT index)
+int send_event(INT idx)
 {
    EQUIPMENT_INFO *eq_info;
    EVENT_HEADER *pevent, *pfragment;
@@ -1048,7 +1051,7 @@ int send_event(INT index)
    INT i, status;
    DWORD sent, size;
 
-   eq_info = &equipment[index].info;
+   eq_info = &equipment[idx].info;
 
    /* check for fragmented event */
    if (eq_info->eq_type & EQ_FRAGMENTED)
@@ -1061,13 +1064,13 @@ int send_event(INT index)
    pevent->trigger_mask = eq_info->trigger_mask;
    pevent->data_size = 0;
    pevent->time_stamp = ss_time();
-   pevent->serial_number = equipment[index].serial_number++;
+   pevent->serial_number = equipment[idx].serial_number++;
 
-   equipment[index].last_called = ss_millitime();
+   equipment[idx].last_called = ss_millitime();
 
    /* call user readout routine */
-   *((EQUIPMENT **) (pevent + 1)) = &equipment[index];
-   pevent->data_size = equipment[index].readout((char *) (pevent + 1), 0);
+   *((EQUIPMENT **) (pevent + 1)) = &equipment[idx];
+   pevent->data_size = equipment[idx].readout((char *) (pevent + 1), 0);
 
    /* send event */
    if (pevent->data_size) {
@@ -1120,8 +1123,8 @@ int send_event(INT index)
             }
 
             /* send event to buffer */
-            if (equipment[index].buffer_handle) {
-               status = rpc_send_event(equipment[index].buffer_handle, pfragment,
+            if (equipment[idx].buffer_handle) {
+               status = rpc_send_event(equipment[idx].buffer_handle, pfragment,
                                        pfragment->data_size + sizeof(EVENT_HEADER), SYNC, rpc_mode);
                if (status != RPC_SUCCESS) {
                   cm_msg(MERROR, "send_event", "rpc_send_event(SYNC) error %d", status);
@@ -1133,9 +1136,9 @@ int send_event(INT index)
             }
          }
 
-         if (equipment[index].buffer_handle) {
+         if (equipment[idx].buffer_handle) {
             /* flush buffer cache on server side */
-            status = bm_flush_cache(equipment[index].buffer_handle, SYNC);
+            status = bm_flush_cache(equipment[idx].buffer_handle, SYNC);
             if (status != BM_SUCCESS) {
                cm_msg(MERROR, "send_event", "bm_flush_cache(SYNC) error %d", status);
                return status;
@@ -1151,15 +1154,15 @@ int send_event(INT index)
          }
 
          /* send event to buffer */
-         if (equipment[index].buffer_handle) {
-            status = rpc_send_event(equipment[index].buffer_handle, pevent,
+         if (equipment[idx].buffer_handle) {
+            status = rpc_send_event(equipment[idx].buffer_handle, pevent,
                                     pevent->data_size + sizeof(EVENT_HEADER), SYNC, rpc_mode);
             if (status != BM_SUCCESS) {
                cm_msg(MERROR, "send_event", "bm_send_event(SYNC) error %d", status);
                return status;
             }
             rpc_flush_event();
-            status = bm_flush_cache(equipment[index].buffer_handle, SYNC);
+            status = bm_flush_cache(equipment[idx].buffer_handle, SYNC);
             if (status != BM_SUCCESS) {
                cm_msg(MERROR, "send_event", "bm_flush_cache(SYNC) error %d", status);
                return status;
@@ -1170,18 +1173,18 @@ int send_event(INT index)
             send SLOW events since the class driver does that */
          if ((eq_info->read_on & RO_ODB) ||
              (eq_info->history > 0 && (eq_info->eq_type & ~EQ_SLOW))) {
-            update_odb(pevent, equipment[index].hkey_variables, equipment[index].format);
-            equipment[index].odb_out++;
+            update_odb(pevent, equipment[idx].hkey_variables, equipment[idx].format);
+            equipment[idx].odb_out++;
          }
       }
 
-      equipment[index].bytes_sent += pevent->data_size + sizeof(EVENT_HEADER);
-      equipment[index].events_sent++;
+      equipment[idx].bytes_sent += pevent->data_size + sizeof(EVENT_HEADER);
+      equipment[idx].events_sent++;
 
-      equipment[index].stats.events_sent += equipment[index].events_sent;
-      equipment[index].events_sent = 0;
+      equipment[idx].stats.events_sent += equipment[idx].events_sent;
+      equipment[idx].events_sent = 0;
    } else
-      equipment[index].serial_number--;
+      equipment[idx].serial_number--;
 
    /* why do we flush the cache for all equipments? */
    for (i = 0; equipment[i].name[0]; i++)
@@ -1293,6 +1296,7 @@ int readout_thread(void *param)
    EVENT_HEADER *pevent;
    void *p;
 
+   p = param; /* avoid compiler warning */
    do {
       /* obtain buffer space */
       if (rbh1_next) // if set by user code, use it
@@ -1535,7 +1539,7 @@ INT scheduler(void)
    EVENT_HEADER *pevent, *pfragment;
    DWORD last_time_network = 0, last_time_display = 0, last_time_flush = 0, 
       readout_start, sent, size;
-   INT i, j, index, status = 0, ch, source, state, old_flag;
+   INT i, j, idx, status = 0, ch, source, state, old_flag;
    char str[80], *pdata;
    unsigned char *pd;
    BOOL buffer_done, flag, force_update = FALSE;
@@ -1557,8 +1561,8 @@ INT scheduler(void)
       actual_time = ss_time();
 
       /*---- loop over equipment table -------------------------------*/
-      for (index = 0;; index++) {
-         eq = &equipment[index];
+      for (idx = 0;; idx++) {
+         eq = &equipment[idx];
          eq_info = &eq->info;
 
          /* check if end of equipment list */
@@ -1604,7 +1608,7 @@ INT scheduler(void)
                   readout_enable(FALSE);
 
                /* readout and send event */
-               status = send_event(index);
+               status = send_event(idx);
 
                if (status != CM_SUCCESS) {
                   cm_msg(MERROR, "scheduler", "send_event error %d", status);
@@ -1751,8 +1755,8 @@ INT scheduler(void)
                         }
 
                         /* send event to buffer */
-                        if (equipment[index].buffer_handle) {
-                           status = rpc_send_event(equipment[index].buffer_handle, pfragment,
+                        if (equipment[idx].buffer_handle) {
+                           status = rpc_send_event(equipment[idx].buffer_handle, pfragment,
                                                    pfragment->data_size + sizeof(EVENT_HEADER), SYNC, rpc_mode);
                            if (status != RPC_SUCCESS) {
                               cm_msg(MERROR, "send_event", "rpc_send_event(SYNC) error %d", status);
@@ -1811,7 +1815,7 @@ INT scheduler(void)
 
             do {
                size = receive_trigger_event(eq);
-               if (size == -1)
+               if ((int)size == -1)
                   goto net_error;
 
                actual_millitime = ss_millitime();
@@ -2092,12 +2096,12 @@ int main(int argc, char *argv[])
 #endif
 {
    INT status, i, j;
-   INT daemon;
+   INT daemon_flag;
 
    host_name[0] = 0;
    exp_name[0] = 0;
    debug = FALSE;
-   daemon = 0;
+   daemon_flag = 0;
 
    setbuf(stdout, 0);
    setbuf(stderr, 0);
@@ -2122,9 +2126,9 @@ int main(int argc, char *argv[])
       if (argv[i][0] == '-' && argv[i][1] == 'd')
          debug = TRUE;
       else if (argv[i][0] == '-' && argv[i][1] == 'D')
-         daemon = 1;
+         daemon_flag = 1;
       else if (argv[i][0] == '-' && argv[i][1] == 'O')
-         daemon = 2;
+         daemon_flag = 2;
       else if (argv[i][0] == '-') {
          if (i + 1 >= argc || argv[i + 1][0] == '-')
             goto usage;
@@ -2192,9 +2196,9 @@ int main(int argc, char *argv[])
       printf("User max frag. size    :     %d\n", max_event_size_frag);
    printf("# of events per buffer :     %d\n\n", event_buffer_size / max_event_size);
 
-   if (daemon) {
+   if (daemon_flag) {
       printf("\nBecoming a daemon...\n");
-      ss_daemon_init(daemon == 2);
+      ss_daemon_init(daemon_flag == 2);
    }
 
    /* now connect to server */

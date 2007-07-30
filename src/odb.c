@@ -106,7 +106,7 @@ void *malloc_key(DATABASE_HEADER * pheader, INT size)
       }
    } else {
       /* check if free block is used totally */
-      if (pfound->size - size < sizeof(FREE_DESCRIP)) {
+      if (pfound->size - size < (int) sizeof(FREE_DESCRIP)) {
          /* skip block totally */
          pprev->next_free = pfound->next_free;
       } else {
@@ -226,7 +226,7 @@ void *malloc_data(DATABASE_HEADER * pheader, INT size)
       }
    } else {
       /* check if free block is used totally */
-      if (pfound->size - size < sizeof(FREE_DESCRIP)) {
+      if (pfound->size - size < (int) sizeof(FREE_DESCRIP)) {
          /* skip block totally */
          pprev->next_free = pfound->next_free;
       } else {
@@ -364,6 +364,7 @@ INT print_key_info(HNDLE hDB, HNDLE hKey, KEY * pkey, INT level, void *info)
    int i;
    char *p;
 
+   i = hDB;
    p = (char *) info;
 
    sprintf(p + strlen(p), "%08X  %08X  %04X    ",
@@ -383,6 +384,9 @@ INT db_show_mem(HNDLE hDB, char *result, INT buf_size, BOOL verbose)
    DATABASE_HEADER *pheader;
    INT total_size_key, total_size_data;
    FREE_DESCRIP *pfree;
+
+   /* avoid compiler warning */
+   total_size_data = buf_size;
 
    db_lock_database(hDB);
 
@@ -1038,7 +1042,7 @@ INT db_close_database(HNDLE hDB)
    else {
       DATABASE_HEADER *pheader;
       DATABASE_CLIENT *pclient;
-      INT index, destroy_flag, i, j;
+      INT idx, destroy_flag, i, j;
 
       if (hDB > _database_entries || hDB <= 0) {
          cm_msg(MERROR, "db_close_database", "invalid database handle");
@@ -1054,9 +1058,9 @@ INT db_close_database(HNDLE hDB)
       /* first lock database */
       db_lock_database(hDB);
 
-      index = _database[hDB - 1].client_index;
+      idx = _database[hDB - 1].client_index;
       pheader = _database[hDB - 1].database_header;
-      pclient = &pheader->client[index];
+      pclient = &pheader->client[idx];
 
       if (rpc_get_server_option(RPC_OSERVER_TYPE) == ST_SINGLE &&
           _database[hDB - 1].index != rpc_get_server_acception()) {
@@ -1085,7 +1089,7 @@ INT db_close_database(HNDLE hDB)
       _database[hDB - 1].attached = FALSE;
 
       /* clear entry from client structure in database header */
-      memset(&(pheader->client[index]), 0, sizeof(DATABASE_CLIENT));
+      memset(&(pheader->client[idx]), 0, sizeof(DATABASE_CLIENT));
 
       /* calculate new max_client_index entry */
       for (i = MAX_CLIENTS - 1; i >= 0; i--)
@@ -1174,7 +1178,7 @@ INT db_flush_database(HNDLE hDB)
    else {
       DATABASE_HEADER *pheader;
       DATABASE_CLIENT *pclient;
-      INT index;
+      INT idx;
 
       if (hDB > _database_entries || hDB <= 0) {
          cm_msg(MERROR, "db_close_database", "invalid database handle");
@@ -1188,9 +1192,9 @@ INT db_flush_database(HNDLE hDB)
        */
 
       db_lock_database(hDB);
-      index = _database[hDB - 1].client_index;
+      idx = _database[hDB - 1].client_index;
       pheader = _database[hDB - 1].database_header;
-      pclient = &pheader->client[index];
+      pclient = &pheader->client[idx];
 
       if (rpc_get_server_option(RPC_OSERVER_TYPE) == ST_SINGLE &&
           _database[hDB - 1].index != rpc_get_server_acception()) {
@@ -1287,11 +1291,11 @@ INT db_set_client_name(HNDLE hDB, char *client_name)
    {
       DATABASE_HEADER *pheader;
       DATABASE_CLIENT *pclient;
-      INT index;
+      INT idx;
 
-      index = _database[hDB - 1].client_index;
+      idx = _database[hDB - 1].client_index;
       pheader = _database[hDB - 1].database_header;
-      pclient = &pheader->client[index];
+      pclient = &pheader->client[idx];
 
       strcpy(pclient->name, client_name);
    }
@@ -1741,7 +1745,7 @@ INT db_delete_key1(HNDLE hDB, HNDLE hKey, INT level, BOOL follow_links)
          return DB_INVALID_HANDLE;
       }
 
-      if (hKey < sizeof(DATABASE_HEADER)) {
+      if (hKey < (int) sizeof(DATABASE_HEADER)) {
          cm_msg(MERROR, "db_delete_key1", "invalid key handle");
          return DB_INVALID_HANDLE;
       }
@@ -2739,6 +2743,9 @@ void db_find_open_records(HNDLE hDB, HNDLE hKey, KEY * key, INT level, void *res
    INT i, j;
    char line[256], str[80];
 
+   /* avoid compiler warning */
+   i = level;
+
    /* check if this key has notify count set */
    if (key->notify_count) {
       db_get_path(hDB, hKey, str, sizeof(str));
@@ -2769,6 +2776,9 @@ void db_fix_open_records(HNDLE hDB, HNDLE hKey, KEY * key, INT level, void *resu
    INT i, j;
    char str[256];
    KEY *pkey;
+
+   /* avoid compiler warning */
+   i = level;
 
    /* check if this key has notify count set */
    if (key->notify_count) {
@@ -3007,7 +3017,7 @@ INT db_get_value(HNDLE hDB, HNDLE hKeyRoot, char *key_name, void *data,
       DATABASE_HEADER *pheader;
       HNDLE hkey;
       KEY *pkey;
-      INT status, size, index;
+      INT status, size, idx;
       char *p, path[256], keyname[256];
 
       if (hDB > _database_entries || hDB <= 0) {
@@ -3022,14 +3032,14 @@ INT db_get_value(HNDLE hDB, HNDLE hKeyRoot, char *key_name, void *data,
 
       /* check if key name contains index */
       strlcpy(keyname, key_name, sizeof(keyname));
-      index = -1;
+      idx = -1;
       if (strchr(keyname, '[') && strchr(keyname, ']')) {
          for (p = strchr(keyname, '[') + 1; *p && *p != ']'; p++)
             if (!isdigit(*p))
                break;
 
          if (*p && *p == ']') {
-            index = atoi(strchr(keyname, '[') + 1);
+            idx = atoi(strchr(keyname, '[') + 1);
             *strchr(keyname, '[') = 0;
          }
       }
@@ -3084,8 +3094,8 @@ INT db_get_value(HNDLE hDB, HNDLE hKeyRoot, char *key_name, void *data,
       }
 
       /* check if buffer is too small */
-      if ((index == -1 && pkey->num_values * pkey->item_size > *buf_size) ||
-          (index != -1 && pkey->item_size > *buf_size)) {
+      if ((idx == -1 && pkey->num_values * pkey->item_size > *buf_size) ||
+          (idx != -1 && pkey->item_size > *buf_size)) {
          memcpy(data, (char *) pheader + pkey->data, *buf_size);
          db_unlock_database(hDB);
          db_get_path(hDB, hkey, path, sizeof(path));
@@ -3095,20 +3105,20 @@ INT db_get_value(HNDLE hDB, HNDLE hKeyRoot, char *key_name, void *data,
       }
 
       /* check if index in boundaries */
-      if (index != -1 && index >= pkey->num_values) {
+      if (idx != -1 && idx >= pkey->num_values) {
          db_unlock_database(hDB);
          db_get_path(hDB, hkey, path, sizeof(path));
          cm_msg(MERROR, "db_get_value",
-                "invalid index \"%d\" for key \"%s\"", index, path);
+                "invalid index \"%d\" for key \"%s\"", idx, path);
          return DB_INVALID_PARAM;
       }
 
       /* copy key data */
-      if (index == -1) {
+      if (idx == -1) {
          memcpy(data, (char *) pheader + pkey->data, pkey->num_values * pkey->item_size);
          *buf_size = pkey->num_values * pkey->item_size;
       } else {
-         memcpy(data, (char *) pheader + pkey->data + index * pkey->item_size,
+         memcpy(data, (char *) pheader + pkey->data + idx * pkey->item_size,
                 pkey->item_size);
          *buf_size = pkey->item_size;
       }
@@ -3154,10 +3164,10 @@ KEY   key;
                     db_get_key() and db_get_data()
 @return DB_SUCCESS, DB_INVALID_HANDLE, DB_NO_MORE_SUBKEYS
 */
-INT db_enum_key(HNDLE hDB, HNDLE hKey, INT index, HNDLE * subkey_handle)
+INT db_enum_key(HNDLE hDB, HNDLE hKey, INT idx, HNDLE * subkey_handle)
 {
    if (rpc_is_remote())
-      return rpc_call(RPC_DB_ENUM_KEY, hDB, hKey, index, subkey_handle);
+      return rpc_call(RPC_DB_ENUM_KEY, hDB, hKey, idx, subkey_handle);
 
 #ifdef LOCAL_ROUTINES
    {
@@ -3200,13 +3210,13 @@ INT db_enum_key(HNDLE hDB, HNDLE hKey, INT index, HNDLE * subkey_handle)
       }
       pkeylist = (KEYLIST *) ((char *) pheader + pkey->data);
 
-      if (index >= pkeylist->num_keys) {
+      if (idx >= pkeylist->num_keys) {
          db_unlock_database(hDB);
          return DB_NO_MORE_SUBKEYS;
       }
 
       pkey = (KEY *) ((char *) pheader + pkeylist->first_key);
-      for (i = 0; i < index; i++)
+      for (i = 0; i < idx; i++)
          pkey = (KEY *) ((char *) pheader + pkey->next_key);
 
       /* resolve links */
@@ -3244,7 +3254,7 @@ INT db_enum_key(HNDLE hDB, HNDLE hKey, INT index, HNDLE * subkey_handle)
 
 
 /*------------------------------------------------------------------*/
-INT db_enum_link(HNDLE hDB, HNDLE hKey, INT index, HNDLE * subkey_handle)
+INT db_enum_link(HNDLE hDB, HNDLE hKey, INT idx, HNDLE * subkey_handle)
 /********************************************************************\
 
   Routine: db_enum_link
@@ -3255,7 +3265,7 @@ INT db_enum_link(HNDLE hDB, HNDLE hKey, INT index, HNDLE * subkey_handle)
     HNDLE hDB               Handle to the database
     HNDLE hKey              Handle of key to enumerate, zero for the
                             root key
-    INT   index             Subkey index, sould be initially 0, then
+    INT   idx               Subkey index, sould be initially 0, then
                             incremented in each call until
                             *subhKey becomes zero and the function
                             returns DB_NO_MORE_SUBKEYS
@@ -3272,7 +3282,7 @@ INT db_enum_link(HNDLE hDB, HNDLE hKey, INT index, HNDLE * subkey_handle)
 \********************************************************************/
 {
    if (rpc_is_remote())
-      return rpc_call(RPC_DB_ENUM_LINK, hDB, hKey, index, subkey_handle);
+      return rpc_call(RPC_DB_ENUM_LINK, hDB, hKey, idx, subkey_handle);
 
 #ifdef LOCAL_ROUTINES
    {
@@ -3313,13 +3323,13 @@ INT db_enum_link(HNDLE hDB, HNDLE hKey, INT index, HNDLE * subkey_handle)
       }
       pkeylist = (KEYLIST *) ((char *) pheader + pkey->data);
 
-      if (index >= pkeylist->num_keys) {
+      if (idx >= pkeylist->num_keys) {
          db_unlock_database(hDB);
          return DB_NO_MORE_SUBKEYS;
       }
 
       pkey = (KEY *) ((char *) pheader + pkeylist->first_key);
-      for (i = 0; i < index; i++)
+      for (i = 0; i < idx; i++)
          pkey = (KEY *) ((char *) pheader + pkey->next_key);
 
       *subkey_handle = (POINTER_T) pkey - (POINTER_T) pheader;
@@ -3506,7 +3516,7 @@ INT db_get_key(HNDLE hDB, HNDLE hKey, KEY * key)
          return DB_INVALID_HANDLE;
       }
 
-      if (hKey < sizeof(DATABASE_HEADER) && hKey != 0) {
+      if (hKey < (int) sizeof(DATABASE_HEADER) && hKey != 0) {
          cm_msg(MERROR, "db_get_key", "invalid key handle");
          return DB_INVALID_HANDLE;
       }
@@ -3570,7 +3580,7 @@ INT db_get_key_time(HNDLE hDB, HNDLE hKey, DWORD * delta)
          return DB_INVALID_HANDLE;
       }
 
-      if (hKey < sizeof(DATABASE_HEADER)) {
+      if (hKey < (int) sizeof(DATABASE_HEADER)) {
          cm_msg(MERROR, "db_get_key", "invalid key handle");
          return DB_INVALID_HANDLE;
       }
@@ -3631,7 +3641,7 @@ INT db_get_key_info(HNDLE hDB, HNDLE hKey, char *name, INT name_size,
          return DB_INVALID_HANDLE;
       }
 
-      if (hKey < sizeof(DATABASE_HEADER)) {
+      if (hKey < (int) sizeof(DATABASE_HEADER)) {
          cm_msg(MERROR, "db_get_key_info", "invalid key handle");
          return DB_INVALID_HANDLE;
       }
@@ -3719,7 +3729,7 @@ INT db_rename_key(HNDLE hDB, HNDLE hKey, char *name)
          return DB_INVALID_HANDLE;
       }
 
-      if (hKey < sizeof(DATABASE_HEADER)) {
+      if (hKey < (int) sizeof(DATABASE_HEADER)) {
          cm_msg(MERROR, "db_rename_key", "invalid key handle");
          return DB_INVALID_HANDLE;
       }
@@ -3757,7 +3767,7 @@ INT db_rename_key(HNDLE hDB, HNDLE hKey, char *name)
 }
 
 /*------------------------------------------------------------------*/
-INT db_reorder_key(HNDLE hDB, HNDLE hKey, INT index)
+INT db_reorder_key(HNDLE hDB, HNDLE hKey, INT idx)
 /********************************************************************\
 
   Routine: db_reorder_key
@@ -3768,7 +3778,7 @@ INT db_reorder_key(HNDLE hDB, HNDLE hKey, INT index)
   Input:
     HNDLE hDB               Handle to the database
     HNDLE hKey              Handle of key
-    INT   index             New positio of key in keylist
+    INT   idx               New positio of key in keylist
 
   Output:
     <none>
@@ -3782,7 +3792,7 @@ INT db_reorder_key(HNDLE hDB, HNDLE hKey, INT index)
 \********************************************************************/
 {
    if (rpc_is_remote())
-      return rpc_call(RPC_DB_REORDER_KEY, hDB, hKey, index);
+      return rpc_call(RPC_DB_REORDER_KEY, hDB, hKey, idx);
 
 #ifdef LOCAL_ROUTINES
    {
@@ -3801,7 +3811,7 @@ INT db_reorder_key(HNDLE hDB, HNDLE hKey, INT index)
          return DB_INVALID_HANDLE;
       }
 
-      if (hKey < sizeof(DATABASE_HEADER)) {
+      if (hKey < (int) sizeof(DATABASE_HEADER)) {
          cm_msg(MERROR, "db_rename_key", "invalid key handle");
          return DB_INVALID_HANDLE;
       }
@@ -3861,7 +3871,7 @@ INT db_reorder_key(HNDLE hDB, HNDLE hKey, INT index)
 
       /* add key to list at proper index */
       pkey_tmp = (KEY *) ((char *) pheader + pkeylist->first_key);
-      if (index < 0 || index >= pkeylist->num_keys - 1) {
+      if (idx < 0 || idx >= pkeylist->num_keys - 1) {
          /* add at bottom */
 
          /* find last key */
@@ -3873,13 +3883,13 @@ INT db_reorder_key(HNDLE hDB, HNDLE hKey, INT index)
          pkey_tmp->next_key = (POINTER_T) pkey - (POINTER_T) pheader;
          pkey->next_key = 0;
       } else {
-         if (index == 0) {
+         if (idx == 0) {
             /* add at top */
             pkey->next_key = pkeylist->first_key;
             pkeylist->first_key = (POINTER_T) pkey - (POINTER_T) pheader;
          } else {
             /* add at position index */
-            for (i = 0; i < index - 1; i++)
+            for (i = 0; i < idx - 1; i++)
                pkey_tmp = (KEY *) ((char *) pheader + pkey_tmp->next_key);
 
             pkey->next_key = pkey_tmp->next_key;
@@ -3943,7 +3953,7 @@ INT db_get_data(HNDLE hDB, HNDLE hKey, void *data, INT * buf_size, DWORD type)
          return DB_INVALID_HANDLE;
       }
 
-      if (hKey < sizeof(DATABASE_HEADER)) {
+      if (hKey < (int) sizeof(DATABASE_HEADER)) {
          cm_msg(MERROR, "db_get_data", "invalid key handle");
          return DB_INVALID_HANDLE;
       }
@@ -4062,7 +4072,7 @@ INT db_get_data1(HNDLE hDB, HNDLE hKey, void *data, INT * buf_size,
          return DB_INVALID_HANDLE;
       }
 
-      if (hKey < sizeof(DATABASE_HEADER)) {
+      if (hKey < (int) sizeof(DATABASE_HEADER)) {
          cm_msg(MERROR, "db_get_data", "invalid key handle");
          return DB_INVALID_HANDLE;
       }
@@ -4145,15 +4155,15 @@ The function returns a single value of keys containing arrays of values.
 @param hKey         Handle for key where search starts, zero for root.
 @param data         Size of data buffer.
 @param buf_size     Return size of the record.
-@param index        Index of array [0..n-1].
+@param idx          Index of array [0..n-1].
 @param type         Type of key, one of TID_xxx (see @ref Midas_Data_Types).
 @return DB_SUCCESS, DB_INVALID_HANDLE, DB_TRUNCATED, DB_OUT_OF_RANGE
 */
 INT db_get_data_index(HNDLE hDB, HNDLE hKey,
-                      void *data, INT * buf_size, INT index, DWORD type)
+                      void *data, INT * buf_size, INT idx, DWORD type)
 {
    if (rpc_is_remote())
-      return rpc_call(RPC_DB_GET_DATA_INDEX, hDB, hKey, data, buf_size, index, type);
+      return rpc_call(RPC_DB_GET_DATA_INDEX, hDB, hKey, data, buf_size, idx, type);
 
 #ifdef LOCAL_ROUTINES
    {
@@ -4171,7 +4181,7 @@ INT db_get_data_index(HNDLE hDB, HNDLE hKey,
          return DB_INVALID_HANDLE;
       }
 
-      if (hKey < sizeof(DATABASE_HEADER)) {
+      if (hKey < (int) sizeof(DATABASE_HEADER)) {
          cm_msg(MERROR, "db_get_data", "invalid key handle");
          return DB_INVALID_HANDLE;
       }
@@ -4223,28 +4233,28 @@ INT db_get_data_index(HNDLE hDB, HNDLE hKey,
       }
 
       /* check if index in range */
-      if (index < 0 || index >= pkey->num_values) {
+      if (idx < 0 || idx >= pkey->num_values) {
          memset(data, 0, *buf_size);
          db_unlock_database(hDB);
 
          db_get_path(hDB, hKey, str, sizeof(str));
          cm_msg(MERROR, "db_get_data_index",
                 "index (%d) exceeds array length (%d) for key \"%s\"",
-                index, pkey->num_values, str);
+                idx, pkey->num_values, str);
          return DB_OUT_OF_RANGE;
       }
 
       /* check if buffer is too small */
       if (pkey->item_size > *buf_size) {
          /* copy data */
-         memcpy(data, (char *) pheader + pkey->data + index * pkey->item_size, *buf_size);
+         memcpy(data, (char *) pheader + pkey->data + idx * pkey->item_size, *buf_size);
          db_unlock_database(hDB);
          cm_msg(MERROR, "db_get_data_index", "data for key \"%s\" truncated", pkey->name);
          return DB_TRUNCATED;
       }
 
       /* copy key data */
-      memcpy(data, (char *) pheader + pkey->data + index * pkey->item_size,
+      memcpy(data, (char *) pheader + pkey->data + idx * pkey->item_size,
              pkey->item_size);
       *buf_size = pkey->item_size;
 
@@ -4297,7 +4307,7 @@ INT db_set_data(HNDLE hDB, HNDLE hKey,
          return DB_INVALID_HANDLE;
       }
 
-      if (hKey < sizeof(DATABASE_HEADER)) {
+      if (hKey < (int) sizeof(DATABASE_HEADER)) {
          cm_msg(MERROR, "db_set_data", "invalid key handle");
          return DB_INVALID_HANDLE;
       }
@@ -4420,7 +4430,7 @@ INT db_set_num_values(HNDLE hDB, HNDLE hKey, INT num_values)
          return DB_INVALID_HANDLE;
       }
 
-      if (hKey < sizeof(DATABASE_HEADER)) {
+      if (hKey < (int) sizeof(DATABASE_HEADER)) {
          cm_msg(MERROR, "db_set_data", "invalid key handle");
          return DB_INVALID_HANDLE;
       }
@@ -4496,15 +4506,15 @@ values are set to zero.
 @param hKey Handle for key where search starts, zero for root.
 @param data Pointer to single value of data.
 @param data_size
-@param index Size of single data element.
+@param idx Size of single data element.
 @param type Type of key, one of TID_xxx (see @ref Midas_Data_Types).
 @return DB_SUCCESS, DB_INVALID_HANDLE, DB_NO_ACCESS, DB_TYPE_MISMATCH
 */
 INT db_set_data_index(HNDLE hDB, HNDLE hKey,
-                      void *data, INT data_size, INT index, DWORD type)
+                      void *data, INT data_size, INT idx, DWORD type)
 {
    if (rpc_is_remote())
-      return rpc_call(RPC_DB_SET_DATA_INDEX, hDB, hKey, data, data_size, index, type);
+      return rpc_call(RPC_DB_SET_DATA_INDEX, hDB, hKey, data, data_size, idx, type);
 
 #ifdef LOCAL_ROUTINES
    {
@@ -4521,7 +4531,7 @@ INT db_set_data_index(HNDLE hDB, HNDLE hKey,
          return DB_INVALID_HANDLE;
       }
 
-      if (hKey < sizeof(DATABASE_HEADER)) {
+      if (hKey < (int) sizeof(DATABASE_HEADER)) {
          cm_msg(MERROR, "db_set_data_index", "invalid key handle");
          return DB_INVALID_HANDLE;
       }
@@ -4558,18 +4568,18 @@ INT db_set_data_index(HNDLE hDB, HNDLE hKey,
          return DB_TYPE_MISMATCH;
       }
 
-      /* check for valid index */
-      if (index < 0) {
+      /* check for valid idx */
+      if (idx < 0) {
          db_unlock_database(hDB);
          cm_msg(MERROR, "db_set_data_index", "invalid index");
          return DB_FULL;
       }
 
       /* increase data size if necessary */
-      if (index >= pkey->num_values || pkey->item_size == 0) {
+      if (idx >= pkey->num_values || pkey->item_size == 0) {
          pkey->data =
              (POINTER_T) realloc_data(pheader, (char *) pheader + pkey->data,
-                                      pkey->total_size, data_size * (index + 1));
+                                      pkey->total_size, data_size * (idx + 1));
 
          if (pkey->data == 0) {
             db_unlock_database(hDB);
@@ -4580,8 +4590,8 @@ INT db_set_data_index(HNDLE hDB, HNDLE hKey,
          pkey->data -= (POINTER_T) pheader;
          if (!pkey->item_size)
             pkey->item_size = data_size;
-         pkey->total_size = data_size * (index + 1);
-         pkey->num_values = index + 1;
+         pkey->total_size = data_size * (idx + 1);
+         pkey->num_values = idx + 1;
       }
 
       /* cut strings which are too long */
@@ -4590,7 +4600,7 @@ INT db_set_data_index(HNDLE hDB, HNDLE hKey,
          *((char *) data + pkey->item_size - 1) = 0;
 
       /* copy data */
-      memcpy((char *) pheader + pkey->data + index * pkey->item_size,
+      memcpy((char *) pheader + pkey->data + idx * pkey->item_size,
              data, pkey->item_size);
 
       /* update time */
@@ -4610,7 +4620,7 @@ INT db_set_data_index(HNDLE hDB, HNDLE hKey,
 
 /*------------------------------------------------------------------*/
 INT db_set_data_index2(HNDLE hDB, HNDLE hKey, void *data,
-                       INT data_size, INT index, DWORD type, BOOL bNotify)
+                       INT data_size, INT idx, DWORD type, BOOL bNotify)
 /********************************************************************\
 
   Routine: db_set_data_index2
@@ -4623,7 +4633,7 @@ INT db_set_data_index2(HNDLE hDB, HNDLE hKey, void *data,
     HNDLE  hKey             Handle of key to enumerate
     void   *data            Pointer to single value of data
     INT    data_size        Size of single data element
-    INT    index            Index of array to change [0..n-1]
+    INT    idx              Index of array to change [0..n-1]
     DWORD  type             Type of data
     BOOL   bNotify          If TRUE, notify clients
 
@@ -4640,7 +4650,7 @@ INT db_set_data_index2(HNDLE hDB, HNDLE hKey, void *data,
 {
    if (rpc_is_remote())
       return rpc_call(RPC_DB_SET_DATA_INDEX2, hDB, hKey,
-                      data, data_size, index, type, bNotify);
+                      data, data_size, idx, type, bNotify);
 
 #ifdef LOCAL_ROUTINES
    {
@@ -4657,7 +4667,7 @@ INT db_set_data_index2(HNDLE hDB, HNDLE hKey, void *data,
          return DB_INVALID_HANDLE;
       }
 
-      if (hKey < sizeof(DATABASE_HEADER)) {
+      if (hKey < (int) sizeof(DATABASE_HEADER)) {
          cm_msg(MERROR, "db_set_data_index2", "invalid key handle");
          return DB_INVALID_HANDLE;
       }
@@ -4695,17 +4705,17 @@ INT db_set_data_index2(HNDLE hDB, HNDLE hKey, void *data,
       }
 
       /* check for valid index */
-      if (index < 0) {
+      if (idx < 0) {
          db_unlock_database(hDB);
          cm_msg(MERROR, "db_set_data_index2", "invalid index");
          return DB_FULL;
       }
 
       /* increase key size if necessary */
-      if (index >= pkey->num_values) {
+      if (idx >= pkey->num_values) {
          pkey->data =
              (POINTER_T) realloc_data(pheader, (char *) pheader + pkey->data,
-                                      pkey->total_size, data_size * (index + 1));
+                                      pkey->total_size, data_size * (idx + 1));
 
          if (pkey->data == 0) {
             db_unlock_database(hDB);
@@ -4716,8 +4726,8 @@ INT db_set_data_index2(HNDLE hDB, HNDLE hKey, void *data,
          pkey->data -= (POINTER_T) pheader;
          if (!pkey->item_size)
             pkey->item_size = data_size;
-         pkey->total_size = data_size * (index + 1);
-         pkey->num_values = index + 1;
+         pkey->total_size = data_size * (idx + 1);
+         pkey->num_values = idx + 1;
       }
 
       /* cut strings which are too long */
@@ -4726,7 +4736,7 @@ INT db_set_data_index2(HNDLE hDB, HNDLE hKey, void *data,
          *((char *) data + pkey->item_size - 1) = 0;
 
       /* copy data */
-      memcpy((char *) pheader + pkey->data + index * pkey->item_size,
+      memcpy((char *) pheader + pkey->data + idx * pkey->item_size,
              data, pkey->item_size);
 
       /* update time */
@@ -5786,14 +5796,14 @@ static void db_save_tree_struct(HNDLE hDB, HNDLE hKey, int hfile, INT level)
 
 \********************************************************************/
 {
-   INT i, index;
+   INT i, idx;
    KEY key;
    HNDLE hSubkey;
    char line[MAX_ODB_PATH], str[MAX_STRING_LENGTH];
 
    /* first enumerate this level */
-   for (index = 0;; index++) {
-      db_enum_key(hDB, hKey, index, &hSubkey);
+   for (idx = 0;; idx++) {
+      db_enum_key(hDB, hKey, idx, &hSubkey);
 
       if (!hSubkey)
          break;
@@ -5983,7 +5993,7 @@ void xml_encode(char *src, int size)
 
 INT db_save_xml_key(HNDLE hDB, HNDLE hKey, INT level, MXML_WRITER * writer)
 {
-   INT i, index, size, status;
+   INT i, idx, size, status;
    char str[MAX_STRING_LENGTH * 2], *data;
    HNDLE hSubkey;
    KEY key;
@@ -6001,8 +6011,8 @@ INT db_save_xml_key(HNDLE hDB, HNDLE hKey, INT level, MXML_WRITER * writer)
          mxml_write_attribute(writer, "name", key.name);
       }
 
-      for (index = 0;; index++) {
-         db_enum_link(hDB, hKey, index, &hSubkey);
+      for (idx = 0;; idx++) {
+         db_enum_link(hDB, hKey, idx, &hSubkey);
 
          if (!hSubkey)
             break;
@@ -6307,58 +6317,58 @@ normal sprintf() function can be used.
 @param string output ASCII string of data.
 @param data Value data.
 @param data_size Size of single data element.
-@param index Index for array data.
+@param idx Index for array data.
 @param type Type of key, one of TID_xxx (see @ref Midas_Data_Types).
 @return DB_SUCCESS
 */
-INT db_sprintf(char *string, void *data, INT data_size, INT index, DWORD type)
+INT db_sprintf(char *string, void *data, INT data_size, INT idx, DWORD type)
 {
    if (data_size == 0)
       sprintf(string, "<NULL>");
    else
       switch (type) {
       case TID_BYTE:
-         sprintf(string, "%d", *(((BYTE *) data) + index));
+         sprintf(string, "%d", *(((BYTE *) data) + idx));
          break;
       case TID_SBYTE:
-         sprintf(string, "%d", *(((char *) data) + index));
+         sprintf(string, "%d", *(((char *) data) + idx));
          break;
       case TID_CHAR:
-         sprintf(string, "%c", *(((char *) data) + index));
+         sprintf(string, "%c", *(((char *) data) + idx));
          break;
       case TID_WORD:
-         sprintf(string, "%u", *(((WORD *) data) + index));
+         sprintf(string, "%u", *(((WORD *) data) + idx));
          break;
       case TID_SHORT:
-         sprintf(string, "%d", *(((short *) data) + index));
+         sprintf(string, "%d", *(((short *) data) + idx));
          break;
       case TID_DWORD:
-         sprintf(string, "%u", *(((DWORD *) data) + index));
+         sprintf(string, "%u", *(((DWORD *) data) + idx));
          break;
       case TID_INT:
-         sprintf(string, "%d", *(((INT *) data) + index));
+         sprintf(string, "%d", *(((INT *) data) + idx));
          break;
       case TID_BOOL:
-         sprintf(string, "%c", *(((BOOL *) data) + index) ? 'y' : 'n');
+         sprintf(string, "%c", *(((BOOL *) data) + idx) ? 'y' : 'n');
          break;
       case TID_FLOAT:
-         if (ss_isnan(*(((float *) data) + index)))
+         if (ss_isnan(*(((float *) data) + idx)))
             sprintf(string, "NAN");
          else
-            sprintf(string, "%.7g", *(((float *) data) + index));
+            sprintf(string, "%.7g", *(((float *) data) + idx));
          break;
       case TID_DOUBLE:
-         if (ss_isnan(*(((double *) data) + index)))
+         if (ss_isnan(*(((double *) data) + idx)))
             sprintf(string, "NAN");
          else
-            sprintf(string, "%.16lg", *(((double *) data) + index));
+            sprintf(string, "%.16lg", *(((double *) data) + idx));
          break;
       case TID_BITFIELD:
          /* TBD */
          break;
       case TID_STRING:
       case TID_LINK:
-         strlcpy(string, ((char *) data) + data_size * index, MAX_STRING_LENGTH);
+         strlcpy(string, ((char *) data) + data_size * idx, MAX_STRING_LENGTH);
          break;
       default:
          sprintf(string, "<unknown>");
@@ -6372,7 +6382,7 @@ INT db_sprintf(char *string, void *data, INT data_size, INT index, DWORD type)
 #ifndef DOXYGEN_SHOULD_SKIP_THIS
 
 /*------------------------------------------------------------------*/
-INT db_sprintfh(char *string, void *data, INT data_size, INT index, DWORD type)
+INT db_sprintfh(char *string, void *data, INT data_size, INT idx, DWORD type)
 /********************************************************************\
 
   Routine: db_sprintfh
@@ -6382,7 +6392,7 @@ INT db_sprintfh(char *string, void *data, INT data_size, INT index, DWORD type)
 
   Input:
     void  *data             Value data
-    INT   index             Index for array data
+    INT   idx               Index for array data
     INT   data_size         Size of single data element
     DWORD type              Valye type, one of TID_xxx
 
@@ -6399,47 +6409,47 @@ INT db_sprintfh(char *string, void *data, INT data_size, INT index, DWORD type)
    else
       switch (type) {
       case TID_BYTE:
-         sprintf(string, "0x%X", *(((BYTE *) data) + index));
+         sprintf(string, "0x%X", *(((BYTE *) data) + idx));
          break;
       case TID_SBYTE:
-         sprintf(string, "0x%X", *(((char *) data) + index));
+         sprintf(string, "0x%X", *(((char *) data) + idx));
          break;
       case TID_CHAR:
-         sprintf(string, "%c", *(((char *) data) + index));
+         sprintf(string, "%c", *(((char *) data) + idx));
          break;
       case TID_WORD:
-         sprintf(string, "0x%X", *(((WORD *) data) + index));
+         sprintf(string, "0x%X", *(((WORD *) data) + idx));
          break;
       case TID_SHORT:
-         sprintf(string, "0x%hX", *(((short *) data) + index));
+         sprintf(string, "0x%hX", *(((short *) data) + idx));
          break;
       case TID_DWORD:
-         sprintf(string, "0x%X", *(((DWORD *) data) + index));
+         sprintf(string, "0x%X", *(((DWORD *) data) + idx));
          break;
       case TID_INT:
-         sprintf(string, "0x%X", *(((INT *) data) + index));
+         sprintf(string, "0x%X", *(((INT *) data) + idx));
          break;
       case TID_BOOL:
-         sprintf(string, "%c", *(((BOOL *) data) + index) ? 'y' : 'n');
+         sprintf(string, "%c", *(((BOOL *) data) + idx) ? 'y' : 'n');
          break;
       case TID_FLOAT:
-         if (ss_isnan(*(((float *) data) + index)))
+         if (ss_isnan(*(((float *) data) + idx)))
             sprintf(string, "NAN");
          else
-            sprintf(string, "%.7g", *(((float *) data) + index));
+            sprintf(string, "%.7g", *(((float *) data) + idx));
          break;
       case TID_DOUBLE:
-         if (ss_isnan(*(((double *) data) + index)))
+         if (ss_isnan(*(((double *) data) + idx)))
             sprintf(string, "NAN");
          else
-            sprintf(string, "%.16lg", *(((double *) data) + index));
+            sprintf(string, "%.16lg", *(((double *) data) + idx));
          break;
       case TID_BITFIELD:
          /* TBD */
          break;
       case TID_STRING:
       case TID_LINK:
-         sprintf(string, "%s", ((char *) data) + data_size * index);
+         sprintf(string, "%s", ((char *) data) + data_size * idx);
          break;
       default:
          sprintf(string, "<unknown>");
@@ -7065,7 +7075,7 @@ INT db_remove_open_record(HNDLE hDB, HNDLE hKey, BOOL lock)
       DATABASE_HEADER *pheader;
       DATABASE_CLIENT *pclient;
       KEY *pkey;
-      INT i, index;
+      INT i, idx;
 
       if (hDB > _database_entries || hDB <= 0) {
          cm_msg(MERROR, "db_remove_open_record", "invalid database handle");
@@ -7079,11 +7089,11 @@ INT db_remove_open_record(HNDLE hDB, HNDLE hKey, BOOL lock)
       pclient = &pheader->client[_database[hDB - 1].client_index];
 
       /* search key */
-      for (index = 0; index < pclient->max_index; index++)
-         if (pclient->open_record[index].handle == hKey)
+      for (idx = 0; idx < pclient->max_index; idx++)
+         if (pclient->open_record[idx].handle == hKey)
             break;
 
-      if (index == pclient->max_index) {
+      if (idx == pclient->max_index) {
          if (lock)
             db_unlock_database(hDB);
 
@@ -7099,10 +7109,10 @@ INT db_remove_open_record(HNDLE hDB, HNDLE hKey, BOOL lock)
       pclient->num_open_records--;
 
       /* remove exclusive flag */
-      if (pclient->open_record[index].access_mode & MODE_WRITE)
+      if (pclient->open_record[idx].access_mode & MODE_WRITE)
          db_set_mode(hDB, hKey, (WORD) (pkey->access_mode & ~MODE_EXCLUSIVE), 2);
 
-      memset(&pclient->open_record[index], 0, sizeof(OPEN_RECORD));
+      memset(&pclient->open_record[idx], 0, sizeof(OPEN_RECORD));
 
       /* calculate new max_index entry */
       for (i = pclient->max_index - 1; i >= 0; i--)
@@ -7179,8 +7189,14 @@ void merge_records(HNDLE hDB, HNDLE hKey, KEY * pkey, INT level, void *info)
 {
    char full_name[256], buffer[10000];
    INT status, size;
+   void *p;
    HNDLE hKeyInit;
    KEY initkey, key;
+
+   /* avoid compiler warnings */
+   status = level;
+   p = info;
+   p = pkey;
 
    /* compose name of init key */
    db_get_path(hDB, hKey, full_name, sizeof(full_name));
@@ -7225,6 +7241,15 @@ static int open_count;
 
 void check_open_keys(HNDLE hDB, HNDLE hKey, KEY * pkey, INT level, void *info)
 {
+   int i;
+   void *p;
+
+   /* avoid compiler warnings */
+   i = hDB;
+   i = hKey;
+   i = level;
+   p = info;
+
    if (pkey->notify_count)
       open_count++;
 }
@@ -7771,7 +7796,7 @@ main()
 INT db_open_record(HNDLE hDB, HNDLE hKey, void *ptr, INT rec_size,
                    WORD access_mode, void (*dispatcher) (INT, INT, void *), void *info)
 {
-   INT index, status, size;
+   INT idx, status, size;
    KEY key;
    void *data;
    char str[256];
@@ -7786,15 +7811,15 @@ INT db_open_record(HNDLE hDB, HNDLE hKey, void *ptr, INT rec_size,
       }
 
       _record_list_entries = 1;
-      index = 0;
+      idx = 0;
    } else {
       /* check for a deleted entry */
-      for (index = 0; index < _record_list_entries; index++)
-         if (!_record_list[index].handle)
+      for (idx = 0; idx < _record_list_entries; idx++)
+         if (!_record_list[idx].handle)
             break;
 
       /* if not found, create new one */
-      if (index == _record_list_entries) {
+      if (idx == _record_list_entries) {
          _record_list = (RECORD_LIST *) realloc(_record_list,
                                                 sizeof(RECORD_LIST) *
                                                 (_record_list_entries + 1));
@@ -7871,23 +7896,23 @@ INT db_open_record(HNDLE hDB, HNDLE hKey, void *ptr, INT rec_size,
       }
 
       /* init a local copy of the record */
-      _record_list[index].copy = malloc(size);
-      if (_record_list[index].copy == NULL) {
+      _record_list[idx].copy = malloc(size);
+      if (_record_list[idx].copy == NULL) {
          cm_msg(MERROR, "db_open_record", "not enough memory");
          return DB_NO_MEMORY;
       }
 
-      memcpy(_record_list[index].copy, data, size);
+      memcpy(_record_list[idx].copy, data, size);
    }
 
    /* initialize record list */
-   _record_list[index].handle = hKey;
-   _record_list[index].hDB = hDB;
-   _record_list[index].access_mode = access_mode;
-   _record_list[index].data = data;
-   _record_list[index].buf_size = size;
-   _record_list[index].dispatcher = dispatcher;
-   _record_list[index].info = info;
+   _record_list[idx].handle = hKey;
+   _record_list[idx].hDB = hDB;
+   _record_list[idx].access_mode = access_mode;
+   _record_list[idx].data = data;
+   _record_list[idx].buf_size = size;
+   _record_list[idx].dispatcher = dispatcher;
+   _record_list[idx].info = info;
 
    /* add record entry in database structure */
    db_add_open_record(hDB, hKey, (WORD) (access_mode & ~MODE_ALLOC));
@@ -7974,19 +7999,19 @@ If called from a server, send a network notification to the client.
 @param socket       optional server socket
 @return DB_SUCCESS, DB_INVALID_HANDLE
 */
-INT db_update_record(INT hDB, INT hKey, int socket)
+INT db_update_record(INT hDB, INT hKey, int s)
 {
    INT i, size, convert_flags, status;
    char buffer[32];
    NET_COMMAND *nc;
 
    /* check if we are the server */
-   if (socket) {
+   if (s) {
       convert_flags = rpc_get_server_option(RPC_CONVERT_FLAGS);
 
       if (convert_flags & CF_ASCII) {
          sprintf(buffer, "MSG_ODB&%d&%d", hDB, hKey);
-         send_tcp(socket, buffer, strlen(buffer) + 1, 0);
+         send_tcp(s, buffer, strlen(buffer) + 1, 0);
       } else {
          nc = (NET_COMMAND *) buffer;
 
@@ -8005,7 +8030,7 @@ INT db_update_record(INT hDB, INT hKey, int socket)
          }
 
          /* send the update notification to the client */
-         send_tcp(socket, buffer, sizeof(NET_COMMAND_HEADER) + 2 * sizeof(INT), 0);
+         send_tcp(s, buffer, sizeof(NET_COMMAND_HEADER) + 2 * sizeof(INT), 0);
       }
 
       return DB_SUCCESS;

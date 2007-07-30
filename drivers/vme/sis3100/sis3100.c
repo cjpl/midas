@@ -53,7 +53,7 @@
 
 /*------------------------------------------------------------------*/
 
-int mvme_open(MVME_INTERFACE **vme, int index)
+int mvme_open(MVME_INTERFACE **vme, int idx)
 {
    *vme = (MVME_INTERFACE *) malloc(sizeof(MVME_INTERFACE));
    if (*vme == NULL)
@@ -66,14 +66,14 @@ int mvme_open(MVME_INTERFACE **vme, int index)
    int n_sis3100;
 
    sis1100w_Find_No_Of_sis1100(&n_sis3100);
-   if (index >= n_sis3100)
+   if (idx >= n_sis3100)
       return MVME_NO_INTERFACE;
 
    (*vme)->info = malloc(sizeof(struct SIS1100_Device_Struct));
    if ((*vme)->info == NULL)
       return MVME_NO_MEM;
 
-   if (sis1100w_Get_Handle_And_Open(index+1, (struct SIS1100_Device_Struct *) (*vme)->info) != 0) 
+   if (sis1100w_Get_Handle_And_Open(idx+1, (struct SIS1100_Device_Struct *) (*vme)->info) != 0) 
       return MVME_NO_INTERFACE;
 
    if (sis1100w_Init((struct SIS1100_Device_Struct *) (*vme)->info, 0) != 0)
@@ -89,10 +89,10 @@ int mvme_open(MVME_INTERFACE **vme, int index)
    char str[256];
 
    /* open VME */
-   if (index == 0)
+   if (idx == 0)
       strcpy(str, "/tmp/sis1100");
    else
-      sprintf(str, "/tmp/sis1100_%d", index+1);
+      sprintf(str, "/tmp/sis1100_%d", idx+1);
 
    (*vme)->handle = open(str, O_RDWR, 0);
    if ((*vme)->handle < 0)

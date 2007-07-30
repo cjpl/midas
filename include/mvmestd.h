@@ -206,7 +206,7 @@ int main () {
 interface access within the same program.
 @return status MVME_SUCCESS, MVME_NO_INTERFACE, MVME_INVALID_PARAM, MVME_ACCESS_ERROR
 */
-int EXPRT mvme_open(MVME_INTERFACE **vme, int index);
+int EXPRT mvme_open(MVME_INTERFACE **vme, int idx);
 
 /********************************************************************/
 /**

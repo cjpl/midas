@@ -650,7 +650,7 @@ DB_INVALID_NAME        Equipment doesn't match request
 \********************************************************************/
 {
    EQUIPMENT *peqp;
-   INT index, size, status;
+   INT idx, size, status;
    HNDLE hDB, hKey, hKeydump;
    char strpath[MAX_FILE_PATH], Dumpfile[MAX_FILE_PATH];
    char odb_entry[MAX_FILE_PATH];
@@ -677,15 +677,15 @@ DB_INVALID_NAME        Equipment doesn't match request
       cm_msg(MINFO, "ybos_odb_file_dump", "odb_access_file -I- %s not found", odb_entry);
       return YB_SUCCESS;
    }
-   index = 0;
-   while ((status = db_enum_key(hDB, hKey, index, &hKeydump)) != DB_NO_MORE_SUBKEYS) {
+   idx = 0;
+   while ((status = db_enum_key(hDB, hKey, idx, &hKeydump)) != DB_NO_MORE_SUBKEYS) {
       if (status == DB_SUCCESS) {
          size = sizeof(strpath);
          db_get_path(hDB, hKeydump, strpath, size);
          db_get_value(hDB, 0, strpath, Dumpfile, &size, TID_STRING, TRUE);
          yb_file_fragment(peqp, (EVENT_HEADER *) pevent, run_number, Dumpfile);
       }
-      index++;
+      idx++;
    }
    return (YB_SUCCESS);
 }
@@ -1513,7 +1513,10 @@ none
 Function value:
 status : from lower function
 *******************************************************************/
-{
+{  int i;
+
+   i = data_fmt; /* avoid compiler warning */
+
    switch (my.type) {
    case LOG_TYPE_TAPE:
    case LOG_TYPE_DISK:
@@ -1702,6 +1705,7 @@ status : from lower function
 *******************************************************************/
 {
    INT status;
+   status = data_fmt; /* avoid compiler warning */
    status = SS_SUCCESS;
    switch (type) {
    case LOG_TYPE_TAPE:
@@ -2053,6 +2057,7 @@ status : from lower function  SS_SUCCESS, SS_FILE_ERROR
    INT status;
    DWORD written;
 
+   status = data_fmt; /* avoid compiler warning */
 #ifdef YBOS_VERSION_3_3
    if ((type == LOG_TYPE_DISK) && (data_fmt == FORMAT_YBOS)) {  /* add the magta record if going to disk */
       status =
@@ -2441,7 +2446,7 @@ YB_SUCCESS        Ok
 
    /* stop if LRL  = -1 ... I don't think it is necessary but I leave it in for now
       or forever... */
-   if (evt_length - 1 == -1)
+   if ((int)evt_length - 1 == -1)
       return (YB_DONE);
 
    /* check if event cross physical record boundary */
@@ -2534,7 +2539,7 @@ YB_SUCCESS        Ok
       size = my.size;
 
    /* first time in get physrec once */
-   if (my.recn == -1) {
+   if ((int)my.recn == -1) {
       status = midas_physrec_get((void *) my.pmp, &size);
       if (status != YB_SUCCESS)
          return (YB_DONE);
@@ -2546,7 +2551,7 @@ YB_SUCCESS        Ok
   */
 
    /* copy header only */
-   if (((my.pmp + size) - (char *) my.pme) < sizeof(EVENT_HEADER)) {
+   if (((my.pmp + size) - (char *) my.pme) < (int)sizeof(EVENT_HEADER)) {
       fpart = (my.pmp + my.size) - (char *) my.pme;
       memcpy(my.pmh, my.pme, fpart);
       my.pmh = (EVENT_HEADER *) (((char *) my.pmh) + fpart);
