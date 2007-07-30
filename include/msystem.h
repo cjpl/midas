@@ -515,7 +515,7 @@ extern "C" {
    /*---- common function ----*/
    INT EXPRT cm_set_path(char *path);
    INT EXPRT cm_get_path(char *path);
-   INT cm_dispatch_ipc(char *message, int socket);
+   INT cm_dispatch_ipc(char *message, int s);
    INT EXPRT cm_msg_log(INT message_type, const char *message);
    INT EXPRT cm_msg_log1(INT message_type, const char *message, const char *facility);
    void EXPRT name2c(char *str);
@@ -523,7 +523,7 @@ extern "C" {
    /*---- buffer manager ----*/
    INT bm_lock_buffer(INT buffer_handle);
    INT bm_unlock_buffer(INT buffer_handle);
-   INT bm_notify_client(char *buffer_name, int socket);
+   INT bm_notify_client(char *buffer_name, int s);
    INT EXPRT bm_mark_read_waiting(BOOL flag);
    INT bm_push_event(char *buffer_name);
    INT bm_check_buffers(void);
@@ -536,7 +536,7 @@ extern "C" {
    /*---- online database ----*/
    INT EXPRT db_lock_database(HNDLE database_handle);
    INT EXPRT db_unlock_database(HNDLE database_handle);
-   INT db_update_record(INT hDB, INT hKey, int socket);
+   INT db_update_record(INT hDB, INT hKey, int s);
    INT db_close_all_records(void);
    INT EXPRT db_flush_database(HNDLE hDB);
    INT EXPRT db_notify_clients(HNDLE hDB, HNDLE hKey, BOOL bWalk);
@@ -546,12 +546,12 @@ extern "C" {
 
    /*---- rpc functions -----*/
    RPC_LIST EXPRT *rpc_get_internal_list(INT flag);
-   INT rpc_server_receive(INT index, int sock, BOOL check);
+   INT rpc_server_receive(INT idx, int sock, BOOL check);
    INT rpc_server_callback(struct callback_addr *callback);
    INT EXPRT rpc_server_accept(int sock);
    INT rpc_client_accept(int sock);
    INT rpc_get_server_acception(void);
-   INT rpc_set_server_acception(INT index);
+   INT rpc_set_server_acception(INT idx);
    INT EXPRT rpc_set_server_option(INT item, POINTER_T value);
    POINTER_T EXPRT rpc_get_server_option(INT item);
    INT recv_tcp_check(int sock);
