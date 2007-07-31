@@ -532,6 +532,9 @@ INT ss_shm_close(char *name, void *adr, HNDLE handle, INT destroy_flag)
    {
       struct shmid_ds buf;
       FILE *fh;
+      int i;
+
+      i = destroy_flag; /* avoid compiler warning */
 
       /* get info about shared memory */
       if (shmctl(handle, IPC_STAT, &buf) < 0) {
@@ -584,6 +587,8 @@ INT ss_shm_close(char *name, void *adr, HNDLE handle, INT destroy_flag)
    if (1) {
       int ret;
 
+      ret = destroy_flag; /* avoid compiler warning */
+
       assert(adr == mmap_addr[handle]);
 
       ret = munmap(mmap_addr[handle], mmap_size[handle]);
@@ -632,12 +637,18 @@ INT ss_shm_protect(HNDLE handle, void *adr)
 #endif                          /* OS_WINNT */
 #ifdef OS_UNIX_SHM
 
+   int i;
+   i = handle; /* avoid compiler warning */
+
    if (shmdt(adr) < 0) {
       cm_msg(MERROR, "ss_shm_protect", "shmdt() failed");
       return SS_INVALID_ADDRESS;
    }
 #endif                          /* OS_UNIX_SHM */
 #ifdef OS_UNIX_MMAP
+
+   int i;
+   i = handle; /* avoid compiler warning */
 
    if (1) {
       int ret;
@@ -1010,6 +1021,7 @@ void catch_sigchld(int signo)
 {
    int status;
 
+   status = signo; /* avoid compiler warning */
    wait(&status);
    return;
 }
@@ -1315,11 +1327,11 @@ INT ss_shell(int sock)
 #ifdef OS_UNIX
 #ifndef NO_PTY
    pid_t pid;
-   int i, pipe;
+   int i, p;
    char line[32], buffer[1024], shell[32];
    fd_set readfds;
 
-   if ((pid = forkpty(&pipe, line, NULL, NULL)) < 0)
+   if ((pid = forkpty(&p, line, NULL, NULL)) < 0)
       return 0;
    else if (pid > 0) {
       /* parent process */
@@ -1327,7 +1339,7 @@ INT ss_shell(int sock)
       do {
          FD_ZERO(&readfds);
          FD_SET(sock, &readfds);
-         FD_SET(pipe, &readfds);
+         FD_SET(p, &readfds);
 
          select(FD_SETSIZE, (void *) &readfds, NULL, NULL, NULL);
 
@@ -1336,13 +1348,13 @@ INT ss_shell(int sock)
             i = recv(sock, buffer, sizeof(buffer), 0);
             if (i <= 0)
                break;
-            if (write(pipe, buffer, i) != i)
+            if (write(p, buffer, i) != i)
                break;
          }
 
-         if (FD_ISSET(pipe, &readfds)) {
+         if (FD_ISSET(p, &readfds)) {
             memset(buffer, 0, sizeof(buffer));
-            i = read(pipe, buffer, sizeof(buffer));
+            i = read(p, buffer, sizeof(buffer));
             if (i <= 0)
                break;
             send(sock, buffer, i, 0);
@@ -1975,7 +1987,7 @@ INT ss_mutex_wait_for(HNDLE mutex_handle, INT timeout)
          /* retry if interrupted by a ss_wake signal */
          if (errno == EINTR) {
             /* return if timeout expired */
-            if (timeout > 0 && ss_millitime() - start_time > timeout)
+            if (timeout > 0 && (int) (ss_millitime() - start_time) > timeout)
                return SS_TIMEOUT;
 
             continue;
@@ -2564,6 +2576,10 @@ INT ss_wake(INT pid, INT tid, INT thandle)
 #endif                          /* OS_VMS */
 #ifdef OS_UNIX
 
+   int i;
+   i = tid; /* avoid compiler warning */
+   i = thandle;
+
    if (kill(pid, SIGCONT) < 0)
       return SS_NO_PROCESS;
 
@@ -2738,8 +2754,7 @@ INT ss_exception_handler(void (*func) ())
   signal(SIGBREAK, MidasExceptionSignal);
   signal(SIGABRT, MidasExceptionSignal); */
 
-#endif                          /* OS_WINNT */
-#ifdef OS_VMS
+#elif defined (OS_VMS)
 
    MidasExceptionHandler = func;
    lib$establish(MidasExceptionFilter);
@@ -2751,7 +2766,10 @@ INT ss_exception_handler(void (*func) ())
    signal(SIGSEGV, MidasExceptionSignal);
    signal(SIGTERM, MidasExceptionSignal);
 
-#endif                          /* OS_WINNT */
+#else /* OS_VMS */
+   void *p;
+   p = func; /* avoid compiler warning */
+#endif
 
    return SS_SUCCESS;
 }
@@ -2849,7 +2867,7 @@ SUSPEND_STRUCT *_suspend_struct = NULL;
 INT _suspend_entries;
 
 /*------------------------------------------------------------------*/
-INT ss_suspend_init_ipc(INT index)
+INT ss_suspend_init_ipc(INT idx)
 /********************************************************************\
 
   Routine: ss_suspend_init_ipc
@@ -2857,8 +2875,8 @@ INT ss_suspend_init_ipc(INT index)
   Purpose: Create sockets used in the suspend/resume mechanism.
 
   Input:
-    INT    index            Index to the _suspend_struct array for
-          the calling thread.
+    INT    idx              Index to the _suspend_struct array for
+                            the calling thread.
   Output:
     <indirect>              Set entry in _suspend_struct
 
@@ -2922,8 +2940,8 @@ INT ss_suspend_init_ipc(INT index)
    i = sizeof(bind_addr);
    getsockname(sock, (struct sockaddr *) &bind_addr, (int *) &i);
 
-   _suspend_struct[index].ipc_recv_socket = sock;
-   _suspend_struct[index].ipc_port = ntohs(bind_addr.sin_port);
+   _suspend_struct[idx].ipc_recv_socket = sock;
+   _suspend_struct[idx].ipc_port = ntohs(bind_addr.sin_port);
 
   /*--------------- create UDP send socket ----------------------*/
    sock = socket(AF_INET, SOCK_DGRAM, 0);
@@ -2947,8 +2965,8 @@ INT ss_suspend_init_ipc(INT index)
    memcpy((char *) &(bind_addr.sin_addr), phe->h_addr, phe->h_length);
 #endif
 
-   memcpy(&_suspend_struct[index].bind_addr, &bind_addr, sizeof(bind_addr));
-   _suspend_struct[index].ipc_send_socket = sock;
+   memcpy(&_suspend_struct[idx].bind_addr, &bind_addr, sizeof(bind_addr));
+   _suspend_struct[idx].ipc_send_socket = sock;
 
    return SS_SUCCESS;
 }
@@ -2967,7 +2985,7 @@ INT ss_suspend_get_index(INT * pindex)
 
   Output:
     INT    *pindex          Index to the _suspend_struct array for
-          the calling thread.
+                            the calling thread.
 
   Function value:
     SS_SUCCESS              Successful completion
@@ -2975,7 +2993,7 @@ INT ss_suspend_get_index(INT * pindex)
 
 \********************************************************************/
 {
-   INT index;
+   INT idx;
 
    if (_suspend_struct == NULL) {
       /* create a new entry for this thread */
@@ -2990,20 +3008,20 @@ INT ss_suspend_get_index(INT * pindex)
       _suspend_struct[0].in_use = TRUE;
    } else {
       /* check for an existing entry for this thread */
-      for (index = 0; index < _suspend_entries; index++)
-         if (_suspend_struct[index].thread_id == ss_gettid()) {
+      for (idx = 0; idx < _suspend_entries; idx++)
+         if (_suspend_struct[idx].thread_id == ss_gettid()) {
             if (pindex != NULL)
-               *pindex = index;
+               *pindex = idx;
 
             return SS_SUCCESS;
          }
 
       /* check for a deleted entry */
-      for (index = 0; index < _suspend_entries; index++)
-         if (!_suspend_struct[index].in_use)
+      for (idx = 0; idx < _suspend_entries; idx++)
+         if (!_suspend_struct[idx].in_use)
             break;
 
-      if (index == _suspend_entries) {
+      if (idx == _suspend_entries) {
          /* if not found, create new one */
          _suspend_struct = (SUSPEND_STRUCT *) realloc(_suspend_struct,
                                                       sizeof
@@ -3017,9 +3035,9 @@ INT ss_suspend_get_index(INT * pindex)
             return SS_NO_MEMORY;
          }
       }
-      *pindex = index;
-      _suspend_struct[index].thread_id = ss_gettid();
-      _suspend_struct[index].in_use = TRUE;
+      *pindex = idx;
+      _suspend_struct[idx].thread_id = ss_gettid();
+      _suspend_struct[idx].in_use = TRUE;
    }
 
    return SS_SUCCESS;
@@ -3160,17 +3178,17 @@ INT ss_suspend_get_port(INT * port)
 
 \********************************************************************/
 {
-   INT index, status;
+   INT idx, status;
 
-   status = ss_suspend_get_index(&index);
+   status = ss_suspend_get_index(&idx);
 
    if (status != SS_SUCCESS)
       return status;
 
-   if (!_suspend_struct[index].ipc_port)
-      ss_suspend_init_ipc(index);
+   if (!_suspend_struct[idx].ipc_port)
+      ss_suspend_init_ipc(idx);
 
-   *port = _suspend_struct[index].ipc_port;
+   *port = _suspend_struct[idx].ipc_port;
 
    return SS_SUCCESS;
 }
@@ -3211,13 +3229,13 @@ INT ss_suspend(INT millisec, INT msg)
    fd_set readfds;
    struct timeval timeout;
    INT sock, server_socket;
-   INT index, status, i, return_status;
+   INT idx, status, i, return_status;
    int size;
    struct sockaddr from_addr;
    char str[100], buffer[80], buffer_tmp[80];
 
    /* get index to _suspend_struct for this thread */
-   status = ss_suspend_get_index(&index);
+   status = ss_suspend_get_index(&idx);
 
    if (status != SS_SUCCESS)
       return status;
@@ -3228,17 +3246,17 @@ INT ss_suspend(INT millisec, INT msg)
       FD_ZERO(&readfds);
 
       /* check listen socket */
-      if (_suspend_struct[index].listen_socket)
-         FD_SET(_suspend_struct[index].listen_socket, &readfds);
+      if (_suspend_struct[idx].listen_socket)
+         FD_SET(_suspend_struct[idx].listen_socket, &readfds);
 
       /* check server channels */
-      if (_suspend_struct[index].server_acception)
+      if (_suspend_struct[idx].server_acception)
          for (i = 0; i < MAX_RPC_CONNECTION; i++) {
             /* RPC channel */
-            sock = _suspend_struct[index].server_acception[i].recv_sock;
+            sock = _suspend_struct[idx].server_acception[i].recv_sock;
 
             /* only watch the event tcp connection belonging to this thread */
-            if (!sock || _suspend_struct[index].server_acception[i].tid != ss_gettid())
+            if (!sock || _suspend_struct[idx].server_acception[i].tid != ss_gettid())
                continue;
 
             /* watch server socket if no data in cache */
@@ -3250,7 +3268,7 @@ INT ss_suspend(INT millisec, INT msg)
                millisec = 0;
 
             /* event channel */
-            sock = _suspend_struct[index].server_acception[i].event_sock;
+            sock = _suspend_struct[idx].server_acception[i].event_sock;
 
             if (!sock)
                continue;
@@ -3265,15 +3283,15 @@ INT ss_suspend(INT millisec, INT msg)
          }
 
       /* watch client recv connections */
-      if (_suspend_struct[index].server_connection) {
-         sock = _suspend_struct[index].server_connection->recv_sock;
+      if (_suspend_struct[idx].server_connection) {
+         sock = _suspend_struct[idx].server_connection->recv_sock;
          if (sock)
             FD_SET(sock, &readfds);
       }
 
       /* check IPC socket */
-      if (_suspend_struct[index].ipc_recv_socket)
-         FD_SET(_suspend_struct[index].ipc_recv_socket, &readfds);
+      if (_suspend_struct[idx].ipc_recv_socket)
+         FD_SET(_suspend_struct[idx].ipc_recv_socket, &readfds);
 
       timeout.tv_sec = millisec / 1000;
       timeout.tv_usec = (millisec % 1000) * 1000;
@@ -3291,31 +3309,31 @@ INT ss_suspend(INT millisec, INT msg)
       } while (status == -1);   /* dont return if an alarm signal was cought */
 
       /* if listen socket got data, call dispatcher with socket */
-      if (_suspend_struct[index].listen_socket &&
-          FD_ISSET(_suspend_struct[index].listen_socket, &readfds)) {
-         sock = _suspend_struct[index].listen_socket;
+      if (_suspend_struct[idx].listen_socket &&
+          FD_ISSET(_suspend_struct[idx].listen_socket, &readfds)) {
+         sock = _suspend_struct[idx].listen_socket;
 
-         if (_suspend_struct[index].listen_dispatch) {
-            status = _suspend_struct[index].listen_dispatch(sock);
+         if (_suspend_struct[idx].listen_dispatch) {
+            status = _suspend_struct[idx].listen_dispatch(sock);
             if (status == RPC_SHUTDOWN)
                return status;
          }
       }
 
       /* check server channels */
-      if (_suspend_struct[index].server_acception)
+      if (_suspend_struct[idx].server_acception)
          for (i = 0; i < MAX_RPC_CONNECTION; i++) {
             /* rpc channel */
-            sock = _suspend_struct[index].server_acception[i].recv_sock;
+            sock = _suspend_struct[idx].server_acception[i].recv_sock;
 
             /* only watch the event tcp connection belonging to this thread */
-            if (!sock || _suspend_struct[index].server_acception[i].tid != ss_gettid())
+            if (!sock || _suspend_struct[idx].server_acception[i].tid != ss_gettid())
                continue;
 
             if (recv_tcp_check(sock) || FD_ISSET(sock, &readfds)) {
-               if (_suspend_struct[index].server_dispatch) {
-                  status = _suspend_struct[index].server_dispatch(i, sock, msg != 0);
-                  _suspend_struct[index].server_acception[i].
+               if (_suspend_struct[idx].server_dispatch) {
+                  status = _suspend_struct[idx].server_dispatch(i, sock, msg != 0);
+                  _suspend_struct[idx].server_acception[i].
                       last_activity = ss_millitime();
 
                   if (status == SS_ABORT || status == SS_EXIT || status == RPC_SHUTDOWN)
@@ -3326,14 +3344,14 @@ INT ss_suspend(INT millisec, INT msg)
             }
 
             /* event channel */
-            sock = _suspend_struct[index].server_acception[i].event_sock;
+            sock = _suspend_struct[idx].server_acception[i].event_sock;
             if (!sock)
                continue;
 
             if (recv_event_check(sock) || FD_ISSET(sock, &readfds)) {
-               if (_suspend_struct[index].server_dispatch) {
-                  status = _suspend_struct[index].server_dispatch(i, sock, msg != 0);
-                  _suspend_struct[index].server_acception[i].
+               if (_suspend_struct[idx].server_dispatch) {
+                  status = _suspend_struct[idx].server_dispatch(i, sock, msg != 0);
+                  _suspend_struct[idx].server_acception[i].
                       last_activity = ss_millitime();
 
                   if (status == SS_ABORT || status == SS_EXIT || status == RPC_SHUTDOWN)
@@ -3345,12 +3363,12 @@ INT ss_suspend(INT millisec, INT msg)
          }
 
       /* check server message channels */
-      if (_suspend_struct[index].server_connection) {
-         sock = _suspend_struct[index].server_connection->recv_sock;
+      if (_suspend_struct[idx].server_connection) {
+         sock = _suspend_struct[idx].server_connection->recv_sock;
 
          if (sock && FD_ISSET(sock, &readfds)) {
-            if (_suspend_struct[index].client_dispatch)
-               status = _suspend_struct[index].client_dispatch(sock);
+            if (_suspend_struct[idx].client_dispatch)
+               status = _suspend_struct[idx].client_dispatch(sock);
             else {
                status = SS_SUCCESS;
                size = recv_tcp(sock, buffer, sizeof(buffer), 0);
@@ -3361,15 +3379,15 @@ INT ss_suspend(INT millisec, INT msg)
 
             if (status == SS_ABORT) {
                sprintf(str, "Server connection broken to %s",
-                       _suspend_struct[index].server_connection->host_name);
+                       _suspend_struct[idx].server_connection->host_name);
                cm_msg(MINFO, "ss_suspend", str);
 
                /* close client connection if link broken */
-               closesocket(_suspend_struct[index].server_connection->send_sock);
-               closesocket(_suspend_struct[index].server_connection->recv_sock);
-               closesocket(_suspend_struct[index].server_connection->event_sock);
+               closesocket(_suspend_struct[idx].server_connection->send_sock);
+               closesocket(_suspend_struct[idx].server_connection->recv_sock);
+               closesocket(_suspend_struct[idx].server_connection->event_sock);
 
-               memset(_suspend_struct[index].server_connection,
+               memset(_suspend_struct[idx].server_connection,
                       0, sizeof(RPC_CLIENT_CONNECTION));
 
                /* exit program after broken connection to MIDAS server */
@@ -3381,27 +3399,27 @@ INT ss_suspend(INT millisec, INT msg)
       }
 
       /* check IPC socket */
-      if (_suspend_struct[index].ipc_recv_socket &&
-          FD_ISSET(_suspend_struct[index].ipc_recv_socket, &readfds)) {
+      if (_suspend_struct[idx].ipc_recv_socket &&
+          FD_ISSET(_suspend_struct[idx].ipc_recv_socket, &readfds)) {
          /* receive IPC message */
          size = sizeof(struct sockaddr);
-         size = recvfrom(_suspend_struct[index].ipc_recv_socket,
+         size = recvfrom(_suspend_struct[idx].ipc_recv_socket,
                          buffer, sizeof(buffer), 0, &from_addr, (int *) &size);
 
          /* find out if this thread is connected as a server */
          server_socket = 0;
-         if (_suspend_struct[index].server_acception &&
+         if (_suspend_struct[idx].server_acception &&
              rpc_get_server_option(RPC_OSERVER_TYPE) != ST_REMOTE)
             for (i = 0; i < MAX_RPC_CONNECTION; i++) {
-               sock = _suspend_struct[index].server_acception[i].send_sock;
-               if (sock && _suspend_struct[index].server_acception[i].tid == ss_gettid())
+               sock = _suspend_struct[idx].server_acception[i].send_sock;
+               if (sock && _suspend_struct[idx].server_acception[i].tid == ss_gettid())
                   server_socket = sock;
             }
 
          /* receive further messages to empty UDP queue */
          do {
             FD_ZERO(&readfds);
-            FD_SET(_suspend_struct[index].ipc_recv_socket, &readfds);
+            FD_SET(_suspend_struct[idx].ipc_recv_socket, &readfds);
 
             timeout.tv_sec = 0;
             timeout.tv_usec = 0;
@@ -3409,19 +3427,19 @@ INT ss_suspend(INT millisec, INT msg)
             status = select(FD_SETSIZE, &readfds, NULL, NULL, &timeout);
 
             if (status != -1
-                && FD_ISSET(_suspend_struct[index].ipc_recv_socket, &readfds)) {
+                && FD_ISSET(_suspend_struct[idx].ipc_recv_socket, &readfds)) {
                size = sizeof(struct sockaddr);
                size =
-                   recvfrom(_suspend_struct[index].ipc_recv_socket,
+                   recvfrom(_suspend_struct[idx].ipc_recv_socket,
                             buffer_tmp, sizeof(buffer_tmp), 0, &from_addr, &size);
 
                /* don't forward same MSG_BM as above */
                if (buffer_tmp[0] != 'B' || strcmp(buffer_tmp, buffer) != 0)
-                  if (_suspend_struct[index].ipc_dispatch)
-                     _suspend_struct[index].ipc_dispatch(buffer_tmp, server_socket);
+                  if (_suspend_struct[idx].ipc_dispatch)
+                     _suspend_struct[idx].ipc_dispatch(buffer_tmp, server_socket);
             }
 
-         } while (FD_ISSET(_suspend_struct[index].ipc_recv_socket, &readfds));
+         } while (FD_ISSET(_suspend_struct[idx].ipc_recv_socket, &readfds));
 
          /* return if received requested message */
          if (msg == MSG_BM && buffer[0] == 'B')
@@ -3430,8 +3448,8 @@ INT ss_suspend(INT millisec, INT msg)
             return SS_SUCCESS;
 
          /* call dispatcher */
-         if (_suspend_struct[index].ipc_dispatch)
-            _suspend_struct[index].ipc_dispatch(buffer, server_socket);
+         if (_suspend_struct[idx].ipc_dispatch)
+            _suspend_struct[idx].ipc_dispatch(buffer, server_socket);
 
          return_status = SS_SUCCESS;
       }
@@ -3466,23 +3484,23 @@ INT ss_resume(INT port, char *message)
 
 \********************************************************************/
 {
-   INT status, index;
+   INT status, idx;
 
    if (ss_in_async_routine_flag) {
       /* if called from watchdog, tid is different under NT! */
-      index = 0;
+      idx = 0;
    } else {
-      status = ss_suspend_get_index(&index);
+      status = ss_suspend_get_index(&idx);
 
       if (status != SS_SUCCESS)
          return status;
    }
 
-   _suspend_struct[index].bind_addr.sin_port = htons((short) port);
+   _suspend_struct[idx].bind_addr.sin_port = htons((short) port);
 
-   status = sendto(_suspend_struct[index].ipc_send_socket, message,
+   status = sendto(_suspend_struct[idx].ipc_send_socket, message,
                    strlen(message) + 1, 0,
-                   (struct sockaddr *) &_suspend_struct[index].bind_addr,
+                   (struct sockaddr *) &_suspend_struct[idx].bind_addr,
                    sizeof(struct sockaddr_in));
 
    if (status != (INT) strlen(message) + 1)
@@ -3685,7 +3703,7 @@ INT recv_tcp(int sock, char *net_buffer, DWORD buffer_size, INT flags)
 
       n_received += n;
 
-   } while (n_received < sizeof(NET_COMMAND_HEADER));
+   } while (n_received < (int) sizeof(NET_COMMAND_HEADER));
 
    /* now receive parameters */
 
@@ -5205,7 +5223,11 @@ void ss_set_screen_size(int x, int y)
    hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
    SetConsoleScreenBufferSize(hConsole, coordSize);
 
-#endif                          /* OS_WINNT */
+#else /* OS_WINNT */
+   int i;
+   i = x; /* avoid compiler warning */
+   i = y;
+#endif
 }
 
 /*------------------------------------------------------------------*/
@@ -5673,6 +5695,9 @@ INT ss_directio_give_port(INT start, INT end)
 
    return SS_SUCCESS;
 #else
+   int i;
+   i = start; /* avoid compiler warning */
+   i = end;
    return SS_SUCCESS;
 #endif
 }
@@ -5712,6 +5737,9 @@ INT ss_directio_lock_port(INT start, INT end)
 
    return SS_SUCCESS;
 #else
+   int i;
+   i = start; /* avoid compiler warning */
+   i = end;
    return SS_SUCCESS;
 #endif
 }
