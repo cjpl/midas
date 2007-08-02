@@ -1602,7 +1602,7 @@ extern "C" {
                      const char *facility, const char *routine, const char *format, ...);
    INT EXPRT cm_msg_register(void (*func)
                               (HNDLE, HNDLE, EVENT_HEADER *, void *));
-   INT EXPRT cm_msg_retrieve(INT n_message, char *message, INT * buf_size);
+   INT EXPRT cm_msg_retrieve(INT n_message, char *message, INT buf_size);
 
    BOOL EXPRT equal_ustring(char *str1, char *str2);
 

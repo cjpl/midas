@@ -834,7 +834,7 @@ Retrieve old messages from log file
 @param *buf_size         Size of message buffer to fill
 @return CM_SUCCESS
 */
-INT cm_msg_retrieve(INT n_message, char *message, INT * buf_size)
+INT cm_msg_retrieve(INT n_message, char *message, INT buf_size)
 {
    char dir[256];
    char filename[256];
@@ -845,7 +845,7 @@ INT cm_msg_retrieve(INT n_message, char *message, INT * buf_size)
 
 
    if (rpc_is_remote())
-      return rpc_call(RPC_CM_MSG_RETRIEVE, message, buf_size);
+      return rpc_call(RPC_CM_MSG_RETRIEVE, n_message, message, buf_size);
 
    cm_get_experiment_database(&hDB, NULL);
 
@@ -888,25 +888,24 @@ INT cm_msg_retrieve(INT n_message, char *message, INT * buf_size)
    f = fopen(path, "rb");
    if (f == NULL) {
       sprintf(message, "Cannot open message log file %s\n", path);
-      *buf_size = strlen(message);
       return CM_DB_ERROR;
    } else {
       /* position buf_size bytes before the EOF */
-      fseek(f, -(*buf_size - 1), SEEK_END);
+      fseek(f, -(buf_size - 1), SEEK_END);
       offset = ftell(f);
       if (offset != 0) {
          /* go to end of line */
-         fgets(message, *buf_size - 1, f);
+         fgets(message, buf_size - 1, f);
          offset = ftell(f) - offset;
-         *buf_size -= offset;
+         buf_size -= offset;
       }
 
-      memset(message, 0, *buf_size);
-      fread(message, 1, *buf_size - 1, f);
-      message[*buf_size - 1] = 0;
+      memset(message, 0, buf_size);
+      fread(message, 1, buf_size - 1, f);
+      message[buf_size - 1] = 0;
       fclose(f);
 
-      p = message + (*buf_size - 2);
+      p = message + (buf_size - 2);
 
       /* goto end of buffer */
       while (p != message && *p == 0)
@@ -930,10 +929,10 @@ INT cm_msg_retrieve(INT n_message, char *message, INT * buf_size)
             p++;
       }
 
-      *buf_size = (*buf_size - 1) - (p - message);
+      buf_size = (buf_size - 1) - (p - message);
 
-      memmove(message, p, *buf_size);
-      message[*buf_size] = 0;
+      memmove(message, p, buf_size);
+      message[buf_size] = 0;
    }
 
    return CM_SUCCESS;
