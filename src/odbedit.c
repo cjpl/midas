@@ -2452,9 +2452,9 @@ void command_loop(char *host_name, char *exp_name, char *cmd, char *start_dir)
          if (param[1][0])
             i = atoi(param[1]);
 
-         size = sizeof(data);
-         cm_msg_retrieve(i, data, &size);
+         cm_msg_retrieve(i, data, sizeof(data));
          printf(data);
+         printf("\n\n");
       }
 
       /* cleanup */

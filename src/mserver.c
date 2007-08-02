@@ -462,7 +462,7 @@ INT rpc_server_dispatch(INT index, void *prpc_param[])
       break;
 
    case RPC_CM_MSG_RETRIEVE:
-      status = cm_msg_retrieve(CINT(0), CSTRING(1), CPINT(2));
+      status = cm_msg_retrieve(CINT(0), CSTRING(1), CINT(2));
       break;
 
       /* buffer manager functions */
