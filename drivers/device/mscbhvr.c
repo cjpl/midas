@@ -192,8 +192,8 @@ INT mscbhvr_read_all(MSCBHVR_INFO * info, int i)
    status = mscb_read_range(info->fd, info->settings.address[i], 0, 12, buffer, &size);
    if (status != MSCB_SUCCESS) {
       cm_msg(MERROR, "mscbhvr_read_all",
-            "Cannot access MSCB HVR address \"%d\". Check power and connection.", 
-            info->settings.address[i]);
+            "Cannot access MSCB HVR address \"%s:%d\". Check power and connection.", 
+            info->settings.mscb_device, info->settings.address[i]);
       return FE_ERR_HW;
    }
 
@@ -278,8 +278,8 @@ INT mscbhvr_get(MSCBHVR_INFO * info, INT channel, float *pvalue)
    status = mscb_read_range(info->fd, info->settings.address[channel], 2, 3, buffer, &size);
    if (status != MSCB_SUCCESS) {
       cm_msg(MERROR, "mscbhvr_get",
-            "Cannot access MSCB HVR address \"%d\". Check power and connection.", 
-            info->settings.address[channel]);
+            "Cannot access MSCB HVR address \"%s:%d\". Check power and connection.", 
+            info->settings.mscb_device, info->settings.address[channel]);
       return FE_ERR_HW;
    }
 

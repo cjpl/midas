@@ -21,7 +21,7 @@
 /* MSCB node address / channel mapping */
 
 typedef struct {
-   char device[256];
+   char mscb_device[256];
    char pwd[32];
    BOOL debug;
    int *mscb_address;
@@ -84,9 +84,9 @@ INT mscbdev_init(HNDLE hkey, void **pinfo, INT channels, INT(*bd) (INT cmd, ...)
    cm_get_experiment_database(&hDB, NULL);
 
    /* create settings record */
-   size = sizeof(info->mscbdev_settings.device);
-   strcpy(info->mscbdev_settings.device, "usb0");
-   status = db_get_value(hDB, hkey, "Device", &info->mscbdev_settings.device, &size, TID_STRING, TRUE);
+   size = sizeof(info->mscbdev_settings.mscb_device);
+   strcpy(info->mscbdev_settings.mscb_device, "usb0");
+   status = db_get_value(hDB, hkey, "Device", &info->mscbdev_settings.mscb_device, &size, TID_STRING, TRUE);
    if (status != DB_SUCCESS)
       return FE_ERR_ODB;
 
@@ -119,16 +119,16 @@ INT mscbdev_init(HNDLE hkey, void **pinfo, INT channels, INT(*bd) (INT cmd, ...)
    /* initialize info structure */
    info->num_channels = channels;
 
-   info->fd = mscb_init(info->mscbdev_settings.device, sizeof(info->mscbdev_settings.device),
+   info->fd = mscb_init(info->mscbdev_settings.mscb_device, sizeof(info->mscbdev_settings.mscb_device),
                         info->mscbdev_settings.pwd, info->mscbdev_settings.debug);
    if (info->fd < 0) {
-      cm_msg(MERROR, "mscbdev_init", "Cannot connect to MSCB device \"%s\"", info->mscbdev_settings.device);
+      cm_msg(MERROR, "mscbdev_init", "Cannot connect to MSCB device \"%s\"", info->mscbdev_settings.mscb_device);
       return FE_ERR_HW;
    }
 
    /* write back device */
-   status = db_set_value(hDB, hkey, "Device", &info->mscbdev_settings.device,
-                         sizeof(info->mscbdev_settings.device), 1, TID_STRING);
+   status = db_set_value(hDB, hkey, "Device", &info->mscbdev_settings.mscb_device,
+                         sizeof(info->mscbdev_settings.mscb_device), 1, TID_STRING);
    if (status != DB_SUCCESS)
       return FE_ERR_ODB;
 
@@ -208,8 +208,9 @@ INT mscbdev_read_all(MSCBDEV_INFO * info)
             /* only produce error once every minute */
             if (ss_time() - last_error >= 60) {
                last_error = ss_time();
-               cm_msg(MERROR, "mscbdev_get", "Error reading MSCB bus at %d:%d, status %d",
-                      info->mscbdev_settings.mscb_address[i], info->mscbdev_settings.mscb_index[i], status);
+               cm_msg(MERROR, "mscbdev_get", "Error reading MSCB bus at %s:%d:%d, status %d",
+                      info->mscbdev_settings.mscb_device, info->mscbdev_settings.mscb_address[i], 
+                      info->mscbdev_settings.mscb_index[i], status);
             }
             for (j = v_start; j <= v_stop; j++)
                info->mscbdev_settings.var_cache[j] = (float) ss_nan();
