@@ -1717,9 +1717,7 @@ void show_messages_page(int refresh, int n_message)
 
    rsprintf("<input type=submit name=cmd value=More%d><p>\n", more);
 
-   size = sizeof(buffer);
-
-   cm_msg_retrieve(n_message, buffer, &size);
+   cm_msg_retrieve(n_message, buffer, sizeof(buffer));
 
    pline = buffer;
    eob = FALSE;
@@ -10377,8 +10375,7 @@ void interprete(char *cookie_pwd, char *cookie_wpwd, char *path, int refresh)
 
       if (!history_mode) {
          /* retrieve last message */
-         size = 1000;
-         cm_msg_retrieve(1, data, &size);
+         cm_msg_retrieve(1, data, 1000);
 
          receive_message(0, 0, NULL, data + 25);
       }
