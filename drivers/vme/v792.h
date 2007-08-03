@@ -47,8 +47,12 @@ extern "C" {
 #define  V792_BIT_CLEAR2_WO   (DWORD) (0x1034)
 #define  V792_TEST_EVENT_WO   (DWORD) (0x103E)
 #define  V792_EVT_CNT_RST_WO  (DWORD) (0x1040)
+#define  V792_SWCOMM_WO       (DWORD) (0x1068)
 #define  V785_SLIDECONST_RW   (DWORD) (0x106A)
 #define  V792_THRES_BASE      (DWORD) (0x1080)
+
+WORD v792_Read16(MVME_INTERFACE *mvme, DWORD base, int offset);
+void v792_Write16(MVME_INTERFACE *mvme, DWORD base, int offset, WORD value);
 
 void v792_EvtCntRead(MVME_INTERFACE *mvme, DWORD base, DWORD *evtcnt);
 void v792_EvtCntReset(MVME_INTERFACE *mvme, DWORD base);
@@ -75,6 +79,7 @@ void v792_EvtTriggerSet(MVME_INTERFACE *mvme, DWORD base, int count);
 void v792_DataClear(MVME_INTERFACE *mvme, DWORD base);
 void v792_OnlineSet(MVME_INTERFACE *mvme, DWORD base);
 void v792_LowThEnable(MVME_INTERFACE *mvme, DWORD base);
+void v792_LowThDisable(MVME_INTERFACE *mvme, DWORD base);
 void v792_EmptyEnable(MVME_INTERFACE *mvme, DWORD base);
 void v792_EvtCntReset(MVME_INTERFACE *mvme, DWORD base);
 int  v792_Setup(MVME_INTERFACE *mvme, DWORD base, int mode);
@@ -82,6 +87,7 @@ void v792_DelayClearSet(MVME_INTERFACE *mvme, DWORD base, int delay);
 void v792_SoftReset(MVME_INTERFACE *mvme, DWORD base);
 void v792_ControlRegister1Write(MVME_INTERFACE *mvme, DWORD base, WORD pat);
 WORD v792_ControlRegister1Read(MVME_INTERFACE *mvme, DWORD base);
+void v792_Trigger(MVME_INTERFACE *mvme, DWORD base);
 
   enum v792_DataType {
     v792_typeMeasurement=0,

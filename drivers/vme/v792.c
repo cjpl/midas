@@ -10,7 +10,7 @@
                 v792_ identifies commands supported by both
                 v792_ identifies commands supported by V792 only
                 v785_ identifies commands supported by V785 only
-
+                
   $Id$
 *********************************************************************/
 #include <stdio.h>
@@ -20,6 +20,18 @@
 #include <unistd.h>
 #endif
 #include "v792.h"
+
+WORD v792_Read16(MVME_INTERFACE *mvme, DWORD base, int offset)
+{
+  mvme_set_dmode(mvme, MVME_DMODE_D16);
+  return mvme_read_value(mvme, base+offset);
+}
+
+void v792_Write16(MVME_INTERFACE *mvme, DWORD base, int offset, WORD value)
+{
+  mvme_set_dmode(mvme, MVME_DMODE_D16);
+  mvme_write_value(mvme, base+offset, value);
+}
 
 /*****************************************************************/
 /*
@@ -46,6 +58,8 @@ int v792_EventRead(MVME_INTERFACE *mvme, DWORD base, DWORD *pdest, int *nentry)
       pdest[*nentry] = mvme_read_value(mvme, base);
       *nentry += 1;
     } while (!(pdest[*nentry-1] & 0x04000000)); // copy until the trailer
+
+    nentry--;
   }
   mvme_set_dmode(mvme, cmode);
   return *nentry;
@@ -54,7 +68,7 @@ int v792_EventRead(MVME_INTERFACE *mvme, DWORD base, DWORD *pdest, int *nentry)
 /*****************************************************************/
 /*
 Read nentry of data from the data buffer. Will use the DMA engine
-if size is larger then 127 bytes.
+if size is larger than 127 bytes.
 */
 int v792_DataRead(MVME_INTERFACE *mvme, DWORD base, DWORD *pdest, int *nentry)
 {
@@ -251,6 +265,16 @@ void v792_LowThEnable(MVME_INTERFACE *mvme, DWORD base)
 }
 
 /*****************************************************************/
+void v792_LowThDisable(MVME_INTERFACE *mvme, DWORD base)
+{
+  int cmode;
+  mvme_get_dmode(mvme, &cmode);
+  mvme_set_dmode(mvme, MVME_DMODE_D16);
+  mvme_write_value(mvme, base+V792_BIT_SET2_RW, 0x10);
+  mvme_set_dmode(mvme, cmode);
+}
+
+/*****************************************************************/
 void v792_EmptyEnable(MVME_INTERFACE *mvme, DWORD base)
 {
   int cmode;
@@ -366,6 +390,18 @@ void v792_ControlRegister1Write(MVME_INTERFACE *mvme, DWORD base, WORD pat) {
 
 /*****************************************************************/
 /**
+ * cause a software trigger
+ */
+void v792_Trigger(MVME_INTERFACE *mvme, DWORD base) {
+  int cmode;
+  mvme_get_dmode(mvme, &cmode);
+  mvme_set_dmode(mvme, MVME_DMODE_D16);
+  mvme_write_value(mvme, base+V792_SWCOMM_WO, 0);
+  mvme_set_dmode(mvme, cmode);
+}
+
+/*****************************************************************/
+/**
 Sets all the necessary paramters for a given configuration.
 The configuration is provided by the mode argument.
 Add your own configuration in the case statement. Let me know
@@ -412,10 +448,11 @@ void  v792_Status(MVME_INTERFACE *mvme, DWORD base)
 
   mvme_get_dmode(mvme, &cmode);
   mvme_set_dmode(mvme, MVME_DMODE_D16);
-  printf("v792 Status for Base:%lx\n", base);
+  printf("V792 at VME A24 0x%06x:\n", base);
   status = mvme_read_value(mvme, base+V792_FIRM_REV);
   printf("Firmware revision: 0x%x\n", status);
   status = v792_CSR1Read(mvme, base);
+  printf("CSR1: 0x%x\n", status);
   printf("DataReady    :%s\t", status & 0x1 ? "Y" : "N");
   printf(" - Global Dready:%s\t", status & 0x2 ? "Y" : "N");
   printf(" - Busy         :%s\n", status & 0x4 ? "Y" : "N");
@@ -426,13 +463,16 @@ void  v792_Status(MVME_INTERFACE *mvme, DWORD base)
   printf(" - TermOFF      :%s\t", status & 0x80 ? "Y" : "N");
   printf(" - Event Ready  :%s\n", status & 0x100 ? "Y" : "N");
   status = v792_CSR2Read(mvme, base);
+  printf("CSR2: 0x%x\n", status);
   printf("Buffer Empty :%s\t", status & 0x2 ? "Y" : "N");
-  printf(" - Buffer Full  :%s\t", status & 0x4 ? "Y" : "N");
-  printf(" - Csel0        :%s\n", status & 0x10 ? "Y" : "N");
-  printf("Csel1        :%s\t", status & 0x20 ? "Y" : "N");
-  printf(" - Dsel0        :%s\t", status & 0x40 ? "Y" : "N");
-  printf(" - Dsel1        :%s\n", status & 0x80 ? "Y" : "N");
+  printf(" - Buffer Full  :%s\n", status & 0x4 ? "Y" : "N");
+  printf("Daughter card type (CSEL/DSEL)  :%d%d%d%d\n",
+         status & 0x80 ? 1 : 0, 
+         status & 0x40 ? 1 : 0,
+         status & 0x20 ? 1 : 0,
+         status & 0x10 ? 1 : 0);
   status = v792_BitSet2Read(mvme, base);
+  printf("BitSet2: 0x%x\n", status);
   printf("Test Mem     :%s\t", status & 0x1 ? "Y" : "N");
   printf(" - Offline      :%s\t", status & 0x2 ? "Y" : "N");
   printf(" - Clear Data   :%s\n", status & 0x4  ? "Y" : "N");
@@ -442,10 +482,13 @@ void  v792_Status(MVME_INTERFACE *mvme, DWORD base)
   printf("Empty Enable :%s\t", status & 0x1000 ? "Y" : "N");
   printf(" - Slide sub En :%s\t", status & 0x2000 ? "Y" : "N");
   printf(" - All Triggers :%s\n", status & 0x4000 ? "Y" : "N");
+  v792_EvtCntRead(mvme, base, &status);
+  printf("Event counter: %d\n", status);
+
   v792_ThresholdRead(mvme, base, threshold);
   for (i=0;i<V792_MAX_CHANNELS;i+=2) {
-    printf("Threshold[%i] = 0x%4.4x\t   -  ", i, threshold[i]);
-    printf("Threshold[%i] = 0x%4.4x\n", i+1, threshold[i+1]);
+    printf("Threshold[%2i] = 0x%4.4x\t   -  ", i, threshold[i]);
+    printf("Threshold[%2i] = 0x%4.4x\n", i+1, threshold[i+1]);
   }
   mvme_set_dmode(mvme, cmode);
 }
@@ -461,22 +504,22 @@ void  v792_Status(MVME_INTERFACE *mvme, DWORD base)
 void v792_printEntry(const v792_Data* v) {
   switch (v->data.type) {
   case v792_typeMeasurement:
-    printf("Data=0x%08lx Measurement ch=%3d v=%6d over=%1d under=%1d\n",
-     v->raw,v->data.channel,v->data.adc,v->data.ov,v->data.un);
+    printf("Data=0x%08x Measurement ch=%3d v=%6d over=%1d under=%1d\n",
+	   (int)v->raw,v->data.channel,v->data.adc,v->data.ov,v->data.un);
     break;
   case v792_typeHeader:
-    printf("Data=0x%08lx Header geo=%2x crate=%2x cnt=%2d\n",
-         v->raw,v->header.geo,v->header.crate,v->header.cnt);
+    printf("Data=0x%08x Header geo=%2x crate=%2x cnt=%2d\n",
+    	   (int)v->raw,v->header.geo,v->header.crate,v->header.cnt);
     break;
   case v792_typeFooter:
-    printf("Data=0x%08lx Footer geo=%2x evtCnt=%7d\n",
-         v->raw,v->footer.geo,v->footer.evtCnt);
+    printf("Data=0x%08x Footer geo=%2x evtCnt=%7d\n",
+    	   (int)v->raw,v->footer.geo,v->footer.evtCnt);
     break;
   case v792_typeFiller:
-    printf("Data=0x%08lx Filler\n",v->raw);
+    printf("Data=0x%08x Filler\n",(int)v->raw);
     break;
   default:
-    printf("Data=0x%08lx Unknown %04x\n",v->raw,v->data.type);
+    printf("Data=0x%08x Unknown %04x\n",(int)v->raw,v->data.type);
     break;
   }
 }
@@ -556,7 +599,7 @@ int main (int argc, char* argv[]) {
     v792_EventRead(myvme, V792_BASE, dest, &status);
     printf("count: 0x%x\n", status);
     for (i=0;i<status;i++) {
-      printf("%d)",i);
+      printf("%02d)",i);
       v792_printEntry((v792_Data*)&dest[i]);
     }
   }
