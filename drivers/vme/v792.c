@@ -260,7 +260,7 @@ void v792_LowThEnable(MVME_INTERFACE *mvme, DWORD base)
   int cmode;
   mvme_get_dmode(mvme, &cmode);
   mvme_set_dmode(mvme, MVME_DMODE_D16);
-  mvme_write_value(mvme, base+V792_BIT_CLEAR2_RO, 0x10);
+  mvme_write_value(mvme, base+V792_BIT_CLEAR2_WO, 0x10);
   mvme_set_dmode(mvme, cmode);
 }
 
