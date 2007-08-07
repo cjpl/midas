@@ -275,7 +275,7 @@ void user_init(unsigned char init)
    ADC_NRES = 1;
    ADC_NRDY = 1; // input
    ADC_DIN  = 1; // input
-   CADC_SCLK = 0;
+   CADC_SCLK = 1; // inverted
    CADC_SDO  = 0xFF; // input
 
    /* reset and wait for start-up of ADC */
@@ -748,9 +748,9 @@ void read_current()
          sr[j] = (sr[j] << 1) | (d & 0x01);
          d >>= 1;
       }
-      CADC_SCLK = 1;
-      delay_us(OPT_DELAY);
       CADC_SCLK = 0;
+      delay_us(OPT_DELAY);
+      CADC_SCLK = 1;
       delay_us(OPT_DELAY);
    }
 
