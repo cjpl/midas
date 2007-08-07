@@ -818,9 +818,10 @@ unsigned char cadc_read(unsigned char channel, float *value)
 
    if (channel == 0) {
 
-      C0ADC_NCS = 0;
-      delay_us(OPT_DELAY);
+      /* SCK must be low on falling edge of NCS to switch LTC2400 to external clock mode */
       C0ADC_SCK = 0;
+      delay_us(OPT_DELAY);
+      C0ADC_NCS = 0;
       delay_us(OPT_DELAY);
 
       /* wait for conversion ready */
@@ -853,9 +854,10 @@ unsigned char cadc_read(unsigned char channel, float *value)
 
    } else {
       
-      C1ADC_NCS = 0;
-      delay_us(OPT_DELAY);
+      /* SCK must be low on falling edge of NCS to switch LTC2400 to external clock mode */
       C1ADC_SCK = 0;
+      delay_us(OPT_DELAY);
+      C1ADC_NCS = 0;
       delay_us(OPT_DELAY);
 
       /* wait for conversion ready */
