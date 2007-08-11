@@ -5200,7 +5200,7 @@ INT bm_add_event_request(INT buffer_handle, short int event_id,
       pclient->event_request[i].event_id = event_id;
       pclient->event_request[i].trigger_mask = trigger_mask;
       pclient->event_request[i].sampling_type = sampling_type;
-      pclient->event_request[i].dispatch = func;
+      pclient->event_request[i].dispatch = func; // FIXME: this function is never used
 
       pclient->all_flag = pclient->all_flag || (sampling_type & GET_ALL);
 
@@ -10329,15 +10329,24 @@ INT rpc_register_server(INT server_type, char *name, INT * port, INT(*func) (INT
    /* create a socket for listening */
    _lsock = socket(AF_INET, SOCK_STREAM, 0);
    if (_lsock == -1) {
-      cm_msg(MERROR, "rpc_register_server", "socket() failed");
+      cm_msg(MERROR, "rpc_register_server", "socket(AF_INET, SOCK_STREAM) failed, errno %d (%s)", errno, strerror(errno));
       return RPC_NET_ERROR;
    }
+
+   /* set close-on-exec flag to prevent child mserver processes from inheriting the listen socket */
+#if defined(F_SETFD) && defined(FD_CLOEXEC)
+   status = fcntl(_lsock, F_SETFD, fcntl(_lsock, F_GETFD) | FD_CLOEXEC);
+   if (status < 0) {
+      cm_msg(MERROR, "rpc_register_server", "fcntl(F_SETFD, FD_CLOEXEC) failed, errno %d (%s)", errno, strerror(errno));
+      return RPC_NET_ERROR;
+   }
+#endif
 
    /* reuse address, needed if previous server stopped (30s timeout!) */
    flag = 1;
    status = setsockopt(_lsock, SOL_SOCKET, SO_REUSEADDR, (char *) &flag, sizeof(INT));
    if (status < 0) {
-      cm_msg(MERROR, "rpc_register_server", "setsockopt() failed");
+      cm_msg(MERROR, "rpc_register_server", "setsockopt(SO_REUSEADDR) failed, errno %d (%s)", errno, strerror(errno));
       return RPC_NET_ERROR;
    }
 
@@ -10353,7 +10362,7 @@ INT rpc_register_server(INT server_type, char *name, INT * port, INT(*func) (INT
 
    status = bind(_lsock, (struct sockaddr *) &bind_addr, sizeof(bind_addr));
    if (status < 0) {
-      cm_msg(MERROR, "rpc_register_server", "bind() failed: %s", strerror(errno));
+      cm_msg(MERROR, "rpc_register_server", "bind() failed, errno %d (%s)", errno, strerror(errno));
       return RPC_NET_ERROR;
    }
 
@@ -10364,7 +10373,7 @@ INT rpc_register_server(INT server_type, char *name, INT * port, INT(*func) (INT
    status = listen(_lsock, SOMAXCONN);
 #endif
    if (status < 0) {
-      cm_msg(MERROR, "rpc_register_server", "listen() failed");
+      cm_msg(MERROR, "rpc_register_server", "listen() failed, errno %d (%s)", errno, strerror(errno));
       return RPC_NET_ERROR;
    }
 
