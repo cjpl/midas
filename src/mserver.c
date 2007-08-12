@@ -155,6 +155,13 @@ int main(int argc, char **argv)
    }
 #endif
 
+#if 0
+   printf("mserver main, name [%s]\n", name);
+   for (i=0; i<=argc; i++)
+      printf("argv[%d] is [%s]\n", i, argv[i]);
+   system("/bin/ls -la /proc/self/fd");
+#endif
+
    rpc_set_server_option(RPC_OSERVER_NAME, (POINTER_T) name);
 
    /* redirect message print */
