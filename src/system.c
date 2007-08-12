@@ -3330,6 +3330,8 @@ INT ss_suspend(INT millisec, INT msg)
             if (!sock || _suspend_struct[idx].server_acception[i].tid != ss_gettid())
                continue;
 
+            //printf("rpc index %d, socket %d, hostname \'%s\', progname \'%s\'\n", i, sock, _suspend_struct[idx].server_acception[i].host_name, _suspend_struct[idx].server_acception[i].prog_name);
+
             if (recv_tcp_check(sock) || FD_ISSET(sock, &readfds)) {
                if (_suspend_struct[idx].server_dispatch) {
                   status = _suspend_struct[idx].server_dispatch(i, sock, msg != 0);
@@ -3378,7 +3380,7 @@ INT ss_suspend(INT millisec, INT msg)
             }
 
             if (status == SS_ABORT) {
-               sprintf(str, "Server connection broken to %s",
+               sprintf(str, "Server connection broken to \'%s\'",
                        _suspend_struct[idx].server_connection->host_name);
                cm_msg(MINFO, "ss_suspend", str);
 
