@@ -9987,8 +9987,12 @@ INT recv_tcp_server(INT idx, char *buffer, DWORD buffer_size, INT flags, INT * r
 
       /* abort if connection broken */
       if (write_ptr <= 0) {
-         cm_msg(MERROR, "recv_tcp_server", "recv() returned %d, errno: %d (%s)",
-                write_ptr, errno, strerror(errno));
+         if (write_ptr == 0)
+            cm_msg(MERROR, "recv_tcp_server", "rpc connection from \'%s\' on \'%s\' unexpectedly closed",
+                   _server_acception[idx].prog_name, _server_acception[idx].host_name);
+         else
+            cm_msg(MERROR, "recv_tcp_server", "recv() returned %d, errno: %d (%s)",
+                   write_ptr, errno, strerror(errno));
 
          if (remaining)
             *remaining = 0;
@@ -11355,7 +11359,9 @@ INT rpc_client_accept(int lsock)
   strcpy(host_name, phe->h_name);
 #endif
 */
-   strcpy(host_name, "");
+   strcpy(host_name, "(unknown)");
+
+   strcpy(client_program, "(unknown)");
 
    /* look for next free entry */
    for (idx = 0; idx < MAX_RPC_CONNECTION; idx++)
@@ -11800,10 +11806,10 @@ INT rpc_server_receive(INT idx, int sock, BOOL check)
 
  error:
 
-   strcpy(str, _server_acception[idx].host_name);
+   strlcpy(str, _server_acception[idx].host_name, sizeof(str));
    if (strchr(str, '.'))
       *strchr(str, '.') = 0;
-   cm_msg(MTALK, "rpc_server_receive", "Program %s on host %s aborted",
+   cm_msg(MTALK, "rpc_server_receive", "Program \'%s\' on host \'%s\' aborted",
           _server_acception[idx].prog_name, str);
 
  exit:
