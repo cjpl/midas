@@ -5,9 +5,7 @@ Created by:   Pierre-Andre Amaudruz
 Contents:     VME interface for the VMIC VME board processor
               using the mvmestd VME call convention.
 
-$Log: vmicvme.c,v $
-Revision 1.2  2005/09/29 03:36:02  amaudruz
-VMIC VME driver following the mvmestd
+$Id$
 
 *********************************************************************/
 #include <stdio.h>
@@ -225,7 +223,7 @@ DMA    read access : 300ns / DMA latency 28us
 @param n_bytes requested transfer size.
 @return MVME_SUCCESS, ERROR
 */
-int mvme_read(MVME_INTERFACE *mvme, mvme_locaddr_t *dst, mvme_addr_t vme_addr, mvme_size_t n_bytes)
+int mvme_read(MVME_INTERFACE *mvme, void *dst, mvme_addr_t vme_addr, mvme_size_t n_bytes)
 {
   int         status;
 
@@ -345,7 +343,7 @@ or size to transfer larger the 128 bytes (32 DWORD)
 @param n_bytes  size of the array in bytes
 @return MVME_SUCCESS, MVME_ACCESS_ERROR
 */
-int mvme_write(MVME_INTERFACE *mvme, mvme_addr_t vme_addr, mvme_locaddr_t *src, mvme_size_t n_bytes)
+int mvme_write(MVME_INTERFACE *mvme, mvme_addr_t vme_addr, void *src, mvme_size_t n_bytes)
 {
   /* Perform write */
   /*--------------- DMA --------------*/
