@@ -5200,7 +5200,6 @@ INT bm_add_event_request(INT buffer_handle, short int event_id,
       pclient->event_request[i].event_id = event_id;
       pclient->event_request[i].trigger_mask = trigger_mask;
       pclient->event_request[i].sampling_type = sampling_type;
-      pclient->event_request[i].dispatch = func; // FIXME: this function is never used
 
       pclient->all_flag = pclient->all_flag || (sampling_type & GET_ALL);
 
