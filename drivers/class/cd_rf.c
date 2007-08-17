@@ -199,7 +199,7 @@ void rf_setParams(INT hDB, INT hKey, void *info)
 						varIndex = numChannel + 3;
 
 						status = device_driver(rf_info->driver[i], CMD_SET_PARAMS,  // Set Parameters
-																	((rfNumber + 1 ) * 100) + varIndex, *(rf_info->params[rfNumber][numChannel]));
+																	(rfNumber * 100) + varIndex, *(rf_info->params[rfNumber][numChannel]));
 					}
 					*(rf_info->params_mirror[rfNumber][numChannel]) = *(rf_info->params[rfNumber][numChannel]);
 				}			 
@@ -245,73 +245,73 @@ void rf_setControl(INT hDB, INT hKey, void *info)
 			{
 				varIndex = 3;
 				device_driver(rf_info->driver[i], CMD_SET_PARAMS,  
-														((rfNumber + 1 ) * 100) + varIndex, *(rf_info->ladderParams[rfNumber][0]));
+														(rfNumber * 100) + varIndex, *(rf_info->ladderParams[rfNumber][0]));
 				varIndex = 4;
 				device_driver(rf_info->driver[i], CMD_SET_PARAMS,  
-														((rfNumber + 1 ) * 100) + varIndex, *(rf_info->ladderParams[rfNumber][1]));
+														(rfNumber * 100) + varIndex, *(rf_info->ladderParams[rfNumber][1]));
 				varIndex = 5;
 				device_driver(rf_info->driver[i], CMD_SET_PARAMS,  
-														((rfNumber + 1 ) * 100) + varIndex, *(rf_info->ladderParams[rfNumber][2]));
+														(rfNumber * 100) + varIndex, *(rf_info->ladderParams[rfNumber][2]));
 				varIndex = 6;
 				device_driver(rf_info->driver[i], CMD_SET_PARAMS,  
-														((rfNumber + 1 ) * 100) + varIndex, *(rf_info->ladderParams[rfNumber][3]));
+														(rfNumber * 100) + varIndex, *(rf_info->ladderParams[rfNumber][3]));
 				varIndex = 7;
 				device_driver(rf_info->driver[i], CMD_SET_PARAMS,  
-														((rfNumber + 1 ) * 100) + varIndex, *(rf_info->ladderParams[rfNumber][4]));
+														(rfNumber * 100) + varIndex, *(rf_info->ladderParams[rfNumber][4]));
 			}
 			else if(toBeSent2 & 0x02)
 			{
 				varIndex = 3;
 				device_driver(rf_info->driver[i], CMD_SET_PARAMS,  // Voltage
-														((rfNumber + 1 ) * 100) + varIndex, *(rf_info->sweepParams[rfNumber][0]));
+														(rfNumber * 100) + varIndex, *(rf_info->sweepParams[rfNumber][0]));
 				varIndex = 5;
 				device_driver(rf_info->driver[i], CMD_SET_PARAMS,  // Voltage
-														((rfNumber + 1 ) * 100) + varIndex, *(rf_info->sweepParams[rfNumber][1]));
+														(rfNumber * 100) + varIndex, *(rf_info->sweepParams[rfNumber][1]));
 				varIndex = 6;
 				device_driver(rf_info->driver[i], CMD_SET_PARAMS,  // Voltage
-														((rfNumber + 1 ) * 100) + varIndex, *(rf_info->sweepParams[rfNumber][2]));
+														(rfNumber * 100) + varIndex, *(rf_info->sweepParams[rfNumber][2]));
 				varIndex = 7;
 				device_driver(rf_info->driver[i], CMD_SET_PARAMS,  // Voltage
-														((rfNumber + 1 ) * 100) + varIndex, *(rf_info->sweepParams[rfNumber][3]));								
+														(rfNumber * 100) + varIndex, *(rf_info->sweepParams[rfNumber][3]));								
 			}
 			else if(toBeSent2 & 0x04)
 			{
 				varIndex = 7;
 				device_driver(rf_info->driver[i], CMD_SET_PARAMS,  // Voltage
-														((rfNumber + 1 ) * 100) + varIndex, *(rf_info->burstParams[rfNumber][0]));
+														(rfNumber * 100) + varIndex, *(rf_info->burstParams[rfNumber][0]));
 				varIndex = 8;
 				device_driver(rf_info->driver[i], CMD_SET_PARAMS,  // Voltage
-														((rfNumber + 1 ) * 100) + varIndex, *(rf_info->burstParams[rfNumber][1]));
+														(rfNumber * 100) + varIndex, *(rf_info->burstParams[rfNumber][1]));
 				varIndex = 9;
 				device_driver(rf_info->driver[i], CMD_SET_PARAMS,  // Voltage
-														((rfNumber + 1 ) * 100) + varIndex, *(rf_info->burstParams[rfNumber][2]));
+														(rfNumber * 100) + varIndex, *(rf_info->burstParams[rfNumber][2]));
 			}
 			else if(toBeSent2 & 0x08)
 			{
 				varIndex = 4;
 				device_driver(rf_info->driver[i], CMD_SET_PARAMS,  // Voltage
-														((rfNumber + 1 ) * 100) + varIndex, *(rf_info->ladderBurstParams[rfNumber][0]));
+														(rfNumber * 100) + varIndex, *(rf_info->ladderBurstParams[rfNumber][0]));
 				varIndex = 7;
 				device_driver(rf_info->driver[i], CMD_SET_PARAMS,  // Voltage
-														((rfNumber + 1 ) * 100) + varIndex, *(rf_info->ladderBurstParams[rfNumber][1]));
+														(rfNumber * 100) + varIndex, *(rf_info->ladderBurstParams[rfNumber][1]));
 				varIndex = 8;
 				device_driver(rf_info->driver[i], CMD_SET_PARAMS,  // Voltage
-														((rfNumber + 1 ) * 100) + varIndex, *(rf_info->ladderBurstParams[rfNumber][2]));
+														(rfNumber * 100) + varIndex, *(rf_info->ladderBurstParams[rfNumber][2]));
 				varIndex = 9;
 				device_driver(rf_info->driver[i], CMD_SET_PARAMS,  // Voltage
-														((rfNumber + 1 ) * 100) + varIndex, *(rf_info->ladderBurstParams[rfNumber][3]));
+														(rfNumber * 100) + varIndex, *(rf_info->ladderBurstParams[rfNumber][3]));
 			}
 			else if(toBeSent2 & 0x10)
 			{
 				varIndex = 7;
 				device_driver(rf_info->driver[i], CMD_SET_PARAMS,  // Voltage
-														((rfNumber + 1 ) * 100) + varIndex, *(rf_info->fmParams[rfNumber][0]));
+														(rfNumber * 100) + varIndex, *(rf_info->fmParams[rfNumber][0]));
 				varIndex = 5;
 				device_driver(rf_info->driver[i], CMD_SET_PARAMS,  // Voltage
-														((rfNumber + 1 ) * 100) + varIndex, *(rf_info->fmParams[rfNumber][1]));
+														(rfNumber * 100) + varIndex, *(rf_info->fmParams[rfNumber][1]));
 				varIndex = 6;
 				device_driver(rf_info->driver[i], CMD_SET_PARAMS,  // Voltage
-														((rfNumber + 1 ) * 100) + varIndex, *(rf_info->fmParams[rfNumber][2]));
+														(rfNumber * 100) + varIndex, *(rf_info->fmParams[rfNumber][2]));
 			}			
 			rfNumber = rfNumber;
 			varIndex = 0;
@@ -524,7 +524,7 @@ INT rf_init(EQUIPMENT * pequipment)
 
 			//initially read in the values
 			varIndex = 3 + j;
-			device_driver(rf_info->driver[0], CMD_GET_PARAMS, ((rfNumber + 1 ) * 100) + varIndex, rf_info->params[rfNumber][j]); // Params
+			device_driver(rf_info->driver[0], CMD_GET_PARAMS, (rfNumber * 100) + varIndex, rf_info->params[rfNumber][j]); // Params
 			db_set_data(hDB, rf_info->hKeyParams[rfNumber][j], rf_info->params[rfNumber][j], size,
 							rf_info->num_channels, TID_FLOAT);
 
