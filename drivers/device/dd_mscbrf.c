@@ -253,7 +253,7 @@ INT mscbrf(INT cmd, ...)
 {
    va_list argptr;
    HNDLE hKey;
-   INT channel, status, rfNumber, varIndex;
+   INT channel, status, rfNumber, varIndex, temp;
    float value, *pvalue;
 	double dvalue;
    void *info, *bd;
@@ -279,8 +279,9 @@ INT mscbrf(INT cmd, ...)
 
 	case CMD_GET_PARAMS:  // Voltage
       info = va_arg(argptr, void *);
-      rfNumber = va_arg(argptr, INT);
-			varIndex = va_arg(argptr, INT);
+			temp = va_arg(argptr, INT);
+			rfNumber = (INT) (temp / 100);
+			varIndex = temp - (rfNumber * 100);  
       pvalue = (float *) va_arg(argptr, float *);
       status = mscbrf_getParams(info, rfNumber, varIndex, pvalue);
       //ss_sleep(10);
@@ -288,8 +289,9 @@ INT mscbrf(INT cmd, ...)
 
    case CMD_SET_PARAMS:  // Voltage
       info = va_arg(argptr, void *);
-      rfNumber = va_arg(argptr, INT);
-			varIndex = va_arg(argptr, INT);
+      temp = va_arg(argptr, INT);
+			rfNumber = (INT) (temp / 100);
+			varIndex = temp - (rfNumber * 100);  
       dvalue = (double) va_arg(argptr, double);
     printf("Set Bias Voltage %d :[%i]%f\n", (varIndex-4), rfNumber, dvalue);
     status = mscbrf_setParams(info, rfNumber, varIndex, dvalue);
@@ -297,7 +299,7 @@ INT mscbrf(INT cmd, ...)
       break;
 
 	case CMD_GET_CONTROL:
-    info = va_arg(argptr, void *);
+			info = va_arg(argptr, void *);
       rfNumber = va_arg(argptr, INT);
       rvalue = (unsigned char *) va_arg(argptr, unsigned char *);
 			status = mscbrf_getControl(info, rfNumber, rvalue);
