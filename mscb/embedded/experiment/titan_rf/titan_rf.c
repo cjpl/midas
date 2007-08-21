@@ -360,8 +360,11 @@ void ladderBurst(int numSteps, int numCyc, float rfAmp, unsigned long fBurst)
 		strcat(str, buffer);
 	}
 	send(user_data.gpib_adr, "DATA:DELete:ALL");
-	send(user_data.gpib_adr, str);	
+	delay_ms(500);
+	send(user_data.gpib_adr, str);
+	delay_ms(500);
 	send(user_data.gpib_adr, "DATA:COPY TWISTLADDER");
+	delay_ms(500);
 	send(user_data.gpib_adr, "FUNCtion:USER TWISTLADDER");
 	send(user_data.gpib_adr, "FUNCtion USER");
 
