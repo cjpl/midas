@@ -17,6 +17,11 @@
 #include <string.h>
 #include "../../mscbemb.h"
 
+//define which RF Generator you are going to program
+//Currently, 33220A and 33250A are supported
+//#define AGILENT_33220A 1
+#define AGILENT_33250A 1
+
 //Control definitions
 #define CONTROL_LADDERSTEP		(1<<0)
 #define CONTROL_SWEEP	 		(1<<1)
@@ -237,6 +242,10 @@ unsigned char send(unsigned char adr, char *str)
 {
    unsigned char i;
 
+	#ifdef AGILENT_33250A
+	delay_ms(100); //for 33250A, delay i needed
+	#endif
+
   /*---- address cycle ----*/
 
    GPIB_ATN = 0;                // assert attention
@@ -262,28 +271,33 @@ unsigned char send(unsigned char adr, char *str)
 /* User Defined Function Definitions */
 void rf_Init(void)
 {
-	send(user_data.gpib_adr, "OUTPut OFF");
 	send(user_data.gpib_adr, "*RST");
 	send(user_data.gpib_adr, "*CLS");
-	send(user_data.gpib_adr, "OUTPut OFF");	
-	delay_ms(50);
 	send(user_data.gpib_adr, "APPLy:SINusoid 1e6, 1, 0");
 	send(user_data.gpib_adr, "FUNC SINusoid");
 	send(user_data.gpib_adr, "TRIGger:SOURce EXTernal");
 	send(user_data.gpib_adr, "TRIGger:SLOPe POSitive");
-	delay_ms(100);
 }
 
 void kLock(bit kFlag)
 {
 	if(kFlag == KLOCK_ON)
 	{
+		#ifdef AGILENT_33220A
 		send(user_data.gpib_adr, "SYSTem:KLOCk ON");
+		#elif AGILENT_33250A
+		//send(user_data.gpib_adr, "SYSTem:RWLock");
+		#endif
+
 	}
 
 	else if(kFlag == KLOCK_OFF)
 	{
+		#ifdef AGILENT_33220A
 		send(user_data.gpib_adr, "SYSTem:KLOCk OFF");
+		#elif AGILENT_33250A
+		//send(user_data.gpib_adr, "SYSTem:LOCal");
+		#endif
 	}
 }
 
