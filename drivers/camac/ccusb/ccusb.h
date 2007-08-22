@@ -15,6 +15,10 @@
 extern "C" {
 #endif
 
+#define CCUSB_SUCCESS   0
+#define CCUSB_ERROR    -1
+#define CCUSB_TIMEOUT  -2
+
    int ccusb_init();
    MUSB_INTERFACE *ccusb_getCrateStruct(int crate);
 

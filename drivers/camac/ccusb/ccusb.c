@@ -38,7 +38,7 @@ int ccusb_init_crate(int c)
 
    status = musb_open(&(gUsb[c]), 0x16dc, 0x0001, c, 1, 0);
    if (status != MUSB_SUCCESS)
-      return -1;
+      return CCUSB_ERROR;
 
    for (try=0; try<=1; try++) {
 
@@ -73,7 +73,7 @@ int ccusb_init_crate(int c)
    //gUsb[c] = NULL;
      
    fprintf(stderr, "ccusb_init_crate: CAMAC crate %d is CCUSB instance %d is not talking to us\n", c, c);
-   return -1;
+   return CCUSB_ERROR;
 }
 
 /********************************************************************/
@@ -88,7 +88,7 @@ int ccusb_init()
 
    if (gNumCrates < 1) {
       fprintf(stderr, "ccusb_init: Did not find any CC-USB CAMAC interfaces.\n");
-      return -1;
+      return CCUSB_ERROR;
    }
 
    return 0;
@@ -143,7 +143,7 @@ int ccusb_flush(MUSB_INTERFACE * myusbcrate)
    fprintf(stderr, "ccusb_flush: CCUSB is babbling. Please reset it by cycling power on the CAMAC crate.\n");
    exit(1);
 
-   return -1;
+   return CCUSB_ERROR;
 }
 
 /********************************************************************/
@@ -161,7 +161,7 @@ int ccusb_readReg(MUSB_INTERFACE * myusbcrate, int ireg)
      {
        printf("ccusb_readReg: Error: access to non-existant register %d: Per CCUSB manual version 2.3, only \"action register\" %d exists since firmware 0x101. Sorry.\n",
               ireg, CCUSB_ACTION);
-       return -1;
+       return CCUSB_ERROR;
      }
 
    cmd[0] = 1;
@@ -176,7 +176,7 @@ int ccusb_readReg(MUSB_INTERFACE * myusbcrate, int ireg)
 	 musb_reset(myusbcrate);
 	 //ccusb_flush(myusbcrate);
          exit(1);
-         return -1;
+         return CCUSB_ERROR;
       }
 
       rd = musb_read(myusbcrate, READ_EP, buf, 8, 100);
@@ -195,12 +195,12 @@ int ccusb_readReg(MUSB_INTERFACE * myusbcrate, int ireg)
          printf
              ("ccusb_readReg: reg %d, unexpected data length: wr=%d, rd=%d, buf: 0x%x 0x%x 0x%x 0x%x\n",
               ireg, wr, rd, buf[0], buf[1], buf[2], buf[3]);
-         return -1;
+         return CCUSB_ERROR;
       }
    }
 
    printf("ccusb_readReg: reg %d, too many retries, give up\n", ireg);
-   return -1;
+   return CCUSB_ERROR;
 }
 
 /********************************************************************/
@@ -223,20 +223,20 @@ int ccusb_writeReg(MUSB_INTERFACE * myusbcrate, int ireg, int value)
    wr = musb_write(myusbcrate, WRITE_EP, cmd, 8, 100);
    if (wr != 8) {
       fprintf(stderr, "ccusb_writeReg: register %d, value %d: musb_write() error %d (%s)\n", ireg, value, wr, strerror(-wr));
-      return -1;
+      return CCUSB_ERROR;
    }
 
    if (0) {
       int rd = ccusb_readReg(myusbcrate, ireg);
       if (rd < 0) {
          fprintf(stderr, "ccusb_writeReg: Register %d readback failed with error %d\n", ireg, rd);
-         return -1;
+         return CCUSB_ERROR;
       }
 
       if (rd != value) {
          fprintf(stderr, "ccusb_writeReg: Register %d readback mismatch: wrote 0x%x, got 0x%x\n",
                  ireg, value, rd);
-         return -1;
+         return CCUSB_ERROR;
       }
    }
 
@@ -263,22 +263,41 @@ int ccusb_status(MUSB_INTERFACE * myusbcrate)
    printf("CCUSB status:\n");
    //printf("  reg1  action register: 0x%x\n", ccusb_readReg(myusbcrate, CCUSB_ACTION));
    printf("CCUSB CAMAC registers:\n");
+
    reg = ccusb_readCamacReg(myusbcrate, 0);
-   printf("  reg0  firmware id: 0x%04x\n", reg);
+   printf("  reg0  firmware   : 0x%04x: version 0x%04x\n", reg, reg&0xFFFF);
    if (reg == -1)
-     return -1;
+     return CCUSB_ERROR;
+
    reg = ccusb_readCamacReg(myusbcrate, 1);
-   printf("  reg1  global mode: 0x%08x: ", reg);
+   printf("  reg1  global mode: 0x%08x:", reg);
    printf(" BuffOpt=%d,", reg & 0xF);
    printf(" MixBuffOpt=%d,", (reg >> 5) & 1);
    printf(" EvtSepOpt=%d,", (reg >> 6) & 1);
    printf(" HeaderOpt=%d,", (reg >> 8) & 1);
    printf(" Arbitr=%d", (reg >> 12) & 1);
    printf("\n");
-   printf("  reg2  delays:      0x%08x\n", ccusb_readCamacReg(myusbcrate, 2));
-   printf("  reg3  scaler readout control:    0x%08x\n", ccusb_readCamacReg(myusbcrate, 3));
-   printf("  reg4  LED source:  0x%08x\n", ccusb_readCamacReg(myusbcrate, 4));
-   printf("  reg5  NIM source:  0x%08x\n", ccusb_readCamacReg(myusbcrate, 5));
+
+   reg = ccusb_readCamacReg(myusbcrate, 2);
+   printf("  reg2  delays:      0x%08x: LAM delay %d us, trigger delay %d us\n", reg, (reg&0xFF)>>8, (reg&0xFF));
+
+   reg = ccusb_readCamacReg(myusbcrate, 3);
+   printf("  reg3  scaler readout control:    0x%08x: period %.1f s or every %d events, \n", reg, 0.5*((reg&0xFF0000)>>16),(reg&0xFFFF));
+
+   reg = ccusb_readCamacReg(myusbcrate, 4);
+   printf("  reg4  LED source:  0x%08x", reg);
+   printf(": Yellow: %c%c code %d", (reg&(1<<21))?'L':'.', (reg&(1<<20))?'I':'.' , (reg>>16)&7);
+   printf(", Green: %c%c code %d", (reg&(1<<13))?'L':'.', (reg&(1<<12))?'I':'.' , (reg>>8)&7);
+   printf(", Red: %c%c code %d", (reg&(1<<5))?'L':'.', (reg&(1<<4))?'I':'.' , (reg>>0)&7);
+   printf("\n");
+
+   reg = ccusb_readCamacReg(myusbcrate, 5);
+   printf("  reg5  NIM source:  0x%08x", reg);
+   printf(": Yellow: %c%c code %d", (reg&(1<<21))?'L':'.', (reg&(1<<20))?'I':'.' , (reg>>16)&7);
+   printf(", Green: %c%c code %d", (reg&(1<<13))?'L':'.', (reg&(1<<12))?'I':'.' , (reg>>8)&7);
+   printf(", Red: %c%c code %d", (reg&(1<<5))?'L':'.', (reg&(1<<4))?'I':'.' , (reg>>0)&7);
+   printf("\n");
+
    printf("  reg6  Source selector:   0x%08x\n", ccusb_readCamacReg(myusbcrate, 6));
    printf("  reg7  Timing B:    0x%08x\n", ccusb_readCamacReg(myusbcrate, 7));
    printf("  reg8  Timing A:    0x%08x\n", ccusb_readCamacReg(myusbcrate, 8));
@@ -287,7 +306,9 @@ int ccusb_status(MUSB_INTERFACE * myusbcrate)
    printf("  reg11 scaler A:    0x%08x\n", ccusb_readCamacReg(myusbcrate, 11));
    printf("  reg12 scaler B:    0x%08x\n", ccusb_readCamacReg(myusbcrate, 12));
    printf("  reg13 extended delays:     0x%08x\n", ccusb_readCamacReg(myusbcrate, 13));
-   printf("  reg14 usb buffering setup: 0x%08x\n", ccusb_readCamacReg(myusbcrate, 14));
+
+   reg = ccusb_readCamacReg(myusbcrate, 14);
+   printf("  reg14 usb buffering setup: 0x%08x: timeout %d s, number of buffers %d\n", reg, (reg&0xF00)>>8, reg&0xFF);
    printf("  reg15 broadcast map:       0x%08x\n", ccusb_readCamacReg(myusbcrate, 15));
    return 0;
 }
@@ -324,14 +345,14 @@ int ccusb_readStack(MUSB_INTERFACE *musb, int iaddr, uint16_t buf[], int bufsize
    if (wr != bcount) {
      fprintf(stderr, "ccusb_readStack: musb_write() error %d\n", wr);
      exit(1);
-     return -1;
+     return CCUSB_ERROR;
    }
 
    rd = musb_read(musb, READ_EP, buf, bufsize, 1000);
    if (rd < 0) {
      fprintf(stderr, "ccusb_readStack: musb_read() error %d\n", rd);
      exit(1);
-     return -1;
+     return CCUSB_ERROR;
    }
   
    if (verbose) {
@@ -376,7 +397,7 @@ int ccusb_writeStack(MUSB_INTERFACE *musb, int iaddr, int verbose)
    if (wr != bcount) {
      fprintf(stderr, "ccusb_writeStack: musb_write() error %d\n", wr);
      exit(1);
-     return -1;
+     return CCUSB_ERROR;
    }
 
    gCamacStackRecording = 0;
@@ -388,7 +409,7 @@ int ccusb_writeStack(MUSB_INTERFACE *musb, int iaddr, int verbose)
    if (gCamacStackCounter - 2 != buf[0]) {
      fprintf(stderr, "ccusb_writeStack: Stack word counter mismatch: should be %d, received %d\n", gCamacStackCounter - 2, buf[0]);
      exit(1);
-     return -1;
+     return CCUSB_ERROR;
    }
 
    mismatch = 0;
@@ -401,7 +422,7 @@ int ccusb_writeStack(MUSB_INTERFACE *musb, int iaddr, int verbose)
    if (mismatch) {
      fprintf(stderr, "ccusb_writeStack: Error: Stack %d data mismatches: %d\n", iaddr, mismatch);
      exit(1);
-     return -1;
+     return CCUSB_ERROR;
    }
 
    if (verbose)
@@ -428,7 +449,11 @@ int ccusb_readData(MUSB_INTERFACE *musb, char* buffer, int bufferSize, int timeo
   if (rd < 0)
     {
       fprintf(stderr, "ccusb_readData: musb_read() error %d (%s)\n", rd, strerror(-rd));
-      return -1;
+
+      if (rd == -110)
+        return CCUSB_TIMEOUT;
+
+      return CCUSB_ERROR;
     }
   
   return rd;
@@ -494,13 +519,13 @@ int ccusb_naf(MUSB_INTERFACE * myusbcrate, int n, int a, int f, int d24, int dat
    wr = musb_write(myusbcrate, WRITE_EP, cmd, bcount, 100);
    if (wr != bcount) {
       fprintf(stderr, "ccusb_naf: musb_write() error %d (%s)\n", wr, strerror(-wr));
-      return -1;
+      return CCUSB_ERROR;
    }
 
    rd = musb_read(myusbcrate, READ_EP, buf, sizeof(buf), 1000);
    if (rd < 0) {
       fprintf(stderr, "ccusb_naf: musb_read() error %d (%s)\n", rd, strerror(-rd));
-      return -1;
+      return CCUSB_ERROR;
    }
 
    if (0)
@@ -515,7 +540,7 @@ int ccusb_naf(MUSB_INTERFACE * myusbcrate, int n, int a, int f, int d24, int dat
          if (rd != 4) {
             fprintf(stderr,"ccusb_naf: Reply to 24-bit read command: Unexpected data length, should be 4: wr=%d, rd=%d, buf: 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x\n",
                    wr, rd, buf[0], buf[1], buf[2], buf[3], buf[4], buf[5]);
-            return -1;
+            return CCUSB_ERROR;
          }
 
          return buf[0] | (buf[1] << 8) | (buf[2] << 16) | (buf[3] << 24);
@@ -523,7 +548,7 @@ int ccusb_naf(MUSB_INTERFACE * myusbcrate, int n, int a, int f, int d24, int dat
          if (rd != 2 && rd != 4) {
             fprintf(stderr,"ccusb_naf: Reply to 16-bit read command: Unexpected data length, should be 4: wr=%d, rd=%d, buf: 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x\n",
                    wr, rd, buf[0], buf[1], buf[2], buf[3], buf[4], buf[5]);
-            return -1;
+            return CCUSB_ERROR;
          }
 
          return buf[0] | (buf[1] << 8);
@@ -534,7 +559,7 @@ int ccusb_naf(MUSB_INTERFACE * myusbcrate, int n, int a, int f, int d24, int dat
       if (rd != 2 && rd != 4) {
          fprintf(stderr,"ccusb_naf: Reply to control command: Unexpected data length: wr=%d, rd=%d, buf: 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x\n",
                 wr, rd, buf[0], buf[1], buf[2], buf[3], buf[4], buf[5]);
-         return -1;
+         return CCUSB_ERROR;
       }
 
       return buf[0] | (buf[1] << 8);
@@ -544,7 +569,7 @@ int ccusb_naf(MUSB_INTERFACE * myusbcrate, int n, int a, int f, int d24, int dat
       if (rd != 2) {
          fprintf(stderr,"ccusb_naf: Reply to write command: Unexpected data length: wr=%d, rd=%d, buf: 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x\n",
                 wr, rd, buf[0], buf[1], buf[2], buf[3], buf[4], buf[5]);
-         return -1;
+         return CCUSB_ERROR;
       }
 
       return buf[0] | (buf[1] << 8);
