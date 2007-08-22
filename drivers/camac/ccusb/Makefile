@@ -15,7 +15,7 @@ MIDASLIB := $(MIDASSYS)/linux/lib
 CFLAGS += -g -O2 -DOS_LINUX -DHAVE_LIBUSB -I$(MIDASSYS)/include
 CXXFLAGS = $(CFLAGS)
 
-ALL= test_ccusb feccusb
+ALL= test_ccusb ccusb_flash feccusb
 
 all: $(ALL)
 
@@ -30,6 +30,9 @@ musbstd.o: %.o: $(MIDASSYS)/drivers/usb/%.c
 
 test_ccusb: %: %.cxx ccusb.o musbstd.o
 	$(CXX) $(CFLAGS) -DMAIN -o $@ $< ccusb.o musbstd.o -lusb
+
+ccusb_flash: %: %.o
+	$(CXX) -o $@ $(CXXFLAGS) $^ -lusb
 
 ccusb.o: %.o: $(MIDASSYS)/drivers/camac/ccusb/%.c
 	$(CC) $(CFLAGS) -c -o $@ $<
