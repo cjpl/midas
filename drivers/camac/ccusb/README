@@ -42,4 +42,19 @@ generate any data and the frontend will only give "data timeout"
 errors. With the trigger, the LED on the scaler should flash at 1 Hz
 and the LEDs on the CCUSB should flash at the trigger rate.
 
+Note 5: The CCUSB interface does not reliably power up in some CAMAC
+crates (this has something to do with the sequence in which
+different voltages start at different times with different CAMAC
+power supplies). Some newer CCUSB modules may have this
+problem fixed in the hardware and in the CPLD firmware. For modules
+exhibiting this problem (i.e. no USB communication after power up),
+try to cycle the power several time, or implement the "hardware reset
+switch" (ask Wiener).
+
+Note 6: The CCUSB firmware is very fickle and would crash if you look
+at it the wrong way. This MIDAS driver tries to avoid all known crashers
+and together with the example frontend, can recover from some
+of them. Other crashes cannot be recovered from other than by
+a hardware reset or power cycle.
+
 //end
