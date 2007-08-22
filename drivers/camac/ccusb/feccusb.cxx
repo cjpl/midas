@@ -156,6 +156,17 @@ int ccusbInit()
 
   al_reset_alarm("ccusb_failure");
 
+  int version = ccusb_readCamacReg(ccusb_getCrateStruct(CRATE), CCUSB_VERSION);
+  version &= 0xFFFF;
+  printf("CCUSB firmware revision 0x%04x\n", version);
+
+  int minVersion = 0x402;
+  if (version < minVersion)
+    {
+      printf("Error: CCUSB firmware version 0x%04x has broken support for the CAMAC readout list function required by this program. Should have version 0x%04x or newer. Bye!\n", version, minVersion);
+      exit(1);
+    }
+
   if (1)
     {
       // setup the main readout list
@@ -198,22 +209,14 @@ int ccusbInit()
   ccusb_writeCamacReg(ccusb_getCrateStruct(CRATE), 1, 0); // usb buffering control
   ccusb_writeCamacReg(ccusb_getCrateStruct(CRATE), 2, 0); // readout delay
   ccusb_writeCamacReg(ccusb_getCrateStruct(CRATE), 3, 0); // scaler stack control
-  //ccusb_writeCamacReg(ccusb_getCrateStruct(CRATE), 0xE, 0);
 
-  //ccusb_writeCamacReg(ccusb_getCrateStruct(CRATE), 2, 0x8080); // delay
+  ccusb_writeCamacReg(ccusb_getCrateStruct(CRATE), CCUSB_MODE,     0);
+  ccusb_writeCamacReg(ccusb_getCrateStruct(CRATE), CCUSB_USBSETUP, 0);
 
-  //ccusb_writeCamacReg(ccusb_getCrateStruct(CRATE), 1, 0); // buffering mode: 4096 buffer
-  //ccusb_writeCamacReg(ccusb_getCrateStruct(CRATE), 1, 7); // buffering mode: single event transfer
+  //ccusb_writeCamacReg(ccusb_getCrateStruct(CRATE), CCUSB_MODE,     1<<5 | 1<<3);
+  //ccusb_writeCamacReg(ccusb_getCrateStruct(CRATE), CCUSB_USBSETUP, 0x203);
 
-  //ccusb_writeCamacReg(ccusb_getCrateStruct(CRATE), 0xE, 1 | (1<<8));
-  //ccusb_writeCamacReg(ccusb_getCrateStruct(CRATE), 0xE, 1);
-
-  ccusb_writeCamacReg(ccusb_getCrateStruct(CRATE), CCUSB_MODE,     1<<5 | 1<<3);
-  ccusb_writeCamacReg(ccusb_getCrateStruct(CRATE), CCUSB_USBSETUP, 0x203);
-
-  //ccusb_writeCamacReg(ccusb_getCrateStruct(CRATE), 9, 0x0); // lam
-
-  ccusb_writeCamacReg(ccusb_getCrateStruct(CRATE), 3, 0x10000); // scaler stack period
+  ccusb_writeCamacReg(ccusb_getCrateStruct(CRATE), 3, 0x20000); // scaler stack period
 
   ccusb_status(ccusb_getCrateStruct(CRATE));
 
@@ -390,7 +393,6 @@ INT interrupt_configure(INT cmd, PTYPE adr)
 INT read_event(char *pevent, INT off)
 {
   WORD *pbkdat;
-  INT   n;
   int timeout_ms = 5000;
 
   //if (ccusbIsBad)
@@ -402,11 +404,18 @@ INT read_event(char *pevent, INT off)
   bk_create(pevent, "CCUS", TID_WORD, &pbkdat);
 
   int rd = ccusb_readData(ccusb_getCrateStruct(CRATE), (char*)pbkdat, MAX_EVENT, timeout_ms);
-  if (rd < 0)
+
+  if (rd == CCUSB_TIMEOUT)
     {
       fprintf(stderr,"Error: Data timeout from CCUSB CAMAC interface\n");
-      //al_trigger_alarm("ccusb_failure", "Data timeout from CCUSB CAMAC interface", "Alarm", "", AT_INTERNAL);
-      //ccusbIsBad = 1;
+      return 0;
+    }
+
+  if (rd < 0)
+    {
+      fprintf(stderr,"Error: Cannot read data from CCUSB CAMAC interface\n");
+      al_trigger_alarm("ccusb_failure", "Data read error from CCUSB CAMAC interface", "Alarm", "", AT_INTERNAL);
+      ccusbIsBad = 1;
       return 0;
     }
 
