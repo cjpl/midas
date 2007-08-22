@@ -301,7 +301,21 @@ INT begin_of_run(INT run_number, char *error)
 #endif
 #endif
 
-  ccusb_AcqStart(ccusb_getCrateStruct(CRATE));
+  int status = ccusb_AcqStart(ccusb_getCrateStruct(CRATE));
+
+  if (status != CCUSB_SUCCESS)
+    {
+      fprintf(stderr,"Error: Cannot start the CCUSB CAMAC interface\n");
+
+      if (!ccusbIsBad)
+        {
+          ccusbIsBad = 1;
+          al_trigger_alarm("ccusb_failure", "Cannot talk to the CCUSB CAMAC interface", "Alarm", "", AT_INTERNAL);
+        }
+
+      ccusbIsBad = 1;
+      return SS_IO_ERROR;
+    }
 
   printf("begin_of_run done!\n");
 
@@ -317,7 +331,21 @@ INT end_of_run(INT run_number, char *error)
   if (ccusbIsBad)
     return SUCCESS;
 
-  ccusb_AcqStop(ccusb_getCrateStruct(CRATE));
+  int status = ccusb_AcqStop(ccusb_getCrateStruct(CRATE));
+
+  if (status != CCUSB_SUCCESS)
+    {
+      fprintf(stderr,"Error: Cannot stop the CCUSB CAMAC interface\n");
+
+      if (!ccusbIsBad)
+        {
+          /* beware of recursive call to end_of_run() !!! */
+          ccusbIsBad = 1;
+          al_trigger_alarm("ccusb_failure", "Cannot talk to the CCUSB CAMAC interface", "Alarm", "", AT_INTERNAL);
+        }
+
+      ccusbIsBad = 1;
+    }
 
   ccusb_flush(ccusb_getCrateStruct(CRATE));
 
