@@ -1,0 +1,45 @@
+
+MIDAS driver for the Wiener/JTec CC-USB CAMAC-USB interface.
+
+Date: 22-AUG-2007/KO
+
+Note 1: The CC-USB interface comes with a CD which contains manuals,
+firmware files, Windows and Linux software. The Wiener/JTec driver
+is called "libxxusb". These MIDAS/musbstd drivers were written before
+libxxusb bacame available and do not use libxxusb.
+
+This driver implements the MIDAS CAMAC interafce "mcstd.h" using
+the MIDAS USB interface musbstd.h.
+
+Note 2: There exist many revisions of CCUSB firmware. Basic CAMAC
+access works in all of them, but the "readout list" feature seems
+to be only functional with firmware revision 0x402 or older and
+with CPLD revisions CC_atmmgr_101406.jed, CC_datamgr_021905.jed,
+CC_lammgr_brdcst_041906.jed or older.
+
+To upgrade the main CCUSB firmware, follow instructions from
+the CCUSB manual. On Linux, one can use the ccusb_flash
+program included with these MIDAS drivers. It is a copy
+of ccusb_flash from the Wiener CD, with all the pieces
+assembled into one place and with a working Makefile. (I am too
+lazy to add the flashing bits to the ccusb.c driver).
+
+To upgrade the CPLD firmware, one needs a Xilinx JTag programmer
+cable (we use a "parallel port to JTag" cable provided by Wiener),
+and the Xilinx software (on Linux, we use Xilinx91i). For successful
+upgrade, follow instructions from Xilinx and Wiener.
+
+Note 3: Before starting to use the CCUSB interface, one should obtain
+the latest version of the CCUSB manual and firmware by downloading
+the latest version the CCUSB driver CD from the Wiener web
+site (registration required)
+
+Note 4: The example CCUSB frontend assumes this hardware configuration:
+LeCroy 2249A 12 channel ADC in slot 20, Kinetic Systems 3615 6 channel
+scaler in slot 12. NIM trigger input connected to CCUSB input "I1"
+firing at 10-100 Hz. Without the external trigger CCUSB will not
+generate any data and the frontend will only give "data timeout"
+errors. With the trigger, the LED on the scaler should flash at 1 Hz
+and the LEDs on the CCUSB should flash at the trigger rate.
+
+//end
