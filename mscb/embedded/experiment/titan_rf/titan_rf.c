@@ -19,8 +19,8 @@
 
 //define which RF Generator you are going to program
 //Currently, 33220A and 33250A are supported
-//#define AGILENT_33220A 1
-#define AGILENT_33250A 1
+#define AGILENT_33220A 1
+//#define AGILENT_33250A 1
 
 //Control definitions
 #define CONTROL_LADDERSTEP		(1<<0)
@@ -30,14 +30,10 @@
 #define CONTROL_FM		  		(1<<4)
 #define CONTROL_NOT_USED1 		(1<<5)
 #define CONTROL_NOT_USED2 		(1<<6)
-#define CONTROL_KLOCK	  		(1<<7)
 
 //User defined Definitions
 #define CHANGE_ON 1
 #define CHANGE_OFF 2
-#define KLOCK_ON 1
-#define KLOCK_OFF 2
-
 
 // Node Name
 char code node_name[] = "TITAN_RF";
@@ -45,7 +41,7 @@ char code node_name[] = "TITAN_RF";
 /* declare number of sub-addresses to framework */
 unsigned char idata _n_sub_addr = 1;
 
-char xdata str[250];
+char xdata str[378];
 extern SYS_INFO sys_info;
 
 /*---- Define channels and configuration parameters returned to
@@ -68,16 +64,16 @@ struct
 } user_data;
 
 MSCB_INFO_VAR code vars[] = {
-   1, UNIT_BYTE,  0, 0, 	 			 0, "Control",  &user_data.control,
-   1, UNIT_BYTE,  0, 0,              0, "GPIB Adr", &user_data.gpib_adr,
-	1, UNIT_BYTE,  0, 0,              0, "Switch",   &user_data.Switch,
-	4, UNIT_SECOND,0, 0,		MSCBF_FLOAT, "sweepDur", &user_data.sweepDur,
-	2, UNIT_COUNT, 0, 0, 				 0, "numSteps", &user_data.numSteps,
-	4, UNIT_HERTZ, 0, 0,					 0, "fStart"  , &user_data.fStart,
-	4, UNIT_HERTZ, 0, 0,					 0, "fEnd"    , &user_data.fEnd,
-	4, UNIT_VOLT  ,0, 0,		MSCBF_FLOAT, "rfAmp"   , &user_data.rfAmp,
-	4, UNIT_HERTZ, 0, 0,					 0, "fBurst"  , &user_data.fBurst,
-	2, UNIT_COUNT, 0, 0, 				 0, "numCyc"  , &user_data.numCyc,
+   1, UNIT_BYTE,  			0, 0, 	 			 0, "Control",  &user_data.control,
+   1, UNIT_BYTE, 				0, 0,              0, "GPIB Adr", &user_data.gpib_adr,
+	1, UNIT_BYTE, 				0, 0,              0, "Switch",   &user_data.Switch,
+	4, UNIT_SECOND,			0, 0,		MSCBF_FLOAT, "sweepDur", &user_data.sweepDur,
+	2, UNIT_COUNT,			 	0, 0, 				 0, "numSteps", &user_data.numSteps,
+	4, UNIT_HERTZ,  PRFX_MEGA, 0,					 0, "fStart"  , &user_data.fStart,
+	4, UNIT_HERTZ,  PRFX_MEGA, 0,					 0, "fEnd"    , &user_data.fEnd,
+	4, UNIT_VOLT,  PRFX_MILLI, 0,		MSCBF_FLOAT, "rfAmp"   , &user_data.rfAmp,
+	4, UNIT_HERTZ,  PRFX_MEGA, 0,					 0, "fBurst"  , &user_data.fBurst,
+	2, UNIT_COUNT, 			0, 0, 				 0, "numCyc"  , &user_data.numCyc,
    0
 };
 
@@ -112,11 +108,11 @@ void sineBurst(unsigned long fBurst, int numCyc, float rfAmp);
 void ladderBurst(int numSteps, int numCyc, float rfAmp, unsigned long fBurst);
 void fm(unsigned long fStart, unsigned long fEnd, float rfAmp);
 void rf_Init(void);
-void kLock(char kFlag);
 void hardWareUpdate(void);
 
 char flag = CHANGE_OFF;
 char kFlag = 0;
+bit firstTime = 1;
 
 /*---- User init function ------------------------------------------*/
 
@@ -144,14 +140,14 @@ void user_init(unsigned char init)
 
    if (init) {
       user_data.gpib_adr = 10;
-		user_data.sweepDur = 8;
+		user_data.sweepDur = 8; // in seconds
 		user_data.numSteps = 4;
-		user_data.fStart = 100000;
-		user_data.fEnd = 200000;
-		user_data.rfAmp = 0.200;
-		user_data.fBurst = 1000000;
+		user_data.fStart = 100000; //in cHz
+		user_data.fEnd = 200000; //in cHz
+		user_data.rfAmp = 200; //mV
+		user_data.fBurst = 1000000; //in cHz
 		user_data.numCyc = 4;
-		sys_info.node_addr = 0x03;
+		sys_info.node_addr = 0x04;
    }
 
 	//Initialize RF Generators
@@ -161,9 +157,6 @@ void user_init(unsigned char init)
 }
 
 /*---- User write function -----------------------------------------*/
-
-/* buffers in mscbmain.c */
-extern unsigned char xdata in_buf[64], out_buf[64];
 
 void user_write(unsigned char index) reentrant
 {
@@ -271,41 +264,22 @@ unsigned char send(unsigned char adr, char *str)
 /* User Defined Function Definitions */
 void rf_Init(void)
 {
-	send(user_data.gpib_adr, "*RST");
+	send(user_data.gpib_adr, "OUTPut OFF");
 	send(user_data.gpib_adr, "*CLS");
-	send(user_data.gpib_adr, "APPLy:SINusoid 1e6, 1, 0");
-	send(user_data.gpib_adr, "FUNC SINusoid");
+	send(user_data.gpib_adr, "OUTPut:LOAD MAXimum");	
 	send(user_data.gpib_adr, "TRIGger:SOURce EXTernal");
 	send(user_data.gpib_adr, "TRIGger:SLOPe POSitive");
-}
 
-void kLock(bit kFlag)
-{
-	if(kFlag == KLOCK_ON)
-	{
-		#ifdef AGILENT_33220A
-		send(user_data.gpib_adr, "SYSTem:KLOCk ON");
-		#elif AGILENT_33250A
-		//send(user_data.gpib_adr, "SYSTem:RWLock");
-		#endif
-
-	}
-
-	else if(kFlag == KLOCK_OFF)
-	{
-		#ifdef AGILENT_33220A
-		send(user_data.gpib_adr, "SYSTem:KLOCk OFF");
-		#elif AGILENT_33250A
-		//send(user_data.gpib_adr, "SYSTem:LOCal");
-		#endif
-	}
+	//turn all the states off to avoid beeping sounds later
+	send(user_data.gpib_adr, "SWEep:STATe OFF");
+	send(user_data.gpib_adr, "BURSt:STATe OFF");
+	send(user_data.gpib_adr, "FM:STATe OFF");
 }
 
 void fSweep(float sweepDur, unsigned long int fStart, unsigned long int fEnd, float rfAmp)
 {
 	rf_Init();
-	kLock(KLOCK_OFF);
-	
+		
 	sprintf(str, "FREQuency:STARt %lu e-2", fStart);
 	send(user_data.gpib_adr, str);
 
@@ -317,7 +291,7 @@ void fSweep(float sweepDur, unsigned long int fStart, unsigned long int fEnd, fl
 	sprintf(str, "SWEep:TIME %e", sweepDur);
 	send(user_data.gpib_adr, str);
 
-	sprintf(str, "VOLTAGE %e", rfAmp);
+	sprintf(str, "VOLTAGE %e", (rfAmp / 1000));
 	send(user_data.gpib_adr, str);
 
 	//finally, turn on the Sweep Mode
@@ -328,11 +302,10 @@ void fSweep(float sweepDur, unsigned long int fStart, unsigned long int fEnd, fl
 void sineBurst(unsigned long fBurst, int numCyc, float rfAmp)
 {
 	rf_Init();
-	kLock(KLOCK_OFF);
 
 	send(user_data.gpib_adr, "BURSt:MODE TRIGgered");
 
-	sprintf(str, "APPLy:SINusoid %lu e-2, %e", fBurst, rfAmp);
+	sprintf(str, "APPLy:SINusoid %lu e-2, %e", fBurst, (rfAmp / 1000));
 	send(user_data.gpib_adr, str);
 
 	sprintf(str, "BURSt:NCYCles %d", numCyc);
@@ -351,27 +324,36 @@ void ladderBurst(int numSteps, int numCyc, float rfAmp, unsigned long fBurst)
 	char xdata buffer[30];
 
 	rf_Init();
-	kLock(KLOCK_OFF);
 
 	strcpy(str, "DATA VOLATILE");
 	for(i = 0; i < numSteps; i++)
 	{
-		sprintf(buffer, ", %e", (double) ((((double)(2 * i)) / ((double)(numSteps -1))) - 1));
+		sprintf(buffer, ", %2.2f", (double) ((((double)(2 * i)) / ((double)(numSteps -1))) - 1));
 		strcat(str, buffer);
 	}
-	send(user_data.gpib_adr, "DATA:DELete:ALL");
-	delay_ms(500);
+
+	if(!firstTime)	
+	{
+		send(user_data.gpib_adr, "FUNCtion:USER EXP_RISE");
+		send(user_data.gpib_adr, "DATA:DELete TWISTLADDER");		
+	}
+	//delay_ms(500);
+	#ifdef AGILENT_33250A
+	//delay_ms(500); //additional delay fo 33250A
+	#endif
 	send(user_data.gpib_adr, str);
 	delay_ms(500);
+	yield();
 	send(user_data.gpib_adr, "DATA:COPY TWISTLADDER");
 	delay_ms(500);
+	if(firstTime) firstTime = 0;
 	send(user_data.gpib_adr, "FUNCtion:USER TWISTLADDER");
 	send(user_data.gpib_adr, "FUNCtion USER");
 
 	sprintf(str, "BURSt:NCYCles %d", numCyc);
 	send(user_data.gpib_adr, str);
 
-	sprintf(str, "APPLy:USER %lu e-2, %e", fBurst, rfAmp);
+	sprintf(str, "APPLy:USER %lu e-2, %e", fBurst, (rfAmp / 1000));
 	send(user_data.gpib_adr, str);
 
 	//finally, turn on the Ladder Burst Mode
@@ -382,14 +364,13 @@ void ladderBurst(int numSteps, int numCyc, float rfAmp, unsigned long fBurst)
 void fm(unsigned long fStart, unsigned long fEnd, float rfAmp)
 {	
 	rf_Init();
-	kLock(KLOCK_OFF);
 
 	send(user_data.gpib_adr, "FM:SOURce EXTernal");
 
 	sprintf(str, "FM:DEViation %lu e-2", fEnd - fStart);
 	send(user_data.gpib_adr, str);
 
-	sprintf(str, "VOLTAGE %e", rfAmp);
+	sprintf(str, "VOLTAGE %e", (rfAmp / 1000));
 	send(user_data.gpib_adr, str);
 
 	//finally, turn on the Sweep Mode
@@ -404,42 +385,21 @@ void hardWareUpdate(void)
 		if(user_data.control & CONTROL_SWEEP)
 		{
 			fSweep(user_data.sweepDur, user_data.fStart, user_data.fEnd, user_data.rfAmp);
-
-			if(user_data.control & CONTROL_KLOCK)
-			{
-				kLock(KLOCK_ON);
-			}			
 		}
 
 		else if(user_data.control & CONTROL_SINEBURST)
 		{
 			sineBurst(user_data.fBurst, user_data.numCyc, user_data.rfAmp);
-
-			if(user_data.control & CONTROL_KLOCK)
-			{
-				kLock(KLOCK_ON);
-			}
 		}
 
 		else if(user_data.control & CONTROL_LADDERBURST)
 		{
 			ladderBurst(user_data.numSteps, user_data.numCyc, user_data.rfAmp, user_data.fBurst);
-
-			if(user_data.control & CONTROL_KLOCK)
-			{
-				kLock(KLOCK_ON);
-			}
-
 		}
 
 		else if(user_data.control & CONTROL_FM)
 		{
 			fm(user_data.fStart, user_data.fEnd, user_data.rfAmp);
-
-			if(user_data.control & CONTROL_KLOCK)
-			{
-				kLock(KLOCK_ON);
-			}
 		}
 		flag = CHANGE_OFF;
 	}
