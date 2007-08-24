@@ -144,16 +144,15 @@ void user_init(unsigned char init)
 		user_data.numSteps = 4;
 		user_data.fStart = 100000; //in cHz
 		user_data.fEnd = 200000; //in cHz
-		user_data.rfAmp = 200; //mV
+		user_data.rfAmp = 500; //mV
 		user_data.fBurst = 1000000; //in cHz
 		user_data.numCyc = 4;
-		sys_info.node_addr = 0x04;
+		sys_info.node_addr = 0x01;
    }
 
 	//Initialize RF Generators
 	strcpy(str, " ");
 	rf_Init();
-	user_data.control = 0x02;
 }
 
 /*---- User write function -----------------------------------------*/
