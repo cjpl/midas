@@ -136,10 +136,24 @@
 
 /*---- Define variable parameters returned to CMD_GET_INFO command ----*/
 
-struct user_data_type {
-   float		 internal_temp; // ADT7486A internal temperature [degree celsius]
-   float		 external_temp; // ADT7486A external temperature [degree celsius]
-   float		 external_tempOffset; // ADT7486A external temperature offset[degree celsius] 
+struct user_data_type 
+{
+	float s1;	
+	float s2;
+	float s3;
+	float s4;
+	float s5;
+	float s6;
+	float s7;
+	float s8;
+	float diff1;
+	float diff2;
+	float diff3;
+	float diff4;
+	
+   float	internal_temp; // ADT7486A internal temperature [degree celsius]
+   float	external_temp; // ADT7486A external temperature [degree celsius]
+   float	external_tempOffset; // ADT7486A external temperature offset[degree celsius] 
 }; 
 
 /********************************************************************\
