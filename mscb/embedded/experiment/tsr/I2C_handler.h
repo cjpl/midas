@@ -21,7 +21,7 @@
 #define I2C_T_LOW 5 //in us
 #define I2C_T_HIGH 5 //in us
 #define I2C_SU_STA 5 // in us
-#define I2C_ACK	1
+#define I2C_ACK 1
 #define I2C_NACK 2
 #define I2C_CLEAR_DELAY 100 //in ms
 #define I2C_WRITE_FLAG 3
@@ -33,7 +33,7 @@
 #define I2C_SU_STO 5 // in us
 
 //I2C Function Declarations
-void I2C_Init(void);
+void I2C_Clear(void);
 void I2C_Start(void);
 void I2C_Stop(void);
 bit I2C_WriteByte(unsigned char datByte, unsigned char flag);

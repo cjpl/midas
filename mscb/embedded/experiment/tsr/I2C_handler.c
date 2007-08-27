@@ -15,9 +15,13 @@
 \**********************************************************************************/
 
 //Include files
+#include "mscbemb.h"
 #include "I2C_handler.h"
 
-void I2C_Init(void)
+sbit I2C_SDA = MSCB_I2C_SDA;
+sbit I2C_SCL = MSCB_I2C_SCL;
+
+void I2C_Clear(void)
 {
 	I2C_SDA = 1;
 	I2C_SCL = 1;
@@ -94,7 +98,7 @@ unsigned char I2C_ReadByte(bit flag)
 	{
 		I2C_SDA = 0;
 	}
-	else if(flag == NACK)
+	else if(flag == I2C_NACK)
 	{
 		I2C_SDA = 1;
 	}
