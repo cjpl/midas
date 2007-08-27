@@ -13,9 +13,10 @@
 //  need to have FGD_008_TSR defined.
 
 #include <stdio.h>
-#include "../../mscbemb.h"
+#include "mscbemb.h"
 #include "ADT7486A_tsensor.h"
 #include "tsr.h"
+#include "LTC2497.h"
 extern bit FREEZE_MODE;
 extern bit DEBUG_MODE;
 
@@ -59,7 +60,18 @@ struct user_data_type xdata user_data[N_HV_CHN];
 
 MSCB_INFO_VAR code vars[] = {
    //Main variables (with just "read" call)
-   4, UNIT_CELSIUS,         0, 0, MSCBF_FLOAT, "ExtTemp",  &user_data[0].external_temp, //0
+	4, UNIT_CELSIUS,         0, 0, MSCBF_FLOAT, "S1+",  &user_data[0].s1, //0
+	4, UNIT_CELSIUS,         0, 0, MSCBF_FLOAT, "S2+",  &user_data[0].s2, //0
+	4, UNIT_CELSIUS,         0, 0, MSCBF_FLOAT, "S3+",  &user_data[0].s3, //0
+	4, UNIT_CELSIUS,         0, 0, MSCBF_FLOAT, "S4+",  &user_data[0].s4, //0
+	4, UNIT_CELSIUS,         0, 0, MSCBF_FLOAT, "S5+",  &user_data[0].s5, //0
+	4, UNIT_CELSIUS,         0, 0, MSCBF_FLOAT, "S6+",  &user_data[0].s6, //0
+	4, UNIT_CELSIUS,         0, 0, MSCBF_FLOAT, "S7+",  &user_data[0].s7, //0
+	4, UNIT_CELSIUS,         0, 0, MSCBF_FLOAT, "S8+",  &user_data[0].s8, //0
+	4, UNIT_VOLT,         	 0, 0, MSCBF_FLOAT, "DIFF1",  &user_data[0].diff1, //0
+	4, UNIT_VOLT,         	 0, 0, MSCBF_FLOAT, "DIFF2",  &user_data[0].diff2, //0
+	4, UNIT_VOLT,         	 0, 0, MSCBF_FLOAT, "DIFF3",  &user_data[0].diff3, //0
+   4, UNIT_VOLT,         	 0, 0, MSCBF_FLOAT, "DIFF4",  &user_data[0].diff4, //0
    //Hidden variables (wth "read all" call)
    4, UNIT_CELSIUS,         0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "TempOS",  &user_data[0].external_tempOffset, //1(hidden)
    4, UNIT_CELSIUS,         0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "IntTemp",  &user_data[0].internal_temp, //2(hidden)
@@ -176,7 +188,26 @@ unsigned char user_func(unsigned char *data_in, unsigned char *data_out)
 /*---- User loop function ------------------------------------------*/
 void user_loop(void)
 {
+	char i = 0;
+
    User_tsensor(); //run SST user-defined routines	
+
+	//LTC2497_ADC routines
+	for(i = 0; i < N_HV_CHN; i++)
+	{
+		LTC2497_Cmd(READ_S1, &user_data[i].s1);
+		LTC2497_Cmd(READ_S1, &user_data[i].s2);
+		LTC2497_Cmd(READ_S1, &user_data[i].s3);
+		LTC2497_Cmd(READ_S1, &user_data[i].s4);
+		LTC2497_Cmd(READ_S1, &user_data[i].s5);
+		LTC2497_Cmd(READ_S1, &user_data[i].s6);
+		LTC2497_Cmd(READ_S1, &user_data[i].s7);
+		LTC2497_Cmd(READ_S1, &user_data[i].s8);
+		LTC2497_Cmd(READ_S1, &user_data[i].diff1);
+		LTC2497_Cmd(READ_S1, &user_data[i].diff2);
+		LTC2497_Cmd(READ_S1, &user_data[i].diff3);
+		LTC2497_Cmd(READ_S1, &user_data[i].diff4);
+	}
 }
 
 
