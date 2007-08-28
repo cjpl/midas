@@ -1,6 +1,6 @@
 /********************************************************************\
 
-  Name:         fgd_008.h
+  Name:         tsr.h
   Created by:   K. Mizouchi/Pierre-André Amaudruz    Sep/20/2006
 
 
@@ -17,7 +17,7 @@
 #define  _TSR_H
 
 /* number of HV channels */
-#define N_HV_CHN         8
+#define N_CHN         1
 
 /* maximum current im micro Ampere */
 #define MAX_CURRENT      600
