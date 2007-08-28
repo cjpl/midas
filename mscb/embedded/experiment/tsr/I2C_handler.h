@@ -21,8 +21,8 @@
 #define I2C_T_LOW 5 //in us
 #define I2C_T_HIGH 5 //in us
 #define I2C_SU_STA 5 // in us
-#define I2C_ACK 1
-#define I2C_NACK 2
+#define I2C_ACK 0
+#define I2C_NACK 1
 #define I2C_CLEAR_DELAY 100 //in ms
 #define I2C_WRITE_FLAG 3
 #define I2C_READ_FLAG 4
