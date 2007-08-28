@@ -8,7 +8,7 @@
                 for FGD-008-TSR (Temperature Sensor Array)
 				testing board
  
- $id:$
+ $Id$
 \********************************************************************/
 //  need to have TSR defined on the compiler option
 
