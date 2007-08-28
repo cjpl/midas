@@ -45,14 +45,29 @@ void LTC2497_Cmd(char cmd, unsigned char addr, unsigned char control, float * va
 	if(buffer & 0x00020000) //if the read number is positive
 	{		
 		buffer &= 0x0001FFFF;
+		//General ADC conversion for LTC2497 (positive)
+		if(buffer <= 65536)
+		{
+			*varToBeWritten = (((float)buffer) * (LTC2497_FS / 65536.0));
+		}
+		else //when the read Value is 0
+		{
+			*varToBeWritten = 0.0;
+		}
 	}
 	else //if the read number is negative 
 	{
-		buffer = (~buffer + 0x00000001) & 0x0003FFFF; //2's complement
+		buffer = (~buffer + 0x00000001) & 0x0001FFFF; //2's complement
+		//General ADC conversion for LTC2497 (negative)
+		if(buffer <= 65536)
+		{
+			*varToBeWritten = - (((float)buffer) * (LTC2497_FS / 65536.0));
+		}
+		else  //when the read Value is 0
+		{
+			*varToBeWritten = 0.0;
+		}
 	}
-
-	//General ADC conversion for LTC2497
-	*varToBeWritten = (((float)buffer) * (LTC2497_FS / 65536.0));
 
 	//Set appropriate conversions for each measuremets
 	if((cmd >= 0) && (cmd <= 4))
