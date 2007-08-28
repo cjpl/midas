@@ -19,7 +19,7 @@
 // --------------------------------------------------------
 //  Include files
 // --------------------------------------------------------
-#include    "../../mscbemb.h"
+#include    "mscbemb.h"
 #include "SST_handler.h"
 
 /* SST related variables */
@@ -28,6 +28,9 @@ sbit SST = SST1; //This variable chooses between SST lines (e.g. SST1, SST2, etc
 				 //SFR definitions of SST1 and SST2 ports are defined in mscbemb.h
 sbit SST_ClientResponse = SST1_ClientResponse; //Response read through
 											   //comparator output
+
+sbit P1_1 = SST1_REF; // the bit that controls and reads from P1 ^ 1
+sbit P1_0 = SST2_REF; // the bit that controls and reads from P1 ^ 0
 
 /* CRC-8 Table for Polynomial x^8 + x^2 + x^1 + 1 (used for FCS in SST Protocol) */
 unsigned char code FCS_data[] = {
