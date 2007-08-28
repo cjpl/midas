@@ -1,12 +1,15 @@
-// --------------------------------------------------------
-//  ADT7486A handling routines for ADT7486A
-//      - Writtern for Temperature Sensor Array board
-//      - Brian Lee   (May/11/2007)
-//
-//  Version:    Rev 1.2
-//
-//  $Id$
-// --------------------------------------------------------
+/**********************************************************************************\
+  Name:         ADT7486A_tsensor.h
+  Created by:   Brian Lee						     May/11/2007
+
+
+  Contents:     Temperature sensor array (ADT7486A) handler
+
+  Version:		Rev 1.2
+
+  $Id$
+\**********************************************************************************/
+
 #ifndef  _ADT7486A_TSENSOR_H
 #define  _ADT7486A_TSENSOR_H
 
