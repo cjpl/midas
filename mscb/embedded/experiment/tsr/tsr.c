@@ -1,5 +1,5 @@
 /********************************************************************\
-  Name:         fgd_008_tsr.c
+  Name:         tsr.c
   Created by:   Brian Lee						    May/11/2007
 
 
@@ -10,7 +10,7 @@
  
  $id:$
 \********************************************************************/
-//  need to have FGD_008_TSR defined.
+//  need to have TSR defined on the compiler option
 
 #include <stdio.h>
 #include "mscbemb.h"
@@ -21,42 +21,12 @@ extern bit FREEZE_MODE;
 extern bit DEBUG_MODE;
 
 /* declare number of sub-addresses to framework */
-unsigned char idata _n_sub_addr = N_HV_CHN;
+unsigned char idata _n_sub_addr = N_CHN;
 
 char code node_name[] = "TSR";
 
-/* AD7718 pins */
-sbit ADC_NRES = P1 ^ 0;         // !Reset
-sbit ADC_SCLK = P0 ^ 6;         // Serial Clock
-sbit ADC_NCS  = P1 ^ 5;         // !Chip select
-sbit ADC_NRDY = P1 ^ 3;         // !Ready
-sbit ADC_DOUT = P1 ^ 0;         // Data out
-sbit ADC_DIN  = P0 ^ 7;         // Data in
-
-/* LTC2600 pins */
-sbit DAC_NCS  = P1 ^ 2;         // !Chip select
-sbit DAC_SCK  = P0 ^ 6;         // Serial Clock
-sbit DAC_CLR  = P1 ^ 7;         // Clear
-sbit DAC_DIN  = P0 ^ 7;         // Data in
-
-/* Charge Pump */
-sbit INT_BIAS = P1 ^ 2;         // Internal bias path enable
-sbit EXT_BIAS = P1 ^ 3;         // External bias path enable
-
-/* Cross Bar Related */
-//sbit SMBus_XBR_Enable = XBR0 ^ 2;
-//sbit CP0_XBR_Enable = XBR0 ^ 4;
-//sbit CP0_Fn_Enable = CPT0CN ^ 7;
-//sbit CP0A_XBR_Enable = XBR0 ^ 5;
-
-unsigned char idata chn_bits[N_HV_CHN];
-float         xdata u_actual[N_HV_CHN];
-unsigned long xdata t_ramp[N_HV_CHN];
-
-bit trip_reset;
-bit once = 1;
-
-struct user_data_type xdata user_data[N_HV_CHN];
+struct user_data_type xdata user_data[N_CHN];
+unsigned char ADT7486A_addrArray[] = {ADT7486A_ADDR_ARRAY};
 
 MSCB_INFO_VAR code vars[] = {
    //Main variables (with just "read" call)
@@ -104,23 +74,31 @@ void user_init(unsigned char init)
    PCA0MD   = 0x8;  // Sysclk (24.6MHz)
     
    /* initial nonzero EEPROM values */
-   if (init) {
-
-      for (i=0 ; i<N_HV_CHN ; i++) {
-         user_data[i].internal_temp = 0.0;
-		 user_data[i].external_temp = 0.0;
-		 user_data[i].external_tempOffset = 0.0;
-      }
+   if (init) 
+	{
+		sys_info.node_addr = 0x5;
+		sys_info.group_addr = 400;
    }
 
-   // force update
-   for (i=0 ; i<N_HV_CHN ; i++)
-      chn_bits[i] = DEMAND_CHANGED;
-
-   // set normal LED mode (non-inverted mode)
-   for (i=0 ; i<N_HV_CHN ; i++) {
-      led_mode(i+2, 0);
-   }
+	//general initial settings
+	for (i=0 ; i<N_CHN ; i++) 
+	{
+		user_data[i].s1 = 0.0;
+		user_data[i].s2 = 0.0;
+		user_data[i].s3 = 0.0;
+		user_data[i].s4 = 0.0;
+		user_data[i].s5 = 0.0;
+		user_data[i].s6 = 0.0;
+		user_data[i].s7 = 0.0;
+		user_data[i].s8 = 0.0;
+		user_data[i].diff1 = 0.0;
+		user_data[i].diff2 = 0.0;
+		user_data[i].diff3 = 0.0;
+		user_data[i].diff4 = 0.0;
+		user_data[i].internal_temp = 0.0;
+		user_data[i].external_temp = 0.0;
+		user_data[i].external_tempOffset = 0.0;
+	}
 
 	/* Cross Bar Settings */
 	//if the RS485 Communication is not working, it's 90% because of
@@ -147,8 +125,30 @@ void user_init(unsigned char init)
 	CPT0MD = 0x02; //Comparator0 Mode Selection
 				   //Use default, adequate TYP (CP0 Response Time, no edge triggered interrupt)
 
+	P2 &= 0xEF; //Ground for Voltage Divider (set Low)
+	P1MDOUT = 0x00; //Set the Threshold pins P1.0 and P1.1 to Open-Drain
+	P1MDIN &= 0xFC; //and set them to Analong Input for comparator input
+
     //initialize SST protocol related ports/variables/etc for ADT7486A
-	ADT7486A_init(); 	
+	ADT7486A_Init();
+
+	// Turn All Leds ON and OFF to indicate the board is operating
+	led_1 = LED_ON;
+	led_2 = LED_ON;
+	led_3 = LED_ON;
+	led_4 = LED_ON;
+	led_5 = LED_ON;
+	led_6 = LED_ON;
+	led_7 = LED_ON;	
+
+	delay_ms(1000);
+	led_1 = LED_OFF;
+	led_2 = LED_OFF;
+	led_3 = LED_OFF;
+	led_4 = LED_OFF;
+	led_5 = LED_OFF;
+	led_6 = LED_OFF;
+	led_7 = LED_OFF;
 }
 
 
@@ -188,26 +188,28 @@ unsigned char user_func(unsigned char *data_in, unsigned char *data_out)
 /*---- User loop function ------------------------------------------*/
 void user_loop(void)
 {
-	char i = 0;
+	char chNum = 0;
 
 	//LTC2497_ADC routines
-	for(i = 0; i < 1; i++)
+	for(chNum = 0; chNum < N_CHN; chNum++)
 	{
-		//LTC2497_Cmd(READ_S1, &user_data[i].s1);
-		//LTC2497_Cmd(READ_S2, &user_data[i].s2);
-		//LTC2497_Cmd(READ_S3, &user_data[i].s3);
-		//LTC2497_Cmd(READ_S4, &user_data[i].s4);
-		//LTC2497_Cmd(READ_S5, &user_data[i].s5);
-		//LTC2497_Cmd(READ_S6, &user_data[i].s6);
-		//LTC2497_Cmd(READ_S7, &user_data[i].s7);
-		LTC2497_Cmd(READ_S8, &user_data[i].s8);
-		//LTC2497_Cmd(READ_DIFF1, &user_data[i].diff1);
-		//LTC2497_Cmd(READ_DIFF2, &user_data[i].diff2);
-		//LTC2497_Cmd(READ_DIFF3, &user_data[i].diff3);
-		LTC2497_Cmd(READ_DIFF4, &user_data[i].diff4);
-	}
+		//LTC2497_Cmd(READ_S1, &user_data[chNum].s1);
+		//LTC2497_Cmd(READ_S2, &user_data[chNum].s2);
+		//LTC2497_Cmd(READ_S3, &user_data[chNum].s3);
+		//LTC2497_Cmd(READ_S4, &user_data[chNum].s4);
+		//LTC2497_Cmd(READ_S5, &user_data[chNum].s5);
+		//LTC2497_Cmd(READ_S6, &user_data[chNum].s6);
+		//LTC2497_Cmd(READ_S7, &user_data[chNum].s7);
+		LTC2497_Cmd(READ_S8, &user_data[chNum].s8);
+		//LTC2497_Cmd(READ_DIFF1, &user_data[chNum].diff1);
+		//LTC2497_Cmd(READ_DIFF2, &user_data[chNum].diff2);
+		//LTC2497_Cmd(READ_DIFF3, &user_data[chNum].diff3);
+		LTC2497_Cmd(READ_DIFF4, &user_data[chNum].diff4);
 
-	User_tsensor(); //run SST user-defined routines	
+		//run SST user-defined routines	
+		ADT7486A_Cmd(ADT7486A_addrArray[4], GetExt2Temp, &user_data[chNum].external_temp);
+		ADT7486A_Cmd(ADT7486A_addrArray[4], GetIntTemp, &user_data[chNum].internal_temp);
+	}
 }
 
 
