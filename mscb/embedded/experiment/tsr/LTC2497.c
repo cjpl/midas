@@ -11,7 +11,7 @@
   Last updated: Aug/24/2007
   				- Recovery
 
-  $id: $
+  $Id: $
 \**********************************************************************************/
 
 #include "mscbemb.h"
@@ -21,6 +21,8 @@
 void LTC2497_Cmd(char cmd, unsigned char addr, unsigned char control, float * varToBeWritten)
 {
 	unsigned long int buffer = 0x0000; //temporarily storing 24-bit data to check signness
+	
+	delay_ms(LTC2497_CONVERSIONTIME); //delay for conversion time
 
 	//Write cycle, send addr and command
 	I2C_Clear();
@@ -50,7 +52,7 @@ void LTC2497_Cmd(char cmd, unsigned char addr, unsigned char control, float * va
 	}
 
 	//General ADC conversion for LTC2497
-	*varToBeWritten = (((float)buffer) * (LTC2497_FS / 65535.0)); //take it as is
+	*varToBeWritten = (((float)buffer) * (LTC2497_FS / 65536.0));
 
 	//Set appropriate conversions for each measuremets
 	if((cmd >= 0) && (cmd <= 4))
