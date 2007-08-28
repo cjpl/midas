@@ -32,9 +32,9 @@ void I2C_Start(void)
 {
 	//Start condition: I2C_SDA goes from HIGH to LOW while I2C_SCL is HIGH
 	delay_us(I2C_SU_STA);
-	I2C_SCL = 0;
-	delay_us(I2C_HD_STA);
 	I2C_SDA = 0;
+	delay_us(I2C_HD_STA);
+	I2C_SCL = 0;	
 }
 
 void I2C_Stop(void)
@@ -65,19 +65,23 @@ bit I2C_WriteByte(unsigned char datByte, unsigned char flag)
 	for(i = 7; i >= 0; i--)
 	{
 		I2C_SDA = (toBeSent >> i) & 0x01;
+		delay_us(1); //SU;DAT
 		I2C_ClockOnce();
 	}
 
 	if(I2C_SDA == 0)
 	{
+		I2C_ClockOnce();
 		return I2C_ACK;
 	}
 	else if(I2C_SDA == 1)
 	{
+		I2C_ClockOnce();
 		return I2C_NACK;
 	}
 	else
 	{
+		I2C_ClockOnce();
 		return I2C_WRITE_ERROR;
 	}
 }
@@ -87,7 +91,7 @@ unsigned char I2C_ReadByte(bit flag)
 	char i = 0;
 	char dataRead = 0x00;
 
-	for(i = 0; i < 8; i++)
+	for(i = 7; i >= 0; i--)
 	{
 		dataRead |= ((unsigned char) I2C_SDA) << i;
 		I2C_ClockOnce();
@@ -109,8 +113,8 @@ unsigned char I2C_ReadByte(bit flag)
 
 void I2C_ClockOnce(void)
 {
+	I2C_SCL = 1;
 	delay_us(I2C_T_HIGH);
 	I2C_SCL = 0;
-	delay_us(I2C_T_LOW);
-	I2C_SCL = 1;
+	delay_us(I2C_T_LOW);	
 }
