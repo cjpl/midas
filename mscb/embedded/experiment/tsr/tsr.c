@@ -72,6 +72,7 @@ MSCB_INFO_VAR code vars[] = {
 	4, UNIT_VOLT,         	 0, 0, MSCBF_FLOAT, "DIFF2",  &user_data[0].diff2, //0
 	4, UNIT_VOLT,         	 0, 0, MSCBF_FLOAT, "DIFF3",  &user_data[0].diff3, //0
    4, UNIT_VOLT,         	 0, 0, MSCBF_FLOAT, "DIFF4",  &user_data[0].diff4, //0
+	4, UNIT_CELSIUS,         0, 0, MSCBF_FLOAT, "ExtTemp",  &user_data[0].external_temp, //2(hidden)
    //Hidden variables (wth "read all" call)
    4, UNIT_CELSIUS,         0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "TempOS",  &user_data[0].external_tempOffset, //1(hidden)
    4, UNIT_CELSIUS,         0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "IntTemp",  &user_data[0].internal_temp, //2(hidden)
@@ -125,12 +126,11 @@ void user_init(unsigned char init)
 	//if the RS485 Communication is not working, it's 90% because of
 	//crossbar settings!
 
-	P0SKIP = 0x0C; //skip P0 ^ 2 and P0 ^ 3
+	P0SKIP = 0x0F; //skip P0 ^ 2 and P0 ^ 3
 				   //P0 ^ 4 and P0 ^ 5 are automatically assigned to be TX0 and RX0
 				   //see below where crossbar routes the ports for TX0 and RX0
 
-	XBR0 = 0x35;	//route SMBus I/O's to port pin P0 ^ 0 and P0 ^ 1	
-					//route TX0 and RX0 to P0 ^ 4 and P0 ^ 5
+	XBR0 = 0x31; //route TX0 and RX0 to P0 ^ 4 and P0 ^ 5
 	 				//CP0 is enabled and the output of this comparator
 					//is routed to port pin P0 ^ 6; by cross bar priority decoder
 					//CP0 asynchoronous output pint is routed to port P0 ^ 7
@@ -190,24 +190,24 @@ void user_loop(void)
 {
 	char i = 0;
 
-   User_tsensor(); //run SST user-defined routines	
-
 	//LTC2497_ADC routines
-	for(i = 0; i < N_HV_CHN; i++)
+	for(i = 0; i < 1; i++)
 	{
-		LTC2497_Cmd(READ_S1, &user_data[i].s1);
-		LTC2497_Cmd(READ_S1, &user_data[i].s2);
-		LTC2497_Cmd(READ_S1, &user_data[i].s3);
-		LTC2497_Cmd(READ_S1, &user_data[i].s4);
-		LTC2497_Cmd(READ_S1, &user_data[i].s5);
-		LTC2497_Cmd(READ_S1, &user_data[i].s6);
-		LTC2497_Cmd(READ_S1, &user_data[i].s7);
-		LTC2497_Cmd(READ_S1, &user_data[i].s8);
-		LTC2497_Cmd(READ_S1, &user_data[i].diff1);
-		LTC2497_Cmd(READ_S1, &user_data[i].diff2);
-		LTC2497_Cmd(READ_S1, &user_data[i].diff3);
-		LTC2497_Cmd(READ_S1, &user_data[i].diff4);
+		//LTC2497_Cmd(READ_S1, &user_data[i].s1);
+		//LTC2497_Cmd(READ_S2, &user_data[i].s2);
+		//LTC2497_Cmd(READ_S3, &user_data[i].s3);
+		//LTC2497_Cmd(READ_S4, &user_data[i].s4);
+		//LTC2497_Cmd(READ_S5, &user_data[i].s5);
+		//LTC2497_Cmd(READ_S6, &user_data[i].s6);
+		//LTC2497_Cmd(READ_S7, &user_data[i].s7);
+		LTC2497_Cmd(READ_S8, &user_data[i].s8);
+		//LTC2497_Cmd(READ_DIFF1, &user_data[i].diff1);
+		//LTC2497_Cmd(READ_DIFF2, &user_data[i].diff2);
+		//LTC2497_Cmd(READ_DIFF3, &user_data[i].diff3);
+		LTC2497_Cmd(READ_DIFF4, &user_data[i].diff4);
 	}
+
+	User_tsensor(); //run SST user-defined routines	
 }
 
 
