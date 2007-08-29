@@ -89,7 +89,7 @@ MXML_DIR=../mxml
 
 
 #
-# Optional zlib support for analyzer
+# Optional zlib support for data compression in the mlogger and in the analyzer
 #
 NEED_ZLIB=
 
@@ -186,6 +186,9 @@ ifeq ($(OSTYPE),linux)
 
 # >2GB file support
 CFLAGS += -D_LARGEFILE64_SOURCE
+
+# include ZLIB support
+NEED_ZLIB=1
 
 OS_DIR = linux
 OSFLAGS = -DOS_LINUX -fPIC -Wno-unused-function

@@ -27,6 +27,10 @@
 #include "TLeaf.h"
 #endif
 
+#ifdef HAVE_ZLIB
+#include <zlib.h>
+#endif
+
 #ifdef HAVE_MYSQL
 #ifdef OS_UNIX
 #include <mysql/mysql.h>
@@ -954,7 +958,14 @@ INT midas_flush_buffer(LOG_CHN * log_chn)
       status =
           ftp_send(((FTP_CON *) log_chn->ftp_con)->data, info->buffer,
                    size) == size ? SS_SUCCESS : SS_FILE_ERROR;
-   else {
+   else if (log_chn->gzfile) {
+#ifdef HAVE_ZLIB
+      written = gzwrite(log_chn->gzfile, info->buffer, size);
+      status = written == size ? SS_SUCCESS : SS_FILE_ERROR;
+#else
+      assert(!"this cannot happen! support for ZLIB not compiled in");
+#endif
+   } else {
 #ifdef OS_WINNT
       WriteFile((HANDLE) log_chn->handle, info->buffer, size, (unsigned long *) &written,
                 NULL);
@@ -1079,17 +1090,18 @@ INT midas_log_open(LOG_CHN * log_chn, INT run_number)
             }
          }
       }
+
 #ifdef OS_WINNT
       log_chn->handle =
           (int) CreateFile(log_chn->path, GENERIC_WRITE, FILE_SHARE_READ, NULL,
                            CREATE_ALWAYS,
                            FILE_ATTRIBUTE_NORMAL | FILE_FLAG_WRITE_THROUGH |
                            FILE_FLAG_SEQUENTIAL_SCAN, 0);
-
 #else
       log_chn->handle =
-          open(log_chn->path, O_WRONLY | O_CREAT | O_TRUNC | O_BINARY | O_LARGEFILE,
-               0644);
+         open(log_chn->path, O_WRONLY | O_CREAT | O_TRUNC | O_BINARY | O_LARGEFILE,
+              0644);
+
 #endif
 
       if (log_chn->handle < 0) {
@@ -1098,7 +1110,35 @@ INT midas_log_open(LOG_CHN * log_chn, INT run_number)
          log_chn->handle = 0;
          return SS_FILE_ERROR;
       }
+
+      log_chn->gzfile = NULL;
+      if (log_chn->compression > 0) {
+#ifdef HAVE_ZLIB
+         char* sufp = strstr(log_chn->path, ".gz");
+
+         if (!sufp || sufp[3]!=0) {
+            cm_msg(MERROR, "midas_log_open", "Compression enabled but output file name does not end with '.gz'");
+            close(log_chn->handle);
+            free(info->buffer);
+            free(info);
+            log_chn->handle = 0;
+            return SS_FILE_ERROR;
+         }
+
+         log_chn->gzfile = gzdopen(log_chn->handle, "wb");
+         assert(log_chn->gzfile != NULL);
+         gzsetparams(log_chn->gzfile, log_chn->compression, Z_DEFAULT_STRATEGY);
+#else
+         cm_msg(MERROR, "midas_log_open", "Compression enabled but ZLIB support not compiled in");
+         close(log_chn->handle);
+         free(info->buffer);
+         free(info);
+         log_chn->handle = 0;
+         return SS_FILE_ERROR;
+#endif
+      }
    }
+
 
    /* write ODB dump */
    if (log_chn->settings.odb_dump)
@@ -1125,12 +1165,22 @@ INT midas_log_close(LOG_CHN * log_chn, INT run_number)
    } else if (log_chn->type == LOG_TYPE_FTP) {
       ftp_close((FTP_CON *) log_chn->ftp_con);
       ftp_bye((FTP_CON *) log_chn->ftp_con);
-   } else
+   } else {
+      if (log_chn->gzfile) {
+#ifdef HAVE_ZLIB
+         gzclose(log_chn->gzfile);
+         log_chn->gzfile = NULL;
+#else
+         assert(!"this cannot happen! support for ZLIB not compiled in");
+#endif
+      }
+
 #ifdef OS_WINNT
       CloseHandle((HANDLE) log_chn->handle);
 #else
       close(log_chn->handle);
 #endif
+   }
 
    free(((MIDAS_INFO *) log_chn->format_info)->buffer);
    free(log_chn->format_info);
@@ -2201,7 +2251,7 @@ INT log_close(LOG_CHN * log_chn, INT run_number)
    if (log_chn->format == FORMAT_MIDAS)
       midas_log_close(log_chn, run_number);
 
-   log_chn->statistics.files_written++;
+   log_chn->statistics.files_written += 1;
    log_chn->handle = 0;
    log_chn->ftp_con = NULL;
 
@@ -3083,6 +3133,11 @@ INT tr_start(INT run_number, char *error)
             cm_msg(MERROR, "tr_start", error);
             return 0;
          }
+
+         /* set compression level */
+         log_chn[index].compression = 0;
+         size = sizeof(log_chn[index].compression);
+         db_get_value(hDB, log_chn->settings_hkey, "Compression", &log_chn[index].compression, &size, TID_INT, FALSE);
 
          data_dir[0] = 0;
 

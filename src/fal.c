@@ -2336,7 +2336,7 @@ INT log_close(LOG_CHN * log_chn, INT run_number)
    if (log_chn->format == FORMAT_MIDAS)
       midas_log_close(log_chn, run_number);
 
-   log_chn->statistics.files_written++;
+   log_chn->statistics.files_written += 1;
    log_chn->handle = 0;
    log_chn->ftp_con = NULL;
 
