@@ -472,6 +472,7 @@ typedef struct {
    char path[256];
    INT type;
    INT format;
+   INT compression;
    INT buffer_handle;
    INT msg_buffer_handle;
    INT request_id;
@@ -482,6 +483,7 @@ typedef struct {
    CHN_STATISTICS statistics;
    void **format_info;
    void *ftp_con;
+   void *gzfile;
 } LOG_CHN;
 
 #define LOG_TYPE_DISK 1
