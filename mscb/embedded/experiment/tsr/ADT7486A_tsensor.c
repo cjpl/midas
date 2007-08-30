@@ -20,9 +20,8 @@
 // --------------------------------------------------------
 //  Include files
 // --------------------------------------------------------
-#include "mscbemb.h"
-#include "tsr.h"
-#include "SST_handler.h"
+#include "../../mscbemb.h"
+#include "../../protocols/SST_handler.h"
 #include "ADT7486A_tsensor.h"
 
 void ADT7486A_Init(void)
@@ -41,34 +40,6 @@ void ADT7486A_Init(void)
 \**********************************************************************************/
 {	
 	SST_Init();
-}
-
-void ADT7486A_LedMng(void)
-/**********************************************************************************\
-
-  Routine: ADT7486A_LedMng (Led manager)
-
-  Purpose: To turn on/off LEDs to indicate whether each corresponding
-  		   external temperature sources have crossed the limit of
-		   temperature
-
-  Input:
-    void
-
-  Function value:
-    void
-
-\**********************************************************************************/
-{
-	//for each external temperature source, if it reaches over 30 degree
-	//celsius, then turn on the according LED ON, otherwise OFF
-	/*led_1 = (user_data[0].external_temp >= TEMP_LIMIT) ? LED_ON : LED_OFF;
-	led_2 = (user_data[1].external_temp >= TEMP_LIMIT) ? LED_ON : LED_OFF;
-	led_3 = (user_data[2].external_temp >= TEMP_LIMIT) ? LED_ON : LED_OFF;
-	led_4 = (user_data[3].external_temp >= TEMP_LIMIT) ? LED_ON : LED_OFF;
-	led_5 = (user_data[5].internal_temp >= TEMP_LIMIT) ? LED_ON : LED_OFF;
-	led_6 = (user_data[6].external_temp >= TEMP_LIMIT) ? LED_ON : LED_OFF;
-	led_7 = (user_data[7].external_temp >= TEMP_LIMIT) ? LED_ON : LED_OFF;*/
 }
 
 void ADT7486A_Cmd(unsigned char addr, unsigned char writeLength, unsigned char readLength, 
@@ -120,13 +91,13 @@ void ADT7486A_Cmd(unsigned char addr, unsigned char writeLength, unsigned char r
 		//Start the message
 		SST_DrvLow();
 		SST_DrvLow();
-		SST_DrvByte(addr); //target address
+		SST_WriteByte(addr); //target address
 		SST_DrvLow();
-		SST_DrvByte(writeLength); //WriteLength
-		SST_DrvByte(readLength); //ReadLength
+		SST_WriteByte(writeLength); //WriteLength
+		SST_WriteByte(readLength); //ReadLength
 		if(writeLength != 0x00)
 		{
-			SST_DrvByte(command); //Optional : Commands
+			SST_WriteByte(command); //Optional : Commands
 		}
 		else //writeLength == 0x00, Ping command
 		{			
@@ -136,8 +107,8 @@ void ADT7486A_Cmd(unsigned char addr, unsigned char writeLength, unsigned char r
 		if(writeLength == 0x03) //If there is data to be sent (0x03 writeLength)
 		{
 			//Send the data in little endian format, LSB before MSB
-			SST_DrvByte(datLSB);
-			SST_DrvByte(datMSB);
+			SST_WriteByte(datLSB);
+			SST_WriteByte(datMSB);
 			ADT7486A_Read(writeFCS_Org, DONT_READ_DATA);
 			break;
 		}
@@ -162,14 +133,7 @@ void ADT7486A_Cmd(unsigned char addr, unsigned char writeLength, unsigned char r
 				{
 					*varToBeWritten = dataBuffer / k;
 				}
-				ENABLE_INTERRUPTS;
-
-				//reset averaging buffer variable
-				dataBuffer = 0.0;
-				
-				//reset the counting variable used for averaging and break the loop
-				k = 0;
-				break;
+				ENABLE_INTERRUPTS;				
 			}		
 		}
 		else if(command == 0xF6)//if reset command
@@ -177,9 +141,16 @@ void ADT7486A_Cmd(unsigned char addr, unsigned char writeLength, unsigned char r
 			ADT7486A_Read(writeFCS_Org, DONT_READ_DATA);
 		}
 
-		//Delay for the next msg
+		//Clear for the next msg and delay for conversion to finish
 		SST_Clear();
+		delay_ms(ADT7486A_CONVERSION_TIME);
 	}
+
+	//reset averaging buffer variable
+	dataBuffer = 0.0;
+	
+	//reset the counting variable used for averaging and break the loop
+	k = 0;
 }
 
 float ADT7486A_Read(unsigned char writeFCS_Originator, unsigned char cmdFlag)
