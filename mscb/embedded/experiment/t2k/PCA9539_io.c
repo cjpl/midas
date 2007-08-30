@@ -20,6 +20,7 @@
 
 void PCA9539_Init(void)
 {
+	SMBus_Init(); // SMBus initialization (should be called after pca_operation)
 	PCA9539_Cmd(OUTPUT_ENABLE); //put all pins to Output modes
 	PCA9539_Cmd(ALL_LOW); //All Biases enabled
 }
