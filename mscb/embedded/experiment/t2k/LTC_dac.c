@@ -12,7 +12,7 @@
 //  need to have T2KASUM defined
 
 #include "../../mscbemb.h"
-#include "SPI_handler.h"
+#include "../../protocols/SPI_handler.h"
 #include "LTC_dac.h"
 
 /* LTC1665/2600 pins (8-bit DACs)*/

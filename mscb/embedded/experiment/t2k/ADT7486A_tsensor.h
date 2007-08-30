@@ -1,12 +1,15 @@
-// --------------------------------------------------------
-//  ADT7486A handling routines for ADT7486A
-//      - Writtern for Temperature Sensor Array board
-//      - Brian Lee   (May/11/2007)
-//
-//  Version:    Rev 1.2
-//
-//  $Id$
-// --------------------------------------------------------
+/**********************************************************************************\
+  Name:         ADT7486A_tsensor.h
+  Created by:   Brian Lee						     May/11/2007
+
+
+  Contents:     Temperature sensor array (ADT7486A) handler
+
+  Version:		Rev 1.2
+
+  $Id$
+\**********************************************************************************/
+
 #ifndef  _ADT7486A_TSENSOR_H
 #define  _ADT7486A_TSENSOR_H
 
@@ -33,12 +36,12 @@
 #define DONT_READ_DATA  0xff
 #define READ_DATA     0x00
 #define TEMP_LIMIT    30
-#define AVG_COUNT   16
+#define AVG_COUNT   1
+#define ADT7486A_CONVERSION_TIME 38 //in ms
 
 void ADT7486A_Init(void);
 void ADT7486A_Cmd(unsigned char addr, unsigned char writeLength, unsigned char readLength,
-        unsigned char command, unsigned char datMSB, unsigned char datLSB, unsigned char chNum);
+        unsigned char command, unsigned char datMSB, unsigned char datLSB, float *dataToBeWritten);
 float ADT7486A_Read(unsigned char writeFCS_Originator, unsigned char cmdFlag);
-void User_ADT7486A(void);
 
 #endif
