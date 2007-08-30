@@ -16,29 +16,12 @@
 #ifndef  _T2K_ASUM_H
 #define  _T2K_ASUM_H
 
-/* number of HV channels */
-#define N_HV_CHN         1
-
-/* maximum current im micro Ampere */
-#define MAX_CURRENT      600
-
-/* maximum voltage in Volt */
-#define MAX_VOLTAGE      55
-
-// current measurement
-#define AMP_LT1787       8.            // amplification factor in LT1787
-#define I_SENSE_REGISTER 499.          // current sense register
-
-// HV adjust 
-#define V_ADJ_LT3010     1.275         // LT3010 ADJ  voltage 
-#define DAC_VMAX_FOR_ADJ 2*1.275       // DAC maximum voltage      
-#define DAC_VREF         2.5           // DAC reference vol = 2.5 V
-#define REGISTER_RATIO   95.3e3/2.2e6  // 2.2 M Ohm and 95.3 k Ohm registers.
-   
-// chn_bits (change request flag) bit map
-#define DEMAND_CHANGED     (1<<0)
-#define RAMP_UP            (1<<1)
-#define RAMP_DOWN          (1<<2)
+/* ADT7486A temperature array addresses 
+   --> 2 sensors per chip, so each address is repeated twice
+   --> Order does not matter unless specified correctly */
+#define ADT7486A_ADDR_ARRAY 0x4B
+// also define number of temperature sensors you have on board (final design would be 4 ADT7486A's, 8 Remote)
+#define ADT7486A_NUM 1 //currently, for the prototype, there is only one
 
 // charge pump state for PCA control
 #define Q_PUMP_INIT          1           
@@ -167,10 +150,8 @@ void user_loop(void);
 void user_write(unsigned char index) reentrant;
 unsigned char user_read(unsigned char index);
 unsigned char user_func(unsigned char *data_in, unsigned char *data_out);
-
 void pca_operation(unsigned char mode);
-
 void set_current_limit(float value);
-
 void Hardware_Update(void);
+
 #endif
