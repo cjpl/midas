@@ -19,7 +19,7 @@
 
 #define LTC2497_ADR 0x14
 #define LTC2497_FS 1.25 //Full scale is half of Vref, so (2.5 / 2)
-#define LTC2497_CONVERSIONTIME 150 //in ms
+#define LTC2497_CONVERSIONTIME 160 //in ms
 
 //LTC2497 parameters definition
 //CMDs: cmd, addr, control

@@ -14,15 +14,13 @@
   $Id: $
 \**********************************************************************************/
 
-#include "mscbemb.h"
+#include "../../mscbemb.h"
 #include "LTC2497.h"
-#include "I2C_handler.h"
+#include "../../protocols/I2C_handler.h"
 
 void LTC2497_Cmd(char cmd, unsigned char addr, unsigned char control, float * varToBeWritten)
 {
 	unsigned long int buffer = 0x0000; //temporarily storing 24-bit data to check signness
-	
-	delay_ms(LTC2497_CONVERSIONTIME); //delay for conversion time
 
 	//Write cycle, send addr and command
 	I2C_Clear();
@@ -35,7 +33,6 @@ void LTC2497_Cmd(char cmd, unsigned char addr, unsigned char control, float * va
 	//Read cycle, receive the 24-bit ADC data
 	//ignore the last 6 digits (bit0~5) which are always zero
 	delay_ms(LTC2497_CONVERSIONTIME); //delay for conversion time
-	I2C_Clear();	
 	I2C_Start();
 	if(I2C_WriteByte(addr, I2C_READ_FLAG) != I2C_ACK) return;	
 	buffer = (unsigned long int) I2C_ReadByte(I2C_NACK) << 10;
