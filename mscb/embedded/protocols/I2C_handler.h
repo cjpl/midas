@@ -23,7 +23,6 @@
 #define I2C_SU_STA 5 // in us
 #define I2C_ACK 0
 #define I2C_NACK 1
-#define I2C_CLEAR_DELAY 100 //in ms
 #define I2C_WRITE_FLAG 3
 #define I2C_READ_FLAG 4
 #define I2C_DATA_FLAG 5
@@ -31,6 +30,7 @@
 #define I2C_WRITE_ERROR 99
 #define I2C_HD_STA 5 // in us
 #define I2C_SU_STO 5 // in us
+#define I2C_T_BUF 5 // in us, Bus freeTime between Stop and Start condition
 
 //I2C Function Declarations
 void I2C_Clear(void);
