@@ -18,7 +18,7 @@
 
 void AD5301_Init(void)
 {
-	//nothing for now
+	SMBus_Init(); // SMBus initialization (should be called after pca_operation)
 }
 
 void AD5301_Cmd(unsigned char addr, unsigned char datMSB, unsigned char datLSB, bit flag)
