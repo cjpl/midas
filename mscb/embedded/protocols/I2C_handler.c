@@ -23,13 +23,17 @@ sbit I2C_SCL = MSCB_I2C_SCL;
 
 void I2C_Clear(void)
 {
+	//Bus freeTime between Stop and Start condition
 	I2C_SDA = 1;
 	I2C_SCL = 1;
-	delay_ms(I2C_CLEAR_DELAY);
+	delay_us(I2C_T_BUF); 
 }
 
 void I2C_Start(void)
 {
+	//Bus freeTime between Stop and Start condition (Clearing function)
+	I2C_Clear();
+
 	//Start condition: I2C_SDA goes from HIGH to LOW while I2C_SCL is HIGH
 	delay_us(I2C_SU_STA);
 	I2C_SDA = 0;
