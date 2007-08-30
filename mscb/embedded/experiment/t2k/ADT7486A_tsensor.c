@@ -20,24 +20,9 @@
 // --------------------------------------------------------
 //  Include files
 // --------------------------------------------------------
-#include    "../../mscbemb.h"
-#include "t2k-asum.h"
-#include "SST_handler.h"
+#include "../../mscbemb.h"
+#include "../../protocols/SST_handler.h"
 #include "ADT7486A_tsensor.h"
-
-/* LED declarations */
-
-/* MSCB user_data structure */
-extern struct user_data_type xdata user_data[N_HV_CHN];
-
-/* ADT7486A temperature array addresses 
-   --> 2 sensors per chip, so each address is repeated twice
-   --> Order does not matter unless specified correctly */
-unsigned char addrArray[] = {0x4B};
-
-//global variables for averaging purposes
-signed char k = 0;
-float dataBuffer = 0.0;
 
 void ADT7486A_Init(void)
 /**********************************************************************************\
@@ -55,14 +40,10 @@ void ADT7486A_Init(void)
 \**********************************************************************************/
 {	
 	SST_Init();
-
-	// Turn All Leds ON
-
-	delay_ms(1000);
 }
 
 void ADT7486A_Cmd(unsigned char addr, unsigned char writeLength, unsigned char readLength, 
-				unsigned char command, unsigned char datMSB, unsigned char datLSB, unsigned char chNum)
+				unsigned char command, unsigned char datMSB, unsigned char datLSB, float *varToBeWritten)
 /**********************************************************************************\
 
   Routine: ADT7486A_Cmd 
@@ -88,6 +69,8 @@ void ADT7486A_Cmd(unsigned char addr, unsigned char writeLength, unsigned char r
 \**********************************************************************************/
 {
 	float tempDataBuffer = 0x00;
+	signed char k = 0;
+	float dataBuffer = 0.0;
 	unsigned char writeFCS_Org = 0x00; //originator's side write FCS	
 
 	//Calculate originator's side write FCS
@@ -99,24 +82,22 @@ void ADT7486A_Cmd(unsigned char addr, unsigned char writeLength, unsigned char r
 		writeFCS_Org = FCS_Step(datMSB, FCS_Step(datLSB, writeFCS_Org));
 	}
 
-	//Run averaging starting here
+		//Run averaging starting here
 	while(k != AVG_COUNT)
 	{
 		//making sure the SST pin is set to push-pull before originating msgs
 		P2MDOUT = 0x01; 
 
-	
-
 		//Start the message
 		SST_DrvLow();
 		SST_DrvLow();
-		SST_DrvByte(addr); //target address
+		SST_WriteByte(addr); //target address
 		SST_DrvLow();
-		SST_DrvByte(writeLength); //WriteLength
-		SST_DrvByte(readLength); //ReadLength
+		SST_WriteByte(writeLength); //WriteLength
+		SST_WriteByte(readLength); //ReadLength
 		if(writeLength != 0x00)
 		{
-			SST_DrvByte(command); //Optional : Commands
+			SST_WriteByte(command); //Optional : Commands
 		}
 		else //writeLength == 0x00, Ping command
 		{			
@@ -126,8 +107,8 @@ void ADT7486A_Cmd(unsigned char addr, unsigned char writeLength, unsigned char r
 		if(writeLength == 0x03) //If there is data to be sent (0x03 writeLength)
 		{
 			//Send the data in little endian format, LSB before MSB
-			SST_DrvByte(datLSB);
-			SST_DrvByte(datMSB);
+			SST_WriteByte(datLSB);
+			SST_WriteByte(datMSB);
 			ADT7486A_Read(writeFCS_Org, DONT_READ_DATA);
 			break;
 		}
@@ -147,30 +128,12 @@ void ADT7486A_Cmd(unsigned char addr, unsigned char writeLength, unsigned char r
 			}
 			if(k == AVG_COUNT)
 			{		
-				if(command == 0x00) //Get internal temperature
+				DISABLE_INTERRUPTS;
+				if(dataBuffer != (508.0 * AVG_COUNT))
 				{
-					DISABLE_INTERRUPTS;			
-					user_data[chNum].internal_temp = dataBuffer / k;
-					ENABLE_INTERRUPTS;				
+					*varToBeWritten = dataBuffer / k;
 				}
-				else if((command == 0x01) || (command == 0x02)) //Get external temperature
-				{
-					DISABLE_INTERRUPTS;
-					user_data[chNum].external_temp = dataBuffer / k;
-					ENABLE_INTERRUPTS;
-				}
-				else if((command == 0xe0) || (command == 0xe1)) //Get external temperature offset
-				{
-					DISABLE_INTERRUPTS;
-					user_data[chNum].external_tempOffset = dataBuffer / k;
-					ENABLE_INTERRUPTS;
-				}
-				//reset averaging buffer variable
-				dataBuffer = 0.0;
-				
-				//reset the counting variable used for averaging and break the loop
-				k = 0;
-				break;
+				ENABLE_INTERRUPTS;				
 			}		
 		}
 		else if(command == 0xF6)//if reset command
@@ -178,9 +141,16 @@ void ADT7486A_Cmd(unsigned char addr, unsigned char writeLength, unsigned char r
 			ADT7486A_Read(writeFCS_Org, DONT_READ_DATA);
 		}
 
-		//Delay for the next msg
+		//Clear for the next msg and delay for conversion to finish
 		SST_Clear();
+		delay_ms(ADT7486A_CONVERSION_TIME);
 	}
+
+	//reset averaging buffer variable
+	dataBuffer = 0.0;
+	
+	//reset the counting variable used for averaging and break the loop
+	k = 0;
 }
 
 float ADT7486A_Read(unsigned char writeFCS_Originator, unsigned char cmdFlag)
@@ -262,62 +232,4 @@ float ADT7486A_Read(unsigned char writeFCS_Originator, unsigned char cmdFlag)
 
 	//return the converted temperature value
 	return convertedTemp;
-}
-
-void User_ADT7486A(void)
-/**********************************************************************************\
-
-  Routine: User_tsensor
-
-  Purpose: User routine for ADT7486A temperature sensors with SST protocol
-
-  Input:
-    void
-
-  Function value:
-    void
-
-\**********************************************************************************/
-{	
-	//Run a SST command
-	//read the current channel's temperature
-	/*
-	if((cur_sub_addr() % 2) == 0) //even channel numbers
-	{
-		ADT7486A_Cmd(addrArray[cur_sub_addr()], GetExt1Temp, cur_sub_addr()); //Get external temperature 1 command
-							   			 //don't forget to specify the correct address of ADT7486A chip
-		ADT7486A_Cmd(addrArray[cur_sub_addr()], GetExt1Offset, cur_sub_addr());
-		ADT7486A_Cmd(addrArray[cur_sub_addr()], GetIntTemp, cur_sub_addr());
-		//ADT7486A_Cmd(addrArray[n], SetExt1Offset, 0x05, 0x05, n);
-		//ADT7486A_Cmd(addrArray[n], ResetDevice, n);
-	}
-	else if((cur_sub_addr() % 2) != 0) //odd channel numbers
-	{
-		ADT7486A_Cmd(addrArray[cur_sub_addr()], GetExt2Temp, cur_sub_addr()); //Get external temperature 1 command
-							   			 //don't forget to specify the correct address of ADT7486A chip
-		ADT7486A_Cmd(addrArray[cur_sub_addr()], GetExt2Offset, cur_sub_addr());
-		ADT7486A_Cmd(addrArray[cur_sub_addr()], GetIntTemp, cur_sub_addr());
-	}
-	ADT7486A_LedMng();
-	*/
-	
-	signed char chNum = 0;
-
-	for(chNum = 0; chNum < N_HV_CHN; chNum++)
-	{
-		if((chNum % 2) == 0) //if the channel number is even
-		{
-			//then run GetExt1Temp commands
-			ADT7486A_Cmd(addrArray[chNum], GetExt2Temp, chNum);
-			//and the GetIntTemp command
-			ADT7486A_Cmd(addrArray[chNum], GetIntTemp, chNum);
-		}
-		else if((chNum % 2) != 0) //if the channel number is odd
-		{
-			//then run GetExt2Temp commands
-			ADT7486A_Cmd(addrArray[chNum], GetExt1Temp, chNum);
-			//and the GetIntTemp command
-			ADT7486A_Cmd(addrArray[chNum], GetIntTemp, chNum);
-		}
-	}
 }

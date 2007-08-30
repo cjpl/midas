@@ -13,9 +13,8 @@
 
 #include <math.h>
 #include "../../mscbemb.h"
-#include "t2k-asum.h"
 #include "AD7718_adc.h"
-#include "SPI_handler.h"
+#include "../../protocols/SPI_handler.h"
 
 /* AD7718 related pins */
 sbit ADC_ResetN = P1 ^ 1;       // !Reset
@@ -23,9 +22,6 @@ sbit ADC_csN  = P1 ^ 0;         // !Chip select
 sbit ADC_ReadyN = P1 ^ 1;       // !Ready
 sbit ADC_DIN = P1 ^ 3;
 sbit ADC_SCK = P0 ^ 7;
-
-/* MSCB user_data structure */
-extern struct user_data_type xdata user_data[N_HV_CHN];
 
 void AD7718_Init(void)
 {
@@ -57,7 +53,7 @@ void AD7718_Init(void)
 	AD7718_Clear();
 }
 
-void AD7718_Cmd(unsigned char cmd, unsigned char adcChNum, unsigned char mscb_chNum)
+void AD7718_Cmd(unsigned char cmd, unsigned char adcChNum, float *varToBeWritten)
 {
 	float dataToBeStored = 0.0;
 
@@ -72,134 +68,67 @@ void AD7718_Cmd(unsigned char cmd, unsigned char adcChNum, unsigned char mscb_ch
 
 	if(cmd == 2) //+6V_Analog_IMon
 	{	
-		//Do according conversions and offsets
-		
-		dataToBeStored *= 500 / 1.25; //convert to correct current with its ratio
-
-		/* round result to 6 digits */
-		dataToBeStored = floor(dataToBeStored*1E6+0.5)/1E6;
-
-		//save the Data
-		DISABLE_INTERRUPTS;
-		if(dataToBeStored != 0.0) user_data[mscb_chNum].pos_analogImonitor = dataToBeStored;
-		ENABLE_INTERRUPTS;
+		//Do according conversions and offsets		
+		dataToBeStored *= 500 / 1.25; //convert to correct current with its ratio		
 	}	
 	else if(cmd == 3) //+6V_Analog_VMon
 	{
 		//Do according conversions and offsets
 		dataToBeStored *= (5.991 / 1.515); //reverse voltage division
-		
-		//round result to 6 digits
-		dataToBeStored = floor(dataToBeStored*1E6+0.5)/1E6;
-
-		//save the Data
-		DISABLE_INTERRUPTS;
-		if(dataToBeStored != 0.0) user_data[mscb_chNum].pos_analogVmonitor = dataToBeStored;
-		ENABLE_INTERRUPTS;
 	}
 	else if(cmd == 4) //+6V_Dig_IMon
 	{
 		//Do according conversions and offsets
 		dataToBeStored *= 500 / 1.25; //convert to correct current with its ratio
-
-		/* round result to 6 digits */
-		dataToBeStored = floor(dataToBeStored*1E6+0.5)/1E6;
-
-		//save the Data
-		DISABLE_INTERRUPTS;
-		if(dataToBeStored != 0.0) user_data[mscb_chNum].digitalImonitor = dataToBeStored;
-		ENABLE_INTERRUPTS;
 	}
 	else if(cmd == 5) //Bias_Readback
 	{
 		//Do according conversions
 		/* convert to volts */
 		dataToBeStored *= (90.2 / 2.182); //reverse voltage division
-
-		/* round result to 6 digits */
-		dataToBeStored = floor(dataToBeStored*1E6+0.5)/1E6;
-
-		//save the Data
-		DISABLE_INTERRUPTS;
-		if(dataToBeStored != 0.0) user_data[mscb_chNum].biasReadBack = dataToBeStored;
-		ENABLE_INTERRUPTS;
 	}
 	else if(cmd == 6) //+6V_Dig_VMon
 	{
 		//Do according conversions
 		/* convert to volts */
 		dataToBeStored *= (5.972 / 1.515); //reverse voltage division
-
-		/* round result to 6 digits */
-		dataToBeStored = floor(dataToBeStored*1E6+0.5)/1E6;
-
-		//save the Data
-		DISABLE_INTERRUPTS;
-		if(dataToBeStored != 0.0) user_data[mscb_chNum].digitalVmonitor = dataToBeStored;
-		ENABLE_INTERRUPTS;
 	}
 	else if(cmd == 7) //-6V_Analog_VMon
 	{
 		//Do according conversions
 		/* convert to volts */
 		dataToBeStored *= (-6.018 / 1.495); //reverse voltage division
-
-		/* round result to 6 digits */
-		dataToBeStored = floor(dataToBeStored*1E6+0.5)/1E6;
-
-		//save the Data
-		DISABLE_INTERRUPTS;
-		if(dataToBeStored != 0.0) user_data[mscb_chNum].neg_analogVmonitor = dataToBeStored;
-		ENABLE_INTERRUPTS;
 	}
 	else if(cmd == 8) //-6V_Analog_IMon
 	{
 		//Do according conversions
 		/* convert to volts */
 		dataToBeStored *= 500 / 1.25; //convert to correct current with its ratio
-
-		/* round result to 6 digits */
-		dataToBeStored = floor(dataToBeStored*1E6+0.5)/1E6;
-
-		//save the Data
-		DISABLE_INTERRUPTS;
-		if(dataToBeStored != 0.0) user_data[mscb_chNum].neg_analogImonitor = dataToBeStored;
-		ENABLE_INTERRUPTS;
 	}
 	else if(cmd == 9) //BiasCurrentSense
 	{
 		//Do according conversions
 		/* convert to volts */
 		dataToBeStored *= 25 / 2;
-		
-		/* round result to 6 digits */
-		dataToBeStored = floor(dataToBeStored*1E6+0.5)/1E6;
-		
-
-		//save the Data
-		DISABLE_INTERRUPTS;
-		if(dataToBeStored != 0.0) user_data[mscb_chNum].biasCurrentSense = dataToBeStored;
-		ENABLE_INTERRUPTS;
 	}
 	else if(cmd == 10) //RefCurrentSense
 	{
 		//Do according conversions
 		/* convert to volts */
 		dataToBeStored *= 25;
-		
-		/* round result to 6 digits */
-		dataToBeStored = floor(dataToBeStored*1E6+0.5)/1E6;
-		
-
-		//save the Data
-		DISABLE_INTERRUPTS;
-		if(dataToBeStored != 0.0) user_data[mscb_chNum].refCurrentSense = dataToBeStored;
-		ENABLE_INTERRUPTS;
 	}
 	else //if the command is inappropriate, just return
 	{
 		return;
 	}
+
+	/* round result to 6 digits */
+	dataToBeStored = floor(dataToBeStored*1E6+0.5)/1E6;
+
+	//save the Data
+	DISABLE_INTERRUPTS;
+	if(dataToBeStored != 0.0) *varToBeWritten = dataToBeStored;
+	ENABLE_INTERRUPTS;
 
 	//Turn the ADC CS_ bit to high for other ADC devices
 	ADC_csN = 1;
@@ -243,24 +172,4 @@ void AD7718_Clear(void)
 	// reset ADC
 	ADC_DIN = 1;
 	delay_us(40 * SPI_DELAY); //reset communication to default stage			 
-}
-
-void User_AD7718(void)
-{
-	signed char i = 0;
-
-	//Store same values for each channel (8 channel for now)
-	for(i = 0; i < N_HV_CHN; i++)
-	{
-		AD7718_Cmd(READ_AIN2, i);
-		AD7718_Cmd(READ_AIN3, i);
-		AD7718_Cmd(READ_AIN4, i);
-		AD7718_Cmd(READ_AIN5, i);
-		AD7718_Cmd(READ_AIN6, i);
-		AD7718_Cmd(READ_AIN7, i);
-		AD7718_Cmd(READ_AIN8, i);
-		AD7718_Cmd(READ_BIASCS, i);
-		AD7718_Cmd(READ_REFCS, i);
-		watchdog_refresh(0);
-	}
 }

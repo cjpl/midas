@@ -40,10 +40,9 @@
 #define ADC_SF_VALUE     82             // SF value for 50Hz rejection
 
 void AD7718_Init(void);
-void AD7718_Cmd(unsigned char cmd, unsigned char adcChNum, unsigned char mscb_chNum);
+void AD7718_Cmd(unsigned char cmd, unsigned char adcChNum, float *varToBeWritten);
 unsigned long AD7718_Read(void);
 void AD7718_Clear(void);
-void User_AD7718(void);
 
 #endif
 

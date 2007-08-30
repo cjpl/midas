@@ -13,7 +13,7 @@
 
 
 #include "../../mscbemb.h"
-#include "SMBus_handler.h"
+#include "../../protocols/SMBus_handler.h"
 #include "AD5301_dac.h"
 
 void AD5301_Init(void)
@@ -46,8 +46,3 @@ void AD5301_Cmd(unsigned char addr, unsigned char datMSB, unsigned char datLSB, 
 		SMBus_Stop();
 	}
 }
-
-/*void User_AD5301Dac(void)
-{
-	AD5301_Cmd(ADDR_AD5301, 0x00, 0x00, AD5301_READ);
-}*/

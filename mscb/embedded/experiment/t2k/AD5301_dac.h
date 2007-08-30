@@ -19,7 +19,7 @@
 #define ADDR_AD5301 0x0C
 
 //void User_AD5301Dac(void);
-void AD5301_Cmd(unsigned char addr, unsigned char datMSB, unsigned char datLSB, bit flag);
 void AD5301_Init(void);
+void AD5301_Cmd(unsigned char addr, unsigned char datMSB, unsigned char datLSB, bit flag);
 
 #endif

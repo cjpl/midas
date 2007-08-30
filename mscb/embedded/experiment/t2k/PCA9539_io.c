@@ -15,7 +15,7 @@
 
 
 #include "../../mscbemb.h"
-#include "SMBus_handler.h"
+#include "../../protocols/SMBus_handler.h"
 #include "PCA9539_io.h"
 
 void PCA9539_Init(void)
@@ -54,9 +54,3 @@ void PCA9539_Cmd(unsigned char addr, unsigned char cmd, unsigned char datByte, b
 		SMBus_Stop();
 	}
 }
-
-/*void User_PCA9539(void)
-{
-	PCA9539_Cmd(HIGH); //All pins high
-	PCA9539_Cmd(LOW); //All pins low
-}*/
