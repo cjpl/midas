@@ -13,7 +13,7 @@
 //  need to have TSR defined on the compiler option
 
 #include <stdio.h>
-#include "mscbemb.h"
+#include "../../mscbemb.h"
 #include "ADT7486A_tsensor.h"
 #include "tsr.h"
 #include "LTC2497.h"
@@ -126,7 +126,7 @@ void user_init(unsigned char init)
 				   //Use default, adequate TYP (CP0 Response Time, no edge triggered interrupt)
 
 	P2 &= 0xEF; //Ground for Voltage Divider (set Low)
-	P1MDOUT = 0x00; //Set the Threshold pins P1.0 and P1.1 to Open-Drain
+	P1MDOUT &= 0xFC; //Set the Threshold pins P1.0 and P1.1 to Open-Drain
 	P1MDIN &= 0xFC; //and set them to Analong Input for comparator input
 
     //initialize SST protocol related ports/variables/etc for ADT7486A
@@ -181,8 +181,31 @@ unsigned char user_func(unsigned char *data_in, unsigned char *data_out)
    return 2;
 }
 
-/*---- DAC functions -----------------------------------------------*/
+/*---- Custom functions -----------------------------------------------*/
 
+void Temp_LedMng(void)
+/**********************************************************************************\
+
+  Routine: Temp_LedMng (Led manager)
+
+  Purpose: To turn on/off LEDs to indicate whether each corresponding
+  		   external temperature sources have crossed the limit of
+		   temperature
+
+  Input:
+    void
+
+  Function value:
+    void
+
+\**********************************************************************************/
+{
+	//for each external temperature source, if it reaches over 30 degree
+	//celsius, then turn on the according LED ON, otherwise OFF
+	led_1 = (user_data[0].external_temp >= TEMP_LIMIT) ? LED_ON : LED_OFF;
+	led_2 = (user_data[0].internal_temp >= TEMP_LIMIT) ? LED_ON : LED_OFF;
+	led_3 = (user_data[0].s8 >= TEMP_LIMIT) ? LED_ON : LED_OFF;
+}
 
 
 /*---- User loop function ------------------------------------------*/
@@ -207,8 +230,9 @@ void user_loop(void)
 		LTC2497_Cmd(READ_DIFF4, &user_data[chNum].diff4);
 
 		//run SST user-defined routines	
-		ADT7486A_Cmd(ADT7486A_addrArray[4], GetExt2Temp, &user_data[chNum].external_temp);
+		ADT7486A_Cmd(ADT7486A_addrArray[4], GetExt1Temp, &user_data[chNum].external_temp);
 		ADT7486A_Cmd(ADT7486A_addrArray[4], GetIntTemp, &user_data[chNum].internal_temp);
+		Temp_LedMng();
 	}
 }
 
