@@ -1,0 +1,388 @@
+<html>
+ <head>
+  <title>TITAN_RF Demo Status</title>
+  <meta http-equiv="Refresh" content="5">
+
+<SCRIPT LANGUAGE="JavaScript">
+
+
+
+<!-- Begin
+startday = new Date();
+clockStart = startday.getTime();
+function initStopwatch() {
+var myTime = new Date();
+return((myTime.getTime() - clockStart)/1000);
+}
+function getSecs() {
+    var tSecs = Math.round(initStopwatch());
+    var iSecs = tSecs % 60;
+    var iMins = Math.round((tSecs-30)/60);
+    var sSecs ="" + ((iSecs > 9) ? iSecs : "0" + iSecs);
+    var sMins ="" + ((iMins > 9) ? iMins : "0" + iMins);
+    document.getElementById("timespent").value = sMins+":"+sSecs;
+    window.setTimeout('getSecs()',1000);
+}
+
+function modeSelect1()
+{
+	var a;
+	a = document.getElementById("ModeSelect1").selectedIndex;
+	switch(a)
+	{
+		case 0:
+			location.href='http://localhost/CS/SCRF&?value=0&cmd=Set&index=0&cmd=Set';
+			break;
+		case 1:
+			location.href='http://localhost/CS/SCRF&?value=2&cmd=Set&index=0&cmd=Set';
+			break;
+		case 2:
+			location.href='http://localhost/CS/SCRF&?value=4&cmd=Set&index=0&cmd=Set';
+			break;
+		case 3:
+			location.href='http://localhost/CS/SCRF&?value=8&cmd=Set&index=0&cmd=Set';
+			break;
+		case 4:
+			location.href='http://localhost/CS/SCRF&?value=16&cmd=Set&index=0&cmd=Set';
+			break;
+		default:
+			location.href='http://localhost/CS/SCRF&?value=0&cmd=Set&index=0&cmd=Set';
+			break;
+	}
+}
+
+function modeSelect2()
+{
+	var a;
+	a = document.getElementById("ModeSelect2").selectedIndex;
+	switch(a)
+	{
+		case 0:
+			location.href='http://localhost/CS/SCRF&?value=0&cmd=Set&index=15&cmd=Set';
+			break;
+		case 1:
+			location.href='http://localhost/CS/SCRF&?value=2&cmd=Set&index=15&cmd=Set';
+			break;
+		case 2:
+			location.href='http://localhost/CS/SCRF&?value=4&cmd=Set&index=15&cmd=Set';
+			break;
+		case 3:
+			location.href='http://localhost/CS/SCRF&?value=8&cmd=Set&index=15&cmd=Set';
+			break;
+		case 4:
+			location.href='http://localhost/CS/SCRF&?value=16&cmd=Set&index=15&cmd=Set';
+			break;
+		default:
+			location.href='http://localhost/CS/SCRF&?value=0&cmd=Set&index=15&cmd=Set';
+			break;
+	}
+}
+
+function modeSelect3()
+{
+	var a;
+	a = document.getElementById("ModeSelect3").selectedIndex;
+	switch(a)
+	{
+		case 0:
+			location.href='http://localhost/CS/SCRF&?value=0&cmd=Set&index=30&cmd=Set';
+			break;
+		case 1:
+			location.href='http://localhost/CS/SCRF&?value=2&cmd=Set&index=30&cmd=Set';
+			break;
+		case 2:
+			location.href='http://localhost/CS/SCRF&?value=4&cmd=Set&index=30&cmd=Set';
+			break;
+		case 3:
+			location.href='http://localhost/CS/SCRF&?value=8&cmd=Set&index=30&cmd=Set';
+			break;
+		case 4:
+			location.href='http://localhost/CS/SCRF&?value=16&cmd=Set&index=30&cmd=Set';
+			break;
+		default:
+			location.href='http://localhost/CS/SCRF&?value=0&cmd=Set&index=30&cmd=Set';
+			break;
+	}
+}
+
+function modeSelect4()
+{
+	var a;
+	a = document.getElementById("ModeSelect4").selectedIndex;
+	switch(a)
+	{
+		case 0:
+			location.href='http://localhost/CS/SCRF&?value=0&cmd=Set&index=45&cmd=Set';
+			break;
+		case 1:
+			location.href='http://localhost/CS/SCRF&?value=2&cmd=Set&index=45&cmd=Set';
+			break;
+		case 2:
+			location.href='http://localhost/CS/SCRF&?value=4&cmd=Set&index=45&cmd=Set';
+			break;
+		case 3:
+			location.href='http://localhost/CS/SCRF&?value=8&cmd=Set&index=45&cmd=Set';
+			break;
+		case 4:
+			location.href='http://localhost/CS/SCRF&?value=16&cmd=Set&index=45&cmd=Set';
+			break;
+		default:
+			location.href='http://localhost/CS/SCRF&?value=0&cmd=Set&index=45&cmd=Set';
+			break;
+	}
+}
+// End -->
+
+
+</script>
+
+
+
+
+ </head>
+<BODY onLoad="window.setTimeout('getSecs()',1);">
+
+ <form name="form1" method="Get" action="/CS/SCRF&">
+   <table border=1 cellpadding=2 width="100%">
+	<tr><th colspan=2 bgcolor="#A0A0FF">TITAN RF Generator Slow control</tr>
+	<tr><td width="50%"> <b><font color="#ff0000">Actions: </font></b>
+	<input value="Status" name="cmd" type="submit">
+	<input value="ODB"   name="cmd" type="submit">
+	</td><td>
+	<center> <a href="./files/scrfHelp"> >>>> TITAN_RF Help <<<< </a></center>
+	<center> <a href="http://midas.triumf.ca"> >>>> Midas Help <<<< </a></center>
+	</td></tr>
+	</tr>
+   </table>
+
+   <table border=1 cellpadding=2 width="100%">
+      	<tr><th colspan = "5" bgcolor="#A0A0FF"> RF Generator 1 </th></tr>
+
+      	<tr valign="top">
+      	<td rowspan=2 align="center">
+      		Mode Selection:<br>
+      		<select id = "ModeSelect1" name = "ModeSelect1">
+      			<option value="0">Choose Desired Mode</option>
+      			<option value="1">Sweep Mode</option>
+      			<option value="2">Sine Burst Mode</option>
+      			<option value="3">Ladder Burst Mode</option>
+      			<option value="4">FM Mode</option>
+      		</select>
+      		<br>
+		<input value = "Apply" type = "button" onClick = "javascript:modeSelect1();">
+		<br>
+      		Current Mode<br>
+      		(2:Sweep,4:Burst,8:LadderBurst,16:FM) :<br>
+      		<b><odb src="/Equipment/TITAN_RF/Variables/RF1/controlMng" edit=1></b>		
+      	</td>
+      	<td align="center">Sweep Mode</td>
+      	<td align="center">Burst Mode</td>
+      	<td align="center">Ladder Burst Mode</td>
+      	<td align="center">FM Mode</td>
+      	</tr>
+
+      	<tr valign="top">
+      		<td>
+      			Sweep Duration: <b><odb src="/Equipment/TITAN_RF/Variables/RF1/ssweepDur" edit=1> s</b><br>
+      			Start Frequency: <b><odb src="/Equipment/TITAN_RF/Variables/RF1/sstartFreq" edit=1> MHz</b><br>
+      			End Frequency: <b><odb src="/Equipment/TITAN_RF/Variables/RF1/sendFreq" edit=1> MHz</b><br>
+      			RF Amplitude: <b><odb src="/Equipment/TITAN_RF/Variables/RF1/srfAmplitude" edit=1> mV</b>
+      		</td>
+      		<td>
+      			Burst Frequency: <b><odb src="/Equipment/TITAN_RF/Variables/RF1/bburstFreq" edit=1> MHz</b><br>
+      			Number of Cycles: <b><odb src="/Equipment/TITAN_RF/Variables/RF1/bnumCycles" edit=1> cycles</b><br>
+      			RF Amplitude: <b><odb src="/Equipment/TITAN_RF/Variables/RF1/brfAmplitude" edit=1> mV</b>
+      		</td>
+      		<td>
+      			Number of Steps: <b><odb src="/Equipment/TITAN_RF/Variables/RF1/lbnumSteps" edit=1> steps</b><br>
+      			Number of Cycles: <b><odb src="/Equipment/TITAN_RF/Variables/RF1/lbnumCycles" edit=1> cycles</b><br>
+      			RF Amplitude: <b><odb src="/Equipment/TITAN_RF/Variables/RF1/lbrfAmplitude" edit=1> mV</b><br>
+      			Burst Frequency: <b><odb src="/Equipment/TITAN_RF/Variables/RF1/lbburstFreq" edit=1> MHz</b><br>
+      		</td>
+      		<td>
+      			Start Frequency: <b><odb src="/Equipment/TITAN_RF/Variables/RF1/fmstartFreq" edit=1> MHz</b><br>
+      			End Frequency: <b><odb src="/Equipment/TITAN_RF/Variables/RF1/fmendFreq" edit=1> MHz</b><br>
+      			RF Amplitude: <b><odb src="/Equipment/TITAN_RF/Variables/RF1/fmrfAmplitude" edit=1> mV</b>
+      		</td>
+      	</tr>
+   </table>
+
+   <table border=1 cellpadding=2 width="100%">
+      	<tr><th colspan = "5" bgcolor="#A0A0FF"> RF Generator 2 </th></tr>
+
+      	<tr valign="top">
+      	<td rowspan=2 align="center">
+      		Mode Selection:<br>
+      		<select id = "ModeSelect2" name = "ModeSelect2">
+				<option value="0">Choose Desired Mode</option>
+				<option value="1">Sweep Mode</option>
+				<option value="2">Sine Burst Mode</option>
+				<option value="3">Ladder Burst Mode</option>
+				<option value="4">FM Mode</option>
+      		</select>
+      		<br>
+		<input value = "Apply" type = "button" onClick = "javascript:modeSelect2();">
+		<br>
+      		Current Mode<br>
+      		(2:Sweep,4:Burst,8:LadderBurst,16:FM) :<br>
+      		<b><odb src="/Equipment/TITAN_RF/Variables/RF2/controlMng" edit=1></b>
+      	</td>
+      	<td align="center">Sweep Mode</td>
+      	<td align="center">Burst Mode</td>
+      	<td align="center">Ladder Burst Mode</td>
+      	<td align="center">FM Mode</td>
+      	</tr>
+
+      	<tr valign="top">
+      		<td>
+      			Sweep Duration: <b><odb src="/Equipment/TITAN_RF/Variables/RF2/ssweepDur" edit=1> s</b><br>
+      			Start Frequency: <b><odb src="/Equipment/TITAN_RF/Variables/RF2/sstartFreq" edit=1> MHz</b><br>
+      			End Frequency: <b><odb src="/Equipment/TITAN_RF/Variables/RF2/sendFreq" edit=1> MHz</b><br>
+      			RF Amplitude: <b><odb src="/Equipment/TITAN_RF/Variables/RF2/srfAmplitude" edit=1> mV</b>
+      		</td>
+      		<td>
+      			Burst Frequency: <b><odb src="/Equipment/TITAN_RF/Variables/RF2/bburstFreq" edit=1> MHz</b><br>
+      			Number of Cycles: <b><odb src="/Equipment/TITAN_RF/Variables/RF2/bnumCycles" edit=1> cycles</b><br>
+      			RF Amplitude: <b><odb src="/Equipment/TITAN_RF/Variables/RF2/brfAmplitude" edit=1> mV</b>
+      		</td>
+      		<td>
+      			Number of Steps: <b><odb src="/Equipment/TITAN_RF/Variables/RF2/lbnumSteps" edit=1> steps</b><br>
+      			Number of Cycles: <b><odb src="/Equipment/TITAN_RF/Variables/RF2/lbnumCycles" edit=1> cycles</b><br>
+      			RF Amplitude: <b><odb src="/Equipment/TITAN_RF/Variables/RF2/lbrfAmplitude" edit=1> mV</b><br>
+      			Burst Frequency: <b><odb src="/Equipment/TITAN_RF/Variables/RF2/lbburstFreq" edit=1> MHz</b><br>
+      		</td>
+      		<td>
+      			Start Frequency: <b><odb src="/Equipment/TITAN_RF/Variables/RF2/fmstartFreq" edit=1> MHz</b><br>
+      			End Frequency: <b><odb src="/Equipment/TITAN_RF/Variables/RF2/fmendFreq" edit=1> MHz</b><br>
+      			RF Amplitude: <b><odb src="/Equipment/TITAN_RF/Variables/RF2/fmrfAmplitude" edit=1> mV</b>
+      		</td>
+      	</tr>
+   </table>
+
+   <table border=1 cellpadding=2 width="100%">
+   	<tr><th colspan = "5" bgcolor="#A0A0FF"> RF Generator 3 </th></tr>
+
+   	<tr valign="top">
+   	<td rowspan=2 align="center">
+   		Mode Selection:<br>
+   		<select id = "ModeSelect3" name = "ModeSelect3">
+			<option value="0">Choose Desired Mode</option>
+			<option value="1">Sweep Mode</option>
+			<option value="2">Sine Burst Mode</option>
+			<option value="3">Ladder Burst Mode</option>
+			<option value="4">FM Mode</option>
+     	 	</select>
+   		<br>
+		<input value = "Apply" type = "button" onClick = "javascript:modeSelect3();">
+		<br>
+   		Current Mode<br>
+   		(2:Sweep,4:Burst,8:LadderBurst,16:FM) :<br>
+   		<b><odb src="/Equipment/TITAN_RF/Variables/RF3/controlMng" edit=1></b>
+  	</td>
+   	<td align="center">Sweep Mode</td>
+   	<td align="center">Burst Mode</td>
+   	<td align="center">Ladder Burst Mode</td>
+   	<td align="center">FM Mode</td>
+   	</tr>
+
+   	<tr valign="top">
+   		<td>
+   			Sweep Duration: <b><odb src="/Equipment/TITAN_RF/Variables/RF3/ssweepDur" edit=1> s</b><br>
+   			Start Frequency: <b><odb src="/Equipment/TITAN_RF/Variables/RF3/sstartFreq" edit=1> MHz</b><br>
+   			End Frequency: <b><odb src="/Equipment/TITAN_RF/Variables/RF3/sendFreq" edit=1> MHz</b><br>
+   			RF Amplitude: <b><odb src="/Equipment/TITAN_RF/Variables/RF3/srfAmplitude" edit=1> mV</b>
+   		</td>
+   		<td>
+   			Burst Frequency: <b><odb src="/Equipment/TITAN_RF/Variables/RF3/bburstFreq" edit=1> MHz</b><br>
+   			Number of Cycles: <b><odb src="/Equipment/TITAN_RF/Variables/RF3/bnumCycles" edit=1> cycles</b><br>
+   			RF Amplitude: <b><odb src="/Equipment/TITAN_RF/Variables/RF3/brfAmplitude" edit=1> mV</b>
+   		</td>
+   		<td>
+   			Number of Steps: <b><odb src="/Equipment/TITAN_RF/Variables/RF3/lbnumSteps" edit=1> steps</b><br>
+   			Number of Cycles: <b><odb src="/Equipment/TITAN_RF/Variables/RF3/lbnumCycles" edit=1> cycles</b><br>
+   			RF Amplitude: <b><odb src="/Equipment/TITAN_RF/Variables/RF3/lbrfAmplitude" edit=1> mV</b><br>
+   			Burst Frequency: <b><odb src="/Equipment/TITAN_RF/Variables/RF3/lbburstFreq" edit=1> MHz</b><br>
+   		</td>
+   		<td>
+   			Start Frequency: <b><odb src="/Equipment/TITAN_RF/Variables/RF3/fmstartFreq" edit=1> MHz</b><br>
+   			End Frequency: <b><odb src="/Equipment/TITAN_RF/Variables/RF3/fmendFreq" edit=1> MHz</b><br>
+   			RF Amplitude: <b><odb src="/Equipment/TITAN_RF/Variables/RF3/fmrfAmplitude" edit=1> mV</b>
+   		</td>
+   	</tr>
+   </table>
+
+   <table border=1 cellpadding=2 width="100%">
+      	<tr><th colspan = "5" bgcolor="#A0A0FF"> RF Generator 4 </th></tr>
+
+      	<tr valign="top">
+      	<td rowspan=2 align="center">
+      		Mode Selection:<br>
+			<select id = "ModeSelect4" name = "ModeSelect4">
+				<option value="0">Choose Desired Mode</option>
+				<option value="1">Sweep Mode</option>
+				<option value="2">Sine Burst Mode</option>
+				<option value="3">Ladder Burst Mode</option>
+				<option value="4">FM Mode</option>
+      			</select>
+      		<br>
+		<input value = "Apply" type = "button" onClick = "javascript:modeSelect4();">
+		<br>
+      		Current Mode<br>
+      		(2:Sweep,4:Burst,8:LadderBurst,16:FM) :<br>
+      		<b><odb src="/Equipment/TITAN_RF/Variables/RF4/controlMng" edit=1></b>
+      	</td>
+      	<td align="center">Sweep Mode</td>
+      	<td align="center">Burst Mode</td>
+      	<td align="center">Ladder Burst Mode</td>
+      	<td align="center">FM Mode</td>
+      	</tr>
+
+      	<tr valign="top">
+      		<td>
+      			Sweep Duration: <b><odb src="/Equipment/TITAN_RF/Variables/RF4/ssweepDur" edit=1> s</b><br>
+      			Start Frequency: <b><odb src="/Equipment/TITAN_RF/Variables/RF4/sstartFreq" edit=1> MHz</b><br>
+      			End Frequency: <b><odb src="/Equipment/TITAN_RF/Variables/RF4/sendFreq" edit=1> MHz</b><br>
+      			RF Amplitude: <b><odb src="/Equipment/TITAN_RF/Variables/RF4/srfAmplitude" edit=1> mV</b>
+      		</td>
+      		<td>
+      			Burst Frequency: <b><odb src="/Equipment/TITAN_RF/Variables/RF4/bburstFreq" edit=1> MHz</b><br>
+      			Number of Cycles: <b><odb src="/Equipment/TITAN_RF/Variables/RF4/bnumCycles" edit=1> cycles</b><br>
+      			RF Amplitude: <b><odb src="/Equipment/TITAN_RF/Variables/RF4/brfAmplitude" edit=1> mV</b>
+      		</td>
+      		<td>
+      			Number of Steps: <b><odb src="/Equipment/TITAN_RF/Variables/RF4/lbnumSteps" edit=1> steps</b><br>
+      			Number of Cycles: <b><odb src="/Equipment/TITAN_RF/Variables/RF4/lbnumCycles" edit=1> cycles</b><br>
+      			RF Amplitude: <b><odb src="/Equipment/TITAN_RF/Variables/RF4/lbrfAmplitude" edit=1> mV</b><br>
+      			Burst Frequency: <b><odb src="/Equipment/TITAN_RF/Variables/RF4/lbburstFreq" edit=1> MHz</b><br>
+      		</td>
+      		<td>
+      			Start Frequency: <b><odb src="/Equipment/TITAN_RF/Variables/RF4/fmstartFreq" edit=1> MHz</b><br>
+      			End Frequency: <b><odb src="/Equipment/TITAN_RF/Variables/RF4/fmendFreq" edit=1> MHz</b><br>
+      			RF Amplitude: <b><odb src="/Equipment/TITAN_RF/Variables/RF4/fmrfAmplitude" edit=1> mV</b>
+      		</td>
+      	</tr>
+   </table>
+
+	<table border=3 cellpadding=2 width="100%">
+		<tr>
+		<th colspan = "4" bgcolor="#A0A0FF"> RF Monitors </th>
+		</tr>
+
+		<tr valign="top">
+		<td><b>RF_1 monitor: 0V</b></td>
+		<td><b>RF_2 monitor: 0V</b></td>
+		<td><b>RF_3 monitor: 0V</b></td>
+		<td><b>RF_3 monitor: 0V</b></td>
+		</tr>
+   </table>
+
+   <table border=3 cellpadding=2 width="100%">
+	<tr><th width="50%"  colspan=2 bgcolor="#A0A0FF">Temperature Measurements</tr>
+	<tr>
+	<td width="50%" >uC Temperature: <b><odb src="/Equipment/TITAN_RF/Variables/ExtTemp" edit=0> &#176C</b></td>
+	</tr>
+   </table>
+  </form>
+
+ </body>
+</html>
