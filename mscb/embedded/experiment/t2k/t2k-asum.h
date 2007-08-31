@@ -1,6 +1,6 @@
 /********************************************************************\
 
-  Name:         fgd_008.h
+  Name:         t2k-asum.h
   Created by:   Brian Lee  							Jun/07/2007
 
 
@@ -15,13 +15,6 @@
 
 #ifndef  _T2K_ASUM_H
 #define  _T2K_ASUM_H
-
-/* ADT7486A temperature array addresses 
-   --> 2 sensors per chip, so each address is repeated twice
-   --> Order does not matter unless specified correctly */
-#define ADT7486A_ADDR_ARRAY 0x4B
-// also define number of temperature sensors you have on board (final design would be 4 ADT7486A's, 8 Remote)
-#define ADT7486A_NUM 1 //currently, for the prototype, there is only one
 
 // charge pump state for PCA control
 #define Q_PUMP_INIT          1           
@@ -90,7 +83,7 @@
 #define CONTROL_BIAS_DAC  (1<<4)
 #define CONTROL_ASUM_TH   (1<<5)
 #define CONTROL_D_CHPUMP  (1<<6)
-#define CONTROL_KEEP_REF  (1<<7)
+//#define CONTROL_UNUSED    (1<<7)
 
 /* CSR status bits */
 #define STATUS_QPUMP      (1<<0)
