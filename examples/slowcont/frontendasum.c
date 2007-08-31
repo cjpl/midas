@@ -56,7 +56,7 @@ DEVICE_DRIVER asum_driver[] = {
 };
 
 EQUIPMENT equipment[] = {
- {"ASUM",                     /* equipment name */
+ {"T2K-ASUM",                     /* equipment name */
     {3, 0,                      /* event ID, trigger mask */
      "SYSTEM",                        /* event buffer */
      EQ_SLOW,                   /* equipment type */

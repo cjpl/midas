@@ -21,14 +21,14 @@
 
 #include <stdio.h>
 #include "midas.h"
-#include "class/cd_fgd.h"
-#include "device/dd_mscbfgd.h"
+#include "class/cd_tsr.h"
+#include "device/dd_mscbtsr.h"
 #include "mscbbus.h"
 
 /*-- Globals -------------------------------------------------------*/
 
 /* The frontend name (client name) as seen by other MIDAS clients   */
-char *frontend_name = "TSRTEST";
+char *frontend_name = "TSR";
 /* The frontend file name, don't change it */
 char *frontend_file_name = __FILE__;
 
@@ -50,13 +50,13 @@ INT event_buffer_size = 10 * 10000;
 /*-- Equipment list ------------------------------------------------*/
 
 /* device driver list */
-DEVICE_DRIVER fgd_driver[] = {
-   {"TSRTEST", mscbfgd, 1, NULL},
+DEVICE_DRIVER tsr_driver[] = {
+   {"TSRTEST", mscbtsr, 1, NULL},
    {""}
 };
 
 EQUIPMENT equipment[] = {
- {"TSRTEST",                     /* equipment name */
+ {"TSR",                     /* equipment name */
     {3, 0,                      /* event ID, trigger mask */
      "SYSTEM",                        /* event buffer */
      EQ_SLOW,                   /* equipment type */
@@ -69,9 +69,9 @@ EQUIPMENT equipment[] = {
      0,                         /* number of sub events */
      1,                         /* log history every event */
      "", "", ""} ,
-    cd_fgd_read,                 /* readout routine */
-    cd_fgd,                      /* class driver main routine */
-    fgd_driver,                  /* device driver list */
+    cd_tsr_read,                 /* readout routine */
+    cd_tsr,                      /* class driver main routine */
+    tsr_driver,                  /* device driver list */
     NULL,                       /* init string */
     },
    {""}
