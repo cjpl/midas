@@ -328,7 +328,11 @@ void setup_variables(void)
 {
 unsigned char xdata i;
 
+   power_mgmt(0, 1);  // issue a reset
+
    /* check if correct modules are inserted */
+
+   /*
    for (i=0 ; i<5 ; i++) {
       if (!verify_module(0, 0, 0x02)) {
          lcd_goto(0, 0);
@@ -346,6 +350,7 @@ unsigned char xdata i;
       printf("    into port 5     ");
       while (1) watchdog_refresh(0);
    }
+   */
 
    /* initialize drivers */
    for (i=0 ; i<5 ; i++)
