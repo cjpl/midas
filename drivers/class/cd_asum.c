@@ -27,10 +27,30 @@
 #include "midas.h"
 #include "ybos.h"
 
-int indexNum = 0;
-int indexNumADC = 0;
-int controlFlag = 0;
-int biasEnFlag = 0;
+//command definitions
+#define CMD_SET_VBIAS					 CMD_SET_FIRST+5
+#define CMD_SET_CONTROL					 CMD_SET_FIRST+6
+#define CMD_SET_ASUMDACTH				 CMD_SET_FIRST+7
+#define CMD_SET_CHPUMPDAC				 CMD_SET_FIRST+8
+#define CMD_SET_BIAS_EN					 CMD_SET_FIRST+9
+#define CMD_SET_PARAMS					 CMD_SET_FIRST+10
+
+#define CMD_GET_INTERNALTEMP			 CMD_GET_FIRST+2
+#define CMD_GET_ADCMEAS					 CMD_GET_FIRST+3
+#define CMD_GET_CONTROL					 CMD_GET_FIRST+4
+#define CMD_GET_BIASEN					 CMD_GET_FIRST+5
+#define CMD_GET_CHPUMPDAC				 CMD_GET_FIRST+6
+#define CMD_GET_ASUMDACTH			    CMD_GET_FIRST+7
+#define CMD_GET_VBIAS					 CMD_GET_FIRST+8
+#define CMD_GET_ACTUALVBIAS			 CMD_GET_FIRST+9
+#define CMD_GET_PARAMS						 CMD_GET_FIRST+10
+#define CMD_GET_TEMPERATURE1			 CMD_GET_FIRST+11
+#define CMD_GET_TEMPERATURE2			 CMD_GET_FIRST+12
+#define CMD_GET_TEMPERATURE3			 CMD_GET_FIRST+13
+#define CMD_GET_TEMPERATURE4			 CMD_GET_FIRST+14
+#define CMD_GET_TEMPERATURE5			 CMD_GET_FIRST+15
+#define CMD_GET_TEMPERATURE6			 CMD_GET_FIRST+16
+#define CMD_GET_EXTERNALTEMP			 CMD_GET_FIRST+17
 
 typedef struct {
 
@@ -57,19 +77,10 @@ typedef struct {
    char *names;
    float *update_threshold;
 
-   /* mirror arrays */
-   float *vBias_mirror[8];
-	float *actualvBias_mirror[8];
-   float *measured_mirror[9];
-   double *control_mirror[8];
-  double *biasEn_mirror[8];
-  float *asumDacTh_mirror;
-  float *ChPumpDac_mirror;
-
    DEVICE_DRIVER **driver;
    INT *channel_offset;
 
-} FGD_INFO;
+} ASUM_INFO;
 
 #ifndef abs
 #define abs(a) (((a) < 0)   ? -(a) : (a))
@@ -77,7 +88,7 @@ typedef struct {
 
 /*------------------------------------------------------------------*/
 
-static void free_mem(FGD_INFO * asum_info)
+static void free_mem(ASUM_INFO * asum_info)
 {
    int i = 0;
 
@@ -94,14 +105,6 @@ static void free_mem(FGD_INFO * asum_info)
 
    free(asum_info->update_threshold);
 
-   for(i = 0; i < 8; i++) free(asum_info->vBias_mirror[i]);
-	for(i = 0; i < 8; i++) free(asum_info->actualvBias_mirror[i]);
-   for(i = 0; i < 9; i++) free(asum_info->measured_mirror[i]);
-   for(i = 0; i < 8; i++) free(asum_info->control_mirror[i]);
-  for(i = 0; i < 8; i++) free(asum_info->biasEn_mirror[i]);
-  free(asum_info->asumDacTh_mirror);
-  free(asum_info->ChPumpDac_mirror);
-
    free(asum_info->channel_offset);
    free(asum_info->driver);
 
@@ -115,32 +118,22 @@ INT asum_read(EQUIPMENT * pequipment, int channel)
   INT numChannel = 0;
    static DWORD last_time = 0;
    int status, i;
-   FGD_INFO *asum_info;
+   ASUM_INFO *asum_info;
    HNDLE hDB;
 
    /*---- read measured value ----*/
 
-   asum_info = (FGD_INFO *) pequipment->cd_info;
+   asum_info = (ASUM_INFO *) pequipment->cd_info;
    cm_get_experiment_database(&hDB, NULL);
 
   for (numChannel = 0; numChannel < 9; numChannel++)
    {
-    indexNumADC = numChannel + 13;
     status = device_driver(asum_info->driver[channel], CMD_GET_ADCMEAS,
-                  channel - asum_info->channel_offset[channel],
-                  asum_info->measured[numChannel]);
+                  numChannel + 13, asum_info->measured[numChannel]);
 
     /* check for update measured */
     for (i = 0; i < asum_info->num_channels; i++)
     {
-      /* update if change is more than update_threshold */
-      //if (abs(*(asum_info->measured[numChannel]) - *(asum_info->measured_mirror[numChannel])) > asum_info->update_threshold[i])
-      //{
-        for (i = 0; i < asum_info->num_channels; i++)
-        {
-          *(asum_info->measured_mirror[numChannel]) = *(asum_info->measured[numChannel]);
-        }
-
         db_set_data(hDB, asum_info->hKeyMeasured[numChannel], asum_info->measured[numChannel],
                 sizeof(float) * asum_info->num_channels, asum_info->num_channels,
                 TID_FLOAT);
@@ -148,29 +141,32 @@ INT asum_read(EQUIPMENT * pequipment, int channel)
         pequipment->odb_out++;
 
         break;
-      //}
     }
   }
 
+  //for some reason, the first bit of biasEn keeps getting set to 0. needs to be checked. Step by step debugging didn't help
+	//but all biasEn will be on, so just a quick fix, set it to 1 everytime.
+	 if(*asum_info->biasEn[0] == 0)
+	 {
+		*asum_info->biasEn[0] = 1;
+		device_driver(asum_info->driver[i], CMD_SET_BIAS_EN, i - asum_info->channel_offset[i], (double) 255);
+	 }
 	// Get vBias values
 	for (numChannel = 0; numChannel < 8; numChannel++)
 	{
-		if(*(asum_info->biasEn[numChannel]) == 0) //if the bias Enable for the currently specified channel is 0 (OFF)
+		if((*(asum_info->biasEn[numChannel]) == 0) || (*asum_info->control[0] == 0)) //if the bias Enable for the currently specified channel is 0 (OFF)
 		{
 			//then set the actual v_bias readout value to 0V to avoid any confusion
 			*(asum_info->actualvBias[numChannel]) = 0;
 		}
 		else
 		{				
-			indexNum = 5 + numChannel;
 			status = device_driver(asum_info->driver[channel], CMD_GET_VBIAS,
-								channel - asum_info->channel_offset[channel],
-								asum_info->actualvBias[numChannel]);
+								5 + numChannel,	asum_info->actualvBias[numChannel]);
 		}
 		db_set_data(hDB, asum_info->hKeyactualvBias[numChannel], asum_info->actualvBias[numChannel],
 					sizeof(float) * asum_info->num_channels, asum_info->num_channels,
 					TID_FLOAT);
-		*(asum_info->actualvBias_mirror[numChannel]) = *(asum_info->actualvBias[numChannel]);
 		pequipment->odb_out++;
 	
 	}
@@ -201,35 +197,40 @@ void asum_vBias(INT hDB, INT hKey, void *info)
 {
    INT numChannel = 0;
    INT i, status;
-   FGD_INFO *asum_info;
+   ASUM_INFO *asum_info;
    EQUIPMENT *pequipment;
 
    pequipment = (EQUIPMENT *) info;
-   asum_info = (FGD_INFO *) pequipment->cd_info;
+   asum_info = (ASUM_INFO *) pequipment->cd_info;
 
-   /* set individual channels only if vBias value differs */
-   for (numChannel = 0; numChannel < 8; numChannel++)
-   {
-      for (i = 0; i < asum_info->num_channels; i++)
-      {
-         if (*(asum_info->vBias[numChannel]) != *(asum_info->vBias_mirror[numChannel]))
-         {
-            if ((asum_info->driver[i]->flags & DF_READ_ONLY) == 0)
-            {
-          indexNum = numChannel + 5;
-			 if(*(asum_info->vBias[numChannel]) < ((*(asum_info->measured[3])) - 4.962))
-          {
-            printf("Demanded Bias Voltage should be less or more than the current charge pump voltage minus 4.962\n");
-				printf("Setting Demanded Bias Voltage to the charge Pump Value\n");
-            *(asum_info->vBias[numChannel]) = (float) (*(asum_info->measured[3]));
-          }
-               status = device_driver(asum_info->driver[i], CMD_SET_VBIAS,  // Voltage
-                                    i - asum_info->channel_offset[i], *(asum_info->vBias[numChannel]));
-            }
-            *(asum_info->vBias_mirror[numChannel]) = *(asum_info->vBias[numChannel]);
-         }
-      }
-   }
+	 printf("\n\n Checking the selected channel...\n");
+   /* set individual channels only if charge pump is ON */
+	 if(*(asum_info->control[0]) == 1)
+	 {
+		for (i = 0; i < asum_info->num_channels; i++)
+		{
+			if ((asum_info->driver[i]->flags & DF_READ_ONLY) == 0)
+			{
+				for (numChannel = 0; numChannel < 8; numChannel++)
+				{
+					if(hKey == asum_info->hKeyvBias[numChannel])
+					{
+						if((*(asum_info->vBias[numChannel]) < (*(asum_info->measured[3])) - 4.962) || ((*(asum_info->vBias[numChannel]) > (*(asum_info->measured[3])))))
+						{
+							printf("Error: Condition of [Current Charge Pump value - 5 <= Demanded Bias Voltage <= Charge Pump Value] has not been met\n");
+							printf("Setting V Bias %d to Charge Pump Voltage - 5 = %f", numChannel, (float) (*(asum_info->measured[3])) - (float)4.962);
+							*(asum_info->vBias[numChannel]) = (float) (*(asum_info->measured[3])) - (float)4.962;
+							db_set_data(hDB, asum_info->hKeyvBias[numChannel], asum_info->vBias[numChannel],
+									sizeof(float) * asum_info->num_channels, asum_info->num_channels,
+									TID_FLOAT);
+						}			
+						status = device_driver(asum_info->driver[i], CMD_SET_VBIAS,  // Voltage
+																	numChannel + 5, *(asum_info->vBias[numChannel]));
+					}
+				}				
+			}			
+		}
+	 }
    pequipment->odb_in++;
 }
 
@@ -237,21 +238,19 @@ void asum_vBias(INT hDB, INT hKey, void *info)
 void asum_asumDacTh(INT hDB, INT hKey, void *info)
 {
   INT i, status;
-   FGD_INFO *fgd_info;
+   ASUM_INFO *asum_info;
    EQUIPMENT *pequipment;
 
    pequipment = (EQUIPMENT *) info;
-   fgd_info = (FGD_INFO *) pequipment->cd_info;
+   asum_info = (ASUM_INFO *) pequipment->cd_info;
 
    /* set individual channels only if demand value differs */
-   for (i = 0; i < fgd_info->num_channels; i++)
-     if (*fgd_info->asumDacTh != *fgd_info->asumDacTh_mirror) {
-         if ((fgd_info->driver[i]->flags & DF_READ_ONLY) == 0) {
-            status = device_driver(fgd_info->driver[i], CMD_SET_ASUMDACTH,  // DAC Asum Threshold
-                                   i - fgd_info->channel_offset[i], *fgd_info->asumDacTh);
+   for (i = 0; i < asum_info->num_channels; i++)
+         if ((asum_info->driver[i]->flags & DF_READ_ONLY) == 0) 
+				 {
+            status = device_driver(asum_info->driver[i], CMD_SET_ASUMDACTH,  // DAC Asum Threshold
+                                   i - asum_info->channel_offset[i], *asum_info->asumDacTh);
          }
-         *fgd_info->asumDacTh_mirror = *fgd_info->asumDacTh;
-      }
 
    pequipment->odb_in++;
 }
@@ -260,20 +259,18 @@ void asum_asumDacTh(INT hDB, INT hKey, void *info)
 void asum_ChPumpDac(INT hDB, INT hKey, void *info)
 {
   INT i, status;
-   FGD_INFO *fgd_info;
+   ASUM_INFO *asum_info;
    EQUIPMENT *pequipment;
 
    pequipment = (EQUIPMENT *) info;
-   fgd_info = (FGD_INFO *) pequipment->cd_info;
+   asum_info = (ASUM_INFO *) pequipment->cd_info;
 
    /* set individual channels only if demand value differs */
-   for (i = 0; i < fgd_info->num_channels; i++)
-     if (*fgd_info->ChPumpDac != *fgd_info->ChPumpDac_mirror) {
-         if ((fgd_info->driver[i]->flags & DF_READ_ONLY) == 0) {
-            status = device_driver(fgd_info->driver[i], CMD_SET_CHPUMPDAC,  // Charge Pump Dac
-                                   i - fgd_info->channel_offset[i], *fgd_info->ChPumpDac);
-         }
-         *fgd_info->ChPumpDac_mirror = *fgd_info->ChPumpDac;
+   for (i = 0; i < asum_info->num_channels; i++)
+      if ((asum_info->driver[i]->flags & DF_READ_ONLY) == 0) 
+			{
+        status = device_driver(asum_info->driver[i], CMD_SET_CHPUMPDAC,  // Charge Pump Dac
+                                i - asum_info->channel_offset[i], *asum_info->ChPumpDac);
       }
 
    pequipment->odb_in++;
@@ -285,42 +282,76 @@ void asum_ChPumpDac(INT hDB, INT hKey, void *info)
 void control_update(INT hDB, INT hKey, void *info)
 {
    INT numChannel = 0;
-   INT i, status;
-   FGD_INFO *asum_info;
+   INT i, status, j = 0;
+   ASUM_INFO *asum_info;
    EQUIPMENT *pequipment;
-  double controlToBeSent = 0.0;
+   unsigned char controlToBeSent = 0;
+	 unsigned char biasEnToBeSent = 0;
 
    pequipment = (EQUIPMENT *) info;
-   asum_info = (FGD_INFO *) pequipment->cd_info;
+   asum_info = (ASUM_INFO *) pequipment->cd_info;
 
    /* set individual channels only if vBias value differs */
-   for (numChannel = 0; numChannel < 8; numChannel++)
-   {
-      for (i = 0; i < asum_info->num_channels; i++)
-      {
-         if (*(asum_info->control[numChannel]) != *(asum_info->control_mirror[numChannel]))
-         {
-            if ((asum_info->driver[i]->flags & DF_READ_ONLY) == 0)
-            {
-          if((*(asum_info->control[numChannel]) != 1) && (*(asum_info->control[numChannel]) != 0))
-          {
-            printf("Input only 1 or 0, setting to 0 \n");
-            *(asum_info->control[numChannel]) = (double) 0;
-          }
-          //move the received control bit to the correct position
-          if(*(asum_info->control[numChannel]) == 1) controlFlag = 1;
-          else controlFlag = 0;
+	for (i = 0; i < asum_info->num_channels; i++)
+	{
+		if ((asum_info->driver[i]->flags & DF_READ_ONLY) == 0)
+		{
+			for (numChannel = 0; numChannel < 7; numChannel++)
+			{      
+				if((*(asum_info->control[numChannel]) != 1) && (*(asum_info->control[numChannel]) != 0))
+				{
+						printf("Input only 1 or 0, setting to 0 \n");
+						*(asum_info->control[numChannel]) = (double) 0;
+				}
 
-          controlToBeSent = (double) (1 << numChannel);
-
-               status = device_driver(asum_info->driver[i], CMD_SET_CONTROL,  // Control
-                                    i - asum_info->channel_offset[i], controlToBeSent);
-            }
-        *(asum_info->control_mirror[numChannel]) = *(asum_info->control[numChannel]);
-         }
+				//move the received control bit to the correct position
+				if(*(asum_info->control[numChannel]) == 1) controlToBeSent |= ((unsigned char)1 << numChannel);
+				else controlToBeSent &= ~((unsigned char)1 << numChannel);		
       }
-   }
-   pequipment->odb_in++;
+			status = device_driver(asum_info->driver[i], CMD_SET_CONTROL,  // Control
+                                    i - asum_info->channel_offset[i], (double) controlToBeSent);
+
+			//Force Update routines
+			if((*(asum_info->control[7])) == 1)
+			{
+				//if Force TO Hardware is ON				
+				device_driver(asum_info->driver[i], CMD_SET_ASUMDACTH, i - asum_info->channel_offset[i], *asum_info->asumDacTh);
+				device_driver(asum_info->driver[i], CMD_SET_CHPUMPDAC, i - asum_info->channel_offset[i], *asum_info->ChPumpDac);
+				for(j = 0; j < 8; j++)
+				{
+					if(*(asum_info->biasEn[j]) == 1) biasEnToBeSent |= ((unsigned char)1 << j);
+					else biasEnToBeSent &= ~((unsigned char)1 << j);	
+				}
+			  device_driver(asum_info->driver[i], CMD_SET_BIAS_EN, i - asum_info->channel_offset[i], (double) biasEnToBeSent);
+				printf("\n\n\n Checking all voltage channels..\n");
+				ss_sleep(1000); //sleep for 1 second to allow the hardware to make changes
+				asum_read(pequipment, i); //and read all ADC values, including the Main Charge Pump voltage
+				if(*(asum_info->control[0]) == 1)
+				{
+					for(j = 0; j < 8; j++) 
+					{					
+						if((*(asum_info->vBias[j]) < (*(asum_info->measured[3])) - 4.962) || ((*(asum_info->vBias[j]) > (*(asum_info->measured[3])))))
+						{
+							printf("Error: Condition of [Current Charge Pump value - 5 <= Demanded Bias Voltage <= Charge Pump Value] has not been met\n");
+							printf("Setting V Bias %d to Charge Pump Voltage - 5 = %f", j, (float) (*(asum_info->measured[3])) - (float)4.962);
+							*(asum_info->vBias[j]) = (float) (*(asum_info->measured[3])) - (float)4.962;
+							db_set_data(hDB, asum_info->hKeyvBias[j], asum_info->vBias[j],
+										sizeof(float) * asum_info->num_channels, asum_info->num_channels,
+										TID_FLOAT);
+						}
+						device_driver(asum_info->driver[i], CMD_SET_VBIAS, j + 5, *(asum_info->vBias[j]));
+					}
+				}
+
+				//reset the Force Update bit to 0
+				*(asum_info->control[7]) = 0;
+				db_set_data(hDB, asum_info->hKeyControl[7], asum_info->control[7],
+       sizeof(double) * asum_info->num_channels, asum_info->num_channels,
+       TID_DOUBLE);
+			}
+    }		
+	}
+  pequipment->odb_in++;
 }
 
 
@@ -331,39 +362,33 @@ void biasEn_update(INT hDB, INT hKey, void *info)
 {
    INT numChannel = 0;
    INT i, status;
-   FGD_INFO *asum_info;
+   ASUM_INFO *asum_info;
    EQUIPMENT *pequipment;
-  double biasEnToBeSent = 0.0;
+   unsigned char biasEnToBeSent = 0;
 
    pequipment = (EQUIPMENT *) info;
-   asum_info = (FGD_INFO *) pequipment->cd_info;
+   asum_info = (ASUM_INFO *) pequipment->cd_info;
 
    /* set individual channels only if vBias value differs */
-   for (numChannel = 0; numChannel < 8; numChannel++)
-   {
-      for (i = 0; i < asum_info->num_channels; i++)
-      {
-         if (*(asum_info->biasEn[numChannel]) != *(asum_info->biasEn_mirror[numChannel]))
-         {
-            if ((asum_info->driver[i]->flags & DF_READ_ONLY) == 0)
-            {
-          if((*(asum_info->biasEn[numChannel]) != 1) && (*(asum_info->biasEn[numChannel]) != 0))
-          {
-            printf("Input only 1 or 0, setting to 0 \n");
-            *(asum_info->biasEn[numChannel]) = (double) 0;
-          }
+	for (i = 0; i < asum_info->num_channels; i++)
+	{
+		if ((asum_info->driver[i]->flags & DF_READ_ONLY) == 0)
+		{
+			for (numChannel = 0; numChannel < 8; numChannel++)
+			{      
+				if((*(asum_info->biasEn[numChannel]) != 1) && (*(asum_info->biasEn[numChannel]) != 0))
+				{
+						printf("Input only 1 or 0, setting to 0 \n");
+						*(asum_info->biasEn[numChannel]) = (double) 0;
+				}
 
-          if(*(asum_info->biasEn[numChannel]) == 0) biasEnFlag = 1;
-          else biasEnFlag = 0;
-
-          biasEnToBeSent = (double) (1.0 * (1 << numChannel));
-
-               status = device_driver(asum_info->driver[i], CMD_SET_BIAS_EN,  // biasEn
-                                    i - asum_info->channel_offset[i], biasEnToBeSent);
-            }
-        *(asum_info->biasEn_mirror[numChannel]) = *(asum_info->biasEn[numChannel]);
-         }
+				//move the received biasEn bit to the correct position
+				if(*(asum_info->biasEn[numChannel]) == 1) biasEnToBeSent |= ((unsigned char)1 << numChannel);
+				else biasEnToBeSent &= ~((unsigned char)1 << numChannel);		
       }
+			status = device_driver(asum_info->driver[i], CMD_SET_BIAS_EN,  // Control
+                                    i - asum_info->channel_offset[i], (double) biasEnToBeSent);
+    }		
    }
    pequipment->odb_in++;
 }
@@ -374,11 +399,11 @@ void biasEn_update(INT hDB, INT hKey, void *info)
 void asum_update_label(INT hDB, INT hKey, void *info)
 {
    INT i, status;
-   FGD_INFO *asum_info;
+   ASUM_INFO *asum_info;
    EQUIPMENT *pequipment;
 
    pequipment = (EQUIPMENT *) info;
-   asum_info = (FGD_INFO *) pequipment->cd_info;
+   asum_info = (ASUM_INFO *) pequipment->cd_info;
 
    /* update channel labels based on the midas channel names */
    for (i = 0; i < asum_info->num_channels; i++)
@@ -394,7 +419,7 @@ INT asum_init(EQUIPMENT * pequipment)
    int status, size, i, j, index, offset;
    char str[256];
    HNDLE hDB, hKey, hNames, hThreshold;
-   FGD_INFO *asum_info;
+   ASUM_INFO *asum_info;
   char vBiasString[32];
   char actualvBiasString[32];
   char measString[32];
@@ -405,8 +430,8 @@ INT asum_init(EQUIPMENT * pequipment)
 
    /* allocate private data */
 
-  pequipment->cd_info = calloc(1, sizeof(FGD_INFO));
-   asum_info = (FGD_INFO *) pequipment->cd_info;
+  pequipment->cd_info = calloc(1, sizeof(ASUM_INFO));
+   asum_info = (ASUM_INFO *) pequipment->cd_info;
 
    /* get class driver root key */
    cm_get_experiment_database(&hDB, NULL);
@@ -455,14 +480,6 @@ INT asum_init(EQUIPMENT * pequipment)
   asum_info->ChPumpDac = (float *) calloc(asum_info->num_channels, sizeof(float));
 
    asum_info->update_threshold = (float *) calloc(asum_info->num_channels, sizeof(float));
-
-   for(i = 0; i < 8; i++) asum_info->vBias_mirror[i] = (float *) calloc(asum_info->num_channels, sizeof(float));
-	for(i = 0; i < 8; i++) asum_info->actualvBias_mirror[i] = (float *) calloc(asum_info->num_channels, sizeof(float));
-   for(i = 0; i < 9; i++) asum_info->measured_mirror[i] = (float *) calloc(asum_info->num_channels, sizeof(float));
-   for(i = 0; i < 8; i++) asum_info->control_mirror[i] = (double *) calloc(asum_info->num_channels, sizeof(double));
-  for(i = 0; i < 8; i++) asum_info->biasEn_mirror[i] = (double *) calloc(asum_info->num_channels, sizeof(double));
-  asum_info->asumDacTh_mirror = (float *) calloc(asum_info->num_channels, sizeof(float));
-  asum_info->ChPumpDac_mirror = (float *) calloc(asum_info->num_channels, sizeof(float));
 
    asum_info->channel_offset = (INT *) calloc(asum_info->num_channels, sizeof(INT));
    asum_info->driver = (void *) calloc(asum_info->num_channels, sizeof(void *));
@@ -559,73 +576,45 @@ INT asum_init(EQUIPMENT * pequipment)
     if(j == 7) strcpy(actualvBiasString, "Variables/actualvBias8");
 
     /* find the key and get data */
+		db_merge_data(hDB, asum_info->hKeyRoot, actualvBiasString, asum_info->actualvBias[j], 
+					  sizeof(float) * asum_info->num_channels, asum_info->num_channels, TID_FLOAT);
     status = db_find_key(hDB, asum_info->hKeyRoot, actualvBiasString, &asum_info->hKeyactualvBias[j]);
-    if (status == DB_SUCCESS) {
-      size = sizeof(float) * asum_info->num_channels;
-      db_get_data(hDB, asum_info->hKeyactualvBias[j], asum_info->actualvBias[j], &size, TID_FLOAT);
-    }
 
-    /* write back actualvBias values */
-    status = db_find_key(hDB, asum_info->hKeyRoot, actualvBiasString, &asum_info->hKeyactualvBias[j]);
-    if (status != DB_SUCCESS) {
-      db_create_key(hDB, asum_info->hKeyRoot, actualvBiasString, TID_FLOAT);
-      db_find_key(hDB, asum_info->hKeyRoot, actualvBiasString, &asum_info->hKeyactualvBias[j]);
-    }
-
-	 size = sizeof(float) * asum_info->num_channels;
-
-    db_set_data(hDB, asum_info->hKeyactualvBias[j], asum_info->actualvBias[j], size,
+    db_set_data(hDB, asum_info->hKeyactualvBias[j], asum_info->actualvBias[j], sizeof(float) * asum_info->num_channels,
               asum_info->num_channels, TID_FLOAT);
-    db_open_record(hDB, asum_info->hKeyactualvBias[j], asum_info->actualvBias[j],
-                asum_info->num_channels * sizeof(float), MODE_READ, asum_vBias,
-                pequipment);
    }
 
-  /*---- create asumDacTh variables ----*/
-  /* find the key and get data */
-
-  status = db_find_key(hDB, asum_info->hKeyRoot, "Variables/asumDacTh", &asum_info->hKeyasumDacTh);
-  if (status == DB_SUCCESS) {
-    size = sizeof(float) * asum_info->num_channels;
-    db_get_data(hDB, asum_info->hKeyasumDacTh, asum_info->asumDacTh, &size, TID_FLOAT);
-  }
-  else /* write back asumDacTh values */
-  {
-    db_create_key(hDB, asum_info->hKeyRoot, "Variables/asumDacTh", TID_FLOAT);
-    db_find_key(hDB, asum_info->hKeyRoot, "Variables/asumDacTh", &asum_info->hKeyasumDacTh);
-  }
-  //Update asumDacTh value with the latest mscb value
-  device_driver(asum_info->driver[0], CMD_GET_ASUMDACTH, asum_info->channel_offset[0], asum_info->asumDacTh);
-
-  size = sizeof(float) * asum_info->num_channels;
-
-  db_set_data(hDB, asum_info->hKeyasumDacTh, asum_info->asumDacTh, size,
-            asum_info->num_channels, TID_FLOAT);
-  db_open_record(hDB, asum_info->hKeyasumDacTh, asum_info->asumDacTh,
-              asum_info->num_channels * sizeof(float), MODE_READ, asum_asumDacTh,
-              pequipment);
-
-
+  
   /*---- create ChPumpDac variables ----*/
   /* find the key and get data */
+	db_merge_data(hDB, asum_info->hKeyRoot, "Variables/ChPumpDac", asum_info->ChPumpDac,								
+								sizeof(float) * asum_info->num_channels, asum_info->num_channels, TID_FLOAT);
   status = db_find_key(hDB, asum_info->hKeyRoot, "Variables/ChPumpDac", &asum_info->hKeyChPumpDac);
-  if (status == DB_SUCCESS) {
-    size = sizeof(float) * asum_info->num_channels;
-    db_get_data(hDB, asum_info->hKeyChPumpDac, asum_info->ChPumpDac, &size, TID_FLOAT);
-  }
-  else /* write back ChPumpDac values */
-  {
-    db_create_key(hDB, asum_info->hKeyRoot, "Variables/ChPumpDac", TID_FLOAT);
-    db_find_key(hDB, asum_info->hKeyRoot, "Variables/ChPumpDac", &asum_info->hKeyChPumpDac);
-  }
-  //Update with the latest mscb value
+  
+	//Update with the latest mscb value
   device_driver(asum_info->driver[0], CMD_GET_CHPUMPDAC, asum_info->channel_offset[0], asum_info->ChPumpDac);
-  size = sizeof(float) * asum_info->num_channels;
-
-  db_set_data(hDB, asum_info->hKeyChPumpDac, asum_info->ChPumpDac, size,
+  db_set_data(hDB, asum_info->hKeyChPumpDac, asum_info->ChPumpDac, sizeof(float) * asum_info->num_channels,
             asum_info->num_channels, TID_FLOAT);
+
+	//Open Record
   db_open_record(hDB, asum_info->hKeyChPumpDac, asum_info->ChPumpDac,
               asum_info->num_channels * sizeof(float), MODE_READ, asum_ChPumpDac,
+              pequipment);
+
+	/*---- create asumDacTh variables ----*/
+  /* find the key and get data */
+	db_merge_data(hDB, asum_info->hKeyRoot, "Variables/asumDacTh", asum_info->asumDacTh, 
+					  sizeof(float) * asum_info->num_channels, asum_info->num_channels, TID_FLOAT);
+  status = db_find_key(hDB, asum_info->hKeyRoot, "Variables/asumDacTh", &asum_info->hKeyasumDacTh);
+  
+  //Update asumDacTh value with the latest mscb value
+  device_driver(asum_info->driver[0], CMD_GET_ASUMDACTH, asum_info->channel_offset[0], asum_info->asumDacTh);
+  db_set_data(hDB, asum_info->hKeyasumDacTh, asum_info->asumDacTh, sizeof(float) * asum_info->num_channels,
+            asum_info->num_channels, TID_FLOAT);
+
+	//Open Record (connect with asum_asumDacTh function
+  db_open_record(hDB, asum_info->hKeyasumDacTh, asum_info->asumDacTh,
+              asum_info->num_channels * sizeof(float), MODE_READ, asum_asumDacTh,
               pequipment);
 
    /*---- create measured variables ----*/
@@ -646,12 +635,6 @@ INT asum_init(EQUIPMENT * pequipment)
             asum_info->measured[j], sizeof(float) * asum_info->num_channels,
             asum_info->num_channels, TID_FLOAT);
     status = db_find_key(hDB, asum_info->hKeyRoot, measString, &asum_info->hKeyMeasured[j]);
-    /*if (status != DB_SUCCESS) {
-      db_create_key(hDB, asum_info->hKeyRoot, ctrlString, TID_FLOAT);
-      db_find_key(hDB, asum_info->hKeyRoot, ctrlString, &asum_info->hKeyMeasured[j]);
-    }*/
-    memcpy(asum_info->measured_mirror[j], asum_info->measured[j],
-        asum_info->num_channels * sizeof(float));
   }
 
    /*---- create ExtTemp measured variables ----*/
@@ -673,7 +656,7 @@ INT asum_init(EQUIPMENT * pequipment)
    controlRead = calloc(1, sizeof(unsigned char *));
   device_driver(asum_info->driver[0], CMD_GET_CONTROL, asum_info->channel_offset[0], controlRead); // Control
 
-  for(j = 0; j < 8; j++)
+  for(j = 0; j < 9; j++)
    {
     /* Assign control names */
     if(j == 0) strcpy(ctrlString, "Variables/Charge Pump");
@@ -683,7 +666,7 @@ INT asum_init(EQUIPMENT * pequipment)
     if(j == 4) strcpy(ctrlString, "Variables/Bias DAC");
     if(j == 5) strcpy(ctrlString, "Variables/Asum Threshold");
     if(j == 6) strcpy(ctrlString, "Variables/I2C DAC");
-    if(j == 7) strcpy(ctrlString, "Variables/KeepRefAll");
+		if(j == 7) strcpy(ctrlString, "Variables/Force Update TO Hardware");
 
     status = db_find_key(hDB, asum_info->hKeyRoot, ctrlString, &asum_info->hKeyControl[j]);
 	
@@ -704,9 +687,6 @@ INT asum_init(EQUIPMENT * pequipment)
   db_open_record(hDB, asum_info->hKeyControl[j], asum_info->control[j],
             asum_info->num_channels * sizeof(double), MODE_READ, control_update,
             pequipment);
-
-  //copy all control values into the control mirror
-  *(asum_info->control_mirror[j]) = *(asum_info->control[j]);
   }
 
   /*---- create biasEn variables ----*/
@@ -733,8 +713,8 @@ INT asum_init(EQUIPMENT * pequipment)
     }
 
   //distribute the read biasEn values to each element in the biasEn[] array
-  if((*biasEnRead & (unsigned char)(1 << j))) *(asum_info->biasEn[j]) = 0; //0 means OFF in MIDAS interface (on the circuit, 1 means OFF)
-  else *(asum_info->biasEn[j]) = 1; //1 means ON in MIDAS interface (on the circuit, 0 means ON)
+  if((*biasEnRead & (unsigned char)(1 << j))) *(asum_info->biasEn[j]) = 1; //0 means OFF in MIDAS interface (on the circuit, 1 means OFF)
+  else *(asum_info->biasEn[j]) = 0; //1 means ON in MIDAS interface (on the circuit, 0 means ON)
 
   //update the Variables (Control, 8bits)
   db_set_data(hDB, asum_info->hKeybiasEn[j], asum_info->biasEn[j],
@@ -746,9 +726,6 @@ INT asum_init(EQUIPMENT * pequipment)
   db_open_record(hDB, asum_info->hKeybiasEn[j], asum_info->biasEn[j],
             asum_info->num_channels * sizeof(double), MODE_READ, biasEn_update,
             pequipment);
-
-  //copy all biasEn values into the biasEn mirror
-  *(asum_info->biasEn_mirror[j]) = *(asum_info->biasEn[j]);
   }
 
 
@@ -764,7 +741,7 @@ INT asum_init(EQUIPMENT * pequipment)
 
    /*---- set labels form midas SC names ----*/
    for (i = 0; i < asum_info->num_channels; i++) {
-      asum_info = (FGD_INFO *) pequipment->cd_info;
+      asum_info = (ASUM_INFO *) pequipment->cd_info;
       device_driver(asum_info->driver[i], CMD_SET_LABEL,
                     i - asum_info->channel_offset[i], asum_info->names + NAME_LENGTH * i);
    }
@@ -831,7 +808,7 @@ INT asum_exit(EQUIPMENT * pequipment)
 {
    INT i;
 
-   free_mem((FGD_INFO *) pequipment->cd_info);
+   free_mem((ASUM_INFO *) pequipment->cd_info);
 
    /* call exit method of device drivers */
    for (i = 0; pequipment->driver[i].dd != NULL; i++)
@@ -845,9 +822,9 @@ INT asum_exit(EQUIPMENT * pequipment)
 INT asum_idle(EQUIPMENT * pequipment)
 {
    INT act, status;
-   FGD_INFO *asum_info;
+   ASUM_INFO *asum_info;
 
-   asum_info = (FGD_INFO *) pequipment->cd_info;
+   asum_info = (ASUM_INFO *) pequipment->cd_info;
 
    /* select next measurement channel */
    act = (asum_info->last_channel + 1) % asum_info->num_channels;
@@ -864,12 +841,12 @@ INT asum_idle(EQUIPMENT * pequipment)
 INT cd_asum_read(char *pevent, int offset)
 {
    float *pdata;
-   FGD_INFO *asum_info;
+   ASUM_INFO *asum_info;
    EQUIPMENT *pequipment;
   int j = 0;
 
    pequipment = *((EQUIPMENT **) pevent);
-   asum_info = (FGD_INFO *) pequipment->cd_info;
+   asum_info = (ASUM_INFO *) pequipment->cd_info;
 
    if (asum_info->format == FORMAT_FIXED) {
     for(j = 0; j < 8; j++)
