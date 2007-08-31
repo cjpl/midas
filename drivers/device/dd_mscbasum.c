@@ -18,12 +18,31 @@
 #include "midas.h"
 #include "mscb.h"
 
+//command definitions
+#define CMD_SET_VBIAS					 CMD_SET_FIRST+5
+#define CMD_SET_CONTROL					 CMD_SET_FIRST+6
+#define CMD_SET_ASUMDACTH				 CMD_SET_FIRST+7
+#define CMD_SET_CHPUMPDAC				 CMD_SET_FIRST+8
+#define CMD_SET_BIAS_EN					 CMD_SET_FIRST+9
+#define CMD_SET_PARAMS					 CMD_SET_FIRST+10
 
-/*---- globals -----------------------------------------------------*/
-extern indexNum;
-extern indexNumADC;
-extern controlFlag;
-extern biasEnFlag;
+#define CMD_GET_INTERNALTEMP			 CMD_GET_FIRST+2
+#define CMD_GET_ADCMEAS					 CMD_GET_FIRST+3
+#define CMD_GET_CONTROL					 CMD_GET_FIRST+4
+#define CMD_GET_BIASEN					 CMD_GET_FIRST+5
+#define CMD_GET_CHPUMPDAC				 CMD_GET_FIRST+6
+#define CMD_GET_ASUMDACTH			    CMD_GET_FIRST+7
+#define CMD_GET_VBIAS					 CMD_GET_FIRST+8
+#define CMD_GET_ACTUALVBIAS			 CMD_GET_FIRST+9
+#define CMD_GET_PARAMS						 CMD_GET_FIRST+10
+#define CMD_GET_TEMPERATURE1			 CMD_GET_FIRST+11
+#define CMD_GET_TEMPERATURE2			 CMD_GET_FIRST+12
+#define CMD_GET_TEMPERATURE3			 CMD_GET_FIRST+13
+#define CMD_GET_TEMPERATURE4			 CMD_GET_FIRST+14
+#define CMD_GET_TEMPERATURE5			 CMD_GET_FIRST+15
+#define CMD_GET_TEMPERATURE6			 CMD_GET_FIRST+16
+#define CMD_GET_EXTERNALTEMP			 CMD_GET_FIRST+17
+
 
 typedef struct {
    char mscb_device[NAME_LENGTH];
@@ -41,7 +60,7 @@ typedef struct {
    MSCBFGD_SETTINGS settings;
    int num_channels;
    int fd;
-} MSCBFGD_INFO;
+} MSCBASUM_INFO;
 
 /*---- device driver routines --------------------------------------*/
 
@@ -50,11 +69,11 @@ INT mscbasum_init(HNDLE hkey, void **pinfo, INT channels, INT(*bd) (INT cmd, ...
 //   unsigned int  ramp;
    int  i, status, size, flag;
    HNDLE hDB, hkeydd;
-   MSCBFGD_INFO *info;
+   MSCBASUM_INFO *info;
    MSCB_INFO node_info;
 
    /* allocate info structure */
-   info = (MSCBFGD_INFO *) calloc(1, sizeof(MSCBFGD_INFO));
+   info = (MSCBASUM_INFO *) calloc(1, sizeof(MSCBASUM_INFO));
    *pinfo = info;
 
    cm_get_experiment_database(&hDB, NULL);
@@ -109,7 +128,7 @@ INT mscbasum_init(HNDLE hkey, void **pinfo, INT channels, INT(*bd) (INT cmd, ...
 
 /*----------------------------------------------------------------------------*/
 
-INT mscbasum_exit(MSCBFGD_INFO * info)
+INT mscbasum_exit(MSCBASUM_INFO * info)
 {
    mscb_exit(info->fd);
 
@@ -120,129 +139,119 @@ INT mscbasum_exit(MSCBFGD_INFO * info)
 
 /*----------------------------------------------------------------------------*/
 // Set Voltage
-INT mscbasum_setDacBias(MSCBFGD_INFO * info, INT channel, float value)
+INT mscbasum_setDacBias(MSCBASUM_INFO * info, INT channel, float value)
 {
    unsigned char toBeSent = 0;
 	int size = 4;
 	float chPumpVoltage = 0.0;
 
-   mscb_read(info->fd, info->settings.base_address + channel, 16, &chPumpVoltage, &size);
+   mscb_read(info->fd, info->settings.base_address, 16, &chPumpVoltage, &size);
 
    toBeSent = (unsigned char)((chPumpVoltage - value) * 255 / 4.962);
 
-   mscb_write(info->fd, info->settings.base_address + channel, indexNum, &toBeSent, 1);
+   mscb_write(info->fd, info->settings.base_address, channel, &toBeSent, 1);
    return FE_SUCCESS;
 }
 
 /*----------------------------------------------------------------------------*/
 // Set Asum Dac Threshold Voltage
-INT mscgasum_setasumDacTh (MSCBFGD_INFO * info, INT channel, float value)
+INT mscbasum_setasumDacTh (MSCBASUM_INFO * info, INT channel, float value)
 {
    unsigned char toBeSent = 0;
 
    toBeSent = (unsigned char)(value * 65535 / 4.962);
 
-   mscb_write(info->fd, info->settings.base_address + channel, 3, &toBeSent, 1);
+   mscb_write(info->fd, info->settings.base_address, 3, &toBeSent, 1);
    return FE_SUCCESS;
 }
 
 /*----------------------------------------------------------------------------*/
 // Set DAC ChargePump Voltage
-INT mscgasum_setChPumpDac (MSCBFGD_INFO * info, INT channel, float value)
+INT mscbasum_setChPumpDac (MSCBASUM_INFO * info, INT channel, float value)
 {
    unsigned char toBeSent = 0;
 
    toBeSent = (unsigned char)(value * 255 / 4.962);
 
-   mscb_write(info->fd, info->settings.base_address + channel, 4, &toBeSent, 1);
+   mscb_write(info->fd, info->settings.base_address, 4, &toBeSent, 1);
    return FE_SUCCESS;
 }
 
 /*----------------------------------------------------------------------------*/
 // Set Bias Voltage
-INT mscbasum_controlUpdate(MSCBFGD_INFO * info, INT channel, double value)
+INT mscbasum_controlUpdate(MSCBASUM_INFO * info, INT channel, double value)
 {
   int size = 1;
-   unsigned char toBeSent2 = 0;
-  unsigned char readValue = 0;
+   unsigned char toBeSent = 0;
 
-  toBeSent2 = (unsigned char) value;
-  mscb_read(info->fd, info->settings.base_address + channel, 0, &readValue, &size);
+  toBeSent = (unsigned char) value;
 
-  if(controlFlag) toBeSent2 |= readValue;
-  else toBeSent2 = readValue & ~(toBeSent2);
+  printf("Set control:[%i] 0x%x\n", channel, toBeSent);
 
-  printf("Set control:[%i]%o\n", channel, toBeSent2);
-
-   mscb_write(info->fd, info->settings.base_address + channel, 0, &toBeSent2, 1);
+   mscb_write(info->fd, info->settings.base_address, 0, &toBeSent, 1);
    return FE_SUCCESS;
 }
 
 /*----------------------------------------------------------------------------*/
-INT mscbasum_getControl(MSCBFGD_INFO * info, INT channel, unsigned char *rvalue)
+INT mscbasum_getControl(MSCBASUM_INFO * info, INT channel, unsigned char *rvalue)
 {
   int size = 1;
 
-  mscb_read(info->fd, info->settings.base_address + channel, 0, rvalue, &size);
+  mscb_read(info->fd, info->settings.base_address, 0, rvalue, &size);
 
    return FE_SUCCESS;
 }
 
 /*----------------------------------------------------------------------------*/
 // Set Bias Voltage
-INT mscbasum_biasEnUpdate(MSCBFGD_INFO * info, INT channel, double value)
+INT mscbasum_biasEnUpdate(MSCBASUM_INFO * info, INT channel, double value)
 {
   int size = 1;
-   unsigned char toBeSent2 = 0;
-  unsigned char readValue = 0;
+   unsigned char toBeSent = 0;
 
-  toBeSent2 = (unsigned char) value;
-  mscb_read(info->fd, info->settings.base_address + channel, 2, &readValue, &size);
+  toBeSent = (unsigned char) value;
 
-  if(biasEnFlag) toBeSent2 |= readValue;
-  else toBeSent2 = readValue & ~(toBeSent2);
+  printf("Set Bias Enable:[%i] 0x%x\n", channel, toBeSent);
 
-  printf("Set Bias Enable:[%i]%o\n", channel, toBeSent2);
-
-   mscb_write(info->fd, info->settings.base_address + channel, 2, &toBeSent2, 1);
+   mscb_write(info->fd, info->settings.base_address, 2, &toBeSent, 1);
    return FE_SUCCESS;
 }
 
 /*----------------------------------------------------------------------------*/
-INT mscbasum_getbiasEn(MSCBFGD_INFO * info, INT channel, unsigned char *rvalue)
+INT mscbasum_getbiasEn(MSCBASUM_INFO * info, INT channel, unsigned char *rvalue)
 {
   int size = 1;
 
-  mscb_read(info->fd, info->settings.base_address + channel, 2, rvalue, &size);
+  mscb_read(info->fd, info->settings.base_address, 2, rvalue, &size);
 
    return FE_SUCCESS;
 }
 
 /*----------------------------------------------------------------------------*/
-INT mscbasum_getasumDacTh(MSCBFGD_INFO * info, INT channel,float *pvalue)
+INT mscbasum_getasumDacTh(MSCBASUM_INFO * info, INT channel,float *pvalue)
 {
   int size = 2;
   short int readValue=0;
 
-  mscb_read(info->fd, info->settings.base_address + channel, 3, &readValue, &size);
+  mscb_read(info->fd, info->settings.base_address, 3, &readValue, &size);
 
-  *pvalue = (float)(readValue * 4.962 / 65535);
+  *pvalue = (float)(readValue * 4.962 / 65535.0);
 
    return FE_SUCCESS;
 }
 
 /*----------------------------------------------------------------------------*/
-INT mscbasum_getDacBias(MSCBFGD_INFO * info, INT channel,float *pvalue)
+INT mscbasum_getDacBias(MSCBASUM_INFO * info, INT channel,float *pvalue)
 {
   int size = 0;
   unsigned char readValue=0;
   float chPumpVoltage = 0.0;
 
   size = 4; //4bytes for float of readBias
-  mscb_read(info->fd, info->settings.base_address + channel, 16, &chPumpVoltage, &size);
+  mscb_read(info->fd, info->settings.base_address, 16, &chPumpVoltage, &size);
 
   size = 1; //1byte
-  mscb_read(info->fd, info->settings.base_address + channel, indexNum, &readValue, &size);
+  mscb_read(info->fd, info->settings.base_address, channel, &readValue, &size);
 
   *pvalue = (float)(chPumpVoltage - (readValue * 4.962 / 255));
 
@@ -250,12 +259,12 @@ INT mscbasum_getDacBias(MSCBFGD_INFO * info, INT channel,float *pvalue)
 }
 
 /*----------------------------------------------------------------------------*/
-INT mscbasum_getchPumpDac(MSCBFGD_INFO * info, INT channel,float *pvalue)
+INT mscbasum_getchPumpDac(MSCBASUM_INFO * info, INT channel,float *pvalue)
 {
   int size = 1;
   unsigned char readValue=0;
 
-  mscb_read(info->fd, info->settings.base_address + channel, 4, &readValue, &size);
+  mscb_read(info->fd, info->settings.base_address, 4, &readValue, &size);
 
   *pvalue = (float)(readValue * 4.962 / 255);
 
@@ -264,26 +273,26 @@ INT mscbasum_getchPumpDac(MSCBFGD_INFO * info, INT channel,float *pvalue)
 
 /*----------------------------------------------------------------------------*/
 
-INT mscbasum_get_adcMeas(MSCBFGD_INFO * info, INT channel, float *pvalue)
+INT mscbasum_get_adcMeas(MSCBASUM_INFO * info, INT channel, float *pvalue)
 {
    int size = 4;
 
-   mscb_read(info->fd, info->settings.base_address + channel, indexNumADC, pvalue, &size);
+   mscb_read(info->fd, info->settings.base_address, channel, pvalue, &size);
    return FE_SUCCESS;
 }
 
 /*----------------------------------------------------------------------------*/
 
-INT mscbasum_get_temperature(MSCBFGD_INFO * info, INT channel, float *pvalue, int cmd)
+INT mscbasum_get_temperature(MSCBASUM_INFO * info, INT channel, float *pvalue, int cmd)
 {
   int size = 4;
 
   switch (cmd) {
    case CMD_GET_EXTERNALTEMP:  // External Temperature
-    mscb_read(info->fd, info->settings.base_address + channel, 22, pvalue, &size);
+    mscb_read(info->fd, info->settings.base_address, 22, pvalue, &size);
      break;
    case CMD_GET_INTERNALTEMP:  // Internal Temperature
-     mscb_read(info->fd, info->settings.base_address + channel , 24, pvalue, &size);
+     mscb_read(info->fd, info->settings.base_address , 24, pvalue, &size);
      break;
   }
 
@@ -292,9 +301,9 @@ INT mscbasum_get_temperature(MSCBFGD_INFO * info, INT channel, float *pvalue, in
 
 /*----------------------------------------------------------------------------*/
 
-INT mscbasum_setDacBias_current_limit(MSCBFGD_INFO * info, int channel, float limit)
+INT mscbasum_setDacBias_current_limit(MSCBASUM_INFO * info, int channel, float limit)
 {
-   mscb_write(info->fd, info->settings.base_address + channel, 7, &limit, 4);
+   mscb_write(info->fd, info->settings.base_address, 7, &limit, 4);
    return FE_SUCCESS;
 }
 
@@ -340,8 +349,8 @@ INT mscbasum(INT cmd, ...)
       info = va_arg(argptr, void *);
       channel = va_arg(argptr, INT);
       value = (float) va_arg(argptr, double);
-    printf("Set Bias Voltage %d :[%i]%f\n", (indexNum-4), channel, value);
-    status = mscbasum_setDacBias(info, channel, value);
+      //printf("Set Bias Voltage %d :[%i]%f\n", (channel-4), channel, value);
+      status = mscbasum_setDacBias(info, channel, value);
       //ss_sleep(10);
       break;
 
@@ -378,20 +387,20 @@ INT mscbasum(INT cmd, ...)
       channel = va_arg(argptr, INT);
       value = (float) va_arg(argptr, double);
       printf("Set ASUM DAC Threshold voltage:[%i]%f\n", channel, value);
-      status = mscgasum_setasumDacTh(info, channel, value);
+      status = mscbasum_setasumDacTh(info, channel, value);
       break;
 
   case CMD_GET_ASUMDACTH:
     info = va_arg(argptr, void *);
       channel = va_arg(argptr, INT);
-      pvalue = va_arg(argptr, float *);
+      pvalue = (float *) va_arg(argptr, float *);
       status = mscbasum_getasumDacTh(info, channel, pvalue);
       break;
 
   case CMD_GET_CHPUMPDAC:
     info = va_arg(argptr, void *);
       channel = va_arg(argptr, INT);
-      pvalue = va_arg(argptr, float *);
+      pvalue = (float *) va_arg(argptr, float *);
       status = mscbasum_getchPumpDac(info, channel, pvalue);
       break;
 
@@ -400,7 +409,7 @@ INT mscbasum(INT cmd, ...)
    channel = va_arg(argptr, INT);
    value = (float) va_arg(argptr, double);
    printf("Set Charge Pump DAC voltage:[%i]%f\n", channel, value);
-   status = mscgasum_setChPumpDac(info, channel, value);
+   status = mscbasum_setChPumpDac(info, channel, value);
    break;
 
    case CMD_GET_ADCMEAS:  // Current
