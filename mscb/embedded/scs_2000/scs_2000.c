@@ -107,6 +107,9 @@ void user_init(unsigned char init)
    /* red (upper) LED off by default */
    led_mode(1, 0);
 
+   /* issue an initial reset */
+   power_mgmt(0, 1);
+
    /* initial EEPROM value */
    if (init) {
       var_index = 0;
