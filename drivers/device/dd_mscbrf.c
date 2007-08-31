@@ -56,7 +56,7 @@ typedef struct {
 #define MSCBFGD_SETTINGS_STR "\
 MSCB Device = STRING : [32] usb0\n\
 MSCB Pwd = STRING : [32] \n\
-Base Address = INT : 0x1\n\
+Base Address = INT : 0x3\n\
 "
 
 typedef struct {
@@ -147,13 +147,23 @@ INT mscbrf_setParams(MSCBTITANRF_INFO * info, INT channel, INT varIndex, double 
 	int size = 4;
 	float toBeSent = 0.0;
 	short toBeSent2 = 0;
-
+	unsigned int toBeSent3 = 0;
+	
 	if(varIndex == 4 || varIndex == 9)
 	{
 		size = 2; //2 bytes for numSteps and numCycles
 		toBeSent2 = (short) value;
 		mscb_write(info->fd, info->settings.base_address + channel, varIndex, &toBeSent2, size);
 	}
+	
+	else if(varIndex == 5 || varIndex == 6 || varIndex == 8)
+	{
+		size=4; //4 byte unsigned integer determines the frequencies fStart, fEnd amd fBurts in centiHertz
+		        // while the value being passed in the value is odb frequency value in MegaHertz.
+		toBeSent3 = (unsigned int) ceil(value*1.e8); // value is the frequency in centiHertz
+		mscb_write(info->fd, info->settings.base_address + channel, varIndex, &toBeSent3, size);
+	}
+	
 	else
 	{
 		size = 4;
