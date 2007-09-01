@@ -93,7 +93,7 @@ void user_init(unsigned char init)
 		user_data.status   = 0x00;
 		user_data.biasEn   = 0xFF;
 		user_data.dac_asumThreshold   = 0x80;
-		user_data.dac_chPump   = 0xFF;
+		user_data.dac_chPump   = 0x00; //set to lowest scale, just to be safe
 		user_data.biasDac1   = 0xFF;
 		user_data.biasDac2   = 0xFF;
 		user_data.biasDac3   = 0xFF;
