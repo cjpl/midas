@@ -89,7 +89,7 @@ void user_init(unsigned char init)
    /* default settings, set only when EEPROM is being erased and written */
 	if(init)
 	{
-		user_data.control  = 0x00;
+		user_data.control = 0x7E; //temperature and adc readings ON
 		user_data.status   = 0x00;
 		user_data.biasEn   = 0xFF;
 		user_data.dac_asumThreshold   = 0x80;
@@ -101,8 +101,7 @@ void user_init(unsigned char init)
 		user_data.biasDac5   = 0xFF;
 		user_data.biasDac6   = 0xFF;
 		user_data.biasDac7   = 0xFF;
-		user_data.biasDac8   = 0xFF;
-		user_data.control = 0x06; //temperature and adc readings ON
+		user_data.biasDac8   = 0xFF;		
 		sys_info.group_addr = 400;
 		sys_info.node_addr = 0xFF00;
 	}   
@@ -218,7 +217,7 @@ void user_loop(void)
 
 	/*** Write down what you want to do here at each control state ***/
 
-	if((user_data.control) | (user_data.control & CONTROL_TEMP_MEAS))
+	if(user_data.control & CONTROL_TEMP_MEAS)
 	{
 		for(chNum = 0; chNum < ADT7486A_NUM; chNum++)
 		{
@@ -227,7 +226,7 @@ void user_loop(void)
 		}
 	}
 
-	if((user_data.control) | (user_data.control & CONTROL_ADC_MEAS))
+	if(user_data.control & CONTROL_ADC_MEAS)
 	{
 		//ADC Monitoring user defined routines
 		//Store same values for each channel (8 channel for now)
@@ -265,22 +264,20 @@ void user_loop(void)
 	}
 
 	//Update the Bias_Enable status
-	if((user_data.control) | (user_data.control & CONTROL_BIAS_EN))
+	if(user_data.control & CONTROL_BIAS_EN)
 	{
 		PCA9539_Cmd(ADDR_PCA9539, 0x03, ~user_data.biasEn, PCA9539_WRITE);
-		user_data.control &= ~(CONTROL_BIAS_EN);
 	}			
 
 
 	//Update the Charge Pump Threshold voltage
-	if((user_data.control) | (user_data.control & CONTROL_D_CHPUMP))
+	if(user_data.control & CONTROL_D_CHPUMP)
 	{
 		AD5301_Cmd(ADDR_AD5301, (user_data.dac_chPump >> 4), (user_data.dac_chPump << 4), AD5301_WRITE);
-		user_data.control &= ~(CONTROL_D_CHPUMP);
 	}
 
 	// Update Bias Dac voltages as requested
-	if((user_data.control) | (user_data.control & CONTROL_BIAS_DAC))
+	if(user_data.control & CONTROL_BIAS_DAC)
 	{
 		LTCdac_Cmd(LTC1665_LOAD_A, user_data.biasDac1);
 		LTCdac_Cmd(LTC1665_LOAD_B, user_data.biasDac2);
@@ -290,14 +287,12 @@ void user_loop(void)
 		LTCdac_Cmd(LTC1665_LOAD_F, user_data.biasDac6);
 		LTCdac_Cmd(LTC1665_LOAD_G, user_data.biasDac7);
 		LTCdac_Cmd(LTC1665_LOAD_H, user_data.biasDac8);
-		user_data.control &=  ~CONTROL_BIAS_DAC;
 	}
 
 	// Update Bias Dac voltages as requested
-	if((user_data.control) | (user_data.control & CONTROL_ASUM_TH))
+	if(user_data.control & CONTROL_ASUM_TH)
 	{
 		LTCdac_Cmd(LTC2600_LOAD_H, (char) ((user_data.dac_asumThreshold >> 8) & 0xFF), (char) (user_data.dac_asumThreshold & 0xFF));
-		user_data.control &=  ~CONTROL_ASUM_TH;
 	}
 
 	Hardware_Update();
