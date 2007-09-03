@@ -138,14 +138,17 @@ void setup(void)
    FLSCL     = 0xB0;            // set flash read time for 100 MHz
 
    SFRPAGE   = CONFIG_PAGE;
+   OSCICN    = 0x83;            // divide by 1
+   CLKSEL    = 0x00;            // select internal oscillator
+
    PLL0CN    |= 0x01;
    PLL0DIV   = 0x01;
    PLL0FLT   = 0x01;
    PLL0MUL   = 0x04;
-   for (i = 0; i < 15; i++);    // Wait 5us for initialization
+   for (i = 0 ; i < 15; i++);   // Wait 5us for initialization
    PLL0CN    |= 0x02;
-   while ((PLL0CN & 0x10) == 0);
-   OSCICN    = 0x83;
+   for (i = 0 ; i<50000 && ((PLL0CN & 0x10) == 0) ; i++);
+
    CLKSEL    = 0x02;            // select PLL as sysclk src
 #endif
 
