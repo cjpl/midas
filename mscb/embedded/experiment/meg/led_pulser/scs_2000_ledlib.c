@@ -338,7 +338,7 @@ unsigned char i;
    
       /* convert value to DAC counts */
       if (id == 0x02)
-         d = value/100 * 65535;  // 0-100%
+         d = value * 65535;      // 0-1
       else if (id == 0x82)
          d = value/2.5 * 65535;  // 0-2.5mA
       else if (id == 0x83)
@@ -396,7 +396,7 @@ unsigned long f;
    }
 
    if (cmd == MC_WRITE) {
-      value = *((unsigned char *)pd);
+      value = *((float *)pd);
       dr_ltc2600(0x02, MC_WRITE, addr, port, chn, &value);
 
       /* turn LED pulser on/off */
