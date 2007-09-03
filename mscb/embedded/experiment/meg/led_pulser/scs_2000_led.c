@@ -44,7 +44,7 @@ bit b0, b1, b2, b3;
 typedef struct {
    unsigned char freq;
    unsigned char pwidth;
-   unsigned char ampl[40];
+   float ampl[40];
 } USER_DATA;
 
 USER_DATA xdata user_data;
@@ -53,49 +53,49 @@ unsigned char xdata update_data[41];
 
 MSCB_INFO_VAR code vars[] = {
 
-   { 1, UNIT_BYTE,    0, 0, 0, "Freq",   &user_data.freq,     0,  18, 1 },
-   { 1, UNIT_BYTE,    0, 0, 0, "PWidth", &user_data.pwidth,   1,  20, 1 },
+   { 1, UNIT_BYTE,   0, 0, 0,           "Freq",   &user_data.freq,     0,  18, 1 },
+   { 1, UNIT_BYTE,   0, 0, 0,           "PWidth", &user_data.pwidth,   1,  20, 1 },
 
-   { 1, UNIT_PERCENT, 0, 0, 0, "Ampl00", &user_data.ampl[0],  0, 100, 1 },
-   { 1, UNIT_PERCENT, 0, 0, 0, "Ampl01", &user_data.ampl[1],  0, 100, 1 },
-   { 1, UNIT_PERCENT, 0, 0, 0, "Ampl02", &user_data.ampl[2],  0, 100, 1 },
-   { 1, UNIT_PERCENT, 0, 0, 0, "Ampl03", &user_data.ampl[3],  0, 100, 1 },
-   { 1, UNIT_PERCENT, 0, 0, 0, "Ampl04", &user_data.ampl[4],  0, 100, 1 },
-   { 1, UNIT_PERCENT, 0, 0, 0, "Ampl05", &user_data.ampl[5],  0, 100, 1 },
-   { 1, UNIT_PERCENT, 0, 0, 0, "Ampl06", &user_data.ampl[6],  0, 100, 1 },
-   { 1, UNIT_PERCENT, 0, 0, 0, "Ampl07", &user_data.ampl[7],  0, 100, 1 },
-   { 1, UNIT_PERCENT, 0, 0, 0, "Ampl08", &user_data.ampl[8],  0, 100, 1 },
-   { 1, UNIT_PERCENT, 0, 0, 0, "Ampl09", &user_data.ampl[9],  0, 100, 1 },
-   { 1, UNIT_PERCENT, 0, 0, 0, "Ampl10", &user_data.ampl[10], 0, 100, 1 },
-   { 1, UNIT_PERCENT, 0, 0, 0, "Ampl11", &user_data.ampl[11], 0, 100, 1 },
-   { 1, UNIT_PERCENT, 0, 0, 0, "Ampl12", &user_data.ampl[12], 0, 100, 1 },
-   { 1, UNIT_PERCENT, 0, 0, 0, "Ampl13", &user_data.ampl[13], 0, 100, 1 },
-   { 1, UNIT_PERCENT, 0, 0, 0, "Ampl14", &user_data.ampl[14], 0, 100, 1 },
-   { 1, UNIT_PERCENT, 0, 0, 0, "Ampl15", &user_data.ampl[15], 0, 100, 1 },
-   { 1, UNIT_PERCENT, 0, 0, 0, "Ampl16", &user_data.ampl[16], 0, 100, 1 },
-   { 1, UNIT_PERCENT, 0, 0, 0, "Ampl17", &user_data.ampl[17], 0, 100, 1 },
-   { 1, UNIT_PERCENT, 0, 0, 0, "Ampl18", &user_data.ampl[18], 0, 100, 1 },
-   { 1, UNIT_PERCENT, 0, 0, 0, "Ampl19", &user_data.ampl[19], 0, 100, 1 },
-   { 1, UNIT_PERCENT, 0, 0, 0, "Ampl20", &user_data.ampl[20], 0, 100, 1 },
-   { 1, UNIT_PERCENT, 0, 0, 0, "Ampl21", &user_data.ampl[21], 0, 100, 1 },
-   { 1, UNIT_PERCENT, 0, 0, 0, "Ampl22", &user_data.ampl[22], 0, 100, 1 },
-   { 1, UNIT_PERCENT, 0, 0, 0, "Ampl23", &user_data.ampl[23], 0, 100, 1 },
-   { 1, UNIT_PERCENT, 0, 0, 0, "Ampl24", &user_data.ampl[24], 0, 100, 1 },
-   { 1, UNIT_PERCENT, 0, 0, 0, "Ampl25", &user_data.ampl[25], 0, 100, 1 },
-   { 1, UNIT_PERCENT, 0, 0, 0, "Ampl26", &user_data.ampl[26], 0, 100, 1 },
-   { 1, UNIT_PERCENT, 0, 0, 0, "Ampl27", &user_data.ampl[27], 0, 100, 1 },
-   { 1, UNIT_PERCENT, 0, 0, 0, "Ampl28", &user_data.ampl[28], 0, 100, 1 },
-   { 1, UNIT_PERCENT, 0, 0, 0, "Ampl29", &user_data.ampl[29], 0, 100, 1 },
-   { 1, UNIT_PERCENT, 0, 0, 0, "Ampl30", &user_data.ampl[30], 0, 100, 1 },
-   { 1, UNIT_PERCENT, 0, 0, 0, "Ampl31", &user_data.ampl[31], 0, 100, 1 },
-   { 1, UNIT_PERCENT, 0, 0, 0, "Ampl32", &user_data.ampl[32], 0, 100, 1 },
-   { 1, UNIT_PERCENT, 0, 0, 0, "Ampl33", &user_data.ampl[33], 0, 100, 1 },
-   { 1, UNIT_PERCENT, 0, 0, 0, "Ampl34", &user_data.ampl[34], 0, 100, 1 },
-   { 1, UNIT_PERCENT, 0, 0, 0, "Ampl35", &user_data.ampl[35], 0, 100, 1 },
-   { 1, UNIT_PERCENT, 0, 0, 0, "Ampl36", &user_data.ampl[36], 0, 100, 1 },
-   { 1, UNIT_PERCENT, 0, 0, 0, "Ampl37", &user_data.ampl[37], 0, 100, 1 },
-   { 1, UNIT_PERCENT, 0, 0, 0, "Ampl38", &user_data.ampl[38], 0, 100, 1 },
-   { 1, UNIT_PERCENT, 0, 0, 0, "Ampl39", &user_data.ampl[39], 0, 100, 1 },
+   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT, "Ampl00", &user_data.ampl[0],  0, 100, 1 },
+   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT, "Ampl01", &user_data.ampl[1],  0, 100, 1 },
+   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT, "Ampl02", &user_data.ampl[2],  0, 100, 1 },
+   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT, "Ampl03", &user_data.ampl[3],  0, 100, 1 },
+   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT, "Ampl04", &user_data.ampl[4],  0, 100, 1 },
+   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT, "Ampl05", &user_data.ampl[5],  0, 100, 1 },
+   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT, "Ampl06", &user_data.ampl[6],  0, 100, 1 },
+   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT, "Ampl07", &user_data.ampl[7],  0, 100, 1 },
+   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT, "Ampl08", &user_data.ampl[8],  0, 100, 1 },
+   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT, "Ampl09", &user_data.ampl[9],  0, 100, 1 },
+   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT, "Ampl10", &user_data.ampl[10], 0, 100, 1 },
+   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT, "Ampl11", &user_data.ampl[11], 0, 100, 1 },
+   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT, "Ampl12", &user_data.ampl[12], 0, 100, 1 },
+   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT, "Ampl13", &user_data.ampl[13], 0, 100, 1 },
+   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT, "Ampl14", &user_data.ampl[14], 0, 100, 1 },
+   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT, "Ampl15", &user_data.ampl[15], 0, 100, 1 },
+   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT, "Ampl16", &user_data.ampl[16], 0, 100, 1 },
+   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT, "Ampl17", &user_data.ampl[17], 0, 100, 1 },
+   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT, "Ampl18", &user_data.ampl[18], 0, 100, 1 },
+   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT, "Ampl19", &user_data.ampl[19], 0, 100, 1 },
+   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT, "Ampl20", &user_data.ampl[20], 0, 100, 1 },
+   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT, "Ampl21", &user_data.ampl[21], 0, 100, 1 },
+   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT, "Ampl22", &user_data.ampl[22], 0, 100, 1 },
+   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT, "Ampl23", &user_data.ampl[23], 0, 100, 1 },
+   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT, "Ampl24", &user_data.ampl[24], 0, 100, 1 },
+   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT, "Ampl25", &user_data.ampl[25], 0, 100, 1 },
+   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT, "Ampl26", &user_data.ampl[26], 0, 100, 1 },
+   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT, "Ampl27", &user_data.ampl[27], 0, 100, 1 },
+   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT, "Ampl28", &user_data.ampl[28], 0, 100, 1 },
+   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT, "Ampl29", &user_data.ampl[29], 0, 100, 1 },
+   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT, "Ampl30", &user_data.ampl[30], 0, 100, 1 },
+   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT, "Ampl31", &user_data.ampl[31], 0, 100, 1 },
+   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT, "Ampl32", &user_data.ampl[32], 0, 100, 1 },
+   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT, "Ampl33", &user_data.ampl[33], 0, 100, 1 },
+   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT, "Ampl34", &user_data.ampl[34], 0, 100, 1 },
+   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT, "Ampl35", &user_data.ampl[35], 0, 100, 1 },
+   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT, "Ampl36", &user_data.ampl[36], 0, 100, 1 },
+   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT, "Ampl37", &user_data.ampl[37], 0, 100, 1 },
+   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT, "Ampl38", &user_data.ampl[38], 0, 100, 1 },
+   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT, "Ampl39", &user_data.ampl[39], 0, 100, 1 },
 
 
    { 0 }
@@ -388,7 +388,8 @@ unsigned long xdata last_b2 = 0, last_b3 = 0;
 
 unsigned char application_display(bit init)
 {
-unsigned char pulser_ampl_old, pulser_freq_old, i;
+static unsigned char xdata pulser_ampl_old=255, pulser_freq_old=255;
+unsigned char i;
 
    if (init)
       lcd_clear();
@@ -442,7 +443,7 @@ unsigned char pulser_ampl_old, pulser_freq_old, i;
 
    if (pulser_ampl != pulser_ampl_old) {
       for (i=2 ; i<n_variables ; i++) {
-         *((unsigned char *)variables[i].ud) = pulser_ampl;
+         *((float *)variables[i].ud) = pulser_ampl / 100.0;
          user_write(i);
       }
    }
