@@ -1183,7 +1183,7 @@ INT hs_read(DWORD event_id, DWORD start_time, DWORD end_time,
    TAG *tag;
    char str[NAME_LENGTH];
    struct tm *tms;
-   char *cache;
+   char *cache = NULL;
    time_t ltime;
    int rd;
 
