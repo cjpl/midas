@@ -99,7 +99,7 @@ void print_help(char *command)
       printf("rewind [channel]        - rewind tapes in logger\n");
       printf("-- hit return for more --\r");
       getchar();
-      printf("save [-c -s -x] <file>  - save database at current position\n");
+      printf("save [-c -s -x -cs] <file>  - save database at current position\n");
       printf("                          in ASCII format\n");
       printf("  -c                      as a C structure\n");
       printf("  -s                      as a #define'd string\n");
@@ -1783,11 +1783,15 @@ void command_loop(char *host_name, char *exp_name, char *cmd, char *start_dir)
          if (strstr(param[1], ".xml") || strstr(param[1], ".XML"))
             db_save_xml(hDB, hKey, param[1]);
          else if (param[1][0] == '-') {
-            if (param[1][1] == 'c')
+            if (param[1][1] == 'c' && param[1][2] == 's') {
                db_save_struct(hDB, hKey, param[2], NULL, FALSE);
-            if (param[1][1] == 's')
+               db_save_string(hDB, hKey, param[2], NULL, TRUE);
+            }
+            else if (param[1][1] == 'c')
+               db_save_struct(hDB, hKey, param[2], NULL, FALSE);
+            else if (param[1][1] == 's')
                db_save_string(hDB, hKey, param[2], NULL, FALSE);
-            if (param[1][1] == 'x')
+            else if (param[1][1] == 'x')
                db_save_xml(hDB, hKey, param[2]);
          } else
             db_save(hDB, hKey, param[1], FALSE);
