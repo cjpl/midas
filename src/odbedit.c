@@ -2505,6 +2505,7 @@ void command_loop(char *host_name, char *exp_name, char *cmd, char *start_dir)
          printf("MIDAS version %s\n", cm_get_version());
          printf("SVN revision %d\n", cm_get_revision());
          printf("ODB version %d\n", DATABASE_VERSION);
+         printf("Maximum event size %1.1lf MB\n", MAX_EVENT_SIZE/1024.0/1024.0);
       }
 
       /* exec */
