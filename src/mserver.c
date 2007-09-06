@@ -167,9 +167,6 @@ int main(int argc, char **argv)
    /* redirect message print */
    cm_set_msg_print(MT_ALL, MT_ALL, msg_print);
 
-   /* set the watchdog timeout */
-   cm_set_watchdog_params(FALSE, 0);
-
    /* find out if we were started by inetd */
    size = sizeof(int);
    inetd = (getsockopt(0, SOL_SOCKET, SO_TYPE, (void *) &flag, (void *) &size) == 0);
