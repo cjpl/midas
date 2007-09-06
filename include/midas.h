@@ -204,6 +204,9 @@ typedef INT midas_thread_t;
 /* Definition of implementation specific constants */
 
 /* all buffer sizes must be multiples of 4 ! */
+#ifndef MAX_EVENT_SIZE                       /* value can be set via Makefile */
+#define MAX_EVENT_SIZE         0x400000      /**< maximum event size 4MB      */
+#endif
 
 #ifdef OS_WINNT
 #define TAPE_BUFFER_SIZE       0x100000      /**< buffer size for taping data */
@@ -214,7 +217,6 @@ typedef INT midas_thread_t;
 #define OPT_TCP_SIZE           8192          /**< optimal TCP buffer size     */
 #define NET_UDP_SIZE           8192          /**< maximum UDP transfer        */
 
-#define MAX_EVENT_SIZE         0x400000      /**< maximum event size 4MB      */
 #define EVENT_BUFFER_NAME      "SYSTEM"      /**< buffer name for commands    */
 #define DEFAULT_ODB_SIZE       0x100000      /**< online database 1M          */
 
