@@ -318,7 +318,8 @@ $(BIN_DIR):
 
 ifdef NEED_MYSQL
 CFLAGS     += -DHAVE_MYSQL
-LIBS       += $(MYSQL_LIBS) -lz
+LIBS       += $(MYSQL_LIBS)
+NEED_ZLIB = 1
 endif
 
 ifdef ROOTSYS
