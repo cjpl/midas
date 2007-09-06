@@ -261,9 +261,9 @@ typedef struct {
 
 struct callback_addr {
    char host_name[HOST_NAME_LENGTH];
-   short host_port1;
-   short host_port2;
-   short host_port3;
+   unsigned short host_port1;
+   unsigned short host_port2;
+   unsigned short host_port3;
    int debug;
    char experiment[NAME_LENGTH];
    char directory[MAX_STRING_LENGTH];
