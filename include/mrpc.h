@@ -7,7 +7,7 @@
   Purpose:      MIDAS RPC function header file
   Contents:     Symbolic constants for internal RPC functions
 
-  $Id:$
+  $Id$
 
 \********************************************************************/
 

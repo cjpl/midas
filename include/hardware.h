@@ -6,7 +6,7 @@
   Contents:     Type ID definitions and structured for specific
                 hardware.
 
-  $Id:$
+  $Id$
 
 \********************************************************************/
 
