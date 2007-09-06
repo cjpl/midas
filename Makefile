@@ -73,8 +73,8 @@ NEED_LIBROOTA=
 # Optional libmysqlclient library for mlogger
 #
 # To add mySQL support to the logger, say "make ... NEED_MYSQL=1"
-NEED_MYSQL=
-MYSQL_LIBS=/usr/lib/mysql/libmysqlclient.a
+NEED_MYSQL=1
+MYSQL_LIBS=/usr/lib64/mysql/libmysqlclient.a -lssl
 
 #
 # Option to use our own implementation of strlcat, strlcpy
@@ -102,7 +102,14 @@ NEED_ZLIB=
 #
 CC = cc
 CXX = g++
-CFLAGS = -g -O2 -Wall -Wuninitialized -I$(INC_DIR) -I$(DRV_DIR) -I$(MXML_DIR) -L$(LIB_DIR) -DINCLUDE_FTPLIB $(MIDAS_PREF_FLAGS) $(USERFLAGS)
+CFLAGS = -g -O3 -Wall -Wuninitialized -I$(INC_DIR) -I$(DRV_DIR) -I$(MXML_DIR) -L$(LIB_DIR) -DINCLUDE_FTPLIB $(MIDAS_PREF_FLAGS) $(USERFLAGS)
+
+#-----------------------
+# Ovevwrite MAX_EVENT_SIZE with environment variable
+#
+ifdef MIDAS_MAX_EVENT_SIZE
+CFLAGS += -DMAX_EVENT_SIZE=$(MIDAS_MAX_EVENT_SIZE)
+endif
 
 #-----------------------
 # OSF/1 (DEC UNIX)
