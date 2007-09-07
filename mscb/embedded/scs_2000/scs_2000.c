@@ -6,7 +6,7 @@
 
   Contents:     General-purpose framework for SCS-2000 control unit.
 
-  $Id: scs_2000.c 2874 2005-11-15 08:47:14Z ritt $
+  $Id$
 
 \********************************************************************/
 
@@ -21,7 +21,7 @@ extern bit FREEZE_MODE;
 extern bit DEBUG_MODE;
 
 char code node_name[] = "SCS-2000";
-char code svn_revision[] = "$Id: scs_2000.c 2874 2005-11-15 08:47:14Z ritt $";
+char code svn_revision[] = "$Id$";
 
 /* declare number of sub-addresses to framework */
 unsigned char idata _n_sub_addr = 1;
