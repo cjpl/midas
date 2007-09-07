@@ -1598,9 +1598,9 @@ extern "C" {
    void EXPRT cm_ack_ctrlc_pressed();
 
    INT EXPRT cm_set_msg_print(INT system_mask, INT user_mask, int (*func) (const char *));
-   INT EXPRT cm_msg(INT message_type, char *filename, INT line,
+   INT EXPRT cm_msg(INT message_type, const char *filename, INT line,
                     const char *routine, const char *format, ...);
-   INT EXPRT cm_msg1(INT message_type, char *filename, INT line,
+   INT EXPRT cm_msg1(INT message_type, const char *filename, INT line,
                      const char *facility, const char *routine, const char *format, ...);
    INT EXPRT cm_msg_register(void (*func)
                               (HNDLE, HNDLE, EVENT_HEADER *, void *));

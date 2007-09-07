@@ -557,10 +557,11 @@ formated line as it is already added by the client on the receiving side.
 @param format message to printout, ... Parameters like for printf()
 @return CM_SUCCESS
 */
-INT cm_msg(INT message_type, char *filename, INT line, const char *routine, const char *format, ...)
+INT cm_msg(INT message_type, const char *filename, INT line, const char *routine, const char *format, ...)
 {
    va_list argptr;
-   char event[1000], str[1000], format_cpy[900], local_message[1000], send_message[1000], *pc;
+   char event[1000], str[1000], format_cpy[900], local_message[1000], send_message[1000];
+   const char *pc;
    EVENT_HEADER *pevent;
    INT status;
    static BOOL in_routine = FALSE;
@@ -673,11 +674,12 @@ Thu Nov  8 17:59:28 2001 [my_program] My message status:1
 @param format message to printout, ... Parameters like for printf()
 @return CM_SUCCESS
 */
-INT cm_msg1(INT message_type, char *filename, INT line,
+INT cm_msg1(INT message_type, const char *filename, INT line,
             const char *facility, const char *routine, const char *format, ...)
 {
    va_list argptr;
-   char event[1000], str[256], local_message[256], send_message[256], *pc;
+   char event[1000], str[256], local_message[256], send_message[256];
+   const char *pc;
    EVENT_HEADER *pevent;
    INT status;
    static BOOL in_routine = FALSE;

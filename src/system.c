@@ -1733,7 +1733,7 @@ INT ss_thread_kill(midas_thread_t thread_id)
 /*------------------------------------------------------------------*/
 static INT skip_mutex_handle = -1;
 
-INT ss_mutex_create(char *name, HNDLE * mutex_handle)
+INT ss_mutex_create(const char *name, HNDLE * mutex_handle)
 /********************************************************************\
 
   Routine: ss_mutex_create

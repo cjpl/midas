@@ -583,7 +583,7 @@ extern "C" {
    INT EXPRT ss_gettid(void);
    INT ss_getthandle(void);
    INT ss_set_async_flag(INT flag);
-   INT EXPRT ss_mutex_create(char *mutex_name, HNDLE * mutex_handle);
+   INT EXPRT ss_mutex_create(const char *mutex_name, HNDLE * mutex_handle);
    INT EXPRT ss_mutex_wait_for(HNDLE mutex_handle, INT timeout);
    INT EXPRT ss_mutex_release(HNDLE mutex_handle);
    INT EXPRT ss_mutex_delete(HNDLE mutex_handle, INT destroy_flag);
