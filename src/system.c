@@ -1001,6 +1001,10 @@ INT ss_gettid(void)
 
    return pthread_self();
 
+#elif defined OS_CYGWIN
+
+   return pthread_self();
+   
 #elif defined OS_UNIX
 
    return syscall(SYS_gettid);
