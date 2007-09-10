@@ -27,6 +27,9 @@
 #include <string.h>
 #include "mscbemb.h"
 
+/* following flag switches from hardware trip to software trip */
+#undef HARDWARE_TRIP
+
 extern bit FREEZE_MODE;
 extern bit DEBUG_MODE;
 
@@ -303,8 +306,10 @@ void user_init(unsigned char init)
 
    write_adc(REG_FILTER, ADC_SF_VALUE);
 
+#ifdef HARDWARE_TRIP
    /* reset current trip FF's */
    reset_hardware_trip();
+#endif
 
    /* force update */
    for (i=0 ; i<N_HV_CHN ; i++)
@@ -722,6 +727,7 @@ void read_hv(unsigned char channel)
 
 void set_current_limit(float value)
 {
+#ifdef HARDWARE_TRIP
    unsigned short d;
 
    if (value == 9999) {
@@ -754,9 +760,21 @@ void set_current_limit(float value)
 
    /* write current dac */
    write_dac(5, d);
+#else // HARDWARE_TRIP
+   if (value == 9999)
+      trip_disable = 1;
+   else
+      trip_disable = 0;
+
+   /* disable hardware trip always */
+   write_adc(REG_IOCONTROL, (1 << 4)); // P1DIR=1,P1DAT=0
+
+#endif // !HARDWARE_TRIP
 }
 
 /*------------------------------------------------------------------*/
+
+#ifdef HARDWARE_TRIP
 
 unsigned char hardware_current_trip(unsigned char channel)
 {
@@ -765,7 +783,7 @@ unsigned char d;
    /* continuously set FF reset, in case ADC got HV flash */
    if (trip_disable) {
       write_adc(REG_IOCONTROL, (1 << 4)); // P1DIR=1,P1DAT=0
-	   return 0;
+      return 0;
    }
 
    /* do not check if reset in progres */
@@ -806,12 +824,18 @@ void reset_hardware_trip()
    }
 }
 
+#endif // HARDWARE_TRIP
+
 /*------------------------------------------------------------------*/
 
 void check_current(unsigned char channel)
 {
+#ifdef HARDWARE_TRIP
    if (user_data[channel].i_meas > user_data[channel].i_limit ||    // "software" check
        hardware_current_trip(channel)) {                            // "hardware" check
+#else
+   if (user_data[channel].i_meas > user_data[channel].i_limit) {
+#endif
 
       if (trip_time[channel] == 0)
          trip_time[channel] = time();
@@ -842,7 +866,9 @@ void check_current(unsigned char channel)
       user_data[channel].status &= ~STATUS_ILIMIT;
       trip_time[channel] = 0;
 
+#ifdef HARDWARE_TRIP
       reset_hardware_trip();
+#endif
 
       /* force ramp up */
       chn_bits[channel] |= DEMAND_CHANGED;
@@ -1110,10 +1136,12 @@ void user_loop(void)
          read_current(channel);
       }
 
+#ifdef HARDWARE_TRIP
       if (trip_reset) {
          reset_hardware_trip();
          trip_reset = 0;
       }
+#endif
 
       /* if crate HV switched off, set DAC to zero */
       if (SW1) {
