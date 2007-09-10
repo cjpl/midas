@@ -138,8 +138,7 @@ _nop_(); _nop_(); _nop_(); _nop_(); _nop_(); _nop_(); _nop_(); _nop_(); _nop_();
 #define AM_RW_EEPROM    6 // read/write to eeprom on port
 
 #define CSR_PORT_DIR    0 // port direction (1=output, 0=input)
-#define CSR_PULSER      1 // pulser if 1
-#define CSR_PWR_STATUS  2 // power status (bit0: 5VOK, bit1: 24VOK, bit3: 24Vreset, bit4: beeper
+#define CSR_PWR_STATUS  1 // power status (bit0: 5VOK, bit1: 24VOK, bit3: 24Vreset, bit4: beeper
 
 /* address port 0-7 in CPLD, with address modifier listed above */
 void address_port(unsigned char addr, unsigned char port_no, unsigned char am, unsigned char clk_level) reentrant
@@ -269,26 +268,10 @@ unsigned char i, d;
 /* check if module is plugged in */
 unsigned char module_present(unsigned char addr, unsigned char port_no) reentrant
 {
-unsigned char i;
+unsigned char id;
 
-   address_port(addr, port_no, AM_RW_EEPROM, 0);
-
-   /* READ command */
-   OPT_DATAO = 1;
-   CLOCK;
-   OPT_DATAO = 1;
-   CLOCK;
-   OPT_DATAO = 0;
-   CLOCK;
-
-   /* address 0 */
-   for (i=0 ; i<6 ; i++) {
-      OPT_DATAO = 0;
-      CLOCK;
-   }
-
-   /* check for dummy zero readout */
-   return OPT_DATAI == 0;
+   read_eeprom(addr, port_no, &id);
+   return id > 0;
 }
 
 /* read 8 bits from eeprom on specific port */
@@ -311,6 +294,12 @@ unsigned short d;
    for (i=0 ; i<6 ; i++) {
       OPT_DATAO = 0;
       CLOCK;
+   }
+
+   /* check if EEPROM present */
+   if (OPT_DATAI == 1) {
+      *pd = 0;
+      return;
    }
 
    /* read 16 bit data */
@@ -404,6 +393,17 @@ unsigned char power_mgmt(unsigned char addr, unsigned char reset) reentrant
 
    read_csr(addr, CSR_PWR_STATUS, &status);
    return status;
+}
+
+unsigned char is_master()
+{
+   unsigned char status;
+
+   read_csr(0, CSR_PWR_STATUS, &status);
+   if (status == 0xFF)
+      return 0;
+
+   return 1;
 }
 
 /*---- Bitwise output/input ----------------------------------------*/
