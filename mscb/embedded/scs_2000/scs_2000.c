@@ -30,15 +30,17 @@ extern lcd_menu(void);
 
 /*---- Port definitions ----*/
 
-bit b0, b1, b2, b3;
+bit b0, b1, b2, b3, master;
 
 /*---- Define variable parameters returned to CMD_GET_INFO command ----*/
+
+#define N_PORT 16 /* maximal one master and one slave module */
 
 /* data buffer (mirrored in EEPROM) */
 
 MSCB_INFO_VAR *variables;
-float xdata user_data[64];
-float xdata backup_data[64];
+float xdata user_data[N_PORT*8];
+float xdata backup_data[N_PORT*8];
 
 /********************************************************************\
 
@@ -46,14 +48,14 @@ float xdata backup_data[64];
 
 \********************************************************************/
 
-MSCB_INFO_VAR xdata vars[65];
+MSCB_INFO_VAR xdata vars[N_PORT*8+1];
 
-unsigned char xdata update_data[64];
+unsigned char xdata update_data[N_PORT*8];
 unsigned char xdata erase_module;
 
-unsigned char xdata module_nvars[8];
-unsigned char xdata module_id[8];
-unsigned char xdata module_index[8];
+unsigned char xdata module_nvars[N_PORT];
+unsigned char xdata module_id[N_PORT];
+unsigned char xdata module_index[N_PORT];
 
 extern SCS_2000_MODULE code scs_2000_module[];
 extern unsigned char idata n_variables;
@@ -108,43 +110,49 @@ void user_init(unsigned char init)
    led_mode(1, 0);
 
    /* issue an initial reset */
-   power_mgmt(0, 1);
+   for (i=0 ; i<N_PORT/8 ; i++)
+      power_mgmt(i, 1);
 
-   /* initial EEPROM value */
-   if (init) {
-      var_index = 0;
-      for (i=0 ; i<8 ; i++) {
-         index = module_index[i];
-         if (index != 0xFF && scs_2000_module[index].driver) {
-            for (j=0 ; j<module_nvars[i] ; j++)
-               /* default variables to zero */
-               memset(variables[var_index].ud, 0, variables[var_index].width);
-               /* allow driver to overwrite */
-               scs_2000_module[index].driver(module_id[i], MC_GETDEFAULT, 0, i, j, 
-                  variables[var_index++].ud);
-               var_index++;
-         } 
+   /* check if master or slave */
+   master = is_master();
+
+   if (master) {
+      /* initial EEPROM value */
+      if (init) {
+         var_index = 0;
+         for (i=0 ; i<N_PORT ; i++) {
+            index = module_index[i];
+            if (index != 0xFF && scs_2000_module[index].driver) {
+               for (j=0 ; j<module_nvars[i] ; j++)
+                  /* default variables to zero */
+                  memset(variables[var_index].ud, 0, variables[var_index].width);
+                  /* allow driver to overwrite */
+                  scs_2000_module[index].driver(module_id[i], MC_GETDEFAULT, i/8, i%8, j, 
+                     variables[var_index++].ud);
+                  var_index++;
+            } 
+         }
+      } else {
+         /* retrieve backup data from RAM if not reset by power on */
+         SFRPAGE = LEGACY_PAGE;
+         if ((RSTSRC & 0x02) == 0)
+            memcpy(&user_data, &backup_data, sizeof(user_data));
       }
-   } else {
-      /* retrieve backup data from RAM if not reset by power on */
-      SFRPAGE = LEGACY_PAGE;
-      if ((RSTSRC & 0x02) == 0)
-         memcpy(&user_data, &backup_data, sizeof(user_data));
+   
+      /* initialize drivers */
+      for (i=0 ; i<N_PORT ; i++)
+         if (module_index[i] != 0xFF && scs_2000_module[module_index[i]].driver)
+            scs_2000_module[module_index[i]].driver(module_id[i], MC_INIT, i/8, i%8, 0, NULL);
+   
+      /* write digital outputs */
+      for (i=0 ; i<n_variables ; i++)
+         user_write(i);
+   
+      /* write remote variables */
+      for (i = 0; variables[i].width; i++)
+         if (variables[i].flags & MSCBF_REMOUT)
+            send_remote_var(i);
    }
-
-   /* initialize drivers */
-   for (i=0 ; i<8 ; i++)
-      if (module_index[i] != 0xFF && scs_2000_module[module_index[i]].driver)
-         scs_2000_module[module_index[i]].driver(module_id[i], MC_INIT, 0, i, 0, NULL);
-
-   /* write digital outputs */
-   for (i=0 ; i<n_variables ; i++)
-      user_write(i);
-
-   /* write remote variables */
-   for (i = 0; variables[i].width; i++)
-      if (variables[i].flags & MSCBF_REMOUT)
-         send_remote_var(i);
 
    /* display startup screen */
    lcd_goto(0, 0);
@@ -211,12 +219,13 @@ char xdata * pvardata;
    /* set "variables" pointer to array in xdata */
    variables = vars;
 
-   for (port=0 ; port<8 ; port++) {
+   for (port=0 ; port<N_PORT ; port++) {
       module_id[port] = 0;
       module_nvars[port] = 0;
       module_index[port] = 0xFF;
-      if (module_present(0, port)) {
-         read_eeprom(0, port, &id);
+      read_eeprom(port/8, port%8, &id);
+
+      if (id > 0) {
    
          for (i=0 ; scs_2000_module[i].id ; i++) {
             if (scs_2000_module[i].id == id)
@@ -232,8 +241,12 @@ char xdata * pvardata;
                   /* clone single variable definition */
                   for (j=0 ; j<n_var_mod ; j++) {
                      memcpy(variables+n_var, &scs_2000_module[i].var[0], sizeof(MSCB_INFO_VAR));
-                     if (strchr(variables[n_var].name, '%'))
-                        *strchr(variables[n_var].name, '%') = '0'+port;
+                     if (strchr(variables[n_var].name, '%')) {
+                        if (port > 9)
+                           *strchr(variables[n_var].name, '%') = 'A'-10+port;
+                        else
+                           *strchr(variables[n_var].name, '%') = '0'+port;
+                     }
                      if (strchr(variables[n_var].name, '#'))
                         *strchr(variables[n_var].name, '#') = '0'+j;
                      variables[n_var].ud = pvardata;
@@ -244,8 +257,12 @@ char xdata * pvardata;
                } else {
                   /* copy over variable definition */
                   memcpy(variables+n_var, &scs_2000_module[i].var[k], sizeof(MSCB_INFO_VAR));
-                  if (strchr(variables[n_var].name, '%'))
-                     *strchr(variables[n_var].name, '%') = '0'+port;
+                  if (strchr(variables[n_var].name, '%')) {
+                     if (port > 9)
+                        *strchr(variables[n_var].name, '%') = 'A'-10+port;
+                     else
+                        *strchr(variables[n_var].name, '%') = '0'+port;
+                  }
                   variables[n_var].ud = pvardata;
                   pvardata += variables[n_var].width;
                   n_var++;
@@ -289,7 +306,7 @@ char xdata * pvardata;
 
                if (b0) {
                   /* write module id and re-evaluate module */
-                  write_eeprom(0, port, scs_2000_module[i].id);
+                  write_eeprom(port/8, port%8, scs_2000_module[i].id);
                   port--;
                   while (b0) b0 = button(0);
                   changed = 1;
@@ -356,52 +373,55 @@ bit trip_5V_old = 0, trip_24V_old = 0;
 unsigned char power_management()
 {
 static unsigned long xdata last_pwr = 0;
-unsigned char status;
+unsigned char status, i;
 
-  /* only 10 Hz */
-  if (time() > last_pwr+10) {
-     last_pwr = time();
+   /* only 10 Hz */
+   if (time() > last_pwr+10) {
+      last_pwr = time();
     
-     status = power_mgmt(0, 0);
-     
-     if ((status & 0x01) == 0) {
-        if (!trip_5V_old)
-           lcd_clear();
-        led_blink(1, 1, 100);
-        lcd_goto(0, 0);
-        printf("Overcurrent >0.5A on");
-        lcd_goto(0, 1);
-        printf("    5V output !!!   ");
-        trip_5V_old = 1;
-        return 1;
-     } else if (trip_5V_old) {
-        trip_5V_old = 0;
-        lcd_clear();
-     }
+      for (i=0 ; i<N_PORT/8 ; i++) {
 
-     if ((status & 0x02) == 0) {
-        if (!trip_24V_old)
-           lcd_clear();
-        led_blink(1, 1, 100);
-        lcd_goto(0, 0);
-        printf("   Overcurrent on   ");
-        lcd_goto(0, 1);
-        printf("   24V output !!!   ");
-        lcd_goto(0, 3);
-        printf("RESET               ");
-
-        if (button(0)) {
-           power_mgmt(0, 1);  // issue a reset
-           while (button(0)); // wait for button to be released
-        }
-
-        trip_24V_old = 1;
-        return 1;
-     } else if (trip_24V_old) {
-        trip_24V_old = 0;
-        lcd_clear();
-     }
-  }
+         status = power_mgmt(i, 0);
+         
+         if ((status & 0x01) == 0) {
+            if (!trip_5V_old)
+               lcd_clear();
+            led_blink(1, 1, 100);
+            lcd_goto(0, 0);
+            printf("Overcurrent >0.5A on");
+            lcd_goto(0, 1);
+            printf("    5V output !!!   ");
+            trip_5V_old = 1;
+            return 1;
+         } else if (trip_5V_old) {
+            trip_5V_old = 0;
+            lcd_clear();
+         }
+         
+         if ((status & 0x02) == 0) {
+            if (!trip_24V_old)
+               lcd_clear();
+            led_blink(1, 1, 100);
+            lcd_goto(0, 0);
+            printf("   Overcurrent on   ");
+            lcd_goto(0, 1);
+            printf("   24V output !!!   ");
+            lcd_goto(0, 3);
+            printf("RESET               ");
+         
+            if (button(0)) {
+               power_mgmt(i, 1);  // issue a reset
+               while (button(0)); // wait for button to be released
+            }
+         
+            trip_24V_old = 1;
+            return 1;
+         } else if (trip_24V_old) {
+            trip_24V_old = 0;
+            lcd_clear();
+         }
+      }
+   }
   
   return 0;
 }
@@ -420,6 +440,12 @@ unsigned char xdata i, j, n, col;
    if (init)
       lcd_clear();
 
+   if (!master) {
+      lcd_goto(5, 1);
+      printf("SLAVE MODE");
+      return 0;
+   }
+
    if (power_management()) {
       last_index = 255; // force re-display after trip finished
       return 0;
@@ -430,11 +456,11 @@ unsigned char xdata i, j, n, col;
 
       next = prev = 0;
 
-      for (n=i=0 ; i<8  ; i++);
+      for (n=i=0 ; i<N_PORT  ; i++);
          if (module_id[i])
             n++;
 
-      for (col=i=0 ; i<8 ; i++) {
+      for (col=i=0 ; i<N_PORT ; i++) {
 
          if (!module_id[i])
             continue;
@@ -490,12 +516,12 @@ unsigned char xdata i, j, n, col;
    /* erase EEPROM on release of button 1 (hidden functionality) */
    if (!init && !b1 && b1_old) {
 
-      for (port=0,i=0 ; port<8 ; port++)
-         if (module_present(0, port))
+      for (port=0,i=0 ; port<N_PORT ; port++)
+         if (module_present(port/8, port%8))
             i++;
 
-      for (port=0 ; port<8 ; port++)
-         if (module_present(0, port))
+      for (port=0 ; port<N_PORT ; port++)
+         if (module_present(port/8, port%8))
             break;
 
       if (i == 0)
@@ -536,24 +562,24 @@ unsigned char xdata i, j, n, col;
             write_eeprom(0, port, 0xFF);
             while (b1) b1 = button(1);
             SFRPAGE = LEGACY_PAGE;
-            RSTSRC  = 0x10;         // force software reset
+            RSTSRC  = 0x10;   // force software reset
             break;
          }
 
          if (b2) {
-            port = (port+7) % 8;;
+            port = (port+N_PORT-1) % N_PORT;
 
-            while (!module_present(0, port))
-               port = (port+7) % 8;
+            while (!module_present(port/8, N_PORT))
+               port = (port+N_PORT-1) % N_PORT;
 
             while (b2) b2 = button(2);
          }
 
          if (b3) {
-            port = (port+1) % 8;;
+            port = (port+1) % N_PORT;
 
-            while (!module_present(0, port))
-               port = (port+1) % 8;
+            while (!module_present(port/8, port%8))
+               port = (port+1) % N_PORT;
 
             while (b3) b3 = button(3);
          }
@@ -577,63 +603,67 @@ void user_loop(void)
 unsigned char xdata index, i, j, n, port;
 float xdata value;
 
-   /* check if variabled needs to be written */
-   for (index=0 ; index<64 ; index++) {
-      if (update_data[index]) {
-         /* find module to which this variable belongs */
-         i = 0;
-         for (port=0 ; port<8 ; port++) {
-            if (i + module_nvars[port] > index) {
-               i = index - i;
-               j = module_index[port];
-      
-               if (j != 0xFF && scs_2000_module[j].driver)
-                  scs_2000_module[j].driver(scs_2000_module[j].id, MC_WRITE, 0, port, i, variables[index].ud);
-      
-               break;
-      
-            } else
-               i += module_nvars[port];
-         }
-         update_data[index] = 0;
-      }
-   }
+   if (master) {
 
-   /* read next port */
-   if (module_index[port_index] != 0xFF) {
-
-      i = module_index[port_index];
-      for (j=0 ; j<module_nvars[port_index] ; j++) {
-         if (scs_2000_module[i].driver)
-            n = scs_2000_module[i].driver(scs_2000_module[i].id, MC_READ, 
-                                          0, port_index, j, &value);
-         else
-            n = 0;
-
-         if (n>0) {
-            DISABLE_INTERRUPTS;
-            memcpy(variables[first_var_index+j].ud, &value, n);
-            ENABLE_INTERRUPTS;
+      /* check if variabled needs to be written */
+      for (index=0 ; index<N_PORT*8 ; index++) {
+         if (update_data[index]) {
+            /* find module to which this variable belongs */
+            i = 0;
+            for (port=0 ; port<N_PORT ; port++) {
+               if (i + module_nvars[port] > index) {
+                  i = index - i;
+                  j = module_index[port];
+         
+                  if (j != 0xFF && scs_2000_module[j].driver)
+                     scs_2000_module[j].driver(scs_2000_module[j].id, MC_WRITE, 
+                                               port/8, port%8, i, variables[index].ud);
+         
+                  break;
+         
+               } else
+                  i += module_nvars[port];
+            }
+            update_data[index] = 0;
          }
       }
-   }
-
-   /* go to next port */
-   first_var_index += module_nvars[port_index];
-   port_index++;
-   if (port_index == 8) {
-      port_index = 0;
-      first_var_index = 0;
-   }
-
-   /* check for erase module eeprom */
-   if (erase_module != 0xFF) {
-      write_eeprom(0, erase_module, 0xFF);
-      erase_module = 0xFF;
-   }
-
-   /* backup data */
-   memcpy(&backup_data, &user_data, sizeof(user_data));
+   
+      /* read next port */
+      if (module_index[port_index] != 0xFF) {
+   
+         i = module_index[port_index];
+         for (j=0 ; j<module_nvars[port_index] ; j++) {
+            if (scs_2000_module[i].driver)
+               n = scs_2000_module[i].driver(scs_2000_module[i].id, MC_READ, 
+                                             port_index/8, port_index%8, j, &value);
+            else
+               n = 0;
+   
+            if (n>0) {
+               DISABLE_INTERRUPTS;
+               memcpy(variables[first_var_index+j].ud, &value, n);
+               ENABLE_INTERRUPTS;
+            }
+         }
+      }
+   
+      /* go to next port */
+      first_var_index += module_nvars[port_index];
+      port_index++;
+      if (port_index == N_PORT) {
+         port_index = 0;
+         first_var_index = 0;
+      }
+   
+      /* check for erase module eeprom */
+      if (erase_module != 0xFF) {
+         write_eeprom(erase_module/8, erase_module%8, 0xFF);
+         erase_module = 0xFF;
+      }
+   
+      /* backup data */
+      memcpy(&backup_data, &user_data, sizeof(user_data));
+   } /* if (master)
 
    /* read buttons */
    b0 = button(0);
