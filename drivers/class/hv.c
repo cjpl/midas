@@ -682,6 +682,17 @@ INT hv_init(EQUIPMENT * pequipment)
    db_set_record(hDB, hv_info->hKeyDemand, hv_info->demand,
                  hv_info->num_channels * sizeof(float), 0);
 
+   db_find_key(hDB, hv_info->hKeyRoot, "Settings/Trip Time", &hKey);
+   db_set_record(hDB, hKey, hv_info->trip_time, hv_info->num_channels * sizeof(float), 0);
+   db_find_key(hDB, hv_info->hKeyRoot, "Settings/Current Limit", &hKey);
+   db_set_record(hDB, hKey, hv_info->current_limit, hv_info->num_channels * sizeof(float), 0);
+   db_find_key(hDB, hv_info->hKeyRoot, "Settings/Voltage Limit", &hKey);
+   db_set_record(hDB, hKey, hv_info->voltage_limit, hv_info->num_channels * sizeof(float), 0);
+   db_find_key(hDB, hv_info->hKeyRoot, "Settings/Ramp Up Speed", &hKey);
+   db_set_record(hDB, hKey, hv_info->rampup_speed, hv_info->num_channels * sizeof(float), 0);
+   db_find_key(hDB, hv_info->hKeyRoot, "Settings/Ramp Down Speed", &hKey);
+   db_set_record(hDB, hKey, hv_info->rampdown_speed, hv_info->num_channels * sizeof(float), 0);
+
    /*--- open hotlink to HV demand values ----*/
    db_open_record(hDB, hv_info->hKeyDemand, hv_info->demand,
                   hv_info->num_channels * sizeof(float), MODE_READ, hv_demand,
