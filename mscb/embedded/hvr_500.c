@@ -833,9 +833,6 @@ void check_current(unsigned char channel)
 #ifdef HARDWARE_TRIP
    if (user_data[channel].i_meas > user_data[channel].i_limit ||    // "software" check
        hardware_current_trip(channel)) {                            // "hardware" check
-#else
-   if (user_data[channel].i_meas > user_data[channel].i_limit) {
-#endif
 
       if (trip_time[channel] == 0)
          trip_time[channel] = time();
@@ -856,7 +853,27 @@ void check_current(unsigned char channel)
          user_data[channel].status |= STATUS_ILIMIT;
          user_data[channel].trip_cnt++;
       }
-    }
+   }
+#else
+   if (user_data[channel].i_meas > user_data[channel].i_limit) {
+
+      if (trip_time[channel] == 0)
+         trip_time[channel] = time();
+
+      /* ramp down */
+      chn_bits[channel] &= ~DEMAND_CHANGED;
+      chn_bits[channel] &= ~RAMP_UP;
+      chn_bits[channel] |= RAMP_DOWN;
+      user_data[channel].status &= ~STATUS_RAMP_UP;
+      user_data[channel].status |= STATUS_RAMP_DOWN;
+
+      /* raise trip flag */
+      if ((user_data[channel].status & STATUS_ILIMIT) == 0) {
+         user_data[channel].status |= STATUS_ILIMIT;
+         user_data[channel].trip_cnt++;
+      }
+   }
+#endif
 
    /* check for trip recovery */
    if ((user_data[channel].status & STATUS_ILIMIT) &&
@@ -916,8 +933,7 @@ void ramp_hv(unsigned char channel)
 
    /* only process ramping when HV is on and not tripped */
    if ((user_data[channel].control & CONTROL_HV_ON) &&
-       !(user_data[channel].status & STATUS_DISABLED) &&
-       !(user_data[channel].status & STATUS_ILIMIT)) {
+       !(user_data[channel].status & STATUS_DISABLED)) {
 
       if (chn_bits[channel] & DEMAND_CHANGED) {
          /* start ramping */
@@ -982,14 +998,27 @@ void ramp_hv(unsigned char channel)
             u_actual[channel] -= (float) user_data[channel].ramp_down * delta / 100.0;
             user_data[channel].u_dac = u_actual[channel];
 
-            if (u_actual[channel] <= user_data[channel].u_demand) {
-               /* finish ramping */
-
-               u_actual[channel] = user_data[channel].u_demand;
-               user_data[channel].u_dac = u_actual[channel];
-               chn_bits[channel] &= ~RAMP_DOWN;
-               user_data[channel].status &= ~STATUS_RAMP_DOWN;
-
+            /* handle trip ramping */
+            if (user_data[channel].status & STATUS_ILIMIT) {
+               if (u_actual[channel] <= 0) {
+                  /* finish ramping */
+   
+                  u_actual[channel] = 0;
+                  user_data[channel].u_dac = 0;
+                  chn_bits[channel] &= ~RAMP_DOWN;
+                  user_data[channel].status &= ~STATUS_RAMP_DOWN;
+   
+               }
+            } else {
+               if (u_actual[channel] <= user_data[channel].u_demand) {
+                  /* finish ramping */
+   
+                  u_actual[channel] = user_data[channel].u_demand;
+                  user_data[channel].u_dac = u_actual[channel];
+                  chn_bits[channel] &= ~RAMP_DOWN;
+                  user_data[channel].status &= ~STATUS_RAMP_DOWN;
+   
+               }
             }
 
             set_hv(channel, u_actual[channel]);
