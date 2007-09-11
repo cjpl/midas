@@ -132,7 +132,7 @@ unsigned short i_rs485_rx;
 
 void setup(void)
 {
-   int i;                       // software timer
+   unsigned short i;            // software timer
 
    WDTCN = 0xDE;                // Disable watchdog timer
    WDTCN = 0xAD;
@@ -160,12 +160,9 @@ void setup(void)
                                 // the SYSCLK source
 
    //Turn on the PLL and increase the system clock by a factor of M/N = 2
-   SFRPAGE = CONFIG_PAGE;
-
    PLL0CN = 0x00;               // Set internal osc. as PLL source
    SFRPAGE = LEGACY_PAGE;
-   FLSCL = 0x10;                // Set FLASH read time for 50MHz clk
-   // or less
+   FLSCL = 0x10;                // Set FLASH read time for 50MHz clk or less
    SFRPAGE = CONFIG_PAGE;
    PLL0CN |= 0x01;              // Enable Power to PLL
    PLL0DIV = 0x01;              // Set Pre-divide value to N (N = 1)
@@ -176,7 +173,8 @@ void setup(void)
 
    for (i = 0; i < 256; i++);   // Wait at least 5us
    PLL0CN |= 0x02;              // Enable the PLL
-   while (!(PLL0CN & 0x10));    // Wait until PLL frequency is locked
+   // Wait until PLL frequency is locked
+   for (i = 0 ; i<50000 && ((PLL0CN & 0x10) == 0) ; i++); 
    CLKSEL = 0x02;               // Select PLL as SYSCLK source
 
    SFRPAGE = LEGACY_PAGE;
@@ -661,7 +659,8 @@ int udp_send(unsigned char socket_no, unsigned char *buffer, int size)
 
 void main(void)
 {
-   unsigned char *ptr, n, flags;
+   unsigned char *ptr, flags;
+   unsigned short n;
    char socket_no;
    UDP_HEADER *pudp;
 
@@ -706,6 +705,10 @@ void main(void)
              exclusive_port == sock_info[socket_no].dest_port &&
              memcmp(exclusive_addr, sock_info[socket_no].ip_dest_addr, 4) == 0)
             exclusive_timer = 1000; // expires after 10 sec. inactivity
+
+         /* discard packets which are too large */
+         if (n > sizeof(rs485_tx_buf) + sizeof(UDP_HEADER))
+            continue;
 
          /* signal incoming data */
          led_blink(0, 1, 50);
