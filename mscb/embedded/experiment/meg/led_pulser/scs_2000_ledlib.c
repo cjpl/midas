@@ -385,14 +385,18 @@ unsigned long f;
    if (id || chn || pd); // suppress compiler warning
 
    if (cmd == MC_INIT) {
+      /* clear port register */
+      port_reg[port] = 0;
+      write_port(addr, port, 0);
+
+      /* set DAC to zero */
+      value = 0;
+      dr_ltc2600(0x02, MC_WRITE, addr, port, chn, &value);
+
       /* switch port to output */
       read_csr(addr, CSR_PORT_DIR, &d);
       d |= (1 << port);
       write_csr(addr, CSR_PORT_DIR, d);
-
-      /* clear port register */
-      port_reg[port] = 0;
-      write_port(addr, port, 0);
    }
 
    if (cmd == MC_WRITE) {
