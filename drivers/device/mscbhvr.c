@@ -315,10 +315,7 @@ INT mscbhvr_set_voltage_limit(MSCBHVR_INFO * info, int channel, float limit)
 
 INT mscbhvr_set_rampup(MSCBHVR_INFO * info, int channel, float limit)
 {
-   unsigned short data;
-
-   data = (unsigned short) limit;
-   mscb_write(info->fd, info->settings.address[channel], 6, &data, 2);
+   mscb_write(info->fd, info->settings.address[channel], 6, &limit, 4);
    return FE_SUCCESS;
 }
 
@@ -326,10 +323,7 @@ INT mscbhvr_set_rampup(MSCBHVR_INFO * info, int channel, float limit)
 
 INT mscbhvr_set_rampdown(MSCBHVR_INFO * info, int channel, float limit)
 {
-   unsigned short data;
-
-   data = (unsigned short) limit;
-   mscb_write(info->fd, info->settings.address[channel], 7, &data, 2);
+   mscb_write(info->fd, info->settings.address[channel], 7, &limit, 4);
    return FE_SUCCESS;
 }
 
