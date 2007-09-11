@@ -157,12 +157,14 @@ void user_init(unsigned char init)
    /* red (upper) LED off by default */
    led_mode(1, 0);
 
-   /* initial EEPROM value */
-   if (init) {
-      memset(&user_data, 0, sizeof(user_data));
-      user_data.freq = 7;
-      user_data.pwidth = 1;
-   }
+   lcd_goto(0, 0);
+   printf("ampl %f", user_data.ampl[0]);
+
+   /* initial values */
+   if (init);
+   memset(&user_data, 0, sizeof(user_data));
+   user_data.freq = 7;
+   user_data.pwidth = 3;
 
    /* retrieve backup data from RAM if not reset by power on */
    SFRPAGE = LEGACY_PAGE;
