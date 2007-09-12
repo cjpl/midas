@@ -68,8 +68,12 @@ unsigned char xdata in_buf[64], out_buf[64]; /* limited by USB block size */
 unsigned char idata in_buf[20], out_buf[8];
 #endif
 
-unsigned char idata i_in, last_i_in, final_i_in, i_out, n_out, cmd_len;
-unsigned char idata crc_code, addr_mode, n_variables, _flkey=0;
+unsigned char idata i_in, last_i_in, final_i_in, i_out, cmd_len;
+unsigned char idata crc_code, addr_mode, n_variables;
+
+/* use absolute value between main program and upgrader */
+unsigned char idata _flkey _at_ 0x80;
+unsigned char idata n_out _at_ 0x81;
 
 unsigned char idata _cur_sub_addr, _var_size;
 
@@ -97,7 +101,6 @@ bit configured_addr;            // TRUE if node address is configured
 bit configured_vars;            // TRUE if variables are configured
 bit flash_allowed;              // TRUE 5 sec after booting node
 bit wrong_cpu;                  // TRUE if code uses xdata and CPU does't have it
-bit out_buf_empty;              // TRUE if out_buf has been sent completely
 
 /*------------------------------------------------------------------*/
 
@@ -341,8 +344,7 @@ void serial_int(void) interrupt 4
 
       i_out++;                   // increment output counter
       if (i_out == n_out) {
-         i_out = 0;              // send buffer empty, clear pointer
-         out_buf_empty = 1;      // and set flag
+         i_out = n_out = 0;      // send buffer empty, clear pointer
          DELAY_US(10);
          RS485_ENABLE = 0;       // disable RS485 driver
       } else {
@@ -432,7 +434,6 @@ static void send_obuf(unsigned char n)
 #endif
 
    n_out = n;
-   out_buf_empty = 0;
    RS485_ENABLE = 1;
    DELAY_US(INTERCHAR_DELAY);
    SBUF0 = out_buf[0];
@@ -1060,7 +1061,7 @@ void upgrade()
 
    /* wait for acknowledge to be sent */
    for (i=0 ; i<10000 ; i++) {
-      if (out_buf_empty)
+      if (n_out == 0)
          break;
       DELAY_US(10);
    }
