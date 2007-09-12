@@ -309,6 +309,9 @@ void user_init(unsigned char init)
 #ifdef HARDWARE_TRIP
    /* reset current trip FF's */
    reset_hardware_trip();
+#else
+   /* disable hardware trip FF's */
+   write_adc(REG_IOCONTROL, (1 << 4));
 #endif
 
    /* force update */
@@ -653,6 +656,9 @@ unsigned char adc_read(unsigned char channel, float *value)
          delay_ms(300);
 
          write_adc(REG_FILTER, ADC_SF_VALUE);
+#ifndef HARDWARE_TRIP
+         write_adc(REG_IOCONTROL, (1 << 4));
+#endif
 
          return 0;
       }
