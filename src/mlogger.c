@@ -265,11 +265,50 @@ void ctime_to_datetime(char *date)
 
 int mysql_query_debug(MYSQL * db, char *query)
 {
-   int status;
+   int status, size, fh;
+   char filename[256], path[256], dir[256];
+   HNDLE hKey;
 
    /* comment in this line if you need debugging output */
-   cm_msg(MINFO, "mysql_query_debug", "SQL query: %s", query);
+   //cm_msg(MINFO, "mysql_query_debug", "SQL query: %s", query);
 
+   /* write query into logfile if requested */
+   size = sizeof(filename);
+   filename[0] = 0;
+   db_get_value(hDB, 0, "/Logger/SQL/Logfile", filename, &size, TID_STRING, TRUE);
+   if (filename[0]) {
+      status = db_find_key(hDB, 0, "/Logger/Data dir", &hKey);
+      if (status == DB_SUCCESS) {
+         size = sizeof(dir);
+         memset(dir, 0, size);
+         db_get_value(hDB, 0, "/Logger/Data dir", dir, &size, TID_STRING, TRUE);
+         if (dir[0] != 0)
+            if (dir[strlen(dir) - 1] != DIR_SEPARATOR)
+               strcat(dir, DIR_SEPARATOR_STR);
+
+         strcpy(path, dir);
+         strcat(path, filename);
+      } else {
+         cm_get_path(dir);
+         if (dir[0] != 0)
+            if (dir[strlen(dir) - 1] != DIR_SEPARATOR)
+               strcat(dir, DIR_SEPARATOR_STR);
+
+         strcpy(path, dir);
+         strcat(path, filename);
+      }
+
+      fh = open(path, O_WRONLY | O_CREAT | O_APPEND | O_LARGEFILE, 0644);
+      if (fh < 0) {
+         printf("Cannot open message log file %s\n", path);
+      } else {
+         write(fh, query, strlen(query));
+         write(fh, "\n", 1);
+         close(fh);
+      }
+   }
+
+   /* execut sql query */
    status = mysql_query(db, query);
 
    if (status)
@@ -631,7 +670,8 @@ int sql_update(MYSQL * db, char *database, char *table, HNDLE hKeyRoot, BOOL cre
 
 void create_sql_tree()
 {
-   char hostname[80], username[80], password[80], database[80], table[80];
+   char hostname[80], username[80], password[80], database[80], table[80], 
+      filename[80];
    int size, write_flag, create_flag;
    HNDLE hKeyRoot, hKey;
 
@@ -664,6 +704,10 @@ void create_sql_tree()
    size = sizeof(table);
    strcpy(table, "Runlog");
    db_get_value(hDB, 0, "/Logger/SQL/Table", table, &size, TID_STRING, TRUE);
+
+   size = sizeof(filename);
+   strcpy(filename, "sql.log");
+   db_get_value(hDB, 0, "/Logger/SQL/Logfile", filename, &size, TID_STRING, TRUE);
 
    db_find_key(hDB, 0, "/Logger/SQL/Links BOR", &hKeyRoot);
    if (!hKeyRoot) {
