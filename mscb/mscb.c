@@ -626,7 +626,7 @@ int mscb_exchg(int fd, char *buffer, int *size, int len, int flags)
 \********************************************************************/
 {
    int i, n, retry, timeout, status;
-   unsigned char usb_buf[65], eth_buf[256], ret_buf[1024];
+   unsigned char usb_buf[65], eth_buf[1024], ret_buf[1024];
    UDP_HEADER *pudp;
 
    if (fd > MSCB_MAX_FD || fd < 1 || !mscb_fd[fd - 1].type)
@@ -723,6 +723,11 @@ int mscb_exchg(int fd, char *buffer, int *size, int len, int flags)
          pudp->version = MSCB_SUBM_VERSION;
 
          memcpy(pudp+1, buffer, len);
+
+#ifndef _USRDLL
+         if (retry > 0)
+            printf("mscb_exchg: retry send...\n");
+#endif
 
          /* send over UDP link */
          i = msend_udp(fd, eth_buf, len + sizeof(UDP_HEADER));
@@ -2481,6 +2486,9 @@ int mscb_upload(int fd, unsigned short adr, char *buffer, int size, int debug)
       return MSCB_TIMEOUT;
    }
 
+   if (debug)
+      printf("Send upgrade command to remote node\n");
+
    /* send upgrade command */
    buf[0] = MCMD_ADDR_NODE16;
    buf[1] = (unsigned char) (adr >> 8);
@@ -2497,6 +2505,9 @@ int mscb_upload(int fd, unsigned short adr, char *buffer, int size, int debug)
       return MSCB_TIMEOUT;
    }
 
+   if (debug)
+      printf("Received upgrade acknowlege \"%d\" from remote node\n", buf[1]);
+
    if (buf[1] == 2)
       return MSCB_SUBADDR;
 
@@ -2505,6 +2516,9 @@ int mscb_upload(int fd, unsigned short adr, char *buffer, int size, int debug)
 
    /* let main routine enter upgrade() */
    Sleep(500);
+
+   if (debug)
+      printf("Sending echo test to remote node\n");
 
    /* send echo command */
    buf[0] = UCMD_ECHO;
@@ -3974,8 +3988,6 @@ void mscb_scan_udp()
    printf("                    \n");
    while (kbhit())
       getch();
-
-   mscb_init("mscb004", 0, NULL, 0);
 }
 
 /*------------------------------------------------------------------*/
