@@ -43,7 +43,7 @@ extern unsigned char idata _n_sub_addr;
 
 extern char code node_name[];
 
-char code svn_rev[] = "$Rev$";
+char code svn_rev_main[] = "$Rev$";
 
 /*------------------------------------------------------------------*/
 
@@ -287,10 +287,10 @@ void setup(void)
       configured_addr = 1;
 
    /* store SVN revision */
-   sys_info.svn_revision = (svn_rev[6]-'0')*1000+
-                           (svn_rev[7]-'0')*100+
-                           (svn_rev[8]-'0')*10+
-                           (svn_rev[9]-'0');
+   sys_info.svn_revision = (svn_rev_main[6]-'0')*1000+
+                           (svn_rev_main[7]-'0')*100+
+                           (svn_rev_main[8]-'0')*10+
+                           (svn_rev_main[9]-'0');
 
    if ((flags & (1 << 1)) == 0) {
 
