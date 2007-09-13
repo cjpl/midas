@@ -420,10 +420,7 @@ unsigned char port_dir, d;
    if (cmd == MC_INIT) {
 
       /* default pattern */
-      if (id == 0x41)
-         pattern[port] = 0xFF; /* relais has inverter */
-      else
-         pattern[port] = 0;
+      pattern[port] = 0;
 
       /* retrieve previous pattern if not reset by power on */
       SFRPAGE = LEGACY_PAGE;
@@ -443,10 +440,6 @@ unsigned char port_dir, d;
 
       d = *((unsigned char *)pd);
 
-      /* relais has inverter */
-      if (id == 0x41)
-         d = !d;
-   
       if (d)
          pattern[port] |= (1 << chn);
       else
