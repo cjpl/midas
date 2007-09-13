@@ -21,7 +21,9 @@ extern bit FREEZE_MODE;
 extern bit DEBUG_MODE;
 
 char code node_name[] = "SCS-2000";
-char code svn_revision[] = "$Id$";
+char code svn_rev_2000[] = "$Rev: 3902 $";
+extern char code svn_rev_main[];
+extern char code svn_rev_lib[];
 
 /* declare number of sub-addresses to framework */
 unsigned char idata _n_sub_addr = 1;
@@ -164,9 +166,13 @@ void user_init(unsigned char init)
    lcd_goto(0, 1);
    printf("   Address:  %04X", sys_info.node_addr);
    lcd_goto(0, 2);
-   strncpy(str, svn_revision + 16, 6);
+   strncpy(str, svn_rev_2000 + 6, 6);
    *strchr(str, ' ') = 0;
    printf("  Revision:  %s", str);
+   lcd_goto(0, 3);
+   strncpy(str, svn_rev_lib + 6, 6);
+   *strchr(str, ' ') = 0;
+   printf("  Rev. Lib:  %s", str);
 }
 
 #pragma NOAREGS
