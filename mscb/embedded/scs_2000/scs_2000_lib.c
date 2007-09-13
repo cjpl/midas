@@ -6,7 +6,7 @@
 
   Contents:     Library of plug-in modules for SCS-2000
 
-  $Id: scs_2000_lib.c 2874 2005-11-15 08:47:14Z ritt $
+  $Id$
 
 \********************************************************************/
 
@@ -17,7 +17,7 @@
 #include "mscbemb.h"
 #include "scs_2000.h"
 
-char code svn_rev_lib[] = "$Rev: 2874 $";
+char code svn_rev_lib[] = "$Rev$";
 
 /*---- Port definitions ----*/
 

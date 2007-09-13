@@ -21,7 +21,7 @@ extern bit FREEZE_MODE;
 extern bit DEBUG_MODE;
 
 char code node_name[] = "SCS-2000";
-char code svn_rev_2000[] = "$Rev: 3902 $";
+char code svn_rev_2000[] = "$Rev$";
 extern char code svn_rev_main[];
 extern char code svn_rev_lib[];
 
