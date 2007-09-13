@@ -17,6 +17,8 @@
 #include "mscbemb.h"
 #include "scs_2000.h"
 
+char code svn_rev_lib[] = "$Rev: 2874 $";
+
 /*---- Port definitions ----*/
 
 sbit OPT_CLK    = P3 ^ 0;
