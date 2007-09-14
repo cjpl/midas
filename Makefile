@@ -77,7 +77,7 @@ NEED_LIBROOTA=
 # Here we try to figure out automatically if mySQL is installed
 NEED_MYSQL := $(shell if test -x /usr/bin/mysql_config ||\
                          test -x /usr/local/bin/mysql_config ||\
-                         test -x $(MYSQL_DIR)/mysql_config ; then echo yes; fi)
+                         test -x $(MYSQL_DIR)/bin/mysql_config ; then echo 1; fi)
 
 #
 # Option to use our own implementation of strlcat, strlcpy
@@ -320,7 +320,7 @@ $(BIN_DIR):
 #
 
 ifdef NEED_MYSQL
-CFLAGS      += -DHAVE_MYSQL
+CFLAGS      += -DHAVE_MYSQL $(shell mysql_config --include)
 MYSQL_LIBS  := $(shell mysql_config --libs)
 LIBS        += $(MYSQL_LIBS)
 NEED_ZLIB = 1
