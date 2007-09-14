@@ -200,6 +200,7 @@ MSCB_INFO_VAR *variables = vars;
 
 \********************************************************************/
 
+void reset_adc();
 void write_dac(unsigned char channel, unsigned short value) reentrant;
 void write_adc(unsigned char a, unsigned char d);
 void user_write(unsigned char index) reentrant;
@@ -298,13 +299,8 @@ void user_init(unsigned char init)
    ADC_NRDY = 1; // input
    ADC_DIN  = 1; // input
 
-   /* reset and wait for start-up of ADC */
-   ADC_NRES = 0;
-   delay_ms(100);
-   ADC_NRES = 1;
-   delay_ms(300);
-
-   write_adc(REG_FILTER, ADC_SF_VALUE);
+   delay_ms(300); // wait for the ADC to come up after power on
+   reset_adc();
 
 #ifdef HARDWARE_TRIP
    /* reset current trip FF's */
@@ -447,6 +443,21 @@ unsigned char i, m, b;
 }
 
 /*---- ADC functions -----------------------------------------------*/
+
+void reset_adc()
+{
+   ADC_NRES = 0;
+   delay_us(OPT_DELAY);
+   ADC_NRES = 1;
+   delay_us(OPT_DELAY);
+
+   write_adc(REG_FILTER, ADC_SF_VALUE);
+
+#ifndef HARDWARE_TRIP
+   /* disable hardware trip FF's */
+   write_adc(REG_IOCONTROL, (1 << 4));
+#endif
+}
 
 void write_adc(unsigned char a, unsigned char d)
 {
@@ -648,18 +659,7 @@ unsigned char adc_read(unsigned char channel, float *value)
 
       /* abort if no ADC ready after 300ms */
       if (time() - start_time > 30) {
-
-         /* reset ADC */
-         ADC_NRES = 0;
-         delay_ms(100);
-         ADC_NRES = 1;
-         delay_ms(300);
-
-         write_adc(REG_FILTER, ADC_SF_VALUE);
-#ifndef HARDWARE_TRIP
-         write_adc(REG_IOCONTROL, (1 << 4));
-#endif
-
+         reset_adc();
          return 0;
       }
    }
@@ -766,14 +766,13 @@ void set_current_limit(float value)
 
    /* write current dac */
    write_dac(5, d);
+
 #else // HARDWARE_TRIP
+
    if (value == 9999)
       trip_disable = 1;
    else
       trip_disable = 0;
-
-   /* disable hardware trip always */
-   write_adc(REG_IOCONTROL, (1 << 4)); // P1DIR=1,P1DAT=0
 
 #endif // !HARDWARE_TRIP
 }
@@ -869,9 +868,22 @@ void check_current(unsigned char channel)
       /* ramp down */
       chn_bits[channel] &= ~DEMAND_CHANGED;
       chn_bits[channel] &= ~RAMP_UP;
-      chn_bits[channel] |= RAMP_DOWN;
       user_data[channel].status &= ~STATUS_RAMP_UP;
-      user_data[channel].status |= STATUS_RAMP_DOWN;
+
+      if (user_data[channel].ramp_down > 0) {
+         /* ramp down if requested */
+         chn_bits[channel] |= RAMP_DOWN;
+         user_data[channel].status |= STATUS_RAMP_DOWN;
+      } else {
+         /* otherwise go to zero immediately */
+         set_hv(channel, 0);
+         u_actual[channel] = 0;
+         user_data[channel].u_dac = 0;
+
+         /* stop possible ramping */
+         chn_bits[channel] &= ~RAMP_DOWN;
+         user_data[channel].status &= ~STATUS_RAMP_DOWN;
+      }
 
       /* raise trip flag */
       if ((user_data[channel].status & STATUS_ILIMIT) == 0) {
@@ -992,7 +1004,7 @@ void ramp_hv(unsigned char channel)
                user_data[channel].status &= ~STATUS_RILIMIT;
             }
 
-            set_hv(channel, u_actual[channel]);
+            set_hv(channel, user_data[channel].u_dac);
             t_ramp[channel] = time();
          }
       }
@@ -1027,7 +1039,7 @@ void ramp_hv(unsigned char channel)
                }
             }
 
-            set_hv(channel, u_actual[channel]);
+            set_hv(channel, user_data[channel].u_dac);
             t_ramp[channel] = time();
          }
       }
@@ -1067,7 +1079,6 @@ void regulation(unsigned char channel)
                user_data[channel].u_dac = user_data[channel].u_demand + 2;
 
             chn_bits[channel] &= ~DEMAND_CHANGED;
-            set_hv(channel, user_data[channel].u_dac);
          }
 
       } else {
@@ -1075,7 +1086,6 @@ void regulation(unsigned char channel)
          if (chn_bits[channel] & DEMAND_CHANGED) {
             u_actual[channel] = user_data[channel].u_demand;
             user_data[channel].u_dac = user_data[channel].u_demand;
-            set_hv(channel, user_data[channel].u_demand);
 
             chn_bits[channel] &= ~DEMAND_CHANGED;
          }
@@ -1162,13 +1172,20 @@ void user_loop(void)
             trip_reset = 1;
          }
 
+         /* read back HV and current */
+         read_hv(channel);
+         read_current(channel);
+
          /* check for current trip */
          check_current(channel);
 
-         read_hv(channel);
+         /* do ramping and regulation */
          ramp_hv(channel);
          regulation(channel);
-         read_current(channel);
+
+         /* set voltage regularly, in case DAC got HV spike */
+         set_hv(channel, user_data[channel].u_dac);
+
       }
 
 #ifdef HARDWARE_TRIP
@@ -1198,6 +1215,9 @@ void user_loop(void)
          old_sw1 = 0;
       }
    }
+
+   /* reset ADC once all channels have been read */
+   reset_adc();
 
    // read_temperature();
 }
