@@ -73,7 +73,11 @@ NEED_LIBROOTA=
 # Optional libmysqlclient library for mlogger
 #
 # To add mySQL support to the logger, say "make ... NEED_MYSQL=1"
-NEED_MYSQL=
+#
+# Here we try to figure out automatically if mySQL is installed
+NEED_MYSQL := $(shell if test -x /usr/bin/mysql_config ||\
+                         test -x /usr/local/bin/mysql_config ||\
+                         test -x $(MYSQL_DIR)/mysql_config ; then echo yes; fi)
 
 #
 # Option to use our own implementation of strlcat, strlcpy
