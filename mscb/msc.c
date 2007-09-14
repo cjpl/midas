@@ -726,9 +726,9 @@ void cmd_loop(int fd, char *cmd, unsigned short adr)
 
                   if (status == MSCB_SUCCESS) {
                      printf
-                         ("Found node \"%s\", node addr. %d (0x%04X), group addr. %d (0x%04X)      \n",
+                         ("Found node \"%s\", NA %d (0x%04X), GA %d (0x%04X), Rev. %d      \n",
                           str, (unsigned short) i, (unsigned short) i, info.group_address,
-                          info.group_address);
+                          info.group_address, info.svn_revision);
 
                      mscb_get_version(lib, prot);
                      if (info.protocol_version != atoi(prot)) {
