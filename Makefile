@@ -73,8 +73,7 @@ NEED_LIBROOTA=
 # Optional libmysqlclient library for mlogger
 #
 # To add mySQL support to the logger, say "make ... NEED_MYSQL=1"
-NEED_MYSQL=1
-MYSQL_LIBS=/usr/lib64/mysql/libmysqlclient.a -lssl
+NEED_MYSQL=
 
 #
 # Option to use our own implementation of strlcat, strlcpy
@@ -317,8 +316,9 @@ $(BIN_DIR):
 #
 
 ifdef NEED_MYSQL
-CFLAGS     += -DHAVE_MYSQL
-LIBS       += $(MYSQL_LIBS)
+CFLAGS      += -DHAVE_MYSQL
+MYSQL_LIBS  := $(shell mysql_config --libs)
+LIBS        += $(MYSQL_LIBS)
 NEED_ZLIB = 1
 endif
 
