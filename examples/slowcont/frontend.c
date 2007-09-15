@@ -76,7 +76,7 @@ EQUIPMENT equipment[] = {
      60000,                     /* read every 60 sec */
      0,                         /* stop run after this event limit */
      0,                         /* number of sub events */
-     1,                         /* log history every event */
+     10000,                         /* log history every event */
      "", "", ""} ,
     cd_hv_read,                 /* readout routine */
     cd_hv,                      /* class driver main routine */
