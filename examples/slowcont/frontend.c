@@ -160,7 +160,7 @@ INT pause_run(INT run_number, char *error)
    return CM_SUCCESS;
 }
 
-/*-- Resuem Run ----------------------------------------------------*/
+/*-- Resume Run ----------------------------------------------------*/
 
 INT resume_run(INT run_number, char *error)
 {
