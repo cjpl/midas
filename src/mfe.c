@@ -889,6 +889,9 @@ INT register_equipment(void)
       }
    }
 
+   if (slowcont_eq)
+      cm_msg(MINFO, "register_equipment", "Slow control equipment initialized");
+
    return SUCCESS;
 }
 
