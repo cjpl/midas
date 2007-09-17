@@ -75,9 +75,11 @@ NEED_LIBROOTA=
 # To add mySQL support to the logger, say "make ... NEED_MYSQL=1"
 #
 # Here we try to figure out automatically if mySQL is installed
-NEED_MYSQL := $(shell if test -x /usr/bin/mysql_config ||\
-                         test -x /usr/local/bin/mysql_config ||\
-                         test -x $(MYSQL_DIR)/bin/mysql_config ; then echo 1; fi)
+MYSQL_CONFIG := $(shell which mysql_config 2> /dev/null)
+ifdef MYSQL_CONFIG
+  MYSQLINCDIR := $(shell mysql_config --cflags | sed -e 's,^.*-I\([^ ]*\).*$$,\1,' -e s/\'//g)
+  NEED_MYSQL := $(shell if [ -e $(MYSQLINCDIR)/mysql.h ]; then echo 1; fi) 
+endif
 
 #
 # Option to use our own implementation of strlcat, strlcpy
