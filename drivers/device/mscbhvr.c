@@ -147,7 +147,8 @@ INT mscbhvr_init(HNDLE hkey, void **pinfo, INT channels, INT(*bd) (INT cmd, ...)
    }
 
    if (strcmp(node_info.node_name, "HVR-500") != 0 &&
-      strcmp(node_info.node_name, "HVR-400") != 0) {
+      strcmp(node_info.node_name, "HVR-400") != 0 &&
+      strcmp(node_info.node_name, "HVR-200") != 0) {
       cm_msg(MERROR, "mscbhvr_init",
             "Found unexpected node \"%s\" at address \"%d\".", 
             node_info.node_name, info->settings.address[0]);
