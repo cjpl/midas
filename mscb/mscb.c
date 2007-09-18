@@ -934,7 +934,7 @@ int mscb_init(char *device, int bufsize, char *password, int debug)
          return EMSCB_RPC_ERROR;
       }
 
-      mscb_fd[index].remote_fd = mrpc_call(mscb_fd[index].fd, RPC_MSCB_INIT, remote_device, bufsize, debug);
+      mscb_fd[index].remote_fd = mrpc_call(mscb_fd[index].fd, RPC_MSCB_INIT, remote_device, bufsize, password, debug);
       if (mscb_fd[index].remote_fd < 0) {
          mrpc_disconnect(mscb_fd[index].fd);
          mscb_fd[index].fd = 0;
@@ -1158,7 +1158,7 @@ void mscb_get_device(int fd, char *device, int bufsize)
   Purpose: Return device name for fd
 
   Input:
-    int fd                  File descriptor obtained wiv mscb_init()
+    int fd                  File descriptor obtained via mscb_init()
     int bufsize             Size of device string
     char *device            device name, "" if invalid fd
 
