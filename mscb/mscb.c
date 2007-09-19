@@ -1975,12 +1975,14 @@ int mscb_write(int fd, unsigned short adr, unsigned char index, void *data, int 
       f = *((float *)data);
    }
 
-   if (size == 4)
-      debug_log("mscb_write(fd=%d,adr=%d,index=%d,data=%lf/0x%X,size=%d) ", 1, fd, adr, index, f, dw, size);
-   else if (size < 4)
-      debug_log("mscb_write(fd=%d,adr=%d,index=%d,data=0x%X,size=%d) ", 1, fd, adr, index, dw, size);
-   else
-      debug_log("mscb_write(fd=%d,adr=%d,index=%d,data=\"%s\",size=%d) ", 1, fd, adr, index, (char *)data, size);
+   if (_debug_flag) {
+      if (size == 4)
+         debug_log("mscb_write(fd=%d,adr=%d,index=%d,data=%lf/0x%X,size=%d) ", 1, fd, adr, index, f, dw, size);
+      else if (size < 4)
+         debug_log("mscb_write(fd=%d,adr=%d,index=%d,data=0x%X,size=%d) ", 1, fd, adr, index, dw, size);
+      else
+         debug_log("mscb_write(fd=%d,adr=%d,index=%d,data=\"%s\",size=%d) ", 1, fd, adr, index, (char *)data, size);
+   }
 
    if (fd > MSCB_MAX_FD || fd < 1 || !mscb_fd[fd - 1].type) {
       debug_log("return MSCB_INVAL_PARAM\n", 0);
@@ -2950,7 +2952,8 @@ int mscb_read(int fd, unsigned short adr, unsigned char index, void *data, int *
    int i, j, len, n, status;
    unsigned char buf[256], str[1000], crc;
 
-   debug_log("mscb_read(fd=%d,adr=%d,index=%d,size=%d) ", 1, fd, adr, index, *size);
+   if (_debug_flag)
+      debug_log("mscb_read(fd=%d,adr=%d,index=%d,size=%d) ", 1, fd, adr, index, *size);
 
    if (*size > 256)
       return MSCB_INVAL_PARAM;
@@ -3092,16 +3095,18 @@ int mscb_read(int fd, unsigned short adr, unsigned char index, void *data, int *
       if (len - 2 == 4)
          DWORD_SWAP(data);
 
-      sprintf(str, "return %d bytes: ", *size);
-      for (j=0 ; j<*size ; j++) {
-         sprintf(str+strlen(str), "0x%02X ", 
-            *(((unsigned char *)data)+j));
-         if (isalnum(*(((unsigned char *)data)+j)))
-            sprintf(str+strlen(str), "('%c') ", 
+      if (_debug_flag) {
+         sprintf(str, "return %d bytes: ", *size);
+         for (j=0 ; j<*size ; j++) {
+            sprintf(str+strlen(str), "0x%02X ", 
                *(((unsigned char *)data)+j));
+            if (isalnum(*(((unsigned char *)data)+j)))
+               sprintf(str+strlen(str), "('%c') ", 
+                  *(((unsigned char *)data)+j));
+         }
+         strlcat(str, "\n", sizeof(str)); 
+         debug_log(str, 0);
       }
-      strlcat(str, "\n", sizeof(str)); 
-      debug_log(str, 0);
 
       return MSCB_SUCCESS;
    }
@@ -3150,7 +3155,8 @@ int mscb_read_no_retries(int fd, unsigned short adr, unsigned char index, void *
    int j, len, status;
    unsigned char buf[256], str[1000], crc;
 
-   debug_log("mscb_read_no_retries(fd=%d,adr=%d,index=%d,size=%d) ", 1, fd, adr, index, *size);
+   if (_debug_flag)
+      debug_log("mscb_read_no_retries(fd=%d,adr=%d,index=%d,size=%d) ", 1, fd, adr, index, *size);
 
    if (*size > 256)
       return MSCB_INVAL_PARAM;
@@ -3237,16 +3243,18 @@ int mscb_read_no_retries(int fd, unsigned short adr, unsigned char index, void *
    if (len - 2 == 4)
       DWORD_SWAP(data);
 
-   sprintf(str, "return %d bytes: ", *size);
-   for (j=0 ; j<*size ; j++) {
-      sprintf(str+strlen(str), "0x%02X ", 
-         *(((unsigned char *)data)+j));
-      if (isalnum(*(((unsigned char *)data)+j)))
-         sprintf(str+strlen(str), "('%c') ", 
+   if (_debug_flag) {
+      sprintf(str, "return %d bytes: ", *size);
+      for (j=0 ; j<*size ; j++) {
+         sprintf(str+strlen(str), "0x%02X ", 
             *(((unsigned char *)data)+j));
+         if (isalnum(*(((unsigned char *)data)+j)))
+            sprintf(str+strlen(str), "('%c') ", 
+               *(((unsigned char *)data)+j));
+      }
+      strlcat(str, "\n", sizeof(str)); 
+      debug_log(str, 0);
    }
-   strlcat(str, "\n", sizeof(str)); 
-   debug_log(str, 0);
 
    return MSCB_SUCCESS;
 }
@@ -3283,8 +3291,9 @@ int mscb_read_range(int fd, unsigned short adr, unsigned char index1, unsigned c
    int i, j, n, len, status;
    unsigned char buf[256], str[1000], crc;
 
-   debug_log("mscb_read_range(fd=%d,adr=%d,index1=%d,index2=%d,size=%d) ", 
-      1, fd, adr, index1, index2, *size);
+   if (_debug_flag)
+      debug_log("mscb_read_range(fd=%d,adr=%d,index1=%d,index2=%d,size=%d) ", 
+         1, fd, adr, index1, index2, *size);
 
    if (*size > 256)
       return MSCB_INVAL_PARAM;
@@ -3427,20 +3436,22 @@ int mscb_read_range(int fd, unsigned short adr, unsigned char index1, unsigned c
          *size = len - 2;
       }
 
-      sprintf(str, "return %d bytes: ", *size);
-      for (j=0 ; j<*size ; j++) {
-         if (strlen(str) > sizeof(str)-20) {
-            strlcat(str, "...", sizeof(str));
-            break;
-         }
-         sprintf(str+strlen(str), "0x%02X ", 
-            *(((unsigned char *)data)+j));
-         if (isalnum(*(((unsigned char *)data)+j)))
-            sprintf(str+strlen(str), "('%c') ", 
+      if (_debug_flag) {
+         sprintf(str, "return %d bytes: ", *size);
+         for (j=0 ; j<*size ; j++) {
+            if (strlen(str) > sizeof(str)-20) {
+               strlcat(str, "...", sizeof(str));
+               break;
+            }
+            sprintf(str+strlen(str), "0x%02X ", 
                *(((unsigned char *)data)+j));
+            if (isalnum(*(((unsigned char *)data)+j)))
+               sprintf(str+strlen(str), "('%c') ", 
+                  *(((unsigned char *)data)+j));
+         }
+         strlcat(str, "\n", sizeof(str)); 
+         debug_log(str, 0);
       }
-      strlcat(str, "\n", sizeof(str)); 
-      debug_log(str, 0);
 
       return MSCB_SUCCESS;
    }
