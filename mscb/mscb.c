@@ -3429,6 +3429,10 @@ int mscb_read_range(int fd, unsigned short adr, unsigned char index1, unsigned c
 
       sprintf(str, "return %d bytes: ", *size);
       for (j=0 ; j<*size ; j++) {
+         if (strlen(str) > sizeof(str)-20) {
+            strlcat(str, "...", sizeof(str));
+            break;
+         }
          sprintf(str+strlen(str), "0x%02X ", 
             *(((unsigned char *)data)+j));
          if (isalnum(*(((unsigned char *)data)+j)))
