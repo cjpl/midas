@@ -257,7 +257,7 @@ char recv_buffer[NET_BUFFER_SIZE];
 void debug_log(char *format, int start, ...)
 {
    int fh;
-   char str[1000], line[1000];
+   char str[2000], line[2000];
    va_list argptr;
    struct timeb tb;
 
