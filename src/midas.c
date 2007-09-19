@@ -1176,7 +1176,8 @@ INT cm_scan_experiments(void)
          str[0] = 0;
          if (fgets(str, 100, f) == NULL)
             break;
-         if (str[0] && str[0] != '#') {
+         if (str[0] && str[0] != '#' && str[0] != ' ' && str[0] != '\t' && 
+            (strchr(str, ' ') || strchr(str, '\t'))) {
             sscanf(str, "%s %s %s", exptab[i].name, exptab[i].directory, exptab[i].user);
 
             /* check for trailing directory separator */
