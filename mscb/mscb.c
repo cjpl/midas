@@ -58,6 +58,7 @@
 #include <linux/parport.h>
 #include <linux/ppdev.h>
 #include <netinet/in.h>
+#include <arpa/inet.h>
 #include <netdb.h>
 
 #ifdef HAVE_LIBUSB
