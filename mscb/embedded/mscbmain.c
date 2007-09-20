@@ -662,6 +662,7 @@ void interprete(void)
       /* set node name in RAM */
       for (i = 0; i < 16 && i < in_buf[1]; i++)
          sys_info.node_name[i] = in_buf[2 + i];
+      sys_info.node_name[15] = 0;
 
       /* copy address to EEPROM */
       flash_param = 1;
