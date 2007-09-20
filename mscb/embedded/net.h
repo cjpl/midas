@@ -5,7 +5,7 @@
 
   Contents:     CMX Micronet data types and prototypes
 
-  $Id:$
+  $Id$
 
 \********************************************************************/
 
@@ -219,7 +219,7 @@ extern unsigned char null_addr[IP_ADDR_LEN];
 extern unsigned char broadcast_addr[IP_ADDR_LEN];
 
 extern DHCP_LEASE_T dhcp_lease;
-#define DHCP_DEFAULT_LEASE_TIME  36000
+#define DHCP_DEFAULT_LEASE_TIME  (72*3600)
 
 /*------------------------------------------------------------------*/
 

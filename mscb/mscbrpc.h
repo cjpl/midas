@@ -85,7 +85,7 @@ typedef struct {
 
 #define RPC_MSCB_INIT              1
 #define RPC_MSCB_EXIT              2
-#define RPC_MSCB_RESET             3
+#define RPC_MSCB_SUBM_RESET        3
 #define RPC_MSCB_REBOOT            4
 #define RPC_MSCB_PING              5
 #define RPC_MSCB_INFO              6

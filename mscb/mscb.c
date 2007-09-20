@@ -1338,10 +1338,10 @@ int mscb_reboot(int fd, int addr, int gaddr, int broadcast)
 
 /*------------------------------------------------------------------*/
 
-int mscb_reset(int fd)
+int mscb_subm_reset(int fd)
 /********************************************************************\
 
-  Routine: mscb_reset
+  Routine: mscb_subm_reset
 
   Purpose: Reset submaster via hardware reset
 
@@ -1365,7 +1365,7 @@ int mscb_reset(int fd)
    }
 
    if (mrpc_connected(fd))
-      return mrpc_call(mscb_fd[fd - 1].fd, RPC_MSCB_RESET, mscb_fd[fd - 1].remote_fd);
+      return mrpc_call(mscb_fd[fd - 1].fd, RPC_MSCB_SUBM_RESET, mscb_fd[fd - 1].remote_fd);
 
    if (mscb_fd[fd - 1].type == MSCB_TYPE_ETH) {
 
@@ -2978,7 +2978,7 @@ int mscb_read(int fd, unsigned short adr, unsigned char index, void *data, int *
          printf("mscb_read: Automatic submaster reset\n");
 #endif
          debug_log("Automatic submaster reset\n", 1);
-         status = mscb_reset(fd);
+         status = mscb_subm_reset(fd);
          if (status == MSCB_SUBM_ERROR) {
             sprintf(str, "mscb_read: Cannot reconnect to submaster %s\n", mscb_fd[fd - 1].device);
 #ifndef _USRDLL
@@ -3318,7 +3318,7 @@ int mscb_read_range(int fd, unsigned short adr, unsigned char index1, unsigned c
          printf("mscb_read_range: Automatic submaster reset.\n");
 #endif
          debug_log("Automatic submaster reset\n", 1);
-         status = mscb_reset(fd);
+         status = mscb_subm_reset(fd);
          if (status == MSCB_SUBM_ERROR) {
             sprintf(str, "mscb_read_range: Cannot reconnect to submaster %s\n", mscb_fd[fd - 1].device);
 #ifndef _USRDLL
@@ -4006,3 +4006,50 @@ void mscb_scan_udp()
 }
 
 /*------------------------------------------------------------------*/
+
+int mscb_subm_info(int fd)
+/********************************************************************\
+
+  Routine: mscb_subm_info
+
+  Purpose: Show info for submaster
+
+\********************************************************************/
+{
+   unsigned char buf[10];
+   int n, rev, uptime;
+
+   if (fd > MSCB_MAX_FD || fd < 1 || !mscb_fd[fd - 1].type) {
+      debug_log("return MSCB_INVAL_PARAM\n", 0);
+      return MSCB_INVAL_PARAM;
+   }
+
+   if (mscb_fd[fd - 1].type == MSCB_TYPE_ETH) {
+
+      buf[0] = MCMD_ECHO;
+      n = sizeof(buf);
+      mscb_exchg(1, buf, &n, 1, RS485_FLAG_CMD | RS485_FLAG_NO_RETRY);
+
+      if (n >= 4) {
+         rev = (buf[2] << 8) + buf[3];
+         printf("Submaster        : %s\n", mscb_fd[fd-1].device);
+         printf("Address          : %s\n", inet_ntoa(((struct sockaddr_in *)mscb_fd[fd-1].eth_addr)->sin_addr));
+         printf("Protocol version : %d\n", buf[1]);
+         printf("SVN revision     : %d\n", rev);
+
+         if (n == 8) {
+            uptime = (buf[7]<<0) + (buf[6]<<8) + (buf[5]<<16) + (buf[4]<<24);
+            printf("Uptime           : %dd %02dh %02dm %02ds\n",
+                   uptime / (3600 * 24),
+                   (uptime % (3600 * 24)) / 3600, (uptime % 3600) / 60,
+                   (uptime % 60));
+         }
+      }
+
+   } else if (mscb_fd[fd - 1].type == MSCB_TYPE_USB) {
+      printf("This function is currently not implemented for USB submasters\n");
+   }
+
+   debug_log("return MSCB_SUCCESS\n", 0);
+   return MSCB_SUCCESS;
+}

@@ -77,7 +77,7 @@ static RPC_LIST rpc_list[] = {
      {TID_INT, RPC_IN},
      {0}}},
 
-   {RPC_MSCB_RESET, "mscb_reset",
+   {RPC_MSCB_SUBM_RESET, "mscb_subm_reset",
     {{TID_INT, RPC_IN},
      {0}}},
 
@@ -463,8 +463,8 @@ int server_execute(int index, void *prpc_param[])
       status = mscb_reboot(CINT(0), CINT(1), CINT(2), CINT(3));
       break;
 
-   case RPC_MSCB_RESET:
-      status = mscb_reset(CINT(0));
+   case RPC_MSCB_SUBM_RESET:
+      status = mscb_subm_reset(CINT(0));
       break;
 
    case RPC_MSCB_PING:

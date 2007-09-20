@@ -718,6 +718,7 @@ void send_remote_var(unsigned char i);
 unsigned char ping(unsigned short addr);
 
 void sysclock_init(void);
+void sysclock_reset(void);
 unsigned long time(void);
 unsigned long uptime(void);
 
