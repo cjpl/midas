@@ -257,7 +257,7 @@ extern "C" {
    void EXPRT mscb_get_version(char *lib_version, char *prot_version);
    void EXPRT mscb_check(char *device, int size);
    int EXPRT mscb_exit(int fd);
-   int EXPRT mscb_reset(int fd);
+   int EXPRT mscb_subm_reset(int fd);
    int EXPRT mscb_reboot(int fd, int addr, int gaddr, int broadcast);
    int EXPRT mscb_ping(int fd, unsigned short adr, int quick);
    int EXPRT mscb_echo(int fd, unsigned short add, unsigned char d1, unsigned char *d2);
@@ -285,6 +285,7 @@ extern "C" {
 
    int set_mac_address(int fd);
    void mscb_scan_udp();
+   int mscb_subm_info(int fd);
 
 #ifdef __cplusplus
 }

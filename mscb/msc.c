@@ -112,12 +112,13 @@ void print_help()
    puts("ping <addr> [r]            Ping node and set address [repeat mode]");
    puts("read <index> [r] [a]       Read node variable [repeat mode]  [all variables]");
    puts("reboot                     Reboot addressed node");
-   puts("reset                      Reboot whole MSCB system");
    puts("sa <addr>                  Set node address of addressed node");
    puts("save <file> [first last]   Save current node variables [save range]");
    puts("scan [r] [a]               Scan bus for nodes [repeat mode] [all]");
    puts("sg <addr>                  Set group address of addressed node(s)");
    puts("sn <name>                  Set node name (up to 16 characters)");
+   puts("sr                         Reset current submaster");
+   puts("submaster                  Show info for current submaster");
    puts("terminal                   Enter teminal mode for SCS-210");
    puts("upload <hex-file> [debug]  Upload new firmware to node [with debug info]");
    puts("mup <hex-file> <a1> <a2>   Upload new firmware to nodes a1-a2");
@@ -1418,9 +1419,14 @@ void cmd_loop(int fd, char *cmd, unsigned short adr)
          }
       }
 
-      /* reset ---------- */
-      else if (match(param[0], "reset")) {
-         mscb_reset(fd);
+      /* sr ---------- */
+      else if (match(param[0], "sr")) {
+         mscb_subm_reset(fd);
+      }
+
+      /* submaster ---------- */
+      else if (match(param[0], "submaster")) {
+         mscb_subm_info(fd);
       }
 
       /* echo test ---------- */

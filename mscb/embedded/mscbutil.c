@@ -708,6 +708,32 @@ sbit led_9 = LED_9;
 
 /*------------------------------------------------------------------*/
 
+void sysclock_reset(void)
+/********************************************************************\
+
+  Routine: sysclock_reset
+
+  Purpose: Reset system clock and uptime counter
+
+*********************************************************************/
+{
+   unsigned char i;
+
+   _systime = 0;
+   _uptime = 0;
+   _uptime_cnt = 100;
+
+   for (i=0 ; i<N_LED ; i++) {
+     leds[i].mode = 0;
+     leds[i].timer = 0;
+     leds[i].interval = 0;
+     leds[i].n = 0;
+   }
+}
+
+/*------------------------------------------------------------------*/
+
+
 void sysclock_init(void)
 /********************************************************************\
 
@@ -717,8 +743,6 @@ void sysclock_init(void)
 
 *********************************************************************/
 {
-   unsigned char i;
-
    EA = 1;                      // general interrupt enable
    ET0 = 1;                     // Enable Timer 0 interrupt
    PT1 = 0;                     // Interrupt priority low
@@ -745,16 +769,7 @@ void sysclock_init(void)
    TL0 = 0x00;
    TR0 = 1;                     // start timer 0
 
-   _systime = 0;
-   _uptime = 0;
-   _uptime_cnt = 100;
-
-   for (i=0 ; i<N_LED ; i++) {
-     leds[i].mode = 0;
-     leds[i].timer = 0;
-     leds[i].interval = 0;
-     leds[i].n = 0;
-   }
+   sysclock_reset();
 }
 
 /*------------------------------------------------------------------*/

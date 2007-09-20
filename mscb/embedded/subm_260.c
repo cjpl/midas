@@ -198,6 +198,9 @@ void setup(void)
    /* initialize UART0 */
    uart_init(0, BD_115200);
    PS0 = 1;                     // serial interrupt high priority
+                  
+   /* reset system clock */
+   sysclock_reset();
 
    /* Blink LEDs */
    led_blink(0, 3, 150);
@@ -338,7 +341,8 @@ void wd_refresh()
 
 unsigned char execute(char socket_no)
 {
-   unsigned short svn_rev;
+   unsigned short xdata svn_rev;
+   unsigned long xdata up_time;
 
    if (rs485_tx_buf[0] == MCMD_INIT) {
       /* reboot */
@@ -354,7 +358,18 @@ unsigned char execute(char socket_no)
       rs485_rx_buf[1] = SUBM_VERSION;
       rs485_rx_buf[2] = svn_rev >> 8;
       rs485_rx_buf[3] = svn_rev & 0xFF;
-      udp_send(socket_no, rs485_rx_buf, 4);
+
+      up_time = uptime();
+      rs485_rx_buf[7] = up_time & 0xFF;
+      up_time >>= 8;
+      rs485_rx_buf[6] = up_time & 0xFF;
+      up_time >>= 8;
+      rs485_rx_buf[5] = up_time & 0xFF;
+      up_time >>= 8;
+      rs485_rx_buf[4] = up_time & 0xFF;
+      up_time >>= 8;
+
+      udp_send(socket_no, rs485_rx_buf, 8);
       return 2;
    }
 
@@ -580,6 +595,9 @@ int udp_receive(unsigned char **data_ptr, char *socket_no_ptr)
    if (dhcp_state == DHCP_DEAD)
       return (DHCP_LEASE_EXPIRED);
 
+   /* invert first LED if DHCP is ok */
+   led_mode(0, dhcp_state == DHCP_OK);
+
    /* renew with the previous lease time */
    if (dhcp_state == DHCP_RENEWING || dhcp_state == DHCP_REBINDING)
       (void) mn_dhcp_renew(dhcp_lease.org_lease_time);
@@ -675,9 +693,6 @@ void main(void)
 
    // obtain IP address
    mn_dhcp_start(NULL, DHCP_DEFAULT_LEASE_TIME);
-
-   // invert first LED
-   led_mode(0, 1);
 
    // turn on watchdog
    watchdog_enable(10);
