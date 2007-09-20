@@ -17,7 +17,7 @@
 #include "mscbemb.h"
 #include "../scs_2000.h"
 
-char code node_name[] = "SCS-2000-APP";
+char code node_name[] = "SCS-2000-APP"; // not more than 15 characters !
 char code svn_revision[] = "$Id: scs_2000_app.c 2874 2005-11-15 08:47:14Z ritt $";
 
 /* declare number of sub-addresses to framework */
