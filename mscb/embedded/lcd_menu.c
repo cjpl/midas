@@ -275,7 +275,7 @@ void display_name(unsigned char index, MSCB_INFO_VAR *pvar)
    /* display variable name */
    memcpy(str, pvar->name, 8);
    str[8] = 0;
-   printf("%2bd:%s", index, str);
+   printf("%2bu:%s", index, str);
    puts("        ");
 }
 
