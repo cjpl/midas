@@ -939,7 +939,10 @@ void cmd_loop(int fd, char *cmd, unsigned short adr)
                       && (str[strlen(str) - 1] == '\r' || str[strlen(str) - 1] == '\n'))
                   str[strlen(str) - 1] = 0;
 
-               mscb_set_name(fd, (unsigned short) current_addr, str);
+               if (strlen(str) > 15)
+                  printf("Maximum length is 15 characters, please choose shorter name\n");
+               else
+                  mscb_set_name(fd, (unsigned short) current_addr, str);
             }
          }
       }
