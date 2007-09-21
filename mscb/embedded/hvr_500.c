@@ -206,6 +206,8 @@ void write_adc(unsigned char a, unsigned char d);
 void user_write(unsigned char index) reentrant;
 void ramp_hv(unsigned char channel);
 void reset_hardware_trip(void);
+unsigned char read_current(unsigned char channel);
+unsigned char read_hv(unsigned char channel);
 
 /*---- User init function ------------------------------------------*/
 
@@ -705,13 +707,13 @@ void set_hv(unsigned char channel, float value) reentrant
 
 /*------------------------------------------------------------------*/
 
-void read_hv(unsigned char channel)
+unsigned char read_hv(unsigned char channel)
 {
    float xdata hv;
 
    /* read voltage channel */
    if (!adc_read(channel*2, &hv))
-      return;
+      return 0;
 
    /* convert to HV */
    hv *= DIVIDER;
@@ -727,6 +729,8 @@ void read_hv(unsigned char channel)
    DISABLE_INTERRUPTS;
    user_data[channel].u_meas = hv;
    ENABLE_INTERRUPTS;
+
+   return 1;
 }
 
 /*------------------------------------------------------------------*/
@@ -862,33 +866,48 @@ void check_current(unsigned char channel)
 #else
    if (user_data[channel].i_meas > user_data[channel].i_limit) {
 
-      if (trip_time[channel] == 0)
-         trip_time[channel] = time();
+      unsigned char i;
 
-      /* ramp down */
-      chn_bits[channel] &= ~DEMAND_CHANGED;
-      chn_bits[channel] &= ~RAMP_UP;
-      user_data[channel].status &= ~STATUS_RAMP_UP;
-
-      if (user_data[channel].ramp_down > 0) {
-         /* ramp down if requested */
-         chn_bits[channel] |= RAMP_DOWN;
-         user_data[channel].status |= STATUS_RAMP_DOWN;
-      } else {
-         /* otherwise go to zero immediately */
-         set_hv(channel, 0);
-         u_actual[channel] = 0;
-         user_data[channel].u_dac = 0;
-
-         /* stop possible ramping */
-         chn_bits[channel] &= ~RAMP_DOWN;
-         user_data[channel].status &= ~STATUS_RAMP_DOWN;
+      /* ADC could be crashed, so reset it and read current again */
+      for (i=0 ; i<10 ; i++) {
+         reset_adc();
+         delay_ms(50);
+         read_hv(channel);
+         if (read_current(channel))
+            break;
       }
 
-      /* raise trip flag */
-      if ((user_data[channel].status & STATUS_ILIMIT) == 0) {
-         user_data[channel].status |= STATUS_ILIMIT;
-         user_data[channel].trip_cnt++;
+      /* now test again for trip */
+      if (user_data[channel].i_meas > user_data[channel].i_limit) {
+
+         if (trip_time[channel] == 0)
+            trip_time[channel] = time();
+   
+         /* ramp down */
+         chn_bits[channel] &= ~DEMAND_CHANGED;
+         chn_bits[channel] &= ~RAMP_UP;
+         user_data[channel].status &= ~STATUS_RAMP_UP;
+   
+         if (user_data[channel].ramp_down > 0) {
+            /* ramp down if requested */
+            chn_bits[channel] |= RAMP_DOWN;
+            user_data[channel].status |= STATUS_RAMP_DOWN;
+         } else {
+            /* otherwise go to zero immediately */
+            set_hv(channel, 0);
+            u_actual[channel] = 0;
+            user_data[channel].u_dac = 0;
+   
+            /* stop possible ramping */
+            chn_bits[channel] &= ~RAMP_DOWN;
+            user_data[channel].status &= ~STATUS_RAMP_DOWN;
+         }
+   
+         /* raise trip flag */
+         if ((user_data[channel].status & STATUS_ILIMIT) == 0) {
+            user_data[channel].status |= STATUS_ILIMIT;
+            user_data[channel].trip_cnt++;
+         }
       }
    }
 #endif
@@ -915,13 +934,13 @@ void check_current(unsigned char channel)
 
 /*------------------------------------------------------------------*/
 
-void read_current(unsigned char channel)
+unsigned char read_current(unsigned char channel)
 {
    float xdata current;
 
    /* read current channel */
    if (!adc_read(channel*2+1, &current))
-      return;
+      return 0;
 
    /* correct opamp gain, divider & curr. resist, microamp */
    current = current / CUR_MULT * DIVIDER / RCURR * 1E6;
@@ -941,6 +960,8 @@ void read_current(unsigned char channel)
    DISABLE_INTERRUPTS;
    user_data[channel].i_meas = current;
    ENABLE_INTERRUPTS;
+
+   return 1;
 }
 
 /*------------------------------------------------------------------*/
