@@ -100,6 +100,7 @@ sbit DAC_DIN  = P1 ^ 4;         // Data in
 #define REG_ADCGAIN    6
 #define REG_IOCONTROL  7
 
+//#define ADC_SF_VALUE  13        // SF value for 50Hz rejection, 4 Hz total update rate
 #define ADC_SF_VALUE  27        // SF value for 50Hz rejection, 2 Hz total update rate
 //#define ADC_SF_VALUE  82        // SF value for 50Hz rejection, 1 Hz total update rate
 
@@ -864,7 +865,8 @@ void check_current(unsigned char channel)
       }
    }
 #else
-   if (user_data[channel].i_meas > user_data[channel].i_limit) {
+   if (user_data[channel].i_meas > user_data[channel].i_limit &&
+       user_data[channel].u_dac > 40) {
 
       unsigned char i;
 
