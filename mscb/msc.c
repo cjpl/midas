@@ -573,7 +573,7 @@ void cmd_loop(int fd, char *cmd, unsigned short adr)
    unsigned char c;
    float value;
    char str[256], line[256], dbuf[100 * 1024], param[10][100], *pc, *buffer, lib[32],
-       prot[32], *pdata;
+       prot[32], *pdata, dbuf2[256];
    FILE *cmd_file = NULL;
    MSCB_INFO info;
    MSCB_INFO_VAR info_var_array[256];
@@ -1580,8 +1580,10 @@ void cmd_loop(int fd, char *cmd, unsigned short adr)
                         DWORD_SWAP(pdata);
                      }
 
+                     memset(dbuf2, 0, sizeof(dbuf2));
+                     memcpy(dbuf2, pdata, size);
                      if ((info_var_array[i].flags & MSCBF_HIDDEN) == 0 || read_all || first == last)
-                        print_channel(i, &info_var_array[i], pdata, first != last);
+                        print_channel(i, &info_var_array[i], dbuf2, first != last);
 
                      if (kbhit())
                         break;
