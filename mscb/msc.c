@@ -603,7 +603,7 @@ void cmd_loop(int fd, char *cmd, unsigned short adr)
       current_addr = adr;
 
    broadcast = 0;
-
+   reference_addr = 0;
    status = 0;
 
    /* fill table of possible addresses */
