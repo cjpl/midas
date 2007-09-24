@@ -334,32 +334,43 @@ void user_init(unsigned char init)
 
 void user_write(unsigned char index) reentrant
 {
-   if (index == 0 || index == 1 || index == 5) {
+   unsigned char a;
+
+   a = cur_sub_addr();
+
+   if (index == 0 || 
+      (index == 1 && user_data[a].u_demand == 0) || 
+       index == 5) {
+
       /* reset trip */
-      user_data[cur_sub_addr()].status &= ~STATUS_ILIMIT;
+      user_data[a].status &= ~STATUS_ILIMIT;
+
+      /* reset trip count if not addressed directly */
+      if (index != 5)
+         user_data[a].trip_cnt = 0;
 
       /* reset FF's in main loop */
       trip_reset = 1;
 
       /* indicate new demand voltage */
-      chn_bits[cur_sub_addr()] |= DEMAND_CHANGED;
+      chn_bits[a] |= DEMAND_CHANGED;
    }
 
    /* re-check voltage limit */
    if (index == 8) {
-      if (user_data[cur_sub_addr()].u_limit > MAX_VOLTAGE)
-         user_data[cur_sub_addr()].u_limit = MAX_VOLTAGE;
+      if (user_data[a].u_limit > MAX_VOLTAGE)
+         user_data[a].u_limit = MAX_VOLTAGE;
 
-      chn_bits[cur_sub_addr()] |= DEMAND_CHANGED;
+      chn_bits[a] |= DEMAND_CHANGED;
    }
 
    /* check current limit */
    if (index == 9) {
-      if (user_data[cur_sub_addr()].i_limit > MAX_CURRENT &&
-          user_data[cur_sub_addr()].i_limit != 9999)
-         user_data[cur_sub_addr()].i_limit = MAX_CURRENT;
+      if (user_data[a].i_limit > MAX_CURRENT &&
+          user_data[a].i_limit != 9999)
+         user_data[a].i_limit = MAX_CURRENT;
 
-      chn_bits[cur_sub_addr()] |= CUR_LIMIT_CHANGED;
+      chn_bits[a] |= CUR_LIMIT_CHANGED;
    }
 }
 
