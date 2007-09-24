@@ -558,11 +558,22 @@ INT register_equipment(void)
 
          if (frontend_index != -1) {
             /* modify equipment name to <name>xx where xx is the frontend index */
-            sprintf(equipment[idx].name + strlen(equipment[idx].name), "%02d",
-                  frontend_index);
+            if (strchr(equipment[idx].name, '%')) {
+               strcpy(str, equipment[idx].name);
+               sprintf(equipment[idx].name, str, frontend_index);
+            }
 
             /* modify event buffer name to <name>xx where xx is the frontend index */
-            sprintf(eq_info->buffer + strlen(eq_info->buffer), "%02d", frontend_index);
+            if (strchr(eq_info->buffer, '%')) {
+               strcpy(str, eq_info->buffer);
+               sprintf(eq_info->buffer, str, frontend_index);
+            }
+         } else {
+            /* stip %.. */
+            if (strchr(equipment[idx].name, '%'))
+               *strchr(equipment[idx].name, '%') = 0;
+            if (strchr(eq_info->buffer, '%'))
+               *strchr(eq_info->buffer, '%') = 0;
          }
       }
 
