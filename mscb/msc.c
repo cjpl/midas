@@ -122,6 +122,7 @@ void print_help()
    puts("terminal                   Enter teminal mode for SCS-210");
    puts("upload <hex-file> [debug]  Upload new firmware to node [with debug info]");
    puts("mup <hex-file> <a1> <a2>   Upload new firmware to nodes a1-a2");
+   puts("mwr <index> <value> <n1> <n2>  Write a variable to nodes from <n1> to <n2>");
    puts("verify <hex-file>          Compare current firmware with file");
    puts("version                    Display version number");
    puts("write <index> <value> [r]  Write node variable");
@@ -565,8 +566,8 @@ int match(char *str, char *cmd)
 
 void cmd_loop(int fd, char *cmd, unsigned short adr)
 {
-   int i, j, fh, status, size, nparam, current_addr, current_group, first, last, broadcast,
-       read_all, repeat, index, idx1, idx2, wait = 0, n_found;
+   int i, j, fh, status, size, nparam, current_addr, current_group, reference_addr,
+      first, last, broadcast, read_all, repeat, index, idx1, idx2, wait = 0, n_found;
    int ping_addr[0x10000];
    unsigned short addr;
    unsigned int data, uptime;
@@ -876,6 +877,9 @@ void cmd_loop(int fd, char *cmd, unsigned short adr)
             } else
                addr = (unsigned short) atoi(param[1]);
 
+            printf("Enter address of first node in group %d: ", addr);
+            fgets(str, sizeof(str), stdin);
+            reference_addr = atoi(str);
             current_addr = -1;
             current_group = addr;
             broadcast = 0;
@@ -1006,9 +1010,7 @@ void cmd_loop(int fd, char *cmd, unsigned short adr)
                   idx2 = idx1;
 
                if (current_addr < 0) {
-                  printf("Enter address of first node in group %d: ", current_group);
-                  fgets(str, sizeof(str), stdin);
-                  addr = atoi(str);
+                  addr = reference_addr;
                } else
                   addr = current_addr;
 
@@ -1079,6 +1081,59 @@ void cmd_loop(int fd, char *cmd, unsigned short adr)
                if (status != MSCB_SUCCESS)
                   printf("Error: %d\n", status);
             }
+         }
+      }
+
+      /* mwrite ---------- */
+      else if (match(param[0], "mwrite")) {
+         if (!param[1][0] || !param[2][0] || !param[3][0] || !param[4][0])
+            puts("Please specify variable index, value, and node range");
+         else {
+            index = atoi(param[1]);
+            first = atoi(param[3]);
+            last  = atoi(param[4]);
+
+            mscb_info_variable(fd, (unsigned short) first, (unsigned char) index,
+                              &info_var);
+
+            for (addr = first ; addr <= last ; addr++) {
+
+               printf("Node %d\n", addr);
+               if (info_var.unit == UNIT_STRING) {
+                  memset(str, 0, sizeof(str));
+                  strncpy(str, param[2], info_var.width);
+                  if (strlen(str) > 0 && str[strlen(str) - 1] == '\n')
+                     str[strlen(str) - 1] = 0;
+
+                  status = mscb_write(fd, (unsigned short) addr,
+                                    (unsigned char) index, str, strlen(str) + 1);
+
+               } else if (info_var.unit == UNIT_ASCII) {
+                  memset(str, 0, sizeof(str));
+                  strncpy(str, param[2], sizeof(str));
+                  if (strlen(str) > 0 && str[strlen(str) - 1] == '\n')
+                     str[strlen(str) - 1] = 0;
+
+                  mscb_write(fd, (unsigned short) addr,
+                              (unsigned char) index, str, strlen(str) + 1);
+               } else {
+                  if (info_var.flags & MSCBF_FLOAT) {
+                     value = (float) atof(param[2]);
+                     memcpy(&data, &value, sizeof(float));
+                  } else {
+                     if (param[2][1] == 'x')
+                        sscanf(param[2] + 2, "%x", &data);
+                     else
+                        data = atoi(param[2]);
+                  }
+
+                  status = mscb_write(fd, (unsigned short) addr,
+                                    (unsigned char) index, &data, info_var.width);
+               }
+            }
+
+            if (status != MSCB_SUCCESS)
+               printf("Error: %d\n", status);
          }
       }
 
