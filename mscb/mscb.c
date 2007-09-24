@@ -3950,7 +3950,7 @@ void mscb_scan_udp()
 {
    char str[256];
    unsigned char buf[256];
-   int i, n, rev;
+   int i, n, rev, uptime;
    struct hostent *phe;
    struct sockaddr_in *psa_in;
 
@@ -3995,9 +3995,17 @@ void mscb_scan_udp()
       n = sizeof(buf);
       mscb_exchg(1, buf, &n, 1, RS485_FLAG_CMD | RS485_FLAG_NO_RETRY);
 
-      if (n == 4) {
+      if (n >= 4) {
          rev = (buf[2] << 8) + buf[3];
-         printf("Found %s, Protocol version %d, SVN revision %d\n", str, buf[1], rev);
+         printf("Found %s, PV %d, SVN rev. %d", str, buf[1], rev);
+         if (n >= 8) {
+            uptime = (buf[7]<<0) + (buf[6]<<8) + (buf[5]<<16) + (buf[4]<<24);
+            printf(", UT %dd %02dh %02dm %02ds",
+                   uptime / (3600 * 24),
+                   (uptime % (3600 * 24)) / 3600, (uptime % 3600) / 60,
+                   (uptime % 60));
+         }
+         printf("\n");
       }
    }
 
