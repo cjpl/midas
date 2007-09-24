@@ -553,28 +553,25 @@ INT register_equipment(void)
       /* init status */
       equipment[idx].status = FE_SUCCESS;
 
-      /* check for event builder event */
-      if (eq_info->eq_type & EQ_EB) {
-
-         if (frontend_index != -1) {
-            /* modify equipment name to <name>xx where xx is the frontend index */
-            if (strchr(equipment[idx].name, '%')) {
-               strcpy(str, equipment[idx].name);
-               sprintf(equipment[idx].name, str, frontend_index);
-            }
-
-            /* modify event buffer name to <name>xx where xx is the frontend index */
-            if (strchr(eq_info->buffer, '%')) {
-               strcpy(str, eq_info->buffer);
-               sprintf(eq_info->buffer, str, frontend_index);
-            }
-         } else {
-            /* stip %.. */
-            if (strchr(equipment[idx].name, '%'))
-               *strchr(equipment[idx].name, '%') = 0;
-            if (strchr(eq_info->buffer, '%'))
-               *strchr(eq_info->buffer, '%') = 0;
+      /* check for % in equipment (needed for event building) */
+      if (frontend_index != -1) {
+         /* modify equipment name to <name>xx where xx is the frontend index */
+         if (strchr(equipment[idx].name, '%')) {
+            strcpy(str, equipment[idx].name);
+            sprintf(equipment[idx].name, str, frontend_index);
          }
+
+         /* modify event buffer name to <name>xx where xx is the frontend index */
+         if (strchr(eq_info->buffer, '%')) {
+            strcpy(str, eq_info->buffer);
+            sprintf(eq_info->buffer, str, frontend_index);
+         }
+      } else {
+         /* stip %.. */
+         if (strchr(equipment[idx].name, '%'))
+            *strchr(equipment[idx].name, '%') = 0;
+         if (strchr(eq_info->buffer, '%'))
+            *strchr(eq_info->buffer, '%') = 0;
       }
 
       sprintf(str, "/Equipment/%s/Common", equipment[idx].name);
