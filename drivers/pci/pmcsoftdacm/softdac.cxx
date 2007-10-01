@@ -3,7 +3,7 @@
   Name:         softdac.c
   Created by:   Konstantin Olchanski
 
-  Cotents:      Routines for accessing the AWG PMC-SOFTDAC-M board
+  Contents:      Routines for accessing the AWG PMC-SOFTDAC-M board
                 from ALPHI TECHNOLOGY CORPORATION 
                 
  * See manual at
@@ -59,7 +59,7 @@ int softdac_Open(ALPHISOFTDAC ** al)
     }
 
   // Set initial scaling coefficients
-  softdac_ScaleSet(*al, RANGE_PM10V, 0., 0.);
+  softdac_ScaleSet(*al, SOFTDAC_RANGE_PM10V, 0., 0.);
 
   return 0;
 }
@@ -83,41 +83,42 @@ Only one set of param for all the channels.
 int softdac_ScaleSet(ALPHISOFTDAC * al, int range, double alpha, double beta)
 {
   switch (range) {
-  case RANGE_P5V:
+  case SOFTDAC_RANGE_P5V:
     al->alpha = 5.0/32767.;
     al->beta =  0.0;
     break;
-  case RANGE_P10V:
+  case SOFTDAC_RANGE_P10V:
     al->alpha = 10.0/65565.;
     al->beta =  0.0;
     break;
-  case RANGE_PM5V:
+  case SOFTDAC_RANGE_PM5V:
     al->alpha = 5.0/32767.;
     al->beta =  -5.0;
     break;
-  case RANGE_PM10V:
+  case SOFTDAC_RANGE_PM10V:
     al->alpha = 10.0/32767.;
     al->beta =  -10.0;
     break;
-  case RANGE_PM2P5V:
+  case SOFTDAC_RANGE_PM2P5V:
     al->alpha = 2.5/32767.;
     al->beta =  -2.5;
     break;
-  case RANGE_M2P5P7P5V:
+  case SOFTDAC_RANGE_M2P5P7P5V:
     al->alpha = 7.5/32767.;
     al->beta =  -2.5;
     break;
-  case SET_COEF:
+  case SOFTDAC_SET_COEF:
     al->alpha = alpha;
     al->beta  = beta;
     break;
   }
 
-  if (range != SET_COEF) {
-    D32(al->regs+CMD_REG)      = 0x10 | range;
-    D32(al->regs+CMD_REG)      = IMMEDIATE_MODE;
+  if (range != SOFTDAC_SET_COEF) {
+    SOFTDAC_D16(al->regs+SOFTDAC_CMD_REG)      =  0x10 | range;
+    //    SOFTDAC_D16(al->regs+SOFTDAC_CMD_REG)      = 0x02; // SOFTDAC_IMMEDIATE_MODE;
   }
 
+  al->range = range;
   return (0);
 }
 
@@ -130,11 +131,11 @@ Reset softdac
 int softdac_Reset(ALPHISOFTDAC * al)
 {
   for (int i=0; i<0x14; i+=4)
-    D32(al->regs+SOFTDAC_OFFSET+i) = 0;
-  D32(al->regs+SOFTDAC_OFFSET+0x14) = CLK_SAMPLE_RESET;
-  D32(al->regs+SOFTDAC_OFFSET+0x16) = ADDRESS_RESET;
-  D32(al->regs+SOFTDAC_OFFSET+0x18) = DACS_RESET;
-  D32(al->regs+SOFTDAC_OFFSET+0x10) = 0xF0000000;
+    SOFTDAC_D32(al->regs+SOFTDAC_OFFSET+i) = 0;
+  SOFTDAC_D32(al->regs+SOFTDAC_OFFSET+0x14) = SOFTDAC_CLK_SAMPLE_RESET;
+  SOFTDAC_D32(al->regs+SOFTDAC_OFFSET+0x16) = SOFTDAC_ADDRESS_RESET;
+  SOFTDAC_D32(al->regs+SOFTDAC_OFFSET+0x18) = SOFTDAC_DACS_RESET;
+  SOFTDAC_D32(al->regs+SOFTDAC_OFFSET+0x10) = 0xF0000000;
   return al->regs[SOFTDAC_OFFSET+0]; // flush posted PCI writes
 }
 
@@ -156,6 +157,69 @@ Convert Volt to Dac value
 */
 uint16_t softdac_Volt2Dac(ALPHISOFTDAC * al, double volt)
 {
+  
+  switch (al->range) {
+  case SOFTDAC_RANGE_P5V:
+    if (volt < 0.0) {
+      printf("Out of range -> Limited to range (%e < 0.0)\n", volt);
+      volt = 0.0;
+    }
+    if (volt > 5.0) {
+      printf("Out of range -> Limited to range  (%e > 5.0)\n", volt);
+      volt = 5.0;
+    }
+    break;
+  case SOFTDAC_RANGE_P10V:
+    if (volt < 0.0) {
+      printf("Out of range -> Limited to range  (%e < 0.0)\n", volt);
+      volt = 0.0;
+    }
+    if (volt > 10.0) {
+      printf("Out of range -> Limited to range  (%e > 10.0)\n", volt);
+      volt = 10.0;
+    }
+    break;
+  case SOFTDAC_RANGE_PM5V:
+    if (volt < -5.0) {
+      printf("Out of range -> Limited to range  (%e < -5.0)\n", volt);
+      volt = -5.0;
+    }
+    if (volt > 5.0) {
+      printf("Out of range -> Limited to range  (%e > 5.0)\n", volt);
+      volt = 5.0;
+    }
+    break;
+  case SOFTDAC_RANGE_PM10V:
+    if (volt < -10.0) {
+      printf("Out of range -> Limited to range  (%e < -10.0)\n", volt);
+      volt = -10.0;
+    }
+    if (volt > 10.0) {
+      printf("Out of range -> Limited to range  (%e > +10.0)\n", volt);
+      volt = 10.0;
+    }
+    break;
+  case SOFTDAC_RANGE_PM2P5V:
+    if (volt < -2.0) {
+      printf("Out of range -> Limited to range  (%e < -2.0)\n", volt);
+      volt = 0.0;
+    }
+    if (volt > 5.0) {
+      printf("Out of range -> Limited to range  (%e > 5.0)\n", volt);
+      volt = 5.0;
+    }
+    break;
+  case SOFTDAC_RANGE_M2P5P7P5V:
+    if (volt < -2.5) {
+      printf("Out of range -> Limited to range  (%e < -2.5)\n", volt);
+      volt = -2.5;
+    }
+    if (volt > 7.5) {
+      printf("Out of range -> Limited to range  (%e > +7.5)\n", volt);
+      volt = 7.5;
+    }
+    break;
+  }
   return (uint16_t) ((volt - al->beta) / al->alpha);
 }
 
@@ -178,7 +242,7 @@ Get channel address for a particular bank
 @param ichan
 @return int
 */
-char* chanAddr(char* data, int ibank, int ichan, int offset)
+static char* chanAddr(char* data, int ibank, int ichan, int offset)
 {
   return data + ibank*0x40000 + ichan*0x4000 + 2*offset;
 }
@@ -194,9 +258,9 @@ Get channel address for a particular bank
 */
 int softdac_BankActiveRead(ALPHISOFTDAC * al)
 {
-  int stat0 = D08(al->regs+CTL_STAT_0);
+  int stat0 = SOFTDAC_D08(al->regs+SOFTDAC_CTL_STAT_0);
   stat0 &= 0x1;
-  int stat1 = D08(al->regs+CTL_STAT_1);
+  int stat1 = SOFTDAC_D08(al->regs+SOFTDAC_CTL_STAT_1);
   stat1 &= 0x1;
   return (stat0 | (stat1<<1));
 }
@@ -217,7 +281,7 @@ int softdac_DacWrite(ALPHISOFTDAC * al, unsigned short *data, int * chlist, int 
   int16_t dummy = 0;
 
   for (int i=0; i<nch; i++) {
-    D16((al->regs+DAC0102)+2*chlist[i]) = data[i];
+    SOFTDAC_D16((al->regs+SOFTDAC_DAC0102)+2*chlist[i]) = data[i];
   }
 
   return dummy;
@@ -251,7 +315,8 @@ int softdac_LinLoad(ALPHISOFTDAC * al, double vin, double vout, int npts, int * 
     for (int i=0; i<npts; i++)
       {
 	b[i] = (uint16_t)(din + (i * (dout-din) / (npts-1) ));
-	printf("Ch:%d Volt dac[%i]:%d\n", ichan, i, b[i]);
+	printf("&b[i]:%p  npts:%d Ch:%d Volt dac[%i]:%d\n", &b[i], npts, ichan, i
+	       , (uint16_t)(din + (i * (dout-din) / (npts-1) )));
       }
   }
   *offset += npts;
@@ -298,8 +363,8 @@ int  softdac_DirectDacWrite(ALPHISOFTDAC * al, uint16_t din, int chan, double *a
 {
   int16_t dummy = 0;
 
-  D16((al->regs+DAC0102+(chan*2))) = din;
-  printf("Dac chan:%d Reg:0x%x\n", chan,  DAC0102+(chan*2));
+  SOFTDAC_D16((al->regs+SOFTDAC_DAC0102+(chan*2))) = din;
+  printf("Dac chan:%d Reg:0x%x\n", chan,  SOFTDAC_DAC0102+(chan*2));
   return dummy;
 }
 
@@ -308,8 +373,8 @@ int  softdac_DacWrite(ALPHISOFTDAC * al, uint16_t din, int chan, double *arg)
 {
   int16_t dummy = 0;
 
-  D16((al->regs+DAC0102+(chan*2))) = din;
-  printf("Dac chan:%d Reg:0x%x\n", chan,  DAC0102+(chan*2));
+  SOFTDAC_D16((al->regs+SOFTDAC_DAC0102+(chan*2))) = din;
+  printf("Dac chan:%d Reg:0x%x\n", chan,  SOFTDAC_DAC0102+(chan*2));
   return dummy;
 }
 
@@ -319,51 +384,39 @@ int  softdac_DirectVoltWrite(ALPHISOFTDAC * al, double vin, int chan, double *ar
   int16_t dummy = 0;
 
   uint16_t din  = softdac_Volt2Dac(al, vin);
-  D16((al->regs+DAC0102+(chan*2))) = din;
-  printf("Volt chan:%d Reg:0x%x\n", chan,  DAC0102+(chan*2));
+  SOFTDAC_D16((al->regs+SOFTDAC_DAC0102+(chan*2))) = din;
+  printf("Volt chan:%d DacVolt:%06d Reg:0x%x\n", chan, din, SOFTDAC_DAC0102+(chan*2));
   return dummy;
 }
 
 /*****************************************************************/
-int  softdac_SampleSet(ALPHISOFTDAC * al, int bank, int samples)
+void softdac_SampleSet(ALPHISOFTDAC * al, int bank, int samples)
 {
-  int16_t dummy = 0;
-  
   if (bank == 0) {
-    D32(al->regs+LAST_ADDR_0)  = samples; // last addr bank 0
+    SOFTDAC_D32(al->regs+SOFTDAC_LAST_ADDR_0)  = samples-1; // last addr bank 0
   } else if (bank == 1) {
-    D32(al->regs+LAST_ADDR_1)  = samples; // last addr bank 1
+    SOFTDAC_D32(al->regs+SOFTDAC_LAST_ADDR_1)  = samples-1; // last addr bank 1
   }
-  
-  return dummy;
 }
 
 /*****************************************************************/
-int  softdac_ClkSMEnable(ALPHISOFTDAC * al, int bank)
+void  softdac_SMEnable(ALPHISOFTDAC * al)
 {
-  int16_t dummy = 0;
+  uint16_t ctl_stat;
   
-  if (bank == 0) {
-    D08(al->regs+CTL_STAT_0)   = CLK_OUTPUT_ENABLE | EXTERNAL_CLK | SM_ENABLE; // ctrl 0
-  } else if (bank == 1) {
-    D08(al->regs+CTL_STAT_1)   = CLK_OUTPUT_ENABLE | EXTERNAL_CLK | SM_ENABLE; // ctrl 1
-  }
-  
-  return dummy;
+  ctl_stat = SOFTDAC_D08(al->regs+SOFTDAC_CTL_STAT_0);
+  ctl_stat |= SOFTDAC_CLK_OUTPUT_ENABLE |  SOFTDAC_SM_ENABLE;
+  SOFTDAC_D08(al->regs+SOFTDAC_CTL_STAT_0)   = ctl_stat; // ctrl 0
 }
 
 /*****************************************************************/
-int  softdac_ClkSMDisable(ALPHISOFTDAC * al, int bank)
+void softdac_SMDisable(ALPHISOFTDAC * al)
 {
-  int16_t dummy = 0;
+  uint16_t ctl_stat;
   
-  if (bank == 0) {
-    D08(al->regs+CTL_STAT_0)   = CLK_OUTPUT_ENABLE; // ctrl 0
-  } else if (bank == 1) {
-    D08(al->regs+CTL_STAT_1)   = CLK_OUTPUT_ENABLE; // ctrl 1
-  }
-  
-  return dummy;
+  ctl_stat = SOFTDAC_D08(al->regs+SOFTDAC_CTL_STAT_0);
+  ctl_stat &= ~SOFTDAC_SM_ENABLE;
+  SOFTDAC_D08(al->regs+SOFTDAC_CTL_STAT_0)   = ctl_stat; // ctrl 0
 }
 
 /*****************************************************************/
@@ -386,29 +439,29 @@ int  softdac_Setup(ALPHISOFTDAC * al, int samples, int mode)
   switch (mode) {
   case 0x1:
     printf("External Clk On, +/-10V range Stay in Bank 0 (mode:%d)\n", mode);
-    D32(al->regs+CLK_SAMP_INT) = CLK_500KHZ; // Not used as external
-    D32(al->regs+LAST_ADDR_0)  = samples; // last addr bank 0
-    D32(al->regs+LAST_ADDR_1)  = 0; // last addr bank 1
-    D08(al->regs+BANK_CTL_0)   = 0; // Stay in BANK0 ctrl
-    D08(al->regs+BANK_CTL_1)   = 0; // Stay in BANK1 ctrl
-    D08(al->regs+CTL_STAT_0)   = CLK_OUTPUT_ENABLE | INTERNAL_CLK | SM_ENABLE; // ctrl 0
-    D08(al->regs+CTL_STAT_1)   = 0; // ctrl 1
-    D32(al->regs+CMD_REG)      = 0x10 | RANGE_PM10V;
-    D32(al->regs+CMD_REG)      = IMMEDIATE_MODE;
+    SOFTDAC_D32(al->regs+SOFTDAC_CLK_SAMP_INT) = SOFTDAC_CLK_500KHZ; // Not used as external
+    SOFTDAC_D32(al->regs+SOFTDAC_LAST_ADDR_0)  = samples; // last addr bank 0
+    SOFTDAC_D32(al->regs+SOFTDAC_LAST_ADDR_1)  = 0; // last addr bank 1
+    SOFTDAC_D08(al->regs+SOFTDAC_BANK_CTL_0)   = 0; // Stay in BANK0 ctrl
+    SOFTDAC_D08(al->regs+SOFTDAC_BANK_CTL_1)   = 0; // Stay in BANK1 ctrl
+    SOFTDAC_D08(al->regs+SOFTDAC_CTL_STAT_0)   = SOFTDAC_CLK_OUTPUT_ENABLE | SOFTDAC_INTERNAL_CLK ; // ctrl 0
+    SOFTDAC_D08(al->regs+SOFTDAC_CTL_STAT_1)   = 0; // ctrl 1
+    //    SOFTDAC_D32(al->regs+SOFTDAC_CMD_REG)      = 0x10 | SOFTDAC_RANGE_PM10V;
+    //    SOFTDAC_D32(al->regs+SOFTDAC_CMD_REG)      = SOFTDAC_IMMEDIATE_MODE;
     break;
 
   case 0x2:
     printf("Direct Auto update to channel 1..16 (mode:%d)\n", mode);
     //    printf("\n");
-    D32(al->regs+CLK_SAMP_INT) = CLK_500KHZ; // sampling clock divisor
-    D32(al->regs+LAST_ADDR_0)  = samples; // last addr bank 0
-    D32(al->regs+LAST_ADDR_1)  = samples; // last addr bank 1
-    D08(al->regs+BANK_CTL_0)   = 0;                        // BANK0 ctrl
-    D08(al->regs+BANK_CTL_1)   = 0;                        // BANK1 ctrl
-    D08(al->regs+CTL_STAT_0)   = AUTO_UPDATE_DAC;          // ctrl 0
-    D08(al->regs+CTL_STAT_1)   = 0;                        // ctrl 1
-    D32(al->regs+CMD_REG)      = 0x10 | RANGE_PM10V;
-    D32(al->regs+CMD_REG)      = IMMEDIATE_MODE;
+    SOFTDAC_D32(al->regs+SOFTDAC_CLK_SAMP_INT) = SOFTDAC_CLK_500KHZ; // sampling clock divisor
+    SOFTDAC_D32(al->regs+SOFTDAC_LAST_ADDR_0)  = samples; // last addr bank 0
+    SOFTDAC_D32(al->regs+SOFTDAC_LAST_ADDR_1)  = samples; // last addr bank 1
+    SOFTDAC_D08(al->regs+SOFTDAC_BANK_CTL_0)   = 0;                        // BANK0 ctrl
+    SOFTDAC_D08(al->regs+SOFTDAC_BANK_CTL_1)   = 0;                        // BANK1 ctrl
+    SOFTDAC_D08(al->regs+SOFTDAC_CTL_STAT_0)   = SOFTDAC_AUTO_UPDATE_DAC;          // ctrl 0
+    SOFTDAC_D08(al->regs+SOFTDAC_CTL_STAT_1)   = 0;                        // ctrl 1
+    //    SOFTDAC_D32(al->regs+SOFTDAC_CMD_REG)      = 0x10 | SOFTDAC_RANGE_PM10V;
+    //    SOFTDAC_D32(al->regs+SOFTDAC_CMD_REG)      = SOFTDAC_IMMEDIATE_MODE;
 
     dummy = al->regs[0]; // flush posted PCI writes
     break;
@@ -416,17 +469,34 @@ int  softdac_Setup(ALPHISOFTDAC * al, int samples, int mode)
   case 0x3:
     printf("External Clk, loop on samples, stay in bank0 (mode:%d)\n", mode);
     //    printf("\n");
-    D32(al->regs+CLK_SAMP_INT) = CLK_500KHZ; // sampling clock divisor
-    D32(al->regs+LAST_ADDR_0)  = samples; // last addr bank 0
-    D32(al->regs+LAST_ADDR_1)  = 0; // last addr bank 1
-    D08(al->regs+BANK_CTL_0)   = 0;                        // BANK0 ctrl
-    D08(al->regs+BANK_CTL_1)   = 0;                        // BANK1 ctrl
-    D08(al->regs+CTL_STAT_0)   = CLK_OUTPUT_ENABLE | SM_ENABLE | EXTERNAL_CLK ; // ctrl 0
-    D08(al->regs+CTL_STAT_1)   = 0;                        // ctrl 1
+    SOFTDAC_D32(al->regs+SOFTDAC_CLK_SAMP_INT) = SOFTDAC_CLK_500KHZ; // sampling clock divisor
+    SOFTDAC_D32(al->regs+SOFTDAC_LAST_ADDR_0)  = samples; // last addr bank 0
+    SOFTDAC_D32(al->regs+SOFTDAC_LAST_ADDR_1)  = 0; // last addr bank 1
+    SOFTDAC_D08(al->regs+SOFTDAC_BANK_CTL_0)   = 0;                        // BANK0 ctrl
+    SOFTDAC_D08(al->regs+SOFTDAC_BANK_CTL_1)   = 0;                        // BANK1 ctrl
+    SOFTDAC_D08(al->regs+SOFTDAC_CTL_STAT_0)   = SOFTDAC_CLK_OUTPUT_ENABLE | SOFTDAC_EXTERNAL_CLK ; // ctrl 0
+    SOFTDAC_D08(al->regs+SOFTDAC_CTL_STAT_1)   = 0;                        // ctrl 1
     // Specific to the Softdac
-    D32(al->regs+CMD_REG)      = 0x10 | RANGE_PM10V;
-    D32(al->regs+CMD_REG)      = IMMEDIATE_MODE;
+    //    SOFTDAC_D32(al->regs+SOFTDAC_CMD_REG)      = 0x10 | SOFTDAC_RANGE_PM10V;
+    //    SOFTDAC_D32(al->regs+SOFTDAC_CMD_REG)      = SOFTDAC_IMMEDIATE_MODE;
 
+    dummy = al->regs[0]; // flush posted PCI writes
+    break;
+
+  case 0x4:
+    printf("Internal Clk, loop on samples, stay in bank0 (mode:%d)\n", mode);
+    //    printf("\n");
+    SOFTDAC_D32(al->regs+SOFTDAC_CLK_SAMP_INT) = SOFTDAC_CLK_500KHZ; // sampling clock divisor
+    SOFTDAC_D32(al->regs+SOFTDAC_LAST_ADDR_0)  = samples; // last addr bank 0
+    SOFTDAC_D32(al->regs+SOFTDAC_LAST_ADDR_1)  = 0; // last addr bank 1
+    SOFTDAC_D08(al->regs+SOFTDAC_BANK_CTL_0)   = 0;                        // BANK0 ctrl
+    SOFTDAC_D08(al->regs+SOFTDAC_BANK_CTL_1)   = 0;                        // BANK1 ctrl
+    SOFTDAC_D08(al->regs+SOFTDAC_CTL_STAT_0)   = SOFTDAC_CLK_OUTPUT_ENABLE | SOFTDAC_INTERNAL_CLK ; // ctrl 0
+    SOFTDAC_D08(al->regs+SOFTDAC_CTL_STAT_1)   = 0;                        // ctrl 1
+    // Specific to the Softdac
+    //    SOFTDAC_D16(al->regs+SOFTDAC_CMD_REG)      = 0x10 | SOFTDAC_RANGE_PM10V;
+    //    SOFTDAC_D16(al->regs+SOFTDAC_CMD_REG)      = SOFTDAC_IMMEDIATE_MODE;
+  
     dummy = al->regs[0]; // flush posted PCI writes
     break;
 
@@ -443,7 +513,8 @@ int  softdac_Setup(ALPHISOFTDAC * al, int samples, int mode)
 int  softdac_Status(ALPHISOFTDAC * al, int mode)
 {
 
-  int stat = D32(al->regs+SOFTDAC_OFFSET+REGS_D32);
+  int cmdstat = SOFTDAC_D16(al->regs+SOFTDAC_CMD_REG);
+  unsigned int stat = SOFTDAC_D32(al->regs+SOFTDAC_OFFSET+SOFTDAC_REGS_D32);
   switch (mode) {
   case 0x1:
     if ((stat & 0x3) == 0x0)      printf("Stay in Bank 0    ");
@@ -469,6 +540,35 @@ int  softdac_Status(ALPHISOFTDAC * al, int mode)
     printf("%s:Int B1  done    ", stat & 0x20000000 ? "y" : "n");
     printf("%s:Int clk done    ", stat & 0x40000000 ? "y" : "n");
     printf("%s:Int FP  done   \n", stat & 0x80000000 ? "y" : "n");
+ 
+    printf("0x%2.2x:BANK_CTL_0 (0x10)", SOFTDAC_D08(al->regs+SOFTDAC_BANK_CTL_0));
+    printf("   0x%2.2x:BANK_CTL_1 (0x11)\n", SOFTDAC_D08(al->regs+SOFTDAC_BANK_CTL_1));
+    printf("0x%2.2x:CTL_STAT_0 (0x12)", SOFTDAC_D08(al->regs+SOFTDAC_CTL_STAT_0));
+    printf("   0x%2.2x:CTL_STAT_1 (0x13)\n", SOFTDAC_D08(al->regs+SOFTDAC_CTL_STAT_1));
+    printf("0x%8.8x: stat 0x13..0x10\n", stat);
+
+  switch (al->range) {
+  case SOFTDAC_RANGE_P5V:
+    printf("Range : P5V (0x%x)\n", al->range);
+    break;
+  case SOFTDAC_RANGE_P10V:
+    printf("Range : P10V (0x%x)\n", al->range);
+    break;
+  case SOFTDAC_RANGE_PM5V:
+    printf("Range : PM5V (0x%x)\n", al->range);
+    break;
+  case SOFTDAC_RANGE_PM10V:
+    printf("Range : PM10V (0x%x)\n", al->range);
+    break;
+  case SOFTDAC_RANGE_PM2P5V:
+    printf("Range : PM2P5V (0x%x)\n", al->range);
+    break;
+  case SOFTDAC_RANGE_M2P5P7P5V:
+    printf("Range : M2P5P7P5V (0x%x)\n", al->range);
+    break;
+  }
+
+    printf("0x%x: cmdstat \n", cmdstat);
 
     break;
   case 0x2:
@@ -496,7 +596,7 @@ int main(int argc,char* argv[])
   ALPHISOFTDAC *al=0;
   int dummy=0;
   int i;
-  uint16 din=0;
+  uint16_t din=0;
   double arg = 0, ddout;
   int chan = 0;
   int samples = 10;
@@ -510,21 +610,43 @@ int main(int argc,char* argv[])
       exit(1);
     }
   
-  printf("alpha:%e\n offset:%e\n", al->alpha, al->beta);
+  printf("alpha:%e  --  offset:%e\n", al->alpha, al->beta);
   softdac_Status(al, 1);
   
 #if 1
   if (argc == 3) {
     chan = atoi(argv[1]) - 1;
     din  = (uint16_t) atoi(argv[2]);
+    samples = 10;
+    softdac_Setup(al, samples, 2);
+
+    softdac_ScaleSet(al, SOFTDAC_RANGE_PM10V,  10.0/32767., -10.0);
+    printf("alpha:%e  --  offset:%e\n", al->alpha, al->beta);
+
+    for (i=0;;) {
+      ddout = -10.0;
+      softdac_DirectVoltWrite(al, ddout, i, &arg); 
+      ddout = 10.0;
+      softdac_DirectVoltWrite(al, ddout, i, &arg);
+   }
+    softdac_Status(al, 1);
+  }
+  else
+    printf("arg error\n");
+  
+#endif
+#if 0
+  if (argc == 3) {
+    chan = atoi(argv[1]) - 1;
+    din  = (uint16_t) atoi(argv[2]);
     samples = 0;
     softdac_Setup(al, samples, 2);
 
-    softdac_ScaleSet(al, RANGE_PM10V, 10.0/32767., 0.0);
-    printf("alpha:%e\noffset:%e\n", al->alpha, al->beta);
+    softdac_ScaleSet(al, SOFTDAC_RANGE_PM10V, 10.0/32767., 0.0);
+    printf("alpha:%e  --  offset:%e\n", al->alpha, al->beta);
 
     for (i=0;i<8;i++) {
-      ddout = 5.0;
+      ddout = -10.0+i;
       softdac_DirectVoltWrite(al, ddout, i, &arg);
     }
   }
@@ -534,15 +656,19 @@ int main(int argc,char* argv[])
 #endif
 
 #if 0
-  status = softdac_LinLoad(al, -2.,2., pts,  &npts, 0, 0); npts=0;
-  status = softdac_LinLoad(al, -4.,4., pts,  &npts, 0, 1); npts=0;
-  status = softdac_LinLoad(al, -6.,6., pts,  &npts, 0, 2); npts=0;
-  status = softdac_LinLoad(al, -10.,10., pts,  &npts, 0, 3);
+  int pts=100, npts=0;
+  softdac_Reset(al);
+
+  softdac_Setup(al, npts, 4);
+  softdac_ScaleSet(al, SOFTDAC_RANGE_PM10V, 0., 0.);
+
+  int   status = softdac_LinLoad(al, 10 , -10., pts,  &npts, 0, 1);
 
   printf("......................pts:%d\n", pts);
-
-  for (int i=0; i<4; i++)
-    softdac_DacVoltRead(al, pts, 0, 0, i, 0);
+  softdac_Status(al, 1);
+  softdac_SampleSet(al, 0, npts);
+  softdac_SMEnable(al);
+  softdac_Status(al, 1);
 #endif
 
 #if 0
