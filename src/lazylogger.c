@@ -611,7 +611,7 @@ hKey   :   Current lazy channel key
 
    /* check is Maintain free is enabled */
    size = sizeof(maintain);
-   db_get_value(hDB, hKey, "Settings/Maintain free space(%)", &maintain, &size, TID_INT,
+   db_get_value(hDB, hKey, "Settings/Maintain free space (%)", &maintain, &size, TID_INT,
                 TRUE);
    if (maintain != 0) {
       /* scan other channels */
@@ -643,13 +643,13 @@ hKey   :   Current lazy channel key
                 && !modulostr[0]) {
                /* check "maintain free space" */
                size = sizeof(maintain);
-               db_get_value(hDB, (pLall + i)->hKey, "Settings/Maintain free space(%)",
+               db_get_value(hDB, (pLall + i)->hKey, "Settings/Maintain free space (%)",
                             &maintain, &size, TID_INT, TRUE);
                if (maintain) {
                   /* disable and inform */
                   size = sizeof(maintain);
                   maintain = 0;
-                  db_set_value(hDB, (pLall + i)->hKey, "Settings/Maintain free space(%)",
+                  db_set_value(hDB, (pLall + i)->hKey, "Settings/Maintain free space (%)",
                                &maintain, size, 1, TID_INT);
                   cm_msg(MINFO, "lazy_maintain_check",
                          "Maintain free space on channel %s has been disable",
@@ -1623,7 +1623,7 @@ int main(int argc, char **argv)
          printf("Quick man :\n");
          printf("The Lazy/Settings tree is composed of the following parameters:\n");
          printf
-             ("Maintain free space [%%](0): purge source device to maintain free space on the source directory\n");
+             ("Maintain free space (%%)(0): purge source device to maintain free space on the source directory\n");
          printf("                      (0) : no purge      \n");
          printf
              ("Stay behind  (-3)         : If negative number : lazylog runs starting from the OLDEST\n");
