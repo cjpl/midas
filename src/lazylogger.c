@@ -578,7 +578,7 @@ void lazy_settings_hotlink(HNDLE hDB, HNDLE hKey, void *info)
 
    /* check if Maintain has been touched */
    size = sizeof(maintain);
-   db_get_value(hDB, hKey, "Maintain free space(%)", &maintain, &size, TID_INT, TRUE);
+   db_get_value(hDB, hKey, "Maintain free space (%)", &maintain, &size, TID_INT, TRUE);
    if (maintain != 0)
       maintain_touched = TRUE;
    else
