@@ -210,6 +210,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\examples\slowcont\frontend.c"
+				>
+			</File>
+			<File
 				RelativePath="..\src\ftplib.c"
 				>
 				<FileConfiguration
@@ -547,10 +551,6 @@
 			</File>
 			<File
 				RelativePath="..\drivers\device\psi_separator.c"
-				>
-			</File>
-			<File
-				RelativePath="..\..\meg\online\frontends\sc_fe\sc_fe.c"
 				>
 			</File>
 			<File
