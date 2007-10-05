@@ -227,7 +227,7 @@ INT lazy_log_update(INT action, INT run, char *label, char *file, DWORD perf_tim
 
    cm_msg(MINFO, "lazy_log_update", str);
    /* Now add this info also to a special log file */
-   cm_msg1(MINFO, "lazy_log_update", "lazy", str);
+   cm_msg1(MLOG, "lazy_log_update", "lazy", str);
 
    return 0;
 }
@@ -1085,7 +1085,7 @@ Function value:
       if (msg_flag)
          cm_msg(MTALK, "Lazy", str);
       cm_msg(MINFO, "Lazy", str);
-      cm_msg1(MINFO, "lazy_log_update", "lazy", str);
+      cm_msg1(MLOG, "lazy_log_update", "lazy", str);
    }
 
    /* infinite loop while copying */
