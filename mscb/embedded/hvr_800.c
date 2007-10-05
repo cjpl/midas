@@ -32,16 +32,13 @@ char code node_name[] = "HVR-800";
 #define MAX_CURRENT 200
 
 /* maximum voltage in Volt */
-#define MAX_VOLTAGE_LV 50
-#define MAX_VOLTAGE_HV 600
+#define MAX_VOLTAGE 600
 
 /* calculate voltage dividers */
-#define DIVIDER_LV ((75E3 + 2200) / 2200)
-#define DIVIDER_HV ((9.4E6 + 39000) / 39000)
+#define DIVIDER ((9.4E6 + 39000) / 39000)
 
 /* current resistor */
-#define RCURR_LV 15E3
-#define RCURR_HV 1E3
+#define RCURR 1E3
 
 /* current multiplier */
 #define CUR_MULT 11.51          // (g=1+49.4k/4k7) at AD8221
@@ -51,7 +48,6 @@ char code node_name[] = "HVR-800";
 
 /* configuration jumper */
 sbit JU0 = P3 ^ 4;              // negative module if forced to zero
-sbit JU1 = P3 ^ 5;              // low voltage (90V) if forced to zero
 
 /* AD7718 pins */
 sbit ADC_NRES = P0 ^ 6;         // !Reset
@@ -69,6 +65,7 @@ sbit DAC_DIN  = P3 ^ 7;         // Data in
 
 /* LTC2400 pins */
 sbit CADC_SCLK = P0 ^ 4;        // Serial Clock
+sbit CADC_NCS  = P3 ^ 5;        // !Chip select
 #define CADC_SDO P2             // 8 SDOs mapped to full port
 
 /* AD7718 registers */
@@ -94,8 +91,6 @@ float xdata u_actual[N_HV_CHN];
 unsigned long xdata t_ramp[N_HV_CHN];
 
 unsigned long xdata trip_time[N_HV_CHN];
-
-float xdata divider, rcurr, max_voltage;
 
 /*---- Define variable parameters returned to CMD_GET_INFO command ----*/
 
@@ -198,36 +193,24 @@ void user_init(unsigned char init)
       P0.3*RX2      P1.3*LED4         P2.3*DOUT_3       P3.3 CS_ADC
                                                             
       P0.4 CLK_ADC  P1.4*LED3         P2.4*DOUT_4       P3.4*POLARITY
-      P0.5 EN       P1.5*LED2         P2.5*DOUT_5       P3.5*HV_LV
+      P0.5 EN       P1.5*LED2         P2.5*DOUT_5       P3.5 CS_CADC
       P0.6 CLR_ADC  P1.6*LED1         P2.6*DOUT_6       P3.6 CLK
       P0.7 CLR_DAC  P1.7*LED0         P2.7*DOUT_7       P3.7 DIN
     */
    SFRPAGE = CONFIG_PAGE;
    P0MDOUT = 0xF1;
-   P1MDOUT = 0xFF;
+   P1MDOUT = 0x00;
    P2MDOUT = 0x00;
-   P3MDOUT = 0xCC;
+   P3MDOUT = 0xEC;
 
    /* jumper as input */
    JU0 = 1;
-   JU1 = 1;
 
-   /* check for HV/LV configuration */
-   if (JU1 == 0) {
-      max_voltage = MAX_VOLTAGE_LV;
-      divider     = DIVIDER_LV;
-      rcurr       = RCURR_LV;
-   } else {
-      max_voltage = MAX_VOLTAGE_HV;
-      divider     = DIVIDER_HV;
-      rcurr       = RCURR_HV;
-   }
-   
    /* initial nonzero EEPROM values */
    if (init) {
       memset(user_data, 0, sizeof(user_data));
       for (i=0 ; i<N_HV_CHN ; i++) {
-         user_data[i].u_limit = max_voltage;
+         user_data[i].u_limit = MAX_VOLTAGE;
          user_data[i].i_limit = MAX_CURRENT;
          user_data[i].ri_limit = MAX_CURRENT;
          user_data[i].ramp_up = 100;
@@ -248,8 +231,8 @@ void user_init(unsigned char init)
       user_data[i].trip_cnt = 0;
 
       /* check maximum ratings */
-      if (user_data[i].u_limit > max_voltage)
-         user_data[i].u_limit = max_voltage;
+      if (user_data[i].u_limit > MAX_VOLTAGE)
+         user_data[i].u_limit = MAX_VOLTAGE;
 
       if (user_data[i].i_limit > MAX_CURRENT && user_data[i].i_limit != 9999)
          user_data[i].i_limit = MAX_CURRENT;
@@ -275,14 +258,20 @@ void user_init(unsigned char init)
    ADC_NRES = 1;
    ADC_NRDY = 1; // input
    ADC_DIN  = 1; // input
-   CADC_SCLK = 1; // inverted
+
+   // switch to external clock mode
+   CADC_NCS  = 1;
+   delay_us(OPT_DELAY);
+   CADC_SCLK = 0;
+   delay_us(OPT_DELAY);
+   CADC_NCS  = 0;
    CADC_SDO  = 0xFF; // input
 
    /* reset and wait for start-up of ADC */
    ADC_NRES = 0;
-   delay_ms(100);
+   delay_us(OPT_DELAY);
    ADC_NRES = 1;
-   delay_ms(300);
+   delay_us(OPT_DELAY);
 
    write_adc(REG_FILTER, ADC_SF_VALUE);
 
@@ -314,8 +303,8 @@ void user_write(unsigned char index) reentrant
 
    /* re-check voltage limit */
    if (index == 8) {
-      if (user_data[cur_sub_addr()].u_limit > max_voltage)
-         user_data[cur_sub_addr()].u_limit = max_voltage;
+      if (user_data[cur_sub_addr()].u_limit > MAX_VOLTAGE)
+         user_data[cur_sub_addr()].u_limit = MAX_VOLTAGE;
 
       chn_bits[cur_sub_addr()] |= DEMAND_CHANGED;
    }
@@ -646,7 +635,7 @@ void set_hv(unsigned char channel, float value) reentrant
       value = 0;
 
    /* convert HV to voltage */
-   value = value / divider;
+   value = value / DIVIDER;
 
    /* convert to DAC units */
    d = (unsigned short) ((value / 2.5 * 65536) + 0.5);
@@ -666,7 +655,7 @@ void read_hv(unsigned char channel)
       return;
 
    /* convert to HV */
-   hv *= divider;
+   hv *= DIVIDER;
 
    /* apply calibration */
    hv = hv * user_data[channel].adc_gain + user_data[channel].adc_offset;
@@ -733,10 +722,15 @@ void read_current()
    float xdata current;
    unsigned long xdata sr[8];
 
+   CADC_NCS = 0;
+   delay_us(OPT_DELAY);
+
    /* check if all LTC2400 have converted */
    d = CADC_SDO;
-   if (d > 0)
+   if (d > 0) {
+      CADC_NCS = 1;
       return;
+   }
 
    /* read 28 bits from 8 ADCs */
    for (i=0 ; i<8 ; i++)
@@ -748,22 +742,25 @@ void read_current()
          sr[j] = (sr[j] << 1) | (d & 0x01);
          d >>= 1;
       }
-      CADC_SCLK = 0;
-      delay_us(OPT_DELAY);
       CADC_SCLK = 1;
       delay_us(OPT_DELAY);
+      CADC_SCLK = 0;
+      delay_us(OPT_DELAY);
    }
+
+   CADC_NCS  = 1;
+   CADC_SCLK = 0;
 
    for (i=0 ; i<8 ; i++) {
 
       /* convert to volts */
       if ((sr[i] & (1l<<29)) == 0) // negative sign
-        current = (((float)((long)((sr[i] & 0x1FFFFFFF) | 0xE0000000))) / (1l<<28)) * 2.5;
+        current = (((float)((long)((sr[i] & 0x1FFFFFFF) | 0xE0000000))) / (1l<<28)) * 3.3;
       else   
-        current = ((float)(sr[i] & 0x1FFFFFFF) / (1l<<28)) * 2.5;
+        current = ((float)(sr[i] & 0x1FFFFFFF) / (1l<<28)) * 3.3;
    
       /* correct opamp gain and curr. resist, microamp */
-      current = current / CUR_MULT / rcurr * 1E6;
+      current = current / CUR_MULT / RCURR * 1E6;
          
       /* correct for unbalanced voltage dividers */
       current -= user_data[i].cur_vgain * user_data[i].u_meas;
@@ -888,7 +885,7 @@ void regulation(unsigned char channel)
          u_actual[channel] = user_data[channel].u_demand;
 
          /* correct if difference is at least half a LSB */
-         if (fabs(user_data[channel].u_demand - user_data[channel].u_meas) / divider / 2.5 * 65536 > 0.5) {
+         if (fabs(user_data[channel].u_demand - user_data[channel].u_meas) / DIVIDER / 2.5 * 65536 > 0.5) {
 
             user_data[channel].u_dac += user_data[channel].u_demand - user_data[channel].u_meas;
 
