@@ -311,11 +311,16 @@ INT print_key(HNDLE hDB, HNDLE hKey, KEY * pkey, INT level, void *info)
             if (status == DB_SUCCESS) {
                db_get_key(hDB, hKey, &key);
                size = sizeof(data);
-               status = db_get_data(hDB, hKey, data, &size, key.type);
+               if (key.type != TID_KEY)
+                  status = db_get_data(hDB, hKey, data, &size, key.type);
+               else
+                  status = DB_TYPE_MISMATCH;
             }
          }
 
-         if (status == DB_NO_KEY)
+         if (status == DB_TYPE_MISMATCH)
+            strcat(data_str, "<subdirectory>");
+         else if (status == DB_NO_KEY)
             strcat(data_str, "<cannot resolve link>");
          else if (status == DB_NO_ACCESS)
             strcat(data_str, "<no read access>");
