@@ -1202,7 +1202,7 @@ Function value:
    DWORD cp_time;
    DIRLOG *pdirlog = NULL;
    INT *pdonelist = NULL;
-   INT size, cur_acq_run, status, tobe_backup, purun;
+   INT size, cur_state_run, cur_acq_run, status, tobe_backup, purun;
    double freepercent, svfree;
    char str[MAX_FILE_PATH], pufile[MAX_FILE_PATH], inffile[MAX_FILE_PATH],
        outffile[MAX_FILE_PATH];
@@ -1238,10 +1238,10 @@ Function value:
    }
 
    /* make sure that we don't operate on the current DAQ file if so set to oldest */
-   if (lazy.staybehind == 0) {
-      cm_msg(MERROR, "Lazy", "Stay behind cannot be 0");
-      return NOTHING_TODO;
-   }
+   //if (lazy.staybehind == 0) {
+   //   cm_msg(MERROR, "Lazy", "Stay behind cannot be 0");
+   //   return NOTHING_TODO;
+   //}
 
    /* Check if Tape is OK */
    /* ... */
@@ -1309,7 +1309,7 @@ Function value:
 
    /* ckeck if mode is on oldest (staybehind = -x)
       else take current run - keep file */
-   if (lazy.staybehind < 0)
+   if (lazy.staybehind <= 0)
       lazyst.cur_run = tobe_backup;
    else
       lazyst.cur_run -= lazy.staybehind;
@@ -1317,8 +1317,19 @@ Function value:
    /* Get current run number */
    size = sizeof(cur_acq_run);
    status =
-       db_get_value(hDB, 0, "Runinfo/Run number", &cur_acq_run, &size, TID_INT, TRUE);
+       db_get_value(hDB, 0, "Runinfo/Run number", &cur_acq_run, &size, TID_INT, FALSE);
    assert(status == SUCCESS);
+
+    /* In case it is the current run make sure 
+       1) the run has been ended
+       2) nothing else for now
+    */
+   if (tobe_backup == cur_acq_run) {
+    status = db_get_value(hDB, 0, "Runinfo/State", &cur_state_run, &size, TID_INT, FALSE);
+    assert(status == SUCCESS);
+    if ((cur_state_run != STATE_STOPPED))
+      return NOTHING_TODO;
+   }
 
    /* update "maintain free space" */
    lazy_maintain_check(pLch->hKey, pLall);
@@ -1410,7 +1421,7 @@ Function value:
    status = ss_mutex_release(lazy_mutex);
 
    /* check if backup run is beyond keep */
-   if (lazyst.cur_run >= (cur_acq_run - abs(lazy.staybehind)))
+   if (lazyst.cur_run > (cur_acq_run - abs(lazy.staybehind)))
       return NOTHING_TODO;
 
    if (!haveTape)
@@ -1463,8 +1474,10 @@ Function value:
          //  strcat(outffile, lazyst.backfile);
       }
 
-      /* check if space on backup device */
-      if ((lazy.capacity < (lazyst.cur_dev_size + lazyst.file_size)) || eot_reached) {
+      /* check if space on backup device ONLY in the TAPE case */
+      if (((dev_type == LOG_TYPE_TAPE) 
+          && (lazy.capacity < (lazyst.cur_dev_size + lazyst.file_size))) 
+          || eot_reached) {
          char pre_label[32];
          /* save the last label for shell script */
          strcpy(pre_label, lazy.backlabel);
@@ -1525,8 +1538,8 @@ Function value:
             ss_tape_close(channel);
             cm_set_watchdog_params(watchdog_flag, watchdog_timeout);
             return NOTHING_TODO;
-         }
-      }
+         } // 1
+      }  // LOG_TYPE_TAPE 
 
       /* Finally do the copy */
       cp_time = ss_millitime();
