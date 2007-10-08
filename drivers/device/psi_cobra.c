@@ -55,7 +55,7 @@ INT psi_cobra_init(HNDLE hKey, void **pinfo, INT channels, INT(*bd) (INT cmd, ..
    
    cm_get_experiment_database(&hDB, NULL);
 
-   /* create PSI_BEAMBLOCKER settings record */
+   /* create PSI_COBRA settings record */
    status = db_create_record(hDB, hKey, "", PSI_COBRA_SETTINGS_STR);
    if (status != DB_SUCCESS)
       return FE_ERR_ODB;
