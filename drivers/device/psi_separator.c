@@ -159,8 +159,10 @@ INT psi_separator_rall(PSI_SEPARATOR_INFO * info)
    }
 
    // only update once every 10 seconds
-   if (nowtime - last_update < 10)
+   if (nowtime - last_update < 10) {
+      ss_sleep(10); // don't eat all CPU
       return FE_SUCCESS;
+   }
 
    last_update = nowtime;
 
@@ -451,7 +453,6 @@ INT psi_separator(INT cmd, ...)
       break;
 
    default:
-      cm_msg(MERROR, "psi_separator", "Received unknown command %d", cmd);
       break;
    }
 

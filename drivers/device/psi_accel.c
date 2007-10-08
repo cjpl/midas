@@ -121,7 +121,7 @@ struct timeval timeout;
       FD_SET(info->sock, &readfds);
 
       timeout.tv_sec = 0;
-      timeout.tv_usec = 0;
+      timeout.tv_usec = 10000; // don't eat all CPU
 
       select(FD_SETSIZE, (void *) &readfds, NULL, NULL, (void *) &timeout);
 

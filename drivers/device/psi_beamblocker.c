@@ -311,7 +311,8 @@ INT psi_beamblocker_get(PSI_BEAMBLOCKER_INFO * info, INT channel, float *pvalue)
          *pvalue = (float) info->open;
       else
          *pvalue = (float) info->psa;
-   }
+   } else
+      ss_sleep(10); // don't eat all CPU
 
    return FE_SUCCESS;
 }
