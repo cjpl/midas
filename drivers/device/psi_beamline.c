@@ -304,7 +304,8 @@ INT psi_beamline_rall(PSI_BEAMLINE_INFO * info)
          /* round measured to four digits */
          info->measured[i] = (float) ((int) (atof(str + j + 1) * 10000) / 10000.0);
       }
-   }
+   } else
+      ss_sleep(10); // don't eat all CPU
 
    return FE_SUCCESS;
 }
