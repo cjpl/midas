@@ -18,6 +18,7 @@
 #include <windows.h>
 #include <conio.h>
 #include <sys/timeb.h>
+#include <time.h>
 
 #elif defined(OS_DARWIN)
 
@@ -4062,3 +4063,85 @@ int mscb_subm_info(int fd)
    debug_log("return MSCB_SUCCESS\n", 0);
    return MSCB_SUCCESS;
 }
+
+/*------------------------------------------------------------------*/
+
+int mscb_set_time(int fd, int addr, int gaddr, int broadcast)
+/********************************************************************\
+
+  Routine: mscb_set_time
+
+  Purpose: Set time of node equal to local time
+
+  Input:
+    int fd                  File descriptor for connection
+    int addr                Node address
+    int gaddr               Group address
+    int broadcast           Broadcast flag
+
+  Function value:
+    MSCB_SUCCESS            Successful completion
+    MSCB_MUTEX              Cannot obtain mutex for mscb
+    MSCB_TIMEOUT            Timeout receiving ping acknowledge
+
+\********************************************************************/
+{
+   int i, size, status;
+   unsigned char buf[64], dt[10];
+   struct tm *ptm;
+   time_t now;
+
+   if (fd > MSCB_MAX_FD || fd < 1 || !mscb_fd[fd - 1].type)
+      return MSCB_INVAL_PARAM;
+
+   if (mrpc_connected(fd))
+      return mrpc_call(mscb_fd[fd - 1].fd, RPC_MSCB_SET_TIME, mscb_fd[fd - 1].remote_fd, addr, gaddr, broadcast);
+
+   tzset();
+   now = time(NULL);
+   ptm = localtime(&now);
+   dt[0] = (ptm->tm_mday       / 10) * 0x10 + (ptm->tm_mday       % 10);
+   dt[1] = ((ptm->tm_mon+1)    / 10) * 0x10 + ((ptm->tm_mon+1)    % 10);
+   dt[2] = ((ptm->tm_year-100) / 10) * 0x10 + ((ptm->tm_year-100) % 10);
+   dt[3] = (ptm->tm_hour       / 10) * 0x10 + (ptm->tm_hour       % 10);
+   dt[4] = (ptm->tm_min        / 10) * 0x10 + (ptm->tm_min        % 10);
+   dt[5] = (ptm->tm_sec        / 10) * 0x10 + (ptm->tm_sec        % 10);
+   
+   size = sizeof(buf);
+   if (addr >= 0) {
+      buf[0] = MCMD_ADDR_NODE16;
+      buf[1] = (unsigned char) (addr >> 8);
+      buf[2] = (unsigned char) (addr & 0xFF);
+      buf[3] = crc8(buf, 3);
+
+      buf[4] = MCMD_SET_TIME;
+      for (i=0 ; i<6 ; i++)
+         buf[5+i] = dt[i];
+      buf[11] = crc8(buf+4, 7);
+      status = mscb_exchg(fd, buf, &size, 12, RS485_FLAG_NO_ACK | RS485_FLAG_ADR_CYCLE);
+   } else if (gaddr >= 0) {
+      buf[0] = MCMD_ADDR_GRP16;
+      buf[1] = (unsigned char) (gaddr >> 8);
+      buf[2] = (unsigned char) (gaddr & 0xFF);
+      buf[3] = crc8(buf, 3);
+
+      buf[4] = MCMD_SET_TIME;
+      for (i=0 ; i<6 ; i++)
+         buf[5+i] = dt[i];
+      buf[11] = crc8(buf+4, 7);
+      status = mscb_exchg(fd, buf, &size, 12, RS485_FLAG_NO_ACK | RS485_FLAG_ADR_CYCLE);
+   } else if (broadcast) {
+      buf[0] = MCMD_ADDR_BC;
+      buf[1] = crc8(buf, 1);
+
+      buf[2] = MCMD_SET_TIME;
+      for (i=0 ; i<6 ; i++)
+         buf[3+i] = dt[i];
+      buf[9] = crc8(buf+2, 7);
+      status = mscb_exchg(fd, buf, &size, 10, RS485_FLAG_NO_ACK | RS485_FLAG_ADR_CYCLE);
+   }
+
+   return status;
+}
+
+/*------------------------------------------------------------------*/

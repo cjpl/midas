@@ -15,6 +15,7 @@
 #include <conio.h>
 #include <io.h>
 #include <sys/timeb.h>
+#include <time.h>
 
 #elif defined(OS_LINUX)
 
@@ -119,6 +120,7 @@ void print_help()
    puts("sn <name>                  Set node name (up to 16 characters)");
    puts("sr                         Reset current submaster");
    puts("submaster                  Show info for current submaster");
+   puts("sync                       Synchronize local time with node(s)");
    puts("terminal                   Enter teminal mode for SCS-210");
    puts("upload <hex-file> [debug]  Upload new firmware to node [with debug info]");
    puts("mup <hex-file> <a1> <a2>   Upload new firmware to nodes a1-a2");
@@ -581,6 +583,7 @@ void cmd_loop(int fd, char *cmd, unsigned short adr)
    MSCB_INFO_VAR info_var;
    time_t start, now;
    MXML_WRITER *writer;
+   struct tm *ptm;
 
    /* open command file */
    if (cmd[0] == '@') {
@@ -1482,6 +1485,25 @@ void cmd_loop(int fd, char *cmd, unsigned short adr)
       /* submaster ---------- */
       else if (match(param[0], "submaster")) {
          mscb_subm_info(fd);
+      }
+
+      /* sync ---------- */
+      else if (match(param[0], "sync")) {
+         if (current_addr < 0 && current_group < 0 && !broadcast)
+            printf("You must first address node (s)\n");
+         else {
+            status = mscb_set_time(fd, current_addr, current_group, broadcast);
+
+            if (status != MSCB_SUCCESS)
+               printf("Error: %d\n", status);
+            else {
+               now = time(NULL);
+               ptm = localtime(&now);
+               printf("Synchornized to %02d-%02d-%02d %02d:%02d:%02d\n",
+                  ptm->tm_mday, ptm->tm_mon+1, ptm->tm_year-100,
+                  ptm->tm_hour, ptm->tm_min, ptm->tm_sec);
+            }
+         }
       }
 
       /* echo test ---------- */

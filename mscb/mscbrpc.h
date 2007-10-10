@@ -110,6 +110,7 @@ typedef struct {
 #define RPC_MSCB_ADDR             25
 #define RPC_MSCB_GET_DEVICE       26
 #define RPC_MSCB_SET_BAUD         27
+#define RPC_MSCB_SET_TIME         28
 
 /*------------------------------------------------------------------*/
 

@@ -29,6 +29,7 @@
 
 #define MCMD_FREEZE      0x41
 #define MCMD_SYNC        0x49
+#define MCMD_SET_TIME    0x4E
 #define MCMD_UPGRADE     0x50
 #define MCMD_USER        0x58
 
@@ -282,6 +283,7 @@ extern "C" {
    int EXPRT mscb_user(int fd, unsigned short adr, void *param, int size, void *result, int *rsize);
    int EXPRT mscb_link(int fd, unsigned short adr, unsigned char index, void *data, int size);
    int EXPRT mscb_addr(int fd, int cmd, unsigned short adr, int retry);
+   int EXPRT mscb_set_time(int fd, int addr, int gaddr, int broadcast);
 
    int set_mac_address(int fd);
    void mscb_scan_udp();

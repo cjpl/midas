@@ -216,6 +216,13 @@ static RPC_LIST rpc_list[] = {
      {TID_INT, RPC_IN},
      {0}}},
 
+   {RPC_MSCB_SET_TIME, "mscb_set_time",
+    {{TID_INT, RPC_IN},
+     {TID_INT, RPC_IN},
+     {TID_INT, RPC_IN},
+     {TID_INT, RPC_IN},
+     {0}}},
+
    {0}
 
 };
@@ -550,6 +557,10 @@ int server_execute(int index, void *prpc_param[])
 
    case RPC_MSCB_ADDR:
       status = mscb_addr(CINT(0), CINT(1), CSHORT(2), CINT(3));
+      break;
+
+   case RPC_MSCB_SET_TIME:
+      status = mscb_set_time(CINT(0), CINT(1), CINT(2), CINT(3));
       break;
    }
 
