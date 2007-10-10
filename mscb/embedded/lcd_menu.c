@@ -211,6 +211,9 @@ void date_inc(unsigned char index, unsigned char pos, char delta)
       } else if (pos == 1) { // month
          if (d > 12) d = 0;
          if (d < 0) d = 12;
+      } else {               // year
+         if (d > 99) d = 0;
+         if (d < 0) d = 99;
       }
       d = (d / 10)*0x10 + d % 10; // convert back to BCD
       rtc_write(pos, d);

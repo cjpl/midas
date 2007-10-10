@@ -86,6 +86,7 @@ SYS_INFO sys_info;
 #ifdef RTC_SUPPORT
 /* buffer for setting RTC */
 unsigned char xdata rtc_buf[6];
+bit rtc_set;
 #endif
 
 /*------------------------------------------------------------------*/
@@ -231,7 +232,7 @@ void setup(void)
    _flkey = 0;
 
 #ifdef RTC_SUPPORT
-   rtc_buf[0] = 0;
+   rtc_set = 0;
 #endif
 
    RS485_ENABLE = 0;
@@ -697,6 +698,7 @@ void interprete(void)
       led_blink(0, 1, 50);
       for (i=0 ; i<6 ; i++)
          rtc_buf[i] = in_buf[i+1];
+      rtc_set = 1;
 #endif
       break;
 
@@ -1457,10 +1459,10 @@ void yield(void)
    {
    unsigned char i;
 
-   if (rtc_buf[0]) {
+   if (rtc_set) {
       for (i=0 ; i<6 ; i++)
          rtc_write(i, rtc_buf[i]);
-      rtc_buf[0] = 0;
+      rtc_set = 0;
    }
    }
 #endif
