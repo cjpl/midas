@@ -83,6 +83,11 @@ unsigned char var_to_send = 0xFF;
 
 SYS_INFO sys_info;
 
+#ifdef RTC_SUPPORT
+/* buffer for setting RTC */
+unsigned char xdata rtc_buf[6];
+#endif
+
 /*------------------------------------------------------------------*/
 
 /* bit variables in internal RAM */
@@ -224,6 +229,10 @@ void setup(void)
    flash_allowed = 0;
    wrong_cpu = 0;
    _flkey = 0;
+
+#ifdef RTC_SUPPORT
+   rtc_buf[0] = 0;
+#endif
 
    RS485_ENABLE = 0;
    i_in = i_out = n_out = 0;
@@ -658,7 +667,7 @@ void interprete(void)
 
       break;
 
-   case (CMD_SET_NAME):
+   case CMD_SET_NAME:
       /* set node name in RAM */
       for (i = 0; i < 16 && i < in_buf[1]; i++)
          sys_info.node_name[i] = in_buf[2 + i];
@@ -681,6 +690,14 @@ void interprete(void)
 
    case CMD_SYNC:
       SYNC_MODE = in_buf[1];
+      break;
+
+   case CMD_SET_TIME:
+#ifdef RTC_SUPPORT
+      led_blink(0, 1, 50);
+      for (i=0 ; i<6 ; i++)
+         rtc_buf[i] = in_buf[i+1];
+#endif
       break;
 
    case CMD_UPGRADE:
@@ -1435,6 +1452,18 @@ void yield(void)
       /* go to "bootloader" program */
       upgrade();
    }
+
+#ifdef RTC_SUPPORT
+   {
+   unsigned char i;
+
+   if (rtc_buf[0]) {
+      for (i=0 ; i<6 ; i++)
+         rtc_write(i, rtc_buf[i]);
+      rtc_buf[0] = 0;
+   }
+   }
+#endif
 
    /* allow flash 3 sec after reboot */
    if (time() > 300)

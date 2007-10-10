@@ -9,9 +9,10 @@
 
 \********************************************************************/
 
-#include "mscbemb.h"
 #include <intrins.h>
 #include <string.h>
+#include <stdio.h>
+#include "mscbemb.h"
 
 #ifdef EEPROM_SUPPORT
 
@@ -1468,7 +1469,7 @@ sbit LCD_SD  = LCD ^ 0;
 
 /*------------------------------------------------------------------*/
 
-lcd_out(unsigned char d, bit df)
+void lcd_out(unsigned char d, bit df)
 {
    unsigned char timeout;
 
@@ -1478,7 +1479,7 @@ lcd_out(unsigned char d, bit df)
    LCD = LCD | 0xF0;            // data input
 #if defined(CPU_C8051F120)
    SFRPAGE = CONFIG_PAGE;
-   P2MDOUT = 0x0F;
+   P2MDOUT |= 0x0F;
 #ifdef SCS_2000
    LCD_1D = 0;                  // b to a for data
 #endif
@@ -1568,7 +1569,7 @@ void lcd_setup()
    SFRPAGE = CONFIG_PAGE;
    P2MDOUT = 0xFF;             // all push-pull
 #ifdef SCS_2000
-   P1MDOUT = 0xFF;
+   P1MDOUT |= 0x03;
    LCD_1D = 1;                 // a to b for data
    LCD_2D = 1;                 // a to b for control
 #endif
@@ -1591,7 +1592,7 @@ void lcd_setup()
    LCD = LCD | 0xF0;            // data input
 #if defined(CPU_C8051F120)
    SFRPAGE = CONFIG_PAGE;
-   P2MDOUT = 0x0F;
+   P2MDOUT |= 0x0F;
 #ifdef SCS_2000
    LCD_1D = 0;                  // b to a for data
 #endif
@@ -1611,7 +1612,7 @@ void lcd_setup()
    lcd_present = 1;
 
    lcd_out(0x24, 0); // function set: 4-bit, RE=1
-   lcd_out(0x09, 0); // ext function set: 4-line display
+   lcd_out(0x0B, 0); // ext function set: 4-line display, inverting cursor
    lcd_out(0x20, 0); // function set: 4-bit, RE=0
    lcd_out(0x0C, 0); // display on
    lcd_out(0x01, 0); // clear display
@@ -1678,6 +1679,14 @@ void lcd_clear()
    lcd_goto(0, 0);
 }
 
+void lcd_cursor(unsigned char flag)
+{
+   if (flag)
+      lcd_out(0x0F, 0); // display on, curson on, blink on
+   else
+      lcd_out(0x0C, 0); // display on, cursor off, blink off
+}
+
 /*------------------------------------------------------------------*/
 
 void lcd_goto(char x, char y)
@@ -1696,7 +1705,7 @@ void lcd_goto(char x, char y)
 
 char putchar(char c)
 {
-   if (c >= ' ')
+   if (c != '\r' && c != '\n')
       lcd_out(c, 1);
    return c;
 }
@@ -1709,39 +1718,208 @@ void lcd_puts(char *str)
       lcd_out(*str++, 1);
 }
 
+#endif // LCD_SUPPORT
+
+/*------------------------------------------------------------------*/
+
+#ifdef RTC_SUPPORT
+
+sbit RTC_IO  = P1 ^ 2;
+sbit RTC_CLK = P1 ^ 3;
+
 /********************************************************************\
 
-  Routine: scs_lcd1_read
+  Routine: Real time clock (RTC) routines
 
-  Purpose: Returns switch (button) state of SCS-LCD1 module
+  Purpose: Read and set date/time on DS1302 RTC chip on SCS-2001
 
 \********************************************************************/
 
-/*
-char scs_lcd1_read()
+/*------------------------------------------------------------------*/
+
+unsigned char rtc_read_byte(unsigned char adr)
 {
-char i, d;
+   unsigned char idata i, d, m;
 
-  LCD_CLK = 0;  // enable input
-  LCD_SD = 1;
+   RTC_CLK = 0;
 
-  LCD_P_W = 1;  // latch input
-  delay_us(1);
-  LCD_P_W = 0;
+   SFRPAGE = DAC1_PAGE;
+   DAC1L = 0xFF;
+   DAC1H = 0x0F;
 
-  for (i=d=0 ; i<8 ; i++)
-    {
-    d |= LCD_SD;
-    d = (d | LCD_SD) << 1;
+   delay_us(10); // wait for DAC
 
-    LCD_CLK = 1;
-    delay_us(1);
-    LCD_CLK = 0;
-    delay_us(1);
-    }
+   /* switch port to output */
+   SFRPAGE = CONFIG_PAGE;
+   P1MDOUT |= 0x04; 
 
-  return d;
+   for (i=0 ; i<8 ; i++) {
+      RTC_IO = adr & 0x01;
+      delay_us(10);
+      RTC_CLK = 1;
+      delay_us(10);
+      RTC_CLK = 0;
+
+      adr >>= 1;
+   }
+
+   /* switch port to input */
+   SFRPAGE = CONFIG_PAGE;
+   P1MDOUT &= ~ 0x04;
+   RTC_IO = 1;
+
+   delay_us(10);
+   for (i=d=0,m=1 ; i<8 ; i++) {
+      if (RTC_IO)
+         d |= m;
+      RTC_CLK = 1;
+      delay_us(10);
+      RTC_CLK = 0;
+      delay_us(10);
+      m <<= 1;
+   }
+
+   SFRPAGE = DAC1_PAGE;
+   DAC1L = 0;
+   DAC1H = 0;
+
+   delay_us(10); // wait for DAC
+
+   return d;
 }
-*/
 
-#endif
+/*------------------------------------------------------------------*/
+
+void rtc_write_byte(unsigned char adr, unsigned char d)
+{
+   unsigned char idata i;
+
+   RTC_CLK = 0;
+
+   SFRPAGE = DAC1_PAGE;
+   DAC1L = 0xFF;
+   DAC1H = 0x0F;
+
+   delay_us(10); // wait for DAC
+
+   /* switch port to output */
+   SFRPAGE = CONFIG_PAGE;
+   P1MDOUT |= 0x04; 
+
+   for (i=0 ; i<8 ; i++) {
+      RTC_IO = adr & 0x01;
+      delay_us(10);
+      RTC_CLK = 1;
+      delay_us(10);
+      RTC_CLK = 0;
+
+      adr >>= 1;
+   }
+
+   delay_us(10);
+   for (i=0 ; i<8 ; i++) {
+      RTC_IO = d & 0x01;
+      delay_us(10);
+      RTC_CLK = 1;
+      delay_us(10);
+      RTC_CLK = 0;
+
+      d >>= 1;
+   }
+
+   SFRPAGE = DAC1_PAGE;
+   DAC1L = 0;
+   DAC1H = 0;
+
+   delay_us(10); // wait for DAC
+}
+
+/*------------------------------------------------------------------*/
+
+void rtc_write(unsigned char item, unsigned char d)
+{
+   switch (item) {
+      case 0: rtc_write_byte(0x86, d); break; // day
+      case 1: rtc_write_byte(0x88, d); break; // month
+      case 2: rtc_write_byte(0x8C, d); break; // year
+      case 3: rtc_write_byte(0x84, d); break; // hour
+      case 4: rtc_write_byte(0x82, d); break; // minute
+      case 5: rtc_write_byte(0x80, d); break; // second
+   }
+}
+
+/*------------------------------------------------------------------*/
+
+void rtc_get_date(char *str)
+{
+   unsigned char idata d;
+
+   d  = rtc_read_byte(0x87); // day
+   if (d == 0xFF) { // no clock mounted
+      strcpy(str, "XX-XX-XX");
+      return;
+   }
+   str[0] = '0'+d/0x10;
+   str[1] = '0'+d%0x10;
+   str[2] = '-';
+
+   d  = rtc_read_byte(0x89); // month
+   str[3] = '0'+d/0x10;
+   str[4] = '0'+d%0x10;
+   str[5] = '-';
+
+   d  = rtc_read_byte(0x8D); // year
+   str[6] = '0'+d/0x10;
+   str[7] = '0'+d%0x10;
+   str[8] = 0;
+}
+
+/*------------------------------------------------------------------*/
+
+void rtc_get_time(char *str)
+{
+   unsigned char idata d;
+
+   d  = rtc_read_byte(0x85); // hour
+   if (d == 0xFF) { // no clock mounted
+      strcpy(str, "XX:XX:XX");
+      return;
+   }
+   str[0] = '0'+d/0x10;
+   str[1] = '0'+d%0x10;
+   str[2] = ':';
+
+   d  = rtc_read_byte(0x83); // min
+   str[3] = '0'+d/0x10;
+   str[4] = '0'+d%0x10;
+   str[5] = ':';
+
+   d  = rtc_read_byte(0x81); // sec
+   str[6] = '0'+d/0x10;
+   str[7] = '0'+d%0x10;
+   str[8] = 0;
+}
+
+/*------------------------------------------------------------------*/
+
+void rtc_print()
+{
+   char xdata str[10];
+
+   rtc_get_date(str);
+   puts(str);
+   putchar(' ');
+   rtc_get_time(str);
+   puts(str);
+}
+
+/*------------------------------------------------------------------*/
+
+void rtc_init()
+{
+   /* remove write protection */
+   rtc_write_byte(0x8E, 0);
+}
+
+#endif // RTC_SUPPORT
+

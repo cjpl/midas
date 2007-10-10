@@ -250,6 +250,7 @@ sbit RS485_SEC_ENABLE = P0 ^ 4;
 #define LCD_SUPPORT
 #define LCD_8BIT
 #define DYN_VARIABLES
+#define RTC_SUPPORT
 
 /*--------------------------------*/
 #elif defined(HVR_200)
@@ -515,6 +516,7 @@ char putchar1(char c);                   // putchar cannot be used with LCD supp
 
 #define CMD_FREEZE      0x41
 #define CMD_SYNC        0x49
+#define CMD_SET_TIME    0x4E
 #define CMD_UPGRADE     0x50
 #define CMD_USER        0x58
 
@@ -697,6 +699,7 @@ unsigned char crc8_add(unsigned char crc, unsigned int c);
 
 void lcd_setup();
 void lcd_clear();
+void lcd_cursor(unsigned char flag);
 void lcd_goto(char x, char y);
 void lcd_putc(char c);
 void lcd_puts(char *str);
@@ -726,3 +729,12 @@ unsigned char user_func(unsigned char *data_in, unsigned char *data_out);
 
 void set_n_sub_addr(unsigned char n);
 unsigned char cur_sub_addr(void);
+
+void rtc_init(void);
+void rtc_get_date(char *str);
+void rtc_get_time(char *str);
+void rtc_print(void);
+void rtc_write(unsigned char item, unsigned char d);
+
+
+
