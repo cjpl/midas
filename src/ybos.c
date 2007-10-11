@@ -137,8 +137,7 @@ INT ybos_physrec_skip(INT bl);
 INT ybos_physrec_get(DWORD ** prec, DWORD * readn);
 INT midas_physrec_get(void *prec, DWORD * readn);
 
-void yb_any_bank_event_display(void *pevent, INT data_fmt, INT dsp_fmt, INT dsp_mode,
-                               char *bn);
+void yb_any_bank_event_display(void *pevent, INT data_fmt, INT dsp_fmt, INT dsp_mode, char *bn);
 void yb_any_raw_event_display(void *pevent, INT data_fmt, INT dsp_fmt);
 
 void yb_any_raw_bank_display(void *pbank, INT data_fmt, INT dsp_fmt);
@@ -631,8 +630,7 @@ INT ybk_iterate(DWORD * plrl, YBOS_BANK_HEADER ** pybkh, void **pdata)
 /*-- GENERAL file fragmentation and recovery -----------------------*/
 /*-- GENERAL file fragmentation and recovery -----------------------*/
 /*------------------------------------------------------------------*/
-INT feodb_file_dump(EQUIPMENT * eqp, char *eqpname,
-                    char *pevent, INT run_number, char *path)
+INT feodb_file_dump(EQUIPMENT * eqp, char *eqpname, char *pevent, INT run_number, char *path)
 /********************************************************************\
 Routine: feodb_file_dump
 Purpose: Access ODB for the /Equipment/<equip_name>/Dump.
@@ -786,8 +784,7 @@ SS_FILE_ERROR       file access error
 
     /*---- EVID bank ----*/
       if (eqp->format == FORMAT_YBOS) {
-         YBOS_EVID_BANK(pmy, myc_fileh.current_fragment,
-                        (eqp->info.event_id << 16) | (eqp->info.trigger_mask)
+         YBOS_EVID_BANK(pmy, myc_fileh.current_fragment, (eqp->info.event_id << 16) | (eqp->info.trigger_mask)
                         , eqp->serial_number, run_number);
       } else if (eqp->format == FORMAT_MIDAS) {
          MIDAS_EVID_BANK(pmy, myc_fileh.current_fragment,
@@ -828,9 +825,7 @@ SS_FILE_ERROR       file access error
          bk_create(pmy, "DFIL", TID_CHAR, &pbuf);
       /* compute data length */
       remaining = filesize - myc_fileh.current_read_byte;
-      nread =
-          read(dmpf, (char *) pbuf,
-               (remaining > MAX_FRAG_SIZE) ? MAX_FRAG_SIZE : remaining);
+      nread = read(dmpf, (char *) pbuf, (remaining > MAX_FRAG_SIZE) ? MAX_FRAG_SIZE : remaining);
       /* adjust target pointer */
       pbuf = (DWORD *) (((char *) pbuf) + nread);
       /* keep track of statistic */
@@ -863,12 +858,10 @@ SS_FILE_ERROR       file access error
       scheduler (mfe.c) */
          /* #undef USE_EVENT_CHANNEL */
 #ifdef USE_EVENT_CHANNEL
-         dm_pointer_increment(eqp->buffer_handle,
-                              pevent->data_size + sizeof(EVENT_HEADER));
+         dm_pointer_increment(eqp->buffer_handle, pevent->data_size + sizeof(EVENT_HEADER));
 #else
          rpc_flush_event();
-         bm_send_event(eqp->buffer_handle, pevent,
-                       pevent->data_size + sizeof(EVENT_HEADER), SYNC);
+         bm_send_event(eqp->buffer_handle, pevent, pevent->data_size + sizeof(EVENT_HEADER), SYNC);
 #endif
          eqp->odb_out++;
       }
@@ -993,8 +986,7 @@ error, success
       *handle =
           (int) CreateFile(path, GENERIC_WRITE, FILE_SHARE_READ, NULL,
                            CREATE_ALWAYS,
-                           FILE_ATTRIBUTE_NORMAL | FILE_FLAG_WRITE_THROUGH
-                           | FILE_FLAG_SEQUENTIAL_SCAN, 0);
+                           FILE_ATTRIBUTE_NORMAL | FILE_FLAG_WRITE_THROUGH | FILE_FLAG_SEQUENTIAL_SCAN, 0);
 #else
       *handle = open(path, O_WRONLY | O_CREAT | O_TRUNC | O_BINARY | O_LARGEFILE, 0644);
 #endif
@@ -1234,8 +1226,7 @@ it there is no more valid event is to look at the LRL for -1
 
    /* write record to device */
    status =
-       yb_any_log_write(log_chn->handle, log_chn->format, log_chn->type,
-                        ybos->pwrt, YBOS_PHYREC_SIZE << 2);
+       yb_any_log_write(log_chn->handle, log_chn->format, log_chn->type, ybos->pwrt, YBOS_PHYREC_SIZE << 2);
 #ifdef YBOS_VERSION_3_3
    if (log_chn->type == LOG_TYPE_TAPE) {
       log_chn->statistics.bytes_written += YBOS_PHYREC_SIZE << 2;
@@ -1429,8 +1420,7 @@ status : from lower function
    if (!my.zipfile) {
       if (my.type == LOG_TYPE_TAPE) {
          status = ss_tape_open(my.name, O_RDONLY | O_BINARY, &my.handle);
-      } else if ((my.handle = open(my.name, O_RDONLY | O_BINARY | O_LARGEFILE, 0644)) ==
-                 -1) {
+      } else if ((my.handle = open(my.name, O_RDONLY | O_BINARY | O_LARGEFILE, 0644)) == -1) {
          printf("dev name :%s Handle:%d \n", my.name, my.handle);
          return (SS_FILE_ERROR);
       }
@@ -1513,9 +1503,10 @@ none
 Function value:
 status : from lower function
 *******************************************************************/
-{  int i;
+{
+   int i;
 
-   i = data_fmt; /* avoid compiler warning */
+   i = data_fmt;                /* avoid compiler warning */
 
    switch (my.type) {
    case LOG_TYPE_TAPE:
@@ -1660,11 +1651,9 @@ status : from lower function
          *hDev =
              (int) CreateFile(filename, GENERIC_WRITE, FILE_SHARE_READ,
                               NULL, CREATE_ALWAYS,
-                              FILE_ATTRIBUTE_NORMAL |
-                              FILE_FLAG_WRITE_THROUGH | FILE_FLAG_SEQUENTIAL_SCAN, 0);
+                              FILE_ATTRIBUTE_NORMAL | FILE_FLAG_WRITE_THROUGH | FILE_FLAG_SEQUENTIAL_SCAN, 0);
 #else
-         *hDev =
-             open(filename, O_WRONLY | O_CREAT | O_TRUNC | O_BINARY | O_LARGEFILE, 0644);
+         *hDev = open(filename, O_WRONLY | O_CREAT | O_TRUNC | O_BINARY | O_LARGEFILE, 0644);
 #endif
          status = *hDev < 0 ? SS_FILE_ERROR : SS_SUCCESS;
       }
@@ -1705,7 +1694,7 @@ status : from lower function
 *******************************************************************/
 {
    INT status;
-   status = data_fmt; /* avoid compiler warning */
+   status = data_fmt;           /* avoid compiler warning */
    status = SS_SUCCESS;
    switch (type) {
    case LOG_TYPE_TAPE:
@@ -1819,8 +1808,7 @@ SS_SUCCESS         Ok
    }
 #else
    {                            /* --------- DISK ---------- */
-      status = *written =
-          write(handle, (char *) prec, nbytes) == nbytes ? SS_SUCCESS : SS_FILE_ERROR;
+      status = *written = write(handle, (char *) prec, nbytes) == nbytes ? SS_SUCCESS : SS_FILE_ERROR;
       return status;            /* return for DISK */
    }
 #endif
@@ -1854,8 +1842,7 @@ SS_SUCCESS         Ok
 #ifdef INCLUDE_FTPLIB
    {
       *written = status = ftp_send(ftp_con->data, (char *) prec,
-                                   (int) nbytes) ==
-          (int) nbytes ? SS_SUCCESS : SS_FILE_ERROR;
+                                   (int) nbytes) == (int) nbytes ? SS_SUCCESS : SS_FILE_ERROR;
       return status;
    }
 #else
@@ -2057,12 +2044,10 @@ status : from lower function  SS_SUCCESS, SS_FILE_ERROR
    INT status;
    DWORD written;
 
-   status = data_fmt; /* avoid compiler warning */
+   status = data_fmt;           /* avoid compiler warning */
 #ifdef YBOS_VERSION_3_3
    if ((type == LOG_TYPE_DISK) && (data_fmt == FORMAT_YBOS)) {  /* add the magta record if going to disk */
-      status =
-          yb_any_dev_os_write(handle, type,
-                              (char *) ((DWORD *) (magta + 2)), 4, &written);
+      status = yb_any_dev_os_write(handle, type, (char *) ((DWORD *) (magta + 2)), 4, &written);
       if (status != SS_SUCCESS)
          return status;
    }
@@ -2446,7 +2431,7 @@ YB_SUCCESS        Ok
 
    /* stop if LRL  = -1 ... I don't think it is necessary but I leave it in for now
       or forever... */
-   if ((int)evt_length - 1 == -1)
+   if ((int) evt_length - 1 == -1)
       return (YB_DONE);
 
    /* check if event cross physical record boundary */
@@ -2489,8 +2474,7 @@ YB_SUCCESS        Ok
          }
       }
       if (my.pyrd != (DWORD *) my.pyh + my.pyh->offset) {
-         printf(" event misalignment !! %p  %p \n",
-                my.pyrd, (DWORD *) my.pyh + my.pyh->offset);
+         printf(" event misalignment !! %p  %p \n", my.pyrd, (DWORD *) my.pyh + my.pyh->offset);
          printf("Event crossed boundary: length %d\n", evt_length);
          my.pyrd = (DWORD *) my.pyh + my.pyh->offset;
       }
@@ -2539,7 +2523,7 @@ YB_SUCCESS        Ok
       size = my.size;
 
    /* first time in get physrec once */
-   if ((int)my.recn == -1) {
+   if ((int) my.recn == -1) {
       status = midas_physrec_get((void *) my.pmp, &size);
       if (status != YB_SUCCESS)
          return (YB_DONE);
@@ -2551,7 +2535,7 @@ YB_SUCCESS        Ok
   */
 
    /* copy header only */
-   if (((my.pmp + size) - (char *) my.pme) < (int)sizeof(EVENT_HEADER)) {
+   if (((my.pmp + size) - (char *) my.pme) < (int) sizeof(EVENT_HEADER)) {
       fpart = (my.pmp + my.size) - (char *) my.pme;
       memcpy(my.pmh, my.pme, fpart);
       my.pmh = (EVENT_HEADER *) (((char *) my.pmh) + fpart);
@@ -2670,8 +2654,7 @@ none
 }
 
 /*------------------------------------------------------------------*/
-void yb_any_bank_event_display(void *pevent, INT data_fmt, INT dsp_fmt, INT dsp_mode,
-                               char *bn)
+void yb_any_bank_event_display(void *pevent, INT data_fmt, INT dsp_fmt, INT dsp_mode, char *bn)
 /********************************************************************\
 Routine: ybos_bank_event_display
 Purpose: display on screen the event header, bank list and bank content
@@ -2706,8 +2689,7 @@ none
       printf("#banks:%i - Bank list:-%s-\n", status, banklist);
 
       /* check if EVID is present if so display its content */
-      if ((status =
-           ybk_find((DWORD *) pevent, "EVID", &bklen, &bktyp, &pvybk)) == YB_SUCCESS) {
+      if ((status = ybk_find((DWORD *) pevent, "EVID", &bklen, &bktyp, &pvybk)) == YB_SUCCESS) {
          pybk = (YBOS_BANK_HEADER *) pvybk;
          pdata = (DWORD *) ((YBOS_BANK_HEADER *) pybk + 1);
          printf
@@ -2745,8 +2727,7 @@ none
          printf
              ("Evid:%4.4x- Mask:%4.4x- Serial:%i- Time:0x%x- Dsize:%i/0x%x",
               (WORD) pheader->event_id, (WORD) pheader->trigger_mask,
-              pheader->serial_number, pheader->time_stamp, pheader->data_size,
-              pheader->data_size);
+              pheader->serial_number, pheader->time_stamp, pheader->data_size, pheader->data_size);
 
       if ((pbh->data_size + 8) == pheader->data_size) {
          /* bank list */
@@ -3082,7 +3063,7 @@ none
    }
 
    printf("\nBank:%s Length: %i(I*1)/%i(I*4)/%i(Type) Type:%s",
-     bank_name, lrl, lrl >> 2, lrl / (length_type==0?1:length_type), strbktype);
+          bank_name, lrl, lrl >> 2, lrl / (length_type == 0 ? 1 : length_type), strbktype);
 
    pendbk = pdata + lrl;
    while (pdata < pendbk) {
@@ -3304,7 +3285,7 @@ none
    }
 
    printf("\nBank:%s Length: %i(I*1)/%i(I*4)/%i(Type) Type:%s",
-     bank_name, lrl, lrl >> 2, lrl / (length_type==0?1:length_type), strbktype);
+          bank_name, lrl, lrl >> 2, lrl / (length_type == 0 ? 1 : length_type), strbktype);
 
    pendbk = pdata + lrl;
    while (pdata < pendbk) {
@@ -3614,8 +3595,7 @@ YB_NOMORE_SLOT      no more slot for starting dump
 
       /* open device */
       if ((ymfile[i].fHandle =
-           open(ymfile[i].path, O_WRONLY | O_CREAT | O_TRUNC | O_BINARY | O_LARGEFILE,
-                0644)) == -1) {
+           open(ymfile[i].path, O_WRONLY | O_CREAT | O_TRUNC | O_BINARY | O_LARGEFILE, 0644)) == -1) {
          ymfile[i].fHandle = 0;
          printf("File %s cannot be created\n", ymfile[i].path);
          return (SS_FILE_ERROR);
@@ -3659,8 +3639,7 @@ YB_SUCCESS         Successful completion
 
       /* check sequence order */
       if (ymfile[slot].current_fragment + 1 != pmyfch->current_fragment) {
-         printf("Out of sequence %i / %i\n", ymfile[slot].current_fragment,
-                pmyfch->current_fragment);
+         printf("Out of sequence %i / %i\n", ymfile[slot].current_fragment, pmyfch->current_fragment);
       }
       /* dump fragment to file */
       nwrite = write(ymfile[slot].fHandle, pmyfd, pmyfch->fragment_size);
@@ -3672,8 +3651,7 @@ YB_SUCCESS         Successful completion
       if (ymfile[slot].current_fragment == pmyfch->total_fragment) {
          /* file complete */
          close(ymfile[slot].fHandle);
-         printf("File %s (%i) completed\n", ymfile[slot].path,
-                ymfile[slot].current_read_byte);
+         printf("File %s (%i) completed\n", ymfile[slot].path, ymfile[slot].current_read_byte);
          /* cleanup slot */
          ymfile[slot].fHandle = 0;
          return YB_SUCCESS;
@@ -3690,8 +3668,7 @@ YB_SUCCESS         Successful completion
 
       /* check sequence order */
       if (ymfile[slot].current_fragment + 1 != pmyfch->current_fragment) {
-         printf("Out of sequence %i / %i\n", ymfile[slot].current_fragment,
-                pmyfch->current_fragment);
+         printf("Out of sequence %i / %i\n", ymfile[slot].current_fragment, pmyfch->current_fragment);
       }
       /* dump fragment to file */
       nwrite = write(ymfile[slot].fHandle, pmyfd, pmyfch->fragment_size);
@@ -3703,8 +3680,7 @@ YB_SUCCESS         Successful completion
       if (ymfile[slot].current_fragment == pmyfch->total_fragment) {
          /* file complete */
          close(ymfile[slot].fHandle);
-         printf("File %s (%i) completed\n", ymfile[slot].path,
-                ymfile[slot].current_read_byte);
+         printf("File %s (%i) completed\n", ymfile[slot].path, ymfile[slot].current_read_byte);
          /* cleanup slot */
          ymfile[slot].fHandle = 0;
          return YB_SUCCESS;
@@ -3731,7 +3707,7 @@ YB_SUCCESS         Successful completion
 #endif                          /* DOXYGEN_SHOULD_SKIP_THIS */
 
 /**dox***************************************************************/
-          /** @} *//* end of ybosbankc */
+                   /** @} *//* end of ybosbankc */
 
 /**dox***************************************************************/
-          /** @} *//* end of ybosincludecode */
+                   /** @} *//* end of ybosincludecode */
