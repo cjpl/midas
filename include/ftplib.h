@@ -19,7 +19,7 @@ typedef struct {
 #define ftp_password(ftp,pas)      ftp_command(ftp,"PASS %s",pas,230,332,EOF)
 #define ftp_type(ftp,type)         ftp_command(ftp,"TYPE %s",type,200,EOF)
 #define ftp_chdir(ftp,dir)         ftp_command(ftp,"CWD %s",dir,200,250,EOF)
-#define ftp_mkdir(ftp,dir)         ftp_command(ftp,"MKD %s",dir,200,257,EOF)
+#define ftp_mkdir(ftp,dir)         ftp_command(ftp,"XMKD %s",dir,200,257,EOF)
 #define ftp_rm(ftp,dir)            ftp_command(ftp,"DELE %s",dir,200,250,EOF)
 #define ftp_ascii(ftp)             ftp_type(ftp,"A")
 #define ftp_binary(ftp)            ftp_type(ftp,"I")
