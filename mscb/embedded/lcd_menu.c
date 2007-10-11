@@ -38,6 +38,7 @@ unsigned char xdata var_index;       // variable to display
 unsigned char xdata date_index;      // day/month/year index
 
 float xdata f_var;
+unsigned char xdata dt_bcd[6];
 char xdata time_str[10];
 char xdata date_str[10];
 
@@ -200,7 +201,7 @@ void date_inc(unsigned char index, unsigned char pos, char delta)
          if (d < 0) d = 59;
       }
       d = (d / 10)*0x10 + d % 10; // convert back to BCD
-      rtc_write(pos+3, d);
+      rtc_write_item(pos+3, d);
    } else {
       /* date */
       d = date_str[pos*3+1]-'0' + (date_str[pos*3]-'0')*10;
@@ -216,7 +217,7 @@ void date_inc(unsigned char index, unsigned char pos, char delta)
          if (d < 0) d = 99;
       }
       d = (d / 10)*0x10 + d % 10; // convert back to BCD
-      rtc_write(pos, d);
+      rtc_write_item(pos, d);
    }
 }
 
@@ -374,8 +375,9 @@ void lcd_menu()
 
          /* update date/time in system menu */
          if (system_menu) {
-            rtc_get_date(date_str);
-            rtc_get_time(time_str);
+            rtc_read(dt_bcd);
+            rtc_conv_date(dt_bcd, date_str);
+            rtc_conv_time(dt_bcd, time_str);
          }
 
          /* display variables */

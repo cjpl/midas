@@ -14,7 +14,7 @@
 #include <stdio.h>
 #include "mscbemb.h"
 
-#ifdef EEPROM_SUPPORT
+#ifdef HAVE_EEPROM
 
 extern SYS_INFO sys_info;               // for eeprom functions
 extern MSCB_INFO_VAR *variables;
@@ -252,7 +252,7 @@ unsigned char gets_wait(char *str, unsigned char size, unsigned char timeout)
 
 /*------------------------------------------------------------------*/
 
-#ifdef LCD_SUPPORT // putchar is already used for LCD
+#ifdef HAVE_LCD // putchar is already used for LCD
 
 char putchar1(char c)
 {
@@ -267,7 +267,7 @@ char putchar1(char c)
    return c;
 }
 
-#else // LCD_SUPPORT
+#else // HAVE_LCD
 
 char putchar(char c)
 {
@@ -282,7 +282,7 @@ char putchar(char c)
    return c;
 }
 
-#endif // LCD_SUPPORT
+#endif // HAVE_LCD
 
 /*------------------------------------------------------------------*/
 
@@ -1195,7 +1195,7 @@ void delay_us(unsigned int us)
 
 /*------------------------------------------------------------------*/
 
-#ifdef EEPROM_SUPPORT
+#ifdef HAVE_EEPROM
 
 void eeprom_read(void * dst, unsigned char len, unsigned short *offset)
 /********************************************************************\
@@ -1421,11 +1421,11 @@ unsigned char eeprom_retrieve(void)
    return status;
 }
 
-#endif /* EEPROM_SUPPORT */
+#endif /* HAVE_EEPROM */
 
 /*------------------------------------------------------------------*/
 
-#ifdef LCD_SUPPORT
+#ifdef HAVE_LCD
 
 bit lcd_present;
 
@@ -1718,11 +1718,11 @@ void lcd_puts(char *str)
       lcd_out(*str++, 1);
 }
 
-#endif // LCD_SUPPORT
+#endif // HAVE_LCD
 
 /*------------------------------------------------------------------*/
 
-#ifdef RTC_SUPPORT
+#ifdef HAVE_RTC
 
 sbit RTC_IO  = P1 ^ 2;
 sbit RTC_CLK = P1 ^ 3;
@@ -1734,6 +1734,24 @@ sbit RTC_CLK = P1 ^ 3;
   Purpose: Read and set date/time on DS1302 RTC chip on SCS-2001
 
 \********************************************************************/
+
+
+/*------------------------------------------------------------------*/
+
+void rtc_output(unsigned char d)
+{
+   unsigned char i;
+
+   for (i=0 ; i<8 ; i++) {
+      RTC_IO = d & 0x01;
+      delay_us(10);
+      RTC_CLK = 1;
+      delay_us(10);
+      RTC_CLK = 0;
+
+      d >>= 1;
+   }
+}
 
 /*------------------------------------------------------------------*/
 
@@ -1753,15 +1771,7 @@ unsigned char rtc_read_byte(unsigned char adr)
    SFRPAGE = CONFIG_PAGE;
    P1MDOUT |= 0x04; 
 
-   for (i=0 ; i<8 ; i++) {
-      RTC_IO = adr & 0x01;
-      delay_us(10);
-      RTC_CLK = 1;
-      delay_us(10);
-      RTC_CLK = 0;
-
-      adr >>= 1;
-   }
+   rtc_output(adr);
 
    /* switch port to input */
    SFRPAGE = CONFIG_PAGE;
@@ -1790,9 +1800,9 @@ unsigned char rtc_read_byte(unsigned char adr)
 
 /*------------------------------------------------------------------*/
 
-void rtc_write_byte(unsigned char adr, unsigned char d)
+void rtc_read(unsigned char d[6])
 {
-   unsigned char idata i;
+   unsigned char idata i, j, b, m;
 
    RTC_CLK = 0;
 
@@ -1806,25 +1816,32 @@ void rtc_write_byte(unsigned char adr, unsigned char d)
    SFRPAGE = CONFIG_PAGE;
    P1MDOUT |= 0x04; 
 
-   for (i=0 ; i<8 ; i++) {
-      RTC_IO = adr & 0x01;
-      delay_us(10);
-      RTC_CLK = 1;
-      delay_us(10);
-      RTC_CLK = 0;
+   rtc_output(0xBF); // burst read
 
-      adr >>= 1;
-   }
+   /* switch port to input */
+   SFRPAGE = CONFIG_PAGE;
+   P1MDOUT &= ~ 0x04;
+   RTC_IO = 1;
 
-   delay_us(10);
-   for (i=0 ; i<8 ; i++) {
-      RTC_IO = d & 0x01;
-      delay_us(10);
-      RTC_CLK = 1;
-      delay_us(10);
-      RTC_CLK = 0;
+   delay_us(10); // wait for RTC output
 
-      d >>= 1;
+   for (j=0 ; j<7 ; j++) {
+      for (i=b=0,m=1 ; i<8 ; i++) {
+         if (RTC_IO)
+            b |= m;
+         RTC_CLK = 1;
+         delay_us(10);
+         RTC_CLK = 0;
+         delay_us(10);
+         m <<= 1;
+      }
+
+      if (j<3)
+        d[5-j] = b;
+      else if (j < 5)
+        d[j-3] = b;
+      else if (j == 6)
+        d[2] = b;
    }
 
    SFRPAGE = DAC1_PAGE;
@@ -1836,7 +1853,65 @@ void rtc_write_byte(unsigned char adr, unsigned char d)
 
 /*------------------------------------------------------------------*/
 
-void rtc_write(unsigned char item, unsigned char d)
+void rtc_write_byte(unsigned char adr, unsigned char d)
+{
+   RTC_CLK = 0;
+   SFRPAGE = DAC1_PAGE;
+   DAC1L = 0xFF;
+   DAC1H = 0x0F;
+
+   delay_us(10); // wait for DAC
+
+   /* switch port to output */
+   SFRPAGE = CONFIG_PAGE;
+   P1MDOUT |= 0x04; 
+
+   rtc_output(adr);
+   rtc_output(d);
+
+   SFRPAGE = DAC1_PAGE;
+   DAC1L = 0;
+   DAC1H = 0;
+
+   delay_us(10); // wait for DAC
+}
+
+/*------------------------------------------------------------------*/
+
+void rtc_write(unsigned char d[6])
+{
+   RTC_CLK = 0;
+   SFRPAGE = DAC1_PAGE;
+   DAC1L = 0xFF;
+   DAC1H = 0x0F;
+
+   delay_us(10); // wait for DAC
+
+   /* switch port to output */
+   SFRPAGE = CONFIG_PAGE;
+   P1MDOUT |= 0x04; 
+
+   rtc_output(0xBE); // clock burst write
+
+   rtc_output(d[5]);     // sec
+   rtc_output(d[4]);     // min
+   rtc_output(d[3]);     // hour
+   rtc_output(d[0]);     // date
+   rtc_output(d[1]);     // month
+   rtc_output(1);        // weekday
+   rtc_output(d[2]);     // year
+   rtc_output(0);        // WP
+
+   SFRPAGE = DAC1_PAGE;
+   DAC1L = 0;
+   DAC1H = 0;
+
+   delay_us(10); // wait for DAC
+}
+
+/*------------------------------------------------------------------*/
+
+void rtc_write_item(unsigned char item, unsigned char d)
 {
    switch (item) {
       case 0: rtc_write_byte(0x86, d); break; // day
@@ -1850,53 +1925,43 @@ void rtc_write(unsigned char item, unsigned char d)
 
 /*------------------------------------------------------------------*/
 
-void rtc_get_date(char *str)
+void rtc_conv_date(unsigned char d[6], char *str)
 {
-   unsigned char idata d;
-
-   d  = rtc_read_byte(0x87); // day
-   if (d == 0xFF) { // no clock mounted
-      strcpy(str, "XX-XX-XX");
+   if (d[0] == 0xFF) { // no clock mounted
+      strcpy(str, "??-??-??");
       return;
    }
-   str[0] = '0'+d/0x10;
-   str[1] = '0'+d%0x10;
+   str[0] = '0'+d[0]/0x10;
+   str[1] = '0'+d[0]%0x10;
    str[2] = '-';
 
-   d  = rtc_read_byte(0x89); // month
-   str[3] = '0'+d/0x10;
-   str[4] = '0'+d%0x10;
+   str[3] = '0'+d[1]/0x10;
+   str[4] = '0'+d[1]%0x10;
    str[5] = '-';
 
-   d  = rtc_read_byte(0x8D); // year
-   str[6] = '0'+d/0x10;
-   str[7] = '0'+d%0x10;
+   str[6] = '0'+d[2]/0x10;
+   str[7] = '0'+d[2]%0x10;
    str[8] = 0;
 }
 
 /*------------------------------------------------------------------*/
 
-void rtc_get_time(char *str)
+void rtc_conv_time(unsigned char d[6], char *str)
 {
-   unsigned char idata d;
-
-   d  = rtc_read_byte(0x85); // hour
-   if (d == 0xFF) { // no clock mounted
-      strcpy(str, "XX:XX:XX");
+   if (d[0] == 0xFF) { // no clock mounted
+      strcpy(str, "??:??:??");
       return;
    }
-   str[0] = '0'+d/0x10;
-   str[1] = '0'+d%0x10;
+   str[0] = '0'+d[3]/0x10;
+   str[1] = '0'+d[3]%0x10;
    str[2] = ':';
 
-   d  = rtc_read_byte(0x83); // min
-   str[3] = '0'+d/0x10;
-   str[4] = '0'+d%0x10;
+   str[3] = '0'+d[4]/0x10;
+   str[4] = '0'+d[4]%0x10;
    str[5] = ':';
 
-   d  = rtc_read_byte(0x81); // sec
-   str[6] = '0'+d/0x10;
-   str[7] = '0'+d%0x10;
+   str[6] = '0'+d[5]/0x10;
+   str[7] = '0'+d[5]%0x10;
    str[8] = 0;
 }
 
@@ -1904,12 +1969,14 @@ void rtc_get_time(char *str)
 
 void rtc_print()
 {
+   unsigned char xdata d[6];
    char xdata str[10];
 
-   rtc_get_date(str);
+   rtc_read(d);
+   rtc_conv_date(d, str);
    puts(str);
    putchar(' ');
-   rtc_get_time(str);
+   rtc_conv_time(d, str);
    puts(str);
 }
 
@@ -1921,5 +1988,5 @@ void rtc_init()
    rtc_write_byte(0x8E, 0);
 }
 
-#endif // RTC_SUPPORT
+#endif // HAVE_RTC
 

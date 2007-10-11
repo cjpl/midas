@@ -1498,12 +1498,17 @@ int mscb_info(int fd, unsigned short adr, MSCB_INFO * info)
 
       if (size == (int) sizeof(MSCB_INFO) + 3)
          break;
+
+      if (size == (int) sizeof(MSCB_INFO) + 3 - 6) // old format without RTC
+         break;
    }
 
-   if (size < (int) sizeof(MSCB_INFO) + 3)
+   if (size < (int) sizeof(MSCB_INFO) + 3 - 6)
       return MSCB_TIMEOUT;
 
    memcpy(info, buf + 2, sizeof(MSCB_INFO));
+   if (size == (int) sizeof(MSCB_INFO) + 3 - 6) // old format without RTC
+      memset(info->rtc, 0, 6);
 
    /* do CRC check */
    if (crc8(buf, size-1) != buf[size-1])
