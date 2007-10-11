@@ -1592,6 +1592,11 @@ INT yb_ftp_open(char *destination, FTP_CON ** con)
       return status;
 
    status = ftp_chdir(*con, directory);
+   if (status >= 0) {
+      /* directory does not exist -> create it */
+      ftp_mkdir(*con, directory);
+      status = ftp_chdir(*con, directory);
+   }
    if (status >= 0)
       return status;
 
@@ -1681,7 +1686,7 @@ status : from lower function
 }
 
 /*------------------------------------------------------------------*/
-INT yb_any_file_wclose(INT handle, INT type, INT data_fmt)
+INT yb_any_file_wclose(INT handle, INT type, INT data_fmt, char *destination)
 /********************************************************************
 Routine: external yb_any_file_wclose
 Purpose: Close a data file used for replay for the given data format
@@ -1694,7 +1699,7 @@ status : from lower function
 *******************************************************************/
 {
    INT status;
-   status = data_fmt;           /* avoid compiler warning */
+
    status = SS_SUCCESS;
    switch (type) {
    case LOG_TYPE_TAPE:
@@ -1713,8 +1718,35 @@ status : from lower function
       break;
    case LOG_TYPE_FTP:
 #ifdef INCLUDE_FTPLIB
+      {
+      char *p, filename[256];
+      int  i;
+
       ftp_close(ftp_con);
+
+      /* 
+         destination should have the form:
+         host, port, user, password, directory, run%05d.mid, file_mode, command, ...
+      */
+      p = destination;
+      for (i=0 ; i<5 && p != NULL ; i++) {
+         p = strchr(p, ',');
+         if (*p == ',')
+            p++;
+      }
+      if (p != NULL) {
+         strlcpy(filename, p, sizeof(filename));
+         if (strchr(filename, ','))
+            *strchr(filename, ',') = 0;
+      } else
+         strlcpy(filename, destination, sizeof(filename));
+
+      /* if filename starts with a '.' rename it */
+      if (filename[0] == '.')
+         ftp_move(ftp_con, filename, filename+1);
+
       ftp_bye(ftp_con);
+      }
 #endif
       break;
    }
