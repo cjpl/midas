@@ -85,7 +85,8 @@ SYS_INFO sys_info;
 
 #ifdef HAVE_RTC
 /* buffer for setting RTC */
-unsigned char xdata rtc_buf[6];
+unsigned char xdata rtc_bread[6];
+unsigned char xdata rtc_bwrite[6];
 bit rtc_set;
 #endif
 
@@ -600,7 +601,7 @@ void interprete(void)
 
 #ifdef HAVE_RTC
       for (i = 0; i < 6 ; i++)
-         send_byte(rtc_buf[i], &crc);
+         send_byte(rtc_bread[i], &crc);
 #endif
 
       send_byte(crc, NULL);     // send CRC code
@@ -706,7 +707,7 @@ void interprete(void)
 #ifdef HAVE_RTC
       led_blink(0, 1, 50);
       for (i=0 ; i<6 ; i++)
-         rtc_buf[i] = in_buf[i+1];
+         rtc_bwrite[i] = in_buf[i+1];
       rtc_set = 1;
 #endif
       break;
@@ -1466,11 +1467,11 @@ void yield(void)
 
 #ifdef HAVE_RTC
    if (rtc_set) {
-      rtc_write(rtc_buf);
+      rtc_write(rtc_bwrite);
       rtc_set = 0;
    }
 
-   rtc_read(rtc_buf);
+   rtc_read(rtc_bread);
 #endif
 
    /* allow flash 3 sec after reboot */
