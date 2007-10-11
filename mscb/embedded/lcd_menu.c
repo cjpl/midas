@@ -401,7 +401,7 @@ void lcd_menu()
                start_index = var_index-1;
          }
 
-         if (n_variables == 0) {
+         if (n_variables == 0 && !system_menu) {
             lcd_goto(0, 0);
             printf("No variables defined");
          } else {
@@ -536,7 +536,7 @@ void lcd_menu()
          } else {
             
             lcd_goto(0, 3);
-            if (pvar->delta > 0 || (pvar->flags & MSCBF_DATALESS))
+            if ((n_variables > 0 || system_menu) && (pvar->delta > 0 || (pvar->flags & MSCBF_DATALESS)))
                puts("ESC ENTER   ");
             else
                puts("ESC         ");
@@ -559,7 +559,7 @@ void lcd_menu()
             /* evaluate ENTER button */
             if (b1 && !b1_old) {
 
-               if (pvar->width <= 4 && pvar->width > 0 && pvar->delta > 0) {
+               if (n_variables > 0 && pvar->width <= 4 && pvar->width > 0 && pvar->delta > 0) {
                   enter_mode = 1;
                   memcpy(&f_var, pvar->ud, pvar->width);
                   lcd_goto(19, var_index-start_index);
