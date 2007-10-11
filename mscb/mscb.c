@@ -4104,7 +4104,8 @@ int mscb_set_time(int fd, int addr, int gaddr, int broadcast)
          buf[3+i] = dt[i];
       buf[9] = crc8(buf+2, 7);
       status = mscb_exchg(fd, buf, &size, 10, RS485_FLAG_NO_ACK | RS485_FLAG_ADR_CYCLE);
-   }
+   } else
+      status = MSCB_INVAL_PARAM;
 
    return status;
 }
