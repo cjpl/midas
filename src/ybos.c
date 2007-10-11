@@ -1544,7 +1544,6 @@ status : from lower function
 
 #ifdef INCLUDE_FTPLIB
 
-/* @ NOT TESTED @ */
 INT yb_ftp_open(char *destination, FTP_CON ** con)
 {
    INT status;
@@ -1625,7 +1624,6 @@ INT yb_ftp_open(char *destination, FTP_CON ** con)
    return SS_SUCCESS;
 }
 
-/* @ NOT TESTED @ */
 #endif
 
 /*------------------------------------------------------------------*/

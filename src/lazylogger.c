@@ -1323,8 +1323,8 @@ Function value:
    /* update "maintain free space" */
    lazy_maintain_check(pLch->hKey, pLall);
 
-  /***** Lock other clients out of this following code as
-  it may access the other client info tree   *****/
+  /* Lock other clients out of this following code as
+     it may access the other client info tree */
    status = ss_mutex_wait_for(lazy_mutex, 5000);
    if (status != SS_SUCCESS) {
       /* exit for now and come back later */
@@ -1400,7 +1400,7 @@ Function value:
       free(pdonelist);
    pdonelist = NULL;
 
-  /***** Release the mutex  *****/
+   /* Release the mutex  */
    status = ss_mutex_release(lazy_mutex);
 
    /* check if backup run is beyond keep */
@@ -1439,19 +1439,20 @@ Function value:
             strcat(lazy.path, DIR_SEPARATOR_STR);
           */
 
+
          strcpy(str, lazy.path);
-         /* substitue "%d" for current run number */
+         /* substitute "%d" for current run number */
          if (strchr(str, '%'))
             sprintf(outffile, str, lazyst.cur_run);
          else
             strcpy(outffile, str);
 
-         //if (lazy.path[0] != 0)
-         //  if (lazy.path[strlen(lazy.path)-1] != '/')
-         //    strcat(lazy.path, "/");
-         //  strcpy(outffile, lazy.path);
-         //  strcat(outffile, ",");
-         //  strcat(outffile, lazyst.backfile);
+         /* substitute "#d" for current run number millenium */
+         strlcpy(str, outffile, sizeof(str));
+         if (strchr(str, '#')) {
+            *strchr(str, '#') = '%%';
+            sprintf(outffile, str, lazyst.cur_run / 1000);
+         }
       }
 
       /* check if space on backup device ONLY in the TAPE case */
