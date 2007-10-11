@@ -1359,7 +1359,7 @@ int mscb_subm_reset(int fd)
    char buf[10];
    int size;
 
-   debug_log("mscb_reset(fd=%d) ", 1, fd);
+   debug_log("mscb_subm_reset(fd=%d) ", 1, fd);
 
    if (fd > MSCB_MAX_FD || fd < 1 || !mscb_fd[fd - 1].type) {
       debug_log("return MSCB_INVAL_PARAM\n", 0);
@@ -2974,24 +2974,6 @@ int mscb_read(int fd, unsigned short adr, unsigned char index, void *data, int *
    /* try five times */
    for (n = i = 0; n < 5 ; n++) {
 
-      /* after three times, reset submaster */
-      if (n == 3) {
-#ifndef _USRDLL
-         printf("mscb_read: Automatic submaster reset\n");
-#endif
-         debug_log("Automatic submaster reset\n", 1);
-         status = mscb_subm_reset(fd);
-         if (status == MSCB_SUBM_ERROR) {
-            sprintf(str, "mscb_read: Cannot reconnect to submaster %s\n", mscb_fd[fd - 1].device);
-#ifndef _USRDLL
-            printf(str);
-#endif
-            debug_log(str, 1);
-            break;
-         }
-         Sleep(100);
-      }
-
       buf[0] = MCMD_ADDR_NODE16;
       buf[1] = (unsigned char) (adr >> 8);
       buf[2] = (unsigned char) (adr & 0xFF);
@@ -3314,23 +3296,6 @@ int mscb_read_range(int fd, unsigned short adr, unsigned char index1, unsigned c
 
    /* try five times */
    for (n = i = 0; n < 5; n++) {
-      /* after five times, reset submaster */
-      if (n == 3) {
-#ifndef _USRDLL
-         printf("mscb_read_range: Automatic submaster reset.\n");
-#endif
-         debug_log("Automatic submaster reset\n", 1);
-         status = mscb_subm_reset(fd);
-         if (status == MSCB_SUBM_ERROR) {
-            sprintf(str, "mscb_read_range: Cannot reconnect to submaster %s\n", mscb_fd[fd - 1].device);
-#ifndef _USRDLL
-            printf(str);
-#endif
-            debug_log(str, 1);
-            break;
-         }
-         Sleep(100);
-      }
 
       buf[0] = MCMD_ADDR_NODE16;
       buf[1] = (unsigned char) (adr >> 8);
