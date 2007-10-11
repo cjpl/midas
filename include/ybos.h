@@ -378,7 +378,7 @@ extern "C" {
    INT EXPRT yb_any_file_rclose(INT data_fmt);
    INT EXPRT yb_any_file_ropen(char *infile, INT data_fmt);
    INT EXPRT yb_any_file_wopen(INT type, INT data_fmt, char *filename, INT * hDev);
-   INT EXPRT yb_any_file_wclose(INT handle, INT type, INT data_fmt);
+   INT EXPRT yb_any_file_wclose(INT handle, INT type, INT data_fmt, char *filename);
    INT EXPRT yb_any_log_write(INT handle, INT data_fmt, INT type,
                               void *prec, DWORD nbytes);
    INT EXPRT yb_any_event_swap(INT data_fmt, void *pevent);
