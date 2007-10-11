@@ -83,7 +83,7 @@ unsigned char var_to_send = 0xFF;
 
 SYS_INFO sys_info;
 
-#ifdef RTC_SUPPORT
+#ifdef HAVE_RTC
 /* buffer for setting RTC */
 unsigned char xdata rtc_buf[6];
 bit rtc_set;
@@ -231,7 +231,7 @@ void setup(void)
    wrong_cpu = 0;
    _flkey = 0;
 
-#ifdef RTC_SUPPORT
+#ifdef HAVE_RTC
    rtc_set = 0;
 #endif
 
@@ -256,7 +256,7 @@ void setup(void)
    uart_init(1, BD_115200);
 #endif
 
-#ifdef LCD_SUPPORT
+#ifdef HAVE_LCD
    lcd_setup();
 #endif
 
@@ -577,7 +577,11 @@ void interprete(void)
       RS485_ENABLE = 1;
 
       send_byte(CMD_ACK + 7, &crc);      // send acknowledge, variable data length
+#ifdef HAVE_RTC
+      send_byte(30, &crc);               // send data length
+#else
       send_byte(24, &crc);               // send data length
+#endif
       send_byte(PROTOCOL_VERSION, &crc); // send protocol version
 
       send_byte(n_variables, &crc);      // send number of variables
@@ -593,6 +597,11 @@ void interprete(void)
 
       for (i = 0; i < 16; i++)  // send node name
          send_byte(sys_info.node_name[i], &crc);
+
+#ifdef HAVE_RTC
+      for (i = 0; i < 6 ; i++)
+         send_byte(rtc_buf[i], &crc);
+#endif
 
       send_byte(crc, NULL);     // send CRC code
 
@@ -694,7 +703,7 @@ void interprete(void)
       break;
 
    case CMD_SET_TIME:
-#ifdef RTC_SUPPORT
+#ifdef HAVE_RTC
       led_blink(0, 1, 50);
       for (i=0 ; i<6 ; i++)
          rtc_buf[i] = in_buf[i+1];
@@ -1443,7 +1452,7 @@ void yield(void)
    if (flash_program && flash_allowed) {
       flash_program = 0;
 
-#ifdef LCD_SUPPORT
+#ifdef HAVE_LCD
       lcd_clear();
       lcd_goto(0, 0);
       puts("    Upgrading"); 
@@ -1455,16 +1464,13 @@ void yield(void)
       upgrade();
    }
 
-#ifdef RTC_SUPPORT
-   {
-   unsigned char i;
-
+#ifdef HAVE_RTC
    if (rtc_set) {
-      for (i=0 ; i<6 ; i++)
-         rtc_write(i, rtc_buf[i]);
+      rtc_write(rtc_buf);
       rtc_set = 0;
    }
-   }
+
+   rtc_read(rtc_buf);
 #endif
 
    /* allow flash 3 sec after reboot */

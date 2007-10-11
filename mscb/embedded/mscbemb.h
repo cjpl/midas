@@ -94,7 +94,7 @@
 
 /* default flags */
 #define USE_WATCHDOG
-#define EEPROM_SUPPORT
+#define HAVE_EEPROM
 
 /*--------------------------------*/
 #if defined(SCS_210)
@@ -130,7 +130,7 @@ sbit RS485_ENABLE = P1 ^ 0;
 //#define EXT_WATCHDOG
 //sbit EXT_WATCHDOG_PIN = P2 ^ 1;
 
-#undef EEPROM_SUPPORT
+#undef HAVE_EEPROM
 
 /*--------------------------------*/
 #elif defined(SUBM_260)
@@ -142,7 +142,7 @@ sbit RS485_ENABLE = P1 ^ 0;
 #define LED_ON 0
 sbit RS485_ENABLE = P0 ^ 4;
 
-#undef EEPROM_SUPPORT
+#undef HAVE_EEPROM
 
 /*--------------------------------*/
 #elif defined(SCS_300) || defined(SCS_310)
@@ -173,7 +173,7 @@ sbit RS485_ENABLE = P0 ^ 3;
 #define LED_ON 0
 sbit RS485_ENABLE = P3 ^ 5;
 
-#undef EEPROM_SUPPORT
+#undef HAVE_EEPROM
 
 /*--------------------------------*/
 #elif defined(SCS_400) || defined(SCS_500)
@@ -214,7 +214,7 @@ sbit RS485_ENABLE = P3 ^ 5;
 sbit RS485_ENABLE = P0 ^ 5;
 sbit RS485_SEC_ENABLE = P0 ^ 4;
 
-#define LCD_SUPPORT
+#define HAVE_LCD
 
 /*--------------------------------*/
 #elif defined(SCS_1001)
@@ -231,7 +231,7 @@ sbit RS485_SEC_ENABLE = P0 ^ 4;
 //#define EXT_WATCHDOG              // use external watchdog
 sbit EXT_WATCHDOG_PIN = P1 ^ 4;
 
-#define LCD_SUPPORT
+#define HAVE_LCD
 
 /*--------------------------------*/
 #elif defined(SCS_2000)
@@ -247,10 +247,10 @@ sbit RS485_SEC_ENABLE = P0 ^ 4;
 //#define EXT_WATCHDOG              // use external watchdog
 //sbit EXT_WATCHDOG_PIN = DAC0;
 
-#define LCD_SUPPORT
+#define HAVE_LCD
 #define LCD_8BIT
 #define DYN_VARIABLES
-#define RTC_SUPPORT
+#define HAVE_RTC
 
 /*--------------------------------*/
 #elif defined(HVR_200)
@@ -413,7 +413,7 @@ sbit RS485_ENABLE = P0 ^ 3;
 #define UART1_DEVICE                     // use direct device communication
 #endif
 
-#if defined(UART1_DEVICE) && defined(LCD_SUPPORT)
+#if defined(UART1_DEVICE) && defined(HAVE_LCD)
 char putchar1(char c);                   // putchar cannot be used with LCD support
 #endif
 
@@ -731,10 +731,12 @@ void set_n_sub_addr(unsigned char n);
 unsigned char cur_sub_addr(void);
 
 void rtc_init(void);
-void rtc_get_date(char *str);
-void rtc_get_time(char *str);
+void rtc_write(unsigned char d[6]);
+void rtc_read(unsigned char d[6]);
+void rtc_write_item(unsigned char item, unsigned char d);
+void rtc_conv_date(unsigned char d[6], char *str);
+void rtc_conv_time(unsigned char d[6], char *str);
 void rtc_print(void);
-void rtc_write(unsigned char item, unsigned char d);
 
 
 

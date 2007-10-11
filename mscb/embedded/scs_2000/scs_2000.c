@@ -368,7 +368,7 @@ char xdata * pvardata;
 
    /* do memory test on cold start */
    SFRPAGE = LEGACY_PAGE;
-   if (memsize > 0 && (RSTSRC & 0x02) > 0) {
+   if (memsize > 0 /*&& (RSTSRC & 0x02) > 0*/) {
       emif_test();
       sysclock_reset();
    }
@@ -639,7 +639,7 @@ unsigned char xdata i, j, n, col;
                next = 1;
                break;
             }
-            printf("P%bd:%02bX %s      ", i, scs_2000_module[j].id, scs_2000_module[j].name);
+            printf("P%bd:%02bX %s          ", i, scs_2000_module[j].id, scs_2000_module[j].name);
          } else
             printf("                    ");
 
@@ -647,19 +647,19 @@ unsigned char xdata i, j, n, col;
       }
 
       lcd_goto(0, 3);
-      printf("VARS");
+      puts("VARS");
 
       lcd_goto(16, 3);
       if (next)
-         printf("NEXT");
+         printf("  %c ", 0x13);
       else
-         printf("    ");
+         puts("    ");
         
       lcd_goto(10, 3);
-      if (index > 0) 
-         printf("PREV");
+      if (index > 0)
+         printf("  %c ", 0x12);
       else
-         printf("    ");
+         puts("    ");
 
       last_index = index;
    }

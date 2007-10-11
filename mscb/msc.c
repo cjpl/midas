@@ -787,6 +787,14 @@ void cmd_loop(int fd, char *cmd, unsigned short adr)
                printf("Protocol version : %d\n", info.protocol_version);
                printf("SVN revision     : %d\n", info.svn_revision);
 
+               if (info.rtc[0]) {
+                  for (i=0 ; i<6 ; i++)
+                     info.rtc[i] = (info.rtc[i] / 0x10) * 10 + info.rtc[i] % 0x10;
+                  printf("Real Time Clock  : %02d-%02d-%02d %02d:%02d:%02d\n",
+                     info.rtc[0], info.rtc[1], info.rtc[2], 
+                     info.rtc[3], info.rtc[4], info.rtc[5]);
+               }
+
                status = mscb_uptime(fd, (unsigned short) current_addr, &uptime);
                if (status == MSCB_SUCCESS)
                   printf("Uptime           : %dd %02dh %02dm %02ds\n",
