@@ -550,6 +550,7 @@ void lcd_menu()
                if (system_menu) {
                   system_menu = 0;
                   var_index = 0;
+                  lcd_clear();
                } else {
                   in_menu = 0;
                   application_display(1);

@@ -1928,7 +1928,9 @@ void rtc_write_item(unsigned char item, unsigned char d)
 void rtc_conv_date(unsigned char d[6], char *str)
 {
    if (d[0] == 0xFF) { // no clock mounted
-      strcpy(str, "??-??-??");
+      str[0] = str[1] = str[3] = str[4] = str[6] = str[7] = '?';
+      str[2] = str[5] = '-';
+      str[8] = 0;
       return;
    }
    str[0] = '0'+d[0]/0x10;
@@ -1949,7 +1951,9 @@ void rtc_conv_date(unsigned char d[6], char *str)
 void rtc_conv_time(unsigned char d[6], char *str)
 {
    if (d[0] == 0xFF) { // no clock mounted
-      strcpy(str, "??:??:??");
+      str[0] = str[1] = str[3] = str[4] = str[6] = str[7] = '?';
+      str[2] = str[5] = ':';
+      str[8] = 0;
       return;
    }
    str[0] = '0'+d[3]/0x10;
