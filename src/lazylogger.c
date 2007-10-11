@@ -1450,7 +1450,7 @@ Function value:
          /* substitute "#d" for current run number millenium */
          strlcpy(str, outffile, sizeof(str));
          if (strchr(str, '#')) {
-            *strchr(str, '#') = '%%';
+            *strchr(str, '#') = '%';
             sprintf(outffile, str, lazyst.cur_run / 1000);
          }
       }
