@@ -10,6 +10,9 @@
 #include "midas.h"
 #include "msystem.h"
 #include "ybos.h"
+#ifdef INCLUDE_FTPLIB
+#include "ftplib.h"
+#endif
 #include <assert.h>
 
 #define NOTHING_TODO  0
@@ -997,6 +1000,7 @@ Function value:
    static INT last_error = 0;
    char *pext;
    BOOL watchdog_flag;
+   char filename[256];
 
    pext = malloc(strlen(infile));
    strcpy(pext, infile);
@@ -1012,7 +1016,8 @@ Function value:
    last_time = 0;
 
    /* open any logging file (output) */
-   if ((status = yb_any_file_wopen(dev_type, data_fmt, outfile, &hDev)) != 1) {
+   strlcpy(filename, outfile, sizeof(filename)); // ftp modifies filename
+   if ((status = yb_any_file_wopen(dev_type, data_fmt, filename, &hDev)) != 1) {
       if ((ss_time() - last_error) > 60) {
          last_error = ss_time();
          cm_msg(MTALK, "Lazy_copy", "cannot open %s, error %d", outfile, status);
@@ -1084,7 +1089,7 @@ Function value:
                /* close source file */
                yb_any_file_rclose(dev_type);
                /* close output data file */
-               yb_any_file_wclose(hDev, dev_type, data_fmt);
+               yb_any_file_wclose(hDev, dev_type, data_fmt, outfile);
                /* szlazy is the requested block size. Why is it copied to cm_msg?
                   cm_msg(MERROR,"lazy_copy","Write error %i",szlazy); */
                cm_msg(MERROR, "lazy_copy", "Write error ");
@@ -1135,7 +1140,7 @@ Function value:
    if (equal_ustring(lazy.type, "Tape")) {
       blockn = ss_tape_get_blockn(hDev);
    }
-   status = yb_any_file_wclose(hDev, dev_type, data_fmt);
+   status = yb_any_file_wclose(hDev, dev_type, data_fmt, outfile);
    if (status != SS_SUCCESS) {
       if (status == SS_NO_SPACE)
          return status;
@@ -1822,6 +1827,11 @@ int main(int argc, char **argv)
    /* turn on keepalive messages with increased timeout */
    if (debug)
       cm_set_watchdog_params(TRUE, 0);
+
+#ifdef INCLUDE_FTPLIB
+   if (debug)
+      ftp_debug(puts, puts);
+#endif
 
    printf("Lazy_%s starting... " "!" " to exit \n", lazyinfo[channel].name);
 
