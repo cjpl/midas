@@ -87,6 +87,7 @@ SCS_2000_MODULE code scs_2000_module[] = {
   /* 0x20-0x3F digital in  */
   { 0x20, "Din 5V",          vars_din,    1, dr_din_bits    },
   { 0x21, "OptIn",           vars_optin,  1, dr_din_bits    },
+  { 0x22, "CPLD",            vars_din,    1, dr_din_bits    },
 
   /* 0x40-0x5F digital out */
   { 0x40, "Dout 5V/24V",     vars_dout,   1, dr_dout_bits   },
@@ -406,6 +407,14 @@ unsigned char is_master()
       return 0;
 
    return 1;
+}
+
+unsigned char is_present(unsigned char addr)
+{
+   unsigned char status;
+
+   read_csr(addr, CSR_PWR_STATUS, &status);
+   return status != 0xFF;
 }
 
 /*---- Bitwise output/input ----------------------------------------*/

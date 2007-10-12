@@ -263,8 +263,8 @@ begin
   pwr_status(2) <= '0';
   
   -- Beeper (on if low)
-  P_O_BEEPER <= not (pwr_status(3) or not pwr_status(0) or disable_24V);
-  --P_O_BEEPER <= '1';
+  --P_O_BEEPER <= not (pwr_status(3) or not pwr_status(0) or disable_24V);
+  P_O_BEEPER <= '1';
 
   -- quarz speed in MHz:
   -- 0:100, 1:33.33, 2:30, 3:120, 4:25, 5:20, 6:70, 7:80

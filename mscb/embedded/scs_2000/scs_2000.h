@@ -43,6 +43,7 @@ unsigned char module_present(unsigned char addr, unsigned char port_no) reentran
 unsigned char verify_module(unsigned char addr, unsigned char port_no, unsigned char id) reentrant;
 unsigned char power_mgmt(unsigned char addr, unsigned char reset) reentrant;
 unsigned char is_master();
+unsigned char is_present(unsigned char addr);
 
 /*---- Drivers -----------------------------------------------------*/
 

@@ -32,11 +32,11 @@ extern void lcd_menu(void);
 
 /*---- Port definitions ----*/
 
-bit b0, b1, b2, b3, master;
+bit b0, b1, b2, b3, master, module_list;
 
 /*---- Define variable parameters returned to CMD_GET_INFO command ----*/
 
-#define N_PORT 16 /* maximal one master and one slave module */
+#define N_PORT 16 /* maximal one master and three slave modules */
 
 /* data buffer (mirrored in EEPROM) */
 
@@ -55,6 +55,7 @@ MSCB_INFO_VAR xdata vars[N_PORT*8+1];
 unsigned char xdata update_data[N_PORT*8];
 unsigned char xdata erase_module;
 
+unsigned char xdata n_box;
 unsigned char xdata module_nvars[N_PORT];
 unsigned char xdata module_id[N_PORT];
 unsigned char xdata module_index[N_PORT];
@@ -77,6 +78,8 @@ void user_init(unsigned char init)
 
    erase_module = 0xFF;
 
+   /* green (lower) LED on by default */
+   led_mode(0, 1);
    /* red (upper) LED off by default */
    led_mode(1, 0);
 
@@ -209,9 +212,6 @@ void emif_test()
 
    for (i=0 ; i<16 ; i++) {
       emif_switch(i);
-
-      lcd_goto(1, 0);
-      rtc_print();
 
       lcd_goto(i, 3);
       putchar(218);
@@ -377,6 +377,12 @@ char xdata * pvardata;
    n_var = n_mod = 0;
    pvardata = (char *)user_data;
 
+   /* count number of active boxes */
+   for (i=0 ; i<N_PORT/8 ; i++)
+      if (!is_present(i))
+         break;
+   n_box = i;
+
    /* set "variables" pointer to array in xdata */
    variables = vars;
 
@@ -540,7 +546,7 @@ unsigned char status, i;
    if (time() > last_pwr+10 || time() < last_pwr) {
       last_pwr = time();
     
-      for (i=0 ; i<N_PORT/8 ; i++) {
+      for (i=0 ; i<n_box ; i++) {
 
          status = power_mgmt(i, 0);
          
@@ -594,14 +600,13 @@ unsigned long xdata last_b2 = 0, last_b3 = 0;
 
 unsigned char application_display(bit init)
 {
-static bit next, prev;
+static bit next;
 static unsigned char xdata index, last_index, port;
-unsigned char xdata i, j, n, col;
+unsigned char xdata i, n, j, col;
 
    if (init) {
       lcd_clear();
       index = 0;
-      last_index = 1;
    }
 
    if (!master) {
@@ -615,139 +620,175 @@ unsigned char xdata i, j, n, col;
       return 0;
    }
 
-   /* display list of modules */
-   if (index != last_index) {
+   if (!module_list) {
+      lcd_goto(0, 0);
+      for (i=0 ; i<7-strlen(sys_info.node_name)/2 ; i++)
+         puts(" ");
+      puts("** ");
+      puts(sys_info.node_name);
+      puts(" ** ");
+      lcd_goto(0, 1);
+      printf("   Address:  %04X", sys_info.node_addr);
 
-      next = prev = 0;
-
-      for (n=i=0 ; i<N_PORT  ; i++);
-         if (module_id[i])
-            n++;
-
-      for (col=i=0 ; i<N_PORT ; i++) {
-
-         if (!module_id[i])
-            continue;
-
-         if (i < index)
-            continue;
-
-         lcd_goto(0, col);
-         for (j=0 ; scs_2000_module[j].id && scs_2000_module[j].id != module_id[i]; j++);
-         if (scs_2000_module[j].id) {
-            if (col == 3) {
-               next = 1;
-               break;
-            }
-            printf("P%bd:%02bX %s          ", i, scs_2000_module[j].id, scs_2000_module[j].name);
-         } else
-            printf("                    ");
-
-         col++;
-      }
+      lcd_goto(1, 2);
+      rtc_print();
 
       lcd_goto(0, 3);
-      puts("VARS");
-
-      lcd_goto(16, 3);
-      if (next)
-         printf("  %c ", 0x13);
-      else
-         puts("    ");
-        
-      lcd_goto(10, 3);
-      if (index > 0)
-         printf("  %c ", 0x12);
-      else
-         puts("    ");
-
-      last_index = index;
+      puts("MOD  VARS  SYS      ");
    }
 
+   if (module_list) {
+      /* display list of modules */
+      if (index != last_index) {
+   
+         next = 0;
+   
+         for (col=i=n=0 ; i<N_PORT ; i++) {
+   
+            if (!module_id[i])
+               continue;
+   
+            n++;
+            if (n <= index)
+               continue;
+   
+            lcd_goto(0, col);
+            for (j=0 ; scs_2000_module[j].id && scs_2000_module[j].id != module_id[i]; j++);
+            if (scs_2000_module[j].id) {
+               if (col == 3) {
+                  next = 1;
+                  break;
+               }
+               printf("P%bd:%02bX %s          ", i, scs_2000_module[j].id, scs_2000_module[j].name);
+            } else
+               printf("                    ");
+   
+            col++;
+         }
+   
+         lcd_goto(0, 3);
+         puts("ESC      ");
+   
+         lcd_goto(16, 3);
+         if (next)
+            printf("  %c ", 0x13); // V
+         else
+            puts("    ");
+           
+         lcd_goto(10, 3);
+         if (index > 0)
+            printf("  %c ", 0x12); // ^
+         else
+            puts("    ");
+   
+         last_index = index;
+      }
+   
+   
+      if (next && b3 && !b3_old)
+         index++;
+   
+      if (index > 0 && b2 && !b2_old)
+         index--;
+   
+      /* exit on button 0 */
+      if (b0 && !b0_old) {
+         module_list = 0;
+         b0_old = b0;
+         lcd_clear();
+      }
 
-   if (next && b3 && !b3_old)
-      index++;
+      /* erase EEPROM on release of button 1 (hidden functionality) */
+      if (!b1 && b1_old) {
+   
+         for (port=0,i=0 ; port<N_PORT ; port++)
+            if (module_present(port/8, port%8))
+               i++;
+   
+         for (port=0 ; port<N_PORT ; port++)
+            if (module_present(port/8, port%8))
+               break;
+   
+         if (i == 0)
+            return 0;
+         
+         lcd_clear();
+   
+         lcd_goto(0, 3);
+         if (i == 0)
+            printf("ESC ERASE           ");
+         else
+            printf("ESC ERASE  PREV NEXT");
+   
+         while (1) {
+   
+            lcd_goto(0, 0);
+            printf("    Erase module    ");
+            lcd_goto(0, 1);
+            printf("    in port %bd ?   ", port);
+   
+            do {
+               watchdog_refresh(0);
+               b0 = button(0);
+               b1 = button(1);
+               b2 = button(2);
+               b3 = button(3);
+            } while (!b0 && !b1 && !b2 && !b3);
+   
+            if (b0) {
+               while (b0) b0 = button(0);
+               lcd_clear();
+               last_index = 255; // force re-display
+               b0_old = b1_old = 0;
+               return 0;
+            }
+            
+            if (b1) {
+               write_eeprom(0, port, 0xFF);
+               while (b1) b1 = button(1);
+               SFRPAGE = LEGACY_PAGE;
+               RSTSRC  = 0x10;   // force software reset
+               break;
+            }
+   
+            if (b2) {
+               port = (port+N_PORT-1) % N_PORT;
+   
+               while (!module_present(port/8, N_PORT))
+                  port = (port+N_PORT-1) % N_PORT;
+   
+               while (b2) b2 = button(2);
+            }
+   
+            if (b3) {
+               port = (port+1) % N_PORT;
+   
+               while (!module_present(port/8, port%8))
+                  port = (port+1) % N_PORT;
+   
+               while (b3) b3 = button(3);
+            }
+         }
+      }
+   }
 
-   if (index > 0 && b2 && !b2_old)
-      index--;
-
-   /* enter menu on release of button 0 */
-   if (!init && !b0 && b0_old) {
-      last_index = index+1;
+   /* enter variables menu on release of button 1 */
+   if (!module_list && !b1 && b1_old) {
+      b1_old = b1;
       return 1;
    }
 
-   /* erase EEPROM on release of button 1 (hidden functionality) */
-   if (!init && !b1 && b1_old) {
+   /* enter system variables menu on release of button 2 */
+   if (!module_list && !b2 && b2_old) {
+      b2_old = b2;
+      return 2;
+   }
 
-      for (port=0,i=0 ; port<N_PORT ; port++)
-         if (module_present(port/8, port%8))
-            i++;
-
-      for (port=0 ; port<N_PORT ; port++)
-         if (module_present(port/8, port%8))
-            break;
-
-      if (i == 0)
-         return 0;
-      
+   /* show modules on button 0 */
+   if (b0 && !b0_old) {
+      module_list = 1;
       lcd_clear();
-
-      lcd_goto(0, 3);
-      if (i == 0)
-         printf("ESC ERASE           ");
-      else
-         printf("ESC ERASE  PREV NEXT");
-
-      while (1) {
-
-         lcd_goto(0, 0);
-         printf("    Erase module    ");
-         lcd_goto(0, 1);
-         printf("    in port %bd ?   ", port);
-
-         do {
-            watchdog_refresh(0);
-            b0 = button(0);
-            b1 = button(1);
-            b2 = button(2);
-            b3 = button(3);
-         } while (!b0 && !b1 && !b2 && !b3);
-
-         if (b0) {
-            while (b0) b0 = button(0);
-            lcd_clear();
-            last_index = 255; // force re-display
-            b0_old = b1_old = 0;
-            return 0;
-         }
-         
-         if (b1) {
-            write_eeprom(0, port, 0xFF);
-            while (b1) b1 = button(1);
-            SFRPAGE = LEGACY_PAGE;
-            RSTSRC  = 0x10;   // force software reset
-            break;
-         }
-
-         if (b2) {
-            port = (port+N_PORT-1) % N_PORT;
-
-            while (!module_present(port/8, N_PORT))
-               port = (port+N_PORT-1) % N_PORT;
-
-            while (b2) b2 = button(2);
-         }
-
-         if (b3) {
-            port = (port+1) % N_PORT;
-
-            while (!module_present(port/8, port%8))
-               port = (port+1) % N_PORT;
-
-            while (b3) b3 = button(3);
-         }
-      }
+      last_index = index + 1; // force display
    }
 
    b0_old = b0;
