@@ -31,7 +31,7 @@ begin
   P_O_DUMMY <= P_IO_SDO xor P_I_CS1 xor P_I_SDI xor P_I_SCLK;
   
   -- simply send input to central CPLD
-  P_IO_INTERN <= P_I_2A;
+  P_IO_INTERN(7 downto 0) <= P_I_2A(7 downto 0);
   P_O_1A <= "00000000"; 
   
 end Behavioral;
