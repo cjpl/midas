@@ -26,23 +26,23 @@ NET "P_IO_INTERN<5>" LOC = "P76";
 NET "P_IO_INTERN<6>" LOC = "P75";
 NET "P_IO_INTERN<7>" LOC = "P74";
 
-NET "P_O_1A<0>" LOC = "P88";
-NET "P_O_1A<1>" LOC = "P91";
-NET "P_O_1A<2>" LOC = "P92";
-NET "P_O_1A<3>" LOC = "P94";
-NET "P_O_1A<4>" LOC = "P95";
-NET "P_O_1A<5>" LOC = "P96";
-NET "P_O_1A<6>" LOC = "P97";
-NET "P_O_1A<7>" LOC = "P98";
+NET "P_O_1A<7>" LOC = "P88"; # order is reversed in PCB
+NET "P_O_1A<6>" LOC = "P91";
+NET "P_O_1A<5>" LOC = "P92";
+NET "P_O_1A<4>" LOC = "P94";
+NET "P_O_1A<3>" LOC = "P95";
+NET "P_O_1A<2>" LOC = "P96";
+NET "P_O_1A<1>" LOC = "P97";
+NET "P_O_1A<0>" LOC = "P98";
 
-NET "P_I_2A<0>" LOC = "P100";
-NET "P_I_2A<1>" LOC = "P101";
-NET "P_I_2A<2>" LOC = "P102";
-NET "P_I_2A<3>" LOC = "P103";
-NET "P_I_2A<4>" LOC = "P104";
-NET "P_I_2A<5>" LOC = "P105";
-NET "P_I_2A<6>" LOC = "P106";
-NET "P_I_2A<7>" LOC = "P107";
+NET "P_I_2A<7>" LOC = "P100"; # order is reversed in PCB
+NET "P_I_2A<6>" LOC = "P101";
+NET "P_I_2A<5>" LOC = "P102";
+NET "P_I_2A<4>" LOC = "P103";
+NET "P_I_2A<3>" LOC = "P104";
+NET "P_I_2A<2>" LOC = "P105";
+NET "P_I_2A<1>" LOC = "P106";
+NET "P_I_2A<0>" LOC = "P107";
 
 #PACE: Start of PACE Area Constraints
 
