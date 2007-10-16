@@ -32,7 +32,7 @@ extern void lcd_menu(void);
 
 /*---- Port definitions ----*/
 
-bit b0, b1, b2, b3, master, module_list;
+bit b0, b1, b2, b3, master, module_list, beeper_on;
 
 /*---- Define variable parameters returned to CMD_GET_INFO command ----*/
 
@@ -85,7 +85,7 @@ void user_init(unsigned char init)
 
    /* issue an initial reset */
    for (i=0 ; i<N_PORT/8 ; i++)
-      power_mgmt(i, 1);
+      power_24V(i, 1);
 
    /* check if master or slave */
    master = is_master();
@@ -383,6 +383,13 @@ char xdata * pvardata;
          break;
    n_box = i;
 
+   /* turn on power and beeper (turn off later) */
+   for (i=0 ; i<n_box ; i++) {
+      beeper_on = 1;
+      power_beeper(i, 1);
+      power_24V(i, 1);
+   }
+
    /* set "variables" pointer to array in xdata */
    variables = vars;
 
@@ -533,66 +540,6 @@ unsigned char user_func(unsigned char *data_in, unsigned char *data_out)
    return 1;
 }
 
-/*---- Power management --------------------------------------------*/
-
-bit trip_5V_old = 0, trip_24V_old = 0;
-
-unsigned char power_management()
-{
-static unsigned long xdata last_pwr;
-unsigned char status, i;
-
-   /* only 10 Hz */
-   if (time() > last_pwr+10 || time() < last_pwr) {
-      last_pwr = time();
-    
-      for (i=0 ; i<n_box ; i++) {
-
-         status = power_mgmt(i, 0);
-         
-         if ((status & 0x01) == 0) {
-            if (!trip_5V_old)
-               lcd_clear();
-            led_blink(1, 1, 100);
-            lcd_goto(0, 0);
-            printf("Overcurrent >0.5A on");
-            lcd_goto(0, 1);
-            printf("    5V output !!!   ");
-            trip_5V_old = 1;
-            return 1;
-         } else if (trip_5V_old) {
-            trip_5V_old = 0;
-            lcd_clear();
-         }
-         
-         if ((status & 0x02) == 0) {
-            if (!trip_24V_old)
-               lcd_clear();
-            led_blink(1, 1, 100);
-            lcd_goto(0, 0);
-            printf("   Overcurrent on   ");
-            lcd_goto(0, 1);
-            printf("   24V output !!!   ");
-            lcd_goto(0, 3);
-            printf("RESET               ");
-         
-            if (button(0)) {
-               power_mgmt(i, 1);  // issue a reset
-               while (button(0)); // wait for button to be released
-            }
-         
-            trip_24V_old = 1;
-            return 1;
-         } else if (trip_24V_old) {
-            trip_24V_old = 0;
-            lcd_clear();
-         }
-      }
-   }
-  
-  return 0;
-}
-
 /*---- Application display -----------------------------------------*/
 
 bit b0_old = 0, b1_old = 0, b2_old = 0, b3_old = 0;
@@ -607,16 +554,12 @@ unsigned char xdata i, n, j, col;
    if (init) {
       lcd_clear();
       index = 0;
+      last_index = 255;
    }
 
    if (!master) {
       lcd_goto(5, 1);
       printf("SLAVE MODE");
-      return 0;
-   }
-
-   if (power_management()) {
-      last_index = 255; // force re-display after trip finished
       return 0;
    }
 
@@ -802,7 +745,8 @@ unsigned char xdata i, n, j, col;
 /*---- User loop function ------------------------------------------*/
 
 static unsigned char idata port_index = 0, first_var_index = 0;
-
+static xdata unsigned long last_menu;
+ 
 void user_loop(void)
 {
 unsigned char xdata index, i, j, n, port;
@@ -866,16 +810,29 @@ float xdata value;
          erase_module = 0xFF;
       }
    
+   } /* if (master) */
+
+   /* do menu business every 100 ms */
+   if (time() > last_menu+10 || time() < last_menu) {
+      last_menu = time();
+
+      /* read buttons */
+      b0 = button(0);
+      b1 = button(1);
+      b2 = button(2);
+      b3 = button(3);
+   
+      /* manage menu on LCD display */
+      lcd_menu();
+      
       /* backup data */
       memcpy(&backup_data, &user_data, sizeof(user_data));
-   } /* if (master)
+   }
 
-   /* read buttons */
-   b0 = button(0);
-   b1 = button(1);
-   b2 = button(2);
-   b3 = button(3);
-
-   /* manage menu on LCD display */
-   lcd_menu();
+   /* turn off beeper afet 100 ms */
+   if (beeper_on && time() > 10) {
+      beeper_on = 1;
+      for (i=0 ; i<n_box ; i++)
+         power_beeper(i, 0);
+   }
 }
