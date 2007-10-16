@@ -100,10 +100,10 @@ SCS_2000_MODULE code scs_2000_module[] = {
   { 0x62, "Iin 0-2.5mA",     vars_iin,    1, dr_ad7718      },
   { 0x63, "Iin 0-25mA",      vars_iin,    1, dr_ad7718      },
 
-  { 0x64, "Uin 0-2.5V Fast", vars_uin,    1, dr_ads1256     },
+  { 0x64, "Uin 0-2.5V Fst",  vars_uin,    1, dr_ads1256     },
   { 0x65, "Uin +-10V Fast",  vars_uin,    1, dr_ads1256     },
-  { 0x66, "Iin 0-2.5mA Fast",vars_iin,    1, dr_ads1256     },
-  { 0x67, "Iin 0-25mA Fast", vars_iin,    1, dr_ads1256     },
+  { 0x66, "Iin 0-2.5mA Fst", vars_iin,    1, dr_ads1256     },
+  { 0x67, "Iin 0-25mA Fst",  vars_iin,    1, dr_ads1256     },
   { 0x68, "Uin +-10V Diff",  vars_diffin, 1, dr_ad7718      },
 
   { 0x70, "Cin 0-10nF",      vars_cin,    1, dr_capmeter    },
@@ -141,7 +141,7 @@ _nop_(); _nop_(); _nop_(); _nop_(); _nop_(); _nop_(); _nop_(); _nop_(); _nop_();
 #define AM_RW_EEPROM    6 // read/write to eeprom on port
 
 #define CSR_PORT_DIR    0 // port direction (1=output, 0=input)
-#define CSR_PWR_STATUS  1 // power status (bit0: 5VOK, bit1: 24VOK, bit3: 24Vreset, bit4: beeper
+#define CSR_PWR_STATUS  1 // power status (bit0: 5V OK, bit1: 24V OK, bit3: 24V enable, bit4: beeper
 
 /* address port 0-7 in CPLD, with address modifier listed above */
 void address_port(unsigned char addr, unsigned char port_no, unsigned char am, unsigned char clk_level) reentrant
@@ -387,12 +387,37 @@ unsigned short t;
 
 }
 
-unsigned char power_mgmt(unsigned char addr, unsigned char reset) reentrant
+void power_24V(unsigned char addr, unsigned char flag) reentrant
 {
    unsigned char status;
 
-   if (reset)
-      write_csr(addr, CSR_PWR_STATUS, 0x04);
+   read_csr(addr, CSR_PWR_STATUS, &status);
+   if (flag)
+      status |= 0x04;
+   else
+      status &= ~0x04;
+
+   write_csr(addr, CSR_PWR_STATUS, status);
+
+}
+
+void power_beeper(unsigned char addr, unsigned char flag) reentrant
+{
+   unsigned char status;
+
+   read_csr(addr, CSR_PWR_STATUS, &status);
+   if (flag)
+      status |= 0x08;
+   else
+      status &= ~0x08;
+
+   write_csr(addr, CSR_PWR_STATUS, status);
+
+}
+
+unsigned char power_status(unsigned char addr) reentrant
+{
+   unsigned char status;
 
    read_csr(addr, CSR_PWR_STATUS, &status);
    return status;
@@ -956,6 +981,8 @@ unsigned long d;
 
 /*---- ADS1256 24-bit fast sigma-delta ADC -------------------------*/
 
+unsigned char xdata ads1256_cur_chn[8];
+
 /* ADS1256 commands */
 #define ADS1256_WAKEUP      0x00
 #define ADS1256_RDATA       0x01
@@ -985,20 +1012,20 @@ void ads1256_cmd(unsigned char c) reentrant
 
    OPT_DATAO = 0;
    OPT_ALE = 0;
-   DELAY_US(1);
+   DELAY_CLK;
 
    for (i=0 ; i<8 ; i++) {
       OPT_CLK   = 1;
       OPT_DATAO = (c & 0x80) > 0;
-      DELAY_US(1);
+      DELAY_CLK;
       OPT_CLK   = 0;
-      DELAY_US(1);
+      DELAY_CLK;
       c <<= 1;
    }
 
    OPT_ALE = 1;
    OPT_DATAO = 0;
-   DELAY_US(1);
+   DELAY_CLK;
 }
 
 void ads1256_write(unsigned char a, unsigned char d) reentrant
@@ -1007,16 +1034,16 @@ void ads1256_write(unsigned char a, unsigned char d) reentrant
 
    OPT_DATAO = 0;
    OPT_ALE = 0;
-   DELAY_US(1);
+   DELAY_CLK;
 
    /* WREG command */
    c = ADS1256_WREG + a;
    for (i=0 ; i<8 ; i++) {
       OPT_CLK   = 1;
       OPT_DATAO = (c & 0x80) > 0;
-      DELAY_US(1);
+      DELAY_CLK;
       OPT_CLK   = 0;
-      DELAY_US(1);
+      DELAY_CLK;
       c <<= 1;
    }
 
@@ -1025,9 +1052,9 @@ void ads1256_write(unsigned char a, unsigned char d) reentrant
    for (i=0 ; i<8 ; i++) {
       OPT_CLK   = 1;
       OPT_DATAO = 0;
-      DELAY_US(1);
+      DELAY_CLK;
       OPT_CLK   = 0;
-      DELAY_US(1);
+      DELAY_CLK;
       c <<= 1;
    }
 
@@ -1035,15 +1062,15 @@ void ads1256_write(unsigned char a, unsigned char d) reentrant
    for (i=0 ; i<8 ; i++) {
       OPT_CLK   = 1;
       OPT_DATAO = (d & 0x80) > 0;
-      DELAY_US(1);
+      DELAY_CLK;
       OPT_CLK   = 0;
-      DELAY_US(1);
+      DELAY_CLK;
       d <<= 1;
    }
 
    OPT_ALE = 1;
    OPT_DATAO = 0;
-   DELAY_US(1);
+   DELAY_CLK;
 }
 
 void ads1256_read(unsigned long *d) reentrant
@@ -1051,16 +1078,16 @@ void ads1256_read(unsigned long *d) reentrant
    unsigned char i, c;
 
    OPT_ALE = 0;
-   DELAY_US(1);
+   DELAY_CLK;
 
    /* RDATA command */
    c = ADS1256_RDATA;
    for (i=0 ; i<8 ; i++) {
       OPT_CLK   = 1;
       OPT_DATAO = (c & 0x80) > 0;
-      DELAY_US(1);
+      DELAY_CLK;
       OPT_CLK   = 0;
-      DELAY_US(1);
+      DELAY_CLK;
       c <<= 1;
    }
 
@@ -1069,14 +1096,14 @@ void ads1256_read(unsigned long *d) reentrant
    /* read from selected data register */
    for (i=0,*d=0 ; i<24 ; i++) {
       OPT_CLK = 1;
-      DELAY_US(1);
+      DELAY_CLK;
       *d = (*d << 1) | OPT_DATAI;
       OPT_CLK = 0; 
-      DELAY_US(1); 
+      DELAY_CLK;
    }
 
    OPT_ALE = 1;
-   DELAY_US(1);
+   DELAY_CLK;
 }
 
 unsigned char dr_ads1256(unsigned char id, unsigned char cmd, unsigned char addr, 
@@ -1094,6 +1121,8 @@ unsigned long d;
       //ads1256_write(ADS1256_DRATE,  0x23);  // 10 SPS
       //ads1256_write(ADS1256_DRATE,  0x82);  // 100 SPS
       //ads1256_write(ADS1256_DRATE,  0xA1);  // 1000 SPS
+      //ads1256_write(ADS1256_DRATE,  0xB0);  // 2000 SPS
+      //ads1256_write(ADS1256_DRATE,  0xC0);  // 3750 SPS
       ads1256_write(ADS1256_DRATE,  0xD0);  // 7500 SPS
       //ads1256_write(ADS1256_DRATE,  0xF0);  // 30000 SPS
 
@@ -1106,6 +1135,12 @@ unsigned long d;
             break;
          DELAY_US_REENTRANT(1);
       }
+
+      /* start first conversion */
+      ads1256_write(ADS1256_MUX, (0 << 4) | 0x0F);
+      ads1256_cmd(ADS1256_SYNC);
+      ads1256_cmd(ADS1256_WAKEUP);
+      ads1256_cur_chn[port] = 0;
    }
 
    if (cmd == MC_READ) {
@@ -1114,10 +1149,6 @@ unsigned long d;
          return 0;
 
       address_port(addr, port, AM_RW_SERIAL, 0);
-
-      ads1256_write(ADS1256_MUX, (chn << 4) | 0x0F);  // Select single ended positive input
-      ads1256_cmd(ADS1256_SYNC);                      // Trigger new conversion
-      ads1256_cmd(ADS1256_WAKEUP);
 
       /* wait for /DRDY to go low after conversion */
       for (d = 0 ; d<10000 ; d++) {
@@ -1128,11 +1159,22 @@ unsigned long d;
       if (d == 10000)
          return 0;
 
+      /* start next conversion on next channel */
+      ads1256_cur_chn[port] = (ads1256_cur_chn[port] + 1) % 8;
+
+      ads1256_write(ADS1256_MUX, (ads1256_cur_chn[port] << 4) | 0x0F); // Select single ended positive input
+      ads1256_cmd(ADS1256_SYNC);  // Trigger new conversion
+      ads1256_cmd(ADS1256_WAKEUP);
+
+
       /* read 24-bit data */
       ads1256_read(&d);
 
+      /* expand to signed long (32-bit) */
+      value = (signed long)d << 8;
+
       /* convert to volts, PGA=2 (+-2.5V range) */
-      value = 5*((float)d / (1l<<24));
+      value = 5*(value / 0xFFFFFFFF);
    
       /* apply range */
       if (id == 0x64)

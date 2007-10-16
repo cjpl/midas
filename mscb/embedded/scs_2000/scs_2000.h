@@ -41,7 +41,9 @@ void read_eeprom(unsigned char addr, unsigned char port_no, unsigned char *pd) r
 void write_eeprom(unsigned char addr, unsigned char port_no, unsigned char d) reentrant;
 unsigned char module_present(unsigned char addr, unsigned char port_no) reentrant;
 unsigned char verify_module(unsigned char addr, unsigned char port_no, unsigned char id) reentrant;
-unsigned char power_mgmt(unsigned char addr, unsigned char reset) reentrant;
+unsigned char power_status(unsigned char addr) reentrant;
+void power_24V(unsigned char addr, unsigned char flag) reentrant;
+void power_beeper(unsigned char addr, unsigned char flag) reentrant;
 unsigned char is_master();
 unsigned char is_present(unsigned char addr);
 

@@ -25,11 +25,13 @@ entity scs_2000 is
         	 P_I_5V_OK       : in std_logic;
            P_O_BEEPER      : out std_logic;
            P_O_24V_EN      : out std_logic;
-           P_I_24V_OC      : in std_logic
+           P_I_24V_OK      : in std_logic
          );
 end scs_2000;
 
 architecture Behavioral of scs_2000 is
+
+constant firmware_version : std_logic_vector(3 downto 0) := X"1";
 
 -- uC signals, either directly from uC or from extension bus
 signal i_uc_clk       : std_logic;
@@ -68,13 +70,9 @@ signal port_dir     : std_logic_vector(7 downto 0) := "00000000";
 
 -- bit0: 5V ok       readonly
 -- bit1: 24V ok      readonly
--- bit2: 24V reset   writeonly
+-- bit2: 24V enable  read/write
 -- bit3: beeper      read/write
 signal pwr_status   : std_logic_vector(3 downto 0) := "0000";
-
-signal disable_24V  : std_logic := '0';
-signal reset_24V    : std_logic := '0';
-signal pwr_trip     : std_logic;
 
 begin
     
@@ -135,9 +133,6 @@ begin
   begin
     if rising_edge(i_uc_clk) then
       
-      -- reset this signal on every cycle so that it only pulses the FF
-      reset_24V <= '0';
-      
       if i_uc_ale = '1' then
       
         if (i_uc_strobe = '1') then
@@ -167,7 +162,7 @@ begin
             if (addr_port = "000") then     -- 0
                ser_reg_out <= port_dir;
             elsif (addr_port = "001") then  -- 1
-               ser_reg_out(7 downto 4) <= (others => '0');
+               ser_reg_out(7 downto 4) <= firmware_version;
                ser_reg_out(3 downto 0) <= pwr_status;    
             end if;   
           elsif (addr_mod = "100") then
@@ -175,10 +170,8 @@ begin
             if (addr_port = "000") then     -- 0
                port_dir <= ser_reg_in(7 downto 0);
             elsif (addr_port = "001") then  -- 1
+               pwr_status(2) <= ser_reg_in(2); -- 24V enable
                pwr_status(3) <= ser_reg_in(3); -- beeper
-               if (ser_reg_in(2) = '1') then
-                  reset_24V <= '1';         -- 24V reset
-               end if;
             end if;   
           end if;
         
@@ -246,25 +239,14 @@ begin
   -- handle power management --
   -----------------------------
   
-  pwr_trip   <= not P_I_24V_OC;  -- goes zero in case of current trip
-  P_O_24V_EN <= not disable_24V;
-
-  process(pwr_trip, reset_24V)   -- power trip flip-flop  
-  begin
-    if pwr_trip = '1' then
-      disable_24V <= '1';
-    elsif reset_24V = '1' then
-      disable_24V <= '0';   
-    end if;
-  end process;
-
   pwr_status(0) <= P_I_5V_OK;    -- put signals into status register
-  pwr_status(1) <= not disable_24V;
-  pwr_status(2) <= '0';
+  pwr_status(1) <= P_I_24V_OK;
+
+  -- 24V enable
+  P_O_24V_EN <= pwr_status(2);
   
   -- Beeper (on if low)
-  --P_O_BEEPER <= not (pwr_status(3) or not pwr_status(0) or disable_24V);
-  P_O_BEEPER <= '1';
+  P_O_BEEPER <= not pwr_status(3);
 
   -- quarz speed in MHz:
   -- 0:100, 1:33.33, 2:30, 3:120, 4:25, 5:20, 6:70, 7:80

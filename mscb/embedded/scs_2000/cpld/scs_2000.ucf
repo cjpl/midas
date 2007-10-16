@@ -41,7 +41,7 @@ NET "P_IO_EXT<7>" LOC = "P2" | SCHMITT_TRIGGER ;
 NET "P_I_5V_OK"    LOC = "P14" ;
 NET "P_O_BEEPER"   LOC = "P15" ;
 NET "P_O_24V_EN"   LOC = "P16" ;
-NET "P_I_24V_OC"   LOC = "P18" ;
+NET "P_I_24V_OK"   LOC = "P18" ;
 
 NET "P_IO_PORTS<0>_port_pin<0>"  LOC = "P143"  | SCHMITT_TRIGGER ;
 NET "P_IO_PORTS<0>_port_pin<1>"  LOC = "P142"  | SCHMITT_TRIGGER ;
