@@ -36,7 +36,7 @@ bit b0, b1, b2, b3, master, module_list, beeper_on;
 
 /*---- Define variable parameters returned to CMD_GET_INFO command ----*/
 
-#define N_PORT 16 /* maximal one master and three slave modules */
+#define N_PORT 24 /* maximal one master and two slave modules */
 
 /* data buffer (mirrored in EEPROM) */
 
@@ -49,12 +49,12 @@ float xdata user_data[N_PORT*8];
 
 \********************************************************************/
 
-MSCB_INFO_VAR xdata vars[N_PORT*8+1];
-
-unsigned char xdata update_data[N_PORT*8];
+unsigned char xdata n_box;
 unsigned char xdata erase_module;
 
-unsigned char xdata n_box;
+MSCB_INFO_VAR xdata vars[N_PORT*8+1];
+
+unsigned char xdata update_data[N_PORT];
 unsigned char xdata module_nvars[N_PORT];
 unsigned char xdata module_id[N_PORT];
 unsigned char xdata module_index[N_PORT];
@@ -521,7 +521,7 @@ char xdata * pvardata;
 void user_write(unsigned char index) reentrant
 {
    /* will be updated in main loop */
-   update_data[index] = 1;
+   update_data[index/8] |= (1 << (index % 8));
 }
 
 /*---- User read function ------------------------------------------*/
@@ -758,7 +758,7 @@ float xdata value;
 
       /* check if variabled needs to be written */
       for (index=0 ; index<N_PORT*8 ; index++) {
-         if (update_data[index]) {
+         if (update_data[index/8] & (1 << (index % 8))) {
             /* find module to which this variable belongs */
             i = 0;
             for (port=0 ; port<N_PORT ; port++) {
@@ -775,7 +775,7 @@ float xdata value;
                } else
                   i += module_nvars[port];
             }
-            update_data[index] = 0;
+            update_data[index/8] &= ~(1 << (index % 8));
          }
       }
    
