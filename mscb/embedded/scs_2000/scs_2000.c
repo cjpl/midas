@@ -20,7 +20,7 @@
 extern bit FREEZE_MODE;
 extern bit DEBUG_MODE;
 
-char code node_name[] = "SCS-2000";
+char code node_name[] = "SCS-2001";
 char code svn_rev_2000[] = "$Rev$";
 extern char code svn_rev_main[];
 extern char code svn_rev_lib[];
@@ -42,7 +42,6 @@ bit b0, b1, b2, b3, master, module_list, beeper_on;
 
 MSCB_INFO_VAR *variables;
 float xdata user_data[N_PORT*8];
-float xdata backup_data[N_PORT*8];
 
 /********************************************************************\
 
@@ -106,11 +105,6 @@ void user_init(unsigned char init)
                   var_index++;
             } 
          }
-      } else {
-         /* retrieve backup data from RAM if not reset by power on */
-         SFRPAGE = LEGACY_PAGE;
-         if ((RSTSRC & 0x02) == 0)
-            memcpy(&user_data, &backup_data, sizeof(user_data));
       }
    
       /* initialize drivers */
@@ -268,6 +262,7 @@ void emif_test()
       putchar(214);
    }
 
+   emif_switch(0);
    if (error) {
       lcd_goto(0, 2);
       printf("Memory error bank %bd", i);
@@ -281,6 +276,7 @@ void emif_test()
 unsigned char emif_init()
 {
 unsigned char xdata *p;
+unsigned d;
 
    /* setup EMIF interface and probe external memory */
    SFRPAGE = EMI0_PAGE;
@@ -301,21 +297,27 @@ unsigned char xdata *p;
    /* test for external memory */
    emif_switch(0);
    p = NULL;
+   d = *p;
    *p = 0x55;
    if (*p != 0x55) {
+      *p = d; // restore previous data;
       /* turn off EMIF */
       SFRPAGE = EMI0_PAGE;
       EMI0CF  = 0x00;
       return 0;
    }
+   *p = d; // restore previous data;
 
    /* test for second SRAM chip */
    emif_switch(8);
+   d = *p;
    *p = 0xAA;
    if (*p == 0xAA) { 
+      *p = d; // restore previous data;
       emif_switch(0);
       return 2;
    }
+   *p = d; // restore previous data;
 
    emif_switch(0);
    return 1;
@@ -386,7 +388,7 @@ char xdata * pvardata;
    /* turn on power and beeper (turn off later) */
    for (i=0 ; i<n_box ; i++) {
       beeper_on = 1;
-      power_beeper(i, 1);
+      //power_beeper(i, 1);
       power_24V(i, 1);
    }
 
@@ -824,9 +826,6 @@ float xdata value;
    
       /* manage menu on LCD display */
       lcd_menu();
-      
-      /* backup data */
-      memcpy(&backup_data, &user_data, sizeof(user_data));
    }
 
    /* turn off beeper afet 100 ms */
