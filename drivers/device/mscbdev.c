@@ -208,9 +208,8 @@ INT mscbdev_read_all(MSCBDEV_INFO * info)
             /* only produce error once every minute */
             if (ss_time() - last_error >= 60) {
                last_error = ss_time();
-               cm_msg(MERROR, "mscbdev_get", "Error reading MSCB bus at %s:%d:%d, status %d",
-                      info->mscbdev_settings.mscb_device, info->mscbdev_settings.mscb_address[i], 
-                      info->mscbdev_settings.mscb_index[i], status);
+               cm_msg(MERROR, "mscbdev_get", "Error reading MSCB bus at %s:%d:%d-%d, status %d",
+                      info->mscbdev_settings.mscb_device, addr, i_start, i_stop, status);
             }
             for (j = v_start; j <= v_stop; j++)
                info->mscbdev_settings.var_cache[j] = (float) ss_nan();
