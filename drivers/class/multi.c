@@ -436,7 +436,7 @@ INT multi_init(EQUIPMENT * pequipment)
                  m_info->names_output, NAME_LENGTH * m_info->num_channels_output,
                  m_info->num_channels_output, TID_STRING);
 
-  /*---- set labels form midas SC names ----*/
+   /*---- set labels from midas SC names ----*/
    for (i = 0; i < m_info->num_channels_input; i++) {
       device_driver(m_info->driver_input[i], CMD_SET_LABEL,
                     i - m_info->channel_offset_input[i],
