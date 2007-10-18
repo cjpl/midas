@@ -284,7 +284,11 @@ void setup(void)
    }
 
    /* retrieve EEPROM data */
-   flags = eeprom_retrieve();
+   SFRPAGE = LEGACY_PAGE;
+   if ((RSTSRC & 0x02) > 0)
+      flags = eeprom_retrieve(1); // vars on cold start
+   else
+      flags = eeprom_retrieve(0);
 
    if ((flags & (1 << 0)) == 0) {
       configured_addr = 0;
@@ -1415,6 +1419,10 @@ erase_ok:
 
 \*------------------------------------------------------------------*/
 
+#ifdef HAVE_RTC
+unsigned long xdata rtc_last;   
+#endif
+
 void yield(void)
 {
    watchdog_refresh(0);
@@ -1471,11 +1479,14 @@ void yield(void)
       rtc_set = 0;
    }
 
-   rtc_read(rtc_bread);
+   if (time() > rtc_last+90 || time() < rtc_last) {
+      rtc_last = time();
+      rtc_read(rtc_bread);
+   }
 #endif
 
    /* allow flash 3 sec after reboot */
-   if (time() > 300)
+   if (!flash_allowed && time() > 300)
       flash_allowed = 1;
 
 }
