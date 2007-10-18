@@ -710,7 +710,7 @@ unsigned char gets_wait(char *str, unsigned char size, unsigned char timeout);
 void flush(void);
 
 void eeprom_flash(void);
-unsigned char eeprom_retrieve(void);
+unsigned char eeprom_retrieve(unsigned char flag);
 void setup_variables(void);
 
 void uart_init(unsigned char port, unsigned char baud);
@@ -731,6 +731,7 @@ void set_n_sub_addr(unsigned char n);
 unsigned char cur_sub_addr(void);
 
 void rtc_init(void);
+unsigned char rtc_present(void);
 void rtc_write(unsigned char d[6]);
 void rtc_read(unsigned char d[6]);
 void rtc_write_item(unsigned char item, unsigned char d);
