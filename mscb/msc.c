@@ -612,7 +612,7 @@ void cmd_loop(int fd, char *cmd, unsigned short adr)
    /* fill table of possible addresses */
    for (i=0 ; i<0x10000 ; i++)
       ping_addr[i] = 0;
-   for (i=0 ; i<100 ; i++)         // 0..99
+   for (i=0 ; i<1000 ; i++)        // 0..999
       ping_addr[i] = 1;
    for (i=0 ; i<0x10000 ; i+=100)  // 100, 200, ...
       ping_addr[i] = 1;

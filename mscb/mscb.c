@@ -727,8 +727,10 @@ int mscb_exchg(int fd, char *buffer, int *size, int len, int flags)
          memcpy(pudp+1, buffer, len);
 
 #ifndef _USRDLL
+         /*
          if (retry > 0)
             printf("mscb_exchg: retry send...\n");
+         */
 #endif
 
          /* send over UDP link */
