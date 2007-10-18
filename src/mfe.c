@@ -867,9 +867,10 @@ INT register_equipment(void)
                }
 
          /* loop over equipment list and call class driver's init method */
-         if (eq_info->enabled)
+         if (eq_info->enabled) {
+            printf("%s:\n", equipment[idx].name);
             equipment[idx].status = equipment[idx].cd(CMD_INIT, &equipment[idx]);
-         else {
+         } else {
             equipment[idx].status = FE_ERR_DISABLED;
             cm_msg(MINFO, "register_equipment",
                    "Equipment %s disabled in ODB", equipment[idx].name);
