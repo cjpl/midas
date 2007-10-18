@@ -117,6 +117,13 @@ void multi_read(EQUIPMENT * pequipment, int channel)
           (!ss_isnan(m_info->var_input[i]) && ss_isnan(m_info->input_mirror[i])))
          break;
 
+#ifdef DEBUG_THRESHOLDS
+   if (i < m_info->num_channels_input) {
+         printf("%d: %lf -> %lf, threshold %lf\n", i, 
+            m_info->var_input[i], m_info->input_mirror[i], m_info->update_threshold[i]);
+   }
+#endif
+
    /* update if change is more than update_sensitivity or last update more
       than a minute ago */
    actual_time = ss_millitime();
