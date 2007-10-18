@@ -1384,7 +1384,7 @@ void eeprom_flash(void)
 
 /*------------------------------------------------------------------*/
 
-unsigned char eeprom_retrieve(void)
+unsigned char eeprom_retrieve(unsigned char flag)
 /********************************************************************\
 
   Routine: eeprom_retrieve
@@ -1408,14 +1408,17 @@ unsigned char eeprom_retrieve(void)
       status |= (1 << 0);
 
    // user channel variables
-   for (adr = 0 ; adr < _n_sub_addr ; adr++)
-      for (i = 0; variables[i].width; i++)
-         eeprom_read((char *)variables[i].ud + _var_size*adr,
-                     variables[i].width, &offset);
-
-   // check for second magic
-   eeprom_read(&magic, 2, &offset);
-   if (magic == 0x1234)
+   if (flag) {
+      for (adr = 0 ; adr < _n_sub_addr ; adr++)
+         for (i = 0; variables[i].width; i++)
+            eeprom_read((char *)variables[i].ud + _var_size*adr,
+                        variables[i].width, &offset);
+   
+      // check for second magic
+      eeprom_read(&magic, 2, &offset);
+      if (magic == 0x1234)
+         status |= (1 << 1);
+   } else
       status |= (1 << 1);
 
    return status;
@@ -1977,11 +1980,23 @@ void rtc_print()
    char xdata str[10];
 
    rtc_read(d);
-   rtc_conv_date(d, str);
-   puts(str);
-   putchar(' ');
-   rtc_conv_time(d, str);
-   puts(str);
+   if (d[0] != 0xFF) {
+      rtc_conv_date(d, str);
+      puts(str);
+      puts("  ");
+      rtc_conv_time(d, str);
+      puts(str);
+   }
+}
+
+/*------------------------------------------------------------------*/
+
+unsigned char rtc_present()
+{
+   unsigned char d;
+
+   d = rtc_read_byte(0);
+   return d != 0xFF;
 }
 
 /*------------------------------------------------------------------*/
