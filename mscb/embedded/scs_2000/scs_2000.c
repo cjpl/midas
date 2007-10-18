@@ -388,7 +388,7 @@ char xdata * pvardata;
    /* turn on power and beeper (turn off later) */
    for (i=0 ; i<n_box ; i++) {
       beeper_on = 1;
-      //power_beeper(i, 1);
+      power_beeper(i, 1);
       power_24V(i, 1);
    }
 
