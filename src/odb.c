@@ -2979,6 +2979,47 @@ INT db_set_value(HNDLE hDB, HNDLE hKeyRoot, char *key_name, void *data,
 
 /********************************************************************/
 /**
+Set single value of an array.
+
+The function sets a single value of an ODB key which is an array.
+key_name can contain the full path of a key
+(like: "/Equipment/Trigger/Settings/Level1") while hkey is zero which refers
+to the root, or hkey can refer to a sub-directory (like /Equipment/Trigger)
+and key_name is interpreted relative to that directory like "Settings/Level1".
+\code
+INT level1;
+  db_set_value_index(hDB, 0, "/Equipment/Trigger/Settings/Level1",
+                          &level1, sizeof(level1), 15, TID_INT, FALSE);
+\endcode
+@param hDB          ODB handle obtained via cm_get_experiment_database().
+@param hKeyRoot Handle for key where search starts, zero for root.
+@param key_name Name of key to search, can contain directories.
+@param data Address of data.
+@param data_size Size of data (in bytes).
+@param index Array index of value.
+@param type Type of key, one of TID_xxx (see @ref Midas_Data_Types)
+@param truncate Truncate array to current index if TRUE
+@return <same as db_set_data_index>
+*/
+INT db_set_value_index(HNDLE hDB, HNDLE hKeyRoot, char *key_name, void *data,
+                 INT data_size, INT index, DWORD type, BOOL truncate)
+{
+   HNDLE hkey;
+
+   db_find_key(hDB, hKeyRoot, key_name, &hkey);
+   if (!hkey) {
+      db_create_key(hDB, hKeyRoot, key_name, type);
+      db_find_key(hDB, hKeyRoot, key_name, &hkey);
+      assert(hkey);
+   }
+   if (truncate)
+      db_set_num_values(hDB, hkey, index+1);
+
+   return db_set_data_index(hDB, hkey, data, data_size, index, type);
+}
+
+/********************************************************************/
+/**
 Get value of a single key.
 
 The function returns single values or whole arrays which are contained
