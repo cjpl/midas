@@ -333,9 +333,13 @@ int tcpip_init(HNDLE hkey, void **pinfo)
    db_get_record(hDB, hkeybd, &info->settings, &size, 0);
 
    /* open port */
+   printf("%s...", info->settings.host);
    info->fd = tcpip_open(info->settings.host, info->settings.port);
-   if (info->fd < 0)
+   if (info->fd < 0) {
+      printf("error\n");
       return FE_ERR_HW;
+   } else
+      printf("ok\n");
 
    return SUCCESS;
 }
