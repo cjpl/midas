@@ -10399,6 +10399,13 @@ INT rpc_register_server(INT server_type, char *name, INT * port, INT(*func) (INT
    return RPC_SUCCESS;
 }
 
+typedef struct {
+   int  tid;
+   char *buffer;
+} TLS_POINTER;
+
+TLS_POINTER *tls_buffer = NULL;
+int tls_size = 0;
 
 /********************************************************************/
 INT rpc_execute(INT sock, char *buffer, INT convert_flags)
@@ -10435,12 +10442,27 @@ INT rpc_execute(INT sock, char *buffer, INT convert_flags)
    NET_COMMAND *nc_in, *nc_out;
    INT param_size, max_size;
    void *prpc_param[20];
-   char str[1024], debug_line[1024];
+   char str[1024], debug_line[1024], *return_buffer;
 
-   /* return buffer must be auto for multi-thread servers */
-   char *return_buffer;
+   /* return buffer must must use thread local storage multi-thread servers */
+   if (!tls_size) {
+      tls_buffer = (TLS_POINTER *) malloc(sizeof(TLS_POINTER));
+      tls_buffer[tls_size].tid = ss_gettid();
+      tls_buffer[tls_size].buffer = (char *) malloc(NET_BUFFER_SIZE);
+      tls_size = 1;
+   }
+   for (i=0 ; i<tls_size ; i++)
+      if (tls_buffer[i].tid == ss_gettid())
+         break;
+   if (i == tls_size){
+      /* new thread -> allocate new buffer */
+      tls_buffer = (TLS_POINTER *) realloc(tls_buffer, (tls_size+1)*sizeof(TLS_POINTER));
+      tls_buffer[tls_size].tid = ss_gettid();
+      tls_buffer[tls_size].buffer = (char *) malloc(NET_BUFFER_SIZE);
+      tls_size++;
+   }
 
-   return_buffer = (char *) M_MALLOC(NET_BUFFER_SIZE);
+   return_buffer = tls_buffer[i].buffer;
    assert(return_buffer);
 
    /* extract pointer array to parameters */
@@ -10466,7 +10488,6 @@ INT rpc_execute(INT sock, char *buffer, INT convert_flags)
    idx = i;
    if (rpc_list[i].id == 0) {
       cm_msg(MERROR, "rpc_execute", "Invalid rpc ID (%d)", routine_id);
-      M_FREE(return_buffer);
       return RPC_INVALID_ID;
    }
 
@@ -10550,7 +10571,6 @@ INT rpc_execute(INT sock, char *buffer, INT convert_flags)
             cm_msg(MERROR, "rpc_execute",
                    "return parameters (%d) too large for network buffer (%d)",
                    (POINTER_T) out_param_ptr - (POINTER_T) nc_out + param_size, NET_BUFFER_SIZE);
-            M_FREE(return_buffer);
             return RPC_EXCEED_BUFFER;
          }
 
@@ -10586,27 +10606,19 @@ INT rpc_execute(INT sock, char *buffer, INT convert_flags)
       status = RPC_SUCCESS;
 
    /* return immediately for closed down client connections */
-   if (!sock && routine_id == RPC_ID_EXIT) {
-      M_FREE(return_buffer);
+   if (!sock && routine_id == RPC_ID_EXIT)
       return SS_EXIT;
-   }
 
-   if (!sock && routine_id == RPC_ID_SHUTDOWN) {
-      M_FREE(return_buffer);
+   if (!sock && routine_id == RPC_ID_SHUTDOWN)
       return RPC_SHUTDOWN;
-   }
 
    /* Return if TCP connection broken */
-   if (status == SS_ABORT) {
-      M_FREE(return_buffer);
+   if (status == SS_ABORT)
       return SS_ABORT;
-   }
 
    /* if sock == 0, we are in FTCP mode and may not sent results */
-   if (!sock) {
-      M_FREE(return_buffer);
+   if (!sock)
       return RPC_SUCCESS;
-   }
 
    /* compress variable length arrays */
    out_param_ptr = nc_out->param;
@@ -10680,7 +10692,6 @@ INT rpc_execute(INT sock, char *buffer, INT convert_flags)
 
    if (status < 0) {
       cm_msg(MERROR, "rpc_execute", "send_tcp() failed");
-      M_FREE(return_buffer);
       return RPC_NET_ERROR;
    }
 
@@ -10696,18 +10707,12 @@ INT rpc_execute(INT sock, char *buffer, INT convert_flags)
     }
 */
    /* return SS_EXIT if RPC_EXIT is called */
-   if (routine_id == RPC_ID_EXIT) {
-      M_FREE(return_buffer);
+   if (routine_id == RPC_ID_EXIT)
       return SS_EXIT;
-   }
 
    /* return SS_SHUTDOWN if RPC_SHUTDOWN is called */
-   if (routine_id == RPC_ID_SHUTDOWN) {
-      M_FREE(return_buffer);
+   if (routine_id == RPC_ID_SHUTDOWN)
       return RPC_SHUTDOWN;
-   }
-
-   M_FREE(return_buffer);
 
    return RPC_SUCCESS;
 }
