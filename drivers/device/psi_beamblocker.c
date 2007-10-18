@@ -186,13 +186,18 @@ INT psi_beamblocker_init(HNDLE hKey, void **pinfo, INT channels)
    db_get_record(hDB, hKey, &info->psi_beamblocker_settings, &size, 0);
 
    /* contact beamline pc */
+   printf("%s...", info->psi_beamblocker_settings.beamline_pc);
    status = tcp_connect(info->psi_beamblocker_settings.beamline_pc,
                         info->psi_beamblocker_settings.port, &info->sock);
-   if (status != FE_SUCCESS)
+   if (status != FE_SUCCESS) {
+      printf("error\n");
       return status;
+   }
 
    /* get initial state */
    psi_beamblocker_get(info, 0, &value);
+
+   printf("ok\n");
 
    return FE_SUCCESS;
 }
