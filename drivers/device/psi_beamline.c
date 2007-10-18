@@ -162,10 +162,13 @@ INT psi_beamline_init(HNDLE hKey, void **pinfo, INT channels)
       return FE_ERR_ODB;
    }
    /* contact beamline pc */
+   printf("%s...", info->psi_beamline_settings.beamline_pc);
    status = tcp_connect(info->psi_beamline_settings.beamline_pc,
                         info->psi_beamline_settings.port, &info->sock);
-   if (status != FE_SUCCESS)
+   if (status != FE_SUCCESS) {
+      printf("error\n");
       return FE_ERR_HW;
+   }
 
    /* switch combis on */
    send(info->sock, "SWON", 5, 0);
@@ -207,6 +210,7 @@ INT psi_beamline_init(HNDLE hKey, void **pinfo, INT channels)
    }
 
    last_update = ss_time();
+   printf("ok\n");
 
    return FE_SUCCESS;
 }

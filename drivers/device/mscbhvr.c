@@ -166,13 +166,13 @@ INT mscbhvr_init(HNDLE hkey, void **pinfo, INT channels, INT(*bd) (INT cmd, ...)
    for (i=0 ; i<channels ; i++) {
 
       if (i % 10 == 0)
-         printf("HV %s: %d\r", key.name, i);
+         printf("%s: %d\r", key.name, i);
 
       status = mscbhvr_read_all(info, i);
       if (status != FE_SUCCESS)
          return status;
    }
-   printf("HV %s: %d\n", key.name, i);
+   printf("%s: %d\n", key.name, i);
 
    /* turn on HV main switch */
    flag = 3;
