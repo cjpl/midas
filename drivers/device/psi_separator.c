@@ -120,7 +120,12 @@ INT psi_separator_init(HNDLE hkey, void **pinfo, INT channels,
    last_set = 0;
 
    // read initial values
+   printf("Separator...");
    status = psi_separator_rall(info);
+   if (status == FE_SUCCESS)
+      printf("ok\n");
+   else
+      printf("error\n");
 
    // remember update time
    last_update = ss_time();
