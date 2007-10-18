@@ -14,17 +14,19 @@
 #include <stdio.h>
 #include <string.h>
 #include "mscbemb.h"
+#include "scs_2000.h"
 
 /*------------------------------------------------------------------*/
 
 extern unsigned char application_display(bit init);
 extern void user_write(unsigned char index) reentrant;
+extern unsigned char button(unsigned char i);
 extern MSCB_INFO_VAR *variables;
 extern SYS_INFO sys_info;
 extern bit flash_param;
 extern unsigned char idata _flkey;
 
-extern bit b0, b1, b2, b3;     // buttons defined in scs-1000.c
+extern bit b0, b1, b2, b3;     // buttons defined in scs_1000.c/scs_2000.c
 extern unsigned char idata n_variables;
 
 /*------------------------------------------------------------------*/
@@ -109,6 +111,113 @@ MSCB_INFO_VAR code sysvar[] = {
    {  0, UNIT_BOOLEAN, 0, 0, MSCBF_DATALESS, "Reboot" },
 
 };
+
+/*---- Power management --------------------------------------------*/
+
+#ifdef SCS_2000
+
+bit trip_5V = 0, trip_24V = 0, trip_24V_old = 0, wrong_firmware = 0;
+extern unsigned char xdata n_box;
+unsigned char xdata trip_24V_addr[16];
+
+#define CPLD_FIRMWARE_REQUIRED 1
+
+unsigned char power_management(void)
+{
+static unsigned long xdata last_pwr;
+unsigned char status, return_status, i, j;
+
+   return_status = 0;
+   if (!trip_24V)
+      for (i=0 ; i<16 ; i++)
+         trip_24V_addr[i] = 0;
+
+   /* only 10 Hz */
+   if (time() > last_pwr+10 || time() < last_pwr) {
+      last_pwr = time();
+    
+      for (i=0 ; i<n_box ; i++) {
+
+         status = power_status(i);
+         
+         if ((status >> 4) != CPLD_FIRMWARE_REQUIRED) {
+            if (!wrong_firmware)
+               lcd_clear();
+            led_blink(1, 1, 100);
+            lcd_goto(0, 0);
+            puts("Wrong CPLD firmware");
+            lcd_goto(0, 1);
+            if (i > 0) 
+              printf("Slave addr: %bd", i);
+            lcd_goto(0, 2);
+            printf("Req: %02bd != Act: %02bd", CPLD_FIRMWARE_REQUIRED, status >> 4);
+            wrong_firmware = 1;
+            return_status = 1;
+         }
+
+         if ((status & 0x01) == 0) {
+            if (!trip_5V)
+               lcd_clear();
+            led_blink(1, 1, 100);
+            lcd_goto(0, 0);
+            printf("Overcurrent >0.5A on");
+            lcd_goto(0, 1);
+            printf("    5V output !!!   ");
+            lcd_goto(0, 2);
+            if (i > 0) 
+              printf("    Slave addr: %bd", i);
+            trip_5V = 1;
+            return_status = 1;
+         } else if (trip_5V) {
+            trip_5V = 0;
+            lcd_clear();
+         }
+         
+         if ((status & 0x02) == 0 || trip_24V_addr[i]) {
+            if (!trip_24V_addr[i]) {
+               /* check again to avoid spurious trips */
+               status = power_status(i);
+               if ((status & 0x02) > 0)
+                  continue;
+
+               /* turn off 24 V */
+               power_24V(i, 0);
+               trip_24V = 1;
+               trip_24V_addr[i] = 1;
+               lcd_clear();
+            }
+            led_blink(1, 1, 100);
+            lcd_goto(0, 0);
+            printf("   Overcurrent on   ");
+            lcd_goto(0, 1);
+            printf("   24V output !!!   ");
+            lcd_goto(0, 2);
+            if (i > 0) 
+              printf("   Slave addr: %bd", i);
+            lcd_goto(0, 3);
+            printf("RESET               ");
+         
+            if (button(0)) {
+               for (j=0 ; j<16 ; j++)
+                  if (trip_24V_addr[j]) {
+                     power_24V(j, 1);   // turn on power
+                     trip_24V_addr[j] = 0;
+                  }
+               trip_24V = 0;
+               while (button(0)); // wait for button to be released
+               lcd_clear();
+            }
+
+            return_status = 1;
+         }
+      }
+   } else if (trip_24V || trip_5V || wrong_firmware)
+      return_status = 1; // do not go into application_display
+  
+   return return_status;
+}
+
+#endif // SCS-2000
 
 /*------------------------------------------------------------------*/
 
@@ -332,26 +441,31 @@ void display_name(unsigned char index, MSCB_INFO_VAR *pvar)
 
 #if defined(SCS_1001) || defined(SCS_2000)
 
-static xdata unsigned long last_disp, last_b2, last_b3;
+static xdata unsigned long last_b2, last_b3;
 static bit b0_old, b1_old, b2_old, b3_old;
 
 void lcd_menu()
 {
    MSCB_INFO_VAR * xdata pvar;
-   unsigned char idata i, max_index, start_index;
+   unsigned char xdata i, max_index, start_index, app_req;
+
+   if (power_management()) {
+      startup = 1; // force re-display after trip finished
+      return;
+   }
 
    /* clear startup screen after 3 sec. */
    if (startup) {
 
       /* initialize xdata memory */
       var_index = 0;
-      last_disp = 0;
       last_b2 = 0;
       last_b3 = 0;
       b0_old = 0;
       b1_old = 0;
       b2_old = 0;
       b3_old = 0;
+      app_req = 0;
 
       if(time() > 300) {
          startup = 0;
@@ -361,293 +475,287 @@ void lcd_menu()
    }
 
    /* do menu business only every 100ms */
-   if (time() > last_disp+10) {
-      last_disp = time();
+   if (!in_menu) {
 
-      if (!in_menu) {
+      /* if not in menu, call application display */
+      app_req = application_display(0);
+      if (app_req) {
+         in_menu = 1;
+         if (app_req == 2)
+            system_menu = 1;
+      }
+   
+   } else {
 
-         /* if not in menu, call application display */
-         if (application_display(0)) {
-            in_menu = 1;
-         }
-      
+      /* update date/time in system menu */
+      if (system_menu) {
+         rtc_read(dt_bcd);
+         rtc_conv_date(dt_bcd, date_str);
+         rtc_conv_time(dt_bcd, time_str);
+      }
+
+      /* display variables */
+
+      if (system_menu) {
+         pvar = sysvar;
+         max_index = n_sysvar-1;
       } else {
+         pvar = variables;
+         max_index = n_variables-1;
+      }
 
-         /* update date/time in system menu */
-         if (system_menu) {
-            rtc_read(dt_bcd);
-            rtc_conv_date(dt_bcd, date_str);
-            rtc_conv_time(dt_bcd, time_str);
-         }
-
-         /* display variables */
-
-         if (system_menu) {
-            pvar = sysvar;
-            max_index = n_sysvar-1;
-         } else {
-            pvar = variables;
-            max_index = n_variables-1;
-         }
-   
-         if (max_index < 3)
+      if (max_index < 3)
+         start_index = 0;
+      else {
+         if (var_index == 0)
             start_index = 0;
-         else {
-            if (var_index == 0)
-               start_index = 0;
-            else if (var_index == max_index)
-               start_index = var_index-2;
-            else 
-               start_index = var_index-1;
-         }
+         else if (var_index == max_index)
+            start_index = var_index-2;
+         else 
+            start_index = var_index-1;
+      }
 
-         if (n_variables == 0 && !system_menu) {
-            lcd_goto(0, 0);
-            printf("No variables defined");
-         } else {
-            for (i=0 ; i<3 ; i++) {
-   
-               lcd_goto(0, i);
-               if (start_index+i == var_index) 
-                  putchar(0x15);
+      if (n_variables == 0 && !system_menu) {
+         lcd_goto(0, 0);
+         printf("No variables defined");
+      } else {
+         for (i=0 ; i<3 ; i++) {
+
+            lcd_goto(0, i);
+            if (start_index+i == var_index) 
+               putchar(0x15);
+            else
+               putchar(' ');
+
+            lcd_goto(1, i);
+            if (start_index+i > max_index)
+               printf("                   ");
+            else {
+               display_name(start_index+i, &pvar[start_index+i]);
+               lcd_goto(10, i);
+
+               if (enter_mode && start_index+i == var_index)
+                  display_value(&pvar[start_index+i], &f_var);
                else
-                  putchar(' ');
-   
-               lcd_goto(1, i);
-               if (start_index+i > max_index)
-                  printf("                   ");
-               else {
-                  display_name(start_index+i, &pvar[start_index+i]);
-                  lcd_goto(10, i);
-   
-                  if (enter_mode && start_index+i == var_index)
-                     display_value(&pvar[start_index+i], &f_var);
-                  else
-                     display_value(&pvar[start_index+i], pvar[start_index+i].ud);
-               }
-            }
-         }
-   
-         if (system_menu)
-            pvar = &sysvar[var_index];
-         else
-            pvar = &variables[var_index];
-
-         if (enter_mode_date) {
-
-            lcd_goto(0, 3);
-            puts("ESC ENTER   -    +  ");
-            lcd_goto(13+date_index*3, var_index-start_index);
-
-            /* evaluate ESC button */
-            if (!b0 && b0_old) {
-               enter_mode_date = 0;
-               lcd_cursor(0);
-            }
-
-            /* evaluate ENTER button */
-            if (b1 && !b1_old) {
-               date_index++;
-
-               if (date_index == 3) {
-                  enter_mode_date = 0;
-                  lcd_cursor(0);
-               }
-            }
-
-            /* evaluate "-" button */
-            if (b2 && !b2_old) {
-               date_inc(var_index-2, date_index, -1);
-               last_b2 = time();
-            }
-            if (b2 && time() > last_b2 + 70)
-               date_inc(var_index-2, date_index, -1);
-            if (!b2)
-               last_b2 = 0;
-
-            /* evaluate "+" button */
-            if (b3 && !b3_old) {
-               date_inc(var_index-2, date_index, 1);
-               last_b3 = time();
-            }
-            if (b3 && time() > last_b3 + 70)
-               date_inc(var_index-2, date_index, 1);
-            if (!b3)
-               last_b3 = 0;
-         }
-
-         else if (enter_mode) {
-
-            lcd_goto(0, 3);
-            puts("ESC ENTER   -     + ");
-            lcd_goto(19, var_index-start_index);
-
-            /* evaluate ESC button */
-            if (!b0 && b0_old) {
-               enter_mode = 0;
-               lcd_cursor(0);
-            }
-
-            /* evaluate ENTER button */
-            if (b1 && !b1_old) {
-               enter_mode = 0;
-               lcd_cursor(0);
-               memcpy(pvar->ud, &f_var, pvar->width);
-               
-               if (system_menu) {
-                  /* flash new address */
-                  if (var_index == 0 || var_index == 1) {
-                     flash_param = 1;
-                     _flkey = 0xF1;
-                  }
-               } else {
-                  user_write(var_index);
-#ifdef UART1_MSCB
-                  if (pvar->flags & MSCBF_REMOUT)
-                     send_remote_var(var_index);
-#endif
-               }
-            }
-
-            /* evaluate "-" button */
-            if (b2 && !b2_old) {
-               var_inc(pvar, -1);
-               last_b2 = time();
-            }
-            if (b2 && time() > last_b2 + 70)
-               var_inc(pvar, -1);
-            if (b2 && time() > last_b2 + 500)
-               var_inc(pvar, -9);
-            if (!b2)
-               last_b2 = 0;
-
-            /* evaluate "+" button */
-            if (b3 && !b3_old) {
-               var_inc(pvar, 1);
-               last_b3 = time();
-            }
-            if (b3 && time() > last_b3 + 70)
-               var_inc(pvar, 1);
-            if (b3 && time() > last_b3 + 500)
-               var_inc(pvar, 9);
-            if (!b3)
-               last_b3 = 0;
-
-         } else {
-            
-            lcd_goto(0, 3);
-            if ((n_variables > 0 || system_menu) && (pvar->delta > 0 || (pvar->flags & MSCBF_DATALESS)))
-               puts("ESC ENTER   ");
-            else
-               puts("ESC         ");
-            putchar(0x12); // ^
-            puts("     ");
-            putchar(0x13); // v
-            puts(" ");
-   
-            /* enter application display on release of ESC button */
-            if (!b0 && b0_old) {
-               if (system_menu) {
-                  system_menu = 0;
-                  var_index = 0;
-                  lcd_clear();
-               } else {
-                  in_menu = 0;
-                  application_display(1);
-               }
-            }
-   
-            /* evaluate ENTER button */
-            if (b1 && !b1_old) {
-
-               if (n_variables > 0 && pvar->width <= 4 && pvar->width > 0 && pvar->delta > 0) {
-                  enter_mode = 1;
-                  memcpy(&f_var, pvar->ud, pvar->width);
-                  lcd_goto(19, var_index-start_index);
-                  lcd_cursor(1);
-               }
-
-               if (system_menu && (var_index == 2 || var_index == 3)) {
-                  enter_mode_date = 1;
-                  date_index = 0;
-
-                  /* display cursor */
-                  lcd_goto(13, var_index-start_index);
-                  lcd_cursor(1);
-               }
-
-               /* check for flash command */
-               if (system_menu && var_index == 4) {
-                  flash_param = 1;
-                  _flkey = 0xF1;
-                  lcd_clear();
-                  lcd_goto(0, 0);
-                  puts("Parameters written");
-                  lcd_goto(0, 1);
-                  puts("to flash memory.");
-                  delay_ms(3000);
-               }
- 
-               /* check for reboot command */
-               if (system_menu && var_index == 5) {
-#ifdef CPU_C8051F120
-                  SFRPAGE = LEGACY_PAGE;
-#endif
-                  RSTSRC = 0x10;         // force software reset
-               }
-            }
-
-            /* evaluate prev button */
-            if (b2 && !b2_old) {
-               if (var_index == 0) {
-                 if (!system_menu)
-                    var_index = n_variables-1;
-                 else
-                    var_index = n_sysvar-1;
-               } else
-                 var_index--;
-               last_b2 = time();
-            }
-            if (b2 && time() > last_b2 + 70) {
-               if (var_index == 0) {
-                 if (!system_menu)
-                    var_index = n_variables-1;
-                 else
-                    var_index = n_sysvar-1;
-               } else
-                 var_index--;
-            }
-            if (!b2)
-               last_b2 = 0;
-
-            if (system_menu)
-               i = n_sysvar;
-            else
-               i = n_variables;
-
-            /* evaluate next button */
-            if (b3 && !b3_old) {
-               var_index = (var_index + 1) % i;
-               last_b3 = time();
-            }
-            if (b3 && time() > last_b3 + 70)
-               var_index = (var_index + 1) % i;
-            if (!b3)
-               last_b3 = 0;
-
-            /* check for system menu */
-            if (b2 && b3 && !system_menu) {
-               var_index = 0;
-               system_menu = 1;
+                  display_value(&pvar[start_index+i], pvar[start_index+i].ud);
             }
          }
       }
 
-      b0_old = b0;
-      b1_old = b1;
-      b2_old = b2;
-      b3_old = b3;
+      if (system_menu)
+         pvar = &sysvar[var_index];
+      else
+         pvar = &variables[var_index];
+
+      if (enter_mode_date) {
+
+         lcd_goto(0, 3);
+         puts("ESC ENTER   -    +  ");
+         lcd_goto(13+date_index*3, var_index-start_index);
+
+         /* evaluate ESC button */
+         if (!b0 && b0_old) {
+            enter_mode_date = 0;
+            lcd_cursor(0);
+         }
+
+         /* evaluate ENTER button */
+         if (b1 && !b1_old) {
+            date_index++;
+
+            if (date_index == 3) {
+               enter_mode_date = 0;
+               lcd_cursor(0);
+            }
+         }
+
+         /* evaluate "-" button */
+         if (b2 && !b2_old) {
+            date_inc(var_index-2, date_index, -1);
+            last_b2 = time();
+         }
+         if (b2 && time() > last_b2 + 70)
+            date_inc(var_index-2, date_index, -1);
+         if (!b2)
+            last_b2 = 0;
+
+         /* evaluate "+" button */
+         if (b3 && !b3_old) {
+            date_inc(var_index-2, date_index, 1);
+            last_b3 = time();
+         }
+         if (b3 && time() > last_b3 + 70)
+            date_inc(var_index-2, date_index, 1);
+         if (!b3)
+            last_b3 = 0;
+      }
+
+      else if (enter_mode) {
+
+         lcd_goto(0, 3);
+         puts("ESC ENTER   -     + ");
+         lcd_goto(19, var_index-start_index);
+
+         /* evaluate ESC button */
+         if (!b0 && b0_old) {
+            enter_mode = 0;
+            lcd_cursor(0);
+         }
+
+         /* evaluate ENTER button */
+         if (b1 && !b1_old) {
+            enter_mode = 0;
+            lcd_cursor(0);
+            memcpy(pvar->ud, &f_var, pvar->width);
+            
+            if (system_menu) {
+               /* flash new address */
+               if (var_index == 0 || var_index == 1) {
+                  flash_param = 1;
+                  _flkey = 0xF1;
+               }
+            } else {
+               user_write(var_index);
+#ifdef UART1_MSCB
+               if (pvar->flags & MSCBF_REMOUT)
+                  send_remote_var(var_index);
+#endif
+            }
+         }
+
+         /* evaluate "-" button */
+         if (b2 && !b2_old) {
+            var_inc(pvar, -1);
+            last_b2 = time();
+         }
+         if (b2 && time() > last_b2 + 70)
+            var_inc(pvar, -1);
+         if (b2 && time() > last_b2 + 500)
+            var_inc(pvar, -9);
+         if (!b2)
+            last_b2 = 0;
+
+         /* evaluate "+" button */
+         if (b3 && !b3_old) {
+            var_inc(pvar, 1);
+            last_b3 = time();
+         }
+         if (b3 && time() > last_b3 + 70)
+            var_inc(pvar, 1);
+         if (b3 && time() > last_b3 + 500)
+            var_inc(pvar, 9);
+         if (!b3)
+            last_b3 = 0;
+
+      } else {
+         
+         lcd_goto(0, 3);
+         if ((n_variables > 0 || system_menu) && (pvar->delta > 0 || (pvar->flags & MSCBF_DATALESS)))
+            puts("ESC ENTER   ");
+         else
+            puts("ESC         ");
+         putchar(0x12); // ^
+         puts("     ");
+         putchar(0x13); // v
+         puts(" ");
+
+         /* enter application display on release of ESC button */
+         if (!b0 && b0_old) {
+            in_menu = 0;
+            system_menu = 0;
+            application_display(1);
+         }
+
+         /* evaluate ENTER button */
+         if (b1 && !b1_old) {
+
+            if (n_variables > 0 && pvar->width <= 4 && pvar->width > 0 && pvar->delta > 0) {
+               enter_mode = 1;
+               memcpy(&f_var, pvar->ud, pvar->width);
+               lcd_goto(19, var_index-start_index);
+               lcd_cursor(1);
+            }
+
+            if (system_menu && (var_index == 2 || var_index == 3)) {
+               enter_mode_date = 1;
+               date_index = 0;
+
+               /* display cursor */
+               lcd_goto(13, var_index-start_index);
+               lcd_cursor(1);
+            }
+
+            /* check for flash command */
+            if (system_menu && var_index == 4) {
+               flash_param = 1;
+               _flkey = 0xF1;
+               lcd_clear();
+               lcd_goto(0, 0);
+               puts("Parameters written");
+               lcd_goto(0, 1);
+               puts("to flash memory.");
+               delay_ms(3000);
+            }
+
+            /* check for reboot command */
+            if (system_menu && var_index == 5) {
+#ifdef CPU_C8051F120
+               SFRPAGE = LEGACY_PAGE;
+#endif
+               RSTSRC = 0x10;         // force software reset
+            }
+         }
+
+         /* evaluate prev button */
+         if (b2 && !b2_old) {
+            if (var_index == 0) {
+              if (!system_menu)
+                 var_index = n_variables-1;
+              else
+                 var_index = n_sysvar-1;
+            } else
+              var_index--;
+            last_b2 = time();
+         }
+         if (b2 && time() > last_b2 + 70) {
+            if (var_index == 0) {
+              if (!system_menu)
+                 var_index = n_variables-1;
+              else
+                 var_index = n_sysvar-1;
+            } else
+              var_index--;
+         }
+         if (!b2)
+            last_b2 = 0;
+
+         if (system_menu)
+            i = n_sysvar;
+         else
+            i = n_variables;
+
+         /* evaluate next button */
+         if (b3 && !b3_old) {
+            var_index = (var_index + 1) % i;
+            last_b3 = time();
+         }
+         if (b3 && time() > last_b3 + 70)
+            var_index = (var_index + 1) % i;
+         if (!b3)
+            last_b3 = 0;
+
+         /* check for system menu */
+         if (b2 && b3 && !system_menu) {
+            var_index = 0;
+            system_menu = 1;
+         }
+      }
    }
+
+   b0_old = b0;
+   b1_old = b1;
+   b2_old = b2;
+   b3_old = b3;
 }
 
 #else // SCS_1001
