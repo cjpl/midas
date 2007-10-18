@@ -1652,6 +1652,8 @@ extern "C" {
                             char *destination);
    INT EXPRT db_set_value(HNDLE hdb, HNDLE hKeyRoot, char *key_name,
                           void *data, INT size, INT num_values, DWORD type);
+   INT EXPRT db_set_value_index(HNDLE hDB, HNDLE hKeyRoot, char *key_name, void *data,
+                 INT data_size, INT index, DWORD type, BOOL truncate);
    INT EXPRT db_get_value(HNDLE hdb, HNDLE hKeyRoot, char *key_name,
                           void *data, INT * size, DWORD type, BOOL create);
    INT EXPRT db_find_key(HNDLE hdb, HNDLE hkey, char *name, HNDLE * hsubkey);
