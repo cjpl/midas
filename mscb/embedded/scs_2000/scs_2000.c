@@ -276,7 +276,7 @@ void emif_test()
 unsigned char emif_init()
 {
 unsigned char xdata *p;
-unsigned d;
+unsigned char d;
 
    /* setup EMIF interface and probe external memory */
    SFRPAGE = EMI0_PAGE;

@@ -115,7 +115,7 @@ bit wrong_cpu;                  // TRUE if code uses xdata and CPU does't have i
 
 void setup(void)
 {
-   unsigned char adr, flags;
+   unsigned char adr, flags, d;
    unsigned short i;
    unsigned char *p;
 
@@ -275,12 +275,14 @@ void setup(void)
    /* check if variables are in xdata and xdata is present */
    if (n_variables > 0) {
       p = variables[0].ud;
+      d = *p;
       *p = 0x55;
       if (*p != 0x55)
          wrong_cpu = 1;
       *p = 0xAA;
       if (*p != 0xAA)
          wrong_cpu = 1;
+      *p = d;
    }
 
    /* retrieve EEPROM data */
