@@ -5352,11 +5352,11 @@ INT db_paste(HNDLE hDB, HNDLE hKeyRoot, char *buffer)
       /* check if it is a section title */
       if (line[0] == '[') {
          /* extract title and append '/' */
-         strcpy(title, line + 1);
+         strlcpy(title, line + 1, sizeof(title));
          if (strchr(title, ']'))
             *strchr(title, ']') = 0;
          if (title[0] && title[strlen(title) - 1] != '/')
-            strcat(title, "/");
+            strlcat(title, "/", sizeof(title));
       } else {
          /* valid data line if it includes '=' and no ';' */
          if (strchr(line, '=') && line[0] != ';') {
@@ -5364,7 +5364,7 @@ INT db_paste(HNDLE hDB, HNDLE hKeyRoot, char *buffer)
             pc = strchr(line, '=') + 1;
             while (*pc == ' ')
                pc++;
-            strcpy(data_str, pc);
+            strlcpy(data_str, pc, sizeof(data_str));
 
             /* extract key name */
             *strchr(line, '=') = 0;
@@ -5375,12 +5375,12 @@ INT db_paste(HNDLE hDB, HNDLE hKeyRoot, char *buffer)
 
             key_name[0] = 0;
             if (title[0] != '.')
-               strcpy(key_name, title);
+               strlcpy(key_name, title, sizeof(key_name));
 
-            strcat(key_name, line);
+            strlcat(key_name, line, sizeof(key_name));
 
             /* evaluate type info */
-            strcpy(line, data_str);
+            strlcpy(line, data_str, sizeof(line));
             if (strchr(line, ' '))
                *strchr(line, ' ') = 0;
 
@@ -5406,7 +5406,7 @@ INT db_paste(HNDLE hDB, HNDLE hKeyRoot, char *buffer)
                   pc++;
                while ((*pc == ' ' || *pc == ':') && *pc)
                   pc++;
-               strcpy(data_str, pc);
+               strlcpy(data_str, pc, sizeof(data_str));
 
                if (n_data > 1) {
                   data_str[0] = 0;
@@ -5486,7 +5486,7 @@ INT db_paste(HNDLE hDB, HNDLE hKeyRoot, char *buffer)
                            }
                         }
 
-                        strcpy(data + string_length * i, pc);
+                        strlcpy(data + string_length * i, pc, string_length);
                      }
                   } else {
                      pc = data_str;
@@ -5643,7 +5643,7 @@ int db_paste_node(HNDLE hDB, HNDLE hKeyRoot, PMXML_NODE node)
          return DB_TYPE_MISMATCH;
       }
 
-      strcpy(type, mxml_get_attribute(node, "type"));
+      strlcpy(type, mxml_get_attribute(node, "type"), sizeof(type));
       for (tid = 0; tid < TID_LAST; tid++)
          if (strcmp(tid_name[tid], type) == 0)
             break;
