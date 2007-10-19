@@ -619,6 +619,7 @@ System message types */
 #define RPC_SHUTDOWN                509   /**< - */
 #define RPC_NO_MEMORY               510   /**< - */
 #define RPC_DOUBLE_DEFINED          511   /**< - */
+#define RPC_MUTEX_TIMEOUT           512   /**< - */
 /**dox***************************************************************/
           /** @} *//* end of group 25 */
 
