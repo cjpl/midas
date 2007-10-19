@@ -49,7 +49,7 @@ typedef struct {
 
 USER_DATA xdata user_data;
 USER_DATA xdata backup_data;
-unsigned char xdata update_data[41];
+unsigned char xdata update_data[42];
 
 MSCB_INFO_VAR code vars[] = {
 
@@ -161,15 +161,16 @@ void user_init(unsigned char init)
    printf("ampl %f", user_data.ampl[0]);
 
    /* initial values */
-   if (init);
-   memset(&user_data, 0, sizeof(user_data));
-   user_data.freq = 7;
-   user_data.pwidth = 3;
-
-   /* retrieve backup data from RAM if not reset by power on */
-   SFRPAGE = LEGACY_PAGE;
-   if ((RSTSRC & 0x02) == 0)
-      memcpy(&user_data, &backup_data, sizeof(user_data));
+   if (init) {
+      memset(&user_data, 0, sizeof(user_data));
+      user_data.freq = 7;
+      user_data.pwidth = 3;
+   } else {
+      /* retrieve backup data from RAM if not reset by power on */
+      SFRPAGE = LEGACY_PAGE;
+      if ((RSTSRC & 0x02) == 0)
+         memcpy(&user_data, &backup_data, sizeof(user_data));
+   }
 
    /* write digital outputs */
    for (i=0 ; i<n_variables ; i++)
@@ -364,7 +365,10 @@ unsigned char xdata i;
 void user_write(unsigned char index) reentrant
 {
    /* will be updated in main loop */
-   update_data[index] = 1;
+   if (index < sizeof(update_data) / sizeof(update_data[0]) &&
+       index >= 0) {
+      update_data[index] = 1;
+   }
 }
 
 /*---- User read function ------------------------------------------*/
