@@ -4992,7 +4992,7 @@ INT db_load(HNDLE hDB, HNDLE hKeyRoot, char *filename, BOOL bRemote)
    n = 0;
 
    do {
-      i = read(hfile, buffer + n, size);
+      i = read(hfile, buffer + n, size - n);
       if (i <= 0)
          break;
       n += i;
