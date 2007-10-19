@@ -9178,6 +9178,8 @@ INT rpc_client_call(HNDLE hConn, const INT routine_id, ...)
    return status;
 }
 
+/* mutex for multi-threaded applications calling the RPC layer */
+int _mutex_rpc;
 
 /********************************************************************/
 INT rpc_call(const INT routine_id, ...)
@@ -9230,6 +9232,14 @@ INT rpc_call(const INT routine_id, ...)
          return RPC_EXCEED_BUFFER;
       }
       _net_send_buffer_size = NET_BUFFER_SIZE;
+
+      /* create mutex for multi-threaded applications */
+      ss_mutex_create("RPC", &_mutex_rpc);
+   }
+
+   status = ss_mutex_wait_for(_mutex_rpc, 10000);
+   if (status != SS_SUCCESS) {
+      return RPC_MUTEX_TIMEOUT;
    }
 
    nc = (NET_COMMAND *) _net_send_buffer;
@@ -9320,6 +9330,7 @@ INT rpc_call(const INT routine_id, ...)
             cm_msg(MERROR, "rpc_call",
                    "parameters (%d) too large for network buffer (%d)",
                    (POINTER_T) param_ptr - (POINTER_T) nc + param_size, NET_BUFFER_SIZE);
+            ss_mutex_release(_mutex_rpc);
             return RPC_EXCEED_BUFFER;
          }
 
@@ -9350,9 +9361,11 @@ INT rpc_call(const INT routine_id, ...)
 
       if (i != send_size) {
          cm_msg(MERROR, "rpc_call", "send_tcp() failed");
+         ss_mutex_release(_mutex_rpc);
          return RPC_NET_ERROR;
       }
 
+      ss_mutex_release(_mutex_rpc);
       return RPC_SUCCESS;
    }
 
@@ -9360,6 +9373,7 @@ INT rpc_call(const INT routine_id, ...)
    i = send_tcp(send_sock, (char *) nc, send_size, 0);
    if (i != send_size) {
       cm_msg(MERROR, "rpc_call", "send_tcp() failed");
+      ss_mutex_release(_mutex_rpc);
       return RPC_NET_ERROR;
    }
 
@@ -9387,6 +9401,7 @@ INT rpc_call(const INT routine_id, ...)
             the next rpc_call */
          rpc_server_disconnect();
 
+         ss_mutex_release(_mutex_rpc);
          return RPC_TIMEOUT;
       }
    }
@@ -9396,6 +9411,7 @@ INT rpc_call(const INT routine_id, ...)
 
    if (i <= 0) {
       cm_msg(MERROR, "rpc_call", "recv_tcp() failed, routine = \"%s\"", rpc_list[idx].name);
+      ss_mutex_release(_mutex_rpc);
       return RPC_NET_ERROR;
    }
 
@@ -9449,6 +9465,8 @@ INT rpc_call(const INT routine_id, ...)
    }
 
    va_end(ap);
+
+   ss_mutex_release(_mutex_rpc);
 
    return status;
 }
@@ -9568,8 +9586,7 @@ INT rpc_send_event(INT buffer_handle, void *source, INT buf_size, INT async_flag
          _tcp_rp = _tcp_wp = 0;
 
       if (i < 0 && !would_block) {
-         printf("send_tcp() returned %d\n", i);
-         cm_msg(MERROR, "rpc_send_event", "send_tcp() failed");
+         cm_msg(MERROR, "rpc_send_event", "send_tcp() failed, return code = %d", i);
          return RPC_NET_ERROR;
       }
 
