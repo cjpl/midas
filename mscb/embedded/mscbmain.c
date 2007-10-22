@@ -286,7 +286,9 @@ void setup(void)
    }
 
    /* retrieve EEPROM data */
+#ifdef CPU_C8051F120
    SFRPAGE = LEGACY_PAGE;
+#endif
    if ((RSTSRC & 0x02) > 0)
       flags = eeprom_retrieve(1); // vars on cold start
    else
