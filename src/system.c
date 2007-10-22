@@ -320,6 +320,7 @@ INT ss_shm_open(char *name, INT size, void **adr, HNDLE *handle, BOOL get_size)
          return SS_NO_MEMORY;
       }
 
+      memset(&buf, 0, sizeof(buf));
       buf.shm_perm.uid = getuid();
       buf.shm_perm.gid = getgid();
       buf.shm_perm.mode = 0666;
@@ -537,6 +538,7 @@ INT ss_shm_close(char *name, void *adr, HNDLE handle, INT destroy_flag)
       i = destroy_flag; /* avoid compiler warning */
 
       /* get info about shared memory */
+      memset(&buf, 0, sizeof(buf));
       if (shmctl(handle, IPC_STAT, &buf) < 0) {
          cm_msg(MERROR, "ss_shm_close", "shmctl(shmid=%d,IPC_STAT) failed, errno %d (%s)",
                 handle, errno, strerror(errno));
@@ -1875,6 +1877,7 @@ INT ss_mutex_create(const char *name, HNDLE * mutex_handle)
          return SS_NO_MUTEX;
       }
 
+      memset(&buf, 0, sizeof(buf));
       buf.sem_perm.uid = getuid();
       buf.sem_perm.gid = getgid();
       buf.sem_perm.mode = 0666;
