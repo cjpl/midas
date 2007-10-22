@@ -1029,7 +1029,7 @@ static char _client_name[NAME_LENGTH];
 static char _path_name[MAX_STRING_LENGTH];
 static INT _call_watchdog = TRUE;
 static INT _watchdog_timeout = DEFAULT_WATCHDOG_TIMEOUT;
-INT _mutex_alarm, _mutex_elog;
+INT _mutex_alarm, _mutex_elog, _mutex_history;
 
 /**dox***************************************************************/
 /** @addtogroup cmfunctionc
@@ -1691,7 +1691,7 @@ Connect to a MIDAS experiment (to the online database) on
 INT cm_connect_experiment1(char *host_name, char *exp_name,
                            char *client_name, void (*func) (char *), INT odb_size, DWORD watchdog_timeout)
 {
-   INT status, i, mutex_elog, mutex_alarm, size;
+   INT status, i, mutex_elog, mutex_alarm, mutex_history, size;
    char local_host_name[HOST_NAME_LENGTH];
    char client_name1[NAME_LENGTH];
    char password[NAME_LENGTH], str[256], exp_name1[NAME_LENGTH];
@@ -1771,7 +1771,12 @@ INT cm_connect_experiment1(char *host_name, char *exp_name,
          cm_msg(MERROR, "cm_connect_experiment", "Cannot create elog mutex");
          return status;
       }
-      cm_set_experiment_mutex(mutex_alarm, mutex_elog);
+      status = ss_mutex_create("HISTORY", &mutex_history);
+      if (status != SS_CREATED && status != SS_SUCCESS) {
+         cm_msg(MERROR, "cm_connect_experiment", "Cannot create history mutex");
+         return status;
+      }
+      cm_set_experiment_mutex(mutex_alarm, mutex_elog, mutex_history);
    }
 
    /* open ODB */
@@ -2197,7 +2202,7 @@ INT cm_set_experiment_database(HNDLE hDB, HNDLE hKeyClient)
 #ifndef DOXYGEN_SHOULD_SKIP_THIS
 
 /********************************************************************/
-INT cm_set_experiment_mutex(INT mutex_alarm, INT mutex_elog)
+INT cm_set_experiment_mutex(INT mutex_alarm, INT mutex_elog, INT mutex_history)
 /********************************************************************\
 
   Routine: cm_set_experiment_mutex
@@ -2207,6 +2212,7 @@ INT cm_set_experiment_mutex(INT mutex_alarm, INT mutex_elog)
   Input:
     INT    mutex_alarm      Alarm mutex
     INT    mutex_elog       Elog mutex
+    INT    mutex_history    History mutex
 
   Output:
     none
@@ -2218,6 +2224,7 @@ INT cm_set_experiment_mutex(INT mutex_alarm, INT mutex_elog)
 {
    _mutex_alarm = mutex_alarm;
    _mutex_elog = mutex_elog;
+   _mutex_history = mutex_history;
 
    return CM_SUCCESS;
 }
@@ -2267,7 +2274,7 @@ INT cm_get_experiment_database(HNDLE * hDB, HNDLE * hKeyClient)
 #ifndef DOXYGEN_SHOULD_SKIP_THIS
 
 /********************************************************************/
-INT cm_get_experiment_mutex(INT * mutex_alarm, INT * mutex_elog)
+INT cm_get_experiment_mutex(INT * mutex_alarm, INT * mutex_elog, INT *mutex_history)
 /********************************************************************\
 
   Routine: cm_get_experiment_mutex
@@ -2280,6 +2287,7 @@ INT cm_get_experiment_mutex(INT * mutex_alarm, INT * mutex_elog)
   Output:
     INT    mutex_alarm      Alarm mutex
     INT    mutex_elog       Elog mutex
+    INT    mutex_history    History mutex
 
   Function value:
     CM_SUCCESS              Successful completion
@@ -2290,6 +2298,8 @@ INT cm_get_experiment_mutex(INT * mutex_alarm, INT * mutex_elog)
       *mutex_alarm = _mutex_alarm;
    if (mutex_elog)
       *mutex_elog = _mutex_elog;
+   if (mutex_history)
+      *mutex_history = _mutex_history;
 
    return CM_SUCCESS;
 }
@@ -11667,7 +11677,7 @@ INT rpc_server_thread(void *pointer)
 \********************************************************************/
 {
    struct callback_addr callback;
-   int status, mutex_alarm, mutex_elog;
+   int status, mutex_alarm, mutex_elog, mutex_history;
    static DWORD last_checked = 0;
 
    memcpy(&callback, pointer, sizeof(callback));
@@ -11680,7 +11690,8 @@ INT rpc_server_thread(void *pointer)
    /* create alarm and elog mutexes */
    ss_mutex_create("ALARM", &mutex_alarm);
    ss_mutex_create("ELOG", &mutex_elog);
-   cm_set_experiment_mutex(mutex_alarm, mutex_elog);
+   ss_mutex_create("HISTORY", &mutex_history);
+   cm_set_experiment_mutex(mutex_alarm, mutex_elog, mutex_history);
 
    do {
       status = ss_suspend(5000, 0);

@@ -3,7 +3,7 @@
 	ProjectType="Visual C++"
 	Version="8.00"
 	Name="msc"
-	ProjectGUID="{42AD1939-3653-46BE-B8BC-2AB8B9A7B646}"
+	ProjectGUID="{9A9C779E-58C4-480D-A88E-889368A3A451}"
 	>
 	<Platforms>
 		<Platform
@@ -266,7 +266,11 @@
 			Filter="h;hpp;hxx;hm;inl"
 			>
 			<File
-				RelativePath="..\mscb\rpc.h"
+				RelativePath="..\mscb\mscb.h"
+				>
+			</File>
+			<File
+				RelativePath="..\mscb\mscbrpc.h"
 				>
 			</File>
 		</Filter>

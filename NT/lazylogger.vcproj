@@ -133,7 +133,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories="\midas\include;\mxml;"
-				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_DEPRECATE;INCLUDE_FTPLIB"
+				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_DEPRECATE;INCLUDE_FTPLIB;INCLUDE_FTPLIB"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
 				UsePrecompiledHeader="0"
@@ -402,6 +402,22 @@
 			Name="Header Files"
 			Filter="h;hpp;hxx;hm;inl"
 			>
+			<File
+				RelativePath="..\include\ftplib.h"
+				>
+			</File>
+			<File
+				RelativePath="..\include\midas.h"
+				>
+			</File>
+			<File
+				RelativePath="..\include\msystem.h"
+				>
+			</File>
+			<File
+				RelativePath="..\include\ybos.h"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="Resource Files"
