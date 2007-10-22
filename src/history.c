@@ -536,8 +536,10 @@ INT hs_write_event(DWORD event_id, void *data, DWORD size)
    /* request semaphore */
    cm_get_experiment_mutex(NULL, NULL, &mutex);
    status = ss_mutex_wait_for(mutex, 5 * 1000);
-   if (status != SS_SUCCESS)
+   if (status != SS_SUCCESS) {
+      cm_msg(MERROR, "hs_write_event", "mutex timeout");
       return SUCCESS;        /* someone else blocked the history system */
+   }
 
    /* find index to history structure */
    for (index = 0; index < _history_entries; index++)
