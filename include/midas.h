@@ -1575,8 +1575,8 @@ extern "C" {
    INT EXPRT cm_disconnect_client(HNDLE hConn, BOOL bShutdown);
    INT EXPRT cm_set_experiment_database(HNDLE hDB, HNDLE hKeyClient);
    INT EXPRT cm_get_experiment_database(HNDLE * hDB, HNDLE * hKeyClient);
-   INT EXPRT cm_set_experiment_mutex(INT mutex_alarm, INT mutex_elog);
-   INT EXPRT cm_get_experiment_mutex(INT * mutex_alarm, INT * mutex_elog);
+   INT EXPRT cm_set_experiment_mutex(INT mutex_alarm, INT mutex_elog, INT mutex_history);
+   INT EXPRT cm_get_experiment_mutex(INT * mutex_alarm, INT * mutex_elog, INT * mutex_history);
    INT EXPRT cm_set_client_info(HNDLE hDB, HNDLE * hKeyClient,
                                 char *host_name, char *client_name,
                                 INT computer_id, char *password, DWORD watchdog_timeout);
