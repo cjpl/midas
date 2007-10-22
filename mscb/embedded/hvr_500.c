@@ -338,6 +338,7 @@ void user_write(unsigned char index) reentrant
 
    a = cur_sub_addr();
 
+   /* reset trip on main switch, trip reset and on demand = 0 */
    if (index == 0 || 
       (index == 1 && user_data[a].u_demand == 0) || 
        index == 5) {
@@ -355,6 +356,10 @@ void user_write(unsigned char index) reentrant
       /* indicate new demand voltage */
       chn_bits[a] |= DEMAND_CHANGED;
    }
+
+   /* indicated changed demand if no on current trip */
+   if (index == 1 && ((user_data[a].status & STATUS_ILIMIT) == 0))
+      chn_bits[a] |= DEMAND_CHANGED;
 
    /* re-check voltage limit */
    if (index == 8) {
