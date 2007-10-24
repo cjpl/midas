@@ -1350,9 +1350,10 @@ Function value:
          char buf[256];
          sprintf(buf, "Disk buffer is almost full, free space: %.1f%%", freepercent);
 
-         al_trigger_alarm("TapeX", buf, lazy.alarm, "Disk buffer full", AT_INTERNAL);
+         al_trigger_alarm("Disk Full", buf, lazy.alarm, "Disk buffer full", AT_INTERNAL);
       } else {
-         al_reset_alarm("TapeX");
+         if (db_find_key(hDB, 0, "/Alarms/Alarms/Disk Full", &status) == DB_SUCCESS)
+            al_reset_alarm("Disk Full");
       }
 
       /* check purging action */
