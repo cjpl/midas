@@ -6478,7 +6478,11 @@ void show_alarm_page()
                   db_get_value(hDB, hkey, "Check interval", &interval, &size, TID_INT,
                                TRUE);
                   last += interval;
-                  strcpy(value, ctime(&last));
+                  
+                  if (ctime(&last) == NULL)
+                     strcpy(value, "<invalid>");
+                  else
+                     strcpy(value, ctime(&last));
                   value[16] = 0;
 
                   sprintf(str, "Alarm triggers at %s", value);
