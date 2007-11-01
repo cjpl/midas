@@ -5,7 +5,8 @@
 
   Contents:     Channel Access device driver function declarations
 
-  $Id:$
+  $Id$
+  May-14-07: running with base 3.14.8.2
 
 \********************************************************************/
 
