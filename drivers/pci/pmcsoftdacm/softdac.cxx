@@ -10,7 +10,14 @@
  * http://www.alphitech.com
  * http://www.alphitech.com/doc/???.pdf
  *
+
   $Id$
+
+- Restored 0x2 immediate mode 
+- correct range limit comments
+- correct range settings
+- Range setting still doesn't work
+
 *********************************************************************/
 
 #include <stdio.h>
@@ -84,27 +91,27 @@ int softdac_ScaleSet(ALPHISOFTDAC * al, int range, double alpha, double beta)
 {
   switch (range) {
   case SOFTDAC_RANGE_P5V:
-    al->alpha = 5.0/32767.;
+    al->alpha = 5.0/65535.;
     al->beta =  0.0;
     break;
   case SOFTDAC_RANGE_P10V:
-    al->alpha = 10.0/65565.;
+    al->alpha = 10.0/65535.;
     al->beta =  0.0;
     break;
   case SOFTDAC_RANGE_PM5V:
-    al->alpha = 5.0/32767.;
+    al->alpha = 10/65535.;
     al->beta =  -5.0;
     break;
   case SOFTDAC_RANGE_PM10V:
-    al->alpha = 10.0/32767.;
+    al->alpha = 20.0/65535.;
     al->beta =  -10.0;
     break;
   case SOFTDAC_RANGE_PM2P5V:
-    al->alpha = 2.5/32767.;
+    al->alpha = 5.0/65535;
     al->beta =  -2.5;
     break;
   case SOFTDAC_RANGE_M2P5P7P5V:
-    al->alpha = 7.5/32767.;
+    al->alpha = 10/65535;
     al->beta =  -2.5;
     break;
   case SOFTDAC_SET_COEF:
@@ -115,7 +122,7 @@ int softdac_ScaleSet(ALPHISOFTDAC * al, int range, double alpha, double beta)
 
   if (range != SOFTDAC_SET_COEF) {
     SOFTDAC_D16(al->regs+SOFTDAC_CMD_REG)      =  0x10 | range;
-    //    SOFTDAC_D16(al->regs+SOFTDAC_CMD_REG)      = 0x02; // SOFTDAC_IMMEDIATE_MODE;
+    SOFTDAC_D16(al->regs+SOFTDAC_CMD_REG)      =  0x02;
   }
 
   al->range = range;
@@ -163,8 +170,7 @@ uint16_t softdac_Volt2Dac(ALPHISOFTDAC * al, double volt)
     if (volt < 0.0) {
       printf("Out of range -> Limited to range (%e < 0.0)\n", volt);
       volt = 0.0;
-    }
-    if (volt > 5.0) {
+    } else if (volt > 5.0) {
       printf("Out of range -> Limited to range  (%e > 5.0)\n", volt);
       volt = 5.0;
     }
@@ -173,8 +179,7 @@ uint16_t softdac_Volt2Dac(ALPHISOFTDAC * al, double volt)
     if (volt < 0.0) {
       printf("Out of range -> Limited to range  (%e < 0.0)\n", volt);
       volt = 0.0;
-    }
-    if (volt > 10.0) {
+    } else if (volt > 10.0) {
       printf("Out of range -> Limited to range  (%e > 10.0)\n", volt);
       volt = 10.0;
     }
@@ -183,8 +188,7 @@ uint16_t softdac_Volt2Dac(ALPHISOFTDAC * al, double volt)
     if (volt < -5.0) {
       printf("Out of range -> Limited to range  (%e < -5.0)\n", volt);
       volt = -5.0;
-    }
-    if (volt > 5.0) {
+    } else if (volt > 5.0) {
       printf("Out of range -> Limited to range  (%e > 5.0)\n", volt);
       volt = 5.0;
     }
@@ -193,28 +197,25 @@ uint16_t softdac_Volt2Dac(ALPHISOFTDAC * al, double volt)
     if (volt < -10.0) {
       printf("Out of range -> Limited to range  (%e < -10.0)\n", volt);
       volt = -10.0;
-    }
-    if (volt > 10.0) {
+    } else if (volt > 10.0) {
       printf("Out of range -> Limited to range  (%e > +10.0)\n", volt);
       volt = 10.0;
     }
     break;
   case SOFTDAC_RANGE_PM2P5V:
-    if (volt < -2.0) {
-      printf("Out of range -> Limited to range  (%e < -2.0)\n", volt);
-      volt = 0.0;
-    }
-    if (volt > 5.0) {
-      printf("Out of range -> Limited to range  (%e > 5.0)\n", volt);
-      volt = 5.0;
+    if (volt < -2.5) {
+      printf("Out of range -> Limited to range  (%e < -2.5)\n", volt);
+      volt = -2.5;
+    } else if (volt > 2.5) {
+      printf("Out of range -> Limited to range  (%e > 2.5)\n", volt);
+      volt = 2.5;
     }
     break;
   case SOFTDAC_RANGE_M2P5P7P5V:
     if (volt < -2.5) {
       printf("Out of range -> Limited to range  (%e < -2.5)\n", volt);
       volt = -2.5;
-    }
-    if (volt > 7.5) {
+    } else if (volt > 7.5) {
       printf("Out of range -> Limited to range  (%e > +7.5)\n", volt);
       volt = 7.5;
     }
@@ -315,7 +316,7 @@ int softdac_LinLoad(ALPHISOFTDAC * al, double vin, double vout, int npts, int * 
     for (int i=0; i<npts; i++)
       {
 	b[i] = (uint16_t)(din + (i * (dout-din) / (npts-1) ));
-	printf("&b[i]:%p  npts:%d Ch:%d Volt dac[%i]:%d\n", &b[i], npts, ichan, i
+	printf("&b[%i]:%p  npts:%d Ch:%d Volt dac[%i]:%d\n", i, &b[i], npts, ichan, i
 	       , (uint16_t)(din + (i * (dout-din) / (npts-1) )));
       }
   }
@@ -438,7 +439,7 @@ int  softdac_Setup(ALPHISOFTDAC * al, int samples, int mode)
 
   switch (mode) {
   case 0x1:
-    printf("External Clk On, +/-10V range Stay in Bank 0 (mode:%d)\n", mode);
+    printf("Internal Clk On, Stay in Bank 0 (mode:%d)\n", mode);
     SOFTDAC_D32(al->regs+SOFTDAC_CLK_SAMP_INT) = SOFTDAC_CLK_500KHZ; // Not used as external
     SOFTDAC_D32(al->regs+SOFTDAC_LAST_ADDR_0)  = samples; // last addr bank 0
     SOFTDAC_D32(al->regs+SOFTDAC_LAST_ADDR_1)  = 0; // last addr bank 1
@@ -515,6 +516,8 @@ int  softdac_Status(ALPHISOFTDAC * al, int mode)
 
   int cmdstat = SOFTDAC_D16(al->regs+SOFTDAC_CMD_REG);
   unsigned int stat = SOFTDAC_D32(al->regs+SOFTDAC_OFFSET+SOFTDAC_REGS_D32);
+  unsigned int lsamp0 = SOFTDAC_D32(al->regs+SOFTDAC_LAST_ADDR_0);
+  unsigned int lsamp1 = SOFTDAC_D32(al->regs+SOFTDAC_LAST_ADDR_1);
   switch (mode) {
   case 0x1:
     if ((stat & 0x3) == 0x0)      printf("Stay in Bank 0    ");
@@ -545,6 +548,9 @@ int  softdac_Status(ALPHISOFTDAC * al, int mode)
     printf("   0x%2.2x:BANK_CTL_1 (0x11)\n", SOFTDAC_D08(al->regs+SOFTDAC_BANK_CTL_1));
     printf("0x%2.2x:CTL_STAT_0 (0x12)", SOFTDAC_D08(al->regs+SOFTDAC_CTL_STAT_0));
     printf("   0x%2.2x:CTL_STAT_1 (0x13)\n", SOFTDAC_D08(al->regs+SOFTDAC_CTL_STAT_1));
+    printf("Base Addr (Offset) %p\n", al->regs);
+
+    printf("Last Addr 0/1 [%d / %d] (0x08 / 0x0C)\n", lsamp0, lsamp1);
     printf("0x%8.8x: stat 0x13..0x10\n", stat);
 
   switch (al->range) {
@@ -567,7 +573,6 @@ int  softdac_Status(ALPHISOFTDAC * al, int mode)
     printf("Range : M2P5P7P5V (0x%x)\n", al->range);
     break;
   }
-
     printf("0x%x: cmdstat \n", cmdstat);
 
     break;
@@ -602,7 +607,7 @@ int main(int argc,char* argv[])
   int samples = 10;
 
   if (argc > 1)
-    chan = atoi(argv[1]) - 1;
+    chan = atoi(argv[1]);
   
   if (softdac_Open( &al) < 0)
     {
@@ -613,17 +618,16 @@ int main(int argc,char* argv[])
   printf("alpha:%e  --  offset:%e\n", al->alpha, al->beta);
   softdac_Status(al, 1);
   
-#if 1
+#if 0
   if (argc == 3) {
-    chan = atoi(argv[1]) - 1;
-    din  = (uint16_t) atoi(argv[2]);
+    chan = atoi(argv[1]);
+    //    din  = (uint16_t) atoi(argv[2]);
     samples = 10;
     softdac_Setup(al, samples, 2);
-
+    
     softdac_ScaleSet(al, SOFTDAC_RANGE_PM10V,  10.0/32767., -10.0);
     printf("alpha:%e  --  offset:%e\n", al->alpha, al->beta);
-
-    for (i=0;;) {
+    for (i=chan;;) {
       ddout = -10.0;
       softdac_DirectVoltWrite(al, ddout, i, &arg); 
       ddout = 10.0;
@@ -637,7 +641,7 @@ int main(int argc,char* argv[])
 #endif
 #if 0
   if (argc == 3) {
-    chan = atoi(argv[1]) - 1;
+    chan = atoi(argv[1]);
     din  = (uint16_t) atoi(argv[2]);
     samples = 0;
     softdac_Setup(al, samples, 2);
@@ -655,17 +659,15 @@ int main(int argc,char* argv[])
   
 #endif
 
-#if 0
-  int pts=100, npts=0;
+#if 1
+  int status, pts=10, npts=0;
+  float fdin  = atof(argv[2]);
   softdac_Reset(al);
-
-  softdac_Setup(al, npts, 4);
+  softdac_Setup(al, npts, 1);
   softdac_ScaleSet(al, SOFTDAC_RANGE_PM10V, 0., 0.);
-
-  int   status = softdac_LinLoad(al, 10 , -10., pts,  &npts, 0, 1);
-
-  printf("......................pts:%d\n", pts);
-  softdac_Status(al, 1);
+  status = softdac_LinLoad(al, fdin , -1*fdin, pts,  &npts, 0, chan);
+  printf("......................ch:%d pts:%d\n", chan, npts);
+  softdac_DacVoltRead(al, npts, 0, 0, chan, 0);
   softdac_SampleSet(al, 0, npts);
   softdac_SMEnable(al);
   softdac_Status(al, 1);
