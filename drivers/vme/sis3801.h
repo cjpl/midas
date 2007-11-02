@@ -144,14 +144,24 @@ void  sis3801_int_source_disable (MVME_INTERFACE *myvme, DWORD base, const int i
 void  sis3801_int_clear (MVME_INTERFACE *myvme, DWORD base, const int intnum);
 void  sis3801_int_attach (MVME_INTERFACE *myvme, DWORD base, DWORD base_vect, int level, void (*isr)(void));
 void  sis3801_int_detach (MVME_INTERFACE *myvme, DWORD baser, DWORD base_vect, int level);
-void         sis3801_setup(const MVME_INTERFACE *myvme, DWORD base, int mode, int dsp);
-void         myStub_sis3801(void);
+void  sis3801_setup(const MVME_INTERFACE *myvme, DWORD base, int mode, int dsp);
 
-int  SIS3801_Setup(MVME_INTERFACE *myvme, DWORD base, int mode);
-void SIS3801_Status(MVME_INTERFACE *myvme, DWORD base);
+int  sis3801_Setup(MVME_INTERFACE *myvme, DWORD base, int mode);
+void sis3801_Status(MVME_INTERFACE *myvme, DWORD base);
 
 #ifdef __cplusplus
 }
 #endif
 
 #endif  // _INCLUDE
+
+/* emacs                                                                                                             
+ * Local Variables:
+ * mode:font-lock
+ * tab-width: 8
+ * c-basic-offset: 2
+ * End:
+ */
+
+
+
