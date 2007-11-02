@@ -1156,6 +1156,10 @@ control frontend.
 Several equipment with different class drivers can be defined in a
 single frontend.
 
+Slow Control variables can be later accessed through the web using the 
+midas page (@ref mhttpd_task, @ref Equipment_page). This can be done setting the
+variable names under the directory Settings of the corresponding equipment. The variable description is given under @ref History_System. The @ref History_page will also be automatically activated if the application @ref mlogger_task is running.
+
 \code
 Key name                        Type    #Val  Size  Last Opn Mode Value
 ---------------------------------------------------------------------------

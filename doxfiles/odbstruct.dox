@@ -1286,16 +1286,15 @@ based on the periodicity of the history value (in second!).
 The content if the event will be completely copied into the history files
 using the definition of the event as tag names for every element of the event.
 
-The history variable name for each element of the event is composed following one
-of the rules below:
+The history variable name for each element of the event is composed following one of the rules below:
 
-- [bank event] \b /equipment/\<...\>/Variables/<bank name\>[]  is the only
+- [bank event] <b>/equipment/\<...\>/Variables/<bank name\>[]</b> is the only
 reference of the event, the history name is composed of the bank name follwed
 by the corresponding index of the element.
-- [bank event] \b /equipment/\<...\>/Settings/Names \<bank_name\>[]  is present,
-the history name is composed of the corresponding name found in the
+- [bank event] <b>/equipment/\<...\>/Settings/Names \<bank_name\>[]</b> is present, the history name is composed of the corresponding name found in the
 "Names <bank_name>" array. The size of this array should match the size of the
-\b /equipment/\<...\>/Variables/\<bank name[]\> .
+<b>/equipment/\<...\>/Variables/\<bank name[]\></b>.
+
 \code 
 [host:chaos:Running]Target>ls -l -r
 Key name                        Type    #Val  Size  Last Opn Mode Value
