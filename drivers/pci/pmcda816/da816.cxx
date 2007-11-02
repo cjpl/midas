@@ -661,4 +661,14 @@ int main(int argc, char* argv[])
 }
 
 #endif
+
+/* emacs
+ * Local Variables:
+ * mode:C
+ * mode:font-lock
+ * tab-width: 8
+ * c-basic-offset: 2
+ * End:
+ */
+
 /* end file */
