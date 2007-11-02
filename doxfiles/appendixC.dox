@@ -21,17 +21,17 @@ module of each family is already supported by the current Midas distribution.
 latest API.
 
 <hr> @section Midas_CAMAC_standard_functions Midas CAMAC standard functions
-Please refer to @ref mcstd.h for function description.  
+Please refer to @ref mcstdfunctionh for function description.  
 
 <hr> @section ESONE_CAMAC_standard_functions ESONE CAMAC standard functions
 
 <strong>Not all the functionality of ESONE standard have been fully tested</strong>
 
-Please refer to @ref esone.c for function description.  
+Please refer to @ref mesonefunctionc for function description.  
 
 <hr> @section Midas_VME_standard_functions Midas VME standard functions
 This API provides basic VME access through a \b simple set of functions.
-Refer to @ref mvmestd.h for more specific information. mvme_open() contains
+Refer to @ref mvmestdfunctionh for more specific information. mvme_open() contains
 a general access code sample summarizing most of the mvme commands.
 
 <hr> @section Compute_Busy_Logic Computer Busy Logic
