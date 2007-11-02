@@ -98,19 +98,19 @@ the \<status> button.
    - <b> Arguments </b> to the script. Midas Symbolic link are permitted.
    - <b> Example </b>: The <b> Example </b> below defines a script names
     doit with 2 <b> Arguments </b> (run\# device) which will be invoked when the button
-     <doit> is pressed.
-    \code
-    odbedit
-    mkdir Script
-    cd Script 
-    mkdir doit
-    cd doit
-    create string cmd
-    ln "/runinfo/run number" run
-    create string dest
-    set dest /dev/hda
-    \endcode
-- [Version >= 1.8.3 Alias Hyperlink] This line will be present on the
+     \<doit\> is pressed.
+  \code
+  odbedit
+  mkdir Script
+  cd Script 
+  mkdir doit
+  cd doit
+  create string cmd
+  ln "/runinfo/run number" run
+  create string dest
+  set dest /dev/hda
+  \endcode
+- [Alias Hyperlink] This line will be present on the
   status page only if the ODB tree \b /Alias.
   The distinction for spawning a secondary frame with the link
   request is done by default. For forcing the link in the current frame, add
@@ -121,16 +121,7 @@ the \<status> button.
    ls
    create key Alias       
    cd Alias
-   ln /Equipment/Trigger/Common "Trig Setting"
-   ln /Analyzer/Output "Analyzer"
-
-   create key "Alias new window"                     <-- Version < 1.8.3
-   cd "Alias new window"
-   ln /equipment/Scalers/Variables "Scalers Var" 
-
-  or
-   cd Alias
-   ln /Equipment/Trigger/Common "Trig Setting&"      <-- Version >= 1.8.3
+   ln /Equipment/Trigger/Common "Trig Setting&"
   \endcode
 - [General info]
   Current run number, state, General Enable flag for Alarm, Auto restart flag
