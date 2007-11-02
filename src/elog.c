@@ -14,8 +14,11 @@
 #include "strlcpy.h"
 #include <assert.h>
 
+/** @defgroup elfunctioncode Midas Elog Functions (el_xxx)
+ */
+
 /**dox***************************************************************/
-/** @addtogroup elfunctionc
+/** @addtogroup elfunctioncode
  *
  *  @{  */
 
@@ -57,7 +60,7 @@ Submit an ELog entry.
 @param run  Run Number.
 @param author Message author.
 @param type Message type.
-@param system Message system.
+@param syst Message system.
 @param subject Subject.
 @param text Message text.
 @param reply_to In reply to this message.
@@ -964,5 +967,5 @@ INT el_delete_message(char *tag)
 #endif                          /* DOXYGEN_SHOULD_SKIP_THIS */
 
 /**dox***************************************************************/
-                                                                                                             /** @} *//* end of elfunctionc */
+/** @} *//* end of elfunctioncode */
 

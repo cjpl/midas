@@ -15,7 +15,15 @@
 #include <assert.h>
 
 /**dox***************************************************************/
-/** @addtogroup alfunctionc
+/** @file alarm.c
+The Midas Alarm file
+*/
+
+/** @defgroup alfunctioncode Midas Alarm Functions (al_xxx)
+ */
+
+/**dox***************************************************************/
+/** @addtogroup alfunctioncode
  *
  *  @{  */
 
@@ -369,28 +377,17 @@ INT al_trigger_class(char *alarm_class, char *alarm_message, BOOL first)
    return AL_SUCCESS;
 }
 
+/**dox***************************************************************/
+#endif                          /* DOXYGEN_SHOULD_SKIP_THIS */
 
 /********************************************************************/
+/**
+Reset (acknoledge) alarm.
+
+@param alarm_name Alarm name, defined in /alarms/alarms
+@return AL_SUCCESS, AL_RESETE, AL_INVALID_NAME
+*/
 INT al_reset_alarm(char *alarm_name)
-/********************************************************************\
-
-  Routine: al_reset_alarm
-
-  Purpose: Reset (acknowledge) alarm
-
-  Input:
-    char   *alarm_name      Alarm name, must be defined in /Alarms/Alarms
-                            If NULL reset all alarms
-
-  Output:
-    <none>
-
-  Function value:
-    AL_INVALID_NAME         Alarm name not defined
-    AL_RESET                Alarm was triggered and reset
-    AL_SUCCESS              Successful completion
-
-\********************************************************************/
 {
    int status, size, i;
    HNDLE hDB, hkeyalarm, hkeyclass, hsubkey;
@@ -474,21 +471,11 @@ INT al_reset_alarm(char *alarm_name)
 
 
 /********************************************************************/
+/**
+Scan ODB for alarms.
+@return AL_SUCCESS
+*/
 INT al_check()
-/********************************************************************\
-
-  Routine: al_scan
-
-  Purpose: Scan ODB alarams and programs
-
-  Input:
-
-  Output:
-
-  Function value:
-    AL_SUCCESS              Successful completion
-
-\********************************************************************/
 {
    if (rpc_is_remote())
       return rpc_call(RPC_AL_CHECK);
@@ -670,8 +657,7 @@ INT al_check()
    return SUCCESS;
 }
 
-/**dox***************************************************************/
-#endif                          /* DOXYGEN_SHOULD_SKIP_THIS */
 
-                                                                                                             /** @} *//* end of alfunctionc */
+/**dox***************************************************************/
+/** @} *//* end of alfunctioncode */
 

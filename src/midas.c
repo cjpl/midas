@@ -33,12 +33,6 @@ The main core C-code for Midas.
  */
 /** @defgroup bkfunctionc Midas Bank Functions (bk_xxx)
  */
-/** @defgroup alfunctionc Midas Alarm Functions (al_xxx)
- */
-/** @defgroup hsfunctionc Midas History Functions (hs_xxx)
- */
-/** @defgroup elfunctionc Midas Elog Functions (el_xxx)
- */
 /** @defgroup rpcfunctionc Midas RPC Functions (rpc_xxx)
  */
 /** @defgroup dmfunctionc Midas Dual Buffer Memory Functions (dm_xxx)
@@ -997,7 +991,7 @@ INT cm_asctime(char *str, INT buf_size)
 /********************************************************************/
 /**
 Get time from ss_time on server.
-@param    time string
+@param    t string
 @return   CM_SUCCESS
 */
 INT cm_time(DWORD * t)
@@ -3008,8 +3002,8 @@ tapes.
 \endcode
 @param transition TR_START, TR_PAUSE, TR_RESUME or TR_STOP.
 @param run_number New run number. If zero, use current run number plus one.
-@param perror returned error string.
-@param strsize Size of error string.
+@param errstr returned error string.
+@param errstr_size Size of error string.
 @param async_flag SYNC: synchronization flag (SYNC:wait completion, ASYNC: retun immediately)
 @param debug_flag If 1 output debugging information, if 2 output via cm_msg().
 @return CM_SUCCESS, \<error\> error code from remote client
@@ -13805,7 +13799,6 @@ volatile int _rb_nonblocking = 0;
 Set all rb_get_xx to nonblocking. Needed in multi-thread
 environments for stopping all theads without deadlock
 @return DB_SUCCESS
-
 */
 int rb_set_nonblocking()
 /********************************************************************\
