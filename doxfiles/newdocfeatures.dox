@@ -13,11 +13,12 @@ mention the wish list documentation on current developments.
  
 - Software version: 2.0.0
 
-- <b> [>2.0.0] Nov 01/2007 </b>
+- <b> [>2.0.0] Nov 02/2007 </b>
  - @ref mlogger_task supports zip files for MIDAS format.
  - New environment variable @ref MIDAS_MAX_EVENT_SIZE.
  - @ref lazylogger_task new features (remark).
  - @ref Midas_Library <b> alarm, history, elog </b> functions have been placed in dedicate files.
+ - @ref sc_page new editable field for web display.
 
 - <b> [2.0.0] </b>
  - Update the whole midas package for support of 64 bits machine,
@@ -33,65 +34,8 @@ mention the wish list documentation on current developments.
  - EQ_MULTITHREAD frontend type (see @ref EQ_xxx).
  - @ref rbfunctionc for multi-threading and cascading data transfer.
 
-- <b> [1.9.6] </b>
- - Latest tarball : <a href=http://midas.triumf.ca/download> 1.9.5-x </a>
-  You can retrieve the daily tarball directly from the SVN web interface
-  by clicking on the  "tarball" link at the bottom of the main SVN-midas page.
- - Latest RPM : <a href=http://midas.triumf.ca/download> 1.9.2-1  </a>
-
-- <b> [Before 1.9.6] </b>
- - Switch from CVS to Subversion for Version control, this change affects 
-   @ref quickstart. Check the new checkout/update commands. 
- - New @ref Midas_VME_standard_functions implementation in \b mvmestd.h.
- - \b MIDASSYS environment variable now required for building 
-   /examples/experiment and /examples/hbookexpt
- - New \b /drivers tree structure includes \b camac , \b vme , \b fastbus. 
- - New make option for minimal installation. This permits root installation of
-   mserver, mcleanup, dio and mhttpd only.
-   \code
-   > make minimal_install
-   \endcode
-
-- <b> [1.9.5-2] </b>
- - XML ODB format
- - Separate xml SVN path for building Midas required. This package can be
-   extracted the same way as Midas. It has to reside at the same level as Midas.
-
-- <b> [1.9.5-1] </b>
- - @ref Custom_page improvement. Implementation of external file.html and 
-  dynamic linked graphic to ODB values. 
-- <b> [1.9.5] </b>
- - When upgrading to 1.9.5 , \em ALL midas applications including user
-   applications needs to be rebuild \em AND the \b ODB.SHM (.ODB.SHM) shared
-   memory need to be removed. Prior the removal of the ODB.SHM, the ODB database
-   can be saved in ASCII format for later restoration.
- -  @ref Transition_sequence changed to multiple level scheme.
- -  odbedit_task support of XML format for ODB dump.
- -  Large File support (>2GB) from @ref mlogger_task application.
- -  @ref Folder Root Histogram support within mana.
- -  @ref mevb_task application. 
- -  New @ref frontend_task argument for Event Builder option (-i index). 
-   -  Documentation on "Tests" results from analyzer.
- -  @ref mySQL support from @ref mlogger_task. 
- -  Increase system wide parameters values (see midas.h).
- -  Fix numerous small annoying bugs... 
- -  Improve debugging messages in mserver -d (/tmp/mserver.log). 
-
-- <b> [<1.9.5] </b>
- - In writing
-  -  Epics Slow Control documentation 
-
-  -  Introduce @ref MIDASSYS environment variable
-  -  Analyzer documention revision @ref analyzer_struct
-  -  Watchdog bug fix (RH9.0)
-
-  - <b> Restructured Midas distribution </b>
-   - In the same effort as the documentation, the midas tree and CVS have been  
-     modified. The <a href=http://midas.triumf.ca/download> download area </a> now
-     contains separate directories for doc, add-ons, publications etc.
-
-- <b> [<1.9.5] </b>
-  - Hopefully nobody is still running an older version.
+- <b> [<2.0.0] </b>
+  - Unsupported version.
   
 \htmlonly <img ALIGN="left" alt="previous.gif" src="previous.gif"> \endhtmlonly 
 @ref Top - @ref Top - @ref Intro

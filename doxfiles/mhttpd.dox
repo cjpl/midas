@@ -109,7 +109,7 @@ the \<status> button.
   create string cmd
   ln "/runinfo/run number" run
   create string dest
-  set dest /dev/hda
+  set dest 
   \endcode
 - [Alias Hyperlink] This line will be present on the
   status page only if the ODB tree \b /Alias.
