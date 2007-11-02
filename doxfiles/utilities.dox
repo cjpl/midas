@@ -336,7 +336,10 @@ See the @ref ODB_Logger_Tree for reference on the tree structure.
   - mlogger will not run if started remotely (argument -h hostname has been removed).
   - The file size limitation (<2GB) has been removed for older OS version.
   - @ref mySQL data entry support.
- 
+ - From version >2.0.0
+  - mlogger implements compression such that the data file name can be given as 
+    <b>\<file.mid.gz\></b>
+.
  
 <hr> @section lazylogger_task lazylogger task
 \b lazylogger is an application which decouples the data aquisition from the data logging
@@ -357,6 +360,15 @@ channel. While the \b List- will have a dynamic list of run number which has
 been sucessfully manipulated by the Lazylogger channel.
 This list won't exist until the first successful operation of the channel is completed.
 
+- <b> Remarks >2.0.0</b> 
+ - While lazylogger was developed specifically for tape device, it also supports data file
+  transfer to FTP repository system. Improvement towards a more generic support has been done
+  which includes:
+  - dynamic directory destination based on run number or date.
+  - compression copy.
+  - "stay behind=0" support.
+  - Script copy support.
+ 
 - <b> Arguments </b> 
   - [-h ] : help.
   - [-h hostname ] : host name.
@@ -551,7 +563,7 @@ tape                            DIR
  - For every major operation of the lazylogger a message is sent to the
 Message buffer and will be appended to the default Midas log file (midas.log). These
 messages are the only mean of finding out What/When/Where/How the lazylogger has operated
-on a data file. See below a fragment of the @ref midas.log for the chaos experiment.
+on a data file. See below a fragment of the midas.log for the chaos experiment.
 In this case the \b Maintain free space(%) field was enabled which produces the
 cleanup of the data files and the entry in the \b List tree after copy.
 \code

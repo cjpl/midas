@@ -210,10 +210,13 @@ void process_event(HNDLE hBuf, HNDLE request_id, EVENT_HEADER *pheader, void *pe
 
 <hr> @section Midas_Library Midas Code and Libraries
 
-The Midas libraries are composed of 5 main source code and their corresponding header files.
+The Midas libraries are composed of 5 main source codes and their corresponding header files.
 
 -# @ref midasincludecode : Midas abstract layer.
 -# @ref msystemincludecode : Midas function implementation.
+-# @ref alfunctioncode : Midas Alarm functions.
+-# @ref hsfunctioncode : Midas History functions.
+-# @ref elfunctioncode : Midas Elog functions.
 -# @ref mrpcincludecode : Midas RPC functions.
 -# @ref odbcode : Online Database functions.
 -# @ref ybosincludecode : YBOS specific functions.
@@ -229,6 +232,7 @@ Within these files, all the functions have been categorized depending on their s
 - \b el_xxx(...) : Electronic Log book calls
 - \b hs_xxx(...) : History manipulation calls
 - \b ss_xxx(...) : System calls
+- \b rb_xxx(...) : Ring buffer calls
 - \b ybk_xxx(...) : YBOS bank manipulation
 
 <hr> @section midas_macro MIDAS Macros

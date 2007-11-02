@@ -17,7 +17,7 @@ already available in the package.
 
 - Other flags are avaiable at the application level:
  - @ref HAVE_CAMAC , @ref HAVE_ROOT , @ref HAVE_HBOOK , @ref HAVE_MYSQL , 
-  @ref USE_EVENT_CHANNEL ,  @ref DM_DUAL_THREAD , @ref USE_INT
+  @ref USE_EVENT_CHANNEL ,  @ref DM_DUAL_THREAD , @ref USE_INT , @ref MIDAS_MAX_EVENT_SIZE
 
 - By default the midas applications are built for use with dynamic library 
 \b libmidas.so. If static build is required the whole package can be built using the 
@@ -99,12 +99,23 @@ make CERNLIB_PACK=<your path>/libpacklib.a
 <hr> @section HAVE_MYSQL HAVE_MYSQL
 This flag is used for the @ref mlogger_task to building the application with \em mySQL support.
 The build requires to have access to the mysql include files as well as the mysql library.
+
+<hr> @section MIDAS_MAX_EVENT_SIZE MIDAS_MAX_EVENT_SIZE
+ By default the Midas package is build with the maximum event size set to 4MB (MAX_EVENT_SIZE/midas.h).
+ This parameter is used for event transfer across network as well, therefore it has to be applied to all the 
+ midas client involved in the experiment when different value is required and a complete Midas rebuid
+ needs to be done.
 \code
+> setenv MIDAS_MAX_EVENT_SIZE 8000000
+> make
+cc -c -g -O3 -Wall -Wuninitialized -Iinclude -Idrivers -I../mxml -Llinux/lib -DINCLUDE_FTPLIB  \
+ -DMAX_EVENT_SIZE=800000 -D_LARGEFILE64_SOURCE -DHAVE_MYSQL -I/usr/include/mysql -DHAVE_ROOT -pthread \
+-m64 -I/triumfcs/trshare/olchansk/root/root_v5.12.00_SL42_amd64/include -DHAVE_ZLIB -DOS_LINUX -fPIC \
+-Wno-unused-function -o linux/lib/midas.o src/midas.c
+...
 \endcode
-
-- For operation of the analyzer \b without \b HBOOK or \b ROOT, refer to @ref analyzer_struct
-for further details.
-
+ But at the frontend level, the user can define his own local maximum
+ event size through the \b max_event_size (see frontend examples).
 
 <hr> @section SPECIFIC_OS_PRG SPECIFIC_OS_PRG
 This flag is for internal Makefile preference. Used in particular for additional

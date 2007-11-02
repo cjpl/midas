@@ -559,8 +559,7 @@ advantage of the multi-core processor and free up CPU for other task than pollin
     periodically. No hardware requirements is necessary to trigger the readout function.
     The "poll" field in the equipment declaration is in this case used for periodicity.
   - [@ref EQ_MULTITHREAD] This new equipment type is valid since version 2.0. It implements
-    the multi-threading capability within the frontend code. The polling is performed within
-    a separate thread and uses the ring buffer functions @ref rb_xxx for inter-thread
+    the multi-threading capability within the frontend code. The polling is performed within    a separate thread and uses the ring buffer functions @ref rbfunctionc for inter-thread
     communication.    
   - [@ref EQ_SLOW] Declare the equipment as a Slow Control equipment. This will enable
     the call to the \b idle function part of the class driver.
