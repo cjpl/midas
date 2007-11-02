@@ -88,7 +88,8 @@ void da816_Close(ALPHIDA816 *);
 int  da816_Reset(ALPHIDA816 *);
 int  da816_AddReset(ALPHIDA816 *);
 int  da816_Update(ALPHIDA816 *);
-int  da816_Status(ALPHIDA816 *);
+  //int  da816_Status(ALPHIDA816 *);
+int  da816_Status(ALPHIDA816 *, int mode );
 int  da816_BankSwitch(ALPHIDA816 *, int onoff);
 int  da816_BankActiveRead(ALPHIDA816 *);
 int  da816_ScaleSet(ALPHIDA816 *, double alpha, double beta);
@@ -102,7 +103,7 @@ int  da816_LinLoad(ALPHIDA816 *, double vin, double vout, int npts, int * offset
 int  da816_SampleSet(ALPHIDA816 *, int bank, int sample);
 int  da816_ClkSMEnable(ALPHIDA816 *, int bank);
 int  da816_ClkSMDisable(ALPHIDA816 *, int bank);
-int16_t da816_Volt2Dac(double volt);
+uint16_t da816_Volt2Dac(double volt);
 double da816_Dac2Volt (int16_t dac);
 
 
