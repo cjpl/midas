@@ -15,6 +15,11 @@
 The ESONE CAMAC standard call file
 */
 
+/** @defgroup mesonecode Esone CAMAC standard 
+ */
+/** @defgroup mesonefunctionc Camac Functions (Esone) 
+ */
+
 /**dox***************************************************************/
 #ifndef DOXYGEN_SHOULD_SKIP_THIS
 
@@ -45,6 +50,7 @@ INLINE void came_ext(const int ext, int *b, int *c, int *n, int *a)
    *b = (ext >> 24) & 0x7;
    *c = (ext >> 16) & 0x7;
    *n = (ext >> 8) & 0x1f;
+
    *a = (ext >> 0) & 0xf;
 }
 
@@ -719,3 +725,6 @@ INLINE void csubr(const int f, int ext, int intc[], int cb[])
       --count;
    } while (count);
 }
+
+/**dox***************************************************************/
+/** @} */ /* end of mesonefunctionc */
