@@ -33,6 +33,7 @@ Each section is further described below:
 - @ref Start_page - Run control page
 - @ref ODB_page - Online Database manipulation (equivalent to ODBedit)
 - @ref Equipment_page (Frontend info)
+- @ref sc_page (Equipment info specific to Slow Control)
 - @ref CNAF_page (CAMAC access page)
 - @ref Message_page (Message Log) 
 - @ref Elog_page (Electronic Log)
@@ -224,12 +225,42 @@ The equipment names are linked to their respective \b /Variables sub-tree.
 This permit to access as a shortcut the current values of the equipment.
 In the case the equipment is a slow control equipment, the parameters list may
 be hyperlinked for parameter modification.
-This option is possible only if the parameter names have a particular name syntax
-(see @ref History_System).
+This option is possible only if the parameter names have a particular name syntax (see @ref sc_page and @ref History_System).
 
  * <center> Slow control page.
  *  \image html mhsc.gif
  *  \image latex mhsc.eps "Slow control page." width=12cm
+ * </center> 
+
+<hr> @section sc_page Slow Control page
+The page refers to the specific display of a Slow control equipment (see @ref The_Equipment_Structure). In this case the matching names of the equipment variables defined under "Settings/" will be use to compose a table with the
+"Variables/". Each variable in the table may be editable depending on the follwowing rules
+-# If the variable name is defined as "Demand[]" or "Output[]" or "D_<var_name>" under "Settings/" it will be editable by default.
+-# If the variable name is defined under "Settings" and the variable name is also defined under the array "Settings/Editable[]" it will be editable.
+
+\code
+[local:Default:S]/>cd Equipment/MSCB/Settings/
+[local:Default:S]Settings>ls
+[local:Default:S]Settings>ls
+Names
+                                Drift Voltage (KV)
+                                Drift Current (uA)
+                                uC Temperature (C)
+DD
+Offset
+                                0
+                                1
+                                1
+Gain
+                                0
+                                3
+                                4
+Editable                        Gain
+\endcode
+
+ * <center> Slow control Equipment page.
+ *  \image html mhsceqp.jpg
+ *  \image latex mhsceqp.eps "Slow control Equipment page." width=12cm
  * </center> 
 
 <hr> @section CNAF_page CNAF page
@@ -258,10 +289,8 @@ defined by the experiment.
 <hr> @section Elog_page Elog page
 
 The ELOG page provides access to an electronic logbook. This tool can replace the 
-experimental logbook for daily entries. The main advantage of Elog over paper logbook
-is the possiblity to access it remotely and provide a general knowledge of the experiment.
-In the other hand, Elog is not limited strictly to experiments and worldwide Elog
-implementation can be found on the internet.
+experimental logbook for daily entries. The main advantage of Elog over paper logbook  is the possiblity to access it remotely and provide a general knowledge of the experiment.
+In the other hand, Elog is not limited strictly to experiments and worldwide Elog implementation can be found on the internet.
 
 Since version 2.0.0, Elog comes in two flavors, i.e @ref Internal_Elog where the Elog
 is built in the mhttpd Midas web interface, or @ref External_Elog where the
@@ -269,16 +298,12 @@ Elog runs independently from the experiment and  mhttpd as well.
 While the internal doesn't requires any setup, the latter requires a proper
 Elog installation which is fully described on the
 <a href=http://midas.psi.ch/elog/>Elog</a> web site.
-The External Elog implementation requires to have a dedicated entry in the ODB following
-the code below. It requires also to have the package Elog previously installed and 
-properly configured. Once the ODB entry is existant, the internal ELOG is disabled.
+The External Elog implementation requires to have a dedicated entry in the ODB following the code below. It requires also to have the package Elog previously installed and properly configured. Once the ODB entry is existant, the internal ELOG is disabled.
 
 <hr> @subsection Internal_Elog  Internal Elog
 
-By default the mhttpd provides the internal Elog. The entry destination directory is 
-established by the logger key in ODB (see @ref Elog_Dir)
-The Electronic Log page shows the most recent Log message recorded in the system. The
-top buttons allows you to either Create/Edit/Reply/Query/Show a message
+By default the mhttpd provides the internal Elog. The entry destination directory is established by the logger key in ODB (see @ref Elog_Dir)
+The Electronic Log page shows the most recent Log message recorded in the system. The top buttons allows you to either Create/Edit/Reply/Query/Show a message
 
  * <center> main Elog page.
  *  \image html mhelog.gif
