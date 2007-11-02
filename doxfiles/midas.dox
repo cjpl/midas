@@ -15,7 +15,7 @@
    - <b>Midas</b> is a result of a development effort made by Stefan Ritt at 
      <a HREF=http://www.psi.ch>PSI</a>/Switzerland
      (<a HREF=http://midas.psi.ch>Midas\@PSI</a>) in collaboration with the members of the Data
-     acquisition group at <a HREF=http://www.triumf.org>Triumf</a>/Canada.
+     acquisition group at <a HREF=http://www.triumf.info>Triumf</a>/Canada.
 
    - Midas has a dedicated discussion forum (Electronic logbook) which provides common place for midas
    users to report problems, share experience or post improvement wishes. 
@@ -26,7 +26,7 @@
    accessed from the <b><a HREF=http://savannah.psi.ch/viewcvs/trunk/?root=midas>SVN</a></b>   
    repository site in Switzerland either for inspection or download. 
 
-   - Tar and RPMs are also available either from the <a HREF=http://midas.psi.ch/download/>Switzerland</a>
+   - <b> Tarball </b> are available either from the <a HREF=http://midas.psi.ch/download/>Switzerland</a>
      or <a HREF=http://ladd00.triumf.ca/~daqweb/ftp/>Canadian</a> sites.
    
    - The main purpose of the MIDAS DAQ is to provide:
