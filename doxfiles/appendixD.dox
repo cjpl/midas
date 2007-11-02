@@ -12,7 +12,7 @@ as well as the different @ref Environment_variables options for its operation.
 - By default Midas is build with a minimum of pre-compiler flags. But the @ref Makefile 
 contains options for the user to apply customization by enabling internal options 
 already available in the package.
- - @ref YBOS_VERSION_3_3 , @ref EVID_TWIST , @ref INCLUDE_FTPLIB , @ref INCLUDE_ZLIB , 
+ - @ref YBOS_VERSION_3_3 , EVID_TWIST , @ref INCLUDE_FTPLIB , @ref INCLUDE_ZLIB , 
   @ref SPECIFIC_OS_PRG
 
 - Other flags are avaiable at the application level:
