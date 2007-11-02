@@ -2999,7 +2999,7 @@ INT level1;
 @param index Array index of value.
 @param type Type of key, one of TID_xxx (see @ref Midas_Data_Types)
 @param truncate Truncate array to current index if TRUE
-@return <same as db_set_data_index>
+@return \<same as db_set_data_index\>
 */
 INT db_set_value_index(HNDLE hDB, HNDLE hKeyRoot, char *key_name, void *data,
                  INT data_size, INT index, DWORD type, BOOL truncate)
@@ -3197,7 +3197,7 @@ KEY   key;
 \endcode
 @param hDB          ODB handle obtained via cm_get_experiment_database().
 @param hKey          Handle for key where search starts, zero for root.
-@param index Subkey index, sould be initially 0, then
+@param idx          Subkey index, sould be initially 0, then
                     incremented in each call until
                     *subhKey becomes zero and the function
                     returns DB_NO_MORE_SUBKEYS
@@ -8037,7 +8037,7 @@ its new contents to the local copy of it.
 If called from a server, send a network notification to the client.
 @param hDB          ODB handle obtained via cm_get_experiment_database().
 @param hKey         Handle for key where search starts, zero for root.
-@param socket       optional server socket
+@param s            optional server socket
 @return DB_SUCCESS, DB_INVALID_HANDLE
 */
 INT db_update_record(INT hDB, INT hKey, int s)

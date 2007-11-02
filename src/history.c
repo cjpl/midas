@@ -14,8 +14,11 @@
 #include "strlcpy.h"
 #include <assert.h>
 
+/** @defgroup hsfunctioncode Midas History Functions (hs_xxx)
+ */
+
 /**dox***************************************************************/
-/** @addtogroup hsfunctionc
+/** @addtogroup hsfunctioncode
  *
  *  @{  */
 
@@ -58,8 +61,11 @@ INT hs_set_path(char *path)
    return HS_SUCCESS;
 }
 
+/**dox***************************************************************/
+#ifndef DOXYGEN_SHOULD_SKIP_THIS
 
 /********************************************************************/
+
 /**
 Open history file belonging to certain date. Internal use
            only.
@@ -94,9 +100,6 @@ INT hs_open_file(time_t ltime, char *suffix, INT mode, int *fh)
    
    return HS_SUCCESS;
 }
-
-/**dox***************************************************************/
-#ifndef DOXYGEN_SHOULD_SKIP_THIS
 
 /********************************************************************/
 INT hs_gen_index(DWORD ltime)
@@ -263,7 +266,7 @@ INT hs_search_file(DWORD * ltime, INT direction)
 INT hs_define_event(DWORD event_id, char *name, TAG * tag, DWORD size)
 /********************************************************************\
 
-  Routine: hs_define_evnet
+  Routine: hs_define_event
 
   Purpose: Define a new event for which a history should be recorded.
            This routine must be called before any call to
@@ -375,18 +378,18 @@ INT hs_define_event(DWORD event_id, char *name, TAG * tag, DWORD size)
 
          /* regenerate index if missing */
          if (TELL(fh) > 0 && TELL(fhd) == 0) {
-            close(fh);
-            close(fhi);
-            close(fhd);
-            hs_gen_index(rec.time);
-            hs_open_file(rec.time, "hst", O_RDWR, &fh);
-            hs_open_file(rec.time, "idx", O_RDWR, &fhi);
-            hs_open_file(rec.time, "idf", O_RDWR, &fhd);
-            lseek(fh, 0, SEEK_END);
-            lseek(fhi, 0, SEEK_END);
-            lseek(fhd, 0, SEEK_END);
+	   close(fh);
+	   close(fhi);
+	   close(fhd);
+	   hs_gen_index(rec.time);
+	   hs_open_file(rec.time, "hst", O_RDWR, &fh);
+	   hs_open_file(rec.time, "idx", O_RDWR, &fhi);
+	   hs_open_file(rec.time, "idf", O_RDWR, &fhd);
+	   lseek(fh, 0, SEEK_END);
+	   lseek(fhi, 0, SEEK_END);
+	   lseek(fhd, 0, SEEK_END);
          }
-
+	 
          ltime = (time_t) rec.time;
          tmb = localtime(&ltime);
          tmb->tm_hour = tmb->tm_min = tmb->tm_sec = 0;
@@ -1058,11 +1061,11 @@ INT hs_enum_vars(DWORD ltime, DWORD event_id, char *var_name, DWORD * size, DWOR
    }
    *size = n * NAME_LENGTH;
    *n_size = n * sizeof(DWORD);
-
+   
    M_FREE(tag);
    close(fh);
    close(fhd);
-
+   
    return HS_SUCCESS;
 }
 
@@ -1217,15 +1220,15 @@ INT hs_read(DWORD event_id, DWORD start_time, DWORD end_time,
    char *cache = NULL;
    time_t ltime;
    int rd;
-
+   
    //printf("hs_read event %d, time %d:%d, tagname: \'%s\', varindex: %d\n", event_id, start_time, end_time, tag_name, var_index);
-
+   
 #if 0
    if (rpc_is_remote())
-      return rpc_call(RPC_HS_READ, event_id, start_time, end_time, interval,
-                      tag_name, var_index, time_buffer, tbsize, data_buffer, dbsize, type, n);
+     return rpc_call(RPC_HS_READ, event_id, start_time, end_time, interval,
+		     tag_name, var_index, time_buffer, tbsize, data_buffer, dbsize, type, n);
 #endif
-
+   
    /* if not time given, use present to one hour in past */
    if (start_time == 0)
       start_time = (DWORD) time(NULL) - 3600;
@@ -1550,31 +1553,23 @@ INT hs_read(DWORD event_id, DWORD start_time, DWORD end_time,
    return HS_SUCCESS;
 }
 
+/**dox***************************************************************/
+#endif                          /* DOXYGEN_SHOULD_SKIP_THIS */
 
 /********************************************************************/
-INT hs_dump(DWORD event_id, DWORD start_time, DWORD end_time, DWORD interval, BOOL binary_time)
-/********************************************************************\
-
-  Routine: hs_dump
-
-  Purpose: Display history for a given event at stdout. The output
-           can be redirected to be read by Excel for example.
-
-  Input:
-    DWORD  event_id         Event ID
-    DWORD  start_time       Starting Date/Time
-    DWORD  end_time         End Date/Time
-    DWORD  interval         Minimum time in seconds between reported
+/**
+Display history for a given event at stdout. The output
+can be redirected to be read by Excel for example. 
+@param event_id         Event ID
+@param start_time       Starting Date/Time
+@param end_time         End Date/Time
+@param interval         Minimum time in seconds between reported                                                                                
                             events. Can be used to skip events
-    BOOL   binary_time      Display DWORD time stamp
-  Output:
-    <screen output>
-
-  Function value:
-    HS_SUCCESS              Successful completion
-    HS_FILE_ERROR           Cannot open history file
-
-\********************************************************************/
+@param binary_time      Display DWORD time stamp
+@return HS_SUCCESS, HS_FILE_ERROR
+*/
+/********************************************************************/
+INT hs_dump(DWORD event_id, DWORD start_time, DWORD end_time, DWORD interval, BOOL binary_time)
 {
    DWORD prev_time, last_irec_time;
    time_t ltime;
@@ -1777,6 +1772,8 @@ INT hs_dump(DWORD event_id, DWORD start_time, DWORD end_time, DWORD interval, BO
    return HS_SUCCESS;
 }
 
+/**dox***************************************************************/
+#ifndef DOXYGEN_SHOULD_SKIP_THIS
 
 /********************************************************************/
 INT hs_fdump(char *file_name, DWORD id, BOOL binary_time)
@@ -1859,6 +1856,6 @@ INT hs_fdump(char *file_name, DWORD id, BOOL binary_time)
 #endif                          /* DOXYGEN_SHOULD_SKIP_THIS */
 
 /**dox***************************************************************/
-                                                                                                             /** @} *//* end of hsfunctionc */
+/** @} *//* end of hsfunctioncode */
 
 /**dox***************************************************************/
