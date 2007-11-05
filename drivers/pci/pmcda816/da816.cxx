@@ -86,6 +86,8 @@ int da816_Open(ALPHIDA816 ** da816)
     return -errno;
   }
     }
+  
+  fclose(fp);
 
   //memset((*da816)->data, 0, 0x80000);
 
@@ -104,7 +106,12 @@ Reset  all the registers of the pmcda16
 */
 void da816_Close(ALPHIDA816 * da816)
 {
-  free (da816);
+  munmap(0,0x1000);
+  munmap(0,0x80000);
+
+  if (da816)
+    free (da816);
+  da816 = NULL;
 }
 
 /********************************************************************/
