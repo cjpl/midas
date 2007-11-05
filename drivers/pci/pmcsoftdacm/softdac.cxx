@@ -65,6 +65,8 @@ int softdac_Open(ALPHISOFTDAC ** al)
 	}
     }
 
+  fclose(fp);
+
   // Set initial scaling coefficients
   softdac_ScaleSet(*al, SOFTDAC_RANGE_PM10V, 0., 0.);
 
@@ -76,7 +78,10 @@ int softdac_Open(ALPHISOFTDAC ** al)
 */
 void softdac_Close(ALPHISOFTDAC * al)
 {
-  free (al);
+  munmap(0,0x100000);
+  if (al)
+    free (al);
+  al = NULL;
 }
 
 /********************************************************************/
