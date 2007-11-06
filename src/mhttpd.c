@@ -7258,7 +7258,7 @@ static WORD getVariableId(const char* evname, const char* tagname)
 
       getEventName(evid, xname);
 
-      if (strcasecmp(evname, xname) != 0)
+      if (!equal_ustring((char *)evname, (char *)xname))
          continue;
 
       //printf("key \'%s\', evid %d (%s)\n", key.name, evid, xname);
@@ -8316,7 +8316,7 @@ static void show_hist_config_events_tags(HNDLE hDB, HNDLE hKeyRoot, const char* 
       /* parse event name in format: "event_id" or "event_id:var_name" */
       s = key.name;
       
-      event_id = strtoul(s,&s,0);
+      event_id = (WORD)strtoul(s,&s,0);
       if (event_id == 0)
          continue;
       if (s[0] != 0)
@@ -8395,7 +8395,7 @@ static void show_hist_config_variables_tags(HNDLE hDB, HNDLE hKeyRoot, const cha
       if (strncmp(key.name, "Tags ", 5) != 0)
          continue;
 
-      event_id = strtoul(key.name + 5, NULL, 0);
+      event_id = (WORD)strtoul(key.name + 5, NULL, 0);
       if (event_id == 0)
          continue;
 
@@ -10635,6 +10635,10 @@ void interprete(char *cookie_pwd, char *cookie_wpwd, char *path, int refresh)
             }
          }
 
+         /* clear run abort flag */
+         i = 0;
+         db_set_value(hDB, 0, "/Runinfo/Start abort", &i, sizeof(INT), 1, TID_INT);
+
          i = atoi(value);
          if (i <= 0) {
             cm_msg(MERROR, "interprete", "Start run: invalid run number %d", i);
@@ -10644,9 +10648,13 @@ void interprete(char *cookie_pwd, char *cookie_wpwd, char *path, int refresh)
          }
 
          status = cm_transition(TR_START, i, str, sizeof(str), SYNC, FALSE);
-         if (status != CM_SUCCESS && status != CM_DEFERRED_TRANSITION)
+         if (status != CM_SUCCESS && status != CM_DEFERRED_TRANSITION) {
+            /* set run abort flag */
+            i = 1;
+            db_set_value(hDB, 0, "/Runinfo/Start abort", &i, sizeof(INT), 1, TID_INT);
+
             show_error(str);
-         else
+         } else
             redirect("");
       }
       return;

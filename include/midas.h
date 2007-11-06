@@ -1206,6 +1206,7 @@ typedef struct {
    INT online_mode;                   /**< Mode of operation online/offline */
    INT run_number;                    /**< Current processing run number      */
    INT transition_in_progress;        /**< Intermediate state during transition */
+   INT start_abort;                   /**< Set if run start was aborted */
    INT requested_transition;          /**< Deferred transition request */
    char start_time[32];               /**< ASCII of the last start time */
    DWORD start_time_binary;           /**< Bin of the last start time */
@@ -1219,6 +1220,7 @@ typedef struct {
 "Online Mode = INT : 1",\
 "Run number = INT : 0",\
 "Transition in progress = INT : 0",\
+"Start abort = INT : 0",\
 "Requested transition = INT : 0",\
 "Start time = STRING : [32] Tue Sep 09 15:04:42 1997",\
 "Start time binary = DWORD : 0",\
