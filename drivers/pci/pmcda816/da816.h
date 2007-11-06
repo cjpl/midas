@@ -103,7 +103,7 @@ int  da816_LinLoad(ALPHIDA816 *, double vin, double vout, int npts, int * offset
 int  da816_SampleSet(ALPHIDA816 *, int bank, int sample);
 int  da816_ClkSMEnable(ALPHIDA816 *, int bank);
 int  da816_ClkSMDisable(ALPHIDA816 *, int bank);
-uint16_t da816_Volt2Dac(double volt);
+uint16 da816_Volt2Dac(double volt);
 double da816_Dac2Volt (int16_t dac);
 
 
