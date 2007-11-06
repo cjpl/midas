@@ -141,7 +141,13 @@ Definition of implementation specific constants */
 #undef MAX_EVENT_SIZE
 #define MAX_EVENT_SIZE 4096
 
-#endif                          /* OS_MSDOS */
+#endif /* OS_MSDOS */
+
+#ifdef OS_WINNT
+
+#define snprintf(...) _snprintf(__VA_ARGS__)
+
+#endif /* OS_WINNT */
 
 #ifdef OS_VMS
 
@@ -157,9 +163,9 @@ typedef struct {
 #define FD_CLR(n, p)    ((p)->fds_bits &= ~(1 << (n)))
 #define FD_ISSET(n, p)  ((p)->fds_bits & (1 << (n)))
 #define FD_ZERO(p)      ((p)->fds_bits = 0)
-#endif                          /* FD_SET */
+#endif /* FD_SET */
 
-#endif                          /* OS_VMS */
+#endif /* OS_VMS */
 
 /* Missing #defines in VMS */
 
