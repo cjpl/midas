@@ -2180,124 +2180,91 @@ void command_loop(char *host_name, char *exp_name, char *cmd, char *start_dir)
          } else if (i == STATE_PAUSED) {
             printf("Run is paused, please use \"resume\"\n");
          } else {
-            /* check if transition in progress */
-            i = 0;
-            db_get_value(hDB, 0, "/Runinfo/Transition in progress", &i, &size, TID_INT,
-                         TRUE);
-            if (i == 1) {
-               printf("Start/Stop already in progress, please try again later\n");
-               printf("or set \"/Runinfo/Transition in progress\" manually to zero.\n");
+            /* get present run number */
+            old_run_number = 0;
+            status =
+                db_get_value(hDB, 0, "/Runinfo/Run number", &old_run_number, &size,
+                             TID_INT, TRUE);
+            assert(status == SUCCESS);
+            assert(old_run_number >= 0);
+
+            /* edit run parameter if command is not "start now" */
+            if ((param[1][0] == 'n' && param[1][1] == 'o' && param[1][2] == 'w') ||
+                cmd_mode) {
+               new_run_number = old_run_number + 1;
+               line[0] = 'y';
             } else {
-               /* get present run number */
-               old_run_number = 0;
-               status =
-                   db_get_value(hDB, 0, "/Runinfo/Run number", &old_run_number, &size,
-                                TID_INT, TRUE);
-               assert(status == SUCCESS);
-               assert(old_run_number >= 0);
+               db_find_key(hDB, 0, "/Experiment/Edit on start", &hKey);
+               do {
+                  if (hKey) {
+                     for (i = 0;; i++) {
+                        db_enum_link(hDB, hKey, i, &hSubkey);
 
-               /* edit run parameter if command is not "start now" */
-               if ((param[1][0] == 'n' && param[1][1] == 'o' && param[1][2] == 'w') ||
-                   cmd_mode) {
-                  new_run_number = old_run_number + 1;
-                  line[0] = 'y';
-               } else {
-                  db_find_key(hDB, 0, "/Experiment/Edit on start", &hKey);
-                  do {
-                     if (hKey) {
-                        for (i = 0;; i++) {
-                           db_enum_link(hDB, hKey, i, &hSubkey);
+                        if (!hSubkey)
+                           break;
 
-                           if (!hSubkey)
-                              break;
+                        db_get_key(hDB, hSubkey, &key);
+                        strcpy(str, key.name);
 
-                           db_get_key(hDB, hSubkey, &key);
-                           strcpy(str, key.name);
+                        if (equal_ustring(str, "Edit run number"))
+                           continue;
 
-                           if (equal_ustring(str, "Edit run number"))
-                              continue;
+                        db_enum_key(hDB, hKey, i, &hSubkey);
+                        db_get_key(hDB, hSubkey, &key);
 
-                           db_enum_key(hDB, hKey, i, &hSubkey);
-                           db_get_key(hDB, hSubkey, &key);
+                        size = sizeof(data);
+                        status = db_get_data(hDB, hSubkey, data, &size, key.type);
+                        if (status != DB_SUCCESS)
+                           continue;
 
-                           size = sizeof(data);
-                           status = db_get_data(hDB, hSubkey, data, &size, key.type);
-                           if (status != DB_SUCCESS)
-                              continue;
+                        for (j = 0; j < key.num_values; j++) {
+                           db_sprintf(data_str, data, key.item_size, j, key.type);
+                           sprintf(prompt, "%s : ", str);
 
-                           for (j = 0; j < key.num_values; j++) {
-                              db_sprintf(data_str, data, key.item_size, j, key.type);
-                              sprintf(prompt, "%s : ", str);
+                           strcpy(line, data_str);
+                           in_cmd_edit = TRUE;
+                           cmd_edit(prompt, line, NULL, cmd_idle);
+                           in_cmd_edit = FALSE;
 
-                              strcpy(line, data_str);
-                              in_cmd_edit = TRUE;
-                              cmd_edit(prompt, line, NULL, cmd_idle);
-                              in_cmd_edit = FALSE;
-
-                              if (line[0]) {
-                                 db_sscanf(line, data, &size, j, key.type);
-                                 db_set_data_index(hDB, hSubkey, data, size + 1, j,
-                                                   key.type);
-                              }
+                           if (line[0]) {
+                              db_sscanf(line, data, &size, j, key.type);
+                              db_set_data_index(hDB, hSubkey, data, size + 1, j,
+                                                key.type);
                            }
                         }
                      }
-
-                     /* increment run number */
-                     new_run_number = old_run_number + 1;
-                     printf("Run number [%d]: ", new_run_number);
-                     ss_gets(line, 256);
-                     if (line[0] && atoi(line) > 0)
-                        new_run_number = atoi(line);
-
-                     printf("Are the above parameters correct? ([y]/n/q): ");
-                     ss_gets(line, 256);
-
-                  } while (line[0] == 'n' || line[0] == 'N');
-               }
-
-               if (line[0] != 'q' && line[0] != 'Q') {
-                  /* start run */
-                  printf("Starting run #%d\n", new_run_number);
-
-                  i = 1;
-                  status =
-                      db_set_value(hDB, 0, "/Runinfo/Transition in progress", &i,
-                                   sizeof(INT), 1, TID_INT);
-                  assert(status == SUCCESS);
-
-                  /* clear run abort flag */
-                  i = 0;
-                  status = db_set_value(hDB, 0, "/Runinfo/Start abort", &i,
-                                        sizeof(INT), 1, TID_INT);
-                  assert(status == SUCCESS);
-
-                  assert(new_run_number > 0);
-
-                  status =
-                      cm_transition(TR_START, new_run_number, str, sizeof(str), SYNC,
-                                    debug_flag);
-                  if (status != CM_SUCCESS) {
-                     /* in case of error, reset run number */
-                     status =
-                         db_set_value(hDB, 0, "/Runinfo/Run number", &old_run_number,
-                                      sizeof(old_run_number), 1, TID_INT);
-                     assert(status == SUCCESS);
-
-                     /* signal run abort */
-                     i = 1;
-                     status = db_set_value(hDB, 0, "/Runinfo/Start abort", &i,
-                                           sizeof(INT), 1, TID_INT);
-                     assert(status == SUCCESS);
-
-                     printf("Error: %s\n", str);
                   }
 
-                  i = 0;
+                  /* increment run number */
+                  new_run_number = old_run_number + 1;
+                  printf("Run number [%d]: ", new_run_number);
+                  ss_gets(line, 256);
+                  if (line[0] && atoi(line) > 0)
+                     new_run_number = atoi(line);
+
+                  printf("Are the above parameters correct? ([y]/n/q): ");
+                  ss_gets(line, 256);
+
+               } while (line[0] == 'n' || line[0] == 'N');
+            }
+
+            if (line[0] != 'q' && line[0] != 'Q') {
+               /* start run */
+               printf("Starting run #%d\n", new_run_number);
+
+               assert(new_run_number > 0);
+
+               status =
+                   cm_transition(TR_START, new_run_number, str, sizeof(str), SYNC,
+                                 debug_flag);
+               if (status != CM_SUCCESS) {
+                  /* in case of error, reset run number */
                   status =
-                      db_set_value(hDB, 0, "/Runinfo/Transition in progress", &i,
-                                   sizeof(INT), 1, TID_INT);
+                      db_set_value(hDB, 0, "/Runinfo/Run number", &old_run_number,
+                                   sizeof(old_run_number), 1, TID_INT);
                   assert(status == SUCCESS);
+
+                  printf("Error: %s\n", str);
                }
             }
          }
@@ -2308,48 +2275,30 @@ void command_loop(char *host_name, char *exp_name, char *cmd, char *start_dir)
          debug_flag = ((param[1][0] == '-' && param[1][1] == 'v') ||
                        (param[2][0] == '-' && param[2][1] == 'v'));
 
-         /* check if transition in progress */
-         i = 0;
-         size = sizeof(INT);
-         db_get_value(hDB, 0, "/Runinfo/Transition in progress", &i, &size, TID_INT,
-                      TRUE);
-         if (i == 1) {
-            printf("Start/Stop already in progress, please try again later\n");
-            printf("or set \"/Runinfo/Transition in progress\" manually to zero.\n");
-         } else {
-            /* check if run is stopped */
-            state = STATE_STOPPED;
-            size = sizeof(i);
-            db_get_value(hDB, 0, "/Runinfo/State", &state, &size, TID_INT, TRUE);
-            str[0] = 0;
-            if (state == STATE_STOPPED && !cmd_mode) {
-               printf("Run is already stopped. Stop again? (y/[n]) ");
-               ss_gets(str, 256);
-            }
-            if (str[0] == 'y' || state != STATE_STOPPED || cmd_mode) {
-               i = 1;
-               db_set_value(hDB, 0, "/Runinfo/Transition in progress", &i, sizeof(INT), 1,
-                            TID_INT);
+         /* check if run is stopped */
+         state = STATE_STOPPED;
+         size = sizeof(i);
+         db_get_value(hDB, 0, "/Runinfo/State", &state, &size, TID_INT, TRUE);
+         str[0] = 0;
+         if (state == STATE_STOPPED && !cmd_mode) {
+            printf("Run is already stopped. Stop again? (y/[n]) ");
+            ss_gets(str, 256);
+         }
+         if (str[0] == 'y' || state != STATE_STOPPED || cmd_mode) {
+            if (param[1][0] == 'n')
+               status =
+                   cm_transition(TR_STOP | TR_DEFERRED, 0, str, sizeof(str), SYNC,
+                                 debug_flag);
+            else
+               status = cm_transition(TR_STOP, 0, str, sizeof(str), SYNC, debug_flag);
 
-               if (param[1][0] == 'n')
-                  status =
-                      cm_transition(TR_STOP | TR_DEFERRED, 0, str, sizeof(str), SYNC,
-                                    debug_flag);
-               else
-                  status = cm_transition(TR_STOP, 0, str, sizeof(str), SYNC, debug_flag);
-
-               if (status == CM_DEFERRED_TRANSITION)
-                  printf("%s\n", str);
-               else if (status == CM_TRANSITION_IN_PROGRESS)
-                  printf
-                      ("Deferred stop already in progress, enter \"stop now\" to force stop\n");
-               else if (status != CM_SUCCESS)
-                  printf("Error: %s\n", str);
-
-               i = 0;
-               db_set_value(hDB, 0, "/Runinfo/Transition in progress", &i, sizeof(INT), 1,
-                            TID_INT);
-            }
+            if (status == CM_DEFERRED_TRANSITION)
+               printf("%s\n", str);
+            else if (status == CM_TRANSITION_IN_PROGRESS)
+               printf
+                   ("Deferred stop already in progress, enter \"stop now\" to force stop\n");
+            else if (status != CM_SUCCESS)
+               printf("Error: %s\n", str);
          }
       }
 

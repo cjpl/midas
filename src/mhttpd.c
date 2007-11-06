@@ -10635,10 +10635,6 @@ void interprete(char *cookie_pwd, char *cookie_wpwd, char *path, int refresh)
             }
          }
 
-         /* clear run abort flag */
-         i = 0;
-         db_set_value(hDB, 0, "/Runinfo/Start abort", &i, sizeof(INT), 1, TID_INT);
-
          i = atoi(value);
          if (i <= 0) {
             cm_msg(MERROR, "interprete", "Start run: invalid run number %d", i);
@@ -10649,10 +10645,6 @@ void interprete(char *cookie_pwd, char *cookie_wpwd, char *path, int refresh)
 
          status = cm_transition(TR_START, i, str, sizeof(str), SYNC, FALSE);
          if (status != CM_SUCCESS && status != CM_DEFERRED_TRANSITION) {
-            /* set run abort flag */
-            i = 1;
-            db_set_value(hDB, 0, "/Runinfo/Start abort", &i, sizeof(INT), 1, TID_INT);
-
             show_error(str);
          } else
             redirect("");

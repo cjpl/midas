@@ -3049,6 +3049,24 @@ INT cm_transition(INT transition, INT run_number, char *errstr, INT errstr_size,
       abort();
    }
 
+   /* check if transition in progress */
+   i = 0;
+   size = sizeof(i);
+   db_get_value(hDB, 0, "/Runinfo/Transition in progress", &i, &size, TID_INT, TRUE);
+   if (i == 1) {
+      strlcpy(errstr, "Start/Stop already in progress, please try again later\n", errstr_size);
+      strlcat(errstr, "or set \"/Runinfo/Transition in progress\" manually to zero.\n", errstr_size);
+      return CM_TRANSITION_IN_PROGRESS;
+   }
+
+   /* indicate transition in progress */
+   i = 1;
+   db_set_value(hDB, 0, "/Runinfo/Transition in progress", &i, sizeof(INT), 1, TID_INT);
+
+   /* clear run abort flag */
+   i = 0;
+   db_set_value(hDB, 0, "/Runinfo/Start abort", &i, sizeof(INT), 1, TID_INT);
+
    /* Set new run number in ODB */
    if (transition == TR_START) {
       if (debug_flag == 1)
@@ -3076,7 +3094,7 @@ INT cm_transition(INT transition, INT run_number, char *errstr, INT errstr_size,
       }
 
       /* check if deferred transition already in progress */
-      size = sizeof(INT);
+      size = sizeof(i);
       db_get_value(hDB, 0, "/Runinfo/Requested transition", &i, &size, TID_INT, TRUE);
       if (i) {
          if (errstr != NULL)
@@ -3311,6 +3329,12 @@ INT cm_transition(INT transition, INT run_number, char *errstr, INT errstr_size,
             memcpy(errstr, error, (INT) strlen(error) + 1 < errstr_size ? (INT) strlen(error) + 1 : errstr_size);
 
          if (status != CM_SUCCESS) {
+            /* indicate abort */
+            i = 1;
+            db_set_value(hDB, 0, "/Runinfo/Start abort", &i, sizeof(INT), 1, TID_INT);
+            i = 0;
+            db_set_value(hDB, 0, "/Runinfo/Transition in progress", &i, sizeof(INT), 1, TID_INT);
+
             free(tr_client);
             return status;
          }
@@ -3335,6 +3359,13 @@ INT cm_transition(INT transition, INT run_number, char *errstr, INT errstr_size,
                    tr_client[idx].client_name, tr_client[idx].host_name, tr_client[idx].port, status);
             if (errstr != NULL)
                strlcpy(errstr, "Cannot connect to client", errstr_size);
+
+            /* indicate abort */
+            i = 1;
+            db_set_value(hDB, 0, "/Runinfo/Start abort", &i, sizeof(INT), 1, TID_INT);
+            i = 0;
+            db_set_value(hDB, 0, "/Runinfo/Transition in progress", &i, sizeof(INT), 1, TID_INT);
+
             return status;
          }
 
@@ -3388,6 +3419,12 @@ INT cm_transition(INT transition, INT run_number, char *errstr, INT errstr_size,
          }
 
          if (status != CM_SUCCESS) {
+            /* indicate abort */
+            i = 1;
+            db_set_value(hDB, 0, "/Runinfo/Start abort", &i, sizeof(INT), 1, TID_INT);
+            i = 0;
+            db_set_value(hDB, 0, "/Runinfo/Transition in progress", &i, sizeof(INT), 1, TID_INT);
+
             free(tr_client);
             return status;
          }
@@ -3476,8 +3513,13 @@ INT cm_transition(INT transition, INT run_number, char *errstr, INT errstr_size,
       }
    }
 
+
+   /* indicate success */
+   i = 0;
+   db_set_value(hDB, 0, "/Runinfo/Transition in progress", &i, sizeof(INT), 1, TID_INT);
+
    if (errstr != NULL)
-     strlcpy(errstr, "Success", errstr_size);
+      strlcpy(errstr, "Success", errstr_size);
 
    return CM_SUCCESS;
 }
