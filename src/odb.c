@@ -3002,7 +3002,7 @@ INT level1;
 @return \<same as db_set_data_index\>
 */
 INT db_set_value_index(HNDLE hDB, HNDLE hKeyRoot, char *key_name, void *data,
-                 INT data_size, INT index, DWORD type, BOOL truncate)
+                 INT data_size, INT idx, DWORD type, BOOL trunc)
 {
    HNDLE hkey;
 
@@ -3012,10 +3012,10 @@ INT db_set_value_index(HNDLE hDB, HNDLE hKeyRoot, char *key_name, void *data,
       db_find_key(hDB, hKeyRoot, key_name, &hkey);
       assert(hkey);
    }
-   if (truncate)
-      db_set_num_values(hDB, hkey, index+1);
+   if (trunc)
+      db_set_num_values(hDB, hkey, idx+1);
 
-   return db_set_data_index(hDB, hkey, data, data_size, index, type);
+   return db_set_data_index(hDB, hkey, data, data_size, idx, type);
 }
 
 /********************************************************************/
