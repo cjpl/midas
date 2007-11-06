@@ -1194,7 +1194,7 @@ Function value:
    DWORD cp_time;
    DIRLOG *pdirlog = NULL;
    INT *pdonelist = NULL;
-   INT size, cur_state_run, cur_acq_run, status, tobe_backup, purun;
+   INT size, cur_state_run, cur_acq_run, status, tobe_backup, purun, flag;
    double freepercent, svfree;
    char str[MAX_FILE_PATH], pufile[MAX_FILE_PATH], inffile[MAX_FILE_PATH], outffile[MAX_FILE_PATH];
    BOOL donepurge, watchdog_flag;
@@ -1310,10 +1310,23 @@ Function value:
    assert(status == SUCCESS);
 
    /* In case it is the current run make sure 
-      1) the run has been ended
-      2) nothing else for now
+      1) no transition is in progress
+      2) the run start has not been aborted
+      3) the run has been ended
     */
    if (tobe_backup == cur_acq_run) {
+      size = sizeof(flag);
+      status = db_get_value(hDB, 0, "Runinfo/Transition in progress", &flag, &size, TID_INT, FALSE);
+      assert(status == SUCCESS);
+      if (flag)
+         return NOTHING_TODO;
+
+      size = sizeof(flag);
+      status = db_get_value(hDB, 0, "Runinfo/Start abort", &flag, &size, TID_INT, FALSE);
+      assert(status == SUCCESS);
+      if (flag)
+         return NOTHING_TODO;
+
       status = db_get_value(hDB, 0, "Runinfo/State", &cur_state_run, &size, TID_INT, FALSE);
       assert(status == SUCCESS);
       if ((cur_state_run != STATE_STOPPED))
