@@ -2266,6 +2266,12 @@ void command_loop(char *host_name, char *exp_name, char *cmd, char *start_dir)
                                    sizeof(INT), 1, TID_INT);
                   assert(status == SUCCESS);
 
+                  /* clear run abort flag */
+                  i = 0;
+                  status = db_set_value(hDB, 0, "/Runinfo/Start abort", &i,
+                                        sizeof(INT), 1, TID_INT);
+                  assert(status == SUCCESS);
+
                   assert(new_run_number > 0);
 
                   status =
@@ -2276,6 +2282,12 @@ void command_loop(char *host_name, char *exp_name, char *cmd, char *start_dir)
                      status =
                          db_set_value(hDB, 0, "/Runinfo/Run number", &old_run_number,
                                       sizeof(old_run_number), 1, TID_INT);
+                     assert(status == SUCCESS);
+
+                     /* signal run abort */
+                     i = 1;
+                     status = db_set_value(hDB, 0, "/Runinfo/Start abort", &i,
+                                           sizeof(INT), 1, TID_INT);
                      assert(status == SUCCESS);
 
                      printf("Error: %s\n", str);
