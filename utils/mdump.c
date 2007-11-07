@@ -136,7 +136,7 @@ int replog(int data_fmt, char *rep_file, int bl, int action)
                printf("mdump recompose error %i\n", status);
          if (action == REP_LENGTH)
             status = yb_any_all_info_display(D_EVTLEN);
-         if (action == REP_BANKLIST) {
+         if ((action == REP_BANKLIST) || (disp_bank_list == 1)) {
             if (data_fmt == FORMAT_YBOS)
                status = ybk_list((DWORD *) pmyevt, banklist);
             else if (data_fmt == FORMAT_MIDAS) {
@@ -398,6 +398,8 @@ int main(int argc, char **argv)
             debug = TRUE;
          else if (strncmp(argv[i], "-single", 7) == 0)
             single = 1;
+         else if (strncmp(argv[i], "-j", 2) == 0)
+            disp_bank_list = 1;
          else if (argv[i][0] == '-') {
             if (i + 1 >= argc || argv[i + 1][0] == '-')
                goto repusage;
@@ -462,17 +464,19 @@ int main(int argc, char **argv)
                    ("                  -b bank name    : search for bank name (case sensitive)\n");
                printf("                  -i evt_id (any) : event id from the FE\n");
                printf
-                   ("                  -single         : Request single bank only (to be used with -b)\n");
+                   ("                  -[single]       : Request single bank only (to be used with -b)\n");
+               printf
+                   ("                  -j              : Display # of banks and bank name list only for all the event\n");
                printf
                    ("                  -k mask (any)   : trigger_mask from FE setting\n");
                printf
                    (">>> -i and -k are valid for YBOS ONLY if EVID bank is present in the event\n");
+               printf("                  -w what         : [h]eader, [r]ecord, [l]ength\n");
+               printf("                                    [e]vent, [j]bank_list (same as -j)\n");
                printf
-                   ("                  -w what         : Header, Record, Length, Event, Jbank_list\n");
+                   (">>> Header & Record are not supported for MIDAS as no physical record structure exists\n");
                printf
-                   (">>> Header & Record are not supported for MIDAS as no physical record structure\n");
-               printf
-                   ("                  -f format (auto): data representation (x/d/ascii) def:bank header content\n");
+                   ("                  -f format (auto): data representation ([x]/[d]/[a]scii) def:bank header content\n");
                printf
                    ("                  -p path (null)  : path for file composition (see -c)\n");
                printf("                  -t type (auto)  : Bank format (Midas/Ybos)\n");
@@ -555,10 +559,9 @@ int main(int argc, char **argv)
              usage:
                printf("mdump for online  -l #            : display # events (look 1)\n");
                printf
-                   ("                  -f format (auto): data representation (x/d/ascii) def:bank header content\n");
+                   ("                  -f format (auto): data representation ([x]/[d]/[a]scii) def:bank header content\n");
                printf
                    ("                  -p path (null)  : path for file composition (see -c)\n");
-               printf("                  -t type (auto)  : Bank format (Midas/Ybos)\n");
                printf
                    ("                  -c compose      : retrieve file from event (Addrun#/Norun#)\n");
                printf
@@ -566,7 +569,7 @@ int main(int argc, char **argv)
                printf
                    ("                  -m mode         : Display mode either Bank or raw\n");
                printf
-                   ("                  -j              : Display # of banks and bank name list only\n");
+                   ("                  -j              : Display # of banks and bank name list only for all the event\n");
                printf
                    ("                  -b bank name    : search for bank name (case sensitive)\n");
                printf("                  -i evt_id (any) : event id from the FE\n");
@@ -579,12 +582,13 @@ int main(int argc, char **argv)
                printf(">>> in case of -c it is recommented to used -g all\n");
                printf
                    ("                  -s              : speed test for connection test\n");
+               printf("                  -t type (auto)  : Bank format (Midas/Ybos)\n");
                printf
                    ("                  -x Source       : Data source selection def:online (see -x -h)\n");
                printf
                    ("                  -y              : Serial number consistency check\n");
                printf(">>> in case of -y it is recommented to used -g all\n");
-               printf("                  -z buffer name  : Midas buffer name(SYSTEM)\n");
+               printf("                  -z buffer name  : Midas buffer name default:[SYSTEM]\n");
                printf("                  [-h Hostname] [-e Experiment]\n\n");
                return 0;
             }
