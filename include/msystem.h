@@ -143,12 +143,6 @@ Definition of implementation specific constants */
 
 #endif /* OS_MSDOS */
 
-#ifdef OS_WINNT
-
-#define snprintf(...) _snprintf(__VA_ARGS__)
-
-#endif /* OS_WINNT */
-
 #ifdef OS_VMS
 
 #define closesocket(s) close(s)

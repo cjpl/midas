@@ -8437,14 +8437,14 @@ static void show_hist_config_variables_tags(HNDLE hDB, HNDLE hKeyRoot, const cha
          } else {
             int ii;
             for (ii=0; ii<array; ii++) {
-               char vvv[NAME_LENGTH];
-               snprintf(vvv, sizeof(vvv), "%s[%d]", var_name, ii);
+               char vvv[256];
+               sprintf(vvv, "%s[%d]", var_name, ii);
 
                selected = "";
                if (equal_ustring(vvv, selectedTag))
                   selected = "selected";
 
-               snprintf(vvv, sizeof(vvv), "%s[%d]", var_name, ii);
+               sprintf(vvv, "%s[%d]", var_name, ii);
 
                rsprintf("<option %s value=\"%s\">%s\n", selected, vvv, vvv);
             }
