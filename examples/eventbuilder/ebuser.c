@@ -174,7 +174,7 @@ For YBOS format, use the following example.
   *pdata++ = 0x87654321;
   *dest_size = ybk_close(pevent, pdata);
   *dest_size *= 4;
-  pheader->data_size = *dest_size + sizeof(YBOS_BANK_HEADER);
+  pheader->data_size = *dest_size;
 \endcode
 @param nfrag Number of fragment.
 @param mismatch Midas Serial number mismatch flag.
@@ -212,7 +212,7 @@ INT eb_user(INT nfrag, BOOL mismatch, EBUILDER_CHANNEL * ebch
     *pdata++ = ((EVENT_HEADER *) ebch[i].pfragment)->time_stamp;
   }
   *dest_size = bk_close(pevent, pdata);
-  pheader->data_size = *dest_size + sizeof(EVENT_HEADER);
+  pheader->data_size = *dest_size;
 
 
   //
