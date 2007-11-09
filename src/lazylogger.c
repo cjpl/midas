@@ -48,12 +48,12 @@ Tape Data Append = BOOL : y\n\
 "
 #define LAZY_STATISTICS_STRING "\
 Backup file = STRING : [128] none \n\
-File size (Bytes) = FLOAT : 0.0\n\
-KBytes copied = FLOAT : 0.0\n\
-Total Bytes copied = FLOAT : 0.0\n\
-Copy progress (%) = FLOAT : 0\n\
-Copy Rate (Bytes per s) = FLOAT : 0\n\
-Backup status (%) = FLOAT : 0\n\
+File size (Bytes) = DOUBLE : 0.0\n\
+KBytes copied = DOUBLE : 0.0\n\
+Total Bytes copied = DOUBLE : 0.0\n\
+Copy progress (%) = DOUBLE : 0\n\
+Copy Rate (Bytes per s) = DOUBLE : 0\n\
+Backup status (%) = DOUBLE : 0\n\
 Number of Files = INT : 0\n\
 Current Lazy run = INT : 0\n\
 "
@@ -71,7 +71,7 @@ typedef struct {
   char command[64];            /* command to run after rewind */
   char path[MAX_FILE_PATH];    /* backup device name */
   float capacity;              /* backup device max byte size */
-  char backlabel[MAX_FILE_PATH];       /* label of the array in ~/list. if empty like active = 0 */
+  char backlabel[MAX_FILE_PATH]; /* label of the array in ~/list. if empty like active = 0 */
   char commandBefore[64];      /* command to run Before writing a file */
   char commandAfter[64];       /* command to run After writing a file */
   char modulo[8];              /* Modulo for multiple lazy client */
@@ -80,13 +80,13 @@ typedef struct {
 LAZY_SETTING lazy;
 
 typedef struct {
-  char backfile[MAX_FILE_PATH];        /* current or last lazy file done (for info only) */
-  float file_size;             /* file size in bytes */
-  float cur_size;              /* current bytes copied */
-  float cur_dev_size;          /* Total bytes backup on device */
-  float progress;              /* copy % */
-  float copy_rate;             /* copy rate Kb/s */
-  float bckfill;               /* backup fill % */
+  char backfile[MAX_FILE_PATH];  /* current or last lazy file done (for info only) */
+  double file_size;            /* file size in bytes */
+  double cur_size;             /* current bytes copied */
+  double cur_dev_size;         /* Total bytes backup on device */
+  double progress;             /* copy % */
+  double copy_rate;            /* copy rate Kb/s */
+  double bckfill;              /* backup fill % */
   INT nfiles;                  /* # of backuped files */
   INT cur_run;                 /* current or last lazy run number done (for info only) */
 } LAZY_STATISTICS;
@@ -108,7 +108,7 @@ INT channel = -1;
 /* Globals */
 INT lazy_mutex;
 HNDLE hDB, hKey, pcurrent_hKey;
-float lastsz;
+double lastsz;
 HNDLE hKeyst;
 INT run_state, tot_do_size, tot_dirlog_size, hDev;
 BOOL zap_flag, msg_flag;
@@ -197,19 +197,19 @@ INT lazy_log_update(INT action, INT run, char *label, char *file, DWORD perf_tim
 
     if (equal_ustring(lazy.type, "FTP"))
       sprintf(str, "%s: (cp:%.1fs) %s %1.3lfMB file COPIED",
-      label, (float) perf_time / 1000., lazyst.backfile, lazyst.file_size / 1024.0 / 1024.0);
+      label, (double) perf_time / 1000., lazyst.backfile, lazyst.file_size / 1024.0 / 1024.0);
     else if (equal_ustring(lazy.type, "Disk")) {
       if (lazy.path[0] != 0)
         if (lazy.path[strlen(lazy.path) - 1] != DIR_SEPARATOR)
           strcat(lazy.path, DIR_SEPARATOR_STR);
       sprintf(str, "%s[%i] (cp:%.1fs) %s%s %1.3lfMB  file NEW",
-        label, lazyst.nfiles, (float) perf_time / 1000.,
+        label, lazyst.nfiles, (double) perf_time / 1000.,
         lazy.path, lazyst.backfile, lazyst.file_size / 1024.0 / 1024.0);
     } else if (equal_ustring(lazy.type, "Tape")) {
       blocks = (int) (lazyst.cur_dev_size / 32.0 / 1024.0) + lazyst.nfiles;
       /* June 2002, use variable blockn from the real tape position */
       sprintf(str, "%s[%i] (cp:%.1fs) %s/%s %1.3lfMB  file NEW (position at block %d)",
-        label, lazyst.nfiles, (float) perf_time / 1000.,
+        label, lazyst.nfiles, (double) perf_time / 1000.,
         lazy.path, lazyst.backfile, lazyst.file_size / 1024.0 / 1024.0, blockn);
       if (lazy.commandAfter[0]) {
         char cmd[256];
@@ -883,7 +883,7 @@ FALSE          condition FALSE (hold the copy)
 \********************************************************************/
 {
   KEY key;
-  float value;
+  double value;
   double lcond_value;
   INT size, index, status;
   char str[128], left[64], right[64];
@@ -916,7 +916,7 @@ FALSE          condition FALSE (hold the copy)
     }
 
     /* convert value */
-    value = (float) (atoi(right));
+    value = (double) (atoi(right));
 
     status = db_find_key(hDB, 0, left, &hKey);
     if (status != DB_SUCCESS) {
@@ -940,8 +940,8 @@ FALSE          condition FALSE (hold the copy)
     return TRUE;
     */
     /* perform condition check */
-    if (((*pc == '>') && ((float) lcond_value > value)) ||
-      ((*pc == '=') && ((float) lcond_value == value)) || ((*pc == '<') && ((float) lcond_value < value)))
+    if (((*pc == '>') && ((double) lcond_value > value)) ||
+      ((*pc == '=') && ((double) lcond_value == value)) || ((*pc == '<') && ((double) lcond_value < value)))
       return TRUE;
     else
       return FALSE;
@@ -1097,8 +1097,8 @@ Function value:
             return status;
           return (FORCE_EXIT);
         }
-        lazyst.cur_size += (float) szlazy;
-        lazyst.cur_dev_size += (float) szlazy;
+        lazyst.cur_size += (double) szlazy;
+        lazyst.cur_dev_size += (double) szlazy;
         if ((ss_millitime() - cpy_loop_time) > 2000) {
           /* update statistics */
           lazy_statistics_update(cpy_loop_time);
@@ -1170,7 +1170,7 @@ FALSE          file not found
   if (ss_file_find(dir, file, &list) == 1) {
     strcat(fullfile, dir);
     strcat(fullfile, file);
-    if ((lazyst.file_size = (float) (ss_file_size(fullfile))) > 0) {
+    if ((lazyst.file_size = (double) (ss_file_size(fullfile))) > 0) {
       free(list);
       return TRUE;
     }
