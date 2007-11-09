@@ -651,7 +651,7 @@ void read_hv(unsigned char channel)
    float xdata hv;
 
    /* read voltage channel */
-   if (!adc_read(channel*2, &hv))
+   if (!adc_read(channel, &hv))
       return;
 
    /* convert to HV */
