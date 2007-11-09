@@ -968,7 +968,7 @@ void show_status_page(int refresh, char *cookie_wpwd)
    char *trans_name[] = { "Start", "Stop", "Pause", "Resume" };
    time_t now, difftime;
    double analyzed, analyze_ratio, d;
-   float value;
+   double value;
    HNDLE hDB, hkey, hLKey, hsubkey, hkeytmp;
    KEY key;
    BOOL ftp_mode, previous_mode;
@@ -1576,7 +1576,7 @@ void show_status_page(int refresh, char *cookie_wpwd)
 
                   size = sizeof(value);
                   db_get_value(hDB, hLKey, "Statistics/Copy progress (%)", &value, &size,
-                               TID_FLOAT, TRUE);
+                               TID_DOUBLE, TRUE);
                   rsprintf("<td align=center>%1.0f %%", value);
 
                   size = sizeof(str);
@@ -1587,8 +1587,8 @@ void show_status_page(int refresh, char *cookie_wpwd)
                   if (ftp_mode) {
                      size = sizeof(value);
                      db_get_value(hDB, hLKey, "Statistics/Copy Rate (Bytes per s)",
-                                  &value, &size, TID_FLOAT, TRUE);
-                     rsprintf("<td align=center>%1.1f", value / 1024.0f);
+                                  &value, &size, TID_DOUBLE, TRUE);
+                     rsprintf("<td align=center>%1.1f", value / 1024.0);
                   } else {
                      size = sizeof(i);
                      db_get_value(hDB, hLKey, "/Statistics/Number of files", &i, &size,
@@ -1598,7 +1598,7 @@ void show_status_page(int refresh, char *cookie_wpwd)
 
                   size = sizeof(value);
                   db_get_value(hDB, hLKey, "Statistics/Backup status (%)", &value, &size,
-                               TID_FLOAT, TRUE);
+                               TID_DOUBLE, TRUE);
                   rsprintf("<td align=center>%1.1f %%", value);
                   k++;
                }
