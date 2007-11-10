@@ -65,10 +65,8 @@ int softdac_Open(ALPHISOFTDAC ** al)
 	}
     }
 
-  fclose(fp);
-
   // Set initial scaling coefficients
-  softdac_ScaleSet(*al, SOFTDAC_RANGE_PM10V, 0., 0.);
+  softdac_ScaleSet(*al, SOFTDAC_RANGE_PM10V, 0., 0., 1);
 
   return 0;
 }
@@ -78,10 +76,7 @@ int softdac_Open(ALPHISOFTDAC ** al)
 */
 void softdac_Close(ALPHISOFTDAC * al)
 {
-  munmap(0,0x100000);
-  if (al)
-    free (al);
-  al = NULL;
+  free (al);
 }
 
 /********************************************************************/
@@ -92,7 +87,7 @@ Only one set of param for all the channels.
 @param beta  conversion offset coeff
 @return int
 */
-int softdac_ScaleSet(ALPHISOFTDAC * al, int range, double alpha, double beta)
+int softdac_ScaleSet(ALPHISOFTDAC * al, int range, double alpha, double beta, int flag)
 {
   switch (range) {
   case SOFTDAC_RANGE_P5V:
@@ -126,7 +121,10 @@ int softdac_ScaleSet(ALPHISOFTDAC * al, int range, double alpha, double beta)
   }
 
   if (range != SOFTDAC_SET_COEF) {
-    SOFTDAC_D16(al->regs+SOFTDAC_CMD_REG)      =  0x10 | range;
+    for (int i =0;i<8;i++) {
+      SOFTDAC_D16(al->regs+SOFTDAC_CMD_REG)      =  0x10 | range;
+      SOFTDAC_D16(al->regs+SOFTDAC_DAC0102+2*i)   =  0x0;
+    }
     SOFTDAC_D16(al->regs+SOFTDAC_CMD_REG)      =  0x02;
   }
 
@@ -630,7 +628,7 @@ int main(int argc,char* argv[])
     samples = 10;
     softdac_Setup(al, samples, 2);
     
-    softdac_ScaleSet(al, SOFTDAC_RANGE_PM10V,  10.0/32767., -10.0);
+    softdac_ScaleSet(al, SOFTDAC_RANGE_PM10V,  10.0/32767., -10.0, 1);
     printf("alpha:%e  --  offset:%e\n", al->alpha, al->beta);
     for (i=chan;;) {
       ddout = -10.0;
@@ -651,7 +649,7 @@ int main(int argc,char* argv[])
     samples = 0;
     softdac_Setup(al, samples, 2);
 
-    softdac_ScaleSet(al, SOFTDAC_RANGE_PM10V, 10.0/32767., 0.0);
+    softdac_ScaleSet(al, SOFTDAC_RANGE_PM10V, 10.0/32767., 0.0, 1);
     printf("alpha:%e  --  offset:%e\n", al->alpha, al->beta);
 
     for (i=0;i<8;i++) {
@@ -669,7 +667,8 @@ int main(int argc,char* argv[])
   float fdin  = atof(argv[2]);
   softdac_Reset(al);
   softdac_Setup(al, npts, 1);
-  softdac_ScaleSet(al, SOFTDAC_RANGE_PM10V, 0., 0.);
+  softdac_ScaleSet(al, SOFTDAC_RANGE_PM10V, 0., 0., 0);
+  softdac_ScaleSet(al, SOFTDAC_RANGE_PM10V, 0., 0., 1);
   status = softdac_LinLoad(al, fdin , -1*fdin, pts,  &npts, 0, chan);
   printf("......................ch:%d pts:%d\n", chan, npts);
   softdac_DacVoltRead(al, npts, 0, 0, chan, 0);
