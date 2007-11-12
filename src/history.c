@@ -310,7 +310,7 @@ INT hs_define_event(DWORD event_id, char *name, TAG * tag, DWORD size)
       struct tm *tmb;
 
       /* request semaphore */
-      cm_get_experiment_mutex(NULL, NULL, &mutex);
+      cm_get_experiment_mutex(NULL, NULL, &mutex, NULL);
       status = ss_mutex_wait_for(mutex, 5 * 1000);
       if (status != SS_SUCCESS)
          return SUCCESS;        /* someone else blocked the history system */
@@ -537,7 +537,7 @@ INT hs_write_event(DWORD event_id, void *data, DWORD size)
    time_t ltime;
 
    /* request semaphore */
-   cm_get_experiment_mutex(NULL, NULL, &mutex);
+   cm_get_experiment_mutex(NULL, NULL, &mutex, NULL);
    status = ss_mutex_wait_for(mutex, 5 * 1000);
    if (status != SS_SUCCESS) {
       cm_msg(MERROR, "hs_write_event", "mutex timeout");
