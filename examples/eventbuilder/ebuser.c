@@ -161,8 +161,9 @@ It is not possible to mix within the same destination event different event form
   bk_init(pevent);
   bk_create(pevent, bank_name, TID_xxxx, &pdata);
   *pdata++ = ...;
-  *dest_size = bk_close(pevent, pdata);
-  pheader->data_size = *dest_size + sizeof(EVENT_HEADER);
+
+  *dest_size = bk_size(pevent) + sizeof(EVENT_HEADER);
+  pheader->data_size = bk_size(pevent);
 \endcode
 
 For YBOS format, use the following example.
@@ -211,8 +212,8 @@ INT eb_user(INT nfrag, BOOL mismatch, EBUILDER_CHANNEL * ebch
     *pdata++ = ((EVENT_HEADER *) ebch[i].pfragment)->serial_number;
     *pdata++ = ((EVENT_HEADER *) ebch[i].pfragment)->time_stamp;
   }
-  *dest_size = bk_close(pevent, pdata);
-  pheader->data_size = *dest_size;
+  *dest_size = bk_size(pevent) + sizeof(EVENT_HEADER);
+  pheader->data_size = bk_size(pevent);
 
 
   //
