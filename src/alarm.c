@@ -515,7 +515,7 @@ INT al_check()
          return AL_SUCCESS;
 
       /* request semaphore */
-      cm_get_experiment_mutex(&mutex, NULL, NULL);
+      cm_get_experiment_mutex(&mutex, NULL, NULL, NULL);
       status = ss_mutex_wait_for(mutex, 100);
       if (status != SS_SUCCESS)
          return SUCCESS;        /* someone else is doing alarm business */

@@ -356,7 +356,7 @@ INT cm_msg_log(INT message_type, const char *message)
    char filename[256];
    char path[256];
    char str[256];
-   INT status, size, fh;
+   INT status, size, fh, mutex;
    HNDLE hDB, hKey;
 
    if (rpc_is_remote())
@@ -366,9 +366,23 @@ INT cm_msg_log(INT message_type, const char *message)
       cm_get_experiment_database(&hDB, NULL);
 
       if (hDB) {
+
          strcpy(filename, "midas.log");
          size = sizeof(filename);
          db_get_value(hDB, 0, "/Logger/Message file", filename, &size, TID_STRING, TRUE);
+
+         if (strchr(filename, '%')) {
+            /* replace stings such as midas_%y%m%d.mid with current date */
+            time_t now;
+            struct tm *tms;
+
+            tzset();
+            time(&now);
+            tms = localtime(&now);
+
+            strftime(str, sizeof(str), filename, tms);
+            strlcpy(filename, str, sizeof(filename));
+         }
 
          if (strchr(filename, DIR_SEPARATOR) == NULL) {
             status = db_find_key(hDB, 0, "/Logger/Data dir", &hKey);
@@ -401,12 +415,18 @@ INT cm_msg_log(INT message_type, const char *message)
       if (fh < 0) {
          printf("Cannot open message log file %s\n", path);
       } else {
+         
+         cm_get_experiment_mutex(NULL, NULL, NULL, &mutex);
+         status = ss_mutex_wait_for(mutex, 5 * 1000);
+
          strcpy(str, ss_asctime());
          write(fh, str, strlen(str));
          write(fh, " ", 1);
          write(fh, message, strlen(message));
          write(fh, "\n", 1);
          close(fh);
+
+         ss_mutex_release(mutex);
       }
    }
 
@@ -463,6 +483,19 @@ INT cm_msg_log1(INT message_type, const char *message, const char *facility)
          size = sizeof(filename);
          db_get_value(hDB, 0, "/Logger/Message file", filename, &size, TID_STRING, TRUE);
 
+         if (strchr(filename, '%')) {
+            /* replace stings such as midas_%y%m%d.mid with current date */
+            time_t now;
+            struct tm *tms;
+
+            tzset();
+            time(&now);
+            tms = localtime(&now);
+
+            strftime(str, sizeof(str), filename, tms);
+            strlcpy(filename, str, sizeof(filename));
+         }
+
          if (strchr(filename, DIR_SEPARATOR) == NULL) {
 
             status = db_find_key(hDB, 0, "/Logger/Data dir", &hKey);
@@ -481,6 +514,19 @@ INT cm_msg_log1(INT message_type, const char *message, const char *facility)
                   strcpy(filename, "midas.log");
                   size = sizeof(filename);
                   db_get_value(hDB, 0, "/Logger/Message file", filename, &size, TID_STRING, TRUE);
+
+                  if (strchr(filename, '%')) {
+                     /* replace stings such as midas_%y%m%d.mid with current date */
+                     time_t now;
+                     struct tm *tms;
+
+                     tzset();
+                     time(&now);
+                     tms = localtime(&now);
+
+                     strftime(str, sizeof(str), filename, tms);
+                     strlcpy(filename, str, sizeof(filename));
+                  }
                }
 
                strcpy(path, dir);
@@ -554,7 +600,7 @@ formated line as it is already added by the client on the receiving side.
 INT cm_msg(INT message_type, const char *filename, INT line, const char *routine, const char *format, ...)
 {
    va_list argptr;
-   char event[1000], str[1000], format_cpy[900], local_message[1000], send_message[1000];
+   char event[1000], type_str[256], str[1000], format_cpy[900], local_message[1000], send_message[1000];
    const char *pc;
    EVENT_HEADER *pevent;
    INT status;
@@ -573,13 +619,28 @@ INT cm_msg(INT message_type, const char *filename, INT line, const char *routine
    if (pc != filename)
       pc++;
 
+   /* convert type to string */
+   type_str[0] = 0;
+   if (message_type & MT_ERROR)
+      strlcat(type_str, MT_ERROR_STR, sizeof(type_str));
+   if (message_type & MT_INFO)
+      strlcat(type_str, MT_INFO_STR, sizeof(type_str));
+   if (message_type & MT_DEBUG)
+      strlcat(type_str, MT_DEBUG_STR, sizeof(type_str));
+   if (message_type & MT_USER)
+      strlcat(type_str, MT_USER_STR, sizeof(type_str));
+   if (message_type & MT_LOG)
+      strlcat(type_str, MT_LOG_STR, sizeof(type_str));
+   if (message_type & MT_TALK)
+      strlcat(type_str, MT_TALK_STR, sizeof(type_str));
+
    /* print client name into string */
    if (message_type == MT_USER)
       sprintf(send_message, "[%s] ", routine);
    else {
       rpc_get_name(str);
       if (str[0])
-         sprintf(send_message, "[%s] ", str);
+         sprintf(send_message, "[%s,%s] ", str, type_str);
       else
          send_message[0] = 0;
    }
@@ -588,11 +649,11 @@ INT cm_msg(INT message_type, const char *filename, INT line, const char *routine
 
    /* preceed error messages with file and line info */
    if (message_type == MT_ERROR) {
-      sprintf(str, "[%s:%d:%s] ", pc, line, routine);
+      sprintf(str, "[%s:%d:%s,%s] ", pc, line, routine, type_str);
       strlcat(send_message, str, sizeof(send_message));
       strlcat(local_message, str, sizeof(send_message));
    } else if (message_type == MT_USER)
-      sprintf(local_message, "[%s] ", routine);
+      sprintf(local_message, "[%s,%s] ", routine, type_str);
 
    /* limit length of format */
    strlcpy(format_cpy, format, sizeof(format_cpy));
@@ -832,7 +893,7 @@ Retrieve old messages from log file
 */
 INT cm_msg_retrieve(INT n_message, char *message, INT buf_size)
 {
-   char dir[256];
+   char dir[256], str[256];
    char filename[256];
    char path[256], *p;
    FILE *f;
@@ -850,6 +911,19 @@ INT cm_msg_retrieve(INT n_message, char *message, INT buf_size)
       size = sizeof(filename);
       db_get_value(hDB, 0, "/Logger/Message file", filename, &size, TID_STRING, TRUE);
 
+      if (strchr(filename, '%')) {
+         /* replace stings such as midas_%y%m%d.mid with current date */
+         time_t now;
+         struct tm *tms;
+
+         tzset();
+         time(&now);
+         tms = localtime(&now);
+
+         strftime(str, sizeof(str), filename, tms);
+         strlcpy(filename, str, sizeof(filename));
+      }
+
       if (strchr(filename, DIR_SEPARATOR) == NULL) {
          status = db_find_key(hDB, 0, "/Logger/Data dir", &hKey);
          if (status == DB_SUCCESS) {
@@ -863,6 +937,19 @@ INT cm_msg_retrieve(INT n_message, char *message, INT buf_size)
             strcpy(filename, "midas.log");
             size = sizeof(filename);
             db_get_value(hDB, 0, "/Logger/Message file", filename, &size, TID_STRING, TRUE);
+
+            if (strchr(filename, '%')) {
+               /* replace stings such as midas_%y%m%d.mid with current date */
+               time_t now;
+               struct tm *tms;
+
+               tzset();
+               time(&now);
+               tms = localtime(&now);
+
+               strftime(str, sizeof(str), filename, tms);
+               strlcpy(filename, str, sizeof(filename));
+            }
 
             strcpy(path, dir);
             strcat(path, filename);
@@ -1023,7 +1110,7 @@ static char _client_name[NAME_LENGTH];
 static char _path_name[MAX_STRING_LENGTH];
 static INT _call_watchdog = TRUE;
 static INT _watchdog_timeout = DEFAULT_WATCHDOG_TIMEOUT;
-INT _mutex_alarm, _mutex_elog, _mutex_history;
+INT _mutex_alarm, _mutex_elog, _mutex_history, _mutex_msg;
 
 /**dox***************************************************************/
 /** @addtogroup cmfunctionc
@@ -1685,7 +1772,7 @@ Connect to a MIDAS experiment (to the online database) on
 INT cm_connect_experiment1(char *host_name, char *exp_name,
                            char *client_name, void (*func) (char *), INT odb_size, DWORD watchdog_timeout)
 {
-   INT status, i, mutex_elog, mutex_alarm, mutex_history, size;
+   INT status, i, mutex_elog, mutex_alarm, mutex_history, mutex_msg, size;
    char local_host_name[HOST_NAME_LENGTH];
    char client_name1[NAME_LENGTH];
    char password[NAME_LENGTH], str[256], exp_name1[NAME_LENGTH];
@@ -1770,7 +1857,13 @@ INT cm_connect_experiment1(char *host_name, char *exp_name,
          cm_msg(MERROR, "cm_connect_experiment", "Cannot create history mutex");
          return status;
       }
-      cm_set_experiment_mutex(mutex_alarm, mutex_elog, mutex_history);
+      status = ss_mutex_create("MSG", &mutex_msg);
+      if (status != SS_CREATED && status != SS_SUCCESS) {
+         cm_msg(MERROR, "cm_connect_experiment", "Cannot create message mutex");
+         return status;
+      }
+
+      cm_set_experiment_mutex(mutex_alarm, mutex_elog, mutex_history, mutex_msg);
    }
 
    /* open ODB */
@@ -2196,7 +2289,7 @@ INT cm_set_experiment_database(HNDLE hDB, HNDLE hKeyClient)
 #ifndef DOXYGEN_SHOULD_SKIP_THIS
 
 /********************************************************************/
-INT cm_set_experiment_mutex(INT mutex_alarm, INT mutex_elog, INT mutex_history)
+INT cm_set_experiment_mutex(INT mutex_alarm, INT mutex_elog, INT mutex_history, INT mutex_msg)
 /********************************************************************\
 
   Routine: cm_set_experiment_mutex
@@ -2207,6 +2300,7 @@ INT cm_set_experiment_mutex(INT mutex_alarm, INT mutex_elog, INT mutex_history)
     INT    mutex_alarm      Alarm mutex
     INT    mutex_elog       Elog mutex
     INT    mutex_history    History mutex
+    INT    mutex_msg        Message mutex
 
   Output:
     none
@@ -2219,6 +2313,7 @@ INT cm_set_experiment_mutex(INT mutex_alarm, INT mutex_elog, INT mutex_history)
    _mutex_alarm = mutex_alarm;
    _mutex_elog = mutex_elog;
    _mutex_history = mutex_history;
+   _mutex_msg = mutex_msg;
 
    return CM_SUCCESS;
 }
@@ -2268,7 +2363,7 @@ INT cm_get_experiment_database(HNDLE * hDB, HNDLE * hKeyClient)
 #ifndef DOXYGEN_SHOULD_SKIP_THIS
 
 /********************************************************************/
-INT cm_get_experiment_mutex(INT * mutex_alarm, INT * mutex_elog, INT *mutex_history)
+INT cm_get_experiment_mutex(INT * mutex_alarm, INT * mutex_elog, INT *mutex_history, INT *mutex_msg)
 /********************************************************************\
 
   Routine: cm_get_experiment_mutex
@@ -2282,6 +2377,7 @@ INT cm_get_experiment_mutex(INT * mutex_alarm, INT * mutex_elog, INT *mutex_hist
     INT    mutex_alarm      Alarm mutex
     INT    mutex_elog       Elog mutex
     INT    mutex_history    History mutex
+    INT    mutex_msg        Message mutex
 
   Function value:
     CM_SUCCESS              Successful completion
@@ -2294,6 +2390,8 @@ INT cm_get_experiment_mutex(INT * mutex_alarm, INT * mutex_elog, INT *mutex_hist
       *mutex_elog = _mutex_elog;
    if (mutex_history)
       *mutex_history = _mutex_history;
+   if (mutex_msg)
+      *mutex_msg = _mutex_msg;
 
    return CM_SUCCESS;
 }
@@ -11713,7 +11811,7 @@ INT rpc_server_thread(void *pointer)
 \********************************************************************/
 {
    struct callback_addr callback;
-   int status, mutex_alarm, mutex_elog, mutex_history;
+   int status, mutex_alarm, mutex_elog, mutex_history, mutex_msg;
    static DWORD last_checked = 0;
 
    memcpy(&callback, pointer, sizeof(callback));
@@ -11727,7 +11825,8 @@ INT rpc_server_thread(void *pointer)
    ss_mutex_create("ALARM", &mutex_alarm);
    ss_mutex_create("ELOG", &mutex_elog);
    ss_mutex_create("HISTORY", &mutex_history);
-   cm_set_experiment_mutex(mutex_alarm, mutex_elog, mutex_history);
+   ss_mutex_create("MSG", &mutex_msg);
+   cm_set_experiment_mutex(mutex_alarm, mutex_elog, mutex_history, mutex_msg);
 
    do {
       status = ss_suspend(5000, 0);

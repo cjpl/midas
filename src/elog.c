@@ -106,7 +106,7 @@ INT el_submit(int run, char *author, char *type, char *syst, char *subject,
       bedit = (tag[0] != 0);
 
       /* request semaphore */
-      cm_get_experiment_mutex(NULL, &mutex, NULL);
+      cm_get_experiment_mutex(NULL, &mutex, NULL, NULL);
       status = ss_mutex_wait_for(mutex, 5 * 60 * 1000);
       if (status != SS_SUCCESS) {
          cm_msg(MERROR, "el_submit", "Cannot lock experiment mutex, ss_mutex_wait_for() status %d", status);
@@ -885,7 +885,7 @@ INT el_delete_message(char *tag)
    cm_get_experiment_database(&hDB, NULL);
 
    /* request semaphore */
-   cm_get_experiment_mutex(NULL, &mutex, NULL);
+   cm_get_experiment_mutex(NULL, &mutex, NULL, NULL);
    status = ss_mutex_wait_for(mutex, 5 * 60 * 1000);
    if (status != SS_SUCCESS) {
       cm_msg(MERROR, "el_delete_message",

@@ -473,6 +473,14 @@ System message types */
 #define MT_CALL            (1<<6)     /**< - */
 #define MT_ALL              0xFF      /**< - */
 
+#define MT_ERROR_STR       "ERROR"
+#define MT_INFO_STR        "INFO"
+#define MT_DEBUG_STR       "DEBUG"
+#define MT_USER_STR        "USER"
+#define MT_LOG_STR         "LOG"
+#define MT_TALK_STR        "TALK"
+#define MT_CALL_STR        "CALL"
+
 #define MERROR             MT_ERROR, __FILE__, __LINE__ /**< - */
 #define MINFO              MT_INFO,  __FILE__, __LINE__ /**< - */
 #define MDEBUG             MT_DEBUG, __FILE__, __LINE__ /**< - */
@@ -1577,8 +1585,8 @@ extern "C" {
    INT EXPRT cm_disconnect_client(HNDLE hConn, BOOL bShutdown);
    INT EXPRT cm_set_experiment_database(HNDLE hDB, HNDLE hKeyClient);
    INT EXPRT cm_get_experiment_database(HNDLE * hDB, HNDLE * hKeyClient);
-   INT EXPRT cm_set_experiment_mutex(INT mutex_alarm, INT mutex_elog, INT mutex_history);
-   INT EXPRT cm_get_experiment_mutex(INT * mutex_alarm, INT * mutex_elog, INT * mutex_history);
+   INT EXPRT cm_set_experiment_mutex(INT mutex_alarm, INT mutex_elog, INT mutex_history, INT mutex_msg);
+   INT EXPRT cm_get_experiment_mutex(INT * mutex_alarm, INT * mutex_elog, INT * mutex_history, INT * mutex_msg);
    INT EXPRT cm_set_client_info(HNDLE hDB, HNDLE * hKeyClient,
                                 char *host_name, char *client_name,
                                 INT computer_id, char *password, DWORD watchdog_timeout);
