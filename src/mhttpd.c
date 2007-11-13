@@ -1306,7 +1306,7 @@ void show_status_page(int refresh, char *cookie_wpwd)
    /*---- Equipment list ----*/
 
    rsprintf("<tr><th>Equipment<th>FE Node<th>Events");
-   rsprintf("<th>Event rate[/s]<th>Data rate[kB/s]<th>Analyzed</tr>\n");
+   rsprintf("<th>Event rate[/s]<th>Data rate[MB/s]<th>Analyzed</tr>\n");
 
    if (db_find_key(hDB, 0, "/equipment", &hkey) == DB_SUCCESS) {
       for (i = 0;; i++) {
@@ -1367,8 +1367,8 @@ void show_status_page(int refresh, char *cookie_wpwd)
          else
             sprintf(str, "%1.0lf", d);
 
-         rsprintf("<td align=center>%s<td align=center>%1.1lf<td align=center>%1.1lf\n",
-                  str, equipment_stats.events_per_sec, equipment_stats.kbytes_per_sec);
+         rsprintf("<td align=center>%s<td align=center>%1.1lf<td align=center>%1.3lf\n",
+                  str, equipment_stats.events_per_sec, equipment_stats.kbytes_per_sec/1024.0);
 
          /* check if /Analyzer is defined */
          if (db_find_key(hDB, 0, "/Analyzer", &hkeytmp) == DB_SUCCESS) {
@@ -1513,7 +1513,7 @@ void show_status_page(int refresh, char *cookie_wpwd)
                   if (k == 0) {
                      if (ftp_mode)
                         rsprintf
-                            ("<tr><th colspan=2>Lazy Destination<th>Progress<th>File Name<th>Speed [kb/s]<th>Total</tr>\n");
+                            ("<tr><th colspan=2>Lazy Destination<th>Progress<th>File Name<th>Speed [MB/s]<th>Total</tr>\n");
                      else
                         rsprintf
                             ("<tr><th colspan=2>Lazy Label<th>Progress<th>File Name<th># Files<th>Total</tr>\n");
@@ -1554,7 +1554,7 @@ void show_status_page(int refresh, char *cookie_wpwd)
                      size = sizeof(value);
                      db_get_value(hDB, hLKey, "Statistics/Copy Rate (Bytes per s)",
                                   &value, &size, TID_DOUBLE, TRUE);
-                     rsprintf("<td align=center>%1.1f", value / 1024.0);
+                     rsprintf("<td align=center>%1.1f", value / 1024.0 / 1024.0);
                   } else {
                      size = sizeof(i);
                      db_get_value(hDB, hLKey, "/Statistics/Number of files", &i, &size,
