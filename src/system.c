@@ -3538,6 +3538,7 @@ INT send_tcp(int sock, char *buffer, DWORD buffer_size, INT flags)
     INT   sock               Socket which was previosly opened.
     DWORD buffer_size        Size of the buffer in bytes.
     INT   flags              Flags passed to send()
+                             0x10000 : do not send error message
 
   Output:
     char  *buffer            Network receive buffer.
@@ -3553,25 +3554,27 @@ INT send_tcp(int sock, char *buffer, DWORD buffer_size, INT flags)
    /* transfer fragments until complete buffer is transferred */
 
    for (count = 0; (INT) count < (INT) buffer_size - NET_TCP_SIZE;) {
-      status = send(sock, buffer + count, NET_TCP_SIZE, flags);
+      status = send(sock, buffer + count, NET_TCP_SIZE, flags & 0xFFFF);
       if (status != -1)
          count += status;
       else {
-         cm_msg(MERROR, "send_tcp",
-                "send(socket=%d,size=%d) returned %d, errno: %d (%s)",
-                sock, NET_TCP_SIZE, status, errno, strerror(errno));
+         if ((flags & 0x10000) == 0)
+            cm_msg(MERROR, "send_tcp",
+                   "send(socket=%d,size=%d) returned %d, errno: %d (%s)",
+                   sock, NET_TCP_SIZE, status, errno, strerror(errno));
          return status;
       }
    }
 
    while (count < buffer_size) {
-      status = send(sock, buffer + count, buffer_size - count, flags);
+      status = send(sock, buffer + count, buffer_size - count, flags & 0xFFFF);
       if (status != -1)
          count += status;
       else {
-         cm_msg(MERROR, "send_tcp",
-                "send(socket=%d,size=%d) returned %d, errno: %d (%s)",
-                sock, (int) (buffer_size - count), status, errno, strerror(errno));
+         if ((flags & 0x10000) == 0)
+            cm_msg(MERROR, "send_tcp",
+                   "send(socket=%d,size=%d) returned %d, errno: %d (%s)",
+                   sock, (int) (buffer_size - count), status, errno, strerror(errno));
          return status;
       }
    }

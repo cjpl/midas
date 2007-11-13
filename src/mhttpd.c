@@ -660,7 +660,7 @@ void redirect(char *path)
 void redirect2(char *path)
 {
    redirect(path);
-   send_tcp(_sock, return_buffer, strlen(return_buffer) + 1, 0);
+   send_tcp(_sock, return_buffer, strlen(return_buffer) + 1, 0x10000);
    closesocket(_sock);
    return_length = -1;
 }
@@ -11453,10 +11453,7 @@ struct linger        ling;
                printf("\n\n");
             }
 
-            i = send_tcp(_sock, return_buffer, return_length, 0);
-            if (i != return_length)
-               cm_msg(MERROR, "server_loope", "Only sent back %d out of %d bytes", i,
-                      return_length);
+            send_tcp(_sock, return_buffer, return_length, 0x10000);
 
             if (verbose) {
                if (return_length > 1000) {
