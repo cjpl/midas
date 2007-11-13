@@ -66,7 +66,7 @@ int softdac_Open(ALPHISOFTDAC ** al)
     }
 
   // Set initial scaling coefficients
-  softdac_ScaleSet(*al, SOFTDAC_RANGE_PM10V, 0., 0., 1);
+  softdac_ScaleSet(*al, SOFTDAC_RANGE_PM10V, 0., 0.);
 
   return 0;
 }
@@ -87,7 +87,7 @@ Only one set of param for all the channels.
 @param beta  conversion offset coeff
 @return int
 */
-int softdac_ScaleSet(ALPHISOFTDAC * al, int range, double alpha, double beta, int flag)
+int softdac_ScaleSet(ALPHISOFTDAC * al, int range, double alpha, double beta)
 {
   switch (range) {
   case SOFTDAC_RANGE_P5V:
@@ -628,7 +628,7 @@ int main(int argc,char* argv[])
     samples = 10;
     softdac_Setup(al, samples, 2);
     
-    softdac_ScaleSet(al, SOFTDAC_RANGE_PM10V,  10.0/32767., -10.0, 1);
+    softdac_ScaleSet(al, SOFTDAC_RANGE_PM10V,  10.0/32767., -10.0);
     printf("alpha:%e  --  offset:%e\n", al->alpha, al->beta);
     for (i=chan;;) {
       ddout = -10.0;
@@ -649,7 +649,7 @@ int main(int argc,char* argv[])
     samples = 0;
     softdac_Setup(al, samples, 2);
 
-    softdac_ScaleSet(al, SOFTDAC_RANGE_PM10V, 10.0/32767., 0.0, 1);
+    softdac_ScaleSet(al, SOFTDAC_RANGE_PM10V, 10.0/32767., 0.0);
     printf("alpha:%e  --  offset:%e\n", al->alpha, al->beta);
 
     for (i=0;i<8;i++) {
@@ -667,8 +667,8 @@ int main(int argc,char* argv[])
   float fdin  = atof(argv[2]);
   softdac_Reset(al);
   softdac_Setup(al, npts, 1);
-  softdac_ScaleSet(al, SOFTDAC_RANGE_PM10V, 0., 0., 0);
-  softdac_ScaleSet(al, SOFTDAC_RANGE_PM10V, 0., 0., 1);
+  softdac_ScaleSet(al, SOFTDAC_RANGE_PM10V, 0., 0.);
+  softdac_ScaleSet(al, SOFTDAC_RANGE_PM10V, 0., 0.);
   status = softdac_LinLoad(al, fdin , -1*fdin, pts,  &npts, 0, chan);
   printf("......................ch:%d pts:%d\n", chan, npts);
   softdac_DacVoltRead(al, npts, 0, 0, chan, 0);
