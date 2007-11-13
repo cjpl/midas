@@ -17,6 +17,7 @@ extern "C" {
 
 #include <stdint.h>
 
+// char *SOFTDAC_RANGE[] = {"P5V", "P10V", "PM5V", "PM10V", "PM2P5V", "M2P5P7P5V", "off"};
  
 typedef struct { 
   double alpha; 
@@ -57,6 +58,7 @@ typedef struct {
 #define SOFTDAC_CLK_100KHZ            358 
 #define SOFTDAC_CMD_REG             (SOFTDAC_OFFSET+0x48)  // I4 
 #define SOFTDAC_IMMEDIATE_MODE        0x2 
+#define SOFTDAC_RANGE_MAX               6
 #define SOFTDAC_RANGE_P5V             0x8 
 #define SOFTDAC_RANGE_P10V            0x9 
 #define SOFTDAC_RANGE_PM5V            0xA 
@@ -100,7 +102,7 @@ int  softdac_BankActiveRead(ALPHISOFTDAC *);
 void softdac_SampleSet(ALPHISOFTDAC *, int, int); 
 void softdac_SMEnable(ALPHISOFTDAC *); 
 void softdac_SMDisable(ALPHISOFTDAC *); 
-int  softdac_ScaleSet(ALPHISOFTDAC *, int range, double alpha, double beta, int); 
+int  softdac_ScaleSet(ALPHISOFTDAC *, int range, double alpha, double beta); 
 int  softdac_LinLoad(ALPHISOFTDAC *, double vin, double vout, int npts, int * offset, int ibuf, int ichan); 
 int  softdac_DacVoltRead(ALPHISOFTDAC * al, int npts, int offset, int ibuf, int ichan, int flag); 
 int  softdac_DirectDacWrite(ALPHISOFTDAC * al, uint16_t din, int chan, double *arg); 
