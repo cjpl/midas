@@ -1071,7 +1071,7 @@ Function value:
 
   /* force a statistics update on the first loop */
   cpy_loop_time = -2000;
-  {
+  if (dev_type == LOG_TYPE_TAPE) {
     char str[MAX_FILE_PATH];
     sprintf(str, "Starting lazy job on %s at block %d", lazyst.backfile, blockn);
     if (msg_flag)
@@ -1197,7 +1197,7 @@ Function value:
   INT size, cur_state_run, cur_acq_run, status, tobe_backup, purun, flag;
   double freepercent, svfree;
   char str[MAX_FILE_PATH], pufile[MAX_FILE_PATH], inffile[MAX_FILE_PATH], outffile[MAX_FILE_PATH];
-  BOOL donepurge, watchdog_flag;
+  BOOL watchdog_flag;
   DWORD watchdog_timeout;
   LAZY_INFO *pLch;
   static BOOL eot_reached = FALSE;
@@ -1355,14 +1355,14 @@ Function value:
   if (lazy.pupercent > 0) {
     if (pdirlog == NULL)
       pdirlog = malloc(sizeof(DIRLOG));
-    /* cleanup memory */
-    donepurge = FALSE;
+
+    // Compute initial disk space
     svfree = freepercent = 100. * ss_disk_free(lazy.dir) / ss_disk_size(lazy.dir);
 
+    // Check for Disk full first
     if (!haveTape && freepercent < 5.0) {
       char buf[256];
       sprintf(buf, "Disk buffer is almost full, free space: %.1f%%", freepercent);
-
       al_trigger_alarm("Disk Full", buf, lazy.alarm, "Disk buffer full", AT_INTERNAL);
     } else {
       if (db_find_key(hDB, 0, "/Alarms/Alarms/Disk Full", &status) == DB_SUCCESS)
@@ -1371,6 +1371,8 @@ Function value:
 
     /* check purging action */
     while (freepercent <= (double) lazy.pupercent) {
+      // flag for single purge
+      BOOL donepurge = FALSE;
       /* search file to purge : run in donelist AND run in dirlog */
       /* synchronize donelist to dir log in case user has purged
       some file by hand. Basically remove the run in the list if the
@@ -1383,27 +1385,35 @@ Function value:
           rm_time = ss_millitime();
           status = lazy_file_remove(pufile);
           rm_time = ss_millitime() - rm_time;
-          if (status == SS_FILE_ERROR)
+          if (status == SS_FILE_ERROR) {
             cm_msg(MERROR, "Lazy", "lazy_file_remove failed on file %s", pufile);
-          else {
+            // break out if can't delete files
+            break;
+          } else {
             status = lazy_log_update(REMOVE_FILE, purun, NULL, pufile, rm_time);
             donepurge = TRUE;
-
-            /* update donelist (remove run entry as the file has been deleted */
+            /* update donelist (remove run entry as the file has been deleted) */
             if ((status = lazy_remove_entry(channel, pLall, purun)) != 0)
               cm_msg(MERROR, "Lazy", "remove_entry not performed %d", status);
           }
-        }
+        }  // purun found
+
+        // Re-compute free space
         freepercent = 100. * ss_disk_free(lazy.dir) / ss_disk_size(lazy.dir);
-        if ((INT) svfree == (INT) freepercent)
-          break;
-      } else {
-        if (donepurge)
-          cm_msg(MINFO, "Lazy", "Can't purge more for now!");
-        break;
-      }
-    }
-  }
+        // Break out in case the we're within 1%
+        //if ((INT) svfree == (INT) freepercent)
+        //  break;
+        //} else {
+        //  if (donepurge)
+        //    cm_msg(MINFO, "Lazy", "Can't purge more for now!");
+        //  break;
+
+      }  // select_purge
+      // donepurge = FALSE => nothing else to do 
+      // donepurge = TRUE  => one purge done loop back once more
+      if (!donepurge) break;
+    }  // while
+  } // Skip no percent given
 
   /* end of if pupercent > 0 */
   /* cleanup memory */
