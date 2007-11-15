@@ -1085,7 +1085,6 @@ Function value:
   while (1) {
     if (copy_continue) {
       if (yb_any_physrec_get(data_fmt, &plazy, &szlazy) == YB_SUCCESS) {
-        ss_sleep(10);
         status = yb_any_log_write(hDev, data_fmt, dev_type, plazy, szlazy);
         if (status != SS_SUCCESS) {
           /* close source file */
