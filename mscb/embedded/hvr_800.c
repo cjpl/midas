@@ -663,7 +663,7 @@ void read_hv(unsigned char channel)
    /* 0.001 resolution */
    hv = floor(hv * 1000) / 1000.0;
 
-   led_mode(channel, !(hv > 0.1));
+   led_mode(channel, !(hv > 2));
 
    DISABLE_INTERRUPTS;
    user_data[channel].u_meas = hv;
@@ -729,6 +729,7 @@ void read_current()
    d = CADC_SDO;
    if (d > 0) {
       CADC_NCS = 1;
+      delay_us(OPT_DELAY);
       return;
    }
 
