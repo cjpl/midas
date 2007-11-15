@@ -185,9 +185,10 @@ int quick_check(int fd, unsigned short adr, unsigned short adr_dvm, unsigned sho
 int calib(int fd, unsigned short adr, unsigned short adr_dvm, unsigned short adr_mux, 
           float rin_dvm, int first, int next_adr)
 {
-   float f;
+   float f, demand;
    int size, d, status, low_current;
    char str[80];
+   MSCB_INFO info;
    float v_adc1, v_adc2, v_multi1, v_multi2, adc_gain, adc_ofs, 
       dac_gain, dac_ofs, i1, i2, i_900, i_200, i_gain, i_vgain, i_ofs;
 
@@ -203,6 +204,11 @@ int calib(int fd, unsigned short adr, unsigned short adr_dvm, unsigned short adr
    size = 1;
    mscb_read(fd, adr, CH_STATUS, &d, &size);
    low_current = (d & STATUS_LOWCUR) > 0;
+
+   /* read type */
+   mscb_info(fd, adr, &info);
+   if (stricmp(info.node_name, "HVR-800") == 0)
+      low_current = 1;
 
    if (low_current)
       eprintf("#### Found low current module\n");
@@ -259,10 +265,15 @@ int calib(int fd, unsigned short adr, unsigned short adr_dvm, unsigned short adr
          stop();
       }
 
-      eprintf("\nSetting       900.0 Volt\n");
+      if (stricmp(info.node_name, "HVR-800") == 0)
+         demand = 500;
+      else
+         demand = 900;
+
+      eprintf("\nSetting       %5.1lf Volt\n", demand);
       do {
-         /* set demand to 900V */
-         f = 900;
+         /* set demand voltage */
+         f = (float)demand;
          mscb_write(fd, adr, CH_VDEMAND, &f, sizeof(float));
 
          /* wait voltage to settle */
@@ -272,13 +283,13 @@ int calib(int fd, unsigned short adr, unsigned short adr_dvm, unsigned short adr
          size = sizeof(float);
          mscb_read(fd, adr, CH_VMEAS, &v_adc2, &size);
 
-         if (v_adc2 < 890) {
+         if (v_adc2 < f-10) {
             eprintf("Only %1.1lf V can be reached on output,\n", v_adc2);
             eprintf("please increase input voltage and press ENTER.\n");
             fgets(str, sizeof(str), stdin);
          }
 
-      } while (v_adc2 < 890);
+      } while (v_adc2 < f-10);
 
       v_multi2 = read_voltage(fd, adr_dvm);
       if (adr_dvm > 0)
@@ -289,13 +300,13 @@ int calib(int fd, unsigned short adr, unsigned short adr_dvm, unsigned short adr
       mscb_read(fd, adr, CH_VMEAS, &v_adc2, &size);
       eprintf("HVR ADC reads %5.1lf Volt\n", v_adc2);
 
-      if (v_adc2 < 500) {
+      if (v_adc2 < f-10) {
          eprintf("HVR ADC voltage too low, aborting.\n");
          stop();
       }
 
       /* calculate corrections */
-      dac_gain = (float) ((900.0 - 100.0) / (v_multi2 - v_multi1));
+      dac_gain = (float) ((demand - 100.0) / (v_multi2 - v_multi1));
       dac_ofs = (float) (100 - dac_gain * v_multi1);
 
       adc_gain = (float) ((v_multi2 - v_multi1) / (v_adc2 - v_adc1));
@@ -358,11 +369,11 @@ int calib(int fd, unsigned short adr, unsigned short adr_dvm, unsigned short adr
       fgets(str, sizeof(str), stdin);
    }
 
-   /* set voltage to exactly 900 V with regulation */
-   eprintf("\nSetting       900.0 Volt\n");
+   /* set voltage exactly with regulation */
+   eprintf("\nSetting       %5.1lf Volt\n", demand);
    d = 3;
    mscb_write(fd, adr, CH_CONTROL, &d, 1);
-   f = 900;
+   f = demand;
    mscb_write(fd, adr, CH_VDEMAND, &f, sizeof(float));
 
    /* wait voltage to settle */
@@ -371,7 +382,7 @@ int calib(int fd, unsigned short adr, unsigned short adr_dvm, unsigned short adr
    /* read current */
    size = sizeof(float);
    mscb_read(fd, adr, CH_IMEAS, &i_900, &size);
-   eprintf("\nI at 900V  :  %5.3lf uA\n", i_900);
+   eprintf("\nI at %3.0lfV  :  %5.3lf uA\n", demand, i_900);
 
    /* remove voltage */
    f = 0;
@@ -422,10 +433,10 @@ int calib(int fd, unsigned short adr, unsigned short adr_dvm, unsigned short adr
       i_vgain = 0;
 
       /* calculate current gain */
-      i_gain = (float) ((900-200)/5E3) / (i_900 - i_200);
+      i_gain = (float) ((demand-200)/5E3) / (i_900 - i_200);
 
       /* calcualte offset */
-      i_ofs = (float) ((i_900 - 900.0/(5E3 * i_gain)));
+      i_ofs = (float) ((i_900 - demand/(5E3 * i_gain)));
 
       eprintf("\nI vgain    : %10.5lf\n", i_vgain);
       eprintf("I offset   : %10.5lf\n", i_ofs);
@@ -433,6 +444,20 @@ int calib(int fd, unsigned short adr, unsigned short adr_dvm, unsigned short adr
       mscb_write(fd, adr, CH_CURVGAIN, &i_vgain, sizeof(float));
       mscb_write(fd, adr, CH_CUROFS, &i_ofs, sizeof(float));
       mscb_write(fd, adr, CH_CURGAIN, &i_gain, sizeof(float));
+
+      /* remove voltage */
+      f = 0;
+      mscb_write(fd, adr, CH_VDEMAND, &f, sizeof(float));
+      
+      if (adr_mux == 0xFFFF) {
+         if (next_adr > 0) {
+            f = 0;
+            mscb_write(fd, next_adr, CH_VDEMAND, &f, sizeof(float));
+            eprintf("\n\007Please connect multimeter to channel %d and press ENTER\n", next_adr);
+         } else
+            eprintf("\n\007Please disconnect resistor from channel %d and press ENTER\n", adr);
+         fgets(str, sizeof(str), stdin);
+      }
 
    } else {
 
@@ -564,11 +589,11 @@ int main(int argc, char *argv[])
    /* delete log file */
    unlink("calib_hvr.log");
 
-   printf("Enter address of first HVR-200/400/500 channel        [  0] : ");
+   printf("Enter address of first HVR-200/400/500/800 channel    [  0] : ");
    fgets(str, sizeof(str), stdin);
    adr_start = (unsigned short)atoi(str);
 
-   printf("Enter address of last HVR-200/400/500 channel         [%3d] : ", adr_start + 9);
+   printf("Enter address of last HVR-200/400/500/800 channel     [%3d] : ", adr_start + 9);
    fgets(str, sizeof(str), stdin);
    if (!isdigit(str[0]))
       adr_end = adr_start + 9;
