@@ -17,6 +17,7 @@ $Id$
 
 #define NOTHING_TODO  0
 #define FORCE_EXIT    1
+#define EXIT_REQUEST  2
 #define NEW_FILE      1
 #define REMOVE_FILE   2
 #define REMOVE_ENTRY  3
@@ -999,7 +1000,7 @@ Function value:
   DWORD watchdog_timeout;
   static INT last_error = 0;
   char *pext;
-  BOOL watchdog_flag;
+  BOOL watchdog_flag, exit_request=FALSE;
   char filename[256];
 
   pext = malloc(strlen(infile));
@@ -1084,6 +1085,7 @@ Function value:
   while (1) {
     if (copy_continue) {
       if (yb_any_physrec_get(data_fmt, &plazy, &szlazy) == YB_SUCCESS) {
+        ss_sleep(10);
         status = yb_any_log_write(hDev, data_fmt, dev_type, plazy, szlazy);
         if (status != SS_SUCCESS) {
           /* close source file */
@@ -1111,9 +1113,11 @@ Function value:
 
           /* yield quickly */
           status = cm_yield(1);
-          if (status == RPC_SHUTDOWN || status == SS_ABORT)
-            cm_msg(MINFO, "Lazy", "Abort postponed until end of copy %1.0lf[%%]",
-            (double) lazyst.progress);
+          if (status == RPC_SHUTDOWN || status == SS_ABORT || exit_request) {
+            cm_msg(MINFO, "Lazy", "Abort postponed until end of copy of %s %1.0lf[%%]",
+            infile, (double) lazyst.progress);
+             exit_request = TRUE;
+          }
         }
       } /* get physrec */
       else
@@ -1146,7 +1150,10 @@ Function value:
       return status;
     return (FORCE_EXIT);
   }
+
   /* request exit */
+  if (exit_request)
+    return (EXIT_REQUEST);
   return 0;
 }
 
@@ -1197,7 +1204,7 @@ Function value:
   INT size, cur_state_run, cur_acq_run, status, tobe_backup, purun, flag;
   double freepercent, svfree;
   char str[MAX_FILE_PATH], pufile[MAX_FILE_PATH], inffile[MAX_FILE_PATH], outffile[MAX_FILE_PATH];
-  BOOL watchdog_flag;
+  BOOL watchdog_flag, exit_request=FALSE;
   DWORD watchdog_timeout;
   LAZY_INFO *pLch;
   static BOOL eot_reached = FALSE;
@@ -1544,7 +1551,7 @@ Function value:
 
       /* Finally do the copy */
       cp_time = ss_millitime();
-      if ((status = lazy_copy(outffile, inffile)) != 0) {
+      if (((status = lazy_copy(outffile, inffile)) != 0) && (status != EXIT_REQUEST)) {
         if (status == SS_NO_SPACE) {
           /* Consider this case as EOT reached */
           eot_reached = TRUE;
@@ -1564,6 +1571,9 @@ Function value:
     //    cm_msg(MERROR, "Lazy", "lazy_file_exists file %s doesn't exists", lazyst.backfile);
     return NOTHING_TODO;
   }
+
+  if (status == EXIT_REQUEST)
+      exit_request = TRUE;
 
   /* Update the list */
   cp_time = ss_millitime() - cp_time;
@@ -1587,7 +1597,9 @@ Function value:
     db_save(hDB, pLch->hKey, str, TRUE);
   }
 
-  return NOTHING_TODO;
+  if (exit_request)
+      return (FORCE_EXIT);
+  return  NOTHING_TODO;
 }
 
 /*------------------------------------------------------------------*/
@@ -1921,7 +1933,7 @@ usage:
     if ((ss_millitime() - mainlast_time) > 10000) {
       status = lazy_main(channel, &lazyinfo[0]);
       if (status == FORCE_EXIT) {
-        cm_msg(MERROR, "lazy", "Previous error forces task exit");
+        cm_msg(MERROR, "lazy", "Exit requested by program");
         break;
       }
       mainlast_time = ss_millitime();
