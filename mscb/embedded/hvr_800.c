@@ -636,9 +636,11 @@ void set_hv(unsigned char channel, float value) reentrant
 
    /* convert HV to voltage */
    value = value / DIVIDER;
+   if (value > 2.5)
+      value = 2.5;
 
    /* convert to DAC units */
-   d = (unsigned short) ((value / 2.5 * 65536) + 0.5);
+   d = (unsigned short) ((value / 2.5 * 65535) + 0.5);
 
    /* write dac */
    write_dac(channel, d);
