@@ -22,65 +22,61 @@ typedef struct {
   char * regs;
 } ALPHIDA816;
 
-typedef char           uint08;
-typedef unsigned short uint16;
-typedef unsigned int   uint32;
+#define DA816_D08(ptr) (*(volatile uint8_t*)(ptr))
+#define DA816_D16(ptr) (*(volatile int16_t*)(ptr))
+#define DA816_D32(ptr) (*(volatile uint32_t*)(ptr))
 
-#define D08(ptr) (*(volatile uint08*)(ptr))
-#define D16(ptr) (*(volatile uint16*)(ptr))
-#define D32(ptr) (*(volatile uint32*)(ptr))
-
-#define CLK_SAMP_INT        (DA816_OFFSET+0x00)  // I4
-#define ADDRESS_SM          (DA816_OFFSET+0x04)  // I4
-#define LAST_ADDR_0         (DA816_OFFSET+0x08)  // I4
-#define LAST_ADDR_1         (DA816_OFFSET+0x0C)  // I4
-#define BANK_CTL_0          (DA816_OFFSET+0x10)  // I1
-#define BANK_CTL_1          (DA816_OFFSET+0x11)  // I1
-#define CTL_STAT_0          (DA816_OFFSET+0x12)  // I1
-#define CTL_STAT_1          (DA816_OFFSET+0x13)  // I1
-#define CLK_SAMPLE_RESET    (DA816_OFFSET+0x14)  // I2
-#define ADDRESS_RESET       (DA816_OFFSET+0x16)  // I2
-#define DACS_RESET          (DA816_OFFSET+0x18)  // I2
-#define DACS_UPDATES        (DA816_OFFSET+0x1A)  // I2
-#define SWITCH_BANKS        (DA816_OFFSET+0x1C)  // I2
-#define DAC0102             (DA816_OFFSET+0x20)  // I4
-#define DAC0304             (DA816_OFFSET+0x24)  // I4
-#define DAC0506             (DA816_OFFSET+0x28)  // I4
-#define DAC0708             (DA816_OFFSET+0x2C)  // I4
-#define DAC0910             (DA816_OFFSET+0x30)  // I4
-#define DAC1112             (DA816_OFFSET+0x34)  // I4
-#define DAC1314             (DA816_OFFSET+0x38)  // I4
-#define DAC1516             (DA816_OFFSET+0x3C)  // I4
+#define DA816_CLK_SAMP_INT        (DA816_OFFSET+0x00)  // I4
+#define DA816_ADDRESS_SM          (DA816_OFFSET+0x04)  // I4
+#define DA816_LAST_ADDR_0         (DA816_OFFSET+0x08)  // I4
+#define DA816_LAST_ADDR_1         (DA816_OFFSET+0x0C)  // I4
+#define DA816_BANK_CTL_0          (DA816_OFFSET+0x10)  // I1
+#define DA816_BANK_CTL_1          (DA816_OFFSET+0x11)  // I1
+#define DA816_CTL_STAT_0          (DA816_OFFSET+0x12)  // I1
+#define DA816_CTL_STAT_1          (DA816_OFFSET+0x13)  // I1
+#define DA816_CLK_SAMPLE_RESET    (DA816_OFFSET+0x14)  // I2
+#define DA816_ADDRESS_RESET       (DA816_OFFSET+0x16)  // I2
+#define DA816_DACS_RESET          (DA816_OFFSET+0x18)  // I2
+#define DA816_DACS_UPDATES        (DA816_OFFSET+0x1A)  // I2
+#define DA816_SWITCH_BANKS        (DA816_OFFSET+0x1C)  // I2
+#define DA816_DAC0102             (DA816_OFFSET+0x20)  // I4
+#define DA816_DAC0304             (DA816_OFFSET+0x24)  // I4
+#define DA816_DAC0506             (DA816_OFFSET+0x28)  // I4
+#define DA816_DAC0708             (DA816_OFFSET+0x2C)  // I4
+#define DA816_DAC0910             (DA816_OFFSET+0x30)  // I4
+#define DA816_DAC1112             (DA816_OFFSET+0x34)  // I4
+#define DA816_DAC1314             (DA816_OFFSET+0x38)  // I4
+#define DA816_DAC1516             (DA816_OFFSET+0x3C)  // I4
 
 
 // CLK_SAMP_INT  32MHz (32k/2+N = sampling rate) 
-#define CLK_100KHZ           318
-#define CLK_50KHZ            638
-#define CLK_10KHZ           3198
+#define DA816_CLK_100KHZ           318
+#define DA816_CLK_50KHZ            638
+#define DA816_CLK_10KHZ           3198
 
-#define SWITCH_AT_ADDR_0     0x1
-#define INT_BANK_DONE        0x4
+#define DA816_SWITCH_AT_ADDR_0     0x1
+#define DA816_INT_BANK_DONE        0x4
 
 // BANK_CTL_X
-#define ACTIVE_BANK_RO       0x01
-#define CLK_OUTPUT_ENABLE    0x02
-#define INTERNAL_CLK         0x04
-#define EXTERNAL_CLK         0x08
-#define SM_ENABLE            0x20
-#define FP_RESET_ENABLE      0x40
-#define AUTO_UPDATE_DAC      0x80
+#define DA816_ACTIVE_BANK_RO       0x01
+#define DA816_CLK_OUTPUT_ENABLE    0x02
+#define DA816_INTERNAL_CLK         0x04
+#define DA816_EXTERNAL_CLK         0x08
+#define DA816_SM_ENABLE            0x20
+#define DA816_FP_RESET_ENABLE      0x40
+#define DA816_AUTO_UPDATE_DAC      0x80
 
 // CTL_STAT_X
-#define FP_RESET_STATE_RO    0x01  
-#define INT_FP_RESET_ENABLE  0x02
-#define INT_CLK_ENABLE       0x04
-#define INT_BANK_0_DONE      0x10
-#define INT_BANK_1_DONE      0x20
-#define INT_CLK_DONE         0x40
-#define INT_FP_DONE          0x80
+#define DA816_FP_RESET_STATE_RO    0x01  
+#define DA816_INT_FP_RESET_ENABLE  0x02
+#define DA816_INT_CLK_ENABLE       0x04
+#define DA816_INT_BANK_0_DONE      0x10
+#define DA816_INT_BANK_1_DONE      0x20
+#define DA816_INT_CLK_DONE         0x40
+#define DA816_INT_FP_DONE          0x80
 
-#define REGS_D32             0x10
-#define ACTIVE_BANK_D32      0x10000
+#define DA816_REGS_D32             0x10
+#define DA816_ACTIVE_BANK_D32      0x10000
   
 int  da816_Setup(ALPHIDA816 *, int samples, int mode);
 int  da816_Open(ALPHIDA816 **);
@@ -95,15 +91,15 @@ int  da816_BankActiveRead(ALPHIDA816 *);
 int  da816_ScaleSet(ALPHIDA816 *, double alpha, double beta);
 int  da816_MaxSamplesGet();
 
-int  da816_DirectDacWrite(ALPHIDA816 *, uint16 din, int chan);
-int  da816_DacWrite(ALPHIDA816 *, unsigned short *data, int * chlist, int nch);
+int  da816_DirectDacWrite(ALPHIDA816 *, int16_t din, int chan);
+int  da816_DacWrite(ALPHIDA816 *, int16_t *data, int * chlist, int nch);
 int  da816_DirectVoltWrite(ALPHIDA816 *, double vin, int chan, double *arg);
 
 int  da816_LinLoad(ALPHIDA816 *, double vin, double vout, int npts, int * offset, int ibuf, int ichan);
 int  da816_SampleSet(ALPHIDA816 *, int bank, int sample);
 int  da816_ClkSMEnable(ALPHIDA816 *, int bank);
 int  da816_ClkSMDisable(ALPHIDA816 *, int bank);
-uint16 da816_Volt2Dac(double volt);
+int16_t da816_Volt2Dac(double volt);
 double da816_Dac2Volt (int16_t dac);
 
 
