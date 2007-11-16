@@ -92,8 +92,8 @@ int da816_Open(ALPHIDA816 ** da816)
   //memset((*da816)->data, 0, 0x80000);
 
   // Set initial scaling coefficients
-  da816_ScaleSet(*da816, 20.0/65535. , -10.0);
-
+  da816_ScaleSet(*da816, 10.0/32767. , 0.0);
+  
   dummy = (*da816)->data[0]; // flush posted PCI writes
   return 0;
 }
@@ -123,11 +123,12 @@ Reset  all the registers of the pmcda16
 int da816_Reset(ALPHIDA816 * da816)
 {
   for (int i=0; i<0x14; i+=4)
-    D32(da816->regs+i) = 0;
-  D32(da816->regs+0x14) = CLK_SAMPLE_RESET;
-  D32(da816->regs+0x16) = ADDRESS_RESET;
-  D32(da816->regs+0x18) = DACS_RESET;
-  D32(da816->regs+0x10) = 0xF0000000;
+    DA816_D16(da816->regs+i) = 0;
+  DA816_D16(da816->regs+DA816_CLK_SAMPLE_RESET) = 0;
+  DA816_D16(da816->regs+DA816_ADDRESS_RESET) = 0;
+  DA816_D16(da816->regs+DA816_DACS_RESET) = 0;
+  DA816_D16(da816->regs+DA816_BANK_CTL_0) = 0x0;
+  DA816_D16(da816->regs+DA816_CTL_STAT_0) = 0x0;
   return da816->regs[0]; // flush posted PCI writes
 }
 
@@ -139,9 +140,9 @@ Reset Address only of the pmcda16
 */
 int da816_AddReset(ALPHIDA816 * da816)
 {
-  D16(da816->regs+ADDRESS_RESET) = 1;
-  //  D16(da816->regs+DACS_RESET)    = 1;
-  //  D16(da816->regs+DACS_UPDATES)  = 1;
+  DA816_D16(da816->regs+DA816_ADDRESS_RESET) = 1;
+  //  DA816_D16(da816->regs+DA816_DACS_RESET)    = 1;
+  //  DA816_D16(da816->regs+DA816_DACS_UPDATES)  = 1;
   return da816->regs[0]; // flush posted PCI writes
 }
 
@@ -152,7 +153,7 @@ Switch to bank 0 or 1
 */
 int da816_BankSwitch(ALPHIDA816 * da816, int onoff)
 {
-  D32(da816->regs+SWITCH_BANKS) = onoff;
+  DA816_D32(da816->regs+DA816_SWITCH_BANKS) = onoff;
   return da816->regs[0]; // flush posted PCI writes
 }
 /********************************************************************/
@@ -162,7 +163,7 @@ Update the Dac (by hand) before the first clock
 */
 int da816_Update(ALPHIDA816 * da816)
 {
-  D08(da816->regs+CTL_STAT_0) = AUTO_UPDATE_DAC;
+  DA816_D08(da816->regs+DA816_CTL_STAT_0) = DA816_AUTO_UPDATE_DAC;
   return da816->regs[0]; // flush posted PCI writes
 }
 
@@ -182,9 +183,9 @@ Convert Volt to Dac value
 @param  volt voltage to convert
 @return int  dac value
 */
-uint16_t da816_Volt2Dac(ALPHIDA816 * da816, double volt)
+int16_t da816_Volt2Dac(ALPHIDA816 * da816, double volt)
 {
-  return (uint16_t) ((volt - da816->beta) / da816->alpha);
+  return (int16_t) ((volt - da816->beta) / da816->alpha);
 }
 
 /********************************************************************/
@@ -193,7 +194,7 @@ Convert Dac to Volt value
 @param  dac Dac value to convert
 @return double volt value
 */
-double da816_Dac2Volt (ALPHIDA816 * da816, uint16_t dac)
+double da816_Dac2Volt (ALPHIDA816 * da816, int16_t dac)
 {
   return (double) (dac * da816->alpha + da816->beta);
 }
@@ -208,7 +209,7 @@ void dump_data(ALPHIDA816 * da816)
   printf("PMC-DA816 data dump:\n");
   for (int i=0; i<0x80000; i+=4)
     {
-      uint32 s = D32(da816->regs+i);
+      uint32_t s = DA816_D32(da816->regs+i);
       printf("data[0x%06x] = 0x%08x\n",i,s);
     }
 }
@@ -238,9 +239,9 @@ Get channel address for a particular bank
 */
 int da816_BankActiveRead(ALPHIDA816 * da816)
 {
-      int stat0 = D08(da816->regs+CTL_STAT_0);
+      int stat0 = DA816_D08(da816->regs+DA816_CTL_STAT_0);
       stat0 &= 0x1;
-      int stat1 = D08(da816->regs+CTL_STAT_1);
+      int stat1 = DA816_D08(da816->regs+DA816_CTL_STAT_1);
       stat1 &= 0x1;
       return (stat0 | (stat1<<1));
 
@@ -251,12 +252,12 @@ int da816_BankActiveRead(ALPHIDA816 * da816)
 Write to DACx directly for mode 2
 @return int
 */
-int da816_DacWrite(ALPHIDA816 * da816, unsigned short *data, int * chlist, int nch)
+int da816_DacWrite(ALPHIDA816 * da816, short *data, int * chlist, int nch)
 {
   int16_t dummy = 0;
 
   for (int i=0; i<nch; i++) {
-    D16((da816->regs+DAC0102)+2*chlist[i]) = data[i];
+    DA816_D16((da816->regs+DA816_DAC0102)+2*chlist[i]) = data[i];
   }
 
   return dummy;
@@ -275,7 +276,7 @@ Fill particular buffer with nSamples of data
 int fillSinBuffer(ALPHIDA816 * da816 , int numSamples, int ibuf, int ichan, double*arg)
 {
   int16_t dummy = 0;
-  volatile uint16_t* b = (uint16_t*)chanAddr(da816->data, ibuf, ichan, 0);
+  volatile int16_t* b = (int16_t*)chanAddr(da816->data, ibuf, ichan, 0);
 
   //  printf("fillSin ibuf:%d b:%p\n", ibuf, b);
   for (int i=0; i<numSamples; i++)
@@ -307,14 +308,14 @@ int da816_LinLoad(ALPHIDA816 * da816, double vin, double vout, int npts, int * o
 
   int16_t dummy = 0;
   int16_t increment = 0;
-  volatile uint16_t* b = (uint16_t*)chanAddr(da816->data, ibuf, ichan, *offset);
+  volatile int16_t* b = (int16_t*)chanAddr(da816->data, ibuf, ichan, *offset);
 
-  uint16_t din  = da816_Volt2Dac(da816, vin);
-  uint16_t dout = da816_Volt2Dac(da816, vout);
+  int16_t din  = da816_Volt2Dac(da816, vin);
+  int16_t dout = da816_Volt2Dac(da816, vout);
   printf("LinLoad b: %p npts:%06d vin:%f din:%d vout:%f dout:%d\n", b, npts, vin, din, vout, dout);
 
   if (npts == 1) {
-    b[0] = (uint16_t) din;
+    b[0] = (int16_t) din;
     printf("Volt single Dac[0]:%i\n", b[0]);
   } else {
     increment =  (dout-din) / (npts-1);
@@ -330,7 +331,7 @@ int da816_LinLoad(ALPHIDA816 * da816, double vin, double vout, int npts, int * o
 #if 0  
   for (i=0; i<0x80000; i+=2)
     {
-      *(uint16_t*)(da816->data + i) = 3000;
+      *(int16_t*)(da816->data + i) = 3000;
     }
 #endif
   
@@ -349,7 +350,7 @@ Read buffer
 int da816_DacVoltRead(ALPHIDA816 * da816, int npts, int offset, int ibuf, int ichan, int flag)
 {
   int16_t dummy = 0;
-  volatile uint16_t* b = (uint16_t*)chanAddr(da816->data, ibuf, ichan, offset);
+  volatile int16_t* b = (int16_t*)chanAddr(da816->data, ibuf, ichan, offset);
   FILE *fin = 0;
 
   if (flag) {
@@ -372,11 +373,11 @@ int da816_DacVoltRead(ALPHIDA816 * da816, int npts, int offset, int ibuf, int ic
 }
 
 /*****************************************************************/
-int  da816_DirectDacWrite(ALPHIDA816 * da816, uint16 din, int chan)
+int  da816_DirectDacWrite(ALPHIDA816 * da816, int16_t din, int chan)
 {
   int16_t dummy = 0;
 
-  D16((da816->regs+DAC0102+(chan*2))) = din;
+  DA816_D16((da816->regs+DA816_DAC0102+(chan*2))) = din;
   return dummy;
 }
 
@@ -385,9 +386,10 @@ int  da816_DirectVoltWrite(ALPHIDA816 * da816, double vin, int chan, double *arg
 {
   int16_t dummy = 0;
 
-  uint16_t din  = da816_Volt2Dac(da816, vin);
-  D16((da816->regs+DAC0102+(chan*2))) = din;
-  printf("Volt:%e Dac: %d chan:%d Reg:0x%x\n", vin, din, chan,  DAC0102+(chan*2));
+  int16_t din  = da816_Volt2Dac(da816, vin);
+  DA816_D16((da816->regs+DA816_DAC0102+(chan*2))) = din;
+  printf("Volt:%e Dac: %d chan:%d Reg:0x%x  ", vin, din, chan, DA816_DAC0102+(chan*2));
+  printf("Dac read: %d\n", DA816_D16(da816->regs+DA816_DAC0102+(chan*2)));
   return dummy;
 }
 
@@ -399,9 +401,9 @@ int  da816_SampleSet(ALPHIDA816 * da816, int bank, int samples)
   printf("da816_SampleSet: bank %d, samples %d\n", bank, samples);
 
   if (bank == 0) {
-    D32(da816->regs+LAST_ADDR_0)  = samples; // last addr bank 0
+    DA816_D32(da816->regs+DA816_LAST_ADDR_0)  = samples-1; // last addr bank 0
   } else if (bank == 1) {
-    D32(da816->regs+LAST_ADDR_1)  = samples; // last addr bank 1
+    DA816_D32(da816->regs+DA816_LAST_ADDR_1)  = samples-1; // last addr bank 1
   }
 
   return dummy;
@@ -412,7 +414,7 @@ int  da816_ClkSMEnable(ALPHIDA816 * da816, int bank)
 {
   int16_t dummy = 0;
 
-  D08(da816->regs+CTL_STAT_0)   = CLK_OUTPUT_ENABLE | EXTERNAL_CLK | SM_ENABLE | AUTO_UPDATE_DAC;
+  DA816_D08(da816->regs+DA816_CTL_STAT_0)   = DA816_CLK_OUTPUT_ENABLE | DA816_EXTERNAL_CLK | DA816_SM_ENABLE | DA816_AUTO_UPDATE_DAC;
 
   return dummy;
 }
@@ -423,9 +425,9 @@ int  da816_ClkSMDisable(ALPHIDA816 * da816, int bank)
   int16_t dummy = 0;
 
   if (bank == 0) {
-    D08(da816->regs+CTL_STAT_0)   = CLK_OUTPUT_ENABLE; // ctrl 0
+    DA816_D08(da816->regs+DA816_CTL_STAT_0)   = DA816_CLK_OUTPUT_ENABLE; // ctrl 0
   } else if (bank == 1) {
-    D08(da816->regs+CTL_STAT_1)   = CLK_OUTPUT_ENABLE; // ctrl 1
+    DA816_D08(da816->regs+DA816_CTL_STAT_1)   = DA816_CLK_OUTPUT_ENABLE; // ctrl 1
   }
 
   return dummy;
@@ -449,7 +451,7 @@ int  da816_Setup(ALPHIDA816 * da816, int samples, int mode)
 
   printf("da816_Setup: Set mode %d with %d samples\n", mode, samples);
 
-  dummy = D08(da816->regs+CTL_STAT_0);
+  dummy = DA816_D08(da816->regs+DA816_CTL_STAT_0);
   if ((dummy & 1) == 0) {
     printf("da816_Setup: NOTICE: Enable writing to bank 0 (set active bank 1)\n");
     da816_BankSwitch(da816, 9999);
@@ -459,28 +461,28 @@ int  da816_Setup(ALPHIDA816 * da816, int samples, int mode)
   case 0x1:
     printf("Default setting after power up (mode:%d)\n", mode);
     printf("100KHz internal Clock, Clk Output, auto-update\n");
-    D32(da816->regs+CLK_SAMP_INT) = CLK_10KHZ; // sampling clock divisor
-    D32(da816->regs+LAST_ADDR_0)  = samples; // last addr bank 0
-    D32(da816->regs+LAST_ADDR_1)  = samples; // last addr bank 1
-    D08(da816->regs+BANK_CTL_0)   = SWITCH_AT_ADDR_0 | INT_BANK_DONE;             // BANK0 ctrl
-    D08(da816->regs+BANK_CTL_1)   = SWITCH_AT_ADDR_0 | INT_BANK_DONE;             // BANK1 ctrl
+    DA816_D32(da816->regs+DA816_CLK_SAMP_INT) = DA816_CLK_10KHZ; // sampling clock divisor
+    DA816_D32(da816->regs+DA816_LAST_ADDR_0)  = samples; // last addr bank 0
+    DA816_D32(da816->regs+DA816_LAST_ADDR_1)  = samples; // last addr bank 1
+    DA816_D08(da816->regs+DA816_BANK_CTL_0)   = DA816_SWITCH_AT_ADDR_0 | DA816_INT_BANK_DONE;             // BANK0 ctrl
+    DA816_D08(da816->regs+DA816_BANK_CTL_1)   = DA816_SWITCH_AT_ADDR_0 | DA816_INT_BANK_DONE;             // BANK1 ctrl
     //
     // Remove cap scs45 next to sic1 close to 10pin for getting the Clock Out!
-    D08(da816->regs+CTL_STAT_0)   = CLK_OUTPUT_ENABLE | INTERNAL_CLK | SM_ENABLE; // ctrl 0
-    D08(da816->regs+CTL_STAT_1)   = 0; // INT_CLK_ENABLE;                         // ctrl 1
+    DA816_D08(da816->regs+DA816_CTL_STAT_0)   = DA816_CLK_OUTPUT_ENABLE | DA816_INTERNAL_CLK | DA816_SM_ENABLE; // ctrl 0
+    DA816_D08(da816->regs+DA816_CTL_STAT_1)   = 0; // DA816_INT_CLK_ENABLE;                         // ctrl 1
     dummy = da816->regs[0]; // flush posted PCI writes
     break;
 
   case 0x2:
     printf("Direct Auto update to channel 1..16 (mode:%d)\n", mode);
     //    printf("\n");
-    D32(da816->regs+CLK_SAMP_INT) = CLK_100KHZ; // sampling clock divisor
-    D32(da816->regs+LAST_ADDR_0)  = samples; // last addr bank 0
-    D32(da816->regs+LAST_ADDR_1)  = samples; // last addr bank 1
-    D08(da816->regs+BANK_CTL_0)   = 0;                        // BANK0 ctrl
-    D08(da816->regs+BANK_CTL_1)   = 0;                        // BANK1 ctrl
-    D08(da816->regs+CTL_STAT_0)   = EXTERNAL_CLK | AUTO_UPDATE_DAC;          // ctrl 0
-    D08(da816->regs+CTL_STAT_1)   = 0;                        // ctrl 1
+    DA816_D32(da816->regs+DA816_CLK_SAMP_INT) = DA816_CLK_100KHZ; // sampling clock divisor
+    //    DA816_D32(da816->regs+DA816_LAST_ADDR_0)  = samples; // last addr bank 0
+    //   DA816_D32(da816->regs+DA816_LAST_ADDR_1)  = samples; // last addr bank 1
+    DA816_D08(da816->regs+DA816_BANK_CTL_0)   = 0;                        // BANK0 ctrl
+    DA816_D08(da816->regs+DA816_BANK_CTL_1)   = 0;                        // BANK1 ctrl
+    DA816_D08(da816->regs+DA816_CTL_STAT_0)   = DA816_INTERNAL_CLK | DA816_AUTO_UPDATE_DAC;          // ctrl 0
+    DA816_D08(da816->regs+DA816_CTL_STAT_1)   = 0;                        // ctrl 1
 
     dummy = da816->regs[0]; // flush posted PCI writes
     break;
@@ -488,48 +490,48 @@ int  da816_Setup(ALPHIDA816 * da816, int samples, int mode)
   case 0x3:
     printf("External Clk, loop on samples, stay in bank0 (mode:%d)\n", mode);
     //    printf("\n");
-    D32(da816->regs+CLK_SAMP_INT) = CLK_100KHZ; // sampling clock divisor
-    D32(da816->regs+LAST_ADDR_0)  = samples; // last addr bank 0
-    D32(da816->regs+LAST_ADDR_1)  = 0; // samples; // last addr bank 1
-    D08(da816->regs+BANK_CTL_0)   = 0; // SWITCH_AT_ADDR_0;             // BANK0 ctrl
-    D08(da816->regs+BANK_CTL_1)   = 0; // SWITCH_AT_ADDR_0;             // BANK1 ctrl
-    D08(da816->regs+CTL_STAT_0)   = CLK_OUTPUT_ENABLE | SM_ENABLE | EXTERNAL_CLK | AUTO_UPDATE_DAC; // ctrl 0
-    D08(da816->regs+CTL_STAT_1)   = 0; // ctrl 1
+    DA816_D32(da816->regs+DA816_CLK_SAMP_INT) = DA816_CLK_100KHZ; // sampling clock divisor
+    DA816_D32(da816->regs+DA816_LAST_ADDR_0)  = samples; // last addr bank 0
+    DA816_D32(da816->regs+DA816_LAST_ADDR_1)  = 0; // samples; // last addr bank 1
+    DA816_D08(da816->regs+DA816_BANK_CTL_0)   = 0; // DA816_SWITCH_AT_ADDR_0;             // BANK0 ctrl
+    DA816_D08(da816->regs+DA816_BANK_CTL_1)   = 0; // DA816_SWITCH_AT_ADDR_0;             // BANK1 ctrl
+    DA816_D08(da816->regs+DA816_CTL_STAT_0)   = DA816_CLK_OUTPUT_ENABLE | DA816_SM_ENABLE | DA816_EXTERNAL_CLK | DA816_AUTO_UPDATE_DAC; // ctrl 0
+    DA816_D08(da816->regs+DA816_CTL_STAT_1)   = 0; // ctrl 1
     
     printf("Setup: LAST_ADDR_0: %d, LAST_ADDR_1: %d, BANK_CTL_0: 0x%02x, BANK_CTL_1: 0x%02x, CTL_STAT_0: 0x%02x, CTL_STAT_1: 0x%02x\n",
-	   D32(da816->regs+LAST_ADDR_0),
-	   D32(da816->regs+LAST_ADDR_1),
-	   D08(da816->regs+BANK_CTL_0),
-	   D08(da816->regs+BANK_CTL_1),
-	   D08(da816->regs+CTL_STAT_0),
-	   D08(da816->regs+CTL_STAT_1));
+	   DA816_D32(da816->regs+DA816_LAST_ADDR_0),
+	   DA816_D32(da816->regs+DA816_LAST_ADDR_1),
+	   DA816_D08(da816->regs+DA816_BANK_CTL_0),
+	   DA816_D08(da816->regs+DA816_BANK_CTL_1),
+	   DA816_D08(da816->regs+DA816_CTL_STAT_0),
+	   DA816_D08(da816->regs+DA816_CTL_STAT_1));
 
     dummy = da816->regs[0]; // flush posted PCI writes
     break;
 
   case 0x4:
-    printf("External Clk, switch to other bank at 0 (mode:%d)\n", mode);
+    printf("Internal Clk, switch to other bank at 0 (mode:%d)\n", mode);
     //    printf("\n");
-    D32(da816->regs+CLK_SAMP_INT) = CLK_100KHZ; // Not used as external
-    D32(da816->regs+LAST_ADDR_0)  = samples; // last addr bank 0
-    D32(da816->regs+LAST_ADDR_1)  = samples; // last addr bank 1
-    D08(da816->regs+BANK_CTL_0)   = 0; // SWITCH_AT_ADDR_0;             // Stay in BANK0 ctrl
-    D08(da816->regs+BANK_CTL_1)   = 0; // SWITCH_AT_ADDR_0;             // Stay in BANK1 ctrl
-    D08(da816->regs+CTL_STAT_0)   = CLK_OUTPUT_ENABLE | EXTERNAL_CLK | SM_ENABLE; // ctrl 0
-    D08(da816->regs+CTL_STAT_1)   = CLK_OUTPUT_ENABLE | EXTERNAL_CLK | SM_ENABLE; // ctrl 1
+    DA816_D32(da816->regs+DA816_CLK_SAMP_INT) = DA816_CLK_100KHZ; // Not used as external
+    DA816_D32(da816->regs+DA816_LAST_ADDR_0)  = samples-1; // last addr bank 0
+    DA816_D32(da816->regs+DA816_LAST_ADDR_1)  = samples-1; // last addr bank 1
+    DA816_D08(da816->regs+DA816_BANK_CTL_0)   = 1; // DA816_SWITCH_AT_ADDR_0;             // Stay in BANK0 ctrl
+    DA816_D08(da816->regs+DA816_BANK_CTL_1)   = 0; // DA816_SWITCH_AT_ADDR_0;             // Stay in BANK1 ctrl
+    DA816_D08(da816->regs+DA816_CTL_STAT_0)   = DA816_CLK_OUTPUT_ENABLE | DA816_INTERNAL_CLK | DA816_SM_ENABLE; // ctrl 0
+    DA816_D08(da816->regs+DA816_CTL_STAT_1)   = 0; 
     dummy = da816->regs[0]; // flush posted PCI writes
     break;
 
   case 0x5:
-    printf("External Clk Off, (mode:%d)\n", mode);
+    printf("Internal Clk Off, (mode:%d)\n", mode);
     //    printf("\n");
-    D32(da816->regs+CLK_SAMP_INT) = CLK_100KHZ; // Not used as external
-    D32(da816->regs+LAST_ADDR_0)  = 0; // last addr bank 0
-    D32(da816->regs+LAST_ADDR_1)  = 0; // last addr bank 1
-    D08(da816->regs+BANK_CTL_0)   = 0; // SWITCH_AT_ADDR_0;             // Stay in BANK0 ctrl
-    D08(da816->regs+BANK_CTL_1)   = 0; // SWITCH_AT_ADDR_0;             // Stay in BANK1 ctrl
-    D08(da816->regs+CTL_STAT_0)   = CLK_OUTPUT_ENABLE; // ctrl 0
-    D08(da816->regs+CTL_STAT_1)   = CLK_OUTPUT_ENABLE; // ctrl 1
+    DA816_D32(da816->regs+DA816_CLK_SAMP_INT) = DA816_CLK_100KHZ; // Not used as external
+    DA816_D32(da816->regs+DA816_LAST_ADDR_0)  = samples; // last addr bank 0
+    DA816_D32(da816->regs+DA816_LAST_ADDR_1)  = samples; // last addr bank 1
+    DA816_D08(da816->regs+DA816_BANK_CTL_0)   = 0; // DA816_SWITCH_AT_ADDR_0;             // Stay in BANK0 ctrl
+    DA816_D08(da816->regs+DA816_BANK_CTL_1)   = 0; // DA816_SWITCH_AT_ADDR_0;             // Stay in BANK1 ctrl
+    DA816_D08(da816->regs+DA816_CTL_STAT_0)   = DA816_CLK_OUTPUT_ENABLE | DA816_SM_ENABLE | DA816_INTERNAL_CLK ; // ctrl 0
+    DA816_D08(da816->regs+DA816_CTL_STAT_1)   = 0; // ctrl 1
     dummy = da816->regs[0]; // flush posted PCI writes
     break;
 
@@ -546,10 +548,10 @@ int  da816_Setup(ALPHIDA816 * da816, int samples, int mode)
 
 int  da816_Status(ALPHIDA816 * da816, int mode)
 {
-  int stat = D32(da816->regs+REGS_D32);
+  int stat = DA816_D32(da816->regs+DA816_REGS_D32);
   switch (mode) {
   case 0x1:
-    printf("PMC-DA816: Status reg : %p : 0x%08x\n",da816->regs+REGS_D32, stat);
+    printf("PMC-DA816: Status reg : %p : 0x%08x\n",da816->regs+DA816_REGS_D32, stat);
     printf("%d:Mode Bank 0     ", (stat & 0x3));
     printf("%d:Mode Bank 1     ", (stat & 0x300) >> 8);
     printf("%s:Active Bank    \n", stat & 0x00010000 ? "1" : "0");
@@ -568,9 +570,9 @@ int  da816_Status(ALPHIDA816 * da816, int mode)
     printf("%s:Int B1  done    ",  stat & 0x20000000 ? "y" : "n");
     printf("%s:Int clk done    ",  stat & 0x40000000 ? "y" : "n");
     printf("%s:Int FP  done   \n", stat & 0x80000000 ? "y" : "n");
-    printf("Clock divisor: %d\n", D32(da816->regs+CLK_SAMP_INT));
-    printf("SM address: %d\n", D32(da816->regs+ADDRESS_SM));
-    printf("Last addr bank0: %d, bank1: %d\n", D32(da816->regs+LAST_ADDR_0), D32(da816->regs+LAST_ADDR_1));
+    printf("Clock divisor: %d\n", DA816_D32(da816->regs+DA816_CLK_SAMP_INT));
+    printf("SM address: %d\n", DA816_D32(da816->regs+DA816_ADDRESS_SM));
+    printf("Last addr bank0: %d, bank1: %d\n", DA816_D32(da816->regs+DA816_LAST_ADDR_0), DA816_D32(da816->regs+DA816_LAST_ADDR_1));
 
     break;
   case 0x2:
@@ -599,7 +601,7 @@ int main(int argc, char* argv[])
   ALPHIDA816 *al=0;
   int dummy=0;
   int i;
-  uint16 din=0;
+  int16_t din=0;
   double arg = 0, ddout;
   int chan = 0;
 
@@ -618,46 +620,49 @@ int main(int argc, char* argv[])
   da816_Status(al, 1);
 
 
-#if 1
+#if 0
   if (argc == 3) {
-    chan = atoi(argv[1]) - 1;
-    din  = (uint16_t) atoi(argv[2]);
+    chan = atoi(argv[1]);
+    //    din  = (int16_t) atoi(argv[2]);
+    ddout  = (double) atof(argv[2]);
+    
     samples = 0;
-    da816_Setup(al, samples, 2);
 
-    da816_ScaleSet(al, 20.0/65535., -10.0);
-    printf("alpha:%e\noffset:%e\n", al->alpha, al->beta);
-
-    for (i=0;i<8;i++) {
-      ddout = 5.0;
-      da816_DirectVoltWrite(al, ddout, i, &arg);
-    }
   }
-  else
-    printf("arg error\n");
-
+  da816_Setup(al, samples, 2);
+  
+  printf("alpha:%e\noffset:%e\n", al->alpha, al->beta);
+  
+  for (i=0;i<8;i++) {
+    da816_DirectVoltWrite(al, ddout, i, &arg);
+    //    da816_DirectDacWrite(al, (int16_t)ddout, i); // , &arg);
+  }
+  DA816_D32(al->regs+DA816_DACS_UPDATES) = 0;
+  da816_Status(al, 1);  
 #endif
 
 
 #if 1
-  int npts = 0;
   int status = 0;
   da816_Reset(al);
+  DA816_D08(al->regs+DA816_CTL_STAT_0)   = 0; // ctrl 0
+  DA816_D08(al->regs+DA816_CTL_STAT_1)   = 0; // ctrl 0
   /* clear data memory */
   printf("Active banks: %d\n", da816_BankActiveRead(al));
   int pts = 0;
 
-  status = da816_LinLoad( al, -10.0 , -5., 21,  &pts, 0, 0);
+  status = da816_LinLoad( al, 10.0 , -10., 11,  &pts, 1, 2); pts = 0;
+  status = da816_LinLoad( al, 10.0 , -10., 21,  &pts, 0, 2);
   printf("pts:%d\n", pts);
 
-  da816_DacVoltRead(al, pts, 0, 0, 0, 1);
-
+  da816_DacVoltRead(al, pts, 0, 0, 2, 1);
+ 
   printf("Active banks: %d\n", da816_BankActiveRead(al));
-  npts = samples = pts-1;
-
-  status = da816_Setup(al, samples, 5);
+  samples = pts;
+  
+  status = da816_Setup(al, samples, 4);
+  status = da816_SampleSet(al, 1, 11);
   status = da816_SampleSet(al, 0, samples);
-  status = da816_ClkSMEnable(al, 0);
 
   printf("Active banks: %d\n", da816_BankActiveRead(al));
 
@@ -668,7 +673,6 @@ int main(int argc, char* argv[])
 }
 
 #endif
-
 /* emacs
  * Local Variables:
  * mode:C
