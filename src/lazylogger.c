@@ -24,6 +24,8 @@ $Id$
 #define MAX_LAZY_CHANNEL 4
 #define TRACE
 
+#define LOG_TYPE_SCRIPT (-1)
+
 typedef struct {
   INT run;
   double size;
@@ -1157,6 +1159,119 @@ Function value:
 }
 
 /*------------------------------------------------------------------*/
+INT lazy_script_copy(char *infile)
+/********************************************************************\
+Routine: lazy_script_copy
+Purpose: call user script to backup file to backup device
+Input:
+char * infile    source file to be backed up
+Output:
+Function value:
+0           success
+\********************************************************************/
+{
+   int status;
+   FILE* fin;
+   int cpy_loop_time = ss_millitime();
+   char cmd[256];
+
+   /* init copy variables */
+   lazyst.cur_size = 0;
+
+   /* run shell command if available */
+   if (lazy.commandBefore[0]) {
+      char cmd[256];
+      sprintf(cmd, "%s %s %i", lazy.commandBefore,
+              infile, lazyst.nfiles);
+      cm_msg(MINFO, "Lazy", "Exec pre file write script:%s", cmd);
+      ss_system(cmd);
+   }
+
+   /* create the command for the backup script */
+   sprintf(cmd, "%s %s 2>&1", lazy.path, infile);
+
+   {
+      char str[MAX_FILE_PATH];
+      sprintf(str, "Starting lazy job \'%s\'", cmd);
+      if (msg_flag)
+         cm_msg(MTALK, "Lazy", str);
+      cm_msg(MINFO, "Lazy", str);
+      cm_msg1(MINFO, "lazy_log_update", "lazy", str);
+   }
+
+   /* start the backup script */
+   fin = popen(cmd, "r");
+
+   if (fin == NULL) {
+      cm_msg(MTALK, "Lazy_copy", "cannot start %s, errno %d (%s)", cmd, errno, strerror(errno));
+      return FORCE_EXIT;
+   }
+
+   if (1) {
+      int desc = fileno(fin);
+      int flags = fcntl(desc, F_GETFL, 0);
+      fcntl(desc, F_SETFL, flags | O_NONBLOCK);
+   }
+
+   /* infinite loop while copying */
+   while (1) {
+      char buf[1024];
+      int rd = read(fileno(fin), buf, sizeof(buf));
+      if (rd == 0) {
+         /* file closed - backup script completed */
+         break;
+      } else if (rd < 0) {
+         /* i/o error */
+
+         if (errno == EAGAIN) {
+            /* this is the main loop while waiting for the backup script */
+            status = cm_yield(1000);
+            continue;
+         }
+
+         cm_msg(MERROR, "lazy_copy", "Error reading output of the backup script, errno %d (%s)", errno, strerror(errno));
+         break;
+      } else {
+         char *p;
+         /* backup script printed something, write it to log file */
+        
+         /* make sure text is NUL-terminated */
+         buf[rd] = 0;
+
+         /* chop the output of the backup script into lines separated by '\n' */
+         p = buf;
+         while (p) {
+            char* q = strchr(p,'\n');
+            if (q) {
+              *q = 0; // replace '\n' with NUL
+              q++;
+              if (q[0] == 0) // check for end of line
+                 q = NULL;
+            }
+            cm_msg(MINFO, "lazy_copy", p);
+            p = q;
+         }
+      }
+   }
+
+   /* update for last the statistics */
+   lazy_statistics_update(cpy_loop_time);
+
+   /* close input log device */
+   status = pclose(fin);
+
+   if (status != 0) {
+      cm_msg(MERROR, "lazy_copy", "Backup script finished with exit code %d, status 0x%x", (status>>8), status);
+      return SS_NO_SPACE;
+   }
+
+   cm_msg(MINFO, "lazy_copy", "Backup script finished in %.1f sec with exit code %d", (ss_millitime() - cpy_loop_time)/1000.0, (status>>8));
+
+   /* request exit */
+   return 0;
+}
+
+/*------------------------------------------------------------------*/
 BOOL lazy_file_exists(char *dir, char *file)
 /********************************************************************\
 Routine: lazy_file_exists
@@ -1229,8 +1344,10 @@ Function value:
     dev_type = LOG_TYPE_TAPE;
   else if (equal_ustring(lazy.type, "FTP"))
     dev_type = LOG_TYPE_FTP;
+  else if (equal_ustring(lazy.type, "SCRIPT"))
+    dev_type = LOG_TYPE_SCRIPT;
   else {
-    cm_msg(MERROR, "Lazy", "Unknown device type %s (Disk, Tape, FTP)", lazy.type);
+    cm_msg(MERROR, "Lazy", "Unknown device type %s (Disk, Tape, FTP or SCRIPT)", lazy.type);
     return DB_NO_ACCESS;
   }
 
@@ -1437,8 +1554,9 @@ Function value:
   if (lazyst.cur_run > (cur_acq_run - abs(lazy.staybehind)))
     return NOTHING_TODO;
 
-  if (!haveTape)
-    return NOTHING_TODO;
+  if (dev_type != LOG_TYPE_SCRIPT)
+    if (!haveTape)
+      return NOTHING_TODO;
 
   /* Compose the proper file name */
   status = lazy_file_compose(lazy.backfmt, lazy.dir, lazyst.cur_run, inffile, lazyst.backfile);
@@ -1550,7 +1668,16 @@ Function value:
 
       /* Finally do the copy */
       cp_time = ss_millitime();
-      if (((status = lazy_copy(outffile, inffile)) != 0) && (status != EXIT_REQUEST)) {
+      status = 0;
+      if (dev_type == LOG_TYPE_SCRIPT) {
+         //sprintf(lazy.backlabel,"%04d%02d%02d", 2007, 8, 30);
+         sprintf(lazy.backlabel,"%06d", 100*(lazyst.cur_run/100));
+         status = lazy_script_copy(inffile);
+      } else {
+         status = lazy_copy(outffile, inffile);
+      }
+
+      if ((status != 0) && (status != EXIT_REQUEST)) {
         if (status == SS_NO_SPACE) {
           /* Consider this case as EOT reached */
           eot_reached = TRUE;
