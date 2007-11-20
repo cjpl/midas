@@ -39,10 +39,16 @@ int softdac_Open(ALPHISOFTDAC ** al)
 {
 
   // Book space
+  printf("al :%p\n", *al);
   *al = (ALPHISOFTDAC *) calloc(1, sizeof(ALPHISOFTDAC));
+  printf("al :%p\n", *al);
+  if (al == NULL) {
+    printf ("cannot calloc softdac structure\n");
+    return -1;
+  }
   memset((char *) *al, 0, sizeof(ALPHISOFTDAC));
   (*al)->regs = (char *) calloc(1, sizeof(char *));
-  (*al)->data = (char *) calloc(1, sizeof(char *));
+  //  (*al)->data = (char *) calloc(1, sizeof(char *));
 
   FILE *fp = fopen("/dev/pmcsoftdacm","r+");
   if (fp==0)
@@ -65,6 +71,9 @@ int softdac_Open(ALPHISOFTDAC ** al)
 	}
     }
 
+  fclose(fp);
+  fp = NULL;
+
   // Set initial scaling coefficients
   softdac_ScaleSet(*al, SOFTDAC_RANGE_PM10V, 0., 0.);
 
@@ -76,11 +85,15 @@ int softdac_Open(ALPHISOFTDAC ** al)
 */
 void softdac_Close(ALPHISOFTDAC * al)
 {
-  munmap(0,0x100000);
-
-  if (al)
+  printf("al :%p\n", al);
+  if (al) { 
+    //    free (al->regs);
+    //    free (al->data);
     free (al);
-  al = NULL;
+    al = NULL;
+  }
+  munmap(0,0x100000);
+  printf("al :%p\n", al);
 }
 
 /********************************************************************/
