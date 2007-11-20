@@ -252,6 +252,7 @@ PROGS = $(BIN_DIR)/mserver $(BIN_DIR)/mhttpd \
 	$(BIN_DIR)/mtape $(BIN_DIR)/mhist \
 	$(BIN_DIR)/mstat $(BIN_DIR)/mcnaf \
 	$(BIN_DIR)/mdump $(BIN_DIR)/lazylogger \
+	$(BIN_DIR)/mhdump \
 	$(BIN_DIR)/mchart $(BIN_DIR)/stripchart.tcl \
 	$(BIN_DIR)/webpaw $(BIN_DIR)/odbhist \
 	$(BIN_DIR)/melog \
@@ -446,6 +447,9 @@ $(BIN_DIR)/mcnaf: $(UTL_DIR)/mcnaf.c $(DRV_DIR)/camac/camacrpc.c
 
 $(BIN_DIR)/mdump: $(UTL_DIR)/mdump.c
 	$(CC) $(CFLAGS) $(OSFLAGS) -o $@ $(UTL_DIR)/mdump.c $(LIB) $(LIBS)
+
+$(BIN_DIR)/mhdump: $(UTL_DIR)/mhdump.cxx
+	$(CXX) $(CFLAGS) $(OSFLAGS) -o $@ $<
 
 $(BIN_DIR)/lazylogger: $(SRC_DIR)/lazylogger.c
 	$(CC) $(CFLAGS) $(OSFLAGS) -o $@ $(SRC_DIR)/lazylogger.c $(LIB) $(LIBS)
