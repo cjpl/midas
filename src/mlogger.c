@@ -257,8 +257,7 @@ void ctime_to_datetime(char *date)
 
    mktime(&tms);
    sprintf(date, "%d-%02d-%02d %02d-%02d-%02d",
-           tms.tm_year + 1900, tms.tm_mon + 1, tms.tm_mday,
-           tms.tm_hour, tms.tm_min, tms.tm_sec);
+           tms.tm_year + 1900, tms.tm_mon + 1, tms.tm_mday, tms.tm_hour, tms.tm_min, tms.tm_sec);
 }
 
 /*---- mySQL debugging output --------------------------------------*/
@@ -403,8 +402,7 @@ int sql_get_columns(HNDLE hKeyRoot, SQL_LIST ** sql_list)
             break;
          default:
             cm_msg(MERROR, "sql_create_database",
-                   "No SQL type mapping for key \"%s\" of type %s", key.name,
-                   rpc_tid_name(key.type));
+                   "No SQL type mapping for key \"%s\" of type %s", key.name, rpc_tid_name(key.type));
          }
       }
 
@@ -432,15 +430,13 @@ BOOL sql_create_table(MYSQL * db, char *database, char *table, HNDLE hKeyRoot)
    }
 
    for (i = 0; i < n_col; i++)
-      sprintf(query + strlen(query), "`%s` %s  NOT NULL, ", sql_list[i].column_name,
-              sql_list[i].column_type);
+      sprintf(query + strlen(query), "`%s` %s  NOT NULL, ", sql_list[i].column_name, sql_list[i].column_type);
 
    sprintf(query + strlen(query), "PRIMARY KEY (`%s`))", sql_list[0].column_name);
    free(sql_list);
 
    if (mysql_query_debug(db, query)) {
-      cm_msg(MERROR, "sql_create_table", "Failed to create table: Error: %s",
-             mysql_error(db));
+      cm_msg(MERROR, "sql_create_table", "Failed to create table: Error: %s", mysql_error(db));
       return FALSE;
    }
 
@@ -482,15 +478,13 @@ BOOL sql_modify_table(MYSQL * db, char *database, char *table, HNDLE hKeyRoot)
 
             if (mysql_query_debug(db, query)) {
                free(sql_list);
-               cm_msg(MERROR, "sql_modify_table", "Failed to modify column: Error: %s",
-                      mysql_error(db));
+               cm_msg(MERROR, "sql_modify_table", "Failed to modify column: Error: %s", mysql_error(db));
                return FALSE;
             }
 
          } else {
             free(sql_list);
-            cm_msg(MERROR, "sql_modify_table", "Failed to add column: Error: %s",
-                   mysql_error(db));
+            cm_msg(MERROR, "sql_modify_table", "Failed to add column: Error: %s", mysql_error(db));
             return FALSE;
          }
       }
@@ -509,16 +503,14 @@ BOOL sql_create_database(MYSQL * db, char *database)
 
    sprintf(query, "CREATE DATABASE `%s`", database);
    if (mysql_query_debug(db, query)) {
-      cm_msg(MERROR, "sql_create_database", "Failed to create database: Error: %s",
-             mysql_error(db));
+      cm_msg(MERROR, "sql_create_database", "Failed to create database: Error: %s", mysql_error(db));
       return FALSE;
    }
 
    /* select database */
    sprintf(query, "USE `%s`", database);
    if (mysql_query_debug(db, query)) {
-      cm_msg(MERROR, "sql_create_database", "Failed to select database: Error: %s",
-             mysql_error(db));
+      cm_msg(MERROR, "sql_create_database", "Failed to select database: Error: %s", mysql_error(db));
       return FALSE;
    }
 
@@ -584,8 +576,7 @@ int sql_insert(MYSQL * db, char *database, char *table, HNDLE hKeyRoot, BOOL cre
          /* if table does not exist, creat it and try again */
          sql_create_table(db, database, table, hKeyRoot);
          if (mysql_query_debug(db, query)) {
-            cm_msg(MERROR, "sql_insert", "Failed to update database: Error: %s",
-                   mysql_error(db));
+            cm_msg(MERROR, "sql_insert", "Failed to update database: Error: %s", mysql_error(db));
             return mysql_errno(db);
          }
          cm_msg(MINFO, "sql_insert", "SQL table '%s.%s' created successfully", database, table);
@@ -595,15 +586,13 @@ int sql_insert(MYSQL * db, char *database, char *table, HNDLE hKeyRoot, BOOL cre
          /* if table structure is different, adjust it and try again */
          sql_modify_table(db, database, table, hKeyRoot);
          if (mysql_query_debug(db, query)) {
-            cm_msg(MERROR, "sql_insert", "Failed to update database: Error: %s",
-                   mysql_error(db));
+            cm_msg(MERROR, "sql_insert", "Failed to update database: Error: %s", mysql_error(db));
             return mysql_errno(db);
          }
 
       } else {
          status = mysql_errno(db);
-         cm_msg(MERROR, "sql_insert", "Failed to update database: Error: %s",
-                mysql_error(db));
+         cm_msg(MERROR, "sql_insert", "Failed to update database: Error: %s", mysql_error(db));
          return mysql_errno(db);
       }
    }
@@ -613,8 +602,7 @@ int sql_insert(MYSQL * db, char *database, char *table, HNDLE hKeyRoot, BOOL cre
 
 /*---- Update table row from ODB tree ------------------------------*/
 
-int sql_update(MYSQL * db, char *database, char *table, HNDLE hKeyRoot, BOOL create_flag,
-               char *where)
+int sql_update(MYSQL * db, char *database, char *table, HNDLE hKeyRoot, BOOL create_flag, char *where)
 {
    char query[5000];
    int i, n_col;
@@ -631,8 +619,7 @@ int sql_update(MYSQL * db, char *database, char *table, HNDLE hKeyRoot, BOOL cre
       return DB_SUCCESS;
 
    for (i = 0; i < n_col; i++) {
-      sprintf(query + strlen(query), "`%s`='%s'", sql_list[i].column_name,
-              sql_list[i].data);
+      sprintf(query + strlen(query), "`%s`='%s'", sql_list[i].column_name, sql_list[i].data);
       if (i < n_col - 1)
          strcat(query, ", ");
    }
@@ -651,14 +638,12 @@ int sql_update(MYSQL * db, char *database, char *table, HNDLE hKeyRoot, BOOL cre
          /* if table structure is different, adjust it and try again */
          sql_modify_table(db, database, table, hKeyRoot);
          if (mysql_query_debug(db, query)) {
-            cm_msg(MERROR, "sql_update", "Failed to update database: Error: %s",
-                   mysql_error(db));
+            cm_msg(MERROR, "sql_update", "Failed to update database: Error: %s", mysql_error(db));
             return mysql_errno(db);
          }
 
       } else {
-         cm_msg(MERROR, "sql_update", "Failed to update database: Error: %s",
-                mysql_error(db));
+         cm_msg(MERROR, "sql_update", "Failed to update database: Error: %s", mysql_error(db));
          return mysql_errno(db);
       }
    }
@@ -670,15 +655,13 @@ int sql_update(MYSQL * db, char *database, char *table, HNDLE hKeyRoot, BOOL cre
 
 void create_sql_tree()
 {
-   char hostname[80], username[80], password[80], database[80], table[80], 
-      filename[80];
+   char hostname[80], username[80], password[80], database[80], table[80], filename[80];
    int size, write_flag, create_flag;
    HNDLE hKeyRoot, hKey;
 
    size = sizeof(create_flag);
    create_flag = 0;
-   db_get_value(hDB, 0, "/Logger/SQL/Create database", &create_flag, &size, TID_BOOL,
-                TRUE);
+   db_get_value(hDB, 0, "/Logger/SQL/Create database", &create_flag, &size, TID_BOOL, TRUE);
 
    size = sizeof(write_flag);
    write_flag = 0;
@@ -715,16 +698,13 @@ void create_sql_tree()
       db_create_key(hDB, 0, "/Logger/SQL/Links BOR", TID_KEY);
 
       if (db_find_key(hDB, 0, "/Runinfo/Run number", &hKey) == DB_SUCCESS)
-         db_create_link(hDB, 0, "/Logger/SQL/Links BOR/Run number",
-                        "/Runinfo/Run number");
+         db_create_link(hDB, 0, "/Logger/SQL/Links BOR/Run number", "/Runinfo/Run number");
 
       if (db_find_key(hDB, 0, "/Experiment/Run parameters/Comment", &hKey) == DB_SUCCESS)
-         db_create_link(hDB, 0, "/Logger/SQL/Links BOR/Comment",
-                        "/Experiment/Run parameters/Comment");
+         db_create_link(hDB, 0, "/Logger/SQL/Links BOR/Comment", "/Experiment/Run parameters/Comment");
 
       if (db_find_key(hDB, 0, "/Runinfo/Start time", &hKey) == DB_SUCCESS)
-         db_create_link(hDB, 0, "/Logger/SQL/Links BOR/Start time",
-                        "/Runinfo/Start time");
+         db_create_link(hDB, 0, "/Logger/SQL/Links BOR/Start time", "/Runinfo/Start time");
    }
 
    db_find_key(hDB, 0, "/Logger/SQL/Links EOR", &hKeyRoot);
@@ -735,8 +715,7 @@ void create_sql_tree()
       if (db_find_key(hDB, 0, "/Runinfo/Stop time", &hKey) == DB_SUCCESS)
          db_create_link(hDB, 0, "/Logger/SQL/Links EOR/Stop time", "/Runinfo/Stop time");
 
-      if (db_find_key(hDB, 0, "/Equipment/Trigger/Statistics/Events sent", &hKey) ==
-          DB_SUCCESS)
+      if (db_find_key(hDB, 0, "/Equipment/Trigger/Statistics/Events sent", &hKey) == DB_SUCCESS)
          db_create_link(hDB, 0, "/Logger/SQL/Links EOR/Number of events",
                         "/Equipment/Trigger/Statistics/Events sent");
 
@@ -748,8 +727,7 @@ void create_sql_tree()
 void write_sql(BOOL bor)
 {
    MYSQL db;
-   char hostname[80], username[80], password[80], database[80], table[80],
-       query[5000], where[500];
+   char hostname[80], username[80], password[80], database[80], table[80], query[5000], where[500];
    int status, size, write_flag, create_flag;
    BOOL insert;
    HNDLE hKey, hKeyRoot;
@@ -799,8 +777,7 @@ void write_sql(BOOL bor)
 
    size = sizeof(create_flag);
    create_flag = 0;
-   db_get_value(hDB, 0, "/Logger/SQL/Create database", &create_flag, &size, TID_BOOL,
-                TRUE);
+   db_get_value(hDB, 0, "/Logger/SQL/Create database", &create_flag, &size, TID_BOOL, TRUE);
 
    size = sizeof(write_flag);
    write_flag = 0;
@@ -835,8 +812,7 @@ void write_sql(BOOL bor)
    mysql_init(&db);
 
    if (!mysql_real_connect(&db, hostname, username, password, NULL, 0, NULL, 0)) {
-      cm_msg(MERROR, "write_sql", "Failed to connect to database: Error: %s",
-             mysql_error(&db));
+      cm_msg(MERROR, "write_sql", "Failed to connect to database: Error: %s", mysql_error(&db));
       mysql_close(&db);
       return;
    }
@@ -854,8 +830,7 @@ void write_sql(BOOL bor)
          cm_msg(MINFO, "write_sql", "Database \"%s\" created successfully", database);
 
       } else {
-         cm_msg(MERROR, "write_sql", "Failed to select database: Error: %s",
-                mysql_error(&db));
+         cm_msg(MERROR, "write_sql", "Failed to select database: Error: %s", mysql_error(&db));
          mysql_close(&db);
          return;
       }
@@ -891,10 +866,8 @@ INT tape_open(char *dev, INT * handle)
    if (count == sizeof(buffer)) {
       /* tape contains data -> don't start */
       ss_tape_rskip(*handle, -1);
-      cm_msg(MINFO, "tape_open",
-             "Tape contains data, please spool tape with 'mtape seod'");
-      cm_msg(MINFO, "tape_open",
-             "or erase it with 'mtape weof', 'mtape rewind', then try again.");
+      cm_msg(MINFO, "tape_open", "Tape contains data, please spool tape with 'mtape seod'");
+      cm_msg(MINFO, "tape_open", "or erase it with 'mtape weof', 'mtape rewind', then try again.");
       ss_tape_close(*handle);
       return SS_TAPE_ERROR;
    }
@@ -986,42 +959,44 @@ INT ftp_open(char *destination, FTP_CON ** con)
 
 INT midas_flush_buffer(LOG_CHN * log_chn)
 {
-   INT status, size, written;
+   INT size, written;
    MIDAS_INFO *info;
 
    info = (MIDAS_INFO *) log_chn->format_info;
    size = (POINTER_T) info->write_pointer - (POINTER_T) info->buffer;
 
    if (size == 0)
-      return SS_SUCCESS;
+      return 0;
 
    /* write record to device */
    if (log_chn->type == LOG_TYPE_TAPE)
-      status = ss_tape_write(log_chn->handle, info->buffer, size);
+      written = ss_tape_write(log_chn->handle, info->buffer, size);
    else if (log_chn->type == LOG_TYPE_FTP)
-      status =
+      written =
           ftp_send(((FTP_CON *) log_chn->ftp_con)->data, info->buffer,
                    size) == size ? SS_SUCCESS : SS_FILE_ERROR;
    else if (log_chn->gzfile) {
 #ifdef HAVE_ZLIB
-      written = gzwrite(log_chn->gzfile, info->buffer, size);
-      status = written == size ? SS_SUCCESS : SS_FILE_ERROR;
+      z_streamp s;
+
+      s = (z_streamp) log_chn->gzfile;
+      written = s->total_out;
+      gzwrite(log_chn->gzfile, info->buffer, size);
+      written = s->total_out - written;
 #else
       assert(!"this cannot happen! support for ZLIB not compiled in");
 #endif
    } else {
 #ifdef OS_WINNT
-      WriteFile((HANDLE) log_chn->handle, info->buffer, size, (unsigned long *) &written,
-                NULL);
+      WriteFile((HANDLE) log_chn->handle, info->buffer, size, (unsigned long *) &written, NULL);
 #else
       written = write(log_chn->handle, info->buffer, size);
 #endif
-      status = written == size ? SS_SUCCESS : SS_FILE_ERROR;
    }
 
    info->write_pointer = info->buffer;
 
-   return status;
+   return written;
 }
 
 
@@ -1029,14 +1004,14 @@ INT midas_flush_buffer(LOG_CHN * log_chn)
 
 INT midas_write(LOG_CHN * log_chn, EVENT_HEADER * pevent, INT evt_size)
 {
-   INT status, size_left;
+   INT i, written, size_left;
    MIDAS_INFO *info;
 
    info = (MIDAS_INFO *) log_chn->format_info;
+   written = 0;
 
    /* check if event fits into buffer */
-   size_left =
-       TAPE_BUFFER_SIZE - ((POINTER_T) info->write_pointer - (POINTER_T) info->buffer);
+   size_left = TAPE_BUFFER_SIZE - ((POINTER_T) info->write_pointer - (POINTER_T) info->buffer);
 
    if (size_left < evt_size) {
       /* copy first part of event */
@@ -1044,9 +1019,9 @@ INT midas_write(LOG_CHN * log_chn, EVENT_HEADER * pevent, INT evt_size)
       info->write_pointer += size_left;
 
       /* flush buffer */
-      status = midas_flush_buffer(log_chn);
-      if (status != SS_SUCCESS)
-         return status;
+      written += midas_flush_buffer(log_chn);
+      if (written == 0)
+         return SS_FILE_ERROR;
 
       /* several writes for large events */
       while (evt_size - size_left >= TAPE_BUFFER_SIZE) {
@@ -1054,9 +1029,11 @@ INT midas_write(LOG_CHN * log_chn, EVENT_HEADER * pevent, INT evt_size)
          info->write_pointer += TAPE_BUFFER_SIZE;
          size_left += TAPE_BUFFER_SIZE;
 
-         status = midas_flush_buffer(log_chn);
-         if (status != SS_SUCCESS)
-            return status;
+         i = midas_flush_buffer(log_chn);
+         if (i == 0)
+            return SS_FILE_ERROR;
+
+         written += i;
       }
 
       /* copy remaining part of event */
@@ -1070,8 +1047,9 @@ INT midas_write(LOG_CHN * log_chn, EVENT_HEADER * pevent, INT evt_size)
 
    /* update statistics */
    log_chn->statistics.events_written++;
-   log_chn->statistics.bytes_written += pevent->data_size + sizeof(EVENT_HEADER);
-   log_chn->statistics.bytes_written_total += pevent->data_size + sizeof(EVENT_HEADER);
+   log_chn->statistics.bytes_written_uncompressed += evt_size;
+   log_chn->statistics.bytes_written += written;
+   log_chn->statistics.bytes_written_total += written;
 
    return SS_SUCCESS;
 }
@@ -1135,41 +1113,21 @@ INT midas_log_open(LOG_CHN * log_chn, INT run_number)
          }
       }
 
-#ifdef OS_WINNT
-      log_chn->handle =
-          (int) CreateFile(log_chn->path, GENERIC_WRITE, FILE_SHARE_READ, NULL,
-                           CREATE_ALWAYS,
-                           FILE_ATTRIBUTE_NORMAL | FILE_FLAG_WRITE_THROUGH |
-                           FILE_FLAG_SEQUENTIAL_SCAN, 0);
-#else
-      log_chn->handle =
-         open(log_chn->path, O_WRONLY | O_CREAT | O_TRUNC | O_BINARY | O_LARGEFILE,
-              0644);
-
-#endif
-
-      if (log_chn->handle < 0) {
-         free(info->buffer);
-         free(info);
-         log_chn->handle = 0;
-         return SS_FILE_ERROR;
-      }
-
       log_chn->gzfile = NULL;
       if (log_chn->compression > 0) {
 #ifdef HAVE_ZLIB
-         char* sufp = strstr(log_chn->path, ".gz");
+         char *sufp = strstr(log_chn->path, ".gz");
 
-         if (!sufp || sufp[3]!=0) {
-            cm_msg(MERROR, "midas_log_open", "Compression enabled but output file name does not end with '.gz'");
-            close(log_chn->handle);
+         if (!sufp || sufp[3] != 0) {
+            cm_msg(MERROR, "midas_log_open",
+                   "Compression enabled but output file name does not end with '.gz'");
             free(info->buffer);
             free(info);
             log_chn->handle = 0;
             return SS_FILE_ERROR;
          }
 
-         log_chn->gzfile = gzdopen(log_chn->handle, "wb");
+         log_chn->gzfile = gzopen(log_chn->path, "wb");
          assert(log_chn->gzfile != NULL);
          gzsetparams(log_chn->gzfile, log_chn->compression, Z_DEFAULT_STRATEGY);
 #else
@@ -1180,9 +1138,26 @@ INT midas_log_open(LOG_CHN * log_chn, INT run_number)
          log_chn->handle = 0;
          return SS_FILE_ERROR;
 #endif
+
+      } else {                  // if compression
+
+#ifdef OS_WINNT
+         log_chn->handle =
+             (int) CreateFile(log_chn->path, GENERIC_WRITE, FILE_SHARE_READ, NULL,
+                              CREATE_ALWAYS,
+                              FILE_ATTRIBUTE_NORMAL | FILE_FLAG_WRITE_THROUGH | FILE_FLAG_SEQUENTIAL_SCAN, 0);
+#else
+         log_chn->handle = open(log_chn->path, O_WRONLY | O_CREAT | O_TRUNC | O_BINARY | O_LARGEFILE, 0644);
+
+#endif
+         if (log_chn->handle < 0) {
+            free(info->buffer);
+            free(info);
+            log_chn->handle = 0;
+            return SS_FILE_ERROR;
+         }
       }
    }
-
 
    /* write ODB dump */
    if (log_chn->settings.odb_dump)
@@ -1195,11 +1170,17 @@ INT midas_log_open(LOG_CHN * log_chn, INT run_number)
 
 INT midas_log_close(LOG_CHN * log_chn, INT run_number)
 {
+   int written;
+
    /* write ODB dump */
    if (log_chn->settings.odb_dump)
       log_odb_dump(log_chn, EVENTID_EOR, run_number);
 
-   midas_flush_buffer(log_chn);
+   written = midas_flush_buffer(log_chn);
+
+   /* update statistics */
+   log_chn->statistics.bytes_written += written;
+   log_chn->statistics.bytes_written_total += written;
 
    /* Write EOF if Tape */
    if (log_chn->type == LOG_TYPE_TAPE) {
@@ -1212,13 +1193,20 @@ INT midas_log_close(LOG_CHN * log_chn, INT run_number)
    } else {
       if (log_chn->gzfile) {
 #ifdef HAVE_ZLIB
+         z_streamp s;
+
+         s = (z_streamp) log_chn->gzfile;
+         written = s->total_out;
+         gzflush(log_chn->gzfile, Z_FULL_FLUSH);
+         written = s->total_out - written;
          gzclose(log_chn->gzfile);
+         log_chn->statistics.bytes_written += written;
+         log_chn->statistics.bytes_written_total += written;
          log_chn->gzfile = NULL;
 #else
          assert(!"this cannot happen! support for ZLIB not compiled in");
 #endif
       }
-
 #ifdef OS_WINNT
       CloseHandle((HANDLE) log_chn->handle);
 #else
@@ -1361,8 +1349,7 @@ INT dump_write(LOG_CHN * log_chn, EVENT_HEADER * pevent, INT evt_size)
    else if (pevent->event_id == EVENTID_EOR)
       sprintf(pbuf, "%%ID EOR NR %d\n", pevent->serial_number);
    else
-      sprintf(pbuf, "%%ID %d TR %d NR %d\n", pevent->event_id, pevent->trigger_mask,
-              pevent->serial_number);
+      sprintf(pbuf, "%%ID %d TR %d NR %d\n", pevent->event_id, pevent->trigger_mask, pevent->serial_number);
    STR_INC(pbuf, buffer);
 
   /*---- MIDAS format ----------------------------------------------*/
@@ -1422,18 +1409,15 @@ INT dump_write(LOG_CHN * log_chn, EVENT_HEADER * pevent, INT evt_size)
                db_sprintf(pbuf, pdata, size, i, bktype & 0xFF);
 
             else if ((bktype & 0xFF00) == TID_LRS1882)
-               sprintf(pbuf, "GA %d CH %02d DA %d",
-                       lrs1882[i].geo_addr, lrs1882[i].channel, lrs1882[i].data);
+               sprintf(pbuf, "GA %d CH %02d DA %d", lrs1882[i].geo_addr, lrs1882[i].channel, lrs1882[i].data);
 
             else if ((bktype & 0xFF00) == TID_LRS1877) {
                if (i == 0)      /* header */
                   sprintf(pbuf, "GA %d BF %d CN %d",
-                          lrs1877_header[i].geo_addr, lrs1877_header[i].buffer,
-                          lrs1877_header[i].count);
+                          lrs1877_header[i].geo_addr, lrs1877_header[i].buffer, lrs1877_header[i].count);
                else             /* data */
                   sprintf(pbuf, "GA %d CH %02d ED %d DA %1.1lf",
-                          lrs1877[i].geo_addr, lrs1877[i].channel, lrs1877[i].edge,
-                          lrs1877[i].data * 0.5);
+                          lrs1877[i].geo_addr, lrs1877[i].channel, lrs1877[i].edge, lrs1877[i].data * 0.5);
             }
 
             else if ((bktype & 0xFF00) == TID_PCOS3)
@@ -1485,8 +1469,7 @@ INT dump_write(LOG_CHN * log_chn, EVENT_HEADER * pevent, INT evt_size)
       if (log_chn->type == LOG_TYPE_TAPE)
          status = ss_tape_write(log_chn->handle, buffer, size);
       else
-         status = write(log_chn->handle, buffer, size) ==
-             size ? SS_SUCCESS : SS_FILE_ERROR;
+         status = write(log_chn->handle, buffer, size) == size ? SS_SUCCESS : SS_FILE_ERROR;
 
       /* write event directly to device */
       size = strlen((char *) (pevent + 1));
@@ -1496,8 +1479,7 @@ INT dump_write(LOG_CHN * log_chn, EVENT_HEADER * pevent, INT evt_size)
          status = ftp_send(((FTP_CON *) log_chn->ftp_con)->data, buffer, size) == size ?
              SS_SUCCESS : SS_FILE_ERROR;
       else
-         status = write(log_chn->handle, (char *) (pevent + 1), size) ==
-             size ? SS_SUCCESS : SS_FILE_ERROR;
+         status = write(log_chn->handle, (char *) (pevent + 1), size) == size ? SS_SUCCESS : SS_FILE_ERROR;
    } else {
       /* non-ascii format: only write buffer */
 
@@ -1512,8 +1494,7 @@ INT dump_write(LOG_CHN * log_chn, EVENT_HEADER * pevent, INT evt_size)
          status = ftp_send(((FTP_CON *) log_chn->ftp_con)->data, buffer, size) == size ?
              SS_SUCCESS : SS_FILE_ERROR;
       else
-         status = write(log_chn->handle, buffer, size) ==
-             size ? SS_SUCCESS : SS_FILE_ERROR;
+         status = write(log_chn->handle, buffer, size) == size ? SS_SUCCESS : SS_FILE_ERROR;
    }
 
    /* update statistics */
@@ -1545,8 +1526,7 @@ INT dump_log_open(LOG_CHN * log_chn, INT run_number)
       } else
          log_chn->handle = 1;
    } else {
-      log_chn->handle =
-          open(log_chn->path, O_WRONLY | O_CREAT | O_TRUNC | O_LARGEFILE, 0644);
+      log_chn->handle = open(log_chn->path, O_WRONLY | O_CREAT | O_TRUNC | O_LARGEFILE, 0644);
 
       if (log_chn->handle < 0) {
          log_chn->handle = 0;
@@ -1766,8 +1746,7 @@ INT ascii_log_open(LOG_CHN * log_chn, INT run_number)
       } else
          log_chn->handle = 1;
    } else {
-      log_chn->handle =
-          open(log_chn->path, O_WRONLY | O_CREAT | O_TRUNC | O_LARGEFILE, 0644);
+      log_chn->handle = open(log_chn->path, O_WRONLY | O_CREAT | O_TRUNC | O_LARGEFILE, 0644);
 
       if (log_chn->handle < 0) {
          log_chn->handle = 0;
@@ -1860,8 +1839,7 @@ INT root_book_trees(TREE_STRUCT * tree_struct)
          tree_struct->event_tree = (EVENT_TREE *) malloc(sizeof(EVENT_TREE));
       else
          tree_struct->event_tree =
-             (EVENT_TREE *) realloc(tree_struct->event_tree,
-                                    sizeof(EVENT_TREE) * tree_struct->n_tree);
+             (EVENT_TREE *) realloc(tree_struct->event_tree, sizeof(EVENT_TREE) * tree_struct->n_tree);
 
       et = tree_struct->event_tree + (tree_struct->n_tree - 1);
 
@@ -1880,8 +1858,7 @@ INT root_book_trees(TREE_STRUCT * tree_struct)
 
       if (!equal_ustring(str, "MIDAS")) {
          cm_msg(MERROR, "root_book_events",
-                "ROOT output only for MIDAS events, but %s in %s format", eqkey.name,
-                str);
+                "ROOT output only for MIDAS events, but %s in %s format", eqkey.name, str);
          return 0;
       }
 
@@ -1905,14 +1882,12 @@ INT root_book_bank(EVENT_TREE * et, HNDLE hKeyDef, int event_id, char *bank_name
    /* find definition of bank */
    status = db_find_key(hDB, hKeyDef, bank_name, &hKeyVar);
    if (status != DB_SUCCESS) {
-      cm_msg(MERROR, "root_book_bank", "received unknown bank \"%s\" in event #%d",
-             bank_name, event_id);
+      cm_msg(MERROR, "root_book_bank", "received unknown bank \"%s\" in event #%d", bank_name, event_id);
       return 0;
    }
 
    if (et->n_branch + 1 == MAX_BANKS) {
-      cm_msg(MERROR, "root_book_bank", "max number of banks (%d) exceeded in event #%d",
-             MAX_BANKS, event_id);
+      cm_msg(MERROR, "root_book_bank", "max number of banks (%d) exceeded in event #%d", MAX_BANKS, event_id);
       return 0;
    }
 
@@ -2043,8 +2018,7 @@ INT root_write(LOG_CHN * log_chn, EVENT_HEADER * pevent, INT evt_size)
 
    event_def = db_get_event_definition(pevent->event_id);
    if (event_def == NULL) {
-      cm_msg(MERROR, "root_write", "Definition for event #%d not found under /Equipment",
-             pevent->event_id);
+      cm_msg(MERROR, "root_write", "Definition for event #%d not found under /Equipment", pevent->event_id);
       return SS_INVALID_FORMAT;
    }
 
@@ -2064,8 +2038,7 @@ INT root_write(LOG_CHN * log_chn, EVENT_HEADER * pevent, INT evt_size)
             break;
 
       if (i == ts->n_tree) {
-         cm_msg(MERROR, "root_write", "Event #%d not booked by root_book_events()",
-                pevent->event_id);
+         cm_msg(MERROR, "root_write", "Event #%d not booked by root_book_events()", pevent->event_id);
          return SS_INVALID_FORMAT;
       }
 
@@ -2130,8 +2103,7 @@ INT root_write(LOG_CHN * log_chn, EVENT_HEADER * pevent, INT evt_size)
       /* check if all branches have been filled */
       for (i = 0; i < et->n_branch; i++)
          if (!et->branch_filled[i])
-            cm_msg(MERROR, "root_write",
-                   "Bank %s booked but not received, tree cannot be filled", bank_name);
+            cm_msg(MERROR, "root_write", "Bank %s booked but not received, tree cannot be filled", bank_name);
 
       /* fill tree */
       et->tree->Fill();
@@ -2192,8 +2164,7 @@ INT root_log_open(LOG_CHN * log_chn, INT run_number)
       /* set compression level */
       level = 0;
       size = sizeof(level);
-      db_get_value(hDB, log_chn->settings_hkey, "Compression", &level, &size, TID_INT,
-                   FALSE);
+      db_get_value(hDB, log_chn->settings_hkey, "Compression", &level, &size, TID_INT, FALSE);
       f->SetCompressionLevel(level);
 
       /* create root structure with trees and branches */
@@ -2336,13 +2307,11 @@ INT log_write(LOG_CHN * log_chn, EVENT_HEADER * pevent)
 
    actual_time = ss_millitime();
    if ((int) actual_time - (int) start_time > 3000)
-      cm_msg(MINFO, "log_write", "Write operation on %s took %d ms", log_chn->path,
-             actual_time - start_time);
+      cm_msg(MINFO, "log_write", "Write operation on %s took %d ms", log_chn->path, actual_time - start_time);
 
    if (status != SS_SUCCESS && !stop_requested) {
       if (status == SS_IO_ERROR)
-         cm_msg(MTALK, "log_write", "Physical IO error on %s, stopping run",
-                log_chn->path);
+         cm_msg(MTALK, "log_write", "Physical IO error on %s, stopping run", log_chn->path);
       else
          cm_msg(MTALK, "log_write", "Error writing to %s, stopping run", log_chn->path);
 
@@ -2432,8 +2401,7 @@ INT log_write(LOG_CHN * log_chn, EVENT_HEADER * pevent)
 
       /* zero statistics */
       dzero = izero = 0;
-      db_set_value(hDB, stats_hkey, "Bytes written total", &dzero,
-                   sizeof(dzero), 1, TID_DOUBLE);
+      db_set_value(hDB, stats_hkey, "Bytes written total", &dzero, sizeof(dzero), 1, TID_DOUBLE);
       db_set_value(hDB, stats_hkey, "Files written", &izero, sizeof(izero), 1, TID_INT);
 
       cm_msg(MTALK, "log_write", "Please insert new tape and start new run.");
@@ -2491,13 +2459,11 @@ INT open_history()
       /* create default history keys */
       db_create_key(hDB, 0, "/History/Links", TID_KEY);
 
-      if (db_find_key(hDB, 0, "/Equipment/Trigger/Statistics/Events per sec.", &hKeyEq) ==
-          DB_SUCCESS)
+      if (db_find_key(hDB, 0, "/Equipment/Trigger/Statistics/Events per sec.", &hKeyEq) == DB_SUCCESS)
          db_create_link(hDB, 0, "/History/Links/System/Trigger per sec.",
                         "/Equipment/Trigger/Statistics/Events per sec.");
 
-      if (db_find_key(hDB, 0, "/Equipment/Trigger/Statistics/kBytes per sec.", &hKeyEq) ==
-          DB_SUCCESS)
+      if (db_find_key(hDB, 0, "/Equipment/Trigger/Statistics/kBytes per sec.", &hKeyEq) == DB_SUCCESS)
          db_create_link(hDB, 0, "/History/Links/System/Trigger kB per sec.",
                         "/Equipment/Trigger/Statistics/kBytes per sec.");
    }
@@ -2531,8 +2497,7 @@ INT open_history()
 
          status = db_find_key(hDB, hKeyEq, "Variables", &hKeyVar);
          if (status != DB_SUCCESS) {
-            cm_msg(MERROR, "open_history",
-                   "Cannot find /Equipment/%s/Variables entry in database", eq_name);
+            cm_msg(MERROR, "open_history", "Cannot find /Equipment/%s/Variables entry in database", eq_name);
             return 0;
          }
 
@@ -2554,8 +2519,7 @@ INT open_history()
          }
 
          if (n_var == 0)
-            cm_msg(MERROR, "open_history", "defined event %d with no variables in ODB",
-                   event_id);
+            cm_msg(MERROR, "open_history", "defined event %d with no variables in ODB", event_id);
 
          /* create tag array */
          tag = (TAG *) malloc(sizeof(TAG) * n_tags);
@@ -2597,8 +2561,7 @@ INT open_history()
             if (hKeyNames && varkey.num_values != n_names) {
                cm_msg(MERROR, "open_history",
                       "Mismatch between \"/Equipment/%s/Settings/%s\" and \"/Equipment/%s/Variables/%s\" (%d vs. %d entries)",
-                      eq_name, key.name, eq_name, varkey.name, n_names,
-                      varkey.num_values);
+                      eq_name, key.name, eq_name, varkey.name, n_names, varkey.num_values);
                free(tag);
                return 0;
             }
@@ -2608,15 +2571,13 @@ INT open_history()
                for (j = 0; j < varkey.num_values; j++) {
                   /* get name #j */
                   size = NAME_LENGTH;
-                  db_get_data_index(hDB, hKeyNames, tag[i_tag].name, &size, j,
-                                    TID_STRING);
+                  db_get_data_index(hDB, hKeyNames, tag[i_tag].name, &size, j, TID_STRING);
 
                   /* append variable key name for single name array */
                   if (single_names) {
                      if (strlen(tag[i_tag].name) + 1 + strlen(varkey.name) >= NAME_LENGTH) {
                         cm_msg(MERROR, "open_history",
-                               "Name for history entry \"%s %s\" too long",
-                               tag[i_tag].name, varkey.name);
+                               "Name for history entry \"%s %s\" too long", tag[i_tag].name, varkey.name);
                         free(tag);
                         return 0;
                      }
@@ -2666,11 +2627,9 @@ INT open_history()
          }
 
          /* open hot link to variables */
-         status = db_open_record(hDB, hKeyVar, hist_log[index].buffer,
-                                 size, MODE_READ, log_history, NULL);
+         status = db_open_record(hDB, hKeyVar, hist_log[index].buffer, size, MODE_READ, log_history, NULL);
          if (status != DB_SUCCESS)
-            cm_msg(MERROR, "open_history",
-                   "cannot open variable record for history logging");
+            cm_msg(MERROR, "open_history", "cannot open variable record for history logging");
 
          /* remember maximum event id for later use with system events */
          if (event_id > max_event_id)
@@ -2729,15 +2688,13 @@ INT open_history()
                db_enum_link(hDB, hHistKey, i, &hKey);
                db_get_key(hDB, hKey, &key);
                cm_msg(MERROR, "open_history",
-                      "History link /History/Links/%s/%s is invalid", hist_name,
-                      key.name);
+                      "History link /History/Links/%s/%s is invalid", hist_name, key.name);
                return 0;
             }
          }
 
          if (n_var == 0)
-            cm_msg(MERROR, "open_history", "History event %s has no variables in ODB",
-                   hist_name);
+            cm_msg(MERROR, "open_history", "History event %s has no variables in ODB", hist_name);
          else {
             /* create tag array */
             tag = (TAG *) malloc(sizeof(TAG) * n_var);
@@ -2876,7 +2833,6 @@ void log_history(HNDLE hDB, HNDLE hKey, void *info)
       close_history();
       open_history();
    }
-
    //printf("write event: id %d, buffer %p, size %d\n", hist_log[i].event_id, hist_log[i].buffer, hist_log[i].buffer_size);
 
    hs_write_event(hist_log[i].event_id, hist_log[i].buffer, hist_log[i].buffer_size);
@@ -2903,8 +2859,7 @@ void log_system_history(HNDLE hDB, HNDLE hKey, void *info)
 
       db_get_key(hDB, hKey, &key);
       size = key.total_size;
-      db_get_data(hDB, hKey, (char *) hist_log[index].buffer + total_size, &size,
-                  key.type);
+      db_get_data(hDB, hKey, (char *) hist_log[index].buffer + total_size, &size, key.type);
       total_size += size;
    }
 
@@ -2912,8 +2867,7 @@ void log_system_history(HNDLE hDB, HNDLE hKey, void *info)
       close_history();
       open_history();
    } else
-      hs_write_event(hist_log[index].event_id, hist_log[index].buffer,
-                     hist_log[index].buffer_size);
+      hs_write_event(hist_log[index].event_id, hist_log[index].buffer, hist_log[index].buffer_size);
 
    hist_log[index].last_log = ss_time();
 
@@ -2964,17 +2918,13 @@ INT log_callback(INT index, void *prpc_param[])
 
          if (status == DB_SUCCESS) {
             size = sizeof(str);
-            status =
-                db_get_value(hDB, hKeyChannel, "Settings/Type", str, &size, TID_STRING,
-                             TRUE);
+            status = db_get_value(hDB, hKeyChannel, "Settings/Type", str, &size, TID_STRING, TRUE);
             if (status != DB_SUCCESS)
                continue;
 
             if (equal_ustring(str, "Tape")) {
                size = sizeof(str);
-               status =
-                   db_get_value(hDB, hKeyChannel, "Settings/Filename", str, &size,
-                                TID_STRING, TRUE);
+               status = db_get_value(hDB, hKeyChannel, "Settings/Filename", str, &size, TID_STRING, TRUE);
                if (status != DB_SUCCESS)
                   continue;
 
@@ -3000,8 +2950,7 @@ INT log_callback(INT index, void *prpc_param[])
                log_chn[i].statistics.files_written = 0;
                db_set_value(hDB, hKeyChannel, "Statistics/Bytes written total", &dzero,
                             sizeof(dzero), 1, TID_DOUBLE);
-               db_set_value(hDB, hKeyChannel, "Statistics/Files written", &izero,
-                            sizeof(izero), 1, TID_INT);
+               db_set_value(hDB, hKeyChannel, "Statistics/Files written", &izero, sizeof(izero), 1, TID_INT);
             }
          }
       }
@@ -3100,8 +3049,7 @@ INT tr_start(INT run_number, char *error)
          if (log_chn[index].handle) {
             log_close(&log_chn[index], run_number);
             if (log_chn[index].type == LOG_TYPE_DISK) {
-               cm_msg(MINFO, "tr_start", "Deleting previous file \"%s\"",
-                      log_chn[index].path);
+               cm_msg(MINFO, "tr_start", "Deleting previous file \"%s\"", log_chn[index].path);
                unlink(log_chn[index].path);
             }
          }
@@ -3111,8 +3059,7 @@ INT tr_start(INT run_number, char *error)
             continue;
 
          /* save settings key */
-         status =
-             db_find_key(hDB, hKeyChannel, "Settings", &log_chn[index].settings_hkey);
+         status = db_find_key(hDB, hKeyChannel, "Settings", &log_chn[index].settings_hkey);
          if (status != DB_SUCCESS) {
             strcpy(error, "Cannot find channel settings info");
             cm_msg(MERROR, "tr_start", error);
@@ -3129,20 +3076,18 @@ INT tr_start(INT run_number, char *error)
 
          /* clear statistics */
          size = sizeof(CHN_STATISTICS);
-         db_get_record(hDB, log_chn[index].stats_hkey, &log_chn[index].statistics, &size,
-                       0);
+         db_get_record(hDB, log_chn[index].stats_hkey, &log_chn[index].statistics, &size, 0);
 
          log_chn[index].statistics.events_written = 0;
          log_chn[index].statistics.bytes_written = 0;
+         log_chn[index].statistics.bytes_written_uncompressed = 0;
 
-         db_set_record(hDB, log_chn[index].stats_hkey, &log_chn[index].statistics, size,
-                       0);
+         db_set_record(hDB, log_chn[index].stats_hkey, &log_chn[index].statistics, size, 0);
 
          /* get channel info structure */
          chn_settings = &log_chn[index].settings;
          size = sizeof(CHN_SETTINGS);
-         status =
-             db_get_record(hDB, log_chn[index].settings_hkey, chn_settings, &size, 0);
+         status = db_get_record(hDB, log_chn[index].settings_hkey, chn_settings, &size, 0);
          if (status != DB_SUCCESS) {
             strcpy(error, "Cannot read channel info");
             cm_msg(MERROR, "tr_start", error);
@@ -3152,8 +3097,7 @@ INT tr_start(INT run_number, char *error)
          /* don't start run if tape is full */
          if (log_chn[index].type == LOG_TYPE_TAPE &&
              chn_settings->tape_capacity > 0 &&
-             log_chn[index].statistics.bytes_written_total >= chn_settings->tape_capacity)
-         {
+             log_chn[index].statistics.bytes_written_total >= chn_settings->tape_capacity) {
             strcpy(error, "Tape capacity reached. Please load new tape");
             cm_msg(MERROR, "tr_start", error);
             return 0;
@@ -3181,13 +3125,13 @@ INT tr_start(INT run_number, char *error)
          /* set compression level */
          log_chn[index].compression = 0;
          size = sizeof(log_chn[index].compression);
-         db_get_value(hDB, log_chn->settings_hkey, "Compression", &log_chn[index].compression, &size, TID_INT, FALSE);
+         db_get_value(hDB, log_chn->settings_hkey, "Compression", &log_chn[index].compression, &size, TID_INT,
+                      FALSE);
 
          data_dir[0] = 0;
 
          /* if disk, precede filename with directory if not already there */
-         if (log_chn[index].type == LOG_TYPE_DISK &&
-             chn_settings->filename[0] != DIR_SEPARATOR) {
+         if (log_chn[index].type == LOG_TYPE_DISK && chn_settings->filename[0] != DIR_SEPARATOR) {
             size = sizeof(data_dir);
             dir[0] = 0;
             db_get_value(hDB, 0, "/Logger/Data Dir", data_dir, &size, TID_STRING, TRUE);
@@ -3235,8 +3179,7 @@ INT tr_start(INT run_number, char *error)
             strcpy(str, path + strlen(data_dir));
          else
             strcpy(str, path);
-         db_set_value(hDB, hKeyChannel, "Settings/Current filename", str, 256, 1,
-                      TID_STRING);
+         db_set_value(hDB, hKeyChannel, "Settings/Current filename", str, 256, 1, TID_STRING);
 
          if (log_chn[index].type == LOG_TYPE_TAPE &&
              log_chn[index].statistics.bytes_written_total == 0 && tape_message) {
@@ -3262,8 +3205,7 @@ INT tr_start(INT run_number, char *error)
             if (status == FTP_NET_ERROR || status == FTP_RESPONSE_ERROR)
                sprintf(error, "Cannot open FTP channel to [%s]", path);
             if (status == SS_NO_ROOT)
-               sprintf(error,
-                       "No ROOT support compiled into mlogger, please compile with -DHAVE_ROOT flag");
+               sprintf(error, "No ROOT support compiled into mlogger, please compile with -DHAVE_ROOT flag");
 
             if (status == SS_INVALID_FORMAT)
                sprintf(error,
@@ -3284,8 +3226,7 @@ INT tr_start(INT run_number, char *error)
              db_open_record(hDB, log_chn[index].stats_hkey, &log_chn[index].statistics,
                             sizeof(CHN_STATISTICS), MODE_WRITE, NULL, NULL);
          if (status != DB_SUCCESS)
-            cm_msg(MERROR, "tr_start",
-                   "cannot open statistics record, probably other logger is using it");
+            cm_msg(MERROR, "tr_start", "cannot open statistics record, probably other logger is using it");
 
          /* open hot link to settings tree */
          status =
@@ -3297,9 +3238,7 @@ INT tr_start(INT run_number, char *error)
 
 #ifndef FAL_MAIN
          /* open buffer */
-         status =
-             bm_open_buffer(chn_settings->buffer, 2*MAX_EVENT_SIZE,
-                            &log_chn[index].buffer_handle);
+         status = bm_open_buffer(chn_settings->buffer, 2 * MAX_EVENT_SIZE, &log_chn[index].buffer_handle);
          if (status != BM_SUCCESS && status != BM_CREATED) {
             sprintf(error, "Cannot open buffer %s", chn_settings->buffer);
             cm_msg(MERROR, "tr_start", error);
@@ -3322,8 +3261,7 @@ INT tr_start(INT run_number, char *error)
          /* open message buffer if requested */
          if (chn_settings->log_messages) {
             status =
-                bm_open_buffer(MESSAGE_BUFFER_NAME, MESSAGE_BUFFER_SIZE,
-                               &log_chn[index].msg_buffer_handle);
+                bm_open_buffer(MESSAGE_BUFFER_NAME, MESSAGE_BUFFER_SIZE, &log_chn[index].msg_buffer_handle);
             if (status != BM_SUCCESS && status != BM_CREATED) {
                sprintf(error, "Cannot open buffer %s", MESSAGE_BUFFER_NAME);
                cm_msg(MERROR, "tr_start", error);
@@ -3334,8 +3272,7 @@ INT tr_start(INT run_number, char *error)
             status = bm_request_event(log_chn[index].msg_buffer_handle,
                                       (short) EVENTID_MESSAGE,
                                       (short) chn_settings->log_messages,
-                                      GET_ALL, &log_chn[index].msg_request_id,
-                                      receive_event);
+                                      GET_ALL, &log_chn[index].msg_request_id, receive_event);
 
             if (status != BM_SUCCESS) {
                sprintf(error, "Cannot place event request");
@@ -3424,8 +3361,7 @@ INT tr_stop(INT run_number, char *error)
          log_close(&log_chn[i], run_number);
 
          /* close statistics record */
-         db_set_record(hDB, log_chn[i].stats_hkey, &log_chn[i].statistics,
-                       sizeof(CHN_STATISTICS), 0);
+         db_set_record(hDB, log_chn[i].stats_hkey, &log_chn[i].statistics, sizeof(CHN_STATISTICS), 0);
          db_close_record(hDB, log_chn[i].stats_hkey);
          db_close_record(hDB, log_chn[i].settings_hkey);
          log_chn[i].stats_hkey = log_chn[i].settings_hkey = 0;
@@ -3572,8 +3508,8 @@ int main(int argc, char *argv[])
 
 #endif
 
-   setbuf(stdout,NULL);
-   setbuf(stderr,NULL);
+   setbuf(stdout, NULL);
+   setbuf(stderr, NULL);
 
    /* get default from environment */
    cm_get_environment(host_name, sizeof(host_name), exp_name, sizeof(exp_name));
@@ -3688,18 +3624,18 @@ int main(int argc, char *argv[])
 
 #ifdef HAVE_MYSQL
    {
-   char sql_host[256], sql_db[256], sql_table[256];
+      char sql_host[256], sql_db[256], sql_table[256];
 
-   status = db_find_key(hDB, 0, "/Logger/SQL/Hostname", &hktemp);
-   if (status == DB_SUCCESS) {
-      size = 256;
-      db_get_value(hDB, 0, "/Logger/SQL/Hostname", sql_host, &size, TID_STRING, FALSE);
-      size = 256;
-      db_get_value(hDB, 0, "/Logger/SQL/Database", sql_db, &size, TID_STRING, FALSE);
-      size = 256;
-      db_get_value(hDB, 0, "/Logger/SQL/Table", sql_table, &size, TID_STRING, FALSE);
-      printf("SQL     database is %s/%s/%s", sql_host, sql_db, sql_table);
-   }
+      status = db_find_key(hDB, 0, "/Logger/SQL/Hostname", &hktemp);
+      if (status == DB_SUCCESS) {
+         size = 256;
+         db_get_value(hDB, 0, "/Logger/SQL/Hostname", sql_host, &size, TID_STRING, FALSE);
+         size = 256;
+         db_get_value(hDB, 0, "/Logger/SQL/Database", sql_db, &size, TID_STRING, FALSE);
+         size = 256;
+         db_get_value(hDB, 0, "/Logger/SQL/Table", sql_table, &size, TID_STRING, FALSE);
+         printf("SQL     database is %s/%s/%s", sql_host, sql_db, sql_table);
+      }
    }
 #endif
 
@@ -3728,14 +3664,11 @@ int main(int argc, char *argv[])
          if (state == STATE_STOPPED) {
             auto_restart = 0;
             size = sizeof(run_number);
-            status =
-                db_get_value(hDB, 0, "/Runinfo/Run number", &run_number, &size, TID_INT,
-                             TRUE);
+            status = db_get_value(hDB, 0, "/Runinfo/Run number", &run_number, &size, TID_INT, TRUE);
             assert(status == SUCCESS);
 
             if (run_number <= 0) {
-               cm_msg(MERROR, "main", "aborting on attempt to use invalid run number %d",
-                      run_number);
+               cm_msg(MERROR, "main", "aborting on attempt to use invalid run number %d", run_number);
                abort();
             }
 

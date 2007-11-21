@@ -437,6 +437,7 @@ typedef struct {
 "[Statistics]",\
 "Events written = DOUBLE : 0",\
 "Bytes written = DOUBLE : 0",\
+"Bytes written uncompressed = DOUBLE : 0",\
 "Bytes written total = DOUBLE : 0",\
 "Files written = INT : 0",\
 "",\
@@ -463,6 +464,7 @@ typedef struct {
 typedef struct {
    double events_written;
    double bytes_written;
+   double bytes_written_uncompressed;
    double bytes_written_total;
    INT files_written;
 } CHN_STATISTICS;
