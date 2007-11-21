@@ -144,6 +144,9 @@ sbit RS485_ENABLE = P0 ^ 4;
 
 #undef HAVE_EEPROM
 
+#define EXT_WATCHDOG
+#define EXT_WATCHDOG_PIN_DAC1
+
 /*--------------------------------*/
 #elif defined(SCS_300) || defined(SCS_310)
 #include <c8051F020.h>
