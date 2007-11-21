@@ -63,25 +63,19 @@ int da816_Open(ALPHIDA816 ** da816)
 
   int fd = fileno(fp);
 
-  if ((*da816)->regs)
+  (*da816)->regs = (char*)mmap(0,0x1000,PROT_READ|PROT_WRITE,MAP_SHARED,fd,0);
+  if ((*da816)->regs == NULL)
     {
-      (*da816)->regs = (char*)mmap(0,0x1000,PROT_READ|PROT_WRITE,MAP_SHARED,fd,0);
-      if ((*da816)->regs == NULL)
-  {
-    printf("regs: 0x%p\n",(*da816)->regs);
-    fprintf(stderr,"Cannot mmap() PMC-DA816 registers, errno: %d (%s)\n",errno,strerror(errno));
-    return -errno;
-  }
+      printf("regs: 0x%p\n",(*da816)->regs);
+      fprintf(stderr,"Cannot mmap() PMC-DA816 registers, errno: %d (%s)\n",errno,strerror(errno));
+      return -errno;
     }
 
-  if ((*da816)->data)
+  (*da816)->data = (char*)mmap(0,0x80000,PROT_READ|PROT_WRITE,MAP_SHARED,fd,0x1000);
+  if ((*da816)->data == NULL)
     {
-      (*da816)->data = (char*)mmap(0,0x80000,PROT_READ|PROT_WRITE,MAP_SHARED,fd,0x1000);
-      if ((*da816)->data == NULL)
-  {
-    fprintf(stderr,"Cannot mmap() PMC-DA816 data buffer, errno: %d (%s)\n",errno,strerror(errno));
-    return -errno;
-  }
+      fprintf(stderr,"Cannot mmap() PMC-DA816 data buffer, errno: %d (%s)\n",errno,strerror(errno));
+      return -errno;
     }
   
   fclose(fp);
@@ -617,7 +611,7 @@ int main(int argc, char* argv[])
   da816_Status(al, 1);
 
 
-#if 0
+#if 1
   if (argc == 3) {
     chan = atoi(argv[1]);
     //    din  = (int16_t) atoi(argv[2]);
@@ -639,7 +633,7 @@ int main(int argc, char* argv[])
 #endif
 
 
-#if 1
+#if 0
   int status = 0;
   da816_Reset(al);
   DA816_D08(al->regs+DA816_CTL_STAT_0)   = 0; // ctrl 0
