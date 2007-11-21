@@ -345,7 +345,6 @@ unsigned char execute(char socket_no)
 
    if (rs485_tx_buf[0] == MCMD_INIT) {
       /* reboot */
-      while (1);
       SFRPAGE = LEGACY_PAGE;
       RSTSRC = 0x10;
    }
