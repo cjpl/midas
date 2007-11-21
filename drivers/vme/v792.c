@@ -451,6 +451,10 @@ void  v792_Status(MVME_INTERFACE *mvme, DWORD base)
   printf("V792 at VME A24 0x%06x:\n", base);
   status = mvme_read_value(mvme, base+V792_FIRM_REV);
   printf("Firmware revision: 0x%x\n", status);
+  if (status == 0xFFFF) {
+    printf("Module not present!\n");
+    return;
+  }
   status = v792_CSR1Read(mvme, base);
   printf("CSR1: 0x%x\n", status);
   printf("DataReady    :%s\t", status & 0x1 ? "Y" : "N");
@@ -466,11 +470,21 @@ void  v792_Status(MVME_INTERFACE *mvme, DWORD base)
   printf("CSR2: 0x%x\n", status);
   printf("Buffer Empty :%s\t", status & 0x2 ? "Y" : "N");
   printf(" - Buffer Full  :%s\n", status & 0x4 ? "Y" : "N");
-  printf("Daughter card type (CSEL/DSEL)  :%d%d%d%d\n",
+  int dtype = (status & 0xF0) >> 4;
+  printf("Daughter card type (CSEL/DSEL)  :%d%d%d%d (0x%x) ",
          status & 0x80 ? 1 : 0, 
          status & 0x40 ? 1 : 0,
          status & 0x20 ? 1 : 0,
-         status & 0x10 ? 1 : 0);
+         status & 0x10 ? 1 : 0,
+         dtype);
+  switch (dtype) {
+  default:
+    printf("\n");
+    break;
+  case 2:
+    printf("V792 32ch QDC\n");
+    break;
+  }
   status = v792_BitSet2Read(mvme, base);
   printf("BitSet2: 0x%x\n", status);
   printf("Test Mem     :%s\t", status & 0x1 ? "Y" : "N");
@@ -484,6 +498,7 @@ void  v792_Status(MVME_INTERFACE *mvme, DWORD base)
   printf(" - All Triggers :%s\n", status & 0x4000 ? "Y" : "N");
   v792_EvtCntRead(mvme, base, &status);
   printf("Event counter: %d\n", status);
+  printf("Iped value: %d\n", v792_Read16(mvme, base, V792_IPED_RW));
 
   v792_ThresholdRead(mvme, base, threshold);
   for (i=0;i<V792_MAX_CHANNELS;i+=2) {
@@ -522,6 +537,20 @@ void v792_printEntry(const v792_Data* v) {
     printf("Data=0x%08x Unknown %04x\n",(int)v->raw,v->data.type);
     break;
   }
+}
+
+/*****************************************************************/
+int v792_isPresent(MVME_INTERFACE *mvme, DWORD base)
+{
+  int status, cmode;
+  mvme_get_dmode(mvme, &cmode);
+  mvme_set_dmode(mvme, MVME_DMODE_D16);
+  status = mvme_read_value(mvme, base+V792_FIRM_REV);
+  mvme_set_dmode(mvme, cmode);
+  if (status == 0xFFFF)
+    return 0;
+  else
+    return 1;
 }
 
 /*****************************************************************/
