@@ -39,16 +39,11 @@ int softdac_Open(ALPHISOFTDAC ** al)
 {
 
   // Book space
-  printf("al :%p\n", *al);
   *al = (ALPHISOFTDAC *) calloc(1, sizeof(ALPHISOFTDAC));
-  printf("al :%p\n", *al);
   if (al == NULL) {
     printf ("cannot calloc softdac structure\n");
     return -1;
   }
-  memset((char *) *al, 0, sizeof(ALPHISOFTDAC));
-  (*al)->regs = (char *) calloc(1, sizeof(char *));
-  //  (*al)->data = (char *) calloc(1, sizeof(char *));
 
   FILE *fp = fopen("/dev/pmcsoftdacm","r+");
   if (fp==0)
@@ -60,15 +55,13 @@ int softdac_Open(ALPHISOFTDAC ** al)
 
   int fd = fileno(fp);
 
-  if ((*al)->regs)
+  // Allocate address space to the device
+  (*al)->regs = (char*)mmap(0,0x100000,PROT_READ|PROT_WRITE,MAP_SHARED,fd,0);
+  if ((*al)->regs == NULL)
     {
-      (*al)->regs = (char*)mmap(0,0x100000,PROT_READ|PROT_WRITE,MAP_SHARED,fd,0);
-      if ((*al)->regs == NULL)
-	{
-	  printf("regs: 0x%p\n",(*al)->regs);
-	  fprintf(stderr,"Cannot mmap() PMC-SOFTDAC-M registers, errno: %d (%s)\n",errno,strerror(errno));
-	  return -errno;
-	}
+      printf("regs: 0x%p\n",(*al)->regs);
+      fprintf(stderr,"Cannot mmap() PMC-SOFTDAC-M registers, errno: %d (%s)\n",errno,strerror(errno));
+      return -errno;
     }
 
   fclose(fp);
@@ -85,15 +78,11 @@ int softdac_Open(ALPHISOFTDAC ** al)
 */
 void softdac_Close(ALPHISOFTDAC * al)
 {
-  printf("al :%p\n", al);
   if (al) { 
-    //    free (al->regs);
-    //    free (al->data);
+    if (al->regs) munmap(al->regs, 0x100000);
     free (al);
     al = NULL;
   }
-  munmap(0,0x100000);
-  printf("al :%p\n", al);
 }
 
 /********************************************************************/
