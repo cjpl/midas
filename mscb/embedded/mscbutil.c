@@ -1011,18 +1011,37 @@ void watchdog_refresh(unsigned char from_interrupt) reentrant
 
    if (watchdog_on && watchdog_timer < watchdog_timeout*100) {
 
-#ifdef EXT_WATCHDOG
-      EXT_WATCHDOG_PIN = !EXT_WATCHDOG_PIN;
-#else
+#ifndef EXT_WATCHDOG
 #if defined(CPU_C8051F310) || defined(CPU_C8051F320)
       PCA0CPH4 = 0x00;
 #else
       WDTCN = 0xA5;
 #endif
-#endif // EXT_WATCHDOG
+#endif // !EXT_WATCHDOG
 
    }
+
+#ifdef EXT_WATCHDOG // reset external watchdog even if not on
+   if (watchdog_timer < watchdog_timeout*100) {
+#ifdef EXT_WATCHDOG_PIN_DAC1
+      unsigned char old_page;
+      old_page = SFRPAGE;
+      SFRPAGE = DAC1_PAGE;
+      DAC1CN = 0x80; // enable DAC1
+      SFRPAGE = LEGACY_PAGE;
+      REF0CN = 0x03; // enable voltage reference
+      SFRPAGE = DAC1_PAGE;
+
+      DAC1L = DAC1L > 0 ? 0 : 0xFF;
+      DAC1H = DAC1L;
+      SFRPAGE = old_page;
+#else
+      EXT_WATCHDOG_PIN = !EXT_WATCHDOG_PIN;
+#endif
+#endif // EXT_WATCHDOG
+   }
    
+
 #endif
 }
 
@@ -1091,6 +1110,7 @@ void watchdog_disable(void)
 #ifdef USE_WATCHDOG
    watchdog_on = 0;
    watchdog_timer = 0;
+   watchdog_timeout = 255;
 #endif
 
 #if defined(CPU_C8051F310) || defined(CPU_C8051F320)
@@ -1118,18 +1138,37 @@ void watchdog_int(void) reentrant
    watchdog_timer++;
    if (watchdog_on && watchdog_timer < watchdog_timeout*100) {
 
-#ifdef EXT_WATCHDOG
-      EXT_WATCHDOG_PIN = !EXT_WATCHDOG_PIN;
-#else
+#ifndef EXT_WATCHDOG // internal watchdog
 #if defined(CPU_C8051F310) || defined(CPU_C8051F320)
       PCA0CPH4 = 0x00;
 #else
       WDTCN = 0xA5;
 #endif
-#endif // EXT_WATCHDOG
+#endif // !EXT_WATCHDOG
 
    }
+
+#ifdef EXT_WATCHDOG // reset external watchdog even if not on
+   if (watchdog_timer < watchdog_timeout*100) {
+#ifdef EXT_WATCHDOG_PIN_DAC1
+      unsigned char old_page;
+      old_page = SFRPAGE;
+      SFRPAGE = DAC1_PAGE;
+      DAC1CN = 0x80; // enable DAC1
+      SFRPAGE = LEGACY_PAGE;
+      REF0CN = 0x03; // enable voltage reference
+      SFRPAGE = DAC1_PAGE;
+
+      DAC1L = DAC1L > 0 ? 0 : 0xFF;
+      DAC1H = DAC1L;
+      SFRPAGE = old_page;
+#else
+      EXT_WATCHDOG_PIN = !EXT_WATCHDOG_PIN;
 #endif
+#endif // EXT_WATCHDOG
+   }
+
+#endif // USE_WATCHDOG
 }
 
 /*------------------------------------------------------------------*\

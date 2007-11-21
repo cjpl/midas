@@ -134,8 +134,7 @@ void setup(void)
 {
    unsigned short i;            // software timer
 
-   WDTCN = 0xDE;                // Disable watchdog timer
-   WDTCN = 0xAD;
+   watchdog_disable();          // Disable watchdog timer
 
    SFRPAGE = CONFIG_PAGE;       // set SFR page
 
@@ -346,6 +345,7 @@ unsigned char execute(char socket_no)
 
    if (rs485_tx_buf[0] == MCMD_INIT) {
       /* reboot */
+      while (1);
       SFRPAGE = LEGACY_PAGE;
       RSTSRC = 0x10;
    }
