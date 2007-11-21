@@ -38,7 +38,7 @@ The main include file
  *  @{  */
 
 /* has to be changed whenever binary ODB format changes */
-#define DATABASE_VERSION 2      
+#define DATABASE_VERSION 3      
 
 /* MIDAS version number which will be incremented for every release */
 #define MIDAS_VERSION "2.0.0"
@@ -821,8 +821,6 @@ typedef struct {
    short int event_id;           /**< event ID                        */
    short int trigger_mask;       /**< trigger mask                    */
    INT sampling_type;            /**< GET_ALL, GET_SOME, GET_FARM     */
-                                 /**< dispatch function */
-   void (*dispatch) (HNDLE, HNDLE, EVENT_HEADER *, void *);
 } EVENT_REQUEST;
 
 typedef struct {

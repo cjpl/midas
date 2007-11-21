@@ -428,7 +428,7 @@ typedef struct {
 "Buffer = STRING : [32] SYSTEM",\
 "Event ID = INT : -1",\
 "Trigger mask = INT : -1",\
-"Event limit = DWORD : 0",\
+"Event limit = DOUBLE : 0",\
 "Byte limit = DOUBLE : 0",\
 "Tape capacity = DOUBLE : 0",\
 "Subdir format = STRING : [32]",\
@@ -439,7 +439,7 @@ typedef struct {
 "Bytes written = DOUBLE : 0",\
 "Bytes written uncompressed = DOUBLE : 0",\
 "Bytes written total = DOUBLE : 0",\
-"Files written = INT : 0",\
+"Files written = DOUBLE : 0",\
 "",\
 NULL}
 
@@ -454,7 +454,7 @@ typedef struct {
    char buffer[32];
    INT event_id;
    INT trigger_mask;
-   DWORD event_limit;
+   double event_limit;
    double byte_limit;
    double tape_capacity;
    char subdir_format[32];
@@ -466,7 +466,7 @@ typedef struct {
    double bytes_written;
    double bytes_written_uncompressed;
    double bytes_written_total;
-   INT files_written;
+   double files_written;
 } CHN_STATISTICS;
 
 typedef struct {

@@ -596,12 +596,95 @@ static int db_validate_key(DATABASE_HEADER * pheader, int recurse,
 }
 
 /*------------------------------------------------------------------*/
+static void db_validate_sizes()
+{
+   /* validate size of data structures (miscompiled, 32/64 bit mismatch, etc */
+
+   if (0) {
+#define S(x) printf("assert(sizeof(%-20s) == %6d);\n", #x, (int)sizeof(x))
+      // basic data types
+      S(char*);
+      S(char);
+      S(int);
+      S(long int);
+      S(float);
+      S(double);
+      S(BOOL);
+      S(WORD);
+      S(DWORD);
+      S(INT);
+      S(POINTER_T);
+      S(midas_thread_t);
+      // data buffers
+      S(EVENT_REQUEST);
+      S(BUFFER_CLIENT);
+      S(BUFFER_HEADER);
+      // history files
+      S(HIST_RECORD);
+      S(DEF_RECORD);
+      S(INDEX_RECORD);
+      S(TAG);
+      // ODB shared memory structures
+      S(KEY);
+      S(KEYLIST);
+      S(OPEN_RECORD);
+      S(DATABASE_CLIENT);
+      S(DATABASE_HEADER);
+      // misc structures
+      S(EVENT_HEADER);
+      S(EQUIPMENT_INFO);
+      S(EQUIPMENT_STATS);
+      S(BANK_HEADER);
+      S(BANK);
+      S(BANK32);
+      S(ANA_OUTPUT_INFO);
+      S(PROGRAM_INFO);
+      S(ALARM_CLASS);
+      S(ALARM);
+      S(CHN_SETTINGS);
+      S(CHN_STATISTICS);
+#undef S
+   }
+
+#ifdef OS_LINUX
+   assert(sizeof(EVENT_REQUEST       ) ==     16); // ODB v3
+   assert(sizeof(BUFFER_CLIENT       ) ==    256);
+   assert(sizeof(BUFFER_HEADER       ) ==  16444);
+   assert(sizeof(HIST_RECORD         ) ==     20);
+   assert(sizeof(DEF_RECORD          ) ==     40);
+   assert(sizeof(INDEX_RECORD        ) ==     12);
+   assert(sizeof(TAG                 ) ==     40);
+   assert(sizeof(KEY                 ) ==     68);
+   assert(sizeof(KEYLIST             ) ==     12);
+   assert(sizeof(OPEN_RECORD         ) ==      8);
+   assert(sizeof(DATABASE_CLIENT     ) ==   2112);
+   assert(sizeof(DATABASE_HEADER     ) == 135232);
+   assert(sizeof(EVENT_HEADER        ) ==     16);
+   assert(sizeof(EQUIPMENT_INFO      ) ==    400);
+   assert(sizeof(EQUIPMENT_STATS     ) ==     24);
+   assert(sizeof(BANK_HEADER         ) ==      8);
+   assert(sizeof(BANK                ) ==      8);
+   assert(sizeof(BANK32              ) ==     12);
+   assert(sizeof(ANA_OUTPUT_INFO     ) ==    792);
+   assert(sizeof(PROGRAM_INFO        ) ==    316);
+   assert(sizeof(ALARM_CLASS         ) ==    348);
+   assert(sizeof(ALARM               ) ==    452);
+   assert(sizeof(CHN_SETTINGS        ) ==    640); // ODB v3
+   assert(sizeof(CHN_STATISTICS      ) ==     40); // ODB v3
+#endif
+}
+
+/*------------------------------------------------------------------*/
 static int db_validate_db(DATABASE_HEADER * pheader)
 {
    int total_size_key = 0;
    int total_size_data = 0;
    double ratio;
    FREE_DESCRIP *pfree;
+
+   /* validate size of data structures (miscompiled, 32/64 bit mismatch, etc */
+
+   db_validate_sizes();
 
    /* validate the key free list */
 
