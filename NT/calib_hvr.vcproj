@@ -3,7 +3,7 @@
 	ProjectType="Visual C++"
 	Version="8.00"
 	Name="calib_hvr"
-	ProjectGUID="{C9716FC9-B731-419D-8B74-730091316AB1}"
+	ProjectGUID="{5FFAAEA5-A300-44C0-A725-607B98DE63AE}"
 	>
 	<Platforms>
 		<Platform
@@ -136,7 +136,8 @@
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				InlineFunctionExpansion="1"
-				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE"
+				AdditionalIncludeDirectories="\midas\include;\mxml;"
+				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_DEPRECATE"
 				StringPooling="true"
 				RuntimeLibrary="0"
 				EnableFunctionLevelLinking="true"
@@ -264,6 +265,10 @@
 			Name="Header Files"
 			Filter="h;hpp;hxx;hm;inl"
 			>
+			<File
+				RelativePath="..\include\musbstd.h"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="Resource Files"

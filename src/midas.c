@@ -934,23 +934,6 @@ INT cm_msg_retrieve(INT n_message, char *message, INT buf_size)
                if (dir[strlen(dir) - 1] != DIR_SEPARATOR)
                   strcat(dir, DIR_SEPARATOR_STR);
 
-            strcpy(filename, "midas.log");
-            size = sizeof(filename);
-            db_get_value(hDB, 0, "/Logger/Message file", filename, &size, TID_STRING, TRUE);
-
-            if (strchr(filename, '%')) {
-               /* replace stings such as midas_%y%m%d.mid with current date */
-               time_t now;
-               struct tm *tms;
-
-               tzset();
-               time(&now);
-               tms = localtime(&now);
-
-               strftime(str, sizeof(str), filename, tms);
-               strlcpy(filename, str, sizeof(filename));
-            }
-
             strcpy(path, dir);
             strcat(path, filename);
          } else {
@@ -960,7 +943,7 @@ INT cm_msg_retrieve(INT n_message, char *message, INT buf_size)
                   strcat(dir, DIR_SEPARATOR_STR);
 
             strcpy(path, dir);
-            strcat(path, "midas.log");
+            strcat(path, filename);
          }
       } else {
          strcpy(path, filename);
