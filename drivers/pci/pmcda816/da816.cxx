@@ -52,9 +52,6 @@ int da816_Open(ALPHIDA816 ** da816)
 
   // Book space
   *da816 = (ALPHIDA816 *) calloc(1, sizeof(ALPHIDA816));
-  memset((char *) *da816, 0, sizeof(ALPHIDA816));
-  (*da816)->regs = (char *) calloc(1, sizeof(char *));
-  (*da816)->data = (char *) calloc(1, sizeof(char *));
 
   FILE *fp = fopen("/dev/pmcda816","r+");
   if (fp==0)
@@ -106,12 +103,12 @@ Reset  all the registers of the pmcda16
 */
 void da816_Close(ALPHIDA816 * da816)
 {
-  munmap(0,0x1000);
-  munmap(0,0x80000);
-
-  if (da816)
+  if (da816) {
+    if (da816->regs) munmap(da816->regs,0x1000);
+    if (da816->data) munmap(da816->data,0x80000);
     free (da816);
-  da816 = NULL;
+    da816 = NULL;
+  }
 }
 
 /********************************************************************/
