@@ -325,7 +325,7 @@ $(BIN_DIR):
 ifdef NEED_MYSQL
 CFLAGS      += -DHAVE_MYSQL $(shell mysql_config --include)
 MYSQL_LIBS  := $(shell mysql_config --libs)
-LIBS        += $(MYSQL_LIBS)
+# only for mlogger LIBS        += $(MYSQL_LIBS)
 NEED_ZLIB = 1
 endif
 
@@ -354,7 +354,7 @@ LIBS       += -lz
 endif
 
 $(BIN_DIR)/mlogger: $(BIN_DIR)/%: $(SRC_DIR)/%.c
-	$(CXX) $(CFLAGS) $(OSFLAGS) -o $@ $< $(LIB) $(ROOTLIBS) $(LIBS)
+	$(CXX) $(CFLAGS) $(OSFLAGS) -o $@ $< $(LIB) $(ROOTLIBS) $(MYSQL_LIBS) $(LIBS)
 
 $(BIN_DIR)/%:$(SRC_DIR)/%.c
 	$(CC) $(CFLAGS) $(OSFLAGS) -o $@ $< $(LIB) $(LIBS)
