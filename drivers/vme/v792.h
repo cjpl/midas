@@ -47,6 +47,7 @@ extern "C" {
 #define  V792_BIT_CLEAR2_WO   (DWORD) (0x1034)
 #define  V792_TEST_EVENT_WO   (DWORD) (0x103E)
 #define  V792_EVT_CNT_RST_WO  (DWORD) (0x1040)
+#define  V792_IPED_RW         (DWORD) (0x1060)
 #define  V792_SWCOMM_WO       (DWORD) (0x1068)
 #define  V785_SLIDECONST_RW   (DWORD) (0x106A)
 #define  V792_THRES_BASE      (DWORD) (0x1080)
@@ -88,6 +89,7 @@ void v792_SoftReset(MVME_INTERFACE *mvme, DWORD base);
 void v792_ControlRegister1Write(MVME_INTERFACE *mvme, DWORD base, WORD pat);
 WORD v792_ControlRegister1Read(MVME_INTERFACE *mvme, DWORD base);
 void v792_Trigger(MVME_INTERFACE *mvme, DWORD base);
+int  v792_isPresent(MVME_INTERFACE *mvme, DWORD base);
 
   enum v792_DataType {
     v792_typeMeasurement=0,
