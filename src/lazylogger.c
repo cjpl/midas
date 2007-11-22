@@ -1159,6 +1159,9 @@ Function value:
 }
 
 /*------------------------------------------------------------------*/
+
+#ifdef OS_LINUX // does not work under Windows because of missing popen
+
 INT lazy_script_copy(char *infile)
 /********************************************************************\
 Routine: lazy_script_copy
@@ -1270,6 +1273,8 @@ Function value:
    /* request exit */
    return 0;
 }
+
+#endif // OS_LINUX
 
 /*------------------------------------------------------------------*/
 BOOL lazy_file_exists(char *dir, char *file)
@@ -1670,9 +1675,12 @@ Function value:
       cp_time = ss_millitime();
       status = 0;
       if (dev_type == LOG_TYPE_SCRIPT) {
-         //sprintf(lazy.backlabel,"%04d%02d%02d", 2007, 8, 30);
+#ifdef OS_LINUX
          sprintf(lazy.backlabel,"%06d", 100*(lazyst.cur_run/100));
          status = lazy_script_copy(inffile);
+#else
+         assert(!"lazy_script_copy not supported under Windows");
+#endif
       } else {
          status = lazy_copy(outffile, inffile);
       }
