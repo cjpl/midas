@@ -934,7 +934,7 @@ void show_status_page(int refresh, char *cookie_wpwd)
    char *trans_name[] = { "Start", "Stop", "Pause", "Resume" };
    time_t now, difftime;
    double analyzed, analyze_ratio, d;
-   double value;
+   double value, compression_ratio;
    HNDLE hDB, hkey, hLKey, hsubkey, hkeytmp;
    KEY key;
    BOOL ftp_mode, previous_mode;
@@ -1135,7 +1135,7 @@ void show_status_page(int refresh, char *cookie_wpwd)
          rsprintf("</tr>\n\n");
    }
 
-  /*---- aliases ----*/
+   /*---- aliases ----*/
 
    first = TRUE;
 
@@ -1403,7 +1403,7 @@ void show_status_page(int refresh, char *cookie_wpwd)
    /*---- Logging channels ----*/
 
    rsprintf
-       ("<tr><th colspan=2>Channel<th>Active<th>Events<th>MB written<th>GB total</tr>\n");
+       ("<tr><th colspan=2>Channel<th>Events<th>MB written<th>Compression<th>GB total</tr>\n");
 
    if (db_find_key(hDB, 0, "/Logger/Channels", &hkey) == DB_SUCCESS) {
       for (i = 0;; i++) {
@@ -1455,27 +1455,34 @@ void show_status_page(int refresh, char *cookie_wpwd)
          else
             sprintf(ref, "/Logger/Channels/%s/Settings", key.name);
 
-         rsprintf("<tr><td colspan=2><B><a href=\"%s\">%s</a></B> %s", ref, key.name,
-                  str);
-
-         /* active */
-
          if (cm_exist("Logger", FALSE) != CM_SUCCESS
              && cm_exist("FAL", FALSE) != CM_SUCCESS)
-            rsprintf("<td align=center bgcolor=\"FF0000\">No Logger");
+            rsprintf("<tr><td colspan=2 bgcolor=\"FF0000\">");
          else if (!flag)
-            rsprintf("<td align=center bgcolor=\"FFFF00\">Disabled");
+            rsprintf("<tr><td colspan=2 bgcolor=\"FFFF00\">");
          else if (chn_settings.active)
-            rsprintf("<td align=center bgcolor=\"00FF00\">Yes");
+            rsprintf("<tr><td colspan=2 bgcolor=\"00FF00\">");
          else
-            rsprintf("<td align=center bgcolor=\"FFFF00\">No");
+            rsprintf("<tr><td colspan=2 bgcolor=\"FFFF00\">");
+
+         rsprintf("<B><a href=\"%s\">%s</a></B> %s", ref, key.name, str);
 
          /* statistics */
 
-         rsprintf
-             ("<td align=center>%1.0lf<td align=center>%1.3lf<td align=center>%1.3lf</tr>\n",
-              chn_stats.events_written, chn_stats.bytes_written / 1024 / 1024,
-              chn_stats.bytes_written_total / 1024 / 1024 / 1024);
+         rsprintf("<td align=center>%1.0lf<td align=center>%1.3lf\n",
+              chn_stats.events_written, chn_stats.bytes_written / 1024 / 1024);
+
+         if (chn_settings.compression > 0) {
+            if (chn_stats.bytes_written_uncompressed > 0)
+               compression_ratio = 1 - chn_stats.bytes_written / chn_stats.bytes_written_uncompressed;
+            else
+               compression_ratio = 0;
+
+            rsprintf("<td align=center>%4.1lf%%", compression_ratio * 100);
+         } else
+            rsprintf("<td align=center>N/A</td>");
+
+         rsprintf("<td align=center>%1.3lf</tr>\n", chn_stats.bytes_written_total / 1024 / 1024 / 1024);
       }
    }
 
