@@ -959,7 +959,7 @@ INT ftp_open(char *destination, FTP_CON ** con)
 
 INT midas_flush_buffer(LOG_CHN * log_chn)
 {
-   INT size, written;
+   INT i, size, written;
    MIDAS_INFO *info;
 
    info = (MIDAS_INFO *) log_chn->format_info;
@@ -981,7 +981,9 @@ INT midas_flush_buffer(LOG_CHN * log_chn)
 
       s = (z_streamp) log_chn->gzfile;
       written = s->total_out;
-      gzwrite(log_chn->gzfile, info->buffer, size);
+      i = gzwrite(log_chn->gzfile, info->buffer, size);
+      if (i != size)
+         return -1;
       written = s->total_out - written;
 #else
       assert(!"this cannot happen! support for ZLIB not compiled in");
@@ -1020,7 +1022,7 @@ INT midas_write(LOG_CHN * log_chn, EVENT_HEADER * pevent, INT evt_size)
 
       /* flush buffer */
       written += midas_flush_buffer(log_chn);
-      if (written == 0)
+      if (written < 0)
          return SS_FILE_ERROR;
 
       /* several writes for large events */
@@ -1030,7 +1032,7 @@ INT midas_write(LOG_CHN * log_chn, EVENT_HEADER * pevent, INT evt_size)
          size_left += TAPE_BUFFER_SIZE;
 
          i = midas_flush_buffer(log_chn);
-         if (i == 0)
+         if (i < 0)
             return SS_FILE_ERROR;
 
          written += i;
