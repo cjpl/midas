@@ -4523,11 +4523,12 @@ void show_sc_page(char *path, int refresh)
 
 /*------------------------------------------------------------------*/
 
-char *find_odb_tag(char *p, char *path, BOOL * edit)
+char *find_odb_tag(char *p, char *path, BOOL * edit, char *type)
 {
    char str[256], *ps;
 
    *edit = 0;
+   strcpy(type, "text");
    do {
       while (*p && *p != '<')
          p++;
@@ -4559,20 +4560,50 @@ char *find_odb_tag(char *p, char *path, BOOL * edit)
                   while (*p && *p != '\"')
                      *path++ = *p++;
                   *path = 0;
+                  if (*p == '\"')
+                    p++;
                } else {
                   while (*p && *p != ' ' && *p != '>')
                      *path++ = *p++;
                   *path = 0;
                }
-               p++;
             } else {
+
                strncpy(str, p, 5);
                str[5] = 0;
                if (equal_ustring(str, "edit=")) {
                   p += 5;
-                  *edit = atoi(p);
-                  while (*p && *p != ' ' && *p != '>')
+
+                  if (*p == '\"') {
                      p++;
+                     *edit = atoi(p);
+                     if (*p == '\"')
+                       p++;
+                  } else {
+                     *edit = atoi(p);
+                     while (*p && *p != ' ' && *p != '>')
+                        p++;
+                  }
+
+               } else {
+
+                  strncpy(str, p, 5);
+                  str[5] = 0;
+                  if (equal_ustring(str, "type=")) {
+                     p += 5;
+                     if (*p == '\"') {
+                        p++;
+                        while (*p && *p != '\"')
+                           *type++ = *p++;
+                        *type = 0;
+                        if (*p == '\"')
+                          p++;
+                     } else {
+                        while (*p && *p != ' ' && *p != '>')
+                           *type++ = *p++;
+                        *type = 0;
+                     }
+                  }
                }
             }
 
@@ -4597,10 +4628,10 @@ char *find_odb_tag(char *p, char *path, BOOL * edit)
 
 /*------------------------------------------------------------------*/
 
-void show_odb_tag(char *path, char *keypath, int n_var, BOOL bedit)
+void show_odb_tag(char *path, char *keypath, int n_var, BOOL bedit, char *type)
 {
    int size, index, i_edit, i_set;
-   char str[TEXT_SIZE], data[TEXT_SIZE], *p;
+   char str[TEXT_SIZE], data[TEXT_SIZE], options[1000], *p;
    HNDLE hDB, hkey;
    KEY key;
 
@@ -4638,37 +4669,69 @@ void show_odb_tag(char *path, char *keypath, int n_var, BOOL bedit)
       db_get_data_index(hDB, hkey, data, &size, index, key.type);
       db_sprintf(str, data, key.item_size, 0, key.type);
 
-      if (bedit) {
+      if (equal_ustring(type, "checkbox")) {
+
+         if (isparam("cbi"))
+            i_set = atoi(getparam("cbi"));
          if (n_var == i_set) {
-            /* set value */
-            strlcpy(str, getparam("value"), sizeof(str));
+            /* toggle state */
+            if (str[0] == 'y')
+               strcpy(str, "n");
+            else
+               strcpy(str, "y");
+
             db_sscanf(str, data, &size, 0, key.type);
             db_set_data_index(hDB, hkey, data, size, index, key.type);
-
-            /* read back value */
-            size = sizeof(data);
-            db_get_data_index(hDB, hkey, data, &size, index, key.type);
-            db_sprintf(str, data, key.item_size, 0, key.type);
          }
 
-         if (n_var == i_edit) {
-            rsprintf("<input type=text size=10 maxlength=80 name=value value=\"%s\">\n",
-                     str);
-            rsprintf("<input type=submit size=20 name=cmd value=Set>\n");
-            rsprintf("<input type=hidden name=index value=%d>\n", n_var);
-            rsprintf("<input type=hidden name=cmd value=Set>\n");
-         } else {
-            if (exp_name[0])
-               rsprintf("<a href=\"/CS/%s?exp=%s&cmd=Edit&index=%d\">", path, exp_name,
-                        n_var);
-            else
-               rsprintf("<a href=\"/CS/%s?cmd=Edit&index=%d\">", path, n_var);
+         options[0] = 0;
+         if (str[0] == 'y')
+            strcat(options, " checked");
+         if (!bedit)
+            strcat(options, " disabled");
+         else {
+            strlcat(options, " onClick=\"o=document.createElement('input');o.type='hidden';o.name='cbi';o.value='", sizeof(options));
+            sprintf(options+strlen(options), "%d", n_var);
+            strlcat(options, "';document.form1.appendChild(o);", sizeof(options));
+            strlcat(options, "document.form1.submit();\"", sizeof(options));
+         }
 
+         rsprintf("<input type=\"checkbox\" %s>\n", options);
+      
+      } else { // checkbox
+      
+         if (bedit) {
+            if (n_var == i_set) {
+               /* set value */
+               strlcpy(str, getparam("value"), sizeof(str));
+               db_sscanf(str, data, &size, 0, key.type);
+               db_set_data_index(hDB, hkey, data, size, index, key.type);
+
+               /* read back value */
+               size = sizeof(data);
+               db_get_data_index(hDB, hkey, data, &size, index, key.type);
+               db_sprintf(str, data, key.item_size, 0, key.type);
+            }
+
+            if (n_var == i_edit) {
+               rsprintf("<input type=text size=10 maxlength=80 name=value value=\"%s\">\n",
+                        str);
+               rsprintf("<input type=submit size=20 name=cmd value=Set>\n");
+               rsprintf("<input type=hidden name=index value=%d>\n", n_var);
+               rsprintf("<input type=hidden name=cmd value=Set>\n");
+            } else {
+               if (exp_name[0])
+                  rsprintf("<a href=\"/CS/%s?exp=%s&cmd=Edit&index=%d\">", path, exp_name,
+                           n_var);
+               else
+                  rsprintf("<a href=\"/CS/%s?cmd=Edit&index=%d\">", path, n_var);
+
+               rsputs(str);
+               rsprintf("</a>");
+            }
+         } else
             rsputs(str);
-            rsprintf("</a>");
-         }
-      } else
-         rsputs(str);
+      }
    }
 }
 
@@ -5085,7 +5148,7 @@ void show_custom_gif(char *name)
 void show_custom_page(char *path)
 {
    int size, n_var, fh;
-   char str[TEXT_SIZE], *ctext, keypath[256], *p, *ps;
+   char str[TEXT_SIZE], *ctext, keypath[256], type[32], *p, *ps;
    HNDLE hDB, hkey;
    KEY key;
    BOOL bedit;
@@ -5138,7 +5201,7 @@ void show_custom_page(char *path)
       /* interprete text, replace <odb> tags with ODB values */
       p = ps = ctext;
       do {
-         p = find_odb_tag(ps, keypath, &bedit);
+         p = find_odb_tag(ps, keypath, &bedit, type);
          if (p != NULL)
             *p = 0;
          rsputs(ps);
@@ -5147,7 +5210,7 @@ void show_custom_page(char *path)
             break;
          ps = strchr(p + 1, '>') + 1;
 
-         show_odb_tag(path, keypath, n_var, bedit);
+         show_odb_tag(path, keypath, n_var, bedit, type);
          n_var++;
 
       } while (p != NULL);
