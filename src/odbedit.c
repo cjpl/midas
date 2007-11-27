@@ -303,7 +303,8 @@ INT print_key(HNDLE hDB, HNDLE hKey, KEY * pkey, INT level, void *info)
             printf("%s\n", line);
             memset(line, ' ', sizeof(line));
             line[80] = 0;
-         }
+         } else
+            line[strlen(line)] = ' ';
       } else {
          if (pi->index != -1)
             sprintf(line + strlen(line), "[%d]", pi->index);
