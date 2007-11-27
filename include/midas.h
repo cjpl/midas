@@ -1680,6 +1680,7 @@ extern "C" {
    INT EXPRT db_enum_link(HNDLE hdb, HNDLE key_handle, INT index, HNDLE * subkey_handle);
    INT EXPRT db_get_next_link(HNDLE hdb, HNDLE key_handle, HNDLE * subkey_handle);
    INT EXPRT db_get_key(HNDLE hdb, HNDLE key_handle, KEY * key);
+   INT EXPRT db_get_link(HNDLE hdb, HNDLE key_handle, KEY * key);
    INT EXPRT db_get_key_info(HNDLE hDB, HNDLE hKey, char *name,
                              INT name_size, INT * type, INT * num_values,
                              INT * item_size);
@@ -1687,6 +1688,8 @@ extern "C" {
    INT EXPRT db_rename_key(HNDLE hDB, HNDLE hKey, char *name);
    INT EXPRT db_reorder_key(HNDLE hDB, HNDLE hKey, INT index);
    INT EXPRT db_get_data(HNDLE hdb, HNDLE key_handle, void *data,
+                         INT * buf_size, DWORD type);
+   INT EXPRT db_get_link_data(HNDLE hdb, HNDLE key_handle, void *data,
                          INT * buf_size, DWORD type);
    INT EXPRT db_get_data1(HNDLE hDB, HNDLE hKey, void *data,
                           INT * buf_size, DWORD type, INT * num_values);

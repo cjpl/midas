@@ -928,11 +928,12 @@ void exec_script(HNDLE hkey)
 
 void show_status_page(int refresh, char *cookie_wpwd)
 {
-   int i, j, k, status, size, type;
+   int i, j, k, h, m, s, status, size, type;
    BOOL flag, first;
    char str[1000], name[32], ref[256], bgcol[32], fgcol[32], alarm_class[32];
    char *trans_name[] = { "Start", "Stop", "Pause", "Resume" };
-   time_t now, difftime;
+   time_t now;
+   DWORD difftime;
    double analyzed, analyze_ratio, d;
    double value, compression_ratio;
    HNDLE hDB, hkey, hLKey, hsubkey, hkeytmp;
@@ -1002,7 +1003,7 @@ void show_status_page(int refresh, char *cookie_wpwd)
 
    rsprintf("<table border=3 cellpadding=2>\n");
 
-  /*---- title row ----*/
+   /*---- title row ----*/
 
    size = sizeof(str);
    str[0] = 0;
@@ -1013,7 +1014,7 @@ void show_status_page(int refresh, char *cookie_wpwd)
    rsprintf("<th colspan=3 bgcolor=#A0A0FF>%s &nbsp;&nbsp;Refr:%d</tr>\n", ctime(&now),
             refresh);
 
-  /*---- menu buttons ----*/
+   /*---- menu buttons ----*/
 
    rsprintf("<tr><td colspan=6 bgcolor=#C0C0C0>\n");
 
@@ -1035,7 +1036,7 @@ void show_status_page(int refresh, char *cookie_wpwd)
    rsprintf("<input type=submit name=cmd value=Config>\n");
    rsprintf("<input type=submit name=cmd value=Help>\n");
 
-  /*---- script buttons ----*/
+   /*---- script buttons ----*/
 
    status = db_find_key(hDB, 0, "Script", &hkey);
    if (status == DB_SUCCESS) {
@@ -1052,7 +1053,7 @@ void show_status_page(int refresh, char *cookie_wpwd)
 
    rsprintf("</tr>\n\n");
 
-  /*---- alarms ----*/
+   /*---- alarms ----*/
 
    /* go through all triggered alarms */
    db_find_key(hDB, 0, "/Alarms/Alarms", &hkey);
@@ -1104,7 +1105,7 @@ void show_status_page(int refresh, char *cookie_wpwd)
       }
    }
 
-  /*---- manual triggered equipment ----*/
+   /*---- manual triggered equipment ----*/
 
    if (db_find_key(hDB, 0, "/equipment", &hkey) == DB_SUCCESS) {
       first = TRUE;
@@ -1283,12 +1284,16 @@ void show_status_page(int refresh, char *cookie_wpwd)
 
    rsprintf("<tr align=center><td colspan=3>Start: %s", runinfo.start_time);
 
-   difftime = now - runinfo.start_time_binary;
+   difftime = (DWORD) (now - runinfo.start_time_binary);
+   h = difftime / 3600;
+   m = difftime % 3600 / 60;
+   s = difftime % 60;
+
    if (runinfo.state == STATE_STOPPED)
       rsprintf("<td colspan=3>Stop: %s</tr>\n", runinfo.stop_time);
    else
-      rsprintf("<td colspan=3>Running time: %dh%02dm%02ds</tr>\n",
-               difftime / 3600, difftime % 3600 / 60, difftime % 60);
+      rsprintf("<td colspan=3>Running time: %dh%02dm%02ds</tr>\n", h, m, s);
+
 
    /*---- run comment ----*/
 
@@ -1465,22 +1470,26 @@ void show_status_page(int refresh, char *cookie_wpwd)
          else
             rsprintf("<tr><td colspan=2 bgcolor=\"FFFF00\">");
 
-         rsprintf("<B><a href=\"%s\">%s</a></B> %s", ref, key.name, str);
+         rsprintf("<B><a href=\"%s\">#%s:</a></B>&nbsp;&nbsp;%s", ref, key.name, str);
 
          /* statistics */
 
-         rsprintf("<td align=center>%1.0lf<td align=center>%1.3lf\n",
-              chn_stats.events_written, chn_stats.bytes_written / 1024 / 1024);
-
          if (chn_settings.compression > 0) {
+            rsprintf("<td align=center>%1.0lf<td align=center>%1.3lf\n",
+                 chn_stats.events_written, chn_stats.bytes_written / 1024 / 1024);
+
             if (chn_stats.bytes_written_uncompressed > 0)
                compression_ratio = 1 - chn_stats.bytes_written / chn_stats.bytes_written_uncompressed;
             else
                compression_ratio = 0;
 
             rsprintf("<td align=center>%4.1lf%%", compression_ratio * 100);
-         } else
+         } else {
+            rsprintf("<td align=center>%1.0lf<td align=center>%1.3lf\n",
+                 chn_stats.events_written, chn_stats.bytes_written_uncompressed / 1024 / 1024);
+
             rsprintf("<td align=center>N/A</td>");
+         }
 
          rsprintf("<td align=center>%1.3lf</tr>\n", chn_stats.bytes_written_total / 1024 / 1024 / 1024);
       }
@@ -5613,7 +5622,7 @@ void show_start_page(void)
          if (!hsubkey)
             break;
 
-         db_get_key(hDB, hsubkey, &key);
+         db_get_link(hDB, hsubkey, &key);
          strlcpy(str, key.name, sizeof(str));
 
          if (equal_ustring(str, "Edit run number"))
@@ -5784,7 +5793,7 @@ void show_odb_page(char *enc_path, int enc_path_size, char *dec_path)
       db_enum_link(hDB, hkeyroot, i, &hkey);
       if (!hkey)
          break;
-      db_get_key(hDB, hkey, &key);
+      db_get_link(hDB, hkey, &key);
 
       strlcpy(str, dec_path, sizeof(str));
       if (str[0] && str[strlen(str) - 1] != '/')
@@ -5797,7 +5806,7 @@ void show_odb_page(char *enc_path, int enc_path_size, char *dec_path)
       link_name[0] = 0;
       if (key.type == TID_LINK) {
          size = sizeof(link_name);
-         db_get_data(hDB, hkey, link_name, &size, TID_LINK);
+         db_get_link_data(hDB, hkey, link_name, &size, TID_LINK);
          db_enum_key(hDB, hkeyroot, i, &hkey);
          db_get_key(hDB, hkey, &key);
       }

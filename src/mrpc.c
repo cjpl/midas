@@ -462,6 +462,18 @@ static RPC_LIST rpc_list_library[] = {
     }
    ,
 
+   {RPC_DB_GET_LINK, "db_get_link",
+    {{TID_INT, RPC_IN}
+     ,
+     {TID_INT, RPC_IN}
+     ,
+     {TID_STRUCT, RPC_OUT, sizeof(KEY)}
+     ,
+     {0}
+     }
+    }
+   ,
+
    {RPC_DB_GET_KEY_INFO, "db_get_key_info",
     {{TID_INT, RPC_IN}
      ,
@@ -519,6 +531,22 @@ static RPC_LIST rpc_list_library[] = {
    ,
 
    {RPC_DB_GET_DATA, "db_get_data",
+    {{TID_INT, RPC_IN}
+     ,
+     {TID_INT, RPC_IN}
+     ,
+     {TID_ARRAY, RPC_OUT | RPC_VARARRAY}
+     ,
+     {TID_INT, RPC_IN | RPC_OUT}
+     ,
+     {TID_DWORD, RPC_IN}
+     ,
+     {0}
+     }
+    }
+   ,
+
+   {RPC_DB_GET_LINK_DATA, "db_get_data",
     {{TID_INT, RPC_IN}
      ,
      {TID_INT, RPC_IN}

@@ -342,7 +342,7 @@ int sql_get_columns(HNDLE hKeyRoot, SQL_LIST ** sql_list)
 
       /* get name of link, NOT of link target */
       db_enum_link(hDB, hKeyRoot, i, &hKey);
-      db_get_key(hDB, hKey, &key);
+      db_get_link(hDB, hKey, &key);
       strlcpy((*sql_list)[i].column_name, key.name, NAME_LENGTH);
 
       /* get key */
@@ -1130,7 +1130,13 @@ INT midas_log_open(LOG_CHN * log_chn, INT run_number)
          }
 
          log_chn->gzfile = gzopen(log_chn->path, "wb");
-         assert(log_chn->gzfile != NULL);
+         if (log_chn->gzfile == NULL) {
+            free(info->buffer);
+            free(info);
+            log_chn->handle = 0;
+            return SS_FILE_ERROR;
+         }
+
          gzsetparams(log_chn->gzfile, log_chn->compression, Z_DEFAULT_STRATEGY);
 #else
          cm_msg(MERROR, "midas_log_open", "Compression enabled but ZLIB support not compiled in");

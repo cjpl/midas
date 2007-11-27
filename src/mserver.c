@@ -727,6 +727,25 @@ INT rpc_server_dispatch(INT index, void *prpc_param[])
       }
       break;
 
+   case RPC_DB_GET_LINK:
+      status = db_get_link(CHNDLE(0), CHNDLE(1), CARRAY(2));
+      if (convert_flags) {
+         KEY *pkey;
+
+         pkey = (KEY *) CARRAY(2);
+         rpc_convert_single(&pkey->type, TID_DWORD, RPC_OUTGOING, convert_flags);
+         rpc_convert_single(&pkey->num_values, TID_INT, RPC_OUTGOING, convert_flags);
+         rpc_convert_single(&pkey->data, TID_INT, RPC_OUTGOING, convert_flags);
+         rpc_convert_single(&pkey->total_size, TID_INT, RPC_OUTGOING, convert_flags);
+         rpc_convert_single(&pkey->item_size, TID_INT, RPC_OUTGOING, convert_flags);
+         rpc_convert_single(&pkey->access_mode, TID_WORD, RPC_OUTGOING, convert_flags);
+         rpc_convert_single(&pkey->notify_count, TID_WORD, RPC_OUTGOING, convert_flags);
+         rpc_convert_single(&pkey->next_key, TID_INT, RPC_OUTGOING, convert_flags);
+         rpc_convert_single(&pkey->parent_keylist, TID_INT, RPC_OUTGOING, convert_flags);
+         rpc_convert_single(&pkey->last_written, TID_INT, RPC_OUTGOING, convert_flags);
+      }
+      break;
+
    case RPC_DB_GET_KEY_INFO:
       status = db_get_key_info(CHNDLE(0), CHNDLE(1), CSTRING(2), CINT(3), CPINT(4), CPINT(5), CPINT(6));
       break;
@@ -745,6 +764,11 @@ INT rpc_server_dispatch(INT index, void *prpc_param[])
 
    case RPC_DB_GET_DATA:
       status = db_get_data(CHNDLE(0), CHNDLE(1), CARRAY(2), CPINT(3), CDWORD(4));
+      rpc_convert_data(CARRAY(2), CDWORD(4), RPC_FIXARRAY | RPC_OUTGOING, CINT(3), convert_flags);
+      break;
+
+   case RPC_DB_GET_LINK_DATA:
+      status = db_get_link_data(CHNDLE(0), CHNDLE(1), CARRAY(2), CPINT(3), CDWORD(4));
       rpc_convert_data(CARRAY(2), CDWORD(4), RPC_FIXARRAY | RPC_OUTGOING, CINT(3), convert_flags);
       break;
 

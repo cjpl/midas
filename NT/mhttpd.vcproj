@@ -377,6 +377,18 @@
 			Filter="h;hpp;hxx;hm;inl"
 			>
 			<File
+				RelativePath="..\include\midas.h"
+				>
+			</File>
+			<File
+				RelativePath="..\include\mrpc.h"
+				>
+			</File>
+			<File
+				RelativePath="..\include\msystem.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\mxml\mxml.h"
 				>
 			</File>
