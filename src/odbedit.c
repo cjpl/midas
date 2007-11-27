@@ -251,17 +251,24 @@ INT print_key(HNDLE hDB, HNDLE hKey, KEY * pkey, INT level, void *info)
    if (pi->flags & PI_VALUE) {
       /* only print value */
       if (key.type != TID_KEY) {
-         status = db_get_data(hDB, hKey, data, &size, key.type);
+         status = db_get_link_data(hDB, hKey, data, &size, key.type);
          data_str[0] = 0;
 
          /* resolve links */
          if (key.type == TID_LINK) {
-            sprintf(data_str, "%s -> ", data);         
-            status = db_find_key(hDB, 0, data, &hKey);
+            if (strlen(data) > 0 && data[strlen(data)-1] == ']')
+               status = DB_SUCCESS;
+            else
+               status = db_find_key(hDB, 0, data, &hKey);
             if (status == DB_SUCCESS) {
-               db_get_key(hDB, hKey, &key);
-               size = sizeof(data);
-               status = db_get_data(hDB, hKey, data, &size, key.type);
+               status = db_get_key(hDB, hKey, &key);
+               if (status == DB_SUCCESS) {
+                  size = sizeof(data);
+                  if (key.type != TID_KEY)
+                     status = db_get_data(hDB, hKey, data, &size, key.type);
+                  else
+                     status = DB_TYPE_MISMATCH;
+               }
             }
          }
 
@@ -272,9 +279,9 @@ INT print_key(HNDLE hDB, HNDLE hKey, KEY * pkey, INT level, void *info)
          else
             for (i = 0; i < key.num_values; i++) {
                if (pi->flags & PI_HEX)
-                  db_sprintfh(data_str+strlen(data_str), data, key.item_size, i, key.type);
+                  db_sprintfh(data_str, data, key.item_size, i, key.type);
                else
-                  db_sprintf(data_str+strlen(data_str), data, key.item_size, i, key.type);
+                  db_sprintf(data_str, data, key.item_size, i, key.type);
 
                if ((pi->index != -1 && i == pi->index) || pi->index == -1)
                   printf("%s\n", data_str);
@@ -284,12 +291,24 @@ INT print_key(HNDLE hDB, HNDLE hKey, KEY * pkey, INT level, void *info)
       }
    } else {
       /* print key name with value */
-      memset(line, ' ', 80);
-      line[80] = 0;
+      memset(line, ' ', sizeof(line));
+      line[sizeof(line)-1] = 0;
       sprintf(line + level * 4, "%s", key.name);
-      if (pi->index != -1)
-         sprintf(line + strlen(line), "[%d]", pi->index);
-      line[strlen(line)] = ' ';
+      if (key.type == TID_LINK) {
+         db_get_link_data(hDB, hKey, data, &size, key.type);
+         sprintf(line + strlen(line), " -> %s", data);
+         if (pi->index != -1)
+            sprintf(line + strlen(line), "[%d]", pi->index);
+         if (strlen(line) >= 32) {
+            printf("%s\n", line);
+            memset(line, ' ', sizeof(line));
+            line[80] = 0;
+         }
+      } else {
+         if (pi->index != -1)
+            sprintf(line + strlen(line), "[%d]", pi->index);
+         line[strlen(line)] = ' ';
+      }
 
       if (key.type == TID_KEY) {
          if (pi->flags & PI_LONG)
@@ -301,26 +320,30 @@ INT print_key(HNDLE hDB, HNDLE hKey, KEY * pkey, INT level, void *info)
             return 0;
       } else {
 
-         status = db_get_data(hDB, hKey, data, &size, key.type);
+         status = db_get_link_data(hDB, hKey, data, &size, key.type);
          data_str[0] = 0;
 
          /* resolve links */
          if (key.type == TID_LINK) {
-            sprintf(data_str, "%s -> ", data);         
-            status = db_find_key(hDB, 0, data, &hKey);
+            if (strlen(data) > 0 && data[strlen(data)-1] == ']')
+               status = DB_SUCCESS;
+            else
+               status = db_find_key(hDB, 0, data, &hKey);
             if (status == DB_SUCCESS) {
-               db_get_key(hDB, hKey, &key);
-               size = sizeof(data);
-               if (key.type != TID_KEY)
-                  status = db_get_data(hDB, hKey, data, &size, key.type);
-               else
-                  status = DB_TYPE_MISMATCH;
+               status = db_get_key(hDB, hKey, &key);
+               if (status == DB_SUCCESS) {
+                  size = sizeof(data);
+                  if (key.type != TID_KEY)
+                     status = db_get_data(hDB, hKey, data, &size, key.type);
+                  else
+                     status = DB_TYPE_MISMATCH;
+               }
             }
          }
 
          if (status == DB_TYPE_MISMATCH)
             strcat(data_str, "<subdirectory>");
-         else if (status == DB_NO_KEY)
+         else if (status == DB_NO_KEY || status == DB_INVALID_LINK)
             strcat(data_str, "<cannot resolve link>");
          else if (status == DB_NO_ACCESS)
             strcat(data_str, "<no read access>");
@@ -376,9 +399,11 @@ INT print_key(HNDLE hDB, HNDLE hKey, KEY * pkey, INT level, void *info)
             else
                strcpy(line + 32, data_str);
          else
-            line[32] = 0;
+            while (line[strlen(line)-1] == ' ')
+               line[strlen(line)-1] = 0;
 
-         printf("%s\n", line);
+         if (line[0])
+            printf("%s\n", line);
 
          if (key.type == TID_STRING && strchr(data_str, '\n'))
             puts(data_str);
@@ -659,9 +684,9 @@ INT cmd_dir(char *line, INT * cursor)
             strcat(key_name, " ");
 
          /* retrieve key data */
-         db_get_key(hDB, hSubkey, &key);
+         db_get_link(hDB, hSubkey, &key);
          size = sizeof(data);
-         db_get_data(hDB, hSubkey, data, &size, key.type);
+         db_get_link_data(hDB, hSubkey, data, &size, key.type);
          
          if (key.type == TID_STRING || key.type == TID_LINK)
             sprintf(str, "\"%s\"", data);
@@ -699,14 +724,14 @@ INT cmd_dir(char *line, INT * cursor)
    } else
       strcpy(partial, str);
 
-   db_find_key(hDB, 0, str, &hKey);
+   db_find_link(hDB, 0, str, &hKey);
    for (i = 0, match = 0;; i++) {
       db_enum_link(hDB, hKey, i, &hSubkey);
 
       if (!hSubkey)
          break;
 
-      db_get_key(hDB, hSubkey, &key);
+      db_get_link(hDB, hSubkey, &key);
       strcpy(str, key.name);
 
       str[strlen(partial)] = 0;
@@ -724,7 +749,7 @@ INT cmd_dir(char *line, INT * cursor)
       if (!hSubkey)
          break;
 
-      db_get_key(hDB, hSubkey, &key);
+      db_get_link(hDB, hSubkey, &key);
       strcpy(str, key.name);
 
       str[strlen(partial)] = 0;
@@ -783,7 +808,7 @@ INT cmd_dir(char *line, INT * cursor)
             if (!hSubkey)
                break;
 
-            db_get_key(hDB, hSubkey, &key);
+            db_get_link(hDB, hSubkey, &key);
             strcpy(str, key.name);
 
             str[strlen(partial)] = 0;
@@ -1383,9 +1408,9 @@ void command_loop(char *host_name, char *exp_name, char *cmd, char *start_dir)
                strcpy(print_info.pattern, param[i]);
             } else {
                if (param[i][0] == '/')
-                  status = db_find_key(hDB, 0, param[i], &hKey);
+                  status = db_find_link(hDB, 0, param[i], &hKey);
                else
-                  status = db_find_key(hDB, hKey, param[i], &hKey);
+                  status = db_find_link(hDB, hKey, param[i], &hKey);
 
                if (status == DB_NO_KEY)
                   printf("key %s not found\n", param[i]);
@@ -1408,7 +1433,7 @@ void command_loop(char *host_name, char *exp_name, char *cmd, char *start_dir)
                if (cm_is_ctrlc_pressed())
                   cm_ack_ctrlc_pressed();
             } else {
-               db_get_key(hDB, hKey, &key);
+               db_get_link(hDB, hKey, &key);
                if (key.type != TID_KEY)
                   print_key(hDB, hKey, &key, 0, &print_info);
                else
@@ -1423,7 +1448,7 @@ void command_loop(char *host_name, char *exp_name, char *cmd, char *start_dir)
                      if (!hSubkey)
                         break;
 
-                     db_get_key(hDB, hSubkey, &key);
+                     db_get_link(hDB, hSubkey, &key);
                      status = print_key(hDB, hSubkey, &key, 0, &print_info);
                      if (status == 0)
                         break;
