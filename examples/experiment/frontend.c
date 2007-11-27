@@ -81,9 +81,7 @@ EQUIPMENT equipment[] = {
    {"Trigger",               /* equipment name */
     {1, 0,                   /* event ID, trigger mask */
      "SYSTEM",               /* event buffer */
-//     EQ_INTERRUPT,           /* equipment type */
-     EQ_MULTITHREAD,         /* equipment type */
-//     EQ_POLLED,              /* equipment type */
+     EQ_POLLED,              /* equipment type */
      LAM_SOURCE(0, 0xFFFFFF),        /* event source crate 0, all stations */
      "MIDAS",                /* format */
      TRUE,                   /* enabled */
