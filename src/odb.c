@@ -4197,19 +4197,19 @@ INT db_get_data(HNDLE hDB, HNDLE hKey, void *data, INT * buf_size, DWORD type)
 
       /* follow links to array index */
       if (pkey->type == TID_LINK) {
-         char  link[256];
+         char  link_name[256];
          int   i;
          HNDLE hkey;
          KEY   key;
 
-         strlcpy(link, (char *) pheader + pkey->data, sizeof(link));
-         if (strlen(link) > 0 && link[strlen(link) - 1] == ']') {
+         strlcpy(link_name, (char *) pheader + pkey->data, sizeof(link_name));
+         if (strlen(link_name) > 0 && link_name[strlen(link_name) - 1] == ']') {
             db_unlock_database(hDB);
-            if (strchr(link, '[') == NULL)
+            if (strchr(link_name, '[') == NULL)
                return DB_INVALID_LINK;
-            i = atoi(strchr(link, '[')+1);
-            *strchr(link, '[') = 0;
-            if (db_find_key(hDB, 0, link, &hkey) != DB_SUCCESS)
+            i = atoi(strchr(link_name, '[')+1);
+            *strchr(link_name, '[') = 0;
+            if (db_find_key(hDB, 0, link_name, &hkey) != DB_SUCCESS)
                return DB_INVALID_LINK;
             db_get_key(hDB, hkey, &key);
             return db_get_data_index(hDB, hkey, data, buf_size, i, key.type);
@@ -4634,7 +4634,7 @@ INT db_set_data(HNDLE hDB, HNDLE hKey,
       KEY *pkey;
       HNDLE hkeylink;
       int link_idx;
-      char link[256];
+      char link_name[256];
 
       if (hDB > _database_entries || hDB <= 0) {
          cm_msg(MERROR, "db_set_data", "invalid database handle");
@@ -4673,14 +4673,14 @@ INT db_set_data(HNDLE hDB, HNDLE hKey,
 
       /* check for link to array index */
       if (pkey->type == TID_LINK) {
-         strlcpy(link, (char *) pheader + pkey->data, sizeof(link));
-         if (strlen(link) > 0 && link[strlen(link) - 1] == ']') {
+         strlcpy(link_name, (char *) pheader + pkey->data, sizeof(link_name));
+         if (strlen(link_name) > 0 && link_name[strlen(link_name) - 1] == ']') {
             db_unlock_database(hDB);
-            if (strchr(link, '[') == NULL)
+            if (strchr(link_name, '[') == NULL)
                return DB_INVALID_LINK;
-            link_idx = atoi(strchr(link, '[')+1);
-            *strchr(link, '[') = 0;
-            if (db_find_key(hDB, 0, link, &hkeylink) != DB_SUCCESS)
+            link_idx = atoi(strchr(link_name, '[')+1);
+            *strchr(link_name, '[') = 0;
+            if (db_find_key(hDB, 0, link_name, &hkeylink) != DB_SUCCESS)
                return DB_INVALID_LINK;
             return db_set_data_index(hDB, hkeylink, data, buf_size, link_idx, type);
          }
@@ -4874,7 +4874,7 @@ INT db_set_data_index(HNDLE hDB, HNDLE hKey,
    {
       DATABASE_HEADER *pheader;
       KEY *pkey;
-      char link[256];
+      char link_name[256];
       int link_idx;
       HNDLE hkeylink;
 
@@ -4912,14 +4912,14 @@ INT db_set_data_index(HNDLE hDB, HNDLE hKey,
 
       /* check for link to array index */
       if (pkey->type == TID_LINK) {
-         strlcpy(link, (char *) pheader + pkey->data, sizeof(link));
-         if (strlen(link) > 0 && link[strlen(link) - 1] == ']') {
+         strlcpy(link_name, (char *) pheader + pkey->data, sizeof(link_name));
+         if (strlen(link_name) > 0 && link_name[strlen(link_name) - 1] == ']') {
             db_unlock_database(hDB);
-            if (strchr(link, '[') == NULL)
+            if (strchr(link_name, '[') == NULL)
                return DB_INVALID_LINK;
-            link_idx = atoi(strchr(link, '[')+1);
-            *strchr(link, '[') = 0;
-            if (db_find_key(hDB, 0, link, &hkeylink) != DB_SUCCESS)
+            link_idx = atoi(strchr(link_name, '[')+1);
+            *strchr(link_name, '[') = 0;
+            if (db_find_key(hDB, 0, link_name, &hkeylink) != DB_SUCCESS)
                return DB_INVALID_LINK;
             return db_set_data_index(hDB, hkeylink, data, data_size, link_idx, type);
          }
