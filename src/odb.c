@@ -3641,7 +3641,7 @@ INT db_get_key(HNDLE hDB, HNDLE hKey, KEY * key)
       DATABASE_HEADER *pheader;
       KEY *pkey;
       HNDLE hkeylink;
-      char link[256];
+      char link_name[256];
 
       if (hDB > _database_entries || hDB <= 0) {
          cm_msg(MERROR, "db_get_key", "invalid database handle");
@@ -3680,12 +3680,12 @@ INT db_get_key(HNDLE hDB, HNDLE hKey, KEY * key)
       }
 
       /* check for link to array index */
-      strlcpy(link, (char *) pheader + pkey->data, sizeof(link));
-      if (strlen(link) > 0 && link[strlen(link) - 1] == ']') {
+      strlcpy(link_name, (char *) pheader + pkey->data, sizeof(link));
+      if (strlen(link_name) > 0 && link_name[strlen(link_name) - 1] == ']') {
          db_unlock_database(hDB);
-         if (strchr(link, '[') == NULL)
+         if (strchr(link_name, '[') == NULL)
             return DB_INVALID_LINK;
-         if (db_find_key(hDB, 0, link, &hkeylink) != DB_SUCCESS)
+         if (db_find_key(hDB, 0, link_name, &hkeylink) != DB_SUCCESS)
             return DB_INVALID_LINK;
          db_get_key(hDB, hkeylink, key);
          key->num_values = 1; // fake number of values
