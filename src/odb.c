@@ -3680,7 +3680,7 @@ INT db_get_key(HNDLE hDB, HNDLE hKey, KEY * key)
       }
 
       /* check for link to array index */
-      strlcpy(link_name, (char *) pheader + pkey->data, sizeof(link));
+      strlcpy(link_name, (char *) pheader + pkey->data, sizeof(link_name));
       if (strlen(link_name) > 0 && link_name[strlen(link_name) - 1] == ']') {
          db_unlock_database(hDB);
          if (strchr(link_name, '[') == NULL)
