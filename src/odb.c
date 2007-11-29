@@ -3680,16 +3680,18 @@ INT db_get_key(HNDLE hDB, HNDLE hKey, KEY * key)
       }
 
       /* check for link to array index */
-      strlcpy(link_name, (char *) pheader + pkey->data, sizeof(link_name));
-      if (strlen(link_name) > 0 && link_name[strlen(link_name) - 1] == ']') {
-         db_unlock_database(hDB);
-         if (strchr(link_name, '[') == NULL)
-            return DB_INVALID_LINK;
-         if (db_find_key(hDB, 0, link_name, &hkeylink) != DB_SUCCESS)
-            return DB_INVALID_LINK;
-         db_get_key(hDB, hkeylink, key);
-         key->num_values = 1; // fake number of values
-         return DB_SUCCESS;
+      if (pkey->type == TID_LINK) {
+         strlcpy(link_name, (char *) pheader + pkey->data, sizeof(link_name));
+         if (strlen(link_name) > 0 && link_name[strlen(link_name) - 1] == ']') {
+            db_unlock_database(hDB);
+            if (strchr(link_name, '[') == NULL)
+               return DB_INVALID_LINK;
+            if (db_find_key(hDB, 0, link_name, &hkeylink) != DB_SUCCESS)
+               return DB_INVALID_LINK;
+            db_get_key(hDB, hkeylink, key);
+            key->num_values = 1; // fake number of values
+            return DB_SUCCESS;
+         }
       }
 
       memcpy(key, pkey, sizeof(KEY));
@@ -8001,8 +8003,13 @@ INT db_check_record(HNDLE hDB, HNDLE hKey, char *keyname, char *rec_str, BOOL co
                      if (!string_length) {
                         if (info_str[1] == '=')
                            string_length = -1;
-                        else
-                           string_length = atoi(info_str + 1);
+                        else {
+                           pc = strchr(info_str, '[');
+                           if (pc != NULL)
+                              string_length = atoi(pc+1);
+                           else 
+                              string_length = -1;
+                        }
                         if (string_length > MAX_STRING_LENGTH) {
                            string_length = MAX_STRING_LENGTH;
                            cm_msg(MERROR, "db_check_record",
@@ -8025,7 +8032,10 @@ INT db_check_record(HNDLE hDB, HNDLE hKey, char *keyname, char *rec_str, BOOL co
                            cm_msg(MERROR, "db_check_record",
                                   "found multi-line string without termination sequence");
                      } else {
-                        pc = info_str + 2;
+                        if (strchr(info_str, ']'))
+                           pc = strchr(info_str, ']') + 1;
+                        else
+                           pc = info_str + 2;
                         while (*pc && *pc != ' ')
                            pc++;
                         while (*pc && *pc == ' ')
