@@ -7658,7 +7658,7 @@ void rpc_convert_data(void *data, INT tid, INT flags, INT total_size, INT conver
 
 INT rpc_tid_size(INT id)
 {
-   if (id < TID_LAST)
+   if (id >=0 && id < TID_LAST)
       return tid_size[id];
 
    return 0;
@@ -7666,7 +7666,7 @@ INT rpc_tid_size(INT id)
 
 char *rpc_tid_name(INT id)
 {
-   if (id < TID_LAST)
+   if (id >= 0 && id < TID_LAST)
       return tid_name[id];
    else
       return "<unknown>";
