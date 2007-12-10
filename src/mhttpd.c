@@ -4831,7 +4831,8 @@ typedef struct {
 
 void show_custom_gif(char *name)
 {
-   char str[256], filename[256], data[256], value[256], src[256];
+   char str[256], filename[256], data[256], value[256], src[256], custom_path[256],
+      full_filename[256];
    int i, index, length, status, size, width, height, bgcol, fgcol, bdcol, r, g, b, x, y;
    HNDLE hDB, hkeygif, hkeyroot, hkey, hkeyval;
    double fvalue, ratio;
@@ -4843,8 +4844,13 @@ void show_custom_gif(char *name)
    CGIF_LABEL label;
    CGIF_BAR bar;
 
-   /* find image description in ODB */
    cm_get_experiment_database(&hDB, NULL);
+
+   custom_path[0] = 0;
+   size = sizeof(custom_path);
+   db_get_value(hDB, 0, "/Custom/Path", custom_path, &size, TID_STRING, FALSE);
+
+   /* find image description in ODB */
    sprintf(str, "/Custom/Images/%s", name);
    db_find_key(hDB, 0, str, &hkeygif);
    if (!hkeygif) {
@@ -4856,9 +4862,15 @@ void show_custom_gif(char *name)
    /* load background image */
    size = sizeof(filename);
    db_get_value(hDB, hkeygif, "Background", filename, &size, TID_STRING, FALSE);
-   f = fopen(filename, "rb");
+
+   strlcpy(full_filename, custom_path, sizeof(str));
+   if (full_filename[strlen(full_filename)-1] != DIR_SEPARATOR)
+      strlcat(full_filename, DIR_SEPARATOR_STR, sizeof(full_filename));
+   strlcat(full_filename, filename, sizeof(full_filename));
+
+   f = fopen(full_filename, "rb");
    if (f == NULL) {
-      sprintf(str, "Cannot open file \"%s\"", filename);
+      sprintf(str, "Cannot open file \"%s\"", full_filename);
       show_error(str);
       return;
    }
@@ -5157,7 +5169,8 @@ void show_custom_gif(char *name)
 void show_custom_page(char *path)
 {
    int size, n_var, fh;
-   char str[TEXT_SIZE], *ctext, keypath[256], type[32], *p, *ps;
+   char str[TEXT_SIZE], *ctext, keypath[256], type[32], *p, *ps, custom_path[256],
+      filename[256];
    HNDLE hDB, hkey;
    KEY key;
    BOOL bedit;
@@ -5175,6 +5188,10 @@ void show_custom_page(char *path)
    }
    sprintf(str, "/Custom/%s", path);
 
+   custom_path[0] = 0;
+   size = sizeof(custom_path);
+   db_get_value(hDB, 0, "/Custom/Path", custom_path, &size, TID_STRING, FALSE);
+
    db_find_key(hDB, 0, str, &hkey);
    if (hkey) {
 
@@ -5186,9 +5203,13 @@ void show_custom_page(char *path)
 
       /* check if filename */
       if (strchr(ctext, '\n') == 0) {
-         fh = open(ctext, O_RDONLY | O_BINARY);
+         strlcpy(filename, custom_path, sizeof(str));
+         if (filename[strlen(filename)-1] != DIR_SEPARATOR)
+            strlcat(filename, DIR_SEPARATOR_STR, sizeof(filename));
+         strlcat(filename, ctext, sizeof(filename));
+         fh = open(filename, O_RDONLY | O_BINARY);
          if (fh < 0) {
-            sprintf(str, "Cannot open file \"%s\"", ctext);
+            sprintf(str, "Cannot open file \"%s\"", filename);
             show_error(str);
             free(ctext);
             return;
