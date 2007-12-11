@@ -25,12 +25,6 @@
 
 #include "vmedrv.h"
 
-#define A32_SIZE 0x01000000
-#define A32_MASK 0x00FFFFFF
-
-//#define A32_SIZE 0x00010000
-//#define A32_MASK 0x0000FFFF
-
 #define MAX_VME_SLOTS 7
 
 typedef struct {
@@ -42,25 +36,6 @@ typedef struct {
   mvme_addr_t    high;
   int           valid;
 } VME_TABLE;
-
-/********************************************************************/
-/**
-Return the largest window size based on the address modifier.
-For A32, VMIC cannot map a full 32bit address space.
-We map it in chunks of 16 Mbytes instead
-*/
-static mvme_size_t FullWsze(int am) {
-  switch (am & 0xF0) {
-  case 0x00:
-    return A32_SIZE; // map A32 space in chunks of 16Mibytes
-  case 0x30:
-    return (1<<24); // map all of the A24 address space: 16Mibytes
-  case 0x20:
-    return (1<<16); // map all of the A16 address space: 64kibytes
-  default:
-    return 0;
-  }
-}
 
 /********************************************************************/
 /**
@@ -83,33 +58,72 @@ int gefvme_openWindow(MVME_INTERFACE *mvme, mvme_addr_t vme_addr, mvme_size_t n_
   table = (VME_TABLE *) mvme->table;
   
   /* Find new slot */
-  j=0;
-  while (table[j].valid)  j++;
-  
+  for (j=0; j<MAX_VME_SLOTS; j++)
+    if (!table[j].valid)
+      {
+        /* Create a new window */
+
+        sprintf(devname, "/dev/vme_m%d", j);
+        fd = open(devname, O_RDWR);
+        if (fd < 0) {
+          if (errno != EBUSY)
+            fprintf(stderr,"gefvme_openWindow: cannot open VME device \'%s\', errno %d (%s)\n", devname, errno, strerror(errno));
+          continue;
+        }
+        
+        break;
+      }
+
+  printf("gefvme_openWindow: Slot %d, VME addr 0x%08x, am 0x%02x, size 0x%08x %d\n", j, vme_addr, table[j].am, n_bytes, n_bytes);
+        
   if (j >= MAX_VME_SLOTS) {
     /* No more slot available */
     fprintf(stderr,"gefvme_openWindow: All VME slots are in use!\n");
     return MVME_ACCESS_ERROR;
   }
 
-  /* Create a new window */
-  table[j].low    = vme_addr;
   table[j].am     = ((mvme->am == 0) ? MVME_AM_DEFAULT : mvme->am);
-  table[j].nbytes = n_bytes;
-
-  printf("gefvme_openWindow: Slot %d, VME addr 0x%08x, am 0x%02x, size 0x%08x %d\n", j, vme_addr, table[j].am, n_bytes, n_bytes);
-
-  sprintf(devname, "/dev/vme_m%d", j);
-  fd = open(devname, O_RDWR);
-  if (fd < 0) {
-    fprintf(stderr,"gefvme_openWindow: cannot open VME device \'%s\', errno %d (%s)\n", devname, errno, strerror(errno));
-    abort();
-    return MVME_ACCESS_ERROR;
-  }
-
   table[j].handle = fd;
 
   memset(&conf, 0, sizeof(conf));
+
+  switch (table[j].am)
+    {
+    default:
+      fprintf(stderr,"gefvme_openWindow: Do not know how to handle VME AM 0x%x\n", table[j].am);
+      abort();
+      return MVME_ACCESS_ERROR;
+    case MVME_AM_A24:
+    case MVME_AM_A24_ND:
+      vme_addr = 0;
+      n_bytes = (1<<24);
+      conf.addrSpace = VME_A24;       /*  Address Space */
+      conf.userAccessType = VME_USER; /*  User/Supervisor Access Type */
+      conf.dataAccessType = VME_DATA; /*  Data/Program Access Type */
+      amode = "A24";
+      break;
+    case MVME_AM_A32_ND:
+    case MVME_AM_A32_SD:
+      n_bytes = 0x01000000;
+      //n_bytes = 0x00800000;
+      {
+        char* env = getenv("GEFVME_A32_SIZE");
+        if (env)
+          {
+            n_bytes = strtoul(env, NULL, 0);
+            fprintf(stderr,"gefvme: A32 window size set to 0x%x\n", n_bytes);
+          }
+      }
+      vme_addr = vme_addr - vme_addr%n_bytes;
+      conf.addrSpace = VME_A32;       /*  Address Space */
+      conf.userAccessType = VME_USER; /*  User/Supervisor Access Type */
+      conf.dataAccessType = VME_DATA; /*  Data/Program Access Type */
+      amode = "A32";
+      break;
+    }
+
+  table[j].low    = vme_addr;
+  table[j].nbytes = n_bytes;
 
   conf.windowNbr = j;    /*  Window Number */
   conf.windowEnable = 1; /*  State of Window */
@@ -126,26 +140,6 @@ int gefvme_openWindow(MVME_INTERFACE *mvme, mvme_addr_t vme_addr, mvme_size_t n_
   conf.xferRate2esst = VME_SSTNONE;  /*  2eSST Transfer Rate */
   conf.maxDataWidth  = VME_D32;      /*  Maximum Data Width */
   conf.xferProtocol  = 0; // VME_SCT;   /*  Transfer Protocol */
-  switch (table[j].am)
-    {
-    default:
-      fprintf(stderr,"gefvme_openWindow: Do not know how to handle VME AM 0x%x\n", table[j].am);
-      abort();
-      return MVME_ACCESS_ERROR;
-    case MVME_AM_A24:
-    case MVME_AM_A24_ND:
-      conf.addrSpace = VME_A24;       /*  Address Space */
-      conf.userAccessType = VME_USER; /*  User/Supervisor Access Type */
-      conf.dataAccessType = VME_DATA; /*  Data/Program Access Type */
-      amode = "A24";
-      break;
-    case MVME_AM_A32_SD:
-      conf.addrSpace = VME_A32;       /*  Address Space */
-      conf.userAccessType = VME_USER; /*  User/Supervisor Access Type */
-      conf.dataAccessType = VME_DATA; /*  Data/Program Access Type */
-      amode = "A32";
-      break;
-    }
   conf.reserved = 0;       /* For future use */
 
   status = ioctl(fd, VME_IOCTL_SET_OUTBOUND, &conf);
@@ -181,35 +175,27 @@ static int gefvme_mapcheck(MVME_INTERFACE *mvme, mvme_addr_t vme_addr, mvme_size
   int status;
   int j;
   VME_TABLE *table;
-  mvme_addr_t addr;
   table = (VME_TABLE *) mvme->table;
 
   /* Look for existing mapping */
 
-  for (j=0; table[j].valid; j++) {
-    /* Check for the proper am */
-    if (mvme->am != table[j].am)
-      continue;
-    /* Check the vme address range */
-    if ((vme_addr >= table[j].low) && ((vme_addr+n_bytes) < table[j].high)) {
-      /* valid range */
-      break;
+  for (j=0; j<MAX_VME_SLOTS; j++)
+    if (table[j].valid) {    /* Check for the proper am */
+      if (mvme->am != table[j].am)
+        continue;
+      /* Check the vme address range */
+      if ((vme_addr >= table[j].low) && ((vme_addr+n_bytes) < table[j].high)) {
+        /* valid range */
+        break;
+      }
     }
-  }
 
   /* Create a new mapping if needed */
 
-  if (!table[j].valid) {
-    /* Adjust vme_addr start point (split in quarters) */
-    if (vme_addr >= A32_SIZE) 
-      addr = vme_addr & (~A32_MASK);
-    else
-      addr = 0x00000000;
-    /* Create a new window */
-    status = gefvme_openWindow(mvme, addr, FullWsze(mvme->am), &j);
-    if (status != MVME_SUCCESS) {
+  if (j>=MAX_VME_SLOTS) {
+    status = gefvme_openWindow(mvme, vme_addr, n_bytes, &j);
+    if (status != MVME_SUCCESS)
       return status;
-    }
   }
 
   if (pfd)
@@ -329,6 +315,7 @@ int mvme_read(MVME_INTERFACE *mvme, void *dst, mvme_addr_t vme_addr, mvme_size_t
   char devnode[20];
   vmeDmaPacket_t vmeDma;
   char* ptr;
+  int xerrno;
 
   /* Perform read */
   /*--------------- DMA --------------*/
@@ -337,6 +324,10 @@ int mvme_read(MVME_INTERFACE *mvme, void *dst, mvme_addr_t vme_addr, mvme_size_t
     fprintf(stderr,"mvme_read: Unknown VME block transfer mode %d\n", mvme->blt_mode);
     return MVME_ACCESS_ERROR;
 
+  case MVME_AM_A24_SMBLT:
+  case MVME_AM_A24_NMBLT:
+  case MVME_AM_A32_SMBLT:
+  case MVME_AM_A32_NMBLT:
   case MVME_BLT_BLT32:
   case MVME_BLT_MBLT64:
 
@@ -354,22 +345,49 @@ int mvme_read(MVME_INTERFACE *mvme, void *dst, mvme_addr_t vme_addr, mvme_size_t
     vmeDma.byteCount = n_bytes;
     vmeDma.srcBus = VME_DMA_VME;
     vmeDma.srcAddr = vme_addr;
-    if (mvme->blt_mode == MVME_BLT_BLT32)
-      vmeDma.srcVmeAttr.maxDataWidth = VME_D32;
-    else if (mvme->blt_mode == MVME_BLT_MBLT64)
-      vmeDma.srcVmeAttr.maxDataWidth = VME_D64;
-    else
-      assert(!"mvme_read: Unknown DMA mode!");
-    vmeDma.srcVmeAttr.addrSpace = VME_A24;
+
+    switch (mvme->blt_mode)
+      {
+      case MVME_BLT_BLT32:
+        vmeDma.srcVmeAttr.maxDataWidth = VME_D32;
+        vmeDma.srcVmeAttr.xferProtocol = VME_BLT;
+        break;
+      case MVME_BLT_MBLT64:
+      case MVME_AM_A24_SMBLT:
+      case MVME_AM_A24_NMBLT:
+      case MVME_AM_A32_SMBLT:
+      case MVME_AM_A32_NMBLT:
+        //vmeDma.srcVmeAttr.maxDataWidth = VME_D64;
+        vmeDma.srcVmeAttr.maxDataWidth = VME_D32;
+        vmeDma.srcVmeAttr.xferProtocol = VME_MBLT;
+        break;
+      default:
+        assert(!"mvme_read: Unknown DMA mode!");
+      }
+
+    switch (mvme->am)
+      {
+      default:
+        fprintf(stderr,"mvme_read: Do not know how to handle VME AM 0x%x\n", mvme->am);
+        assert(!"mvme_read: Unknown VME AM DMA mode!");
+        return MVME_ACCESS_ERROR;
+      case MVME_AM_A24:
+      case MVME_AM_A24_ND:
+      case MVME_AM_A24_SMBLT:
+      case MVME_AM_A24_NMBLT:
+        vmeDma.srcVmeAttr.addrSpace = VME_A24;
+        break;
+      case MVME_AM_A32_ND:
+      case MVME_AM_A32_SD:
+      case MVME_AM_A32_SMBLT:
+      case MVME_AM_A32_NMBLT:
+        vmeDma.srcVmeAttr.addrSpace = VME_A32;
+        break;
+      }
+
     //vmeDma.srcVmeAttr.userAccessType = VME_SUPER;
     vmeDma.srcVmeAttr.userAccessType = VME_USER;
     vmeDma.srcVmeAttr.dataAccessType = VME_DATA;
-    if (mvme->blt_mode == MVME_BLT_BLT32)
-      vmeDma.srcVmeAttr.xferProtocol = VME_BLT;
-    else if (mvme->blt_mode == MVME_BLT_MBLT64)
-      vmeDma.srcVmeAttr.xferProtocol = VME_MBLT;
-    else
-      assert(!"mvme_read: Unknown DMA mode!");
     vmeDma.dstBus = VME_DMA_USER;
     vmeDma.dstAddr = (int)dst;
     vmeDma.dstVmeAttr.maxDataWidth = 0;
@@ -377,19 +395,18 @@ int mvme_read(MVME_INTERFACE *mvme, void *dst, mvme_addr_t vme_addr, mvme_size_t
     vmeDma.dstVmeAttr.userAccessType = 0;
     vmeDma.dstVmeAttr.dataAccessType = 0;
     vmeDma.dstVmeAttr.xferProtocol = 0;
+
+    vmeDma.vmeDmaStatus = 0;
     
     status = ioctl(fd, VME_IOCTL_START_DMA, &vmeDma);
-    if (status < 0) {
-      fprintf(stderr,"mvme_read: ioctl(VME_IOCTL_START_DMA) returned %d, errno %d (%s)\n", status, errno, strerror(errno));
-      close(fd);
-      return MVME_ACCESS_ERROR;
-    }
+    xerrno = errno;
 
     close(fd);
 
     if (0)
       {
         printf("mvme_read: DMA status:\n");
+        printf("  requested %d bytes\n", n_bytes);
         printf("  vmeDmaToken: %d\n", vmeDma.vmeDmaToken);
         printf("  vmeDmaWait:  %d\n", vmeDma.vmeDmaWait);
         printf("  vmeDmaStartTick: %d\n", vmeDma.vmeDmaStartTick);
@@ -397,7 +414,27 @@ int mvme_read(MVME_INTERFACE *mvme, void *dst, mvme_addr_t vme_addr, mvme_size_t
         printf("  vmeDmaElapsedTime: %d\n", vmeDma.vmeDmaElapsedTime);
         printf("  vmeDmaStatus: %d\n", vmeDma.vmeDmaStatus);
         printf("  byte count: %d\n", vmeDma.byteCount);
+        //assert(!"Crash here!");
       }
+
+    //printf("mvme_read: DMA %6d of %6d bytes from 0x%08x, status 0x%08x, srcAddr 0x%08x, dstAddr 0x%08x\n", n_bytes, vmeDma.byteCount, vme_addr, vmeDma.vmeDmaStatus, vmeDma.srcAddr, vmeDma.dstAddr);
+
+    if (status < 0) {
+      fprintf(stderr,"mvme_read: ioctl(VME_IOCTL_START_DMA) returned %d, errno %d (%s)\n", status, xerrno, strerror(xerrno));
+      return MVME_ACCESS_ERROR;
+    }
+
+    if (vmeDma.vmeDmaStatus != 0x02000000) {
+      //*((uint32_t*)dst) = 0xdeadbeef;
+      printf("mvme_read: DMA %6d of %6d bytes from 0x%08x, status 0x%08x, srcAddr 0x%08x, dstAddr 0x%08x\n", n_bytes, vmeDma.byteCount, vme_addr, vmeDma.vmeDmaStatus, vmeDma.srcAddr, vmeDma.dstAddr);
+      fprintf(stderr,"mvme_read: ioctl(VME_IOCTL_START_DMA) returned vmeDmaStatus 0x%08x\n", vmeDma.vmeDmaStatus);
+      return MVME_ACCESS_ERROR;
+    }
+
+    if (vmeDma.byteCount != n_bytes) {
+      fprintf(stderr,"mvme_read: ioctl(VME_IOCTL_START_DMA) returned byteCount %d while requested read of %d bytes\n", vmeDma.byteCount, n_bytes);
+      return MVME_ACCESS_ERROR;
+    }
 
     if (0)
       {
@@ -418,7 +455,7 @@ int mvme_read(MVME_INTERFACE *mvme, void *dst, mvme_addr_t vme_addr, mvme_size_t
       ptr[i+2] = tmp;
     }
     
-    return(MVME_SUCCESS);
+    return MVME_SUCCESS;
 
   case 0: // no block transfers
   
@@ -451,8 +488,11 @@ int mvme_read(MVME_INTERFACE *mvme, void *dst, mvme_addr_t vme_addr, mvme_size_t
         ptr[i+1] = ptr[i+2];
         ptr[i+2] = tmp;
       }
+
     } else
       assert(!"mvme_read: Unknown value of mvme->dmode. Only MVME_DMODE_D32 and MVME_DMODE_D64 permitted");
+
+    return MVME_SUCCESS;
   }
 
   assert(!"Not reached!");
