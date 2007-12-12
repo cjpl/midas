@@ -185,12 +185,11 @@ int quick_check(int fd, unsigned short adr, unsigned short adr_dvm, unsigned sho
 int calib(int fd, unsigned short adr, unsigned short adr_dvm, unsigned short adr_mux, 
           float rin_dvm, int first, int next_adr)
 {
-   float f, demand;
    int size, d, status, low_current;
    char str[80];
    MSCB_INFO info;
-   float v_adc1, v_adc2, v_multi1, v_multi2, adc_gain, adc_ofs, 
-      dac_gain, dac_ofs, i1, i2, i_900, i_200, i_gain, i_vgain, i_ofs;
+   float f1, v_adc1, v_adc2, v_multi1, v_multi2, adc_gain, adc_ofs, 
+      dac_gain, dac_ofs, i1, i2, i_high, i_low, i_gain, i_vgain, i_ofs, u_high, u_low;
 
    eprintf("\n**** Calibrating channel %d ****\n\n", adr);
 
@@ -216,8 +215,8 @@ int calib(int fd, unsigned short adr, unsigned short adr_dvm, unsigned short adr
    /* repeat until correct */
    do {
       /* disable hardware current limit */
-      f = 9999;
-      mscb_write(fd, adr, CH_ILIMIT, &f, sizeof(float));
+      f1 = 9999;
+      mscb_write(fd, adr, CH_ILIMIT, &f1, sizeof(float));
 
       /* set CSR to HV on, no regulation */
       d = 1;
@@ -240,17 +239,24 @@ int calib(int fd, unsigned short adr, unsigned short adr_dvm, unsigned short adr
 
       /*--- measure U calibration ----*/
 
-      /* set demand to 100V */
-      eprintf("Setting       100.0 Volt\n");
-      f = 100;
-      mscb_write(fd, adr, CH_VDEMAND, &f, sizeof(float));
+      if (stricmp(info.node_name, "HVR-800") == 0) {
+         u_low  = 100;       
+         u_high = 500;
+      } else {
+         u_low  = 100;
+         u_high = 900;
+      }
+
+      /* set demand to low value */
+      eprintf("Setting       %5.1lf Volt\n", u_low);
+      mscb_write(fd, adr, CH_VDEMAND, &u_low, sizeof(float));
       Sleep(HV_SET_DELAY);
 
       v_multi1 = read_voltage(fd, adr_dvm);
       if (adr_dvm > 0)
          eprintf("DVM reads     %5.1lf Volt\n", v_multi1);
 
-      if (v_multi1 < 50) {
+      if (v_multi1 < u_low-50) {
          eprintf("HVR ADC voltage too low, aborting.\n");
          stop();
       }
@@ -260,21 +266,15 @@ int calib(int fd, unsigned short adr, unsigned short adr_dvm, unsigned short adr
       mscb_read(fd, adr, CH_VMEAS, &v_adc1, &size);
       eprintf("HVR ADC reads %5.1lf Volt\n", v_adc1);
 
-      if (v_adc1 < 50) {
+      if (v_adc1 < u_low-50) {
          eprintf("HVR ADC voltage too low, aborting.\n");
          stop();
       }
 
-      if (stricmp(info.node_name, "HVR-800") == 0)
-         demand = 500;
-      else
-         demand = 900;
-
-      eprintf("\nSetting       %5.1lf Volt\n", demand);
+      eprintf("\nSetting       %5.1lf Volt\n", u_high);
       do {
          /* set demand voltage */
-         f = (float)demand;
-         mscb_write(fd, adr, CH_VDEMAND, &f, sizeof(float));
+         mscb_write(fd, adr, CH_VDEMAND, &u_high, sizeof(float));
 
          /* wait voltage to settle */
          Sleep(HV_SET_DELAY);
@@ -283,13 +283,13 @@ int calib(int fd, unsigned short adr, unsigned short adr_dvm, unsigned short adr
          size = sizeof(float);
          mscb_read(fd, adr, CH_VMEAS, &v_adc2, &size);
 
-         if (v_adc2 < f-10) {
+         if (v_adc2 < u_high-10) {
             eprintf("Only %1.1lf V can be reached on output,\n", v_adc2);
             eprintf("please increase input voltage and press ENTER.\n");
             fgets(str, sizeof(str), stdin);
          }
 
-      } while (v_adc2 < f-10);
+      } while (v_adc2 < u_high-10);
 
       v_multi2 = read_voltage(fd, adr_dvm);
       if (adr_dvm > 0)
@@ -300,14 +300,14 @@ int calib(int fd, unsigned short adr, unsigned short adr_dvm, unsigned short adr
       mscb_read(fd, adr, CH_VMEAS, &v_adc2, &size);
       eprintf("HVR ADC reads %5.1lf Volt\n", v_adc2);
 
-      if (v_adc2 < f-10) {
+      if (v_adc2 < u_high-10) {
          eprintf("HVR ADC voltage too low, aborting.\n");
          stop();
       }
 
       /* calculate corrections */
-      dac_gain = (float) ((demand - 100.0) / (v_multi2 - v_multi1));
-      dac_ofs = (float) (100 - dac_gain * v_multi1);
+      dac_gain = (float) ((u_high - u_low) / (v_multi2 - v_multi1));
+      dac_ofs = (float) (u_low - dac_gain * v_multi1);
 
       adc_gain = (float) ((v_multi2 - v_multi1) / (v_adc2 - v_adc1));
       adc_ofs = (float) (v_multi1 - adc_gain * v_adc1);
@@ -335,11 +335,11 @@ int calib(int fd, unsigned short adr, unsigned short adr_dvm, unsigned short adr
       mscb_write(fd, adr, CH_DACGAIN, &dac_gain, sizeof(float));
       mscb_write(fd, adr, CH_DACOFS, &dac_ofs, sizeof(float));
 
-      /* now test 500 V */
+      /* now test u_high/2 */
 
-      eprintf("\nSetting       500.0 Volt\n");
-      f = 500;
-      mscb_write(fd, adr, CH_VDEMAND, &f, sizeof(float));
+      eprintf("\nSetting       %5.1lf Volt\n", u_high/2);
+      f1 = u_high/2;
+      mscb_write(fd, adr, CH_VDEMAND, &f1, sizeof(float));
 
       /* wait voltage to settle */
       Sleep(HV_SET_DELAY);
@@ -353,50 +353,50 @@ int calib(int fd, unsigned short adr, unsigned short adr_dvm, unsigned short adr
       if (adr_dvm > 0)
          eprintf("DVM reads     %5.1lf Volt\n", v_multi1);
 
-      if (fabs(v_adc1 - 500) > 1)
+      if (fabs(v_adc1 - u_high/2) > 1)
          eprintf("\nERROR: ADC does not read 500V, re-doing calibration\n");
 
-      if (fabs(v_multi1 - 500) > 1)
+      if (fabs(v_multi1 - u_high/2) > 1)
          eprintf("\nERROR: DVM does not read 500V, re-doing calibration\n");
 
-   } while (fabs(v_adc1 - 500) > 1 || fabs(v_multi1 - 500) > 1);
+   } while (fabs(v_adc1 - u_high/2) > 1 || fabs(v_multi1 - u_high/2) > 1);
 
    if (low_current) {
       /* set demand to 0V */
-      f = 0;
-      mscb_write(fd, adr, CH_VDEMAND, &f, sizeof(float));
+      f1 = 0;
+      mscb_write(fd, adr, CH_VDEMAND, &f1, sizeof(float));
       eprintf("\007Please connect 100 MOhm resistor to channel %d and press ENTER\n", adr);
       fgets(str, sizeof(str), stdin);
+      rin_dvm = 100E6;
    }
 
    /* set voltage exactly with regulation */
-   eprintf("\nSetting       %5.1lf Volt\n", demand);
+   eprintf("\nSetting       %5.1lf Volt\n", u_high);
    d = 3;
    mscb_write(fd, adr, CH_CONTROL, &d, 1);
-   f = demand;
-   mscb_write(fd, adr, CH_VDEMAND, &f, sizeof(float));
+   mscb_write(fd, adr, CH_VDEMAND, &u_high, sizeof(float));
 
    /* wait voltage to settle */
    Sleep(HV_SET_DELAY);
 
    /* read current */
    size = sizeof(float);
-   mscb_read(fd, adr, CH_IMEAS, &i_900, &size);
-   eprintf("\nI at %3.0lfV  :  %5.3lf uA\n", demand, i_900);
+   mscb_read(fd, adr, CH_IMEAS, &i_high, &size);
+   eprintf("\nI at %3.0lfV  :  %5.3lf uA\n", u_high, i_high);
 
    /* remove voltage */
-   f = 0;
-   mscb_write(fd, adr, CH_VDEMAND, &f, sizeof(float));
+   f1 = 0;
+   mscb_write(fd, adr, CH_VDEMAND, &f1, sizeof(float));
 
    /* set current limit to 2.5mA */
-   f = 2500;
-   mscb_write(fd, adr, CH_ILIMIT, &f, sizeof(float));
+   f1 = 2500;
+   mscb_write(fd, adr, CH_ILIMIT, &f1, sizeof(float));
 
    if (!low_current) {
       if (adr_mux == 0xFFFF) {
          if (next_adr > 0) {
-            f = 0;
-            mscb_write(fd, next_adr, CH_VDEMAND, &f, sizeof(float));
+            f1 = 0;
+            mscb_write(fd, next_adr, CH_VDEMAND, &f1, sizeof(float));
             eprintf("\n\007Please connect multimeter to channel %d and press ENTER\n", next_adr);
          } else
             eprintf("\n\007Please disconnect multimeter from channel %d and press ENTER\n", adr);
@@ -420,23 +420,22 @@ int calib(int fd, unsigned short adr, unsigned short adr_dvm, unsigned short adr
 
    if (low_current) {
 
-      /* set demand to 200V */
-      f = 200;
-      mscb_write(fd, adr, CH_VDEMAND, &f, sizeof(float));
+      /* set low demand */
+      mscb_write(fd, adr, CH_VDEMAND, &u_low, sizeof(float));
       Sleep(HV_SET_DELAY);
 
       /* read current */
       size = sizeof(float);
-      mscb_read(fd, adr, CH_IMEAS, &i_200, &size);
-      eprintf("I at 200V  :  %5.3lf uA\n", i_200);
+      mscb_read(fd, adr, CH_IMEAS, &i_low, &size);
+      eprintf("I at %1.0lfV  :  %5.3lf uA\n", u_low, i_low);
 
       i_vgain = 0;
 
       /* calculate current gain */
-      i_gain = (float) ((demand-200)/100) / (i_900 - i_200);
+      i_gain = (float) ((u_high-u_low)/rin_dvm*1E6) / (i_high - i_low);
 
       /* calcualte offset */
-      i_ofs = (float) ((i_900 - demand/(100 * i_gain)));
+      i_ofs = (float) ((i_high - u_high/(rin_dvm * i_gain)*1E6));
 
       eprintf("\nI vgain    : %10.5lf\n", i_vgain);
       eprintf("I offset   : %10.5lf\n", i_ofs);
@@ -446,13 +445,13 @@ int calib(int fd, unsigned short adr, unsigned short adr_dvm, unsigned short adr
       mscb_write(fd, adr, CH_CURGAIN, &i_gain, sizeof(float));
 
       /* remove voltage */
-      f = 0;
-      mscb_write(fd, adr, CH_VDEMAND, &f, sizeof(float));
+      f1 = 0;
+      mscb_write(fd, adr, CH_VDEMAND, &f1, sizeof(float));
       
       if (adr_mux == 0xFFFF) {
          if (next_adr > 0) {
-            f = 0;
-            mscb_write(fd, next_adr, CH_VDEMAND, &f, sizeof(float));
+            f1 = 0;
+            mscb_write(fd, next_adr, CH_VDEMAND, &f1, sizeof(float));
             eprintf("\n\007Please connect multimeter to channel %d and press ENTER\n", next_adr);
          } else
             eprintf("\n\007Please disconnect resistor from channel %d and press ENTER\n", adr);
@@ -467,56 +466,54 @@ int calib(int fd, unsigned short adr, unsigned short adr_dvm, unsigned short adr
 
       /*---- measure I-V gain ----*/
 
-      /* set demand to 100V */
-      f = 100;
-      mscb_write(fd, adr, CH_VDEMAND, &f, sizeof(float));
+      /* set low demand */
+      mscb_write(fd, adr, CH_VDEMAND, &u_low, sizeof(float));
       Sleep(HV_SET_DELAY);
 
       /* read current */
       size = sizeof(float);
       mscb_read(fd, adr, CH_IMEAS, &i1, &size);
-      eprintf("I at 100V  :  %5.1lf uA\n", i1);
+      eprintf("I at %1.0lfV  :  %5.1lf uA\n", u_low, i1);
 
       do {
-         /* set demand to 900V */
-         f = 900;
-         mscb_write(fd, adr, CH_VDEMAND, &f, sizeof(float));
+         /* set demand to high value */
+         mscb_write(fd, adr, CH_VDEMAND, &u_high, sizeof(float));
          Sleep(HV_SET_DELAY);
 
          /* read voltage */
          size = sizeof(float);
          mscb_read(fd, adr, CH_VMEAS, &v_adc1, &size);
 
-         if (v_adc1 < 890) {
-            v_adc2 = 900 - v_adc1 + 100;
-            v_adc2 = (float) ((int) (v_adc2 / 100.0) * 100);
+         if (v_adc1 < u_high-10) {
+            v_adc2 = u_high - v_adc1 + u_low;
+            v_adc2 = (float) ((int) (v_adc2 / u_low) * 100);
 
             eprintf("Only %1.1lf V can be reached on output,\n", v_adc1);
             eprintf("please increase input voltage by %1.0lf V and press ENTER.\n", v_adc2);
             fgets(str, sizeof(str), stdin);
          }
 
-      } while (v_adc1 < 890);
+      } while (v_adc1 < u_high-10);
 
       /* read current */
       size = sizeof(float);
       mscb_read(fd, adr, CH_IMEAS, &i2, &size);
-      eprintf("I at 900V  :  %5.1lf uA\n", i2);
+      eprintf("I at %1.0lfV  :  %5.1lf uA\n", u_high, i2);
 
-      if (i_900 - i2 < 10) {
+      if (i_high - i2 < 10) {
          eprintf("\nERROR: The current variation is too small, probably current measurement is not working\n");
          eprintf("Aborting calibration.\n");
          stop();
       }
 
       /* calculate voltage-current correction */
-      i_vgain = (float) (i2 - i1) / (900 - 100);
+      i_vgain = (float) (i2 - i1) / (u_high - u_low);
 
       /* calcualte offset */
-      i_ofs = (float) ((i2 - i1 * 900.0/100.0) / (1 - 900.0/100.0));
+      i_ofs = (float) ((i2 - i1 * u_high/u_low) / (1 - u_high/u_low));
 
       /* calculate current gain */
-      i_gain = (float) (900/rin_dvm*1E6) / (i_900 - i2);
+      i_gain = (float) (u_high/rin_dvm*1E6) / (i_high - i2);
 
       eprintf("\nI vgain    : %10.5lf\n", i_vgain);
       eprintf("I offset   : %10.5lf\n", i_ofs);
@@ -532,8 +529,8 @@ int calib(int fd, unsigned short adr, unsigned short adr_dvm, unsigned short adr
    }
 
    /* remove voltage */
-   f = 0;
-   mscb_write(fd, adr, CH_VDEMAND, &f, sizeof(float));
+   f1 = 0;
+   mscb_write(fd, adr, CH_VDEMAND, &f1, sizeof(float));
 
    /* write constants to EEPROM */
    mscb_flash(fd, adr, -1, 0);
