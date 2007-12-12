@@ -1001,18 +1001,19 @@ Function value:
   INT last_time, cpy_loop_time;
   DWORD watchdog_timeout;
   static INT last_error = 0;
-  char *pext;
+  //char *pext;
   BOOL watchdog_flag, exit_request=FALSE;
   char filename[256];
 
-  pext = malloc(strlen(infile));
-  strcpy(pext, infile);
+  // SR Nov 07, outcommented for "raw" .gz transfer
+  //pext = malloc(strlen(infile));
+  //strcpy(pext, infile);
 
   /* find out what format it is from the extension. */
-  if (strncmp(pext + strlen(pext) - 3, ".gz", 3) == 0) {
+  //if (strncmp(pext + strlen(pext) - 3, ".gz", 3) == 0) {
     /* extension .gz terminator on . */
-    *(pext + strlen(pext) - 3) = '\0';
-  }
+    // *(pext + strlen(pext) - 3) = '\0'; SR Nov 07
+  //}
 
   /* init copy variables */
   lazyst.cur_size = 0.0f;
