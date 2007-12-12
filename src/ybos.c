@@ -1413,7 +1413,7 @@ status : from lower function
       /* disk device */
       my.type = LOG_TYPE_DISK;
       if (strncmp(infile + strlen(infile) - 3, ".gz", 3) == 0)
-         my.zipfile = TRUE;
+         my.zipfile = FALSE; // PAA Nov/07 ignore zip, copy blindly blocks
    }
 
    /* open file */
@@ -1549,7 +1549,7 @@ INT yb_ftp_open(char *destination, FTP_CON ** con)
    INT status;
    short port = 0;
    char *token, host_name[HOST_NAME_LENGTH],
-       user[32], pass[32], directory[256], file_name[256], file_mode[256];
+       user[256], pass[256], directory[256], file_name[256], file_mode[256];
 
    /* 
       destination should have the form:
