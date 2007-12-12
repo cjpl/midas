@@ -1038,8 +1038,8 @@ void watchdog_refresh(unsigned char from_interrupt) reentrant
 #else
       EXT_WATCHDOG_PIN = !EXT_WATCHDOG_PIN;
 #endif
-#endif // EXT_WATCHDOG
    }
+#endif // EXT_WATCHDOG
    
 
 #endif
@@ -1165,8 +1165,8 @@ void watchdog_int(void) reentrant
 #else
       EXT_WATCHDOG_PIN = !EXT_WATCHDOG_PIN;
 #endif
-#endif // EXT_WATCHDOG
    }
+#endif // EXT_WATCHDOG
 
 #endif // USE_WATCHDOG
 }
