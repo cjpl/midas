@@ -179,6 +179,7 @@ INT mscbhvr_init(HNDLE hkey, void **pinfo, INT channels, INT(*bd) (INT cmd, ...)
    flag = 3;
    mscb_write_group(info->fd, 400, 0, &flag, 1);
    mscb_write_group(info->fd, 500, 0, &flag, 1);
+   mscb_write_group(info->fd, 800, 0, &flag, 1);
 
    return FE_SUCCESS;
 }
