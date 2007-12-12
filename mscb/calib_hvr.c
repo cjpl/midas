@@ -365,7 +365,7 @@ int calib(int fd, unsigned short adr, unsigned short adr_dvm, unsigned short adr
       /* set demand to 0V */
       f = 0;
       mscb_write(fd, adr, CH_VDEMAND, &f, sizeof(float));
-      eprintf("\007Please connect 5GOhm resistor to channel %d and press ENTER\n", adr);
+      eprintf("\007Please connect 100 MOhm resistor to channel %d and press ENTER\n", adr);
       fgets(str, sizeof(str), stdin);
    }
 
@@ -433,10 +433,10 @@ int calib(int fd, unsigned short adr, unsigned short adr_dvm, unsigned short adr
       i_vgain = 0;
 
       /* calculate current gain */
-      i_gain = (float) ((demand-200)/5E3) / (i_900 - i_200);
+      i_gain = (float) ((demand-200)/100) / (i_900 - i_200);
 
       /* calcualte offset */
-      i_ofs = (float) ((i_900 - demand/(5E3 * i_gain)));
+      i_ofs = (float) ((i_900 - demand/(100 * i_gain)));
 
       eprintf("\nI vgain    : %10.5lf\n", i_vgain);
       eprintf("I offset   : %10.5lf\n", i_ofs);
