@@ -4,28 +4,28 @@
   Created by:   Pierre-Andre Amaudruz / Jean-Pierre Martin
 
   Contents:     48 ch Flash ADC / 20-64 Msps from J.-P. Martin
-
   $Id$
+
 *********************************************************************/
-#
+ 
+#ifndef  VF48_INCLUDE_H
+#define  VF48_INCLUDE_H
+
 #include <stdio.h>
 #include <string.h>
-// #include "vmicvme.h"
-#include "mvmestd.h"
 
-#ifndef  __VF48_INCLUDE_H__
-#define  __VF48_INCLUDE_H__
+#include "mvmestd.h"
 
 /* Definitions */
 #define VF48_IDXMAX 4096
-
+ 
 /* Registers */
 #define  VF48_MAX_CHANNELS         (DWORD) 48
-#define  VF48_SUCCESS              (int)   (1)
-#define  VF48_NO_DATA              (int)   (2)
-#define  VF48_ERR_PARM             (int)   (-1)
-#define  VF48_NO_TRAILER           (int)   (-2)
-#define  VF48_ERR_HW               (int)   (603)
+#define  VF48_SUCCESS              (1)
+#define  VF48_ERROR                (-1)
+#define  VF48_ERR_PARM             (-1)
+#define  VF48_ERR_NODATA           (503)
+#define  VF48_ERR_HW               (603)
 #define  VF48_CSR_REG_RW           (DWORD) (0)          /**< -RW-D16/32 */
 #define  VF48_SELECTIVE_SET_W      (DWORD) (0x0010)
 #define  VF48_SELECTIVE_CLR_W      (DWORD) (0x0014)
@@ -33,7 +33,7 @@
 #define  VF48_FIRMWARE_R           (DWORD) (0x0030)  /**< -R-D16/32 */
 #define  VF48_PARAM_DATA_RW        (DWORD) (0x0050)  /**< -RW-D16/32 */
 #define  VF48_PARAM_ID_W           (DWORD) (0x0060)  /**< -W-D16/32 */
-#define  VF48_SOFT_TRIG_W          (DWORD) (0x0080)
+#define  VF48_SOFT_TRIG_W          (DWORD) (0x0070)
 #define  VF48_GRP_REG_RW           (DWORD) (0x0090)
 #define  VF48_NFRAME_R             (DWORD) (0x00A0)  /**< -R-D16/32 */
 #define  VF48_GLOBAL_RESET_W       (DWORD) (0x00B0)  /**< -W */
@@ -172,5 +172,7 @@ int  vf48_ChSuppSet(MVME_INTERFACE *mvme, DWORD base, int grp, DWORD size);
 int  vf48_ChSuppRead(MVME_INTERFACE *mvme, DWORD base, int grp);
 int  vf48_DivisorWrite(MVME_INTERFACE *mvme, DWORD base, DWORD size);
 int  vf48_DivisorRead(MVME_INTERFACE *mvme, DWORD base, int grp);
+int  vf48_Trigger(MVME_INTERFACE *mvme, DWORD base);
+int  vf48_Status(MVME_INTERFACE *mvme, DWORD base);
 #endif
 

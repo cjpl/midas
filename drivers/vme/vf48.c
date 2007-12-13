@@ -3,13 +3,15 @@
   Created by:   Pierre-Andre Amaudruz / Jean-Pierre Martin
 
   Contents:     48 ch Flash ADC / 20..64 Msps from J.-P. Martin
-
+                
   $Id$
+
 *********************************************************************/
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include <unistd.h>
+#include <assert.h>
+
 #include "vf48.h"
 
 /********************************************************************/
@@ -21,45 +23,38 @@
     @param base  VF48 base address
     @param pdest Pointer to destination
     @param nentry Number of DWORD to transfer
-    @return status VF48_ERR_HW, SUCCESS
+    @return status VF48_ERROR, SUCCESS
 */
-int   idx = 0, nframe;
+static int   idx = 0, inbuf;
 int vf48_EventRead64(MVME_INTERFACE *mvme, DWORD base, DWORD *pdest, int *nentry)
 {
   int   markerfound, j;
   DWORD lData[VF48_IDXMAX];
-  DWORD *phead=NULL;
-
+  DWORD *phead;
+  
   int cmode, timeout;
-
+  
   mvme_get_dmode(mvme, &cmode);
   mvme_set_dmode(mvme, MVME_DMODE_D32);
-
-  if (nframe > VF48_IDXMAX) idx = 0;
-
+  
+  if (inbuf > VF48_IDXMAX) idx = 0;
+  
   if (idx == 0) {
-    nframe = vf48_NFrameRead(mvme, base);
-    //    if (nframe > 512) nframe = 512;
-    if (nframe == 0) {
-      *nentry = 0;
-      mvme_set_dmode(mvme, cmode);
-      return VF48_NO_DATA;
-    }
+    inbuf = vf48_NFrameRead(mvme, base);
     // max readout buffer (HW dependent)
-    vf48_DataRead(mvme, base, lData, &nframe);
+    vf48_DataRead(mvme, base, lData, &inbuf);
+    //    printf("Data Read Idx=0 %d\n", inbuf);
   }
-
+  
   // Check if available event found in local buffer
   timeout = 16;
   markerfound = 0;
   while (timeout) {
     // Scan local buffer from current index to top for Header
-    while ((idx < nframe) && ((lData[idx] & 0xF0000000) != VF48_HEADER)) {
-      if ((lData[idx] & 0xF0000000) == 0xB0000000)
-  printf("Searching for Header found 0xB (data[%d]:0x%x), Nframe:%d\n", idx, lData[idx], nframe);
+    while ((idx < inbuf) && ((lData[idx] & 0xF0000000) != VF48_HEADER)) {
       idx++;
     }
-    if (idx < nframe) {
+    if (idx < inbuf) {
       // Header found, save head, flag header, cp header
       timeout = 0;              // Reset to force exit on next test
       phead = pdest;            // Save top of event for evt length
@@ -71,60 +66,54 @@ int vf48_EventRead64(MVME_INTERFACE *mvme, DWORD base, DWORD *pdest, int *nentry
     } else {
       // No header found, request VME data (start at idx = 0)
       timeout--;               // Safe exit
-      nframe = vf48_NFrameRead(mvme, base);
-      //      if (nframe > 512) nframe = 512;
+      inbuf = vf48_NFrameRead(mvme, base);
       // max readout buffer (HW dependent)
-      //      memset(&lData, 0, VF48_IDXMAX);
-      if (nframe)
-  vf48_DataRead(mvme, base, lData, &nframe);
       idx = 0;
-      //      printf("Data Read Header search %d (timeout %d)\n", nframe, timeout);
+      vf48_DataRead(mvme, base, lData, &inbuf);
+      //      printf("Data Read Header search %d (timeout %d)\n", inbuf, timeout);
     }
   }
   if ((timeout == 0) && !markerfound) {
     //    printf("vf48_EventRead: Header Loop: Timeout Header not found\n");
     idx = 0;         // make sure we read VME on next call
     *nentry = 0;               // Set returned event length
-    return VF48_NO_DATA;
+    return VF48_ERROR;
   }
-
-  //  printf("Starting data copy nframe:%d idx:%d\n", nframe, idx);
-  timeout = 256;
+  
+  //  printf("Starting data copy\n");
+  timeout = 64;
   while(timeout) {
     timeout--;
     // copy rest of event until Trailer (nentry: valid# from last vme data)
-    while ((idx < nframe) && ((lData[idx] & 0xF0000000) != VF48_TRAILER)) {
-      if ((lData[idx] & 0xF0000000) == 0xB0000000) {
-  printf("Searching for Trailer found 0xB (data[%d]:0x%x), Nframe:%d\n", idx, lData[idx], nframe);
-      }
+    while ((idx < inbuf) && ((lData[idx] & 0xF0000000) != VF48_TRAILER)) {
       *pdest++ = lData[idx++];
     }
-    if ((lData[idx] & 0xF0000000) == VF48_TRAILER) {
+    if ((lData[idx] & 0xF0000000) == VF48_TRAILER) { 
       // Event complete return
       *pdest++ = lData[idx++];  // copy Trailer
       *nentry = pdest - phead;  // Compute event length
-      //      printf("Event complete idx:%d last nframe:%d evt len:%d\n", idx, nframe, *nentry);
-      return VF48_SUCCESS;
+      //      printf("Event complete idx:%d last inbuf:%d evt len:%d\n", idx, inbuf, *nentry);
+      return SUCCESS;
     } else {
-      j = 80000;
+      // No Trailer found, request VME data (start at idx = 0)
+      //      timeout--;                // Safe exit
+      j = 40000;
       while (j) { j--; }
-      //      usleep(1);
-      nframe = vf48_NFrameRead(mvme, base);
-      //     if (nframe > 512) nframe = 512;
-      if (nframe)
-  vf48_DataRead(mvme,  base, lData, &nframe);
+      // usleep(1);
+      inbuf = vf48_NFrameRead(mvme, base);
+      vf48_DataRead(mvme,  base, lData, &inbuf);
       idx = 0;
-      // printf("Data Read Trailer search %d (timeout:%d)\n", nframe, timeout);
+      // printf("Data Read Trailer search %d (timeout:%d)\n", inbuf, timeout);
     }
     if (timeout == 0) {
       printf("vf48_EventRead: Trailer Loop: Timeout Trailer not found\n");
       idx = 0;                // make sure we read VME on next call
       *nentry = 0;               // Set returned event length
-      return VF48_NO_TRAILER;
+      return VF48_ERROR;
     }
   }
   printf(" coming out from here\n");
-  return VF48_ERR_HW;
+  return VF48_ERROR;
 }
 
 /********************************************************************/
@@ -134,7 +123,7 @@ int vf48_EventRead64(MVME_INTERFACE *mvme, DWORD base, DWORD *pdest, int *nentry
    @param base  VF48 base address
    @param pdest Pointer to destination
    @param nentry Number of DWORD to transfer
-   @return status VF48_ERR_HW, SUCCESS
+   @return status VF48_ERROR, SUCCESS
 */
 int vf48_EventRead(MVME_INTERFACE *mvme, DWORD base, DWORD *pdest, int *nentry)
 {
@@ -159,7 +148,7 @@ int vf48_EventRead(MVME_INTERFACE *mvme, DWORD base, DWORD *pdest, int *nentry)
       *nentry = 0;
       //      printf("timeout on header  data:0x%lx\n", hdata);
       mvme_set_dmode(mvme, cmode);
-      return VF48_NO_DATA;
+      return VF48_ERR_NODATA;
     }
     //    channel = (hdata >> 24) & 0xF;
     //    printf(">>>>>>>>>>>>>>> Channel : %d \n", channel);
@@ -177,9 +166,9 @@ int vf48_EventRead(MVME_INTERFACE *mvme, DWORD base, DWORD *pdest, int *nentry)
       printf("timeout on Trailer  data:0x%x\n", pdest[*nentry-1]);
       printf("nentry:%d data:0x%x base:0x%x \n", *nentry, pdest[*nentry], base+VF48_DATA_FIFO_R);
       *nentry = 0;
-      return VF48_NO_TRAILER;
+      return VF48_ERROR;
     }
-    *nentry--;
+    nentry--;
   }
   mvme_set_dmode(mvme, cmode);
   return (VF48_SUCCESS);
@@ -195,67 +184,90 @@ Read N entries (32bit) from the VF48 data FIFO using the MBLT64 mode
  */
 int vf48_DataRead(MVME_INTERFACE *mvme, DWORD base, DWORD *pdest, int *nentry)
 {
-  int cmode, save_am, nbytes, status;
+  int status;
 
-  mvme_get_dmode(mvme, &cmode);
-  mvme_set_dmode(mvme, MVME_DMODE_D32);
-
-  mvme_get_am(mvme,&save_am);
-  mvme_set_am(   mvme, MVME_AM_A24_NMBLT);
+  mvme_set_am(  mvme, MVME_AM_A24);
+  mvme_set_blt(  mvme, MVME_BLT_MBLT64);
+  //mvme_set_blt(  mvme, MVME_BLT_BLT32);
+  //mvme_set_blt(  mvme, 0);
 
   // Transfer in MBLT64 (8bytes), nentry is in 32bits(VF48)
-  mvme_set_blt(  mvme, MVME_BLT_MBLT64);
-  nbytes = ((*nentry + 1) / 2) * 8;
-  //  nbytes = ((*nentry << 2));
+  // *nentry * 8 / 2
+  status = mvme_read(mvme, pdest, base+VF48_DATA_FIFO_R, *nentry<<2);
+  if (status != MVME_SUCCESS)
+    return 0;
 
-  status = mvme_read(mvme, pdest, base+VF48_DATA_FIFO_R, nbytes);
-  if (status != 1)
-    printf("vme_read error %d\n", status);
-  mvme_set_am(mvme, save_am);
-  mvme_set_dmode(mvme, cmode);
   return (*nentry);
 }
 
 /********************************************************************/
 int vf48_ParameterWrite(MVME_INTERFACE *mvme, DWORD base, int grp, int param, int value)
 {
+  int retry;
   int  cmode;
 
   if (grp < 6) {
     switch (param) {
     case VF48_SEGMENT_SIZE:
       if (value > 1023) {
-  value = 1023;
-  printf("vf48_ParameterWrite: Segment size troncated to 1023\n");
+	value = 1023;
+	printf("vf48_ParameterWrite: Segment size troncated to 1023\n");
       }
       break;
     case VF48_PRE_TRIGGER:
       if (value > 127) {
-  value = 100;
-  printf("vf48_ParameterWrite: Pre trigger troncated to 100\n");
+	value = 100;
+	printf("vf48_ParameterWrite: Pre trigger troncated to 100\n");
       }
       break;
     case VF48_LATENCY:
       if (value > 127) {
-  value = 127;
-  printf("vf48_ParameterWrite: Latency troncated to 127\n");
+	value = 127;
+	printf("vf48_ParameterWrite: Latency troncated to 127\n");
       }
       break;
     };
     mvme_get_dmode(mvme, &cmode);
     mvme_set_dmode(mvme, MVME_DMODE_D32);
-    if (vf48_ParameterCheck(mvme, base, VF48_CSR_PARM_ID_RDY) == VF48_SUCCESS) {
-      mvme_write_value(mvme, base+VF48_PARAM_ID_W, param | grp<<VF48_GRP_OFFSET);
+
+    for (retry=20; retry>0; retry--) {
+      int to;
+      int wr;
+      int rd;
+
+      // wait for VF48_CSR_PARM_ID_RDY
+      for (to=10; to>0; to--) {
+        int csr = mvme_read_value(mvme, base+VF48_CSR_REG_RW);
+        //printf("write: Waiting for 0x%x, CSR 0x%x\n", VF48_CSR_PARM_ID_RDY, csr);
+        if (csr & VF48_CSR_PARM_ID_RDY)
+          break;
+      }
+      // check for timeout
+      if (to<=0)
+        printf("vf48_ParameterWrite: Timeout waiting for VF48_CSR_PARM_ID_RDY\n");
+
+      wr = param | grp<<VF48_GRP_OFFSET;
+      mvme_write_value(mvme, base+VF48_PARAM_ID_W, wr);
       mvme_write_value(mvme, base+VF48_PARAM_DATA_RW, value);
-      /*      printf("to:0x%x with 0x%x data on 0x%x with 0x%x\n"
-       , VF48_PARAM_ID_W
-       , (param | grp<<VF48_GRP_OFFSET)
-       , VF48_PARAM_DATA_RW
-       , value);
-      */
-      mvme_set_dmode(mvme, cmode);
-      return VF48_SUCCESS;
+
+      // flush posted PCI writes
+      mvme_read_value(mvme, base+VF48_CSR_REG_RW);
+
+      rd = vf48_ParameterRead(mvme, base, grp, param);
+
+      //printf("Group %d, param %d, write %d, read %d\n", grp, param, value, rd);
+
+      if (rd == value) {
+        mvme_set_dmode(mvme, cmode);
+        return VF48_SUCCESS;
+      }
+
+      printf("vf48_ParameterWrite: Module at 0x%x, Group %d, parameter %d: data mismatch error: wrote 0x%08x, read 0x%08x\n", base, grp, param, value, rd);
+      //printf("Write retry!\n");
     }
+
+    fprintf(stderr, "Too many retries writing VF48 parameter!\n");
+    exit(1);
   }
   return VF48_ERR_PARM;
 }
@@ -271,57 +283,78 @@ Read any Parameter for a given group. Each group (0..5) handles
 */
 int vf48_ParameterRead(MVME_INTERFACE *mvme, DWORD base, int grp, int param)
 {
-  int  cmode, par, j;
+  int  cmode, par, to, wr, retry;
 
   if (grp < 6) {
     mvme_get_dmode(mvme, &cmode);
     mvme_set_dmode(mvme, MVME_DMODE_D32);
-    j = VF48_PARMA_BIT_RD | param | grp<<VF48_GRP_OFFSET;
-    if (vf48_ParameterCheck(mvme, base, VF48_CSR_PARM_ID_RDY) == VF48_SUCCESS) {
-      mvme_write_value(mvme, base+VF48_PARAM_ID_W, j);
+
+    for (retry=20; retry>0; retry--) {
+      //printf("Reading grp %d, param %d\n", grp, param);
+
+      // wait for VF48_CSR_PARM_ID_RDY
+      for (to=10; to>0; to--) {
+        int csr = mvme_read_value(mvme, base+VF48_CSR_REG_RW);
+        //printf("read1: Waiting for 0x%x, CSR 0x%x\n", VF48_CSR_PARM_ID_RDY, csr);
+        if (csr & VF48_CSR_PARM_ID_RDY)
+          break;
+      }
+      
+      // check for timeout
+      if (to<=0)
+        printf("Timeout waiting for VF48_CSR_PARAM_ID_RDY\n");
+
+      wr = VF48_PARMA_BIT_RD | param | grp<<VF48_GRP_OFFSET;
+
+      mvme_write_value(mvme, base+VF48_PARAM_ID_W, wr);
       mvme_write_value(mvme, base+VF48_PARAM_DATA_RW, 0);
-      if (vf48_ParameterCheck(mvme, base, VF48_CSR_PARM_DATA_RDY) == VF48_SUCCESS)
-  par = mvme_read_value(mvme, base+VF48_PARAM_DATA_RW);
-      else
-  par = -1;
-      mvme_set_dmode(mvme, cmode);
-      return par;
+
+      // flush posted PCI writes
+      //mvme_read_value(mvme, base+VF48_CSR_REG_RW);
+
+      // wait for VF48_CSR_PARM_ID_RDY
+      for (to=10; to>0; to--) {
+        int csr = mvme_read_value(mvme, base+VF48_CSR_REG_RW);
+        int data = mvme_read_value(mvme, base+VF48_PARAM_DATA_RW);
+        if (0)
+          printf("read2: Waiting for 0x%x, CSR 0x%x, data 0x%x\n", VF48_CSR_PARM_DATA_RDY, csr, data);
+        if (csr & VF48_CSR_PARM_DATA_RDY)
+          break;
+      }
+
+      par = mvme_read_value(mvme, base+VF48_PARAM_DATA_RW);
+
+      // check for timeout
+      if (to > 0) {
+        mvme_set_dmode(mvme, cmode);
+        return par;
+      }
+
+      //printf("Timeout waiting for VF48_CSR_PARAM_DATA_RDY\n");
     }
+
+    fprintf(stderr, "Too many retries reading vf48 parameter!\n");
+    exit(1);
   }
   return VF48_ERR_PARM;
 }
 
 /********************************************************************/
-int  vf48_ParameterCheck(MVME_INTERFACE *mvme, DWORD base, int what)
-{
-  int  cmode;
-  int tm=10, test, csr;
-
-  mvme_get_dmode(mvme, &cmode);
-  mvme_set_dmode(mvme, MVME_DMODE_D32);
-
-  do {
-    csr = mvme_read_value(mvme, base+VF48_CSR_REG_RW);
-    test = csr & what;      // VF48_CSR_PARM_ID_RDY or VF48_CSR_PARM_DATA_RDY
-  } while ((tm--) && !test);
-
-  if (tm == 0) {
-    mvme_set_dmode(mvme, cmode);
-    printf("ParmCheck: Timeout csr:0x%x test%x\n", csr, test);
-    return -1;
-  }
-  mvme_set_dmode(mvme, cmode);
-  return VF48_SUCCESS;
-}
-
-/********************************************************************/
 void vf48_Reset(MVME_INTERFACE *mvme, DWORD base)
 {
-  int  cmode;
+  int  cmode, v;
 
   mvme_get_dmode(mvme, &cmode);
   mvme_set_dmode(mvme, MVME_DMODE_D32);
   mvme_write_value(mvme, base+VF48_GLOBAL_RESET_W, 0);
+  mvme_write_value(mvme, base+VF48_TEST_REG_RW, 0x00000000);
+  v = mvme_read_value(mvme, base+VF48_TEST_REG_RW);
+  if (v != 0)
+    printf("vf48_Reset: Test register data mismatch: read 0x%08x, expected 0\n", v);
+  mvme_write_value(mvme, base+VF48_TEST_REG_RW, 0x0000FFFF);
+  v = mvme_read_value(mvme, base+VF48_TEST_REG_RW);
+  if (v != 0x0000FFFF)
+    printf("vf48_Reset: Test register data mismatch: read 0x%08x, expected 0x0000FFFF\n", v);
   mvme_set_dmode(mvme, cmode);
 }
 
@@ -332,9 +365,11 @@ int vf48_AcqStart(MVME_INTERFACE *mvme, DWORD base)
 
   mvme_get_dmode(mvme, &cmode);
   mvme_set_dmode(mvme, MVME_DMODE_D32);
+  mvme_set_am(mvme, MVME_AM_A24);
   csr = mvme_read_value(mvme, base+VF48_CSR_REG_RW);
   csr |= VF48_CSR_START_ACQ;  // start ACQ
   mvme_write_value(mvme, base+VF48_CSR_REG_RW, csr);
+  mvme_read_value(mvme, base+VF48_CSR_REG_RW);
   mvme_set_dmode(mvme, cmode);
   return VF48_SUCCESS;
 
@@ -354,10 +389,12 @@ int vf48_AcqStop(MVME_INTERFACE *mvme, DWORD base)
   int  cmode, csr;
 
   mvme_get_dmode(mvme, &cmode);
+  mvme_set_am(mvme, MVME_AM_A24);
   mvme_set_dmode(mvme, MVME_DMODE_D32);
   csr = mvme_read_value(mvme, base+VF48_CSR_REG_RW);
   csr &= ~(VF48_CSR_START_ACQ);  // stop ACQ
   mvme_write_value(mvme, base+VF48_CSR_REG_RW, csr);
+  mvme_read_value(mvme, base+VF48_CSR_REG_RW);
   mvme_set_dmode(mvme, cmode);
   return VF48_SUCCESS;
 
@@ -415,6 +452,8 @@ int vf48_NFrameRead(MVME_INTERFACE *mvme, DWORD base)
 {
   int  cmode, nframe;
 
+  // Set am to A24 non-privileged Data
+  mvme_set_am(mvme, MVME_AM_A24);
   mvme_get_dmode(mvme, &cmode);
   mvme_set_dmode(mvme, MVME_DMODE_D32);
   nframe =  mvme_read_value(mvme, base+VF48_NFRAME_R);
@@ -718,6 +757,17 @@ int vf48_DivisorRead(MVME_INTERFACE *mvme, DWORD base, int grp)
 }
 
 /********************************************************************/
+int  vf48_Trigger(MVME_INTERFACE *mvme, DWORD base)
+{
+  int r;
+  //printf("Write 0x%x\n", base + VF48_SOFT_TRIG_W);
+  mvme_write_value(mvme, base + VF48_SOFT_TRIG_W, 0);
+  r = mvme_read_value(mvme, base + VF48_CSR_REG_RW);
+  //printf("Readback: CSR 0x%x\n", r);
+  return VF48_SUCCESS;
+}
+
+/********************************************************************/
 int vf48_Setup(MVME_INTERFACE *mvme, DWORD base, int mode)
 {
   int  cmode, i;
@@ -753,6 +803,62 @@ int vf48_Setup(MVME_INTERFACE *mvme, DWORD base, int mode)
 }
 
 /********************************************************************/
+/** vf48_Status
+   @param mvme vme structure
+   @param base  VF48 base address
+   @return status VF48_ERROR, SUCCESS
+*/
+int vf48_Status(MVME_INTERFACE *mvme, DWORD base)
+{
+  char *parname[] = {
+    "",
+    "PED",
+    "Hit Det Threshold",
+    "Clip Delay",
+    "PreTrigger",
+    "Segment Size",
+    "K",
+    "L",
+    "M",
+    "Channel enable",
+    "Mbits1",
+    "Mbits2",
+    "Latency",
+    "Firmware ID",
+    "Attenuator",
+    "Trigger Threshold"
+  };
+
+  int cmode, i, j;
+
+  mvme_get_dmode(mvme, &cmode);
+  mvme_set_dmode(mvme, MVME_DMODE_D32);
+
+  printf("VF48 at VME A24 0x%06x, status:\n", base);
+  printf("  CSR:          0x%08x\n", mvme_read_value(mvme, base + 0x0));
+  printf("  Test reg:     0x%08x\n", mvme_read_value(mvme, base + 0x20));
+  printf("  Firmware:     0x%08x\n", mvme_read_value(mvme, base + 0x30));
+  printf("  Group enable: 0x%08x\n", mvme_read_value(mvme, base + 0x90));
+  printf("  NbrFrames:    0x%08x\n", mvme_read_value(mvme, base + 0xA0));
+
+  printf("Parameters:\n");
+  for (i=0; i<15; i++)
+    {
+      printf("  par%02d (%-20s): ", i, parname[i]);
+      for (j=0; j<6; j++)
+	{
+	  int v = vf48_ParameterRead(mvme, base, j, i);
+	  printf(" %6d (0x%04x) ", v, v);
+	}
+
+      printf("\n");
+    }
+
+  mvme_set_dmode(mvme, cmode);
+  return VF48_SUCCESS;
+}
+
+/********************************************************************/
 #ifdef MAIN_ENABLE
 int main (int argc, char* argv[]) {
 
@@ -780,43 +886,43 @@ int main (int argc, char* argv[]) {
 
     for (i=1;i<argc; i+=2) {
       if (argv[i][1] == 's') {
-  segsize = atoi(argv[i+1]);
+	segsize = atoi(argv[i+1]);
       }
       else if (argv[i][1] == 'l') {
-  latency = atoi(argv[i+1]);
+	latency = atoi(argv[i+1]);
       }
       else if (argv[i][1] == 'p') {
-  pretrig = atoi(argv[i+1]);
+	pretrig = atoi(argv[i+1]);
       }
       else if (argv[i][1] == 't') {
-  tthreshold = atoi(argv[i+1]);
+	tthreshold = atoi(argv[i+1]);
       }
       else if (argv[i][1] == 'u') {
-  hthreshold = atoi(argv[i+1]);
+	hthreshold = atoi(argv[i+1]);
       }
       else if (argv[i][1] == 'r') {
-  i--;
-  vf48_Reset(myvme, VF48_BASE);
+	i--;
+	vf48_Reset(myvme, VF48_BASE);
       }
       else if (argv[i][1] == 'e') {
-  evtflag = atoi(argv[i+1]);
+	evtflag = atoi(argv[i+1]);
       }
       else if (argv[i][1] == 'g') {
-  grpmsk = strtol(argv[i+1], (char **)NULL, 16);
+	grpmsk = strtol(argv[i+1], (char **)NULL, 16);
       }
       else if (argv[i][1] == 'h') {
-  printf("\nvf48         : Run read only (no setup)\n");
-  printf("vf48 -h      : This help\n");
-  printf("vf48 -r      : Reset now\n");
-  printf("vf48 -e val  : Event flag for event display, 0, x, 64\n");
-  printf("vf48 -s val  : Setup Segment size value & Run [def:10]\n");
-  printf("vf48 -l val  : Setup Latency value & Run [def:5]\n");
-  printf("vf48 -g 0xval: Setup Group Enable pattern & Run [def:0x3F]\n");
-  printf("vf48 -p val  : Setup PreTrigger & Run [def:0x20]\n");
-  printf("vf48 -t val  : Setup Trig Threshold & Run [def:0x0A]\n");
-  printf("vf48 -u val  : Setup Hit Threshold & Run [def:0x0A]\n");
-  printf("Comments     : Setup requires Run stopped\n\n");
-  return 0;
+	printf("\nvf48         : Run read only (no setup)\n");
+	printf("vf48 -h      : This help\n");
+	printf("vf48 -r      : Reset now\n");
+	printf("vf48 -e val  : Event flag for event display, 0, x, 64\n");
+	printf("vf48 -s val  : Setup Segment size value & Run [def:10]\n");
+	printf("vf48 -l val  : Setup Latency value & Run [def:5]\n");
+	printf("vf48 -g 0xval: Setup Group Enable pattern & Run [def:0x3F]\n");
+	printf("vf48 -p val  : Setup PreTrigger & Run [def:0x20]\n");
+	printf("vf48 -t val  : Setup Trig Threshold & Run [def:0x0A]\n");
+	printf("vf48 -u val  : Setup Hit Threshold & Run [def:0x0A]\n");
+	printf("Comments     : Setup requires Run stopped\n\n");
+	return 0;
       }
     }
 
@@ -903,36 +1009,36 @@ int main (int argc, char* argv[]) {
     printf(" DataRead transfer\n");
     while (1) // (vf48_NFrameRead(myvme, VF48_BASE))
       {
-  usleep(100000);
-  nframe = vf48_NFrameRead(myvme, VF48_BASE);
-  if (nframe) {
-    //  printf("Doing DMA read now\n");
-  nframe = vf48_NFrameRead(myvme, VF48_BASE);
-  vf48_DataRead(myvme, VF48_BASE, (DWORD *)&buf, &nframe);
+	usleep(100000);
+	nframe = vf48_NFrameRead(myvme, VF48_BASE);
+	if (nframe) {
+	  //  printf("Doing DMA read now\n");
+	nframe = vf48_NFrameRead(myvme, VF48_BASE);
+	vf48_DataRead(myvme, VF48_BASE, (DWORD *)&buf, &nframe);
 
-  usleep(1000);
+	usleep(1000);
 
-  nframe1 = vf48_NFrameRead(myvme, VF48_BASE);
-  vf48_DataRead(myvme, VF48_BASE, (DWORD *)&buf1, &nframe1);
-  usleep(1000);
-
-  nframe2 = vf48_NFrameRead(myvme, VF48_BASE);
-  vf48_DataRead(myvme, VF48_BASE, (DWORD *)&buf2, &nframe2);
-
-  /*
-  printf("CSR Buffer: 0x%x\n", vf48_CsrRead(myvme, VF48_BASE));
-  printf("NFrame: buf %d  buf1 %d  buf2 %d\n", nframe, nframe1, nframe2);
-  for (i=0;i<nframe+2;i++) {
-    printf("Buf   data[%d]: 0x%x\n", i, buf[i]);
-  }
-  for (i=0;i<nframe1+2;i++) {
-    printf("Buf1  data[%d]: 0x%x\n", i, buf1[i]);
-  }
-  for (i=0;i<nframe2+2;i++) {
-    printf("Buf2  data[%d]: 0x%x\n", i, buf2[i]);
-  }
-  */
-  printf("End of Data for %d %d %d\n", nframe, nframe1, nframe2);
+	nframe1 = vf48_NFrameRead(myvme, VF48_BASE);
+	vf48_DataRead(myvme, VF48_BASE, (DWORD *)&buf1, &nframe1);
+	usleep(1000);
+	
+	nframe2 = vf48_NFrameRead(myvme, VF48_BASE);
+	vf48_DataRead(myvme, VF48_BASE, (DWORD *)&buf2, &nframe2);
+	
+	/*
+	printf("CSR Buffer: 0x%x\n", vf48_CsrRead(myvme, VF48_BASE));
+	printf("NFrame: buf %d  buf1 %d  buf2 %d\n", nframe, nframe1, nframe2);
+	for (i=0;i<nframe+2;i++) {
+	  printf("Buf   data[%d]: 0x%x\n", i, buf[i]);
+	}
+	for (i=0;i<nframe1+2;i++) {
+	  printf("Buf1  data[%d]: 0x%x\n", i, buf1[i]);
+	}
+	for (i=0;i<nframe2+2;i++) {
+	  printf("Buf2  data[%d]: 0x%x\n", i, buf2[i]);
+	}
+	*/
+	printf("End of Data for %d %d %d\n", nframe, nframe1, nframe2);
       }
     }
   }
@@ -944,23 +1050,23 @@ int main (int argc, char* argv[]) {
       nentry = 0;
       vf48_EventRead64(myvme, VF48_BASE, (DWORD *)&buf, &nentry);
       if (nentry != 0) {
-  if (evt+1 != (buf[0] & 0xFFFFFF))
-    printf(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>--------------- Event# mismatch %x %x\n", evt, (buf[0] & 0xFFFFFF));
+	if (evt+1 != (buf[0] & 0xFFFFFF))
+	  printf(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>--------------- Event# mismatch %x %x\n", evt, (buf[0] & 0xFFFFFF));
 
-  evt = (buf[0] & 0xFFFFFF);
+	evt = (buf[0] & 0xFFFFFF);
 
-  for (i=0;i<nentry;i++) {
-    //    printf("buf[%d]:0x%x\n", i, buf[i]);
-    if ((buf[i] & 0xe0000000) == 0xe0000000 ||
-        (buf[i] & 0x10000BAD) == 0x10000BAD)
-    printf("\t\t\t\t\t\t\t\t %d buf[%d]:0x%x\n", nentry, i, buf[i]);
-  }
-
-  if (pnentry != nentry)
-    printf("End of Event previous(%d) (%d)\n", pnentry, nentry);
+	for (i=0;i<nentry;i++) {
+	  //    printf("buf[%d]:0x%x\n", i, buf[i]);
+	  if ((buf[i] & 0xe0000000) == 0xe0000000 ||
+	      (buf[i] & 0x10000BAD) == 0x10000BAD)
+	  printf("\t\t\t\t\t\t\t\t %d buf[%d]:0x%x\n", nentry, i, buf[i]);
+	}
+	
+	if (pnentry != nentry)
+	  printf("End of Event previous(%d) (%d)\n", pnentry, nentry);
       else
-  printf("End of Event              (%d) T(0x%x)\n", nentry, buf[nentry]);
-  pnentry = nentry;
+	printf("End of Event              (%d) T(0x%x)\n", nentry, buf[nentry]);
+	pnentry = nentry;
       }
     }
   }
@@ -971,21 +1077,21 @@ int main (int argc, char* argv[]) {
       nentry = 0;
       vf48_EventRead(myvme, VF48_BASE, (DWORD *)&buf, &nentry);
       if (nentry != 0) {
-  if (evt+1 != (buf[0] & 0xFFFFFF))
-    printf("--------------- Event# mismatch %x %x\n", evt, (buf[0] & 0xFFFFFF));
-
-  evt = (buf[0] & 0xFFFFFF);
-
-  for (i=0;i<nentry;i++) {
-    if ((buf[i] & 0xe0000000) == 0xe0000000)
-    printf("\t\t\t\t\t\t\t\t  %d buf[%d]:0x%x\n", nentry, i, buf[i]);
-  }
-
-  if (pnentry != nentry)
-    printf("End of Event previous(%d) (%d)\n", pnentry, nentry);
-  else
-    printf("End of Event              (%d) T(0x%x)\n", nentry, buf[nentry]);
-  pnentry = nentry;
+	if (evt+1 != (buf[0] & 0xFFFFFF))
+	  printf("--------------- Event# mismatch %x %x\n", evt, (buf[0] & 0xFFFFFF));
+	
+	evt = (buf[0] & 0xFFFFFF);
+	
+	for (i=0;i<nentry;i++) {
+	  if ((buf[i] & 0xe0000000) == 0xe0000000)
+	  printf("\t\t\t\t\t\t\t\t  %d buf[%d]:0x%x\n", nentry, i, buf[i]);
+	}
+	
+	if (pnentry != nentry)
+	  printf("End of Event previous(%d) (%d)\n", pnentry, nentry);
+	else
+	  printf("End of Event              (%d) T(0x%x)\n", nentry, buf[nentry]);
+	pnentry = nentry;
       }
     }
   }
