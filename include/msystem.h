@@ -222,6 +222,13 @@ extern char **environ;
 /* missing tell() for some operating systems */
 #define TELL(fh) lseek(fh, 0, SEEK_CUR)
 
+/* define file truncation */
+#ifdef OS_WINNT
+#define TRUNCATE(fh) chsize(fh, TELL(fh))
+#else
+#define TRUNCATE(fh) ftruncate(fh, TELL(fh))
+#endif
+
 /* reduced shared memory size */
 #ifdef OS_SOLARIS
 #define MAX_SHM_SIZE      0x20000       /* 128k */
