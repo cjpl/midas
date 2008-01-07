@@ -531,7 +531,7 @@ INT hs_write_event(DWORD event_id, void *data, DWORD size)
    HIST_RECORD rec, drec;
    DEF_RECORD def_rec;
    INDEX_RECORD irec;
-   int fh, fhi, fhd;
+   int fh, fhi, fhd, last_pos_data, last_pos_index;
    INT index, mutex, status;
    struct tm tmb, tmr;
    time_t ltime;
@@ -630,17 +630,29 @@ INT hs_write_event(DWORD event_id, void *data, DWORD size)
 
    /* got to end of file */
    lseek(_history[index].hist_fh, 0, SEEK_END);
-   irec.offset = TELL(_history[index].hist_fh);
+   last_pos_data = irec.offset = TELL(_history[index].hist_fh);
 
    /* write record header */
    write(_history[index].hist_fh, (char *) &rec, sizeof(rec));
 
    /* write data */
-   write(_history[index].hist_fh, (char *) data, size);
+   if (write(_history[index].hist_fh, (char *) data, size) < (int)size) {
+      /* disk maybe full? Do a roll-back! */
+      lseek(_history[index].hist_fh, last_pos_data, SEEK_SET);
+      TRUNCATE(_history[index].hist_fh);
+      ss_mutex_release(mutex);
+      return HS_FILE_ERROR;
+   }
 
    /* write index record */
    lseek(_history[index].index_fh, 0, SEEK_END);
+   last_pos_index = TELL(_history[index].index_fh);
    if (write(_history[index].index_fh, (char *) &irec, sizeof(irec)) < sizeof(irec)) {
+      /* disk maybe full? Do a roll-back! */
+      lseek(_history[index].hist_fh, last_pos_data, SEEK_SET);
+      TRUNCATE(_history[index].hist_fh);
+      lseek(_history[index].index_fh, last_pos_index, SEEK_SET);
+      TRUNCATE(_history[index].index_fh);
       ss_mutex_release(mutex);
       return HS_FILE_ERROR;
    }
