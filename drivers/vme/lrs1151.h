@@ -17,13 +17,11 @@
 extern "C" {
 #endif
 
-#define  LRS1151_CLEAR_ALL       (0x0)
 #define  LRS1151_CLEAR_WO        (DWORD) (0x0040)
 #define  LRS1151_DATA_RO         (DWORD) (0x0080)
 
-
-void lrs1151_Reset(MVME_INTERFACE *mvme, DWORD base, int ch);
-int  lrs1151_Read(MVME_INTERFACE *mvme, DWORD base, DWORD *data);
+void lrs1151_Clear(MVME_INTERFACE *mvme, DWORD base);
+void  lrs1151_Read(MVME_INTERFACE *mvme, DWORD base, DWORD *data);
 
 #ifdef __cplusplus
 }
