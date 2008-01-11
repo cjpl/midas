@@ -987,13 +987,13 @@ void user_loop(void)
       watchdog_refresh(0);
 
       if ((user_data[0].control & CONTROL_IDLE) == 0) {
-         check_current(channel);
-         read_hv(channel);
-         ramp_hv(channel);
-         regulation(channel);
          read_current();
+         if (time() > 300) { // current readout unreliable at startup
+            check_current(channel);
+            read_hv(channel);
+            ramp_hv(channel);
+            regulation(channel);
+         }
       }
    }
-
-   // read_temperature();
 }
