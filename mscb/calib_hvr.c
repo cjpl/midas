@@ -222,7 +222,7 @@ int calib(int fd, unsigned short adr, unsigned short adr_dvm, unsigned short adr
       d = 1;
       mscb_write(fd, adr, CH_CONTROL, &d, 1);
 
-      if (first) {
+      if (first || low_current) {
          if (adr_mux == 0xFFFF) {
             eprintf("\007Please connect multimeter to channel %d and press ENTER\n", adr);
             fgets(str, sizeof(str), stdin);
@@ -420,9 +420,13 @@ int calib(int fd, unsigned short adr, unsigned short adr_dvm, unsigned short adr
 
    if (low_current) {
 
-      /* set low demand */
+      /* remove voltage */
+      u_low = 0;
       mscb_write(fd, adr, CH_VDEMAND, &u_low, sizeof(float));
       Sleep(HV_SET_DELAY);
+      
+      eprintf("\n\007Please disconnect resistor from channel %d and press ENTER\n", adr);
+      fgets(str, sizeof(str), stdin);
 
       /* read current */
       size = sizeof(float);
@@ -432,7 +436,7 @@ int calib(int fd, unsigned short adr, unsigned short adr_dvm, unsigned short adr
       i_vgain = 0;
 
       /* calculate current gain */
-      i_gain = (float) ((u_high-u_low)/rin_dvm*1E6) / (i_high - i_low);
+      i_gain = (float) ((u_high - u_low)/rin_dvm*1E6) / (i_high - i_low);
 
       /* calcualte offset */
       i_ofs = (float) ((i_high - u_high/(rin_dvm * i_gain)*1E6));
@@ -443,20 +447,6 @@ int calib(int fd, unsigned short adr, unsigned short adr_dvm, unsigned short adr
       mscb_write(fd, adr, CH_CURVGAIN, &i_vgain, sizeof(float));
       mscb_write(fd, adr, CH_CUROFS, &i_ofs, sizeof(float));
       mscb_write(fd, adr, CH_CURGAIN, &i_gain, sizeof(float));
-
-      /* remove voltage */
-      f1 = 0;
-      mscb_write(fd, adr, CH_VDEMAND, &f1, sizeof(float));
-      
-      if (adr_mux == 0xFFFF) {
-         if (next_adr > 0) {
-            f1 = 0;
-            mscb_write(fd, next_adr, CH_VDEMAND, &f1, sizeof(float));
-            eprintf("\n\007Please connect multimeter to channel %d and press ENTER\n", next_adr);
-         } else
-            eprintf("\n\007Please disconnect resistor from channel %d and press ENTER\n", adr);
-         fgets(str, sizeof(str), stdin);
-      }
 
    } else {
 
