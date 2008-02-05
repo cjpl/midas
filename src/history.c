@@ -1495,6 +1495,7 @@ INT hs_read(DWORD event_id, DWORD start_time, DWORD end_time,
          close(fh);
          close(fhd);
          close(fhi);
+         fh = fhd = fhi = 0;
 
       nextday:
 
@@ -1555,9 +1556,9 @@ INT hs_read(DWORD event_id, DWORD start_time, DWORD end_time,
 
    if (cache)
       M_FREE(cache);
-   close(fh);
-   close(fhd);
-   close(fhi);
+   if (fh) close(fh);
+   if (fhd) close(fhd);
+   if (fhi) close(fhi);
 
    *dbsize = *n * var_size;
    *tbsize = *n * sizeof(DWORD);
