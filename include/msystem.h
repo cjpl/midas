@@ -177,6 +177,9 @@ typedef struct {
 
 #define closesocket(s) close(s)
 #define ioctlsocket(s,c,d) ioctl(s,c,d)
+#ifndef stricmp
+#define stricmp(s1, s2) strcasecmp(s1, s2)
+#endif
 
 #define P_WAIT   0
 #define P_NOWAIT 1
