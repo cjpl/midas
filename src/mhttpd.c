@@ -8580,6 +8580,7 @@ int sort_tags(const void *a, const void *b)
   // NOT REACHED
 }
 
+
 static void show_hist_config_variables_tags(HNDLE hDB, HNDLE hKeyRoot, const char* selectedName)
 {
    int i, j;
@@ -8591,8 +8592,9 @@ static void show_hist_config_variables_tags(HNDLE hDB, HNDLE hKeyRoot, const cha
    static char gPreviousSelectedEvent[NAME_LENGTH];
    static char gPreviousSelectedTag[NAME_LENGTH];
 
-   const int kMaxTags = 1000;
-   char names[kMaxTags][2*NAME_LENGTH];
+#define MAX_TAGS 1000
+
+   char names[MAX_TAGS][2*NAME_LENGTH];
    int nvars = 0;
    
    strlcpy(selectedEvent, selectedName, sizeof(selectedEvent));
@@ -8695,7 +8697,7 @@ static void show_hist_config_variables_tags(HNDLE hDB, HNDLE hKeyRoot, const cha
       }
    }
 
-   assert(nvars <= kMaxTags);
+   assert(nvars <= MAX_TAGS);
 
    if (0) {
      printf("found %d names\n", nvars);
