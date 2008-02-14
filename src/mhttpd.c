@@ -1207,7 +1207,7 @@ void show_status_page(int refresh, char *cookie_wpwd)
             continue;
 
          /* skip "Path" */
-         if (stricmp(key.name, "Path") == 0)
+         if (equal_ustring(key.name, "Path"))
             continue;
 
          strlcpy(name, key.name, sizeof(name));
@@ -7426,6 +7426,8 @@ void generate_hist_graph(char *path, char *buffer, int *buffer_size,
    double yb1, yb2, yf1, yf2, ybase;
    float minvalue = (float) -HUGE_VAL;
    float maxvalue = (float) +HUGE_VAL;
+   int show_values = 0;
+   char var_status[MAX_VARS][256];
 
    static char *ybuffer;
    static DWORD *tbuffer;
@@ -7649,6 +7651,11 @@ void generate_hist_graph(char *path, char *buffer, int *buffer_size,
       logaxis = 0;
       db_get_value(hDB, hkeypanel, "Log axis", &logaxis, &size, TID_BOOL, TRUE);
 
+      /* get show_values type */
+      size = sizeof(show_values);
+      show_values = 0;
+      db_get_value(hDB, hkeypanel, "Show values", &show_values, &size, TID_BOOL, TRUE);
+
       /* get min value */
       size = sizeof(minvalue);
       minvalue = (float) -HUGE_VAL;
@@ -7828,16 +7835,26 @@ void generate_hist_graph(char *path, char *buffer, int *buffer_size,
 
       } while (status == HS_TRUNCATED);
 
+      sprintf(var_status[i], "hs_read error %d", status);
+
       if (status == HS_UNDEFINED_VAR) {
+         sprintf(var_status[i], "Event %d, variable \"%s\" not found in history", event_id, var_name[i]);
+#if 0
          sprintf(str, "Variable \"%s\" not found in history", var_name[i]);
          gdImageString(im, gdFontSmall, width / 2 - (strlen(str) * gdFontSmall->w) / 2,
                        height / 2, str, red);
          goto error;
+#endif
       } else if (status != HS_SUCCESS) {
+         sprintf(var_status[i], "hs_read() of event %d, variable \"%s\", index %d gives error %d", event_id, var_name[i], var_index[i], status);
+#if 0
          sprintf(str, "Variable \"%s\" history error %d", var_name[i], status);
          gdImageString(im, gdFontSmall, width / 2 - (strlen(str) * gdFontSmall->w) / 2,
                        height / 2, str, red);
          goto error;
+#endif
+      } else {
+         var_status[i][0] = 0;
       }
 
       for (j = n_vp = 0; j < (int) n_point[i]; j++) {
@@ -8206,18 +8223,42 @@ void generate_hist_graph(char *path, char *buffer, int *buffer_size,
          if (index != -1 && index != i)
             continue;
 
-         if (factor[i] != 1) {
-            if (offset[i] == 0)
-               sprintf(str, "%s * %1.2lG", strchr(tag_name[i], ':') + 1, factor[i]);
+         str[0] = 0;
+         status = db_find_key(hDB, hkeypanel, "Label", &hkeydvar);
+         if (status == DB_SUCCESS) {
+            size = sizeof(str);
+            status = db_get_data_index(hDB, hkeydvar, str, &size, i, TID_STRING);
+         }
+
+         if (status != DB_SUCCESS || strlen(str) < 1) {
+            if (factor[i] != 1) {
+               if (offset[i] == 0)
+                  sprintf(str, "%s * %1.2lG", strchr(tag_name[i], ':') + 1, factor[i]);
+               else
+                  sprintf(str, "%s * %1.2lG %c %1.5lG", strchr(tag_name[i], ':') + 1,
+                          factor[i], offset[i] < 0 ? '-' : '+', fabs(offset[i]));
+            } else {
+               if (offset[i] == 0)
+                  sprintf(str, "%s", strchr(tag_name[i], ':') + 1);
+               else
+                  sprintf(str, "%s %c %1.5lG", strchr(tag_name[i], ':') + 1,
+                          offset[i] < 0 ? '-' : '+', fabs(offset[i]));
+            }
+         }
+
+         if (show_values) {
+            char xstr[256];
+            if (n_point[i] > 0)
+               sprintf(xstr," = %g", y[i][n_point[i]-1]);
             else
-               sprintf(str, "%s * %1.2lG %c %1.5lG", strchr(tag_name[i], ':') + 1,
-                       factor[i], offset[i] < 0 ? '-' : '+', fabs(offset[i]));
-         } else {
-            if (offset[i] == 0)
-               sprintf(str, "%s", strchr(tag_name[i], ':') + 1);
-            else
-               sprintf(str, "%s %c %1.5lG", strchr(tag_name[i], ':') + 1,
-                       offset[i] < 0 ? '-' : '+', fabs(offset[i]));
+               sprintf(xstr," = no data");
+            strlcat(str, xstr, sizeof(str));
+         }
+
+         if (strlen(var_status[i]) > 1) {
+            char xstr[256];
+            sprintf(xstr," (%s)", var_status[i]);
+            strlcat(str, xstr, sizeof(str));
          }
 
          row = index == -1 ? i : 0;
@@ -8479,6 +8520,66 @@ static void show_hist_config_events_tags(HNDLE hDB, HNDLE hKeyRoot, const char* 
 
 /*------------------------------------------------------------------*/
 
+/*------------------------------------------------------------------*/
+
+int sort_tags(const void *a, const void *b)
+{
+  int i;
+  const char*sa = a;
+  const char*sb = b;
+
+  int debug = 0;
+
+  // Cannot use strcmp() because it does not know how to compare numerical values, e.g.
+  // it thinks "111" is smaller than "9"
+  //return strcmp(sa, sb);
+
+  if (debug)
+    printf("compare [%s] and [%s]\n", sa, sb);
+
+  for (i=0; ; i++) {
+    if (sa[i]==0 && sb[i]==0)
+      return 0; // both strings have the same length and the same characters
+
+    //printf("index %d, char [%c] [%c], isdigit %d %d\n", i, sa[i], sb[i], isdigit(sa[i]), isdigit(sb[i]));
+
+    if (isdigit(sa[i]) && isdigit(sb[i])) {
+      int va = atoi(sa+i);
+      int vb = atoi(sb+i);
+
+      if (debug)
+        printf("index %d, values %d %d\n", i, va, vb);
+
+      if (va < vb)
+        return -1;
+      else if (va > vb)
+        return 1;
+
+      // values are equal, skip the the end of the digits, compare any trailing text
+      continue;
+    }
+
+    if (sa[i]==sb[i]) {
+      continue;
+    }
+
+    if (debug)
+      printf("index %d, char [%c] [%c]\n", i, sa[i], sb[i]);
+    
+    if (sa[i] == 0) // string sa is shorter
+      return -1;
+    else if (sb[i] == 0) // string sb is shorter
+      return 1;
+
+    if (sa[i]<sb[i])
+      return -1;
+    else
+      return 1;
+  }
+
+  // NOT REACHED
+}
+
 static void show_hist_config_variables_tags(HNDLE hDB, HNDLE hKeyRoot, const char* selectedName)
 {
    int i, j;
@@ -8486,6 +8587,13 @@ static void show_hist_config_variables_tags(HNDLE hDB, HNDLE hKeyRoot, const cha
    char *s;
    char selectedEvent[NAME_LENGTH];
    char selectedTag[NAME_LENGTH];
+   
+   static char gPreviousSelectedEvent[NAME_LENGTH];
+   static char gPreviousSelectedTag[NAME_LENGTH];
+
+   const int kMaxTags = 1000;
+   char names[kMaxTags][2*NAME_LENGTH];
+   int nvars = 0;
    
    strlcpy(selectedEvent, selectedName, sizeof(selectedEvent));
    s = strchr(selectedEvent, ':');
@@ -8500,6 +8608,14 @@ static void show_hist_config_variables_tags(HNDLE hDB, HNDLE hKeyRoot, const cha
       selectedTag[0] = 0;
    
    //printf("Selected event (%s) tag (%s)\n", selectedEvent, selectedTag);
+   
+   if (strlen(selectedTag) < 1) {
+     if (strcmp(selectedEvent, gPreviousSelectedEvent) == 0)
+       strlcpy(selectedTag, gPreviousSelectedTag, sizeof(selectedTag));
+   }
+
+   strlcpy(gPreviousSelectedEvent, selectedEvent, sizeof(gPreviousSelectedEvent));
+   strlcpy(gPreviousSelectedTag, selectedTag, sizeof(gPreviousSelectedTag));
    
    /* loop over equipment to display event name */
    for (i = 0;; i++) {
@@ -8558,7 +8674,8 @@ static void show_hist_config_variables_tags(HNDLE hDB, HNDLE hKeyRoot, const cha
             selected = "";
             if (equal_ustring(var_name, selectedTag))
                selected = "selected";
-            rsprintf("<option %s value=\"%s\">%s\n", selected, var_name, var_name);
+            //rsprintf("<option %s value=\"%s\">%s\n", selected, var_name, var_name);
+            strlcpy(names[nvars++], var_name, sizeof(names[0]));
          } else {
             int ii;
             for (ii=0; ii<array; ii++) {
@@ -8571,10 +8688,47 @@ static void show_hist_config_variables_tags(HNDLE hDB, HNDLE hKeyRoot, const cha
 
                sprintf(vvv, "%s[%d]", var_name, ii);
 
-               rsprintf("<option %s value=\"%s\">%s\n", selected, vvv, vvv);
+               //rsprintf("<option %s value=\"%s\">%s\n", selected, vvv, vvv);
+               strlcpy(names[nvars++], vvv, sizeof(names[0]));
             }
          }
       }
+   }
+
+   assert(nvars <= kMaxTags);
+
+   if (0) {
+     printf("found %d names\n", nvars);
+     for (i=0; i<nvars; i++)
+       printf("unsorted %d: [%s]\n", i, names[i]);
+   }
+
+   qsort(names, nvars, sizeof(names[0]), sort_tags);
+
+   if (0) {
+     printf("found %d names\n", nvars);
+     for (i=0; i<nvars; i++)
+       printf("  sorted %d: [%s]\n", i, names[i]);
+   }
+
+   if (0) {
+     printf("Compare %d\n", sort_tags("AAA", "BBB"));
+     printf("Compare %d\n", sort_tags("BBB", "AAA"));
+     printf("Compare %d\n", sort_tags("AAA", "AAA"));
+     printf("Compare %d\n", sort_tags("A", "AAA"));
+     printf("Compare %d\n", sort_tags("A111", "A1"));
+     printf("Compare %d\n", sort_tags("A111", "A2"));
+     printf("Compare %d\n", sort_tags("A111", "A222"));
+     printf("Compare %d\n", sort_tags("A111a", "A111b"));
+   }
+
+
+   for (i=0; i<nvars; i++) {
+     char* selected = "";
+     if (equal_ustring(names[i], selectedTag))
+       selected = "selected";
+     
+     rsprintf("<option %s value=\"%s\">%s\n", selected, names[i], names[i]);
    }
 }
 
@@ -8800,6 +8954,7 @@ void show_hist_config_page(char *path, char *hgroup, char *panel)
    char hist_col[MAX_VARS][NAME_LENGTH] = { "#0000FF", "#00C000", "#FF0000", "#00C0C0", "#FF00FF",
       "#C0C000", "#808080", "#80FF80", "#FF8080", "#8080FF"
    };
+   char hist_label[MAX_VARS][NAME_LENGTH];
 
    cm_get_experiment_database(&hDB, NULL);
    strlcpy(cmd, getparam("cmd"), sizeof(cmd));
@@ -8852,8 +9007,22 @@ void show_hist_config_page(char *path, char *hgroup, char *panel)
             strlcpy(hist_col[index], getparam(str), NAME_LENGTH);
             if (hKey)
                db_set_data_index(hDB, hKey, hist_col[index], NAME_LENGTH, index, TID_STRING);
+
+            sprintf(str, "/History/Display/%s/Label", path);
+            db_find_key(hDB, 0, str, &hKey);
+            if (!hKey) {
+               db_create_key(hDB, 0, str, TID_STRING);
+               db_find_key(hDB, 0, str, &hKey);
+            }
+            sprintf(str, "lab%d", index);
+            strlcpy(hist_label[index], getparam(str), NAME_LENGTH);
+            if (hKey)
+               db_set_data_index(hDB, hKey, hist_label[index], NAME_LENGTH, index, TID_STRING);
          } else {
             sprintf(str, "/History/Display/%s/Variables", path);
+            db_find_key(hDB, 0, str, &hKey);
+            db_set_num_values(hDB, hKey, index);
+            sprintf(str, "/History/Display/%s/Labels", path);
             db_find_key(hDB, 0, str, &hKey);
             db_set_num_values(hDB, hKey, index);
             sprintf(str, "/History/Display/%s/Factor", path);
@@ -8899,6 +9068,10 @@ void show_hist_config_page(char *path, char *hgroup, char *panel)
       flag = *getparam("run_markers");
       db_set_value(hDB, 0, ref, &flag, sizeof(flag), 1, TID_BOOL);
 
+      sprintf(ref, "/History/Display/%s/Show values", path);
+      flag = *getparam("show_values");
+      db_set_value(hDB, 0, ref, &flag, sizeof(flag), 1, TID_BOOL);
+
       strlcpy(str, path, sizeof(str));
       if (strrchr(str, '/'))
          strlcpy(str, strrchr(str, '/')+1, sizeof(str));
@@ -8919,17 +9092,17 @@ void show_hist_config_page(char *path, char *hgroup, char *panel)
       if (strrchr(str, '/'))
          strlcpy(str, strrchr(str, '/')+1, sizeof(str));
    }
-   show_header(hDB, "History Config", "GET", str, 3, 0);
+   show_header(hDB, "History Config", "GET", str, 4, 0);
 
    /* menu buttons */
-   rsprintf("<tr><td colspan=6 bgcolor=\"#C0C0C0\">\n");
+   rsprintf("<tr><td colspan=7 bgcolor=\"#C0C0C0\">\n");
    rsprintf("<input type=submit name=cmd value=Save>\n");
    rsprintf("<input type=submit name=cmd value=Cancel>\n");
    rsprintf("<input type=submit name=cmd value=Refresh>\n");
    rsprintf("<input type=submit name=cmd value=\"Delete Panel\">\n");
    rsprintf("</td></tr>\n");
 
-   rsprintf("<tr><td colspan=6 bgcolor=\"#FFFF00\" align=center><b>Panel \"%s / %s\"</b>\n",
+   rsprintf("<tr><td colspan=7 bgcolor=\"#FFFF00\" align=center><b>Panel \"%s / %s\"</b>\n",
             hgroup, panel);
 
    /* hidden command for refresh */
@@ -8946,7 +9119,7 @@ void show_hist_config_page(char *path, char *hgroup, char *panel)
       size = NAME_LENGTH;
       db_get_value(hDB, 0, ref, str, &size, TID_STRING, TRUE);
    }
-   rsprintf("<tr><td bgcolor=\"#E0E0E0\" colspan=6>Time scale: &nbsp;&nbsp;");
+   rsprintf("<tr><td bgcolor=\"#E0E0E0\" colspan=7>Time scale: &nbsp;&nbsp;");
    rsprintf("<input type=text name=timescale value=%s></td></tr>\n", str);
 
    /* ylow_zero */
@@ -8959,11 +9132,11 @@ void show_hist_config_page(char *path, char *hgroup, char *panel)
    }
    if (flag)
       rsprintf
-          ("<tr><td bgcolor=\"#E0E0E0\" colspan=6><input type=checkbox checked name=zero_ylow value=1>",
+          ("<tr><td bgcolor=\"#E0E0E0\" colspan=7><input type=checkbox checked name=zero_ylow value=1>",
            str);
    else
       rsprintf
-          ("<tr><td bgcolor=\"#E0E0E0\" colspan=6><input type=checkbox name=zero_ylow value=1>",
+          ("<tr><td bgcolor=\"#E0E0E0\" colspan=7><input type=checkbox name=zero_ylow value=1>",
            str);
    rsprintf("&nbsp;&nbsp;Zero Ylow</td></tr>\n");
 
@@ -8977,7 +9150,7 @@ void show_hist_config_page(char *path, char *hgroup, char *panel)
       db_get_value(hDB, 0, ref, &xxminimum, &size, TID_FLOAT, TRUE);
       sprintf(str, "%f", xxminimum);
    }
-   rsprintf("<tr><td bgcolor=\"#E0E0E0\" colspan=6>Minimum: &nbsp;&nbsp;");
+   rsprintf("<tr><td bgcolor=\"#E0E0E0\" colspan=7>Minimum: &nbsp;&nbsp;");
    rsprintf("<input type=text name=minimum value=%s></td></tr>\n", str);
 
    /* maximum */
@@ -8990,7 +9163,7 @@ void show_hist_config_page(char *path, char *hgroup, char *panel)
       db_get_value(hDB, 0, ref, &xxmaximum, &size, TID_FLOAT, TRUE);
       sprintf(str, "%f", xxmaximum);
    }
-   rsprintf("<tr><td bgcolor=\"#E0E0E0\" colspan=6>Maximum: &nbsp;&nbsp;");
+   rsprintf("<tr><td bgcolor=\"#E0E0E0\" colspan=7>Maximum: &nbsp;&nbsp;");
    rsprintf("<input type=text name=maximum value=%s></td></tr>\n", str);
 
    /* log_axis */
@@ -9003,11 +9176,11 @@ void show_hist_config_page(char *path, char *hgroup, char *panel)
    }
    if (flag)
       rsprintf
-          ("<tr><td bgcolor=\"#E0E0E0\" colspan=6><input type=checkbox checked name=log_axis value=1>",
+          ("<tr><td bgcolor=\"#E0E0E0\" colspan=7><input type=checkbox checked name=log_axis value=1>",
            str);
    else
       rsprintf
-          ("<tr><td bgcolor=\"#E0E0E0\" colspan=6><input type=checkbox name=log_axis value=1>",
+          ("<tr><td bgcolor=\"#E0E0E0\" colspan=7><input type=checkbox name=log_axis value=1>",
            str);
    rsprintf("&nbsp;&nbsp;Logarithmic Y axis</td></tr>\n");
 
@@ -9021,13 +9194,31 @@ void show_hist_config_page(char *path, char *hgroup, char *panel)
    }
    if (flag)
       rsprintf
-          ("<tr><td bgcolor=\"#E0E0E0\" colspan=6><input type=checkbox checked name=run_markers value=1>",
+          ("<tr><td bgcolor=\"#E0E0E0\" colspan=7><input type=checkbox checked name=run_markers value=1>",
            str);
    else
       rsprintf
-          ("<tr><td bgcolor=\"#E0E0E0\" colspan=6><input type=checkbox name=run_markers value=1>",
+          ("<tr><td bgcolor=\"#E0E0E0\" colspan=7><input type=checkbox name=run_markers value=1>",
            str);
    rsprintf("&nbsp;&nbsp;Show run markers</td></tr>\n");
+
+   /* show_values */
+   if (equal_ustring(cmd, "refresh"))
+      flag = *getparam("show_values");
+   else {
+      sprintf(ref, "/History/Display/%s/Show values", path);
+      size = sizeof(flag);
+      db_get_value(hDB, 0, ref, &flag, &size, TID_BOOL, TRUE);
+   }
+   if (flag)
+      rsprintf
+          ("<tr><td bgcolor=\"#E0E0E0\" colspan=7><input type=checkbox checked name=show_values value=1>",
+           str);
+   else
+      rsprintf
+          ("<tr><td bgcolor=\"#E0E0E0\" colspan=7><input type=checkbox name=show_values value=1>",
+           str);
+   rsprintf("&nbsp;&nbsp;Show values of variables</td></tr>\n");
 
    /*---- events and variables ----*/
 
@@ -9061,7 +9252,7 @@ void show_hist_config_page(char *path, char *hgroup, char *panel)
       }
    }
 
-   rsprintf("<tr><th>Col<th>Event<th>Variable<th>Factor<th>Offset<th>Colour</tr>\n");
+   rsprintf("<tr><th>Col<th>Event<th>Variable<th>Factor<th>Offset<th>Colour<th>Label</tr>\n");
 
    /* extract colours */
    for (index = 0; index < MAX_VARS; index++) {
@@ -9197,6 +9388,29 @@ void show_hist_config_page(char *path, char *hgroup, char *panel)
       rsprintf
           ("<td><input type=text size=10 maxlength=10 name=\"col%d\" value=%s></td>\n",
            index, hist_col[index]);
+
+      hist_label[index][0] = 0;
+
+      if (equal_ustring(cmd, "refresh")) {
+         /* get value from parameters */
+         sprintf(str, "lab%d", index);
+         if (*getparam(str))
+            strlcpy(hist_label[index], getparam(str), NAME_LENGTH);
+      } else {
+         /* get value from ODB */
+         sprintf(str, "/History/Display/%s/Label", path);
+         db_find_key(hDB, 0, str, &hKey);
+         size = NAME_LENGTH;
+         if (hKey) {
+            db_get_key(hDB, hKey, &key);
+            if (index < key.num_values)
+               db_get_data_index(hDB, hKey, hist_label[index], &size, index, TID_STRING);
+         }
+      }
+
+      rsprintf
+          ("<td><input type=text size=10 maxlength=%d name=\"lab%d\" value=\"%s\"></td>\n",
+           NAME_LENGTH, index, hist_label[index]);
 
       rsprintf("</tr>\n");
 
@@ -9803,6 +10017,7 @@ void show_hist_page(char *path, int path_size, char *buffer, int *buffer_size,
       db_create_key(hDB, 0, str, TID_KEY);
       db_find_key(hDB, 0, str, &hkey);
       db_set_value(hDB, hkey, "Variables", "", NAME_LENGTH * 2, 1, TID_STRING);
+      db_set_value(hDB, hkey, "Labels", "", NAME_LENGTH * 2, 1, TID_STRING);
 
       factor[0] = 1;
       db_set_value(hDB, hkey, "Factor", factor, 1 * sizeof(float), 1, TID_FLOAT);
@@ -9812,6 +10027,8 @@ void show_hist_page(char *path, int path_size, char *buffer, int *buffer_size,
       i = 1;
       db_set_value(hDB, hkey, "Zero ylow", &i, sizeof(BOOL), 1, TID_BOOL);
       db_set_value(hDB, hkey, "Show run markers", &i, sizeof(BOOL), 1, TID_BOOL);
+      i = 0;
+      db_set_value(hDB, hkey, "Show values", &i, sizeof(BOOL), 1, TID_BOOL);
       i = 0;
       db_set_value(hDB, hkey, "Log axis", &i, sizeof(BOOL), 1, TID_BOOL);
 
