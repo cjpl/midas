@@ -5199,7 +5199,7 @@ void show_custom_page(char *path)
    cm_get_experiment_database(&hDB, NULL);
 
    if (path[0] == 0) {
-      show_error("Invalid custom page");
+      show_error("Invalid custom page: NULL path");
       return;
    }
    sprintf(str, "/Custom/%s", path);
@@ -5270,7 +5270,7 @@ void show_custom_page(char *path)
 
       free(ctext);
    } else {
-      show_error("Invalid custom page");
+      show_error("Invalid custom page: Page not found in ODB");
       return;
    }
 }
