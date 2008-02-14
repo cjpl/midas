@@ -10019,7 +10019,7 @@ void show_hist_page(char *path, int path_size, char *buffer, int *buffer_size,
       db_create_key(hDB, 0, str, TID_KEY);
       db_find_key(hDB, 0, str, &hkey);
       db_set_value(hDB, hkey, "Variables", "", NAME_LENGTH * 2, 1, TID_STRING);
-      db_set_value(hDB, hkey, "Labels", "", NAME_LENGTH * 2, 1, TID_STRING);
+      db_set_value(hDB, hkey, "Label", "", NAME_LENGTH * 2, 1, TID_STRING);
 
       factor[0] = 1;
       db_set_value(hDB, hkey, "Factor", factor, 1 * sizeof(float), 1, TID_FLOAT);
