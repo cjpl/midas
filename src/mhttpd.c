@@ -9024,7 +9024,7 @@ void show_hist_config_page(char *path, char *hgroup, char *panel)
             sprintf(str, "/History/Display/%s/Variables", path);
             db_find_key(hDB, 0, str, &hKey);
             db_set_num_values(hDB, hKey, index);
-            sprintf(str, "/History/Display/%s/Labels", path);
+            sprintf(str, "/History/Display/%s/Label", path);
             db_find_key(hDB, 0, str, &hKey);
             db_set_num_values(hDB, hKey, index);
             sprintf(str, "/History/Display/%s/Factor", path);
