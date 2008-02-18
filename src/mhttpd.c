@@ -10418,7 +10418,7 @@ void show_hist_page(char *path, int path_size, char *buffer, int *buffer_size,
             if (exp_name[0]) {
                sprintf(ref, "%s%s/%s.gif?exp=%s&width=Small", hurl, path, key.name,
                         exp_name);
-               sprintf(ref2, "%s%s/%s?exp=%s", hurl, key.name, key.name, exp_name);
+               sprintf(ref2, "%s%s/%s?exp=%s", hurl, path, key.name, exp_name);
             } else {
                sprintf(ref, "%s%s/%s.gif?width=Small", hurl, path, key.name);
                sprintf(ref2, "%s%s/%s", hurl, path, key.name);
@@ -10428,9 +10428,8 @@ void show_hist_page(char *path, int path_size, char *buffer, int *buffer_size,
                rsprintf("<tr><td><a href=\"%s%s\"><img src=\"%s%s\" alt=\"%s.gif\"></a>\n",
                         back_path, ref2, back_path, ref, key.name);
             else
-               rsprintf
-                     ("<td><a href=\"%s%s\"><img src=\"%s%s\" alt=\"%s.gif\"></a></tr>\n",
-                     back_path, ref2, back_path, ref, key.name);
+               rsprintf("<td><a href=\"%s%s\"><img src=\"%s%s\" alt=\"%s.gif\"></a></tr>\n",
+                        back_path, ref2, back_path, ref, key.name);
          }
 
       } else {
