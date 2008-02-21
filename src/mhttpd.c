@@ -1875,7 +1875,7 @@ void show_elog_new(char *path, BOOL bedit, char *odb_att)
 
    rsprintf("<html><head><title>MIDAS ELog</title></head>\n");
    rsprintf
-       ("<body><form method=\"POST\" action=\"EL/\" enctype=\"multipart/form-data\">\n");
+       ("<body><form method=\"POST\" action=\"./\" enctype=\"multipart/form-data\">\n");
 
    /* define hidden field for experiment */
    if (exp_name[0])
@@ -2120,7 +2120,7 @@ void show_elog_query()
    rsprintf("Content-Type: text/html; charset=iso-8859-1\r\n\r\n");
 
    rsprintf("<html><head><title>MIDAS ELog</title></head>\n");
-   rsprintf("<body><form method=\"GET\" action=\"EL/\">\n");
+   rsprintf("<body><form method=\"GET\" action=\"./\">\n");
 
    /* define hidden field for experiment */
    if (exp_name[0])
@@ -2354,7 +2354,7 @@ void show_elog_submit_query(INT last_n)
    rsprintf("Content-Type: text/html; charset=iso-8859-1\r\n\r\n");
 
    rsprintf("<html><head><title>MIDAS ELog</title></head>\n");
-   rsprintf("<body><form method=\"GET\" action=\"EL/\">\n");
+   rsprintf("<body><form method=\"GET\" action=\"./\">\n");
 
    /* define hidden field for experiment */
    if (exp_name[0])
@@ -2801,7 +2801,7 @@ void show_rawfile(char *path)
    rsprintf("Content-Type: text/html; charset=iso-8859-1\r\n\r\n");
 
    rsprintf("<html><head><title>MIDAS File Display %s</title></head>\n", path);
-   rsprintf("<body><form method=\"GET\" action=\"EL/%s\">\n", path);
+   rsprintf("<body><form method=\"GET\" action=\"./%s\">\n", path);
 
    /* define hidden field for experiment */
    if (exp_name[0])
@@ -2933,7 +2933,7 @@ void show_form_query()
    rsprintf("Content-Type: text/html; charset=iso-8859-1\r\n\r\n");
 
    rsprintf("<html><head><title>MIDAS ELog</title></head>\n");
-   rsprintf("<body><form method=\"GET\" action=\"EL/\">\n");
+   rsprintf("<body><form method=\"GET\" action=\"./\">\n");
 
    if (*getparam("form") == 0)
       return;
@@ -3574,9 +3574,9 @@ void show_elog_page(char *path, int path_size)
 
    if (strncmp(command, "Last ", 5) == 0) {
       if (command[strlen(command) - 1] == 'h')
-         sprintf(str, "EL/last%d", atoi(command + 5));
+         sprintf(str, "last%d", atoi(command + 5));
       else if (command[strlen(command) - 1] == 'd')
-         sprintf(str, "EL/last%d", atoi(command + 5) * 24);
+         sprintf(str, "last%d", atoi(command + 5) * 24);
 
       redirect(str);
       return;
@@ -3593,7 +3593,7 @@ void show_elog_page(char *path, int path_size)
    }
 
    if (equal_ustring(command, "runlog")) {
-      sprintf(str, "../EL/runlog.txt");
+      sprintf(str, "runlog.txt");
       redirect(str);
       return;
    }
@@ -3717,7 +3717,7 @@ void show_elog_page(char *path, int path_size)
                continue;
          }
 
-         sprintf(str, "EL/%s", path);
+         sprintf(str, "%s", path);
 
          if (*getparam("lauthor") == '1') {
             if (strchr(str, '?') == NULL)
@@ -6646,7 +6646,7 @@ void show_programs_page()
       status = cm_shutdown(getparam("Stop") + 5, FALSE);
 
       if (status == CM_SUCCESS)
-         redirect("?cmd=programs");
+         redirect("./?cmd=programs");
       else {
          sprintf(str,
                  "Cannot shut down client \"%s\", please kill manually and do an ODB cleanup",
@@ -6660,13 +6660,17 @@ void show_programs_page()
    /* start command */
    if (*getparam("Start")) {
       /* for NT: close reply socket before starting subprocess */
-      redirect2("?cmd=programs");
+      redirect2("./?cmd=programs");
 
       strlcpy(name, getparam("Start") + 6, sizeof(name));
-      sprintf(str, "/Programs/%s/Start command", name);
+      if (strchr(name, '?'))
+         *strchr(name, '?') = 0;
+      strlcpy(str, "/Programs/", sizeof(str));
+      strlcat(str, name, sizeof(str));
+      strlcpy(str, "/Start command", sizeof(str));
       command[0] = 0;
       size = sizeof(command);
-      db_get_value(hDB, 0, str, command, &size, TID_STRING, TRUE);
+      db_get_value(hDB, 0, str, command, &size, TID_STRING, FALSE);
       if (command[0]) {
          ss_system(command);
          for (i = 0; i < 50; i++) {
@@ -10891,10 +10895,10 @@ void interprete(char *cookie_pwd, char *cookie_wpwd, char *path, int refresh)
 
       if (hkey) {
          /* for NT: close reply socket before starting subprocess */
-         redirect2("");
+         redirect2("./");
          exec_script(hkey);
       } else
-         redirect("");
+         redirect("./");
 
       return;
    }
@@ -10912,10 +10916,10 @@ void interprete(char *cookie_pwd, char *cookie_wpwd, char *path, int refresh)
 
       if (hkey) {
          /* for NT: close reply socket before starting subprocess */
-         redirect2("");
+         redirect2("./");
          exec_script(hkey);
       } else
-         redirect("");
+         redirect("./");
 
       return;
    }
@@ -11189,7 +11193,7 @@ void interprete(char *cookie_pwd, char *cookie_wpwd, char *path, int refresh)
          return;
 
       al_reset_alarm(NULL);
-      redirect("?cmd=alarms");
+      redirect("./?cmd=alarms");
       return;
    }
 
@@ -11198,7 +11202,7 @@ void interprete(char *cookie_pwd, char *cookie_wpwd, char *path, int refresh)
          return;
 
       al_reset_alarm(dec_path);
-      redirect("?cmd=alarms");
+      redirect("./?cmd=alarms");
       return;
    }
 
