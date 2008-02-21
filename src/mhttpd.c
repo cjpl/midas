@@ -6667,7 +6667,7 @@ void show_programs_page()
          *strchr(name, '?') = 0;
       strlcpy(str, "/Programs/", sizeof(str));
       strlcat(str, name, sizeof(str));
-      strlcpy(str, "/Start command", sizeof(str));
+      strlcat(str, "/Start command", sizeof(str));
       command[0] = 0;
       size = sizeof(command);
       db_get_value(hDB, 0, str, command, &size, TID_STRING, FALSE);
@@ -6685,7 +6685,7 @@ void show_programs_page()
 
    show_header(hDB, "Programs", "GET", "", 3, 0);
 
-  /*---- menu buttons ----*/
+   /*---- menu buttons ----*/
 
    rsprintf("<tr><td colspan=6 bgcolor=#C0C0C0>\n");
 
@@ -6695,7 +6695,7 @@ void show_programs_page()
 
    rsprintf("<input type=hidden name=cmd value=Programs>\n");
 
-  /*---- programs ----*/
+   /*---- programs ----*/
 
    rsprintf("<tr><th>Program<th>Running on host<th>Alarm class<th>Autorestart</tr>\n");
 
@@ -6715,9 +6715,9 @@ void show_programs_page()
             continue;
 
          if (exp_name[0])
-            sprintf(ref, "/Programs/%s?exp=%s", key.name, exp_name);
+            sprintf(ref, "Programs/%s?exp=%s", key.name, exp_name);
          else
-            sprintf(ref, "/Programs/%s", key.name);
+            sprintf(ref, "Programs/%s", key.name);
 
          /* required? */
          size = sizeof(required);
