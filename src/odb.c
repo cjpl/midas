@@ -1496,12 +1496,14 @@ INT db_protect_database(HNDLE hDB)
 
 /*---- helper routines ---------------------------------------------*/
 
-char *extract_key(char *key_list, char *key_name)
+char *extract_key(char *key_list, char *key_name, int key_name_length)
 {
+   int i = 0;
+
    if (*key_list == '/')
       key_list++;
 
-   while (*key_list && *key_list != '/')
+   while (*key_list && *key_list != '/' && ++i<key_name_length)
       *key_name++ = *key_list++;
    *key_name = 0;
 
@@ -1591,7 +1593,7 @@ INT db_create_key(HNDLE hDB, HNDLE hKey, char *key_name, DWORD type)
       pkey_name = key_name;
       do {
          /* extract single key from key_name */
-         pkey_name = extract_key(pkey_name, str);
+        pkey_name = extract_key(pkey_name, str, sizeof(str));
 
          /* do not allow empty names, like '/dir/dir//dir/' */
          if (str[0] == 0) {
@@ -2074,7 +2076,7 @@ INT db_find_key(HNDLE hDB, HNDLE hKey, char *key_name, HNDLE * subhKey)
       pkey_name = key_name;
       do {
          /* extract single subkey from key_name */
-         pkey_name = extract_key(pkey_name, str);
+        pkey_name = extract_key(pkey_name, str, sizeof(str));
 
          /* strip trailing '[n]' */
          if (strchr(str, '[') && str[strlen(str) - 1] == ']')
@@ -2247,7 +2249,7 @@ INT db_find_key1(HNDLE hDB, HNDLE hKey, char *key_name, HNDLE * subhKey)
       pkey_name = key_name;
       do {
          /* extract single subkey from key_name */
-         pkey_name = extract_key(pkey_name, str);
+        pkey_name = extract_key(pkey_name, str, sizeof(str));
 
          /* check if parent or current directory */
          if (strcmp(str, "..") == 0) {
@@ -2400,7 +2402,7 @@ INT db_find_link(HNDLE hDB, HNDLE hKey, char *key_name, HNDLE * subhKey)
       pkey_name = key_name;
       do {
          /* extract single subkey from key_name */
-         pkey_name = extract_key(pkey_name, str);
+         pkey_name = extract_key(pkey_name, str, sizeof(str));
 
          /* check if parent or current directory */
          if (strcmp(str, "..") == 0) {
@@ -2552,7 +2554,7 @@ INT db_find_link1(HNDLE hDB, HNDLE hKey, char *key_name, HNDLE * subhKey)
       pkey_name = key_name;
       do {
          /* extract single subkey from key_name */
-         pkey_name = extract_key(pkey_name, str);
+         pkey_name = extract_key(pkey_name, str, sizeof(str));
 
          /* check if parent or current directory */
          if (strcmp(str, "..") == 0) {
@@ -4777,17 +4779,17 @@ INT db_set_num_values(HNDLE hDB, HNDLE hKey, INT num_values)
       INT new_size;
 
       if (hDB > _database_entries || hDB <= 0) {
-         cm_msg(MERROR, "db_set_data", "invalid database handle");
+         cm_msg(MERROR, "db_set_num_values", "invalid database handle");
          return DB_INVALID_HANDLE;
       }
 
       if (!_database[hDB - 1].attached) {
-         cm_msg(MERROR, "db_set_data", "invalid database handle");
+         cm_msg(MERROR, "db_set_num_values", "invalid database handle");
          return DB_INVALID_HANDLE;
       }
 
       if (hKey < (int) sizeof(DATABASE_HEADER)) {
-         cm_msg(MERROR, "db_set_data", "invalid key handle");
+         cm_msg(MERROR, "db_set_num_values", "invalid key handle");
          return DB_INVALID_HANDLE;
       }
 
@@ -4814,20 +4816,27 @@ INT db_set_num_values(HNDLE hDB, HNDLE hKey, INT num_values)
       /* keys cannot contain data */
       if (pkey->type == TID_KEY) {
          db_unlock_database(hDB);
-         cm_msg(MERROR, "db_set_data", "Key cannot contain data");
+         cm_msg(MERROR, "db_set_num_values", "Key cannot contain data");
          return DB_TYPE_MISMATCH;
+      }
+
+      if (pkey->total_size != pkey->item_size * pkey->num_values) {
+         db_unlock_database(hDB);
+         cm_msg(MERROR, "db_set_num_values", "Corrupted key");
+         return DB_CORRUPTED;
       }
 
       /* resize data size if necessary */
       if (pkey->num_values != num_values) {
          new_size = pkey->item_size * num_values;
+
          pkey->data =
              (POINTER_T) realloc_data(pheader, (char *) pheader + pkey->data,
                                       pkey->total_size, new_size);
 
          if (pkey->data == 0) {
             db_unlock_database(hDB);
-            cm_msg(MERROR, "db_set_data", "online database full");
+            cm_msg(MERROR, "db_set_num_values", "online database full");
             return DB_FULL;
          }
 
@@ -4945,8 +4954,16 @@ INT db_set_data_index(HNDLE hDB, HNDLE hKey,
       /* check for valid idx */
       if (idx < 0) {
          db_unlock_database(hDB);
-         cm_msg(MERROR, "db_set_data_index", "invalid index");
+         cm_msg(MERROR, "db_set_data_index", "invalid index %d", idx);
          return DB_FULL;
+      }
+
+      /* check for valid array element size: if new element size
+         is different from existing size, ODB becomes corrupted */
+      if (pkey->item_size!=0 && data_size!=pkey->item_size) {
+         db_unlock_database(hDB);
+         cm_msg(MERROR, "db_set_data_index", "invalid element data size %d, expected %d", data_size, pkey->item_size);
+         return DB_TYPE_MISMATCH;
       }
 
       /* increase data size if necessary */
