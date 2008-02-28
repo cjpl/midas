@@ -639,6 +639,8 @@ void redirect(char *path)
 {
    char str[256];
 
+   //printf("redirect to [%s]\n", path);
+
    strlcpy(str, path, sizeof(str));
    if (str[0] == 0)
       strcpy(str, "./");
@@ -1832,7 +1834,7 @@ void strencode3(char *text)
 
 /*------------------------------------------------------------------*/
 
-void show_elog_new(char *path, BOOL bedit, char *odb_att)
+void show_elog_new(char *path, BOOL bedit, char *odb_att, char *action_path)
 {
    int i, j, size, run_number, wrap, status;
    char str[256], ref[256], *p;
@@ -1842,6 +1844,11 @@ void show_elog_new(char *path, BOOL bedit, char *odb_att)
    HNDLE hDB, hkey, hsubkey;
    BOOL display_run_number;
    KEY key;
+
+   //printf("show_elog_new, path [%s], action_path [%s], att [%s]\n", path, action_path, odb_att);
+
+   if (!action_path)
+     action_path = "./";
 
    cm_get_experiment_database(&hDB, NULL);
    display_run_number = TRUE;
@@ -1875,7 +1882,7 @@ void show_elog_new(char *path, BOOL bedit, char *odb_att)
 
    rsprintf("<html><head><title>MIDAS ELog</title></head>\n");
    rsprintf
-       ("<body><form method=\"POST\" action=\"./\" enctype=\"multipart/form-data\">\n");
+       ("<body><form method=\"POST\" action=\"%s\" enctype=\"multipart/form-data\">\n", action_path);
 
    /* define hidden field for experiment */
    if (exp_name[0])
@@ -2283,13 +2290,13 @@ void show_elog_delete(char *path)
    /* redirect if confirm = NO */
    if (getparam("confirm") && *getparam("confirm")
        && strcmp(getparam("confirm"), "No") == 0) {
-      sprintf(str, "EL/%s", path);
+      sprintf(str, "../EL/%s", path);
       redirect(str);
       return;
    }
 
    /* header */
-   sprintf(str, "EL/%s", path);
+   sprintf(str, "../EL/%s", path);
    show_header(hDB, "Delete ELog entry", "GET", str, 1, 0);
 
    if (!allow_delete) {
@@ -3475,9 +3482,9 @@ void show_elog_page(char *path, int path_size)
 
    if (equal_ustring(command, "new")) {
       if (*getparam("file"))
-         show_elog_new(NULL, FALSE, getparam("file"));
+         show_elog_new(NULL, FALSE, getparam("file"), NULL);
       else
-         show_elog_new(NULL, FALSE, NULL);
+         show_elog_new(NULL, FALSE, NULL, NULL);
       return;
    }
 
@@ -3538,22 +3545,30 @@ void show_elog_page(char *path, int path_size)
       
       } else {
 
-         strlcpy(str, path, sizeof(str));
-         while (strchr(path, '/'))
-            *strchr(path, '/') = '\\';
+         char action_path[256];
 
-         show_elog_new(NULL, FALSE, path);
+         action_path[0] = 0;
+
+         strlcpy(str, path, sizeof(str));
+         while (strchr(path, '/')) {
+            *strchr(path, '/') = '\\';
+            strlcat(action_path, "../", sizeof(action_path));
+         }
+
+         strlcat(action_path, "EL/", sizeof(action_path));
+
+         show_elog_new(NULL, FALSE, path, action_path);
          return;
       }
    }
 
    if (equal_ustring(command, "edit")) {
-      show_elog_new(path, TRUE, NULL);
+      show_elog_new(path, TRUE, NULL, NULL);
       return;
    }
 
    if (equal_ustring(command, "reply")) {
-      show_elog_new(path, FALSE, NULL);
+      show_elog_new(path, FALSE, NULL, NULL);
       return;
    }
 
@@ -10183,7 +10198,7 @@ void show_hist_page(char *path, int path_size, char *buffer, int *buffer_size,
             sprintf(str + strlen(str), "index=%s", getparam("hindex"));
          }
 
-         show_elog_new(NULL, FALSE, str);
+         show_elog_new(NULL, FALSE, str, "../../EL/");
          return;
       }
    }
