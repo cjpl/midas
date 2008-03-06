@@ -5715,8 +5715,8 @@ void show_start_page(void)
                else
                   rsprintf("<td><input type=checkbox name=x%d value=1></td></tr>\n", n++);
             } else
-               rsprintf("<td><input type=text size=80 maxlength=%d name=x%d value=\"%s\"></tr>\n",
-                 maxlength, n++, data_str);
+               rsprintf("<td><input type=text size=%d maxlength=%d name=x%d value=\"%s\"></tr>\n",
+                        (maxlength<80)?maxlength:80, maxlength-1, n++, data_str);
          }
       }
    }
@@ -11044,7 +11044,7 @@ void interprete(char *cookie_pwd, char *cookie_wpwd, char *path, int refresh)
                   size = key.item_size;
                   sprintf(str, "x%d", n++);
                   db_sscanf(getparam(str), data, &size, 0, key.type);
-                  db_set_data_index(hDB, hsubkey, data, size + 1, j, key.type);
+                  db_set_data_index(hDB, hsubkey, data, key.item_size, j, key.type);
                }
             }
          }
