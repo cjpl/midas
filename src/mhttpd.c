@@ -5806,13 +5806,6 @@ void show_odb_page(char *enc_path, int enc_path_size, char *dec_path)
 
    /*---- ODB display -----------------------------------------------*/
 
-   /* display root key */
-   rsprintf("<tr><td colspan=2 align=center><b>");
-   if (exp_name[0])
-      rsprintf("<a href=\"root?exp=%s\">/</a> \n", exp_name);
-   else
-      rsprintf("<a href=\"root\">/</a> \n");
-
    /* add one "../" for each level */
    tmp_path[0] = 0;
    for (p = dec_path ; *p ; p++)
@@ -5822,6 +5815,13 @@ void show_odb_page(char *enc_path, int enc_path_size, char *dec_path)
    p = dec_path;
    if (*p == '/')
       p++;
+
+   /* display root key */
+   rsprintf("<tr><td colspan=2 align=center><b>");
+   if (exp_name[0])
+      rsprintf("<a href=\"%sroot?exp=%s\">/</a> \n", tmp_path, exp_name);
+   else
+      rsprintf("<a href=\"%sroot\">/</a> \n", tmp_path);
 
    /*---- display path ----*/
    while (*p) {
