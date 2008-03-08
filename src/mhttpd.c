@@ -11556,7 +11556,7 @@ void server_loop(int daemon)
    char cookie_pwd[256], cookie_wpwd[256], boundary[256], *p;
    int lsock, flag, content_length, header_length;
    unsigned int len;
-   struct hostent *phe;
+   struct hostent *local_phe = NULL;
    fd_set readfds;
    struct timeval timeout;
    INT last_time = 0;
@@ -11606,13 +11606,13 @@ struct linger        ling;
    /* get host name for mail notification */
    gethostname(host_name, sizeof(host_name));
 
-   phe = gethostbyname(host_name);
-   if (phe != NULL)
-      phe = gethostbyaddr(phe->h_addr, sizeof(int), AF_INET);
+   local_phe = gethostbyname(host_name);
+   if (local_phe != NULL)
+      local_phe = gethostbyaddr(local_phe->h_addr, sizeof(int), AF_INET);
 
    /* if domain name is not in host name, hope to get it from phe */
    if (strchr(host_name, '.') == NULL)
-      strlcpy(host_name, phe->h_name, sizeof(host_name));
+      strlcpy(host_name, local_phe->h_name, sizeof(host_name));
 
 #ifdef OS_UNIX
    /* give up root privilege */
@@ -11650,10 +11650,79 @@ struct linger        ling;
 #endif
 
       if (FD_ISSET(lsock, &readfds)) {
+
          len = sizeof(acc_addr);
          _sock = accept(lsock, (struct sockaddr *) &acc_addr, &len);
 
          last_time = (INT) ss_time();
+
+         /* save remote host address */
+         memcpy(&remote_addr, &(acc_addr.sin_addr), sizeof(remote_addr));
+
+         /* check access control list */
+         if (1) {
+            struct hostent *remote_phe;
+            char hname[256];
+            int value = 0;
+            int size;
+            int status;
+            int okey = 0;
+            HNDLE hDB = 0;
+            HNDLE hkey = 0;
+
+            remote_phe = gethostbyaddr((char *) &remote_addr, 4, PF_INET);
+
+            if (remote_phe == NULL) {
+               /* use IP number instead */
+               strlcpy(hname, (char *)inet_ntoa(remote_addr), sizeof(hname));
+            } else
+               strlcpy(hname, remote_phe->h_name, sizeof(hname));
+
+            //printf("connection request from \'%s\'\n", hname);
+
+            /* always permit localhost */
+            if (strcmp(hname, "localhost.localdomain") == 0) {
+               okey = 1;
+            }
+
+            if (!okey) {
+               status = cm_get_experiment_database(&hDB, NULL);
+               assert(status == DB_SUCCESS);
+
+               if (hDB == 0) {
+
+                  status = cm_connect_experiment(midas_hostname, "", "mhttpd", NULL);
+                  if (status != CM_SUCCESS) {
+                     cm_msg(MERROR, "server_loop", "cm_connect_experiment(\'%s\',\'%s\') error %d", midas_hostname, "", status);
+                  }
+
+                  status = cm_get_experiment_database(&hDB, NULL);
+                  assert(status == DB_SUCCESS);
+               }
+
+               if (hDB) {
+                  status = db_find_key(hDB, 0, "/experiment/security/mhttpd hosts", &hkey);
+                  if (status!=DB_SUCCESS || hkey==0)
+                     okey = 1; // access list is not enabled
+               }
+            }
+
+            if (!okey && hkey) {
+               value = 0;
+               size  = sizeof(value);
+               status = db_get_value(hDB, hkey, hname, &value, &size, TID_INT, FALSE);
+               //printf("hDB %d, status %d, value %d\n", hDB, status, value);
+               
+               if (status == DB_SUCCESS)
+                  okey = 1;
+            }
+
+            if (!okey) {
+               cm_msg(MERROR, "server_loop", "Rejecting http connection from \'%s\'", hname);
+               closesocket(_sock);
+               continue;
+            }
+         }
 
          /* turn on lingering (borrowed from NCSA httpd code) */
 
@@ -11666,18 +11735,20 @@ struct linger        ling;
          /* save remote host address */
          memcpy(&remote_addr, &(acc_addr.sin_addr), sizeof(remote_addr));
          if (verbose) {
-            struct hostent *phe;
+            struct hostent *remote_phe;
             char str[256];
 
             strcpy(str, ss_asctime());
             printf(str);
             printf("=== Received request from ");
-            phe = gethostbyaddr((char *) &remote_addr, 4, PF_INET);
-            if (phe == NULL) {
+
+            remote_phe = gethostbyaddr((char *) &remote_addr, 4, PF_INET);
+            if (remote_phe == NULL) {
                /* use IP number instead */
                strlcpy(str, (char *) inet_ntoa(remote_addr), sizeof(str));
             } else
-               strlcpy(str, phe->h_name, sizeof(str));
+               strlcpy(str, remote_phe->h_name, sizeof(str));
+
             puts(str);
             printf("===========\n");
             fflush(stdout);
@@ -11896,7 +11967,9 @@ struct linger        ling;
                printf("\n\n");
             }
 
-            send_tcp(_sock, return_buffer, return_length, 0x10000);
+            i = send_tcp(_sock, return_buffer, return_length, 0x10000);
+            if (i != return_length)
+               cm_msg(MERROR, "server_loope", "Only sent back %d out of %d bytes", i, return_length);
 
             if (verbose) {
                if (return_length > 1000) {
