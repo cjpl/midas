@@ -404,14 +404,10 @@ INT device_driver(DEVICE_DRIVER * device_drv, INT cmd, ...)
                for (j=CMD_SET_FIRST ; j<=CMD_SET_LAST ; j++)
                   device_drv->mt_buffer->channel[i].array[j] = (float)ss_nan();
 
-            /* get default names and demands for this driver already now */
-            for (i = 0; i < device_drv->channels; i++) {
+            /* get default names for this driver already now */
+            for (i = 0; i < device_drv->channels; i++)
                device_drv->dd(CMD_GET_LABEL, device_drv->dd_info, i,
                                  device_drv->mt_buffer->channel[i].label);
-               if (device_drv->flags & DF_PRIO_DEVICE)
-                  device_drv->dd(CMD_GET_DEMAND, device_drv->dd_info, i, 
-                                    &device_drv->mt_buffer->channel[i].array[CMD_GET_DEMAND]);
-            }
 
             /* create mutex */
             sprintf(str, "DD_%s", device_drv->name);

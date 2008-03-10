@@ -2786,8 +2786,8 @@ INT cm_register_transition(INT transition, INT(*func) (INT, char *), INT sequenc
    _trans_table[i].func = func;
    _trans_table[i].sequence_number = sequence_number;
 
-   for (i = 0; i < 13; i++)
-      if (trans_name[i].transition == transition)
+   for (i = 0; ; i++)
+      if (trans_name[i].name[0] == 0 || trans_name[i].transition == transition)
          break;
 
    sprintf(str, "Transition %s", trans_name[i].name);
@@ -2890,8 +2890,8 @@ INT cm_set_transition_sequence(INT transition, INT sequence_number)
    cm_get_experiment_database(&hDB, &hKey);
 
    /* Find the transition type from the list */
-   for (i = 0; i < 13; i++)
-      if (trans_name[i].transition == transition)
+   for (i = 0; ; i++)
+      if (trans_name[i].name[0] == 0 || trans_name[i].transition == transition)
          break;
    sprintf(str, "Transition %s", trans_name[i].name);
 
@@ -2954,8 +2954,8 @@ INT cm_register_deferred_transition(INT transition, BOOL(*func) (INT, BOOL))
    /* set new transition mask */
    _deferred_transition_mask |= transition;
 
-   for (i = 0; i < 13; i++)
-      if (trans_name[i].transition == transition)
+   for (i = 0; ; i++)
+      if (trans_name[i].name[0] == 0 || trans_name[i].transition == transition)
          break;
 
    sprintf(tr_key_name, "Transition %s DEFERRED", trans_name[i].name);
@@ -7395,8 +7395,6 @@ void bm_defragment_event(HNDLE buffer_handle, HNDLE request_id,
 
    if (i == MAX_DEFRAG_EVENTS) {
       /* no buffer available -> no first fragment received */
-      free(defrag_buffer[i].pevent);
-      memset(&defrag_buffer[i].event_id, 0, sizeof(EVENT_DEFRAG_BUFFER));
       cm_msg(MERROR, "bm_defragement_event",
              "Received fragment without first fragment (ID %d) Ser#:%d",
              pevent->event_id & 0x0FFF, pevent->serial_number);
