@@ -925,7 +925,7 @@ typedef struct {
 } BUS_DRIVER;
 
 typedef struct {
-   float array[CMD_GET_LAST];         /**< Array for various values          */
+   float variable[CMD_GET_LAST+1];    /**< Array for various values          */
    char  label[NAME_LENGTH];          /**< Array for channel labels          */                                
 } DD_MT_CHANNEL;
 
