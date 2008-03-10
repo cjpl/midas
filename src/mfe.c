@@ -308,7 +308,7 @@ int sc_thread(void *info)
          status = device_drv->dd(cmd, device_drv->dd_info, current_channel, &value);
 
          ss_mutex_wait_for(device_drv->mutex, 1000);
-         device_drv->mt_buffer->channel[current_channel].array[cmd] = value;
+         device_drv->mt_buffer->channel[current_channel].variable[cmd] = value;
          device_drv->mt_buffer->status = status;
          ss_mutex_release(device_drv->mutex);
 
@@ -337,7 +337,7 @@ int sc_thread(void *info)
             status = device_drv->dd(cmd, device_drv->dd_info, i, &value);
 
             ss_mutex_wait_for(device_drv->mutex, 1000);
-            device_drv->mt_buffer->channel[i].array[cmd] = value;
+            device_drv->mt_buffer->channel[i].variable[cmd] = value;
             device_drv->mt_buffer->status = status;
             ss_mutex_release(device_drv->mutex);
          }
@@ -347,10 +347,10 @@ int sc_thread(void *info)
       for (i = 0; i < device_drv->channels; i++) {
 
          for (cmd = CMD_SET_FIRST; cmd <= CMD_SET_LAST; cmd++) {
-            if (!ss_isnan(device_drv->mt_buffer->channel[i].array[cmd])) {
+            if (!ss_isnan(device_drv->mt_buffer->channel[i].variable[cmd])) {
                ss_mutex_wait_for(device_drv->mutex, 1000);
-               value = device_drv->mt_buffer->channel[i].array[cmd];
-               device_drv->mt_buffer->channel[i].array[cmd] = (float) ss_nan();
+               value = device_drv->mt_buffer->channel[i].variable[cmd];
+               device_drv->mt_buffer->channel[i].variable[cmd] = (float) ss_nan();
                device_drv->mt_buffer->status = status;
                ss_mutex_release(device_drv->mutex);
 
@@ -402,7 +402,7 @@ INT device_driver(DEVICE_DRIVER * device_drv, INT cmd, ...)
             /* set all set values to NaN */
             for (i=0 ; i<device_drv->channels ; i++)
                for (j=CMD_SET_FIRST ; j<=CMD_SET_LAST ; j++)
-                  device_drv->mt_buffer->channel[i].array[j] = (float)ss_nan();
+                  device_drv->mt_buffer->channel[i].variable[j] = (float)ss_nan();
 
             /* get default names for this driver already now */
             for (i = 0; i < device_drv->channels; i++)
@@ -475,7 +475,7 @@ INT device_driver(DEVICE_DRIVER * device_drv, INT cmd, ...)
          value = (float) va_arg(argptr, double);        // floats are passed as double
          if (device_drv->flags & DF_MULTITHREAD) {
             ss_mutex_wait_for(device_drv->mutex, 1000);
-            device_drv->mt_buffer->channel[channel].array[cmd] = value;
+            device_drv->mt_buffer->channel[channel].variable[cmd] = value;
             status = device_drv->mt_buffer->status;
             ss_mutex_release(device_drv->mutex);
          } else {
@@ -489,7 +489,7 @@ INT device_driver(DEVICE_DRIVER * device_drv, INT cmd, ...)
          pvalue = va_arg(argptr, float *);
          if (device_drv->flags & DF_MULTITHREAD) {
             ss_mutex_wait_for(device_drv->mutex, 1000);
-            *pvalue = device_drv->mt_buffer->channel[channel].array[cmd];
+            *pvalue = device_drv->mt_buffer->channel[channel].variable[cmd];
             status = device_drv->mt_buffer->status;
             ss_mutex_release(device_drv->mutex);
          } else
