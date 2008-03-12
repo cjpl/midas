@@ -10942,6 +10942,15 @@ void interprete(char *cookie_pwd, char *cookie_wpwd, char *path, int refresh)
    /*---- alarms command --------------------------------------------*/
 
    if (equal_ustring(command, "alarms")) {
+      str[0] = 0;
+      for (p=dec_path ; *p ; p++)
+         if (*p == '/')
+            strlcat(str, "../", sizeof(str));
+      if (str[0]) {
+         strlcat(str, "./?cmd=alarms", sizeof(str));
+         redirect(str);
+         return;
+      }
       show_alarm_page();
       return;
    }
@@ -11229,6 +11238,16 @@ void interprete(char *cookie_pwd, char *cookie_wpwd, char *path, int refresh)
    /*---- programs command ------------------------------------------*/
 
    if (equal_ustring(command, "programs")) {
+      str[0] = 0;
+      for (p=dec_path ; *p ; p++)
+         if (*p == '/')
+            strlcat(str, "../", sizeof(str));
+      if (str[0]) {
+         strlcat(str, "./?cmd=programs", sizeof(str));
+         redirect(str);
+         return;
+      }
+
       str[0] = 0;
       if (*getparam("Start"))
          sprintf(str, "?cmd=programs&Start=%s", getparam("Start"));
