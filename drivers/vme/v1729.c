@@ -322,7 +322,7 @@ int v1729_TimeCalibrationRun(MVME_INTERFACE *mvme, DWORD base, int flag)
   int i_bar=0;
   int h[5000];
   char bars[] = "|\\-/";
-  int i, k, j, toggle, save[4];
+  int i, k=0, j, toggle, save[4];
   FILE *fH=NULL;
 
   mvme_get_dmode(mvme, &cmode);
