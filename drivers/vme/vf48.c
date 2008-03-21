@@ -743,13 +743,17 @@ Currently the MBIT2 contains the divisor parameter too.
 This function will overwrite this parameter. Apply this
 function prior the divisor.
  */
-int vf48_ChSuppSet(MVME_INTERFACE *mvme, DWORD base, int grp, DWORD size)
+int vf48_ChSuppSet(MVME_INTERFACE *mvme, DWORD base, int grp, DWORD value)
 {
   int  cmode;
+  int  mbit2;
 
   mvme_get_dmode(mvme, &cmode);
   mvme_set_dmode(mvme, MVME_DMODE_D16);
-  vf48_ParameterWrite(mvme, base, grp, VF48_MBIT2, size);
+  mbit2 =  vf48_ParameterRead(mvme, base, grp, VF48_MBIT2);
+  mbit2 &= ~1;
+  mbit2 |= value&0x1;
+  vf48_ParameterWrite(mvme, base, grp, VF48_MBIT2, mbit2);
   mvme_set_dmode(mvme, cmode);
   return grp;
 }
@@ -775,19 +779,30 @@ write the sub-sampling divisor factor to all 6 groups.
 Value of 0   : base sampling
 Value of x>0 : base sampling / x
  */
-int vf48_DivisorWrite(MVME_INTERFACE *mvme, DWORD base, DWORD size)
+int vf48_DivisorWrite(MVME_INTERFACE *mvme, DWORD base, DWORD value)
 {
   int  cmode, i, mbit2;
+
+  assert(value > 0);
+  assert(value < 256);
 
   mvme_get_dmode(mvme, &cmode);
   mvme_set_dmode(mvme, MVME_DMODE_D16);
   for (i=0;i<6;i++) {
     mbit2 =  vf48_ParameterRead(mvme, base, i, VF48_MBIT2);
-    mbit2 |= (size << 8);
+    mbit2 &= ~0xFF00;
+    mbit2 |= (value << 8);
     vf48_ParameterWrite(mvme, base, i, VF48_MBIT2, mbit2);
   }
+  for (i=0;i<6;i++) {
+    int rd = vf48_DivisorRead(mvme, base, i);
+    if (rd != value) {
+      printf("vf48_DivisorWrite: Divisor read back mismatch: module at 0x%x, group %d, wrote %d, read back %d\n", base, i, value, rd);
+      abort();
+    }
+  }
   mvme_set_dmode(mvme, cmode);
-  return size;
+  return value;
 }
 
 /********************************************************************/
