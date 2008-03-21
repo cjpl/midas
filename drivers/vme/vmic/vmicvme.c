@@ -233,6 +233,8 @@ int mvme_read(MVME_INTERFACE *mvme, void *dst, mvme_addr_t vme_addr, mvme_size_t
       (mvme->blt_mode == MVME_BLT_MBLT64) ||
       (n_bytes > 127)) {
 
+    int am = mvme->am;
+
 #ifdef DO_TIMING
     struct timeval t1, t2, t3;
     int dt1, dt2;
@@ -246,6 +248,11 @@ int mvme_read(MVME_INTERFACE *mvme, void *dst, mvme_addr_t vme_addr, mvme_size_t
 	return(ERROR);
       }
 
+    if (mvme->blt_mode == MVME_BLT_BLT32)
+      am = MVME_AM_A24_NB;
+    else if (mvme->blt_mode == MVME_BLT_MBLT64)
+      am = MVME_AM_A24_NMBLT;
+
 #ifdef DO_TIMING
     gettimeofday(&t1,NULL);
 #endif
@@ -254,7 +261,7 @@ int mvme_read(MVME_INTERFACE *mvme, void *dst, mvme_addr_t vme_addr, mvme_size_t
         , info->dma_handle
         , 0
         , vme_addr
-        , mvme->am
+        , am
         , n_bytes
         , 0);
     //fprintf(stderr,"dma read: addr 0x%x, am 0x%x, bytes: %d, status: %d\n", vme_addr, mvme->am, n_bytes, status);
