@@ -2440,6 +2440,91 @@ INT log_write(LOG_CHN * log_chn, EVENT_HEADER * pevent)
 
 void log_history(HNDLE hDB, HNDLE hKey, void *info);
 
+INT add_event(int* indexp, int event_id, const char* event_name, HNDLE hKey, int ntags, const TAG* tags, int period, int hotlink)
+{
+   int status;
+   int size, i;
+   int index = *indexp;
+
+   /* check for duplicate event id's */
+   for (i=0; i<index; i++)
+      if (hist_log[i].event_id == event_id) {
+         cm_msg(MERROR, "open_history", "Duplicate event id %d", event_id);
+         return 0;
+      }
+
+   if (index >= MAX_HISTORY) {
+      cm_msg(MERROR, "open_history", "Too many history events: %d, please increase MAX_HISTORY!", index);
+      return 0;
+   }
+
+   status = hs_define_event(event_id, (char*)event_name, (TAG*)tags, sizeof(TAG) * ntags);
+   assert(status == DB_SUCCESS);
+
+   status = db_get_record_size(hDB, hKey, 0, &size);
+   assert(status == DB_SUCCESS);
+
+   /* setup hist_log structure for this event */
+   hist_log[index].event_id = event_id;
+   hist_log[index].hKeyVar  = hKey;
+   hist_log[index].buffer_size = size;
+   hist_log[index].buffer   = malloc(size);
+   hist_log[index].period   = period;
+   hist_log[index].last_log = 0;
+
+   if (hist_log[index].buffer == NULL) {
+      cm_msg(MERROR, "open_history", "cannot allocate data buffer for event \"%s\" size %d", event_name, size);
+      return 0;
+   }
+   
+   /* open hot link to variables */
+   if (hotlink) {
+      status = db_open_record(hDB, hKey, hist_log[index].buffer,
+                              size, MODE_READ, log_history, NULL);
+      if (status != DB_SUCCESS) {
+         cm_msg(MERROR, "open_history",
+                "cannot hotlink event %d \"%s\" for history logging, db_open_record() status %d",
+                event_id, event_name, status);
+         return status;
+      }
+   }
+   
+   if (verbose)
+      printf("Created event %d for equipment \"%s\", %d tags, size %d\n", event_id, event_name, ntags, size);
+
+   /* create history tags for mhttpd */
+
+   if (1) {
+      char buf[256];
+
+      sprintf(buf, "/History/Tags/%d", event_id);
+
+      //printf("Set tag \'%s\' = \'%s\'\n", buf, event_name);
+
+      status = db_set_value(hDB, 0, buf, (void*)event_name, strlen(event_name)+1, 1, TID_STRING);
+      assert(status == DB_SUCCESS);
+
+      for (i=0; i<ntags; i++) {
+         WORD v = tags[i].n_data;
+         sprintf(buf, "/History/Tags/Tags %d/%s", event_id, tags[i].name);
+
+         //printf("Set tag \'%s\' = %d\n", buf, v);
+
+         status = db_set_value(hDB, 0, buf, &v, sizeof(v), 1, TID_WORD);
+         assert(status == DB_SUCCESS);
+
+         if (strlen(tags[i].name) == NAME_LENGTH-1)
+            cm_msg(MERROR, "add_event",
+                   "Tag name \'%s\' in event %d (%s) may have been truncated to %d characters",
+                   tags[i].name, event_id, event_name, NAME_LENGTH-1);
+      }
+   }
+
+   *indexp = index+1;
+
+   return SUCCESS;
+}
+
 INT open_history()
 {
    INT size, index, i_tag, status, i, j, li, max_event_id;
@@ -2814,7 +2899,10 @@ void close_history()
    for (i = 1; i < MAX_HISTORY; i++)
       if (hist_log[i].hKeyVar) {
          db_close_record(hDB, hist_log[i].hKeyVar);
-         free(hist_log[i].buffer);
+         hist_log[i].hKeyVar = 0;
+         if (hist_log[i].buffer)
+            free(hist_log[i].buffer);
+         hist_log[i].buffer = NULL;
       }
 }
 
@@ -2840,8 +2928,11 @@ void log_history(HNDLE hDB, HNDLE hKey, void *info)
    if (size != hist_log[i].buffer_size) {
       close_history();
       open_history();
+      return;
    }
-   //printf("write event: id %d, buffer %p, size %d\n", hist_log[i].event_id, hist_log[i].buffer, hist_log[i].buffer_size);
+
+   if (verbose)
+      printf("write event: id %d, buffer %p, size %d\n", hist_log[i].event_id, hist_log[i].buffer, hist_log[i].buffer_size);
 
    hs_write_event(hist_log[i].event_id, hist_log[i].buffer, hist_log[i].buffer_size);
    hist_log[i].last_log = ss_time();
@@ -3552,7 +3643,7 @@ int main(int argc, char *argv[])
       ss_daemon_init(FALSE);
    }
 
-   status = cm_connect_experiment("", exp_name, "Logger", NULL);
+   status = cm_connect_experiment(host_name, exp_name, "Logger", NULL);
    if (status != CM_SUCCESS)
       return 1;
 
