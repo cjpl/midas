@@ -105,6 +105,7 @@ struct Tag
 struct Event
 {
   bool printAllTags;
+  int size;
   std::map<std::string,Tag*> tags;
   std::vector<std::string> tagNames;
   std::vector<int> tagIndexes;
@@ -165,11 +166,38 @@ int readHstFile(FILE*f)
 	    rd = fread(tags, 1, size, f);
 	    assert(rd == size);
 
+            Event* e = gTags[rec.event_id];
+            if (!e)
+              {
+                gTags[rec.event_id] = new Event;
+                e = gTags[rec.event_id];
+                e->printAllTags = false;
+                if (doAll)
+                  e->printAllTags = true;
+              }
+            else
+              {
+                e->tagNames.clear();
+                e->tagIndexes.clear();
+              }
+
+            e->size = 0;
+
 	    int offset = 0;
 
 	    for (int itag=0; itag<ntags; itag++)
 	      {
-		int size = tags[itag].n_data * tid_size[tags[itag].type];
+                int tsize = tid_size[tags[itag].type];
+
+                if (tsize == 0)
+                  tsize = 1;
+
+		int size = tags[itag].n_data * tsize;
+
+                if (offset%tsize != 0)
+                  offset += tsize-offset%tsize;
+
+                assert(offset%tsize == 0);
 
 		Tag* t = new Tag;
 		t->event_id  = rec.event_id;
@@ -178,16 +206,6 @@ int readHstFile(FILE*f)
 		t->arraySize = tags[itag].n_data;
 		t->typeSize  = tid_size[tags[itag].type];
 		t->typeCode  = tags[itag].type;
-
-		Event* e = gTags[t->event_id];
-		if (!e)
-		  {
-		    gTags[t->event_id] = new Event;
-		    e = gTags[t->event_id];
-		    e->printAllTags = false;
-		    if (doAll)
-		      e->printAllTags = true;
-		  }
 
 		e->tags[t->name] = t;
 
@@ -202,6 +220,8 @@ int readHstFile(FILE*f)
 
 		offset += size;
 	      }
+
+            e->size = offset;
 
 	    delete tags;
 	    break;
@@ -226,6 +246,11 @@ int readHstFile(FILE*f)
 	    Event* e = gTags[rec.event_id];
 	    if (e && doPrintData)
 	      {
+                if (size != e->size)
+                  {
+                    printf("event %d, size mismatch should be %d, got %d bytes\n", rec.event_id, e->size, size);
+                  }
+
 		//printf("event %d, time %s", rec.event_id, ctime(&t));
 
 		int n  = e->tagNames.size();
