@@ -2747,8 +2747,9 @@ INT open_history()
 
             if (hKeyNames && varkey.num_values != n_names) {
                cm_msg(MERROR, "open_history",
-                      "Mismatch between \"/Equipment/%s/Settings/%s\" and \"/Equipment/%s/Variables/%s\" (%d vs. %d entries)",
-                      eq_name, key.name, eq_name, varkey.name, n_names, varkey.num_values);
+                      "Array size mismatch: \"/Equipment/%s/Settings/%s\" has %d entries while \"/Equipment/%s/Variables/%s\" has %d entries",
+                      eq_name, key.name, n_names,
+                      eq_name, varkey.name, varkey.num_values);
                free(tag);
                return 0;
             }
@@ -2761,8 +2762,11 @@ INT open_history()
                   db_get_data_index(hDB, hKeyNames, tag[i_tag].name, &size, j, TID_STRING);
 
                   if (strlen(tag[i_tag].name) < 1) {
-                     snprintf(tag[i_tag].name, NAME_LENGTH-1, "%s[%d]", varkey.name, j);
-                     tag[i_tag].name[NAME_LENGTH-1] = 0;
+                     char buf[256];
+                     sprintf(buf, "%d", j);
+                     strlcpy(tag[i_tag].name, varkey.name, NAME_LENGTH);
+                     strlcat(tag[i_tag].name, "_", NAME_LENGTH);
+                     strlcat(tag[i_tag].name, buf, NAME_LENGTH);
                   }
 
                   /* append variable key name for single name array */
