@@ -53,7 +53,7 @@ void create_sql_tree();
 #define LOGGER_TIMEOUT 60000
 
 #define MAX_CHANNELS 10
-#define MAX_HISTORY  50
+#define MAX_HISTORY 100
 
 BOOL in_stop_transition = FALSE;
 BOOL tape_message = TRUE;
@@ -2449,7 +2449,7 @@ INT add_event(int* indexp, int event_id, const char* event_name, HNDLE hKey, int
    /* check for duplicate event id's */
    for (i=0; i<index; i++)
       if (hist_log[i].event_id == event_id) {
-         cm_msg(MERROR, "open_history", "Duplicate event id %d", event_id);
+         cm_msg(MERROR, "open_history", "Duplicate event id %d for \'%s\'", event_id, event_name);
          return 0;
       }
 
@@ -2473,7 +2473,7 @@ INT add_event(int* indexp, int event_id, const char* event_name, HNDLE hKey, int
    hist_log[index].last_log = 0;
 
    if (hist_log[index].buffer == NULL) {
-      cm_msg(MERROR, "open_history", "cannot allocate data buffer for event \"%s\" size %d", event_name, size);
+      cm_msg(MERROR, "open_history", "Cannot allocate data buffer for event \"%s\" size %d", event_name, size);
       return 0;
    }
    
@@ -2483,7 +2483,7 @@ INT add_event(int* indexp, int event_id, const char* event_name, HNDLE hKey, int
                               size, MODE_READ, log_history, NULL);
       if (status != DB_SUCCESS) {
          cm_msg(MERROR, "open_history",
-                "cannot hotlink event %d \"%s\" for history logging, db_open_record() status %d",
+                "Cannot hotlink event %d \"%s\" for history logging, db_open_record() status %d",
                 event_id, event_name, status);
          return status;
       }
@@ -2536,8 +2536,9 @@ INT open_history()
    WORD event_id;
    char str[256], eq_name[NAME_LENGTH], hist_name[NAME_LENGTH];
    BOOL single_names;
+   int count_events = 0;
 
-   /* set direcotry for history files */
+   /* set directory for history files */
    size = sizeof(str);
    str[0] = 0;
    status = db_get_value(hDB, 0, "/Logger/History Dir", str, &size, TID_STRING, FALSE);
@@ -2613,6 +2614,8 @@ INT open_history()
 
          if (n_var == 0)
             cm_msg(MERROR, "open_history", "defined event %d with no variables in ODB", event_id);
+         
+         n_tags = 1000; // FIXME!
 
          /* create tag array */
          tag = (TAG *) malloc(sizeof(TAG) * n_tags);
@@ -2666,6 +2669,11 @@ INT open_history()
                   size = NAME_LENGTH;
                   db_get_data_index(hDB, hKeyNames, tag[i_tag].name, &size, j, TID_STRING);
 
+                  if (strlen(tag[i_tag].name) < 1) {
+                     snprintf(tag[i_tag].name, NAME_LENGTH-1, "%s[%d]", varkey.name, j);
+                     tag[i_tag].name[NAME_LENGTH-1] = 0;
+                  }
+
                   /* append variable key name for single name array */
                   if (single_names) {
                      if (strlen(tag[i_tag].name) + 1 + strlen(varkey.name) >= NAME_LENGTH) {
@@ -2674,8 +2682,8 @@ INT open_history()
                         free(tag);
                         return 0;
                      }
-                     strcat(tag[i_tag].name, " ");
-                     strcat(tag[i_tag].name, varkey.name);
+                     strlcat(tag[i_tag].name, " ", NAME_LENGTH);
+                     strlcat(tag[i_tag].name, varkey.name, NAME_LENGTH);
                   }
 
                   tag[i_tag].type = varkey.type;
@@ -2687,8 +2695,33 @@ INT open_history()
 
                   i_tag++;
                }
+            } else if (varkey.type == TID_KEY) {
+               int ii;
+               for (ii=0;; ii++) {
+                  KEY vvarkey;
+                  HNDLE hhKey;
+
+                  status = db_enum_key(hDB, hKey, ii, &hhKey);
+                  if (status == DB_NO_MORE_SUBKEYS)
+                     break;
+
+                  /* get variable key */
+                  db_get_key(hDB, hhKey, &vvarkey);
+
+                  strlcpy(tag[i_tag].name, varkey.name, NAME_LENGTH);
+                  strlcat(tag[i_tag].name, "_", NAME_LENGTH);
+                  strlcat(tag[i_tag].name, vvarkey.name, NAME_LENGTH);
+                  tag[i_tag].type = vvarkey.type;
+                  tag[i_tag].n_data = vvarkey.num_values;
+
+                  if (verbose)
+                     printf("Defined tag \"%s\", type %d, num_values %d\n", tag[i_tag].name,
+                            tag[i_tag].type, tag[i_tag].n_data);
+
+                  i_tag++;
+               }
             } else {
-               strcpy(tag[i_tag].name, varkey.name);
+               strlcpy(tag[i_tag].name, varkey.name, NAME_LENGTH);
                tag[i_tag].type = varkey.type;
                tag[i_tag].n_data = varkey.num_values;
 
@@ -2700,29 +2733,12 @@ INT open_history()
             }
          }
 
-         hs_define_event(event_id, eq_name, tag, sizeof(TAG) * i_tag);
-         free(tag);
-
-         if (verbose)
-            printf("\n");
-
-         /* setup hist_log structure for this event */
-         hist_log[index].event_id = event_id;
-         hist_log[index].hKeyVar = hKeyVar;
-         db_get_record_size(hDB, hKeyVar, 0, &size);
-         hist_log[index].buffer_size = size;
-         hist_log[index].buffer = malloc(size);
-         hist_log[index].period = history;
-         hist_log[index].last_log = 0;
-         if (hist_log[index].buffer == NULL) {
-            cm_msg(MERROR, "open_history", "cannot allocate history buffer");
-            return 0;
-         }
-
-         /* open hot link to variables */
-         status = db_open_record(hDB, hKeyVar, hist_log[index].buffer, size, MODE_READ, log_history, NULL);
+         status = add_event(&index, event_id, eq_name, hKeyVar, i_tag, tag, history, 1);
          if (status != DB_SUCCESS)
-            cm_msg(MERROR, "open_history", "cannot open variable record for history logging");
+            return status;
+
+         free(tag);
+         count_events++;
 
          /* remember maximum event id for later use with system events */
          if (event_id > max_event_id)
@@ -2829,26 +2845,13 @@ INT open_history()
                db_open_record(hDB, hHistKey, NULL, size, MODE_READ, log_system_history,
                               (void *) (POINTER_T) index);
 
-            hs_define_event(max_event_id, hist_name, tag, sizeof(TAG) * n_var);
+            status = add_event(&index, max_event_id, hist_name, hHistKey, n_var, tag, 10, 0);
+            if (status != DB_SUCCESS)
+               return status;
+
             free(tag);
 
-            if (verbose)
-               printf("\n");
-
-            /* define system history */
-
-            hist_log[index].event_id = max_event_id;
-            hist_log[index].hKeyVar = hHistKey;
-            hist_log[index].buffer_size = size;
-            hist_log[index].buffer = malloc(size);
-            hist_log[index].period = 10;        /* 10 sec default period */
-            hist_log[index].last_log = 0;
-            if (hist_log[index].buffer == NULL) {
-               cm_msg(MERROR, "open_history", "cannot allocate history buffer");
-               return 0;
-            }
-
-            index++;
+            count_events++;
             max_event_id++;
 
             if (index == MAX_HISTORY) {
@@ -2873,6 +2876,8 @@ INT open_history()
 
    hs_define_event(0, "Run transitions", tag, sizeof(TAG) * 2);
    free(tag);
+
+   cm_msg(MINFO, "open_history", "Configured history with %d events", count_events);
 
    return CM_SUCCESS;
 }
