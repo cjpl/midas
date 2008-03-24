@@ -2440,7 +2440,7 @@ INT log_write(LOG_CHN * log_chn, EVENT_HEADER * pevent)
 
 void log_history(HNDLE hDB, HNDLE hKey, void *info);
 
-INT add_event(int* indexp, int event_id, const char* event_name, HNDLE hKey, int ntags, const TAG* tags, int period, int hotlink)
+static int add_event(int* indexp, int event_id, const char* event_name, HNDLE hKey, int ntags, const TAG* tags, int period, int hotlink)
 {
    int status;
    int size, i;
@@ -2456,6 +2456,14 @@ INT add_event(int* indexp, int event_id, const char* event_name, HNDLE hKey, int
    if (index >= MAX_HISTORY) {
       cm_msg(MERROR, "open_history", "Too many history events: %d, please increase MAX_HISTORY!", index);
       return 0;
+   }
+
+   /* check for invalid history tags */
+   for (i=0; i<ntags; i++) {
+      if (rpc_tid_size(tags[i].type) == 0) {
+         cm_msg(MERROR, "open_history", "Invalid tag %d \'%s\' in event %d \'%s\': type size is zero", i, tags[i].name, event_id, event_name);
+         return 0;
+      }
    }
 
    status = hs_define_event(event_id, (char*)event_name, (TAG*)tags, sizeof(TAG) * ntags);
@@ -2525,15 +2533,89 @@ INT add_event(int* indexp, int event_id, const char* event_name, HNDLE hKey, int
    return SUCCESS;
 }
 
+static int get_event_id(int eq_id, const char* eq_name, const char* var_name)
+{
+   HNDLE hDB, hKeyRoot;
+   char name[NAME_LENGTH+NAME_LENGTH+2];
+   int status, i;
+   WORD max_id = 0;
+
+   strlcpy(name, eq_name, sizeof(name));
+   strlcat(name, ":", sizeof(name));
+   strlcat(name, var_name, sizeof(name));
+
+   //printf("Looking for event id for \'%s\'\n", name);
+
+   cm_get_experiment_database(&hDB, NULL);
+   
+   status = db_find_key(hDB, 0, "/History/Events", &hKeyRoot);
+   if (status == DB_SUCCESS) {
+      for (i = 0;; i++) {
+         HNDLE hKey;
+         KEY key;
+         WORD evid;
+         int size;
+         char tmp[NAME_LENGTH+NAME_LENGTH+2];
+         
+         status = db_enum_key(hDB, hKeyRoot, i, &hKey);
+         if (status != DB_SUCCESS)
+           break;
+         
+         status = db_get_key(hDB, hKey, &key);
+         assert(status == DB_SUCCESS);
+         
+         //printf("key \'%s\'\n", key.name);
+         
+         evid = strtol(key.name, NULL, 0);
+         if (evid == 0)
+            continue;
+
+         size = sizeof(tmp);
+         status = db_get_data(hDB, hKey, tmp, &size, TID_STRING);
+         //printf("status %d\n", status);
+         assert(status == DB_SUCCESS);
+
+         //printf("got %d \'%s\'\n", evid, tmp);
+
+         if (strcasecmp(name, tmp) == 0)
+            return evid;
+
+         if (evid/1000 == eq_id)
+            max_id = evid;
+      }
+   }
+
+   //printf("eq_id %d, max_id %d\n", eq_id, max_id);
+
+   if (max_id == 0)
+      max_id = eq_id * 1000;
+
+   if (1) {
+      char tmp[NAME_LENGTH+NAME_LENGTH+2];
+      WORD evid = max_id + 1;
+
+      sprintf(tmp,"/History/Events/%d", evid);
+
+      status = db_set_value(hDB, 0, tmp, name, strlen(name)+1, 1, TID_STRING);
+      assert(status == DB_SUCCESS);
+
+      return evid;
+   }
+
+   /* not reached */
+   return 0;
+}
+
 INT open_history()
 {
    INT size, index, i_tag, status, i, j, li, max_event_id;
+   int ieq;
    INT n_var, n_tags, n_names = 0;
    HNDLE hKeyRoot, hKeyVar, hKeyNames, hLinkKey, hVarKey, hKeyEq, hHistKey, hKey;
    DWORD history;
    TAG *tag;
    KEY key, varkey, linkkey, histkey;
-   WORD event_id;
+   WORD eq_id;
    char str[256], eq_name[NAME_LENGTH], hist_name[NAME_LENGTH];
    BOOL single_names;
    int count_events = 0;
@@ -2573,7 +2655,8 @@ INT open_history()
    }
 
    /* loop over equipment */
-   for (index = 0; index < MAX_HISTORY; index++) {
+   index = 0;
+   for (ieq = 0; ; ieq++) {
       status = db_enum_key(hDB, hKeyRoot, index, &hKeyEq);
       if (status != DB_SUCCESS)
          break;
@@ -2584,6 +2667,8 @@ INT open_history()
 
       /* define history tags only if log history flag is on */
       if (history > 0) {
+         BOOL per_variable_history = 0;
+
          /* get equipment name */
          db_get_key(hDB, hKeyEq, &key);
          strcpy(eq_name, key.name);
@@ -2595,13 +2680,18 @@ INT open_history()
             return 0;
          }
 
-         size = sizeof(event_id);
-         db_get_value(hDB, hKeyEq, "Common/Event ID", &event_id, &size, TID_WORD, TRUE);
+         size = sizeof(eq_id);
+         status = db_get_value(hDB, hKeyEq, "Common/Event ID", &eq_id, &size, TID_WORD, TRUE);
+         assert(status == DB_SUCCESS);
+
+         size = sizeof(int);
+         status = db_get_value(hDB, hKeyEq, "Common/PerVariableHistory", &per_variable_history, &size, TID_INT, TRUE);
+         assert(status == DB_SUCCESS);
 
          if (verbose)
             printf
                 ("\n==================== Equipment \"%s\", ID %d  =======================\n",
-                 eq_name, event_id);
+                 eq_name, eq_id);
 
          /* count keys in variables tree */
          for (n_var = 0, n_tags = 0;; n_var++) {
@@ -2613,14 +2703,15 @@ INT open_history()
          }
 
          if (n_var == 0)
-            cm_msg(MERROR, "open_history", "defined event %d with no variables in ODB", event_id);
+            cm_msg(MERROR, "open_history", "defined event %d with no variables in ODB", eq_id);
          
          n_tags = 1000; // FIXME!
 
          /* create tag array */
          tag = (TAG *) malloc(sizeof(TAG) * n_tags);
 
-         for (i = 0, i_tag = 0;; i++) {
+         i_tag = 0;
+         for (i=0; ; i++) {
             status = db_enum_key(hDB, hKeyVar, i, &hKey);
             if (status == DB_NO_MORE_SUBKEYS)
                break;
@@ -2731,18 +2822,42 @@ INT open_history()
 
                i_tag++;
             }
+
+            if (per_variable_history && i_tag>0) {
+               WORD event_id;
+               char event_name[NAME_LENGTH];
+
+               event_id = get_event_id(eq_id, eq_name, varkey.name);
+               assert(event_id > 0);
+
+               strlcpy(event_name, eq_name, NAME_LENGTH);
+               strlcat(event_name, "/", NAME_LENGTH);
+               strlcat(event_name, varkey.name, NAME_LENGTH);
+
+               status = add_event(&index, event_id, event_name, hKey, i_tag, tag, history, 1);
+               if (status != DB_SUCCESS)
+                  return status;
+
+               count_events++;
+
+               i_tag = 0;
+            } /* if per-variable history */
+
+         } /* loop over variables */
+
+         if (!per_variable_history && i_tag>0) {
+            status = add_event(&index, eq_id, eq_name, hKeyVar, i_tag, tag, history, 1);
+            if (status != DB_SUCCESS)
+               return status;
+
+            count_events++;
          }
 
-         status = add_event(&index, event_id, eq_name, hKeyVar, i_tag, tag, history, 1);
-         if (status != DB_SUCCESS)
-            return status;
-
          free(tag);
-         count_events++;
 
          /* remember maximum event id for later use with system events */
-         if (event_id > max_event_id)
-            max_event_id = event_id;
+         if (eq_id > max_event_id)
+            max_event_id = eq_id;
       } else {
          hist_log[index].event_id = 0;
          hist_log[index].hKeyVar = 0;
@@ -2750,7 +2865,7 @@ INT open_history()
          hist_log[index].buffer_size = 0;
          hist_log[index].period = 0;
       }
-   }
+   } /* loop over equipments */
 
    if (index == MAX_HISTORY) {
       cm_msg(MERROR, "open_history", "too many equipments for history");
