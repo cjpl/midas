@@ -15,7 +15,7 @@
 #include <math.h>
 #include <intrins.h>
 #include "mscbemb.h"
-#include "scs_2000.h"
+#include "..\scs_2000\scs_2000.h"
 
 extern bit FREEZE_MODE;
 extern bit DEBUG_MODE;
