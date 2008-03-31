@@ -11,9 +11,9 @@ File 1,1,<.\scs_2001.c><scs_2001.c> 0x0
 File 1,1,<..\mscbmain.c><mscbmain.c> 0x0 
 File 1,1,<..\mscbutil.c><mscbutil.c> 0x0 
 File 1,1,<..\lcd_menu.c><lcd_menu.c> 0x0 
-File 1,1,<.\scs_2000_lib.c><scs_2000_lib.c> 0x0 
+File 1,1,<..\scs_2000\scs_2000_lib.c><scs_2000_lib.c> 0x0 
 File 2,5,<..\mscbemb.h><mscbemb.h> 0x0 
-File 2,5,<.\scs_2000.h><scs_2000.h> 0x0 
+File 2,5,<..\scs_2000\scs_2000.h><scs_2000.h> 0x0 
 
 
 Options 1,0,0  // Target 'ICE'
