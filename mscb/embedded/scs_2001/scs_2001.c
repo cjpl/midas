@@ -331,6 +331,109 @@ unsigned char d;
    return 8;
 }
 
+/*---- Power management --------------------------------------------*/
+
+bit trip_5V = 0, trip_24V = 0, trip_24V_old = 0, wrong_firmware = 0;
+extern unsigned char xdata n_box;
+unsigned char xdata trip_24V_addr[16];
+
+#define CPLD_FIRMWARE_REQUIRED 2
+
+unsigned char power_management(void)
+{
+static unsigned long xdata last_pwr;
+unsigned char status, return_status, i, j;
+
+   return_status = 0;
+   if (!trip_24V)
+      for (i=0 ; i<16 ; i++)
+         trip_24V_addr[i] = 0;
+
+   /* only 10 Hz */
+   if (time() > last_pwr+10 || time() < last_pwr) {
+      last_pwr = time();
+    
+      for (i=0 ; i<n_box ; i++) {
+
+         status = power_status(i);
+         
+         if ((status >> 4) != CPLD_FIRMWARE_REQUIRED) {
+            if (!wrong_firmware)
+               lcd_clear();
+            led_blink(1, 1, 100);
+            lcd_goto(0, 0);
+            puts("Wrong CPLD firmware");
+            lcd_goto(0, 1);
+            if (i > 0) 
+              printf("Slave addr: %bd", i);
+            lcd_goto(0, 2);
+            printf("Req: %02bd != Act: %02bd", CPLD_FIRMWARE_REQUIRED, status >> 4);
+            wrong_firmware = 1;
+            return_status = 1;
+         }
+
+         if ((status & 0x01) == 0) {
+            if (!trip_5V)
+               lcd_clear();
+            led_blink(1, 1, 100);
+            lcd_goto(0, 0);
+            printf("Overcurrent >0.5A on");
+            lcd_goto(0, 1);
+            printf("    5V output !!!   ");
+            lcd_goto(0, 2);
+            if (i > 0) 
+              printf("    Slave addr: %bd", i);
+            trip_5V = 1;
+            return_status = 1;
+         } else if (trip_5V) {
+            trip_5V = 0;
+            lcd_clear();
+         }
+         
+         if ((status & 0x02) == 0 || trip_24V_addr[i]) {
+            if (!trip_24V_addr[i]) {
+               /* check again to avoid spurious trips */
+               status = power_status(i);
+               if ((status & 0x02) > 0)
+                  continue;
+
+               /* turn off 24 V */
+               power_24V(i, 0);
+               trip_24V = 1;
+               trip_24V_addr[i] = 1;
+               lcd_clear();
+            }
+            led_blink(1, 1, 100);
+            lcd_goto(0, 0);
+            printf("   Overcurrent on   ");
+            lcd_goto(0, 1);
+            printf("   24V output !!!   ");
+            lcd_goto(0, 2);
+            if (i > 0) 
+              printf("   Slave addr: %bd", i);
+            lcd_goto(0, 3);
+            printf("RESET               ");
+         
+            if (button(0)) {
+               for (j=0 ; j<16 ; j++)
+                  if (trip_24V_addr[j]) {
+                     power_24V(j, 1);   // turn on power
+                     trip_24V_addr[j] = 0;
+                  }
+               trip_24V = 0;
+               while (button(0)); // wait for button to be released
+               lcd_clear();
+            }
+
+            return_status = 1;
+         }
+      }
+   } else if (trip_24V || trip_5V || wrong_firmware)
+      return_status = 1; // do not go into application_display
+  
+   return return_status;
+}
+
 /*---- Module scan -------------------------------------------------*/
 
 void setup_variables(void)
