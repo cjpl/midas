@@ -20,7 +20,7 @@
 extern bit FREEZE_MODE;
 extern bit DEBUG_MODE;
 
-char code node_name[] = "SCS-2001";
+char code node_name[] = "SCS-2000";
 char code svn_rev_2000[] = "$Rev$";
 extern char code svn_rev_main[];
 extern char code svn_rev_lib[];
@@ -177,152 +177,6 @@ unsigned short xdata value;
    return value < 1000;
 }
 
-/*---- EMIF routines -----------------------------------------------*/
-
-void emif_switch(unsigned char bk)
-{
-   unsigned char d;
-
-   d = (bk & 0x07) << 1; // A16-A18
-   if (bk & 0x08)
-     d |= 0x20;          // /CS0=low, /CS1=high
-   else
-     d |= 0x10;          // /CS0=high, /CS1=low
-
-   d |= 0xC0;            // /RD=/WR=high
-
-   P4 = d;
-}
-
-void emif_test()
-{
-   unsigned char idata i, error;
-   unsigned char xdata *p;
-
-   lcd_clear();
-   lcd_goto(2, 1);
-   printf("Memory test...");
-   error = 0;
-
-   for (i=0 ; i<16 ; i++) {
-      emif_switch(i);
-
-      lcd_goto(i, 3);
-      putchar(218);
-
-      watchdog_refresh(0);
-
-      for (p=0 ; p<0xFFFF ; p++)
-         *p = 0;
-
-      for (p=0 ; p<0xFFFF ; p++)
-         if (*p != 0) {
-            error = 1;
-            break;
-         }
-
-      lcd_goto(i, 3);
-      putchar(217);
-
-      for (p=0 ; p<0xFFFF ; p++)
-         *p = 0x55;
-
-      for (p=0 ; p<0xFFFF ; p++)
-         if (*p != 0x55) {
-            error = 1;
-            break;
-         }
-
-
-      lcd_goto(i, 3);
-      putchar(216);
-
-      for (p=0 ; p<0xFFFF ; p++)
-         *p = 0xAA;
-
-      for (p=0 ; p<0xFFFF ; p++)
-         if (*p != 0xAA) {
-            error = 1;
-            break;
-         }
-
-      lcd_goto(i, 3);
-      putchar(215);
-
-      for (p=0 ; p<0xFFFF ; p++)
-         *p = 0xFF;
-
-      for (p=0 ; p<0xFFFF ; p++)
-         if (*p != 0xFF) {
-            error = 1;
-            break;
-         }
-
-      lcd_goto(i, 3);
-      putchar(214);
-   }
-
-   emif_switch(0);
-   if (error) {
-      lcd_goto(0, 2);
-      printf("Memory error bank %bd", i);
-      do {
-         watchdog_refresh(0);
-         b0 = button(0);
-      } while (!b0);
-   }
-}
-
-unsigned char emif_init()
-{
-unsigned char xdata *p;
-unsigned char d;
-
-   /* setup EMIF interface and probe external memory */
-   SFRPAGE = EMI0_PAGE;
-   EMI0CF  = 0x3C; // active on P4-P7, non-multiplexed, external only
-   EMI0CN  = 0x00; // page zero
-   EMI0TC  = 0x04; // 2 SYSCLK cycles (=20ns) /WR and /RD signals
-
-   /* configure EMIF ports as push/pull */
-   SFRPAGE = CONFIG_PAGE;
-   P4MDOUT = 0xFF;
-   P5MDOUT = 0xFF;
-   P6MDOUT = 0xFF;
-   P7MDOUT = 0xFF;
-
-   /* "park" ports */
-   P4 = P5 = P6 = P7 = 0xFF;
-
-   /* test for external memory */
-   emif_switch(0);
-   p = NULL;
-   d = *p;
-   *p = 0x55;
-   if (*p != 0x55) {
-      *p = d; // restore previous data;
-      /* turn off EMIF */
-      SFRPAGE = EMI0_PAGE;
-      EMI0CF  = 0x00;
-      return 0;
-   }
-   *p = d; // restore previous data;
-
-   /* test for second SRAM chip */
-   emif_switch(8);
-   d = *p;
-   *p = 0xAA;
-   if (*p == 0xAA) { 
-      *p = d; // restore previous data;
-      emif_switch(0);
-      return 2;
-   }
-   *p = d; // restore previous data;
-
-   emif_switch(0);
-   return 1;
-}
-
 /*---- Module scan -------------------------------------------------*/
 
 void setup_variables(void)
@@ -365,15 +219,10 @@ char xdata * pvardata;
    /* initizlize real time clock */
    rtc_init();
 
-   /* initialize external memory interface */
-   memsize = emif_init();
-
-   /* do memory test on cold start */
+   /* reset clock on cold start */
    SFRPAGE = LEGACY_PAGE;
-   if (memsize > 0 && (RSTSRC & 0x02) > 0) {
-      emif_test();
+   if ((RSTSRC & 0x02) > 0)
       sysclock_reset();
-   }
 
    changed = 0;
    n_var = n_mod = 0;
