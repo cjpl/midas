@@ -64,6 +64,11 @@ MSCB_INFO_VAR code vars_temp[] = {
 MSCB_INFO_VAR code vars_iout[] =
    { 4, UNIT_AMPERE,  PRFX_MILLI, 0, MSCBF_FLOAT, "P%Iout#", (void xdata *)8, 0, 20,  0.1 };
 
+MSCB_INFO_VAR code vars_lhe[] = {
+   { 4, UNIT_AMPERE,  PRFX_MILLI, 0, MSCBF_FLOAT, "P%Iout#", (void xdata *)2, 0, 100,  1 },
+   { 4, UNIT_PERCENT, 0,          0, MSCBF_FLOAT, "P%Lin#",  (void xdata *)2 },
+};
+
 MSCB_INFO_VAR code vars_din[] =
    { 1, UNIT_BOOLEAN, 0,          0,           0, "P%Din#",  (void xdata *)8 };
 
@@ -117,6 +122,7 @@ SCS_2000_MODULE code scs_2000_module[] = {
   { 0x81, "UOut +-10V",      vars_uout,   1, dr_ad5764      },
   { 0x82, "IOut 0-2.5mA",    vars_iout,   1, dr_ltc2600     },
   { 0x83, "IOut 0-25mA",     vars_iout,   1, dr_ltc2600     },
+  { 0x84, "Liq.He level",    vars_lhe,    2, dr_lhe         },
 
   { 0 }
 };
@@ -1278,4 +1284,233 @@ float c;
 
    return 1;
 }
+
+/*---- Liquid helium level meter --------*/
+
+void ad7718_lt2600_write(unsigned char a, unsigned char d) reentrant
+{
+   unsigned char i, m;
+
+   OPT_DATAO = 0;
+   OPT_ALE = 0;
+   DELAY_CLK;
+
+   /* write zeros to !WEN and R/!W */
+   for (i=0 ; i<4 ; i++) {
+      OPT_CLK   = 0;
+      OPT_DATAO = 0;
+      DELAY_CLK;
+      OPT_CLK   = 1;
+      DELAY_CLK;
+   }
+
+   /* register address */
+   for (i=0,m=8 ; i<4 ; i++) {
+      OPT_CLK   = 0;
+      OPT_DATAO = (a & m) > 0;
+      DELAY_CLK;
+      OPT_CLK   = 1;
+      DELAY_CLK;
+      m >>= 1;
+   }
+
+   /* NOOP command for LT2600 */
+   for (i=0 ; i<32 ; i++) {
+      OPT_DATAO = 1;
+      CLOCK;
+   }
+
+   /* remove CS to strobe */
+   OPT_STR = 1;
+   DELAY_CLK;
+   OPT_STR = 0;
+
+   /* write to selected data register */
+   for (i=0,m=0x80 ; i<8 ; i++) {
+      OPT_CLK   = 0;
+      OPT_DATAO = (d & m) > 0;
+      DELAY_CLK;
+      OPT_CLK   = 1;
+      DELAY_CLK;
+      m >>= 1;
+   }
+
+   /* NOOP command for LT2600 */
+   for (i=0 ; i<32 ; i++) {
+      OPT_DATAO = 1;
+      CLOCK;
+   }
+
+   OPT_ALE = 1;
+   OPT_DATAO = 0;
+   DELAY_CLK;
+}
+
+void ad7718_lt2600_read(unsigned char a, unsigned long *d) reentrant
+{
+   unsigned char i, m;
+
+   OPT_ALE = 0;
+   DELAY_CLK;
+
+   /* write zero to !WEN and one to R/!W */
+   for (i=0 ; i<4 ; i++) {
+      OPT_CLK   = 0;
+      OPT_DATAO = (i == 1);
+      DELAY_CLK;
+      OPT_CLK   = 1;
+      DELAY_CLK;
+   }
+
+   /* register address */
+   for (i=0,m=8 ; i<4 ; i++) {
+      OPT_CLK   = 0;
+      OPT_DATAO = (a & m) > 0;
+      DELAY_CLK;
+      OPT_CLK   = 1;
+      DELAY_CLK;
+      m >>= 1;
+   }
+
+   /* NOOP command for LT2600 */
+   for (i=0 ; i<32 ; i++) {
+      OPT_DATAO = 1;
+      CLOCK;
+   }
+
+   /* remove CS to strobe */
+   OPT_STR = 1;
+   DELAY_CLK;
+   OPT_STR = 0;
+
+   /* read from selected data register */
+   for (i=0,*d=0 ; i<24 ; i++) {
+      OPT_CLK = 0;
+      DELAY_CLK;
+      *d = (*d << 1) | OPT_DATAI;
+      OPT_CLK = 1; 
+      DELAY_CLK; 
+   }
+
+   /* NOOP command for LT2600 */
+   for (i=0 ; i<32 ; i++) {
+      OPT_DATAO = 1;
+      CLOCK;
+   }
+
+   OPT_ALE = 1;
+   DELAY_CLK;
+}
+
+unsigned char dr_lhe(unsigned char id, unsigned char cmd, unsigned char addr, 
+                     unsigned char port, unsigned char chn, void *pd) reentrant
+{
+float value;
+unsigned char status;
+unsigned long d;
+unsigned char i;
+
+
+   if (id || chn || pd); // suppress compiler warning
+
+   if (cmd == MC_INIT) {
+      address_port(addr, port, AM_RW_SERIAL, 1);
+      ad7718_lt2600_write(AD7718_FILTER, 82);                // SF value for 50Hz rejection (2 Hz)
+      //ad7718_write(AD7718_FILTER, 13);                // SF value for faster conversion (12 Hz)
+      ad7718_lt2600_write(AD7718_MODE, 3);                   // continuous conversion
+      DELAY_US_REENTRANT(100);
+
+      /* start first conversion */
+      ad7718_lt2600_write(AD7718_CONTROL, (0 << 4) | 0x0F);  // Channel 0, +2.56V range
+      temp_cur_chn[port] = 0;
+   }
+
+
+   if (cmd == MC_WRITE) {
+
+      if (chn > 1)
+         return 0;
+
+      value = *((float *)pd);
+   
+      /* convert value to DAC counts */
+      d = value/100.0 * 65535; // 0-100mA
+   
+      address_port(addr, port, AM_RW_SERIAL, 0);
+    
+      /* write ones to AD7718 */
+      for (i=0 ; i<8 ; i++) {
+         OPT_DATAO = 1;
+         CLOCK;
+      }
+
+      /* eight dummies to pad 32-bit shift register */
+      for (i=0 ; i<8 ; i++) {
+         OPT_DATAO = 0;
+         CLOCK;
+      }
+
+      /* EWEN command */
+      for (i=0 ; i<4 ; i++) {
+         OPT_DATAO = (i > 1);
+         CLOCK;
+      }
+   
+      for (i=0 ; i<4 ; i++) {
+         OPT_DATAO = (chn & 8) > 0;
+         CLOCK;
+         chn <<= 1;
+      }
+   
+      for (i=0 ; i<16 ; i++) {
+         OPT_DATAO = (d & 0x8000) > 0;
+         CLOCK;
+         d <<= 1;
+      }
+
+
+      /* remove CS to update outputs */
+      OPT_ALE = 1; 
+   }
+
+   if (cmd == MC_READ) {
+
+      return 0; //##
+
+      if (chn != 2 || chn != 3)
+         return 0;
+
+      chn -= 2; // map ch2&3 to ADC chn0&1
+
+      /* return if ADC busy */
+      read_port(addr, port, &status);
+      if ((status & 1) > 0)
+         return 0;
+
+      /* return if not current channel */
+      if (chn != temp_cur_chn[port])
+         return 0;
+
+      address_port(addr, port, AM_RW_SERIAL, 1);
+    
+      /* read 24-bit data */
+      ad7718_lt2600_read(AD7718_ADCDATA, &d);
+
+      /* start next conversion */
+      temp_cur_chn[port] = (temp_cur_chn[port] + 1) % 2;
+      ad7718_lt2600_write(AD7718_CONTROL, (temp_cur_chn[port] << 4) | 0x0F);  // next chn, +2.56V range
+
+      /* convert to volts */
+      value = 2.56*((float)d / (1l<<24));
+
+      /* round result to significant digits */
+      value = ((long)(value*1E1+0.5))/1E1;
+   
+      *((float *)pd) = value;
+      return 4;
+   }
+
+   return 1;
+}
+
 
