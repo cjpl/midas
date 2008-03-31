@@ -452,6 +452,11 @@ char xdata * pvardata;
          
          } else {
 
+
+            /* turn off any beeper */
+            for (i=0 ; i<n_box ; i++)
+               power_beeper(i, 0);
+
             /* initialize new/unknown module */
             lcd_clear();
             lcd_goto(0, 0);
@@ -828,7 +833,7 @@ float xdata value;
       lcd_menu();
    }
 
-   /* turn off beeper afet 100 ms */
+   /* turn off beeper after 100 ms */
    if (beeper_on && time() > 10) {
       beeper_on = 1;
       for (i=0 ; i<n_box ; i++)
