@@ -14,7 +14,6 @@
 #include <stdio.h>
 #include <string.h>
 #include "mscbemb.h"
-#include "scs_2000.h"
 
 /*------------------------------------------------------------------*/
 
@@ -44,6 +43,20 @@ unsigned char xdata dt_bcd[6];
 char xdata time_str[10];
 char xdata date_str[10];
 
+#ifdef SCS_2001
+typedef struct {
+  float temperature;
+  float u_3_3v;
+  float i_24v;
+  float u_5v_ext;
+  float u_24v;
+  float u_24v_ext;
+  float u_1_8v;
+} MONS;
+
+MONS xdata mon;
+#endif
+
 /*------------------------------------------------------------------*/
 
 typedef struct {
@@ -54,7 +67,7 @@ typedef struct {
 NAME_TABLE code prefix_table[] = {
    {PRFX_PICO, "p",},
    {PRFX_NANO, "n",},
-   {PRFX_MICRO, "\344",},
+   {PRFX_MICRO, "\217",},
    {PRFX_MILLI, "m",},
    {PRFX_NONE, "",},
    {PRFX_KILO, "k",},
@@ -73,15 +86,15 @@ NAME_TABLE code unit_table[] = {
    {UNIT_HOUR, "h",},
    {UNIT_AMPERE, "A",},
    {UNIT_KELVIN, "K",},
-   {UNIT_CELSIUS, "\337C",},
-   {UNIT_FARENHEIT, "\337F",},
+   {UNIT_CELSIUS, "\200C",},
+   {UNIT_FARENHEIT, "\200F",},
 
    {UNIT_HERTZ, "Hz",},
    {UNIT_PASCAL, "Pa",},
    {UNIT_BAR, "ba",},
    {UNIT_WATT, "W",},
    {UNIT_VOLT, "V",},
-   {UNIT_OHM, "\364",},
+   {UNIT_OHM, "\265",},
    {UNIT_TESLA, "T",},
    {UNIT_LITERPERSEC, "l/s",},
    {UNIT_RPM, "RPM",},
@@ -97,127 +110,35 @@ NAME_TABLE code unit_table[] = {
 
 /*------------------------------------------------------------------*/
 
+#ifdef SCS_2001
+unsigned char n_sysvar = 13;
+#else
 unsigned char n_sysvar = 6;
+#endif
 
 MSCB_INFO_VAR code sysvar[] = {
 
    {  2, UNIT_WORD, 0, 0, 0, "Node Adr", &sys_info.node_addr, 0, 0, 1 },
    {  2, UNIT_WORD, 0, 0, 0, "Grp Adr",  &sys_info.group_addr, 0, 0, 1 },
 
-   { 10, UNIT_STRING,0,0, 0, "Time",     &time_str, 0, 0, 1},
-   { 10, UNIT_STRING,0,0, 0, "Date",     &date_str, 0, 0, 1},
+   { 10, UNIT_STRING,  0, 0, 0, "Time",     &time_str, 0, 0, 1},
+   { 10, UNIT_STRING,  0, 0, 0, "Date",     &date_str, 0, 0, 1},
 
+#ifdef SCS_2001
+   { 4,  UNIT_CELSIUS, 0, 0, MSCBF_FLOAT,    "Temp",   &mon.temperature, 0, 0, 1},
+   { 4,  UNIT_VOLT,    0, 0, MSCBF_FLOAT,    "1.8V",   &mon.u_1_8v,      0, 0, 2},
+   { 4,  UNIT_VOLT,    0, 0, MSCBF_FLOAT,    "3.3V",   &mon.u_3_3v,      0, 0, 2},
+   { 4,  UNIT_VOLT,    0, 0, MSCBF_FLOAT,    "5Vext",  &mon.u_5v_ext,    0, 0, 2},
+   { 4,  UNIT_VOLT,    0, 0, MSCBF_FLOAT,    "24V",    &mon.u_24v,       0, 0, 1},
+   { 4,  UNIT_VOLT,    0, 0, MSCBF_FLOAT,    "24Vext", &mon.u_24v_ext,   0, 0, 1},
+   { 4,  UNIT_AMPERE,  0, 0, MSCBF_FLOAT,    "I 24V",  &mon.i_24v,       0, 0, 2},
+#endif
+   
    {  0, UNIT_BOOLEAN, 0, 0, MSCBF_DATALESS, "Flash" },
    {  0, UNIT_BOOLEAN, 0, 0, MSCBF_DATALESS, "Reboot" },
 
 };
 
-/*---- Power management --------------------------------------------*/
-
-#ifdef SCS_2000
-
-bit trip_5V = 0, trip_24V = 0, trip_24V_old = 0, wrong_firmware = 0;
-extern unsigned char xdata n_box;
-unsigned char xdata trip_24V_addr[16];
-
-#define CPLD_FIRMWARE_REQUIRED 1
-
-unsigned char power_management(void)
-{
-static unsigned long xdata last_pwr;
-unsigned char status, return_status, i, j;
-
-   return_status = 0;
-   if (!trip_24V)
-      for (i=0 ; i<16 ; i++)
-         trip_24V_addr[i] = 0;
-
-   /* only 10 Hz */
-   if (time() > last_pwr+10 || time() < last_pwr) {
-      last_pwr = time();
-    
-      for (i=0 ; i<n_box ; i++) {
-
-         status = power_status(i);
-         
-         if ((status >> 4) != CPLD_FIRMWARE_REQUIRED) {
-            if (!wrong_firmware)
-               lcd_clear();
-            led_blink(1, 1, 100);
-            lcd_goto(0, 0);
-            puts("Wrong CPLD firmware");
-            lcd_goto(0, 1);
-            if (i > 0) 
-              printf("Slave addr: %bd", i);
-            lcd_goto(0, 2);
-            printf("Req: %02bd != Act: %02bd", CPLD_FIRMWARE_REQUIRED, status >> 4);
-            wrong_firmware = 1;
-            return_status = 1;
-         }
-
-         if ((status & 0x01) == 0) {
-            if (!trip_5V)
-               lcd_clear();
-            led_blink(1, 1, 100);
-            lcd_goto(0, 0);
-            printf("Overcurrent >0.5A on");
-            lcd_goto(0, 1);
-            printf("    5V output !!!   ");
-            lcd_goto(0, 2);
-            if (i > 0) 
-              printf("    Slave addr: %bd", i);
-            trip_5V = 1;
-            return_status = 1;
-         } else if (trip_5V) {
-            trip_5V = 0;
-            lcd_clear();
-         }
-         
-         if ((status & 0x02) == 0 || trip_24V_addr[i]) {
-            if (!trip_24V_addr[i]) {
-               /* check again to avoid spurious trips */
-               status = power_status(i);
-               if ((status & 0x02) > 0)
-                  continue;
-
-               /* turn off 24 V */
-               power_24V(i, 0);
-               trip_24V = 1;
-               trip_24V_addr[i] = 1;
-               lcd_clear();
-            }
-            led_blink(1, 1, 100);
-            lcd_goto(0, 0);
-            printf("   Overcurrent on   ");
-            lcd_goto(0, 1);
-            printf("   24V output !!!   ");
-            lcd_goto(0, 2);
-            if (i > 0) 
-              printf("   Slave addr: %bd", i);
-            lcd_goto(0, 3);
-            printf("RESET               ");
-         
-            if (button(0)) {
-               for (j=0 ; j<16 ; j++)
-                  if (trip_24V_addr[j]) {
-                     power_24V(j, 1);   // turn on power
-                     trip_24V_addr[j] = 0;
-                  }
-               trip_24V = 0;
-               while (button(0)); // wait for button to be released
-               lcd_clear();
-            }
-
-            return_status = 1;
-         }
-      }
-   } else if (trip_24V || trip_5V || wrong_firmware)
-      return_status = 1; // do not go into application_display
-  
-   return return_status;
-}
-
-#endif // SCS-2000
 
 /*------------------------------------------------------------------*/
 
@@ -278,7 +199,7 @@ void display_value(MSCB_INFO_VAR *pvar, void *pd)
 
       case 4:
          if (pvar->flags & MSCBF_FLOAT)
-            printf("%b*.3f", 10-unit_len, *((float *) pd));
+            printf("%b*.b*f", 10-unit_len, (unsigned char)pvar->delta, *((float *) pd));
          else {
             if (pvar->flags & MSCBF_SIGNED)
                printf("%b*ld", 10-unit_len, *((long *) pd));
@@ -439,7 +360,9 @@ void display_name(unsigned char index, MSCB_INFO_VAR *pvar)
 
 /*------------------------------------------------------------------*/
 
-#if defined(SCS_1001) || defined(SCS_2000)
+#if defined(SCS_1001) || defined(SCS_2000) || defined(SCS_2001)
+
+extern unsigned char power_management(void);
 
 static xdata unsigned long last_b2, last_b3;
 static bit b0_old, b1_old, b2_old, b3_old;
@@ -448,6 +371,10 @@ void lcd_menu()
 {
    MSCB_INFO_VAR * xdata pvar;
    unsigned char xdata i, max_index, start_index, app_req;
+#ifdef SCS_2001
+   unsigned short xdata d;
+   float xdata f;
+#endif
 
    if (power_management()) {
       startup = 1; // force re-display after trip finished
@@ -492,6 +419,39 @@ void lcd_menu()
          rtc_read(dt_bcd);
          rtc_conv_date(dt_bcd, date_str);
          rtc_conv_time(dt_bcd, time_str);
+
+#ifdef SCS_2001
+         /* read system monitor */
+         monitor_read(0, 0x02, 0, (char *)&d, 2); // Read internal temperature
+         f = (d >> 4)/8.0;
+         mon.temperature = (long)(f*1E1+0.5)/1E1;
+   
+         monitor_read(0, 0x02, 1, (char *)&d, 2); // Read VDD
+         f = 2.0*(d >> 4)*2.5/4096.0;
+         mon.u_3_3v = (long)(f*1E2+0.5)/1E2;
+      
+         monitor_read(0, 0x02, 2, (char *)&d, 2); // Read current on 24V
+         f = 2.5*(d >> 4)/4096.0; // volts
+         f = f/2700.0;     // Isense (R9)
+         f = f*14000.0;    // Iload (BTS650)
+         mon.i_24v = (long)(f*1E2+0.5)/1E2;
+      
+         monitor_read(0, 0x02, 3, (char *)&d, 2); // Read +5V ext
+         f = 2.5*(d >> 4)*2.5/4096.0;
+         mon.u_5v_ext = (long)(f*1E2+0.5)/1E2;
+      
+         monitor_read(0, 0x02, 4, (char *)&d, 2); // Read +24V
+         f = 11*(d >> 4)*2.5/4096.0;
+         mon.u_24v = (long)(f*1E2+0.5)/1E2;
+   
+         monitor_read(0, 0x02, 5, (char *)&d, 2); // Read +24V ext
+         f = 11*(d >> 4)*2.5/4096.0;
+         mon.u_24v_ext = (long)(f*1E2+0.5)/1E2;
+   
+         monitor_read(0, 0x02, 6, (char *)&d, 2); // Read +1.8V
+         f = (d >> 4)*2.5/4096.0;
+         mon.u_1_8v = (long)(f*1E2+0.5)/1E2;
+#endif
       }
 
       /* display variables */
