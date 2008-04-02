@@ -106,15 +106,11 @@ begin
   i_uc_data_in <= P_I_UC_DATA_IN when master = '1' else P_IO_EXT(3); 
   
   P_O_UC_DATA_OUT <= o_sl_data_out when master = '0'
-                     else P_IO_EXT(4) when 
-                     addr_unit /= my_addr
-							else P_I_DOUT_MON when
-							addr_mod = "111"
-                     else o_uc_data_out when
-                     addr_mod /= "101" and addr_mod /= "110"
+                     else P_IO_EXT(4) when addr_unit /= my_addr
+							else P_I_DOUT_MON when addr_mod = "111"
+                     else o_uc_data_out when addr_mod /= "101" and addr_mod /= "110"
                      else P_I_SDO;
-  P_O_UC_STAT     <= P_IO_PORTS(CONV_INTEGER(addr_port)).port_pin(0) when
-                     addr_unit = my_addr
+  P_O_UC_STAT     <= P_IO_PORTS(CONV_INTEGER(addr_port)).port_pin(0) when addr_unit = my_addr
                      else P_IO_EXT(5); -- get status from slave bus                   
   P_O_UC_SPARE1   <= '1';
   P_O_UC_SPARE2   <= '1';
@@ -130,9 +126,11 @@ begin
   P_IO_EXT(3)     <= P_I_UC_DATA_IN when master = '1' else 'Z';
 
   -- output o_uc_data_out and STAT in slave mode when addressed
-  P_IO_EXT(4)     <= o_uc_data_out when
-                     master = '0' and addr_unit = my_addr and addr_mod /= "101" and addr_mod /= "110" else P_I_SDO when
-                     master = '0' and addr_unit = my_addr else 'Z';
+  P_IO_EXT(4)     <= 'Z' when master = '1' or addr_unit /= my_addr
+                     else P_I_SDO when addr_mod = "101" or addr_mod = "110"
+							else P_I_DOUT_MON when addr_mod = "111"
+							else o_uc_data_out;
+                     
   P_IO_EXT(5)     <= P_IO_PORTS(CONV_INTEGER(addr_port)).port_pin(0) when
                      master = '0' and addr_unit = my_addr else 'Z';
   

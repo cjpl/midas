@@ -338,9 +338,9 @@ unsigned char d;
 
 /*---- Power management --------------------------------------------*/
 
-bit trip_5V = 0, trip_24V = 0, trip_24V_old = 0, wrong_firmware = 0;
+bit trip_5V = 0, trip_24V = 0, wrong_firmware = 0;
+unsigned char trip_5V_box;
 extern unsigned char xdata n_box;
-unsigned char xdata trip_24V_addr[16];
 
 #define CPLD_FIRMWARE_REQUIRED 2
 
@@ -354,9 +354,6 @@ unsigned short d;
       return 1;
 
    return_status = 0;
-   if (!trip_24V)
-      for (i=0 ; i<16 ; i++)
-         trip_24V_addr[i] = 0;
 
    /* only 10 Hz */
    if (time() > last_pwr+10 || time() < last_pwr) {
@@ -367,34 +364,36 @@ unsigned short d;
          status = power_status(i);
 
          if ((status >> 4) != CPLD_FIRMWARE_REQUIRED) {
-            if (!wrong_firmware)
-               lcd_clear();
             led_blink(1, 1, 100);
-            lcd_goto(0, 0);
-            puts("Wrong CPLD firmware");
-            lcd_goto(0, 1);
-            if (i > 0) 
-              printf("Slave addr: %bd", i);
-            lcd_goto(0, 2);
-            printf("Req: %02bd != Act: %02bd", CPLD_FIRMWARE_REQUIRED, status >> 4);
+            if (!wrong_firmware) {
+               lcd_clear();
+               lcd_goto(0, 0);
+               puts("Wrong CPLD firmware");
+               lcd_goto(0, 1);
+               if (i > 0) 
+                 printf("Slave addr: %bd", i);
+               lcd_goto(0, 2);
+               printf("Req: %02bd != Act: %02bd", CPLD_FIRMWARE_REQUIRED, status >> 4);
+            }
             wrong_firmware = 1;
             return_status = 1;
          }
 
-         monitor_read(0, 0x01, 0, a, 3); // Read alarm register
+         monitor_read(i, 0x01, 0, a, 3); // Read alarm register
          if (a[0] & 0x08) {
-            if (!trip_24V)
-               lcd_clear();
             led_blink(1, 1, 100);
-            lcd_goto(0, 0);
-            printf("Overcurrent >1.5A on");
-            lcd_goto(0, 1);
-            printf("   24V output !!!   ");
-            lcd_goto(0, 2);
-            if (i > 0) 
-               printf("   Slave addr: %bd", i);
-            lcd_goto(15, 3);
-            printf("RESET");
+            if (!trip_24V) {
+               lcd_clear();
+               lcd_goto(0, 0);
+               printf("Overcurrent >1.5A on");
+               lcd_goto(0, 1);
+               printf("   24V output !!!   ");
+               lcd_goto(0, 2);
+               if (i > 0) 
+                  printf("   Slave addr: %bd", i);
+               lcd_goto(15, 3);
+               printf("RESET");
+            }
             trip_24V = 1;
          
             if (button(3)) {
@@ -408,25 +407,30 @@ unsigned short d;
          }
 
          if (time() > 100) { // wait for first conversion
-            monitor_read(0, 0x02, 3, (char *)&d, 2); // Read +5V ext
+            monitor_read(i, 0x02, 3, (char *)&d, 2); // Read +5V ext
             if (2.5*(d >> 4)*2.5/4096.0 < 4.5) {
-               if (!trip_5V)
+               if (!trip_5V) {
                   lcd_clear();
-               led_blink(1, 1, 100);
-               lcd_goto(0, 0);
-               printf("Overcurrent >0.5A on");
-               lcd_goto(0, 1);
-               printf("    5V output !!!");
-               lcd_goto(0, 2);
-               if (i > 0) 
-                 printf("    Slave addr: %bd", i);
+                  led_blink(1, 1, 100);
+                  lcd_goto(0, 0);
+                  printf("Overcurrent >0.5A on");
+                  lcd_goto(0, 1);
+                  printf("    5V output !!!");
+                  lcd_goto(0, 2);
+                  if (i > 0) 
+                     printf("    Slave addr: %bd", i);
+               }
+               lcd_goto(0, 3);
+               printf("    U = %1.2f V", 2.5*(d >> 4)*2.5/4096.0);
                trip_5V = 1;
+               trip_5V_box = 1;
                return_status = 1;
-            } else if (trip_5V) {
+            } else if (trip_5V && trip_5V_box == i) {
                trip_5V = 0;
                lcd_clear();
             }
-          }
+         }
+
       }
    } else if (trip_24V || trip_5V || wrong_firmware)
       return_status = 1; // do not go into application_display
