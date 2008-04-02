@@ -136,7 +136,7 @@ void serial_int1(void) interrupt 20
 {
    if (SCON1 & 0x02) {          // TI1
 
-#if defined(SCS_220) || defined(SCS_1000) || defined(SCS_1001) || defined(SCS_2000)
+#if defined(SCS_220) || defined(SCS_1000) || defined(SCS_1001) || defined(SCS_2000) || defined(SCS_2001)
       if (sbuf_wp == sbuf_rp)
          RS485_SEC_ENABLE = 0;
 #endif
@@ -171,7 +171,7 @@ void rs232_output(void)
 {
    if (sbuf_wp != sbuf_rp && ti1_shadow == 1) {
       ti1_shadow = 0;
-#if defined(SCS_220) || defined(SCS_1000) || defined(SCS_1001) || defined(SCS_2000)
+#if defined(SCS_220) || defined(SCS_1000) || defined(SCS_1001) || defined(SCS_2000) || defined(SCS_2001)
       RS485_SEC_ENABLE = 1;
 #endif
 
@@ -1484,7 +1484,7 @@ bit lcd_present;
 
 #define LCD P2                  // LCD display connected to port2
 
-#if defined (SCS_2000)  // new SCS_2000, different from prototype!
+#if defined (SCS_2000)  || defined(SCS_2001)
 sbit LCD_RS  = P1 ^ 4;
 sbit LCD_R_W = P1 ^ 5;
 sbit LCD_E   = P1 ^ 6;
@@ -1522,7 +1522,7 @@ void lcd_out(unsigned char d, bit df)
 #if defined(CPU_C8051F120)
    SFRPAGE = CONFIG_PAGE;
    P2MDOUT |= 0x0F;
-#ifdef SCS_2000
+#if defined(SCS_2000) || defined(SCS_2001)
    LCD_1D = 0;                  // b to a for data
 #endif
 #else
@@ -1543,7 +1543,7 @@ void lcd_out(unsigned char d, bit df)
    delay_us(1);
    LCD_R_W = 0;
 #if defined(CPU_C8051F120)
-#ifdef SCS_2000
+#if defined(SCS_2000) || defined(SCS_2001)
    LCD_1D = 1;                  // a to b for data
 #endif
    SFRPAGE = CONFIG_PAGE;
@@ -1576,7 +1576,8 @@ void lcd_out(unsigned char d, bit df)
 
 /*------------------------------------------------------------------*/
 
-#if defined(SCS_900) || defined(SCS_1001) || defined(SCS_2000) // 4-line LCD display with KS0078 controller
+#if defined(SCS_900) || defined(SCS_1001) || defined(SCS_2000) || defined(SCS_2001) 
+// 4-line LCD display with KS0078 controller
 
 void lcd_nibble(unsigned char d)
 {
@@ -1610,7 +1611,7 @@ void lcd_setup()
 #if defined(CPU_C8051F120)
    SFRPAGE = CONFIG_PAGE;
    P2MDOUT = 0xFF;             // all push-pull
-#ifdef SCS_2000
+#if defined(SCS_2000) || defined(SCS_2001)
    P1MDOUT |= 0x03;
    LCD_1D = 1;                 // a to b for data
    LCD_2D = 1;                 // a to b for control
@@ -1619,7 +1620,8 @@ void lcd_setup()
    PRT2CF = 0xFF;              // all push-pull
 #endif
 
-#if defined(SCS_900) || defined(SCS_1001) || defined(SCS_2000) // 4-line LCD display with KS0078 controller
+#if defined(SCS_900) || defined(SCS_1001) || defined(SCS_2000)  || defined(SCS_2001)
+// 4-line LCD display with KS0078 controller
 
    LCD &= ~(0xFE);
    LCD |= 0x20;  // set 4-bit interface
@@ -1635,7 +1637,7 @@ void lcd_setup()
 #if defined(CPU_C8051F120)
    SFRPAGE = CONFIG_PAGE;
    P2MDOUT |= 0x0F;
-#ifdef SCS_2000
+#if defined(SCS_2000) || defined(SCS_2001)
    LCD_1D = 0;                  // b to a for data
 #endif
 #else
@@ -1734,7 +1736,7 @@ void lcd_cursor(unsigned char flag)
 void lcd_goto(char x, char y)
 {
 
-#if defined(SCS_900) || defined(SCS_1001) || defined(SCS_2000)
+#if defined(SCS_900) || defined(SCS_1001) || defined(SCS_2000) || defined(SCS_2001)
    /* goto position x(0..19), y(0..3) */
    lcd_out((x & 0x1F) | (0x80) | ((y & 0x03) << 5), 0);
 #else
@@ -1803,9 +1805,15 @@ unsigned char rtc_read_byte(unsigned char adr)
 
    RTC_CLK = 0;
 
+#ifdef SCS_2000
    SFRPAGE = DAC1_PAGE;
    DAC1L = 0xFF;
    DAC1H = 0x0F;
+#else
+   SFRPAGE = DAC0_PAGE;
+   DAC0L = 0xFF;
+   DAC0H = 0x0F;
+#endif
 
    delay_us(10); // wait for DAC
 
@@ -1831,9 +1839,15 @@ unsigned char rtc_read_byte(unsigned char adr)
       m <<= 1;
    }
 
+#ifdef SCS_2000
    SFRPAGE = DAC1_PAGE;
    DAC1L = 0;
    DAC1H = 0;
+#else
+   SFRPAGE = DAC0_PAGE;
+   DAC0L = 0;
+   DAC0H = 0;
+#endif
 
    delay_us(10); // wait for DAC
 
@@ -1848,9 +1862,15 @@ void rtc_read(unsigned char d[6])
 
    RTC_CLK = 0;
 
+#ifdef SCS_2000
    SFRPAGE = DAC1_PAGE;
    DAC1L = 0xFF;
    DAC1H = 0x0F;
+#else
+   SFRPAGE = DAC0_PAGE;
+   DAC0L = 0xFF;
+   DAC0H = 0x0F;
+#endif
 
    delay_us(10); // wait for DAC
 
@@ -1886,9 +1906,15 @@ void rtc_read(unsigned char d[6])
         d[2] = b;
    }
 
+#ifdef SCS_2000
    SFRPAGE = DAC1_PAGE;
    DAC1L = 0;
    DAC1H = 0;
+#else
+   SFRPAGE = DAC0_PAGE;
+   DAC0L = 0;
+   DAC0H = 0;
+#endif
 
    delay_us(10); // wait for DAC
 }
@@ -1898,9 +1924,16 @@ void rtc_read(unsigned char d[6])
 void rtc_write_byte(unsigned char adr, unsigned char d)
 {
    RTC_CLK = 0;
+
+#ifdef SCS_2000
    SFRPAGE = DAC1_PAGE;
    DAC1L = 0xFF;
    DAC1H = 0x0F;
+#else
+   SFRPAGE = DAC0_PAGE;
+   DAC0L = 0xFF;
+   DAC0H = 0x0F;
+#endif
 
    delay_us(10); // wait for DAC
 
@@ -1911,9 +1944,15 @@ void rtc_write_byte(unsigned char adr, unsigned char d)
    rtc_output(adr);
    rtc_output(d);
 
+#ifdef SCS_2000
    SFRPAGE = DAC1_PAGE;
    DAC1L = 0;
    DAC1H = 0;
+#else
+   SFRPAGE = DAC0_PAGE;
+   DAC0L = 0;
+   DAC0H = 0;
+#endif
 
    delay_us(10); // wait for DAC
 }
@@ -1923,9 +1962,16 @@ void rtc_write_byte(unsigned char adr, unsigned char d)
 void rtc_write(unsigned char d[6])
 {
    RTC_CLK = 0;
+
+#ifdef SCS_2000
    SFRPAGE = DAC1_PAGE;
    DAC1L = 0xFF;
    DAC1H = 0x0F;
+#else
+   SFRPAGE = DAC0_PAGE;
+   DAC0L = 0xFF;
+   DAC0H = 0x0F;
+#endif
 
    delay_us(10); // wait for DAC
 
@@ -1944,9 +1990,15 @@ void rtc_write(unsigned char d[6])
    rtc_output(d[2]);     // year
    rtc_output(0);        // WP
 
+#ifdef SCS_2000
    SFRPAGE = DAC1_PAGE;
    DAC1L = 0;
    DAC1H = 0;
+#else
+   SFRPAGE = DAC0_PAGE;
+   DAC0L = 0;
+   DAC0H = 0;
+#endif
 
    delay_us(10); // wait for DAC
 }
