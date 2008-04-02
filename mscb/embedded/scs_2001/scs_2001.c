@@ -32,7 +32,7 @@ extern void lcd_menu(void);
 
 /*---- Port definitions ----*/
 
-bit b0, b1, b2, b3, master, module_list, beeper_on;
+bit b0, b1, b2, b3, master, module_list, beeper_on, main_startup;
 
 /*---- Define variable parameters returned to CMD_GET_INFO command ----*/
 
@@ -84,10 +84,11 @@ void user_init(unsigned char init)
 
    /* issue an initial reset */
    for (i=0 ; i<N_PORT/8 ; i++)
-      power_24V(i, 1);
+      monitor_init(i);
 
    /* check if master or slave */
    master = is_master();
+   main_startup = 1;
 
    if (master) {
       /* initial EEPROM value */
@@ -129,8 +130,12 @@ void user_init(unsigned char init)
    puts("** ");
    puts(sys_info.node_name);
    puts(" ** ");
+   
    lcd_goto(0, 1);
-   printf("   Address:  %04X", sys_info.node_addr);
+   if (master)
+      printf("   Address:  %04X", sys_info.node_addr);
+   else
+      printf("     Slave mode ");
    lcd_goto(0, 2);
    strncpy(str, svn_rev_2000 + 6, 6);
    *strchr(str, ' ') = 0;
@@ -342,7 +347,11 @@ unsigned char xdata trip_24V_addr[16];
 unsigned char power_management(void)
 {
 static unsigned long xdata last_pwr;
-unsigned char status, return_status, i, j;
+unsigned char status, return_status, i, a[3];
+unsigned short d;
+
+   if (!master)
+      return 1;
 
    return_status = 0;
    if (!trip_24V)
@@ -356,7 +365,7 @@ unsigned char status, return_status, i, j;
       for (i=0 ; i<n_box ; i++) {
 
          status = power_status(i);
-         
+
          if ((status >> 4) != CPLD_FIRMWARE_REQUIRED) {
             if (!wrong_firmware)
                lcd_clear();
@@ -372,61 +381,52 @@ unsigned char status, return_status, i, j;
             return_status = 1;
          }
 
-         if ((status & 0x01) == 0) {
-            if (!trip_5V)
+         monitor_read(0, 0x01, 0, a, 3); // Read alarm register
+         if (a[0] & 0x08) {
+            if (!trip_24V)
                lcd_clear();
             led_blink(1, 1, 100);
             lcd_goto(0, 0);
-            printf("Overcurrent >0.5A on");
-            lcd_goto(0, 1);
-            printf("    5V output !!!   ");
-            lcd_goto(0, 2);
-            if (i > 0) 
-              printf("    Slave addr: %bd", i);
-            trip_5V = 1;
-            return_status = 1;
-         } else if (trip_5V) {
-            trip_5V = 0;
-            lcd_clear();
-         }
-         
-         if ((status & 0x02) == 0 || trip_24V_addr[i]) {
-            if (!trip_24V_addr[i]) {
-               /* check again to avoid spurious trips */
-               status = power_status(i);
-               if ((status & 0x02) > 0)
-                  continue;
-
-               /* turn off 24 V */
-               power_24V(i, 0);
-               trip_24V = 1;
-               trip_24V_addr[i] = 1;
-               lcd_clear();
-            }
-            led_blink(1, 1, 100);
-            lcd_goto(0, 0);
-            printf("   Overcurrent on   ");
+            printf("Overcurrent >1.5A on");
             lcd_goto(0, 1);
             printf("   24V output !!!   ");
             lcd_goto(0, 2);
             if (i > 0) 
-              printf("   Slave addr: %bd", i);
-            lcd_goto(0, 3);
-            printf("RESET               ");
+               printf("   Slave addr: %bd", i);
+            lcd_goto(15, 3);
+            printf("RESET");
+            trip_24V = 1;
          
-            if (button(0)) {
-               for (j=0 ; j<16 ; j++)
-                  if (trip_24V_addr[j]) {
-                     power_24V(j, 1);   // turn on power
-                     trip_24V_addr[j] = 0;
-                  }
+            if (button(3)) {
+               monitor_clear(i);
                trip_24V = 0;
-               while (button(0)); // wait for button to be released
+               while (button(3));  // wait for button to be released
                lcd_clear();
             }
 
             return_status = 1;
          }
+
+         if (time() > 100) { // wait for first conversion
+            monitor_read(0, 0x02, 3, (char *)&d, 2); // Read +5V ext
+            if (2.5*(d >> 4)*2.5/4096.0 < 4.5) {
+               if (!trip_5V)
+                  lcd_clear();
+               led_blink(1, 1, 100);
+               lcd_goto(0, 0);
+               printf("Overcurrent >0.5A on");
+               lcd_goto(0, 1);
+               printf("    5V output !!!");
+               lcd_goto(0, 2);
+               if (i > 0) 
+                 printf("    Slave addr: %bd", i);
+               trip_5V = 1;
+               return_status = 1;
+            } else if (trip_5V) {
+               trip_5V = 0;
+               lcd_clear();
+            }
+          }
       }
    } else if (trip_24V || trip_5V || wrong_firmware)
       return_status = 1; // do not go into application_display
@@ -500,7 +500,6 @@ char xdata * pvardata;
    for (i=0 ; i<n_box ; i++) {
       beeper_on = 1;
       power_beeper(i, 1);
-      power_24V(i, 1);
    }
 
    /* set "variables" pointer to array in xdata */
@@ -675,11 +674,8 @@ unsigned char xdata i, n, j, col;
       last_index = 255;
    }
 
-   if (!master) {
-      lcd_goto(5, 1);
-      printf("SLAVE MODE");
+   if (!master)
       return 0;
-   }
 
    if (!module_list) {
       lcd_goto(0, 0);
@@ -688,6 +684,7 @@ unsigned char xdata i, n, j, col;
       puts("** ");
       puts(sys_info.node_name);
       puts(" ** ");
+      
       lcd_goto(0, 1);
       printf("   Address:  %04X", sys_info.node_addr);
 
@@ -941,7 +938,22 @@ float xdata value;
       b3 = button(3);
    
       /* manage menu on LCD display */
-      lcd_menu();
+      if (master)
+         lcd_menu();
+      else {
+      
+         if (time() > 300) {
+            if (main_startup) {
+               main_startup = 0;
+               lcd_clear();
+            }
+
+            lcd_goto(5, 1);
+            printf("SLAVE MODE");
+            lcd_goto(5, 2);
+            printf("Address %2bd", slave_addr());
+         }
+      }
    }
 
    /* turn off beeper after 100 ms */
