@@ -42,14 +42,26 @@ signal i_uc_ale       : std_logic;
 signal i_uc_strobe    : std_logic;
 signal i_uc_data_in   : std_logic;
 
+-- serial signals going to slave units
+signal i_sl_clk       : std_logic;
+signal i_sl_ale       : std_logic;
+signal i_sl_strobe    : std_logic;
+signal o_sl_data_out  : std_logic;
+
+-- serial registers
 signal ser_reg_in     : std_logic_vector(9 downto 0);
 signal ser_reg_out    : std_logic_vector(7 downto 0);
+signal ser_reg_slave  : std_logic_vector(7 downto 0);
 signal o_uc_data_out  : std_logic;
 
-signal addr_unit    : std_logic_vector(3 downto 0);
-signal addr_port    : std_logic_vector(2 downto 0);
-signal my_addr      : std_logic_vector(3 downto 0);
-signal master       : std_logic;
+-- internal clock counter
+signal counter        : std_logic_vector(31 downto 0);
+
+-- various variables
+signal addr_unit      : std_logic_vector(3 downto 0);
+signal addr_port      : std_logic_vector(2 downto 0);
+signal my_addr        : std_logic_vector(3 downto 0);
+signal master         : std_logic;
 
 -- address modifiers:
 -- 0  000  AM_READ_PORT
@@ -63,6 +75,7 @@ signal master       : std_logic;
 --   1       pwr_status
 -- 5  101  AM_RW_SERIAL
 -- 6  110  AM_RW_EEPROM
+-- 7  111  AM_RW_MONITOR
 signal addr_mod     : std_logic_vector(2 downto 0);
 
 type type_port_reg is array (const_no_ports-1 downto 0) of std_logic_vector(7 downto 0);
@@ -71,9 +84,8 @@ signal port_reg     : type_port_reg;
 -- '1' is ouput, '0' is input
 signal port_dir     : std_logic_vector(7 downto 0) := "00000000";                                        
 
--- bit0: 24V enable  read/write
--- bit1: beeper      read/write
-signal pwr_status   : std_logic_vector(1 downto 0) := "00";
+-- bit0: beeper      read/write
+signal pwr_status   : std_logic := '0';
 
 begin
     
@@ -93,9 +105,11 @@ begin
   i_uc_strobe  <= P_I_UC_STROBE  when master = '1' else P_IO_EXT(2);
   i_uc_data_in <= P_I_UC_DATA_IN when master = '1' else P_IO_EXT(3); 
   
-  P_O_UC_DATA_OUT <= '1' when master = '0'
+  P_O_UC_DATA_OUT <= o_sl_data_out when master = '0'
                      else P_IO_EXT(4) when 
                      addr_unit /= my_addr
+							else P_I_DOUT_MON when
+							addr_mod = "111"
                      else o_uc_data_out when
                      addr_mod /= "101" and addr_mod /= "110"
                      else P_I_SDO;
@@ -164,16 +178,15 @@ begin
                ser_reg_out <= port_dir;
             elsif (addr_port = "001") then  -- 1
                ser_reg_out(7 downto 4) <= firmware_version;
-					ser_reg_out(3 downto 2) <= "00";
-               ser_reg_out(1 downto 0) <= pwr_status;    
+					ser_reg_out(3 downto 1) <= "000";
+               ser_reg_out(0) <= pwr_status;    
             end if;   
           elsif (addr_mod = "100") then
             -- write CSR
             if (addr_port = "000") then     -- 0
                port_dir <= ser_reg_in(7 downto 0);
             elsif (addr_port = "001") then  -- 1
-               pwr_status(0) <= ser_reg_in(0); -- 24V enable
-               pwr_status(1) <= ser_reg_in(1); -- beeper
+               pwr_status <= ser_reg_in(0); -- beeper
             end if;   
           end if;
         
@@ -188,6 +201,33 @@ begin
           -- read data from uC
           ser_reg_in <= ser_reg_in(8 downto 0) & i_uc_data_in;
         
+        end if;  
+      end if;
+    end if;
+  end process;
+
+  ------------------------------------------------
+  -- serial communication to read slave address --
+  ------------------------------------------------
+
+  i_sl_clk    <= P_I_UC_CLK     when master = '0' else '0';
+  i_sl_strobe <= P_I_UC_STROBE  when master = '0' else '0';
+  i_sl_ale    <= P_I_UC_ALE     when master = '0' else '0';
+
+  process(i_sl_clk)
+  begin
+    if rising_edge(i_sl_clk) then
+      if i_sl_ale = '0' then
+        if (i_sl_strobe = '1') then
+            ser_reg_slave(7)          <= '1'; -- indicate slave mode
+            ser_reg_slave(6 downto 4) <= firmware_version(2 downto 0);
+            ser_reg_slave(3 downto 0) <= my_addr;
+        else
+          -- send data to uC
+          o_sl_data_out <= ser_reg_slave(7);
+          
+          -- rotate serial register
+          ser_reg_slave <= ser_reg_slave(6 downto 0) & '0';
         end if;  
       end if;
     end if;
@@ -241,21 +281,43 @@ begin
   -- handle serial bus to MAX1253 power monitor --
   ------------------------------------------------
   
-  P_O_SCLK_MON <= '1';
-  P_O_CS_MON <= '1';
-  P_O_DIN_MON <= '0';
+  P_O_SCLK_MON    <= i_uc_clk when
+                     i_uc_ale = '0'
+							else '0';
+  P_O_DIN_MON     <= i_uc_data_in when
+                     i_uc_ale = '0'
+							else '0';
+  P_O_CS_MON      <= '0' when
+                     i_uc_ale = '0' and
+							i_uc_strobe = '0' and
+							addr_unit = my_addr and
+							addr_mod = "111"
+							else '1';
 
+  ------------------
+  -- quartz clock --
+  ------------------
+
+  -- enable quartz
+  P_O_CLKEN  <= '1';
+  
+  -- LED pulse generator
+  process(P_I_CLK)
+  begin
+    if rising_edge(P_I_CLK) then
+      counter <= counter+1;
+    end if;
+  end process;
+  
   -----------------------------
   -- handle power management --
   -----------------------------
   
   -- 24V enable
-  P_O_24V_EN <= pwr_status(0);
+  P_O_24V_EN <= P_I_INT_MON;
   
-  -- Beeper (on if low)
-  P_O_BEEPER <= not pwr_status(1);
-
-  -- disable quarz
-  P_O_CLKEN  <= '0';
+  -- Beeper (active low)
+  P_O_BEEPER <= not (((not P_I_INT_MON) and counter(24)) or 
+                       pwr_status);
 
 end Behavioral;
