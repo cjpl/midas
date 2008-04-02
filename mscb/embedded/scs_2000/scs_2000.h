@@ -45,6 +45,7 @@ unsigned char power_status(unsigned char addr) reentrant;
 void power_24V(unsigned char addr, unsigned char flag) reentrant;
 void power_beeper(unsigned char addr, unsigned char flag) reentrant;
 unsigned char is_master();
+unsigned char slave_addr();
 unsigned char is_present(unsigned char addr);
 
 /*---- Drivers -----------------------------------------------------*/
