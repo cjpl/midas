@@ -111,9 +111,9 @@ NAME_TABLE code unit_table[] = {
 /*------------------------------------------------------------------*/
 
 #ifdef SCS_2001
-unsigned char xdata n_sysvar = 13;
+#define N_SYSVAR 13
 #else
-unsigned char xdata n_sysvar = 6;
+#define N_SYSVAR 6
 #endif
 
 MSCB_INFO_VAR code sysvar[] = {
@@ -458,7 +458,7 @@ void lcd_menu()
 
       if (system_menu) {
          pvar = sysvar;
-         max_index = n_sysvar-1;
+         max_index = N_SYSVAR-1;
       } else {
          pvar = variables;
          max_index = n_variables-1;
@@ -646,7 +646,11 @@ void lcd_menu()
             }
 
             /* check for flash command */
+#ifdef SCS_2001
+            if (system_menu && var_index == 11) {
+#else
             if (system_menu && var_index == 4) {
+#endif
                flash_param = 1;
                _flkey = 0xF1;
                lcd_clear();
@@ -658,7 +662,11 @@ void lcd_menu()
             }
 
             /* check for reboot command */
+#ifdef SCS_2001
+            if (system_menu && var_index == 12) {
+#else
             if (system_menu && var_index == 5) {
+#endif
 #ifdef CPU_C8051F120
                SFRPAGE = LEGACY_PAGE;
 #endif
@@ -672,7 +680,7 @@ void lcd_menu()
               if (!system_menu)
                  var_index = n_variables-1;
               else
-                 var_index = n_sysvar-1;
+                 var_index = N_SYSVAR-1;
             } else
               var_index--;
             last_b2 = time();
@@ -682,7 +690,7 @@ void lcd_menu()
               if (!system_menu)
                  var_index = n_variables-1;
               else
-                 var_index = n_sysvar-1;
+                 var_index = N_SYSVAR-1;
             } else
               var_index--;
          }
@@ -690,7 +698,7 @@ void lcd_menu()
             last_b2 = 0;
 
          if (system_menu)
-            i = n_sysvar;
+            i = N_SYSVAR;
          else
             i = n_variables;
 
@@ -865,7 +873,7 @@ void lcd_menu()
                  if (!system_menu)
                     var_index = n_variables-1;
                  else
-                    var_index = n_sysvar-1;
+                    var_index = N_SYSVAR-1;
                } else
                  var_index--;
                last_b2 = time();
@@ -875,7 +883,7 @@ void lcd_menu()
                  if (!system_menu)
                     var_index = n_variables-1;
                  else
-                    var_index = n_sysvar-1;
+                    var_index = N_SYSVAR-1;
                } else
                  var_index--;
             }
@@ -883,7 +891,7 @@ void lcd_menu()
                last_b2 = 0;
 
             if (system_menu)
-               i = n_sysvar;
+               i = N_SYSVAR;
             else
                i = n_variables;
 
