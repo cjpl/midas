@@ -152,9 +152,9 @@ _nop_(); _nop_(); _nop_(); _nop_(); _nop_(); _nop_(); _nop_(); _nop_(); _nop_();
                           //              (SCS-2001: bit0: beeper)
 
 /* address port 0-7 in CPLD, with address modifier listed above */
-void address_port(unsigned char addr, unsigned char port_no, unsigned char am, unsigned char clk_level) reentrant
+void address_port(unsigned char addr, unsigned char port_no, unsigned char am, unsigned char clk_level)
 {
-unsigned char i;
+unsigned char xdata i;
 
    OPT_ALE = 1;
    OPT_CLK = 0;
@@ -189,9 +189,9 @@ unsigned char i;
 }
 
 /* write 8 bits to port output */
-void write_port(unsigned char addr, unsigned char port_no, unsigned char d) reentrant
+void write_port(unsigned char addr, unsigned char port_no, unsigned char d)
 {
-unsigned char i;
+unsigned char xdata i;
 
    address_port(addr, port_no, AM_WRITE_PORT, 0);
 
@@ -206,9 +206,9 @@ unsigned char i;
 }
 
 /* read 8 bits from port pins */
-void read_port(unsigned char addr, unsigned char port_no, unsigned char *pd) reentrant
+void read_port(unsigned char addr, unsigned char port_no, unsigned char *pd)
 {
-unsigned char i, d;
+unsigned char xdata i, d;
 
    address_port(addr, port_no, AM_READ_PORT, 0);
 
@@ -224,9 +224,9 @@ unsigned char i, d;
 }
 
 /* read 8 bits from port output register */
-void read_port_reg(unsigned char addr, unsigned char port_no, unsigned char *pd) reentrant
+void read_port_reg(unsigned char addr, unsigned char port_no, unsigned char *pd)
 {
-unsigned char i, d;
+unsigned char xdata i, d;
 
    address_port(addr, port_no, AM_READ_REG, 0);
 
@@ -242,9 +242,9 @@ unsigned char i, d;
 }
 
 /* write to CSR */
-void write_csr(unsigned char addr, unsigned char csr_no, unsigned char d) reentrant
+void write_csr(unsigned char addr, unsigned char csr_no, unsigned char d)
 {
-unsigned char i;
+unsigned char xdata i;
 
    address_port(addr, csr_no, AM_WRITE_CSR, 0);
 
@@ -259,9 +259,9 @@ unsigned char i;
 }
 
 /* read from CSR */
-void read_csr(unsigned char addr, unsigned char csr_no, unsigned char *pd) reentrant
+void read_csr(unsigned char addr, unsigned char csr_no, unsigned char *pd)
 {
-unsigned char i, d;
+unsigned char xdata i, d;
 
    address_port(addr, csr_no, AM_READ_CSR, 0);
 
@@ -277,19 +277,19 @@ unsigned char i, d;
 }
 
 /* check if module is plugged in */
-unsigned char module_present(unsigned char addr, unsigned char port_no) reentrant
+unsigned char module_present(unsigned char addr, unsigned char port_no)
 {
-unsigned char id;
+unsigned char xdata id;
 
    read_eeprom(addr, port_no, &id);
    return id > 0;
 }
 
 /* read 8 bits from eeprom on specific port */
-void read_eeprom(unsigned char addr, unsigned char port_no, unsigned char *pd) reentrant
+void read_eeprom(unsigned char addr, unsigned char port_no, unsigned char *pd)
 {
-unsigned char i;
-unsigned short d;
+unsigned char xdata i;
+unsigned short xdata d;
 
    address_port(addr, port_no, AM_RW_EEPROM, 0);
 
@@ -324,22 +324,25 @@ unsigned short d;
 }
 
 /* verify that certain module is plugged into specific port */
-unsigned char verify_module(unsigned char addr, unsigned char port_no, unsigned char id) reentrant
+unsigned char verify_module(unsigned char addr, unsigned char port_no, unsigned char id)
 {
-unsigned char real_id;
+unsigned char xdata real_id, xaddr, xport_no, xid;
 
-   if (!module_present(addr, port_no))
+   xaddr = addr;
+   xport_no = port_no;
+   xid = id;
+   if (!module_present(xaddr, xport_no))
       return 0;
 
-   read_eeprom(addr, port_no, &real_id);
-   return real_id == id;
+   read_eeprom(xaddr, xport_no, &real_id);
+   return real_id == xid;
 }
 
 /* write 8 bits to eeprom on specific port */
-void write_eeprom(unsigned char addr, unsigned char port_no, unsigned char d) reentrant
+void write_eeprom(unsigned char addr, unsigned char port_no, unsigned char d)
 {
-unsigned char i;
-unsigned short t;
+unsigned char xdata i;
+unsigned short xdata t;
 
    address_port(addr, port_no, AM_RW_EEPROM, 0);
 
@@ -398,7 +401,7 @@ unsigned short t;
 /* read 16 bits from MAX1253 power monitor */
 void monitor_read(unsigned char uaddr, unsigned char cmd, unsigned char raddr, unsigned char *pd, unsigned char nbytes)
 {
-unsigned char i;
+unsigned char xdata i;
 
    /* address monitor on unit address */
    address_port(uaddr, 0, AM_RW_MONITOR, 0);
@@ -465,7 +468,7 @@ unsigned char xdata i;
 /* write single byte to MAX1253 power monitor */
 void monitor_write(unsigned char d)
 {
-unsigned char i;
+unsigned char xdata i;
 
    /* write 8 bit data */
    for (i=0 ; i<8 ; i++) {
@@ -477,8 +480,8 @@ unsigned char i;
 
 void monitor_init(unsigned char addr)
 {
-   unsigned char i;
-   unsigned short d;
+   unsigned char xdata i;
+   unsigned short xdata d;
 
    monitor_address(addr, 0x07, 0); // Reset
 
@@ -527,7 +530,7 @@ void monitor_clear(unsigned char addr)
 
 void power_24V(unsigned char addr, unsigned char flag) reentrant
 {
-   unsigned char status;
+   unsigned char xdata status;
 
    read_csr(addr, CSR_PWR_STATUS, &status);
 
@@ -542,9 +545,9 @@ void power_24V(unsigned char addr, unsigned char flag) reentrant
 
 #endif
 
-void power_beeper(unsigned char addr, unsigned char flag) reentrant
+void power_beeper(unsigned char addr, unsigned char flag)
 {
-   unsigned char status;
+   unsigned char xdata status;
 
    read_csr(addr, CSR_PWR_STATUS, &status);
 
@@ -564,9 +567,9 @@ void power_beeper(unsigned char addr, unsigned char flag) reentrant
 
 }
 
-unsigned char power_status(unsigned char addr) reentrant
+unsigned char power_status(unsigned char addr)
 {
-   unsigned char status;
+   unsigned char xdata status;
 
    read_csr(addr, CSR_PWR_STATUS, &status);
    return status;
@@ -574,7 +577,7 @@ unsigned char power_status(unsigned char addr) reentrant
 
 unsigned char is_master()
 {
-   unsigned char status;
+   unsigned char xdata status;
 
    read_csr(0, CSR_PWR_STATUS, &status);
    if (status & 0x80)
@@ -585,7 +588,7 @@ unsigned char is_master()
 
 unsigned char slave_addr()
 {
-   unsigned char status;
+   unsigned char xdata status;
 
    read_csr(0, CSR_PWR_STATUS, &status);
    if (status & 0x80)
@@ -596,7 +599,7 @@ unsigned char slave_addr()
 
 unsigned char is_present(unsigned char addr)
 {
-   unsigned char status;
+   unsigned char xdata status;
 
    read_csr(addr, CSR_PWR_STATUS, &status);
    return status != 0xFF && status != 0x00;

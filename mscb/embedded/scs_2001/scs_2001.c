@@ -68,7 +68,7 @@ void scan_modules(void);
 
 /*---- User init function ------------------------------------------*/
 
-extern SYS_INFO sys_info;
+extern SYS_INFO idata sys_info;
 
 void user_init(unsigned char init)
 {
@@ -186,7 +186,7 @@ unsigned short xdata value;
 
 void emif_switch(unsigned char bk)
 {
-   unsigned char d;
+   unsigned char idata d;
 
    d = (bk & 0x07);      // A16-A18
    if (bk & 0x08)
@@ -289,7 +289,7 @@ void emif_test(unsigned char n_banks)
 unsigned char emif_init()
 {
 unsigned char xdata *p;
-unsigned char d;
+unsigned char idata d;
 
    /* setup EMIF interface and probe external memory */
    SFRPAGE = EMI0_PAGE;
@@ -339,7 +339,7 @@ unsigned char d;
 /*---- Power management --------------------------------------------*/
 
 bit trip_5V = 0, trip_24V = 0, wrong_firmware = 0;
-unsigned char trip_5V_box;
+unsigned char xdata trip_5V_box;
 extern unsigned char xdata n_box;
 
 #define CPLD_FIRMWARE_REQUIRED 2
@@ -347,8 +347,8 @@ extern unsigned char xdata n_box;
 unsigned char power_management(void)
 {
 static unsigned long xdata last_pwr;
-unsigned char status, return_status, i, a[3];
-unsigned short d;
+unsigned char xdata status, return_status, i, a[3];
+unsigned short xdata d;
 
    if (!master)
       return 1;
@@ -863,7 +863,7 @@ unsigned char xdata i, n, j, col;
 
 /*---- User loop function ------------------------------------------*/
 
-static unsigned char idata port_index = 0, first_var_index = 0;
+static unsigned char xdata port_index = 0, first_var_index = 0;
 static xdata unsigned long last_menu;
  
 void user_loop(void)
