@@ -95,7 +95,7 @@ unsigned char adc_chn = 0;
 
 /*---- User init function ------------------------------------------*/
 
-extern SYS_INFO sys_info;
+extern SYS_INFO idata sys_info;
 
 void user_init(unsigned char init)
 {

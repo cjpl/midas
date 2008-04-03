@@ -180,7 +180,7 @@ void ramp_hv(unsigned char channel);
 
 /*---- User init function ------------------------------------------*/
 
-extern SYS_INFO sys_info;
+extern SYS_INFO idata sys_info;
 
 void user_init(unsigned char init)
 {

@@ -212,7 +212,7 @@ void trip_enable(unsigned char channel, unsigned char flag);
 
 /*---- User init function ------------------------------------------*/
 
-extern SYS_INFO sys_info;
+extern SYS_INFO idata sys_info;
 
 void user_init(unsigned char init)
 {

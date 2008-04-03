@@ -82,7 +82,7 @@ void user_init(unsigned char init)
    /* red (upper) LED off by default */
    led_mode(1, 0);
 
-   /* issue an initial reset */
+   /* initialize power monitor */
    for (i=0 ; i<N_PORT/8 ; i++)
       monitor_init(i);
 
