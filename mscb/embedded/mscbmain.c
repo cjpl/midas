@@ -78,10 +78,10 @@ unsigned char idata n_out _at_ 0x81;
 unsigned char idata _cur_sub_addr, _var_size;
 
 #ifdef UART1_MSCB
-unsigned char var_to_send = 0xFF;
+unsigned char idata var_to_send = 0xFF;
 #endif
 
-SYS_INFO sys_info;
+SYS_INFO idata sys_info;
 
 #ifdef HAVE_RTC
 /* buffer for setting RTC */

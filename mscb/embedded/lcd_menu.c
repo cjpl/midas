@@ -21,7 +21,7 @@ extern unsigned char application_display(bit init);
 extern void user_write(unsigned char index) reentrant;
 extern unsigned char button(unsigned char i);
 extern MSCB_INFO_VAR *variables;
-extern SYS_INFO sys_info;
+extern SYS_INFO idata sys_info;
 extern bit flash_param;
 extern unsigned char idata _flkey;
 
@@ -111,9 +111,9 @@ NAME_TABLE code unit_table[] = {
 /*------------------------------------------------------------------*/
 
 #ifdef SCS_2001
-unsigned char n_sysvar = 13;
+unsigned char xdata n_sysvar = 13;
 #else
-unsigned char n_sysvar = 6;
+unsigned char xdata n_sysvar = 6;
 #endif
 
 MSCB_INFO_VAR code sysvar[] = {
@@ -146,7 +146,7 @@ static char xdata str[12];
 
 void display_value(MSCB_INFO_VAR *pvar, void *pd)
 {
-   unsigned char i, unit_len;
+   unsigned char xdata i, unit_len;
    
    if (pvar->unit == UNIT_STRING) {
       strncpy(str, (char *)pd, 10);
@@ -217,7 +217,7 @@ void display_value(MSCB_INFO_VAR *pvar, void *pd)
 
 void date_inc(unsigned char index, unsigned char pos, char delta)
 {
-   char d;
+   char xdata d;
 
    if (index == 0) {
       /* time */
@@ -726,7 +726,7 @@ static bit b0_old = 0, b1_old = 0, b2_old = 0, b3_old = 0;
 void lcd_menu()
 {
    MSCB_INFO_VAR * xdata pvar;
-   unsigned char idata i;
+   unsigned char xdata i;
 
    /* clear startup screen after 3 sec. */
    if (startup) {

@@ -16,7 +16,7 @@
 
 #ifdef HAVE_EEPROM
 
-extern SYS_INFO sys_info;               // for eeprom functions
+extern SYS_INFO idata sys_info;          // for eeprom functions
 extern MSCB_INFO_VAR *variables;
 
 #endif
@@ -109,7 +109,7 @@ unsigned char crc8_add(unsigned char crc, unsigned int c)
 
 \********************************************************************/
 {
-   unsigned char index;
+   unsigned char idata index;
 
    index = c ^ crc;
    return crc8_data[index];
@@ -189,7 +189,7 @@ void rs232_output(void)
 
 char getchar(void)
 {
-   char c;
+   char idata c;
 
    do {
       if (rbuf_wp != rbuf_rp) {
@@ -210,7 +210,7 @@ char getchar(void)
 
 char getchar_nowait(void)
 {
-   char c;
+   char idata c;
 
    if (rbuf_wp != rbuf_rp) {
       c = *rbuf_rp++;
@@ -226,8 +226,8 @@ char getchar_nowait(void)
 
 unsigned char gets_wait(char *str, unsigned char size, unsigned char timeout)
 {
-   unsigned long start;
-   unsigned char i;
+   unsigned idata long start;
+   unsigned idata char i;
    char c;
 
    start = time();
@@ -311,7 +311,7 @@ void uart1_init_buffer()
 #if defined(UART1_MSCB) // UART1 connected as master to MSCB slave bus
 
 bit ti1_shadow = 1;
-unsigned char n_recv;
+unsigned char idata n_recv;
 
 char xdata rbuf[64];
 
@@ -342,7 +342,7 @@ void serial_int1(void) interrupt 20
 
 unsigned char uart1_send(char *buffer, int size, unsigned char bit9)
 {
-unsigned char i;
+unsigned char idata i;
 
    /* empty receive buffer */
    n_recv = 0;
@@ -388,8 +388,8 @@ unsigned char i;
 
 unsigned char uart1_receive(char *buffer, int size)
 {
-unsigned char len;
-long start_time;
+unsigned char idata len;
+long idata start_time;
 
    start_time = time();
    len = 0;
@@ -663,9 +663,9 @@ void uart_init(unsigned char port, unsigned char baud)
 
 /*------------------------------------------------------------------*/
 
-static unsigned long _systime;
-static unsigned long _uptime;
-static unsigned char _uptime_cnt;
+static unsigned long idata _systime;
+static unsigned long idata _uptime;
+static unsigned char idata _uptime_cnt;
 
 /* LED structure */
 
@@ -718,7 +718,7 @@ void sysclock_reset(void)
 
 *********************************************************************/
 {
-   unsigned char i;
+   unsigned char idata i;
 
    _systime = 0;
    _uptime = 0;
@@ -979,9 +979,9 @@ unsigned long uptime(void)
 
 #ifdef USE_WATCHDOG
 #define DEFAULT_WATCHDOG_TIMEOUT 10    // 10 seconds
-unsigned short watchdog_timer;
-unsigned char  watchdog_timeout = DEFAULT_WATCHDOG_TIMEOUT;
-bit            watchdog_on;
+unsigned short idata watchdog_timer;
+unsigned char  idata watchdog_timeout = DEFAULT_WATCHDOG_TIMEOUT;
+bit                  watchdog_on;
 #endif
 
 void watchdog_refresh(unsigned char from_interrupt) reentrant
@@ -1602,7 +1602,7 @@ void lcd_nibble(unsigned char d)
 
 void lcd_setup()
 {
-   unsigned i=0;
+   unsigned idata i=0;
 
    LCD_E   = 0;
    LCD_R_W = 0;
@@ -1757,7 +1757,7 @@ char putchar(char c)
 /*------------------------------------------------------------------*/
 
 void lcd_puts(char *str)
-{
+{            
    while (*str)
       lcd_out(*str++, 1);
 }
@@ -1784,7 +1784,7 @@ sbit RTC_CLK = P1 ^ 3;
 
 void rtc_output(unsigned char d)
 {
-   unsigned char i;
+   unsigned char idata i;
 
    for (i=0 ; i<8 ; i++) {
       RTC_IO = d & 0x01;
@@ -2084,7 +2084,7 @@ void rtc_print()
 
 unsigned char rtc_present()
 {
-   unsigned char d;
+   unsigned char idata d;
 
    d = rtc_read_byte(0);
    return d != 0xFF;
