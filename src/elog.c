@@ -78,11 +78,11 @@ Submit an ELog entry.
 @param tag_size     Maximum size of tag.
 @return EL_SUCCESS
 */
-INT el_submit(int run, char *author, char *type, char *syst, char *subject,
-              char *text, char *reply_to, char *encoding,
-              char *afilename1, char *buffer1, INT buffer_size1,
-              char *afilename2, char *buffer2, INT buffer_size2,
-              char *afilename3, char *buffer3, INT buffer_size3, char *tag, INT tag_size)
+INT el_submit(int run, const char *author, const char *type, const char *syst, const char *subject,
+              const char *text, const char *reply_to, const char *encoding,
+              const char *afilename1, char *buffer1, INT buffer_size1,
+              const char *afilename2, char *buffer2, INT buffer_size2,
+              const char *afilename3, char *buffer3, INT buffer_size3, char *tag, INT tag_size)
 {
    if (rpc_is_remote())
       return rpc_call(RPC_EL_SUBMIT, run, author, type, syst, subject,
@@ -98,7 +98,8 @@ INT el_submit(int run, char *author, char *type, char *syst, char *subject,
           start_str[80], end_str[80], last[80], date[80], thread[80], attachment[256];
       HNDLE hDB;
       time_t now;
-      char message[10000], *p, *buffer = NULL;
+      char message[10000], *p;
+      char *buffer = NULL;
       BOOL bedit;
 
       cm_get_experiment_database(&hDB, NULL);
