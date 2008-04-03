@@ -528,7 +528,7 @@ void monitor_clear(unsigned char addr)
 
 #ifdef SCS_2000
 
-void power_24V(unsigned char addr, unsigned char flag) reentrant
+void power_24V(unsigned char addr, unsigned char flag)
 {
    unsigned char xdata status;
 
