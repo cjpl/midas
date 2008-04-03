@@ -1,12 +1,12 @@
 /********************************************************************\
 
-  Name:         scs_2000.c
+  Name:         scs_2001.c
   Created by:   Stefan Ritt
 
 
-  Contents:     General-purpose framework for SCS-2000 control unit.
+  Contents:     General-purpose framework for SCS-2001 control unit.
 
-  $Id: scs_2000.c 4147 2008-03-31 13:35:08Z ritt@PSI.CH $
+  $Id: scs_2001.c 4147 2008-03-31 13:35:08Z ritt@PSI.CH $
 
 \********************************************************************/
 
