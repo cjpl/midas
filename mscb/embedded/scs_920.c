@@ -74,7 +74,7 @@ void write_adc(unsigned char a, unsigned char d);
 
 /*---- User init function ------------------------------------------*/
 
-extern SYS_INFO sys_info;
+extern SYS_INFO idata sys_info;
 
 void user_init(unsigned char init)
 {

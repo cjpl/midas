@@ -21,7 +21,7 @@ extern bit FREEZE_MODE;
 extern bit DEBUG_MODE;
 extern bit flash_param; 
 extern unsigned char idata _flkey;
-extern SYS_INFO sys_info;
+extern SYS_INFO idata sys_info;
 
 char code node_name[] = "BTS";
 char code svn_revision[] = "$Id: scs_1001_bts.c 3083 2006-04-26 14:19:48Z ritt $";

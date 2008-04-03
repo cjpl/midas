@@ -38,7 +38,7 @@ MSCB_INFO_VAR code variables[] = {
    0
 };
 
-SYS_INFO sys_info;
+SYS_INFO idata sys_info;
 
 /*------------------------------------------------------------------*/
 
