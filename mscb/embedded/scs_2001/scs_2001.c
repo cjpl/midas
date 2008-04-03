@@ -485,7 +485,7 @@ char xdata * pvardata;
 
    /* do memory test on cold start */
    SFRPAGE = LEGACY_PAGE;
-   if (memsize > 0 /*&& (RSTSRC & 0x02) > 0 ##*/) {
+   if (memsize > 0 && (RSTSRC & 0x02) > 0) {
       emif_test(memsize);
       sysclock_reset();
    }
