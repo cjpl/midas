@@ -803,11 +803,11 @@ Open an online database
         DB_MEMSIZE_MISMATCH, DB_NO_MUTEX, DB_INVALID_PARAM,
         RPC_NET_ERROR
 */
-INT db_open_database(char *database_name, INT database_size,
-                     HNDLE * hDB, char *client_name)
+INT db_open_database(const char *xdatabase_name, INT database_size,
+                     HNDLE * hDB, const char *client_name)
 {
    if (rpc_is_remote())
-      return rpc_call(RPC_DB_OPEN_DATABASE, database_name, database_size,
+      return rpc_call(RPC_DB_OPEN_DATABASE, xdatabase_name, database_size,
                       hDB, client_name);
 
 #ifdef LOCAL_ROUTINES
@@ -823,15 +823,15 @@ INT db_open_database(char *database_name, INT database_size,
       FREE_DESCRIP *pfree;
       BOOL call_watchdog;
       DWORD timeout;
+      char database_name[NAME_LENGTH];
+
+      /* restrict name length */
+      strlcpy(database_name, xdatabase_name, NAME_LENGTH);
 
       if (database_size < 0 || database_size > 10E7) {
          cm_msg(MERROR, "db_open_database", "invalid database size");
          return DB_INVALID_PARAM;
       }
-
-      /* restrict name length */
-      if (strlen(database_name) >= NAME_LENGTH)
-         database_name[NAME_LENGTH] = 0;
 
       /* allocate new space for the new database descriptor */
       if (_database_entries == 0) {
@@ -1347,7 +1347,7 @@ INT db_close_all_databases(void)
 }
 
 /*------------------------------------------------------------------*/
-INT db_set_client_name(HNDLE hDB, char *client_name)
+INT db_set_client_name(HNDLE hDB, const char *client_name)
 /********************************************************************\
 
   Routine: db_set_client_name
@@ -1496,7 +1496,7 @@ INT db_protect_database(HNDLE hDB)
 
 /*---- helper routines ---------------------------------------------*/
 
-char *extract_key(char *key_list, char *key_name, int key_name_length)
+const char *extract_key(const char *key_list, char *key_name, int key_name_length)
 {
    int i = 0;
 
@@ -1540,7 +1540,7 @@ Create a new key in a database
 @param type        Type of key, one of TID_xxx (see @ref Midas_Data_Types)
 @return DB_SUCCESS, DB_INVALID_HANDLE, DB_INVALID_PARAM, DB_FULL, DB_KEY_EXIST, DB_NO_ACCESS
 */
-INT db_create_key(HNDLE hDB, HNDLE hKey, char *key_name, DWORD type)
+INT db_create_key(HNDLE hDB, HNDLE hKey, const char *key_name, DWORD type)
 {
    if (rpc_is_remote())
       return rpc_call(RPC_DB_CREATE_KEY, hDB, hKey, key_name, type);
@@ -1550,7 +1550,8 @@ INT db_create_key(HNDLE hDB, HNDLE hKey, char *key_name, DWORD type)
       DATABASE_HEADER *pheader;
       KEYLIST *pkeylist;
       KEY *pkey, *pprev_key, *pkeyparent;
-      char *pkey_name, str[MAX_STRING_LENGTH];
+      const char *pkey_name;
+      char str[MAX_STRING_LENGTH];
       INT i;
 
       if (hDB > _database_entries || hDB <= 0) {
@@ -1779,7 +1780,7 @@ Create a link to a key or set the destination of and existing link.
 @param destination   Destination of link in the form "/key/key/key"
 @return DB_SUCCESS, DB_INVALID_HANDLE, DB_FULL, DB_KEY_EXIST, DB_NO_ACCESS
 */
-INT db_create_link(HNDLE hDB, HNDLE hKey, char *link_name, char *destination)
+INT db_create_link(HNDLE hDB, HNDLE hKey, const char *link_name, const char *destination)
 {
    HNDLE hkey;
    int status;
@@ -2012,7 +2013,7 @@ db_find_key(hdb, hkey, "Run number", &hsubkey);
 @param subhKey Returned handle of key, zero if key cannot be found.
 @return DB_SUCCESS, DB_INVALID_HANDLE, DB_NO_ACCESS, DB_NO_KEY
 */
-INT db_find_key(HNDLE hDB, HNDLE hKey, char *key_name, HNDLE * subhKey)
+INT db_find_key(HNDLE hDB, HNDLE hKey, const char *key_name, HNDLE * subhKey)
 {
    if (rpc_is_remote())
       return rpc_call(RPC_DB_FIND_KEY, hDB, hKey, key_name, subhKey);
@@ -2022,7 +2023,8 @@ INT db_find_key(HNDLE hDB, HNDLE hKey, char *key_name, HNDLE * subhKey)
       DATABASE_HEADER *pheader;
       KEYLIST *pkeylist;
       KEY *pkey;
-      char *pkey_name, str[MAX_STRING_LENGTH];
+      const char *pkey_name;
+      char str[MAX_STRING_LENGTH];
       INT i, status;
 
       *subhKey = 0;
@@ -2171,7 +2173,7 @@ INT db_find_key(HNDLE hDB, HNDLE hKey, char *key_name, HNDLE * subhKey)
 #ifndef DOXYGEN_SHOULD_SKIP_THIS
 
 /*------------------------------------------------------------------*/
-INT db_find_key1(HNDLE hDB, HNDLE hKey, char *key_name, HNDLE * subhKey)
+INT db_find_key1(HNDLE hDB, HNDLE hKey, const char *key_name, HNDLE * subhKey)
 /********************************************************************\
 
   Routine: db_find_key1
@@ -2202,7 +2204,8 @@ INT db_find_key1(HNDLE hDB, HNDLE hKey, char *key_name, HNDLE * subhKey)
       DATABASE_HEADER *pheader;
       KEYLIST *pkeylist;
       KEY *pkey;
-      char *pkey_name, str[MAX_STRING_LENGTH];
+      const char *pkey_name;
+      char str[MAX_STRING_LENGTH];
       INT i;
 
       *subhKey = 0;
@@ -2316,7 +2319,7 @@ INT db_find_key1(HNDLE hDB, HNDLE hKey, char *key_name, HNDLE * subhKey)
 }
 
 /*------------------------------------------------------------------*/
-INT db_find_link(HNDLE hDB, HNDLE hKey, char *key_name, HNDLE * subhKey)
+INT db_find_link(HNDLE hDB, HNDLE hKey, const char *key_name, HNDLE * subhKey)
 /********************************************************************\
 
   Routine: db_find_link
@@ -2351,7 +2354,8 @@ INT db_find_link(HNDLE hDB, HNDLE hKey, char *key_name, HNDLE * subhKey)
       DATABASE_HEADER *pheader;
       KEYLIST *pkeylist;
       KEY *pkey;
-      char *pkey_name, str[MAX_STRING_LENGTH];
+      const char *pkey_name;
+      char str[MAX_STRING_LENGTH];
       INT i;
 
       *subhKey = 0;
@@ -2477,7 +2481,7 @@ INT db_find_link(HNDLE hDB, HNDLE hKey, char *key_name, HNDLE * subhKey)
 }
 
 /*------------------------------------------------------------------*/
-INT db_find_link1(HNDLE hDB, HNDLE hKey, char *key_name, HNDLE * subhKey)
+INT db_find_link1(HNDLE hDB, HNDLE hKey, const char *key_name, HNDLE * subhKey)
 /********************************************************************\
 
   Routine: db_find_link1
@@ -2508,7 +2512,8 @@ INT db_find_link1(HNDLE hDB, HNDLE hKey, char *key_name, HNDLE * subhKey)
       DATABASE_HEADER *pheader;
       KEYLIST *pkeylist;
       KEY *pkey;
-      char *pkey_name, str[MAX_STRING_LENGTH];
+      const char *pkey_name;
+      char str[MAX_STRING_LENGTH];
       INT i;
 
       *subhKey = 0;
@@ -2961,7 +2966,7 @@ INT level1;
 @param type Type of key, one of TID_xxx (see @ref Midas_Data_Types)
 @return DB_SUCCESS, DB_INVALID_HANDLE, DB_NO_ACCESS, DB_TYPE_MISMATCH
 */
-INT db_set_value(HNDLE hDB, HNDLE hKeyRoot, char *key_name, void *data,
+INT db_set_value(HNDLE hDB, HNDLE hKeyRoot, const char *key_name, const void *data,
                  INT data_size, INT num_values, DWORD type)
 {
    if (rpc_is_remote())
@@ -3090,7 +3095,7 @@ INT level1;
 @param truncate Truncate array to current index if TRUE
 @return \<same as db_set_data_index\>
 */
-INT db_set_value_index(HNDLE hDB, HNDLE hKeyRoot, char *key_name, void *data,
+INT db_set_value_index(HNDLE hDB, HNDLE hKeyRoot, const char *key_name, const void *data,
                  INT data_size, INT idx, DWORD type, BOOL trunc)
 {
    HNDLE hkey;
@@ -3135,7 +3140,7 @@ INT level1, size;
 @return DB_SUCCESS, DB_INVALID_HANDLE, DB_NO_ACCESS, DB_TYPE_MISMATCH,
 DB_TRUNCATED, DB_NO_KEY
 */
-INT db_get_value(HNDLE hDB, HNDLE hKeyRoot, char *key_name, void *data,
+INT db_get_value(HNDLE hDB, HNDLE hKeyRoot, const char *key_name, void *data,
                  INT * buf_size, DWORD type, BOOL create)
 {
    if (rpc_is_remote())
@@ -3907,7 +3912,7 @@ INT db_get_key_info(HNDLE hDB, HNDLE hKey, char *name, INT name_size,
 
 
 /*------------------------------------------------------------------*/
-INT db_rename_key(HNDLE hDB, HNDLE hKey, char *name)
+INT db_rename_key(HNDLE hDB, HNDLE hKey, const char *name)
 /********************************************************************\
 
   Routine: db_get_key
@@ -3973,8 +3978,7 @@ INT db_rename_key(HNDLE hDB, HNDLE hKey, char *name)
          return DB_INVALID_HANDLE;
       }
 
-      name[NAME_LENGTH] = 0;
-      strcpy(pkey->name, name);
+      strlcpy(pkey->name, name, NAME_LENGTH);
 
       db_unlock_database(hDB);
 
@@ -4627,7 +4631,7 @@ HNLDE hkey;
 @return DB_SUCCESS, DB_INVALID_HANDLE, DB_TRUNCATED
 */
 INT db_set_data(HNDLE hDB, HNDLE hKey,
-                void *data, INT buf_size, INT num_values, DWORD type)
+                const void *data, INT buf_size, INT num_values, DWORD type)
 {
    if (rpc_is_remote())
       return rpc_call(RPC_DB_SET_DATA, hDB, hKey, data, buf_size, num_values, type);
@@ -4876,7 +4880,7 @@ values are set to zero.
 @return DB_SUCCESS, DB_INVALID_HANDLE, DB_NO_ACCESS, DB_TYPE_MISMATCH
 */
 INT db_set_data_index(HNDLE hDB, HNDLE hKey,
-                      void *data, INT data_size, INT idx, DWORD type)
+                      const void *data, INT data_size, INT idx, DWORD type)
 {
    if (rpc_is_remote())
       return rpc_call(RPC_DB_SET_DATA_INDEX, hDB, hKey, data, data_size, idx, type);
@@ -5010,7 +5014,7 @@ INT db_set_data_index(HNDLE hDB, HNDLE hKey,
 #ifndef DOXYGEN_SHOULD_SKIP_THIS
 
 /*------------------------------------------------------------------*/
-INT db_set_data_index2(HNDLE hDB, HNDLE hKey, void *data,
+INT db_set_data_index2(HNDLE hDB, HNDLE hKey, const void *data,
                        INT data_size, INT idx, DWORD type, BOOL bNotify)
 /********************************************************************\
 
@@ -5145,7 +5149,7 @@ INT db_set_data_index2(HNDLE hDB, HNDLE hKey, void *data,
 
 /*----------------------------------------------------------------------------*/
 
-INT db_merge_data(HNDLE hDB, HNDLE hKeyRoot, char *name, void *data,
+INT db_merge_data(HNDLE hDB, HNDLE hKeyRoot, const char *name, void *data,
                   INT data_size, INT num_values, INT type)
 /********************************************************************\
 
@@ -5312,7 +5316,7 @@ the root of the ODB (hkey equal zero) or relative to a certain key.
 back-end, if FALSE, it is loaded from the current process
 @return DB_SUCCESS, DB_INVALID_HANDLE, DB_FILE_ERROR
 */
-INT db_load(HNDLE hDB, HNDLE hKeyRoot, char *filename, BOOL bRemote)
+INT db_load(HNDLE hDB, HNDLE hKeyRoot, const char *filename, BOOL bRemote)
 {
    struct stat stat_buf;
    INT hfile, size, n, i, status;
@@ -5654,14 +5658,15 @@ Copy an ODB subtree in ASCII format from a buffer
 @param buffer NULL-terminated buffer
 @return DB_SUCCESS, DB_TRUNCATED, DB_NO_MEMORY
 */
-INT db_paste(HNDLE hDB, HNDLE hKeyRoot, char *buffer)
+INT db_paste(HNDLE hDB, HNDLE hKeyRoot, const char *buffer)
 {
    char line[MAX_STRING_LENGTH];
    char title[MAX_STRING_LENGTH];
    char key_name[MAX_STRING_LENGTH];
    char data_str[MAX_STRING_LENGTH + 50];
    char test_str[MAX_STRING_LENGTH];
-   char *pc, *pold, *data;
+   char *pc, *data;
+   const char *pold;
    INT data_size;
    INT tid, i, j, n_data, string_length, status, size;
    HNDLE hKey;
@@ -6069,7 +6074,7 @@ Paste an ODB subtree in XML format from a buffer
 @param buffer NULL-terminated buffer
 @return DB_SUCCESS, DB_INVALID_PARAM, DB_NO_MEMORY, DB_TYPE_MISMATCH
 */
-INT db_paste_xml(HNDLE hDB, HNDLE hKeyRoot, char *buffer)
+INT db_paste_xml(HNDLE hDB, HNDLE hKeyRoot, const char *buffer)
 {
    char error[256];
    INT status;
@@ -6285,7 +6290,7 @@ be saved (hkey equal zero) or only a sub-tree.
 @param bRemote Flag for saving database on remote server.
 @return DB_SUCCESS, DB_FILE_ERROR
 */
-INT db_save(HNDLE hDB, HNDLE hKey, char *filename, BOOL bRemote)
+INT db_save(HNDLE hDB, HNDLE hKey, const char *filename, BOOL bRemote)
 {
    if (rpc_is_remote() && bRemote)
       return rpc_call(RPC_DB_SAVE, hDB, hKey, filename, bRemote);
@@ -6487,7 +6492,7 @@ be saved (hkey equal zero) or only a sub-tree.
 @param filename Filename of .XML file.
 @return DB_SUCCESS, DB_FILE_ERROR
 */
-INT db_save_xml(HNDLE hDB, HNDLE hKey, char *filename)
+INT db_save_xml(HNDLE hDB, HNDLE hKey, const char *filename)
 {
 #ifdef LOCAL_ROUTINES
    {
@@ -6540,7 +6545,7 @@ Save a branch of a database to a C structure .H file
 @param append      If TRUE, append to end of existing file
 @return DB_SUCCESS, DB_INVALID_HANDLE, DB_FILE_ERROR
 */
-INT db_save_struct(HNDLE hDB, HNDLE hKey, char *file_name, char *struct_name, BOOL append)
+INT db_save_struct(HNDLE hDB, HNDLE hKey, const char *file_name, const char *struct_name, BOOL append)
 {
    KEY key;
    char str[100], line[100];
@@ -6585,7 +6590,7 @@ INT db_save_struct(HNDLE hDB, HNDLE hKey, char *file_name, char *struct_name, BO
 #ifndef DOXYGEN_SHOULD_SKIP_THIS
 
 /*------------------------------------------------------------------*/
-INT db_save_string(HNDLE hDB, HNDLE hKey, char *file_name, char *string_name, BOOL append)
+INT db_save_string(HNDLE hDB, HNDLE hKey, const char *file_name, const char *string_name, BOOL append)
 /********************************************************************\
 
   Routine: db_save_string
@@ -6714,7 +6719,7 @@ normal sprintf() function can be used.
 @param type Type of key, one of TID_xxx (see @ref Midas_Data_Types).
 @return DB_SUCCESS
 */
-INT db_sprintf(char *string, void *data, INT data_size, INT idx, DWORD type)
+INT db_sprintf(char *string, const void *data, INT data_size, INT idx, DWORD type)
 {
    if (data_size == 0)
       sprintf(string, "<NULL>");
@@ -6775,7 +6780,7 @@ INT db_sprintf(char *string, void *data, INT data_size, INT idx, DWORD type)
 #ifndef DOXYGEN_SHOULD_SKIP_THIS
 
 /*------------------------------------------------------------------*/
-INT db_sprintfh(char *string, void *data, INT data_size, INT idx, DWORD type)
+INT db_sprintfh(char *string, const void *data, INT data_size, INT idx, DWORD type)
 /********************************************************************\
 
   Routine: db_sprintfh
@@ -7707,7 +7712,7 @@ main()
 @param init_str     Initialization string in the format of the db_copy/db_save functions.
 @return DB_SUCCESS, DB_INVALID_HANDLE, DB_FULL, DB_NO_ACCESS, DB_OPEN_RECORD
 */
-INT db_create_record(HNDLE hDB, HNDLE hKey, char *orig_key_name, char *init_str)
+INT db_create_record(HNDLE hDB, HNDLE hKey, const char *orig_key_name, const char *init_str)
 {
    char str[256], key_name[256], *buffer;
    INT status, size, i, buffer_size;
@@ -7877,13 +7882,14 @@ db_create_record() if correct=TRUE.
 @param correct  If TRUE, correct ODB record if necessary
 @return DB_SUCCESS, DB_INVALID_HANDLE, DB_NO_KEY, DB_STRUCT_MISMATCH
 */
-INT db_check_record(HNDLE hDB, HNDLE hKey, char *keyname, char *rec_str, BOOL correct)
+INT db_check_record(HNDLE hDB, HNDLE hKey, const char *keyname, const char *rec_str, BOOL correct)
 {
    char line[MAX_STRING_LENGTH];
    char title[MAX_STRING_LENGTH];
    char key_name[MAX_STRING_LENGTH];
    char info_str[MAX_STRING_LENGTH + 50];
-   char *pc, *pold, *rec_str_orig;
+   char *pc;
+   const char *pold, *rec_str_orig;
    DWORD tid;
    INT i, j, n_data, string_length, status;
    HNDLE hKeyRoot, hKeyTest;
