@@ -149,7 +149,6 @@ _nop_(); _nop_(); _nop_(); _nop_(); _nop_(); _nop_(); _nop_(); _nop_(); _nop_();
 
 #define CSR_PORT_DIR    0 // port direction (1=output, 0=input)
 #define CSR_PWR_STATUS  1 // power status (SCS-2000: bit0: 5V OK, bit1: 24V OK, bit3: 24V enable, bit4: beeper)
-                          //              (SCS-2001: bit0: beeper)
 
 /* address port 0-7 in CPLD, with address modifier listed above */
 void address_port(unsigned char addr, unsigned char port_no, unsigned char am, unsigned char clk_level)
@@ -551,17 +550,10 @@ void power_beeper(unsigned char addr, unsigned char flag)
 
    read_csr(addr, CSR_PWR_STATUS, &status);
 
-#ifdef SCS_2001
-   if (flag)
-      status |= 0x01;
-   else
-      status &= ~0x01;
-#else
    if (flag)
       status |= 0x08;
    else
       status &= ~0x08;
-#endif
 
    write_csr(addr, CSR_PWR_STATUS, status);
 
@@ -1472,7 +1464,7 @@ void ad7718_lt2600_write(unsigned char a, unsigned char d) reentrant
    }
 
    /* NOOP command for LT2600 */
-   for (i=0 ; i<32 ; i++) {
+   for (i=0 ; i<33 ; i++) {
       OPT_DATAO = 1;
       CLOCK;
    }
@@ -1493,7 +1485,7 @@ void ad7718_lt2600_write(unsigned char a, unsigned char d) reentrant
    }
 
    /* NOOP command for LT2600 */
-   for (i=0 ; i<32 ; i++) {
+   for (i=0 ; i<33 ; i++) {
       OPT_DATAO = 1;
       CLOCK;
    }
@@ -1530,7 +1522,7 @@ void ad7718_lt2600_read(unsigned char a, unsigned long *d) reentrant
    }
 
    /* NOOP command for LT2600 */
-   for (i=0 ; i<32 ; i++) {
+   for (i=0 ; i<33 ; i++) {
       OPT_DATAO = 1;
       CLOCK;
    }
@@ -1550,7 +1542,7 @@ void ad7718_lt2600_read(unsigned char a, unsigned long *d) reentrant
    }
 
    /* NOOP command for LT2600 */
-   for (i=0 ; i<32 ; i++) {
+   for (i=0 ; i<33 ; i++) {
       OPT_DATAO = 1;
       CLOCK;
    }
@@ -1573,7 +1565,7 @@ unsigned char i;
    if (cmd == MC_INIT) {
       address_port(addr, port, AM_RW_SERIAL, 1);
       ad7718_lt2600_write(AD7718_FILTER, 82);                // SF value for 50Hz rejection (2 Hz)
-      //ad7718_write(AD7718_FILTER, 13);                // SF value for faster conversion (12 Hz)
+      //ad7718_write(AD7718_FILTER, 13);                     // SF value for faster conversion (12 Hz)
       ad7718_lt2600_write(AD7718_MODE, 3);                   // continuous conversion
       DELAY_US_REENTRANT(100);
 
@@ -1584,6 +1576,11 @@ unsigned char i;
 
 
    if (cmd == MC_WRITE) {
+
+      address_port(addr, port, AM_RW_SERIAL, 1);
+      ad7718_lt2600_write(AD7718_IOCONTROL, 0x30);
+      ad7718_lt2600_write(AD7718_IOCONTROL, 0x33);
+      return 0;
 
       if (chn > 1)
          return 0;
