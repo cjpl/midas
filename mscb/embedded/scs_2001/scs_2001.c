@@ -15,7 +15,7 @@
 #include <math.h>
 #include <intrins.h>
 #include "mscbemb.h"
-#include "..\scs_2000\scs_2000.h"
+#include "scs_2001.h"
 
 extern bit FREEZE_MODE;
 extern bit DEBUG_MODE;
@@ -60,7 +60,7 @@ unsigned char xdata module_id[N_PORT];
 unsigned char xdata module_index[N_PORT];
 
 unsigned char xdata memsize;
-extern SCS_2000_MODULE code scs_2000_module[];
+extern SCS_2001_MODULE code scs_2001_module[];
 extern unsigned char idata n_variables;
 
 void user_write(unsigned char index) reentrant;
@@ -96,12 +96,12 @@ void user_init(unsigned char init)
          var_index = 0;
          for (i=0 ; i<N_PORT ; i++) {
             index = module_index[i];
-            if (index != 0xFF && scs_2000_module[index].driver) {
+            if (index != 0xFF && scs_2001_module[index].driver) {
                for (j=0 ; j<module_nvars[i] ; j++)
                   /* default variables to zero */
                   memset(variables[var_index].ud, 0, variables[var_index].width);
                   /* allow driver to overwrite */
-                  scs_2000_module[index].driver(module_id[i], MC_GETDEFAULT, i/8, i%8, j, 
+                  scs_2001_module[index].driver(module_id[i], MC_GETDEFAULT, i/8, i%8, j, 
                      variables[var_index++].ud);
                   var_index++;
             } 
@@ -110,8 +110,8 @@ void user_init(unsigned char init)
    
       /* initialize drivers */
       for (i=0 ; i<N_PORT ; i++)
-         if (module_index[i] != 0xFF && scs_2000_module[module_index[i]].driver)
-            scs_2000_module[module_index[i]].driver(module_id[i], MC_INIT, i/8, i%8, 0, NULL);
+         if (module_index[i] != 0xFF && scs_2001_module[module_index[i]].driver)
+            scs_2001_module[module_index[i]].driver(module_id[i], MC_INIT, i/8, i%8, 0, NULL);
    
       /* write digital outputs */
       for (i=0 ; i<n_variables ; i++)
@@ -361,7 +361,7 @@ unsigned short xdata d;
     
       for (i=0 ; i<n_box ; i++) {
 
-         status = power_status(i);
+         read_csr(i, &status);
 
          if ((status >> 4) != CPLD_FIRMWARE_REQUIRED) {
             led_blink(1, 1, 100);
@@ -517,20 +517,20 @@ char xdata * pvardata;
 
       if (id > 0) {
    
-         for (i=0 ; scs_2000_module[i].id ; i++) {
-            if (scs_2000_module[i].id == id)
+         for (i=0 ; scs_2001_module[i].id ; i++) {
+            if (scs_2001_module[i].id == id)
                break;
          }
 
-         if (scs_2000_module[i].id == id) {
+         if (scs_2001_module[i].id == id) {
             module_nvars[port] = 0;
-            for (k=0 ; k<scs_2000_module[i].n_var ; k++) {
-               n_var_mod = (unsigned char)scs_2000_module[i].var[k].ud;
+            for (k=0 ; k<scs_2001_module[i].n_var ; k++) {
+               n_var_mod = (unsigned char)scs_2001_module[i].var[k].ud;
                
                if (n_var_mod) {
                   /* clone single variable definition */
                   for (j=0 ; j<n_var_mod ; j++) {
-                     memcpy(variables+n_var, &scs_2000_module[i].var[0], sizeof(MSCB_INFO_VAR));
+                     memcpy(variables+n_var, &scs_2001_module[i].var[k], sizeof(MSCB_INFO_VAR));
                      if (strchr(variables[n_var].name, '%')) {
                         if (port > 9)
                            *strchr(variables[n_var].name, '%') = 'A'-10+port;
@@ -546,7 +546,7 @@ char xdata * pvardata;
                   }
                } else {
                   /* copy over variable definition */
-                  memcpy(variables+n_var, &scs_2000_module[i].var[k], sizeof(MSCB_INFO_VAR));
+                  memcpy(variables+n_var, &scs_2001_module[i].var[k], sizeof(MSCB_INFO_VAR));
                   if (strchr(variables[n_var].name, '%')) {
                      if (port > 9)
                         *strchr(variables[n_var].name, '%') = 'A'-10+port;
@@ -581,12 +581,12 @@ char xdata * pvardata;
             i = 0;
             while (1) {
                lcd_goto(0, 2);
-               printf(">%02bX %s            ", scs_2000_module[i].id, scs_2000_module[i].name);
+               printf(">%02bX %s            ", scs_2001_module[i].id, scs_2001_module[i].name);
 
                lcd_goto(0, 3);
                if (i == 0)
                   printf("SEL             NEXT");
-               else if (scs_2000_module[i+1].id == 0)
+               else if (scs_2001_module[i+1].id == 0)
                   printf("SEL        PREV     ");
                else
                   printf("SEL        PREV NEXT");
@@ -601,7 +601,7 @@ char xdata * pvardata;
 
                if (b0) {
                   /* write module id and re-evaluate module */
-                  write_eeprom(port/8, port%8, scs_2000_module[i].id);
+                  write_eeprom(port/8, port%8, scs_2001_module[i].id);
                   port--;
                   while (b0) b0 = button(0);
                   changed = 1;
@@ -615,7 +615,7 @@ char xdata * pvardata;
                }
 
                if (b3) {
-                  if (scs_2000_module[i+1].id)
+                  if (scs_2001_module[i+1].id)
                      i++;
                   while (b3) b3 = button(3);
                }
@@ -715,13 +715,13 @@ unsigned char xdata i, n, j, col;
                continue;
    
             lcd_goto(0, col);
-            for (j=0 ; scs_2000_module[j].id && scs_2000_module[j].id != module_id[i]; j++);
-            if (scs_2000_module[j].id) {
+            for (j=0 ; scs_2001_module[j].id && scs_2001_module[j].id != module_id[i]; j++);
+            if (scs_2001_module[j].id) {
                if (col == 3) {
                   next = 1;
                   break;
                }
-               printf("P%bd:%02bX %s          ", i, scs_2000_module[j].id, scs_2000_module[j].name);
+               printf("P%bd:%02bX %s          ", i, scs_2001_module[j].id, scs_2001_module[j].name);
             } else
                printf("                    ");
    
@@ -883,8 +883,8 @@ float xdata value;
                   i = index - i;
                   j = module_index[port];
          
-                  if (j != 0xFF && scs_2000_module[j].driver)
-                     scs_2000_module[j].driver(scs_2000_module[j].id, MC_WRITE, 
+                  if (j != 0xFF && scs_2001_module[j].driver)
+                     scs_2001_module[j].driver(scs_2001_module[j].id, MC_WRITE, 
                                                port/8, port%8, i, variables[index].ud);
          
                   break;
@@ -901,8 +901,8 @@ float xdata value;
    
          i = module_index[port_index];
          for (j=0 ; j<module_nvars[port_index] ; j++) {
-            if (scs_2000_module[i].driver)
-               n = scs_2000_module[i].driver(scs_2000_module[i].id, MC_READ, 
+            if (scs_2001_module[i].driver)
+               n = scs_2001_module[i].driver(scs_2001_module[i].id, MC_READ, 
                                              port_index/8, port_index%8, j, &value);
             else
                n = 0;
