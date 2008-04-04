@@ -11,8 +11,19 @@ package scs_2001_pack is
 
 -- Declare constants
 
-  constant const_no_ports  : integer := 8;
-
+  constant const_no_ports   : integer := 8;
+  
+  constant AM_READ_PORT     : integer := 0;
+  constant AM_READ_REG      : integer := 1;
+  constant AM_WRITE_PORT    : integer := 2;
+  constant AM_WRITE_DIR     : integer := 3;
+  constant AM_READ_CSR      : integer := 4;
+  constant AM_WRITE_CSR     : integer := 5;
+  
+  constant AM_RW_SERIAL     : integer := 6;
+  constant AM_RW_EEPROM     : integer := 7;
+  constant AM_RW_MONITOR    : integer := 8;
+  
 -- Declare types
 
   type type_port_rec is 

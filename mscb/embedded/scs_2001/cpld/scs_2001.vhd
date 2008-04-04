@@ -49,7 +49,7 @@ signal i_sl_strobe    : std_logic;
 signal o_sl_data_out  : std_logic;
 
 -- serial registers
-signal ser_reg_in     : std_logic_vector(9 downto 0);
+signal ser_reg_in     : std_logic_vector(10 downto 0);
 signal ser_reg_out    : std_logic_vector(7 downto 0);
 signal ser_reg_slave  : std_logic_vector(7 downto 0);
 signal o_uc_data_out  : std_logic;
@@ -64,28 +64,25 @@ signal my_addr        : std_logic_vector(3 downto 0);
 signal master         : std_logic;
 
 -- address modifiers:
--- 0  000  AM_READ_PORT
--- 1  001  AM_READ_REG
--- 2  010  AM_WRITE_PORT
--- 3  011  AM_READ_CSR
---   0       port_dir
---   1       pwr_status
--- 4  100  AM_WRITE_CSR
---   0       port_dir
---   1       pwr_status
--- 5  101  AM_RW_SERIAL
--- 6  110  AM_RW_EEPROM
--- 7  111  AM_RW_MONITOR
-signal addr_mod     : std_logic_vector(2 downto 0);
+-- 0  0000  AM_READ_PORT
+-- 1  0001  AM_READ_REG
+-- 2  0010  AM_WRITE_PORT
+-- 4  0100  AM_WRITE_PORTDIR
+-- 5  0101  AM_RW_SERIAL
+-- 6  0110  AM_RW_EEPROM
+-- 7  0111  AM_RW_MONITOR
+-- 8  1000  AM_READ_CSR
+-- 9  1001  AM_WRITE_CSR
+signal addr_mod     : std_logic_vector(3 downto 0);
 
 type type_port_reg is array (const_no_ports-1 downto 0) of std_logic_vector(7 downto 0);
 signal port_reg     : type_port_reg;
 
 -- '1' is ouput, '0' is input
-signal port_dir     : std_logic_vector(7 downto 0) := "00000000";                                        
+signal port_dir     : type_port_reg;                                        
 
 -- bit0: beeper      read/write
-signal pwr_status   : std_logic := '0';
+signal csr          : std_logic_vector(3 downto 0);
 
 begin
     
@@ -107,8 +104,8 @@ begin
   
   P_O_UC_DATA_OUT <= o_sl_data_out when master = '0'
                      else P_IO_EXT(4) when addr_unit /= my_addr
-							else P_I_DOUT_MON when addr_mod = "111"
-                     else o_uc_data_out when addr_mod /= "101" and addr_mod /= "110"
+							else P_I_DOUT_MON when addr_mod = AM_RW_MONITOR
+                     else o_uc_data_out when addr_mod /= AM_RW_SERIAL and addr_mod /= AM_RW_EEPROM
                      else P_I_SDO;
   P_O_UC_STAT     <= P_IO_PORTS(CONV_INTEGER(addr_port)).port_pin(0) when addr_unit = my_addr
                      else P_IO_EXT(5); -- get status from slave bus                   
@@ -127,8 +124,8 @@ begin
 
   -- output o_uc_data_out and STAT in slave mode when addressed
   P_IO_EXT(4)     <= 'Z' when master = '1' or addr_unit /= my_addr
-                     else P_I_SDO when addr_mod = "101" or addr_mod = "110"
-							else P_I_DOUT_MON when addr_mod = "111"
+                     else P_I_SDO when addr_mod = AM_RW_SERIAL or addr_mod = AM_RW_EEPROM
+							else P_I_DOUT_MON when addr_mod = AM_RW_MONITOR
 							else o_uc_data_out;
                      
   P_IO_EXT(5)     <= P_IO_PORTS(CONV_INTEGER(addr_port)).port_pin(0) when
@@ -150,42 +147,37 @@ begin
       
         if (i_uc_strobe = '1') then
           -- upon strobe, copy serial register
-          addr_unit   <= ser_reg_in(9 downto 6);
-          addr_port   <= ser_reg_in(5 downto 3);
-          addr_mod    <= ser_reg_in(2 downto 0);
+          addr_unit   <= ser_reg_in(10 downto 7);
+          addr_port   <= ser_reg_in(6 downto 4);
+          addr_mod    <= ser_reg_in(3 downto 0);
         else
           -- address cycle
-          ser_reg_in(9 downto 0) <= ser_reg_in(8 downto 0) & i_uc_data_in;
+          ser_reg_in(10 downto 0) <= ser_reg_in(9 downto 0) & i_uc_data_in;
         end if;
       
       else -- data cycle if ALE = '0'
       
         if (i_uc_strobe = '1' and addr_unit = my_addr) then
-          if (addr_mod = "000") then
+          if (addr_mod = AM_READ_PORT) then
             -- read from port
             ser_reg_out <= P_IO_PORTS(CONV_INTEGER(addr_port)).port_pin;
-          elsif (addr_mod = "001") then
+          elsif (addr_mod = AM_READ_REG) then
             -- read from register
             ser_reg_out <= port_reg(CONV_INTEGER(addr_port));
-          elsif (addr_mod = "010") then
+          elsif (addr_mod = AM_WRITE_PORT) then
             -- write to port
             port_reg(CONV_INTEGER(addr_port)) <= ser_reg_in(7 downto 0);
-          elsif (addr_mod = "011") then
+          elsif (addr_mod = AM_WRITE_DIR) then
+            -- write port dir
+            port_dir(CONV_INTEGER(addr_port)) <= ser_reg_in(7 downto 0);
+          elsif (addr_mod = AM_READ_CSR) then
             -- read CSR
-            if (addr_port = "000") then     -- 0
-               ser_reg_out <= port_dir;
-            elsif (addr_port = "001") then  -- 1
-               ser_reg_out(7 downto 4) <= firmware_version;
-					ser_reg_out(3 downto 1) <= "000";
-               ser_reg_out(0) <= pwr_status;    
-            end if;   
-          elsif (addr_mod = "100") then
-            -- write CSR
-            if (addr_port = "000") then     -- 0
-               port_dir <= ser_reg_in(7 downto 0);
-            elsif (addr_port = "001") then  -- 1
-               pwr_status <= ser_reg_in(0); -- beeper
-            end if;   
+				ser_reg_out(7)          <= '0'; -- indicate master mode
+				ser_reg_out(6 downto 4) <= firmware_version(2 downto 0);
+				ser_reg_out(3 downto 0) <= csr;
+			 elsif (addr_mod = AM_WRITE_CSR) then
+            -- write CSR			 
+            csr(2 downto 0) <= ser_reg_in(2 downto 0);
           end if;
         
         elsif (i_uc_strobe = '0') then
@@ -197,7 +189,7 @@ begin
           ser_reg_out <= ser_reg_out(6 downto 0) & '0';
           
           -- read data from uC
-          ser_reg_in <= ser_reg_in(8 downto 0) & i_uc_data_in;
+          ser_reg_in <= ser_reg_in(9 downto 0) & i_uc_data_in;
         
         end if;  
       end if;
@@ -240,7 +232,7 @@ begin
     -- connect port pin to output register or tristate it
     bit_gen: for bit_no in 0 to 7 generate
       P_IO_PORTS(port_no).port_pin(bit_no) <= 
-        port_reg(port_no)(bit_no) when port_dir(port_no) = '1' else
+        port_reg(port_no)(bit_no) when port_dir(port_no)(bit_no) = '1' else
         'Z';
     end generate;    
        
@@ -250,7 +242,7 @@ begin
       i_uc_strobe = '0' and
       addr_unit = my_addr and 
       addr_port = port_no and 
-      addr_mod = "101"
+      addr_mod = AM_RW_SERIAL
       else '1';
 
     -- activate EEPROM CS if addressed                                     
@@ -259,7 +251,7 @@ begin
       i_uc_strobe = '0' and
       addr_unit = my_addr and 
       addr_port = port_no and 
-      addr_mod = "110"
+      addr_mod = AM_RW_EEPROM
       else '0';
       
   end generate;
@@ -289,7 +281,7 @@ begin
                      i_uc_ale = '0' and
 							i_uc_strobe = '0' and
 							addr_unit = my_addr and
-							addr_mod = "111"
+							addr_mod = AM_RW_MONITOR
 							else '1';
 
   ------------------
@@ -316,6 +308,6 @@ begin
   
   -- Beeper (active low)
   P_O_BEEPER <= not (((not P_I_INT_MON) and counter(24)) or 
-                       pwr_status);
+                       csr(0));
 
 end Behavioral;
