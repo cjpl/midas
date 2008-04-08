@@ -1452,7 +1452,7 @@ unsigned char i;
       DELAY_US_REENTRANT(100);
 
       /* start first conversion */
-      ad7718_write(AD7718_CONTROL, (0 << 4) | 0x0F);  // Channel 0, +2.56V range
+      ad7718_write(AD7718_CONTROL, (1 << 4) | (0x07));  // Channel 0, Bipolar, +-2.56V range
       temp_cur_chn[port] = 0;
    }
 
@@ -1517,13 +1517,19 @@ unsigned char i;
 
       /* start next conversion */
       temp_cur_chn[port] = (temp_cur_chn[port] + 1) % 2;
-      ad7718_write(AD7718_CONTROL, (temp_cur_chn[port] << 4) | 0x0F);  // next chn, +2.56V range
+      ad7718_write(AD7718_CONTROL, ((1-temp_cur_chn[port]) << 4) | 0x07);  // next chn, bipolar, +-2.56V range
 
       /* convert to volts */
-      value = 2.56*((float)d / (1l<<24));
+      value = 5.12*((float)d / (1l<<24))-2.56;
+
+      /* invert input divider */
+      value *= (1E6/82E3);
+
+      /* calibrate */
+      value *= 1.086;
 
       /* round result to significant digits */
-      value = ((long)(value*1E1+0.5))/1E1;
+      value = ((long)(value*1E5+0.5))/1E5;
    
       *((float *)pd) = value;
       return 4;
