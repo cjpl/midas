@@ -2657,7 +2657,7 @@ INT open_history()
    /* loop over equipment */
    index = 0;
    for (ieq = 0; ; ieq++) {
-      status = db_enum_key(hDB, hKeyRoot, index, &hKeyEq);
+      status = db_enum_key(hDB, hKeyRoot, ieq, &hKeyEq);
       if (status != DB_SUCCESS)
          break;
 
@@ -2862,12 +2862,6 @@ INT open_history()
          /* remember maximum event id for later use with system events */
          if (eq_id > max_event_id)
             max_event_id = eq_id;
-      } else {
-         hist_log[index].event_id = 0;
-         hist_log[index].hKeyVar = 0;
-         hist_log[index].buffer = NULL;
-         hist_log[index].buffer_size = 0;
-         hist_log[index].period = 0;
       }
    } /* loop over equipments */
 
