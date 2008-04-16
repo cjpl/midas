@@ -19,6 +19,8 @@
 
 char code svn_rev_lib[] = "$Rev: 4169 $";
 
+#define N_PORT 24 /* maximal one master and two slave modules */
+
 /*---- Port definitions ----*/
 
 sbit OPT_CLK    = P3 ^ 0;
@@ -34,39 +36,39 @@ sbit OPT_SPARE2 = P3 ^ 7;
 /*---- List of modules ---------------------------------------------*/
 
 MSCB_INFO_VAR code vars_bout[] =
-   { 1, UNIT_BYTE,    0,          0,           0, "P%Out",   (void xdata *)1, 0, 255, 1 };
+   { 1, UNIT_BYTE,    0,          0,           0, "P%Out",   (void xdata *)1, 0, 0, 255, 1 };
 
 MSCB_INFO_VAR code vars_uin[] =
-   { 4, UNIT_VOLT,    0,          0, MSCBF_FLOAT, "P%Uin#",  (void xdata *)8, 0, 0, 4 };
+   { 4, UNIT_VOLT,    0,          0, MSCBF_FLOAT, "P%Uin#",  (void xdata *)8, 4 };
 
 MSCB_INFO_VAR code vars_diffin[] =
-   { 4, UNIT_VOLT,    0,          0, MSCBF_FLOAT, "P%Uin#",  (void xdata *)4, 0, 0, 4 };
+   { 4, UNIT_VOLT,    0,          0, MSCBF_FLOAT, "P%Uin#",  (void xdata *)4, 4 };
 
 MSCB_INFO_VAR code vars_uin_range[] = {
-   { 4, UNIT_VOLT,    0,          0, MSCBF_FLOAT, "P%Uin#",  (void xdata *)8, 0, 0, 4 },
+   { 4, UNIT_VOLT,    0,          0, MSCBF_FLOAT, "P%Uin#",  (void xdata *)8, 4 },
    { 1, UNIT_BYTE,    0,          0, MSCBF_HIDDEN,"P%Range", (void xdata *)0 },
 };
 
 MSCB_INFO_VAR code vars_uout[] =
-   { 4, UNIT_VOLT,    0,          0, MSCBF_FLOAT, "P%Uout#", (void xdata *)8, 0, 30,  0.5 };
+   { 4, UNIT_VOLT,    0,          0, MSCBF_FLOAT, "P%Uout#", (void xdata *)8, 2, 0, 30,  0.5 };
 
 MSCB_INFO_VAR code vars_iin[] =
-   { 4, UNIT_AMPERE,  PRFX_MILLI, 0, MSCBF_FLOAT, "P%Iin#",  (void xdata *)8, 0, 0, 4 };
+   { 4, UNIT_AMPERE,  PRFX_MILLI, 0, MSCBF_FLOAT, "P%Iin#",  (void xdata *)8, 4 };
 
 MSCB_INFO_VAR code vars_cin[] =
-   { 4, UNIT_FARAD,   PRFX_NANO,  0, MSCBF_FLOAT, "P%Cin#",  (void xdata *)4, 0, 0, 4 };
+   { 4, UNIT_FARAD,   PRFX_NANO,  0, MSCBF_FLOAT, "P%Cin#",  (void xdata *)4, 4 };
 
 MSCB_INFO_VAR code vars_temp[] = {
-   { 4, UNIT_CELSIUS, 0,          0, MSCBF_FLOAT, "P%T#",    (void xdata *)8, 0, 0, 2 },
+   { 4, UNIT_CELSIUS, 0,          0, MSCBF_FLOAT, "P%T#",    (void xdata *)8, 2, 0, 0 },
    { 4, UNIT_AMPERE,  PRFX_MILLI, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "P%Excit", (void xdata *)0 },
 };
 
 MSCB_INFO_VAR code vars_iout[] =
-   { 4, UNIT_AMPERE,  PRFX_MILLI, 0, MSCBF_FLOAT, "P%Iout#", (void xdata *)8, 0, 20,  0.1 };
+   { 4, UNIT_AMPERE,  PRFX_MILLI, 0, MSCBF_FLOAT, "P%Iout#", (void xdata *)8, 2, 0, 20,  0.1 };
 
 MSCB_INFO_VAR code vars_lhe[] = {
-   { 4, UNIT_AMPERE,  PRFX_MILLI, 0, MSCBF_FLOAT, "P%Iout#", (void xdata *)2, 0, 100,  1 },
-   { 4, UNIT_PERCENT, 0,          0, MSCBF_FLOAT, "P%Lin#",  (void xdata *)2 },
+   { 4, UNIT_AMPERE,  PRFX_MILLI, 0, MSCBF_FLOAT, "P%Iout#", (void xdata *)2, 1, 0, 100,  1 },
+   { 4, UNIT_PERCENT, 0,          0, MSCBF_FLOAT, "P%Lin#",  (void xdata *)2, 2 },
 };
 
 MSCB_INFO_VAR code vars_din[] =
@@ -594,7 +596,7 @@ unsigned char is_present(unsigned char addr)
 
 /*---- Bitwise output/input ----------------------------------------*/
 
-unsigned char xdata pattern[8];
+unsigned char xdata pattern[N_PORT];
 
 unsigned char dr_dout_bits(unsigned char id, unsigned char cmd, unsigned char addr, 
                            unsigned char port, unsigned char chn, void *pd) reentrant
@@ -606,15 +608,15 @@ unsigned char d;
    if (cmd == MC_INIT) {
 
       /* default pattern */
-      pattern[port] = 0;
+      pattern[addr*8+port] = 0;
 
       /* retrieve previous pattern if not reset by power on */
       SFRPAGE = LEGACY_PAGE;
       if ((RSTSRC & 0x02) == 0)
-         read_port_reg(addr, port, &pattern[port]);
+         read_port_reg(addr, port, &pattern[addr*8+port]);
 
       /* set default value before switching to putput */   
-      write_port(addr, port, pattern[port]);
+      write_port(addr, port, pattern[addr*8+port]);
 
       /* switch port to output */
       write_dir(addr, port, 0xFF);
@@ -625,11 +627,11 @@ unsigned char d;
       d = *((unsigned char *)pd);
 
       if (d)
-         pattern[port] |= (1 << chn);
+         pattern[addr*8+port] |= (1 << chn);
       else
-         pattern[port] &= ~(1 << chn);
+         pattern[addr*8+port] &= ~(1 << chn);
 
-      write_port(addr, port, pattern[port]);
+      write_port(addr, port, pattern[addr*8+port]);
    }
 
    return 0;   
@@ -644,9 +646,9 @@ unsigned char d;
 
    if (cmd == MC_READ) {
       if (*((unsigned char *)pd))
-         pattern[port] |= (1 << chn);
+         pattern[addr*8+port] |= (1 << chn);
       else
-         pattern[port] &= ~(1 << chn);
+         pattern[addr*8+port] &= ~(1 << chn);
 
       read_port(addr, port, &d);
       *((unsigned char *)pd) = (d & (1 << chn)) > 0;
@@ -939,8 +941,8 @@ void ad7718_read(unsigned char a, unsigned long *d) reentrant
    DELAY_CLK;
 }
 
-unsigned char xdata ad7718_cur_chn[8];
-unsigned char xdata ad7718_range[8];
+unsigned char xdata ad7718_cur_chn[N_PORT];
+unsigned char xdata ad7718_range[N_PORT];
 float code ad7718_full_range[] = { 0.02, 0.04, 0.08, 0.16, 0.32, 0.64, 1.28, 2.56 };
 
 unsigned char dr_ad7718(unsigned char id, unsigned char cmd, unsigned char addr, 
@@ -958,15 +960,15 @@ unsigned char status;
       DELAY_US_REENTRANT(100);
 
       /* default range */
-      ad7718_range[port] = 0x07;                      // +2.56V range
+      ad7718_range[addr*8+port] = 0x07;               // +2.56V range
 
       /* start first conversion */
-      ad7718_write(AD7718_CONTROL, (0 << 4) | 0x08 | ad7718_range[port]);  // Channel 0, unipolar
-      ad7718_cur_chn[port] = 0;
+      ad7718_write(AD7718_CONTROL, (0 << 4) | 0x08 | ad7718_range[addr*8+port]);  // Channel 0, unipolar
+      ad7718_cur_chn[addr*8+port] = 0;
    }
 
    if (cmd == MC_WRITE && chn == 8) {
-      ad7718_range[port] = *((unsigned char *)pd);
+      ad7718_range[addr*8+port] = *((unsigned char *)pd);
    }
 
    if (cmd == MC_READ) {
@@ -980,7 +982,7 @@ unsigned char status;
          return 0;
 
       /* return if not current channel */
-      if (chn != ad7718_cur_chn[port])
+      if (chn != ad7718_cur_chn[addr*8+port])
          return 0;
 
       address_port1(addr, port, AM_RW_SERIAL, 1);
@@ -990,14 +992,14 @@ unsigned char status;
 
       /* start next conversion */
       if (id == 0x68)
-         ad7718_cur_chn[port] = (ad7718_cur_chn[port] + 1) % 4;
+         ad7718_cur_chn[addr*8+port] = (ad7718_cur_chn[addr*8+port] + 1) % 4;
       else
-         ad7718_cur_chn[port] = (ad7718_cur_chn[port] + 1) % 8;
+         ad7718_cur_chn[addr*8+port] = (ad7718_cur_chn[addr*8+port] + 1) % 8;
 
-      ad7718_write(AD7718_CONTROL, (ad7718_cur_chn[port] << 4) | 0x08 | ad7718_range[port]);
+      ad7718_write(AD7718_CONTROL, (ad7718_cur_chn[addr*8+port] << 4) | 0x08 | ad7718_range[addr*8+port]);
 
       /* convert to volts */
-      value = ad7718_full_range[ad7718_range[port]]*((float)d / (1l<<24));
+      value = ad7718_full_range[ad7718_range[addr*8+port]]*((float)d / (1l<<24));
    
       /* apply range */
       if (id == 0x60)
@@ -1028,8 +1030,8 @@ unsigned char status;
 /*---- PT100/1000 via AD7718 ---------------------------------------*/
 
 static float xdata exc_current = 1; /* 1 mA */
-static float xdata temp_base_value[8];
-static unsigned char xdata temp_cur_chn[8];
+static float xdata temp_base_value[N_PORT];
+static unsigned char xdata temp_cur_chn[N_PORT];
 
 unsigned char dr_temp(unsigned char id, unsigned char cmd, unsigned char addr, 
                       unsigned char port, unsigned char chn, void *pd) reentrant
@@ -1047,7 +1049,7 @@ unsigned long d;
 
       /* start first conversion */
       ad7718_write(AD7718_CONTROL, (0 << 4) | 0x0F);  // Channel 0, +2.56V range
-      temp_cur_chn[port] = 0;
+      temp_cur_chn[addr*8+port] = 0;
    }
 
    if (cmd == MC_WRITE && chn == 8) {
@@ -1069,7 +1071,7 @@ unsigned long d;
          return 0;
 
       /* return if not current channel */
-      if (chn != temp_cur_chn[port])
+      if (chn != temp_cur_chn[addr*8+port])
          return 0;
 
       address_port1(addr, port, AM_RW_SERIAL, 1);
@@ -1078,8 +1080,8 @@ unsigned long d;
       ad7718_read(AD7718_ADCDATA, &d);
 
       /* start next conversion */
-      temp_cur_chn[port] = (temp_cur_chn[port] + 1) % 8;
-      ad7718_write(AD7718_CONTROL, (temp_cur_chn[port] << 4) | 0x0F);  // next chn, +2.56V range
+      temp_cur_chn[addr*8+port] = (temp_cur_chn[addr*8+port] + 1) % 8;
+      ad7718_write(AD7718_CONTROL, (temp_cur_chn[addr*8+port] << 4) | 0x0F);  // next chn, +2.56V range
 
       /* convert to volts */
       value = 2.56*((float)d / (1l<<24));
@@ -1088,10 +1090,10 @@ unsigned long d;
 
       /* subtract base value */
       if (chn > 0)
-         value -= temp_base_value[port];
+         value -= temp_base_value[addr*8+port];
 
       /* remember current value as next base value */
-      temp_base_value[port] = new_base_value;
+      temp_base_value[addr*8+port] = new_base_value;
 
       /* convert to Ohms (1mA excitation) */
       value /= (exc_current*0.001);
@@ -1125,7 +1127,7 @@ unsigned long d;
 
 /*---- ADS1256 24-bit fast sigma-delta ADC -------------------------*/
 
-unsigned char xdata ads1256_cur_chn[8];
+unsigned char xdata ads1256_cur_chn[N_PORT];
 
 /* ADS1256 commands */
 #define ADS1256_WAKEUP      0x00
@@ -1284,7 +1286,7 @@ unsigned long d;
       ads1256_write(ADS1256_MUX, (0 << 4) | 0x0F);
       ads1256_cmd(ADS1256_SYNC);
       ads1256_cmd(ADS1256_WAKEUP);
-      ads1256_cur_chn[port] = 0;
+      ads1256_cur_chn[addr*8+port] = 0;
    }
 
    if (cmd == MC_READ) {
@@ -1304,9 +1306,9 @@ unsigned long d;
          return 0;
 
       /* start next conversion on next channel */
-      ads1256_cur_chn[port] = (ads1256_cur_chn[port] + 1) % 8;
+      ads1256_cur_chn[addr*8+port] = (ads1256_cur_chn[addr*8+port] + 1) % 8;
 
-      ads1256_write(ADS1256_MUX, (ads1256_cur_chn[port] << 4) | 0x0F); // Select single ended positive input
+      ads1256_write(ADS1256_MUX, (ads1256_cur_chn[addr*8+port] << 4) | 0x0F); // Select single ended positive input
       ads1256_cmd(ADS1256_SYNC);  // Trigger new conversion
       ads1256_cmd(ADS1256_WAKEUP);
 
@@ -1453,7 +1455,7 @@ unsigned char i;
 
       /* start first conversion */
       ad7718_write(AD7718_CONTROL, (1 << 4) | (0x07));  // Channel 0, Bipolar, +-2.56V range
-      temp_cur_chn[port] = 0;
+      temp_cur_chn[addr*8+port] = 0;
    }
 
 
@@ -1507,7 +1509,7 @@ unsigned char i;
          return 0;
 
       /* return if not current channel */
-      if ((chn-2) != temp_cur_chn[port])
+      if ((chn-2) != temp_cur_chn[addr*8+port])
          return 0;
 
       address_port1(addr, port, AM_RW_SERIAL, 1);
@@ -1516,8 +1518,8 @@ unsigned char i;
       ad7718_read(AD7718_ADCDATA, &d);
 
       /* start next conversion */
-      temp_cur_chn[port] = (temp_cur_chn[port] + 1) % 2;
-      ad7718_write(AD7718_CONTROL, ((1-temp_cur_chn[port]) << 4) | 0x07);  // next chn, bipolar, +-2.56V range
+      temp_cur_chn[addr*8+port] = (temp_cur_chn[addr*8+port] + 1) % 2;
+      ad7718_write(AD7718_CONTROL, ((1-temp_cur_chn[addr*8+port]) << 4) | 0x07);  // next chn, bipolar, +-2.56V range
 
       /* convert to volts */
       value = 5.12*((float)d / (1l<<24))-2.56;
