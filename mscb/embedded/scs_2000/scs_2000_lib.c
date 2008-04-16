@@ -34,39 +34,39 @@ sbit OPT_SPARE2 = P3 ^ 7;
 /*---- List of modules ---------------------------------------------*/
 
 MSCB_INFO_VAR code vars_bout[] =
-   { 1, UNIT_BYTE,    0,          0,           0, "P%Out",   (void xdata *)1, 0, 255, 1 };
+   { 1, UNIT_BYTE,    0,          0,           0, "P%Out",   (void xdata *)1, 0, 0, 255, 1 };
 
 MSCB_INFO_VAR code vars_uin[] =
-   { 4, UNIT_VOLT,    0,          0, MSCBF_FLOAT, "P%Uin#",  (void xdata *)8, 0, 0, 4 };
+   { 4, UNIT_VOLT,    0,          0, MSCBF_FLOAT, "P%Uin#",  (void xdata *)8, 4 };
 
 MSCB_INFO_VAR code vars_diffin[] =
-   { 4, UNIT_VOLT,    0,          0, MSCBF_FLOAT, "P%Uin#",  (void xdata *)4, 0, 0, 4 };
+   { 4, UNIT_VOLT,    0,          0, MSCBF_FLOAT, "P%Uin#",  (void xdata *)4, 4 };
 
 MSCB_INFO_VAR code vars_uin_range[] = {
-   { 4, UNIT_VOLT,    0,          0, MSCBF_FLOAT, "P%Uin#",  (void xdata *)8, 0, 0, 4 },
+   { 4, UNIT_VOLT,    0,          0, MSCBF_FLOAT, "P%Uin#",  (void xdata *)8, 4 },
    { 1, UNIT_BYTE,    0,          0, MSCBF_HIDDEN,"P%Range", (void xdata *)0 },
 };
 
 MSCB_INFO_VAR code vars_uout[] =
-   { 4, UNIT_VOLT,    0,          0, MSCBF_FLOAT, "P%Uout#", (void xdata *)8, 0, 30,  0.5 };
+   { 4, UNIT_VOLT,    0,          0, MSCBF_FLOAT, "P%Uout#", (void xdata *)8, 2, 0, 30,  0.5 };
 
 MSCB_INFO_VAR code vars_iin[] =
-   { 4, UNIT_AMPERE,  PRFX_MILLI, 0, MSCBF_FLOAT, "P%Iin#",  (void xdata *)8, 0, 0, 4 };
+   { 4, UNIT_AMPERE,  PRFX_MILLI, 0, MSCBF_FLOAT, "P%Iin#",  (void xdata *)8, 4 };
 
 MSCB_INFO_VAR code vars_cin[] =
-   { 4, UNIT_FARAD,   PRFX_NANO,  0, MSCBF_FLOAT, "P%Cin#",  (void xdata *)4, 0, 0, 4 };
+   { 4, UNIT_FARAD,   PRFX_NANO,  0, MSCBF_FLOAT, "P%Cin#",  (void xdata *)4, 4 };
 
 MSCB_INFO_VAR code vars_temp[] = {
-   { 4, UNIT_CELSIUS, 0,          0, MSCBF_FLOAT, "P%T#",    (void xdata *)8, 0, 0, 2 },
+   { 4, UNIT_CELSIUS, 0,          0, MSCBF_FLOAT, "P%T#",    (void xdata *)8, 2, 0, 0 },
    { 4, UNIT_AMPERE,  PRFX_MILLI, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "P%Excit", (void xdata *)0 },
 };
 
 MSCB_INFO_VAR code vars_iout[] =
-   { 4, UNIT_AMPERE,  PRFX_MILLI, 0, MSCBF_FLOAT, "P%Iout#", (void xdata *)8, 0, 20,  0.1 };
+   { 4, UNIT_AMPERE,  PRFX_MILLI, 0, MSCBF_FLOAT, "P%Iout#", (void xdata *)8, 2, 0, 20,  0.1 };
 
 MSCB_INFO_VAR code vars_lhe[] = {
-   { 4, UNIT_AMPERE,  PRFX_MILLI, 0, MSCBF_FLOAT, "P%Iout#", (void xdata *)2, 0, 100,  1 },
-   { 4, UNIT_PERCENT, 0,          0, MSCBF_FLOAT, "P%Lin#",  (void xdata *)2 },
+   { 4, UNIT_AMPERE,  PRFX_MILLI, 0, MSCBF_FLOAT, "P%Iout#", (void xdata *)2, 1, 0, 100,  1 },
+   { 4, UNIT_PERCENT, 0,          0, MSCBF_FLOAT, "P%Lin#",  (void xdata *)2, 2 },
 };
 
 MSCB_INFO_VAR code vars_din[] =
