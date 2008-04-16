@@ -199,7 +199,7 @@ void display_value(MSCB_INFO_VAR *pvar, void *pd)
 
       case 4:
          if (pvar->flags & MSCBF_FLOAT)
-            printf("%b*.b*f", 10-unit_len, (unsigned char)pvar->delta, *((float *) pd));
+            printf("%b*.b*f", 10-unit_len, pvar->digits ? pvar->digits : 3, *((float *) pd));
          else {
             if (pvar->flags & MSCBF_SIGNED)
                printf("%b*ld", 10-unit_len, *((long *) pd));

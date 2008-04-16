@@ -621,6 +621,7 @@ typedef struct {
    void *ud;                    // point to user data buffer
 
 #if defined(SCS_1000) || defined(SCS_1001) || defined(SCS_2000) || defined(SCS_2001)
+   unsigned char  digits;       // number of digits to display after period
    float min, max, delta;       // limits for button control
    unsigned short node_address; // address for remote node on subbus
    unsigned char  channel;      // address for remote channel subbus

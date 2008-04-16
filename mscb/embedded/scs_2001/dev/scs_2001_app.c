@@ -41,23 +41,23 @@ struct {
 
 MSCB_INFO_VAR code vars[] = {
 
-   { 4, UNIT_VOLT,    0, 0, MSCBF_FLOAT, "ADC00",  &user_data.adc[0],   0, 0, 4 },                    
-   { 4, UNIT_VOLT,    0, 0, MSCBF_FLOAT, "ADC01",  &user_data.adc[1],   0, 0, 4 },                    
-   { 4, UNIT_VOLT,    0, 0, MSCBF_FLOAT, "ADC02",  &user_data.adc[2],   0, 0, 4 },                    
-   { 4, UNIT_VOLT,    0, 0, MSCBF_FLOAT, "ADC03",  &user_data.adc[3],   0, 0, 4 },                    
-   { 4, UNIT_VOLT,    0, 0, MSCBF_FLOAT, "ADC04",  &user_data.adc[4],   0, 0, 4 },                    
-   { 4, UNIT_VOLT,    0, 0, MSCBF_FLOAT, "ADC05",  &user_data.adc[5],   0, 0, 4 },                    
-   { 4, UNIT_VOLT,    0, 0, MSCBF_FLOAT, "ADC06",  &user_data.adc[6],   0, 0, 4 },                    
-   { 4, UNIT_VOLT,    0, 0, MSCBF_FLOAT, "ADC07",  &user_data.adc[7],   0, 0, 4 },                    
+   { 4, UNIT_VOLT,    0, 0, MSCBF_FLOAT, "ADC00",  &user_data.adc[0],   4 },                    
+   { 4, UNIT_VOLT,    0, 0, MSCBF_FLOAT, "ADC01",  &user_data.adc[1],   4 },                    
+   { 4, UNIT_VOLT,    0, 0, MSCBF_FLOAT, "ADC02",  &user_data.adc[2],   4 },                    
+   { 4, UNIT_VOLT,    0, 0, MSCBF_FLOAT, "ADC03",  &user_data.adc[3],   4 },                    
+   { 4, UNIT_VOLT,    0, 0, MSCBF_FLOAT, "ADC04",  &user_data.adc[4],   4 },                    
+   { 4, UNIT_VOLT,    0, 0, MSCBF_FLOAT, "ADC05",  &user_data.adc[5],   4 },                    
+   { 4, UNIT_VOLT,    0, 0, MSCBF_FLOAT, "ADC06",  &user_data.adc[6],   4 },                    
+   { 4, UNIT_VOLT,    0, 0, MSCBF_FLOAT, "ADC07",  &user_data.adc[7],   4 },                    
                                                                                          
-   { 1, UNIT_BOOLEAN, 0, 0, 0,           "Valve0", &user_data.valve[0], 0, 1, 1 },
-   { 1, UNIT_BOOLEAN, 0, 0, 0,           "Valve1", &user_data.valve[1], 0, 1, 1 },
-   { 1, UNIT_BOOLEAN, 0, 0, 0,           "Valve2", &user_data.valve[2], 0, 1, 1 },
-   { 1, UNIT_BOOLEAN, 0, 0, 0,           "Valve3", &user_data.valve[3], 0, 1, 1 },
-   { 1, UNIT_BOOLEAN, 0, 0, 0,           "Valve4", &user_data.valve[4], 0, 1, 1 },
-   { 1, UNIT_BOOLEAN, 0, 0, 0,           "Valve5", &user_data.valve[5], 0, 1, 1 },
-   { 1, UNIT_BOOLEAN, 0, 0, 0,           "Valve6", &user_data.valve[6], 0, 1, 1 },
-   { 1, UNIT_BOOLEAN, 0, 0, 0,           "Valve7", &user_data.valve[7], 0, 1, 1 },
+   { 1, UNIT_BOOLEAN, 0, 0, 0,           "Valve0", &user_data.valve[0], 0, 0, 1, 1 },
+   { 1, UNIT_BOOLEAN, 0, 0, 0,           "Valve1", &user_data.valve[1], 0, 0, 1, 1 },
+   { 1, UNIT_BOOLEAN, 0, 0, 0,           "Valve2", &user_data.valve[2], 0, 0, 1, 1 },
+   { 1, UNIT_BOOLEAN, 0, 0, 0,           "Valve3", &user_data.valve[3], 0, 0, 1, 1 },
+   { 1, UNIT_BOOLEAN, 0, 0, 0,           "Valve4", &user_data.valve[4], 0, 0, 1, 1 },
+   { 1, UNIT_BOOLEAN, 0, 0, 0,           "Valve5", &user_data.valve[5], 0, 0, 1, 1 },
+   { 1, UNIT_BOOLEAN, 0, 0, 0,           "Valve6", &user_data.valve[6], 0, 0, 1, 1 },
+   { 1, UNIT_BOOLEAN, 0, 0, 0,           "Valve7", &user_data.valve[7], 0, 0, 1, 1 },
 
    { 0 }
 };
