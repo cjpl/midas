@@ -74,17 +74,17 @@ struct {
    unsigned short rot_speed;
    float tmp_current;
    unsigned char din[4];
-   unsigned char mv_close;
+   unsigned char hv_close;
    unsigned char bv_open;
    unsigned char bv_close;
-   float mv_mbar;
-   float fv_mbar;
+   float hv_mbar;
+   float vv_mbar;
    unsigned short final_speed;
    unsigned short evac_timeout;
    unsigned short fp_cycle;
-   float fv_max;
-   float fv_min;
-   float mv_thresh;
+   float vv_max;
+   float vv_min;
+   float hv_thresh;
    float adc[8];
    float aofs[8];
    float again[8];
@@ -94,37 +94,37 @@ MSCB_INFO_VAR code vars[] = {
 
    { 1, UNIT_BYTE,    0, 0, 0,                               "Error",    &user_data.error },                        // 0
                                                                                                                
-   { 1, UNIT_BOOLEAN, 0, 0, 0,                               "Station",  &user_data.station_on, 0, 1, 1 },          // 1
-   { 1, UNIT_BOOLEAN, 0, 0, 0,                               "Locked",   &user_data.valve_locked, 0, 1, 1 },        // 2
-   { 1, UNIT_BOOLEAN, 0, 0, 0,                               "Vac OK",   &user_data.vacuum_ok,  0, 1, 1 },          // 3
-   { 1, UNIT_BOOLEAN, 0, 0, 0,                               "ManMode",  &user_data.man_mode,  0, 1, 1 },           // 4
+   { 1, UNIT_BOOLEAN, 0, 0, 0,                               "Station",  &user_data.station_on, 0, 0, 1, 1 },       // 1
+   { 1, UNIT_BOOLEAN, 0, 0, 0,                               "Locked",   &user_data.valve_locked, 0, 0, 1, 1 },     // 2
+   { 1, UNIT_BOOLEAN, 0, 0, 0,                               "Vac OK",   &user_data.vacuum_ok,  0, 0, 1, 1 },       // 3
+   { 1, UNIT_BOOLEAN, 0, 0, 0,                               "ManMode",  &user_data.man_mode,  0, 0, 1, 1 },        // 4
                                                                                                                
-   { 1, UNIT_BOOLEAN, 0, 0, 0,                               "Forepump", &user_data.relais[0], 0, 1, 1 },           // 5
-   { 1, UNIT_BOOLEAN, 0, 0, 0,                               "Forevlv",  &user_data.relais[1], 0, 1, 1 },           // 6
-   { 1, UNIT_BOOLEAN, 0, 0, 0,                               "Mainvlv",  &user_data.relais[2], 0, 1, 1 },           // 7
-   { 1, UNIT_BOOLEAN, 0, 0, 0,                               "Bypvlv",   &user_data.relais[3], 0, 1, 1 },           // 8
+   { 1, UNIT_BOOLEAN, 0, 0, 0,                               "Forepump", &user_data.relais[0], 0, 0, 1, 1 },        // 5
+   { 1, UNIT_BOOLEAN, 0, 0, 0,                               "Forevlv",  &user_data.relais[1], 0, 0, 1, 1 },        // 6
+   { 1, UNIT_BOOLEAN, 0, 0, 0,                               "Mainvlv",  &user_data.relais[2], 0, 0, 1, 1 },        // 7
+   { 1, UNIT_BOOLEAN, 0, 0, 0,                               "Bypvlv",   &user_data.relais[3], 0, 0, 1, 1 },        // 8
                                                                                                                
-   { 1, UNIT_BOOLEAN, 0, 0, 0,                               "Turbo on", &user_data.turbo_on,  0, 1, 1 },           // 9
+   { 1, UNIT_BOOLEAN, 0, 0, 0,                               "Turbo on", &user_data.turbo_on,  0, 0, 1, 1 },        // 9
    { 2, UNIT_HERTZ,   0, 0, 0,                               "RotSpd",   &user_data.rot_speed, },                   // 10
    { 4, UNIT_AMPERE,  0, 0, MSCBF_FLOAT,                     "TMPcur",   &user_data.tmp_current, },                 // 11
                                                                                                                
-   { 1, UNIT_BOOLEAN, 0, 0, 0,                               "FP on",    &user_data.din[0] },                       // 12
-   { 1, UNIT_BOOLEAN, 0, 0, 0,                               "FV open",  &user_data.din[1] },                       // 13
-   { 1, UNIT_BOOLEAN, 0, 0, 0,                               "FV close", &user_data.din[2] },                       // 14
-   { 1, UNIT_BOOLEAN, 0, 0, 0,                               "MV open",  &user_data.din[3] },                       // 15
-   { 1, UNIT_BOOLEAN, 0, 0, 0,                               "MV close", &user_data.mv_close },                     // 16
+   { 1, UNIT_BOOLEAN, 0, 0, 0,                               "VP on",    &user_data.din[0] },                       // 12
+   { 1, UNIT_BOOLEAN, 0, 0, 0,                               "VV open",  &user_data.din[1] },                       // 13
+   { 1, UNIT_BOOLEAN, 0, 0, 0,                               "VV close", &user_data.din[2] },                       // 14
+   { 1, UNIT_BOOLEAN, 0, 0, 0,                               "HV open",  &user_data.din[3] },                       // 15
+   { 1, UNIT_BOOLEAN, 0, 0, 0,                               "HV close", &user_data.hv_close },                     // 16
    { 1, UNIT_BOOLEAN, 0, 0, 0,                               "BV open",  &user_data.bv_open  },                     // 17
    { 1, UNIT_BOOLEAN, 0, 0, 0,                               "BV close", &user_data.bv_close },                     // 18
                                                                                                                
-   { 4, UNIT_BAR, PRFX_MILLI, 0, MSCBF_FLOAT,                "MV",       &user_data.mv_mbar },                      // 19
-   { 4, UNIT_BAR, PRFX_MILLI, 0, MSCBF_FLOAT,                "FV",       &user_data.fv_mbar },                      // 20
+   { 4, UNIT_BAR, PRFX_MILLI, 0, MSCBF_FLOAT,                "HV",       &user_data.hv_mbar },                      // 19
+   { 4, UNIT_BAR, PRFX_MILLI, 0, MSCBF_FLOAT,                "VV",       &user_data.vv_mbar },                      // 20
                                                                                                                
    { 2, UNIT_HERTZ,   0, 0, MSCBF_HIDDEN,                    "FinSpd",   &user_data.final_speed },                  // 21
-   { 2, UNIT_MINUTE,  0, 0, MSCBF_HIDDEN,                    "Timeout",  &user_data.evac_timeout, 0, 300, 10 },     // 22
-   { 2, UNIT_SECOND,  0, 0, MSCBF_HIDDEN,                    "FP cycle", &user_data.fp_cycle, 10, 600, 10 },        // 23
-   { 4, UNIT_BAR, PRFX_MILLI, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "FV max",   &user_data.fv_max, 1, 10, 1 },             // 24
-   { 4, UNIT_BAR, PRFX_MILLI, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "FV min",   &user_data.fv_min, 0.1, 1, 0.1 },          // 25
-   { 4, UNIT_BAR, PRFX_MILLI, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "MV thrsh", &user_data.mv_thresh, 0.001, 1, 0.001 },   // 26
+   { 2, UNIT_MINUTE,  0, 0, MSCBF_HIDDEN,                    "Timeout",  &user_data.evac_timeout, 0, 0, 300, 10 },  // 22
+   { 2, UNIT_SECOND,  0, 0, MSCBF_HIDDEN,                    "FP cycle", &user_data.fp_cycle, 0, 10, 600, 10 },     // 23
+   { 4, UNIT_BAR, PRFX_MILLI, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "VV max",   &user_data.vv_max, 1, 1, 10, 1 },          // 24
+   { 4, UNIT_BAR, PRFX_MILLI, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "VV min",   &user_data.vv_min, 1, 0.1, 1, 0.1 },       // 25
+   { 4, UNIT_BAR, PRFX_MILLI, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "HV thrsh", &user_data.hv_thresh, 3, 0.001, 1, 0.001 },// 26
 
    { 4, UNIT_VOLT,   0, 0, MSCBF_FLOAT | MSCBF_HIDDEN,       "ADC0",     &user_data.adc[0] },                    
    { 4, UNIT_VOLT,   0, 0, MSCBF_FLOAT | MSCBF_HIDDEN,       "ADC1",     &user_data.adc[1] },                    
@@ -135,23 +135,23 @@ MSCB_INFO_VAR code vars[] = {
    { 4, UNIT_VOLT,   0, 0, MSCBF_FLOAT | MSCBF_HIDDEN,       "ADC6",     &user_data.adc[6] },                    
    { 4, UNIT_VOLT,   0, 0, MSCBF_FLOAT | MSCBF_HIDDEN,       "ADC7",     &user_data.adc[7] },                    
                                                                                                                 
-   { 4, UNIT_VOLT,   0, 0, MSCBF_FLOAT | MSCBF_HIDDEN,       "AOFS0",    &user_data.aofs[0], -0.1, 0.1, 0.001 }, 
-   { 4, UNIT_VOLT,   0, 0, MSCBF_FLOAT | MSCBF_HIDDEN,       "AOFS1",    &user_data.aofs[1], -0.1, 0.1, 0.001 }, 
-   { 4, UNIT_VOLT,   0, 0, MSCBF_FLOAT | MSCBF_HIDDEN,       "AOFS2",    &user_data.aofs[2], -0.1, 0.1, 0.001 }, 
-   { 4, UNIT_VOLT,   0, 0, MSCBF_FLOAT | MSCBF_HIDDEN,       "AOFS3",    &user_data.aofs[3], -0.1, 0.1, 0.001 }, 
-   { 4, UNIT_VOLT,   0, 0, MSCBF_FLOAT | MSCBF_HIDDEN,       "AOFS4",    &user_data.aofs[4], -0.1, 0.1, 0.001 }, 
-   { 4, UNIT_VOLT,   0, 0, MSCBF_FLOAT | MSCBF_HIDDEN,       "AOFS5",    &user_data.aofs[5], -0.1, 0.1, 0.001 }, 
-   { 4, UNIT_VOLT,   0, 0, MSCBF_FLOAT | MSCBF_HIDDEN,       "AOFS6",    &user_data.aofs[6], -0.1, 0.1, 0.001 }, 
-   { 4, UNIT_VOLT,   0, 0, MSCBF_FLOAT | MSCBF_HIDDEN,       "AOFS7",    &user_data.aofs[7], -0.1, 0.1, 0.001 }, 
+   { 4, UNIT_VOLT,   0, 0, MSCBF_FLOAT | MSCBF_HIDDEN,       "AOFS0",    &user_data.aofs[0], 3, -0.1, 0.1, 0.001 }, 
+   { 4, UNIT_VOLT,   0, 0, MSCBF_FLOAT | MSCBF_HIDDEN,       "AOFS1",    &user_data.aofs[1], 3, -0.1, 0.1, 0.001 }, 
+   { 4, UNIT_VOLT,   0, 0, MSCBF_FLOAT | MSCBF_HIDDEN,       "AOFS2",    &user_data.aofs[2], 3, -0.1, 0.1, 0.001 }, 
+   { 4, UNIT_VOLT,   0, 0, MSCBF_FLOAT | MSCBF_HIDDEN,       "AOFS3",    &user_data.aofs[3], 3, -0.1, 0.1, 0.001 }, 
+   { 4, UNIT_VOLT,   0, 0, MSCBF_FLOAT | MSCBF_HIDDEN,       "AOFS4",    &user_data.aofs[4], 3, -0.1, 0.1, 0.001 }, 
+   { 4, UNIT_VOLT,   0, 0, MSCBF_FLOAT | MSCBF_HIDDEN,       "AOFS5",    &user_data.aofs[5], 3, -0.1, 0.1, 0.001 }, 
+   { 4, UNIT_VOLT,   0, 0, MSCBF_FLOAT | MSCBF_HIDDEN,       "AOFS6",    &user_data.aofs[6], 3, -0.1, 0.1, 0.001 }, 
+   { 4, UNIT_VOLT,   0, 0, MSCBF_FLOAT | MSCBF_HIDDEN,       "AOFS7",    &user_data.aofs[7], 3, -0.1, 0.1, 0.001 }, 
                                                                                                                 
-   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN,       "AGAIN0",   &user_data.again[0], 0.9, 1.1, 0.001 }, 
-   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN,       "AGAIN1",   &user_data.again[1], 0.9, 1.1, 0.001 }, 
-   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN,       "AGAIN2",   &user_data.again[2], 0.9, 1.1, 0.001 }, 
-   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN,       "AGAIN3",   &user_data.again[3], 0.9, 1.1, 0.001 }, 
-   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN,       "AGAIN4",   &user_data.again[4], 0.9, 1.1, 0.001 }, 
-   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN,       "AGAIN5",   &user_data.again[5], 0.9, 1.1, 0.001 }, 
-   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN,       "AGAIN6",   &user_data.again[6], 0.9, 1.1, 0.001 }, 
-   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN,       "AGAIN7",   &user_data.again[7], 0.9, 1.1, 0.001 }, 
+   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN,       "AGAIN0",   &user_data.again[0], 3, 0.9, 1.1, 0.001 }, 
+   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN,       "AGAIN1",   &user_data.again[1], 3, 0.9, 1.1, 0.001 }, 
+   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN,       "AGAIN2",   &user_data.again[2], 3, 0.9, 1.1, 0.001 }, 
+   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN,       "AGAIN3",   &user_data.again[3], 3, 0.9, 1.1, 0.001 }, 
+   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN,       "AGAIN4",   &user_data.again[4], 3, 0.9, 1.1, 0.001 }, 
+   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN,       "AGAIN5",   &user_data.again[5], 3, 0.9, 1.1, 0.001 }, 
+   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN,       "AGAIN6",   &user_data.again[6], 3, 0.9, 1.1, 0.001 }, 
+   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN,       "AGAIN7",   &user_data.again[7], 3, 0.9, 1.1, 0.001 }, 
 
    { 0 }
 };
@@ -224,9 +224,9 @@ void user_init(unsigned char init)
 
       user_data.evac_timeout = 60; // 1h to pump recipient
       user_data.fp_cycle = 20;     // run fore pump for min. 20 sec.
-      user_data.fv_max = 4;        // start fore pump at 4 mbar     
-      user_data.fv_min = 0.4;      // stop fore pump at 0.4 mbar
-      user_data.mv_thresh = 1E-3;  // vacuum ok if < 10^-3 mbar
+      user_data.vv_max = 4;        // start fore pump at 4 mbar     
+      user_data.vv_min = 0.4;      // stop fore pump at 0.4 mbar
+      user_data.hv_thresh = 1E-3;  // vacuum ok if < 10^-3 mbar
    }
 
    /* write digital outputs */
@@ -481,15 +481,15 @@ static bit b0_old = 0, b1_old = 0, b2_old = 0, b3_old = 0,
    /* display pressures */
    lcd_goto(0, 0);
    if (user_data.relais[0] && user_data.relais[1])
-      printf("P1*: %9.2E mbar", user_data.fv_mbar);
+      printf("P1*: %9.2E mbar", user_data.vv_mbar);
    else
-      printf("P1: %10.2E mbar", user_data.fv_mbar);
+      printf("P1: %10.2E mbar", user_data.vv_mbar);
    
    lcd_goto(0, 1);
    if (user_data.turbo_on && (user_data.relais[2] || user_data.relais[3]))
-      printf("P2*: %9.2E mbar", user_data.mv_mbar);
+      printf("P2*: %9.2E mbar", user_data.hv_mbar);
    else
-      printf("P2: %10.2E mbar", user_data.mv_mbar);
+      printf("P2: %10.2E mbar", user_data.hv_mbar);
  
    lcd_goto(0, 2);
    if (user_data.error & ERR_TURBO_COMM)
@@ -526,10 +526,10 @@ static bit b0_old = 0, b1_old = 0, b2_old = 0, b3_old = 0,
       printf(user_data.relais[0] ? "FP0" : "FP1");
 
       lcd_goto(5, 3);
-      printf(user_data.relais[1] ? "FV0" : "FV1");
+      printf(user_data.relais[1] ? "VV0" : "VV1");
 
       lcd_goto(11, 3);
-      printf(user_data.relais[2] ? "MV0" : "MV1");
+      printf(user_data.relais[2] ? "HV0" : "HV1");
 
       lcd_goto(16, 3);
       printf(user_data.relais[3] ? "BV0" : "BV1");
@@ -622,9 +622,9 @@ static bit b0_old = 0, b1_old = 0, b2_old = 0, b3_old = 0,
    }
 
    /* check if evacuation of forepump and buffer tank is ready */
-   if (pump_state == ST_EVAC_FORE && user_data.fv_mbar < 1) {
+   if (pump_state == ST_EVAC_FORE && user_data.vv_mbar < 1) {
 
-      if (user_data.mv_mbar < 1) {
+      if (user_data.hv_mbar < 1) {
          
          /* recipient is already evacuated, go to running mode */
          start_time = time();     // remember start time
@@ -664,13 +664,13 @@ static bit b0_old = 0, b1_old = 0, b2_old = 0, b3_old = 0,
    }
 
    /* check if evacuation of main recipient is ready, may take very long time */
-   if (pump_state == ST_EVAC_MAIN && user_data.mv_mbar < 1) {
+   if (pump_state == ST_EVAC_MAIN && user_data.hv_mbar < 1) {
       
       set_forevalve(1);        // now evacuate both recipient and buffer tank
    }
 
    /* check if vacuum on both sides of main valve is ok */
-   if (pump_state == ST_EVAC_MAIN && user_data.mv_mbar < 1 && user_data.fv_mbar < 1) {
+   if (pump_state == ST_EVAC_MAIN && user_data.hv_mbar < 1 && user_data.vv_mbar < 1) {
 
       /* turn on turbo pump */
       user_data.turbo_on = 1;
@@ -683,7 +683,7 @@ static bit b0_old = 0, b1_old = 0, b2_old = 0, b3_old = 0,
    if (pump_state == ST_RAMP_TURBO || pump_state == ST_RUN_FPON || pump_state == ST_RUN_FPOFF ||
        pump_state == ST_RUN_FPUP || pump_state == ST_RUN_FPDOWN) {
 
-       if (user_data.mv_mbar > 4 && user_data.valve_locked == 0) {
+       if (user_data.hv_mbar > 4 && user_data.valve_locked == 0) {
 
           /* protect turbo pump */
           set_mainvalve(0);
@@ -703,7 +703,7 @@ static bit b0_old = 0, b1_old = 0, b2_old = 0, b3_old = 0,
    /* check if turbo pump started successfully in unlocked mode */
    if (user_data.valve_locked == 0 && pump_state == ST_RAMP_TURBO && 
        user_data.rot_speed > user_data.final_speed*0.8 &&
-       user_data.mv_mbar < 1 && user_data.fv_mbar < 1) {
+       user_data.hv_mbar < 1 && user_data.vv_mbar < 1) {
     
       set_bypassvalve(0);
 
@@ -717,7 +717,7 @@ static bit b0_old = 0, b1_old = 0, b2_old = 0, b3_old = 0,
    /* check if turbo pump started successfully in locked mode */
    if (user_data.valve_locked == 1 && pump_state == ST_RAMP_TURBO && 
        user_data.rot_speed > user_data.final_speed*0.8 &&
-       user_data.fv_mbar < 1) {
+       user_data.vv_mbar < 1) {
     
       start_time = time();     // remember start time
       pump_state = ST_RUN_FPON;
@@ -728,7 +728,7 @@ static bit b0_old = 0, b1_old = 0, b2_old = 0, b3_old = 0,
    if (pump_state == ST_RUN_FPON) {
 
       if (time() > start_time + user_data.fp_cycle*100 && 
-          user_data.fv_mbar < user_data.fv_min) {
+          user_data.vv_mbar < user_data.vv_min) {
          set_forevalve(0);
          pump_state = ST_RUN_FPDOWN;
          start_time = time();
@@ -747,7 +747,7 @@ static bit b0_old = 0, b1_old = 0, b2_old = 0, b3_old = 0,
    /* check for fore pump on */
    if (pump_state == ST_RUN_FPOFF) {
 
-      if (user_data.fv_mbar > user_data.fv_max) {
+      if (user_data.vv_mbar > user_data.vv_max) {
          set_forepump(1);
          pump_state = ST_RUN_FPUP;
          start_time = time();
@@ -764,7 +764,7 @@ static bit b0_old = 0, b1_old = 0, b2_old = 0, b3_old = 0,
    }
    
    /* set vacuum status */
-   user_data.vacuum_ok = (user_data.mv_mbar <= user_data.mv_thresh);
+   user_data.vacuum_ok = (user_data.hv_mbar <= user_data.hv_thresh);
    user_write(3);
 
    /*---- Pump station turn off logic ----*/
@@ -828,11 +828,11 @@ void user_loop(void)
 
    /* convert voltage to pressure, see data sheets */
    if (adc_chn == 0)
-      user_data.mv_mbar  = pow(10, 1.667 * user_data.adc[0] - 11.33); // PKR 251
+      user_data.hv_mbar  = pow(10, 1.667 * user_data.adc[0] - 11.33); // PKR 251
    if (adc_chn == 1)
-      user_data.fv_mbar  = pow(10, user_data.adc[1] - 5.5);           // TPR 280
+      user_data.vv_mbar  = pow(10, user_data.adc[1] - 5.5);           // TPR 280
    if (adc_chn == 5)
-      user_data.mv_close = user_data.adc[5] > 5;                     // ADC as digital input
+      user_data.hv_close = user_data.adc[5] > 5;                     // ADC as digital input
    if (adc_chn == 6)
       user_data.bv_open  = user_data.adc[6] > 5;                     // ADC as digital input
    if (adc_chn == 7)
