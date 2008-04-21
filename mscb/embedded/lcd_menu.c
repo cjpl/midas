@@ -215,6 +215,8 @@ void display_value(MSCB_INFO_VAR *pvar, void *pd)
 
 /*------------------------------------------------------------------*/
 
+#ifdef HAVE_RTC
+
 void date_inc(unsigned char index, unsigned char pos, char delta)
 {
    char xdata d;
@@ -250,6 +252,8 @@ void date_inc(unsigned char index, unsigned char pos, char delta)
       rtc_write_item(pos, d);
    }
 }
+
+#endif
 
 /*------------------------------------------------------------------*/
 
@@ -376,10 +380,13 @@ void lcd_menu()
    float xdata f;
 #endif
 
+
+#if defined(SCS_2000) || defined(SCS_2001)
    if (power_management()) {
       startup = 1; // force re-display after trip finished
       return;
    }
+#endif
 
    /* clear startup screen after 3 sec. */
    if (startup) {
@@ -416,9 +423,11 @@ void lcd_menu()
 
       /* update date/time in system menu */
       if (system_menu) {
+#ifdef HAVE_RTC
          rtc_read(dt_bcd);
          rtc_conv_date(dt_bcd, date_str);
          rtc_conv_time(dt_bcd, time_str);
+#endif
 
 #ifdef SCS_2001
          /* read system monitor */
@@ -529,6 +538,7 @@ void lcd_menu()
             }
          }
 
+#ifdef HAVE_RTC
          /* evaluate "-" button */
          if (b2 && !b2_old) {
             date_inc(var_index-2, date_index, -1);
@@ -548,6 +558,7 @@ void lcd_menu()
             date_inc(var_index-2, date_index, 1);
          if (!b3)
             last_b3 = 0;
+#endif
       }
 
       else if (enter_mode) {
