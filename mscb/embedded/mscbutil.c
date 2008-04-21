@@ -226,8 +226,8 @@ char getchar_nowait(void)
 
 unsigned char gets_wait(char *str, unsigned char size, unsigned char timeout)
 {
-   unsigned idata long start;
-   unsigned idata char i;
+   unsigned long idata start;
+   unsigned char idata i;
    char c;
 
    start = time();
