@@ -1521,9 +1521,11 @@ void lcd_out(unsigned char d, bit df)
    LCD = LCD | 0xF0;            // data input
 #if defined(CPU_C8051F120)
    SFRPAGE = CONFIG_PAGE;
-   P2MDOUT |= 0x0F;
 #if defined(SCS_2000) || defined(SCS_2001)
+   P2MDOUT |= 0x0F;
    LCD_1D = 0;                  // b to a for data
+#else
+   P2MDOUT = 0x0F;
 #endif
 #else
    PRT2CF = 0x0F;
@@ -1636,9 +1638,11 @@ void lcd_setup()
    LCD = LCD | 0xF0;            // data input
 #if defined(CPU_C8051F120)
    SFRPAGE = CONFIG_PAGE;
-   P2MDOUT |= 0x0F;
 #if defined(SCS_2000) || defined(SCS_2001)
+   P2MDOUT |= 0x0F;
    LCD_1D = 0;                  // b to a for data
+#else
+   P2MDOUT = 0x0F;
 #endif
 #else
    PRT2CF = 0x0F;
