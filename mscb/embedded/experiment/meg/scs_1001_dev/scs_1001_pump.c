@@ -379,8 +379,8 @@ void sr_read()
 
 unsigned char tc600_read(unsigned short param, char *result)
 {
-   char idata str[32];
-   unsigned char i, j, cs, len;
+   char xdata str[32];
+   unsigned char xdata i, j, cs, len;
 
    sprintf(str, "%03Bd00%03d02=?", TC600_ADDRESS, param);
 
@@ -410,8 +410,8 @@ unsigned char tc600_read(unsigned short param, char *result)
 
 unsigned char tc600_write(unsigned short param, unsigned char len, unsigned long value)
 {
-   char idata str[32];
-   unsigned char i, cs;
+   char xdata str[32];
+   unsigned char xdata i, cs;
 
    if (len == 6)
       sprintf(str, "%03Bd10%03d06%06ld", TC600_ADDRESS, param, value);
