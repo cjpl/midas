@@ -288,8 +288,10 @@ char putchar(char c)
 
 void flush(void)
 {
-   while (sbuf_wp != sbuf_rp)
+   while (sbuf_wp != sbuf_rp) {
+      watchdog_refresh(0);
       rs232_output();
+   }
 }
 
 /*------------------------------------------------------------------*/
