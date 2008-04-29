@@ -102,7 +102,7 @@ void user_init(unsigned char init)
                   memset(variables[var_index].ud, 0, variables[var_index].width);
                   /* allow driver to overwrite */
                   scs_2001_module[index].driver(module_id[i], MC_GETDEFAULT, i/8, i%8, j, 
-                     variables[var_index++].ud);
+                     variables[var_index].ud);
                   var_index++;
             } 
          }
