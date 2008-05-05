@@ -292,6 +292,12 @@ Read any Parameter for a given group. Each group (0..5) handles
 int vf48_ParameterRead(MVME_INTERFACE *mvme, DWORD base, int grp, int param)
 {
   int  cmode, par, to, wr, retry;
+  int  debug = 0;
+
+  if (vf48_isPresent(mvme, base) != VF48_SUCCESS) {
+    printf("There is no VF48 at VME A24 0x%x\n", base);
+    return VF48_ERR_PARM;
+  }
 
   if (grp < 6) {
     mvme_get_dmode(mvme, &cmode);
@@ -301,7 +307,7 @@ int vf48_ParameterRead(MVME_INTERFACE *mvme, DWORD base, int grp, int param)
 
       int csr = 0;
 
-      if (0) {
+      if (debug) {
         csr = mvme_read_value(mvme, base+VF48_CSR_REG_RW);
         printf("Reading grp %d, param %d, ID_RDY %d, DATA_RDY %d\n", grp, param, csr & VF48_CSR_PARM_ID_RDY, csr & VF48_CSR_PARM_DATA_RDY);
       }
@@ -309,13 +315,13 @@ int vf48_ParameterRead(MVME_INTERFACE *mvme, DWORD base, int grp, int param)
       // wait for VF48_CSR_PARM_ID_RDY
       for (to=10; to>0; to--) {
         csr = mvme_read_value(mvme, base+VF48_CSR_REG_RW);
-	if (0)
+	if (debug)
 	  printf("vf48_ParameterRead: read1: Waiting for 0x%x, CSR 0x%x, to %d\n", VF48_CSR_PARM_ID_RDY, csr, to);
         if (csr & VF48_CSR_PARM_ID_RDY)
           break;
       }
 
-      if (0)
+      if (debug)
         printf("vf48_ParameterRead: Group %d, parameter %d, VF48_CSR_PARAM_ID_RDY   wait %d\n", grp, param, to);
       
       // check for timeout
@@ -342,7 +348,7 @@ int vf48_ParameterRead(MVME_INTERFACE *mvme, DWORD base, int grp, int param)
       // wait for VF48_CSR_PARM_DATA_RDY
       for (to=10; to>0; to--) {
         csr = mvme_read_value(mvme, base+VF48_CSR_REG_RW);
-        if (0)
+        if (debug)
           printf("vf48_ParameterRead: CSR 0x%x, Waiting for 0x%x, TO %d\n", csr, VF48_CSR_PARM_DATA_RDY, to);
         if (csr & VF48_CSR_PARM_DATA_RDY)
           break;
@@ -360,7 +366,7 @@ int vf48_ParameterRead(MVME_INTERFACE *mvme, DWORD base, int grp, int param)
 	
 	csr = mvme_read_value(mvme, base+VF48_CSR_REG_RW);
 
-	if (0)
+	if (debug)
 	  printf("vf48_ParameterRead: CSR 0x%x, data 0x%x\n", csr, data);
 	
 	if ((csr & VF48_CSR_PARM_DATA_RDY) == 0) {
@@ -374,7 +380,7 @@ int vf48_ParameterRead(MVME_INTERFACE *mvme, DWORD base, int grp, int param)
 	printf("vf48_ParameterRead: CSR 0x%x, stuck VF48_CSR_PARM_DATA_RDY\n", csr);
       }
 
-      if (0)
+      if (debug)
 	printf("vf48_ParameterRead: Group %d, parameter %d, timeout waiting for VF48_CSR_PARAM_DATA_RDY, retry %d\n", grp, param, retry);
       //sleep(1);
     }
@@ -386,7 +392,7 @@ int vf48_ParameterRead(MVME_INTERFACE *mvme, DWORD base, int grp, int param)
 }
 
 /********************************************************************/
-void vf48_Reset(MVME_INTERFACE *mvme, DWORD base)
+int vf48_Reset(MVME_INTERFACE *mvme, DWORD base)
 {
   int  cmode, v;
 
@@ -395,7 +401,7 @@ void vf48_Reset(MVME_INTERFACE *mvme, DWORD base)
   if (1)
     printf("vf48_Reset: CSR 0x%x\n", mvme_read_value(mvme, base+VF48_CSR_REG_RW));
   mvme_write_value(mvme, base+VF48_GLOBAL_RESET_W, 0);
-  sleep(1);
+  //sleep(1);
   if (1)
     printf("vf48_Reset: CSR 0x%x\n", mvme_read_value(mvme, base+VF48_CSR_REG_RW));
   mvme_write_value(mvme, base+VF48_TEST_REG_RW, 0x00000000);
@@ -407,6 +413,13 @@ void vf48_Reset(MVME_INTERFACE *mvme, DWORD base)
   if (v != 0x0000FFFF)
     printf("vf48_Reset: Test register data mismatch: read 0x%08x, expected 0x0000FFFF\n", v);
   mvme_set_dmode(mvme, cmode);
+
+  if (vf48_isPresent(mvme, base) != VF48_SUCCESS) {
+    printf("There is no VF48 at VME A24 0x%x\n", base);
+    return VF48_ERR_HW;
+  }
+
+  return VF48_SUCCESS;
 }
 
 /********************************************************************/
@@ -911,7 +924,7 @@ int vf48_Status(MVME_INTERFACE *mvme, DWORD base)
     printf("Module is in running mode: cannot read parameters\n");
   } else {
     printf("Parameters:\n");
-    for (i=0; i<16; i++) {
+    for (i=1; i<16; i++) {
       printf("  par%02d (%-20s): ", i, parname[i]);
       for (j=0; j<6; j++) {
 	int v = vf48_ParameterRead(mvme, base, j, i);
@@ -922,6 +935,31 @@ int vf48_Status(MVME_INTERFACE *mvme, DWORD base)
   }
 
   mvme_set_dmode(mvme, cmode);
+  return VF48_SUCCESS;
+}
+
+/********************************************************************/
+/** vf48_isPresent
+   @param mvme vme structure
+   @param base  VF48 base address
+   @return status VF48_ERROR if module is not present, SUCCESS
+*/
+int vf48_isPresent(MVME_INTERFACE *mvme, DWORD base)
+{
+  int cmode;
+  int missing = 0;
+
+  mvme_get_dmode(mvme, &cmode);
+  mvme_set_dmode(mvme, MVME_DMODE_D32);
+
+  missing |= (0xFFFFFFFF==mvme_read_value(mvme, base + 0x0));
+  missing |= (0xFFFFFFFF==mvme_read_value(mvme, base + 0x30));
+
+  mvme_set_dmode(mvme, cmode);
+
+  if (missing)
+    return VF48_ERROR;
+
   return VF48_SUCCESS;
 }
 
