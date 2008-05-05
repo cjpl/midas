@@ -137,6 +137,7 @@ ID#   Def Value
 //#define  VF48_OUT_OF_SYNC          (DWORD) (0x88000000)
 //#define  VF48_TIMEOUT              (DWORD) (0x10000000)
 
+int  vf48_isPresent(MVME_INTERFACE *mvme, DWORD base);
 int  vf48_Setup(MVME_INTERFACE *mvme, DWORD base, int mode);
 int  vf48_EventRead(MVME_INTERFACE *myvme, DWORD base, DWORD *event, int *elements);
 int  vf48_EventRead64(MVME_INTERFACE *myvme, DWORD base, DWORD *event, int *elements);
@@ -144,7 +145,7 @@ int  vf48_GroupRead(MVME_INTERFACE *myvme, DWORD base, DWORD *event, int grp, in
 int  vf48_DataRead(MVME_INTERFACE *myvme, DWORD base, DWORD *event, int *elements);
 int  vf48_ExtTrgSet(MVME_INTERFACE *myvme, DWORD base);
 int  vf48_ExtTrgClr(MVME_INTERFACE *myvme, DWORD base);
-void vf48_Reset(MVME_INTERFACE *myvme, DWORD base);
+int  vf48_Reset(MVME_INTERFACE *myvme, DWORD base);
 int  vf48_AcqStart(MVME_INTERFACE *myvme, DWORD base);
 int  vf48_AcqStop(MVME_INTERFACE *myvme, DWORD base);
 int  vf48_NFrameRead(MVME_INTERFACE *myvme, DWORD base);
