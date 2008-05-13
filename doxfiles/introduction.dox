@@ -37,18 +37,17 @@ driving force behind this evolution :-).
 The Maximum Integrated Data Acquisition System (MIDAS) is a general-purpose
 system for event based data acquisition in small and medium scale physics 
 experiments. It has been developed at the Paul Scherrer Institute (Switzerland)
-and at TRIUMF (Canada) between 1993 and 2000 (Release of Version 1.8.0).
+and at TRIUMF (Canada) between 1993 and now (Release of Version 2.1.0).
 Presently ongoing development are more focused on the interfacing capability of
 the Midas package to external applications such as ROOT for data analysis 
 (see @ref analyzer_struct). 
 
 Midas is based on a modular networking capability and a central database system.
 MIDAS consists of a C library and several applications. They run on many
-different operating systems such as UNIX like, Windows NT, VxWorks, VMS and
-MS-DOS. While the system is already in use in several laboratories, the development
-continues with addition of new features and tools.
-Current development involves RTLinux for either dedicated frontend or composite frontend 
-and backend system. 
+different operating systems such as UNIX like, Windows NT, VxWorks and
+use to run in the old days on MS-DOS, VMS, OSF/1 . While the system is already in use
+in several laboratories, the development continues with addition of new features and tools.
+Recent developments involved multi-threading, FGPA/Linux support, MSCB extension. 
 
 For the newest status, check the MIDAS home page:
    <a HREF="http://midas.psi.ch"> Switzerland </a>, 
@@ -58,21 +57,29 @@ For the newest status, check the MIDAS home page:
 
 MIDAS has been designed for small and medium experiments. It can be used in distributed
 environments where one or more frontends are connected to the backend via Ethernet.
-The frontend might be an embedded system like a VME CPU running VxWorks or a PC running
-Windows NT or Linux. Data rates around 1MB/sec through standard Ethernet and 6.1MB/sec
-over Fast Ethernet can be achieved.
+The frontend might be an embedded system like a VME CPU running VxWorks or Linux or a PC running
+Windows NT or Linux. Midas transfer data rates capabilities are close to the type of hardware limits
+used.
 
 For small experiments and test setups the front-end program can run on the back-end
 computer thus eliminating the need of network transfer, presuming that the back-end
 computer has direct access to the hardware. Device drivers for common PC-CAMAC interfaces
 have been written for Windows NT and Linux. Drivers for PC-VME interfaces are commercially
-available for Windows NT.
+available for Windows NT and for Linux as well. Midas provides a large variety of drivers based
+on their use within the physiscs community. CAMAC is slowly phased out and VME based modules take the
+relay. So far no cPCI modules has made to our physics experiements. 
 
-For data analysis, users can write a complete analyzer or use the standard MIDAS analyzer
-which uses HBOOK  routines for histogramming and PAW  for histogram display.
+For data analysis, users can write their own analyzer using simple Midas calls to retrieve the necessary 
+data or use one of the standard MIDAS analyzer:
+- HBOOK based routines for histogramming and PAW for histogram display (recenly phasing out too)
+- ROOT based with <b>analyzer</b> (part of the Midas package)
+- <a HREF=http://midas.psi.ch/rome>ROME</a> analyzer framework using XML description
+- <a HREF=http://ladd00.triumf.ca/%7Eolchansk/rootana/>Rootana</a> C++ standalone application. 
 
-The MIDAS package contains also a slow control system which can be used to control high
-voltage supplies, temperature control units etc. The slow control system is fully integrated
+The MIDAS package contains also a slow control system which can be used for all sort of control such 
+as high voltage supplies, temperature control units, GPIB, serial devices such as 
+<a HREF=http://midas.psi.ch/mscb>MSCB</a>, RS232 or Ethernet based modules.
+The slow control system is fully integrated
 in the main data acquisition and act as a front-end with particular built-in control mechanism.
 Slow control values can be written together with event data to tape.
 
