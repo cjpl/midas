@@ -7,11 +7,17 @@
 Some of the midas features are not yet fully documented or even referenced
 anywhere in the documentation.
 
-This section will maintain an up-to-date information with a log 
+This section will try to maintain an up-to-date information with a log 
 of the latest documentation on past and current features. It will also
-mention the wish list documentation on current developments.
+mention possible wish features and list documentation on current developments.
  
-- Software version: 2.0.0
+- Software version: 2.1.0 (in progress May 13/2008)
+ - 2.0.0 has been touched heavly for compilation errors and warnings corrections, as well
+   as mlogger, history, mhttpd for inclusion of new features. All these changes WILL require 
+   a new release under the number 2.1.0. The list of the main modifications
+   is given here below:
+  - in progress...
+  - ...
 
 - <b> [>2.0.0] Nov 02/2007 </b>
  - @ref mlogger_task supports zip files for MIDAS format.

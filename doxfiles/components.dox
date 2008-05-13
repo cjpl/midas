@@ -5,7 +5,7 @@
 \htmlonly <img alt="next.gif" src="next.gif"> \endhtmlonly
 
 Midas system is based on a modular scheme that allows scalability and flexibility.
-Each component's operation is handled by a sub-set of functions. but all the components
+Each component operation is handled by a sub-set of functions. but all the components
 are grouped in a single library (libmidas.a, libmidas.so(UNIX),  midas.dll(NT)).
 
 The overall C-code is about 80'000 lines long and makes up over 450 functions
@@ -15,9 +15,9 @@ needed for most operations.
 Each Midas component is briefly described below but throughout the documentation
 more detailed information will be given regarding each of their capabilities.
 All these components are available from the "off-the-shelf" package.
-Basic components such as the  @ref Buffer_Manager, @ref Online_Database,
-@ref Message_System, @ref Run_Control are by default operationals. The other
-needs are to be enabled by the user simply by either starting an application or
+Basic component such as the  @ref Buffer_Manager, @ref Online_Database,
+@ref Message_System, @ref Run_Control are by default operational. Other features
+need to be enabled by the user simply by either starting an application or
 by activation of the component through the @ref Online_Database.
 A general picture of the Midas system is displayed below.
 
@@ -46,17 +46,15 @@ its functionality.
 The "buffer manager" consists of a set of library functions for event collection and
 distribution. A buffer is a shared memory region in RAM, which can be accessed by
 several processes, called "clients". Processes sending events to a buffer are
-called "producers", processes reading events are called "consumers".
+called "producers", processes reading events from the buffer are called "consumers".
 
 A buffer is organized as a FIFO (First-In-First-Out) memory. Consumers can specify
 which type of events they want to receive from a buffer.
 For this purpose each event contains a MIDAS header with an event ID and other
 pertinent information.
 
-Buffers can be accessed locally or remotely via the MIDAS server.
-The data throughput for a local configuration composed of one producer and two
-consumers is about 10MB/sec on a 200 MHz Pentium PC running Windows NT.
-In the case of remote access, the network may be the essential speed limitation element.
+Buffers can be accessed locally through the shared memory or remotely via the MIDAS server acting 
+as an interface to that same shared memory.
 
 A common problem in DAQ systems is the possible crash of a client, like a user analyzer.
 This can cause the whole system to hang up and may require a restart of the DAQ
@@ -65,35 +63,37 @@ a special watchdog scheme has been implemented.
 Each client attached to the buffer manager signals its presence periodically
 by storing a time stamp in the shared memory. Every other client connected to the
 same buffer manager can then check if the other parties are still alive.
-If not, proper action is taken consisting of removing the dead client hooks from
+If not, proper action is taken consisting in removing the dead client hooks from
 the system leaving the system in a working condition.
 
 @section Message_System Message System
 Any client can produce status or error messages with a single call using the MIDAS library.
-These messages are then forwarded to any other clients who maybe susceptible to
+These messages are then forwarded to any other clients who may be susceptible to
 receive these messages as well as to a central log file system. The message system
-is based on the buffer manager scheme.
-A dedicated buffer is used to receive and distribute messages.
+is based on the buffer manager scheme but with a dedicated header to identify the type 
+of message. A dedicated buffer (therefore shared memory) is used to receive and distribute messages.
 Predefined message type contained in the Midas library covers most of the message
 requirement.
 
 @section Online_Database Online Database
 In a distributed DAQ environment configuration data is usually stored in several files
 on different computers.
-MIDAS uses a different approach. All relevant data for a particular experiment are stored
-in a central database called "Online Database" (ODB). This database contains run
+MIDAS uses a different approach. All relevant data for a given experiment are stored
+in a central database called "Online DataBase" (ODB). This database contains run
 parameters, logging channel information, condition parameters for front-ends and
-analyzers and slow control values as well as status and performance data.
+analyzers, slow control values as well as status and performance data and any
+information defined by the user.
 
 The main advantage of this concept is that all programs participating in an
 experiment have full access to these data without having to contact different computers.
 The possible disadvantage could be the extra load put on the particular host serving
-the ODB.
-
-The ODB is located completely in shared memory of the back-end computer.
-The access function to an element of the ODB has been optimized for speed.
+the ODB. As the access to such databased can be remote, the connection is performed 
+through an RPC layer. Midas includes its own RPC which has been optimized for speed.
+big/little endian is taken care such that cross-platform is possible with the advantage
+that the RPC doesn't define a byte ordering but uses the transmitter type and convert
+to the require byte ordering only if needed by the receiver.
 Measurement shows that up to 50,000 accesses per second local connection and around
-500 accesses per second remotely over the MIDAS server can be obtained.
+500 accesses per second remotely over the MIDAS server can be obtained (numbers from 1990).
 
 The ODB is hierarchically structured, similar to a file system, with directories and
 sub-directories. The data is stored in pairs of a key/data, similar to the Windows
@@ -104,7 +104,7 @@ of any of those. A key can also be a directory or a symbolic link (like on Unix)
 
 The Midas library provides a complete set of functions to manage and operate on these keys.
 Furthermore any ODB client can register a @ref Hot_Link between a local C-structure
-and a element of the ODB.
+and any element of the ODB.
 Whenever a client (program) changes a value in this sub-tree, the C-structure
 automatically receives an update of the changed data.
 Additionally, a client can register a callback function which will be executed as soon as
@@ -127,19 +127,19 @@ access to hardware equipment.
 Several \em frontends can be attached simultaneously to a given experiment.
 Each \em frontend can be composed of multiple \em Equipment.
 \em Equipment is a single or a collection of sub-task(s)
-meant to collect and regroup logically or physically data under a single and uniquely
+meant to collect and regroup logical or physical data under a single and uniquely
 identified event. 
 
 This program is composed of a general framework which is experiment independent,
 and a set of template routines for the user to fill. This program will:
-- Register the given \em Equipment(s) list to the Midas system.
-- Provide the mean of collecting data from hardware source defined in each equipment.
+- Register the given \em Equipment(s) list to a specific Midas experiment.
+- Provide the mean of collecting data from hardware source defined by each equipment read function.
 - Gather these data in a known format (Fixed, Midas, Ybos) for each equipment.
-- Sendsthese data to the buffer manager.
+- Sends these data to the buffer manager either locally or remotely.
 - Collect periodically statistic of the acquisition task and send it to the Online Database.
 
 The frontend framework takes care of sending events to the buffer manager and optionally a
-copy to the ODB. A "Data cache " in the frontend and on the server side reduces the amount
+copy to the ODB. A "Data cache" in the frontend and on the server side reduces the amount
 of network operations pushing the transfer speed closer to the physical limit
 of the network configuration.
 
@@ -149,24 +149,23 @@ Currently the frontend supports four different kind of event trigger:
 - <em> Periodic events</em>: Scheduled event based on a fixed time interval. 
 They can be used to read information such as scaler values, temperatures etc.
 - <em> Polled events</em>: Hardware trigger information read continuously which in
-turns if the signal is asserted it will trigger the equipment readout.
-  - <em> LAM events</em>: Generated only when pre-defined LAM is asserted: 
+turns if the signal is asserted will trigger the equipment readout.
+  - <em> LAM events</em>: Generated only when pre-defined LAM is asserted (CAMAC). 
 - <em> Interrupt events</em>: Generated by particular hardware device supporting
 interrupt mode. 
 - <em> Slow Control events</em>: Special class of events that are used in the slow
 control system.
 
-Each of these types of triggering can be enabled/activated for a particular experiment state,
+Each of these types of trigger can be enabled/activated for a particular experiment state,
 Transition State or a combination of any of them. Examples such as "read scaler event
-only when running" or "read periodic event if a  state is not paused and on all
+only when running" or "read periodic event if the run state is not paused and on all
 transitions" are possible.
 
-Dedicated header and  library files for hardware access to CAMAC, VME, Fastbus, GPIB and
+Dedicated header and library files for hardware access to CAMAC, VME, Fastbus, GPIB and
 RS232 are part of Midas distribution set. For more information see @ref Frontend_code.
 
 @section Data_Logger Data Logger
-The data logger is a client usually running on the backend computer (can be running
-remotely but performance may suffer) receiving events from the buffer manager and
+The data logger is a client running on the backend computer receiving events from the buffer manager and
 saving them onto disk, tape or via FTP to a remote computer.
 It supports several parallel logging channels with individual event selection criteria.
 Data can currently be written in five different formats:
@@ -175,9 +174,9 @@ Data can currently be written in five different formats:
 
 Basic functionality of the logger includes:
 - Run Control based on:
-  - event limit
-  - recorded byte limit
-  - logging device full.
+  - event limit not reached yet.
+  - recorded byte limit not reached yet.
+  - logging device not full.
 - Logging selection of particular events based on Event Identifier.
 - Auto restart feature allowing logging of several runs of a given size without user intervention.
 - Recording of ODB values to a so called @ref History_System
@@ -195,13 +194,14 @@ initializes the HBOOK or ROOT system and automatically books N-tuples/TTree for 
 Interface to user routines for event analysis is  provided.
 
 The analyzer is structured into "stages", where each stage analyzes a subset of
-the event data. Low level stages can perform ADC and TDC calibration,while  high level
+the event data. Low level stages can perform ADC and TDC calibration,while high level
 stages can calculate "physics" results.
 The same analyzer executable can be used to run online (receive events from the
 buffer manager) and off-line (read events from file).
 When running online, generated N-tuples/TTree are stored in a ring-buffer in shared memory.
 They can by analyzed with PAW without stopping the run. For ROOT please refer to the 
-documentation ...
+documentation ... Recently ROOT based analyzer is the unique type of analyzer supported with 
+several implementation of that package (analzyer, ROME, Rootana).
 
 When running off-line, the analyzer can read MIDAS binary files, analyze the events, add
 calculated data for each event and produce a HBOOK RZ output file which can be read
@@ -212,22 +212,22 @@ To control the analyzer, only the values in the ODB have to be changed which get
 automatically propagated to the analyzer parameters.
 If analysis software has been already developed, Midas provides the functionality
 necessary to interface the analyzer code to the Midas data channel.
-Support for languages such as C, FORTRAN, PASCAL is available.
+Support for languages such as C, C++ is available (prior support for FORTRAN, PASCAL were available).
 
 @section Run_Control Run Control
 As mentioned earlier, the Online Database (ODB) contains all the pertinent
 information regarding an experiment. For that reason a run control program requires
 only to access the ODB. A basic program supplied in the package called ODBEdit
 provides a simple and safe mean for interacting with ODB.
-Through that program essentially all the flexibility of the ODB is available to the
+Through that program essentially all the Midas capability are available to the
 user's fingertips. 
 
 Three "Run State" define the state of Midas \em Stopped, \em Paused, \em Running.
 In order to change from one state to another, Midas provides four basic
 "Transition" function \em Tr_Start, \em Tr_pause, \em Tr_resume, \em Tr_Stop.
 During these transition periods, any Midas client register to
-receive notification of such message will be able to perform its task within the
-overall run control of the experiment. 
+receive notification of such message will be able to perform dedicated task in either
+synchronized or asynchronized mode within the overall run control of the experiment. 
 
 In Order to provide more flexibility to the transition sequence of all the 
 midas clients connected to a given experiment, each transition function has 
@@ -249,19 +249,19 @@ power supplies or beam line magnets are stored directly in the ODB.
 
 To control a device it is then enough to modify the demand values in the database.
 The modified value gets automatically propagated to the slow control system, which in
-turn uses specific device driver to control the particular hardware. Measured values from
-the hardware are periodically send back to the ODB to reflect the current status
-of the sub-system.
+turn uses specific device driver to apply he change to the particular hardware. 
+Measured values from the hardware are periodically send back to the ODB to reflect
+the current status of the sub-system.
 
-The Slow control system is organized in "Classes Driver ". Each Class driver refers to a
+The Slow control system is organized in a Object Oriented way with 3 levels of 
+calls such class, device and bus drivers. Each Class driver refers to a
 particular set of functionality of that class i.e. High-Voltage, Temperature, General I/O,
-Magnet etc.
-The implementation of the device specific is done in a second stage "Device Driver" while the
-actual hardware implementation is done in a third layer "Bus Driver".
+Magnet etc. The implementation of the device specific is done in a second stage 
+"Device Driver" while the actual hardware implementation is done in a third layer "Bus Driver".
 The current MIDAS distribution already has some device driver for general I/O and
 commercial High Voltage power supply system (see @ref AppendixB).
 The necessary code composing the hardware device driver is kept simple by only
-requiring a "set channel value" and "read channel value".
+requiring a "set channel value" and "read channel value" for example.
 For the High Voltage class driver, a graphical user interface under Windows or Qt
 is already available. It can set, load and print high voltages for any devices of
 that class.
@@ -282,13 +282,13 @@ through a Midas utility @ref mhist_task or displayed through the @ref mhttpd_tas
 
 The history data extraction from the disk file is done using low level file function
 giving similar result as a standard database mechanism but with faster access time.
-For instance, a query of a value, which was written once every minute over a period of
-one week, is performed in a few seconds.
-For more information see @ref History_System, @ref ODB_History_Tree.
+Due to its simple use and good display quality, this section has been reworked to be able
+to handle larger number of parameters. This is one of the main 2.1.0 modification, 
+see @ref History_System, @ref ODB_History_Tree.
 
 @section Alarm_System Alarm System
 The Midas alarm mechanism is a built-in feature of the Midas server. It acts upon the
-description of the required alarm set defined in the Online Database (ODB).
+description of the required alarm defined in the Online Database (ODB).
 Currently the internal alarms supports the following mechanism:
 - ODB value over fixed threshold
   at regular time interval, a pre-defined ODB value will be compared to a fixed value.
@@ -298,8 +298,8 @@ Currently the internal alarms supports the following mechanism:
 - General C-code alarm setting
   Alarm C function permitting to issue user defined alarm.
   
-The action triggered by the alarm is left to the user through the mean of running
-a detached script. But basic aalrm report is available such as:
+The action triggered by the alarm is left to the user through the mean of a detached script.
+But basic alarm report is available such as:
 - Logging the alarm message to the experiment log file.
 - Sending a "Electronic Log message" (see @ref Electronic_Logbook).
 - Interrupt data acquisition.
@@ -311,7 +311,7 @@ way of logging his/her own information related to the current experiment. This
 electronic logbook may supplement or complement the standard paper logbook and
 in the mean time allow "web publishing" of this information. Indeed the electronic
 logbook information is accessible from any web browser as long as the
-@ref mhttpd_task is running in the background of the system.
+@ref mhttpd_task (Midas web server) is running in the background of the system.
 For more information see @ref Electronic_Logbook, @ref mhttpd_task.
 
 \htmlonly <img ALIGN="left" alt="previous.gif" src="previous.gif"> \endhtmlonly 

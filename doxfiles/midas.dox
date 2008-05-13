@@ -2,7 +2,7 @@
   <center> 
    \anchor Top <b> Welcome to the world of Midas. </b>
    <br>
-   <a HREF=https://daq-plone.triumf.ca/SR/MIDAS/images/midasintro.jpg><b><i>The System</i></b></a>
+   <a HREF=http://ladd00.triumf.ca/~daqweb/ftp/midasintro.jpg><b><i>The System</i></b></a>
   </center>
 
    Midas is a versatile Data acquisition System for medium scale physics experiments.
@@ -26,16 +26,17 @@
    accessed from the <b><a HREF=http://savannah.psi.ch/viewcvs/trunk/?root=midas>SVN</a></b>   
    repository site in Switzerland either for inspection or download. 
 
-   - <b> Tarball </b> are available either from the <a HREF=http://midas.psi.ch/download/>Switzerland</a>
+   - <b> Tarball </b> are available either from the <a HREF=http://midas.psi.ch/download/>Swiss</a>
      or <a HREF=http://ladd00.triumf.ca/~daqweb/ftp/>Canadian</a> sites.
    
    - The main purpose of the MIDAS DAQ is to provide:
      - data collection from local and/or remote hardware source.
      - data recording to common storage media.
      - Full data flow control.
-   - It does also event-by-event analysis through PAW or Root based application. Please refer to: 
+   - It does also include event-by-event analysis through PAW or Root based application. Please refer to: 
     - <b><a HREF=http://midas.psi.ch/rome>ROME</a></b> analyzer framework.
-    - <b><a HREF=http://ladd00.triumf.ca/~daqweb/doc/roody/html>Roody</a></b> GUI histogram visualizer
+    - <b><a HREF=http://ladd00.triumf.ca/%7Eolchansk/rootana/>Rootana</a></b> Rootana
+    - <b><a HREF=http://ladd00.triumf.ca/~daqweb/doc/roody/html/>Roody</a></b> GUI histogram visualizer
    application. 
 
    - The current hardware support is listed at this 
@@ -46,7 +47,7 @@
    - The following chapters refer to the online Midas documentation. 
  
   @section Document Content
-  \arg @ref NDF : Whats new in Midas.
+  \arg @ref NDF : What is new in Midas.
   \arg @ref Intro : Some initial words and description
   \arg @ref Comp : Listing 
   \arg @ref quickstart : The HowTo for installation.
