@@ -23,6 +23,8 @@ Set output in pulse mode
 */
 void vmeio_OutputSet(MVME_INTERFACE *myvme, DWORD base, DWORD data)
 {
+  mvme_set_am(myvme, MVME_AM_A24_ND);
+  mvme_set_dmode(myvme, MVME_DMODE_D32);
   mvme_write_value(myvme, base+VMEIO_OUTSET, data & 0xFFFFFF);
 }
 
@@ -36,6 +38,8 @@ Write to the sync output (pulse mode)
 */
 void vmeio_SyncWrite(MVME_INTERFACE *myvme, DWORD base, DWORD data)
 {
+  mvme_set_am(myvme, MVME_AM_A24_ND);
+  mvme_set_dmode(myvme, MVME_DMODE_D32);
   mvme_write_value(myvme, base+VMEIO_OUTPULSE, data & 0xFFFFFF);
 }
 
@@ -49,6 +53,8 @@ Writee to the Async output (latch mode)
 */
 void vmeio_AsyncWrite(MVME_INTERFACE *myvme, DWORD base, DWORD data)
 {
+  mvme_set_am(myvme, MVME_AM_A24_ND);
+  mvme_set_dmode(myvme, MVME_DMODE_D32);
   mvme_write_value(myvme, base+VMEIO_OUTLATCH, data & 0xFFFFFF);
 }
 
@@ -62,6 +68,8 @@ Read the CSR register
 int vmeio_CsrRead(MVME_INTERFACE *myvme, DWORD base)
 {
   int csr;
+  mvme_set_am(myvme, MVME_AM_A24_ND);
+  mvme_set_dmode(myvme, MVME_DMODE_D32);
   csr = mvme_read_value(myvme, base+VMEIO_RDCNTL);
   return (csr & 0xFF);
 }
@@ -76,6 +84,8 @@ Read from the Async register
 int vmeio_AsyncRead(MVME_INTERFACE *myvme, DWORD base)
 {
   int csr;
+  mvme_set_am(myvme, MVME_AM_A24_ND);
+  mvme_set_dmode(myvme, MVME_DMODE_D32);
   csr = mvme_read_value(myvme, base+VMEIO_RDASYNC);
   return (csr & 0xFFFFFF);
 }
@@ -90,6 +100,8 @@ Read from the Sync register
 int vmeio_SyncRead(MVME_INTERFACE *myvme, DWORD base)
 {
   int csr;
+  mvme_set_am(myvme, MVME_AM_A24_ND);
+  mvme_set_dmode(myvme, MVME_DMODE_D32);
   csr = mvme_read_value(myvme, base+VMEIO_RDSYNC);
   return (csr & 0xFFFFFF);
 }
@@ -103,6 +115,8 @@ Clear Strobe input
 */
 void vmeio_StrobeClear(MVME_INTERFACE *myvme, DWORD base)
 {
+  mvme_set_am(myvme, MVME_AM_A24_ND);
+  mvme_set_dmode(myvme, MVME_DMODE_D32);
   mvme_write_value(myvme, base+VMEIO_RDCNTL, 0);
 }
 
@@ -117,7 +131,9 @@ Only any of the first 8 inputs can generate interrupt.
 */
 void vmeio_IntEnable(MVME_INTERFACE *myvme, DWORD base, int input)
 {
-   mvme_write_value(myvme, base+VMEIO_IRQENBL, input);
+  mvme_set_am(myvme, MVME_AM_A24_ND);
+  mvme_set_dmode(myvme, MVME_DMODE_D32);
+  mvme_write_value(myvme, base+VMEIO_IRQENBL, input);
 }
 
 /********************************************************************/
@@ -133,6 +149,8 @@ In Async mode a logical level on the input will trigger the interrupt.
 */
 void vmeio_IntRearm(MVME_INTERFACE *myvme, DWORD base, int input)
 {
+  mvme_set_am(myvme, MVME_AM_A24_ND);
+  mvme_set_dmode(myvme, MVME_DMODE_D32);
   mvme_write_value(myvme, base+VMEIO_INTSRC, input);
 }
 
