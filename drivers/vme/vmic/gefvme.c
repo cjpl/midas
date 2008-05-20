@@ -72,8 +72,12 @@ int gefvme_openWindow(MVME_INTERFACE *mvme, mvme_addr_t vme_addr, mvme_size_t n_
             sprintf(devname, "/dev/vme_m%d", j);
             fd = open(devname, O_RDWR);
             if (fd < 0) {
+              if (errno == ENXIO) {
+                fprintf(stderr,"gefvme_openWindow: VME driver not present: Cannot open VME device \'%s\', errno %d (%s)\n", devname, errno, strerror(errno));
+                exit(1);
+              }
               if (errno != EBUSY)
-                fprintf(stderr,"gefvme_openWindow: cannot open VME device \'%s\', errno %d (%s)\n", devname, errno, strerror(errno));
+                fprintf(stderr,"gefvme_openWindow: Cannot open VME device \'%s\', errno %d (%s)\n", devname, errno, strerror(errno));
               continue;
             }
             
@@ -351,8 +355,8 @@ int mvme_read_dma(MVME_INTERFACE *mvme, void *dst, mvme_addr_t vme_addr, mvme_si
   
   memset(&vmeDma, 0, sizeof(vmeDma));
   
-  vmeDma.maxPciBlockSize = 4096;
-  vmeDma.maxVmeBlockSize = 4096;
+  vmeDma.maxPciBlockSize = 16*1024;
+  vmeDma.maxVmeBlockSize = 16*1024;
   vmeDma.byteCount = n_bytes;
   vmeDma.srcBus = VME_DMA_VME;
   vmeDma.srcAddr = vme_addr;
