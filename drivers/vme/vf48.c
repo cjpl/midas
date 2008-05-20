@@ -187,6 +187,7 @@ int vf48_DataRead(MVME_INTERFACE *mvme, DWORD base, DWORD *pdest, int *nentry)
   int status;
 
   mvme_set_am(  mvme, MVME_AM_A24);
+  mvme_set_dmode(  mvme, MVME_DMODE_D32);
   mvme_set_blt(  mvme, MVME_BLT_MBLT64);
   //mvme_set_blt(  mvme, MVME_BLT_BLT32);
   //mvme_set_blt(  mvme, 0);
