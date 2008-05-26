@@ -2254,7 +2254,7 @@ void command_loop(char *host_name, char *exp_name, char *cmd, char *start_dir)
 
                            if (line[0]) {
                               db_sscanf(line, data, &size, j, key.type);
-                              db_set_data_index(hDB, hSubkey, data, size + 1, j,
+                              db_set_data_index(hDB, hSubkey, data, key.item_size, j,
                                                 key.type);
                            }
                         }
