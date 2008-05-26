@@ -1331,7 +1331,7 @@ INT cm_check_client(HNDLE hDB, HNDLE hKeyClient)
    KEY key;
    DATABASE_HEADER *pheader;
    DATABASE_CLIENT *pclient;
-   INT i, client_pid, status;
+   INT i, client_pid, status, dead = 0, found = 0;
    char name[NAME_LENGTH];
 
    db_get_key(hDB, hKeyClient, &key);
@@ -1347,19 +1347,37 @@ INT cm_check_client(HNDLE hDB, HNDLE hKeyClient)
 
       /* loop through clients */
       for (i = 0; i < pheader->max_client_index; i++, pclient++)
-         if (pclient->tid == client_pid)
+         if (pclient->tid == client_pid) {
+            found = 1;
             break;
+         }
 
-      if (i == pheader->max_client_index) {
+      if (found) { /* check that the client is still running: PID still exists */
+#ifdef OS_UNIX
+#ifdef ESRCH
+         /* Only enable this for systems that define ESRCH and hope that they also support kill(pid,0) */
+         errno = 0;
+         kill(client_pid, 0);
+         if (errno == ESRCH) {
+            cm_msg(MERROR, "cm_check_client",
+                   "Removing client \'%s\', pid %d, index %d because this pid no longer exists",
+                   pclient->name, client_pid, i);
+            dead = 1;
+         }
+      }
+#endif
+#endif
+
+      if (!found || dead) {
          /* client not found : delete ODB stucture */
          db_unlock_database(hDB);
 
          status = cm_delete_client_info(hDB, client_pid);
          if (status != CM_SUCCESS)
-            cm_msg(MERROR, "cm_check_client", "cannot delete client info");
+            cm_msg(MERROR, "cm_check_client", "Cannot delete client info for client \'%s\', pid %d, status %d", name, client_pid, status);
          else
             cm_msg(MINFO, "cm_check_client",
-                   "Deleted entry \'/System/Clients/%d\' for client \'%s\'\n", client_pid, name);
+                   "Deleted entry \'/System/Clients/%d\' for client \'%s\'", client_pid, name);
 
          return CM_NO_CLIENT;
       }
@@ -3307,6 +3325,27 @@ INT cm_transition(INT transition, INT run_number, char *errstr, INT errstr_size,
          break;
       }
 
+   /* check that all transition clients are alive */
+   for (i=0;; ) {
+      status = db_enum_key(hDB, hRootKey, i, &hSubkey);
+      if (status != DB_SUCCESS)
+         break;
+
+      status = cm_check_client(hDB, hSubkey);
+
+      if (status == DB_SUCCESS) {
+         /* this client is alive. Check next one! */
+         i++;
+         continue;
+      }
+
+      assert(status == CM_NO_CLIENT);
+
+      /* start from scratch: removing odb entries as we iterate over them
+       * does strange things to db_enum_key() */
+      i=0;
+   }
+
    if (debug_flag == 1)
       printf("---- Transition %s started ----\n", trname);
    if (debug_flag == 2)
@@ -4354,7 +4393,7 @@ void cm_watchdog(int dummy)
                    actual_time > pbclient->last_activity &&
                    actual_time - pbclient->last_activity > pbclient->watchdog_timeout) {
                   sprintf(str,
-                          "Client \'%s\' on \'%s\' removed by cm_watchdog (idle %1.1lfs,TO %1.0lfs)",
+                          "Client \'%s\' on buffer \'%s\' removed by cm_watchdog (idle %1.1lfs,TO %1.0lfs)",
                           pbclient->name, pheader->name,
                           (actual_time - pbclient->last_activity) / 1000.0,
                           pbclient->watchdog_timeout / 1000.0);
@@ -4419,7 +4458,7 @@ void cm_watchdog(int dummy)
                    actual_time > pdbclient->last_activity &&
                    actual_time - pdbclient->last_activity > pdbclient->watchdog_timeout) {
                   sprintf(str,
-                          "Client \'%s\' (PID %d) on \'%s\' removed by cm_watchdog (idle %1.1lfs,TO %1.0lfs)",
+                          "Client \'%s\' (PID %d) on buffer \'%s\' removed by cm_watchdog (idle %1.1lfs,TO %1.0lfs)",
                           pdbclient->name, client_pid, pdbheader->name,
                           (actual_time - pdbclient->last_activity) / 1000.0,
                           pdbclient->watchdog_timeout / 1000.0);
@@ -4457,8 +4496,7 @@ void cm_watchdog(int dummy)
                if (bDeleted) {
                   status = cm_delete_client_info(i + 1, client_pid);
                   if (status != CM_SUCCESS)
-                     cm_msg(MERROR, "cm_watchdog", "cannot delete client info");
-               }
+                     cm_msg(MERROR, "cm_watchdog", "cannot delete client info for client \'%s\', pid %d from buffer \'%s\', status %d", pdbclient->name, client_pid, pdbheader->name, status);               }
 
                db_unlock_database(i + 1);
 
