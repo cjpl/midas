@@ -498,8 +498,17 @@ static int db_validate_key(DATABASE_HEADER * pheader, int recurse,
       return 0;
    }
 
+#if 0
+   /* correct invalid key type 0 */
+   if (pkey->type == 0) {
+      cm_msg(MERROR, "db_validate_key",
+             "Warning: invalid key type, key \"%s\", type %d, changed to type %d", path, pkey->type, TID_KEY);
+      pkey->type = TID_KEY;
+   }
+#endif
+
    /* check key type */
-   if (pkey->type >= TID_LAST) {
+   if (pkey->type <= 0 || pkey->type >= TID_LAST) {
       cm_msg(MERROR, "db_validate_key",
              "Warning: invalid key type, key \"%s\", type %d", path, pkey->type);
       return 0;
@@ -3682,7 +3691,7 @@ INT db_get_key(HNDLE hDB, HNDLE hKey, KEY * key)
 
       if (!pkey->type) {
          db_unlock_database(hDB);
-         cm_msg(MERROR, "db_get_key", "invalid key");
+         cm_msg(MERROR, "db_get_key", "invalid key type %d", pkey->type);
          return DB_INVALID_HANDLE;
       }
 
@@ -3761,7 +3770,7 @@ INT db_get_link(HNDLE hDB, HNDLE hKey, KEY * key)
 
       if (!pkey->type) {
          db_unlock_database(hDB);
-         cm_msg(MERROR, "db_get_key", "invalid key");
+         cm_msg(MERROR, "db_get_key", "invalid key type %d", pkey->type);
          return DB_INVALID_HANDLE;
       }
 
@@ -3974,7 +3983,7 @@ INT db_rename_key(HNDLE hDB, HNDLE hKey, const char *name)
 
       if (!pkey->type) {
          db_unlock_database(hDB);
-         cm_msg(MERROR, "db_rename_key", "invalid key");
+         cm_msg(MERROR, "db_rename_key", "invalid key type %d", pkey->type);
          return DB_INVALID_HANDLE;
       }
 
@@ -4051,7 +4060,7 @@ INT db_reorder_key(HNDLE hDB, HNDLE hKey, INT idx)
 
       if (!pkey->type) {
          db_unlock_database(hDB);
-         cm_msg(MERROR, "db_reorder_key", "invalid key");
+         cm_msg(MERROR, "db_reorder_key", "invalid key type %d", pkey->type);
          return DB_INVALID_HANDLE;
       }
 
@@ -4199,7 +4208,7 @@ INT db_get_data(HNDLE hDB, HNDLE hKey, void *data, INT * buf_size, DWORD type)
 
       if (!pkey->type) {
          db_unlock_database(hDB);
-         cm_msg(MERROR, "db_get_data", "invalid key");
+         cm_msg(MERROR, "db_get_data", "invalid key type %d", pkey->type);
          return DB_INVALID_HANDLE;
       }
 
@@ -4321,7 +4330,7 @@ INT db_get_link_data(HNDLE hDB, HNDLE hKey, void *data, INT * buf_size, DWORD ty
 
       if (!pkey->type) {
          db_unlock_database(hDB);
-         cm_msg(MERROR, "db_get_data", "invalid key");
+         cm_msg(MERROR, "db_get_data", "invalid key type %d", pkey->type);
          return DB_INVALID_HANDLE;
       }
 
@@ -4440,7 +4449,7 @@ INT db_get_data1(HNDLE hDB, HNDLE hKey, void *data, INT * buf_size,
 
       if (!pkey->type) {
          db_unlock_database(hDB);
-         cm_msg(MERROR, "db_get_data", "invalid key");
+         cm_msg(MERROR, "db_get_data", "invalid key type %d", pkey->type);
          return DB_INVALID_HANDLE;
       }
 
@@ -4549,7 +4558,7 @@ INT db_get_data_index(HNDLE hDB, HNDLE hKey,
 
       if (!pkey->type) {
          db_unlock_database(hDB);
-         cm_msg(MERROR, "db_get_data_index", "invalid key");
+         cm_msg(MERROR, "db_get_data_index", "invalid key type %d", pkey->type);
          return DB_INVALID_HANDLE;
       }
 
@@ -5420,7 +5429,9 @@ INT db_copy(HNDLE hDB, HNDLE hKey, char *buffer, INT * buffer_size, char *path)
 
       if (i == 0 && !hSubkey) {
          /* If key has no subkeys, just write this key */
-         db_get_link(hDB, hKey, &key);
+         status = db_get_link(hDB, hKey, &key);
+         if (status != DB_SUCCESS)
+            continue;
          size = key.total_size;
          data = (char *) malloc(size);
          if (data == NULL) {
@@ -5430,7 +5441,9 @@ INT db_copy(HNDLE hDB, HNDLE hKey, char *buffer, INT * buffer_size, char *path)
          line[0] = 0;
 
          if (key.type != TID_KEY) {
-            db_get_link_data(hDB, hKey, data, &size, key.type);
+            status = db_get_link_data(hDB, hKey, data, &size, key.type);
+            if (status != DB_SUCCESS)
+               continue;
             if (key.num_values == 1) {
                sprintf(line, "%s = %s : ", key.name, tid_name[key.type]);
 
@@ -5510,7 +5523,10 @@ INT db_copy(HNDLE hDB, HNDLE hKey, char *buffer, INT * buffer_size, char *path)
       if (!hSubkey)
          break;
 
-      db_get_link(hDB, hSubkey, &key);
+      status = db_get_link(hDB, hSubkey, &key);
+      if (status != DB_SUCCESS)
+         continue;
+
       if (strcmp(key.name, "arr2") == 0)
          printf("\narr2\n");
       size = key.total_size;
@@ -5550,7 +5566,10 @@ INT db_copy(HNDLE hDB, HNDLE hKey, char *buffer, INT * buffer_size, char *path)
          buffer += strlen(buffer);
          bWritten = FALSE;
       } else {
-         db_get_link_data(hDB, hSubkey, data, &size, key.type);
+         status = db_get_link_data(hDB, hSubkey, data, &size, key.type);
+         if (status != DB_SUCCESS)
+            continue;
+
          if (!bWritten) {
             if (path[0] == 0)
                sprintf(line, "[.]\n");
