@@ -2863,8 +2863,8 @@ INT cm_deregister_transition(INT transition)
    _trans_table[i].func = NULL;
    _trans_table[i].sequence_number = 0;
 
-   for (i = 0; i < 13; i++)
-      if (trans_name[i].transition == transition)
+   for (i = 0; ; i++)
+      if (trans_name[i].name[0] == 0 || trans_name[i].transition == transition)
          break;
 
    sprintf(str, "Transition %s", trans_name[i].name);
