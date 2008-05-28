@@ -120,16 +120,22 @@ bool doAll        = false;
 
 int readHstFile(FILE*f)
 {
+  bool doRead = true;
+
   assert(f!=NULL);
 
   while (1)
     {
       HIST_RECORD rec;
 
-      int rd = fread(&rec, sizeof(rec), 1, f);
-      if (!rd)
-	break;
+      if (doRead)
+        {
+          int rd = fread(&rec, sizeof(rec), 1, f);
+          if (!rd)
+            break;
+        }
 
+      doRead = true;
 #if 0
       printf("HIST_RECORD:\n");
       printf("  Record type: 0x%x\n", rec.record_type);
@@ -142,14 +148,47 @@ int readHstFile(FILE*f)
       switch (rec.record_type)
 	{
 	default:
-	  printf("Unexpected record type: 0x%x\n", rec.record_type);
-	  return -1;
+	  printf("Unexpected record type: 0x%08x, trying to recover by skipping bad data.\n", rec.record_type);
+          while (1)
+            {
+              int c = fgetc(f);
+              //printf("read 0x%02x\n", c);
+              if (c==EOF)
+                return 0;
+              if (c!=0x48)
+                continue;
+
+              c = fgetc(f);
+              if (c==EOF)
+                return 0;
+              if (c!=0x53)
+                continue;
+
+              c = fgetc(f);
+              if (c==EOF)
+                return 0;
+              if (c!=0x44)
+                continue;
+
+              printf("Maybe recovered - see what looks like valid history record header.\n");
+
+              ((char*)(&rec))[0] = 0x48;
+              ((char*)(&rec))[1] = 0x53;
+              ((char*)(&rec))[2] = 0x44;
+
+              int rd = fread(((char*)(&rec))+3, sizeof(rec)-3, 1, f);
+              if (!rd)
+                return 0;
+
+              doRead = false;
+              break;
+            }
 	  break;
 
 	case 0x46445348: // RT_DEF:
 	  {
 	    char event_name[NAME_LENGTH];
-	    rd = fread(event_name, 1, NAME_LENGTH, f);
+	    int rd = fread(event_name, 1, NAME_LENGTH, f);
 	    assert(rd == NAME_LENGTH);
 	    
 	    int size = rec.data_size;
@@ -234,11 +273,14 @@ int readHstFile(FILE*f)
 	    if (0)
 	      printf("Data record, size %d.\n", size);
 
-	    assert(size > 0);
-	    assert(size < 1*1024*1024);
+            if (size <= 1 || size > 1*1024*1024)
+              {
+                printf("Invalid data record: event %d, size %d is invalid\n", rec.event_id, rec.data_size);
+                continue;
+              }
 	    
 	    char *buf = new char[size];
-	    rd = fread(buf, 1, size, f);
+	    int rd = fread(buf, 1, size, f);
 	    assert(rd == size);
 
 	    time_t t = (time_t)rec.time;
