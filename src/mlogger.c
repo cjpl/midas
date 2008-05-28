@@ -2619,6 +2619,7 @@ INT open_history()
    char str[256], eq_name[NAME_LENGTH], hist_name[NAME_LENGTH];
    BOOL single_names;
    int count_events = 0;
+   int global_per_variable_history = 0;
 
    /* set directory for history files */
    size = sizeof(str);
@@ -2654,6 +2655,10 @@ INT open_history()
       return 0;
    }
 
+   size = sizeof(int);
+   status = db_get_value(hDB, hKeyEq, "/History/PerVariableHistory", &global_per_variable_history, &size, TID_INT, TRUE);
+   assert(status == DB_SUCCESS);
+
    /* loop over equipment */
    index = 0;
    for (ieq = 0; ; ieq++) {
@@ -2667,7 +2672,7 @@ INT open_history()
 
       /* define history tags only if log history flag is on */
       if (history > 0) {
-         BOOL per_variable_history = 0;
+         BOOL per_variable_history = global_per_variable_history;
 
          /* get equipment name */
          db_get_key(hDB, hKeyEq, &key);
@@ -2685,8 +2690,8 @@ INT open_history()
          assert(status == DB_SUCCESS);
 
          size = sizeof(int);
-         status = db_get_value(hDB, hKeyEq, "Common/PerVariableHistory", &per_variable_history, &size, TID_INT, TRUE);
-         assert(status == DB_SUCCESS);
+         status = db_get_value(hDB, hKeyEq, "Settings/PerVariableHistory", &per_variable_history, &size, TID_INT, FALSE);
+         assert(status == DB_SUCCESS || status == DB_NO_KEY);
 
          if (verbose)
             printf
