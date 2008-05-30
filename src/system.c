@@ -3706,7 +3706,14 @@ INT recv_tcp(int sock, char *net_buffer, DWORD buffer_size, INT flags)
       n = recv(sock, net_buffer + n_received, sizeof(NET_COMMAND_HEADER), flags);
 #endif
 
-      if (n <= 0) {
+      if (n == 0) {
+         cm_msg(MERROR, "recv_tcp",
+                "header: recv returned %d, n_received = %d, unexpected connection closure",
+                n, n_received);
+         return n;
+      }
+
+      if (n < 0) {
          cm_msg(MERROR, "recv_tcp",
                 "header: recv returned %d, n_received = %d, errno: %d (%s)",
                 n, n_received, errno, strerror(errno));
@@ -3740,7 +3747,14 @@ INT recv_tcp(int sock, char *net_buffer, DWORD buffer_size, INT flags)
                param_size - n_received, flags);
 #endif
 
-      if (n <= 0) {
+      if (n == 0) {
+         cm_msg(MERROR, "recv_tcp",
+                "param: recv returned %d, n_received = %d, unexpected connection closure",
+                n, n_received);
+         return n;
+      }
+
+      if (n < 0) {
          cm_msg(MERROR, "recv_tcp",
                 "param: recv returned %d, n_received = %d, errno: %d (%s)",
                 n, n_received, errno, strerror(errno));
