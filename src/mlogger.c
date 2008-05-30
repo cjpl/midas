@@ -2656,8 +2656,8 @@ INT open_history()
    }
 
    size = sizeof(int);
-   status = db_get_value(hDB, hKeyEq, "/History/PerVariableHistory", &global_per_variable_history, &size, TID_INT, TRUE);
-   assert(status == DB_SUCCESS);
+   status = db_get_value(hDB, 0, "/History/PerVariableHistory", &global_per_variable_history, &size, TID_INT, TRUE);
+   assert(status==DB_SUCCESS);
 
    /* loop over equipment */
    index = 0;
@@ -3415,7 +3415,7 @@ INT tr_start(INT run_number, char *error)
          /* return if logging channel couldn't be opened */
          if (status != SS_SUCCESS) {
             if (status == SS_FILE_ERROR)
-               sprintf(error, "Cannot open file %s (Disk full?)", path);
+               sprintf(error, "Cannot open file %s (See messages)", path);
             if (status == SS_FILE_EXISTS)
                sprintf(error, "File %s exists already, run start aborted", path);
             if (status == SS_NO_TAPE)
