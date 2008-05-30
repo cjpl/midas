@@ -988,12 +988,15 @@ INT midas_flush_buffer(LOG_CHN * log_chn)
 #else
       assert(!"this cannot happen! support for ZLIB not compiled in");
 #endif
-   } else {
+   } else if (log_chn->handle) {
 #ifdef OS_WINNT
       WriteFile((HANDLE) log_chn->handle, info->buffer, size, (unsigned long *) &written, NULL);
 #else
       written = write(log_chn->handle, info->buffer, size);
 #endif
+   } else {
+      /* we are writing into the void!?! */
+      written = 0;
    }
 
    info->write_pointer = info->buffer;
@@ -1116,21 +1119,50 @@ INT midas_log_open(LOG_CHN * log_chn, INT run_number)
       }
 
       log_chn->gzfile = NULL;
-      if (log_chn->compression > 0) {
-#ifdef HAVE_ZLIB
+      log_chn->handle = 0;
+         
+      /* check that compression level and file name match each other */
+      if (1) {
          char *sufp = strstr(log_chn->path, ".gz");
-
-         if (!sufp || sufp[3] != 0) {
+         int isgz = sufp && sufp[3]==0;
+         
+         if (log_chn->compression>0 && !isgz) {
             cm_msg(MERROR, "midas_log_open",
                    "Compression enabled but output file name does not end with '.gz'");
             free(info->buffer);
             free(info);
-            log_chn->handle = 0;
             return SS_FILE_ERROR;
          }
 
-         log_chn->gzfile = gzopen(log_chn->path, "wb");
+         if (log_chn->compression==0 && isgz) {
+            cm_msg(MERROR, "midas_log_open",
+                   "Output file name ends with '.gz', but compression level is zero");
+            free(info->buffer);
+            free(info);
+            return SS_FILE_ERROR;
+         }
+      }
+
+#ifdef OS_WINNT
+      log_chn->handle = (int) CreateFile(log_chn->path, GENERIC_WRITE, FILE_SHARE_READ, NULL,
+                                         CREATE_ALWAYS,
+                                         FILE_ATTRIBUTE_NORMAL | FILE_FLAG_WRITE_THROUGH | FILE_FLAG_SEQUENTIAL_SCAN, 0);
+#else
+      log_chn->handle = open(log_chn->path, O_WRONLY | O_CREAT | O_TRUNC | O_BINARY | O_LARGEFILE, 0644);
+#endif
+      if (log_chn->handle < 0) {
+         free(info->buffer);
+         free(info);
+         log_chn->handle = 0;
+         return SS_FILE_ERROR;
+      }
+
+      if (log_chn->compression > 0) {
+#ifdef HAVE_ZLIB
+         log_chn->gzfile = gzdopen(log_chn->handle, "wb");
          if (log_chn->gzfile == NULL) {
+            cm_msg(MERROR, "midas_log_open",
+                   "Error: gzdopen() failed, cannot open compression stream");
             free(info->buffer);
             free(info);
             log_chn->handle = 0;
@@ -1146,24 +1178,6 @@ INT midas_log_open(LOG_CHN * log_chn, INT run_number)
          log_chn->handle = 0;
          return SS_FILE_ERROR;
 #endif
-
-      } else {                  // if compression
-
-#ifdef OS_WINNT
-         log_chn->handle =
-             (int) CreateFile(log_chn->path, GENERIC_WRITE, FILE_SHARE_READ, NULL,
-                              CREATE_ALWAYS,
-                              FILE_ATTRIBUTE_NORMAL | FILE_FLAG_WRITE_THROUGH | FILE_FLAG_SEQUENTIAL_SCAN, 0);
-#else
-         log_chn->handle = open(log_chn->path, O_WRONLY | O_CREAT | O_TRUNC | O_BINARY | O_LARGEFILE, 0644);
-
-#endif
-         if (log_chn->handle < 0) {
-            free(info->buffer);
-            free(info);
-            log_chn->handle = 0;
-            return SS_FILE_ERROR;
-         }
       }
    }
 
@@ -1220,6 +1234,7 @@ INT midas_log_close(LOG_CHN * log_chn, INT run_number)
 #else
       close(log_chn->handle);
 #endif
+      log_chn->handle = 0;
    }
 
    free(((MIDAS_INFO *) log_chn->format_info)->buffer);
