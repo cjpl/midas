@@ -97,13 +97,14 @@ void user_init(unsigned char init)
          for (i=0 ; i<N_PORT ; i++) {
             index = module_index[i];
             if (index != 0xFF && scs_2001_module[index].driver) {
-               for (j=0 ; j<module_nvars[i] ; j++)
+               for (j=0 ; j<module_nvars[i] ; j++) {
                   /* default variables to zero */
                   memset(variables[var_index].ud, 0, variables[var_index].width);
                   /* allow driver to overwrite */
                   scs_2001_module[index].driver(module_id[i], MC_GETDEFAULT, i/8, i%8, j, 
                      variables[var_index].ud);
                   var_index++;
+               }
             } 
          }
       }

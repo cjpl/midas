@@ -60,15 +60,19 @@ MSCB_INFO_VAR code vars_cin[] =
 
 MSCB_INFO_VAR code vars_temp[] = {
    { 4, UNIT_CELSIUS, 0,          0, MSCBF_FLOAT, "P%T#",    (void xdata *)8, 2, 0, 0 },
-   { 4, UNIT_AMPERE,  PRFX_MILLI, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "P%Excit", (void xdata *)0 },
+   { 4, UNIT_AMPERE,  PRFX_MILLI, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "P%Excit", (void xdata *)0, 1 },
 };
 
 MSCB_INFO_VAR code vars_iout[] =
    { 4, UNIT_AMPERE,  PRFX_MILLI, 0, MSCBF_FLOAT, "P%Iout#", (void xdata *)8, 2, 0, 20,  0.1 };
 
 MSCB_INFO_VAR code vars_lhe[] = {
-   { 4, UNIT_AMPERE,  PRFX_MILLI, 0, MSCBF_FLOAT, "P%Iout#", (void xdata *)2, 1, 0, 100,  1 },
-   { 4, UNIT_PERCENT, 0,          0, MSCBF_FLOAT, "P%Lin#",  (void xdata *)2, 2 },
+   { 4, UNIT_AMPERE,  PRFX_MILLI, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "P%Excit", (void xdata *)0, 1, 0, 100,  1 },
+   { 4, UNIT_AMPERE,  PRFX_MILLI, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "P%IOfs",  (void xdata *)0, 2 },
+   { 2, UNIT_SECOND,  0,          0, MSCBF_HIDDEN, "P%Toff",  (void xdata *)0, 0 },
+   { 2, UNIT_SECOND,  0,          0, MSCBF_HIDDEN, "P%Ton",   (void xdata *)0, 0 },
+
+   { 4, UNIT_PERCENT, 0,          0, MSCBF_FLOAT, "P%Lin",  (void xdata *)0, 1 },
 };
 
 MSCB_INFO_VAR code vars_din[] =
@@ -124,7 +128,7 @@ SCS_2001_MODULE code scs_2001_module[] = {
   { 0x81, "UOut +-10V",      vars_uout,   1, dr_ad5764      },
   { 0x82, "IOut 0-2.5mA",    vars_iout,   1, dr_ltc2600     },
   { 0x83, "IOut 0-25mA",     vars_iout,   1, dr_ltc2600     },
-  { 0x84, "Liq.He level",    vars_lhe,    2, dr_lhe         },
+  { 0x84, "Liq.He level",    vars_lhe,    5, dr_lhe         },
 
   { 0 }
 };
@@ -1029,7 +1033,7 @@ unsigned char status;
 
 /*---- PT100/1000 via AD7718 ---------------------------------------*/
 
-static float xdata exc_current = 1; /* 1 mA */
+static float xdata exc_current[N_PORT];
 static float xdata temp_base_value[N_PORT];
 static unsigned char xdata temp_cur_chn[N_PORT];
 
@@ -1050,12 +1054,13 @@ unsigned long d;
       /* start first conversion */
       ad7718_write(AD7718_CONTROL, (0 << 4) | 0x0F);  // Channel 0, +2.56V range
       temp_cur_chn[addr*8+port] = 0;
+      exc_current[port] = 1;
    }
 
    if (cmd == MC_WRITE && chn == 8) {
-      exc_current = *((float *)pd);
-      if (exc_current < 0.01 || exc_current > 10) {
-         exc_current = 1;
+      exc_current[port] = *((float *)pd);
+      if (exc_current[port] < 0.01 || exc_current[port] > 10) {
+         exc_current[port] = 1;
          *((float *)pd) = 1;
       }
    }
@@ -1096,7 +1101,7 @@ unsigned long d;
       temp_base_value[addr*8+port] = new_base_value;
 
       /* convert to Ohms (1mA excitation) */
-      value /= (exc_current*0.001);
+      value /= (exc_current[port]*0.001);
 
       /* convert PT1000 to PT100 ??? */
       if (id == 0x73)
@@ -1305,13 +1310,16 @@ unsigned long d;
       if (d == 10000)
          return 0;
 
+      /* return if not current channel */
+      if (chn != ads1256_cur_chn[addr*8+port])
+         return 0;
+
       /* start next conversion on next channel */
       ads1256_cur_chn[addr*8+port] = (ads1256_cur_chn[addr*8+port] + 1) % 8;
 
       ads1256_write(ADS1256_MUX, (ads1256_cur_chn[addr*8+port] << 4) | 0x0F); // Select single ended positive input
       ads1256_cmd(ADS1256_SYNC);  // Trigger new conversion
       ads1256_cmd(ADS1256_WAKEUP);
-
 
       /* read 24-bit data */
       ads1256_read(&d);
@@ -1427,6 +1435,13 @@ float c;
 
 /*---- Liquid helium level meter --------*/
 
+static float xdata lhe_excit[N_PORT];
+static float xdata lhe_iofs[N_PORT];
+static unsigned short xdata lhe_toff[N_PORT];
+static unsigned short xdata lhe_ton[N_PORT];
+static unsigned long xdata lhe_last[N_PORT];
+static unsigned char xdata lhe_on[N_PORT];
+
 unsigned char dr_lhe(unsigned char id, unsigned char cmd, unsigned char addr, 
                      unsigned char port, unsigned char chn, void *pd) reentrant
 {
@@ -1434,10 +1449,46 @@ float value;
 unsigned char status, b;
 unsigned long d;
 unsigned short s;
-unsigned char i;
+unsigned char i, idx;
 
 
    if (id || chn || pd); // suppress compiler warning
+
+   idx = addr*8 + port;
+
+   if (cmd == MC_GETDEFAULT) {
+      if (chn == 0) {
+         lhe_excit[idx] = 75;
+         *((float *)pd) = 75;
+      } else if (chn == 1) {
+         lhe_iofs[idx] = 0;
+         *((float *)pd) = 0;
+      } else if (chn == 2) {
+         lhe_toff[idx] = 60;
+         *((unsigned short *)pd) = 60;
+      } else if (chn == 3) {
+         lhe_ton[idx] = 5;
+         *((unsigned short *)pd) = 5;
+      }
+      return 0;
+   }
+
+   /* handle switching on/off */
+   if (lhe_on[idx] == 0) {
+      if (time() - lhe_last[idx] > lhe_toff[idx]*100) {
+         lhe_on[idx] = 1;
+         lhe_last[idx] = time();
+         value = lhe_excit[idx];
+         dr_lhe(id, MC_WRITE, addr, port, 0, &value);
+      }
+   } else {
+      if (time() - lhe_last[idx] > lhe_ton[idx]*100) {
+         lhe_on[idx] = 0;
+         lhe_last[idx] = time();
+         value = 0;
+         dr_lhe(id, MC_WRITE, addr, port, 0, &value);
+      }
+   }
 
    if (cmd == MC_INIT) {
       /* configure serial interface to LT2600 */
@@ -1454,18 +1505,35 @@ unsigned char i;
       DELAY_US_REENTRANT(100);
 
       /* start first conversion */
-      ad7718_write(AD7718_CONTROL, (1 << 4) | (0x07));  // Channel 0, Bipolar, +-2.56V range
-      temp_cur_chn[addr*8+port] = 0;
-   }
+      ad7718_write(AD7718_CONTROL, (0 << 4) | (0x07));  // Channel 0, Bipolar, +-2.56V range
 
+      lhe_on[idx] = 1;
+      lhe_last[idx] = time();
+   }
 
    if (cmd == MC_WRITE) {
 
-      if (chn > 1)
+      if (chn == 0 && *((float *)pd) > 0)
+         lhe_excit[idx] = *((float *)pd);
+      else if (chn == 1)
+         lhe_iofs[idx] = *((float *)pd);
+      else if (chn == 2)
+         lhe_toff[idx] = *((unsigned short *)pd);
+      else if (chn == 3)
+         lhe_ton[idx] = *((unsigned short *)pd);
+
+      if (chn > 0)
          return 0;
 
       value = *((float *)pd);
    
+      /* offset correction */
+      value -= lhe_iofs[idx];
+      if (value < 0)
+         value = 0;
+      if (value > 100)
+         value = 100;
+
       /* convert value to DAC counts */
       s = value/100.0 * 65535; // 0-100mA
    
@@ -1500,16 +1568,26 @@ unsigned char i;
 
    if (cmd == MC_READ) {
 
-      if (chn != 2 && chn != 3)
+      if (chn == 0) {
+         *((float *)pd) = lhe_excit[idx];
+         return 4;
+      } else if (chn == 1) {
+         *((float *)pd) = lhe_iofs[idx];
+         return 4;
+      } else if (chn == 2) {
+         *((unsigned short *)pd) = lhe_toff[idx];
+         return 2;
+      } else if (chn == 3) {
+         *((unsigned short *)pd) = lhe_ton[idx];
+         return 2;
+      }
+
+      if (chn != 4)
          return 0;
 
       /* return if ADC busy */
       read_port(addr, port, &status);
       if ((status & 1) > 0)
-         return 0;
-
-      /* return if not current channel */
-      if ((chn-2) != temp_cur_chn[addr*8+port])
          return 0;
 
       address_port1(addr, port, AM_RW_SERIAL, 1);
@@ -1518,8 +1596,7 @@ unsigned char i;
       ad7718_read(AD7718_ADCDATA, &d);
 
       /* start next conversion */
-      temp_cur_chn[addr*8+port] = (temp_cur_chn[addr*8+port] + 1) % 2;
-      ad7718_write(AD7718_CONTROL, ((1-temp_cur_chn[addr*8+port]) << 4) | 0x07);  // next chn, bipolar, +-2.56V range
+      ad7718_write(AD7718_CONTROL, (0 << 4) | 0x07);  // Channel 0, bipolar, +-2.56V range
 
       /* convert to volts */
       value = 5.12*((float)d / (1l<<24))-2.56;
@@ -1527,14 +1604,22 @@ unsigned char i;
       /* invert input divider */
       value *= (1E6/82E3);
 
-      /* calibrate */
-      value *= 1.086;
+      /* convert to R */
+      value = value / (lhe_excit[idx] / 1000.0); 
+
+      /* convert to fill level (0%=0Ohm, 100%=270Ohm, 4.5Ohm/cm) */
+      value = 100 - (value / 2.7);
 
       /* round result to significant digits */
       value = ((long)(value*1E5+0.5))/1E5;
-   
-      *((float *)pd) = value;
-      return 4;
+
+      /* only measure if on for some time */
+      if (lhe_on[idx] == 1 && time() - lhe_last[idx] > 100) {
+         *((float *)pd) = value;
+         return 4;
+      }
+
+      return 0;
    }
 
    return 1;
