@@ -11,7 +11,7 @@ This section will try to maintain an up-to-date information with a log
 of the latest documentation on past and current features. It will also
 mention possible wish features and list documentation on current developments.
  
-- Software version: 2.1.0 (in progress May 13/2008)
+- Software version: 2.1.0 (in progress June 4/2008)
  - 2.0.0 has been touched heavly for compilation errors and warnings corrections, as well
    as mlogger, history, mhttpd for inclusion of new features. All these changes WILL require 
    a new release under the number 2.1.0. The list of the main modifications

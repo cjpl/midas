@@ -16,9 +16,9 @@ sample experiment. In a second stage, the frontend or the analyzer can be moved
 to another computer to test the remote connection capability.
 
 The Midas Package source and some binaries can be found at :
-<a href=http://midas.psi.ch/download> PSI </a> or at 
-<a href=http://midas.triumf.ca/download> TRIUMF </a>.
-An <a href=http://savannah.psi.ch/viewcvs/trunk/?root=midas> online SVN web site 
+<a href=http://midas.psi.ch/download > PSI </a> or at 
+<a href=http://midas.triumf.ca/download > TRIUMF </a>.
+An <a href=http://savannah.psi.ch/viewcvs/trunk/?root=midas > online SVN web site 
 </a> is also available for the latest developments.
 
 Even though Midas is available for multiple platforms, the following description
@@ -26,195 +26,158 @@ are for @ref Linux_installation and @ref Windows_installation.
 
 <hr> @section Linux_installation Linux installation
 
--# <b>Extraction: </b>
-  - <b>Compressed files</b>
-    The compressed file contains the source and binary code. It does expand 
-    under the directory name of \b midas. This extraction can be done at the 
-    user level.
-    @code 
-    cd /home/mydir
-    tar -zxvf midas-1.9.x.tar.gz
-    @endcode
-    The midas directory structure will be composed of several subdirectories such as:
-    \code
-    >ls
-    COPYING  doc/      examples/  include/  linux/     makefile.nt  mscb/  utils/
-    CVS/     drivers/  gui/       java/     Makefile*  mcleanup*    src/   vxworks/
-    \endcode
-    \n    
-  - <b>RPM</b>
-    Current RPM is not fully up-to-date. We suggest that you use the 
-    compressed files or the <b>SVN repository</b>.
-    In the case of the \b rpm, the binaries are placed in the /usr/local/bin
-    , /usr/local/include, /usr/local/lib.
-    \n\n
-  - <b>SVN</b>
-    The source code can be extracted from the
-    <a HREF=http://savannah.psi.ch/viewcvs/trunk/?root=midas>
-    SVN repository</a>. An anonymous access is available under the username
-    svn and password svn which may be required several time. SVN provides also 
-    a quick \b tarball creation within the web interface!
-    \code
-    svn co svn+ssh://svn@savannah.psi.ch/afs/psi.ch/project/meg/svn/midas/trunk midas
-    svn co svn+ssh://svn@savannah.psi.ch/afs/psi.ch/project/meg/svn/mxml/trunk mxml
-    \endcode
-    \n
-    If you expect to run the <a href=http://midas.psi.ch/rome/index.html>ROME analyzer</a>
-    you can extract the SVN package following the same procedure.
-    \code
-    svn co svn+ssh://svn@savannah.psi.ch/afs/psi.ch/project/meg/svn/rome/trunk rome
-    \endcode
-    \n
-    For the Histogram display tool <a href=http://ladd00.triumf.ca/~daqweb/doc/roody/html>
-    ROODY</a> the package still resides under CVS but will be soon moved to SVN.
-    \code
-    cvs -d anoncvs@midas.triumf.ca:/usr/local/cvsroot checkout roody
-    \endcode
-
--# <b> Compilation & Build: </b>
-   Previously we did supplied RPM or compress package which included an initial binary version of all
-   the midas application for linux. Using now SVN and its ability to generate tarball directly from the
-   svn/web interface, compilation and local build is required.
-   \n\n
-   Once the midas package has been extracted into your desired directory, define the environment variable
-   <b>MIDASSYS</b> to point to this directory. run <b>make</b> to produce all the midas core applications.
-   This will create a directory under MIDASSYS based on the host type under which a lib and bin will contain
-   respectively the objects/library and the application binaries.
-   \n\n
-   The compilation and link will try to generate the \b rmidas application which requires \b ROOT to 
-   be installed. The application \b mana will also be compiled for \b HBOOK and \b ROOT.
-   Look in the make listing below for the @ref HAVE_HBOOK, @ref HAVE_ROOT. 
-   \n\n
-   \code
-   > setenv MIDASSYS /home/<mydir>/midas
-   or
-   > export MIDASSYS=/home/<mydir>/midas
-
-   > cd $MIDASSYS
-   > make
-  cc -c -g -O2 -Wall -Iinclude -Idrivers -Llinux/lib -DINCLUDE_FTPLIB -DOS_LINUX -fPIC   
-  -o linux/lib/midas.o src/midas.c
-  cc -c -g -O2 -Wall -Iinclude -Idrivers -Llinux/lib -DINCLUDE_FTPLIB -DOS_LINUX -fPIC   
-  -o linux/lib/system.o src/system.c
-  cc -c -g -O2 -Wall -Iinclude -Idrivers -Llinux/lib -DINCLUDE_FTPLIB -DOS_LINUX -fPIC   
-  -o linux/lib/mrpc.o src/mrpc.c
-  cc -c -g -O2 -Wall -Iinclude -Idrivers -Llinux/lib -DINCLUDE_FTPLIB -DOS_LINUX -fPIC   
-  -o linux/lib/odb.o src/odb.c
-  cc -c -g -O2 -Wall -Iinclude -Idrivers -Llinux/lib -DINCLUDE_FTPLIB -DOS_LINUX -fPIC   
-  -o linux/lib/ybos.o src/ybos.c
-  cc -c -g -O2 -Wall -Iinclude -Idrivers -Llinux/lib -DINCLUDE_FTPLIB -DOS_LINUX -fPIC   
-  -o linux/lib/ftplib.o src/ftplib.c
-  rm -f linux/lib/libmidas.a
-  ar -crv linux/lib/libmidas.a linux/lib/midas.o linux/lib/system.o linux/lib/mrpc.o 
-  linux/lib/odb.o linux/lib/ybos.o linux/lib/ftplib.o
-  a - linux/lib/midas.o
-  a - linux/lib/system.o
-  a - linux/lib/mrpc.o
-  a - linux/lib/odb.o
-  a - linux/lib/ybos.o
-  a - linux/lib/ftplib.o
-  rm -f linux/lib/libmidas.so
-  ld -shared -o linux/lib/libmidas.so linux/lib/midas.o linux/lib/system.o
-  linux/lib/mrpc.o linux/lib/odb.o linux/lib/ybos.o linux/lib/ftplib.o -lutil 
-  -lpthread -lc
-  cc -c -g -O2 -Wall -Iinclude -Idrivers -Llinux/lib -DINCLUDE_FTPLIB -DOS_LINUX -fPIC    
-  -o linux/lib/mana.o src/mana.c
-  cc -Dextname -DHAVE_HBOOK -c -g -O2 -Wall -Iinclude -Idrivers -Llinux/lib 
-  -DINCLUDE_FTPLIB -DOS_LINUX -fPIC    -o linux/lib/hmana.o src/mana.c
-  ...
-  g++ -DHAVE_ROOT -c -g -O2 -Wall -Iinclude -Idrivers -Llinux/lib -DINCLUDE_FTPLIB 
-  -DOS_LINUX -fPIC   -D_REENTRANT -I/home1/midas/ root/include -o linux/lib/rmana.o 
-  src/mana.c
-  g++ -c -g -O2 -Wall -Iinclude -Idrivers -Llinux/lib -DINCLUDE_FTPLIB -DOS_LINU 
-  -fPIC   -o linux/lib/mfe.o src/mfe.c
-  cc -Dextname -c -g -O2 -Wall -Iinclude -Idrivers -Llinux/lib 
-  -DINCLUDE_FTPLIB -DOS_LINUX -fPIC    -o linux/lib/fal.o src/fal.c
-  ...
-  cc -g -O2 -Wall -Iinclude -Idrivers -Llinux/lib -DINCLUDE_FTPLIB -DOS_LINUX -fPIC   
-  -o linux/bin/mserver src/mserver.c -lmidas -lutil -lpthread
-  cc -g -O2 -Wall -Iinclude -Idrivers -Llinux/lib -DINCLUDE_FTPLIB -DOS_LINUX -fPIC   
-  -o linux/bin/mhttpd src/mhttpd.c src/mgd.c -lmidas -lutil -lpthread -lm
-  g++ -g -O2 -Wall -Iinclude -Idrivers -Llinux/lib -DINCLUDE_FTPLIB -DOS_LINUX -fPIC   
-  -DHAVE_ROOT -D_REENTRANT -I/home1/midas/root/include 
-  -o linux/bin/mlogger src/mlogger.c -lmidas 
-  -L/home1/midas/root/lib -lCore -lCint -lHist -lGraf -lGraf3d -lGpad -lTree
-  -lRint -lPostscript -lMatrix -lPhysics -lpthread -lm -ldl -rdynamic -lutil -lpthread
-  cc -g -O2 -Wall -Iinclude -Idrivers -Llinux/lib -DINCLUDE_FTPLIB -DOS_LINUX -fPIC   
-  -o linux/bin/odbedit src/odbedit.c src/cmdedit.c -lmidas -lutil -lpthread
-  cc -g -O2 -Wall -Iinclude -Idrivers -Llinux/lib -DINCLUDE_FTPLIB -DOS_LINUX -fPIC   
-  -o linux/bin/mtape utils/mtape.c -lmidas -lutil -lpthread
-  cc -g -O2 -Wall -Iinclude -Idrivers -Llinux/lib -DINCLUDE_FTPLIB -DOS_LINUX -fPIC   
-  -o linux/bin/mhist utils/mhist.c -lmidas -lutil -lpthread
-  cc -g -O2 -Wall -Iinclude -Idrivers -Llinux/lib -DINCLUDE_FTPLIB -DOS_LINUX -fPIC   
-  -o linux/bin/mstat utils/mstat.c -lmidas -lutil -lpthread
-  cc -g -O2 -Wall -Iinclude -Idrivers -Llinux/lib -DINCLUDE_FTPLIB -DOS_LINUX -fPIC   
-  -o linux/bin/mcnaf utils/mcnaf.c drivers/bus/camacrpc.c -lmidas -lutil -lpthread
-  cc -g -O2 -Wall -Iinclude -Idrivers -Llinux/lib -DINCLUDE_FTPLIB -DOS_LINUX -fPIC   
-  -o linux/bin/mdump utils/mdump.c -lmidas -lz -lutil -lpthread
-  cc -g -O2 -Wall -Iinclude -Idrivers -Llinux/lib -DINCLUDE_FTPLIB -DOS_LINUX -fPIC   
-  -o linux/bin/lazylogger src/lazylogger.c -lmidas -lz -lutil -lpthread
-  cc -g -O2 -Wall -Iinclude -Idrivers -Llinux/lib -DINCLUDE_FTPLIB -DOS_LINUX -fPIC   
-  -o linux/bin/mchart utils/mchart.c -lmidas -lutil -lpthread
-  cp -f utils/stripchart.tcl linux/bin/.
-  cc -g -O2 -Wall -Iinclude -Idrivers -Llinux/lib -DINCLUDE_FTPLIB -DOS_LINUX -fPIC   
-  -o linux/bin/webpaw utils/webpaw.c -lmidas -lutil -lpthread
-  cc -g -O2 -Wall -Iinclude -Idrivers -Llinux/lib -DINCLUDE_FTPLIB -DOS_LINUX -fPIC   
-  -o linux/bin/odbhist utils/odbhist.c -lmidas -lutil -lpthread
-  cc -g -O2 -Wall -Iinclude -Idrivers -Llinux/lib -DINCLUDE_FTPLIB -DOS_LINUX -fPIC   
-  -o linux/bin/melog utils/melog.c -lmidas -lutil -lpthread
-  cc -g -O2 -Wall -Iinclude -Idrivers -Llinux/lib -DINCLUDE_FTPLIB -DOS_LINUX -fPIC   
-  -o linux/bin/mlxspeaker utils/mlxspeaker.c -lmidas -lutil -lpthread
-  cc -g -O2 -Wall -Iinclude -Idrivers -Llinux/lib -DINCLUDE_FTPLIB -DOS_LINUX -fPIC   
-  -o linux/bin/dio utils/dio.c -lmidas -lutil-lpthread
-  g++ -g -O2 -Wall -Iinclude -Idrivers -Llinux/lib -DINCLUDE_FTPLIB -DOS_LINUX -fPIC  
-  -DHAVE_ROOT -D_REENTRANT -I/home1/midas/root/include -o linux/bin/rmidas src/rmidas.c 
-  -lmidas -L/home1/midas/root/lib -lCore -lCint -lHist -lGraf -lGraf3d -lGpad 
-  -lTree -lRint -lPostscript -lMatrix -lPhysics -lGui -lpthread -lm -ldl -rdynamic
-  -lutil -lpthread
-  \endcode
-  <br><br>
--# <b> Installation: </b>
-The installation consists in placing the image files in the \b /usr/local/ directories.
-This operation requires superuser privilege. The open "install" from the Makefile will
-automatically do this installation for you.
-\code 
-cd /home/<mydir>/midas
-su - 
-make install
-\endcode
-<br><br>
--# <b> Configuration: </b>
-Several system files needs to be modified for the full Midas implementation.
+- All the following description expect the midas to be found under
+  the directory \b $HOME/packages/midas the experiment specific directory
+  is \b $HOME/online . The user name is johnfoo. Environment variables needs to be setup:
+  @code
+  #!/bin/echo You must source
+  setenv CVS_RSH ssh
+  setenv MIDASSYS $HOME/packages/midas
+  setenv ROOTSYS  $HOME/packages/root
+  setenv MIDAS_EXPTAB $HOME/online/exptab
+  setenv PATH .:$MIDASSYS/linux/bin:$HOME/packages/roody/bin:$ROOTSYS/bin:$PATH
+  #end
+  @endcode
+  - mkdir $HOME/packages
+  - Logout and login again, or source .cshrc for the change to take effect.
+ \n
+ - <b>ROOT Installation </b>
+  - For full Midas operation \b ROOT is needed for the data logging and analysis packages.
+  - Identify the Linux version: RH9 (Red Hat Linux 9), FC3 (Fedora Core 3),
+    RHEL4/SL4 (Red Hat Enterprise LInux 4/Scientific Linux 4): more /etc/redhat-release
+  - cd $HOME/packages
+  - ln -s /triumfcs/trshare/olchansk/root/root_vNNN_VVV root, where NNN is the 
+    latest available version of ROOT ("ls -l /triumfcs/trshare/olchansk/root") and VVV is the
+    Linux version code (RH9, FC3, SL4, etc).
+    For example: /triumfcs/trshare/olchansk/root/root_v5.10.00_SL40
+  - Check that ROOT works: "echo $ROOTSYS", "$ROOTSYS/bin/root"
+  \n
+ - <b>Midas Installation </b>
+  - The source code can be extracted from the
+   <a HREF=http://savannah.psi.ch/viewcvs/trunk/?root=midas > SVN repository</a>.
+  An anonymous access is available under the username \b svn and password \b svn 
+  which may be required several time. The SVN web interface provides a quick 
+  \b tarball. This suggested extraction method is the following.
+  - Midas package requires \b mxml auxiliary package which can be found at the same 
+    SVN site as Midas. mxml and midas are extracted at the same directory level.
+  @code
+  cd $HOME/packages
+  svn co svn+ssh://svn@savannah.psi.ch/afs/psi.ch/project/meg/svn/midas/trunk midas
+  svn co svn+ssh://svn@savannah.psi.ch/afs/psi.ch/project/meg/svn/mxml/trunk mxml
+  cd midas
+  make
+  ls $MIDASSYS/linux/bin   ... should contains odbedit and all the midas applications.
+  @endcode
+  \n
+ - <b>ROME installation </b>
+  - The PSI ROME analysis package can be found at
+  <a href=http://midas.psi.ch/rome/index.html >ROME analyzer</a>
+  The same extraction procedure as Midas can be followed. For its operation please
+  refer to the <a href=http://midas.psi.ch/rome/index.html >ROME web site</a>.
+  @code
+  cd $HOME/packages
+  svn co svn+ssh://svn@savannah.psi.ch/afs/psi.ch/project/meg/svn/rome/trunk rome
+  cd rome
+  make
+  @endcode
+  \n
+- <b>ROODY installation </b>
+  - ROODY is a Histogram display tool <a href=http://ladd00.triumf.ca/~daqweb/doc/roody/html >
+  ROODY</a> this package is supported by the Triumf DAQ group. Its installation is similar to 
+  the midas package.
+  @code
+  cd $HOME/packages
+  svn checkout svn://ladd00.triumf.ca/roody/trunk roody
+  cd roody
+  make
+  $HOME/packages/roody/bin/roody, run the program
+  @endcode
+  \n
+- <b>Midas Experiment Setup from scratch</b>
+  - Assuming that accessibility to hardware such as VME or CAMAC is available and the following
+    packages ROOT, Midas, ROODY have been installed.
+  - create a new user for this daq system (johnfoo), follow these instructions.
+  - login as the new user
+  - mkdir online
+  - cd online
+  - mkdir elog history data
+  - create the \b exptab file "$HOME/online/exptab" following the example below.
+    The first entry (exptname) is the name if the DAQ system (MIDAS experiment name)
+   , the second entry (/home/USER/online) is the location of MIDAS shared memory buffers
+   (by convention, $HOME/online), the third entry (johnfoo) is your username. 
+  @code
+  sipmtest1 /home/johnfoo/online johnfoo
+  @endcode
+  - copy start_daq.sh, kill_client.perl and kill_daq.sh from the $MIDASSYS to the online dir.
+  - copy $MIDASSYS/examples/experiment/* to the online dir.
+  - make (creates frontend executable)
+  - odbedit, run these commands, these commands will redirect specific data files to the given
+    directories and define the format of the data files.
+  @code
+  odbedit> 
+  set "/Logger/Message file" "/home/johnfoo/online/midas.log"
+  set "/Logger/Data Dir"     "/home/johnfoo/online/data"
+  create STRING "/Logger/History dir"
+  set "/Logger/History dir"  "/home/johnfoo/online/history"
+  create STRING "/Logger/Elog dir"
+  set "/Logger/Elog dir"     "/home/johnfoo/online/elog"
+  set "/Logger/ODB dump file" "/home/johnfoo/online/history/run%05d.xml"
+  set "/Logger/ODB dump" "y"
+  set "/Logger/Channels/0/Settings/Filename" "run%05d.mid.gz"
+  set "/Logger/Channels/0/Settings/Compression"   1
+  set "/Logger/Channels/0/Settings/ODB Dump" "y"
+  exit   exit 
+  @endcode
+  - ./start_daq.sh
+  - open a web browser http://localhost:8081
+  - save the url bookmark to the "personal toolbar"
+  - start run, end run
+  -  back from the shell, restart the DAQ to make sure all changes "take", run:
+  - ./kill_daq.sh
+  - ./start_daq.sh
+  - go back to the midas web page, everything should be green
+  - start a run
+  - send signals to the ADC gate
+  - you should be getting events
+  - to look at data, proceed with setting up the <a href=http://daq-plone.triumf.ca/SR/rootana >
+    ROOT analyzer </a>
+\n
+- <b>Installation considerations</b>
+  - While the above description install Midas under user privilege for standard operation, 
+  Midas can be installed in a more general way under root privilege. This method permit to gain remote
+  access to the package through the xinetd daemon mechanism. In order to do so extra steps need to be done. 
+  Several system files needs to be modified for the full Midas implementation.
   - <b>/etc/services :</b> For remote access. Inclusion of the midas service.
-       Add following line:
-    \code 
-    # midas service
-    midas           1175/tcp                        # Midas server
-    \endcode
+   Add following line:
+  \code 
+  # midas service
+  midas           1175/tcp                        # Midas server
+  \endcode
   - <b>/etc/xinetd.d/midas :</b> Daemon definition. Create new file named \b midas
-    \code 
-    service midas
-    {
-            flags                   = REUSE NOLIBWRAP
-            socket_type             = stream
-            wait                    = no
-            user                    = root
-            server                  = /usr/local/bin/mserver
-            log_on_success          += USERID HOST PID
-            log_on_failure          += USERID HOST
-            disable                 = no
-    }    \endcode
+  \code 
+  service midas
+  {
+           flags                   = REUSE NOLIBWRAP
+           socket_type             = stream
+           wait                    = no
+           user                    = root
+           server                  = /usr/local/bin/mserver
+           log_on_success          += USERID HOST PID
+           log_on_failure          += USERID HOST
+           disable                 = no
+  }
+  \endcode
   - <b>/etc/ld.so.conf :</b> Dynamic Linked library list. Add directory pointing to 
   location of the midas.so file (add /usr/local/lib).
-    \code 
-    /usr/local/lib
-    \endcode
+  \code 
+  /usr/local/lib
+  \endcode
   The system is now build by default in static which prevent to have to setup
   the .so path through either the environment \b LD_LIBRARY_PATH or the ld.so.conf.
   - <b>/etc/exptab :</b> Midas Experiment definition file (see below).
 <br><br>
--# \anchor Experiment_Definition <b> Experiment definition: </b>
-  Midas system supports multiple experiment running contemporary on the same computer.
+- \anchor Experiment_Definition <b> Experiment definition: </b>
+  - Midas system supports multiple experiment running contemporary on the same computer.
   Even though it may not be efficient, this capability makes sense when the experiments
   are simple detector lab setups which shared hardware resources for data collection.
   In order to support this feature, Midas requires a uniquely identified set of
@@ -240,66 +203,30 @@ Several system files needs to be modified for the full Midas implementation.
   \code
   #
   # Midas experiment list
-  midas   /home/midas/online     midas
-  decay   /home/slave/decay_daq  slave
+  test   /home/johnfoo/online     johnfoo
+  decay  /home/jackfoo/decay_daq  jackfoo
   \endcode
   <br>
   Experiments not defined into \b exptab are not accessible remotely, but can still be
   accessed locally using the @ref Environment_variables @ref MIDAS_DIR if defined.
   This environment superceed the \b exptab definition.
   <br><br>
--# <b> Demo examples: </b>
-  The midas file structure contains examples of code which can be (should be) used for template.
+- <b> Demo examples: </b>
+  The midas file structure contains examples of code which can be (should be) used as template.
   In the <b> midas/examples/experiment</b> you will find a full set for frontend and analysis code.
-  The building of this example is performed with the \b Makefile of this directory. The reference
-  to the Midas package is done relative to your current location (../../include). In the case the 
-  content of this directory is copied to a different location (template), you will need to
-  modify the local parameters within the Makefile
+  The building of this example is performed with the \b Makefile of this directory.
   \code
   #-------------------------------------------------------------------
   # The following lines define direcories. Adjust if necessary
   #                 
-  DRV_DIR   = ../../drivers/bus
-  INC_DIR   = ../../include
-  LIB_DIR   = ../../linux/lib
- \endcode
-  Replace by: 
- \code
-  #-------------------------------------------------------------------
-  # The following lines define direcories. Adjust if necessary
-  #                 
-  DRV_DIR   = /home/mydir/midas/drivers/bus
-  INC_DIR   = /usr/local/include
-  LIB_DIR   = /usr/local//lib
- \endcode
-<br><br>
-  \code 
-  > cd /home/mydir/midas/examples/experiment
-  > make 
-  gcc -g -O2 -Wall -g -I../../include -I../../drivers/bus -DOS_LINUX -Dextname -c
-  -o camacnul.o ../../drivers/bus/camacnul.c
-  g++ -g -O2 -Wall -g -I../../include -I../../drivers/bus -DOS_LINUX -Dextname -o
-  frontend frontend.c
-  camacnul.o ../../linux/lib/mfe.o ../../linux/lib/libmidas.a  -lm -lz -lutil
-  -lnsl -lpthread
-  g++  -D_REENTRANT -I/home1/midas/root/include -DHAVE_ROOT -g -O2 -Wall -g 
-  -I../../include -I../../drivers/bus -DOS_LINUX -Dextname -o analyzer.o 
-  -c analyzer.c
-  g++  -D_REENTRANT -I/home1/midas/root/include -DHAVE_ROOT -g -O2 -Wall -g 
-  -I../../include -I../../drivers/bus -DOS_LINUX -Dextname -o adccalib.o -c adccalib.c
-  g++  -D_REENTRANT -I/home1/midas/root/include -DHAVE_ROOT -g -O2 -Wall -g 
-  -I../../include -I../../drivers/bus -DOS_LINUX -Dextname -o adcsum.o -c adcsum.c
-  g++  -D_REENTRANT -I/home1/midas/root/include -DHAVE_ROOT -g -O2 -Wall -g 
-  -I../../include -I../../drivers/bus -DOS_LINUX -Dextname -o scaler.o -c scaler.c
-  g++  -o analyzer ../../linux/lib/rmana.o analyzer.o adccalib.o adcsum.o scaler.o 
-  ../../linux/lib/libmidas.a  -L/home1/midas/root/lib -lCore -lCint -lHist -lGraf 
-  -lGraf3d -lGpad -lTree -lRint -lPostscript -lMatrix -lPhysics -lpthread -lm -ldl 
-  -rdynamic -lThread -lm -lz -lutil -lnsl -lpthread
->  
+  DRV_DIR   = $(MIDASSYS)/drivers/bus
+  INC_DIR   = $(MIDASSYS)/include
+  LIB_DIR   = $(MIDASSYS)/linux/lib
   \endcode
+
   For testing the system, you can start the frontend as follow:
   \code
-> frontend
+  > frontend
   Event buffer size      :     100000
   Buffer allocation      : 2 x 100000
   System max event size  :     524288
@@ -308,8 +235,8 @@ Several system files needs to be modified for the full Midas implementation.
   # of events per buffer :     10
   
   Connect to experiment ...Available experiments on local computer:
-  0 : midas         
-  1 : root
+  0 : test         
+  1 : decay
   Select number:0                    <---- predefined experiment from exptab file
 
   Sample Frontend connected to <local>. Press "!" to exit                 17:27:47
@@ -325,16 +252,16 @@ Several system files needs to be modified for the full Midas implementation.
   \code
   >odbedit
   Available experiments on local computer:
-  0 : midas
-  1 : root
+  0 : test
+  1 : decay
   Select number: 0
-  [local:midas:S]/>start now
+  [local:test:S]/>start now
   Starting run #1
   17:28:58 [ODBEdit] Run #1 started
-  [local:midas:R]/>
+  [local:test:R]/>
   \endcode
   The run has been started as seen in the frontend terminal window.
-  See the /examples/experiment/frontend.c for data generation code.
+  See the frontend.c for data generation code.
   \code
   Sample Frontend connected to <local>. Press "!" to exit                 17:29:07
   ================================================================================
@@ -349,27 +276,64 @@ Several system files needs to be modified for the full Midas implementation.
 
 <hr> @section Windows_installation Windows installation
 
--# <b> Extraction: </b>
-\code 
-\endcode
--# <b> Installation: </b>
-\code 
-\endcode
--# <b> Configuration: </b>
-\code 
-\endcode
--# <b> Experiment definition: </b>
-\code 
-\endcode
--# <b> Compilation: </b>
-\code 
-\endcode
--# <b> Demo examples: </b>
-
-
+- <b> Installation: </b>
+  - All the following description expect the midas to be found under
+    the directory \b \%SystemDrive%\midas the experiment specific directory
+    is \b \%SystemDrive%\online. The user name is johnfoo.
+  - The package extraction under Windows is similar to the Linux. The SVN site is used to
+    gather the midas and mxml. The method can be the tarball or the svn using the 
+    <a href=http://tortoisesvn.net > Tortoise package</a>.
+  - Using the tarball mechanism:
+  @code
+    - Go to http://savannah.psi.ch/viewcvs/trunk/?root=midas
+    - Click "Download tarball"
+    - Extract trunk to %SystemDrive%
+    - Rename trunk to midas
+    - delete trunk.tar.gz
+    - Go to http://savannah.psi.ch/viewcvs/trunk/?root=mxml
+    - Click "Download tarball"
+    - Extract trunk to %SystemDrive%
+    - Rename trunk to mxml
+  @endcode
+    - Environment variables needs to be setup prior the midas build;
+    from the "system properties" -> advanced -> Environment Variables, define new system variables
+    MIDASSYS to c:\midas (installation location).
+  - from the "system properties" -> advanced -> Environment Variables, add to PATH system variables
+    ;\%MIDASSYS%\nt\bin
+  - create file \%SystemRoot%\system32\exptab
+  @code
+  test c:\online johnfoo 
+  @endcode   
+  - The Midas build requires the Microsoft Visual C++ (2005) or .NET. the corresponding environment
+  variables for the compiler need to be set prior the Midas build. A batch file can be found 
+  under "C:\\Program Files\Microsoft Visual Studio 8\Common7\Tools\vsvar32.bat or similar...
+  @code 
+  cd %MIDASSYS%
+  nmake -f makefile.nt
+  @endcode
+\n
+- <b>Midas Experiment Setup from scratch</b>
+  - Assuming that accessibility to hardware is possible and the following
+    package Midasis installed. Open 3 "Command Prompt" windows.
+  @code
+  -w1 cd \
+  -w1 mkdir online
+  -w1 copy %MIDASSYS%\examples\experiement\frontend.exe .
+  -w1 frontend.exe
+  -w2 start mhttpd 
+  -w3 start odbedit
+  -w3 odbedit> scl
+      Name                Host
+      Sample Frontend     yourhost
+      ODBEdit             yourhost
+  @endcode  
+  - Start a web brower and go to http://localhost
+  - Click Start, confirm run number, click refresh...   Stop run.
+\n
+- Please refer to the rest of the manual for further description of the system operation.
+ 
 \htmlonly <img ALIGN="left" alt="previous.gif" src="previous.gif"> \endhtmlonly 
 @ref Comp - @ref Top - @ref Internal
 \htmlonly <img alt="next.gif" src="next.gif"> \endhtmlonly
 
 */
-
