@@ -7,11 +7,11 @@ Target (Simulator), 0x0000 // Tools: 'MCS-51'
 Group (Source Files)
 Group (Include Files)
 
-File 1,1,<.\scs_2000_app.c><scs_2000_app.c> 0x0 
 File 1,1,<..\scs_2000_lib.c><scs_2000_lib.c> 0x0 
 File 1,1,<..\..\mscbmain.c><mscbmain.c> 0x0 
 File 1,1,<..\..\mscbutil.c><mscbutil.c> 0x0 
 File 1,1,<..\..\lcd_menu.c><lcd_menu.c> 0x0 
+File 1,1,<.\scs_2000_app.c><scs_2000_app.c> 0x0 
 File 2,5,<..\scs_2000.h><scs_2000.h> 0x0 
 File 2,5,<..\..\mscbemb.h><mscbemb.h> 0x0 
 
