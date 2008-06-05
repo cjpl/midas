@@ -11362,7 +11362,7 @@ void interprete(char *cookie_pwd, char *cookie_wpwd, char *path, int refresh)
 
    if (strncmp(path, "CS/", 3) == 0) {
       if (equal_ustring(command, "edit")) {
-         sprintf(str, "%s?cmd=Edit&index=%d", path, index);
+         sprintf(str, "%s?cmd=Edit&index=%d", path+3, index);
          if (!check_web_password(cookie_wpwd, str, experiment))
             return;
       }
