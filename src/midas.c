@@ -1352,8 +1352,8 @@ INT cm_check_client(HNDLE hDB, HNDLE hKeyClient)
             break;
          }
 
-      if (found) { /* check that the client is still running: PID still exists */
 #ifdef OS_UNIX
+      if (found) { /* check that the client is still running: PID still exists */
 #ifdef ESRCH
          /* Only enable this for systems that define ESRCH and hope that they also support kill(pid,0) */
          errno = 0;
