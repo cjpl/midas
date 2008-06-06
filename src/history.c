@@ -193,7 +193,7 @@ INT hs_gen_index(DWORD ltime)
             cm_msg(MERROR, "hs_gen_index", "broken history file for time %d, trying to recover", (int)ltime);
 
          recovering = 1;
-         lseek(fh, -sizeof(rec)+1, SEEK_CUR);
+         lseek(fh, 1-sizeof(rec), SEEK_CUR);
 
          continue;
       }
