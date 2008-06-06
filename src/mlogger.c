@@ -2528,7 +2528,7 @@ static int add_event(int* indexp, int event_id, const char* event_name, HNDLE hK
       assert(status == DB_SUCCESS);
 
       for (i=0; i<ntags; i++) {
-         WORD v = tags[i].n_data;
+         WORD v = (WORD) tags[i].n_data;
          sprintf(buf, "/History/Tags/Tags %d/%s", event_id, tags[i].name);
 
          //printf("Set tag \'%s\' = %d\n", buf, v);
@@ -2581,7 +2581,7 @@ static int get_event_id(int eq_id, const char* eq_name, const char* var_name)
          
          //printf("key \'%s\'\n", key.name);
          
-         evid = strtol(key.name, NULL, 0);
+         evid = (WORD) strtol(key.name, NULL, 0);
          if (evid == 0)
             continue;
 
