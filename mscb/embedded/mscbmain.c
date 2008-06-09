@@ -219,6 +219,9 @@ void setup(void)
    /* enable watchdog with default timeout */
    watchdog_enable(0);
 
+   /* enable missing clock detector */
+   RSTSRC |= 0x04;
+
    /* default LED mode */
    for (i=0 ; i<N_LED ; i++)
       led_mode(i, 1);
