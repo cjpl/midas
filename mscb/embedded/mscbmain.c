@@ -120,9 +120,12 @@ void setup(void)
    unsigned char *p;
 
    _flkey = 0;
-
+   
    /* first disable watchdog */
    watchdog_disable();
+
+   /* avoid any blocking of RS485 bus */
+   RS485_ENABLE = 0;
 
    /* Port and oscillator configuration */
 
@@ -134,7 +137,7 @@ void setup(void)
    XBR1 = 0x00;
    XBR2 = 0x44;
 
-#ifdef SCS_210 // run SCS_210 at 24.5 MHz
+  #ifdef SCS_210 // run SCS_210 at 24.5 MHz
    /* Select internal quartz oscillator */
    SFRPAGE   = LEGACY_PAGE;
    FLSCL     = 0x00;            // set flash read time for <25 MHz
@@ -142,7 +145,7 @@ void setup(void)
    SFRPAGE   = CONFIG_PAGE;
    OSCICN    = 0x83;            // divide by 1
    CLKSEL    = 0x00;            // select internal oscillator
-#else          // run SCS_1001 at 98 MHz
+  #else          // run SCS_1001 at 98 MHz
    /* Select internal quartz oscillator */
    SFRPAGE   = LEGACY_PAGE;
    FLSCL     = 0xB0;            // set flash read time for 100 MHz
@@ -160,7 +163,7 @@ void setup(void)
    for (i = 0 ; i<50000 && ((PLL0CN & 0x10) == 0) ; i++);
 
    CLKSEL    = 0x02;            // select PLL as sysclk src
-#endif
+  #endif
 
 #elif defined(CPU_C8051F020)
 
@@ -173,9 +176,9 @@ void setup(void)
    P2MDOUT = 0x00;              // P2: LPT
    P3MDOUT = 0xE0;              // P3.5,6,7: Optocouplers
 
-#ifdef SCS_220
+  #ifdef SCS_220
    P0MDOUT |= 0x40;             // P0.6: RS485_SEC_ENABLE = Push Pull
-#endif
+  #endif
 
    /* Select external quartz oscillator */
    OSCXCN = 0x67;               // Crystal mode, Power Factor 22E6
@@ -186,11 +189,11 @@ void setup(void)
    XBR0 = 0x01;                 // Enable RX/TX
    XBR1 = 0x40;                 // Enable crossbar
 
-#ifdef SCS_320
+  #ifdef SCS_320
    P0MDOUT = 0x18;              // P0.3:TX, P0.4:RS485 enable Push/Pull
-#else
+  #else
    P0MDOUT = 0x90;              // P0.4:TX, P0.7:RS485 enable Push/Pull
-#endif
+  #endif
 
    /* Select internal quartz oscillator */
    OSCICN = 0x83;               // IOSCEN=1, SYSCLK=24.5 MHz
@@ -212,7 +215,7 @@ void setup(void)
    OSCICN = 0x08;               // CLKSL=1 (external)
 
 #endif
-
+        
    /* start system clock */
    sysclock_init();
 
@@ -239,7 +242,6 @@ void setup(void)
    rtc_set = 0;
 #endif
 
-   RS485_ENABLE = 0;
    i_in = i_out = n_out = 0;
    _cur_sub_addr = 0;
    for (i=0 ; i<sizeof(in_buf) ; i++)
