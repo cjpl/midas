@@ -52,7 +52,8 @@ BOOL history_mode = FALSE;
 BOOL verbose = FALSE;
 char midas_hostname[256];
 char midas_expt[256];
-char allowed_host[10][PARAM_LENGTH];
+#define MAX_N_ALLOWED_HOSTS 10
+char allowed_host[MAX_N_ALLOWED_HOSTS][PARAM_LENGTH];
 int  n_allowed_hosts;
 
 char *mname[] = {
@@ -11685,8 +11686,6 @@ struct linger        ling;
 
          /* check access control list */
          if (n_allowed_hosts > 0) {
-            
-
             allowed = FALSE;
 
             remote_phe = gethostbyaddr((char *) &remote_addr, 4, PF_INET);
@@ -11696,8 +11695,6 @@ struct linger        ling;
                strlcpy(hname, (char *)inet_ntoa(remote_addr), sizeof(hname));
             } else
                strlcpy(hname, remote_phe->h_name, sizeof(hname));
-
-            //printf("connection request from \'%s\'\n", hname);
 
             /* always permit localhost */
             if (strcmp(hname, "localhost.localdomain") == 0)
@@ -12045,7 +12042,8 @@ int main(int argc, char *argv[])
          else if (argv[i][1] == 'h')
             strlcpy(midas_hostname, argv[++i], sizeof(midas_hostname));
          else if (argv[i][1] == 'a')
-            strlcpy(allowed_host[n_allowed_hosts++], argv[++i], sizeof(allowed_host[0]));
+            if (n_allowed_hosts < MAX_N_ALLOWED_HOSTS)
+               strlcpy(allowed_host[n_allowed_hosts++], argv[++i], sizeof(allowed_host[0]));
          else {
           usage:
             printf("usage: %s [-h Hostname] [-p port] [-v] [-D] [-c] [-a Hostname]\n\n", argv[0]);
