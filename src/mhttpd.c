@@ -52,6 +52,8 @@ BOOL history_mode = FALSE;
 BOOL verbose = FALSE;
 char midas_hostname[256];
 char midas_expt[256];
+char allowed_host[10][PARAM_LENGTH];
+int  n_allowed_hosts;
 
 char *mname[] = {
    "January",
@@ -11579,6 +11581,9 @@ void server_loop(int daemon)
    fd_set readfds;
    struct timeval timeout;
    INT last_time = 0;
+   struct hostent *remote_phe;
+   char hname[256];
+   BOOL allowed;
 /*
 struct linger        ling;
 */
@@ -11679,15 +11684,10 @@ struct linger        ling;
          memcpy(&remote_addr, &(acc_addr.sin_addr), sizeof(remote_addr));
 
          /* check access control list */
-         if (1) {
-            struct hostent *remote_phe;
-            char hname[256];
-            int value = 0;
-            int size;
-            int status;
-            int okey = 0;
-            HNDLE hDB = 0;
-            HNDLE hkey = 0;
+         if (n_allowed_hosts > 0) {
+            
+
+            allowed = FALSE;
 
             remote_phe = gethostbyaddr((char *) &remote_addr, 4, PF_INET);
 
@@ -11700,44 +11700,21 @@ struct linger        ling;
             //printf("connection request from \'%s\'\n", hname);
 
             /* always permit localhost */
-            if (strcmp(hname, "localhost.localdomain") == 0) {
-               okey = 1;
-            }
+            if (strcmp(hname, "localhost.localdomain") == 0)
+               allowed = TRUE;
+            if (strcmp(hname, "localhost") == 0)
+               allowed = TRUE;
 
-            if (!okey) {
-               status = cm_get_experiment_database(&hDB, NULL);
-               assert(status == DB_SUCCESS);
-
-               if (hDB == 0) {
-
-                  status = cm_connect_experiment(midas_hostname, "", "mhttpd", NULL);
-                  if (status != CM_SUCCESS) {
-                     cm_msg(MERROR, "server_loop", "cm_connect_experiment(\'%s\',\'%s\') error %d", midas_hostname, "", status);
+            if (!allowed) {
+               for (i=0 ; i<n_allowed_hosts ; i++)
+                  if (strcmp(hname, allowed_host[i]) == 0) {
+                     allowed = TRUE;
+                     break;
                   }
-
-                  status = cm_get_experiment_database(&hDB, NULL);
-                  assert(status == DB_SUCCESS);
-               }
-
-               if (hDB) {
-                  status = db_find_key(hDB, 0, "/experiment/security/mhttpd hosts", &hkey);
-                  if (status!=DB_SUCCESS || hkey==0)
-                     okey = 1; // access list is not enabled
-               }
             }
 
-            if (!okey && hkey) {
-               value = 0;
-               size  = sizeof(value);
-               status = db_get_value(hDB, hkey, hname, &value, &size, TID_INT, FALSE);
-               //printf("hDB %d, status %d, value %d\n", hDB, status, value);
-               
-               if (status == DB_SUCCESS)
-                  okey = 1;
-            }
-
-            if (!okey) {
-               cm_msg(MERROR, "server_loop", "Rejecting http connection from \'%s\'", hname);
+            if (!allowed) {
+               printf("Rejecting http connection from \'%s\'\n", hname);
                closesocket(_sock);
                continue;
             }
@@ -12048,6 +12025,7 @@ int main(int argc, char *argv[])
 
    /* parse command line parameters */
    no_disconnect = FALSE;
+   n_allowed_hosts = 0;
    for (i = 1; i < argc; i++) {
       if (argv[i][0] == '-' && argv[i][1] == 'D')
          daemon = TRUE;
@@ -12066,15 +12044,19 @@ int main(int argc, char *argv[])
             tcp_port = atoi(argv[++i]);
          else if (argv[i][1] == 'h')
             strlcpy(midas_hostname, argv[++i], sizeof(midas_hostname));
+         else if (argv[i][1] == 'a')
+            strlcpy(allowed_host[n_allowed_hosts++], argv[++i], sizeof(allowed_host[0]));
          else {
           usage:
-            printf("usage: %s [-h Hostname] [-p port] [-v] [-D] [-c]\n\n", argv[0]);
+            printf("usage: %s [-h Hostname] [-p port] [-v] [-D] [-c] [-a Hostname]\n\n", argv[0]);
             printf("       -v display verbose HTTP communication\n");
             printf("       -h connect to midas server (mserver) on given host\n");
             printf("       -D become a daemon\n");
             printf("       -E only display ELog system\n");
             printf("       -H only display history plots\n");
             printf("       -c don't disconnect from experiment\n");
+            printf("       -a only allow access for specific host(s), several\n");
+            printf("          [-a Hostname] statements might be given\n");
             return 0;
          }
       }
