@@ -4566,11 +4566,12 @@ void show_sc_page(char *path, int refresh)
 
 /*------------------------------------------------------------------*/
 
-char *find_odb_tag(char *p, char *path, BOOL * edit, char *type)
+char *find_odb_tag(char *p, char *path, BOOL * edit, char *type, char *pwd)
 {
    char str[256], *ps;
 
    *edit = 0;
+   pwd[0] = 0;
    strcpy(type, "text");
    do {
       while (*p && *p != '<')
@@ -4646,6 +4647,24 @@ char *find_odb_tag(char *p, char *path, BOOL * edit, char *type)
                            *type++ = *p++;
                         *type = 0;
                      }
+                  } else {
+                     strncpy(str, p, 4);
+                     str[4] = 0;
+                     if (equal_ustring(str, "pwd=")) {
+                        p += 4;
+                        if (*p == '\"') {
+                           p++;
+                           while (*p && *p != '\"')
+                              *pwd++ = *p++;
+                           *pwd = 0;
+                           if (*p == '\"')
+                             p++;
+                        } else {
+                           while (*p && *p != ' ' && *p != '>')
+                              *pwd++ = *p++;
+                           *pwd = 0;
+                        }
+                     }
                   }
                }
             }
@@ -4671,7 +4690,7 @@ char *find_odb_tag(char *p, char *path, BOOL * edit, char *type)
 
 /*------------------------------------------------------------------*/
 
-void show_odb_tag(char *path, char *keypath, int n_var, BOOL bedit, char *type)
+void show_odb_tag(char *path, char *keypath, int n_var, BOOL bedit, char *type, char *pwd)
 {
    int size, index, i_edit, i_set;
    char str[TEXT_SIZE], data[TEXT_SIZE], options[1000], *p;
@@ -4766,8 +4785,13 @@ void show_odb_tag(char *path, char *keypath, int n_var, BOOL bedit, char *type)
                if (exp_name[0])
                   rsprintf("<a href=\"%s?exp=%s&cmd=Edit&index=%d\">", path, exp_name,
                            n_var);
-               else
-                  rsprintf("<a href=\"%s?cmd=Edit&index=%d\">", path, n_var);
+               else {
+                  if (pwd[0]) {
+                     rsprintf("<a onClick=\"promptpwd('%s?cmd=Edit&index=%d&pnam=%s')\" href=\"#\">", path, n_var, pwd);
+                  } else {
+                     rsprintf("<a href=\"%s?cmd=Edit&index=%d\">", path, n_var);
+                  }
+               }
 
                rsputs(str);
                rsprintf("</a>");
@@ -5204,7 +5228,7 @@ void show_custom_page(char *path)
 {
    int size, n_var, fh;
    char str[TEXT_SIZE], *ctext, keypath[256], type[32], *p, *ps, custom_path[256],
-      filename[256];
+      filename[256], pwd[256], ppath[256];
    HNDLE hDB, hkey;
    KEY key;
    BOOL bedit;
@@ -5257,6 +5281,31 @@ void show_custom_page(char *path)
          close(fh);
       }
 
+      /* check for valid password */
+      if (equal_ustring(getparam("cmd"), "Edit")) {
+         p = ps = ctext;
+         do {
+            p = find_odb_tag(ps, keypath, &bedit, type, pwd);
+            if (p == NULL)
+               break;
+            ps = strchr(p, '>') + 1;
+
+            if (pwd[0]) {
+               size = NAME_LENGTH;
+               str[0] = 0;
+               if (*getparam("pnam"))
+                  sprintf(ppath, "/Custom/Pwd/%s", getparam("pnam"));
+               else
+                  sprintf(ppath, "/Custom/Pwd/%s", path);
+               db_get_value(hDB, 0, ppath, str, &size, TID_STRING, TRUE);
+               if (!equal_ustring(getparam("cpwd"), str)) {
+                  show_error("Invalid password!");
+                  return;
+               }
+            }
+         } while (p != NULL);
+      }
+
       /* HTTP header */
       rsprintf("HTTP/1.0 200 Document follows\r\n");
       rsprintf("Server: MIDAS HTTP %d\r\n", cm_get_revision());
@@ -5265,7 +5314,7 @@ void show_custom_page(char *path)
       /* interprete text, replace <odb> tags with ODB values */
       p = ps = ctext;
       do {
-         p = find_odb_tag(ps, keypath, &bedit, type);
+         p = find_odb_tag(ps, keypath, &bedit, type, pwd);
          if (p != NULL)
             *p = 0;
          rsputs(ps);
@@ -5274,7 +5323,7 @@ void show_custom_page(char *path)
             break;
          ps = strchr(p + 1, '>') + 1;
 
-         show_odb_tag(path, keypath, n_var, bedit, type);
+         show_odb_tag(path, keypath, n_var, bedit, type, pwd);
          n_var++;
 
       } while (p != NULL);
