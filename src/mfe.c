@@ -188,8 +188,9 @@ INT tr_stop(INT rn, char *error)
    status = end_of_run(rn, error);
 
    /* check if event(s) happened just before disabling the trigger */
-   if ((i = check_polled_events()) > 0)
-      cm_msg(MINFO, "tr_stop", "sent remaining %d polled events", i);
+   if ((i = check_polled_events()) > 0) {
+      // cm_msg(MINFO, "tr_stop", "sent remaining %d polled events", i);
+   }
 
    if (status == CM_SUCCESS) {
       /* don't send events if already stopped */
