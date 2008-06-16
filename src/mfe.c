@@ -111,6 +111,7 @@ void readout_enable(BOOL flag);
 int readout_enabled(void);
 void display(BOOL bInit);
 BOOL logger_root();
+INT check_polled_events(void);
 
 /*---- ODB records -------------------------------------------------*/
 
@@ -186,6 +187,10 @@ INT tr_stop(INT rn, char *error)
 
    status = end_of_run(rn, error);
 
+   /* check if event(s) happened just before disabling the trigger */
+   if ((i = check_polled_events()) > 0)
+      cm_msg(MINFO, "tr_stop", "sent remaining %d polled events", i);
+
    if (status == CM_SUCCESS) {
       /* don't send events if already stopped */
       if (run_state != STATE_STOPPED)
@@ -210,7 +215,7 @@ INT tr_stop(INT rn, char *error)
       if (equipment[i].buffer_handle) {
          INT err = bm_flush_cache(equipment[i].buffer_handle, SYNC);
          if (err != BM_SUCCESS) {
-            cm_msg(MERROR, "tr_prestop", "bm_flush_cache(SYNC) error %d", err);
+            cm_msg(MERROR, "tr_stop", "bm_flush_cache(SYNC) error %d", err);
             return err;
          }
       }
@@ -1194,7 +1199,6 @@ int send_event(INT idx)
    } else
       equipment[idx].serial_number--;
 
-   /* why do we flush the cache for all equipments? */
    for (i = 0; equipment[i].name[0]; i++)
       if (equipment[i].buffer_handle) {
          status = bm_flush_cache(equipment[i].buffer_handle, SYNC);
@@ -1536,6 +1540,230 @@ BOOL logger_root()
    }
 
    return FALSE;
+}
+
+/*------------------------------------------------------------------*/
+
+INT check_polled_events(void)
+{
+   EQUIPMENT_INFO *eq_info;
+   EQUIPMENT *eq;
+   EVENT_HEADER *pevent, *pfragment;
+   DWORD readout_start, sent, size;
+   INT i, idx, source, events_sent, status;
+   char *pdata;
+   unsigned char *pd;
+
+   events_sent = 0;
+
+   /*---- loop over equipment table -------------------------------*/
+   for (idx = 0;; idx++) {
+      eq = &equipment[idx];
+      eq_info = &eq->info;
+
+      /* check if end of equipment list */
+      if (!eq->name[0])
+         break;
+
+      if (!eq_info->enabled)
+         continue;
+
+      if (eq->status != FE_SUCCESS)
+         continue;
+
+      if ((eq_info->eq_type & EQ_POLLED) == 0)
+         continue;
+
+      /*---- check polled events ----*/
+      readout_start = actual_millitime;
+      pevent = NULL;
+
+      while ((source = poll_event(eq_info->source, eq->poll_count, FALSE)) > 0) {
+         
+         if (eq_info->eq_type & EQ_FRAGMENTED)
+            pevent = frag_buffer;
+         else
+            pevent = (EVENT_HEADER *)event_buffer;
+
+         /* compose MIDAS event header */
+         pevent->event_id = eq_info->event_id;
+         pevent->trigger_mask = eq_info->trigger_mask;
+         pevent->data_size = 0;
+         pevent->time_stamp = actual_time;
+         pevent->serial_number = eq->serial_number;
+
+         /* put source at beginning of event, will be overwritten by 
+            user readout code, just a special feature used by some 
+            multi-source applications */
+         *(INT *) (pevent + 1) = source;
+
+         if (eq->info.num_subevents) {
+            eq->subevent_number = 0;
+            do {
+               *(INT *) ((char *) (pevent + 1) + pevent->data_size) = source;
+
+               /* call user readout routine for subevent indicating offset */
+               size = eq->readout((char *) (pevent + 1), pevent->data_size);
+               pevent->data_size += size;
+               if (size > 0) {
+                  if (pevent->data_size + sizeof(EVENT_HEADER) >
+                      (DWORD) max_event_size) {
+                     cm_msg(MERROR, "scheduler",
+                            "Event size %ld larger than maximum size %d",
+                            (long) (pevent->data_size + sizeof(EVENT_HEADER)),
+                            max_event_size);
+                  }
+
+                  eq->subevent_number++;
+                  eq->serial_number++;
+               }
+
+               /* wait for next event */
+               do {
+                  source = poll_event(eq_info->source, eq->poll_count, FALSE);
+
+                  if (source == FALSE) {
+                     actual_millitime = ss_millitime();
+
+                     /* repeat no more than period */
+                     if (actual_millitime - readout_start > (DWORD) eq_info->period)
+                        break;
+                  }
+               } while (source == FALSE);
+
+            } while (eq->subevent_number < eq->info.num_subevents && source);
+
+            /* notify readout routine about end of super-event */
+            pevent->data_size = eq->readout((char *) (pevent + 1), -1);
+         } else {
+            /* call user readout routine indicating event source */
+            pevent->data_size = eq->readout((char *) (pevent + 1), 0);
+
+            /* check event size */
+            if (eq_info->eq_type & EQ_FRAGMENTED) {
+               if (pevent->data_size + sizeof(EVENT_HEADER) > (DWORD) max_event_size_frag) {
+                  cm_msg(MERROR, "send_event",
+                        "Event size %ld larger than maximum size %d for frag. ev.",
+                        (long) (pevent->data_size + sizeof(EVENT_HEADER)),
+                        max_event_size_frag);
+                  assert(FALSE);
+               }
+            } else {
+               if (pevent->data_size + sizeof(EVENT_HEADER) > (DWORD) max_event_size) {
+                  cm_msg(MERROR, "scheduler",
+                        "Event size %ld larger than maximum size %d",
+                        (long) (pevent->data_size + sizeof(EVENT_HEADER)),
+                        max_event_size);
+                  assert(FALSE);
+               }
+            }
+
+            /* increment serial number if event read out sucessfully */
+            if (pevent->data_size)
+               eq->serial_number++;
+         }
+
+         /* send event */
+         if (pevent->data_size) {
+
+            /* check for fragmented event */
+            if (eq_info->eq_type & EQ_FRAGMENTED) {
+               /* compose fragments */
+               pfragment = event_buffer;
+
+               /* compose MIDAS event header */
+               memcpy(pfragment, pevent, sizeof(EVENT_HEADER));
+               pfragment->event_id |= EVENTID_FRAG1;
+
+               /* store total event size */
+               pd = (unsigned char *) (pfragment + 1);
+               size = pevent->data_size;
+               for (i = 0; i < 4; i++) {
+                  pd[i] = (unsigned char) (size & 0xFF);      /* little endian, please! */
+                  size >>= 8;
+               }
+
+               pfragment->data_size = sizeof(DWORD);
+
+               pdata = (char *) (pevent + 1);
+
+               for (i = 0, sent = 0; sent < pevent->data_size; i++) {
+                  if (i > 0) {
+                     pfragment = event_buffer;
+
+                     /* compose MIDAS event header */
+                     memcpy(pfragment, pevent, sizeof(EVENT_HEADER));
+                     pfragment->event_id |= EVENTID_FRAG;
+
+                     /* copy portion of event */
+                     size = pevent->data_size - sent;
+                     if (size > max_event_size - sizeof(EVENT_HEADER))
+                        size = max_event_size - sizeof(EVENT_HEADER);
+
+                     memcpy(pfragment + 1, pdata, size);
+                     pfragment->data_size = size;
+                     sent += size;
+                     pdata += size;
+                  }
+
+                  /* send event to buffer */
+                  if (equipment[idx].buffer_handle) {
+                     status = rpc_send_event(equipment[idx].buffer_handle, pfragment,
+                                             pfragment->data_size + sizeof(EVENT_HEADER), SYNC, rpc_mode);
+                     if (status != RPC_SUCCESS) {
+                        cm_msg(MERROR, "send_event", "rpc_send_event(SYNC) error %d", status);
+                        return status;
+                     }
+
+                     /* flush events from buffer */
+                     rpc_flush_event();
+                  }
+               }
+            
+            } else { /*-------------------*/
+
+               /* send unfragmented event */
+
+               /* send first event to ODB if logger writes in root format */
+               if (pevent->serial_number == 0)
+                  if (logger_root())
+                     update_odb(pevent, eq->hkey_variables, eq->format);
+
+               status = rpc_send_event(eq->buffer_handle, pevent,
+                                       pevent->data_size + sizeof(EVENT_HEADER),
+                                       SYNC, rpc_mode);
+
+               if (status != SUCCESS) {
+                  cm_msg(MERROR, "scheduler", "rpc_send_event error %d", status);
+                  break;
+               }
+            }
+
+            eq->bytes_sent += pevent->data_size + sizeof(EVENT_HEADER);
+
+            if (eq->info.num_subevents) {
+               eq->events_sent += eq->subevent_number;
+               events_sent += eq->subevent_number;
+            } else {
+               eq->events_sent++;
+               events_sent++;
+            }
+         }
+
+         actual_millitime = ss_millitime();
+
+         /* repeat no more than period */
+         if (actual_millitime - readout_start > (DWORD) eq_info->period)
+            break;
+
+         /* quit if event limit is reached */
+         if (eq_info->event_limit > 0 &&
+             eq->stats.events_sent + eq->events_sent >= eq_info->event_limit)
+            break;
+      }
+   }
+
+   return events_sent;
 }
 
 /*------------------------------------------------------------------*/
