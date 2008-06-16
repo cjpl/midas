@@ -12041,10 +12041,10 @@ int main(int argc, char *argv[])
             tcp_port = atoi(argv[++i]);
          else if (argv[i][1] == 'h')
             strlcpy(midas_hostname, argv[++i], sizeof(midas_hostname));
-         else if (argv[i][1] == 'a')
+         else if (argv[i][1] == 'a') {
             if (n_allowed_hosts < MAX_N_ALLOWED_HOSTS)
                strlcpy(allowed_host[n_allowed_hosts++], argv[++i], sizeof(allowed_host[0]));
-         else {
+         } else {
           usage:
             printf("usage: %s [-h Hostname] [-p port] [-v] [-D] [-c] [-a Hostname]\n\n", argv[0]);
             printf("       -v display verbose HTTP communication\n");
