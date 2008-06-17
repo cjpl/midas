@@ -1231,9 +1231,9 @@ void show_status_page(int refresh, char *cookie_wpwd)
             name[strlen(name) - 1] = 0;
 
          if (exp_name[0])
-            sprintf(ref, "./CS/%s?exp=%s", key.name, exp_name);
+            sprintf(ref, "./CS/%s?exp=%s", name, exp_name);
          else
-            sprintf(ref, "./CS/%s", key.name);
+            sprintf(ref, "./CS/%s", name);
 
          if (new_window)
             rsprintf("<a href=\"%s\" target=\"_blank\">%s</a> ", ref, name);
@@ -5224,14 +5224,15 @@ void show_custom_gif(char *name)
 
 /*------------------------------------------------------------------*/
 
-void show_custom_page(char *path)
+void show_custom_page(char *path, char *cookie_cpwd)
 {
-   int size, n_var, fh;
+   int size, n_var, fh, index;
    char str[TEXT_SIZE], *ctext, keypath[256], type[32], *p, *ps, custom_path[256],
       filename[256], pwd[256], ppath[256];
    HNDLE hDB, hkey;
    KEY key;
    BOOL bedit;
+   char data[8];
 
    if (strstr(path, ".gif")) {
       show_custom_gif(path);
@@ -5249,11 +5250,18 @@ void show_custom_page(char *path)
    custom_path[0] = 0;
    size = sizeof(custom_path);
    db_get_value(hDB, 0, "/Custom/Path", custom_path, &size, TID_STRING, FALSE);
-
    db_find_key(hDB, 0, str, &hkey);
+   if (!hkey) {
+      sprintf(str, "/Custom/%s&", path);
+      db_find_key(hDB, 0, str, &hkey);
+      if (!hkey) {
+         sprintf(str, "/Custom/%s!", path);
+         db_find_key(hDB, 0, str, &hkey);
+      }
+   }
+
    if (hkey) {
 
-      n_var = 0;
       db_get_key(hDB, hkey, &key);
       size = key.total_size;
       ctext = malloc(size);
@@ -5284,26 +5292,67 @@ void show_custom_page(char *path)
       /* check for valid password */
       if (equal_ustring(getparam("cmd"), "Edit")) {
          p = ps = ctext;
+         n_var = 0;
          do {
             p = find_odb_tag(ps, keypath, &bedit, type, pwd);
             if (p == NULL)
                break;
             ps = strchr(p, '>') + 1;
 
-            if (pwd[0]) {
+            if (pwd[0] && n_var == atoi(getparam("index"))) {
                size = NAME_LENGTH;
-               str[0] = 0;
+               strlcpy(str, path, sizeof(str));
+               if (strlen(str)>0 && str[strlen(str)-1] == '&')
+                  str[strlen(str)-1] = 0;
                if (*getparam("pnam"))
                   sprintf(ppath, "/Custom/Pwd/%s", getparam("pnam"));
                else
-                  sprintf(ppath, "/Custom/Pwd/%s", path);
+                  sprintf(ppath, "/Custom/Pwd/%s", str);
+               str[0] = 0;
                db_get_value(hDB, 0, ppath, str, &size, TID_STRING, TRUE);
-               if (!equal_ustring(getparam("cpwd"), str)) {
+               if (!equal_ustring(cookie_cpwd, str)) {
                   show_error("Invalid password!");
                   return;
-               }
+               } else
+                  break;
             }
+
+            n_var++;
          } while (p != NULL);
+      }
+
+      /* process toggle command */
+      if (equal_ustring(getparam("cmd"), "Toggle")) {
+         if (*getparam("pnam")) {
+            sprintf(ppath, "/Custom/Pwd/%s", getparam("pnam"));
+            str[0] = 0;
+            db_get_value(hDB, 0, ppath, str, &size, TID_STRING, TRUE);
+            if (!equal_ustring(cookie_cpwd, str)) {
+               show_error("Invalid password!");
+               return;
+            }
+         }
+         strlcpy(str, getparam("odb"), sizeof(str));
+         if (strchr(str, '[')) {
+            index = atoi(strchr(str, '[')+1);
+            *strchr(str, '[') = 0;
+         } else
+            index = 0;
+
+         if (db_find_key(hDB, 0, str, &hkey)) {
+            db_get_key(hDB, hkey, &key);
+            memset(data, 0, sizeof(data));
+            if (key.item_size <= sizeof(data)) {
+               size = sizeof(data);
+               db_get_data_index(hDB, hkey, data, &size, index, key.type);
+               db_sprintf(str, data, size, 0, key.type);
+               if (atoi(str) == 0)
+                  db_sscanf("1", data, &size, 0, key.type);
+               else
+                  db_sscanf("0", data, &size, 0, key.type);
+               db_set_data_index(hDB, hkey, data, key.item_size, index, key.type);
+            }
+         }
       }
 
       /* HTTP header */
@@ -5313,6 +5362,7 @@ void show_custom_page(char *path)
 
       /* interprete text, replace <odb> tags with ODB values */
       p = ps = ctext;
+      n_var = 0;
       do {
          p = find_odb_tag(ps, keypath, &bedit, type, pwd);
          if (p != NULL)
@@ -10728,7 +10778,7 @@ void send_favicon(char *icon)
 
 /*------------------------------------------------------------------*/
 
-void interprete(char *cookie_pwd, char *cookie_wpwd, char *path, int refresh)
+void interprete(char *cookie_pwd, char *cookie_wpwd, char *cookie_cpwd, char *path, int refresh)
 /********************************************************************\
 
   Routine: interprete
@@ -11419,7 +11469,7 @@ void interprete(char *cookie_pwd, char *cookie_wpwd, char *path, int refresh)
             return;
       }
 
-      show_custom_page(dec_path + 3);
+      show_custom_page(dec_path + 3, cookie_cpwd);
       return;
    }
 
@@ -11430,7 +11480,7 @@ void interprete(char *cookie_pwd, char *cookie_wpwd, char *path, int refresh)
             return;
       }
 
-      show_custom_page("Status");
+      show_custom_page("Status", cookie_cpwd);
       return;
    }
 
@@ -11456,7 +11506,7 @@ void interprete(char *cookie_pwd, char *cookie_wpwd, char *path, int refresh)
 
 /*------------------------------------------------------------------*/
 
-void decode_get(char *string, char *cookie_pwd, char *cookie_wpwd, int refresh)
+void decode_get(char *string, char *cookie_pwd, char *cookie_wpwd, char *cookie_cpwd, int refresh)
 {
    char path[256];
    char *p, *pitem;
@@ -11492,7 +11542,7 @@ void decode_get(char *string, char *cookie_pwd, char *cookie_wpwd, int refresh)
       }
    }
 
-   interprete(cookie_pwd, cookie_wpwd, path, refresh);
+   interprete(cookie_pwd, cookie_wpwd, cookie_cpwd, path, refresh);
 }
 
 /*------------------------------------------------------------------*/
@@ -11604,7 +11654,7 @@ void decode_post(char *header, char *string, char *boundary, int length,
 
    } while ((POINTER_T) string - (POINTER_T) pinit < length);
 
-   interprete(cookie_pwd, cookie_wpwd, path, refresh);
+   interprete(cookie_pwd, cookie_wpwd, "", path, refresh);
 }
 
 /*------------------------------------------------------------------*/
@@ -11624,7 +11674,7 @@ void server_loop(int daemon)
 {
    int status, i, refresh, n_error;
    struct sockaddr_in bind_addr, acc_addr;
-   char cookie_pwd[256], cookie_wpwd[256], boundary[256], *p;
+   char cookie_pwd[256], cookie_wpwd[256], cookie_cpwd[256], boundary[256], *p;
    int lsock, flag, content_length, header_length;
    unsigned int len;
    struct hostent *local_phe = NULL;
@@ -11933,6 +11983,11 @@ struct linger        ling;
                     sizeof(cookie_wpwd));
             cookie_wpwd[strcspn(cookie_wpwd, " ;\r\n")] = 0;
          }
+         if (strstr(net_buffer, "cpwd=") != NULL) {
+            strlcpy(cookie_cpwd, strstr(net_buffer, "cpwd=") + 5,
+                    sizeof(cookie_cpwd));
+            cookie_cpwd[strcspn(cookie_cpwd, " ;\r\n")] = 0;
+         }
 
          refresh = 0;
          if (strstr(net_buffer, "midas_refr=") != NULL)
@@ -11991,7 +12046,7 @@ struct linger        ling;
             *(strstr(net_buffer, "HTTP") - 1) = 0;
 
             /* decode command and return answer */
-            decode_get(net_buffer + 4, cookie_pwd, cookie_wpwd, refresh);
+            decode_get(net_buffer + 4, cookie_pwd, cookie_wpwd, cookie_cpwd, refresh);
          } else {
             decode_post(net_buffer + 5, net_buffer + header_length, boundary,
                         content_length, cookie_pwd, cookie_wpwd, refresh);
