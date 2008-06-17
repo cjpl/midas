@@ -2592,7 +2592,7 @@ static int get_event_id(int eq_id, const char* eq_name, const char* var_name)
 
          //printf("got %d \'%s\'\n", evid, tmp);
 
-         if (strcasecmp(name, tmp) == 0)
+         if (equal_ustring(name, tmp))
             return evid;
 
          if (evid/1000 == eq_id)
