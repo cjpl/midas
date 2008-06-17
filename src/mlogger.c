@@ -2464,19 +2464,19 @@ static int add_event(int* indexp, int event_id, const char* event_name, HNDLE hK
    /* check for duplicate event id's */
    for (i=0; i<index; i++)
       if (hist_log[i].event_id == event_id) {
-         cm_msg(MERROR, "open_history", "Duplicate event id %d for \'%s\'", event_id, event_name);
+         cm_msg(MERROR, "add_event", "Duplicate event id %d for \'%s\'", event_id, event_name);
          return 0;
       }
 
    if (index >= MAX_HISTORY) {
-      cm_msg(MERROR, "open_history", "Too many history events: %d, please increase MAX_HISTORY!", index);
+      cm_msg(MERROR, "add_event", "Too many history events: %d, please increase MAX_HISTORY!", index);
       return 0;
    }
 
    /* check for invalid history tags */
    for (i=0; i<ntags; i++) {
       if (rpc_tid_size(tags[i].type) == 0) {
-         cm_msg(MERROR, "open_history", "Invalid tag %d \'%s\' in event %d \'%s\': type size is zero", i, tags[i].name, event_id, event_name);
+         cm_msg(MERROR, "add_event", "Invalid tag %d \'%s\' in event %d \'%s\': type size is zero", i, tags[i].name, event_id, event_name);
          return 0;
       }
    }
@@ -2496,7 +2496,7 @@ static int add_event(int* indexp, int event_id, const char* event_name, HNDLE hK
    hist_log[index].last_log = 0;
 
    if (hist_log[index].buffer == NULL) {
-      cm_msg(MERROR, "open_history", "Cannot allocate data buffer for event \"%s\" size %d", event_name, size);
+      cm_msg(MERROR, "add_event", "Cannot allocate data buffer for event \"%s\" size %d", event_name, size);
       return 0;
    }
    
@@ -2505,7 +2505,7 @@ static int add_event(int* indexp, int event_id, const char* event_name, HNDLE hK
       status = db_open_record(hDB, hKey, hist_log[index].buffer,
                               size, MODE_READ, log_history, NULL);
       if (status != DB_SUCCESS) {
-         cm_msg(MERROR, "open_history",
+         cm_msg(MERROR, "add_event",
                 "Cannot hotlink event %d \"%s\" for history logging, db_open_record() status %d",
                 event_id, event_name, status);
          return status;
