@@ -2725,8 +2725,6 @@ INT open_history()
          if (n_var == 0)
             cm_msg(MERROR, "open_history", "defined event %d with no variables in ODB", eq_id);
          
-         n_tags = 1000; // FIXME!
-
          /* create tag array */
          tag = (TAG *) malloc(sizeof(TAG) * n_tags);
 
