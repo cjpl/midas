@@ -5353,6 +5353,10 @@ void show_custom_page(char *path, char *cookie_cpwd)
                db_set_data_index(hDB, hkey, data, key.item_size, index, key.type);
             }
          }
+
+         /* redirect (so that 'reload' does not toggle again) */
+         redirect(path);
+         return;
       }
 
       /* HTTP header */
