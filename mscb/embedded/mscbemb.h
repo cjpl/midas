@@ -83,6 +83,9 @@
 #ifdef hvr_800
 #define HVR_800
 #endif
+#ifdef hvr_1600
+#define HVR_1600
+#endif
 #ifdef hvr_test
 #define HVR_TEST
 #endif
@@ -329,6 +332,31 @@ sbit RS485_ENABLE = P0 ^ 7;
 sbit RS485_ENABLE = P0 ^ 5;
 
 /*--------------------------------*/
+#elif defined(HVR_1600)
+#include <c8051F120.h>
+#define CPU_C8051F120
+
+#define LED_0 P7 ^ 0
+#define LED_1 P7 ^ 1 
+#define LED_2 P7 ^ 2 
+#define LED_3 P7 ^ 3
+#define LED_4 P7 ^ 4
+#define LED_5 P7 ^ 5
+#define LED_6 P7 ^ 6
+#define LED_7 P7 ^ 7
+#define LED_8 P3 ^ 0
+#define LED_9 P3 ^ 1 
+#define LED_10 P3 ^ 2 
+#define LED_11 P3 ^ 3
+#define LED_12 P3 ^ 4
+#define LED_13 P3 ^ 5
+#define LED_14 P3 ^ 6
+#define LED_15 P3 ^ 7
+
+#define LED_ON 1
+sbit RS485_ENABLE = P0 ^ 5;
+
+/*--------------------------------*/
 #elif defined(HVR_TEST)
 #include <c8051F000.h>
 #define CPU_C8051F000
@@ -386,7 +414,23 @@ sbit RS485_ENABLE = P0 ^ 3;
 
 #define LED_OFF !LED_ON
 
-#if defined(LED_7)
+#if defined(LED_15)
+#define N_LED 16
+#elif defined(LED_14)
+#define N_LED 15
+#elif defined(LED_13)
+#define N_LED 14
+#elif defined(LED_12)
+#define N_LED 13
+#elif defined(LED_11)
+#define N_LED 12
+#elif defined(LED_10)
+#define N_LED 11
+#elif defined(LED_9)
+#define N_LED 10
+#elif defined(LED_8)
+#define N_LED 9
+#elif defined(LED_7)
 #define N_LED 8
 #elif defined(LED_6)
 #define N_LED 7
