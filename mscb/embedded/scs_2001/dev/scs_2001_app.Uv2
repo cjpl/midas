@@ -10,8 +10,8 @@ Group (Include Files)
 File 1,1,<..\..\mscbmain.c><mscbmain.c> 0x0 
 File 1,1,<..\..\mscbutil.c><mscbutil.c> 0x0 
 File 1,1,<..\..\lcd_menu.c><lcd_menu.c> 0x0 
-File 1,1,<.\scs_2001_app.c><scs_2001_app.c> 0x0 
 File 1,1,<..\scs_2001_lib.c><scs_2001_lib.c> 0x0 
+File 1,1,<.\scs_2001_test.c><scs_2001_test.c> 0x0 
 File 2,5,<..\..\mscbemb.h><mscbemb.h> 0x0 
 File 2,5,<..\scs_2001.h><scs_2001.h> 0x0 
 
