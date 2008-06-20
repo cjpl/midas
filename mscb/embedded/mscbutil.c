@@ -665,18 +665,35 @@ void uart_init(unsigned char port, unsigned char baud)
 
 /*------------------------------------------------------------------*/
 
+#ifdef CPU_C8051F120
+
+static unsigned long xdata _systime;
+static unsigned long xdata _uptime;
+static unsigned char xdata _uptime_cnt;
+
+/* LED structure */
+struct {
+  unsigned char mode;
+  unsigned char timer;
+  unsigned char interval;
+  unsigned char n;
+} xdata leds[N_LED];
+
+#else
+
 static unsigned long idata _systime;
 static unsigned long idata _uptime;
 static unsigned char idata _uptime_cnt;
 
 /* LED structure */
-
 struct {
   unsigned char mode;
   unsigned char timer;
   unsigned char interval;
   unsigned char n;
 } idata leds[N_LED];
+
+#endif
 
 #ifdef LED_0
 sbit led_0 = LED_0;
@@ -707,6 +724,24 @@ sbit led_8 = LED_8;
 #endif
 #ifdef LED_9
 sbit led_9 = LED_9;
+#endif
+#ifdef LED_10
+sbit led_10 = LED_10;
+#endif
+#ifdef LED_11
+sbit led_11 = LED_11;
+#endif
+#ifdef LED_12
+sbit led_12 = LED_12;
+#endif
+#ifdef LED_13
+sbit led_13 = LED_13;
+#endif
+#ifdef LED_14
+sbit led_14 = LED_14;
+#endif
+#ifdef LED_15
+sbit led_15 = LED_15;
 #endif
 
 /*------------------------------------------------------------------*/
@@ -893,9 +928,18 @@ void led_blink(unsigned char led, unsigned char n, int interval) reentrant
 
 void led_set(unsigned char led, unsigned char flag) reentrant 
 {
+#ifdef CPU_C8051F120
+   unsigned char old_page;
+#endif
+
    /* invert on/off if mode == 1 */
    if (led < N_LED && leds[led].mode)
       flag = !flag;
+
+#ifdef CPU_C8051F120
+   old_page = SFRPAGE;
+   SFRPAGE = CONFIG_PAGE;
+#endif
 
 #ifdef LED_0
    if (led == 0)
@@ -936,6 +980,34 @@ void led_set(unsigned char led, unsigned char flag) reentrant
 #ifdef LED_9
    if (led == 9)
       led_9 = flag;
+#endif
+#ifdef LED_10
+   if (led == 10)
+      led_10 = flag;
+#endif
+#ifdef LED_11
+   if (led == 11)
+      led_11 = flag;
+#endif
+#ifdef LED_12
+   if (led == 12)
+      led_12 = flag;
+#endif
+#ifdef LED_13
+   if (led == 13)
+      led_13 = flag;
+#endif
+#ifdef LED_14
+   if (led == 14)
+      led_14 = flag;
+#endif
+#ifdef LED_15
+   if (led == 15)
+      led_15 = flag;
+#endif
+
+#ifdef CPU_C8051F120
+   SFRPAGE = old_page;
 #endif
 }
 
@@ -1430,7 +1502,8 @@ unsigned char eeprom_retrieve(unsigned char flag)
 
   Routine: eeprom_retrieve
 
-  Purpose: Retrieve system and user parameters from EEPROM
+  Purpose: Retrieve system parameters from EEPROM
+           If flag=1, also retrieve user variables from EEPROM
 
 \********************************************************************/
 {
@@ -1449,17 +1522,18 @@ unsigned char eeprom_retrieve(unsigned char flag)
       status |= (1 << 0);
 
    // user channel variables
-   if (flag) {
-      for (adr = 0 ; adr < _n_sub_addr ; adr++)
-         for (i = 0; variables[i].width; i++)
+   for (adr = 0 ; adr < _n_sub_addr ; adr++)
+      for (i = 0; variables[i].width; i++) {
+         if (flag)
             eeprom_read((char *)variables[i].ud + _var_size*adr,
                         variables[i].width, &offset);
-   
-      // check for second magic
-      eeprom_read(&magic, 2, &offset);
-      if (magic == 0x1234)
-         status |= (1 << 1);
-   } else
+         else
+            offset += variables[i].width;
+      }
+
+   // check for second magic
+   eeprom_read(&magic, 2, &offset);
+   if (magic == 0x1234)
       status |= (1 << 1);
 
    return status;
