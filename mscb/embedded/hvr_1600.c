@@ -43,7 +43,8 @@ char code node_name[] = "HVR-1600";
 
 /* current multiplier */
 //#define CUR_MULT 11.51          // (g=1+49.4k/4k7) at AD8221
-#define CUR_MULT 1              // (g=1) at AD8221
+#define CUR_MULT 97.86          // (g=1+49.4k/510) at AD8221
+//#define CUR_MULT 1              // (g=1) at AD8221
 
 /* delay for opto-couplers in us */
 #define OPT_DELAY 1
@@ -623,19 +624,19 @@ void read_currents()
         current = ((float)(sr[i] & 0x1FFFFFFF) / (1l<<28)) * 2.5;
    
       /* correct opamp gain and curr. resist, microamp */
-      //current = current / CUR_MULT / RCURR * 1E6;
+      current = current / CUR_MULT / RCURR * 1E6;
          
       /* correct for unbalanced voltage dividers */
-      //current -= user_data[i].cur_vgain * user_data[i].u_meas;
+      current -= user_data[i].cur_vgain * user_data[i].u_meas;
    
       /* correct for offset */
-      //current -= user_data[i].cur_offset;
+      current -= user_data[i].cur_offset;
    
       /* calibrate gain */
-      //current = current * user_data[i].cur_gain;
+      current = current * user_data[i].cur_gain;
    
       /* 1 nA resolution */
-      //current = floor(current*1000 + 0.5)/1000.0;
+      current = floor(current*1000 + 0.5)/1000.0;
    
       DISABLE_INTERRUPTS;
       user_data[i].i_meas = current;
