@@ -42,9 +42,7 @@ char code node_name[] = "HVR-1600";
 #define RCURR 1E3
 
 /* current multiplier */
-//#define CUR_MULT 11.51          // (g=1+49.4k/4k7) at AD8221
-#define CUR_MULT 97.86          // (g=1+49.4k/510) at AD8221
-//#define CUR_MULT 1              // (g=1) at AD8221
+#define CUR_MULT 8.97          // (g=1+49.4k/6k2) at AD8221
 
 /* delay for opto-couplers in us */
 #define OPT_DELAY 1
@@ -53,8 +51,8 @@ char code node_name[] = "HVR-1600";
 sbit JU0 = P3 ^ 4;              // negative module if forced to zero
 
 /* LTC2600 pins */
-sbit DAC_NCS1 = P4 ^ 3;         // !Chip select channel 0-7
-sbit DAC_NCS2 = P4 ^ 4;         // !Chip select channel 8-15
+sbit DAC_NCS1 = P4 ^ 4;         // !Chip select channel 0-7
+sbit DAC_NCS2 = P4 ^ 3;         // !Chip select channel 8-15
 sbit DAC_SCK  = P4 ^ 5;         // Serial Clock
 sbit DAC_CLR  = P4 ^ 6;         // Clear
 sbit DAC_SDI  = P4 ^ 2;         // Serial In
@@ -337,7 +335,7 @@ unsigned char i, m, b;
 
    SFRPAGE = CONFIG_PAGE; // for Port 4!
 
-   if (channel < 0)
+   if (channel < 8)
       DAC_NCS1 = 0; // chip select
    else
       DAC_NCS2 = 0; // chip select
@@ -359,7 +357,7 @@ unsigned char i, m, b;
    // channel address
    for (i=0,m=8 ; i<4 ; i++) {
       DAC_SCK = 0;
-      DAC_SDI = (channel & m) > 0;
+      DAC_SDI = ((channel % 8)& m) > 0;
       delay_us(OPT_DELAY);
       DAC_SCK = 1;
       delay_us(OPT_DELAY);
