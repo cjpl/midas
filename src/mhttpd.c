@@ -9557,7 +9557,7 @@ void export_hist(char *path, int scale, int toffset, int index, int labels)
 {
    HNDLE hDB, hkey, hkeypanel, hkeyeq, hkeydvar, hkeyvars, hkeyroot, hkeynames;
    KEY key;
-   int i, j, k, l, n_vars, size, status, n_vp;
+   int i, j, k, l, n_vars, n_all_vars, size, status, n_vp;
    DWORD bsize, tsize, n_run_number, *state, *run_number, *t_run_number, i_run, *i_var;
    char str[256], fmt[256], *p, odbpath[256];
    INT var_index[MAX_VARS];
@@ -9626,42 +9626,42 @@ void export_hist(char *path, int scale, int toffset, int index, int labels)
    }
 
    db_get_key(hDB, hkeydvar, &key);
-   n_vars = key.num_values;
+   n_all_vars = key.num_values;
 
-   if (n_vars > MAX_VARS) {
+   if (n_all_vars > MAX_VARS) {
       rsprintf(str, "Too many variables in panel %s", path);
       return;
    }
 
-   for (i = 0; i < n_vars; i++) {
+   for (i = n_vars = 0; i < n_all_vars; i++) {
       if (index != -1 && index != i)
          continue;
 
       size = sizeof(str);
       db_get_data_index(hDB, hkeydvar, str, &size, i, TID_STRING);
-      strlcpy(tag_name[i], str, sizeof(tag_name[0]));
+      strlcpy(tag_name[n_vars], str, sizeof(tag_name[0]));
 
       /* split varname in event, variable and index */
-      if (strchr(tag_name[i], ':')) {
-         strlcpy(event_name[i], tag_name[i], sizeof(event_name[0]));
-         *strchr(event_name[i], ':') = 0;
-         strlcpy(var_name[i], strchr(tag_name[i], ':') + 1, sizeof(var_name[0]));
-         var_index[i] = 0;
-         if (strchr(var_name[i], '[')) {
-            var_index[i] = atoi(strchr(var_name[i], '[') + 1);
-            *strchr(var_name[i], '[') = 0;
+      if (strchr(tag_name[n_vars], ':')) {
+         strlcpy(event_name[n_vars], tag_name[n_vars], sizeof(event_name[0]));
+         *strchr(event_name[n_vars], ':') = 0;
+         strlcpy(var_name[n_vars], strchr(tag_name[n_vars], ':') + 1, sizeof(var_name[0]));
+         var_index[n_vars] = 0;
+         if (strchr(var_name[n_vars], '[')) {
+            var_index[n_vars] = atoi(strchr(var_name[n_vars], '[') + 1);
+            *strchr(var_name[n_vars], '[') = 0;
          }
       } else {
-         rsprintf("Tag \"%s\" has wrong format in panel %s", tag_name[i], path);
+         rsprintf("Tag \"%s\" has wrong format in panel %s", tag_name[n_vars], path);
          return;
       }
 
       /* search event_id */
-      status = hs_get_event_id(0, event_name[i], &event_id);
+      status = hs_get_event_id(0, event_name[n_vars], &event_id);
 
       if (status != HS_SUCCESS) {
          rsprintf("Event \"%s\" from panel \"%s\" not found in history",
-                  event_name[i], path);
+                  event_name[n_vars], path);
          return;
       }
 
@@ -9714,13 +9714,13 @@ void export_hist(char *path, int scale, int toffset, int index, int labels)
                break;
 
             db_get_key(hDB, hkeyeq, &key);
-            if (equal_ustring(key.name, event_name[i])) {
+            if (equal_ustring(key.name, event_name[n_vars])) {
                /* check if variable is individual key under variabels/ */
-               sprintf(str, "Variables/%s", var_name[i]);
+               sprintf(str, "Variables/%s", var_name[n_vars]);
                db_find_key(hDB, hkeyeq, str, &hkey);
                if (hkey) {
-                  sprintf(odbpath, "/Equipment/%s/Variables/%s", event_name[i],
-                          var_name[i]);
+                  sprintf(odbpath, "/Equipment/%s/Variables/%s", event_name[n_vars],
+                          var_name[n_vars]);
                   break;
                }
 
@@ -9728,7 +9728,7 @@ void export_hist(char *path, int scale, int toffset, int index, int labels)
                db_find_key(hDB, hkeyeq, "Settings/Names", &hkeynames);
                if (hkeynames) {
                   /* extract variable name and Variables/<key> */
-                  strlcpy(str, var_name[i], sizeof(str));
+                  strlcpy(str, var_name[n_vars], sizeof(str));
                   p = str + strlen(str) - 1;
                   while (p > str && *p != ' ')
                      p--;
@@ -9742,7 +9742,7 @@ void export_hist(char *path, int scale, int toffset, int index, int labels)
                      size = sizeof(str);
                      db_get_data_index(hDB, hkeynames, str, &size, k, TID_STRING);
                      if (equal_ustring(str, varname)) {
-                        sprintf(odbpath, "/Equipment/%s/Variables/%s[%d]", event_name[i],
+                        sprintf(odbpath, "/Equipment/%s/Variables/%s[%d]", event_name[n_vars],
                                 key_name, k);
                         break;
                      }
@@ -9771,9 +9771,9 @@ void export_hist(char *path, int scale, int toffset, int index, int labels)
                               size = sizeof(str);
                               db_get_data_index(hDB, hkeynames, str, &size, l,
                                                 TID_STRING);
-                              if (equal_ustring(str, var_name[i])) {
+                              if (equal_ustring(str, var_name[n_vars])) {
                                  sprintf(odbpath, "/Equipment/%s/Variables/%s[%d]",
-                                         event_name[i], key_name, l);
+                                         event_name[n_vars], key_name, l);
                                  break;
                               }
                            }
@@ -9796,14 +9796,14 @@ void export_hist(char *path, int scale, int toffset, int index, int labels)
                      break;
 
                   db_get_key(hDB, hkey, &key);
-                  if (equal_ustring(key.name, event_name[i])) {
+                  if (equal_ustring(key.name, event_name[n_vars])) {
                      db_enum_key(hDB, hkeyroot, j, &hkey);
-                     db_find_key(hDB, hkey, var_name[i], &hkey);
+                     db_find_key(hDB, hkey, var_name[n_vars], &hkey);
                      if (hkey) {
                         db_get_key(hDB, hkey, &key);
                         db_get_path(hDB, hkey, odbpath, sizeof(odbpath));
                         if (key.num_values > 1)
-                           sprintf(odbpath + strlen(odbpath), "[%d]", var_index[i]);
+                           sprintf(odbpath + strlen(odbpath), "[%d]", var_index[n_vars]);
                         break;
                      }
                   }
@@ -9817,8 +9817,8 @@ void export_hist(char *path, int scale, int toffset, int index, int labels)
          memset(ybuffer, 0, bsize);
          status =
              hs_read(event_id, ss_time() - scale + toffset, ss_time() + toffset,
-                     0, var_name[i], var_index[i], tbuffer, &tsize,
-                     ybuffer, &bsize, &type, &n_point[i]);
+                     0, var_name[n_vars], var_index[n_vars], tbuffer, &tsize,
+                     ybuffer, &bsize, &type, &n_point[n_vars]);
 
          if (status == HS_TRUNCATED) {
             hbuffer_size *= 2;
@@ -9831,62 +9831,64 @@ void export_hist(char *path, int scale, int toffset, int index, int labels)
       } while (status == HS_TRUNCATED);
 
       if (status == HS_UNDEFINED_VAR) {
-         rsprintf("Variable \"%s\" not found in history", var_name[i]);
+         rsprintf("Variable \"%s\" not found in history", var_name[n_vars]);
          return;
       }
 
-      x[i] = M_MALLOC(sizeof(DWORD) * n_point[i]);
-      y[i] = M_MALLOC(sizeof(DWORD) * n_point[i]);
+      x[n_vars] = M_MALLOC(sizeof(DWORD) * n_point[n_vars]);
+      y[n_vars] = M_MALLOC(sizeof(DWORD) * n_point[n_vars]);
 
-      for (j = n_vp = 0; j < (int) n_point[i]; j++) {
-         x[i][n_vp] = tbuffer[j];
+      for (j = n_vp = 0; j < (int) n_point[n_vars]; j++) {
+         x[n_vars][n_vp] = tbuffer[j];
 
          /* convert data to float */
          switch (type) {
          case TID_BYTE:
-            y[i][n_vp] = (float) *(((BYTE *) ybuffer) + j);
+            y[n_vars][n_vp] = (float) *(((BYTE *) ybuffer) + j);
             break;
          case TID_SBYTE:
-            y[i][n_vp] = (float) *(((char *) ybuffer) + j);
+            y[n_vars][n_vp] = (float) *(((char *) ybuffer) + j);
             break;
          case TID_CHAR:
-            y[i][n_vp] = (float) *(((char *) ybuffer) + j);
+            y[n_vars][n_vp] = (float) *(((char *) ybuffer) + j);
             break;
          case TID_WORD:
-            y[i][n_vp] = (float) *(((WORD *) ybuffer) + j);
+            y[n_vars][n_vp] = (float) *(((WORD *) ybuffer) + j);
             break;
          case TID_SHORT:
-            y[i][n_vp] = (float) *(((short *) ybuffer) + j);
+            y[n_vars][n_vp] = (float) *(((short *) ybuffer) + j);
             break;
          case TID_DWORD:
-            y[i][n_vp] = (float) *(((DWORD *) ybuffer) + j);
+            y[n_vars][n_vp] = (float) *(((DWORD *) ybuffer) + j);
             break;
          case TID_INT:
-            y[i][n_vp] = (float) *(((INT *) ybuffer) + j);
+            y[n_vars][n_vp] = (float) *(((INT *) ybuffer) + j);
             break;
          case TID_BOOL:
-            y[i][n_vp] = (float) *(((BOOL *) ybuffer) + j);
+            y[n_vars][n_vp] = (float) *(((BOOL *) ybuffer) + j);
             break;
          case TID_FLOAT:
-            y[i][n_vp] = (float) *(((float *) ybuffer) + j);
+            y[n_vars][n_vp] = (float) *(((float *) ybuffer) + j);
             break;
          case TID_DOUBLE:
-            y[i][n_vp] = (float) *(((double *) ybuffer) + j);
+            y[n_vars][n_vp] = (float) *(((double *) ybuffer) + j);
             break;
          }
 
          /* skip NaNs */
-         if (ss_isnan(y[i][n_vp]))
+         if (ss_isnan(y[n_vars][n_vp]))
             continue;
 
          /* apply factor and offset */
-         y[i][n_vp] = y[i][n_vp] * factor[i] + offset[i];
+         y[n_vars][n_vp] = y[n_vars][n_vp] * factor[n_vars] + offset[n_vars];
 
          /* increment number of valid points */
          n_vp++;
       }
 
-      n_point[i] = n_vp;
+      n_point[n_vars] = n_vp;
+
+      n_vars ++;
    }
 
    /* read run markes if selected */
@@ -9947,10 +9949,14 @@ void export_hist(char *path, int scale, int toffset, int index, int labels)
       i_var[i] = 0;
 
    /* find first time where all variables are available */
-   t = 0;
-   for (i = 1; i < n_vars; i++) 
-      if (n_point[i] > 0 && x[i][0] > (DWORD)t)
-         t = x[i][0];
+   if (n_vars == 1)
+      t = x[0][0];
+   else {
+      t = 0;
+      for (i = 1; i < n_vars; i++) 
+         if (n_point[i] > 0 && x[i][0] > (DWORD)t)
+            t = x[i][0];
+   }
 
    if (t == 0 && n_vars > 1) {
       rsprintf("=== No history available for choosen period ===\n");
