@@ -5737,13 +5737,21 @@ INT db_paste(HNDLE hDB, HNDLE hKeyRoot, const char *buffer)
          /* valid data line if it includes '=' and no ';' */
          if (strchr(line, '=') && line[0] != ';') {
             /* copy type info and data */
-            pc = strchr(line, '=') + 1;
+            pc = strrchr(line, '=') + 1;
+            while (strstr(line, ": [") != NULL && strstr(line, ": [") < pc) {
+               pc-=2;
+               while (*pc != '=' && pc > line)
+                  pc--;
+               pc++;
+            }
             while (*pc == ' ')
                pc++;
             strlcpy(data_str, pc, sizeof(data_str));
 
             /* extract key name */
-            *strchr(line, '=') = 0;
+            *strrchr(line, '=') = 0;
+            while (strstr(line, ": [") && strchr(line, '='))
+               *strrchr(line, '=') = 0;
 
             pc = &line[strlen(line) - 1];
             while (*pc == ' ')
