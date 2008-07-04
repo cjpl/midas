@@ -99,7 +99,7 @@ BOOL al_evaluate_condition(char *condition, char *value)
                  strchr(strchr(str, '['), '-')) {
          while (i > 0 && isdigit(str[i]))
             i--;
-         idx2 = atoi(str + i + 1) + 1;
+         idx2 = atoi(str + i + 1);
          while (i > 0 && str[i] != '[')
             i--;
          idx1 = atoi(str + i + 1);
@@ -124,10 +124,10 @@ BOOL al_evaluate_condition(char *condition, char *value)
 
    if (idx1 < 0) {
       idx1 = 0;
-      idx2 = key.num_values;
+      idx2 = key.num_values-1;
    }
 
-   for (index=idx1; index<idx2 ; index++) {
+   for (index=idx1; index<=idx2 ; index++) {
       
       if (equal_ustring(function, "access")) {
          /* check key access time */

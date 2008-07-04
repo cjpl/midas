@@ -6563,7 +6563,7 @@ void show_alarm_page()
    rsprintf("<tr><th colspan=4 bgcolor=#A0A0FF>MIDAS experiment \"%s\"", str);
    rsprintf("<th colspan=3 bgcolor=#A0A0FF>%s</tr>\n", ctime(&now));
 
-  /*---- menu buttons ----*/
+   /*---- menu buttons ----*/
 
    rsprintf("<tr>\n");
    rsprintf("<td colspan=7 bgcolor=#C0C0C0>\n");
