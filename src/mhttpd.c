@@ -12075,8 +12075,6 @@ struct linger        ling;
             }
 
             i = send_tcp(_sock, return_buffer, return_length, 0x10000);
-            if (i != return_length)
-               cm_msg(MERROR, "server_loope", "Only sent back %d out of %d bytes", i, return_length);
 
             if (verbose) {
                if (return_length > 1000) {
