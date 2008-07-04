@@ -40,7 +40,7 @@ The Midas Alarm file
 BOOL al_evaluate_condition(char *condition, char *value)
 {
    HNDLE hDB, hkey;
-   int i, j, idx, size;
+   int i, j, idx1, idx2, index, size;
    KEY key;
    double value1, value2;
    char value1_str[256], value2_str[256], str[256], op[3], function[80];
@@ -50,11 +50,11 @@ BOOL al_evaluate_condition(char *condition, char *value)
    strcpy(str, condition);
    op[1] = op[2] = 0;
    value1 = value2 = 0;
-   idx = 0;
+   idx1 = idx2 = 0;
 
    /* find value and operator */
    for (i = strlen(str) - 1; i > 0; i--)
-      if (strchr("<>=!", str[i]) != NULL)
+      if (strchr("<>=!&", str[i]) != NULL)
          break;
    op[0] = str[i];
    for (j = 1; str[i + j] == ' '; j++);
@@ -62,7 +62,7 @@ BOOL al_evaluate_condition(char *condition, char *value)
    value2 = atof(value2_str);
    str[i] = 0;
 
-   if (i > 0 && strchr("<>=!", str[i - 1])) {
+   if (i > 0 && strchr("<>=!&", str[i - 1])) {
       op[1] = op[0];
       op[0] = str[--i];
       str[i] = 0;
@@ -90,10 +90,26 @@ BOOL al_evaluate_condition(char *condition, char *value)
    /* find key */
    if (str[i] == ']') {
       str[i--] = 0;
-      while (i > 0 && isdigit(str[i]))
-         i--;
-      idx = atoi(str + i + 1);
-      str[i] = 0;
+      if (str[i] == '*') {
+         idx1 = -1;
+         while (i > 0 && str[i] != '[')
+            i--;
+         str[i] = 0;
+      } else if (strchr(str, '[') &&
+                 strchr(strchr(str, '['), '-')) {
+         while (i > 0 && isdigit(str[i]))
+            i--;
+         idx2 = atoi(str + i + 1) + 1;
+         while (i > 0 && str[i] != '[')
+            i--;
+         idx1 = atoi(str + i + 1);
+         str[i] = 0;
+      } else {
+         while (i > 0 && isdigit(str[i]))
+            i--;
+         idx1 = idx2 = atoi(str + i + 1);
+         str[i] = 0;
+      }
    }
 
    cm_get_experiment_database(&hDB, NULL);
@@ -104,46 +120,57 @@ BOOL al_evaluate_condition(char *condition, char *value)
          strcpy(value, "unknown");
       return FALSE;
    }
+   db_get_key(hDB, hkey, &key);
 
-   if (equal_ustring(function, "access")) {
-      /* check key access time */
-      db_get_key_time(hDB, hkey, &dtime);
-      sprintf(value1_str, "%d", dtime);
-      value1 = atof(value1_str);
-   } else {
-      /* get key data and convert to double */
-      db_get_key(hDB, hkey, &key);
-      size = sizeof(data);
-      db_get_data(hDB, hkey, data, &size, key.type);
-      db_sprintf(value1_str, data, size, idx, key.type);
-      value1 = atof(value1_str);
+   if (idx1 < 0) {
+      idx1 = 0;
+      idx2 = key.num_values;
    }
 
-   /* convert boolean values to integers */
-   if (key.type == TID_BOOL) {
-      value1 = (value1_str[0] == 'Y' || value1_str[0] == 'y' || value1_str[0] == '1');
-      value2 = (value2_str[0] == 'Y' || value2_str[0] == 'y' || value2_str[0] == '1');
+   for (index=idx1; index<idx2 ; index++) {
+      
+      if (equal_ustring(function, "access")) {
+         /* check key access time */
+         db_get_key_time(hDB, hkey, &dtime);
+         sprintf(value1_str, "%d", dtime);
+         value1 = atof(value1_str);
+      } else {
+         /* get key data and convert to double */
+         db_get_key(hDB, hkey, &key);
+         size = sizeof(data);
+         db_get_data_index(hDB, hkey, data, &size, index, key.type);
+         db_sprintf(value1_str, data, size, 0, key.type);
+         value1 = atof(value1_str);
+      }
+
+      /* convert boolean values to integers */
+      if (key.type == TID_BOOL) {
+         value1 = (value1_str[0] == 'Y' || value1_str[0] == 'y' || value1_str[0] == '1');
+         value2 = (value2_str[0] == 'Y' || value2_str[0] == 'y' || value2_str[0] == '1');
+      }
+
+      /* return value */
+      if (value)
+         strcpy(value, value1_str);
+
+      /* now do logical operation */
+      if (strcmp(op, "=") == 0)
+         if (value1 == value2) return TRUE;
+      if (strcmp(op, "==") == 0)
+         if (value1 == value2) return TRUE;
+      if (strcmp(op, "!=") == 0)
+         if (value1 != value2) return TRUE;
+      if (strcmp(op, "<") == 0)
+         if (value1 < value2) return TRUE;
+      if (strcmp(op, ">") == 0)
+         if (value1 > value2) return TRUE;
+      if (strcmp(op, "<=") == 0)
+         if (value1 <= value2) return TRUE;
+      if (strcmp(op, ">=") == 0)
+         if (value1 >= value2) return TRUE;
+      if (strcmp(op, "&") == 0)
+         if (((unsigned int)value1 & (unsigned int)value2) > 0) return TRUE;
    }
-
-   /* return value */
-   if (value)
-      strcpy(value, value1_str);
-
-   /* now do logical operation */
-   if (strcmp(op, "=") == 0)
-      return value1 == value2;
-   if (strcmp(op, "==") == 0)
-      return value1 == value2;
-   if (strcmp(op, "!=") == 0)
-      return value1 != value2;
-   if (strcmp(op, "<") == 0)
-      return value1 < value2;
-   if (strcmp(op, ">") == 0)
-      return value1 > value2;
-   if (strcmp(op, "<=") == 0)
-      return value1 <= value2;
-   if (strcmp(op, ">=") == 0)
-      return value1 >= value2;
 
    return FALSE;
 }
