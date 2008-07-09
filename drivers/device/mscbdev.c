@@ -209,13 +209,13 @@ INT mscbdev_read_all(MSCBDEV_INFO * info)
             if (ss_time() - last_error >= 60) {
                last_error = ss_time();
                if (i_start == i_stop)
-                  sprintf(str, "Error reading MSCB bus at %s:%d:%d", 
+                  sprintf(str, "Error reading MSCB bus at \"%s:%d:%d\"", 
                          info->mscbdev_settings.mscb_device, addr, i_start);
                else
-                  sprintf(str, "Error reading MSCB bus at %s:%d:%d-%d", 
+                  sprintf(str, "Error reading MSCB bus at \"%s:%d:%d-%d\"", 
                          info->mscbdev_settings.mscb_device, addr, i_start, i_stop);
                mfe_error(str);
-               cm_msg(MERROR, "mscbdev_get", str);
+               cm_msg(MERROR, "mscbdev_read_all", str);
             }
             for (j = v_start; j <= v_stop; j++)
                info->mscbdev_settings.var_cache[j] = (float) ss_nan();
