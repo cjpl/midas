@@ -1885,6 +1885,8 @@ extern "C" {
    /*---- frontend functions ----*/
    INT get_frontend_index();
    void register_cnaf_callback(int debug);
+   void mfe_error(const char *error);
+   void mfe_set_error(void (*dispatcher) (const char *));
 
    /*---- analyzer functions ----*/
    void EXPRT test_register(ANA_TEST * t);
