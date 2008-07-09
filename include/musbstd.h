@@ -20,6 +20,7 @@ typedef struct {
    usb_dev_handle *dev;
    int usb_configuration;
    int usb_interface;
+   int usb_type;
 } MUSB_INTERFACE;
 
 #elif defined(_MSC_VER)
@@ -71,6 +72,7 @@ int EXPRT musb_close(MUSB_INTERFACE *musb_interface);
 int EXPRT musb_write(MUSB_INTERFACE *musb_interface,int endpoint,const void *buf,int count,int timeout_ms);
 int EXPRT musb_read(MUSB_INTERFACE *musb_interface,int endpoint,void *buf,int count,int timeout_ms);
 int EXPRT musb_reset(MUSB_INTERFACE *musb_interface);
+int EXPRT musb_set_altinterface(MUSB_INTERFACE *musb_interface, int index);
 
 #ifdef __cplusplus
 }
