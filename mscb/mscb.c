@@ -83,23 +83,16 @@ MSCB_FD mscb_fd[MSCB_MAX_FD];
 
 /* usb endpoints */
 
-#if defined(_MSC_VER)
-
-#define EP_READ  0
-#define EP_WRITE 0
-
-#elif defined(OS_DARWIN)
+#if defined(OS_DARWIN)
 
 #define EP_READ  1
 #define EP_WRITE 2
 
-#elif defined(OS_LINUX)
+#else
 
 #define EP_READ  0x81
 #define EP_WRITE 0x02
 
-#else
-#error Do not know which endpoint numbers to use!
 #endif
 
 /* constants */
