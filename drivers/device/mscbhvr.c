@@ -189,14 +189,15 @@ INT mscbhvr_init(HNDLE hkey, void **pinfo, INT channels, INT(*bd) (INT cmd, ...)
 INT mscbhvr_read_all(MSCBHVR_INFO * info, int i)
 {
    int size, status;
-   unsigned char buffer[256], *pbuf;
+   unsigned char buffer[256], *pbuf, str[256];
 
    size = sizeof(buffer);
    status = mscb_read_range(info->fd, info->settings.address[i], 0, 12, buffer, &size);
    if (status != MSCB_SUCCESS) {
-      cm_msg(MERROR, "mscbhvr_read_all",
-            "Cannot access MSCB HVR address \"%s:%d\". Check power and connection.", 
-            info->settings.mscb_device, info->settings.address[i]);
+      sprintf(str, "Error reading MSCB HVR at \"%s:%d\".", 
+              info->settings.mscb_device, info->settings.address[i]);
+      mfe_error(str);
+      cm_msg(MERROR, "mscbhvr_read_all", str);
       return FE_ERR_HW;
    }
 
