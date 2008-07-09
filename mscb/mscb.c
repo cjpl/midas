@@ -2971,8 +2971,8 @@ int mscb_read(int fd, unsigned short adr, unsigned char index, void *data, int *
    if (mrpc_connected(fd))
       return mrpc_call(mscb_fd[fd - 1].fd, RPC_MSCB_READ, mscb_fd[fd - 1].remote_fd, adr, index, data, size);
 
-   /* try five times */
-   for (n = i = 0; n < 5 ; n++) {
+   /* try ten times */
+   for (n = i = 0; n < 10 ; n++) {
 
       buf[0] = MCMD_ADDR_NODE16;
       buf[1] = (unsigned char) (adr >> 8);
@@ -3294,8 +3294,8 @@ int mscb_read_range(int fd, unsigned short adr, unsigned char index1, unsigned c
       return mrpc_call(mscb_fd[fd - 1].fd, RPC_MSCB_READ_RANGE,
                        mscb_fd[fd - 1].remote_fd, adr, index1, index2, data, size);
 
-   /* try five times */
-   for (n = i = 0; n < 5; n++) {
+   /* try ten times */
+   for (n = i = 0; n < 10; n++) {
 
       buf[0] = MCMD_ADDR_NODE16;
       buf[1] = (unsigned char) (adr >> 8);
