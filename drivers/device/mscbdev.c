@@ -180,7 +180,7 @@ INT mscbdev_set(MSCBDEV_INFO * info, INT channel, float value)
 INT mscbdev_read_all(MSCBDEV_INFO * info)
 {
    int i, j, status, i_start, i_stop, v_start, v_stop, addr, size;
-   unsigned char buffer[256], *pbuf;
+   unsigned char buffer[256], str[256], *pbuf;
    static DWORD last_error = 0;
 
    /* find consecutive ranges in variables */
@@ -208,8 +208,14 @@ INT mscbdev_read_all(MSCBDEV_INFO * info)
             /* only produce error once every minute */
             if (ss_time() - last_error >= 60) {
                last_error = ss_time();
-               cm_msg(MERROR, "mscbdev_get", "Error reading MSCB bus at %s:%d:%d-%d, status %d",
-                      info->mscbdev_settings.mscb_device, addr, i_start, i_stop, status);
+               if (i_start == i_stop)
+                  sprintf(str, "Error reading MSCB bus at %s:%d:%d", 
+                         info->mscbdev_settings.mscb_device, addr, i_start);
+               else
+                  sprintf(str, "Error reading MSCB bus at %s:%d:%d-%d", 
+                         info->mscbdev_settings.mscb_device, addr, i_start, i_stop);
+               mfe_error(str);
+               cm_msg(MERROR, "mscbdev_get", str);
             }
             for (j = v_start; j <= v_stop; j++)
                info->mscbdev_settings.var_cache[j] = (float) ss_nan();
