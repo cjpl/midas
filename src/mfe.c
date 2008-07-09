@@ -102,6 +102,7 @@ int rbh1=0, rbh2=0, rbh1_next=0, rbh2_next=0;
 volatile int stop_all_threads = 0;
 int readout_thread(void *param);
 volatile int readout_thread_active = 0;
+void mfe_error_check(void);
 
 int send_event(INT idx);
 int receive_trigger_event(EQUIPMENT *eq);
@@ -2101,6 +2102,9 @@ INT scheduler(void)
          }
       }
 
+      /*---- check for error messages periodically -------------------*/
+      mfe_error_check();
+
       /*---- call frontend_loop periodically -------------------------*/
       if (frontend_call_loop) {
          status = frontend_loop();
@@ -2322,6 +2326,53 @@ INT scheduler(void)
 INT get_frontend_index()
 {
    return frontend_index;
+}
+
+/*------------------------------------------------------------------*/
+
+void (*mfe_error_dispatcher)(const char *) = NULL;
+
+#define MFE_ERROR_SIZE 10
+char mfe_error_str[MFE_ERROR_SIZE][256];
+int mfe_error_r, mfe_error_w;
+int mfe_mutex;
+
+void mfe_set_error(void (*dispatcher) (const char *))
+{
+   int status;
+
+   mfe_error_dispatcher = dispatcher;
+   mfe_error_r = mfe_error_w = 0;
+   memset(mfe_error_str, 0, sizeof(mfe_error_str));
+
+   if (mfe_mutex == 0) {
+      status = ss_mutex_create("FE_ERR", &mfe_mutex);
+      if (status != SS_SUCCESS && status != SS_CREATED)
+         cm_msg(MERROR, "mfe_set_error", "Cannot create mutex\n");
+   }
+
+}
+
+void mfe_error(const char *error)
+/* central error dispatcher routine which can be called by any device
+   or class driver */
+{
+   /* put error into FIFO */
+   ss_mutex_wait_for(mfe_mutex, 1000);
+   strlcpy(mfe_error_str[mfe_error_w], error, 256);
+   mfe_error_w = (mfe_error_w + 1) % MFE_ERROR_SIZE;
+   ss_mutex_release(mfe_mutex);
+}
+
+void mfe_error_check(void)
+{
+   ss_mutex_wait_for(mfe_mutex, 1000);
+   if (mfe_error_w != mfe_error_r) {
+      if (mfe_error_dispatcher != NULL)
+         mfe_error_dispatcher(mfe_error_str[mfe_error_r]);
+      mfe_error_r = (mfe_error_r + 1) % MFE_ERROR_SIZE;
+   }
+   ss_mutex_release(mfe_mutex);
 }
 
 /*------------------------------------------------------------------*/
