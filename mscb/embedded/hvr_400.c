@@ -198,14 +198,16 @@ void user_init(unsigned char init)
    if (init) {
       memset(user_data, 0, sizeof(user_data));
       for (i=0 ; i<N_HV_CHN ; i++) {
-         user_data[i].u_limit = MAX_VOLTAGE;
-         user_data[i].i_limit = MAX_CURRENT;
-         user_data[i].ri_limit = MAX_CURRENT;
-         user_data[i].trip_time = 10;
+         user_data[i].ramp_up    = 300;
+         user_data[i].ramp_down  = 300;
+         user_data[i].u_limit    = MAX_VOLTAGE;
+         user_data[i].i_limit    = MAX_CURRENT;
+         user_data[i].ri_limit   = MAX_CURRENT;
+         user_data[i].trip_time  = 10;
 
-         user_data[i].adc_gain = 1;
-         user_data[i].dac_gain = 1;
-         user_data[i].cur_gain = 1;
+         user_data[i].adc_gain   = 1;
+         user_data[i].dac_gain   = 1;
+         user_data[i].cur_gain   = 1;
       }
    }
 
@@ -281,27 +283,45 @@ void user_init(unsigned char init)
 
 void user_write(unsigned char index) reentrant
 {
-   if (index == 0 || index == 1 || index == 4) {
+   unsigned char a;
+
+   a = cur_sub_addr();
+
+   /* reset trip on main switch, trip reset and on demand = 0 */
+   if (index == 0 || 
+       (index == 1 && user_data[a].u_demand == 0) || 
+        index == 5) {
+
       /* reset trip */
-      user_data[cur_sub_addr()].status &= ~STATUS_ILIMIT;
+      user_data[a].status &= ~STATUS_ILIMIT;
+
+      /* reset trip count if not addressed directly */
+      if (index != 5)
+         user_data[a].trip_cnt = 0;
 
       /* indicate new demand voltage */
-      chn_bits[cur_sub_addr()] |= DEMAND_CHANGED;
+      chn_bits[a] |= DEMAND_CHANGED;
    }
+
+   /* indicated changed demand if no on current trip */
+   if (index == 1 && ((user_data[a].status & STATUS_ILIMIT) == 0))
+      chn_bits[a] |= DEMAND_CHANGED;
 
    /* re-check voltage limit */
    if (index == 8) {
-      if (user_data[cur_sub_addr()].u_limit > MAX_VOLTAGE)
-         user_data[cur_sub_addr()].u_limit = MAX_VOLTAGE;
+      if (user_data[a].u_limit > MAX_VOLTAGE)
+         user_data[a].u_limit = MAX_VOLTAGE;
 
-      chn_bits[cur_sub_addr()] |= DEMAND_CHANGED;
+      chn_bits[a] |= DEMAND_CHANGED;
    }
 
    /* check current limit */
    if (index == 9) {
-      if (user_data[cur_sub_addr()].i_limit > MAX_CURRENT &&
-          user_data[cur_sub_addr()].i_limit != 9999)
-         user_data[cur_sub_addr()].i_limit = MAX_CURRENT;
+      if (user_data[a].i_limit > MAX_CURRENT &&
+          user_data[a].i_limit != 9999)
+         user_data[a].i_limit = MAX_CURRENT;
+
+      chn_bits[a] |= CUR_LIMIT_CHANGED;
    }
 }
 
@@ -946,11 +966,20 @@ void user_loop(void)
       watchdog_refresh(0);
 
       if ((user_data[0].control & CONTROL_IDLE) == 0) {
-         check_current(channel);
+
+         /* read back HV and current */
          read_hv(channel);
+         read_current(channel);
+
+         /* check for current trip */
+         check_current(channel);
+
+         /* do ramping and regulation */
          ramp_hv(channel);
          regulation(channel);
-         read_current(channel);
+
+         /* set voltage regularly, in case DAC hot HV spike */
+         set_hv(channel, user_data[channel].u_dac);
       }
    }
 
