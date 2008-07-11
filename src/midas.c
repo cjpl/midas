@@ -3149,13 +3149,15 @@ INT cm_transition(INT transition, INT run_number, char *errstr, INT errstr_size,
    }
 
    /* check if transition in progress */
-   i = 0;
-   size = sizeof(i);
-   db_get_value(hDB, 0, "/Runinfo/Transition in progress", &i, &size, TID_INT, TRUE);
-   if (i == 1) {
-      strlcpy(errstr, "Start/Stop already in progress, please try again later\n", errstr_size);
-      strlcat(errstr, "or set \"/Runinfo/Transition in progress\" manually to zero.\n", errstr_size);
-      return CM_TRANSITION_IN_PROGRESS;
+   if (!deferred) {
+      i = 0;
+      size = sizeof(i);
+      db_get_value(hDB, 0, "/Runinfo/Transition in progress", &i, &size, TID_INT, TRUE);
+      if (i == 1) {
+         strlcpy(errstr, "Start/Stop already in progress, please try again later\n", errstr_size);
+         strlcat(errstr, "or set \"/Runinfo/Transition in progress\" manually to zero.\n", errstr_size);
+         return CM_TRANSITION_IN_PROGRESS;
+      }
    }
 
    /* indicate transition in progress */
