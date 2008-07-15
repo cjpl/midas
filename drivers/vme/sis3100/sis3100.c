@@ -89,10 +89,8 @@ int mvme_open(MVME_INTERFACE **vme, int idx)
    char str[256];
 
    /* open VME */
-   if (idx == 0)
-      strcpy(str, "/tmp/sis1100");
-   else
-      sprintf(str, "/tmp/sis1100_%d", idx+1);
+   sprintf(str, "/dev/sis1100_%02dremote", idx);
+   printf("## open %s\n", str);
 
    (*vme)->handle = open(str, O_RDWR, 0);
    if ((*vme)->handle < 0)
