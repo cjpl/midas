@@ -1697,8 +1697,12 @@ extern "C" {
                                INT * buf_size, INT index, DWORD type);
    INT EXPRT db_set_data(HNDLE hdb, HNDLE hKey, const void *data, INT buf_size,
                          INT num_values, DWORD type);
+   INT EXPRT db_set_link_data(HNDLE hDB, HNDLE hKey,
+                              const void *data, INT buf_size, INT num_values, DWORD type);
    INT EXPRT db_set_data_index(HNDLE hDB, HNDLE hKey, const void *data, INT size,
                                INT index, DWORD type);
+   INT EXPRT db_set_link_data_index(HNDLE hDB, HNDLE hKey, const void *data, INT size,
+                                    INT index, DWORD type);
    INT EXPRT db_set_data_index2(HNDLE hDB, HNDLE hKey, const void *data,
                                 INT size, INT index, DWORD type, BOOL bNotify);
    INT EXPRT db_set_num_values(HNDLE hDB, HNDLE hKey, INT num_values);

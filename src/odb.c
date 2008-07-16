@@ -4757,6 +4757,117 @@ INT db_set_data(HNDLE hDB, HNDLE hKey,
    return DB_SUCCESS;
 }
 
+/********************************************************************/
+/**
+Same as db_set_data, but it does not follow a link to an array index
+@param hDB          ODB handle obtained via cm_get_experiment_database().
+@param hKey Handle for key where search starts, zero for root.
+@param data Buffer from which data gets copied to.
+@param buf_size Size of data buffer.
+@param num_values Number of data values (for arrays).
+@param type Type of key, one of TID_xxx (see @ref Midas_Data_Types).
+@return DB_SUCCESS, DB_INVALID_HANDLE, DB_TRUNCATED
+*/
+INT db_set_link_data(HNDLE hDB, HNDLE hKey,
+                     const void *data, INT buf_size, INT num_values, DWORD type)
+{
+   if (rpc_is_remote())
+      return rpc_call(RPC_DB_SET_LINK_DATA, hDB, hKey, data, buf_size, num_values, type);
+
+#ifdef LOCAL_ROUTINES
+   {
+      DATABASE_HEADER *pheader;
+      KEY *pkey;
+
+      if (hDB > _database_entries || hDB <= 0) {
+         cm_msg(MERROR, "db_set_data", "invalid database handle");
+         return DB_INVALID_HANDLE;
+      }
+
+      if (!_database[hDB - 1].attached) {
+         cm_msg(MERROR, "db_set_data", "invalid database handle");
+         return DB_INVALID_HANDLE;
+      }
+
+      if (hKey < (int) sizeof(DATABASE_HEADER)) {
+         cm_msg(MERROR, "db_set_data", "invalid key handle");
+         return DB_INVALID_HANDLE;
+      }
+
+      if (num_values == 0)
+         return DB_INVALID_PARAM;
+
+      db_lock_database(hDB);
+
+      pheader = _database[hDB - 1].database_header;
+      pkey = (KEY *) ((char *) pheader + hKey);
+
+      /* check if hKey argument is correct */
+      if (!db_validate_hkey(pheader, hKey)) {
+         db_unlock_database(hDB);
+         return DB_INVALID_HANDLE;
+      }
+
+      /* check for write access */
+      if (!(pkey->access_mode & MODE_WRITE) || (pkey->access_mode & MODE_EXCLUSIVE)) {
+         db_unlock_database(hDB);
+         return DB_NO_ACCESS;
+      }
+
+      if (pkey->type != type) {
+         db_unlock_database(hDB);
+         cm_msg(MERROR, "db_set_link_data", "\"%s\" is of type %s, not %s",
+                pkey->name, rpc_tid_name(pkey->type), rpc_tid_name(type));
+         return DB_TYPE_MISMATCH;
+      }
+
+      /* keys cannot contain data */
+      if (pkey->type == TID_KEY) {
+         db_unlock_database(hDB);
+         cm_msg(MERROR, "db_set_link_data", "Key cannot contain data");
+         return DB_TYPE_MISMATCH;
+      }
+
+      /* if no buf_size given (Java!), calculate it */
+      if (buf_size == 0)
+         buf_size = pkey->item_size * num_values;
+
+      /* resize data size if necessary */
+      if (pkey->total_size != buf_size) {
+         pkey->data =
+             (POINTER_T) realloc_data(pheader, (char *) pheader + pkey->data,
+                                      pkey->total_size, buf_size);
+
+         if (pkey->data == 0) {
+            db_unlock_database(hDB);
+            cm_msg(MERROR, "db_set_link_data", "online database full");
+            return DB_FULL;
+         }
+
+         pkey->data -= (POINTER_T) pheader;
+         pkey->total_size = buf_size;
+      }
+
+      /* set number of values */
+      pkey->num_values = num_values;
+      if (num_values)
+         pkey->item_size = buf_size / num_values;
+
+      /* copy data */
+      memcpy((char *) pheader + pkey->data, data, buf_size);
+
+      /* update time */
+      pkey->last_written = ss_time();
+
+      db_notify_clients(hDB, hKey, TRUE);
+      db_unlock_database(hDB);
+
+   }
+#endif                          /* LOCAL_ROUTINES */
+
+   return DB_SUCCESS;
+}
+ 
 /**dox***************************************************************/
 #ifndef DOXYGEN_SHOULD_SKIP_THIS
 
@@ -4898,7 +5009,7 @@ INT db_set_data_index(HNDLE hDB, HNDLE hKey,
    {
       DATABASE_HEADER *pheader;
       KEY *pkey;
-      char link_name[256];
+      char link_name[256], str[256];
       int link_idx;
       HNDLE hkeylink;
 
@@ -4951,8 +5062,9 @@ INT db_set_data_index(HNDLE hDB, HNDLE hKey,
 
       if (pkey->type != type) {
          db_unlock_database(hDB);
+         db_get_path(hDB, hKey, str, sizeof(str));
          cm_msg(MERROR, "db_set_data_index",
-                "\"%s\" is of type %s, not %s", pkey->name,
+                "\"%s\" is of type %s, not %s", str,
                 rpc_tid_name(pkey->type), rpc_tid_name(type));
          return DB_TYPE_MISMATCH;
       }
@@ -4969,6 +5081,126 @@ INT db_set_data_index(HNDLE hDB, HNDLE hKey,
          db_unlock_database(hDB);
          cm_msg(MERROR, "db_set_data_index", "invalid index %d", idx);
          return DB_FULL;
+      }
+
+      /* check for valid array element size: if new element size
+         is different from existing size, ODB becomes corrupted */
+      if (pkey->item_size!=0 && data_size!=pkey->item_size) {
+         db_unlock_database(hDB);
+         cm_msg(MERROR, "db_set_data_index", "invalid element data size %d, expected %d", data_size, pkey->item_size);
+         return DB_TYPE_MISMATCH;
+      }
+
+      /* increase data size if necessary */
+      if (idx >= pkey->num_values || pkey->item_size == 0) {
+         pkey->data =
+             (POINTER_T) realloc_data(pheader, (char *) pheader + pkey->data,
+                                      pkey->total_size, data_size * (idx + 1));
+
+         if (pkey->data == 0) {
+            db_unlock_database(hDB);
+            cm_msg(MERROR, "db_set_data_index", "online database full");
+            return DB_FULL;
+         }
+
+         pkey->data -= (POINTER_T) pheader;
+         if (!pkey->item_size)
+            pkey->item_size = data_size;
+         pkey->total_size = data_size * (idx + 1);
+         pkey->num_values = idx + 1;
+      }
+
+      /* cut strings which are too long */
+      if ((type == TID_STRING || type == TID_LINK) &&
+          (int) strlen((char *) data) + 1 > pkey->item_size)
+         *((char *) data + pkey->item_size - 1) = 0;
+
+      /* copy data */
+      memcpy((char *) pheader + pkey->data + idx * pkey->item_size,
+             data, pkey->item_size);
+
+      /* update time */
+      pkey->last_written = ss_time();
+
+      db_notify_clients(hDB, hKey, TRUE);
+      db_unlock_database(hDB);
+
+   }
+#endif                          /* LOCAL_ROUTINES */
+
+   return DB_SUCCESS;
+}
+
+/********************************************************************/
+/**
+Same as db_set_data_index, but does not follow links.
+
+@param hDB          ODB handle obtained via cm_get_experiment_database().
+@param hKey Handle for key where search starts, zero for root.
+@param data Pointer to single value of data.
+@param data_size
+@param idx Size of single data element.
+@param type Type of key, one of TID_xxx (see @ref Midas_Data_Types).
+@return DB_SUCCESS, DB_INVALID_HANDLE, DB_NO_ACCESS, DB_TYPE_MISMATCH
+*/
+INT db_set_link_data_index(HNDLE hDB, HNDLE hKey,
+                           const void *data, INT data_size, INT idx, DWORD type)
+{
+   if (rpc_is_remote())
+      return rpc_call(RPC_DB_SET_LINK_DATA_INDEX, hDB, hKey, data, data_size, idx, type);
+
+#ifdef LOCAL_ROUTINES
+   {
+      DATABASE_HEADER *pheader;
+      KEY *pkey;
+      char str[256];
+
+      if (hDB > _database_entries || hDB <= 0) {
+         cm_msg(MERROR, "db_set_data_index", "invalid database handle");
+         return DB_INVALID_HANDLE;
+      }
+
+      if (!_database[hDB - 1].attached) {
+         cm_msg(MERROR, "db_set_data_index", "invalid database handle");
+         return DB_INVALID_HANDLE;
+      }
+
+      if (hKey < (int) sizeof(DATABASE_HEADER)) {
+         cm_msg(MERROR, "db_set_data_index", "invalid key handle");
+         return DB_INVALID_HANDLE;
+      }
+
+      db_lock_database(hDB);
+
+      pheader = _database[hDB - 1].database_header;
+      pkey = (KEY *) ((char *) pheader + hKey);
+
+      /* check if hKey argument is correct */
+      if (!db_validate_hkey(pheader, hKey)) {
+         db_unlock_database(hDB);
+         return DB_INVALID_HANDLE;
+      }
+
+      /* check for write access */
+      if (!(pkey->access_mode & MODE_WRITE) || (pkey->access_mode & MODE_EXCLUSIVE)) {
+         db_unlock_database(hDB);
+         return DB_NO_ACCESS;
+      }
+
+      if (pkey->type != type) {
+         db_unlock_database(hDB);
+         db_get_path(hDB, hKey, str, sizeof(str));
+         cm_msg(MERROR, "db_set_data_index",
+                "\"%s\" is of type %s, not %s", str,
+                rpc_tid_name(pkey->type), rpc_tid_name(type));
+         return DB_TYPE_MISMATCH;
+      }
+
+      /* keys cannot contain data */
+      if (pkey->type == TID_KEY) {
+         db_unlock_database(hDB);
+         cm_msg(MERROR, "db_set_data_index", "key cannot contain data");
+         return DB_TYPE_MISMATCH;
       }
 
       /* check for valid array element size: if new element size
@@ -5945,10 +6177,10 @@ INT db_paste(HNDLE hDB, HNDLE hKeyRoot, const char *buffer)
                   /* set key data if created sucessfully */
                   if (hKey) {
                      if (tid == TID_STRING || tid == TID_LINK)
-                        db_set_data(hDB, hKey, data, string_length * n_data, n_data, tid);
+                        db_set_link_data(hDB, hKey, data, string_length * n_data, n_data, tid);
                      else
-                        db_set_data(hDB, hKey, data,
-                                    rpc_tid_size(tid) * n_data, n_data, tid);
+                        db_set_link_data(hDB, hKey, data,
+                                         rpc_tid_size(tid) * n_data, n_data, tid);
                   }
                }
             }

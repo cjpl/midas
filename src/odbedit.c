@@ -451,7 +451,7 @@ void set_key(HNDLE hDB, HNDLE hKey, int index1, int index2, char *value)
    char data[1000];
    int i, size, status = 0;
 
-   db_get_key(hDB, hKey, &key);
+   db_get_link(hDB, hKey, &key);
 
    memset(data, 0, sizeof(data));
    db_sscanf(value, data, &size, 0, key.type);
@@ -466,14 +466,14 @@ void set_key(HNDLE hDB, HNDLE hKey, int index1, int index2, char *value)
 
    if (key.num_values > 1 && index1 == -1) {
       for (i = 0; i < key.num_values; i++)
-         status = db_set_data_index(hDB, hKey, data, key.item_size, i, key.type);
+         status = db_set_link_data_index(hDB, hKey, data, key.item_size, i, key.type);
    } else if (key.num_values > 1 && index2 > index1) {
       for (i = index1; i < key.num_values && i <= index2; i++)
-         status = db_set_data_index(hDB, hKey, data, key.item_size, i, key.type);
+         status = db_set_link_data_index(hDB, hKey, data, key.item_size, i, key.type);
    } else if (key.num_values > 1 || index1 > 0)
-      status = db_set_data_index(hDB, hKey, data, key.item_size, index1, key.type);
+      status = db_set_link_data_index(hDB, hKey, data, key.item_size, index1, key.type);
    else
-      status = db_set_data(hDB, hKey, data, key.item_size, 1, key.type);
+      status = db_set_link_data(hDB, hKey, data, key.item_size, 1, key.type);
 
    if (status == DB_NO_ACCESS)
       printf("Write access not allowed\n");
@@ -1520,7 +1520,7 @@ void command_loop(char *host_name, char *exp_name, char *cmd, char *start_dir)
                } else
                   key.item_size = NAME_LENGTH;
 
-               db_set_data(hDB, hKey, data, key.item_size, 1, key.type);
+               db_set_link_data(hDB, hKey, data, key.item_size, 1, key.type);
             }
 
             if (j > 1) {
@@ -1528,7 +1528,7 @@ void command_loop(char *host_name, char *exp_name, char *cmd, char *start_dir)
 
                if (key.type == TID_LINK)
                   key.item_size = NAME_LENGTH;
-               db_set_data_index(hDB, hKey, data, key.item_size, j - 1, key.type);
+               db_set_link_data_index(hDB, hKey, data, key.item_size, j - 1, key.type);
             }
          }
       }
@@ -1575,7 +1575,7 @@ void command_loop(char *host_name, char *exp_name, char *cmd, char *start_dir)
                   size = sizeof(data);
                   db_get_data(hDB, hKey, data, &size, key.type);
                   db_find_key(hDB, 0, str, &hKey);
-                  db_set_data(hDB, hKey, data, size, key.num_values, key.type);
+                  db_set_link_data(hDB, hKey, data, size, key.num_values, key.type);
                } else {
                   size = sizeof(data);
                   db_copy(hDB, hKey, data, &size, "");

@@ -616,7 +616,43 @@ static RPC_LIST rpc_list_library[] = {
     }
    ,
 
+   {RPC_DB_SET_LINK_DATA, "db_set_link_data",
+    {{TID_INT, RPC_IN}
+     ,
+     {TID_INT, RPC_IN}
+     ,
+     {TID_ARRAY, RPC_IN | RPC_VARARRAY}
+     ,
+     {TID_INT, RPC_IN}
+     ,
+     {TID_INT, RPC_IN}
+     ,
+     {TID_DWORD, RPC_IN}
+     ,
+     {0}
+     }
+    }
+   ,
+
    {RPC_DB_SET_DATA_INDEX, "db_set_data_index",
+    {{TID_INT, RPC_IN}
+     ,
+     {TID_INT, RPC_IN}
+     ,
+     {TID_ARRAY, RPC_IN | RPC_VARARRAY}
+     ,
+     {TID_INT, RPC_IN}
+     ,
+     {TID_INT, RPC_IN}
+     ,
+     {TID_DWORD, RPC_IN}
+     ,
+     {0}
+     }
+    }
+   ,
+
+   {RPC_DB_SET_LINK_DATA_INDEX, "db_set_link_data_index",
     {{TID_INT, RPC_IN}
      ,
      {TID_INT, RPC_IN}

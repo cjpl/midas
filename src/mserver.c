@@ -787,9 +787,19 @@ INT rpc_server_dispatch(INT index, void *prpc_param[])
       status = db_set_data(CHNDLE(0), CHNDLE(1), CARRAY(2), CINT(3), CINT(4), CDWORD(5));
       break;
 
+   case RPC_DB_SET_LINK_DATA:
+      rpc_convert_data(CARRAY(2), CDWORD(5), RPC_FIXARRAY, CINT(3), convert_flags);
+      status = db_set_link_data(CHNDLE(0), CHNDLE(1), CARRAY(2), CINT(3), CINT(4), CDWORD(5));
+      break;
+
    case RPC_DB_SET_DATA_INDEX:
       rpc_convert_single(CARRAY(2), CDWORD(5), 0, convert_flags);
       status = db_set_data_index(CHNDLE(0), CHNDLE(1), CARRAY(2), CINT(3), CINT(4), CDWORD(5));
+      break;
+
+   case RPC_DB_SET_LINK_DATA_INDEX:
+      rpc_convert_single(CARRAY(2), CDWORD(5), 0, convert_flags);
+      status = db_set_link_data_index(CHNDLE(0), CHNDLE(1), CARRAY(2), CINT(3), CINT(4), CDWORD(5));
       break;
 
    case RPC_DB_SET_DATA_INDEX2:
