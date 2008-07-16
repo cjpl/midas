@@ -43,8 +43,8 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="\midas\include;\mxml;"
-				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_DEPRECATE"
+				AdditionalIncludeDirectories="\midas\include;\mxml;\midas\mscb\drivers\windows\libusb\include;"
+				PreprocessorDefinitions="WIN32;_DEBUG;HAVE_LIBUSB;_CONSOLE;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_DEPRECATE"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
@@ -273,11 +273,19 @@
 				RelativePath="..\mscb\mscbrpc.h"
 				>
 			</File>
+			<File
+				RelativePath="..\mscb\drivers\windows\libusb\usb.h"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="Resource Files"
 			Filter="ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe"
 			>
+			<File
+				RelativePath="..\mscb\drivers\windows\libusb\lib\libusb.lib"
+				>
+			</File>
 		</Filter>
 	</Files>
 	<Globals>

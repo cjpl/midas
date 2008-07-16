@@ -106,6 +106,8 @@ routine IDs for RPC calls
 #define RPC_DB_GET_NEXT_LINK            11241 /**< - */
 #define RPC_DB_GET_LINK                 11242 /**< - */
 #define RPC_DB_GET_LINK_DATA            11243 /**< - */
+#define RPC_DB_SET_LINK_DATA            11244 /**< - */
+#define RPC_DB_SET_LINK_DATA_INDEX      11245 /**< - */
 
 #define RPC_HS_SET_PATH                 11300 /**< - */
 #define RPC_HS_DEFINE_EVENT             11301 /**< - */
