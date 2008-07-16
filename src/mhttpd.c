@@ -5842,7 +5842,8 @@ void show_odb_page(char *enc_path, int enc_path_size, char *dec_path)
 {
    int i, j, size, status;
    char str[256], tmp_path[256], url_path[256], data_str[TEXT_SIZE], 
-      hex_str[256], ref[256], keyname[32], link_name[256];
+      hex_str[256], ref[256], keyname[32], link_name[256], link_ref[256],
+      full_path[256], root_path[256];
    char *p, *pd;
    char data[TEXT_SIZE];
    HNDLE hDB, hkey, hkeyroot;
@@ -5928,6 +5929,7 @@ void show_odb_page(char *enc_path, int enc_path_size, char *dec_path)
       rsprintf("<a href=\"%sroot?exp=%s\">/</a> \n", tmp_path, exp_name);
    else
       rsprintf("<a href=\"%sroot\">/</a> \n", tmp_path);
+   strlcpy(root_path, tmp_path, sizeof(root_path));
 
    /*---- display path ----*/
    while (*p) {
@@ -5967,124 +5969,149 @@ void show_odb_page(char *enc_path, int enc_path_size, char *dec_path)
       if (str[0] && str[strlen(str) - 1] != '/')
          strlcat(str, "/", sizeof(str));
       strlcat(str, key.name, sizeof(str));
-      urlEncode(str, sizeof(str));
+      strlcpy(full_path, str, sizeof(full_path));
+      urlEncode(full_path, sizeof(full_path));
       strlcpy(keyname, key.name, sizeof(keyname));
 
       /* resolve links */
       link_name[0] = 0;
+      status = DB_SUCCESS;
       if (key.type == TID_LINK) {
          size = sizeof(link_name);
          db_get_link_data(hDB, hkey, link_name, &size, TID_LINK);
-         db_enum_key(hDB, hkeyroot, i, &hkey);
+         status = db_enum_key(hDB, hkeyroot, i, &hkey);
          db_get_key(hDB, hkey, &key);
       }
 
-      if (key.type == TID_KEY) {
-         /* for keys, don't display data value */
-         if (exp_name[0])
-            rsprintf
-                ("<tr><td colspan=2 bgcolor=#FFD000><a href=\"%s?exp=%s\">%s</a><br></tr>\n",
-                 str, exp_name, keyname);
-         else
-            rsprintf
-                ("<tr><td colspan=2 bgcolor=#FFD000><a href=\"%s\">%s</a><br></tr>\n",
-                 str, keyname);
-      } else {
-         /* display single value */
-         if (key.num_values == 1) {
-            size = sizeof(data);
-            db_get_data(hDB, hkey, data, &size, key.type);
-            db_sprintf(data_str, data, key.item_size, 0, key.type);
-
-            if (key.type != TID_STRING)
-               db_sprintfh(hex_str, data, key.item_size, 0, key.type);
+      if (link_name[0]) {
+         if (exp_name[0]) {
+            if (root_path[strlen(root_path)-1] == '/' && link_name[0] == '/')
+               sprintf(ref, "%s%s?cmd=Set&exp=%s", root_path, link_name+1, exp_name);
             else
-               hex_str[0] = 0;
-
-            if (data_str[0] == 0 || equal_ustring(data_str, "<NULL>")) {
-               strcpy(data_str, "(empty)");
-               hex_str[0] = 0;
-            }
-
-            if (exp_name[0])
-               sprintf(ref, "%s?cmd=Set&exp=%s", str, exp_name);
-            else
-               sprintf(ref, "%s?cmd=Set", str);
-
-            if (strcmp(data_str, hex_str) != 0 && hex_str[0]) {
-               if (link_name[0])
-                  rsprintf
-                      ("<tr><td bgcolor=#FFFF00>%s <i>-> %s</i><td><a href=\"%s\">%s (%s)</a><br></tr>\n",
-                       keyname, link_name, ref, data_str, hex_str);
-               else
-                  rsprintf
-                      ("<tr><td bgcolor=#FFFF00>%s<td><a href=\"%s\">%s (%s)</a><br></tr>\n",
-                       keyname, ref, data_str, hex_str);
-            } else {
-               if (strchr(data_str, '\n')) {
-                  if (link_name[0])
-                     rsprintf("<tr><td bgcolor=#FFFF00>%s <i>-> %s</i><td>", keyname,
-                              link_name);
-                  else
-                     rsprintf("<tr><td bgcolor=#FFFF00>%s<td>", keyname);
-                  rsprintf("\n<pre>");
-                  strencode3(data_str);
-                  rsprintf("</pre>");
-                  if (strlen(data) > strlen(data_str))
-                     rsprintf("<i>... (%d bytes total)<p>\n", strlen(data));
-
-                  rsprintf("<a href=\"%s\">Edit</a></tr>\n", ref);
-               } else {
-                  if (link_name[0])
-                     rsprintf
-                         ("<tr><td bgcolor=#FFFF00>%s <i>-> %s</i><td><a href=\"%s\">",
-                          keyname, link_name, ref);
-                  else
-                     rsprintf("<tr><td bgcolor=#FFFF00>%s<td><a href=\"%s\">", keyname,
-                              ref);
-                  strencode(data_str);
-                  rsprintf("</a><br></tr>\n");
-               }
-            }
+               sprintf(ref, "%s%s?cmd=Set&exp=%s", root_path, link_name, exp_name);
+            sprintf(link_ref, "%s?cmd=Set&exp=%s", full_path, exp_name);
          } else {
-            /* check for exceeding length */
-            if (key.num_values > 1000)
-               rsprintf("<tr><td bgcolor=#FFFF00>%s<td><i>... %d values ...</i>\n",
-                        keyname, key.num_values);
-            else {
-               /* display first value */
-               if (link_name[0])
-                  rsprintf("<tr><td  bgcolor=#FFFF00 rowspan=%d>%s<br><i>-> %s</i>\n",
-                           key.num_values, keyname, link_name);
-               else
-                  rsprintf("<tr><td  bgcolor=#FFFF00 rowspan=%d>%s\n", key.num_values,
-                           keyname);
+            if (root_path[strlen(root_path)-1] == '/' && link_name[0] == '/')
+               sprintf(ref, "%s%s?cmd=Set", root_path, link_name+1);
+            else
+               sprintf(ref, "%s%s?cmd=Set", root_path, link_name);
+            sprintf(link_ref, "%s?cmd=Set", full_path);
+         }
+      } else {
+         if (exp_name[0])
+            sprintf(ref, "%s?cmd=Set&exp=%s", full_path, exp_name);
+         else
+            sprintf(ref, "%s?cmd=Set", full_path);
+      }
 
-               for (j = 0; j < key.num_values; j++) {
-                  size = sizeof(data);
-                  db_get_data_index(hDB, hkey, data, &size, j, key.type);
-                  db_sprintf(data_str, data, key.item_size, 0, key.type);
+      if (status != DB_SUCCESS) {
+         rsprintf("<tr><td bgcolor=#FFFF00>");
+         rsprintf("%s <i>-> <a href=\"%s\">%s</a></i><td><b><font color=\"red\">&lt;cannot resolve link&gt;</font><b></tr>\n",
+              keyname, link_ref, link_name);
+      } else {
+         if (key.type == TID_KEY) {
+            /* for keys, don't display data value */
+            if (exp_name[0])
+               rsprintf
+                   ("<tr><td colspan=2 bgcolor=#FFD000><a href=\"%s?exp=%s\">%s</a><br></tr>\n",
+                    full_path, exp_name, keyname);
+            else
+               rsprintf
+                   ("<tr><td colspan=2 bgcolor=#FFD000><a href=\"%s\">%s</a><br></tr>\n",
+                    full_path, keyname);
+         } else {
+            /* display single value */
+            if (key.num_values == 1) {
+               size = sizeof(data);
+               db_get_data(hDB, hkey, data, &size, key.type);
+               db_sprintf(data_str, data, key.item_size, 0, key.type);
+
+               if (key.type != TID_STRING)
                   db_sprintfh(hex_str, data, key.item_size, 0, key.type);
+               else
+                  hex_str[0] = 0;
 
-                  if (data_str[0] == 0 || equal_ustring(data_str, "<NULL>")) {
-                     strcpy(data_str, "(empty)");
-                     hex_str[0] = 0;
+               if (data_str[0] == 0 || equal_ustring(data_str, "<NULL>")) {
+                  strcpy(data_str, "(empty)");
+                  hex_str[0] = 0;
+               }
+
+               if (strcmp(data_str, hex_str) != 0 && hex_str[0]) {
+                  if (link_name[0]) {
+                     rsprintf("<tr><td bgcolor=#FFFF00>");
+                     rsprintf("%s <i>-> <a href=\"%s\">%s</a></i><td><a href=\"%s\">%s (%s)</a><br></tr>\n",
+                          keyname, link_ref, link_name, ref, data_str, hex_str);
+                  } else {
+                     rsprintf("<tr><td bgcolor=#FFFF00>");
+                     rsprintf("%s<td><a href=\"%s\">%s (%s)</a><br></tr>\n",
+                              keyname, ref, data_str, hex_str);
                   }
+               } else {
+                  if (strchr(data_str, '\n')) {
+                     if (link_name[0]) {
+                        rsprintf("<tr><td bgcolor=#FFFF00>");
+                        rsprintf("%s <i>-> <a href=\"%s\">%s</a></i><td>", keyname, link_ref, link_name);
+                     } else
+                        rsprintf("<tr><td bgcolor=#FFFF00>%s<td>", keyname);
+                     rsprintf("\n<pre>");
+                     strencode3(data_str);
+                     rsprintf("</pre>");
+                     if (strlen(data) > strlen(data_str))
+                        rsprintf("<i>... (%d bytes total)<p>\n", strlen(data));
 
-                  if (exp_name[0])
-                     sprintf(ref, "%s?cmd=Set&index=%d&exp=%s", str, j, exp_name);
+                     rsprintf("<a href=\"%s\">Edit</a></tr>\n", ref);
+                  } else {
+                     if (link_name[0]) {
+                        rsprintf("<tr><td bgcolor=#FFFF00>");
+                        rsprintf("%s <i>-> <a href=\"%s\">%s</a></i><td><a href=\"%s\">",
+                             keyname, link_ref, link_name, ref);
+                     } else
+                        rsprintf("<tr><td bgcolor=#FFFF00>%s<td><a href=\"%s\">", keyname,
+                                 ref);
+                     strencode(data_str);
+                     rsprintf("</a><br></tr>\n");
+                  }
+               }
+            } else {
+               /* check for exceeding length */
+               if (key.num_values > 1000)
+                  rsprintf("<tr><td bgcolor=#FFFF00>%s<td><i>... %d values ...</i>\n",
+                           keyname, key.num_values);
+               else {
+                  /* display first value */
+                  if (link_name[0])
+                     rsprintf("<tr><td  bgcolor=#FFFF00 rowspan=%d>%s<br><i>-> %s</i>\n",
+                              key.num_values, keyname, link_name);
                   else
-                     sprintf(ref, "%s?cmd=Set&index=%d", str, j);
+                     rsprintf("<tr><td  bgcolor=#FFFF00 rowspan=%d>%s\n", key.num_values,
+                              keyname);
 
-                  if (j > 0)
-                     rsprintf("<tr>");
+                  for (j = 0; j < key.num_values; j++) {
+                     size = sizeof(data);
+                     db_get_data_index(hDB, hkey, data, &size, j, key.type);
+                     db_sprintf(data_str, data, key.item_size, 0, key.type);
+                     db_sprintfh(hex_str, data, key.item_size, 0, key.type);
 
-                  if (strcmp(data_str, hex_str) != 0 && hex_str[0])
-                     rsprintf("<td><a href=\"%s\">[%d] %s (%s)</a><br></tr>\n", ref, j,
-                              data_str, hex_str);
-                  else
-                     rsprintf("<td><a href=\"%s\">[%d] %s</a><br></tr>\n", ref, j,
-                              data_str);
+                     if (data_str[0] == 0 || equal_ustring(data_str, "<NULL>")) {
+                        strcpy(data_str, "(empty)");
+                        hex_str[0] = 0;
+                     }
+
+                     if (exp_name[0])
+                        sprintf(ref, "%s?cmd=Set&index=%d&exp=%s", full_path, j, exp_name);
+                     else
+                        sprintf(ref, "%s?cmd=Set&index=%d", full_path, j);
+
+                     if (j > 0)
+                        rsprintf("<tr>");
+
+                     if (strcmp(data_str, hex_str) != 0 && hex_str[0])
+                        rsprintf("<td><a href=\"%s\">[%d] %s (%s)</a><br></tr>\n", ref, j,
+                                 data_str, hex_str);
+                     else
+                        rsprintf("<td><a href=\"%s\">[%d] %s</a><br></tr>\n", ref, j,
+                                 data_str);
+                  }
                }
             }
          }
@@ -6110,7 +6137,7 @@ void show_set_page(char *enc_path, int enc_path_size, char *dec_path, char *grou
 
    /* show set page if no value is given */
    if (!isparam("value") && !*getparam("text")) {
-      status = db_find_key(hDB, 0, dec_path, &hkey);
+      status = db_find_link(hDB, 0, dec_path, &hkey);
       if (status != DB_SUCCESS) {
          rsprintf("Error: cannot find key %s<P>\n", dec_path);
          return;
@@ -6182,7 +6209,7 @@ void show_set_page(char *enc_path, int enc_path_size, char *dec_path, char *grou
    } else {
       /* set value */
 
-      status = db_find_key(hDB, 0, dec_path, &hkey);
+      status = db_find_link(hDB, 0, dec_path, &hkey);
       if (status != DB_SUCCESS) {
          rsprintf("Error: cannot find key %s<P>\n", dec_path);
          return;
@@ -6208,9 +6235,9 @@ void show_set_page(char *enc_path, int enc_path_size, char *dec_path, char *grou
          key.item_size = rpc_tid_size(key.type);
 
       if (key.num_values > 1)
-         status = db_set_data_index(hDB, hkey, data, key.item_size, index, key.type);
+         status = db_set_link_data_index(hDB, hkey, data, key.item_size, index, key.type);
       else
-         status = db_set_data(hDB, hkey, data, key.item_size, 1, key.type);
+         status = db_set_link_data(hDB, hkey, data, key.item_size, 1, key.type);
 
       if (status == DB_NO_ACCESS)
          rsprintf("<h2>Write access not allowed</h2>\n");
