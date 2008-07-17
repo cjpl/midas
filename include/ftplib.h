@@ -1,12 +1,26 @@
+/********************************************************************\
+
+  Name:         ftplib.h
+  Created by:   Stefan Ritt
+
+  Contents:     FTP library declarations
+
+  $Id$
+
+\********************************************************************/
+
+#ifndef _FTPLIB_H
+#define _FTPLIB_H
+
 #ifndef EXPRT
 #define EXPRT
 #endif
 
-#define MAX_ANSWERS 10          /* Number of known goodest answers for reqest */
-#define QUIT 0
-#define Ctrl(x) ((x) - '@')
-#define FREE(x) memset ( &x , '\0' , sizeof x )
-#define CUT(x) ((x)&0xff)
+#define FTP_MAX_ANSWERS 10          /* Number of known goodest answers for reqest */
+#define FTP_QUIT 0
+#define FTP_Ctrl(x) ((x) - '@')
+#define FTP_FREE(x) memset ( &x , '\0' , sizeof x )
+#define FTP_CUT(x) ((x)&0xff)
 
 typedef struct {
    int sock;
@@ -57,3 +71,5 @@ extern "C" {
 #ifdef __cplusplus
 }
 #endif
+
+#endif // _FTPLIB_H

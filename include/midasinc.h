@@ -10,7 +10,6 @@
 
 \********************************************************************/
 
-
 /* OS independent files */
 
 #include <stdio.h>
@@ -178,5 +177,8 @@ extern void *realloc();
 #include <sys/statvfs.h>
 #define NO_PTY
 #endif
+
+/* FTP library */
+#include "ftplib.h"
 
 /*------------------------------------------------------------------*/

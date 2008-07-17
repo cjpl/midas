@@ -12,7 +12,6 @@
 #include "midas.h"
 #include "msystem.h"
 #include "hardware.h"
-#include "ftplib.h"
 #include <errno.h>              /* for mkdir() */
 #include <assert.h>
 
@@ -1095,7 +1094,7 @@ INT midas_log_open(LOG_CHN * log_chn, INT run_number)
          return status;
       }
    } else if (log_chn->type == LOG_TYPE_FTP) {
-      status = ftp_open(log_chn->path, (FTP_CON **) (&log_chn->ftp_con));
+      status = ftp_open(log_chn->path, &log_chn->ftp_con);
       if (status != SS_SUCCESS) {
          free(info->buffer);
          free(info);
@@ -1211,8 +1210,8 @@ INT midas_log_close(LOG_CHN * log_chn, INT run_number)
       ss_tape_write_eof(log_chn->handle);
       ss_tape_close(log_chn->handle);
    } else if (log_chn->type == LOG_TYPE_FTP) {
-      ftp_close((FTP_CON *) log_chn->ftp_con);
-      ftp_bye((FTP_CON *) log_chn->ftp_con);
+      ftp_close(log_chn->ftp_con);
+      ftp_bye(log_chn->ftp_con);
    } else {
       if (log_chn->gzfile) {
 #ifdef HAVE_ZLIB
@@ -1500,7 +1499,7 @@ INT dump_write(LOG_CHN * log_chn, EVENT_HEADER * pevent, INT evt_size)
       if (log_chn->type == LOG_TYPE_TAPE)
          status = ss_tape_write(log_chn->handle, (char *) (pevent + 1), size);
       else if (log_chn->type == LOG_TYPE_FTP)
-         status = ftp_send(((FTP_CON *) log_chn->ftp_con)->data, buffer, size) == size ?
+         status = ftp_send((log_chn->ftp_con)->data, buffer, size) == size ?
              SS_SUCCESS : SS_FILE_ERROR;
       else
          status = write(log_chn->handle, (char *) (pevent + 1), size) == size ? SS_SUCCESS : SS_FILE_ERROR;
@@ -1515,7 +1514,7 @@ INT dump_write(LOG_CHN * log_chn, EVENT_HEADER * pevent, INT evt_size)
       if (log_chn->type == LOG_TYPE_TAPE)
          status = ss_tape_write(log_chn->handle, buffer, size);
       else if (log_chn->type == LOG_TYPE_FTP)
-         status = ftp_send(((FTP_CON *) log_chn->ftp_con)->data, buffer, size) == size ?
+         status = ftp_send((log_chn->ftp_con)->data, buffer, size) == size ?
              SS_SUCCESS : SS_FILE_ERROR;
       else
          status = write(log_chn->handle, buffer, size) == size ? SS_SUCCESS : SS_FILE_ERROR;
@@ -1543,7 +1542,7 @@ INT dump_log_open(LOG_CHN * log_chn, INT run_number)
          return status;
       }
    } else if (log_chn->type == LOG_TYPE_FTP) {
-      status = ftp_open(log_chn->path, (FTP_CON **) (&log_chn->ftp_con));
+      status = ftp_open(log_chn->path, &log_chn->ftp_con);
       if (status != SS_SUCCESS) {
          log_chn->handle = 0;
          return status;
@@ -1579,8 +1578,8 @@ INT dump_log_close(LOG_CHN * log_chn, INT run_number)
       ss_tape_write_eof(log_chn->handle);
       ss_tape_close(log_chn->handle);
    } else if (log_chn->type == LOG_TYPE_FTP) {
-      ftp_close((FTP_CON *) log_chn->ftp_con);
-      ftp_bye((FTP_CON *) log_chn->ftp_con);
+      ftp_close(log_chn->ftp_con);
+      ftp_bye(log_chn->ftp_con);
    } else
       close(log_chn->handle);
 
@@ -1735,7 +1734,7 @@ INT ascii_write(LOG_CHN * log_chn, EVENT_HEADER * pevent, INT evt_size)
    if (log_chn->type == LOG_TYPE_TAPE)
       status = ss_tape_write(log_chn->handle, buffer, size);
    else if (log_chn->type == LOG_TYPE_FTP)
-      status = ftp_send(((FTP_CON *) log_chn->ftp_con)->data, buffer, size) == size ?
+      status = ftp_send(log_chn->ftp_con->data, buffer, size) == size ?
           SS_SUCCESS : SS_FILE_ERROR;
    else
       status = write(log_chn->handle, buffer, size) == size ? SS_SUCCESS : SS_FILE_ERROR;
@@ -1763,7 +1762,7 @@ INT ascii_log_open(LOG_CHN * log_chn, INT run_number)
          return status;
       }
    } else if (log_chn->type == LOG_TYPE_FTP) {
-      status = ftp_open(log_chn->path, (FTP_CON **) (&log_chn->ftp_con));
+      status = ftp_open(log_chn->path, &log_chn->ftp_con);
       if (status != SS_SUCCESS) {
          log_chn->handle = 0;
          return status;
@@ -1800,8 +1799,8 @@ INT ascii_log_close(LOG_CHN * log_chn, INT run_number)
       ss_tape_write_eof(log_chn->handle);
       ss_tape_close(log_chn->handle);
    } else if (log_chn->type == LOG_TYPE_FTP) {
-      ftp_close((FTP_CON *) log_chn->ftp_con);
-      ftp_bye((FTP_CON *) log_chn->ftp_con);
+      ftp_close(log_chn->ftp_con);
+      ftp_bye(log_chn->ftp_con);
    } else
       close(log_chn->handle);
 
@@ -3080,7 +3079,8 @@ void log_history(HNDLE hDB, HNDLE hKey, void *info)
 
 void log_system_history(HNDLE hDB, HNDLE hKey, void *info)
 {
-   INT i, size, total_size, status, index;
+   INT size, total_size, status, index;
+   DWORD i;
    KEY key;
 
    index = (INT) (POINTER_T) info;
