@@ -3009,7 +3009,9 @@ INT open_history()
    hs_define_event(0, "Run transitions", tag, sizeof(TAG) * 2);
    free(tag);
 
+   /* outcommented not to produce a log entry on every run
    cm_msg(MINFO, "open_history", "Configured history with %d events", count_events);
+   */
 
    return CM_SUCCESS;
 }
