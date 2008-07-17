@@ -13,8 +13,13 @@
 #include <string.h>
 #include <stdlib.h>
 #include <ctype.h>
-#include <io.h>
 #include <fcntl.h>
+
+#ifdef _MSC_VER
+#include <io.h>
+#else
+#include <unistd.h>
+#endif
 
 /*------------------------------------------------------------------*/
 
@@ -485,7 +490,7 @@ int main(int argc, char *argv[])
          printf
              ("       <varname>        ODB variable name like \"/Runinfo/Run number\"\n");
          printf("       [index]          Index if <varname> is an array\n");
-         printf("       <filename>       run%05d.odb by default\n");
+         printf("       <filename>       run%%05d.odb by default\n");
          printf("       -e <file>        Extract ODB file from MID file\n");
          printf("       -q               Don't display run number\n");
          printf("       -a               Add numbers for all runs\n");
