@@ -67,6 +67,7 @@ struct hist_log_s {
    void *buffer;
    INT buffer_size;
    HNDLE hKeyVar;
+   DWORD n_var;
    DWORD period;
    DWORD last_log;
 } hist_log[MAX_HISTORY];
@@ -2488,12 +2489,13 @@ static int add_event(int* indexp, int event_id, const char* event_name, HNDLE hK
    assert(status == DB_SUCCESS);
 
    /* setup hist_log structure for this event */
-   hist_log[index].event_id = event_id;
-   hist_log[index].hKeyVar  = hKey;
+   hist_log[index].event_id    = event_id;
+   hist_log[index].n_var       = ntags;
+   hist_log[index].hKeyVar     = hKey;
    hist_log[index].buffer_size = size;
-   hist_log[index].buffer   = malloc(size);
-   hist_log[index].period   = period;
-   hist_log[index].last_log = 0;
+   hist_log[index].buffer      = malloc(size);
+   hist_log[index].period      = period;
+   hist_log[index].last_log    = 0;
 
    if (hist_log[index].buffer == NULL) {
       cm_msg(MERROR, "add_event", "Cannot allocate data buffer for event \"%s\" size %d", event_name, size);
@@ -3098,7 +3100,7 @@ void log_system_history(HNDLE hDB, HNDLE hKey, void *info)
       total_size += size;
    }
 
-   if (total_size != hist_log[index].buffer_size) {
+   if (i != hist_log[index].n_var) {
       close_history();
       open_history();
    } else
