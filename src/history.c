@@ -90,14 +90,13 @@ INT hs_open_file(time_t ltime, char *suffix, INT mode, int *fh)
    ttime = (time_t) ltime;
    tms = localtime(&ttime);
 
-   sprintf(file_name, "%s%02d%02d%02d.%s", _hs_path_name,
-           tms->tm_year % 100, tms->tm_mon + 1, tms->tm_mday, suffix);
+   sprintf(file_name, "%s%02d%02d%02d.%s", _hs_path_name, tms->tm_year % 100, tms->tm_mon + 1, tms->tm_mday, suffix);
 
    /* open file, add O_BINARY flag for Windows NT */
    *fh = open(file_name, mode | O_BINARY, 0644);
 
    //printf("hs_open_file: time %d, file \'%s\', fh %d\n", (int)ltime, file_name, *fh);
-   
+
    return HS_SUCCESS;
 }
 
@@ -132,7 +131,7 @@ INT hs_gen_index(DWORD ltime)
    int recovering = 0;
    //time_t now = time(NULL);
 
-   cm_msg(MINFO, "hs_gen_index", "generating index files for time %d", (int)ltime);
+   cm_msg(MINFO, "hs_gen_index", "generating index files for time %d", (int) ltime);
    printf("Recovering index files...\n");
 
    if (ltime == 0)
@@ -177,7 +176,7 @@ INT hs_gen_index(DWORD ltime)
 
          /* skip tags */
          lseek(fh, rec.data_size, SEEK_CUR);
-      } else if (rec.record_type == RT_DATA && rec.data_size>1 && rec.data_size<1*1024*1024) {
+      } else if (rec.record_type == RT_DATA && rec.data_size > 1 && rec.data_size < 1 * 1024 * 1024) {
          /* write index record */
          irec.event_id = rec.event_id;
          irec.time = rec.time;
@@ -190,10 +189,10 @@ INT hs_gen_index(DWORD ltime)
          lseek(fh, rec.data_size, SEEK_CUR);
       } else {
          if (!recovering)
-            cm_msg(MERROR, "hs_gen_index", "broken history file for time %d, trying to recover", (int)ltime);
+            cm_msg(MERROR, "hs_gen_index", "broken history file for time %d, trying to recover", (int) ltime);
 
          recovering = 1;
-         lseek(fh, 1-sizeof(rec), SEEK_CUR);
+         lseek(fh, 1 - sizeof(rec), SEEK_CUR);
 
          continue;
       }
@@ -394,18 +393,18 @@ INT hs_define_event(DWORD event_id, char *name, TAG * tag, DWORD size)
 
          /* regenerate index if missing */
          if (TELL(fh) > 0 && TELL(fhd) == 0) {
-	   close(fh);
-	   close(fhi);
-	   close(fhd);
-	   hs_gen_index(rec.time);
-	   hs_open_file(rec.time, "hst", O_RDWR, &fh);
-	   hs_open_file(rec.time, "idx", O_RDWR, &fhi);
-	   hs_open_file(rec.time, "idf", O_RDWR, &fhd);
-	   lseek(fh, 0, SEEK_END);
-	   lseek(fhi, 0, SEEK_END);
-	   lseek(fhd, 0, SEEK_END);
+            close(fh);
+            close(fhi);
+            close(fhd);
+            hs_gen_index(rec.time);
+            hs_open_file(rec.time, "hst", O_RDWR, &fh);
+            hs_open_file(rec.time, "idx", O_RDWR, &fhi);
+            hs_open_file(rec.time, "idf", O_RDWR, &fhd);
+            lseek(fh, 0, SEEK_END);
+            lseek(fhi, 0, SEEK_END);
+            lseek(fhd, 0, SEEK_END);
          }
-	 
+
          ltime = (time_t) rec.time;
          tmb = localtime(&ltime);
          tmb->tm_hour = tmb->tm_min = tmb->tm_sec = 0;
@@ -557,7 +556,7 @@ INT hs_write_event(DWORD event_id, void *data, DWORD size)
    status = ss_mutex_wait_for(mutex, 5 * 1000);
    if (status != SS_SUCCESS) {
       cm_msg(MERROR, "hs_write_event", "mutex timeout");
-      return SUCCESS;        /* someone else blocked the history system */
+      return SUCCESS;           /* someone else blocked the history system */
    }
 
    /* find index to history structure */
@@ -652,7 +651,7 @@ INT hs_write_event(DWORD event_id, void *data, DWORD size)
    write(_history[index].hist_fh, (char *) &rec, sizeof(rec));
 
    /* write data */
-   if (write(_history[index].hist_fh, (char *) data, size) < (int)size) {
+   if (write(_history[index].hist_fh, (char *) data, size) < (int) size) {
       /* disk maybe full? Do a roll-back! */
       lseek(_history[index].hist_fh, last_pos_data, SEEK_SET);
       TRUNCATE(_history[index].hist_fh);
@@ -1089,11 +1088,11 @@ INT hs_enum_vars(DWORD ltime, DWORD event_id, char *var_name, DWORD * size, DWOR
    }
    *size = n * NAME_LENGTH;
    *n_size = n * sizeof(DWORD);
-   
+
    M_FREE(tag);
    close(fh);
    close(fhd);
-   
+
    return HS_SUCCESS;
 }
 
@@ -1197,9 +1196,7 @@ INT hs_get_var(DWORD ltime, DWORD event_id, char *var_name, DWORD * type, INT * 
 
 
 /********************************************************************/
-INT hs_read(DWORD event_id, DWORD start_time, DWORD end_time,
-            DWORD interval, char *tag_name, DWORD var_index,
-            DWORD * time_buffer, DWORD * tbsize, void *data_buffer, DWORD * dbsize, DWORD * type, DWORD * n)
+INT hs_read(DWORD event_id, DWORD start_time, DWORD end_time, DWORD interval, char *tag_name, DWORD var_index, DWORD * time_buffer, DWORD * tbsize, void *data_buffer, DWORD * dbsize, DWORD * type, DWORD * n)
 /********************************************************************\
 
   Routine: hs_read
@@ -1248,15 +1245,14 @@ INT hs_read(DWORD event_id, DWORD start_time, DWORD end_time,
    char *cache = NULL;
    time_t ltime;
    int rd;
-   
+
    //printf("hs_read event %d, time %d:%d, tagname: \'%s\', varindex: %d\n", event_id, start_time, end_time, tag_name, var_index);
-   
+
 #if 0
    if (rpc_is_remote())
-     return rpc_call(RPC_HS_READ, event_id, start_time, end_time, interval,
-		     tag_name, var_index, time_buffer, tbsize, data_buffer, dbsize, type, n);
+      return rpc_call(RPC_HS_READ, event_id, start_time, end_time, interval, tag_name, var_index, time_buffer, tbsize, data_buffer, dbsize, type, n);
 #endif
-   
+
    /* if not time given, use present to one hour in past */
    if (start_time == 0)
       start_time = (DWORD) time(NULL) - 3600;
@@ -1282,9 +1278,12 @@ INT hs_read(DWORD event_id, DWORD start_time, DWORD end_time,
    if (fh < 0 || fhd < 0 || fhi < 0) {
       cm_msg(MERROR, "hs_read", "cannot open index files");
       *tbsize = *dbsize = *n = 0;
-      if (fh>0) close(fh);
-      if (fhd>0) close(fhd);
-      if (fhi>0) close(fhi);
+      if (fh > 0)
+         close(fh);
+      if (fhd > 0)
+         close(fhd);
+      if (fhi > 0)
+         close(fhi);
       return HS_FILE_ERROR;
    }
 
@@ -1303,9 +1302,12 @@ INT hs_read(DWORD event_id, DWORD start_time, DWORD end_time,
          i = read(fhi, cache, cache_size);
          if (i < cache_size) {
             M_FREE(cache);
-            if (fh>0) close(fh);
-            if (fhd>0) close(fhd);
-            if (fhi>0) close(fhi);
+            if (fh > 0)
+               close(fh);
+            if (fhd > 0)
+               close(fhd);
+            if (fhi > 0)
+               close(fhi);
             return HS_FILE_ERROR;
          }
       }
@@ -1378,17 +1380,19 @@ INT hs_read(DWORD event_id, DWORD start_time, DWORD end_time,
 
    /* read records, skip wrong IDs */
    old_def_offset = -1;
-   last_irec_time = start_time - 24*60*60;
+   last_irec_time = start_time - 24 * 60 * 60;
    do {
       //printf("time %d -> %d\n", last_irec_time, irec.time);
 
       if (irec.time < last_irec_time) {
-         cm_msg(MERROR, "hs_read",
-                "corrupted history data: time does not increase: %d -> %d", last_irec_time, irec.time);
+         cm_msg(MERROR, "hs_read", "corrupted history data: time does not increase: %d -> %d", last_irec_time, irec.time);
          //*tbsize = *dbsize = *n = 0;
-         if (fh>0) close(fh);
-         if (fhd>0) close(fhd);
-         if (fhi>0) close(fhi);
+         if (fh > 0)
+            close(fh);
+         if (fhd > 0)
+            close(fhd);
+         if (fhi > 0)
+            close(fhi);
          hs_gen_index(last_irec_time);
          return HS_SUCCESS;
       }
@@ -1400,11 +1404,14 @@ INT hs_read(DWORD event_id, DWORD start_time, DWORD end_time,
             lseek(fh, irec.offset, SEEK_SET);
             rd = read(fh, (char *) &rec, sizeof(rec));
             if (rd != sizeof(rec)) {
-               cm_msg(MERROR, "hs_read", "corrupted history data at time %d: read() of %d bytes returned %d, errno %d (%s)", (int)irec.time, sizeof(rec), rd, errno, strerror(errno));
+               cm_msg(MERROR, "hs_read", "corrupted history data at time %d: read() of %d bytes returned %d, errno %d (%s)", (int) irec.time, sizeof(rec), rd, errno, strerror(errno));
                //*tbsize = *dbsize = *n = 0;
-               if (fh>0) close(fh);
-               if (fhd>0) close(fhd);
-               if (fhi>0) close(fhi);
+               if (fh > 0)
+                  close(fh);
+               if (fhd > 0)
+                  close(fhd);
+               if (fhi > 0)
+                  close(fhi);
                hs_gen_index(last_irec_time);
                return HS_SUCCESS;
             }
@@ -1513,22 +1520,22 @@ INT hs_read(DWORD event_id, DWORD start_time, DWORD end_time,
             cache = NULL;
          } else {
 
-         try_again:
+          try_again:
 
             i = sizeof(irec);
 
             memcpy(&irec, cache + cp, sizeof(irec));
             cp += sizeof(irec);
-            
+
             /* if history file is broken ... */
-            if (irec.time < last_irec_time || irec.time > last_irec_time + 24*60*60) {
+            if (irec.time < last_irec_time || irec.time > last_irec_time + 24 * 60 * 60) {
                //if (irec.time < last_irec_time) {
                //printf("time %d -> %d, cache_size %d, cp %d\n", last_irec_time, irec.time, cache_size, cp);
 
                //printf("Seeking next record...\n");
 
                while (cp < cache_size) {
-                  DWORD* evidp = (DWORD*)(cache + cp);
+                  DWORD *evidp = (DWORD *) (cache + cp);
                   if (*evidp == event_id) {
                      //printf("Found at cp %d\n", cp);
                      goto try_again;
@@ -1536,7 +1543,7 @@ INT hs_read(DWORD event_id, DWORD start_time, DWORD end_time,
 
                   cp++;
                }
-               
+
                i = -1;
             }
          }
@@ -1550,7 +1557,7 @@ INT hs_read(DWORD event_id, DWORD start_time, DWORD end_time,
          close(fhi);
          fh = fhd = fhi = 0;
 
-      nextday:
+       nextday:
 
          /* advance one day */
          ltime = (time_t) last_irec_time;
@@ -1611,9 +1618,12 @@ INT hs_read(DWORD event_id, DWORD start_time, DWORD end_time,
 
    if (cache)
       M_FREE(cache);
-   if (fh) close(fh);
-   if (fhd) close(fhd);
-   if (fhi) close(fhi);
+   if (fh)
+      close(fh);
+   if (fhd)
+      close(fhd);
+   if (fhi)
+      close(fhi);
 
    *dbsize = *n * var_size;
    *tbsize = *n * sizeof(DWORD);
@@ -1701,8 +1711,7 @@ INT hs_dump(DWORD event_id, DWORD start_time, DWORD end_time, DWORD interval, BO
    last_irec_time = 0;
    do {
       if (irec.time < last_irec_time) {
-         cm_msg(MERROR, "hs_dump",
-                "corrupted history data: time does not increase: %d -> %d", last_irec_time, irec.time);
+         cm_msg(MERROR, "hs_dump", "corrupted history data: time does not increase: %d -> %d", last_irec_time, irec.time);
          hs_gen_index(last_irec_time);
          return HS_FILE_ERROR;
       }
@@ -1925,6 +1934,6 @@ INT hs_fdump(char *file_name, DWORD id, BOOL binary_time)
 #endif                          /* DOXYGEN_SHOULD_SKIP_THIS */
 
 /**dox***************************************************************/
-/** @} *//* end of hsfunctioncode */
+         /** @} *//* end of hsfunctioncode */
 
 /**dox***************************************************************/
