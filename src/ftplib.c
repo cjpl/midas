@@ -115,7 +115,7 @@ int ftp_connect(FTP_CON ** con, char *host_name, unsigned short port)
    status = ftp_get_message(*con, str);
 
    /* check for status */
-   if (status == QUIT || !ftp_good(status, 120, 220, EOF)) {
+   if (status == FTP_QUIT || !ftp_good(status, 120, 220, EOF)) {
       closesocket(sock);
       free(*con);
       return FTP_NET_ERROR;
@@ -160,7 +160,7 @@ int ftp_command(FTP_CON * con, char *command, char *param, ...)
 
    /* read reply */
    status = ftp_get_message(con, str);
-   if (status == QUIT)
+   if (status == FTP_QUIT)
       return FTP_NET_ERROR;
 
    /* check reply code */
@@ -198,7 +198,7 @@ int ftp_get_message(FTP_CON * con, char *message)
 
    for (i = 0;; i++) {
       if (recv(con->sock, &message[i], 1, 0) != 1)
-         return QUIT;
+         return FTP_QUIT;
 
       if (i > 1 && message[i] == 10 && message[i - 1] == 13)
          break;
@@ -298,8 +298,8 @@ int ftp_data(FTP_CON * con, char *command, char *file)
    a = (char *) &data.sin_addr;
    b = (char *) &data.sin_port;
 
-   status = ftp_port(con, CUT(a[0]), CUT(a[1]), CUT(a[2]),
-                     CUT(a[3]), CUT(b[0]), CUT(b[1]));
+   status = ftp_port(con, FTP_CUT(a[0]), FTP_CUT(a[1]), FTP_CUT(a[2]),
+                     FTP_CUT(a[3]), FTP_CUT(b[0]), FTP_CUT(b[1]));
    if (status != FTP_SUCCESS)
       return FTP_NET_ERROR;
 
@@ -438,8 +438,8 @@ int ftp_port(FTP_CON * con, int a, int b, int c, int d, int e, int f)
       return FTP_NET_ERROR;
 
    status = ftp_get_message(con, cmd);
-   if (status == QUIT)
-      return QUIT;
+   if (status == FTP_QUIT)
+      return FTP_QUIT;
 
    if (!ftp_good(status, 200, EOF))
       return FTP_NET_ERROR;

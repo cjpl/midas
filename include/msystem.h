@@ -494,7 +494,7 @@ typedef struct {
    CHN_SETTINGS settings;
    CHN_STATISTICS statistics;
    void **format_info;
-   void *ftp_con;
+   FTP_CON *ftp_con;
    void *gzfile;
 } LOG_CHN;
 
