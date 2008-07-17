@@ -5,7 +5,7 @@
 
   Contents:     MIDAS history display utility
 
-  $Id:$
+  $Id$
 
 \********************************************************************/
 
@@ -13,6 +13,8 @@
 #include <string.h>
 #include <stdlib.h>
 #include <ctype.h>
+#include <io.h>
+#include <fcntl.h>
 
 /*------------------------------------------------------------------*/
 
@@ -30,11 +32,9 @@ typedef char str[256];
 str var_params[100];            /* varables to print 100 each of 256 char lenth */
 
 DWORD status, start_run, end_run, run;
-INT i, quiet, add, j, k, eoln, boln, weight;
-char file_name[256], var_name[256];
+INT i, quiet, add, j, k, eoln, boln;
+char file_name[256], var_name[256], mid_name[256];
 double total[100], value[100];
-str e_var1, e_var2, e_var3;
-double var1, var2, var3, sum, sum_var1;
 
 /*------------------------------------------------------------------*/
 
@@ -116,80 +116,81 @@ int odb_hist(char *file_name, int run_number, char *var_name, int quiet,
       index = -1;
 
    f = fopen(str, "r");
-   if (f != NULL) {
-      if ((!quiet) && boln && print)
-         printf("%5d: ", run_number);
+   if (f == NULL)
+      return 0;
 
-      /* search path */
-      do {
-         fgets(line, sizeof(line), f);
-         if (line[0] == '[')
-            if (equal_ustring(line, path)) {
-               /* look for key */
-               do {
-                  fgets(line, sizeof(line), f);
-                  if (strchr(line, '=') != NULL) {
-                     strcpy(str, line);
-                     *(strchr(str, '=') - 1) = 0;
+   if ((!quiet) && boln && print)
+      printf("%5d: ", run_number);
 
-                     /* check if key name matches */
-                     if (equal_ustring(str, key_name)) {
-                        if (index == -1) {
-                           /* non-arrays */
-                           strcpy(str, strchr(line, '=') + 2);
-                           if (strchr(str, ':') != NULL) {
-                              strcpy(str, strchr(str, ':') + 2);
-                              if (strchr(str, '\n') != NULL)
-                                 *strchr(str, '\n') = 0;
-                              if (str[0] == '[' && strchr(str, ']') != NULL)
-                                 strcpy(str, strchr(str, ']') + 2);
-                              if (print)
-                                 printf(str);
-                              *value = strtod(str, NULL);
-                              goto finish;
-                           }
-                        } else {
-                           /* arrays */
-                           for (i = 0; i <= index; i++)
-                              fgets(line, sizeof(line), f);
-                           if (line[0] == '[' && atoi(line + 1) == index) {
-                              strcpy(str, strchr(line, ']') + 2);
-                              if (strchr(str, '\n') != NULL)
-                                 *strchr(str, '\n') = 0;
-                              if (print)
-                                 printf(str);
-                              *value = strtod(str, NULL);
-                           }
+   /* search path */
+   do {
+      fgets(line, sizeof(line), f);
+      if (line[0] == '[')
+         if (equal_ustring(line, path)) {
+            /* look for key */
+            do {
+               fgets(line, sizeof(line), f);
+               if (strchr(line, '=') != NULL) {
+                  strcpy(str, line);
+                  *(strchr(str, '=') - 1) = 0;
+
+                  /* check if key name matches */
+                  if (equal_ustring(str, key_name)) {
+                     if (index == -1) {
+                        /* non-arrays */
+                        strcpy(str, strchr(line, '=') + 2);
+                        if (strchr(str, ':') != NULL) {
+                           strcpy(str, strchr(str, ':') + 2);
+                           if (strchr(str, '\n') != NULL)
+                              *strchr(str, '\n') = 0;
+                           if (str[0] == '[' && strchr(str, ']') != NULL)
+                              strcpy(str, strchr(str, ']') + 2);
+                           if (print)
+                              printf(str);
+                           *value = strtod(str, NULL);
                            goto finish;
                         }
-
+                     } else {
+                        /* arrays */
+                        for (i = 0; i <= index; i++)
+                           fgets(line, sizeof(line), f);
+                        if (line[0] == '[' && atoi(line + 1) == index) {
+                           strcpy(str, strchr(line, ']') + 2);
+                           if (strchr(str, '\n') != NULL)
+                              *strchr(str, '\n') = 0;
+                           if (print)
+                              printf(str);
+                           *value = strtod(str, NULL);
+                        }
+                        goto finish;
                      }
+
                   }
+               }
 
-               } while (line[0] != '[' || line[1] != '/');
+            } while (line[0] != '[' || line[1] != '/');
 
-            }
-      } while (!feof(f));
-
-    finish:
-      if (print) {
-         if (eoln)
-            printf("\n");
-         else {
-            a = 0;
-            while (str[a] != '\0')
-               a++;
-            k = a;
-            while ((str[k] != '.') && (k >= 0))
-               k--;
-            for (i = 0; i < (10 - (a - k)); i++)
-               printf(" ");
-            printf("\t");
          }
-         fclose(f);
+   } while (!feof(f));
+
+ finish:
+   if (print) {
+      if (eoln)
+         printf("\n");
+      else {
+         a = 0;
+         while (str[a] != '\0')
+            a++;
+         k = a;
+         while ((str[k] != '.') && (k >= 0))
+            k--;
+         for (i = 0; i < (10 - (a - k)); i++)
+            printf(" ");
+         printf("\t");
       }
+      fclose(f);
    }
-   /* f != NULL */
+
    return SUCCESS;
 }
 
@@ -288,31 +289,6 @@ int load_pars_from_file(char filename[256])
                   j--;
                break;
 
-            case 'e':
-               weight = 1;
-
-               if ((fgets(line, sizeof(line), f1) != NULL) && (line[0] != '['))
-                  strcpy(e_var1, line);
-               else {
-                  result = 0;
-                  break;
-               }
-
-               if ((fgets(line, sizeof(line), f1) != NULL) && (line[0] != '['))
-                  strcpy(e_var2, line);
-               else {
-                  result = 0;
-                  break;
-               }
-
-               if ((fgets(line, sizeof(line), f1) != NULL) && (line[0] != '['))
-                  strcpy(e_var3, line);
-               else {
-                  result = 0;
-                  break;
-               }
-               break;
-
             case 'r':
                if ((fgets(line, sizeof(line), f1) != NULL) && (line[0] != '['))
                   start_run = atoi(line);
@@ -348,9 +324,99 @@ int load_pars_from_file(char filename[256])
 
 /*------------------------------------------------------------------*/
 
+typedef struct {
+   short int event_id;           /**< event ID starting from one      */
+   short int trigger_mask;       /**< hardware trigger mask           */
+   DWORD serial_number;          /**< serial number starting from one */
+   DWORD time_stamp;             /**< time of production of event     */
+   DWORD data_size;              /**< size of event in bytes w/o header */
+} EVENT_HEADER;
+
+#define EVENTID_BOR      ((short int) 0x8000)  /**< Begin-of-run      */
+#define EVENTID_EOR      ((short int) 0x8001)  /**< End-of-run        */
+#define EVENTID_MESSAGE  ((short int) 0x8002)  /**< Message events    */
+
+int extract(char *mid_file, char *odb_file)
+/********************************************************************\
+
+  Routine: extract
+
+  Purpose: Extract ODB file from MID file
+
+  Input:
+    char *mid_file          Midas file name, usually runxxxxx.mid
+    char *odb_file          ODB file name, usually runxxxxx.odb
+
+  Function value:
+    1                       Successful completion
+    0                       Error
+
+\********************************************************************/
+{
+   int fhm, fho, run_number;
+   unsigned int n;
+   EVENT_HEADER header;
+   char *buffer, *p, odb_name[256];
+
+   fhm = open(mid_file, O_RDONLY, 0644);
+   if (fhm < 0) {
+      printf("Cannot open file \"%s\"\n", mid_file);
+      return 0;
+   }
+
+   if (strchr(odb_file, '%')) {
+      p = mid_file;
+      while (*p && !isdigit(*p))
+         p++;
+      run_number = atoi(p);
+      sprintf(odb_name, odb_file, run_number);
+   } else
+      strcpy(odb_name, odb_file);
+
+   fho = open(odb_name, O_WRONLY | O_CREAT | O_APPEND, 0644);
+   if (fho < 0) {
+      printf("Cannot open file \"%s\"\n", odb_name);
+      return 0;
+   }
+
+   n = read(fhm, &header, sizeof(header));
+   if (n != sizeof(header)) {
+      printf("Cannot read event header from file \"%s\"\n", mid_file);
+      return 0;
+   }
+
+   if (header.event_id != EVENTID_BOR) {
+      printf("First event in \"%s\" is not a BOR event\n", mid_file);
+      return 0;
+   }
+
+   buffer = malloc(header.data_size);
+
+   n = read(fhm, buffer, header.data_size);
+   if (n < header.data_size) {
+      printf("Cannot read %d bytes from \"%s\"\n", header.data_size, mid_file);
+      return 0;
+   }
+
+   n = write(fho, buffer, header.data_size);
+   if (n < header.data_size) {
+      printf("Cannot write %d bytes to \"%s\"\n", header.data_size, odb_name);
+      return 0;
+   }
+
+   close(fhm);
+   close(fho);
+   free(buffer);
+
+   printf("\"%s\" successfully created\n", odb_name);
+   return 1;
+}
+
+/*------------------------------------------------------------------*/
+
 int main(int argc, char *argv[])
 {
-   int cfg, print;
+   int cfg, print, n_files;
 
    strcpy(var_name, "/Runinfo/Run number");
    strcpy(file_name, "run%05d.odb");
@@ -362,6 +428,8 @@ int main(int argc, char *argv[])
    k = 0;
    cfg = 0;
    j = -1;
+   n_files = 0;
+   mid_name[0] = 0;
 
    /* parse command line parameters */
 
@@ -377,6 +445,9 @@ int main(int argc, char *argv[])
          }
    }
 
+   if (argc <= 1)
+      goto usage;
+
    for (i = 1; i < argc; i++) {
       if (argv[i][0] == '-') {
          if (argv[i][1] == 'q')
@@ -390,7 +461,7 @@ int main(int argc, char *argv[])
                start_run = atoi(argv[++i]);
                end_run = atoi(argv[++i]);
             } else if (argv[i][1] == 'v') {
-               j = -1;          /*if this not used the parameters from here will be add to "v" parameters from cfg file */
+               j = -1;
                while (i + 1 < argc && argv[i + 1][0] != '-')
                   if (argv[i + 1][0] != '-') {
                      i++;
@@ -400,13 +471,8 @@ int main(int argc, char *argv[])
                   }
             } else if (argv[i][1] == 'f')
                strcpy(file_name, argv[++i]);
-            else if (argv[i][1] == 'e') {
-               /* user must be carefull here, he must enter all 3 params */
-               strcpy(e_var1, argv[++i]);
-               strcpy(e_var2, argv[++i]);
-               strcpy(e_var3, argv[++i]);
-               weight = 1;
-            } else if (cfg);
+            else if (argv[i][1] == 'e')
+               strcpy(mid_name, argv[++i]);
             else
                goto usage;
          }
@@ -414,24 +480,26 @@ int main(int argc, char *argv[])
 
        usage:
          printf("\nusage: odbhist -r <run1> <run2> -v <varname>[index]\n");
-         printf("       [-f <filename>] [-q] [-a] [-c <file>]\n");
-         printf("       [-e <var1> <var2> <var3>]\n\n");
+         printf("       [-f <filename>] [-q] [-a] [-c <file>] [-e <file>]\n");
          printf("       <run1> <run2>    Range of run numbers (inclusive)\n");
          printf
              ("       <varname>        ODB variable name like \"/Runinfo/Run number\"\n");
          printf("       [index]          Index if <varname> is an array\n");
+         printf("       <filename>       run%05d.odb by default\n");
+         printf("       -e <file>        Extract ODB file from MID file\n");
          printf("       -q               Don't display run number\n");
          printf("       -a               Add numbers for all runs\n");
          printf("       -c               load configuration from file\n");
          printf("                        (parameters loaded from cfg file will be\n");
          printf("                        overwriten by parameters from command line)\n");
-         printf("       -e  <var1> <var2> <var3>\n");
-         printf("                        this parameter will return\n");
-         printf("                        sum(var1*var2/var3)/sum(var1)\n");
-         printf("                        summing will be done over all runs\n");
          return 0;
 
       }
+   }
+
+   if (mid_name[0]) {
+      extract(mid_name, file_name);
+      return 1;
    }
 
    if (end_run < start_run) {
@@ -439,6 +507,9 @@ int main(int argc, char *argv[])
              end_run, start_run);
       return 0;
    }
+
+   if (j == -1)
+      goto usage;
 
    /* printing of header is needed here */
    for (run = start_run; run <= end_run; run++) {
@@ -461,36 +532,8 @@ int main(int argc, char *argv[])
             break;
 
          total[k] += value[k];
+         n_files++;
       }                         /*for k */
-
-      if (weight) {
-         strcpy(var_name, e_var1);
-         var1 = 0;
-         status = odb_hist(file_name, run, var_name, quiet, &var1, 0, 0, 0);
-         if (status != SUCCESS) {
-            printf("error in -e parameter var1 \n");
-            goto usage;
-         }
-
-         strcpy(var_name, e_var2);
-         var2 = 0;
-         status = odb_hist(file_name, run, var_name, quiet, &var2, 0, 0, 0);
-         if (status != SUCCESS) {
-            printf("error in -e parameter var2\n");
-            goto usage;
-         }
-
-         strcpy(var_name, e_var3);
-         var3 = 0;
-         status = odb_hist(file_name, run, var_name, quiet, &var3, 0, 0, 0);
-         if (status != SUCCESS) {
-            printf("error in -e parameter var3\n");
-            goto usage;
-         }
-
-         sum += var1 * var2 / var3;
-         sum_var1 += var1;
-      }                         /* if weight */
    }                            /* for run */
 
    if (add) {
@@ -502,9 +545,8 @@ int main(int argc, char *argv[])
       printf("\n");
    }
 
-   if (weight) {
-      printf("weighted sum is %lf\n", sum / sum_var1);
-      printf("sum of var1 is %lf\n", sum_var1);
+   if (n_files == 0) {
+      printf("No files found in selected range\n");
    }
 
    return 1;
