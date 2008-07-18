@@ -1276,11 +1276,15 @@ void show_status_page(int refresh, char *cookie_wpwd)
    else
       sprintf(ref, "Logger/Auto restart?cmd=set");
 
-   size = sizeof(flag);
-   db_get_value(hDB, 0, "Logger/Auto restart", &flag, &size, TID_BOOL, TRUE);
-   strlcpy(str, flag ? "00FF00" : "FFFF00", sizeof(str));
-   rsprintf("<td bgcolor=#%s><a href=\"%s\">Restart: %s</a>", str, ref,
-            flag ? "Yes" : "No");
+   if (cm_exist("RunSubmit", FALSE))
+      rsprintf("<td bgcolor=#00FF00>Restart: RunSubmit");
+   else {
+     size = sizeof(flag);
+     db_get_value(hDB, 0, "Logger/Auto restart", &flag, &size, TID_BOOL, TRUE);
+     strlcpy(str, flag ? "00FF00" : "FFFF00", sizeof(str));
+     rsprintf("<td bgcolor=#%s><a href=\"%s\">Restart: %s</a>", str, ref,
+              flag ? "Yes" : "No");
+   }
 
    if (cm_exist("Logger", FALSE) != CM_SUCCESS && cm_exist("FAL", FALSE) != CM_SUCCESS)
       rsprintf("<td colspan=2 bgcolor=#FF0000>Logger not running</tr>\n");
