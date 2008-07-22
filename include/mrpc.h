@@ -48,6 +48,7 @@ routine IDs for RPC calls
 #define RPC_CM_EXIST                    11011 /**< - */
 #define RPC_CM_MSG_RETRIEVE             11012 /**< - */
 #define RPC_CM_MSG_LOG1                 11013 /**< - */
+#define RPC_CM_CHECK_CLIENT             11014 /**< - */
 
 #define RPC_BM_OPEN_BUFFER              11100 /**< - */
 #define RPC_BM_CLOSE_BUFFER             11101 /**< - */

@@ -1589,6 +1589,7 @@ extern "C" {
                                 char *host_name, char *client_name,
                                 INT computer_id, char *password, DWORD watchdog_timeout);
    INT EXPRT cm_get_client_info(char *client_name);
+   INT EXPRT cm_check_client(HNDLE hDB, HNDLE hKeyClient);
    INT EXPRT cm_set_watchdog_params(BOOL call_watchdog, DWORD timeout);
    INT EXPRT cm_get_watchdog_params(BOOL * call_watchdog, DWORD * timeout);
    INT EXPRT cm_get_watchdog_info(HNDLE hDB, char *client_name,
