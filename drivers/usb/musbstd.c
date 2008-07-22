@@ -15,9 +15,6 @@
 
 #ifdef _MSC_VER                 // Windows includes
 
-#undef HAVE_LIBUSB
-#define HAVE_LIBUSB             // use libusb also unde Windows
-
 #include <windows.h>
 #include <conio.h>
 #include <winioctl.h>
@@ -448,9 +445,11 @@ int musb_read(MUSB_INTERFACE *musb_interface, int endpoint, void *buf, int count
 #if defined(HAVE_LIBUSB)
 
    n_read = usb_bulk_read(musb_interface->dev, endpoint | 0x80, (char*)buf, count, timeout);
+   /* errors should be handled in upper layer ....
    if (n_read <= 0) {
       fprintf(stderr, "musb_read: requested %d, read %d, errno %d (%s)\n", count, n_read, errno, strerror(errno));
    }
+   */
 
 #elif defined(OS_DARWIN)
 
