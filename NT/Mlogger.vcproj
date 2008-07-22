@@ -297,6 +297,10 @@
 				</FileConfiguration>
 			</File>
 			<File
+				RelativePath=".\mlogger.rc"
+				>
+			</File>
+			<File
 				RelativePath="..\src\mrpc.c"
 				>
 				<FileConfiguration
@@ -414,7 +418,15 @@
 			Filter="h;hpp;hxx;hm;inl"
 			>
 			<File
+				RelativePath="..\include\ftplib.h"
+				>
+			</File>
+			<File
 				RelativePath="..\include\midas.h"
+				>
+			</File>
+			<File
+				RelativePath="..\include\midasinc.h"
 				>
 			</File>
 			<File
