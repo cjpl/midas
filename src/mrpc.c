@@ -54,6 +54,11 @@ static RPC_LIST rpc_list_library[] = {
      {TID_INT, RPC_IN},
      {0}}},
 
+   {RPC_CM_CHECK_CLIENT, "cm_check_client",
+    {{TID_INT, RPC_IN},
+     {TID_INT, RPC_IN},
+     {0}}},
+
    {RPC_CM_SET_WATCHDOG_PARAMS, "cm_set_watchdog_params",
     {{TID_BOOL, RPC_IN},
      {TID_INT, RPC_IN},

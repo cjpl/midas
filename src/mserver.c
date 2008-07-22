@@ -421,6 +421,10 @@ INT rpc_server_dispatch(INT index, void *prpc_param[])
                                   CSTRING(3), CINT(4), CSTRING(5), CINT(6));
       break;
 
+   case RPC_CM_CHECK_CLIENT:
+      status = cm_check_client(CHNDLE(0), CHNDLE(1));
+      break;
+
    case RPC_CM_SET_WATCHDOG_PARAMS:
       status = cm_set_watchdog_params(CBOOL(0), CINT(1));
       break;

@@ -1326,8 +1326,11 @@ that client from the /system/client tree.
 */
 INT cm_check_client(HNDLE hDB, HNDLE hKeyClient)
 {
-#ifdef LOCAL_ROUTINES
+   if (rpc_is_remote())
+      return rpc_call(RPC_CM_CHECK_CLIENT, hDB, hKeyClient);
 
+#ifdef LOCAL_ROUTINES
+{
    KEY key;
    DATABASE_HEADER *pheader;
    DATABASE_CLIENT *pclient;
@@ -1384,7 +1387,7 @@ INT cm_check_client(HNDLE hDB, HNDLE hKeyClient)
    }
 
    db_unlock_database(hDB);
-
+}
 #endif                          /*LOCAL_ROUTINES */
 
    return CM_SUCCESS;
