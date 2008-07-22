@@ -211,7 +211,7 @@ int mscbbus_init(HNDLE hkey, void **pinfo)
       return FE_ERR_HW;
 
    /* check if scs_210 is alive */
-   status = mscb_addr(info->fd, MCMD_PING16, info->settings.address, 1, 1);
+   status = mscb_addr(info->fd, MCMD_PING16, info->settings.address, 1);
    if (status != MSCB_SUCCESS) {
       if (status == MSCB_MUTEX)
          printf("MSCB used by other process\n");
