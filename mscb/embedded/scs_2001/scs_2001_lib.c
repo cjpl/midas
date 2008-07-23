@@ -68,7 +68,8 @@ MSCB_INFO_VAR code vars_iout[] =
 
 MSCB_INFO_VAR code vars_lhe[] = {
    { 4, UNIT_AMPERE,  PRFX_MILLI, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "P%Excit", (void xdata *)0, 1, 0, 100,  1 },
-   { 4, UNIT_AMPERE,  PRFX_MILLI, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "P%IOfs",  (void xdata *)0, 2 },
+   { 4, UNIT_PERCENT, 0,          0, MSCBF_FLOAT | MSCBF_HIDDEN, "P%LOfs",  (void xdata *)0, 2 },
+   { 4, UNIT_FACTOR,  0,          0, MSCBF_FLOAT | MSCBF_HIDDEN, "P%LGain",  (void xdata *)0, 2 },
    { 2, UNIT_SECOND,  0,          0, MSCBF_HIDDEN, "P%Toff",  (void xdata *)0, 0 },
    { 2, UNIT_SECOND,  0,          0, MSCBF_HIDDEN, "P%Ton",   (void xdata *)0, 0 },
 
@@ -1436,7 +1437,8 @@ float c;
 /*---- Liquid helium level meter --------*/
 
 static float xdata lhe_excit[N_PORT];
-static float xdata lhe_iofs[N_PORT];
+static float xdata lhe_ofs[N_PORT];
+static float xdata lhe_gain[N_PORT];
 static unsigned short xdata lhe_toff[N_PORT];
 static unsigned short xdata lhe_ton[N_PORT];
 static unsigned long xdata lhe_last[N_PORT];
@@ -1461,12 +1463,15 @@ unsigned char i, idx;
          lhe_excit[idx] = 75;
          *((float *)pd) = 75;
       } else if (chn == 1) {
-         lhe_iofs[idx] = 0;
+         lhe_ofs[idx] = 0;
          *((float *)pd) = 0;
       } else if (chn == 2) {
+         lhe_gain[idx] = 1;
+         *((float *)pd) = 1;
+      } else if (chn == 3) {
          lhe_toff[idx] = 60;
          *((unsigned short *)pd) = 60;
-      } else if (chn == 3) {
+      } else if (chn == 4) {
          lhe_ton[idx] = 5;
          *((unsigned short *)pd) = 5;
       }
@@ -1516,10 +1521,12 @@ unsigned char i, idx;
       if (chn == 0 && *((float *)pd) > 0)
          lhe_excit[idx] = *((float *)pd);
       else if (chn == 1)
-         lhe_iofs[idx] = *((float *)pd);
+         lhe_ofs[idx] = *((float *)pd);
       else if (chn == 2)
-         lhe_toff[idx] = *((unsigned short *)pd);
+         lhe_gain[idx] = *((float *)pd);
       else if (chn == 3)
+         lhe_toff[idx] = *((unsigned short *)pd);
+      else if (chn == 4)
          lhe_ton[idx] = *((unsigned short *)pd);
 
       if (chn > 0)
@@ -1527,8 +1534,6 @@ unsigned char i, idx;
 
       value = *((float *)pd);
    
-      /* offset correction */
-      value -= lhe_iofs[idx];
       if (value < 0)
          value = 0;
       if (value > 100)
@@ -1572,12 +1577,15 @@ unsigned char i, idx;
          *((float *)pd) = lhe_excit[idx];
          return 4;
       } else if (chn == 1) {
-         *((float *)pd) = lhe_iofs[idx];
+         *((float *)pd) = lhe_ofs[idx];
          return 4;
       } else if (chn == 2) {
+         *((float *)pd) = lhe_gain[idx];
+         return 4;
+      } else if (chn == 3) {
          *((unsigned short *)pd) = lhe_toff[idx];
          return 2;
-      } else if (chn == 3) {
+      } else if (chn == 4) {
          *((unsigned short *)pd) = lhe_ton[idx];
          return 2;
       }
@@ -1609,6 +1617,9 @@ unsigned char i, idx;
 
       /* convert to fill level (0%=0Ohm, 100%=270Ohm, 4.5Ohm/cm) */
       value = 100 - (value / 2.7);
+
+      /* apply calibration */
+      value = (value - lhe_ofs[idx]) * lhe_gain[idx];
 
       /* round result to significant digits */
       value = ((long)(value*1E5+0.5))/1E5;
