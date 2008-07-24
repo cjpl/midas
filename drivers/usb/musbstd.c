@@ -172,9 +172,15 @@ int musb_open(MUSB_INTERFACE **musb_interface, int vendor, int product, int inst
                   fprintf(stderr, "musb_open: usb_claim_interface() error %d (%s)\n", status,
                      strerror(-status));
 
+#ifdef _MSC_VER
+                  fprintf(stderr,
+                     "musb_open: Found USB device 0x%04x:0x%04x instance %d, but cannot initialize it:\nDevice is probably used by another program\n",
+                     vendor, product, instance);
+#else
                   fprintf(stderr,
                      "musb_open: Found USB device 0x%04x:0x%04x instance %d, but cannot initialize it: please check permissions on \"/proc/bus/usb/%s/%s\"\n",
                      vendor, product, instance, bus->dirname, dev->filename);
+#endif
 
                   return MUSB_ACCESS_ERROR;
                }
