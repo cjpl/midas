@@ -405,58 +405,68 @@ void external_int1(void) interrupt 2
 
 void user_write(unsigned char index) reentrant
 {
+   unsigned char a;
+
+   a = cur_sub_addr();
+
    if (index == 0) {
       /* main HV switch on/off */
-      if (user_data[cur_sub_addr()].control & CONTROL_HV_ON)
-         hv_on(cur_sub_addr(), 1);
+      if (user_data[a].control & CONTROL_HV_ON)
+         hv_on(a, 1);
       else {
-         hv_on(cur_sub_addr(), 0);
+         hv_on(a, 0);
 
-         u_actual[cur_sub_addr()] = 0;
-         user_data[cur_sub_addr()].u_dac = 0;
+         u_actual[a] = 0;
+         user_data[a].u_dac = 0;
    
          /* stop possible ramping */
-         chn_bits[cur_sub_addr()] &= ~DEMAND_CHANGED;
-         chn_bits[cur_sub_addr()] &= ~RAMP_UP;
-         chn_bits[cur_sub_addr()] &= ~RAMP_DOWN;
-         user_data[cur_sub_addr()].status &= ~(STATUS_RAMP_UP | STATUS_RAMP_DOWN);
+         chn_bits[a] &= ~DEMAND_CHANGED;
+         chn_bits[a] &= ~RAMP_UP;
+         chn_bits[a] &= ~RAMP_DOWN;
+         user_data[a].status &= ~(STATUS_RAMP_UP | STATUS_RAMP_DOWN);
       }
    }
 
-   if (index == 1) {
-      /* indicate new demand voltage */
-      chn_bits[cur_sub_addr()] |= DEMAND_CHANGED;
-   }
+   /* indicated changed demand if no current trip */
+   if (index == 1 && ((user_data[a].status & STATUS_ILIMIT) == 0))
+      chn_bits[a] |= DEMAND_CHANGED;
 
-   if (index == 0 || index == 1 || index == 5) {
+   /* reset trip on main switch, trip reset and on demand = 0 */
+   if (index == 0 || 
+       (index == 1 && user_data[a].u_demand == 0) ||
+       index == 5) {
       /* reset trip */
-      user_data[cur_sub_addr()].status &= ~STATUS_ILIMIT;
+      user_data[a].status &= ~STATUS_ILIMIT;
+
+      /* reset trip count if not addressed directly */
+      if (index != 5)
+         user_data[a].trip_cnt = 0;
 
       /* reset trip in main loop */
-      if (cur_sub_addr() == 0)
+      if (a == 0)
          trip0_reset = 1;
       else
          trip1_reset = 1;
 
       /* indicate new demand voltage */
-      chn_bits[cur_sub_addr()] |= DEMAND_CHANGED;
+      chn_bits[a] |= DEMAND_CHANGED;
    }
 
    /* re-check voltage limit */
    if (index == 8) {
-      if (user_data[cur_sub_addr()].u_limit > MAX_VOLTAGE)
-         user_data[cur_sub_addr()].u_limit = MAX_VOLTAGE;
+      if (user_data[a].u_limit > MAX_VOLTAGE)
+         user_data[a].u_limit = MAX_VOLTAGE;
 
-      chn_bits[cur_sub_addr()] |= DEMAND_CHANGED;
+      chn_bits[a] |= DEMAND_CHANGED;
    }
 
    /* check current limit */
    if (index == 9) {
-      if (user_data[cur_sub_addr()].i_limit > MAX_CURRENT &&
-          user_data[cur_sub_addr()].i_limit != 9999)
-         user_data[cur_sub_addr()].i_limit = MAX_CURRENT;
+      if (user_data[a].i_limit > MAX_CURRENT &&
+          user_data[a].i_limit != 9999)
+         user_data[a].i_limit = MAX_CURRENT;
 
-      chn_bits[cur_sub_addr()] |= CUR_LIMIT_CHANGED;
+      chn_bits[a] |= CUR_LIMIT_CHANGED;
    }
 }
 
