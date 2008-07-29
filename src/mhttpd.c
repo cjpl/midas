@@ -815,6 +815,10 @@ void show_header(HNDLE hDB, char *title, char *method, char *path, int colspan,
    rsprintf("<!DOCTYPE HTML PUBLIC \"-//IETF//DTD HTML 2.0//EN\">\n");
    rsprintf("<html><head>\n");
 
+   /* style sheet */
+   rsprintf("<link rel=\"icon\" href=\"favicon.png\" type=\"image/png\" />\n");
+   rsprintf("<link rel=\"stylesheet\" href=\"mhttpd.css\" type=\"text/css\" />\n");
+
    /* auto refresh */
    if (refresh > 0)
       rsprintf("<meta http-equiv=\"Refresh\" content=\"%02d\">\n", refresh);
@@ -864,7 +868,9 @@ void show_error(char *error)
    rsprintf("Server: MIDAS HTTP %d\r\n", cm_get_revision());
    rsprintf("Content-Type: text/html; charset=iso-8859-1\r\n\r\n");
 
-   rsprintf("<html><head><title>MIDAS error</title></head>\n");
+   rsprintf("<html><head>\n");
+   rsprintf("<link rel=\"stylesheet\" href=\"mhttpd.css\" type=\"text/css\" />\n");
+   rsprintf("<title>MIDAS error</title></head>\n");
    rsprintf("<body><H1>%s</H1></body></html>\n", error);
 }
 
@@ -1008,6 +1014,9 @@ void show_status_page(int refresh, char *cookie_wpwd)
    /* auto refresh */
    if (refresh > 0)
       rsprintf("<head><meta http-equiv=\"Refresh\" content=\"%02d\">\n", refresh);
+
+   rsprintf("<link rel=\"icon\" href=\"favicon.png\" type=\"image/png\" />\n");
+   rsprintf("<link rel=\"stylesheet\" href=\"mhttpd.css\" type=\"text/css\" />\n");
 
    rsprintf("<title>MIDAS status</title></head>\n");
    rsprintf("<body><form method=\"GET\" action=\".\">\n");
@@ -1677,6 +1686,9 @@ void show_messages_page(int refresh, int n_message)
 
    rsprintf("<html><head>\n");
 
+   rsprintf("<link rel=\"icon\" href=\"favicon.png\" type=\"image/png\" />\n");
+   rsprintf("<link rel=\"stylesheet\" href=\"mhttpd.css\" type=\"text/css\" />\n");
+
    /* auto refresh */
    if (refresh > 0)
       rsprintf("<meta http-equiv=\"Refresh\" content=\"%d\">\n\n", refresh);
@@ -1887,7 +1899,10 @@ void show_elog_new(char *path, BOOL bedit, char *odb_att, char *action_path)
    rsprintf("Server: MIDAS HTTP %d\r\n", cm_get_revision());
    rsprintf("Content-Type: text/html; charset=iso-8859-1\r\n\r\n");
 
-   rsprintf("<html><head><title>MIDAS ELog</title></head>\n");
+   rsprintf("<html><head>\n");
+   rsprintf("<link rel=\"icon\" href=\"favicon.png\" type=\"image/png\" />\n");
+   rsprintf("<link rel=\"stylesheet\" href=\"mhttpd.css\" type=\"text/css\" />\n");
+   rsprintf("<title>MIDAS ELog</title></head>\n");
    rsprintf
        ("<body><form method=\"POST\" action=\"%s\" enctype=\"multipart/form-data\">\n", action_path);
 
@@ -2133,7 +2148,10 @@ void show_elog_query()
    rsprintf("Server: MIDAS HTTP %d\r\n", cm_get_revision());
    rsprintf("Content-Type: text/html; charset=iso-8859-1\r\n\r\n");
 
-   rsprintf("<html><head><title>MIDAS ELog</title></head>\n");
+   rsprintf("<html><head>\n");
+   rsprintf("<link rel=\"icon\" href=\"favicon.png\" type=\"image/png\" />\n");
+   rsprintf("<link rel=\"stylesheet\" href=\"mhttpd.css\" type=\"text/css\" />\n");
+   rsprintf("<title>MIDAS ELog</title></head>\n");
    rsprintf("<body><form method=\"GET\" action=\"./\">\n");
 
    /* define hidden field for experiment */
@@ -2367,7 +2385,10 @@ void show_elog_submit_query(INT last_n)
    rsprintf("Server: MIDAS HTTP %d\r\n", cm_get_revision());
    rsprintf("Content-Type: text/html; charset=iso-8859-1\r\n\r\n");
 
-   rsprintf("<html><head><title>MIDAS ELog</title></head>\n");
+   rsprintf("<html><head>\n");
+   rsprintf("<link rel=\"icon\" href=\"favicon.png\" type=\"image/png\" />\n");
+   rsprintf("<link rel=\"stylesheet\" href=\"mhttpd.css\" type=\"text/css\" />\n");
+   rsprintf("<title>MIDAS ELog</title></head>\n");
    rsprintf("<body><form method=\"GET\" action=\"./\">\n");
 
    /* define hidden field for experiment */
@@ -2814,7 +2835,10 @@ void show_rawfile(char *path)
    rsprintf("Server: MIDAS HTTP %d\r\n", cm_get_revision());
    rsprintf("Content-Type: text/html; charset=iso-8859-1\r\n\r\n");
 
-   rsprintf("<html><head><title>MIDAS File Display %s</title></head>\n", path);
+   rsprintf("<html><head>\n");
+   rsprintf("<link rel=\"icon\" href=\"favicon.png\" type=\"image/png\" />\n");
+   rsprintf("<link rel=\"stylesheet\" href=\"mhttpd.css\" type=\"text/css\" />\n");
+   rsprintf("<title>MIDAS File Display %s</title></head>\n", path);
    rsprintf("<body><form method=\"GET\" action=\"./%s\">\n", path);
 
    /* define hidden field for experiment */
@@ -2946,7 +2970,10 @@ void show_form_query()
    rsprintf("Server: MIDAS HTTP %d\r\n", cm_get_revision());
    rsprintf("Content-Type: text/html; charset=iso-8859-1\r\n\r\n");
 
-   rsprintf("<html><head><title>MIDAS ELog</title></head>\n");
+   rsprintf("<html><head>\n");
+   rsprintf("<link rel=\"icon\" href=\"favicon.png\" type=\"image/png\" />\n");
+   rsprintf("<link rel=\"stylesheet\" href=\"mhttpd.css\" type=\"text/css\" />\n");
+   rsprintf("<title>MIDAS ELog</title></head>\n");
    rsprintf("<body><form method=\"GET\" action=\"./\">\n");
 
    if (*getparam("form") == 0)
@@ -3171,7 +3198,10 @@ void submit_elog()
       rsprintf("Server: MIDAS HTTP %d\r\n", cm_get_revision());
       rsprintf("Content-Type: text/html; charset=iso-8859-1\r\n\r\n");
 
-      rsprintf("<html><head><title>ELog Error</title></head>\n");
+      rsprintf("<html><head>\n");
+      rsprintf("<link rel=\"icon\" href=\"favicon.png\" type=\"image/png\" />\n");
+      rsprintf("<link rel=\"stylesheet\" href=\"mhttpd.css\" type=\"text/css\" />\n");
+      rsprintf("<title>ELog Error</title></head>\n");
       rsprintf("<i>Error: No author supplied.</i><p>\n");
       rsprintf("Please go back and enter your name in the <i>author</i> field.\n");
       rsprintf("<body></body></html>\n");
@@ -3243,7 +3273,10 @@ void submit_elog()
             rsprintf("Server: MIDAS HTTP %d\r\n", cm_get_revision());
             rsprintf("Content-Type: text/html; charset=iso-8859-1\r\n\r\n");
 
-            rsprintf("<html><head><title>ELog Error</title></head>\n");
+            rsprintf("<html><head>\n");
+            rsprintf("<link rel=\"icon\" href=\"favicon.png\" type=\"image/png\" />\n");
+            rsprintf("<link rel=\"stylesheet\" href=\"mhttpd.css\" type=\"text/css\" />\n");
+            rsprintf("<title>ELog Error</title></head>\n");
             rsprintf("<i>Error: Attachment file <i>%s</i> not valid.</i><p>\n",
                      getparam(str));
             rsprintf
@@ -3391,7 +3424,10 @@ void submit_form()
       rsprintf("Server: MIDAS HTTP %d\r\n", cm_get_revision());
       rsprintf("Content-Type: text/html; charset=iso-8859-1\r\n\r\n");
 
-      rsprintf("<html><head><title>ELog Error</title></head>\n");
+      rsprintf("<html><head>\n");
+      rsprintf("<link rel=\"icon\" href=\"favicon.png\" type=\"image/png\" />\n");
+      rsprintf("<link rel=\"stylesheet\" href=\"mhttpd.css\" type=\"text/css\" />\n");
+      rsprintf("<title>ELog Error</title></head>\n");
       rsprintf("<i>Error: No author supplied.</i><p>\n");
       rsprintf("Please go back and enter your name in the <i>author</i> field.\n");
       rsprintf("<body></body></html>\n");
@@ -3789,7 +3825,10 @@ void show_elog_page(char *path, int path_size)
    rsprintf("Server: MIDAS HTTP %d\r\n", cm_get_revision());
    rsprintf("Content-Type: text/html; charset=iso-8859-1\r\n\r\n");
 
-   rsprintf("<html><head><title>MIDAS ELog - %s</title></head>\n", subject);
+   rsprintf("<html><head>\n");
+   rsprintf("<link rel=\"icon\" href=\"favicon.png\" type=\"image/png\" />\n");
+   rsprintf("<link rel=\"stylesheet\" href=\"mhttpd.css\" type=\"text/css\" />\n");
+   rsprintf("<title>MIDAS ELog - %s</title></head>\n", subject);
    rsprintf("<body><form method=\"GET\" action=\"../EL/%s\">\n", str);
 
    /* define hidden field for experiment */
@@ -5446,7 +5485,10 @@ void show_cnaf_page()
    rsprintf("Server: MIDAS HTTP %d\r\n", cm_get_revision());
    rsprintf("Content-Type: text/html; charset=iso-8859-1\r\n\r\n");
 
-   rsprintf("<html><head><title>MIDAS CAMAC interface</title></head>\n");
+   rsprintf("<html><head>\n");
+   rsprintf("<link rel=\"icon\" href=\"favicon.png\" type=\"image/png\" />\n");
+   rsprintf("<link rel=\"stylesheet\" href=\"mhttpd.css\" type=\"text/css\" />\n");
+   rsprintf("<title>MIDAS CAMAC interface</title></head>\n");
    rsprintf("<body><form method=\"GET\" action=\"CNAF\">\n\n");
 
    /* title row */
@@ -5639,6 +5681,8 @@ void show_experiment_page(char exp_list[MAX_EXPERIMENT][NAME_LENGTH])
 
    rsprintf("<html>\n");
    rsprintf("<head>\n");
+   rsprintf("<link rel=\"icon\" href=\"favicon.png\" type=\"image/png\" />\n");
+   rsprintf("<link rel=\"stylesheet\" href=\"mhttpd.css\" type=\"text/css\" />\n");
    rsprintf("<title>MIDAS Experiment Selection</title>\n");
    rsprintf("</head>\n\n");
 
@@ -5664,7 +5708,10 @@ void show_password_page(char *password, char *experiment)
    rsprintf("Server: MIDAS HTTP %d\r\n", cm_get_revision());
    rsprintf("Content-Type: text/html; charset=iso-8859-1\r\n\r\n");
 
-   rsprintf("<html><head><title>Enter password</title></head><body>\n\n");
+   rsprintf("<html><head>\n");
+   rsprintf("<link rel=\"icon\" href=\"favicon.png\" type=\"image/png\" />\n");
+   rsprintf("<link rel=\"stylesheet\" href=\"mhttpd.css\" type=\"text/css\" />\n");
+   rsprintf("<title>Enter password</title></head><body>\n\n");
 
    rsprintf("<form method=\"GET\" action=\".\">\n\n");
 
@@ -5709,7 +5756,10 @@ BOOL check_web_password(char *password, char *redir, char *experiment)
       rsprintf("Server: MIDAS HTTP %d\r\n", cm_get_revision());
       rsprintf("Content-Type: text/html; charset=iso-8859-1\r\n\r\n");
 
-      rsprintf("<html><head><title>Enter password</title></head><body>\n\n");
+      rsprintf("<html><head>\n");
+      rsprintf("<link rel=\"icon\" href=\"favicon.png\" type=\"image/png\" />\n");
+      rsprintf("<link rel=\"stylesheet\" href=\"mhttpd.css\" type=\"text/css\" />\n");
+      rsprintf("<title>Enter password</title></head><body>\n\n");
 
       rsprintf("<form method=\"GET\" action=\".\">\n\n");
 
@@ -6575,6 +6625,8 @@ void show_alarm_page()
    rsprintf("Content-Type: text/html; charset=iso-8859-1\r\n\r\n");
 
    rsprintf("<html><head>\n");
+   rsprintf("<link rel=\"icon\" href=\"favicon.png\" type=\"image/png\" />\n");
+   rsprintf("<link rel=\"stylesheet\" href=\"mhttpd.css\" type=\"text/css\" />\n");
    rsprintf("<title>Alarms</title></head>\n");
    rsprintf("<body>\n");
 
@@ -10819,6 +10871,51 @@ void send_favicon(char *icon)
 
 /*------------------------------------------------------------------*/
 
+char mhttpd_css[] = "body {\
+  margin:3px;\
+  color:black;\
+  background-color:white;\
+  font-family:verdana,tahoma,sans-serif;\
+}\
+\
+/* standard link colors and decorations */\
+a:link { color:#0000FF; text-decoration:none }\
+a:visited { color:#800080; text-decoration:none }\
+a:hover { color:#0000FF; text-decoration:underline }\
+a:active { color:#0000FF; text-decoration:underline }\
+a:focus { color:#0000FF; text-decoration:underline }\
+";
+
+
+void send_css()
+{
+   int length;
+   char str[256], format[256];
+   time_t now;
+   struct tm *gmt;
+
+   rsprintf("HTTP/1.1 200 Document follows\r\n");
+   rsprintf("Server: MIDAS HTTP %d\r\n", cm_get_revision());
+   rsprintf("Accept-Ranges: bytes\r\n");
+
+   /* set expiration time to one day */
+   time(&now);
+   now += (int) (3600 * 24);
+   gmt = gmtime(&now);
+   strcpy(format, "%A, %d-%b-%y %H:%M:%S GMT");
+   strftime(str, sizeof(str), format, gmt);
+   rsprintf("Expires: %s\r\n", str);
+   rsprintf("Content-Type: text/css\r\n");
+
+   length = strlen(mhttpd_css);
+   rsprintf("Content-Length: %d\r\n\r\n", length);
+
+   return_length = strlen(return_buffer) + length;
+   memcpy(return_buffer + strlen(return_buffer), mhttpd_css, length);
+}
+
+/*------------------------------------------------------------------*/
+
 void interprete(char *cookie_pwd, char *cookie_wpwd, char *cookie_cpwd, char *path, int refresh)
 /********************************************************************\
 
@@ -10849,6 +10946,11 @@ void interprete(char *cookie_pwd, char *cookie_wpwd, char *cookie_cpwd, char *pa
 
    if (equal_ustring(path, "favicon.ico") || equal_ustring(path, "favicon.png")) {
       send_favicon(path);
+      return;
+   }
+
+   if (strstr(path, "mhttpd.css")) {
+      send_css(path);
       return;
    }
 
