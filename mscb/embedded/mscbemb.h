@@ -290,6 +290,9 @@ sbit RS485_SEC_ENABLE = P0 ^ 4;
 #define LED_ON 1
 sbit RS485_ENABLE = P0 ^ 5;
 
+#define EXT_WATCHDOG              // use external watchdog
+sbit EXT_WATCHDOG_PIN = P0 ^ 4;
+
 /*--------------------------------*/
 #elif defined(HVR_400)
 #include <c8051F310.h>

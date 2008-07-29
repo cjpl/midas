@@ -217,6 +217,7 @@ extern SYS_INFO idata sys_info;
 void user_init(unsigned char init)
 {
    unsigned char i;
+   unsigned short value;
 
    /* configure crossbar */
    SFRPAGE = CONFIG_PAGE;
@@ -242,7 +243,7 @@ void user_init(unsigned char init)
 
    SFRPAGE = CONFIG_PAGE;
 
-   P0MDOUT = 0x01;  // P0.0: TX = Push Pull
+   P0MDOUT = 0x11;  // P0.0: TX = Push Pull, P0.4: WD
    P1MDOUT = 0x00;  // all open drain
    P2MDOUT = 0x60;  // P2.5/6: HV_POWER
    P3MDOUT = 0x00;
@@ -250,32 +251,32 @@ void user_init(unsigned char init)
    /* initial nonzero EEPROM values */
    if (init) {
       for (i=0 ; i<N_HV_CHN ; i++) {
-         user_data[i].u_demand = 0;
-         user_data[i].trip_cnt = 0;
-         user_data[i].ramp_up = 300;
-         user_data[i].ramp_down = 300;
-         user_data[i].u_limit = MAX_VOLTAGE;
-         user_data[i].i_limit = MAX_CURRENT;
-         user_data[i].ri_limit = MAX_CURRENT;
-         user_data[i].trip_max = 0;
-         user_data[i].trip_time = 10;
+         user_data[i].u_demand   = 0;
+         user_data[i].trip_cnt   = 0;
+         user_data[i].ramp_up    = 100;
+         user_data[i].ramp_down  = 100;
+         user_data[i].u_limit    = MAX_VOLTAGE;
+         user_data[i].i_limit    = MAX_CURRENT;
+         user_data[i].ri_limit   = MAX_CURRENT;
+         user_data[i].trip_max   = 0;
+         user_data[i].trip_time  = 10;
 
-         user_data[i].adc_gain = 1;
+         user_data[i].adc_gain   = 1;
          user_data[i].adc_offset = 0;
-         user_data[i].dac_gain = 1;
+         user_data[i].dac_gain   = 1;
          user_data[i].dac_offset = 0;
-         user_data[i].cur_vgain = 0;
-         user_data[i].cur_gain = 1;
+         user_data[i].cur_vgain  = 0;
+         user_data[i].cur_gain   = 1;
          user_data[i].cur_offset = 0;
       }
    }
 
    /* default control register */
    for (i=0 ; i<N_HV_CHN ; i++) {
-      user_data[i].control = CONTROL_REGULATION;
-      user_data[i].status = 0;
-      user_data[i].u_demand = 0;
-      user_data[i].trip_cnt = 0;
+      user_data[i].control       = CONTROL_REGULATION;
+      user_data[i].status        = 0;
+      user_data[i].u_demand      = 0;
+      user_data[i].trip_cnt      = 0;
 
       /* check maximum ratings */
       if (user_data[i].u_limit > MAX_VOLTAGE)
@@ -303,13 +304,47 @@ void user_init(unsigned char init)
    hv_on(0, 0);
    hv_on(1, 0);
 
-   /* HV power on */
+   /* HV power reset */
+   HV1_POWER = 0;
+   HV2_POWER = 0;
+
+   delay_ms(400);
+
    HV1_POWER = 1;
    HV2_POWER = 1;
 
    /* set default group address */
    if (sys_info.group_addr == 0xFFFF)
       sys_info.group_addr = 200;
+
+   /* get address from crate backplane read through internal ADC */
+   SFRPAGE = LEGACY_PAGE;
+   REF0CN  = 0x03;           // use internal voltage reference
+   AMX0CF  = 0x00;           // select single ended analog inputs
+   ADC0CF  = 0x98;           // ADC Clk 2.5 MHz @ 98 MHz, gain 1
+   ADC0CN  = 0x80;           // enable ADC 
+
+   SFRPAGE = ADC0_PAGE;
+   sys_info.node_addr = 0;
+   for (i=0 ; i<7 ; i++) {
+      AMX0SL  = i;           // set multiplexer
+      delay_ms(10);          // wait for settling time
+
+      DISABLE_INTERRUPTS;
+     
+      AD0INT = 0;
+      AD0BUSY = 1;
+      while (!AD0INT);   // wait until conversion ready
+   
+      ENABLE_INTERRUPTS;
+
+      value = ADC0L | (ADC0H << 8);
+      if (value > 1000)
+         sys_info.node_addr |= (1 << i);
+   }
+
+   /* each unit contains two addresses */
+   sys_info.node_addr <<= 1;
 
    /* set-up DAC & ADC */
    ADC_NRDY = 1; // input
