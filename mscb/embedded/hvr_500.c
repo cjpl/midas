@@ -357,7 +357,7 @@ void user_write(unsigned char index) reentrant
       chn_bits[a] |= DEMAND_CHANGED;
    }
 
-   /* indicated changed demand if no on current trip */
+   /* indicated changed demand if no current trip */
    if (index == 1 && ((user_data[a].status & STATUS_ILIMIT) == 0))
       chn_bits[a] |= DEMAND_CHANGED;
 
