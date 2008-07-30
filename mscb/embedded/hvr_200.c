@@ -375,12 +375,17 @@ void user_init(unsigned char init)
 
 void external_int0(void) interrupt 0
 {
-   /* turn off HV */
-   HV1_OFF = 1;
+   /* wait 10 us to see if trip is "real" */
+   DELAY_US(10);
 
-   /* remember trip */
-   trip0 = 1;
-   trip_time[0] = time();
+   if (HV1_TRIP == 0) {
+      /* turn off HV */
+      HV1_OFF = 1;
+   
+      /* remember trip */
+      trip0 = 1;
+      trip_time[0] = time();
+   }
 
    /* clear interrupt flag */
    IE0 = 0;
@@ -388,12 +393,17 @@ void external_int0(void) interrupt 0
 
 void external_int1(void) interrupt 2
 {
-   /* turn off HV */
-   HV2_OFF = 1;
+   /* wait 10 us to see if trip is "real" */
+   DELAY_US(10);
 
-   /* remember trip */
-   trip1 = 1;
-   trip_time[1] = time();
+   if (HV2_TRIP == 0) {
+      /* turn off HV */
+      HV2_OFF = 1;
+   
+      /* remember trip */
+      trip1 = 1;
+      trip_time[1] = time();
+   }
 
    /* clear interrupt flag */
    IE1 = 0;
@@ -1099,7 +1109,10 @@ void check_trip(unsigned char channel)
 
    } else {
 
-      /* turn on interrupt if trip enabled and voltage over instable limit */
+      /* turn on interrupt if 
+         trip enabled and 
+         voltage over instable limit and 
+         trip limit change more than 1s ago */
       if (trip1_enabled && user_data[1].u_meas >= 100 && 
           time() > trip_change[1]+100) {
 
@@ -1134,6 +1147,39 @@ void check_trip(unsigned char channel)
 
 void check_current(unsigned char channel)
 {
+   /* check trip signal now in case interrupt did not get through */
+   if (trip0_enabled && user_data[0].u_meas >= 100 &&  
+       time() > trip_change[0]+100) {
+      if (HV1_TRIP == 0) {
+         DELAY_US(10);
+   
+         if (HV1_TRIP == 0) {
+            /* turn off HV */
+            HV1_OFF = 1;
+         
+            /* remember trip */
+            trip0 = 1;
+            trip_time[0] = time();
+         }
+      }
+   }
+
+   if (trip1_enabled && user_data[1].u_meas >= 100 &&  
+       time() > trip_change[1]+100) {
+      if (HV2_TRIP == 0) {
+         DELAY_US(10);
+   
+         if (HV2_TRIP == 0) {
+            /* turn off HV */
+            HV2_OFF = 1;
+         
+            /* remember trip */
+            trip1 = 1;
+            trip_time[1] = time();
+         }
+      }
+   }
+   
    if ((channel == 0 && trip0) || (channel == 1 && trip1)) {
 
       /* zero output voltage */
