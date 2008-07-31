@@ -306,8 +306,10 @@ int sc_thread(void *info)
    float value;
    int *last_update;
    unsigned int current_time;
+   DWORD last_time;
 
    last_update = calloc(device_drv->channels, sizeof(int));
+   last_time = ss_millitime();
 
    do {
       /* read one channel from device */
@@ -319,7 +321,7 @@ int sc_thread(void *info)
          device_drv->mt_buffer->status = status;
          ss_mutex_release(device_drv->mutex);
 
-         //printf("TID %d: channel %d, value %f\n", ss_gettid(), current_channel, value);
+         // printf("TID %d: channel %d, value %f\n", ss_gettid(), current_channel, value);
       }
 
       /* switch to next channel in next loop */
@@ -366,6 +368,15 @@ int sc_thread(void *info)
             }
          }
       }
+
+      /* limit data rate if defined in equipment list */
+      if (current_channel == 0)
+         if (device_drv->pequipment && device_drv->pequipment->event_limit) {
+            while (ss_millitime() - last_time < (DWORD)device_drv->pequipment->event_limit &&
+                   !device_drv->stop_thread)
+               ss_sleep(10);
+            last_time = ss_millitime();
+         }
 
    } while (device_drv->stop_thread == 0);
 
