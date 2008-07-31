@@ -4726,13 +4726,13 @@ char *find_odb_tag(char *p, char *path, int *edit, char *type, char *pwd, char *
                            if (*pt == '\"') {
                               pt++;
                               while (*pt && *pt != '\"')
-                                 *pt++;
+                                 pt++;
                               if (*pt == '\"')
                                  pt++;
                               *pt = 0;
                            } else {
                               while (*pt && *pt != ' ' && *pt != '>')
-                                 *pt++;
+                                 pt++;
                               *pt = 0;
                            }
                            if (tail[0]) {
