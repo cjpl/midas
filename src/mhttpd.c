@@ -861,6 +861,17 @@ void show_header(HNDLE hDB, char *title, char *method, char *path, int colspan,
 
 /*------------------------------------------------------------------*/
 
+void show_text_header()
+{
+   rsprintf("HTTP/1.0 200 Document follows\r\n");
+   rsprintf("Server: MIDAS HTTP %d\r\n", cm_get_revision());
+   rsprintf("Pragma: no-cache\r\n");
+   rsprintf("Expires: Fri, 01 Jan 1983 00:00:00 GMT\r\n");
+   rsprintf("Content-Type: text/plain; charset=iso-8859-1\r\n\r\n");
+}
+
+/*------------------------------------------------------------------*/
+
 void show_error(char *error)
 {
    /* header */
@@ -4609,11 +4620,12 @@ void show_sc_page(char *path, int refresh)
 
 /*------------------------------------------------------------------*/
 
-char *find_odb_tag(char *p, char *path, BOOL * edit, char *type, char *pwd)
+char *find_odb_tag(char *p, char *path, int *edit, char *type, char *pwd, char *tail)
 {
-   char str[256], *ps;
+   char str[256], *ps, *pt;
 
    *edit = 0;
+   *tail = 0;
    pwd[0] = 0;
    strcpy(type, "text");
    do {
@@ -4707,6 +4719,30 @@ char *find_odb_tag(char *p, char *path, BOOL * edit, char *type, char *pwd)
                               *pwd++ = *p++;
                            *pwd = 0;
                         }
+                     } else {
+                        if (strchr(p, '=')) {
+                           strlcpy(str, p, sizeof(str));
+                           pt = strchr(str, '=')+1;
+                           if (*pt == '\"') {
+                              pt++;
+                              while (*pt && *pt != '\"')
+                                 *pt++;
+                              if (*pt == '\"')
+                                 pt++;
+                              *pt = 0;
+                           } else {
+                              while (*pt && *pt != ' ' && *pt != '>')
+                                 *pt++;
+                              *pt = 0;
+                           }
+                           if (tail[0]) {
+                              strlcat(tail, " ", 256);
+                              strlcat(tail, str, 256);
+                           } else {
+                              strlcat(tail, str, 256);
+                           }
+                           p += strlen(str);
+                        }
                      }
                   }
                }
@@ -4733,7 +4769,7 @@ char *find_odb_tag(char *p, char *path, BOOL * edit, char *type, char *pwd)
 
 /*------------------------------------------------------------------*/
 
-void show_odb_tag(char *path, char *keypath, int n_var, BOOL bedit, char *type, char *pwd)
+void show_odb_tag(char *path, char *keypath, int n_var, int edit, char *type, char *pwd, char *tail)
 {
    int size, index, i_edit, i_set;
    char str[TEXT_SIZE], data[TEXT_SIZE], options[1000], *p;
@@ -4780,32 +4816,44 @@ void show_odb_tag(char *path, char *keypath, int n_var, BOOL bedit, char *type, 
             i_set = atoi(getparam("cbi"));
          if (n_var == i_set) {
             /* toggle state */
-            if (str[0] == 'y')
-               strcpy(str, "n");
-            else
-               strcpy(str, "y");
+            if (key.type == TID_BOOL) {
+               if (str[0] == 'y')
+                  strcpy(str, "n");
+               else
+                  strcpy(str, "y");
+            } else {
+               if (atoi(str) > 0)
+                  strcpy(str, "0");
+               else
+                  strcpy(str, "1");
+            }
 
             db_sscanf(str, data, &size, 0, key.type);
             db_set_data_index(hDB, hkey, data, size, index, key.type);
          }
 
          options[0] = 0;
-         if (str[0] == 'y')
-            strcat(options, " checked");
-         if (!bedit)
-            strcat(options, " disabled");
+         if (str[0] == 'y' || atoi(str) > 0)
+            strcat(options, "checked ");
+         if (!edit)
+            strcat(options, "disabled ");
          else {
-            strlcat(options, " onClick=\"o=document.createElement('input');o.type='hidden';o.name='cbi';o.value='", sizeof(options));
-            sprintf(options+strlen(options), "%d", n_var);
-            strlcat(options, "';document.form1.appendChild(o);", sizeof(options));
-            strlcat(options, "document.form1.submit();\"", sizeof(options));
+            if (edit == 1) {
+               strlcat(options, "onClick=\"o=document.createElement('input');o.type='hidden';o.name='cbi';o.value='", sizeof(options));
+               sprintf(options+strlen(options), "%d", n_var);
+               strlcat(options, "';document.form1.appendChild(o);", sizeof(options));
+               strlcat(options, "document.form1.submit();\" ", sizeof(options));
+            }
          }
+
+         if (tail[0])
+            strlcat(options, tail, sizeof(options));
 
          rsprintf("<input type=\"checkbox\" %s>\n", options);
       
       } else { // checkbox
       
-         if (bedit) {
+         if (edit) {
             if (n_var == i_set) {
                /* set value */
                strlcpy(str, getparam("value"), sizeof(str));
@@ -4825,14 +4873,24 @@ void show_odb_tag(char *path, char *keypath, int n_var, BOOL bedit, char *type, 
                rsprintf("<input type=hidden name=index value=%d>\n", n_var);
                rsprintf("<input type=hidden name=cmd value=Set>\n");
             } else {
-               if (exp_name[0])
-                  rsprintf("<a href=\"%s?exp=%s&cmd=Edit&index=%d\">", path, exp_name,
-                           n_var);
-               else {
-                  if (pwd[0]) {
-                     rsprintf("<a onClick=\"promptpwd('%s?cmd=Edit&index=%d&pnam=%s')\" href=\"#\">", path, n_var, pwd);
+               if (edit == 2) {
+                  /* edit handling through user supplied JavaScript */
+                  rsprintf("<a href=\"#\" %s>", tail);
+               } else {
+                  /* edit handling through form submission */
+                  if (exp_name[0]) {
+                     if (pwd[0])
+                        rsprintf("<a onClick=\"promptpwd('%s?exp=%s&cmd=Edit&index=%d&pnam=%s')\" href=\"#\">", 
+                                 path, exp_name, n_var, pwd);
+                     else
+                        rsprintf("<a href=\"%s?exp=%s&cmd=Edit&index=%d\">", path, exp_name,
+                                 n_var);
                   } else {
-                     rsprintf("<a href=\"%s?cmd=Edit&index=%d\">", path, n_var);
+                     if (pwd[0]) {
+                        rsprintf("<a onClick=\"promptpwd('%s?cmd=Edit&index=%d&pnam=%s')\" href=\"#\">", path, n_var, pwd);
+                     } else {
+                        rsprintf("<a href=\"%s?cmd=Edit&index=%d\" %s>", path, n_var, tail);
+                     }
                   }
                }
 
@@ -5269,13 +5327,12 @@ void show_custom_gif(char *name)
 
 void show_custom_page(char *path, char *cookie_cpwd)
 {
-   int size, n_var, fh, index;
+   int size, i, n_var, fh, index, edit;
    char str[TEXT_SIZE], *ctext, keypath[256], type[32], *p, *ps, custom_path[256],
-      filename[256], pwd[256], ppath[256];
+      filename[256], pwd[256], ppath[256], tail[256];
    HNDLE hDB, hkey;
    KEY key;
-   BOOL bedit;
-   char data[8];
+   char data[TEXT_SIZE];
 
    if (strstr(path, ".gif")) {
       show_custom_gif(path);
@@ -5337,7 +5394,7 @@ void show_custom_page(char *path, char *cookie_cpwd)
          p = ps = ctext;
          n_var = 0;
          do {
-            p = find_odb_tag(ps, keypath, &bedit, type, pwd);
+            p = find_odb_tag(ps, keypath, &edit, type, pwd, tail);
             if (p == NULL)
                break;
             ps = strchr(p, '>') + 1;
@@ -5366,6 +5423,7 @@ void show_custom_page(char *path, char *cookie_cpwd)
 
       /* process toggle command */
       if (equal_ustring(getparam("cmd"), "Toggle")) {
+
          if (*getparam("pnam")) {
             sprintf(ppath, "/Custom/Pwd/%s", getparam("pnam"));
             str[0] = 0;
@@ -5402,6 +5460,91 @@ void show_custom_page(char *path, char *cookie_cpwd)
          return;
       }
 
+      /* process "jset" command */
+      if (equal_ustring(getparam("cmd"), "jset")) {
+
+         if (*getparam("pnam")) {
+            sprintf(ppath, "/Custom/Pwd/%s", getparam("pnam"));
+            str[0] = 0;
+            db_get_value(hDB, 0, ppath, str, &size, TID_STRING, TRUE);
+            if (!equal_ustring(cookie_cpwd, str)) {
+               show_text_header();
+               rsprintf("Invalid password!");
+               return;
+            }
+         }
+         strlcpy(str, getparam("odb"), sizeof(str));
+         if (strchr(str, '[')) {
+            index = atoi(strchr(str, '[')+1);
+            *strchr(str, '[') = 0;
+         } else
+            index = 0;
+
+         if (db_find_key(hDB, 0, str, &hkey) && isparam("value")) {
+            db_get_key(hDB, hkey, &key);
+            memset(data, 0, sizeof(data));
+            if (key.item_size <= sizeof(data)) {
+               size = sizeof(data);
+               db_sscanf(getparam("value"), data, &size, 0, key.type);
+               db_set_data_index(hDB, hkey, data, key.item_size, index, key.type);
+            }
+         }
+
+         show_text_header();
+         rsprintf("OK");
+         return;
+      }
+
+      /* process "jget" command */
+      if (equal_ustring(getparam("cmd"), "jget")) {
+
+         strlcpy(str, getparam("odb"), sizeof(str));
+         if (strchr(str, '[')) {
+            if (*(strchr(str, '[')+1) == '*')
+               index = -1;
+            else
+               index = atoi(strchr(str, '[')+1);
+            *strchr(str, '[') = 0;
+         } else
+            index = 0;
+
+         show_text_header();
+
+         if (db_find_key(hDB, 0, str, &hkey)) {
+            db_get_key(hDB, hkey, &key);
+            if (key.item_size <= sizeof(data)) {
+               size = sizeof(data);
+               db_get_data(hDB, hkey, data, &size, key.type);
+               if (index == -1) {
+                  for (i=0 ; i<key.num_values ; i++) {
+                     db_sprintf(str, data, key.item_size, i, key.type);
+                     rsputs(str);
+                     rsputs("\n");
+                  }
+               } else {
+                  db_sprintf(str, data, key.item_size, index, key.type);
+                  rsputs(str);
+               }
+            }
+         } else
+            rsputs("ODB key not found");
+
+         return;
+      }
+
+      /* process "jmsg" command */
+      if (equal_ustring(getparam("cmd"), "jmsg")) {
+
+         i = 1;
+         if (*getparam("n"))
+            i = atoi(getparam("n"));
+
+         show_text_header();
+         cm_msg_retrieve(i, str, sizeof(str));
+         rsputs(str);
+         return;
+      }
+
       /* HTTP header */
       rsprintf("HTTP/1.0 200 Document follows\r\n");
       rsprintf("Server: MIDAS HTTP %d\r\n", cm_get_revision());
@@ -5411,7 +5554,7 @@ void show_custom_page(char *path, char *cookie_cpwd)
       p = ps = ctext;
       n_var = 0;
       do {
-         p = find_odb_tag(ps, keypath, &bedit, type, pwd);
+         p = find_odb_tag(ps, keypath, &edit, type, pwd, tail);
          if (p != NULL)
             *p = 0;
          rsputs(ps);
@@ -5420,7 +5563,7 @@ void show_custom_page(char *path, char *cookie_cpwd)
             break;
          ps = strchr(p + 1, '>') + 1;
 
-         show_odb_tag(path, keypath, n_var, bedit, type, pwd);
+         show_odb_tag(path, keypath, n_var, edit, type, pwd, tail);
          n_var++;
 
       } while (p != NULL);
@@ -10916,6 +11059,144 @@ void send_css()
 
 /*------------------------------------------------------------------*/
 
+char *mhttpd_js = 
+"document.onmousemove = getMouseXY;\n"
+"\n"
+"function getMouseXY(e)\n"
+"{\n"
+"   var x = e.pageX;\n"
+"   var y = e.pageY;\n"
+"   var p = 'abs: ' + x + '/' + y;\n"
+"   i = document.getElementById('refimg');\n"
+"   if (i == null)\n"
+"      return false;\n"
+"   document.body.style.cursor = 'crosshair';\n"
+"   x -= i.offsetLeft;\n"
+"   y -= i.offsetTop;\n"
+"   while (i = i.offsetParent) {\n"
+"      x -= i.offsetLeft;\n"
+"      y -= i.offsetTop;\n"
+"   }\n"
+"   p += '   rel: ' + x + '/' + y;\n"
+"   window.status = p;\n"
+"   return true;\n"
+"}\n"
+"\n"
+"function XMLHttpRequestGeneric()\n"
+"{\n"
+"   var request;\n"
+"   try {\n"
+"      request = new XMLHttpRequest(); // Firefox, Opera 8.0+, Safari\n"
+"   }\n"
+"   catch (e) {\n"
+"      try {\n"
+"         request = new ActiveXObject('Msxml2.XMLHTTP'); // Internet Explorer\n"
+"      }\n"
+"      catch (e) {\n"
+"         try {\n"
+"            request = new ActiveXObject('Microsoft.XMLHTTP');\n"
+"         }\n"
+"         catch (e) {\n"
+"           alert('Your browser does not support AJAX!');\n"
+"           return undefined;\n"
+"         }\n"
+"      }\n"
+"   }\n"
+"\n"
+"   return request;\n"
+"}\n"
+"\n"
+"function ODBSet(path, value, pwdname)\n"
+"{\n"
+"   var value, request, url;\n"
+"\n"
+"   if (pwdname != undefined)\n"
+"      pwd = prompt('Please enter password', '');\n"
+"   else\n"
+"      pwd = '';\n"
+"\n"
+"   request = XMLHttpRequestGeneric();\n"
+"\n"
+"   request.onreadystatechange = function()\n"
+"   {\n"
+"      if(request.readyState == 4 && request.status == 200)\n"
+"        if (request.responseText != 'OK')\n"
+"           alert(request.responseText);\n"
+"   }\n"
+"\n"
+"   url = '?cmd=jset&odb=' + path + '&value=' + value;\n"
+"\n"
+"   if (pwdname != undefined)\n"
+"      url += '&pnam=' + pwdname;\n"
+"\n"
+"   request.open('GET', url, true);\n"
+"\n"
+"   if (pwdname != undefined)\n"
+"      request.setRequestHeader('Cookie', 'cpwd='+pwd);\n"
+"\n"
+"   request.send(null);\n"
+"}\n"
+"\n"
+"function ODBGet(path)\n"
+"{\n"
+"   request = XMLHttpRequestGeneric();\n"
+"\n"
+"   var url = '?cmd=jget&odb=' + path;\n"
+"   request.open('GET', url, false);\n"
+"   request.send(null);\n"
+"\n"
+"   if (path.match(/[*]/)) {\n"
+"      var array = request.responseText.split('\\n');\n"
+"      return array;\n"
+"   } else\n"
+"      return request.responseText;\n"
+"}\n"
+"\n"
+"function ODBGetMsg(n)\n"
+"{\n"
+"   request = XMLHttpRequestGeneric();\n"
+"\n"
+"   var url = '?cmd=jmsg&n=' + n;\n"
+"   request.open('GET', url, false);\n"
+"   request.send(null);\n"
+"\n"
+"   if (n > 1) {\n"
+"      var array = request.responseText.split('\\n');\n"
+"      return array;\n"
+"   } else\n"
+"      return request.responseText;\n"
+"}\n"
+"";
+
+void send_js()
+{
+   int length;
+   char str[256], format[256];
+   time_t now;
+   struct tm *gmt;
+
+   rsprintf("HTTP/1.1 200 Document follows\r\n");
+   rsprintf("Server: MIDAS HTTP %d\r\n", cm_get_revision());
+   rsprintf("Accept-Ranges: bytes\r\n");
+
+   /* set expiration time to one day */
+   time(&now);
+   now += (int) (3600 * 24);
+   gmt = gmtime(&now);
+   strcpy(format, "%A, %d-%b-%y %H:%M:%S GMT");
+   strftime(str, sizeof(str), format, gmt);
+   rsprintf("Expires: %s\r\n", str);
+   rsprintf("Content-Type: text/javascript\r\n");
+
+   length = strlen(mhttpd_js);
+   rsprintf("Content-Length: %d\r\n\r\n", length);
+
+   return_length = strlen(return_buffer) + length;
+   memcpy(return_buffer + strlen(return_buffer), mhttpd_js, length);
+}
+
+/*------------------------------------------------------------------*/
+
 void interprete(char *cookie_pwd, char *cookie_wpwd, char *cookie_cpwd, char *path, int refresh)
 /********************************************************************\
 
@@ -10951,6 +11232,11 @@ void interprete(char *cookie_pwd, char *cookie_wpwd, char *cookie_cpwd, char *pa
 
    if (strstr(path, "mhttpd.css")) {
       send_css(path);
+      return;
+   }
+
+   if (strstr(path, "mhttpd.js")) {
+      send_js(path);
       return;
    }
 
@@ -12197,7 +12483,7 @@ struct linger        ling;
 
          if (return_length != -1) {
             if (return_length == 0)
-               return_length = strlen(return_buffer) + 1;
+               return_length = strlen(return_buffer);
 
             if (verbose) {
                char str[256];
