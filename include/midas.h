@@ -938,20 +938,6 @@ typedef struct {
 } DD_MT_BUFFER;
 
 typedef struct {
-   char name[NAME_LENGTH];            /**< Driver name                       */
-   INT(*dd) (INT cmd, ...);           /**< Device driver entry point         */
-   INT channels;                      /**< Number of channels                */
-   INT(*bd) (INT cmd, ...);           /**< Bus driver entry point            */
-   DWORD flags;                       /**< Combination of DF_xx              */
-   void *dd_info;                     /**< Private info for device driver    */
-   DD_MT_BUFFER *mt_buffer;           /**< pointer to multithread buffer     */
-   INT stop_thread;                   /**< flag used to stop the thread      */
-   HNDLE mutex;                       /**< mutex/semaphore handle for buffer */
-} DEVICE_DRIVER;
-
-INT device_driver(DEVICE_DRIVER *device_driver, INT cmd, ...);
-
-typedef struct {
    WORD event_id;                     /**< Event ID associated with equipm.  */
    WORD trigger_mask;                 /**< Trigger mask                      */
    char buffer[NAME_LENGTH];          /**< Event buffer to send events into  */
@@ -968,6 +954,21 @@ typedef struct {
    char frontend_name[NAME_LENGTH];   /**< Frontend name                     */
    char frontend_file_name[256];      /**< Source file used for user FE      */
 } EQUIPMENT_INFO;
+
+typedef struct {
+   char name[NAME_LENGTH];            /**< Driver name                       */
+   INT(*dd) (INT cmd, ...);           /**< Device driver entry point         */
+   INT channels;                      /**< Number of channels                */
+   INT(*bd) (INT cmd, ...);           /**< Bus driver entry point            */
+   DWORD flags;                       /**< Combination of DF_xx              */
+   void *dd_info;                     /**< Private info for device driver    */
+   DD_MT_BUFFER *mt_buffer;           /**< pointer to multithread buffer     */
+   INT stop_thread;                   /**< flag used to stop the thread      */
+   HNDLE mutex;                       /**< mutex/semaphore handle for buffer */
+   EQUIPMENT_INFO *pequipment;        /**< pointer to equipment              */
+} DEVICE_DRIVER;
+
+INT device_driver(DEVICE_DRIVER *device_driver, INT cmd, ...);
 
 typedef struct {
    double events_sent;

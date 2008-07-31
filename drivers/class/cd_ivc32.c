@@ -94,10 +94,12 @@ INT ivc32_start(EQUIPMENT * pequipment)
 {
    INT i;
 
-   /* call close method of device drivers */
+   /* call start method of device drivers */
    for (i = 0; pequipment->driver[i].dd != NULL ; i++)
-      if (pequipment->driver[i].flags & DF_MULTITHREAD)
+      if (pequipment->driver[i].flags & DF_MULTITHREAD) {
+         pequipment->driver[i].pequipment = &pequipment->info;
          device_driver(&pequipment->driver[i], CMD_START);
+      }
 
    return FE_SUCCESS;
 }
