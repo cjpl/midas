@@ -145,9 +145,10 @@ static RPC_LIST rpc_list[] = {
      {TID_INT, RPC_IN},
      {0}}},
 
-   {RPC_MSCB_WRITE, "mscb_write_block",
+   {RPC_MSCB_WRITE_RANGE, "mscb_write_range",
     {{TID_INT, RPC_IN},
      {TID_INT, RPC_IN},
+     {TID_BYTE, RPC_IN},
      {TID_BYTE, RPC_IN},
      {TID_ARRAY, RPC_IN | RPC_VARARRAY},
      {TID_INT, RPC_IN},
@@ -514,8 +515,8 @@ int server_execute(int index, void *prpc_param[])
       status = mscb_write(CINT(0), CSHORT(1), CBYTE(2), CARRAY(3), CINT(4));
       break;
 
-   case RPC_MSCB_WRITE_BLOCK:
-      status = mscb_write_block(CINT(0), CSHORT(1), CBYTE(2), CARRAY(3), CINT(4));
+   case RPC_MSCB_WRITE_RANGE:
+      status = mscb_write_range(CINT(0), CSHORT(1), CBYTE(2), CBYTE(3), CARRAY(4), CINT(5));
       break;
 
    case RPC_MSCB_FLASH:

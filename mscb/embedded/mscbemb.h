@@ -605,8 +605,7 @@ char putchar1(char c);                   // putchar cannot be used with LCD supp
 
 #define CMD_READ        0xA0
 
-#define CMD_WRITE_BLOCK 0xB5
-#define CMD_READ_BLOCK  0xB9
+#define CMD_WRITE_RANGE 0xA8
 
 #define GET_INFO_GENERAL   0
 #define GET_INFO_VARIABLES 1

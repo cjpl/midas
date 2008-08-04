@@ -96,21 +96,20 @@ typedef struct {
 #define RPC_MSCB_WRITE            11
 #define RPC_MSCB_WRITE_NO_RETRIES 12
 #define RPC_MSCB_WRITE_GROUP      13
-#define RPC_MSCB_WRITE_BLOCK      14
+#define RPC_MSCB_WRITE_RANGE      14
 #define RPC_MSCB_FLASH            15
 #define RPC_MSCB_UPLOAD           16
 #define RPC_MSCB_VERIFY           17
 #define RPC_MSCB_READ             18
 #define RPC_MSCB_READ_NO_RETRIES  19
 #define RPC_MSCB_READ_RANGE       20
-#define RPC_MSCB_READ_BLOCK       21
-#define RPC_MSCB_USER             22
-#define RPC_MSCB_ECHO             23
-#define RPC_MSCB_SET_NAME         24
-#define RPC_MSCB_ADDR             25
-#define RPC_MSCB_GET_DEVICE       26
-#define RPC_MSCB_SET_BAUD         27
-#define RPC_MSCB_SET_TIME         28
+#define RPC_MSCB_USER             21
+#define RPC_MSCB_ECHO             22
+#define RPC_MSCB_SET_NAME         23
+#define RPC_MSCB_ADDR             24
+#define RPC_MSCB_GET_DEVICE       25
+#define RPC_MSCB_SET_BAUD         26
+#define RPC_MSCB_SET_TIME         27
 
 /*------------------------------------------------------------------*/
 

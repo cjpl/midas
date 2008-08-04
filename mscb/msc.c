@@ -581,7 +581,7 @@ void cmd_loop(int fd, char *cmd, unsigned short adr)
    MSCB_INFO info;
    MSCB_INFO_VAR info_var_array[256];
    MSCB_INFO_VAR info_var;
-   time_t start, now;
+   time_t now;
    MXML_WRITER *writer;
    struct tm *ptm;
 
@@ -1579,34 +1579,6 @@ void cmd_loop(int fd, char *cmd, unsigned short adr)
          }
       }
 
-      /* block transfer test ---------- */
-      else if (match(param[0], "block")) {
-         int i, status;
-
-         if (current_addr < 0)
-            printf("You must first address an individual node\n");
-         else {
-            i = 0;
-            time(&start);
-            while (!kbhit()) {
-               status =
-                   mscb_write_block(fd, (unsigned short) current_addr, 0, dbuf, 1024);
-               i += 1024;
-
-               time(&now);
-               if (now > start + 1) {
-                  start = now;
-                  printf("%4.2lf kB/sec\r", i / 1024.0);
-                  i = 0;
-                  fflush(stdout);
-               }
-            }
-            printf("%d\n", i);
-            while (kbhit())
-               getch();
-         }
-      }
-
       /* read range test ---------- */
       else if (match(param[0], "rr")) {
          if (current_addr < 0)
@@ -1712,14 +1684,22 @@ void cmd_loop(int fd, char *cmd, unsigned short adr)
       /* test 2 -----------*/
       else if (match(param[0], "t2")) {
          struct timeb tb1, tb2;
+         float a[4];
 #ifdef OS_DARWIN
          assert(!"ftime() is obsolete!");
 #else
          ftime(&tb1);
 #endif
-         size = 256;
+         a[0] = 12.34f;
+         a[1] = 56.78f;
+         a[2] = 12.34f;
+         a[3] = 56.78f;
+         DWORD_SWAP(a);
+         DWORD_SWAP(a+1);
+         DWORD_SWAP(a+2);
+         DWORD_SWAP(a+3);
          for (i=0 ; i<900 ; i++) {
-            mscb_read_range(fd, (unsigned short) current_addr, 1, 0, dbuf, &size);
+            mscb_write_range(fd, (unsigned short) current_addr, 0, 3, a, sizeof(a));
             printf("%d\r", i);
             if (kbhit())
                break;

@@ -46,8 +46,7 @@
 
 #define MCMD_READ        0xA0
 
-#define MCMD_WRITE_BLOCK 0xB5
-#define MCMD_READ_BLOCK  0xB9
+#define MCMD_WRITE_RANGE 0xA8
 
 #define GET_INFO_GENERAL   0
 #define GET_INFO_VARIABLE  1
@@ -272,7 +271,7 @@ extern "C" {
    int EXPRT mscb_write(int fd, unsigned short adr, unsigned char index, void *data, int size);
    int EXPRT mscb_write_no_retries(int fd, unsigned short adr, unsigned char index, void *data, int size);
    int EXPRT mscb_write_group(int fd, unsigned short adr, unsigned char index, void *data, int size);
-   int EXPRT mscb_write_block(int fd, unsigned short adr, unsigned char index, void *data, int size);
+   int EXPRT mscb_write_range(int fd, unsigned short adr, unsigned char index1, unsigned char index2, void *data, int size);
    int EXPRT mscb_flash(int fd, int adr, int gaddr, int broadcast);
    int EXPRT mscb_set_baud(int fd, int baud);
    int EXPRT mscb_upload(int fd, unsigned short adr, char *buffer, int size, int debug);
