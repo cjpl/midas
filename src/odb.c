@@ -7034,6 +7034,75 @@ INT db_sprintf(char *string, const void *data, INT data_size, INT idx, DWORD typ
 
    return DB_SUCCESS;
 }
+/********************************************************************/
+/**
+Same as db_sprintf, but with additional format parameter
+
+@param string output ASCII string of data.
+@param format Format specifier passed to sprintf()
+@param data Value data.
+@param data_size Size of single data element.
+@param idx Index for array data.
+@param type Type of key, one of TID_xxx (see @ref Midas_Data_Types).
+@return DB_SUCCESS
+*/
+
+INT db_sprintff(char *string, const char *format, const void *data, INT data_size, INT idx, DWORD type)
+{
+   if (data_size == 0)
+      sprintf(string, "<NULL>");
+   else
+      switch (type) {
+      case TID_BYTE:
+         sprintf(string, format, *(((BYTE *) data) + idx));
+         break;
+      case TID_SBYTE:
+         sprintf(string, format, *(((char *) data) + idx));
+         break;
+      case TID_CHAR:
+         sprintf(string, format, *(((char *) data) + idx));
+         break;
+      case TID_WORD:
+         sprintf(string, format, *(((WORD *) data) + idx));
+         break;
+      case TID_SHORT:
+         sprintf(string, format, *(((short *) data) + idx));
+         break;
+      case TID_DWORD:
+         sprintf(string, format, *(((DWORD *) data) + idx));
+         break;
+      case TID_INT:
+         sprintf(string, format, *(((INT *) data) + idx));
+         break;
+      case TID_BOOL:
+         sprintf(string, format, *(((BOOL *) data) + idx) ? 'y' : 'n');
+         break;
+      case TID_FLOAT:
+         if (ss_isnan(*(((float *) data) + idx)))
+            sprintf(string, "NAN");
+         else
+            sprintf(string, format, *(((float *) data) + idx));
+         break;
+      case TID_DOUBLE:
+         if (ss_isnan(*(((double *) data) + idx)))
+            sprintf(string, "NAN");
+         else
+            sprintf(string, format, *(((double *) data) + idx));
+         break;
+      case TID_BITFIELD:
+         /* TBD */
+         break;
+      case TID_STRING:
+      case TID_LINK:
+         strlcpy(string, ((char *) data) + data_size * idx, MAX_STRING_LENGTH);
+         break;
+      default:
+         sprintf(string, "<unknown>");
+         break;
+      }
+
+   return DB_SUCCESS;
+}
 
 /**dox***************************************************************/
 #ifndef DOXYGEN_SHOULD_SKIP_THIS
