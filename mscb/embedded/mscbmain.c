@@ -526,7 +526,7 @@ void addr_node16(unsigned char mode, unsigned int adr, unsigned int node_addr)
 
 void interprete(void) 
 {
-   unsigned char crc, cmd, i, j, n, ch, a1, a2;
+   unsigned char crc, cmd, i, j, n, ch, ch1, ch2, a1, a2;
    unsigned short size;
    MSCB_INFO_VAR *pvar;
    unsigned long idata u;
@@ -936,6 +936,57 @@ void interprete(void)
          }
       }
    }
+
+
+   if (cmd == CMD_WRITE_RANGE) {
+
+      /* blink LED once when writing data */
+      if (addr_mode == ADDR_NODE)
+         led_blink(_cur_sub_addr, 1, 50);
+      else 
+         for (i=0 ; i<_n_sub_addr ; i++)
+            led_blink(i, 1, 50);
+
+      if (in_buf[1] & 0x80) {
+         size = (in_buf[1] & 0x7F) << 8 | in_buf[2];
+         j = 3;
+      } else {
+         size = in_buf[1];
+         j = 2;
+      }
+
+      ch1 = in_buf[j];
+      ch2 = in_buf[j+1];
+      for (ch = ch1 ; ch <= ch2 ; ch++) {
+         if (ch < n_variables) {
+      
+            n = variables[ch].width;
+
+            if (addr_mode == ADDR_NODE)
+               a1 = a2 = _cur_sub_addr;
+            else {
+               a1 = 0;
+               a2 = _n_sub_addr-1;
+            }
+               
+            for (_cur_sub_addr = a1 ; _cur_sub_addr <= a2 ; _cur_sub_addr++) {
+               for (i = 0; i < n; i++)
+                  if (!(variables[ch].flags & MSCBF_DATALESS)) {
+                     ((char *) variables[ch].ud)[i + _var_size*_cur_sub_addr] = 
+                        in_buf[2 + j + i];
+                  }
+      
+               user_write(ch);
+            }
+            _cur_sub_addr = a1; // restore previous value
+            j += n;
+         }
+      }
+      out_buf[0] = CMD_ACK;
+      out_buf[1] = in_buf[i_in - 1];
+      send_obuf(2);
+   }
+
 }
 
 /*------------------------------------------------------------------*/

@@ -2183,17 +2183,18 @@ int mscb_write_no_retries(int fd, unsigned short adr, unsigned char index, void 
 
 /*------------------------------------------------------------------*/
 
-int mscb_write_block(int fd, unsigned short adr, unsigned char index, void *data, int size)
+int mscb_write_range(int fd, unsigned short adr, unsigned char index1, unsigned char index2, void *data, int size)
 /********************************************************************\
 
-  Routine: mscb_write_block
+  Routine: mscb_write_range
 
-  Purpose: Write block of data to single node
+  Purpose: Write data to multiple indices on node
 
   Input:
     int fd                  File descriptor for connection
     unsigned short adr      Node address
-    unsigned char index     Variable index 0..255
+    unsigned char index1    First variable index 0..255 to write
+    unsigned char index2    Last variable index 0..255 to write
     void *data              Data to send
     int size                Data size in bytes
 
@@ -2206,60 +2207,100 @@ int mscb_write_block(int fd, unsigned short adr, unsigned char index, void *data
 
 \********************************************************************/
 {
-   int i, n, len;
+   int i, len, status, retry;
    unsigned char buf[256], crc;
 
-   if (fd > MSCB_MAX_FD || fd < 1 || !mscb_fd[fd - 1].type)
+   if (_debug_flag)
+      debug_log("mscb_write_range(fd=%d,adr=%d,index1=%d,index2=%d,size=%d) ", 
+         1, fd, adr, index1, index2, size);
+
+   if (fd > MSCB_MAX_FD || fd < 1 || !mscb_fd[fd - 1].type) {
+      debug_log("return MSCB_INVAL_PARAM\n", 0);
       return MSCB_INVAL_PARAM;
+   }
 
    if (mrpc_connected(fd))
-      return mrpc_call(mscb_fd[fd - 1].fd, RPC_MSCB_WRITE_BLOCK, mscb_fd[fd - 1].remote_fd, adr, index, data, size);
+      return mrpc_call(mscb_fd[fd - 1].fd, RPC_MSCB_WRITE_RANGE, 
+                       mscb_fd[fd - 1].remote_fd, adr, index1, index2, data, size);
 
-   if (size < 1)
+   if (size < 1 || size + 10 > sizeof(buf)) {
+      debug_log("return MSCB_INVAL_PARAM\n", 0);
       return MSCB_INVAL_PARAM;
+   }
 
-   /*
-   Bulk test gave 128kb/sec, 10.3.04, SR
-
-   for (i=0 ; i<1024 ; i++)
-      buf[i] = RS485_FLAG_CMD;
-
-   i = msend_usb(mscb_fd[fd - 1].hw, buf, 1024);
-   return MSCB_SUCCESS;
-   */
-
-   /* slice data in 58 byte blocks */
-   for (i=0 ; i<=size/58 ; i++) {
-      n = 58;
-      if (size < (i+1)*58)
-         n = size - i*58;
-
-      if (n == 0)
-         break;
+   /* try 10 times */
+   for (retry=0 ; retry<10 ; retry++) {
 
       buf[0] = MCMD_ADDR_NODE16;
       buf[1] = (unsigned char) (adr >> 8);
       buf[2] = (unsigned char) (adr & 0xFF);
       buf[3] = crc8(buf, 3);
 
-      buf[4] = MCMD_WRITE_ACK + 7;
-      buf[5] = (unsigned char)(n + 1);
-      buf[6] = index;
+      buf[4] = MCMD_WRITE_RANGE | 0x07;
 
-      memcpy(buf+7, (char *)data+i*58, n);
-      crc = crc8(buf+4, 3 + n);
-      buf[7 + n] = crc;
+      if (size < 128) {
+         buf[5] = size + 2;
+         buf[6] = index1;
+         buf[7] = index2;
 
-      len = sizeof(buf);
-      mscb_exchg(fd, buf, &len, n+8, RS485_FLAG_ADR_CYCLE);
-      if (len < 2)
-         return MSCB_TIMEOUT;
+         for (i = 0; i < size; i++)
+            buf[8 + i] = ((char *)data)[i];
 
-      if (buf[0] != MCMD_ACK || buf[1] != crc)
-         return MSCB_CRC_ERROR;
+         crc = crc8(buf+4, 4 + i);
+         buf[8 + i] = crc;
+         len = sizeof(buf);
+         status = mscb_exchg(fd, buf, &len, 9 + i, RS485_FLAG_ADR_CYCLE);
+      } else {
+         buf[5] = 0x80 | ((size + 2) >> 8);
+         buf[6] = (size + 2) & 0xFF;
+         buf[7] = index1;
+         buf[8] = index2;
+
+         for (i = 0; i < size; i++)
+            buf[9 + i] = ((char *)data)[i];
+
+         crc = crc8(buf+4, 5 + i);
+         buf[9 + i] = crc;
+         len = sizeof(buf);
+         status = mscb_exchg(fd, buf, &len, 10 + i, RS485_FLAG_ADR_CYCLE);
+      }
+
+      if (len == 1) {
+#ifndef _USRDLL
+         printf("mscb_write: Timeout from RS485 bus\n");
+#endif
+         debug_log("Timeout from RS485 bus\n", 1);
+         status = MSCB_TIMEOUT;
+
+#ifndef _USRDLL
+         printf("mscb_write: Flush node communication\n");
+#endif
+         debug_log("Flush node communication\n", 1);
+         memset(buf, 0, sizeof(buf));
+         mscb_exchg(fd, buf, NULL, 10, RS485_FLAG_BIT9 | RS485_FLAG_NO_ACK);
+         Sleep(100);
+
+         continue;
+      }
+
+      if (status == MSCB_TIMEOUT) {
+         debug_log("return MSCB_TIMEOUT\n", 0);
+         status = MSCB_TIMEOUT;
+         continue;
+      }
+
+      if (buf[0] != MCMD_ACK || buf[1] != crc) {
+         debug_log("return MSCB_CRC_ERROR\n", 0);
+         status = MSCB_CRC_ERROR;
+         continue;
+      }
+
+      status = MSCB_SUCCESS;
+      debug_log("return MSCB_SUCCESS\n", 0);
+      break;
    }
 
-   return MSCB_SUCCESS;
+   return status;
 }
 
 /*------------------------------------------------------------------*/
