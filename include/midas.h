@@ -1741,6 +1741,7 @@ extern "C" {
    INT EXPRT db_copy_xml(HNDLE hDB, HNDLE hKey, char *buffer, INT * buffer_size);
 
    INT EXPRT db_sprintf(char *string, const void *data, INT data_size, INT index, DWORD type);
+   INT EXPRT db_sprintff(char *string, const char *format, const void *data, INT data_size, INT index, DWORD type);
    INT EXPRT db_sprintfh(char *string, const void *data, INT data_size, INT index, DWORD type);
    INT EXPRT db_sscanf(char *string, void *data, INT * data_size, INT index, DWORD type);
    char EXPRT *strcomb(char **list);
