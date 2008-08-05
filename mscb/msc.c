@@ -1684,22 +1684,18 @@ void cmd_loop(int fd, char *cmd, unsigned short adr)
       /* test 2 -----------*/
       else if (match(param[0], "t2")) {
          struct timeb tb1, tb2;
-         float a[4];
+         float a[16];
 #ifdef OS_DARWIN
          assert(!"ftime() is obsolete!");
 #else
          ftime(&tb1);
 #endif
-         a[0] = 12.34f;
-         a[1] = 56.78f;
-         a[2] = 12.34f;
-         a[3] = 56.78f;
-         DWORD_SWAP(a);
-         DWORD_SWAP(a+1);
-         DWORD_SWAP(a+2);
-         DWORD_SWAP(a+3);
+         for (i=0 ; i<16 ; i++) {
+            a[i] = i*1.01f;
+            DWORD_SWAP(&a[i]);
+         }
          for (i=0 ; i<900 ; i++) {
-            mscb_write_range(fd, (unsigned short) current_addr, 0, 3, a, sizeof(a));
+            mscb_write_range(fd, (unsigned short) current_addr, 0, 16, a, sizeof(a));
             printf("%d\r", i);
             if (kbhit())
                break;

@@ -279,6 +279,7 @@ sbit RS485_SEC_ENABLE = P0 ^ 4;
 #define LCD_8BIT
 #define DYN_VARIABLES
 #define HAVE_RTC
+#define HAVE_EMIF
 
 /*--------------------------------*/
 #elif defined(HVR_200)
@@ -814,6 +815,11 @@ void rtc_print(void);
 void monitor_init(unsigned char addr);
 void monitor_read(unsigned char uaddr, unsigned char cmd, unsigned char raddr, unsigned char *pd, unsigned char nbytes);
 void monitor_clear(unsigned char addr);
+
+unsigned char emif_init(void);
+void emif_test(unsigned char n_banks);
+void emif_switch(unsigned char bk);
+
 
 
 
