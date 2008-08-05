@@ -2180,3 +2180,169 @@ void rtc_init()
 
 #endif // HAVE_RTC
 
+
+/*---- EMIF routines -----------------------------------------------*/
+
+#ifdef HAVE_EMIF
+
+void emif_switch(unsigned char bk)
+{
+   unsigned char idata d;
+
+   d = (bk & 0x07);      // A16-A18
+   if (bk & 0x08)
+     d |= 0x20;          // /CS0=high, /CS1=low  (ext. inv.)
+   else
+     d |= 0x00;          // /CS0=low,  /CS1=high
+
+   d |= 0xC0;            // /RD=/WR=high
+
+   P4 = d;
+}
+
+/*------------------------------------------------------------------*/
+
+void emif_test(unsigned char n_banks)
+{
+   unsigned char idata i, error;
+   unsigned char xdata *p;
+
+   lcd_clear();
+   lcd_goto(2, 1);
+   printf("Memory test...");
+   error = 0;
+
+   /* don't let clock interrupt update time in XDATA space */
+   watchdog_disable();
+   DISABLE_INTERRUPTS;
+
+   for (i=0 ; i<n_banks ; i++) {
+      emif_switch(i);
+
+      lcd_goto(i, 3);
+      putchar(218);
+
+      for (p=0 ; p<0xFFFF ; p++)
+         *p = 0;
+
+      for (p=0 ; p<0xFFFF ; p++)
+         if (*p != 0) {
+            error = 1;
+            break;
+         }
+      if (error)
+         break;
+
+      lcd_goto(i, 3);
+      putchar(217);
+
+      for (p=0 ; p<0xFFFF ; p++)
+         *p = 0x55;
+
+      for (p=0 ; p<0xFFFF ; p++)
+         if (*p != 0x55) {
+            error = 1;
+            break;
+         }
+      if (error)
+         break;
+
+
+      lcd_goto(i, 3);
+      putchar(216);
+
+      for (p=0 ; p<0xFFFF ; p++)
+         *p = 0xAA;
+
+      for (p=0 ; p<0xFFFF ; p++)
+         if (*p != 0xAA) {
+            error = 1;
+            break;
+         }
+      if (error)
+         break;
+
+      lcd_goto(i, 3);
+      putchar(215);
+
+      for (p=0 ; p<0xFFFF ; p++)
+         *p = 0xFF;
+
+      for (p=0 ; p<0xFFFF ; p++)
+         if (*p != 0xFF) {
+            error = 1;
+            break;
+         }
+      if (error)
+         break;
+
+      lcd_goto(i, 3);
+      putchar(214);
+   }
+
+   ENABLE_INTERRUPTS;
+   watchdog_enable(0);
+
+   emif_switch(0);
+   if (error) {
+      lcd_goto(0, 2);
+      printf("Memory error bank %bd", i);
+      do {
+         watchdog_refresh(0);
+      } while (1);
+   }
+}
+
+/*------------------------------------------------------------------*/
+
+unsigned char emif_init()
+{
+unsigned char xdata *p;
+unsigned char idata d;
+
+   /* setup EMIF interface and probe external memory */
+   SFRPAGE = EMI0_PAGE;
+   EMI0CF  = 0x3C; // active on P4-P7, non-multiplexed, external only
+   EMI0CN  = 0x00; // page zero
+   EMI0TC  = 0x04; // 2 SYSCLK cycles (=20ns) /WR and /RD signals
+
+   /* configure EMIF ports as push/pull */
+   SFRPAGE = CONFIG_PAGE;
+   P4MDOUT = 0xFF;
+   P5MDOUT = 0xFF;
+   P6MDOUT = 0xFF;
+   P7MDOUT = 0xFF;
+
+   /* "park" ports */
+   P4 = P5 = P6 = P7 = 0xFF;
+
+   /* test for external memory */
+   emif_switch(0);
+   p = NULL;
+   d = *p;
+   *p = 0x55;
+   if (*p != 0x55) {
+      *p = d; // restore previous data;
+      /* turn off EMIF */
+      SFRPAGE = EMI0_PAGE;
+      EMI0CF  = 0x00;
+      return 0;
+   }
+   *p = d; // restore previous data;
+
+   /* test for second SRAM chip */
+   emif_switch(8);
+   d = *p;
+   *p = 0xAA;
+   if (*p == 0xAA) { 
+      *p = d; // restore previous data;
+      emif_switch(0);
+      return 16;
+   }
+   *p = d; // restore previous data;
+
+   emif_switch(0);
+   return 8;
+}
+
+#endif // HAVE_EMIF

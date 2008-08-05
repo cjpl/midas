@@ -63,7 +63,7 @@ void send_remote_var(unsigned char i);
 /* variables in internal RAM (indirect addressing) */
 
 #if defined(CPU_C8051F020) || defined(CPU_C8051F120)
-unsigned char xdata in_buf[64], out_buf[64]; /* limited by USB block size */
+unsigned char xdata in_buf[256], out_buf[64];
 #else
 unsigned char idata in_buf[20], out_buf[8];
 #endif
@@ -216,6 +216,20 @@ void setup(void)
 
 #endif
         
+#ifdef HAVE_LCD
+   lcd_setup();
+#endif
+
+#ifdef HAVE_EMIF
+   /* initialize external memory interface */
+   d = emif_init();
+
+   /* do memory test on cold start */
+   SFRPAGE = LEGACY_PAGE;
+   if (d > 0 && (RSTSRC & 0x02) > 0)
+      emif_test(d);
+#endif
+
    /* start system clock */
    sysclock_init();
 
@@ -260,10 +274,6 @@ void setup(void)
 
 #ifdef UART1_MSCB
    uart_init(1, BD_115200);
-#endif
-
-#ifdef HAVE_LCD
-   lcd_setup();
 #endif
 
 #ifdef DYN_VARIABLES
