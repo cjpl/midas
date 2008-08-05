@@ -36,7 +36,7 @@ bit b0, b1, b2, b3, master, module_list, beeper_on;
 
 /*---- Define variable parameters returned to CMD_GET_INFO command ----*/
 
-#define N_PORT 24 /* maximal one master and two slave modules */
+#define N_PORT 8  /* for master/slave please use SCS-2001 */
 
 /* data buffer (mirrored in EEPROM) */
 
