@@ -1327,10 +1327,16 @@ int readout_thread(void *param)
       if (rbh1_next) // if set by user code, use it
          rbh1 = rbh1_next;
 
-      status = rb_get_wp(rbh1, &p, 10000);
+      status = rb_get_wp(rbh1, &p, 0);
       if (stop_all_threads)
          break;
-      assert(status == DB_SUCCESS);
+      if (status == DB_TIMEOUT) {
+         printf("readout_thread: Ring buffer is full, waiting for space!\n");
+         ss_sleep(100);
+         continue;
+      }
+      if (status != DB_SUCCESS)
+         break;
 
       if (readout_enabled()) {
         
@@ -1394,19 +1400,23 @@ int receive_trigger_event(EQUIPMENT *eq)
    int status;
    EVENT_HEADER *prb, *pevent;
    void *p;
+   int nbytes;
+
+   if (0) {
+      static int count = 0;
+      if (((count++) % 100) == 0) {
+         rb_get_buffer_level(rbh2, &nbytes);
+         if (nbytes != 0)
+            printf("mfe: ring buffer contains %d bytes\n", nbytes);
+      }
+   }
 
    status = rb_get_rp(rbh2, &p, 10);
    prb = (EVENT_HEADER *)p;
    if (status == DB_TIMEOUT)
       return 0;
 
-   pevent = (EVENT_HEADER *)event_buffer;
-
-   /* copy event from ring buffer to local buffer */
-   memcpy(pevent, prb, prb->data_size + sizeof(EVENT_HEADER));
-
-   /* free up space in ring buffer */
-   rb_increment_rp(rbh2, sizeof(EVENT_HEADER) + prb->data_size);
+   pevent = prb;
 
    /* send event */
    if (pevent->data_size) {
@@ -1433,6 +1443,8 @@ int receive_trigger_event(EQUIPMENT *eq)
             eq->events_sent++;
       }
    }
+
+   rb_increment_rp(rbh2, sizeof(EVENT_HEADER) + prb->data_size);
 
    return prb->data_size;
 }
@@ -2453,7 +2465,7 @@ int main(int argc, char *argv[])
 
    /* check event and buffer sizes */
    if (event_buffer_size < 2 * max_event_size) {
-      cm_msg(MERROR, "mainFE", "event_buffer_size too small for max. event size\n");
+      cm_msg(MERROR, "mainFE", "event_buffer_size %d too small for max. event size %d\n", event_buffer_size, max_event_size);
       ss_sleep(5000);
       return 1;
    }
@@ -2516,6 +2528,7 @@ int main(int argc, char *argv[])
    status = cm_connect_experiment1(host_name, exp_name, full_frontend_name,
                                    NULL, DEFAULT_ODB_SIZE, DEFAULT_FE_TIMEOUT);
    if (status != CM_SUCCESS) {
+      cm_msg(MERROR, "mainFE", "Cannot connect to experiment \'%s\' on host \'%s\', status %d", exp_name, host_name, status);
       /* let user read message before window might close */
       ss_sleep(5000);
       return 1;
@@ -2527,7 +2540,7 @@ int main(int argc, char *argv[])
    /* allocate buffer space */
    event_buffer = malloc(max_event_size);
    if (event_buffer == NULL) {
-      cm_msg(MERROR, "mainFE", "mfe: Not enough memory or event too big\n");
+      cm_msg(MERROR, "mainFE", "mfe: Cannot allocate event buffer of max_event_size %d\n", max_event_size);
       return 1;
    }
 
