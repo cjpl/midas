@@ -3028,9 +3028,9 @@ int mscb_read(int fd, unsigned short adr, unsigned char index, void *data, int *
       if (status == MSCB_TIMEOUT) {
 #ifndef _USRDLL
          /* show error, but repeat 10 times */
-         printf("mscb_read: Timeout writing to sumbster\n");
+         printf("mscb_read: Timeout writing to submaster\n");
 #endif
-         debug_log("Timeout writing to sumbster\n", 1);
+         debug_log("Timeout writing to submaster\n", 1);
          continue;
       }
       if (status == MSCB_SUBM_ERROR) {
@@ -3210,7 +3210,7 @@ int mscb_read_no_retries(int fd, unsigned short adr, unsigned char index, void *
    if (status == MSCB_TIMEOUT) {
 #ifndef _USRDLL
       /* show error, but repeat 10 times */
-      printf("mscb_read_no_retries: Timeout writing to sumbster\n");
+      printf("mscb_read_no_retries: Timeout writing to submaster\n");
 #endif
       return MSCB_TIMEOUT;
    }
@@ -3352,9 +3352,9 @@ int mscb_read_range(int fd, unsigned short adr, unsigned char index1, unsigned c
       if (status == MSCB_TIMEOUT) {
 #ifndef _USRDLL
          /* show error, but repeat 10 times */
-         printf("mscb_read_range: Timeout writing to sumbster\n");
+         printf("mscb_read_range: Timeout writing to submaster\n");
 #endif
-         debug_log("Timeout writing to sumbster\n", 1);
+         debug_log("Timeout writing to submaster\n", 1);
          continue;
       }
       if (status == MSCB_SUBM_ERROR) {
