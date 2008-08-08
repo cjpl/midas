@@ -2258,7 +2258,13 @@ DWORD ss_time()
 {
 #if !defined(OS_VXWORKS)
 #if !defined(OS_VMS)
-   tzset();
+#if 0
+   static int once = 0;
+   if (once==0) {
+      tzset();
+      once = 1;
+   }
+#endif
 #endif
 #endif
    return (DWORD) time(NULL);
@@ -3550,18 +3556,22 @@ INT send_tcp(int sock, char *buffer, DWORD buffer_size, INT flags)
 {
    DWORD count;
    INT status;
+   //int net_tcp_size = NET_TCP_SIZE;
+   int net_tcp_size = 1024*1024;
 
    /* transfer fragments until complete buffer is transferred */
 
-   for (count = 0; (INT) count < (INT) buffer_size - NET_TCP_SIZE;) {
-      status = send(sock, buffer + count, NET_TCP_SIZE, flags & 0xFFFF);
+   for (count = 0; (INT) count < (INT) buffer_size - net_tcp_size;) {
+      status = send(sock, buffer + count, net_tcp_size, flags & 0xFFFF);
       if (status != -1)
          count += status;
       else {
+         if (errno == EINTR)
+            continue;
          if ((flags & 0x10000) == 0)
             cm_msg(MERROR, "send_tcp",
                    "send(socket=%d,size=%d) returned %d, errno: %d (%s)",
-                   sock, NET_TCP_SIZE, status, errno, strerror(errno));
+                   sock, net_tcp_size, status, errno, strerror(errno));
          return status;
       }
    }
@@ -3571,6 +3581,8 @@ INT send_tcp(int sock, char *buffer, DWORD buffer_size, INT flags)
       if (status != -1)
          count += status;
       else {
+         if (errno == EINTR)
+            continue;
          if ((flags & 0x10000) == 0)
             cm_msg(MERROR, "send_tcp",
                    "send(socket=%d,size=%d) returned %d, errno: %d (%s)",
