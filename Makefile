@@ -116,6 +116,21 @@ ifdef MIDAS_MAX_EVENT_SIZE
 CFLAGS += -DMAX_EVENT_SIZE=$(MIDAS_MAX_EVENT_SIZE)
 endif
 
+
+#-----------------------
+# Cross-compilation, change GCC_PREFIX
+#
+ifeq ($(OSTYPE),crosscompile)
+GCC_PREFIX=/home/fgddaq/linuxdcc/Cross-Compiler/gcc-4.0.2/build/gcc-4.0.2-glibc-2.3.6/powerpc-405-linux-gnu
+GCC_BIN=$(GCC_PREFIX)/bin/powerpc-405-linux-gnu-
+LIBS=-L/home/fgddaq/linuxdcc/userland/lib -pthread -lutil
+CC  = $(GCC_BIN)gcc
+CXX = $(GCC_BIN)g++
+OSTYPE = cross-ppc405
+OS_DIR = $(OSTYPE)
+NEED_MYSQL=
+endif
+
 #-----------------------
 # OSF/1 (DEC UNIX)
 #
@@ -293,6 +308,16 @@ all: check-mxml \
 	$(LIB_DIR)/mfe.o \
 	$(LIB_DIR)/fal.o $(PROGS)
 
+linux32:
+	$(MAKE) ROOTSYS= OS_DIR=linux-m32 USERFLAGS=-m32
+
+linux64:
+	$(MAKE) ROOTSYS= OS_DIR=linux-m64 USERFLAGS=-m64
+
+crosscompile:
+	echo OSTYPE=$(OSTYPE)
+	$(MAKE) ROOTSYS= OS_DIR=$(OSTYPE)-crosscompile OSTYPE=crosscompile
+
 examples: $(EXAMPLES)
 
 #####################################################################
@@ -325,7 +350,7 @@ $(BIN_DIR):
 
 ifdef NEED_MYSQL
 CFLAGS      += -DHAVE_MYSQL $(shell mysql_config --include)
-MYSQL_LIBS  := $(shell mysql_config --libs)
+MYSQL_LIBS  := -L/usr/lib/mysql $(shell mysql_config --libs)
 # only for mlogger LIBS        += $(MYSQL_LIBS)
 NEED_ZLIB = 1
 endif
