@@ -25,6 +25,9 @@
 // link with SetupAPI.Lib.
 #pragma comment (lib, "setupapi.lib")
 
+// disable "deprecated" warning
+#pragma warning( disable: 4996)
+
 // {CBEB3FB1-AE9F-471c-9016-9B6AC6DCD323}
 DEFINE_GUID(GUID_CLASS_MSCB_BULK, 0xcbeb3fb1, 0xae9f, 0x471c, 0x90, 0x16, 0x9b, 0x6a, 0xc6, 0xdc, 0xd3, 0x23);
 
