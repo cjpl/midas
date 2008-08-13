@@ -30,6 +30,7 @@ typedef struct {
 typedef struct {
    HANDLE rhandle;
    HANDLE whandle;
+   int usb_type;
 } MUSB_INTERFACE;
 
 #elif defined(OS_DARWIN)
