@@ -170,7 +170,7 @@ typedef struct {
 
 /*---- file descriptor ---------------------------------------------*/
 
-#define MSCB_MAX_FD      10
+#define MSCB_MAX_FD      30
 
 #define MSCB_TYPE_USB     1
 #define MSCB_TYPE_ETH     2
