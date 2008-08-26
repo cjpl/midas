@@ -1,4 +1,4 @@
-/********************************************************************\
+n/********************************************************************  \
 
   Name:         mhttpd.c
   Created by:   Stefan Ritt
@@ -11702,10 +11702,7 @@ void interprete(char *cookie_pwd, char *cookie_wpwd, char *cookie_cpwd, char *pa
          sprintf(str, "SC/%s/%s", eq_name, group);
          redirect(str);
       } else {
-         strlcpy(str, path, sizeof(str));
-         if (strrchr(str, '/'))
-            strlcpy(str, strrchr(str, '/')+1, sizeof(str));
-         redirect(str);
+         redirect("./");
       }
 
       return;
