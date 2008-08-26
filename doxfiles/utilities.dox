@@ -360,6 +360,14 @@ channel. While the \b List- will have a dynamic list of run number which has
 been sucessfully manipulated by the Lazylogger channel.
 This list won't exist until the first successful operation of the channel is completed.
 
+- <b> Remarks "Script" backup type (svn rev 4295)</b> 
+  - To support non-standard storage media, such as dcache pools, a "script" backup type
+  was added: to save the midas file, lazylogger executes a script supplied by the user.
+  Only one argument is passed to this script, the full path of the midas file to be saved.
+  The script should return exit status 0 for successful operation, non-zero for error,
+  in which case, the lazylogger will try again later. Example scripts are available
+  for dcache, castor and removable hard disks (hot-plug sata, usb).
+ 
 - <b> Remarks >2.0.0</b> 
  - While lazylogger was developed specifically for tape device, it also supports data file
   transfer to FTP repository system. Improvement towards a more generic support has been done
@@ -450,7 +458,7 @@ This list won't exist until the first successful operation of the channel is com
   given for the data logger.
  <br><br>
   - <b>[Backup type]</b> Specify the "slow device" backup type. Default \b Tape.
-  Can be \b Disk or \b Ftp. 
+  Can be \b Disk, \b Script or \b Ftp. 
    <br><br>
   - <b>[Execute after rewind]</b> Specify a script to run after completion of a lazylogger
   backup set (see below "Capacity (Bytes)").
@@ -459,6 +467,7 @@ This list won't exist until the first successful operation of the channel is com
     - For Tape : \b /dev/nst0- (UNIX like).
     - For Disk : \b /data1/myexpt
     - For Ftp  : \b host,port,user,password,directory
+    - For Script : /home/.../lazy_dcache.perl (script to run for saving the midas file)
    <br><br>
   - <b>[Capacity (Bytes)]</b> Specify the maximum "slow device" capacity in bytes.
   When this capacity is reached,the lazylogger will close the backup device and clear
