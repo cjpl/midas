@@ -193,6 +193,8 @@ INT lazy_log_update(INT action, INT run, char *label, char *file, DWORD perf_tim
   char str[MAX_FILE_PATH];
   INT blocks;
 
+  strcpy(str, "no action");
+
   /* log Lazy logger to midas.log only */
   if (action == NEW_FILE) {
     /* keep track of number of file on that channel */
@@ -201,7 +203,11 @@ INT lazy_log_update(INT action, INT run, char *label, char *file, DWORD perf_tim
     if (equal_ustring(lazy.type, "FTP"))
       sprintf(str, "%s: (cp:%.1fs) %s %1.3lfMB file COPIED",
       label, (double) perf_time / 1000., lazyst.backfile, lazyst.file_size / 1024.0 / 1024.0);
-    else if (equal_ustring(lazy.type, "Disk")) {
+    else if (equal_ustring(lazy.type, "Script")) {
+      sprintf(str, "%s[%i] (cp:%.1fs) %s %1.3lfMB  file NEW",
+        label, lazyst.nfiles, (double) perf_time / 1000.,
+        lazyst.backfile, lazyst.file_size / 1024.0 / 1024.0);
+    } else if (equal_ustring(lazy.type, "Disk")) {
       if (lazy.path[0] != 0)
         if (lazy.path[strlen(lazy.path) - 1] != DIR_SEPARATOR)
           strcat(lazy.path, DIR_SEPARATOR_STR);
@@ -1814,7 +1820,7 @@ usage:
       printf("                          : args passed are: 'device path' 'channel name' 'list label'\n");
       printf
         ("                          : The actual command will look like: <cmd> /dev/nst0 Tape Data_2000\n");
-      printf("Backup type               : Destination device type (Disk, Tape, FTP)\n");
+      printf("Backup type               : Destination device type (Disk, Tape, Script, FTP)\n");
       printf("Path                      : Destination path (file.ext, /dev/nst0, ftp...)\n");
       printf("                            in case of FTP type, the 'Path' entry should be:\n");
       printf("                            host, port, user, password, directory, run%%05d.mid\n");
