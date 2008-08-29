@@ -1322,7 +1322,7 @@ int readout_thread(void *param)
    void *p;
 
    p = param; /* avoid compiler warning */
-   do {
+   while (!stop_all_threads) {
       /* obtain buffer space */
       if (rbh1_next) // if set by user code, use it
          rbh1 = rbh1_next;
@@ -1386,7 +1386,7 @@ int readout_thread(void *param)
       } else // readout_enabled
         ss_sleep(10);
 
-   } while (!stop_all_threads);
+   }
 
    readout_thread_active = 0;
 
@@ -1431,7 +1431,7 @@ int receive_trigger_event(EQUIPMENT *eq)
                                  SYNC, rpc_mode);
 
          if (status != SUCCESS) {
-            cm_msg(MERROR, "scheduler", "rpc_send_event error %d", status);
+            cm_msg(MERROR, "receive_trigger_event", "rpc_send_event error %d", status);
             return -1;
          }
 
@@ -1633,7 +1633,7 @@ INT check_polled_events(void)
                if (size > 0) {
                   if (pevent->data_size + sizeof(EVENT_HEADER) >
                       (DWORD) max_event_size) {
-                     cm_msg(MERROR, "scheduler",
+                     cm_msg(MERROR, "check_polled_events",
                             "Event size %ld larger than maximum size %d",
                             (long) (pevent->data_size + sizeof(EVENT_HEADER)),
                             max_event_size);
@@ -1667,7 +1667,7 @@ INT check_polled_events(void)
             /* check event size */
             if (eq_info->eq_type & EQ_FRAGMENTED) {
                if (pevent->data_size + sizeof(EVENT_HEADER) > (DWORD) max_event_size_frag) {
-                  cm_msg(MERROR, "send_event",
+                  cm_msg(MERROR, "check_polled_events",
                         "Event size %ld larger than maximum size %d for frag. ev.",
                         (long) (pevent->data_size + sizeof(EVENT_HEADER)),
                         max_event_size_frag);
@@ -1675,7 +1675,7 @@ INT check_polled_events(void)
                }
             } else {
                if (pevent->data_size + sizeof(EVENT_HEADER) > (DWORD) max_event_size) {
-                  cm_msg(MERROR, "scheduler",
+                  cm_msg(MERROR, "check_polled_events",
                         "Event size %ld larger than maximum size %d",
                         (long) (pevent->data_size + sizeof(EVENT_HEADER)),
                         max_event_size);
@@ -1736,7 +1736,7 @@ INT check_polled_events(void)
                      status = rpc_send_event(equipment[idx].buffer_handle, pfragment,
                                              pfragment->data_size + sizeof(EVENT_HEADER), SYNC, rpc_mode);
                      if (status != RPC_SUCCESS) {
-                        cm_msg(MERROR, "send_event", "rpc_send_event(SYNC) error %d", status);
+                        cm_msg(MERROR, "check_polled_events", "rpc_send_event(SYNC) error %d", status);
                         return status;
                      }
 
@@ -1759,7 +1759,7 @@ INT check_polled_events(void)
                                        SYNC, rpc_mode);
 
                if (status != SUCCESS) {
-                  cm_msg(MERROR, "scheduler", "rpc_send_event error %d", status);
+                  cm_msg(MERROR, "check_polled_events", "rpc_send_event error %d", status);
                   break;
                }
             }
@@ -2020,7 +2020,7 @@ INT scheduler(void)
                            status = rpc_send_event(equipment[idx].buffer_handle, pfragment,
                                                    pfragment->data_size + sizeof(EVENT_HEADER), SYNC, rpc_mode);
                            if (status != RPC_SUCCESS) {
-                              cm_msg(MERROR, "send_event", "rpc_send_event(SYNC) error %d", status);
+                              cm_msg(MERROR, "scheduler", "rpc_send_event(SYNC) error %d", status);
                               return status;
                            }
 
