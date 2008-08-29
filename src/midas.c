@@ -4607,9 +4607,16 @@ INT cm_shutdown(char *name, BOOL bUnique)
          /* client found -> connect to its server port */
          status = rpc_client_connect(remote_host, port, client_name, &hConn);
          if (status != RPC_SUCCESS) {
+            int client_pid = atoi(key.name);
             return_status = CM_NO_CLIENT;
-            sprintf(str, "cannot connect to client %s on host %s, port %d", client_name, remote_host, port);
-            cm_msg(MERROR, "cm_shutdown", str);
+            cm_msg(MERROR, "cm_shutdown", "Cannot connect to client \'%s\' on host \'%s\', port %d", client_name, remote_host, port);
+#ifdef SIGKILL
+            cm_msg(MERROR, "cm_shutdown", "Killing and Deleting client \'%s\' pid %d", client_name, client_pid);
+            kill(client_pid, SIGKILL);
+            status = cm_delete_client_info(hDB, client_pid);
+            if (status != CM_SUCCESS)
+               cm_msg(MERROR, "cm_shutdown", "Cannot delete client info for client \'%s\', pid %d, status %d", name, client_pid, status);
+#endif
          } else {
             /* call disconnect with shutdown=TRUE */
             rpc_client_disconnect(hConn, TRUE);
@@ -4622,9 +4629,16 @@ INT cm_shutdown(char *name, BOOL bUnique)
             } while (status == DB_SUCCESS && (ss_millitime() - start_time < 5000));
 
             if (status == DB_SUCCESS) {
-               cm_msg(MINFO, "cm_shutdown",
-                      "Cannot shutdown client \"%s\", please kill manually and do an ODB cleanup",
-                      client_name);
+               int client_pid = atoi(key.name);
+               return_status = CM_NO_CLIENT;
+               cm_msg(MERROR, "cm_shutdown", "Client \'%s\' not responding to shutdown command", client_name);
+#ifdef SIGKILL
+               cm_msg(MERROR, "cm_shutdown", "Killing and Deleting client \'%s\' pid %d", client_name, client_pid);
+               kill(client_pid, SIGKILL);
+               status = cm_delete_client_info(hDB, client_pid);
+               if (status != CM_SUCCESS)
+                  cm_msg(MERROR, "cm_shutdown", "Cannot delete client info for client \'%s\', pid %d, status %d", name, client_pid, status);
+#endif
                return_status = CM_NO_CLIENT;
             } else {
                return_status = CM_SUCCESS;
@@ -9777,15 +9791,27 @@ INT rpc_send_event(INT buffer_handle, void *source, INT buf_size, INT async_flag
       /* send events larger than optimal buffer size directly */
       if (aligned_buf_size + 4 * 8 + sizeof(NET_COMMAND_HEADER) >= (DWORD) _opt_tcp_size) {
          /* send header */
-         send_tcp(_rpc_sock, _tcp_buffer + _tcp_wp, sizeof(NET_COMMAND_HEADER) + 16, 0);
+         i = send_tcp(_rpc_sock, _tcp_buffer + _tcp_wp, sizeof(NET_COMMAND_HEADER) + 16, 0);
+         if (i <= 0) {
+            cm_msg(MERROR, "rpc_send_event", "send_tcp() failed, return code = %d", i);
+            return RPC_NET_ERROR;
+         }
 
          /* send data */
-         send_tcp(_rpc_sock, (char *) source, aligned_buf_size, 0);
+         i = send_tcp(_rpc_sock, (char *) source, aligned_buf_size, 0);
+         if (i <= 0) {
+            cm_msg(MERROR, "rpc_send_event", "send_tcp() failed, return code = %d", i);
+            return RPC_NET_ERROR;
+         }
 
          /* send last two parameters */
          *((INT *) (&nc->param[0])) = buf_size;
          *((INT *) (&nc->param[8])) = 0;
-         send_tcp(_rpc_sock, &nc->param[0], 16, 0);
+         i = send_tcp(_rpc_sock, &nc->param[0], 16, 0);
+         if (i <= 0) {
+            cm_msg(MERROR, "rpc_send_event", "send_tcp() failed, return code = %d", i);
+            return RPC_NET_ERROR;
+         }
       } else {
          /* copy event */
          memcpy(&nc->param[16], source, buf_size);
@@ -9802,10 +9828,18 @@ INT rpc_send_event(INT buffer_handle, void *source, INT buf_size, INT async_flag
       /* send events larger than optimal buffer size directly */
       if (aligned_buf_size + 4 * 8 + sizeof(INT) >= (DWORD) _opt_tcp_size) {
          /* send buffer */
-         send_tcp(_rpc_sock, (char *) &buffer_handle, sizeof(INT), 0);
+         i = send_tcp(_rpc_sock, (char *) &buffer_handle, sizeof(INT), 0);
+         if (i <= 0) {
+            cm_msg(MERROR, "rpc_send_event", "send_tcp() failed, return code = %d", i);
+            return RPC_NET_ERROR;
+         }
 
          /* send data */
-         send_tcp(_rpc_sock, (char *) source, aligned_buf_size, 0);
+         i = send_tcp(_rpc_sock, (char *) source, aligned_buf_size, 0);
+         if (i <= 0) {
+            cm_msg(MERROR, "rpc_send_event", "send_tcp() failed, return code = %d", i);
+            return RPC_NET_ERROR;
+         }
       } else {
          /* copy event */
          *((INT *) (_tcp_buffer + _tcp_wp)) = buffer_handle;
