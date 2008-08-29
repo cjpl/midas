@@ -1,4 +1,4 @@
-n/********************************************************************  \
+/********************************************************************  \
 
   Name:         mhttpd.c
   Created by:   Stefan Ritt
@@ -8958,9 +8958,8 @@ static void show_hist_config_variables_tags(HNDLE hDB, HNDLE hKeyRoot, const cha
    static char gPreviousSelectedEvent[NAME_LENGTH];
    static char gPreviousSelectedTag[NAME_LENGTH];
 
-#define MAX_TAGS 1000
-
-   char names[MAX_TAGS][2*NAME_LENGTH];
+   char *names = NULL;
+   int maxvars = 0;
    int nvars = 0;
    
    strlcpy(selectedEvent, selectedName, sizeof(selectedEvent));
@@ -9043,7 +9042,14 @@ static void show_hist_config_variables_tags(HNDLE hDB, HNDLE hKeyRoot, const cha
             if (equal_ustring(var_name, selectedTag))
                selected = "selected";
             //rsprintf("<option %s value=\"%s\">%s\n", selected, var_name, var_name);
-            strlcpy(names[nvars++], var_name, sizeof(names[0]));
+
+            if (nvars>=maxvars) {
+               maxvars = (maxvars+1)*2;
+               //printf("nvars %d, allocate %d\n", nvars, maxvars);
+               names = realloc(names, maxvars*2*NAME_LENGTH);
+               assert(names!=NULL);
+            }
+            strlcpy(&names[(nvars++)*2*NAME_LENGTH], var_name, 2*NAME_LENGTH);
          } else {
             int ii;
             for (ii=0; ii<array; ii++) {
@@ -9057,26 +9063,30 @@ static void show_hist_config_variables_tags(HNDLE hDB, HNDLE hKeyRoot, const cha
                sprintf(vvv, "%s[%d]", var_name, ii);
 
                //rsprintf("<option %s value=\"%s\">%s\n", selected, vvv, vvv);
-               strlcpy(names[nvars++], vvv, sizeof(names[0]));
+               if (nvars>=maxvars) {
+                  maxvars = (maxvars+1)*2;
+                  //printf("nvars %d, allocate %d\n", nvars, maxvars);
+                  names = realloc(names, maxvars*2*NAME_LENGTH);
+                  assert(names!=NULL);
+               }
+               strlcpy(&names[(nvars++)*2*NAME_LENGTH], vvv, 2*NAME_LENGTH);
             }
          }
       }
    }
 
-   assert(nvars <= MAX_TAGS);
-
    if (0) {
      printf("found %d names\n", nvars);
      for (i=0; i<nvars; i++)
-       printf("unsorted %d: [%s]\n", i, names[i]);
+       printf("unsorted %d: [%s]\n", i, names+i*2*NAME_LENGTH);
    }
 
-   qsort(names, nvars, sizeof(names[0]), sort_tags);
+   qsort(names, nvars, 2*NAME_LENGTH, sort_tags);
 
    if (0) {
      printf("found %d names\n", nvars);
      for (i=0; i<nvars; i++)
-       printf("  sorted %d: [%s]\n", i, names[i]);
+       printf("  sorted %d: [%s]\n", i, names+i*2*NAME_LENGTH);
    }
 
    if (0) {
@@ -9093,11 +9103,14 @@ static void show_hist_config_variables_tags(HNDLE hDB, HNDLE hKeyRoot, const cha
 
    for (i=0; i<nvars; i++) {
      char* selected = "";
-     if (equal_ustring(names[i], selectedTag))
+     if (equal_ustring(names+i*2*NAME_LENGTH, selectedTag))
        selected = "selected";
      
-     rsprintf("<option %s value=\"%s\">%s\n", selected, names[i], names[i]);
+     rsprintf("<option %s value=\"%s\">%s\n", selected, names+i*2*NAME_LENGTH, names+i*2*NAME_LENGTH);
    }
+
+   if (names)
+     free(names);
 }
 
 /*------------------------------------------------------------------*/
