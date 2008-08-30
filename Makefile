@@ -82,6 +82,11 @@ ifdef MYSQL_CONFIG
 endif
 
 #
+# Optional ODBC history support
+#
+HAVE_ODBC := $(shell if [ -e /usr/include/sql.h ]; then echo 1; fi)
+
+#
 # Option to use our own implementation of strlcat, strlcpy
 #
 NEED_STRLCPY=1
@@ -283,6 +288,10 @@ ifdef ROOTSYS
 ANALYZER += $(LIB_DIR)/rmana.o
 endif
 
+ifdef HAVE_ODBC
+PROGS += $(BIN_DIR)/mh2sql
+endif
+
 OBJS =  $(LIB_DIR)/midas.o $(LIB_DIR)/system.o $(LIB_DIR)/mrpc.o \
 	$(LIB_DIR)/odb.o $(LIB_DIR)/ybos.o $(LIB_DIR)/ftplib.o \
 	$(LIB_DIR)/mxml.o \
@@ -353,6 +362,12 @@ CFLAGS      += -DHAVE_MYSQL $(shell mysql_config --include)
 MYSQL_LIBS  := -L/usr/lib/mysql $(shell mysql_config --libs)
 # only for mlogger LIBS        += $(MYSQL_LIBS)
 NEED_ZLIB = 1
+endif
+
+ifdef HAVE_ODBC
+CFLAGS      += -DHAVE_ODBC
+OBJS        += $(LIB_DIR)/history_odbc.o
+LIBS        += -lodbc
 endif
 
 ifdef ROOTSYS
@@ -447,6 +462,9 @@ endif
 $(LIB_DIR)/%.o:$(SRC_DIR)/%.c
 	$(CC) -c $(CFLAGS) $(OSFLAGS) -o $@ $<
 
+$(LIB_DIR)/%.o:$(SRC_DIR)/%.cxx
+	$(CXX) -c $(CFLAGS) $(OSFLAGS) -o $@ $<
+
 $(LIB_DIR)/mxml.o:$(MXML_DIR)/mxml.c
 	$(CC) -c $(CFLAGS) $(OSFLAGS) -o $@ $(MXML_DIR)/mxml.c
 
@@ -476,6 +494,9 @@ $(BIN_DIR)/mdump: $(UTL_DIR)/mdump.c
 
 $(BIN_DIR)/mhdump: $(UTL_DIR)/mhdump.cxx
 	$(CXX) $(CFLAGS) $(OSFLAGS) -o $@ $<
+
+$(BIN_DIR)/mh2sql: $(UTL_DIR)/mh2sql.cxx $(LIB_DIR)/history_odbc.o
+	$(CXX) $(CFLAGS) $(OSFLAGS) -o $@ $^ $(LIBS)
 
 $(BIN_DIR)/lazylogger: $(SRC_DIR)/lazylogger.c
 	$(CC) $(CFLAGS) $(OSFLAGS) -o $@ $(SRC_DIR)/lazylogger.c $(LIB) $(LIBS)

@@ -62,6 +62,7 @@ BOOL verbose = FALSE;
 LOG_CHN log_chn[MAX_CHANNELS];
 
 struct hist_log_s {
+   char event_name[256];
    WORD event_id;
    void *buffer;
    INT buffer_size;
@@ -2455,6 +2456,11 @@ INT log_write(LOG_CHN * log_chn, EVENT_HEADER * pevent)
 
 void log_history(HNDLE hDB, HNDLE hKey, void *info);
 
+#ifdef HAVE_ODBC
+#include "history_odbc.h"
+static int using_odbc = 0;
+#endif
+
 static int add_event(int* indexp, int event_id, const char* event_name, HNDLE hKey, int ntags, const TAG* tags, int period, int hotlink)
 {
    int status;
@@ -2462,11 +2468,16 @@ static int add_event(int* indexp, int event_id, const char* event_name, HNDLE hK
    int index = *indexp;
 
    /* check for duplicate event id's */
-   for (i=0; i<index; i++)
+   for (i=0; i<index; i++) {
       if (hist_log[i].event_id == event_id) {
          cm_msg(MERROR, "add_event", "Duplicate event id %d for \'%s\'", event_id, event_name);
          return 0;
       }
+      if (strcmp(hist_log[i].event_name, event_name) == 0) {
+         cm_msg(MERROR, "add_event", "Duplicate event name \'%s\' with event id %d", event_name, event_id);
+         return 0;
+      }
+   }
 
    if (index >= MAX_HISTORY) {
       cm_msg(MERROR, "add_event", "Too many history events: %d, please increase MAX_HISTORY!", index);
@@ -2484,10 +2495,18 @@ static int add_event(int* indexp, int event_id, const char* event_name, HNDLE hK
    status = hs_define_event(event_id, (char*)event_name, (TAG*)tags, sizeof(TAG) * ntags);
    assert(status == DB_SUCCESS);
 
+#ifdef HAVE_ODBC
+   if (using_odbc) {
+      status = hs_define_event_odbc(event_name, (TAG*)tags, sizeof(TAG) * ntags);
+      assert(status == DB_SUCCESS);
+   }
+#endif
+
    status = db_get_record_size(hDB, hKey, 0, &size);
    assert(status == DB_SUCCESS);
 
    /* setup hist_log structure for this event */
+   strlcpy(hist_log[index].event_name, event_name, sizeof(hist_log[index].event_name));
    hist_log[index].event_id    = event_id;
    hist_log[index].n_var       = ntags;
    hist_log[index].hKeyVar     = hKey;
@@ -2636,6 +2655,26 @@ INT open_history()
    BOOL single_names;
    int count_events = 0;
    int global_per_variable_history = 0;
+
+#ifdef HAVE_ODBC
+   /* check ODBC connection */
+   using_odbc = 0;
+   size = sizeof(str);
+   status = db_get_value(hDB, 0, "/Logger/ODBC_DSN", str, &size, TID_STRING, FALSE);
+   if (status == DB_SUCCESS) {
+      int debug = 0;
+      size = sizeof(debug);
+      status = db_get_value(hDB, 0, "/Logger/ODBC_Debug", &debug, &size, TID_INT, TRUE);
+      hs_debug_odbc(debug);
+
+      using_odbc = 1;
+      status = hs_connect_odbc(str);
+      if (status != HS_SUCCESS) {
+         cm_msg(MERROR, "open_history", "Cannot connect to ODBC database with DSN \'%s\', status %d", str, status);
+         using_odbc = 0;
+      }
+   }
+#endif
 
    /* set directory for history files */
    size = sizeof(str);
@@ -3043,6 +3082,12 @@ void close_history()
             free(hist_log[i].buffer);
          hist_log[i].buffer = NULL;
       }
+
+#ifdef HAVE_ODBC
+   if (using_odbc)
+      status = hs_disconnect_odbc();
+   using_odbc = 0;
+#endif
 }
 
 /*---- log_history -------------------------------------------------*/
@@ -3075,6 +3120,11 @@ void log_history(HNDLE hDB, HNDLE hKey, void *info)
 
    hs_write_event(hist_log[i].event_id, hist_log[i].buffer, hist_log[i].buffer_size);
    hist_log[i].last_log = ss_time();
+#ifdef HAVE_ODBC
+   if (using_odbc) {
+      hs_write_event_odbc(hist_log[i].event_name, hist_log[i].last_log, (const char*)hist_log[i].buffer, hist_log[i].buffer_size);
+   }
+#endif
 }
 
 /*------------------------------------------------------------------*/
