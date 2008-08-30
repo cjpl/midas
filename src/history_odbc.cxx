@@ -7,6 +7,9 @@
 #include <ctype.h>
 #include <assert.h>
 
+// MIDAS BOOL collides with ODBC BOOL
+#define BOOL xxxBOOL
+
 #include "midas.h"
 #include "history_odbc.h"
 
@@ -594,7 +597,7 @@ int SqlODBC::Fetch()
 const char* SqlODBC::GetColumn(int icol)
 {
   static char buf[1024];
-  int indicator;
+  SQLINTEGER indicator;
   int status = SQLGetData(fStmt, icol, SQL_C_CHAR, buf, sizeof(buf), &indicator);
 
   if (!SQL_SUCCEEDED(status)) {
