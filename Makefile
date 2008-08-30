@@ -368,6 +368,9 @@ ifdef HAVE_ODBC
 CFLAGS      += -DHAVE_ODBC
 OBJS        += $(LIB_DIR)/history_odbc.o
 LIBS        += -lodbc
+ifeq ($(OSTYPE),darwin)
+LIBS        += /System/Library/Frameworks/CoreFoundation.framework/CoreFoundation
+endif
 endif
 
 ifdef ROOTSYS
