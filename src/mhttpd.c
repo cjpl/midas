@@ -1305,7 +1305,7 @@ void show_status_page(int refresh, char *cookie_wpwd)
    else
       sprintf(ref, "Logger/Auto restart?cmd=set");
 
-   if (cm_exist("RunSubmit", FALSE))
+   if (cm_exist("RunSubmit", FALSE) == CM_SUCCESS)
       rsprintf("<td bgcolor=#00FF00>Restart: RunSubmit");
    else {
      size = sizeof(flag);
