@@ -3566,8 +3566,10 @@ INT send_tcp(int sock, char *buffer, DWORD buffer_size, INT flags)
       if (status != -1)
          count += status;
       else {
+#ifdef OS_UNIX
          if (errno == EINTR)
             continue;
+#endif
          if ((flags & 0x10000) == 0)
             cm_msg(MERROR, "send_tcp",
                    "send(socket=%d,size=%d) returned %d, errno: %d (%s)",
@@ -3581,8 +3583,10 @@ INT send_tcp(int sock, char *buffer, DWORD buffer_size, INT flags)
       if (status != -1)
          count += status;
       else {
+#ifdef OS_UNIX
          if (errno == EINTR)
             continue;
+#endif
          if ((flags & 0x10000) == 0)
             cm_msg(MERROR, "send_tcp",
                    "send(socket=%d,size=%d) returned %d, errno: %d (%s)",
