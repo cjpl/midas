@@ -113,7 +113,8 @@ struct sockaddr_in addr;
 int size, n;
 fd_set readfds;
 struct timeval timeout;
-static float value_ch1 = 0;
+static float value_ch0, value_ch1;
+static int first = 1;
 
    if (channel == 0) {
 
@@ -128,16 +129,22 @@ static float value_ch1 = 0;
 
          select(FD_SETSIZE, (void *) &readfds, NULL, NULL, (void *) &timeout);
 
-         if (!FD_ISSET(info->sock, &readfds))
-            break;
-
-         memset(str, 0, sizeof(str));
-         size = sizeof(addr);
-         n = recvfrom(info->sock, str, sizeof(str), 0, (struct sockaddr *)&addr, &size);
+         if (FD_ISSET(info->sock, &readfds)) {
+            memset(str, 0, sizeof(str));
+            size = sizeof(addr);
+            n = recvfrom(info->sock, str, sizeof(str), 0, (struct sockaddr *)&addr, &size);
+            if (n > 0) {
+               value_ch0 = (float)atof(str+10);
+               value_ch1 = (float)atof(str+31);
+               first = 0;
+            }
+         } else {
+            if (!first)
+               break;
+         }
       } while (1);
 
-      *pvalue = (float)atof(str+10);
-      value_ch1 = (float)atof(str+31);
+      *pvalue = value_ch0;
    } else
       *pvalue = value_ch1;
 
