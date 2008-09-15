@@ -215,7 +215,6 @@ INT mscbdev_read_all(MSCBDEV_INFO * info)
                   sprintf(str, "Error reading MSCB bus at \"%s:%d:%d-%d\"", 
                          info->mscbdev_settings.mscb_device, addr, i_start, i_stop);
                mfe_error(str);
-               cm_msg(MERROR, "mscbdev_read_all", str);
             }
             for (j = v_start; j <= v_stop; j++)
                info->mscbdev_settings.var_cache[j] = (float) ss_nan();
