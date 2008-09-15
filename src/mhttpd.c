@@ -971,7 +971,8 @@ void show_status_page(int refresh, char *cookie_wpwd)
 {
    int i, j, k, h, m, s, status, size, type;
    BOOL flag, first;
-   char str[1000], name[32], ref[256], bgcol[32], fgcol[32], alarm_class[32];
+   char str[1000], msg[256], name[32], ref[256], bgcol[32], fgcol[32], alarm_class[32],
+      value_str[256];
    char *trans_name[] = { "Start", "Stop", "Pause", "Resume" };
    time_t now;
    DWORD difftime;
@@ -1116,13 +1117,6 @@ void show_status_page(int refresh, char *cookie_wpwd)
             size = sizeof(flag);
             db_get_value(hDB, hsubkey, "Triggered", &flag, &size, TID_INT, TRUE);
             if (flag) {
-               /*
-                  if (exp_name[0])
-                  sprintf(ref, "/?exp=%s&cmd=alarms", exp_name);
-                  else
-                  sprintf(ref, "/?cmd=alarms");
-                */
-
                size = sizeof(alarm_class);
                db_get_value(hDB, hsubkey, "Alarm Class", alarm_class, &size, TID_STRING,
                             TRUE);
@@ -1137,8 +1131,21 @@ void show_status_page(int refresh, char *cookie_wpwd)
                size = sizeof(fgcol);
                db_get_value(hDB, 0, str, fgcol, &size, TID_STRING, TRUE);
 
-               size = sizeof(str);
-               db_get_value(hDB, hsubkey, "Alarm Message", str, &size, TID_STRING, TRUE);
+               size = sizeof(msg);
+               db_get_value(hDB, hsubkey, "Alarm Message", msg, &size, TID_STRING, TRUE);
+
+               size = sizeof(j);
+               db_get_value(hDB, hsubkey, "Type", &j, &size, TID_INT, TRUE);
+
+               if (j == AT_EVALUATED) {
+                  size = sizeof(str);
+                  db_get_value(hDB, hsubkey, "Condition", str, &size, TID_STRING, TRUE);
+
+                  /* retrieve value */
+                  al_evaluate_condition(str, value_str);
+                  sprintf(str, msg, value_str);
+               } else
+                  strlcpy(str, msg, sizeof(str));
 
                rsprintf("<tr><td colspan=6 bgcolor=\"%s\" align=center>", bgcol);
 
