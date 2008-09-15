@@ -180,8 +180,9 @@ INT mscbdev_set(MSCBDEV_INFO * info, INT channel, float value)
 INT mscbdev_read_all(MSCBDEV_INFO * info)
 {
    int i, j, status, i_start, i_stop, v_start, v_stop, addr, size;
-   unsigned char buffer[256], str[256], *pbuf;
+   unsigned char buffer[256], *pbuf;
    static DWORD last_error = 0;
+   char str[256];
 
    /* find consecutive ranges in variables */
    v_start = v_stop = 0;
