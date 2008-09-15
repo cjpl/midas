@@ -189,7 +189,8 @@ INT mscbhvr_init(HNDLE hkey, void **pinfo, INT channels, INT(*bd) (INT cmd, ...)
 INT mscbhvr_read_all(MSCBHVR_INFO * info, int i)
 {
    int size, status;
-   unsigned char buffer[256], *pbuf, str[256];
+   unsigned char buffer[256], *pbuf;
+   char str[256];
 
    size = sizeof(buffer);
    status = mscb_read_range(info->fd, info->settings.address[i], 0, 12, buffer, &size);
