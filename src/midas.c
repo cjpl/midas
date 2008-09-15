@@ -4562,7 +4562,7 @@ INT cm_shutdown(char *name, BOOL bUnique)
    INT status, return_status, i, size;
    HNDLE hDB, hKeyClient, hKey, hSubkey, hKeyTmp, hConn;
    KEY key;
-   char client_name[NAME_LENGTH], remote_host[HOST_NAME_LENGTH], str[256];
+   char client_name[NAME_LENGTH], remote_host[HOST_NAME_LENGTH];
    INT port;
    DWORD start_time;
 
