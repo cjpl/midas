@@ -197,7 +197,6 @@ INT mscbhvr_read_all(MSCBHVR_INFO * info, int i)
       sprintf(str, "Error reading MSCB HVR at \"%s:%d\".", 
               info->settings.mscb_device, info->settings.address[i]);
       mfe_error(str);
-      cm_msg(MERROR, "mscbhvr_read_all", str);
       return FE_ERR_HW;
    }
 
@@ -268,6 +267,7 @@ INT mscbhvr_get(MSCBHVR_INFO * info, INT channel, float *pvalue)
 {
    int size, status;
    unsigned char buffer[256], *pbuf;
+   char str[256];
 
    /* check if value was previously read by mscbhvr_read_all() */
    if (info->node_vars[channel].cached) {
@@ -281,9 +281,9 @@ INT mscbhvr_get(MSCBHVR_INFO * info, INT channel, float *pvalue)
    size = sizeof(buffer);
    status = mscb_read_range(info->fd, info->settings.address[channel], 2, 3, buffer, &size);
    if (status != MSCB_SUCCESS) {
-      cm_msg(MERROR, "mscbhvr_get",
-            "Cannot access MSCB HVR address \"%s:%d\". Check power and connection.", 
-            info->settings.mscb_device, info->settings.address[channel]);
+      sprintf(str, "Error reading MSCB HVR at \"%s:%d\".", 
+              info->settings.mscb_device, info->settings.address[channel]);
+      mfe_error(str);
       return FE_ERR_HW;
    }
 
