@@ -1405,11 +1405,27 @@ Lock a database for exclusive access via system mutex calls.
 @param hDB   Handle to the database to lock
 @return DB_SUCCESS, DB_INVALID_HANDLE, DB_TIMEOUT
 */
+
+/* Define CHECK_THREAD_ID to enable thread checking. This ensures that
+   only the main thread does the locking/unlocking of the ODB. In multi-thread
+   applications (slow control front-end for example), unexpected behaviour can
+   occur if several threads lock/unlock the ODB at the same time, since the midas
+   API is not thread safe. */
+#ifdef CHECK_THREAD_ID
+static int _lock_tid = 0;
+#endif
+
 INT db_lock_database(HNDLE hDB)
 {
-
 #ifdef LOCAL_ROUTINES
    int status;
+
+#ifdef CHECK_THREAD_ID
+   if (_lock_tid == 0)
+      _lock_tid = ss_gettid();
+
+   assert(_lock_tid = ss_gettid());
+#endif
 
    if (hDB > _database_entries || hDB <= 0) {
       cm_msg(MERROR, "db_lock_database", "invalid database handle, aborting...");
@@ -1463,6 +1479,14 @@ INT db_unlock_database(HNDLE hDB)
 {
 
 #ifdef LOCAL_ROUTINES
+
+#ifdef CHECK_THREAD_ID
+   if (_lock_tid == 0)
+      _lock_tid = ss_gettid();
+
+   assert(_lock_tid = ss_gettid());
+#endif
+
    if (hDB > _database_entries || hDB <= 0) {
       cm_msg(MERROR, "db_unlock_database", "invalid database handle");
       return DB_INVALID_HANDLE;
@@ -1482,6 +1506,24 @@ INT db_unlock_database(HNDLE hDB)
    return DB_SUCCESS;
 }
 
+/********************************************************************/
+
+INT db_get_lock_cnt(HNDLE hDB)
+{
+#ifdef LOCAL_ROUTINES
+
+   if (hDB > _database_entries || hDB <= 0) {
+      cm_msg(MERROR, "db_lock_database", "invalid database handle, aborting...");
+      abort();
+      return DB_INVALID_HANDLE;
+   }
+
+   return _database[hDB - 1].lock_cnt;
+#else
+   return 0;
+#endif
+}
+      
 /********************************************************************/
 /**
 Protect a database for read/write access outside of the \b db_xxx functions
