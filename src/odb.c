@@ -1512,6 +1512,10 @@ INT db_get_lock_cnt(HNDLE hDB)
 {
 #ifdef LOCAL_ROUTINES
 
+   /* return zero if no ODB is open or we run remotely */
+   if (_database_entries == 0)
+      return 0;
+
    if (hDB > _database_entries || hDB <= 0) {
       cm_msg(MERROR, "db_lock_database", "invalid database handle, aborting...");
       abort();
