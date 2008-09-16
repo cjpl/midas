@@ -143,6 +143,9 @@ int main(int argc, char *argv[])
 
    cm_msg_register(receive_message);
 
+   /* increased watchdog timeout for long messages */
+   cm_set_watchdog_params(TRUE, 60000);
+
    printf("Midas Message Talker connected to %s. Press \"!\" to exit\n",
           host_name[0] ? host_name : "local host");
 
