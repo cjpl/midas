@@ -550,6 +550,7 @@ extern "C" {
    /*---- online database ----*/
    INT EXPRT db_lock_database(HNDLE database_handle);
    INT EXPRT db_unlock_database(HNDLE database_handle);
+   INT EXPRT db_get_lock_cnt(HNDLE database_handle);
    INT db_update_record(INT hDB, INT hKey, int s);
    INT db_close_all_records(void);
    INT EXPRT db_flush_database(HNDLE hDB);
