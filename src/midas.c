@@ -900,7 +900,6 @@ INT cm_msg_retrieve(INT n_message, char *message, INT buf_size)
    INT status, size, offset, i;
    HNDLE hDB, hKey;
 
-
    if (rpc_is_remote())
       return rpc_call(RPC_CM_MSG_RETRIEVE, n_message, message, buf_size);
 
@@ -9112,6 +9111,7 @@ INT rpc_client_call(HNDLE hConn, const INT routine_id, ...)
    BOOL bpointer, bbig;
    NET_COMMAND *nc;
    int send_sock;
+   time_t start_time;
 
    idx = hConn - 1;
 
@@ -9269,24 +9269,28 @@ INT rpc_client_call(HNDLE hConn, const INT routine_id, ...)
 
    /* make some timeout checking */
    if (rpc_timeout > 0) {
-      FD_ZERO(&readfds);
-      FD_SET(send_sock, &readfds);
-
-      timeout.tv_sec = rpc_timeout / 1000;
-      timeout.tv_usec = (rpc_timeout % 1000) * 1000;
+      start_time = ss_time();
 
       do {
+         FD_ZERO(&readfds);
+         FD_SET(send_sock, &readfds);
+
+         timeout.tv_sec = 1;
+         timeout.tv_usec = 0;
+
          status = select(FD_SETSIZE, &readfds, NULL, NULL, &timeout);
 
-         /* if an alarm signal was cought, restart select with reduced timeout */
-         if (status == -1 && timeout.tv_sec >= WATCHDOG_INTERVAL / 1000)
-            timeout.tv_sec -= WATCHDOG_INTERVAL / 1000;
+         if (FD_ISSET(send_sock, &readfds))
+            break;
 
-      } while (status == -1);   /* dont return if an alarm signal was cought */
+         if (ss_time() - start_time > rpc_timeout / 1000)
+            break;
+
+      } while (status == -1 || status == 0); /* continue again if signal was cought */
 
       if (!FD_ISSET(send_sock, &readfds)) {
-         cm_msg(MERROR, "rpc_client_call", "rpc timeout, routine = \"%s\", host = \"%s\"",
-                rpc_list[rpc_index].name, _client_connection[idx].host_name);
+         cm_msg(MERROR, "rpc_client_call", "rpc timeout after %d sec, routine = \"%s\", host = \"%s\", connection closed", 
+            (int) (ss_time() - start_time), rpc_list[rpc_index].name, _client_connection[idx].host_name);
 
          /* disconnect to avoid that the reply to this rpc_call comes at
             the next rpc_call */
@@ -9403,6 +9407,7 @@ INT rpc_call(const INT routine_id, ...)
    BOOL bpointer, bbig;
    NET_COMMAND *nc;
    int send_sock;
+   time_t start_time;
 
    send_sock = _server_connection.send_sock;
    transport = _server_connection.transport;
@@ -9437,6 +9442,7 @@ INT rpc_call(const INT routine_id, ...)
          break;
    idx = i;
    if (rpc_list[i].id == 0) {
+      ss_mutex_release(_mutex_rpc);
       sprintf(str, "invalid rpc ID (%d)", routine_id);
       cm_msg(MERROR, "rpc_call", str);
       return RPC_INVALID_ID;
@@ -9511,10 +9517,10 @@ INT rpc_call(const INT routine_id, ...)
          param_size = ALIGN8(arg_size);
 
          if ((POINTER_T) param_ptr - (POINTER_T) nc + param_size > (INT) NET_BUFFER_SIZE) {
+            ss_mutex_release(_mutex_rpc);
             cm_msg(MERROR, "rpc_call",
                    "parameters (%d) too large for network buffer (%d)",
                    (POINTER_T) param_ptr - (POINTER_T) nc + param_size, NET_BUFFER_SIZE);
-            ss_mutex_release(_mutex_rpc);
             return RPC_EXCEED_BUFFER;
          }
 
@@ -9544,8 +9550,8 @@ INT rpc_call(const INT routine_id, ...)
       i = send_tcp(send_sock, (char *) nc, send_size, 0);
 
       if (i != send_size) {
-         cm_msg(MERROR, "rpc_call", "send_tcp() failed");
          ss_mutex_release(_mutex_rpc);
+         cm_msg(MERROR, "rpc_call", "send_tcp() failed");
          return RPC_NET_ERROR;
       }
 
@@ -9556,37 +9562,37 @@ INT rpc_call(const INT routine_id, ...)
    /* in TCP mode, send and wait for reply on send socket */
    i = send_tcp(send_sock, (char *) nc, send_size, 0);
    if (i != send_size) {
-      cm_msg(MERROR, "rpc_call", "send_tcp() failed");
       ss_mutex_release(_mutex_rpc);
+      cm_msg(MERROR, "rpc_call", "send_tcp() failed");
       return RPC_NET_ERROR;
    }
 
    /* make some timeout checking */
    if (rpc_timeout > 0) {
-      FD_ZERO(&readfds);
-      FD_SET(send_sock, &readfds);
-
-      timeout.tv_sec = rpc_timeout / 1000;
-      timeout.tv_usec = (rpc_timeout % 1000) * 1000;
+      start_time = ss_time();
 
       do {
+         FD_ZERO(&readfds);
+         FD_SET(send_sock, &readfds);
+
+         timeout.tv_sec = 1;
+         timeout.tv_usec = 0;
+
          status = select(FD_SETSIZE, &readfds, NULL, NULL, &timeout);
 
-         /* if an alarm signal was cought, restart select with reduced timeout */
-         if (status == -1 && timeout.tv_sec >= WATCHDOG_INTERVAL / 1000)
-            timeout.tv_sec -= WATCHDOG_INTERVAL / 1000;
+         if (FD_ISSET(send_sock, &readfds))
+            break;
 
-      } while (status == -1);   /* dont return if an alarm signal was cought */
+         if (ss_time() - start_time > rpc_timeout / 1000)
+            break;
+
+      } while (status == -1 || status == 0); /* continue again if signal was cought */
 
       if (!FD_ISSET(send_sock, &readfds)) {
-         cm_msg(MERROR, "rpc_call", "rpc timeout, routine = \"%s\"", rpc_list[idx].name);
-
-         /* disconnect to avoid that the reply to this rpc_call comes at
-            the next rpc_call */
-         rpc_server_disconnect();
-
          ss_mutex_release(_mutex_rpc);
-         return RPC_TIMEOUT;
+         cm_msg(MERROR, "rpc_call", "rpc timeout after %d sec, routine = \"%s\", program abort", 
+            (int) (ss_time() - start_time), rpc_list[idx].name);
+         abort();
       }
    }
 
@@ -9594,8 +9600,8 @@ INT rpc_call(const INT routine_id, ...)
    i = recv_tcp(send_sock, _net_send_buffer, NET_BUFFER_SIZE, 0);
 
    if (i <= 0) {
-      cm_msg(MERROR, "rpc_call", "recv_tcp() failed, routine = \"%s\"", rpc_list[idx].name);
       ss_mutex_release(_mutex_rpc);
+      cm_msg(MERROR, "rpc_call", "recv_tcp() failed, routine = \"%s\"", rpc_list[idx].name);
       return RPC_NET_ERROR;
    }
 
