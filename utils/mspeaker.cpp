@@ -52,8 +52,6 @@ void receive_message(HNDLE hBuf, HNDLE id, EVENT_HEADER * header, void *message)
          sp--;
       *(++sp) = '\0';
 
-      /* Send beep first */
-      // for windows, send the wav directly
       if ((ss_time() - last_beep) > shutupTime) {
          switch (header->trigger_mask) {
          case MT_TALK:
@@ -66,18 +64,18 @@ void receive_message(HNDLE hBuf, HNDLE id, EVENT_HEADER * header, void *message)
             break;
          }
 
+         // beep first
          PlaySound(str, NULL, SND_SYNC);
          last_beep = ss_time();
-         ss_sleep(200);
+
+         ss_sleep(500);
+
+         wchar_t wcstring[1000];
+         MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED, (LPCSTR)pc, -1, wcstring, 1000); 
+         
+         // Speak!
+         Voice->Speak(wcstring, SPF_DEFAULT, NULL );
       }
-
-      ss_sleep(500);
-
-      wchar_t wcstring[1000];
-      MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED, (LPCSTR)pc, -1, wcstring, 1000); 
-      
-      // Speak!
-      Voice->Speak(wcstring, SPF_DEFAULT, NULL );
    }
 
    return;
