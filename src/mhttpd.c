@@ -8278,15 +8278,6 @@ void generate_hist_graph(char *path, char *buffer, int *buffer_size,
          /* apply factor and offset */
          y[i][n_vp] = y[i][n_vp] * factor[i] + offset[i];
 
-#if 0
-         /* apply minimum and maximum clamping */
-         if (y[i][n_vp] > maxvalue)
-            y[i][n_vp] = maxvalue;
-
-         if (y[i][n_vp] < minvalue)
-            y[i][n_vp] = minvalue;
-#endif
-
          /* calculate ymin and ymax */
          if ((i == 0 || index != -1) && n_vp == 0)
             ymin = ymax = y[i][0];
@@ -8389,8 +8380,6 @@ void generate_hist_graph(char *path, char *buffer, int *buffer_size,
    /* draw axis frame */
    taxis(im, gdFontSmall, fgcol, gridcol, x1, y1, x2 - x1, width, 3, 5, 9, 10, 0,
          ss_time() - scale + toffset, ss_time() + toffset);
-   /* use following line for a X-axis in "hours since now" instead of a time axis */
-   //haxis(im, gdFontSmall, fgcol, ltgrey, x1, y1, x2-x1, 3, 5, 9, 10, 0, xmin,  xmax);
 
    vaxis(im, gdFontSmall, fgcol, gridcol, x1, y1, y1 - y2, -3, -5, -7, -8, x2 - x1, ymin,
          ymax, logaxis);
@@ -8506,16 +8495,18 @@ void generate_hist_graph(char *path, char *buffer, int *buffer_size,
          if (ys >= height)
             ys = height-1;
 
-         gdImageDashedLine(im, x1, ys, x2, ys, curve_col[i]);
+         if (ys > y2 && ys < y1) {
+            gdImageDashedLine(im, x1, ys, x2, ys, curve_col[i]);
 
-         poly[0].x = x1;
-         poly[0].y = ys;
-         poly[1].x = x1 + 5;
-         poly[1].y = ys;
-         poly[2].x = x1;
-         poly[2].y = ys - 5;
+            poly[0].x = x1;
+            poly[0].y = ys;
+            poly[1].x = x1 + 5;
+            poly[1].y = ys;
+            poly[2].x = x1;
+            poly[2].y = ys - 5;
 
-         gdImageFilledPolygon(im, poly, 3, curve_col[i]);
+            gdImageFilledPolygon(im, poly, 3, curve_col[i]);
+         }
       }
       if (upper_limit[i] != -12345) {
          if (logaxis) {
