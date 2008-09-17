@@ -8529,16 +8529,18 @@ void generate_hist_graph(char *path, char *buffer, int *buffer_size,
          if (ys >= height)
             ys = height-1;
 
-         gdImageDashedLine(im, x1, ys, x2, ys, curve_col[i]);
+         if (ys > y2 && ys < y1) {
+            gdImageDashedLine(im, x1, ys, x2, ys, curve_col[i]);
 
-         poly[0].x = x1;
-         poly[0].y = ys;
-         poly[1].x = x1 + 5;
-         poly[1].y = ys;
-         poly[2].x = x1;
-         poly[2].y = ys + 5;
+            poly[0].x = x1;
+            poly[0].y = ys;
+            poly[1].x = x1 + 5;
+            poly[1].y = ys;
+            poly[2].x = x1;
+            poly[2].y = ys + 5;
 
-         gdImageFilledPolygon(im, poly, 3, curve_col[i]);
+            gdImageFilledPolygon(im, poly, 3, curve_col[i]);
+         }
       }
 
       for (j = 0; j < (int) n_point[i]; j++) {
