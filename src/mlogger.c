@@ -97,7 +97,7 @@ void log_system_history(HNDLE hDB, HNDLE hKey, void *info);
 
 void logger_init()
 {
-   INT size, status;
+   INT size, status, delay;
    BOOL flag;
    HNDLE hKey;
    char str[256];
@@ -126,6 +126,10 @@ void logger_init()
    flag = FALSE;
    size = sizeof(BOOL);
    db_get_value(hDB, 0, "/Logger/Auto restart", &flag, &size, TID_BOOL, TRUE);
+
+   delay = 0;
+   size = sizeof(INT);
+   db_get_value(hDB, 0, "/Logger/Auto restart delay", &delay, &size, TID_INT, TRUE);
 
    flag = TRUE;
    db_get_value(hDB, 0, "/Logger/Tape message", &flag, &size, TID_BOOL, TRUE);
@@ -2301,13 +2305,13 @@ INT log_close(LOG_CHN * log_chn, INT run_number)
 
 INT log_write(LOG_CHN * log_chn, EVENT_HEADER * pevent)
 {
-   INT status = 0, size, izero;
+   INT status = 0, size, izero, delay;
    DWORD actual_time, start_time, watchdog_timeout;
    BOOL watchdog_flag, flag;
    static BOOL stop_requested = FALSE;
    static DWORD last_checked = 0;
    HNDLE htape, stats_hkey;
-   char tape_name[256];
+   char tape_name[256], errstr[256];
    double dzero;
 
    start_time = ss_millitime();
@@ -2352,12 +2356,12 @@ INT log_write(LOG_CHN * log_chn, EVENT_HEADER * pevent)
        log_chn->statistics.events_written >= log_chn->settings.event_limit) {
       stop_requested = TRUE;
 
-      cm_msg(MTALK, "log_write", "stopping run after having received %d events",
+      cm_msg(MTALK, "log_write", "stopping run after having received %1.0lf events",
              log_chn->settings.event_limit);
 
-      status = cm_transition(TR_STOP, 0, NULL, 0, ASYNC, DEBUG_TRANS);
+      status = cm_transition(TR_STOP, 0, errstr, sizeof(errstr), ASYNC, DEBUG_TRANS);
       if (status != CM_SUCCESS)
-         cm_msg(MERROR, "log_write", "cannot stop run after reaching event limit");
+         cm_msg(MERROR, "log_write", "cannot stop run: %s", errstr);
       stop_requested = FALSE;
 
       /* check if autorestart, main loop will take care of it */
@@ -2365,8 +2369,12 @@ INT log_write(LOG_CHN * log_chn, EVENT_HEADER * pevent)
       flag = FALSE;
       db_get_value(hDB, 0, "/Logger/Auto restart", &flag, &size, TID_BOOL, TRUE);
 
+      delay = 0;
+      size = sizeof(INT);
+      db_get_value(hDB, 0, "/Logger/Auto restart delay", &delay, &size, TID_INT, TRUE);
+
       if (flag)
-         auto_restart = ss_time() + 20; /* start in 20 sec. */
+         auto_restart = ss_time() + delay; /* start after specified delay */
 
       return status;
    }
@@ -2390,8 +2398,12 @@ INT log_write(LOG_CHN * log_chn, EVENT_HEADER * pevent)
       flag = FALSE;
       db_get_value(hDB, 0, "/Logger/Auto restart", &flag, &size, TID_BOOL, TRUE);
 
+      delay = 0;
+      size = sizeof(INT);
+      db_get_value(hDB, 0, "/Logger/Auto restart delay", &delay, &size, TID_INT, TRUE);
+
       if (flag)
-         auto_restart = ss_time() + 20; /* start in 20 sec. */
+         auto_restart = ss_time() + delay; /* start after selected delay */
 
       return status;
    }
