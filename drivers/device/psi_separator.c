@@ -119,8 +119,18 @@ INT psi_separator_init(HNDLE hkey, void **pinfo, INT channels,
    last_update = 0;
    last_set = 0;
 
-   // read initial values
    printf("Separator...");
+
+   status = info->bd(CMD_INIT, info->hkey, &info->bd_info);
+   if (status != SUCCESS) {
+      cm_msg(MERROR, "psi_separator_init", "Cannot connect to separator PC");
+      info->bd(CMD_EXIT, info->bd_info);
+      free(info->bd_info);
+      return FE_ERR_HW;
+   }
+   info->bd(CMD_CLOSE, info->bd_info);
+
+   // read initial values
    status = psi_separator_rall(info);
    if (status == FE_SUCCESS)
       printf("ok\n");
@@ -140,6 +150,8 @@ INT psi_separator_init(HNDLE hkey, void **pinfo, INT channels,
 //! \param info is a pointer to the DD specific info structure
 INT psi_separator_exit(PSI_SEPARATOR_INFO * info)
 {
+   info->bd(CMD_EXIT, info->bd_info);
+
    //free local variables
    free(info);
 
@@ -171,16 +183,13 @@ INT psi_separator_rall(PSI_SEPARATOR_INFO * info)
 
    last_update = nowtime;
 
-   /* Open connection. Note tha the bus driver allocates memory for the
-      bd_info structure, which must be released manually later */
-   status = info->bd(CMD_INIT, info->hkey, &info->bd_info);
+   /* Open connection. */
+   status = info->bd(CMD_OPEN, info->bd_info);
    if (status != SUCCESS) {
       if (info->errorcount < MAX_ERROR) {
-         cm_msg(MERROR, "psi_separator_rall", "Cannot connect to separator PC");
+         mfe_error("Cannot connect to separator PC");
          info->errorcount++;
       }
-      info->bd(CMD_EXIT, info->bd_info);
-      free(info->bd_info);
       return FE_ERR_HW;
    }
 
@@ -188,8 +197,7 @@ INT psi_separator_rall(PSI_SEPARATOR_INFO * info)
    status = info->bd(CMD_WRITE, info->bd_info, str, strlen(str) + 1);   // send string zero terminated
    if (status <= 0) {
       if (info->errorcount < MAX_ERROR) {
-         cm_msg(MERROR, "psi_separator_rall",
-                "Error sending *RALL to SEP pc");
+         mfe_error("Error sending *RALL to SEP pc");
          info->errorcount++;
       }
       info->bd(CMD_EXIT, info->bd_info);
@@ -211,8 +219,7 @@ INT psi_separator_rall(PSI_SEPARATOR_INFO * info)
          }
 
          if (info->errorcount < 2 * MAX_ERROR && (nowtime - info->lasterrtime) > 900) { //signal error after 15min
-            cm_msg(MERROR, "psi_separator_rall", "Cannot RALL data.");   //this period is given by the
-            cm_msg(MINFO, "psi_separator_rall", "str read = %s", str);  //watchdog on separator
+            mfe_error("Cannot RALL data.");   //this period is given by the watchdog on separator
             info->errorcount++;
          }
 
@@ -247,25 +254,16 @@ INT psi_separator_rall(PSI_SEPARATOR_INFO * info)
 
    if ((strstr(str, "OK") == NULL) && (strstr(str, "OVC") == NULL)) {
       if (info->errorcount < MAX_ERROR)
-         cm_msg(MERROR, "separator_rall", "Error getting RALL status");
+         mfe_error("Error getting RALL status");
       info->errorcount++;
    }
 
    if (strstr(str, "OVC") != NULL) {
       if (info->hvcurrent > 0.9 * info->settings.max_current) {
-         cm_msg(MTALK, "psi_separator_rall", "Separator in Overcurrent");
-         cm_msg(MINFO, "psi_separator_rall",
-#ifdef NUNK
-                "Read values HVP, HVN, HVPC, HVNC, VAC = %f %f %f %f %10f",
-                info->hvmeasuredpos, info->hvmeasuredneg,
-                info->hvcurrentpos, info->hvcurrentneg, info->sepvac);
-#endif
-                "Read values HV, CUR, VAC = %f %f %10f",
-                info->hvmeasured, info->hvmeasured, info->sepvac);
+         mfe_error("Separator in Overcurrent");
       }
    }
-   info->bd(CMD_EXIT, info->bd_info);
-   free(info->bd_info);
+   info->bd(CMD_CLOSE, info->bd_info);
 
    return FE_SUCCESS;
 }
@@ -288,8 +286,7 @@ INT psi_separator_set(PSI_SEPARATOR_INFO * info, INT channel, float value)
    // force subsequent SET operations to have a interval of at least 5 sec; otherwise
    // the reading will hang
    if (ss_time() - last_set < 5) {
-      cm_msg(MINFO, "psi_separator_set",
-             "SET disregarded: Need at least 5 sec between subsequent SET operations");
+      mfe_error("SET disregarded: Need at least 5 sec between subsequent SET operations");
       return FE_SUCCESS;
    }
 
@@ -297,8 +294,7 @@ INT psi_separator_set(PSI_SEPARATOR_INFO * info, INT channel, float value)
 
    status = info->bd(CMD_INIT, info->hkey, &info->bd_info);
    if (status != SUCCESS) {
-      cm_msg(MERROR, "psi_separator_set",
-             "Error initializing connection to separator host");
+      mfe_error("Error initializing connection to separator host");
       info->bd(CMD_EXIT, info->bd_info);
       return FE_ERR_HW;
    }
@@ -306,8 +302,7 @@ INT psi_separator_set(PSI_SEPARATOR_INFO * info, INT channel, float value)
 
    status = info->bd(CMD_WRITE, info->bd_info, str, strlen(str) + 1);   // send string zero terminated
    if (status <= 0) {
-      cm_msg(MERROR, "psi_separator_set", "Error sending %s to SEP pc",
-             str);
+      mfe_error("Error sending string to SEP pc");
       info->bd(CMD_EXIT, info->bd_info);
       return FE_ERR_HW;
    }
@@ -316,9 +311,7 @@ INT psi_separator_set(PSI_SEPARATOR_INFO * info, INT channel, float value)
    info->bd(CMD_EXIT, info->bd_info);
 
    if (strstr(str, "*HV *") == NULL) {
-      cm_msg(MERROR, "psi_separator_set",
-             "Didn't get *HV * acknowledgement after setting new HV");
-      cm_msg(MINFO, "psi_separator_set", "returned str = %s", str);
+      mfe_error("Didn't get *HV * acknowledgement after setting new HV");
       return FE_ERR_HW;
    }
 
