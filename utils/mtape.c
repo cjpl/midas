@@ -21,6 +21,7 @@ INT tape_dir(INT channel, INT count)
    EVENT_HEADER *event;
    char buffer[TAPE_BUFFER_SIZE];
    INT status, size, index, blockn;
+   time_t t;
 
    event = (EVENT_HEADER *) buffer;
    for (index = 0; index < count; index++) {
@@ -79,12 +80,12 @@ INT tape_dir(INT channel, INT count)
 #endif
       } else {
          blockn = ss_tape_get_blockn(channel);
+         t = (time_t) event->time_stamp;
          if (blockn > 0)
             printf("Found run #%d at block#:%d recorded on %s", event->serial_number,
-                   blockn, ctime((time_t *) &event->time_stamp));
+                   blockn, ctime(&t));
          else
-            printf("Found run #%d recorded on %s", event->serial_number,
-                   ctime((time_t *) &event->time_stamp));
+            printf("Found run #%d recorded on %s", event->serial_number, ctime(&t));
       }
       if (index < count - 1) {
          printf("Spooling tape...\r");
