@@ -54,6 +54,7 @@ static INT tcp_connect(char *host, int port, int *sock)
    struct sockaddr_in bind_addr;
    struct hostent *phe;
    int status;
+   char str[256];
 
 #ifdef OS_WINNT
    {
@@ -68,7 +69,7 @@ static INT tcp_connect(char *host, int port, int *sock)
    /* create a new socket for connecting to remote server */
    *sock = socket(AF_INET, SOCK_STREAM, 0);
    if (*sock == -1) {
-      cm_msg(MERROR, "tcp_connect", "cannot create socket");
+      mfe_error("cannot create socket");
       return FE_ERR_HW;
    }
 
@@ -80,7 +81,7 @@ static INT tcp_connect(char *host, int port, int *sock)
 
    status = bind(*sock, (void *) &bind_addr, sizeof(bind_addr));
    if (status < 0) {
-      cm_msg(MERROR, "tcp_connect", "cannot bind");
+      mfe_error("cannot bind");
       return RPC_NET_ERROR;
    }
 
@@ -100,7 +101,7 @@ static INT tcp_connect(char *host, int port, int *sock)
 #else
    phe = gethostbyname(host);
    if (phe == NULL) {
-      cm_msg(MERROR, "tcp_connect", "cannot get host name");
+      mfe_error("cannot get host name");
       return RPC_NET_ERROR;
    }
    memcpy((char *) &(bind_addr.sin_addr), phe->h_addr, phe->h_length);
@@ -119,7 +120,8 @@ static INT tcp_connect(char *host, int port, int *sock)
    if (status != 0) {
       closesocket(*sock);
       *sock = -1;
-      cm_msg(MERROR, "tcp_connect", "cannot connect to %s", host);
+      sprintf("cannot connec to host %s", host);
+      mfe_error(str);
       return FE_ERR_HW;
    }
 
@@ -245,8 +247,8 @@ INT psi_beamline_set(PSI_BEAMLINE_INFO * info, INT channel, float value)
    sprintf(str, "WDAC %s %d", info->name + channel * NAME_LENGTH, (int) value);
    status = send(info->sock, str, strlen(str) + 1, 0);
    if (status < 0) {
-      cm_msg(MERROR, "psi_beamline_get", "cannot read data from %s",
-             info->psi_beamline_settings.beamline_pc);
+      sprintf(str, "cannot read data from %s", info->psi_beamline_settings.beamline_pc);
+      mfe_error(str);
       return FE_ERR_HW;
    }
    recv_string(info->sock, str, sizeof(str), 10000);
@@ -281,17 +283,15 @@ INT psi_beamline_rall(PSI_BEAMLINE_INFO * info)
 
             if (status != FE_SUCCESS)
                return FE_ERR_HW;
-            else
-               cm_msg(MINFO, "psi_beamline_rall", "sucessfully reconneccted to %s",
-                      info->psi_beamline_settings.beamline_pc);
          } else
             return FE_SUCCESS;
       }
 
       status = recv_string(info->sock, str, sizeof(str), 10000);
       if (status <= 0) {
-         cm_msg(MERROR, "psi_beamline_rall", "cannot retrieve data from %s",
+         sprintf(str, "cannot retrieve data from %s",
                 info->psi_beamline_settings.beamline_pc);
+         mfe_error(str);
          return FE_ERR_HW;
       }
 

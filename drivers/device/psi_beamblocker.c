@@ -84,6 +84,7 @@ static INT tcp_connect(char *host, int port, int *sock)
    struct sockaddr_in bind_addr;
    struct hostent *phe;
    int status;
+   char str[256];
 
 #ifdef OS_WINNT
    {
@@ -98,7 +99,7 @@ static INT tcp_connect(char *host, int port, int *sock)
    /* create a new socket for connecting to remote server */
    *sock = socket(AF_INET, SOCK_STREAM, 0);
    if (*sock == -1) {
-      cm_msg(MERROR, "tcp_connect", "Cannot create socket");
+      mfe_error("Cannot create socket");
       return FE_ERR_HW;
    }
 
@@ -110,7 +111,7 @@ static INT tcp_connect(char *host, int port, int *sock)
 
    status = bind(*sock, (void *) &bind_addr, sizeof(bind_addr));
    if (status < 0) {
-      cm_msg(MERROR, "tcp_connect", "Cannot bind");
+      mfe_error("Cannot bind");
       return RPC_NET_ERROR;
    }
 
@@ -130,7 +131,8 @@ static INT tcp_connect(char *host, int port, int *sock)
 #else
    phe = gethostbyname(host);
    if (phe == NULL) {
-      cm_msg(MERROR, "tcp_connect", "Cannot find host \"%s\"", host);
+      sprintf(str, "Cannot find host \"%s\"", host);
+      mfe_error(str);
       return RPC_NET_ERROR;
    }
    memcpy((char *) &(bind_addr.sin_addr), phe->h_addr, phe->h_length);
@@ -149,7 +151,8 @@ static INT tcp_connect(char *host, int port, int *sock)
    if (status != 0) {
       closesocket(*sock);
       *sock = -1;
-      cm_msg(MERROR, "tcp_connect", "Cannot connect to \"%s\"", host);
+      sprintf(str, "Cannot connect to \"%s\"", host);
+      mfe_error(str);
       return FE_ERR_HW;
    }
 
@@ -224,7 +227,7 @@ INT psi_beamblocker_set(PSI_BEAMBLOCKER_INFO * info, INT channel, float value)
    INT status;
 
    if (channel == 1) {
-      cm_msg(MERROR, "psi_beamblocker_set", "Cannot set PSA status. PSA status can only be read.");
+      mfe_error("Cannot set PSA status. PSA status can only be read.");
       return FE_SUCCESS; /* cannot change PSA status */
    }
 
@@ -235,8 +238,8 @@ INT psi_beamblocker_set(PSI_BEAMBLOCKER_INFO * info, INT channel, float value)
 
    status = send(info->sock, str, strlen(str) + 1, 0);
    if (status < 0) {
-      cm_msg(MERROR, "psi_beamblocker_set", "Cannot read data from %s",
-             info->psi_beamblocker_settings.beamline_pc);
+      sprintf(str, "Cannot read data from %s", info->psi_beamblocker_settings.beamline_pc);
+      mfe_error(str);
       return FE_ERR_HW;
    }
    recv_string(info->sock, str, sizeof(str), 500);
@@ -278,17 +281,14 @@ INT psi_beamblocker_get(PSI_BEAMBLOCKER_INFO * info, INT channel, float *pvalue)
 
             if (status != FE_SUCCESS)
                return FE_ERR_HW;
-            else
-               cm_msg(MINFO, "psi_beamblocker_get", "sucessfully reconneccted to %s",
-                      info->psi_beamblocker_settings.beamline_pc);
          } else
             return FE_SUCCESS;
       }
 
       status = recv_string(info->sock, str, sizeof(str), 3000);
       if (status <= 0) {
-         cm_msg(MERROR, "psi_beamblocker_get", "Cannot retrieve data from %s",
-                info->psi_beamblocker_settings.beamline_pc);
+         sprintf(str, "Cannot retrieve data from %s", info->psi_beamblocker_settings.beamline_pc);
+         mfe_error(str);
          return FE_ERR_HW;
       }
 
