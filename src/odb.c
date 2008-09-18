@@ -1424,7 +1424,7 @@ INT db_lock_database(HNDLE hDB)
    if (_lock_tid == 0)
       _lock_tid = ss_gettid();
 
-   assert(_lock_tid = ss_gettid());
+   assert(_lock_tid == ss_gettid());
 #endif
 
    if (hDB > _database_entries || hDB <= 0) {
@@ -1493,7 +1493,7 @@ INT db_unlock_database(HNDLE hDB)
    if (_lock_tid == 0)
       _lock_tid = ss_gettid();
 
-   assert(_lock_tid = ss_gettid());
+   assert(_lock_tid == ss_gettid());
 #endif
 
    if (hDB > _database_entries || hDB <= 0) {
