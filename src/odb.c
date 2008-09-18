@@ -833,6 +833,7 @@ INT db_open_database(const char *xdatabase_name, INT database_size,
       BOOL call_watchdog;
       DWORD timeout;
       char database_name[NAME_LENGTH];
+      void *p;
 
       /* restrict name length */
       strlcpy(database_name, xdatabase_name, NAME_LENGTH);
@@ -896,9 +897,9 @@ INT db_open_database(const char *xdatabase_name, INT database_size,
       status = ss_shm_open(database_name,
                            sizeof(DATABASE_HEADER) +
                            2 * ALIGN8(database_size / 2),
-                           (void **) &(_database[(INT) handle].
-                                       database_header), &shm_handle, TRUE);
+                           &p, &shm_handle, TRUE);
 
+      _database[(INT)handle].database_header = (DATABASE_HEADER *)p;
       if (status == SS_NO_MEMORY || status == SS_FILE_ERROR) {
          *hDB = 0;
          return DB_INVALID_NAME;
@@ -1419,6 +1420,7 @@ INT db_lock_database(HNDLE hDB)
 {
 #ifdef LOCAL_ROUTINES
    int status;
+   void *p;
 
 #ifdef CHECK_THREAD_ID
    if (_lock_tid == 0)
@@ -1470,9 +1472,10 @@ INT db_lock_database(HNDLE hDB)
 #endif
 
    if (_database[hDB - 1].protect) {
-      if (_database[hDB - 1].database_header == NULL)
-         ss_shm_unprotect(_database[hDB - 1].shm_handle,
-                          (void **) &_database[hDB - 1].database_header);
+      if (_database[hDB - 1].database_header == NULL) {
+         ss_shm_unprotect(_database[hDB - 1].shm_handle, &p);
+         _database[hDB - 1].database_header = (DATABASE_HEADER *)p;
+      }
    }
 #endif                          /* LOCAL_ROUTINES */
    return DB_SUCCESS;

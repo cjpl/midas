@@ -94,7 +94,7 @@ char exp_name[NAME_LENGTH];
 HNDLE hDB;
 
 /* output file information, maps to /<analyzer>/Output */
-struct {
+struct out_info_struct {
    char filename[256];
    BOOL rwnt;
    BOOL histo_dump;
@@ -3058,7 +3058,7 @@ INT log_callback(INT index, void *prpc_param[])
 
 \********************************************************************/
 
-struct {
+struct eb_struct {
    DWORD transition;
    DWORD run_number;
 } eb;

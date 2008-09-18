@@ -2901,7 +2901,7 @@ INT ss_suspend_init_ipc(INT idx)
 \********************************************************************/
 {
    INT status, sock;
-   int i;
+   unsigned int size;
    struct sockaddr_in bind_addr;
    char local_host_name[HOST_NAME_LENGTH];
    struct hostent *phe;
@@ -2950,8 +2950,8 @@ INT ss_suspend_init_ipc(INT idx)
       return SS_SOCKET_ERROR;
 
    /* find out which port OS has chosen */
-   i = sizeof(bind_addr);
-   getsockname(sock, (struct sockaddr *) &bind_addr, (int *) &i);
+   size = sizeof(bind_addr);
+   getsockname(sock, (struct sockaddr *) &bind_addr, &size);
 
    _suspend_struct[idx].ipc_recv_socket = sock;
    _suspend_struct[idx].ipc_port = ntohs(bind_addr.sin_port);
@@ -3243,7 +3243,7 @@ INT ss_suspend(INT millisec, INT msg)
    struct timeval timeout;
    INT sock, server_socket;
    INT idx, status, i, return_status;
-   int size;
+   unsigned int size;
    struct sockaddr from_addr;
    char str[100], buffer[80], buffer_tmp[80];
 
@@ -3419,7 +3419,7 @@ INT ss_suspend(INT millisec, INT msg)
          /* receive IPC message */
          size = sizeof(struct sockaddr);
          size = recvfrom(_suspend_struct[idx].ipc_recv_socket,
-                         buffer, sizeof(buffer), 0, &from_addr, (int *) &size);
+                         buffer, sizeof(buffer), 0, &from_addr, &size);
 
          /* find out if this thread is connected as a server */
          server_socket = 0;
@@ -6026,7 +6026,9 @@ void ss_stack_history_dump(char *filename)
          j = (j + 1) % N_STACK_HISTORY;
       }
       fclose(f);
-   }
+      printf("Stack dump written to %s\n", filename);
+   } else
+      printf("Cannot open %s: errno=%d\n", filename, errno);
 }
 
 /**dox***************************************************************/

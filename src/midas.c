@@ -974,6 +974,7 @@ INT cm_msg_retrieve(INT n_message, char *message, INT buf_size)
       return rpc_call(RPC_CM_MSG_RETRIEVE, n_message, message, buf_size);
 
    cm_get_experiment_database(&hDB, NULL);
+   status = 0;
 
    if (hDB) {
       strcpy(filename, "midas.log");
@@ -4046,6 +4047,7 @@ INT bm_open_buffer(char *buffer_name, INT buffer_size, INT * buffer_handle)
       BUFFER_HEADER *pheader;
       HNDLE hDB, odb_key;
       char odb_path[256];
+      void *p;
 
       /* get buffer size from ODB, user parameter as default if not present in ODB */
       sprintf(odb_path, "/Experiment/Buffer sizes/%s", buffer_name);
@@ -4121,8 +4123,11 @@ INT bm_open_buffer(char *buffer_name, INT buffer_size, INT * buffer_handle)
 #endif
 
       /* open shared memory region */
+            //status = ss_shm_open(buffer_name, sizeof(BUFFER_HEADER) + buffer_size,
+            //               (void **) &(_buffer[handle].buffer_header), &shm_handle, FALSE);
       status = ss_shm_open(buffer_name, sizeof(BUFFER_HEADER) + buffer_size,
-                           (void **) &(_buffer[handle].buffer_header), &shm_handle, FALSE);
+                          &p, &shm_handle, FALSE);
+      _buffer[handle].buffer_header = (BUFFER_HEADER *)p;
 
       if (status != SS_SUCCESS && status != SS_CREATED) {
          *buffer_handle = 0;
@@ -8372,11 +8377,11 @@ INT rpc_server_connect(char *host_name, char *exp_name)
 
    /* find out which port OS has chosen */
    size = sizeof(bind_addr);
-   getsockname(lsock1, (struct sockaddr *) &bind_addr, (int *) &size);
+   getsockname(lsock1, (struct sockaddr *) &bind_addr, &size);
    listen_port1 = ntohs(bind_addr.sin_port);
-   getsockname(lsock2, (struct sockaddr *) &bind_addr, (int *) &size);
+   getsockname(lsock2, (struct sockaddr *) &bind_addr, &size);
    listen_port2 = ntohs(bind_addr.sin_port);
-   getsockname(lsock3, (struct sockaddr *) &bind_addr, (int *) &size);
+   getsockname(lsock3, (struct sockaddr *) &bind_addr, &size);
    listen_port3 = ntohs(bind_addr.sin_port);
 
    /* create a new socket for connecting to remote server */
@@ -8489,11 +8494,11 @@ INT rpc_server_connect(char *host_name, char *exp_name)
 
    size = sizeof(bind_addr);
 
-   _server_connection.send_sock = accept(lsock1, (struct sockaddr *) &bind_addr, (int *) &size);
+   _server_connection.send_sock = accept(lsock1, (struct sockaddr *) &bind_addr, &size);
 
-   _server_connection.recv_sock = accept(lsock2, (struct sockaddr *) &bind_addr, (int *) &size);
+   _server_connection.recv_sock = accept(lsock2, (struct sockaddr *) &bind_addr, &size);
 
-   _server_connection.event_sock = accept(lsock3, (struct sockaddr *) &bind_addr, (int *) &size);
+   _server_connection.event_sock = accept(lsock3, (struct sockaddr *) &bind_addr, &size);
 
    if (_server_connection.send_sock == -1 ||
        _server_connection.recv_sock == -1 || _server_connection.event_sock == -1) {
@@ -10675,7 +10680,7 @@ INT rpc_register_server(INT server_type, char *name, INT * port, INT(*func) (INT
    /* return port wich OS has choosen */
    if (port && *port == 0) {
       size = sizeof(bind_addr);
-      getsockname(_lsock, (struct sockaddr *) &bind_addr, (int *) &size);
+      getsockname(_lsock, (struct sockaddr *) &bind_addr, (unsigned int *) &size);
       *port = ntohs(bind_addr.sin_port);
    }
 
@@ -11372,7 +11377,7 @@ INT rpc_server_accept(int lsock)
 
    if (lsock > 0) {
       size = sizeof(acc_addr);
-      sock = accept(lsock, (struct sockaddr *) &acc_addr, (int *) &size);
+      sock = accept(lsock, (struct sockaddr *) &acc_addr, &size);
 
       if (sock == -1)
          return RPC_NET_ERROR;
@@ -11381,7 +11386,7 @@ INT rpc_server_accept(int lsock)
 
       size = sizeof(acc_addr);
       sock = lsock;
-      getpeername(sock, (struct sockaddr *) &acc_addr, (int *) &size);
+      getpeername(sock, (struct sockaddr *) &acc_addr, &size);
    }
 
    /* receive string with timeout */
@@ -11635,7 +11640,7 @@ INT rpc_client_accept(int lsock)
    char net_buffer[256], *p;
 
    size = sizeof(acc_addr);
-   sock = accept(lsock, (struct sockaddr *) &acc_addr, (int *) &size);
+   sock = accept(lsock, (struct sockaddr *) &acc_addr, &size);
 
    if (sock == -1)
       return RPC_NET_ERROR;
