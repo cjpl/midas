@@ -101,7 +101,7 @@ static int mmap_size[MAX_MMAP];
 #endif
 
 /*------------------------------------------------------------------*/
-INT ss_shm_open(char *name, INT size, void **adr, HNDLE *handle, BOOL get_size)
+INT ss_shm_open(char *name, INT size, void **adr, HNDLE * handle, BOOL get_size)
 /********************************************************************\
 
   Routine: ss_shm_open
@@ -182,8 +182,7 @@ INT ss_shm_open(char *name, INT size, void **adr, HNDLE *handle, BOOL get_size)
       hMap = OpenFileMapping(FILE_MAP_ALL_ACCESS, FALSE, str);
       if (hMap == 0) {
          hFile = CreateFile(file_name, GENERIC_READ | GENERIC_WRITE,
-                            FILE_SHARE_READ | FILE_SHARE_WRITE, NULL,
-                            OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, 0);
+                            FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, 0);
          if (!hFile) {
             cm_msg(MERROR, "ss_shm_open", "CreateFile() failed");
             return SS_FILE_ERROR;
@@ -195,8 +194,7 @@ INT ss_shm_open(char *name, INT size, void **adr, HNDLE *handle, BOOL get_size)
                size = file_size;
          } else {
             if (file_size != 0xFFFFFFFF && file_size > 0 && file_size != size) {
-               cm_msg(MERROR, "ss_shm_open", "Requested size (%d) differs from existing size (%d)",
-                  size, file_size);
+               cm_msg(MERROR, "ss_shm_open", "Requested size (%d) differs from existing size (%d)", size, file_size);
                return SS_SIZE_MISMATCH;
             }
          }
@@ -295,7 +293,8 @@ INT ss_shm_open(char *name, INT size, void **adr, HNDLE *handle, BOOL get_size)
          if (get_size) {
             size = file_size;
          } else if (size != file_size) {
-            cm_msg(MERROR, "ss_shm_open", "Existing file \'%s\' has size %d, different from requested size %d", file_name, file_size, size);
+            cm_msg(MERROR, "ss_shm_open", "Existing file \'%s\' has size %d, different from requested size %d",
+                   file_name, file_size, size);
             return SS_SIZE_MISMATCH;
          }
       }
@@ -330,8 +329,7 @@ INT ss_shm_open(char *name, INT size, void **adr, HNDLE *handle, BOOL get_size)
       *handle = (HNDLE) shmid;
 
       if ((*adr) == (void *) (-1)) {
-         cm_msg(MERROR, "ss_shm_open", "shmat(shmid=%d) failed, errno %d (%s)", shmid,
-                errno, strerror(errno));
+         cm_msg(MERROR, "ss_shm_open", "shmat(shmid=%d) failed, errno %d (%s)", shmid, errno, strerror(errno));
          return SS_NO_MEMORY;
       }
 
@@ -376,8 +374,7 @@ INT ss_shm_open(char *name, INT size, void **adr, HNDLE *handle, BOOL get_size)
 
          if (fh < 0) {
             cm_msg(MERROR, "ss_shm_open",
-                   "Cannot create shared memory file \'%s\', errno %d (%s)", file_name,
-                   errno, strerror(errno));
+                   "Cannot create shared memory file \'%s\', errno %d (%s)", file_name, errno, strerror(errno));
             return SS_FILE_ERROR;
          }
 
@@ -397,8 +394,7 @@ INT ss_shm_open(char *name, INT size, void **adr, HNDLE *handle, BOOL get_size)
          ret = lseek(fh, 0, SEEK_SET);
          assert(ret == 0);
 
-         cm_msg(MINFO, "ss_shm_open", "Created shared memory file \'%s\', size %d",
-                file_name, size);
+         cm_msg(MINFO, "ss_shm_open", "Created shared memory file \'%s\', size %d", file_name, size);
 
          status = SS_CREATED;
       }
@@ -417,8 +413,7 @@ INT ss_shm_open(char *name, INT size, void **adr, HNDLE *handle, BOOL get_size)
       *adr = mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_SHARED, fh, 0);
 
       if ((*adr) == MAP_FAILED) {
-         cm_msg(MERROR, "ss_shm_open", "mmap() failed, errno %d (%s)", errno,
-                strerror(errno));
+         cm_msg(MERROR, "ss_shm_open", "mmap() failed, errno %d (%s)", errno, strerror(errno));
          return SS_NO_MEMORY;
       }
 
@@ -535,7 +530,7 @@ INT ss_shm_close(char *name, void *adr, HNDLE handle, INT destroy_flag)
       FILE *fh;
       int i;
 
-      i = destroy_flag; /* avoid compiler warning */
+      i = destroy_flag;         /* avoid compiler warning */
 
       /* get info about shared memory */
       memset(&buf, 0, sizeof(buf));
@@ -551,8 +546,7 @@ INT ss_shm_close(char *name, void *adr, HNDLE handle, INT destroy_flag)
             fh = fopen(file_name, "w");
 
             if (fh == NULL) {
-               cm_msg(MERROR, "ss_shm_close",
-                      "Cannot write to file %s, please check protection", file_name);
+               cm_msg(MERROR, "ss_shm_close", "Cannot write to file %s, please check protection", file_name);
             } else {
                /* write shared memory to file */
                fwrite(adr, 1, buf.shm_segsz, fh);
@@ -561,22 +555,19 @@ INT ss_shm_close(char *name, void *adr, HNDLE handle, INT destroy_flag)
          }
 
          if (shmdt(adr) < 0) {
-            cm_msg(MERROR, "ss_shm_close", "shmdt(shmid=%d) failed, errno %d (%s)",
-                   handle, errno, strerror(errno));
+            cm_msg(MERROR, "ss_shm_close", "shmdt(shmid=%d) failed, errno %d (%s)", handle, errno, strerror(errno));
             return SS_INVALID_ADDRESS;
          }
 
          if (shmctl(handle, IPC_RMID, &buf) < 0) {
             cm_msg(MERROR, "ss_shm_close",
-                   "shmctl(shmid=%d,IPC_RMID) failed, errno %d (%s)", handle, errno,
-                   strerror(errno));
+                   "shmctl(shmid=%d,IPC_RMID) failed, errno %d (%s)", handle, errno, strerror(errno));
             return SS_INVALID_ADDRESS;
          }
       } else
          /* only detach if we are not the last */
       if (shmdt(adr) < 0) {
-         cm_msg(MERROR, "ss_shm_close", "shmdt(shmid=%d) failed, errno %d (%s)", handle,
-                errno, strerror(errno));
+         cm_msg(MERROR, "ss_shm_close", "shmdt(shmid=%d) failed, errno %d (%s)", handle, errno, strerror(errno));
          return SS_INVALID_ADDRESS;
       }
 
@@ -589,15 +580,14 @@ INT ss_shm_close(char *name, void *adr, HNDLE handle, INT destroy_flag)
    if (1) {
       int ret;
 
-      ret = destroy_flag; /* avoid compiler warning */
+      ret = destroy_flag;       /* avoid compiler warning */
 
       assert(adr == mmap_addr[handle]);
 
       ret = munmap(mmap_addr[handle], mmap_size[handle]);
       if (ret != 0) {
          cm_msg(MERROR, "ss_shm_protect",
-                "Cannot munmap(): return value %d, errno %d (%s)", ret, errno,
-                strerror(errno));
+                "Cannot munmap(): return value %d, errno %d (%s)", ret, errno, strerror(errno));
          return SS_INVALID_ADDRESS;
       }
 
@@ -640,7 +630,7 @@ INT ss_shm_protect(HNDLE handle, void *adr)
 #ifdef OS_UNIX_SHM
 
    int i;
-   i = handle; /* avoid compiler warning */
+   i = handle;                  /* avoid compiler warning */
 
    if (shmdt(adr) < 0) {
       cm_msg(MERROR, "ss_shm_protect", "shmdt() failed");
@@ -650,7 +640,7 @@ INT ss_shm_protect(HNDLE handle, void *adr)
 #ifdef OS_UNIX_MMAP
 
    int i;
-   i = handle; /* avoid compiler warning */
+   i = handle;                  /* avoid compiler warning */
 
    if (1) {
       int ret;
@@ -660,8 +650,7 @@ INT ss_shm_protect(HNDLE handle, void *adr)
       ret = mprotect(mmap_addr[handle], mmap_size[handle], PROT_NONE);
       if (ret != 0) {
          cm_msg(MERROR, "ss_shm_protect",
-                "Cannot mprotect(): return value %d, errno %d (%s)", ret, errno,
-                strerror(errno));
+                "Cannot mprotect(): return value %d, errno %d (%s)", ret, errno, strerror(errno));
          return SS_INVALID_ADDRESS;
       }
    }
@@ -719,8 +708,7 @@ INT ss_shm_unprotect(HNDLE handle, void **adr)
       ret = mprotect(mmap_addr[handle], mmap_size[handle], PROT_READ | PROT_WRITE);
       if (ret != 0) {
          cm_msg(MERROR, "ss_shm_unprotect",
-                "Cannot mprotect(): return value %d, errno %d (%s)", ret, errno,
-                strerror(errno));
+                "Cannot mprotect(): return value %d, errno %d (%s)", ret, errno, strerror(errno));
          return SS_INVALID_ADDRESS;
       }
    }
@@ -799,8 +787,7 @@ INT ss_shm_flush(char *name, void *adr, INT size)
       fh = fopen(file_name, "w");
 
       if (fh == NULL) {
-         cm_msg(MERROR, "ss_shm_flush",
-                "Cannot write to file %s, please check protection", file_name);
+         cm_msg(MERROR, "ss_shm_flush", "Cannot write to file %s, please check protection", file_name);
       } else {
          /* write shared memory to file */
          fwrite(adr, 1, size, fh);
@@ -815,9 +802,7 @@ INT ss_shm_flush(char *name, void *adr, INT size)
    if (1) {
       int ret = msync(adr, size, MS_ASYNC);
       if (ret != 0) {
-         cm_msg(MERROR, "ss_shm_flush",
-                "Cannot msync(): return value %d, errno %d (%s)", ret, errno,
-                strerror(errno));
+         cm_msg(MERROR, "ss_shm_flush", "Cannot msync(): return value %d, errno %d (%s)", ret, errno, strerror(errno));
          return SS_INVALID_ADDRESS;
       }
    }
@@ -858,8 +843,7 @@ INT ss_getthandle(void)
       to the SupendThread() and ResumeThread() functions.
     */
 
-   DuplicateHandle(GetCurrentProcess(), GetCurrentThread(),
-                   GetCurrentProcess(), &hThread, THREAD_ALL_ACCESS, TRUE, 0);
+   DuplicateHandle(GetCurrentProcess(), GetCurrentThread(), GetCurrentProcess(), &hThread, THREAD_ALL_ACCESS, TRUE, 0);
 
    return (INT) hThread;
 
@@ -1006,7 +990,7 @@ INT ss_gettid(void)
 #elif defined OS_CYGWIN
 
    return pthread_self();
-   
+
 #elif defined OS_UNIX
 
    return syscall(SYS_gettid);
@@ -1027,7 +1011,7 @@ void catch_sigchld(int signo)
 {
    int status;
 
-   status = signo; /* avoid compiler warning */
+   status = signo;              /* avoid compiler warning */
    wait(&status);
    return;
 }
@@ -1087,8 +1071,7 @@ INT ss_spawnv(INT mode, char *cmdname, char *argv[])
          cmdstring_dsc.dsc$w_length = strlen(cmdstring);
          cmdstring_dsc.dsc$a_pointer = cmdstring;
 
-         status = sys$creprc(0, &cmdstring_dsc,
-                             0, 0, 0, 0, 0, NULL, 4, 0, 0, PRC$M_DETACH);
+         status = sys$creprc(0, &cmdstring_dsc, 0, 0, 0, 0, 0, NULL, 4, 0, 0, PRC$M_DETACH);
       } else {
          flags = (mode & P_NOWAIT) ? 1 : 0;
 
@@ -1175,8 +1158,7 @@ INT ss_shell(int sock)
 #ifdef OS_WINNT
 
    HANDLE hChildStdinRd, hChildStdinWr, hChildStdinWrDup,
-       hChildStdoutRd, hChildStdoutWr,
-       hChildStderrRd, hChildStderrWr, hSaveStdin, hSaveStdout, hSaveStderr;
+       hChildStdoutRd, hChildStdoutWr, hChildStderrRd, hChildStderrWr, hSaveStdin, hSaveStdout, hSaveStderr;
 
    SECURITY_ATTRIBUTES saAttr;
    PROCESS_INFORMATION piProcInfo;
@@ -1637,8 +1619,7 @@ midas_thread_t ss_thread_create(INT(*thread_func) (void *), void *param)
       return 0;
    }
 
-   status = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE) thread_func,
-                         (LPVOID) param, 0, &thread_id);
+   status = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE) thread_func, (LPVOID) param, 0, &thread_id);
 
    return status == NULL ? 0 : (midas_thread_t) thread_id;
 
@@ -1823,8 +1804,7 @@ INT ss_mutex_create(const char *name, HNDLE * mutex_handle)
 
       *mutex_handle = (HNDLE) malloc(8);
 
-      status = sys$enqw(0, LCK$K_NLMODE, *mutex_handle, 0, &mutexname_dsc,
-                        0, 0, 0, 0, 0, 0);
+      status = sys$enqw(0, LCK$K_NLMODE, *mutex_handle, 0, &mutexname_dsc, 0, 0, 0, 0, 0, 0);
 
       if (status != SS$_NORMAL) {
          free((void *) *mutex_handle);
@@ -2260,7 +2240,7 @@ DWORD ss_time()
 #if !defined(OS_VMS)
 #if 0
    static int once = 0;
-   if (once==0) {
+   if (once == 0) {
       tzset();
       once = 1;
    }
@@ -2440,7 +2420,6 @@ INT ss_sleep(INT millisec)
 #endif
       return SS_SUCCESS;
    }
-
 #ifdef OS_WINNT
    Sleep(millisec);
 #endif
@@ -2590,7 +2569,7 @@ INT ss_wake(INT pid, INT tid, INT thandle)
 #ifdef OS_UNIX
 
    int i;
-   i = tid; /* avoid compiler warning */
+   i = tid;                     /* avoid compiler warning */
    i = thandle;
 
    if (kill(pid, SIGCONT) < 0)
@@ -2615,8 +2594,7 @@ INT ss_wake(INT pid, INT tid, INT thandle)
 static void (*UserCallback) (int);
 static UINT _timer_id = 0;
 
-VOID CALLBACK _timeCallback(UINT idEvent, UINT uReserved, DWORD dwUser,
-                            DWORD dwReserved1, DWORD dwReserved2)
+VOID CALLBACK _timeCallback(UINT idEvent, UINT uReserved, DWORD dwUser, DWORD dwReserved1, DWORD dwReserved2)
 {
    _timer_id = 0;
    if (UserCallback != NULL)
@@ -2650,8 +2628,7 @@ INT ss_alarm(INT millitime, void (*func) (int))
 
    UserCallback = func;
    if (millitime > 0)
-      _timer_id =
-          timeSetEvent(millitime, 100, (LPTIMECALLBACK) _timeCallback, 0, TIME_ONESHOT);
+      _timer_id = timeSetEvent(millitime, 100, (LPTIMECALLBACK) _timeCallback, 0, TIME_ONESHOT);
    else {
       if (_timer_id)
          timeKillEvent(_timer_id);
@@ -2779,9 +2756,9 @@ INT ss_exception_handler(void (*func) ())
    signal(SIGSEGV, MidasExceptionSignal);
    signal(SIGTERM, MidasExceptionSignal);
 
-#else /* OS_VMS */
+#else                           /* OS_VMS */
    void *p;
-   p = func; /* avoid compiler warning */
+   p = func;                    /* avoid compiler warning */
 #endif
 
    return SS_SUCCESS;
@@ -2866,13 +2843,13 @@ typedef struct {
    INT ipc_port;
    INT ipc_recv_socket;
    INT ipc_send_socket;
-   INT(*ipc_dispatch) (char *, INT);
+    INT(*ipc_dispatch) (char *, INT);
    INT listen_socket;
-   INT(*listen_dispatch) (INT);
+    INT(*listen_dispatch) (INT);
    RPC_SERVER_CONNECTION *server_connection;
-   INT(*client_dispatch) (INT);
+    INT(*client_dispatch) (INT);
    RPC_SERVER_ACCEPTION *server_acception;
-   INT(*server_dispatch) (INT, int, BOOL);
+    INT(*server_dispatch) (INT, int, BOOL);
    struct sockaddr_in bind_addr;
 } SUSPEND_STRUCT;
 
@@ -2951,7 +2928,11 @@ INT ss_suspend_init_ipc(INT idx)
 
    /* find out which port OS has chosen */
    size = sizeof(bind_addr);
+#ifdef OS_WINNT
+   getsockname(sock, (struct sockaddr *) &bind_addr, (int *) &size);
+#else
    getsockname(sock, (struct sockaddr *) &bind_addr, &size);
+#endif
 
    _suspend_struct[idx].ipc_recv_socket = sock;
    _suspend_struct[idx].ipc_port = ntohs(bind_addr.sin_port);
@@ -3036,10 +3017,7 @@ INT ss_suspend_get_index(INT * pindex)
 
       if (idx == _suspend_entries) {
          /* if not found, create new one */
-         _suspend_struct = (SUSPEND_STRUCT *) realloc(_suspend_struct,
-                                                      sizeof
-                                                      (SUSPEND_STRUCT) *
-                                                      (_suspend_entries + 1));
+         _suspend_struct = (SUSPEND_STRUCT *) realloc(_suspend_struct, sizeof(SUSPEND_STRUCT) * (_suspend_entries + 1));
          memset(&_suspend_struct[_suspend_entries], 0, sizeof(SUSPEND_STRUCT));
 
          _suspend_entries++;
@@ -3322,8 +3300,7 @@ INT ss_suspend(INT millisec, INT msg)
       } while (status == -1);   /* dont return if an alarm signal was cought */
 
       /* if listen socket got data, call dispatcher with socket */
-      if (_suspend_struct[idx].listen_socket &&
-          FD_ISSET(_suspend_struct[idx].listen_socket, &readfds)) {
+      if (_suspend_struct[idx].listen_socket && FD_ISSET(_suspend_struct[idx].listen_socket, &readfds)) {
          sock = _suspend_struct[idx].listen_socket;
 
          if (_suspend_struct[idx].listen_dispatch) {
@@ -3348,8 +3325,7 @@ INT ss_suspend(INT millisec, INT msg)
             if (recv_tcp_check(sock) || FD_ISSET(sock, &readfds)) {
                if (_suspend_struct[idx].server_dispatch) {
                   status = _suspend_struct[idx].server_dispatch(i, sock, msg != 0);
-                  _suspend_struct[idx].server_acception[i].
-                      last_activity = ss_millitime();
+                  _suspend_struct[idx].server_acception[i].last_activity = ss_millitime();
 
                   if (status == SS_ABORT || status == SS_EXIT || status == RPC_SHUTDOWN)
                      return status;
@@ -3366,8 +3342,7 @@ INT ss_suspend(INT millisec, INT msg)
             if (recv_event_check(sock) || FD_ISSET(sock, &readfds)) {
                if (_suspend_struct[idx].server_dispatch) {
                   status = _suspend_struct[idx].server_dispatch(i, sock, msg != 0);
-                  _suspend_struct[idx].server_acception[i].
-                      last_activity = ss_millitime();
+                  _suspend_struct[idx].server_acception[i].last_activity = ss_millitime();
 
                   if (status == SS_ABORT || status == SS_EXIT || status == RPC_SHUTDOWN)
                      return status;
@@ -3393,8 +3368,7 @@ INT ss_suspend(INT millisec, INT msg)
             }
 
             if (status == SS_ABORT) {
-               sprintf(str, "Server connection broken to \'%s\'",
-                       _suspend_struct[idx].server_connection->host_name);
+               sprintf(str, "Server connection broken to \'%s\'", _suspend_struct[idx].server_connection->host_name);
                cm_msg(MINFO, "ss_suspend", str);
 
                /* close client connection if link broken */
@@ -3402,8 +3376,7 @@ INT ss_suspend(INT millisec, INT msg)
                closesocket(_suspend_struct[idx].server_connection->recv_sock);
                closesocket(_suspend_struct[idx].server_connection->event_sock);
 
-               memset(_suspend_struct[idx].server_connection,
-                      0, sizeof(RPC_CLIENT_CONNECTION));
+               memset(_suspend_struct[idx].server_connection, 0, sizeof(RPC_CLIENT_CONNECTION));
 
                /* exit program after broken connection to MIDAS server */
                return SS_ABORT;
@@ -3414,17 +3387,18 @@ INT ss_suspend(INT millisec, INT msg)
       }
 
       /* check IPC socket */
-      if (_suspend_struct[idx].ipc_recv_socket &&
-          FD_ISSET(_suspend_struct[idx].ipc_recv_socket, &readfds)) {
+      if (_suspend_struct[idx].ipc_recv_socket && FD_ISSET(_suspend_struct[idx].ipc_recv_socket, &readfds)) {
          /* receive IPC message */
          size = sizeof(struct sockaddr);
-         size = recvfrom(_suspend_struct[idx].ipc_recv_socket,
-                         buffer, sizeof(buffer), 0, &from_addr, &size);
+#ifdef OS_WINNT
+         size = recvfrom(_suspend_struct[idx].ipc_recv_socket, buffer, sizeof(buffer), 0, &from_addr, (int *) &size);
+#else
+         size = recvfrom(_suspend_struct[idx].ipc_recv_socket, buffer, sizeof(buffer), 0, &from_addr, &size);
+#endif
 
          /* find out if this thread is connected as a server */
          server_socket = 0;
-         if (_suspend_struct[idx].server_acception &&
-             rpc_get_server_option(RPC_OSERVER_TYPE) != ST_REMOTE)
+         if (_suspend_struct[idx].server_acception && rpc_get_server_option(RPC_OSERVER_TYPE) != ST_REMOTE)
             for (i = 0; i < MAX_RPC_CONNECTION; i++) {
                sock = _suspend_struct[idx].server_acception[i].send_sock;
                if (sock && _suspend_struct[idx].server_acception[i].tid == ss_gettid())
@@ -3441,12 +3415,15 @@ INT ss_suspend(INT millisec, INT msg)
 
             status = select(FD_SETSIZE, &readfds, NULL, NULL, &timeout);
 
-            if (status != -1
-                && FD_ISSET(_suspend_struct[idx].ipc_recv_socket, &readfds)) {
+            if (status != -1 && FD_ISSET(_suspend_struct[idx].ipc_recv_socket, &readfds)) {
                size = sizeof(struct sockaddr);
                size =
+#ifdef OS_WINNT
                    recvfrom(_suspend_struct[idx].ipc_recv_socket,
-                            buffer_tmp, sizeof(buffer_tmp), 0, &from_addr, &size);
+                            buffer_tmp, sizeof(buffer_tmp), 0, &from_addr, (int *) &size);
+#else
+                   recvfrom(_suspend_struct[idx].ipc_recv_socket, buffer_tmp, sizeof(buffer_tmp), 0, &from_addr, &size);
+#endif
 
                /* don't forward same MSG_BM as above */
                if (buffer_tmp[0] != 'B' || strcmp(buffer_tmp, buffer) != 0)
@@ -3515,8 +3492,7 @@ INT ss_resume(INT port, char *message)
 
    status = sendto(_suspend_struct[idx].ipc_send_socket, message,
                    strlen(message) + 1, 0,
-                   (struct sockaddr *) &_suspend_struct[idx].bind_addr,
-                   sizeof(struct sockaddr_in));
+                   (struct sockaddr *) &_suspend_struct[idx].bind_addr, sizeof(struct sockaddr_in));
 
    if (status != (INT) strlen(message) + 1)
       return SS_SOCKET_ERROR;
@@ -3557,7 +3533,7 @@ INT send_tcp(int sock, char *buffer, DWORD buffer_size, INT flags)
    DWORD count;
    INT status;
    //int net_tcp_size = NET_TCP_SIZE;
-   int net_tcp_size = 1024*1024;
+   int net_tcp_size = 1024 * 1024;
 
    /* transfer fragments until complete buffer is transferred */
 
@@ -3724,15 +3700,13 @@ INT recv_tcp(int sock, char *net_buffer, DWORD buffer_size, INT flags)
 
       if (n == 0) {
          cm_msg(MERROR, "recv_tcp",
-                "header: recv returned %d, n_received = %d, unexpected connection closure",
-                n, n_received);
+                "header: recv returned %d, n_received = %d, unexpected connection closure", n, n_received);
          return n;
       }
 
       if (n < 0) {
          cm_msg(MERROR, "recv_tcp",
-                "header: recv returned %d, n_received = %d, errno: %d (%s)",
-                n, n_received, errno, strerror(errno));
+                "header: recv returned %d, n_received = %d, errno: %d (%s)", n, n_received, errno, strerror(errno));
          return n;
       }
 
@@ -3752,28 +3726,23 @@ INT recv_tcp(int sock, char *net_buffer, DWORD buffer_size, INT flags)
    do {
 #ifdef OS_UNIX
       do {
-         n = recv(sock,
-                  net_buffer + sizeof(NET_COMMAND_HEADER) + n_received,
-                  param_size - n_received, flags);
+         n = recv(sock, net_buffer + sizeof(NET_COMMAND_HEADER) + n_received, param_size - n_received, flags);
 
          /* don't return if an alarm signal was cought */
       } while (n == -1 && errno == EINTR);
 #else
-      n = recv(sock, net_buffer + sizeof(NET_COMMAND_HEADER) + n_received,
-               param_size - n_received, flags);
+      n = recv(sock, net_buffer + sizeof(NET_COMMAND_HEADER) + n_received, param_size - n_received, flags);
 #endif
 
       if (n == 0) {
          cm_msg(MERROR, "recv_tcp",
-                "param: recv returned %d, n_received = %d, unexpected connection closure",
-                n, n_received);
+                "param: recv returned %d, n_received = %d, unexpected connection closure", n, n_received);
          return n;
       }
 
       if (n < 0) {
          cm_msg(MERROR, "recv_tcp",
-                "param: recv returned %d, n_received = %d, errno: %d (%s)",
-                n, n_received, errno, strerror(errno));
+                "param: recv returned %d, n_received = %d, errno: %d (%s)", n, n_received, errno, strerror(errno));
          return n;
       }
 
@@ -3902,8 +3871,7 @@ INT send_udp(int sock, char *buffer, DWORD buffer_size, INT flags)
    udp_header->serial_number = serial_number;
    udp_header->sequence_number = i;
    memcpy(udp_header + 1, buffer + i * data_size, buffer_size - i * data_size);
-   status =
-       send(sock, udp_buffer, sizeof(UDP_HEADER) + buffer_size - i * data_size, flags);
+   status = send(sock, udp_buffer, sizeof(UDP_HEADER) + buffer_size - i * data_size, flags);
    if ((DWORD) status == sizeof(UDP_HEADER) + buffer_size - i * data_size)
       return buffer_size;
 
@@ -4047,8 +4015,7 @@ INT recv_udp(int sock, char *buffer, DWORD buffer_size, INT flags)
       sequence_number++;
 
       /* check sequence and serial numbers */
-      if (udp_header->serial_number != serial_number ||
-          udp_header->sequence_number != sequence_number)
+      if (udp_header->serial_number != serial_number || udp_header->sequence_number != sequence_number)
          /* lost one, so start again */
          goto start;
 
@@ -4146,8 +4113,7 @@ INT ss_tape_open(char *path, INT oflag, INT * channel)
    INT status;
    TAPE_GET_MEDIA_PARAMETERS m;
 
-   *channel = (INT) CreateFile(path, GENERIC_READ | GENERIC_WRITE, 0,
-                               0, OPEN_EXISTING, 0, NULL);
+   *channel = (INT) CreateFile(path, GENERIC_READ | GENERIC_WRITE, 0, 0, OPEN_EXISTING, 0, NULL);
 
    if (*channel == (INT) INVALID_HANDLE_VALUE) {
       status = GetLastError();
@@ -4257,8 +4223,7 @@ INT ss_tape_status(char *path)
    TAPE_GET_DRIVE_PARAMETERS d;
    double x;
 
-   channel = (INT) CreateFile(path, GENERIC_READ | GENERIC_WRITE, 0,
-                              0, OPEN_EXISTING, 0, NULL);
+   channel = (INT) CreateFile(path, GENERIC_READ | GENERIC_WRITE, 0, 0, OPEN_EXISTING, 0, NULL);
 
    if (channel == (INT) INVALID_HANDLE_VALUE) {
       status = GetLastError();
@@ -4403,8 +4368,7 @@ INT ss_tape_read(INT channel, void *pdata, INT * count)
          if (n == 0 && errno == 0)
             status = SS_END_OF_FILE;
          else {
-            cm_msg(MERROR, "ss_tape_read",
-                   "unexpected tape error: n=%d, errno=%d\n", n, errno);
+            cm_msg(MERROR, "ss_tape_read", "unexpected tape error: n=%d, errno=%d\n", n, errno);
             status = errno;
          }
       }
@@ -4428,8 +4392,7 @@ INT ss_tape_read(INT channel, void *pdata, INT * count)
       else if (status == ERROR_MORE_DATA)
          status = SS_SUCCESS;
       else
-         cm_msg(MERROR, "ss_tape_read",
-                "unexpected tape error: n=%d, errno=%d\n", read, status);
+         cm_msg(MERROR, "ss_tape_read", "unexpected tape error: n=%d, errno=%d\n", read, status);
    } else
       status = SS_SUCCESS;
 
@@ -4555,8 +4518,7 @@ INT ss_tape_fskip(INT channel, INT count)
 
 #ifdef OS_WINNT
 
-   status = SetTapePosition((HANDLE) channel, TAPE_SPACE_FILEMARKS, 0,
-                            (DWORD) count, 0, FALSE);
+   status = SetTapePosition((HANDLE) channel, TAPE_SPACE_FILEMARKS, 0, (DWORD) count, 0, FALSE);
 
    if (status == ERROR_END_OF_MEDIA)
       return SS_END_OF_TAPE;
@@ -4616,9 +4578,7 @@ INT ss_tape_rskip(INT channel, INT count)
 
 #ifdef OS_WINNT
 
-   status =
-       SetTapePosition((HANDLE) channel, TAPE_SPACE_RELATIVE_BLOCKS, 0,
-                       (DWORD) count, 0, FALSE);
+   status = SetTapePosition((HANDLE) channel, TAPE_SPACE_RELATIVE_BLOCKS, 0, (DWORD) count, 0, FALSE);
    if (status != NO_ERROR) {
       cm_msg(MERROR, "ss_tape_rskip", "error %d", status);
       return status;
@@ -4887,8 +4847,7 @@ blockn:  >0 = block number, =0 option not available, <0 errno
    TAPE_GET_MEDIA_PARAMETERS media;
    unsigned long size;
    /* I'm not sure the partition count corresponds to the block count */
-   status =
-       GetTapeParameters((HANDLE) channel, GET_TAPE_MEDIA_INFORMATION, &size, &media);
+   status = GetTapeParameters((HANDLE) channel, GET_TAPE_MEDIA_INFORMATION, &size, &media);
    return (media.PartitionCount);
 
 #endif
@@ -4954,11 +4913,9 @@ double ss_disk_free(char *path)
    if (strchr(str, ':') != NULL) {
       *(strchr(str, ':') + 1) = 0;
       strcat(str, DIR_SEPARATOR_STR);
-      GetDiskFreeSpace(str, &SectorsPerCluster, &BytesPerSector,
-                       &NumberOfFreeClusters, &TotalNumberOfClusters);
+      GetDiskFreeSpace(str, &SectorsPerCluster, &BytesPerSector, &NumberOfFreeClusters, &TotalNumberOfClusters);
    } else
-      GetDiskFreeSpace(NULL, &SectorsPerCluster, &BytesPerSector,
-                       &NumberOfFreeClusters, &TotalNumberOfClusters);
+      GetDiskFreeSpace(NULL, &SectorsPerCluster, &BytesPerSector, &NumberOfFreeClusters, &TotalNumberOfClusters);
 
    return (double) NumberOfFreeClusters *SectorsPerCluster * BytesPerSector;
 #else                           /* OS_WINNT */
@@ -5049,14 +5006,12 @@ INT ss_file_find(char *path, char *pattern, char **plist)
       return 0;
    first = 0;
    *plist = (char *) realloc(*plist, (i + 1) * MAX_STRING_LENGTH);
-   strncpy(*plist + (i * MAX_STRING_LENGTH), lpfdata->cFileName,
-           strlen(lpfdata->cFileName));
+   strncpy(*plist + (i * MAX_STRING_LENGTH), lpfdata->cFileName, strlen(lpfdata->cFileName));
    *(*plist + (i * MAX_STRING_LENGTH) + strlen(lpfdata->cFileName)) = '\0';
    i++;
    while (FindNextFile(pffile, lpfdata)) {
       *plist = (char *) realloc(*plist, (i + 1) * MAX_STRING_LENGTH);
-      strncpy(*plist + (i * MAX_STRING_LENGTH), lpfdata->cFileName,
-              strlen(lpfdata->cFileName));
+      strncpy(*plist + (i * MAX_STRING_LENGTH), lpfdata->cFileName, strlen(lpfdata->cFileName));
       *(*plist + (i * MAX_STRING_LENGTH) + strlen(lpfdata->cFileName)) = '\0';
       i++;
    }
@@ -5166,11 +5121,9 @@ double ss_disk_size(char *path)
    if (strchr(str, ':') != NULL) {
       *(strchr(str, ':') + 1) = 0;
       strcat(str, DIR_SEPARATOR_STR);
-      GetDiskFreeSpace(str, &SectorsPerCluster, &BytesPerSector,
-                       &NumberOfFreeClusters, &TotalNumberOfClusters);
+      GetDiskFreeSpace(str, &SectorsPerCluster, &BytesPerSector, &NumberOfFreeClusters, &TotalNumberOfClusters);
    } else
-      GetDiskFreeSpace(NULL, &SectorsPerCluster, &BytesPerSector,
-                       &NumberOfFreeClusters, &TotalNumberOfClusters);
+      GetDiskFreeSpace(NULL, &SectorsPerCluster, &BytesPerSector, &NumberOfFreeClusters, &TotalNumberOfClusters);
 
    return (double) TotalNumberOfClusters *SectorsPerCluster * BytesPerSector;
 #endif                          /* OS_WINNT */
@@ -5220,8 +5173,7 @@ void ss_clear_screen()
    dwConSize = csbi.dwSize.X * csbi.dwSize.Y;
 
    /* fill the entire screen with blanks */
-   bSuccess = FillConsoleOutputCharacter(hConsole, (TCHAR) ' ',
-                                         dwConSize, coordScreen, &cCharsWritten);
+   bSuccess = FillConsoleOutputCharacter(hConsole, (TCHAR) ' ', dwConSize, coordScreen, &cCharsWritten);
 
    /* put the cursor at (0, 0) */
    bSuccess = SetConsoleCursorPosition(hConsole, coordScreen);
@@ -5265,9 +5217,9 @@ void ss_set_screen_size(int x, int y)
    hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
    SetConsoleScreenBufferSize(hConsole, coordSize);
 
-#else /* OS_WINNT */
+#else                           /* OS_WINNT */
    int i;
-   i = x; /* avoid compiler warning */
+   i = x;                       /* avoid compiler warning */
    i = y;
 #endif
 }
@@ -5313,8 +5265,7 @@ void ss_printf(INT x, INT y, const char *format, ...)
       dwWriteCoord.X = (short) x;
       dwWriteCoord.Y = (short) y;
 
-      WriteConsoleOutputCharacter(hConsole, str, strlen(str),
-                                  dwWriteCoord, &cCharsWritten);
+      WriteConsoleOutputCharacter(hConsole, str, strlen(str), dwWriteCoord, &cCharsWritten);
    }
 
 #endif                          /* OS_WINNT */
@@ -5365,8 +5316,7 @@ char *ss_getpass(char *prompt)
       hConsole = GetStdHandle(STD_INPUT_HANDLE);
       SetConsoleMode(hConsole, ENABLE_LINE_INPUT);
       ReadConsole(hConsole, password, sizeof(password), &nCharsRead, NULL);
-      SetConsoleMode(hConsole, ENABLE_LINE_INPUT | ENABLE_ECHO_INPUT |
-                     ENABLE_PROCESSED_INPUT | ENABLE_MOUSE_INPUT);
+      SetConsoleMode(hConsole, ENABLE_LINE_INPUT | ENABLE_ECHO_INPUT | ENABLE_PROCESSED_INPUT | ENABLE_MOUSE_INPUT);
       printf("\n");
 
       if (password[strlen(password) - 1] == '\r')
@@ -5554,8 +5504,7 @@ INT ss_getchar(BOOL reset)
    hConsole = GetStdHandle(STD_INPUT_HANDLE);
 
    if (reset) {
-      SetConsoleMode(hConsole, ENABLE_LINE_INPUT | ENABLE_ECHO_INPUT |
-                     ENABLE_PROCESSED_INPUT | ENABLE_MOUSE_INPUT);
+      SetConsoleMode(hConsole, ENABLE_LINE_INPUT | ENABLE_ECHO_INPUT | ENABLE_PROCESSED_INPUT | ENABLE_MOUSE_INPUT);
       init = FALSE;
       return 0;
    }
@@ -5719,9 +5668,7 @@ INT ss_directio_give_port(INT start, INT end)
 
    /* use DirectIO driver under NT to gain port access */
    if (vi.dwPlatformId == VER_PLATFORM_WIN32_NT) {
-      hdio =
-          CreateFile("\\\\.\\directio", GENERIC_READ, FILE_SHARE_READ,
-                     NULL, OPEN_EXISTING, 0, NULL);
+      hdio = CreateFile("\\\\.\\directio", GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, 0, NULL);
       if (hdio == INVALID_HANDLE_VALUE) {
          printf("hyt1331.c: Cannot access IO ports (No DirectIO driver installed)\n");
          return -1;
@@ -5730,15 +5677,14 @@ INT ss_directio_give_port(INT start, INT end)
       /* open ports */
       buffer[1] = start;
       buffer[2] = end;
-      if (!DeviceIoControl
-          (hdio, (DWORD) 0x9c406000, &buffer, sizeof(buffer), NULL, 0, &size, NULL))
+      if (!DeviceIoControl(hdio, (DWORD) 0x9c406000, &buffer, sizeof(buffer), NULL, 0, &size, NULL))
          return -1;
    }
 
    return SS_SUCCESS;
 #else
    int i;
-   i = start; /* avoid compiler warning */
+   i = start;                   /* avoid compiler warning */
    i = end;
    return SS_SUCCESS;
 #endif
@@ -5761,9 +5707,7 @@ INT ss_directio_lock_port(INT start, INT end)
 
    /* use DirectIO driver under NT to gain port access */
    if (vi.dwPlatformId == VER_PLATFORM_WIN32_NT) {
-      hdio =
-          CreateFile("\\\\.\\directio", GENERIC_READ, FILE_SHARE_READ,
-                     NULL, OPEN_EXISTING, 0, NULL);
+      hdio = CreateFile("\\\\.\\directio", GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, 0, NULL);
       if (hdio == INVALID_HANDLE_VALUE) {
          printf("hyt1331.c: Cannot access IO ports (No DirectIO driver installed)\n");
          return -1;
@@ -5772,15 +5716,14 @@ INT ss_directio_lock_port(INT start, INT end)
       /* lock ports */
       buffer[1] = start;
       buffer[2] = end;
-      if (!DeviceIoControl
-          (hdio, (DWORD) 0x9c406000, &buffer, sizeof(buffer), NULL, 0, &size, NULL))
+      if (!DeviceIoControl(hdio, (DWORD) 0x9c406000, &buffer, sizeof(buffer), NULL, 0, &size, NULL))
          return -1;
    }
 
    return SS_SUCCESS;
 #else
    int i;
-   i = start; /* avoid compiler warning */
+   i = start;                   /* avoid compiler warning */
    i = end;
    return SS_SUCCESS;
 #endif
@@ -5984,7 +5927,7 @@ void ss_stack_print()
    int i, n;
 
    n = ss_stack_get(&string);
-   for (i=0 ; i<n ; i++)
+   for (i = 0; i < n; i++)
       printf("%s\n", string[i]);
    if (n > 0)
       free(string);
@@ -6002,7 +5945,7 @@ void ss_stack_history_entry(char *tag)
    strlcpy(stack_history[stack_history_pointer], tag, 80);
    stack_history_pointer = (stack_history_pointer + 1) % N_STACK_HISTORY;
    n = ss_stack_get(&string);
-   for (i=2 ; i<n ; i++) {
+   for (i = 2; i < n; i++) {
       strlcpy(stack_history[stack_history_pointer], string[i], 80);
       stack_history_pointer = (stack_history_pointer + 1) % N_STACK_HISTORY;
    }
@@ -6020,7 +5963,7 @@ void ss_stack_history_dump(char *filename)
    f = fopen(filename, "wt");
    if (f != NULL) {
       j = stack_history_pointer;
-      for (i=0 ; i<N_STACK_HISTORY ; i++) {
+      for (i = 0; i < N_STACK_HISTORY; i++) {
          if (strlen(stack_history[j]) > 0)
             fprintf(f, "%s\n", stack_history[j]);
          j = (j + 1) % N_STACK_HISTORY;
@@ -6034,5 +5977,5 @@ void ss_stack_history_dump(char *filename)
 /**dox***************************************************************/
 #endif                          /* DOXYGEN_SHOULD_SKIP_THIS */
 
-/** @} *//* end of msfunctionc */
-/** @} *//* end of msystemincludecode */
+         /** @} *//* end of msfunctionc */
+         /** @} *//* end of msystemincludecode */
