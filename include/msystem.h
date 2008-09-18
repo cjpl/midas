@@ -613,6 +613,10 @@ extern "C" {
    INT EXPRT ss_thread_kill(midas_thread_t thread_id);
    INT EXPRT ss_get_struct_align(void);
    INT EXPRT ss_timezone(void);
+   INT EXPRT ss_stack_get(char ***string);
+   void EXPRT ss_stack_print();
+   void EXPRT ss_stack_history_entry(char *tag);
+   void EXPRT ss_stack_history_dump(char *filename);
 
    /*---- socket routines ----*/
    INT EXPRT send_tcp(int sock, char *buffer, DWORD buffer_size, INT flags);

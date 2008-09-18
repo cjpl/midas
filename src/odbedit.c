@@ -2733,7 +2733,7 @@ int main(int argc, char *argv[])
 
    /* turn off watchdog if in debug mode */
    if (debug)
-      cm_set_watchdog_params(TRUE, 0);
+      cm_set_watchdog_params(FALSE, 0);
 
    /* get experiment name */
    if (!exp_name[0]) {

@@ -5947,6 +5947,88 @@ int ss_isnan(double x)
    return isnan(x);
 }
 
+/*------------------------------------------------------------------*/
+/********************************************************************\
+*                                                                    *
+*                  Stack Trace                                       *
+*                                                                    *
+\********************************************************************/
+
+#ifdef OS_LINUX
+#include <execinfo.h>
+#endif
+
+#define N_STACK_HISTORY 500
+char stack_history[N_STACK_HISTORY][80];
+int stack_history_pointer = -1;
+
+INT ss_stack_get(char ***string)
+{
+#ifdef OS_LINUX
+#define MAX_STACK_DEPTH 16
+
+   void *trace[MAX_STACK_DEPTH];
+   int size;
+
+   size = backtrace(trace, MAX_STACK_DEPTH);
+   *string = backtrace_symbols(trace, size);
+   return size;
+#else
+   return 0;
+#endif
+}
+
+void ss_stack_print()
+{
+   char **string;
+   int i, n;
+
+   n = ss_stack_get(&string);
+   for (i=0 ; i<n ; i++)
+      printf("%s\n", string[i]);
+   if (n > 0)
+      free(string);
+}
+
+void ss_stack_history_entry(char *tag)
+{
+   char **string;
+   int i, n;
+
+   if (stack_history_pointer == -1) {
+      stack_history_pointer++;
+      memset(stack_history, 0, sizeof(stack_history));
+   }
+   strlcpy(stack_history[stack_history_pointer], tag, 80);
+   stack_history_pointer = (stack_history_pointer + 1) % N_STACK_HISTORY;
+   n = ss_stack_get(&string);
+   for (i=2 ; i<n ; i++) {
+      strlcpy(stack_history[stack_history_pointer], string[i], 80);
+      stack_history_pointer = (stack_history_pointer + 1) % N_STACK_HISTORY;
+   }
+   free(string);
+
+   strlcpy(stack_history[stack_history_pointer], "=========================", 80);
+   stack_history_pointer = (stack_history_pointer + 1) % N_STACK_HISTORY;
+}
+
+void ss_stack_history_dump(char *filename)
+{
+   FILE *f;
+   int i, j;
+
+   f = fopen(filename, "wt");
+   if (f != NULL) {
+      j = stack_history_pointer;
+      for (i=0 ; i<N_STACK_HISTORY ; i++) {
+         if (strlen(stack_history[j]) > 0)
+            fprintf(f, "%s\n", stack_history[j]);
+         j = (j + 1) % N_STACK_HISTORY;
+      }
+      fclose(f);
+   }
+}
+
 /**dox***************************************************************/
 #endif                          /* DOXYGEN_SHOULD_SKIP_THIS */
 
