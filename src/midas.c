@@ -879,6 +879,75 @@ INT cm_msg_register(void (*func) (HNDLE, HNDLE, EVENT_HEADER *, void *))
    return status;
 }
 
+/* Retrieve message from an individual file. Internal use only */
+INT cm_msg_retrieve1(char *filename, INT n_message, char *message, INT buf_size)
+{
+   FILE *f;
+   INT  offset, i, j;
+   char *p;
+
+   f = fopen(filename, "rb");
+   if (f == NULL) {
+      sprintf(message, "Cannot open message log file %s\n", filename);
+      return -1;
+   }
+
+   /* position buf_size bytes before the EOF */
+   fseek(f, -(buf_size - 1), SEEK_END);
+   offset = ftell(f);
+   if (offset != 0) {
+      /* go to end of line */
+      fgets(message, buf_size - 1, f);
+      offset = ftell(f) - offset;
+      buf_size -= offset;
+   }
+
+   memset(message, 0, buf_size);
+   fread(message, 1, buf_size - 1, f);
+   message[buf_size - 1] = 0;
+   fclose(f);
+
+   p = message + (buf_size - 2);
+
+   /* goto end of buffer */
+   while (p != message && *p == 0)
+      p--;
+
+   /* strip line break */
+   j = 0;
+   while (p != message && (*p == '\n' || *p == '\r')) {
+      *(p--) = 0;
+      j = 1;
+   }
+
+
+   /* trim buffer so that last n_messages remain */
+   for (i = 0; i < n_message; i++) {
+      while (p != message && *p != '\n')
+         p--;
+
+      while (p != message && (*p == '\n' || *p == '\r'))
+         p--;
+
+      if (p == message)
+         break;
+
+      j++;
+   }
+   if (p != message) {
+      p++;
+      while (*p == '\n' || *p == '\r')
+         p++;
+   }
+
+   buf_size = (buf_size - 1) - (p - message);
+
+   memmove(message, p, buf_size);
+   message[buf_size] = 0;
+
+   return j;
+}
+
 /********************************************************************/
 /**
 Retrieve old messages from log file
@@ -894,11 +963,12 @@ Retrieve old messages from log file
 INT cm_msg_retrieve(INT n_message, char *message, INT buf_size)
 {
    char dir[256], str[256];
-   char filename[256];
-   char path[256], *p;
-   FILE *f;
-   INT status, size, offset, i;
+   char filename[256], filename2[256];
+   char path[256], *message2;
+   INT status, size, n, i;
    HNDLE hDB, hKey;
+   time_t now;
+   struct tm *tms;
 
    if (rpc_is_remote())
       return rpc_call(RPC_CM_MSG_RETRIEVE, n_message, message, buf_size);
@@ -911,19 +981,15 @@ INT cm_msg_retrieve(INT n_message, char *message, INT buf_size)
       db_get_value(hDB, 0, "/Logger/Message file", filename, &size, TID_STRING, TRUE);
 
       if (strchr(filename, '%')) {
-         /* replace stings such as midas_%y%m%d.mid with current date */
-         time_t now;
-         struct tm *tms;
-
+         /* replace strings such as midas_%y%m%d.mid with current date */
          tzset();
          time(&now);
          tms = localtime(&now);
 
-         strftime(str, sizeof(str), filename, tms);
-         strlcpy(filename, str, sizeof(filename));
+         strftime(filename2, sizeof(str), filename, tms);
       }
 
-      if (strchr(filename, DIR_SEPARATOR) == NULL) {
+      if (strchr(filename2, DIR_SEPARATOR) == NULL) {
          status = db_find_key(hDB, 0, "/Logger/Data dir", &hKey);
          if (status == DB_SUCCESS) {
             size = sizeof(dir);
@@ -934,7 +1000,7 @@ INT cm_msg_retrieve(INT n_message, char *message, INT buf_size)
                   strcat(dir, DIR_SEPARATOR_STR);
 
             strcpy(path, dir);
-            strcat(path, filename);
+            strcat(path, filename2);
          } else {
             cm_get_path(dir);
             if (dir[0] != 0)
@@ -942,65 +1008,61 @@ INT cm_msg_retrieve(INT n_message, char *message, INT buf_size)
                   strcat(dir, DIR_SEPARATOR_STR);
 
             strcpy(path, dir);
-            strcat(path, filename);
+            strcat(path, filename2);
          }
       } else {
-         strcpy(path, filename);
+         strcpy(path, filename2);
       }
    } else
       strcpy(path, "midas.log");
 
-   f = fopen(path, "rb");
-   if (f == NULL) {
-      sprintf(message, "Cannot open message log file %s\n", path);
-      return CM_DB_ERROR;
-   } else {
-      /* position buf_size bytes before the EOF */
-      fseek(f, -(buf_size - 1), SEEK_END);
-      offset = ftell(f);
-      if (offset != 0) {
-         /* go to end of line */
-         fgets(message, buf_size - 1, f);
-         offset = ftell(f) - offset;
-         buf_size -= offset;
+   n = cm_msg_retrieve1(path, n_message, message, buf_size);
+
+   while (n < n_message && strchr(filename, '%')) {
+      now -= 3600*24; // go one day back 
+      tms = localtime(&now);
+
+      strftime(filename2, sizeof(str), filename, tms);
+
+      if (strchr(filename2, DIR_SEPARATOR) == NULL) {
+         status = db_find_key(hDB, 0, "/Logger/Data dir", &hKey);
+         if (status == DB_SUCCESS) {
+            size = sizeof(dir);
+            memset(dir, 0, size);
+            db_get_value(hDB, 0, "/Logger/Data dir", dir, &size, TID_STRING, TRUE);
+            if (dir[0] != 0)
+               if (dir[strlen(dir) - 1] != DIR_SEPARATOR)
+                  strcat(dir, DIR_SEPARATOR_STR);
+
+            strcpy(path, dir);
+            strcat(path, filename2);
+         } else {
+            cm_get_path(dir);
+            if (dir[0] != 0)
+               if (dir[strlen(dir) - 1] != DIR_SEPARATOR)
+                  strcat(dir, DIR_SEPARATOR_STR);
+
+            strcpy(path, dir);
+            strcat(path, filename2);
+         }
+      } else {
+         strcpy(path, filename2);
       }
 
-      memset(message, 0, buf_size);
-      fread(message, 1, buf_size - 1, f);
-      message[buf_size - 1] = 0;
-      fclose(f);
+      message2 = (char *)malloc(buf_size);
 
-      p = message + (buf_size - 2);
+      i = cm_msg_retrieve1(path, n_message - n, message2, buf_size-strlen(message)-1);
+      if (i < 0)
+         break;
+      strlcat(message2, "\r\n", buf_size);
 
-      /* goto end of buffer */
-      while (p != message && *p == 0)
-         p--;
-
-      /* strip line break */
-      while (p != message && (*p == '\n' || *p == '\r'))
-         *(p--) = 0;
-
-      /* trim buffer so that last n_messages remain */
-      for (i = 0; i < n_message; i++) {
-         while (p != message && *p != '\n')
-            p--;
-
-         while (p != message && (*p == '\n' || *p == '\r'))
-            p--;
-      }
-      if (p != message) {
-         p++;
-         while (*p == '\n' || *p == '\r')
-            p++;
-      }
-
-      buf_size = (buf_size - 1) - (p - message);
-
-      memmove(message, p, buf_size);
-      message[buf_size] = 0;
+      memmove(message+strlen(message2), message, strlen(message)+1);
+      memcpy(message, message2, strlen(message2));
+      free(message2);
+      n += i;
    }
 
-   return CM_SUCCESS;
+   return status;
 }
 
 /**dox***************************************************************/
