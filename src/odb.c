@@ -1460,6 +1460,15 @@ INT db_lock_database(HNDLE hDB)
 
    _database[hDB - 1].lock_cnt++;
 
+#ifdef CHECK_LOCK_COUNT
+   {
+   char str[256];
+
+   sprintf(str, "db_lock_database, lock_cnt=%d", _database[hDB-1].lock_cnt);
+   ss_stack_history_entry(str);
+   }
+#endif
+
    if (_database[hDB - 1].protect) {
       if (_database[hDB - 1].database_header == NULL)
          ss_shm_unprotect(_database[hDB - 1].shm_handle,
@@ -1491,6 +1500,15 @@ INT db_unlock_database(HNDLE hDB)
       cm_msg(MERROR, "db_unlock_database", "invalid database handle");
       return DB_INVALID_HANDLE;
    }
+
+#ifdef CHECK_LOCK_COUNT
+   {
+   char str[256];
+
+   sprintf(str, "db_unlock_database, lock_cnt=%d", _database[hDB-1].lock_cnt);
+   ss_stack_history_entry(str);
+   }
+#endif
 
    if (_database[hDB - 1].lock_cnt == 1)
       ss_mutex_release(_database[hDB - 1].mutex);

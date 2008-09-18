@@ -297,10 +297,6 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath=".\mlogger.rc"
-				>
-			</File>
-			<File
 				RelativePath="..\src\mrpc.c"
 				>
 				<FileConfiguration
