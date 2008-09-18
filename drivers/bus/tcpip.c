@@ -59,7 +59,7 @@ void tcpip_debug(TCPIP_INFO * info, char *dbg_str)
 
 /*------------------------------------------------------------------*/
 
-int tcpip_open(char *host, int port)
+int tcpip_connect(char *host, int port)
 {
    struct sockaddr_in bind_addr;
    struct hostent *phe;
@@ -78,7 +78,7 @@ int tcpip_open(char *host, int port)
    /* create a new socket for connecting to remote server */
    fd = socket(AF_INET, SOCK_STREAM, 0);
    if (fd == -1) {
-      perror("tcpip_open: socket");
+      perror("tcpip_connect: socket");
       return fd;
    }
 
@@ -90,7 +90,7 @@ int tcpip_open(char *host, int port)
 
    status = bind(fd, (void *) &bind_addr, sizeof(bind_addr));
    if (status < 0) {
-      perror("tcpip_open:bind");
+      perror("tcpip_connect:bind");
       return -1;
    }
 
@@ -110,7 +110,7 @@ int tcpip_open(char *host, int port)
 #else
    phe = gethostbyname(host);
    if (phe == NULL) {
-      printf("\ntcpip_open: unknown host name %s\n", host);
+      printf("\ntcpip_connect: unknown host name %s\n", host);
       return -1;
    }
    memcpy((char *) &(bind_addr.sin_addr), phe->h_addr, phe->h_length);
@@ -127,7 +127,7 @@ int tcpip_open(char *host, int port)
 #endif
 
    if (status != 0) {
-      perror("tcpip_open:connect");
+      perror("tcpip_connect:connect");
       return -1;
    }
 
@@ -137,6 +137,26 @@ int tcpip_open(char *host, int port)
 /*----------------------------------------------------------------------------*/
 
 int tcpip_exit(TCPIP_INFO * info)
+{
+   closesocket(info->fd);
+
+   return SUCCESS;
+}
+
+/*----------------------------------------------------------------------------*/
+
+int tcpip_open(TCPIP_INFO * info)
+{
+   info->fd = tcpip_connect(info->settings.host, info->settings.port);
+   if (info->fd < 0)
+      return FE_ERR_HW;
+
+   return SUCCESS;
+}
+
+/*----------------------------------------------------------------------------*/
+
+int tcpip_close(TCPIP_INFO * info)
 {
    closesocket(info->fd);
 
@@ -333,7 +353,7 @@ int tcpip_init(HNDLE hkey, void **pinfo)
    db_get_record(hDB, hkeybd, &info->settings, &size, 0);
 
    /* open port */
-   info->fd = tcpip_open(info->settings.host, info->settings.port);
+   info->fd = tcpip_connect(info->settings.host, info->settings.port);
    if (info->fd < 0)
       return FE_ERR_HW;
 
@@ -363,6 +383,16 @@ INT tcpip(INT cmd, ...)
    case CMD_EXIT:
       info = va_arg(argptr, void *);
       status = tcpip_exit(info);
+      break;
+
+   case CMD_OPEN:
+      info = va_arg(argptr, void *);
+      status = tcpip_open(info);
+      break;
+
+   case CMD_CLOSE:
+      info = va_arg(argptr, void *);
+      status = tcpip_close(info);
       break;
 
    case CMD_NAME:

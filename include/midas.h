@@ -686,10 +686,12 @@ Slow control device driver commands */
 #define CMD_GET_THRESHOLD_ZERO        8
 #define CMD_SET_LABEL                 9
 #define CMD_GET_LABEL                10
-#define CMD_MISC_LAST                10 /* update this if you add new commands */
+#define CMD_OPEN                     11
+#define CMD_CLOSE                    12
+#define CMD_MISC_LAST                12 /* update this if you add new commands */
 
 #define CMD_SET_FIRST                CMD_MISC_LAST+1 /* set commands */
-#define CMD_SET                      CMD_SET_FIRST   // = 11
+#define CMD_SET                      CMD_SET_FIRST   // = 13
 #define CMD_SET_VOLTAGE_LIMIT        CMD_SET_FIRST+1
 #define CMD_SET_CURRENT_LIMIT        CMD_SET_FIRST+2
 #define CMD_SET_RAMPUP               CMD_SET_FIRST+3
@@ -698,12 +700,12 @@ Slow control device driver commands */
 #define CMD_SET_LAST                 CMD_SET_FIRST+5 /* update this if you add new commands */
 
 #define CMD_GET_FIRST                CMD_SET_LAST+1  /* multithreaded get commands */
-#define CMD_GET                      CMD_GET_FIRST   // = 17
+#define CMD_GET                      CMD_GET_FIRST   // = 19
 #define CMD_GET_CURRENT              CMD_GET_FIRST+1
 #define CMD_GET_LAST                 CMD_GET_FIRST+1 /* update this if you add new commands ! */
 
 #define CMD_GET_DIRECT               CMD_GET_LAST+1  /* direct get commands */
-#define CMD_GET_DEMAND               CMD_GET_DIRECT  // = 20
+#define CMD_GET_DEMAND               CMD_GET_DIRECT  // = 22
 #define CMD_GET_VOLTAGE_LIMIT        CMD_GET_DIRECT+1
 #define CMD_GET_CURRENT_LIMIT        CMD_GET_DIRECT+2
 #define CMD_GET_RAMPUP               CMD_GET_DIRECT+3
