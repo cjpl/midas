@@ -2115,7 +2115,7 @@ INT scheduler(void)
             /* check if autorestart, main loop will take care of it */
             size = sizeof(BOOL);
             flag = FALSE;
-            db_get_value(hDB, 0, "/Logger/Auto restart", &flag, &size, TID_BOOL, TRUE);
+            db_get_value(hDB, 0, "/Logger/Auto restart", &flag, (INT *)&size, TID_BOOL, TRUE);
 
             if (flag)
                auto_restart = ss_time() + 20;   /* restart in 20 sec. */
@@ -2291,7 +2291,7 @@ INT scheduler(void)
       if (auto_restart > 0 && ss_time() > auto_restart) {
          /* check if really stopped */
          size = sizeof(state);
-         status = db_get_value(hDB, 0, "Runinfo/State", &state, &size, TID_INT, TRUE);
+         status = db_get_value(hDB, 0, "Runinfo/State", &state, (INT *)&size, TID_INT, TRUE);
          if (status != DB_SUCCESS)
             cm_msg(MERROR, "scheduler", "cannot get Runinfo/State in database");
 
@@ -2299,7 +2299,7 @@ INT scheduler(void)
             auto_restart = 0;
             size = sizeof(run_number);
             status =
-                db_get_value(hDB, 0, "/Runinfo/Run number", &run_number, &size, TID_INT,
+                  db_get_value(hDB, 0, "/Runinfo/Run number", &run_number, (INT*)&size, TID_INT,
                              TRUE);
             assert(status == SUCCESS);
 
