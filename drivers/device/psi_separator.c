@@ -187,6 +187,8 @@ INT psi_separator_rall(PSI_SEPARATOR_INFO * info)
    status = info->bd(CMD_OPEN, info->bd_info);
    if (status != SUCCESS) {
       if (info->errorcount < MAX_ERROR) {
+         info->errorcount++;
+      } else {
          mfe_error("Cannot connect to separator PC");
          info->errorcount++;
       }
@@ -197,11 +199,12 @@ INT psi_separator_rall(PSI_SEPARATOR_INFO * info)
    status = info->bd(CMD_WRITE, info->bd_info, str, strlen(str) + 1);   // send string zero terminated
    if (status <= 0) {
       if (info->errorcount < MAX_ERROR) {
-         mfe_error("Error sending *RALL to SEP pc");
          info->errorcount++;
+      } else {
+         info->errorcount++;
+         mfe_error("Error sending *RALL to SEP pc");
       }
-      info->bd(CMD_EXIT, info->bd_info);
-      free(info->bd_info);
+      info->bd(CMD_CLOSE, info->bd_info);
       return FE_ERR_HW;
    }
 
@@ -223,8 +226,7 @@ INT psi_separator_rall(PSI_SEPARATOR_INFO * info)
             info->errorcount++;
          }
 
-         info->bd(CMD_EXIT, info->bd_info);
-         free(info->bd_info);
+         info->bd(CMD_CLOSE, info->bd_info);
          return FE_ERR_HW;
       }
    }
