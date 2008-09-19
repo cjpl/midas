@@ -4244,7 +4244,7 @@ void show_sc_page(char *path, int refresh)
    }
    rsprintf("</tr>\n\n");
 
-  /*---- enumerate SC equipment ----*/
+   /*---- enumerate SC equipment ----*/
 
    rsprintf("<tr><td colspan=15 bgcolor=#FFFF00><i>Equipment:</i> &nbsp;&nbsp;\n");
 
@@ -10225,12 +10225,12 @@ void export_hist(char *path, int scale, int toffset, int index, int labels)
 
       /* find index for all variables which is valid for t */
       for (i = 0; i < n_vars; i++)
-         while (i_var[i] < n_point[i] - 1 && x[i][i_var[i]+1] <= (DWORD)t)
+         while (n_point[i] > 0 && i_var[i] < n_point[i] - 1 && x[i][i_var[i]+1] <= (DWORD)t)
             i_var[i]++;
 
       /* finish if last point for all variables reached */
       for (i = 0 ; i < n_vars ; i++)
-         if (i_var[i] < n_point[i] - 1)
+         if (n_point[i] > 0 && i_var[i] < n_point[i] - 1)
             break;
       if (i == n_vars)
          break;
@@ -10291,7 +10291,7 @@ void show_hist_page(char *path, int path_size, char *buffer, int *buffer_size,
    char *poffset, *pscale, *pmag, *pindex, *fbuffer, *p;
    HNDLE hDB, hkey, hikeyp, hkeyp, hkeybutton;
    KEY key, ikey;
-   int i, j, k, scale, offset, index, width, size, status, labels, fh, fsize;
+   int i, j, k, scale, offset, index, width, size, status, labels, fh, fsize, found;
    float factor[2];
    char def_button[][NAME_LENGTH] = { "10m", "1h", "3h", "12h", "24h", "3d", "7d" };
    time_t now;
@@ -10339,13 +10339,39 @@ void show_hist_page(char *path, int path_size, char *buffer, int *buffer_size,
       if (*p == '/')
          strlcat(back_path, "../", sizeof(back_path));
 
+   if (isparam("fpanel") && isparam("fgroup") && 
+      !isparam("scale")  && !isparam("shift") && !isparam("width") && !isparam("cmd")) {
+
+      if (strchr(path, '/')) {
+         strlcpy(panel, strchr(path, '/') + 1, sizeof(panel));
+         strlcpy(hgroup, path, sizeof(hgroup));
+         *strchr(hgroup, '/') = 0;
+      } else {
+         strlcpy(hgroup, path, sizeof(str));
+         panel[0] = 0;
+      }
+
+      /* rewrite path if parameters come from a form submission */
+
+      /* check if group changed */
+      if (!equal_ustring(getparam("fgroup"), hgroup))
+         sprintf(path, "%s%s", back_path, getparam("fgroup"));
+      else if (*getparam("fpanel"))
+         sprintf(path, "%s%s/%s", back_path, getparam("fgroup"), getparam("fpanel"));
+      else
+         sprintf(path, "%s%s", back_path, getparam("fgroup"));
+
+      redirect(path);
+      return;
+   }
+
    if (equal_ustring(getparam("cmd"), "New")) {
       strlcpy(str, path, sizeof(str));
       if (strrchr(str, '/'))
          strlcpy(str, strrchr(str, '/')+1, sizeof(str));
       show_header(hDB, "History", "GET", str, 1, 0);
 
-      rsprintf("<tr><td align=center bgcolor=\"#FFFF00\" colspan=2>\n");
+      rsprintf("<tr><td align=center bgcolor=\"#FFFF80\" colspan=2>\n");
       rsprintf("Select group: &nbsp;&nbsp;");
       rsprintf("<select name=\"group\">\n");
 
@@ -10675,118 +10701,205 @@ void show_hist_page(char *path, int path_size, char *buffer, int *buffer_size,
 
    rsprintf("</td></tr>\n");
 
-   /* links for history panels */
-   rsprintf("<tr><td colspan=2 bgcolor=\"#FFFF00\">\n");
-   if (!path[0])
-      rsprintf("<b>Please select panel:</b><br>\n");
+   if (path[0] == 0) {
+      /* show big selection page */
 
-   /* table for panel selection */
-   rsprintf("<table border=1 cellpadding=3 style='text-align: left;'>");
+      /* links for history panels */
+      rsprintf("<tr><td colspan=2 bgcolor=\"#FFFFA0\">\n");
+      if (!path[0])
+         rsprintf("<b>Please select panel:</b><br>\n");
 
-   /* "All" link */
-   rsprintf("<tr><td colspan=2>\n");
-   if (equal_ustring(path, "All"))
-      rsprintf("<b>All</b> &nbsp;&nbsp;");
-   else {
-      if (exp_name[0])
-         rsprintf("<a href=\"%sAll?exp=%s\">ALL</a> &nbsp;&nbsp;\n", back_path, exp_name);
-      else
-         rsprintf("<a href=\"%sAll\">ALL</a>\n", back_path);
-   }
-   rsprintf("</td></tr>\n");
+      /* table for panel selection */
+      rsprintf("<table border=1 cellpadding=3 style='text-align: left;'>");
 
-   /* Setup History table links */
-   db_find_key(hDB, 0, "/History/Display", &hkey);
-   if (!hkey) {
-      /* create default panel */
-      strcpy(str, "System:Trigger per sec.");
-      strcpy(str + 2 * NAME_LENGTH, "System:Trigger kB per sec.");
-      db_set_value(hDB, 0, "/History/Display/Default/Trigger rate/Variables",
-                   str, NAME_LENGTH * 4, 2, TID_STRING);
-      strcpy(str, "1h");
-      db_set_value(hDB, 0, "/History/Display/Default/Trigger rate/Time Scale",
-                   str, NAME_LENGTH, 1, TID_STRING);
-
-      factor[0] = 1;
-      factor[1] = 1;
-      db_set_value(hDB, 0, "/History/Display/Default/Trigger rate/Factor",
-                   factor, 2 * sizeof(float), 2, TID_FLOAT);
-      factor[0] = 0;
-      factor[1] = 0;
-      db_set_value(hDB, 0, "/History/Display/Default/Trigger rate/Offset",
-                   factor, 2 * sizeof(float), 2, TID_FLOAT);
-      strcpy(str, "1h");
-      db_set_value(hDB, 0, "/History/Display/Default/Trigger rate/Timescale",
-                   str, NAME_LENGTH, 1, TID_STRING);
-      i = 1;
-      db_set_value(hDB, 0, "/History/Display/Default/Trigger rate/Zero ylow", &i,
-                   sizeof(BOOL), 1, TID_BOOL);
-      i = 1;
-      db_set_value(hDB, 0, "/History/Display/Default/Trigger rate/Show run markers",
-                   &i, sizeof(BOOL), 1, TID_BOOL);
-   }
-
-   db_find_key(hDB, 0, "/History/Display", &hkey);
-   if (hkey) {
-      for (i = 0;; i++) {
-         db_enum_link(hDB, hkey, i, &hkeyp);
-
-         if (!hkeyp)
-            break;
-
-         // Group key
-         db_get_key(hDB, hkeyp, &key);
-
-         if (strchr(path, '/'))
-            strlcpy(str, strchr(path, '/') + 1, sizeof(str));
+      /* "All" link */
+      rsprintf("<tr><td colspan=2>\n");
+      if (equal_ustring(path, "All"))
+         rsprintf("<b>All</b> &nbsp;&nbsp;");
+      else {
+         if (exp_name[0])
+            rsprintf("<a href=\"%sAll?exp=%s\">ALL</a> &nbsp;&nbsp;\n", back_path, exp_name);
          else
-            strlcpy(str, path, sizeof(str));
+            rsprintf("<a href=\"%sAll\">ALL</a>\n", back_path);
+      }
+      rsprintf("</td></tr>\n");
 
-         if (equal_ustring(str, key.name))
-            rsprintf("<tr><td><b>%s</b></td>\n<td>", key.name);
-         else {
-            if (exp_name[0])
-               rsprintf("<tr><td><b><a href=\"%s%s?exp=%s\">%s</a></b></td>\n<td>",
-                        back_path, key.name, exp_name, key.name);
-            else
-               rsprintf("<tr><td><b><a href=\"%s%s\">%s</a></b></td>\n<td>",
-                        back_path, key.name, key.name);
-         }
+      /* Setup History table links */
+      db_find_key(hDB, 0, "/History/Display", &hkey);
+      if (!hkey) {
+         /* create default panel */
+         strcpy(str, "System:Trigger per sec.");
+         strcpy(str + 2 * NAME_LENGTH, "System:Trigger kB per sec.");
+         db_set_value(hDB, 0, "/History/Display/Default/Trigger rate/Variables",
+                      str, NAME_LENGTH * 4, 2, TID_STRING);
+         strcpy(str, "1h");
+         db_set_value(hDB, 0, "/History/Display/Default/Trigger rate/Time Scale",
+                      str, NAME_LENGTH, 1, TID_STRING);
 
-         for (j = 0;; j++) {
-            // scan items 
-            db_enum_link(hDB, hkeyp, j, &hikeyp);
+         factor[0] = 1;
+         factor[1] = 1;
+         db_set_value(hDB, 0, "/History/Display/Default/Trigger rate/Factor",
+                      factor, 2 * sizeof(float), 2, TID_FLOAT);
+         factor[0] = 0;
+         factor[1] = 0;
+         db_set_value(hDB, 0, "/History/Display/Default/Trigger rate/Offset",
+                      factor, 2 * sizeof(float), 2, TID_FLOAT);
+         strcpy(str, "1h");
+         db_set_value(hDB, 0, "/History/Display/Default/Trigger rate/Timescale",
+                      str, NAME_LENGTH, 1, TID_STRING);
+         i = 1;
+         db_set_value(hDB, 0, "/History/Display/Default/Trigger rate/Zero ylow", &i,
+                      sizeof(BOOL), 1, TID_BOOL);
+         i = 1;
+         db_set_value(hDB, 0, "/History/Display/Default/Trigger rate/Show run markers",
+                      &i, sizeof(BOOL), 1, TID_BOOL);
+      }
 
-            if (!hikeyp) {
-               rsprintf("</tr>");
+      db_find_key(hDB, 0, "/History/Display", &hkey);
+      if (hkey) {
+         for (i = 0;; i++) {
+            db_enum_link(hDB, hkey, i, &hkeyp);
+
+            if (!hkeyp)
                break;
-            }
-            // Item key
-            db_get_key(hDB, hikeyp, &ikey);
+
+            // Group key
+            db_get_key(hDB, hkeyp, &key);
 
             if (strchr(path, '/'))
                strlcpy(str, strchr(path, '/') + 1, sizeof(str));
             else
                strlcpy(str, path, sizeof(str));
 
-            if (equal_ustring(str, ikey.name))
-               rsprintf("<small><b>%s</b></small> &nbsp;", ikey.name);
+            if (equal_ustring(str, key.name))
+               rsprintf("<tr><td><b>%s</b></td>\n<td>", key.name);
             else {
                if (exp_name[0])
-                  rsprintf("<small><a href=\"%s%s/%s?exp=%s\">%s</a></small> &nbsp;\n",
-                           back_path, key.name, ikey.name, exp_name, ikey.name);
+                  rsprintf("<tr><td><b><a href=\"%s%s?exp=%s\">%s</a></b></td>\n<td>",
+                           back_path, key.name, exp_name, key.name);
                else
-                  rsprintf("<small><a href=\"%s%s/%s\">%s</a></small> &nbsp;\n",
-                           back_path, key.name, ikey.name, ikey.name);
+                  rsprintf("<tr><td><b><a href=\"%s%s\">%s</a></b></td>\n<td>",
+                           back_path, key.name, key.name);
+            }
+
+            for (j = 0;; j++) {
+               // scan items 
+               db_enum_link(hDB, hkeyp, j, &hikeyp);
+
+               if (!hikeyp) {
+                  rsprintf("</tr>");
+                  break;
+               }
+               // Item key
+               db_get_key(hDB, hikeyp, &ikey);
+
+               if (strchr(path, '/'))
+                  strlcpy(str, strchr(path, '/') + 1, sizeof(str));
+               else
+                  strlcpy(str, path, sizeof(str));
+
+               if (equal_ustring(str, ikey.name))
+                  rsprintf("<small><b>%s</b></small> &nbsp;", ikey.name);
+               else {
+                  if (exp_name[0])
+                     rsprintf("<small><a href=\"%s%s/%s?exp=%s\">%s</a></small> &nbsp;\n",
+                              back_path, key.name, ikey.name, exp_name, ikey.name);
+                  else
+                     rsprintf("<small><a href=\"%s%s/%s\">%s</a></small> &nbsp;\n",
+                              back_path, key.name, ikey.name, ikey.name);
+               }
             }
          }
       }
+
+      /* "New" button */
+      rsprintf("<tr><td colspan=2><input type=submit name=cmd value=New></td></tr>\n");
+      rsprintf("</table></tr>\n");
+
+   } else {
+
+      /* show drop-down selectors */
+      rsprintf("<tr><td colspan=2 bgcolor=\"#FFFFA0\">\n");
+
+      rsprintf("Group:\n");
+
+      rsprintf("<select title=\"Select group\" name=\"fgroup\" onChange=\"document.form1.submit()\"");
+
+      db_find_key(hDB, 0, "/History/Display", &hkey);
+      if (hkey) {
+         hkeyp = 0;
+         for (i = 0;; i++) {
+            db_enum_link(hDB, hkey, i, &hikeyp);
+
+            if (!hikeyp)
+               break;
+
+            if (i == 0)
+               hkeyp = hikeyp;
+
+            // Group key
+            db_get_key(hDB, hikeyp, &key);
+
+            if (strchr(path, '/')) {
+               strlcpy(panel, strchr(path, '/') + 1, sizeof(panel));
+               strlcpy(hgroup, path, sizeof(hgroup));
+               *strchr(hgroup, '/') = 0;
+            } else {
+               strlcpy(hgroup, path, sizeof(str));
+               panel[0] = 0;
+            }
+
+            if (equal_ustring(key.name, hgroup)) {
+               rsprintf("<option selected value=\"%s\">%s\n", key.name, key.name);
+               hkeyp = hikeyp;
+            } else
+               rsprintf("<option value=\"%s\">%s\n", key.name, key.name);
+         }
+
+         rsprintf("</select>\n");
+         rsprintf("&nbsp;&nbsp;Panel:\n");
+         rsprintf("<select title=\"Select panel\" name=\"fpanel\" onChange=\"document.form1.submit()\">\n");
+
+         found = 0;
+         if (hkeyp) {
+            for (i = 0;; i++) {
+               // scan panels
+               db_enum_link(hDB, hkeyp, i, &hikeyp);
+
+               if (!hikeyp)
+                  break;
+
+               // Item key
+               db_get_key(hDB, hikeyp, &key);
+
+               if (strchr(path, '/'))
+                  strlcpy(str, strchr(path, '/') + 1, sizeof(str));
+               else
+                  strlcpy(str, path, sizeof(str));
+
+               if (equal_ustring(str, key.name)) {
+                  rsprintf("<option selected value=\"%s\">%s\n", key.name, key.name);
+                  found = 1;
+               } else
+                  rsprintf("<option value=\"%s\">%s\n", key.name, key.name);
+            }
+         }
+
+         if (found) 
+            rsprintf("<option value=\"\">- all -\n");
+         else
+            rsprintf("<option selected value=\"\">- all -\n");
+
+         rsprintf("</select>\n");
+      }
+
+      rsprintf("<noscript>\n");
+      rsprintf("<input type=submit value=\"Go\">\n");
+      rsprintf("</noscript>\n");
+
+      rsprintf("</td></tr>\n");
    }
 
-   /* "New" button */
-   rsprintf("<tr><td colspan=2><input type=submit name=cmd value=New></td></tr>\n");
-
-   rsprintf("</table></tr>\n");
 
    /* check if whole group should be displayed */
    if (path[0] && !equal_ustring(path, "ALL") && strchr(path, '/') == NULL) {
