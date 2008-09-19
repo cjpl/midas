@@ -287,9 +287,21 @@ INT psi_beamblocker_get(PSI_BEAMBLOCKER_INFO * info, INT channel, float *pvalue)
 
       status = recv_string(info->sock, str, sizeof(str), 3000);
       if (status <= 0) {
-         sprintf(str, "Cannot retrieve data from %s", info->psi_beamblocker_settings.beamline_pc);
-         mfe_error(str);
-         return FE_ERR_HW;
+         if (info->sock > 0) {
+            closesocket(info->sock);
+            info->sock = -1;
+         }
+
+         /* try to reconnect every 10 minutes */
+         if (ss_time() - last_reconnect > 600) {
+            last_reconnect = ss_time();
+            status = tcp_connect(info->psi_beamblocker_settings.beamline_pc,
+                                 info->psi_beamblocker_settings.port, &info->sock);
+
+            if (status != FE_SUCCESS)
+               return FE_ERR_HW;
+         } else
+            return FE_SUCCESS;
       }
 
       /* skip *RCAM* name */
