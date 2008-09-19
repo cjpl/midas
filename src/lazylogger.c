@@ -235,9 +235,11 @@ INT lazy_log_update(INT action, INT run, char *label, char *file, DWORD perf_tim
   else if (action == REMOVE_ENTRY)
     sprintf(str, "%s run#%i entry REMOVED", label, run);
 
+#ifdef WRITE_MIDAS_LOG
   cm_msg(MINFO, "lazy_log_update", str);
+#endif
   /* Now add this info also to a special log file */
-  cm_msg1(MINFO, "lazy_log_update", "lazy", str);
+  cm_msg1(MINFO, "lazy", "lazy_log_update", str);
 
   return 0;
 }
