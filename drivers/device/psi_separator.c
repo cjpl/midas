@@ -329,9 +329,16 @@ INT psi_separator_set(PSI_SEPARATOR_INFO * info, INT channel, float value)
 INT psi_separator_get(PSI_SEPARATOR_INFO * info, INT channel,
                       float *pvalue)
 {
-   INT status;
+   static INT status = 0;
 
-   status = psi_separator_rall(info);
+   if (channel == 0)
+      status = psi_separator_rall(info);
+
+   if (status == FE_ERR_HW) {
+      *pvalue = (float) ss_nan();
+      return status;
+   }
+
    if (channel == 0)
       *pvalue = info->hvmeasured;
    else if (channel == 1)
