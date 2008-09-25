@@ -245,7 +245,7 @@ extern "C" {
 
 /* make functions under WinNT dll exportable */
 #ifndef EXPRT
-#if defined(_MSC_VER) && defined(_USRDLL)
+#if defined(_MSC_VER) && defined(EXPORT_DLL)
 #define EXPRT __declspec(dllexport)
 #else
 #define EXPRT

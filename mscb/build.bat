@@ -52,8 +52,9 @@ zip -p mscb%version%.zip labview/*.dll
 zip -p mscb%version%.zip labview/*.llb
 zip -p mscb%version%.zip labview/*.vi
 
-zip -p mscb%version%.zip drivers/windows/mscbusb.inf
-zip -p mscb%version%.zip drivers/windows/mscbusb.sys
+zip -p mscb%version%.zip drivers/windows/libusb/libusb0.dll
+zip -p mscb%version%.zip drivers/windows/libusb/libusb0.sys
+zip -p mscb%version%.zip drivers/windows/libusb/mscblibusb.inf
 
 
 zip -p mscb%version%.zip \mxml\*.*
@@ -62,6 +63,6 @@ zip -p mscb%version%.zip \midas\drivers\usb\musbstd.c
 
 echo Sending archive to midas.psi.ch
 
-scp mscb%version%.zip ritt@midas:html/midas/mscb/software/download
+copy mscb%version%.zip x:\html\midas\mscb\software\download
 
 rm mscb%version%.zip > nul

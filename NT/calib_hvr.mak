@@ -46,7 +46,7 @@ CLEAN :
     if not exist "$(OUTDIR)/$(NULL)" mkdir "$(OUTDIR)"
 
 CPP=cl.exe
-CPP_PROJ=/nologo /W3 /O2 /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /D "_CRT_SECURE_NO_DEPRECATE" /D "_CRT_NONSTDC_NO_DEPRECATE" /Fp"$(INTDIR)\calib_hvr.pch" /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c /I "\mxml" /I "\midas\include"
+CPP_PROJ=/nologo /W3 /O2 /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /D "_CRT_SECURE_NO_DEPRECATE" /D "_CRT_NONSTDC_NO_DEPRECATE" /D "HAVE_LIBUSB" /Fp"$(INTDIR)\calib_hvr.pch" /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c /I "\mxml" /I "\midas\include" /I "\midas\mscb\drivers\windows\libusb\include"
 
 .c{$(INTDIR)}.obj::
    $(CPP) @<<
@@ -90,7 +90,9 @@ LINK32_OBJS= \
 	"$(INTDIR)\mscb.obj" \
 	"$(INTDIR)\strlcpy.obj" \
 	"$(INTDIR)\musbstd.obj" \
-	"$(INTDIR)\mscbrpc.obj"
+	"$(INTDIR)\mscbrpc.obj" \
+	"\midas\mscb\drivers\windows\libusb\lib\libusb.lib"       
+
 
 ".\bin\calib_hvr.exe" : "$(OUTDIR)" $(DEF_FILE) $(LINK32_OBJS)
     $(LINK32) @<<
@@ -121,7 +123,7 @@ CLEAN :
     if not exist "$(OUTDIR)/$(NULL)" mkdir "$(OUTDIR)"
 
 CPP=cl.exe
-CPP_PROJ=/nologo /MLd /W3 /Gm /ZI /Od /D "WIN32" /D "_DEBUG" /D "_CONSOLE" /D "_MBCS" /D "_CRT_SECURE_NO_DEPRECATE" /D "_CRT_NONSTDC_NO_DEPRECATE" /Fp"$(INTDIR)\calib_hvr.pch"  /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /GZ /c /I "\mxml" /I "\midas\include"
+CPP_PROJ=/nologo /MLd /W3 /Gm /ZI /Od /D "WIN32" /D "_DEBUG" /D "_CONSOLE" /D "_MBCS" /D "_CRT_SECURE_NO_DEPRECATE" /D "_CRT_NONSTDC_NO_DEPRECATE" /D "HAVE_LIBUSB" /Fp"$(INTDIR)\calib_hvr.pch"  /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /GZ /c /I "\mxml" /I "\midas\include" /I "\midas\mscb\drivers\windows\libusb\include"
 
 .c{$(INTDIR)}.obj::
    $(CPP) @<<
@@ -165,7 +167,9 @@ LINK32_OBJS= \
 	"$(INTDIR)\mscb.obj" \
 	"$(INTDIR)\strlcpy.obj" \
 	"$(INTDIR)\musbstd.obj" \
-	"$(INTDIR)\mscbrpc.obj"
+	"$(INTDIR)\mscbrpc.obj" \
+	"\midas\mscb\drivers\windows\libusb\lib\libusb.lib"       
+
 
 ".\bin\calib_hvr.exe" : "$(OUTDIR)" $(DEF_FILE) $(LINK32_OBJS)
     $(LINK32) @<<

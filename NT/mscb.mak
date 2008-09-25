@@ -47,7 +47,7 @@ CLEAN :
     if not exist "$(OUTDIR)/$(NULL)" mkdir "$(OUTDIR)"
 
 CPP=cl.exe
-CPP_PROJ=/nologo /MT /W3 /O2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "MSCB_EXPORTS" /D "_CRT_SECURE_NO_DEPRECATE" /D "_CRT_NONSTDC_NO_DEPRECATE" /Fp"$(INTDIR)\mscb.pch" /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c /I "\mxml" /I "\midas\include"
+CPP_PROJ=/nologo /MT /W3 /O2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "EXPORT_DLL" /D "MSCB_EXPORTS" /D "_CRT_SECURE_NO_DEPRECATE" /D "_CRT_NONSTDC_NO_DEPRECATE" /D "HAVE_LIBUSB" /Fp"$(INTDIR)\mscb.pch" /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c /I "\mxml" /I "\midas\include" /I "\midas\mscb\drivers\windows\libusb\include"
 
 .c{$(INTDIR)}.obj::
    $(CPP) @<<
@@ -92,7 +92,8 @@ LINK32_OBJS= \
 	"$(INTDIR)\mscb.obj" \
 	"$(INTDIR)\mscbrpc.obj" \
 	"$(INTDIR)\musbstd.obj" \
-	"$(INTDIR)\strlcpy.obj" 
+	"$(INTDIR)\strlcpy.obj" \
+	"\midas\mscb\drivers\windows\libusb\lib\libusb.lib"       
 
 
 ".\lib\mscb.dll" : "$(OUTDIR)" $(DEF_FILE) $(LINK32_OBJS)
@@ -125,7 +126,7 @@ CLEAN :
     if not exist "$(OUTDIR)/$(NULL)" mkdir "$(OUTDIR)"
 
 CPP=cl.exe
-CPP_PROJ=/nologo /MTd /W3 /Gm /ZI /Od /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "MSCB_EXPORTS" /D "_CRT_SECURE_NO_DEPRECATE" /D "_CRT_NONSTDC_NO_DEPRECATE" /Fp"$(INTDIR)\mscb.pch"  /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /GZ /c 
+CPP_PROJ=/nologo /MTd /W3 /Gm /ZI /Od /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /D "_MBCS" /D "EXPORT_DLL" /D "MSCB_EXPORTS" /D "_CRT_SECURE_NO_DEPRECATE" /D "_CRT_NONSTDC_NO_DEPRECATE" /D "HAVE_LIBUSB" /Fp"$(INTDIR)\mscb.pch"  /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /GZ /c 
 
 .c{$(INTDIR)}.obj::
    $(CPP) @<<
@@ -170,7 +171,8 @@ LINK32_OBJS= \
 	"$(INTDIR)\mscb.obj" \
 	"$(INTDIR)\mscbrpc.obj" \
 	"$(INTDIR)\musbstd.obj" \
-	"$(INTDIR)\strlcpy.obj"
+	"$(INTDIR)\strlcpy.obj" \
+	"\midas\mscb\drivers\windows\libusb\lib\libusb.lib"       
 
 
 ".\lib\mscb.dll" : "$(OUTDIR)" $(DEF_FILE) $(LINK32_OBJS)
