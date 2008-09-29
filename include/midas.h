@@ -196,6 +196,11 @@ typedef INT midas_thread_t;
 #define O_LARGEFILE 0
 #endif
 
+/* disable "deprecated" warning */
+#if defined( _MSC_VER )
+#pragma warning( disable: 4996)
+#endif
+
 /**dox***************************************************************/
 #endif                          /* DOXYGEN_SHOULD_SKIP_THIS */
 
