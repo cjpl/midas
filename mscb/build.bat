@@ -38,6 +38,7 @@ zip mscb%version%.zip Makefile
 zip mscb%version%.zip *.c
 zip mscb%version%.zip *.h
 zip mscb%version%.zip msc.exe
+zip mscb%version%.zip libusb0.dll
 zip mscb%version%.zip calib_700.exe
 zip mscb%version%.zip calib_900.exe
 zip mscb%version%.zip calib_1000.exe
