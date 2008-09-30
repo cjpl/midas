@@ -118,20 +118,20 @@ NAME_TABLE code unit_table[] = {
 
 MSCB_INFO_VAR code sysvar[] = {
 
-   {  2, UNIT_WORD, 0, 0, 0, "Node Adr", &sys_info.node_addr, 0, 0, 1 },
-   {  2, UNIT_WORD, 0, 0, 0, "Grp Adr",  &sys_info.group_addr, 0, 0, 1 },
+   {  2, UNIT_WORD, 0, 0, 0, "Node Adr", &sys_info.node_addr,  1, 0, 0, 1 },
+   {  2, UNIT_WORD, 0, 0, 0, "Grp Adr",  &sys_info.group_addr, 1, 0, 0, 1 },
 
-   { 10, UNIT_STRING,  0, 0, 0, "Time",     &time_str, 0, 0, 1},
-   { 10, UNIT_STRING,  0, 0, 0, "Date",     &date_str, 0, 0, 1},
+   { 10, UNIT_STRING,  0, 0, 0, "Time",     &time_str, 1, 0, 0, 1},
+   { 10, UNIT_STRING,  0, 0, 0, "Date",     &date_str, 1, 0, 0, 1},
 
 #ifdef SCS_2001
-   { 4,  UNIT_CELSIUS, 0, 0, MSCBF_FLOAT,    "Temp",   &mon.temperature, 0, 0, 1},
-   { 4,  UNIT_VOLT,    0, 0, MSCBF_FLOAT,    "1.8V",   &mon.u_1_8v,      0, 0, 2},
-   { 4,  UNIT_VOLT,    0, 0, MSCBF_FLOAT,    "3.3V",   &mon.u_3_3v,      0, 0, 2},
-   { 4,  UNIT_VOLT,    0, 0, MSCBF_FLOAT,    "5Vext",  &mon.u_5v_ext,    0, 0, 2},
-   { 4,  UNIT_VOLT,    0, 0, MSCBF_FLOAT,    "24V",    &mon.u_24v,       0, 0, 1},
-   { 4,  UNIT_VOLT,    0, 0, MSCBF_FLOAT,    "24Vext", &mon.u_24v_ext,   0, 0, 1},
-   { 4,  UNIT_AMPERE,  0, 0, MSCBF_FLOAT,    "I 24V",  &mon.i_24v,       0, 0, 2},
+   { 4,  UNIT_CELSIUS, 0, 0, MSCBF_FLOAT,    "Temp",   &mon.temperature, 2, 0, 0, 1},
+   { 4,  UNIT_VOLT,    0, 0, MSCBF_FLOAT,    "1.8V",   &mon.u_1_8v,      2, 0, 0, 2},
+   { 4,  UNIT_VOLT,    0, 0, MSCBF_FLOAT,    "3.3V",   &mon.u_3_3v,      2, 0, 0, 2},
+   { 4,  UNIT_VOLT,    0, 0, MSCBF_FLOAT,    "5Vext",  &mon.u_5v_ext,    2, 0, 0, 2},
+   { 4,  UNIT_VOLT,    0, 0, MSCBF_FLOAT,    "24V",    &mon.u_24v,       2, 0, 0, 1},
+   { 4,  UNIT_VOLT,    0, 0, MSCBF_FLOAT,    "24Vext", &mon.u_24v_ext,   2, 0, 0, 1},
+   { 4,  UNIT_AMPERE,  0, 0, MSCBF_FLOAT,    "I 24V",  &mon.i_24v,       2, 0, 0, 2},
 #endif
    
    {  0, UNIT_BOOLEAN, 0, 0, MSCBF_DATALESS, "Flash" },
@@ -427,6 +427,11 @@ void lcd_menu()
          rtc_read(dt_bcd);
          rtc_conv_date(dt_bcd, date_str);
          rtc_conv_time(dt_bcd, time_str);
+#else
+         date_str[0] = '-';
+         date_str[1] = 0;
+         time_str[0] = '-';
+         time_str[1] = 0;
 #endif
 
 #ifdef SCS_2001

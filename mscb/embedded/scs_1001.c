@@ -62,18 +62,18 @@ struct {
 
 MSCB_INFO_VAR code vars[] = {
 
-   { 1, UNIT_BOOLEAN, 0, 0, 0,        "Relais0", &user_data.relais[0], 0, 1, 1 }, // 0
-   { 1, UNIT_BOOLEAN, 0, 0, 0,        "Relais1", &user_data.relais[1], 0, 1, 1 },
-   { 1, UNIT_BOOLEAN, 0, 0, 0,        "Relais2", &user_data.relais[2], 0, 1, 1 },
-   { 1, UNIT_BOOLEAN, 0, 0, 0,        "Relais3", &user_data.relais[3], 0, 1, 1 },
+   { 1, UNIT_BOOLEAN, 0, 0, 0,        "Relais0", &user_data.relais[0], 1, 0, 1, 1 }, // 0
+   { 1, UNIT_BOOLEAN, 0, 0, 0,        "Relais1", &user_data.relais[1], 1, 0, 1, 1 },
+   { 1, UNIT_BOOLEAN, 0, 0, 0,        "Relais2", &user_data.relais[2], 1, 0, 1, 1 },
+   { 1, UNIT_BOOLEAN, 0, 0, 0,        "Relais3", &user_data.relais[3], 1, 0, 1, 1 },
 
-   { 1, UNIT_BOOLEAN, 0, 0, 0,        "Dout0",   &user_data.dout[0],   0, 1, 1 }, // 4
-   { 1, UNIT_BOOLEAN, 0, 0, 0,        "Dout1",   &user_data.dout[1],   0, 1, 1 },
-   { 1, UNIT_BOOLEAN, 0, 0, 0,        "Dout2",   &user_data.dout[2],   0, 1, 1 },
-   { 1, UNIT_BOOLEAN, 0, 0, 0,        "Dout3",   &user_data.dout[3],   0, 1, 1 },
+   { 1, UNIT_BOOLEAN, 0, 0, 0,        "Dout0",   &user_data.dout[0],   1, 0, 1, 1 }, // 4
+   { 1, UNIT_BOOLEAN, 0, 0, 0,        "Dout1",   &user_data.dout[1],   1, 0, 1, 1 },
+   { 1, UNIT_BOOLEAN, 0, 0, 0,        "Dout2",   &user_data.dout[2],   1, 0, 1, 1 },
+   { 1, UNIT_BOOLEAN, 0, 0, 0,        "Dout3",   &user_data.dout[3],   1, 0, 1, 1 },
 
-   { 4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "DAC0",    &user_data.dac[0],  -10, 10, 0.01 }, // 8
-   { 4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "DAC1",    &user_data.dac[1],  -10, 10, 0.01 },
+   { 4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "DAC0",    &user_data.dac[0],  2, -10, 10, 0.01 }, // 8
+   { 4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "DAC1",    &user_data.dac[1],  2, -10, 10, 0.01 },
 
    { 1, UNIT_BOOLEAN, 0, 0, 0,        "Din0",    &user_data.din[0] },  // 10
    { 1, UNIT_BOOLEAN, 0, 0, 0,        "Din1",    &user_data.din[1] },
@@ -89,28 +89,28 @@ MSCB_INFO_VAR code vars[] = {
    { 4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "ADC6",    &user_data.adc[6] },
    { 4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "ADC7",    &user_data.adc[7] },
 
-   { 4, UNIT_VOLT,   0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "DOFS0",  &user_data.dofs[0], -0.1, 0.1, 0.001 }, // 22
-   { 4, UNIT_VOLT,   0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "DOFS1",  &user_data.dofs[1], -0.1, 0.1, 0.001 },
-   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "DGAIN0", &user_data.dgain[0], 0.9, 1.1, 0.001 },
-   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "DGAIN1", &user_data.dgain[1], 0.9, 1.1, 0.001 },
+   { 4, UNIT_VOLT,   0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "DOFS0",  &user_data.dofs[0],  3,-0.1, 0.1, 0.001 }, // 22
+   { 4, UNIT_VOLT,   0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "DOFS1",  &user_data.dofs[1],  3,-0.1, 0.1, 0.001 },
+   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "DGAIN0", &user_data.dgain[0], 3, 0.9, 1.1, 0.001 },
+   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "DGAIN1", &user_data.dgain[1], 3, 0.9, 1.1, 0.001 },
 
-   { 4, UNIT_VOLT,   0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "AOFS0",  &user_data.aofs[0], -0.1, 0.1, 0.001 }, // 26
-   { 4, UNIT_VOLT,   0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "AOFS1",  &user_data.aofs[1], -0.1, 0.1, 0.001 },
-   { 4, UNIT_VOLT,   0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "AOFS2",  &user_data.aofs[2], -0.1, 0.1, 0.001 },
-   { 4, UNIT_VOLT,   0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "AOFS3",  &user_data.aofs[3], -0.1, 0.1, 0.001 },
-   { 4, UNIT_VOLT,   0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "AOFS4",  &user_data.aofs[4], -0.1, 0.1, 0.001 },
-   { 4, UNIT_VOLT,   0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "AOFS5",  &user_data.aofs[5], -0.1, 0.1, 0.001 },
-   { 4, UNIT_VOLT,   0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "AOFS6",  &user_data.aofs[6], -0.1, 0.1, 0.001 },
-   { 4, UNIT_VOLT,   0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "AOFS7",  &user_data.aofs[7], -0.1, 0.1, 0.001 },
+   { 4, UNIT_VOLT,   0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "AOFS0",  &user_data.aofs[0], 3,-0.1, 0.1, 0.001 }, // 26
+   { 4, UNIT_VOLT,   0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "AOFS1",  &user_data.aofs[1], 3,-0.1, 0.1, 0.001 },
+   { 4, UNIT_VOLT,   0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "AOFS2",  &user_data.aofs[2], 3,-0.1, 0.1, 0.001 },
+   { 4, UNIT_VOLT,   0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "AOFS3",  &user_data.aofs[3], 3,-0.1, 0.1, 0.001 },
+   { 4, UNIT_VOLT,   0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "AOFS4",  &user_data.aofs[4], 3,-0.1, 0.1, 0.001 },
+   { 4, UNIT_VOLT,   0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "AOFS5",  &user_data.aofs[5], 3,-0.1, 0.1, 0.001 },
+   { 4, UNIT_VOLT,   0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "AOFS6",  &user_data.aofs[6], 3,-0.1, 0.1, 0.001 },
+   { 4, UNIT_VOLT,   0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "AOFS7",  &user_data.aofs[7], 3,-0.1, 0.1, 0.001 },
 
-   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "AGAIN0", &user_data.again[0], 0.9, 1.1, 0.001 }, // 34
-   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "AGAIN1", &user_data.again[1], 0.9, 1.1, 0.001 },
-   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "AGAIN2", &user_data.again[2], 0.9, 1.1, 0.001 },
-   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "AGAIN3", &user_data.again[3], 0.9, 1.1, 0.001 },
-   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "AGAIN4", &user_data.again[4], 0.9, 1.1, 0.001 },
-   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "AGAIN5", &user_data.again[5], 0.9, 1.1, 0.001 },
-   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "AGAIN6", &user_data.again[6], 0.9, 1.1, 0.001 },
-   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "AGAIN7", &user_data.again[7], 0.9, 1.1, 0.001 },
+   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "AGAIN0", &user_data.again[0], 3, 0.9, 1.1, 0.001 }, // 34
+   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "AGAIN1", &user_data.again[1], 3, 0.9, 1.1, 0.001 },
+   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "AGAIN2", &user_data.again[2], 3, 0.9, 1.1, 0.001 },
+   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "AGAIN3", &user_data.again[3], 3, 0.9, 1.1, 0.001 },
+   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "AGAIN4", &user_data.again[4], 3, 0.9, 1.1, 0.001 },
+   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "AGAIN5", &user_data.again[5], 3, 0.9, 1.1, 0.001 },
+   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "AGAIN6", &user_data.again[6], 3, 0.9, 1.1, 0.001 },
+   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "AGAIN7", &user_data.again[7], 3, 0.9, 1.1, 0.001 },
 
 
    //## test
