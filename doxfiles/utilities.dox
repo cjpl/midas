@@ -1251,14 +1251,24 @@ Operates on @ref mchart_task data or on Midas history save-set files.
  >hvedit
  \endcode
 
-<hr> @section mserver_task Midas Remote server
-\em mserver provides remote access to any midas client. This task usually runs in the
-background and doesn't need to be modified. In the case where debugging is required, the
+<hr> @section mserver_task mserver task
+\em mserver provides remote access to any midas client. To use it, start the mserver
+on the machine hosting midas shared memory buffers (manually via "mserver -D" or
+automatically via xinetd). On all other machines, set the environement variable MIDAS_SERVER_HOST
+to the hostname of the machine running the mserver or add the command line switch "-h hostname:port" to
+midas programs that support it (i.e. "odbedit -h hostname"). If multiple experiments share
+the same computer, one can still use the mserver: either run separate mservers
+for each experiment using non-default TCP ports or define the experiments in
+the global /etc/exptab file and run the mserver from xinetd. When running from xinetd,
+the mserver will select the correct experiment and setuid() into the correct user account.
+The mserver task usually runs in the
+background and does not need to be modified. In the case where debugging is required, the
 \em mserver can be started with the -d flag which will write an entry for each transaction
 appearing onto the mserver. This log entry contains the time stamp and RPC call request.
 
 - <b> Arguments </b>
   - [-h ] : help
+  - [-p port ] : Use non-default TCP port (use with "setenv MIDAS_SERVER_HOST host:port")
   - [-s ] : Single process  server
   - [-t ] : Multi thread server
   - [-m ] : Milti process server (default)

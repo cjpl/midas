@@ -172,9 +172,13 @@ will generate a warning message in the case this variable is not defined.
  midas experiment. The default location is for OS_UNIX: /etc, /. For OS_WINNT:
  \\system32, \\system.
 @subsection   MIDAS_SERVER_HOST MIDAS_SERVER_HOST
- This variable predefines the names of the host on which the Midas experiment
- shared memories are residing. It is needed when connection to a remote experiment
- is requested. This variable is valid for Unix as well as Windows OS.
+ This variable predefines the name of the host on which the Midas experiment
+ shared memories are residing and which is running the mserver program. Tells
+ midas clients to connect to the mserver running on given host and tcp port. If using
+ non-default tcp port number, start the mserver with the -p switch (i.e. "mserver -p 7070")
+ and set MIDAS_SERVER_HOST to "hostname:port" (i.e. "setenv MIDAS_SERVER_HOST host.example.com:7070").
+ Some MIDAS programs cannot run remotely (i.e. mserver has to run locally).
+ This variable is valid for Unix as well as Windows OS.
 @subsection   MIDAS_EXPT_NAME MIDAS_EXPT_NAME
  This variable predefines the name of the experiment to connect by default. It
  prevents the requested application to ask for the experiment name when multiple

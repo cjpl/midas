@@ -127,6 +127,7 @@ int main(int argc, char **argv)
    int i, flag, size, server_type;
    char name[256], str[1000];
    BOOL inetd, daemon, debug;
+   int port = MIDAS_TCP_PORT;
 
 #ifdef OS_WINNT
    /* init critical section object for open/close buffer */
@@ -211,15 +212,18 @@ int main(int argc, char **argv)
             server_type = ST_MTHREAD;
          else if (argv[i][0] == '-' && argv[i][1] == 'm')
             server_type = ST_MPROCESS;
+         else if (argv[i][0] == '-' && argv[i][1] == 'p')
+            port = strtoul(argv[++i], NULL, 0);
          else if (argv[i][0] == '-') {
             if (i + 1 >= argc || argv[i + 1][0] == '-')
                goto usage;
             else {
              usage:
-               printf("usage: mserver [-s][-t][-m][-d]\n");
+               printf("usage: mserver [-s][-t][-m][-d][-p port]\n");
                printf("               -s    Single process server\n");
                printf("               -t    Multi threaded server\n");
                printf("               -m    Multi process server (default)\n");
+               printf("               -p port Listen for connections on non-default tcp port\n");
 #ifdef OS_LINUX
                printf("               -D    Become a daemon\n");
                printf("               -d    Write debug info to stdout or to \"/tmp/mserver.log\"\n\n");
@@ -264,7 +268,7 @@ int main(int argc, char **argv)
       }
 
       /* register server */
-      if (rpc_register_server(server_type, argv[0], NULL, rpc_server_dispatch) != RPC_SUCCESS) {
+      if (rpc_register_server(server_type, argv[0], &port, rpc_server_dispatch) != RPC_SUCCESS) {
          printf("Cannot start server\n");
          return 0;
       }

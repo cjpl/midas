@@ -2040,6 +2040,9 @@ INT cm_list_experiments(char *host_name, char exp_name[MAX_EXPERIMENT][NAME_LENG
    INT sock;
    char str[MAX_EXPERIMENT * NAME_LENGTH];
    struct hostent *phe;
+   int port = MIDAS_TCP_PORT;
+   char hname[256];
+   char* s;
 
    if (host_name[0] == 0 || equal_ustring(host_name, "local")) {
       status = cm_scan_experiments();
@@ -2068,23 +2071,31 @@ INT cm_list_experiments(char *host_name, char exp_name[MAX_EXPERIMENT][NAME_LENG
       return RPC_NET_ERROR;
    }
 
+   /* extract port number from host_name */
+   strlcpy(hname, host_name, sizeof(hname));
+   s = strchr(hname, ':');
+   if (s) {
+      *s = 0;
+      port = strtoul(s+1, NULL, 0);
+   }
+
    /* connect to remote node */
    memset(&bind_addr, 0, sizeof(bind_addr));
    bind_addr.sin_family = AF_INET;
    bind_addr.sin_addr.s_addr = 0;
-   bind_addr.sin_port = htons((short) MIDAS_TCP_PORT);
+   bind_addr.sin_port = htons(port);
 
 #ifdef OS_VXWORKS
    {
       INT host_addr;
 
-      host_addr = hostGetByName(host_name);
+      host_addr = hostGetByName(hname);
       memcpy((char *) &(bind_addr.sin_addr), &host_addr, 4);
    }
 #else
-   phe = gethostbyname(host_name);
+   phe = gethostbyname(hname);
    if (phe == NULL) {
-      cm_msg(MERROR, "cm_list_experiments", "cannot get host name");
+      cm_msg(MERROR, "cm_list_experiments", "cannot resolve host name \'%s\'", hname);
       return RPC_NET_ERROR;
    }
    memcpy((char *) &(bind_addr.sin_addr), phe->h_addr, phe->h_length);
@@ -8280,6 +8291,8 @@ INT rpc_server_connect(char *host_name, char *exp_name)
    struct hostent *phe;
    fd_set readfds;
    struct timeval timeout;
+   int port = MIDAS_TCP_PORT;
+   char* s;
 
 #ifdef OS_WINNT
    {
@@ -8377,23 +8390,31 @@ INT rpc_server_connect(char *host_name, char *exp_name)
       return RPC_NET_ERROR;
    }
 
+   /* extract port number from host_name */
+   strlcpy(str, host_name, sizeof(str));
+   s = strchr(str, ':');
+   if (s) {
+      *s = 0;
+      port = strtoul(s+1, NULL, 0);
+   }
+
    /* connect to remote node */
    memset(&bind_addr, 0, sizeof(bind_addr));
    bind_addr.sin_family = AF_INET;
    bind_addr.sin_addr.s_addr = 0;
-   bind_addr.sin_port = htons((short) MIDAS_TCP_PORT);
+   bind_addr.sin_port = htons(port);
 
 #ifdef OS_VXWORKS
    {
       INT host_addr;
 
-      host_addr = hostGetByName(host_name);
+      host_addr = hostGetByName(str);
       memcpy((char *) &(bind_addr.sin_addr), &host_addr, 4);
    }
 #else
-   phe = gethostbyname(host_name);
+   phe = gethostbyname(str);
    if (phe == NULL) {
-      cm_msg(MERROR, "rpc_server_connect", "cannot get host name");
+      cm_msg(MERROR, "rpc_server_connect", "cannot resolve host name \'%s\'", str);
       return RPC_NET_ERROR;
    }
    memcpy((char *) &(bind_addr.sin_addr), phe->h_addr, phe->h_length);
