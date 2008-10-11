@@ -47,6 +47,8 @@ typedef struct {
 static DWORD last_update;
 static DWORD last_reconnect;
 
+#define MAX_ERROR        5      // send error after this amount of failed read attempts
+
 /*---- network TCP connection --------------------------------------*/
 
 static INT tcp_connect(char *host, int port, int *sock)
@@ -264,6 +266,7 @@ INT psi_beamline_rall(PSI_BEAMLINE_INFO * info)
 {
    INT status, i, j;
    char str[1024];
+   static int error_count = 0;
 
    if (ss_time() - last_update > 10) {
       last_update = ss_time();
@@ -289,11 +292,14 @@ INT psi_beamline_rall(PSI_BEAMLINE_INFO * info)
 
       status = recv_string(info->sock, str, sizeof(str), 10000);
       if (status <= 0) {
-         sprintf(str, "cannot retrieve data from %s",
-                info->psi_beamline_settings.beamline_pc);
-         mfe_error(str);
+         error_count++;
+         if (error_count > MAX_ERROR) {
+            sprintf(str, "cannot retrieve data from %s", info->psi_beamline_settings.beamline_pc);
+            mfe_error(str);
+         }
          return FE_ERR_HW;
       }
+      error_count = 0;
 
       for (i = 0; i < info->num_channels; i++) {
          recv_string(info->sock, str, sizeof(str), 10000);
@@ -309,7 +315,7 @@ INT psi_beamline_rall(PSI_BEAMLINE_INFO * info)
          info->measured[i] = (float) ((int) (atof(str + j + 1) * 10000) / 10000.0);
       }
    } else
-      ss_sleep(10); // don't eat all CPU
+      ss_sleep(10);             // don't eat all CPU
 
    return FE_SUCCESS;
 }
