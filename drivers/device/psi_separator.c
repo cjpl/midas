@@ -47,17 +47,17 @@ Max. current = FLOAT : 10\n\
 //! write the other device's variables.
 
 typedef struct {
-   PSI_SEPARATOR_SETTINGS settings; //!< stores internal settings, not active
-   float hvdemand;                    //!< demand values, to be read initially from separator PC
-   float hvmeasured;                  //!< measured HV
-   float hvcurrent;                   //!< measured current
-   float sepvac;                      //!< separator vacuum;
-   INT(*bd) (INT cmd, ...);           //!< bus driver entry function
-   void *bd_info;                     //!< private info of bus driver
-   HNDLE hkey;                        //!< ODB key for bus driver info
-   INT errorcount;                    //!< number of error encountered
-   DWORD lasterr_resettime;           //!< last error reset time
-   DWORD lasterrtime;                 //!< last error time stamp
+   PSI_SEPARATOR_SETTINGS settings;     //!< stores internal settings, not active
+   float hvdemand;              //!< demand values, to be read initially from separator PC
+   float hvmeasured;            //!< measured HV
+   float hvcurrent;             //!< measured current
+   float sepvac;                //!< separator vacuum;
+    INT(*bd) (INT cmd, ...);    //!< bus driver entry function
+   void *bd_info;               //!< private info of bus driver
+   HNDLE hkey;                  //!< ODB key for bus driver info
+   INT errorcount;              //!< number of error encountered
+   DWORD lasterr_resettime;     //!< last error reset time
+   DWORD lasterrtime;           //!< last error time stamp
 } PSI_SEPARATOR_INFO;
 
 static DWORD last_update;
@@ -73,19 +73,16 @@ INT psi_separator_rall(PSI_SEPARATOR_INFO * info);
 //! \param **pinfo is needed to store the internal info structure
 //! \param channels is the number of channels of the device (from the class driver)
 //! \param *bd is a pointer to the bus driver
-INT psi_separator_init(HNDLE hkey, void **pinfo, INT channels,
-                       INT(*bd) (INT cmd, ...))
+INT psi_separator_init(HNDLE hkey, void **pinfo, INT channels, INT(*bd) (INT cmd, ...))
 {
    int status;
    HNDLE hDB, hkeydd;
    PSI_SEPARATOR_INFO *info;
 
    if (channels != 3) {
-      cm_msg(MERROR, "psi_separator_init",
-             "Driver requires 3 channels, not %d", channels);
+      cm_msg(MERROR, "psi_separator_init", "Driver requires 3 channels, not %d", channels);
       return FE_ERR_ODB;
    }
-
    //allocate info structure
    info = calloc(1, sizeof(PSI_SEPARATOR_INFO));
    *pinfo = info;
@@ -98,11 +95,9 @@ INT psi_separator_init(HNDLE hkey, void **pinfo, INT channels,
       return FE_ERR_ODB;
 
    db_find_key(hDB, hkey, "DD", &hkeydd);
-   status = db_open_record(hDB, hkeydd, &info->settings, sizeof(info->settings),
-                      MODE_READ, NULL, NULL);
+   status = db_open_record(hDB, hkeydd, &info->settings, sizeof(info->settings), MODE_READ, NULL, NULL);
    if (status != DB_SUCCESS) {
-      cm_msg(MERROR, "psi_separator_init",
-             "Error opening hot-link to DD key");
+      cm_msg(MERROR, "psi_separator_init", "Error opening hot-link to DD key");
       return FE_ERR_ODB;
    }
 
@@ -174,10 +169,9 @@ INT psi_separator_rall(PSI_SEPARATOR_INFO * info)
       info->errorcount = 0;
       info->lasterr_resettime = nowtime;
    }
-
    // only update once every 10 seconds
    if (nowtime - last_update < 10) {
-      ss_sleep(10); // don't eat all CPU
+      ss_sleep(10);             // don't eat all CPU
       return FE_SUCCESS;
    }
 
@@ -211,10 +205,10 @@ INT psi_separator_rall(PSI_SEPARATOR_INFO * info)
    strcpy(str, "0");
    while (strstr(str, "*RALL*") == NULL) {
       status = info->bd(CMD_GETS, info->bd_info, str, sizeof(str), "\n", 3000);
-      
+
       if (strstr(str, "*RALL*") == NULL)
          ss_sleep(100);         //sleep 100ms before trying again
-      
+
       if (ss_time() - last_update > 30) {
          if (info->errorcount < MAX_ERROR) {
             info->lasterrtime = nowtime;
@@ -222,7 +216,7 @@ INT psi_separator_rall(PSI_SEPARATOR_INFO * info)
          }
 
          if (info->errorcount < 2 * MAX_ERROR && (nowtime - info->lasterrtime) > 900) { //signal error after 15min
-            mfe_error("Cannot RALL data.");   //this period is given by the watchdog on separator
+            mfe_error("Cannot RALL data.");     //this period is given by the watchdog on separator
             info->errorcount++;
          }
 
@@ -234,23 +228,26 @@ INT psi_separator_rall(PSI_SEPARATOR_INFO * info)
    // get first string, should be "HVN <voltage> <current>"
    status = info->bd(CMD_GETS, info->bd_info, str, sizeof(str), "\n", 500);
 
-   // skip name
-   for (j = 0; j < (int) strlen(str) && str[j] != ' '; j++);
+   if (strstr(str, "HVN")) {
+      // skip name
+      for (j = 0; j < (int) strlen(str) && str[j] != ' '; j++);
 
-   // extract demand value
-   info->hvdemand = (float) atof(str + j + 1);
-   for (j++; j < (int) strlen(str) && str[j] != ' '; j++);
+      // extract demand value
+      info->hvdemand = (float) atof(str + j + 1);
+      for (j++; j < (int) strlen(str) && str[j] != ' '; j++);
 
-   // extract measured values
-   info->hvmeasured = (float) atof(str + j + 1);
-   for (j++; j < (int) strlen(str) && str[j] != ' '; j++);
-   info->hvcurrent = (float) atof(str + j + 1);
-
+      // extract measured values
+      info->hvmeasured = (float) atof(str + j + 1);
+      for (j++; j < (int) strlen(str) && str[j] != ' '; j++);
+      info->hvcurrent = (float) atof(str + j + 1);
+   }
    // get second string, should be "VAC <vacuum>"
    status = info->bd(CMD_GETS, info->bd_info, str, sizeof(str), "\n", 500);
-   for (j = 0; j < (int) strlen(str) && str[j] != ' '; j++);
-   info->sepvac = (float) atof(str + j + 1);
 
+   if (strstr(str, "VAC")) {
+      for (j = 0; j < (int) strlen(str) && str[j] != ' '; j++);
+      info->sepvac = (float) atof(str + j + 1);
+   }
    // get status string
    status = info->bd(CMD_GETS, info->bd_info, str, sizeof(str), "\n", 500);
 
@@ -316,18 +313,17 @@ INT psi_separator_set(PSI_SEPARATOR_INFO * info, INT channel, float value)
       mfe_error("Didn't get *HV * acknowledgement after setting new HV");
       return FE_ERR_HW;
    }
-
-   last_update = ss_time();     //to force wait before invoking the next read; if not done the
-                                //communication is hanging and the slow control frontend has to be
-                                //killed manually
+   //to force wait before invoking the next read; if not done the
+   //communication is hanging and the slow control frontend has to be
+   //killed manually
+   last_update = ss_time();
 
    return FE_SUCCESS;
 }
 
 /*----------------------------------------------------------------------------*/
 
-INT psi_separator_get(PSI_SEPARATOR_INFO * info, INT channel,
-                      float *pvalue)
+INT psi_separator_get(PSI_SEPARATOR_INFO * info, INT channel, float *pvalue)
 {
    static INT status = 0;
 
@@ -351,8 +347,7 @@ INT psi_separator_get(PSI_SEPARATOR_INFO * info, INT channel,
 
 /*----------------------------------------------------------------------------*/
 
-INT psi_separator_get_demand(PSI_SEPARATOR_INFO * info, INT channel,
-                             float *pvalue)
+INT psi_separator_get_demand(PSI_SEPARATOR_INFO * info, INT channel, float *pvalue)
 {
    if (channel == 0)
       *pvalue = info->hvdemand;
@@ -368,8 +363,7 @@ INT psi_separator_get_demand(PSI_SEPARATOR_INFO * info, INT channel,
 //! \param info is a pointer to the DD specific info structure
 //! \param channel of the name to be set
 //! \param name pointer to the ODB name
-INT psi_separator_get_label(PSI_SEPARATOR_INFO * info, INT channel,
-                                   char *name)
+INT psi_separator_get_label(PSI_SEPARATOR_INFO * info, INT channel, char *name)
 {
    if (channel == 0)
       strcpy(name, "Sep. HV (kV)");
@@ -383,8 +377,7 @@ INT psi_separator_get_label(PSI_SEPARATOR_INFO * info, INT channel,
 
 /*----------------------------------------------------------------------------*/
 
-INT psi_separator_get_default_threshold(PSI_SEPARATOR_INFO * info,
-                                        INT channel, float *pvalue)
+INT psi_separator_get_default_threshold(PSI_SEPARATOR_INFO * info, INT channel, float *pvalue)
 {
    *pvalue = 0.5f;
    return FE_SUCCESS;
