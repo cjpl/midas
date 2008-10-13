@@ -11942,11 +11942,6 @@ void server_loop(int daemon)
    setgid(getgid());
 #endif
 
-   if (daemon) {
-      printf("Becoming a daemon...\n");
-      ss_daemon_init(FALSE);
-   }
-
    /* listen for connection */
    status = listen(lsock, SOMAXCONN);
    if (status < 0) {
@@ -11955,6 +11950,12 @@ void server_loop(int daemon)
    }
 
    printf("Server listening on port %d...\n", tcp_port);
+
+   if (daemon) {
+      printf("Becoming a daemon...\n");
+      ss_daemon_init(FALSE);
+   }
+
    do {
       FD_ZERO(&readfds);
       FD_SET(lsock, &readfds);
