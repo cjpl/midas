@@ -11871,7 +11871,7 @@ void ctrlc_handler(int sig)
 
 char net_buffer[WEB_BUFFER_SIZE];
 
-void server_loop(int daemon)
+void server_loop()
 {
    int status, i, refresh, n_error;
    struct sockaddr_in bind_addr, acc_addr;
@@ -11950,11 +11950,6 @@ void server_loop(int daemon)
    }
 
    printf("Server listening on port %d...\n", tcp_port);
-
-   if (daemon) {
-      printf("Becoming a daemon...\n");
-      ss_daemon_init(FALSE);
-   }
 
    do {
       FD_ZERO(&readfds);
@@ -12342,8 +12337,12 @@ int main(int argc, char *argv[])
       }
    }
 
-   /*---- connect to experiment ----*/
+   if (daemon) {
+      printf("Becoming a daemon...\n");
+      ss_daemon_init(FALSE);
+   }
 
+   /*---- connect to experiment ----*/
    status = cm_connect_experiment1(midas_hostname, midas_expt, "mhttpd", NULL,
                                    DEFAULT_ODB_SIZE, DEFAULT_WATCHDOG_TIMEOUT);
    if (status == CM_WRONG_PASSWORD)
@@ -12363,7 +12362,7 @@ int main(int argc, char *argv[])
    /* redirect message display, turn on message logging */
    cm_set_msg_print(MT_ALL, MT_ALL, print_message);
 
-   server_loop(daemon);
+   server_loop();
 
    return 0;
 }
