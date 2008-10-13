@@ -1252,7 +1252,7 @@ void assemble_prompt(char *prompt, char *host_name, char *exp_name, char *pwd)
 
 /*------------------------------------------------------------------*/
 
-void command_loop(char *host_name, char *exp_name, char *cmd, char *start_dir)
+int command_loop(char *host_name, char *exp_name, char *cmd, char *start_dir)
 {
    INT status = 0, i, j, state, size, old_run_number, new_run_number, channel;
    char line[256], prompt[256];
@@ -1281,7 +1281,7 @@ void command_loop(char *host_name, char *exp_name, char *cmd, char *start_dir)
    /* check if dir exists */
    if (db_find_key(hDB, 0, pwd, &hKey) != DB_SUCCESS) {
       printf("Directory \"%s\" not found.\n", pwd);
-      return;
+      return -1;
    }
 
    /* open command file */
@@ -1289,7 +1289,7 @@ void command_loop(char *host_name, char *exp_name, char *cmd, char *start_dir)
       cmd_file = fopen(cmd + 1, "r");
       if (cmd_file == NULL) {
          printf("Command file %s not found.\n", cmd + 1);
-         return;
+         return -1;
       }
    }
 
@@ -1673,7 +1673,9 @@ void command_loop(char *host_name, char *exp_name, char *cmd, char *start_dir)
             if (status == DB_SUCCESS)
                set_key(hDB, hKey, index1, index2, param[2]);
             else {
-               printf("key not found\n");
+               printf("Error: Key \"%s\" not found\n", name);
+               if (cmd_mode)
+                  return -1;
             }
          }
       }
@@ -1703,8 +1705,11 @@ void command_loop(char *host_name, char *exp_name, char *cmd, char *start_dir)
             }
             if (str[0] == 'y')
                db_set_mode(hDB, hKey, mode, TRUE);
-         } else
-            printf("key not found\n");
+         } else {
+            printf("Error: Key \"%s\" not found\n", str);
+            if (cmd_mode)
+               return -1;
+         }
       }
 
       /* truncate */
@@ -1719,8 +1724,11 @@ void command_loop(char *host_name, char *exp_name, char *cmd, char *start_dir)
 
          if (status == DB_SUCCESS)
             db_set_num_values(hDB, hKey, i);
-         else
-            printf("key not found\n");
+         else {
+            printf("Error: Key \"%s\" not found\n", str);
+            if (cmd_mode)
+               return -1;
+         }
       }
 
       /* rename */
@@ -1734,8 +1742,11 @@ void command_loop(char *host_name, char *exp_name, char *cmd, char *start_dir)
 
          if (status == DB_SUCCESS || !hKey)
             db_rename_key(hDB, hKey, param[2]);
-         else
-            printf("key not found\n");
+         else {
+            printf("Error: Key \"%s\" not found\n", str);
+            if (cmd_mode)
+               return -1;
+         }
       }
 
       /* move */
@@ -1760,8 +1771,11 @@ void command_loop(char *host_name, char *exp_name, char *cmd, char *start_dir)
                printf("no write access to key\n");
             if (status == DB_OPEN_RECORD)
                printf("key is open by other client\n");
-         } else
-            printf("key not found\n");
+         } else {
+            printf("Error: Key \"%s\" not found\n", str);
+            if (cmd_mode)
+               return -1;
+         }
       }
 
       /* find key */
@@ -2021,7 +2035,7 @@ void command_loop(char *host_name, char *exp_name, char *cmd, char *start_dir)
 
             db_find_key(hDB, 0, str, &hKey);
             if (hKey == 0)
-               printf("key \"%s\" not found\n", param[1]);
+               printf("Error: Key \"%s\" not found\n", param[1]);
             else {
                if (param[2][0] == 0) {
                   printf("File name: ");
@@ -2633,7 +2647,7 @@ void command_loop(char *host_name, char *exp_name, char *cmd, char *start_dir)
    for (i = 0; i < MAX_RPC_CONNECTION; i++)
       cm_yield(0);
 
-   return;
+   return 1; /* indicate success */
 }
 
 /*------------------------------------------------------------------*/
@@ -2743,7 +2757,7 @@ int main(int argc, char *argv[])
    }
 
    /* command loop */
-   command_loop(host_name, exp_name, cmd, dir);
+   status = command_loop(host_name, exp_name, cmd, dir);
 
    /* no shutdown message if called with command */
    if (cmd_mode)
@@ -2751,5 +2765,8 @@ int main(int argc, char *argv[])
 
    cm_disconnect_experiment();
 
-   return 0;
+   if (status != 1)
+      return EXIT_FAILURE;
+
+   return EXIT_SUCCESS;
 }
