@@ -358,6 +358,7 @@ class SqlBase
 public:
   virtual int Connect(const char* dsn = 0) = 0;
   virtual int Disconnect() = 0;
+  virtual bool IsConnected() = 0;
   virtual int Exec(const char* sql) = 0;
   virtual int GetNumColumns() = 0;
   virtual int Fetch() = 0;
@@ -369,6 +370,7 @@ class SqlStdout: public SqlBase
 {
 public:
   FILE *fp;
+  bool fIsConnected;
 
 public:
   int Connect(const char* filename = NULL)
@@ -378,6 +380,7 @@ public:
     fp = fopen(filename, "w");
     assert(fp);
     sql_type = sql_type_mysql;
+    fIsConnected = true;
     return 0;
   }
 
@@ -390,12 +393,19 @@ public:
   int Disconnect()
   {
     // do nothing
+    fIsConnected = false;
     return 0;
+  }
+  
+  bool IsConnected()
+  {
+    return fIsConnected;
   }
 
   SqlStdout() // ctor
   {
     fp = NULL;
+    fIsConnected = false;
   }
 
   ~SqlStdout() // dtor
@@ -504,6 +514,11 @@ public:
 
     return 0;
   }
+  
+  bool IsConnected()
+  {
+     return fIsConnected;
+  }
 
   int Exec(const char* sql)
   {
@@ -518,7 +533,7 @@ public:
 
     if (!SQL_SUCCEEDED(status))
       {
-        cm_msg(MERROR, "SqlODBC::Exec", "SQLExecDirect() error %d", status);
+        //cm_msg(MERROR, "SqlODBC::Exec", "SQLExecDirect() error %d", status);
 
         if (gTrace)
           printf("SqlODBC::Exec: SQLExecDirect() error %d: SQL command: \"%s\"\n", status, sql);
@@ -540,9 +555,14 @@ public:
                                    &mlen);
 
             if (!SQL_SUCCEEDED(status))
-              break;
-
-            cm_msg(MERROR, "SqlODBC::Exec", "SQLGetDiagRec: state: \'%s\', message: \'%s\', native error: %d", state, message, error);
+	    {
+	        if (status != 100)
+	    	   cm_msg(MERROR, "SqlODBC::Exec", "SQLGetDiagRec() error %d", status);
+              	break;
+	    }
+	      
+	    if ((error != 1060) && (error != 1050))
+            	cm_msg(MERROR, "SqlODBC::Exec", "SQLGetDiagRec: state: \'%s\', message: \'%s\', native error: %d", state, message, error);
           }
 
         return -1;
@@ -697,6 +717,9 @@ public:
 
   void Write(Event *e, time_t t, const char*buf, int size)
   {
+    if (!fSql->IsConnected())
+       return;
+       
     //printf("event %d, time %s", rec.event_id, ctime(&t));
 
     int n  = e->ntags;
@@ -803,6 +826,8 @@ static SqlOutput *sql  = NULL;
 
 int hs_connect_odbc(const char* odbc_dsn)
 {
+  int status;
+
   if (sqlx)
     hs_disconnect_odbc();
 
@@ -818,7 +843,9 @@ int hs_connect_odbc(const char* odbc_dsn)
   else
     sqlx = new SqlODBC();
 
-  sqlx->Connect(gOdbcDsn);
+  status = sqlx->Connect(gOdbcDsn);
+  if (status != 0)
+    return !HS_SUCCESS;
 
   sql = new SqlOutput(sqlx);
 
