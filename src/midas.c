@@ -978,6 +978,8 @@ INT cm_msg_retrieve(INT n_message, char *message, INT buf_size)
       size = sizeof(filename);
       db_get_value(hDB, 0, "/Logger/Message file", filename, &size, TID_STRING, TRUE);
 
+      strlcpy(filename2, filename, sizeof(filename2));
+
       if (strchr(filename, '%')) {
          /* replace strings such as midas_%y%m%d.mid with current date */
          tzset();
