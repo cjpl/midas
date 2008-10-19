@@ -73,12 +73,12 @@ For data analysis, users can write their own analyzer using simple Midas calls t
 data or use one of the standard MIDAS analyzer:
 - HBOOK based routines for histogramming and PAW for histogram display (recenly phasing out too)
 - ROOT based with <b>analyzer</b> (part of the Midas package)
-- <a HREF=http://midas.psi.ch/rome>ROME</a> analyzer framework using XML description
-- <a HREF=http://ladd00.triumf.ca/%7Eolchansk/rootana/>Rootana</a> C++ standalone application. 
+- <a HREF="http://midas.psi.ch/rome">ROME</a> analyzer framework using XML description
+- <a HREF="http://daq-plone.triumf.ca/SR/rootana">Rootana</a> C++ standalone application. 
 
 The MIDAS package contains also a slow control system which can be used for all sort of control such 
 as high voltage supplies, temperature control units, GPIB, serial devices such as 
-<a HREF=http://midas.psi.ch/mscb>MSCB</a>, RS232 or Ethernet based modules.
+<a HREF="http://midas.psi.ch/mscb">MSCB</a>, RS232 or Ethernet based modules.
 The slow control system is fully integrated
 in the main data acquisition and act as a front-end with particular built-in control mechanism.
 Slow control values can be written together with event data to tape.

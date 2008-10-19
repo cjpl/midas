@@ -2,7 +2,7 @@
   <center> 
    \anchor Top <b> Welcome to the world of Midas. </b>
    <br>
-   <a HREF=http://ladd00.triumf.ca/~daqweb/ftp/midasintro.jpg><b><i>The System</i></b></a>
+   <a HREF="http://ladd00.triumf.ca/~daqweb/ftp/midasintro.jpg"><b><i>The System</i></b></a>
   </center>
 
    Midas is a versatile Data acquisition System for medium scale physics experiments.
@@ -13,36 +13,36 @@
    Feel free to browse through the following links. 
  
    - <b>Midas</b> is a result of a development effort made by Stefan Ritt at 
-     <a HREF=http://www.psi.ch>PSI</a>/Switzerland
-     (<a HREF=http://midas.psi.ch>Midas\@PSI</a>) in collaboration with the members of the Data
-     acquisition group at <a HREF=http://www.triumf.info>Triumf</a>/Canada.
+     <a HREF="http://www.psi.ch">PSI</a>/Switzerland
+     (<a HREF="http://midas.psi.ch">Midas\@PSI</a>) in collaboration with the members of the Data
+     acquisition group at <a HREF="http://www.triumf.ca">Triumf</a>/Canada.
 
    - Midas has a dedicated discussion forum (Electronic logbook) which provides common place for midas
    users to report problems, share experience or post improvement wishes. 
-   You can browse this <b><a HREF=https://ladd00.triumf.ca/elog/Midas>Elog</a></b>
+   You can browse this <b><a HREF="https://ladd00.triumf.ca/elog/Midas">Elog</a></b>
    or register for Email notifications.
 
-   - The Midas source code is subject to the <a HREF=http://www.gnu.org/copyleft/gpl.html>GPL</a> and can be
-   accessed from the <b><a HREF=http://savannah.psi.ch/viewcvs/trunk/?root=midas>SVN</a></b>   
+   - The Midas source code is subject to the <a HREF="http://www.gnu.org/copyleft/gpl.html">GPL</a> and can be
+   accessed from the <b><a HREF="http://savannah.psi.ch/viewcvs/trunk/?root=midas">SVN</a></b>   
    repository site in Switzerland either for inspection or download. 
 
-   - <b> Tarball </b> are available either from the <a HREF=http://midas.psi.ch/download/>Swiss</a>
-     or <a HREF=http://ladd00.triumf.ca/~daqweb/ftp/>Canadian</a> sites.
+   - <b> Tarball </b> are available either from the <a HREF="http://midas.psi.ch/download/">Swiss</a>
+     or <a HREF="http://ladd00.triumf.ca/~daqweb/ftp/">Canadian</a> sites.
    
    - The main purpose of the MIDAS DAQ is to provide:
      - data collection from local and/or remote hardware source.
      - data recording to common storage media.
      - Full data flow control.
    - It does also include event-by-event analysis through PAW or Root based application. Please refer to: 
-    - <b><a HREF=http://midas.psi.ch/rome>ROME</a></b> analyzer framework.
-    - <b><a HREF=http://ladd00.triumf.ca/%7Eolchansk/rootana/>Rootana</a></b> Rootana
-    - <b><a HREF=http://ladd00.triumf.ca/~daqweb/doc/roody/html/>Roody</a></b> GUI histogram visualizer
+    - <b><a HREF="http://midas.psi.ch/rome">ROME</a></b> analyzer framework.
+    - <b><a HREF="http://daq-plone.triumf.ca/SR/rootana">Rootana</a></b> Rootana
+    - <b><a HREF="http://daq-plone.triumf.ca/SR/ROODY">Roody</a></b> GUI histogram visualizer
    application. 
 
    - The current hardware support is listed at this 
-   <a HREF=http://ladd00.triumf.ca/~daqweb/doc/midas/html/AppendixB.html>location</a>.
+   <a HREF="http://ladd00.triumf.ca/~daqweb/doc/midas/html/AppendixB.html">location</a>.
 
-   - Other related links can be found <a HREF=http://daq-plone.triumf.ca/SR/MIDAS/>here</a>.
+   - Other related links can be found <a HREF="http://daq-plone.triumf.ca/SR/MIDAS/">here</a>.
 
    - The following chapters refer to the online Midas documentation. 
  
@@ -63,7 +63,7 @@
      
   <br>
   \htmlonly <center><small> <em>
-  Powered by<br><a href=http://www.stack.nl/~dimitri/doxygen/features.html>
+  Powered by<br><a href="http://www.stack.nl/~dimitri/doxygen/features.html">
   <img src="doxygen.png" alt="doxygen" style="border: 0px solid;"></a>
   </em> </small> </center> \endhtmlonly 
 */

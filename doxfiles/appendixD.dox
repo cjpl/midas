@@ -7,6 +7,16 @@
 The section covers the @ref building_option for customization of the DAQ system
 as well as the different @ref Environment_variables options for its operation.
 
+<hr> @section make_targets Makefile options
+
+- "make", "make all" : compile the default midas system
+- "make clean" : remove all compiled object files and executables
+- "make dox" : make this documentation (in directory .../doxfiles/html)
+- "make linux32", "make clean32" : compile subset of midas with gcc "-m32" switch, useful for cross-compiling 32-bit midas on a 64-bit machine
+- "make linux64", "make clean64" : compile subset of midas with gcc "-m64" switch, useful for compiling 64-bit midas when default ROOTSYS points to a 32-bit ROOT version
+- "make crosscompile" : compile midas using a cross-compiler, for exmaple, to produce midas libraries and executables that will run on a PPC Linux distribution, see Makefile for details.
+- "make examples" : compile example code in .../examples
+
 <hr> @section building_option Building Options
 
 - By default Midas is build with a minimum of pre-compiler flags. But the @ref Makefile 
