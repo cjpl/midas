@@ -6505,7 +6505,7 @@ INT bm_receive_event(INT buffer_handle, void *destination, INT * buf_size, INT a
       int status, old_timeout = 0;
 
       if (*buf_size > (INT) NET_BUFFER_SIZE) {
-         cm_msg(MERROR, "bm_receive_event", "max. event size larger than NET_BUFFER_SIZE");
+         cm_msg(MERROR, "bm_receive_event", "max. event size %d larger than NET_BUFFER_SIZE %d", *buf_size, NET_BUFFER_SIZE);
          return RPC_NET_ERROR;
       }
 
@@ -9201,7 +9201,7 @@ INT rpc_client_call(HNDLE hConn, const INT routine_id, ...)
    if (_net_send_buffer_size == 0) {
       _net_send_buffer = (char *) M_MALLOC(NET_BUFFER_SIZE);
       if (_net_send_buffer == NULL) {
-         cm_msg(MERROR, "rpc_client_call", "not enough memory to allocate network buffer");
+         cm_msg(MERROR, "rpc_client_call", "Cannot allocate %d bytes for network buffer", NET_BUFFER_SIZE);
          return RPC_EXCEED_BUFFER;
       }
       _net_send_buffer_size = NET_BUFFER_SIZE;
@@ -9291,10 +9291,10 @@ INT rpc_client_call(HNDLE hConn, const INT routine_id, ...)
          /* always align parameter size */
          param_size = ALIGN8(arg_size);
 
-         if ((POINTER_T) param_ptr - (POINTER_T) nc + param_size > (INT) NET_BUFFER_SIZE) {
+         if ((POINTER_T) param_ptr - (POINTER_T) nc + param_size > _net_send_buffer_size) {
             cm_msg(MERROR, "rpc_client_call",
                    "parameters (%d) too large for network buffer (%d)",
-                   (POINTER_T) param_ptr - (POINTER_T) nc + param_size, NET_BUFFER_SIZE);
+                   (POINTER_T) param_ptr - (POINTER_T) nc + param_size, _net_send_buffer_size);
             return RPC_EXCEED_BUFFER;
          }
 
@@ -9375,7 +9375,7 @@ INT rpc_client_call(HNDLE hConn, const INT routine_id, ...)
    }
 
    /* receive result on send socket */
-   i = recv_tcp(send_sock, _net_send_buffer, NET_BUFFER_SIZE, 0);
+   i = recv_tcp(send_sock, _net_send_buffer, _net_send_buffer_size, 0);
 
    if (i <= 0) {
       cm_msg(MERROR, "rpc_client_call",
@@ -9491,7 +9491,7 @@ INT rpc_call(const INT routine_id, ...)
    if (_net_send_buffer_size == 0) {
       _net_send_buffer = (char *) M_MALLOC(NET_BUFFER_SIZE);
       if (_net_send_buffer == NULL) {
-         cm_msg(MERROR, "rpc_call", "not enough memory to allocate network buffer");
+         cm_msg(MERROR, "rpc_call", "Cannot allocate %d bytes for network buffer", NET_BUFFER_SIZE);
          return RPC_EXCEED_BUFFER;
       }
       _net_send_buffer_size = NET_BUFFER_SIZE;
@@ -9590,11 +9590,11 @@ INT rpc_call(const INT routine_id, ...)
          /* always align parameter size */
          param_size = ALIGN8(arg_size);
 
-         if ((POINTER_T) param_ptr - (POINTER_T) nc + param_size > (INT) NET_BUFFER_SIZE) {
+         if ((POINTER_T) param_ptr - (POINTER_T) nc + param_size > _net_send_buffer_size) {
             ss_mutex_release(_mutex_rpc);
             cm_msg(MERROR, "rpc_call",
                    "parameters (%d) too large for network buffer (%d)",
-                   (POINTER_T) param_ptr - (POINTER_T) nc + param_size, NET_BUFFER_SIZE);
+                   (POINTER_T) param_ptr - (POINTER_T) nc + param_size, _net_send_buffer_size);
             return RPC_EXCEED_BUFFER;
          }
 
@@ -9671,7 +9671,7 @@ INT rpc_call(const INT routine_id, ...)
    }
 
    /* receive result on send socket */
-   i = recv_tcp(send_sock, _net_send_buffer, NET_BUFFER_SIZE, 0);
+   i = recv_tcp(send_sock, _net_send_buffer, _net_send_buffer_size, 0);
 
    if (i <= 0) {
       ss_mutex_release(_mutex_rpc);
@@ -10224,7 +10224,7 @@ INT recv_tcp_server(INT idx, char *buffer, DWORD buffer_size, INT flags, INT * r
       _server_acception[idx].misalign = 0;
    }
    if (!_server_acception[idx].net_buffer) {
-      cm_msg(MERROR, "recv_tcp_server", "not enough memory to allocate network buffer");
+      cm_msg(MERROR, "recv_tcp_server", "Cannot allocate %d bytes for network buffer", _server_acception[idx].net_buffer_size);
       return -1;
    }
 
@@ -10421,7 +10421,7 @@ INT recv_event_server(INT idx, char *buffer, DWORD buffer_size, INT flags, INT *
       psa->ev_misalign = 0;
    }
    if (!psa->ev_net_buffer) {
-      cm_msg(MERROR, "recv_event_server", "not enough memory to allocate network buffer");
+      cm_msg(MERROR, "recv_event_server", "Cannot allocate %d bytes for network buffer", psa->net_buffer_size);
       return -1;
    }
 
@@ -10746,6 +10746,7 @@ INT rpc_execute(INT sock, char *buffer, INT convert_flags)
    INT param_size, max_size;
    void *prpc_param[20];
    char str[1024], debug_line[1024], *return_buffer;
+   int return_buffer_size;
 
    /* return buffer must must use thread local storage multi-thread servers */
    if (!tls_size) {
@@ -10765,6 +10766,7 @@ INT rpc_execute(INT sock, char *buffer, INT convert_flags)
       tls_size++;
    }
 
+   return_buffer_size = NET_BUFFER_SIZE;
    return_buffer = tls_buffer[i].buffer;
    assert(return_buffer);
 
@@ -10869,10 +10871,10 @@ INT rpc_execute(INT sock, char *buffer, INT convert_flags)
          if (rpc_list[idx].param[i].tid == TID_STRUCT)
             param_size = ALIGN8(rpc_list[idx].param[i].n);
 
-         if ((POINTER_T) out_param_ptr - (POINTER_T) nc_out + param_size > (INT) NET_BUFFER_SIZE) {
+         if ((POINTER_T) out_param_ptr - (POINTER_T) nc_out + param_size > return_buffer_size) {
             cm_msg(MERROR, "rpc_execute",
                    "return parameters (%d) too large for network buffer (%d)",
-                   (POINTER_T) out_param_ptr - (POINTER_T) nc_out + param_size, NET_BUFFER_SIZE);
+                   (POINTER_T) out_param_ptr - (POINTER_T) nc_out + param_size, return_buffer_size);
             return RPC_EXCEED_BUFFER;
          }
 
@@ -12039,7 +12041,7 @@ INT rpc_server_receive(INT idx, int sock, BOOL check)
    if (_net_recv_buffer_size == 0) {
       _net_recv_buffer = (char *) M_MALLOC(NET_BUFFER_SIZE);
       if (_net_recv_buffer == NULL) {
-         cm_msg(MERROR, "rpc_server_receive", "not enough memory to allocate network buffer");
+         cm_msg(MERROR, "rpc_server_receive", "Cannot allocate %d bytes for network buffer", NET_BUFFER_SIZE);
          return RPC_EXCEED_BUFFER;
       }
       _net_recv_buffer_size = NET_BUFFER_SIZE;
@@ -12066,9 +12068,9 @@ INT rpc_server_receive(INT idx, int sock, BOOL check)
    if (sock == _server_acception[idx].recv_sock) {
       do {
          if (_server_acception[idx].remote_hw_type == DR_ASCII)
-            n_received = recv_string(_server_acception[idx].recv_sock, _net_recv_buffer, NET_BUFFER_SIZE, 10000);
+            n_received = recv_string(_server_acception[idx].recv_sock, _net_recv_buffer, _net_recv_buffer_size, 10000);
          else
-            n_received = recv_tcp_server(idx, _net_recv_buffer, NET_BUFFER_SIZE, 0, &remaining);
+            n_received = recv_tcp_server(idx, _net_recv_buffer, _net_recv_buffer_size, 0, &remaining);
 
          if (n_received <= 0) {
             status = SS_ABORT;
@@ -12103,7 +12105,7 @@ INT rpc_server_receive(INT idx, int sock, BOOL check)
          start_time = ss_millitime();
 
          do {
-            n_received = recv_event_server(idx, _net_recv_buffer, NET_BUFFER_SIZE, 0, &remaining);
+            n_received = recv_event_server(idx, _net_recv_buffer, _net_recv_buffer_size, 0, &remaining);
 
             if (n_received <= 0) {
                status = SS_ABORT;
@@ -13206,7 +13208,7 @@ INT eb_increment_pointer(INT buffer_handle, INT event_size)
 
    if (_eb_write_pointer > _event_ring_buffer + _eb_size)
       cm_msg(MERROR, "eb_increment_pointer",
-             "event size (%d) exeeds maximum event size (%d)", event_size, MAX_EVENT_SIZE);
+             "event size (%d) exceeds maximum event size (%d)", event_size, MAX_EVENT_SIZE);
 
    if (_eb_size - ((POINTER_T) _eb_write_pointer - (POINTER_T) _event_ring_buffer) <
        (int) (MAX_EVENT_SIZE + sizeof(EVENT_HEADER) + sizeof(INT))) {
