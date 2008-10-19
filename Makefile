@@ -134,6 +134,7 @@ CXX = $(GCC_BIN)g++
 OSTYPE = cross-ppc405
 OS_DIR = $(OSTYPE)
 NEED_MYSQL=
+HAVE_ODBC=
 endif
 
 #-----------------------
@@ -317,11 +318,20 @@ all: check-mxml \
 	$(LIB_DIR)/mfe.o \
 	$(LIB_DIR)/fal.o $(PROGS)
 
+dox:
+	cd doxfiles; doxygen midox.cfg
+
 linux32:
 	$(MAKE) ROOTSYS= OS_DIR=linux-m32 USERFLAGS=-m32
 
 linux64:
 	$(MAKE) ROOTSYS= OS_DIR=linux-m64 USERFLAGS=-m64
+
+clean32:
+	$(MAKE) ROOTSYS= OS_DIR=linux-m32 USERFLAGS=-m32 clean
+
+clean64:
+	$(MAKE) ROOTSYS= OS_DIR=linux-m64 USERFLAGS=-m64 clean
 
 crosscompile:
 	echo OSTYPE=$(OSTYPE)
@@ -357,7 +367,7 @@ $(BIN_DIR):
 # main binaries
 #
 
-ifdef NEED_MYSQL
+ifeq ($(NEED_MYSQL),1)
 CFLAGS      += -DHAVE_MYSQL $(shell mysql_config --include)
 MYSQL_LIBS  := -L/usr/lib/mysql $(shell mysql_config --libs)
 # only for mlogger LIBS        += $(MYSQL_LIBS)
