@@ -274,6 +274,12 @@ extern "C" {
    int EXPRT mscb_write_range(int fd, unsigned short adr, unsigned char index1, unsigned char index2, void *data, int size);
    int EXPRT mscb_flash(int fd, int adr, int gaddr, int broadcast);
    int EXPRT mscb_set_baud(int fd, int baud);
+   int EXPRT mscb_get_max_retry();
+   int EXPRT mscb_set_max_retry(int max_retry);
+   int EXPRT mscb_get_usb_timeout();
+   int EXPRT mscb_set_usb_timeout(int timeout);
+   int EXPRT mscb_get_eth_max_retry();
+   int EXPRT mscb_set_eth_max_retry(int eth_max_retry);
    int EXPRT mscb_upload(int fd, unsigned short adr, char *buffer, int size, int debug);
    int EXPRT mscb_verify(int fd, unsigned short adr, char *buffer, int size);
    int EXPRT mscb_read(int fd, unsigned short adr, unsigned char index, void *data, int *size);
