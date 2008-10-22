@@ -112,8 +112,6 @@ extern void debug_log(char *format, int start, ...);
 #define RS485_FLAG_ADR_CYCLE (1<<5)
 #define RS485_FLAG_NO_RETRY  (1<<6)  /* for mscb_scan_udp */
 
-#define MUSB_TIMEOUT 6000 /* 6 sec, must be longer than TO_LONG */
-
 /* header for UDP communication */
 typedef struct {
    unsigned short size;
@@ -257,6 +255,117 @@ int strieq(const char *str1, const char *str2)
       return 0;
 
    return 1;
+}
+
+/*----retries and timeouts------------------------------------------*/
+
+static int mscb_max_retry = 10;
+static int mscb_eth_max_retry = 10;
+static int mscb_usb_timeout = 6000; /* 6 sec, must be longer than TO_LONG */
+
+int EXPRT mscb_get_usb_timeout()
+/********************************************************************\
+
+  Routine: mscb_get_usb_timeout
+
+  Purpose: Get the current setting of the MSCB USB timeout
+
+  Return value:
+    current value of the MSCB USB timeout
+
+\********************************************************************/
+{
+   return mscb_usb_timeout;
+}
+
+int EXPRT mscb_set_usb_timeout(int timeout)
+/********************************************************************\
+
+  Routine: mscb_set_usb_timeout
+
+  Purpose: Set the timeout value for MSCB USB operations
+
+  Input:
+    int timeout         USB timeout in ms
+
+  Function value:
+    old value of the USB timeout
+
+\********************************************************************/
+{
+   int old_timeout = mscb_usb_timeout;
+   mscb_usb_timeout = timeout;
+   return old_timeout;
+}
+
+int mscb_get_max_retry()
+/********************************************************************\
+
+  Routine: mscb_get_max_retry
+
+  Purpose: Get the current setting of the MSCB maximum retry limit
+
+  Return value:
+    current value of the MSCB maximum retry limit
+
+\********************************************************************/
+{
+   return mscb_max_retry;
+}
+
+int EXPRT mscb_set_max_retry(int max_retry)
+/********************************************************************\
+
+  Routine: mscb_set_max_retry
+
+  Purpose: Set the limit for retrying MSCB operations
+
+  Input:
+    int max_retry           new value of the mscb maximum retry limit
+
+  Function value:
+    old value of the maximum retry limit
+
+\********************************************************************/
+{
+   int old_retry = mscb_max_retry;
+   mscb_max_retry = max_retry;
+   return old_retry;
+}
+
+int mscb_get_eth_max_retry()
+/********************************************************************\
+
+  Routine: mscb_get_eth_max_retry
+
+  Purpose: Get the current setting of the MSCB ethernet retry limit
+
+  Return value:
+    current value of the MSCB ethernet retry limit
+
+\********************************************************************/
+{
+   return mscb_eth_max_retry;
+}
+
+int EXPRT mscb_set_eth_max_retry(int max_eth_retry)
+/********************************************************************\
+
+  Routine: mscb_set_eth_max_retry
+
+  Purpose: Set retry limit for MSCB ethernet communications
+
+  Input:
+    int max_eth_retry        new value for ethernet retry limit
+
+  Function value:
+    old value of the ethernet maximum retry limit
+
+\********************************************************************/
+{
+   int old_retry = mscb_eth_max_retry;
+   mscb_eth_max_retry = max_eth_retry;
+   return old_retry;
 }
 
 /*---- mutex functions ---------------------------------------------*/
@@ -468,13 +577,13 @@ int subm250_check(MUSB_INTERFACE *ui)
       /* check if it's a subm_250 */
       nwrite = 1;
       buf[0] = 0;
-      status = musb_write(ui, EP_WRITE, buf, nwrite, MUSB_TIMEOUT);
+      status = musb_write(ui, EP_WRITE, buf, nwrite, mscb_usb_timeout);
       if (status != nwrite) {
          fprintf(stderr,"mscb.c::subm250_open(): musb_write() error %d\n", status);
          return EMSCB_NOT_FOUND;
       }
 
-      status = musb_read(ui, EP_READ, buf, sizeof(buf), MUSB_TIMEOUT);
+      status = musb_read(ui, EP_READ, buf, sizeof(buf), mscb_usb_timeout);
       if (strcmp(buf, "SUBM_250") == 0)
          return MSCB_SUCCESS;
 
@@ -644,7 +753,7 @@ int mscb_exchg(int fd, char *buffer, int *size, int len, int flags)
       memcpy(usb_buf + 1, buffer, len);
 
       /* send on OUT pipe */
-      i = musb_write(mscb_fd[fd - 1].ui, EP_WRITE, usb_buf, len + 1, MUSB_TIMEOUT);
+      i = musb_write(mscb_fd[fd - 1].ui, EP_WRITE, usb_buf, len + 1, mscb_usb_timeout);
 
       if (i == 0) {
          /* USB submaster might have been dis- and reconnected, so reinit */
@@ -658,7 +767,7 @@ int mscb_exchg(int fd, char *buffer, int *size, int len, int flags)
             return MSCB_TIMEOUT;
          }
 
-         i = musb_write(mscb_fd[fd - 1].ui, EP_WRITE, usb_buf, len + 1, MUSB_TIMEOUT);
+         i = musb_write(mscb_fd[fd - 1].ui, EP_WRITE, usb_buf, len + 1, mscb_usb_timeout);
       }
 
       if (i != len + 1) {
@@ -685,7 +794,7 @@ int mscb_exchg(int fd, char *buffer, int *size, int len, int flags)
       /* receive result on IN pipe */
       n = 0;
       do {
-         i = musb_read(mscb_fd[fd - 1].ui, EP_READ, buffer+n, *size-n > 61 ? 61 : *size - n, MUSB_TIMEOUT);
+         i = musb_read(mscb_fd[fd - 1].ui, EP_READ, buffer+n, *size-n > 61 ? 61 : *size - n, mscb_usb_timeout);
          if (i == 61) {
             n += 60;
             break;
@@ -706,7 +815,7 @@ int mscb_exchg(int fd, char *buffer, int *size, int len, int flags)
       status = 0;
 
       /* try ten times, in case packets got lost */
-      for (retry=0 ; retry<10 ; retry++) {
+      for (retry=0 ; retry<mscb_eth_max_retry ; retry++) {
          /* increment and write sequence number */
          mscb_fd[fd - 1].seq_nr = (mscb_fd[fd - 1].seq_nr + 1) % 0x10000;
 
@@ -986,7 +1095,7 @@ int mscb_init(char *device, int bufsize, char *password, int debug)
       n = 0;
 
       /* linux needs some time to start-up ...??? */
-      for (i = 0; i < 10; i++) {
+      for (i = 0; i < mscb_max_retry; i++) {
          /* check if submaster alive */
          buf[0] = MCMD_ECHO;
          n = sizeof(buf);
@@ -1431,7 +1540,7 @@ int mscb_ping(int fd, unsigned short adr, int quick)
       return mrpc_call(mscb_fd[fd - 1].fd, RPC_MSCB_PING, mscb_fd[fd - 1].remote_fd, adr);
 
    /* call mscb_addr with/without retries */
-   status = mscb_addr(fd, MCMD_PING16, adr, quick ? 1 : 10);
+   status = mscb_addr(fd, MCMD_PING16, adr, quick ? 1 : mscb_max_retry);
 
    return status;
 }
@@ -2000,7 +2109,7 @@ int mscb_write(int fd, unsigned short adr, unsigned char index, void *data, int 
    }
 
    /* try 10 times */
-   for (retry=0 ; retry<10 ; retry++) {
+   for (retry=0 ; retry<mscb_max_retry ; retry++) {
 
       buf[0] = MCMD_ADDR_NODE16;
       buf[1] = (unsigned char) (adr >> 8);
@@ -2229,7 +2338,7 @@ int mscb_write_range(int fd, unsigned short adr, unsigned char index1, unsigned 
    }
 
    /* try 10 times */
-   for (retry=0 ; retry<10 ; retry++) {
+   for (retry=0 ; retry<mscb_max_retry ; retry++) {
 
       buf[0] = MCMD_ADDR_NODE16;
       buf[1] = (unsigned char) (adr >> 8);
@@ -2598,7 +2707,7 @@ int mscb_upload(int fd, unsigned short adr, char *buffer, int size, int debug)
       if (!page_cont[page])
          continue;
 
-      for (retry = 0 ; retry < 10 ; retry++) {
+      for (retry = 0 ; retry < mscb_max_retry ; retry++) {
 
          if (debug)
             printf("Erase page   0x%04X - ", page * 512);
@@ -2638,7 +2747,7 @@ int mscb_upload(int fd, unsigned short adr, char *buffer, int size, int debug)
       }
 
       /* check retries */
-      if (retry == 10) {
+      if (retry == mscb_max_retry) {
          printf("\nToo many retries, aborting\n");
          goto prog_error;
          break;
@@ -2666,7 +2775,7 @@ prog_pages:
       for (i = crc = 0; i < 512; i++)
          crc += image[page * 512 + i];
 
-      for (retry = 0 ; retry < 10 ; retry++) {
+      for (retry = 0 ; retry < mscb_max_retry ; retry++) {
 
          if (debug)
             printf("Program page 0x%04X - ", page * 512);
@@ -2675,7 +2784,7 @@ prog_pages:
          /* chop down page in 32 byte segments (->USB) */
          for (subpage = 0; subpage < 16; subpage++) {
 
-            for (sretry = 0 ; sretry < 10 ; sretry++) {
+            for (sretry = 0 ; sretry < mscb_max_retry ; sretry++) {
                /* program page */
                buf[0] = UCMD_PROGRAM;
                buf[1] = (unsigned char)page;
@@ -2697,7 +2806,7 @@ prog_pages:
             }
 
             /* check retries */
-            if (sretry == 10) {
+            if (sretry == mscb_max_retry) {
                printf("\nToo many retries, aborting\n");
                goto prog_error;
                break;
@@ -2740,7 +2849,7 @@ prog_pages:
       }
 
       /* check retries */
-      if (retry == 10) {
+      if (retry == mscb_max_retry) {
          printf("\nToo many retries, aborting\n");
          goto prog_error;
          break;
@@ -3013,7 +3122,7 @@ int mscb_read(int fd, unsigned short adr, unsigned char index, void *data, int *
       return mrpc_call(mscb_fd[fd - 1].fd, RPC_MSCB_READ, mscb_fd[fd - 1].remote_fd, adr, index, data, size);
 
    /* try ten times */
-   for (n = i = 0; n < 10 ; n++) {
+   for (n = i = 0; n < mscb_max_retry ; n++) {
 
       buf[0] = MCMD_ADDR_NODE16;
       buf[1] = (unsigned char) (adr >> 8);
@@ -3336,7 +3445,7 @@ int mscb_read_range(int fd, unsigned short adr, unsigned char index1, unsigned c
                        mscb_fd[fd - 1].remote_fd, adr, index1, index2, data, size);
 
    /* try ten times */
-   for (n = i = 0; n < 10; n++) {
+   for (n = i = 0; n < mscb_max_retry; n++) {
 
       buf[0] = MCMD_ADDR_NODE16;
       buf[1] = (unsigned char) (adr >> 8);
