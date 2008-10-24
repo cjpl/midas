@@ -510,6 +510,8 @@ public:
 
     cm_msg(MINFO, "SqlODBC::Connect", "Connected to %s", dsn);
 
+    al_reset_alarm("Logger_ODBC");
+
     fIsConnected = true;
 
     return 0;
@@ -522,10 +524,9 @@ public:
 
   int Exec(const char* sql)
   {
-
     if (!fIsConnected)
       return -1;
-
+    
     if (gTrace)
       printf("SqlODBC::Exec: %s\n", sql);
 
@@ -583,6 +584,11 @@ public:
     SQLFreeHandle(SQL_HANDLE_ENV,  fEnv);
 
     fIsConnected = false;
+
+    char buf[256];
+    sprintf(buf, "Logger disconnected from history database");
+    al_trigger_alarm("Logger_ODBC", buf, "Alarm", "", AT_INTERNAL);
+
     return 0;
   }
 
@@ -811,7 +817,7 @@ public:
            (int)t,
            values.c_str());
     int status = fSql->Exec(sss);
-    
+  
     if (status != 0)
       {
         cm_msg(MERROR, "SqlOutput::Write", "SQL database write error %d, disconnecting", status);
