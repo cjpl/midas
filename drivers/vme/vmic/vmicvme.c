@@ -14,6 +14,7 @@ $Id$
 #include <signal.h>
 #include <unistd.h>
 #include <assert.h>
+#include <errno.h>
 
 #include "vmicvme.h"
 
@@ -24,6 +25,8 @@ struct sigevent event;
 struct sigaction handler_act;
 
 INT_INFO int_info;
+
+int vmicvme_max_dma_nbytes = DEFAULT_DMA_NBYTES;
 
 mvme_size_t FullWsze (int am);
 int vmic_mmap(MVME_INTERFACE *mvme, mvme_addr_t vme_addr, mvme_size_t size);
@@ -96,13 +99,25 @@ int mvme_open(MVME_INTERFACE **mvme, int index)
   info = (DMA_INFO *) calloc(1, sizeof(DMA_INFO));
   
   (*mvme)->info = info;
-  
-  /* Create DMA buffer */
-  if(0 > vme_dma_buffer_create( (vme_bus_handle_t) (*mvme)->handle
-        , &(info->dma_handle)
-        , DEFAULT_DMA_NBYTES, 0, NULL))  {
-    perror("Error creating the buffer");
-    return(ERROR);
+
+  while (1) {
+
+    /* Create DMA buffer */
+    int status = vme_dma_buffer_create( (vme_bus_handle_t) (*mvme)->handle
+                                        , &(info->dma_handle)
+                                        , vmicvme_max_dma_nbytes, 0, NULL);
+    if (status >= 0)
+      break;
+
+    fprintf(stderr,"mvme_open: Cannot create VME DMA buffer of size %d, errno %d (%s)\n", vmicvme_max_dma_nbytes, errno, strerror(errno));
+    vmicvme_max_dma_nbytes /= 2;
+
+    if (vmicvme_max_dma_nbytes >= 1024) {
+      fprintf(stderr,"mvme_open: Allocated VME DMA buffer of size %d\n", vmicvme_max_dma_nbytes);
+      continue;
+    }
+
+    assert(!"Cannot allocate VME DMA buffer!");
   }
   
   if(NULL == (info->dma_ptr = vme_dma_buffer_map(
@@ -110,15 +125,16 @@ int mvme_open(MVME_INTERFACE **mvme, int index)
              , info->dma_handle
              , 0)))
     {
-      perror("Error mapping the buffer");
+      perror("mvme_open: Error mapping the DMA buffer");
       vme_dma_buffer_release((vme_bus_handle_t) (*mvme)->handle, info->dma_handle);
+      assert(!"Cannot map the DMA buffer!");
       return(ERROR);
     }
 
   printf("mvme_open:\n");
   printf("Bus handle              = 0x%x\n", (*mvme)->handle);
   printf("DMA handle              = 0x%x\n", (int)info->dma_handle);
-  printf("DMA area size           = %d bytes\n", DEFAULT_DMA_NBYTES);
+  printf("DMA area size           = %d bytes\n", vmicvme_max_dma_nbytes);
   printf("DMA    physical address = %p\n", (unsigned long *) info->dma_ptr);
   
   return(MVME_SUCCESS);
@@ -242,9 +258,9 @@ int mvme_read(MVME_INTERFACE *mvme, void *dst, mvme_addr_t vme_addr, mvme_size_t
 
     DMA_INFO *info = ((DMA_INFO*)mvme->info);
 
-    if (n_bytes >= DEFAULT_DMA_NBYTES)
+    if (n_bytes >= vmicvme_max_dma_nbytes)
       {
-	fprintf(stderr,"mvme_read: Attempt to DMA %d bytes more than DEFAULT_DMA_NBYTES=%d\n", (int)n_bytes, DEFAULT_DMA_NBYTES);
+	fprintf(stderr,"mvme_read: Attempt to DMA %d bytes more than DEFAULT_DMA_NBYTES=%d\n", (int)n_bytes, vmicvme_max_dma_nbytes);
 	return(ERROR);
       }
 
@@ -360,9 +376,9 @@ int mvme_write(MVME_INTERFACE *mvme, mvme_addr_t vme_addr, void *src, mvme_size_
 
     DMA_INFO  *info = ((DMA_INFO  *)mvme->info);
 
-    if (n_bytes >= DEFAULT_DMA_NBYTES)
+    if (n_bytes >= vmicvme_max_dma_nbytes)
       {
-	fprintf(stderr,"mvme_write: Attempt to DMA %d bytes more than DEFAULT_DMA_NBYTES=%d\n", (int)n_bytes, DEFAULT_DMA_NBYTES);
+	fprintf(stderr,"mvme_write: Attempt to DMA %d bytes more than DEFAULT_DMA_NBYTES=%d\n", (int)n_bytes, vmicvme_max_dma_nbytes);
 	return(ERROR);
       }
 
