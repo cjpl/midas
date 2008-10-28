@@ -828,13 +828,6 @@ int mscb_exchg(int fd, char *buffer, int *size, int len, int flags)
 
          memcpy(pudp+1, buffer, len);
 
-#ifndef _USRDLL
-         /*
-         if (retry > 0)
-            printf("mscb_exchg: retry send...\n");
-         */
-#endif
-
          /* send over UDP link */
          i = msend_udp(fd, eth_buf, len + sizeof(UDP_HEADER));
 
@@ -868,11 +861,9 @@ int mscb_exchg(int fd, char *buffer, int *size, int len, int flags)
             timeout = 5000;
 
 #ifndef _USRDLL
-         /* single retries are common, so only print warning for second retry */
-         /*     
-         if (retry > 1 && status == MSCB_TIMEOUT)
+         /* few retries are common, so only print warning starting from 5th retry */
+         if (retry > 4 && status == MSCB_TIMEOUT)
             printf("mscb_exchg: retry with %d ms timeout, fd = %d\n", timeout, fd);
-         */
 #endif
 
          /* receive result on IN pipe */
