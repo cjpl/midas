@@ -260,7 +260,6 @@ int strieq(const char *str1, const char *str2)
 /*----retries and timeouts------------------------------------------*/
 
 static int mscb_max_retry = 10;
-static int mscb_eth_max_retry = 10;
 static int mscb_usb_timeout = 6000; /* 6 sec, must be longer than TO_LONG */
 
 int EXPRT mscb_get_usb_timeout()
@@ -333,22 +332,28 @@ int EXPRT mscb_set_max_retry(int max_retry)
    return old_retry;
 }
 
-int mscb_get_eth_max_retry()
+int mscb_get_eth_max_retry(int fd)
 /********************************************************************\
 
   Routine: mscb_get_eth_max_retry
 
   Purpose: Get the current setting of the MSCB ethernet retry limit
 
+  Input:
+    inf fd                   file descriptor for mscb connection
+
   Return value:
     current value of the MSCB ethernet retry limit
 
 \********************************************************************/
 {
-   return mscb_eth_max_retry;
+   if (fd > MSCB_MAX_FD || fd < 1 || !mscb_fd[fd - 1].type)
+      return MSCB_INVAL_PARAM;
+
+   return mscb_fd[fd - 1].eth_max_retry;
 }
 
-int EXPRT mscb_set_eth_max_retry(int max_eth_retry)
+int EXPRT mscb_set_eth_max_retry(int fd, int eth_max_retry)
 /********************************************************************\
 
   Routine: mscb_set_eth_max_retry
@@ -356,15 +361,21 @@ int EXPRT mscb_set_eth_max_retry(int max_eth_retry)
   Purpose: Set retry limit for MSCB ethernet communications
 
   Input:
-    int max_eth_retry        new value for ethernet retry limit
+    inf fd                   file descriptor for mscb connection
+    int eth_max_retry        new value for ethernet retry limit
 
   Function value:
     old value of the ethernet maximum retry limit
 
 \********************************************************************/
 {
-   int old_retry = mscb_eth_max_retry;
-   mscb_eth_max_retry = max_eth_retry;
+   int old_retry;
+
+   if (fd > MSCB_MAX_FD || fd < 1 || !mscb_fd[fd - 1].type)
+      return MSCB_INVAL_PARAM;
+   
+   old_retry = mscb_fd[fd - 1].eth_max_retry;
+   mscb_fd[fd - 1].eth_max_retry = eth_max_retry;
    return old_retry;
 }
 
@@ -815,7 +826,7 @@ int mscb_exchg(int fd, char *buffer, int *size, int len, int flags)
       status = 0;
 
       /* try ten times, in case packets got lost */
-      for (retry=0 ; retry<mscb_eth_max_retry ; retry++) {
+      for (retry=0 ; retry<mscb_fd[fd - 1].eth_max_retry ; retry++) {
          /* increment and write sequence number */
          mscb_fd[fd - 1].seq_nr = (mscb_fd[fd - 1].seq_nr + 1) % 0x10000;
 
@@ -1146,6 +1157,9 @@ int mscb_init(char *device, int bufsize, char *password, int debug)
          return EMSCB_LOCKED;
       }
       mscb_release(index + 1);
+
+      /* set default number of retries */
+      mscb_fd[index].eth_max_retry = 10;
 
       /* check if submaster alive */
       buf[0] = MCMD_ECHO;
@@ -1531,7 +1545,7 @@ int mscb_ping(int fd, unsigned short adr, int quick)
       return mrpc_call(mscb_fd[fd - 1].fd, RPC_MSCB_PING, mscb_fd[fd - 1].remote_fd, adr);
 
    /* call mscb_addr with/without retries */
-   status = mscb_addr(fd, MCMD_PING16, adr, quick ? 1 : mscb_max_retry);
+   status = mscb_addr(fd, MCMD_PING16, adr, quick ? 1 : mscb_fd[fd - 1].eth_max_retry);
 
    return status;
 }
@@ -3435,7 +3449,7 @@ int mscb_read_range(int fd, unsigned short adr, unsigned char index1, unsigned c
       return mrpc_call(mscb_fd[fd - 1].fd, RPC_MSCB_READ_RANGE,
                        mscb_fd[fd - 1].remote_fd, adr, index1, index2, data, size);
 
-   /* try ten times */
+   /* retry several times as specified with mscb_max_retry */
    for (n = i = 0; n < mscb_max_retry; n++) {
 
       buf[0] = MCMD_ADDR_NODE16;
@@ -3451,7 +3465,7 @@ int mscb_read_range(int fd, unsigned short adr, unsigned char index1, unsigned c
       status = mscb_exchg(fd, buf, &len, 8, RS485_FLAG_ADR_CYCLE);
       if (status == MSCB_TIMEOUT) {
 #ifndef _USRDLL
-         /* show error, but repeat 10 times */
+         /* show error, but continue with retry */
          printf("mscb_read_range: Timeout writing to submaster\n");
 #endif
          debug_log("Timeout writing to submaster\n", 1);
@@ -3459,7 +3473,7 @@ int mscb_read_range(int fd, unsigned short adr, unsigned char index1, unsigned c
       }
       if (status == MSCB_SUBM_ERROR) {
 #ifndef _USRDLL
-         /* show error, but repeat 10 times */
+         /* show error, but continue with retry */
          printf("mscb_read_range: Connection to submaster broken\n");
 #endif
          debug_log("Connection to submaster broken\n", 1);

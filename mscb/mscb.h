@@ -185,6 +185,7 @@ typedef struct {
    int seq_nr;
    unsigned char eth_addr[16];
    MUSB_INTERFACE *ui;
+   int eth_max_retry;
 } MSCB_FD;
 
 extern MSCB_FD mscb_fd[MSCB_MAX_FD];
@@ -278,8 +279,8 @@ extern "C" {
    int EXPRT mscb_set_max_retry(int max_retry);
    int EXPRT mscb_get_usb_timeout();
    int EXPRT mscb_set_usb_timeout(int timeout);
-   int EXPRT mscb_get_eth_max_retry();
-   int EXPRT mscb_set_eth_max_retry(int eth_max_retry);
+   int EXPRT mscb_get_eth_max_retry(int fd);
+   int EXPRT mscb_set_eth_max_retry(int fd, int eth_max_retry);
    int EXPRT mscb_upload(int fd, unsigned short adr, char *buffer, int size, int debug);
    int EXPRT mscb_verify(int fd, unsigned short adr, char *buffer, int size);
    int EXPRT mscb_read(int fd, unsigned short adr, unsigned char index, void *data, int *size);
