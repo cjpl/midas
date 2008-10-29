@@ -1199,7 +1199,11 @@ void mrpc_server_loop(void)
 
       if (FD_ISSET(lsock, &readfds)) {
          len = sizeof(acc_addr);
-         sock = accept(lsock, (struct sockaddr *) &acc_addr, &len);
+#ifdef _MSC_VER
+         sock = accept(lsock, (struct sockaddr *) &acc_addr, (int *) &len);
+#else
+         sock = accept(lsock, (struct sockaddr *) &acc_addr, (unsigned int *) &len);
+#endif
 
          /* find new entry in socket table */
          for (i = 0; i < N_MAX_CONNECTION; i++)
