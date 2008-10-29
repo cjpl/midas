@@ -2485,10 +2485,6 @@ int command_loop(char *host_name, char *exp_name, char *cmd, char *start_dir)
          else
             cm_cleanup("", force);
          bm_close_buffer(hBuf);
-
-         db_find_key(hDB, 0, "/", &hKey);
-         db_get_open_records(hDB, hKey, data, sizeof(data), TRUE);
-         printf(data);
       }
 
       /* shutdown */
