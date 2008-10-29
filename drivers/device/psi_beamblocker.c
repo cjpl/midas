@@ -228,7 +228,7 @@ INT psi_beamblocker_set(PSI_BEAMBLOCKER_INFO * info, INT channel, float value)
 
    if (channel == 1) {
       mfe_error("Cannot set PSA status. PSA status can only be read.");
-      return FE_SUCCESS; /* cannot change PSA status */
+      return FE_SUCCESS;        /* cannot change PSA status */
    }
 
    sprintf(str, "WCAM %d %d 16 %d", info->psi_beamblocker_settings.ncom,
@@ -260,8 +260,7 @@ INT psi_beamblocker_get(PSI_BEAMBLOCKER_INFO * info, INT channel, float *pvalue)
 
    /* update every minute or every 5 seconds if blocker has been moved not
       more than one minute ago */
-   if (ss_time() - last_update > 60 ||
-       (ss_time() - last_action < 60 && ss_time() - last_update > 5)) {
+   if (ss_time() - last_update > 60 || (ss_time() - last_action < 60 && ss_time() - last_update > 5)) {
       last_update = ss_time();
 
       sprintf(str, "RCAM %d %d 0", info->psi_beamblocker_settings.nstat,
@@ -285,6 +284,7 @@ INT psi_beamblocker_get(PSI_BEAMBLOCKER_INFO * info, INT channel, float *pvalue)
             return FE_SUCCESS;
       }
 
+      memset(str, 0, sizeof(str));
       status = recv_string(info->sock, str, sizeof(str), 3000);
       if (status <= 0) {
          if (info->sock > 0) {
@@ -304,32 +304,34 @@ INT psi_beamblocker_get(PSI_BEAMBLOCKER_INFO * info, INT channel, float *pvalue)
             return FE_SUCCESS;
       }
 
-      /* skip *RCAM* name */
-      for (i = 0; i < (int) strlen(str) && str[i] != ' '; i++)
+      if (strstr(str, "*RCAM*")) {
+         /* skip *RCAM* name */
+         for (i = 0; i < (int) strlen(str) && str[i] != ' '; i++)
+            i++;
+
+         /* skip X&Q */
+         for (i++; i < (int) strlen(str) && str[i] != ' '; i++);
          i++;
 
-      /* skip X&Q */
-      for (i++; i < (int) strlen(str) && str[i] != ' '; i++);
-      i++;
+         /* round measured to four digits */
+         status = atoi(str + i);
 
-      /* round measured to four digits */
-      status = atoi(str + i);
+         if ((status & info->psi_beamblocker_settings.stat_open) > 0)
+            info->open = 1.f;
+         else if ((status & info->psi_beamblocker_settings.stat_closed) > 0)
+            info->open = 0.f;
+         else
+            info->open = 0.5f;
 
-      if ((status & info->psi_beamblocker_settings.stat_open) > 0)
-         info->open = 1.f;
-      else if ((status & info->psi_beamblocker_settings.stat_closed) > 0)
-         info->open = 0.f;
-      else
-         info->open = 0.5f;
+         info->psa = (float) ((status & info->psi_beamblocker_settings.stat_psa) > 0);
 
-      info->psa = (float)((status & info->psi_beamblocker_settings.stat_psa) > 0);
-
-      if (channel == 0)
-         *pvalue = (float) info->open;
-      else
-         *pvalue = (float) info->psa;
+         if (channel == 0)
+            *pvalue = (float) info->open;
+         else
+            *pvalue = (float) info->psa;
+      }
    } else
-      ss_sleep(10); // don't eat all CPU
+      ss_sleep(10);             // don't eat all CPU
 
    return FE_SUCCESS;
 }
