@@ -24,6 +24,7 @@ typedef struct {
    char mscb_device[256];
    char pwd[32];
    BOOL debug;
+   int retries;
    int *mscb_address;
    unsigned char *mscb_index;
    int *var_size;
@@ -102,6 +103,12 @@ INT mscbdev_init(HNDLE hkey, void **pinfo, INT channels, INT(*bd) (INT cmd, ...)
    if (status != DB_SUCCESS)
       return FE_ERR_ODB;
 
+   size = sizeof(info->mscbdev_settings.retries);
+   info->mscbdev_settings.retries = 10;
+   status = db_get_value(hDB, hkey, "Retries", &info->mscbdev_settings.retries, &size, TID_INT, TRUE);
+   if (status != DB_SUCCESS)
+      return FE_ERR_ODB;
+
    size = sizeof(INT) * channels;
    db_get_value(hDB, hkey, "MSCB Address", info->mscbdev_settings.mscb_address, &size, TID_INT, TRUE);
    db_find_key(hDB, hkey, "MSCB Address", &hsubkey);
@@ -125,6 +132,9 @@ INT mscbdev_init(HNDLE hkey, void **pinfo, INT channels, INT(*bd) (INT cmd, ...)
       cm_msg(MERROR, "mscbdev_init", "Cannot connect to MSCB device \"%s\"", info->mscbdev_settings.mscb_device);
       return FE_ERR_HW;
    }
+
+   /* set number of retries */
+   mscb_set_eth_max_retry(info->fd, info->mscbdev_settings.retries);
 
    /* write back device */
    status = db_set_value(hDB, hkey, "Device", &info->mscbdev_settings.mscb_device,
@@ -210,11 +220,11 @@ INT mscbdev_read_all(MSCBDEV_INFO * info)
             if (ss_time() - last_error >= 60) {
                last_error = ss_time();
                if (i_start == i_stop)
-                  sprintf(str, "Error reading MSCB bus at \"%s:%d:%d\"", 
-                         info->mscbdev_settings.mscb_device, addr, i_start);
+                  sprintf(str, "Error reading MSCB bus at \"%s:%d:%d\" after %d retries", 
+                         info->mscbdev_settings.mscb_device, addr, i_start, mscb_get_eth_max_retry(info->fd));
                else
-                  sprintf(str, "Error reading MSCB bus at \"%s:%d:%d-%d\"", 
-                         info->mscbdev_settings.mscb_device, addr, i_start, i_stop);
+                  sprintf(str, "Error reading MSCB bus at \"%s:%d:%d-%d\" after %d retries", 
+                         info->mscbdev_settings.mscb_device, addr, i_start, i_stop, mscb_get_eth_max_retry(info->fd));
                mfe_error(str);
             }
             for (j = v_start; j <= v_stop; j++)
