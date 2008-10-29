@@ -2113,7 +2113,8 @@ int mscb_write(int fd, unsigned short adr, unsigned char index, void *data, int 
       return MSCB_INVAL_PARAM;
    }
 
-   /* try 10 times */
+   /* retry several times */
+   status = 0;
    for (retry=0 ; retry<mscb_max_retry ; retry++) {
 
       buf[0] = MCMD_ADDR_NODE16;
@@ -2342,7 +2343,8 @@ int mscb_write_range(int fd, unsigned short adr, unsigned char index1, unsigned 
       return MSCB_INVAL_PARAM;
    }
 
-   /* try 10 times */
+   /* retry several times */
+   status = 0;
    for (retry=0 ; retry<mscb_max_retry ; retry++) {
 
       buf[0] = MCMD_ADDR_NODE16;
@@ -3142,7 +3144,7 @@ int mscb_read(int fd, unsigned short adr, unsigned char index, void *data, int *
       status = mscb_exchg(fd, buf, &len, 7, RS485_FLAG_ADR_CYCLE);
       if (status == MSCB_TIMEOUT) {
 #ifndef _USRDLL
-         /* show error, but repeat 10 times */
+         /* show error, but continue repeating */
          printf("mscb_read: Timeout writing to submaster\n");
 #endif
          debug_log("Timeout writing to submaster\n", 1);
@@ -3150,7 +3152,7 @@ int mscb_read(int fd, unsigned short adr, unsigned char index, void *data, int *
       }
       if (status == MSCB_SUBM_ERROR) {
 #ifndef _USRDLL
-         /* show error, but repeat 10 times */
+         /* show error, but continue repeating */
          printf("mscb_read: Connection to submaster broken\n");
 #endif
          debug_log("Connection to submaster broken\n", 1);
@@ -3325,7 +3327,7 @@ int mscb_read_no_retries(int fd, unsigned short adr, unsigned char index, void *
    status = mscb_exchg(fd, buf, &len, 7, RS485_FLAG_ADR_CYCLE);
    if (status == MSCB_TIMEOUT) {
 #ifndef _USRDLL
-      /* show error, but repeat 10 times */
+      /* show error, but continue repeating */
       printf("mscb_read_no_retries: Timeout writing to submaster\n");
 #endif
       return MSCB_TIMEOUT;
@@ -3353,7 +3355,7 @@ int mscb_read_no_retries(int fd, unsigned short adr, unsigned char index, void *
    if ((buf[0] != MCMD_ACK + len - 2 && buf[0] != MCMD_ACK + 7)
       || buf[len - 1] != crc) {
 #ifndef _USRDLL
-      /* show error, but repeat 10 times */
+      /* show error, but continue repeating */
       printf("mscb_read_no_retries: CRC error on RS485 bus\n");
 #endif
       return MSCB_CRC_ERROR;

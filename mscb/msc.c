@@ -1376,10 +1376,10 @@ void cmd_loop(int fd, char *cmd, unsigned short adr)
 
                if (param[2][0] == 'd')
                   status =
-                      mscb_upload(fd, (unsigned short) current_addr, buffer, size, TRUE);
+                      mscb_upload(fd, (unsigned short) current_addr, (unsigned char *)buffer, size, TRUE);
                else
                   status =
-                      mscb_upload(fd, (unsigned short) current_addr, buffer, size, FALSE);
+                      mscb_upload(fd, (unsigned short) current_addr, (unsigned char *)buffer, size, FALSE);
 
                if (status == MSCB_FORMAT_ERROR)
                   printf("Syntax error in file \"%s\"\n", str);
@@ -1420,7 +1420,7 @@ void cmd_loop(int fd, char *cmd, unsigned short adr)
 
                for (i = first; i <= last; i++) {
                   printf("Node%d: ", i);
-                  status = mscb_upload(fd, (unsigned short) i, buffer, size, FALSE);
+                  status = mscb_upload(fd, (unsigned short) i, (unsigned char *)buffer, size, FALSE);
 
                   if (status == MSCB_FORMAT_ERROR) {
                      printf("Syntax error in file \"%s\"\n", str);
@@ -1460,7 +1460,7 @@ void cmd_loop(int fd, char *cmd, unsigned short adr)
                read(fh, buffer, size - 1);
                close(fh);
 
-               status = mscb_verify(fd, (unsigned short) current_addr, buffer, size);
+               status = mscb_verify(fd, (unsigned short) current_addr, (unsigned char *)buffer, size);
 
                if (status == MSCB_FORMAT_ERROR)
                   printf("Syntax error in file \"%s\"\n", str);
