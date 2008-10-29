@@ -626,7 +626,7 @@ int subm250_open(MUSB_INTERFACE **ui, int usb_index)
 
 /*---- Low level routines for UDP communication --------------------*/
 
-int msend_udp(int index, char *buffer, int size)
+int msend_udp(int index, unsigned char *buffer, int size)
 {
    int count;
 
@@ -639,7 +639,7 @@ int msend_udp(int index, char *buffer, int size)
 
 /*------------------------------------------------------------------*/
 
-int mrecv_udp(int index, char *buf, int *size, int millisec)
+int mrecv_udp(int index, unsigned char *buf, int *size, int millisec)
 {
    int n, status;
    unsigned char buffer[1024+6];
@@ -710,7 +710,7 @@ int mrecv_udp(int index, char *buf, int *size, int millisec)
 
 /*------------------------------------------------------------------*/
 
-int mscb_exchg(int fd, char *buffer, int *size, int len, int flags)
+int mscb_exchg(int fd, unsigned char *buffer, int *size, int len, int flags)
 /********************************************************************\
 
   Routine: mscb_exchg
@@ -1182,7 +1182,7 @@ int mscb_init(char *device, int bufsize, char *password, int debug)
       memset(buf, 0, sizeof(buf));
       buf[0] = MCMD_TOKEN;
       if (password)
-         strcpy(buf+1, password);
+         strcpy((char *)(buf+1), password);
       else
          buf[1] = 0;
 
@@ -1465,7 +1465,7 @@ int mscb_subm_reset(int fd)
 
 \********************************************************************/
 {
-   char buf[10];
+   unsigned char buf[10];
    int size;
 
    debug_log("mscb_subm_reset(fd=%d) ", 1, fd);
@@ -2538,7 +2538,7 @@ int mscb_set_baud(int fd, int baud)
 
 /*------------------------------------------------------------------*/
 
-int mscb_upload(int fd, unsigned short adr, char *buffer, int size, int debug)
+int mscb_upload(int fd, unsigned short adr, unsigned char *buffer, int size, int debug)
 /********************************************************************\
 
   Routine: mscb_upload
@@ -2589,16 +2589,16 @@ int mscb_upload(int fd, unsigned short adr, char *buffer, int size, int debug)
    flash_size = 0;
    do {
       if (line[0] == ':') {
-         sscanf(line + 1, "%02x%02x%02x%02x", &len, &ofh, &ofl, &type);
+         sscanf((const char *)line + 1, "%02x%02x%02x%02x", &len, &ofh, &ofl, &type);
          ofs = (unsigned short)((ofh << 8) | ofl);
 
          for (i = 0; i < (int) len; i++) {
-            sscanf(line + 9 + i * 2, "%02x", &d);
+            sscanf((const char *)line + 9 + i * 2, "%02x", &d);
             image[ofs + i] = (unsigned char)d;
          }
 
          flash_size += len;
-         line = strchr(line, '\n');
+         line = (unsigned char *)strchr((char *)line, '\n');
          if (line == NULL)
             break;
 
@@ -2637,7 +2637,7 @@ int mscb_upload(int fd, unsigned short adr, char *buffer, int size, int debug)
    buf[0] = MCMD_FREEZE;
    buf[1] = 1;
    buflen = sizeof(buf);
-   mscb_exchg(fd, buf, &buflen, 2, RS485_FLAG_CMD);
+   mscb_exchg(fd, buf, (int *)&buflen, 2, RS485_FLAG_CMD);
 
    /* wait for acknowledge */
    if (buflen != 1) {
@@ -2656,7 +2656,7 @@ int mscb_upload(int fd, unsigned short adr, char *buffer, int size, int debug)
    buf[4] = MCMD_UPGRADE;
    buf[5] = crc8(buf+4, 1);
    buflen = sizeof(buf);
-   mscb_exchg(fd, buf, &buflen, 6, RS485_FLAG_LONG_TO | RS485_FLAG_ADR_CYCLE);
+   mscb_exchg(fd, buf, (int *)&buflen, 6, RS485_FLAG_LONG_TO | RS485_FLAG_ADR_CYCLE);
 
    /* wait for acknowledge */
    if (buflen != 3) {
@@ -2682,7 +2682,7 @@ int mscb_upload(int fd, unsigned short adr, char *buffer, int size, int debug)
    /* send echo command */
    buf[0] = UCMD_ECHO;
    buflen = sizeof(buf);
-   mscb_exchg(fd, buf, &buflen, 1, RS485_FLAG_LONG_TO);
+   mscb_exchg(fd, buf, (int *)&buflen, 1, RS485_FLAG_LONG_TO);
 
    /* wait for ready */
    if (buflen != 2) {
@@ -2722,7 +2722,7 @@ int mscb_upload(int fd, unsigned short adr, char *buffer, int size, int debug)
          buf[0] = UCMD_ERASE;
          buf[1] = (unsigned char)page;
          buflen = sizeof(buf);
-         mscb_exchg(fd, buf, &buflen, 2, RS485_FLAG_LONG_TO);
+         mscb_exchg(fd, buf, (int *)&buflen, 2, RS485_FLAG_LONG_TO);
 
          if (buflen != 2) {
             printf("\nError: timeout from remote node for erase page 0x%04X\n", page * 512);
@@ -2800,7 +2800,7 @@ prog_pages:
                   buf[i+3] = image[page * 512 + subpage * 32 + i];
 
                buflen = sizeof(buf);
-               mscb_exchg(fd, buf, &buflen, 32+3, RS485_FLAG_LONG_TO);
+               mscb_exchg(fd, buf, (int *)&buflen, 32+3, RS485_FLAG_LONG_TO);
 
                /* read acknowledge */
                if (buflen != 2 || buf[0] != MCMD_ACK) {
@@ -2834,7 +2834,7 @@ prog_pages:
          buf[0] = UCMD_VERIFY;
          buf[1] = (unsigned char)page;
          buflen = sizeof(buf);
-         mscb_exchg(fd, buf, &buflen, 2, RS485_FLAG_LONG_TO);
+         mscb_exchg(fd, buf, (int *)&buflen, 2, RS485_FLAG_LONG_TO);
 
          if (buflen != 2) {
             printf("\nError: timeout from remote node for verify page 0x%04X\n", page * 512);
@@ -2883,7 +2883,7 @@ prog_error:
    buf[0] = MCMD_FREEZE;
    buf[1] = 0;
    buflen = sizeof(buf);
-   mscb_exchg(fd, buf, &buflen, 2, RS485_FLAG_CMD);
+   mscb_exchg(fd, buf, (int *)&buflen, 2, RS485_FLAG_CMD);
 
    /* wait for acknowledge */
    if (buflen != 1)
@@ -2894,7 +2894,7 @@ prog_error:
 
 /*------------------------------------------------------------------*/
 
-int mscb_verify(int fd, unsigned short adr, char *buffer, int size)
+int mscb_verify(int fd, unsigned short adr, unsigned char *buffer, int size)
 /********************************************************************\
 
   Routine: mscb_verify
@@ -2942,16 +2942,16 @@ int mscb_verify(int fd, unsigned short adr, char *buffer, int size)
    flash_size = 0;
    do {
       if (line[0] == ':') {
-         sscanf(line + 1, "%02x%02x%02x%02x", &len, &ofh, &ofl, &type);
+         sscanf((char *)line + 1, "%02x%02x%02x%02x", &len, &ofh, &ofl, &type);
          ofs = (unsigned short)((ofh << 8) | ofl);
 
          for (i = 0; i < (int) len; i++) {
-            sscanf(line + 9 + i * 2, "%02x", &d);
+            sscanf((char *)line + 9 + i * 2, "%02x", &d);
             image[ofs + i] = (unsigned char)d;
          }
 
          flash_size += len;
-         line = strchr(line, '\r') + 1;
+         line = (unsigned char *)strchr((char *)line, '\r') + 1;
          if (line && *line == '\n')
             line++;
       } else
@@ -2963,7 +2963,7 @@ int mscb_verify(int fd, unsigned short adr, char *buffer, int size)
    buf[0] = MCMD_FREEZE;
    buf[1] = 1;
    buflen = sizeof(buf);
-   mscb_exchg(fd, buf, &buflen, 2, RS485_FLAG_CMD);
+   mscb_exchg(fd, buf, (int *)&buflen, 2, RS485_FLAG_CMD);
 
    /* wait for acknowledge */
    if (buflen != 1) {
@@ -2979,7 +2979,7 @@ int mscb_verify(int fd, unsigned short adr, char *buffer, int size)
    buf[4] = MCMD_UPGRADE;
    buf[5] = crc8(buf+4, 1);
    buflen = sizeof(buf);
-   mscb_exchg(fd, buf, &buflen, 6, RS485_FLAG_LONG_TO | RS485_FLAG_ADR_CYCLE);
+   mscb_exchg(fd, buf, (int *)&buflen, 6, RS485_FLAG_LONG_TO | RS485_FLAG_ADR_CYCLE);
 
    /* wait for acknowledge */
    if (buflen != 3) {
@@ -2993,7 +2993,7 @@ int mscb_verify(int fd, unsigned short adr, char *buffer, int size)
    /* send echo command */
    buf[0] = UCMD_ECHO;
    buflen = sizeof(buf);
-   mscb_exchg(fd, buf, &buflen, 1, RS485_FLAG_LONG_TO);
+   mscb_exchg(fd, buf, (int *)&buflen, 1, RS485_FLAG_LONG_TO);
 
    /* wait for ready, 1 sec timeout */
    if (buflen != 2) {
@@ -3034,7 +3034,7 @@ int mscb_verify(int fd, unsigned short adr, char *buffer, int size)
             buf[1] = (unsigned char)page;
             buf[2] = (unsigned char)subpage;
             buflen = sizeof(buf);
-            status = mscb_exchg(fd, buf, &buflen, 3, RS485_FLAG_LONG_TO);
+            status = mscb_exchg(fd, buf, (int *)&buflen, 3, RS485_FLAG_LONG_TO);
             if (status != MSCB_SUCCESS || buflen != 32+3) {
                if (retry == 4) {
                  printf("\nError: timeout from remote node for verify page 0x%04X\n", page * 512);
@@ -3070,7 +3070,7 @@ ver_error:
    buf[0] = MCMD_FREEZE;
    buf[1] = 0;
    buflen = sizeof(buf);
-   mscb_exchg(fd, buf, &buflen, 2, RS485_FLAG_CMD);
+   mscb_exchg(fd, buf, (int *)&buflen, 2, RS485_FLAG_CMD);
 
    printf("Verify finished\n");
 
@@ -3107,7 +3107,8 @@ int mscb_read(int fd, unsigned short adr, unsigned char index, void *data, int *
 \********************************************************************/
 {
    int i, j, len, n, status;
-   unsigned char buf[256], str[1000], crc;
+   unsigned char buf[256], crc;
+   char str[1000];
 
    if (_debug_flag)
       debug_log("mscb_read(fd=%d,adr=%d,index=%d,size=%d) ", 1, fd, adr, index, *size);
@@ -3235,9 +3236,9 @@ int mscb_read(int fd, unsigned short adr, unsigned char index, void *data, int *
          DWORD_SWAP(data);
 
       if (_debug_flag) {
-         sprintf(str, "return %d bytes: ", *size);
+         sprintf((char *)str, "return %d bytes: ", *size);
          for (j=0 ; j<*size ; j++) {
-            sprintf(str+strlen(str), "0x%02X ", 
+            sprintf((char *)str+strlen(str), "0x%02X ", 
                *(((unsigned char *)data)+j));
             if (isalnum(*(((unsigned char *)data)+j)))
                sprintf(str+strlen(str), "('%c') ", 
@@ -3292,7 +3293,8 @@ int mscb_read_no_retries(int fd, unsigned short adr, unsigned char index, void *
 \********************************************************************/
 {
    int j, len, status;
-   unsigned char buf[256], str[1000], crc;
+   char str[1000];
+   unsigned char buf[256], crc;
 
    if (_debug_flag)
       debug_log("mscb_read_no_retries(fd=%d,adr=%d,index=%d,size=%d) ", 1, fd, adr, index, *size);
@@ -3428,7 +3430,8 @@ int mscb_read_range(int fd, unsigned short adr, unsigned char index1, unsigned c
 \********************************************************************/
 {
    int i, j, n, len, status;
-   unsigned char buf[256], str[1000], crc;
+   char str[1000];
+   unsigned char buf[256], crc;
 
    if (_debug_flag)
       debug_log("mscb_read_range(fd=%d,adr=%d,index1=%d,index2=%d,size=%d) ", 
