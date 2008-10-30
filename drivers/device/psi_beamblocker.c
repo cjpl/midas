@@ -256,7 +256,7 @@ INT psi_beamblocker_get(PSI_BEAMBLOCKER_INFO * info, INT channel, float *pvalue)
 {
    INT status, i;
    char str[80];
-   static DWORD last_update;
+   static DWORD last_update = 0;
 
    /* update every minute or every 5 seconds if blocker has been moved not
       more than one minute ago */
@@ -300,6 +300,8 @@ INT psi_beamblocker_get(PSI_BEAMBLOCKER_INFO * info, INT channel, float *pvalue)
 
             if (status != FE_SUCCESS)
                return FE_ERR_HW;
+
+            return FE_SUCCESS;
          } else
             return FE_SUCCESS;
       }
@@ -325,13 +327,14 @@ INT psi_beamblocker_get(PSI_BEAMBLOCKER_INFO * info, INT channel, float *pvalue)
 
          info->psa = (float) ((status & info->psi_beamblocker_settings.stat_psa) > 0);
 
-         if (channel == 0)
-            *pvalue = (float) info->open;
-         else
-            *pvalue = (float) info->psa;
       }
    } else
       ss_sleep(10);             // don't eat all CPU
+
+   if (channel == 0)
+      *pvalue = (float) info->open;
+   else
+      *pvalue = (float) info->psa;
 
    return FE_SUCCESS;
 }
