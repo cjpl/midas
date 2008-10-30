@@ -314,6 +314,7 @@ int sc_thread(void *info)
    do {
       /* read one channel from device */
       for (cmd = CMD_GET_FIRST; cmd <= CMD_GET_LAST; cmd++) {
+         value = (float)ss_nan();
          status = device_drv->dd(cmd, device_drv->dd_info, current_channel, &value);
 
          ss_mutex_wait_for(device_drv->mutex, 1000);
