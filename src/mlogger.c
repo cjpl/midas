@@ -526,8 +526,8 @@ BOOL sql_create_database(MYSQL * db, char *database)
 
 int sql_insert(MYSQL * db, char *database, char *table, HNDLE hKeyRoot, BOOL create_flag)
 {
-   char query[5000], *pstr;
-   int status, i, j, n_col;
+   char query[5000], str[5000];
+   int status, i, n_col;
    SQL_LIST *sql_list;
 
    /* 
@@ -548,23 +548,14 @@ int sql_insert(MYSQL * db, char *database, char *table, HNDLE hKeyRoot, BOOL cre
    strlcat(query, ") VALUES (", sizeof(query));
 
    for (i = 0; i < n_col; i++) {
-      strcat(query, "'");
+      strlcat(query, "'", sizeof(query));
 
-      /* convert "\" to "\\" (MySQL standard) */
-      for (j = 0; j < (int) strlen(sql_list[i].data); j++) {
-         if (sql_list[i].data[j] == '\\')
-            strcat(query, "\\\\");
-         else {
-            pstr = query + strlen(query);
-            *pstr++ = sql_list[i].data[j];
-            *pstr = 0;
-         }
-      }
-
-      strcat(query, "'");
+      mysql_escape_string(str, sql_list[i].data, strlen(sql_list[i].data));
+      strlcat(query, str, sizeof(query));
+      strlcat(query, "'", sizeof(query));
 
       if (i < n_col - 1)
-         strcat(query, ", ");
+         strlcat(query, ", ", sizeof(query));
    }
 
    free(sql_list);
@@ -609,7 +600,7 @@ int sql_insert(MYSQL * db, char *database, char *table, HNDLE hKeyRoot, BOOL cre
 
 int sql_update(MYSQL * db, char *database, char *table, HNDLE hKeyRoot, BOOL create_flag, char *where)
 {
-   char query[5000];
+   char query[5000], str[10000];
    int i, n_col;
    SQL_LIST *sql_list;
 
@@ -624,7 +615,8 @@ int sql_update(MYSQL * db, char *database, char *table, HNDLE hKeyRoot, BOOL cre
       return DB_SUCCESS;
 
    for (i = 0; i < n_col; i++) {
-      sprintf(query + strlen(query), "`%s`='%s'", sql_list[i].column_name, sql_list[i].data);
+      mysql_escape_string(str, sql_list[i].data, strlen(sql_list[i].data));
+      sprintf(query + strlen(query), "`%s`='%s'", sql_list[i].column_name, str);
       if (i < n_col - 1)
          strcat(query, ", ");
    }
@@ -656,7 +648,7 @@ int sql_update(MYSQL * db, char *database, char *table, HNDLE hKeyRoot, BOOL cre
    return DB_SUCCESS;
 }
 
-/*---- Write ODB tree to SQL table ----------------------------------*/
+/*---- Create /Logger/SQL tree -------------------------------------*/
 
 void create_sql_tree()
 {
