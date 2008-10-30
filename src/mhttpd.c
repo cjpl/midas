@@ -5854,11 +5854,14 @@ void show_start_page(void)
       }
    }
 
-   rsprintf("<tr><td align=center colspan=2>");
-   rsprintf("<input type=submit name=cmd value=Start>");
-   rsprintf("<input type=submit name=cmd value=Cancel>");
-   rsprintf("</tr>");
-   rsprintf("</table>");
+   rsprintf("<tr><td align=center colspan=2>\n");
+   rsprintf("<input type=submit name=cmd value=Start>\n");
+   rsprintf("<input type=submit name=cmd value=Cancel>\n");
+   rsprintf("</tr>\n");
+   rsprintf("</table>\n");
+
+   if (isparam("redir"))
+      rsprintf("<input type=hidden name=\"redir\" value=\"%s\">\n", getparam("redir"));
 
    rsprintf("</body></html>\r\n");
 }
@@ -11378,8 +11381,12 @@ void interprete(char *cookie_pwd, char *cookie_wpwd, char *cookie_cpwd, char *pa
          status = cm_transition(TR_START, i, str, sizeof(str), SYNC, FALSE);
          if (status != CM_SUCCESS && status != CM_DEFERRED_TRANSITION) {
             show_error(str);
-         } else
-            redirect("");
+         } else {
+            if (isparam("redir"))
+               redirect(getparam("redir"));
+            else
+               redirect("");
+         }
       }
       return;
    }
@@ -11398,6 +11405,8 @@ void interprete(char *cookie_pwd, char *cookie_wpwd, char *cookie_cpwd, char *pa
       status = cm_transition(TR_STOP, 0, str, sizeof(str), SYNC, FALSE);
       if (status != CM_SUCCESS && status != CM_DEFERRED_TRANSITION)
          show_error(str);
+      else if (isparam("redir"))
+         redirect(getparam("redir"));
       else
          redirect("");
 
@@ -11465,7 +11474,10 @@ void interprete(char *cookie_pwd, char *cookie_wpwd, char *cookie_cpwd, char *pa
          sprintf(str, "SC/%s/%s", eq_name, group);
          redirect(str);
       } else {
-         redirect("./");
+         if (isparam("redir"))
+            redirect(getparam("redir"));
+         else
+            redirect("./");
       }
 
       return;
