@@ -47,6 +47,7 @@
 typedef int INT;
 
 int _debug_flag = 1;
+int _debug_flag1 = 0;
 
 /*------------------------------------------------------------------*/
 
@@ -259,6 +260,41 @@ INT mtid_size[] = {
 int rpc_sock[N_MAX_CONNECTION];
 char net_buffer[NET_BUFFER_SIZE];
 char recv_buffer[NET_BUFFER_SIZE];
+
+/*------------------------------------------------------------------*/
+
+void debug_log1(char *format, ...)
+{
+   int fh;
+   char str[2000], line[2000];
+   va_list argptr;
+   struct timeb tb;
+
+   if (!_debug_flag1)
+      return;
+
+   line[0] = 0;
+#ifdef OS_DARWIN
+   assert(!"No ftime(), sorry!");
+#else
+   ftime(&tb);
+#endif
+   strcpy(line, ctime(&tb.time) + 11);
+   sprintf(line + 8, ".%03d ", tb.millitm);
+
+   va_start(argptr, format);
+   vsprintf(str, format, argptr);
+   va_end(argptr);
+
+   strcat(line, str);
+
+   fh = open("mscb_debug.log", O_CREAT | O_WRONLY | O_APPEND, 0644);
+   if (fh < 0)
+      return;
+
+   write(fh, line, strlen(line));
+   close(fh);
+}
 
 /*------------------------------------------------------------------*/
 
