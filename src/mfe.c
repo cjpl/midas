@@ -57,6 +57,7 @@ INT run_state;                  /* STATE_RUNNING, STATE_STOPPED, STATE_PAUSED */
 INT run_number;
 DWORD actual_time;              /* current time in seconds since 1970 */
 DWORD actual_millitime;         /* current time in milliseconds */
+DWORD rate_period;              /* period in ms for rate calculations */
 
 char host_name[HOST_NAME_LENGTH];
 char exp_name[NAME_LENGTH];
@@ -139,6 +140,18 @@ Events sent = DOUBLE : 0\n\
 Events per sec. = DOUBLE : 0\n\
 kBytes per sec. = DOUBLE : 0\n\
 "
+
+/*------------------------------------------------------------------*/
+
+void set_rate_period(int ms)
+{
+   rate_period = ms;
+}
+
+int get_rate_period()
+{
+   return rate_period;
+}
 
 /*-- transition callbacks ------------------------------------------*/
 
@@ -1800,7 +1813,7 @@ INT scheduler(void)
    EQUIPMENT *eq;
    EVENT_HEADER *pevent, *pfragment;
    DWORD last_time_network = 0, last_time_display = 0, last_time_flush = 0, 
-      readout_start, sent, size;
+      readout_start, sent, size, last_time_rate = 0;
    INT i, j, idx, status = 0, ch, source, state, old_flag;
    char str[80], *pdata;
    unsigned char *pd;
@@ -1817,6 +1830,8 @@ INT scheduler(void)
 #endif
 
    /*----------------- MAIN equipment loop ------------------------------*/
+
+   last_time_rate = ss_millitime();
 
    do {
       actual_millitime = ss_millitime();
@@ -2175,15 +2190,15 @@ INT scheduler(void)
          force_update = FALSE;
 
          /* calculate rates */
-         if (actual_millitime != last_time_display) {
+         if (actual_millitime - last_time_rate > get_rate_period()) {
             max_bytes_per_sec = 0;
             for (i = 0; equipment[i].name[0]; i++) {
                eq = &equipment[i];
                eq->stats.events_sent += eq->events_sent;
                eq->stats.events_per_sec =
-                   eq->events_sent / ((actual_millitime - last_time_display) / 1000.0);
+                   eq->events_sent / ((actual_millitime - last_time_rate) / 1000.0);
                eq->stats.kbytes_per_sec =
-                   eq->bytes_sent / 1024.0 / ((actual_millitime - last_time_display) /
+                   eq->bytes_sent / 1024.0 / ((actual_millitime - last_time_rate) /
                                               1000.0);
 
                if ((INT) eq->bytes_sent > max_bytes_per_sec)
@@ -2195,27 +2210,28 @@ INT scheduler(void)
 
             max_bytes_per_sec = (DWORD)
                 ((double) max_bytes_per_sec /
-                 ((actual_millitime - last_time_display) / 1000.0));
+                 ((actual_millitime - last_time_rate) / 1000.0));
 
-            /* tcp buffer size evaluation */
-            if (optimize) {
-               opt_max = MAX(opt_max, (INT) max_bytes_per_sec);
-               ss_printf(0, opt_index, "%6d : %5.1lf %5.1lf", opt_tcp_size,
-                         opt_max / 1024.0, max_bytes_per_sec / 1024.0);
-               if (++opt_cnt == 10) {
-                  opt_cnt = 0;
-                  opt_max = 0;
-                  opt_index++;
-                  opt_tcp_size = 1 << (opt_index + 7);
+            last_time_rate = actual_millitime;
+         }
+
+         /* tcp buffer size evaluation */
+         if (optimize) {
+            opt_max = MAX(opt_max, (INT) max_bytes_per_sec);
+            ss_printf(0, opt_index, "%6d : %5.1lf %5.1lf", opt_tcp_size,
+                      opt_max / 1024.0, max_bytes_per_sec / 1024.0);
+            if (++opt_cnt == 10) {
+               opt_cnt = 0;
+               opt_max = 0;
+               opt_index++;
+               opt_tcp_size = 1 << (opt_index + 7);
+               rpc_set_opt_tcp_size(opt_tcp_size);
+               if (1 << (opt_index + 7) > 0x8000) {
+                  opt_index = 0;
+                  opt_tcp_size = 1 << 7;
                   rpc_set_opt_tcp_size(opt_tcp_size);
-                  if (1 << (opt_index + 7) > 0x8000) {
-                     opt_index = 0;
-                     opt_tcp_size = 1 << 7;
-                     rpc_set_opt_tcp_size(opt_tcp_size);
-                  }
                }
             }
-
          }
 
          /* propagate changes in equipment to ODB */
@@ -2512,6 +2528,9 @@ int main(int argc, char *argv[])
       printf("\nBecoming a daemon...\n");
       ss_daemon_init(daemon_flag == 2);
    }
+  
+   /* set default rate period */
+   set_rate_period(3000);
 
    /* now connect to server */
    if (display_period) {
