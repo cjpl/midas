@@ -40,7 +40,7 @@ The Midas Alarm file
 BOOL al_evaluate_condition(char *condition, char *value)
 {
    HNDLE hDB, hkey;
-   int i, j, idx1, idx2, index, size;
+   int i, j, idx1, idx2, idx, size;
    KEY key;
    double value1, value2;
    char value1_str[256], value2_str[256], str[256], op[3], function[80];
@@ -127,7 +127,7 @@ BOOL al_evaluate_condition(char *condition, char *value)
       idx2 = key.num_values-1;
    }
 
-   for (index=idx1; index<=idx2 ; index++) {
+   for (idx=idx1; idx<=idx2 ; idx++) {
       
       if (equal_ustring(function, "access")) {
          /* check key access time */
@@ -138,7 +138,7 @@ BOOL al_evaluate_condition(char *condition, char *value)
          /* get key data and convert to double */
          db_get_key(hDB, hkey, &key);
          size = sizeof(data);
-         db_get_data_index(hDB, hkey, data, &size, index, key.type);
+         db_get_data_index(hDB, hkey, data, &size, idx, key.type);
          db_sprintf(value1_str, data, size, 0, key.type);
          value1 = atof(value1_str);
       }
