@@ -307,7 +307,7 @@ int mysql_query_debug(MYSQL * db, char *query)
          printf("Cannot open message log file %s\n", path);
       } else {
          write(fh, query, strlen(query));
-         write(fh, "\n", 1);
+         write(fh, ";\n", 1);
          close(fh);
       }
    }
