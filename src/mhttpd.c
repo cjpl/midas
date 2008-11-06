@@ -4491,10 +4491,12 @@ void show_sc_page(char *path, int refresh)
 char *find_odb_tag(char *p, char *path, int *edit, char *type, char *pwd, char *tail)
 {
    char str[256], *ps, *pt;
+   BOOL in_script;
 
    *edit = 0;
    *tail = 0;
    pwd[0] = 0;
+   in_script = FALSE;
    strcpy(type, "text");
    do {
       while (*p && *p != '<')
@@ -4508,10 +4510,20 @@ char *find_odb_tag(char *p, char *path, int *edit, char *type, char *pwd, char *
       while (*p && ((*p == ' ') || iscntrl(*p)))
          p++;
 
+      strncpy(str, p, 6);
+      str[6] = 0;
+      if (equal_ustring(str, "script"))
+         in_script = TRUE;
+
+      strncpy(str, p, 7);
+      str[7] = 0;
+      if (equal_ustring(str, "/script"))
+         in_script = FALSE;
+
       strncpy(str, p, 4);
       str[4] = 0;
 
-      if (equal_ustring(str, "odb ")) {
+      if (!in_script && equal_ustring(str, "odb ")) {
          ps = p - 1;
          p += 4;
          while (*p && ((*p == ' ') || iscntrl(*p)))
