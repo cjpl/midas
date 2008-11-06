@@ -2190,7 +2190,7 @@ INT scheduler(void)
          force_update = FALSE;
 
          /* calculate rates */
-         if (actual_millitime - last_time_rate > get_rate_period()) {
+         if (actual_millitime - last_time_rate > (DWORD)get_rate_period()) {
             max_bytes_per_sec = 0;
             for (i = 0; equipment[i].name[0]; i++) {
                eq = &equipment[i];
