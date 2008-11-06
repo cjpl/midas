@@ -4956,7 +4956,12 @@ void show_custom_gif(char *name)
                sprintf(value, label.format, *(((double *) data)));
             else if (vkey.type == TID_INT)
                sprintf(value, label.format, *(((INT *) data)));
-            else
+            else if (vkey.type == TID_BOOL) {
+               if (strstr(label.format, "%c"))
+                  sprintf(value, label.format, *(((INT *) data)) ? 'y' : 'n');
+               else
+                  sprintf(value, label.format, *(((INT *) data)));
+            } else
                db_sprintf(value, data, size, 0, vkey.type);
          } else
             db_sprintf(value, data, size, 0, vkey.type);
