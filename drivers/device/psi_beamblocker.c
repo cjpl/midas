@@ -258,9 +258,8 @@ INT psi_beamblocker_get(PSI_BEAMBLOCKER_INFO * info, INT channel, float *pvalue)
    char str[80];
    static DWORD last_update = 0;
 
-   /* update every minute or every 5 seconds if blocker has been moved not
-      more than one minute ago */
-   if (ss_time() - last_update > 60 || (ss_time() - last_action < 60 && ss_time() - last_update > 5)) {
+   /* update every 5 seconds */
+   if (ss_time() - last_update >= 5) {
       last_update = ss_time();
 
       sprintf(str, "RCAM %d %d 0", info->psi_beamblocker_settings.nstat,
@@ -272,8 +271,8 @@ INT psi_beamblocker_get(PSI_BEAMBLOCKER_INFO * info, INT channel, float *pvalue)
             info->sock = -1;
          }
 
-         /* try to reconnect every 10 minutes */
-         if (ss_time() - last_reconnect > 600) {
+         /* try to reconnect every minute */
+         if (ss_time() - last_reconnect >= 60) {
             last_reconnect = ss_time();
             status = tcp_connect(info->psi_beamblocker_settings.beamline_pc,
                                  info->psi_beamblocker_settings.port, &info->sock);
@@ -292,8 +291,8 @@ INT psi_beamblocker_get(PSI_BEAMBLOCKER_INFO * info, INT channel, float *pvalue)
             info->sock = -1;
          }
 
-         /* try to reconnect every 10 minutes */
-         if (ss_time() - last_reconnect > 600) {
+         /* try to reconnect every minute */
+         if (ss_time() - last_reconnect >= 60) {
             last_reconnect = ss_time();
             status = tcp_connect(info->psi_beamblocker_settings.beamline_pc,
                                  info->psi_beamblocker_settings.port, &info->sock);
@@ -343,7 +342,7 @@ INT psi_beamblocker_get(PSI_BEAMBLOCKER_INFO * info, INT channel, float *pvalue)
 
 INT psi_beamblocker_get_demand(PSI_BEAMBLOCKER_INFO * info, INT channel, float *pvalue)
 {
-   if (ss_time() - last_action < 60)
+   if (ss_time() - last_action < 5)
       *pvalue = (float) last_demand;
    else
       *pvalue = info->open;
