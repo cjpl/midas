@@ -11222,10 +11222,17 @@ void interprete(char *cookie_pwd, char *cookie_wpwd, char *cookie_cpwd, char *pa
 
       if (hkey) {
          /* for NT: close reply socket before starting subprocess */
-         redirect2("./");
+         if (isparam("redir"))
+           redirect2(getparam("redir"));
+         else
+           redirect2("");         
          exec_script(hkey);
-      } else
-         redirect("./");
+      } else {
+         if (isparam("redir"))
+           redirect2(getparam("redir"));
+         else
+           redirect2("");         
+      }
 
       return;
    }
@@ -11243,10 +11250,17 @@ void interprete(char *cookie_pwd, char *cookie_wpwd, char *cookie_cpwd, char *pa
 
       if (hkey) {
          /* for NT: close reply socket before starting subprocess */
-         redirect2("./");
+         if (isparam("redir"))
+           redirect2(getparam("redir"));
+         else
+           redirect2("");         
          exec_script(hkey);
-      } else
-         redirect("./");
+      } else {
+         if (isparam("redir"))
+           redirect(getparam("redir"));
+         else
+           redirect("");         
+      }
 
       return;
    }
@@ -11311,6 +11325,8 @@ void interprete(char *cookie_pwd, char *cookie_wpwd, char *cookie_cpwd, char *pa
       status = cm_transition(TR_PAUSE, 0, str, sizeof(str), SYNC, FALSE);
       if (status != CM_SUCCESS && status != CM_DEFERRED_TRANSITION)
          show_error(str);
+      else if (isparam("redir"))
+         redirect(getparam("redir"));
       else
          redirect("");
 
@@ -11331,6 +11347,8 @@ void interprete(char *cookie_pwd, char *cookie_wpwd, char *cookie_cpwd, char *pa
       status = cm_transition(TR_RESUME, 0, str, sizeof(str), SYNC, FALSE);
       if (status != CM_SUCCESS && status != CM_DEFERRED_TRANSITION)
          show_error(str);
+      else if (isparam("redir"))
+         redirect(getparam("redir"));
       else
          redirect("");
 
