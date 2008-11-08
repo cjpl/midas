@@ -102,6 +102,8 @@ MSCB_FD mscb_fd[MSCB_MAX_FD];
 
 extern int _debug_flag;         /* global debug flag */
 extern void debug_log(char *format, int start, ...);
+extern int _debug_flag1;        /* global debug flag */
+extern void debug_log1(char *format, ...);
 
 /* RS485 flags for USB submaster */
 #define RS485_FLAG_BIT9      (1<<0)
@@ -825,7 +827,7 @@ int mscb_exchg(int fd, unsigned char *buffer, int *size, int len, int flags)
 
       status = 0;
 
-      /* try ten times, in case packets got lost */
+      /* try several times according to eth_max_retry, in case packets got lost */
       for (retry=0 ; retry<mscb_fd[fd - 1].eth_max_retry ; retry++) {
          /* increment and write sequence number */
          mscb_fd[fd - 1].seq_nr = (mscb_fd[fd - 1].seq_nr + 1) % 0x10000;
@@ -903,6 +905,11 @@ int mscb_exchg(int fd, unsigned char *buffer, int *size, int len, int flags)
             mscb_release(fd);
             return MSCB_SUCCESS;
          }
+
+         /*
+         if (retry > 0)
+            debug_log1("RETRY %d: dev=%s, status=%d, n=%d\n", retry, mscb_fd[fd-1].device, status, n);
+         */
 
          if (flags & RS485_FLAG_NO_RETRY) {
             *size = 0;
@@ -1014,6 +1021,9 @@ int mscb_init(char *device, int bufsize, char *password, int debug)
 
    /* set global debug flag */
    _debug_flag = (debug == 1);
+   
+   /* set global debug flag for error debugging */
+   _debug_flag1 = 0;
 
    debug_log("mscb_init(device=\"%s\",bufsize=%d,password=\"%s\",debug=%d) ", 1, device, bufsize, password, debug);
 
@@ -3132,6 +3142,9 @@ int mscb_read(int fd, unsigned short adr, unsigned char index, void *data, int *
    /* try ten times */
    for (n = i = 0; n < mscb_max_retry ; n++) {
 
+      if (n > 0)
+         debug_log("mscb_read: retry %d\n", n);
+
       buf[0] = MCMD_ADDR_NODE16;
       buf[1] = (unsigned char) (adr >> 8);
       buf[2] = (unsigned char) (adr & 0xFF);
@@ -3142,6 +3155,7 @@ int mscb_read(int fd, unsigned short adr, unsigned char index, void *data, int *
       buf[6] = crc8(buf+4, 2);
       len = sizeof(buf);
       status = mscb_exchg(fd, buf, &len, 7, RS485_FLAG_ADR_CYCLE);
+
       if (status == MSCB_TIMEOUT) {
 #ifndef _USRDLL
          /* show error, but continue repeating */
@@ -3160,9 +3174,12 @@ int mscb_read(int fd, unsigned short adr, unsigned char index, void *data, int *
       }
 
       if (len == 1 && buf[0] == MCMD_ACK) {
-         /* variable has been deleted on node, so refresh cache */ 
-         mscb_clear_info_cache(fd);
-         return MSCB_INVALID_INDEX;
+         /* variable has been deleted on node, so refresh cache */
+         if (n > 5) {
+            mscb_clear_info_cache(fd);
+            return MSCB_INVALID_INDEX;
+         }
+         continue;
       }
 
       if (len == 1) {
@@ -3487,8 +3504,11 @@ int mscb_read_range(int fd, unsigned short adr, unsigned char index1, unsigned c
 
       if (len == 1 && buf[0] == MCMD_ACK) {
          /* variable has been deleted on node, so refresh cache */ 
-         mscb_clear_info_cache(fd);
-         return MSCB_INVALID_INDEX;
+         if (n > 5) {
+            mscb_clear_info_cache(fd);
+            return MSCB_INVALID_INDEX;
+         }
+         continue;
       }
 
       if (len == 1) {
