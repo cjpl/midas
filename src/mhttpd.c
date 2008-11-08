@@ -8190,7 +8190,7 @@ void generate_hist_graph(char *path, char *buffer, int *buffer_size,
                        "Run number", 0, tbuffer, &tsize, ybuffer, &bsize, &type,
                        &n_marker);
 
-      if (status != HS_UNDEFINED_VAR) {
+      if (status != HS_UNDEFINED_VAR && n_marker < 100) {
          xs_old = -1;
          xmaxm = x1;
          for (j = 0; j < (int) n_marker; j++) {
