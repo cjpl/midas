@@ -287,8 +287,11 @@ void debug_log1(char *format, ...)
    va_end(argptr);
 
    strcat(line, str);
-
-   fh = open("mscb_debug.log", O_CREAT | O_WRONLY | O_APPEND, 0644);
+#ifdef _MSC_VER
+   fh = open("c:\\tmp\\mscb_debug.log", O_CREAT | O_WRONLY | O_APPEND, 0644);
+#else
+   fh = open("/tmp/mscb_debug1.log", O_CREAT | O_WRONLY | O_APPEND, 0644);
+#endif
    if (fh < 0)
       return;
 
