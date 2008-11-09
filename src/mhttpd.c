@@ -4520,9 +4520,12 @@ char *find_odb_tag(char *p, char *path, int *edit, char *type, char *pwd, char *
       if (equal_ustring(str, "/script"))
          in_script = FALSE;
 
+      /* don't interprete any tags in script */
+      if (in_script)
+         continue;
+
       strncpy(str, p, 4);
       str[4] = 0;
-
       if (!in_script && equal_ustring(str, "odb ")) {
          ps = p - 1;
          p += 4;
