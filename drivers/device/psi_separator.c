@@ -291,10 +291,10 @@ INT psi_separator_set(PSI_SEPARATOR_INFO * info, INT channel, float value)
 
    last_set = ss_time();
 
-   status = info->bd(CMD_INIT, info->hkey, &info->bd_info);
+   /* Open connection. */
+   status = info->bd(CMD_OPEN, info->bd_info);
    if (status != SUCCESS) {
       mfe_error("Error initializing connection to separator host");
-      info->bd(CMD_EXIT, info->bd_info);
       return FE_ERR_HW;
    }
    sprintf(str, "*HV %1.0lf %1.0lf", info->hvdemand, info->settings.max_current);
@@ -302,12 +302,12 @@ INT psi_separator_set(PSI_SEPARATOR_INFO * info, INT channel, float value)
    status = info->bd(CMD_WRITE, info->bd_info, str, strlen(str) + 1);   // send string zero terminated
    if (status <= 0) {
       mfe_error("Error sending string to SEP pc");
-      info->bd(CMD_EXIT, info->bd_info);
+      info->bd(CMD_CLOSE, info->bd_info);
       return FE_ERR_HW;
    }
 
    status = info->bd(CMD_GETS, info->bd_info, str, sizeof(str), "\n", 3000);
-   info->bd(CMD_EXIT, info->bd_info);
+   info->bd(CMD_CLOSE, info->bd_info);
 
    if (strstr(str, "*HV *") == NULL) {
       mfe_error("Didn't get *HV * acknowledgement after setting new HV");
