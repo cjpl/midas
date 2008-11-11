@@ -323,7 +323,7 @@ INT psi_separator_set(PSI_SEPARATOR_INFO * info, INT channel, float value)
 
    status = info->bd(CMD_WRITE, info->bd_info, str, strlen(str) + 1);   // send string zero terminated
    if (status <= 0) {
-      mfe_error("Error sending string to SEP pc");
+      mfe_error("Error sending string to separator pc");
       info->bd(CMD_CLOSE, info->bd_info);
       return FE_ERR_HW;
    }
@@ -331,8 +331,8 @@ INT psi_separator_set(PSI_SEPARATOR_INFO * info, INT channel, float value)
    status = info->bd(CMD_GETS, info->bd_info, str, sizeof(str), "\n", 3000);
    info->bd(CMD_CLOSE, info->bd_info);
 
-   if (strstr(str, "*HV *") == NULL) {
-      mfe_error("Didn't get *HV * acknowledgement after setting new HV");
+   if (strstr(str, "*HV *") == NULL && strstr(str, "*RAMP *") == NULL) {
+      mfe_error("Didn't get acknowledgement after setting new HV");
       return FE_ERR_HW;
    }
    //to force wait before invoking the next read; if not done the
