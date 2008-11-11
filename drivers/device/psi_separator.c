@@ -18,6 +18,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdarg.h>
+#include <math.h>
 #include "midas.h"
 
 /*---- globals -----------------------------------------------------*/
@@ -30,14 +31,14 @@
 
 //! Store any parameters the device driver needs in following
 //! structure. Edit the PSI_SEPARATOR_SETTINGS_STR accordingly. This
-//! contains the initial current limit in muA
+//! contains voltage limit at which ramping is started
 
 typedef struct {
-   float max_current;
+   float ramp_voltage;
 } PSI_SEPARATOR_SETTINGS;
 
 #define PSI_SEPARATOR_SETTINGS_STR "\
-Max. current = FLOAT : 10\n\
+Ramp voltage = FLOAT : 150\n\
 "
 
 //! following structure contains private variables to the device
@@ -48,9 +49,10 @@ Max. current = FLOAT : 10\n\
 
 typedef struct {
    PSI_SEPARATOR_SETTINGS settings;     //!< stores internal settings, not active
-   float hvdemand;              //!< demand values, to be read initially from separator PC
-   float hvmeasured;            //!< measured HV
-   float hvcurrent;             //!< measured current
+   float hv_demand;             //!< demand values, to be read initially from separator PC
+   float hv_measured;           //!< measured HV
+   float cur_max;               //!< maximal current
+   float cur_measured;          //!< measured current
    float sepvac;                //!< separator vacuum;
     INT(*bd) (INT cmd, ...);    //!< bus driver entry function
    void *bd_info;               //!< private info of bus driver
@@ -232,15 +234,22 @@ INT psi_separator_rall(PSI_SEPARATOR_INFO * info)
       // skip name
       for (j = 0; j < (int) strlen(str) && str[j] != ' '; j++);
 
-      // extract demand value
-      info->hvdemand = (float) atof(str + j + 1);
+      // extract demand voltage
+      info->hv_demand = (float) atof(str + j + 1);
       for (j++; j < (int) strlen(str) && str[j] != ' '; j++);
 
-      // extract measured values
-      info->hvmeasured = (float) atof(str + j + 1);
+      // extract measured voltage
+      info->hv_measured = (float) atof(str + j + 1);
       for (j++; j < (int) strlen(str) && str[j] != ' '; j++);
-      info->hvcurrent = (float) atof(str + j + 1);
+
+      // extract maximal current
+      info->cur_max = (float) atof(str + j + 1);
+      for (j++; j < (int) strlen(str) && str[j] != ' '; j++);
+
+      // extract measured current
+      info->cur_measured = (float) atof(str + j + 1);
    }
+
    // get second string, should be "VAC <vacuum>"
    status = info->bd(CMD_GETS, info->bd_info, str, sizeof(str), "\n", 500);
 
@@ -253,12 +262,12 @@ INT psi_separator_rall(PSI_SEPARATOR_INFO * info)
 
    if ((strstr(str, "OK") == NULL) && (strstr(str, "OVC") == NULL)) {
       if (info->errorcount < MAX_ERROR)
-         mfe_error("Error getting RALL status");
+         mfe_error("Error reading separator status");
       info->errorcount++;
    }
 
    if (strstr(str, "OVC") != NULL) {
-      if (info->hvcurrent > 0.9 * info->settings.max_current) {
+      if (info->cur_measured > 0.9 * info->cur_max) {
          mfe_error("Separator in Overcurrent");
       }
    }
@@ -278,9 +287,9 @@ INT psi_separator_set(PSI_SEPARATOR_INFO * info, INT channel, float value)
    char str[STR_SIZE];
 
    if (channel == 0)            // channel 0: set HV
-      info->hvdemand = value;
+      info->hv_demand = value;
    else if (channel == 1)       // channel 1: set current limit
-      info->settings.max_current = value;
+      info->cur_max = value;
 
    // force subsequent SET operations to have a interval of at least 5 sec; otherwise
    // the reading will hang
@@ -297,7 +306,20 @@ INT psi_separator_set(PSI_SEPARATOR_INFO * info, INT channel, float value)
       mfe_error("Error initializing connection to separator host");
       return FE_ERR_HW;
    }
-   sprintf(str, "*HV %1.0lf %1.0lf", info->hvdemand, info->settings.max_current);
+
+   if (info->hv_demand == -1) {
+      sprintf(str, "*RST");
+      info->hv_demand = 0;
+   } else if (fabs(info->hv_demand - info->hv_measured) <= 10 || info->hv_demand < info->hv_measured)
+      sprintf(str, "*HV %1.0lf %1.0lf", info->hv_demand, info->cur_max);
+   else {
+      if (info->hv_demand <= 150)
+         sprintf(str, "*RAMP %1.0lf %1.0lf %1.0lf", info->hv_demand, info->hv_demand, info->cur_max);
+      else if (info->hv_measured < 150)
+         sprintf(str, "*RAMP 150 %1.0lf %1.0lf 5", info->hv_demand, info->cur_max);
+      else
+         sprintf(str, "*RAMP %1.0lf %1.0lf %1.0lf 5", info->hv_measured, info->hv_demand, info->cur_max);
+   }
 
    status = info->bd(CMD_WRITE, info->bd_info, str, strlen(str) + 1);   // send string zero terminated
    if (status <= 0) {
@@ -336,9 +358,9 @@ INT psi_separator_get(PSI_SEPARATOR_INFO * info, INT channel, float *pvalue)
    }
 
    if (channel == 0)
-      *pvalue = info->hvmeasured;
+      *pvalue = info->hv_measured;
    else if (channel == 1)
-      *pvalue = info->hvcurrent;
+      *pvalue = info->cur_measured;
    else if (channel == 2)
       *pvalue = info->sepvac;
 
@@ -350,9 +372,9 @@ INT psi_separator_get(PSI_SEPARATOR_INFO * info, INT channel, float *pvalue)
 INT psi_separator_get_demand(PSI_SEPARATOR_INFO * info, INT channel, float *pvalue)
 {
    if (channel == 0)
-      *pvalue = info->hvdemand;
+      *pvalue = info->hv_demand;
    else if (channel == 1)
-      *pvalue = (float) info->settings.max_current;
+      *pvalue = info->cur_max;
 
    return FE_SUCCESS;
 }
