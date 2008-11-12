@@ -27,6 +27,7 @@
 
 /* --------- to handle error messages ------------------------------*/
 #define MAX_ERROR        5      //!< maximum number of error messages
+#define MIN_ERROR        3      //!< report status error after three errors
 #define DELTA_TIME_ERROR 3600   //!< reset error counter after DELTA_TIME_ERROR seconds
 
 //! Store any parameters the device driver needs in following
@@ -261,7 +262,7 @@ INT psi_separator_rall(PSI_SEPARATOR_INFO * info)
    status = info->bd(CMD_GETS, info->bd_info, str, sizeof(str), "\n", 500);
 
    if ((strstr(str, "OK") == NULL) && (strstr(str, "OVC") == NULL)) {
-      if (info->errorcount < MAX_ERROR)
+      if (info->errorcount < MAX_ERROR && info->errorcount >= MIN_ERROR)
          mfe_error("Error reading separator status");
       info->errorcount++;
    }
