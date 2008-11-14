@@ -773,7 +773,7 @@ void show_help_page()
    rsprintf("For more information, refer to the\n");
    rsprintf("<A HREF=\"http://midas.psi.ch/htmldoc/index.html\">PSI MIDAS manual</A>,\n");
    rsprintf
-       ("<A HREF=\"http://midas.triumf.ca/doc/html/index.html\">Triumf MIDAS manual</A>.<P>\n\n");
+       ("<A HREF=\"http://ladd00.triumf.ca/~daqweb/doc/midas/html/\">Triumf MIDAS manual</A>.<P>\n\n");
 
    rsprintf("<hr>\n");
    rsprintf("<address>\n");
@@ -11979,7 +11979,7 @@ void server_loop()
       local_phe = gethostbyaddr(local_phe->h_addr, sizeof(int), AF_INET);
 
    /* if domain name is not in host name, hope to get it from phe */
-   if (strchr(host_name, '.') == NULL)
+   if (local_phe != NULL && strchr(host_name, '.') == NULL)
       strlcpy(host_name, local_phe->h_name, sizeof(host_name));
 
 #ifdef OS_UNIX
