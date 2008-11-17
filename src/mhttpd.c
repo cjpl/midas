@@ -5354,18 +5354,37 @@ void show_custom_page(char *path, char *cookie_cpwd)
          }
          strlcpy(str, getparam("odb"), sizeof(str));
          if (strchr(str, '[')) {
-            index = atoi(strchr(str, '[')+1);
+            if (*(strchr(str, '[')+1) == '*')
+               index = -1;
+            else
+               index = atoi(strchr(str, '[')+1);
             *strchr(str, '[') = 0;
          } else
             index = 0;
 
-         if (db_find_key(hDB, 0, str, &hkey) && isparam("value")) {
+         if (db_find_key(hDB, 0, str, &hkey) == DB_SUCCESS && isparam("value")) {
             db_get_key(hDB, hkey, &key);
             memset(data, 0, sizeof(data));
             if (key.item_size <= sizeof(data)) {
                size = sizeof(data);
                db_sscanf(getparam("value"), data, &size, 0, key.type);
                db_set_data_index(hDB, hkey, data, key.item_size, index, key.type);
+            }
+         } else {
+            if (isparam("value") && isparam("type") && isparam("len")) {
+               db_create_key(hDB, 0, str, atoi(getparam("type")));
+
+               db_find_key(hDB, 0, str, &hkey);
+               db_get_key(hDB, hkey, &key);
+               memset(data, 0, sizeof(data));
+               size = sizeof(data);
+               db_sscanf(getparam("value"), data, &size, 0, key.type);
+               if (key.type == TID_STRING)
+                  db_set_data(hDB, hkey, data, atoi(getparam("len")), 1, TID_STRING);
+               else {
+                  for (i=0 ; i<atoi(getparam("len")) ; i++)
+                     db_set_data_index(hDB, hkey, data, rpc_tid_size(key.type), i, key.type);
+               }
             }
          }
 
@@ -5389,7 +5408,7 @@ void show_custom_page(char *path, char *cookie_cpwd)
 
          show_text_header();
 
-         if (db_find_key(hDB, 0, str, &hkey)) {
+         if (db_find_key(hDB, 0, str, &hkey) == DB_SUCCESS) {
             db_get_key(hDB, hkey, &key);
             if (key.item_size <= sizeof(data)) {
                size = sizeof(data);
@@ -5401,18 +5420,40 @@ void show_custom_page(char *path, char *cookie_cpwd)
                      else
                         db_sprintf(str, data, key.item_size, i, key.type);
                      rsputs(str);
-                     rsputs("\n");
+                     if (i<key.num_values-1)
+                        rsputs("\n");
                   }
                } else {
-                  if (isparam("format"))
-                     db_sprintff(str, getparam("format"), data, key.item_size, index, key.type);
-                  else
-                     db_sprintf(str, data, key.item_size, index, key.type);
-                  rsputs(str);
+                  if (index >= key.num_values)
+                     rsputs("<DB_OUT_OF_RANGE>");
+                  else {
+                     if (isparam("format"))
+                        db_sprintff(str, getparam("format"), data, key.item_size, index, key.type);
+                     else
+                        db_sprintf(str, data, key.item_size, index, key.type);
+                     rsputs(str);
+                  }
                }
             }
          } else
-            rsputs("ODB key not found");
+            rsputs("<DB_NO_KEY>");
+
+         return;
+      }
+
+      /* process "jkey" command */
+      if (equal_ustring(getparam("cmd"), "jkey")) {
+
+         show_text_header();
+
+         if (isparam("odb") && db_find_key(hDB, 0, getparam("odb"), &hkey) == DB_SUCCESS) {
+            db_get_key(hDB, hkey, &key);
+            rsprintf("%s\n", key.name);
+            rsprintf("TID_%s\n", rpc_tid_name(key.type));
+            rsprintf("%d\n", key.num_values);
+            rsprintf("%d", key.item_size);
+         } else
+            rsputs("<DB_NO_KEY>");
 
          return;
       }
@@ -11005,7 +11046,7 @@ char *mhttpd_js =
 "      alert(request.responseText);\n"
 "}\n"
 "\n"
-"function ODBGet(path)\n"
+"function ODBGet(path, defval, len, type)\n"
 "{\n"
 "   request = XMLHttpRequestGeneric();\n"
 "\n"
@@ -11014,10 +11055,45 @@ char *mhttpd_js =
 "   request.send(null);\n"
 "\n"
 "   if (path.match(/[*]/)) {\n"
-"      var array = request.responseText.split('\\n');\n"
-"      return array;\n"
-"   } else\n"
+"      if (request.responseText == null)\n"
+"         return null;\n"
+"      if (request.responseText == '<DB_NO_KEY>') {\n"
+"         url = '?cmd=jset&odb=' + path + '&value=' + defval + '&len=' + len + '&type=' + type;\n"
+"\n"
+"         request.open('GET', url, false);\n"
+"         request.send(null);\n"
+"         return defval;\n"
+"      } else {\n"
+"         var array = request.responseText.split('\\n');\n"
+"         return array;\n"
+"      }\n"
+"   } else {\n"
+"      if ((request.responseText == '<DB_NO_KEY>' ||\n"
+"           request.responseText == '<DB_OUT_OF_RANGE>') && defval != undefined) {\n"
+"         url = '?cmd=jset&odb=' + path + '&value=' + defval + '&len=' + len + '&type=' + type;\n"
+"\n"
+"         request.open('GET', url, false);\n"
+"         request.send(null);\n"
+"         return defval;\n"
+"      }\n"
 "      return request.responseText;\n"
+"   }\n"
+"}\n"
+"\n"
+"function ODBKey(path)\n"
+"{\n"
+"   request = XMLHttpRequestGeneric();\n"
+"\n"
+"   var url = '?cmd=jkey&odb=' + path;\n"
+"   request.open('GET', url, false);\n"
+"   request.send(null);\n"
+"   if (request.responseText == null)\n"
+"      return null;\n"
+"   var key = request.responseText.split('\\n');\n"
+"   this.name = key[0];\n"
+"   this.type = key[1];\n"
+"   this.num_values = key[2];\n"
+"   this.item_size = key[3];\n"
 "}\n"
 "\n"
 "function ODBGetMsg(n)\n"
@@ -11038,8 +11114,8 @@ char *mhttpd_js =
 
 void send_js()
 {
-   int length;
-   char str[256], format[256];
+   int i, length;
+   char str[256], format[256], *buf;
    time_t now;
    struct tm *gmt;
 
@@ -11056,11 +11132,21 @@ void send_js()
    rsprintf("Expires: %s\r\n", str);
    rsprintf("Content-Type: text/javascript\r\n");
 
-   length = strlen(mhttpd_js);
+   buf = malloc(strlen(mhttpd_js)+10000);
+   strcpy(buf, mhttpd_js);
+   strcat(buf, "\n/* MIDAS type definitions */\n");
+   for (i=1 ; i<TID_LAST ; i++) {
+      sprintf(str, "var TID_%s = %d;\n", rpc_tid_name(i), i);
+      strcat(buf, str);
+   }
+
+   length = strlen(buf);
    rsprintf("Content-Length: %d\r\n\r\n", length);
 
    return_length = strlen(return_buffer) + length;
-   memcpy(return_buffer + strlen(return_buffer), mhttpd_js, length);
+   memcpy(return_buffer + strlen(return_buffer), buf, length);
+
+   free(buf);
 }
 
 /*------------------------------------------------------------------*/
