@@ -98,6 +98,8 @@ BOOL slowcont_eq = FALSE;
 void *event_buffer;
 void *frag_buffer = NULL;
 
+int *n_events;
+
 /* inter-thread communication */
 int rbh1=0, rbh2=0, rbh1_next=0, rbh2_next=0;
 volatile int stop_all_threads = 0;
@@ -167,6 +169,7 @@ INT tr_start(INT rn, char *error)
       equipment[i].subevent_number = 0;
       equipment[i].stats.events_sent = 0;
       equipment[i].odb_in = equipment[i].odb_out = 0;
+      n_events[i] = 0;
    }
 
    status = begin_of_run(rn, error);
@@ -239,8 +242,11 @@ INT tr_stop(INT rn, char *error)
    for (i = 0; equipment[i].name[0]; i++) {
       eq = &equipment[i];
       eq->stats.events_sent += eq->events_sent;
+      eq->stats.events_per_sec = 0;
+      eq->stats.kbytes_per_sec = 0;
       eq->bytes_sent = 0;
       eq->events_sent = 0;
+      n_events[i] = 0;
    }
 
    db_send_changed_records();
@@ -925,6 +931,8 @@ INT register_equipment(void)
          manual_trig_flag = TRUE;
       }
    }
+
+   n_events = calloc(sizeof(int), idx);
 
    if (slowcont_eq)
       cm_msg(MINFO, "register_equipment", "Slow control equipment initialized");
@@ -2189,14 +2197,20 @@ INT scheduler(void)
           || (!display_period && actual_millitime - last_time_display > 3000)) {
          force_update = FALSE;
 
-         /* calculate rates */
+         for (i = 0; equipment[i].name[0]; i++) {
+            eq = &equipment[i];
+            eq->stats.events_sent += eq->events_sent;
+            n_events[i] += eq->events_sent;
+            eq->events_sent = 0;
+         }
+
+         /* calculate rates after requested period */
          if (actual_millitime - last_time_rate > (DWORD)get_rate_period()) {
             max_bytes_per_sec = 0;
             for (i = 0; equipment[i].name[0]; i++) {
                eq = &equipment[i];
-               eq->stats.events_sent += eq->events_sent;
                eq->stats.events_per_sec =
-                   eq->events_sent / ((actual_millitime - last_time_rate) / 1000.0);
+                   n_events[i] / ((actual_millitime - last_time_rate) / 1000.0);
                eq->stats.kbytes_per_sec =
                    eq->bytes_sent / 1024.0 / ((actual_millitime - last_time_rate) /
                                               1000.0);
@@ -2205,7 +2219,7 @@ INT scheduler(void)
                   max_bytes_per_sec = eq->bytes_sent;
 
                eq->bytes_sent = 0;
-               eq->events_sent = 0;
+               n_events[i] = 0;
             }
 
             max_bytes_per_sec = (DWORD)
@@ -2686,6 +2700,8 @@ int main(int argc, char *argv[])
    for (i = 0; equipment[i].name[0]; i++)
       if ((equipment[i].info.eq_type & EQ_SLOW) && equipment[i].status == FE_SUCCESS)
          equipment[i].cd(CMD_EXIT, &equipment[i]);      /* close physical connections */
+
+   free(n_events);
 
    /* close network connection to server */
    cm_disconnect_experiment();
