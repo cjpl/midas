@@ -1037,9 +1037,30 @@ void show_status_page(int refresh, char *cookie_wpwd)
       rsprintf("<input type=submit name=cmd value=Start>\n");
    else if (runinfo.state == STATE_PAUSED)
       rsprintf("<input type=submit name=cmd value=Resume>\n");
-   else
-      rsprintf
-          ("<input type=submit name=cmd value=Stop>\n<input type=submit name=cmd value=Pause>\n");
+   else {
+      rsprintf("<noscript>\n");
+      rsprintf("<input type=submit name=cmd value=Stop>\n");
+      rsprintf("<input type=submit name=cmd value=Pause>\n");
+      rsprintf("</noscript>\n");
+      rsprintf("<script type=\"text/javascript\">\n");
+      rsprintf("<!--\n");
+      rsprintf("function stop()\n");
+      rsprintf("{\n");
+      rsprintf("   flag = confirm('Are you sure to stop the run?');\n");
+      rsprintf("   if (flag == true)\n");
+      rsprintf("      window.location.href = '?cmd=Stop';\n");
+      rsprintf("}\n");
+      rsprintf("function pause()\n");
+      rsprintf("{\n");
+      rsprintf("   flag = confirm('Are you sure to pause the run?');\n");
+      rsprintf("   if (flag == true)\n");
+      rsprintf("      window.location.href = '?cmd=Pause';\n");
+      rsprintf("}\n");
+      rsprintf("document.write('<input type=button value=Stop onClick=\"stop();\">\\n');\n");
+      rsprintf("document.write('<input type=button value=Pause onClick=\"pause();\"\\n>');\n");
+      rsprintf("//-->\n");
+      rsprintf("</script>\n");
+   }
 
    rsprintf("<input type=submit name=cmd value=ODB>\n");
    rsprintf("<input type=submit name=cmd value=CNAF>\n");
