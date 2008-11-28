@@ -2652,7 +2652,7 @@ INT open_history()
    INT n_var, n_tags, n_names = 0;
    HNDLE hKeyRoot, hKeyVar, hKeyNames, hLinkKey, hVarKey, hKeyEq, hHistKey, hKey;
    DWORD history;
-   TAG *tag;
+   TAG *tag = NULL;
    KEY key, varkey, linkkey, histkey;
    WORD eq_id;
    char str[256], eq_name[NAME_LENGTH], hist_name[NAME_LENGTH];
@@ -2763,12 +2763,30 @@ INT open_history()
             if (status == DB_NO_MORE_SUBKEYS)
                break;
             db_get_key(hDB, hKey, &key);
-            n_tags += key.num_values;
+            if (key.type != TID_KEY) {
+               n_tags += key.num_values;
+            }
+            else {
+               int ii;
+               for (ii=0;; ii++) {
+                  KEY vvarkey;
+                  HNDLE hhKey;
+
+                  status = db_enum_key(hDB, hKey, ii, &hhKey);
+                  if (status == DB_NO_MORE_SUBKEYS)
+                     break;
+
+                  /* get variable key */
+                  db_get_key(hDB, hhKey, &vvarkey);
+
+                  n_tags += vvarkey.num_values;
+               }
+            }
          }
 
          if (n_var == 0)
             cm_msg(MERROR, "open_history", "defined event %d with no variables in ODB", eq_id);
-         
+
          /* create tag array */
          tag = (TAG *) malloc(sizeof(TAG) * n_tags);
 
@@ -2900,6 +2918,8 @@ INT open_history()
                strlcat(event_name, "/", NAME_LENGTH);
                strlcat(event_name, varkey.name, NAME_LENGTH);
 
+               assert(i_tag <= n_tags);
+
                status = add_event(&index, event_id, event_name, hKey, i_tag, tag, history, 1);
                if (status != DB_SUCCESS)
                   return status;
@@ -2912,6 +2932,8 @@ INT open_history()
          } /* loop over variables */
 
          if (!per_variable_history && i_tag>0) {
+            assert(i_tag <= n_tags);
+
             status = add_event(&index, eq_id, eq_name, hKeyVar, i_tag, tag, history, 1);
             if (status != DB_SUCCESS)
                return status;
@@ -2919,7 +2941,8 @@ INT open_history()
             count_events++;
          }
 
-         free(tag);
+         if (tag)
+            free(tag);
 
          /* remember maximum event id for later use with system events */
          if (eq_id > max_event_id)
