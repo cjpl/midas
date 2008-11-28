@@ -20,7 +20,7 @@ int main(int argc, char* argv[])
    sprintf(cmd, "/bin/ls -ld %s", f);
    system(cmd);
 
-   sprintf(cmd, "/bin/df %s", f);
+   sprintf(cmd, "/bin/df -k %s", f);
    system(cmd);
 
    return 0;
