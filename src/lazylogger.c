@@ -381,20 +381,51 @@ Function value:      number of elements
       return 0;
    }
 
-   tot_nelement = tot_do_size = 0;
+   tot_nelement = 0;
    for (i = 0;; i++) {
       db_enum_key(hDB, hKey, i, &hSubkey);
       if (!hSubkey)
          break;
       db_get_key(hDB, hSubkey, &key);
       nelement = key.num_values;
-      tot_do_size += nelement * sizeof(INT);
-      *pdo = realloc(*pdo, tot_do_size);
+      *pdo = realloc(*pdo, sizeof(INT)*(tot_nelement + nelement));
       size = nelement * sizeof(INT);
       db_get_data(hDB, hSubkey, (char *) (*pdo + tot_nelement), &size, TID_INT);
       tot_nelement += nelement;
    }
 
+   if (0) {
+      printf("read pdo: %d\n", tot_nelement);
+      for (i=0; i<tot_nelement; i++)
+         printf("%d: %d\n", i, (*pdo)[i]);
+   }
+
+   /* expand compressed run numbers */
+   for (i=0; i<tot_nelement; i++)
+      if ((*pdo)[i] < 0) {
+         int first =  (*pdo)[i-1];
+         int last = -(*pdo)[i];
+         int nruns = last - first + 1;
+         assert(nruns > 1);
+
+         *pdo = realloc(*pdo, sizeof(INT)*(tot_nelement + nruns - 2));
+         assert(*pdo != NULL);
+
+         memmove((*pdo) + i + nruns -1, (*pdo) + i + 1, sizeof(INT)*(tot_nelement - i - 1));
+
+         for (j=1; j<nruns; j++)
+            (*pdo)[i+j-1] = first + j;
+
+         tot_nelement += nruns - 2;
+      }
+
+   if (0) {
+      printf("uncompressed pdo: %d\n", tot_nelement);
+      for (i=0; i<tot_nelement; i++)
+         printf("%d: %d\n", i, (*pdo)[i]);
+   }
+
+   /* sort array of integers */
    for (j = 0; j < tot_nelement - 1; j++) {
       for (i = j + 1; i < tot_nelement; i++) {
          if (*(*pdo + j) > *(*pdo + i)) {
@@ -404,6 +435,15 @@ Function value:      number of elements
          }
       }
    }
+
+   if (0) {
+      printf("sorted pdo: %d\n", tot_nelement);
+      for (i=0; i<tot_nelement; i++)
+         printf(" %d\n", (*pdo)[i]);
+   }
+
+   tot_do_size = tot_nelement * sizeof(INT);
+
    return tot_nelement;
 }
 
@@ -708,16 +748,76 @@ Function value:
             potherlist = (INT *) realloc(potherlist, size);
             db_get_record(hDB, hSubkey, (char *) potherlist, &size, 0);
             /* match run number */
+            if (0) {
+               printf("remove %d from (size %d)\n", run, nother);
+               for (j = 0; j < nother; j++)
+                  printf("%d: %d\n", j, potherlist[j]);
+            }
             for (j = 0; j < nother; j++) {
-               if (*(potherlist + j) == run)
-                  found = TRUE;
-               if (found)
-                  if (j + 1 < nother)
-                     *(potherlist + j) = *(potherlist + j + 1);
+               int first = potherlist[j];
+               int last  = potherlist[j];
+               /* maybe it is part of a range */
+               if (j+1<nother && potherlist[j+1]<0) {
+                  /* yes, part of a range */
+                  last = -potherlist[j+1];
+                  if (run>=first && run<=last) {
+                     if (run==first) {
+                        potherlist[j] = run+1;
+                     } else if (run==last) {
+                        potherlist[j+1] = -(run-1);
+                     } else {
+                        /* remove from middle */
+                        nother += 2;
+                        potherlist = realloc(potherlist, sizeof(INT)*nother);
+                        memmove(potherlist + j + 2, potherlist + j, sizeof(INT)*(nother - j - 2));
+                        potherlist[j+1] = -(run-1);
+                        potherlist[j+2] = run+1;
+                     }
+
+                     found = TRUE;
+                  }
+               } else {
+                  /* nope, single run entry */
+                  if (run==potherlist[j]) {
+                     int kk;
+                     for (kk=j+1; kk<nother; kk++)
+                        potherlist[kk-1] = potherlist[kk];
+                     nother--;
+                     found = TRUE;
+                  }
+               }
             }
             /* delete label[] or update label[] */
             if (found) {
-               nother--;
+
+               if (0) {
+                  printf("save size %d\n", nother);
+                  for (j = 0; j < nother; j++)
+                     printf("%d: %d\n", j, potherlist[j]);
+               }
+
+               /* make sure we write only valid run ranges */
+               for (j = 0; j < nother; j++) {
+                  if (j+1<nother && potherlist[j+1]<0) {
+                     int first = potherlist[j];
+                     int last  = -potherlist[j+1];
+
+                     /* skip valid range entries */
+                     if (last>first)
+                        continue;
+
+                     /* remove invalid range entry, leaving only first run */
+                     memmove(potherlist + j + 1, potherlist + j + 2, sizeof(INT)*(nother-j-2));
+                     nother--;
+                  }
+               }
+
+               if (0) {
+                  printf("save size %d\n", nother);
+                  for (j = 0; j < nother; j++)
+                     printf("%d: %d\n", j, potherlist[j]);
+               }
+
                if (nother > 0)
                   db_set_data(hDB, hSubkey, potherlist, nother * sizeof(INT), nother, TID_INT);
                else
@@ -772,10 +872,25 @@ DB_SUCCESS   : update ok
          size = sizeof(INT);
          memcpy((char *) ptape, (char *) &lazyst.cur_run, sizeof(INT));
       } else {
-         ptape = realloc((char *) ptape, size + sizeof(INT));
-         memcpy((char *) ptape + size, (char *) &lazyst.cur_run, sizeof(INT));
-         ifiles += 1;
-         size += sizeof(INT);
+         INT *pi = (INT*)ptape;
+         if (0)
+            printf("files %d, last run %d\n", ifiles, pi[ifiles-1]);
+         if (lazyst.cur_run == pi[ifiles-1] + 1) {
+            ptape = realloc((char *) ptape, size + sizeof(INT));
+            pi = (INT*)ptape;
+            pi[ifiles] = -lazyst.cur_run;
+            ifiles += 1;
+            size += sizeof(INT);
+         } else if (pi[ifiles-1] < 0 && lazyst.cur_run == -pi[ifiles-1]) {
+            pi[ifiles-1] = -lazyst.cur_run;
+         } else if (pi[ifiles-1] < 0 && lazyst.cur_run == -pi[ifiles-1] + 1) {
+            pi[ifiles-1] = -lazyst.cur_run;
+         } else {
+            ptape = realloc((char *) ptape, size + sizeof(INT));
+            memcpy((char *) ptape + size, (char *) &lazyst.cur_run, sizeof(INT));
+            ifiles += 1;
+            size += sizeof(INT);
+         }
       }
       db_set_data(hDB, hKeylabel, (char *) ptape, size, ifiles, TID_INT);
    } else {                     /* new run array ==> */
