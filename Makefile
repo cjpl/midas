@@ -275,6 +275,7 @@ PROGS = $(BIN_DIR)/mserver $(BIN_DIR)/mhttpd \
 	$(BIN_DIR)/mdump $(BIN_DIR)/lazylogger \
 	$(BIN_DIR)/mtransition \
 	$(BIN_DIR)/mhdump \
+	$(BIN_DIR)/test_ss_file_size \
 	$(BIN_DIR)/mchart $(BIN_DIR)/stripchart.tcl \
 	$(BIN_DIR)/webpaw $(BIN_DIR)/odbhist \
 	$(BIN_DIR)/melog \
@@ -508,6 +509,9 @@ $(BIN_DIR)/mdump: $(UTL_DIR)/mdump.c
 
 $(BIN_DIR)/mhdump: $(UTL_DIR)/mhdump.cxx
 	$(CXX) $(CFLAGS) $(OSFLAGS) -o $@ $<
+
+$(BIN_DIR)/test_ss_file_size: $(UTL_DIR)/test_ss_file_size.c
+	$(CC) $(CFLAGS) $(OSFLAGS) -o $@ $< $(LIB) $(LIBS)
 
 $(BIN_DIR)/mtransition: $(SRC_DIR)/mtransition.cxx
 	$(CXX) $(CFLAGS) $(OSFLAGS) -o $@ $< $(LIB) $(LIBS)
