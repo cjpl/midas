@@ -4886,7 +4886,10 @@ double ss_disk_free(char *path)
    return (double) st.f_bavail * st.f_bsize;
 #elif defined(OS_LINUX)
    struct statfs st;
-   statfs(path, &st);
+   int status;
+   status = statfs(path, &st);
+   if (status != 0)
+      return -1;
    return (double) st.f_bavail * st.f_bsize;
 #elif defined(OS_SOLARIS)
    struct statvfs st;
@@ -5057,11 +5060,25 @@ double ss_file_size(char *path)
 
 \********************************************************************/
 {
-   struct stat stat_buf;
+#ifdef OS_LINUX
+   struct stat64 stat_buf;
+   int status;
 
    /* allocate buffer with file size */
-   stat(path, &stat_buf);
+   status = stat64(path, &stat_buf);
+   if (status != 0)
+      return -1;
    return (double) stat_buf.st_size;
+#else
+   struct stat stat_buf;
+   int status;
+
+   /* allocate buffer with file size */
+   status = stat(path, &stat_buf);
+   if (status != 0)
+      return -1;
+   return (double) stat_buf.st_size;
+#endif
 }
 
 double ss_disk_size(char *path)
@@ -5087,8 +5104,11 @@ double ss_disk_size(char *path)
    statfs(path, &st, sizeof(st));
    return (double) st.f_blocks * st.f_fsize;
 #elif defined(OS_LINUX)
+   int status;
    struct statfs st;
-   statfs(path, &st);
+   status = statfs(path, &st);
+   if (status != 0)
+      return -1;
    return (double) st.f_blocks * st.f_bsize;
 #elif defined(OS_SOLARIS)
    struct statvfs st;
