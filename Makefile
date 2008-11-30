@@ -78,7 +78,7 @@ NEED_LIBROOTA=
 MYSQL_CONFIG := $(shell which mysql_config 2> /dev/null)
 ifdef MYSQL_CONFIG
   MYSQLINCDIR := $(shell mysql_config --cflags | sed -e 's,^.*-I\([^ ]*\).*$$,\1,' -e s/\'//g)
-  NEED_MYSQL := $(shell if [ -e $(MYSQLINCDIR)/mysql.h ]; then echo 1; fi) 
+  NEED_MYSQL := $(shell if [ -e $(MYSQLINCDIR)/mysql.h ]; then echo 1; fi)
 endif
 
 #
