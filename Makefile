@@ -371,7 +371,7 @@ $(BIN_DIR):
 
 ifeq ($(NEED_MYSQL),1)
 CFLAGS      += -DHAVE_MYSQL $(shell mysql_config --include)
-MYSQL_LIBS  := -L/usr/lib/mysql $(shell mysql_config --libs)
+MYSQL_LIBS  := $(shell mysql_config --libs)
 # only for mlogger LIBS        += $(MYSQL_LIBS)
 NEED_ZLIB = 1
 endif
