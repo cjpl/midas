@@ -5165,6 +5165,9 @@ void show_custom_gif(char *name)
          size = sizeof(data);
          status = db_get_value(hDB, 0, src, data, &size, vkey.type, FALSE);
          db_sprintf(value, data, size, 0, vkey.type);
+         if (equal_ustring(value, "NAN"))
+            continue;
+         
          fvalue = atof(value);
 
          x = y = 0;
