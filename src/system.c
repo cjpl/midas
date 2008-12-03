@@ -5060,7 +5060,7 @@ double ss_file_size(char *path)
 
 \********************************************************************/
 {
-#ifdef _LARGEFILE64_SOURE
+#ifdef _LARGEFILE64_SOURCE
    struct stat64 stat_buf;
    int status;
 
