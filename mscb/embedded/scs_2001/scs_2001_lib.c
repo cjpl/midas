@@ -123,6 +123,7 @@ SCS_2001_MODULE code scs_2001_module[] = {
 
   { 0x72, "PT100",           vars_temp,   2, dr_temp        },
   { 0x73, "PT1000",          vars_temp,   2, dr_temp        },
+  { 0x74, "AD590",           vars_temp,   1, dr_ad590       },
 
   /* 0x80-0x9F analog out */
   { 0x80, "UOut 0-2.5V",     vars_uout,   1, dr_ltc2600     },
@@ -1122,6 +1123,80 @@ unsigned long d;
       if (value > 999)
          value = 999.9;
       if (value < -200)
+         value = -999.9;
+
+      *((float *)pd) = value;
+      return 4;
+   }
+
+   return 1;
+}
+
+/*---- AD590 via AD7718 ---------------------------------------*/
+
+unsigned char dr_ad590(unsigned char id, unsigned char cmd, unsigned char addr, 
+                      unsigned char port, unsigned char chn, void *pd) reentrant
+{
+float value;
+unsigned char status;
+unsigned long d;
+
+   if (id);
+
+   if (cmd == MC_INIT) {
+      address_port1(addr, port, AM_RW_SERIAL, 1);
+      ad7718_write(AD7718_FILTER, 82);                // SF value for 50Hz rejection
+      ad7718_write(AD7718_MODE, 3);                   // continuous conversion
+      DELAY_US_REENTRANT(100);
+
+      /* start first conversion */
+      ad7718_write(AD7718_CONTROL, (0 << 4) | 0x05);  // Channel 0, +-640mV range
+      temp_cur_chn[addr*8+port] = 0;
+      exc_current[port] = 1;
+   }
+
+   if (cmd == MC_READ) {
+
+      if (chn > 7)
+         return 0;
+
+      /* return if ADC busy */
+      read_port(addr, port, &status);
+      if ((status & 1) > 0)
+         return 0;
+
+      /* return if not current channel */
+      if (chn != temp_cur_chn[addr*8+port])
+         return 0;
+
+      address_port1(addr, port, AM_RW_SERIAL, 1);
+    
+      /* read 24-bit data */
+      ad7718_read(AD7718_ADCDATA, &d);
+
+      /* start next conversion */
+      temp_cur_chn[addr*8+port] = (temp_cur_chn[addr*8+port] + 1) % 8;
+      ad7718_write(AD7718_CONTROL, (temp_cur_chn[addr*8+port] << 4) | 0x05);  // next chn, +-640mV range
+
+      /* convert to volts (negative input) */
+      value = 0.64-1.28*((float)d / (1l<<24));
+
+      /* convert to current (1kOhm shunt) */
+      value /= 1000;
+
+      /* convert to microamps, which equals temperature in Kelvin */
+      value *= 1E6;
+
+      /* convert to Celsius */
+      value -= 273.2;
+
+      /* round result to significant digits */
+      value = ((long)(value*1E2+0.5))/1E2;
+   
+      /* valid range is -55 .. 150 deg. C */
+      if (value > 150)
+         value = 999.9;
+      if (value < -55)
          value = -999.9;
 
       *((float *)pd) = value;
