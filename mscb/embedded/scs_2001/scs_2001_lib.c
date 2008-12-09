@@ -1195,9 +1195,9 @@ unsigned long d;
    
       /* valid range is -55 .. 150 deg. C */
       if (value > 150)
-         value = 999.9;
+         value = 999.99;
       if (value < -55)
-         value = -999.9;
+         value = -999.99;
 
       *((float *)pd) = value;
       return 4;
