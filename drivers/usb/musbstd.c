@@ -380,6 +380,11 @@ int musb_close(MUSB_INTERFACE *musb_interface)
    status = usb_release_interface(musb_interface->dev, musb_interface->usb_interface);
    if (status < 0)
       fprintf(stderr, "musb_close: usb_release_interface() error %d\n", status);
+   
+#ifdef OS_LINUX   // linux wants a reset, otherwise the device cannot be accessed next time
+   musb_reset(musb_interface);
+#endif
+
    status = usb_close(musb_interface->dev);
    if (status < 0)
       fprintf(stderr, "musb_close: usb_close() error %d\n", status);
@@ -518,7 +523,8 @@ int musb_reset(MUSB_INTERFACE *musb_interface)
 
    int status;
    status = usb_reset(musb_interface->dev);
-   fprintf(stderr, "musb_reset: usb_reset() status %d\n", status);
+   if (status < 0)
+      fprintf(stderr, "musb_reset: usb_reset() status %d\n", status);
 
 #elif defined(OS_DARWIN)
 
