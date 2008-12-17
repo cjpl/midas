@@ -5901,6 +5901,9 @@ double ss_nan()
 #ifndef isnan
 #define isnan(x) _isnan(x)
 #endif
+#ifndef isfin
+#define isfinite(x) _finite(x)
+#endif
 #elif defined(OS_LINUX)
 #include <math.h>
 #endif
@@ -5910,9 +5913,9 @@ int ss_isnan(double x)
    return isnan(x);
 }
 
-int ss_isnanf(float x)
+int ss_isfin(double x)
 {
-   return isnan(x);
+   return isfinite(x);
 }
 
 /*------------------------------------------------------------------*/
