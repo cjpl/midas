@@ -6,7 +6,7 @@
 
   Contents:     Library of plug-in modules for SCS-2001
 
-  $Id: scs_2001_lib.c 4169 2008-04-03 13:35:06Z ritt@PSI.CH $
+  $Id$
 
 \********************************************************************/
 
