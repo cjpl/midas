@@ -8119,6 +8119,10 @@ void generate_hist_graph(char *path, char *buffer, int *buffer_size,
          if (ss_isnan(y[i][n_vp]))
             continue;
 
+         /* skip INFs */
+         if (!ss_isfin(y[i][n_vp]))
+            continue;
+
          /* avoid overflow */
          if (y[i][n_vp] > 1E30)
             y[i][n_vp] = 1E30f;
@@ -8142,12 +8146,6 @@ void generate_hist_graph(char *path, char *buffer, int *buffer_size,
 
       n_point[i] = n_vp;
    }
-
-   /* avoid any NANs */
-   if (ss_isnanf(ymin))
-      ymin = 0;
-   if (ss_isnanf(ymax))
-      ymax = 0;
 
    if (ymin < minvalue)
       ymin = minvalue;

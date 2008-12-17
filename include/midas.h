@@ -1813,7 +1813,7 @@ extern "C" {
 
    double EXPRT ss_nan(void);
    int EXPRT ss_isnan(double x);
-   int EXPRT ss_isnanf(float x);
+   int EXPRT ss_isfin(double x);
 
    void EXPRT ss_clear_screen(void);
    void EXPRT ss_printf(INT x, INT y, const char *format, ...);
