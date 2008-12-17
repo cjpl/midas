@@ -13,6 +13,7 @@ char *mhttpd_svn_revision = "$Rev$";
 
 #include <math.h>
 #include <assert.h>
+#include <float.h>
 #include "midas.h"
 #include "msystem.h"
 #include "mgd.h"
@@ -8141,6 +8142,12 @@ void generate_hist_graph(char *path, char *buffer, int *buffer_size,
 
       n_point[i] = n_vp;
    }
+
+   /* avoid any NANs */
+   if (ss_isnanf(ymin))
+      ymin = 0;
+   if (ss_isnanf(ymax))
+      ymax = 0;
 
    if (ymin < minvalue)
       ymin = minvalue;
