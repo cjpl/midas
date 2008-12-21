@@ -5235,7 +5235,7 @@ void show_custom_gif(char *name)
 void show_custom_page(char *path, char *cookie_cpwd)
 {
    int size, i, n_var, fh, index, edit;
-   char str[TEXT_SIZE], *ctext, keypath[256], type[32], *p, *ps, custom_path[256],
+   char str[TEXT_SIZE], keypath[256], type[32], *p, *ps, custom_path[256],
       filename[256], pwd[256], ppath[256], tail[256];
    HNDLE hDB, hkey;
    KEY key;
@@ -5268,6 +5268,7 @@ void show_custom_page(char *path, char *cookie_cpwd)
    }
 
    if (hkey) {
+      char* ctext;
 
       db_get_key(hDB, hkey, &key);
       size = key.total_size;
@@ -5319,6 +5320,7 @@ void show_custom_page(char *path, char *cookie_cpwd)
                db_get_value(hDB, 0, ppath, str, &size, TID_STRING, TRUE);
                if (!equal_ustring(cookie_cpwd, str)) {
                   show_error("Invalid password!");
+                  free(ctext);
                   return;
                } else
                   break;
@@ -5337,6 +5339,7 @@ void show_custom_page(char *path, char *cookie_cpwd)
             db_get_value(hDB, 0, ppath, str, &size, TID_STRING, TRUE);
             if (!equal_ustring(cookie_cpwd, str)) {
                show_error("Invalid password!");
+               free(ctext);
                return;
             }
          }
@@ -5364,6 +5367,7 @@ void show_custom_page(char *path, char *cookie_cpwd)
 
          /* redirect (so that 'reload' does not toggle again) */
          redirect(path);
+         free(ctext);
          return;
       }
 
@@ -5377,6 +5381,7 @@ void show_custom_page(char *path, char *cookie_cpwd)
             if (!equal_ustring(cookie_cpwd, str)) {
                show_text_header();
                rsprintf("Invalid password!");
+               free(ctext);
                return;
             }
          }
@@ -5418,6 +5423,7 @@ void show_custom_page(char *path, char *cookie_cpwd)
 
          show_text_header();
          rsprintf("OK");
+         free(ctext);
          return;
       }
 
@@ -5466,6 +5472,7 @@ void show_custom_page(char *path, char *cookie_cpwd)
          } else
             rsputs("<DB_NO_KEY>");
 
+         free(ctext);
          return;
       }
 
@@ -5483,6 +5490,7 @@ void show_custom_page(char *path, char *cookie_cpwd)
          } else
             rsputs("<DB_NO_KEY>");
 
+         free(ctext);
          return;
       }
 
@@ -5496,6 +5504,7 @@ void show_custom_page(char *path, char *cookie_cpwd)
          show_text_header();
          cm_msg_retrieve(i, str, sizeof(str));
          rsputs(str);
+         free(ctext);
          return;
       }
 
