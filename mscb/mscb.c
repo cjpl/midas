@@ -4180,10 +4180,14 @@ int mscb_subm_info(int fd)
    }
 
    if (mscb_fd[fd - 1].type == MSCB_TYPE_ETH) {
+      int status;
 
       buf[0] = MCMD_ECHO;
       n = sizeof(buf);
-      mscb_exchg(1, buf, &n, 1, RS485_FLAG_CMD | RS485_FLAG_NO_RETRY);
+      status = mscb_exchg(1, buf, &n, 1, RS485_FLAG_CMD | RS485_FLAG_NO_RETRY);
+
+      if (status != MSCB_SUCCESS)
+         return status;
 
       if (n >= 4) {
          rev = (buf[2] << 8) + buf[3];
