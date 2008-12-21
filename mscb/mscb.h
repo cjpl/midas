@@ -9,6 +9,9 @@
 
 \********************************************************************/
 
+#ifndef INCLUDE_MSCB_H
+#define INCLUDE_MSCB_H
+
 #include <musbstd.h>
 
 /*---- MSCB commands -----------------------------------------------*/
@@ -316,4 +319,6 @@ int kbhit();
 #define POINTER_T     long int
 #else
 #define POINTER_T     int
+#endif
+
 #endif
