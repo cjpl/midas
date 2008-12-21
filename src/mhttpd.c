@@ -7638,15 +7638,15 @@ void generate_hist_graph(char *path, char *buffer, int *buffer_size,
        key_name[256];
    DWORD n_point[MAX_VARS];
    int x[MAX_VARS][1000];
-   float y[MAX_VARS][1000];
+   double y[MAX_VARS][1000];
    float factor[MAX_VARS], offset[MAX_VARS];
    BOOL logaxis, runmarker;
-   float xmin, xmax, ymin, ymax;
+   double xmin, xmax, ymin, ymax;
    gdPoint poly[3];
-   float upper_limit[MAX_VARS], lower_limit[MAX_VARS];
+   double upper_limit[MAX_VARS], lower_limit[MAX_VARS];
    double yb1, yb2, yf1, yf2, ybase;
-   float minvalue = (float) -HUGE_VAL;
-   float maxvalue = (float) +HUGE_VAL;
+   float minvalue = -HUGE_VAL;
+   float maxvalue = +HUGE_VAL;
    int show_values = 0;
    char var_status[MAX_VARS][256];
 
@@ -8024,13 +8024,13 @@ void generate_hist_graph(char *path, char *buffer, int *buffer_size,
                   p = strchr(str, '<') + 1;
                   if (*p == '=')
                      p++;
-                  lower_limit[i] = (float) (factor[i] * atof(p) + offset[i]);
+                  lower_limit[i] = (factor[i] * atof(p) + offset[i]);
                }
                if (strchr(str, '>')) {
                   p = strchr(str, '>') + 1;
                   if (*p == '=')
                      p++;
-                  upper_limit[i] = (float) (factor[i] * atof(p) + offset[i]);
+                  upper_limit[i] = (factor[i] * atof(p) + offset[i]);
                }
             }
          }
@@ -8084,34 +8084,34 @@ void generate_hist_graph(char *path, char *buffer, int *buffer_size,
          /* convert data to float */
          switch (type) {
          case TID_BYTE:
-            y[i][n_vp] = (float) *(((BYTE *) ybuffer) + j);
+            y[i][n_vp] = (double) *(((BYTE *) ybuffer) + j);
             break;
          case TID_SBYTE:
-            y[i][n_vp] = (float) *(((char *) ybuffer) + j);
+            y[i][n_vp] = (double) *(((char *) ybuffer) + j);
             break;
          case TID_CHAR:
-            y[i][n_vp] = (float) *(((char *) ybuffer) + j);
+            y[i][n_vp] = (double) *(((char *) ybuffer) + j);
             break;
          case TID_WORD:
-            y[i][n_vp] = (float) *(((WORD *) ybuffer) + j);
+            y[i][n_vp] = (double) *(((WORD *) ybuffer) + j);
             break;
          case TID_SHORT:
-            y[i][n_vp] = (float) *(((short *) ybuffer) + j);
+            y[i][n_vp] = (double) *(((short *) ybuffer) + j);
             break;
          case TID_DWORD:
-            y[i][n_vp] = (float) *(((DWORD *) ybuffer) + j);
+            y[i][n_vp] = (double) *(((DWORD *) ybuffer) + j);
             break;
          case TID_INT:
-            y[i][n_vp] = (float) *(((INT *) ybuffer) + j);
+            y[i][n_vp] = (double) *(((INT *) ybuffer) + j);
             break;
          case TID_BOOL:
-            y[i][n_vp] = (float) *(((BOOL *) ybuffer) + j);
+            y[i][n_vp] = (double) *(((BOOL *) ybuffer) + j);
             break;
          case TID_FLOAT:
-            y[i][n_vp] = (float) *(((float *) ybuffer) + j);
+            y[i][n_vp] = (double) *(((float *) ybuffer) + j);
             break;
          case TID_DOUBLE:
-            y[i][n_vp] = (float) *(((double *) ybuffer) + j);
+            y[i][n_vp] = (double) *(((double *) ybuffer) + j);
             break;
          }
 
