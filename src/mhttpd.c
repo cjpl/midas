@@ -5269,11 +5269,19 @@ void show_custom_page(char *path, char *cookie_cpwd)
 
    if (hkey) {
       char* ctext;
+      int status;
 
-      db_get_key(hDB, hkey, &key);
+      status = db_get_key(hDB, hkey, &key);
+      assert(status == DB_SUCCESS);
       size = key.total_size;
       ctext = malloc(size);
-      db_get_data(hDB, hkey, ctext, &size, TID_STRING);
+      status = db_get_data(hDB, hkey, ctext, &size, TID_STRING);
+      if (status != DB_SUCCESS) {
+         sprintf(str, "Error: db_get_data() status %d", status);
+         show_error(str);
+         free(ctext);
+         return;
+      }
 
       /* check if filename */
       if (strchr(ctext, '\n') == 0) {
