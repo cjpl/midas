@@ -581,7 +581,9 @@ int main(int argc, char **argv)
                    ("                  -g type         : sampling mode either SOME or all)\n");
                printf(">>> in case of -c it is recommented to used -g all\n");
                printf
-                   ("                  -s              : speed test for connection test\n");
+                   ("                  -s              : report buffer data rate and fill level\n");
+               printf
+                   ("                  -s -d           : for use with -s: also report all buffer clients and requests\n");
                printf("                  -t type (auto)  : Bank format (Midas/Ybos)\n");
                printf
                    ("                  -x Source       : Data source selection def:online (see -x -h)\n");
@@ -790,6 +792,51 @@ int main(int argc, char **argv)
                size += buffer_header.size;
             printf("Level: %4.3f %%, ", 100 - 100.0 * size / buffer_header.size);
             printf("Rate: %1.3f MB/sec\n", rate);
+
+            if (debug) {
+               int i, j;
+               int now = ss_millitime();
+
+               printf("buffer name [%s], clients: %d, max: %d, size: %d, rp: %d, wp: %d, ine: %d, oute: %d\n", 
+                      buffer_header.name,
+                      buffer_header.num_clients,
+                      buffer_header.max_client_index,
+                      buffer_header.size,
+                      buffer_header.read_pointer,
+                      buffer_header.write_pointer,
+                      buffer_header.num_in_events,
+                      buffer_header.num_out_events
+                      );
+
+               for (i=0; i<buffer_header.max_client_index; i++)
+                  if (buffer_header.client[i].pid) {
+                     printf("  client %d: name [%s], pid: %d, tid: %d, thandle: %d, port: %d, rp: %d, max_req: %d, read_wait: %d, write_wait: %d, wake_up: %d, get_all: %d, active: %d, timeout: %d\n",
+                            i,
+                            buffer_header.client[i].name,
+                            buffer_header.client[i].pid,
+                            buffer_header.client[i].tid,
+                            buffer_header.client[i].thandle,
+                            buffer_header.client[i].port,
+                            buffer_header.client[i].read_pointer,
+                            buffer_header.client[i].max_request_index,
+                            buffer_header.client[i].read_wait,
+                            buffer_header.client[i].write_wait,
+                            buffer_header.client[i].wake_up,
+                            buffer_header.client[i].all_flag,
+                            now - buffer_header.client[i].last_activity,
+                            buffer_header.client[i].watchdog_timeout);
+
+                     for (j=0; j<buffer_header.client[i].max_request_index; j++)
+                        if (buffer_header.client[i].event_request[j].valid)
+                           printf("    request %d: id: %d, valid: %d, event_id: %d, trigger_mask: 0x%x, type: %d\n",
+                                  j,
+                                  buffer_header.client[i].event_request[j].id,
+                                  buffer_header.client[i].event_request[j].valid,
+                                  buffer_header.client[i].event_request[j].event_id,
+                                  buffer_header.client[i].event_request[j].trigger_mask,
+                                  buffer_header.client[i].event_request[j].sampling_type);
+                  }
+            }
 
             start_time = stop_time;
             count = 0;
