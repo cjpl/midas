@@ -10350,10 +10350,13 @@ void show_hist_page(char *path, int path_size, char *buffer, int *buffer_size,
    if (pindex && *pindex)
       index = atoi(pindex);
 
+   /* use contents of "/History/URL" to access history images (*images only*)
+    * otherwise, use relative addresses from "back_path" */
+
    size = sizeof(hurl);
    status = db_get_value(hDB, 0, "/History/URL", hurl, &size, TID_STRING, FALSE);
    if (status != DB_SUCCESS)
-      hurl[0] = 0;
+      strlcpy(hurl, back_path, sizeof(hurl));
 
    if (equal_ustring(getparam("cmd"), "Create ELog")) {
       size = sizeof(url);
@@ -10752,14 +10755,14 @@ void show_hist_page(char *path, int path_size, char *buffer, int *buffer_size,
 
             db_get_key(hDB, hikeyp, &key);
             sprintf(ref, "%s%s/%s.gif?width=Small", hurl, path, key.name);
-            sprintf(ref2, "%s%s/%s", hurl, path, key.name);
+            sprintf(ref2, "%s/%s", path, key.name);
 
             if (i % 2 == 0)
-               rsprintf("<tr><td><a href=\"%s%s\"><img src=\"%s%s\" alt=\"%s.gif\"></a>\n",
-                        back_path, ref2, back_path, ref, key.name);
+               rsprintf("<tr><td><a href=\"%s%s\"><img src=\"%s\" alt=\"%s.gif\"></a>\n",
+                        back_path, ref2, ref, key.name);
             else
-               rsprintf("<td><a href=\"%s%s\"><img src=\"%s%s\" alt=\"%s.gif\"></a></tr>\n",
-                        back_path, ref2, back_path, ref, key.name);
+               rsprintf("<td><a href=\"%s%s\"><img src=\"%s\" alt=\"%s.gif\"></a></tr>\n",
+                        back_path, ref2, ref, key.name);
          }
 
       } else {
@@ -10863,8 +10866,8 @@ void show_hist_page(char *path, int path_size, char *buffer, int *buffer_size,
          sprintf(ref, "%s%s.gif", hurl, path);
 
       /* put reference to graph */
-      rsprintf("<tr><td colspan=2><img src=\"%s%s\" alt=\"%s.gif\" usemap=\"#%s\"></tr>\n",
-               back_path, ref, path, path);
+      rsprintf("<tr><td colspan=2><img src=\"%s\" alt=\"%s.gif\" usemap=\"#%s\"></tr>\n",
+               ref, path, path);
    }
 
    else if (equal_ustring(path, "All")) {
@@ -10888,14 +10891,14 @@ void show_hist_page(char *path, int path_size, char *buffer, int *buffer_size,
 
                db_get_key(hDB, hikeyp, &ikey);
                sprintf(ref, "%s%s/%s.gif?width=Small", hurl, key.name, ikey.name);
-               sprintf(ref2, "%s%s/%s", hurl, key.name, ikey.name);
+               sprintf(ref2, "%s/%s", key.name, ikey.name);
 
                if (k % 2 == 0)
-                  rsprintf("<tr><td><a href=\"%s%s\"><img src=\"%s%s\" alt=\"%s.gif\"></a>\n",
-                           back_path, ref2, back_path, ref, key.name);
+                  rsprintf("<tr><td><a href=\"%s%s\"><img src=\"%s\" alt=\"%s.gif\"></a>\n",
+                           back_path, ref2, ref, key.name);
                else
-                  rsprintf("<td><a href=\"%s%s\"><img src=\"%s%s\" alt=\"%s.gif\"></a></tr>\n",
-                       back_path, ref2, back_path, ref, key.name);
+                  rsprintf("<td><a href=\"%s%s\"><img src=\"%s\" alt=\"%s.gif\"></a></tr>\n",
+                       back_path, ref2, ref, key.name);
             }                   // items loop
          }                      // Groups loop
    }                            // All
@@ -12453,6 +12456,7 @@ int main(int argc, char *argv[])
    int i, status;
    int daemon = FALSE;
    char str[256];
+   char *myname = "mhttpd";
 
    setbuf(stdout, NULL);
    setbuf(stderr, NULL);
@@ -12508,8 +12512,11 @@ int main(int argc, char *argv[])
       ss_daemon_init(FALSE);
    }
 
+   if (history_mode)
+      myname = "mhttpd_history";
+
    /*---- connect to experiment ----*/
-   status = cm_connect_experiment1(midas_hostname, midas_expt, "mhttpd", NULL,
+   status = cm_connect_experiment1(midas_hostname, midas_expt, myname, NULL,
                                    DEFAULT_ODB_SIZE, DEFAULT_WATCHDOG_TIMEOUT);
    if (status == CM_WRONG_PASSWORD)
       return 1;
