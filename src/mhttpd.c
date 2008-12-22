@@ -7662,8 +7662,8 @@ void generate_hist_graph(char *path, char *buffer, int *buffer_size,
    gdPoint poly[3];
    double upper_limit[MAX_VARS], lower_limit[MAX_VARS];
    double yb1, yb2, yf1, yf2, ybase;
-   float minvalue = -HUGE_VAL;
-   float maxvalue = +HUGE_VAL;
+   float minvalue = (float) -HUGE_VAL;
+   float maxvalue = (float) +HUGE_VAL;
    int show_values = 0;
    char var_status[MAX_VARS][256];
 
