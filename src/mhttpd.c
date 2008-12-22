@@ -4676,7 +4676,7 @@ char *find_odb_tag(char *p, char *path, int *edit, char *type, char *pwd, char *
 void show_odb_tag(char *path, char *keypath, int n_var, int edit, char *type, char *pwd, char *tail)
 {
    int size, index, i_edit, i_set;
-   char str[TEXT_SIZE], data[TEXT_SIZE], options[1000], *p;
+   char str[TEXT_SIZE], data[TEXT_SIZE], options[1000], full_keypath[256], *p;
    HNDLE hDB, hkey;
    KEY key;
 
@@ -4691,6 +4691,7 @@ void show_odb_tag(char *path, char *keypath, int n_var, int edit, char *type, ch
       i_set = atoi(getparam("index"));
 
    /* check if path contains index */
+   strlcpy(full_keypath, keypath, sizeof(full_keypath));
    index = 0;
 
    if (strchr(keypath, '[') && strchr(keypath, ']')) {
@@ -4793,7 +4794,7 @@ void show_odb_tag(char *path, char *keypath, int n_var, int edit, char *type, ch
                rsprintf("</a>");
             }
          } else if (edit == 2) {
-            rsprintf("<a href=\"#\" onclick=\"ODBEdit('%s')\">\n", keypath);
+            rsprintf("<a href=\"#\" onclick=\"ODBEdit('%s')\">\n", full_keypath);
             rsputs(str);
             rsprintf("</a>");
          }
