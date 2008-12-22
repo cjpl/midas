@@ -676,7 +676,7 @@ INT cm_msg(INT message_type, const char *filename, INT line, const char *routine
 
    /* copy message to event */
    pevent = (EVENT_HEADER *) event;
-   strcpy(event + sizeof(EVENT_HEADER), send_message);
+   strlcpy(event + sizeof(EVENT_HEADER), send_message, sizeof(event) - sizeof(EVENT_HEADER));
 
    /* send event if not of type MLOG */
    if (message_type != MT_LOG) {
