@@ -11163,6 +11163,14 @@ char *mhttpd_js =
 "   } else\n"
 "      return request.responseText;\n"
 "}\n"
+"\n"
+"function ODBEdit(path)\n"
+"{\n"
+"   var value = ODBGet(path);\n"
+"   var new_value = prompt('Please enter new value', value);\n"
+"   ODBSet(path, new_value);\n"
+"   window.location.reload();\n" 
+"}\n"
 "";
 
 void send_js()
