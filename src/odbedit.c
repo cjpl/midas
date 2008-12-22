@@ -2690,7 +2690,7 @@ int main(int argc, char *argv[])
             strcpy(host_name, argv[++i]);
          else if (argv[i][1] == 'c') {
             if (strlen(argv[i+1]) >= sizeof(cmd)) {
-               printf("error: command line too long (>%d bytes)\n", sizeof(cmd));
+               printf("error: command line too long (>%d bytes)\n", (int)sizeof(cmd));
                return 0;
             }
             strlcpy(cmd, argv[++i], sizeof(cmd));
