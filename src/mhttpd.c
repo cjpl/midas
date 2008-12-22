@@ -4757,7 +4757,7 @@ void show_odb_tag(char *path, char *keypath, int n_var, int edit, char *type, ch
       
       } else { // checkbox
       
-         if (edit) {
+         if (edit == 1) {
             if (n_var == i_set) {
                /* set value */
                strlcpy(str, getparam("value"), sizeof(str));
@@ -4792,7 +4792,12 @@ void show_odb_tag(char *path, char *keypath, int n_var, int edit, char *type, ch
                rsputs(str);
                rsprintf("</a>");
             }
-         } else
+         } else if (edit == 2) {
+            rsprintf("<a href=\"#\" onclick=\"ODBEdit('%s')\">\n", keypath);
+            rsputs(str);
+            rsprintf("</a>");
+         }
+           else
             rsputs(str);
       }
    }
@@ -11168,8 +11173,10 @@ char *mhttpd_js =
 "{\n"
 "   var value = ODBGet(path);\n"
 "   var new_value = prompt('Please enter new value', value);\n"
-"   ODBSet(path, new_value);\n"
-"   window.location.reload();\n" 
+"   if (new_value != undefined) {\n"
+"      ODBSet(path, new_value);\n"
+"      window.location.reload();\n"
+"   }\n"
 "}\n"
 "";
 
