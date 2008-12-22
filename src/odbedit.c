@@ -1255,9 +1255,9 @@ void assemble_prompt(char *prompt, char *host_name, char *exp_name, char *pwd)
 int command_loop(char *host_name, char *exp_name, char *cmd, char *start_dir)
 {
    INT status = 0, i, j, state, size, old_run_number, new_run_number, channel;
-   char line[256], prompt[256];
-   char param[10][100];
-   char str[256], old_dir[256], cwd[256], name[256], *pc, data_str[256];
+   char line[2000], prompt[256];
+   char param[10][2000];
+   char str[2000], old_dir[256], cwd[256], name[256], *pc, data_str[256];
    char old_password[32], new_password[32];
    INT nparam, flags, index1, index2, debug_flag;
    WORD mode;
@@ -1266,7 +1266,7 @@ int command_loop(char *host_name, char *exp_name, char *cmd, char *start_dir)
    char user_name[80] = "";
    FILE *cmd_file = NULL;
    DWORD last_msg_time = 0;
-   char message[256], client_name[256], *p;
+   char message[2000], client_name[256], *p;
    INT n1, n2, msg_type;
    PRINT_INFO print_info;
 
@@ -1303,7 +1303,7 @@ int command_loop(char *host_name, char *exp_name, char *cmd, char *start_dir)
          cmd_edit(prompt, line, cmd_dir, cmd_idle);
          in_cmd_edit = FALSE;
       } else if (cmd[0] != '@')
-         strcpy(line, cmd);
+         strlcpy(line, cmd, sizeof(line));
       else {
          memset(line, 0, sizeof(line));
          fgets(line, sizeof(line), cmd_file);
@@ -1329,28 +1329,24 @@ int command_loop(char *host_name, char *exp_name, char *cmd, char *start_dir)
       do {
          if (*pc == '"') {
             pc++;
-            for (i = 0; *pc && *pc != '"'; i++)
+            for (i = 0; *pc && *pc != '"' && i<sizeof(param[0])-1; i++)
                param[nparam][i] = *pc++;
-/*
-        while(strlen(param[nparam]) > 0 && param[nparam][strlen(param[nparam])-1] == ' ')
-          param[nparam][strlen(param[nparam])-1] = 0;
-*/
             if (*pc)
                pc++;
          } else if (*pc == '\'') {
             pc++;
-            for (i = 0; *pc && *pc != '\''; i++)
+            for (i = 0; *pc && *pc != '\'' && i<sizeof(param[0])-1; i++)
                param[nparam][i] = *pc++;
             if (*pc)
                pc++;
          } else if (*pc == '`') {
             pc++;
-            for (i = 0; *pc && *pc != '`'; i++)
+            for (i = 0; *pc && *pc != '`' && i<sizeof(param[0])-1; i++)
                param[nparam][i] = *pc++;
             if (*pc)
                pc++;
          } else
-            for (i = 0; *pc && *pc != ' '; i++)
+            for (i = 0; *pc && *pc != ' ' && i<sizeof(param[0])-1; i++)
                param[nparam][i] = *pc++;
          param[nparam][i] = 0;
          while (*pc == ' ')
@@ -2412,7 +2408,7 @@ int command_loop(char *host_name, char *exp_name, char *cmd, char *start_dir)
             strcpy(user_name, param[1]);
             strcpy(message, param[2]);
          } else if (param[1][0])
-            strcpy(message, param[1]);
+            strlcpy(message, param[1], sizeof(message));
 
          if (!cmd_mode) {
             if (ss_time() - last_msg_time > 300) {
@@ -2656,7 +2652,7 @@ int main(int argc, char *argv[])
 {
    INT status, i, odb_size, size;
    char host_name[HOST_NAME_LENGTH], exp_name[NAME_LENGTH];
-   char cmd[256], dir[100], str[256];
+   char cmd[2000], dir[256], str[2000];
    BOOL debug;
    BOOL corrupted;
    HNDLE hDB;
@@ -2693,14 +2689,14 @@ int main(int argc, char *argv[])
          else if (argv[i][1] == 'h')
             strcpy(host_name, argv[++i]);
          else if (argv[i][1] == 'c') {
-            if (strlen(argv[i]) >= 256) {
-               printf("error: command line too long (>256).\n");
+            if (strlen(argv[i+1]) >= sizeof(cmd)) {
+               printf("error: command line too long (>%d bytes)\n", sizeof(cmd));
                return 0;
             }
-            strcpy(cmd, argv[++i]);
+            strlcpy(cmd, argv[++i], sizeof(cmd));
             cmd_mode = TRUE;
          } else if (argv[i][1] == 'd')
-            strcpy(dir, argv[++i]);
+            strlcpy(dir, argv[++i], sizeof(dir));
          else if (argv[i][1] == 's')
             odb_size = atoi(argv[++i]);
          else {
@@ -2713,7 +2709,7 @@ int main(int argc, char *argv[])
             return 0;
          }
       } else
-         strcpy(host_name, argv[i]);
+         strlcpy(host_name, argv[i], sizeof(host_name));
    }
 #endif
 
