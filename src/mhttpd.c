@@ -4542,13 +4542,9 @@ char *find_odb_tag(char *p, char *path, int *edit, char *type, char *pwd, char *
       if (equal_ustring(str, "/script"))
          in_script = FALSE;
 
-      /* don't interprete any tags in script */
-      if (in_script)
-         continue;
-
       strncpy(str, p, 4);
       str[4] = 0;
-      if (!in_script && equal_ustring(str, "odb ")) {
+      if (equal_ustring(str, "odb ")) {
          ps = p - 1;
          p += 4;
          while (*p && ((*p == ' ') || iscntrl(*p)))
@@ -4572,6 +4568,9 @@ char *find_odb_tag(char *p, char *path, int *edit, char *type, char *pwd, char *
                   *path = 0;
                }
             } else {
+
+               if (in_script)
+                  break;
 
                strncpy(str, p, 5);
                str[5] = 0;
@@ -11094,8 +11093,8 @@ char *mhttpd_js =
 "\n"
 "   request.send(null);\n"
 "\n"
-"   if (request.responseText != 'OK')\n"
-"      alert(request.responseText);\n"
+"   if (request.status != 200 || request.responseText != 'OK') \n"
+"      alert('ODBSet error:\\nPath: '+path+'\\nHTTP Status: '+request.status+'\\nMessage: '+request.responseText+'\\n'+document.location) ;\n"
 "}\n"
 "\n"
 "function ODBGet(path, format, defval, len, type)\n"
