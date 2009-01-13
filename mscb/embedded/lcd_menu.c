@@ -74,7 +74,7 @@ NAME_TABLE code prefix_table[] = {
    {PRFX_MEGA, "M",},
    {PRFX_GIGA, "G",},
    {PRFX_TERA, "T",},
-   {0}
+   {99}
 };
 
 NAME_TABLE code unit_table[] = {
@@ -160,7 +160,7 @@ void display_value(MSCB_INFO_VAR *pvar, void *pd)
 
       /* evaluate prefix */
       if (pvar->prefix) {
-         for (i = 0; prefix_table[i].id; i++)
+         for (i = 0; prefix_table[i].id != 99; i++)
             if (prefix_table[i].id == pvar->prefix)
                break;
          if (prefix_table[i].id)
