@@ -263,7 +263,7 @@ void print_channel_str(int index, MSCB_INFO_VAR * info_chn, void *pdata, int ver
 
    sprintf(line + strlen(line), " ");
 
-   /* evaluate prfix */
+   /* evaluate prefix */
    if (info_chn->prefix) {
       for (i = 0; prefix_table[i].id != 99; i++)
          if (prefix_table[i].id == info_chn->prefix)
