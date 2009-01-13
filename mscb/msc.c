@@ -55,7 +55,7 @@ NAME_TABLE prefix_table[] = {
    {PRFX_MEGA, "mega",},
    {PRFX_GIGA, "giga",},
    {PRFX_TERA, "tera",},
-   {0}
+   {99}
 };
 
 NAME_TABLE unit_table[] = {
@@ -265,7 +265,7 @@ void print_channel_str(int index, MSCB_INFO_VAR * info_chn, void *pdata, int ver
 
    /* evaluate prfix */
    if (info_chn->prefix) {
-      for (i = 0; prefix_table[i].id; i++)
+      for (i = 0; prefix_table[i].id != 99; i++)
          if (prefix_table[i].id == info_chn->prefix)
             break;
       if (prefix_table[i].id)
