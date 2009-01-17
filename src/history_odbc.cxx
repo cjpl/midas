@@ -13,6 +13,7 @@
 #include "midas.h"
 #include "history_odbc.h"
 
+#include <vector>
 #include <string>
 
 std::string tagName2columnName(const char* s)
@@ -46,218 +47,6 @@ int hs_debug_odbc(int debug)
   gTrace = debug;
   return old;
 }
-
-#if 0
-int hs_read_odbc(uint32_t event_id, time_t start_time, time_t end_time,
-                 time_t interval, char *tag_name, int var_index,
-                 uint32_t * time_buffer, uint32_t * tbsize,
-                 void *data_buffer, uint32_t * dbsize,
-                 uint32_t * type, uint32_t * n)
-{
-  SQLHENV env;
-  SQLHDBC dbc;
-  SQLHSTMT stmt;
-  SQLRETURN ret; /* ODBC API return status */
-  SQLSMALLINT columns; /* number of columns in result-set */
-  char cname[1024];
-  SQLCHAR cmd[1024];
-  int row = 0;
-  int status;
-  double *dptr;
-
-  /* Allocate an environment handle */
-  status = SQLAllocHandle(SQL_HANDLE_ENV, SQL_NULL_HANDLE, &env);
-  if (!SQL_SUCCEEDED(status))
-    {
-      printf("SQLAllocHandle(SQL_HANDLE_ENV) error %d\n", status);
-      exit(1);
-    }
-
-  /* We want ODBC 3 support */
-  status = SQLSetEnvAttr(env, SQL_ATTR_ODBC_VERSION, (void *) SQL_OV_ODBC3, 0);
-  if (!SQL_SUCCEEDED(status))
-    {
-      printf("SQLSetEnvAttr error %d\n", status);
-      exit(1);
-    }
-
-  /* Allocate a connection handle */
-  status = SQLAllocHandle(SQL_HANDLE_DBC, env, &dbc);
-  if (!SQL_SUCCEEDED(status))
-    {
-      printf("SQLAllocHandle(SQL_HANDLE_DBC) error %d\n", status);
-      exit(1);
-    }
-
-  /* Connect to the DSN mydsn */
-  /* You will need to change mydsn to one you have created and tested */
-  //SQLDriverConnect(dbc, NULL, "DSN=mysqlDSN;", SQL_NTS,
-  //                 NULL, 0, NULL, SQL_DRIVER_COMPLETE);
-  status = SQLConnect(dbc, (SQLCHAR*) gOdbcDsn, SQL_NTS,
-                      (SQLCHAR*) "t2kmysqlwrite", SQL_NTS,
-                      (SQLCHAR*) "neutwrite_280", SQL_NTS);
-  //if ((status != SQL_SUCCESS) && (status != SQL_SUCCESS_WITH_INFO))
-  if (!SQL_SUCCEEDED(status))
-    {
-      SQLINTEGER		 V_OD_err;
-      SQLSMALLINT		 V_OD_mlen;
-      SQLCHAR 		 V_OD_stat[10]; // Status SQL
-      SQLCHAR            V_OD_msg[200];
-
-      printf("SQLConnect() error %d\n", status);
-      SQLGetDiagRec(SQL_HANDLE_DBC, dbc,1, 
-                    V_OD_stat, &V_OD_err,V_OD_msg,100,&V_OD_mlen);
-      printf("%s (%d)\n",V_OD_msg,V_OD_err);
-      return -HS_SUCCESS;
-    }
-
-  /* Allocate a statement handle */
-  status = SQLAllocHandle(SQL_HANDLE_STMT, dbc, &stmt);
-  if (!SQL_SUCCEEDED(status))
-    {
-      printf("SQLAllocHandle(SQL_HANDLE_STMT) error %d\n", status);
-      exit(1);
-    }
-
-  if (0)
-    {
-      /* Retrieve a list of tables */
-      status = SQLTables(stmt, NULL, 0, NULL, 0, NULL, 0, (SQLCHAR*)"TABLE", SQL_NTS);
-      if (!SQL_SUCCEEDED(status))
-        {
-          printf("SQLTables() error %d\n", status);
-          exit(1);
-        }
-      
-      /* How many columns are there */
-      status = SQLNumResultCols(stmt, &columns);
-      if (!SQL_SUCCEEDED(status))
-        {
-          printf("SQLNumResultCols() error %d\n", status);
-          exit(1);
-        }
-      
-      /* Loop through the rows in the result-set */
-      while (SQL_SUCCEEDED(ret = SQLFetch(stmt))) {
-        SQLUSMALLINT i;
-        printf("Row %d\n", row++);
-        /* Loop through the columns */
-        for (i = 1; i <= columns; i++) {
-          SQLINTEGER indicator;
-          char buf[512];
-          /* retrieve column data as a string */
-          ret = SQLGetData(stmt, i, SQL_C_CHAR,
-                           buf, sizeof(buf), &indicator);
-          if (SQL_SUCCEEDED(ret)) {
-            /* Handle null columns */
-            if (indicator == SQL_NULL_DATA) strcpy(buf, "NULL");
-            printf("  Column %u : %s\n", i, buf);
-          }
-        }
-      }
-    }
-
-  tagName2columnName(tag_name, cname);
-
-  sprintf((char*)cmd, "SELECT _i_time, %s FROM event%d;", cname, event_id);
-
-  printf("SQL Query: \'%s\'\n", cmd);
-
-  status = SQLExecDirect(stmt,cmd,SQL_NTS);
-  
-  if (!SQL_SUCCEEDED(status))
-    {
-      int i;
-      printf("SQLExecDirect error %d: %s\n", status, cmd);
-      
-      for (i=1; ; i++)
-        {
-            SQLCHAR 		 state[10]; // Status SQL
-            SQLINTEGER		 error;
-            SQLCHAR              message[1024];
-            SQLSMALLINT		 mlen;
-            
-            status = SQLGetDiagRec(SQL_HANDLE_STMT,
-                                   stmt,
-                                   i,
-                                   state,
-                                   &error,
-                                   message,
-                                   sizeof(message),
-                                   &mlen);
-
-            if (!SQL_SUCCEEDED(status))
-              break;
-
-            printf("SQLGetDiagRec: state: \'%s\', message: \'%s\', native error: %d\n", state, message, error);
-        }
-
-      exit(1);
-    }
-
-  /* How many columns are there */
-  status = SQLNumResultCols(stmt, &columns);
-  if (!SQL_SUCCEEDED(status))
-    {
-      printf("SQLNumResultCols() error %d\n", status);
-      exit(1);
-    }
-
-  *n = 0;
-  *type = TID_DOUBLE;
-  dptr = (double*)data_buffer;
-  
-  /* Loop through the rows in the result-set */
-  row = 0;
-  while (SQL_SUCCEEDED(ret = SQLFetch(stmt))) {
-    SQLCHAR col1[256];
-    SQLCHAR col2[256];
-    SQLINTEGER indicator1, indicator2;
-    int t = 0;
-    double v = 0;
-
-    status = SQLGetData(stmt, 1, SQL_C_CHAR, col1, sizeof(col1), &indicator1);
-    if (SQL_SUCCEEDED(status)) {
-      /* Handle null columns */
-      if (indicator1 == SQL_NULL_DATA) t = 9999;
-      else t = atoi((char*)col1);
-    }
-
-    status = SQLGetData(stmt, 2, SQL_C_CHAR, col2, sizeof(col2), &indicator2);
-    if (SQL_SUCCEEDED(status)) {
-      /* Handle null columns */
-      if (indicator2 == SQL_NULL_DATA) v = 9999;
-      else v = atof((char*)col2);
-    }
-
-    row++;
-
-    if (t < start_time || t > end_time)
-      continue;
-
-    printf("Row %d, columns [%s] [%s], time %d, value %f\n", row, col1, col2, t, v);
-
-    time_buffer[*n] = t;
-    dptr[*n] = v;
-    (*n)++;
-
-    if ((*n) * sizeof(DWORD) >= *tbsize || (*n) * sizeof(double) >= *dbsize) {
-      *dbsize = (*n) * sizeof(double);
-      *tbsize = (*n) * sizeof(DWORD);
-      return HS_TRUNCATED;
-    }
-
-
-    //exit(123);
-  }
-  //exit(1);
-
-  *dbsize = (*n) * sizeof(double);
-  *tbsize = (*n) * sizeof(DWORD);
-
-  return HS_SUCCESS;
-}
-#endif
 
 ////////////////////////////////////////
 //              SQL Stuff             //
@@ -360,8 +149,12 @@ public:
   virtual int Disconnect() = 0;
   virtual bool IsConnected() = 0;
   virtual int Exec(const char* sql) = 0;
+  virtual int GetNumRows() = 0;
   virtual int GetNumColumns() = 0;
   virtual int Fetch() = 0;
+  virtual int Done() = 0;
+  virtual std::vector<std::string> ListTables() = 0;
+  virtual std::vector<std::string> ListColumns(const char* table) = 0;
   virtual const char* GetColumn(int icol) = 0;
   virtual ~SqlBase() { }; // virtual dtor
 };
@@ -415,209 +208,355 @@ public:
     fp = NULL;
   }
 
+  int GetNumRows() { return 0; }
   int GetNumColumns() { return 0; }
   int Fetch() { return 0; }
+  int Done() { return 0; }
+  std::vector<std::string> ListTables() { std::vector<std::string> list; return list; };
+  std::vector<std::string> ListColumns(const char* table) { std::vector<std::string> list; return list; };
   const char* GetColumn(int icol) { return NULL; };
 };
+
+static char* gAlarmName = "unknown";
 
 class SqlODBC: public SqlBase
 {
 public:
+   bool fIsConnected;
 
-  bool fIsConnected;
+   SQLHENV  fEnv;
+   SQLHDBC  fDB;
+   SQLHSTMT fStmt;
 
-  SQLHENV  fEnv;
-  SQLHDBC  fDB;
-  SQLHSTMT fStmt;
+   SqlODBC(); // ctor
+   ~SqlODBC(); // dtor
 
-  SqlODBC() // ctor
-  {
-    fIsConnected = false;
-  }
+   int Connect(const char* dsn);
+   int Disconnect();
+   bool IsConnected();
 
-  int Connect(const char* dsn)
-  {
-    if (fIsConnected)
+   std::vector<std::string> ListTables();
+   std::vector<std::string> ListColumns(const char* table);
+
+   int Exec(const char* sql);
+
+   int GetNumRows();
+   int GetNumColumns();
+   int Fetch();
+   const char* GetColumn(int icol);
+   int Done();
+
+protected:
+   void ReportErrors(const char* from, const char* sqlfunc, int status);
+};
+
+SqlODBC::SqlODBC() // ctor
+{
+   fIsConnected = false;
+   gAlarmName = "Logger";
+}
+
+SqlODBC::~SqlODBC() // dtor
+{
+   Disconnect();
+}
+
+int SqlODBC::Connect(const char* dsn)
+{
+   if (fIsConnected)
       Disconnect();
 
-    int status = SQLAllocHandle(SQL_HANDLE_ENV, SQL_NULL_HANDLE, &fEnv);
+   int status = SQLAllocHandle(SQL_HANDLE_ENV, SQL_NULL_HANDLE, &fEnv);
 
-    if (!SQL_SUCCEEDED(status))
+   if (!SQL_SUCCEEDED(status))
       {
-        cm_msg(MERROR, "SqlODBC::Connect", "SQLAllocHandle(SQL_HANDLE_ENV) error %d", status);
-        return -1;
+         cm_msg(MERROR, "SqlODBC::Connect", "SQLAllocHandle(SQL_HANDLE_ENV) error %d", status);
+         return -1;
       }
 
-    status = SQLSetEnvAttr(fEnv,
-                           SQL_ATTR_ODBC_VERSION, 
-                           (void*)SQL_OV_ODBC2,
-                           0); 
-    if (!SQL_SUCCEEDED(status))
+   status = SQLSetEnvAttr(fEnv,
+                          SQL_ATTR_ODBC_VERSION, 
+                          (void*)SQL_OV_ODBC2,
+                          0); 
+   if (!SQL_SUCCEEDED(status))
       {
-        cm_msg(MERROR, "SqlODBC::Connect", "SQLSetEnvAttr() error %d", status);
-        SQLFreeHandle(SQL_HANDLE_ENV, fEnv);
-        return -1;
+         cm_msg(MERROR, "SqlODBC::Connect", "SQLSetEnvAttr() error %d", status);
+         SQLFreeHandle(SQL_HANDLE_ENV, fEnv);
+         return -1;
       }
 
-    // 2. allocate connection handle, set timeout
+   // 2. allocate connection handle, set timeout
 
-    status = SQLAllocHandle(SQL_HANDLE_DBC, fEnv, &fDB); 
-    if (!SQL_SUCCEEDED(status))
+   status = SQLAllocHandle(SQL_HANDLE_DBC, fEnv, &fDB); 
+   if (!SQL_SUCCEEDED(status))
       {
-        cm_msg(MERROR, "SqlODBC::Connect", "SQLAllocHandle(SQL_HANDLE_DBC) error %d", status);
-        SQLFreeHandle(SQL_HANDLE_ENV, fEnv);
-        exit(0);
+         cm_msg(MERROR, "SqlODBC::Connect", "SQLAllocHandle(SQL_HANDLE_DBC) error %d", status);
+         SQLFreeHandle(SQL_HANDLE_ENV, fEnv);
+         exit(0);
       }
 
-    SQLSetConnectAttr(fDB, SQL_LOGIN_TIMEOUT, (SQLPOINTER *)5, 0);
+   SQLSetConnectAttr(fDB, SQL_LOGIN_TIMEOUT, (SQLPOINTER *)5, 0);
 
-    // 3. Connect to the datasource "web" 
+   // 3. Connect to the datasource "web" 
 
-    if (0)
+   if (0)
       {
-        // connect to PgSQL database
+         // connect to PgSQL database
 
-        sql_type = sql_type_pgsql;
-        status = SQLConnect(fDB, (SQLCHAR*) dsn, SQL_NTS,
-                            (SQLCHAR*) "xxx", SQL_NTS,
-                            (SQLCHAR*) "", SQL_NTS);
+         sql_type = sql_type_pgsql;
+         status = SQLConnect(fDB, (SQLCHAR*) dsn, SQL_NTS,
+                             (SQLCHAR*) "xxx", SQL_NTS,
+                             (SQLCHAR*) "", SQL_NTS);
       }
 
-    if (1)
+   if (1)
       {
-        // connect to MySQL database
+         // connect to MySQL database
 
-        sql_type = sql_type_mysql;
-        status = SQLConnect(fDB, (SQLCHAR*) dsn, SQL_NTS,
-                            (SQLCHAR*) NULL, SQL_NTS,
-                            (SQLCHAR*) NULL, SQL_NTS);
+         sql_type = sql_type_mysql;
+         status = SQLConnect(fDB, (SQLCHAR*) dsn, SQL_NTS,
+                             (SQLCHAR*) NULL, SQL_NTS,
+                             (SQLCHAR*) NULL, SQL_NTS);
       }
 
-    if ((status != SQL_SUCCESS) && (status != SQL_SUCCESS_WITH_INFO))
+   if ((status != SQL_SUCCESS) && (status != SQL_SUCCESS_WITH_INFO))
       {
-        SQLINTEGER    V_OD_err;
-        SQLSMALLINT   V_OD_mlen;
-        SQLCHAR       V_OD_stat[10]; // Status SQL
-        SQLCHAR       V_OD_msg[200];
+         SQLINTEGER    V_OD_err;
+         SQLSMALLINT   V_OD_mlen;
+         SQLCHAR       V_OD_stat[10]; // Status SQL
+         SQLCHAR       V_OD_msg[200];
 
-        SQLGetDiagRec(SQL_HANDLE_DBC, fDB, 1, V_OD_stat, &V_OD_err, V_OD_msg, 100, &V_OD_mlen);
-        cm_msg(MERROR, "SqlODBC::Connect", "SQLConnect() error %d, %s (%d)", status, V_OD_msg,V_OD_err);
-        SQLFreeHandle(SQL_HANDLE_ENV, fEnv);
-        return -1;
+         SQLGetDiagRec(SQL_HANDLE_DBC, fDB, 1, V_OD_stat, &V_OD_err, V_OD_msg, 100, &V_OD_mlen);
+         cm_msg(MERROR, "SqlODBC::Connect", "SQLConnect() error %d, %s (%d)", status, V_OD_msg,V_OD_err);
+         SQLFreeHandle(SQL_HANDLE_ENV, fEnv);
+         return -1;
       }
 
-    SQLAllocHandle(SQL_HANDLE_STMT, fDB, &fStmt);
+   SQLAllocHandle(SQL_HANDLE_STMT, fDB, &fStmt);
 
-    cm_msg(MINFO, "SqlODBC::Connect", "Connected to %s", dsn);
+   cm_msg(MINFO, "SqlODBC::Connect", "Connected to %s", dsn);
 
-    al_reset_alarm("Logger_ODBC");
+   al_reset_alarm(gAlarmName);
 
-    fIsConnected = true;
+   fIsConnected = true;
 
-    return 0;
-  }
-  
-  bool IsConnected()
-  {
-     return fIsConnected;
-  }
+   return 0;
+}
 
-  int Exec(const char* sql)
-  {
-    if (!fIsConnected)
-      return -1;
-    
-    if (gTrace)
-      printf("SqlODBC::Exec: %s\n", sql);
-
-    int status = SQLExecDirect(fStmt,(SQLCHAR*)sql,SQL_NTS);
-
-    if (!SQL_SUCCEEDED(status))
-      {
-        //cm_msg(MERROR, "SqlODBC::Exec", "SQLExecDirect() error %d", status);
-
-        if (gTrace)
-          printf("SqlODBC::Exec: SQLExecDirect() error %d: SQL command: \"%s\"\n", status, sql);
-
-        for (int i=1; ; i++)
-          {
-            SQLCHAR 		 state[10]; // Status SQL
-            SQLINTEGER		 error;
-            SQLCHAR              message[1024];
-            SQLSMALLINT		 mlen;
-            
-            status = SQLGetDiagRec(SQL_HANDLE_STMT,
-                                   fStmt,
-                                   i,
-                                   state,
-                                   &error,
-                                   message,
-                                   sizeof(message),
-                                   &mlen);
-
-            if (!SQL_SUCCEEDED(status))
-	    {
-	        if (status != 100)
-	    	   cm_msg(MERROR, "SqlODBC::Exec", "SQLGetDiagRec() error %d", status);
-              	break;
-	    }
-	      
-	    if ((error != 1060) && (error != 1050))
-            	cm_msg(MERROR, "SqlODBC::Exec", "SQLGetDiagRec: state: \'%s\', message: \'%s\', native error: %d", state, message, error);
-          }
-
-        return -1;
-      }
-
-    return 0;
-  }
-
-  int Disconnect()
-  {
-    if (!fIsConnected)
+int SqlODBC::Disconnect()
+{
+   if (!fIsConnected)
       return 0;
 
-    SQLDisconnect(fDB);
+   SQLDisconnect(fDB);
 
-    SQLFreeHandle(SQL_HANDLE_DBC,  fDB);
-    SQLFreeHandle(SQL_HANDLE_STMT, fStmt);
-    SQLFreeHandle(SQL_HANDLE_ENV,  fEnv);
+   SQLFreeHandle(SQL_HANDLE_DBC,  fDB);
+   SQLFreeHandle(SQL_HANDLE_STMT, fStmt);
+   SQLFreeHandle(SQL_HANDLE_ENV,  fEnv);
 
-    fIsConnected = false;
+   fIsConnected = false;
 
-    char buf[256];
-    sprintf(buf, "Logger disconnected from history database");
-    al_trigger_alarm("Logger_ODBC", buf, "Alarm", "", AT_INTERNAL);
+   char buf[256];
+   sprintf(buf, "%s lost connection to the history database", gAlarmName);
+   al_trigger_alarm(gAlarmName, buf, "Alarm", "", AT_INTERNAL);
 
-    return 0;
-  }
+   return 0;
+}
 
-  ~SqlODBC() // dtor
-  {
-    Disconnect();
-  }
+bool SqlODBC::IsConnected()
+{
+   return fIsConnected;
+}
 
-  int GetNumColumns();
-  int Fetch();
-  const char* GetColumn(int icol);
-};
+void SqlODBC::ReportErrors(const char* from, const char* sqlfunc, int status)
+{
+   if (gTrace)
+      printf("%s: %s error %d\n", from, sqlfunc, status);
+
+   for (int i=1; ; i++) {
+      SQLCHAR 		 state[10]; // Status SQL
+      SQLINTEGER		 error;
+      SQLCHAR              message[1024];
+      SQLSMALLINT		 mlen;
+      
+      status = SQLGetDiagRec(SQL_HANDLE_STMT,
+                             fStmt,
+                             i,
+                             state,
+                             &error,
+                             message,
+                             sizeof(message),
+                             &mlen);
+      
+      if (status == SQL_NO_DATA)
+         break;
+
+      if (!SQL_SUCCEEDED(status)) {
+         cm_msg(MERROR, "SqlODBC::ReportErrors", "SQLGetDiagRec() error %d", status);
+         break;
+      }
+      
+      if ((error != 1060) && (error != 1050)) {
+         if (gTrace)
+            printf("%s: %s error: state: \'%s\', message: \'%s\', native error: %d\n", from, sqlfunc, state, message, error);
+         cm_msg(MERROR, from, "%s error: state: \'%s\', message: \'%s\', native error: %d", sqlfunc, state, message, error);
+      }
+   }
+}
+
+std::vector<std::string> SqlODBC::ListTables()
+{
+   std::vector<std::string> list;
+
+   if (!fIsConnected)
+      return list;
+
+   /* Retrieve a list of tables */
+   int status = SQLTables(fStmt, NULL, 0, NULL, 0, NULL, 0, (SQLCHAR*)"TABLE", SQL_NTS);
+   if (!SQL_SUCCEEDED(status)) {
+      ReportErrors("SqlODBC::ListTables", "SQLTables()", status);
+      return list;
+   }
+
+   int ncols = GetNumColumns();
+   int nrows = GetNumRows();
+
+   if (ncols <= 0 || nrows <= 0) {
+      cm_msg(MERROR, "SqlODBC::ListTables", "Error: SQLTables() returned unexpected number of columns %d or number of rows %d, status %d", ncols, nrows, status);
+   }
+
+   int row = 0;
+   while (Fetch()) {
+      if (0) {
+         printf("row %d: ", row);
+         for (int i=1; i<=ncols; i++) {
+            const char* s = GetColumn(i);
+            printf("[%s]", s);
+         }
+         printf("\n");
+         row++;
+      }
+
+      list.push_back(GetColumn(3));
+   }
+
+   Done();
+
+   return list;
+}
+
+std::vector<std::string> SqlODBC::ListColumns(const char* table)
+{
+   std::vector<std::string> list;
+
+   if (!fIsConnected)
+      return list;
+
+   /* Retrieve a list of tables */
+   int status = SQLColumns(fStmt, NULL, 0, NULL, 0, (SQLCHAR*)table, SQL_NTS, NULL, 0);
+   if (!SQL_SUCCEEDED(status)) {
+      ReportErrors("SqlODBC::ListColumns", "SQLColumns()", status);
+      return list;
+   }
+
+   int ncols = GetNumColumns();
+   int nrows = GetNumRows(); // nrows seems to be always "-1"
+
+   if (ncols <= 0 /*|| nrows <= 0*/) {
+      cm_msg(MERROR, "SqlODBC::ListColumns", "Error: SQLColumns(\'%s\') returned unexpected number of columns %d or number of rows %d, status %d", table, ncols, nrows, status);
+   }
+
+   int row = 0;
+   while (Fetch()) {
+      if (0) {
+         printf("row %d: ", row);
+         for (int i=1; i<=ncols; i++) {
+            const char* s = GetColumn(i);
+            printf("[%s]", s);
+         }
+         printf("\n");
+         row++;
+      }
+
+      list.push_back(GetColumn(4));
+   }
+
+   Done();
+
+   return list;
+}
+
+int SqlODBC::Exec(const char* sql)
+{
+   if (!fIsConnected)
+      return -1;
+    
+   int status;
+
+   if (gTrace)
+      printf("SqlODBC::Exec: %s\n", sql);
+
+   status = SQLExecDirect(fStmt,(SQLCHAR*)sql,SQL_NTS);
+
+   if (!SQL_SUCCEEDED(status))
+      {
+         if (gTrace)
+            printf("SqlODBC::Exec: SQLExecDirect() error %d: SQL command: \"%s\"\n", status, sql);
+
+         ReportErrors("SqlODBC::Exec", "SQLExecDirect()", status);
+         return -1;
+      }
+
+   return 0;
+}
+
+int SqlODBC::GetNumRows()
+{
+   SQLINTEGER nrows = 0;
+   /* How many rows are there */
+   int status = SQLRowCount(fStmt, &nrows);
+   if (!SQL_SUCCEEDED(status)) {
+      ReportErrors("SqlODBC::GetNumRow", "SQLRowCount()", status);
+      return -1;
+   }
+   return nrows;
+}
 
 int SqlODBC::GetNumColumns()
 {
-  SQLSMALLINT ncols = 0;
-  /* How many columns are there */
-  int status = SQLNumResultCols(fStmt, &ncols);
-  if (!SQL_SUCCEEDED(status))
-    {
-      cm_msg(MERROR, "SqlODBC::GetNumColumns", "SQLNumResultCols() error %d", status);
+   SQLSMALLINT ncols = 0;
+   /* How many columns are there */
+   int status = SQLNumResultCols(fStmt, &ncols);
+   if (!SQL_SUCCEEDED(status)) {
+      ReportErrors("SqlODBC::GetNumColumns", "SQLNumResultCols()", status);
       return -1;
-    }
-  return ncols;
+   }
+   return ncols;
 }
 
 int SqlODBC::Fetch()
 {
-  return SQL_SUCCEEDED(SQLFetch(fStmt));
+   int status = SQLFetch(fStmt);
+
+   if (status == SQL_NO_DATA)
+      return 0;
+
+   if (!SQL_SUCCEEDED(status)) {
+      ReportErrors("SqlODBC::Fetch", "SQLFetch()", status);
+      return -1;
+   }
+
+   return 1;
+}
+
+int SqlODBC::Done()
+{
+   int status = SQLCloseCursor(fStmt);
+   if (!SQL_SUCCEEDED(status)) {
+      ReportErrors("SqlODBC::Done", "SQLCloseCursor()", status);
+      return -1;
+   }
+   return 0;
 }
 
 const char* SqlODBC::GetColumn(int icol)
@@ -834,6 +773,9 @@ int hs_connect_odbc(const char* odbc_dsn)
 {
   int status;
 
+  if (strcmp(gOdbcDsn, odbc_dsn) == 0)
+    return HS_SUCCESS;
+
   if (sqlx)
     hs_disconnect_odbc();
 
@@ -860,8 +802,16 @@ int hs_connect_odbc(const char* odbc_dsn)
 
 int hs_disconnect_odbc()
 {
-  if (gTrace)
-    printf("hs_disconnect_odbc!\n");
+   if (gTrace)
+      printf("hs_disconnect_odbc!\n");
+
+   if (sqlx) {
+      sqlx->Disconnect();
+      delete sqlx;
+   }
+
+   sqlx = NULL;
+   gOdbcDsn[0] = 0;
 
   return HS_SUCCESS;
 }
@@ -874,123 +824,424 @@ static std::vector<Event*> events;
 
 Event* FindEvent(const char* event_name)
 {
-  int ne = events.size();
-  for (int i=0; i<ne; i++)
-    if (strcmp(events[i]->event_name, event_name)==0)
-      return events[i];
-  assert(!"Attempt to write an undefined event!");
-  // NOT REACHED
-  return NULL;
+   int ne = events.size();
+   for (int i=0; i<ne; i++)
+      if (strcmp(events[i]->event_name, event_name)==0)
+         return events[i];
+   assert(!"Attempt to write an undefined event!");
+   // NOT REACHED
+   return NULL;
 }
 
 int hs_define_event_odbc(const char* event_name, const TAG tags[], int tags_size)
 {
-  assert(sql);
+   assert(sql);
 
-  int ntags = tags_size/sizeof(TAG);
+   int ntags = tags_size/sizeof(TAG);
 
-  if (gTrace)
-    printf("define event [%s] with %d tags\n", event_name, ntags);
+   if (gTrace)
+      printf("define event [%s] with %d tags\n", event_name, ntags);
 
-  Event* e = new Event();
+   Event* e = new Event();
 
-  e->event_name = strdup(event_name);
-  e->table_name = strdup(tagName2columnName(event_name).c_str());
-  e->ntags = ntags;
-  e->tags = new Tag[ntags];
+   e->event_name = strdup(event_name);
+   e->table_name = strdup(tagName2columnName(event_name).c_str());
+   e->ntags = ntags;
+   e->tags = new Tag[ntags];
 
-  int offset = 0;
-  for (int i=0; i<ntags; i++)
-    {
-      e->tags[i].column_name = strdup(tagName2columnName(tags[i].name).c_str());
-      e->tags[i].offset = offset;
-      e->tags[i].tag = tags[i];
-      int size = tags[i].n_data * tid_size[tags[i].type];
-      offset += size;
-    }
+   int offset = 0;
+   for (int i=0; i<ntags; i++)
+      {
+         e->tags[i].column_name = strdup(tagName2columnName(tags[i].name).c_str());
+         e->tags[i].offset = offset;
+         e->tags[i].tag = tags[i];
+         int size = tags[i].n_data * tid_size[tags[i].type];
+         offset += size;
+      }
 
-  sql->CreateTable(e);
+   sql->CreateTable(e);
 
-  events.push_back(e);
+   events.push_back(e);
 
-  return HS_SUCCESS;
+   return HS_SUCCESS;
 }
 
 int hs_write_event_odbc(const char*  event_name, time_t timestamp, const char* buffer, int buffer_size)
 {
-  if (gTrace)
-    printf("write event [%s] size %d\n", event_name, buffer_size);
-  assert(sql);
-  sql->Write(FindEvent(event_name), timestamp, buffer, buffer_size);
-  return HS_SUCCESS;
+   if (gTrace)
+      printf("write event [%s] size %d\n", event_name, buffer_size);
+   assert(sql);
+   sql->Write(FindEvent(event_name), timestamp, buffer, buffer_size);
+   return HS_SUCCESS;
+}
+
+static char* encode(const std::vector<std::string>& list)
+{
+   int len = 0;
+   for (unsigned int i=0; i<list.size(); i++) {
+      len += 1 + list[i].length();
+   }
+   len += 1;
+
+   char *s = (char*)malloc(len);
+   assert(s!=NULL);
+
+   int pos = 0;
+   for (unsigned int i=0; i<list.size(); i++) {
+      const char* eee = list[i].c_str();
+      int   lll = strlen(eee);
+      memcpy(s+pos, eee, lll);
+      s[pos+lll] = 0;
+      pos += lll + 1;
+   }
+   s[pos] = 0;
+   pos++;
+
+   assert(pos == len);
+
+   return s;
+}
+
+int hs_enum_events_odbc(int *num_events, char**event_names)
+{
+   assert(sqlx);
+
+   *num_events = 0;
+   *event_names = NULL;
+
+   std::vector<std::string> tables = sqlx->ListTables();
+
+   std::vector<std::string> events;
+
+   for (unsigned int i=0; i<tables.size(); i++) {
+      std::string ename = tables[i];
+      int pos = ename.find("_");
+      if (pos > 0)
+         ename = ename.substr(0, pos);
+
+      bool found = false;
+      for (unsigned int j=0; j<events.size(); j++) {
+         if (events[j] == ename) {
+            found = true;
+            break;
+         }
+      }
+
+      if (!found)
+         events.push_back(ename);
+   }
+
+#if 0
+   int len = 0;
+   for (unsigned int i=0; i<events.size(); i++) {
+      len += 1 + events[i].length();
+   }
+   len += 1;
+
+   char *s = (char*)malloc(len);
+   int pos = 0;
+   for (unsigned int i=0; i<events.size(); i++) {
+      const char* eee = events[i].c_str();
+      int   lll = strlen(eee);
+      memcpy(s+pos, eee, lll);
+      s[pos+lll] = 0;
+      pos += lll + 1;
+   }
+   s[pos] = 0;
+   pos++;
+
+   assert(pos == len);
+#endif
+
+   *num_events  = events.size();
+   *event_names = encode(events);
+      
+   return HS_SUCCESS;
+}
+
+int hs_enum_vars_odbc(const char* event_name, int *num_vars, char** var_names)
+{
+   assert(sqlx);
+
+   *num_vars = 0;
+   *var_names = NULL;
+
+   std::vector<std::string> tables = sqlx->ListTables();
+   std::vector<std::string> vars;
+
+   std::string ename = tagName2columnName(event_name);
+
+   int len = ename.length();
+   for (unsigned int i=0; i<tables.size(); i++) {
+      const char* t = tables[i].c_str();
+      const char* s = strstr(t, ename.c_str());
+
+      //printf("ename [%s], table [%s], t: %p, s: %p, char: [%c]\n", ename.c_str(), tables[i].c_str(), t, s, t[len]);
+      
+      if (s==t && (t[len]=='_'||t[len]==0)) {
+         
+         std::vector<std::string> columns = sqlx->ListColumns(tables[i].c_str());
+         
+         for (unsigned int j=0; j<columns.size(); j++) {
+            if (columns[j] == "_t_time")
+               continue;
+            if (columns[j] == "_i_time")
+               continue;
+            //printf("column %s\n", columns[j].c_str());
+            vars.push_back(columns[j]);
+         }
+      }
+   }
+
+#if 0
+   char* p = (char*)malloc(vars.size()*NAME_LENGTH);
+
+   for (unsigned int i=0; i<vars.size(); i++) {
+      strlcpy(p + i*NAME_LENGTH, vars[i].c_str(), NAME_LENGTH);
+   }
+#endif
+      
+   *num_vars = vars.size();
+   *var_names = encode(vars);
+
+   return HS_SUCCESS;
+}
+
+int hs_get_events_odbc(int *num_events, char**event_names)
+{
+   assert(sqlx);
+
+   *num_events = 0;
+   *event_names = NULL;
+
+   std::vector<std::string> tables = sqlx->ListTables();
+
+   std::vector<std::string> events;
+
+   for (unsigned int i=0; i<tables.size(); i++) {
+      std::string ename = tables[i];
+      events.push_back(ename);
+   }
+
+   *num_events  = events.size();
+   *event_names = encode(events);
+      
+   return HS_SUCCESS;
+}
+
+int hs_get_tags_odbc(const char* event_name, int *n_tags, TAG **tags)
+{
+   assert(sqlx);
+
+   *n_tags = 0;
+   *tags = NULL;
+
+   std::string ename = tagName2columnName(event_name);
+
+   std::vector<std::string> columns = sqlx->ListColumns(ename.c_str());
+
+   TAG* t = (TAG*)malloc(sizeof(TAG)*columns.size());
+   assert(t);
+
+   int n=0;
+   for (unsigned int j=0; j<columns.size(); j++) {
+      if (columns[j] == "_t_time")
+         continue;
+      if (columns[j] == "_i_time")
+         continue;
+      STRLCPY(t[n].name, columns[j].c_str());
+      t[n].type = TID_DOUBLE;
+      t[n].n_data = 1;
+      n++;
+   }
+
+   *n_tags = n;
+   *tags = t;
+
+   return HS_SUCCESS;
 }
 
 int hs_read_odbc(time_t start_time, time_t end_time, time_t interval,
-                 const char* event_name, const char *tag_name, int var_index,
-                 uint32_t * time_buffer, uint32_t * tbsize,
-                 void *data_buffer, uint32_t * dbsize,
-                 uint32_t * type, uint32_t * n)
+                 const char* event_name, const char* tag_name, int var_index,
+                 int *num_entries,
+                 time_t** time_buffer, double**data_buffer)
 {
-  assert(sqlx);
+   assert(sqlx);
 
-  std::string ename = tagName2columnName(event_name);
-  std::string tname = tagName2columnName(tag_name);
+   gAlarmName = "mhttpd_history";
 
-  char cmd[256];
-  sprintf(cmd, "SELECT _i_time, %s FROM %s;", tname.c_str(), ename.c_str());
+   *num_entries = 0;
+   *time_buffer = NULL;
+   *data_buffer = NULL;
 
-  int status = sqlx->Exec(cmd);
+   //printf("start %d, end %d, dt %d, interval %d, max points %d\n", start_time, end_time, end_time-start_time, interval, (end_time-start_time)/interval);
 
-  if (status)
-    return HS_FILE_ERROR;
+   std::string ename = tagName2columnName(event_name);
+   std::string tname = tagName2columnName(tag_name);
 
-  int ncols = sqlx->GetNumColumns();
+   int status = 1;
 
-  if (ncols < 1)
-    return HS_FILE_ERROR;
+   std::vector<std::string> tables = sqlx->ListTables();
 
-  *n = 0;
-  *type = TID_DOUBLE;
+   if (tables.size() <= 1) {
+        cm_msg(MERROR, "hs_read_odbc", "ListTables() returned nothing, trying to reconnect to the database");
 
-  double *dptr = (double*)data_buffer;
+        std::string dsn = gOdbcDsn;
+        sqlx->Disconnect();
+        sqlx->Connect(dsn.c_str());
+        if (!sqlx->IsConnected()) {
+           return HS_FILE_ERROR;
+        }
+
+        tables = sqlx->ListTables();
+   }
+
+   int len = strlen(event_name);
+   for (unsigned int i=0; i<tables.size(); i++) {
+      //printf("table %s\n", tables[i].c_str());
+
+      const char* t = tables[i].c_str();
+      const char* s = strstr(t, ename.c_str());
+
+      if (s==t && (t[len]=='_'||t[len]==0)) {
+
+         bool found = false;
+         std::vector<std::string> columns = sqlx->ListColumns(tables[i].c_str());
+         for (unsigned int j=0; j<columns.size(); j++) {
+            //printf("column %s\n", columns[j].c_str());
+            if (columns[j] == tname) {
+               found = true;
+               break;
+            }
+         }
+
+         if (found) {
+            char cmd[256];
+            sprintf(cmd, "SELECT _i_time, %s FROM %s where _i_time>=%d and _i_time<=%d;",
+                    tname.c_str(), tables[i].c_str(),
+                    (int)start_time, (int)end_time);
+           
+            status = sqlx->Exec(cmd);
+
+            if (gTrace) {
+               printf("hs_read_odbc: event %s, name %s, index %d: Read table %s: status %d, nrows: %d\n",
+                      event_name, tag_name, var_index,
+                      tables[i].c_str(),
+                      status,
+                      sqlx->GetNumRows());
+            }
+
+            if (status)
+               continue;
+
+            if (sqlx->GetNumRows() == 0) {
+               sqlx->Done();
+               status = SQL_NO_DATA;
+               continue;
+            }
+
+            break;
+         }
+      }
+   }
+
+   if (status == SQL_NO_DATA)
+      return HS_SUCCESS;
+
+   if (status) {
+      if (gTrace)
+         printf("hs_read_odbc: event %s, name %s, index %d, could not find the right table? status %d\n",
+                event_name, tag_name, var_index,
+                status);
+      
+      return HS_FILE_ERROR;
+   }
+
+   int nrows = sqlx->GetNumRows();
+   int ncols = sqlx->GetNumColumns();
+
+   if (nrows == 0)
+      return HS_SUCCESS;
+
+   if (gTrace)
+      printf("hs_read_odbc: event %s, name %s, index %d, nrows: %d, ncols: %d\n",
+             event_name, tag_name, var_index,
+             nrows, ncols);
+
+   if (nrows < 0)
+      return HS_FILE_ERROR;
+
+   if (ncols < 1)
+      return HS_FILE_ERROR;
+
+   *num_entries = 0;
+   *time_buffer = (time_t*)malloc(nrows * sizeof(time_t));
+   *data_buffer = (double*)malloc(nrows * sizeof(double));
   
-  /* Loop through the rows in the result-set */
-  int row = 0;
-  while (sqlx->Fetch())
-    {
+   /* Loop through the rows in the result-set */
+   int row = 0;
+   time_t tt = 0;
+   int ann = 0;
+   double att = 0;
+   double avv = 0;
+   while (sqlx->Fetch()) {
       time_t t = 0;
       double v = 0;
-
+     
       const char* timedata = sqlx->GetColumn(1);
       if (timedata)
-        t = atoi(timedata);
-
+         t = atoi(timedata);
+     
       const char* valuedata = sqlx->GetColumn(2);
       if (valuedata)
-        v = atof(valuedata);
-      
-      row++;
-      
+         v = atof(valuedata);
+     
       if (t < start_time || t > end_time)
-        continue;
-      
-      //printf("Row %d, columns [%s] [%s], time %d, value %f\n", row, col1, col2, t, v);
-      
-      time_buffer[*n] = t;
-      dptr[*n] = v;
-      (*n)++;
-      
-      if ((*n) * sizeof(DWORD) >= *tbsize || (*n) * sizeof(double) >= *dbsize) {
-        *dbsize = (*n) * sizeof(double);
-        *tbsize = (*n) * sizeof(DWORD);
-        return HS_TRUNCATED;
+         continue;
+     
+      //printf("Row %d, time %d, value %f\n", row, t, v);
+      //printf("tt: %d, ann: %d\n", tt, ann);
+     
+      if (tt == 0 || t >= tt + interval) {
+        
+         if (ann > 0) {
+            assert(row < nrows);
+           
+            (*time_buffer)[row] = att/ann;
+            (*data_buffer)[row] = avv/ann;
+           
+            row++;
+            (*num_entries) = row;
+         }
+
+         ann = 0;
+         att = 0;
+         avv = 0;
+         tt  = t;
+         
       }
-    }
 
-  *dbsize = (*n) * sizeof(double);
-  *tbsize = (*n) * sizeof(DWORD);
+      ann++;
+      att += t;
+      avv += v;
+   }
 
-  return HS_SUCCESS;
+   if (ann > 0) {
+      assert(row < nrows);
+
+      (*time_buffer)[row] = att/ann;
+      (*data_buffer)[row] = avv/ann;
+     
+      row++;
+      (*num_entries) = row;
+   }
+
+   sqlx->Done();
+
+   if (gTrace)
+      printf("hs_read_odbc: return %d events\n", *num_entries);
+
+   return HS_SUCCESS;
 }
 
 // end
