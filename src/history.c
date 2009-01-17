@@ -1196,6 +1196,101 @@ INT hs_get_var(DWORD ltime, DWORD event_id, char *var_name, DWORD * type, INT * 
 
 
 /********************************************************************/
+INT hs_get_tags(DWORD ltime, DWORD event_id, char event_name[NAME_LENGTH], int* n_tags, TAG** tags)
+/********************************************************************\
+
+  Routine: hs_get_tags
+
+  Purpose: Get tags for event id
+
+  Input:
+    DWORD  ltime            Date at which variable definition should
+                            be returned
+    DWORD  event_id         Event ID
+
+  Output:
+    char    event_name[NAME_LENGTH] Event name from history file
+    INT    *n_tags          Number of tags
+    TAG   **tags            Pointer to array of tags (should be free()ed by the caller)
+
+  Function value:
+    HS_SUCCESS              Successful completion
+    HS_NO_MEMEORY           Out of memory
+    HS_FILE_ERROR           Cannot open history file
+
+\********************************************************************/
+{
+   int fh, fhd;
+   INT i, n, status;
+   DEF_RECORD def_rec;
+   HIST_RECORD rec;
+
+   *n_tags = 0;
+   *tags = NULL;
+
+   if (rpc_is_remote())
+      assert(!"RPC not implemented");
+
+   /* search latest history file */
+   status = hs_search_file(&ltime, -1);
+   if (status != HS_SUCCESS) {
+      cm_msg(MERROR, "hs_get_tags", "cannot find recent history file");
+      return HS_FILE_ERROR;
+   }
+
+   /* open history and definition files */
+   hs_open_file(ltime, "hst", O_RDONLY, &fh);
+   hs_open_file(ltime, "idf", O_RDONLY, &fhd);
+   if (fh < 0 || fhd < 0) {
+      cm_msg(MERROR, "hs_get_tags", "cannot open index files");
+      if (fh>0)
+         close(fh);
+      if (fhd>0)
+         close(fhd);
+      return HS_FILE_ERROR;
+   }
+
+   /* search last definition */
+   lseek(fhd, 0, SEEK_END);
+   n = TELL(fhd) / sizeof(def_rec);
+   def_rec.event_id = 0;
+   for (i = n - 1; i >= 0; i--) {
+      lseek(fhd, i * sizeof(def_rec), SEEK_SET);
+      read(fhd, (char *) &def_rec, sizeof(def_rec));
+      if (def_rec.event_id == event_id)
+         break;
+   }
+
+   if (def_rec.event_id != event_id) {
+      //cm_msg(MERROR, "hs_get_tags", "event %d not found in index file", event_id);
+      close(fh);
+      close(fhd);
+      return HS_UNDEFINED_EVENT;
+   }
+
+   /* read definition header */
+   lseek(fh, def_rec.def_offset, SEEK_SET);
+   status = read(fh, (char *) &rec, sizeof(rec));
+   assert(status == sizeof(rec));
+
+   status = read(fh, event_name, NAME_LENGTH);
+   assert(status == NAME_LENGTH);
+
+   /* read event definition */
+   *n_tags = rec.data_size / sizeof(TAG);
+
+   *tags = (TAG*) malloc(rec.data_size);
+
+   status = read(fh, (char *) (*tags), rec.data_size);
+   assert(status == rec.data_size);
+
+   close(fh);
+   close(fhd);
+
+   return HS_SUCCESS;
+}
+
+
 INT hs_read(DWORD event_id, DWORD start_time, DWORD end_time, DWORD interval, char *tag_name, DWORD var_index, DWORD * time_buffer, DWORD * tbsize, void *data_buffer, DWORD * dbsize, DWORD * type, DWORD * n)
 /********************************************************************\
 
