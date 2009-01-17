@@ -1865,6 +1865,7 @@ extern "C" {
    INT EXPRT hs_get_var(DWORD ltime, DWORD event_id, char *var_name,
                         DWORD * type, INT * n_data);
    INT EXPRT hs_get_event_id(DWORD ltime, char *name, DWORD * id);
+   INT EXPRT hs_get_tags(DWORD ltime, DWORD event_id, char event_name[NAME_LENGTH], int *n_tags, TAG **tags);
    INT EXPRT hs_read(DWORD event_id, DWORD start_time, DWORD end_time,
                      DWORD interval, char *tag_name, DWORD var_index,
                      DWORD * time_buffer, DWORD * tbsize,
