@@ -417,8 +417,8 @@ $(BIN_DIR)/%:$(SRC_DIR)/%.c
 $(BIN_DIR)/odbedit: $(SRC_DIR)/odbedit.c $(SRC_DIR)/cmdedit.c
 	$(CC) $(CFLAGS) $(OSFLAGS) -o $@ $(SRC_DIR)/odbedit.c $(SRC_DIR)/cmdedit.c $(LIB) $(LIBS)
 
-$(BIN_DIR)/mhttpd: $(SRC_DIR)/mhttpd.c $(SRC_DIR)/mgd.c
-	$(CC) $(CFLAGS) $(OSFLAGS) -o $@ $(SRC_DIR)/mhttpd.c $(SRC_DIR)/mgd.c $(LIB) $(LIBS) -lm
+$(BIN_DIR)/mhttpd: $(LIB_DIR)/mhttpd.o $(LIB_DIR)/mgd.o
+	$(CXX) $(CFLAGS) $(OSFLAGS) -o $@ $^ $(LIB) $(LIBS) -lm
 
 $(PROGS): $(LIBNAME) $(SHLIB)
 
