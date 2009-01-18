@@ -52,7 +52,6 @@ void create_sql_tree();
 #define LOGGER_TIMEOUT 60000
 
 #define MAX_CHANNELS 10
-#define MAX_HISTORY 100
 
 BOOL in_stop_transition = FALSE;
 BOOL tape_message = TRUE;
@@ -70,7 +69,11 @@ struct hist_log_s {
    DWORD n_var;
    DWORD period;
    DWORD last_log;
-} hist_log[MAX_HISTORY];
+};
+
+static int         hist_log_size = 0;
+static int         hist_log_max = 0;
+static hist_log_s *hist_log = NULL;
 
 HNDLE hDB;
 
@@ -2469,6 +2472,8 @@ static int add_event(int* indexp, int event_id, const char* event_name, HNDLE hK
 {
    int status;
    int size, i;
+   int oldTags = 0;
+   int disableTags = 0;
    int index = *indexp;
 
    /* check for duplicate event id's */
@@ -2483,15 +2488,33 @@ static int add_event(int* indexp, int event_id, const char* event_name, HNDLE hK
       }
    }
 
-   if (index >= MAX_HISTORY) {
-      cm_msg(MERROR, "add_event", "Too many history events: %d, please increase MAX_HISTORY!", index);
-      return 0;
+   while (index >= hist_log_size) {
+      int new_size = 2*hist_log_size;
+
+      if (hist_log_size == 0)
+         new_size = 10;
+
+      hist_log = (hist_log_s*)realloc(hist_log, sizeof(hist_log[0])*new_size);
+      assert(hist_log!=NULL);
+
+      hist_log_size = new_size;
    }
+
+   if (index >= hist_log_max)
+      hist_log_max = index + 1;
 
    /* check for invalid history tags */
    for (i=0; i<ntags; i++) {
       if (rpc_tid_size(tags[i].type) == 0) {
          cm_msg(MERROR, "add_event", "Invalid tag %d \'%s\' in event %d \'%s\': type size is zero", i, tags[i].name, event_id, event_name);
+         return 0;
+      }
+   }
+
+   /* check for trailing spaces in tag names */
+   for (i=0; i<ntags; i++) {
+      if (isspace(tags[i].name[strlen(tags[i].name)-1])) {
+         cm_msg(MERROR, "add_event", "Invalid tag %d \'%s\' in event %d \'%s\': has trailing spaces", i, tags[i].name, event_id, event_name);
          return 0;
       }
    }
@@ -2541,7 +2564,26 @@ static int add_event(int* indexp, int event_id, const char* event_name, HNDLE hK
 
    /* create history tags for mhttpd */
 
-   if (1) {
+   disableTags = 0;
+   size = sizeof(disableTags);
+   status = db_get_value(hDB, 0, "/History/DisableTags", &disableTags, &size, TID_BOOL, TRUE);
+
+   oldTags = 0;
+   size = sizeof(oldTags);
+   status = db_get_value(hDB, 0, "/History/CreateOldTags", &oldTags, &size, TID_BOOL, FALSE);
+
+   if (disableTags) {
+      HNDLE hKey;
+
+      status = db_find_key(hDB, 0, "/History/Tags", &hKey);
+      if (status == DB_SUCCESS) {
+         status = db_delete_key(hDB, hKey, FALSE);
+         if (status != DB_SUCCESS)
+            cm_msg(MERROR, "add_event", "Cannot delete /History/Tags, db_delete_key() status %d", status);
+      }
+
+   } else if (oldTags) {
+
       char buf[256];
 
       sprintf(buf, "/History/Tags/%d", event_id);
@@ -2564,6 +2606,173 @@ static int add_event(int* indexp, int event_id, const char* event_name, HNDLE hK
             cm_msg(MERROR, "add_event",
                    "Tag name \'%s\' in event %d (%s) may have been truncated to %d characters",
                    tags[i].name, event_id, event_name, NAME_LENGTH-1);
+      }
+
+   } else {
+
+      const int kLength = 32 + NAME_LENGTH + NAME_LENGTH;
+      char buf[kLength];
+      HNDLE hKey;
+
+      sprintf(buf, "/History/Tags/%d", event_id);
+      status = db_find_key(hDB, 0, buf, &hKey);
+
+      if (status == DB_SUCCESS) {
+         // add new tags
+         KEY key;
+
+         status = db_get_key(hDB, hKey, &key);
+         assert(status == DB_SUCCESS);
+
+         assert(key.type == TID_STRING);
+
+         if (key.item_size < kLength && key.num_values == 1) {
+            // old style tags are present. Convert them to new style!
+
+            HNDLE hTags;
+
+            cm_msg(MINFO, "add_event", "Converting old event %d (%s) tags to new style", event_id, event_name);
+
+            status = db_set_data(hDB, hKey, event_name, kLength, 1, TID_STRING);
+            assert(status == DB_SUCCESS);
+
+            sprintf(buf, "/History/Tags/Tags %d", event_id);
+
+            status = db_find_key(hDB, 0, buf, &hTags);
+
+            if (status == DB_SUCCESS) {
+               for (i=0; ; i++) {
+                  HNDLE h;
+                  int size;
+                  KEY key;
+                  WORD w;
+
+                  status = db_enum_key(hDB, hTags, i, &h);
+                  if (status == DB_NO_MORE_SUBKEYS)
+                     break;
+                  assert(status == DB_SUCCESS);
+
+                  status = db_get_key(hDB, h, &key);
+
+                  size = sizeof(w);
+                  status = db_get_data(hDB, h, &w, &size, TID_WORD);
+                  assert(status == DB_SUCCESS);
+
+                  sprintf(buf, "%d[%d] %s", 0, w, key.name);
+                  
+                  status = db_set_data_index(hDB, hKey, buf, kLength, 1+i, TID_STRING);
+                  assert(status == DB_SUCCESS);
+               }
+
+               status = db_delete_key(hDB, hTags, TRUE);
+               assert(status == DB_SUCCESS);
+            }
+
+            // format conversion has changed the key, get it again
+            status = db_get_key(hDB, hKey, &key);
+            assert(status == DB_SUCCESS);
+         }
+
+         if (1) {
+            // add new tags
+         
+            int size = key.item_size * key.num_values;
+            int num = key.num_values;
+
+            char* s = (char*)malloc(size);
+            assert(s != NULL);
+
+            TAG* t = (TAG*)malloc(sizeof(TAG)*(key.num_values + ntags));
+            assert(t != NULL);
+
+            status = db_get_data(hDB, hKey, s, &size, TID_STRING);
+            assert(status == DB_SUCCESS);
+
+            for (i=1; i<key.num_values; i++) {
+               char* ss = s + i*key.item_size;
+
+               t[i].type = 0;
+               t[i].n_data = 0;
+               t[i].name[0] = 0;
+
+               if (isdigit(ss[0])) {
+                  //sscanf(ss, "%d[%d] %s", &t[i].type, &t[i].n_data, t[i].name);
+
+                  t[i].type = strtoul(ss, &ss, 0);
+                  assert(*ss == '[');
+                  ss++;
+                  t[i].n_data = strtoul(ss, &ss, 0);
+                  assert(*ss == ']');
+                  ss++;
+                  assert(*ss == ' ');
+                  ss++;
+                  strlcpy(t[i].name, ss, sizeof(t[i].name));
+
+                  //printf("type %d, n_data %d, name [%s]\n", t[i].type, t[i].n_data, t[i].name);
+               }
+            }
+
+            for (i=0; i<ntags; i++) {
+               int j;
+               int k = 0;
+
+               for (j=1; j<key.num_values; j++) {
+                  if (equal_ustring((char*)tags[i].name, (char*)t[j].name)) {
+                     if ((tags[i].type!=t[j].type) || (tags[i].n_data!=t[j].n_data)) {
+                        cm_msg(MINFO, "add_event", "Event %d (%s) tag \"%s\" type and size changed from %d[%d] to %d[%d]",
+                               event_id, event_name,
+                               tags[i].name,
+                               t[j].type, t[j].n_data,
+                               tags[i].type, tags[i].n_data);
+                        k = j;
+                        break;
+                     }
+
+                     k = -1;
+                     break;
+                  }
+               }
+
+               // if tag not present, k==0, so append it to the array
+
+               if (k==0)
+                  k = num;
+
+               if (k > 0) {
+                  sprintf(buf, "%d[%d] %s", tags[i].type, tags[i].n_data, tags[i].name);
+
+                  status = db_set_data_index(hDB, hKey, buf, kLength, k, TID_STRING);
+                  assert(status == DB_SUCCESS);
+
+                  if (k >= num)
+                     num = k+1;
+               }
+            }
+
+            free(s);
+            free(t);
+         }
+
+      } else if (status == DB_NO_KEY) {
+         // create new array of tags
+         status = db_create_key(hDB, 0, buf, TID_STRING);
+         assert(status == DB_SUCCESS);
+
+         status = db_find_key(hDB, 0, buf, &hKey);
+         assert(status == DB_SUCCESS);
+
+         status = db_set_data(hDB, hKey, event_name, kLength, 1, TID_STRING);
+         assert(status == DB_SUCCESS);
+
+         for (i=0; i<ntags; i++) {
+            sprintf(buf, "%d[%d] %s", tags[i].type, tags[i].n_data, tags[i].name);
+
+            status = db_set_data_index(hDB, hKey, buf, kLength, 1+i, TID_STRING);
+            assert(status == DB_SUCCESS);
+         }
+      } else {
+         cm_msg(MERROR, "add_event", "Error: db_find_key(%s) status %d", buf, status);
+         return 0;
       }
    }
 
@@ -2661,16 +2870,21 @@ INT open_history()
    int global_per_variable_history = 0;
 
 #ifdef HAVE_ODBC
+   size = sizeof(i);
+   i = 0;
+   status = db_get_value(hDB, 0, "/Logger/ODBC_Debug", &i, &size, TID_INT, TRUE);
+   assert(status==DB_SUCCESS);
+   hs_debug_odbc(i);
+
    /* check ODBC connection */
    using_odbc = 0;
    size = sizeof(str);
-   status = db_get_value(hDB, 0, "/Logger/ODBC_DSN", str, &size, TID_STRING, FALSE);
-   if (status == DB_SUCCESS) {
-      int debug = 0;
-      size = sizeof(debug);
-      status = db_get_value(hDB, 0, "/Logger/ODBC_Debug", &debug, &size, TID_INT, TRUE);
-      hs_debug_odbc(debug);
+   str[0] = 0;
 
+   status = db_get_value(hDB, 0, "/Logger/ODBC_DSN", str, &size, TID_STRING, TRUE);
+   assert(status==DB_SUCCESS);
+
+   if (strlen(str)>1 && str[0]!='#') {
       using_odbc = 1;
       status = hs_connect_odbc(str);
       if (status != HS_SUCCESS) {
@@ -2737,6 +2951,8 @@ INT open_history()
          db_get_key(hDB, hKeyEq, &key);
          strcpy(eq_name, key.name);
 
+         if (strchr(eq_name, ':'))
+            cm_msg(MERROR, "open_history", "Equipment name \'%s\' contains characters \':\', this may break the history system", eq_name);
 
          status = db_find_key(hDB, hKeyEq, "Variables", &hKeyVar);
          if (status != DB_SUCCESS) {
@@ -2950,11 +3166,6 @@ INT open_history()
       }
    } /* loop over equipments */
 
-   if (index == MAX_HISTORY) {
-      cm_msg(MERROR, "open_history", "too many equipments for history");
-      return 0;
-   }
-
    /*---- define linked trees ---------------------------------------*/
 
    /* round up event id */
@@ -3051,11 +3262,6 @@ INT open_history()
 
             count_events++;
             max_event_id++;
-
-            if (index == MAX_HISTORY) {
-               cm_msg(MERROR, "open_history", "too many equipments for history");
-               return 0;
-            }
          }
       }
    }
@@ -3101,7 +3307,7 @@ void close_history()
    }
 
    /* close event history */
-   for (i = 1; i < MAX_HISTORY; i++)
+   for (i = 1; i < hist_log_max; i++)
       if (hist_log[i].hKeyVar) {
          db_close_record(hDB, hist_log[i].hKeyVar);
          hist_log[i].hKeyVar = 0;
@@ -3123,11 +3329,11 @@ void log_history(HNDLE hDB, HNDLE hKey, void *info)
 {
    INT i, size;
 
-   for (i = 0; i < MAX_HISTORY; i++)
+   for (i = 0; i < hist_log_max; i++)
       if (hist_log[i].hKeyVar == hKey)
          break;
 
-   if (i == MAX_HISTORY)
+   if (i == hist_log_max)
       return;
 
    /* check if over period */
