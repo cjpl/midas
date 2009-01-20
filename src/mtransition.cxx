@@ -40,6 +40,7 @@ void usage()
    fprintf(stderr, "  DELAY 100 - sleep for 100 seconds\n");
    fprintf(stderr, "  DELAY \"/logger/Auto restart delay\" - sleep for time specified in ODB variable\n");
    fprintf(stderr, "  IF \"/logger/Auto restart\" - continue only if ODB variable is set to TRUE\n");
+   cm_set_msg_print(MT_ERROR, 0, NULL);
    cm_disconnect_experiment();
    exit (1);
 }
@@ -109,10 +110,12 @@ int main(int argc, char *argv[])
 
          if (state == STATE_RUNNING) {
             printf("START: Run is already started\n");
+            cm_set_msg_print(MT_ERROR, 0, NULL);
             cm_disconnect_experiment();
             exit(1);
          } else if (state == STATE_PAUSED) {
             printf("START: Run is paused, please use \"RESUME\"\n");
+            cm_set_msg_print(MT_ERROR, 0, NULL);
             cm_disconnect_experiment();
             exit(1);
          }
@@ -168,6 +171,7 @@ int main(int argc, char *argv[])
 
          if (state != STATE_RUNNING) {
             printf("PAUSE: Run is not started\n");
+            cm_set_msg_print(MT_ERROR, 0, NULL);
             cm_disconnect_experiment();
             exit(1);
          }
@@ -187,6 +191,7 @@ int main(int argc, char *argv[])
             continue;
          } else if (state != STATE_PAUSED) {
             printf("RESUME: Run is not paused\n");
+            cm_set_msg_print(MT_ERROR, 0, NULL);
             cm_disconnect_experiment();
             exit(1);
          }
@@ -213,6 +218,7 @@ int main(int argc, char *argv[])
             status = db_get_value(hDB, 0, arg, &delay, &size, TID_INT, FALSE);
             if (status !=  DB_SUCCESS) {
                fprintf(stderr,"DELAY: Cannot read ODB variable \'%s\', status %d\n", arg, status);
+               cm_set_msg_print(MT_ERROR, 0, NULL);
                cm_disconnect_experiment();
                exit(1);
             }
@@ -244,6 +250,7 @@ int main(int argc, char *argv[])
             }
             if (status !=  DB_SUCCESS) {
                fprintf(stderr,"IF: Cannot read ODB variable \'%s\', status %d\n", arg, status);
+               cm_set_msg_print(MT_ERROR, 0, NULL);
                cm_disconnect_experiment();
                exit(1);
             }
@@ -253,6 +260,7 @@ int main(int argc, char *argv[])
             printf("IF \'%s\' value %d\n", arg, value);
 
          if (!value) {
+            cm_set_msg_print(MT_ERROR, 0, NULL);
             cm_disconnect_experiment();
             exit(0);
          }
@@ -264,6 +272,9 @@ int main(int argc, char *argv[])
 
       }
    }
+
+   /* do not produce a shutdown message */
+   cm_set_msg_print(MT_ERROR, 0, NULL);
 
    cm_disconnect_experiment();
 
