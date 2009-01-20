@@ -440,6 +440,7 @@ typedef struct {
 "Trigger mask = INT : -1",\
 "Event limit = DOUBLE : 0",\
 "Byte limit = DOUBLE : 0",\
+"Subrun Byte limit = DOUBLE : 0",\
 "Tape capacity = DOUBLE : 0",\
 "Subdir format = STRING : [32]",\
 "Current filename = STRING : [256]",\
@@ -449,6 +450,7 @@ typedef struct {
 "Bytes written = DOUBLE : 0",\
 "Bytes written uncompressed = DOUBLE : 0",\
 "Bytes written total = DOUBLE : 0",\
+"Bytes written subrun = DOUBLE : 0",\
 "Files written = DOUBLE : 0",\
 "",\
 NULL}
@@ -466,6 +468,7 @@ typedef struct {
    INT trigger_mask;
    double event_limit;
    double byte_limit;
+   double subrun_byte_limit;
    double tape_capacity;
    char subdir_format[32];
    char current_filename[256];
@@ -476,6 +479,7 @@ typedef struct {
    double bytes_written;
    double bytes_written_uncompressed;
    double bytes_written_total;
+   double bytes_written_subrun;
    double files_written;
 } CHN_STATISTICS;
 
@@ -485,6 +489,7 @@ typedef struct {
    INT type;
    INT format;
    INT compression;
+   INT subrun_number;
    INT buffer_handle;
    INT msg_buffer_handle;
    INT request_id;
