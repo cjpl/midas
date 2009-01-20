@@ -5,7 +5,7 @@
 
   Contents:     Command-line interface to run state transitions
 
-  $Id: odbedit.c 4345 2008-10-13 06:45:19Z ritt@PSI.CH $
+  $Id$
 
 \********************************************************************/
 
@@ -70,6 +70,9 @@ int main(int argc, char *argv[])
             usage(); // does not return
          }
       }
+
+   /* do not produce a startup message */
+   cm_set_msg_print(MT_ERROR, 0, NULL);
 
    status = cm_connect_experiment1(host_name, exp_name, "mtransition", NULL,
                                    DEFAULT_ODB_SIZE,
