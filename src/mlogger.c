@@ -93,6 +93,7 @@ typedef struct {
 void receive_event(HNDLE hBuf, HNDLE request_id, EVENT_HEADER * pheader, void *pevent);
 INT log_write(LOG_CHN * log_chn, EVENT_HEADER * pheader);
 void log_system_history(HNDLE hDB, HNDLE hKey, void *info);
+int log_generate_file_name(LOG_CHN *log_chn);
 
 /*== common code FAL/MLOGGER start =================================*/
 
@@ -100,9 +101,10 @@ void log_system_history(HNDLE hDB, HNDLE hKey, void *info);
 
 void logger_init()
 {
-   INT size, status, delay;
+   INT size, status, delay, index;
    BOOL flag;
-   HNDLE hKey;
+   HNDLE hKey, hKeyChannel;
+   KEY key;
    char str[256];
 
    /*---- create /logger entries -----*/
@@ -144,6 +146,23 @@ void logger_init()
       status = db_create_record(hDB, 0, "/Logger/Channels/0", strcomb(chn_settings_str));
       if (status != DB_SUCCESS)
          cm_msg(MERROR, "logger_init", "Cannot create channel entry in database");
+   } else {
+      /* check format of other channels */
+      status = db_find_key(hDB, 0, "/Logger/Channels", &hKey);
+      if (status == DB_SUCCESS) {
+         for (index = 0; index < MAX_CHANNELS; index++) {
+            status = db_enum_key(hDB, hKey, index, &hKeyChannel);
+            if (status == DB_NO_MORE_SUBKEYS)
+               break;
+
+            db_get_key(hDB, hKeyChannel, &key);
+            status = db_check_record(hDB, hKey, key.name, strcomb(chn_settings_str), TRUE);
+            if (status != DB_SUCCESS && status != DB_OPEN_RECORD) {
+               cm_msg(MERROR, "logger_init", "Cannot create/check channel record");
+               break;
+            }
+         }
+      }
    }
 #ifdef HAVE_MYSQL
    create_sql_tree();
@@ -1054,6 +1073,7 @@ INT midas_write(LOG_CHN * log_chn, EVENT_HEADER * pevent, INT evt_size)
    log_chn->statistics.events_written++;
    log_chn->statistics.bytes_written_uncompressed += evt_size;
    log_chn->statistics.bytes_written += written;
+   log_chn->statistics.bytes_written_subrun += written;
    log_chn->statistics.bytes_written_total += written;
 
    return SS_SUCCESS;
@@ -2207,7 +2227,7 @@ INT root_log_open(LOG_CHN * log_chn, INT run_number)
       event.data_size = 0;
       event.serial_number = run_number;
 
-      //##root_write(log_chn, &event, sizeof(EVENT_HEADER));
+      //root_write(log_chn, &event, sizeof(EVENT_HEADER));
    }
 
    return SS_SUCCESS;
@@ -2345,7 +2365,7 @@ INT log_write(LOG_CHN * log_chn, EVENT_HEADER * pevent)
       return status;
    }
 
-   /* check if event limit is reached */
+   /* check if event limit is reached to stop run */
    if (!stop_requested && !in_stop_transition &&
        log_chn->settings.event_limit > 0 &&
        log_chn->statistics.events_written >= log_chn->settings.event_limit) {
@@ -2374,7 +2394,26 @@ INT log_write(LOG_CHN * log_chn, EVENT_HEADER * pevent)
       return status;
    }
 
-   /* check if byte limit is reached */
+   /* check if byte limit is reached for subrun */
+   if (!stop_requested && log_chn->settings.subrun_byte_limit > 0 &&
+       log_chn->statistics.bytes_written_subrun >= log_chn->settings.subrun_byte_limit) {
+
+      int run_number;
+      size = sizeof(run_number);
+      status = db_get_value(hDB, 0, "Runinfo/Run number", &run_number, &size, TID_INT, TRUE);
+      assert(status == SUCCESS);
+
+      stop_requested = TRUE; // avoid recursive call thourgh log_odb_dump
+      log_close(log_chn, run_number);
+      stop_requested = FALSE;
+
+      log_chn->subrun_number++;
+      log_chn->statistics.bytes_written_subrun = 0;
+      log_generate_file_name(log_chn);
+      log_open(log_chn, run_number);
+   }
+
+   /* check if byte limit is reached to stop run */
    if (!stop_requested && !in_stop_transition &&
        log_chn->settings.byte_limit > 0 &&
        log_chn->statistics.bytes_written >= log_chn->settings.byte_limit) {
@@ -3485,6 +3524,84 @@ INT log_callback(INT index, void *prpc_param[])
 
 /*------------------------------------------------------------------*/
 
+int log_generate_file_name(LOG_CHN *log_chn)
+{
+   INT size, status, run_number;
+   char str[256], path[256], dir[256], data_dir[256];
+   CHN_SETTINGS *chn_settings;
+   BOOL tape_flag = FALSE;
+   time_t now;
+   struct tm *tms;
+
+   chn_settings = &log_chn->settings;
+   size = sizeof(run_number);
+   status = db_get_value(hDB, 0, "Runinfo/Run number", &run_number, &size, TID_INT, TRUE);
+   assert(status == SUCCESS);
+
+   data_dir[0] = 0;
+
+   /* if disk, precede filename with directory if not already there */
+   if (log_chn->type == LOG_TYPE_DISK && chn_settings->filename[0] != DIR_SEPARATOR) {
+      size = sizeof(data_dir);
+      dir[0] = 0;
+      db_get_value(hDB, 0, "/Logger/Data Dir", data_dir, &size, TID_STRING, TRUE);
+      if (data_dir[0] != 0)
+         if (data_dir[strlen(data_dir) - 1] != DIR_SEPARATOR)
+            strcat(data_dir, DIR_SEPARATOR_STR);
+      strcpy(str, data_dir);
+
+      /* append subdirectory if requested */
+      if (chn_settings->subdir_format[0]) {
+         tzset();
+         time(&now);
+         tms = localtime(&now);
+
+         strftime(dir, sizeof(dir), chn_settings->subdir_format, tms);
+         strcat(str, dir);
+         strcat(str, DIR_SEPARATOR_STR);
+      }
+
+      /* create directory if needed */
+#ifdef OS_WINNT
+      status = mkdir(str);
+#else
+      status = mkdir(str, 0755);
+#endif
+#if !defined(HAVE_MYSQL) && !defined(OS_WINNT)  /* errno not working with mySQL lib */
+      if (status == -1 && errno != EEXIST)
+         cm_msg(MERROR, "tr_start", "Cannot create subdirectory %s", str);
+#endif
+
+      strcat(str, chn_settings->filename);
+   } else
+      strcpy(str, chn_settings->filename);
+
+   /* check if two "%" are present in filename */
+   if (strchr(str, '%')) {
+      if (strchr(strchr(str, '%')+1, '%')) {
+         /* substitude first "%d" by current run number, second "%d" by subrun number */
+         sprintf(path, str, run_number, log_chn->subrun_number);
+      } else {
+         /* substitue "%d" by current run number */
+         sprintf(path, str, run_number);
+      }
+   } else
+      strcpy(path, str);
+
+   strcpy(log_chn->path, path);
+
+   /* write back current file name to ODB */
+   if (strncmp(path, data_dir, strlen(data_dir)) == 0)
+      strcpy(str, path + strlen(data_dir));
+   else
+      strcpy(str, path);
+   db_set_value(hDB, log_chn->settings_hkey, "Current filename", str, 256, 1, TID_STRING);
+
+   return CM_SUCCESS;
+}
+
+/*------------------------------------------------------------------*/
+
 /********************************************************************\
 
                          transition callbacks
@@ -3514,12 +3631,10 @@ INT tr_start(INT run_number, char *error)
 {
    INT size, index, status;
    HNDLE hKeyRoot, hKeyChannel;
-   char str[256], path[256], dir[256], data_dir[256];
+   char path[256];
    CHN_SETTINGS *chn_settings;
    KEY key;
    BOOL write_data, tape_flag = FALSE;
-   time_t now;
-   struct tm *tms;
 
    /* save current ODB */
    odb_save("last.xml");
@@ -3650,58 +3765,11 @@ INT tr_start(INT run_number, char *error)
          db_get_value(hDB, log_chn->settings_hkey, "Compression", &log_chn[index].compression, &size, TID_INT,
                       FALSE);
 
-         data_dir[0] = 0;
+         
+         /* initialize subrun number */
+         log_chn[index].subrun_number = 0;
 
-         /* if disk, precede filename with directory if not already there */
-         if (log_chn[index].type == LOG_TYPE_DISK && chn_settings->filename[0] != DIR_SEPARATOR) {
-            size = sizeof(data_dir);
-            dir[0] = 0;
-            db_get_value(hDB, 0, "/Logger/Data Dir", data_dir, &size, TID_STRING, TRUE);
-            if (data_dir[0] != 0)
-               if (data_dir[strlen(data_dir) - 1] != DIR_SEPARATOR)
-                  strcat(data_dir, DIR_SEPARATOR_STR);
-            strcpy(str, data_dir);
-
-            /* append subdirectory if requested */
-            if (chn_settings->subdir_format[0]) {
-               tzset();
-               time(&now);
-               tms = localtime(&now);
-
-               strftime(dir, sizeof(dir), chn_settings->subdir_format, tms);
-               strcat(str, dir);
-               strcat(str, DIR_SEPARATOR_STR);
-            }
-
-            /* create directory if needed */
-#ifdef OS_WINNT
-            status = mkdir(str);
-#else
-            status = mkdir(str, 0755);
-#endif
-#if !defined(HAVE_MYSQL) && !defined(OS_WINNT)  /* errno not working with mySQL lib */
-            if (status == -1 && errno != EEXIST)
-               cm_msg(MERROR, "tr_start", "Cannot create subdirectory %s", str);
-#endif
-
-            strcat(str, chn_settings->filename);
-         } else
-            strcpy(str, chn_settings->filename);
-
-         /* substitue "%d" by current run number */
-         if (strchr(str, '%'))
-            sprintf(path, str, run_number);
-         else
-            strcpy(path, str);
-
-         strcpy(log_chn[index].path, path);
-
-         /* write back current file name to ODB */
-         if (strncmp(path, data_dir, strlen(data_dir)) == 0)
-            strcpy(str, path + strlen(data_dir));
-         else
-            strcpy(str, path);
-         db_set_value(hDB, hKeyChannel, "Settings/Current filename", str, 256, 1, TID_STRING);
+         log_generate_file_name(&log_chn[index]);
 
          if (log_chn[index].type == LOG_TYPE_TAPE &&
              log_chn[index].statistics.bytes_written_total == 0 && tape_message) {

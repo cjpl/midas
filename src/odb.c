@@ -8224,11 +8224,7 @@ INT db_check_record(HNDLE hDB, HNDLE hKey, const char *keyname, const char *rec_
             while (*pc == ' ')
                *pc-- = 0;
 
-            key_name[0] = 0;
-            if (title[0] != '.')
-               strcpy(key_name, title);
-
-            strcat(key_name, line);
+            strlcpy(key_name, line, sizeof(key_name));
 
             /* evaluate type info */
             strcpy(line, info_str);
