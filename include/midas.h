@@ -301,6 +301,7 @@ Data types Definition                         min      max    */
 Synchronous / Asynchronous flags */
 #define SYNC          0
 #define ASYNC         1
+#define DETACH        2
 
 /**
 Access modes */
