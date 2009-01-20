@@ -656,8 +656,8 @@ static void db_validate_sizes()
    assert(sizeof(PROGRAM_INFO) == 316);
    assert(sizeof(ALARM_CLASS) == 348);
    assert(sizeof(ALARM) == 452);
-   assert(sizeof(CHN_SETTINGS) == 640); // ODB v3
-   assert(sizeof(CHN_STATISTICS) == 40);        // ODB v3
+   assert(sizeof(CHN_SETTINGS) == 648); // ODB v3
+   assert(sizeof(CHN_STATISTICS) == 48);        // ODB v3
 #endif
 }
 
