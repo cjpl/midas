@@ -3199,6 +3199,28 @@ INT cm_transition(INT transition, INT run_number, char *errstr, INT errstr_size,
       return CM_INVALID_TRANSITION;
    }
 
+   /* do detached transition via mtransition tool */
+   if (async_flag == DETACH) {
+#ifdef OS_WINNT
+      strcpy(str, "start /min mtransition"); // start in separate minimized window
+#else
+      strcpy(str, "mtransition ");
+#endif
+      
+      if (transition == TR_STOP)
+         strlcat(str, " STOP", sizeof(str));
+      else if (transition == TR_START)
+         strlcat(str, " DELAY \"/logger/Auto restart delay\" START", sizeof(str));
+
+#ifdef OS_WINNT
+#else
+      strlcat(str, " &", sizeof(str)); // start in background
+#endif
+
+      system(str);
+      return CM_SUCCESS;
+   }
+
    /* get key of local client */
    cm_get_experiment_database(&hDB, &hKeylocal);
 
