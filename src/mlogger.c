@@ -3529,7 +3529,6 @@ int log_generate_file_name(LOG_CHN *log_chn)
    INT size, status, run_number;
    char str[256], path[256], dir[256], data_dir[256];
    CHN_SETTINGS *chn_settings;
-   BOOL tape_flag = FALSE;
    time_t now;
    struct tm *tms;
 
