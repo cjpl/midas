@@ -1,4 +1,4 @@
-/********************************************************************  \
+/********************************************************************\
 
   Name:         mhttpd.c
   Created by:   Stefan Ritt
@@ -5256,8 +5256,7 @@ void do_jrpc_rev0()
       { 0 }
    };
 
-   int status;
-   int count = 0;
+   int status, count = 0, substring = 0, rpc;
 
    char *sname   = getparam("name");
    char *srpc    = getparam("rpc");
@@ -5268,13 +5267,12 @@ void do_jrpc_rev0()
       return;
    }
 
-   int substring = 0;
    if (sname[strlen(sname)-1]=='*') {
       sname[strlen(sname)-1] = 0;
       substring = 1;
    }
 
-   int rpc = atoi(srpc);
+   rpc = atoi(srpc);
 
    if (rpc<RPC_MIN_ID || rpc>RPC_MAX_ID) {
       show_text_header();
@@ -7012,11 +7010,11 @@ void show_alarm_page()
 
 void show_programs_page()
 {
-   INT i, j, size, count, status;
-   BOOL restart, first, required;
+   INT i, j, k, size, count, status;
+   BOOL restart, first, required, client;
    HNDLE hDB, hkeyroot, hkey, hkey_rc, hkeycl;
    KEY key, keycl;
-   char str[256], ref[256], command[256], name[80];
+   char str[256], ref[256], command[256], name[80], name_addon[80];
 
    cm_get_experiment_database(&hDB, NULL);
 
@@ -7109,12 +7107,29 @@ void show_programs_page()
                   break;
 
                size = sizeof(name);
+               memset(name, 0, size);
                db_get_value(hDB, hkeycl, "Name", name, &size, TID_STRING, TRUE);
 
                db_get_key(hDB, hkeycl, &keycl);
+               
+               // check if client name is longer than the program name
+               // necessary for multiple started processes which will have names
+               // as client_name, client_name1, ...
+               client = TRUE;
+               if (strlen(name) > strlen(key.name)) {
+                  size = strlen(name)-strlen(key.name);
+                  memcpy(name_addon, name+strlen(key.name), size);
+                  name_addon[size] = 0;
+                  for (k=0; k<size; k++) {
+                     if (!isdigit(name_addon[k])) {
+                        client = FALSE;
+                        break;
+                     }
+                  }  
+               }
                name[strlen(key.name)] = 0;
 
-               if (equal_ustring(name, key.name)) {
+               if (equal_ustring(name, key.name) && client) {
                   size = sizeof(str);
                   db_get_value(hDB, hkeycl, "Host", str, &size, TID_STRING, TRUE);
 
@@ -8849,30 +8864,6 @@ void generate_hist_graph(char *path, char *buffer, int *buffer_size,
                        x1 + 10 + 5, y2 + 10 + 2 + row * (gdFontMediumBold->h + 10), str,
                        curve_col[i]);
       }
-
-      if (1) {
-         char str[256];
-         sprintf(str, "plot time %.3f sec", (tend - tstart)/1000.0);
-
-         i = n_vars;
-
-         row = index == -1 ? i : 0;
-
-         gdImageFilledRectangle(im,
-                                x1 + 10,
-                                y2 + 10 + row * (gdFontMediumBold->h + 10),
-                                x1 + 10 + strlen(str) * gdFontMediumBold->w + 10,
-                                y2 + 10 + row * (gdFontMediumBold->h + 10) +
-                                gdFontMediumBold->h + 2 + 2, white);
-         gdImageRectangle(im, x1 + 10, y2 + 10 + row * (gdFontMediumBold->h + 10),
-                          x1 + 10 + strlen(str) * gdFontMediumBold->w + 10,
-                          y2 + 10 + row * (gdFontMediumBold->h + 10) +
-                          gdFontMediumBold->h + 2 + 2, black);
-
-         gdImageString(im, gdFontMediumBold,
-                       x1 + 10 + 5, y2 + 10 + 2 + row * (gdFontMediumBold->h + 10), str,
-                       black);
-      }
    }
 
    gdImageRectangle(im, x1, y2, x2, y1, fgcol);
@@ -9570,6 +9561,7 @@ static int enum_vars_events(HNDLE hDB, const char* event_name, int* num_vars, ch
    int i, j;
    int status;
    char *s;
+   DWORD ltime;
 
    struct poor_mans_list names;
 
@@ -9591,6 +9583,9 @@ static int enum_vars_events(HNDLE hDB, const char* event_name, int* num_vars, ch
       WORD event_id;
       char buf[256];
       int size;
+      int ntags;
+      TAG *tags;
+      char xevent_name[NAME_LENGTH];
       
       status = db_enum_key(hDB, hKeyRoot, i, &hKey);
       if (status != DB_SUCCESS)
@@ -9624,10 +9619,7 @@ static int enum_vars_events(HNDLE hDB, const char* event_name, int* num_vars, ch
       if (!equal_ustring(buf, (char*)event_name))
          continue;
 
-      DWORD ltime = time(NULL);
-      int ntags;
-      TAG *tags;
-      char xevent_name[NAME_LENGTH];
+      ltime = (DWORD) time(NULL);
 
       status = hs_get_tags(ltime, event_id, xevent_name, &ntags, &tags);
 
@@ -10243,6 +10235,7 @@ void show_hist_config_page(char *path, char *hgroup, char *panel)
    for (index = 0; index < MAX_VARS; index++) {
       char event_name[NAME_LENGTH];
       char *s;
+      char* pp;
 
       if (equal_ustring(cmd, "refresh")) {
          /* get value from parameters */
@@ -10355,7 +10348,7 @@ void show_hist_config_page(char *path, char *hgroup, char *panel)
                   if (var_names[p]==0)
                      break;
 
-                  char* pp = var_names+p;
+                  pp = var_names+p;
 
                   if (equal_ustring(selected_var, pp))
                      rsprintf("<option selected value=\"%s\">%s\n", pp, pp);
