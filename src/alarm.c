@@ -37,7 +37,7 @@ The Midas Alarm file
 \********************************************************************/
 
 /********************************************************************/
-BOOL al_evaluate_condition(char *condition, char *value)
+BOOL al_evaluate_condition(const char *condition, char *value)
 {
    HNDLE hDB, hkey;
    int i, j, idx1, idx2, idx, size;
@@ -200,7 +200,7 @@ Trigger a certain alarm.
 @param type Alarm type, one of AT_xxx
 @return AL_SUCCESS, AL_INVALID_NAME
 */
-INT al_trigger_alarm(char *alarm_name, char *alarm_message, char *default_class, char *cond_str, INT type)
+INT al_trigger_alarm(const char *alarm_name, const char *alarm_message, const char *default_class, const char *cond_str, INT type)
 {
    if (rpc_is_remote())
       return rpc_call(RPC_AL_TRIGGER_ALARM, alarm_name, alarm_message, default_class, cond_str, type);
@@ -318,7 +318,7 @@ INT al_trigger_alarm(char *alarm_name, char *alarm_message, char *default_class,
 #ifndef DOXYGEN_SHOULD_SKIP_THIS
 
 /********************************************************************/
-INT al_trigger_class(char *alarm_class, char *alarm_message, BOOL first)
+INT al_trigger_class(const char *alarm_class, const char *alarm_message, BOOL first)
 /********************************************************************\
 
   Routine: al_trigger_class
@@ -414,7 +414,7 @@ Reset (acknoledge) alarm.
 @param alarm_name Alarm name, defined in /alarms/alarms
 @return AL_SUCCESS, AL_RESETE, AL_INVALID_NAME
 */
-INT al_reset_alarm(char *alarm_name)
+INT al_reset_alarm(const char *alarm_name)
 {
    int status, size, i;
    HNDLE hDB, hkeyalarm, hkeyclass, hsubkey;

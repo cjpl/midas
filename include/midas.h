@@ -1893,11 +1893,11 @@ extern "C" {
 
    /*---- alarm functions ----*/
    INT EXPRT al_check();
-   INT EXPRT al_trigger_alarm(char *alarm_name, char *alarm_message,
-                              char *default_class, char *cond_str, INT type);
-   INT EXPRT al_trigger_class(char *alarm_class, char *alarm_message, BOOL first);
-   INT EXPRT al_reset_alarm(char *alarm_name);
-   BOOL EXPRT al_evaluate_condition(char *condition, char *value);
+   INT EXPRT al_trigger_alarm(const char *alarm_name, const char *alarm_message,
+                              const char *default_class, const char *cond_str, INT type);
+   INT EXPRT al_trigger_class(const char *alarm_class, const char *alarm_message, BOOL first);
+   INT EXPRT al_reset_alarm(const char *alarm_name);
+   BOOL EXPRT al_evaluate_condition(const char *condition, char *value);
 
    /*---- frontend functions ----*/
    INT get_frontend_index();
