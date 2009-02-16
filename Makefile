@@ -492,6 +492,7 @@ $(LIB_DIR)/odb.o: msystem.h midas.h midasinc.h mrpc.h
 $(LIB_DIR)/ybos.o: msystem.h midas.h midasinc.h mrpc.h
 $(LIB_DIR)/ftplib.o: msystem.h midas.h midasinc.h
 $(LIB_DIR)/mxml.o: msystem.h midas.h midasinc.h $(MXML_DIR)/mxml.h
+$(LIB_DIR)/alarm.o: msystem.h midas.h midasinc.h
 
 #
 # utilities
