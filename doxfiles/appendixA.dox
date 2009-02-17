@@ -9,6 +9,7 @@ Midas supports two differents data format so far. A possible new candidate would
 NeXus format, but presently no implementation has been developed.
 - @ref Midas_format
 - @ref YBOS_format
+- @ref History_format
 
 <hr> @section Midas_format Midas format
 Special formats are used in MIDAS for the event header, banks and when writing to disk
@@ -77,7 +78,7 @@ a tape in MIDAS format.
 <hr> @section YBOS_format YBOS format
 As mentioned earlier the YBOS documentation is available at the following URL
 address:
-<a href=http://www-cdf.fnal.gov/offline/ybos/ybos.html>Ybos site</a>
+<a href="http://www-cdf.fnal.gov/offline/ybos/ybos.html">Ybos site</a>
 Originally YBOS is a collection of FORTRAN functions which facilitate the
 manipulation of group of data. It also describes a mode of encoding/storing
 data in an organized way.
@@ -151,6 +152,108 @@ The Offset is computed with the following rules:
   of the physical record header + the left over fragment size.
 - If the logical record extent beyond a full block, the offset will be set to -1.
 - The mark of the end of file is defined with a logical record length set to -1.
+
+<hr> @section History_format History format
+
+MIDAS history data are written to MIDAS .hst files. For a complete working
+example of reading these files, look at mhdump.cxx.
+
+This is the internal format of MIDAS .hst files (reverse engineered by K.Olchanski).
+
+History file consists of definition records and data records. Definition records for each history event always preceed data records for this event. Other than that, definition and data records are present in the file in no particular order. If data definition changes at some point, the new definition record is written to the file and new data records follow using the new format.
+
+The data is written in native-endian format and big-endian history files (i.e. written on PowerPC-based computer) would not read on little-endian computers (i.e. Intel/AMD CPUs).
+
+When decoding history data records, be aware that the data is written on the format returned by db_get_data(), and follow certain alignement rules. Misaligned data may contain empty padding bytes.
+
+\code
+definition record:
+   struct HIST_RECORD:
+      uint32_t record_type = 0x46445348 (RT_DEF)
+      uint32_t event_id    = history event id
+      uint32_t time        = unix time
+      uint32_t def_offset  = 0
+      uint32_t data_size   = size in bytes of following data = ntags*sizeof(TAG)
+   event name:
+      char name[NAME_LENGTH] = name of this event (fixed size, 32 bytes)
+   struct TAG [0]
+      char name[NAME_LENGTH] = tag name (fixed size, 32 bytes)
+      uint32_t type          = type of the data (TID_DOUBLE, etc)
+      uint32_t n_data        = 1 for single variables, number of array elements for arrays
+   struct TAG [1]
+      ...
+   struct TAG [ntags-1]
+      ...
+\endcode
+
+\code
+data record:
+   struct HIST_RECORD: (same as above)
+      uint32_t record_type = 0x41445348 (RT_DATA)
+      uint32_t event_id    = history event id
+      uint32_t time        = unix time
+      uint32_t def_offset  = ???
+      uint32_t data_size   = size in bytes of following data
+   event data
+      char[data_size]      = history data for this event (see mhdump.cxx and examples below on decoding this data
+\endcode
+
+To decode the "event data" blob in a data record, one should parse the data definition for this event and remember the contents of all tag definitions. One way to parse the data is by computing the "offset" for each tag by adding up the tag size for each tag. For each tag, the corresponding data size is the product of n_data and the size of the MIDAS type, given in this table (extracted from midas.c):
+
+\code
+/* data type sizes */
+int tid_size[] = {
+   0,                           /* tid == 0 not defined                               */
+   1,                           /* TID_BYTE      unsigned byte         0       255    */
+   1,                           /* TID_SBYTE     signed byte         -128      127    */
+   1,                           /* TID_CHAR      single character      0       255    */
+   2,                           /* TID_WORD      two bytes             0      65535   */
+   2,                           /* TID_SHORT     signed word        -32768    32767   */
+   4,                           /* TID_DWORD     four bytes            0      2^32-1  */
+   4,                           /* TID_INT       signed dword        -2^31    2^31-1  */
+   4,                           /* TID_BOOL      four bytes bool       0        1     */
+   4,                           /* TID_FLOAT     4 Byte float format                  */
+   8,                           /* TID_DOUBLE    8 Byte float format                  */
+   1,                           /* TID_BITFIELD  8 Bits Bitfield    00000000 11111111 */
+   0,                           /* TID_STRING    zero terminated string               */
+   0,                           /* TID_ARRAY     variable length array of unkown type */
+   0,                           /* TID_STRUCT    C structure                          */
+   0,                           /* TID_KEY       key in online database               */
+   0                            /* TID_LINK      link in online database              */
+};
+\endcode
+
+Example code for computing tag offsets:
+\code
+int offset = 0;
+for (int itag=0; itag&lt;ntags; itag++) {
+   int size = tags[itag].n_data * tid_size[tags[itag].type];
+   type_for_tag[itag] = tags[itag].type;
+   offset_for_tag[itag] = offset;
+   offset += size;
+}
+\endcode
+
+Example code for decoding the event data blob:
+\code
+char *buf = new char[data_size];
+fread(buf, 1, data_size, f); // read data blob from file
+
+int itag = ...; // the tag we want to look at
+int j    = ...; // array index inside the tag
+
+int offset = offset_for_tag[itag];
+void* ptr = (void*)(buf+offset);
+
+switch (type_for_tag[itag]) {
+   default:
+      printf("unknownType%d ",type_for_tag[itag]);
+      break;
+   case 6: /* DWORD */
+      printf("%u ",((uint32_t*)ptr)[j]);
+      break;
+}
+\endcode
 
 \htmlonly <img ALIGN="left" alt="previous.gif" src="previous.gif"> \endhtmlonly 
 @ref Utilities - @ref Top - @ref AppendixB 
