@@ -45,6 +45,7 @@ int hs_connect_odbc(const char* odbc_dsn); ///< connect to given ODBC DSN, defin
 int hs_disconnect_odbc();                  ///< disconnect from ODBC, returns HS_SUCCESS
 
 int hs_debug_odbc(int debug);              ///< set debug level, returns previous debug level
+int hs_set_alarm_odbc(const char* alarm_name); ///< set alarm name for history failures. Use NULL to disable alarms
 
 int hs_define_event_odbc(const char* event_name, const TAG tags[], int tags_size); ///< see hs_define_event(), returns HS_SUCCESS
 int hs_write_event_odbc(const char*  event_name, time_t timestamp, const char* buffer, int buffer_size); ///< see hs_write_event(), returns HS_SUCCESS

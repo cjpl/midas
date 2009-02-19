@@ -137,22 +137,30 @@ void help()
 
 int main(int argc,char*argv[])
 {
-  if (argc <= 2)
-    help(); // DOES NOT RETURN
+   int status;
+   if (argc <= 2)
+      help(); // DOES NOT RETURN
 
-  hs_connect_odbc(argv[1]);
+   status = cm_connect_experiment("", "", "mh2sql", NULL);
+   if (status != SUCCESS)
+      exit(1);
 
-  for (int iarg=2; iarg<argc; iarg++)
-    if (strcmp(argv[iarg], "-h")==0)
-      {
-        help(); // DOES NOT RETURN
+   status = hs_connect_odbc(argv[1]);
+   if (status != SUCCESS)
+      exit(1);
+   
+   for (int iarg=2; iarg<argc; iarg++)
+      if (strcmp(argv[iarg], "-h")==0) {
+         help(); // DOES NOT RETURN
+      } else if (argv[iarg][0]=='-' && argv[iarg][1]=='v') {
+         hs_debug_odbc(atoi(argv[iarg]+2));
+      } else {
+         readHst(argv[iarg]);
       }
-    else
-      {
-	readHst(argv[iarg]);
-      }
 
-  return 0;
+   cm_disconnect_experiment();
+
+   return 0;
 }
 
 // end

@@ -2549,7 +2549,10 @@ static int add_event(int* indexp, int event_id, const char* event_name, HNDLE hK
 #ifdef HAVE_ODBC
    if (using_odbc) {
       status = hs_define_event_odbc(event_name, (TAG*)tags, sizeof(TAG) * ntags);
-      assert(status == DB_SUCCESS);
+      if (status != HS_SUCCESS) {
+         cm_msg(MERROR, "add_event", "Cannot define event \"%s\"", event_name);
+         return 0;
+      }
    }
 #endif
 
@@ -2900,6 +2903,8 @@ INT open_history()
    assert(status==DB_SUCCESS);
    hs_debug_odbc(i);
 
+   hs_set_alarm_odbc("Logger_ODBC");
+
    /* check ODBC connection */
    using_odbc = 0;
    size = sizeof(str);
@@ -2909,12 +2914,12 @@ INT open_history()
    assert(status==DB_SUCCESS);
 
    if (strlen(str)>1 && str[0]!='#') {
-      using_odbc = 1;
       status = hs_connect_odbc(str);
       if (status != HS_SUCCESS) {
          cm_msg(MERROR, "open_history", "Cannot connect to ODBC database with DSN \'%s\', status %d", str, status);
-         using_odbc = 0;
+         return status;
       }
+      using_odbc = 1;
    }
 #endif
 
