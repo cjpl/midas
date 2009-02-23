@@ -15,6 +15,8 @@
 
 #ifdef _MSC_VER                 // Windows includes
 
+#pragma warning(disable:4996)
+
 #include <windows.h>
 #include <conio.h>
 #include <sys/timeb.h>
