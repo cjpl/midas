@@ -167,7 +167,7 @@ INLINE void cam16i_sa(const int c, const int n, const int a, const int f,
 
 /*--input--------------------------------------------------------*/
 INLINE void cam24i_sa(const int c, const int n, const int a, const int f,
-                      unsigned long **d, const int r)
+                      DWORD **d, const int r)
 {
    int aa;
 
