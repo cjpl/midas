@@ -89,7 +89,7 @@ $(BIN_DIR)/mserver.exe:  $(LIBRARY) $(SRC_DIR)/mserver.c
 $(BIN_DIR)/mhttpd.exe:  $(LIBRARY) $(SRC_DIR)/mhttpd.c $(SRC_DIR)/mgd.c
 	$(CC) $(CFLAGS) /Fe$(BIN_DIR)/mhttpd.exe $(SRC_DIR)/mhttpd.c $(SRC_DIR)/mgd.c $(LIBRARY) $(LIBS) wsock32.lib
 $(BIN_DIR)/mlogger.exe:  $(LIBRARY) $(SRC_DIR)/mlogger.c
-	$(CC) $(CFLAGS) /Fe$(BIN_DIR)/mlogger.exe $(SRC_DIR)/mlogger.c $(LIBRARY) $(LIBS)
+	$(CC) $(CFLAGS) /Fe$(BIN_DIR)/mlogger.exe /Tp$(SRC_DIR)/mlogger.c $(LIBRARY) $(LIBS)
 $(BIN_DIR)/odbedit.exe: $(LIBRARY) $(SRC_DIR)/odbedit.c $(SRC_DIR)/cmdedit.c
 	$(CC) $(CFLAGS) /Fe$(BIN_DIR)/odbedit.exe $(SRC_DIR)/cmdedit.c $(SRC_DIR)/odbedit.c $(LIBRARY) $(LIBS)
 $(BIN_DIR)/lazylogger.exe: $(LIBRARY) $(SRC_DIR)/lazylogger.c
