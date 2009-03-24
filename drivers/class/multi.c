@@ -480,8 +480,8 @@ INT multi_init(EQUIPMENT * pequipment)
    /* set initial demand values */
    for (i = 0; i < m_info->num_channels_output; i++) {
       if (pequipment->driver[index].flags & DF_PRIO_DEVICE) {
-         /* read default value from device */
-         device_driver(m_info->driver_output[i], CMD_GET,
+         /* read default value directly from device bypassing multi-thread buffer */
+         device_driver(m_info->driver_output[i], CMD_GET_DEMAND,
                        i - m_info->channel_offset_output[i],
                        &m_info->output_mirror[i]);
       } else {
