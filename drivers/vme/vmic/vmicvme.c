@@ -280,9 +280,9 @@ int mvme_read(MVME_INTERFACE *mvme, void *dst, mvme_addr_t vme_addr, mvme_size_t
         , am
         , n_bytes
         , 0);
-    //fprintf(stderr,"dma read: addr 0x%x, am 0x%x, bytes: %d, status: %d\n", vme_addr, mvme->am, n_bytes, status);
-    if (status > 0) {
-      perror("Error reading data");
+    if (status != 0) {
+      fprintf(stderr,"mvme_read: dma read: addr 0x%x, am 0x%x, bytes: %d, status: %d\n", vme_addr, mvme->am, n_bytes, status);
+      perror("mvme_read: Error in vme_dma_read()");
       return(ERROR);
     }
 
