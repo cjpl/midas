@@ -343,8 +343,21 @@ static int makeDmaPacket(vmeDmaPacket_t *pkt, int blt_mode, int am, uint32_t vme
   pkt->srcVmeAttr.userAccessType = VME_USER;
   pkt->srcVmeAttr.dataAccessType = VME_DATA;
   pkt->dstBus = VME_DMA_USER;
-  pkt->dstAddr  = 0xFFFFFFFF & ((uint64_t)dst_addr);
-  pkt->dstAddrU = 0xFFFFFFFF & (((uint64_t)dst_addr)>>32);
+  if (sizeof(dst_addr) == sizeof(uint32_t))
+     {
+        /* 32-bit addresses */
+        pkt->dstAddr  = (uint32_t)dst_addr;
+        pkt->dstAddrU = 0;
+     }
+  else
+     {
+        /* 64-bit addresses */
+        pkt->dstAddr  = 0xFFFFFFFF & ((uint64_t)dst_addr);
+        pkt->dstAddrU = 0xFFFFFFFF & ((uint64_t)dst_addr)>>32;
+     }
+
+  //printf("dst_addr: %p, addrL: 0x%08x, addrU: 0x%08x\n", dst_addr, pkt->dstAddr, pkt->dstAddrU);
+
   pkt->dstVmeAttr.maxDataWidth = 0;
   pkt->dstVmeAttr.addrSpace = 0;
   pkt->dstVmeAttr.userAccessType = 0;
@@ -400,7 +413,8 @@ int gefvme_read_dma_multiple(MVME_INTERFACE *mvme, int nseg, void* dstaddr[], co
   vmeDmaPacket_t pkt[nseg];
   for (i=0; i<nseg; i++)
     {
-      printf("packet %p+%d, blt %d, am 0x%x, vmeaddr 0x%x, dstaddr %p, nbytes %d\n",  pkt+i, sizeof(vmeDmaPacket_t), mvme->blt_mode, mvme->am, vmeaddr[i], dstaddr[i], nbytes[i]);
+      if (gefvme_dma_debug)
+        printf("packet %p+%d, blt %d, am 0x%x, vmeaddr 0x%x, dstaddr %p, nbytes %d\n",  pkt+i, sizeof(vmeDmaPacket_t), mvme->blt_mode, mvme->am, vmeaddr[i], dstaddr[i], nbytes[i]);
       makeDmaPacket(pkt+i, mvme->blt_mode, mvme->am, vmeaddr[i], dstaddr[i], nbytes[i]);
       pkt[i].pNextPacket = pkt+i+1;
     }
@@ -458,6 +472,36 @@ int mvme_open(MVME_INTERFACE **mvme, int index)
     return(MVME_ACCESS_ERROR);
   }
 #endif
+
+  /* set controls */
+
+  if (1) {
+     char devname[256];
+     int fd;
+     int status;
+     struct vmeRequesterCfg cfg;
+
+     cfg.requestLevel = 0;	/*  Requester Bus Request Level */
+     cfg.fairMode = 0;	/*  Requester Fairness Mode Indicator */
+     cfg.releaseMode = 0;	/*  Requester Bus Release Mode */
+     cfg.timeonTimeoutTimer = 7;	/*  Master Time-on Time-out Timer */
+     cfg.timeoffTimeoutTimer = 0;	/*  Master Time-off Time-out Timer */
+
+     sprintf(devname, "%s", "/dev/vme_ctl");
+     fd = open(devname, O_RDWR);
+     if (fd < 0) {
+        fprintf(stderr,"mvme_open: GEFVME VME driver not present? Cannot open VME device \'%s\', errno %d (%s)\n", devname, errno, strerror(errno));
+        exit(1);
+     }
+
+     status = ioctl(fd, VME_IOCTL_SET_REQUESTOR, &cfg);
+     if (status != 0) {
+        fprintf(stderr,"mvme_open: Cannot set GEFVME VME_IOCTL_SET_REQUESTOR, errno %d (%s)\n", errno, strerror(errno));
+        exit(1);
+     }
+
+     close(fd);
+  }
   
   return MVME_SUCCESS;
 }
@@ -553,7 +597,7 @@ int gefvme_read_dma(MVME_INTERFACE *mvme, void *dst, mvme_addr_t vme_addr, int n
 
   if (vmeDma.vmeDmaStatus != 0x02000000) {
     //*((uint32_t*)dst) = 0xdeadbeef;
-    printf("mvme_read_dma: DMA %6d of %6d bytes from 0x%08x, status 0x%08x, srcAddr 0x%08x, dstAddr 0x%08x\n", n_bytes, bytesRead, vme_addr, vmeDma.vmeDmaStatus, vmeDma.srcAddr, vmeDma.dstAddr);
+    printf("mvme_read_dma: DMA error, read %6d out of %6d bytes from 0x%08x, status 0x%08x, srcAddr 0x%08x, dstAddr 0x%08x\n", bytesRead, n_bytes, vme_addr, vmeDma.vmeDmaStatus, vmeDma.srcAddr, vmeDma.dstAddr);
     fprintf(stderr,"mvme_read_dma: ioctl(VME_IOCTL_START_DMA) returned vmeDmaStatus 0x%08x\n", vmeDma.vmeDmaStatus);
     return MVME_ACCESS_ERROR;
   }
