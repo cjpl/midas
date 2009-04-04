@@ -31,9 +31,11 @@
 #define  VF48_SELECTIVE_CLR_W      (DWORD) (0x0014)
 #define  VF48_TEST_REG_RW          (DWORD) (0x0020)
 #define  VF48_FIRMWARE_R           (DWORD) (0x0030)  /**< -R-D16/32 */
+#define  VF48_SOFTWARE_RESET_W     (DWORD) (0x0040)  /**< -W */
 #define  VF48_PARAM_DATA_RW        (DWORD) (0x0050)  /**< -RW-D16/32 */
 #define  VF48_PARAM_ID_W           (DWORD) (0x0060)  /**< -W-D16/32 */
 #define  VF48_SOFT_TRIG_W          (DWORD) (0x0070)
+#define  VF48_LVDSSR_W             (DWORD) (0x0080)
 #define  VF48_GRP_REG_RW           (DWORD) (0x0090)
 #define  VF48_NFRAME_R             (DWORD) (0x00A0)  /**< -R-D16/32 */
 #define  VF48_GLOBAL_RESET_W       (DWORD) (0x00B0)  /**< -W */
@@ -146,6 +148,8 @@ int  vf48_DataRead(MVME_INTERFACE *myvme, DWORD base, DWORD *event, int *element
 int  vf48_ExtTrgSet(MVME_INTERFACE *myvme, DWORD base);
 int  vf48_ExtTrgClr(MVME_INTERFACE *myvme, DWORD base);
 int  vf48_Reset(MVME_INTERFACE *myvme, DWORD base);
+int  vf48_ResetCollector(MVME_INTERFACE *myvme, DWORD base);
+int  vf48_ResetFrontends(MVME_INTERFACE *myvme, DWORD base, int groupMask);
 int  vf48_AcqStart(MVME_INTERFACE *myvme, DWORD base);
 int  vf48_AcqStop(MVME_INTERFACE *myvme, DWORD base);
 int  vf48_NFrameRead(MVME_INTERFACE *myvme, DWORD base);
