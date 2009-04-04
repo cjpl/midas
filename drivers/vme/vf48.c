@@ -207,77 +207,73 @@ int vf48_ParameterWrite(MVME_INTERFACE *mvme, DWORD base, int grp, int param, in
   int retry;
   int  cmode;
 
-  if (grp < 6) {
-    switch (param) {
-    case VF48_SEGMENT_SIZE:
-      if (value > 1023) {
-	value = 1023;
-	printf("vf48_ParameterWrite: Segment size troncated to 1023\n");
-      }
-      break;
-    case VF48_PRE_TRIGGER:
-      if (value > 127) {
-	value = 100;
-	printf("vf48_ParameterWrite: Pre trigger troncated to 100\n");
-      }
-      break;
-    case VF48_LATENCY:
-      if (value > 127) {
-	value = 127;
-	printf("vf48_ParameterWrite: Latency troncated to 127\n");
-      }
-      break;
-    };
-    mvme_get_dmode(mvme, &cmode);
-    mvme_set_dmode(mvme, MVME_DMODE_D32);
-
-    if (0) {
-      int csr = mvme_read_value(mvme, base+VF48_CSR_REG_RW);
-      printf("Writing grp %d, param %d, ID_RDY %d, DATA_RDY %d\n", grp, param, csr & VF48_CSR_PARM_ID_RDY, csr & VF48_CSR_PARM_DATA_RDY);
-    }
-
-    for (retry=20; retry>0; retry--) {
-      int to;
-      int wr;
-      int rd;
-
-      // wait for VF48_CSR_PARM_ID_RDY
-      for (to=10; to>0; to--) {
-        int csr = mvme_read_value(mvme, base+VF48_CSR_REG_RW);
-        //printf("vf48_ParameterWrite: Waiting for 0x%x, CSR 0x%x\n", VF48_CSR_PARM_ID_RDY, csr);
-        if (csr & VF48_CSR_PARM_ID_RDY)
-          break;
-      }
-      // check for timeout
-      if (to<=0)
-        printf("vf48_ParameterWrite: Group %d, parameter %d, timeout waiting for VF48_CSR_PARM_ID_RDY\n", grp, param);
-
-      wr = param | grp<<VF48_GRP_OFFSET;
-      mvme_write_value(mvme, base+VF48_PARAM_ID_W, wr);
-
-      // flush posted PCI writes
-      mvme_read_value(mvme, base+VF48_CSR_REG_RW);
-
-      mvme_write_value(mvme, base+VF48_PARAM_DATA_RW, value);
-
-      // flush posted PCI writes
-      mvme_read_value(mvme, base+VF48_CSR_REG_RW);
-
-      rd = vf48_ParameterRead(mvme, base, grp, param);
-
-      //printf("Group %d, param %d, write %d, read %d\n", grp, param, value, rd);
-
-      if (rd == value) {
-        mvme_set_dmode(mvme, cmode);
-        return VF48_SUCCESS;
-      }
-
-      printf("vf48_ParameterWrite: Module at 0x%x, Group %d, parameter %d: data mismatch error: wrote 0x%08x, read 0x%08x\n", base, grp, param, value, rd);
-    }
-
-    fprintf(stderr, "vf48_ParameterWrite: Group %d, parameter %d, too many retries writing VF48 parameter!\n", grp, param);
-    exit(1);
+  if (grp < 0 || grp >= 6) {
+    printf("vf48_ParameterWrite: Invalid grp %d\n", grp);
+    return VF48_ERR_PARM;
   }
+
+  switch (param) {
+  case VF48_SEGMENT_SIZE:
+    if (value > 1023) {
+      value = 1023;
+      printf("vf48_ParameterWrite: Segment size troncated to 1023\n");
+    }
+    break;
+  case VF48_PRE_TRIGGER:
+    if (value > 127) {
+      value = 100;
+      printf("vf48_ParameterWrite: Pre trigger troncated to 100\n");
+    }
+    break;
+  case VF48_LATENCY:
+    if (value > 127) {
+      value = 127;
+      printf("vf48_ParameterWrite: Latency troncated to 127\n");
+    }
+    break;
+  };
+
+  mvme_get_dmode(mvme, &cmode);
+  mvme_set_dmode(mvme, MVME_DMODE_D32);
+
+  if (0) {
+    int csr = mvme_read_value(mvme, base+VF48_CSR_REG_RW);
+    printf("Writing grp %d, param %d, ID_RDY %d, DATA_RDY %d\n", grp, param, csr & VF48_CSR_PARM_ID_RDY, csr & VF48_CSR_PARM_DATA_RDY);
+  }
+
+  for (retry=20; retry>0; retry--) {
+    int wr;
+    int rd;
+    
+    wr = param | grp<<VF48_GRP_OFFSET;
+    mvme_write_value(mvme, base+VF48_PARAM_ID_W, wr);
+    
+    // flush posted PCI writes
+    mvme_read_value(mvme, base+VF48_CSR_REG_RW);
+    
+    mvme_write_value(mvme, base+VF48_PARAM_DATA_RW, value);
+    
+    // flush posted PCI writes
+    mvme_read_value(mvme, base+VF48_CSR_REG_RW);
+
+    rd = vf48_ParameterRead(mvme, base, grp, param);
+
+    if (rd == VF48_ERR_PARM) {
+      printf("vf48_ParameterWrite: Module at 0x%x, Group %d, parameter %d: Error %d during parameter read-back\n", base, grp, param, rd);
+      return VF48_ERR_PARM;
+    }
+
+    //printf("Group %d, param %d, write %d, read %d\n", grp, param, value, rd);
+
+    if (rd == value) {
+      mvme_set_dmode(mvme, cmode);
+      return VF48_SUCCESS;
+    }
+
+    printf("vf48_ParameterWrite: Module at 0x%x, Group %d, parameter %d: data mismatch error: wrote 0x%08x, read 0x%08x\n", base, grp, param, value, rd);
+  }
+
+  fprintf(stderr, "vf48_ParameterWrite: Group %d, parameter %d, too many retries writing VF48 parameter!\n", grp, param);
   return VF48_ERR_PARM;
 }
 
@@ -292,134 +288,133 @@ Read any Parameter for a given group. Each group (0..5) handles
 */
 int vf48_ParameterRead(MVME_INTERFACE *mvme, DWORD base, int grp, int param)
 {
-  int  cmode, par, to, wr, retry;
+  int  cmode, par, to, retry;
   int  debug = 0;
 
   if (vf48_isPresent(mvme, base) != VF48_SUCCESS) {
-    printf("There is no VF48 at VME A24 0x%x\n", base);
+    printf("vf48_ParameterRead: There is no VF48 at VME A24 0x%x\n", base);
     return VF48_ERR_PARM;
   }
 
-  if (grp < 6) {
-    mvme_get_dmode(mvme, &cmode);
-    mvme_set_dmode(mvme, MVME_DMODE_D32);
+  if (grp < 0 || grp >= 6) {
+    printf("vf48_ParameterRead: Invalid grp %d\n", grp);
+    return VF48_ERR_PARM;
+  }
 
-    for (retry=50; retry>0; retry--) {
+  mvme_set_am(mvme, MVME_AM_A24);
+  mvme_get_dmode(mvme, &cmode);
+  mvme_set_dmode(mvme, MVME_DMODE_D32);
 
-      int csr = 0;
+  for (retry=20; retry>0; retry--) {
 
-      if (debug) {
-        csr = mvme_read_value(mvme, base+VF48_CSR_REG_RW);
-        printf("Reading grp %d, param %d, ID_RDY %d, DATA_RDY %d\n", grp, param, csr & VF48_CSR_PARM_ID_RDY, csr & VF48_CSR_PARM_DATA_RDY);
-      }
-
-      // wait for VF48_CSR_PARM_ID_RDY
-      for (to=10; to>0; to--) {
-        csr = mvme_read_value(mvme, base+VF48_CSR_REG_RW);
-	if (debug)
-	  printf("vf48_ParameterRead: read1: Waiting for 0x%x, CSR 0x%x, to %d\n", VF48_CSR_PARM_ID_RDY, csr, to);
-        if (csr & VF48_CSR_PARM_ID_RDY)
-          break;
-      }
-
-      if (debug)
-        printf("vf48_ParameterRead: Group %d, parameter %d, VF48_CSR_PARAM_ID_RDY   wait %d\n", grp, param, to);
-      
-      // check for timeout
-      if (to<=0) {
-        //printf("vf48_ParameterRead: Group %d, parameter %d, timeout waiting for VF48_CSR_PARAM_ID_RDY\n", grp, param);
-        //return VF48_ERR_PARM;
-      }
-
-      wr = VF48_PARMA_BIT_RD | param | grp<<VF48_GRP_OFFSET;
-
-      mvme_write_value(mvme, base+VF48_PARAM_ID_W, wr);
-
-      // flush posted PCI writes
-      mvme_read_value(mvme, base+VF48_CSR_REG_RW);
-
-      //sleep(1);
-
-      mvme_write_value(mvme, base+VF48_PARAM_DATA_RW, 0xFFFFFFFF);
-      //sleep(1);
-
-      // flush posted PCI writes
-      mvme_read_value(mvme, base+VF48_CSR_REG_RW);
-
-      // wait for VF48_CSR_PARM_DATA_RDY
-      for (to=10; to>0; to--) {
-        csr = mvme_read_value(mvme, base+VF48_CSR_REG_RW);
-        if (debug)
-          printf("vf48_ParameterRead: CSR 0x%x, Waiting for 0x%x, TO %d\n", csr, VF48_CSR_PARM_DATA_RDY, to);
-        if (csr & VF48_CSR_PARM_DATA_RDY)
-          break;
-      }
-
-      if (csr & VF48_CSR_CRC_ERROR) {
-	if (0)
-	  printf("vf48_ParameterRead: CSR 0x%x, CRC error!\n", csr);
-	//continue;
-      }
-
-      if (csr & VF48_CSR_PARM_DATA_RDY)	{
-
-	int data = mvme_read_value(mvme, base+VF48_PARAM_DATA_RW);
-	
-	csr = mvme_read_value(mvme, base+VF48_CSR_REG_RW);
-
-	if (debug)
-	  printf("vf48_ParameterRead: CSR 0x%x, data 0x%x\n", csr, data);
-	
-	if ((csr & VF48_CSR_PARM_DATA_RDY) == 0) {
-	  mvme_set_dmode(mvme, cmode);
-	  return data;
-	}
-      }
-
-      if (csr & VF48_CSR_PARM_DATA_RDY)	{
-	csr = mvme_read_value(mvme, base+VF48_CSR_REG_RW);
-	printf("vf48_ParameterRead: CSR 0x%x, stuck VF48_CSR_PARM_DATA_RDY\n", csr);
-      }
-
-      if (debug)
-	printf("vf48_ParameterRead: Group %d, parameter %d, timeout waiting for VF48_CSR_PARAM_DATA_RDY, retry %d\n", grp, param, retry);
-      //sleep(1);
+    int csr = 0;
+    int data = 0;
+    int wr;
+    
+    if (debug) {
+      csr = mvme_read_value(mvme, base+VF48_CSR_REG_RW);
+      printf("Reading grp %d, param %d, ID_RDY %d, DATA_RDY %d\n", grp, param, csr & VF48_CSR_PARM_ID_RDY, csr & VF48_CSR_PARM_DATA_RDY);
     }
 
-    fprintf(stderr, "vf48_ParameterRead: Group %d, parameter %d, too many retries reading vf48 parameter!\n", grp, param);
-    exit(1);
+    wr = VF48_PARMA_BIT_RD | param | grp<<VF48_GRP_OFFSET;
+
+    mvme_write_value(mvme, base+VF48_PARAM_ID_W, wr);
+
+    // flush posted PCI writes
+    mvme_read_value(mvme, base+VF48_CSR_REG_RW);
+
+    mvme_write_value(mvme, base+VF48_PARAM_DATA_RW, 0xFFFFFFFF);
+
+    // flush posted PCI writes
+    mvme_read_value(mvme, base+VF48_CSR_REG_RW);
+
+    // wait for VF48_CSR_PARM_DATA_RDY
+    for (to=10; to>0; to--) {
+      csr = mvme_read_value(mvme, base+VF48_CSR_REG_RW);
+      if (debug)
+        printf("vf48_ParameterRead: CSR 0x%x, Waiting for 0x%x, TO %d\n", csr, VF48_CSR_PARM_DATA_RDY, to);
+      if (csr & VF48_CSR_PARM_DATA_RDY)
+        break;
+    }
+
+    if (csr & VF48_CSR_CRC_ERROR) {
+      if (1)
+        printf("vf48_ParameterRead: CSR 0x%x, CRC error!\n", csr);
+      //continue;
+    }
+
+    if (! (csr & VF48_CSR_PARM_DATA_RDY)) {
+      if (debug)
+        printf("vf48_ParameterRead: Group %d, parameter %d, timeout waiting for VF48_CSR_PARAM_DATA_RDY, retry %d\n", grp, param, retry);
+      continue;
+    }
+
+    data = 0xFFFF & mvme_read_value(mvme, base+VF48_PARAM_DATA_RW);
+    
+    csr = mvme_read_value(mvme, base+VF48_CSR_REG_RW);
+    
+    if (debug)
+      printf("vf48_ParameterRead: CSR 0x%x, data 0x%x\n", csr, data);
+    
+    mvme_set_dmode(mvme, cmode);
+    return data;
   }
+
+  //fprintf(stderr, "vf48_ParameterRead: Group %d, parameter %d, too many retries reading vf48 parameter!\n", grp, param);
   return VF48_ERR_PARM;
 }
 
 /********************************************************************/
 int vf48_Reset(MVME_INTERFACE *mvme, DWORD base)
 {
-  int  cmode, v;
+  int v;
 
-  mvme_get_dmode(mvme, &cmode);
-  mvme_set_dmode(mvme, MVME_DMODE_D32);
+  mvme_set_am(mvme, MVME_AM_A24);
+  mvme_set_dmode(mvme, MVME_DMODE_D16);
+
   if (1)
     printf("vf48_Reset: CSR 0x%x\n", mvme_read_value(mvme, base+VF48_CSR_REG_RW));
   mvme_write_value(mvme, base+VF48_GLOBAL_RESET_W, 0);
-  //sleep(1);
+  mvme_read_value(mvme, base+VF48_CSR_REG_RW); // flush posted PCI writes
+
   if (1)
     printf("vf48_Reset: CSR 0x%x\n", mvme_read_value(mvme, base+VF48_CSR_REG_RW));
+
   mvme_write_value(mvme, base+VF48_TEST_REG_RW, 0x00000000);
   v = mvme_read_value(mvme, base+VF48_TEST_REG_RW);
   if (v != 0)
     printf("vf48_Reset: Test register data mismatch: read 0x%08x, expected 0\n", v);
+
   mvme_write_value(mvme, base+VF48_TEST_REG_RW, 0x0000FFFF);
   v = mvme_read_value(mvme, base+VF48_TEST_REG_RW);
   if (v != 0x0000FFFF)
     printf("vf48_Reset: Test register data mismatch: read 0x%08x, expected 0x0000FFFF\n", v);
-  mvme_set_dmode(mvme, cmode);
 
   if (vf48_isPresent(mvme, base) != VF48_SUCCESS) {
     printf("There is no VF48 at VME A24 0x%x\n", base);
     return VF48_ERR_HW;
   }
 
+  return VF48_SUCCESS;
+}
+
+/********************************************************************/
+int vf48_ResetCollector(MVME_INTERFACE *mvme, DWORD base)
+{
+  mvme_set_am(mvme, MVME_AM_A24);
+  mvme_set_dmode(mvme, MVME_DMODE_D16);
+  mvme_write_value(mvme, base+VF48_SOFTWARE_RESET_W, 0);
+  mvme_read_value(mvme, base+VF48_CSR_REG_RW); // flush posted PCI writes
+  return VF48_SUCCESS;
+}
+
+/********************************************************************/
+int vf48_ResetFrontends(MVME_INTERFACE *mvme, DWORD base, int groupMask)
+{
+  mvme_set_am(mvme, MVME_AM_A24);
+  mvme_set_dmode(mvme, MVME_DMODE_D16);
+  mvme_write_value(mvme, base+VF48_LVDSSR_W, groupMask);
+  mvme_read_value(mvme, base+VF48_CSR_REG_RW); // flush posted PCI writes
   return VF48_SUCCESS;
 }
 
@@ -594,6 +589,9 @@ Set the segment size for all 6 groups
 int vf48_SegmentSizeSet(MVME_INTERFACE *mvme, DWORD base, DWORD size)
 {
   int  cmode, i;
+
+  assert(size>0);
+  assert(size<=1000);
 
   mvme_get_dmode(mvme, &cmode);
   mvme_set_dmode(mvme, MVME_DMODE_D16);
@@ -795,27 +793,29 @@ Value of x>0 : base sampling / x
  */
 int vf48_DivisorWrite(MVME_INTERFACE *mvme, DWORD base, DWORD value)
 {
-  int  cmode, i, mbit2;
+   int i, mbit2, grp;
 
   assert(value > 0);
   assert(value < 256);
 
-  mvme_get_dmode(mvme, &cmode);
+  mvme_set_am(mvme, MVME_AM_A24);
   mvme_set_dmode(mvme, MVME_DMODE_D16);
-  for (i=0;i<6;i++) {
-    mbit2 =  vf48_ParameterRead(mvme, base, i, VF48_MBIT2);
-    mbit2 &= ~0xFF00;
-    mbit2 |= (value << 8);
-    vf48_ParameterWrite(mvme, base, i, VF48_MBIT2, mbit2);
-  }
-  for (i=0;i<6;i++) {
-    int rd = vf48_DivisorRead(mvme, base, i);
-    if (rd != value) {
-      printf("vf48_DivisorWrite: Divisor read back mismatch: module at 0x%x, group %d, wrote %d, read back %d\n", base, i, value, rd);
-      abort();
+  grp = vf48_GrpRead(mvme, base);
+  for (i=0;i<6;i++)
+    if (grp&(1<<i)) {
+      mbit2 =  vf48_ParameterRead(mvme, base, i, VF48_MBIT2);
+      mbit2 &= ~0xFF00;
+      mbit2 |= (value << 8);
+      vf48_ParameterWrite(mvme, base, i, VF48_MBIT2, mbit2);
     }
-  }
-  mvme_set_dmode(mvme, cmode);
+  for (i=0;i<6;i++)
+    if (grp&(1<<i)) {
+      int rd = vf48_DivisorRead(mvme, base, i);
+      if (rd != value) {
+        printf("vf48_DivisorWrite: Divisor read back mismatch: module at 0x%x, group %d, wrote %d, read back %d\n", base, i, value, rd);
+        abort();
+      }
+    }
   return value;
 }
 
@@ -841,8 +841,10 @@ int  vf48_Trigger(MVME_INTERFACE *mvme, DWORD base)
 {
   int r;
   //printf("Write 0x%x\n", base + VF48_SOFT_TRIG_W);
+  mvme_set_am(mvme, MVME_AM_A24);
+  mvme_set_dmode(mvme, MVME_DMODE_D16);
   mvme_write_value(mvme, base + VF48_SOFT_TRIG_W, 0);
-  r = mvme_read_value(mvme, base + VF48_CSR_REG_RW);
+  r = mvme_read_value(mvme, base + VF48_CSR_REG_RW); // flush posted PCI writes
   //printf("Readback: CSR 0x%x\n", r);
   return VF48_SUCCESS;
 }
