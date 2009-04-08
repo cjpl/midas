@@ -11549,6 +11549,9 @@ void show_hist_page(char *path, int path_size, char *buffer, int *buffer_size,
       rsprintf("<input type=submit value=\"Go\">\n");
       rsprintf("</noscript>\n");
 
+      rsprintf("&nbsp;&nbsp;<input type=\"button\" name=\"New\" value=\"New\" ");
+      rsprintf("onClick=\"window.location.href='../?cmd=New'\">\n");
+
       rsprintf("</td></tr>\n");
    }
 
@@ -11714,7 +11717,7 @@ void show_hist_page(char *path, int path_size, char *buffer, int *buffer_size,
          }                      // Groups loop
    }                            // All
    rsprintf("</table>\r\n");
-   rsprintf("</body></html>\r\n");
+   rsprintf("</form></body></html>\r\n");
 }
 
 
