@@ -11475,7 +11475,7 @@ void show_hist_page(char *path, int path_size, char *buffer, int *buffer_size,
 
       rsprintf("Group:\n");
 
-      rsprintf("<select title=\"Select group\" name=\"fgroup\" onChange=\"document.form1.submit()\"");
+      rsprintf("<select title=\"Select group\" name=\"fgroup\" onChange=\"document.form1.submit()\">\n");
 
       db_find_key(hDB, 0, "/History/Display", &hkey);
       if (hkey) {
