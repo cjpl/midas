@@ -7997,6 +7997,7 @@ void generate_hist_graph(char *path, char *buffer, int *buffer_size,
    size = sizeof(str);
    status = db_get_value(hDB, 0, "/History/ODBC_DSN", str, &size, TID_STRING, FALSE);
    if (status == DB_SUCCESS && str[0]!=0 && str[0]!='#') {
+      hs_set_alarm_odbc("mhttpd_ODBC");
       status = hs_connect_odbc(str);
       if (status != HS_SUCCESS) {
          sprintf(str, "Cannot use /History/ODBC_DSN, error %d, see messages", status);
@@ -9555,7 +9556,7 @@ static int enum_vars_tags(HNDLE hDB, const char* event_name, int* num_vars, char
    return HS_SUCCESS;
 }
 
-static int enum_vars_events(HNDLE hDB, const char* event_name, int* num_vars, char** var_names)
+static int enum_vars_events(HNDLE hDB, int using_odbc, const char* event_name, int* num_vars, char** var_names)
 {
    HNDLE hKeyRoot;
    int i, j;
@@ -9610,6 +9611,9 @@ static int enum_vars_events(HNDLE hDB, const char* event_name, int* num_vars, ch
       status = db_get_data(hDB, hKey, buf, &size, TID_STRING);
       assert(status == DB_SUCCESS);
 
+      char xxevent_name[2*NAME_LENGTH+100];
+      strlcpy(xxevent_name, buf, sizeof(xxevent_name));
+      
       s = strchr(buf, ':');
       if (s)
          *s = 0;
@@ -9621,7 +9625,14 @@ static int enum_vars_events(HNDLE hDB, const char* event_name, int* num_vars, ch
 
       ltime = (DWORD) time(NULL);
 
-      status = hs_get_tags(ltime, event_id, xevent_name, &ntags, &tags);
+      if (using_odbc)
+#if HAVE_ODBC
+         status = hs_get_tags_odbc(xxevent_name, &ntags, &tags);
+#else
+         status = HS_FILE_ERROR;
+#endif
+      else
+         status = hs_get_tags(ltime, event_id, xevent_name, &ntags, &tags);
 
       //printf("status %d, tags %d\n", status, ntags);
 
@@ -9801,9 +9812,7 @@ static int enum_events(HNDLE hDB, int using_odbc, int* num_events, char** event_
    int size, status;
 
    if (using_odbc) {
-#ifdef HAVE_ODBC
-      return hs_enum_events_odbc(num_events, event_names);
-#endif
+      return enum_events_events(hDB, num_events, event_names);
    }
 
    /* select which list of events and variables to use */
@@ -9843,9 +9852,7 @@ static int enum_events(HNDLE hDB, int using_odbc, int* num_events, char** event_
 static int enum_vars(HNDLE hDB, int using_odbc, const char* event_name, int* num_vars, char** var_names)
 {
    if (using_odbc) {
-#ifdef HAVE_ODBC
-      return hs_enum_vars_odbc(event_name, num_vars, var_names);
-#endif
+      return enum_vars_events(hDB, using_odbc, event_name, num_vars, var_names);
    }
 
    switch (list_source) {
@@ -9854,7 +9861,7 @@ static int enum_vars(HNDLE hDB, int using_odbc, const char* event_name, int* num
    case 2:
       return enum_vars_tags(hDB, event_name, num_vars, var_names);
    case 3:
-      return enum_vars_events(hDB, event_name, num_vars, var_names);
+      return enum_vars_events(hDB, using_odbc, event_name, num_vars, var_names);
    default:
       return HS_FILE_ERROR;
    }
@@ -10207,6 +10214,7 @@ void show_hist_config_page(char *path, char *hgroup, char *panel)
    size = sizeof(str);
    status = db_get_value(hDB, 0, "/History/ODBC_DSN", str, &size, TID_STRING, FALSE);
    if (status == DB_SUCCESS && str[0]!=0 && str[0]!='#') {
+      hs_set_alarm_odbc("mhttpd_ODBC");
       status = hs_connect_odbc(str);
       if (status == HS_SUCCESS) {
          using_odbc = 1;
