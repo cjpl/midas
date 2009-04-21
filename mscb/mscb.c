@@ -882,9 +882,13 @@ int mscb_exchg(int fd, unsigned char *buffer, int *size, int len, int flags)
             printf("mscb_exchg: retry with %d ms timeout, fd = %d\n", timeout, fd);
 #endif
 
+         //printf("call mrecv_udp, retry %d, timeout %d\n", retry, timeout);
+
          /* receive result on IN pipe */
          n = sizeof(ret_buf);
          status = mrecv_udp(fd, ret_buf, &n, timeout);
+
+         //printf("returned from mrecv_udp, status %d, read %d\n", status, n);
 
          /* return if invalid version */
          if (status == MSCB_SUBM_ERROR) {
@@ -923,6 +927,8 @@ int mscb_exchg(int fd, unsigned char *buffer, int *size, int len, int flags)
       /* no reply after all the retries, so return error */
       if (size && *size)
          memset(buffer, 0, *size);
+      if (size)
+         *size = 0;
       mscb_release(fd);
       return MSCB_TIMEOUT;
    }
@@ -1606,7 +1612,7 @@ int mscb_info(int fd, unsigned short adr, MSCB_INFO * info)
    if (mrpc_connected(fd))
       return mrpc_call(mscb_fd[fd - 1].fd, RPC_MSCB_INFO, mscb_fd[fd - 1].remote_fd, adr, info);
 
-   for (retry = 0 ; retry < 2 ; retry++) {
+   for (retry = 0 ; retry < mscb_max_retry ; retry++) {
       buf[0] = MCMD_ADDR_NODE16;
       buf[1] = (unsigned char) (adr >> 8);
       buf[2] = (unsigned char) (adr & 0xFF);
