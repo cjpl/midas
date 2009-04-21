@@ -23,8 +23,8 @@
 
 // MIDAS defines collide with ODBC
 
-#undef DWORD
-#undef BOOL
+#define DWORD DWORD_xxx
+#define BOOL  BOOL_xxx
 
 #include <sql.h>
 #include <sqlext.h>
@@ -33,8 +33,6 @@
 ////////////////////////////////////////
 //           helper stuff             //
 ////////////////////////////////////////
-
-typedef std::vector<TAG> TagVector;
 
 #define STRLCPY(dst, src) strlcpy(dst, src, sizeof(dst))
 #define FREE(x) { if (x) free(x); x = NULL; }
@@ -524,6 +522,8 @@ std::vector<std::string> SqlODBC::ListColumns(const char* table)
       cm_msg(MERROR, "SqlODBC::ListColumns", "Error: SQLColumns(\'%s\') returned unexpected number of columns %d or number of rows %d, status %d", table, ncols, nrows, status);
    }
 
+   //printf("get columns [%s]: status %d, ncols %d, nrows %d\n", table, status, ncols, nrows);
+
    int row = 0;
    while (Fetch()) {
       if (0) {
@@ -688,12 +688,6 @@ static void PrintTags(int ntags, const TAG tags[])
 {
    for (int i=0; i<ntags; i++)
       printf("tag %d: %s %s[%d]\n", i, midasTypeName(tags[i].type), tags[i].name, tags[i].n_data);
-}
-
-static void PrintTags(const TagVector& tags)
-{
-   for (size_t i=0; i<tags.size(); i++)
-      printf("tag %d: %s %s[%d]\n", (int)i, midasTypeName(tags[i].type), tags[i].name, tags[i].n_data);
 }
 
 int CreateEvent(SqlBase* sql, Event* e)
@@ -919,29 +913,6 @@ static std::string eventName2tableName(const char* s)
    return tagName2columnName(s);
 }
 
-static TagVector xx_get_tags_odbc(const char* eventName)
-{
-   assert(gSql);
-
-   TagVector tags;
-   
-   std::vector<std::string> columns = gSql->ListColumns(eventName2tableName(eventName).c_str());
-
-   for (unsigned int j=0; j<columns.size(); j+=2) {
-      if (columns[j] == "_t_time")
-         continue;
-      if (columns[j] == "_i_time")
-         continue;
-      TAG t;
-      STRLCPY(t.name, columns[j].c_str());
-      t.type = sql2midasType(columns[j+1].c_str());
-      t.n_data = 1;
-      tags.push_back(t);
-   }
-
-   return tags;
-}
-
 ////////////////////////////////////////////////////////
 //             Functions used by mlogger              //
 ////////////////////////////////////////////////////////
@@ -1151,160 +1122,6 @@ int hs_write_event_odbc(const char* event_name, time_t timestamp, const char* bu
 //             Functions used by mhttpd               //
 ////////////////////////////////////////////////////////
 
-static char* encode(const std::vector<std::string>& list)
-{
-   int len = 0;
-   for (unsigned int i=0; i<list.size(); i++) {
-      len += 1 + list[i].length();
-   }
-   len += 1;
-
-   char *s = (char*)malloc(len);
-   assert(s!=NULL);
-
-   int pos = 0;
-   for (unsigned int i=0; i<list.size(); i++) {
-      const char* eee = list[i].c_str();
-      int   lll = strlen(eee);
-      memcpy(s+pos, eee, lll);
-      s[pos+lll] = 0;
-      pos += lll + 1;
-   }
-   s[pos] = 0;
-   pos++;
-
-   assert(pos == len);
-
-   return s;
-}
-
-int hs_enum_events_odbc(int *num_events, char**event_names)
-{
-   assert(gSql);
-
-   *num_events = 0;
-   *event_names = NULL;
-
-   std::vector<std::string> tables = gSql->ListTables();
-
-   std::vector<std::string> events;
-
-   for (unsigned int i=0; i<tables.size(); i++) {
-      std::string ename = tables[i];
-      int pos = ename.find("_");
-      if (pos > 0)
-         ename = ename.substr(0, pos);
-
-      bool found = false;
-      for (unsigned int j=0; j<events.size(); j++) {
-         if (events[j] == ename) {
-            found = true;
-            break;
-         }
-      }
-
-      if (!found)
-         events.push_back(ename);
-   }
-
-#if 0
-   int len = 0;
-   for (unsigned int i=0; i<events.size(); i++) {
-      len += 1 + events[i].length();
-   }
-   len += 1;
-
-   char *s = (char*)malloc(len);
-   int pos = 0;
-   for (unsigned int i=0; i<events.size(); i++) {
-      const char* eee = events[i].c_str();
-      int   lll = strlen(eee);
-      memcpy(s+pos, eee, lll);
-      s[pos+lll] = 0;
-      pos += lll + 1;
-   }
-   s[pos] = 0;
-   pos++;
-
-   assert(pos == len);
-#endif
-
-   *num_events  = events.size();
-   *event_names = encode(events);
-      
-   return HS_SUCCESS;
-}
-
-int hs_enum_vars_odbc(const char* event_name, int *num_vars, char** var_names)
-{
-   assert(gSql);
-
-   *num_vars = 0;
-   *var_names = NULL;
-
-   std::vector<std::string> tables = gSql->ListTables();
-   std::vector<std::string> vars;
-
-   std::string ename = eventName2tableName(event_name);
-
-   int len = ename.length();
-   for (unsigned int i=0; i<tables.size(); i++) {
-      const char* t = tables[i].c_str();
-      const char* s = strstr(t, ename.c_str());
-
-      //printf("ename [%s], table [%s], t: %p, s: %p, char: [%c]\n", ename.c_str(), tables[i].c_str(), t, s, t[len]);
-      
-      if (s==t && (t[len]=='_'||t[len]==0)) {
-         
-         std::vector<std::string> columns = gSql->ListColumns(tables[i].c_str());
-         
-         for (unsigned int j=0; j<columns.size(); j+=2) {
-            if (columns[j] == "_t_time")
-               continue;
-            if (columns[j] == "_i_time")
-               continue;
-            //printf("column %s\n", columns[j].c_str());
-            vars.push_back(columns[j]);
-         }
-      }
-   }
-
-#if 0
-   char* p = (char*)malloc(vars.size()*NAME_LENGTH);
-
-   for (unsigned int i=0; i<vars.size(); i++) {
-      strlcpy(p + i*NAME_LENGTH, vars[i].c_str(), NAME_LENGTH);
-   }
-#endif
-      
-   *num_vars = vars.size();
-   *var_names = encode(vars);
-
-   return HS_SUCCESS;
-}
-
-int hs_get_events_odbc(int *num_events, char**event_names)
-{
-   assert(gSql);
-
-   *num_events = 0;
-   *event_names = NULL;
-
-   std::vector<std::string> tables = gSql->ListTables();
-
-   std::vector<std::string> events;
-
-   for (unsigned int i=0; i<tables.size(); i++) {
-      std::string ename = tables[i];
-      events.push_back(ename);
-   }
-
-   *num_events  = events.size();
-   *event_names = encode(events);
-      
-   return HS_SUCCESS;
-}
-
 int hs_get_tags_odbc(const char* event_name, int *n_tags, TAG **tags)
 {
    assert(gSql);
@@ -1316,6 +1133,25 @@ int hs_get_tags_odbc(const char* event_name, int *n_tags, TAG **tags)
 
    std::vector<std::string> columns = gSql->ListColumns(tname.c_str());
 
+   if (columns.size() < 1) {
+      cm_msg(MERROR, "hs_get_tags_odbc", "Cannot get columns for table \'%s\', try to reconnect to the database", tname.c_str());
+
+      gSql->Disconnect();
+      gSql->Connect(gOdbcDsn.c_str());
+      if (!gSql->IsConnected()) {
+
+         if (gAlarmName.length() > 0) {
+            char buf[256];
+            sprintf(buf, "%s lost connection to the history database", gAlarmName.c_str());
+            al_trigger_alarm(gAlarmName.c_str(), buf, "Alarm", "", AT_INTERNAL);
+         }
+
+         return HS_FILE_ERROR;
+      }
+
+      columns = gSql->ListColumns(tname.c_str());      
+   }
+
    TAG* t = (TAG*)malloc(sizeof(TAG)*columns.size());
    assert(t);
 
@@ -1326,9 +1162,14 @@ int hs_get_tags_odbc(const char* event_name, int *n_tags, TAG **tags)
       if (columns[j] == "_i_time")
          continue;
       STRLCPY(t[n].name, columns[j].c_str());
-      t[n].type = TID_DOUBLE;
+      t[n].type = sql2midasType(columns[j+1].c_str());
       t[n].n_data = 1;
       n++;
+   }
+
+   if (0) {
+      printf("event [%s] table [%s], tags: %d\n", event_name, tname.c_str(), n);
+      PrintTags(n, t);
    }
 
    *n_tags = n;
@@ -1363,6 +1204,13 @@ int hs_read_odbc(time_t start_time, time_t end_time, time_t interval,
         gSql->Disconnect();
         gSql->Connect(gOdbcDsn.c_str());
         if (!gSql->IsConnected()) {
+
+           if (gAlarmName.length() > 0) {
+              char buf[256];
+              sprintf(buf, "%s lost connection to the history database", gAlarmName.c_str());
+              al_trigger_alarm(gAlarmName.c_str(), buf, "Alarm", "", AT_INTERNAL);
+           }
+
            return HS_FILE_ERROR;
         }
 
