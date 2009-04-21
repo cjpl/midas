@@ -4293,6 +4293,9 @@ void show_sc_page(char *path, int refresh)
          if (!equal_ustring(group, "All") && !equal_ustring(str, group))
             continue;
 
+         if (strlen(name) < 1)
+            sprintf(name, "[%d]", i);
+
          rsprintf("<tr><td colspan=%d>%s", colspan, name);
 
          for (j = 0;; j++) {
@@ -4300,6 +4303,10 @@ void show_sc_page(char *path, int refresh)
             if (!hkey)
                break;
             db_get_key(hDB, hkey, &varkey);
+
+            /* check if "variables" array is shorter than the "names" array */
+            if (i >= varkey.num_values)
+               continue;
 
             size = sizeof(data);
             db_get_data_index(hDB, hkey, data, &size, i, varkey.type);
@@ -4449,16 +4456,21 @@ void show_sc_page(char *path, int refresh)
             /* data for current group */
             sprintf(str, "/Equipment/%s/Settings/Names %s", eq_name, varkey.name);
             db_find_key(hDB, 0, str, &hkeyset);
+            if (hkeyset)
+               db_get_key(hDB, hkeyset, &key);
 
             if (varkey.num_values > 1000)
                rsprintf("<tr><td colspan=9>%s<td align=center><i>... %d values ...</i>",
                         varkey.name, varkey.num_values);
             else {
                for (j = 0; j < varkey.num_values; j++) {
-                  if (hkeyset) {
+                  if (hkeyset && j<key.num_values) {
                      size = sizeof(name);
                      db_get_data_index(hDB, hkeyset, name, &size, j, TID_STRING);
                   } else
+                     sprintf(name, "%s[%d]", varkey.name, j);
+
+                  if (strlen(name) < 1)
                      sprintf(name, "%s[%d]", varkey.name, j);
 
                   rsprintf("<tr><td colspan=9>%s", name);
