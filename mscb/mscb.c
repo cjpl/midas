@@ -9,7 +9,7 @@
 
 \********************************************************************/
 
-#define MSCB_LIBRARY_VERSION   "2.5.0"
+#define MSCB_LIBRARY_VERSION   "2.5.1"
 #define MSCB_PROTOCOL_VERSION  "5"
 #define MSCB_SUBM_VERSION      5
 
