@@ -1736,7 +1736,9 @@ INT ss_mutex_create(const char *name, HNDLE * mutex_handle)
             as the binary is an optimized mutex.
 
   Input:
-    char   *name            Name of the mutex to create
+    char   *name            Name of the mutex to create.
+                            Special blank name "" creates a local mutex for
+                            syncronization between threads in multithreaded applications.
 
   Output:
     HNDLE  *mutex_handle    Handle of the created mutex
@@ -1748,7 +1750,7 @@ INT ss_mutex_create(const char *name, HNDLE * mutex_handle)
 
 \********************************************************************/
 {
-   char mutex_name[256], path[256], file_name[256];
+   char mutex_name[256];
 
    /* Add a leading SM_ to the mutex name */
    sprintf(mutex_name, "MX_%s", name);
@@ -1762,25 +1764,6 @@ INT ss_mutex_create(const char *name, HNDLE * mutex_handle)
    return SS_CREATED;
 
 #endif                          /* OS_VXWORKS */
-
-   /* Build the filename out of the path and the name of the mutex */
-   cm_get_path(path);
-   if (path[0] == 0) {
-      getcwd(path, 256);
-#if defined(OS_VMS)
-#elif defined(OS_UNIX)
-      strcat(path, "/");
-#elif defined(OS_WINNT)
-      strcat(path, "\\");
-#endif
-   }
-
-   strcpy(file_name, path);
-#if defined (OS_UNIX)
-   strcat(file_name, ".");      /* dot file under UNIX */
-#endif
-   strcat(file_name, name);
-   strcat(file_name, ".SHM");
 
 #ifdef OS_WINNT
 
@@ -1821,8 +1804,35 @@ INT ss_mutex_create(const char *name, HNDLE * mutex_handle)
 #ifdef OS_UNIX
 
    {
-      INT key, status, fh;
+      INT key = IPC_PRIVATE;
+      int status;
       struct semid_ds buf;
+
+      if (name[0] != 0) {
+         int fh;
+         char path[256], file_name[256];
+
+         /* Build the filename out of the path and the name of the mutex */
+         cm_get_path(path);
+         if (path[0] == 0) {
+            getcwd(path, 256);
+            strcat(path, "/");
+         }
+
+         strcpy(file_name, path);
+         strcat(file_name, ".");
+         strcat(file_name, name);
+         strcat(file_name, ".SHM");
+
+         /* create a unique key from the file name */
+         key = ftok(file_name, 'M');
+         if (key < 0) {
+            fh = open(file_name, O_CREAT, 0644);
+            close(fh);
+            key = ftok(file_name, 'M');
+            status = SS_CREATED;
+         }
+      }
 
 #if (defined(OS_LINUX) && !defined(_SEM_SEMUN_UNDEFINED) && !defined(OS_CYGWIN)) || defined(OS_FREEBSD)
       union semun arg;
@@ -1835,15 +1845,6 @@ INT ss_mutex_create(const char *name, HNDLE * mutex_handle)
 #endif
 
       status = SS_SUCCESS;
-
-      /* create a unique key from the file name */
-      key = ftok(file_name, 'M');
-      if (key < 0) {
-         fh = open(file_name, O_CREAT, 0644);
-         close(fh);
-         key = ftok(file_name, 'M');
-         status = SS_CREATED;
-      }
 
       /* create or get semaphore */
       *mutex_handle = (HNDLE) semget(key, 1, 0);
@@ -1866,7 +1867,7 @@ INT ss_mutex_create(const char *name, HNDLE * mutex_handle)
       semctl(*mutex_handle, 0, IPC_SET, arg);
 
       /* if semaphore was created, set value to one */
-      if (status == SS_CREATED) {
+      if (key == IPC_PRIVATE || status == SS_CREATED) {
          arg.val = 1;
          if (semctl(*mutex_handle, 0, SETVAL, arg) < 0)
             return SS_NO_MUTEX;
@@ -1965,14 +1966,22 @@ INT ss_mutex_wait_for(HNDLE mutex_handle, INT timeout)
       start_time = ss_millitime();
 
       do {
+#ifdef OS_LINUX
+         struct timespec ts;
+         ts.tv_sec  = 1;
+         ts.tv_nsec = 0;
+         
+         status = semtimedop(mutex_handle, &sb, 1, &ts);
+#else
          status = semop(mutex_handle, &sb, 1);
+#endif
 
          /* return on success */
          if (status == 0)
             break;
 
          /* retry if interrupted by a ss_wake signal */
-         if (errno == EINTR) {
+         if (errno == EINTR || errno == EAGAIN) {
             /* return if timeout expired */
             if (timeout > 0 && (int) (ss_millitime() - start_time) > timeout)
                return SS_TIMEOUT;
