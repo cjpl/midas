@@ -3209,6 +3209,10 @@ INT cm_transition(INT transition, INT run_number, char *errstr, INT errstr_size,
       
       if (transition == TR_STOP)
          strlcat(str, " STOP", sizeof(str));
+      else if (transition == TR_PAUSE)
+         strlcat(str, " PAUSE", sizeof(str));
+      else if (transition == TR_RESUME)
+         strlcat(str, " RESUME", sizeof(str));
       else if (transition == TR_START)
          strlcat(str, " DELAY \"/logger/Auto restart delay\" START", sizeof(str));
 
