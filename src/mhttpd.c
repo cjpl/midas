@@ -1036,13 +1036,13 @@ void show_status_page(int refresh, char *cookie_wpwd)
    rsprintf("<tr><td colspan=6 bgcolor=#C0C0C0>\n");
 
    if (runinfo.state == STATE_STOPPED)
-      rsprintf("<input type=submit name=cmd value=Start>\n");
-   else if (runinfo.state == STATE_PAUSED)
-      rsprintf("<input type=submit name=cmd value=Resume>\n");
+      rsprintf("<input type=submit name=cmd %s value=Start>\n", runinfo.transition_in_progress?"disabled":"");
    else {
       rsprintf("<noscript>\n");
-      rsprintf("<input type=submit name=cmd value=Stop>\n");
-      rsprintf("<input type=submit name=cmd value=Pause>\n");
+      if (runinfo.state == STATE_PAUSED || runinfo.state == STATE_RUNNING)
+         rsprintf("<input type=submit name=cmd %s value=Stop>\n", runinfo.transition_in_progress?"disabled":"");
+      if (runinfo.state == STATE_RUNNING)
+         rsprintf("<input type=submit name=cmd %s value=Pause>\n", runinfo.transition_in_progress?"disabled":"");
       rsprintf("</noscript>\n");
       rsprintf("<script type=\"text/javascript\">\n");
       rsprintf("<!--\n");
@@ -1058,10 +1058,14 @@ void show_status_page(int refresh, char *cookie_wpwd)
       rsprintf("   if (flag == true)\n");
       rsprintf("      window.location.href = '?cmd=Pause';\n");
       rsprintf("}\n");
-      rsprintf("document.write('<input type=button value=Stop onClick=\"stop();\">\\n');\n");
-      rsprintf("document.write('<input type=button value=Pause onClick=\"pause();\"\\n>');\n");
+      if (runinfo.state == STATE_PAUSED || runinfo.state == STATE_RUNNING)
+         rsprintf("document.write('<input type=button %s value=Stop onClick=\"stop();\">\\n');\n", runinfo.transition_in_progress?"disabled":"");
+      if (runinfo.state == STATE_RUNNING)
+         rsprintf("document.write('<input type=button %s value=Pause onClick=\"pause();\"\\n>');\n", runinfo.transition_in_progress?"disabled":"");
       rsprintf("//-->\n");
       rsprintf("</script>\n");
+      if (runinfo.state == STATE_PAUSED)
+         rsprintf("<input type=submit name=cmd %s value=Resume>\n", runinfo.transition_in_progress?"disabled":"");
    }
 
    rsprintf("<input type=submit name=cmd value=ODB>\n");
@@ -1277,6 +1281,9 @@ void show_status_page(int refresh, char *cookie_wpwd)
       rsprintf("<td colspan=1 bgcolor=#00FF00>Running");
    else
       rsprintf("<td colspan=1 bgcolor=#FFFFFF>Unknown");
+
+   if (runinfo.transition_in_progress)
+      rsprintf("<br><b>Transition in progress</b>");
 
    if (runinfo.requested_transition)
       for (i = 0; i < 4; i++)
@@ -12321,7 +12328,7 @@ void interprete(char *cookie_pwd, char *cookie_wpwd, char *cookie_cpwd, char *pa
       if (!check_web_password(cookie_wpwd, "?cmd=pause", experiment))
          return;
 
-      status = cm_transition(TR_PAUSE, 0, str, sizeof(str), SYNC, FALSE);
+      status = cm_transition(TR_PAUSE, 0, str, sizeof(str), DETACH, FALSE);
       if (status != CM_SUCCESS && status != CM_DEFERRED_TRANSITION)
          show_error(str);
       else if (isparam("redir"))
@@ -12343,7 +12350,7 @@ void interprete(char *cookie_pwd, char *cookie_wpwd, char *cookie_cpwd, char *pa
       if (!check_web_password(cookie_wpwd, "?cmd=resume", experiment))
          return;
 
-      status = cm_transition(TR_RESUME, 0, str, sizeof(str), SYNC, FALSE);
+      status = cm_transition(TR_RESUME, 0, str, sizeof(str), DETACH, FALSE);
       if (status != CM_SUCCESS && status != CM_DEFERRED_TRANSITION)
          show_error(str);
       else if (isparam("redir"))
@@ -12395,7 +12402,7 @@ void interprete(char *cookie_pwd, char *cookie_wpwd, char *cookie_cpwd, char *pa
             return;
          }
 
-         status = cm_transition(TR_START, i, str, sizeof(str), SYNC, FALSE);
+         status = cm_transition(TR_START, i, str, sizeof(str), DETACH, FALSE);
          if (status != CM_SUCCESS && status != CM_DEFERRED_TRANSITION) {
             show_error(str);
          } else {
@@ -12403,6 +12410,10 @@ void interprete(char *cookie_pwd, char *cookie_wpwd, char *cookie_cpwd, char *pa
                redirect(getparam("redir"));
             else
                redirect("");
+            /* if we return too quicly, mtransition did not get a chance to start
+               and set "transition_in_progress" and until the status page is manually refreshed,
+               it looks like pushing the "start" button had no effect. KO 2009-Apr-28 */
+            ss_sleep(1000);
          }
       }
       return;
@@ -12411,7 +12422,7 @@ void interprete(char *cookie_pwd, char *cookie_wpwd, char *cookie_cpwd, char *pa
    /*---- stop run --------------------------------------------*/
 
    if (equal_ustring(command, "stop")) {
-      if (run_state != STATE_RUNNING) {
+      if (run_state != STATE_RUNNING && run_state != STATE_PAUSED) {
          show_error("Run is not running");
          return;
       }
@@ -12419,7 +12430,7 @@ void interprete(char *cookie_pwd, char *cookie_wpwd, char *cookie_cpwd, char *pa
       if (!check_web_password(cookie_wpwd, "?cmd=stop", experiment))
          return;
 
-      status = cm_transition(TR_STOP, 0, str, sizeof(str), SYNC, FALSE);
+      status = cm_transition(TR_STOP, 0, str, sizeof(str), DETACH, FALSE);
       if (status != CM_SUCCESS && status != CM_DEFERRED_TRANSITION)
          show_error(str);
       else if (isparam("redir"))
