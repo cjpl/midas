@@ -133,8 +133,8 @@ sbit RS485_SEC_ENABLE = P0 ^ 6;
 #define LED_ON 0
 sbit RS485_ENABLE = P1 ^ 0;
 
-//#define EXT_WATCHDOG
-//sbit EXT_WATCHDOG_PIN = P2 ^ 1;
+#define EXT_WATCHDOG
+sbit EXT_WATCHDOG_PIN = P2 ^ 1;
 
 #undef HAVE_EEPROM
 
