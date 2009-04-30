@@ -3199,6 +3199,17 @@ INT cm_transition(INT transition, INT run_number, char *errstr, INT errstr_size,
       return CM_INVALID_TRANSITION;
    }
 
+   /* get key of local client */
+   cm_get_experiment_database(&hDB, &hKeylocal);
+
+   if (errstr != NULL)
+      strlcpy(errstr, "Unknown error", errstr_size);
+
+   if (debug_flag == 0) {
+      size = sizeof(i);
+      db_get_value(hDB, 0, "/Experiment/Transition debug flag", &debug_flag, &size, TID_INT, TRUE);
+   }
+
    /* do detached transition via mtransition tool */
    if (async_flag == DETACH) {
 #ifdef OS_WINNT
@@ -3206,6 +3217,9 @@ INT cm_transition(INT transition, INT run_number, char *errstr, INT errstr_size,
 #else
       strcpy(str, "mtransition ");
 #endif
+
+      if (debug_flag)
+         sprintf(str + strlen(str), " -d %d", debug_flag);
       
       if (transition == TR_STOP)
          strlcat(str, " STOP", sizeof(str));
@@ -3214,22 +3228,23 @@ INT cm_transition(INT transition, INT run_number, char *errstr, INT errstr_size,
       else if (transition == TR_RESUME)
          strlcat(str, " RESUME", sizeof(str));
       else if (transition == TR_START)
-         strlcat(str, " DELAY \"/logger/Auto restart delay\" START", sizeof(str));
+         sprintf(str + strlen(str), " DELAY \"/logger/Auto restart delay\" START %d", run_number);
 
 #ifdef OS_WINNT
 #else
       strlcat(str, " &", sizeof(str)); // start in background
 #endif
 
-      system(str);
+      status = system(str);
+
+      if (status != 0) {
+         if (errstr != NULL)
+            sprintf(errstr, "Cannot execute mtransition, system() returned %d", status);
+         return CM_SET_ERROR;
+      }
+
       return CM_SUCCESS;
    }
-
-   /* get key of local client */
-   cm_get_experiment_database(&hDB, &hKeylocal);
-
-   if (errstr != NULL)
-      strlcpy(errstr, "Unknown error", errstr_size);
 
    /* if no run number is given, get it from DB */
    if (run_number == 0) {
