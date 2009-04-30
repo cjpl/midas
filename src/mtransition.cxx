@@ -31,9 +31,9 @@ int read_state(HNDLE hDB)
 
 void usage()
 {
-   fprintf(stderr, "Usage: mtransition [-v] [-h Hostname] [-e Experiment] commands...\n");
+   fprintf(stderr, "Usage: mtransition [-v] [-d debug_flag] [-h Hostname] [-e Experiment] commands...\n");
    fprintf(stderr, "Commands:\n");
-   fprintf(stderr, "  START - start a new run\n");
+   fprintf(stderr, "  START [runno] - start a new run\n");
    fprintf(stderr, "  STOP - stop the run\n");
    fprintf(stderr, "  PAUSE - pause the run\n");
    fprintf(stderr, "  RESUME - resume the run\n");
@@ -49,6 +49,7 @@ int main(int argc, char *argv[])
 {
    int status;
    bool verbose = false;
+   int debug_flag = 0;
    char host_name[HOST_NAME_LENGTH], exp_name[NAME_LENGTH];
 
    /* get default from environment */
@@ -63,6 +64,8 @@ int main(int argc, char *argv[])
       if (argv[i][0] == '-') {
          if (argv[i][1] == 'v')
             verbose = true;
+         else if (argv[i][1] == 'd' && i < argc-1)
+            debug_flag = strtoul(argv[++i], NULL, 0);
          else if (argv[i][1] == 'e' && i < argc-1)
             strlcpy(exp_name, argv[++i], sizeof(exp_name));
          else if (argv[i][1] == 'h' && i < argc-1)
@@ -71,6 +74,11 @@ int main(int argc, char *argv[])
             usage(); // does not return
          }
       }
+
+   if (debug_flag)
+      verbose = true;
+   else if (verbose)
+      debug_flag = 1;
 
    /* do not produce a startup message */
    cm_set_msg_print(MT_ERROR, 0, NULL);
@@ -99,6 +107,14 @@ int main(int argc, char *argv[])
       if (argv[i][0] == '-') {
         
          // skip command line switches
+
+         if (argv[i][1] == 'd')
+            i++;
+         else if (argv[i][1] == 'h')
+            i++;
+         if (argv[i][1] == 'e')
+            i++;
+
          continue;
 
       } else if (strcmp(argv[i], "START") == 0) {
@@ -129,11 +145,18 @@ int main(int argc, char *argv[])
 
          int new_run_number = old_run_number + 1;
 
+         if (i+1 < argc) {
+            if (isdigit(argv[i+1][0])) {
+               new_run_number = atoi(argv[i+1]);
+               i++;
+            }
+         }
+
          if (verbose)
             printf("Starting run %d\n", new_run_number);
 
          char str[256];
-         status = cm_transition(TR_START, new_run_number, str, sizeof(str), SYNC, verbose);
+         status = cm_transition(TR_START, new_run_number, str, sizeof(str), SYNC, debug_flag);
          if (status != CM_SUCCESS) {
             /* in case of error, reset run number */
             status = db_set_value(hDB, 0, "/Runinfo/Run number", &old_run_number, sizeof(old_run_number), 1, TID_INT);
@@ -153,7 +176,7 @@ int main(int argc, char *argv[])
          }
 
          char str[256];
-         status = cm_transition(TR_STOP, 0, str, sizeof(str), SYNC, verbose);
+         status = cm_transition(TR_STOP, 0, str, sizeof(str), SYNC, debug_flag);
 
          if (status != CM_SUCCESS)
             printf("STOP: cm_transition status %d, message \'%s\'\n", status, str);
@@ -177,7 +200,7 @@ int main(int argc, char *argv[])
          }
 
          char str[256];
-         status = cm_transition(TR_PAUSE, 0, str, sizeof(str), SYNC, verbose);
+         status = cm_transition(TR_PAUSE, 0, str, sizeof(str), SYNC, debug_flag);
 
          if (status != CM_SUCCESS)
             printf("PAUSE: cm_transition status %d, message \'%s\'\n", status, str);
@@ -197,7 +220,7 @@ int main(int argc, char *argv[])
          }
 
          char str[256];
-         status = cm_transition(TR_RESUME, 0, str, sizeof(str), SYNC, verbose);
+         status = cm_transition(TR_RESUME, 0, str, sizeof(str), SYNC, debug_flag);
          if (status != CM_SUCCESS)
             printf("RESUME: cm_transition status %d, message \'%s\'\n", status, str);
 
