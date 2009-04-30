@@ -1414,11 +1414,11 @@ INT ss_daemon_init(BOOL keep_stdout)
       if (fd < 0)
          fd = open("/dev/null", O_WRONLY, 0);
       if (fd < 0) {
-         cm_msg(MERROR, "ss_system", "Can't open /dev/null");
+         cm_msg(MERROR, "ss_daemon_init", "Can't open /dev/null");
          return SS_ABORT;
       }
       if (fd != i) {
-         cm_msg(MERROR, "ss_system", "Did not get file descriptor");
+         cm_msg(MERROR, "ss_daemon_init", "Did not get file descriptor");
          return SS_ABORT;
       }
    }
