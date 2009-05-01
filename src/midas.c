@@ -141,6 +141,8 @@ static INT _debug_mode = 0;
 
 static INT _watchdog_last_called = 0;
 
+int _rpc_connect_timeout = 10000;
+
 /* table for transition functions */
 
 typedef struct {
@@ -2123,7 +2125,7 @@ INT cm_list_experiments(char *host_name, char exp_name[MAX_EXPERIMENT][NAME_LENG
 
    for (i = 0; i < MAX_EXPERIMENT; i++) {
       exp_name[i][0] = 0;
-      status = recv_string(sock, str, sizeof(str), 1000);
+      status = recv_string(sock, str, sizeof(str), _rpc_connect_timeout);
 
       if (status < 0)
          return RPC_NET_ERROR;
@@ -8201,7 +8203,7 @@ INT rpc_client_connect(char *host_name, INT port, char *client_name, HNDLE * hCo
    send(sock, str, strlen(str) + 1, 0);
 
    /* receive remote computer info */
-   i = recv_string(sock, str, sizeof(str), 10000);
+   i = recv_string(sock, str, sizeof(str), _rpc_connect_timeout);
    if (i <= 0) {
       cm_msg(MERROR, "rpc_client_connect", "timeout on receive remote computer info: %s", str);
       return RPC_NET_ERROR;
@@ -8485,7 +8487,7 @@ INT rpc_server_connect(char *host_name, char *exp_name)
       sprintf(str, "C %d %d %d %s %s", listen_port1, listen_port2, listen_port3, cm_get_version(), exp_name);
 
    send(sock, str, strlen(str) + 1, 0);
-   i = recv_string(sock, str, sizeof(str), 10000);
+   i = recv_string(sock, str, sizeof(str), _rpc_connect_timeout);
    closesocket(sock);
    if (i <= 0) {
       cm_msg(MERROR, "rpc_server_connect", "timeout on receive status from server");
@@ -8522,7 +8524,7 @@ INT rpc_server_connect(char *host_name, char *exp_name)
    FD_SET(lsock2, &readfds);
    FD_SET(lsock3, &readfds);
 
-   timeout.tv_sec = 5;
+   timeout.tv_sec  = _rpc_connect_timeout/1000;
    timeout.tv_usec = 0;
 
    do {
@@ -8583,7 +8585,7 @@ INT rpc_server_connect(char *host_name, char *exp_name)
    send(_server_connection.send_sock, str, strlen(str) + 1, 0);
 
    /* receive remote computer info */
-   i = recv_string(_server_connection.send_sock, str, sizeof(str), 10000);
+   i = recv_string(_server_connection.send_sock, str, sizeof(str), _rpc_connect_timeout);
    if (i <= 0) {
       cm_msg(MERROR, "rpc_server_connect", "timeout on receive remote computer info");
       return RPC_NET_ERROR;
@@ -8776,7 +8778,8 @@ INT rpc_get_option(HNDLE hConn, INT item)
   Purpose: Get actual RPC option
 
   Input:
-    HNDLE hConn             RPC connection handle
+    HNDLE hConn             RPC connection handle, -1 for server connection, -2 for rpc connect timeout
+
     INT   item              One of RPC_Oxxx
 
   Output:
@@ -8791,6 +8794,8 @@ INT rpc_get_option(HNDLE hConn, INT item)
    case RPC_OTIMEOUT:
       if (hConn == -1)
          return _server_connection.rpc_timeout;
+      if (hConn == -2)
+         return _rpc_connect_timeout;
       return _client_connection[hConn - 1].rpc_timeout;
 
    case RPC_OTRANSPORT:
@@ -8876,7 +8881,7 @@ INT rpc_get_option(HNDLE hConn, INT item)
 /********************************************************************/
 /**
 Set RPC option
-@param hConn              RPC connection handle
+@param hConn              RPC connection handle, -1 for server connection, -2 for rpc connect timeout
 @param item               One of RPC_Oxxx
 @param value              Value to set
 @return RPC_SUCCESS
@@ -8887,6 +8892,8 @@ INT rpc_set_option(HNDLE hConn, INT item, INT value)
    case RPC_OTIMEOUT:
       if (hConn == -1)
          _server_connection.rpc_timeout = value;
+      else if (hConn == -2)
+         _rpc_connect_timeout = value;
       else
          _client_connection[hConn - 1].rpc_timeout = value;
       break;
@@ -11918,7 +11925,7 @@ INT rpc_server_callback(struct callback_addr * pcallback)
              strerror(errno));
 #endif
 
-   if (recv_string(recv_sock, net_buffer, 256, 10000) <= 0) {
+   if (recv_string(recv_sock, net_buffer, 256, _rpc_connect_timeout) <= 0) {
       cm_msg(MERROR, "rpc_server_callback", "timeout on receive remote computer info");
       goto error;
    }
