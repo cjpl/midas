@@ -278,13 +278,13 @@ actual equipment (see @ref Frontend_code).
 This permits a higher flexibility of the history system such as dynamic modification
 of the event structure without restarting the Midas logger.
 At any given time, data-over-time relation can be queried from the disk file
-through a Midas utility @ref mhist_task or displayed through the @ref mhttpd_task.
+through a Midas utilities @ref mhdump_task, @ref mh2sql_task and @ref mhist_task or displayed through the @ref mhttpd_task.
 
 The history data extraction from the disk file is done using low level file function
 giving similar result as a standard database mechanism but with faster access time.
 Due to its simple use and good display quality, this section has been reworked to be able
 to handle larger number of parameters. This is one of the main 2.1.0 modification, 
-see @ref History_System, @ref ODB_History_Tree.
+see @ref History_internal, @ref History_System, @ref ODB_History_Tree.
 
 @section Alarm_System Alarm System
 The Midas alarm mechanism is a built-in feature of the Midas server. It acts upon the
