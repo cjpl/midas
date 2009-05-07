@@ -22,6 +22,8 @@ provide access to the Online data base and run control.
 - @ref mcnaf_task : CAMAC standalone application 
 - @ref mhttpd_task : Midas Web server
 - @ref melog_task : Electronic entry application 
+- @ref mhdump_task : History file dump application
+- @ref mh2sql_task : Import history files into an SQL database
 - @ref mhist_task : History retrieval application
 - @ref mchart_task : Standalone Chart display application
 - @ref mtape_task : Tape device manipulator
@@ -882,6 +884,81 @@ Electronic Log utility. Submit full Elog entry to the specified Elog port.
 \endcode
 - <b> Remarks </b>
 
+
+<hr> @section mhdump_task mhdump task
+History file dump application.
+
+\code
+Usage: mhdump [-h] [-L] [-n] [-t] [-E event_id] [-T tag_name] file1.hst file2.hst ...
+\endcode
+
+To run mhdump, give it any number of history file names. By default mhdump will print all information available in the file in a human-readable and computer-parsable format.
+
+Derivative from mhdump are utilities mh2sql for importing history files into an SQL database and mhrewrite for changing the structure of history files.
+
+To limit the output to given events and tags, use the "-E" and "-T" command line switches. To only see event definitions, use the "-L" command line switches. Other available command line switches and options are listed here:
+
+\code
+
+Switches:
+  -h --- print this help message
+  -L --- list tag definitions only
+  -t --- omit tag definitions
+  -n --- omit variable names
+
+Examples:
+  To list all existing tags: mhdump -L file1.hst file2.hst ...
+  To show data for all events, all tags: mhdump file1.hst file2.hst ...
+  To show all data for event 0: mhdump -E 0 file1.hst file2.hst ...
+  To show data for event 0, tag "State": mhdump -n -E 0 -T State file1.hst file2.hst ...
+  To show data for event 3, tag "MCRT", array index 5: mhdump -n -E 3 -T MCRT[5] file1.hst file2.hst ...
+\endcode
+
+Example:
+\code
+./linux/bin/mhdump ~/alpha/alphacpc09-elog-history/history/081101.hst
+...
+Event 6001, "labview/LTMP", size 680, 17 tags.
+  Tag 0: "TMP.SOL.IGBT"[1], type "DOUBLE" (10), type size 8, offset 0+8
+  Tag 1: "TMP.SOL.Diode"[1], type "DOUBLE" (10), type size 8, offset 8+8
+  Tag 2: "TMP.SOL.DiodeOut"[1], type "DOUBLE" (10), type size 8, offset 16+8
+  Tag 3: "TMP.SOL.PosBus"[1], type "DOUBLE" (10), type size 8, offset 24+8
+  Tag 4: "TMP.USTR.IGBT"[1], type "DOUBLE" (10), type size 8, offset 32+8
+  Tag 5: "TMP.USTR.Diode"[1], type "DOUBLE" (10), type size 8, offset 40+8
+  Tag 6: "TMP.USTR.CrossOver"[1], type "DOUBLE" (10), type size 8, offset 48+8
+  Tag 7: "TMP.USTR.PosBus"[1], type "DOUBLE" (10), type size 8, offset 56+8
+  Tag 8: "TMP.OCT.IGBT"[1], type "DOUBLE" (10), type size 8, offset 64+8
+  Tag 9: "TMP.OCT.Diode"[1], type "DOUBLE" (10), type size 8, offset 72+8
+  Tag 10: "TMP.OCT.CrossOver"[1], type "DOUBLE" (10), type size 8, offset 80+8
+  Tag 11: "TMP.OCT.PosBus"[1], type "DOUBLE" (10), type size 8, offset 88+8
+  Tag 12: "TMP.DSTR.IGBT"[1], type "DOUBLE" (10), type size 8, offset 96+8
+  Tag 13: "TMP.DSTR.Diode"[1], type "DOUBLE" (10), type size 8, offset 104+8
+  Tag 14: "TMP.DSTR.CrossOver"[1], type "DOUBLE" (10), type size 8, offset 112+8
+  Tag 15: "TMP.DSTR.PosBus"[1], type "DOUBLE" (10), type size 8, offset 120+8
+  Tag 16: "LTMP_Timestamp"[1], type "DOUBLE" (10), type size 8, offset 128+8
+6001 1225494000  TMP.SOL.IGBT=22.7  TMP.SOL.Diode=23.1  TMP.SOL.DiodeOut=24.1  TMP.SOL.PosBus=24  TMP.USTR.IGBT=23.3  TMP.USTR.Diode=23.2  TMP.USTR.CrossOver=23.
+5  TMP.USTR.PosBus=23.8  TMP.OCT.IGBT=23.5  TMP.OCT.Diode=23.2  TMP.OCT.CrossOver=23.9  TMP.OCT.PosBus=23.8  TMP.DSTR.IGBT=22  TMP.DSTR.Diode=22.1  TMP.DSTR.Cros
+sOver=23  TMP.DSTR.PosBus=23.1  LTMP_Timestamp=3308338795.271  Fri Oct 31 16:00:00 2008
+...
+\endcode
+
+<hr> @section mh2sql_task mh2sql task
+Import history files into SQL database.
+
+\code
+Usage: mh2sql odbc_dsn file1.hst file2.hst ...
+\endcode
+
+mh2sql imports history files into an SQL database in the same way as if they were written into the database by mlogger.
+
+\code
+
+Switches:
+  -h --- print this help message
+
+Examples:
+  ...
+\endcode
 
 <hr> @section mhist_task mhist task
 History data retriever.
