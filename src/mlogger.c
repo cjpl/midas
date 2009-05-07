@@ -1,3 +1,4 @@
+
 /********************************************************************\
 
   Name:         mlogger.c
@@ -45,10 +46,6 @@ void create_sql_tree();
 
 /*---- globals -----------------------------------------------------*/
 
-#ifndef DEBUG_TRANS
-#define DEBUG_TRANS 0
-#endif
-
 #define LOGGER_TIMEOUT 60000
 
 #define MAX_CHANNELS 10
@@ -57,6 +54,8 @@ BOOL in_stop_transition = FALSE;
 BOOL tape_message = TRUE;
 BOOL verbose = FALSE;
 BOOL stop_requested = FALSE;
+BOOL start_requested = FALSE;
+DWORD auto_restart = 0;
 
 LOG_CHN log_chn[MAX_CHANNELS];
 
@@ -2318,14 +2317,107 @@ INT log_close(LOG_CHN * log_chn, INT run_number)
 
 /*---- log_write ---------------------------------------------------*/
 
+int stop_the_run(int restart)
+{
+   int status;
+   char errstr[256];
+   int size, flag, trans_flag;
+
+   if (restart) {
+      size = sizeof(BOOL);
+      flag = FALSE;
+      db_get_value(hDB, 0, "/Logger/Auto restart", &flag, &size, TID_BOOL, TRUE);
+
+      if (flag) {
+         start_requested = TRUE;
+         auto_restart = 0;
+      }
+   }
+
+   stop_requested = TRUE;
+
+   size = sizeof(BOOL);
+   flag = FALSE;
+   db_get_value(hDB, 0, "/Logger/Async transitions", &flag, &size, TID_BOOL, TRUE);
+
+   if (flag)
+      trans_flag = ASYNC;
+   else
+      trans_flag = DETACH;
+
+   status = cm_transition(TR_STOP, 0, errstr, sizeof(errstr), trans_flag, verbose);
+   if (status != CM_SUCCESS) {
+      cm_msg(MERROR, "log_write", "cannot stop the run: %s", errstr);
+      return status;
+   }
+
+   return status;
+}
+
+int start_the_run()
+{
+   int status, size, state, run_number;
+   int flag, trans_flag;
+   char errstr[256];
+
+   start_requested = FALSE;
+   auto_restart = 0;
+
+   /* check if autorestart is still on */
+   size = sizeof(BOOL);
+   flag = FALSE;
+   db_get_value(hDB, 0, "/Logger/Auto restart", &flag, &size, TID_BOOL, TRUE);
+
+   if (!flag) {
+      cm_msg(MINFO, "main", "Run auto restart canceled");
+      return SUCCESS;
+   }
+
+   /* check if really stopped */
+   size = sizeof(state);
+   status = db_get_value(hDB, 0, "Runinfo/State", &state, &size, TID_INT, TRUE);
+   if (status != DB_SUCCESS) {
+      cm_msg(MERROR, "main", "cannot get Runinfo/State in database");
+      return status;
+   }
+  
+   if (state != STATE_STOPPED)
+      return SUCCESS;
+
+   size = sizeof(run_number);
+   status = db_get_value(hDB, 0, "/Runinfo/Run number", &run_number, &size, TID_INT, TRUE);
+   assert(status == SUCCESS);
+    
+   if (run_number <= 0) {
+      cm_msg(MERROR, "main", "aborting on attempt to use invalid run number %d", run_number);
+      abort();
+   }
+    
+   size = sizeof(BOOL);
+   flag = FALSE;
+   db_get_value(hDB, 0, "/Logger/Async transitions", &flag, &size, TID_BOOL, TRUE);
+
+   if (flag)
+      trans_flag = ASYNC;
+   else
+      trans_flag = DETACH;
+
+   cm_msg(MTALK, "main", "starting new run");
+   status = cm_transition(TR_START, run_number + 1, errstr, sizeof(errstr), trans_flag, verbose);
+   if (status != CM_SUCCESS)
+      cm_msg(MERROR, "main", "cannot restart run: %s", errstr);
+
+   return status;
+}
+
 INT log_write(LOG_CHN * log_chn, EVENT_HEADER * pevent)
 {
    INT status = 0, size, izero;
    DWORD actual_time, start_time, watchdog_timeout;
-   BOOL watchdog_flag, flag;
+   BOOL watchdog_flag;
    static DWORD last_checked = 0;
    HNDLE htape, stats_hkey;
-   char tape_name[256], errstr[256];
+   char tape_name[256];
    double dzero;
 
    start_time = ss_millitime();
@@ -2357,9 +2449,7 @@ INT log_write(LOG_CHN * log_chn, EVENT_HEADER * pevent)
       else
          cm_msg(MTALK, "log_write", "Error writing to %s, stopping run", log_chn->path);
 
-      stop_requested = TRUE;
-      cm_transition(TR_STOP, 0, NULL, 0, ASYNC, DEBUG_TRANS);
-      stop_requested = FALSE;
+      stop_the_run(0);
 
       return status;
    }
@@ -2373,16 +2463,7 @@ INT log_write(LOG_CHN * log_chn, EVENT_HEADER * pevent)
       cm_msg(MTALK, "log_write", "stopping run after having received %1.0lf events",
              log_chn->settings.event_limit);
 
-      status = cm_transition(TR_STOP, 0, errstr, sizeof(errstr), DETACH, DEBUG_TRANS);
-      if (status != CM_SUCCESS)
-         cm_msg(MERROR, "log_write", "cannot stop run: %s", errstr);
-
-      /* check if autorestart, mtransition will take care of it */
-      size = sizeof(BOOL);
-      flag = FALSE;
-      db_get_value(hDB, 0, "/Logger/Auto restart", &flag, &size, TID_BOOL, TRUE);
-      if (flag)
-         cm_transition(TR_START, 0, errstr, sizeof(errstr), DETACH, DEBUG_TRANS);
+      status = stop_the_run(1);
 
       return status;
    }
@@ -2415,16 +2496,7 @@ INT log_write(LOG_CHN * log_chn, EVENT_HEADER * pevent)
       cm_msg(MTALK, "log_write", "stopping run after having received %1.0lf mega bytes",
              log_chn->statistics.bytes_written / 1E6);
 
-      status = cm_transition(TR_STOP, 0, NULL, 0, DETACH, DEBUG_TRANS);
-      if (status != CM_SUCCESS)
-         cm_msg(MERROR, "log_write", "cannot stop run after reaching bytes limit");
-
-      /* check if autorestart, mtransition will take care of it */
-      size = sizeof(BOOL);
-      flag = FALSE;
-      db_get_value(hDB, 0, "/Logger/Auto restart", &flag, &size, TID_BOOL, TRUE);
-      if (flag)
-         cm_transition(TR_START, 0, errstr, sizeof(errstr), DETACH, DEBUG_TRANS);
+      status = stop_the_run(1);
 
       return status;
    }
@@ -2441,9 +2513,7 @@ INT log_write(LOG_CHN * log_chn, EVENT_HEADER * pevent)
       strcpy(tape_name, log_chn->path);
       stats_hkey = log_chn->stats_hkey;
 
-      status = cm_transition(TR_STOP, 0, NULL, 0, DETACH, DEBUG_TRANS);
-      if (status != CM_SUCCESS)
-         cm_msg(MERROR, "log_write", "cannot stop run after reaching tape capacity");
+      status = stop_the_run(0);
 
       /* rewind tape */
       ss_tape_open(tape_name, O_RDONLY, &htape);
@@ -2474,9 +2544,7 @@ INT log_write(LOG_CHN * log_chn, EVENT_HEADER * pevent)
          stop_requested = TRUE;
          cm_msg(MTALK, "log_write", "disk nearly full, stopping run");
 
-         status = cm_transition(TR_STOP, 0, NULL, 0, DETACH, DEBUG_TRANS);
-         if (status != CM_SUCCESS)
-            cm_msg(MERROR, "log_write", "cannot stop run after reaching byte limit");
+         status = stop_the_run(0);
       }
    }
 
@@ -4002,8 +4070,16 @@ INT tr_stop(INT run_number, char *error)
    eb.run_number = run_number;
    hs_write_event(0, &eb, sizeof(eb));
 
-   /* clest flag */
+   /* clear flag */
    stop_requested = FALSE;
+
+   if (start_requested) {
+      int delay = 0;
+      size = sizeof(delay);
+      db_get_value(hDB, 0, "/Logger/Auto restart delay", &delay, &size, TID_INT, TRUE);
+      auto_restart = ss_time() + delay; /* start after specified delay */
+      start_requested = FALSE;
+   }
 
    return CM_SUCCESS;
 }
@@ -4233,6 +4309,11 @@ int main(int argc, char *argv[])
       if (ss_millitime() - last_time_stat > 1000) {
          last_time_stat = ss_millitime();
          db_send_changed_records();
+      }
+
+      /* check for auto restart */
+      if (auto_restart && ss_time() > auto_restart) {
+         status = start_the_run();
       }
 
       /* check keyboard once every second */
