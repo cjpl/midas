@@ -7517,7 +7517,7 @@ INT db_get_record(HNDLE hDB, HNDLE hKey, void *data, INT * buf_size, INT align)
       if (total_size != *buf_size) {
          db_get_path(hDB, hKey, str, sizeof(str));
          cm_msg(MERROR, "db_get_record",
-                "struct size mismatch for \"%s\" (%d instead of %d)", str, *buf_size, total_size);
+                "struct size mismatch for \"%s\" (expected size: %d, size in ODB: %d)", str, *buf_size, total_size);
          return DB_STRUCT_SIZE_MISMATCH;
       }
 
