@@ -1282,8 +1282,17 @@ void show_status_page(int refresh, char *cookie_wpwd)
    else
       rsprintf("<td colspan=1 bgcolor=#FFFFFF>Unknown");
 
-   if (runinfo.transition_in_progress)
-      rsprintf("<br><b>Transition in progress</b>");
+   if (runinfo.transition_in_progress == TR_STOP)
+      rsprintf("<br><b>Stopping run</b>");
+
+   if (runinfo.transition_in_progress == TR_START)
+      rsprintf("<br><b>Starting run</b>");
+
+   if (runinfo.transition_in_progress == TR_PAUSE)
+      rsprintf("<br><b>Pausing run</b>");
+
+   if (runinfo.transition_in_progress == TR_RESUME)
+      rsprintf("<br><b>Resuming run</b>");
 
    if (runinfo.requested_transition)
       for (i = 0; i < 4; i++)
