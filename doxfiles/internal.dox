@@ -22,6 +22,8 @@ to the Electronic Logbook.
 - @ref Slow_Control_system : Specific Slow Control mechanism
 - @ref Electronic_Logbook : Essential utility
 - @ref Log_File : Message, error, report
+- @ref History_internal : Internal workings of the history system
+- @ref History_sql_internal : Internal workings of the SQL history system
 
 <br>
 
@@ -1258,6 +1260,340 @@ Fri Mar 24 11:42:41 2000 [ODBEdit] Run #8363 stopped
 Fri Mar 24 12:19:57 2000 [MChart] client [umelba.Triumf.CA]MChart failed watchdog test after 10 sec
 Fri Mar 24 12:19:57 2000 [MChart] Program MChart on host koslx0 stopped
 \endcode  
+
+<hr> @section History_internal MIDAS History system
+
+This section describes the internal workings of the midas history system.
+
+To enable the history mechanism for a front end equipment, set the "history" variable in the equipment definition to a value greater than zero. "60" is a good number. Read on for it's meaning. Restart your frontend, then verify that ODB "/equipment/xxx/Common/Log history" has been updated with the new value. Change it manually if necessary. Restart mlogger. The data from the new equipment should now appear in mhttpd and in the history file (use @ref mhdump_task to read the history file).
+
+History system main data path:
+
+\code
+user code in the frontend equipment "read" function reads the data,
+places it into a midas data bank
+ |
+ V
+in mfe.c, if equipment->history>0, this data bank is written into ODB (update_odb()).
+Frequency of ODB writes is limited by ODB_UPDATE_TIME (1/sec in mfe.c rev 4298). (Note to self: Confirm presence of bug: if 2 events are generates one right after the other, data banks form the second event are never written into history. K.O.).
+ |
+ V
+odb write triggers an odb hotlink into the mlogger
+ |
+ V
+hotlink calls mlogger.c::log_history(), which calls hs_write() to write data into the history file. Frequency of history writes is throttled down by the number of seconds between writes stored in ODB "/Equipment/xxx/Common/Log history". (Note to self: Confirm presence of bug: if 3 banks are written and period is set to 1 hour, only the first bank will be written , ever? K.O.)
+ |
+ V
+history.c::hs_write() or history_odbc::hs_write_odbc()
+write the data into a history file or into an SQL database.
+\endcode
+
+The internal structure of midas history files is documented here \ref History_format
+
+\if false
+Midas history tutorial written by K.Olchanski for the T2K/ND280 software group:
+
+\code
+The traditional midas slow controls layout is simple. In the
+frontend, one defines the equipment as EQ_PERIODIC, RO_ALWAYS|RO_ODB,
+set "period" to 1000 (1 sec), and "log history" to 60 (1 minute).
+
+In the readout routine, you create a bank "TEST" with 10 TID_DOUBLE values.
+
+The readout routine will be called every 1 second (can be adjusted via
+odb .../common/period).
+
+Make your readout routine look like this:
+
+int read_xxx_event(...) {
+   printf("Hi, time is %d!\n", time(NULL));
+   double *data;
+   bk_init(...., &data, TID_DOUBLE)
+   for (int i=0; i<10; i++)
+      data[i] = read_data();
+   bk_close(..., data+10); <-- bank size 10 elements
+   return bk_size(...); <--- or return 0 if you do not want to produce any data
+}
+
+The data you write into the bank will show up in /equipment/xxx/variables/test
+as an array of 10 numbers of type TID_DOUBLE.
+
+If you now restart mlogger, then go into mhttpd history page,
+go to "create new history panel", etc, you will see you equipment
+with variables "TEST[0]" through "TEST[9]" and you should be able
+to plot the data against time. With ".../common/log history" set to 60,
+new data will appear every minute. You can play with "log history"
+and "period" to change the update frequency. (But highest possible update
+frequency is 1 sec).
+
+The same data in the same form will be written into the GSC slow controls
+database: there will be a table corresponding to array/bank "TEST"
+with columns "TEST_0" though "TEST_9" containing your data.
+
+Now, to give the columns more interesting names, go to "/eq/xxx/Settings"
+and create an string array "Names TEST" with 10 elements. Fill
+the entries with names like "name_a", "name_b", etc.
+
+Then go to mhttpd "status" page and go to the link corresponding
+to your equipment. Instead of an ODB page for "/eq/xxx/Variables",
+you will see a table of 10 numbers with 2 columns: your names
+from "Names TEST" and the numerical values from the frontend. If
+you refresh this web page, you will see the numbers change
+every 10 seconds (or whatever readout period you have set).
+
+Now, after restarted mlogger, if you go to the mhttpd history page
+editor, you will see your data show up with your new names.
+In the GSC slow controls database, your data is now stored into
+columns named with your new names.
+
+Note that the old boring names "TEST_0" etc still show up. This is because
+you should have created the array "Names TEST" before running your
+frontend, or at least before restarting the mlogger. With some work,
+the unwanted variables can be removed from midas history and from the GSC database.
+
+You do not have to pack all your data into one array of TID_DOUBLE.
+Sometimes it is desirable to store the data into several arrays,
+for example, as done by the fewiener frontend, see
+http://ladd05.triumf.ca:8084/SC/Wiener02
+
+These arrays can use different names (".../settings/Names AAA",
+".../settings/Names BBB") or share names like in fewiener02.
+
+So far, so simple. But what if all data is not of type "double"?
+
+The simplest solution is to store all data as "double" and to stick
+to the traditional midas system described above.
+
+The alternative is to use something called "structured bank".
+
+Structured banks are very useful and easy to use for general data
+acqisition. But to use them in conjunction with the midas history
+system (and the associated history-to-sql database writer), you will
+need to jump through hoops.
+
+To begin, we need to construct the hoops.
+
+You will need to define the data structure for your data. Obvously
+only MIDAS basic data types can be used. I recommend using only
+INT, DWORD, FLOAT and DOUBLE. Other types are not as useful and
+cause some tricky data alignement problems.
+
+struct test_bank {
+int aaa;
+int bbb;
+}
+
+The data in the bank has to have correct alignement. Something like
+this struct xxx { int a; double b; } would not work because "b"
+is misaligned. If you do not know what I am talking about, do
+not proceed until you figure it out.
+
+Then you need to describe this data structure to MIDAS. This is done
+using a text string like this:
+struct FEB64_5940_bank {
+   uint32_t _timestamp;
+   uint8_t  _protocol_version;
+   uint8_t  _n_variables;
+   uint16_t _node_address;
+   uint16_t _group_address;
+   uint16_t _svn_revision;
+   uint32_t serialn ; //   0 SerialN    unit  52, prefix   0, status 0, flags 0
+   uint16_t error   ; //   1 Error      unit  52, prefix   0, status 0, flags 0
+...
+char* FEB64_5940_InitStr[] = {
+   "[.]",
+   "_timestamp = DWORD",
+   "_protocol_version = BYTE",
+   "_n_variables = BYTE",
+   "_node_address = WORD",
+   "_group_address = WORD",
+   "_svn_revision = WORD",
+   "serialn    = DWORD",
+   "error      = WORD",
+...
+
+For FGD MSCB devices, these midas bank definitions
+are generated automatically using the mscbMakeCode utility which
+extracts variables definitions from the MSCB device itself.
+
+Armed with these hoops, we plug them into our frontend: the bank
+description goes into something called "BANK_LIST", the bank
+structure goes into the event readout function (the usual way,
+but the bank type should be TID_STRUCT).
+
+See example here (current code does not use the BANK_LIST)
+http://ladd00.triumf.ca/viewcvs/fgddaq/trunk/online/gsc/femscb.cxx?revision=338&view=markup
+
+Now when you run the frontend, you will see in ODB created:
+/eq/xxx/Variables/test/aaa (of type INT)
+/eq/xxx/Variables/test/bbb
+
+Here "test" is the bank name (should match the name in BANK_LIST),
+"aaa" and "bbb" are the data fields from our structure.
+
+After restarting mlogger, you will see the corresponding entries
+in the history for your equipment. The names will be "test_aaa"
+and "test_bbb". Same names will appear in the SQL database.
+
+This works well if bank names are known in advance. In the FGD MSCB
+case, we do not know which cards are present, and anyway, it would
+be tedious to create the BANK_LIST entries for all possible
+FGD MSCB devices. For this reason, the bank entries are created
+using functions "createBank" and "writeBank" lifted verbatim
+from midas mfe.c.
+
+After the bank definitions are created in ODB via BANK_LIST or "createBank",
+the history system uses this ODB tree to extract individual
+values from the bank binary blob for writing them into the history
+and into the SQL database.
+
+In the nutshell, I think this is all there is to creating midas slow
+controls data. Among minor details I did not address is wise
+selection of names for equipment, banks and variables; efficient
+grouping of data into banks (all data into 1 bank, 1 value per bank, etc);
+handling of time stamps; etc.
+\endcode
+
+Clarification email from Konstantin Olchanski to Tim Nichols:
+
+\code
+From olchansk@triumf.ca Wed Nov 12 10:34:47 2008
+Date: Wed, 12 Nov 2008 10:34:47 -0800
+From: Konstantin Olchanski <olchansk@triumf.ca>
+To: Tim Nicholls <tim.nicholls@stfc.ac.uk>
+Cc: Renee Poutisou <renee@triumf.ca>,
+	Geoff Pearce <geoff.pearce@stfc.ac.uk>
+Subject: Re: Slow control banks & history
+
+On Wed, Nov 12, 2008 at 09:17:41AM +0000, Tim Nicholls wrote:
+> http://www.nd280.org/daq/SlowControl/TutorialMH
+> 
+> which is very useful. But I'm now a little confused. Renee said in a
+> previous meeting that my front-end should NOT write banks into the event
+> buffer, but should update the "banks" in the ODB tree directly. This is what
+> my problematic front-end was doing.
+> 
+> Can you confirm that it IS necessary to actually write banks into system
+> event buffer? If so, the discussion we had about naming becomes invalid
+> since I would then be limited to four characters.
+> 
+> Hope you can shed some light on this.
+
+
+Tim, technically, you do not have to create "events" with "banks". In
+the nutshell, there are two data paths for your data to get into the
+history file:
+
+1) your readout code -> data bank -> mfe.c code -> ODB -> mlogger -> history
+2) your readout code -> db_set_data from your code -> ODB -> mlogger -> history
+
+The traditional way is (1) - for experiments that want to have "slow
+control events" in their data stream.
+
+For T2K we feel that writing slow control events into the data stream
+is not useful and use method (2) for most existing GSC equipments.
+
+Some of my equipments (i.e. FGD_MSCB) is still compatible with method (1)
+because variable ("bank") names are restricted to 4 characters.
+
+BTW, do not go crazy with long variable names. While technically
+you can go up to 32 chars, in reality it is limited to 16 chars
+through limitations in the history system. Very long names
+also cause problems in the user interfaces (ugly web pages, etc).
+
+Here is an example of what I feel are especially ugly names
+http://ladd05.triumf.ca:8084/SC/Temp36
+
+Here is an example of what I feel are okey names
+http://ladd05.triumf.ca:8084/SC/TPC_FE_SlowCtrl
+
+
+K.O.
+\endcode
+\endif
+
+<hr> @section History_sql_internal MIDAS SQL History system
+
+This section describes the internal workings of the midas SQL history system.
+
+The SQL history system implements the MIDAS history using
+an SQL database for data storage instead of flat binary files.
+
+The SQL history code lives in a separate files history_odbc.h and history_odbc.cxx
+and it uses the ODBC API for accessing SQL databases. As of revision 4433, only
+MySQL database is supported, with support for PgSQL written but not enabled. The
+interface to mlogger is identical to hs_define_event()/hs_write_event() used
+by traditional midas history system.
+
+Preliminary testing with MySQL and PgSQL indicates that disk space
+requirements are the same for both storage mechanisms using flat binary files
+or either of the 2 SQL databases. All 3 tested storage mechanisms
+store the data uncompressed. (Observed gzip-1 compression ratios from CERN-ALPHA
+history files are 50% or better).
+
+Preliminary testing indicates that MySQL database is "not too slow" for use
+by T2K/ND280 slow controls system. Using MySQL, performance seems to
+improve somewhat compared to traditional history because each SQL table is stored
+into a separate file, compared to everything-in-one-file in traditional midas
+history.
+
+To enable writing history to SQL:
+
+- setup a MySQL database, you will need to know: the server hostname and port number, database name, user name and password. It is recommended to create 3 different users: a "root" user with full priveleges, a "reader" user with read-only priveleges and a "writer" user with "insert, create table, and add column" priveleges (no permission to drop table, remove columns, etc)
+- setup $HOME/.odbc.ini file:
+\code
+cat $HOME/.odbc.ini
+[sql_writer]
+Description  = sql_writer
+Driver       = /usr/lib64/libmyodbc3.so
+SERVER       = ladd05.triumf.ca
+PORT         =
+Database     = test
+OPTION       = 3
+SOCKET       =
+User         = test_writer
+Password     = test_writer_password
+\endcode
+- set ODB "/History/PerVariableHistory" to 1 (BEWARE! This will change the format of normal midas history files. You do not have to enable per-variable history to use the SQL interface, but the layout of SQL tables may be suboptimal in the same way the layout of data in the midas history file is suboptimal).
+- set ODB "/Logger/ODBC_DSN" to "sql_writer", "/Logger/ODBC_Debug" to 1
+- run "mlogger -v", observe how it issues SQL commands to create the tables and columns corresponding to MIDAS history events and tags.
+- there could be collisions and conflicts between MIDAS and SQL names because MySQL only permits a subset of all possible characters in table and columns names. All "bad" characters are replaced with an underscore "_", creating possible conflicts, i.e. "A+6V" and "A-6V" will both result in the same column name "A_6V". mlogger will complain about this.
+- after all name conflicts are resolved and mlogger is happy, you can set ODBC_Debug to 0 and run mlogger as normal, without "-v".
+- mlogger is programmed to raise alarms if connection to SQL database is interrupted or if some events cannot be written into the database (i.e. data type mismatch, SQL syntax errors, etc). The traditional midas history never raised alarms because it "never failed". (Other than from "disk full" errors, which are immediately obvious).
+
+To enable reading history from SQL:
+
+- add the reader DSN to the $HOME/.odbc.ini file:
+\code
+[sql_reader]
+Description  = sql_reader
+Driver       = /usr/lib64/libmyodbc3.so
+SERVER       = ladd05.triumf.ca
+PORT         =
+Database     = test
+OPTION       = 3
+SOCKET       =
+User         = test_reader
+Password     = test_reader_password
+\endcode
+- set ODB "/History/ODBC_DSN" to "sql_reader"
+- restart mhttpd (not required?)
+- from this moment mhttpd will only use history information from the SQL database - to make history plots and to extract history variable names for the history plot editor. The ODB "/History/Tags" and "/History/Events" are not used. The on-disk .hst & co history are not used.
+- variable names presented to the user may change from MIDAS names to SQL names (use the history panel "Label" text fields to create permanent plot labels).
+
+Layout of SQL tables:
+
+- one table is created for each history event. Table name is the same as the history event name (as reported by mhdump).
+- one column is created for each history tag (history variable). Column name is the same as the tag name (as reported by mhdump). For array tags, one column is created for each array element: array a[3] will produce columns a_0, a_1 and a_2.
+- 2 special columns are always created: _i_time and _t_time are the timestamps in the UNIX-time integer format and in the SQL "time" format. (Apriory, it is not clear which timestamp format is more useful for end users. mhttpd uses the _i_time integer time format). Note that this timestamp is the time when mlogger receives the hotlink signal (see above) and it can be a fe wseconds behind from when the user placed the data into the midas bank. For high precision (and sub-second time resolution) time stamps, users should generate their own timestamps and include them as part of the data itself.
+
+Schema evolution:
+
+- when new data fields are added, new SQL columns are created automatically
+- existing SQL columns are never deleted
+- arrays are expanded automatically, and arrays never shrink.
+- if type of a data field changes, a conflict may occur with existing SQL columns, for example of previous type was "FLOAT" and new type is "DOUBLE", the existing SQL columns would have the SQL data type "float", too narrow to store new values. mlogger will complain about this. Such conflicts may be resolved by changing the type of the SQL column using SQL tools.
+
 
 \htmlonly <img ALIGN="left" alt="previous.gif" src="previous.gif"> \endhtmlonly 
 @ref quickstart - @ref Top - @ref Utilities
