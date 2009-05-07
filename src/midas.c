@@ -3233,7 +3233,7 @@ INT cm_transition(INT transition, INT run_number, char *errstr, INT errstr_size,
       else if (transition == TR_RESUME)
          strlcat(str, " RESUME", sizeof(str));
       else if (transition == TR_START)
-         sprintf(str + strlen(str), " DELAY \"/logger/Auto restart delay\" START %d", run_number);
+         sprintf(str + strlen(str), " START %d", run_number);
 
 #ifdef OS_WINNT
 #else
