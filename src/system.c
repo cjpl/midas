@@ -3628,11 +3628,6 @@ INT recv_string(int sock, char *buffer, DWORD buffer_size, INT millisec)
 
          do {
             status = select(FD_SETSIZE, &readfds, NULL, NULL, &timeout);
-
-            /* if an alarm signal was cought, restart select with reduced timeout */
-            if (status == -1 && timeout.tv_sec >= WATCHDOG_INTERVAL / 1000)
-               timeout.tv_sec -= WATCHDOG_INTERVAL / 1000;
-
          } while (status == -1);        /* dont return if an alarm signal was cought */
 
          if (!FD_ISSET(sock, &readfds))
