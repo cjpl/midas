@@ -313,26 +313,44 @@ int vf48_ParameterRead(MVME_INTERFACE *mvme, DWORD base, int grp, int param)
     
     if (debug) {
       csr = mvme_read_value(mvme, base+VF48_CSR_REG_RW);
-      printf("Reading grp %d, param %d, ID_RDY %d, DATA_RDY %d\n", grp, param, csr & VF48_CSR_PARM_ID_RDY, csr & VF48_CSR_PARM_DATA_RDY);
+      printf("vf48_ParameterRead: CSR 0x%x, Reading grp %d, param %d, ID_RDY %d, DATA_RDY %d\n", csr, grp, param, csr & VF48_CSR_PARM_ID_RDY, csr & VF48_CSR_PARM_DATA_RDY);
     }
 
     wr = VF48_PARMA_BIT_RD | param | grp<<VF48_GRP_OFFSET;
 
+    if (debug)
+       printf("write id 0x%04x\n", wr);
+
     mvme_write_value(mvme, base+VF48_PARAM_ID_W, wr);
 
     // flush posted PCI writes
-    mvme_read_value(mvme, base+VF48_CSR_REG_RW);
+    csr = mvme_read_value(mvme, base+VF48_CSR_REG_RW);
 
+    if (debug) {
+      printf("vf48_ParameterRead: CSR 0x%x, Reading grp %d, param %d, ID_RDY %d, DATA_RDY %d\n", csr, grp, param, csr & VF48_CSR_PARM_ID_RDY, csr & VF48_CSR_PARM_DATA_RDY);
+
+      //if (!(csr & VF48_CSR_PARM_ID_RDY))
+      //exit(123);
+    }
+
+    //mvme_write_value(mvme, base+VF48_PARAM_DATA_RW, 0xFFFFFFFF);
     mvme_write_value(mvme, base+VF48_PARAM_DATA_RW, 0xFFFFFFFF);
 
     // flush posted PCI writes
-    mvme_read_value(mvme, base+VF48_CSR_REG_RW);
+    csr = mvme_read_value(mvme, base+VF48_CSR_REG_RW);
+
+    if (debug) {
+      printf("vf48_ParameterRead: CSR 0x%x, Reading grp %d, param %d, ID_RDY %d, DATA_RDY %d\n", csr, grp, param, csr & VF48_CSR_PARM_ID_RDY, csr & VF48_CSR_PARM_DATA_RDY);
+    }
 
     // wait for VF48_CSR_PARM_DATA_RDY
     for (to=10; to>0; to--) {
       csr = mvme_read_value(mvme, base+VF48_CSR_REG_RW);
-      if (debug)
-        printf("vf48_ParameterRead: CSR 0x%x, Waiting for 0x%x, TO %d\n", csr, VF48_CSR_PARM_DATA_RDY, to);
+      if (debug) {
+         printf("vf48_ParameterRead: CSR 0x%x, Waiting for 0x%x, TO %d\n", csr, VF48_CSR_PARM_DATA_RDY, to);
+         data = mvme_read_value(mvme, base+VF48_PARAM_DATA_RW);
+         printf("data register 0x%x\n", data);
+      }
       if (csr & VF48_CSR_PARM_DATA_RDY)
         break;
     }
@@ -367,7 +385,7 @@ int vf48_ParameterRead(MVME_INTERFACE *mvme, DWORD base, int grp, int param)
 /********************************************************************/
 int vf48_Reset(MVME_INTERFACE *mvme, DWORD base)
 {
-  int v;
+   int i, v, csr, good;
 
   mvme_set_am(mvme, MVME_AM_A24);
   mvme_set_dmode(mvme, MVME_DMODE_D16);
@@ -375,10 +393,31 @@ int vf48_Reset(MVME_INTERFACE *mvme, DWORD base)
   if (1)
     printf("vf48_Reset: CSR 0x%x\n", mvme_read_value(mvme, base+VF48_CSR_REG_RW));
   mvme_write_value(mvme, base+VF48_GLOBAL_RESET_W, 0);
-  mvme_read_value(mvme, base+VF48_CSR_REG_RW); // flush posted PCI writes
+  csr = mvme_read_value(mvme, base+VF48_CSR_REG_RW); // flush posted PCI writes
 
   if (1)
-    printf("vf48_Reset: CSR 0x%x\n", mvme_read_value(mvme, base+VF48_CSR_REG_RW));
+    printf("vf48_Reset: CSR 0x%x\n", csr);
+
+#if 0
+  if (!(csr & VF48_CSR_PARM_ID_RDY) || !(csr & VF48_CSR_PARM_DATA_RDY)) {
+     /* frontend realtime signals did not reset correctly,
+      * reset them by toggling the "col_run" realtime signal */
+
+     vf48_AcqStart(mvme, base);
+  csr = mvme_read_value(mvme, base+VF48_CSR_REG_RW); // flush posted PCI writes
+  csr = mvme_read_value(mvme, base+VF48_CSR_REG_RW); // flush posted PCI writes
+  csr = mvme_read_value(mvme, base+VF48_CSR_REG_RW); // flush posted PCI writes
+  csr = mvme_read_value(mvme, base+VF48_CSR_REG_RW); // flush posted PCI writes
+  csr = mvme_read_value(mvme, base+VF48_CSR_REG_RW); // flush posted PCI writes
+  csr = mvme_read_value(mvme, base+VF48_CSR_REG_RW); // flush posted PCI writes
+     vf48_AcqStop(mvme, base);
+
+     csr = mvme_read_value(mvme, base+VF48_CSR_REG_RW); // flush posted PCI writes
+
+     if (1)
+        printf("vf48_Reset: CSR 0x%x\n", csr);
+  }
+#endif
 
   mvme_write_value(mvme, base+VF48_TEST_REG_RW, 0x00000000);
   v = mvme_read_value(mvme, base+VF48_TEST_REG_RW);
@@ -394,6 +433,17 @@ int vf48_Reset(MVME_INTERFACE *mvme, DWORD base)
     printf("There is no VF48 at VME A24 0x%x\n", base);
     return VF48_ERR_HW;
   }
+
+  printf("vf48_Reset: Module 0x%06x: Firmware revision: collector: 0x%x, frontend:", base, mvme_read_value(mvme, base+VF48_FIRMWARE_R));
+  
+  good = 1;
+  for (i=0; i<6; i++) {
+     v = vf48_ParameterRead(mvme, base, i, VF48_FIRMWARE_ID);
+     printf(" 0x%x", v);
+     if (v < 0)
+	good = 0;
+  }
+  printf("\n");
 
   return VF48_SUCCESS;
 }
@@ -510,26 +560,22 @@ int vf48_ExtTrgClr(MVME_INTERFACE *mvme, DWORD base)
 /********************************************************************/
 int vf48_NFrameRead(MVME_INTERFACE *mvme, DWORD base)
 {
-  int  cmode, nframe;
+  int nframe;
 
-  // Set am to A24 non-privileged Data
   mvme_set_am(mvme, MVME_AM_A24);
-  mvme_get_dmode(mvme, &cmode);
   mvme_set_dmode(mvme, MVME_DMODE_D32);
   nframe =  mvme_read_value(mvme, base+VF48_NFRAME_R);
-  mvme_set_dmode(mvme, cmode);
-  return (nframe);
+  return nframe;
 }
 
 /********************************************************************/
 int vf48_CsrRead(MVME_INTERFACE *mvme, DWORD base)
 {
-  int  cmode, csr;
+  int csr;
 
-  mvme_get_dmode(mvme, &cmode);
+  mvme_set_am(mvme, MVME_AM_A24);
   mvme_set_dmode(mvme, MVME_DMODE_D16);
   csr = mvme_read_value(mvme, base+VF48_CSR_REG_RW);
-  mvme_set_dmode(mvme, cmode);
   return csr;
 }
 
