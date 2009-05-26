@@ -9591,6 +9591,7 @@ static int enum_vars_events(HNDLE hDB, int using_odbc, const char* event_name, i
    int status;
    char *s;
    DWORD ltime;
+   char xxevent_name[2*NAME_LENGTH+100];
 
    struct poor_mans_list names;
 
@@ -9639,7 +9640,6 @@ static int enum_vars_events(HNDLE hDB, int using_odbc, const char* event_name, i
       status = db_get_data(hDB, hKey, buf, &size, TID_STRING);
       assert(status == DB_SUCCESS);
 
-      char xxevent_name[2*NAME_LENGTH+100];
       strlcpy(xxevent_name, buf, sizeof(xxevent_name));
       
       s = strchr(buf, ':');
