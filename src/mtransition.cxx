@@ -31,7 +31,13 @@ int read_state(HNDLE hDB)
 
 void usage()
 {
-   fprintf(stderr, "Usage: mtransition [-v] [-d debug_flag] [-h Hostname] [-e Experiment] commands...\n");
+   fprintf(stderr, "Usage: mtransition [-v] [-d debug_flag] [-f] [-h Hostname] [-e Experiment] commands...\n");
+   fprintf(stderr, "Options:\n");
+   fprintf(stderr, "  -v - report activity\n");
+   fprintf(stderr, "  -d debug_flag - passed through cm_transition(debug_flag): 0=normal, 1=printf, 2=cm_msg(MINFO)\n");
+   fprintf(stderr, "  -f - force new state regardless of current state\n");
+   fprintf(stderr, "  -h Hostname - connect to mserver on remote host\n");
+   fprintf(stderr, "  -e Experiment - connect to non-default experiment\n");
    fprintf(stderr, "Commands:\n");
    fprintf(stderr, "  START [runno] - start a new run\n");
    fprintf(stderr, "  STOP - stop the run\n");
@@ -50,6 +56,7 @@ int main(int argc, char *argv[])
    int status;
    bool verbose = false;
    int debug_flag = 0;
+   bool force = false;
    char host_name[HOST_NAME_LENGTH], exp_name[NAME_LENGTH];
 
    /* get default from environment */
@@ -64,6 +71,8 @@ int main(int argc, char *argv[])
       if (argv[i][0] == '-') {
          if (argv[i][1] == 'v')
             verbose = true;
+         else if (argv[i][1] == 'f')
+            force = true;
          else if (argv[i][1] == 'd' && i < argc-1)
             debug_flag = strtoul(argv[++i], NULL, 0);
          else if (argv[i][1] == 'e' && i < argc-1)
@@ -124,12 +133,12 @@ int main(int argc, char *argv[])
          /* check if run is already started */
          int state = read_state(hDB);
 
-         if (state == STATE_RUNNING) {
+         if (!force && state == STATE_RUNNING) {
             printf("START: Run is already started\n");
             cm_set_msg_print(MT_ERROR, 0, NULL);
             cm_disconnect_experiment();
             exit(1);
-         } else if (state == STATE_PAUSED) {
+         } else if (!force && state == STATE_PAUSED) {
             printf("START: Run is paused, please use \"RESUME\"\n");
             cm_set_msg_print(MT_ERROR, 0, NULL);
             cm_disconnect_experiment();
@@ -187,7 +196,7 @@ int main(int argc, char *argv[])
 
          int state = read_state(hDB);
 
-         if (state == STATE_PAUSED) {
+         if (!force && state == STATE_PAUSED) {
             printf("PAUSE: Run is already paused\n");
             continue;
          }
@@ -209,10 +218,10 @@ int main(int argc, char *argv[])
 
          int state = read_state(hDB);
 
-         if (state == STATE_RUNNING) {
+         if (!force && state == STATE_RUNNING) {
             printf("RESUME: Run is already running\n");
             continue;
-         } else if (state != STATE_PAUSED) {
+         } else if (!force && state != STATE_PAUSED) {
             printf("RESUME: Run is not paused\n");
             cm_set_msg_print(MT_ERROR, 0, NULL);
             cm_disconnect_experiment();
