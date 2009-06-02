@@ -3217,34 +3217,49 @@ INT cm_transition(INT transition, INT run_number, char *errstr, INT errstr_size,
 
    /* do detached transition via mtransition tool */
    if (async_flag == DETACH) {
+      char *args[100];
+      int iarg = 0;
+      char debug_arg[256];
+      char start_arg[256];
 #ifdef OS_WINNT
-      strcpy(str, "start /min mtransition"); // start in separate minimized window
+      args[iarg++] = "start";
+      args[iarg++] = "/min";
+      args[iarg++] = "mtransition";
 #else
-      strcpy(str, "mtransition ");
+      args[iarg++] = "mtransition";
 #endif
 
-      if (debug_flag)
-         sprintf(str + strlen(str), " -d %d", debug_flag);
-      
+      if (debug_flag) {
+         args[iarg++] = "-d";
+         
+         sprintf(debug_arg, "%d", debug_flag);
+         args[iarg++] = debug_arg;
+      }
+
       if (transition == TR_STOP)
-         strlcat(str, " STOP", sizeof(str));
+         args[iarg++] = "STOP";
       else if (transition == TR_PAUSE)
-         strlcat(str, " PAUSE", sizeof(str));
+         args[iarg++] = "PAUSE";
       else if (transition == TR_RESUME)
-         strlcat(str, " RESUME", sizeof(str));
-      else if (transition == TR_START)
-         sprintf(str + strlen(str), " START %d", run_number);
+         args[iarg++] = "RESUME";
+      else if (transition == TR_START) {
+         args[iarg++] = "START";
 
-#ifdef OS_WINNT
-#else
-      strlcat(str, " &", sizeof(str)); // start in background
-#endif
+         sprintf(start_arg, "%d", run_number);
+         args[iarg++] = start_arg;
+      }
+      
+      args[iarg++] = NULL;
 
-      status = system(str);
+      if (0)
+         for (iarg=0; args[iarg]!=NULL; iarg++)
+            printf("arg[%d] [%s]\n", iarg, args[iarg]);
+      
+      status = ss_spawnv(P_DETACH, args[0], args);
 
-      if (status != 0) {
+      if (status != SUCCESS) {
          if (errstr != NULL)
-            sprintf(errstr, "Cannot execute mtransition, system() returned %d", status);
+            sprintf(errstr, "Cannot execute mtransition, ss_spawnvp() returned %d", status);
          return CM_SET_ERROR;
       }
 
