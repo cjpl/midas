@@ -70,6 +70,7 @@ BOOL debug;                     /* disable watchdog messages from server */
 DWORD auto_restart = 0;         /* restart run after event limit reached stop */
 INT manual_trigger_event_id = 0;        /* set from the manual_trigger callback */
 INT frontend_index = -1;        /* frontend index for event building */
+BOOL lockout_readout_thread = TRUE; /* manual triggers, periodic events and 1Hz flush cache lockout the readout thread */
 
 HNDLE hDB;
 
@@ -162,6 +163,10 @@ int get_rate_period()
 INT tr_start(INT rn, char *error)
 {
    INT i, status;
+
+   /* disable interrupts or readout thread
+    * if somehow it was not stopped from previous run */
+   readout_enable(FALSE);
 
    /* reset serial numbers */
    for (i = 0; equipment[i].name[0]; i++) {
@@ -1295,7 +1300,8 @@ void readout_enable(BOOL flag)
    if (multithread_eq) {
       /* readout thread might still be in readout, so wait until finished */
       if (flag == 0)
-         while (readout_thread_active);
+         while (readout_thread_active)
+            ss_sleep(10);
    }
 }
 
@@ -1354,7 +1360,7 @@ int readout_thread(void *param)
          break;
       if (status == DB_TIMEOUT) {
          printf("readout_thread: Ring buffer is full, waiting for space!\n");
-         ss_sleep(100);
+         ss_sleep(1);
          continue;
       }
       if (status != DB_SUCCESS)
@@ -1366,7 +1372,9 @@ int readout_thread(void *param)
          readout_thread_active = 1;
 
          /* check for new event */
-         if ((source = poll_event(multithread_eq->info.source, multithread_eq->poll_count, FALSE)) > 0) {
+         source = poll_event(multithread_eq->info.source, multithread_eq->poll_count, FALSE);
+
+         if (source > 0) {
 
             if (stop_all_threads)
                break;
@@ -1889,7 +1897,7 @@ INT scheduler(void)
             if (actual_millitime - eq->last_called >= (DWORD) eq_info->period) {
                /* disable interrupts or readout thread during this event */
                old_flag = readout_enabled();
-               if (old_flag)
+               if (old_flag && lockout_readout_thread)
                   readout_enable(FALSE);
 
                /* readout and send event */
@@ -2167,7 +2175,7 @@ INT scheduler(void)
       /*---- check for manual triggered events -----------------------*/
       if (manual_trigger_event_id) {
          old_flag = readout_enabled();
-         if (old_flag)
+         if (old_flag && lockout_readout_thread)
             readout_enable(FALSE);
 
          /* readout and send event */
@@ -2286,7 +2294,7 @@ INT scheduler(void)
 
          if (max_bytes_per_sec < SERVER_CACHE_SIZE) {
             old_flag = readout_enabled();
-            if (old_flag)
+            if (old_flag && lockout_readout_thread)
                readout_enable(FALSE);
 
             for (i = 0; equipment[i].name[0]; i++) {
