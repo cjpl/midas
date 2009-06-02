@@ -3672,6 +3672,10 @@ static struct {
 
 /*------------------------------------------------------------------*/
 
+INT tr_stop(INT run_number, char *error);
+
+INT current_run_number = 0;
+
 INT tr_start(INT run_number, char *error)
 /********************************************************************\
 
@@ -3693,8 +3697,20 @@ INT tr_start(INT run_number, char *error)
    KEY key;
    BOOL write_data, tape_flag = FALSE;
 
+   if (verbose)
+      printf("tr_start: run %d, current_run_number %d\n", run_number, current_run_number);
+
    /* save current ODB */
    odb_save("last.xml");
+
+   /* if missed tr_stop(), do it now */
+   if (current_run_number != 0) {
+      status = tr_stop(current_run_number, error);
+      if (status != CM_SUCCESS)
+         return status;
+   }
+
+   current_run_number = run_number;
 
    /* read global logging flag */
    size = sizeof(BOOL);
@@ -3972,8 +3988,13 @@ INT tr_stop(INT run_number, char *error)
    char filename[256];
    char str[256];
 
+   if (verbose)
+      printf("tr_stop: run %d, current_run_number %d\n", run_number, current_run_number);
+
    if (in_stop_transition)
       return CM_SUCCESS;
+
+   current_run_number = 0;
 
    in_stop_transition = TRUE;
    for (i = 0; i < MAX_CHANNELS; i++) {
