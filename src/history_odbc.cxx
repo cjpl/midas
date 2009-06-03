@@ -983,10 +983,10 @@ int hs_define_event_odbc(const char* event_name, const TAG tags[], int tags_size
 
       // check if new column needs to be created
       bool found = false;
-      for (size_t j=0; j<columns.size(); j++) {
+      for (size_t j=0; j<columns.size(); j+=2) {
          if (e->tags[i].column_name == columns[j]) {
             // column exists, check data type
-            //printf("column \'%s\', data type %s/%s\n", e->tags[i].column_name, midasTypeName(tags[i].type), columns[j+1].c_str());
+            //printf("column \'%s\', data type %s\n", e->tags[i].column_name.c_str(), columns[j+1].c_str());
 
             if (!isCompatible(e->tags[i].tag.type, columns[j+1].c_str())) {
                cm_msg(MERROR, "hs_define_event_odbc", "Error: History event \'%s\': Incompatible data type for tag \'%s\' type \'%s\', SQL column \'%s\' type \'%s\'", event_name, e->tags[i].tag.name, midasTypeName(e->tags[i].tag.type), columns[j].c_str(), columns[j+1].c_str());
