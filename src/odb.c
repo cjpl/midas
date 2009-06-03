@@ -8560,9 +8560,7 @@ INT db_open_record(HNDLE hDB, HNDLE hKey, void *ptr, INT rec_size,
    _record_list[idx].info = info;
 
    /* add record entry in database structure */
-   db_add_open_record(hDB, hKey, (WORD) (access_mode & ~MODE_ALLOC));
-
-   return DB_SUCCESS;
+   return db_add_open_record(hDB, hKey, (WORD) (access_mode & ~MODE_ALLOC));
 }
 
 /********************************************************************/
