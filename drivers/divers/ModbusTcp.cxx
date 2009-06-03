@@ -191,8 +191,8 @@ int ModbusTcp::ReadRegisters(int slaveId, int func, int ireg, int numReg, uint16
       return -1;
    }
    
-   if (buf[8] != numReg*2 || rd != expected) {
-      cm_msg(MERROR, "ModbusTcp::ReadRegisters", "reg %d, bad modbus packet length %d, received %d, expected %d", ireg, buf[8], rd, expected);
+   if (buf[8] != 0xFF&(numReg*2) || rd != expected) {
+      cm_msg(MERROR, "ModbusTcp::ReadRegisters", "reg %d, bad modbus packet length %d, received %d, expected %d", ireg, 0xFF&buf[8], rd, expected);
       return -1;
    }
    
