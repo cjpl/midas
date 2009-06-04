@@ -104,6 +104,10 @@
 
 #ifdef OS_UNIX
 
+#ifndef __USE_GNU
+#define __USE_GNU // needed for semtimedop()
+#endif
+
 #include <errno.h>
 #include <stdarg.h>
 #include <unistd.h>
