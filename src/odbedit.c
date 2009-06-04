@@ -2644,6 +2644,21 @@ int command_loop(char *host_name, char *exp_name, char *cmd, char *start_dir)
 
 /*------------------------------------------------------------------*/
 
+void ctrlc_odbedit(INT i)
+{
+   /* reset terminal */
+   ss_getchar(1);
+
+   /* no shutdown message */
+   cm_set_msg_print(MT_ERROR, 0, NULL);
+
+   cm_disconnect_experiment();
+
+   exit(EXIT_SUCCESS);
+}
+
+/*------------------------------------------------------------------*/
+
 #ifdef OS_VXWORKS
 int odbedit(char *ahost_name, char *aexp_name)
 #else
@@ -2747,6 +2762,9 @@ int main(int argc, char *argv[])
       size = NAME_LENGTH;
       db_get_value(hDB, 0, "/Experiment/Name", exp_name, &size, TID_STRING, TRUE);
    }
+
+   /* register Ctrl-C handler */
+   ss_ctrlc_handler(ctrlc_odbedit);
 
    /* command loop */
    status = command_loop(host_name, exp_name, cmd, dir);
