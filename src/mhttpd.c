@@ -13375,7 +13375,7 @@ int main(int argc, char *argv[])
           usage:
             printf("usage: %s [-h Hostname] [-e Experiment] [-p port] [-v] [-D] [-c] [-a Hostname]\n\n", argv[0]);
             printf("       -h connect to midas server (mserver) on given host\n");
-            printf("       -h experiment to connect to\n");
+            printf("       -e experiment to connect to\n");
             printf("       -v display verbose HTTP communication\n");
             printf("       -D become a daemon\n");
             printf("       -E only display ELog system\n");
