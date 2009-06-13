@@ -7765,7 +7765,7 @@ static void set_history_path()
    hs_set_path(str);
 }
 
-static WORD get_variable_id(DWORD ltime, const char* evname, const char* tagname)
+static WORD get_variable_id(DWORD ltime, int using_odbc, const char* evname, const char* tagname)
 {
    HNDLE hDB, hKeyRoot;
    int status, i;
@@ -7807,16 +7807,30 @@ static WORD get_variable_id(DWORD ltime, const char* evname, const char* tagname
       status = db_get_data(hDB, hKey, buf, &size, TID_STRING);
       assert(status == DB_SUCCESS);
 
+      strlcpy(event_name, buf, sizeof(event_name));
+
       s = strchr(buf,':');
       if (s)
          *s = 0;
 
-      //printf("Found event %d, name [%s], looking for [%s][%s]\n", evid, buf, evname, tagname);
+      //printf("Found event %d, event [%s] name [%s], looking for [%s][%s]\n", evid, event_name, buf, evname, tagname);
 
       if (!equal_ustring((char *)evname, buf))
          continue;
 
-      status = hs_get_tags(ltime, evid, event_name, &ntags, &tags);
+      if (using_odbc) {
+#if HAVE_ODBC
+         status = hs_get_tags_odbc(event_name, &ntags, &tags);
+#else
+         status = HS_FILE_ERROR;
+#endif
+      } else {
+         status = hs_get_tags(ltime, evid, event_name, &ntags, &tags);
+      }
+
+      //printf("status %d, ntags %d\n", status, ntags);
+
+      //status = hs_get_tags(ltime, evid, event_name, &ntags, &tags);
 
       for (j=0; j<ntags; j++) {
          //printf("at %d [%s] looking for [%s]\n", j, tags[j].name, tagname);
@@ -8023,9 +8037,17 @@ void generate_hist_graph(char *path, char *buffer, int *buffer_size,
 #ifdef HAVE_ODBC
    /* check ODBC connection */
    size = sizeof(str);
-   status = db_get_value(hDB, 0, "/History/ODBC_DSN", str, &size, TID_STRING, FALSE);
+   status = db_get_value(hDB, 0, "/History/ODBC_DSN", str, &size, TID_STRING, TRUE);
    if (status == DB_SUCCESS && str[0]!=0 && str[0]!='#') {
+      int debug = 0;
+      size = sizeof(debug);
+      status = db_get_value(hDB, 0, "/History/ODBC_Debug", &debug, &size, TID_INT, TRUE);
+      assert(status==DB_SUCCESS);
+
+      hs_debug_odbc(debug);
+
       hs_set_alarm_odbc("mhttpd_ODBC");
+
       status = hs_connect_odbc(str);
       if (status != HS_SUCCESS) {
          sprintf(str, "Cannot use /History/ODBC_DSN, error %d, see messages", status);
@@ -8135,18 +8157,18 @@ void generate_hist_graph(char *path, char *buffer, int *buffer_size,
 
       /* use "/History/Tags" if available */
       event_id = get_variable_id_tags(event_name[i], var_name[i]);
-      
+
       /* if no Tags, use "/History/Events" and hs_get_tags() to read definition from history files */
       if (event_id == 0)
-         event_id = get_variable_id(ss_time() + toffset, event_name[i], var_name[i]);
+         event_id = get_variable_id(ss_time() + toffset, using_odbc, event_name[i], var_name[i]);
 
       /* if nothing works, use hs_get_event_id() */
       if (event_id == 0)
          status = hs_get_event_id(0, event_name[i], &event_id);
 
       if (event_id == 0) {
-         sprintf(str, "Event \"%s\" from panel \"%s\" not found in history",
-                 event_name[i], panel);
+         sprintf(str, "Event \"%s\" variable \"%s\" from panel \"%s\" not found in history",
+                 event_name[i], var_name[i], panel);
          gdImageString(im, gdFontSmall, width / 2 - (strlen(str) * gdFontSmall->w) / 2,
                        height / 2, str, red);
          goto error;
@@ -8367,10 +8389,15 @@ void generate_hist_graph(char *path, char *buffer, int *buffer_size,
          time_t* time_buffer;
          double* data_buffer;
          time_t now = ss_time();
+         int debug = 0;
 
          var_status[i][0] = 0;
 
-         hs_debug_odbc(1);
+         size = sizeof(debug);
+         status = db_get_value(hDB, 0, "/History/ODBC_Debug", &debug, &size, TID_INT, TRUE);
+         assert(status==DB_SUCCESS);
+         
+         hs_debug_odbc(debug);
 
          status = hs_read_odbc(now - scale + toffset, now + toffset, scale / 1000 + 1,
                                event_name[i], var_name[i], var_index[i],
