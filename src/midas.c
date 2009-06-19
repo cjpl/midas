@@ -3221,6 +3221,9 @@ INT cm_transition(INT transition, INT run_number, char *errstr, INT errstr_size,
       int iarg = 0;
       char debug_arg[256];
       char start_arg[256];
+      char expt_name[256];
+      extern RPC_SERVER_CONNECTION _server_connection;
+
 #ifdef OS_WINNT
       args[iarg++] = "start";
       args[iarg++] = "/min";
@@ -3228,6 +3231,21 @@ INT cm_transition(INT transition, INT run_number, char *errstr, INT errstr_size,
 #else
       args[iarg++] = "mtransition";
 #endif
+
+      if (_server_connection.send_sock) {
+         /* if connected to mserver, pass connection info to mtransition */
+         args[iarg++] = "-h";
+         args[iarg++] = _server_connection.host_name;
+         args[iarg++] = "-e";
+         args[iarg++] = _server_connection.exp_name;
+      } else {
+         /* get experiment name from ODB */
+         size = sizeof(expt_name);
+         db_get_value(hDB, 0, "/Experiment/Name", expt_name, &size, TID_STRING, FALSE);
+
+         args[iarg++] = "-e";
+         args[iarg++] = expt_name;
+      }
 
       if (debug_flag) {
          args[iarg++] = "-d";
