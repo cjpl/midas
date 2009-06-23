@@ -977,7 +977,7 @@ INT ftp_open(char *destination, FTP_CON ** con)
 
 INT midas_flush_buffer(LOG_CHN * log_chn)
 {
-   INT i, size, written;
+   INT size, written;
    MIDAS_INFO *info;
 
    info = (MIDAS_INFO *) log_chn->format_info;
@@ -996,6 +996,7 @@ INT midas_flush_buffer(LOG_CHN * log_chn)
    else if (log_chn->gzfile) {
 #ifdef HAVE_ZLIB
       z_streamp s;
+      INT i;
 
       s = (z_streamp) log_chn->gzfile;
       written = s->total_out;
