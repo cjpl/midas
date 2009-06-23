@@ -1,5 +1,5 @@
-Microsoft Visual Studio Solution File, Format Version 9.00
-# Visual Studio 2005
+Microsoft Visual Studio Solution File, Format Version 10.00
+# Visual Studio 2008
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "MSERVER", "MSERVER.vcproj", "{1B9ABEE1-F2BA-4249-9DAA-2834E7288E3D}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ODBEDIT", "odbedit.vcproj", "{525F32F6-22D2-4F4E-A066-EDF4C509855F}"
@@ -95,7 +95,6 @@ Global
 		{9A094AEB-C3DB-4EC1-8BA0-13844C3C4B10}.Debug|Win32.ActiveCfg = Debug|Win32
 		{9A094AEB-C3DB-4EC1-8BA0-13844C3C4B10}.Release|Win32.ActiveCfg = Release|Win32
 		{E9193A43-04AE-4B8A-B357-7C5E4109FDAC}.Debug|Win32.ActiveCfg = Debug|Win32
-		{E9193A43-04AE-4B8A-B357-7C5E4109FDAC}.Debug|Win32.Build.0 = Debug|Win32
 		{E9193A43-04AE-4B8A-B357-7C5E4109FDAC}.Release|Win32.ActiveCfg = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
