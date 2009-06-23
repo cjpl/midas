@@ -1,5 +1,5 @@
-Microsoft Visual Studio Solution File, Format Version 9.00
-# Visual Studio 2005
+Microsoft Visual Studio Solution File, Format Version 10.00
+# Visual Studio 2008
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "calib_700", "calib_700.vcproj", "{D6387EBD-DEC0-4127-9142-058304A809DE}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "calib_hvr", "calib_hvr.vcproj", "{5FFAAEA5-A300-44C0-A725-607B98DE63AE}"
