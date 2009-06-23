@@ -154,7 +154,7 @@ typedef struct {
    MSCB_INFO_VAR  info;
 } CACHE_INFO_VAR;
 
-CACHE_INFO_VAR *cache_info_var;
+CACHE_INFO_VAR *cache_info_var = NULL;
 int n_cache_info_var;
 
 void mscb_clear_info_cache(int fd);
@@ -1043,6 +1043,7 @@ int mscb_init(char *device, int bufsize, char *password, int debug)
    n_cache = 0;
 
    free(cache_info_var);
+   cache_info_var = NULL;
    n_cache_info_var = 0;
 
    /* check for RPC connection */
@@ -1574,8 +1575,8 @@ int mscb_ping(int fd, unsigned short adr, int quick)
 void mscb_clear_info_cache(int fd)
 /* called internally when a node gets upgraded or address changed */
 {
-   if (n_cache_info_var)
-      free(cache_info_var);
+   free(cache_info_var);
+   cache_info_var = NULL;
    n_cache_info_var = 0;
 }
 
