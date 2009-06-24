@@ -3673,9 +3673,84 @@ static struct {
 
 /*------------------------------------------------------------------*/
 
-INT tr_stop(INT run_number, char *error);
+int close_channels(int run_number, BOOL* p_tape_flag)
+{
+   int i;
+   BOOL tape_flag = FALSE;
 
-INT current_run_number = 0;
+   for (i = 0; i < MAX_CHANNELS; i++) {
+      if (log_chn[i].handle || log_chn[i].ftp_con) {
+         /* generate MTALK message */
+         if (log_chn[i].type == LOG_TYPE_TAPE && tape_message) {
+            tape_flag = TRUE;
+            cm_msg(MTALK, "tr_stop", "closing tape channel #%d, please wait", i);
+         }
+#ifndef FAL_MAIN
+         /* wait until buffer is empty */
+         if (log_chn[i].buffer_handle) {
+#ifdef DELAYED_STOP
+            DWORD start_time;
+
+            start_time = ss_millitime();
+            do {
+               cm_yield(100);
+            } while (ss_millitime() - start_time < DELAYED_STOP);
+#else
+            INT n_bytes;
+            do {
+               bm_get_buffer_level(log_chn[i].buffer_handle, &n_bytes);
+               if (n_bytes > 0)
+                  cm_yield(100);
+            } while (n_bytes > 0);
+#endif
+         }
+#endif                          /* FAL_MAIN */
+
+         /* close logging channel */
+         log_close(&log_chn[i], run_number);
+
+         /* close statistics record */
+         db_set_record(hDB, log_chn[i].stats_hkey, &log_chn[i].statistics, sizeof(CHN_STATISTICS), 0);
+         db_close_record(hDB, log_chn[i].stats_hkey);
+         db_close_record(hDB, log_chn[i].settings_hkey);
+         log_chn[i].stats_hkey = log_chn[i].settings_hkey = 0;
+      }
+   }
+
+   if (p_tape_flag)
+      *p_tape_flag = tape_flag;
+
+   return SUCCESS;
+}
+
+int close_buffers()
+{
+   int i;
+
+   /* close buffers */
+   for (i = 0; i < MAX_CHANNELS; i++) {
+#ifndef FAL_MAIN
+      if (log_chn[i].buffer_handle) {
+         INT j;
+
+         bm_close_buffer(log_chn[i].buffer_handle);
+         for (j = i + 1; j < MAX_CHANNELS; j++)
+            if (log_chn[j].buffer_handle == log_chn[i].buffer_handle)
+               log_chn[j].buffer_handle = 0;
+      }
+
+      if (log_chn[i].msg_request_id)
+         bm_delete_request(log_chn[i].msg_request_id);
+#endif
+
+      /* clear channel info */
+      memset(&log_chn[i].handle, 0, sizeof(LOG_CHN));
+   }
+
+   return SUCCESS;
+}
+
+/*------------------------------------------------------------------*/
 
 INT tr_start(INT run_number, char *error)
 /********************************************************************\
@@ -3693,25 +3768,22 @@ INT tr_start(INT run_number, char *error)
 {
    INT size, index, status;
    HNDLE hKeyRoot, hKeyChannel;
-   char path[256];
    CHN_SETTINGS *chn_settings;
    KEY key;
    BOOL write_data, tape_flag = FALSE;
 
    if (verbose)
-      printf("tr_start: run %d, current_run_number %d\n", run_number, current_run_number);
+      printf("tr_start: run %d\n", run_number);
 
    /* save current ODB */
    odb_save("last.xml");
 
-   /* if missed tr_stop(), do it now */
-   if (current_run_number != 0) {
-      status = tr_stop(current_run_number, error);
-      if (status != CM_SUCCESS)
-         return status;
-   }
+   in_stop_transition = TRUE;
 
-   current_run_number = run_number;
+   close_channels(run_number, NULL);
+   close_buffers();
+
+   in_stop_transition = FALSE;
 
    /* read global logging flag */
    size = sizeof(BOOL);
@@ -3750,7 +3822,7 @@ INT tr_start(INT run_number, char *error)
       db_get_key(hDB, hKeyChannel, &key);
       status = db_check_record(hDB, hKeyRoot, key.name, strcomb(chn_settings_str), TRUE);
       if (status != DB_SUCCESS && status != DB_OPEN_RECORD) {
-         cm_msg(MERROR, "tr_start", "Cannot create/check channel record");
+         cm_msg(MERROR, "tr_start", "Cannot create/check channel record, status %d", status);
          break;
       }
 
@@ -3765,7 +3837,7 @@ INT tr_start(INT run_number, char *error)
             }
          }
 
-         /* if FTP channel alreay open, don't re-open it again */
+         /* if FTP channel already open, don't re-open it again */
          if (log_chn[index].ftp_con)
             continue;
 
@@ -3857,17 +3929,17 @@ INT tr_start(INT run_number, char *error)
          /* return if logging channel couldn't be opened */
          if (status != SS_SUCCESS) {
             if (status == SS_FILE_ERROR)
-               sprintf(error, "Cannot open file %s (See messages)", path);
+               sprintf(error, "Cannot open file \'%s\' (See messages)", log_chn[index].path);
             if (status == SS_FILE_EXISTS)
-               sprintf(error, "File %s exists already, run start aborted", path);
+               sprintf(error, "File \'%s\' exists already, run start aborted", log_chn[index].path);
             if (status == SS_NO_TAPE)
-               sprintf(error, "No tape in device %s", path);
+               sprintf(error, "No tape in device \'%s\'", log_chn[index].path);
             if (status == SS_TAPE_ERROR)
                sprintf(error, "Tape error, cannot start run");
             if (status == SS_DEV_BUSY)
-               sprintf(error, "Device %s used by someone else", path);
+               sprintf(error, "Device \'%s\' used by someone else", log_chn[index].path);
             if (status == FTP_NET_ERROR || status == FTP_RESPONSE_ERROR)
-               sprintf(error, "Cannot open FTP channel to [%s]", path);
+               sprintf(error, "Cannot open FTP channel to \'%s\'", log_chn[index].path);
             if (status == SS_NO_ROOT)
                sprintf(error, "No ROOT support compiled into mlogger, please compile with -DHAVE_ROOT flag");
 
@@ -3973,6 +4045,31 @@ INT tr_start(INT run_number, char *error)
    return CM_SUCCESS;
 }
 
+/*-- -------- ------------------------------------------------------*/
+
+INT tr_start_abort(INT run_number, char *error)
+{
+   int i;
+
+   if (verbose)
+      printf("tr_start_abort: run %d\n", run_number);
+
+   in_stop_transition = TRUE;
+
+   for (i = 0; i < MAX_CHANNELS; i++)
+      if (log_chn[i].handle && log_chn[i].type == LOG_TYPE_DISK) {
+         cm_msg(MINFO, "tr_start_abort", "Deleting previous file \"%s\"", log_chn[i].path);
+         unlink(log_chn[i].path);
+      }
+
+   close_channels(run_number, NULL);
+   close_buffers();
+
+   in_stop_transition = FALSE;
+
+   return CM_SUCCESS;
+}
+
 /*-- poststop ------------------------------------------------------*/
 
 INT tr_stop(INT run_number, char *error)
@@ -3984,78 +4081,21 @@ INT tr_stop(INT run_number, char *error)
 
 \********************************************************************/
 {
-   INT i, size;
+   INT  size;
    BOOL flag, tape_flag = FALSE;
    char filename[256];
    char str[256];
 
    if (verbose)
-      printf("tr_stop: run %d, current_run_number %d\n", run_number, current_run_number);
+      printf("tr_stop: run %d\n", run_number);
 
    if (in_stop_transition)
       return CM_SUCCESS;
 
-   current_run_number = 0;
-
    in_stop_transition = TRUE;
-   for (i = 0; i < MAX_CHANNELS; i++) {
-      if (log_chn[i].handle || log_chn[i].ftp_con) {
-         /* generate MTALK message */
-         if (log_chn[i].type == LOG_TYPE_TAPE && tape_message) {
-            tape_flag = TRUE;
-            cm_msg(MTALK, "tr_stop", "closing tape channel #%d, please wait", i);
-         }
-#ifndef FAL_MAIN
-         /* wait until buffer is empty */
-         if (log_chn[i].buffer_handle) {
-#ifdef DELAYED_STOP
-            DWORD start_time;
 
-            start_time = ss_millitime();
-            do {
-               cm_yield(100);
-            } while (ss_millitime() - start_time < DELAYED_STOP);
-#else
-            INT n_bytes;
-            do {
-               bm_get_buffer_level(log_chn[i].buffer_handle, &n_bytes);
-               if (n_bytes > 0)
-                  cm_yield(100);
-            } while (n_bytes > 0);
-#endif
-         }
-#endif                          /* FAL_MAIN */
-
-         /* close logging channel */
-         log_close(&log_chn[i], run_number);
-
-         /* close statistics record */
-         db_set_record(hDB, log_chn[i].stats_hkey, &log_chn[i].statistics, sizeof(CHN_STATISTICS), 0);
-         db_close_record(hDB, log_chn[i].stats_hkey);
-         db_close_record(hDB, log_chn[i].settings_hkey);
-         log_chn[i].stats_hkey = log_chn[i].settings_hkey = 0;
-      }
-   }
-
-   /* close buffers */
-   for (i = 0; i < MAX_CHANNELS; i++) {
-#ifndef FAL_MAIN
-      if (log_chn[i].buffer_handle) {
-         INT j;
-
-         bm_close_buffer(log_chn[i].buffer_handle);
-         for (j = i + 1; j < MAX_CHANNELS; j++)
-            if (log_chn[j].buffer_handle == log_chn[i].buffer_handle)
-               log_chn[j].buffer_handle = 0;
-      }
-
-      if (log_chn[i].msg_request_id)
-         bm_delete_request(log_chn[i].msg_request_id);
-#endif
-
-      /* clear channel info */
-      memset(&log_chn[i].handle, 0, sizeof(LOG_CHN));
-   }
+   close_channels(run_number, &tape_flag);
+   close_buffers();
 
    /* ODB dump if requested */
    size = sizeof(flag);
@@ -4257,6 +4297,7 @@ int main(int argc, char *argv[])
       return 1;
    }
 
+   cm_register_transition(TR_STARTABORT, tr_start_abort, 800);
    cm_register_transition(TR_STOP, tr_stop, 800);
    cm_register_transition(TR_PAUSE, tr_pause, 800);
    cm_register_transition(TR_RESUME, tr_resume, 200);
