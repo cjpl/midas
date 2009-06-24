@@ -37,6 +37,7 @@ The Online Database file
 #include "mxml.h"
 #include "strlcpy.h"
 #include <assert.h>
+#include <signal.h>
 
 /*------------------------------------------------------------------*/
 

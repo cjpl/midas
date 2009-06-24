@@ -1966,7 +1966,9 @@ INT ss_mutex_wait_for(HNDLE mutex_handle, INT timeout)
       start_time = ss_millitime();
 
       do {
-#ifdef OS_LINUX
+#if defined(OS_DARWIN)
+         status = semop(mutex_handle, &sb, 1);
+#elif defined(OS_LINUX)
          struct timespec ts;
          ts.tv_sec  = 1;
          ts.tv_nsec = 0;

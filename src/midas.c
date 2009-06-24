@@ -13,6 +13,7 @@
 #include "msystem.h"
 #include "strlcpy.h"
 #include <assert.h>
+#include <signal.h>
 
 /* SVN revision number. This value will be changed by the Subversion
    system automatically on every revision of midas.c. It will be
