@@ -100,6 +100,7 @@ struct {
    TR_STOP, "STOP",}, {
    TR_PAUSE, "PAUSE",}, {
    TR_RESUME, "RESUME",}, {
+   TR_STARTABORT, "STARTABORT",}, {
    TR_DEFERRED, "DEFERRED",}, {
 0, "",},};
 
@@ -2850,7 +2851,7 @@ INT cm_register_transition(INT transition, INT(*func) (INT, char *), INT sequenc
    char str[256];
 
    /* check for valid transition */
-   if (transition != TR_START && transition != TR_STOP && transition != TR_PAUSE && transition != TR_RESUME) {
+   if (transition != TR_START && transition != TR_STOP && transition != TR_PAUSE && transition != TR_RESUME && transition != TR_STARTABORT) {
       cm_msg(MERROR, "cm_register_transition", "Invalid transition request \"%d\"", transition);
       return CM_INVALID_TRANSITION;
    }
@@ -3178,7 +3179,7 @@ tapes.
 @param debug_flag If 1 output debugging information, if 2 output via cm_msg().
 @return CM_SUCCESS, \<error\> error code from remote client
 */
-INT cm_transition(INT transition, INT run_number, char *errstr, INT errstr_size, INT async_flag, INT debug_flag)
+INT cm_transition1(INT transition, INT run_number, char *errstr, INT errstr_size, INT async_flag, INT debug_flag)
 {
    INT i, j, status, idx, size, sequence_number, port, state, old_timeout, n_tr_clients;
    HNDLE hDB, hRootKey, hSubkey, hKey, hKeylocal, hConn, hKeyTrans;
@@ -3197,7 +3198,7 @@ INT cm_transition(INT transition, INT run_number, char *errstr, INT errstr_size,
    transition &= ~TR_DEFERRED;
 
    /* check for valid transition */
-   if (transition != TR_START && transition != TR_STOP && transition != TR_PAUSE && transition != TR_RESUME) {
+   if (transition != TR_START && transition != TR_STOP && transition != TR_PAUSE && transition != TR_RESUME && transition != TR_STARTABORT) {
       cm_msg(MERROR, "cm_transition", "Invalid transition request \"%d\"", transition);
       if (errstr != NULL)
          strlcpy(errstr, "Invalid transition request", errstr_size);
@@ -3646,8 +3647,13 @@ INT cm_transition(INT transition, INT run_number, char *errstr, INT errstr_size,
             cm_msg(MERROR, "cm_transition",
                    "cannot connect to client \"%s\" on host %s, port %d, status %d",
                    tr_client[idx].client_name, tr_client[idx].host_name, tr_client[idx].port, status);
-            if (errstr != NULL)
-               strlcpy(errstr, "Cannot connect to client", errstr_size);
+            if (errstr != NULL) {
+               strlcpy(errstr, "Cannot connect to client \'", errstr_size);
+               strlcat(errstr, tr_client[idx].client_name, errstr_size);
+               strlcat(errstr, "\'", errstr_size);
+            }
+
+            cm_cleanup(tr_client[idx].client_name, TRUE);
 
             /* indicate abort */
             i = 1;
@@ -3744,6 +3750,9 @@ INT cm_transition(INT transition, INT run_number, char *errstr, INT errstr_size,
    if (transition == TR_STOP)
       state = STATE_STOPPED;
 
+   if (transition == TR_STARTABORT)
+      state = STATE_STOPPED;
+
    size = sizeof(state);
    status = db_set_value(hDB, 0, "Runinfo/State", &state, size, 1, TID_INT);
    if (status != DB_SUCCESS)
@@ -3759,16 +3768,20 @@ INT cm_transition(INT transition, INT run_number, char *errstr, INT errstr_size,
       sprintf(str, "Run #%d paused", run_number);
    if (transition == TR_RESUME)
       sprintf(str, "Run #%d resumed", run_number);
+   if (transition == TR_STARTABORT)
+      sprintf(str, "Run #%d start aborted", run_number);
 
    if (str[0])
       cm_msg(MINFO, "cm_transition", str);
 
    /* lock/unlock ODB values if present */
    db_find_key(hDB, 0, "/Experiment/Lock when running", &hKey);
-   if (hKey && transition == TR_START)
-      db_set_mode(hDB, hKey, MODE_READ, TRUE);
-   if (hKey && transition == TR_STOP)
-      db_set_mode(hDB, hKey, MODE_READ | MODE_WRITE | MODE_DELETE, TRUE);
+   if (hKey) {
+      if (state == STATE_STOPPED)
+         db_set_mode(hDB, hKey, MODE_READ | MODE_WRITE | MODE_DELETE, TRUE);
+      else
+         db_set_mode(hDB, hKey, MODE_READ, TRUE);
+   }
 
    /* flush online database */
    if (transition == TR_STOP)
@@ -3817,6 +3830,20 @@ INT cm_transition(INT transition, INT run_number, char *errstr, INT errstr_size,
       strlcpy(errstr, "Success", errstr_size);
 
    return CM_SUCCESS;
+}
+
+INT cm_transition(INT transition, INT run_number, char *errstr, INT errstr_size, INT async_flag, INT debug_flag)
+{
+   int status;
+
+   status = cm_transition1(transition, run_number, errstr, errstr_size, async_flag, debug_flag);
+
+   if (transition == TR_START && status != CM_SUCCESS) {
+      cm_msg(MERROR, "cm_transition", "Could not start a run: cm_transition() status %d, message \'%s\'", status, errstr);
+      cm_transition1(TR_STARTABORT, run_number, NULL, 0, async_flag, debug_flag);
+   }
+
+   return status;
 }
 
 

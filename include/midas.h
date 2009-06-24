@@ -340,6 +340,7 @@ Transitions values */
 #define TR_STOP       (1<<1)  /**< Stop transition  */
 #define TR_PAUSE      (1<<2)  /**< Pause transition */
 #define TR_RESUME     (1<<3)  /**< Resume transition  */
+#define TR_STARTABORT (1<<4)  /**< Start aborted transition  */
 #define TR_DEFERRED   (1<<12)
 
 /** 
