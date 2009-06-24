@@ -43,6 +43,7 @@ void usage()
    fprintf(stderr, "  STOP - stop the run\n");
    fprintf(stderr, "  PAUSE - pause the run\n");
    fprintf(stderr, "  RESUME - resume the run\n");
+   fprintf(stderr, "  STARTABORT - cleanup after failed START\n");
    fprintf(stderr, "  DELAY 100 - sleep for 100 seconds\n");
    fprintf(stderr, "  DELAY \"/logger/Auto restart delay\" - sleep for time specified in ODB variable\n");
    fprintf(stderr, "  IF \"/logger/Auto restart\" - continue only if ODB variable is set to TRUE\n");
@@ -232,6 +233,13 @@ int main(int argc, char *argv[])
          status = cm_transition(TR_RESUME, 0, str, sizeof(str), SYNC, debug_flag);
          if (status != CM_SUCCESS)
             printf("RESUME: cm_transition status %d, message \'%s\'\n", status, str);
+
+      } else if (strcmp(argv[i], "STARTABORT") == 0) {
+
+         char str[256];
+         status = cm_transition(TR_STARTABORT, 0, str, sizeof(str), SYNC, debug_flag);
+         if (status != CM_SUCCESS)
+            printf("STARTABORT: cm_transition status %d, message \'%s\'\n", status, str);
 
       } else if (strcmp(argv[i], "DELAY") == 0) {
 
