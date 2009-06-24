@@ -56,16 +56,16 @@ if size is larger then 127 bytes.
 int sis3820_FifoRead(MVME_INTERFACE *mvme, DWORD base, void *pdest, int wcount)
 {
   int rd;
-  int save_am;
 
-  mvme_get_am(mvme,&save_am);
-  mvme_set_blt(  mvme, MVME_BLT_MBLT64);
-  mvme_set_am(   mvme, MVME_AM_A32_D64);
+  mvme_set_am(mvme, MVME_AM_A32);
+  //mvme_set_blt(mvme, 0); // PIO, V7865: 1.4 Mbytes/sec
+  //mvme_set_blt(mvme, MVME_BLT_NONE); // single-word DMA, V7865: 18 Mbytes/sec
+  //mvme_set_blt(  mvme, MVME_BLT_BLT32); // 32-bit DMA, V7865: 23 Mbytes/sec
+  mvme_set_blt(  mvme, MVME_BLT_MBLT64); // 64-bit DMA, V7865: 41 Mbytes/sec
+  // does not work, mvme_set_blt(  mvme, MVME_BLT_2EVME); // double-edge 64-bit DMA
 
   rd = mvme_read(mvme, pdest, base + 0x800000, wcount*4);
   //printf("fifo read wcount: %d, rd: %d\n",wcount,rd);
-
-  mvme_set_am(mvme, save_am);
 
   return wcount;
 }
@@ -85,10 +85,11 @@ int  sis3820_DataReady(MVME_INTERFACE *mvme, DWORD base)
 /*****************************************************************/
 void  sis3820_Status(MVME_INTERFACE *mvme, DWORD base)
 {
-  printf("SIS3820 at A32 0x%x\n", (int)base);
-  printf("CSR: 0x%x\n", regRead(mvme,base,SIS3820_CONTROL_STATUS));
-  printf("ModuleID and Firmware: 0x%x\n", regRead(mvme,base,SIS3820_MODID));
-  printf("Operation mode: 0x%x\n", regRead(mvme,base,SIS3820_OPERATION_MODE));
+  printf("SIS3820 at VME A32 address 0x%x: CSR: 0x%08x, ModuleID and Firmware: 0x%08x, Operation mode: 0x%08x\n",
+         (int)base,
+         regRead(mvme,base,SIS3820_CONTROL_STATUS),
+         regRead(mvme,base,SIS3820_MODID),
+         regRead(mvme,base,SIS3820_OPERATION_MODE));
 }
 
 //end
