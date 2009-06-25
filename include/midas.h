@@ -804,6 +804,14 @@ Extract or set/reset the time stamp field pointed by the argument.
 @param e pointer to the midas event (pevent)
 */
 #define TIME_STAMP(e)      ((((EVENT_HEADER *) e)-1)->time_stamp)
+
+/**
+DATA_SIZE
+Extract or set/reset the data size field pointed by the argument.
+@param e pointer to the midas event (pevent)
+*/
+#define DATA_SIZE(e)      ((((EVENT_HEADER *) e)-1)->data_size)
+
 #define EVENT_SOURCE(e,o)  (* (INT*) (e+o))
 
 /**
