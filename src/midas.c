@@ -3226,13 +3226,7 @@ INT cm_transition1(INT transition, INT run_number, char *errstr, INT errstr_size
       char expt_name[256];
       extern RPC_SERVER_CONNECTION _server_connection;
 
-#ifdef OS_WINNT
-      args[iarg++] = "start";
-      args[iarg++] = "/min";
       args[iarg++] = "mtransition";
-#else
-      args[iarg++] = "mtransition";
-#endif
 
       if (_server_connection.send_sock) {
          /* if connected to mserver, pass connection info to mtransition */
