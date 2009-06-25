@@ -108,7 +108,7 @@ int readout_thread(void *param);
 volatile int readout_thread_active = 0;
 void mfe_error_check(void);
 
-int send_event(INT idx);
+int send_event(INT idx, BOOL manual_trig);
 int receive_trigger_event(EQUIPMENT *eq);
 void send_all_periodic_events(INT transition);
 void interrupt_routine(void);
@@ -1095,7 +1095,7 @@ void update_odb(EVENT_HEADER * pevent, HNDLE hKey, INT format)
 
 /*------------------------------------------------------------------*/
 
-int send_event(INT idx)
+int send_event(INT idx, BOOL manual_trig)
 {
    EQUIPMENT_INFO *eq_info;
    EVENT_HEADER *pevent, *pfragment;
@@ -1115,7 +1115,7 @@ int send_event(INT idx)
    /* compose MIDAS event header */
    pevent->event_id = eq_info->event_id;
    pevent->trigger_mask = eq_info->trigger_mask;
-   pevent->data_size = 0;
+   pevent->data_size = (INT) manual_trig;
    pevent->time_stamp = ss_time();
    pevent->serial_number = equipment[idx].serial_number++;
 
@@ -1273,7 +1273,7 @@ void send_all_periodic_events(INT transition)
       if (transition == TR_RESUME && (eq_info->read_on & RO_RESUME) == 0)
          continue;
 
-      send_event(i);
+      send_event(i, FALSE);
    }
 }
 
@@ -1901,7 +1901,7 @@ INT scheduler(void)
                   readout_enable(FALSE);
 
                /* readout and send event */
-               status = send_event(idx);
+               status = send_event(idx, FALSE);
 
                if (status != CM_SUCCESS) {
                   cm_msg(MERROR, "scheduler", "send_event error %d", status);
@@ -2182,7 +2182,7 @@ INT scheduler(void)
          status = BM_INVALID_PARAM;
          for (i = 0; equipment[i].name[0]; i++)
             if (equipment[i].info.event_id == manual_trigger_event_id) {
-               status = send_event(i);
+               status = send_event(i, TRUE);
                break;
             }
 
