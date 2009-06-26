@@ -943,6 +943,9 @@ void exec_script(HNDLE hkey)
 
 /*------------------------------------------------------------------*/
 
+int requested_transition = 0;
+int requested_old_state = 0;
+
 void show_status_page(int refresh, char *cookie_wpwd)
 {
    int i, j, k, h, m, s, status, size, type;
@@ -1281,6 +1284,24 @@ void show_status_page(int refresh, char *cookie_wpwd)
       rsprintf("<td colspan=1 bgcolor=#00FF00>Running");
    else
       rsprintf("<td colspan=1 bgcolor=#FFFFFF>Unknown");
+
+   if (runinfo.transition_in_progress)
+      requested_transition = 0;
+
+   if (runinfo.state != requested_old_state)
+      requested_transition = 0;
+
+   if (requested_transition == TR_STOP)
+      rsprintf("<br><b>Run stop requested</b>");
+
+   if (requested_transition == TR_START)
+      rsprintf("<br><b>Run start requested</b>");
+
+   if (requested_transition == TR_PAUSE)
+      rsprintf("<br><b>Run pause requested</b>");
+
+   if (requested_transition == TR_RESUME)
+      rsprintf("<br><b>Run resume requested</b>");
 
    if (runinfo.transition_in_progress == TR_STOP)
       rsprintf("<br><b>Stopping run</b>");
@@ -12372,6 +12393,10 @@ void interprete(char *cookie_pwd, char *cookie_wpwd, char *cookie_cpwd, char *pa
       else
          redirect("");
 
+      requested_old_state = run_state;
+      if (status == SUCCESS)
+         requested_transition = TR_PAUSE;
+
       return;
    }
 
@@ -12393,6 +12418,10 @@ void interprete(char *cookie_pwd, char *cookie_wpwd, char *cookie_cpwd, char *pa
          redirect(getparam("redir"));
       else
          redirect("");
+
+      requested_old_state = run_state;
+      if (status == SUCCESS)
+         requested_transition = TR_RESUME;
 
       return;
    }
@@ -12442,14 +12471,14 @@ void interprete(char *cookie_pwd, char *cookie_wpwd, char *cookie_cpwd, char *pa
          if (status != CM_SUCCESS && status != CM_DEFERRED_TRANSITION) {
             show_error(str);
          } else {
+
+            requested_old_state = run_state;
+            requested_transition = TR_START;
+
             if (isparam("redir"))
                redirect(getparam("redir"));
             else
                redirect("");
-            /* if we return too quicly, mtransition did not get a chance to start
-               and set "transition_in_progress" and until the status page is manually refreshed,
-               it looks like pushing the "start" button had no effect. KO 2009-Apr-28 */
-            ss_sleep(1000);
          }
       }
       return;
@@ -12473,6 +12502,10 @@ void interprete(char *cookie_pwd, char *cookie_wpwd, char *cookie_cpwd, char *pa
          redirect(getparam("redir"));
       else
          redirect("");
+
+      requested_old_state = run_state;
+      if (status == CM_SUCCESS)
+         requested_transition = TR_STOP;
 
       return;
    }
