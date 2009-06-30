@@ -118,6 +118,8 @@ int mvme_close(MVME_INTERFACE *vme)
    close(vme->handle);
 #endif
 
+   free(vme);
+
    return MVME_SUCCESS;
 }
 
