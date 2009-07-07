@@ -19,7 +19,6 @@ Contents:     Dump event on screen with MIDAS or YBOS data format
 #define  REP_EVENT     4
 #define  REP_BANKLIST  5
 
-
 char bank_name[4], sbank_name[4], svpath[128];
 INT hBufEvent;
 INT save_dsp = 1, evt_display = 0;
