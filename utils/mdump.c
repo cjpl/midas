@@ -19,6 +19,7 @@ Contents:     Dump event on screen with MIDAS or YBOS data format
 #define  REP_EVENT     4
 #define  REP_BANKLIST  5
 
+
 char bank_name[4], sbank_name[4], svpath[128];
 INT hBufEvent;
 INT save_dsp = 1, evt_display = 0;
@@ -89,6 +90,9 @@ int replog(int data_fmt, char *rep_file, int bl, int action)
 {
    char banklist[YB_STRING_BANKLIST_MAX];
    short int msk, id;
+   static char bars[] = "|/-\\";
+   static int i_bar;
+   static EVENT_HEADER pevh;
    BOOL bank_found = FALSE;
    INT status = 0, i;
    DWORD physize, evtlen;
@@ -134,6 +138,26 @@ int replog(int data_fmt, char *rep_file, int bl, int action)
             if ((status =
                  yb_file_recompose(pmyevt, data_fmt, svpath, file_mode)) != YB_SUCCESS)
                printf("mdump recompose error %i\n", status);
+	 if ((consistency == 1) && (data_fmt == FORMAT_MIDAS)) {
+	   pme = (EVENT_HEADER *) pmyevt;
+	   if (pme->serial_number != pevh.serial_number + 1) {
+	     /* event header */
+	     printf
+	       ("\nLast - Evid:%4.4x- Mask:%4.4x- Serial:%i- Time:0x%x- Dsize:%i/0x%x\n",
+		pevh.event_id, pevh.trigger_mask, pevh.serial_number, pevh.time_stamp,
+		pevh.data_size, pevh.data_size);
+	     printf
+	       ("Now  - Evid:%4.4x- Mask:%4.4x- Serial:%i- Time:0x%x- Dsize:%i/0x%x\n",
+		pme->event_id, pme->trigger_mask, pme->serial_number,
+		pme->time_stamp, pme->data_size, pme->data_size);
+	   } else {
+	     printf("Consistency check: %c - %i (Data size:%i)\r", bars[i_bar++ % 4],
+		    pme->serial_number, pme->data_size);
+	     fflush(stdout);
+	   }
+	   memcpy((char *) &pevh, (char *) pme, sizeof(EVENT_HEADER));
+	   continue;
+	 }
          if (action == REP_LENGTH)
             status = yb_any_all_info_display(D_EVTLEN);
          if ((action == REP_BANKLIST) || (disp_bank_list == 1)) {
@@ -400,6 +424,8 @@ int main(int argc, char **argv)
             single = 1;
          else if (strncmp(argv[i], "-j", 2) == 0)
             disp_bank_list = 1;
+         else if (strncmp(argv[i], "-y", 2) == 0)
+            consistency = 1;
          else if (argv[i][0] == '-') {
             if (i + 1 >= argc || argv[i + 1][0] == '-')
                goto repusage;
@@ -465,6 +491,8 @@ int main(int argc, char **argv)
                printf("                  -i evt_id (any) : event id from the FE\n");
                printf
                    ("                  -[single]       : Request single bank only (to be used with -b)\n");
+               printf
+                   ("                  -y              : Serial number consistency check\n");
                printf
                    ("                  -j              : Display # of banks and bank name list only for all the event\n");
                printf
