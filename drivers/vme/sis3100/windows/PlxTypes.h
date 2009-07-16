@@ -1,13 +1,13 @@
-#ifndef __PLXTYPES_H
-#define __PLXTYPES_H
+#ifndef __PLX_TYPES_H
+#define __PLX_TYPES_H
 
 /*******************************************************************************
- * Copyright (c) 2001 PLX Technology, Inc.
- * 
- * PLX Technology Inc. licenses this software under specific terms and
- * conditions.  Use of any of the software or derviatives thereof in any
- * product without a PLX Technology chip is strictly prohibited. 
- * 
+ * Copyright (c) PLX Technology, Inc.
+ *
+ * PLX Technology Inc. licenses this source file under the GNU Lesser General Public
+ * License (LGPL) version 2.  This source file may be modified or redistributed
+ * under the terms of the LGPL and without express permission from PLX Technology.
+ *
  * PLX Technology, Inc. provides this software AS IS, WITHOUT ANY WARRANTY,
  * EXPRESS OR IMPLIED, INCLUDING, WITHOUT LIMITATION, ANY WARRANTY OF
  * MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE.  PLX makes no guarantee
@@ -15,12 +15,11 @@
  * the software and documentation in terms of correctness, accuracy,
  * reliability, currentness, or otherwise; and you rely on the software,
  * documentation and results solely at your own risk.
- * 
+ *
  * IN NO EVENT SHALL PLX BE LIABLE FOR ANY LOSS OF USE, LOSS OF BUSINESS,
  * LOSS OF PROFITS, INDIRECT, INCIDENTAL, SPECIAL OR CONSEQUENTIAL DAMAGES
- * OF ANY KIND.  IN NO EVENT SHALL PLX'S TOTAL LIABILITY EXCEED THE SUM
- * PAID TO PLX FOR THE PRODUCT LICENSED HEREUNDER.
- * 
+ * OF ANY KIND.
+ *
  ******************************************************************************/
 
 /******************************************************************************
@@ -35,16 +34,16 @@
  *
  * Revision:
  *
- *      01-30-01 : PCI SDK v3.20
+ *      07-01-08 : PLX SDK v6.00
  *
  ******************************************************************************/
 
 
-#if defined(IOP_CODE)
-    #include "IopTypes.h"
-#elif defined(PCI_CODE)
-    #include "PciTypes.h"
-#endif
+#include "Plx.h"
+#include "PlxDefCk.h"
+#include "PlxStat.h"
+#include "PciTypes.h"
+
 
 
 #ifdef __cplusplus
@@ -54,669 +53,483 @@ extern "C" {
 
 
 
-/* Assertion constants */
-#define AssertBLAST          0
-#define EOTAsserted          1
+/******************************************
+ *   Definitions for Code Portability
+ ******************************************/
+// Convert pointer to an integer
+#define PLX_PTR_TO_INT( ptr )       ((PLX_UINT_PTR)(ptr))
 
-/* BLINK duration values. The larger the duration, the slower it blinks */
-#define BLINK_SLOW           0x80000
-#define BLINK_MEDIUM         0x50000
-#define BLINK_FAST           0x30000
+// Convert integer to a pointer
+#define PLX_INT_TO_PTR( int )       ((VOID*)(PLX_UINT_PTR)(int))
 
-/* Hot swap status definitions */
-#define HS_LED_ON            0x08
-#define HS_BOARD_REMOVED     0x40
-#define HS_BOARD_INSERTED    0x80
+// Guarantees correct endian format of a value regardless of CPU platform
+#if defined(PLX_BIG_ENDIAN)
+    #define PLX_LE_DATA_32(value)   EndianSwap32( (value) )
+    #define PLX_BE_DATA_32(value)   (value)
+#else
+    #define PLX_LE_DATA_32(value)   (value)
+    #define PLX_BE_DATA_32(value)   EndianSwap32( (value) )
+#endif
 
 
-/* Access Size Type */
-typedef enum _ACCESS_TYPE
+
+/******************************************
+ *      Miscellaneous definitions
+ ******************************************/
+#if !defined(VOID)
+    typedef void              VOID;
+#endif
+
+#if (!defined(PLX_MSWINDOWS)) || defined(PLX_VXD_DRIVER)
+    #if !defined(BOOLEAN)
+        typedef S8            BOOLEAN;
+    #endif
+#endif
+
+#if !defined(PLX_MSWINDOWS)
+    #if !defined(BOOL)
+        typedef S8            BOOL;
+    #endif
+#endif
+
+#if !defined(NULL)
+    #define NULL              ((VOID *) 0x0)
+#endif
+
+#if !defined(TRUE)
+    #define TRUE              1
+#endif
+
+#if !defined(FALSE)
+    #define FALSE             0
+#endif
+
+#if defined(PLX_MSWINDOWS) 
+    #define PLX_TIMEOUT_INFINITE    INFINITE
+#elif defined(PLX_LINUX) || defined(PLX_LINUX_DRIVER)
+    #define PLX_TIMEOUT_INFINITE    MAX_SCHEDULE_TIMEOUT
+#endif
+
+
+
+
+/******************************************
+ *   PLX-specific types & structures
+ ******************************************/
+
+// Mode PLX API uses to access device
+typedef enum _PLX_API_MODE
+{
+    PLX_API_MODE_PCI,                   // Device accessed via PLX driver over PCI/PCIe
+    PLX_API_MODE_I2C_AARDVARK,          // Device accessed via Aardvark I2C USB
+    PLX_API_MODE_TCP                    // Device accessed via TCP/IP
+} PLX_API_MODE;
+
+
+// Access Size Type
+typedef enum _PLX_ACCESS_TYPE
 {
     BitSize8,
     BitSize16,
     BitSize32,
     BitSize64
-} ACCESS_TYPE, *PACCESS_TYPE;
+} PLX_ACCESS_TYPE;
 
 
-/* Various DMA states */
-typedef enum _DMA_STATE
+// EEPROM status
+typedef enum _PLX_EEPROM_STATUS
 {
-    DmaStateClosed,
-    DmaStateBlock,
-    DmaStateSgl,
-    DmaStateShuttle,
-} DMA_STATE;
+    PLX_EEPROM_STATUS_NONE         = 0,     // Not present
+    PLX_EEPROM_STATUS_VALID        = 1,     // Present with valid data
+    PLX_EEPROM_STATUS_INVALID_DATA = 2,     // Present w/invalid data or CRC error
+    PLX_EEPROM_STATUS_BLANK        = PLX_EEPROM_STATUS_INVALID_DATA,
+    PLX_EEPROM_STATUS_CRC_ERROR    = PLX_EEPROM_STATUS_INVALID_DATA
+} PLX_EEPROM_STATUS;
 
 
-/* DMA Channel Definitions */
-typedef enum _DMA_CHANNEL
+// Port types
+typedef enum _PLX_LINK_SPEED
 {
-    IopChannel0,
-    IopChannel1,
-    IopChannel2,
-    PrimaryPciChannel0,
-    PrimaryPciChannel1,
-    SecondaryPciChannel0,
-    SecondaryPciChannel1
-} DMA_CHANNEL, *PDMA_CHANNEL;
+    PLX_LINK_SPEED_2_5_GBPS     = 1,
+    PLX_LINK_SPEED_5_0_GBPS     = 2
+} PLX_LINK_SPEED;
 
 
-/* DMA Transfer Direction Type */
-typedef enum _DMA_DIRECTION
+// Port types
+typedef enum _PLX_PORT_TYPE
 {
-    IopToIop,
-    IopToPrimaryPci,
-    PrimaryPciToIop,
-    IopToSecondaryPci,
-    SecondaryPciToIop,
-    PrimaryPciToSecondaryPci,
-    SecondaryPciToPrimaryPci
-} DMA_DIRECTION, *PDMA_DIRECTION;
+    PLX_PORT_UNKNOWN            = 0xFF,
+    PLX_PORT_ENDPOINT           = 0,
+    PLX_PORT_NON_TRANS          = PLX_PORT_ENDPOINT,  // NT port is an endpoint
+    PLX_PORT_LEGACY_ENDPOINT    = 1,
+    PLX_PORT_ROOT_PORT          = 4,
+    PLX_PORT_UPSTREAM           = 5,
+    PLX_PORT_DOWNSTREAM         = 6,
+    PLX_PORT_PCIE_TO_PCI_BRIDGE = 7,
+    PLX_PORT_PCI_TO_PCIE_BRIDGE = 8,
+    PLX_PORT_ROOT_ENDPOINT      = 9,
+    PLX_PORT_ROOT_EVENT_COLL    = 10
+} PLX_PORT_TYPE;
 
 
-/* DMA Command Definitions */
-typedef enum _DMA_COMMAND
+// Non-transparent Port types (used by PLX service driver)
+typedef enum _PLX_NT_PORT_TYPE
 {
-    DmaStart,
+    PLX_NT_PORT_NONE            = 0,     // Not an NT port
+    PLX_NT_PORT_VIRTUAL         = 1,     // NT Virtual-side port
+    PLX_NT_PORT_LINK            = 2      // NT Link-side port
+} PLX_NT_PORT_TYPE;
+
+
+// DMA control commands
+typedef enum _PLX_DMA_COMMAND
+{
     DmaPause,
     DmaResume,
-    DmaAbort,
-    DmaStatus
-} DMA_COMMAND, *PDMA_COMMAND;
+    DmaAbort
+} PLX_DMA_COMMAND;
 
 
-/* DMA Channel Priority Definitions */
-typedef enum _DMA_CHANNEL_PRIORITY
+// Performance monitor control
+typedef enum _PLX_PERF_CMD
 {
-    Channel0Highest,
-    Channel1Highest,
-    Channel2Highest,
-    Channel3Highest,
-    Rotational
-} DMA_CHANNEL_PRIORITY;
+    PLX_PERF_CMD_START,
+    PLX_PERF_CMD_STOP,
+} PLX_PERF_CMD;
 
 
-/* Power State Definitions */
-typedef enum _PLX_POWER_LEVEL
-{
-    D0Uninitialized,
-    D0,
-    D1,
-    D2,
-    D3Hot,
-    D3Cold
-} PLX_POWER_LEVEL, *PPLX_POWER_LEVEL;
-
-
-/* EEPROM Type Definitions */
-typedef enum _EEPROM_TYPE
-{
-    Eeprom93CS46,
-    Eeprom93CS56,
-    Eeprom93CS66,
-    EepromX24012,
-    EepromX24022,
-    EepromX24042,
-    EepromX24162,
-    EEPROM_UNSUPPORTED
-} EEPROM_TYPE, *PEEPROM_TYPE;
-
-
-/* FLASH Device Definitions */
-typedef enum _FLASH_TYPE
-{
-    AM29F040,
-    AM29LV040B,
-    AT49LV040,
-    MBM29LV160,
-    FLASH_UNSUPPORTED
-} FLASH_TYPE, *PFALSH_TYPE;
-
-
-/* USER Pin Definitions */
-typedef enum _USER_PIN
-{
-    USER0,
-    USER1,
-    USER2,
-    USER3,
-    USER4,
-    USER5
-} USER_PIN, *PUSER_PIN;
-
-
-/* USER Pin Values */
-typedef enum _PLX_PIN_STATE
-{
-    Inactive,
-    Active
-} PLX_PIN_STATE, *PPLX_PIN_STATE;
-
-
-/* Pin Direction Values */
-typedef enum _PLX_PIN_DIRECTION
-{
-    PLX_PIN_INPUT,
-    PLX_PIN_OUTPUT
-} PLX_PIN_DIRECTION;
-
-
-/* PCI Space Definitions */
-typedef enum _PCI_SPACE
-{
-    PciMemSpace,
-    PciIoSpace
-} PCI_SPACE, *PPCI_SPACE;
-
-
-/* Base Address Register Definitions */
-typedef enum _BAR_SPACE
-{
-    Bar0,
-    Bar1,
-    Bar2,
-    Bar3,
-    Bar4,
-    Bar5,
-    IopExpansionRom
-} BAR_SPACE, *PBAR_SPACE;
-
-
-/* IOP Space Types */
-typedef enum _IOP_SPACE
-{
-    IopSpace0,
-    IopSpace1,
-    IopSpace2,
-    IopSpace3,
-    MsLcs0,
-    MsLcs1,
-    MsLcs2,
-    MsLcs3,
-    MsDram,
-    MsDefault,
-    ExpansionRom
-} IOP_SPACE, *PIOP_SPACE;
-
-
-/* Bus Index Types */
-typedef enum _BUS_INDEX
-{
-    PrimaryPciBus,
-    SecondaryPciBus
-} BUS_INDEX, *PBUS_INDEX;
-
-
-/* Mailbox ID Definitions */
-typedef enum _MAILBOX_ID
-{
-    MailBox0,
-    MailBox1,
-    MailBox2,
-    MailBox3,
-    MailBox4,
-    MailBox5,
-    MailBox6,
-    MailBox7
-} MAILBOX_ID, *PMAILBOX_ID;
-
-
-/* Power Management Data Definitions */
-typedef enum _POWER_DATA_SELECT
-{
-    D0PowerConsumed,
-    D1PowerConsumed,
-    D2PowerConsumed,
-    D3HotPowerConsumed,
-    D0PowerDissipated,
-    D1PowerDissipated,
-    D2PowerDissipated,
-    D3PowerDissipated
-} POWER_DATA_SELECT, *PPOWER_DATA_SELECT;
-
-
-/* Power Scale definitions */
-typedef enum _POWER_DATA_SCALE
-{
-    PowerScaleUnknown,
-    PowerScaleOneTenth,
-    PowerScaleOneHundredth,
-    PowerScaleOneThousandth
-} POWER_DATA_SCALE, *PPOWER_DATA_SCALE;
-
-
-/* DMA Channel Descriptor Structure */  
-typedef struct _DMA_CHANNEL_DESC 
-{
-    U32 EnableReadyInput         :1;
-    U32 EnableBTERMInput         :1;
-    U32 EnableIopBurst           :1;
-    U32 EnableWriteInvalidMode   :1;
-    U32 EnableDmaEOTPin          :1;
-    U32 DmaStopTransferMode      :1;
-    U32 HoldIopAddrConst         :1;
-    U32 HoldIopSourceAddrConst   :1;
-    U32 HoldIopDestAddrConst     :1;
-    U32 DemandMode               :1;
-    U32 SrcDemandMode            :1;
-    U32 DestDemandMode           :1;
-    U32 EnableTransferCountClear :1;
-    U32 WaitStates               :4;
-    U32 IopBusWidth              :2;
-    U32 EOTEndLink               :1;
-    U32 ValidStopControl         :1;
-    U32 ValidModeEnable          :1;
-    U32 EnableDualAddressCycles  :1;
-    U32 Reserved1                :9;
-    U32 TholdForIopWrites        :4;
-    U32 TholdForIopReads         :4;
-    U32 TholdForPciWrites        :4;
-    U32 TholdForPciReads         :4;
-    U32 EnableFlybyMode          :1;
-    U32 FlybyDirection           :1;
-    U32 EnableDoneInt            :1;
-    U32 Reserved2                :13;
-    DMA_CHANNEL_PRIORITY DmaChannelPriority;
-} DMA_CHANNEL_DESC, *PDMA_CHANNEL_DESC;
-
-
-/* DMA Transfer Element Union Structure */
-typedef union _DMA_TRANSFER_ELEMENT
-{
-    struct
+// Used for device power state. Added here for code compatability in Linux
+#if !defined(PLX_MSWINDOWS) 
+    typedef enum _DEVICE_POWER_STATE
     {
-    #if defined(PCI_CODE)
-        union
-        {
-            U32 LowPciAddr;
-            U32 UserAddr;
-        };
-    #else
-        U32 LowPciAddr;
-    #endif
-        U32 IopAddr;
-        U32 TransferCount;
-    #if defined(LITTLE_ENDIAN)
-        U32 PciSglLoc         :1;
-        U32 LastSglElement    :1;
-        U32 TerminalCountIntr :1;
-        U32 IopToPciDma       :1;
-        U32 NextSglPtr        :28;
-    #elif defined(BIG_ENDIAN)
-        U32 NextSglPtr        :28;
-        U32 IopToPciDma       :1;
-        U32 TerminalCountIntr :1;
-        U32 LastSglElement    :1;
-        U32 PciSglLoc         :1;
-    #endif
-    } Pci9080Dma;
+        PowerDeviceUnspecified = 0,
+        PowerDeviceD0,
+        PowerDeviceD1,
+        PowerDeviceD2,
+        PowerDeviceD3,
+        PowerDeviceMaximum
+    } DEVICE_POWER_STATE;
+#endif
 
-    struct
+
+// Properties of API access mode
+typedef struct _PLX_MODE_PROP
+{
+    union
     {
-    #if defined(PCI_CODE)
-        union
+        struct
         {
-            U32 LowPciAddr;
-            U32 UserAddr;
-        };
-    #else
-        U32 LowPciAddr;
-    #endif
-        U32 IopAddr;
-        U32 TransferCount;
-    #if defined(LITTLE_ENDIAN)
-        U32 PciSglLoc         :1;
-        U32 LastSglElement    :1;
-        U32 TerminalCountIntr :1;
-        U32 IopToPciDma       :1;
-        U32 NextSglPtr        :28;
-    #elif defined(BIG_ENDIAN)
-        U32 NextSglPtr        :28;
-        U32 IopToPciDma       :1;
-        U32 TerminalCountIntr :1;
-        U32 LastSglElement    :1;
-        U32 PciSglLoc         :1;
-    #endif
-        U32 HighPciAddr;
-    } Pci9054Dma;
+            U16 I2cPort;
+            U16 SlaveAddr;
+            U32 ClockRate;
+        } I2c;
 
-    struct
+        struct
+        {
+            U64 IpAddress;
+        } Tcp;
+    };
+} PLX_MODE_PROP;
+
+
+// PCI Memory Structure
+typedef struct _PLX_PHYSICAL_MEM
+{
+    U64 UserAddr;                    // User-mode virtual address
+    U64 PhysicalAddr;                // Bus physical address
+    U64 CpuPhysical;                 // CPU physical address
+    U32 Size;                        // Size of the buffer
+} PLX_PHYSICAL_MEM;
+
+
+// PLX Driver Properties
+typedef struct _PLX_DRIVER_PROP
+{
+    char    DriverName[16];          // Name of driver
+    BOOLEAN bIsServiceDriver;        // Is service driver or PnP driver?
+    U64     AcpiPcieEcam;            // Base address of PCIe ECAM
+    U8      Reserved[40];            // Reserved for future use
+} PLX_DRIVER_PROP;
+
+
+// PCI BAR Properties
+typedef struct _PLX_PCI_BAR_PROP
+{
+    U32      BarValue;               // Actual value in BAR
+    U64      Physical;               // BAR Physical Address
+    U64      Size;                   // Size of BAR space
+    BOOLEAN  bIoSpace;               // Memory or I/O space?
+    BOOLEAN  bPrefetchable;          // Is space pre-fetchable?
+    BOOLEAN  b64bit;                 // Is PCI BAR 64-bit?
+} PLX_PCI_BAR_PROP;
+
+
+// Used for getting the port properties and status
+typedef struct _PLX_PORT_PROP
+{
+    U8      PortType;                // Port configuration
+    U8      PortNumber;              // Internal port number
+    U8      LinkWidth;               // Negotiated port link width
+    U8      MaxLinkWidth;            // Max link width device is capable of
+    U8      LinkSpeed;               // Negotiated link speed
+    U8      MaxLinkSpeed;            // Max link speed device is capable of
+    U16     MaxReadReqSize;          // Max read request size allowed
+    U16     MaxPayloadSize;          // Max payload size setting
+    BOOLEAN bNonPcieDevice;          // Flag whether device is a PCIe device
+} PLX_PORT_PROP;
+
+
+// PCI Device Key Identifier
+typedef struct _PLX_DEVICE_KEY
+{
+    U32          IsValidTag;         // Magic number to determine validity
+    U8           bus;                // Physical device location
+    U8           slot;
+    U8           function;
+    U16          VendorId;           // Device Identifier
+    U16          DeviceId;
+    U16          SubVendorId;
+    U16          SubDeviceId;
+    U8           Revision;
+    U8           ApiIndex;           // Used internally by the API
+    U8           DeviceNumber;       // Used internally by device drivers
+    PLX_API_MODE ApiMode;            // Mode API uses to access device
+    U8           PlxPort;            // PLX port number of device
+    U8           NTPortType;         // Stores if NT port & whether link or virtual
+    U32          Reserved[8];        // Reserved for future use
+} PLX_DEVICE_KEY;
+
+
+// PLX Device Object Structure
+typedef struct _PLX_DEVICE_OBJECT
+{
+    U32                IsValidTag;   // Magic number to determine validity
+    PLX_DEVICE_KEY     Key;          // Device location key identifier
+    PLX_DRIVER_HANDLE  hDevice;      // Handle to driver
+    PLX_PCI_BAR_PROP   PciBar[6];    // PCI BAR properties
+    U64                PciBarVa[6];  // For PCI BAR user-mode BAR mappings
+    U8                 BarMapRef[6]; // BAR map count used by API
+    U32                PlxChipType;  // PLX chip type
+    U8                 PlxRevision;  // PLX chip revision
+    PLX_PHYSICAL_MEM   CommonBuffer; // Used to store common buffer information
+    U32                Reserved[8];  // Reserved for future use
+} PLX_DEVICE_OBJECT;
+
+
+// PLX Notification Object
+typedef struct _PLX_NOTIFY_OBJECT
+{
+    U32 IsValidTag;                  // Magic number to determine validity
+    U64 pWaitObject;                 // -- INTERNAL -- Wait object used by the driver
+    U64 hEvent;                      // User event handle (HANDLE can be 32 or 64 bit)
+} PLX_NOTIFY_OBJECT;
+
+
+// PLX Interrupt Structure 
+typedef struct _PLX_INTERRUPT
+{
+    U32 Doorbell;
+    U8  PciMain               :1;
+    U8  PciAbort              :1;
+    U8  LocalToPci_1          :1;
+    U8  LocalToPci_2          :1;
+    U8  DmaChannel_0          :1;
+    U8  DmaChannel_1          :1;
+    U8  MuInboundPost         :1;
+    U8  MuOutboundPost        :1;
+    U8  MuOutboundOverflow    :1;
+    U8  TargetRetryAbort      :1;
+    U8  Message_0             :1;
+    U8  Message_1             :1;
+    U8  Message_2             :1;
+    U8  Message_3             :1;
+    U8  SwInterrupt           :1;
+    U8  ResetDeassert         :1;
+    U8  PmeDeassert           :1;
+    U8  GPIO_4_5              :1;
+    U8  GPIO_14_15            :1;
+    U8  HotPlugAttention      :1;
+    U8  HotPlugPowerFault     :1;
+    U8  HotPlugMrlSensor      :1;
+    U8  HotPlugChangeDetect   :1;
+    U8  HotPlugCmdCompleted   :1;
+    U32 Reserved              :32;      // Reserved space for future
+} PLX_INTERRUPT;
+
+
+// DMA Channel Properties Structure
+typedef struct _PLX_DMA_PROP
+{
+    U8 ReadyInput           :1;
+    U8 Burst                :1;
+    U8 BurstInfinite        :1;
+    U8 WriteInvalidMode     :1;
+    U8 LocalAddrConst       :1;
+    U8 DualAddressCycles    :1;
+    U8 ValidMode            :1;
+    U8 TransferCountClear   :1;
+    U8 ValidStopControl     :1;
+    U8 DemandMode           :1;
+    U8 EOTPin               :1;
+    U8 EOTEndLink           :1;
+    U8 StopTransferMode     :1;
+    U8 LocalBusWidth        :2;
+    U8 WaitStates           :4;
+} PLX_DMA_PROP;
+
+
+// DMA Transfer Parameters
+typedef struct _PLX_DMA_PARAMS
+{
+    union
     {
-        U32 TransferCount;
-    #if defined(PCI_CODE)
-        union
-        {
-            U32 LowPciAddr;
-            U32 UserAddr;
-            U32 SourceAddr;
-        };
-    #else
-        union loc1
-        {
-            U32 LowPciAddr; /* DMA channel 0, 1 */
-            U32 SourceAddr; /* DMA channel 2 */
-        } Loc1;
-    #endif
-
-    #if defined(PCI_CODE)
-        union loc2
-        {
-            U32 IopAddr;    /* DMA channel 0, 1 */
-            U32 DestAddr;   /* DMA channel 2 */
-        };
-    #else
-        union loc2
-        {
-            U32 IopAddr;    /* DMA channel 0, 1 */
-            U32 DestAddr;   /* DMA channel 2 */
-        } Loc2;
-    #endif
-
-    #if defined(LITTLE_ENDIAN)
-        U32 PciSglLoc         :1;
-        U32 LastSglElement    :1;
-        U32 TerminalCountIntr :1;
-        U32 IopToPciDma       :1;
-        U32 NextSglPtr        :28;
-    #elif defined(BIG_ENDIAN)
-        U32 NextSglPtr        :28;
-        U32 IopToPciDma       :1;
-        U32 TerminalCountIntr :1;
-        U32 LastSglElement    :1;
-        U32 PciSglLoc         :1;
-    #endif
-        U32 HighPciAddr;
-    } Iop480Dma;
-
-    /*
-     * The DMA Transfer Element must always start on a 16 byte
-     * boundary so the following reserve field ensures this. Total size = 0x30.
-     */
-    U32 Reserved[12];
-} DMA_TRANSFER_ELEMENT, *PDMA_TRANSFER_ELEMENT;
+        U64 UserVa;                // User space virtual address
+        U32 PciAddrLow;            // Lower 32-bits of PCI address
+    } u;
+    U32     PciAddrHigh;           // Upper 32-bits of PCI address
+    U32     LocalAddr;             // Local bus address
+    U32     ByteCount;             // Number of bytes to transfer
+    U32     TerminalCountIntr :1;
+    U32     LocalToPciDma     :1;
+} PLX_DMA_PARAMS;
 
 
-/* DMA SGL Address Data Type */
-typedef PDMA_TRANSFER_ELEMENT          SGL_ADDR, *PSGL_ADDR;
-
-
-/* DMA Manager initialization Parameters Structure */
-typedef struct _DMA_PARMS
+// Performance properties
+typedef struct _PLX_PERF_PROP
 {
-    DMA_CHANNEL           DmaChannel;
-    PDMA_TRANSFER_ELEMENT FirstSglElement; 
-    PU32                  WaitQueueBase; 
-    U32                   NumberOfElements;
-} DMA_PARMS, *PDMA_PARMS;
+    U32 IsValidTag;   // Magic number to determine validity
+
+    // Port properties
+    U8  PortNumber;
+    U8  LinkWidth;
+    U8  LinkSpeed;
+    U8  Station;
+    U8  StationPort;
+
+    // Ingress counters
+    U32 IngressPostedHeader;
+    U32 IngressPostedDW;
+    U32 IngressNonpostedDW;
+    U32 IngressCplHeader;
+    U32 IngressCplDW;
+    U32 IngressDllp;
+    U32 IngressPhy;
+
+    // Egress counters
+    U32 EgressPostedHeader;
+    U32 EgressPostedDW;
+    U32 EgressNonpostedDW;
+    U32 EgressCplHeader;
+    U32 EgressCplDW;
+    U32 EgressDllp;
+    U32 EgressPhy;
+
+    // Storage for previous counter values
+
+    // Previous Ingress counters
+    U32 Prev_IngressPostedHeader;
+    U32 Prev_IngressPostedDW;
+    U32 Prev_IngressNonpostedDW;
+    U32 Prev_IngressCplHeader;
+    U32 Prev_IngressCplDW;
+    U32 Prev_IngressDllp;
+    U32 Prev_IngressPhy;
+
+    // Previous Egress counters
+    U32 Prev_EgressPostedHeader;
+    U32 Prev_EgressPostedDW;
+    U32 Prev_EgressNonpostedDW;
+    U32 Prev_EgressCplHeader;
+    U32 Prev_EgressCplDW;
+    U32 Prev_EgressDllp;
+    U32 Prev_EgressPhy;
+} PLX_PERF_PROP;
 
 
-/* PLX Interrupt Structure */   
-typedef struct _PLX_INTR
+// Performance statistics
+typedef struct _PLX_PERF_STATS
 {
-    U32 InboundPost      :1;
-    U32 OutboundPost     :1;
-    U32 OutboundOverflow :1;
-    U32 OutboundOption   :1;
-    U32 IopDmaChannel0   :1;
-    U32 PciDmaChannel0   :1;
-    U32 IopDmaChannel1   :1;
-    U32 PciDmaChannel1   :1;
-    U32 IopDmaChannel2   :1;
-    U32 PciDmaChannel2   :1;
-    U32 Mailbox0         :1;
-    U32 Mailbox1         :1;
-    U32 Mailbox2         :1;
-    U32 Mailbox3         :1;
-    U32 Mailbox4         :1;
-    U32 Mailbox5         :1;
-    U32 Mailbox6         :1;
-    U32 Mailbox7         :1;
-    U32 IopDoorbell      :1;
-    U32 PciDoorbell      :1;
-    U32 SerialPort1      :1;
-    U32 SerialPort2      :1;
-    U32 BIST             :1;
-    U32 PowerManagement  :1;
-    U32 PciMainInt       :1;
-    U32 IopToPciInt      :1;
-    U32 IopMainInt       :1;
-    U32 PciAbort         :1;
-    U32 PciReset         :1;
-    U32 PciPME           :1;
-    U32 Enum             :1;
-    U32 PciENUM          :1;
-    U32 IopBusTimeout    :1;
-    U32 AbortLSERR       :1;
-    U32 ParityLSERR      :1;
-    U32 RetryAbort       :1;
-    U32 LocalParityLSERR :1;
-    U32 PciSERR          :1;
-    U32 IopRefresh       :1;
-    U32 PciINTApin       :1;
-    U32 IopINTIpin       :1;
-    U32 TargetAbort      :1;
-    U32 Ch1Abort         :1;
-    U32 Ch0Abort         :1;
-    U32 DMAbort          :1;
-    U32 IopToPciInt_2    :1;
-    U32 Reserved         :18;
-} PLX_INTR, *PPLX_INTR;
+    S64         IngressTotalBytes;              // Total bytes including overhead
+    long double IngressTotalByteRate;           // Total byte rate
+    S64         IngressCplAvgPerReadReq;        // Average number of completion TLPs for read requests
+    S64         IngressCplAvgBytesPerTlp;       // Average number of bytes per completion TLPs
+    S64         IngressPayloadReadBytes;        // Payload bytes read (Completion TLPs)
+    S64         IngressPayloadReadBytesAvg;     // Average payload bytes for reads (Completion TLPs)
+    S64         IngressPayloadWriteBytes;       // Payload bytes written (Posted TLPs)
+    S64         IngressPayloadWriteBytesAvg;    // Average payload bytes for writes (Posted TLPs)
+    S64         IngressPayloadTotalBytes;       // Payload total bytes
+    double      IngressPayloadAvgPerTlp;        // Payload average size per TLP
+    long double IngressPayloadByteRate;         // Payload byte rate
+    long double IngressLinkUtilization;         // Total link utilization
+
+    S64         EgressTotalBytes;               // Total byte including overhead
+    long double EgressTotalByteRate;            // Total byte rate
+    S64         EgressCplAvgPerReadReq;         // Average number of completion TLPs for read requests
+    S64         EgressCplAvgBytesPerTlp;        // Average number of bytes per completion TLPs
+    S64         EgressPayloadReadBytes;         // Payload bytes read (Completion TLPs)
+    S64         EgressPayloadReadBytesAvg;      // Average payload bytes for reads (Completion TLPs)
+    S64         EgressPayloadWriteBytes;        // Payload bytes written (Posted TLPs)
+    S64         EgressPayloadWriteBytesAvg;     // Average payload bytes for writes (Posted TLPs)
+    S64         EgressPayloadTotalBytes;        // Payload total bytes
+    double      EgressPayloadAvgPerTlp;         // Payload average size per TLP
+    long double EgressPayloadByteRate;          // Payload byte rate
+    long double EgressLinkUtilization;          // Total link utilization
+} PLX_PERF_STATS;
 
 
-/* PCI bus properties structure */
-typedef struct _PCI_BUS_PROP
+// DBG -- Left in temporarily only for PDE support.  Will be removed in next release
+typedef struct _PLX_PERFORMANCE_OBJECT
 {
-    U32 PciRequestMode           :1;
-    U32 DmPciReadMode            :1;
-    U32 EnablePciArbiter         :1;
-    U32 EnableWriteInvalidMode   :1;
-    U32 DmPrefetchLimit          :1;
-    U32 PciReadNoWriteMode       :1;
-    U32 PciReadWriteFlushMode    :1;
-    U32 PciReadNoFlushMode       :1;
-    U32 EnableRetryAbort         :1;
-    U32 WFifoAlmostFullFlagCount :5;
-    U32 DmWriteDelay             :2;
-    U32 ReadPrefetchMode         :2;
-    U32 IoRemapSelect            :1;
-    U32 EnablePciBusMastering    :1;
-    U32 EnableMemorySpaceAccess  :1;
-    U32 EnableIoSpaceAccess      :1;
-    U32 Reserved1                :10;
-    U32 ReservedForFutureUse;
-} PCI_BUS_PROP, *PPCI_BUS_PROP;
+    U32 IsValidTag;   // Magic number to determine validity
+
+    // Port properties
+    U8  PortNumber;
+    U8  LinkWidth;
+    U8  Generation;
+
+    // TIC
+    U32 TicIngressTlpPostedHeader;
+    U32 TicIngressTlpPostedDW;
+    U32 TicIngressTlpNonpostedDW;
+    U32 TicIngressTlpCompletionHeader;
+    U32 TicIngressTlpCompletionDW;
+
+    // TEC
+    U32 TecEgressTlpPostedHeader;
+    U32 TecEgressTlpPostedDW;
+    U32 TecEgressTlpNonpostedDW;
+    U32 TecEgressTlpCompletionHeader;
+    U32 TecEgressTlpCompletionDW;
+
+    // DLLP
+    U32 DllpIngress;
+    U32 DllpEgress;
+
+    // PHY
+    U32 PhyIngress;
+    U32 PhyEgress;
+} PLX_PERFORMANCE_OBJECT;
 
 
-/* PCI Abritration Descriptor Structure */
-typedef struct _PCI_ARBIT_DESC
+// DBG -- Left in temporarily only for PDE support.  Will be removed in next release
+// Performance statistics
+typedef struct _PLX_PERF_STATISTICS_PER_PORT
 {
-    U32 PciHighPriority;
-} PCI_ARBIT_DESC, *PPCI_ARBIT_DESC;
+    // Port Input Statistics
+    double InputLinkUtilization;
+    double InputPayLoadSize;
+    double InputPayloadByteRate;
+    double InputTotalBytes;
+    double InputByteRate;
 
+    // Port Output Statistics
+    double OutputLinkUtilization;
+    double OutputPayLoadSize;
+    double OutputPayloadByteRate;
+    double OutputTotalBytes;
+    double OutputByteRate;
+} PLX_PERF_STATISTICS_PER_PORT;
 
-/* IOP Bus Properties Structure */
-typedef struct _IOP_BUS_PROP
-{
-    U32 EnableReadyRecover       :1;
-    U32 EnableReadyInput         :1;
-    U32 EnableBTERMInput         :1;
-    U32 DisableReadPrefetch      :1;
-    U32 EnableReadPrefetchCount  :1;
-    U32 ReadPrefetchCounter      :4;
-    U32 EnableBursting           :1;
-    U32 EnableIopBusTimeoutTimer :1;
-    U32 BREQoTimerResolution     :1;
-    U32 EnableIopBREQo           :1;
-    U32 BREQoDelayClockCount     :4;
-    U32 MapInMemorySpace         :1;
-    U32 OddParitySelect          :1;
-    U32 EnableParityCheck        :1;
-    U32 MemoryWriteProtect       :1;
-    U32 InternalWaitStates       :4;
-    U32 PciRev2_1Mode            :1;
-    U32 IopBusWidth              :2;
-    U32 Reserved1                :4;
-    U32 Iop480WADWaitStates      :4;
-    U32 Iop480WDDWaitStates      :4;
-    U32 Iop480WDLYDelayStates    :3;
-    U32 Iop480WHLDHoldStates     :3;
-    U32 Iop480WRCVRecoverStates  :3;
-    U32 Reserved2                :15;
-    U32 Iop480RADWaitStates      :4;
-    U32 Iop480RDDWaitStates      :4;
-    U32 Iop480RDLYADelayStates   :3;
-    U32 Iop480RDLYDDelayStates   :3;
-    U32 Iop480RRCVRecoverStates  :3;
-    U32 Reserved3                :15;
-    U32 DramRefreshEnable        :1;
-    U32 DramRefreshInterval      :11;
-    U32 Iop480TWRdelay           :2;
-    U32 Iop480W2Wdelay           :2;
-    U32 Iop480A2Cdelay           :2;
-    U32 Iop480RRCVdelay          :2;
-    U32 Iop480PRCGdelay          :2;
-    U32 Iop480WCWdelay           :2;
-    U32 Iop480RCWdelay           :2;
-    U32 Iop480C2Cdelay           :2;
-    U32 Iop480R2Cdelay           :2;
-    U32 Iop480R2Rdelay           :2;
-} IOP_BUS_PROP, *PIOP_BUS_PROP;
-
-
-/* IOP Arbitration Descriptor Structure */
-typedef struct _IOP_ARBIT_DESC
-{
-    U32 IopBusDSGiveUpBusMode    :1;
-    U32 EnableDSLockedSequence   :1;
-    U32 GateIopLatencyTimerBREQo :1;
-    U32 EnableWAITInput          :1;
-    U32 EnableBOFF               :1;
-    U32 BOFFTimerResolution      :1;
-    U32 EnableIopBusLatencyTimer :1;
-    U32 EnableIopBusPauseTimer   :1;
-    U32 EnableIopArbiter         :1;
-    U32 IopArbitrationPriority   :3;
-    U32 BOFFDelayClocks          :4;
-    U32 IopBusLatencyTimer       :8;
-    U32 IopBusPauseTimer         :8;
-    U32 EnableIopBusTimeout      :1;
-    U32 IopBusTimeout            :15;
-    U32 Reserved                 :16;
-} IOP_ARBIT_DESC, *PIOP_ARBIT_DESC;
-
-
-/* IOP Endian Descriptor Structure*/
-typedef struct _IOP_ENDIAN_DESC
-{
-    U32 BigEIopSpace0            :1;
-    U32 BigEIopSpace1            :1;
-    U32 BigEExpansionRom         :1;
-    U32 BigEMaster480LCS0        :1;
-    U32 BigEMaster480LCS1        :1;
-    U32 BigEMaster480LCS2        :1;
-    U32 BigEMaster480LCS3        :1;
-    U32 BigEMaster480Dram        :1;
-    U32 BigEMaster480Default     :1;
-    U32 BigEIopBusRegion0        :1; 
-    U32 BigEIopBusRegion1        :1;
-    U32 BigEIopBusRegion2        :1;
-    U32 BigEIopBusRegion3        :1;
-    U32 BigEDramBusRegion        :1;
-    U32 BigEDefaultBusRegion     :1;
-    U32 BigEDmaChannel0          :1;
-    U32 BigEDmaChannel1          :1;
-    U32 BigEIopConfigRegAccess   :1;
-    U32 BigEDirectMasterAccess   :1;
-    U32 BigEIopConfigRegInternal :1;
-    U32 BigEDirectMasterInternal :1;
-    U32 BigEByteLaneMode         :1;
-    U32 BigEByteLaneModeLBR0     :1;
-    U32 BigEByteLaneModeLBR1     :1;
-    U32 BigEByteLaneModeLBR2     :1;
-    U32 BigEByteLaneModeLBR3     :1;
-    U32 BigEByteLaneModeDRAMBR   :1;
-    U32 BigEByteLaneModeDefBR    :1;
-    U32 Reserved1                :4;
-    U32 ReservedForFutureUse;
-} IOP_ENDIAN_DESC, *PIOP_ENDIAN_DESC;
-
-
-/* Power Management Properties */
-typedef struct _PM_PROP
-{
-    U32 Version                   :3;
-    U32 PMEClockNeeded            :1;
-    U32 DeviceSpecialInit         :1;
-    U32 D1Supported               :1;
-    U32 D2Supported               :1;
-    U32 AssertPMEfromD0           :1;
-    U32 AssertPMEfromD1           :1;
-    U32 AssertPMEfromD2           :1;
-    U32 AssertPMEfromD3Hot        :1;
-    U32 Read_Set_State            :2;
-    U32 PME_Enable                :1;
-    U32 PME_Status                :1;  
-    U32 PowerDataSelect           :3;
-    U32 PowerDataScale            :2;
-    U32 PowerDataValue            :8;
-    U32 Reserved                  :4;
-} PM_PROP, *PPM_PROP;
-
-
-/* IOP API Initialization Parameters Structure */
-typedef struct _API_PARMS
-{
-    VOID            *PlxIcIopBaseAddr;
-    VOID            *SpuMemBaseAddr;
-    PPCI_BUS_PROP    PtrPciBusProp;
-    PPCI_ARBIT_DESC  PtrPciArbitDesc;
-    PIOP_BUS_PROP    PtrIopBus0Prop;
-    PIOP_BUS_PROP    PtrIopBus1Prop;
-    PIOP_BUS_PROP    PtrIopBus2Prop;
-    PIOP_BUS_PROP    PtrIopBus3Prop;
-    PIOP_BUS_PROP    PtrLcs0Prop;
-    PIOP_BUS_PROP    PtrLcs1Prop;
-    PIOP_BUS_PROP    PtrLcs2Prop;
-    PIOP_BUS_PROP    PtrLcs3Prop;
-    PIOP_BUS_PROP    PtrDramProp;
-    PIOP_BUS_PROP    PtrDefaultProp;
-    PIOP_BUS_PROP    PtrExpRomBusProp;
-    PIOP_ARBIT_DESC  PtrIopArbitDesc;
-    PIOP_ENDIAN_DESC PtrIopEndianDesc;
-    PPM_PROP         PtrPMProp;
-    PU32             PtrVPDBaseAddress;
-} API_PARMS, *PAPI_PARMS;
-
-
-typedef struct _SPU_STATUS
-{
-    U32 DSRInputInactive          :1;
-    U32 CTSInputInactive          :1;
-    U32 ReceiveBufferReady        :1;
-    U32 FramingError              :1;
-    U32 OverrunError              :1;
-    U32 ParityError               :1;
-    U32 LineBreak                 :1;
-    U32 TransmitBufferReady       :1;
-    U32 TransmitterShiftRegReady  :1;
-    U32 Reserve                   :23;
-} SPU_STATUS, *PSPU_STATUS;
-
-
-typedef struct _SPU_DESC
-{
-    U32 BaudRate;
-    U32 LclkFreq;                         /* LCLK Frequency in Hz */
-    U32 LM                        :2;     /* LoopBack Modes */
-    U32 DTR                       :1;     /* Data Terminal */
-    U32 RTS                       :1;     /* Request to Send */
-    U32 DB                        :1;     /* Data bits */
-    U32 PE                        :1;     /* Parity Enable */
-    U32 PTY                       :1;     /* Parity */
-    U32 SB                        :1;     /* Stop bits */
-    U32 Reserved                  :24;
-} SPU_DESC, *PSPU_DESC;
 
 
 
