@@ -1,13 +1,13 @@
-#ifndef __PCITYPES_H
-#define __PCITYPES_H
+#ifndef __PCI_TYPES_H
+#define __PCI_TYPES_H
 
 /*******************************************************************************
- * Copyright (c) 2001 PLX Technology, Inc.
- * 
- * PLX Technology Inc. licenses this software under specific terms and
- * conditions.  Use of any of the software or derviatives thereof in any
- * product without a PLX Technology chip is strictly prohibited. 
- * 
+ * Copyright (c) PLX Technology, Inc.
+ *
+ * PLX Technology Inc. licenses this source file under the GNU Lesser General Public
+ * License (LGPL) version 2.  This source file may be modified or redistributed
+ * under the terms of the LGPL and without express permission from PLX Technology.
+ *
  * PLX Technology, Inc. provides this software AS IS, WITHOUT ANY WARRANTY,
  * EXPRESS OR IMPLIED, INCLUDING, WITHOUT LIMITATION, ANY WARRANTY OF
  * MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE.  PLX makes no guarantee
@@ -15,12 +15,11 @@
  * the software and documentation in terms of correctness, accuracy,
  * reliability, currentness, or otherwise; and you rely on the software,
  * documentation and results solely at your own risk.
- * 
+ *
  * IN NO EVENT SHALL PLX BE LIABLE FOR ANY LOSS OF USE, LOSS OF BUSINESS,
  * LOSS OF PROFITS, INDIRECT, INCIDENTAL, SPECIAL OR CONSEQUENTIAL DAMAGES
- * OF ANY KIND.  IN NO EVENT SHALL PLX'S TOTAL LIABILITY EXCEED THE SUM
- * PAID TO PLX FOR THE PRODUCT LICENSED HEREUNDER.
- * 
+ * OF ANY KIND.
+ *
  ******************************************************************************/
 
 /******************************************************************************
@@ -31,133 +30,164 @@
  *
  * Description:
  *
- *      This file defines the basic types available to the PCI code.
+ *      This file defines the basic types
  *
  * Revision:
  *
- *      01-30-01 : PCI SDK v3.20
+ *      04-01-08 : PLX SDK v6.00
  *
  ******************************************************************************/
 
 
-#include "PlxError.h"
-
-
-#if defined(PLX_DRIVER)
-    #if defined(WDM_DRIVER)
-        #include <wdm.h>        /* cannot be used in API */
-    #else
-        #include <ntddk.h>      /* cannot be used in API */
-    #endif
-#else
-    #include <wtypes.h>         /* access same basic types used in Win32 */
+#if defined(PLX_WDM_DRIVER)
+    #include <wdm.h>            // WDM Driver types
 #endif
+
+#if defined(PLX_NT_DRIVER)
+    #include <ntddk.h>          // NT Kernel Mode Driver types
+#endif
+
+#if defined(PLX_MSWINDOWS)
+    #if !defined(PLX_DRIVER)
+        #include <wtypes.h>     // Windows application level types
+    #endif
+#endif
+
+// Must be placed before <linux/types.h> to prevent compile errors
+#if defined(PLX_LINUX) && !defined(PLX_LINUX_DRIVER)
+    #include <memory.h>         // To automatically add mem*() set of functions
+#endif
+
+#if defined(PLX_LINUX) || defined(PLX_LINUX_DRIVER)
+    #include <linux/types.h>    // Linux types
+#endif
+
+#if defined(PLX_LINUX)
+    #include <limits.h>         // For MAX_SCHEDULE_TIMEOUT in Linux applications
+#endif
+
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 
+
 /******************************************
- * Basic Type Definitions
+ *   Linux Application Level Definitions
  ******************************************/
-#if !defined(VOID)
-    typedef void                    VOID, *PVOID;
-#endif
+#if defined(PLX_LINUX)
+    typedef __s8                  S8;
+    typedef __u8                  U8;
+    typedef __s16                 S16;
+    typedef __u16                 U16;
+    typedef __s32                 S32;
+    typedef __u32                 U32;
+  #if defined(PLX_BIG_ENDIAN)           // To avoid 64-bit issues on BE systems
+    typedef __s32                 S64;
+    typedef __u32                 U64;
+  #else
+    typedef __s64                 S64;
+    typedef __u64                 U64;
+  #endif
+    typedef signed long           PLX_INT_PTR;        // For 32/64-bit code compatability
+    typedef unsigned long         PLX_UINT_PTR;
 
-#if !defined(S8)
-    typedef signed char             S8, *PS8;
-#endif
+    typedef int                   HANDLE;
+    typedef int                   PLX_DRIVER_HANDLE;  // Linux-specific driver handle
 
-#if !defined(U8)
-    typedef unsigned char           U8, *PU8;
-#endif
+    #define INVALID_HANDLE_VALUE  (HANDLE)-1
 
-#if !defined(S16)
-    typedef signed short            S16, *PS16;
+    #if !defined(MAX_SCHEDULE_TIMEOUT)
+        #define MAX_SCHEDULE_TIMEOUT    LONG_MAX
+    #endif
 #endif
-
-#if !defined(U16)
-    typedef unsigned short          U16, *PU16;
-#endif
-
-#if !defined(S32)
-    typedef signed long             S32, *PS32;
-#endif
-
-#if !defined(U32)
-    typedef unsigned long           U32, *PU32;
-#endif
-/* mki, 16.01.02
-#if !defined(LONGLONG)
-    typedef signed _int64           LONGLONG;
-#endif
-
-#if !defined(ULONGLONG)
-    typedef unsigned _int64         ULONGLONG;
-#endif
-*/
-#if !defined(S64)
-    typedef union _S64
-    {
-        struct
-        {
-            U32  LowPart;
-            S32  HighPart;
-        }u;
-
-        LONGLONG QuadPart;
-    } S64;
-#endif
-
-#if !defined(U64)
-    typedef union _U64
-    {
-        struct
-        {
-            U32  LowPart;
-            U32  HighPart;
-        }u;
-
-        ULONGLONG QuadPart;
-    } U64;
-#endif
-
 
 
 
 /******************************************
- * PCI SDK Defined Structures
+ *    Linux Kernel Level Definitions
  ******************************************/
-/* Device Location Structure */
-typedef struct _DEVICE_LOCATION
-{
-    U32 DeviceId;
-    U32 VendorId;
-    U32 BusNumber;
-    U32 SlotNumber;
-    U8  SerialNumber[16];
-} DEVICE_LOCATION, *PDEVICE_LOCATION;
+#if defined(PLX_LINUX_DRIVER)
+    typedef s8                    S8;
+    typedef u8                    U8;
+    typedef s16                   S16;
+    typedef u16                   U16;
+    typedef s32                   S32;
+    typedef u32                   U32;
+  #if defined(PLX_BIG_ENDIAN)           // To avoid 64-bit issues on BE systems
+    typedef s32                   S64;
+    typedef u32                   U64;
+  #else
+    typedef s64                   S64;
+    typedef u64                   U64;
+  #endif
+    typedef signed long           PLX_INT_PTR;        // For 32/64-bit code compatability
+    typedef unsigned long         PLX_UINT_PTR;
 
-/* Virtual Addresses Structure */
-typedef struct _VIRTUAL_ADDRESSES
-{
-    U32 Va0;
-    U32 Va1;
-    U32 Va2;
-    U32 Va3;
-    U32 Va4;
-    U32 Va5;
-    U32 VaRom;
-} VIRTUAL_ADDRESSES, *PVIRTUAL_ADDRESSES;
+    typedef int                   PLX_DRIVER_HANDLE;  // Linux-specific driver handle
+#endif
 
-/* PCI Memory  Structure*/
-typedef struct _PCI_MEMORY
-{
-    U32 UserAddr;
-    U32 PhysicalAddr;
-    U32 Size;
-} PCI_MEMORY, *PPCI_MEMORY;
+
+
+/******************************************
+ *      Windows Type Definitions
+ ******************************************/
+#if defined(PLX_MSWINDOWS)
+    typedef signed char           S8;
+    typedef unsigned char         U8;
+    typedef signed short          S16;
+    typedef unsigned short        U16;
+    typedef signed long           S32;
+    typedef unsigned long         U32;
+    typedef signed _int64         S64;
+    typedef unsigned _int64       U64;
+    typedef INT_PTR               PLX_INT_PTR;        // For 32/64-bit code compatability
+    typedef UINT_PTR              PLX_UINT_PTR;
+
+    typedef HANDLE                PLX_DRIVER_HANDLE;  // Windows-specific driver handle
+#endif
+
+
+
+/******************************************
+ *        DOS Type Definitions
+ ******************************************/
+#if defined(PLX_DOS)
+    typedef signed char           S8;
+    typedef unsigned char         U8;
+    typedef signed short          S16;
+    typedef unsigned short        U16;
+    typedef signed long           S32;
+    typedef unsigned long         U32;
+    typedef signed long long      S64;
+    typedef unsigned long long    U64;
+    typedef S32                   PLX_INT_PTR;        // For 32/64-bit code compatability
+    typedef U32                   PLX_UINT_PTR;
+
+    typedef void*                 HANDLE;
+    typedef void*                 PLX_DRIVER_HANDLE;
+    #define INVALID_HANDLE_VALUE  (NULL)
+
+    #if !defined(_far)
+        #define _far
+    #endif
+#endif
+
+
+
+/******************************************
+ *    Volatile Basic Type Definitions
+ ******************************************/
+typedef volatile S8           VS8;
+typedef volatile U8           VU8;
+typedef volatile S16          VS16;
+typedef volatile U16          VU16;
+typedef volatile S32          VS32;
+typedef volatile U32          VU32;
+typedef volatile S64          VS64;
+typedef volatile U64          VU64;
+
 
 
 
