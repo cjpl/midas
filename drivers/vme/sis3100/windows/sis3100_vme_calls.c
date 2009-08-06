@@ -29,6 +29,8 @@
 /* Include files                                                             */
 /*---------------------------------------------------------------------------*/
 
+#ifndef EXCLUDE_VME // let applications exlucde all VME code
+
 #include <stdio.h>
 #include <stdlib.h>
 //#include "PlxApi.h"
@@ -780,3 +782,4 @@ int s3100_sdram_read(
 	return 0;
 }
 
+#endif // EXCLUDE_VME
