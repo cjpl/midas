@@ -10,6 +10,8 @@
 
 \********************************************************************/
 
+#ifndef EXCLUDE_VME // let applications exlucde all VME code
+
 #ifdef __linux__
 #ifndef OS_LINUX
 #define OS_LINUX
@@ -488,3 +490,5 @@ int mvme_get_blt(MVME_INTERFACE *vme, int *mode)
    *mode = vme->blt_mode;
    return MVME_SUCCESS;
 }
+
+#endif // EXCLUDE_VME
