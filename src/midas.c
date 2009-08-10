@@ -5800,6 +5800,9 @@ static void bm_show_pointers(const BUFFER_HEADER * pheader)
 
 static void bm_validate_client_pointers(BUFFER_HEADER * pheader, BUFFER_CLIENT * pclient)
 {
+   assert(pheader->read_pointer >= 0 && pheader->read_pointer <= pheader->size);
+   assert(pclient->read_pointer >= 0 && pclient->read_pointer <= pheader->size);
+
    if (pheader->read_pointer <= pheader->write_pointer) {
 
       if (pclient->read_pointer < pheader->read_pointer) {
@@ -6093,6 +6096,9 @@ static int bm_wait_for_free_space(int buffer_handle, BUFFER * pbuf, int async_fl
                EVENT_REQUEST *prequest = pc->event_request;
                EVENT_HEADER *pevent_test = (EVENT_HEADER *) (pdata + pc->read_pointer);
 
+               assert(pc->read_pointer >= 0);
+               assert(pc->read_pointer <= pheader->size);
+
                for (j = 0; j < pc->max_request_index; j++, prequest++)
                   if (prequest->valid && bm_match_event(prequest->event_id, prequest->trigger_mask, pevent_test)) {
                      if (prequest->sampling_type & GET_ALL) {
@@ -6125,6 +6131,9 @@ static int bm_wait_for_free_space(int buffer_handle, BUFFER * pbuf, int async_fl
 
                   /* correct increment for DWORD boundary */
                   increment = ALIGN8(increment);
+
+                  assert(increment > 0);
+                  assert(increment <= pheader->size);
 
                   new_read_pointer = (pc->read_pointer + increment) % pheader->size;
 
@@ -6244,6 +6253,12 @@ recompile.
 INT bm_send_event(INT buffer_handle, void *source, INT buf_size, INT async_flag)
 {
    EVENT_HEADER *pevent;
+
+   /* check if event size is invalid */
+   if (buf_size < sizeof(EVENT_HEADER)) {
+      cm_msg(MERROR, "bm_send_event", "event size (%d) it too small", buf_size);
+      return BM_INVALID_PARAM;
+   }
 
    /* check if event size defined in header matches buf_size */
    if (ALIGN8(buf_size) != (INT) ALIGN8(((EVENT_HEADER *) source)->data_size + sizeof(EVENT_HEADER))) {
@@ -6497,6 +6512,9 @@ INT bm_flush_cache(INT buffer_handle, INT async_flag)
       while (pbuf->write_cache_rp < pbuf->write_cache_wp) {
          /* loop over all events in cache */
 
+         assert(pbuf->write_cache_rp >= 0);
+         assert(pbuf->write_cache_rp < pbuf->write_cache_size);
+
          pevent = (EVENT_HEADER *) (pbuf->write_cache + pbuf->write_cache_rp);
          total_size = pevent->data_size + sizeof(EVENT_HEADER);
 
@@ -6747,6 +6765,9 @@ INT bm_receive_event(INT buffer_handle, void *destination, INT * buf_size, INT a
          EVENT_REQUEST *prequest;
          EVENT_HEADER *pevent = (EVENT_HEADER *) (pdata + pc->read_pointer);
 
+         assert(pc->read_pointer >= 0);
+         assert(pc->read_pointer <= pheader->size);
+
          total_size = pevent->data_size + sizeof(EVENT_HEADER);
          total_size = ALIGN8(total_size);
 
@@ -6839,6 +6860,9 @@ INT bm_receive_event(INT buffer_handle, void *destination, INT * buf_size, INT a
             break;              /* exit from loop over events in data buffer, leaving the current event untouched */
 
          /* shift read pointer */
+
+         assert(total_size > 0);
+         assert(total_size <= pheader->size);
 
          new_read_pointer = pc->read_pointer + total_size;
          if (new_read_pointer >= pheader->size) {
@@ -7027,6 +7051,9 @@ INT bm_push_event(char *buffer_name)
          EVENT_REQUEST *prequest;
          EVENT_HEADER *pevent = (EVENT_HEADER *) (pdata + pc->read_pointer);
 
+         assert(pc->read_pointer >= 0);
+         assert(pc->read_pointer <= pheader->size);
+
          total_size = pevent->data_size + sizeof(EVENT_HEADER);
          total_size = ALIGN8(total_size);
 
@@ -7104,6 +7131,9 @@ INT bm_push_event(char *buffer_name)
             break;              /* exit from loop over events in data buffer, leaving the current event untouched */
 
          /* shift read pointer */
+
+         assert(total_size > 0);
+         assert(total_size <= pheader->size);
 
          new_read_pointer = pc->read_pointer + total_size;
          if (new_read_pointer >= pheader->size) {
