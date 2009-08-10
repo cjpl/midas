@@ -4560,13 +4560,14 @@ void show_sc_page(char *path, int refresh)
 
 /*------------------------------------------------------------------*/
 
-char *find_odb_tag(char *p, char *path, int *edit, char *type, char *pwd, char *tail)
+char *find_odb_tag(char *p, char *path, char *format, int *edit, char *type, char *pwd, char *tail)
 {
    char str[256], *ps, *pt;
    BOOL in_script;
 
    *edit = 0;
    *tail = 0;
+   *format = 0;
    pwd[0] = 0;
    in_script = FALSE;
    strcpy(type, "text");
@@ -4601,6 +4602,25 @@ char *find_odb_tag(char *p, char *path, int *edit, char *type, char *pwd, char *
             p++;
 
          do {
+            strncpy(str, p, 7);
+            str[7] = 0;
+            if (equal_ustring(str, "format=")) {
+               p += 7;
+               if (*p == '\"') {
+                  p++;
+                  while (*p && *p != '\"')
+                     *format++ = *p++;
+                  *format = 0;
+                  if (*p == '\"')
+                    p++;
+               } else {
+                  while (*p && *p != ' ' && *p != '>')
+                     *format++ = *p++;
+                  *format = 0;
+               }
+
+            } else {
+
             strncpy(str, p, 4);
             str[4] = 0;
             if (equal_ustring(str, "src=")) {
@@ -4701,6 +4721,7 @@ char *find_odb_tag(char *p, char *path, int *edit, char *type, char *pwd, char *
                   }
                }
             }
+            }
 
             while (*p && ((*p == ' ') || iscntrl(*p)))
                p++;
@@ -4723,7 +4744,7 @@ char *find_odb_tag(char *p, char *path, int *edit, char *type, char *pwd, char *
 
 /*------------------------------------------------------------------*/
 
-void show_odb_tag(char *path, char *keypath, int n_var, int edit, char *type, char *pwd, char *tail)
+void show_odb_tag(char *path, char *keypath, char *format, int n_var, int edit, char *type, char *pwd, char *tail)
 {
    int size, index, i_edit, i_set;
    char str[TEXT_SIZE], data[TEXT_SIZE], options[1000], full_keypath[256], *p;
@@ -4763,7 +4784,11 @@ void show_odb_tag(char *path, char *keypath, int n_var, int edit, char *type, ch
       db_get_key(hDB, hkey, &key);
       size = sizeof(data);
       db_get_data_index(hDB, hkey, data, &size, index, key.type);
-      db_sprintf(str, data, key.item_size, 0, key.type);
+
+      if (format && strlen(format)>0)
+         db_sprintff(str, format, data, key.item_size, 0, key.type);
+      else
+         db_sprintf(str, data, key.item_size, 0, key.type);
 
       if (equal_ustring(type, "checkbox")) {
 
@@ -5489,7 +5514,9 @@ void show_custom_page(char *path, char *cookie_cpwd)
          p = ps = ctext;
          n_var = 0;
          do {
-            p = find_odb_tag(ps, keypath, &edit, type, pwd, tail);
+            char format[256];
+
+            p = find_odb_tag(ps, keypath, format, &edit, type, pwd, tail);
             if (p == NULL)
                break;
             ps = strchr(p, '>') + 1;
@@ -5711,7 +5738,8 @@ void show_custom_page(char *path, char *cookie_cpwd)
       p = ps = ctext;
       n_var = 0;
       do {
-         p = find_odb_tag(ps, keypath, &edit, type, pwd, tail);
+         char format[256];
+         p = find_odb_tag(ps, keypath, format, &edit, type, pwd, tail);
          if (p != NULL)
             *p = 0;
          rsputs(ps);
@@ -5720,7 +5748,7 @@ void show_custom_page(char *path, char *cookie_cpwd)
             break;
          ps = strchr(p + 1, '>') + 1;
 
-         show_odb_tag(path, keypath, n_var, edit, type, pwd, tail);
+         show_odb_tag(path, keypath, format, n_var, edit, type, pwd, tail);
          n_var++;
 
       } while (p != NULL);
