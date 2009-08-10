@@ -391,8 +391,10 @@ INT al_trigger_class(const char *alarm_class, const char *alarm_message, BOOL fi
       state = STATE_STOPPED;
       size = sizeof(state);
       db_get_value(hDB, 0, "/Runinfo/State", &state, &size, TID_INT, TRUE);
-      if (state != STATE_STOPPED)
-         cm_transition(TR_STOP, 0, NULL, 0, ASYNC, FALSE);
+      if (state != STATE_STOPPED) {
+         cm_msg(MINFO, "al_trigger_class", "Stopping the run from alarm class \'%s\', message \'%s\'", alarm_class, alarm_message);
+         cm_transition(TR_STOP, 0, NULL, 0, DETACH, FALSE);
+      }
    }
 
    status = db_set_record(hDB, hkeyclass, &ac, sizeof(ac), 0);
