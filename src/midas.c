@@ -14204,7 +14204,7 @@ typedef struct {
    unsigned char *ep;
 } RING_BUFFER;
 
-#define MAX_RING_BUFFER 10
+#define MAX_RING_BUFFER 100
 
 RING_BUFFER rb[MAX_RING_BUFFER];
 
