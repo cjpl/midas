@@ -10865,6 +10865,7 @@ INT rpc_register_server(INT server_type, char *name, INT * port, INT(*func) (INT
 
 typedef struct {
    int tid;
+   int buffer_size;
    char *buffer;
 } TLS_POINTER;
 
@@ -10908,12 +10909,19 @@ INT rpc_execute(INT sock, char *buffer, INT convert_flags)
    void *prpc_param[20];
    char str[1024], debug_line[1024], *return_buffer;
    int return_buffer_size;
+   int return_buffer_tls;
+#ifdef FIXED_BUFFER
+   int initial_buffer_size = NET_BUFFER_SIZE;
+#else
+   int initial_buffer_size = 1024;
+#endif
 
    /* return buffer must must use thread local storage multi-thread servers */
    if (!tls_size) {
       tls_buffer = (TLS_POINTER *) malloc(sizeof(TLS_POINTER));
       tls_buffer[tls_size].tid = ss_gettid();
-      tls_buffer[tls_size].buffer = (char *) malloc(NET_BUFFER_SIZE);
+      tls_buffer[tls_size].buffer_size = initial_buffer_size;
+      tls_buffer[tls_size].buffer = (char *) malloc(tls_buffer[tls_size].buffer_size);
       tls_size = 1;
    }
    for (i = 0; i < tls_size; i++)
@@ -10923,17 +10931,18 @@ INT rpc_execute(INT sock, char *buffer, INT convert_flags)
       /* new thread -> allocate new buffer */
       tls_buffer = (TLS_POINTER *) realloc(tls_buffer, (tls_size + 1) * sizeof(TLS_POINTER));
       tls_buffer[tls_size].tid = ss_gettid();
-      tls_buffer[tls_size].buffer = (char *) malloc(NET_BUFFER_SIZE);
+      tls_buffer[tls_size].buffer_size = initial_buffer_size;
+      tls_buffer[tls_size].buffer = (char *) malloc(tls_buffer[tls_size].buffer_size);
       tls_size++;
    }
 
-   return_buffer_size = NET_BUFFER_SIZE;
+   return_buffer_tls  = i;
+   return_buffer_size = tls_buffer[i].buffer_size;
    return_buffer = tls_buffer[i].buffer;
    assert(return_buffer);
 
    /* extract pointer array to parameters */
    nc_in = (NET_COMMAND *) buffer;
-   nc_out = (NET_COMMAND *) return_buffer;
 
    /* convert header format (byte swapping) */
    if (convert_flags) {
@@ -10957,7 +10966,11 @@ INT rpc_execute(INT sock, char *buffer, INT convert_flags)
       return RPC_INVALID_ID;
    }
 
+ again:
+
    in_param_ptr = nc_in->param;
+
+   nc_out = (NET_COMMAND *) return_buffer;
    out_param_ptr = nc_out->param;
 
    sprintf(debug_line, "%s(", rpc_list[idx].name);
@@ -11033,10 +11046,36 @@ INT rpc_execute(INT sock, char *buffer, INT convert_flags)
             param_size = ALIGN8(rpc_list[idx].param[i].n);
 
          if ((POINTER_T) out_param_ptr - (POINTER_T) nc_out + param_size > return_buffer_size) {
+#ifdef FIXED_BUFFER
             cm_msg(MERROR, "rpc_execute",
                    "return parameters (%d) too large for network buffer (%d)",
                    (POINTER_T) out_param_ptr - (POINTER_T) nc_out + param_size, return_buffer_size);
+
             return RPC_EXCEED_BUFFER;
+#else
+            int itls;
+            int new_size = (POINTER_T) out_param_ptr - (POINTER_T) nc_out + param_size + 1024;
+            
+            //cm_msg(MINFO, "rpc_execute",
+            //      "rpc_execute: return parameters (%d) too large for network buffer (%d), new buffer size (%d)",
+            //      (POINTER_T) out_param_ptr - (POINTER_T) nc_out + param_size, return_buffer_size, new_size);
+
+            itls = return_buffer_tls;
+
+            tls_buffer[itls].buffer_size = new_size;
+            tls_buffer[itls].buffer = (char *) realloc(tls_buffer[itls].buffer, new_size);
+
+            if (!tls_buffer[itls].buffer) {
+               cm_msg(MERROR, "rpc_execute", "Cannot allocate return buffer of size %d", new_size);
+               return RPC_EXCEED_BUFFER;
+            }
+
+            return_buffer_size = tls_buffer[itls].buffer_size;
+            return_buffer = tls_buffer[itls].buffer;
+            assert(return_buffer);
+
+            goto again;
+#endif
          }
 
          /* if parameter goes both directions, copy input to output */
@@ -11053,6 +11092,8 @@ INT rpc_execute(INT sock, char *buffer, INT convert_flags)
       if (rpc_list[idx].param[i + 1].tid)
          strcat(debug_line, ", ");
    }
+
+   //printf("predicted return size %d\n", (POINTER_T) out_param_ptr - (POINTER_T) nc_out);
 
    strcat(debug_line, ")");
    rpc_debug_printf(debug_line);
@@ -11145,6 +11186,8 @@ INT rpc_execute(INT sock, char *buffer, INT convert_flags)
    param_size = (POINTER_T) out_param_ptr - (POINTER_T) nc_out->param;
    nc_out->header.routine_id = status;
    nc_out->header.param_size = param_size;
+
+   //printf("actual return size %d, buffer used %d\n", (POINTER_T) out_param_ptr - (POINTER_T) nc_out, sizeof(NET_COMMAND_HEADER) + param_size);
 
    /* convert header format (byte swapping) if necessary */
    if (convert_flags) {
