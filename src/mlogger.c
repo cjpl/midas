@@ -2569,6 +2569,15 @@ static int add_event(int* indexp, int event_id, const char* event_name, HNDLE hK
    int disableTags = 0;
    int index = *indexp;
 
+   if (0) {   
+      /* print the tags */
+      printf("add_event: event %d, name \"%s\", ntags %d\n", event_id, event_name, ntags);
+      for (i=0; i<ntags; i++) {
+         printf("tag %d: name \"%s\", type %d, n_data %d\n", i, tags[i].name, tags[i].type, tags[i].n_data);
+      }
+   }
+
+
    /* check for duplicate event id's */
    for (i=0; i<index; i++) {
       if (hist_log[i].event_id == event_id) {
@@ -2598,8 +2607,12 @@ static int add_event(int* indexp, int event_id, const char* event_name, HNDLE hK
 
    /* check for invalid history tags */
    for (i=0; i<ntags; i++) {
+      if (tags[i].type == TID_STRING) {
+         cm_msg(MERROR, "add_event", "Invalid tag %d \'%s\' in event %d \'%s\': cannot do history for TID_STRING data, sorry!", i, tags[i].name, event_id, event_name);
+         return 0;
+      }
       if (rpc_tid_size(tags[i].type) == 0) {
-         cm_msg(MERROR, "add_event", "Invalid tag %d \'%s\' in event %d \'%s\': type size is zero", i, tags[i].name, event_id, event_name);
+         cm_msg(MERROR, "add_event", "Invalid tag %d \'%s\' in event %d \'%s\': type %d size is zero", i, tags[i].name, event_id, event_name, tags[i].type);
          return 0;
       }
    }
@@ -3103,7 +3116,7 @@ INT open_history()
 
          /* create tag array */
          tag = (TAG *) malloc(sizeof(TAG) * n_tags);
-
+ 
          i_tag = 0;
          for (i=0; ; i++) {
             status = db_enum_key(hDB, hKeyVar, i, &hKey);
@@ -3179,8 +3192,8 @@ INT open_history()
                   tag[i_tag].n_data = 1;
 
                   if (verbose)
-                     printf("Defined tag \"%s\", type %d, num_values %d\n",
-                            tag[i_tag].name, tag[i_tag].type, tag[i_tag].n_data);
+                     printf("Defined tag %d, name \"%s\", type %d, num_values %d\n",
+                            i_tag, tag[i_tag].name, tag[i_tag].type, tag[i_tag].n_data);
 
                   i_tag++;
                }
@@ -3204,7 +3217,7 @@ INT open_history()
                   tag[i_tag].n_data = vvarkey.num_values;
 
                   if (verbose)
-                     printf("Defined tag \"%s\", type %d, num_values %d\n", tag[i_tag].name,
+                     printf("Defined tag %d, name \"%s\", type %d, num_values %d\n", i_tag, tag[i_tag].name,
                             tag[i_tag].type, tag[i_tag].n_data);
 
                   i_tag++;
@@ -3215,7 +3228,7 @@ INT open_history()
                tag[i_tag].n_data = varkey.num_values;
 
                if (verbose)
-                  printf("Defined tag \"%s\", type %d, num_values %d\n", tag[i_tag].name,
+                  printf("Defined tag %d, name \"%s\", type %d, num_values %d\n", i_tag, tag[i_tag].name,
                          tag[i_tag].type, tag[i_tag].n_data);
 
                i_tag++;
