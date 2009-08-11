@@ -5026,7 +5026,7 @@ INT cm_cleanup(char *client_name, BOOL ignore_timeout)
       BOOL bDeleted;
       char str[256];
       DWORD interval;
-      int now = ss_millitime();
+      DWORD now = ss_millitime();
 
       /* check buffers */
       for (i = 0; i < _buffer_entries; i++)
@@ -6256,7 +6256,7 @@ static int bm_wait_for_free_space(int buffer_handle, BUFFER * pbuf, int async_fl
        * rpc_server_receive()) and return without sleeping. Result
        * is a busy loop waiting for free space in data buffer */
       if (status != SS_TIMEOUT)
-         sleep(1);
+         ss_sleep(10);
 
       /* validate client index: we could have been removed from the buffer */
       pheader->client[bm_validate_client_index(pbuf)].write_wait = 0;
