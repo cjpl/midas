@@ -18,6 +18,7 @@
 #else
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <string.h>
 #endif
 
 #define DEF_MCAST_GROUP  "239.208.0.1"
