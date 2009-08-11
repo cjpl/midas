@@ -65,6 +65,7 @@ all:    $(LIB_DIR) $(BIN_DIR) \
   $(BIN_DIR)/mcnaf.exe \
   $(BIN_DIR)/mlogger.exe \
   $(BIN_DIR)/odbedit.exe \
+  $(BIN_DIR)/mtransition.exe \
   $(BIN_DIR)/mtape.exe \
   $(BIN_DIR)/mhist.exe \
   $(BIN_DIR)/mstat.exe \
@@ -92,6 +93,8 @@ $(BIN_DIR)/mlogger.exe:  $(LIBRARY) $(SRC_DIR)/mlogger.c
 	$(CC) $(CFLAGS) /Fe$(BIN_DIR)/mlogger.exe /Tp$(SRC_DIR)/mlogger.c $(LIBRARY) $(LIBS)
 $(BIN_DIR)/odbedit.exe: $(LIBRARY) $(SRC_DIR)/odbedit.c $(SRC_DIR)/cmdedit.c
 	$(CC) $(CFLAGS) /Fe$(BIN_DIR)/odbedit.exe $(SRC_DIR)/cmdedit.c $(SRC_DIR)/odbedit.c $(LIBRARY) $(LIBS)
+$(BIN_DIR)/mtransition.exe: $(LIBRARY) $(SRC_DIR)/mtransition.cxx
+	$(CC) $(CFLAGS) /Fe$(BIN_DIR)/mtransition.exe $(SRC_DIR)/mtransition.cxx $(LIBRARY) $(LIBS)
 $(BIN_DIR)/lazylogger.exe: $(LIBRARY) $(SRC_DIR)/lazylogger.c
 	$(CC) $(CFLAGS) /Fe$(BIN_DIR)/lazylogger.exe $(SRC_DIR)/lazylogger.c $(LIBRARY) $(LIBS)
 
