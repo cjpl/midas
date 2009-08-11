@@ -696,7 +696,7 @@ int CreateEvent(SqlBase* sql, Event* e)
    
    if (e->create) {
       char buf[1024];
-      sprintf(buf, "CREATE TABLE %s (_t_time TIMESTAMP NOT NULL, _i_time INTEGER NOT NULL);", e->table_name.c_str());
+      sprintf(buf, "CREATE TABLE %s (_t_time TIMESTAMP NOT NULL, _i_time INTEGER NOT NULL, INDEX (_i_time), INDEX (_t_time));", e->table_name.c_str());
       status = sql->Exec(buf);
       if (status != 0) {
          e->active = false;
