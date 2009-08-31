@@ -110,7 +110,7 @@ INT psi_cobra_get(PSI_COBRA_INFO * info, INT channel, float *pvalue)
 {
 char str[256];
 struct sockaddr_in addr;
-int size, n;
+unsigned int size, n;
 fd_set readfds;
 struct timeval timeout;
 static float value_ch0, value_ch1;
