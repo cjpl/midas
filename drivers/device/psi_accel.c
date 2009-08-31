@@ -31,7 +31,7 @@ typedef struct {
 } PSI_ACCEL_SETTINGS;
 
 #define PSI_ACCEL_SETTINGS_STR "\
-Multicast Group = STRING : [32] 226.129.151.54\n\
+Multicast Group = STRING : [32] 226.129.151.176\n\
 "
 
 typedef struct {
