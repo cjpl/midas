@@ -110,7 +110,7 @@ INT psi_accel_get(PSI_ACCEL_INFO * info, INT channel, float *pvalue)
 {
 char str[10000];
 struct sockaddr_in addr;
-int size, n;
+unsigned int size, n;
 fd_set readfds;
 struct timeval timeout;
 
