@@ -340,7 +340,8 @@ int mvme_read(MVME_INTERFACE *vme, void *dst, mvme_addr_t vme_addr, mvme_size_t 
 
       /* A32 */
       if (vme->am >= 0x08 && vme->am <= 0x0F) {
-         if (vme->blt_mode == MVME_BLT_NONE)
+         /* 2EVME has a problem with buffer size < 64 bytes */
+         if (vme->blt_mode == MVME_BLT_NONE || (vme->blt_mode == MVME_BLT_2EVME && n_bytes < 64))
             status = vme_A32DMA_D32_read(hvme, (u_int32_t) vme_addr, (u_int32_t*) dst, (u_int32_t) n_bytes/4, (u_int32_t*)&n);
          else if (vme->blt_mode == MVME_BLT_BLT32)
             status = vme_A32BLT32_read(hvme, (u_int32_t) vme_addr, (u_int32_t*) dst, (u_int32_t) n_bytes/4, (u_int32_t*)&n);
