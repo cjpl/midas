@@ -3,16 +3,17 @@
 ## CMake pre-settings
 cmake_minimum_required(VERSION 2.6)
 cmake_policy(VERSION 2.6)
-cmake_policy(SET CMP0011 NEW)
+#cmake_policy(SET CMP0011 NEW)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/")
 
+################################################################
 ## Project setup
-project(MIDAS)
+project(MIDAS C CXX)
 set(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR}/bin)
 set(LIBRARY_OUTPUT_PATH    ${PROJECT_BINARY_DIR}/lib)
-enable_language(C)
-enable_language(CXX)
+add_definitions(-g -O2)
 
+################################################################
 ## Include utilities and options
 # Find mxml
 include(FindMXML)
@@ -27,6 +28,12 @@ include_directories(include ${MXML_PATH})
 include(OSflags)
 
 include(FindROOT)  # Find ROOT environment
+if(ROOT_FOUND)
+  message("** Libraries and utilities will be compiled with ROOT.")
+else(ROOT_FOUND)
+  message("** WARNING: ROOTSYS not found in your system!")
+  message("            All ROOT related codes will not be compiled!")
+endif(ROOT_FOUND)
 include(FindMySQL) # Find MySQL
 include(FindODBC)  # Find ODBC
 include(FindZLIB)  # Find zlib
@@ -39,7 +46,7 @@ set(NEED_FTPLIB  TRUE)  # Need ftp protocol?
 #set(NEED_STRLCPY TRUE)  # Need strlcpy.h? -- maybe opened in OSflags.cmake
 #set(MIDAS_MAX_EVENT_SIZE 1000000)  # maxmimum event size = ?
 
-##############################################################################
+################################################################
 ## Setup options
 
 ## OS-specific
@@ -68,11 +75,9 @@ endif(NEED_FTPLIB)
 
 ## ODBC: -lodbc or -liodbc
 if(ODBC_FOUND)
-  message(STATUS "Add ODBC-specified targets")
-  #set(CPP_UTILS ${CPP_UTILS} mh2sql)
+  message(STATUS "Add ODBC-related targets using ${ODBC_LIBRARY}")
   set(EXTRA_UTILS ${EXTRA_UTILS} mh2sql)
   add_definitions(-DHAVE_ODBC)
-  #set(LDFLAGS "${LDFLAGS} -l${ODBC_LIBRARY}")
   set(LDFLAGS "${LDFLAGS} -l${ODBC_NAME}")
 else(ODBC_FOUND)
   message(STATUS "ODBC not found!")
@@ -86,22 +91,31 @@ endif(ZLIB_FOUND)
 
 ## ROOT
 if(NEED_ROOT AND ROOT_FOUND)
-  message(STATUS "Using ROOT at ${ROOTSYS}")
+  message(STATUS "Using ROOTSYS found at ${ROOTSYS}")
+  add_definitions(-DHAVE_ROOT)
 
-  if(NEED_RPATH)      # Add rpath ..
-    set(ROOT_LIBS "${ROOT_LIBS} -Wl,-rpath,${ROOTSYS}/lib")
+  # Add rpath
+  if(NEED_RPATH)
+    execute_process(
+      COMMAND ${ROOT_CONFIG} --libdir
+      OUTPUT_VARIABLE ROOT_LIBDIR
+      OUTPUT_STRIP_TRAILING_WHITESPACE )
+    set(ROOT_LIBS "${ROOT_LIBS} -Wl,-rpath,${ROOT_LIBDIR}")
   endif(NEED_RPATH)
 
   ## libRoot.a: Static ROOT library
   if(NEED_LIBROOTA AND ROOT_LIBA)
     set(LDFLAGS "${LDFLAGS} ${ROOTSYS}/lib/libRoot.a -lssl -ldl -lcrypt")
     message(STATUS "Using statlic ROOT library: ${ROOT_LIBA}")
+  else(NEED_LIBROOTA AND ROOT_LIBA)
+    message("   Static ROOT library not used!")
   endif(NEED_LIBROOTA AND ROOT_LIBA)
 endif(NEED_ROOT AND ROOT_FOUND)
 
-####### MIDAS library and objects #########################
-## Objects needed to build the libmidas(.a,.so,..)
+################################################################
+# MIDAS library
 
+## Objects needed to build the libmidas(.a,.so,..)
 foreach(obj ${FTPLIB} midas system mrpc odb ybos history alarm elog)
   set(LIB_OBJS ${LIB_OBJS} src/${obj}.c)
 endforeach(obj)
@@ -112,17 +126,17 @@ if(ODBC_FOUND)
   set(LIB_OBJS ${LIB_OBJS} src/history_odbc.cxx)
 endif(ODBC_FOUND)
 
-## Library definition
 ## Add static lib
 add_library(midas-static STATIC ${LIB_OBJS})
 set_target_properties(midas-static PROPERTIES OUTPUT_NAME "midas")
-
-if(NEED_SHLIB)  # Add shared lib
+## Add shared lib
+if(NEED_SHLIB)
   add_library(midas-shared SHARED ${LIB_OBJS})
   set_target_properties(midas-shared PROPERTIES OUTPUT_NAME "midas")
 endif(NEED_SHLIB)
 
-########## Utilities ######################################
+################################################################
+# Utilities
 
 ## Core Utilties
 set(CORE_UTILS mserver mhttpd mlogger odbedit lazylogger)
@@ -132,41 +146,33 @@ add_executable(mlogger    src/mlogger.c)
 add_executable(mhttpd     src/mhttpd.c  src/mgd.c )
 add_executable(odbedit    src/odbedit.c src/cmdedit.c )
 add_executable(lazylogger src/lazylogger.c)
+
 foreach(exe ${CORE_UTILS})
   target_link_libraries(${exe} midas-static)
   set_target_properties(${exe} PROPERTIES LINK_FLAGS "${LDFLAGS}")
 endforeach(exe)
 
-set_target_properties( mhttpd PROPERTIES
-  LINK_FLAGS "-lm ${LDFLAGS}" LINKER_LANGUAGE CXX )
+# Specials
+set_target_properties( mhttpd PROPERTIES LINKER_LANGUAGE CXX
+  LINK_FLAGS "-lm ${LDFLAGS}")
+# mlogger --- BAD extension (CXX source using ".c")!!
+set_source_files_properties(src/mlogger.c  PROPERTIES LANGUAGE CXX
+  COMPILE_FLAGS "${ROOT_CFLAGS}")
+set_target_properties( mlogger  PROPERTIES HAS_CXX TRUE
+  LINK_FLAGS "${MYSQL_LIBS} ${ROOT_LIBS} ${LDFLAGS} " )
 
-## for mlogger --- It's BAD to name a CXX source using ".c" file extension !!!
-set_target_properties( mlogger 
-  PROPERTIES
-  LINK_FLAGS "${MYSQL_LIBS} ${ROOT_LIBS} ${LDFLAGS}"
-  LINKER_LANGUAGE CXX
-  COMPILE_FLAGS "${ROOT_CFLAGS}" )
-set_source_files_properties( src/mlogger.c  PROPERTIES LANGUAGE CXX )
-
-## Utilities
-set(UTILS mtape    mhist  mstat  mdump   mchart
-  webpaw  odbhist  melog  mcnaf
+## Extra utilities
+set(UTILS mtape  mhist  mstat  mdump  mchart  webpaw  odbhist  melog  mcnaf
   mhdump  mtransition # C++ codes
   ${EXTRA_UTILS}  )
 
-add_executable(mtape   utils/mtape.c)
-add_executable(mhist   utils/mhist.c)
-add_executable(mstat   utils/mstat.c)
-add_executable(mdump   utils/mdump.c)
-add_executable(melog   utils/melog.c)
-add_executable(mchart  utils/mchart.c)
-add_executable(odbhist utils/odbhist.c)
-add_executable(webpaw  utils/webpaw.c)
+foreach(exe mtape mhist mstat mdump melog mchart odbhist webpaw)
+  add_executable(${exe} utils/${exe}.c)
+endforeach(exe)
+add_executable(mcnaf   utils/mcnaf.c drivers/camac/camacrpc.c)
 add_executable(mhdump  utils/mhdump.cxx)
-add_executable(mcnaf   utils/mcnaf.c  drivers/camac/camacrpc.c)
 add_executable(mtransition src/mtransition.cxx)
 
-# optional utilities
 if("${UTILS}" MATCHES "mh2sql")
   add_executable(mh2sql utils/mh2sql.cxx src/history_odbc.cxx )
 endif("${UTILS}" MATCHES "mh2sql")
@@ -184,71 +190,99 @@ foreach(exe ${UTILS})
 endforeach(exe)
 
 ## Scripts
-set(SCRIPTS stripchart.tcl )   # TCL script
+set(SCRIPTS utils/stripchart.tcl )   # TCL script
 
-## Special targets
+################################################################
+# Special targets
 
-#add_library( midas_fe  src/mfe.c )
-#add_library( midas_fal  src/fal.c )
-#set_target_properties( midas_fal PROPERTIES
-#  COMPILE_FLAGS "-Dextname -DMANA_LITE" )
-## for generating mfe.o
-add_custom_command( OUTPUT mfe.o DEPENDS src/mfe.c
+## generating mfe.o
+add_custom_command( OUTPUT ${LIBRARY_OUTPUT_PATH}/mfe.o
+  DEPENDS src/mfe.c
   COMMAND ${CMAKE_C_COMPILER}
   ARGS -I${CMAKE_SOURCE_DIR}/include -c ${CMAKE_SOURCE_DIR}/src/mfe.c
-  WORKING_DIRECTORY lib )
-add_custom_target(mfe ALL DEPENDS mfe.o)
+  WORKING_DIRECTORY ${LIBRARY_OUTPUT_PATH})
+add_custom_target(mfe ALL DEPENDS ${LIBRARY_OUTPUT_PATH}/mfe.o)
 
-## for generating mfe.o
-add_custom_command( OUTPUT fal.o DEPENDS src/fal.c
+## generating fal.o
+add_custom_command( OUTPUT ${LIBRARY_OUTPUT_PATH}/fal.o
+  DEPENDS src/fal.c
   COMMAND ${CMAKE_C_COMPILER}
   ARGS -I${CMAKE_SOURCE_DIR}/include -Dextname -DMANA_LITE
   -c ${CMAKE_SOURCE_DIR}/src/fal.c
-  WORKING_DIRECTORY lib )
-add_custom_target(fal ALL DEPENDS fal.o)
+  WORKING_DIRECTORY ${LIBRARY_OUTPUT_PATH})
+add_custom_target(fal ALL DEPENDS ${LIBRARY_OUTPUT_PATH}/fal.o)
 
 ## analyzer objects: mana.o
-#add_library( midas_ana src/mana.c )
-#set_target_properties(midas_ana PROPERTIES LINKER_LANGUAGE C)
-add_custom_command( OUTPUT mana.o DEPENDS src/mana.c
+add_custom_command( OUTPUT ${LIBRARY_OUTPUT_PATH}/mana.o
+  DEPENDS src/mana.c
   COMMAND ${CMAKE_C_COMPILER}
   ARGS -I${CMAKE_SOURCE_DIR}/include -c ${CMAKE_SOURCE_DIR}/src/mana.c
-  WORKING_DIRECTORY lib )
-add_custom_target(mana ALL DEPENDS mana.o)
+  WORKING_DIRECTORY ${LIBRARY_OUTPUT_PATH})
+add_custom_target(mana ALL DEPENDS ${LIBRARY_OUTPUT_PATH}/mana.o)
+
+set(EXTRA_MOBJS mfe.o fal.o mana.o)
 
 # rmana.o
-if(NEED_ROOT)
-  # add_library( midas_rana src/mana.c)
-  # set_target_properties( midas_rana PROPERTIES
-  #   LINKER_LANGUAGE CXX  
-  #   COMPILE_FLAGS "-DUSE_ROOT ${ROOT_CFLAGS}" )
-  # set_source_files_properties( src/mana.c PROPERTIES LANGUAGE CXX )
-
-  set(ARG_LIST "-DUSE_ROOT ${ROOT_CFLAGS} -I${CMAKE_SOURCE_DIR}/include -c ${CMAKE_SOURCE_DIR}/src/mana.c")
+if(NEED_ROOT AND ROOT_FOUND)
+  set(ARG_LIST "-DUSE_ROOT ${ROOT_CFLAGS} -I${CMAKE_SOURCE_DIR}/include -o rmana.o -c ${CMAKE_SOURCE_DIR}/src/mana.c")
   separate_arguments(ARG_LIST)
-  add_custom_command( OUTPUT rmana.o DEPENDS src/mana.c
+  add_custom_command( OUTPUT ${LIBRARY_OUTPUT_PATH}/rmana.o
+    DEPENDS src/mana.c
     COMMAND ${CMAKE_CXX_COMPILER}
     ARGS ${ARG_LIST}
-    WORKING_DIRECTORY lib )
-  add_custom_target(rmana ALL DEPENDS rmana.o)
-endif(NEED_ROOT)
+    WORKING_DIRECTORY ${LIBRARY_OUTPUT_PATH})
+  add_custom_target(rmana ALL DEPENDS ${LIBRARY_OUTPUT_PATH}/rmana.o )
+  set(EXTRA_MOBJS ${EXTRA_MOBJS} rmana.o )
+endif(NEED_ROOT AND ROOT_FOUND)
 
 ## hmana.o
 if(NEED_CERNLIB)
-  add_custom_command( OUTPUT hmana.o DEPENDS src/mana.c
+  add_custom_command( OUTPUT ${LIBRARY_OUTPUT_PATH}/hmana.o
+    DEPENDS src/mana.c
     COMMAND ${CMAKE_C_COMPILER}
-    ARGS -I${CMAKE_SOURCE_DIR}/include -Dextname -DHAVE_HBOOK
+    ARGS -I${CMAKE_SOURCE_DIR}/include -Dextname -DHAVE_HBOOK -o hmana.o
     -c ${CMAKE_SOURCE_DIR}/src/mana.c
-    WORKING_DIRECTORY lib )
-  add_custom_target(hmana ALL DEPENDS hmana.o)
+    WORKING_DIRECTORY ${LIBRARY_OUTPUT_PATH})
+  add_custom_target(hmana ALL DEPENDS ${LIBRARY_OUTPUT_PATH}/hmana.o)
+  set(EXTRA_MOBJS ${EXTRA_MOBJS} hmana.o )
 endif(NEED_CERNLIB)
 
-##########  Drivers and modules ################################
-#
+################################################################
+#  Building drivers and modules -- Not yet
 
-##########  Examples ###########################################
-#
+################################################################
+# Building examples -- Not yet
 
-##########  Installation########################################
-#
+################################################################
+#  Installation 
+
+## Library and objects (custom targets)
+install(TARGETS midas-static ARCHIVE DESTINATION lib)
+if(NEED_SHLIB)
+  install(TARGETS midas-shared LIBRARY DESTINATION lib
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
+    GROUP_READ GROUP_EXECUTE WORLD_EXECUTE WORLD_READ)
+endif(NEED_SHLIB)
+
+foreach(obj ${EXTRA_MOBJS})
+  install(FILES ${PROJECT_BINARY_DIR}/lib/${obj} DESTINATION lib/midas)
+endforeach(obj)
+
+## Core and extra utilities, scripts
+install(TARGETS ${CORE_UTILS} ${UTILS}
+  RUNTIME DESTINATION bin
+  PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
+  GROUP_READ GROUP_EXECUTE WORLD_EXECUTE WORLD_READ)
+install(PROGRAMS ${SCRIPTS} DESTINATION bin)
+
+## include, src, examples, drivers
+set(MSHAREDIR "share/midas")
+if(NOT MSHAREDIR)
+  set(MSHAREDIR ".")
+endif(NOT MSHAREDIR)
+install(DIRECTORY include/ DESTINATION include/midas
+  FILES_MATCHING PATTERN "*.h")
+install(DIRECTORY src      DESTINATION ${MSHAREDIR})
+install(DIRECTORY examples DESTINATION ${MSHAREDIR})
+install(DIRECTORY drivers  DESTINATION ${MSHAREDIR})
 
