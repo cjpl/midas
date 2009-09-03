@@ -1360,7 +1360,7 @@ int readout_thread(void *param)
          break;
       if (status == DB_TIMEOUT) {
          printf("readout_thread: Ring buffer is full, waiting for space!\n");
-         ss_sleep(1);
+         ss_sleep(10);
          continue;
       }
       if (status != DB_SUCCESS)
