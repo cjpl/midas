@@ -64,6 +64,7 @@ void print_help(char *command)
       printf("copy <src> <dest>       - copy a subtree to a new location\n");
       printf("create <type> <key>     - create a key of a certain type\n");
       printf("create <type> <key>[n]  - create an array of size [n]\n");
+      printf("create string <key>[n][m]  - create an array of [n] strings of [m] characters\n");
       printf("del/rm [-l] [-f] <key>  - delete a key and its subkeys\n");
       printf("  -l                      follow links\n");
       printf("  -f                      force deletion without asking\n");
@@ -1254,10 +1255,10 @@ void assemble_prompt(char *prompt, char *host_name, char *exp_name, char *pwd)
 
 int command_loop(char *host_name, char *exp_name, char *cmd, char *start_dir)
 {
-   INT status = 0, i, j, state, size, old_run_number, new_run_number, channel;
+   INT status = 0, i, j, k, state, size, old_run_number, new_run_number, channel;
    char line[2000], prompt[256];
    char param[10][2000];
-   char str[2000], old_dir[256], cwd[256], name[256], *pc, data_str[256];
+   char str[2000], str2[80], old_dir[256], cwd[256], name[256], *pc, data_str[256];
    char old_password[32], new_password[32];
    INT nparam, flags, index1, index2, debug_flag;
    WORD mode;
@@ -1482,10 +1483,16 @@ int command_loop(char *host_name, char *exp_name, char *cmd, char *start_dir)
          compose_name(pwd, param[2], str);
 
          /* check if array */
+
+         k = -1;
          if (str[strlen(str) - 1] == ']') {
-            if (strchr(str, '['))
+            if (strchr(str, '[')) {
                j = atoi(strchr(str, '[') + 1);
-            *strchr(str, '[') = 0;
+               strlcpy(str2, strchr(str, '[') + 1, sizeof(str2));
+               *strchr(str, '[') = 0;
+               if (strchr(str2, '['))
+                  k = atoi(strchr(str2, '[')+1);
+            }
          } else
             j = 1;
 
@@ -1504,7 +1511,7 @@ int command_loop(char *host_name, char *exp_name, char *cmd, char *start_dir)
             db_get_key(hDB, hKey, &key);
 
             if (i == TID_STRING) {
-               if (!cmd_mode) {
+               if (!cmd_mode && k == -1) {
                   memset(data, 0, sizeof(data));
 
                   printf("String length [%d]: ", NAME_LENGTH);
@@ -1513,8 +1520,10 @@ int command_loop(char *host_name, char *exp_name, char *cmd, char *start_dir)
                      key.item_size = atoi(str);
                   else
                      key.item_size = NAME_LENGTH;
-               } else
+               } else if (k == -1)
                   key.item_size = NAME_LENGTH;
+               else 
+                  key.item_size = k;
 
                db_set_link_data(hDB, hKey, data, key.item_size, 1, key.type);
             }
