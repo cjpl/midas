@@ -186,46 +186,62 @@ endforeach(exe)
 ## Scripts
 set(SCRIPTS stripchart.tcl )   # TCL script
 
-########## Special libraries ################################
-#
-# 'Cause CMake cannot handle "*.o" target, so Change these into libraries.
-# All apps need to merge with these objects should be linked with the
-# corresponding libraries.
+## Special targets
 
-add_library( midas_fe  src/mfe.c )
-add_library( midas_fal  src/fal.c )
-set_target_properties( midas_fal PROPERTIES
-  COMPILE_FLAGS "-Dextname -DMANA_LITE" )
+#add_library( midas_fe  src/mfe.c )
+#add_library( midas_fal  src/fal.c )
+#set_target_properties( midas_fal PROPERTIES
+#  COMPILE_FLAGS "-Dextname -DMANA_LITE" )
+## for generating mfe.o
+add_custom_command( OUTPUT mfe.o DEPENDS src/mfe.c
+  COMMAND ${CMAKE_C_COMPILER}
+  ARGS -I${CMAKE_SOURCE_DIR}/include -c ${CMAKE_SOURCE_DIR}/src/mfe.c
+  WORKING_DIRECTORY lib )
+add_custom_target(mfe ALL DEPENDS mfe.o)
 
-## for generating mfe.o ??
-# add_custom_command( OUTPUT  ${PROJECT_BINARY_DIR}/lib/mfe.o
-#   DEPENDS src/mfe.c
-#   COMMAND ${CMAKE_C_COMPILER}
-#   ARGS ${CMAKE_C_FLAGS} -c  )
+## for generating mfe.o
+add_custom_command( OUTPUT fal.o DEPENDS src/fal.c
+  COMMAND ${CMAKE_C_COMPILER}
+  ARGS -I${CMAKE_SOURCE_DIR}/include -Dextname -DMANA_LITE
+  -c ${CMAKE_SOURCE_DIR}/src/fal.c
+  WORKING_DIRECTORY lib )
+add_custom_target(fal ALL DEPENDS fal.o)
 
-## analyzer objects
-add_library( midas_ana src/mana.c )
-set_target_properties(midas_ana PROPERTIES LINKER_LANGUAGE C)
+## analyzer objects: mana.o
+#add_library( midas_ana src/mana.c )
+#set_target_properties(midas_ana PROPERTIES LINKER_LANGUAGE C)
+add_custom_command( OUTPUT mana.o DEPENDS src/mana.c
+  COMMAND ${CMAKE_C_COMPILER}
+  ARGS -I${CMAKE_SOURCE_DIR}/include -c ${CMAKE_SOURCE_DIR}/src/mana.c
+  WORKING_DIRECTORY lib )
+add_custom_target(mana ALL DEPENDS mana.o)
 
 # rmana.o
 if(NEED_ROOT)
-  add_library( midas_rana src/mana.c)
-  set_target_properties( midas_rana PROPERTIES
-    LINKER_LANGUAGE CXX  
-    COMPILE_FLAGS "-DUSE_ROOT ${ROOT_CFLAGS}" )
-  set_source_files_properties( src/mana.c PROPERTIES LANGUAGE CXX )
+  # add_library( midas_rana src/mana.c)
+  # set_target_properties( midas_rana PROPERTIES
+  #   LINKER_LANGUAGE CXX  
+  #   COMPILE_FLAGS "-DUSE_ROOT ${ROOT_CFLAGS}" )
+  # set_source_files_properties( src/mana.c PROPERTIES LANGUAGE CXX )
+
+  set(ARG_LIST "-DUSE_ROOT ${ROOT_CFLAGS} -I${CMAKE_SOURCE_DIR}/include -c ${CMAKE_SOURCE_DIR}/src/mana.c")
+  separate_arguments(ARG_LIST)
+  add_custom_command( OUTPUT rmana.o DEPENDS src/mana.c
+    COMMAND ${CMAKE_CXX_COMPILER}
+    ARGS ${ARG_LIST}
+    WORKING_DIRECTORY lib )
+  add_custom_target(rmana ALL DEPENDS rmana.o)
 endif(NEED_ROOT)
 
 ## hmana.o
-# How to rebuild mama.c again using "C" not "C++" (?)
-# if(NEED_CERNLIB)
-#   add_library( midas_hana src/mana.c )
-#   set_source_files_properties( src/mana.c
-#     PROPERTIES LANGUAGE C)
-#   set_target_properties( midas_hana PROPERTIES
-#     COMPILE_FLAGS "-Dextname -DHAVE_HBOOK"
-#     LINKER_LANGUAGE C)
-# endif(NEED_CERNLIB)
+if(NEED_CERNLIB)
+  add_custom_command( OUTPUT hmana.o DEPENDS src/mana.c
+    COMMAND ${CMAKE_C_COMPILER}
+    ARGS -I${CMAKE_SOURCE_DIR}/include -Dextname -DHAVE_HBOOK
+    -c ${CMAKE_SOURCE_DIR}/src/mana.c
+    WORKING_DIRECTORY lib )
+  add_custom_target(hmana ALL DEPENDS hmana.o)
+endif(NEED_CERNLIB)
 
 ##########  Drivers and modules ################################
 #
