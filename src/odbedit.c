@@ -1177,7 +1177,7 @@ void compose_name(char *pwd, char *name, char *full_name)
 
 /*------------------------------------------------------------------*/
 
-void assemble_prompt(char *prompt, char *host_name, char *exp_name, char *pwd)
+void assemble_prompt(char *prompt, int psize, char *host_name, char *exp_name, char *pwd)
 {
    HNDLE hDB;
    char mask[256], str[32];
@@ -1202,10 +1202,10 @@ void assemble_prompt(char *prompt, char *host_name, char *exp_name, char *pwd)
 
    pm = mask;
    pp = prompt;
+   memset(prompt, 0, psize);
    do {
       if (*pm != '%') {
          *pp++ = *pm++;
-         *pp = 0;
       } else {
          switch (*++pm) {
          case 't':
@@ -1297,7 +1297,7 @@ int command_loop(char *host_name, char *exp_name, char *cmd, char *start_dir)
    do {
       /* print prompt */
       if (!cmd_mode) {
-         assemble_prompt(prompt, host_name, exp_name, pwd);
+         assemble_prompt(prompt, sizeof(prompt), host_name, exp_name, pwd);
 
          in_cmd_edit = TRUE;
          line[0] = 0;
