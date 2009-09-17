@@ -123,7 +123,7 @@ int main()
 
    /* place a request for a specific event id */
    bm_request_event(hBufEvent, (WORD) event_id, TRIGGER_ALL,
-                    all_flag ? GET_ALL : GET_SOME, &request_id,
+                    all_flag ? GET_ALL : GET_NONBLOCKING, &request_id,
                     via_callback ? process_event : NULL);
 
    /* place a request for system messages */

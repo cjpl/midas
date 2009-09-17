@@ -5,7 +5,7 @@
 
   Contents:     System part of Analyzer code for sample experiment
 
-  $Id:$
+  $Id$
 
 \********************************************************************/
 
@@ -108,7 +108,7 @@ ANALYZE_REQUEST analyze_request[] = {
    {"Trigger",                  /* equipment name */
     1,                          /* event ID */
     TRIGGER_ALL,                /* trigger mask */
-    GET_SOME,                   /* get some events */
+    GET_NONBLOCKING,            /* get some events */
     "SYSTEM",                   /* event buffer */
     TRUE,                       /* enabled */
     "", "",

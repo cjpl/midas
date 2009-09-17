@@ -273,9 +273,8 @@ Data format */
 /**
 Event Sampling type */
 #define GET_ALL   (1<<0)      /**< get all events (consume)           */
-#define GET_SOME  (1<<1)      /**< get as much as possible (sampling) */
-#define GET_FARM  (1<<2)      /**< distribute events over several
-                                 clients (farming)                  */
+#define GET_NONBLOCKING (1<<1)/**< get as much as possible without blocking producer */
+#define GET_RECENT (1<<2)     /**< get recent event (not older than 1 s)*/
 
 /**
 Data types Definition                         min      max    */
@@ -837,7 +836,7 @@ typedef struct {
    BOOL valid;                   /**< indicating a valid entry        */
    short int event_id;           /**< event ID                        */
    short int trigger_mask;       /**< trigger mask                    */
-   INT sampling_type;            /**< GET_ALL, GET_SOME, GET_FARM     */
+   INT sampling_type;            /**< GET_ALL, GET_NONBLOCKING, GET_RECENT */
 } EVENT_REQUEST;
 
 typedef struct {
@@ -1090,7 +1089,7 @@ typedef struct {
 typedef struct {
    INT event_id;                      /**< Event ID associated with equipm.  */
    INT trigger_mask;                  /**< Trigger mask                      */
-   INT sampling_type;                 /**< GET_ALL/GET_SOME                  */
+   INT sampling_type;                 /**< GET_ALL/GET_NONBLOCKING/GET_RECENT*/
    char buffer[NAME_LENGTH];          /**< Event buffer to send events into  */
    BOOL enabled;                      /**< Enable flag                       */
    char client_name[NAME_LENGTH];     /**< Analyzer name                     */

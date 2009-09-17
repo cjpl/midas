@@ -387,7 +387,7 @@ int main(int argc, char **argv)
    event_id = EVENTID_ALL;
    event_msk = TRIGGER_ALL;
    evt_display = 1;
-   get_flag = GET_SOME;
+   get_flag = GET_NONBLOCKING;
    dsp_fmt = DSP_UNK;
    dsp_mode = DSP_BANK;
    file_mode = YB_NO_RECOVER;
@@ -547,7 +547,7 @@ int main(int argc, char **argv)
             } else if (strncmp(argv[i], "-g", 2) == 0) {
                sprintf(str, argv[++i]);
                if (strncmp(str, "s", 1) == 0)
-                  get_flag = GET_SOME;
+                  get_flag = GET_NONBLOCKING;
                if (strncmp(str, "a", 1) == 0)
                   get_flag = GET_ALL;
             } else if (strncmp(argv[i], "-f", 2) == 0) {
