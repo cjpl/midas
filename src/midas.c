@@ -878,7 +878,7 @@ INT cm_msg_register(void (*func) (HNDLE, HNDLE, EVENT_HEADER *, void *))
 
    _msg_dispatch = func;
 
-   status = bm_request_event(_msg_buffer, EVENTID_ALL, TRIGGER_ALL, GET_SOME, &id, func);
+   status = bm_request_event(_msg_buffer, EVENTID_ALL, TRIGGER_ALL, GET_NONBLOCKING, &id, func);
 
    return status;
 }
@@ -5567,7 +5567,7 @@ INT bm_add_event_request(INT buffer_handle, short int event_id,
     short int    event_id       Event ID      \
     short int    trigger_mask   Trigger mask  / Event specification
 
-    INT          sampling_type  One of GET_ALL, GET_SOME or GET_FARM
+    INT          sampling_type  One of GET_ALL, GET_NONBLOCKING or GET_RECENT
 
 
                  Note: to request all types of events, use
@@ -5681,9 +5681,9 @@ receive events with any trigger mask.
 @param sampling_type specifies how many events to receive.
 A value of GET_ALL receives all events which
 match the specified event ID and trigger mask. If the events are consumed slower
-than produced, the producer is automatically slowed down. A value of GET_SOME
+than produced, the producer is automatically slowed down. A value of GET_NONBLOCKING
 receives as much events as possible without slowing down the producer. GET_ALL is
-typically used by the logger, while GET_SOME is typically used by analyzers.
+typically used by the logger, while GET_NONBLOCKING is typically used by analyzers.
 @param request_id request ID returned by the function.
 This ID is passed to the callback routine and must
 be used in the bm_delete_request() routine.
