@@ -159,7 +159,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="wsock32.lib winmm.lib libCore.lib libHist.lib libTree.lib libRint.lib libGraf.lib"
+				AdditionalDependencies="wsock32.lib winmm.lib libCore.lib libCint.lib libRIO.lib libNet.lib libHist.lib libTree.lib libRint.lib libGraf.lib libThread.lib"
 				OutputFile="C:\midas\nt\bin\ranalyzer.exe"
 				LinkIncremental="2"
 				SuppressStartupBanner="true"
