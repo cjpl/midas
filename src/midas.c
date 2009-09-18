@@ -5588,6 +5588,7 @@ INT bm_add_event_request(INT buffer_handle, short int event_id,
     BM_NO_MEMORY            Too much request. MAX_EVENT_REQUESTS in
                             MIDAS.H should be increased.
     BM_INVALID_HANDLE       Buffer handle is invalid
+    BM_INVALID_PARAM        GET_RECENT is used with non-zero cache size
     RPC_NET_ERROR           Network error
 
 \********************************************************************/
@@ -5616,6 +5617,10 @@ INT bm_add_event_request(INT buffer_handle, short int event_id,
          cm_msg(MERROR, "bm_add_event_request", "mixing callback/non callback requests not possible");
          return BM_INVALID_MIXING;
       }
+
+      /* do not allow GET_RECENT with nonzero cache size */
+      if (sampling_type == GET_RECENT && _buffer[buffer_handle - 1].read_cache_size > 0)
+         return BM_INVALID_PARAM;
 
       /* get a pointer to the proper client structure */
       pclient = &(_buffer[buffer_handle - 1].buffer_header->
@@ -7144,6 +7149,16 @@ INT bm_push_event(char *buffer_name)
 
          for (i = 0; i < pc->max_request_index; i++, prequest++)
             if (prequest->valid && bm_match_event(prequest->event_id, prequest->trigger_mask, pevent)) {
+
+               /* check if this is a recent event */
+               if (prequest->sampling_type == GET_RECENT) {
+                  if (ss_time() - pevent->time_stamp > 1) {
+                     /* skip that event */
+                     continue;
+                  }
+
+                  printf("now: %d, event: %d\n", ss_time(), pevent->time_stamp);
+               }
 
                /* we found a request for this event, so copy it */
 
