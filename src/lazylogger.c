@@ -309,7 +309,7 @@ number of elements
 
    /* allocate memory */
    tot_dirlog_size = (nfile * sizeof(DIRLOG));
-   *plog = realloc(*plog, tot_dirlog_size);
+   *plog = (DIRLOG*)realloc(*plog, tot_dirlog_size);
    memset(*plog, 0, tot_dirlog_size);
 
    /* Check Modulo option */
@@ -388,7 +388,7 @@ Function value:      number of elements
          break;
       db_get_key(hDB, hSubkey, &key);
       nelement = key.num_values;
-      *pdo = realloc(*pdo, sizeof(INT)*(tot_nelement + nelement));
+      *pdo = (INT*)realloc(*pdo, sizeof(INT)*(tot_nelement + nelement));
       size = nelement * sizeof(INT);
       db_get_data(hDB, hSubkey, (char *) (*pdo + tot_nelement), &size, TID_INT);
       tot_nelement += nelement;
@@ -408,7 +408,7 @@ Function value:      number of elements
          int nruns = last - first + 1;
          assert(nruns > 1);
 
-         *pdo = realloc(*pdo, sizeof(INT)*(tot_nelement + nruns - 2));
+         *pdo = (INT*)realloc(*pdo, sizeof(INT)*(tot_nelement + nruns - 2));
          assert(*pdo != NULL);
 
          memmove((*pdo) + i + nruns -1, (*pdo) + i + 1, sizeof(INT)*(tot_nelement - i - 1));
@@ -527,9 +527,9 @@ INT lazy_select_purge(HNDLE hKey, INT channel, LAZY_INFO * pLall, char *fmt, cha
       /* try to find the oldest matching run present in the list AND on disk */
       /* build current done list */
       if (pdonelist == NULL)
-         pdonelist = malloc(sizeof(INT));
+         pdonelist = (INT*)malloc(sizeof(INT));
       if (potherlist == NULL)
-         potherlist = malloc(sizeof(INT));
+         potherlist = (INT*)malloc(sizeof(INT));
 
       /* Build current done list (run list already backed up) */
       ndone = build_done_list(hKey, &pdonelist);
@@ -598,7 +598,7 @@ INT lazy_select_purge(HNDLE hKey, INT channel, LAZY_INFO * pLall, char *fmt, cha
 
       /* check if file is in the dir log (exists) */
       if (pdirlog == NULL)
-         pdirlog = malloc(sizeof(DIRLOG));
+         pdirlog = (DIRLOG*)malloc(sizeof(DIRLOG));
       nfile = build_log_list(fmt, dir, &pdirlog);
       for (i = 0; i < nfile; i++) {
          if (pdirlog[i].run == *run) {
@@ -726,7 +726,7 @@ Function value:
    /* mark current channel for removing entry too */
    (pLall + channel)->match = TRUE;
    if (potherlist == NULL)
-      potherlist = malloc(sizeof(INT));
+      potherlist = (INT*)malloc(sizeof(INT));
 
    /* scan matching run number */
    for (k = 0; k < MAX_LAZY_CHANNEL; k++) {     /* skip if no dir and no ff match */
@@ -768,7 +768,7 @@ Function value:
                      } else {
                         /* remove from middle */
                         nother += 2;
-                        potherlist = realloc(potherlist, sizeof(INT)*nother);
+                        potherlist = (INT*)realloc(potherlist, sizeof(INT)*nother);
                         memmove(potherlist + j + 2, potherlist + j, sizeof(INT)*(nother - j - 2));
                         potherlist[j+1] = -(run-1);
                         potherlist[j+2] = run+1;
@@ -864,7 +864,7 @@ DB_SUCCESS   : update ok
    if (db_find_key(hDB, hKey, lazy.backlabel, &hKeylabel) == DB_SUCCESS) {      /* run array already present ==> append run */
       db_get_key(hDB, hKeylabel, &Keylabel);
       ifiles = Keylabel.num_values;
-      ptape = malloc(Keylabel.total_size);
+      ptape = (char*)malloc(Keylabel.total_size);
       size = Keylabel.total_size;
       db_get_data(hDB, hKeylabel, ptape, &size, TID_INT);
       if ((size == sizeof(INT)) && (*ptape == -1)) {
@@ -876,7 +876,7 @@ DB_SUCCESS   : update ok
          if (0)
             printf("files %d, last run %d\n", ifiles, pi[ifiles-1]);
          if (lazyst.cur_run == pi[ifiles-1] + 1) {
-            ptape = realloc((char *) ptape, size + sizeof(INT));
+            ptape = (char*)realloc((char *) ptape, size + sizeof(INT));
             pi = (INT*)ptape;
             pi[ifiles] = -lazyst.cur_run;
             ifiles += 1;
@@ -886,7 +886,7 @@ DB_SUCCESS   : update ok
          } else if (pi[ifiles-1] < 0 && lazyst.cur_run == -pi[ifiles-1] + 1) {
             pi[ifiles-1] = -lazyst.cur_run;
          } else {
-            ptape = realloc((char *) ptape, size + sizeof(INT));
+            ptape = (char*)realloc((char *) ptape, size + sizeof(INT));
             memcpy((char *) ptape + size, (char *) &lazyst.cur_run, sizeof(INT));
             ifiles += 1;
             size += sizeof(INT);
@@ -1525,12 +1525,12 @@ Function value:
 
    /* build logger dir listing */
    if (pdirlog == NULL)
-      pdirlog = malloc(sizeof(DIRLOG));
+      pdirlog = (DIRLOG*)malloc(sizeof(DIRLOG));
    build_log_list(lazy.backfmt, lazy.dir, &pdirlog);
 
    /* build donelist comparing pdirlog and /Lazy/List */
    if (pdonelist == NULL)
-      pdonelist = malloc(sizeof(INT));
+      pdonelist = (INT*)malloc(sizeof(INT));
    build_done_list(pLch->hKey, &pdonelist);
 
    /* compare list : run NOT in donelist AND run in dirlog */
@@ -1603,7 +1603,7 @@ Function value:
    /* check SPACE and purge if necessary = % (1:99) */
    if (lazy.pupercent > 0) {
       if (pdirlog == NULL)
-         pdirlog = malloc(sizeof(DIRLOG));
+         pdirlog = (DIRLOG*)malloc(sizeof(DIRLOG));
 
       // Compute initial disk space
       svfree = freepercent = 100. * ss_disk_free(lazy.dir) / ss_disk_size(lazy.dir);

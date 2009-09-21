@@ -527,7 +527,7 @@ $(BIN_DIR)/mh2sql: $(UTL_DIR)/mh2sql.cxx $(LIB_DIR)/history_odbc.o
 	$(CXX) $(CFLAGS) $(OSFLAGS) -o $@ $^ $(LIBS)
 
 $(BIN_DIR)/lazylogger: $(SRC_DIR)/lazylogger.c
-	$(CC) $(CFLAGS) $(OSFLAGS) -o $@ $(SRC_DIR)/lazylogger.c $(LIB) $(LIBS)
+	$(CXX) $(CFLAGS) $(OSFLAGS) -o $@ $< $(LIB) $(LIBS)
 
 $(BIN_DIR)/dio: $(UTL_DIR)/dio.c
 	$(CC) $(CFLAGS) $(OSFLAGS) -o $@ $(UTL_DIR)/dio.c
