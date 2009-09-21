@@ -1,4 +1,3 @@
-
 /********************************************************************\
 
   Name:         mlogger.c
@@ -50,6 +49,7 @@ void create_sql_tree();
 
 #define MAX_CHANNELS 10
 
+INT  local_state;
 BOOL in_stop_transition = FALSE;
 BOOL tape_message = TRUE;
 BOOL verbose = FALSE;
@@ -2465,7 +2465,6 @@ INT log_write(LOG_CHN * log_chn, EVENT_HEADER * pevent)
              log_chn->settings.event_limit);
 
       status = stop_the_run(1);
-
       return status;
    }
 
@@ -4055,6 +4054,8 @@ INT tr_start(INT run_number, char *error)
    write_sql(TRUE);
 #endif
 
+   local_state = STATE_RUNNING;
+
    return CM_SUCCESS;
 }
 
@@ -4079,6 +4080,8 @@ INT tr_start_abort(INT run_number, char *error)
    close_buffers();
 
    in_stop_transition = FALSE;
+
+   local_state = STATE_STOPPED;
 
    return CM_SUCCESS;
 }
@@ -4156,6 +4159,8 @@ INT tr_stop(INT run_number, char *error)
       start_requested = FALSE;
    }
 
+   local_state = STATE_STOPPED;
+
    return CM_SUCCESS;
 }
 
@@ -4170,6 +4175,8 @@ INT tr_pause(INT run_number, char *error)
    eb.run_number = run_number;
    hs_write_event(0, &eb, sizeof(eb));
 
+   local_state = STATE_PAUSED;
+
    return CM_SUCCESS;
 }
 
@@ -4179,6 +4186,8 @@ INT tr_resume(INT run_number, char *error)
    eb.transition = STATE_RUNNING;
    eb.run_number = run_number;
    hs_write_event(0, &eb, sizeof(eb));
+
+   local_state = STATE_RUNNING;
 
    return CM_SUCCESS;
 }
@@ -4217,6 +4226,7 @@ int main(int argc, char *argv[])
    BOOL debug, daemon, save_mode;
    DWORD last_time_kb = 0;
    DWORD last_time_stat = 0;
+   DWORD duration, run_start_time;
    HNDLE hktemp;
 
 #ifdef HAVE_ROOT
@@ -4321,6 +4331,11 @@ int main(int argc, char *argv[])
    /* initialize ODB */
    logger_init();
 
+   /* obtain current state */
+   local_state = STATE_STOPPED;
+   size = sizeof(local_state);
+   status = db_get_value(hDB, 0, "/Runinfo/State", &local_state, &size, TID_INT, true);
+
    /* open history logging */
    if (open_history() != CM_SUCCESS) {
       printf("Error in history system, aborting startup.\n");
@@ -4390,6 +4405,20 @@ int main(int argc, char *argv[])
       /* check for auto restart */
       if (auto_restart && ss_time() > auto_restart) {
          status = start_the_run();
+      }
+
+      /* check if time is reached to stop run */
+      duration = 0;
+      size = sizeof(duration);
+      db_get_value(hDB, 0, "/Logger/Run duration", &duration, &size, TID_DWORD, true);
+      size = sizeof(run_start_time);
+      status = db_get_value(hDB, 0, "/Runinfo/Start time binary", &run_start_time, &size, TID_DWORD, true);
+      assert(status == DB_SUCCESS);
+
+      if (!stop_requested && !in_stop_transition && local_state != STATE_STOPPED &&
+          duration > 0 && ss_time() >= run_start_time + duration) {
+         cm_msg(MTALK, "main", "stopping run after %d seconds", duration);
+         status = stop_the_run(1);
       }
 
       /* check keyboard once every second */
