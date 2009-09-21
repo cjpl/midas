@@ -227,7 +227,7 @@ INT tr_stop(INT rn, char *error)
    } else
       readout_enable(TRUE);
 
-   for (i = 0; equipment[i].name[0]; i++)
+   for (i = 0; equipment[i].name[0]; i++) {
       /* read remaining events from ring buffers */
       if (equipment[i].info.eq_type & (EQ_MULTITHREAD | EQ_INTERRUPT)) {
          while (receive_trigger_event(equipment+i) > 0);
@@ -242,6 +242,7 @@ INT tr_stop(INT rn, char *error)
             return err;
          }
       }
+   }
 
    /* update final statistics record in ODB */
    for (i = 0; equipment[i].name[0]; i++) {
