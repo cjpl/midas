@@ -969,6 +969,8 @@ typedef struct {
    char frontend_host[NAME_LENGTH];   /**< Host on which FE is running       */
    char frontend_name[NAME_LENGTH];   /**< Frontend name                     */
    char frontend_file_name[256];      /**< Source file used for user FE      */
+   char status[256];                  /**< Current status of equipment       */
+   char status_color[NAME_LENGTH];    /**< Color to be used by mhttpd for status */
 } EQUIPMENT_INFO;
 
 typedef struct {
@@ -1633,7 +1635,7 @@ extern "C" {
                               (HNDLE, HNDLE, EVENT_HEADER *, void *));
    INT EXPRT cm_msg_retrieve(INT n_message, char *message, INT buf_size);
 
-   BOOL EXPRT equal_ustring(char *str1, char *str2);
+   BOOL EXPRT equal_ustring(const char *str1, const char *str2);
 
    /*---- buffer manager ----*/
    INT EXPRT bm_open_buffer(char *buffer_name, INT buffer_size, INT * buffer_handle);
@@ -1912,6 +1914,7 @@ extern "C" {
    void register_cnaf_callback(int debug);
    void mfe_error(const char *error);
    void mfe_set_error(void (*dispatcher) (const char *));
+   int set_equipment_status(const char *name, const char *eq_status, const char *status_color);
 
    /*---- analyzer functions ----*/
    void EXPRT test_register(ANA_TEST * t);

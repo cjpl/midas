@@ -1387,7 +1387,7 @@ void show_status_page(int refresh, char *cookie_wpwd)
 
    /*---- Equipment list ----*/
 
-   rsprintf("<tr><th>Equipment<th>FE Node<th>Events");
+   rsprintf("<tr><th>Equipment<th>Status<th>Events");
    rsprintf("<th>Event rate[/s]<th>Data rate[MB/s]<th>Analyzed</tr>\n");
 
    if (db_find_key(hDB, 0, "/equipment", &hkey) == DB_SUCCESS) {
@@ -1424,17 +1424,17 @@ void show_status_page(int refresh, char *cookie_wpwd)
          if (cm_exist(equipment.frontend_name, TRUE) != CM_SUCCESS
              && cm_exist("FAL", TRUE) != CM_SUCCESS)
             rsprintf
-                ("<tr><td><a href=\"%s\">%s</a><td align=center bgcolor=#FF0000>(inactive)",
+                ("<tr><td><a href=\"%s\">%s</a><td align=center bgcolor=#FF0000>(frontend stopped)",
                  ref, key.name);
          else {
             if (equipment.enabled)
                rsprintf
-                   ("<tr><td><a href=\"%s\">%s</a><td align=center bgcolor=#00FF00>%s@%s",
-                    ref, key.name, equipment.frontend_name, equipment.frontend_host);
+                   ("<tr><td><a href=\"%s\">%s</a><td align=center bgcolor=\"%s\">%s",
+                    ref, key.name, equipment.status_color, equipment.status);
             else
                rsprintf
-                   ("<tr><td><a href=\"%s\">%s</a><td align=center bgcolor=#FFFF00>%s@%s",
-                    ref, key.name, equipment.frontend_name, equipment.frontend_host);
+                   ("<tr><td><a href=\"%s\">%s</a><td align=center bgcolor=#FFFF00>(disabled)",
+                    ref, key.name);
          }
 
          /* event statistics */

@@ -1538,7 +1538,7 @@ const char *extract_key(const char *key_list, char *key_name, int key_name_lengt
    return key_list;
 }
 
-BOOL equal_ustring(char *str1, char *str2)
+BOOL equal_ustring(const char *str1, const char *str2)
 {
    if (str1 == NULL && str2 != NULL)
       return FALSE;
