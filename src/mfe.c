@@ -71,6 +71,7 @@ DWORD auto_restart = 0;         /* restart run after event limit reached stop */
 INT manual_trigger_event_id = 0;        /* set from the manual_trigger callback */
 INT frontend_index = -1;        /* frontend index for event building */
 BOOL lockout_readout_thread = TRUE; /* manual triggers, periodic events and 1Hz flush cache lockout the readout thread */
+BOOL eq_status[100];
 
 HNDLE hDB;
 
@@ -136,6 +137,8 @@ Log history = INT : 0\n\
 Frontend host = STRING : [32] \n\
 Frontend name = STRING : [32] \n\
 Frontend file name = STRING : [256] \n\
+Status = STRING : [256] \n\
+Status color = STRING : [32] \n\
 "
 
 #define EQUIPMENT_STATISTICS_STR "\
@@ -657,6 +660,11 @@ INT register_equipment(void)
       strcpy(eq_info->frontend_name, full_frontend_name);
       strcpy(eq_info->frontend_file_name, frontend_file_name);
 
+      if (eq_status[idx] == FALSE) {
+         sprintf(eq_info->status, "%s@%s", full_frontend_name, eq_info->frontend_host);
+         strcpy(eq_info->status_color, "#00FF00");
+      }
+
       /* update variables in ODB */
       db_set_record(hDB, hKey, eq_info, sizeof(EQUIPMENT_INFO), 0);
 
@@ -942,6 +950,34 @@ INT register_equipment(void)
 
    if (slowcont_eq)
       cm_msg(MINFO, "register_equipment", "Slow control equipment initialized");
+
+   return SUCCESS;
+}
+
+/*------------------------------------------------------------------*/
+
+int set_equipment_status(const char *name, const char *eqipment_status, const char *status_color)
+{
+   int status, idx;
+   char str[256];
+   HNDLE hKey;
+
+   for (idx = 0; equipment[idx].name[0]; idx++)
+      if (equal_ustring(equipment[idx].name, name))
+         break;
+
+   if (equal_ustring(equipment[idx].name, name)) {
+      eq_status[idx] = TRUE; // remember special status for this equipment
+
+      sprintf(str, "/Equipment/%s/Common", name);
+      db_find_key(hDB, 0, str, &hKey);
+      assert(hKey);
+
+      status = db_set_value(hDB, hKey, "Status", eqipment_status, 256, 1, TID_STRING);
+      assert(status == DB_SUCCESS);
+      status = db_set_value(hDB, hKey, "Status color", status_color, 32, 1, TID_STRING);
+      assert(status == DB_SUCCESS);
+   }
 
    return SUCCESS;
 }
@@ -2456,6 +2492,8 @@ int main(int argc, char *argv[])
 
    setbuf(stdout, 0);
    setbuf(stderr, 0);
+
+   memset(eq_status, 0, sizeof(eq_status));
 
 #ifdef SIGPIPE
    signal(SIGPIPE, SIG_IGN);
