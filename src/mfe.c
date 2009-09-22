@@ -71,7 +71,6 @@ DWORD auto_restart = 0;         /* restart run after event limit reached stop */
 INT manual_trigger_event_id = 0;        /* set from the manual_trigger callback */
 INT frontend_index = -1;        /* frontend index for event building */
 BOOL lockout_readout_thread = TRUE; /* manual triggers, periodic events and 1Hz flush cache lockout the readout thread */
-BOOL eq_status[100];
 
 HNDLE hDB;
 
@@ -659,11 +658,8 @@ INT register_equipment(void)
       gethostname(eq_info->frontend_host, sizeof(eq_info->frontend_host));
       strcpy(eq_info->frontend_name, full_frontend_name);
       strcpy(eq_info->frontend_file_name, frontend_file_name);
-
-      if (eq_status[idx] == FALSE) {
-         sprintf(eq_info->status, "%s@%s", full_frontend_name, eq_info->frontend_host);
-         strcpy(eq_info->status_color, "#00FF00");
-      }
+      sprintf(eq_info->status, "%s@%s", full_frontend_name, eq_info->frontend_host);
+      strcpy(eq_info->status_color, "#00FF00");
 
       /* update variables in ODB */
       db_set_record(hDB, hKey, eq_info, sizeof(EQUIPMENT_INFO), 0);
@@ -967,8 +963,6 @@ int set_equipment_status(const char *name, const char *eqipment_status, const ch
          break;
 
    if (equal_ustring(equipment[idx].name, name)) {
-      eq_status[idx] = TRUE; // remember special status for this equipment
-
       sprintf(str, "/Equipment/%s/Common", name);
       db_find_key(hDB, 0, str, &hKey);
       assert(hKey);
@@ -2493,8 +2487,6 @@ int main(int argc, char *argv[])
    setbuf(stdout, 0);
    setbuf(stderr, 0);
 
-   memset(eq_status, 0, sizeof(eq_status));
-
 #ifdef SIGPIPE
    signal(SIGPIPE, SIG_IGN);
 #endif
@@ -2667,10 +2659,8 @@ int main(int argc, char *argv[])
    if (display_period)
       cm_set_msg_print(MT_ALL, MT_ALL, message_print);
 
-   /* call user init function */
-   if (display_period)
-      printf("Init hardware...\n");
-   if (frontend_init() != SUCCESS) {
+   /* reqister equipment in ODB */
+   if (register_equipment() != SUCCESS) {
       if (display_period)
          printf("\n");
       cm_disconnect_experiment();
@@ -2680,8 +2670,10 @@ int main(int argc, char *argv[])
       return 1;
    }
 
-   /* reqister equipment in ODB */
-   if (register_equipment() != SUCCESS) {
+   /* call user init function */
+   if (display_period)
+      printf("Init hardware...\n");
+   if (frontend_init() != SUCCESS) {
       if (display_period)
          printf("\n");
       cm_disconnect_experiment();
