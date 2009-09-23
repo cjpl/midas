@@ -56,6 +56,7 @@ BOOL verbose = FALSE;
 BOOL stop_requested = FALSE;
 BOOL start_requested = FALSE;
 DWORD auto_restart = 0;
+DWORD run_start_time, subrun_start_time;
 
 LOG_CHN log_chn[MAX_CHANNELS];
 
@@ -2414,7 +2415,7 @@ int start_the_run()
 INT log_write(LOG_CHN * log_chn, EVENT_HEADER * pevent)
 {
    INT status = 0, size, izero;
-   DWORD actual_time, start_time, watchdog_timeout;
+   DWORD actual_time, start_time, watchdog_timeout, duration;
    BOOL watchdog_flag;
    static DWORD last_checked = 0;
    HNDLE htape, stats_hkey;
@@ -2468,23 +2469,48 @@ INT log_write(LOG_CHN * log_chn, EVENT_HEADER * pevent)
       return status;
    }
 
-   /* check if byte limit is reached for subrun */
-   if (!stop_requested && log_chn->settings.subrun_byte_limit > 0 &&
-       log_chn->statistics.bytes_written_subrun >= log_chn->settings.subrun_byte_limit) {
-
+   /* check if duration is reached for subrun */
+   duration = 0;
+   size = sizeof(duration);
+   db_get_value(hDB, 0, "/Logger/Subrun duration", &duration, &size, TID_DWORD, true);
+   if (!stop_requested && duration > 0 && ss_time() >= subrun_start_time + duration) {
       int run_number;
+
+      // cm_msg(MTALK, "main", "stopping subrun after %d seconds", duration);
+
       size = sizeof(run_number);
       status = db_get_value(hDB, 0, "Runinfo/Run number", &run_number, &size, TID_INT, TRUE);
       assert(status == SUCCESS);
 
       stop_requested = TRUE; // avoid recursive call thourgh log_odb_dump
       log_close(log_chn, run_number);
-      stop_requested = FALSE;
-
       log_chn->subrun_number++;
       log_chn->statistics.bytes_written_subrun = 0;
       log_generate_file_name(log_chn);
       log_open(log_chn, run_number);
+      subrun_start_time = ss_time();
+      stop_requested = FALSE;
+   }
+
+   /* check if byte limit is reached for subrun */
+   if (!stop_requested && log_chn->settings.subrun_byte_limit > 0 &&
+       log_chn->statistics.bytes_written_subrun >= log_chn->settings.subrun_byte_limit) {
+      int run_number;
+
+      cm_msg(MTALK, "main", "stopping subrun after %lf bytes", log_chn->settings.subrun_byte_limit);
+
+      size = sizeof(run_number);
+      status = db_get_value(hDB, 0, "Runinfo/Run number", &run_number, &size, TID_INT, TRUE);
+      assert(status == SUCCESS);
+
+      stop_requested = TRUE; // avoid recursive call thourgh log_odb_dump
+      log_close(log_chn, run_number);
+      log_chn->subrun_number++;
+      log_chn->statistics.bytes_written_subrun = 0;
+      log_generate_file_name(log_chn);
+      log_open(log_chn, run_number);
+      subrun_start_time = ss_time();
+      stop_requested = FALSE;
    }
 
    /* check if byte limit is reached to stop run */
@@ -3639,7 +3665,7 @@ int log_generate_file_name(LOG_CHN *log_chn)
 #endif
 #if !defined(HAVE_MYSQL) && !defined(OS_WINNT)  /* errno not working with mySQL lib */
       if (status == -1 && errno != EEXIST)
-         cm_msg(MERROR, "tr_start", "Cannot create subdirectory %s", str);
+         cm_msg(MERROR, "log_generate_file_name", "Cannot create subdirectory %s", str);
 #endif
 
       strcat(str, chn_settings->filename);
@@ -3796,6 +3822,8 @@ INT tr_start(INT run_number, char *error)
    close_buffers();
 
    in_stop_transition = FALSE;
+
+   run_start_time = subrun_start_time = ss_time();
 
    /* read global logging flag */
    size = sizeof(BOOL);
@@ -4055,6 +4083,7 @@ INT tr_start(INT run_number, char *error)
 #endif
 
    local_state = STATE_RUNNING;
+   run_start_time = subrun_start_time = ss_time();
 
    return CM_SUCCESS;
 }
@@ -4226,7 +4255,7 @@ int main(int argc, char *argv[])
    BOOL debug, daemon, save_mode;
    DWORD last_time_kb = 0;
    DWORD last_time_stat = 0;
-   DWORD duration, run_start_time;
+   DWORD duration;
    HNDLE hktemp;
 
 #ifdef HAVE_ROOT
@@ -4411,10 +4440,6 @@ int main(int argc, char *argv[])
       duration = 0;
       size = sizeof(duration);
       db_get_value(hDB, 0, "/Logger/Run duration", &duration, &size, TID_DWORD, true);
-      size = sizeof(run_start_time);
-      status = db_get_value(hDB, 0, "/Runinfo/Start time binary", &run_start_time, &size, TID_DWORD, true);
-      assert(status == DB_SUCCESS);
-
       if (!stop_requested && !in_stop_transition && local_state != STATE_STOPPED &&
           duration > 0 && ss_time() >= run_start_time + duration) {
          cm_msg(MTALK, "main", "stopping run after %d seconds", duration);
