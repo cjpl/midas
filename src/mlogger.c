@@ -2497,7 +2497,7 @@ INT log_write(LOG_CHN * log_chn, EVENT_HEADER * pevent)
        log_chn->statistics.bytes_written_subrun >= log_chn->settings.subrun_byte_limit) {
       int run_number;
 
-      cm_msg(MTALK, "main", "stopping subrun after %lf bytes", log_chn->settings.subrun_byte_limit);
+      // cm_msg(MTALK, "main", "stopping subrun after %1.0lf bytes", log_chn->settings.subrun_byte_limit);
 
       size = sizeof(run_number);
       status = db_get_value(hDB, 0, "Runinfo/Run number", &run_number, &size, TID_INT, TRUE);
@@ -3904,6 +3904,7 @@ INT tr_start(INT run_number, char *error)
          log_chn[index].statistics.events_written = 0;
          log_chn[index].statistics.bytes_written = 0;
          log_chn[index].statistics.bytes_written_uncompressed = 0;
+         log_chn[index].statistics.bytes_written_subrun = 0;
 
          db_set_record(hDB, log_chn[index].stats_hkey, &log_chn[index].statistics, size, 0);
 
