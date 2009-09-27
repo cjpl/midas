@@ -63,7 +63,7 @@ LOG_CHN log_chn[MAX_CHANNELS];
 struct hist_log_s {
    char event_name[256];
    WORD event_id;
-   void *buffer;
+   char *buffer;
    INT buffer_size;
    HNDLE hKeyVar;
    DWORD n_var;
@@ -2581,6 +2581,10 @@ INT log_write(LOG_CHN * log_chn, EVENT_HEADER * pevent)
 
 void log_history(HNDLE hDB, HNDLE hKey, void *info);
 
+#include "history.h"
+
+static std::vector<MidasHistoryInterface*> mh;
+
 #ifdef HAVE_ODBC
 #include "history_odbc.h"
 static int using_odbc = 0;
@@ -2650,6 +2654,11 @@ static int add_event(int* indexp, int event_id, const char* event_name, HNDLE hK
       }
    }
 
+   for (unsigned i=0; i<mh.size(); i++) {
+     status = mh[i]->hs_define_event(event_name, ntags, tags);
+     assert(status == HS_SUCCESS);
+   }
+
    status = hs_define_event(event_id, (char*)event_name, (TAG*)tags, sizeof(TAG) * ntags);
    assert(status == DB_SUCCESS);
 
@@ -2672,7 +2681,7 @@ static int add_event(int* indexp, int event_id, const char* event_name, HNDLE hK
    hist_log[index].n_var       = ntags;
    hist_log[index].hKeyVar     = hKey;
    hist_log[index].buffer_size = size;
-   hist_log[index].buffer      = malloc(size);
+   hist_log[index].buffer      = (char*)malloc(size);
    hist_log[index].period      = period;
    hist_log[index].last_log    = 0;
 
@@ -3457,6 +3466,8 @@ void close_history()
       status = hs_disconnect_odbc();
    using_odbc = 0;
 #endif
+   for (unsigned h=0; h<mh.size(); h++)
+      status  = mh[h]->hs_disconnect();
 }
 
 /*---- log_history -------------------------------------------------*/
@@ -3494,6 +3505,12 @@ void log_history(HNDLE hDB, HNDLE hKey, void *info)
       hs_write_event_odbc(hist_log[i].event_name, hist_log[i].last_log, (const char*)hist_log[i].buffer, hist_log[i].buffer_size);
    }
 #endif
+
+   for (unsigned h=0; h<mh.size(); h++) {
+     int status = mh[h]->hs_write_event(hist_log[i].event_name, hist_log[i].last_log, hist_log[i].buffer_size, hist_log[i].buffer);
+     assert(status == HS_SUCCESS);
+   }
+
 }
 
 /*------------------------------------------------------------------*/
