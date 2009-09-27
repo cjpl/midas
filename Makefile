@@ -388,6 +388,7 @@ endif
 ifdef HAVE_ODBC
 CFLAGS      += -DHAVE_ODBC
 OBJS        += $(LIB_DIR)/history_odbc.o
+OBJS        += $(LIB_DIR)/history_sql.o
 LIBS        += -lodbc
 ifeq ($(OSTYPE),darwin)
 LIBS        += /System/Library/Frameworks/CoreFoundation.framework/CoreFoundation
@@ -523,7 +524,7 @@ $(BIN_DIR)/mhdump: $(UTL_DIR)/mhdump.cxx
 $(BIN_DIR)/mtransition: $(SRC_DIR)/mtransition.cxx
 	$(CXX) $(CFLAGS) $(OSFLAGS) -o $@ $< $(LIB) $(LIBS)
 
-$(BIN_DIR)/mh2sql: $(UTL_DIR)/mh2sql.cxx $(LIB_DIR)/history_odbc.o
+$(BIN_DIR)/mh2sql: $(UTL_DIR)/mh2sql.cxx
 	$(CXX) $(CFLAGS) $(OSFLAGS) -o $@ $^ $(LIBS)
 
 $(BIN_DIR)/lazylogger: $(SRC_DIR)/lazylogger.c

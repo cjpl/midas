@@ -14,11 +14,13 @@
 #include <errno.h>
 
 #include "midas.h"
-#include "history_odbc.h"
+#include "history.h"
 
 #include <map>
 
 std::map<int,const char*> gEventName;
+
+MidasHistoryInterface *mh = NULL;
 
 int readHstFile(FILE*f)
 {
@@ -67,7 +69,7 @@ int readHstFile(FILE*f)
 	    rd = fread(tags, 1, size, f);
 	    assert(rd == size);
 
-            hs_define_event_odbc(event_name, tags, size);
+            mh->hs_define_event(event_name, ntags, tags);
 
             gEventName[rec.event_id] = strdup(event_name);
 
@@ -100,7 +102,7 @@ int readHstFile(FILE*f)
 
 	    time_t t = (time_t)rec.time;
 
-            hs_write_event_odbc(gEventName[rec.event_id], t, buf, size);
+            mh->hs_write_event(gEventName[rec.event_id], t, size, buf);
           
             break;
 	  }
@@ -145,7 +147,10 @@ int main(int argc,char*argv[])
    if (status != SUCCESS)
       exit(1);
 
-   status = hs_connect_odbc(argv[1]);
+   mh = MakeMidasHistoryODBC();
+   assert(mh);
+
+   status = mh->hs_connect(argv[1]);
    if (status != SUCCESS)
       exit(1);
    
@@ -153,7 +158,7 @@ int main(int argc,char*argv[])
       if (strcmp(argv[iarg], "-h")==0) {
          help(); // DOES NOT RETURN
       } else if (argv[iarg][0]=='-' && argv[iarg][1]=='v') {
-         hs_debug_odbc(atoi(argv[iarg]+2));
+         mh->hs_set_debug(atoi(argv[iarg]+2));
       } else {
          readHst(argv[iarg]);
       }
