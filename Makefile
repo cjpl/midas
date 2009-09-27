@@ -112,7 +112,7 @@ NEED_ZLIB=
 #
 CC = cc
 CXX = g++
-CFLAGS = -g -O3 -Wall -Wuninitialized -I$(INC_DIR) -I$(DRV_DIR) -I$(MXML_DIR) -L$(LIB_DIR) -DINCLUDE_FTPLIB $(MIDAS_PREF_FLAGS) $(USERFLAGS)
+CFLAGS = -g -O2 -Wall -Wuninitialized -I$(INC_DIR) -I$(DRV_DIR) -I$(MXML_DIR) -L$(LIB_DIR) -DINCLUDE_FTPLIB $(MIDAS_PREF_FLAGS) $(USERFLAGS)
 
 #-----------------------
 # Ovevwrite MAX_EVENT_SIZE with environment variable
@@ -483,6 +483,9 @@ endif
 #
 # library objects
 #
+
+$(LIB_DIR)/mhttpd.o: $(LIB_DIR)/%.o:$(SRC_DIR)/%.c
+	$(CXX) -c $(CFLAGS) $(OSFLAGS) -o $@ $<
 
 $(LIB_DIR)/%.o:$(SRC_DIR)/%.c
 	$(CC) -c $(CFLAGS) $(OSFLAGS) -o $@ $<

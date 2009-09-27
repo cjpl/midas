@@ -16,7 +16,9 @@ char *mhttpd_svn_revision = "$Rev$";
 #include <float.h>
 #include "midas.h"
 #include "msystem.h"
+extern "C" {
 #include "mgd.h"
+}
 #include "history_odbc.h"
 
 /* refresh times in seconds */
@@ -521,13 +523,13 @@ INT sendmail(char *smtp_host, char *from, char *to, char *subject, char *text)
       return -1;
    memcpy((char *) &(bind_addr.sin_addr), phe->h_addr, phe->h_length);
 
-   if (connect(s, (void *) &bind_addr, sizeof(bind_addr)) < 0) {
+   if (connect(s, (const sockaddr*)&bind_addr, sizeof(bind_addr)) < 0) {
       closesocket(s);
       return -1;
    }
 
    strsize = TEXT_SIZE + 1000;
-   str = malloc(strsize);
+   str = (char*)malloc(strsize);
 
    recv_string(s, str, strsize, 3000);
    if (verbose)
@@ -3214,7 +3216,7 @@ void submit_elog()
 
          /* check if valid ODB tree */
          if (db_find_key(hDB, 0, path, &hkey) == DB_SUCCESS) {
-            buffer[i] = M_MALLOC(100000);
+           buffer[i] = (char*)M_MALLOC(100000);
             gen_odb_attachment(path, buffer[i]);
             strlcpy(att_file[i], path, sizeof(att_file[0]));
             strlcat(att_file[i], ".html", sizeof(att_file[0]));
@@ -3224,7 +3226,7 @@ void submit_elog()
          /* check if local file */
          else if ((fh = open(path1, O_RDONLY | O_BINARY)) >= 0) {
             size = lseek(fh, 0, SEEK_END);
-            buffer[i] = M_MALLOC(size);
+            buffer[i] = (char*)M_MALLOC(size);
             lseek(fh, 0, SEEK_SET);
             read(fh, buffer[i], size);
             close(fh);
@@ -3232,7 +3234,7 @@ void submit_elog()
             _attachment_buffer[i] = buffer[i];
             _attachment_size[i] = size;
          } else if (strncmp(path, "/HS/", 4) == 0) {
-            buffer[i] = M_MALLOC(100000);
+           buffer[i] = (char*)M_MALLOC(100000);
             size = 100000;
             strlcpy(str, path + 4, sizeof(str));
             if (strchr(str, '?')) {
@@ -3524,7 +3526,7 @@ void show_elog_page(char *path, int path_size)
 
          /*---- use external ELOG ----*/
          fsize = 100000;
-         fbuffer = M_MALLOC(fsize);
+         fbuffer = (char*)M_MALLOC(fsize);
          assert(fbuffer != NULL);
 
          /* write ODB contents to buffer */
@@ -5478,7 +5480,7 @@ void show_custom_page(char *path, char *cookie_cpwd)
       status = db_get_key(hDB, hkey, &key);
       assert(status == DB_SUCCESS);
       size = key.total_size;
-      ctext = malloc(size);
+      ctext = (char*)malloc(size);
       status = db_get_data(hDB, hkey, ctext, &size, TID_STRING);
       if (status != DB_SUCCESS) {
          sprintf(str, "Error: db_get_data() status %d", status);
@@ -5503,7 +5505,7 @@ void show_custom_page(char *path, char *cookie_cpwd)
          free(ctext);
          size = lseek(fh, 0, SEEK_END) + 1;
          lseek(fh, 0, SEEK_SET);
-         ctext = malloc(size);
+         ctext = (char*)malloc(size);
          memset(ctext, 0, size);
          read(fh, ctext, size);
          close(fh);
@@ -8019,8 +8021,8 @@ void generate_hist_graph(char *path, char *buffer, int *buffer_size,
 
    if (hbuffer_size == 0) {
       hbuffer_size = 1000 * sizeof(DWORD);
-      tbuffer = malloc(hbuffer_size);
-      ybuffer = malloc(hbuffer_size);
+      tbuffer = (DWORD*)malloc(hbuffer_size);
+      ybuffer = (char*)malloc(hbuffer_size);
    }
 
    cm_get_experiment_database(&hDB, NULL);
@@ -8086,6 +8088,7 @@ void generate_hist_graph(char *path, char *buffer, int *buffer_size,
 #ifdef HAVE_ODBC
    /* check ODBC connection */
    size = sizeof(str);
+   str[0] = 0;
    status = db_get_value(hDB, 0, "/History/ODBC_DSN", str, &size, TID_STRING, TRUE);
    if (status == DB_SUCCESS && str[0]!=0 && str[0]!='#') {
       int debug = 0;
@@ -8515,9 +8518,9 @@ void generate_hist_graph(char *path, char *buffer, int *buffer_size,
 
          if (status == HS_TRUNCATED) {
             hbuffer_size *= 2;
-            tbuffer = realloc(tbuffer, hbuffer_size);
+            tbuffer = (DWORD*)realloc(tbuffer, hbuffer_size);
             assert(tbuffer);
-            ybuffer = realloc(ybuffer, hbuffer_size);
+            ybuffer = (char*)realloc(ybuffer, hbuffer_size);
             assert(ybuffer);
          }
 
@@ -8725,7 +8728,7 @@ void generate_hist_graph(char *path, char *buffer, int *buffer_size,
 
       state = NULL;
       if (status != HS_UNDEFINED_VAR) {
-         state = M_MALLOC(sizeof(DWORD) * n_marker);
+        state = (DWORD*)M_MALLOC(sizeof(DWORD) * n_marker);
          for (j = 0; j < (int) n_marker; j++)
             state[j] = *((DWORD *) ybuffer + j);
       }
@@ -9170,7 +9173,7 @@ void list_add(struct poor_mans_list* list, const char* str)
       int nl = 2*list->length;
       if (list->length == 0)
          nl = 100;
-      list->names = realloc(list->names, nl);
+      list->names = (char*)realloc(list->names, nl);
       assert(list->names);
       list->length = nl;
    }
@@ -9409,8 +9412,8 @@ static int enum_events_tags(HNDLE hDB, int* num_events, char** event_names)
 int sort_tags(const void *a, const void *b)
 {
   int i;
-  const char*sa = a;
-  const char*sb = b;
+  const char*sa = (const char*)a;
+  const char*sb = (const char*)b;
 
   int debug = 0;
 
@@ -10612,8 +10615,8 @@ void export_hist(char *path, int scale, int toffset, int index, int labels)
 
    if (hbuffer_size == 0) {
       hbuffer_size = 1000 * sizeof(DWORD);
-      tbuffer = malloc(hbuffer_size);
-      ybuffer = malloc(hbuffer_size);
+      tbuffer = (DWORD*)malloc(hbuffer_size);
+      ybuffer = (char*)malloc(hbuffer_size);
    }
 
    /* header */
@@ -10849,9 +10852,9 @@ void export_hist(char *path, int scale, int toffset, int index, int labels)
 
          if (status == HS_TRUNCATED) {
             hbuffer_size *= 2;
-            tbuffer = realloc(tbuffer, hbuffer_size);
+            tbuffer = (DWORD*)realloc(tbuffer, hbuffer_size);
             assert(tbuffer);
-            ybuffer = realloc(ybuffer, hbuffer_size);
+            ybuffer = (char*)realloc(ybuffer, hbuffer_size);
             assert(ybuffer);
          }
 
@@ -10862,8 +10865,8 @@ void export_hist(char *path, int scale, int toffset, int index, int labels)
          return;
       }
 
-      x[n_vars] = M_MALLOC(sizeof(DWORD) * n_point[n_vars]);
-      y[n_vars] = M_MALLOC(sizeof(DWORD) * n_point[n_vars]);
+      x[n_vars] = (DWORD*)M_MALLOC(sizeof(DWORD) * n_point[n_vars]);
+      y[n_vars] = (float*)M_MALLOC(sizeof(DWORD) * n_point[n_vars]);
 
       for (j = n_vp = 0; j < (int) n_point[n_vars]; j++) {
          x[n_vars][n_vp] = tbuffer[j];
@@ -10931,7 +10934,7 @@ void export_hist(char *path, int scale, int toffset, int index, int labels)
                        "State", 0, tbuffer, &tsize, ybuffer, &bsize, &type, &n_run_number);
 
       if (status != HS_UNDEFINED_VAR) {
-         state = M_MALLOC(sizeof(DWORD) * n_run_number);
+        state = (DWORD*)M_MALLOC(sizeof(DWORD) * n_run_number);
          for (j = 0; j < (int) n_run_number; j++)
             state[j] = *((DWORD *) ybuffer + j);
       }
@@ -10946,8 +10949,8 @@ void export_hist(char *path, int scale, int toffset, int index, int labels)
                        &n_run_number);
 
       if (status != HS_UNDEFINED_VAR) {
-         run_number = M_MALLOC(sizeof(DWORD) * n_run_number);
-         t_run_number = M_MALLOC(sizeof(DWORD) * n_run_number);
+        run_number = (DWORD*)M_MALLOC(sizeof(DWORD) * n_run_number);
+        t_run_number = (DWORD*)M_MALLOC(sizeof(DWORD) * n_run_number);
          for (j = 0; j < (int) n_run_number; j++) {
             t_run_number[j] = tbuffer[j];
             run_number[j] = *((DWORD *) ybuffer + j);
@@ -10969,7 +10972,7 @@ void export_hist(char *path, int scale, int toffset, int index, int labels)
    }
    rsprintf("\n");
 
-   i_var = M_MALLOC(sizeof(DWORD) * n_vars);
+   i_var = (DWORD*)M_MALLOC(sizeof(DWORD) * n_vars);
 
    i_run = 0;
    for (i = 0; i < n_vars; i++) 
@@ -11289,7 +11292,7 @@ void show_hist_page(char *path, int path_size, char *buffer, int *buffer_size,
 
          /*---- use external ELOG ----*/
          fsize = 100000;
-         fbuffer = M_MALLOC(fsize);
+         fbuffer = (char*)M_MALLOC(fsize);
          assert(fbuffer != NULL);
 
          if (equal_ustring(pmag, "Large"))
@@ -12121,7 +12124,7 @@ void send_js()
    rsprintf("Expires: %s\r\n", str);
    rsprintf("Content-Type: text/javascript\r\n");
 
-   buf = malloc(strlen(mhttpd_js)+10000);
+   buf = (char*)malloc(strlen(mhttpd_js)+10000);
    strcpy(buf, mhttpd_js);
    strcat(buf, "\n/* MIDAS type definitions */\n");
    for (i=1 ; i<TID_LAST ; i++) {
@@ -12173,12 +12176,12 @@ void interprete(char *cookie_pwd, char *cookie_wpwd, char *cookie_cpwd, char *pa
    }
 
    if (strstr(path, "mhttpd.css")) {
-      send_css(path);
+      send_css();
       return;
    }
 
    if (strstr(path, "mhttpd.js")) {
-      send_js(path);
+      send_js();
       return;
    }
 
@@ -13097,11 +13100,11 @@ void server_loop()
 
 #ifdef OS_UNIX
       do {
-         status = select(FD_SETSIZE, (void *) &readfds, NULL, NULL, (void *) &timeout);
+         status = select(FD_SETSIZE, &readfds, NULL, NULL, &timeout);
          /* if an alarm signal was cought, restart with reduced timeout */
       } while (status == -1 && errno == EINTR);
 #else
-      status = select(FD_SETSIZE, (void *) &readfds, NULL, NULL, (void *) &timeout);
+      status = select(FD_SETSIZE, &readfds, NULL, NULL, &timeout);
 #endif
 
       if (FD_ISSET(lsock, &readfds)) {
@@ -13184,7 +13187,7 @@ void server_loop()
 #ifdef OS_UNIX
             do {
                status =
-                   select(FD_SETSIZE, (void *) &readfds, NULL, NULL, (void *) &timeout);
+                   select(FD_SETSIZE, &readfds, NULL, NULL, &timeout);
                /* if an alarm signal was cought, restart with reduced timeout */
             } while (status == -1 && errno == EINTR);
 #else
@@ -13213,8 +13216,8 @@ void server_loop()
                   timeout.tv_usec = 0;
 
                   status =
-                      select(FD_SETSIZE, (void *) &readfds, NULL, NULL,
-                             (void *) &timeout);
+                      select(FD_SETSIZE, &readfds, NULL, NULL,
+                             &timeout);
 
                   if (FD_ISSET(_sock, &readfds))
                      i = recv(_sock, net_buffer, sizeof(net_buffer), 0);
