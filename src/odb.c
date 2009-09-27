@@ -648,7 +648,8 @@ static void db_validate_sizes()
    assert(sizeof(DATABASE_CLIENT) == 2112);
    assert(sizeof(DATABASE_HEADER) == 135232);
    assert(sizeof(EVENT_HEADER) == 16);
-   assert(sizeof(EQUIPMENT_INFO) == 400);
+   //assert(sizeof(EQUIPMENT_INFO) == 400); // ODB v3, midas.h before rev 4558
+   assert(sizeof(EQUIPMENT_INFO) == 688); // ODB v3, midas.h after rev 4558
    assert(sizeof(EQUIPMENT_STATS) == 24);
    assert(sizeof(BANK_HEADER) == 8);
    assert(sizeof(BANK) == 8);
