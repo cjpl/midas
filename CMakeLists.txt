@@ -76,7 +76,7 @@ endif(NEED_FTPLIB)
 ## ODBC: -lodbc or -liodbc
 if(ODBC_FOUND)
   message(STATUS "Add ODBC-related targets using ${ODBC_LIBRARY}")
-  set(EXTRA_UTILS ${EXTRA_UTILS} mh2sql)
+  #set(EXTRA_UTILS ${EXTRA_UTILS} mh2sql)
   add_definitions(-DHAVE_ODBC)
   set(LDFLAGS "${LDFLAGS} -l${ODBC_NAME}")
 else(ODBC_FOUND)
@@ -153,6 +153,8 @@ foreach(exe ${CORE_UTILS})
 endforeach(exe)
 
 # Specials
+set_source_files_properties(src/mhttpd.c  PROPERTIES LANGUAGE CXX)
+#  COMPILE_FLAGS "${ROOT_CFLAGS}")
 set_target_properties( mhttpd PROPERTIES LINKER_LANGUAGE CXX
   LINK_FLAGS "-lm ${LDFLAGS}")
 # mlogger --- BAD extension (CXX source using ".c")!!
