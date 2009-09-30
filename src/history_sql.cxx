@@ -38,8 +38,8 @@
 //           helper stuff             //
 ////////////////////////////////////////
 
-#define STRLCPY(dst, src) strlcpy(dst, src, sizeof(dst))
-#define FREE(x) { if (x) free(x); x = NULL; }
+#define STRLCPY(dst, src) strlcpy((dst), (src), sizeof(dst))
+#define FREE(x) { if (x) free(x); (x) = NULL; }
 
 ////////////////////////////////////////
 //        global variables            //
@@ -239,7 +239,7 @@ public:
   int Exec(const char* sql)
   {
     fprintf(fp, "%s\n", sql);
-    return 0;
+    return SUCCESS;
   }
 
   int Disconnect()
@@ -313,6 +313,7 @@ public:
 
 protected:
    void ReportErrors(const char* from, const char* sqlfunc, int status);
+   int DecodeError();
 };
 
 SqlODBC::SqlODBC() // ctor
@@ -463,6 +464,33 @@ void SqlODBC::ReportErrors(const char* from, const char* sqlfunc, int status)
    }
 }
 
+int SqlODBC::DecodeError()
+{
+   for (int i=1; ; i++) {
+      SQLCHAR 		 state[10]; // Status SQL
+      SQLINTEGER		 error;
+      SQLCHAR              message[1024];
+      SQLSMALLINT		 mlen;
+
+      error = 0;
+      
+      int status = SQLGetDiagRec(SQL_HANDLE_STMT,
+                                 fStmt,
+                                 i,
+                                 state,
+                                 &error,
+                                 message,
+                                 sizeof(message),
+                                 &mlen);
+      
+      if (status == SQL_NO_DATA)
+         return DB_SUCCESS;
+
+      if (error==1146)
+         return DB_NO_KEY;
+   }
+}
+
 std::vector<std::string> SqlODBC::ListTables()
 {
    std::vector<std::string> list;
@@ -550,8 +578,13 @@ std::vector<std::string> SqlODBC::ListColumns(const char* table)
 
 int SqlODBC::Exec(const char* sql)
 {
+   // return values:
+   // DB_SUCCESS
+   // DB_FILE_ERROR: not connected
+   // DB_NO_KEY: "table not found"
+
    if (!fIsConnected)
-      return -1;
+      return DB_FILE_ERROR;
     
    int status;
 
@@ -562,13 +595,18 @@ int SqlODBC::Exec(const char* sql)
       status = SQLExecDirect(fStmt,(SQLCHAR*)sql,SQL_NTS);
 
       if (SQL_SUCCEEDED(status)) {
-         return 0;
+         return DB_SUCCESS;
       }
 
       if (gTrace)
          printf("SqlODBC::Exec: SQLExecDirect() error %d: SQL command: \"%s\"\n", status, sql);
       
       ReportErrors("SqlODBC::Exec", "SQLExecDirect()", status);
+
+      status = DecodeError();
+
+      if (status == DB_NO_KEY)
+         return status;
       
       cm_msg(MINFO, "SqlODBC::Exec", "history_odbc: Trying to reconnect to %s", fDSN.c_str());
 
@@ -578,11 +616,11 @@ int SqlODBC::Exec(const char* sql)
       Connect(dsn.c_str());
 
       if (!fIsConnected) {
-         cm_msg(MERROR, "SqlODBC::Exec", "history_odbc: Reconnect to %s failed. Database is down?", fDSN.c_str());
+         cm_msg(MERROR, "SqlODBC::Exec", "history_odbc: Reconnect to \'%s\' failed. Database is down?", fDSN.c_str());
       }
    }
 
-   return 0;
+   return DB_SUCCESS;
 }
 
 int SqlODBC::GetNumRows()
@@ -629,9 +667,9 @@ int SqlODBC::Done()
    int status = SQLCloseCursor(fStmt);
    if (!SQL_SUCCEEDED(status)) {
       ReportErrors("SqlODBC::Done", "SQLCloseCursor()", status);
-      return -1;
+      return DB_FILE_ERROR;
    }
-   return 0;
+   return DB_SUCCESS;
 }
 
 const char* SqlODBC::GetColumn(int icol)
@@ -703,7 +741,7 @@ int CreateEvent(SqlBase* sql, Event* e)
       char buf[1024];
       sprintf(buf, "CREATE TABLE %s (_t_time TIMESTAMP NOT NULL, _i_time INTEGER NOT NULL, INDEX (_i_time), INDEX (_t_time));", e->table_name.c_str());
       status = sql->Exec(buf);
-      if (status != 0) {
+      if (status != SUCCESS) {
          e->active = false;
          return -1;
       }
@@ -720,7 +758,7 @@ int CreateEvent(SqlBase* sql, Event* e)
 
          status = sql->Exec(buf);
 
-         if (status != 0) {
+         if (status != SUCCESS) {
             e->active = false;
             return -1;
          }
@@ -820,7 +858,7 @@ int WriteEvent(SqlBase* sql, Event *e, time_t t, const char*buf, int size)
 
    int status = sql->Exec(sss);
    
-   if (status != 0) {
+   if (status != SUCCESS) {
       e->active = false;
       return -1;
    }
@@ -846,102 +884,307 @@ static std::string MidasNameToSqlName(const char* s)
    return out;
 }
 
-static int CreateIndex(SqlBase* sql)
-{
-   char buf[1024];
-   sprintf(buf, "CREATE TABLE _history_index (event_name VARCHAR NOT NULL, table_name VARCHAR, tag_name VARCHAR, column_name VARCHAR, timestamp TIMESTAMP NOT NULL);");
-   int status = sql->Exec(buf);
-   return 0;
-}
-
 struct IndexEntryTag
 {
-  std::string tag_name;
-  std::string column_name;
+   std::string tag_name;
+   std::string column_name;
+   int timestamp;
 };
 
 struct IndexEntry
 {
-  std::string event_name;
-  std::string table_name;
-  std::vector<IndexEntryTag> tags;
+   std::string event_name;
+   std::string table_name;
+   int timestamp;
+   std::vector<IndexEntryTag> tags;
+   std::vector<TAG> tags_cache;
 };
 
 std::vector<IndexEntry*> gHistoryIndex;
 
+static void PrintIndex()
+{
+   for (unsigned i=0; i<gHistoryIndex.size(); i++) {
+      IndexEntry *e = gHistoryIndex[i];
+
+      printf("entry %d: [%s] [%s], time %d, tags\n", i, e->event_name.c_str(), e->table_name.c_str(), e->timestamp);
+
+      for (unsigned j=0; j<e->tags.size(); j++)
+         printf("  tag %d: [%s] [%s], time %d\n", j, e->tags[j].tag_name.c_str(), e->tags[j].column_name.c_str(), e->tags[j].timestamp);
+   }
+}
+
+static int CreateIndex(SqlBase* sql)
+{
+   char buf[1024];
+   sprintf(buf, "CREATE TABLE _history_index (event_name VARCHAR(256) NOT NULL, table_name VARCHAR(256), tag_name VARCHAR(256), column_name VARCHAR(256), itimestamp INTEGER NOT NULL);");
+   int status = sql->Exec(buf);
+   return 0;
+}
+
+static IndexEntry* FindIndexByEventName(const char* event_name)
+{
+   for (unsigned i=0; i<gHistoryIndex.size(); i++)
+      if (equal_ustring(gHistoryIndex[i]->event_name.c_str(), event_name)) {
+         return gHistoryIndex[i];
+      }
+   return NULL;
+}
+
+static IndexEntryTag* FindIndexByTagName(IndexEntry* ie, const char* tag_name)
+{
+   for (unsigned i=0; i<ie->tags.size(); i++)
+      if (equal_ustring(ie->tags[i].tag_name.c_str(), tag_name)) {
+         return &ie->tags[i];
+      }
+   return NULL;
+}
+
+static int gHaveIndex = true;
+static int gHaveIndexAll = false;
+
 static int ReadIndex(SqlBase* sql, const char* event_name)
 {
-  // FAKE ME;
+   if (gTrace)
+      printf("ReadIndex [%s]\n", event_name);
+
+   if (!gHaveIndex)
+      return HS_FILE_ERROR;
+
+   if (gHaveIndexAll)
+      return HS_SUCCESS;
+
+   if (gTrace)
+      printf("ReadIndex: reading index for event [%s]\n", event_name);
+
+   //event_name = NULL;
+
+   char cmd[256];
+
+   if (event_name)
+      sprintf(cmd, "SELECT event_name, table_name, tag_name, column_name, itimestamp FROM _history_index where event_name=\'%s\';", event_name);
+   else
+      sprintf(cmd, "SELECT event_name, table_name, tag_name, column_name, itimestamp FROM _history_index;");
+   
+   int status = sql->Exec(cmd);
+
+   if (status == DB_NO_KEY) {
+      gHaveIndex = false;
+      return HS_FILE_ERROR;
+   }
+   
+   if (gTrace) {
+      printf("ReadIndex: event %s, Read status %d, nrows: %d\n",
+             event_name,
+             status,
+             sql->GetNumRows());
+   }
+   
+   if (status != SUCCESS)
+      return HS_FILE_ERROR;
+   
+   if (sql->GetNumRows() == 0) {
+      sql->Done();
+      return HS_FILE_ERROR;
+   }
+   
+   int nrows = sql->GetNumRows();
+   int ncols = sql->GetNumColumns();
+   
+   if (nrows == 0)
+      return HS_SUCCESS;
+   
+   if (gTrace)
+      printf("ReadIndex: event %s, nrows: %d, ncols: %d\n",
+             event_name,
+             nrows, ncols);
+   
+   if (nrows < 0)
+      return HS_FILE_ERROR;
+   
+   if (ncols < 1)
+      return HS_FILE_ERROR;
+   
+   /* Loop through the rows in the result-set */
+   int row = 0;
+   while (sql->Fetch()) {
+      const char* p;
+
+      std::string xevent_name  = sql->GetColumn(1);
+
+      p = sql->GetColumn(2);
+      if (p) { // table declaration
+         std::string xtable_name  = p;
+         std::string xtimestamp   = sql->GetColumn(5);
+         int timestamp = atoi(xtimestamp.c_str());
+
+         IndexEntry* ie = FindIndexByEventName(xevent_name.c_str());
+         if (!ie) {
+            ie = new IndexEntry;
+            gHistoryIndex.push_back(ie);
+            ie->timestamp = timestamp - 1; // make sure we update this entry
+         }
+
+         if (timestamp > ie->timestamp) {
+            ie->event_name = xevent_name;
+            ie->table_name = xtable_name;
+            ie->timestamp  = timestamp;
+         }
+
+         //printf("%s %s %s %s %s [%s]\n", xevent_name.c_str(), xtable_name.c_str(), "???", "???", xtimestamp.c_str(), p);
+         continue;
+      }
+         
+      p = sql->GetColumn(3);
+      if (p) { // tag declaration
+         std::string xtag_name    = p;
+         std::string xcolumn_name = sql->GetColumn(4);
+         std::string xtimestamp   = sql->GetColumn(5);
+         int timestamp = atoi(xtimestamp.c_str());
+
+         IndexEntry* ie = FindIndexByEventName(xevent_name.c_str());
+         if (!ie) {
+            ie = new IndexEntry;
+            gHistoryIndex.push_back(ie);
+            ie->timestamp = 0;
+            ie->event_name = xevent_name;
+         }
+
+         bool found = false;
+         for (unsigned j=0; j<ie->tags.size(); j++)
+            if (ie->tags[j].tag_name == xtag_name) {
+               if (timestamp > ie->tags[j].timestamp) {
+                  ie->tags[j].timestamp = timestamp;
+                  ie->tags[j].column_name = xcolumn_name;
+               }
+               found = true;
+               break;
+            }
+
+         if (!found) {
+            IndexEntryTag it;
+            it.tag_name = xtag_name;
+            it.column_name = xcolumn_name;
+            it.timestamp  = timestamp;
+            ie->tags.push_back(it);
+         }
+
+         //printf("%s %s %s %s %s\n", xevent_name.c_str(), "???", xtag_name.c_str(), xcolumn_name.c_str(), xtimestamp.c_str());
+         continue;
+      }
+
+   }
+
+   sql->Done();
+
+   gHaveIndex = true;
+
+   if (event_name == NULL)
+      gHaveIndexAll = true;
+
+   //PrintIndex();
+
+   return HS_SUCCESS;
 }
 
 static IndexEntry* FindIndexByEventName(SqlBase* sql, const char* event_name)
 {
-  for (int itry=0; itry<2; itry++) {
-    for (unsigned i=0; i<gHistoryIndex.size(); i++)
-      if (equal_ustring(gHistoryIndex[i]->event_name.c_str(), event_name)) {
-	return gHistoryIndex[i];
-      }
+   for (int itry=0; itry<2; itry++) {
+      for (unsigned i=0; i<gHistoryIndex.size(); i++)
+         if (equal_ustring(gHistoryIndex[i]->event_name.c_str(), event_name)) {
+            return gHistoryIndex[i];
+         }
     
-    ReadIndex(sql, event_name);
-  }
+      ReadIndex(sql, event_name);
+   }
 
-  return NULL;
+   return NULL;
 }
 
 static IndexEntry* FindIndexByTableName(SqlBase* sql, const char* table_name)
 {
-  for (int itry=0; itry<2; itry++) {
-    for (unsigned i=0; i<gHistoryIndex.size(); i++)
-      if (equal_ustring(gHistoryIndex[i]->table_name.c_str(), table_name)) {
-	return gHistoryIndex[i];
-      }
+   for (int itry=0; itry<2; itry++) {
+      for (unsigned i=0; i<gHistoryIndex.size(); i++)
+         if (equal_ustring(gHistoryIndex[i]->table_name.c_str(), table_name)) {
+            return gHistoryIndex[i];
+         }
     
-    ReadIndex(sql, NULL);
-  }
+      ReadIndex(sql, NULL);
+   }
 
-  return NULL;
+   return NULL;
 }
 
 static std::string EventNameToTableName(SqlBase* sql, const char* event_name)
 {
-  IndexEntry* e = FindIndexByEventName(sql, event_name);
-  if (e)
-    return e->table_name;
-  else
-    return MidasNameToSqlName(event_name);
-}
+   for (int itry=0; itry<2; itry++) {
+      IndexEntry* e = FindIndexByEventName(sql, event_name);
+      if (e)
+         return e->table_name;
 
-static std::string TableNameToEventName(SqlBase* sql, const char* table_name)
-{
-  IndexEntry* e = FindIndexByTableName(sql, table_name);
-  if (e)
-    return e->event_name;
-  else
-    return table_name;
+      CreateIndex(sql);
+
+      std::string table_name = MidasNameToSqlName(event_name);
+
+      double now = time(NULL);
+
+      char sss[102400];
+      sprintf(sss, "INSERT INTO _history_index (event_name, table_name, itimestamp) VALUES (\'%s\', \'%s\', \'%.0f\');",
+              event_name,
+              table_name.c_str(),
+              now);
+      
+      int status = sql->Exec(sss);
+
+      ReadIndex(sql, event_name);
+   }
+
+   // only get here if cannot write to index table!
+  
+   return MidasNameToSqlName(event_name);
 }
 
 static std::string TagNameToColumnName(SqlBase* sql, const char* event_name, const char* tag_name)
 {
-  IndexEntry* e = FindIndexByEventName(sql, event_name);
+   IndexEntry* e = FindIndexByEventName(sql, event_name);
+   
+   for (int itry=0; itry<2; itry++) {
+      if (e)
+         for (unsigned i=0; i<e->tags.size(); i++)
+            if (equal_ustring(e->tags[i].tag_name.c_str(), tag_name))
+               return e->tags[i].column_name;
+      
+      std::string column_name = MidasNameToSqlName(tag_name);
 
-  if (e)
-    for (unsigned i=0; i<e->tags.size(); i++)
-      if (equal_ustring(e->tags[i].tag_name.c_str(), tag_name))
-	return e->tags[i].column_name;
+      double now = time(NULL);
+      
+      char sss[102400];
+      sprintf(sss, "INSERT INTO _history_index (event_name, tag_name, column_name, itimestamp) VALUES (\'%s\', \'%s\', \'%s\', \'%.0f\');",
+              event_name,
+              tag_name,
+              column_name.c_str(),
+              now);
+      
+      int status = sql->Exec(sss);
 
-  return MidasNameToSqlName(tag_name);
+      ReadIndex(sql, event_name);
+   }
+   
+   // only get here if cannot write to index table!
+   
+   return MidasNameToSqlName(tag_name);
 }
 
 static std::string ColumnNameToTagName(SqlBase* sql, const char* event_name, const char* column_name)
 {
-  IndexEntry* e = FindIndexByEventName(sql, event_name);
-
-  if (e)
-    for (unsigned i=0; i<e->tags.size(); i++)
-      if (equal_ustring(e->tags[i].column_name.c_str(), column_name))
-	return e->tags[i].tag_name;
-
-  return column_name;
+   IndexEntry* e = FindIndexByEventName(sql, event_name);
+   
+   if (e)
+      for (unsigned i=0; i<e->tags.size(); i++)
+         if (equal_ustring(e->tags[i].column_name.c_str(), column_name))
+            return e->tags[i].tag_name;
+   
+   return column_name;
 }
 
 ////////////////////////////////////////////////////////
@@ -951,553 +1194,743 @@ static std::string ColumnNameToTagName(SqlBase* sql, const char* event_name, con
 class SqlHistory: public MidasHistoryInterface
 {
 public:
-  SqlBase *fSql;
-  int fDebug;
-  std::string fAlarmName;
-  std::string fConnectString;
-  int fConnectRetry;
-  int fNextConnect;
+   SqlBase *fSql;
+   int fDebug;
+   std::string fAlarmName;
+   std::string fConnectString;
+   int fConnectRetry;
+   int fNextConnect;
+   std::vector<Event*> fEvents;
+   std::vector<std::string> fIndexEvents;
 
-  SqlHistory(SqlBase* b)
-  {
-    fDebug = 0;
-    fConnectRetry = 0;
-    fNextConnect  = 0;
-    fSql = b;
-  }
-
-  ~SqlHistory()
-  {
-    hs_disconnect();
-    delete fSql;
-    fSql = NULL;
-  }
-
-  int hs_set_debug(int debug)
-  {
-    int old = fDebug;
-    fDebug = debug;
-    gTrace = debug;
-    return old;
-  }
-
-  int hs_set_alarm(const char* alarm_name)
-  {
-    if (alarm_name)
-      fAlarmName = alarm_name;
-    else
-      fAlarmName = "";
-
-    gAlarmName = fAlarmName;
-    return HS_SUCCESS;
-  }
-
-  int hs_connect(const char* connect_string)
-  {
-    int status;
-    
-    assert(fSql);
-
-    if (fSql->IsConnected())
-      if (strcmp(fConnectString.c_str(), connect_string) == 0)
-	return HS_SUCCESS;
-    
-    hs_disconnect();
-    
-    fConnectString = connect_string;
-    
-    if (fDebug)
-      printf("hs_connect_odbc: set connect string to \'%s\'\n", fConnectString.c_str());
-    
-#if 0
-    if (connect_string[0] == '/')
-      fSql = new SqlStdout();
-    else
-      fSql = new SqlODBC();
-#endif
-    
-    status = fSql->Connect(fConnectString.c_str());
-    if (status != 0)
-      return HS_FILE_ERROR;
-    
-    return HS_SUCCESS;
-  }
-
-  int hs_disconnect()
-  {
-    if (fDebug)
-      printf("hs_disconnect_odbc!\n");
-    
-    fSql->Disconnect();
-
-    return HS_SUCCESS;
-  }
-
-  ////////////////////////////////////////////////////////
-  //             Functions used by mlogger              //
-  ////////////////////////////////////////////////////////
-
-  std::vector<Event*> fEvents;
-
-  int hs_define_event(const char* event_name, int ntags, const TAG tags[])
-  {
-    if (fDebug) {
-      printf("define event [%s] with %d tags:\n", event_name, ntags);
-      PrintTags(ntags, tags);
-    }
-
-   // delete all events with the same name
-   for (unsigned int i=0; i<fEvents.size(); i++)
-      if (fEvents[i])
-         if (fEvents[i]->event_name == event_name) {
-            printf("deleting exising event %s\n", event_name);
-            delete fEvents[i];
-            fEvents[i] = NULL;
-         }
-
-   Event* e = new Event();
-
-   e->event_name = event_name;
-   e->table_name = EventNameToTableName(fSql, event_name);
-   e->active = true;
-   e->create = false;
-
-   int offset = 0;
-   for (int i=0; i<ntags; i++) {
-      for (unsigned int j=0; j<tags[i].n_data; j++) {
-	 std::string tagname = tags[i].name;
-         if (tags[i].n_data > 1) {
-            char s[256];
-            sprintf(s, "_%d", j);
-            tagname += s;
-         }
-
-         Tag t;
-	 t.column_name = TagNameToColumnName(fSql, event_name, tagname.c_str());
-         t.create = false;
-         t.offset = offset;
-         t.tag = tags[i];
-         t.tag.n_data = 1;
-         e->tags.push_back(t);
-         int size = tid_size[tags[i].type];
-         offset += size;
-      }
+   SqlHistory(SqlBase* b)
+   {
+      fDebug = 0;
+      fConnectRetry = 0;
+      fNextConnect  = 0;
+      fSql = b;
    }
 
-   std::vector<std::string> columns = fSql->ListColumns(e->table_name.c_str());
-
-   if (columns.size() <= 0)
-      e->create = true;
-
-   for (size_t i=0; i<e->tags.size(); i++) {
-      // check for duplicate column names
-      for (size_t j=i+1; j<e->tags.size(); j++)
-         if (e->tags[i].column_name == e->tags[j].column_name) {
-            cm_msg(MERROR, "hs_define_event_odbc", "Error: History event \'%s\': Duplicated column name \'%s\' from tags %d \'%s\' and %d \'%s\'", event_name, e->tags[i].column_name.c_str(), i, e->tags[i].tag.name, j, e->tags[j].tag.name);
-            e->active = false;
-            break;
-         }
-
-      // check if new column needs to be created
-      bool found = false;
-      for (size_t j=0; j<columns.size(); j+=2) {
-         if (e->tags[i].column_name == columns[j]) {
-            // column exists, check data type
-            //printf("column \'%s\', data type %s\n", e->tags[i].column_name.c_str(), columns[j+1].c_str());
-
-            if (!isCompatible(e->tags[i].tag.type, columns[j+1].c_str())) {
-               cm_msg(MERROR, "hs_define_event_odbc", "Error: History event \'%s\': Incompatible data type for tag \'%s\' type \'%s\', SQL column \'%s\' type \'%s\'", event_name, e->tags[i].tag.name, midasTypeName(e->tags[i].tag.type), columns[j].c_str(), columns[j+1].c_str());
-               e->active = false;
-            }
-
-            found = true;
-            break;
-         }
-      }
-
-      if (!found) {
-         // create it
-         //printf("column \'%s\', data type %s  --- create!\n", e->tags[i].column_name.c_str(), midasTypeName(e->tags[i].tag.type));
-         e->tags[i].create = true;
-      }
+   ~SqlHistory()
+   {
+      hs_disconnect();
+      delete fSql;
+      fSql = NULL;
    }
 
-   int status = CreateEvent(fSql, e);
+   int hs_set_debug(int debug)
+   {
+      int old = fDebug;
+      fDebug = debug;
+      gTrace = debug;
+      return old;
+   }
+   
+   int hs_set_alarm(const char* alarm_name)
+   {
+      if (alarm_name)
+         fAlarmName = alarm_name;
+      else
+         fAlarmName = "";
 
-   if (status != 0) {
-      // if cannot create event in SQL database, disable this event and carry on.
-
-      e->active = false;
-
-      if (fAlarmName.length() > 0) {
-         char buf[256];
-         sprintf(buf, "%s cannot define history event \'%s\', see messages", fAlarmName.c_str(), e->event_name.c_str());
-         al_trigger_alarm(fAlarmName.c_str(), buf, "Alarm", "", AT_INTERNAL);
-      }
+      gAlarmName = fAlarmName;
+      return HS_SUCCESS;
    }
 
-   // find empty slot in events list
-   for (unsigned int i=0; i<fEvents.size(); i++)
-      if (!fEvents[i]) {
-         fEvents[i] = e;
-         e = NULL;
-         break;
+   int hs_connect(const char* connect_string)
+   {
+      if (fDebug)
+         printf("hs_connect %s!\n", connect_string);
+
+      assert(fSql);
+
+      if (fSql->IsConnected())
+         if (strcmp(fConnectString.c_str(), connect_string) == 0)
+            return HS_SUCCESS;
+    
+      hs_disconnect();
+    
+      fConnectString = connect_string;
+    
+      if (fDebug)
+         printf("hs_connect: connecting to SQL database \'%s\'\n", fConnectString.c_str());
+    
+      if (connect_string[0] == '/') {
+         delete fSql;
+         fSql = new SqlStdout();
       }
-
-   // if no empty slots, add at the end
-   if (e)
-      fEvents.push_back(e);
-
-   return HS_SUCCESS;
-}
-
-  int hs_write_event(const char* event_name, time_t timestamp, int buffer_size, const char* buffer)
-  {
-    if (fDebug)
-      printf("write event [%s] size %d\n", event_name, buffer_size);
-
-    // if disconnected, try to reconnect
-
-    if (!fSql->IsConnected()) {
-      time_t now = time(NULL);
-
-      // too early to try reconnecting?
-      if (fConnectRetry!=0 && now < fNextConnect) {
-         return HS_FILE_ERROR;
-      }
-
+    
       int status = fSql->Connect(fConnectString.c_str());
-
-      if (status != 0) {
-
-         // first retry in 5 seconds
-         if (fConnectRetry == 0)
-            fConnectRetry = 5;
-
-         fNextConnect = now + fConnectRetry;
-
-         // exponential backoff
-         fConnectRetry *= 2;
-
-         // but no more than every 10 minutes
-         if (fConnectRetry > 10*60)
-            fConnectRetry = 10*60;
-
-         return HS_FILE_ERROR;
-      }
+      if (status != HS_SUCCESS)
+         return status;
+    
+      return HS_SUCCESS;
    }
 
-    fNextConnect = 0;
-    fConnectRetry = 0;
-
-   Event *e = NULL;
-
-   // find this event
-   for (size_t i=0; i<fEvents.size(); i++)
-      if (fEvents[i]->event_name == event_name) {
-         e = fEvents[i];
-         break;
-      }
-
-   // not found
-   if (!e)
-      return HS_FILE_ERROR;
-
-   // deactivated because of error?
-   if (!e->active)
-      return HS_FILE_ERROR;
-
-   int status = WriteEvent(fSql, e, timestamp, buffer, buffer_size);
-
-   // if could not write to SQL?
-   if (status != 0) {
-
-      // if lost SQL connection, try again later
-      if (!fSql->IsConnected()) {
-         return HS_FILE_ERROR;
-      }
-
-      // otherwise, deactivate this event, raise alarm
-
-      e->active = 0;
-
-      if (fAlarmName.length() > 0) {
-         char buf[256];
-         sprintf(buf, "%s cannot write history event \'%s\', see messages", fAlarmName.c_str(), e->event_name.c_str());
-         al_trigger_alarm(fAlarmName.c_str(), buf, "Alarm", "", AT_INTERNAL);
-      }
-
-      return HS_FILE_ERROR;
-   }
-
-   return HS_SUCCESS;
-  }
-
-  ////////////////////////////////////////////////////////
-  //             Functions used by mhttpd               //
-  ////////////////////////////////////////////////////////
-
-  int hs_get_events(std::vector<std::string> **pevents)
-  {
-    *pevents = new std::vector<std::string>;
-    return HS_SUCCESS;
-
-#if 0
-    std::string tname = EventNameToTableName(fSql, event_name);
-
-    std::vector<std::string> columns = fSql->ListColumns(tname.c_str());
-
-    if (columns.size() < 1) {
-      cm_msg(MERROR, "hs_get_tags_odbc", "Cannot get columns for table \'%s\', try to reconnect to the database", tname.c_str());
-    }
-#endif
-  }
+   int hs_disconnect()
+   {
+      if (fDebug)
+         printf("hs_disconnect!\n");
       
-  int hs_get_tags(const char* event_name, int *n_tags, TAG **tags)
-  {
-    *n_tags = 0;
-    *tags = NULL;
+      fSql->Disconnect();
+      
+      return HS_SUCCESS;
+   }
 
-    std::string tname = EventNameToTableName(fSql, event_name);
-
-    std::vector<std::string> columns = fSql->ListColumns(tname.c_str());
-
-    if (columns.size() < 1) {
-      cm_msg(MERROR, "hs_get_tags_odbc", "Cannot get columns for table \'%s\', try to reconnect to the database", tname.c_str());
+   int Reconnect()
+   {
+      if (fDebug)
+         printf("Reconnect to SQL database!\n");
       
       fSql->Disconnect();
       fSql->Connect(fConnectString.c_str());
       if (!fSql->IsConnected()) {
-
+         
          if (fAlarmName.length() > 0) {
             char buf[256];
             sprintf(buf, "%s lost connection to the history database", fAlarmName.c_str());
+            al_trigger_alarm(fAlarmName.c_str(), buf, "Alarm", "", AT_INTERNAL);
+         }
+         
+         return HS_FILE_ERROR;
+      }
+      
+      return HS_SUCCESS;
+   }
+
+   ////////////////////////////////////////////////////////
+   //             Internal data caches                   //
+   ////////////////////////////////////////////////////////
+
+   int hs_clear_cache()
+   {
+      if (fDebug)
+         printf("hs_clear_cache!\n");
+
+      gHaveIndex = true;
+      gHaveIndexAll = false;
+
+      for (unsigned i=0; i<gHistoryIndex.size(); i++) {
+         IndexEntry* ie = gHistoryIndex[i];
+         delete ie;
+      }
+      gHistoryIndex.clear();
+
+      fIndexEvents.clear();
+
+      return HS_SUCCESS;
+   }
+
+   int XReadIndex()
+   {
+      std::vector<std::string> tables = fSql->ListTables();
+      
+      for (unsigned i=0; i<tables.size(); i++) {
+         if (tables[i] == "_history_index")
+            continue;
+
+         IndexEntry* ie = NULL; //FindEventName(tables[i].c_str());
+
+         if (!ie) {
+            ie = new IndexEntry;
+
+            ie->table_name = tables[i];
+            ie->event_name = ie->table_name;
+
+            gHistoryIndex.push_back(ie);
+         }
+
+         std::vector<std::string> columns = fSql->ListColumns(ie->table_name.c_str());
+
+         for (unsigned int j=0; j<columns.size(); j+=2) {
+            if (columns[j] == "_t_time")
+               continue;
+            if (columns[j] == "_i_time")
+               continue;
+
+            IndexEntryTag t;
+            t.column_name = columns[j];
+            t.tag_name = t.column_name;
+            t.timestamp = 0;
+
+            ie->tags.push_back(t);
+         }
+      }
+
+      //PrintIndex();
+
+      return HS_SUCCESS;
+   }
+
+   ////////////////////////////////////////////////////////
+   //             Functions used by mlogger              //
+   ////////////////////////////////////////////////////////
+
+   int hs_define_event(const char* event_name, int ntags, const TAG tags[])
+   {
+      if (fDebug) {
+         printf("define event [%s] with %d tags:\n", event_name, ntags);
+         PrintTags(ntags, tags);
+      }
+
+      // delete all events with the same name
+      for (unsigned int i=0; i<fEvents.size(); i++)
+         if (fEvents[i])
+            if (fEvents[i]->event_name == event_name) {
+               printf("deleting exising event %s\n", event_name);
+               delete fEvents[i];
+               fEvents[i] = NULL;
+            }
+
+      Event* e = new Event();
+
+      e->event_name = event_name;
+      e->table_name = EventNameToTableName(fSql, event_name);
+      e->active = true;
+      e->create = false;
+
+      int offset = 0;
+      for (int i=0; i<ntags; i++) {
+         for (unsigned int j=0; j<tags[i].n_data; j++) {
+            std::string tagname = tags[i].name;
+            if (tags[i].n_data > 1) {
+               char s[256];
+               sprintf(s, "_%d", j);
+               tagname += s;
+            }
+
+            Tag t;
+            t.column_name = TagNameToColumnName(fSql, event_name, tagname.c_str());
+            t.create = false;
+            t.offset = offset;
+            t.tag = tags[i];
+            t.tag.n_data = 1;
+            e->tags.push_back(t);
+            int size = tid_size[tags[i].type];
+            offset += size;
+         }
+      }
+
+      std::vector<std::string> columns = fSql->ListColumns(e->table_name.c_str());
+
+      if (columns.size() <= 0)
+         e->create = true;
+
+      for (size_t i=0; i<e->tags.size(); i++) {
+         // check for duplicate column names
+         for (size_t j=i+1; j<e->tags.size(); j++)
+            if (e->tags[i].column_name == e->tags[j].column_name) {
+               cm_msg(MERROR, "hs_define_event_odbc", "Error: History event \'%s\': Duplicated column name \'%s\' from tags %d \'%s\' and %d \'%s\'", event_name, e->tags[i].column_name.c_str(), i, e->tags[i].tag.name, j, e->tags[j].tag.name);
+               e->active = false;
+               break;
+            }
+
+         // check if new column needs to be created
+         bool found = false;
+         for (size_t j=0; j<columns.size(); j+=2) {
+            if (e->tags[i].column_name == columns[j]) {
+               // column exists, check data type
+               //printf("column \'%s\', data type %s\n", e->tags[i].column_name.c_str(), columns[j+1].c_str());
+
+               if (!isCompatible(e->tags[i].tag.type, columns[j+1].c_str())) {
+                  cm_msg(MERROR, "hs_define_event_odbc", "Error: History event \'%s\': Incompatible data type for tag \'%s\' type \'%s\', SQL column \'%s\' type \'%s\'", event_name, e->tags[i].tag.name, midasTypeName(e->tags[i].tag.type), columns[j].c_str(), columns[j+1].c_str());
+                  e->active = false;
+               }
+
+               found = true;
+               break;
+            }
+         }
+
+         if (!found) {
+            // create it
+            //printf("column \'%s\', data type %s  --- create!\n", e->tags[i].column_name.c_str(), midasTypeName(e->tags[i].tag.type));
+            e->tags[i].create = true;
+         }
+      }
+
+      int status = CreateEvent(fSql, e);
+
+      if (status != 0) {
+         // if cannot create event in SQL database, disable this event and carry on.
+
+         e->active = false;
+
+         if (fAlarmName.length() > 0) {
+            char buf[256];
+            sprintf(buf, "%s cannot define history event \'%s\', see messages", fAlarmName.c_str(), e->event_name.c_str());
+            al_trigger_alarm(fAlarmName.c_str(), buf, "Alarm", "", AT_INTERNAL);
+         }
+      }
+
+      // find empty slot in events list
+      for (unsigned int i=0; i<fEvents.size(); i++)
+         if (!fEvents[i]) {
+            fEvents[i] = e;
+            e = NULL;
+            break;
+         }
+
+      // if no empty slots, add at the end
+      if (e)
+         fEvents.push_back(e);
+
+      return HS_SUCCESS;
+   }
+
+   int hs_write_event(const char* event_name, time_t timestamp, int buffer_size, const char* buffer)
+   {
+      if (fDebug)
+         printf("write event [%s] size %d\n", event_name, buffer_size);
+
+      // if disconnected, try to reconnect
+
+      if (!fSql->IsConnected()) {
+         time_t now = time(NULL);
+
+         // too early to try reconnecting?
+         if (fConnectRetry!=0 && now < fNextConnect) {
+            return HS_FILE_ERROR;
+         }
+
+         int status = fSql->Connect(fConnectString.c_str());
+
+         if (status != 0) {
+
+            // first retry in 5 seconds
+            if (fConnectRetry == 0)
+               fConnectRetry = 5;
+
+            fNextConnect = now + fConnectRetry;
+
+            // exponential backoff
+            fConnectRetry *= 2;
+
+            // but no more than every 10 minutes
+            if (fConnectRetry > 10*60)
+               fConnectRetry = 10*60;
+
+            return HS_FILE_ERROR;
+         }
+      }
+
+      fNextConnect = 0;
+      fConnectRetry = 0;
+
+      Event *e = NULL;
+
+      // find this event
+      for (size_t i=0; i<fEvents.size(); i++)
+         if (fEvents[i]->event_name == event_name) {
+            e = fEvents[i];
+            break;
+         }
+
+      // not found
+      if (!e)
+         return HS_FILE_ERROR;
+
+      // deactivated because of error?
+      if (!e->active)
+         return HS_FILE_ERROR;
+
+      int status = WriteEvent(fSql, e, timestamp, buffer, buffer_size);
+
+      // if could not write to SQL?
+      if (status != 0) {
+
+         // if lost SQL connection, try again later
+         if (!fSql->IsConnected()) {
+            return HS_FILE_ERROR;
+         }
+
+         // otherwise, deactivate this event, raise alarm
+
+         e->active = 0;
+
+         if (fAlarmName.length() > 0) {
+            char buf[256];
+            sprintf(buf, "%s cannot write history event \'%s\', see messages", fAlarmName.c_str(), e->event_name.c_str());
             al_trigger_alarm(fAlarmName.c_str(), buf, "Alarm", "", AT_INTERNAL);
          }
 
          return HS_FILE_ERROR;
       }
 
-      columns = fSql->ListColumns(tname.c_str());      
+      return HS_SUCCESS;
    }
 
-   TAG* t = (TAG*)malloc(sizeof(TAG)*columns.size());
-   assert(t);
+   ////////////////////////////////////////////////////////
+   //             Functions used by mhttpd               //
+   ////////////////////////////////////////////////////////
 
-   int n=0;
-   for (unsigned int j=0; j<columns.size(); j+=2) {
-      if (columns[j] == "_t_time")
-         continue;
-      if (columns[j] == "_i_time")
-         continue;
-      STRLCPY(t[n].name, ColumnNameToTagName(fSql, event_name, columns[j].c_str()).c_str());
-      t[n].type = sql2midasType(columns[j+1].c_str());
-      t[n].n_data = 1;
-      n++;
+   int hs_get_events(std::vector<std::string> *pevents)
+   {
+      if (fDebug)
+         printf("hs_get_events!\n");
+
+      if (fIndexEvents.size() == 0) {
+
+         if (fDebug)
+            printf("hs_get_events: reading event names!\n");
+
+         std::vector<std::string> tables = fSql->ListTables();
+      
+         for (unsigned i=0; i<tables.size(); i++) {
+            if (tables[i] == "_history_index")
+               continue;
+
+            IndexEntry* ie = FindIndexByTableName(fSql, tables[i].c_str());
+            if (ie)
+               fIndexEvents.push_back(ie->event_name);
+            else
+               fIndexEvents.push_back(tables[i]);
+         }
+      }
+
+      assert(pevents);
+      *pevents = fIndexEvents;
+      
+      return HS_SUCCESS;
    }
+      
+   int hs_get_tags(const char* event_name, std::vector<TAG> *ptags)
+   {
+      if (fDebug)
+         printf("hs_get_tags for [%s]\n", event_name);
 
-   if (0) {
-      printf("event [%s] table [%s], tags: %d\n", event_name, tname.c_str(), n);
-      PrintTags(n, t);
-   }
+      assert(ptags);
 
-   *n_tags = n;
-   *tags = t;
+      IndexEntry* ie = FindIndexByEventName(event_name);
 
-   return HS_SUCCESS;
-}
+      if (!ie) {
+         ReadIndex(fSql, event_name);
+         ie = FindIndexByEventName(event_name);
+      }
 
-  int hs_read(time_t start_time, time_t end_time, time_t interval,
-	      const char* event_name, const char* tag_name, int var_index,
-	      int *num_entries,
-	      time_t** time_buffer, double**data_buffer)
-  {
-    *num_entries = 0;
-    *time_buffer = NULL;
-    *data_buffer = NULL;
+      if (!ie) {
+         XReadIndex();
+         ie = FindIndexByEventName(event_name);
+      }
 
-   //printf("start %d, end %d, dt %d, interval %d, max points %d\n", start_time, end_time, end_time-start_time, interval, (end_time-start_time)/interval);
+      if (!ie)
+         return HS_UNDEFINED_EVENT;
 
-   std::string ename = EventNameToTableName(fSql, event_name);
-   std::string tname = TagNameToColumnName(fSql, event_name, tag_name);
+      if (ie->tags_cache.size() == 0) {
+         if (fDebug)
+            printf("hs_get_tags reading tags for [%s]\n", event_name);
 
-   int status = 1;
+         std::string tname = ie->table_name;
 
-   std::vector<std::string> tables = fSql->ListTables();
+         std::vector<std::string> columns = fSql->ListColumns(tname.c_str());
 
-   if (tables.size() <= 1) {
-        cm_msg(MERROR, "hs_read_odbc", "ListTables() returned nothing, trying to reconnect to the database");
+         if (columns.size() < 1) {
+            cm_msg(MERROR, "hs_get_tags", "Cannot get columns for table \'%s\', try to reconnect to the database", tname.c_str());
 
-        fSql->Disconnect();
-        fSql->Connect(fConnectString.c_str());
-        if (!fSql->IsConnected()) {
+            int status = Reconnect();
+            if (status != HS_SUCCESS)
+               return status;
 
-           if (fAlarmName.length() > 0) {
-              char buf[256];
-              sprintf(buf, "%s lost connection to the history database", fAlarmName.c_str());
-              al_trigger_alarm(fAlarmName.c_str(), buf, "Alarm", "", AT_INTERNAL);
-           }
+            columns = fSql->ListColumns(tname.c_str());      
+         }
 
-           return HS_FILE_ERROR;
-        }
+         TAG* t = (TAG*)malloc(sizeof(TAG)*columns.size());
+         assert(t);
 
-        tables = fSql->ListTables();
-   }
-
-   int len = strlen(event_name);
-   for (unsigned int i=0; i<tables.size(); i++) {
-      //printf("table %s\n", tables[i].c_str());
-
-      const char* t = tables[i].c_str();
-      const char* s = strstr(t, ename.c_str());
-
-      if (s==t && (t[len]=='_'||t[len]==0)) {
-
-         bool found = false;
-         std::vector<std::string> columns = fSql->ListColumns(tables[i].c_str());
          for (unsigned int j=0; j<columns.size(); j+=2) {
-            //printf("column %s\n", columns[j].c_str());
-            if (columns[j] == tname) {
-               found = true;
+            if (columns[j] == "_t_time")
+               continue;
+            if (columns[j] == "_i_time")
+               continue;
+
+            IndexEntryTag* it = FindIndexByTagName(ie, columns[j].c_str());
+
+            TAG t;
+            if (it)
+               STRLCPY(t.name, it->tag_name.c_str());
+            else
+               STRLCPY(t.name, columns[j].c_str());
+            t.type = sql2midasType(columns[j+1].c_str());
+            t.n_data = 1;
+
+            ie->tags_cache.push_back(t);
+         }
+      }
+      
+      for (unsigned i=0; i<ie->tags_cache.size(); i++)
+         ptags->push_back(ie->tags_cache[i]);
+
+      return HS_SUCCESS;
+   }
+
+   int hs_read_old_style(double start_time, double end_time, double interval,
+                         const char* event_name, const char* tag_name, int var_index,
+                         int *num_entries,
+                         time_t** time_buffer, double**data_buffer)
+   {
+      if (fDebug) {
+         printf("hs_read_old_style: event \"%s\", tag \"%s\"\n", event_name, tag_name);
+      }
+
+      ReadIndex(fSql, NULL);
+
+      for (unsigned e=0; e<gHistoryIndex.size(); e++) {
+
+         const char* s = gHistoryIndex[e]->event_name.c_str();
+
+         bool match = false;
+         for (int j=0; s[j]; j++) {
+
+            if ((event_name[j]==0) && (s[j]=='/')) {
+               match = true;
+               break;
+            }
+
+            if ((event_name[j]==0) && (s[j]=='_')) {
+               match = true;
+               break;
+            }
+
+            if (event_name[j]==0) {
+               match = false;
+               break;
+            }
+
+            if (tolower(event_name[j]) != tolower(s[j])) {
+               match = false;
                break;
             }
          }
 
-         if (found) {
-            char cmd[256];
-            sprintf(cmd, "SELECT _i_time, %s FROM %s where _i_time>=%d and _i_time<=%d;",
-                    tname.c_str(), tables[i].c_str(),
-                    (int)start_time, (int)end_time);
-           
-            status = fSql->Exec(cmd);
+         //printf("try %s, match %d\n", s, match);
 
-            if (gTrace) {
-               printf("hs_read_odbc: event %s, name %s, index %d: Read table %s: status %d, nrows: %d\n",
-                      event_name, tag_name, var_index,
-                      tables[i].c_str(),
-                      status,
-                      fSql->GetNumRows());
+         if (match) {
+            bool found_tag = false;
+            IndexEntry *ie = gHistoryIndex[e];
+            for (unsigned v=0; v<ie->tags.size(); v++) {
+               //printf("try tag [%s] looking for [%s]\n", ie->tags[v].tag_name.c_str(), tag_name);
+               if (equal_ustring(tag_name, ie->tags[v].tag_name.c_str())) {
+                  found_tag = true;
+                  break;
+               }
             }
 
-            if (status)
-               continue;
+            if (!found_tag)
+               match = false;
+         }
 
-            if (fSql->GetNumRows() == 0) {
-               fSql->Done();
-               status = SQL_NO_DATA;
-               continue;
-            }
+         if (match) {
+            if (fDebug)
+               printf("hs_read_old_style: event \"%s\", tag \"%s\", try matching event \'%s\'\n", event_name, tag_name, s);
 
-            break;
+            int status = hs_read(start_time, end_time, interval,
+                                 s, tag_name, var_index,
+                                 num_entries,
+                                 time_buffer, data_buffer);
+
+            if (status==HS_SUCCESS && *num_entries>0)
+               return HS_SUCCESS;
          }
       }
+
+      return HS_UNDEFINED_VAR;
    }
 
-   if (status == SQL_NO_DATA)
-      return HS_SUCCESS;
+   int hs_read(double start_time, double end_time, double interval,
+               const char* event_name, const char* tag_name, int tag_index,
+               int *num_entries,
+               time_t** time_buffer, double**data_buffer)
+   {
+      *num_entries = 0;
+      *time_buffer = NULL;
+      *data_buffer = NULL;
 
-   if (status) {
-      if (gTrace)
-         printf("hs_read_odbc: event %s, name %s, index %d, could not find the right table? status %d\n",
-                event_name, tag_name, var_index,
-                status);
-      
-      return HS_FILE_ERROR;
-   }
+      if (fDebug)
+         printf("hs_read: event [%s], tag [%s], index %d, start %f, end %f, dt %f, interval %f, max points %f\n",
+                event_name, tag_name, tag_index,
+                start_time, end_time, end_time-start_time, interval, (end_time-start_time)/interval);
 
-   int nrows = fSql->GetNumRows();
-   int ncols = fSql->GetNumColumns();
+      if (event_name==NULL)
+         return HS_SUCCESS;
 
-   if (nrows == 0)
-      return HS_SUCCESS;
+      IndexEntry*ie = FindIndexByEventName(event_name);
 
-   if (gTrace)
-      printf("hs_read_odbc: event %s, name %s, index %d, nrows: %d, ncols: %d\n",
-             event_name, tag_name, var_index,
-             nrows, ncols);
+      if (!ie) {
+         ReadIndex(fSql, event_name);
+         ie = FindIndexByEventName(event_name);
+      }
 
-   if (nrows < 0)
-      return HS_FILE_ERROR;
+      if (!ie) {
+         XReadIndex();
+         ie = FindIndexByEventName(event_name);
+      }
 
-   if (ncols < 1)
-      return HS_FILE_ERROR;
+      IndexEntryTag *it = NULL;
 
-   *num_entries = 0;
-   *time_buffer = (time_t*)malloc(nrows * sizeof(time_t));
-   *data_buffer = (double*)malloc(nrows * sizeof(double));
-  
-   /* Loop through the rows in the result-set */
-   int row = 0;
-   time_t tt = 0;
-   int ann = 0;
-   double att = 0;
-   double avv = 0;
-   while (fSql->Fetch()) {
-      time_t t = 0;
-      double v = 0;
-     
-      const char* timedata = fSql->GetColumn(1);
-      if (timedata)
-         t = atoi(timedata);
-     
-      const char* valuedata = fSql->GetColumn(2);
-      if (valuedata)
-         v = atof(valuedata);
-     
-      if (t < start_time || t > end_time)
-         continue;
-     
-      //printf("Row %d, time %d, value %f\n", row, t, v);
-      //printf("tt: %d, ann: %d\n", tt, ann);
-     
-      if (tt == 0 || t >= tt + interval) {
-        
-         if (ann > 0) {
-            assert(row < nrows);
-           
-            (*time_buffer)[row] = (time_t)(att/ann);
-            (*data_buffer)[row] = avv/ann;
-           
-            row++;
-            (*num_entries) = row;
-         }
-
-         ann = 0;
-         att = 0;
-         avv = 0;
-         tt  = t;
+      if (ie)
+         it = FindIndexByTagName(ie, tag_name);
          
+      // new-style event name: "equipment_name/variable_name:tag_name"
+      // old style event name: "equipment_name:tag_name" ("variable_name" is missing)
+      bool oldStyleEventName = (strchr(event_name, '/')==NULL);
+
+      if (oldStyleEventName)
+         if (!ie || !it) {
+            return hs_read_old_style(start_time, end_time, interval,
+                                     event_name, tag_name, tag_index,
+                                     num_entries,
+                                     time_buffer, data_buffer);
+         }
+
+      std::string tname = ie->table_name;
+      std::string cname = it->column_name;
+
+      char cmd[256];
+      sprintf(cmd, "SELECT _i_time, %s FROM %s WHERE _i_time>=%.0f and _i_time<=%.0f ORDER BY _i_time;",
+              cname.c_str(), tname.c_str(),
+              start_time, end_time);
+           
+      int status = fSql->Exec(cmd);
+
+      if (fDebug) {
+         printf("hs_read_odbc: event \"%s\", tag \"%s\", index %d: Read table \"%s\" column \"%s\": status %d, nrows: %d, ncolumns: %d\n",
+                event_name, tag_name, tag_index,
+                tname.c_str(),
+                cname.c_str(),
+                status,
+                fSql->GetNumRows(),
+                fSql->GetNumColumns()
+                );
       }
 
-      ann++;
-      att += t;
-      avv += v;
-   }
+      if (status != SUCCESS) {
+         return HS_FILE_ERROR;
+      }
 
-   if (ann > 0) {
-      assert(row < nrows);
+      if (fSql->GetNumRows() == 0) {
+         fSql->Done();
 
-      (*time_buffer)[row] = (time_t)(att/ann);
-      (*data_buffer)[row] = avv/ann;
+         if (oldStyleEventName) {
+            return hs_read_old_style(start_time, end_time, interval,
+                                     event_name, tag_name, tag_index,
+                                     num_entries,
+                                     time_buffer, data_buffer);
+         }
+
+         return HS_SUCCESS;
+      }
+
+      int nrows = fSql->GetNumRows();
+      int ncols = fSql->GetNumColumns();
+
+      if (nrows < 0)
+         return HS_FILE_ERROR;
+
+      if (ncols < 1)
+         return HS_FILE_ERROR;
+
+      *num_entries = 0;
+      *time_buffer = (time_t*)malloc(nrows * sizeof(time_t));
+      *data_buffer = (double*)malloc(nrows * sizeof(double));
+  
+      /* Loop through the rows in the result-set */
+      int row = 0;
+      time_t tt = 0;
+      int ann = 0;
+      double att = 0;
+      double avv = 0;
+      while (fSql->Fetch()) {
+         time_t t = 0;
+         double v = 0;
      
-      row++;
-      (*num_entries) = row;
+         const char* timedata = fSql->GetColumn(1);
+         if (timedata)
+            t = atoi(timedata);
+     
+         const char* valuedata = fSql->GetColumn(2);
+         if (valuedata)
+            v = atof(valuedata);
+     
+         if (t < start_time || t > end_time)
+            continue;
+     
+         //printf("Row %d, time %d, value %f\n", row, t, v);
+         //printf("tt: %d, ann: %d\n", tt, ann);
+     
+         if (tt == 0 || t >= tt + interval) {
+        
+            if (ann > 0) {
+               assert(row < nrows);
+           
+               (*time_buffer)[row] = (time_t)(att/ann);
+               (*data_buffer)[row] = avv/ann;
+           
+               row++;
+               (*num_entries) = row;
+            }
+
+            ann = 0;
+            att = 0;
+            avv = 0;
+            tt  = t;
+         
+         }
+
+         ann++;
+         att += t;
+         avv += v;
+      }
+
+      if (ann > 0) {
+         assert(row < nrows);
+
+         (*time_buffer)[row] = (time_t)(att/ann);
+         (*data_buffer)[row] = avv/ann;
+     
+         row++;
+         (*num_entries) = row;
+      }
+
+      fSql->Done();
+
+      if (fDebug)
+         printf("hs_read_odbc: return %d entries\n", *num_entries);
+
+      return HS_SUCCESS;
    }
 
-   fSql->Done();
+   int hs_read(time_t start_time, time_t end_time, time_t interval,
+               int num_var,
+               const char* event_name[], const char* tag_name[], const int tag_index[],
+               int num_entries[],
+               time_t* time_buffer[], double* data_buffer[],
+               int st[])
+   {
+      if (fDebug)
+         printf("hs_read: %d variables\n", num_var);
 
-   if (gTrace)
-      printf("hs_read_odbc: return %d events\n", *num_entries);
+      for (int i=0; i<num_var; i++) {
 
-   return HS_SUCCESS;
-}
+         if (event_name[i]==NULL) {
+            st[i] = HS_UNDEFINED_EVENT;
+            num_entries[i] = 0;
+            continue;
+         }
 
+         st[i] = hs_read(start_time, end_time, interval,
+                         event_name[i], tag_name[i], tag_index[i],
+                         &num_entries[i],
+                         &time_buffer[i], &data_buffer[i]);
+      }
+      
+      return HS_SUCCESS;
+   }
 };
 
 #ifdef HAVE_ODBC
 MidasHistoryInterface* MakeMidasHistoryODBC()
 {
-  return new SqlHistory(new SqlODBC());
+   return new SqlHistory(new SqlODBC());
 }
 #endif
 
