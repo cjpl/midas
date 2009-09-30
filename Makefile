@@ -297,6 +297,8 @@ endif
 OBJS =  $(LIB_DIR)/midas.o $(LIB_DIR)/system.o $(LIB_DIR)/mrpc.o \
 	$(LIB_DIR)/odb.o $(LIB_DIR)/ybos.o $(LIB_DIR)/ftplib.o \
 	$(LIB_DIR)/mxml.o \
+	$(LIB_DIR)/history_midas.o \
+	$(LIB_DIR)/history_sql.o \
 	$(LIB_DIR)/history.o $(LIB_DIR)/alarm.o $(LIB_DIR)/elog.o
 
 ifdef NEED_STRLCPY
@@ -388,7 +390,6 @@ endif
 ifdef HAVE_ODBC
 CFLAGS      += -DHAVE_ODBC
 OBJS        += $(LIB_DIR)/history_odbc.o
-OBJS        += $(LIB_DIR)/history_sql.o
 LIBS        += -lodbc
 ifeq ($(OSTYPE),darwin)
 LIBS        += /System/Library/Frameworks/CoreFoundation.framework/CoreFoundation
@@ -465,6 +466,8 @@ endif
 #
 # frontend and backend framework
 #
+
+$(LIB_DIR)/history_sql.o $(LIB_DIR)/history_midas.o $(LIB_DIR)/mhttpd.o $(LIB_DIR)/mlogger.o: history.h
 
 $(LIB_DIR)/mfe.o: msystem.h midas.h midasinc.h mrpc.h
 $(LIB_DIR)/fal.o: $(SRC_DIR)/fal.c msystem.h midas.h midasinc.h mrpc.h
