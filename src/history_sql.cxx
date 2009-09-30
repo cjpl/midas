@@ -1273,6 +1273,8 @@ public:
          printf("hs_disconnect!\n");
       
       fSql->Disconnect();
+
+      hs_clear_cache();
       
       return HS_SUCCESS;
    }
