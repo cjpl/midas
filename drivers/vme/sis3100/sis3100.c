@@ -95,6 +95,7 @@ int mvme_open(MVME_INTERFACE **vme, int idx)
    (*vme)->handle = open(str, O_RDWR, 0);
    if ((*vme)->handle < 0)
       return MVME_NO_INTERFACE;
+   (*vme)->info = (void *)1;
    }
 #endif
 
