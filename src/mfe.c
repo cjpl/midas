@@ -560,7 +560,7 @@ INT device_driver(DEVICE_DRIVER * device_drv, INT cmd, ...)
 
 INT register_equipment(void)
 {
-   INT idx, size, status, i, j, k, n;
+   INT idx, size, status;
    char str[256];
    EQUIPMENT_INFO *eq_info;
    EQUIPMENT_STATS *eq_stats;
@@ -764,6 +764,27 @@ INT register_equipment(void)
          bm_set_cache_size(equipment[idx].buffer_handle, 0, SERVER_CACHE_SIZE);
       } else
          equipment[idx].buffer_handle = 0;
+   }
+
+   n_events = calloc(sizeof(int), idx);
+
+   return SUCCESS;
+}
+
+/*------------------------------------------------------------------*/
+
+INT initialize_equipment(void)
+{
+   INT idx, i, j, k, n;
+   char str[256];
+   EQUIPMENT_INFO *eq_info;
+   EQUIPMENT_STATS *eq_stats;
+   BOOL manual_trig_flag = FALSE;
+
+   /* scan EQUIPMENT table from FRONTEND.C */
+   for (idx = 0; equipment[idx].name[0]; idx++) {
+      eq_info = &equipment[idx].info;
+      eq_stats = &equipment[idx].stats;
 
       /*---- initialize interrupt events -----------------------------*/
 
@@ -773,7 +794,7 @@ INT register_equipment(void)
          for (i = 0; equipment[i].name[0]; i++)
             if (equipment[i].info.eq_type & EQ_POLLED) {
                equipment[idx].status = FE_ERR_DISABLED;
-               cm_msg(MINFO, "register_equipment",
+               cm_msg(MINFO, "initialize_equipment",
                       "Interrupt readout cannot be combined with polled readout");
             }
 
@@ -781,7 +802,7 @@ INT register_equipment(void)
             if (eq_info->enabled) {
                if (interrupt_eq) {
                   equipment[idx].status = FE_ERR_DISABLED;
-                  cm_msg(MINFO, "register_equipment",
+                  cm_msg(MINFO, "initialize_equipment",
                          "Defined more than one equipment with interrupt readout");
                } else {
                   interrupt_eq = &equipment[idx];
@@ -798,7 +819,7 @@ INT register_equipment(void)
                }
             } else {
                equipment[idx].status = FE_ERR_DISABLED;
-               cm_msg(MINFO, "register_equipment",
+               cm_msg(MINFO, "initialize_equipment",
                       "Equipment %s disabled in file \"frontend.c\"",
                       equipment[idx].name);
             }
@@ -813,7 +834,7 @@ INT register_equipment(void)
          for (i = 0; equipment[i].name[0]; i++)
             if (equipment[i].info.eq_type & EQ_POLLED) {
                equipment[idx].status = FE_ERR_DISABLED;
-               cm_msg(MINFO, "register_equipment",
+               cm_msg(MINFO, "initialize_equipment",
                       "Multi-threaded readout cannot be combined with polled readout for equipment \'%s\'", equipment[i].name);
             }
 
@@ -821,7 +842,7 @@ INT register_equipment(void)
             if (eq_info->enabled) {
                if (multithread_eq) {
                   equipment[idx].status = FE_ERR_DISABLED;
-                  cm_msg(MINFO, "register_equipment",
+                  cm_msg(MINFO, "initialize_equipment",
                          "Defined more than one equipment with multi-threaded readout for equipment \'%s\'", equipment[i].name);
                } else {
                   multithread_eq = &equipment[idx];
@@ -838,7 +859,7 @@ INT register_equipment(void)
                }
             } else {
                equipment[idx].status = FE_ERR_DISABLED;
-               cm_msg(MINFO, "register_equipment",
+               cm_msg(MINFO, "initialize_equipment",
                       "Equipment %s disabled in file \"frontend.c\"",
                       equipment[idx].name);
             }
@@ -848,6 +869,9 @@ INT register_equipment(void)
       /*---- initialize slow control equipment ---------------------*/
 
       if (eq_info->eq_type & EQ_SLOW) {
+
+         set_equipment_status(equipment[idx].name, "Initializing...", "yellow");
+
          /* resolve duplicate device names */
          for (i = 0; equipment[idx].driver[i].name[0]; i++)
             for (j = i + 1; equipment[idx].driver[j].name[0]; j++)
@@ -865,10 +889,21 @@ INT register_equipment(void)
          if (eq_info->enabled) {
             printf("%s:\n", equipment[idx].name);
             equipment[idx].status = equipment[idx].cd(CMD_INIT, &equipment[idx]);
+
+            if (equipment[idx].status == FE_SUCCESS)
+               set_equipment_status(equipment[idx].name, "Ok", "#00FF00");
+            else if (equipment[idx].status == FE_ERR_HW)
+               set_equipment_status(equipment[idx].name, "Hardware error", "#FF0000");
+            else if (equipment[idx].status == FE_ERR_ODB)
+               set_equipment_status(equipment[idx].name, "ODB error", "#FF0000");
+            else if (equipment[idx].status == FE_ERR_DRIVER)
+               set_equipment_status(equipment[idx].name, "Driver error", "#FF0000");
+            else
+               set_equipment_status(equipment[idx].name, "Error", "#FF0000");
+
          } else {
             equipment[idx].status = FE_ERR_DISABLED;
-            cm_msg(MINFO, "register_equipment",
-                   "Equipment %s disabled in ODB", equipment[idx].name);
+            set_equipment_status(equipment[idx].name, "Disbled", "yellow");
          }
 
          /* now start threads if requested */
@@ -893,10 +928,8 @@ INT register_equipment(void)
       }
    }
 
-   n_events = calloc(sizeof(int), idx);
-
    if (slowcont_eq)
-      cm_msg(MINFO, "register_equipment", "Slow control equipment initialized");
+      cm_msg(MINFO, "initialize_equipment", "Slow control equipment initialized");
 
    return SUCCESS;
 }
@@ -2697,6 +2730,7 @@ int main(int argc, char *argv[])
       return 1;
    }
 
+   initialize_equipment();
    calibrate_polling();
 
    if (display_period)
