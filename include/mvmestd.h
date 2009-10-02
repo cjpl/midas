@@ -133,6 +133,7 @@ data modes
 
 /*---- interface structure -----------------------------------------*/
 typedef struct {
+   int  initialized;         /**< 1 if VME interface initialized */
    int  handle;              /**< internal handle */
    int  index;               /**< index of interface 0..n */
    void *info;               /**< internal info structure */
