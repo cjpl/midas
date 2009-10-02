@@ -13110,7 +13110,11 @@ void server_loop()
       if (FD_ISSET(lsock, &readfds)) {
 
          len = sizeof(acc_addr);
+#ifdef OS_WINNT
          _sock = accept(lsock, (struct sockaddr *) &acc_addr, (int *)&len);
+#else
+         _sock = accept(lsock, (struct sockaddr *) &acc_addr, (socklen_t *)&len);
+#endif
 
          last_time = (INT) ss_time();
 
