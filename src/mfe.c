@@ -774,8 +774,9 @@ INT register_equipment(void)
 
 INT initialize_equipment(void)
 {
-   INT idx, i, j, k, n;
+   INT idx, i, j, k, n, count;
    char str[256];
+   DWORD start_time, delta_time;
    EQUIPMENT_INFO *eq_info;
    EQUIPMENT_STATS *eq_stats;
    BOOL manual_trig_flag = FALSE;
@@ -823,6 +824,51 @@ INT initialize_equipment(void)
                       equipment[idx].name);
             }
          }
+      }
+
+      /*---- evaluate polling count ----------------------------------*/
+
+      if (eq_info->eq_type & (EQ_POLLED | EQ_MULTITHREAD)) {
+         if (eq_info->eq_type & EQ_INTERRUPT) {
+            if (eq_info->eq_type & EQ_POLLED)
+               cm_msg(MERROR, "register_equipment",
+                  "Equipment \"%s\" cannot be of type EQ_INTERRUPT and EQ_POLLED at the same time", 
+                  equipment[idx].name);
+            else
+               cm_msg(MERROR, "register_equipment",
+                  "Equipment \"%s\" cannot be of type EQ_INTERRUPT and EQ_MULTITHREAD at the same time", 
+                  equipment[idx].name);
+            return 0;
+         }
+
+         if (display_period)
+            printf("\nCalibrating");
+
+         count = 1;
+         do {
+            if (display_period)
+               printf(".");
+
+            start_time = ss_millitime();
+
+            poll_event(equipment[idx].info.source, count, TRUE);
+
+            delta_time = ss_millitime() - start_time;
+
+            if (count == 1 && delta_time > eq_info->period * 1.2) {
+               cm_msg(MERROR, "register_equipment", "Polling routine with count=1 takes %d ms", delta_time);
+               ss_sleep(3000);
+               break;
+            }
+
+            if (delta_time > 0)
+               count = (INT) ((double) count * eq_info->period / delta_time);
+            else
+               count *= 100;
+
+         } while (delta_time > eq_info->period * 1.2 || delta_time < eq_info->period * 0.8);
+
+         equipment[idx].poll_count = count;
       }
 
       /*---- initialize multithread events -------------------------*/
@@ -929,69 +975,6 @@ INT initialize_equipment(void)
 
    if (slowcont_eq)
       cm_msg(MINFO, "initialize_equipment", "Slow control equipment initialized");
-
-   return SUCCESS;
-}
-
-/*------------------------------------------------------------------*/
-
-INT calibrate_polling(void)
-{
-   INT idx, count;
-   EQUIPMENT_INFO *eq_info;
-   EQUIPMENT_STATS *eq_stats;
-   DWORD start_time, delta_time;
-
-   /* scan EQUIPMENT table from FRONTEND.C */
-   for (idx = 0; equipment[idx].name[0]; idx++) {
-      eq_info = &equipment[idx].info;
-      eq_stats = &equipment[idx].stats;
-
-      /*---- evaluate polling count ----------------------------------*/
-
-      if (eq_info->eq_type & (EQ_POLLED | EQ_MULTITHREAD)) {
-         if (eq_info->eq_type & EQ_INTERRUPT) {
-            if (eq_info->eq_type & EQ_POLLED)
-               cm_msg(MERROR, "register_equipment",
-                  "Equipment \"%s\" cannot be of type EQ_INTERRUPT and EQ_POLLED at the same time", 
-                  equipment[idx].name);
-            else
-               cm_msg(MERROR, "register_equipment",
-                  "Equipment \"%s\" cannot be of type EQ_INTERRUPT and EQ_MULTITHREAD at the same time", 
-                  equipment[idx].name);
-            return 0;
-         }
-
-         if (display_period)
-            printf("\nCalibrating");
-
-         count = 1;
-         do {
-            if (display_period)
-               printf(".");
-
-            start_time = ss_millitime();
-
-            poll_event(equipment[idx].info.source, count, TRUE);
-
-            delta_time = ss_millitime() - start_time;
-
-            if (count == 1 && delta_time > eq_info->period * 1.2) {
-               cm_msg(MERROR, "register_equipment", "Polling routine with count=1 takes %d ms", delta_time);
-               ss_sleep(3000);
-               break;
-            }
-
-            if (delta_time > 0)
-               count = (INT) ((double) count * eq_info->period / delta_time);
-            else
-               count *= 100;
-
-         } while (delta_time > eq_info->period * 1.2 || delta_time < eq_info->period * 0.8);
-
-         equipment[idx].poll_count = count;
-      }
-   }
 
    return SUCCESS;
 }
@@ -2730,7 +2713,6 @@ int main(int argc, char *argv[])
    }
 
    initialize_equipment();
-   calibrate_polling();
 
    if (display_period)
       printf("OK\n");
