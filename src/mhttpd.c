@@ -7582,7 +7582,7 @@ void taxis(gdImagePtr im, gdFont * font, int col, int gcol,
       x_act += dx;
 
       /* supress 1.23E-17 ... */
-      if (fabs(x_act) < dx / 100)
+      if (fabs((double)x_act) < dx / 100)
          x_act = 0;
 
    } while (1);
@@ -13110,7 +13110,7 @@ void server_loop()
       if (FD_ISSET(lsock, &readfds)) {
 
          len = sizeof(acc_addr);
-         _sock = accept(lsock, (struct sockaddr *) &acc_addr, &len);
+         _sock = accept(lsock, (struct sockaddr *) &acc_addr, (int *)&len);
 
          last_time = (INT) ss_time();
 
@@ -13191,7 +13191,7 @@ void server_loop()
                /* if an alarm signal was cought, restart with reduced timeout */
             } while (status == -1 && errno == EINTR);
 #else
-            status = select(FD_SETSIZE, (void *) &readfds, NULL, NULL, (void *) &timeout);
+            status = select(FD_SETSIZE, (fd_set *) &readfds, NULL, NULL, (const timeval *) &timeout);
 #endif
             if (FD_ISSET(_sock, &readfds))
                i = recv(_sock, net_buffer + len, sizeof(net_buffer) - len, 0);
