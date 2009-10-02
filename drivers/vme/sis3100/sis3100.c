@@ -116,13 +116,15 @@ int mvme_close(MVME_INTERFACE *vme)
    if (vme->initialized) {
 #ifdef OS_WINNT
       sis1100w_Close((struct SIS1100_Device_Struct *) vme->info);
-      free(vme->info);
 #endif
 
 #ifdef OS_LINUX
       close(vme->handle);
 #endif
    }
+
+   if (vme->info)
+      free(vme->info);
 
    free(vme);
 
