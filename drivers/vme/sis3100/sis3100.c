@@ -75,7 +75,7 @@ int mvme_open(MVME_INTERFACE **vme, int idx)
    if ((*vme)->info == NULL)
       return MVME_NO_MEM;
 
-   if (sis1100w_Get_Handle_And_Open(idx+1, (struct SIS1100_Device_Struct *) (*vme)->info) != 0) 
+   if (sis1100w_Get_Handle_And_Open(idx+1, (struct SIS1100_Device_Struct *) (*vme)->info) != 0)
       return MVME_NO_INTERFACE;
 
    if (sis1100w_Init((struct SIS1100_Device_Struct *) (*vme)->info, 0) != 0)
@@ -100,10 +100,11 @@ int mvme_open(MVME_INTERFACE **vme, int idx)
 #endif
 
    /* default values */
-   (*vme)->am        = MVME_AM_DEFAULT;
-   (*vme)->dmode     = MVME_DMODE_D32;
-   (*vme)->blt_mode  = MVME_BLT_NONE;
-   (*vme)->table     = NULL; // not used
+   (*vme)->initialized = 1;
+   (*vme)->am          = MVME_AM_DEFAULT;
+   (*vme)->dmode       = MVME_DMODE_D32;
+   (*vme)->blt_mode    = MVME_BLT_NONE;
+   (*vme)->table       = NULL; // not used
 
    return MVME_SUCCESS;
 }
@@ -112,14 +113,16 @@ int mvme_open(MVME_INTERFACE **vme, int idx)
 
 int mvme_close(MVME_INTERFACE *vme)
 {
+   if (vme->initialized) {
 #ifdef OS_WINNT
-   sis1100w_Close((struct SIS1100_Device_Struct *) vme->info);
-   free(vme->info);
+      sis1100w_Close((struct SIS1100_Device_Struct *) vme->info);
+      free(vme->info);
 #endif
 
 #ifdef OS_LINUX
-   close(vme->handle);
+      close(vme->handle);
 #endif
+   }
 
    free(vme);
 
