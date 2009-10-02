@@ -909,7 +909,6 @@ INT calibrate_polling(void)
    EQUIPMENT_INFO *eq_info;
    EQUIPMENT_STATS *eq_stats;
    DWORD start_time, delta_time;
-   BOOL manual_trig_flag = FALSE;
 
    /* scan EQUIPMENT table from FRONTEND.C */
    for (idx = 0; equipment[idx].name[0]; idx++) {
