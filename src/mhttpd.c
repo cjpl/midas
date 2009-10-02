@@ -100,7 +100,7 @@ char system_list[20][NAME_LENGTH] = {
 };
 
 
-struct {
+static struct {
    char ext[32];
    char type[32];
 } filetype[] = {
@@ -464,7 +464,7 @@ void urlEncode(char *ps, int ps_size)
       }
    }
    *pd = '\0';
-   assert(pd - str < sizeof(str));
+   assert(pd - str < (int)sizeof(str));
    strlcpy(ps, str, ps_size);
 }
 
@@ -5569,7 +5569,7 @@ void show_custom_page(char *path, char *cookie_cpwd)
          if (db_find_key(hDB, 0, str, &hkey)) {
             db_get_key(hDB, hkey, &key);
             memset(data, 0, sizeof(data));
-            if (key.item_size <= sizeof(data)) {
+            if (key.item_size <= (int)sizeof(data)) {
                size = sizeof(data);
                db_get_data_index(hDB, hkey, data, &size, index, key.type);
                db_sprintf(str, data, size, 0, key.type);
@@ -5614,7 +5614,7 @@ void show_custom_page(char *path, char *cookie_cpwd)
          if (db_find_key(hDB, 0, str, &hkey) == DB_SUCCESS && isparam("value")) {
             db_get_key(hDB, hkey, &key);
             memset(data, 0, sizeof(data));
-            if (key.item_size <= sizeof(data)) {
+            if (key.item_size <= (int)sizeof(data)) {
                size = sizeof(data);
                db_sscanf(getparam("value"), data, &size, 0, key.type);
                db_set_data_index(hDB, hkey, data, key.item_size, index, key.type);
@@ -5660,7 +5660,7 @@ void show_custom_page(char *path, char *cookie_cpwd)
 
          if (db_find_key(hDB, 0, str, &hkey) == DB_SUCCESS) {
             db_get_key(hDB, hkey, &key);
-            if (key.item_size <= sizeof(data)) {
+            if (key.item_size <= (int)sizeof(data)) {
                size = sizeof(data);
                db_get_data(hDB, hkey, data, &size, key.type);
                if (index == -1) {
@@ -7852,7 +7852,7 @@ static WORD get_variable_id(DWORD ltime, int using_odbc, const char* evname, con
 
       evid = atoi(key.name);
 
-      assert(key.item_size < sizeof(buf));
+      assert(key.item_size < (int)sizeof(buf));
 
       size = sizeof(buf);
       status = db_get_data(hDB, hKey, buf, &size, TID_STRING);
@@ -7934,7 +7934,7 @@ static WORD get_variable_id_tags(const char* evname, const char* tagname)
 
       evid = atoi(key.name);
 
-      assert(key.item_size < sizeof(buf));
+      assert(key.item_size < (int)sizeof(buf));
 
       size = sizeof(buf);
       status = db_get_data_index(hDB, hKey, buf, &size, 0, TID_STRING);
@@ -9554,7 +9554,7 @@ static int enum_vars_tags(HNDLE hDB, const char* event_name, int* num_vars, char
       if (event_id == 0)
          continue;
 
-      if (key.item_size >= sizeof(buf))
+      if (key.item_size >= (int)sizeof(buf))
          continue;
 
       if (key.num_values == 1) { // old format of "/History/Tags"
@@ -9712,7 +9712,7 @@ static int enum_vars_events(HNDLE hDB, int using_odbc, const char* event_name, i
       if (event_id == 0)
          continue;
 
-      if (key.item_size >= sizeof(buf))
+      if (key.item_size >= (int)sizeof(buf))
          continue;
 
       size = sizeof(buf);
