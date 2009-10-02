@@ -565,7 +565,6 @@ INT register_equipment(void)
    EQUIPMENT_INFO *eq_info;
    EQUIPMENT_STATS *eq_stats;
    HNDLE hKey;
-   BOOL manual_trig_flag = FALSE;
    BANK_LIST *bank_list;
    DWORD dummy;
 
