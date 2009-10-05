@@ -2966,7 +2966,7 @@ static int get_event_id(int eq_id, const char* eq_name, const char* var_name)
          //printf("status %d\n", status);
          assert(status == DB_SUCCESS);
 
-         //printf("got %d \'%s\'\n", evid, tmp);
+         //printf("got %d \'%s\' looking for \'%s\'\n", evid, tmp, name);
 
          if (equal_ustring(name, tmp))
             return evid;
@@ -2981,11 +2981,22 @@ static int get_event_id(int eq_id, const char* eq_name, const char* var_name)
    if (max_id == 0)
       max_id = eq_id * 1000;
 
-   if (1) {
+   if (max_id < 1000)
+      max_id = 1000;
+
+   while (1) {
       char tmp[NAME_LENGTH+NAME_LENGTH+2];
+      HNDLE hKey;
       WORD evid = max_id + 1;
 
       sprintf(tmp,"/History/Events/%d", evid);
+
+      status = db_find_key(hDB, 0, tmp, &hKey);
+      if (status == DB_SUCCESS) {
+         max_id = evid;
+         assert(max_id < 65000);
+         continue;
+      }
 
       status = db_set_value(hDB, 0, tmp, name, strlen(name)+1, 1, TID_STRING);
       assert(status == DB_SUCCESS);
@@ -3038,6 +3049,11 @@ INT open_history()
       using_odbc = 1;
    }
 #endif
+
+   for (unsigned i=0; i<mh.size(); i++) {
+      status = mh[i]->hs_clear_cache();
+      assert(status == HS_SUCCESS);
+   }
 
    /* set directory for history files */
    size = sizeof(str);
