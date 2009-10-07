@@ -3225,9 +3225,15 @@ INT open_history()
             if (hKeyNames) {
                /* loop over array elements */
                for (j = 0; j < varkey.num_values; j++) {
+                  char xname[256];
+
+                  tag[i_tag].name[0] = 0;
+
                   /* get name #j */
-                  size = NAME_LENGTH;
-                  db_get_data_index(hDB, hKeyNames, tag[i_tag].name, &size, j, TID_STRING);
+                  size = sizeof(xname);
+                  status = db_get_data_index(hDB, hKeyNames, xname, &size, j, TID_STRING);
+                  if (status == DB_SUCCESS)
+                     strlcpy(tag[i_tag].name, xname, sizeof(tag[i_tag].name));
 
                   if (strlen(tag[i_tag].name) < 1) {
                      char buf[256];
