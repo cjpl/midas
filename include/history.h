@@ -25,14 +25,13 @@ class MidasSqlInterface;
 
 MidasHistoryInterface* MakeMidasHistory();
 MidasHistoryInterface* MakeMidasHistoryODBC();
+MidasHistoryInterface* MakeMidasHistorySqlDebug();
 
 // MIDAS history interface class
 
 class MidasHistoryInterface
 {
- private:
-
- protected:
+ public:
   virtual ~MidasHistoryInterface() { };
 
  public:
@@ -40,7 +39,6 @@ class MidasHistoryInterface
   virtual int hs_disconnect() = 0;                  ///< disconnect from history, returns HS_SUCCESS
 
   virtual int hs_set_debug(int debug) = 0;          ///< set debug level, returns previous debug level
-  virtual int hs_set_alarm(const char* alarm_name) = 0; ///< set alarm name for history failures. Use NULL to disable alarms
 
   virtual int hs_clear_cache() = 0; ///< clear internal cache, returns HS_SUCCESS
 

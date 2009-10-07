@@ -260,8 +260,13 @@ public:
 public:
    MidasHistory() // ctor
    {
-      fDebug = 1;
+      fDebug = 0;
       fListSource = 0;
+   }
+
+   ~MidasHistory() // dtor
+   {
+      // empty
    }
 
    /*------------------------------------------------------------------*/
@@ -333,13 +338,6 @@ public:
    int hs_set_debug(int debug)
    {
       return debug;
-   }
-
-   /*------------------------------------------------------------------*/
-
-   int hs_set_alarm(const char* alarm_name)
-   {
-      return HS_SUCCESS;
    }
 
    /*------------------------------------------------------------------*/

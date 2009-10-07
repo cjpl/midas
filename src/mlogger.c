@@ -2585,11 +2585,6 @@ void log_history(HNDLE hDB, HNDLE hKey, void *info);
 
 static std::vector<MidasHistoryInterface*> mh;
 
-#ifdef HAVE_ODBC
-#include "history_odbc.h"
-static int using_odbc = 0;
-#endif
-
 static int add_event(int* indexp, int event_id, const char* event_name, HNDLE hKey, int ntags, const TAG* tags, int period, int hotlink)
 {
    int status;
@@ -2653,24 +2648,17 @@ static int add_event(int* indexp, int event_id, const char* event_name, HNDLE hK
          return 0;
       }
    }
-
+   
    for (unsigned i=0; i<mh.size(); i++) {
-     status = mh[i]->hs_define_event(event_name, ntags, tags);
-     assert(status == HS_SUCCESS);
+      status = mh[i]->hs_define_event(event_name, ntags, tags);
+      if (status != HS_SUCCESS) {
+         cm_msg(MERROR, "add_event", "Cannot define event \"%s\", hs_define_event() status %d", event_name, status);
+         return 0;
+      }
    }
 
    status = hs_define_event(event_id, (char*)event_name, (TAG*)tags, sizeof(TAG) * ntags);
    assert(status == DB_SUCCESS);
-
-#ifdef HAVE_ODBC
-   if (using_odbc) {
-      status = hs_define_event_odbc(event_name, (TAG*)tags, sizeof(TAG) * ntags);
-      if (status != HS_SUCCESS) {
-         cm_msg(MERROR, "add_event", "Cannot define event \"%s\"", event_name);
-         return 0;
-      }
-   }
-#endif
 
    status = db_get_record_size(hDB, hKey, 0, &size);
    assert(status == DB_SUCCESS);
@@ -3023,30 +3011,53 @@ INT open_history()
    int count_events = 0;
    int global_per_variable_history = 0;
 
-#ifdef HAVE_ODBC
-   size = sizeof(i);
-   i = 0;
-   status = db_get_value(hDB, 0, "/Logger/ODBC_Debug", &i, &size, TID_INT, TRUE);
-   assert(status==DB_SUCCESS);
-   hs_debug_odbc(i);
+   for (unsigned i=0; i<mh.size(); i++)
+      delete mh[i];
+   mh.clear();
 
-   hs_set_alarm_odbc("Logger_ODBC");
+#ifdef HAVE_ODBC
+   int debug = 0;
+   size = sizeof(debug);
+   status = db_get_value(hDB, 0, "/Logger/ODBC_Debug", &debug, &size, TID_INT, TRUE);
+   assert(status==DB_SUCCESS);
 
    /* check ODBC connection */
-   using_odbc = 0;
-   size = sizeof(str);
-   str[0] = 0;
+   char dsn[256];
+   size = sizeof(dsn);
+   dsn[0] = 0;
 
-   status = db_get_value(hDB, 0, "/Logger/ODBC_DSN", str, &size, TID_STRING, TRUE);
+   status = db_get_value(hDB, 0, "/Logger/ODBC_DSN", dsn, &size, TID_STRING, TRUE);
    assert(status==DB_SUCCESS);
 
-   if (strlen(str)>1 && str[0]!='#') {
-      status = hs_connect_odbc(str);
+   if (debug == 2) {
+
+      MidasHistoryInterface* hi = MakeMidasHistorySqlDebug();
+      assert(hi);
+
+      hi->hs_set_debug(debug);
+      
+      status = hi->hs_connect(dsn);
       if (status != HS_SUCCESS) {
-         cm_msg(MERROR, "open_history", "Cannot connect to ODBC database with DSN \'%s\', status %d", str, status);
+         cm_msg(MERROR, "open_history", "Cannot connect to SQL debug driver \'%s\', status %d", dsn, status);
          return status;
       }
-      using_odbc = 1;
+
+      mh.push_back(hi);
+
+   } else if (strlen(dsn)>1 && dsn[0]!='#') {
+
+      MidasHistoryInterface* hi = MakeMidasHistoryODBC();
+      assert(hi);
+
+      hi->hs_set_debug(debug);
+      
+      status = hi->hs_connect(dsn);
+      if (status != HS_SUCCESS) {
+         cm_msg(MERROR, "open_history", "Cannot connect to ODBC database with DSN \'%s\', status %d", dsn, status);
+         return status;
+      }
+
+      mh.push_back(hi);
    }
 #endif
 
@@ -3439,7 +3450,17 @@ INT open_history()
    tag[1].type = TID_DWORD;
    tag[1].n_data = 1;
 
-   hs_define_event(0, "Run transitions", tag, sizeof(TAG) * 2);
+   const char* event_name = "Run transitions";
+
+   for (unsigned i=0; i<mh.size(); i++) {
+      status = mh[i]->hs_define_event(event_name, 2, tag);
+      if (status != HS_SUCCESS) {
+         cm_msg(MERROR, "add_event", "Cannot define event \"%s\", hs_define_event() status %d", event_name, status);
+         return 0;
+      }
+   }
+
+   hs_define_event(0, (char*)event_name, tag, sizeof(TAG) * 2);
    free(tag);
 
    /* outcommented not to produce a log entry on every run
@@ -3477,11 +3498,6 @@ void close_history()
          hist_log[i].buffer = NULL;
       }
 
-#ifdef HAVE_ODBC
-   if (using_odbc)
-      status = hs_disconnect_odbc();
-   using_odbc = 0;
-#endif
    for (unsigned h=0; h<mh.size(); h++)
       status  = mh[h]->hs_disconnect();
 }
@@ -3511,22 +3527,19 @@ void log_history(HNDLE hDB, HNDLE hKey, void *info)
       return;
    }
 
+   hist_log[i].last_log = ss_time();
+
    if (verbose)
-      printf("write event: id %d, buffer %p, size %d\n", hist_log[i].event_id, hist_log[i].buffer, hist_log[i].buffer_size);
+      printf("write event: id %d, timestamp %d, buffer %p, size %d\n", hist_log[i].event_id, hist_log[i].last_log, hist_log[i].buffer, hist_log[i].buffer_size);
 
    hs_write_event(hist_log[i].event_id, hist_log[i].buffer, hist_log[i].buffer_size);
-   hist_log[i].last_log = ss_time();
-#ifdef HAVE_ODBC
-   if (using_odbc) {
-      hs_write_event_odbc(hist_log[i].event_name, hist_log[i].last_log, (const char*)hist_log[i].buffer, hist_log[i].buffer_size);
-   }
-#endif
 
    for (unsigned h=0; h<mh.size(); h++) {
-     int status = mh[h]->hs_write_event(hist_log[i].event_name, hist_log[i].last_log, hist_log[i].buffer_size, hist_log[i].buffer);
-     assert(status == HS_SUCCESS);
+      int status = mh[h]->hs_write_event(hist_log[i].event_name, hist_log[i].last_log, hist_log[i].buffer_size, hist_log[i].buffer);
+      if (verbose)
+         if (status != HS_SUCCESS)
+            printf("hs_write_event() status %d\n", status);
    }
-
 }
 
 /*------------------------------------------------------------------*/
@@ -3557,10 +3570,15 @@ void log_system_history(HNDLE hDB, HNDLE hKey, void *info)
    if (i != hist_log[index].n_var) {
       close_history();
       open_history();
-   } else
+   } else {
+      hist_log[index].last_log = ss_time();
+
       hs_write_event(hist_log[index].event_id, hist_log[index].buffer, hist_log[index].buffer_size);
 
-   hist_log[index].last_log = ss_time();
+      for (unsigned h=0; h<mh.size(); h++)
+         mh[h]->hs_write_event(hist_log[index].event_name, hist_log[index].last_log, hist_log[index].buffer_size, hist_log[index].buffer);
+   }
+
 
    /* simulate odb key update for hot links connected to system history */
    if (!rpc_is_remote()) {
@@ -3737,11 +3755,6 @@ int log_generate_file_name(LOG_CHN *log_chn)
 
 \********************************************************************/
 
-static struct {
-   DWORD transition;
-   DWORD run_number;
-} eb;
-
 /*------------------------------------------------------------------*/
 
 int close_channels(int run_number, BOOL* p_tape_flag)
@@ -3817,6 +3830,24 @@ int close_buffers()
       /* clear channel info */
       memset(&log_chn[i].handle, 0, sizeof(LOG_CHN));
    }
+
+   return SUCCESS;
+}
+
+/*------------------------------------------------------------------*/
+
+static int write_history(DWORD transition, DWORD run_number)
+{
+   DWORD eb[2];
+   eb[0] = transition;
+   eb[1] = run_number;
+
+   hs_write_event(0, eb, sizeof(eb));
+
+   time_t now = time(NULL);
+
+   for (unsigned h=0; h<mh.size(); h++)
+      mh[h]->hs_write_event("Run transitions", now, sizeof(eb), (const char*)eb);
 
    return SUCCESS;
 }
@@ -4107,9 +4138,8 @@ INT tr_start(INT run_number, char *error)
    }
 
    /* write transition event into history */
-   eb.transition = STATE_RUNNING;
-   eb.run_number = run_number;
-   hs_write_event(0, &eb, sizeof(eb));
+   write_history(STATE_RUNNING, run_number);
+
 
 #ifdef HAVE_MYSQL
    /* write to SQL database if requested */
@@ -4207,9 +4237,7 @@ INT tr_stop(INT run_number, char *error)
       cm_msg(MTALK, "tr_stop", "all tape channels closed");
 
    /* write transition event into history */
-   eb.transition = STATE_STOPPED;
-   eb.run_number = run_number;
-   hs_write_event(0, &eb, sizeof(eb));
+   write_history(STATE_STOPPED, run_number);
 
    /* clear flag */
    stop_requested = FALSE;
@@ -4234,9 +4262,7 @@ INT tr_stop(INT run_number, char *error)
 INT tr_pause(INT run_number, char *error)
 {
    /* write transition event into history */
-   eb.transition = STATE_PAUSED;
-   eb.run_number = run_number;
-   hs_write_event(0, &eb, sizeof(eb));
+   write_history(STATE_PAUSED, run_number);
 
    local_state = STATE_PAUSED;
 
@@ -4246,9 +4272,7 @@ INT tr_pause(INT run_number, char *error)
 INT tr_resume(INT run_number, char *error)
 {
    /* write transition event into history */
-   eb.transition = STATE_RUNNING;
-   eb.run_number = run_number;
-   hs_write_event(0, &eb, sizeof(eb));
+   write_history(STATE_RUNNING, run_number);
 
    local_state = STATE_RUNNING;
 
