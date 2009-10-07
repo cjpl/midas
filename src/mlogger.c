@@ -3213,7 +3213,7 @@ INT open_history()
                }
             }
 
-            if (hKeyNames && varkey.num_values != n_names) {
+            if (hKeyNames && n_names < varkey.num_values) {
                cm_msg(MERROR, "open_history",
                       "Array size mismatch: \"/Equipment/%s/Settings/%s\" has %d entries while \"/Equipment/%s/Variables/%s\" has %d entries",
                       eq_name, key.name, n_names,
