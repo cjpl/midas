@@ -820,6 +820,8 @@ void show_header(HNDLE hDB, char *title, char *method, char *path, int colspan,
    if (str[0] == 0)
       strcpy(str, "./");
 
+   urlEncode(str, sizeof(str));
+
    if (equal_ustring(method, "POST"))
       rsprintf
           ("<body><form name=\"form1\" method=\"POST\" action=\"%s\" enctype=\"multipart/form-data\">\n\n",
@@ -6833,10 +6835,10 @@ void show_delete_page(char *enc_path, char *dec_path, char *value, int index)
 
       /* enumerate subkeys */
       for (i = 0;; i++) {
-         db_enum_key(hDB, hkeyroot, i, &hkey);
+         db_enum_link(hDB, hkeyroot, i, &hkey);
          if (!hkey)
             break;
-         db_get_key(hDB, hkey, &key);
+         db_get_link(hDB, hkey, &key);
          rsprintf("<option> %s\n", key.name);
       }
 
