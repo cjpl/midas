@@ -47,9 +47,16 @@ void     v560_RegisterWrite(MVME_INTERFACE *mvme, DWORD base, int offset, uint16
 
 void v560_Read(MVME_INTERFACE *mvme, DWORD base, uint32_t data[16])
 {
+  int i;
   mvme_set_am(mvme, MVME_AM_A24);
   mvme_set_dmode(mvme, MVME_DMODE_D32);
-  mvme_read(mvme, data, base + 0x10, 16*4);
+  //mvme_set_blt(mvme, MVME_BLT_BLT32);
+  //mvme_set_blt(mvme, MVME_BLT_NONE);
+  //mvme_set_blt(mvme, 0);
+  //mvme_read(mvme, data, base + 0x10, 16*4);
+
+  for (i=0; i<16; i++)
+    data[i] = mvme_read_value(mvme, base + 0x10 + 4*i);
 }
 
 /*****************************************************************/
