@@ -715,7 +715,7 @@ int SqlODBC::Exec(const char* sql)
 
 int SqlODBC::GetNumRows()
 {
-   SQLINTEGER nrows = 0;
+   SQLLEN nrows = 0;
    /* How many rows are there */
    int status = SQLRowCount(fStmt, &nrows);
    if (!SQL_SUCCEEDED(status)) {
@@ -765,7 +765,7 @@ int SqlODBC::Done()
 const char* SqlODBC::GetColumn(int icol)
 {
   static char buf[1024];
-  SQLINTEGER indicator;
+  SQLLEN indicator;
   int status = SQLGetData(fStmt, icol, SQL_C_CHAR, buf, sizeof(buf), &indicator);
 
   if (!SQL_SUCCEEDED(status)) {
