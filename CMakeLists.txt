@@ -123,10 +123,11 @@ foreach(obj mxml ${EXTRA_OBJS})
   set(LIB_OBJS ${LIB_OBJS} ${MXML_PATH}/${obj}.c)
 endforeach(obj)
 if(ODBC_FOUND)
-  #set(LIB_OBJS ${LIB_OBJS} src/history_odbc.cxx)
+  set(LIB_OBJS ${LIB_OBJS} src/history_odbc.cxx)
   message(STATUS "ODBC found, but not include history_odbc.cxx")
 endif(ODBC_FOUND)
 set(LIB_OBJS ${LIB_OBJS} src/history_sql.cxx)
+message(STATUS "LIB_OBJS: ${LIB_OBJS}")
 
 ## Add static lib
 add_library(midas-static STATIC ${LIB_OBJS})
