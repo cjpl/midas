@@ -19,7 +19,7 @@ char *mhttpd_svn_revision = "$Rev$";
 extern "C" {
 #include "mgd.h"
 }
-#include "history_odbc.h"
+#include "history.h"
 
 /* refresh times in seconds */
 #define DEFAULT_REFRESH 60
@@ -100,10 +100,12 @@ char system_list[20][NAME_LENGTH] = {
 };
 
 
-static struct {
+struct Filetype {
    char ext[32];
    char type[32];
-} filetype[] = {
+};
+
+Filetype filetype[] = {
 
    {
    ".JPG", "image/jpeg",}, {
@@ -7799,6 +7801,9 @@ int time_to_sec(char *str)
 
 /*------------------------------------------------------------------*/
 
+static MidasHistoryInterface* mh = NULL;
+static bool using_odbc = 0;
+
 static void set_history_path()
 {
    int status;
@@ -7808,173 +7813,58 @@ static void set_history_path()
 
    cm_get_experiment_database(&hDB, NULL);
 
-   /* check dedicated history path */
+#ifdef HAVE_ODBC
+   /* check ODBC connection */
    size = sizeof(str);
-   memset(str, 0, size);
+   str[0] = 0;
+   status = db_get_value(hDB, 0, "/History/ODBC_DSN", str, &size, TID_STRING, TRUE);
+   if (status == DB_SUCCESS && str[0]!=0 && str[0]!='#') {
 
-   status = db_get_value(hDB, 0, "/Logger/History dir", str, &size, TID_STRING, FALSE);
-   if (status != DB_SUCCESS)
-      db_get_value(hDB, 0, "/Logger/Data dir", str, &size, TID_STRING, TRUE);
-   hs_set_path(str);
-}
+      if (!using_odbc)
+         if (mh) {
+            delete mh;
+            mh = NULL;
+         }
 
-static WORD get_variable_id(DWORD ltime, int using_odbc, const char* evname, const char* tagname)
-{
-   HNDLE hDB, hKeyRoot;
-   int status, i;
+      if (!mh)
+         mh = MakeMidasHistoryODBC();
 
-   cm_get_experiment_database(&hDB, NULL);
-   
-   status = db_find_key(hDB, 0, "/History/Events", &hKeyRoot);
-   if (status != DB_SUCCESS) {
-      return 0;
+      using_odbc = true;
+
+      int debug = 0;
+      size = sizeof(debug);
+      status = db_get_value(hDB, 0, "/History/ODBC_Debug", &debug, &size, TID_INT, TRUE);
+      assert(status==DB_SUCCESS);
+
+      mh->hs_set_debug(debug);
+
+      status = mh->hs_connect(str);
+
+      if (status != HS_SUCCESS) {
+         cm_msg(MERROR, "set_history_path", "Cannot connect to history database, hs_connect() status %d", status);
+      }
+
+   } else {
+      if (using_odbc)
+         if (mh) {
+            delete mh;
+            mh = NULL;
+
+         }
+      using_odbc = false;
    }
-
-   for (i = 0;; i++) {
-      HNDLE hKey;
-      KEY key;
-      WORD evid;
-      char buf[256];
-      int size;
-      char *s;
-      int j;
-      int ntags = 0;
-      TAG* tags = NULL;
-      char event_name[NAME_LENGTH];
-
-      status = db_enum_key(hDB, hKeyRoot, i, &hKey);
-      if (status != DB_SUCCESS)
-	 break;
-
-      status = db_get_key(hDB, hKey, &key);
-      assert(status == DB_SUCCESS);
-
-      if (!isdigit(key.name[0]))
-         continue;
-
-      evid = atoi(key.name);
-
-      assert(key.item_size < (int)sizeof(buf));
-
-      size = sizeof(buf);
-      status = db_get_data(hDB, hKey, buf, &size, TID_STRING);
-      assert(status == DB_SUCCESS);
-
-      strlcpy(event_name, buf, sizeof(event_name));
-
-      s = strchr(buf,':');
-      if (s)
-         *s = 0;
-
-      //printf("Found event %d, event [%s] name [%s], looking for [%s][%s]\n", evid, event_name, buf, evname, tagname);
-
-      if (!equal_ustring((char *)evname, buf))
-         continue;
-
-      if (using_odbc) {
-#if HAVE_ODBC
-         status = hs_get_tags_odbc(event_name, &ntags, &tags);
-#else
-         status = HS_FILE_ERROR;
 #endif
-      } else {
-         status = hs_get_tags(ltime, evid, event_name, &ntags, &tags);
-      }
 
-      //printf("status %d, ntags %d\n", status, ntags);
+   if (!using_odbc) {
+      if (!mh)
+         mh = MakeMidasHistory();
 
-      //status = hs_get_tags(ltime, evid, event_name, &ntags, &tags);
+      status = mh->hs_connect(NULL);
 
-      for (j=0; j<ntags; j++) {
-         //printf("at %d [%s] looking for [%s]\n", j, tags[j].name, tagname);
-
-         if (equal_ustring((char *)tagname, tags[j].name)) {
-            if (tags)
-               free(tags);
-            return evid;
-         }
-      }
-
-      if (tags)
-         free(tags);
-      tags = NULL;
-   }
-
-   return 0;
-}
-
-static WORD get_variable_id_tags(const char* evname, const char* tagname)
-{
-   HNDLE hDB, hKeyRoot;
-   int status, i;
-
-   cm_get_experiment_database(&hDB, NULL);
-   
-   status = db_find_key(hDB, 0, "/History/Tags", &hKeyRoot);
-   if (status != DB_SUCCESS) {
-      return 0;
-   }
-
-   for (i = 0;; i++) {
-      HNDLE hKey;
-      KEY key;
-      WORD evid;
-      char buf[256];
-      int size;
-      char *s;
-      int j;
-
-      status = db_enum_key(hDB, hKeyRoot, i, &hKey);
-      if (status != DB_SUCCESS)
-	 break;
-
-      status = db_get_key(hDB, hKey, &key);
-      assert(status == DB_SUCCESS);
-
-      if (!isdigit(key.name[0]))
-         continue;
-
-      evid = atoi(key.name);
-
-      assert(key.item_size < (int)sizeof(buf));
-
-      size = sizeof(buf);
-      status = db_get_data_index(hDB, hKey, buf, &size, 0, TID_STRING);
-      assert(status == DB_SUCCESS);
-
-      s = strchr(buf,'/');
-      if (s)
-         *s = 0;
-
-      //printf("Found event %d, name [%s], looking for [%s][%s]\n", evid, buf, evname, tagname);
-
-      if (!equal_ustring((char *)evname, buf))
-         continue;
-
-      for (j=1; j<key.num_values; j++) {
-         size = sizeof(buf);
-         status = db_get_data_index(hDB, hKey, buf, &size, j, TID_STRING);
-         assert(status == DB_SUCCESS);
-
-         if (!isdigit(buf[0]))
-            continue;
-
-         s = strchr(buf,' ');
-         if (!s)
-            continue;
-
-         s++;
- 
-         //printf("at %d [%s] [%s] compare to [%s]\n", j, buf, s, tagname);
-
-         if (equal_ustring((char *)tagname, s)) {
-            //printf("Found evid %d\n", evid);
-            return evid;
-         }
+      if (status != HS_SUCCESS) {
+         cm_msg(MERROR, "set_history_path", "Cannot connect to midas history, hs_connect() status %d", status);
       }
    }
-
-   return 0;
 }
 
 /*------------------------------------------------------------------*/
@@ -7988,14 +7878,12 @@ void generate_hist_graph(char *path, char *buffer, int *buffer_size,
    gdImagePtr im;
    gdGifBuffer gb;
    int i, j, k, l, n_vars, size, status, row, x_marker, n_vp, r, g, b;
-   DWORD bsize, tsize, n_marker, *state;
    int length, aoffset;
    int flag, x1, y1, x2, y2, xs, xs_old, ys, xold, yold, xmaxm;
    int white, black, grey, ltgrey, red, green, blue, fgcol, bgcol, gridcol,
        curve_col[MAX_VARS], state_col[3];
    char str[256], panel[256], *p, odbpath[256];
    INT var_index[MAX_VARS];
-   DWORD type, event_id;
    char event_name[MAX_VARS][NAME_LENGTH];
    char tag_name[MAX_VARS][64], var_name[MAX_VARS][NAME_LENGTH], varname[64],
        key_name[256];
@@ -8014,7 +7902,6 @@ void generate_hist_graph(char *path, char *buffer, int *buffer_size,
    int show_values = 0;
    int sort_vars = 0;
    char var_status[MAX_VARS][256];
-   int using_odbc = 0;
    double tstart, tend;
 
    static char *ybuffer;
@@ -8075,45 +7962,8 @@ void generate_hist_graph(char *path, char *buffer, int *buffer_size,
    gdImageString(im, gdFontGiant, width / 2 - (strlen(panel) * gdFontGiant->w) / 2, 2,
                  panel, fgcol);
 
-   /* set history path */
-   status = db_find_key(hDB, 0, "/Logger/Data dir", &hkey);
-   if (status != DB_SUCCESS) {
-      sprintf(str, "No data directory defined in ODB");
-      gdImageString(im, gdFontSmall, width / 2 - (strlen(str) * gdFontSmall->w) / 2,
-                    height / 2, str, red);
-      goto error;
-   }
-
-   /* check dedicated history path */
+   /* connect to history */
    set_history_path();
-
-#ifdef HAVE_ODBC
-   /* check ODBC connection */
-   size = sizeof(str);
-   str[0] = 0;
-   status = db_get_value(hDB, 0, "/History/ODBC_DSN", str, &size, TID_STRING, TRUE);
-   if (status == DB_SUCCESS && str[0]!=0 && str[0]!='#') {
-      int debug = 0;
-      size = sizeof(debug);
-      status = db_get_value(hDB, 0, "/History/ODBC_Debug", &debug, &size, TID_INT, TRUE);
-      assert(status==DB_SUCCESS);
-
-      hs_debug_odbc(debug);
-
-      hs_set_alarm_odbc("mhttpd_ODBC");
-
-      status = hs_connect_odbc(str);
-      if (status != HS_SUCCESS) {
-         sprintf(str, "Cannot use /History/ODBC_DSN, error %d, see messages", status);
-         gdImageString(im, gdFontSmall, width / 2 - (strlen(str) * gdFontSmall->w) / 2,
-                       height / 2, str, red);
-         goto error;
-      }
-
-      using_odbc = 1;
-      //printf("using odbc!\n");
-   }
-#endif
 
    /* check panel name in ODB */
    sprintf(str, "/History/Display/%s", panel);
@@ -8206,29 +8056,6 @@ void generate_hist_graph(char *path, char *buffer, int *buffer_size,
 	    }
 	 }
       }
-
-      /* search for event_id */
-
-      /* use "/History/Tags" if available */
-      event_id = get_variable_id_tags(event_name[i], var_name[i]);
-
-      /* if no Tags, use "/History/Events" and hs_get_tags() to read definition from history files */
-      if (event_id == 0)
-         event_id = get_variable_id(ss_time() + toffset, using_odbc, event_name[i], var_name[i]);
-
-      /* if nothing works, use hs_get_event_id() */
-      if (event_id == 0)
-         status = hs_get_event_id(0, event_name[i], &event_id);
-
-      if (event_id == 0) {
-         sprintf(str, "Event \"%s\" variable \"%s\" from panel \"%s\" not found in history",
-                 event_name[i], var_name[i], panel);
-         gdImageString(im, gdFontSmall, width / 2 - (strlen(str) * gdFontSmall->w) / 2,
-                       height / 2, str, red);
-         goto error;
-      }
-
-      //printf("Looking for event %d tag \'%s\' [%d]\n", event_id, var_name[i], var_index[i]);
 
       /* get timescale */
       if (scale == 0) {
@@ -8436,52 +8263,83 @@ void generate_hist_graph(char *path, char *buffer, int *buffer_size,
             }
          }
       }
+   } // loop over variables
 
-      if (using_odbc) {
-#ifdef HAVE_ODBC
-         int num_entries;
-         time_t* time_buffer;
-         double* data_buffer;
-         time_t now = ss_time();
-         int debug = 0;
+   if (1) {
+      time_t now = ss_time();
 
-         var_status[i][0] = 0;
+      int num_entries[MAX_VARS];
+      time_t *times[MAX_VARS];
+      double *datas[MAX_VARS];
+      int st[MAX_VARS];
 
-         size = sizeof(debug);
-         status = db_get_value(hDB, 0, "/History/ODBC_Debug", &debug, &size, TID_INT, TRUE);
-         assert(status==DB_SUCCESS);
-         
-         hs_debug_odbc(debug);
+      const char* xevent_name[MAX_VARS];
+      const char* xvar_name[MAX_VARS];
 
-         status = hs_read_odbc(now - scale + toffset, now + toffset, scale / 1000 + 1,
-                               event_name[i], var_name[i], var_index[i],
-                               &num_entries,
-                               &time_buffer, &data_buffer);
-
-         if (status != HS_SUCCESS) {
-            sprintf(var_status[i], "hs_read_odbc error %d, see messages", status);
-            num_entries = 0;
+      for (i = 0; i < n_vars; i++) {
+         if (index != -1 && index != i) {
+            var_status[i][0] = 0;
+            xevent_name[i] = NULL;
+            xvar_name[i] = NULL;
+            continue;
          }
 
-         for (j = n_vp = 0; j < num_entries; j++) {
-            x[i][n_vp] = time_buffer[j] - now;
-            y[i][n_vp] = data_buffer[j];
-            
+         var_status[i][0] = 0;
+         xevent_name[i] = event_name[i];
+         xvar_name[i] = var_name[i];
+         
+         //printf("event [%s][%s] tag [%s][%s] index [%d]\n", event_name[i], xevent_name[i], var_name[i], xvar_name[i], var_index[i]);
+      }
+
+      status = mh->hs_read(now - scale + toffset, now + toffset, scale / 1000 + 1,
+                           n_vars,
+                           xevent_name, xvar_name, var_index,
+                           num_entries,
+                           times, datas,
+                           st);
+     
+      if (status != HS_SUCCESS) {
+         sprintf(str, "Complete history failure, hs_read() status %d, see messages", status);
+         gdImageString(im, gdFontSmall, width / 2 - (strlen(str) * gdFontSmall->w) / 2,
+                       height / 2, str, red);
+         goto error;
+      }
+
+      for (i = 0; i < n_vars; i++) {
+         var_status[i][0] = 0;
+
+         if (st[i] == HS_UNDEFINED_VAR) {
+            sprintf(var_status[i], "not found in history");
+            num_entries[i] = 0;
+         } else if (st[i] != HS_SUCCESS) {
+            sprintf(var_status[i], "hs_read() error %d, see messages", st[i]);
+            num_entries[i] = 0;
+         }
+      }
+     
+      for (i = 0; i < n_vars; i++) {
+         if (index != -1 && index != i)
+            continue;
+       
+         for (j = n_vp = 0; j < num_entries[i]; j++) {
+            x[i][n_vp] = times[i][j] - now;
+            y[i][n_vp] = datas[i][j];
+         
             /* skip NaNs */
             if (ss_isnan(y[i][n_vp]))
                continue;
-            
+         
             /* skip INFs */
             if (!ss_isfin(y[i][n_vp]))
                continue;
-            
+         
             /* avoid overflow */
             if (y[i][n_vp] > 1E30)
                y[i][n_vp] = 1E30f;
-            
+         
             /* apply factor and offset */
             y[i][n_vp] = y[i][n_vp] * factor[i] + offset[i];
-            
+         
             /* calculate ymin and ymax */
             if ((i == 0 || index != -1) && n_vp == 0)
                ymin = ymax = y[i][0];
@@ -8491,136 +8349,19 @@ void generate_hist_graph(char *path, char *buffer, int *buffer_size,
                if (y[i][n_vp] < ymin)
                   ymin = y[i][n_vp];
             }
-            
+         
             /* increment number of valid points */
             n_vp++;
-         }
+
+         } // loop over data
 
          n_point[i] = n_vp;
 
          assert(n_point[i]<=MAX_POINTS);
 
-         if (time_buffer)
-            free(time_buffer);
-         if (data_buffer)
-            free(data_buffer);
-#else
-         assert(!"This cannot happen: using_odbc!=0, but no HAVE_ODBC");
-#endif
-      } else {
-      do {
-         bsize = tsize = hbuffer_size;
-         memset(ybuffer, 0, bsize);
-         status =
-             hs_read(event_id, ss_time() - scale + toffset, ss_time() + toffset,
-                     scale / 1000 + 1, var_name[i], var_index[i], tbuffer, &tsize,
-                     ybuffer, &bsize, &type, &n_point[i]);
-
-         //printf("hs_read %d \'%s\' [%d] returned %d, %d entries\n", event_id, var_name[i], var_index[i], status, n_point[i]);
-
-         if (status == HS_TRUNCATED) {
-            hbuffer_size *= 2;
-            tbuffer = (DWORD*)realloc(tbuffer, hbuffer_size);
-            assert(tbuffer);
-            ybuffer = (char*)realloc(ybuffer, hbuffer_size);
-            assert(ybuffer);
-         }
-
-      } while (status == HS_TRUNCATED);
-
-      sprintf(var_status[i], "hs_read error %d", status);
-
-      if (status == HS_UNDEFINED_VAR) {
-         sprintf(var_status[i], "Event %d, variable \"%s\" not found in history", event_id, var_name[i]);
-#if 0
-         sprintf(str, "Variable \"%s\" not found in history", var_name[i]);
-         gdImageString(im, gdFontSmall, width / 2 - (strlen(str) * gdFontSmall->w) / 2,
-                       height / 2, str, red);
-         goto error;
-#endif
-      } else if (status != HS_SUCCESS) {
-         sprintf(var_status[i], "hs_read() of event %d, variable \"%s\", index %d gives error %d", event_id, var_name[i], var_index[i], status);
-#if 0
-         sprintf(str, "Variable \"%s\" history error %d", var_name[i], status);
-         gdImageString(im, gdFontSmall, width / 2 - (strlen(str) * gdFontSmall->w) / 2,
-                       height / 2, str, red);
-         goto error;
-#endif
-      } else {
-         var_status[i][0] = 0;
-      }
-
-      for (j = n_vp = 0; j < (int) n_point[i]; j++) {
-         x[i][n_vp] = tbuffer[j] - ss_time();
-
-         /* convert data to float */
-         switch (type) {
-         case TID_BYTE:
-            y[i][n_vp] = (double) *(((BYTE *) ybuffer) + j);
-            break;
-         case TID_SBYTE:
-            y[i][n_vp] = (double) *(((char *) ybuffer) + j);
-            break;
-         case TID_CHAR:
-            y[i][n_vp] = (double) *(((char *) ybuffer) + j);
-            break;
-         case TID_WORD:
-            y[i][n_vp] = (double) *(((WORD *) ybuffer) + j);
-            break;
-         case TID_SHORT:
-            y[i][n_vp] = (double) *(((short *) ybuffer) + j);
-            break;
-         case TID_DWORD:
-            y[i][n_vp] = (double) *(((DWORD *) ybuffer) + j);
-            break;
-         case TID_INT:
-            y[i][n_vp] = (double) *(((INT *) ybuffer) + j);
-            break;
-         case TID_BOOL:
-            y[i][n_vp] = (double) *(((BOOL *) ybuffer) + j);
-            break;
-         case TID_FLOAT:
-            y[i][n_vp] = (double) *(((float *) ybuffer) + j);
-            break;
-         case TID_DOUBLE:
-            y[i][n_vp] = (double) *(((double *) ybuffer) + j);
-            break;
-         }
-
-         /* skip NaNs */
-         if (ss_isnan(y[i][n_vp]))
-            continue;
-
-         /* skip INFs */
-         if (!ss_isfin(y[i][n_vp]))
-            continue;
-
-         /* avoid overflow */
-         if (y[i][n_vp] > 1E30)
-            y[i][n_vp] = 1E30f;
-
-         /* apply factor and offset */
-         y[i][n_vp] = y[i][n_vp] * factor[i] + offset[i];
-
-         /* calculate ymin and ymax */
-         if ((i == 0 || index != -1) && n_vp == 0)
-            ymin = ymax = y[i][0];
-         else {
-            if (y[i][n_vp] > ymax)
-               ymax = y[i][n_vp];
-            if (y[i][n_vp] < ymin)
-               ymin = y[i][n_vp];
-         }
-
-         /* increment number of valid points */
-         n_vp++;
-      }
-
-      n_point[i] = n_vp;
-
-      assert(n_point[i]<=MAX_POINTS);
-
-      }
+         free(times[i]);
+         free(datas[i]);
+      } // loop over variables
    }
 
    tend = ss_millitime();
@@ -8720,38 +8461,42 @@ void generate_hist_graph(char *path, char *buffer, int *buffer_size,
 
    /* write run markes if selected */
    if (runmarker) {
-      bsize = hbuffer_size;
-      tsize = hbuffer_size;
 
-      /* read run state */
+      const char* event_names[] = {
+         "Run transitions", 
+         "Run transitions", 
+         0 };
 
-      status = hs_read(0, ss_time() - scale + toffset, ss_time() + toffset, 0,
-                       "State", 0, tbuffer, &tsize, ybuffer, &bsize, &type, &n_marker);
+      const char* tag_names[] = {
+         "State", 
+         "Run number", 
+         0 };
 
-      state = NULL;
-      if (status != HS_UNDEFINED_VAR) {
-        state = (DWORD*)M_MALLOC(sizeof(DWORD) * n_marker);
-         for (j = 0; j < (int) n_marker; j++)
-            state[j] = *((DWORD *) ybuffer + j);
-      }
+      const int tag_indexes[] = {
+         0,
+         0,
+         0 };
 
-      bsize = hbuffer_size;
-      tsize = hbuffer_size;
+      int num_entries[3];
+      time_t *tbuf[3];
+      double *dbuf[3];
+      int     st[3];
 
-      /* read run number */
+      status = mh->hs_read(ss_time() - scale + toffset - scale, ss_time() + toffset, 0,
+                           2, event_names, tag_names, tag_indexes,
+                           num_entries, tbuf, dbuf, st);
 
-      status = hs_read(0, ss_time() - scale + toffset, ss_time() + toffset, 0,
-                       "Run number", 0, tbuffer, &tsize, ybuffer, &bsize, &type,
-                       &n_marker);
+      //printf("read run info: status %d, entries %d %d\n", status, num_entries[0], num_entries[1]);
 
-      if (status != HS_UNDEFINED_VAR && n_marker < 100) {
+      int n_marker = num_entries[0];
+
+      if (status == HS_SUCCESS && n_marker > 0 && n_marker < 100) {
          xs_old = -1;
          xmaxm = x1;
          for (j = 0; j < (int) n_marker; j++) {
-            int run_number;
             int col;
 
-            x_marker = tbuffer[j] - ss_time();
+            x_marker = tbuf[1][j] - ss_time();
             xs = (int) ((x_marker / 3600.0 - xmin) / (xmax - xmin) * (x2 - x1) + x1 +
                         0.5);
 
@@ -8760,32 +8505,32 @@ void generate_hist_graph(char *path, char *buffer, int *buffer_size,
             if (xs >= width)
                xs = width-1;
 
-            run_number = *((DWORD *) ybuffer + j);
+            double run_number = dbuf[1][j];
 
             if (xs <= xs_old)
                xs = xs_old + 1;
             xs_old = xs;
 
-            if (state[j] == 1)
+            if (dbuf[0][j] == 1)
                col = state_col[0];
-            else if (state[j] == 2)
+            else if (dbuf[0][j] == 2)
                col = state_col[1];
-            else if (state[j] == 3)
+            else if (dbuf[0][j] == 3)
                col = state_col[2];
             else
                col = state_col[0];
 
             gdImageDashedLine(im, xs, y1, xs, y2, col);
 
-            sprintf(str, "%d", run_number);
+            sprintf(str, "%.0f", run_number);
 
-            if (state[j] == STATE_RUNNING) {
+            if (dbuf[0][j] == STATE_RUNNING) {
                if (xs > xmaxm) {
                   gdImageStringUp(im, gdFontSmall, xs + 0,
                                   y2 + 2 + gdFontSmall->w * strlen(str), str, fgcol);
                   xmaxm = xs - 2 + gdFontSmall->h;
                }
-            } else if (state[j] == STATE_STOPPED) {
+            } else if (dbuf[0][j] == STATE_STOPPED) {
                if (xs + 2 - gdFontSmall->h > xmaxm) {
                   gdImageStringUp(im, gdFontSmall, xs + 2 - gdFontSmall->h,
                                   y2 + 2 + gdFontSmall->w * strlen(str), str, fgcol);
@@ -8795,8 +8540,15 @@ void generate_hist_graph(char *path, char *buffer, int *buffer_size,
          }
       }
 
-      if (state)
-         M_FREE(state);
+      if (num_entries[0]) {
+         free(tbuf[0]);
+         free(dbuf[0]);
+      }
+
+      if (num_entries[1]) {
+         free(tbuf[1]);
+         free(dbuf[1]);
+      }
    }
 
    for (i = 0; i < n_vars; i++) {
@@ -9149,269 +8901,7 @@ void show_query_page(char *path)
 
 /*------------------------------------------------------------------*/
 
-struct poor_mans_list
-{
-   char *names;
-   int last;
-   int length;
-   int count;
-};
-
-void list_init(struct poor_mans_list* list)
-{
-   list->names = NULL;
-   list->last = 0;
-   list->length = 0;
-   list->count = 0;
-};
-
-void list_add(struct poor_mans_list* list, const char* str)
-{
-   int lll;
-
-   lll = strlen(str);
-
-   while (list->last + lll + 2 >= list->length) {
-      int nl = 2*list->length;
-      if (list->length == 0)
-         nl = 100;
-      list->names = (char*)realloc(list->names, nl);
-      assert(list->names);
-      list->length = nl;
-   }
-   
-   memcpy(list->names + list->last, str, lll);
-   list->last+=lll;
-   list->names[list->last] = 0;
-   list->last++;
-   list->names[list->last] = 0;
-   list->count++;
-   
-   assert(list->last < list->length);
-}
-
-static int enum_events_equipment(HNDLE hDB, int* num_events, char** event_names)
-{
-   HNDLE hKeyRoot;
-   int i, status;
-
-   struct poor_mans_list names;
-   list_init(&names);
-
-   *num_events = 0;
-   *event_names = NULL;
-
-   status = db_find_key(hDB, 0, "/Equipment", &hKeyRoot);
-   if (status != DB_SUCCESS) {
-      show_error("Cannot find /Equipment in ODB");
-      return HS_FILE_ERROR;
-   }
-
-   /* loop over equipment to display event name */
-   for (i = 0;; i++) {
-      HNDLE hKeyEq;
-      int history;
-      int size;
-      
-      status = db_enum_key(hDB, hKeyRoot, i, &hKeyEq);
-      if (status != DB_SUCCESS)
-         break;
-    
-      /* check history flag */
-      size = sizeof(history);
-      db_get_value(hDB, hKeyEq, "Common/Log history", &history, &size, TID_INT, TRUE);
-    
-      /* show event only if log history flag is on */
-      if (history > 0) {
-         KEY key;
-         char *evname;
-
-         /* get equipment name */
-         db_get_key(hDB, hKeyEq, &key);
-
-         evname = key.name;
-
-         list_add(&names, evname);
-         
-         //printf("event \'%s\'\n", evname);
-      }
-   }
-   
-   /* loop over history links to display event name */
-   status = db_find_key(hDB, 0, "/History/Links", &hKeyRoot);
-   if (status == DB_SUCCESS) {
-      for (i = 0;; i++) {
-         HNDLE hKey;
-         KEY key;
-         char* evname;
-
-         status = db_enum_link(hDB, hKeyRoot, i, &hKey);
-         if (status == DB_NO_MORE_SUBKEYS)
-            break;
-      
-         db_get_key(hDB, hKey, &key);
-      
-         evname = key.name;
-
-         list_add(&names, evname);
-
-         //printf("event \'%s\'\n", evname);
-      }
-   }
-
-   *num_events = names.count;
-   *event_names = names.names;
-
-   return HS_SUCCESS;
-}
-
-static int enum_events_events(HNDLE hDB, int* num_events, char** event_names)
-{
-   int i;
-   HNDLE hKeyRoot;
-   int status;
-
-   struct poor_mans_list names;
-   list_init(&names);
-
-   *num_events = 0;
-   *event_names = NULL;
-
-   status = db_find_key(hDB, 0, "/History/Events", &hKeyRoot);
-   if (status != DB_SUCCESS) {
-      show_error("Cannot find /History/Events in ODB");
-      return HS_FILE_ERROR;
-   }
-
-   /* loop over tags to display event names */
-   for (i = 0;; i++) {
-      HNDLE hKeyEq;
-      char *s;
-      char evname[1024+NAME_LENGTH];
-      int size;
-      char *p;
-      int found;
-      
-      status = db_enum_key(hDB, hKeyRoot, i, &hKeyEq);
-      if (status != DB_SUCCESS)
-         break;
-    
-      size = sizeof(evname);
-      status = db_get_data(hDB, hKeyEq, evname, &size, TID_STRING);
-      assert(status == DB_SUCCESS);
-
-      s = strchr(evname,':');
-      if (s)
-         *s = 0;
-
-      /* skip duplicated event names */
-
-      found = 0;
-      for (p = names.names; p!=NULL && *p!=0; p += strlen(p) + 1) {
-         if (equal_ustring(evname, p)) {
-            found = 1;
-            break;
-         }
-      }
-    
-      if (found)
-         continue;
-
-      list_add(&names, evname);
-
-      //printf("event \'%s\'\n", evname);
-   }
-
-   *num_events = names.count;
-   *event_names = names.names;
-
-   return HS_SUCCESS;
-}
-
-static int enum_events_tags(HNDLE hDB, int* num_events, char** event_names)
-{
-   int i;
-   HNDLE hKeyRoot;
-   int status;
-
-   struct poor_mans_list names;
-   list_init(&names);
-
-   *num_events = 0;
-   *event_names = NULL;
-
-   status = db_find_key(hDB, 0, "/History/Tags", &hKeyRoot);
-   if (status != DB_SUCCESS) {
-      show_error("Cannot find /History/Tags in ODB");
-      return HS_FILE_ERROR;
-   }
-   
-   /* loop over tags to display event names */
-   for (i = 0;; i++) {
-      HNDLE hKeyEq;
-      KEY key;
-      char *s;
-      WORD event_id;
-      char evname[1024+NAME_LENGTH];
-      int size;
-      char *p;
-      int found;
-      
-      status = db_enum_key(hDB, hKeyRoot, i, &hKeyEq);
-      if (status != DB_SUCCESS)
-         break;
-    
-      /* get event name */
-      db_get_key(hDB, hKeyEq, &key);
-      
-      //printf("key \'%s\'\n", key.name);
-      
-      /* parse event name in format: "event_id" or "event_id:var_name" */
-      s = key.name;
-      
-      event_id = (WORD)strtoul(s,&s,0);
-      if (event_id == 0)
-         continue;
-      if (s[0] != 0)
-         continue;
-
-      size = sizeof(evname);
-      status = db_get_data_index(hDB, hKeyEq, evname, &size, 0, TID_STRING);
-      assert(status == DB_SUCCESS);
-
-      s = strchr(evname, '/');
-      if (s)
-         *s = 0;
-
-      /* skip duplicated event names */
-
-      found = 0;
-      for (p = names.names; p!=NULL && *p!=0; p += strlen(p) + 1) {
-         if (equal_ustring(evname, p)) {
-            found = 1;
-            break;
-         }
-      }
-    
-      if (found)
-         continue;
-
-      list_add(&names, evname);
-
-      //printf("event %d \'%s\'\n", event_id, evname);
-   }
-
-   *num_events = names.count;
-   *event_names = names.names;
-
-   return HS_SUCCESS;
-}
-
-/*------------------------------------------------------------------*/
-
-/*------------------------------------------------------------------*/
-
-int sort_tags(const void *a, const void *b)
+static int cmp_names(const void *a, const void *b)
 {
   int i;
   const char*sa = (const char*)a;
@@ -9469,535 +8959,53 @@ int sort_tags(const void *a, const void *b)
   // NOT REACHED
 }
 
-char* sort_names(char* names)
+const bool cmp_tags(const TAG& a, const TAG& b)
 {
-   int i, p;
-   int len = 0;
-   int num = 0;
-   char* arr_names;
-   struct poor_mans_list sorted;
-
-   for (i=0, p=0; names[p]!=0; i++) {
-      const char*pp = names+p;
-      int pplen = strlen(pp);
-      //printf("%d [%s] %d\n", i, pp, pplen);
-      if (pplen > len)
-         len = pplen;
-      p += strlen(names+p) + 1;
-   }
-
-   num = i;
-
-   len+=1; // space for string terminator '\0'
-
-   arr_names = (char*)malloc(len*num);
-
-   for (i=0, p=0; names[p]!=0; i++) {
-      const char*pp = names+p;
-      strlcpy(arr_names+i*len, pp, len);
-      p += strlen(names+p) + 1;
-   }
-
-   free(names);
-
-   qsort(arr_names, num, len, sort_tags);
-
-   list_init(&sorted);
-
-   for (i=0; i<num; i++)
-      list_add(&sorted, arr_names+i*len);
-
-   return sorted.names;
+  return cmp_names(a.name, b.name) < 0;
 }
 
-#define STRLCPY(dst, src) strlcpy(dst, src, sizeof(dst))
-
-static int enum_vars_tags(HNDLE hDB, const char* event_name, int* num_vars, char** var_names)
+#if 0
+static int cmp_tags(const void *a, const void *b)
 {
-   HNDLE hKeyRoot;
-   int i, j;
-   int status;
-
-   struct poor_mans_list names;
-
-   list_init(&names);
-
-   *num_vars = 0;
-   *var_names = NULL;
-   
-   status = db_find_key(hDB, 0, "/History/Tags", &hKeyRoot);
-   if (status != DB_SUCCESS) {
-      show_error("Cannot find /History/Tags in ODB");
-      return HS_FILE_ERROR;
-   }
-   
-   /* loop over equipment to display event name */
-   for (i = 0;; i++) {
-      HNDLE hKey;
-      KEY key;
-      WORD event_id;
-      char buf[256];
-      int size;
-      char* s;
-      
-      status = db_enum_key(hDB, hKeyRoot, i, &hKey);
-      if (status != DB_SUCCESS)
-         break;
-    
-      /* get event name */
-      status = db_get_key(hDB, hKey, &key);
-      assert(status == DB_SUCCESS);
-      
-      /* parse event id */
-      if (!isdigit(key.name[0]))
-         continue;
-
-      event_id = atoi(key.name);
-      if (event_id == 0)
-         continue;
-
-      if (key.item_size >= (int)sizeof(buf))
-         continue;
-
-      if (key.num_values == 1) { // old format of "/History/Tags"
-
-         HNDLE hKeyDir;
-         sprintf(buf, "Tags %d", event_id);
-         status = db_find_key(hDB, hKeyRoot, buf, &hKeyDir);
-         if (status != DB_SUCCESS)
-            continue;
-
-         /* loop over tags */
-         for (j=0; ; j++) {
-            HNDLE hKey;
-            WORD array;
-            int size;
-            char var_name[NAME_LENGTH];
-            
-            status = db_enum_key(hDB, hKeyDir, j, &hKey);
-            if (status != DB_SUCCESS)
-               break;
-            
-            /* get event name */
-            status = db_get_key(hDB, hKey, &key);
-            assert(status == DB_SUCCESS);
-            
-            array = 1;
-            size  = sizeof(array);
-            status = db_get_data(hDB, hKey, &array, &size, TID_WORD);
-            assert(status == DB_SUCCESS);
-            
-            strlcpy(var_name, key.name, sizeof(var_name));
-            
-            //printf("Found %s, event %d (%s), tag (%s) array %d\n", key.name, event_id, event_name, var_name, array);
-            
-            if (array == 1) {
-               list_add(&names, var_name);
-            } else {
-               int ii;
-               for (ii=0; ii<array; ii++) {
-                  char vvv[256];
-                  sprintf(vvv, "%s[%d]", var_name, ii);
-                  list_add(&names, vvv);
-               }
-            }
-         }
-
-         continue;
-      }
-
-      size = sizeof(buf);
-      status = db_get_data_index(hDB, hKey, buf, &size, 0, TID_STRING);
-      assert(status == DB_SUCCESS);
-
-      s = strchr(buf, '/');
-      if (s)
-         *s = 0;
-
-      //printf("evid %d, name [%s]\n", event_id, buf);
-
-      if (!equal_ustring(buf, (char*)event_name))
-         continue;
-
-      /* loop over tags */
-      for (j=1; j<key.num_values; j++) {
-         int array;
-         int size;
-         char var_name[NAME_LENGTH];
-         int ev_type;
-         
-         size = sizeof(buf);
-         status = db_get_data_index(hDB, hKey, buf, &size, j, TID_STRING);
-         assert(status == DB_SUCCESS);
-
-         //printf("index %d [%s]\n", j, buf);
-
-         if (!isdigit(buf[0]))
-            continue;
-
-         sscanf(buf, "%d[%d]", &ev_type, &array);
-
-         s = strchr(buf, ' ');
-         if (!s)
-            continue;
-         s++;
-
-         STRLCPY(var_name, s);
-
-         //printf("Found %s, event %d (%s), tag (%s) array %d, type %d\n", buf, event_id, selectedEvent, var_name, array, ev_type);
-
-         if (array == 1) {
-            list_add(&names, var_name);
-         } else {
-            int ii;
-            for (ii=0; ii<array; ii++) {
-               char vvv[256];
-               sprintf(vvv, "%s[%d]", var_name, ii);
-               list_add(&names, vvv);
-            }
-         }
-      }
-   }
-
-   *num_vars = names.count;
-   *var_names = names.names;
-
-   return HS_SUCCESS;
+  const TAG*sa = (const TAG*)a;
+  const TAG*sb = (const TAG*)b;
+  return cmp_names(sa->name, sb->name);
 }
 
-static int enum_vars_events(HNDLE hDB, int using_odbc, const char* event_name, int* num_vars, char** var_names)
+static void sort_tags(int ntags, TAG* tags)
 {
-   HNDLE hKeyRoot;
-   int i, j;
-   int status;
-   char *s;
-   DWORD ltime;
-   char xxevent_name[2*NAME_LENGTH+100];
-
-   struct poor_mans_list names;
-
-   list_init(&names);
-
-   *num_vars = 0;
-   *var_names = NULL;
-   
-   status = db_find_key(hDB, 0, "/History/Events", &hKeyRoot);
-   if (status != DB_SUCCESS) {
-      show_error("Cannot find /History/Events in ODB");
-      return HS_FILE_ERROR;
-   }
-   
-   /* loop over equipment to display event name */
-   for (i = 0;; i++) {
-      HNDLE hKey;
-      KEY key;
-      WORD event_id;
-      char buf[256];
-      int size;
-      int ntags;
-      TAG *tags;
-      char xevent_name[NAME_LENGTH];
-      
-      status = db_enum_key(hDB, hKeyRoot, i, &hKey);
-      if (status != DB_SUCCESS)
-         break;
-    
-      /* get event name */
-      status = db_get_key(hDB, hKey, &key);
-      assert(status == DB_SUCCESS);
-      
-      /* parse event id */
-      if (!isdigit(key.name[0]))
-         continue;
-
-      event_id = atoi(key.name);
-      if (event_id == 0)
-         continue;
-
-      if (key.item_size >= (int)sizeof(buf))
-         continue;
-
-      size = sizeof(buf);
-      status = db_get_data(hDB, hKey, buf, &size, TID_STRING);
-      assert(status == DB_SUCCESS);
-
-      strlcpy(xxevent_name, buf, sizeof(xxevent_name));
-      
-      s = strchr(buf, ':');
-      if (s)
-         *s = 0;
-
-      //printf("evid %d, name [%s], selected [%s]\n", event_id, buf, event_name);
-
-      if (!equal_ustring(buf, (char*)event_name))
-         continue;
-
-      ltime = (DWORD) time(NULL);
-
-      if (using_odbc)
-#if HAVE_ODBC
-         status = hs_get_tags_odbc(xxevent_name, &ntags, &tags);
-#else
-         status = HS_FILE_ERROR;
+   qsort(tags, ntags, sizeof(TAG), cmp_tags);
+}
 #endif
-      else
-         status = hs_get_tags(ltime, event_id, xevent_name, &ntags, &tags);
 
-      //printf("status %d, tags %d\n", status, ntags);
-
-      if (status != HS_SUCCESS)
-         continue;
-
-      /* loop over tags */
-      for (j=0; j<ntags; j++) {
-         int array;
-         char var_name[NAME_LENGTH];
-         int ev_type;
-         
-         STRLCPY(var_name, tags[j].name);
-         ev_type = tags[j].type;
-         array = tags[j].n_data;
-
-         //printf("Found %s, event %d (%s), tag (%s) array %d, type %d\n", buf, event_id, selectedEvent, var_name, array, ev_type);
-
-         if (array == 1) {
-            list_add(&names, var_name);
-         } else {
-            int ii;
-            for (ii=0; ii<array; ii++) {
-               char vvv[256];
-               sprintf(vvv, "%s[%d]", var_name, ii);
-               list_add(&names, vvv);
-            }
-         }
-      }
-
-      if (tags)
-         free(tags);
-      tags = NULL;
-   }
-
-   *num_vars = names.count;
-   *var_names = names.names;
-
-   return HS_SUCCESS;
-}
-
-static int enum_vars_equipment(HNDLE hDB, const char* event_name, int* num_vars, char** var_names)
-{
-   HNDLE hKeyRoot;
-   HNDLE hKey, hKeyEq, hKeyVar;
-   BOOL is_link = FALSE;
-   int status;
-   int i;
-   char eq_name[NAME_LENGTH];
-   char str[256];
-
-   struct poor_mans_list names;
-
-   list_init(&names);
-   
-   *num_vars = 0;
-   *var_names = NULL;
-   
-   status = db_find_key(hDB, 0, "/Equipment", &hKeyRoot);
-   if (status != DB_SUCCESS) {
-      show_error("Cannot find /Equipment in ODB");
-      return HS_FILE_ERROR;
-   }
-
-   /* display variables for selected event */
-   
-   STRLCPY(eq_name, event_name);
-  
-   is_link = FALSE;
-   db_find_key(hDB, hKeyRoot, eq_name, &hKeyEq);
-   if (!hKeyEq) {
-      sprintf(str, "/History/Links/%s", eq_name);
-      status = db_find_link(hDB, 0, str, &hKeyVar);
-      if (status != DB_SUCCESS) {
-         sprintf(str, "Cannot find /Equipment/%s or /History/Links/%s in ODB",
-                 eq_name, eq_name);
-         show_error(str);
-         return HS_FILE_ERROR;
-      } else
-         is_link = TRUE;
-   }
-  
-   /* go through variables for selected event */
-   if (!is_link) {
-      sprintf(str, "/Equipment/%s/Variables", eq_name);
-      status = db_find_key(hDB, 0, str, &hKeyVar);
-      if (status != DB_SUCCESS) {
-         sprintf(str, "Cannot find /Equipment/%s/Variables in ODB", eq_name);
-         show_error(str);
-         return HS_FILE_ERROR;
-      }
-   }
-  
-   for (i = 0;; i++) {
-      KEY varkey;
-
-      status = db_enum_link(hDB, hKeyVar, i, &hKey);
-      if (status == DB_NO_MORE_SUBKEYS)
-         break;
-
-      if (is_link) {
-         db_get_key(hDB, hKey, &varkey);
-         list_add(&names, varkey.name);
-      } else {
-         int n_names;
-         int single_names;
-         HNDLE hKeyNames;
-         char var_name[NAME_LENGTH];
-         
-         /* get variable key */
-         db_get_key(hDB, hKey, &varkey);
-         n_names = 0;
-         
-         /* look for names */
-         db_find_key(hDB, hKeyEq, "Settings/Names", &hKeyNames);
-         single_names = (hKeyNames > 0);
-         if (hKeyNames) {
-            KEY key;
-            /* get variables from names list */
-            db_get_key(hDB, hKeyNames, &key);
-            n_names = key.num_values;
-         } else {
-            KEY key;
-            sprintf(str, "Settings/Names %s", varkey.name);
-            db_find_key(hDB, hKeyEq, str, &hKeyNames);
-            if (hKeyNames) {
-               /* get variables from names list */
-              db_get_key(hDB, hKeyNames, &key);
-              n_names = key.num_values;
-            }
-         }
-      
-         if (hKeyNames) {
-            int j;
-
-            /* loop over array elements */
-            for (j = 0; j < n_names; j++) {
-               int size;
-               /* get name #j */
-               size = NAME_LENGTH;
-               db_get_data_index(hDB, hKeyNames, var_name, &size, j, TID_STRING);
-               
-               /* append variable key name for single name array */
-               if (single_names) {
-                  strlcat(var_name, " ", sizeof(var_name));
-                  strlcat(var_name, varkey.name, sizeof(var_name));
-               }
-
-               list_add(&names, var_name);
-            }
-         } else {
-
-            if (varkey.num_values > 0) {
-               int j;
-               for (j = 0; j < varkey.num_values; j++) {
-                  sprintf(var_name, "%s[%d]", varkey.name, j);
-                  list_add(&names, var_name);
-               }
-            } else {
-               list_add(&names, varkey.name);
-            }
-         }
-      }
-   }
-
-   *num_vars = names.count;
-   *var_names = names.names;
-
-   return HS_SUCCESS;
-}
-
-static int list_source = 0;
-
-static int enum_events(HNDLE hDB, int using_odbc, int* num_events, char** event_names)
-{
-   HNDLE hKeyRoot;
-   int size, status;
-
-   if (using_odbc) {
-      return enum_events_events(hDB, num_events, event_names);
-   }
-
-   /* select which list of events and variables to use */
-
-   size = sizeof(list_source);
-   status = db_get_value(hDB, 0, "/History/ListSource", &list_source, &size, TID_INT, TRUE);
-
-   /* by default "/History/ListSource" is set to zero, then use /History/Tags if available */
-   
-   if (list_source == 0) {
-      status = db_find_key(hDB, 0, "/History/Tags", &hKeyRoot);
-      if (status == DB_SUCCESS)
-         list_source = 2;
-   }
-   
-   /* if "Tags" not present use "/History/Events" in conjunction with hs_get_tags() */
-   
-   if (list_source == 0) {
-      status = db_find_key(hDB, 0, "/History/Events", &hKeyRoot);
-      if (status == DB_SUCCESS)
-         list_source = 3;
-   }
-   
-   switch (list_source) {
-   case 1:
-      return enum_events_equipment(hDB, num_events, event_names);
-   case 2:
-      return enum_events_tags(hDB, num_events, event_names);
-   case 3:
-      return enum_events_events(hDB, num_events, event_names);
-   default:
-      show_error("Invalid value of /History/ListSource in ODB");
-      return HS_FILE_ERROR;
-   }
-}
-
-static int enum_vars(HNDLE hDB, int using_odbc, const char* event_name, int* num_vars, char** var_names)
-{
-   if (using_odbc) {
-      return enum_vars_events(hDB, using_odbc, event_name, num_vars, var_names);
-   }
-
-   switch (list_source) {
-   case 1:
-      return enum_vars_equipment(hDB, event_name, num_vars, var_names);
-   case 2:
-      return enum_vars_tags(hDB, event_name, num_vars, var_names);
-   case 3:
-      return enum_vars_events(hDB, using_odbc, event_name, num_vars, var_names);
-   default:
-      return HS_FILE_ERROR;
-   }
-}
+#define STRLCPY(dst, src) strlcpy((dst), (src), sizeof(dst))
 
 /*------------------------------------------------------------------*/
 
 void show_hist_config_page(char *path, char *hgroup, char *panel)
 {
-   int i, status, size, index, sort_vars;
+   int status, size, index, sort_vars;
    BOOL flag;
    HNDLE hDB, hKeyVar, hKey;
    KEY key;
    char str[256], var_name[256], cmd[256], ref[256], *p;
    char display_name[MAX_VARS][2 * NAME_LENGTH];
+   char display_name_odb[MAX_VARS][2 * NAME_LENGTH];
    float value;
    char hist_col[MAX_VARS][NAME_LENGTH] = { "#0000FF", "#00C000", "#FF0000", "#00C0C0", "#FF00FF",
       "#C0C000", "#808080", "#80FF80", "#FF8080", "#8080FF"
    };
    char hist_label[MAX_VARS][NAME_LENGTH];
-   int using_odbc = 0;
-   int num_events = 0;
-   char* event_names = NULL;
 
    cm_get_experiment_database(&hDB, NULL);
    strlcpy(cmd, getparam("cmd"), sizeof(cmd));
    hKeyVar = 0;
+
+   if (equal_ustring(cmd, "Clear history cache")) {
+      strcpy(cmd, "refresh");
+      if (mh)
+         mh->hs_clear_cache();
+   }
 
    if (cmd[0] && equal_ustring(cmd, "save")) {
       /* copy parameters to their ODB location */
@@ -10122,9 +9130,6 @@ void show_hist_config_page(char *path, char *hgroup, char *panel)
       return;
    }
 
-   /* check dedicated history path */
-   set_history_path();
-
    if (panel[0]) {
       str[0] = 0;
       for (p=path ; *p ; p++)
@@ -10145,6 +9150,7 @@ void show_hist_config_page(char *path, char *hgroup, char *panel)
    rsprintf("<input type=submit name=cmd value=Save>\n");
    rsprintf("<input type=submit name=cmd value=Cancel>\n");
    rsprintf("<input type=submit name=cmd value=Refresh>\n");
+   rsprintf("<input type=submit name=cmd value=\"Clear history cache\">\n");
    rsprintf("<input type=submit name=cmd value=\"Delete Panel\">\n");
    rsprintf("</td></tr>\n");
 
@@ -10288,11 +9294,26 @@ void show_hist_config_page(char *path, char *hgroup, char *panel)
 
    /*---- events and variables ----*/
 
+   /* read display event names from odb */
+
+   sprintf(str, "/History/Display/%s/%s/Variables", hgroup, panel);
+   db_find_key(hDB, 0, str, &hKey);
+
+   memset(display_name_odb, 0, sizeof(display_name_odb));
+   if (hKey) {
+      db_get_key(hDB, hKey, &key);
+      
+      for (int i = 0; i < key.num_values; i++) {
+         size = 2 * NAME_LENGTH;
+         db_get_data_index(hDB, hKey, display_name_odb[i], &size, i, TID_STRING);
+      }
+   }
+
    /* get display event name */
 
    if (equal_ustring(cmd, "refresh")) {
       /* from parameters in a refresh */
-      for (i = 0; i < MAX_VARS; i++) {
+      for (int i = 0; i < MAX_VARS; i++) {
          sprintf(str, "event%d", i);
          strlcpy(display_name[i], getparam(str), sizeof(display_name[0]));
 
@@ -10303,48 +9324,14 @@ void show_hist_config_page(char *path, char *hgroup, char *panel)
          }
       }
    } else {
-      /* from ODB else */
-      sprintf(str, "/History/Display/%s/%s/Variables", hgroup, panel);
-      db_find_key(hDB, 0, str, &hKey);
-
-      memset(display_name, 0, sizeof(display_name));
-      if (hKey) {
-         db_get_key(hDB, hKey, &key);
-
-         for (i = 0; i < key.num_values; i++) {
-            size = 2 * NAME_LENGTH;
-            db_get_data_index(hDB, hKey, display_name[i], &size, i, TID_STRING);
-         }
-      }
+      for (int i = 0; i < MAX_VARS; i++)
+         strlcpy(display_name[i], display_name_odb[i], sizeof(display_name[i]));
    }
 
-#ifdef HAVE_ODBC
-   /* check ODBC connection */
-   size = sizeof(str);
-   status = db_get_value(hDB, 0, "/History/ODBC_DSN", str, &size, TID_STRING, FALSE);
-   if (status == DB_SUCCESS && str[0]!=0 && str[0]!='#') {
-      hs_set_alarm_odbc("mhttpd_ODBC");
-      status = hs_connect_odbc(str);
-      if (status == HS_SUCCESS) {
-         using_odbc = 1;
-         //printf("using odbc!\n");
-      }
-   }
-#endif
+   set_history_path();
 
-   enum_events(hDB, using_odbc, &num_events, &event_names);
-
-   if (0 && event_names) {
-      int i, p;
-      printf("enum events: num %d\n", num_events);
-      p = 0;
-      for (i=0; i<num_events; i++) {
-         if (event_names[p]==0)
-            break;
-         printf("event %d [%s]\n", i, event_names+p);
-         p += strlen(event_names+p) + 1;
-      }
-   }
+   std::vector<std::string> events;
+   mh->hs_get_events(&events);
 
    rsprintf("<tr><th>Col<th>Event<th>Variable<th>Factor<th>Offset<th>Colour<th>Label</tr>\n");
 
@@ -10352,7 +9339,6 @@ void show_hist_config_page(char *path, char *hgroup, char *panel)
    for (index = 0; index < MAX_VARS; index++) {
       char event_name[NAME_LENGTH];
       char *s;
-      char* pp;
 
       if (equal_ustring(cmd, "refresh")) {
          /* get value from parameters */
@@ -10390,22 +9376,31 @@ void show_hist_config_page(char *path, char *hgroup, char *panel)
       /* empty option */
       rsprintf("<option value=\"\">&lt;empty&gt;\n");
 
-      if (event_names) {
-         char *p;
-         for (p = event_names; *p != 0; p += strlen(p) + 1) {
-            if (equal_ustring(event_name, p))
-               s = "selected";
-            else
-               s = "";
-            rsprintf("<option %s value=\"%s\">%s\n", s, p, p);
+      bool found_selected = false;
+      for (unsigned e=0; e<events.size(); e++) {
+         const char *p = events[e].c_str();
+         if (equal_ustring(event_name, p)) {
+            s = "selected";
+            found_selected = true;
          }
+         else
+            s = "";
+         rsprintf("<option %s value=\"%s\">%s\n", s, p, p);
       }
+
+      if (!found_selected)
+         if (strlen(display_name_odb[index]) > 0) {
+            char event_name[256];
+            strlcpy(event_name, display_name_odb[index], sizeof(event_name));
+            char *s = strchr(event_name, ':');
+            if (s)
+               *s = 0;
+            rsprintf("<option selected value=\"%s\">%s\n", event_name, event_name);
+         }
 
       rsprintf("</select></td>\n");
 
       if (display_name[index][0]) {
-         int num_vars = 0;
-         char* var_names = NULL;
 
          char selected_var[NAME_LENGTH];
 
@@ -10418,9 +9413,11 @@ void show_hist_config_page(char *path, char *hgroup, char *panel)
 
          rsprintf("<td><select name=\"var%d\">\n", index);
 
-         status = enum_vars(hDB, using_odbc, event_name, &num_vars, &var_names);
+         std::vector<TAG> tags;
 
-         if (var_names) {
+         status = mh->hs_get_tags(event_name, &tags);
+
+         if (tags.size() > 0) {
 
             static char previous_event[NAME_LENGTH];
             static char previous_var[NAME_LENGTH];
@@ -10430,56 +9427,59 @@ void show_hist_config_page(char *path, char *hgroup, char *panel)
                   STRLCPY(selected_var, previous_var);
             }
 
+            //printf("entry [%s] event [%s] tag [%s], previous [%s] [%s]\n", display_name[index], event_name, selected_var, previous_event, previous_var);
+
             STRLCPY(previous_event, event_name);
             STRLCPY(previous_var, selected_var);
 
             if (0) {
-               int i, p;
-               printf("enum vars: num %d\n", num_vars);
-               for (i=0, p=0; i<num_vars; i++) {
-                  if (var_names[p]==0)
-                     break;
-                  printf("var %d [%s]\n", i, var_names+p);
-                  p += strlen(var_names+p) + 1;
-               }
+               printf("Compare %d\n", cmp_names("AAA", "BBB"));
+               printf("Compare %d\n", cmp_names("BBB", "AAA"));
+               printf("Compare %d\n", cmp_names("AAA", "AAA"));
+               printf("Compare %d\n", cmp_names("A", "AAA"));
+               printf("Compare %d\n", cmp_names("A111", "A1"));
+               printf("Compare %d\n", cmp_names("A111", "A2"));
+               printf("Compare %d\n", cmp_names("A111", "A222"));
+               printf("Compare %d\n", cmp_names("A111a", "A111b"));
             }
 
-            if (0) {
-               printf("Compare %d\n", sort_tags("AAA", "BBB"));
-               printf("Compare %d\n", sort_tags("BBB", "AAA"));
-               printf("Compare %d\n", sort_tags("AAA", "AAA"));
-               printf("Compare %d\n", sort_tags("A", "AAA"));
-               printf("Compare %d\n", sort_tags("A111", "A1"));
-               printf("Compare %d\n", sort_tags("A111", "A2"));
-               printf("Compare %d\n", sort_tags("A111", "A222"));
-               printf("Compare %d\n", sort_tags("A111a", "A111b"));
-            }
+            //if (sort_vars)
+            //sort_tags(ntags, tags);
 
             if (sort_vars)
-               var_names = sort_names(var_names);
+               std::sort(tags.begin(), tags.end(), cmp_tags);
 
-            if (1) {
-               int i, p;
+            found_selected = false;
 
-               for (i=0, p=0; i<num_vars; i++) {
-                  if (var_names[p]==0)
-                     break;
+            for (unsigned v=0; v<tags.size(); v++) {
 
-                  pp = var_names+p;
+               for (unsigned j=0; j<tags[v].n_data; j++) {
+                  char tagname[256];
 
-                  if (equal_ustring(selected_var, pp))
-                     rsprintf("<option selected value=\"%s\">%s\n", pp, pp);
+                  if (tags[v].n_data == 1)
+                     sprintf(tagname, "%s", tags[v].name);
                   else
-                     rsprintf("<option value=\"%s\">%s\n", pp, pp);
+                     sprintf(tagname, "%s[%d]", tags[v].name, j);
                   
-                  p += strlen(var_names+p) + 1;
+                  if (equal_ustring(selected_var, tagname)) {
+                     rsprintf("<option selected value=\"%s\">%s\n", tagname, tagname);
+                     found_selected = true;
+                  }
+                  else
+                     rsprintf("<option value=\"%s\">%s\n", tagname, tagname);
                }
             }
-            
-            if (var_names)
-               free(var_names);
-            var_names = NULL;
          }
+
+         if (!found_selected)
+            if (strlen(display_name_odb[index]) > 0) {
+               char varname[NAME_LENGTH];
+               strlcpy(varname, display_name_odb[index], sizeof(varname));
+               char *s = strchr(display_name_odb[index], ':');
+               if (s)
+                  strlcpy(varname, s+1, sizeof(varname));
+               rsprintf("<option selected value=\"%s\">%s\n", varname, varname);
+            }
 
          rsprintf("</select></td>\n");
 
@@ -10583,10 +9583,6 @@ void show_hist_config_page(char *path, char *hgroup, char *panel)
 
    rsprintf("</table></form>\n");
    rsprintf("</body></html>\r\n");
-
-   if (event_names)
-      free(event_names);
-   event_names = NULL;
 }
 
 /*------------------------------------------------------------------*/
@@ -11092,6 +10088,7 @@ void show_hist_page(char *path, int path_size, char *buffer, int *buffer_size,
 
    if (equal_ustring(getparam("cmd"), "Config") ||
        equal_ustring(getparam("cmd"), "Save")
+       || equal_ustring(getparam("cmd"), "Clear history cache")
        || equal_ustring(getparam("cmd"), "Refresh")) {
 
       /* get group and panel from path if not given */
@@ -11197,6 +10194,9 @@ void show_hist_page(char *path, int path_size, char *buffer, int *buffer_size,
    }
 
    if (*getparam("panel")) {
+
+      printf("new panel!!!!!!!!!!\n");
+
       strlcpy(panel, getparam("panel"), sizeof(panel));
       strlcpy(hgroup, getparam("group"), sizeof(hgroup));
       /* use new group if present */
@@ -11438,6 +10438,7 @@ void show_hist_page(char *path, int path_size, char *buffer, int *buffer_size,
    rsprintf("<input type=submit name=cmd value=ODB>\n");
    rsprintf("<input type=submit name=cmd value=Alarms>\n");
    rsprintf("<input type=submit name=cmd value=Status>\n");
+   rsprintf("<input type=submit name=cmd value=History>\n");
 
    /* check if panel exists */
    sprintf(str, "/History/Display/%s", path);
