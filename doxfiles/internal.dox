@@ -1519,11 +1519,12 @@ This section describes the internal workings of the midas SQL history system.
 The SQL history system implements the MIDAS history using
 an SQL database for data storage instead of flat binary files.
 
-The SQL history code lives in a separate files history_odbc.h and history_odbc.cxx
-and it uses the ODBC API for accessing SQL databases. As of revision 4433, only
-MySQL database is supported, with support for PgSQL written but not enabled. The
-interface to mlogger is identical to hs_define_event()/hs_write_event() used
-by traditional midas history system.
+The SQL history code lives in a separate files history.h and history_sql.cxx.
+The present implentation uses the ODBC API for accessing SQL databases.
+As of revision 4433, only MySQL database is supported, with support for PgSQL
+written and partially tested but not enabled. Drivers for SQL DB APIs other
+than ODBC should be easy to add in history_sql and most SQL operations
+are done using an interface class.
 
 Preliminary testing with MySQL and PgSQL indicates that disk space
 requirements are the same for both storage mechanisms using flat binary files
@@ -1540,43 +1541,48 @@ history.
 To enable writing history to SQL:
 
 - setup a MySQL database, you will need to know: the server hostname and port number, database name, user name and password. It is recommended to create 3 different users: a "root" user with full priveleges, a "reader" user with read-only priveleges and a "writer" user with "insert, create table, and add column" priveleges (no permission to drop table, remove columns, etc)
+- setup a MySQL database (RHEL/SL 5)
+\code
+ssh root@localhost
+service mysqld start
+/usr/bin/mysql_secure_installation (enter current password for root: press <enter>, then accept default answer "Y" to all questions)
+mysqladmin -p create history
+using mysql-administrator, create 2 users:
+history_writer, with database "history" schema privileges: select, insert, create, alter
+history_reader, with database "history" schema privileges: select
+\endcode
 - setup $HOME/.odbc.ini file:
 \code
 cat $HOME/.odbc.ini
-[sql_writer]
-Description  = sql_writer
+[history_writer]
+Description  = history_writer
 Driver       = /usr/lib64/libmyodbc3.so
 SERVER       = ladd05.triumf.ca
 PORT         =
-Database     = test
+Database     = history
 OPTION       = 3
 SOCKET       =
-User         = test_writer
-Password     = test_writer_password
+User         = history_writer
+Password     = ******
+[history_reader]
+Description  = history_reader
+Driver       = /usr/lib64/libmyodbc3.so
+SERVER       = ladd05.triumf.ca
+PORT         =
+Database     = history
+OPTION       = 3
+SOCKET       =
+User         = history_reader
+Password     = 
 \endcode
 - set ODB "/History/PerVariableHistory" to 1 (BEWARE! This will change the format of normal midas history files. You do not have to enable per-variable history to use the SQL interface, but the layout of SQL tables may be suboptimal in the same way the layout of data in the midas history file is suboptimal).
-- set ODB "/Logger/ODBC_DSN" to "sql_writer", "/Logger/ODBC_Debug" to 1
+- set ODB "/Logger/ODBC_DSN" to "history_writer", "/Logger/ODBC_Debug" to 0 (or 1 to see all SQL commands)
 - run "mlogger -v", observe how it issues SQL commands to create the tables and columns corresponding to MIDAS history events and tags.
-- there could be collisions and conflicts between MIDAS and SQL names because MySQL only permits a subset of all possible characters in table and columns names. All "bad" characters are replaced with an underscore "_", creating possible conflicts, i.e. "A+6V" and "A-6V" will both result in the same column name "A_6V". mlogger will complain about this.
-- after all name conflicts are resolved and mlogger is happy, you can set ODBC_Debug to 0 and run mlogger as normal, without "-v".
 - mlogger is programmed to raise alarms if connection to SQL database is interrupted or if some events cannot be written into the database (i.e. data type mismatch, SQL syntax errors, etc). The traditional midas history never raised alarms because it "never failed". (Other than from "disk full" errors, which are immediately obvious).
 
-To enable reading history from SQL:
+To enable reading history from an SQL database:
 
-- add the reader DSN to the $HOME/.odbc.ini file:
-\code
-[sql_reader]
-Description  = sql_reader
-Driver       = /usr/lib64/libmyodbc3.so
-SERVER       = ladd05.triumf.ca
-PORT         =
-Database     = test
-OPTION       = 3
-SOCKET       =
-User         = test_reader
-Password     = test_reader_password
-\endcode
-- set ODB "/History/ODBC_DSN" to "sql_reader"
+- set ODB "/History/ODBC_DSN" to "history_reader"
 - restart mhttpd (not required?)
 - from this moment mhttpd will only use history information from the SQL database - to make history plots and to extract history variable names for the history plot editor. The ODB "/History/Tags" and "/History/Events" are not used. The on-disk .hst & co history are not used.
 - variable names presented to the user may change from MIDAS names to SQL names (use the history panel "Label" text fields to create permanent plot labels).
@@ -1586,13 +1592,14 @@ Layout of SQL tables:
 - one table is created for each history event. Table name is the same as the history event name (as reported by mhdump).
 - one column is created for each history tag (history variable). Column name is the same as the tag name (as reported by mhdump). For array tags, one column is created for each array element: array a[3] will produce columns a_0, a_1 and a_2.
 - 2 special columns are always created: _i_time and _t_time are the timestamps in the UNIX-time integer format and in the SQL "time" format. (Apriory, it is not clear which timestamp format is more useful for end users. mhttpd uses the _i_time integer time format). Note that this timestamp is the time when mlogger receives the hotlink signal (see above) and it can be a fe wseconds behind from when the user placed the data into the midas bank. For high precision (and sub-second time resolution) time stamps, users should generate their own timestamps and include them as part of the data itself.
+- a special table called _history_index is created to remember the mapping between SQL names and MIDAS names for event names, variable name and tag names.
 
 Schema evolution:
 
 - when new data fields are added, new SQL columns are created automatically
 - existing SQL columns are never deleted
 - arrays are expanded automatically, and arrays never shrink.
-- if type of a data field changes, a conflict may occur with existing SQL columns, for example of previous type was "FLOAT" and new type is "DOUBLE", the existing SQL columns would have the SQL data type "float", too narrow to store new values. mlogger will complain about this. Such conflicts may be resolved by changing the type of the SQL column using SQL tools.
+- if type of a data field changes, a conflict may occur with existing SQL columns, for example of previous type was "FLOAT" and new type is "DOUBLE", the existing SQL columns would have the SQL data type "float", too narrow to store new values. mlogger will complain about this. Such conflicts may be resolved by changing the type of the SQL column using SQL tools. In general, SQL names are created from MIDAS names by replacing all non-alphanumerical characters to an underscore "_". If this procedure creates duplicate column names, the column names and made unique by appending them with a random number, i.e. MIDAS names "A+B" and "A-B" will be translated to "A_B" and "A_B_12345" (random integer). True MIDAS names are saved into the _history_index.
 
 
 \htmlonly <img ALIGN="left" alt="previous.gif" src="previous.gif"> \endhtmlonly 
