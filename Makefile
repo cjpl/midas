@@ -50,14 +50,6 @@ SYSINC_DIR = $(PREFIX)/include
 MIDAS_PREF_FLAGS  =
 
 #
-# Option to build the midas shared library
-#
-# To link midas with the static libmidas.a, say "make ... NEED_SHLIB="
-# To link midas with the shared libmidas.so, say "make ... NEED_SHLIB=1"
-#
-NEED_SHLIB=
-
-#
 # Option to set the shared library path on MIDAS executables
 #
 NEED_RPATH=1
@@ -110,9 +102,9 @@ NEED_ZLIB=
 #-----------------------
 # Common flags
 #
-CC = cc
-CXX = g++
-CFLAGS = -g -O2 -Wall -Wuninitialized -I$(INC_DIR) -I$(DRV_DIR) -I$(MXML_DIR) -L$(LIB_DIR) -DINCLUDE_FTPLIB $(MIDAS_PREF_FLAGS) $(USERFLAGS)
+CC = cc $(USERFLAGS)
+CXX = g++ $(USERFLAGS)
+CFLAGS = -g -O2 -Wall -Wuninitialized -I$(INC_DIR) -I$(DRV_DIR) -I$(MXML_DIR) -L$(LIB_DIR) -DINCLUDE_FTPLIB $(MIDAS_PREF_FLAGS)
 
 #-----------------------
 # Ovevwrite MAX_EVENT_SIZE with environment variable
@@ -306,12 +298,10 @@ ifdef NEED_STRLCPY
 OBJS += $(LIB_DIR)/strlcpy.o
 endif
 
-LIBNAME=$(LIB_DIR)/libmidas.a
-LIB    =$(LIBNAME)
-ifdef NEED_SHLIB
-SHLIB = $(LIB_DIR)/libmidas.so
-LIB   = -lmidas -Wl,-rpath,$(SYSLIB_DIR)
-endif
+LIBNAME = $(LIB_DIR)/libmidas.a
+LIB     = $(LIBNAME)
+SHLIB   = $(LIB_DIR)/libmidas-shared.so
+
 VPATH = $(LIB_DIR):$(INC_DIR)
 
 all: check-mxml \
@@ -457,10 +447,10 @@ ifdef NEED_RANLIB
 	ranlib $@
 endif
 
-ifdef NEED_SHLIB
-$(SHLIB): $(OBJS)
+ifeq ($(OSTYPE),linux)
+%.so: $(OBJS)
 	rm -f $@
-	ld -shared -o $@ $^ $(LIBS) -lc
+	$(CXX) -shared -o $@ $^ $(LIBS) -lc
 endif
 
 ifeq ($(OSTYPE),darwin)
@@ -609,11 +599,8 @@ ifdef ROOTSYS
 else
 	rm -fv $(SYSLIB_DIR)/rmana.o
 endif
-ifdef NEED_SHLIB
-	install -v -m 644 $(LIB_DIR)/libmidas.so $(SYSLIB_DIR)
-else
-	rm -fv $(SYSLIB_DIR)/libmidas.so
-endif
+	-rm -fv $(SYSLIB_DIR)/libmidas.so
+	-install -v -m 644 $(LIB_DIR)/libmidas-shared.so $(SYSLIB_DIR)
 
 # drivers
 	@echo "... "
