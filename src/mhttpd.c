@@ -965,7 +965,7 @@ void show_status_page(int refresh, char *cookie_wpwd)
    double value, compression_ratio;
    HNDLE hDB, hkey, hLKey, hsubkey, hkeytmp;
    KEY key;
-   BOOL ftp_mode, previous_mode;
+   int  ftp_mode, previous_mode;
    char client_name[NAME_LENGTH];
    struct tm *gmt;
    BOOL new_window;
@@ -7808,14 +7808,13 @@ static void set_history_path()
 {
    int status;
    HNDLE hDB;
-   int size;
-   char str[1024];
 
    cm_get_experiment_database(&hDB, NULL);
 
 #ifdef HAVE_ODBC
    /* check ODBC connection */
-   size = sizeof(str);
+   char str[256];
+   int size = sizeof(str);
    str[0] = 0;
    status = db_get_value(hDB, 0, "/History/ODBC_DSN", str, &size, TID_STRING, TRUE);
    if (status == DB_SUCCESS && str[0]!=0 && str[0]!='#') {

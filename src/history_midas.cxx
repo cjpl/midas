@@ -173,47 +173,6 @@ static WORD get_variable_id_tags(const char* evname, const char* tagname)
    return 0;
 }
 
-struct poor_mans_list
-{
-   char *names;
-   int last;
-   int length;
-   int count;
-};
-
-static void list_init(struct poor_mans_list* list)
-{
-   list->names = NULL;
-   list->last = 0;
-   list->length = 0;
-   list->count = 0;
-};
-
-static void list_add(struct poor_mans_list* list, const char* str)
-{
-   int lll;
-
-   lll = strlen(str);
-
-   while (list->last + lll + 2 >= list->length) {
-      int nl = 2*list->length;
-      if (list->length == 0)
-         nl = 100;
-      list->names = (char*)realloc(list->names, nl);
-      assert(list->names);
-      list->length = nl;
-   }
-   
-   memcpy(list->names + list->last, str, lll);
-   list->last+=lll;
-   list->names[list->last] = 0;
-   list->last++;
-   list->names[list->last] = 0;
-   list->count++;
-   
-   assert(list->last < list->length);
-}
-
 #if 0
 char* sort_names(char* names)
 {
