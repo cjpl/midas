@@ -190,8 +190,9 @@ LIBS = -lpthread
 SPECIFIC_OS_PRG = $(BIN_DIR)/mlxspeaker
 NEED_STRLCPY=
 NEED_RANLIB=1
-NEED_SHLIB=
 NEED_RPATH=
+SHLIB+=$(LIB_DIR)/libmidas-shared.dylib
+SHLIB+=$(LIB_DIR)/libmidas-shared.so
 endif
 
 #-----------------------
@@ -431,7 +432,7 @@ $(BIN_DIR)/odbedit: $(SRC_DIR)/odbedit.c $(SRC_DIR)/cmdedit.c
 $(BIN_DIR)/mhttpd: $(LIB_DIR)/mhttpd.o $(LIB_DIR)/mgd.o
 	$(CXX) $(CFLAGS) $(OSFLAGS) -o $@ $^ $(LIB) $(LIBS) -lm
 
-$(PROGS): $(LIBNAME) $(SHLIB)
+$(PROGS): $(LIBNAME)
 
 #
 # examples
@@ -460,6 +461,16 @@ ifdef NEED_SHLIB
 $(SHLIB): $(OBJS)
 	rm -f $@
 	ld -shared -o $@ $^ $(LIBS) -lc
+endif
+
+ifeq ($(OSTYPE),darwin)
+%.dylib: $(OBJS)
+	rm -f $@
+	g++ -dynamiclib -dylib -o $@ $^ $(LIBS) -lc
+
+%.so: $(OBJS)
+	rm -f $@
+	g++ -bundle -flat_namespace -undefined suppress -o $@ $^ $(LIBS) -lc
 endif
 
 #
@@ -653,7 +664,7 @@ indent:
 	find . -name "*.[hc]" -exec indent -kr -nut -i3 -l90 {} \;
 
 clean:
-	rm -f $(LIB_DIR)/*.o $(LIB_DIR)/*.a $(LIB_DIR)/*.so *~ \#*
+	-rm -f $(LIB_DIR)/*.o $(LIB_DIR)/*.a $(LIB_DIR)/*.so $(LIB_DIR)/*.dylib
 
 mrproper : clean
 	rm -rf $(OS_DIR)
