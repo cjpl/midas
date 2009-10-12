@@ -1,6 +1,17 @@
-// history_midas.cxx
+/********************************************************************\
+
+  Name:         history_midas.cxx
+  Created by:   Konstantin Olchanski
+
+  Contents:     Interface class for traditional MIDAS history
+
+  $Id$
+
+\********************************************************************/
 
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <assert.h>
 
 #include <map>
@@ -44,7 +55,7 @@ static WORD get_variable_id(DWORD ltime, const char* evname, const char* tagname
 
       evid = atoi(key.name);
 
-      assert(key.item_size < sizeof(buf));
+      assert(key.item_size < (int)sizeof(buf));
 
       size = sizeof(buf);
       status = db_get_data(hDB, hKey, buf, &size, TID_STRING);
@@ -113,12 +124,15 @@ static WORD get_variable_id_tags(const char* evname, const char* tagname)
       status = db_get_key(hDB, hKey, &key);
       assert(status == DB_SUCCESS);
 
+      if (key.type != TID_STRING)
+         continue;
+
       if (!isdigit(key.name[0]))
          continue;
 
       evid = atoi(key.name);
 
-      assert(key.item_size < sizeof(buf));
+      assert(key.item_size < (int)sizeof(buf));
 
       size = sizeof(buf);
       status = db_get_data_index(hDB, hKey, buf, &size, 0, TID_STRING);
@@ -525,6 +539,9 @@ public:
       
          //printf("key \'%s\'\n", key.name);
       
+         if (key.type != TID_STRING)
+            continue;
+
          /* parse event name in format: "event_id" or "event_id:var_name" */
          s = key.name;
       
@@ -821,7 +838,7 @@ public:
          if (event_id == 0)
             continue;
 
-         if (key.item_size >= sizeof(buf))
+         if (key.item_size >= (int)sizeof(buf))
             continue;
 
          if (key.num_values == 1) { // old format of "/History/Tags"
@@ -866,6 +883,9 @@ public:
 
             continue;
          }
+
+         if (key.type != TID_STRING)
+            continue;
 
          size = sizeof(buf);
          status = db_get_data_index(hDB, hKey, buf, &size, 0, TID_STRING);

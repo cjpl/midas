@@ -468,8 +468,8 @@ void SqlODBC::ReportErrors(const char* from, const char* sqlfunc, int status)
       
       if (1 || (error != 1060) && (error != 1050)) {
          if (fDebug)
-            printf("%s: %s error: state: \'%s\', message: \'%s\', native error: %d\n", from, sqlfunc, state, message, error);
-         cm_msg(MERROR, from, "%s error: state: \'%s\', message: \'%s\', native error: %d", sqlfunc, state, message, error);
+            printf("%s: %s error: state: \'%s\', message: \'%s\', native error: %d\n", from, sqlfunc, state, message, (int)error);
+         cm_msg(MERROR, from, "%s error: state: \'%s\', message: \'%s\', native error: %d", sqlfunc, state, message, (int)error);
       }
    }
 }
@@ -1166,6 +1166,7 @@ public:
    std::vector<Event*> fEvents;
    std::vector<std::string> fIndexEvents;
    bool fHaveIndex;
+   bool fHaveXIndex;
 
    SqlHistory(SqlBase* b)
    {
@@ -1174,6 +1175,7 @@ public:
       fNextConnect  = 0;
       fSql = b;
       fHaveIndex = false;
+      fHaveXIndex = false;
    }
 
    ~SqlHistory()
@@ -1267,6 +1269,7 @@ public:
 
       gHaveIndex = true;
       gHaveIndexAll = false;
+      fHaveXIndex = false;
 
       for (unsigned i=0; i<gHistoryIndex.size(); i++) {
          IndexEntry* ie = gHistoryIndex[i];
@@ -1281,6 +1284,12 @@ public:
 
    int XReadIndex()
    {
+      if (fHaveXIndex)
+         return HS_SUCCESS;
+
+      if (fDebug)
+         printf("XReadIndex!\n");
+
       std::vector<std::string> tables;
 
       int status = fSql->ListTables(&tables);
@@ -1322,6 +1331,8 @@ public:
             ie->tags.push_back(t);
          }
       }
+
+      fHaveXIndex = true;
 
       //PrintIndex();
 
@@ -1660,6 +1671,8 @@ public:
 
          if (fDebug)
             printf("hs_get_events: reading event names!\n");
+
+         ReadIndex(fSql, NULL);
 
          std::vector<std::string> tables;
          int status = fSql->ListTables(&tables);
