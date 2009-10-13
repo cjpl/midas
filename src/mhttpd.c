@@ -5759,8 +5759,8 @@ void show_custom_page(char *path, char *cookie_cpwd)
 
       } while (p != NULL);
 
-      if (equal_ustring(getparam("cmd"), "Set")) {
-         /* redirect (so that 'reload' does not reset value) */
+      if (equal_ustring(getparam("cmd"), "Set") || isparam("cbi")) {
+         /* redirect (so that 'reload' does not change value) */
          strlen_retbuf = 0;
          sprintf(str, "%s", path);
          redirect(str);
