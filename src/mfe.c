@@ -115,6 +115,7 @@ void interrupt_routine(void);
 void readout_enable(BOOL flag);
 int readout_enabled(void);
 void display(BOOL bInit);
+void rotate_wheel(void);
 BOOL logger_root();
 INT check_polled_events(void);
 
@@ -1531,6 +1532,8 @@ int receive_trigger_event(EQUIPMENT *eq)
             eq->events_sent += eq->subevent_number;
          else
             eq->events_sent++;
+
+         rotate_wheel();
       }
    }
 
@@ -1632,6 +1635,22 @@ void display(BOOL bInit)
 
 /*------------------------------------------------------------------*/
 
+void rotate_wheel(void)
+{
+   static DWORD last_wheel = 0, wheel_index = 0;
+   static char wheel_char[] = { '-', '\\', '|', '/' };
+
+   if (display_period) {
+      if (ss_millitime() - last_wheel > 300) {
+         last_wheel = ss_millitime();
+         ss_printf(79, 2, "%c", wheel_char[wheel_index]);
+         wheel_index = (wheel_index + 1) % 4;
+      }
+   }
+}
+
+/*------------------------------------------------------------------*/
+
 BOOL logger_root()
 /* check if logger uses ROOT format */
 {
@@ -1670,6 +1689,7 @@ INT check_polled_events(void)
    unsigned char *pd;
 
    events_sent = 0;
+   actual_millitime = ss_millitime();
 
    /*---- loop over equipment table -------------------------------*/
    for (idx = 0;; idx++) {
@@ -1863,6 +1883,8 @@ INT check_polled_events(void)
                eq->events_sent++;
                events_sent++;
             }
+
+            rotate_wheel();
          }
 
          actual_millitime = ss_millitime();
@@ -2146,6 +2168,8 @@ INT scheduler(void)
                      eq->events_sent += eq->subevent_number;
                   else
                      eq->events_sent++;
+
+                  rotate_wheel();
                }
 
                actual_millitime = ss_millitime();
