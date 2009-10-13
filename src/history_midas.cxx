@@ -17,6 +17,7 @@
 #include <map>
 
 #include "midas.h"
+#include "msystem.h"
 #include "history.h"
 
 static WORD get_variable_id(DWORD ltime, const char* evname, const char* tagname)
@@ -330,6 +331,7 @@ public:
    int xxx(const char*)
    {
       assert(!"not implemented!");
+      return 0;
    }
 
    int hs_define_event(const char* event_name, int ntags, const TAG tags[])
@@ -585,7 +587,7 @@ public:
       
       /* if no Tags, use "/History/Events" and hs_get_tags() to read definition from history files */
       if (event_id == 0)
-         event_id = get_variable_id(t, event_name, tag_name);
+         event_id = get_variable_id((DWORD)t, event_name, tag_name);
 
       /* special kludge because run transitions are not listed in /History/Events */
       if ((event_id == 0) && equal_ustring(event_name, "Run transitions")) {
@@ -742,7 +744,7 @@ public:
       
       int ntags;
       TAG* tags;
-      status =  ::hs_get_tags(now, evid, (char*)event_name, &ntags, &tags);
+      status =  ::hs_get_tags((DWORD)now, evid, (char*)event_name, &ntags, &tags);
       
       if (status != HS_SUCCESS)
          return status;
@@ -971,7 +973,7 @@ public:
          do {
             bsize = tsize = hbuffer_size;
             memset(ybuffer, 0, bsize);
-            status = ::hs_read(event_id, start_time, end_time, interval,
+            status = ::hs_read(event_id, (DWORD)start_time, (DWORD)end_time, (DWORD)interval,
                                (char*)tag_name[i], var_index[i],
                                tbuffer, &tsize,
                                ybuffer, &bsize,
