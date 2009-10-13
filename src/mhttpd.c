@@ -14,6 +14,7 @@ char *mhttpd_svn_revision = "$Rev$";
 #include <math.h>
 #include <assert.h>
 #include <float.h>
+#include <algorithm>
 #include "midas.h"
 #include "msystem.h"
 extern "C" {
@@ -7967,7 +7968,7 @@ void generate_hist_graph(char *path, char *buffer, int *buffer_size,
    /* check panel name in ODB */
    sprintf(str, "/History/Display/%s", panel);
    db_find_key(hDB, 0, str, &hkeypanel);
-   if (!hkey) {
+   if (!hkeypanel) {
       sprintf(str, "Cannot find /History/Display/%s in ODB", panel);
       gdImageString(im, gdFontSmall, width / 2 - (strlen(str) * gdFontSmall->w) / 2,
                     height / 2, str, red);
@@ -8321,7 +8322,7 @@ void generate_hist_graph(char *path, char *buffer, int *buffer_size,
             continue;
        
          for (j = n_vp = 0; j < num_entries[i]; j++) {
-            x[i][n_vp] = times[i][j] - now;
+            x[i][n_vp] = (int)(times[i][j] - now);
             y[i][n_vp] = datas[i][j];
          
             /* skip NaNs */
@@ -8495,7 +8496,7 @@ void generate_hist_graph(char *path, char *buffer, int *buffer_size,
          for (j = 0; j < (int) n_marker; j++) {
             int col;
 
-            x_marker = tbuf[1][j] - ss_time();
+            x_marker = (int)(tbuf[1][j] - ss_time());
             xs = (int) ((x_marker / 3600.0 - xmin) / (xmax - xmin) * (x2 - x1) + x1 +
                         0.5);
 
