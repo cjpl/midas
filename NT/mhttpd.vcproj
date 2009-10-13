@@ -214,6 +214,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\history_midas.cxx"
+				>
+			</File>
+			<File
 				RelativePath="..\src\mgd.c"
 				>
 				<FileConfiguration
