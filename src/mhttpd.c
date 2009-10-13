@@ -7818,7 +7818,7 @@ static void set_history_path()
    int size = sizeof(str);
    str[0] = 0;
    status = db_get_value(hDB, 0, "/History/ODBC_DSN", str, &size, TID_STRING, TRUE);
-   if (status == DB_SUCCESS && str[0]!=0 && str[0]!='#') {
+   if ((status==DB_SUCCESS || status==DB_TRUNCATED) && str[0]!=0 && str[0]!='#') {
 
       if (!using_odbc)
          if (mh) {
@@ -10194,9 +10194,6 @@ void show_hist_page(char *path, int path_size, char *buffer, int *buffer_size,
    }
 
    if (*getparam("panel")) {
-
-      printf("new panel!!!!!!!!!!\n");
-
       strlcpy(panel, getparam("panel"), sizeof(panel));
       strlcpy(hgroup, getparam("group"), sizeof(hgroup));
       /* use new group if present */
