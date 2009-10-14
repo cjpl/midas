@@ -447,6 +447,12 @@ ifdef NEED_RANLIB
 	ranlib $@
 endif
 
+ifeq ($(OSTYPE),crosscompile)
+%.so: $(OBJS)
+	rm -f $@
+	$(CXX) -shared -o $@ $^ $(LIBS) -lc
+endif
+
 ifeq ($(OSTYPE),linux)
 %.so: $(OBJS)
 	rm -f $@
