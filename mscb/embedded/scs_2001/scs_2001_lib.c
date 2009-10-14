@@ -130,7 +130,7 @@ SCS_2001_MODULE code scs_2001_module[] = {
   { 0x81, "UOut +-10V",      vars_uout,   1, dr_ad5764      },
   { 0x82, "IOut 0-2.5mA",    vars_iout,   1, dr_ltc2600     },
   { 0x83, "IOut 0-25mA",     vars_iout,   1, dr_ltc2600     },
-  { 0x84, "Liq.He level",    vars_lhe,    5, dr_lhe         },
+  { 0x84, "Liq.He level",    vars_lhe,    6, dr_lhe         },
 
   { 0 }
 };
