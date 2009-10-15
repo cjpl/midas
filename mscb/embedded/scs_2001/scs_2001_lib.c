@@ -58,9 +58,17 @@ MSCB_INFO_VAR code vars_iin[] =
 MSCB_INFO_VAR code vars_cin[] =
    { 4, UNIT_FARAD,   PRFX_NANO,  0, MSCBF_FLOAT, "P%Cin#",  (void xdata *)4, 4 };
 
-MSCB_INFO_VAR code vars_temp[] = {
+MSCB_INFO_VAR code vars_temp81[] = {
    { 4, UNIT_CELSIUS, 0,          0, MSCBF_FLOAT, "P%T#",    (void xdata *)8, 2, 0, 0 },
    { 4, UNIT_AMPERE,  PRFX_MILLI, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "P%Excit", (void xdata *)0, 1 },
+};
+
+MSCB_INFO_VAR code vars_temp8[] = {
+   { 4, UNIT_CELSIUS, 0,          0, MSCBF_FLOAT, "P%T#",    (void xdata *)8, 2, 0, 0 },
+};
+
+MSCB_INFO_VAR code vars_temp2[] = {
+   { 4, UNIT_CELSIUS, 0,          0, MSCBF_FLOAT, "P%T#",    (void xdata *)2, 2, 0, 0 },
 };
 
 MSCB_INFO_VAR code vars_iout[] =
@@ -121,9 +129,12 @@ SCS_2001_MODULE code scs_2001_module[] = {
   { 0x70, "Cin 0-10nF",      vars_cin,    1, dr_capmeter    },
   { 0x71, "Cin 0-1uF",       vars_cin,    1, dr_capmeter    },
 
-  { 0x72, "PT100",           vars_temp,   2, dr_temp        },
-  { 0x73, "PT1000",          vars_temp,   2, dr_temp        },
-  { 0x74, "AD590",           vars_temp,   1, dr_ad590       },
+  { 0x72, "PT100-8",         vars_temp81, 2, dr_temp8       },
+  { 0x73, "PT1000-8",        vars_temp81, 2, dr_temp8       },
+  { 0x74, "AD590",           vars_temp8,  1, dr_ad590       },
+
+  { 0x75, "PT100-2",         vars_temp2,  1, dr_temp2       },
+  { 0x76, "PT1000-2",        vars_temp2,  1, dr_temp2       },
 
   /* 0x80-0x9F analog out */
   { 0x80, "UOut 0-2.5V",     vars_uout,   1, dr_ltc2600     },
@@ -1033,14 +1044,14 @@ unsigned char status;
    return 0;
 }
 
-/*---- PT100/1000 via AD7718 ---------------------------------------*/
+/*---- PT100/1000 via AD7718 eight channels ------------------------*/
 
 static float xdata exc_current[N_PORT];
 static float xdata temp_base_value[N_PORT];
 static unsigned char xdata temp_cur_chn[N_PORT];
 
-unsigned char dr_temp(unsigned char id, unsigned char cmd, unsigned char addr, 
-                      unsigned char port, unsigned char chn, void *pd) reentrant
+unsigned char dr_temp8(unsigned char id, unsigned char cmd, unsigned char addr, 
+                       unsigned char port, unsigned char chn, void *pd) reentrant
 {
 float value, new_base_value;
 unsigned char status;
@@ -1128,6 +1139,85 @@ unsigned long d;
       *((float *)pd) = value;
       return 4;
    }
+
+   return 1;
+}
+
+/*---- PT100/1000 via AD7718 two channels ------------------------*/
+
+static unsigned char xdata temp_cur_chn[N_PORT];
+
+unsigned char dr_temp2(unsigned char id, unsigned char cmd, unsigned char addr, 
+                       unsigned char port, unsigned char chn, void *pd) reentrant
+{
+float value;
+unsigned char status;
+unsigned long d;
+
+   if (cmd == MC_INIT) {
+      address_port1(addr, port, AM_RW_SERIAL, 1);
+      ad7718_write(AD7718_FILTER, 82);                // SF value for 50Hz rejection (2 Hz)
+      //ad7718_write(AD7718_FILTER, 13);                // SF value for faster conversion (12 Hz)
+      ad7718_write(AD7718_MODE, 3);                   // continuous conversion
+      DELAY_US_REENTRANT(100);
+
+      /* start first conversion */
+      ad7718_write(AD7718_CONTROL, (1 << 7) | 0x0F);  // Channel 1-2, +2.56V range
+      temp_cur_chn[addr*8+port] = 0;
+   }
+
+   if (cmd == MC_READ) {
+
+      if (chn > 7)
+         return 0;
+
+      /* return if ADC busy */
+      read_port(addr, port, &status);
+      if ((status & 1) > 0)
+         return 0;
+
+      /* return if not current channel */
+      if (chn != temp_cur_chn[addr*8+port])
+         return 0;
+
+      address_port1(addr, port, AM_RW_SERIAL, 1);
+    
+      /* read 24-bit data */
+      ad7718_read(AD7718_ADCDATA, &d);
+
+      /* start next conversion */
+      temp_cur_chn[addr*8+port] = (temp_cur_chn[addr*8+port] + 1) % 2;
+      ad7718_write(AD7718_CONTROL, (1 << 7) | (temp_cur_chn[addr*8+port] << 4) | 0x0F);  // next chn pair, +2.56V range
+
+      /* convert to volts */
+      value = 2.56*((float)d / (1l<<24));
+
+      /* convert to Ohms (1mA excitation) */
+      value /= 0.001;
+
+      /* convert PT1000 to PT100 ??? */
+      if (id == 0x76)
+         value /= 10;
+
+      /* convert to Kelvin, coefficients obtained from table fit (www.lakeshore.com) */
+      value = 5.232935E-7 * value * value * value + 
+              0.0009 * value * value + 
+              2.357 * value + 28.288;
+
+      /* convert to Celsius */
+      value -= 273.15;
+
+      /* round result to significant digits */
+      value = ((long)(value*1E2+0.5))/1E2;
+   
+      if (value > 999)
+         value = 999.9;
+      if (value < -200)
+         value = -999.9;
+
+      *((float *)pd) = value;
+      return 4;
+      }
 
    return 1;
 }
