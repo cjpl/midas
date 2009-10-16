@@ -4259,27 +4259,46 @@ void show_sc_page(char *path, int refresh)
       memset(group_name, 0, sizeof(group_name));
       db_get_key(hDB, hkey, &key);
 
-      for (i = 0; i < key.num_values; i++) {
-         size = sizeof(str);
-         db_get_data_index(hDB, hkey, str, &size, i, TID_STRING);
+      for (int level = 0; ; level++) {
+         bool next_level = false;
+         for (i = 0; i < key.num_values; i++) {
+            size = sizeof(str);
+            db_get_data_index(hDB, hkey, str, &size, i, TID_STRING);
+            
+            char *s = strchr(str, '%');
+            for (int k=0; s && k<level; k++)
+               s = strchr(s+1, '%');
 
-         if (strchr(str, '%')) {
-            *strchr(str, '%') = 0;
-            for (j = 0; j < MAX_GROUPS; j++) {
-               if (equal_ustring(group_name[j], str) || group_name[j][0] == 0)
-                  break;
+            if (s) {
+               *s = 0;
+               if (strchr(s+1, '%'))
+                   next_level = true;
+
+               //printf("try group [%s] name [%s], level %d, %d\n", str, s+1, level, next_level);
+
+               for (j = 0; j < MAX_GROUPS; j++) {
+                  if (equal_ustring(group_name[j], str) || group_name[j][0] == 0)
+                     break;
+               }
+               if (group_name[j][0] == 0)
+                  strlcpy(group_name[j], str, sizeof(group_name[0]));
             }
-            if (group_name[j][0] == 0)
-               strlcpy(group_name[j], str, sizeof(group_name[0]));
          }
+
+         if (!next_level)
+            break;
       }
 
       for (i = 0; i < MAX_GROUPS && group_name[i][0]; i++) {
          if (equal_ustring(group_name[i], group))
             rsprintf("<b>%s</b> &nbsp;&nbsp;", group_name[i]);
-         else
+         else {
+            char s[256];
+            strlcpy(s, group_name[i], sizeof(s));
+            urlEncode(s, sizeof(s));
             rsprintf("<a href=\"%s%s/%s\">%s</a> &nbsp;&nbsp;", back_path, eq_name,
-                        group_name[i], group_name[i]);
+                        s, group_name[i]);
+         }
       }
       rsprintf("</tr>\n");
 
@@ -4326,15 +4345,18 @@ void show_sc_page(char *path, int refresh)
          size = sizeof(str);
          db_get_data_index(hDB, hkeyset, str, &size, i, TID_STRING);
 
-         name[0] = 0;
-         if (strchr(str, '%')) {
-            *strchr(str, '%') = 0;
-            strlcpy(name, str + strlen(str) + 1, sizeof(name));
-         } else
-            strlcpy(name, str, sizeof(name));
+         strlcpy(name, str, sizeof(name));
 
-         if (!equal_ustring(group, "All") && !equal_ustring(str, group))
-            continue;
+         //printf("group [%s], name [%s], str [%s]\n", group, name, str);
+
+         if (!equal_ustring(group, "All")) {
+            // check if name starts with the name of the group we want to display
+            char *s = strstr(name, group);
+            if (s != name)
+               continue;
+            if (name[strlen(group)] != '%')
+               continue;
+         }
 
          if (strlen(name) < 1)
             sprintf(name, "[%d]", i);
