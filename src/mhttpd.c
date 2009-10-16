@@ -1413,7 +1413,7 @@ void show_status_page(int refresh, char *cookie_wpwd)
          if (hkeytmp) {
             db_get_record_size(hDB, hkeytmp, 0, &size);
             /* discard wrong equipments (caused by analyzer) */
-            if (size == sizeof(equipment))
+            if (size <= (int)sizeof(equipment))
                db_get_record(hDB, hkeytmp, &equipment, &size, 0);
          }
 
@@ -1434,14 +1434,13 @@ void show_status_page(int refresh, char *cookie_wpwd)
                 ("<tr><td><a href=\"%s\">%s</a><td align=center bgcolor=#FF0000>(frontend stopped)",
                  ref, key.name);
          else {
-            if (equipment.enabled)
-               rsprintf
-                   ("<tr><td><a href=\"%s\">%s</a><td align=center bgcolor=\"%s\">%s",
-                    ref, key.name, equipment.status_color, equipment.status);
-            else
-               rsprintf
-                   ("<tr><td><a href=\"%s\">%s</a><td align=center bgcolor=#FFFF00>(disabled)",
-                    ref, key.name);
+            if (equipment.enabled) {
+               if (equipment.status[0] == 0)
+                  rsprintf("<tr><td><a href=\"%s\">%s</a><td align=center bgcolor=\"%s\">%s@%s", ref, key.name, "#00FF00", equipment.frontend_name, equipment.frontend_host);
+               else
+                  rsprintf("<tr><td><a href=\"%s\">%s</a><td align=center bgcolor=\"%s\">%s", ref, key.name, equipment.status_color, equipment.status);
+            } else
+               rsprintf("<tr><td><a href=\"%s\">%s</a><td align=center bgcolor=#FFFF00>(disabled)", ref, key.name);
          }
 
          /* event statistics */
