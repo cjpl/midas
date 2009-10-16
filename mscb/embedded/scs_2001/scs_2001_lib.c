@@ -1162,7 +1162,7 @@ unsigned long d;
       DELAY_US_REENTRANT(100);
 
       /* start first conversion */
-      ad7718_write(AD7718_CONTROL, (1 << 7) | 0x0F);  // Channel 1-2, +2.56V range
+      ad7718_write(AD7718_CONTROL, (1 << 7) | 0x0C);  // Channel 1-2, +-320mV range
       temp_cur_chn[addr*8+port] = 0;
    }
 
@@ -1187,10 +1187,10 @@ unsigned long d;
 
       /* start next conversion */
       temp_cur_chn[addr*8+port] = (temp_cur_chn[addr*8+port] + 1) % 2;
-      ad7718_write(AD7718_CONTROL, (1 << 7) | (temp_cur_chn[addr*8+port] << 4) | 0x0F);  // next chn pair, +2.56V range
+      ad7718_write(AD7718_CONTROL, (1 << 7) | (temp_cur_chn[addr*8+port] << 4) | 0x0C);  // next chn pair, +-320mV range
 
       /* convert to volts */
-      value = 2.56*((float)d / (1l<<24));
+      value = 0.32*((float)d / (1l<<24));
 
       /* convert to Ohms (1mA excitation) */
       value /= 0.001;
