@@ -3664,6 +3664,8 @@ INT cm_transition1(INT transition, INT run_number, char *errstr, INT errstr_size
                strlcat(errstr, "\'", errstr_size);
             }
 
+            /* clients that do not respond to transitions are dead or defective, get rid of them. K.O. */
+            cm_shutdown(tr_client[idx].client_name, TRUE);
             cm_cleanup(tr_client[idx].client_name, TRUE);
 
             /* indicate abort */
