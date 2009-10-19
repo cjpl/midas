@@ -1148,8 +1148,7 @@ INT midas_log_open(LOG_CHN * log_chn, INT run_number)
          int isgz = sufp && sufp[3]==0;
          
          if (log_chn->compression>0 && !isgz) {
-            cm_msg(MERROR, "midas_log_open",
-                   "Compression enabled but output file name does not end with '.gz'");
+            cm_msg(MERROR, "midas_log_open", "Compression level %d enabled, but output file name \'%s\' does not end with '.gz'", log_chn->compression, log_chn->path);
             free(info->buffer);
             free(info);
             return SS_FILE_ERROR;
@@ -4019,9 +4018,7 @@ INT tr_start(INT run_number, char *error)
          /* set compression level */
          log_chn[index].compression = 0;
          size = sizeof(log_chn[index].compression);
-         db_get_value(hDB, log_chn->settings_hkey, "Compression", &log_chn[index].compression, &size, TID_INT,
-                      FALSE);
-
+         status = db_get_value(hDB, log_chn[index].settings_hkey, "Compression", &log_chn[index].compression, &size, TID_INT, FALSE);
          
          /* initialize subrun number */
          log_chn[index].subrun_number = 0;
