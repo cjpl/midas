@@ -960,6 +960,12 @@ public:
       for (int i=0; i<num_var; i++) {
          DWORD tid;
          int event_id;
+
+         if (event_name[i]==NULL) {
+            st[i] = HS_UNDEFINED_EVENT;
+            num_entries[i] = 0;
+            continue;
+         }
          
          int status = xhs_event_id(start_time, event_name[i], tag_name[i], &event_id);
          
