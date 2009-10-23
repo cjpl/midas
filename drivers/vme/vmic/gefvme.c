@@ -122,6 +122,15 @@ static int gefvme_openWindow(MVME_INTERFACE *mvme, int am, mvme_addr_t vme_addr,
       fprintf(stderr,"gefvme_openWindow: Do not know how to handle VME AM 0x%x\n", table[j].am);
       abort();
       return MVME_ACCESS_ERROR;
+    case MVME_AM_A16_SD:
+    case MVME_AM_A16_ND:
+      vme_addr = 0;
+      n_bytes = (1<<16);
+      conf.addrSpace = VME_A16;       /*  Address Space */
+      conf.userAccessType = VME_USER; /*  User/Supervisor Access Type */
+      conf.dataAccessType = VME_DATA; /*  Data/Program Access Type */
+      amode = "A16";
+      break;
     case MVME_AM_A24:
     case MVME_AM_A24_ND:
       vme_addr = 0;
