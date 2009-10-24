@@ -13,7 +13,10 @@
 #ifndef V1190B_INCLUDE_H
 #define V1190B_INCLUDE_H
 
-#
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* V1190 Base address */
 #define  V1190_MAX_CHANNELS      (DWORD) 64
 #define  V1190_REG_BASE          (DWORD) (0x1000)
@@ -53,6 +56,9 @@
 #define  LE_RESOLUTION_800       (WORD) (0x00)
 
 int  udelay(int usec);
+WORD v1190_Read16(MVME_INTERFACE *mvme, DWORD base, int offset);
+DWORD v1190_Read32(MVME_INTERFACE *mvme, DWORD base, int offset);
+void v1190_Write16(MVME_INTERFACE *mvme, DWORD base, int offset, WORD value);
 int  v1190_EventRead(MVME_INTERFACE *mvme, DWORD base, DWORD *pdest, int *nentry);
 int  v1190_DataRead(MVME_INTERFACE *mvme, DWORD base, DWORD *pdest, int nentry);
 void v1190_SoftReset(MVME_INTERFACE *mvme, DWORD base);
@@ -80,4 +86,7 @@ int  v1190_Setup(MVME_INTERFACE *mvme, DWORD base, int mode);
 int  v1190_Status(MVME_INTERFACE *mvme, DWORD base);
 void v1190_SetEdgeDetection(MVME_INTERFACE *mvme, DWORD base, int eLeading, int eTrailing);
 
+#ifdef __cplusplus
+}
+#endif
 #endif // V1190B_INCLUDE_H

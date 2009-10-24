@@ -12,6 +12,26 @@
 #include "v1190B.h"
 
 /*****************************************************************/
+WORD v1190_Read16(MVME_INTERFACE *mvme, DWORD base, int offset)
+{
+  mvme_set_am(mvme, MVME_AM_A24);
+  mvme_set_dmode(mvme, MVME_DMODE_D16);
+  return mvme_read_value(mvme, base+offset);
+}
+
+DWORD v1190_Read32(MVME_INTERFACE *mvme, DWORD base, int offset)
+{
+  mvme_set_am(mvme, MVME_AM_A24);
+  mvme_set_dmode(mvme, MVME_DMODE_D32);
+  return mvme_read_value(mvme, base+offset);
+}
+
+void v1190_Write16(MVME_INTERFACE *mvme, DWORD base, int offset, WORD value)
+{
+  mvme_set_am(mvme, MVME_AM_A24);
+  mvme_set_dmode(mvme, MVME_DMODE_D16);
+  mvme_write_value(mvme, base+offset, value);
+}
 /*****************************************************************/
 /**
 Read Data buffer for single event (check delimiters)
@@ -490,25 +510,28 @@ int v1190_Status(MVME_INTERFACE *mvme, DWORD base)
 {
   WORD  i, code, pair=0;
   int   cmode, value;
+  int ns = 25; // ns per tdc count
 
   mvme_get_dmode(mvme, &cmode);
   mvme_set_dmode(mvme, MVME_DMODE_D16);
 
   //-------------------------------------------------
+  printf("\n");
+  printf("V1190 TDC at VME A24 0x%06x:\n", base);
   printf("\n--- Trigger Section [0x1600]:\n");
   code = 0x1600;
   if ((value = v1190_MicroWrite(mvme, base, code)) < 0)
     return -value;
   value = v1190_MicroRead(mvme, base);
-  printf("  Match Window width       : 0x%04x\n", value);
+  printf("  Match Window width       : 0x%04x, %d ns\n", value, value*ns);
   value = v1190_MicroRead(mvme, base);
-  printf("  Window offset            : 0x%04x\n", value);
+  printf("  Window offset            : 0x%04x, %d ns\n", value, ((WORD)value)*ns);
   value = v1190_MicroRead(mvme, base);
-  printf("  Extra Search Window Width: 0x%04x\n", value);
+  printf("  Extra Search Window Width: 0x%04x, %d ns\n", value, value*ns);
   value = v1190_MicroRead(mvme, base);
-  printf("  Reject Margin            : 0x%04x\n", value);
+  printf("  Reject Margin            : 0x%04x, %d ns\n", value, value*ns);
   value = v1190_MicroRead(mvme, base);
-  printf("  Trigger Time subtration  : %s\n",(value & 0x1) ? "y" : "n");
+  printf("  Trigger Time subtraction : %s\n",(value & 0x1) ? "y" : "n");
 
   //-------------------------------------------------
   printf("\n--- Edge Detection & Resolution Section[0x2300/26/29]:\n");
