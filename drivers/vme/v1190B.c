@@ -102,6 +102,7 @@ int v1190_DataRead(MVME_INTERFACE *mvme, DWORD base, DWORD *pdest, int nentry)
 
     mvme_get_dmode(mvme, &cmode);
     mvme_set_dmode(mvme, MVME_DMODE_D32);
+    mvme_set_blt(mvme, MVME_BLT_BLT32);
 
     status = mvme_read(mvme, pdest, base, sizeof(DWORD) * nentry);
 
