@@ -344,43 +344,52 @@ See the @ref ODB_Logger_Tree for reference on the tree structure.
 .
  
 <hr> @section lazylogger_task lazylogger task
-\b lazylogger is an application which decouples the data aquisition from the data logging
-mechanism. The need of such application has been dictated by the slow response time of
-some of the media logging devices (Tape devices). Delay due to tape mounting,
-retension, reposition implies that the data acquisition has to hold until operation
-completion. By using \b mlogger to log data to disk in a first stage and then using
-\b lazylogger to copy or move the stored files to the "slow device" we can keep the
-acquisition running without interruption.
-- Multiple lazyloggers can be running comtemporary on the same computer, each one 
-  taking care of a particular channel.
-- Each lazylogger channels will have a dedicated ODB tree containg its own information.
-- All the lazylogger channel will be under the ODB \b /Lazy/\<channel_name\>/...
-- Each channel tree is composed of three sub-tree \b Settings, Statistics, List.
+\b lazylogger is a midas application for saving midas files created by \b mlogger
+to permanent storage such as tape media, DCACHE and CASTOR HSM systems, USB disks, etc
+and for managing the disk space used by \b mlogger. One can think of \b lazylogger
+as a light weight HSM manager.
 
-Self-explanatory the \b Settings and Statistics contains the running operation of the
-channel. While the \b List- will have a dynamic list of run number which has
-been sucessfully manipulated by the Lazylogger channel.
-This list won't exist until the first successful operation of the channel is completed.
+Because most external data storage devices are "not real time" in the sense that they
+are subject to arbitrary delays when tapes need to be changed or when network
+connections to an HSM system become congested, a typical midas daq system
+will be configured with \b mlogger writing midas data files to a local disk, often
+configured as a raid array for improved performance, and with \b lazylogger copying
+these files to permanent storage and deleting old files to make space for new data.
 
-- <b> Remarks "Script" backup type (svn rev 4295)</b> 
-  - To support non-standard storage media, such as dcache pools, a "script" backup type
-  was added: to save the midas file, lazylogger executes a script supplied by the user.
-  Only one argument is passed to this script, the full path of the midas file to be saved.
-  The script should return exit status 0 for successful operation, non-zero for error,
-  in which case, the lazylogger will try again later. Example scripts are available
-  for dcache, castor and removable hard disks (hot-plug sata, usb).
- 
-- <b> Remarks >2.0.0</b> 
- - While lazylogger was developed specifically for tape device, it also supports data file
-  transfer to FTP repository system. Improvement towards a more generic support has been done
-  which includes:
-  - dynamic directory destination based on run number or date.
-  - compression copy.
-  - "stay behind=0" support.
-  - Script copy support.
- 
-- <b> Arguments </b> 
+Multiple \b lazylogger programs can used at the same time to make multiple copies
+of midas data files to different locations. Each copy of \b lazylogger would use
+a different channel name specified by the "-c" command line switch. When using
+multiple lazyloggers, one should take care to check that only one of them is configured
+to delete old data files.
+
+When one output device cannot keep up with data, multiple \b lazylogger programs
+can used to write data to multiple outputs in parallel. For example, using the ODB "Modulo.Position" option,
+one can configure the 1st lazylogger to write the odd runs to the first tape drive and the 2nd
+lazylogger to write even runs to the second tape drive.
+
+\b lazylogger implements several methods for writing files, controlled by ODB "/Lazy/.../Settings/Backup type":
+- "Tape" - for writing data to tape devices that implement the "mt" interface. On Linux, known to work are 8mm and DLT/SDLT tape devices, but generally, any SCSI tape drive should work.
+- "Script" - this method was recently added to provide support for writing data to HSM systems, such as DACHE and CASTOR. The user has to provide a script or program that takes one argument - the full pathname of the file to be written to extrnal storage. The user supplied script or program should take care or writing the file to the correct place (i.e. run the DCACHE dccp command) and return 0 if file was successfully saved. Example scripts are available for DCACHE and CASTOR HSM systems.
+- "FTP" - for writing data to an FTP server.
+- "Disk"
+
+To reduce load on the daq system, \b lazylogger implements several "stay-behind" schemes, controlled by ODB "/Lazy/.../Settings/Stay behind":
+- value of zero means "no stay behind", data files are saved as soon as mlogger switches to the next output file,
+- positive values tell \b lazylogger to keep this number of unsaved files
+- negative values tell \b lazylogger to keep this number of unsaved runs (1 run may have multiple files if subruns are used)
+
+When using the \b mlogger subrun feature, where multiple midas output files are created for each run,
+please configure midas as following:
+- /Logger/Channels/.../Settings/Filename set to "run%05dsub%05d.mid.gz", "subrun byte limit" to 1.9 Gbytes.
+- /Lazy/.../Settings/"Filename format" set to "*.mid.gz"
+- /Lazy/.../Settings/"Stay behind" set to 0 or positive number (stay behind so many files) to permit \b lazylogger to save subrun files soon after they are created. Using negative stay-behind (stay behind by so many runs) is not recommended because no subrun files from the current run will be saved until the next run is started, and continuous running (without restarting runs) will be impossible as the system will run out of disk space - \b lazylogger will write nothing and will delete no old files.
+
+For each \b lazylogger channel, configuration is stored in ODB under \b /Lazy/\<channel_name\>/...
+as explained below.
+
+- <b> Command line arguments </b> 
   - [-h ] : help.
+  - [-d ] : enable debug flag to print all actions and decisions.
   - [-h hostname ] : host name.
   - [-e exptname ] : experiment name.
   - [-D ] : start program as a daemon.
@@ -423,18 +432,7 @@ This list won't exist until the first successful operation of the channel is com
   \b AND  The given run number appears anywhere under the "List/" directory of that channel
   </center></b>
  <br><br>
-  - <b>[Stay behind]</b> This parameter defines how many consecutive data files should be kept
-  between the current run and the last lazylogger run.
-    - <b> Example  with "Stay behind = -3" </b>:
-    -# Current acquisition run number 253 -\> run00253.mid is being logged by mlogger.
-    -# Files available on the disk corresponding to run \#248, \#249, \#250, \#251, \#252.
-    -# Lazylogger will start backing up run \#250 as soon as the new run 254 starts.
-    -3 "Stay behind = -3" corresponds to 3 file untouched on the disk
-    (\#251, \#252, \#253).
-  The negative sign instructs the lazylogger to \b always scan the entire "Data Dir" from the
-  oldest to the most recent file sitting on the disk at the "Data Dir" path- for backup.
-  If the "Stay behind" is positive, lazylogger will \b backup starting from- x behind
-  the current acquisition run number. Run order will be ignored.
+  - <b>[Stay behind]</b> See "stay behind" discussion above
   <br><br>
   - <b>[Alarm Class]</b> Specify the Alarm class to be used in case of triggered alarm.
   <br><br>
@@ -456,11 +454,10 @@ This list won't exist until the first successful operation of the channel is com
   - <b>[Data format]</b> Specify the Data format of the data files. Currently supported formats
   are: \b MIDAS and \b YBOS.
    <br><br>
-  - <b>[Filename format]</b> Specify the file format of the data files. Same format as
-  given for the data logger.
+  - <b>[Filename format]</b> Specify which files to backup. One can use the same format as
+  given for the data logger or say "run*.mid.gz". Multiple file types can be specified, for example "*.mid.gz,*.xml".
  <br><br>
-  - <b>[Backup type]</b> Specify the "slow device" backup type. Default \b Tape.
-  Can be \b Disk, \b Script or \b Ftp. 
+  - <b>[Backup type]</b> Use \b Tape, \b Disk, \b Script or \b Ftp. 
    <br><br>
   - <b>[Execute after rewind]</b> Specify a script to run after completion of a lazylogger
   backup set (see below "Capacity (Bytes)").
@@ -482,9 +479,9 @@ This list won't exist until the first successful operation of the channel is com
   prevent any further backup until a none empty label list is entered again.
   In the other hand the list label will remain under the "/List" key to display all
   run being backed up until the corresponding files have been removed from the disk.
-  - <b>[Exec preW file]</b> Permits to run a script before the begining of the lazy job.
+  - <b>[Execute before writing file]</b> Permits to run a script before the begining of the lazy job.
   The <b> arguments </b> passed to the scripts are: input file name , output file name, current block number.
-  - <b>[Exec postW file]</b> Permits to run a script after the completion of the lazy job.
+  - <b>[Execute after writing file]</b> Permits to run a script after the completion of the lazy job.
   The <b> arguments </b> passed to the scripts are: list label, current job number, source path,
   file name, file size in MB, current block number.
  <br><br>
@@ -508,9 +505,6 @@ This list won't exist until the first successful operation of the channel is com
   - <b>[Statistics/]</b> ODB tree specifying general information about the status of
   the current lazylogger channel state.
  <br><br>
-  - <b>[List/]</b> ODB tree, will contain arrays of run number associated with the
-   array name backup-set label. Any run number appearing in any of the arrays is
-   considered to have been backed up.
   
 - <b> Usage </b>
  lazylogger requires to be setup prior data file can be moved.
