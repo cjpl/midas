@@ -65,13 +65,16 @@ data representations
 /* Byte and Word swapping big endian <-> little endian */
 /**
 SWAP WORD macro */
+#ifndef WORD_SWAP
 #define WORD_SWAP(x) { BYTE _tmp;                               \
                        _tmp= *((BYTE *)(x));                    \
                        *((BYTE *)(x)) = *(((BYTE *)(x))+1);     \
                        *(((BYTE *)(x))+1) = _tmp; }
+#endif
 
 /**
 SWAP DWORD macro */
+#ifndef DWORD_SWAP
 #define DWORD_SWAP(x) { BYTE _tmp;                              \
                        _tmp= *((BYTE *)(x));                    \
                        *((BYTE *)(x)) = *(((BYTE *)(x))+3);     \
@@ -79,9 +82,11 @@ SWAP DWORD macro */
                        _tmp= *(((BYTE *)(x))+1);                \
                        *(((BYTE *)(x))+1) = *(((BYTE *)(x))+2); \
                        *(((BYTE *)(x))+2) = _tmp; }
+#endif
 
 /**
 SWAP QWORD macro */
+#ifndef QWORD_SWAP
 #define QWORD_SWAP(x) { BYTE _tmp;                              \
                        _tmp= *((BYTE *)(x));                    \
                        *((BYTE *)(x)) = *(((BYTE *)(x))+7);     \
@@ -95,6 +100,7 @@ SWAP QWORD macro */
                        _tmp= *(((BYTE *)(x))+3);                \
                        *(((BYTE *)(x))+3) = *(((BYTE *)(x))+4); \
                        *(((BYTE *)(x))+4) = _tmp; }
+#endif
 
 /**dox***************************************************************/
           /** @} *//* end of msmacroh */
