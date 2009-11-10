@@ -8521,10 +8521,10 @@ void generate_hist_graph(char *path, char *buffer, int *buffer_size,
             xs = (int) ((x_marker / 3600.0 - xmin) / (xmax - xmin) * (x2 - x1) + x1 +
                         0.5);
 
-            if (xs < 0)
-               xs = 0;
-            if (xs >= width)
-               xs = width-1;
+            if (xs < x1)
+               continue;
+            if (xs >= x2)
+               continue;
 
             double run_number = dbuf[1][j];
 
