@@ -266,8 +266,10 @@ INT hs_search_file(DWORD * ltime, INT direction)
    hs_open_file(*ltime, "idx", O_RDONLY, &fhi);
 
    close(fh);
-   close(fhd);
-   close(fhi);
+   if (fhd > 0)
+      close(fhd);
+   if (fhi > 0)
+      close(fhi);
 
    /* generate them if not */
    if (fhd < 0 || fhi < 0)
