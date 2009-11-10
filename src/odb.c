@@ -6849,7 +6849,7 @@ INT db_save_string(HNDLE hDB, HNDLE hKey, const char *file_name, const char *str
    for (i = 0; i < (int) strlen(str); i++)
       str[i] = (char) toupper(str[i]);
 
-   sprintf(line, "#define %s(_name) char *_name[] = {\\\n", str);
+   sprintf(line, "#define %s(_name) const char *_name[] = {\\\n", str);
    write(fh, line, strlen(line));
 
    buffer_size = 10000;
