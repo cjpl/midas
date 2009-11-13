@@ -994,9 +994,9 @@ public:
                assert(tbuffer);
                ybuffer = (char*)realloc(ybuffer, hbuffer_size);
                assert(ybuffer);
-               continue;
             }
-         } while (false); // loop once
+
+         } while (status == HS_TRUNCATED);
         
          st[i] = status;
 
