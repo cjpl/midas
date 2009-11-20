@@ -817,6 +817,11 @@ INT db_open_database(const char *xdatabase_name, INT database_size, HNDLE * hDB,
          return DB_INVALID_PARAM;
       }
 
+      if (strchr(client_name, '/') != NULL) {
+         cm_msg(MERROR, "db_open_database", "client name \'%s\' should not contain the slash \'/\' character", client_name);
+         return DB_INVALID_PARAM;
+      }
+
       /* allocate new space for the new database descriptor */
       if (_database_entries == 0) {
          _database = (DATABASE *) malloc(sizeof(DATABASE));
