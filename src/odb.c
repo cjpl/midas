@@ -812,6 +812,11 @@ INT db_open_database(const char *xdatabase_name, INT database_size, HNDLE * hDB,
          return DB_INVALID_PARAM;
       }
 
+      if (strlen(client_name) >= NAME_LENGTH) {
+         cm_msg(MERROR, "db_open_database", "client name \'%s\' is longer than %d characters", client_name, NAME_LENGTH-1);
+         return DB_INVALID_PARAM;
+      }
+
       /* allocate new space for the new database descriptor */
       if (_database_entries == 0) {
          _database = (DATABASE *) malloc(sizeof(DATABASE));
@@ -995,7 +1000,7 @@ INT db_open_database(const char *xdatabase_name, INT database_size, HNDLE * hDB,
 
       memset(pclient, 0, sizeof(DATABASE_CLIENT));
       /* use client name previously set by bm_set_name */
-      strcpy(pclient->name, client_name);
+      strlcpy(pclient->name, client_name, sizeof(pclient->name));
       pclient->pid = ss_getpid();
       pclient->tid = ss_gettid();
       pclient->thandle = ss_getthandle();
@@ -1694,7 +1699,7 @@ INT db_create_key(HNDLE hDB, HNDLE hKey, const char *key_name, DWORD type)
                pkey->type = TID_KEY;
                pkey->num_values = 1;
                pkey->access_mode = MODE_READ | MODE_WRITE | MODE_DELETE;
-               strcpy(pkey->name, str);
+               strlcpy(pkey->name, str, sizeof(pkey->name));
                pkey->parent_keylist = (POINTER_T) pkeylist - (POINTER_T) pheader;
 
                /* find space for new keylist */
@@ -1733,7 +1738,7 @@ INT db_create_key(HNDLE hDB, HNDLE hKey, const char *key_name, DWORD type)
                pkey->type = type;
                pkey->num_values = 1;
                pkey->access_mode = MODE_READ | MODE_WRITE | MODE_DELETE;
-               strcpy(pkey->name, str);
+               strlcpy(pkey->name, str, sizeof(pkey->name));
                pkey->parent_keylist = (POINTER_T) pkeylist - (POINTER_T) pheader;
 
                /* zero data */
