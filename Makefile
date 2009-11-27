@@ -118,9 +118,9 @@ endif
 # Cross-compilation, change GCC_PREFIX
 #
 ifeq ($(OSTYPE),crosscompile)
-GCC_PREFIX=/home/fgddaq/linuxdcc/Cross-Compiler/gcc-4.0.2/build/gcc-4.0.2-glibc-2.3.6/powerpc-405-linux-gnu
+GCC_PREFIX=$(HOME)/linuxdcc/Cross-Compiler/gcc-4.0.2/build/gcc-4.0.2-glibc-2.3.6/powerpc-405-linux-gnu
 GCC_BIN=$(GCC_PREFIX)/bin/powerpc-405-linux-gnu-
-LIBS=-L/home/fgddaq/linuxdcc/userland/lib -pthread -lutil
+LIBS=-L$(HOME)/linuxdcc/userland/lib -pthread -lutil
 CC  = $(GCC_BIN)gcc
 CXX = $(GCC_BIN)g++
 OSTYPE = cross-ppc405
