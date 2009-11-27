@@ -24,6 +24,8 @@ CRITICAL_SECTION buffer_critial_section;
 
 struct callback_addr callback;
 
+BOOL use_callback_addr = TRUE;
+
 INT rpc_server_dispatch(INT index, void *prpc_param[]);
 
 /*---- msg_print ---------------------------------------------------*/
@@ -51,12 +53,12 @@ void debug_print(char *msg)
 
    /* print message to file */
 #ifdef OS_LINUX
-   strcpy(file_name, "/tmp/mserver.log");
+   strlcpy(file_name, "/tmp/mserver.log", sizeof(file_name));
 #else
    getcwd(file_name, sizeof(file_name));
    if (file_name[strlen(file_name) - 1] != DIR_SEPARATOR)
-      strcat(file_name, DIR_SEPARATOR_STR);
-   strcat(file_name, "mserver.log");
+      strlcat(file_name, DIR_SEPARATOR_STR, sizeof(file_name));
+   strlcat(file_name, "mserver.log", sizeof(file_name));
 #endif
    f = fopen(file_name, "a");
 
@@ -143,16 +145,16 @@ int main(int argc, char **argv)
 
    /* save executable file name */
    if (argv[0] == NULL || argv[0][0] == 0)
-      strcpy(name, "mserver");
+     strlcpy(name, "mserver", sizeof(name));
    else
-      strcpy(name, argv[0]);
+     strlcpy(name, argv[0], sizeof(name));
 
 #ifdef OS_UNIX
    /* if no full path given, assume /usr/local/bin */
    if (strchr(name, '/') == 0) {
-      strcpy(str, "/usr/local/bin/");
-      strcat(str, name);
-      strcpy(name, str);
+      strlcpy(str, "/usr/local/bin/", sizeof(str));
+      strlcat(str, name, sizeof(str));
+      strlcpy(name, str, sizeof(name));
    }
 #endif
 
@@ -162,6 +164,9 @@ int main(int argc, char **argv)
       printf("argv[%d] is [%s]\n", i, argv[i]);
    system("/bin/ls -la /proc/self/fd");
 #endif
+
+   if (getenv("MIDAS_MSERVER_DO_NOT_USE_CALLBACK_ADDR"))
+      use_callback_addr = FALSE;
 
    rpc_set_server_option(RPC_OSERVER_NAME, (POINTER_T) name);
 
@@ -220,8 +225,8 @@ int main(int argc, char **argv)
             else {
              usage:
                printf("usage: mserver [-s][-t][-m][-d][-p port]\n");
-               printf("               -s    Single process server\n");
-               printf("               -t    Multi threaded server\n");
+               printf("               -s    Single process server (DO NOT USE!)\n");
+               printf("               -t    Multi threaded server (DO NOT USE!)\n");
                printf("               -m    Multi process server (default)\n");
                printf("               -p port Listen for connections on non-default tcp port\n");
 #ifdef OS_LINUX
@@ -286,29 +291,29 @@ int main(int argc, char **argv)
 
       /* extract callback arguments and start receiver */
 #ifdef OS_VMS
-      strcpy(callback.host_name, argv[2]);
+      strlcpy(callback.host_name, argv[2], sizeof(callback.host_name));
       callback.host_port1 = atoi(argv[3]);
       callback.host_port2 = atoi(argv[4]);
       callback.host_port3 = atoi(argv[5]);
       callback.debug = atoi(argv[6]);
       if (argc > 7)
-         strcpy(callback.experiment, argv[7]);
+         strlcpy(callback.experiment, argv[7], sizeof(callback.experiment));
       if (argc > 8)
-         strcpy(callback.directory, argv[8]);
+         strlcpy(callback.directory, argv[8], sizeof(callback.directory));
       if (argc > 9)
-         strcpy(callback.user, argv[9]);
+         strlcpy(callback.user, argv[9], sizeof(callback.user));
 #else
-      strcpy(callback.host_name, argv[1]);
+      strlcpy(callback.host_name, argv[1], sizeof(callback.host_name));
       callback.host_port1 = atoi(argv[2]);
       callback.host_port2 = atoi(argv[3]);
       callback.host_port3 = atoi(argv[4]);
       callback.debug = atoi(argv[5]);
       if (argc > 6)
-         strcpy(callback.experiment, argv[6]);
+         strlcpy(callback.experiment, argv[6], sizeof(callback.experiment));
       if (argc > 7)
-         strcpy(callback.directory, argv[7]);
+         strlcpy(callback.directory, argv[7], sizeof(callback.directory));
       if (argc > 8)
-         strcpy(callback.user, argv[8]);
+         strlcpy(callback.user, argv[8], sizeof(callback.user));
 #endif
       callback.index = 0;
 
@@ -421,7 +426,7 @@ INT rpc_server_dispatch(INT index, void *prpc_param[])
       /* common functions */
 
    case RPC_CM_SET_CLIENT_INFO:
-      status = cm_set_client_info(CHNDLE(0), CPHNDLE(1), CSTRING(2),
+      status = cm_set_client_info(CHNDLE(0), CPHNDLE(1), (use_callback_addr?callback.host_name:CSTRING(2)),
                                   CSTRING(3), CINT(4), CSTRING(5), CINT(6));
       break;
 

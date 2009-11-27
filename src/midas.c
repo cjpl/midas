@@ -11073,6 +11073,8 @@ INT rpc_execute(INT sock, char *buffer, INT convert_flags)
    /* find entry in rpc_list */
    routine_id = nc_in->header.routine_id & ~TCP_FAST;
 
+   assert(rpc_list != NULL);
+
    for (i = 0;; i++)
       if (rpc_list[i].id == 0 || rpc_list[i].id == routine_id)
          break;
