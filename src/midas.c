@@ -135,6 +135,7 @@ static char *_tcp_buffer = NULL;
 static INT _tcp_wp = 0;
 static INT _tcp_rp = 0;
 static INT _rpc_sock = 0;
+static int _mutex_rpc = 0;
 
 static INT _send_sock;
 
@@ -8909,6 +8910,10 @@ INT rpc_server_disconnect()
 
    memset(&_server_connection, 0, sizeof(RPC_SERVER_CONNECTION));
 
+   /* remove semaphore */
+   if (_mutex_rpc)
+      ss_mutex_delete(_mutex_rpc, TRUE);
+
    rpc_server_disconnect_recursion_level = 0;
    return RPC_SUCCESS;
 }
@@ -9710,9 +9715,6 @@ INT rpc_client_call(HNDLE hConn, const INT routine_id, ...)
    return status;
 }
 
-/* mutex for multi-threaded applications calling the RPC layer */
-int _mutex_rpc;
-
 /********************************************************************/
 INT rpc_call(const INT routine_id, ...)
 /********************************************************************\
@@ -9767,7 +9769,8 @@ INT rpc_call(const INT routine_id, ...)
       _net_send_buffer_size = NET_BUFFER_SIZE;
 
       /* create a local mutex for multi-threaded applications */
-      ss_mutex_create("RPC", &_mutex_rpc);
+      sprintf(str, "RPC_%d", ss_getpid());
+      ss_mutex_create(str, &_mutex_rpc);
    }
 
    status = ss_mutex_wait_for(_mutex_rpc, 10000 + rpc_timeout);
