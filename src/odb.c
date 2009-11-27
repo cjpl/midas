@@ -4183,6 +4183,7 @@ INT db_get_data(HNDLE hDB, HNDLE hKey, void *data, INT * buf_size, DWORD type)
    {
       DATABASE_HEADER *pheader;
       KEY *pkey;
+      char str[256];
 
       if (hDB > _database_entries || hDB <= 0) {
          cm_msg(MERROR, "db_get_data", "Invalid database handle");
@@ -4245,15 +4246,17 @@ INT db_get_data(HNDLE hDB, HNDLE hKey, void *data, INT * buf_size, DWORD type)
 
       if (pkey->type != type) {
          db_unlock_database(hDB);
+         db_get_path(hDB, hKey, str, sizeof(str));
          cm_msg(MERROR, "db_get_data", "\"%s\" is of type %s, not %s",
-                pkey->name, rpc_tid_name(pkey->type), rpc_tid_name(type));
+                str, rpc_tid_name(pkey->type), rpc_tid_name(type));
          return DB_TYPE_MISMATCH;
       }
 
       /* keys cannot contain data */
       if (pkey->type == TID_KEY) {
          db_unlock_database(hDB);
-         cm_msg(MERROR, "db_get_data", "Key \"%s\" cannot contain data", pkey->name);
+         db_get_path(hDB, hKey, str, sizeof(str));
+         cm_msg(MERROR, "db_get_data", "Key \"%s\" cannot contain data", str);
          return DB_TYPE_MISMATCH;
       }
 
@@ -4269,7 +4272,8 @@ INT db_get_data(HNDLE hDB, HNDLE hKey, void *data, INT * buf_size, DWORD type)
       if (pkey->num_values * pkey->item_size > *buf_size) {
          memcpy(data, (char *) pheader + pkey->data, *buf_size);
          db_unlock_database(hDB);
-         cm_msg(MERROR, "db_get_data", "data for key \"%s\" truncated", pkey->name);
+         db_get_path(hDB, hKey, str, sizeof(str));
+         cm_msg(MERROR, "db_get_data", "data for key \"%s\" truncated", str);
          return DB_TRUNCATED;
       }
 
