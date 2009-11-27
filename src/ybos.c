@@ -2700,7 +2700,7 @@ Function value:
 none
 \********************************************************************/
 {
-   char banklist[YB_STRING_BANKLIST_MAX];
+   char banklist[YB_STRING_BANKLIST_MAX + STRING_BANKLIST_MAX];
    YBOS_BANK_HEADER *pybk;
    void *pvybk, *pvdata;
    DWORD *pdata, *pdata1;
@@ -2796,6 +2796,7 @@ none
          yb_any_raw_event_display(pevent, data_fmt, dsp_fmt);
       }
    }
+
    return;
 }
 

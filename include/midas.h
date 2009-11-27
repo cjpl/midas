@@ -232,7 +232,7 @@ typedef INT midas_thread_t;
 #define MAX_OPEN_RECORDS       256           /**< number of open DB records   */
 #define MAX_ODB_PATH           256           /**< length of path in ODB       */
 #define MAX_EXPERIMENT         32            /**< number of different exp.    */
-#define BANKLIST_MAX           64            /**< max # of banks in event     */
+#define BANKLIST_MAX           1024          /**< max # of banks in event     */
 #define STRING_BANKLIST_MAX    BANKLIST_MAX * 4   /**< for bk_list()          */
 
 

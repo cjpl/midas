@@ -253,8 +253,7 @@ void process_event(HNDLE hBuf, HNDLE request_id, EVENT_HEADER * pheader, void *p
    static EVENT_HEADER pevh;
    INT internal_data_fmt, status, index, size;
    DWORD *plrl, *pybk, bklen, bktyp;
-   char banklist[YB_STRING_BANKLIST_MAX];
-   BANK *pmbk;
+   char banklist[YB_STRING_BANKLIST_MAX + STRING_BANKLIST_MAX];
    BANK_HEADER *pmbh;
 
    if (speed == 1) {
@@ -329,10 +328,15 @@ void process_event(HNDLE hBuf, HNDLE request_id, EVENT_HEADER * pheader, void *p
          if (file_mode != YB_NO_RECOVER)
             status = yb_file_recompose(pheader, internal_data_fmt, svpath, file_mode);
          if (sbank_name[0] != 0) {
+            BANK *pmbk;
             if (bk_find(pmbh, sbank_name, &bklen, &bktyp, (void *) &pmbk) == SS_SUCCESS) {      /* bank name given through argument list */
                status = bk_list(pmbh, banklist);
                printf("#banks:%i Bank list:-%s-", status, banklist);
-               yb_any_bank_display(pmbh, pmbk-1, FORMAT_MIDAS, dsp_mode, dsp_fmt);
+               if (bk_is32(pmbh))
+                  pmbk = (BANK*)(((char*)pmbk) - sizeof(BANK32));
+               else
+                  pmbk = (BANK*)(((char*)pmbk) - sizeof(BANK));
+               yb_any_bank_display(pmbh, pmbk, FORMAT_MIDAS, dsp_mode, dsp_fmt);
             } else {
                status = bk_list(pmbh, banklist);
                printf("Bank -%s- not found (%i) in ", sbank_name, status);
