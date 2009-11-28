@@ -764,6 +764,11 @@ INT search_callback(HNDLE hDB, HNDLE hKey, KEY * key, INT level, void *info)
 
 void show_help_page()
 {
+   /* header */
+   rsprintf("HTTP/1.0 200 Document follows\r\n");
+   rsprintf("Server: MIDAS HTTP %d\r\n", mhttpd_revision());
+   rsprintf("Content-Type: text/html; charset=iso-8859-1\r\n\r\n");
+
    rsprintf("<html><head>\n");
    rsprintf("<title>MIDAS WWW Gateway Help</title>\n");
    rsprintf("</head>\n\n");
@@ -1025,17 +1030,18 @@ void show_status_page(int refresh, char *cookie_wpwd)
    rsprintf("<link rel=\"icon\" href=\"favicon.png\" type=\"image/png\" />\n");
    rsprintf("<link rel=\"stylesheet\" href=\"mhttpd.css\" type=\"text/css\" />\n");
 
-   rsprintf("<title>MIDAS status</title></head>\n");
+   size = sizeof(str);
+   str[0] = 0;
+   db_get_value(hDB, 0, "/Experiment/Name", str, &size, TID_STRING, TRUE);
+   time(&now);
+
+   rsprintf("<title>%s status</title></head>\n", str);
+
    rsprintf("<body><form method=\"GET\" action=\".\">\n");
 
    rsprintf("<table border=3 cellpadding=2>\n");
 
    /*---- title row ----*/
-
-   size = sizeof(str);
-   str[0] = 0;
-   db_get_value(hDB, 0, "/Experiment/Name", str, &size, TID_STRING, TRUE);
-   time(&now);
 
    rsprintf("<tr><th colspan=3 bgcolor=#A0A0FF>MIDAS experiment \"%s\"", str);
    rsprintf("<th colspan=3 bgcolor=#A0A0FF>%s &nbsp;&nbsp;Refr:%d</tr>\n", ctime(&now),
@@ -1045,38 +1051,45 @@ void show_status_page(int refresh, char *cookie_wpwd)
 
    rsprintf("<tr><td colspan=6 bgcolor=#C0C0C0>\n");
 
-   if (runinfo.state == STATE_STOPPED)
-      rsprintf("<input type=submit name=cmd %s value=Start>\n", runinfo.transition_in_progress?"disabled":"");
-   else {
-      rsprintf("<noscript>\n");
-      if (runinfo.state == STATE_PAUSED || runinfo.state == STATE_RUNNING)
-         rsprintf("<input type=submit name=cmd %s value=Stop>\n", runinfo.transition_in_progress?"disabled":"");
-      if (runinfo.state == STATE_RUNNING)
-         rsprintf("<input type=submit name=cmd %s value=Pause>\n", runinfo.transition_in_progress?"disabled":"");
-      rsprintf("</noscript>\n");
-      rsprintf("<script type=\"text/javascript\">\n");
-      rsprintf("<!--\n");
-      rsprintf("function stop()\n");
-      rsprintf("{\n");
-      rsprintf("   flag = confirm('Are you sure to stop the run?');\n");
-      rsprintf("   if (flag == true)\n");
-      rsprintf("      window.location.href = '?cmd=Stop';\n");
-      rsprintf("}\n");
-      rsprintf("function pause()\n");
-      rsprintf("{\n");
-      rsprintf("   flag = confirm('Are you sure to pause the run?');\n");
-      rsprintf("   if (flag == true)\n");
-      rsprintf("      window.location.href = '?cmd=Pause';\n");
-      rsprintf("}\n");
-      if (runinfo.state == STATE_PAUSED || runinfo.state == STATE_RUNNING)
-         rsprintf("document.write('<input type=button %s value=Stop onClick=\"stop();\">\\n');\n", runinfo.transition_in_progress?"disabled":"");
-      if (runinfo.state == STATE_RUNNING)
-         rsprintf("document.write('<input type=button %s value=Pause onClick=\"pause();\"\\n>');\n", runinfo.transition_in_progress?"disabled":"");
-      rsprintf("//-->\n");
-      rsprintf("</script>\n");
-      if (runinfo.state == STATE_PAUSED)
-         rsprintf("<input type=submit name=cmd %s value=Resume>\n", runinfo.transition_in_progress?"disabled":"");
-   }
+   BOOL hide_run_buttons = 0;
+   size = sizeof(hide_run_buttons);
+   db_get_value(hDB, 0, "/Experiment/Hide Run Buttons", &hide_run_buttons, &size, TID_BOOL, TRUE);
+
+   if (!hide_run_buttons)
+      {
+         if (runinfo.state == STATE_STOPPED)
+            rsprintf("<input type=submit name=cmd %s value=Start>\n", runinfo.transition_in_progress?"disabled":"");
+         else {
+            rsprintf("<noscript>\n");
+            if (runinfo.state == STATE_PAUSED || runinfo.state == STATE_RUNNING)
+               rsprintf("<input type=submit name=cmd %s value=Stop>\n", runinfo.transition_in_progress?"disabled":"");
+            if (runinfo.state == STATE_RUNNING)
+               rsprintf("<input type=submit name=cmd %s value=Pause>\n", runinfo.transition_in_progress?"disabled":"");
+            rsprintf("</noscript>\n");
+            rsprintf("<script type=\"text/javascript\">\n");
+            rsprintf("<!--\n");
+            rsprintf("function stop()\n");
+            rsprintf("{\n");
+            rsprintf("   flag = confirm('Are you sure to stop the run?');\n");
+            rsprintf("   if (flag == true)\n");
+            rsprintf("      window.location.href = '?cmd=Stop';\n");
+            rsprintf("}\n");
+            rsprintf("function pause()\n");
+            rsprintf("{\n");
+            rsprintf("   flag = confirm('Are you sure to pause the run?');\n");
+            rsprintf("   if (flag == true)\n");
+            rsprintf("      window.location.href = '?cmd=Pause';\n");
+            rsprintf("}\n");
+            if (runinfo.state == STATE_PAUSED || runinfo.state == STATE_RUNNING)
+               rsprintf("document.write('<input type=button %s value=Stop onClick=\"stop();\">\\n');\n", runinfo.transition_in_progress?"disabled":"");
+            if (runinfo.state == STATE_RUNNING)
+               rsprintf("document.write('<input type=button %s value=Pause onClick=\"pause();\"\\n>');\n", runinfo.transition_in_progress?"disabled":"");
+            rsprintf("//-->\n");
+            rsprintf("</script>\n");
+            if (runinfo.state == STATE_PAUSED)
+               rsprintf("<input type=submit name=cmd %s value=Resume>\n", runinfo.transition_in_progress?"disabled":"");
+         }
+      }
 
    rsprintf("<input type=submit name=cmd value=ODB>\n");
    rsprintf("<input type=submit name=cmd value=CNAF>\n");
@@ -3342,11 +3355,12 @@ void submit_elog()
          p = strtok(mail_list, ",");
          for (i = 0; p; i++) {
             strlcpy(mail_to, p, sizeof(mail_to));
-            sprintf(mail_from, "MIDAS <MIDAS@%s>", host_name);
 
             size = sizeof(str);
             str[0] = 0;
             db_get_value(hDB, 0, "/Experiment/Name", str, &size, TID_STRING, TRUE);
+
+            sprintf(mail_from, "MIDAS %s <MIDAS@%s>", str, host_name);
 
             sprintf(mail_text, "A new entry has been submitted by %s:\n\n", author);
             sprintf(mail_text + strlen(mail_text), "Experiment : %s\n", str);
