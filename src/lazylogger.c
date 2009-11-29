@@ -17,6 +17,7 @@ $Id$
 
 #include <vector>
 #include <string>
+#include <algorithm>
 
 #define NOTHING_TODO  0
 #define FORCE_EXIT    1
@@ -2067,7 +2068,7 @@ int main(int argc, char **argv)
       char str[32];
       channel = 0;
       if (channel_name[0] != 0)
-         sprintf(lazyinfo[channel].name, channel_name);
+         strlcpy(lazyinfo[channel].name, channel_name, sizeof(lazyinfo[channel].name));
       sprintf(str, "/Lazy/%s/Settings", lazyinfo[channel].name);
       db_create_record(hDB, 0, str, LAZY_SETTINGS_STRING);
    }
