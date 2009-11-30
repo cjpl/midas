@@ -5010,7 +5010,7 @@ void show_custom_gif(char *name)
 {
    char str[256], filename[256], data[256], value[256], src[256], custom_path[256],
       full_filename[256];
-   int i, index, length, status, size, width, height, bgcol, fgcol, bdcol, r, g, b, x, y;
+   int i, fh, index, length, status, size, width, height, bgcol, fgcol, bdcol, r, g, b, x, y;
    HNDLE hDB, hkeygif, hkeyroot, hkey, hkeyval;
    double fvalue, ratio;
    KEY key, vkey;
@@ -5031,8 +5031,39 @@ void show_custom_gif(char *name)
    sprintf(str, "/Custom/Images/%s", name);
    db_find_key(hDB, 0, str, &hkeygif);
    if (!hkeygif) {
-      sprintf(str, "Cannot find ODB key \"/Custom/Images/%s\"", name);
-      show_error(str);
+
+      /* check for file */
+      strlcpy(filename, custom_path, sizeof(str));
+      if (filename[strlen(filename)-1] != DIR_SEPARATOR)
+         strlcat(filename, DIR_SEPARATOR_STR, sizeof(filename));
+      strlcat(filename, name, sizeof(filename));
+      fh = open(filename, O_RDONLY | O_BINARY);
+      if (fh < 0) {
+         sprintf(str, "Cannot open file \"%s\" and cannot find ODB key \"/Custom/Images/%s\"", filename, name);
+         show_error(str);
+         return;
+      }
+
+      size = lseek(fh, 0, SEEK_END);
+      lseek(fh, 0, SEEK_SET);
+
+      /* return GIF image */
+      rsprintf("HTTP/1.0 200 Document follows\r\n");
+      rsprintf("Server: MIDAS HTTP %d\r\n", mhttpd_revision());
+
+      rsprintf("Content-Type: image/gif\r\n");
+      rsprintf("Content-Length: %d\r\n", size);
+      rsprintf("Pragma: no-cache\r\n");
+      rsprintf("Expires: Fri, 01-Jan-1983 00:00:00 GMT\r\n\r\n");
+
+      if (size > (int) (sizeof(return_buffer) - strlen(return_buffer))) {
+         printf("return buffer too small\n");
+         return;
+      }
+
+      return_length = strlen(return_buffer) + size;
+      read(fh, return_buffer + strlen(return_buffer), size);
+      close(fh);
       return;
    }
 
