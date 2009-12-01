@@ -1234,17 +1234,17 @@ void show_status_page(int refresh, char *cookie_wpwd)
             size = sizeof(ref);
             db_get_data(hDB, hsubkey, ref, &size, TID_STRING);
             if (new_window)
-               rsprintf("<a href=\"%s\" target=\"_blank\">%s</a> ", ref, name);
+               rsprintf("<button type=\"button\" onclick=\"window.open('%s');\">%s</button>\n", ref, name);
             else
-               rsprintf("<a href=\"%s\">%s</a> ", ref, name);
+               rsprintf("<button type=\"button\" onclick=\"document.location.href='%s';\">%s</button>\n", ref, name);
          } else if (key.type == TID_LINK) {
             /* odb link */
             sprintf(ref, "./Alias/%s", key.name);
 
             if (new_window)
-               rsprintf("<a href=\"%s\" target=\"_blank\">%s</a> ", ref, name);
+               rsprintf("<button type=\"button\" onclick=\"window.open('%s');\">%s</button>\n", ref, name);
             else
-               rsprintf("<a href=\"%s\">%s</a> ", ref, name);
+               rsprintf("<button type=\"button\" onclick=\"document.location.href='%s';\">%s</button>\n", ref, name);
          }
       }
    }
@@ -1286,10 +1286,10 @@ void show_status_page(int refresh, char *cookie_wpwd)
          sprintf(ref, "./CS/%s", name);
 
          if (new_window)
-            rsprintf("<a href=\"%s\" target=\"_blank\">%s</a> ", ref, name);
+            rsprintf("<button type=\"button\" onclick=\"window.open('%s');\">%s</button>\n", ref, name);
          else
-            rsprintf("<a href=\"%s\">%s</a> ", ref, name);
-      }
+            rsprintf("<button type=\"button\" onclick=\"document.location.href='%s';\">%s</button>\n", ref, name);
+       }
    }
 
    /*---- run info ----*/
@@ -8357,6 +8357,11 @@ void generate_hist_graph(char *path, char *buffer, int *buffer_size,
          //printf("event [%s][%s] tag [%s][%s] index [%d]\n", event_name[i], xevent_name[i], var_name[i], xvar_name[i], var_index[i]);
       }
 
+      for (i=0 ; i<MAX_VARS ; i++) {
+         times[i] = NULL;
+         datas[i] = NULL;
+      }
+
       status = mh->hs_read(now - scale + toffset, now + toffset, scale / 1000 + 1,
                            n_vars,
                            xevent_name, xvar_name, var_index,
@@ -8425,8 +8430,10 @@ void generate_hist_graph(char *path, char *buffer, int *buffer_size,
 
          assert(n_point[i]<=MAX_POINTS);
 
-         free(times[i]);
-         free(datas[i]);
+         if (times[i])
+            free(times[i]);
+         if (datas[i])
+            free(datas[i]);
       } // loop over variables
    }
 
