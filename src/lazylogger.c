@@ -178,7 +178,7 @@ LAZY_INFO lazyinfo[MAX_LAZY_CHANNEL] = { {0, FALSE, "Tape"} };
 INT channel = -1;
 
 /* Globals */
-INT lazy_mutex;
+INT lazy_semaphore;
 HNDLE hDB, hKey, pcurrent_hKey;
 double lastsz;
 HNDLE hKeyst;
@@ -1477,7 +1477,7 @@ INT lazy_maintain_free_space(LAZY_INFO *pLch, LAZY_INFO *pLall)
       /* Lock other clients out of this following code as
          it may access the other client info tree */
 
-      status = ss_mutex_wait_for(lazy_mutex, 5000);
+      status = ss_semaphore_wait_for(lazy_semaphore, 5000);
       if (status != SS_SUCCESS) {
          /* exit for now and come back later */
          return NOTHING_TODO;
@@ -1528,8 +1528,8 @@ INT lazy_maintain_free_space(LAZY_INFO *pLch, LAZY_INFO *pLall)
             break;
       }                         // while
 
-      /* Release the mutex  */
-      status = ss_mutex_release(lazy_mutex);
+      /* Release the semaphore  */
+      status = ss_semaphore_release(lazy_semaphore);
 
    } /* end of if pupercent > 0 */
 
@@ -2035,8 +2035,8 @@ int main(int argc, char **argv)
    if (status != CM_SUCCESS)
       return 1;
 
-   /* create a common mutex for the independent lazylogger */
-   status = ss_mutex_create("LAZY", &lazy_mutex);
+   /* create a common semaphore for the independent lazylogger */
+   status = ss_semaphore_create("LAZY", &lazy_semaphore);
 
    /* check lazy status for multiple channels */
    cm_get_experiment_database(&hDB, &hKey);

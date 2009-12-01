@@ -45,7 +45,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories="\midas\include,\root\include;\mxml;\mysql\include;"
-				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_DEPRECATE;"
+				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_DEPRECATE;HAVE_ZLIB;HAVE_MYSQL"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
 				UsePrecompiledHeader="0"
@@ -72,11 +72,11 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="wsock32.lib winmm.lib libCore.lib libTree.lib"
+				AdditionalDependencies="wsock32.lib winmm.lib libmysql.lib libCore.lib libCint.lib libRIO.lib libNet.lib libHist.lib libTree.lib libRint.lib libGraf.lib"
 				OutputFile="\midas\NT\bin\mlogger.exe"
 				LinkIncremental="2"
 				SuppressStartupBanner="true"
-				AdditionalLibraryDirectories="\root\lib"
+				AdditionalLibraryDirectories="\root\lib;\mysql\lib\opt"
 				GenerateDebugInformation="true"
 				ProgramDatabaseFile=".\Debug/mlogger.pdb"
 				SubSystem="1"
@@ -237,10 +237,6 @@
 			</File>
 			<File
 				RelativePath="..\src\history.c"
-				>
-			</File>
-			<File
-				RelativePath="..\..\mysql\lib\debug\libmysql.lib"
 				>
 			</File>
 			<File

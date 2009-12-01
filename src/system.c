@@ -2159,7 +2159,7 @@ INT ss_semaphore_delete(HNDLE semaphore_handle, INT destroy_flag)
 
 /*------------------------------------------------------------------*/
 
-INT ss_mutex_create(MUTEX_T * mutex)
+INT ss_mutex_create(MUTEX_T ** mutex)
 /********************************************************************\
 
   Routine: ss_mutex_create
@@ -2167,7 +2167,7 @@ INT ss_mutex_create(MUTEX_T * mutex)
   Purpose: Create a mutex for inter-thread locking
 
   Output:
-    MUTEX_T mutex           Pointer to mutex
+    MUTEX_T mutex           Address of pointer to mutex
 
   Function value:
     SS_CREATED              Mutex was created
@@ -2187,9 +2187,10 @@ INT ss_mutex_create(MUTEX_T * mutex)
 
 #ifdef OS_WINNT
 
-   *mutex = CreateMutex(NULL, FALSE, NULL);
+   *mutex = malloc(sizeof(HANDLE));
+   **mutex = CreateMutex(NULL, FALSE, NULL);
 
-   if (*mutex == 0)
+   if (**mutex == 0)
       return SS_NO_MUTEX;
 
    return SS_CREATED;
@@ -2200,8 +2201,8 @@ INT ss_mutex_create(MUTEX_T * mutex)
    {
       int status;
 
-      *mutex_handle = (HNDLE) PTHREAD_MUTEX_INITIALIZER;
-      status = pthread_mutex_init((pthread_mutex_t *)mutex_handle, NULL);
+      *mutex = malloc(sizeof(pthread_mutex_t));
+      status = pthread_mutex_init(*mutex, NULL);
       if (status != 0) {
          cm_msg(MERROR, "ss_mutex_create", "pthread_mutex_init() failed, status = %d", status);
          return SS_NO_MUTEX;
@@ -2216,8 +2217,14 @@ INT ss_mutex_create(MUTEX_T * mutex)
 #endif
 }
 
+#ifdef OS_UNIX
+extern int pthread_mutex_timedlock (pthread_mutex_t *__restrict __mutex,
+                                    __const struct timespec *__restrict
+                                    __abstime) __THROW;
+#endif
+
 /*------------------------------------------------------------------*/
-INT ss_mutex_wait_for(HNDLE mutex_handle, INT timeout)
+INT ss_mutex_wait_for(MUTEX_T *mutex, INT timeout)
 /********************************************************************\
 
   Routine: ss_mutex_wait_for
@@ -2225,7 +2232,7 @@ INT ss_mutex_wait_for(HNDLE mutex_handle, INT timeout)
   Purpose: Wait for a mutex to get owned
 
   Input:
-    HNDLE  *mutex_handle    Handle of the mutex
+    MUTEX_T  *mutex         Pointer to mutex
     INT    timeout          Timeout in ms, zero for no timeout
 
   Output:
@@ -2242,7 +2249,7 @@ INT ss_mutex_wait_for(HNDLE mutex_handle, INT timeout)
 
 #ifdef OS_WINNT
 
-   status = WaitForSingleObject((HANDLE) mutex_handle, timeout == 0 ? INFINITE : timeout);
+   status = WaitForSingleObject(*mutex, timeout == 0 ? INFINITE : timeout);
    if (status == WAIT_FAILED)
       return SS_NO_MUTEX;
    if (status == WAIT_TIMEOUT)
@@ -2252,7 +2259,7 @@ INT ss_mutex_wait_for(HNDLE mutex_handle, INT timeout)
 #endif                          /* OS_WINNT */
 #ifdef OS_VXWORKS
    /* convert timeout in ticks (1/60) = 1000/60 ~ 1/16 = >>4 */
-   status = semTake((SEM_ID) mutex_handle, timeout == 0 ? WAIT_FOREVER : timeout >> 4);
+   status = semTake((SEM_ID) mutex, timeout == 0 ? WAIT_FOREVER : timeout >> 4);
    if (status == ERROR)
       return SS_NO_MUTEX;
    return SS_SUCCESS;
@@ -2263,8 +2270,8 @@ INT ss_mutex_wait_for(HNDLE mutex_handle, INT timeout)
       struct timespec st;
 
       st.tv_sec = timeout / 1000;
-      st.tv_usec = (timeout % 1000) * 1000;
-      status = pthread_mutex_timedlock(mutex_handle, &st);
+      st.tv_nsec = (timeout % 1000) * 1E6;
+      status = pthread_mutex_timedlock(mutex, &st);
       if (status != 0) {
          cm_msg(MERROR, "ss_mutex_wait_for", "pthread_mutex_timedlock() failed, status = %d", status);
          return SS_NO_MUTEX;
@@ -2280,7 +2287,7 @@ INT ss_mutex_wait_for(HNDLE mutex_handle, INT timeout)
 }
 
 /*------------------------------------------------------------------*/
-INT ss_mutex_release(HNDLE mutex_handle)
+INT ss_mutex_release(MUTEX_T *mutex)
 /********************************************************************\
 
   Routine: ss_mutex_release
@@ -2288,7 +2295,7 @@ INT ss_mutex_release(HNDLE mutex_handle)
   Purpose: Release ownership of a mutex
 
   Input:
-    HNDLE  *mutex_handle    Handle of the mutex
+    MUTEX_T  *mutex         Pointer to mutex
 
   Output:
     none
@@ -2303,7 +2310,7 @@ INT ss_mutex_release(HNDLE mutex_handle)
 
 #ifdef OS_WINNT
 
-   status = ReleaseMutex((HANDLE) mutex_handle);
+   status = ReleaseMutex(*mutex);
    if (status == FALSE)
       return SS_NO_SEMAPHORE;
 
@@ -2318,7 +2325,7 @@ INT ss_mutex_release(HNDLE mutex_handle)
 #endif                          /* OS_VXWORKS */
 #ifdef OS_UNIX
 
-      status = pthread_mutex_unlock(mutex_handle);
+      status = pthread_mutex_unlock(mutex);
       if (status != 0) {
          cm_msg(MERROR, "ss_mutex_wait_for", "pthread_mutex_unlock() failed, status = %d", status);
          return SS_NO_MUTEX;
@@ -2333,7 +2340,7 @@ INT ss_mutex_release(HNDLE mutex_handle)
 }
 
 /*------------------------------------------------------------------*/
-INT ss_mutex_delete(HNDLE mutex_handle)
+INT ss_mutex_delete(MUTEX_T *mutex)
 /********************************************************************\
 
   Routine: ss_mutex_delete
@@ -2341,7 +2348,7 @@ INT ss_mutex_delete(HNDLE mutex_handle)
   Purpose: Delete a mutex
 
   Input:
-    HNDLE  *mutex_handle    Handle of the mutex
+    MUTEX_T  *mutex         Pointer to mutex
 
   Output:
     none
@@ -2354,8 +2361,10 @@ INT ss_mutex_delete(HNDLE mutex_handle)
 {
 #ifdef OS_WINNT
 
-   if (CloseHandle((HANDLE) mutex_handle) == FALSE)
+   if (CloseHandle(*mutex) == FALSE)
       return SS_NO_SEMAPHORE;
+
+   free(mutex);
 
    return SS_SUCCESS;
 
@@ -2371,12 +2380,13 @@ INT ss_mutex_delete(HNDLE mutex_handle)
    { 
       int status;
       
-      status = pthread_mutex_destroy((pthread_mutex_t *) &mutex_handle);
+      status = pthread_mutex_destroy(mutex);
       if (status != 0) {
          cm_msg(MERROR, "ss_mutex_wait_for", "pthread_mutex_unlock() failed, status = %d", status);
          return SS_NO_MUTEX;
       }
 
+      free(mutex);
       return SS_SUCCESS;
    }
 #endif                          /* OS_UNIX */

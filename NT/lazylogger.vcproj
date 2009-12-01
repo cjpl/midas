@@ -260,6 +260,7 @@
 						PreprocessorDefinitions=""
 						BasicRuntimeChecks="3"
 						BrowseInformation="1"
+						CompileAs="2"
 					/>
 				</FileConfiguration>
 			</File>

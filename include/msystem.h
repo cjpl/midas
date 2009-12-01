@@ -611,7 +611,7 @@ extern "C" {
    INT EXPRT ss_semaphore_wait_for(HNDLE semaphore_handle, INT timeout);
    INT EXPRT ss_semaphore_release(HNDLE semaphore_handle);
    INT EXPRT ss_semaphore_delete(HNDLE semaphore_handle, INT destroy_flag);
-   INT EXPRT ss_mutex_create(MUTEX_T *mutex);
+   INT EXPRT ss_mutex_create(MUTEX_T **mutex);
    INT EXPRT ss_mutex_wait_for(MUTEX_T *mutex, INT timeout);
    INT EXPRT ss_mutex_release(MUTEX_T *mutex);
    INT EXPRT ss_mutex_delete(MUTEX_T *mutex);

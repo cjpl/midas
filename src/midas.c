@@ -135,7 +135,7 @@ static char *_tcp_buffer = NULL;
 static INT _tcp_wp = 0;
 static INT _tcp_rp = 0;
 static INT _rpc_sock = 0;
-static int _mutex_rpc = 0;
+static MUTEX_T *_mutex_rpc = NULL;
 
 static INT _send_sock;
 

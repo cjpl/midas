@@ -425,7 +425,7 @@ INT device_driver(DEVICE_DRIVER * device_drv, INT cmd, ...)
    HNDLE hKey;
    INT channel, status, i, j;
    float value, *pvalue;
-   char *name, *label, str[256];
+   char *name, *label;
 
    va_start(argptr, cmd);
    status = FE_SUCCESS;
@@ -457,8 +457,7 @@ INT device_driver(DEVICE_DRIVER * device_drv, INT cmd, ...)
                                  device_drv->mt_buffer->channel[i].label);
 
             /* create mutex */
-            sprintf(str, "DD_%s", device_drv->name);
-            status = ss_mutex_create(str, &device_drv->mutex);
+            status = ss_mutex_create(&device_drv->mutex);
             if (status != SS_CREATED && status != SS_SUCCESS)
                return FE_ERR_DRIVER;
             status = FE_SUCCESS;
@@ -491,7 +490,7 @@ INT device_driver(DEVICE_DRIVER * device_drv, INT cmd, ...)
          if (i == 1000)
             ss_thread_kill(device_drv->mt_buffer->thread_id);
 
-         ss_mutex_delete(device_drv->mutex, TRUE);
+         ss_mutex_delete(device_drv->mutex);
          free(device_drv->mt_buffer->channel);
          free(device_drv->mt_buffer);
       }
@@ -2481,7 +2480,7 @@ void (*mfe_error_dispatcher)(const char *) = NULL;
 #define MFE_ERROR_SIZE 10
 char mfe_error_str[MFE_ERROR_SIZE][256];
 int mfe_error_r, mfe_error_w;
-int mfe_mutex;
+MUTEX_T *mfe_mutex;
 
 void mfe_set_error(void (*dispatcher) (const char *))
 {
@@ -2492,7 +2491,7 @@ void mfe_set_error(void (*dispatcher) (const char *))
    memset(mfe_error_str, 0, sizeof(mfe_error_str));
 
    if (mfe_mutex == 0) {
-      status = ss_mutex_create("FE_ERR", &mfe_mutex);
+      status = ss_mutex_create(&mfe_mutex);
       if (status != SS_SUCCESS && status != SS_CREATED)
          cm_msg(MERROR, "mfe_set_error", "Cannot create mutex\n");
    }
