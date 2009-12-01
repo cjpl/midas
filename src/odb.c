@@ -780,7 +780,7 @@ Open an online database
 @param client_name       Name of this application
 @param hDB          ODB handle obtained via cm_get_experiment_database().
 @return DB_SUCCESS, DB_CREATED, DB_INVALID_NAME, DB_NO_MEMORY, 
-        DB_MEMSIZE_MISMATCH, DB_NO_MUTEX, DB_INVALID_PARAM,
+        DB_MEMSIZE_MISMATCH, DB_NO_SEMAPHORE, DB_INVALID_PARAM,
         RPC_NET_ERROR
 */
 INT db_open_database(const char *xdatabase_name, INT database_size, HNDLE * hDB, const char *client_name)
@@ -942,11 +942,11 @@ INT db_open_database(const char *xdatabase_name, INT database_size, HNDLE * hDB,
          return DB_VERSION_MISMATCH;
       }
 
-      /* create mutex for the database */
-      status = ss_mutex_create(database_name, &(_database[handle].mutex));
+      /* create semaphore for the database */
+      status = ss_semaphore_create(database_name, &(_database[handle].semaphore));
       if (status != SS_SUCCESS && status != SS_CREATED) {
          *hDB = 0;
-         return DB_NO_MUTEX;
+         return DB_NO_SEMAPHORE;
       }
       _database[handle].lock_cnt = 0;
 
@@ -1179,8 +1179,8 @@ INT db_close_database(HNDLE hDB)
       /* unlock database */
       db_unlock_database(hDB);
 
-      /* delete mutex */
-      ss_mutex_delete(_database[hDB - 1].mutex, destroy_flag);
+      /* delete semaphore */
+      ss_semaphore_delete(_database[hDB - 1].semaphore, destroy_flag);
 
       /* update _database_entries */
       if (hDB == _database_entries)
@@ -1193,14 +1193,18 @@ INT db_close_database(HNDLE hDB)
          _database = NULL;
       }
 
-      /* if we are the last one, also delete other mutexes */
+      /* if we are the last one, also delete other semaphores */
       if (destroy_flag) {
-         extern INT _mutex_elog, _mutex_alarm;
+         extern INT _semaphore_elog, _semaphore_alarm, _semaphore_history, _semaphore_msg;
 
-         if (_mutex_elog)
-            ss_mutex_delete(_mutex_elog, TRUE);
-         if (_mutex_alarm)
-            ss_mutex_delete(_mutex_alarm, TRUE);
+         if (_semaphore_elog)
+            ss_semaphore_delete(_semaphore_elog, TRUE);
+         if (_semaphore_alarm)
+            ss_semaphore_delete(_semaphore_alarm, TRUE);
+         if (_semaphore_history)
+            ss_semaphore_delete(_semaphore_history, TRUE);
+         if (_semaphore_msg)
+            ss_semaphore_delete(_semaphore_msg, TRUE);
       }
 
    }
@@ -1370,7 +1374,7 @@ INT db_set_client_name(HNDLE hDB, const char *client_name)
 
 /********************************************************************/
 /**
-Lock a database for exclusive access via system mutex calls.
+Lock a database for exclusive access via system semaphore calls.
 @param hDB   Handle to the database to lock
 @return DB_SUCCESS, DB_INVALID_HANDLE, DB_TIMEOUT
 */
@@ -1406,21 +1410,21 @@ INT db_lock_database(HNDLE hDB)
    if (_database[hDB - 1].protect && _database[hDB - 1].database_header != NULL) {
       cm_msg(MERROR, "db_lock_database", "internal error: DB already locked, aborting...");
       abort();
-      return DB_NO_MUTEX;
+      return DB_NO_SEMAPHORE;
    }
 
    if (_database[hDB - 1].lock_cnt == 0) {
-      /* wait max. 5 minutes for mutex (required if locking process is being debugged) */
-      status = ss_mutex_wait_for(_database[hDB - 1].mutex, 5 * 60 * 1000);
+      /* wait max. 5 minutes for semaphore (required if locking process is being debugged) */
+      status = ss_semaphore_wait_for(_database[hDB - 1].semaphore, 5 * 60 * 1000);
       if (status == SS_TIMEOUT) {
          cm_msg(MERROR, "db_lock_database", "timeout obtaining lock for database, exiting...");
          exit(1);
          return DB_TIMEOUT;
       }
       if (status != SS_SUCCESS) {
-         cm_msg(MERROR, "db_lock_database", "cannot lock database, ss_mutex_wait_for() status %d, aborting...", status);
+         cm_msg(MERROR, "db_lock_database", "cannot lock database, ss_semaphore_wait_for() status %d, aborting...", status);
          abort();
-         return DB_NO_MUTEX;
+         return DB_NO_SEMAPHORE;
       }
    }
 
@@ -1447,7 +1451,7 @@ INT db_lock_database(HNDLE hDB)
 
 /********************************************************************/
 /**
-Unlock a database via system mutex calls.
+Unlock a database via system semaphore calls.
 @param hDB   Handle to the database to unlock
 @return DB_SUCCESS, DB_INVALID_HANDLE
 */
@@ -1477,7 +1481,7 @@ INT db_unlock_database(HNDLE hDB)
 #endif
 
    if (_database[hDB - 1].lock_cnt == 1)
-      ss_mutex_release(_database[hDB - 1].mutex);
+      ss_semaphore_release(_database[hDB - 1].semaphore);
 
    if (_database[hDB - 1].lock_cnt > 0)
       _database[hDB - 1].lock_cnt--;

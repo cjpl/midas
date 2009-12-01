@@ -107,8 +107,8 @@ INT el_submit(int run, const char *author, const char *type, const char *syst, c
       bedit = (tag[0] != 0);
 
       /* request semaphore */
-      cm_get_experiment_mutex(NULL, &mutex, NULL, NULL);
-      status = ss_mutex_wait_for(mutex, 5 * 60 * 1000);
+      cm_get_experiment_semaphore(NULL, &mutex, NULL, NULL);
+      status = ss_semaphore_wait_for(mutex, 5 * 60 * 1000);
       if (status != SS_SUCCESS) {
          cm_msg(MERROR, "el_submit", "Cannot lock experiment mutex, ss_mutex_wait_for() status %d", status);
          abort();
@@ -878,7 +878,7 @@ INT el_delete_message(char *tag)
 \********************************************************************/
 {
 #ifdef LOCAL_ROUTINES
-   INT n, size, fh, mutex, offset = 0, tail_size, status;
+   INT n, size, fh, semaphore, offset = 0, tail_size, status;
    char dir[256], str[256], file_name[256];
    HNDLE hDB;
    char *buffer = NULL;
@@ -886,11 +886,11 @@ INT el_delete_message(char *tag)
    cm_get_experiment_database(&hDB, NULL);
 
    /* request semaphore */
-   cm_get_experiment_mutex(NULL, &mutex, NULL, NULL);
-   status = ss_mutex_wait_for(mutex, 5 * 60 * 1000);
+   cm_get_experiment_semaphore(NULL, &semaphore, NULL, NULL);
+   status = ss_semaphore_wait_for(semaphore, 5 * 60 * 1000);
    if (status != SS_SUCCESS) {
       cm_msg(MERROR, "el_delete_message",
-             "Cannot lock experiment mutex, ss_mutex_wait_for() status %d", status);
+             "Cannot lock experiment semaphore, ss_semaphore_wait_for() status %d", status);
       abort();
    }
 
@@ -914,7 +914,7 @@ INT el_delete_message(char *tag)
    sprintf(file_name, "%s%s.log", dir, str);
    fh = open(file_name, O_CREAT | O_RDWR | O_BINARY, 0644);
    if (fh < 0) {
-      ss_mutex_release(mutex);
+      ss_semaphore_release(semaphore);
       return EL_FILE_ERROR;
    }
    lseek(fh, offset, SEEK_SET);
@@ -929,7 +929,7 @@ INT el_delete_message(char *tag)
       buffer = (char *) M_MALLOC(tail_size);
       if (buffer == NULL) {
          close(fh);
-         ss_mutex_release(mutex);
+         ss_semaphore_release(semaphore);
          return EL_FILE_ERROR;
       }
 
@@ -957,8 +957,8 @@ INT el_delete_message(char *tag)
    if (tail_size == 0)
       remove(file_name);
 
-   /* release elog mutex */
-   ss_mutex_release(mutex);
+   /* release elog semaphore */
+   ss_semaphore_release(semaphore);
 #endif                          /* LOCAL_ROUTINES */
 
    return EL_SUCCESS;

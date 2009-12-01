@@ -361,7 +361,7 @@ INT cm_msg_log(INT message_type, const char *message)
    char filename[256];
    char path[256];
    char str[256];
-   INT status, size, fh, mutex;
+   INT status, size, fh, semaphore;
    HNDLE hDB, hKey;
 
    if (rpc_is_remote())
@@ -421,8 +421,8 @@ INT cm_msg_log(INT message_type, const char *message)
          printf("Cannot open message log file %s\n", path);
       } else {
 
-         cm_get_experiment_mutex(NULL, NULL, NULL, &mutex);
-         status = ss_mutex_wait_for(mutex, 5 * 1000);
+         cm_get_experiment_semaphore(NULL, NULL, NULL, &semaphore);
+         status = ss_semaphore_wait_for(semaphore, 5 * 1000);
 
          strcpy(str, ss_asctime());
          write(fh, str, strlen(str));
@@ -431,7 +431,7 @@ INT cm_msg_log(INT message_type, const char *message)
          write(fh, "\n", 1);
          close(fh);
 
-         ss_mutex_release(mutex);
+         ss_semaphore_release(semaphore);
       }
    }
 
@@ -1162,7 +1162,7 @@ static char _client_name[NAME_LENGTH];
 static char _path_name[MAX_STRING_LENGTH];
 static INT _call_watchdog = TRUE;
 static INT _watchdog_timeout = DEFAULT_WATCHDOG_TIMEOUT;
-INT _mutex_alarm, _mutex_elog, _mutex_history, _mutex_msg;
+INT _semaphore_alarm, _semaphore_elog, _semaphore_history, _semaphore_msg;
 
 /**dox***************************************************************/
 /** @addtogroup cmfunctionc
@@ -1847,7 +1847,7 @@ Connect to a MIDAS experiment (to the online database) on
 INT cm_connect_experiment1(char *host_name, char *exp_name,
                            char *client_name, void (*func) (char *), INT odb_size, DWORD watchdog_timeout)
 {
-   INT status, i, mutex_elog, mutex_alarm, mutex_history, mutex_msg, size;
+   INT status, i, semaphore_elog, semaphore_alarm, semaphore_history, semaphore_msg, size;
    char local_host_name[HOST_NAME_LENGTH];
    char client_name1[NAME_LENGTH];
    char password[NAME_LENGTH], str[256], exp_name1[NAME_LENGTH];
@@ -1916,29 +1916,29 @@ INT cm_connect_experiment1(char *host_name, char *exp_name,
 
       cm_set_path(exptab[i].directory);
 
-      /* create alarm and elog mutexes */
-      status = ss_mutex_create("ALARM", &mutex_alarm);
+      /* create alarm and elog semaphores */
+      status = ss_semaphore_create("ALARM", &semaphore_alarm);
       if (status != SS_CREATED && status != SS_SUCCESS) {
-         cm_msg(MERROR, "cm_connect_experiment", "Cannot create alarm mutex");
+         cm_msg(MERROR, "cm_connect_experiment", "Cannot create alarm semaphore");
          return status;
       }
-      status = ss_mutex_create("ELOG", &mutex_elog);
+      status = ss_semaphore_create("ELOG", &semaphore_elog);
       if (status != SS_CREATED && status != SS_SUCCESS) {
-         cm_msg(MERROR, "cm_connect_experiment", "Cannot create elog mutex");
+         cm_msg(MERROR, "cm_connect_experiment", "Cannot create elog semaphore");
          return status;
       }
-      status = ss_mutex_create("HISTORY", &mutex_history);
+      status = ss_semaphore_create("HISTORY", &semaphore_history);
       if (status != SS_CREATED && status != SS_SUCCESS) {
-         cm_msg(MERROR, "cm_connect_experiment", "Cannot create history mutex");
+         cm_msg(MERROR, "cm_connect_experiment", "Cannot create history semaphore");
          return status;
       }
-      status = ss_mutex_create("MSG", &mutex_msg);
+      status = ss_semaphore_create("MSG", &semaphore_msg);
       if (status != SS_CREATED && status != SS_SUCCESS) {
-         cm_msg(MERROR, "cm_connect_experiment", "Cannot create message mutex");
+         cm_msg(MERROR, "cm_connect_experiment", "Cannot create message semaphore");
          return status;
       }
 
-      cm_set_experiment_mutex(mutex_alarm, mutex_elog, mutex_history, mutex_msg);
+      cm_set_experiment_semaphore(semaphore_alarm, semaphore_elog, semaphore_history, semaphore_msg);
    }
 
    /* open ODB */
@@ -2375,18 +2375,18 @@ INT cm_set_experiment_database(HNDLE hDB, HNDLE hKeyClient)
 #ifndef DOXYGEN_SHOULD_SKIP_THIS
 
 /********************************************************************/
-INT cm_set_experiment_mutex(INT mutex_alarm, INT mutex_elog, INT mutex_history, INT mutex_msg)
+INT cm_set_experiment_semaphore(INT semaphore_alarm, INT semaphore_elog, INT semaphore_history, INT semaphore_msg)
 /********************************************************************\
 
-  Routine: cm_set_experiment_mutex
+  Routine: cm_set_experiment_semaphore
 
-  Purpose: Set the handle to the experiment wide mutexes
+  Purpose: Set the handle to the experiment wide semaphorees
 
   Input:
-    INT    mutex_alarm      Alarm mutex
-    INT    mutex_elog       Elog mutex
-    INT    mutex_history    History mutex
-    INT    mutex_msg        Message mutex
+    INT    semaphore_alarm      Alarm semaphore
+    INT    semaphore_elog       Elog semaphore
+    INT    semaphore_history    History semaphore
+    INT    semaphore_msg        Message semaphore
 
   Output:
     none
@@ -2396,10 +2396,10 @@ INT cm_set_experiment_mutex(INT mutex_alarm, INT mutex_elog, INT mutex_history, 
 
 \********************************************************************/
 {
-   _mutex_alarm = mutex_alarm;
-   _mutex_elog = mutex_elog;
-   _mutex_history = mutex_history;
-   _mutex_msg = mutex_msg;
+   _semaphore_alarm = semaphore_alarm;
+   _semaphore_elog = semaphore_elog;
+   _semaphore_history = semaphore_history;
+   _semaphore_msg = semaphore_msg;
 
    return CM_SUCCESS;
 }
@@ -2449,35 +2449,35 @@ INT cm_get_experiment_database(HNDLE * hDB, HNDLE * hKeyClient)
 #ifndef DOXYGEN_SHOULD_SKIP_THIS
 
 /********************************************************************/
-INT cm_get_experiment_mutex(INT * mutex_alarm, INT * mutex_elog, INT * mutex_history, INT * mutex_msg)
+INT cm_get_experiment_semaphore(INT * semaphore_alarm, INT * semaphore_elog, INT * semaphore_history, INT * semaphore_msg)
 /********************************************************************\
 
-  Routine: cm_get_experiment_mutex
+  Routine: cm_get_experiment_semaphore
 
-  Purpose: Get the handle to the experiment wide mutexes
+  Purpose: Get the handle to the experiment wide semaphores
 
   Input:
     none
 
   Output:
-    INT    mutex_alarm      Alarm mutex
-    INT    mutex_elog       Elog mutex
-    INT    mutex_history    History mutex
-    INT    mutex_msg        Message mutex
+    INT    semaphore_alarm      Alarm semaphore
+    INT    semaphore_elog       Elog semaphore
+    INT    semaphore_history    History semaphore
+    INT    semaphore_msg        Message semaphore
 
   Function value:
     CM_SUCCESS              Successful completion
 
 \********************************************************************/
 {
-   if (mutex_alarm)
-      *mutex_alarm = _mutex_alarm;
-   if (mutex_elog)
-      *mutex_elog = _mutex_elog;
-   if (mutex_history)
-      *mutex_history = _mutex_history;
-   if (mutex_msg)
-      *mutex_msg = _mutex_msg;
+   if (semaphore_alarm)
+      *semaphore_alarm = _semaphore_alarm;
+   if (semaphore_elog)
+      *semaphore_elog = _semaphore_elog;
+   if (semaphore_history)
+      *semaphore_history = _semaphore_history;
+   if (semaphore_msg)
+      *semaphore_msg = _semaphore_msg;
 
    return CM_SUCCESS;
 }
@@ -4282,7 +4282,7 @@ main()
 @param buffer_handle Buffer handle returned by function
 @return BM_SUCCESS, BM_CREATED <br>
 BM_NO_SHM Shared memory cannot be created <br>
-BM_NO_MUTEX Mutex cannot be created <br>
+BM_NO_SEMAPHORE Semaphore cannot be created <br>
 BM_NO_MEMORY Not enough memory to create buffer descriptor <br>
 BM_MEMSIZE_MISMATCH Buffer size conflicts with an existing buffer of
 different size <br>
@@ -4416,12 +4416,12 @@ INT bm_open_buffer(char *buffer_name, INT buffer_size, INT * buffer_handle)
          }
       }
 
-      /* create mutex for the buffer */
-      status = ss_mutex_create(buffer_name, &(_buffer[handle].mutex));
+      /* create semaphore for the buffer */
+      status = ss_semaphore_create(buffer_name, &(_buffer[handle].semaphore));
       if (status != SS_CREATED && status != SS_SUCCESS) {
          *buffer_handle = 0;
          _buffer_entries--;
-         return BM_NO_MUTEX;
+         return BM_NO_SEMAPHORE;
       }
 
       /* first lock buffer */
@@ -4604,8 +4604,8 @@ INT bm_close_buffer(INT buffer_handle)
       /* unlock buffer */
       bm_unlock_buffer(buffer_handle);
 
-      /* delete mutex */
-      ss_mutex_delete(_buffer[buffer_handle - 1].mutex, destroy_flag);
+      /* delete semaphore */
+      ss_semaphore_delete(_buffer[buffer_handle - 1].semaphore, destroy_flag);
 
       /* update _buffer_entries */
       if (buffer_handle == _buffer_entries)
@@ -5299,7 +5299,7 @@ INT bm_lock_buffer(INT buffer_handle)
 
   Routine: bm_lock_buffer
 
-  Purpose: Lock a buffer for exclusive access via system mutex calls.
+  Purpose: Lock a buffer for exclusive access via system semaphore calls.
 
   Input:
     INT    bufer_handle     Handle to the buffer to lock
@@ -5319,11 +5319,11 @@ INT bm_lock_buffer(INT buffer_handle)
       return BM_INVALID_HANDLE;
    }
 
-   status = ss_mutex_wait_for(_buffer[buffer_handle - 1].mutex, 5 * 60 * 1000);
+   status = ss_semaphore_wait_for(_buffer[buffer_handle - 1].semaphore, 5 * 60 * 1000);
 
    if (status != SS_SUCCESS) {
       cm_msg(MERROR, "bm_lock_buffer",
-             "Cannot lock buffer handle %d, ss_mutex_wait_for() status %d", buffer_handle, status);
+             "Cannot lock buffer handle %d, ss_semaphore_wait_for() status %d", buffer_handle, status);
       abort();
       return BM_INVALID_HANDLE;
    }
@@ -5337,7 +5337,7 @@ INT bm_unlock_buffer(INT buffer_handle)
 
   Routine: bm_unlock_buffer
 
-  Purpose: Unlock a buffer via system mutex calls.
+  Purpose: Unlock a buffer via system semaphore calls.
 
   Input:
     INT    bufer_handle     Handle to the buffer to lock
@@ -5355,7 +5355,7 @@ INT bm_unlock_buffer(INT buffer_handle)
       return BM_INVALID_HANDLE;
    }
 
-   ss_mutex_release(_buffer[buffer_handle - 1].mutex);
+   ss_semaphore_release(_buffer[buffer_handle - 1].semaphore);
    return BM_SUCCESS;
 }
 
@@ -8912,7 +8912,7 @@ INT rpc_server_disconnect()
 
    /* remove semaphore */
    if (_mutex_rpc)
-      ss_mutex_delete(_mutex_rpc, TRUE);
+      ss_mutex_delete(_mutex_rpc);
 
    rpc_server_disconnect_recursion_level = 0;
    return RPC_SUCCESS;
@@ -9769,11 +9769,12 @@ INT rpc_call(const INT routine_id, ...)
       _net_send_buffer_size = NET_BUFFER_SIZE;
 
       /* create a local mutex for multi-threaded applications */
-      ss_mutex_create("", &_mutex_rpc);
+      ss_mutex_create(&_mutex_rpc);
    }
 
    status = ss_mutex_wait_for(_mutex_rpc, 10000 + rpc_timeout);
    if (status != SS_SUCCESS) {
+      cm_msg(MERROR, "rpc_call", "Mutex timeout");
       return RPC_MUTEX_TIMEOUT;
    }
 
@@ -12293,7 +12294,7 @@ INT rpc_server_thread(void *pointer)
 \********************************************************************/
 {
    struct callback_addr callback;
-   int status, mutex_alarm, mutex_elog, mutex_history, mutex_msg;
+   int status, semaphore_alarm, semaphore_elog, semaphore_history, semaphore_msg;
    static DWORD last_checked = 0;
 
    memcpy(&callback, pointer, sizeof(callback));
@@ -12303,12 +12304,12 @@ INT rpc_server_thread(void *pointer)
    if (status != RPC_SUCCESS)
       return status;
 
-   /* create alarm and elog mutexes */
-   ss_mutex_create("ALARM", &mutex_alarm);
-   ss_mutex_create("ELOG", &mutex_elog);
-   ss_mutex_create("HISTORY", &mutex_history);
-   ss_mutex_create("MSG", &mutex_msg);
-   cm_set_experiment_mutex(mutex_alarm, mutex_elog, mutex_history, mutex_msg);
+   /* create alarm and elog semaphores */
+   ss_semaphore_create("ALARM", &semaphore_alarm);
+   ss_semaphore_create("ELOG", &semaphore_elog);
+   ss_semaphore_create("HISTORY", &semaphore_history);
+   ss_semaphore_create("MSG", &semaphore_msg);
+   cm_set_experiment_semaphore(semaphore_alarm, semaphore_elog, semaphore_history, semaphore_msg);
 
    do {
       status = ss_suspend(5000, 0);
@@ -13793,14 +13794,14 @@ INT dm_buffer_create(INT size, INT user_max_event_size)
       VX_TASK_SPAWN starg;
 
       /* create semaphore */
-      status = ss_mutex_create("send", &dm.sem_send);
+      status = ss_semaphore_create("send", &dm.sem_send);
       if (status != SS_CREATED && status != SS_SUCCESS) {
-         cm_msg(MERROR, "dm_buffer_create", "error in ss_mutex_create send");
+         cm_msg(MERROR, "dm_buffer_create", "error in ss_semaphore_create send");
          return status;
       }
-      status = ss_mutex_create("flush", &dm.sem_flush);
+      status = ss_semaphore_create("flush", &dm.sem_flush);
       if (status != SS_CREATED && status != SS_SUCCESS) {
-         cm_msg(MERROR, "dm_buffer_create", "error in ss_mutex_create flush");
+         cm_msg(MERROR, "dm_buffer_create", "error in ss_semaphore_create flush");
          return status;
       }
       /* spawn dm_task */
@@ -13820,7 +13821,7 @@ INT dm_buffer_create(INT size, INT user_max_event_size)
       }
 #ifdef OS_WINNT
       /* necessary for true MUTEX (NT) */
-      ss_mutex_wait_for(dm.sem_send, 0);
+      ss_semaphore_wait_for(dm.sem_send, 0);
 #endif
    }
 #endif                          /* DM_DUAL_THREAD */
@@ -13860,12 +13861,12 @@ INT dm_buffer_release(void)
 #ifdef DM_DUAL_THREAD
    /* kill spawned dm_task */
    dm.action = DM_KILL;
-   ss_mutex_release(dm.sem_send);
-   ss_mutex_release(dm.sem_flush);
+   ss_semaphore_release(dm.sem_send);
+   ss_semaphore_release(dm.sem_flush);
 
    /* release semaphore */
-   ss_mutex_delete(dm.sem_send, 0);
-   ss_mutex_delete(dm.sem_flush, 0);
+   ss_semaphore_delete(dm.sem_send, 0);
+   ss_semaphore_delete(dm.sem_flush, 0);
 #endif
 
    return CM_SUCCESS;
@@ -14149,11 +14150,11 @@ INT dm_area_send(void)
 
    /* force a DM_SEND if possible. Don't wait for completion */
    dm.action = DM_SEND;
-   ss_mutex_release(dm.sem_send);
+   ss_semaphore_release(dm.sem_send);
 #ifdef OS_WINNT
    /* necessary for true MUTEX (NT) */
-   status = ss_mutex_wait_for(dm.sem_send, 1);
-   if (status == SS_NO_MUTEX) {
+   status = ss_semaphore_wait_for(dm.sem_send, 1);
+   if (status == SS_NO_SEMAPHORE) {
       printf(" timeout while waiting for sem_send\n");
       return RPC_NET_ERROR;
    }
@@ -14215,7 +14216,7 @@ INT dm_task(void *pointer)
 
 #ifdef OS_WINNT
    /* necessary for true MUTEX (NT) get semaphore */
-   ss_mutex_wait_for(dm.sem_flush, 0);
+   ss_semaphore_wait_for(dm.sem_flush, 0);
 #endif
 
    /* Main FOREVER LOOP */
@@ -14223,10 +14224,10 @@ INT dm_task(void *pointer)
    while (1) {
       if (!dm_area_full()) {
          /* wait semaphore here ........ 0 == forever */
-         ss_mutex_wait_for(dm.sem_send, 0);
+         ss_semaphore_wait_for(dm.sem_send, 0);
 #ifdef OS_WINNT
          /* necessary for true MUTEX (NT) give semaphore */
-         ss_mutex_release(dm.sem_send);
+         ss_semaphore_release(dm.sem_send);
 #endif
       }
       if (dm.action == DM_SEND) {
@@ -14277,10 +14278,10 @@ INT dm_task(void *pointer)
          dm.pa = &dm.area1;
 
          /* release user */
-         ss_mutex_release(dm.sem_flush);
+         ss_semaphore_release(dm.sem_flush);
 #ifdef OS_WINNT
          /* necessary for true MUTEX (NT) get semaphore back */
-         ss_mutex_wait_for(dm.sem_flush, 0);
+         ss_semaphore_wait_for(dm.sem_flush, 0);
 #endif
       }
       /* if FLUSH */
@@ -14293,9 +14294,9 @@ INT dm_task(void *pointer)
  error:
    cm_msg(MERROR, "dm_area_flush", "aSync Net error");
  kill:
-   ss_mutex_release(dm.sem_flush);
+   ss_semaphore_release(dm.sem_flush);
 #ifdef OS_WINNT
-   ss_mutex_wait_for(dm.sem_flush, 1);
+   ss_semaphore_wait_for(dm.sem_flush, 1);
 #endif
    cm_msg(MERROR, "areaSend", "task areaSend exiting now");
    exit;
@@ -14329,20 +14330,20 @@ INT dm_area_flush(void)
 #ifdef DM_DUAL_THREAD
    /* request FULL flush */
    dm.action = DM_FLUSH;
-   ss_mutex_release(dm.sem_send);
+   ss_semaphore_release(dm.sem_send);
 #ifdef OS_WINNT
    /* necessary for true MUTEX (NT) get semaphore back */
-   ss_mutex_wait_for(dm.sem_send, 0);
+   ss_semaphore_wait_for(dm.sem_send, 0);
 #endif
 
    /* important to wait for completion before continue with timeout
       timeout specified milliseconds */
-   status = ss_mutex_wait_for(dm.sem_flush, 10000);
+   status = ss_semaphore_wait_for(dm.sem_flush, 10000);
 #ifdef DM_DEBUG
    printf("dm_area_flush after waiting %i\n", status);
 #endif
 #ifdef OS_WINNT
-   ss_mutex_release(dm.sem_flush);      /* give it back now */
+   ss_semaphore_release(dm.sem_flush);      /* give it back now */
 #endif
 
    return status;

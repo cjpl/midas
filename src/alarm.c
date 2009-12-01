@@ -511,7 +511,7 @@ INT al_check()
 
 #ifdef LOCAL_ROUTINES
    {
-      INT i, status, size, mutex;
+      INT i, status, size, semaphore;
       HNDLE hDB, hkeyroot, hkey;
       KEY key;
       ALARM a;
@@ -544,8 +544,8 @@ INT al_check()
          return AL_SUCCESS;
 
       /* request semaphore */
-      cm_get_experiment_mutex(&mutex, NULL, NULL, NULL);
-      status = ss_mutex_wait_for(mutex, 100);
+      cm_get_experiment_semaphore(&semaphore, NULL, NULL, NULL);
+      status = ss_semaphore_wait_for(semaphore, 100);
       if (status != SS_SUCCESS)
          return SUCCESS;        /* someone else is doing alarm business */
 
@@ -556,14 +556,14 @@ INT al_check()
          status = db_create_record(hDB, 0, "/Alarms/Alarms/Demo ODB", strcomb(alarm_odb_str));
          db_find_key(hDB, 0, "/Alarms/Alarms", &hkeyroot);
          if (!hkeyroot) {
-            ss_mutex_release(mutex);
+            ss_semaphore_release(semaphore);
             return SUCCESS;
          }
 
          status = db_create_record(hDB, 0, "/Alarms/Alarms/Demo periodic", strcomb(alarm_periodic_str));
          db_find_key(hDB, 0, "/Alarms/Alarms", &hkeyroot);
          if (!hkeyroot) {
-            ss_mutex_release(mutex);
+            ss_semaphore_release(semaphore);
             return SUCCESS;
          }
 
@@ -571,7 +571,7 @@ INT al_check()
          status = db_create_record(hDB, 0, "/Alarms/Classes/Alarm", strcomb(alarm_class_str));
          status = db_create_record(hDB, 0, "/Alarms/Classes/Warning", strcomb(alarm_class_str));
          if (status != DB_SUCCESS) {
-            ss_mutex_release(mutex);
+            ss_semaphore_release(semaphore);
             return SUCCESS;
          }
       }
@@ -679,7 +679,7 @@ INT al_check()
          }
       }
 
-      ss_mutex_release(mutex);
+      ss_semaphore_release(semaphore);
    }
 #endif                          /* LOCAL_COUTINES */
 

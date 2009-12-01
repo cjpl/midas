@@ -323,12 +323,12 @@ INT hs_define_event(DWORD event_id, char *name, TAG * tag, DWORD size)
       time_t ltime;
       char str[256], event_name[NAME_LENGTH], *buffer;
       int fh, fhi, fhd;
-      INT i, n, len, index, status, mutex;
+      INT i, n, len, index, status, semaphore;
       struct tm *tmb;
 
       /* request semaphore */
-      cm_get_experiment_mutex(NULL, NULL, &mutex, NULL);
-      status = ss_mutex_wait_for(mutex, 5 * 1000);
+      cm_get_experiment_semaphore(NULL, NULL, &semaphore, NULL);
+      status = ss_semaphore_wait_for(semaphore, 5 * 1000);
       if (status != SS_SUCCESS)
          return SUCCESS;        /* someone else blocked the history system */
 
@@ -337,7 +337,7 @@ INT hs_define_event(DWORD event_id, char *name, TAG * tag, DWORD size)
          _history = (HISTORY *) M_MALLOC(sizeof(HISTORY));
          memset(_history, 0, sizeof(HISTORY));
          if (_history == NULL) {
-            ss_mutex_release(mutex);
+            ss_semaphore_release(semaphore);
             return HS_NO_MEMORY;
          }
 
@@ -357,7 +357,7 @@ INT hs_define_event(DWORD event_id, char *name, TAG * tag, DWORD size)
             _history_entries++;
             if (_history == NULL) {
                _history_entries--;
-               ss_mutex_release(mutex);
+               ss_semaphore_release(semaphore);
                return HS_NO_MEMORY;
             }
          }
@@ -382,7 +382,7 @@ INT hs_define_event(DWORD event_id, char *name, TAG * tag, DWORD size)
          /* open history file */
          hs_open_file(rec.time, "hst", O_CREAT | O_RDWR, &fh);
          if (fh < 0) {
-            ss_mutex_release(mutex);
+            ss_semaphore_release(semaphore);
             return HS_FILE_ERROR;
          }
 
@@ -508,7 +508,7 @@ INT hs_define_event(DWORD event_id, char *name, TAG * tag, DWORD size)
          M_FREE(buffer);
       }
 
-      ss_mutex_release(mutex);
+      ss_semaphore_release(semaphore);
    }
 
    return HS_SUCCESS;
@@ -549,15 +549,15 @@ INT hs_write_event(DWORD event_id, void *data, DWORD size)
    DEF_RECORD def_rec;
    INDEX_RECORD irec;
    int fh, fhi, fhd, last_pos_data, last_pos_index;
-   INT index, mutex, status;
+   INT index, semaphore, status;
    struct tm tmb, tmr;
    time_t ltime;
 
    /* request semaphore */
-   cm_get_experiment_mutex(NULL, NULL, &mutex, NULL);
-   status = ss_mutex_wait_for(mutex, 5 * 1000);
+   cm_get_experiment_semaphore(NULL, NULL, &semaphore, NULL);
+   status = ss_semaphore_wait_for(semaphore, 5 * 1000);
    if (status != SS_SUCCESS) {
-      cm_msg(MERROR, "hs_write_event", "mutex timeout");
+      cm_msg(MERROR, "hs_write_event", "semaphore timeout");
       return SUCCESS;           /* someone else blocked the history system */
    }
 
@@ -566,7 +566,7 @@ INT hs_write_event(DWORD event_id, void *data, DWORD size)
       if (_history[index].event_id == event_id)
          break;
    if (index == _history_entries) {
-      ss_mutex_release(mutex);
+      ss_semaphore_release(semaphore);
       return HS_UNDEFINED_EVENT;
    }
 
@@ -595,21 +595,21 @@ INT hs_write_event(DWORD event_id, void *data, DWORD size)
       /* open new history file */
       hs_open_file(rec.time, "hst", O_CREAT | O_RDWR, &fh);
       if (fh < 0) {
-         ss_mutex_release(mutex);
+         ss_semaphore_release(semaphore);
          return HS_FILE_ERROR;
       }
 
       /* open new index file */
       hs_open_file(rec.time, "idx", O_CREAT | O_RDWR, &fhi);
       if (fhi < 0) {
-         ss_mutex_release(mutex);
+         ss_semaphore_release(semaphore);
          return HS_FILE_ERROR;
       }
 
       /* open new definition index file */
       hs_open_file(rec.time, "idf", O_CREAT | O_RDWR, &fhd);
       if (fhd < 0) {
-         ss_mutex_release(mutex);
+         ss_semaphore_release(semaphore);
          return HS_FILE_ERROR;
       }
 
@@ -657,7 +657,7 @@ INT hs_write_event(DWORD event_id, void *data, DWORD size)
       /* disk maybe full? Do a roll-back! */
       lseek(_history[index].hist_fh, last_pos_data, SEEK_SET);
       TRUNCATE(_history[index].hist_fh);
-      ss_mutex_release(mutex);
+      ss_semaphore_release(semaphore);
       return HS_FILE_ERROR;
    }
 
@@ -670,11 +670,11 @@ INT hs_write_event(DWORD event_id, void *data, DWORD size)
       TRUNCATE(_history[index].hist_fh);
       lseek(_history[index].index_fh, last_pos_index, SEEK_SET);
       TRUNCATE(_history[index].index_fh);
-      ss_mutex_release(mutex);
+      ss_semaphore_release(semaphore);
       return HS_FILE_ERROR;
    }
 
-   ss_mutex_release(mutex);
+   ss_semaphore_release(semaphore);
    return HS_SUCCESS;
 }
 

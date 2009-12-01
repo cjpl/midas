@@ -537,7 +537,7 @@ System message types */
 #define BM_INVALID_NAME             204   /**< - */
 #define BM_INVALID_HANDLE           205   /**< - */
 #define BM_NO_SLOT                  206   /**< - */
-#define BM_NO_MUTEX                 207   /**< - */
+#define BM_NO_SEMAPHORE             207   /**< - */
 #define BM_NOT_FOUND                208   /**< - */
 #define BM_ASYNC_RETURN             209   /**< - */
 #define BM_TRUNCATED                210   /**< - */
@@ -561,7 +561,7 @@ System message types */
 #define DB_INVALID_NAME             304   /**< - */
 #define DB_INVALID_HANDLE           305   /**< - */
 #define DB_NO_SLOT                  306   /**< - */
-#define DB_NO_MUTEX                 307   /**< - */
+#define DB_NO_SEMAPHORE             307   /**< - */
 #define DB_MEMSIZE_MISMATCH         308   /**< - */
 #define DB_INVALID_PARAM            309   /**< - */
 #define DB_FULL                     310   /**< - */
@@ -594,7 +594,7 @@ System message types */
 #define SS_INVALID_HANDLE           405   /**< - */
 #define SS_INVALID_ADDRESS          406   /**< - */
 #define SS_FILE_ERROR               407   /**< - */
-#define SS_NO_MUTEX                 408   /**< - */
+#define SS_NO_SEMAPHORE             408   /**< - */
 #define SS_NO_PROCESS               409   /**< - */
 #define SS_NO_THREAD                410   /**< - */
 #define SS_SOCKET_ERROR             411   /**< - */
@@ -615,6 +615,7 @@ System message types */
 #define SS_INVALID_FORMAT           426   /**< - */
 #define SS_NO_ROOT                  427   /**< - */
 #define SS_SIZE_MISMATCH            428   /**< - */
+#define SS_NO_MUTEX                 429   /**< - */
 /**dox***************************************************************/
           /** @} *//* end of group 24 */
 
@@ -891,7 +892,7 @@ typedef struct {
    INT write_cache_size;            /**< cache size in bytes          */
    INT write_cache_rp;              /**< cache read pointer           */
    INT write_cache_wp;              /**< cache write pointer          */
-   HNDLE mutex;                     /**< mutex/semaphore handle       */
+   HNDLE semaphore;                 /**< semaphore handle             */
    INT shm_handle;                  /**< handle to shared memory      */
    INT index;                       /**< connection index / tid       */
    BOOL callback;                   /**< callback defined for this buffer */
@@ -982,7 +983,7 @@ typedef struct {
    void *dd_info;                     /**< Private info for device driver    */
    DD_MT_BUFFER *mt_buffer;           /**< pointer to multithread buffer     */
    INT stop_thread;                   /**< flag used to stop the thread      */
-   HNDLE mutex;                       /**< mutex/semaphore handle for buffer */
+   HNDLE semaphore;                   /**< semaphore handle for buffer       */
    EQUIPMENT_INFO *pequipment;        /**< pointer to equipment              */
 } DEVICE_DRIVER;
 
@@ -1602,8 +1603,8 @@ extern "C" {
    INT EXPRT cm_disconnect_client(HNDLE hConn, BOOL bShutdown);
    INT EXPRT cm_set_experiment_database(HNDLE hDB, HNDLE hKeyClient);
    INT EXPRT cm_get_experiment_database(HNDLE * hDB, HNDLE * hKeyClient);
-   INT EXPRT cm_set_experiment_mutex(INT mutex_alarm, INT mutex_elog, INT mutex_history, INT mutex_msg);
-   INT EXPRT cm_get_experiment_mutex(INT * mutex_alarm, INT * mutex_elog, INT * mutex_history, INT * mutex_msg);
+   INT EXPRT cm_set_experiment_semaphore(INT semaphore_alarm, INT semaphore_elog, INT semaphore_history, INT semaphore_msg);
+   INT EXPRT cm_get_experiment_semaphore(INT * semaphore_alarm, INT * semaphore_elog, INT * semaphore_history, INT * semaphore_msg);
    INT EXPRT cm_set_client_info(HNDLE hDB, HNDLE * hKeyClient,
                                 char *host_name, char *client_name,
                                 INT computer_id, char *password, DWORD watchdog_timeout);

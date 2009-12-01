@@ -1718,14 +1718,14 @@ INT ss_thread_kill(midas_thread_t thread_id)
 #ifndef DOXYGEN_SHOULD_SKIP_THIS
 
 /*------------------------------------------------------------------*/
-static INT skip_mutex_handle = -1;
+static INT skip_semaphore_handle = -1;
 
-INT ss_mutex_create(const char *name, HNDLE * mutex_handle)
+INT ss_semaphore_create(const char *name, HNDLE * semaphore_handle)
 /********************************************************************\
 
-  Routine: ss_mutex_create
+  Routine: ss_semaphore_create
 
-  Purpose: Create a mutex with a specific name
+  Purpose: Create a semaphore with a specific name
 
     Remark: Under VxWorks the specific semaphore handling is
             different than other OS. But VxWorks provides
@@ -1736,24 +1736,24 @@ INT ss_mutex_create(const char *name, HNDLE * mutex_handle)
             as the binary is an optimized mutex.
 
   Input:
-    char   *name            Name of the mutex to create.
-                            Special blank name "" creates a local mutex for
+    char   *name            Name of the semaphore to create.
+                            Special blank name "" creates a local semaphore for
                             syncronization between threads in multithreaded applications.
 
   Output:
-    HNDLE  *mutex_handle    Handle of the created mutex
+    HNDLE  *semaphore_handle    Handle of the created semaphore
 
   Function value:
-    SS_CREATED              Mutex was created
-    SS_SUCCESS              Mutex existed already and was attached
-    SS_NO_MUTEX             Cannot create mutex
+    SS_CREATED              semaphore was created
+    SS_SUCCESS              semaphore existed already and was attached
+    SS_NO_SEMAPHORE         Cannot create semaphore
 
 \********************************************************************/
 {
-   char mutex_name[256];
+   char semaphore_name[256];
 
-   /* Add a leading SM_ to the mutex name */
-   sprintf(mutex_name, "MX_%s", name);
+   /* Add a leading MX_ to the semaphore name */
+   sprintf(semaphore_name, "MX_%s", name);
 
 #ifdef OS_VXWORKS
 
@@ -1767,10 +1767,10 @@ INT ss_mutex_create(const char *name, HNDLE * mutex_handle)
 
 #ifdef OS_WINNT
 
-   *mutex_handle = (HNDLE) CreateMutex(NULL, FALSE, mutex_name);
+   *semaphore_handle = (HNDLE) CreateMutex(NULL, FALSE, semaphore_name);
 
-   if (*mutex_handle == 0)
-      return SS_NO_MUTEX;
+   if (*semaphore_handle == 0)
+      return SS_NO_SEMAPHORE;
 
    return SS_CREATED;
 
@@ -1781,21 +1781,21 @@ INT ss_mutex_create(const char *name, HNDLE * mutex_handle)
 
    {
       INT status;
-      $DESCRIPTOR(mutexname_dsc, "dummy");
-      mutexname_dsc.dsc$w_length = strlen(mutex_name);
-      mutexname_dsc.dsc$a_pointer = mutex_name;
+      $DESCRIPTOR(semaphorename_dsc, "dummy");
+      semaphorename_dsc.dsc$w_length = strlen(semaphore_name);
+      semaphorename_dsc.dsc$a_pointer = semaphore_name;
 
-      *mutex_handle = (HNDLE) malloc(8);
+      *semaphore_handle = (HNDLE) malloc(8);
 
-      status = sys$enqw(0, LCK$K_NLMODE, *mutex_handle, 0, &mutexname_dsc, 0, 0, 0, 0, 0, 0);
+      status = sys$enqw(0, LCK$K_NLMODE, *semaphore_handle, 0, &semaphorename_dsc, 0, 0, 0, 0, 0, 0);
 
       if (status != SS$_NORMAL) {
-         free((void *) *mutex_handle);
-         *mutex_handle = 0;
+         free((void *) *semaphore_handle);
+         *semaphore_handle = 0;
       }
 
-      if (*mutex_handle == 0)
-         return SS_NO_MUTEX;
+      if (*semaphore_handle == 0)
+         return SS_NO_SEMAPHORE;
 
       return SS_CREATED;
    }
@@ -1812,7 +1812,7 @@ INT ss_mutex_create(const char *name, HNDLE * mutex_handle)
          int fh;
          char path[256], file_name[256];
 
-         /* Build the filename out of the path and the name of the mutex */
+         /* Build the filename out of the path and the name of the semaphore */
          cm_get_path(path);
          if (path[0] == 0) {
             getcwd(path, 256);
@@ -1847,15 +1847,15 @@ INT ss_mutex_create(const char *name, HNDLE * mutex_handle)
       status = SS_SUCCESS;
 
       /* create or get semaphore */
-      *mutex_handle = (HNDLE) semget(key, 1, 0);
-      if (*mutex_handle < 0) {
-         *mutex_handle = (HNDLE) semget(key, 1, IPC_CREAT);
+      *semaphore_handle = (HNDLE) semget(key, 1, 0);
+      if (*semaphore_handle < 0) {
+         *semaphore_handle = (HNDLE) semget(key, 1, IPC_CREAT);
          status = SS_CREATED;
       }
 
-      if (*mutex_handle < 0) {
-         cm_msg(MERROR, "ss_mutex_mutex", "semget() failed, errno = %d", errno);
-         return SS_NO_MUTEX;
+      if (*semaphore_handle < 0) {
+         cm_msg(MERROR, "ss_semaphore_create", "semget() failed, errno = %d", errno);
+         return SS_NO_SEMAPHORE;
       }
 
       memset(&buf, 0, sizeof(buf));
@@ -1864,13 +1864,13 @@ INT ss_mutex_create(const char *name, HNDLE * mutex_handle)
       buf.sem_perm.mode = 0666;
       arg.buf = &buf;
 
-      semctl(*mutex_handle, 0, IPC_SET, arg);
+      semctl(*semaphore_handle, 0, IPC_SET, arg);
 
       /* if semaphore was created, set value to one */
       if (key == IPC_PRIVATE || status == SS_CREATED) {
          arg.val = 1;
-         if (semctl(*mutex_handle, 0, SETVAL, arg) < 0)
-            return SS_NO_MUTEX;
+         if (semctl(*semaphore_handle, 0, SETVAL, arg) < 0)
+            return SS_NO_SEMAPHORE;
       }
 
       return SS_SUCCESS;
@@ -1878,20 +1878,20 @@ INT ss_mutex_create(const char *name, HNDLE * mutex_handle)
 #endif                          /* OS_UNIX */
 
 #ifdef OS_MSDOS
-   return SS_NO_MUTEX;
+   return SS_NO_SEMAPHORE;
 #endif
 }
 
 /*------------------------------------------------------------------*/
-INT ss_mutex_wait_for(HNDLE mutex_handle, INT timeout)
+INT ss_semaphore_wait_for(HNDLE semaphore_handle, INT timeout)
 /********************************************************************\
 
-  Routine: ss_mutex_wait_for
+  Routine: ss_semaphore_wait_for
 
-  Purpose: Wait for a mutex to get owned
+  Purpose: Wait for a semaphore to get owned
 
   Input:
-    HNDLE  *mutex_handle    Handle of the created mutex
+    HNDLE  *semaphore_handle    Handle of the semaphore
     INT    timeout          Timeout in ms, zero for no timeout
 
   Output:
@@ -1899,7 +1899,7 @@ INT ss_mutex_wait_for(HNDLE mutex_handle, INT timeout)
 
   Function value:
     SS_SUCCESS              Successful completion
-    SS_NO_MUTEX             Invalid mutex handle
+    SS_NO_SEMAPHORE         Invalid semaphore handle
     SS_TIMEOUT              Timeout
 
 \********************************************************************/
@@ -1908,26 +1908,26 @@ INT ss_mutex_wait_for(HNDLE mutex_handle, INT timeout)
 
 #ifdef OS_WINNT
 
-   status = WaitForSingleObject((HANDLE) mutex_handle, timeout == 0 ? INFINITE : timeout);
+   status = WaitForSingleObject((HANDLE) semaphore_handle, timeout == 0 ? INFINITE : timeout);
    if (status == WAIT_FAILED)
-      return SS_NO_MUTEX;
+      return SS_NO_SEMAPHORE;
    if (status == WAIT_TIMEOUT)
       return SS_TIMEOUT;
 
    return SS_SUCCESS;
 #endif                          /* OS_WINNT */
 #ifdef OS_VMS
-   status = sys$enqw(0, LCK$K_EXMODE, mutex_handle, LCK$M_CONVERT, 0, 0, 0, 0, 0, 0, 0);
+   status = sys$enqw(0, LCK$K_EXMODE, semaphore_handle, LCK$M_CONVERT, 0, 0, 0, 0, 0, 0, 0);
    if (status != SS$_NORMAL)
-      return SS_NO_MUTEX;
+      return SS_NO_SEMAPHORE;
    return SS_SUCCESS;
 
 #endif                          /* OS_VMS */
 #ifdef OS_VXWORKS
    /* convert timeout in ticks (1/60) = 1000/60 ~ 1/16 = >>4 */
-   status = semTake((SEM_ID) mutex_handle, timeout == 0 ? WAIT_FOREVER : timeout >> 4);
+   status = semTake((SEM_ID) semaphore_handle, timeout == 0 ? WAIT_FOREVER : timeout >> 4);
    if (status == ERROR)
-      return SS_NO_MUTEX;
+      return SS_NO_SEMAPHORE;
    return SS_SUCCESS;
 
 #endif                          /* OS_VXWORKS */
@@ -1952,30 +1952,30 @@ INT ss_mutex_wait_for(HNDLE mutex_handle, INT timeout)
 
       memset(&arg, 0, sizeof(arg));
 
-      /* don't request the mutex when in asynchronous state
-         and mutex was locked already by foreground process */
+      /* don't request the semaphore when in asynchronous state
+         and semaphore was locked already by foreground process */
       if (ss_in_async_routine_flag)
-         if (semctl(mutex_handle, 0, GETPID, arg) == getpid())
-            if (semctl(mutex_handle, 0, GETVAL, arg) == 0) {
-               skip_mutex_handle = mutex_handle;
+         if (semctl(semaphore_handle, 0, GETPID, arg) == getpid())
+            if (semctl(semaphore_handle, 0, GETVAL, arg) == 0) {
+               skip_semaphore_handle = semaphore_handle;
                return SS_SUCCESS;
             }
 
-      skip_mutex_handle = -1;
+      skip_semaphore_handle = -1;
 
       start_time = ss_millitime();
 
       do {
 #if defined(OS_DARWIN)
-         status = semop(mutex_handle, &sb, 1);
+         status = semop(semaphore_handle, &sb, 1);
 #elif defined(OS_LINUX)
          struct timespec ts;
          ts.tv_sec  = 1;
          ts.tv_nsec = 0;
          
-         status = semtimedop(mutex_handle, &sb, 1, &ts);
+         status = semtimedop(semaphore_handle, &sb, 1, &ts);
 #else
-         status = semop(mutex_handle, &sb, 1);
+         status = semop(semaphore_handle, &sb, 1);
 #endif
 
          /* return on success */
@@ -1991,7 +1991,7 @@ INT ss_mutex_wait_for(HNDLE mutex_handle, INT timeout)
             continue;
          }
 
-         return SS_NO_MUTEX;
+         return SS_NO_SEMAPHORE;
       } while (1);
 
       return SS_SUCCESS;
@@ -1999,27 +1999,27 @@ INT ss_mutex_wait_for(HNDLE mutex_handle, INT timeout)
 #endif                          /* OS_UNIX */
 
 #ifdef OS_MSDOS
-   return SS_NO_MUTEX;
+   return SS_NO_SEMAPHORE;
 #endif
 }
 
 /*------------------------------------------------------------------*/
-INT ss_mutex_release(HNDLE mutex_handle)
+INT ss_semaphore_release(HNDLE semaphore_handle)
 /********************************************************************\
 
-  Routine: ss_release_mutex
+  Routine: ss_semaphore_release
 
-  Purpose: Release ownership of a mutex
+  Purpose: Release ownership of a semaphore
 
   Input:
-    HNDLE  *mutex_handle    Handle of the created mutex
+    HNDLE  *semaphore_handle    Handle of the semaphore
 
   Output:
     none
 
   Function value:
     SS_SUCCESS              Successful completion
-    SS_NO_MUTEX             Invalid mutex handle
+    SS_NO_SEMAPHORE         Invalid semaphore handle
 
 \********************************************************************/
 {
@@ -2027,20 +2027,20 @@ INT ss_mutex_release(HNDLE mutex_handle)
 
 #ifdef OS_WINNT
 
-   status = ReleaseMutex((HANDLE) mutex_handle);
+   status = ReleaseMutex((HANDLE) semaphore_handle);
 
    if (status == FALSE)
-      return SS_NO_MUTEX;
+      return SS_NO_SEMAPHORE;
 
    return SS_SUCCESS;
 
 #endif                          /* OS_WINNT */
 #ifdef OS_VMS
 
-   status = sys$enqw(0, LCK$K_NLMODE, mutex_handle, LCK$M_CONVERT, 0, 0, 0, 0, 0, 0, 0);
+   status = sys$enqw(0, LCK$K_NLMODE, semaphore_handle, LCK$M_CONVERT, 0, 0, 0, 0, 0, 0, 0);
 
    if (status != SS$_NORMAL)
-      return SS_NO_MUTEX;
+      return SS_NO_SEMAPHORE;
 
    return SS_SUCCESS;
 
@@ -2048,8 +2048,8 @@ INT ss_mutex_release(HNDLE mutex_handle)
 
 #ifdef OS_VXWORKS
 
-   if (semGive((SEM_ID) mutex_handle) == ERROR)
-      return SS_NO_MUTEX;
+   if (semGive((SEM_ID) semaphore_handle) == ERROR)
+      return SS_NO_SEMAPHORE;
    return SS_SUCCESS;
 #endif                          /* OS_VXWORKS */
 
@@ -2061,13 +2061,13 @@ INT ss_mutex_release(HNDLE mutex_handle)
       sb.sem_op = 1;            /* increment semaphore */
       sb.sem_flg = SEM_UNDO;
 
-      if (mutex_handle == skip_mutex_handle) {
-         skip_mutex_handle = -1;
+      if (semaphore_handle == skip_semaphore_handle) {
+         skip_semaphore_handle = -1;
          return SS_SUCCESS;
       }
 
       do {
-         status = semop(mutex_handle, &sb, 1);
+         status = semop(semaphore_handle, &sb, 1);
 
          /* return on success */
          if (status == 0)
@@ -2077,7 +2077,7 @@ INT ss_mutex_release(HNDLE mutex_handle)
          if (errno == EINTR)
             continue;
 
-         return SS_NO_MUTEX;
+         return SS_NO_SEMAPHORE;
       } while (1);
 
       return SS_SUCCESS;
@@ -2085,49 +2085,49 @@ INT ss_mutex_release(HNDLE mutex_handle)
 #endif                          /* OS_UNIX */
 
 #ifdef OS_MSDOS
-   return SS_NO_MUTEX;
+   return SS_NO_SEMAPHORE;
 #endif
 }
 
 /*------------------------------------------------------------------*/
-INT ss_mutex_delete(HNDLE mutex_handle, INT destroy_flag)
+INT ss_semaphore_delete(HNDLE semaphore_handle, INT destroy_flag)
 /********************************************************************\
 
-  Routine: ss_mutex_delete
+  Routine: ss_semaphore_delete
 
-  Purpose: Delete a mutex
+  Purpose: Delete a semaphore
 
   Input:
-    HNDLE  *mutex_handle    Handle of the created mutex
+    HNDLE  *semaphore_handle    Handle of the semaphore
 
   Output:
     none
 
   Function value:
     SS_SUCCESS              Successful completion
-    SS_NO_MUTEX             Invalid mutex handle
+    SS_NO_SEMAPHORE         Invalid semaphore handle
 
 \********************************************************************/
 {
 #ifdef OS_WINNT
 
-   if (CloseHandle((HANDLE) mutex_handle) == FALSE)
-      return SS_NO_MUTEX;
+   if (CloseHandle((HANDLE) semaphore_handle) == FALSE)
+      return SS_NO_SEMAPHORE;
 
    return SS_SUCCESS;
 
 #endif                          /* OS_WINNT */
 #ifdef OS_VMS
 
-   free((void *) mutex_handle);
+   free((void *) semaphore_handle);
    return SS_SUCCESS;
 
 #endif                          /* OS_VMS */
 
 #ifdef OS_VXWORKS
    /* no code for VxWorks destroy yet */
-   if (semDelete((SEM_ID) mutex_handle) == ERROR)
-      return SS_NO_MUTEX;
+   if (semDelete((SEM_ID) semaphore_handle) == ERROR)
+      return SS_NO_SEMAPHORE;
    return SS_SUCCESS;
 #endif                          /* OS_VXWORKS */
 
@@ -2145,16 +2145,241 @@ INT ss_mutex_delete(HNDLE mutex_handle, INT destroy_flag)
    memset(&arg, 0, sizeof(arg));
 
    if (destroy_flag)
-      if (semctl(mutex_handle, 0, IPC_RMID, arg) < 0)
-         return SS_NO_MUTEX;
+      if (semctl(semaphore_handle, 0, IPC_RMID, arg) < 0)
+         return SS_NO_SEMAPHORE;
 
    return SS_SUCCESS;
 
 #endif                          /* OS_UNIX */
 
 #ifdef OS_MSDOS
+   return SS_NO_SEMAPHORE;
+#endif
+}
+
+/*------------------------------------------------------------------*/
+
+INT ss_mutex_create(HNDLE * mutex_handle)
+/********************************************************************\
+
+  Routine: ss_mutex_create
+
+  Purpose: Create a mutex for inter-thread locking
+
+  Output:
+    HNDLE  *mutex_handle    Handle of the created mutes
+
+  Function value:
+    SS_CREATED              Mutex was created
+    SS_NO_SEMAPHORE         Cannot create mutex
+
+\********************************************************************/
+{
+#ifdef OS_VXWORKS
+
+   /* semBCreate is a Binary semaphore which is under VxWorks a optimized mutex
+      refering to the programmer's Guide 5.3.1 */
+   if ((*((SEM_ID *) mutex_handle) = semBCreate(SEM_Q_FIFO, SEM_EMPTY)) == NULL)
+      return SS_NO_MUTEX;
+   return SS_CREATED;
+
+#endif                          /* OS_VXWORKS */
+
+#ifdef OS_WINNT
+
+   *mutex_handle = (HNDLE) CreateMutex(NULL, FALSE, NULL);
+
+   if (*mutex_handle == 0)
+      return SS_NO_MUTEX;
+
+   return SS_CREATED;
+
+#endif                          /* OS_WINNT */
+#ifdef OS_UNIX
+
+   {
+      int status;
+
+      *mutex_handle = (HNDLE) PTHREAD_MUTEX_INITIALIZER;
+      status = pthread_mutex_init((pthread_mutex_t *)mutex_handle, NULL);
+      if (status != 0) {
+         cm_msg(MERROR, "ss_mutex_create", "pthread_mutex_init() failed, status = %d", status);
+         return SS_NO_MUTEX;
+      }
+
+      return SS_SUCCESS;
+   }
+#endif                          /* OS_UNIX */
+
+#ifdef OS_MSDOS
+   return SS_NO_SEMAPHORE;
+#endif
+}
+
+/*------------------------------------------------------------------*/
+INT ss_mutex_wait_for(HNDLE mutex_handle, INT timeout)
+/********************************************************************\
+
+  Routine: ss_mutex_wait_for
+
+  Purpose: Wait for a mutex to get owned
+
+  Input:
+    HNDLE  *mutex_handle    Handle of the mutex
+    INT    timeout          Timeout in ms, zero for no timeout
+
+  Output:
+    none
+
+  Function value:
+    SS_SUCCESS              Successful completion
+    SS_NO_MUTEX             Invalid mutex handle
+    SS_TIMEOUT              Timeout
+
+\********************************************************************/
+{
+   INT status;
+
+#ifdef OS_WINNT
+
+   status = WaitForSingleObject((HANDLE) mutex_handle, timeout == 0 ? INFINITE : timeout);
+   if (status == WAIT_FAILED)
+      return SS_NO_MUTEX;
+   if (status == WAIT_TIMEOUT)
+      return SS_TIMEOUT;
+
+   return SS_SUCCESS;
+#endif                          /* OS_WINNT */
+#ifdef OS_VXWORKS
+   /* convert timeout in ticks (1/60) = 1000/60 ~ 1/16 = >>4 */
+   status = semTake((SEM_ID) mutex_handle, timeout == 0 ? WAIT_FOREVER : timeout >> 4);
+   if (status == ERROR)
+      return SS_NO_MUTEX;
+   return SS_SUCCESS;
+
+#endif                          /* OS_VXWORKS */
+#ifdef OS_UNIX
+   {
+      struct timespec st;
+
+      st.tv_sec = timeout / 1000;
+      st.tv_usec = (timeout % 1000) * 1000;
+      status = pthread_mutex_timedlock(mutex_handle, &st);
+      if (status != 0) {
+         cm_msg(MERROR, "ss_mutex_wait_for", "pthread_mutex_timedlock() failed, status = %d", status);
+         return SS_NO_MUTEX;
+      }
+
+      return SS_SUCCESS;
+   }
+#endif                          /* OS_UNIX */
+
+#ifdef OS_MSDOS
    return SS_NO_MUTEX;
 #endif
+}
+
+/*------------------------------------------------------------------*/
+INT ss_mutex_release(HNDLE mutex_handle)
+/********************************************************************\
+
+  Routine: ss_mutex_release
+
+  Purpose: Release ownership of a mutex
+
+  Input:
+    HNDLE  *mutex_handle    Handle of the mutex
+
+  Output:
+    none
+
+  Function value:
+    SS_SUCCESS              Successful completion
+    SS_NO_MUTES             Invalid mutes handle
+
+\********************************************************************/
+{
+   INT status;
+
+#ifdef OS_WINNT
+
+   status = ReleaseMutex((HANDLE) mutex_handle);
+   if (status == FALSE)
+      return SS_NO_SEMAPHORE;
+
+   return SS_SUCCESS;
+
+#endif                          /* OS_WINNT */
+#ifdef OS_VXWORKS
+
+   if (semGive((SEM_ID) mutes_handle) == ERROR)
+      return SS_NO_MUTEX;
+   return SS_SUCCESS;
+#endif                          /* OS_VXWORKS */
+#ifdef OS_UNIX
+
+      status = pthread_mutex_unlock(mutex_handle);
+      if (status != 0) {
+         cm_msg(MERROR, "ss_mutex_wait_for", "pthread_mutex_unlock() failed, status = %d", status);
+         return SS_NO_MUTEX;
+      }
+
+      return SS_SUCCESS;
+#endif                          /* OS_UNIX */
+
+#ifdef OS_MSDOS
+   return SS_NO_MUTEX;
+#endif
+}
+
+/*------------------------------------------------------------------*/
+INT ss_mutex_delete(HNDLE mutex_handle)
+/********************************************************************\
+
+  Routine: ss_mutex_delete
+
+  Purpose: Delete a mutex
+
+  Input:
+    HNDLE  *mutex_handle    Handle of the mutex
+
+  Output:
+    none
+
+  Function value:
+    SS_SUCCESS              Successful completion
+    SS_NO_MUTEX             Invalid mutex handle
+
+\********************************************************************/
+{
+#ifdef OS_WINNT
+
+   if (CloseHandle((HANDLE) mutex_handle) == FALSE)
+      return SS_NO_SEMAPHORE;
+
+   return SS_SUCCESS;
+
+#endif                          /* OS_WINNT */
+#ifdef OS_VXWORKS
+   /* no code for VxWorks destroy yet */
+   if (semDelete((SEM_ID) mutex_handle) == ERROR)
+      return SS_NO_MUTEX;
+   return SS_SUCCESS;
+#endif                          /* OS_VXWORKS */
+
+#ifdef OS_UNIX
+   { 
+      int status;
+      
+      status = pthread_mutex_destroy((pthread_mutex_t *) &mutex_handle);
+      if (status != 0) {
+         cm_msg(MERROR, "ss_mutex_wait_for", "pthread_mutex_unlock() failed, status = %d", status);
+         return SS_NO_MUTEX;
+      }
+
+      return SS_SUCCESS;
+   }
+#endif                          /* OS_UNIX */
 }
 
 /**dox***************************************************************/

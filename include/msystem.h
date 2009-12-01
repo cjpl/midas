@@ -392,7 +392,7 @@ typedef struct {
    INT client_index;            /* index to CLIENT str. in buf. */
    DATABASE_HEADER *database_header;    /* pointer to database header   */
    void *database_data;         /* pointer to database data     */
-   HNDLE mutex;                 /* mutex/semaphore handle       */
+   HNDLE semaphore;             /* semaphore handle             */
    INT lock_cnt;                /* flag to avoid multiple locks */
    HNDLE shm_handle;            /* handle (id) to shared memory */
    INT index;                   /* connection index / tid       */
@@ -607,10 +607,14 @@ extern "C" {
    INT EXPRT ss_gettid(void);
    INT ss_getthandle(void);
    INT ss_set_async_flag(INT flag);
-   INT EXPRT ss_mutex_create(const char *mutex_name, HNDLE * mutex_handle);
+   INT EXPRT ss_semaphore_create(const char *semaphore_name, HNDLE * semaphore_handle);
+   INT EXPRT ss_semaphore_wait_for(HNDLE semaphore_handle, INT timeout);
+   INT EXPRT ss_semaphore_release(HNDLE semaphore_handle);
+   INT EXPRT ss_semaphore_delete(HNDLE semaphore_handle, INT destroy_flag);
+   INT EXPRT ss_mutex_create(HNDLE * mutex_handle);
    INT EXPRT ss_mutex_wait_for(HNDLE mutex_handle, INT timeout);
    INT EXPRT ss_mutex_release(HNDLE mutex_handle);
-   INT EXPRT ss_mutex_delete(HNDLE mutex_handle, INT destroy_flag);
+   INT EXPRT ss_mutex_delete(HNDLE mutex_handle);
    INT ss_wake(INT pid, INT tid, INT thandle);
    INT ss_alarm(INT millitime, void (*func) (int));
    INT ss_suspend_get_port(INT * port);

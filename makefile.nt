@@ -88,7 +88,7 @@ $(BIN_DIR):
 $(BIN_DIR)/mserver.exe:  $(LIBRARY) $(SRC_DIR)/mserver.c
 	$(CC) $(CFLAGS) /Fe$(BIN_DIR)/mserver.exe $(SRC_DIR)/mserver.c $(LIBRARY) $(LIBS) wsock32.lib
 $(BIN_DIR)/mhttpd.exe:  $(LIBRARY) $(SRC_DIR)/mhttpd.c $(SRC_DIR)/mgd.c
-	$(CC) $(CFLAGS) /Fe$(BIN_DIR)/mhttpd.exe $(SRC_DIR)/mhttpd.c $(SRC_DIR)/mgd.c $(LIBRARY) $(LIBS) wsock32.lib
+	$(CC) $(CFLAGS) /TP /Fe$(BIN_DIR)/mhttpd.exe $(SRC_DIR)/mhttpd.c $(SRC_DIR)/mgd.c $(LIBRARY) $(LIBS) wsock32.lib
 $(BIN_DIR)/mlogger.exe:  $(LIBRARY) $(SRC_DIR)/mlogger.c
 	$(CC) $(CFLAGS) /Fe$(BIN_DIR)/mlogger.exe /Tp$(SRC_DIR)/mlogger.c $(LIBRARY) $(LIBS)
 $(BIN_DIR)/odbedit.exe: $(LIBRARY) $(SRC_DIR)/odbedit.c $(SRC_DIR)/cmdedit.c
