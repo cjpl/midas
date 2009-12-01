@@ -9769,8 +9769,7 @@ INT rpc_call(const INT routine_id, ...)
       _net_send_buffer_size = NET_BUFFER_SIZE;
 
       /* create a local mutex for multi-threaded applications */
-      sprintf(str, "RPC_%d", ss_getpid());
-      ss_mutex_create(str, &_mutex_rpc);
+      ss_mutex_create("", &_mutex_rpc);
    }
 
    status = ss_mutex_wait_for(_mutex_rpc, 10000 + rpc_timeout);
