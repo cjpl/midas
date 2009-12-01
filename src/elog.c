@@ -92,7 +92,7 @@ INT el_submit(int run, const char *author, const char *type, const char *syst, c
 
 #ifdef LOCAL_ROUTINES
    {
-      INT n, size, fh, status, run_number, mutex, buffer_size = 0, idx, offset = 0, tail_size = 0;
+      INT n, size, fh, status, run_number, semaphore, buffer_size = 0, idx, offset = 0, tail_size = 0;
       struct tm *tms = NULL;
       char afilename[256], file_name[256], afile_name[3][256], dir[256], str[256],
           start_str[80], end_str[80], last[80], date[80], thread[80], attachment[256];
@@ -107,10 +107,10 @@ INT el_submit(int run, const char *author, const char *type, const char *syst, c
       bedit = (tag[0] != 0);
 
       /* request semaphore */
-      cm_get_experiment_semaphore(NULL, &mutex, NULL, NULL);
-      status = ss_semaphore_wait_for(mutex, 5 * 60 * 1000);
+      cm_get_experiment_semaphore(NULL, &semaphore, NULL, NULL);
+      status = ss_semaphore_wait_for(semaphore, 5 * 60 * 1000);
       if (status != SS_SUCCESS) {
-         cm_msg(MERROR, "el_submit", "Cannot lock experiment mutex, ss_mutex_wait_for() status %d", status);
+         cm_msg(MERROR, "el_submit", "Cannot lock experiment semaphore, ss_semaphore_wait_for() status %d", status);
          abort();
       }
 
@@ -229,7 +229,7 @@ INT el_submit(int run, const char *author, const char *type, const char *syst, c
          sprintf(file_name, "%s%s.log", dir, str);
          fh = open(file_name, O_CREAT | O_RDWR | O_BINARY, 0644);
          if (fh < 0) {
-            ss_mutex_release(mutex);
+            ss_semaphore_release(semaphore);
             return EL_FILE_ERROR;
          }
          lseek(fh, offset, SEEK_SET);
@@ -251,7 +251,7 @@ INT el_submit(int run, const char *author, const char *type, const char *syst, c
             buffer = (char *) M_MALLOC(tail_size);
             if (buffer == NULL) {
                close(fh);
-               ss_mutex_release(mutex);
+               ss_semaphore_release(semaphore);
                return EL_FILE_ERROR;
             }
 
@@ -269,7 +269,7 @@ INT el_submit(int run, const char *author, const char *type, const char *syst, c
 
          fh = open(file_name, O_CREAT | O_RDWR | O_BINARY, 0644);
          if (fh < 0) {
-            ss_mutex_release(mutex);
+            ss_semaphore_release(semaphore);
             return EL_FILE_ERROR;
          }
 
@@ -377,8 +377,8 @@ INT el_submit(int run, const char *author, const char *type, const char *syst, c
          } while (TRUE);
       }
 
-      /* release elog mutex */
-      ss_mutex_release(mutex);
+      /* release elog semaphore */
+      ss_semaphore_release(semaphore);
    }
 #endif                          /* LOCAL_ROUTINES */
 

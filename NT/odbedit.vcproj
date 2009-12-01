@@ -379,6 +379,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\include\midasinc.h"
+				>
+			</File>
+			<File
 				RelativePath="..\include\mrpc.h"
 				>
 			</File>

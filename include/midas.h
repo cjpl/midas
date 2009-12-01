@@ -201,6 +201,15 @@ typedef INT midas_thread_t;
 #pragma warning( disable: 4996)
 #endif
 
+/* mutex definitions */
+#if defined(OS_WINNT)
+typedef HANDLE MUTEX_T;
+#elif defined(OS_LINUX)
+typedef pthread_mutex_t MUTEX_T;
+#else
+typedef INT MUTEX_T
+#endif
+
 /**dox***************************************************************/
 #endif                          /* DOXYGEN_SHOULD_SKIP_THIS */
 

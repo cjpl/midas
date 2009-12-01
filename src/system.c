@@ -2159,7 +2159,7 @@ INT ss_semaphore_delete(HNDLE semaphore_handle, INT destroy_flag)
 
 /*------------------------------------------------------------------*/
 
-INT ss_mutex_create(HNDLE * mutex_handle)
+INT ss_mutex_create(MUTEX_T * mutex)
 /********************************************************************\
 
   Routine: ss_mutex_create
@@ -2167,7 +2167,7 @@ INT ss_mutex_create(HNDLE * mutex_handle)
   Purpose: Create a mutex for inter-thread locking
 
   Output:
-    HNDLE  *mutex_handle    Handle of the created mutes
+    MUTEX_T mutex           Pointer to mutex
 
   Function value:
     SS_CREATED              Mutex was created
@@ -2187,9 +2187,9 @@ INT ss_mutex_create(HNDLE * mutex_handle)
 
 #ifdef OS_WINNT
 
-   *mutex_handle = (HNDLE) CreateMutex(NULL, FALSE, NULL);
+   *mutex = CreateMutex(NULL, FALSE, NULL);
 
-   if (*mutex_handle == 0)
+   if (*mutex == 0)
       return SS_NO_MUTEX;
 
    return SS_CREATED;
