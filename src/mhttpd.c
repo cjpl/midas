@@ -1118,64 +1118,6 @@ void show_status_page(int refresh, char *cookie_wpwd)
 
    rsprintf("</tr>\n\n");
 
-   /*---- alarms ----*/
-
-   /* go through all triggered alarms */
-   db_find_key(hDB, 0, "/Alarms/Alarms", &hkey);
-   if (hkey) {
-      /* check global alarm flag */
-      flag = TRUE;
-      size = sizeof(flag);
-      db_get_value(hDB, 0, "/Alarms/Alarm System active", &flag, &size, TID_BOOL, TRUE);
-      if (flag) {
-         for (i = 0;; i++) {
-            db_enum_link(hDB, hkey, i, &hsubkey);
-
-            if (!hsubkey)
-               break;
-
-            size = sizeof(flag);
-            db_get_value(hDB, hsubkey, "Triggered", &flag, &size, TID_INT, TRUE);
-            if (flag) {
-               size = sizeof(alarm_class);
-               db_get_value(hDB, hsubkey, "Alarm Class", alarm_class, &size, TID_STRING,
-                            TRUE);
-
-               strcpy(bgcol, "red");
-               sprintf(str, "/Alarms/Classes/%s/Display BGColor", alarm_class);
-               size = sizeof(bgcol);
-               db_get_value(hDB, 0, str, bgcol, &size, TID_STRING, TRUE);
-
-               strcpy(fgcol, "black");
-               sprintf(str, "/Alarms/Classes/%s/Display FGColor", alarm_class);
-               size = sizeof(fgcol);
-               db_get_value(hDB, 0, str, fgcol, &size, TID_STRING, TRUE);
-
-               size = sizeof(msg);
-               db_get_value(hDB, hsubkey, "Alarm Message", msg, &size, TID_STRING, TRUE);
-
-               size = sizeof(j);
-               db_get_value(hDB, hsubkey, "Type", &j, &size, TID_INT, TRUE);
-
-               if (j == AT_EVALUATED) {
-                  size = sizeof(str);
-                  db_get_value(hDB, hsubkey, "Condition", str, &size, TID_STRING, TRUE);
-
-                  /* retrieve value */
-                  al_evaluate_condition(str, value_str);
-                  sprintf(str, msg, value_str);
-               } else
-                  strlcpy(str, msg, sizeof(str));
-
-               rsprintf("<tr><td colspan=6 bgcolor=\"%s\" align=center>", bgcol);
-
-               rsprintf("<font color=\"%s\" size=+3>%s: %s</font></tr>\n", fgcol,
-                        alarm_class, str);
-            }
-         }
-      }
-   }
-
    /*---- manual triggered equipment ----*/
 
    if (db_find_key(hDB, 0, "/equipment", &hkey) == DB_SUCCESS) {
@@ -1290,6 +1232,64 @@ void show_status_page(int refresh, char *cookie_wpwd)
          else
             rsprintf("<button type=\"button\" onclick=\"document.location.href='%s';\">%s</button>\n", ref, name);
        }
+   }
+
+   /*---- alarms ----*/
+
+   /* go through all triggered alarms */
+   db_find_key(hDB, 0, "/Alarms/Alarms", &hkey);
+   if (hkey) {
+      /* check global alarm flag */
+      flag = TRUE;
+      size = sizeof(flag);
+      db_get_value(hDB, 0, "/Alarms/Alarm System active", &flag, &size, TID_BOOL, TRUE);
+      if (flag) {
+         for (i = 0;; i++) {
+            db_enum_link(hDB, hkey, i, &hsubkey);
+
+            if (!hsubkey)
+               break;
+
+            size = sizeof(flag);
+            db_get_value(hDB, hsubkey, "Triggered", &flag, &size, TID_INT, TRUE);
+            if (flag) {
+               size = sizeof(alarm_class);
+               db_get_value(hDB, hsubkey, "Alarm Class", alarm_class, &size, TID_STRING,
+                            TRUE);
+
+               strcpy(bgcol, "red");
+               sprintf(str, "/Alarms/Classes/%s/Display BGColor", alarm_class);
+               size = sizeof(bgcol);
+               db_get_value(hDB, 0, str, bgcol, &size, TID_STRING, TRUE);
+
+               strcpy(fgcol, "black");
+               sprintf(str, "/Alarms/Classes/%s/Display FGColor", alarm_class);
+               size = sizeof(fgcol);
+               db_get_value(hDB, 0, str, fgcol, &size, TID_STRING, TRUE);
+
+               size = sizeof(msg);
+               db_get_value(hDB, hsubkey, "Alarm Message", msg, &size, TID_STRING, TRUE);
+
+               size = sizeof(j);
+               db_get_value(hDB, hsubkey, "Type", &j, &size, TID_INT, TRUE);
+
+               if (j == AT_EVALUATED) {
+                  size = sizeof(str);
+                  db_get_value(hDB, hsubkey, "Condition", str, &size, TID_STRING, TRUE);
+
+                  /* retrieve value */
+                  al_evaluate_condition(str, value_str);
+                  sprintf(str, msg, value_str);
+               } else
+                  strlcpy(str, msg, sizeof(str));
+
+               rsprintf("<tr><td colspan=6 bgcolor=\"%s\" align=center>", bgcol);
+
+               rsprintf("<font color=\"%s\" size=+3>%s: %s</font></tr>\n", fgcol,
+                        alarm_class, str);
+            }
+         }
+      }
    }
 
    /*---- run info ----*/
