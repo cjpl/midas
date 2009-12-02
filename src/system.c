@@ -2273,11 +2273,12 @@ INT ss_mutex_wait_for(MUTEX_T *mutex, INT timeout)
    {
       struct timespec st;
 
-      st.tv_sec = timeout / 1000;
-      st.tv_nsec = (timeout % 1000) * 1E6;
+      clock_gettime(CLOCK_REALTIME, &st);
+      st.tv_sec += timeout / 1000;
+      st.tv_nsec += (timeout % 1000) * 1E6;
       status = pthread_mutex_timedlock(mutex, &st);
       if (status != 0) {
-         cm_msg(MERROR, "ss_mutex_wait_for", "pthread_mutex_timedlock() failed, status = %d", status);
+         cm_msg(MERROR, "ss_mutex_wait_for", "pthread_mutex_timedlock() failed, error = %s", strerror(status));
          return SS_NO_MUTEX;
       }
 
