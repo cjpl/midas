@@ -2250,10 +2250,14 @@ INT ss_mutex_wait_for(MUTEX_T *mutex, INT timeout)
 #ifdef OS_WINNT
 
    status = WaitForSingleObject(*mutex, timeout == 0 ? INFINITE : timeout);
-   if (status == WAIT_FAILED)
+   if (status == WAIT_FAILED) {
+      cm_msg(MERROR, "ss_mutex_wait_for", "WaitForSingleObject() failed, status = %d", status);
       return SS_NO_MUTEX;
-   if (status == WAIT_TIMEOUT)
+   }
+   if (status == WAIT_TIMEOUT) {
+      cm_msg(MERROR, "ss_mutex_wait_for", "Mutex timeout after %d ms", timeout);
       return SS_TIMEOUT;
+   }
 
    return SS_SUCCESS;
 #endif                          /* OS_WINNT */
