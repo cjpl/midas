@@ -178,7 +178,7 @@ endif
 ifeq ($(OSTYPE),darwin)
 OS_DIR = darwin
 OSFLAGS = -DOS_LINUX -DOS_DARWIN -DHAVE_STRLCPY -fPIC -Wno-unused-function
-LIBS = -lpthread
+LIBS = -lpthread -lrt
 SPECIFIC_OS_PRG = $(BIN_DIR)/mlxspeaker
 NEED_STRLCPY=
 NEED_RANLIB=1
@@ -220,7 +220,7 @@ OS_DIR = linux
 OSFLAGS = -DOS_LINUX -fPIC -Wno-unused-function
 # add to compile midas in 32-bit mode
 # OSFLAGS += -m32
-LIBS = -lutil -lpthread
+LIBS = -lutil -lpthread -lrt
 SPECIFIC_OS_PRG = $(BIN_DIR)/mlxspeaker $(BIN_DIR)/dio
 endif
 
