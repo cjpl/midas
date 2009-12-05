@@ -967,8 +967,7 @@ void show_status_page(int refresh, char *cookie_wpwd)
    char *trans_name[] = { "Start", "Stop", "Pause", "Resume" };
    time_t now;
    DWORD difftime;
-   double analyzed, analyze_ratio, d;
-   double value, compression_ratio;
+   double d, value, compression_ratio;
    HNDLE hDB, hkey, hLKey, hsubkey, hkeytmp;
    KEY key;
    int  ftp_mode, previous_mode;
@@ -1407,8 +1406,10 @@ void show_status_page(int refresh, char *cookie_wpwd)
 
    /*---- Equipment list ----*/
 
+   rsprintf("<tr><td colspan=6><table border=1 width=100%%>\n");
+
    rsprintf("<tr><th>Equipment<th>Status<th>Events");
-   rsprintf("<th>Event rate[/s]<th>Data rate[MB/s]<th>Analyzed</tr>\n");
+   rsprintf("<th>Event rate[/s]<th>Data rate[MB/s]\n");
 
    if (db_find_key(hDB, 0, "/equipment", &hkey) == DB_SUCCESS) {
       for (i = 0;; i++) {
@@ -1467,36 +1468,10 @@ void show_status_page(int refresh, char *cookie_wpwd)
 
          rsprintf("<td align=center>%s<td align=center>%1.1lf<td align=center>%1.3lf\n",
                   str, equipment_stats.events_per_sec, equipment_stats.kbytes_per_sec/1024.0);
-
-         /* check if /Analyzer is defined */
-         if (db_find_key(hDB, 0, "/Analyzer", &hkeytmp) == DB_SUCCESS) {
-            /* get analyzed ratio */
-            analyze_ratio = 0;
-            sprintf(ref, "/Analyzer/%s", key.name);
-            db_find_key(hDB, 0, ref, &hkeytmp);
-            if (hkeytmp) {
-               size = sizeof(double);
-               if (db_get_value(hDB, hkeytmp, "Statistics/Events received",
-                                &analyzed, &size, TID_DOUBLE, TRUE) == DB_SUCCESS &&
-                   equipment_stats.events_sent > 0)
-                  analyze_ratio = analyzed / equipment_stats.events_sent;
-               if (analyze_ratio > 1)
-                  analyze_ratio = 1;
-            }
-
-            /* check if analyzer is running */
-            if (cm_exist("Analyzer", FALSE) == CM_SUCCESS
-                || cm_exist("FAL", FALSE) == CM_SUCCESS)
-               rsprintf("<td align=center bgcolor=#00FF00>%3.1lf%%</tr>\n",
-                        analyze_ratio * 100.0);
-            else
-               rsprintf("<td align=center bgcolor=#FF0000>%3.1lf%%</tr>\n",
-                        analyze_ratio * 100.0);
-         } else {
-            rsprintf("<td align=center>N/A</td></tr>\n");
-         }
       }
    }
+
+   rsprintf("</table></td></tr>\n");
 
    /*---- Logging channels ----*/
 
