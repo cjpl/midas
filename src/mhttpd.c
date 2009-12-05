@@ -963,7 +963,7 @@ void show_status_page(int refresh, char *cookie_wpwd)
    int i, j, k, h, m, s, status, size, type;
    BOOL flag, first;
    char str[1000], msg[256], name[32], ref[256], bgcol[32], fgcol[32], alarm_class[32],
-      value_str[256];
+      value_str[256], *p;
    char *trans_name[] = { "Start", "Stop", "Pause", "Resume" };
    time_t now;
    DWORD difftime;
@@ -1050,12 +1050,17 @@ void show_status_page(int refresh, char *cookie_wpwd)
 
    rsprintf("<tr><td colspan=6 bgcolor=#C0C0C0>\n");
 
-   BOOL hide_run_buttons = 0;
-   size = sizeof(hide_run_buttons);
-   db_get_value(hDB, 0, "/Experiment/Hide Run Buttons", &hide_run_buttons, &size, TID_BOOL, TRUE);
+   strlcpy(str, "Start, ODB, Messages, ELog, Alarms, Programs, History, Config, Help", sizeof(str));
+   size = sizeof(str);
+   db_get_value(hDB, 0, "/Experiment/Menu Buttons", str, &size, TID_STRING, TRUE);
 
-   if (!hide_run_buttons)
-      {
+   p = strtok(str, ", ");
+
+   while (p) {
+
+      strlcpy(str, p, sizeof(str));
+
+      if (stricmp(str, "Start") == 0) {
          if (runinfo.state == STATE_STOPPED)
             rsprintf("<input type=submit name=cmd %s value=Start>\n", runinfo.transition_in_progress?"disabled":"");
          else {
@@ -1088,17 +1093,11 @@ void show_status_page(int refresh, char *cookie_wpwd)
             if (runinfo.state == STATE_PAUSED)
                rsprintf("<input type=submit name=cmd %s value=Resume>\n", runinfo.transition_in_progress?"disabled":"");
          }
-      }
+      } else
+         rsprintf("<input type=submit name=cmd value=\"%s\">\n", str);
 
-   rsprintf("<input type=submit name=cmd value=ODB>\n");
-   rsprintf("<input type=submit name=cmd value=CNAF>\n");
-   rsprintf("<input type=submit name=cmd value=Messages>\n");
-   rsprintf("<input type=submit name=cmd value=ELog>\n");
-   rsprintf("<input type=submit name=cmd value=Alarms>\n");
-   rsprintf("<input type=submit name=cmd value=Programs>\n");
-   rsprintf("<input type=submit name=cmd value=History>\n");
-   rsprintf("<input type=submit name=cmd value=Config>\n");
-   rsprintf("<input type=submit name=cmd value=Help>\n");
+      p = strtok(NULL, ", ");
+   }
 
    /*---- script buttons ----*/
 
