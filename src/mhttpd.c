@@ -1409,7 +1409,7 @@ void show_status_page(int refresh, char *cookie_wpwd)
    rsprintf("<tr><td colspan=6><table border=1 width=100%%>\n");
 
    rsprintf("<tr><th>Equipment<th>Status<th>Events");
-   rsprintf("<th>Event rate[/s]<th>Data rate[MB/s]\n");
+   rsprintf("<th>Events[/s]<th>Data[MB/s]\n");
 
    if (db_find_key(hDB, 0, "/equipment", &hkey) == DB_SUCCESS) {
       for (i = 0;; i++) {
