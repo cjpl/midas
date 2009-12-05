@@ -879,16 +879,13 @@ int mscb_exchg(int fd, unsigned char *buffer, int *size, int len, int flags)
 #ifndef _USRDLL
          /* few retries are common, so only print warning starting from 5th retry */
          if (retry > 4 && status == MSCB_TIMEOUT)
-            printf("mscb_exchg: retry with %d ms timeout, fd = %d\n", timeout, fd);
+            printf("mscb_exchg: retry %d out of %d with %d ms timeout, fd = %d\n", 
+                    retry, mscb_fd[fd - 1].eth_max_retry, timeout, fd);
 #endif
-
-         //printf("call mrecv_udp, retry %d, timeout %d\n", retry, timeout);
 
          /* receive result on IN pipe */
          n = sizeof(ret_buf);
          status = mrecv_udp(fd, ret_buf, &n, timeout);
-
-         //printf("returned from mrecv_udp, status %d, read %d\n", status, n);
 
          /* return if invalid version */
          if (status == MSCB_SUBM_ERROR) {
@@ -3498,17 +3495,18 @@ int mscb_read_range(int fd, unsigned short adr, unsigned char index1, unsigned c
       if (status == MSCB_TIMEOUT) {
 #ifndef _USRDLL
          /* show error, but continue with retry */
-         printf("mscb_read_range: Timeout writing to submaster\n");
+         printf("mscb_read_range: Timeout %d out of %d writing to submaster %s:%d\n", 
+            n, mscb_max_retry, mscb_fd[fd-1].device, adr);
 #endif
-         debug_log("Timeout writing to submaster\n", 1);
+         debug_log("Timeout writing to submaster %s:%d\n", 1, mscb_fd[fd-1].device, adr);
          continue;
       }
       if (status == MSCB_SUBM_ERROR) {
 #ifndef _USRDLL
          /* show error, but continue with retry */
-         printf("mscb_read_range: Connection to submaster broken\n");
+         printf("mscb_read_range: Connection to submaster %s:%d broken\n", mscb_fd[fd-1].device, adr);
 #endif
-         debug_log("Connection to submaster broken\n", 1);
+         debug_log("Connection to submaster %s:%d broken\n", 1, mscb_fd[fd-1].device, adr);
          break;
       }
 
@@ -3523,9 +3521,9 @@ int mscb_read_range(int fd, unsigned short adr, unsigned char index1, unsigned c
 
       if (len == 1) {
 #ifndef _USRDLL
-         printf("mscb_read_range: Timeout from RS485 bus\n");
+         printf("mscb_read_range: Timeout from RS485 bus at %s:%d\n", mscb_fd[fd-1].device, adr);
 #endif
-         debug_log("Timeout from RS485 bus\n", 1);
+         debug_log("Timeout from RS485 bus at %s:%d\n", 1, mscb_fd[fd-1].device, adr);
          status = MSCB_TIMEOUT;
 
 #ifndef _USRDLL
