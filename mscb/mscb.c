@@ -2171,15 +2171,15 @@ int mscb_write(int fd, unsigned short adr, unsigned char index, void *data, int 
 
       if (len == 1) {
 #ifndef _USRDLL
-         printf("mscb_write: Timeout from RS485 bus\n");
+         printf("mscb_write: Timeout from RS485 bus at %s:%d\n", mscb_fd[fd-1].device, adr);
 #endif
-         debug_log("Timeout from RS485 bus\n", 1);
+         debug_log("Timeout from RS485 bus at %s:%d\n", 1, mscb_fd[fd-1].device, adr);
          status = MSCB_TIMEOUT;
 
 #ifndef _USRDLL
-         printf("mscb_write: Flush node communication\n");
+         printf("mscb_write: Flush node communication at %s:%d\n", mscb_fd[fd-1].device, adr);
 #endif
-         debug_log("Flush node communication\n", 1);
+         debug_log("Flush node communication at %s:%d\n", 1, mscb_fd[fd-1].device, adr);
          memset(buf, 0, sizeof(buf));
          mscb_exchg(fd, buf, NULL, 10, RS485_FLAG_BIT9 | RS485_FLAG_NO_ACK);
          Sleep(100);
@@ -2400,15 +2400,15 @@ int mscb_write_range(int fd, unsigned short adr, unsigned char index1, unsigned 
 
       if (len == 1) {
 #ifndef _USRDLL
-         printf("mscb_write: Timeout from RS485 bus\n");
+         printf("mscb_write: Timeout from RS485 bus at %s:%d\n", mscb_fd[fd-1].device, adr);
 #endif
-         debug_log("Timeout from RS485 bus\n", 1);
+         debug_log("Timeout from RS485 bus at %s:%d\n", 1, mscb_fd[fd-1].device, adr);
          status = MSCB_TIMEOUT;
 
 #ifndef _USRDLL
-         printf("mscb_write: Flush node communication\n");
+         printf("mscb_write: Flush node communication at %s:%d\n", mscb_fd[fd-1].device, adr);
 #endif
-         debug_log("Flush node communication\n", 1);
+         debug_log("Flush node communication at %s:%d\n", 1, mscb_fd[fd-1].device, adr);
          memset(buf, 0, sizeof(buf));
          mscb_exchg(fd, buf, NULL, 10, RS485_FLAG_BIT9 | RS485_FLAG_NO_ACK);
          Sleep(100);
@@ -3166,17 +3166,17 @@ int mscb_read(int fd, unsigned short adr, unsigned char index, void *data, int *
       if (status == MSCB_TIMEOUT) {
 #ifndef _USRDLL
          /* show error, but continue repeating */
-         printf("mscb_read: Timeout writing to submaster\n");
+         printf("mscb_read: Timeout writing to submaster %s:%d\n", mscb_fd[fd-1].device, adr);
 #endif
-         debug_log("Timeout writing to submaster\n", 1);
+         debug_log("Timeout writing to submaster %s:%d\n", 1, mscb_fd[fd-1].device, adr);
          continue;
       }
       if (status == MSCB_SUBM_ERROR) {
 #ifndef _USRDLL
          /* show error, but continue repeating */
-         printf("mscb_read: Connection to submaster broken\n");
+         printf("mscb_read: Connection to submaster %s:%d broken\n", mscb_fd[fd-1].device, adr);
 #endif
-         debug_log("Connection to submaster broken\n", 1);
+         debug_log("Connection to submaster %s:%d broken\n", 1, mscb_fd[fd-1].device, adr);
          break;
       }
 
@@ -3191,15 +3191,15 @@ int mscb_read(int fd, unsigned short adr, unsigned char index, void *data, int *
 
       if (len == 1) {
 #ifndef _USRDLL
-         printf("mscb_read: Timeout from RS485 bus\n");
+         printf("mscb_read: Timeout from RS485 bus at %s:%d\n", mscb_fd[fd-1].device, adr);
 #endif
-         debug_log("Timeout from RS485 bus\n", 1);
+         debug_log("Timeout from RS485 bus at %s:%d\n", 1, mscb_fd[fd-1].device, adr);
          status = MSCB_TIMEOUT;
 
 #ifndef _USRDLL
-         printf("mscb_read: Flush node communication\n");
+         printf("mscb_read: Flush node communication at %s:%d\n", mscb_fd[fd-1].device, adr);
 #endif
-         debug_log("Flush node communication\n", 1);
+         debug_log("Flush node communication at %s:%d\n", 1, mscb_fd[fd-1].device, adr);
          memset(buf, 0, sizeof(buf));
          mscb_exchg(fd, buf, NULL, 10, RS485_FLAG_BIT9 | RS485_FLAG_NO_ACK);
          Sleep(100);
@@ -3210,7 +3210,7 @@ int mscb_read(int fd, unsigned short adr, unsigned char index, void *data, int *
       if (len < 2) {
 #ifndef _USRDLL
          /* show error, but repeat request */
-         printf("mscb_read: Timeout reading from submaster\n");
+         printf("mscb_read: Timeout reading from submaster %s:%d\n", mscb_fd[fd-1].device, adr);
 #endif
          status = MSCB_TIMEOUT;
          continue;
@@ -3222,7 +3222,7 @@ int mscb_read(int fd, unsigned short adr, unsigned char index, void *data, int *
          status = MSCB_FORMAT_ERROR;
 #ifndef _USRDLL
          /* show error, but repeat */
-         printf("mscb_read: Read error on RS485 bus\n");
+         printf("mscb_read: Read error on RS485 bus at %s:%d\n", mscb_fd[fd-1].device, adr);
 #endif
          continue;
       }
@@ -3231,7 +3231,7 @@ int mscb_read(int fd, unsigned short adr, unsigned char index, void *data, int *
          status = MSCB_CRC_ERROR;
 #ifndef _USRDLL
          /* show error, but repeat */
-         printf("mscb_read: CRC error on RS485 bus\n");
+         printf("mscb_read: CRC error on RS485 bus at %s:%d\n", mscb_fd[fd-1].device, adr);
 #endif
          continue;
       }
@@ -3352,14 +3352,14 @@ int mscb_read_no_retries(int fd, unsigned short adr, unsigned char index, void *
    if (status == MSCB_TIMEOUT) {
 #ifndef _USRDLL
       /* show error, but continue repeating */
-      printf("mscb_read_no_retries: Timeout writing to submaster\n");
+      printf("mscb_read_no_retries: Timeout writing to submaster %s:%d\n", mscb_fd[fd-1].device, adr);
 #endif
       return MSCB_TIMEOUT;
    }
 
    if (len == 1) {
 #ifndef _USRDLL
-      printf("mscb_read_no_retries: Timeout from RS485 bus\n");
+      printf("mscb_read_no_retries: Timeout from RS485 bus at %s:%d\n", mscb_fd[fd-1].device, adr);
 #endif
       memset(buf, 0, sizeof(buf));
       mscb_exchg(fd, buf, NULL, 10, RS485_FLAG_BIT9 | RS485_FLAG_NO_ACK);
@@ -3369,7 +3369,7 @@ int mscb_read_no_retries(int fd, unsigned short adr, unsigned char index, void *
    if (len < 2) {
 #ifndef _USRDLL
       /* show error, but repeat request */
-      printf("mscb_read_no_retries: Timeout reading from submaster\n");
+      printf("mscb_read_no_retries: Timeout reading from submaster %s:%d\n", mscb_fd[fd-1].device, adr);
 #endif
       return MSCB_TIMEOUT;
    }
@@ -3380,7 +3380,7 @@ int mscb_read_no_retries(int fd, unsigned short adr, unsigned char index, void *
       || buf[len - 1] != crc) {
 #ifndef _USRDLL
       /* show error, but continue repeating */
-      printf("mscb_read_no_retries: CRC error on RS485 bus\n");
+         printf("mscb_read_no_retries: CRC error on RS485 bus at %s:%d\n", mscb_fd[fd-1].device, adr);
 #endif
       return MSCB_CRC_ERROR;
    }
@@ -3527,9 +3527,9 @@ int mscb_read_range(int fd, unsigned short adr, unsigned char index1, unsigned c
          status = MSCB_TIMEOUT;
 
 #ifndef _USRDLL
-         printf("mscb_read_range: Flush node communication\n");
+         printf("mscb_read_range: Flush node communication at %s:%d\n", mscb_fd[fd-1].device, adr);
 #endif
-         debug_log("Flush node communication\n", 1);
+         debug_log("Flush node communication at %s:%d\n", 1, mscb_fd[fd-1].device, adr);
          memset(buf, 0, sizeof(buf));
          mscb_exchg(fd, buf, NULL, 10, RS485_FLAG_BIT9 | RS485_FLAG_NO_ACK);
          Sleep(100);
@@ -3540,7 +3540,7 @@ int mscb_read_range(int fd, unsigned short adr, unsigned char index1, unsigned c
       if (len < 2) {
 #ifndef _USRDLL
          /* show error, but repeat request */
-         printf("mscb_read_range: Timeout reading from submaster\n");
+         printf("mscb_read_range: Timeout reading from submaster %s:%d\n", mscb_fd[fd-1].device, adr);
 #endif
          status = MSCB_TIMEOUT;
          continue;
@@ -3552,7 +3552,7 @@ int mscb_read_range(int fd, unsigned short adr, unsigned char index1, unsigned c
          status = MSCB_FORMAT_ERROR;
 #ifndef _USRDLL
          /* show error, but repeat */
-         printf("mscb_read_range: Read error on RS485 bus\n");
+         printf("mscb_read_range: Read error on RS485 bus at %s:%d\n", mscb_fd[fd-1].device, adr);
 #endif
          continue;
       }
@@ -3561,7 +3561,7 @@ int mscb_read_range(int fd, unsigned short adr, unsigned char index1, unsigned c
          status = MSCB_CRC_ERROR;
 #ifndef _USRDLL
          /* show error, but repeat */
-         printf("mscb_read_range: CRC error on RS485 bus\n");
+         printf("mscb_read_range: CRC error on RS485 bus at %s:%d\n", mscb_fd[fd-1].device, adr);
 #endif
          continue;
       }
