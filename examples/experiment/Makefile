@@ -39,7 +39,7 @@ OSFLAGS = -DOS_LINUX -Dextname
 CFLAGS = -g -O2 -Wall
 # add to compile in 32-bit mode
 # OSFLAGS += -m32
-LIBS = -lm -lz -lutil -lnsl -lpthread
+LIBS = -lm -lz -lutil -lnsl -lpthread -lrt
 endif
 
 #-----------------------
