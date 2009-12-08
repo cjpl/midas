@@ -2480,7 +2480,7 @@ void (*mfe_error_dispatcher)(const char *) = NULL;
 #define MFE_ERROR_SIZE 10
 char mfe_error_str[MFE_ERROR_SIZE][256];
 int mfe_error_r, mfe_error_w;
-MUTEX_T *mfe_mutex;
+MUTEX_T *mfe_mutex = NULL;
 
 void mfe_set_error(void (*dispatcher) (const char *))
 {
@@ -2490,7 +2490,7 @@ void mfe_set_error(void (*dispatcher) (const char *))
    mfe_error_r = mfe_error_w = 0;
    memset(mfe_error_str, 0, sizeof(mfe_error_str));
 
-   if (mfe_mutex == 0) {
+   if (mfe_mutex == NULL) {
       status = ss_mutex_create(&mfe_mutex);
       if (status != SS_SUCCESS && status != SS_CREATED)
          cm_msg(MERROR, "mfe_set_error", "Cannot create mutex\n");
@@ -2511,13 +2511,15 @@ void mfe_error(const char *error)
 
 void mfe_error_check(void)
 {
-   ss_mutex_wait_for(mfe_mutex, 1000);
-   if (mfe_error_w != mfe_error_r) {
-      if (mfe_error_dispatcher != NULL)
-         mfe_error_dispatcher(mfe_error_str[mfe_error_r]);
-      mfe_error_r = (mfe_error_r + 1) % MFE_ERROR_SIZE;
+   if (mfe_mutex != NULL) {
+      ss_mutex_wait_for(mfe_mutex, 1000);
+      if (mfe_error_w != mfe_error_r) {
+         if (mfe_error_dispatcher != NULL)
+	    mfe_error_dispatcher(mfe_error_str[mfe_error_r]);
+         mfe_error_r = (mfe_error_r + 1) % MFE_ERROR_SIZE;
+      }
+      ss_mutex_release(mfe_mutex);
    }
-   ss_mutex_release(mfe_mutex);
 }
 
 /*------------------------------------------------------------------*/
