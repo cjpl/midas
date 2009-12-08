@@ -27,7 +27,7 @@ OSTYPE = $(shell uname)
 # lines below.
 
 # This is for Linux ----------------
-LIBS = -lbsd -lm -lutil -lpthread
+LIBS = -lbsd -lm -lutil -lpthread -lrt
 OSFLAGS = -DOS_LINUX
 
 #-------------------------------------------------------------------
