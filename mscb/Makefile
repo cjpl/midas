@@ -50,7 +50,7 @@ FLAGS         = -Wall -Wuninitialized -I$(MXMLDIR) -I$(MIDASINC)
 STRLCPY       = strlcpy.o
 
 ifeq ($(OSTYPE),linux)
-CC   += -DOS_LINUX -DHAVE_LIBUSB -fpic
+CC   += -DOS_LINUX -DHAVE_LIBUSB -DHAVE_USB -fpic
 LIBS  = -lusb
 endif
 

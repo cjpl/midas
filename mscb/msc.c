@@ -829,7 +829,7 @@ void cmd_loop(int fd, char *cmd, unsigned short adr)
                status = mscb_ping(fd, addr, 1);
 
                if (status != MSCB_SUCCESS) {
-                  if (status == MSCB_MUTEX)
+                  if (status == MSCB_SEMAPHORE)
                      printf("MSCB used by other process\n");
                   else if (status == MSCB_SUBM_ERROR)
                      printf("Error: Submaster not responding\n");
@@ -1817,7 +1817,12 @@ int main(int argc, char *argv[])
          printf("\nSubmaster at %s has old version\n", device);
          puts("Please upgrade submaster software\n");
       } else if (fd == EMSCB_NOT_FOUND) {
+#ifdef HAVE_USB
          printf("\nCannot find USB submaster\n");
+#else
+         printf("\nNo USB support available in this verson of msc\n");
+         printf("An ethernet node address must explicitly be supplied via the '-d [host]' flag\n");
+#endif
       } else if (fd == EMSCB_WRONG_PASSWORD) {
          printf("\nWrong password\n");
       } else if (fd == EMSCB_NO_WRITE_ACCESS) {

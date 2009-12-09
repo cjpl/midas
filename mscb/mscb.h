@@ -184,7 +184,7 @@ typedef struct {
    int type;
    int fd;
    int remote_fd;
-   int mutex_handle;
+   int semaphore_handle;
    int seq_nr;
    unsigned char eth_addr[16];
    MUSB_INTERFACE *ui;
@@ -200,7 +200,7 @@ extern MSCB_FD mscb_fd[MSCB_MAX_FD];
 #define MSCB_TIMEOUT        3
 #define MSCB_TIMEOUT_BUS    4
 #define MSCB_INVAL_PARAM    5
-#define MSCB_MUTEX          6
+#define MSCB_SEMAPHORE      6
 #define MSCB_FORMAT_ERROR   7
 #define MSCB_NO_MEM         8
 #define MSCB_SUBM_ERROR     9
@@ -227,11 +227,14 @@ extern MSCB_FD mscb_fd[MSCB_MAX_FD];
 #define EMSCB_SUBM_VERSION      -12
 
 /*---- Byte and Word swapping big endian <-> little endian ---------*/
+#ifndef WORD_SWAP
 #define WORD_SWAP(x) { unsigned char _tmp;                               \
                        _tmp= *((unsigned char *)(x));                    \
                        *((unsigned char *)(x)) = *(((unsigned char *)(x))+1);     \
                        *(((unsigned char *)(x))+1) = _tmp; }
+#endif
 
+#ifndef DWORD_SWAP
 #define DWORD_SWAP(x) { unsigned char _tmp;                              \
                        _tmp= *((unsigned char *)(x));                    \
                        *((unsigned char *)(x)) = *(((unsigned char *)(x))+3);     \
@@ -239,6 +242,7 @@ extern MSCB_FD mscb_fd[MSCB_MAX_FD];
                        _tmp= *(((unsigned char *)(x))+1);                \
                        *(((unsigned char *)(x))+1) = *(((unsigned char *)(x))+2); \
                        *(((unsigned char *)(x))+2) = _tmp; }
+#endif
 
 /*---- function declarations ---------------------------------------*/
 

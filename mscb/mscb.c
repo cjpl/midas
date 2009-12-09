@@ -65,7 +65,7 @@
 #include <arpa/inet.h>
 #include <netdb.h>
 
-#ifdef HAVE_LIBUSB
+#ifdef HAVE_USB
 #include <usb.h>
 #endif
 
@@ -76,13 +76,18 @@
 
 #include "strlcpy.h"
 
+#ifdef HAVE_USB
 #include "musbstd.h"
+#endif
+
 #include "mscb.h"
 #include "mscbrpc.h"
 
 /*------------------------------------------------------------------*/
 
 MSCB_FD mscb_fd[MSCB_MAX_FD];
+
+#ifdef HAVE_USB
 
 /* usb endpoints */
 
@@ -97,6 +102,8 @@ MSCB_FD mscb_fd[MSCB_MAX_FD];
 #define EP_WRITE 0x02
 
 #endif
+
+#endif // HAVE_USB
 
 /* constants */
 
@@ -384,18 +391,18 @@ int EXPRT mscb_set_eth_max_retry(int fd, int eth_max_retry)
    return old_retry;
 }
 
-/*---- mutex functions ---------------------------------------------*/
+/*---- semaphore functions ------------------------------------------*/
 
-int mscb_mutex_create(char *device)
+int mscb_semaphore_create(char *device)
 {
 #ifdef _MSC_VER
-   HANDLE mutex_handle;
+   HANDLE semaphore_handle;
 
-   mutex_handle = CreateMutex(NULL, FALSE, device);
-   if (mutex_handle == 0)
+   semaphore_handle = CreateMutex(NULL, FALSE, device);
+   if (semaphore_handle == 0)
       return 0;
 
-   return (int)mutex_handle;
+   return (int)semaphore_handle;
 
 #elif defined(OS_LINUX)
 
@@ -410,7 +417,7 @@ int mscb_mutex_create(char *device)
 #endif
 
    struct semid_ds buf;
-   int key, status, fh, mutex_handle;
+   int key, status, fh, semaphore_handle;
    char str[256];
 
    status = 1;
@@ -427,13 +434,13 @@ int mscb_mutex_create(char *device)
    }
 
    /* create or get semaphore */
-   mutex_handle = semget(key, 1, 0);
-   if (mutex_handle < 0) {
-      mutex_handle = semget(key, 1, IPC_CREAT);
+   semaphore_handle = semget(key, 1, 0);
+   if (semaphore_handle < 0) {
+      semaphore_handle = semget(key, 1, IPC_CREAT);
       status = 2;
    }
 
-   if (mutex_handle < 0) {
+   if (semaphore_handle < 0) {
       printf("semget() failed, errno = %d", errno);
       return 0;
    }
@@ -443,16 +450,16 @@ int mscb_mutex_create(char *device)
    buf.sem_perm.mode = 0666;
    arg.buf = &buf;
 
-   semctl(mutex_handle, 0, IPC_SET, arg);
+   semctl(semaphore_handle, 0, IPC_SET, arg);
 
    /* if semaphore was created, set value to one */
    if (status == 2) {
       arg.val = 1;
-      if (semctl(mutex_handle, 0, SETVAL, arg) < 0)
+      if (semctl(semaphore_handle, 0, SETVAL, arg) < 0)
          return 0;
    }
 
-   return mutex_handle;
+   return semaphore_handle;
 #endif // OS_LINUX
 }
 
@@ -466,7 +473,7 @@ int mscb_lock(int fd)
    if (fd);
 
    /* wait with a timeout of 10 seconds */
-   status = WaitForSingleObject((HANDLE)mscb_fd[fd - 1].mutex_handle, 10000);
+   status = WaitForSingleObject((HANDLE)mscb_fd[fd - 1].semaphore_handle, 10000);
 
    if (status == WAIT_FAILED)
       return 0;
@@ -475,12 +482,12 @@ int mscb_lock(int fd)
 
 #elif defined(OS_LINUX)
 
-#ifdef HAVE_LIBUSB
+#ifdef HAVE_USB
    //if (mscb_fd[fd - 1].type == MSCB_TYPE_USB) {
    //   if (usb_claim_interface((usb_dev_handle *) mscb_fd[fd - 1].ui->dev, 0) < 0)
    //     return 0;
    //}
-#endif // HAVE_LIBUSB
+#endif // HAVE_USB
 
    if (mscb_fd[fd - 1].type == MSCB_TYPE_ETH) {
 
@@ -506,7 +513,7 @@ int mscb_lock(int fd)
       time(&start_time);
 
       do {
-         status = semop(mscb_fd[fd - 1].mutex_handle, &sb, 1);
+         status = semop(mscb_fd[fd - 1].semaphore_handle, &sb, 1);
 
          /* return on success */
          if (status == 0)
@@ -539,17 +546,17 @@ int mscb_release(int fd)
 
    if (fd);
 
-   status = ReleaseMutex((HANDLE)mscb_fd[fd - 1].mutex_handle);
+   status = ReleaseMutex((HANDLE)mscb_fd[fd - 1].semaphore_handle);
    if (status == FALSE)
       return 0;
 
 #elif defined(OS_LINUX)
 
    if (mscb_fd[fd - 1].type == MSCB_TYPE_USB) {
-#ifdef HAVE_LIBUSB
+#ifdef HAVE_USB
      //      if (usb_release_interface((usb_dev_handle *) mscb_fd[fd - 1].ui->dev, 0) < 0)
      //    return 0;
-#endif // HAVE_LIBUSB
+#endif // HAVE_USB
    }
      
    else if (mscb_fd[fd - 1].type == MSCB_TYPE_ETH) {
@@ -563,7 +570,7 @@ int mscb_release(int fd)
       sb.sem_flg = SEM_UNDO;
 
       do {
-         status = semop(mscb_fd[fd - 1].mutex_handle, &sb, 1);
+         status = semop(mscb_fd[fd - 1].semaphore_handle, &sb, 1);
 
          /* return on success */
          if (status == 0)
@@ -583,6 +590,8 @@ int mscb_release(int fd)
 }
 
 /*---- Low level routines for USB communication --------------------*/
+
+#ifdef HAVE_USB
 
 int subm250_check(MUSB_INTERFACE *ui)
 {
@@ -628,6 +637,8 @@ int subm250_open(MUSB_INTERFACE **ui, int usb_index)
 
    return EMSCB_NOT_FOUND;
 }
+
+#endif // HAVE_USB
 
 /*---- Low level routines for UDP communication --------------------*/
 
@@ -746,19 +757,22 @@ int mscb_exchg(int fd, unsigned char *buffer, int *size, int len, int flags)
 \********************************************************************/
 {
    int i, n, retry, timeout, status;
-   unsigned char usb_buf[65], eth_buf[1024], ret_buf[1024];
+   unsigned char eth_buf[1024], ret_buf[1024];
    UDP_HEADER *pudp;
 
    if (fd > MSCB_MAX_FD || fd < 1 || !mscb_fd[fd - 1].type)
       return MSCB_INVAL_PARAM;
 
    if (mscb_lock(fd) != MSCB_SUCCESS)
-      return MSCB_MUTEX;
+      return MSCB_SEMAPHORE;
 
    /*---- USB code ----*/
 
    if (mscb_fd[fd - 1].type == MSCB_TYPE_USB) {
 
+#ifdef HAVE_USB
+      unsigned char usb_buf[65];
+      
       if (len >= 64 || len < 1) {
          mscb_release(fd);
          return MSCB_INVAL_PARAM;
@@ -818,6 +832,8 @@ int mscb_exchg(int fd, unsigned char *buffer, int *size, int len, int flags)
          n += i;
       } while (i == 60);
       *size = n;
+
+#endif // HAVE_USB
    }
 
    /*---- Ethernet code ----*/
@@ -1091,11 +1107,12 @@ int mscb_init(char *device, int bufsize, char *password, int debug)
 
    /*---- initialize submaster ----*/
 
-   if (mscb_fd[index].mutex_handle == 0)
-      mscb_fd[index].mutex_handle = mscb_mutex_create(device);
+   if (mscb_fd[index].semaphore_handle == 0)
+      mscb_fd[index].semaphore_handle = mscb_semaphore_create(device);
 
    if (mscb_fd[index].type == MSCB_TYPE_USB) {
 
+#ifdef HAVE_USB
       if (!mscb_lock(index + 1)) {
          debug_log("return EMSCB_LOCKED\n", 0);
          memset(&mscb_fd[index], 0, sizeof(MSCB_FD));
@@ -1136,6 +1153,7 @@ int mscb_init(char *device, int bufsize, char *password, int debug)
          if (n == 4)
             break;
       }
+#endif // HAVE_USB   
    }
 
    if (mscb_fd[index].type == MSCB_TYPE_ETH) {
@@ -1253,8 +1271,10 @@ int mscb_exit(int fd)
       mrpc_disconnect(mscb_fd[fd - 1].fd);
    }
 
+#ifdef HAVE_USB
    if (mscb_fd[fd - 1].type == MSCB_TYPE_USB)
       musb_close(mscb_fd[fd - 1].ui);
+#endif
 
    if (mscb_fd[fd - 1].type == MSCB_TYPE_ETH)
       mrpc_disconnect(mscb_fd[fd - 1].fd);
@@ -1337,7 +1357,7 @@ int mscb_addr(int fd, int cmd, unsigned short adr, int retry)
   Function value:
     MSCB_SUCCESS            Successful completion
     MSCB_TIMEOUT            Timeout receiving ping acknowledge
-    MSCB_MUTEX              Cannot obtain mutex for mscb
+    MSCB_SEMAPHORE          Cannot obtain semaphore for mscb
 
 \********************************************************************/
 {
@@ -1417,7 +1437,7 @@ int mscb_reboot(int fd, int addr, int gaddr, int broadcast)
 
   Function value:
     MSCB_SUCCESS            Successful completion
-    MSCB_MUTEX              Cannot obtain mutex for mscb
+    MSCB_SEMAPHORE          Cannot obtain semaphore for mscb
     MSCB_TIMEOUT            Timeout receiving ping acknowledge
 
 \********************************************************************/
@@ -1478,7 +1498,7 @@ int mscb_subm_reset(int fd)
 
   Function value:
     MSCB_SUCCESS            Successful completion
-    MSCB_MUTEX              Cannot obtain mutex for mscb
+    MSCB_SEMPHORE           Cannot obtain semaphore for mscb
 
 \********************************************************************/
 {
@@ -1512,12 +1532,13 @@ int mscb_subm_reset(int fd)
       }
 
    } else if (mscb_fd[fd - 1].type == MSCB_TYPE_USB) {
-
+#ifdef HAVE_USB
       buf[0] = MCMD_INIT;
       mscb_exchg(fd, buf, NULL, 1, RS485_FLAG_CMD | RS485_FLAG_NO_ACK);
       musb_close(mscb_fd[fd - 1].ui);
       Sleep(1000);
       subm250_open(&mscb_fd[fd - 1].ui, atoi(mscb_fd[fd - 1].device+3));
+#endif
    }
 
    /* send 0's to overflow partially filled node receive buffer */
@@ -1549,7 +1570,7 @@ int mscb_ping(int fd, unsigned short adr, int quick)
   Function value:
     MSCB_SUCCESS            Successful completion
     MSCB_TIMEOUT            Timeout receiving data
-    MSCB_MUTEX              Cannot obtain mutex for mscb
+    MSCB_SEMAPHORE          Cannot obtain semaphore for mscb
 
 \********************************************************************/
 {
@@ -1597,7 +1618,7 @@ int mscb_info(int fd, unsigned short adr, MSCB_INFO * info)
     MSCB_SUCCESS            Successful completion
     MSCB_TIMEOUT            Timeout receiving data
     MSCB_CRC_ERROR          CRC error
-    MSCB_MUTEX              Cannot obtain mutex for mscb
+    MSCB_SEMAPHORE          Cannot obtain semaphore for mscb
 
 \********************************************************************/
 {
@@ -1667,7 +1688,7 @@ int mscb_uptime(int fd, unsigned short adr, unsigned int *uptime)
     MSCB_SUCCESS            Successful completion
     MSCB_TIMEOUT            Timeout receiving data
     MSCB_CRC_ERROR          CRC error
-    MSCB_MUTEX              Cannot obtain mutex for mscb
+    MSCB_SEMAPHORE          Cannot obtain semaphore for mscb
 
 \********************************************************************/
 {
@@ -1727,7 +1748,7 @@ int mscb_info_variable(int fd, unsigned short adr, unsigned char index, MSCB_INF
     MSCB_TIMEOUT            Timeout receiving data
     MSCB_CRC_ERROR          CRC error
 
-    MSCB_MUTEX              Cannot obtain mutex for mscb
+    MSCB_SEMAPHORE          Cannot obtain semaphore for mscb
 
 \********************************************************************/
 {
@@ -1820,7 +1841,7 @@ int mscb_set_node_addr(int fd, int addr, int gaddr, int broadcast,
 
   Function value:
     MSCB_SUCCESS            Successful completion
-    MSCB_MUTEX              Cannot obtain mutex for mscb
+    MSCB_SEMAPHORE          Cannot obtain semaphore for mscb
 
 \********************************************************************/
 {
@@ -1904,7 +1925,7 @@ int mscb_set_group_addr(int fd, int addr, int gaddr, int broadcast, unsigned sho
 
   Function value:
     MSCB_SUCCESS            Successful completion
-    MSCB_MUTEX              Cannot obtain mutex for mscb
+    MSCB_SEMAPHORE          Cannot obtain semaphore for mscb
 
 \********************************************************************/
 {
@@ -1976,7 +1997,7 @@ int mscb_set_name(int fd, unsigned short adr, char *name)
 
   Function value:
     MSCB_SUCCESS            Successful completion
-    MSCB_MUTEX              Cannot obtain mutex for mscb
+    MSCB_SEMAPHORE          Cannot obtain semaphore for mscb
 
 \********************************************************************/
 {
@@ -2030,7 +2051,7 @@ int mscb_write_group(int fd, unsigned short adr, unsigned char index, void *data
 
   Function value:
     MSCB_SUCCESS            Successful completion
-    MSCB_MUTEX              Cannot obtain mutex for mscb
+    MSCB_SEMAPHORE          Cannot obtain semaphore for mscb
 
 \********************************************************************/
 {
@@ -2087,7 +2108,7 @@ int mscb_write(int fd, unsigned short adr, unsigned char index, void *data, int 
     MSCB_TIMEOUT            Timeout receiving acknowledge
     MSCB_CRC_ERROR          CRC error
     MSCB_INVAL_PARAM        Parameter "size" has invalid value
-    MSCB_MUTEX              Cannot obtain mutex for mscb
+    MSCB_SEMAPHORE          Cannot obtain semaphore for mscb
 
 \********************************************************************/
 {
@@ -2229,7 +2250,7 @@ int mscb_write_no_retries(int fd, unsigned short adr, unsigned char index, void 
     MSCB_TIMEOUT            Timeout receiving acknowledge
     MSCB_CRC_ERROR          CRC error
     MSCB_INVAL_PARAM        Parameter "size" has invalid value
-    MSCB_MUTEX              Cannot obtain mutex for mscb
+    MSCB_SEMAPHORE          Cannot obtain semaphore for mscb
 
 \********************************************************************/
 {
@@ -2335,7 +2356,7 @@ int mscb_write_range(int fd, unsigned short adr, unsigned char index1, unsigned 
     MSCB_TIMEOUT            Timeout receiving acknowledge
     MSCB_CRC_ERROR          CRC error
     MSCB_INVAL_PARAM        Parameter "size" has invalid value
-    MSCB_MUTEX              Cannot obtain mutex for mscb
+    MSCB_SEMAPHORE          Cannot obtain semaphore for mscb
 
 \********************************************************************/
 {
@@ -2457,7 +2478,7 @@ int mscb_flash(int fd, int addr, int gaddr, int broadcast)
     MSCB_TIMEOUT            Timeout receiving acknowledge
     MSCB_CRC_ERROR          CRC error
     MSCB_INVAL_PARAM        Parameter "size" has invalid value
-    MSCB_MUTEX              Cannot obtain mutex for mscb
+    MSCB_SEMAPHORE          Cannot obtain semaphore for mscb
 
 \********************************************************************/
 {
@@ -2532,7 +2553,7 @@ int mscb_set_baud(int fd, int baud)
     MSCB_TIMEOUT            Timeout receiving acknowledge
     MSCB_CRC_ERROR          CRC error
     MSCB_INVAL_PARAM        Parameter "size" has invalid value
-    MSCB_MUTEX              Cannot obtain mutex for mscb
+    MSCB_SEMAPHORE          Cannot obtain semaphore for mscb
 
 \********************************************************************/
 {
@@ -2577,7 +2598,7 @@ int mscb_upload(int fd, unsigned short adr, unsigned char *buffer, int size, int
     MSCB_TIMEOUT            Timeout receiving acknowledge
     MSCB_CRC_ERROR          CRC error
     MSCB_INVAL_PARAM        Parameter "size" has invalid value
-    MSCB_MUTEX              Cannot obtain mutex for mscb
+    MSCB_SEMAPHORE          Cannot obtain semaphore for mscb
     MSCB_FORMAT_ERROR       Error in HEX file format
 
 \********************************************************************/
@@ -2932,7 +2953,7 @@ int mscb_verify(int fd, unsigned short adr, unsigned char *buffer, int size)
     MSCB_TIMEOUT            Timeout receiving acknowledge
     MSCB_CRC_ERROR          CRC error
     MSCB_INVAL_PARAM        Parameter "size" has invalid value
-    MSCB_MUTEX              Cannot obtain mutex for mscb
+    MSCB_SEMAPHORE          Cannot obtain semaphore for mscb
     MSCB_FORMAT_ERROR       Error in HEX file format
 
 \********************************************************************/
@@ -3120,7 +3141,7 @@ int mscb_read(int fd, unsigned short adr, unsigned char index, void *data, int *
     MSCB_TIMEOUT            Timeout receiving acknowledge
     MSCB_CRC_ERROR          CRC error
     MSCB_INVAL_PARAM        Parameter "size" has invalid value
-    MSCB_MUTEX              Cannot obtain mutex for mscb
+    MSCB_SEMAPHORE          Cannot obtain semaphore for mscb
     MSCB_INVALID_INDEX      index parameter too large
 
 \********************************************************************/
@@ -3314,7 +3335,7 @@ int mscb_read_no_retries(int fd, unsigned short adr, unsigned char index, void *
     MSCB_TIMEOUT            Timeout receiving acknowledge
     MSCB_CRC_ERROR          CRC error
     MSCB_INVAL_PARAM        Parameter "size" has invalid value
-    MSCB_MUTEX              Cannot obtain mutex for mscb
+    MSCB_SEMAPHORE          Cannot obtain semaphore for mscb
 
 \********************************************************************/
 {
@@ -3451,7 +3472,7 @@ int mscb_read_range(int fd, unsigned short adr, unsigned char index1, unsigned c
     MSCB_TIMEOUT            Timeout receiving acknowledge
     MSCB_CRC_ERROR          CRC error
     MSCB_INVAL_PARAM        Parameter "size" has invalid value
-    MSCB_MUTEX              Cannot obtain mutex for mscb
+    MSCB_SEMAPHORE          Cannot obtain semaphore for mscb
 
 \********************************************************************/
 {
@@ -3648,7 +3669,7 @@ int mscb_user(int fd, unsigned short adr, void *param, int size, void *result, i
     MSCB_SUCCESS            Successful completion
     MSCB_TIMEOUT            Timeout receiving data
     MSCB_CRC_ERROR          CRC error
-    MSCB_MUTEX              Cannot obtain mutex for mscb
+    MSCB_SEMAPHORE          Cannot obtain semaphore for mscb
     MSCB_FORMAT_ERROR       "size" parameter too large
 
 \********************************************************************/
@@ -3725,7 +3746,7 @@ int mscb_echo(int fd, unsigned short adr, unsigned char d1, unsigned char *d2)
     MSCB_SUCCESS            Successful completion
     MSCB_TIMEOUT            Timeout receiving data
     MSCB_CRC_ERROR          CRC error
-    MSCB_MUTEX              Cannot obtain mutex for mscb
+    MSCB_SEMAPHORE          Cannot obtain semaphore for mscb
     MSCB_FORMAT_ERROR       "size" parameter too large
 
 \********************************************************************/
@@ -3807,7 +3828,7 @@ int mscb_link(int fd, unsigned short adr, unsigned char index, void *data, int s
     MSCB_SUCCESS            Successful completion
     MSCB_TIMEOUT            Timeout receiving data
     MSCB_CRC_ERROR          CRC error
-    MSCB_MUTEX              Cannot obtain mutex for mscb
+    MSCB_SEMAPHORE          Cannot obtain semaphore for mscb
     MSCB_FORMAT_ERROR       "size" parameter too large
     MSCB_NO_MEM             Out of memory
 
@@ -3916,6 +3937,7 @@ int mscb_select_device(char *device, int size, int select)
 
 \********************************************************************/
 {
+#ifdef HAVE_USB
    char list[10][256], str[256];
    int status, usb_index, found, i, n, index, error_code;
    MUSB_INTERFACE *ui;
@@ -3944,7 +3966,7 @@ int mscb_select_device(char *device, int size, int select)
          break;
 
       sprintf(str, "usb%d", found);
-      mscb_fd[index].mutex_handle = mscb_mutex_create(str);
+      mscb_fd[index].semaphore_handle = mscb_semaphore_create(str);
 
       if (!mscb_lock(index + 1)) {
          printf("lock failed\n");
@@ -3986,6 +4008,9 @@ int mscb_select_device(char *device, int size, int select)
    } while (1);
 
    return MSCB_SUCCESS;
+#else // HAVE_USB
+   return 0;
+#endif
 }
 
 /*------------------------------------------------------------------*/
@@ -4119,7 +4144,7 @@ void mscb_scan_udp()
 #endif
 
    mscb_fd[0].type = MSCB_TYPE_ETH; 
-   mscb_fd[0].mutex_handle = mscb_mutex_create("mscb");
+   mscb_fd[0].semaphore_handle = mscb_semaphore_create("mscb");
    mscb_fd[0].fd = socket(AF_INET, SOCK_DGRAM, 0);
    if (mscb_fd[0].fd == -1) {
       printf("cannot create socket\n");
@@ -4238,7 +4263,7 @@ int mscb_set_time(int fd, int addr, int gaddr, int broadcast)
 
   Function value:
     MSCB_SUCCESS            Successful completion
-    MSCB_MUTEX              Cannot obtain mutex for mscb
+    MSCB_SEMAPHORE          Cannot obtain semaphore for mscb
     MSCB_TIMEOUT            Timeout receiving ping acknowledge
 
 \********************************************************************/
