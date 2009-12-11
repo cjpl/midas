@@ -12,7 +12,9 @@
 #ifndef INCLUDE_MSCB_H
 #define INCLUDE_MSCB_H
 
+#ifdef HAVE_USB
 #include <musbstd.h>
+#endif
 
 /*---- MSCB commands -----------------------------------------------*/
 
@@ -187,7 +189,9 @@ typedef struct {
    int semaphore_handle;
    int seq_nr;
    unsigned char eth_addr[16];
+#ifdef HAVE_USB
    MUSB_INTERFACE *ui;
+#endif
    int eth_max_retry;
 } MSCB_FD;
 
