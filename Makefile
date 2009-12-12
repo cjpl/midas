@@ -89,11 +89,21 @@ NEED_STRLCPY=1
 #
 MXML_DIR=../mxml
 
+#
+# Directory in which mscb.c/h resides. These files are necessary for
+# the optional MSCB support in mhttpd
+#
+MSCB_DIR=./mscb
 
 #
 # Optional zlib support for data compression in the mlogger and in the analyzer
 #
 NEED_ZLIB=
+
+#
+# Optional MSCB support for mhttpd
+#
+NEED_MSCB=1
 
 #####################################################################
 # Nothing needs to be modified after this line 
@@ -104,7 +114,7 @@ NEED_ZLIB=
 #
 CC = cc $(USERFLAGS)
 CXX = g++ $(USERFLAGS)
-CFLAGS = -g -O2 -Wall -Wuninitialized -I$(INC_DIR) -I$(DRV_DIR) -I$(MXML_DIR) -L$(LIB_DIR) -DINCLUDE_FTPLIB $(MIDAS_PREF_FLAGS)
+CFLAGS = -g -O2 -Wall -Wuninitialized -I$(INC_DIR) -I$(DRV_DIR) -I$(MXML_DIR) -I$(MSCB_DIR) -L$(LIB_DIR) -DINCLUDE_FTPLIB $(MIDAS_PREF_FLAGS)
 
 #-----------------------
 # Ovevwrite MAX_EVENT_SIZE with environment variable
@@ -408,6 +418,11 @@ endif # ROOTSYS
 ifdef NEED_ZLIB
 CFLAGS     += -DHAVE_ZLIB
 LIBS       += -lz
+endif
+
+ifdef NEED_MSCB
+CFLAGS     += -DHAVE_MSCB
+LIBS       += $(MSCB_DIR)/mscb.c
 endif
 
 $(BIN_DIR)/mlogger: $(BIN_DIR)/%: $(SRC_DIR)/%.c
