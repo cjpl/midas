@@ -21,6 +21,8 @@
 #include <conio.h>
 #include <sys/timeb.h>
 #include <time.h>
+#include <io.h>
+#include <fcntl.h>
 
 #elif defined(OS_DARWIN)
 
@@ -110,10 +112,8 @@ MSCB_FD mscb_fd[MSCB_MAX_FD];
 #define TO_SHORT          100   /* 100 ms */
 #define TO_LONG          5000   /* 5 s    */
 
-extern int _debug_flag;         /* global debug flag */
-extern void debug_log(char *format, int start, ...);
-extern int _debug_flag1;        /* global debug flag */
-extern void debug_log1(char *format, ...);
+int _debug_flag;         /* global debug flag */
+void debug_log(char *format, int start, ...);
 
 /* RS485 flags for USB submaster */
 #define RS485_FLAG_BIT9      (1<<0)
@@ -181,6 +181,49 @@ int kbhit()
 }
 
 #endif
+
+/*------------------------------------------------------------------*/
+
+void debug_log(char *format, int start, ...)
+{
+   int fh;
+   char str[2000], line[2000];
+   va_list argptr;
+   struct timeb tb;
+
+   if (!_debug_flag)
+      return;
+
+   line[0] = 0;
+   if (start) {
+#ifdef OS_DARWIN
+      assert(!"No ftime(), sorry!");
+#else
+      ftime(&tb);
+#endif
+      strcpy(line, ctime(&tb.time) + 11);
+      sprintf(line + 8, ".%03d ", tb.millitm);
+   }
+
+   va_start(argptr, start);
+   vsprintf(str, (char *) format, argptr);
+   va_end(argptr);
+
+   strcat(line, str);
+
+   /* if debug flag equals 2, write to stdout */
+   if (_debug_flag == 2)
+      write(fileno(stdout), line, strlen(line));
+   else {
+      /* else write to file */
+      fh = open("mscb_debug.log", O_CREAT | O_WRONLY | O_APPEND, 0644);
+      if (fh < 0)
+         return;
+
+      write(fh, line, strlen(line));
+      close(fh);
+   }
+}
 
 /*------------------------------------------------------------------*/
 
@@ -924,7 +967,7 @@ int mscb_exchg(int fd, unsigned char *buffer, int *size, int len, int flags)
 
          /*
          if (retry > 0)
-            debug_log1("RETRY %d: dev=%s, status=%d, n=%d\n", retry, mscb_fd[fd-1].device, status, n);
+            debug_log("RETRY %d: dev=%s, status=%d, n=%d\n", retry, mscb_fd[fd-1].device, status, n);
          */
 
          if (flags & RS485_FLAG_NO_RETRY) {
@@ -1040,9 +1083,6 @@ int mscb_init(char *device, int bufsize, char *password, int debug)
    /* set global debug flag */
    _debug_flag = (debug == 1);
    
-   /* set global debug flag for error debugging */
-   _debug_flag1 = 0;
-
    debug_log("mscb_init(device=\"%s\",bufsize=%d,password=\"%s\",debug=%d) ", 1, device, bufsize, password, debug);
 
    /* clear caches */

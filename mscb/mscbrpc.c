@@ -48,8 +48,9 @@
 
 typedef int INT;
 
-int _debug_flag = 1;
-int _debug_flag1 = 0;
+/* functions defined in mscb.c */
+extern int _debug_flag;
+extern void debug_log(char *format, int start, ...);
 
 /*------------------------------------------------------------------*/
 
@@ -262,87 +263,6 @@ INT mtid_size[] = {
 int rpc_sock[N_MAX_CONNECTION];
 char net_buffer[NET_BUFFER_SIZE];
 char recv_buffer[NET_BUFFER_SIZE];
-
-/*------------------------------------------------------------------*/
-
-void debug_log1(char *format, ...)
-{
-   int fh;
-   char str[2000], line[2000];
-   va_list argptr;
-   struct timeb tb;
-
-   if (!_debug_flag1)
-      return;
-
-   line[0] = 0;
-#ifdef OS_DARWIN
-   assert(!"No ftime(), sorry!");
-#else
-   ftime(&tb);
-#endif
-   strcpy(line, ctime(&tb.time) + 11);
-   sprintf(line + 8, ".%03d ", tb.millitm);
-
-   va_start(argptr, format);
-   vsprintf(str, format, argptr);
-   va_end(argptr);
-
-   strcat(line, str);
-#ifdef _MSC_VER
-   fh = open("c:\\tmp\\mscb_debug.log", O_CREAT | O_WRONLY | O_APPEND, 0644);
-#else
-   fh = open("/tmp/mscb_debug1.log", O_CREAT | O_WRONLY | O_APPEND, 0644);
-#endif
-   if (fh < 0)
-      return;
-
-   write(fh, line, strlen(line));
-   close(fh);
-}
-
-/*------------------------------------------------------------------*/
-
-void debug_log(char *format, int start, ...)
-{
-   int fh;
-   char str[2000], line[2000];
-   va_list argptr;
-   struct timeb tb;
-
-   if (!_debug_flag)
-      return;
-
-   line[0] = 0;
-   if (start) {
-#ifdef OS_DARWIN
-      assert(!"No ftime(), sorry!");
-#else
-      ftime(&tb);
-#endif
-      strcpy(line, ctime(&tb.time) + 11);
-      sprintf(line + 8, ".%03d ", tb.millitm);
-   }
-
-   va_start(argptr, start);
-   vsprintf(str, (char *) format, argptr);
-   va_end(argptr);
-
-   strcat(line, str);
-
-   /* if debug flag equals 2, write to stdout */
-   if (_debug_flag == 2)
-      write(fileno(stdout), line, strlen(line));
-   else {
-      /* else write to file */
-      fh = open("mscb_debug.log", O_CREAT | O_WRONLY | O_APPEND, 0644);
-      if (fh < 0)
-         return;
-
-      write(fh, line, strlen(line));
-      close(fh);
-   }
-}
 
 /*------------------------------------------------------------------*/
 
