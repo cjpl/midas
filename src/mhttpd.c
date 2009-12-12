@@ -6195,7 +6195,7 @@ void show_cnaf_page()
 #ifdef HAVE_MSCB
 
 typedef struct {
-   unsigned char id;
+   char id;
    char name[32];
 } NAME_TABLE;
 
@@ -6406,6 +6406,7 @@ void create_mscb_tree()
             db_enum_key(hDB, hKeyDev, j, &hKey);
             if (!hKey)
                break;
+
             if (db_find_key(hDB, hKey, "MSCB Address", &hKeyAdr) == DB_SUCCESS) {
                /* mscbdev type of device */
                size = sizeof(mscb_dev);
@@ -6427,16 +6428,18 @@ void create_mscb_tree()
                if (db_get_value(hDB, hKey, "MSCB Pwd", mscb_pwd, &size, TID_STRING, FALSE) != DB_SUCCESS)
                   continue;
 
+               n_dev_adr = 0;
                size = sizeof(dev_badr);
                db_get_data(hDB, hKeyAdr, dev_badr, &size, TID_INT);
                size = sizeof(dev_chn);
                if (db_get_value(hDB, hKey, "Block Channels", dev_chn, &size, TID_INT, FALSE) == DB_SUCCESS) {
-                  for (k=n_dev_adr=0 ; k<size/(int)sizeof(int) && n_dev_adr < sizeof(dev_adr)/sizeof(int) ; k++) {
+                  for (k=0 ; k<size/(int)sizeof(int) && n_dev_adr < (int)(sizeof(dev_adr)/sizeof(int)) ; k++) {
                      for (l=0 ; l<dev_chn[k] ; l++)
                         dev_adr[n_dev_adr++] = dev_badr[k]+l;
                   }
                }
-            }
+            } else
+	       continue;
 
             /* create or open submaster entry */
             db_find_key(hDB, hKeySubm, mscb_dev, &hKey);
@@ -6689,6 +6692,7 @@ void show_mscb_page(char *path, int refresh)
    rsprintf("Submaster<hr>\r\n");
 
    rsprintf("<select name=\"subm\" size=20 onChange=\"document.form1.submit();\">\r\n");
+   hKeyCurSubm = 0;
    for (i = 0;;i++) {
       db_enum_key(hDB, hKeySubm, i, &hKey);
       if (!hKey)
@@ -6714,6 +6718,11 @@ void show_mscb_page(char *path, int refresh)
    /*---- node list ----*/
    rsprintf("<td class=\"node\">\r\n");
    rsprintf("Node<hr>\r\n");
+
+   if (!hKeyCurSubm) {
+      rsprintf("No submaster found in ODB\r\n");
+      return;
+   }
 
    rsprintf("<select name=\"node\" size=20 onChange=\"document.form1.submit();\">\r\n");
    db_find_key(hDB, hKeyCurSubm, "Address", &hKeyAddr);
