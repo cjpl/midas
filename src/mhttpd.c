@@ -6334,6 +6334,7 @@ void print_mscb_var(char *value, char *evalue, char *unit, MSCB_INFO_VAR *info_c
             fdata = *((float *)pdata);
             DWORD_SWAP(&fdata);
             sprintf(value, "%1.6lg", fdata);
+            sprintf(evalue, "%1.6lg", fdata);
          } else {
             if (info_chn->flags & MSCBF_SIGNED) {
                idata = *((signed int *)pdata);
