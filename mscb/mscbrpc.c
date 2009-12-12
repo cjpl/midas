@@ -365,7 +365,7 @@ void mdrain_tcp(int sock)
       timeout.tv_usec = 0;
 
       do {
-         status = select(FD_SETSIZE, (void *) &readfds, NULL, NULL, (void *) &timeout);
+         status = select(FD_SETSIZE, &readfds, NULL, NULL, &timeout);
       } while (status == -1);   /* dont return if an alarm signal was cought */
 
       if (!FD_ISSET(sock, &readfds))
@@ -391,7 +391,7 @@ int mrecv_tcp(int sock, char *buffer, int buffer_size)
    int status;
    int millisec;
 
-   if (buffer_size < sizeof(NET_COMMAND_HEADER)) {
+   if (buffer_size < (int)sizeof(NET_COMMAND_HEADER)) {
       printf("mrecv_tcp_server: buffer too small\n");
       return -1;
    }
@@ -409,7 +409,7 @@ int mrecv_tcp(int sock, char *buffer, int buffer_size)
       timeout.tv_usec = (millisec % 1000) * 1000;
 
       do {
-         status = select(FD_SETSIZE, (void *) &readfds, NULL, NULL, (void *) &timeout);
+         status = select(FD_SETSIZE, &readfds, NULL, NULL, &timeout);
       } while (status == -1);   /* dont return if an alarm signal was cought */
 
       if (!FD_ISSET(sock, &readfds))
@@ -422,7 +422,7 @@ int mrecv_tcp(int sock, char *buffer, int buffer_size)
 
       n_received += n;
 
-   } while (n_received < sizeof(NET_COMMAND_HEADER));
+   } while (n_received < (int)sizeof(NET_COMMAND_HEADER));
 
    /* now receive parameters */
 
@@ -441,7 +441,7 @@ int mrecv_tcp(int sock, char *buffer, int buffer_size)
       timeout.tv_usec = (millisec % 1000) * 1000;
 
       do {
-         status = select(FD_SETSIZE, (void *) &readfds, NULL, NULL, (void *) &timeout);
+         status = select(FD_SETSIZE, &readfds, NULL, NULL, &timeout);
       } while (status == -1);   /* dont return if an alarm signal was cought */
 
       if (!FD_ISSET(sock, &readfds))
@@ -521,11 +521,11 @@ int server_execute(int index, void *prpc_param[])
       break;
 
    case RPC_MSCB_INFO:
-      status = mscb_info(CINT(0), CWORD(1), CARRAY(2));
+      status = mscb_info(CINT(0), CWORD(1), (MSCB_INFO*)CARRAY(2));
       break;
 
    case RPC_MSCB_INFO_VARIABLE:
-      status = mscb_info_variable(CINT(0), CSHORT(1), CBYTE(2), CARRAY(3));
+      status = mscb_info_variable(CINT(0), CSHORT(1), CBYTE(2), (MSCB_INFO_VAR*)CARRAY(3));
       break;
 
    case RPC_MSCB_UPTIME:
@@ -569,11 +569,11 @@ int server_execute(int index, void *prpc_param[])
       break;
 
    case RPC_MSCB_UPLOAD:
-      status = mscb_upload(CINT(0), CSHORT(1), CARRAY(2), CINT(3), CINT(4));
+      status = mscb_upload(CINT(0), CSHORT(1), (unsigned char*)CARRAY(2), CINT(3), CINT(4));
       break;
 
    case RPC_MSCB_VERIFY:
-      status = mscb_verify(CINT(0), CSHORT(1), CARRAY(2), CINT(3));
+      status = mscb_verify(CINT(0), CSHORT(1), (unsigned char*)CARRAY(2), CINT(3));
       break;
 
    case RPC_MSCB_READ:
@@ -802,7 +802,11 @@ int mrpc_connect(char *host_name, int port)
    bind_addr.sin_addr.s_addr = 0;
    bind_addr.sin_port = 0;
 
-   status = bind(sock, (void *) &bind_addr, sizeof(bind_addr));
+#ifdef _MSC_VER
+   status = bind(sock, (const sockaddr *)&bind_addr, sizeof(bind_addr));
+#else
+   status = bind(sock, (const struct sockaddr *)&bind_addr, sizeof(bind_addr));
+#endif
    if (status < 0) {
       perror("mrpc_connect,bind");
       return -1;
@@ -822,7 +826,11 @@ int mrpc_connect(char *host_name, int port)
 
    memcpy((char *) &(bind_addr.sin_addr), phe->h_addr, phe->h_length);
 
-   status = connect(sock, (void *) &bind_addr, sizeof(bind_addr));
+#ifdef _MSC_VER
+   status = connect(sock, (const sockaddr *)&bind_addr, sizeof(bind_addr));
+#else
+   status = connect(sock, (const struct sockaddr *)&bind_addr, sizeof(bind_addr));
+#endif
    if (status != 0) {
       if (errno)
          perror("mrpc_connect,connect");
@@ -1052,7 +1060,7 @@ int mrpc_call(int sock, const int routine_id, ...)
    timeout.tv_sec = RPC_TIMEOUT / 1000;
    timeout.tv_usec = (RPC_TIMEOUT % 1000) * 1000;
 
-   select(FD_SETSIZE, (void *) &readfds, NULL, NULL, (void *) &timeout);
+   select(FD_SETSIZE, &readfds, NULL, NULL, &timeout);
 
    if (!FD_ISSET(sock, &readfds)) {
       printf("mrpc_call: rpc timeout, routine = \"%s\"\n", rpc_list[index].name);
@@ -1236,7 +1244,7 @@ void mrpc_server_loop(void)
       timeout.tv_sec = 0;
       timeout.tv_usec = 100000;
 
-      status = select(FD_SETSIZE, (void *) &readfds, NULL, NULL, (void *) &timeout);
+      status = select(FD_SETSIZE, &readfds, NULL, NULL, &timeout);
 
       if (FD_ISSET(lsock, &readfds)) {
          len = sizeof(acc_addr);

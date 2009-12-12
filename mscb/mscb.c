@@ -470,8 +470,6 @@ int mscb_lock(int fd)
 #ifdef _MSC_VER
    int status;
 
-   if (fd);
-
    /* wait with a timeout of 10 seconds */
    status = WaitForSingleObject((HANDLE)mscb_fd[fd - 1].semaphore_handle, 10000);
 
@@ -543,8 +541,6 @@ int mscb_release(int fd)
 {
 #ifdef _MSC_VER
    int status;
-
-   if (fd);
 
    status = ReleaseMutex((HANDLE)mscb_fd[fd - 1].semaphore_handle);
    if (status == FALSE)
@@ -646,7 +642,7 @@ int msend_udp(int index, unsigned char *buffer, int size)
 {
    int count;
 
-   count = sendto(mscb_fd[index-1].fd, buffer, size, 0, 
+   count = sendto(mscb_fd[index-1].fd, (const char *)buffer, size, 0, 
                   (struct sockaddr *) &mscb_fd[index-1].eth_addr, 
                   sizeof(struct sockaddr));
 
@@ -674,7 +670,7 @@ int mrecv_udp(int index, unsigned char *buf, int *size, int millisec)
    timeout.tv_usec = (millisec % 1000) * 1000;
 
    do {
-      status = select(FD_SETSIZE, (void *) &readfds, NULL, NULL, (void *) &timeout);
+      status = select(FD_SETSIZE, &readfds, NULL, NULL, &timeout);
    } while (status == -1);        /* dont return if an alarm signal was cought */
 
    if (!FD_ISSET(mscb_fd[index-1].fd, &readfds)) {
@@ -682,7 +678,7 @@ int mrecv_udp(int index, unsigned char *buf, int *size, int millisec)
       return MSCB_TIMEOUT;
    }
 
-   n = recv(mscb_fd[index-1].fd, buffer, sizeof(buffer), 0);
+   n = recv(mscb_fd[index-1].fd, (char *)buffer, sizeof(buffer), 0);
 
    pudp = (UDP_HEADER *)buffer;
 
@@ -693,7 +689,7 @@ int mrecv_udp(int index, unsigned char *buf, int *size, int millisec)
    }
 
    /* check size */
-   if (ntohs(pudp->size) + sizeof(UDP_HEADER) != n) {
+   if (ntohs(pudp->size) + (int)sizeof(UDP_HEADER) != n) {
       *size = 0;
       return MSCB_FORMAT_ERROR;
    }
@@ -863,7 +859,7 @@ int mscb_exchg(int fd, unsigned char *buffer, int *size, int len, int flags)
          /* send over UDP link */
          i = msend_udp(fd, eth_buf, len + sizeof(UDP_HEADER));
 
-         if (i != len + sizeof(UDP_HEADER)) {
+         if (i != len + (int)sizeof(UDP_HEADER)) {
             if (size && *size)
                memset(buffer, 0, *size);
             mscb_release(fd);
@@ -1012,7 +1008,7 @@ int mscb_init(char *device, int bufsize, char *password, int debug)
 {
    int index, i, n;
    int status;
-   char host[256], dev3[256], remote_device[256];
+   char dev3[256];
    unsigned char buf[64];
    struct hostent *phe;
    struct sockaddr_in *psa_in;
@@ -1060,7 +1056,10 @@ int mscb_init(char *device, int bufsize, char *password, int debug)
    n_cache_info_var = 0;
 
    /* check for RPC connection */
+#ifdef HAVE_MRPC
    if (strchr(device, ':')) {
+      char remote_device[256], host[256];
+
       strlcpy(mscb_fd[index].device, device, sizeof(mscb_fd[index].device));
       mscb_fd[index].type = MSCB_TYPE_RPC;
 
@@ -1087,6 +1086,7 @@ int mscb_init(char *device, int bufsize, char *password, int debug)
       debug_log("return %d\n", 0, index + 1);
       return index + 1;
    }
+#endif
 
    /* check which device type */
    strcpy(dev3, device);
@@ -1266,18 +1266,22 @@ int mscb_exit(int fd)
    if (fd > MSCB_MAX_FD || fd < 1 || !mscb_fd[fd - 1].type)
       return MSCB_INVAL_PARAM;
 
+#ifdef HAVE_MRPC
    if (mrpc_connected(fd)) {
       mrpc_call(mscb_fd[fd - 1].fd, RPC_MSCB_EXIT, mscb_fd[fd - 1].remote_fd);
       mrpc_disconnect(mscb_fd[fd - 1].fd);
    }
+#endif
 
 #ifdef HAVE_USB
    if (mscb_fd[fd - 1].type == MSCB_TYPE_USB)
       musb_close(mscb_fd[fd - 1].ui);
 #endif
 
+#ifdef HAVE_MRPC
    if (mscb_fd[fd - 1].type == MSCB_TYPE_ETH)
       mrpc_disconnect(mscb_fd[fd - 1].fd);
+#endif
 
    memset(&mscb_fd[fd - 1], 0, sizeof(MSCB_FD));
 
@@ -1312,8 +1316,6 @@ void mscb_get_device(int fd, char *device, int bufsize)
 
 \********************************************************************/
 {
-   char str[256];
-
    if (!device)
       return;
 
@@ -1321,10 +1323,12 @@ void mscb_get_device(int fd, char *device, int bufsize)
    if (fd > MSCB_MAX_FD || fd < 1 || !mscb_fd[fd - 1].type)
       return;
 
+#ifdef HAVE_MRPC
    if (mrpc_connected(fd)) {
       mrpc_call(mscb_fd[fd - 1].fd, RPC_MSCB_GET_DEVICE,
-                mscb_fd[fd - 1].remote_fd, str, sizeof(str));
+                mscb_fd[fd - 1].remote_fd, device, bufsize);
    }
+#endif
 
    strlcpy(device, mscb_fd[fd-1].device, bufsize);
 }
@@ -1367,8 +1371,10 @@ int mscb_addr(int fd, int cmd, unsigned short adr, int retry)
    if (fd > MSCB_MAX_FD || fd < 1 || !mscb_fd[fd - 1].type)
       return MSCB_INVAL_PARAM;
 
+#ifdef HAVE_MRPC
    if (mrpc_connected(fd))
       return mrpc_call(mscb_fd[fd - 1].fd, RPC_MSCB_ADDR, mscb_fd[fd - 1].remote_fd, cmd, adr, retry);
+#endif
 
    for (n = 0; n < retry; n++) {
       buf[0] = (unsigned char)cmd;
@@ -1448,8 +1454,10 @@ int mscb_reboot(int fd, int addr, int gaddr, int broadcast)
    if (fd > MSCB_MAX_FD || fd < 1 || !mscb_fd[fd - 1].type)
       return MSCB_INVAL_PARAM;
 
+#ifdef HAVE_MRPC
    if (mrpc_connected(fd))
       return mrpc_call(mscb_fd[fd - 1].fd, RPC_MSCB_REBOOT, mscb_fd[fd - 1].remote_fd, addr, gaddr, broadcast);
+#endif
 
    size = sizeof(buf);
    if (addr >= 0) {
@@ -1512,8 +1520,10 @@ int mscb_subm_reset(int fd)
       return MSCB_INVAL_PARAM;
    }
 
+#ifdef HAVE_MRPC
    if (mrpc_connected(fd))
       return mrpc_call(mscb_fd[fd - 1].fd, RPC_MSCB_SUBM_RESET, mscb_fd[fd - 1].remote_fd);
+#endif
 
    if (mscb_fd[fd - 1].type == MSCB_TYPE_ETH) {
 
@@ -1579,8 +1589,10 @@ int mscb_ping(int fd, unsigned short adr, int quick)
    if (fd > MSCB_MAX_FD || fd < 1 || !mscb_fd[fd - 1].type)
       return MSCB_INVAL_PARAM;
 
+#ifdef HAVE_MRPC
    if (mrpc_connected(fd))
       return mrpc_call(mscb_fd[fd - 1].fd, RPC_MSCB_PING, mscb_fd[fd - 1].remote_fd, adr);
+#endif
 
    /* call mscb_addr with/without retries */
    status = mscb_addr(fd, MCMD_PING16, adr, quick ? 1 : mscb_fd[fd - 1].eth_max_retry);
@@ -1628,8 +1640,10 @@ int mscb_info(int fd, unsigned short adr, MSCB_INFO * info)
    if (fd > MSCB_MAX_FD || fd < 1 || !mscb_fd[fd - 1].type)
       return MSCB_INVAL_PARAM;
 
+#ifdef HAVE_MRPC
    if (mrpc_connected(fd))
       return mrpc_call(mscb_fd[fd - 1].fd, RPC_MSCB_INFO, mscb_fd[fd - 1].remote_fd, adr, info);
+#endif
 
    for (retry = 0 ; retry < mscb_max_retry ; retry++) {
       buf[0] = MCMD_ADDR_NODE16;
@@ -1699,8 +1713,10 @@ int mscb_uptime(int fd, unsigned short adr, unsigned int *uptime)
    if (fd > MSCB_MAX_FD || fd < 1 || !mscb_fd[fd - 1].type)
       return MSCB_INVAL_PARAM;
 
+#ifdef HAVE_MRPC
    if (mrpc_connected(fd))
       return mrpc_call(mscb_fd[fd - 1].fd, RPC_MSCB_UPTIME, mscb_fd[fd - 1].remote_fd, adr, uptime);
+#endif
 
    buf[0] = MCMD_ADDR_NODE16;
    buf[1] = (unsigned char) (adr >> 8);
@@ -1784,9 +1800,11 @@ int mscb_info_variable(int fd, unsigned short adr, unsigned char index, MSCB_INF
       cache_info_var[n_cache_info_var].adr = adr;
       cache_info_var[n_cache_info_var].index = index;
 
+#ifdef HAVE_MRPC
       if (mrpc_connected(fd))
          return mrpc_call(mscb_fd[fd - 1].fd, RPC_MSCB_INFO_VARIABLE,
                         mscb_fd[fd - 1].remote_fd, adr, index, info);
+#endif
 
       for (retry = 0 ; retry < 2 ; retry++) {
          buf[0] = MCMD_ADDR_NODE16;
@@ -1851,9 +1869,11 @@ int mscb_set_node_addr(int fd, int addr, int gaddr, int broadcast,
    if (fd > MSCB_MAX_FD || fd < 1 || !mscb_fd[fd - 1].type)
       return MSCB_INVAL_PARAM;
 
+#ifdef HAVE_MRPC
    if (mrpc_connected(fd))
       return mrpc_call(mscb_fd[fd - 1].fd, RPC_MSCB_SET_NODE_ADDR, mscb_fd[fd - 1].remote_fd, 
                        addr, gaddr, broadcast, new_addr);
+#endif
 
    if (addr >= 0) { // individual node
 
@@ -1934,9 +1954,11 @@ int mscb_set_group_addr(int fd, int addr, int gaddr, int broadcast, unsigned sho
    if (fd > MSCB_MAX_FD || fd < 1 || !mscb_fd[fd - 1].type)
       return MSCB_INVAL_PARAM;
 
+#ifdef HAVE_MRPC
    if (mrpc_connected(fd))
       return mrpc_call(mscb_fd[fd - 1].fd, RPC_MSCB_SET_GROUP_ADDR, mscb_fd[fd - 1].remote_fd, 
                        gaddr, new_addr);
+#endif
 
    if (broadcast > 0) {         
       buf[0] = MCMD_ADDR_BC;
@@ -2007,8 +2029,10 @@ int mscb_set_name(int fd, unsigned short adr, char *name)
    if (fd > MSCB_MAX_FD || fd < 1 || !mscb_fd[fd - 1].type)
       return MSCB_INVAL_PARAM;
 
+#ifdef HAVE_MRPC
    if (mrpc_connected(fd))
       return mrpc_call(mscb_fd[fd - 1].fd, RPC_MSCB_SET_NAME, mscb_fd[fd - 1].remote_fd, adr, name);
+#endif
 
    buf[0] = MCMD_ADDR_NODE16;
    buf[1] = (unsigned char) (adr >> 8);
@@ -2062,9 +2086,11 @@ int mscb_write_group(int fd, unsigned short adr, unsigned char index, void *data
    if (fd > MSCB_MAX_FD || fd < 1 || !mscb_fd[fd - 1].type)
       return MSCB_INVAL_PARAM;
 
+#ifdef HAVE_MRPC
    if (mrpc_connected(fd))
       return mrpc_call(mscb_fd[fd - 1].fd, RPC_MSCB_WRITE_GROUP,
                        mscb_fd[fd - 1].remote_fd, adr, index, data, size);
+#endif
 
    if (size > 4 || size < 1)
       return MSCB_INVAL_PARAM;
@@ -2077,7 +2103,7 @@ int mscb_write_group(int fd, unsigned short adr, unsigned char index, void *data
    buf[4] = (unsigned char)(MCMD_WRITE_NA + size + 1);
    buf[5] = index;
 
-   for (i = 0, d = data; i < size; i++)
+   for (i = 0, d = (unsigned char *)data; i < size; i++)
       buf[6 + size - 1 - i] = *d++;
 
    buf[6 + i] = crc8(buf, 6 + i);
@@ -2143,8 +2169,10 @@ int mscb_write(int fd, unsigned short adr, unsigned char index, void *data, int 
       return MSCB_INVAL_PARAM;
    }
 
+#ifdef HAVE_MRPC
    if (mrpc_connected(fd))
       return mrpc_call(mscb_fd[fd - 1].fd, RPC_MSCB_WRITE, mscb_fd[fd - 1].remote_fd, adr, index, data, size);
+#endif
 
    if (size < 1) {
       debug_log("return MSCB_INVAL_PARAM\n", 0);
@@ -2166,10 +2194,10 @@ int mscb_write(int fd, unsigned short adr, unsigned char index, void *data, int 
 
          /* reverse order for WORD & DWORD */
          if (size < 5)
-            for (i = 0, d = data; i < size; i++)
+            for (i = 0, d = (unsigned char *)data; i < size; i++)
                buf[6 + size - 1 - i] = *d++;
          else
-            for (i = 0, d = data; i < size; i++)
+            for (i = 0, d = (unsigned char *)data; i < size; i++)
                buf[6 + i] = *d++;
 
          crc = crc8(buf+4, 2 + i);
@@ -2181,7 +2209,7 @@ int mscb_write(int fd, unsigned short adr, unsigned char index, void *data, int 
          buf[5] = (unsigned char)(size + 1);
          buf[6] = index;
 
-         for (i = 0, d = data; i < size; i++)
+         for (i = 0, d = (unsigned char *)data; i < size; i++)
             buf[7 + i] = *d++;
 
          crc = crc8(buf+4, 3 + i);
@@ -2277,8 +2305,10 @@ int mscb_write_no_retries(int fd, unsigned short adr, unsigned char index, void 
       return MSCB_INVAL_PARAM;
    }
 
+#ifdef HAVE_MRPC
    if (mrpc_connected(fd))
       return mrpc_call(mscb_fd[fd - 1].fd, RPC_MSCB_WRITE_NO_RETRIES, mscb_fd[fd - 1].remote_fd, adr, index, data, size);
+#endif
 
    if (size < 1) {
       debug_log("return MSCB_INVAL_PARAM\n", 0);
@@ -2296,10 +2326,10 @@ int mscb_write_no_retries(int fd, unsigned short adr, unsigned char index, void 
 
       /* reverse order for WORD & DWORD */
       if (size < 5)
-         for (i = 0, d = data; i < size; i++)
+         for (i = 0, d = (unsigned char *)data; i < size; i++)
             buf[6 + size - 1 - i] = *d++;
       else
-         for (i = 0, d = data; i < size; i++)
+         for (i = 0, d = (unsigned char *)data; i < size; i++)
             buf[6 + i] = *d++;
 
       crc = crc8(buf+4, 2 + i);
@@ -2311,7 +2341,7 @@ int mscb_write_no_retries(int fd, unsigned short adr, unsigned char index, void 
       buf[5] = (unsigned char)(size + 1);
       buf[6] = index;
 
-      for (i = 0, d = data; i < size; i++)
+      for (i = 0, d = (unsigned char *)data; i < size; i++)
          buf[7 + i] = *d++;
 
       crc = crc8(buf+4, 3 + i);
@@ -2372,11 +2402,13 @@ int mscb_write_range(int fd, unsigned short adr, unsigned char index1, unsigned 
       return MSCB_INVAL_PARAM;
    }
 
+#ifdef HAVE_MRPC
    if (mrpc_connected(fd))
       return mrpc_call(mscb_fd[fd - 1].fd, RPC_MSCB_WRITE_RANGE, 
                        mscb_fd[fd - 1].remote_fd, adr, index1, index2, data, size);
+#endif
 
-   if (size < 1 || size + 10 > sizeof(buf)) {
+   if (size < 1 || size + 10 > (int)sizeof(buf)) {
       debug_log("return MSCB_INVAL_PARAM\n", 0);
       return MSCB_INVAL_PARAM;
    }
@@ -2487,8 +2519,10 @@ int mscb_flash(int fd, int addr, int gaddr, int broadcast)
    if (fd > MSCB_MAX_FD || fd < 1 || !mscb_fd[fd - 1].type)
       return MSCB_INVAL_PARAM;
 
+#ifdef HAVE_MRPC
    if (mrpc_connected(fd))
       return mrpc_call(mscb_fd[fd - 1].fd, RPC_MSCB_FLASH, mscb_fd[fd - 1].remote_fd, addr, gaddr, broadcast);
+#endif
 
    if (addr >= 0) {
       buf[0] = MCMD_ADDR_NODE16;
@@ -2562,8 +2596,10 @@ int mscb_set_baud(int fd, int baud)
    if (fd > MSCB_MAX_FD || fd < 1 || !mscb_fd[fd - 1].type)
       return MSCB_INVAL_PARAM;
 
+#ifdef HAVE_MRPC
    if (mrpc_connected(fd))
       return mrpc_call(mscb_fd[fd - 1].fd, RPC_MSCB_SET_BAUD, mscb_fd[fd - 1].remote_fd, baud);
+#endif
 
    buf[0] = MCMD_ADDR_BC;
    buf[1] = crc8(buf, 1);
@@ -2613,8 +2649,10 @@ int mscb_upload(int fd, unsigned short adr, unsigned char *buffer, int size, int
    if (fd > MSCB_MAX_FD || fd < 1 || !mscb_fd[fd - 1].type)
       return MSCB_INVAL_PARAM;
 
+#ifdef HAVE_MRPC
    if (mrpc_connected(fd))
       return mrpc_call(mscb_fd[fd - 1].fd, RPC_MSCB_UPLOAD, mscb_fd[fd - 1].remote_fd, adr, buffer, size);
+#endif
 
    /* check if node alive */
    status = mscb_ping(fd, adr, 0);
@@ -2651,10 +2689,10 @@ int mscb_upload(int fd, unsigned short adr, unsigned char *buffer, int size, int
    } while (*line);
 
    /* count pages and bytes */
-   for (page = 0; page < sizeof(page_cont)/sizeof(int) ; page++)
+   for (page = 0; page < (int)(sizeof(page_cont)/sizeof(int)) ; page++)
       page_cont[page] = FALSE;
 
-   for (page = n_page = 0; page < sizeof(page_cont)/sizeof(int) ; page++) {
+   for (page = n_page = 0; page < (int)(sizeof(page_cont)/sizeof(int)) ; page++) {
       /* check if page contains data */
       for (i = 0; i < 512; i++) {
          if (image[page * 512 + i] != 0xFF) {
@@ -2966,8 +3004,10 @@ int mscb_verify(int fd, unsigned short adr, unsigned char *buffer, int size)
    if (fd > MSCB_MAX_FD || fd < 1 || !mscb_fd[fd - 1].type)
       return MSCB_INVAL_PARAM;
 
+#ifdef HAVE_MRPC
    if (mrpc_connected(fd))
       return mrpc_call(mscb_fd[fd - 1].fd, RPC_MSCB_UPLOAD, mscb_fd[fd - 1].remote_fd, adr, buffer, size);
+#endif
 
    /* check if node alive */
    status = mscb_ping(fd, adr, 0);
@@ -3164,8 +3204,10 @@ int mscb_read(int fd, unsigned short adr, unsigned char index, void *data, int *
       return MSCB_INVAL_PARAM;
    }
 
+#ifdef HAVE_MRPC
    if (mrpc_connected(fd))
       return mrpc_call(mscb_fd[fd - 1].fd, RPC_MSCB_READ, mscb_fd[fd - 1].remote_fd, adr, index, data, size);
+#endif
 
    /* try ten times */
    for (n = i = 0; n < mscb_max_retry ; n++) {
@@ -3357,8 +3399,10 @@ int mscb_read_no_retries(int fd, unsigned short adr, unsigned char index, void *
       return MSCB_INVAL_PARAM;
    }
 
+#ifdef HAVE_MRPC
    if (mrpc_connected(fd))
       return mrpc_call(mscb_fd[fd - 1].fd, RPC_MSCB_READ_NO_RETRIES, mscb_fd[fd - 1].remote_fd, adr, index, data, size);
+#endif
 
    buf[0] = MCMD_ADDR_NODE16;
    buf[1] = (unsigned char) (adr >> 8);
@@ -3495,9 +3539,11 @@ int mscb_read_range(int fd, unsigned short adr, unsigned char index1, unsigned c
       return MSCB_INVAL_PARAM;
    }
 
+#ifdef HAVE_MRPC
    if (mrpc_connected(fd))
       return mrpc_call(mscb_fd[fd - 1].fd, RPC_MSCB_READ_RANGE,
                        mscb_fd[fd - 1].remote_fd, adr, index1, index2, data, size);
+#endif
 
    /* retry several times as specified with mscb_max_retry */
    for (n = i = 0; n < mscb_max_retry; n++) {
@@ -3686,9 +3732,11 @@ int mscb_user(int fd, unsigned short adr, void *param, int size, void *result, i
       return MSCB_FORMAT_ERROR;
    }
 
+#ifdef HAVE_MRPC
    if (mrpc_connected(fd))
       return mrpc_call(mscb_fd[fd - 1].fd, RPC_MSCB_USER,
                        mscb_fd[fd - 1].remote_fd, adr, param, size, result, rsize);
+#endif
 
    buf[0] = MCMD_ADDR_NODE16;
    buf[1] = (unsigned char) (adr >> 8);
@@ -3759,8 +3807,10 @@ int mscb_echo(int fd, unsigned short adr, unsigned char d1, unsigned char *d2)
    if (fd > MSCB_MAX_FD || fd < 1 || !mscb_fd[fd - 1].type)
       return MSCB_INVAL_PARAM;
 
+#ifdef HAVE_MRPC
    if (mrpc_connected(fd))
       return mrpc_call(mscb_fd[fd - 1].fd, RPC_MSCB_ECHO, mscb_fd[fd - 1].remote_fd, adr, d1, d2);
+#endif
 
    buf[0] = MCMD_ADDR_NODE16;
    buf[1] = (unsigned char) (adr >> 8);
@@ -4276,8 +4326,10 @@ int mscb_set_time(int fd, int addr, int gaddr, int broadcast)
    if (fd > MSCB_MAX_FD || fd < 1 || !mscb_fd[fd - 1].type)
       return MSCB_INVAL_PARAM;
 
+#ifdef HAVE_MRPC
    if (mrpc_connected(fd))
       return mrpc_call(mscb_fd[fd - 1].fd, RPC_MSCB_SET_TIME, mscb_fd[fd - 1].remote_fd, addr, gaddr, broadcast);
+#endif
 
    tzset();
    now = time(NULL);

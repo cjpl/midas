@@ -41,7 +41,7 @@
 /*------------------------------------------------------------------*/
 
 typedef struct {
-   unsigned char id;
+   char id;
    char name[32];
 } NAME_TABLE;
 
@@ -156,7 +156,7 @@ void print_channel_str(int index, MSCB_INFO_VAR * info_chn, void *pdata, int ver
 
    if (info_chn->unit == UNIT_STRING) {
       memset(str, 0, sizeof(str));
-      strncpy(str, pdata, info_chn->width);
+      strncpy(str, (const char*)pdata, info_chn->width);
       if (verbose)
          sprintf(line + strlen(line), "STR%02d    \"", info_chn->width);
       for (i = 0; i < (int) strlen(str); i++)
@@ -1369,7 +1369,7 @@ void cmd_loop(int fd, char *cmd, unsigned short adr)
                   printf("Uploading file %s\n", str);
                size = lseek(fh, 0, SEEK_END) + 1;
                lseek(fh, 0, SEEK_SET);
-               buffer = malloc(size);
+               buffer = (char*)malloc(size);
                memset(buffer, 0, size);
                read(fh, buffer, size - 1);
                close(fh);
@@ -1413,7 +1413,7 @@ void cmd_loop(int fd, char *cmd, unsigned short adr)
                   printf("Uploading file %s\n", str);
                size = lseek(fh, 0, SEEK_END) + 1;
                lseek(fh, 0, SEEK_SET);
-               buffer = malloc(size);
+               buffer = (char*)malloc(size);
                memset(buffer, 0, size);
                read(fh, buffer, size - 1);
                close(fh);
@@ -1455,7 +1455,7 @@ void cmd_loop(int fd, char *cmd, unsigned short adr)
             if (fh > 0) {
                size = lseek(fh, 0, SEEK_END) + 1;
                lseek(fh, 0, SEEK_SET);
-               buffer = malloc(size);
+               buffer = (char *)malloc(size);
                memset(buffer, 0, size);
                read(fh, buffer, size - 1);
                close(fh);
@@ -1788,7 +1788,9 @@ int main(int argc, char *argv[])
    }
 
    if (server) {
+#ifdef HAVE_MRPC
       mrpc_server_loop();
+#endif
       return 0;
    }
 

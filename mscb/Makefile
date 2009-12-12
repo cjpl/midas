@@ -44,7 +44,7 @@ USBDIR        = ../drivers/usb/
 endif
 
 OUTNAME       = msc 
-CC            = gcc -g -O
+CC            = gcc -g -O -DHAVE_MRPC
 FLAGS         = -Wall -Wuninitialized -I$(MXMLDIR) -I$(MIDASINC)
 
 STRLCPY       = strlcpy.o
