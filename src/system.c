@@ -1686,8 +1686,16 @@ INT ss_thread_kill(midas_thread_t thread_id)
 #if defined(OS_WINNT)
 
    DWORD status;
+   HANDLE th;
 
-   status = TerminateThread(thread_id, 0);
+   th = OpenThread(THREAD_TERMINATE, FALSE, (DWORD)thread_id);
+   if (th == 0)
+      status = GetLastError();
+
+   status = TerminateThread(th, 0);
+
+   if (status == 0)
+      status = GetLastError();
 
    return status != 0 ? SS_SUCCESS : SS_NO_THREAD;
 
