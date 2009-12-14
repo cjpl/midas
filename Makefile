@@ -437,11 +437,9 @@ $(BIN_DIR)/odbedit: $(SRC_DIR)/odbedit.c $(SRC_DIR)/cmdedit.c
 ifdef NEED_MSCB
 $(BIN_DIR)/mhttpd: $(LIB_DIR)/mhttpd.o $(LIB_DIR)/mgd.o $(LIB_DIR)/mscb.o
 	$(CXX) $(CFLAGS) $(OSFLAGS) -o $@ $^ $(LIB) $(LIBS) -lm
-	su -c "chown root $(BIN_DIR)/mhttpd; chmod +s $(BIN_DIR)/mhttpd"
 else
 $(BIN_DIR)/mhttpd: $(LIB_DIR)/mhttpd.o $(LIB_DIR)/mgd.o
 	$(CXX) $(CFLAGS) $(OSFLAGS) -o $@ $^ $(LIB) $(LIBS) -lm
-	su -c "chown root $(BIN_DIR)/mhttpd; chmod +s $(BIN_DIR)/mhttpd"
 endif
 
 $(PROGS): $(LIBNAME)
