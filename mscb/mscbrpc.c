@@ -722,11 +722,7 @@ int mrpc_connect(char *host_name, int port)
    bind_addr.sin_addr.s_addr = 0;
    bind_addr.sin_port = 0;
 
-#ifdef _MSC_VER
-   status = bind(sock, (const sockaddr *)&bind_addr, sizeof(bind_addr));
-#else
    status = bind(sock, (const struct sockaddr *)&bind_addr, sizeof(bind_addr));
-#endif
    if (status < 0) {
       perror("mrpc_connect,bind");
       return -1;
@@ -746,11 +742,7 @@ int mrpc_connect(char *host_name, int port)
 
    memcpy((char *) &(bind_addr.sin_addr), phe->h_addr, phe->h_length);
 
-#ifdef _MSC_VER
-   status = connect(sock, (const sockaddr *)&bind_addr, sizeof(bind_addr));
-#else
    status = connect(sock, (const struct sockaddr *)&bind_addr, sizeof(bind_addr));
-#endif
    if (status != 0) {
       if (errno)
          perror("mrpc_connect,connect");
