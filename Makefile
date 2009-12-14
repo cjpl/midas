@@ -422,7 +422,6 @@ endif
 
 ifdef NEED_MSCB
 CFLAGS     += -DHAVE_MSCB
-LIBS       += $(MSCB_DIR)/mscb.c
 endif
 
 $(BIN_DIR)/mlogger: $(BIN_DIR)/%: $(SRC_DIR)/%.c
@@ -434,8 +433,16 @@ $(BIN_DIR)/%:$(SRC_DIR)/%.c
 $(BIN_DIR)/odbedit: $(SRC_DIR)/odbedit.c $(SRC_DIR)/cmdedit.c
 	$(CC) $(CFLAGS) $(OSFLAGS) -o $@ $(SRC_DIR)/odbedit.c $(SRC_DIR)/cmdedit.c $(LIB) $(LIBS)
 
+
+ifdef NEED_MSCB
+$(BIN_DIR)/mhttpd: $(LIB_DIR)/mhttpd.o $(LIB_DIR)/mgd.o $(LIB_DIR)/mscb.o
+	$(CXX) $(CFLAGS) $(OSFLAGS) -o $@ $^ $(LIB) $(LIBS) -lm
+	su -c "chown root $(BIN_DIR)/mhttpd; chmod +s $(BIN_DIR)/mhttpd"
+else
 $(BIN_DIR)/mhttpd: $(LIB_DIR)/mhttpd.o $(LIB_DIR)/mgd.o
 	$(CXX) $(CFLAGS) $(OSFLAGS) -o $@ $^ $(LIB) $(LIBS) -lm
+	su -c "chown root $(BIN_DIR)/mhttpd; chmod +s $(BIN_DIR)/mhttpd"
+endif
 
 $(PROGS): $(LIBNAME)
 
@@ -522,6 +529,11 @@ $(LIB_DIR)/mxml.o:$(MXML_DIR)/mxml.c
 
 $(LIB_DIR)/strlcpy.o:$(MXML_DIR)/strlcpy.c
 	$(CC) -c $(CFLAGS) $(OSFLAGS) -o $@ $(MXML_DIR)/strlcpy.c
+
+ifdef NEED_MSCB
+$(LIB_DIR)/mscb.o:$(MSCB_DIR)/mscb.c $(MSCB_DIR)/mscb.h
+	$(CXX) -c $(CFLAGS) $(OSFLAGS) -o $@ $(MSCB_DIR)/mscb.c
+endif
 
 $(LIB_DIR)/midas.o: msystem.h midas.h midasinc.h mrpc.h
 $(LIB_DIR)/system.o: msystem.h midas.h midasinc.h mrpc.h
