@@ -16,8 +16,6 @@
 #include "midas.h"
 #include "mscb.h"
 
-extern void debug_log1(char *format, ...);
-
 /*---- globals -----------------------------------------------------*/
 
 /* MSCB node address / channel mapping */
@@ -218,15 +216,6 @@ INT mscbdev_read_all(MSCBDEV_INFO * info)
             status = mscb_read_range(info->fd, addr, i_start, i_stop, buffer, &size);
 
          if (status != MSCB_SUCCESS) {
-            if (i_start == i_stop)
-               sprintf(str, "Error reading MSCB bus at \"%s:%d:%d\", status %d", 
-                      info->mscbdev_settings.mscb_device, addr, i_start, status);
-            else
-               sprintf(str, "Error reading MSCB bus at \"%s:%d:%d-%d\", status %d", 
-                      info->mscbdev_settings.mscb_device, addr, i_start, i_stop, status);
-            strcat(str, "\n");
-            debug_log1(str);
-
             /* only produce error once every minute */
             if (ss_time() - last_error >= 60) {
                last_error = ss_time();
