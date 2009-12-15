@@ -993,6 +993,7 @@ typedef struct {
    DD_MT_BUFFER *mt_buffer;           /**< pointer to multithread buffer     */
    INT stop_thread;                   /**< flag used to stop the thread      */
    MUTEX_T *mutex;                    /**< mutex for buffer                  */
+   INT semaphore;                     /**< semaphore for device access       */
    EQUIPMENT_INFO *pequipment;        /**< pointer to equipment              */
 } DEVICE_DRIVER;
 
