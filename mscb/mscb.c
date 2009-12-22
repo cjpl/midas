@@ -4033,10 +4033,6 @@ int mscb_select_device(char *device, int size, int select)
    int status, usb_index, found, i, n, index, error_code;
    MUSB_INTERFACE *ui;
 
-#if defined(OS_DARWIN) || defined(OS_LINUX)
-   assert(!"mscb_select_device is not permitted, please specify \'-d usb0\'.");
-#endif
-
    n = 0;
    *device = 0;
    error_code = 0;
