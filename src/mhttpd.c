@@ -5446,7 +5446,10 @@ void show_custom_gif(char *name)
          if (equal_ustring(value, "NAN"))
             continue;
          
-         fvalue = atof(value);
+         if (vkey.type == TID_BOOL) {
+            fvalue = (value[0] == 'y');
+         } else
+            fvalue = atof(value);
 
          x = y = 0;
          size = sizeof(x);
