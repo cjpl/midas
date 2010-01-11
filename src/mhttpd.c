@@ -1253,7 +1253,7 @@ void show_status_page(int refresh, char *cookie_wpwd)
 
    status = db_find_key(hDB, 0, "Script", &hkey);
    if (status == DB_SUCCESS) {
-      rsprintf("<tr><td colspan=6 bgcolor=#D0D0D0>\n");
+      rsprintf("<tr><td colspan=6 bgcolor=#E0FFFF>\n");
 
       for (i = 0;; i++) {
          db_enum_link(hDB, hkey, i, &hsubkey);
@@ -1284,7 +1284,7 @@ void show_status_page(int refresh, char *cookie_wpwd)
             db_get_value(hDB, hkeytmp, "Type", &type, &size, TID_INT, TRUE);
             if (type & EQ_MANUAL_TRIG) {
                if (first)
-                  rsprintf("<tr><td colspan=6 bgcolor=#C0C0C0>\n");
+                  rsprintf("<tr><td colspan=6 bgcolor=#E0FFE0>\n");
 
                first = FALSE;
 
@@ -1304,7 +1304,7 @@ void show_status_page(int refresh, char *cookie_wpwd)
    db_find_key(hDB, 0, "/Alias", &hkey);
    if (hkey) {
       if (first) {
-         rsprintf("<tr><td colspan=6 bgcolor=#C0C0C0>\n");
+         rsprintf("<tr><td colspan=6 bgcolor=#E0E0FF>\n");
          first = FALSE;
       }
       for (i = 0;; i++) {
@@ -1365,7 +1365,7 @@ void show_status_page(int refresh, char *cookie_wpwd)
             continue;
 
          if (first) {
-            rsprintf("<tr><td colspan=6 bgcolor=#C0C0C0>\n");
+            rsprintf("<tr><td colspan=6 bgcolor=#E0E0FF>\n");
             first = FALSE;
          }
 
