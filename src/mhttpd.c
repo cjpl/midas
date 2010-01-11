@@ -5270,8 +5270,13 @@ void show_custom_gif(char *name)
 
          sscanf(label.fgcolor, "%02x%02x%02x", &r, &g, &b);
          fgcol = gdImageColorAllocate(im, r, g, b);
+         if (fgcol == -1)
+            fgcol = gdImageColorClosest(im, r, g, b);
+
          sscanf(label.bgcolor, "%02x%02x%02x", &r, &g, &b);
          bgcol = gdImageColorAllocate(im, r, g, b);
+         if (bgcol == -1)
+            bgcol = gdImageColorClosest(im, r, g, b);
 
          /* select font */
          if (equal_ustring(label.font, "Small"))
@@ -5353,10 +5358,18 @@ void show_custom_gif(char *name)
 
          sscanf(bar.fgcolor, "%02x%02x%02x", &r, &g, &b);
          fgcol = gdImageColorAllocate(im, r, g, b);
+         if (fgcol == -1)
+            fgcol = gdImageColorClosest(im, r, g, b);
+
          sscanf(bar.bgcolor, "%02x%02x%02x", &r, &g, &b);
          bgcol = gdImageColorAllocate(im, r, g, b);
+         if (bgcol == -1)
+            bgcol = gdImageColorClosest(im, r, g, b);
+
          sscanf(bar.bdcolor, "%02x%02x%02x", &r, &g, &b);
          bdcol = gdImageColorAllocate(im, r, g, b);
+         if (bdcol == -1)
+            bdcol = gdImageColorClosest(im, r, g, b);
 
          if (bar.min == bar.max)
             bar.max += 1;
@@ -5482,6 +5495,8 @@ void show_custom_gif(char *name)
          if (status == DB_SUCCESS) {
             sscanf(data, "%02x%02x%02x", &r, &g, &b);
             fgcol = gdImageColorAllocate(im, r, g, b);
+            if (fgcol == -1)
+               fgcol = gdImageColorClosest(im, r, g, b);
             gdImageFill(im, x, y, fgcol);
          }
       }
