@@ -208,9 +208,9 @@ char getchar(void)
 
 /*------------------------------------------------------------------*/
 
-char getchar_nowait(void)
+char getchar_nowait(void) reentrant
 {
-   char idata c;
+   char c;
 
    if (rbuf_wp != rbuf_rp) {
       c = *rbuf_rp++;
