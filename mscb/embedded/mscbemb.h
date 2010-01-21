@@ -496,6 +496,15 @@ char putchar1(char c);                   // putchar cannot be used with LCD supp
 #endif
 #endif
 
+/* handle enable bit for RS485 */
+#ifdef RS485_ENABLE_INVERT
+#define RS485_ENABLE_ON 0
+#define RS485_ENABLE_OFF 1
+#else
+#define RS485_ENABLE_ON 0
+#define RS485_ENABLE_OFF 1
+#endif
+
 /*---- Delay macro to be used in interrupt routines etc. -----------*/
 
 #if defined(SUBM_260)
@@ -778,7 +787,7 @@ void lcd_putc(char c);
 void lcd_puts(char *str);
 char scs_lcd1_read();
 
-char getchar_nowait(void);
+char getchar_nowait(void) reentrant;
 unsigned char gets_wait(char *str, unsigned char size, unsigned char timeout);
 void flush(void);
 

@@ -125,7 +125,7 @@ void setup(void)
    watchdog_disable();
 
    /* avoid any blocking of RS485 bus */
-   RS485_ENABLE = 0;
+   RS485_ENABLE = RS485_ENABLE_OFF;
 
    /* Port and oscillator configuration */
 
@@ -380,7 +380,7 @@ void serial_int(void) interrupt 4
       if (i_out == n_out) {
          i_out = n_out = 0;      // send buffer empty, clear pointer
          DELAY_US(10);
-         RS485_ENABLE = 0;       // disable RS485 driver
+         RS485_ENABLE = RS485_ENABLE_OFF; // disable RS485 driver
       } else {
          DELAY_US(INTERCHAR_DELAY);
          SBUF0 = out_buf[i_out]; // send character
@@ -468,7 +468,7 @@ static void send_obuf(unsigned char n)
 #endif
 
    n_out = n;
-   RS485_ENABLE = 1;
+   RS485_ENABLE = RS485_ENABLE_ON;
    DELAY_US(INTERCHAR_DELAY);
    SBUF0 = out_buf[0];
 }
@@ -598,7 +598,7 @@ void interprete(void)
 
       ES0 = 0;                  // temporarily disable serial interrupt
       crc = 0;
-      RS485_ENABLE = 1;
+      RS485_ENABLE = RS485_ENABLE_ON;
 
       send_byte(CMD_ACK + 7, &crc);      // send acknowledge, variable data length
 #ifdef HAVE_RTC
@@ -630,7 +630,7 @@ void interprete(void)
       send_byte(crc, NULL);     // send CRC code
 
       DELAY_US(10);
-      RS485_ENABLE = 0;
+      RS485_ENABLE = RS485_ENABLE_OFF;
       ES0 = 1;                  // re-enable serial interrupts
       break;
 
@@ -642,7 +642,7 @@ void interprete(void)
                                   
          ES0 = 0;                       // temporarily disable serial interrupt
          crc = 0;
-         RS485_ENABLE = 1;
+         RS485_ENABLE = RS485_ENABLE_ON;
 
          send_byte(CMD_ACK + 7, &crc);  // send acknowledge, variable data length
          send_byte(13, &crc);           // send data length
@@ -658,7 +658,7 @@ void interprete(void)
          send_byte(crc, NULL);          // send CRC code
 
          DELAY_US(10);
-         RS485_ENABLE = 0;
+         RS485_ENABLE = RS485_ENABLE_OFF;
          ES0 = 1;                       // re-enable serial interrupts
       } else {
          /* just send dummy ack */
@@ -790,7 +790,7 @@ void interprete(void)
 
                ES0 = 0;            // temporarily disable serial interrupt
                crc = 0;
-               RS485_ENABLE = 1;
+               RS485_ENABLE = RS485_ENABLE_ON;
    
                if (n > 6) {
                   /* variable length buffer */
@@ -811,7 +811,7 @@ void interprete(void)
                send_byte(crc, NULL);                  // send CRC code
    
                DELAY_US(10);
-               RS485_ENABLE = 0;
+               RS485_ENABLE = RS485_ENABLE_OFF;
                ES0 = 1;            // re-enable serial interrupts
             }
          } else {
@@ -831,7 +831,7 @@ void interprete(void)
 
             ES0 = 0;            // temporarily disable serial interrupt
             crc = 0;
-            RS485_ENABLE = 1;
+            RS485_ENABLE = RS485_ENABLE_ON;
 
             send_byte(CMD_ACK + 7, &crc);            // send acknowledge, variable data length
             if (size < 0x80)
@@ -850,7 +850,7 @@ void interprete(void)
             send_byte(crc, NULL);       // send CRC code
 
             DELAY_US(10);
-            RS485_ENABLE = 0;
+            RS485_ENABLE = RS485_ENABLE_OFF;
             ES0 = 1;            // re-enable serial interrupts
          } else {
             /* just send dummy ack to indicate error */
@@ -1236,10 +1236,10 @@ receive_cmd:
          RI0 = 0;
 
          /* acknowledge ping, independent of own address */
-         RS485_ENABLE = 1;
+         RS485_ENABLE = RS485_ENABLE_ON;
          SEND_BYTE(CMD_ACK);
          DELAY_US(10);
-         RS485_ENABLE = 0;
+         RS485_ENABLE = RS485_ENABLE_OFF;
 
       } else if (cmd == CMD_UPGRADE) {
 
@@ -1251,20 +1251,20 @@ receive_cmd:
          RI0 = 0;
 
          /* acknowledge upgrade */
-         RS485_ENABLE = 1;
+         RS485_ENABLE = RS485_ENABLE_ON;
          SEND_BYTE(CMD_ACK+1);
          SEND_BYTE(1);
          SEND_BYTE(0); // dummy CRC
          DELAY_US(10);
-         RS485_ENABLE = 0;
+         RS485_ENABLE = RS485_ENABLE_OFF;
 
       } else if (cmd == UCMD_ECHO) {
 
-         RS485_ENABLE = 1;
+         RS485_ENABLE = RS485_ENABLE_ON;
          SEND_BYTE(CMD_ACK);
          SEND_BYTE(0); // dummy CRC, needed by subm_250
          DELAY_US(10);
-         RS485_ENABLE = 0;
+         RS485_ENABLE = RS485_ENABLE_OFF;
 
       } else if (cmd == UCMD_ERASE) {
 
@@ -1324,11 +1324,11 @@ receive_cmd:
 erase_ok:
 #endif
          /* return acknowledge */
-         RS485_ENABLE = 1;
+         RS485_ENABLE = RS485_ENABLE_ON;
          SEND_BYTE(CMD_ACK);
          SEND_BYTE(crc);
          DELAY_US(10);
-         RS485_ENABLE = 0;
+         RS485_ENABLE = RS485_ENABLE_OFF;
 
       } else if (cmd == UCMD_PROGRAM) {
 
@@ -1402,11 +1402,11 @@ erase_ok:
          SFRPAGE = UART0_PAGE;
 #endif
 
-         RS485_ENABLE = 1;
+         RS485_ENABLE = RS485_ENABLE_ON;
          SEND_BYTE(CMD_ACK);
          SEND_BYTE(0);
          DELAY_US(10);
-         RS485_ENABLE = 0;
+         RS485_ENABLE = RS485_ENABLE_OFF;
 
       } else if (cmd == UCMD_VERIFY) {
 
@@ -1426,11 +1426,11 @@ erase_ok:
             crc += *pr++;
 
          /* return acknowledge */
-         RS485_ENABLE = 1;
+         RS485_ENABLE = RS485_ENABLE_ON;
          SEND_BYTE(CMD_ACK);
          SEND_BYTE(crc);
          DELAY_US(10);
-         RS485_ENABLE = 0;
+         RS485_ENABLE = RS485_ENABLE_OFF;
 
       } else if (cmd == UCMD_READ) {
 
@@ -1450,7 +1450,7 @@ erase_ok:
          j = SBUF0;
          RI0 = 0;
 
-         RS485_ENABLE = 1;
+         RS485_ENABLE = RS485_ENABLE_ON;
 
          SEND_BYTE(CMD_ACK+7);     // send acknowledge, variable data length
          SEND_BYTE(32);            // send data length
@@ -1465,7 +1465,7 @@ erase_ok:
 
          SEND_BYTE(crc);
          DELAY_US(10);
-         RS485_ENABLE = 0;
+         RS485_ENABLE = RS485_ENABLE_OFF;
 
       } else if (cmd == UCMD_REBOOT) {
 
