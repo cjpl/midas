@@ -11785,7 +11785,7 @@ char mhttpd_css[] = "body {\
   margin:3px;\
   color:black;\
   background-color:white;\
-  font-family:sans-serif;\
+  font-family:verdana,tahoma,sans-serif;\
 }\
 \
 /* standard link colors and decorations */\
