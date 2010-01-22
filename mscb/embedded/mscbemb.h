@@ -379,6 +379,27 @@ sbit RS485_ENABLE = P3 ^ 5;
 sbit RS485_ENABLE = P0 ^ 4;
 
 /*--------------------------------*/
+
+#elif defined(CRATE_MONITOR)
+#include <c8051F120.h>
+#define CPU_C8051F120
+
+#define LED_0 P0 ^ 6
+#define LED_ON 0
+sbit RS485_ENABLE = P0 ^ 5;
+
+
+#elif defined(PT100X8)
+#include <c8051F120.h>
+#define CPU_C8051F120
+
+#define LED_0 P0 ^ 6
+#define LED_ON 0
+sbit RS485_ENABLE = P0 ^ 5;
+#define RS485_EANBLE_INVERT
+
+/*--------------------------------*/
+
 #elif defined(FGD_008)
 #include <c8051F310.h>
 #define  CPU_C8051F310
