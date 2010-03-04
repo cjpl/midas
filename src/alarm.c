@@ -344,6 +344,7 @@ INT al_trigger_class(const char *alarm_class, const char *alarm_message, BOOL fi
    HNDLE hDB, hkeyclass;
    char str[256], command[256], tag[32], url[256];
    ALARM_CLASS ac;
+   DWORD now = ss_time();
 
    cm_get_experiment_database(&hDB, NULL);
 
@@ -363,10 +364,10 @@ INT al_trigger_class(const char *alarm_class, const char *alarm_message, BOOL fi
    }
 
    /* write system message */
-   if (ac.write_system_message && (INT) ss_time() - (INT) ac.system_message_last > ac.system_message_interval) {
+   if (ac.write_system_message && (now - ac.system_message_last >= ac.system_message_interval)) {
       sprintf(str, "%s: %s", alarm_class, alarm_message);
       cm_msg(MTALK, "al_trigger_class", str);
-      ac.system_message_last = ss_time();
+      ac.system_message_last = now;
    }
 
    /* write elog message on first trigger if using internal ELOG */
@@ -448,7 +449,7 @@ INT al_reset_alarm(const char *alarm_name)
    sprintf(str, "/Alarms/Alarms/%s", alarm_name);
    db_find_key(hDB, 0, str, &hkeyalarm);
    if (!hkeyalarm) {
-      cm_msg(MERROR, "al_reset_alarm", "Alarm %s not found in ODB", alarm_name);
+      /*cm_msg(MERROR, "al_reset_alarm", "Alarm %s not found in ODB", alarm_name);*/
       return AL_INVALID_NAME;
    }
 
