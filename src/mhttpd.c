@@ -391,6 +391,41 @@ void get_elog_url(char *url, int len);
 
 /*------------------------------------------------------------------*/
 
+char *stristr(const char *str, const char *pattern)
+{
+   char c1, c2, *ps, *pp;
+
+   if (str == NULL || pattern == NULL)
+      return NULL;
+
+   while (*str) {
+      ps = (char *) str;
+      pp = (char *) pattern;
+      c1 = *ps;
+      c2 = *pp;
+      if (toupper(c1) == toupper(c2)) {
+         while (*pp) {
+            c1 = *ps;
+            c2 = *pp;
+
+            if (toupper(c1) != toupper(c2))
+               break;
+
+            ps++;
+            pp++;
+         }
+
+         if (!*pp)
+            return (char *) str;
+      }
+      str++;
+   }
+
+   return NULL;
+}
+
+/*------------------------------------------------------------------*/
+
 void rsputs(const char *str)
 {
    if (strlen_retbuf + strlen(str) > sizeof(return_buffer)-40) {
@@ -1197,9 +1232,9 @@ void show_status_page(int refresh, char *cookie_wpwd)
    rsprintf("<tr><td colspan=6 bgcolor=#C0C0C0>\n");
 
 #ifdef HAVE_MSCB
-   strlcpy(str, "Start, ODB, Messages, ELog, Alarms, Programs, History, MSCB, Config, Help", sizeof(str));
+   strlcpy(str, "Start, Pause, ODB, Messages, ELog, Alarms, Programs, History, MSCB, Config, Help", sizeof(str));
 #else
-   strlcpy(str, "Start, ODB, Messages, ELog, Alarms, Programs, History, Config, Help", sizeof(str));
+   strlcpy(str, "Start, Pause, ODB, Messages, ELog, Alarms, Programs, History, Config, Help", sizeof(str));
 #endif
    size = sizeof(str);
    db_get_value(hDB, 0, "/Experiment/Menu Buttons", str, &size, TID_STRING, TRUE);
@@ -1217,8 +1252,6 @@ void show_status_page(int refresh, char *cookie_wpwd)
             rsprintf("<noscript>\n");
             if (runinfo.state == STATE_PAUSED || runinfo.state == STATE_RUNNING)
                rsprintf("<input type=submit name=cmd %s value=Stop>\n", runinfo.transition_in_progress?"disabled":"");
-            if (runinfo.state == STATE_RUNNING)
-               rsprintf("<input type=submit name=cmd %s value=Pause>\n", runinfo.transition_in_progress?"disabled":"");
             rsprintf("</noscript>\n");
             rsprintf("<script type=\"text/javascript\">\n");
             rsprintf("<!--\n");
@@ -1228,14 +1261,25 @@ void show_status_page(int refresh, char *cookie_wpwd)
             rsprintf("   if (flag == true)\n");
             rsprintf("      window.location.href = '?cmd=Stop';\n");
             rsprintf("}\n");
+            if (runinfo.state == STATE_PAUSED || runinfo.state == STATE_RUNNING)
+               rsprintf("document.write('<input type=button %s value=Stop onClick=\"stop();\">\\n');\n", runinfo.transition_in_progress?"disabled":"");
+            rsprintf("//-->\n");
+            rsprintf("</script>\n");
+         }
+      } else if (stricmp(str, "Pause") == 0) {
+         if (runinfo.state != STATE_STOPPED) {
+            rsprintf("<noscript>\n");
+            if (runinfo.state == STATE_RUNNING == 0)
+               rsprintf("<input type=submit name=cmd %s value=Pause>\n", runinfo.transition_in_progress?"disabled":"");
+            rsprintf("</noscript>\n");
+            rsprintf("<script type=\"text/javascript\">\n");
+            rsprintf("<!--\n");
             rsprintf("function pause()\n");
             rsprintf("{\n");
             rsprintf("   flag = confirm('Are you sure to pause the run?');\n");
             rsprintf("   if (flag == true)\n");
             rsprintf("      window.location.href = '?cmd=Pause';\n");
             rsprintf("}\n");
-            if (runinfo.state == STATE_PAUSED || runinfo.state == STATE_RUNNING)
-               rsprintf("document.write('<input type=button %s value=Stop onClick=\"stop();\">\\n');\n", runinfo.transition_in_progress?"disabled":"");
             if (runinfo.state == STATE_RUNNING)
                rsprintf("document.write('<input type=button %s value=Pause onClick=\"pause();\"\\n>');\n", runinfo.transition_in_progress?"disabled":"");
             rsprintf("//-->\n");
@@ -1877,7 +1921,7 @@ void show_messages_page(int refresh, int n_message)
 
    rsprintf("<table columns=2 border=3 cellpadding=2>\n");
 
-  /*---- title row ----*/
+   /*---- title row ----*/
 
    size = sizeof(str);
    str[0] = 0;
@@ -1887,7 +1931,7 @@ void show_messages_page(int refresh, int n_message)
    rsprintf("<tr><th bgcolor=#A0A0FF>MIDAS experiment \"%s\"", str);
    rsprintf("<th bgcolor=#A0A0FF>%s</tr>\n", ctime(&now));
 
-  /*---- menu buttons ----*/
+   /*---- menu buttons ----*/
 
    rsprintf("<tr><td colspan=2 bgcolor=#C0C0C0>\n");
 
@@ -2566,7 +2610,7 @@ void show_elog_submit_query(INT last_n)
       show_attachments = (*getparam("attach") > 0);
    }
 
-  /*---- title row ----*/
+   /*---- title row ----*/
 
    size = sizeof(str);
    str[0] = 0;
@@ -2582,7 +2626,7 @@ void show_elog_submit_query(INT last_n)
    else
       rsprintf("<th colspan=%d bgcolor=#A0A0FF>Experiment \"%s\"</tr>\n", colspan, str);
 
-  /*---- menu buttons ----*/
+   /*---- menu buttons ----*/
 
    if (!full) {
       colspan = display_run_number ? 7 : 6;
@@ -2594,7 +2638,7 @@ void show_elog_submit_query(INT last_n)
       rsprintf("</tr>\n\n");
    }
 
-  /*---- convert end date to ltime ----*/
+   /*---- convert end date to ltime ----*/
 
    ltime_end = ltime_start = 0;
    m1 = m2 = d2 = y2 = 0;
@@ -2989,7 +3033,7 @@ void show_rawfile(char *path)
 
    rsprintf("<table border=3 cellpadding=1 width=\"100%%\">\n");
 
-  /*---- title row ----*/
+   /*---- title row ----*/
 
    size = sizeof(str);
    str[0] = 0;
@@ -3001,7 +3045,7 @@ void show_rawfile(char *path)
    else
       rsprintf("<th bgcolor=#A0A0FF>Experiment \"%s\"</tr>\n", str);
 
-  /*---- menu buttons ----*/
+   /*---- menu buttons ----*/
 
    rsprintf("<tr><td colspan=2 bgcolor=#C0C0C0>\n");
 
@@ -3124,12 +3168,12 @@ void show_form_query()
 
    rsprintf("<table border=3 cellpadding=1>\n");
 
-  /*---- title row ----*/
+   /*---- title row ----*/
 
    rsprintf("<tr><th colspan=2 bgcolor=#A0A0FF>MIDAS Electronic Logbook");
    rsprintf("<th colspan=2 bgcolor=#A0A0FF>Form \"%s\"</tr>\n", getparam("form"));
 
-  /*---- menu buttons ----*/
+   /*---- menu buttons ----*/
 
    rsprintf("<tr><td colspan=4 bgcolor=#C0C0C0>\n");
 
@@ -3198,7 +3242,7 @@ void show_form_query()
       }
 
 
-  /*---- menu buttons at bottom ----*/
+   /*---- menu buttons at bottom ----*/
 
    if (i > 10) {
       rsprintf("<tr><td colspan=4 bgcolor=#C0C0C0>\n");
