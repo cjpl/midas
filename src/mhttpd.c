@@ -5174,6 +5174,79 @@ typedef struct {
 
 /*------------------------------------------------------------------*/
 
+int evaluate_src(char *key, char *src, double *fvalue)
+{
+   HNDLE hDB, hkeyval;
+   KEY vkey;
+   int i, n, size, status, ivalue;
+   char str[256], data[256], value[256];
+
+   cm_get_experiment_database(&hDB, NULL);
+
+   /* separate source from operators */
+   for (i=0 ; i<(int)strlen(src) ; i++)
+      if (src[i] == '>' || src[i] == '&')
+         break;
+   strncpy(str, src, i);
+   str[i] = 0;
+
+   /* strip trailing blanks */
+   while (strlen(str) > 0 && str[strlen(str)-1] == ' ')
+      str[strlen(str)-1] = 0;
+
+   db_find_key(hDB, 0, str, &hkeyval);
+   if (!hkeyval) {
+      cm_msg(MERROR, "show_custom_gif", "Invalid Src key \"%s\" for Fill \"%s\"",
+             src, key);
+      return 0;
+   }
+
+   db_get_key(hDB, hkeyval, &vkey);
+   size = sizeof(data);
+   status = db_get_value(hDB, 0, src, data, &size, vkey.type, FALSE);
+   db_sprintf(value, data, size, 0, vkey.type);
+   if (equal_ustring(value, "NAN"))
+      return 0;
+   
+   if (vkey.type == TID_BOOL) {
+      *fvalue = (value[0] == 'y');
+   } else
+      *fvalue = atof(value);
+
+   /* evaluate possible operators */
+   do {
+      if (src[i] == '>' && src[i+1] == '>') {
+         i+=2;
+         n = atoi(src+i);
+         while (src[i] == ' ' || isdigit(src[i]))
+            i++;
+         ivalue = (int)*fvalue;
+         ivalue >>= n;
+         *fvalue = ivalue;
+      }
+
+      if (src[i] == '&') {
+         i+=1;
+         while (src[i] == ' ')
+            i++;
+         if (src[i] == '0' && src[i] == 'x')
+            sscanf(src+2, "%x", &n);
+         else
+            n = atoi(src+i);
+         while (src[i] == ' ' || isdigit(src[i]) || src[i] == 'x')
+            i++;
+         ivalue = (int)*fvalue;
+         ivalue &= n;
+         *fvalue = ivalue;
+      }
+
+   } while (src[i]);
+
+   return 1;
+}
+
+/*------------------------------------------------------------------*/
+
 void show_custom_gif(char *name)
 {
    char str[256], filename[256], data[256], value[256], src[256], custom_path[256],
@@ -5489,24 +5562,8 @@ void show_custom_gif(char *name)
             continue;
          }
 
-         db_find_key(hDB, 0, src, &hkeyval);
-         if (!hkeyval) {
-            cm_msg(MERROR, "show_custom_gif", "Invalid Src key \"%s\" for Fill \"%s\"",
-                   src, key.name);
+         if (!evaluate_src(key.name, src, &fvalue))
             continue;
-         }
-
-         db_get_key(hDB, hkeyval, &vkey);
-         size = sizeof(data);
-         status = db_get_value(hDB, 0, src, data, &size, vkey.type, FALSE);
-         db_sprintf(value, data, size, 0, vkey.type);
-         if (equal_ustring(value, "NAN"))
-            continue;
-         
-         if (vkey.type == TID_BOOL) {
-            fvalue = (value[0] == 'y');
-         } else
-            fvalue = atof(value);
 
          x = y = 0;
          size = sizeof(x);
