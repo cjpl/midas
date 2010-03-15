@@ -135,6 +135,7 @@ SCS_2001_MODULE code scs_2001_module[] = {
 
   { 0x75, "PT100-2",         vars_temp2,  1, dr_temp2       },
   { 0x76, "PT1000-2",        vars_temp2,  1, dr_temp2       },
+  { 0x77, "CERNOX-2",        vars_temp2,  1, dr_temp2       },
 
   /* 0x80-0x9F analog out */
   { 0x80, "UOut 0-2.5V",     vars_uout,   1, dr_ltc2600     },
@@ -1162,7 +1163,10 @@ unsigned long d;
       DELAY_US_REENTRANT(100);
 
       /* start first conversion */
-      ad7718_write(AD7718_CONTROL, (1 << 7) | 0x0C);  // Channel 1-2, +-320mV range
+      if (id == 0x77)
+         ad7718_write(AD7718_CONTROL, (1 << 7) | 0x08);  // Channel 1-2, +-20mV range
+      else
+         ad7718_write(AD7718_CONTROL, (1 << 7) | 0x0C);  // Channel 1-2, +-320mV range
       temp_cur_chn[addr*8+port] = 0;
    }
 
@@ -1187,25 +1191,40 @@ unsigned long d;
 
       /* start next conversion */
       temp_cur_chn[addr*8+port] = (temp_cur_chn[addr*8+port] + 1) % 2;
-      ad7718_write(AD7718_CONTROL, (1 << 7) | (temp_cur_chn[addr*8+port] << 4) | 0x0C);  // next chn pair, +-320mV range
+
+      if (id == 0x77)
+         ad7718_write(AD7718_CONTROL, (1 << 7) | (temp_cur_chn[addr*8+port] << 4) | 0x08);  // next chn pair, +-20mV range
+      else
+         ad7718_write(AD7718_CONTROL, (1 << 7) | (temp_cur_chn[addr*8+port] << 4) | 0x0C);  // next chn pair, +-320mV range
 
       /* convert to volts */
-      value = 0.32*((float)d / (1l<<24));
+      if (id == 0x77)
+         value = 0.020*((float)d / (1l<<24));
+      else
+         value = 0.320*((float)d / (1l<<24));
 
-      /* convert to Ohms (1mA excitation) */
-      value /= 0.001;
+      if (id == 0x75 || id == 0x76) {
+         /* PT100 or PT1000 */
+         
+         /* convert to Ohms (1mA excitation) */
+         value /= 0.001;
 
-      /* convert PT1000 to PT100 ??? */
-      if (id == 0x76)
-         value /= 10;
+         if (id == 0x76)
+            value /= 10;
+   
+         /* convert to Kelvin, coefficients obtained from table fit (www.lakeshore.com) */
+         value = 5.232935E-7 * value * value * value + 
+                 0.0009 * value * value + 
+                 2.357 * value + 28.288;
+   
+         /* convert to Celsius */
+         value -= 273.15;
+      } else {
+         /* CERNOX resistors */
 
-      /* convert to Kelvin, coefficients obtained from table fit (www.lakeshore.com) */
-      value = 5.232935E-7 * value * value * value + 
-              0.0009 * value * value + 
-              2.357 * value + 28.288;
-
-      /* convert to Celsius */
-      value -= 273.15;
+         /* convert to Ohms (1uA excitation) */
+         value *= 1E6;
+      }
 
       /* round result to significant digits */
       value = ((long)(value*1E2+0.5))/1E2;

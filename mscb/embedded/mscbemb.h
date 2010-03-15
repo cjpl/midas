@@ -522,8 +522,8 @@ char putchar1(char c);                   // putchar cannot be used with LCD supp
 #define RS485_ENABLE_ON 0
 #define RS485_ENABLE_OFF 1
 #else
-#define RS485_ENABLE_ON 0
-#define RS485_ENABLE_OFF 1
+#define RS485_ENABLE_ON 1
+#define RS485_ENABLE_OFF 0
 #endif
 
 /*---- Delay macro to be used in interrupt routines etc. -----------*/
