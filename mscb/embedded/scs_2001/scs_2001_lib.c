@@ -67,8 +67,12 @@ MSCB_INFO_VAR code vars_temp8[] = {
    { 4, UNIT_CELSIUS, 0,          0, MSCBF_FLOAT, "P%T#",    (void xdata *)8, 2, 0, 0 },
 };
 
-MSCB_INFO_VAR code vars_temp2[] = {
+MSCB_INFO_VAR code vars_temp2_c[] = {
    { 4, UNIT_CELSIUS, 0,          0, MSCBF_FLOAT, "P%T#",    (void xdata *)2, 2, 0, 0 },
+};
+
+MSCB_INFO_VAR code vars_temp2_k[] = {
+   { 4, UNIT_KELVIN,  0,          0, MSCBF_FLOAT, "P%T#",    (void xdata *)2, 2, 0, 0 },
 };
 
 MSCB_INFO_VAR code vars_iout[] =
@@ -133,9 +137,9 @@ SCS_2001_MODULE code scs_2001_module[] = {
   { 0x73, "PT1000-8",        vars_temp81, 2, dr_temp8       },
   { 0x74, "AD590",           vars_temp8,  1, dr_ad590       },
 
-  { 0x75, "PT100-2",         vars_temp2,  1, dr_temp2       },
-  { 0x76, "PT1000-2",        vars_temp2,  1, dr_temp2       },
-  { 0x77, "CERNOX-2",        vars_temp2,  1, dr_temp2       },
+  { 0x75, "PT100-2",         vars_temp2_c,1, dr_temp2       },
+  { 0x76, "PT1000-2",        vars_temp2_c,1, dr_temp2       },
+  { 0x77, "CERNOX-2",        vars_temp2_k,1, dr_temp2       },
 
   /* 0x80-0x9F analog out */
   { 0x80, "UOut 0-2.5V",     vars_uout,   1, dr_ltc2600     },
@@ -1147,18 +1151,18 @@ unsigned long d;
 /*---- PT100/1000 via AD7718 two channels ------------------------*/
 
 static unsigned char xdata temp_cur_chn[N_PORT];
+static unsigned char xdata error_cur_chn[N_PORT];
 
 unsigned char dr_temp2(unsigned char id, unsigned char cmd, unsigned char addr, 
                        unsigned char port, unsigned char chn, void *pd) reentrant
 {
 float value;
-unsigned char status;
+unsigned char status, cur_chn;
 unsigned long d;
 
    if (cmd == MC_INIT) {
       address_port1(addr, port, AM_RW_SERIAL, 1);
       ad7718_write(AD7718_FILTER, 82);                // SF value for 50Hz rejection (2 Hz)
-      //ad7718_write(AD7718_FILTER, 13);                // SF value for faster conversion (12 Hz)
       ad7718_write(AD7718_MODE, 3);                   // continuous conversion
       DELAY_US_REENTRANT(100);
 
@@ -1172,7 +1176,7 @@ unsigned long d;
 
    if (cmd == MC_READ) {
 
-      if (chn > 7)
+      if (chn > 2)
          return 0;
 
       /* return if ADC busy */
@@ -1181,7 +1185,8 @@ unsigned long d;
          return 0;
 
       /* return if not current channel */
-      if (chn != temp_cur_chn[addr*8+port])
+      cur_chn = temp_cur_chn[addr*8+port];
+      if (chn != cur_chn % 2)
          return 0;
 
       address_port1(addr, port, AM_RW_SERIAL, 1);
@@ -1190,18 +1195,25 @@ unsigned long d;
       ad7718_read(AD7718_ADCDATA, &d);
 
       /* start next conversion */
-      temp_cur_chn[addr*8+port] = (temp_cur_chn[addr*8+port] + 1) % 2;
+      if (id == 0x77) {
+         /* channel 0,1: voltage drop across sensor
+            channel 2,3: voltage drop across 100k resistor (open sensor indicator) */
+         temp_cur_chn[addr*8+port] = (temp_cur_chn[addr*8+port] + 1) % 4;
+         
+         if (temp_cur_chn[addr*8+port] < 2)
+            ad7718_write(AD7718_CONTROL, (1 << 7) | (temp_cur_chn[addr*8+port] << 4) | 0x08);  // next chn pair, +-20mV range
+         else
+            ad7718_write(AD7718_CONTROL, (1 << 7) | (temp_cur_chn[addr*8+port] << 4) | 0x0C);  // next chn pair, +-320mV range
 
-      if (id == 0x77)
-         ad7718_write(AD7718_CONTROL, (1 << 7) | (temp_cur_chn[addr*8+port] << 4) | 0x08);  // next chn pair, +-20mV range
-      else
+         if (cur_chn == 0 || cur_chn == 1)
+            value = 0.020*((float)d / (1l<<24)); // +- 20mV range
+         else
+            value = 0.320*((float)d / (1l<<24)); // +- 320mV range
+      } else {
+         temp_cur_chn[addr*8+port] = (temp_cur_chn[addr*8+port] + 1) % 2;
          ad7718_write(AD7718_CONTROL, (1 << 7) | (temp_cur_chn[addr*8+port] << 4) | 0x0C);  // next chn pair, +-320mV range
-
-      /* convert to volts */
-      if (id == 0x77)
-         value = 0.020*((float)d / (1l<<24));
-      else
          value = 0.320*((float)d / (1l<<24));
+      }
 
       if (id == 0x75 || id == 0x76) {
          /* PT100 or PT1000 */
@@ -1222,17 +1234,39 @@ unsigned long d;
       } else {
          /* CERNOX resistors */
 
+         /* remember error condition (current != 1uA) */
+         if (cur_chn == 2 || cur_chn == 3) {
+            if (value < 0.08 || value > 0.12)
+               error_cur_chn[addr*8+port] |= (1 << chn);
+            else
+               error_cur_chn[addr*8+port] &= ~(1 << chn);
+            return 0;
+         }
+
          /* convert to Ohms (1uA excitation) */
          value *= 1E6;
+
+         /* convert to Kelvin, coefficients obtains from table fit (Lakeshore table for CX-1050-AA-4L) */
+         value = -0.479E-12 * value * value * value * value 
+                 -0.7873E-9 * value * value * value
+                 +16.11E-6  * value * value
+                 +36.5E-3   * value
+                 +0.07336;
+
+         if (value != 0)
+            value = 1000/value;
+
+         if ((error_cur_chn[addr*8+port] & (1 << chn)) > 0)
+            value = -999.9;
       }
 
-      /* round result to significant digits */
+      /* round result to two significant digits */
       value = ((long)(value*1E2+0.5))/1E2;
    
-      if (value > 999)
-         value = 999.9;
-      if (value < -200)
-         value = -999.9;
+      if (value > 999.99)
+         value = 999.99;
+      if (value < -10)
+         value = -999.99;
 
       *((float *)pd) = value;
       return 4;
