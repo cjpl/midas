@@ -4421,7 +4421,7 @@ INT mana_init()
          if (bank_list->type == TID_STRUCT) {
             sprintf(str, "/Equipment/%s/Variables/%s", analyze_request[i].event_name,
                     block_name);
-            db_create_record(hDB, 0, str, strcomb(bank_list->init_str));
+            db_create_record(hDB, 0, str, strcomb((const char**)bank_list->init_str));
             db_find_key(hDB, 0, str, &hkey);
             bank_list->def_key = hkey;
          } else {
@@ -4440,7 +4440,7 @@ INT mana_init()
    for (i = 0; analyze_request[i].event_name[0]; i++) {
       if (analyze_request[i].init_string) {
          sprintf(str, "/Equipment/%s/Variables", analyze_request[i].event_name);
-         db_create_record(hDB, 0, str, strcomb(analyze_request[i].init_string));
+         db_create_record(hDB, 0, str, strcomb((const char**)analyze_request[i].init_string));
       }
    }
 #ifndef MANA_LITE
@@ -4492,7 +4492,7 @@ INT init_module_parameters()
             sprintf(str, "/%s/Parameters/%s", analyzer_name, module[j]->name);
 
             if (module[j]->init_str)
-               db_create_record(hDB, 0, str, strcomb(module[j]->init_str));
+               db_create_record(hDB, 0, str, strcomb((const char**)module[j]->init_str));
 
             db_find_key(hDB, 0, str, &hkey);
             if (db_open_record(hDB, hkey, module[j]->parameters, module[j]->param_size,
@@ -4733,7 +4733,7 @@ INT register_equipment(void)
                if (bank_list->type == TID_STRUCT) {
                   sprintf(str, "/Equipment/%s/Variables/%s", equipment[index].name,
                           bank_list->name);
-                  db_create_record(hDB, 0, str, strcomb(bank_list->init_str));
+                  db_create_record(hDB, 0, str, strcomb((const char**)bank_list->init_str));
                } else {
                   sprintf(str, "/Equipment/%s/Variables/%s", equipment[index].name,
                           bank_list->name);
