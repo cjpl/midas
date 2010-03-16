@@ -44,8 +44,8 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="\midas\include;\mxml"
-				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;"
+				AdditionalIncludeDirectories="\midas\include;\mxml;\midas\mscb\"
+				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;HAVE_MSCB"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
 				UsePrecompiledHeader="0"
@@ -319,6 +319,14 @@
 				</FileConfiguration>
 			</File>
 			<File
+				RelativePath="..\mscb\mscb.c"
+				>
+			</File>
+			<File
+				RelativePath="..\mscb\mscbrpc.c"
+				>
+			</File>
+			<File
 				RelativePath="..\..\mxml\mxml.c"
 				>
 			</File>
@@ -387,6 +395,10 @@
 			</File>
 			<File
 				RelativePath="..\include\mrpc.h"
+				>
+			</File>
+			<File
+				RelativePath="..\mscb\mscb.h"
 				>
 			</File>
 			<File

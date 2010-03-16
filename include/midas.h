@@ -1250,7 +1250,7 @@ typedef struct {
    DWORD stop_time_binary;            /**< ASCII of the last stop time */
 } RUNINFO;
 
-#define RUNINFO_STR(_name) char *_name[] = {\
+#define RUNINFO_STR(_name) const char *_name[] = {\
 "[.]",\
 "State = INT : 1",\
 "Online Mode = INT : 1",\
@@ -1294,7 +1294,7 @@ typedef struct {
 #define AT_PERIODIC   4 /**< - */
 #define AT_LAST       4 /**< - */
 
-#define PROGRAM_INFO_STR(_name) char *_name[] = {\
+#define PROGRAM_INFO_STR(_name) const char *_name[] = {\
 "[.]",\
 "Required = BOOL : n",\
 "Watchdog timeout = INT : 10000",\
@@ -1323,7 +1323,7 @@ typedef struct {
    char display_fgcolor[32];
 } ALARM_CLASS;
 
-#define ALARM_CLASS_STR(_name) char *_name[] = {\
+#define ALARM_CLASS_STR(_name) const char *_name[] = {\
 "[.]",\
 "Write system message = BOOL : y",\
 "Write Elog message = BOOL : n",\
@@ -1353,7 +1353,7 @@ typedef struct {
    char alarm_message[80];
 } ALARM;
 
-#define ALARM_ODB_STR(_name) char *_name[] = {\
+#define ALARM_ODB_STR(_name) const char *_name[] = {\
 "[.]",\
 "Active = BOOL : n",\
 "Triggered = INT : 0",\
@@ -1368,7 +1368,7 @@ typedef struct {
 "",\
 NULL }
 
-#define ALARM_PERIODIC_STR(_name) char *_name[] = {\
+#define ALARM_PERIODIC_STR(_name) const char *_name[] = {\
 "[.]",\
 "Active = BOOL : n",\
 "Triggered = INT : 0",\
@@ -1773,7 +1773,7 @@ extern "C" {
    INT EXPRT db_sprintff(char *string, const char *format, const void *data, INT data_size, INT index, DWORD type);
    INT EXPRT db_sprintfh(char *string, const void *data, INT data_size, INT index, DWORD type);
    INT EXPRT db_sscanf(char *string, void *data, INT * data_size, INT index, DWORD type);
-   char EXPRT *strcomb(char **list);
+   char EXPRT *strcomb(const char **list);
 
    /*---- Bank routines ----*/
    void EXPRT bk_init(void *pbh);

@@ -5105,7 +5105,7 @@ void show_odb_tag(char *path, char *keypath, char *format, int n_var, int edit, 
    BGColor   Background color RRGGBB             FFFFFF
 */
 
-char *cgif_label_str[] = {
+const char *cgif_label_str[] = {
    "Src = STRING : [256] ",
    "Format = STRING : [32] %1.1f",
    "Font = STRING : [32] Medium",
@@ -5145,7 +5145,7 @@ typedef struct {
    BDColor   Border color RRGGBB                 808080
 */
 
-char *cgif_bar_str[] = {
+const char *cgif_bar_str[] = {
    "Src = STRING : [256] ",
    "X = INT : 0",
    "Y = INT : 0",

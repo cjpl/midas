@@ -39,6 +39,22 @@ typedef struct {
 #define PI_HEX       (1<<3)
 #define PI_PAUSE     (1<<4)
 
+MUTEX_T *tm;
+
+/*------------------------------------------------------------------*/
+
+INT thread(void *p)
+{
+   do {
+      ss_sleep(1000);
+      ss_mutex_wait_for(tm, 10000);
+      printf("%d in critical section\n", ss_gettid());
+      ss_sleep(3000);
+      printf("%d out of critical section\n", ss_gettid());
+      ss_mutex_release(tm);
+   } while (1);
+}
+
 /*------------------------------------------------------------------*/
 
 BOOL key_modified;
@@ -2621,6 +2637,10 @@ int command_loop(char *host_name, char *exp_name, char *cmd, char *start_dir)
 
       /* test 3 */
       else if (param[0][0] == 't' && param[0][1] == '3') {
+         ss_mutex_create(&tm);
+         ss_thread_create(thread, NULL);
+         ss_thread_create(thread, NULL);
+         ss_thread_create(thread, NULL);
       }
 
       /* exit/quit */

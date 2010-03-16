@@ -432,7 +432,7 @@ typedef struct {
 
 /*---- Logging channel information ---------------------------------*/
 
-#define CHN_SETTINGS_STR(_name) char *_name[] = {\
+#define CHN_SETTINGS_STR(_name) const char *_name[] = {\
 "[Settings]",\
 "Active = BOOL : 1",\
 "Type = STRING : [8] Disk",\
@@ -683,4 +683,5 @@ extern "C" {
 #endif
 /**dox***************************************************************/
 #endif                          /* DOXYGEN_SHOULD_SKIP_THIS */
-          /**dox***************************************************************//** @} *//* end of msystemincludecode */
+          
+/**dox***************************************************************//** @} *//* end of msystemincludecode */

@@ -332,7 +332,7 @@ void *realloc_data(DATABASE_HEADER * pheader, void *address, INT old_size, INT n
 }
 
 /*------------------------------------------------------------------*/
-char *strcomb(char **list)
+char *strcomb(const char **list)
 /* convert list of strings into single string to be used by db_paste() */
 {
    INT i, j;

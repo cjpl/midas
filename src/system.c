@@ -2195,7 +2195,7 @@ INT ss_mutex_create(MUTEX_T ** mutex)
 
 #ifdef OS_WINNT
 
-   *mutex = malloc(sizeof(HANDLE));
+   *mutex = (MUTEX_T *)malloc(sizeof(HANDLE));
    **mutex = CreateMutex(NULL, FALSE, NULL);
 
    if (**mutex == 0)
