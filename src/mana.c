@@ -1543,7 +1543,7 @@ INT mana_init()
          if (bank_list->type == TID_STRUCT) {
             sprintf(str, "/Equipment/%s/Variables/%s", analyze_request[i].event_name,
                     block_name);
-            db_check_record(hDB, 0, str, strcomb(bank_list->init_str), TRUE);
+            db_check_record(hDB, 0, str, strcomb((const char **)bank_list->init_str), TRUE);
             db_find_key(hDB, 0, str, &hkey);
             bank_list->def_key = hkey;
          } else {
@@ -1564,7 +1564,7 @@ INT mana_init()
    for (i = 0; analyze_request[i].event_name[0]; i++) {
       if (analyze_request[i].init_string) {
          sprintf(str, "/Equipment/%s/Variables", analyze_request[i].event_name);
-         db_check_record(hDB, 0, str, strcomb(analyze_request[i].init_string), TRUE);
+         db_check_record(hDB, 0, str, strcomb((const char **)analyze_request[i].init_string), TRUE);
       }
    }
 
@@ -3826,7 +3826,7 @@ INT init_module_parameters(BOOL bclose)
                      status = 0;
                }
                if (status != DB_SUCCESS && module[j]->init_str) {
-                  if (db_check_record(hDB, 0, str, strcomb(module[j]->init_str), TRUE) !=
+                  if (db_check_record(hDB, 0, str, strcomb((const char **)module[j]->init_str), TRUE) !=
                       DB_SUCCESS) {
                      cm_msg(MERROR, "init_module_parameters",
                             "Cannot create/check \"%s\" parameters in ODB", str);
