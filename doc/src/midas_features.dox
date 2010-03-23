@@ -1,0 +1,187 @@
+/*! \page F_ODB_Structure ODB Structure
+
+\htmlonly
+<script type="text/javascript">
+pages( "F_MainElements",  "F_Section_Index", "F_Midas_Code_and_Libraries", "F_ODB_Structure","end"); // back index next {top bottom}
+// sections params:   last section; top of this section; next section
+sections("Quickstart", "Features", "RunControl");
+</script>
+\endhtmlonly
+\latexonly 
+ @ref F_MainElements "previous page" - @ref Top - @ref Organization "Map"- @ref F_Midas_Code_and_Libraries "next page"
+\endlatexonly
+<br>
+The Online Database contains information that System and User wants to share.
+Basically all transactions for experiment setup and monitoring go through the ODB.
+The ODB also contains some specific system information related to the "Midas client"
+currently involved in an experiment (/system).
+
+Each ODB field or so called \b KEY is accessible by the user through 
+ - either interactively (see @ref RC_odbedit_task and @ref RC_mhttpd_task ) 
+ - or by C-programming (see functions db_xxx in @ref F_Midas_Library).
+
+The ODB information is stored in a "tree/branch" structure where each branch refers
+to a specific set of data. On the first invocation of the database (first Midas
+application) a minimal system record will be created. Later on each application
+will add its own set of parameters to the database depending on its requirement.
+For instance, starting the ODB for the first time, the tree \b /Runfinfo,
+/Experiment, /System  will be created. The application @ref F_mlogger_task "mlogger"
+will add its own trees (i.e. <b> /Logger /History  </b>). 
+
+ODB is the main communication platform between Midas applications. As such, the contents of 
+the ODB is application dependent.
+Several optional trees (and subtrees) can be added by the user in order to provide extra
+functionality of the system. Such optional trees are <b> Alias, Script, Edit on Start,
+Security, Custom, Run parameters etc. </b>.
+
+
+The ODB is of course available to the users for storage of data and communication between their own 
+custom clients.  Users are expected to customize the ODB for their experiments, by  addding their own trees, 
+subtrees and keys as desired, as well as customizing the existing system keys to suit their own needs.
+
+The following lists many of the Midas ODB trees, with links into the documentation: 
+- @ref RC_odb_system_tree "/System tree"
+- @ref RC_ODB_RunInfo_Tree  "/Runinfo tree"
+- @ref FE_ODB_equipment_tree "/Equipment tree"
+- @ref F_Logger_tree "/Logger tree"
+- @ref RC_ODB_Experiment_Tree "/Experiment tree"
+- @ref F_ODB_history_tree "/History tree"
+- @ref RC_ODB_Alarms_Tree "/Alarms tree"
+- @ref RC_odb_script_tree "/Script tree"
+- @ref RC_odb_alias_tree "/Alias tree"
+- @ref F_ODB_Elog_Tree "/Elog tree"
+- @ref RC_ODB_programs_tree "/Programs tree"
+- @ref F_ODB_Lazy_Tree "/Lazy tree"
+- @ref FE_ODB_EBuilder_Tree "/Ebuilder tree"
+- @ref RC_odb_custom_tree "/Custom tree"
+- @ref RC_odb_customscript_tree "/CustomScript tree"
+
+\anchor end
+\htmlonly
+<script type="text/javascript">
+pages( "F_MainElements",  "F_Section_Index", "F_Midas_Code_and_Libraries", "F_ODB_Structure",""); // back index next {top bottom}
+// sections params:   last section; top of this section; next section
+sections("Quickstart", "Features", "RunControl");
+</script>
+\endhtmlonly
+\latexonly 
+ @ref F_MainElements "previous page" - @ref Top - @ref Organization "Map"- @ref F_Midas_Code_and_Libraries "next page"
+\endlatexonly
+
+<!-- end of page F_ODB_Structure
+       a sub-page of FEATURES
+-->
+*/
+
+/*! @page F_Midas_Code_and_Libraries Midas Code and Libraries
+
+\htmlonly
+<script type="text/javascript">
+pages( "F_ODB_Structure",  "F_Section_Index", "F_Logging","F_Midas_Code_and_Libraries","end"); // back index next {top bottom}
+// sections params:   last section; top of this section; next section
+sections("Quickstart", "Features", "RunControl");
+</script>
+\endhtmlonly
+\latexonly 
+ @ref F_ODB_Structure "previous page" - @ref Top - @ref Organization "Map"- @ref  F_Logging "next page"
+\endlatexonly
+<br>
+
+
+This section covers several aspects of the Midas system.
+
+  - @ref RC_state_transition
+  - @ref F_Midas_Data_Types 
+  - @ref F_Midas_Library
+  - @ref F_midas_macro
+  - @ref FE_YBOS_Bank_Types
+  - @ref F_YBOS_library
+
+@section F_Midas_Data_Types Midas Data Types
+Midas defines its own data type for OS compatibility. It is suggested that you use them
+in order to ensure correct compilation when moving code from one OS to another.
+\em float and \em double retain OS definition.
+
+- BYTE      unsigned char
+- WORD      unsigned short int (16bits word)
+- DWORD     unsigned 32bits word
+- INT       signed 32bits word
+- BOOL      OS dependent.
+
+When defining a data type either in the frontend code for bank definition or in user code
+to define ODB variables, Midas requires the use of its own data type declaration. The list
+below shows the main Type IDentification to be used (refer to @ref mdefineh
+for complete listing):
+
+- TID_BYTE      unsigned byte         0       255 
+- TID_SBYTE     signed BYTE         -128      127 
+- TID_CHAR      single character      0       255 
+- TID_WORD      two BYTE             0      65535
+- TID_SHORT     signed WORD        -32768    32767
+- TID_DWORD     four bytes            0      2**32-1
+- TID_INT       signed DWORD        -2**31    2**31-1
+- TID_BOOL      four bytes bool       0        1   
+- TID_FLOAT     four bytes float format    
+- TID_DOUBLE    eight bytes float format                
+
+<hr>
+
+<hr> @section F_Midas_Library Midas Code and Libraries
+
+The Midas libraries are composed of 5 main source codes and their corresponding header files.
+
+-# @ref midasincludecode : Midas abstract layer.
+-# @ref msystemincludecode : Midas function implementation.
+-# @ref alfunctioncode : Midas Alarm functions.
+-# @ref hsfunctioncode : Midas History functions.
+-# @ref elfunctioncode : Midas Elog functions.
+-# @ref mrpcincludecode : Midas RPC functions.
+-# @ref odbcode : Online Database functions.
+-# @ref ybosincludecode : YBOS specific functions.
+
+
+Within these files, all the functions have been categorized depending on their scope.
+
+- \b al_xxx(...) : Alarm system calls
+- \b bk_xxx(...) : Midas bank manipulation calls
+- \b bm_xxx(...) : Buffer management calls
+- \b cm_xxx(...) : Common system calls
+- \b db_xxx(...) : Database management calls
+- \b el_xxx(...) : Electronic Log book calls
+- \b hs_xxx(...) : History manipulation calls
+- \b ss_xxx(...) : System calls
+- \b rb_xxx(...) : Ring buffer calls
+- \b ybk_xxx(...) : YBOS bank manipulation
+
+<hr> @section F_midas_macro MIDAS Macros
+Several group of MACROs are available for simplifying the users' job on setting or getting Midas
+information. They are also listed in the @ref F_Midas_Library. All of them are defined in
+the @ref mmacroh, @ref msmacroh, @ref ybosmacroh header files.
+
+  - @ref F_message_types "Message macros"
+  - @ref FE_Midas_Event_Header_Macros "Event Header macros"
+  - @ref DA_Byte_Swap_Macros
+  - @ref FE_LAM_macros
+
+<hr> @subsection F_YBOS_library YBOS library
+Exportable ybos functions through inclusion of ybos.h
+
+
+\anchor end
+
+\htmlonly
+<script type="text/javascript">
+pages( "F_ODB_Structure",  "F_Section_Index", "F_Logging","F_Midas_Code_and_Libraries",""); // back index next {top bottom}
+// sections params:   last section; top of this section; next section
+sections("Quickstart", "Features", "RunControl");
+</script>
+\endhtmlonly
+\latexonly 
+ @ref F_ODB_Structure "previous page" - @ref Top - @ref Organization "Map"- @ref  F_Logging "next page"
+\endlatexonly
+<br>
+
+<!-- End of Page  F_Midas_Code_and_Libraries 
+       a sub-page of FEATURES
+-->
+*/

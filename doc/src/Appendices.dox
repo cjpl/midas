@@ -1,0 +1,290 @@
+/*! \page FE_Appendices  Appendices
+<br>
+<!-- Navigation -->
+\htmlonly
+<script type="text/javascript">
+// pages parameters: back index next {top bottom}
+pages( "FE_event_buffer_size","FE_section_index", "FE_Data_Format","Appendices","end" );
+// section parameters: last section; top of this section; next section
+sections("NDF","Appendices","Glossary");
+</script>
+\endhtmlonly
+\latexonly
+@ref  FE_event_buffer_size "previous page" - @ref FE_section_index - @ref Top - @ref  Glossary "next page"
+\endlatexonly
+<br>
+
+  - \subpage  FE_Data_format  <!-- appendix A -->
+  - \subpage  FE_hardware    <!-- formerly Appendix B -->
+  - \subpage  FE_camac_vme_function_calls <!-- appendix C -->
+  - \subpage  FE_utils  <!- from utilities -->
+\anchor end
+*/
+
+
+/*!  \page  FE_camac_vme_function_calls CAMAC and VME access function calls
+<!-- Formerly  appendixC.dox  -->
+<br>
+\htmlonly
+ <script type="text/javascript">
+pages("FE_Hardware",  "FE_section_index", "FE_utils","FE_camac_vme_function_calls","end" ); // back index next {top bottom}
+// section parameters: last section; top of this section; next section
+sections("RunControl","FrontendOperation","Utilities");
+</script>
+\endhtmlonly
+\latexonly
+@ref FE_Hardware  "previous page" - @ref FE_section_index - @ref Top - @ref   FE_mcnaf_task mcnaf "next page"
+\endlatexonly
+<br>
+ 
+Midas defines its own set of CAMAC and VME calls in order to unify the different 
+hardware modules that it supports. This interface method permits code to be totally 
+<em> hardware as well as OS  independent </em>. For example, the same user code developed 
+on a system can be used as a template for another application on a different operating 
+system.
+
+While the file mcstd.h (Midas Camac Standard) provides the interface for the 
+CAMAC access, the file mvmestd.h (Midas VME Standard) is for the VME access.
+An extra CAMAC interface built on the top of \b mcstd provides the ESONE standard
+CAMAC calls (esone.c).
+
+Refer to the corresponding directories under \b /drivers to find out what
+module of each family is already supported by the current Midas distribution.
+/drivers/divers contains older drivers which have not yet been converted to the
+latest API.
+
+<hr> @section FE_Midas_CAMAC_standard_functions Midas CAMAC standard functions
+Please refer to @ref mcstdfunctionh for function description.  
+
+<hr> @section FE_ESONE_CAMAC_standard_functions ESONE CAMAC standard functions
+
+<strong>Not all the functionality of ESONE standard has been fully tested</strong>
+
+Please refer to @ref mesonefunctionc for function description.  
+
+<hr> @section FE_Midas_VME_standard_functions Midas VME standard functions
+
+This API provides basic VME access through a \b simple set of functions.
+Refer to @ref mvmestdfunctionh for more specific information. mvme_open() contains
+a general access code sample summarizing most of the mvme commands.
+
+<hr> @section FE_Compute_Busy_Logic Computer Busy Logic
+
+A "computer busy logic" has to be implemented for a front-end to work properly.
+The reason for this is that some ADC modules can be re-triggered.
+If they receive more than one gate pulse before being read out, they accumulate
+the input charge that leads to incorrect results. Therefore only one gate
+pulse should be sent to the ADCs, and additional pulses must be blocked before the
+event is read out by the front-end.
+This operation is usually performed by a latch module, which is set by the trigger
+signal and reset by the computer after it has read out the event.
+
+The output of this latch is shaped (limited in its pulse width to match the
+ADC gate width) and distributed to the ADCs. This scheme has two problems.
+The computer generates the reset signal, usually by two CAMAC output functions
+to a CAMAC IO unit. Therefore the duration of the pulse is a couple of ms.
+There is a non-negligible probability that during the reset pulse there is
+another hardware trigger. If this happens and both inputs of the latch are active,
+its function is undefined. Usually it generates several output pulses that lead
+to erroneous ADC values. The second problem lies in the fact that the latch can be
+just reset when a trigger input is active.
+This can happen since trigger signals usually have a width of a few tens of nanoseconds.
+In this case the latch output signal does not carry the timing of the trigger signal,
+but the timing of the reset signal.
+The incorrect timing of the output can lead to false ADC and TDC signals.
+To overcome this problem, a more elaborate scheme is necessary. One possible solution
+is the use of a latch module with edge-sensitive input and veto input.
+At PSI, the module "D. TRIGGER / DT102" can be used. The veto input is also connected
+to the computer:
+
+
+
+ * <center> Latched trigger layout.
+ *  \image html latch02.gif
+ *  \image latex latch02.eps "Latched trigger layout." width=12cm
+ * </center> 
+
+To reset this latch, the following bit sequence is applied to the computer output (signals
+are displayed active low):
+
+ * <center> Improved Latched trigger layout.
+ *  \image html latch01.gif
+ *  \image latex latch01.eps "Improved Latched trigger layout." width=12cm
+ * </center> 
+
+The active veto signal during the reset pulse avoids the case where the latch can receive a
+"set" and a "reset" simultaneously. The edge-sensitive input ensures that the latch
+can only trigger on a leading edge of a trigger signal, and not when the
+veto signal is removed. This ensures that the timing of the trigger is always carried at the
+ADC/TDC gate signal.
+
+ * <center> Veto Timing.
+ *  \image html timing01.gif
+ *  \image latex timing01.eps "Veto Timing." width=12cm
+ * </center> 
+
+<br>
+\htmlonly
+<script type="text/javascript">
+pages("FE_Hardware",  "FE_section_index", "FE_utils","FE_camac_vme_function_calls","" ); // back index next {top bottom}
+// section parameters: last section; top of this section; next section
+sections("RunControl","FrontendOperation","Utilities");
+</script>
+\endhtmlonly
+\latexonly
+@ref FE_Hardware  "previous page" - @ref FE_section_index - @ref Top - @ref    FE_utils  "next page"
+\endlatexonly
+<br>
+\anchor end
+<!-- End of page  FE_camac_vme_function_calls -->
+*/
+
+
+ 
+/*!  \page FE_utils Hardware utilities
+<!-- Formerly in utilities  -->
+<br>
+\htmlonly 
+<script type="text/javascript">
+pages("FE_camac_vme_function_calls",  "FE_section_index", "DataAnalysis","FE_utils","end" ); // back index next {top bottom}
+// section parameters: last section; top of this section; next section
+sections("RunControl","FrontendOperation","Utilities");
+</script>
+\endhtmlonly
+\latexonly
+@ref   FE_camac_vme_function_calls "previous page" - @ref FE_section_index - @ref Top - @ref  DataAnalysis  "next page"
+\endlatexonly
+<br>
+
+ - @ref  FE_mcnaf_task 
+ - @ref  FE_dio_task    
+
+@section  FE_mcnaf_task mcnaf        - CAMAC hardware access
+
+\b mcnaf is an interactive CAMAC tool which allows "direct" access to the CAMAC
+hardware. This application is operational under either of the two following
+conditions:
+    -# \b mcnaf has been built against a particular CAMAC driver (see @ref CAMAC_drivers).
+    -# A user frontend code using a valid CAMAC driver is currently active. In this case
+    the frontend acts as a RPC CAMAC server and will handle the CAMAC request. This 
+    last option is only available if the frontend code (mfe.c) from the
+    @ref BO_building_option has included the @ref BO_HAVE_CAMAC pre-compiler flag.
+
+- <b> Arguments </b>
+  - [-h ] : help
+  - [-h hostname ] : host name 
+  - [-e exptname ] : experiment name
+  - [-f frontend name] : Frontend name to connect to.
+  - [-s RPC server name] : CAMAC RPC server name for remote connection.
+ 
+- <b> Building application </b>
+  The \b midas/utils/makefile.mcnaf will build a collection of \b mcnaf
+  applications which are hardware dependent, see <b> Example </b> below:
+  - <b>[miocnaf]</b> cnaf application using the declared CAMAC hardware DRIVER
+    (kcs2927 in this case). To be used with \b dio CAMAC application starter
+    (see @ref FE_dio_task).
+  - <b>[mwecnaf]</b> cnaf application using the WI-E-N-ER PCI/CAMAC interface
+    (see @ref CAMAC_drivers). Please contact: midas@triumf.ca
+    for further information.
+  - <b>[mcnaf]</b> cnaf application using the CAMAC RPC capability of any Midas
+    frontend program having CAMAC access.
+  - <b>[mdrvcnaf]</b> cnaf application using the Linux CAMAC driver for either
+    kcs2927, kcs2926, dsp004. This application would require to have the proper
+    Linux module loaded in the system first.
+    Please contact mailto:midas@triumf.ca for further information.
+
+\code
+Thu> cd /midas/utils
+Thu> make -f makefile.mcnaf DRIVER=kcs2927
+gcc -O3 -I../include -DOS_LINUX -c -o mcnaf.o mcnaf.c
+gcc -O3 -I../include -DOS_LINUX -c -o kcs2927.o ../drivers/bus/kcs2927.c
+gcc -O3 -I../include -DOS_LINUX -o miocnaf mcnaf.o kcs2927.o  ../linux/lib/libmidas.a -lutil
+gcc -O3 -I../include -DOS_LINUX -c -o wecc32.o ../drivers/bus/wecc32.c
+gcc -O3 -I../include -DOS_LINUX -o mwecnaf mcnaf.o wecc32.o  ../linux/lib/libmidas.a -lutil 
+gcc -O3 -I../include -DOS_LINUX -c -o camacrpc.o ../drivers/bus/camacrpc.c
+gcc -O3 -I../include -DOS_LINUX -o mcnaf mcnaf.o camacrpc.o  ../linux/lib/libmidas.a -lutil 
+gcc -O3 -I../include -DOS_LINUX -c -o camaclx.o ../drivers/bus/camaclx.c
+gcc -O3 -I../include -DOS_LINUX -o mdrvcnaf mcnaf.o camaclx.o  ../linux/lib/libmidas.a -lutil 
+rm *.o
+\endcode
+
+- <b> Running application </b>
+  - Direct CAMAC access: This requires the computer to have the proper CAMAC interface
+    installed and the \b BASE ADDRESS matching the value defined in the corresponding CAMAC
+    driver. For kcs2926.c, kcs2927.c, dsp004.c, hyt1331.c, the base address
+    (CAMAC_BASE) is set to 0x280.
+  \code
+   >dio miocnaf
+   \endcode
+  - RPC CAMAC through frontend: This requires to have a frontend running which
+    will be able to serve the CAMAC RPC request.
+    Any Midas frontend has that capability built-in but it has to have the proper
+    CAMAC driver included in it.
+    \code
+     >mcnaf -e <expt> -h <host> -f <fe_name>
+     \endcode
+   
+- <b> Usage </b>
+  \code
+  ........
+  \endcode
+
+
+
+
+<hr> 
+@section FE_dio_task dio          - direct I/O driver
+
+Direct I/O task provider (LINUX).
+
+If no particular Linux driver is installed for the CAMAC access, the \b dio-
+program will allow you to access the I/O ports to which the CAMAC
+interface card is connected to. 
+
+- <b> Arguments </b>
+  - [application name ] : Program name requiring I/O permission.
+- <b> Usage </b>
+ \code
+ >dio miocnaf
+ >dio frontend 
+ \endcode
+- <b> Remark </b>
+- This "hacking" utility restricts the access
+to a range of I/O ports from 0x200 to 0x3FF.
+
+- As this mode if I/O access by-passes the driver (if any),
+concurrent access to the same I/O port may produce unexpected
+result and in the worst case it will freeze the computer.
+It is therefore important to ensure to run one and only one dio
+application to a given port in order to prevent potential hangup problem.
+
+- Interrupt handling, DMA capabilities of the interface will not be
+accessible under this mode of operation.
+
+
+
+
+
+
+
+
+
+\anchor end
+<br>
+\htmlonly 
+<script type="text/javascript">
+pages("FE_camac_vme_function_calls",  "FE_section_index", "DataAnalysis","FE_utils","end" ); // back index next {top bottom}
+// section parameters: last section; top of this section; next section
+sections("RunControl","FrontendOperation","Utilities");
+</script>
+\endhtmlonly
+\latexonly
+@ref   FE_camac_vme_function_calls "previous page" - @ref FE_section_index - @ref Top - @ref  DataAnalysis  "next page"
+\endlatexonly
+<br>
+*/
+
+<!-- end of page  FE_utils -->
+
+
+ 

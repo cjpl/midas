@@ -1,0 +1,705 @@
+/*! @page  Organization Manual Contents 
+\htmlonly
+<script type="text/javascript" src="http://ladd00.triumf.ca/~daqweb/doc/my_midas/html/navigation.js"></script>
+\endhtmlonly
+
+<span class="note">This file produced automatically ...  DO NOT EDIT </span>
+@section O_what What can be found in this manual?
+
+<span class="warn">
+WARNING - this page is under construction as the sections
+are being changed/added to etc.
+</span>
+
+\anchor Organization_section_index
+<span  style="font-weight: bold; font-size: 125%;">Section Index</span>
+<ol class="i0">
+<li> @ref Top "Main Page"
+<li> @ref Intro_section_index "Introduction" 
+<li> @ref Quickstart_section_index "Quick Start" 
+<li> @ref Features_section_index "Features of the Midas DAQ System" 
+<li> @ref RunControl_section_index "Run Control" 
+<li> @ref FrontendOperation_section_index "Frontend Operation" 
+<li> @ref DataAnalysis_section_index "Data Analysis ( Midas Analyzer, ROOT, ROODY, ROOTANA)" 
+<li> @ref Performance_section_index "Performance" 
+<li> @ref SpecialConfig_section_index "Special Configurations" 
+<li> @ref BuildingOptions_section_index "Midas build options and operation considerations" 
+<li> @ref NDF_section_index "New Documented Features" 
+<li> @ref Glossary_section_index "Glossary" 
+<li> @ref DocIndex_section_index "Index to Documentation pages" 
+</ol>
+
+\anchor O_main_index
+<span  style="font-weight: bold; font-size: 125%;">Main Index</span>
+<ol class="i0">
+   <li>@ref Top "Main Page"
+   <br>
+\anchor Intro_section_index
+<br>
+   <li> @ref Intro <!-- subpage Intro -->
+   <ul class="i1"> <!-- i1 -->
+      <li> @ref I_WhatIsMidas <!-- section under page Intro in introduction.dox -->
+      <li> @ref I_Midas_exp <!-- section under page Intro in introduction.dox -->
+      <ul class="i2">
+         <li> @ref I_FE_and_BE <!-- subsection under page Intro in introduction.dox -->
+         <li> @ref I_device_drivers <!-- subsection under page Intro in introduction.dox -->
+         <li> @ref I_Analysis <!-- subsection under page Intro in introduction.dox -->
+         <li> @ref I_slow_controls <!-- subsection under page Intro in introduction.dox -->
+      </ul> <!-- i2 -->
+<br>
+      <li> @ref I_Midas_system_picture <!-- subpage I_Midas_system_picture -->
+   </ul> <!-- i1  end-of-page Intro -->
+\anchor Quickstart_section_index
+<br>
+   <li> @ref Quickstart <!-- subpage Quickstart -->
+   <ul class="i1"> <!-- i1 -->
+      <li> @ref Q_QuickStartIntro <!-- section under page Quickstart in quickstart.dox -->
+      <li> @ref Q_SVN <!-- section under page Quickstart in quickstart.dox -->
+      <li> @ref Q_Quickstart_Installation <!-- section under page Quickstart in quickstart.dox -->
+<br>
+      <li> @ref Q_Linux <!-- subpage Q_Linux -->
+      <ul class="i2"> <!-- i2 -->
+         <li> @ref Q_Linux_system_requirements <!-- section under page Q_Linux in quickstart.dox -->
+         <li> @ref Q_Linux_installation <!-- section under page Q_Linux in quickstart.dox -->
+         <ul class="i3">
+            <li> @ref Q_Linux_Environment_Variables <!-- subsection under page Q_Linux in quickstart.dox -->
+            <li> @ref Q_Linux_Root_Installation <!-- subsection under page Q_Linux in quickstart.dox -->
+            <li> @ref Q_Linux_Midas_Installation <!-- subsection under page Q_Linux in quickstart.dox -->
+            <li> @ref Q_Linux_Rome_Installation <!-- subsection under page Q_Linux in quickstart.dox -->
+            <li> @ref Q_Linux_Roody_Installation <!-- subsection under page Q_Linux in quickstart.dox -->
+         </ul> <!-- i3 -->
+         <li> @ref Q_Linux_Basic_Test <!-- section under page Q_Linux in quickstart.dox -->
+         <ul class="i3">
+            <li> @ref Q_Linux_Hardware_Requirements <!-- subsection under page Q_Linux in quickstart.dox -->
+            <li> @ref Q_Linux_Software_Requirements <!-- subsection under page Q_Linux in quickstart.dox -->
+            <li> @ref Q_Linux_Expt_Setup <!-- subsection under page Q_Linux in quickstart.dox -->
+         </ul> <!-- i3 -->
+         <li> @ref Q_Linux_Installation_Considerations <!-- section under page Q_Linux in quickstart.dox -->
+         <ul class="i3">
+            <li> @ref Q_Linux_Remote_Access <!-- subsection under page Q_Linux in quickstart.dox -->
+            <li> @ref Q_Linux_Exptab <!-- subsection under page Q_Linux in quickstart.dox -->
+         </ul> <!-- i3 -->
+         <li> @ref Q_Linux_Demo_Examples <!-- section under page Q_Linux in quickstart.dox -->
+      </ul> <!-- i2  end-of-page Q_Linux -->
+<br>
+      <li> @ref Q_Windows <!-- subpage Q_Windows -->
+      <ul class="i2"> <!-- i2 -->
+         <li> @ref Q_Windows_system_requirements <!-- section under page Q_Windows in quickstart.dox -->
+         <li> @ref Q_Windows_installation <!-- section under page Q_Windows in quickstart.dox -->
+         <ul class="i3">
+            <li> @ref Q_Windows_Environment_Variables <!-- subsection under page Q_Windows in quickstart.dox -->
+         </ul> <!-- i3 -->
+         <li> @ref Q_Windows_Basic_Test <!-- section under page Q_Windows in quickstart.dox -->
+         <ul class="i3">
+            <li> @ref Q_Windows_Hardware_Requirements <!-- subsection under page Q_Windows in quickstart.dox -->
+            <li> @ref Q_Windows_Software_Requirements <!-- subsection under page Q_Windows in quickstart.dox -->
+            <li> @ref Q_Windows_Expt_Setup <!-- subsection under page Q_Windows in quickstart.dox -->
+         </ul> <!-- i3  end-of-page Q_Windows -->
+      </ul> <!-- i2  end-of-page Q_Windows -->
+   </ul> <!-- i1  end-of-page Quickstart -->
+\anchor Features_section_index
+<br>
+   <li> @ref Features <!-- subpage Features -->
+   <ul class="i1"> <!-- i1 -->
+      <li> @ref F_Midas_Overview_Intro <!-- section under page Features in Features.dox -->
+<br>
+      <li> @ref F_MainElements <!-- subpage F_MainElements -->
+      <ul class="i2"> <!-- i2 -->
+         <li> @ref F_Buffer_Manager_overview <!-- section under page F_MainElements in overview.dox -->
+         <li> @ref F_Message_System_overview <!-- section under page F_MainElements in overview.dox -->
+         <li> @ref F_Online_Database_overview <!-- section under page F_MainElements in overview.dox -->
+         <li> @ref F_Midas_Server_overview <!-- section under page F_MainElements in overview.dox -->
+         <li> @ref F_Frontend_sec_overview <!-- section under page F_MainElements in overview.dox -->
+         <li> @ref F_Data_Logger_overview <!-- section under page F_MainElements in overview.dox -->
+         <li> @ref F_Analyzer_sec_overview <!-- section under page F_MainElements in overview.dox -->
+         <li> @ref F_Run_Control_overview <!-- section under page F_MainElements in overview.dox -->
+         <li> @ref F_Slow_Control_overview <!-- section under page F_MainElements in overview.dox -->
+         <li> @ref F_History_System_overview <!-- section under page F_MainElements in overview.dox -->
+         <li> @ref F_Alarm_System_overview <!-- section under page F_MainElements in overview.dox -->
+         <li> @ref F_Electronic_Logbook_overview <!-- section under page F_MainElements in overview.dox -->
+      </ul> <!-- i2  end-of-page F_MainElements -->
+<br>
+      <li> @ref F_ODB_Structure <!-- subpage F_ODB_Structure -->
+<br>
+      <li> @ref F_Midas_Code_and_Libraries <!-- subpage F_Midas_Code_and_Libraries -->
+      <ul class="i2"> <!-- i2 -->
+         <li> @ref F_Midas_Data_Types <!-- section under page F_Midas_Code_and_Libraries in midas_features.dox -->
+         <li> @ref F_Midas_Library <!-- section under page F_Midas_Code_and_Libraries in midas_features.dox -->
+         <li> @ref F_midas_macro <!-- section under page F_Midas_Code_and_Libraries in midas_features.dox -->
+         <ul class="i3">
+            <li> @ref F_YBOS_library <!-- subsection under page F_Midas_Code_and_Libraries in midas_features.dox -->
+         </ul> <!-- i3  end-of-page F_Midas_Code_and_Libraries -->
+      </ul> <!-- i2  end-of-page F_Midas_Code_and_Libraries -->
+<br>
+      <li> @ref F_Logging <!-- subpage F_Logging -->
+      <ul class="i2"> <!-- i2 -->
+         <li> @ref F_Midas_Logger <!-- section under page F_Logging in Features.dox -->
+         <li> @ref F_mlogger_task <!-- section under page F_Logging in Features.dox -->
+         <li> @ref F_Logging_Data <!-- subpage F_Logging_Data -->
+         <ul class="i3"> <!-- i3 -->
+            <li> @ref F_Logger_tree <!-- section under page F_Logging_Data in Features.dox -->
+            <li> @ref F_Logger_tree_keys <!-- section under page F_Logging_Data in Features.dox -->
+            <li> @ref F_Logger_Settings <!-- section under page F_Logging_Data in Features.dox -->
+            <li> @ref F_Logger_CStat_Statistics <!-- section under page F_Logging_Data in Features.dox -->
+            <li> @ref F_Logger_Optional_Keys <!-- section under page F_Logging_Data in Features.dox -->
+         </ul> <!-- i3  end-of-page F_Logging_Data -->
+         <li> @ref F_Messaging <!-- subpage F_Messaging -->
+         <ul class="i3"> <!-- i3 -->
+            <li> @ref F_Log_File <!-- section under page F_Messaging in Features.dox -->
+            <li> @ref F_mspeaker_task <!-- section under page F_Messaging in Features.dox -->
+         </ul> <!-- i3  end-of-page F_Messaging -->
+         <li> @ref F_mySQL <!-- subpage F_mySQL -->
+         <ul class="i3"> <!-- i3 -->
+            <li> @ref F_Logger_mySQL <!-- section under page F_mySQL in Features.dox -->
+            <li> @ref F_Logger_SQL_keys <!-- section under page F_mySQL in Features.dox -->
+         </ul> <!-- i3  end-of-page F_mySQL -->
+         <li> @ref F_History_logging <!-- subpage F_History_logging -->
+         <ul class="i3"> <!-- i3 -->
+            <li> @ref F_History_System <!-- section under page F_History_logging in Features.dox -->
+            <li> @ref F_Logger_History_Files_Location <!-- section under page F_History_logging in Features.dox -->
+            <ul class="i4">
+               <li> @ref F_Logger_Create_History_Dir <!-- subsection under page F_History_logging in Features.dox -->
+            </ul> <!-- i4 -->
+            <li> @ref F_History_Event_Types <!-- section under page F_History_logging in Features.dox -->
+            <li> @ref F_Frontend_History_Event <!-- section under page F_History_logging in Features.dox -->
+            <ul class="i4">
+               <li> @ref F_Enable_History_Event <!-- subsection under page F_History_logging in Features.dox -->
+               <ul class="i5" > 
+                  <li> @ref new_history_tags <!-- subsubsection under page F_History_logging in Features.dox -->
+                  <li> @ref F_history_old_tags <!-- subsubsection under page F_History_logging in Features.dox -->
+               </ul> <!-- i5 -->
+               <li> @ref F_example_FE_history_event <!-- subsection under page F_History_logging in Features.dox -->
+            </ul> <!-- i4 -->
+            <li> @ref F_ODB_History_tree <!-- section under page F_History_logging in Features.dox -->
+            <li> @ref F_History_tree_keys <!-- section under page F_History_logging in Features.dox -->
+            <li> @ref F_customizing_History <!-- section under page F_History_logging in Features.dox -->
+            <li> @ref History_sql_internal <!-- section under page F_History_logging in Features.dox -->
+            <li> @ref F_mhist_task <!-- section under page F_History_logging in Features.dox -->
+            <li> @ref F_mhdump_task <!-- section under page F_History_logging in Features.dox -->
+            <li> @ref F_History_format <!-- section under page F_History_logging in Features.dox -->
+         </ul> <!-- i3  end-of-page F_History_logging -->
+         <li> @ref F_Elog <!-- subpage F_Elog -->
+         <ul class="i3"> <!-- i3 -->
+            <li> @ref F_Elog_Intro <!-- section under page F_Elog in Features.dox -->
+            <li> @ref F_Logger_Elog_Files_Location <!-- section under page F_Elog in Features.dox -->
+            <ul class="i4">
+               <li> @ref F_Logger_Create_Elog_Dir <!-- subsection under page F_Elog in Features.dox -->
+            </ul> <!-- i4 -->
+            <li> @ref F_Elog_Custom <!-- section under page F_Elog in Features.dox -->
+            <ul class="i4">
+               <li> @ref F_ODB_Elog_Tree <!-- subsection under page F_Elog in Features.dox -->
+               <li> @ref F_Email <!-- subsection under page F_Elog in Features.dox -->
+               <li> @ref F_Display_RN <!-- subsection under page F_Elog in Features.dox -->
+               <li> @ref F_Allow_Delete <!-- subsection under page F_Elog in Features.dox -->
+               <li> @ref F_Types <!-- subsection under page F_Elog in Features.dox -->
+               <li> @ref F_Systems <!-- subsection under page F_Elog in Features.dox -->
+               <li> @ref F_SMTP_Host <!-- subsection under page F_Elog in Features.dox -->
+               <li> @ref F_Buttons <!-- subsection under page F_Elog in Features.dox -->
+               <li> @ref F_Host_name <!-- subsection under page F_Elog in Features.dox -->
+               <li> @ref F_Email_D <!-- subsection under page F_Elog in Features.dox -->
+            </ul> <!-- i4 -->
+            <li> @ref F_melog_task <!-- section under page F_Elog in Features.dox -->
+         </ul> <!-- i3  end-of-page F_Elog -->
+         <li> @ref F_LogUtil <!-- subpage F_LogUtil -->
+         <ul class="i3"> <!-- i3 -->
+            <li> @ref F_lazylogger_task <!-- section under page F_LogUtil in Features.dox -->
+            <li> @ref F_ODB_Lazy_Tree <!-- section under page F_LogUtil in Features.dox -->
+            <li> @ref F_mchart_task <!-- section under page F_LogUtil in Features.dox -->
+            <li> @ref F_mtape_task <!-- section under page F_LogUtil in Features.dox -->
+            <li> @ref F_stripchartfile <!-- section under page F_LogUtil in Features.dox -->
+         </ul> <!-- i3  end-of-page F_LogUtil -->
+      </ul> <!-- i2  end-of-page F_Logging -->
+   </ul> <!-- i1  end-of-page Features -->
+\anchor RunControl_section_index
+<br>
+   <li> @ref RunControl <!-- subpage RunControl -->
+<br>
+   <ul class="i1"> <!-- i1 -->
+      <li> @ref RC_Run_States_and_Transitions <!-- subpage RC_Run_States_and_Transitions -->
+      <ul class="i2"> <!-- i2 -->
+         <li> @ref RC_state_transition <!-- section under page RC_Run_States_and_Transitions in RunControl.dox -->
+         <li> @ref RC_Transition_priority <!-- section under page RC_Run_States_and_Transitions in RunControl.dox -->
+         <ul class="i3">
+            <li> @ref RC_Register_for_run_transition <!-- subsection under page RC_Run_States_and_Transitions in RunControl.dox -->
+            <ul class="i4" > 
+               <li> @ref RC_Multiple_Registration <!-- subsubsection under page RC_Run_States_and_Transitions in RunControl.dox -->
+            </ul> <!-- i4 -->
+            <li> @ref RC_Default_Seq_Numbers <!-- subsection under page RC_Run_States_and_Transitions in RunControl.dox -->
+            <li> @ref RC_Review_Seq_Num <!-- subsection under page RC_Run_States_and_Transitions in RunControl.dox -->
+            <li> @ref RC_Change_Seq_Num <!-- subsection under page RC_Run_States_and_Transitions in RunControl.dox -->
+         </ul> <!-- i3 -->
+         <li> @ref RC_Deferred_Transition <!-- section under page RC_Run_States_and_Transitions in RunControl.dox -->
+         <li> @ref RC_ODB_RunInfo <!-- section under page RC_Run_States_and_Transitions in RunControl.dox -->
+         <ul class="i3">
+            <li> @ref RC_ODB_RunInfo_Tree <!-- subsection under page RC_Run_States_and_Transitions in RunControl.dox -->
+         </ul> <!-- i3  end-of-page RC_Run_States_and_Transitions -->
+      </ul> <!-- i2  end-of-page RC_Run_States_and_Transitions -->
+<br>
+      <li> @ref RC_Controlling_run <!-- subpage RC_Controlling_run -->
+      <ul class="i2"> <!-- i2 -->
+         <li> @ref RC_run_control <!-- section under page RC_Controlling_run in RunControl.dox -->
+         <li> @ref RC_odbedit <!-- subpage RC_odbedit -->
+         <ul class="i3"> <!-- i3 -->
+            <li> @ref RC_odbedit_task <!-- subpage RC_odbedit_task -->
+            <ul class="i4"> <!-- i4 -->
+               <li> @ref RC_odbedit_help <!-- section under page RC_odbedit_task in odbedit.dox -->
+            </ul> <!-- i4  end-of-page RC_odbedit_task -->
+            <li> @ref RC_odbedit_examples <!-- subpage RC_odbedit_examples -->
+            <ul class="i4"> <!-- i4 -->
+               <li> @ref RC_odbedit_prompt <!-- section under page RC_odbedit_examples in odbedit.dox -->
+               <ul class="i5">
+                  <li> @ref RC_odbedit_prompt_examples <!-- subsection under page RC_odbedit_examples in odbedit.dox -->
+               </ul> <!-- i5 -->
+               <li> @ref RC_odbedit_create_ODB <!-- section under page RC_odbedit_examples in odbedit.dox -->
+               <li> @ref RC_odbedit_keynames <!-- section under page RC_odbedit_examples in odbedit.dox -->
+               <li> @ref RC_odbedit_corrupted <!-- section under page RC_odbedit_examples in odbedit.dox -->
+               <ul class="i5">
+                  <li> @ref RC_odbedit_extcommand <!-- subsection under page RC_odbedit_examples in odbedit.dox -->
+                  <ul class="i6" > 
+                     <li> @ref RC_example_script_2 <!-- subsubsection under page RC_odbedit_examples in odbedit.dox -->
+                     </ul> <!-- i7 -->
+                  </ul> <!-- i6 -->
+               <li> @ref RC_odbedit_cmd_examples <!-- section under page RC_odbedit_examples in odbedit.dox -->
+               <ul class="i5">
+                  <li> @ref RC_odbedit_pwd <!-- subsection under page RC_odbedit_examples in odbedit.dox -->
+                  <li> @ref RC_odbedit_cd <!-- subsection under page RC_odbedit_examples in odbedit.dox -->
+                  <li> @ref RC_odbedit_chat <!-- subsection under page RC_odbedit_examples in odbedit.dox -->
+                  <li> @ref RC_odbedit_ls <!-- subsection under page RC_odbedit_examples in odbedit.dox -->
+                  <li> @ref RC_odbedit_mkdir <!-- subsection under page RC_odbedit_examples in odbedit.dox -->
+                  <li> @ref RC_odbedit_move <!-- subsection under page RC_odbedit_examples in odbedit.dox -->
+                  <li> @ref RC_odbedit_rename <!-- subsection under page RC_odbedit_examples in odbedit.dox -->
+                  <li> @ref RC_odbedit_copy <!-- subsection under page RC_odbedit_examples in odbedit.dox -->
+                  <li> @ref RC_odbedit_import <!-- subsection under page RC_odbedit_examples in odbedit.dox -->
+                  <li> @ref RC_odbedit_export <!-- subsection under page RC_odbedit_examples in odbedit.dox -->
+                  <li> @ref RC_odbedit_ln <!-- subsection under page RC_odbedit_examples in odbedit.dox -->
+                  <li> @ref RC_odbedit_cr <!-- subsection under page RC_odbedit_examples in odbedit.dox -->
+                  <li> @ref RC_odbedit_set <!-- subsection under page RC_odbedit_examples in odbedit.dox -->
+                  <li> @ref RC_odbedit_chmod <!-- subsection under page RC_odbedit_examples in odbedit.dox -->
+                  <li> @ref RC_odbedit_trunc <!-- subsection under page RC_odbedit_examples in odbedit.dox -->
+                  <li> @ref RC_odbedit_rm <!-- subsection under page RC_odbedit_examples in odbedit.dox -->
+                  <li> @ref RC_odbedit_sor <!-- subsection under page RC_odbedit_examples in odbedit.dox -->
+                  <li> @ref RC_odbedit_save <!-- subsection under page RC_odbedit_examples in odbedit.dox -->
+                  <li> @ref RC_odbedit_load <!-- subsection under page RC_odbedit_examples in odbedit.dox -->
+                  <li> @ref RC_odbedit_make <!-- subsection under page RC_odbedit_examples in odbedit.dox -->
+                  <li> @ref RC_odbedit_scl <!-- subsection under page RC_odbedit_examples in odbedit.dox -->
+                  <li> @ref RC_odbedit_sh <!-- subsection under page RC_odbedit_examples in odbedit.dox -->
+                  <li> @ref RC_odbedit_start <!-- subsection under page RC_odbedit_examples in odbedit.dox -->
+                  <li> @ref RC_EOS_example2 <!-- subsection under page RC_odbedit_examples in odbedit.dox -->
+                  <li> @ref RC_odbedit_stop <!-- subsection under page RC_odbedit_examples in odbedit.dox -->
+               </ul> <!-- i5  end-of-page RC_odbedit_examples -->
+            </ul> <!-- i4  end-of-page RC_odbedit_examples -->
+         </ul> <!-- i3  end-of-page RC_odbedit -->
+         <li> @ref RC_mhttpd <!-- subpage RC_mhttpd -->
+         <ul class="i3"> <!-- i3 -->
+            <li> @ref RC_mhttpd_task <!-- section under page RC_mhttpd in mhttpd.dox -->
+            <ul class="i4">
+               <li> @ref RC_mhttpd_connect <!-- subsection under page RC_mhttpd in mhttpd.dox -->
+            </ul> <!-- i4 -->
+            <li> @ref RC_mhttpd_functionality <!-- section under page RC_mhttpd in mhttpd.dox -->
+            <li> @ref RC_mhttpd_Main_Status_page <!-- subpage RC_mhttpd_Main_Status_page -->
+            <ul class="i4"> <!-- i4 -->
+               <li> @ref RC_mhttpd_status_page_features <!-- section under page RC_mhttpd_Main_Status_page in mhttpd.dox -->
+               <ul class="i5">
+                  <li> @ref RC_mhttpd_status_title <!-- subsection under page RC_mhttpd_Main_Status_page in mhttpd.dox -->
+                  <li> @ref RC_mhttpd_status_menu_buttons <!-- subsection under page RC_mhttpd_Main_Status_page in mhttpd.dox -->
+                  <li> @ref RC_mhttpd_status_RC_buttons <!-- subsection under page RC_mhttpd_Main_Status_page in mhttpd.dox -->
+                  <li> @ref RC_mhttpd_status_Page_buttons <!-- subsection under page RC_mhttpd_Main_Status_page in mhttpd.dox -->
+                  <li> @ref RC_mhttpd_status_User_buttons <!-- subsection under page RC_mhttpd_Main_Status_page in mhttpd.dox -->
+                  <ul class="i6" > 
+                     <li> @ref RC_odb_script_tree <!-- subsubsection under page RC_mhttpd_Main_Status_page in mhttpd.dox -->
+                     <li> @ref RC_odb_script_example <!-- subsubsection under page RC_mhttpd_Main_Status_page in mhttpd.dox -->
+                  </ul> <!-- i6 -->
+                  <li> @ref RC_mhttpd_status_Alias_links <!-- subsection under page RC_mhttpd_Main_Status_page in mhttpd.dox -->
+                  <li> @ref RC_mhttpd_status_Run_info <!-- subsection under page RC_mhttpd_Main_Status_page in mhttpd.dox -->
+                  <li> @ref RC_mhttpd_status_Equipment_info <!-- subsection under page RC_mhttpd_Main_Status_page in mhttpd.dox -->
+                  <ul class="i6" > 
+                     <li> @ref RC_mhttpd_eq_variables <!-- subsubsection under page RC_mhttpd_Main_Status_page in mhttpd.dox -->
+                  </ul> <!-- i6 -->
+                  <li> @ref RC_mhttpd_status_Event_Rates <!-- subsection under page RC_mhttpd_Main_Status_page in mhttpd.dox -->
+                  <li> @ref RC_mhttpd_status_Logger <!-- subsection under page RC_mhttpd_Main_Status_page in mhttpd.dox -->
+                  <li> @ref RC_mhttpd_status_Lazylogger <!-- subsection under page RC_mhttpd_Main_Status_page in mhttpd.dox -->
+                  <li> @ref RC_mhttpd_status_latest_msg <!-- subsection under page RC_mhttpd_Main_Status_page in mhttpd.dox -->
+                  <li> @ref RC_mhttpd_status_clients <!-- subsection under page RC_mhttpd_Main_Status_page in mhttpd.dox -->
+               </ul> <!-- i5  end-of-page RC_mhttpd_Main_Status_page -->
+            </ul> <!-- i4  end-of-page RC_mhttpd_Main_Status_page -->
+            <li> @ref RC_mhttpd_Start_page <!-- subpage RC_mhttpd_Start_page -->
+            <ul class="i4"> <!-- i4 -->
+               <li> @ref RC_mhttpd_Edit_On_Start <!-- section under page RC_mhttpd_Start_page in mhttpd.dox -->
+               <ul class="i5">
+                  <li> @ref RC_EOS_web_features <!-- subsection under page RC_mhttpd_Start_page in mhttpd.dox -->
+                  <li> @ref RC_Edit_PC <!-- subsection under page RC_mhttpd_Start_page in mhttpd.dox -->
+                  <li> @ref RC_Prevent_Edit_RN <!-- subsection under page RC_mhttpd_Start_page in mhttpd.dox -->
+               </ul> <!-- i5  end-of-page RC_mhttpd_Start_page -->
+            </ul> <!-- i4  end-of-page RC_mhttpd_Start_page -->
+            <li> @ref RC_mhttpd_ODB_page <!-- subpage RC_mhttpd_ODB_page -->
+            <li> @ref RC_mhttpd_Equipment_page <!-- subpage RC_mhttpd_Equipment_page -->
+            <ul class="i4"> <!-- i4 -->
+               <li> @ref RC_mhttpd_Equipment_var <!-- section under page RC_mhttpd_Equipment_page in mhttpd.dox -->
+               <ul class="i5">
+                  <li> @ref RC_mhttpd_Equipment_example1 <!-- subsection under page RC_mhttpd_Equipment_page in mhttpd.dox -->
+                  <li> @ref RC_mhttpd_Equipment_example2 <!-- subsection under page RC_mhttpd_Equipment_page in mhttpd.dox -->
+               </ul> <!-- i5  end-of-page RC_mhttpd_Equipment_page -->
+            </ul> <!-- i4  end-of-page RC_mhttpd_Equipment_page -->
+            <li> @ref RC_mhttpd_sc_page <!-- subpage RC_mhttpd_sc_page -->
+            <li> @ref RC_mhttpd_CNAF_page <!-- subpage RC_mhttpd_CNAF_page -->
+            <li> @ref RC_mhttpd_Message_page <!-- subpage RC_mhttpd_Message_page -->
+            <li> @ref RC_mhttpd_Elog_page <!-- subpage RC_mhttpd_Elog_page -->
+            <ul class="i4"> <!-- i4 -->
+               <li> @ref RC_mhttpd_Elog_intro <!-- section under page RC_mhttpd_Elog_page in mhttpd.dox -->
+               <ul class="i5">
+                  <li> @ref RC_mhttpd_Internal_Elog <!-- subsection under page RC_mhttpd_Elog_page in mhttpd.dox -->
+                  <li> @ref RC_mhttpd_External_Elog <!-- subsection under page RC_mhttpd_Elog_page in mhttpd.dox -->
+               </ul> <!-- i5  end-of-page RC_mhttpd_Elog_page -->
+            </ul> <!-- i4  end-of-page RC_mhttpd_Elog_page -->
+            <li> @ref RC_mhttpd_Program_page <!-- subpage RC_mhttpd_Program_page -->
+            <li> @ref RC_mhttpd_History_page <!-- subpage RC_mhttpd_History_page -->
+            <li> @ref RC_mhttpd_Alarm_page <!-- subpage RC_mhttpd_Alarm_page -->
+            <li> @ref RC_mhttpd_Custom_page <!-- subpage RC_mhttpd_Custom_page -->
+            <ul class="i4"> <!-- i4 -->
+               <li> @ref RC_mhttpd_custom_intro <!-- section under page RC_mhttpd_Custom_page in mhttpd_custom.dox -->
+               <li> @ref RC_Example_Custom_Webpages <!-- subpage RC_Example_Custom_Webpages -->
+               <ul class="i5"> <!-- i5 -->
+                  <li> @ref RC_BNMQR_status <!-- subpage RC_BNMQR_status -->
+                  <li> @ref RC_MEG_Gas_Page <!-- subpage RC_MEG_Gas_Page -->
+                  <li> @ref RC_Ebit_custom_page <!-- subpage RC_Ebit_custom_page -->
+                  <li> @ref RC_Mpet_custom_page <!-- subpage RC_Mpet_custom_page -->
+                  <li> @ref RC_T2K_Gas_Page <!-- subpage RC_T2K_Gas_Page -->
+               </ul> <!-- i5  end-of-page RC_Example_Custom_Webpages -->
+               <li> @ref RC_mhttpd_Activate <!-- subpage RC_mhttpd_Activate -->
+               <ul class="i5"> <!-- i5 -->
+                  <li> @ref RC_odb_custom_tree <!-- section under page RC_mhttpd_Activate in mhttpd_custom.dox -->
+                  <ul class="i6">
+                     <li> @ref RC_odb_custom_keynames <!-- subsection under page RC_mhttpd_Activate in mhttpd_custom.dox -->
+                     <li> @ref RC_odb_custom_external_example <!-- subsection under page RC_mhttpd_Activate in mhttpd_custom.dox -->
+                     <li> @ref RC_odb_custom_internal_example <!-- subsection under page RC_mhttpd_Activate in mhttpd_custom.dox -->
+                     <li> @ref RC_odb_custom_keys_examples <!-- subsection under page RC_mhttpd_Activate in mhttpd_custom.dox -->
+                     <li> @ref RC_odb_custom_status <!-- subsection under page RC_mhttpd_Activate in mhttpd_custom.dox -->
+                  </ul> <!-- i6  end-of-page RC_mhttpd_Activate -->
+               </ul> <!-- i5  end-of-page RC_mhttpd_Activate -->
+               <li> @ref RC_mhttpd_custom_features <!-- subpage RC_mhttpd_custom_features -->
+               <ul class="i5"> <!-- i5 -->
+                  <li> @ref RC_mhttpd_custom_js_lib <!-- section under page RC_mhttpd_custom_features in mhttpd_custom_features.dox -->
+                  <li> @ref RC_mhttpd_js <!-- subpage RC_mhttpd_js -->
+                  <ul class="i6"> <!-- i6 -->
+                     <li> @ref RC_mhttpd_custom_create <!-- section under page RC_mhttpd_custom_features in mhttpd_custom_features.dox -->
+                     <ul class="i7">
+                        <li> @ref RC_mhttpd_custom_key_access <!-- subsection under page RC_mhttpd_custom_features in mhttpd_custom_features.dox -->
+                        <li> @ref RC_mhttpd_custom_refresh <!-- subsection under page RC_mhttpd_custom_features in mhttpd_custom_features.dox -->
+                     </ul> <!-- i7 -->
+                     <li> @ref RC_mhttpd_custom_midas_buttons <!-- section under page RC_mhttpd_custom_features in mhttpd_custom_features.dox -->
+                     <li> @ref RC_mhttpd_custom_alias <!-- section under page RC_mhttpd_custom_features in mhttpd_custom_features.dox -->
+                     <li> @ref RC_mhttpd_custom_script_buttons <!-- section under page RC_mhttpd_custom_features in mhttpd_custom_features.dox -->
+                     <li> @ref RC_mhttpd_custom_getmsg <!-- section under page RC_mhttpd_custom_features in mhttpd_custom_features.dox -->
+                     <li> @ref RC_mhttpd_custom_getmouse <!-- section under page RC_mhttpd_custom_features in mhttpd_custom_features.dox -->
+                  </ul> <!-- i6 -->
+                  <li> @ref RC_mhttpd_custom_ODB_access <!-- subpage RC_mhttpd_custom_ODB_access -->
+                  <ul class="i6"> <!-- i6 -->
+                     <li> @ref RC_mhttpd_custom_odb_html <!-- section under page RC_mhttpd_custom_ODB_access in mhttpd_custom_odb_access.dox -->
+                     <li> @ref RC_mhttpd_custom_odb_js <!-- section under page RC_mhttpd_custom_ODB_access in mhttpd_custom_odb_access.dox -->
+                     <ul class="i7">
+                        <li> @ref RC_mhttpd_custom_odbget <!-- subsection under page RC_mhttpd_custom_ODB_access in mhttpd_custom_odb_access.dox -->
+                        <li> @ref RC_mhttpd_custom_odbedit <!-- subsection under page RC_mhttpd_custom_ODB_access in mhttpd_custom_odb_access.dox -->
+                        <li> @ref RC_mhttpd_custom_odbset <!-- subsection under page RC_mhttpd_custom_ODB_access in mhttpd_custom_odb_access.dox -->
+                        <li> @ref RC_mhttpd_custom_odbkey <!-- subsection under page RC_mhttpd_custom_ODB_access in mhttpd_custom_odb_access.dox -->
+                     </ul> <!-- i7 -->
+                     <li> @ref RC_mhttpd_custom_ODB_access_examples <!-- subpage RC_mhttpd_custom_ODB_access_examples -->
+                     <ul class="i7"> <!-- i7 -->
+                        <li> @ref RC_mhttpd_js_example1 <!-- section under page RC_mhttpd_custom_ODB_access_examples in mhttpd_custom_odb_access.dox -->
+                        <li> @ref RC_mhttpd_js_example2 <!-- section under page RC_mhttpd_custom_ODB_access_examples in mhttpd_custom_odb_access.dox -->
+                     </ul> <!-- i7  end-of-page RC_mhttpd_custom_ODB_access_examples -->
+                  </ul> <!-- i6  end-of-page RC_mhttpd_custom_ODB_access -->
+                  <li> @ref RC_mhttpd_custom_RPC_access <!-- subpage RC_mhttpd_custom_RPC_access -->
+                  <li> @ref RC_mhttpd_Image_access <!-- subpage RC_mhttpd_Image_access -->
+                  <ul class="i6"> <!-- i6 -->
+                     <li> @ref RC_mhttpd_custom_history <!-- section under page RC_mhttpd_Image_access in mhttpd_custom_image.dox -->
+                     <li> @ref RC_mhttpd_custom_image <!-- section under page RC_mhttpd_Image_access in mhttpd_custom_image.dox -->
+                     <li> @ref RC_mhttpd_custom_imagemap <!-- section under page RC_mhttpd_Image_access in mhttpd_custom_image.dox -->
+                     <ul class="i7">
+                        <li> @ref RC_mhttpd_custom_imagemap_demo <!-- subsection under page RC_mhttpd_Image_access in mhttpd_custom_image.dox -->
+                        <li> @ref RC_mhttpd_custom_imagemap_pw <!-- subsection under page RC_mhttpd_Image_access in mhttpd_custom_image.dox -->
+                     </ul> <!-- i7 -->
+                     <li> @ref RC_mhttpd_custom_Labels_Bars_Fills <!-- section under page RC_mhttpd_Image_access in mhttpd_custom_image.dox -->
+                     <ul class="i7">
+                        <li> @ref RC_mhttpd_custom_labels <!-- subsection under page RC_mhttpd_Image_access in mhttpd_custom_image.dox -->
+                        <li> @ref RC_mhttpd_labels_tree <!-- subsection under page RC_mhttpd_Image_access in mhttpd_custom_image.dox -->
+                        <li> @ref RC_mhttpd_custom_bars <!-- subsection under page RC_mhttpd_Image_access in mhttpd_custom_image.dox -->
+                        <li> @ref RC_mhttpd_bars_tree <!-- subsection under page RC_mhttpd_Image_access in mhttpd_custom_image.dox -->
+                     </ul> <!-- i7 -->
+                     <li> @ref RC_mhttpd_custom_fills <!-- section under page RC_mhttpd_Image_access in mhttpd_custom_image.dox -->
+                     <ul class="i7">
+                        <li> @ref RC_mhttpd_fills_tree <!-- subsection under page RC_mhttpd_Image_access in mhttpd_custom_image.dox -->
+                        <li> @ref RC_mhttpd_custom_fill_scripts <!-- subsection under page RC_mhttpd_Image_access in mhttpd_custom_image.dox -->
+                     </ul> <!-- i7 -->
+                     <li> @ref RC_mhttpd_custom_edit_boxes <!-- section under page RC_mhttpd_Image_access in mhttpd_custom_image.dox -->
+                     <ul class="i7">
+                        <li> @ref RC_mhttpd_custom_pw <!-- subsection under page RC_mhttpd_Image_access in mhttpd_custom_image.dox -->
+                     </ul> <!-- i7 -->
+                     <li> @ref RC_mhttpd_custom_demo <!-- subpage RC_mhttpd_custom_demo -->
+                     <li> @ref RC_mhttpd_Internal <!-- subpage RC_mhttpd_Internal -->
+                  </ul> <!-- i6  end-of-page RC_mhttpd_Image_access -->
+               </ul> <!-- i5  end-of-page RC_mhttpd_custom_features -->
+            </ul> <!-- i4  end-of-page RC_mhttpd_Custom_page -->
+         </ul> <!-- i3  end-of-page RC_mhttpd -->
+      </ul> <!-- i2  end-of-page RC_Controlling_run -->
+<br>
+      <li> @ref RC_Monitor <!-- subpage RC_Monitor -->
+      <ul class="i2"> <!-- i2 -->
+         <li> @ref RC_mstat_task <!-- section under page RC_Monitor in RunControl.dox -->
+         <li> @ref RC_mdump_task <!-- section under page RC_Monitor in RunControl.dox -->
+         <ul class="i3">
+            <li> @ref RC_mdump_ex1 <!-- subsection under page RC_Monitor in RunControl.dox -->
+            <li> @ref RC_mdump_ex2 <!-- subsection under page RC_Monitor in RunControl.dox -->
+         </ul> <!-- i3 -->
+         <li> @ref RC_rmidas_task <!-- section under page RC_Monitor in RunControl.dox -->
+         <li> @ref RC_hvedit_task <!-- section under page RC_Monitor in RunControl.dox -->
+      </ul> <!-- i2  end-of-page RC_Monitor -->
+<br>
+      <li> @ref RC_customize_ODB <!-- subpage RC_customize_ODB -->
+      <ul class="i2"> <!-- i2 -->
+         <li> @ref RC_customize_intro <!-- section under page RC_customize_ODB in RunControl.dox -->
+         <li> @ref RC_customize_experiment_tree <!-- section under page RC_customize_ODB in RunControl.dox -->
+         <ul class="i3">
+            <li> @ref RC_ODB_Experiment_Tree <!-- subsection under page RC_customize_ODB in RunControl.dox -->
+            <li> @ref RC_Experiment_tree_keys <!-- subsection under page RC_customize_ODB in RunControl.dox -->
+         </ul> <!-- i3 -->
+         <li> @ref RC_run_start_params <!-- section under page RC_customize_ODB in RunControl.dox -->
+         <ul class="i3">
+            <li> @ref RC_Edit_On_Start <!-- subsection under page RC_customize_ODB in RunControl.dox -->
+         </ul> <!-- i3 -->
+         <li> @ref RC_Lock_when_Running <!-- section under page RC_customize_ODB in RunControl.dox -->
+         <li> @ref RC_Access_Control <!-- section under page RC_customize_ODB in RunControl.dox -->
+         <ul class="i3">
+            <li> @ref RC_Setup_Security <!-- subsection under page RC_customize_ODB in RunControl.dox -->
+            <ul class="i4" > 
+               <li> @ref RC_security_allowed_hosts <!-- subsubsection under page RC_customize_ODB in RunControl.dox -->
+               <li> @ref RC_security_allowed_programs <!-- subsubsection under page RC_customize_ODB in RunControl.dox -->
+            </ul> <!-- i4 -->
+            <li> @ref RC_Setup_Web_Security <!-- subsection under page RC_customize_ODB in RunControl.dox -->
+            <ul class="i4" > 
+               <li> @ref RC_security_web_pw <!-- subsubsection under page RC_customize_ODB in RunControl.dox -->
+            </ul> <!-- i4 -->
+            <li> @ref RC_Example_security <!-- subsection under page RC_customize_ODB in RunControl.dox -->
+            <ul class="i4" > 
+               <li> @ref RC_Example_full_security <!-- subsubsection under page RC_customize_ODB in RunControl.dox -->
+               <li> @ref RC_Example_web_security <!-- subsubsection under page RC_customize_ODB in RunControl.dox -->
+            </ul> <!-- i4 -->
+            <li> @ref RC_Remove_Security <!-- subsection under page RC_customize_ODB in RunControl.dox -->
+         </ul> <!-- i3 -->
+         <li> @ref RC_starting_clients <!-- section under page RC_customize_ODB in RunControl.dox -->
+         <ul class="i3">
+            <li> @ref RC_start_all_example <!-- subsection under page RC_customize_ODB in RunControl.dox -->
+            <li> @ref RC_kill_all_example <!-- subsection under page RC_customize_ODB in RunControl.dox -->
+            <li> @ref RC_ODB_programs_client <!-- subsection under page RC_customize_ODB in RunControl.dox -->
+            <li> @ref RC_customize_Programs_tree <!-- subsection under page RC_customize_ODB in RunControl.dox -->
+         </ul> <!-- i3 -->
+         <li> @ref RC_Alarm_System <!-- section under page RC_customize_ODB in RunControl.dox -->
+         <li> @ref RC_ODB_Alarms_Tree <!-- section under page RC_customize_ODB in RunControl.dox -->
+         <ul class="i3">
+            <li> @ref RC_explanation_of_alarms_tree <!-- subsection under page RC_customize_ODB in RunControl.dox -->
+         </ul> <!-- i3  end-of-page RC_customize_ODB -->
+      </ul> <!-- i2  end-of-page RC_customize_ODB -->
+<br>
+      <li> @ref RC_Hot_Link <!-- subpage RC_Hot_Link -->
+      <ul class="i2"> <!-- i2 -->
+         <li> @ref RC_Hot_Link_Intro <!-- section under page RC_Hot_Link in RunControl.dox -->
+         <li> @ref RC_Example_Hot_Link <!-- section under page RC_Hot_Link in RunControl.dox -->
+      </ul> <!-- i2  end-of-page RC_Hot_Link -->
+      <li> @ref RC_Intro <!-- section under page RunControl in RunControl.dox -->
+   </ul> <!-- i1  end-of-page RunControl -->
+\anchor FrontendOperation_section_index
+<br>
+   <li> @ref FrontendOperation <!-- subpage FrontendOperation -->
+   <ul class="i1"> <!-- i1 -->
+      <li> @ref FE_Intro <!-- section under page FrontendOperation in FrontendOperation.dox -->
+      <ul class="i2">
+         <li> @ref FE_program <!-- subsection under page FrontendOperation in FrontendOperation.dox -->
+         <li> @ref FE_frontend_task <!-- subsection under page FrontendOperation in FrontendOperation.dox -->
+         <li> @ref FE_hw_equipment <!-- subsection under page FrontendOperation in FrontendOperation.dox -->
+         <li> @ref FE_drivers <!-- subsection under page FrontendOperation in FrontendOperation.dox -->
+         <li> @ref FE_sw_equipment <!-- subsection under page FrontendOperation in FrontendOperation.dox -->
+         <li> @ref FE_multi <!-- subsection under page FrontendOperation in FrontendOperation.dox -->
+         <li> @ref FE_features <!-- subsection under page FrontendOperation in FrontendOperation.dox -->
+         <li> @ref FE_data_transfer <!-- subsection under page FrontendOperation in FrontendOperation.dox -->
+         <ul class="i3" > 
+            <li> @ref FE_optimize_transfer <!-- subsubsection under page FrontendOperation in FrontendOperation.dox -->
+         </ul> <!-- i3 -->
+         <li> @ref FE_event_trigger <!-- subsection under page FrontendOperation in FrontendOperation.dox -->
+         <li> @ref FE_equipment_readout_function <!-- subsection under page FrontendOperation in FrontendOperation.dox -->
+      </ul> <!-- i2 -->
+      <li> @ref FE_Equipment_list <!-- section under page FrontendOperation in FrontendOperation.dox -->
+<br>
+      <li> @ref FE_ODB_equipment_tree <!-- subpage FE_ODB_equipment_tree -->
+<br>
+      <li> @ref FE_eqdec <!-- subpage FE_eqdec -->
+      <ul class="i2"> <!-- i2 -->
+         <li> @ref FE_Example_equipment_structure <!-- section under page FE_eqdec in fe_eqdec.dox -->
+         <li> @ref FE_ROOT_Structure_Def <!-- section under page FE_eqdec in fe_eqdec.dox -->
+         <li> @ref FE_equipment_odb_common <!-- section under page FE_eqdec in fe_eqdec.dox -->
+         <ul class="i3">
+            <li> @ref FE_equipment_odb_hot_links <!-- subsection under page FE_eqdec in fe_eqdec.dox -->
+         </ul> <!-- i3  end-of-page FE_eqdec -->
+      </ul> <!-- i2  end-of-page FE_eqdec -->
+<br>
+      <li> @ref FE_table <!-- subpage FE_table -->
+<br>
+      <li> @ref Frontend_code <!-- subpage Frontend_code -->
+      <ul class="i2"> <!-- i2 -->
+         <li> @ref FE_intro <!-- section under page Frontend_code in Frontend_code.dox -->
+         <ul class="i3">
+            <li> @ref FE_LAM_macros <!-- subsection under page Frontend_code in Frontend_code.dox -->
+         </ul> <!-- i3 -->
+         <li> @ref FE_code_sections <!-- subpage FE_code_sections -->
+         <ul class="i3"> <!-- i3 -->
+            <li> @ref FE_includes <!-- section under page FE_code_sections in Frontend_code.dox -->
+            <li> @ref FE_global <!-- section under page FE_code_sections in Frontend_code.dox -->
+            <li> @ref FE_global_user <!-- section under page FE_code_sections in Frontend_code.dox -->
+            <li> @ref FE_system_prototypes <!-- section under page FE_code_sections in Frontend_code.dox -->
+            <li> @ref FE_user_prototypes <!-- section under page FE_code_sections in Frontend_code.dox -->
+         </ul> <!-- i3  end-of-page FE_code_sections -->
+         <li> @ref FE_sequence <!-- subpage FE_sequence -->
+         <ul class="i3"> <!-- i3 -->
+            <li> @ref FE_frontend_init <!-- section under page FE_sequence in Frontend_code.dox -->
+            <li> @ref FE_begin_of_run <!-- section under page FE_sequence in Frontend_code.dox -->
+            <li> @ref FE_pause_resume_run <!-- section under page FE_sequence in Frontend_code.dox -->
+            <li> @ref FE_end_of_run <!-- section under page FE_sequence in Frontend_code.dox -->
+            <li> @ref FE_frontend_exit <!-- section under page FE_sequence in Frontend_code.dox -->
+         </ul> <!-- i3  end-of-page FE_sequence -->
+         <li> @ref FE_eq_event_routines <!-- subpage FE_eq_event_routines -->
+         <ul class="i3"> <!-- i3 -->
+            <li> @ref FE_poll_event <!-- section under page FE_eq_event_routines in Frontend_code.dox -->
+            <li> @ref FE_interrupt_event <!-- section under page FE_eq_event_routines in Frontend_code.dox -->
+            <li> @ref FE_readout_routine <!-- section under page FE_eq_event_routines in Frontend_code.dox -->
+            <ul class="i4">
+               <li> @ref FE_poll_or_interrupt_readout_routine <!-- subsection under page FE_eq_event_routines in Frontend_code.dox -->
+               <li> @ref FE_other_event <!-- subsection under page FE_eq_event_routines in Frontend_code.dox -->
+               <li> @ref FE_fragmented_event <!-- subsection under page FE_eq_event_routines in Frontend_code.dox -->
+               <li> @ref FE_manual_trigger <!-- subsection under page FE_eq_event_routines in Frontend_code.dox -->
+               <ul class="i5" > 
+                  <li> @ref FE_manual_trig_determine <!-- subsubsection under page FE_eq_event_routines in Frontend_code.dox -->
+               </ul> <!-- i5 -->
+               <li> @ref FE_tdmusr_equipment <!-- subsection under page FE_eq_event_routines in Frontend_code.dox -->
+               <li> @ref FE_frag_max_event_size <!-- subsection under page FE_eq_event_routines in Frontend_code.dox -->
+               <li> @ref FE_frag_readout_code <!-- subsection under page FE_eq_event_routines in Frontend_code.dox -->
+               <li> @ref FE_backend_Manual_Trigger <!-- subsection under page FE_eq_event_routines in Frontend_code.dox -->
+            </ul> <!-- i4  end-of-page FE_eq_event_routines -->
+         </ul> <!-- i3  end-of-page FE_eq_event_routines -->
+         <li> @ref FE_event_notification <!-- subpage FE_event_notification -->
+         <li> @ref FE_camac_vme_function_calls <!-- subpage FE_camac_vme_function_calls -->
+         <ul class="i3"> <!-- i3 -->
+            <li> @ref FE_Midas_CAMAC_standard_functions <!-- section under page FE_camac_vme_function_calls in Appendices.dox -->
+            <li> @ref FE_ESONE_CAMAC_standard_functions <!-- section under page FE_camac_vme_function_calls in Appendices.dox -->
+            <li> @ref FE_Midas_VME_standard_functions <!-- section under page FE_camac_vme_function_calls in Appendices.dox -->
+            <li> @ref FE_Compute_Busy_Logic <!-- section under page FE_camac_vme_function_calls in Appendices.dox -->
+         </ul> <!-- i3  end-of-page FE_camac_vme_function_calls -->
+         <li> @ref FE_bank_construction <!-- subpage FE_bank_construction -->
+         <ul class="i3"> <!-- i3 -->
+            <li> @ref FE_FIXED_event_readout <!-- section under page FE_bank_construction in Frontend_code.dox -->
+            <li> @ref FE_MIDAS_event_construction <!-- section under page FE_bank_construction in Frontend_code.dox -->
+            <ul class="i4">
+               <li> @ref FE_Midas_Data_Types <!-- subsection under page FE_bank_construction in Frontend_code.dox -->
+               <li> @ref FE_creation_Midas_banks <!-- subsection under page FE_bank_construction in Frontend_code.dox -->
+               <li> @ref FE_Midas_Event_Header_Manipulation <!-- subsection under page FE_bank_construction in Frontend_code.dox -->
+            </ul> <!-- i4 -->
+            <li> @ref FE_YBOS_event_construction <!-- section under page FE_bank_construction in Frontend_code.dox -->
+            <li> @ref FE_YBOS_Bank_Types <!-- section under page FE_bank_construction in Frontend_code.dox -->
+            <ul class="i4">
+               <li> @ref FE_creation_YBOS_banks <!-- subsection under page FE_bank_construction in Frontend_code.dox -->
+            </ul> <!-- i4  end-of-page FE_bank_construction -->
+         </ul> <!-- i3  end-of-page FE_bank_construction -->
+         <li> @ref FE_Super_Event <!-- subpage FE_Super_Event -->
+         <ul class="i3"> <!-- i3 -->
+            <li> @ref FE_Super_Event_example <!-- section under page FE_Super_Event in Frontend_code.dox -->
+            <li> @ref FE_Super_Event_readout <!-- section under page FE_Super_Event in Frontend_code.dox -->
+         </ul> <!-- i3  end-of-page FE_Super_Event -->
+         <li> @ref FE_Event_Builder <!-- subpage FE_Event_Builder -->
+         <ul class="i3"> <!-- i3 -->
+            <li> @ref FE_mevb_task <!-- section under page FE_Event_Builder in eventbuilder.dox -->
+            <li> @ref FE_eb <!-- section under page FE_Event_Builder in eventbuilder.dox -->
+            <li> @ref FE_principle_eb <!-- section under page FE_Event_Builder in eventbuilder.dox -->
+            <li> @ref FE_eb_tree <!-- section under page FE_Event_Builder in eventbuilder.dox -->
+            <li> @ref FE_eb_Operation <!-- section under page FE_Event_Builder in eventbuilder.dox -->
+            <li> @ref FE_ODB_EBuilder_Tree <!-- section under page FE_Event_Builder in eventbuilder.dox -->
+         </ul> <!-- i3  end-of-page FE_Event_Builder -->
+         <li> @ref FE_Slow_Control_system <!-- subpage FE_Slow_Control_system -->
+         <li> @ref FE_Deferred_Transition <!-- subpage FE_Deferred_Transition -->
+      </ul> <!-- i2  end-of-page Frontend_code -->
+   </ul> <!-- i1  end-of-page FrontendOperation -->
+\anchor DataAnalysis_section_index
+<br>
+   <li> @ref DataAnalysis <!-- subpage DataAnalysis -->
+   <ul class="i1"> <!-- i1 -->
+      <li> @ref DA_analyzer_task <!-- section under page DataAnalysis in DataAnalyzer.dox -->
+      <li> @ref DA_Midas_Analyzer <!-- section under page DataAnalysis in DataAnalyzer.dox -->
+      <li> @ref Multi_Stage_Concept <!-- section under page DataAnalysis in DataAnalyzer.dox -->
+      <ul class="i2">
+         <li> @ref Analyzer_parameters <!-- subsection under page DataAnalysis in DataAnalyzer.dox -->
+         <li> @ref Analyzer_module_parameters <!-- subsection under page DataAnalysis in DataAnalyzer.dox -->
+         <li> @ref Analyzer_flow_chart <!-- subsection under page DataAnalysis in DataAnalyzer.dox -->
+         <li> @ref HBOOK_analyzer <!-- subsection under page DataAnalysis in DataAnalyzer.dox -->
+         <li> @ref PAW_Online_usage <!-- subsection under page DataAnalysis in DataAnalyzer.dox -->
+         <li> @ref PAW_Offline_usage <!-- subsection under page DataAnalysis in DataAnalyzer.dox -->
+      </ul> <!-- i2 -->
+      <li> @ref DA_YBOS_bank_examples <!-- section under page DataAnalysis in DataAnalyzer.dox -->
+      <li> @ref DA_Byte_Swap_Macros <!-- section under page DataAnalysis in DataAnalyzer.dox -->
+   </ul> <!-- i1  end-of-page DataAnalysis -->
+\anchor Performance_section_index
+<br>
+   <li> @ref Performance <!-- subpage Performance -->
+   <ul class="i1"> <!-- i1 -->
+      <li> @ref Performance_section_index <!-- section under page Performance in Performance.dox -->
+   </ul> <!-- i1  end-of-page Performance -->
+\anchor SpecialConfig_section_index
+<br>
+   <li> @ref SpecialConfig <!-- subpage SpecialConfig -->
+   <ul class="i1"> <!-- i1 -->
+      <li> @ref SpecConfig_section_index <!-- section under page SpecialConfig in SpecialConfig.dox -->
+   </ul> <!-- i1  end-of-page SpecialConfig -->
+\anchor BuildingOptions_section_index
+<br>
+   <li> @ref BuildingOptions <!-- subpage BuildingOptions -->
+   <ul class="i1"> <!-- i1 -->
+      <li> @ref BO_building_option <!-- section under page BuildingOptions in BuildingOptions.dox -->
+      <li> @ref BO_USERFLAGS <!-- section under page BuildingOptions in BuildingOptions.dox -->
+      <li> @ref BO_MIDAS_PREF_FLAGS <!-- section under page BuildingOptions in BuildingOptions.dox -->
+      <li> @ref BO_HAVE_CAMAC <!-- section under page BuildingOptions in BuildingOptions.dox -->
+      <li> @ref BO_HAVE_ROOT <!-- section under page BuildingOptions in BuildingOptions.dox -->
+      <li> @ref BO_HAVE_HBOOK <!-- section under page BuildingOptions in BuildingOptions.dox -->
+      <li> @ref BO_HAVE_MYSQL <!-- section under page BuildingOptions in BuildingOptions.dox -->
+      <li> @ref BO_MIDAS_MAX_EVENT_SIZE <!-- section under page BuildingOptions in BuildingOptions.dox -->
+      <li> @ref BO_SPECIFIC_OS_PRG <!-- section under page BuildingOptions in BuildingOptions.dox -->
+      <li> @ref BO_INCLUDE_FTPLIB <!-- section under page BuildingOptions in BuildingOptions.dox -->
+      <li> @ref BO_INCLUDE_ZLIB <!-- section under page BuildingOptions in BuildingOptions.dox -->
+      <li> @ref BO_YBOS_VERSION_3_3 <!-- section under page BuildingOptions in BuildingOptions.dox -->
+      <li> @ref BO_DM_DUAL_THREAD <!-- section under page BuildingOptions in BuildingOptions.dox -->
+      <li> @ref BO_USE_EVENT_CHANNEL <!-- section under page BuildingOptions in BuildingOptions.dox -->
+      <li> @ref BO_USE_INT <!-- section under page BuildingOptions in BuildingOptions.dox -->
+      <li> @ref BO_Environment_variables <!-- section under page BuildingOptions in BuildingOptions.dox -->
+      <ul class="i2">
+         <li> @ref BO_MIDASSYS <!-- subsection under page BuildingOptions in BuildingOptions.dox -->
+         <li> @ref BO_MIDAS_EXPTAB <!-- subsection under page BuildingOptions in BuildingOptions.dox -->
+         <li> @ref BO_MIDAS_SERVER_HOST <!-- subsection under page BuildingOptions in BuildingOptions.dox -->
+         <li> @ref BO_MIDAS_EXPT_NAME <!-- subsection under page BuildingOptions in BuildingOptions.dox -->
+         <li> @ref BO_MIDAS_DIR <!-- subsection under page BuildingOptions in BuildingOptions.dox -->
+         <li> @ref BO_MCHART_DIR <!-- subsection under page BuildingOptions in BuildingOptions.dox -->
+      </ul> <!-- i2  end-of-page BuildingOptions -->
+   </ul> <!-- i1  end-of-page BuildingOptions -->
+\anchor NDF_section_index
+<br>
+   <li> @ref NDF <!-- subpage NDF -->
+   <ul class="i1"> <!-- i1 -->
+      <li> @ref ndf_info <!-- section under page NDF in newdocfeatures.dox -->
+      <li> @ref ndf_section_220 <!-- section under page NDF in newdocfeatures.dox -->
+      <li> @ref ndf_section_210 <!-- section under page NDF in newdocfeatures.dox -->
+      <li> @ref ndf_section_200 <!-- section under page NDF in newdocfeatures.dox -->
+   </ul> <!-- i1  end-of-page NDF -->
+\anchor Glossary_section_index
+<br>
+   <li> @ref Glossary <!-- subpage Glossary -->
+\anchor DocIndex_section_index
+<br>
+   <li> @ref DocIndex <!-- subpage DocIndex -->
+</ol>
+\anchor end
+\htmlonly <img ALIGN="left" alt="previous.gif" src="previous.gif"> \endhtmlonly @ref Top 
+\htmlonly <img alt="next.gif" src="next.gif"> \endhtmlonly
+*/

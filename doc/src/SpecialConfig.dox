@@ -1,0 +1,29 @@
+/*! @page SpecialConfig Special Configurations
+
+<!-- Navigation -->
+<br>
+\htmlonly
+<script type="text/javascript" src="http://ladd00.triumf.ca/~daqweb/doc/my_midas/html/navigation.js"></script>
+<script type="text/javascript">
+pages("Performance","SpecConfig_section_index",  "","Performance","end" ); // back index next {top bottom}
+sections("DataAnalyzer","Performance","SpecialConfig"); // last section; top of this section; next section
+</script>
+\endhtmlonly
+\latexonly
+@ref DataAnalyzer "previous page"  - @ref Organization "Map" - @ref SpecialConfig "next page"
+\endlatexonly
+<br>
+<!-- End of Navigation -->
+
+
+no contents yet
+
+
+@section SpecConfig_section_index Special Configuration Section Index
+nothing yet
+<br>
+
+
+
+\anchor end
+*/

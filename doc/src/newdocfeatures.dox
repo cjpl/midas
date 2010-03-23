@@ -1,0 +1,78 @@
+/*! \page NDF New Documented Features
+
+<!-- Subpage of Introduction Section -->
+
+\htmlonly <img ALIGN="left" alt="previous.gif" src="previous.gif"> \endhtmlonly 
+@ref  - @ref Top - @ref SpecialConfig
+\htmlonly <img alt="next.gif" src="next.gif"> \endhtmlonly
+
+\todo newdocfeatures.dox needs work
+
+\section ndf_info  General Information
+
+This section will describe what new features are available with new versions
+of the Midas code. References will be given to these features in the documentation, and they
+will be highlighted in the text <span class ="new">like this</span>.
+
+See also the <a href="https://ladd00.triumf.ca/elog/Midas">Midas Elog Forum</a> for
+  - Requests for new features, 
+  - Bug reports etc https://ladd00.triumf.ca/elog/Midas
+  - yet-to-be-documented new features ??
+
+\todo are we still going by Midas Version 2.2.? or are we going by e.g. version nnn of mhttpd.c ??
+
+\section ndf_section_220 Version 2.2.0
+- Software version: 2.2.0 (2009)
+\TODO fill all ?? versions
+ -  ?? (mhttpd.c) <b>/Experiment/Hide Run Buttons</b> used to hide run buttons on mhttpd main status page ( see  @ref RC_mhttpd_status_action_buttons "details")
+ -  ?? (mhttpd.c) <b>/Experiment/Menu Buttons</b> to select which buttons appear on mhttpd main status page ( see  @ref RC_mhttpd_status_action_buttons "details")
+ -  4434 (mhttpd.c) and 4435 (mlogger.c)  \b Note: backup ODB before using the following !!
+    - history in SQL database (see @ref History_sql_internal)
+    - experimental implementation of "ODBRpc" @ref RC_mhttpd_custom_RPC_access  added to the midas javascript library
+    - see  @ref note_history_tags "Note on /History/Tags"
+    - @ref F_mhdump_task
+
+
+
+\section ndf_section_210 Version 2.1.0
+- Software version: 2.1.0 (in progress June 4/2008)
+ - 2.0.0 has been touched heavly for compilation errors and warnings corrections, as well
+   as mlogger, history, mhttpd for inclusion of new features. All these changes WILL require 
+   a new release under the number 2.1.0. The list of the main modifications
+   is given here below:
+  - in progress...
+  - ...
+\todo Version 2.1.0 list of main modifications missing
+
+\section ndf_section_200 Version 2.0.0
+- <b> [>2.0.0] Nov 02/2007 </b>
+ - @ref F_mlogger_task supports zip files for MIDAS format.
+ - New environment variable @ref BO_MIDAS_MAX_EVENT_SIZE.
+ - @ref F_lazylogger_task new features (remark).
+ - @ref F_Midas_Library <b> alarm, history, elog </b> functions have been placed in dedicate files.
+ - @ref sc_page new editable field for web display.
+
+- <b> [2.0.0] </b>
+ - Update the whole midas package for support of 64 bits machine,
+   OSLFAGS should have -m32 for 32bit  (@ref BO_building_option).
+ - Implementation of the external standalone Elog package (@ref External_Elog).
+ - ODB Buffer size parameter (@ref  ODB_Experiment_Tree).  
+ - Fix buffer level handling.
+ - Improve midas.log, ODB Dump file directory destination (@ref Data_Dir).
+ - Multiple minor buf fixes
+  - Buffer level handling.
+  - mdump single bank display.
+  - mhttpd (multiple buggies).
+ - EQ_MULTITHREAD frontend type (see @ref EQ_xxx).
+ - @ref rbfunctionc for multi-threading and cascading data transfer.
+
+
+- <b> [<2.0.0] </b>
+  - Unsupported version.
+
+\todo 2.0.0 needs cleaning up
+  
+\htmlonly <img ALIGN="left" alt="previous.gif" src="previous.gif"> \endhtmlonly
+@ref Quickstart - @ref Top - @ref SpecialConfig
+\htmlonly <img alt="next.gif" src="next.gif"> \endhtmlonly
+*/

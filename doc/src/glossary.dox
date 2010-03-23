@@ -1,0 +1,28 @@
+/*! @page Glossary Glossary
+
+\htmlonly <img ALIGN="left" alt="previous.gif" src="previous.gif"> \endhtmlonly 
+@ref Top -  @ref Organization "Map"
+\htmlonly <img alt="next.gif" src="next.gif"> \endhtmlonly
+
+<ul>
+<li> @ref sintro0 "backend"
+<li> @ref sintro1 "driver"
+<li> @ref Equipment_definition "equipment"
+  <ul>
+     <li> @ref FE_hw_equipment "hardware"
+     <li> @ref FE_sw_equipment "software"
+  </ul>
+<li> @ref Event_definition
+  <ul>
+     <li> @ref  FE_event_trigger "trigger"
+  </ul>
+<li> @ref sintro0 "frontend"
+  
+</ul>
+
+\htmlonly <img ALIGN="left" alt="previous.gif" src="previous.gif"> \endhtmlonly 
+@ref Top -  @ref Organization "Map"
+\htmlonly <img alt="next.gif" src="next.gif"> \endhtmlonly
+
+*/
+    

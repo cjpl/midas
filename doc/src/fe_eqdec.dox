@@ -1,0 +1,281 @@
+/*! @page FE_eqdec Equipment list for a Frontend
+
+<!-- Navigation -->
+\htmlonly
+<script type="text/javascript">
+// pages parameters: back index next {top bottom}
+pages( "FE_ODB_equipment_tree","FE_section_index", "FE_table","FE_eqdec","end" );
+
+// section parameters: last section; top of this section; next section
+sections("RunControl","FrontendOperation","Utilities");
+</script>
+\endhtmlonly
+\latexonly
+@ref  FE_ODB_equipment_tree "previous page"  - @ref FE_section_index - @ref Top - @ref  FE_table "next page" 
+\endlatexonly
+<br>
+
+@section FE_Example_equipment_structure Example of equipment declaration
+<div style="text-align: center;">
+<span style="color: rgb(255, 0, 0); font-weight: bold;">Click on
+each parameter link for details.</span>
+</div>
+
+<table style="text-align: left; width: 100%;" border="1" cellpadding="2"
+ cellspacing="2">
+    <tr>
+      <td
+ style="vertical-align: top; text-align: center; background-color: rgb(255, 255, 204);"><span
+ style="font-weight: bold;">Example Equipment declaration
+from frontend.c</span><br>
+      </td>
+      <td
+ style="vertical-align: top; text-align: center; background-color: rgb(255, 255, 204);"><span
+ style="font-weight: bold;">Equivalent ODB common structure created by
+mfe.c</span><br>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;"> <br>
+      </td>
+      <td style="vertical-align: top;"><br>
+      </td>
+    </tr>
+    <tr>
+ <td style="vertical-align: top; background-color: rgb(204, 204, 255); ">
+      <pre style="background-color: rgb(204, 204, 255);">
+
+//-- Equipment list ------------------------------------------------ 
+EQUIPMENT equipment[] = {   // start of EQUIPMENT structure  </pre>
+      </td>
+      <td style="vertical-align: top;">
+      </td>
+    </tr>
+    <tr>
+      <td
+ style="vertical-align: top; background-color: rgb(102, 255, 153);"><span
+ style="color: rgb(255, 255, 255);"><span style="color: rgb(0, 102, 0);">/</span><span
+ style="color: rgb(153, 255, 153);"><span style="color: rgb(0, 102, 0);">/ 
+Definition of Trigger Equipment :</span></span></span><br>
+      </td>
+      <td
+ style="vertical-align: top; background-color: rgb(204, 255, 255);"><br>
+      </td>
+    </tr>
+
+    <tr>
+  <td style="vertical-align: top; background-color: rgb(153, 255, 153);">
+<pre style="background-color: rgb(153, 255, 153);">
+{ "Trigger",                          @ref FE_tbl_EqName "// equipment name"
+     { 1,                            @ref FE_tbl_EventID "// event ID"
+       0,                            @ref FE_tbl_TrigMask "// trigger mask"
+       "SYSTEM",                     @ref FE_tbl_Buffer "// event buffer"
+#ifdef USE_INT
+       EQ_INTERRUPT,                 @ref FE_tbl_EqType "// equipment type" 
+#else
+       EQ_POLLED,                    @ref FE_tbl_EqType "// equipment type "
+#endif
+       LAM_SOURCE(0, 0xFFFFFF),      @ref FE_tbl_IntSrc "// event source crate 0, all stations"
+       "MIDAS",                      @ref FE_tbl_Format "// format"
+       TRUE,                         @ref FE_tbl_EqEnabled "// enabled "
+       RO_RUNNING | RO_ODB @ref FE_tbl_ReadOn "// read when running and update ODB "      
+       500,                          @ref FE_tbl_Period "// poll for 500ms  "
+       0,                            @ref FE_tbl_EventLimit "// stop run after this event limit "
+       0,                            @ref FE_tbl_NumSubevents "// number of sub events "
+       0,                            @ref FE_tbl_History "// log history" 
+       "",                           @ref FE_tbl_Reserved "// Reserved"
+       "",                           @ref FE_tbl_Reserved "// Reserved"
+       "",},                         @ref FE_tbl_Reserved "// Reserved"
+       read_trigger_event,           @ref FE_tbl_ReadoutRoutine "// Readout Routine"    
+// the following is required only if data is to be saved in @ref FE_ROOT_Structure_Def "ROOT format"
+       NULL,                         @ref FE_tbl_ClassDriver "// Reserved"
+       NULL,                         @ref FE_tbl_DevDriverList "// Reserved"
+       trigger_bank_list,            @ref FE_tbl_BankDef "// bank list"
+// end of required parameters for ROOT format
+     },
+</pre>
+      </td>
+ <td style="vertical-align: top;  background-color: rgb(204, 255, 255);">
+<pre style="background-color: rgb(204, 255, 255);">
+
+[/Equipment/Trigger/Common]
+
+
+</pre>
+      </td>
+    </tr>
+ <tr>
+      <td
+ style="vertical-align: top; background-color: rgb(102, 255, 153);"><span
+ style="color: rgb(0, 102, 0);">// Definition of Scaler Equipment :</span><br>
+      </td>
+      <td
+ style="vertical-align: top; background-color: rgb(204, 255, 255);"><br>
+      </td>
+    </tr>
+
+    <tr>
+      <td style="vertical-align: top; background-color: rgb(153, 255, 153);">
+<pre style="background-color: rgb(153, 255, 153);">
+{ "Scaler",                          @ref FE_tbl_EqName "// equipment name"
+     { 2,                            @ref FE_tbl_EventID "// event ID"
+       0,                            @ref FE_tbl_TrigMask "// trigger mask"
+       "SYSTEM",                     @ref FE_tbl_Buffer "// event buffer"
+       EQ_PERIODIC | EQ_MANUAL_TRIG, @ref FE_tbl_EqType "// equipment type "
+       0,                            @ref FE_tbl_IntSrc "// event source"
+       "MIDAS",                      @ref FE_tbl_Format "// format"
+       TRUE,                         @ref FE_tbl_EqEnabled "// enabled "
+       RO_RUNNING | RO_TRANSITIONS | @ref FE_tbl_ReadOn "// read when running and on transitions "      
+       RO_ODB,                       @ref FE_tbl_ReadOn "// and update ODB "
+       10000,                        @ref FE_tbl_Period "// read every 10 sec"
+       0,                            @ref FE_tbl_EventLimit "// stop run after this event limit "
+       0,                            @ref FE_tbl_NumSubevents "// number of sub events "
+       0,                            @ref FE_tbl_History "// log history" 
+       "",                           @ref FE_tbl_Reserved "// Reserved"
+       "",                           @ref FE_tbl_Reserved "// Reserved"
+       "",},                         @ref FE_tbl_Reserved "// Reserved"
+       read_scaler_event,            @ref FE_tbl_ReadoutRoutine "// Readout Routine" 
+// the following is required only if data is to be saved in @ref FE_ROOT_Structure_Def "ROOT format"
+       NULL,                         @ref FE_tbl_ClassDriver "// Reserved"
+       NULL,                         @ref FE_tbl_DevDriverList "// Reserved"
+       scaler_bank_list,             @ref FE_tbl_BankDef "// bank list"
+// end of required parameters for ROOT format
+     },
+</pre></td>
+      <td style="vertical-align: top;  background-color: rgb(204, 255, 255);">
+<pre style="background-color: rgb(204, 255, 255);">
+
+@anchor FE_scaler_common
+[/Equipment/Scaler/Common]
+
+Event ID = WORD : 2
+Trigger mask = WORD : 0
+Buffer = STRING : [32] SYSTEM
+Type = INT : 17
+Source = INT : 0
+Format = STRING : [8] MIDAS
+Enabled = BOOL : y
+Read on = INT : 121
+Period = INT : 10000
+Event limit = DOUBLE : 0
+Num subevents = DWORD : 0
+Log history = INT : 0
+Frontend host = STRING : [32] lxhost1
+Frontend name = STRING : [32] fe
+Frontend file name = STRING : [256] frontend.c
+</pre>
+      </td>
+    </tr>
+
+ </tr>
+    <tr>
+ <td
+ style="vertical-align: top; background-color: rgb(102, 255, 153);"><span
+ style="color: rgb(0, 102, 0);">//  '''''''''''                         Repeat for any other defined Equipments </span><br>
+      </td>
+    </tr>
+
+    <tr>
+ <td style="vertical-align: top; background-color: rgb(204, 204, 255); ">
+      <pre style="background-color: rgb(204, 204, 255);">
+     {""}
+};              // end of EQUIPMENT structure
+</pre>
+      </td>
+      <td style="vertical-align: top;"><br>
+      </td>
+    </tr>
+</table>
+
+@section FE_ROOT_Structure_Def ROOT structure definition for frontend EQUIPMENT list
+
+
+This example shows a structured bank and a standard variable length
+bank declaration for the trigger bank list. <br>
+
+\code
+   ADC0_BANK_STR(adc0_bank_str);
+   BANK_LIST trigger_bank_list[] = {
+      {"ADC0", TID_STRUCT, sizeof(ADC0_BANK), adc0_bank_str},
+      {"TDC0", TID_WORD, N_TDC, NULL},
+      {""},
+   };
+
+   BANK_LIST scaler_bank_list[] = {
+      {"SCLR", TID_DWORD, N_ADC, NULL},
+      {""},
+   };
+\endcode
+
+The @ref FE_tbl_Format "formats" for the ADC0 bank is "fixed", and for the TDC0 bank "midas".<br>
+This structure definition must be declared in the parameter @ref
+FE_tbl_BankDef "Bank Definition" in the equipment list 
+as in the example @ref FE_Example_equipment_structure "above".<br>
+<br>
+
+@section FE_equipment_odb_common Equipment Settings in ODB
+
+
+Every time the frontend is initialized, it <b>copies the equipment
+settings to the ODB</b> under <span style="font-style: italic;">/Equipment/&lt;equipment
+name&gt;/Common</span> (see @ref FE_scaler_common "example").<br>
+<br>
+@subsection FE_equipment_odb_hot_links Hot-linked equipment settings
+
+Hot-links to the   <span style="font-style: italic;">/Equipment/&lt;equipment
+name&gt;/Common</span> area are created, allowing some of the settings
+to be <span style="font-weight: bold;">changed during run-time</span>,
+rather than having to edit, recompile and reload the frontend. These
+settings are the
+<br>
+<table style="text-align: left; width: 25%; background-color: rgb(204, 204, 204); margin-left: auto; margin-right: auto;" border="1" cellpadding="2" cellspacing="2">
+
+
+
+<tr align="center">
+<td
+style="vertical-align: top; background-color: rgb(255, 255, 204);"><span
+style="font-weight: bold;">Equipment Settings hot-linked in ODB</span><br>
+</td>
+</tr>
+<tr align="center">
+<td style="vertical-align: top;">**  
+@ref FE_tbl_EqEnabled "Enabled" flag
+</td>
+</tr>
+<tr align="center">
+<td style="vertical-align: top;">**  
+@ref FE_tbl_ReadOn "RO_XX" flags
+</td>
+</tr>
+<tr align="center">
+<td style="vertical-align: top;">**  
+@ref  FE_tbl_Period "Period"
+</td>
+</tr>
+<tr align="center">
+<td style="vertical-align: top;">**  
+@ref  FE_tbl_EventLimit "Event Limit"
+</td>
+</tr>
+
+</table>
+
+Modification from the ODB is immediately reflected into the frontend, which will act upon the new setting.
+
+<br>
+\anchor end
+
+<!-- Navigation -->
+\htmlonly
+<script type="text/javascript">
+// pages parameters: back index next {top bottom}
+pages( "FE_ODB_equipment_tree","FE_section_index", "FE_table","FE_eqdec","end" );
+// section parameters: last section; top of this section; next section
+sections("RunControl","FrontendOperation","Utilities");
+</script>
+\endhtmlonly
+\latexonly
+@ref  FE_ODB_equipment_tree "previous page"  - @ref FE_section_index - @ref Top - @ref  FE_table "next page" 
+\endlatexonly
+*/

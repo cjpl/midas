@@ -1,0 +1,42 @@
+/*! @page Performance Performance
+
+<!-- Navigation -->
+<br>
+\htmlonly
+<script type="text/javascript" src="http://ladd00.triumf.ca/~daqweb/doc/my_midas/html/navigation.js"></script>
+<script type="text/javascript">
+pages("DataAnalyzer","Performance_section_index",  "SpecialConfig","Performance","end" ); // back index next {top bottom}
+sections("DataAnalyzer","Performance","SpecialConfig"); // last section; top of this section; next section
+</script>
+\endhtmlonly
+\latexonly
+@ref DataAnalyzer "previous page"  - @ref Organization "Map" - @ref SpecialConfig "next page"
+\endlatexonly
+<br>
+<!-- End of Navigation -->
+
+no contents yet
+
+
+
+
+
+@section Performance_section_index Performance Section Index
+     nothing yet
+
+
+<!-- Navigation -->
+<br>
+\htmlonly
+<script type="text/javascript">
+pages("DataAnalyzer","Performance_section_index",  "SpecialConfig","Performance","" ); // back index next {top bottom}
+sections("DataAnalyzer","Performance","SpecialConfig"); // last section; top of this section; next section
+</script>
+\endhtmlonly
+\latexonly
+@ref DataAnalyzer "previous page"  - @ref Organization "Map" - @ref SpecialConfig "next page"
+\endlatexonly
+<br>
+<!-- End of Navigation -->
+\anchor end
+*/

@@ -1,0 +1,688 @@
+/*! @page FE_table Explanation of Equipment list parameters
+
+<!-- Navigation -->
+\htmlonly
+<script type="text/javascript">
+// pages parameters: back index next {top bottom}
+pages( "FE_eqdec","FE_section_index", "Frontend_code","FE_table","end" );
+
+// section parameters: last section; top of this section; next section
+sections("RunControl","FrontendOperation","Utilities");
+</script>
+\endhtmlonly
+\latexonly
+@ref FE_eqdec "previous page" - @ref FE_section_index - @ref Top - @ref  Frontend_code "next page"
+\endlatexonly
+<br>
+
+<table
+ style="text-align: left; width: 100%; background-color: rgb(255, 255, 255);"
+  border="1" cellpadding="2" cellspacing="2">
+  <caption>TABLE showing Equipment List Parameters </caption>  
+    <tr>
+      <td colspan="2" rowspan="1"
+ style="vertical-align: top; background-color: rgb(255, 255, 204); font-weight: bold;">EQUIPMENT
+   Parameter<br>
+      </td>
+      <td colspan="2" rowspan="1"
+ style="vertical-align: top; background-color: rgb(255, 255, 204); font-weight: bold;">Explanation<br>
+      </td>
+    </tr>
+    <tr>
+      <td colspan="2" rowspan="1"
+ style="vertical-align: top; background-color: rgb(255, 255, 255);"><span
+ style="color: rgb(255, 0, 0);"><span style="color: rgb(0, 0, 0);">@anchor FE_tbl_EqName</span>
+      <span style="font-weight: bold;">Equipment
+Name</span></span><br>
+      </td>
+      <td colspan="2" rowspan="1"
+ style="vertical-align: top; background-color: rgb(255, 255, 255);">Each
+equipment has to be assigned a <b> unique name </b> (i.e. no two equipments in the 
+same experiment may have the same name). The name will be the reference name of the equipment
+generating the event. Examples of typical Equipment Names are "Trigger","Scaler","Epics". </td>
+    </tr>
+    <tr>
+      <td colspan="1" rowspan="17"
+ style="vertical-align: top; background-color: rgb(255, 255, 255);">       
+ <span
+ style="color: rgb(255, 255, 255);">1<br></span> <!-- white 1 -->
+      </td>
+      <td colspan="2" rowspan="1"
+ style="vertical-align: top; font-weight: bold; background-color: rgb(192, 192, 192);">
+      <div
+ style="text-align: center; background-color: rgb(153, 153, 153);"><span
+ style="color: rgb(255, 255, 255);">EQUIPMENT_INFO  
+Structure</span><br>
+      </div>
+      </td>
+
+      <td  colspan="1" rowspan="17" style="vertical-align: top;">
+<span
+ style="color: rgb(255, 255, 255);">1<br></span> <!-- white 1 -->
+
+      </td>
+    </tr>
+    <tr>
+      <td
+ style="vertical-align: top; background-color: rgb(204, 204, 204);"><span
+ style="color: rgb(255, 0, 0);"><span style="color: rgb(0, 0, 0);">
+@anchor FE_tbl_EventID</span></span><span
+ style="font-weight: bold; color: rgb(255, 0, 0);"><span
+ style="color: rgb(0, 0, 0);"> </span>Event
+ID</span><br>
+      </td>
+      <td
+ style="vertical-align: top; background-color: rgb(204, 204, 204);">Each
+equipment has to be associated with a <b> unique event ID </b>. The event ID
+will be part of the event
+header of that particular equipment. <br>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top; background-color: rgb(204, 204, 204);">
+<span  style="color: rgb(255, 0, 0);"><span style="color: rgb(0, 0, 0);">
+@anchor FE_tbl_TrigMask</span>
+ <span style="font-weight: bold;">Trigger Mask</span></span><br>
+      </td>
+      <td
+ style="vertical-align: top; background-color: rgb(204, 204, 204);">Each
+equipment must be associated with a <b> unique Trigger mask </b> if  the
+@ref FE_tbl_EqType "Equipment type" is  @ref FE_tbl_EqInterrupt "EQ_INTERRUPT" or 
+@ref  FE_tbl_EqMultithread "EQ_MULTITHREAD".  In this case,
+the trigger mask can be modified
+dynamically by the readout routine to define a <b> sub-event type </b> on an
+event-by-event basis. This can be used to mix "physics events" (from a
+physics trigger) and "calibration events" (from a clock for example) in
+one run and identify them later. Both parameters are declared as 16bit
+values. If the Trigger mask is used in a single bit-wise mode, 16 is
+the maximum number of different masks available.  
+    </tr>
+    <tr>
+      <td
+ style="vertical-align: top; background-color: rgb(204, 204, 204);"><span
+ style="color: rgb(255, 0, 0);"><span style="color: rgb(0, 0, 0);">@anchor FE_tbl_Buffer</span>
+      <span style="font-weight: bold;">Buffer</span></span><br>
+      </td>
+      <td
+ style="vertical-align: top; background-color: rgb(204, 204, 204);"> Specifies
+the name of the Buffer to which the event will be sent.
+After composition of an "Equipment", the Midas frontend mfe.c
+takes over the sending of this event to the buffer (usually the
+<b> "SYSTEM" </b> buffer) on the back-end computer  where it may be sent
+to the logger and the analyser.
+<ul>
+<li>  @anchor FE_tbl_mirrorODB If this field is left empty, (i.e. set to ""), 
+the readout function associated with that equipment will still be performed, but the 
+actual event won't
+be sent to the buffer. Instead, that
+particular equipment can be <b>mirrored in the ODB</b> if the @ref  FE_tbl_ReadOn "RO_ODB" flag is
+turned on (see @ref  FE_RO_ODB_example "example").  Note that this feature is
+generally used only for testing or monitoring, as writing large amounts
+of data to the ODB takes time. 
+<li>By using a buffer other than the "SYSTEM" buffer,  @ref F_Logger_Event_Filtering can be 
+implemented. 
+<li>
+If using an \ref Event_Builder  "Event Builder" ( i.e. a secondary
+stage
+on the back-end to collect
+and assemble events coming from different buffers in order to
+compose a larger event) , a dedicated buffer can be specified.  In
+this case the  @ref FE_tbl_EqEb "EQ_EB" flag must be turned on, and the events coming from
+the frontend are called \b fragments.
+</ul>
+      </td>
+    </tr>
+    <tr>
+      <td
+ style="vertical-align: top; background-color: rgb(204, 204, 204);">@anchor FE_tbl_EqType
+      <span style="font-weight: bold; color: rgb(255, 0, 0);">Equipment
+Type</span><br>
+      </td>
+      <td
+ style="vertical-align: top; background-color: rgb(204, 204, 204);">One
+of the Equipment Flags EQ_XXX selected
+from the following Table: <br>
+      <table
+ style="text-align: left; width: 90%; height: 90%; margin-left: 0px; margin-right: auto;"
+ border="1" cellpadding="2" cellspacing="2">
+  <caption>Table showing Equipment Flags
+</caption>       
+          <tr align="center">
+            <td colspan="2" rowspan="1"
+ style="vertical-align: top; background-color: rgb(51, 204, 255);"><span
+ style="font-weight: bold;">Equipment Types</span><br>
+            </td>
+            <td
+ style="vertical-align: top; background-color: rgb(51, 204, 255);">
+<span style="font-weight: bold;">Explanation</span>
+<br>
+            </td>
+          </tr>
+          <tr>
+            <td
+ style="vertical-align: top; background-color: rgb(51, 204, 255);">@anchor FE_tbl_EqPeriodic
+EQ_PERIODIC</td>
+            <td
+ style="vertical-align: top; background-color: rgb(51, 204, 255);">Periodic
+Event<br>
+            </td>
+            <td
+ style="vertical-align: top; background-color: rgb(51, 204, 255);">In
+this mode no hardware requirement is necessary to @ref FE_tab_event_trigger "trigger" the
+readout function.  Instead, the @ref FE_tbl_ReadoutRoutine "readout routine" associated with this 
+equipment is called periodically.
+ The @ref  FE_tbl_Period "Period" field in the equipment declaration is used in
+this case to specify the time interval between calls to the
+readout function.  See @ref FE_other_event "example". </td>
+          </tr>
+          <tr>
+            <td
+ style="vertical-align: top; background-color: rgb(51, 204, 255);">@anchor FE_tbl_EqPolled
+EQ_POLLED</td>
+            <td
+ style="vertical-align: top; background-color: rgb(51, 204, 255);">Polling
+Event </td>
+            <td
+ style="vertical-align: top; background-color: rgb(51, 204, 255);">In
+this mode,  the name of the routine performing the @ref FE_tab_event_trigger "trigger" check
+function is  @ref FE_poll_event "poll_event()". This routine must be provided
+in the frontend.c by the user.     
+As polling consists of checking a variable for a TRUE condition, if the
+loop count is infinite and the
+condition never becomes TRUE, the frontend
+would not be able to respond to any network commands. Therefore the
+loop count is determined when the frontend starts for the first time so
+that it returns
+after a given time-out if no event is available.  This time-out is
+usually of the order of 500 milliseconds. <br> The EQ_POLLED equipment type is mainly used for
+data acquisition based on a hardware condition becoming TRUE, at which time
+the @ref FE_tbl_ReadoutRoutine "readout routine" associated with the equipment is called.
+See  @ref FE_poll_event "example".
+<br>
+            </td>
+          </tr>
+          <tr>
+            <td
+ style="vertical-align: top; background-color: rgb(51, 204, 255);">
+@anchor FE_tbl_EqInterrupt EQ_INTERRUPT</td>
+            <td
+ style="vertical-align: top; background-color: rgb(51, 204, 255);">Interrupt
+Event </td>
+            <td
+ style="vertical-align: top; background-color: rgb(51, 204, 255);">This mode
+is similar to the @ref FE_tbl_EqPolled "EQ_POLLED" mode except a hardware interrupt is used to 
+@ref FE_tab_event_trigger "trigger" the
+event instead of a polling loop.  Instead of passing a pointer to the polling 
+routine, in EQ_INTERRUPT mode a pointer to the <b> interrupt configuration routine </b> is 
+passed to the system.  Midas requires complete configuration and control of
+the interrupt source. This is provided by an interrupt configuration
+routine called @ref  FE_interrupt_event "interrupt_configure()" that must be provided in the 
+frontend.c by the user. When a valid interrupt is received, the 
+@ref FE_tbl_ReadoutRoutine "readout routine" associated with the equipment is called.
+See  @ref FE_interrupt_event "example".
+</td>
+</tr>
+          <tr>
+            <td
+ style="vertical-align: top; background-color: rgb(51, 204, 255);">
+@anchor FE_tbl_EqMultithread EQ_MULTITHREAD</td>
+            <td
+ style="vertical-align: top; background-color: rgb(51, 204, 255);">Multithread
+Event Readout </td>
+            <td
+ style="vertical-align: top; background-color: rgb(51, 204, 255);">This
+new equipment type is available in Midas versions 2.0 and later. It
+implements the
+multi-threading capability within the frontend code. The polling is
+performed within a separate thread and uses the
+@ref rbfunctionc "Midas Ring Buffer Functions" (rb_xxx) for inter-thread communication.
+EQ_MULTITHREAD is similar to @ref FE_tbl_EqPolled "EQ_POLLED" mode, except for the polling
+function which in the case of EQ_MULTITHREAD resides in a separate
+thread. This new type has been added to take advantage of the
+multi-core processor to free up CPU for tasks other than polling.<br>
+            </td>
+          </tr>
+          <tr>
+            <td
+ style="vertical-align: top; background-color: rgb(51, 204, 255);">EQ_SLOW</td>
+            <td
+ style="vertical-align: top; background-color: rgb(51, 204, 255);">Slow
+Control Event </td>
+            <td
+ style="vertical-align: top; background-color: rgb(51, 204, 255);">This flag declares
+the equipment as a Slow Control Equipment. This will enable the call to
+the <b>idle</b> function part of the class driver. This flag also causes event data 
+to be sent automatically to the /equipment/variables tree in the ODB.</td>
+          </tr>
+          <tr>
+            <td
+ style="vertical-align: top; background-color: rgb(51, 204, 255);">
+@anchor FE_tbl_EqManTrig EQ_MANUAL_TRIG</td>
+            <td
+ style="vertical-align: top; background-color: rgb(51, 204, 255);">Manual
+triggered event </td>
+            <td
+ style="vertical-align: top; background-color: rgb(51, 204, 255);">This
+flag enables the equipment to be @ref FE_Manual_trig_mode "triggered" by a remote procedure
+call (RPC). If EQ_MANUAL_TRIGGER is selected, the web interface will
+provide an extra button to trigger the equipment. The event may also be triggered by
+a client via RPC. @ref FE_manual_trigger "See example."</td>
+          </tr>
+          <tr>
+            <td
+ style="vertical-align: top; background-color: rgb(51, 204, 255);">
+@anchor FE_tbl_EqFragmented EQ_FRAGMENTED</td>
+            <td
+ style="vertical-align: top; background-color: rgb(51, 204, 255);">Fragmented
+Event </td>
+            <td
+ style="vertical-align: top; background-color: rgb(51, 204, 255);">This
+flag enables large events (beyond the Midas configuration limit) to be
+handled by the system. This flag requires that a valid <b>max_event_size_frag</b>
+variable is defined in the user frontend code.
+The \b max_event_size
+variable is used as fragment size in this case. This option is meant to
+be used in experiments where the event \b rate is not an issue but the
+\b size of the data needs to be extremely large.  @ref FE_fragmented_event "See example." </td>
+          </tr>
+          <tr>
+            <td
+ style="vertical-align: top; background-color: rgb(51, 204, 255);">
+@anchor FE_tbl_EqEb EQ_EB</td>
+            <td
+ style="vertical-align: top; background-color: rgb(51, 204, 255);">Event
+run through the
+event builder </td>
+            <td
+ style="vertical-align: top; background-color: rgb(51, 204, 255);">This
+flag identifies the equipment as a <b>fragment event</b>  and
+should be ORed with the EQ_POLLED in order to be identified by the \ref
+Event_Builder. Not to be confused with a fragmented event (see above)!
+ </td>
+          </tr>         
+      </table>
+      </td>
+    </tr>
+    <tr>
+      <td
+ style="vertical-align: top; background-color: rgb(204, 204, 204);"><span
+ style="color: rgb(0, 0, 0);">@anchor FE_tbl_IntSrc</span><span
+ style="font-weight: bold; color: rgb(255, 0, 0);"> Interrupt
+Source</span><br>
+      </td>
+      <td
+ style="vertical-align: top; background-color: rgb(204, 204, 204);">
+This field (also called the "event source") is only used if the  @ref  FE_tbl_EqType
+"Equipment Type" is set to  @ref FE_tbl_EqInterrupt "EQ_INTERRUPT" or 
+@ref  FE_tbl_EqMultithread "EQ_MULTITHREAD".
+The Interrupt Source field is a bit-wise pattern representing the interrupt that is
+allowed to trigger the call to the  @ref FE_tbl_ReadoutRoutine "readout routine".<br>
+
+The  @ref  FE_poll_or_interrupt_readout_routine "example"  shows a CAMAC or VME source for the interrupt. A MACRO
+(LAM_SOURCE) calculates the bit pattern from the parameters (Crate,Slot). 
+If not using an interrupt, this field can be set to 1.
+      </td>
+    </tr>
+    <tr>
+      <td
+ style="vertical-align: top; background-color: rgb(204, 204, 204);"><span
+ style="color: rgb(0, 0, 0);">@anchor FE_tbl_Format</span><span
+ style="font-weight: bold; color: rgb(255, 0, 0);"> Format</span><br>
+      </td>
+      <td
+ style="vertical-align: top; background-color: rgb(204, 204, 204);">Specifies
+the data format used for generating the
+event. The following three options are possible: "MIDAS", "YBOS" and
+"FIXED".
+The format must agree with the way the event is composed in the 
+Equipment @ref FE_tbl_ReadoutRoutine "readout routine".  
+It tells the system how to interpret an event when it
+is copied to the ODB or displayed in a user-readable form. 
+NOTE:
+<ul>
+<li>For FIXED events, the  @ref FE_tbl_BankDef "Bank definition" parameter 
+may contain the  @ref FE_tbl_InitString "Init String".
+<li>There is no "ROOT" format. To save raw data in ROOT format,  the 
+@ref FE_tbl_BankDef "Bank definition" must be supplied, and a conversion to ROOT
+format is done from one the three available formats.
+</li>
+      <center>
+      <div style="text-align: left;"> MIDAS, YBOS or FIXED data format can be
+mixed at the frontend level, but the data logger (mlogger) is not able
+to handle this format diversity on a event-by-event basis.  <b>In
+practice 
+a given experiment should keep the data format identical throughout the
+equipment definition. </b>Different equipments can, of course, 
+have different formats in the same frontend.<b><br>
+      </b></div>
+      </center>
+      </td>
+    </tr>
+    <tr>
+      <td
+ style="vertical-align: top; background-color: rgb(204, 204, 204);"><span
+ style="color: rgb(0, 0, 0);">@anchor FE_tbl_EqEnabled</span><span
+ style="font-weight: bold; color: rgb(255, 0, 0);">
+Equipment Enabled  @ref FE_equipment_odb_common "**" </span>
+      </td>
+      <td
+ style="vertical-align: top; background-color: rgb(204, 204, 204);">"Enable"
+switch for the equipment. Only when enabled (i.e. TRUE) is this equipment is
+active. </td>
+    </tr>
+    <tr>
+      <td
+ style="vertical-align: top; background-color: rgb(204, 204, 204);">@anchor FE_tbl_ReadOn
+      <span style="font-weight: bold; color: rgb(255, 0, 0);">Read
+On @ref FE_equipment_odb_common "**" </span><br>
+      </td>
+      <td
+ style="vertical-align: top; background-color: rgb(204, 204, 204);">Specifies
+when the read-out of an event occurs or is enabled (i.e. on which
+transition
+state(s) and/or on which run state(s) respectively) by using a
+combination
+of RO_XXX flags
+selected from the following table: <br>
+      <table style="text-align: left; width: 90%;" border="1"
+ cellpadding="2" cellspacing="2">
+<caption>Table showing RO Flags
+</caption>         
+          <tr align="center">
+            <td colspan="2"
+ style="vertical-align: top; background-color: rgb(102, 255, 153);"><span
+ style="font-weight: bold;">Read-0n Flags</span><br>
+            </td>
+          </tr>
+          <tr>
+            <td
+ style="vertical-align: top; background-color: rgb(102, 255, 153);">RO_RUNNING<br>
+            </td>
+            <td
+ style="vertical-align: top; background-color: rgb(102, 255, 153);">While
+running<br>
+            </td>
+          </tr>
+          <tr>
+            <td
+ style="vertical-align: top; background-color: rgb(102, 255, 153);">RO_STOPPED<br>
+            </td>
+            <td
+ style="vertical-align: top; background-color: rgb(102, 255, 153);">Before
+stopping a run<br>
+            </td>
+          </tr>
+          <tr>
+            <td
+ style="vertical-align: top; background-color: rgb(102, 255, 153);">RO_PAUSED<br>
+            </td>
+            <td
+ style="vertical-align: top; background-color: rgb(102, 255, 153);">While
+run is paused ?<br>
+            </td>
+          </tr>
+          <tr>
+            <td
+ style="vertical-align: top; background-color: rgb(102, 255, 153);">RO_BOR<br>
+            </td>
+            <td
+ style="vertical-align: top; background-color: rgb(102, 255, 153);">At
+the beginning of run<br>
+            </td>
+          </tr>
+          <tr>
+            <td
+ style="vertical-align: top; background-color: rgb(102, 255, 153);">RO_EOR<br>
+            </td>
+            <td
+ style="vertical-align: top; background-color: rgb(102, 255, 153);">At
+the end of run<br>
+            </td>
+          </tr>
+          <tr>
+            <td
+ style="vertical-align: top; background-color: rgb(102, 255, 153);">RO_PAUSE<br>
+            </td>
+            <td
+ style="vertical-align: top; background-color: rgb(102, 255, 153);">Before
+pausing the run<br>
+            </td>
+          </tr>
+          <tr>
+            <td
+ style="vertical-align: top; background-color: rgb(102, 255, 153);">RO_RESUME<br>
+            </td>
+            <td
+ style="vertical-align: top; background-color: rgb(102, 255, 153);">Before
+resuming the run<br>
+            </td>
+          </tr>
+          <tr>
+            <td
+ style="vertical-align: top; background-color: rgb(102, 255, 153);">RO_TRANSITIONS<br>
+            </td>
+            <td
+ style="vertical-align: top; background-color: rgb(102, 255, 153);">At
+all transitions<br>
+            </td>
+          </tr>
+          <tr>
+            <td
+ style="vertical-align: top; background-color: rgb(102, 255, 153);">RO_ALWAYS<br>
+            </td>
+            <td
+ style="vertical-align: top; background-color: rgb(102, 255, 153);">Always
+(independent of the
+run status)<br>
+            </td>
+          </tr>
+          <tr>
+            <td
+ style="vertical-align: top; background-color: rgb(102, 255, 153);">@anchor FE_tbl_RO_ODB
+RO_ODB<br>
+            </td>
+            <td
+ style="vertical-align: top; background-color: rgb(102, 255, 153);">Copy
+the event to the
+/Equipment/&lt;equipment name&gt;/Variables ODB tree.  See
+@ref  FE_tbl_mirrorODB "above". </td>
+          </tr>
+         
+      </table>
+      <span style="font-weight: bold;">NOTE: </span>These flags can be
+combined with the logical OR operator,
+e.g. RO_RUNNING | RO_TRANSITIONS means that the event is read out when
+running and additionally on all transitions. <br>
+      </td>
+    </tr>
+    <tr>
+      <td
+ style="vertical-align: top; background-color: rgb(204, 204, 204);"><span
+ style="color: rgb(0, 0, 0);">@anchor FE_tbl_Period</span><span
+ style="font-weight: bold; color: rgb(255, 0, 0);"> Period @ref FE_equipment_odb_common "**"</span><br>
+      </td>
+      <td
+ style="vertical-align: top; background-color: rgb(204, 204, 204);">Time
+interval for @ref FE_tbl_EqPeriodic "Periodic" equipment or time out value
+in case
+of @ref FE_tbl_EqPolled "Polled" or @ref FE_tbl_EqMultithread "Multithread" equipment (units are
+milliseconds). </td>
+    </tr>
+    <tr>
+      <td
+ style="vertical-align: top; background-color: rgb(204, 204, 204);"><span
+ style="color: rgb(0, 0, 0);">@anchor FE_tbl_EventLimit </span><span
+ style="font-weight: bold; color: rgb(255, 0, 0);">Event Limit @ref FE_equipment_odb_common "**"</span><br>
+      </td>
+      <td
+ style="vertical-align: top; background-color: rgb(204, 204, 204);">Specifies
+the number of events to be taken prior to forcing an End-of-Run
+transition. The value 0 disables this option. </td>
+    </tr>
+    <tr>
+      <td
+ style="vertical-align: top; background-color: rgb(204, 204, 204);"><span
+ style="color: rgb(0, 0, 0);">@anchor FE_tbl_NumSubevents</span><span
+ style="font-weight: bold; color: rgb(255, 0, 0);"> Number
+of sub-events</span><br>
+      </td>
+      <td
+ style="vertical-align: top; background-color: rgb(204, 204, 204);">Enables
+the Super event capability if &gt; 0 . Specifies the maximum number of
+subevents in the @ref FE_Super_Event "Super event". \b Not applicable to @ref FE_tbl_Format "FIXED format" events.<br>
+      </td>
+    </tr>
+    <tr>
+      <td
+ style="vertical-align: top; background-color: rgb(204, 204, 204);"><span
+ style="color: rgb(0, 0, 0);">@anchor FE_tbl_History</span><span
+ style="font-weight: bold; color: rgb(255, 0, 0);"> History</span><br>
+      </td>
+      <td
+ style="vertical-align: top; background-color: rgb(204, 204, 204);">Enable/disable
+the @ref  F_History_System for that equipment. The value (positive
+in seconds) specifies the time interval between subsequent history events.
+A positive value enables history logging, in which case the event data will also
+be sent automatically to the ODB in the /equipment/variables tree. 
+To disable history logging of this event, set this parameter to 0. 
+ <br>
+      </td>
+    </tr>
+    <tr>
+      <td
+ style="vertical-align: top; background-color: rgb(204, 204, 204);"><span
+ style="color: rgb(0, 0, 0);">@anchor FE_tbl_Reserved</span><span
+ style="font-weight: bold; color: rgb(255, 0, 0);"> </span><span
+ style="font-weight: bold; color: rgb(255, 0, 0);">Reserved</span><br>
+      </td>
+      <td
+ style="vertical-align: top; background-color: rgb(204, 204, 204);">Reserved
+field for system. Should be present and set to "" in the frontend.
+      </td>
+    </tr>
+    <tr>
+      <td
+ style="vertical-align: top; background-color: rgb(204, 204, 204);"><span
+ style="font-weight: bold; color: rgb(255, 0, 0);">Reserved</span> </td>
+      <td
+ style="vertical-align: top; background-color: rgb(204, 204, 204);">Reserved
+field for system. Should be present and set to "" in the frontend.</td>
+    </tr>
+    <tr>
+      <td
+ style="vertical-align: top; background-color: rgb(204, 204, 204);"><span
+ style="font-weight: bold; color: rgb(255, 0, 0);">Reserved</span> </td>
+      <td
+ style="vertical-align: top; background-color: rgb(204, 204, 204);">Reserved
+field for system. Should be present and set to "" in the frontend. </td>
+    </tr>
+   <tr>
+      <td colspan="2" rowspan="1"
+ style="text-align: center; vertical-align: top; background-color: rgb(153, 153, 153);">
+ <span
+ style="color: rgb(255, 255, 255);">
+End of EQUIPMENT_INFO structure</span> <!-- white -->
+      </td>
+    </tr>  
+    <tr>
+      <td colspan="2" rowspan="1"
+ style="vertical-align: top; background-color: rgb(255, 255, 255);"><span
+ style="color: rgb(0, 0, 0);">@anchor FE_tbl_ReadoutRoutine</span><span
+ style="font-weight: bold; color: rgb(255, 0, 0);"> Readout
+routine</span><br>
+      </td>
+      <td colspan="2"  rowspan="1"
+ style="vertical-align: top; background-color: rgb(255, 255, 255);">This field
+contains the name of the function to be called when the event is triggered. 
+The name of this routine is determined by the user.
+This readout routine must be present in the frontend code. It will be called at an 
+@anchor FE_tab_event_trigger <b>event trigger</b>, which will occur under one of these conditions depending on
+the @ref FE_tbl_EqType "Equipment type".
+<ul>
+<li><b>polled mode</b>: the poll_event() routine has detected a trigger request
+while polling on a trigger source.</li>
+<li><b>interrupt mode</b>: an interrupt has occurred whose source is pre-defined in the
+interrupt_configure() routine.</li>
+<li><b>periodic modes</b>: trigger occurs periodically at a time interval specified by the 
+@ref FE_tbl_Period "Period" field
+</li>
+<li>@anchor FE_Manual_trig_mode <b>manual trigger mode</b>: trigger occurs when 
+<ul>
+   <li>the  @ref FE_manual_trigger button is pressed on the web interface 
+   <li>a client requests an event by  @ref FE_backend_Manual_Trigger "triggering the event sending mechanism" via a RPC.
+</ul>
+</li>
+</ul>
+Click for further details of a @ref FE_poll_event "poll_event routine" and an 
+@ref FE_interrupt_event "interrupt routine".     
+      </td>
+    </tr>
+    <tr>
+      <td colspan="2" rowspan="1"
+ style="vertical-align: top; background-color: rgb(255, 255, 255);">@anchor FE_tbl_ClassDriver
+ <span style="font-weight: bold; color: rgb(255, 0, 0);">Class Driver</span></td>
+      <td colspan="2" rowspan="1"
+ style="vertical-align: top; background-color: rgb(255, 255, 255);">
+Reserved for Class Driver main routine. If  @ref FE_tbl_EqType "Equipment Type" 
+is <b> not EQ_SLOW </b>, this field must be present but set to NULL.<br>
+      </td>
+    </tr>
+    <tr>
+      <td colspan="2" rowspan="1" style="vertical-align: top;">@anchor FE_tbl_DevDriverList
+ <span style="font-weight: bold; color: rgb(255, 0, 0);">Device Driver List</span></td>
+      <td  colspan="2" rowspan="1" style="vertical-align: top;">
+Reserved for Device Driver List. If  @ref FE_tbl_EqType "Equipment Type" is <b> not EQ_SLOW </b>,
+this field must be present, but set to NULL<br>
+      </td>
+    </tr>
+    <tr>
+      <td colspan="2" rowspan="1"
+ style="vertical-align: top; background-color: rgb(255, 255, 255);">@anchor FE_tbl_BankDef
+      <span style="font-weight: bold; color: rgb(255, 0, 0);">Bank
+Definition</span>
+or
+@anchor FE_tbl_InitString
+  <span style="font-weight: bold; color: rgb(255, 0, 0);">Init String</span>
+<br>
+
+
+      </td>
+      <td  colspan="2" rowspan="1"
+ style="vertical-align: top; background-color: rgb(255, 255, 255);">Bank
+declaration  (ROOT only) or Init String (@anchor FE_tbl_Format "FIXED event format" only), or set to NULL. <br>
+      <span style="font-weight: bold;"></span>Since the introduction of
+      <b>ROOT</b> , the frontend is required to
+contain the definition of the banks. in the case the raw data is to be
+converted to and stored in <b>ROOT</b>
+format. The conversion is needed since there is no <span
+ style="font-weight: bold;">ROOT</span> @ref FE_tbl_Format "format"
+supported. This procedure is equivalent to the bank declaration
+in the
+analyser. See @ref FE_ROOT_Structure_Def example for
+details. <br>
+      <br>
+      </td>
+    </tr>
+   
+</table>
+<br>
+
+
+<!-- Navigation -->
+\htmlonly
+<script type="text/javascript">
+// pages parameters: back index next {top bottom}
+pages( "FE_eqdec","FE_section_index", "Frontend_code","FE_table","" );
+
+// section parameters: last section; top of this section; next section
+sections("RunControl","FrontendOperation","Utilities");
+</script>
+\endhtmlonly
+\latexonly
+@ref FE_eqdec "previous page" - @ref FE_section_index - @ref Top - @ref  Frontend_code "next page"
+\endlatexonly
+<br>
+\anchor end
+*/
+
+

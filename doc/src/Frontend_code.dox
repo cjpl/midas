@@ -1,0 +1,2792 @@
+/*! \page Frontend_code  Frontend code
+<br>
+<!-- Navigation -->
+\htmlonly
+<script type="text/javascript">
+// pages parameters: back index next {top bottom}
+pages( "FE_table","FE_section_index", "FE_code_sections","Frontend_code","end" );
+// section parameters: last section; top of this section; next section
+sections("RunControl","FrontendOperation","Utilities");
+</script>
+\endhtmlonly
+\latexonly
+@ref FE_table "previous page" - @ref FE_section_index - @ref Top - @ref  FE_code_sections "next page"
+\endlatexonly
+<br>
+
+@section FE_intro Introduction
+The features of a typical frontend program are best explained by reference to examples of the user code 
+provided in the Midas Package. 
+The examples in this document  are taken from the following C code examples. There are also examples
+available in C++ (see table below).
+
+<table style="text-align: left; width: 100%;" border="0" cellpadding="2"
+cellspacing="2">
+<caption>Examples of user frontend routines for different hardware and language
+</caption>
+<tr>
+ <td 
+ style="vertical-align: top;  background-color: rgb(255, 255, 204) ;">
+<span style="font-weight: bold;">Hardware :</span>
+</td>
+<td
+ style="vertical-align: top;  background-color: rgb(255, 255, 204);">
+<span style="font-weight: bold;">Filename :</span>
+</td>
+<td
+ style="vertical-align: top;  background-color: rgb(255, 255, 204);">
+<span style="font-weight: bold;">Directory :</span>
+</td>
+<span style="font-weight: bold;">
+<td>Language :</span></td>
+</tr>
+<tr>
+<td>VME</td>
+<td>fevmemodules.c</td>
+<td>examples/experiment</td>
+<td>C</td>
+</tr>
+<tr>
+<td>CAMAC</td>
+<td>frontend.c</td>
+<td>../examples/experiment</td>
+</tr>
+<td>C</td>
+</tr>
+<tr>
+<td> VME</td>
+<td> fevme.cxx</td>
+<td>../examples/Triumf/c++</td> 
+</tr>
+</tr>
+<td>C++</td>
+</table>
+<br>
+ Other examples of frontend code can be found in the Midas distribution under the 
+\b ../examples directory.
+
+<!-- FE_LAM_macros came from appendix E -->
+@subsection FE_LAM_macros  CAMAC DAQ Event LAM Macros
+Midas provides <b> Macros for CAMAC LAM manipulation </b> which may be used in the 
+frontend or analyzer code.
+  These Macros are used to interact with the LAM register.
+  Usually the CAMAC Crate Controller has the feature that it is able to register one bit per slot 
+  and present this register to the user. It may even have the option to
+  mask off this register to allow to set a "general" LAM register containing
+  either "1" (At least one LAM from the masked LAM is set) or "0" ( no LAM set
+  from the maksed LAM register).
+  The  @ref FE_poll_event "poll_event()" CAMAC routine uses this feature to return a variable which contains a
+  bit-wise value of the current LAM register in the Crate Controller.
+  - @ref LAM_SOURCE
+  - @ref LAM_STATION
+  - @ref LAM_SOURCE_CRATE
+  - @ref LAM_SOURCE_STATION
+
+<hr>
+
+
+<!-- declare these subpages -->
+ - \subpage  FE_code_sections
+ - \subpage  FE_sequence
+ - \subpage  FE_eq_event_routines
+ - \subpage  FE_event_notification
+ - \subpage  FE_camac_vme_function_calls
+ - \subpage  FE_bank_construction
+ - \subpage  FE_Super_Event
+ - \subpage  FE_Event_Builder   <!-- eventbuilder.dox -->
+ - \subpage  FE_Slow_Control_system
+ - \subpage  FE_Deferred_Transition
+
+
+<br>
+\htmlonly
+<script type="text/javascript">
+pages( "FE_table","FE_section_index", "FE_code_sections","Frontend_code","" ); // back index next {top bottom}
+// section parameters: last section; top of this section; next section
+sections("RunControl","FrontendOperation","Utilities");
+</script>
+\endhtmlonly
+\latexonly
+@ref FE_table "previous page" - @ref FE_section_index - @ref Top - @ref  FE_code_sections "next page"
+\endlatexonly
+<br>
+\anchor end
+<!-- End of page Frontend_code  -->
+*/
+
+
+<!-- ======================== PAGE Frontend Code Sections ============= -->
+/*!  \page FE_code_sections Frontend Code Sections
+<br>
+\htmlonly
+ 
+<script type="text/javascript">
+pages( "Frontend_code","FE_section_index", "FE_sequence", "FE_code_sections","end" ); // back index next {top bottom}
+sections("RunControl","FrontendOperation","Utilities"); // last section; top of this section; next section
+</script>
+\endhtmlonly
+\latexonly
+@ref "Frontend_code "previous page" - @ref FE_section_index - @ref Top - @ref  FE_sequence "next page"
+\endlatexonly
+<br>
+
+@section FE_includes  Include files
+
+The user may add any other include files needed, but should not remove any of the existing ones in the 
+example.  The include file @ref  RC_experim_dot_h "experim.h" is a special include file for ease of 
+communication between the C code and the @ref F_Online_Database_overview "odb".
+
+<table style="text-align: left; width: 100%;" border="1" cellpadding="2"
+cellspacing="2">
+<caption>Examples of include files
+</caption>
+<tr>
+ <td
+ style="vertical-align: top; text-align: center; background-color: rgb(255, 255, 153);">
+<span style="font-weight: bold;">VME :</span>
+</td>
+<td
+ style="vertical-align: top; text-align: center; background-color: rgb(255, 255, 204);">
+<span style="font-weight: bold;">CAMAC :</span>
+</td>
+<tr><td>
+\code
+#include <stdio.h>
+#include <stdlib.h>
+#include "midas.h"
+#include "experim.h"
+#include "mvmestd.h"
+#include "vmicvme.h"
+  \endcode
+</td>
+<td>
+  \code
+#include <stdio.h>
+#include <stdlib.h>
+#include "midas.h"
+#include "mcstd.h"
+#include "experim.h"
+\endcode
+</td></tr></table>
+
+<br>
+ 
+<br>
+@section FE_global Global declarations
+The declarations are system wide.  Some may be changed to suit the user, but none should not be removed.
+
+
+<ul>
+<li> @ref frontend_name  </li>
+<div style="margin-left: 10px;">
+This value can be modified to reflect the purpose of the code.
+</div>
+<li> @ref frontend_call_loop </li>
+<div style="margin-left: 10px;">
+If set to TRUE, the function frontend_loop() runs after every equipment loop. If FALSE,
+     frontend_loop() does not run. The user can add suitable code to this routine if desired (e.g. to 
+check for a condition.
+</div>
+<li>  @ref display_period   </li>
+<div style="margin-left: 10px;">
+The time interval (defined in milliseconds) between the refresh of a
+frontend status display. The value of zero disables the display.
+<br> NOTE: If the frontend is started in the background with the display enabled,
+the stdout should be redirected to the null device to prevent the process from hanging.
+</div>
+<li> @ref max_event_size  </li>
+<div style="margin-left: 10px;">
+specifies the maximum size (in bytes) of the expected event.
+</div>
+<li>  @ref event_buffer_size </li>
+<div style="margin-left: 10px;">
+ specifies the maximum size (in bytes) of the buffer to be
+    allocated by the system.
+</div>
+</ul>
+    
+
+\code 
+
+    // The frontend name (client name) as seen by other MIDAS clients
+    char *frontend_name = "Sample Frontend";
+
+    // The frontend file name, don't change it
+    char *frontend_file_name = __FILE__;
+
+    // frontend_loop is called periodically if this variable is TRUE
+    BOOL frontend_call_loop = FALSE;
+
+    //a frontend status page is displayed with this frequency in ms
+    INT display_period = 3000;
+
+    //maximum event size produced by this frontend
+    INT max_event_size = 200000;
+
+    // maximum event size for fragmented events (EQ_FRAGMENTED) 
+    INT max_event_size_frag = 5 * 1024 * 1024;
+
+    //buffer size to hold events
+    INT event_buffer_size = 10*10000;
+
+
+\endcode
+<br>
+ 
+<br>
+@section FE_global_user Global User declarations
+After the global declarations, the user may add his or her own declarations.
+The example defines various hardware parameters. 
+<table style="text-align: left; width: 100%;" border="1" cellpadding="2"
+cellspacing="2">
+<caption>Examples of global declarations
+</caption>
+<tr>
+ <td
+ style="vertical-align: top; text-align: center; background-color: rgb(255, 255, 153);">
+<span style="font-weight: bold;">VME :</span>
+</td>
+<td
+ style="vertical-align: top; text-align: center; background-color: rgb(255, 255, 204);">
+<span style="font-weight: bold;">CAMAC :</span>
+</td>
+<tr><td>
+\code
+/* Hardware */
+/* Interrupt vector */
+int trig_level =  0;
+#define TRIG_LEVEL  (int) 1
+#define INT_LEVEL   (int) 3
+#define INT_VECTOR  (int) 0x16
+extern INT_INFO int_info;
+int myinfo = VME_INTERRUPT_SIGEVENT;
+
+MVME_INTERFACE *myvme;
+int  inRun = 0;
+DWORD VADC0_BASE = 0x100000; // VME base address
+DWORD VLAM_BASE  = 0x800000; // VME base address
+
+\endcode
+</td>
+<td>
+\code
+    // Global user section
+    // number of channels
+    #define N_ADC  8  
+    #define N_TDC  8 
+    #define N_SCLR 8
+
+    CAMAC crate and slots
+    #define CRATE      0
+    #define SLOT_C212 23
+    #define SLOT_ADC   1
+    #define SLOT_TDC   2
+    #define SLOT_SCLR  3
+\endcode
+</td></td></table>
+<br>
+ 
+<br>
+@section FE_system_prototypes  System prototype functions
+These prototypes declare the pre-defined system functions which should be
+present. 
+\code 
+INT frontend_init();
+INT frontend_exit();
+INT begin_of_run(INT run_number, char *error);
+INT end_of_run(INT run_number, char *error);
+INT pause_run(INT run_number, char *error);
+INT resume_run(INT run_number, char *error);
+INT frontend_loop();
+\endcode
+<br>
+ 
+<br>
+@section FE_user_prototypes  User prototype functions
+Following this group is a second group of prototypes, which define the 
+@ref FE_equipment_readout_function "user functions" 
+that run when the defined equipments are triggered.  In this example, two equipments 
+will be defined, so there are two prototypes. The user functions will be described in 
+detail in the following sections.
+\code
+INT read_trigger_event(char *pevent, INT off);
+INT read_scaler_event(char *pevent, INT off);
+\endcode
+
+And following this is the prototype
+\code
+void register_cnaf_callback(int debug);
+\endcode
+which is a routine provided in cnaf_callback.c
+
+
+<br>
+\htmlonly
+<script type="text/javascript">
+pages( "Frontend_code","FE_section_index", "FE_sequence", "FE_code_sections","" ); // back index next {top bottom}
+// section parameters: last section; top of this section; next section
+sections("RunControl","FrontendOperation","Utilities");
+</script>
+\endhtmlonly
+\latexonly
+@ref "Frontend_code "previous page" - @ref FE_section_index - @ref Top - @ref  FE_sequence "next page"
+\endlatexonly
+<br>
+
+\anchor end
+<!-- End of page FE_code_sections   -->
+*/
+
+
+ 
+<!-- ======================== PAGE  Sequence of operations  ============= -->
+/*!  \page  FE_sequence Sequence of operations
+
+<br>
+\htmlonly
+ 
+<script type="text/javascript">
+pages( "FE_code_sections", "FE_section_index", "FE_eq_event_routines", "FE_sequence","end" ); // back index next {top bottom}
+sections("RunControl","FrontendOperation","Utilities"); // last section; top of this section; next section
+</script>
+\endhtmlonly
+\latexonly
+@ref  FE_code_sections  "previous page" - @ref FE_section_index - @ref Top - @ref FE_eq_event_routines  "next page"
+\endlatexonly
+<br>
+
+
+The following table shows the sequence of operations of the frontend. These system routines are located in the frontend.c code but are called by mfe.c at the appropriate time. These routines must be present in the frontend.c code, but the contents are coded by the user. 
+
+
+
+<table style="text-align: left; width: 75%;" border="1" cellpadding="2"
+cellspacing="2">
+<caption>Table showing sequence of operations
+</caption>
+<tr>
+<td
+style="vertical-align: top; background-color: rgb(51, 204, 255);"><span
+style="font-weight: bold;">Associated Transition</span><br>
+</td>
+<td
+style="vertical-align: top; background-color: rgb(102, 255, 153);"><span
+style="font-weight: bold;">System function</span> <br>
+</td>
+<td
+style="vertical-align: top; background-color: rgb(255, 255, 51);"><span
+style="font-weight: bold;">Action</span><br>
+</td>
+<td style="vertical-align: top;"><br>
+</td>
+</tr>
+<tr>
+<td style="vertical-align: top;"><br>
+</td>
+<td
+style="vertical-align: top; background-color: rgb(153, 255, 153);">frontend_init()<br>
+</td>
+<td
+style="vertical-align: top; background-color: rgb(255, 255, 204);">Runs
+once after system initialization, before equipment registration.</td>
+<td style="vertical-align: top;">@ref FE_frontend_init "Details"<br>
+</td>
+</tr>
+<tr>
+<td
+style="vertical-align: top; background-color: rgb(102, 255, 255);">TR_START<br>
+</td>
+<td
+style="vertical-align: top; background-color: rgb(153, 255, 153);">begin_of_run()<br>
+</td>
+<td
+style="vertical-align: top; background-color: rgb(255, 255, 204);">Runs
+after systerm statistics reset, before any other Equipments at each
+Beginning of Run request.</td>
+<td style="vertical-align: top;">@ref FE_begin_of_run "Details"<br>
+</td>
+</tr>
+<tr>
+<td
+style="vertical-align: top; background-color: rgb(102, 255, 255);">TR_PAUSE</td>
+<td
+style="vertical-align: top; background-color: rgb(153, 255, 153);">pause_run()</td>
+<td
+style="vertical-align: top; background-color: rgb(255, 255, 204);">Runs
+before any other Equipments at each Run Pause request.</td>
+<td  colspan="1" rowspan="2" style="vertical-align: top;"> @ref FE_pause_resume_run "Details" <br>
+</td>
+</tr>
+<tr>
+<td
+style="vertical-align: top; background-color: rgb(102, 255, 255);">TR_RESUME</td>
+<td
+style="vertical-align: top; background-color: rgb(153, 255, 153);">resume_run()</td>
+<td
+style="vertical-align: top; background-color: rgb(255, 255, 204);">Runs
+before any other Equipments at each Run Resume request.</td>
+<!-- <td style="vertical-align: top;"><br> XXX -->
+</td>
+</tr>
+<tr>
+<td
+style="vertical-align: top; background-color: rgb(102, 255, 255);">TR_STOP</td>
+<td
+style="vertical-align: top; background-color: rgb(153, 255, 153);">end_of_run()</td>
+<td
+style="vertical-align: top; background-color: rgb(255, 255, 204);">Runs
+before any other Equipments at each End of Run request.</td>
+<td style="vertical-align: top;">@ref FE_end_of_run "Details"<br>
+</td>
+</tr>
+<tr>
+<td style="vertical-align: top;"><br>
+</td>
+<td
+style="vertical-align: top; background-color: rgb(153, 255, 153);">frontend_exit()<br>
+</td>
+<td
+style="vertical-align: top; background-color: rgb(255, 255, 204);">Runs
+once before Slow Control Equipment exit.</td>
+<td style="vertical-align: top;"><br>
+</td>
+</tr>
+</table>
+
+Each equipment has the option to force itself to run at individual
+transition times (see @ref FE_event_trigger), so that its equipment function will be
+called on a certain @ref RC_Run_States_and_Transitions "transition" (or combination of transitions).
+
+However, the <b>system transition functions</b> 
+ - begin_of_run(), 
+ - end_of_run(), 
+ - pause_run() and 
+ - resume_run()
+<br>all run \b prior to the equipment functions. This gives the 
+system the chance to take basic
+action on the transition request (e.g. enable/disable interrupt) before the equipment runs.
+  
+<br>
+<br>
+@section FE_frontend_init frontend_init()
+
+This function runs once only at the application startup.
+Allows hardware checking, loading/setting of global variables,
+hot-link settings to the ODB etc...
+
+<table style="text-align: left; width: 100%;" border="1" cellpadding="2"
+cellspacing="2">
+<caption>Examples of frontend_init routines
+</caption>
+<tr>
+ <td
+ style="vertical-align: top; text-align: center; background-color: rgb(255, 255, 153);">
+<span style="font-weight: bold;">VME :</span>
+</td>
+<td
+ style="vertical-align: top; text-align: center; background-color: rgb(255, 255, 204);">
+<span style="font-weight: bold;">CAMAC :</span>
+</td>
+<tr><td>
+  \code
+INT frontend_init()
+{
+ ....
+ // Open VME interface
+  status = mvme_open(&myvme, 0);
+
+  // Set am to A24 non-privileged Data
+  mvme_set_am(myvme, MVME_AM_A24_ND);
+
+  // Set dmode to D32
+  mvme_set_dmode(myvme, MVME_DMODE_D32)
+  return SUCCESS;
+}
+  \endcode
+</td>
+<td>
+  \code
+INT frontend_init()
+{
+   cam_init();              // Init CAMAC access
+   cam_crate_clear(CRATE);  // Clear Crate
+   cam_crate_zinit(CRATE);  // Z crate
+   cam_inhibit_set(CRATE);  // Set I crate 
+   return SUCCESS;
+}
+  \endcode
+</td></tr></table>
+<br>
+
+<br>
+@section FE_begin_of_run begin_of_run
+
+This function is called for every run start transition. Allows the updating of user parameters, 
+and the loading/setup/clearing of hardware. At the exit of this function
+the acquisition should be armed and ready to test the interrupt (if used). 
+
+In case of a CAMAC frontend, the LAM has to be declared to the Crate Controller.
+The function \b cam_lam_enable(CRATE, SLOT_IO)  is then necessary in order to enable
+the proper LAM source station. The LAM source station has to also be enabled (F26).
+<br><br>
+The arguments 
+ - \b run_number provides the current run number being started.
+ - \b error can be used for returning a message to the system. This message string will be logged into the \b midas.log  file.
+<br>
+
+<table style="text-align: left; width: 100%;" border="1" cellpadding="2"
+cellspacing="2">
+<caption>Examples of begin_of_run routines
+</caption>
+<tr>
+ <td
+ style="vertical-align: top; text-align: center; background-color: rgb(255, 255, 153);">
+<span style="font-weight: bold;">VME :</span>
+</td>
+<td
+ style="vertical-align: top; text-align: center; background-color: rgb(255, 255, 204);">
+<span style="font-weight: bold;">CAMAC :</span>
+</td>
+<tr><td>
+\code
+INT begin_of_run (INT runnumber, char * error)
+{
+  ......
+
+  // Set am to A24 non-privileged Data
+  mvme_set_am(myvme, MVME_AM_A24_ND);
+  // Set dmode to D32
+  mvme_set_dmode(myvme, MVME_DMODE_D32);
+
+ //-------- ADCs -------------------
+  v792_Setup(myvme, VADC0_BASE, 2);
+  v792_ThresholdWrite(myvme, VADC0_BASE,
+       (WORD *)&(ts.v792.threshold1));
+  v792_DataClear(myvme, VADC0_BASE);
+  csr = v792_CSR1Read(myvme, VADC0_BASE);
+  printf("Data Ready ADC0: 0x%x\n", csr);
+  ........
+  // Disable interrupt
+  mvme_write_value(myvme, VLAM_BASE+4, 0x0);
+  // Reset Latch
+  mvme_write_value(myvme, VLAM_BASE, 0x1);
+  // Clear pending interrupts
+  mvme_write_value(myvme, VLAM_BASE+8, 0x0);
+  // Enable interrupt
+  inRun = 1;
+  mvme_write_value(myvme, VLAM_BASE+4, inRun);
+  return SUCCESS;
+}
+\endcode
+</td>
+<td>
+\code 
+INT begin_of_run (INT runnumber, char * error)
+{
+  ......
+  // clear units
+  camc(CRATE, SLOT_C212, 0, 9);
+  camc(CRATE, SLOT_2249A, 0, 9);
+  camc(CRATE, SLOT_SC2, 0, 9);
+  camc(CRATE, SLOT_SC3, 0, 9);
+
+  // Enable LAM generation
+  camc(CRATE, SLOT_C212, 0, 26);  
+
+  cam_inhibit_clear(CRATE); // Remove I
+  // Declare Station to  CC as LAM source
+  cam_lam_enable(CRATE, SLOT_C212);
+
+
+  // set and clear OR1320 pattern bits
+  camo(CRATE, SLOT_OR1320, 0, 18, 0x0330);
+  // Open run gate, reset latch
+  camo(CRATE, SLOT_OR1320, 0, 21, 0x0663);
+  return SUCCESS;
+}
+\endcode
+
+</td></td></table>
+<br>
+
+<br>
+@section FE_pause_resume_run pause_run() or resume_run()
+
+These two functions are called respectively upon "Pause" and
+"Resume" command. Any code relevant to the upcoming run state can be
+included. 
+
+
+<table style="text-align: left; width: 100%;" border="1" cellpadding="2"
+cellspacing="2">
+<caption>Examples of pause_run and resume_run routines
+</caption>
+<tr>
+ <td
+ style="vertical-align: top; text-align: center; background-color: rgb(255, 255, 153);">
+<span style="font-weight: bold;">VME :</span>
+</td>
+<td
+ style="vertical-align: top; text-align: center; background-color: rgb(255, 255, 204);">
+<span style="font-weight: bold;">CAMAC :</span>
+</td>
+<tr><td>
+  \code  
+INT pause_run (INT run_number, char * error)
+{
+ // Disable interrupt
+  inRun = 0;
+  mvme_write_value(myvme, VLAM_BASE+4, inRun);
+   return SUCCESS;
+}
+
+INT resume_run (INT run_number, char * error)
+{
+ inRun = 1;
+ mvme_write_value(myvme, VLAM_BASE+4, inRun);
+   return SUCCESS;
+}
+\endcode
+</td>
+<td>
+\code 
+INT pause_run (INT run_number, char * error)
+{
+   cam_inhibit_set(CRATE)
+   return SUCCESS;
+}
+INT resume_run (INT run_number, char * error)
+{
+   cam_inhibit_clear(CRATE)
+   return SUCCESS;
+}  
+\endcode
+
+</td></tr></table>
+
+The arguments
+  - \b run_number provides the current run number being paused/resumed.
+  - \b error  can be used for returning a message to the system. This message string will be logged into the midas.log  file.
+
+<br>
+
+<br>
+@section FE_end_of_run end_of_run()
+
+For every "stop run" transition this function is called and provides
+the opportunity to disable the hardware. 
+<table style="text-align: left; width: 100%;" border="1" cellpadding="2"
+cellspacing="2">
+<caption>Examples of end_of_run routines
+</caption>
+<tr>
+ <td
+ style="vertical-align: top; text-align: center; background-color: rgb(255, 255, 153);">
+<span style="font-weight: bold;">VME :</span>
+</td>
+<td
+ style="vertical-align: top; text-align: center; background-color: rgb(255, 255, 204);">
+<span style="font-weight: bold;">CAMAC :</span>
+</td>
+<tr><td>
+\code
+INT end_of_run(INT run_number, char *error)
+{
+  // Stop DAQ for seting up the parameters
+  vf48_AcqStop(myvme, VF48_BASE);
+
+  done = 0;
+  stop_req = 0;
+  inRun = 0;
+  // Disable interrupt
+  mvme_write_value(myvme, VLAM_BASE+4, inRun);
+  trig_level = 0;
+  // Close run gate
+  vmeio_AsyncWrite(myvme, VMEIO_BASE, 0x0);
+  return SUCCESS;
+}
+\endcode
+</td><td>
+\code
+INT end_of_run( INT run_number, char* error)
+{
+   // set and clear OR1320 pattern bits or close run gate.
+   camo(CRATE, SLOT_OR1320, 0, 18, 0x0CC3);
+   camo(CRATE, SLOT_OR1320, 0, 21, 0x0990);
+   // Enable LAM generation
+   camc(CRATE, SLOT_C212, 0, 26);  
+   // disable LAM in crate controller
+   cam_lam_disable(CRATE, SLOT_C212);
+   // set crate inhibit 
+   cam_inhibit_set(CRATE);          
+   return SUCCESS;
+}
+\endcode
+</td></tr></table>
+  The arguments
+  -  \b run_number  provides the current run number being ended.
+  -  \b error  can be used for returning a message to the system. This message string will be logged into the midas.log file.
+<br>
+
+<br>
+@section FE_frontend_exit frontend_exit()
+
+This function runs when the frontend is requested to terminate. Can be
+used for local statistic collection etc.
+
+<br>
+\htmlonly
+<script type="text/javascript">
+pages( "FE_code_sections", "FE_section_index", "FE_eq_event_routines", "FE_sequence","" ); // back index next {top bottom}
+// section parameters: last section; top of this section; next section
+sections("RunControl","FrontendOperation","Utilities");
+</script>
+\endhtmlonly
+\latexonly
+@ref  FE_code_sections  "previous page" - @ref FE_section_index - @ref Top - @ref FE_eq_event_routines  "next page"
+\endlatexonly
+<br>
+
+\anchor end
+<!-- End of page   FE_sequence  -->
+*/
+
+<!-- ======================== PAGE   Frontend Routines  ============= -->
+
+/*!  \page  FE_eq_event_routines Frontend Routines associated with Equipments
+
+<br>
+\htmlonly
+ 
+<script type="text/javascript">
+pages( "FE_sequence", "FE_section_index",  "FE_event_notification","FE_eq_event_routines","end" ); // back index next {top bottom}
+// section parameters: last section; top of this section; next section
+sections("RunControl","FrontendOperation","Utilities");
+</script>
+\endhtmlonly
+\latexonly
+@ref  FE_sequence  "previous page" - @ref FE_section_index - @ref Top - @ref  FE_event_notification "next page"
+\endlatexonly
+<br>
+<br>
+@section FE_poll_event Polled event 
+
+If the @ref FE_tbl_EqType "Equipment Type" is @ref FE_tbl_EqPolled "EQ_POLLED", 
+the \b poll_event()  routine will be called as often as possible over the corresponding
+@ref FE_tbl_EqPolled "poll time" (e.g. 500ms) given by each polling equipment.
+
+In this case, the @ref FE_Example_equipment_structure "Equipment declaration" would 
+have this form:
+
+    \code
+    EQUIPMENT equipment[] = {
+
+      { "Trigger",            // equipment name
+        {
+          ...
+          EQ_POLLED,          // equipment type
+          ...
+          500,                // poll for 500ms 
+          ...
+          "", "", "",},
+       read_trigger_event,    // readout routine 
+       ...
+    \endcode
+
+The user must provide suitable code in the routine <b>poll_event()</b>.
+ 
+The code below shows a typical LAM polling loop.<br>
+ In the case of CAMAC, the \b source corresponds
+to a bitwise LAM station able to generate LAM for that particular equipment.
+If the LAM is ORed for several stations and is independent of the equipment, the
+LAM test can be simplified (see example below) 
+<table style="text-align: left; width: 100%;" border="1" cellpadding="2"
+cellspacing="2">
+<caption>Examples of poll_event routines
+</caption>
+<tr>
+ <td
+ style="vertical-align: top; text-align: center; background-color: rgb(255, 255, 153);">
+<span style="font-weight: bold;">VME :</span>
+</td>
+<td
+ style="vertical-align: top; text-align: center; background-color: rgb(255, 255, 204);">
+<span style="font-weight: bold;">CAMAC :</span>
+</td>
+<tr><td>
+\code
+INT poll_event(INT source, INT count, BOOL test)
+{
+/* Polling routine for events. 
+   Returns TRUE if event is available. 
+   If test equals TRUE, don't return. 
+   The test flag is used to time the polling.
+*/
+
+  int i;
+  int lam = 0;
+
+  for (i = 0; i < count; i++, lam++) {
+    lam = vmeio_CsrRead(myvme, VMEIO_BASE);
+    if (lam)
+      if (!test)
+        return lam;
+  }
+
+  return 0;
+}
+\endcode
+</td><td>
+
+\code
+INT poll_event(INT source, INT count, BOOL test)
+{
+/* Polling routine for events. 
+   Returns TRUE if event is available. 
+   If test equals TRUE, don't return. 
+   The test flag is used to time the polling.
+ */
+   int   i;
+   DWORD lam;
+ 
+   for (i=0 ; i<count ; i++)
+   {
+     cam_lam_read(LAM_SOURCE_CRATE(source), &lam);
+     // Either ... any of the equipment LAM
+     if (lam & LAM_SOURCE_STATION(source))
+     //  
+     // Or ... any LAM (independent of the equipment)
+     if (lam)                             
+
+       if (!test)
+         return lam;
+   }
+   return 0;
+} 
+  \endcode
+</td></tr></table>
+
+An  @ref  FE_poll_or_interrupt_readout_routine "event readout routine" must also be 
+provided by the user (see below).
+
+<br>
+ 
+<br>
+@section FE_interrupt_event Interrupt event
+
+If the Equipment type is  @ref FE_tbl_EqType "EQ_INTERRUPT", an 
+interrupt configuration routine called  interrupt_configure() 
+must be provided in the frontend.c by the user.
+
+
+The interrupt configuration routine has the following declaration:
+<table style="text-align: left; width: 100%;" border="1" cellpadding="2"
+cellspacing="2">
+<caption>Examples of interrupt_configure routines
+</caption>
+<tr>
+ <td
+ style="vertical-align: top; text-align: center; background-color: rgb(255, 255, 153);">
+<span style="font-weight: bold;">VME :</span>
+</td>
+<td
+ style="vertical-align: top; text-align: center; background-color: rgb(255, 255, 204);">
+<span style="font-weight: bold;">CAMAC :</span>
+</td>
+<tr><td>
+\code
+/*-- Interrupt configuration --------------------------*/
+INT interrupt_configure(INT cmd, INT source, PTYPE adr)
+{
+  int vec = 0;
+  switch (cmd) 
+  {
+    case CMD_INTERRUPT_ENABLE:
+      if (inRun) mvme_write_value(myvme, VLAM_BASE+4, 0x1);
+      break;
+
+    case CMD_INTERRUPT_DISABLE:
+      if (inRun) mvme_write_value(myvme, VLAM_BASE+4, 0x0);
+      break;
+
+    case CMD_INTERRUPT_ATTACH:
+      mvme_set_dmode(myvme, MVME_DMODE_D32);
+      mvme_interrupt_attach(myvme, INT_LEVEL, INT_VECTOR, 
+                (void *)adr, &myinfo);
+      mvme_write_value(myvme, VLAM_BASE+0x10, INT_VECTOR);
+      vec = mvme_read_value(myvme, VLAM_BASE+0x10);
+      printf("Interrupt Attached to 0x%x for vector:0x%x\n",
+                     adr, vec&0xFF);
+      break;
+
+    case CMD_INTERRUPT_DETACH:
+      printf("Interrupt Detach\n");
+      break;
+   }
+   return SUCCESS;
+}
+\endcode
+</td><td>
+\code
+INT interrupt_configure(INT cmd, INT source [], PTYPE adr)
+{
+   switch(cmd)
+     {
+      case CMD_INTERRUPT_ENABLE:
+        cam_interrupt_enable();
+        break;
+
+      case CMD_INTERRUPT_DISABLE:
+        cam_interrupt_disable();
+        break;
+
+      case CMD_INTERRUPT_ATTACH:
+        cam_interrupt_attach((void (*)())adr);
+        break;
+
+      case CMD_INTERRUPT_DETACH:
+        cam_interrupt_detach();
+        break;
+
+      }
+  return CM_SUCCESS; 
+}
+\endcode
+</td></tr></table>
+
+Under the four commands listed above, the user must implement the hardware
+operation needed to perform the requested action. In the 
+Midas <b> drivers </b> directory
+examples can be found of such an interrupt code for CAMAC. See source
+code such as hyt1331.c,ces8210.c .
+
+An event readout routine must also be provided by the user in frontend.c .
+In the case of POLLED or INTERRUPT events, the event readout routine is called an @ref  FE_poll_or_interrupt_readout_routine "interrupt readout routine". An example is shown below.
+
+<br>
+ 
+<br>
+@section FE_readout_routine Event Readout routines
+
+An event readout routine (called when an event occurs) is usually of the form
+\code
+INT function_name ( char *pevent ... )
+{
+   INT event_size;
+
+   ........  // read data from hardware
+   ........  // pack into banks depending on format
+   ........
+   return (event_size);
+}
+\endcode
+where the first argument of the readout function (<span
+style="font-weight: bold;">pevent</span>)&nbsp; provides the pointer
+to the newly constructed event, and points to the first valid location for
+storing the data.   
+<br>
+\b NOTE:
+<ul>
+<li> The <span style="font-weight: bold;">return value is the event size, and must be the
+number of bytes collected in this function</span>.
+</li>
+<li> The <b>event serial number</b> will be incremented by one for every call to the readout routine, 
+          <span style="font-weight: bold;">as long as the returned size is non-zero</span>.
+</li>
+<li> If the <b>returned value is set to zero</b>, the event will be dismissed and the serial number to that event will be decremented by one.
+</li>
+</ul>
+<br>
+ 
+<br>
+@subsection FE_poll_or_interrupt_readout_routine Polled or Interrupt readout routine
+
+In the case of an Interrupt or Polled event, the content of the
+memory location pointed to by <b>pevent</b>
+prior to its use in the readout function, contains the interrupt source
+bitwise register. This feature can be exploited in order to identify
+which hardware module has triggered the readout when multiple
+interrupts have been assigned to the same readout function.
+
+
+The examples below show a VME interrupt source and a CAMAC multiple LAM interrupt source
+for a given equipment. Depending whether USE_INT is defined, the Equipment will either
+use a  @ref FE_poll_event "Polled" or an  @ref FE_interrupt_event "Interrupt" mechanism.
+<br> 
+The Equipment declaration is of the form:
+<table style="text-align: left; width: 100%;" border="1" cellpadding="2"
+cellspacing="2">
+<caption>Examples of POLLED or INTERRUPT Equipment list
+</caption>
+<tr>
+ <td
+ style="vertical-align: top; text-align: center; background-color: rgb(255, 255, 153);">
+<span style="font-weight: bold;">VME :</span>
+</td>
+<td
+ style="vertical-align: top; text-align: center; background-color: rgb(255, 255, 204);">
+<span style="font-weight: bold;">CAMAC :</span>
+</td>
+<tr><td>
+\code
+EQUIPMENT equipment[] = {
+
+   {"Trigger",  /* equipment name */
+     ...
+#ifdef USE_INT
+     EQ_INTERRUPT, /* equipment type */
+#else
+     EQ_POLLED,    /* equipment type */
+#endif
+ /* interrupt source: crate 0, all stations */
+     LAM_SOURCE(0, 0x0),
+     ....
+     "", "", "",},
+    read_trigger_event, /* readout routine */
+    NULL, NULL,
+    trigger_bank_list,
+    }
+\endcode
+</td><td>
+\code
+    EQUIPMENT equipment[] = {
+      { "Trigger",  // equipment name
+         {    
+            ...
+// the same readout code will be used for
+// either Interrupt or Polled equipment
+#ifdef USE_INT
+            EQ_INTERRUPT,
+#else                     
+            EQ_POLLED,
+#endif
+            LAM_SOURCE(JW_C,  LAM_STATION(GE_N)
+                   | LAM_STATION(JW_N)), // interrupt source 
+            ...
+            "", "", "",},
+       read_trigger_event,   // event readout routine 
+       ...
+\endcode
+</td></tr></table>
+
+Note that the LAM_SOURCE macro is used in both cases. It simply codes the parameters into
+a bitwise register.
+
+
+The readout routine would contains code such as
+<table style="text-align: left; width: 100%;" border="1" cellpadding="2"
+cellspacing="2">
+<caption>Examples of readout routines
+</caption>
+<tr>
+ <td
+ style="vertical-align: top; text-align: center; background-color: rgb(255, 255, 153);">
+<span style="font-weight: bold;">VME :</span>
+</td>
+<td
+ style="vertical-align: top; text-align: center; background-color: rgb(255, 255, 204);">
+<span style="font-weight: bold;">CAMAC :</span>
+</td>
+<tr><td>
+\code
+INT read_trigger_event(char *pevent, INT off)
+{
+#if defined VADC0_CODE
+  DWORD  *pdata;
+#endif
+
+#if defined VADC0_CODE
+  /* read ADC0 data */
+  v792_EvtCntRead(myvme, VADC0_BASE, &evtcnt);
+  ........
+  /* Read Event */
+  v792_EventRead(myvme, VADC0_BASE, pdata, &nentry);
+  ........
+  v792_DataClear(myvme, VADC0_BASE);
+#endif
+
+  ........
+  return (size);
+}
+\endcode
+</td>
+<td>
+\code
+  INT read_trigger_event(char *pevent, INT off)
+  {
+    DWORD lam;
+
+    lam = *((DWORD *)pevent);
+
+    // check LAM versus MCS station
+    // The clear is performed at the end of the readout function
+    if (lam & LAM_STATION(JW_N))
+    {
+       // read MCS event 
+       size = read_mcs_event(pevent);
+       ...
+    }
+    else if (lam & LAM_STATION(GE_N))
+    {
+       ...
+       // read GE event
+       size = read_ge_event(pevent);
+       ...
+     }
+     clear_LAM(); // clear all LAMs
+  return size;
+} 
+\endcode  
+</td></tr>
+</table>
+\b NOTE: <br>
+In the CAMAC example above, the Midas Event Header contains the same Event ID as the Trigger mask for both LAM. The examples fevmemodules.c (VME) and frontend.c (CAMAC) contain a complete example of read_trigger_event(). 
+
+<br>
+ 
+<br>
+@subsection FE_other_event General readout function
+
+If the  @ref FE_tbl_EqType "Equipment type" is \b not  EQ_INTERRUPT or EQ_POLLED,
+the readout routine is the only event routine that the user needs to provide in frontend.c .
+
+In this case (e.g. a \b periodic event) the  @ref FE_Example_equipment_structure "Equipment declaration" may have
+this form: 
+\code
+    EQUIPMENT equipment[] = {
+      { "Scaler",           // equipment name
+         {    
+            ...
+            EQ_PERIODIC     // equipment type
+            0,              // interrupt source (ignored) 
+            ...
+            10000,          // period (read every 10s)
+            ...
+            "", "", "",},
+       read_scaler_event,   // readout routine 
+       ...
+\endcode
+
+An example of a scaler readout routine read_scaler_event() where the data is
+read out into @ref  FE_bank_construction "data banks" is shown below.
+\code
+INT read_scaler_event(char *pevent, INT off)
+{
+   DWORD *pdata, a;
+
+   /* init bank structure */
+   bk_init(pevent);
+
+   /* create SCLR bank */
+   bk_create(pevent, "SCLR", TID_DWORD, &pdata);
+
+   /* read scaler bank (CAMAC) */
+   for (a = 0; a < N_SCLR; a++)
+      cam24i(CRATE, SLOT_SCLR, a, 0, pdata++);
+    
+   /* close SCLR bank */
+   bk_close(pevent, pdata);
+
+   /* return event size in bytes */
+   return bk_size(pevent);
+}
+\endcode
+
+<br>
+<hr>
+<br>
+
+@subsection FE_fragmented_event Fragmented Event
+
+A \b fragmented event enables very large events (e.g.  beyond the Midas configuration 
+limit) to be handled 
+by the system. The event is sent out by the frontend in smaller fragments, and reassembled by the Midas
+system into one event. This option is useful in experiments where the event rate is not an issue, but 
+the size of the data needs to be extremely large. The Equipment flag  FE_tbl_EqFragmented "EQ_FRAGMENTED"
+indicates that 
+the event is fragmented. The <b>fragment size</b> is determined by "max_event_size" in the frontend code 
+@ref FE_frag_max_event_size "(see below)".
+
+The example used here is taken from the TRIUMF TD-MUSR experiment, where a VME PowerPC (PPC) running 
+VxWorks  is used as the frontend cpu, and acts as a Histogramming Memory (HM).  The backend 
+computer is a Linux PC.
+
+Depending on the time range (i.e. number of bins selected) the histograms
+may be very large. The memory of the PPC is limited, and most of the free memory is needed for 
+the HM, so the event buffer size is set to be relatively small. 
+Therefore the histograms can only be sent out in fragments.
+
+@subsection FE_manual_trigger Manual Trigger
+Another feature illustrated in this example is the <b> Manual Trigger</b>, indicated by the 
+Equipment flag  @ref FE_tbl_EqManTrig "EQ_MANUAL_TRIG".  This flag causes an 
+extra button to be present on the web interface to enable the user to trigger the event. The following 
+image is of the main status page of the MUSR experiment,  where two manual trigger buttons are
+shown, labelled 
+ "Trigger Histo event" and "Trigger Camp event". These have been 
+generated for the Histo and Camp Equipments which were both set up with the EQ_MANUAL_TRIG flag.
+  
+
+ \image html mantrig.png 
+ \image latex mantrig.eps "Manual Trigger button" width=10cm
+
+
+It is also possible for a <b> client to trigger a manual trigger event</b>. The MUSR custom 
+data archiver  (a backend Midas client) controls when an event is sent, by means of
+a   @ref FE_backend_Manual_Trigger "routine" that requests an event by triggering the event sending 
+mechanism with a RPC call.
+
+@subsubsection FE_manual_trig_determine How to determine if trigger was a manual trigger
+In some cases, the same readout code may be used for two types of event: a manual trigger and
+(say) a poll event. A new feature (svn rev 4519 and later) allows the user to determine 
+whether the readout of an event was triggered by a manual trigger or a regular trigger.
+This is done in the readout routine by a call to
+\code
+  flag = DATA_SIZE(pevent);
+\endcode
+
+If the result is  
+ - flag = 0  normal call
+ - flag = 1  manual trigger 
+
+
+@subsection FE_tdmusr_equipment Equipment declaration for manually-triggered and fragmented event
+The Equipment declaration for the manually triggered fragmented histogram event (named Histo) is
+as follows: 
+
+\code
+
+ { "Histo",             /* equipment name */
+    2, 0,                 /* event ID, trigger mask */
+    "SYSTEM",             /* event buffer */
+    EQ_MANUAL_TRIG |     /* equipment type */
+    EQ_FRAGMENTED,        /*    manual trigger, fragmented (no longer periodic)
+ */
+    0,                    /* interrupt source */
+    "MIDAS",               /* format */
+    TRUE,                 /* enabled */
+    RO_RUNNING | RO_EOR |
+    RO_PAUSE | RO_RESUME, /* read when running and on end run,pause,resume tran
+sition */
+    0,                    /* not polled */
+    0,                    /* stop run after this event limit */
+    0,                    /* number of sub event */
+    0,                    /* log history */
+   "", "", "",
+    histo_read,     /* readout routine */
+    NULL,NULL,NULL       /* keep null */
+  },
+\endcode
+
+The Histo event can be manually triggered only <b>when running</b>, and is also triggered by the 
+transitions <b>STOP, PAUSE</b> and \b RESUME, 
+<br>indicated by the  @ref  FE_tbl_ReadOn "Read-On Event flags" : 
+<br>
+<b>RO_RUNNING | RO_EOR | RO_PAUSE | RO_RESUME</b>. 
+
+
+@subsection FE_frag_max_event_size Event size adjustments for fragmented event
+
+The buffer sizes in the frontend must be adjusted to suit the available memory for
+the event buffer (used for sending out the event fragments) 
+and to determine the maximum fragment size.
+
+The standard sizes in frontend.c are
+\code
+    //maximum event size produced by this frontend
+    INT max_event_size = 200000; /* must be less than MAX_EVENT_SIZE in midas.h */ 
+
+    // maximum event size for fragmented events (ignored unless flag EQ_FRAGMENTED is true) 
+    INT max_event_size_frag = 5 * 1024 * 1024;
+
+    //buffer size to hold events
+    INT event_buffer_size = 10*10000;
+\endcode
+
+
+The frontend code under VxWorks uses the following sizes to accomodate the fragmented events:
+\code
+    INT max_event_size = 10000; /* maximum size of event fragments */
+
+    INT max_event_size_frag = 4300000  ; /* maximum size of event (assembled from fragments) */
+
+    INT event_buffer_size = 2*10000; /* buffer size to hold events; must be  >= 2*max_event_size  */
+\endcode
+
+- The value of \b max_event_size is set much smaller than the standard size, and determines the size of
+the event fragments. 
+- The maximum size of the final event is given by \b max_event_size_frag.
+
+
+@subsection FE_frag_readout_code Readout routine for fragmented event
+
+The readout routine packs the event into  @ref  FE_bank_construction "Midas data banks", 
+and is no different to a readout routine for
+a non-fragmented event.  Sending the event as fragments and reassembling it is transparent to 
+the user, as it is handled by the system routine mfe.c .
+ 
+\code
+INT histo_read (char *pevent, INT off)
+{
+  DWORD *pdata, *pmem;
+  INT i;
+  char hist_name[10];
+  DWORD offset; /* offset in words into HM */
+
+  /* init bank structure */
+  bk_init32(pevent);
+
+  for (i=0; i<max_channels; i++)   /* for each histogram */
+
+  {
+    sprintf(hist_name, "HI%02d", i);
+    offset = HM_word_offset[i]; /* find offset into HM for this histo */
+
+    /* create HIxx bank */
+
+      bk_create(pevent, hist_name , TID_DWORD, &pdata);
+      pmem = pmemBase + offset; /* add offset */
+
+
+
+      /* send out the number of bins requested */
+      memcpy(pdata, pmem, number_of_bins * sizeof(DWORD));
+      pdata +=  number_of_bins; /* do not cast no. bins! */
+     
+      bk_close(pevent, pdata);
+    
+  } /* end of loop on all channels (histograms) */
+
+  return bk_size(pevent);
+}
+\endcode
+
+
+
+@subsection FE_backend_Manual_Trigger A Client that Manually Triggers the Equipment
+
+If the frontend equipment declares a <b>Manual Trigger</b>, in addition to the event being triggered
+by pressing a button on the web interface, a <b>backend program can be used to trigger the
+event</b>. 
+<br>
+In the case of the   @ref FE_manual_trigger "example above" where a PPC acts as a 
+Histogramming Memory (HM),  a <b> custom data logger </b> is used to save the contents of 
+the HM periodically during the run, to guard against
+data loss in the event of failure, and to allow an analyzer to display the histograms during the
+run. At the end of run (and on Pause/Continue transitions) the Histo event is sent 
+automatically due to the  @ref FE_tdmusr_equipment "Equipment flags"  RO_PAUSE, RO_CONTINUE and RO_EOR. 
+<br>
+During the run, when it is time to save the contents of the HM, the custom data logger needs 
+to send a manual trigger in order to request a histogram event. This is done by with the Midas
+library call  rpc_client_call  in the function "trigger_histo_event" below. 
+The main program uses the Midas library call bm_request_event to place an event request 
+for the desired Histo event(event ID = 2).  The following code illustrates the technique: 
+
+\code
+/*-------- Custom data logger code fragment  ------------------*/
+
+int main(unsigned int argc,char **argv)
+{
+
+   ............
+   /* connect to experiment */
+   status = cm_connect_experiment(host_name, expt_name, ClientName, 0);
+
+   /* turn on message display, turn on message logging */
+    cm_set_msg_print(MT_ALL, MT_ALL, msg_print);
+
+ 
+   /* set the buffer cache size */
+    bm_set_cache_size(hBufEvent, 100000, 0);
+
+   /* TD-MUSR uses fragmented events so needs GET_ALL  */
+   bm_request_event(hBufEvent, 2, TRIGGER_ALL, GET_ALL, &request_id, process_event_TD);
+
+   .....................
+   .....................
+}
+\endcode
+
+When it is time to save the data during the run, the funtion below (trigger_histo_event)  
+is called:
+
+\code
+/*-----------------------------------------------------------------------------------------------*/
+BOOL trigger_histo_event(void)
+/*-----------------------------------------------------------------------------------------------*/
+{
+  HNDLE hconn;
+  BOOL event_triggered;
+
+  event_triggered = FALSE;
+
+  ...................
+
+  if (run_state == STATE_RUNNING)
+    {
+     // Check the frontend client exists
+     if( cm_exist(ClientName,TRUE))      
+        { 
+          status = cm_connect_client (ClientName, &hconn);
+          if(status != RPC_SUCCESS)
+            cm_msg(MERROR,"trigger_histo_event","Cannot connect to frontend \"%s\" (%d)",
+                   ClientName,status);
+      else      
+         {  // successfully connected to frontend client
+            rpc_client_call(hconn, RPC_MANUAL_TRIG, 2); // trigger a histo event
+            if (status != CM_SUCCESS)
+              cm_msg(MERROR,"trigger_histo_event","Error triggering event from frontend (%d)",status);
+            else
+              {  // successfully triggered event
+                event_triggered=TRUE;
+                status =cm_disconnect_client(hconn, FALSE);
+                if (status != CM_SUCCESS)
+                  cm_msg(MERROR,"trigger_histo_event","Error disconnecting client after event trigger(%d)",status)
+;
+              }
+          }
+       } // end of cm_exist
+      else
+        cm_msg(MERROR,"trigger_histo_event","Frontend client %s not running; not triggering an event (%d)",
+               ClientName,status);
+    } // end of if running
+  return(event_triggered);
+}
+\endcode
+<br>
+<br>
+\htmlonly
+<script type="text/javascript">
+pages( "FE_sequence", "FE_section_index",  "FE_event_notification","FE_eq_event_routines","" ); // back index next {top bottom}
+// section parameters: last section; top of this section; next section
+sections("RunControl","FrontendOperation","Utilities");
+</script>
+\endhtmlonly
+\latexonly
+@ref  FE_sequence  "previous page" - @ref FE_section_index - @ref Top - @ref  FE_event_notification "next page"
+\endlatexonly
+<br>
+\anchor end
+<!-- End of page   FE_eq_event_routines  -->
+*/
+
+
+
+/*!  \page  FE_event_notification Event Notification
+<br>
+\htmlonly
+ 
+<script type="text/javascript">
+pages( "FE_eq_event_routines", "FE_section_index","FE_Deferred_Transition","FE_event_notification","end" ); // back index next {top bottom}
+// section parameters: last section; top of this section; next section
+sections("RunControl","FrontendOperation","Utilities");
+</script>
+\endhtmlonly
+\latexonly
+@ref FE_eq_event_routines   "previous page" - @ref FE_section_index - @ref Top - @ref  FE_Deferred_Transition  "next page"
+\endlatexonly
+<br>
+
+We have already seen how some values in the Equipment/Settings area are  @ref FE_equipment_odb_hot_links
+"automatically hot-linked" for convenience.   
+Most frontends also contain user-defined \b hot-links for event notification. These are 
+often used to set or read back hardware value(s) with immediate effect, based on the user changing a setting in
+the ODB.  These are described (with an example) in @ref RC_Hot_Link .
+
+
+<br>
+\htmlonly
+<script type="text/javascript">
+pages( "FE_eq_event_routines", "FE_section_index","FE_Deferred_Transition","FE_event_notification","" ); // back index next {top bottom}
+// section parameters: last section; top of this section; next section
+sections("RunControl","FrontendOperation","Utilities");
+</script>
+\endhtmlonly
+\latexonly
+@ref FE_eq_event_routines   "previous page" - @ref FE_section_index - @ref Top - @ref  FE_Deferred_Transition "next page"
+\endlatexonly
+<br>
+\anchor end
+<!-- End of page FE_event_notification  -->
+*/
+
+/*!  \page FE_Deferred_Transition Deferred Transition
+
+<br>
+\htmlonly
+<script type="text/javascript">
+pages("FE_event_notification","FE_section_index","FE_bank_construction","FE_Deferred_Transition", "end" ); // back index next {top bottom}
+// section parameters: last section; top of this section; next section
+sections("RunControl","FrontendOperation","Utilities");
+</script>
+\endhtmlonly
+\latexonly
+@ref FE_event_notification "previous page" - @ref FE_section_index - @ref Top - @ref  FE_bank_construction "next page"
+\endlatexonly
+<br>
+
+
+This option permits the user to <b>postpone any transition issued by any requester
+until some condition is satisfied.</b>
+<br> For example:
+- It may not be advisable to pause or stop a run until some hardware
+has turned off a particular valve. 
+- The start of the acquisition system should be postponed until the beam rate has
+been stable for a given period of time.
+- While active, a particular acquisition system should not be interrupted
+until the "cycle" is completed.
+
+In these examples, any application having access to the state of the hardware
+can register to be a "transition Deferred" client.
+The MIDAS system will then catch any transition request and postpone the trigger of 
+such a transition until the condition  is satisfied.
+<br>
+The Deferred_Transition requires 3 steps for setup:
+
+  - Register for the deferred transition. 
+    \code
+    //-- Frontend Init
+    INT frontend_init()
+    {
+      INT    status, index, size;
+      BOOL   found=FALSE;
+
+      // register for deferred transition
+
+      cm_register_deferred_transition(TR_STOP, wait_end_cycle);
+      cm_register_deferred_transition(TR_PAUSE, wait_end_cycle);
+      ...  
+    \endcode
+  - Provide callback function to serve the deferred transition 
+    \code
+  //-- Deferred transition callback
+  BOOL wait_end_cycle(int transition, BOOL first)
+  {
+    if (first)
+    {
+      transition_PS_requested = TRUE;
+      return FALSE;
+
+
+    }
+
+    if (end_of_mcs_cycle)
+
+    {
+      transition_PS_requested = FALSE;
+      end_of_mcs_cycle = FALSE;
+      return TRUE;
+
+    else
+      return FALSE;
+    ...
+  \endcode
+  - Implement the condition code 
+
+  \code
+  ... In this case at the end of the readout function...
+    ...
+
+  INT read_mcs_event(char *pevent, INT offset)
+  {
+    ...
+
+    if (transition_PS_requested)
+    {
+      // Prevent getting a new MCS event by skipping re_arm_cycle and GE by GE_DISABLE LAM
+      cam_lam_disable(JW_C,JW_N);
+      cam_lam_disable(GE_C,GE_N);
+      cam_lam_clear(JW_C,JW_N);
+
+      cam_lam_clear(GE_C,GE_N);
+      camc(GE_C,GE_N,0,GE_DISABLE);
+      end_of_mcs_cycle = TRUE;
+
+    re_arm_cycle(); 
+   return bk_size(pevent);
+
+  \endcode
+
+  In the example above, 
+
+  - The frontend code is registered for PAUSE and STOP using <em>cm_register_deferred_transition</em>.
+   <br> The second argument \em wait_end_cycle  is the declaration of the callback function. 
+
+
+  - The callback function \em wait_end_cycle will be called as soon as the
+  transition is requested with the Boolean flag \em first set to TRUE.
+  - By setting \em transition_PS_requested to TRUE , the user will be provided with the acknowledgment
+  of the transition request.
+  - By returning FALSE from the callback, the transition is prevented from occurring. 
+
+  - As soon as the user condition is satisfied (end_of_mcs_cycle = TRUE), the return code in the 
+callback will be set to TRUE and the requested transition will be issued.
+
+The Deferred transition appears in the ODB under
+  <b>/runinfo/Requested transition</b>  and will contain the transition code
+  (see @ref RC_state_transition ).
+
+  When the system is in deferred state, an ODBedit override command can be issued to
+  \b force the transition to happen. eg:
+\code
+C:\online>odbedit
+ [local]/>stop now 
+ [local]/>start now
+\endcode
+
+  This overide will call the transition function regardless of the state of the
+  hardware involved.
+
+
+<br>
+\htmlonly
+<script type="text/javascript">
+pages("FE_Slow_Control_system","FE_section_index",  "FE_bank_construction","FE_Deferred_Transition", "" ); // back index next {top bottom}
+// section parameters: last section; top of this section; next section
+sections("RunControl","FrontendOperation","Utilities");
+</script>
+\endhtmlonly
+\latexonly
+@ref FE_Slow_Control_system "previous page" - @ref FE_section_index - @ref Top - @ref  FE_bank_construction "next page"
+\endlatexonly
+<br>
+
+\anchor end
+<!-- End of page  FE_Deferred_Transition  -->
+*/
+
+
+/*!  \page FE_bank_construction Bank construction in an Event readout routine
+
+<br>
+\htmlonly
+ 
+<script type="text/javascript">
+pages("FE_Deferred_Transition",  "FE_section_index","FE_Super_Event", "FE_bank_construction","end" ); // back index next {top bottom}
+// section parameters: last section; top of this section; next section
+sections("RunControl","FrontendOperation","Utilities");
+</script>
+\endhtmlonly
+\latexonly
+@ref  FE_Deferred_Transition "previous page" - @ref FE_section_index - @ref Top - @ref  FE_Super_Event "next page"
+\endlatexonly
+<br>
+
+
+A readout event will often need to construct banks in which the data is to be sent out.
+The @ref  FE_tbl_Format "bank format" is declared in the @ref FE_Example_equipment_structure "Equipment list" , e.g.
+\code
+
+    EQUIPMENT equipment[] = {
+
+      { "Trigger",            // equipment name
+        {
+          ...
+          "Midas",            // format
+          ...
+      ...  
+\endcode
+
+Refer to the following sections for an explanation of event composition depending on the
+event type selected: 
+  -  @ref  FE_FIXED_event_readout,
+  -  @ref  FE_MIDAS_event_construction, 
+  -  @ref  FE_YBOS_event_construction.
+
+<br>
+<hr>
+<br>
+
+@section FE_FIXED_event_readout  FIXED format Event readout
+
+The  @ref FE_tbl_Format "FIXED format" is the simplest event format. The event length is fixed and is mapped to
+a C structure that is filled by the readout routine. Since the standard MIDAS analyzer
+cannot work with this format, it is only recommended for an experiment which uses its own
+analyzer and wants to avoid the overhead of a bank structure, or for monitoring purposes in the ODB.
+
+<br>
+There are several ways of defining fixed events. 
+For fixed events, the structure has to be defined twice: once for the compiler in the
+form of a C structure, and once for the ODB in form of an ASCII representation. There are
+several ways of doing this. 
+The ASCII string may be supplied to the system as the @ref FE_tbl_InitString "init string" in the equipment list as follows:
+ 
+
+<table style="text-align: left; width: 100%;" border="0" cellpadding="2"
+cellspacing="5">
+<caption>Example of definition of FIXED format using Equipment field "init string"
+</caption>
+<tr>
+ <td colspan=3
+ style="vertical-align: top; text-align: center; background-color: rgb(255, 255, 153);">
+<span style="font-weight: bold;">Example of FIXED format event:</span>
+</td>
+</tr>
+<tr><td>
+<b>Fixed Event Definition</b>
+<br>A fixed event with two ADC and TDC values:
+</td>
+<td>
+The \b trigger_event_str
+  has to be defined before the equipment list and a reference
+to it has to be placed in the equipment list like:
+</td>
+<td>
+The <b>Readout routine</b>
+<br>The <...> statements are filled with the appropriate code accessing the hardware:
+</td>
+</tr>
+
+<tr>
+<td>
+\code
+typedef struct {
+  int adc0;
+  int adc1;
+  int tdc0;
+  int tdc1;
+  TRIGGER_EVENT;
+}
+char *trigger_event_str[] = {
+"adc0 = INT : 0",
+"adc1 = INT : 0",
+"tdc0 = INT : 0",
+"tdc1 = INT : 0",
+  ASUM_BANK;
+}
+\endcode
+</td>
+<td>
+
+\code{
+  "FIXED",            // FIXED format
+...
+  read_trigger_event, // readout routine 
+  NULL,NULL,
+  trigger_event_str,  // init string 
+ ,
+\endcode
+<td>
+
+\code
+INT read_trigger_event(char *pevent)
+{
+TRIGGER_EVENT *ptrg;
+
+  ptrg = (TRIGGER_EVENT *) pevent;
+  ptrg->adc0 = <...>;
+  ptrg->adc1 = <...>;
+  ptrg->tdc0 = <...>;
+  ptrg->tdc1 = <...>;
+
+  return sizeof(TRIGGER_EVENT);
+\endcode
+
+</td></tr></table>
+<br>
+Alternatively, the structure may be defined first in the ODB, under /Equipment/&lt;eqp_name&gt;/Variables, 
+and supplied to the readout routine by the frontend program including "experim.h", as follows:
+
+<table style="text-align: left; width: 100%;" border="1" cellpadding="2"
+cellspacing="2">
+<caption>Example of structure from \b experim.h for a fixed event
+</caption>
+<tr>
+ <td
+ style="vertical-align: top; text-align: center; background-color: rgb(255, 255, 153);">
+<span style="font-weight: bold;">C structure from \em experim.h:</span>
+</td>
+ <td
+ style="vertical-align: top; text-align: center; background-color: rgb(255, 255, 153);">
+<span style="font-weight: bold;">ASCII representation from \em experim.h :</span>
+</td>
+</tr>
+<tr>
+<td>
+\code
+
+#define INFO_ODB_EVENT_DEFINED
+
+typedef struct {
+  DWORD     helicity;
+  DWORD     current_cycle;
+  DWORD     current_scan;
+  double    current_hel_thr;
+  DWORD     rf_state;
+  DWORD     fluor_monitor_counts;
+  float     epicsdev_set_v_;
+  float     epicsdev_read_v_;
+  float     campdev_set;
+  float     campdev_read;
+  DWORD     last_failed_thr_test;
+} INFO_ODB_EVENT;
+\endcode
+</td><td>
+\code
+#define INFO_ODB_EVENT_STR(_name)
+           char *_name[] = {\
+"[.]",\
+"helicity = DWORD : 0",\
+"current cycle = DWORD : 54",\
+"current scan = DWORD : 5",\
+"Current Hel thr = DOUBLE : 0",\
+"RF state = DWORD : 0",\
+"Fluor monitor counts = DWORD : 0",\
+"EpicsDev Set(V) = FLOAT : 0",\
+"EpicsDev Read(V) = FLOAT : 0",\
+"Campdev set = FLOAT : 0",\
+"Campdev read = FLOAT : 0",\
+"last failed thr test = DWORD : 0",\
+"",\
+NULL }
+\endcode
+</td></tr></table>
+
+@anchor FE_RO_ODB_example
+The  @ref FE_table "Equipment definition" for this fixed event might be :
+\code
+
+ { "Info ODB",     /* equipment name */
+    10, 0,         /* event ID, trigger mask */
+    "",            /* no banks sent */
+    EQ_PERIODIC,   /* equipment type */
+    0,             /* interrupt source */
+    "FIXED",       /* format */
+    TRUE,          /* enabled */
+    RO_RUNNING | RO_ODB | 
+          RO_EOR,  /* read when running; 
+                      send to odb */
+    500,           /* polling period */
+    0,             /* event limit */
+    0,             /* number of sub-events */
+    0,             /* log history */
+    "", "", "",
+    info_odb,      /* readout routine */
+    NULL,NULL,NULL,
+  },
+\endcode
+
+
+The frontend.c program would then include experim.h to gain access to the structure.
+<br>It is a good idea to check the record size and/or create the record in the odb when using 
+C structures from experim.h, to make sure that the structure is identical in the odb to that in experim.h.
+<br>
+The <b> main program </b> might look like this:
+
+\code
+/* frontend.c */
+....
+
+#include experim.h
+
+INFO_ODB_EVENT cyinfo;
+INFO_ODB_EVENT_STR(info_odb_event_str);
+HNDLE hInfo;
+INT status, size;
+char   str_set[256];
+....
+
+sprintf(str_set,"/Equipment/INFO ODB/Variables");
+
+/* create record /Equipment/INFO ODB/Variables to make sure it exists  */
+ /* find the key for info odb */
+  status = db_find_key(hDB, 0, str_set, &hInfo);
+  if (status != DB_SUCCESS)
+    {
+      printf( "Key %s not found; creating record for info odb\n",str_set);
+      status = db_create_record(hDB, 0, str_set, strcomb(info_odb_event_str));
+    }
+  /* check the record size */
+  status = db_get_record_size(hDB, hInfo, 0, &size);
+  if (sizeof(INFO_ODB_EVENT) != size)
+     {
+        cm_msg(MERROR, "bnmr_init", "error; record sizes do not match");
+        return DB_TYPE_MISMATCH;
+     }
+
+  .......    
+\endcode
+
+A <b>readout routine</b> for this fixed event is as follows:
+\code
+INT info_odb(char * pevent, INT off)
+/* - periodic equipment updating the ODB ONLY
+   - no event generation for the data stream.
+*/
+{
+
+  /* fill various values */
+  cyinfo.helicity = gbl_ppg_hel;
+  cyinfo.current_cycle = gbl_CYCLE_N;
+  cyinfo.current_scan = gbl_SCAN_N;
+  cyinfo.epicsdev_set_v_ = epics_params.Epics_val;
+  cyinfo.epicsdev_read_v_ = epics_params.Epics_read;
+  cyinfo.campdev_set = 0;   
+  cyinfo.campdev_read = 0; 
+    
+
+  memcpy(pevent, (char *)&(cyinfo.helicity), sizeof(cyinfo));
+  pevent += sizeof(cyinfo);
+  logMsg ("info_odb %d size:%d\n",gbl_CYCLE_N,sizeof(cyinfo),0,0,0,0);
+  return sizeof(cyinfo);
+}
+\endcode
+<br>
+The output from a FIXED event of this type sent to the ODB using @ref RC_mhttpd_task "mhttpd" is shown 
+@ref  RC_mhttpd_eq_variables "here".
+ 
+More <b>examples of FIXED events</b> can be found in the <b>slow controls device drivers</b>, for example 
+../examples/slowcont/frontend.c and ../drivers/class/hv.c  
+
+<br>
+<hr>
+<br>
+@section FE_MIDAS_event_construction MIDAS event construction
+
+The  @ref FE_Midas_format "MIDAS event format" is a variable length event format. It uses "banks" as
+subsets of an event. A bank is composed of a bank header followed by the data.
+The bank header itself is made of 3 fields i.e:
+- bank name (4 characters)
+- bank type
+- bank length
+
+
+Usually a bank contains an array of values that logically belong
+together. For example, an experiment can generate an ADC bank, a TDC bank and a
+bank with trigger information. The length of a bank can vary from one event to
+another due to zero suppression from the hardware. Besides the variable data length
+support of the bank structure, another main advantage is the possibility for the
+analyzer to add more (calculated) banks during the analysis process to the event
+in process. After the first analysis stage, the event can contain in addition to the
+the raw ADC bank, a bank with calibrated ADC values called CADC for example.
+In this CADC bank the raw ADC values could be offset or gain-corrected.
+
+<hr>
+
+@subsection FE_Midas_Data_Types Midas Data Types
+Midas defines its own @ref data types for OS compatibility. It is suggested that you use them
+in order to ensure correct compilation when moving code from one OS to another.
+
+
+\em float and \em double retain OS definition.
+
+- BYTE      unsigned char
+- WORD      unsigned short int (16bits word)
+- DWORD     unsigned 32bits word
+- INT       signed 32bits word
+- BOOL      OS dependent.
+
+When defining a data type either in the frontend code for bank definition or in user code
+to define ODB variables, Midas requires the use of its own data type declaration. The list
+below shows the main Type IDentification to be used (refer to @ref mdefineh
+for complete listing):
+
+- TID_BYTE      unsigned byte         0       255 
+- TID_SBYTE     signed BYTE         -128      127 
+- TID_CHAR      single character      0       255 
+- TID_WORD      two BYTE             0      65535
+- TID_SHORT     signed WORD        -32768    32767
+- TID_DWORD     four bytes            0      2**32-1
+- TID_INT       signed DWORD        -2**31    2**31-1
+- TID_BOOL      four bytes bool       0        1   
+- TID_FLOAT     four bytes float format    
+- TID_DOUBLE    eight bytes float format                
+
+<hr>
+
+@subsection FE_creation_Midas_banks Creation of MIDAS banks
+
+MIDAS banks are created in the frontend readout code with calls to the MIDAS library.
+The following routines are available:
+- bk_init() , bk_init32() Initializes a bank structure in an event.
+    <br>Note that bk_init32 can be used to reduce the size of very large banks, where the
+    data will fit into a 32-bit word
+- bk_create() Creates a bank with a given name (exactly four characters)
+- bk_close() Closes a bank previously opened with bk_create().
+- bk_locate() Locates a bank within an event by its name.
+- bk_iterate() Returns bank and data pointers to each bank in the event.
+- bk_list() Constructs a string with all the banks' names in the event.
+- bk_size() Returns the size in bytes of all banks including the bank
+headers in an event.
+
+<br>
+Examples for VME and CAMAC hardware are shown here. 
+
+The VME example reads out a VME ADC module into one MIDAS bank. In the CAMAC example 
+the event will contain two banks: one for the ADC data and one for the TDC data. 
+
+<table style="text-align: left; width: 100%;" border="1" cellpadding="2"
+cellspacing="2">
+<caption>Readout routines showing Midas Bank construction
+</caption>
+<tr>
+ <td
+ style="vertical-align: top; text-align: center; background-color: rgb(255, 255, 153);">
+<span style="font-weight: bold;">VME :</span>
+</td>
+<td
+ style="vertical-align: top; text-align: center; background-color: rgb(255, 255, 204);">
+<span style="font-weight: bold;">CAMAC :</span>
+</td>
+<tr><td>
+\code
+INT read_trigger_event(char *pevent, INT off)
+{
+#if defined VADC0_CODE
+  DWORD  *pdata;
+#endif
+ evlimit = SERIAL_NUMBER(pevent);
+
+#if defined VADC0_CODE
+  /* create structured ADC0 bank */
+  bk_create(pevent, "ADC0", TID_DWORD, &pdata);
+  v792_EvtCntRead(myvme, VADC0_BASE, &evtcnt);
+  /* Read Event */
+  v792_EventRead(myvme, VADC0_BASE, pdata, &nentry);
+  pdata += nentry;
+  bk_close(pevent, pdata);
+  v792_DataClear(myvme, VADC0_BASE);
+  return bk_size(pevent);
+#else
+  return 0; /* no event */
+#endif
+
+
+}
+\endcode
+</td>
+<td>
+
+\code
+INT read_trigger_event(char *pevent)
+{
+WORD *pdata, a;
+
+  // init bank structure 
+  bk_init(pevent);
+
+  // create ADC bank 
+  bk_create(pevent, "ADC0", TID_WORD, &pdata);
+
+  // read ADC bank 
+  for (a=0 ; a<8 ; a++)
+    cami(1, 1, a, 0, pdata++);
+
+  bk_close(pevent, pdata);
+
+  // create TDC bank 
+  bk_create(pevent, "TDC0", TID_WORD, &pdata);
+
+  // read TDC bank 
+  for (a=0 ; a<8 ; a++)
+    cami(1, 2, a, 0, pdata++);
+
+  bk_close(pevent, pdata);
+
+  return bk_size(pevent);
+ 
+\endcode
+</td></td></table>
+<br>
+
+
+Upon normal completion, the readout routine returns the event size in bytes.
+If the event is not valid, the routine can return zero. In this case no event
+is sent to the back-end. This can be used to implement a software event filter
+(sometimes called "third level trigger").
+
+
+Examples of unpacking the data from Midas banks are shown in the  @ref DataAnalysis section.
+
+<br>
+<hr>
+<br>
+
+@subsection FE_Midas_Event_Header_Manipulation Midas Event header manipulation
+\anchor FE_Midas_Event_Header_Macros
+  Every event travelling through the Midas system has a "Event Header" containing
+  the minimum information required to identify its contents. The size of the header
+  has been kept as small as possible in order to minimize its impact on the data
+  rate as well as on the data storage requirment. The following Macros in the  @ref F_Midas_Library
+  are available for manipulating Midas event headers. They permit
+  reading or overrideing the content of the event header, as long as the argument of
+  the macro refers to the top of the Midas event (pevent).
+  This argument (pevent) is available in the frontend code in any of the user
+  readout functions.
+
+  The Macros are also available to the user analyzer code, which retrieves the event and
+  provide direct access to the event header (pheader) and to the user part of the event
+  (pevent). Sub-functions using pevent would then be able to get back the header
+  through the use of the macros.
+
+  - @ref TRIGGER_MASK
+  - @ref EVENT_ID
+  - @ref SERIAL_NUMBER
+  - @ref TIME_STAMP
+
+\anchor timestamp
+The following frontend C-code fragments from a running experiment demonstrate the use of these Macros :
+  - example 1
+\code
+INT read_ge_event(char *pevent, INT offset)
+{
+  static WORD *pdata;
+  INT i, x, q;
+  WORD temp;
+ 
+  // Change the time stamp in millisecond for the Super event
+  TIME_STAMP(pevent) = ss_millitime();
+  
+  bk_init(pevent);
+  bk_create(pevent, "GERM", TID_WORD, &pdata);
+  ...
+}
+\endcode
+
+  - example 2
+
+\code
+  ...
+  lam = *((DWORD *)pevent);
+
+  if (lam & LAM_STATION(JW_N))
+
+  {
+    ...
+    // compose event header
+    TRIGGER_MASK(pevent) = JW_MASK;
+    EVENT_ID(pevent)     = JW_ID;
+    SERIAL_NUMBER(pevent)= eq->serial_number++;
+    // read MCS event
+    size = read_mcs_event(pevent);
+    // Correct serial in case event is empty 
+    if (size == 0)
+      SERIAL_NUMBER(pevent) = eq->serial_number--;
+    ...
+  }
+  ...
+
+\endcode
+
+<hr>
+<br>
+@section FE_YBOS_event_construction YBOS event construction
+
+The  @ref FE_YBOS_format "YBOS event format" is also a bank format that has been used in other DAQ systems.
+
+ 
+The advantage of using the YBOS format is the fact that recorded data can be analyzed
+with pre-existing analyzers understanding @ref  FE_YBOS_format. The disadvantage is that it
+has a slightly larger overhead than the  @ref FE_Midas_format , and it supports fewer
+bank types. An introduction to YBOS can be found under
+<a href="http://www-cdf.fnal.gov/offline/ybos/ybos.html"> YBOS </a>  
+YBOS functions are available through the  @ref F_YBOS_library .
+
+The scheme of bank creation is exactly the same as for MIDAS events, only the
+routines are named differently. The YBOS format is double-word oriented i.e. all
+incrementation are done in 4 bytes steps.
+The following routines exist:
+
+- ybk_init() Initializes a bank structure in an event.
+- ybk_create() Creates a bank with a given name (exactly four characters)
+- ybk_close() Closes a bank previously opened with ybk_create().
+- ybk_size() Returns the size in bytes of all banks including the bank
+headers in an event.
+
+
+<hr> @section FE_YBOS_Bank_Types YBOS Bank Types
+YBOS defines several types, but all types should be 4 bytes aligned.
+There is no distinction of signed and unsigned. When mixing MIDAS and YBOS
+in the frontend for  @ref  FE_tbl_ReadOn "RO_ODB"  make
+sure the bank types are compatible (see also @ref ybosdefineh)
+
+- \b I1_BKTYPE  Bank of Bytes
+- \b I2_BKTYPE  Bank of 2 bytes data
+- \b I4_BKTYPE  Bank of 4 bytes data
+- \b F4_BKTYPE  Bank of float data
+- \b D8_BKTYPE  Bank of double data
+- \b A1_BKTYPE  Bank of ASCII char 
+
+@subsection FE_creation_YBOS_banks Creation of YBOS banks
+
+The following code creates an ADC0 bank in YBOS format:
+
+\code
+INT read_trigger_event(char *pevent)
+{
+  DWORD i;
+  DWORD *pbkdat;
+
+  ybk_init((DWORD *) pevent);
+
+  // collect user hardware data 
+  ybk_create((DWORD *)pevent, "ADC0", I4_BKTYPE, (DWORD *)(&pbkdat));
+  for (i=0 ; i<8 ; i++)
+    *pbkdat++ = i & 0xFFF;
+  ybk_close((DWORD *)pevent, pbkdat);
+
+  ybk_create((DWORD *)pevent, "TDC0", I2_BKTYPE, (DWORD *)(&pbkdat));
+  for (i=0 ; i<8 ; i++)
+    *((WORD *)pbkdat)++ = (WORD)(0x10+i) & 0xFFF;
+  ybk_close((DWORD *) pevent, pbkdat);
+
+  ybk_create((DWORD *)pevent, "SIMU", I2_BKTYPE, (DWORD *)(&pbkdat));
+  for (i=0 ; i<9 ; i++)
+    *((WORD *)pbkdat)++ = (WORD) (0x20+i) & 0xFFF;
+  ybk_close((DWORD *) pevent, I2_BKTYPE, pbkdat);
+
+  return (ybk_size((DWORD *)pevent));
+ 
+\endcode
+<br>
+
+Basic examples using YBOS banks are available in the midas tree under examples/ybosexpt.
+
+- <b>Frontend code</b>
+Example 1 and 2 shows the bank creation with some CAMAC acquisition.
+\code
+-------- example 1 -------- Simple 16 bits bank construction
+
+void read_cft (DWORD *pevent)
+{
+  DWORD *pbkdat, slot;
+  
+  ybk_create((DWORD *)pevent, "TDCP", I2_BKTYPE, &pbkdat);
+  for (slot=FIRST_CFT;slot<=LAST_CFT;slot++)
+    {
+      cami(3,slot,1,6,(WORD *)pbkdat);
+      ((WORD *)pbkdat)++;
+
+      cam16i_rq(3,slot,0,4,(WORD **)&pbkdat,16);
+    }
+  ybk_close((DWORD *)pevent, I2_BKTYPE, pbkdat);
+  return;
+}
+-------- example 2 -------- Simple 32bit bank construction
+{
+  DWORD *pbkdat;
+  
+  ybk_create((DWORD *)pevent, "TICS", I4_BKTYPE, &pbkdat);
+  camo(2,22,0,17,ZERO);
+  cam24i_r(2,22,0,0,(DWORD **) &pbkdat,10);
+  cam24i_r(2,22,0,0,(DWORD **) &pbkdat,10);
+  cam24i_r(2,22,0,0,(DWORD **) &pbkdat,10);
+  cam24i_r(2,22,0,0,(DWORD **) &pbkdat,10);
+
+
+  cam24i_r(2,22,0,0,(DWORD **) &pbkdat,9);
+  ybk_close((DWORD *)pevent, I4_BKTYPE, pbkdat);
+  return 0;
+}
+\endcode
+
+Example 3 shows the creation of an EVID bank containg a duplicate of the midas header.
+As the Midas header is stripped out of the YBOS event when the data are logger, it is necessary
+to compose such an event to retain event information for off-line analysis. Use of
+predefined macros (see @ref F_Midas_Library) are available in order to extract from a
+pre-composed Midas event the internal header fields i.e. Midas Event ID, Trigger mask,
+Serial number, Time stamp. In this EVID bank we added the current run number which
+is retrieved by the frontend at the beginning of a run.
+
+
+\code
+-------- example 3 -------- Full equipment readout function
+
+INT read_cum_scaler_event(char *pevent, INT off)
+{
+  INT i;
+  DWORD *pbkdat, *pbktop, *podbvar;
+  
+  ybk_init((DWORD *) pevent);
+  
+  // collect user hardware SCALER data
+  ybk_create((DWORD *)pevent, "EVID", I4_BKTYPE, (DWORD *)(&pbkdat));
+  *(pbkdat)++ = gbl_tgt_counter++;                      // event counter 
+  *((WORD *)pbkdat) = EVENT_ID(pevent);     ((WORD *)pbkdat)++;
+  *((WORD *)pbkdat) = TRIGGER_MASK(pevent); ((WORD *)pbkdat)++;
+
+  *(pbkdat)++ = SERIAL_NUMBER(pevent);
+  *(pbkdat)++ = TIME_STAMP(pevent);
+  *(pbkdat)++ = gbl_run_number;                         // run number
+  ybk_close((DWORD *)pevent, pbkdat);
+  
+  // BEGIN OF CUMULATIVE SCALER EVENT
+  ybk_create((DWORD *)pevent, "CUSC", I4_BKTYPE, (DWORD *)(&pbkdat));
+  for (i=0 ; i<NSCALERS ; i++){
+    *pbkdat++ = scaler[i].cuval[0];
+    *pbkdat++ = scaler[i].cuval[1];
+  }
+
+  ybk_close(DWORD *)pevent, I4_BKTYPE, pbkdat);
+  // END OF CUMULATIVE SCALER EVENT
+
+
+  
+  // event in bytes for Midas
+  return (ybk_size ((DWORD *)pevent));
+}
+\endcode
+
+
+If the data logging is done through YBOS format (see @ref ODB_Logger_Tree Format)
+the events on the storage media will have been stripped of the MIDAS header used for
+transfering the event from the frontend to the backend. This means the logger data
+format is a "TRUE" YBOS format. Use of the standard YBOS library is then possible
+when analyzing the logged data. Examples of extraction of data from YBOS banks are shown 
+in the @ref DataAnalyzer section.
+
+\htmlonly
+<script type="text/javascript">
+pages("FE_Deferred_Transition",  "FE_section_index","FE_Super_Event", "FE_bank_construction","" ); // back index next {top bottom}
+// section parameters: last section; top of this section; next section
+sections("RunControl","FrontendOperation","Utilities");
+</script>
+\endhtmlonly
+\latexonly
+@ref  FE_Deferred_Transition "previous page" - @ref FE_section_index - @ref Top - @ref  FE_Super_Event "next page"
+\endlatexonly
+<br>
+\anchor end
+<!-- End of page  FE_bank_construction  -->
+*/
+
+
+
+/*!  \page FE_Super_Event Super-Event
+
+<br>
+\htmlonly
+ 
+<script type="text/javascript">
+pages( "FE_bank_construction",  "FE_section_index","FE_Event_Builder","FE_Super_Event", "end" ); // back index next {top bottom}
+// section parameters: last section; top of this section; next section
+sections("RunControl","FrontendOperation","Utilities");
+</script>
+\endhtmlonly
+\latexonly
+@ref FE_bank_construction "previous page" - @ref FE_section_index - @ref Top - @ref FE_Event_Builder "next page"
+\endlatexonly
+<br>
+
+
+The Super-Event is an option implemented in the frontend code in order to reduce the
+amount of data to be transfered to the backend computer(s) by removing the bank header for each event
+constructed. It is not applicable to FIXED format events. 
+
+In other words, when an equipment readout in either \em MIDAS or
+\em YBOS  bank format is complete, the event is composed of the bank header
+followed by the data section.
+
+The overhead in bytes of the bank structure is 16 bytes for bk_init(),
+20 bytes for bk_init32() and ybk_init(). If the data section size is close to
+the number above, the data transfer as well as the data storage has an non-negligible
+overhead. To address this problem, the equipment can be set up to generate a so called
+<b> Super-Event </b>  which is an event composed of the initial standard bank header for the
+first event of the super-event, and up to the @ref  FE_tbl_NumSubevents "number of sub-events"
+maximum successive data sections before the closing of the bank.
+
+@section FE_Super_Event_example Super-Event Example
+To demonstrate the use of the super-event, consider the following example:
+
+- Define equipment to be able to generate the \b Super-Event 
+  \code
+  { "GE",                 // equipment name 
+      2, 0x0002,            // event ID, trigger mask 
+      "SYSTEM",             // event buffer 
+  #ifdef USE_INT
+      EQ_INTERRUPT,         // equipment type 
+  #else
+      EQ_POLLED,            // equipment type 
+  #endif
+      LAM_SOURCE(GE_C, LAM_STATION(GE_N)), // interrupt source 
+      "MIDAS",              // format 
+      TRUE,                 // enabled 
+      RO_RUNNING,           // read only when running 
+      200,                  // poll for 200ms 
+      0,                    // stop run after this event limit 
+      1000,                 // -----> number of sub events <-----  enable Super-event
+      0,                    // don't log history 
+      "", "", "",
+      read_ge_event,        // readout routine 
+       ,
+      ...
+  \endcode
+
+@section FE_Super_Event_readout Example Readout code for Super-Event
+
+Set up the readout function for Super-Event  collection, e.g. 
+  \code
+  //-- Event readout
+  // Global and fixed -- Expect NWORDS 16bits data readout per sub-event
+  #define NWORDS 3
+
+  INT read_ge_event(char *pevent, INT offset)
+  {
+    static WORD *pdata;
+
+    // Super-event structure 
+    if (offset == 0)
+    {
+      // FIRST event of the Super-event 
+      bk_init(pevent);
+      bk_create(pevent, "GERM", TID_WORD, &pdata);
+
+    else if (offset == -1)
+    {
+      // close the Super-event if offset is -1
+      bk_close(pevent, pdata);
+
+      // End of Super-Event
+      return bk_size(pevent);
+
+
+    // read GE sub-event (ADC) 
+    cam16i(GE_C, GE_N, 0, GE_READ, pdata++);
+    cam16i(GE_C, GE_N, 1, GE_READ, pdata++);
+    cam16i(GE_C, GE_N, 2, GE_READ, pdata++);
+
+    // clear hardware 
+    re_arm_ge(); 
+
+    if (offset == 0)
+    {
+      // Compute the proper event length on the FIRST event in the Super-Event
+      // NWORDS correspond to the !! NWORDS WORD above !!
+      // sizeof(BANK_HEADER) + sizeof(BANK) will make the 16 bytes header
+      // sizeof(WORD) is defined by the TID_WORD in bk_create()
+
+      return NWORDS * sizeof(WORD) + sizeof(BANK_HEADER) + sizeof(BANK);
+
+    else
+      // Return the data section size only
+      // sizeof(WORD) is defined by the TID_WORD in bk_create()
+
+      return NWORDS * sizeof(WORD);
+  \endcode
+  <br>
+
+As shown in the example above:
+<ul>
+<li> For the \b first event, the correct  size of the event <b>including the header</b> must be calculated and returned
+<li> \b Subsequent events return the size of the <b>data only</b>, not the header. 
+</ul>
+
+The input  parameter "offset" is used to indicate whether the event is the first, last or intermediate.
+After the last event, the bank is closed.
+<br>    
+The encoding of the data section is left to the user. If the number of words
+per sub-event is fixed (i.e. NWORDS in the above example), the sub-event extraction 
+by an analyzer is simple. In the case of
+variable sub-event length, it is necessary to tag the first or the last word of
+each sub-event.The contents of the sub-event is the choice of the user.
+
+  \b Note:
+  - Since no particular tagging is applied to the Super-Event by the Midas transfer 
+    mechanism, <em> the user must provide code in the backend analyzer to interpret the contents
+    of the Super-Event bank(s)</em>.
+
+  -  If the  Super-Event  is composed by an equipment on a remote processor 
+    running a different \em Endian mode than the backend processor,
+    it would be necessary to <em>ensure the data type consistency throughout the
+    <b> Super-Event </b> </em> in order to guarantee the proper byte-swapping of the data content.
+    @ref DA_Byte_Swap_Macros are available for this purpose.
+
+  - It may be convenient to change the \b time-stamp of the super-event 
+         (see @ref timestamp "example" of use of Macro)
+
+  -  The <b> event rate </b> in the equipment statistics will <em> indicate the rate of sub-events</em>. 
+
+<br>
+\htmlonly
+<script type="text/javascript">
+pages( "FE_bank_construction",  "FE_section_index","FE_Event_Builder","FE_Super_Event", "" ); // back index next {top bottom}
+// section parameters: last section; top of this section; next section
+sections("RunControl","FrontendOperation","Utilities");
+</script>
+\endhtmlonly
+\latexonly
+@ref FE_bank_construction "previous page" - @ref FE_section_index - @ref Top - @ref FE_Event_Builder "next page"
+\endlatexonly
+<br>
+\anchor end
+<!-- End of page  FE_Super_Event  -->
+*/
+
+
+<!-- eventbuilder.dox  Event_Builder  page comes next --->
+
+
+
+/*!  \page FE_Slow_Control_system Slow Control System
+
+<br>
+\htmlonly
+ 
+<script type="text/javascript">
+pages("FE_Event_Builder", "FE_section_index","FE_event_buffer_size","FE_Slow_Control_system", "end" ); // back index next {top bottom}
+// section parameters: last section; top of this section; next section
+sections("RunControl","FrontendOperation","Utilities");
+</script>
+\endhtmlonly
+\latexonly
+@ref FE_Event_Builder "previous page" - @ref FE_section_index - @ref Top - @ref FE_event_buffer_size "next page"
+\endlatexonly
+<br>
+
+
+
+Instead of talking directly to each other, frontend and control programs exchange
+information through the ODB. Each slow control equipment gets a corresponding
+ODB tree under /Equipment. This tree contains variables needed to control the
+equipment as well as variables measured by the equipment.
+In case of a high voltage equipment this is a Demand array which contains
+voltages to be set, a Measured array which contains read back voltages and a
+Current array which contains the current drawn from each channel.
+To change the voltage of a channel, a control program writes to the Demand
+array the desired value.
+This array is connected to the high voltage frontend via a ODB hot-link.
+Each time it gets modified, the frontend receives a notification and sets
+the new value. In the other direction the frontend continuously reads the
+voltage and current values from all channels and updates the according ODB
+arrays if there has been a significant change.
+This design has a possible inconvenience due to the fact that ODB is the key
+element of that control. Any failure or corruption of the database can
+result in wrong driver control. Therefore it is not recommended to use
+this system to control systems that need redundancy for safety purposes.
+On the other hand this system has several advantages:
+
+- The control program does not need any knowledge of the frontend,
+  it only talks to the ODB.
+- The control variables only exist at one place that guarantees consistency
+  among all clients.
+- Basic control can be done through ODBEdit without the need of a special
+  control program.
+- A special control program can be tested without having a frontend running.
+- In case of n frontend and m control programs, only n+m network
+connections are needed instead of n*m connection for point-to-point connections.
+Since all slow control values are contained in the ODB, they get automatically
+dumped to the logging channels.
+The slow control frontend uses the same framework as the normal frontend and
+behaves similar in many respects.
+They also create periodic events that contain the slow control variables and are
+logged together with trigger and scaler events. The only difference is that a
+routine is called periodically from the framework that has the task to
+read channels and to update the ODB.
+To access slow control hardware, a two-layer driver concept is used.
+The upper layer is a "class driver", which establishes the connection to the
+ODB variables and contains high level functionality like channel limits,
+ramping etc. It uses a "device driver" to access the channels.
+These drivers implement only very simple commands like "set channel"
+and "read channel". The device drivers themselves can use bus drivers like
+RS232 or GPIB to control the actual device.
+ 
+ * <center> Class driver, Device and Bus driver in the slow control system
+ *  \image html classes2.jpg
+ *  \image latex classes2.eps "Class driver, Device and Bus driver in the slow control system" width=12cm
+ * </center> 
+
+The separation into class and device drivers has the advantage that it is
+very easy to add new devices, because only the simple device driver needs
+to be written. All higher functionality is inherited from the class driver.
+The device driver can implement richer functionality,
+depending on the hardware. For some high voltage devices there is a current
+read-back for example.
+This is usually reflected by additional variables in the ODB,
+i.e. a Current array. Frontend equipment uses exactly one class driver, but a
+class driver can use more than one device driver.
+This makes it possible to control
+several high voltage devices for example with one frontend in one equipment.
+The number of channels for each device driver is defined in the slow
+control frontend.
+Several equipment with different class drivers can be defined in a
+single frontend.
+
+Slow Control variables can be later accessed through the web using the 
+midas page (@ref RC_mhttpd_task, @ref Equipment_page). This can be done setting the
+variable names under the directory Settings of the corresponding equipment. The variable description is given under @ref History_System. The @ref History_page will also be automatically activated if the application 
+@ref F_mlogger_task is running.
+
+\code
+Key name                        Type    #Val  Size  Last Opn Mode Value
+---------------------------------------------------------------------------
+Epics                           DIR
+    Settings                    DIR
+        Channels                DIR
+            Epics               INT     1     4     25h  0   RWD  3
+        Devices                 DIR
+            Epics               DIR
+                Channel name    STRING  10    32    25h  0   RWD  
+                                        [0]             GPS:VAR1
+                                        [1]             GPS:VAR2
+                                        [2]             GPS:VAR3
+        Names                   STRING  10    32    17h  1   RWD  
+                                        [0]             Current
+                                        [1]             Voltage
+                                        [2]             Watchdog
+        Update Threshold MeasureFLOAT   10    4     17h  0   RWD  
+                                        [0]             2
+                                        [1]             2
+                                        [2]             2
+    Common                      DIR
+        Event ID                WORD    1     2     17h  0   RWD  3
+        Trigger mask            WORD    1     2     17h  0   RWD  0
+        Buffer                  STRING  1     32    17h  0   RWD  SYSTEM
+        Type                    INT     1     4     17h  0   RWD  4
+        Source                  INT     1     4     17h  0   RWD  0
+        Format                  STRING  1     8     17h  0   RWD  FIXED
+        Enabled                 BOOL    1     4     17h  0   RWD  y
+        Read on                 INT     1     4     17h  0   RWD  121
+        Period                  INT     1     4     17h  0   RWD  60000
+        Event limit             DOUBLE  1     8     17h  0   RWD  0
+        Num subevents           DWORD   1     4     17h  0   RWD  0
+        Log history             INT     1     4     17h  0   RWD  1
+        Frontend host           STRING  1     32    17h  0   RWD  hostname
+        Frontend name           STRING  1     32    17h  0   RWD  Epics
+        Frontend file name      STRING  1     256   17h  0   RWD  feepic.c
+    Variables                   DIR
+        Demand                  FLOAT   10    4     0s   1   RWD  
+                                        [0]             1.56
+                                        [1]             120
+                                        [2]             87
+        Measured                FLOAT   10    4     2s   0   RWD  
+                                        [0]             1.56
+                                        [1]             120
+                                        [2]             87
+    Statistics                  DIR
+        Events sent             DOUBLE  1     8     17h  0   RWDE 26
+        Events per sec.         DOUBLE  1     8     17h  0   RWDE 0
+        kBytes per sec.         DOUBLE  1     8     17h  0   RWDE 0
+\endcode 
+
+
+\todo more recent examples, description needed for slow control system
+
+Example of readout code:
+
+\code
+    ...
+    "FIXED",                   /* format */
+    ...
+    cd_hv_read,                 /* readout routine */
+    cd_hv,                      /* class driver main routine */
+    hv_driver,                  /* device driver list */
+    NULL,                       /* init string */
+    },
+\endcode
+\code
+INT cd_hv_read(char *pevent, int offset)
+{
+   float *pdata;
+   DWORD *pdw;
+   HV_INFO *hv_info;
+   EQUIPMENT *pequipment;
+
+   pequipment = *((EQUIPMENT **) pevent);
+   hv_info = (HV_INFO *) pequipment->cd_info;
+
+   if (hv_info->format == FORMAT_FIXED) {
+      memcpy(pevent, hv_info->demand, sizeof(float) * hv_info->num_channels);
+      pevent += sizeof(float) * hv_info->num_channels;
+
+    memcpy(pevent, hv_info->measured, sizeof(float) * hv_info->num_channels);
+      pevent += sizeof(float) * hv_info->num_channels;
+
+      memcpy(pevent, hv_info->current, sizeof(float) * hv_info->num_channels);
+      pevent += sizeof(float) * hv_info->num_channels;
+
+      return 3 * sizeof(float) * hv_info->num_channels;
+   }
+ ....
+}
+\endcode
+<br>
+
+<br>
+\htmlonly
+<script type="text/javascript">
+pages("FE_Event_Builder", "FE_section_index","FE_event_buffer_size","FE_Slow_Control_system", "" ); // back index next {top bottom}
+// section parameters: last section; top of this section; next section
+sections("RunControl","FrontendOperation","Utilities");
+</script>
+\endhtmlonly
+\latexonly
+@ref FE_Event_Builder "previous page" - @ref FE_section_index - @ref Top - @ref FE_event_buffer_size "next page"
+\endlatexonly
+<br>
+
+\anchor end
+<!-- End of page  FE_Slow_Control_system  -->
+*/
+
+
+
+
+/*!  \page   FE_event_buffer_size Increase the Event Buffer Size(s)
+
+<br>
+\htmlonly
+<script type="text/javascript">
+pages("FE_Slow_Control_system","FE_section_index","FE_Appendices","FE_event_buffer_size", "end" ); // back index next {top bottom}
+// section parameters: last section; top of this section; next section
+sections("RunControl","FrontendOperation","Utilities");
+</script>
+\endhtmlonly
+\latexonly
+@ref FE_Slow_Control_system "previous page" - @ref FE_section_index - @ref Top - @ref FE_Appendices "next page"
+\endlatexonly
+
+
+<hr>
+<br>
+
+
+By default the event buffer is named <i>SYSTEM</i>.
+  Its default size is 2MB. This new parameter is provided to optimize the memory usage
+  at the frontend level in case large data transfer is needed.
+  This method works for all MIDAS buffers, except for the ODB buffer, where the size has to be
+  specified at creation time (see  @ref RC_odbedit_create_ODB).
+<br>
+ There is no need to
+  increase the SYSMSG.SHM buffer as it is used only for messages.
+<br>
+To increase the size of the event buffer(s): 
+
+ -# Shutdown all MIDAS programs, and @ref RC_odbedit_save "save the ODB contents" if necessary.
+ -# Delete the old .SYSTEM.SHM files located in the directory
+  specified by  the @ref Q_Linux_Exptab "exptab file" for your experiment. 
+  (use \b ipcrm (linux)  for shared memory segment removal).
+ -# Run odbedit (which @ref RC_odbedit_create_ODB "creates the ODB").
+\code
+$odbedit
+[local:midas:Stopped]/>cd /Experiment
+[local:midas:Stopped]/>ls "Buffer Sizes"
+\endcode
+
+        - If the Key "Buffer Sizes" does not exist, create this key, then create a 
+ DWORD key of  the buffer name to be increased, and set it to the desired value, e.g.
+\code
+[local:midas:S]/Experiment>mkdir "Buffer Sizes"
+[local:midas:S]/Experiment>cd "Buffer Sizes"
+[local:midas:S]/Buffer Sizes>create DWORD SYSTEM
+[local:midas:S]/Buffer Sizes>set SYSTEM 0x1000000
+\endcode
+        - If the SYSTEM key exists already, just set it to the desired size. 
+
+ -# @ref RC_odbedit_load "Reload the ODB contents" if necessary.
+
+\anchor end
+
+<br>
+\htmlonly
+<script type="text/javascript">
+pages("FE_Slow_Control_system","FE_section_index","FE_Appendices","FE_event_buffer_size", "" ); // back index next {top bottom}
+// section parameters: last section; top of this section; next section
+sections("RunControl","FrontendOperation","Utilities");
+</script>
+\endhtmlonly
+\latexonly
+@ref FE_Slow_Control_system "previous page" - @ref FE_section_index - @ref Top - @ref FE_Appendices "next page"
+\endlatexonly
+<!-- end of page  FE_event_buffer_size
+
+   Next ...  FE_Appendices   -->
+*/

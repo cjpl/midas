@@ -1,0 +1,325 @@
+/*! @page FrontendOperation Frontend Operation
+
+<br>
+\htmlonly
+<script type="text/javascript">
+pages(  "RC_mstat","FE_section_index", "FE_ODB_equipment_tree","FrontendOperation","end" ); // back index next {top bottom}
+sections("RunControl","FrontendOperation","Utilities"); // last section; top of this section; next section
+</script>
+\endhtmlonly
+\latexonly
+@ref  RC_mstat "previous page"  - @ref Top -   @ref Organization "Map" -  @ref   FE_ODB_equipment_tree "next page"
+\endlatexonly
+<br>
+
+@section FE_Intro Introduction
+
+The \b terms that are needed for a discussion of the frontend will be introduced here. The features of a typical 
+frontend program will then be explained by reference to some of the examples included with the Midas package. 
+<br>
+
+@subsection FE_program Frontend Program
+
+A "frontend program" refers to a  @ref FE_frontend_task running on a particular computer which has access to hardware equipment 
+in use by the experiment.  The frontend program (image) consists of  
+ - a fixed  <em>experiment-independent system framework</em> (mfe.c)
+ - a <em>user part</em> (frontend.c)
+
+A set of templates for the user part is provided in the Midas package. The hardware access is only 
+apparent in the user part ( referred to here as frontend.c, but the user may select any name). The system 
+framework is contained in the file mfe.c, which is part of the Midas package. The term "frontend code" 
+in this document usually refers to the user part, since the system framework is fixed. 
+<br>
+
+The frontend task, once built, is run as described as follows.
+
+@subsection FE_frontend_task frontend  - Midas Frontend application
+
+The "frontend" task is built by the user and may have any name the user chooses
+(e.g. fecamac, fegpib). The purpose of a @ref FE_program is to collect data from 
+hardware and transmit this information to a central place where data logging and 
+analysis can be performed. This task is achieved with 
+
+ -# a specific @ref Frontend_code  written by the user describing the sequence of action to acquire
+the hardware data and 
+ -#  a framework code handling the data flow control, data transmission and run
+control operation.
+The framework code (mfe.c) has the following arguments:
+- <b> Arguments </b>
+  - [-h hostname ] : host name (see @ref RC_odbedit_task)
+  - [-e exptname ] : experiment name (see @ref RC_odbedit_task)
+  - [-D ] : Become a Daemon.
+  - [-O ] : Become a Daemon but keep stdout 
+
+  - [-d ] : Used for debugging the frontend
+  - [-i index] : Set frontend index (used with @ref FE_mevb_task . See also @ref  FE_principle_eb).
+
+Note that the new argument (-i index) has been introduced (in Midas versions 1.9.5 and later) to
+facilitate the multiple frontend configuration operation required for the @ref FE_Event_Builder.
+
+- <b> Usage </b>
+
+
+Start the application as a daemon, using the default host, experiment and port :
+\code
+e.g. fecamac -D
+\endcode
+Start the application superceding the default host, experiment and port:
+\code
+
+e.g. fegpib -e exp218 -h isdaq10 -p 7077 -D
+\endcode
+
+
+@subsection FE_hw_equipment Hardware Equipment
+Examples of hardware equipment accessed by the frontend are ADC modules, TDC modules, Scaler modules etc. 
+
+@subsection FE_drivers Hardware Drivers
+
+The frontend is usually linked to a \b driver for the particular hardware in use. Dedicated header and library 
+files (drivers) for hardware access 
+to CAMAC, VME, Fastbus, GPIB and RS232 are part of the Midas distribution set.
+Several libraries and drivers exist for the various bus systems.
+See @ref FE_Hardware.
+
+The drivers are located in the drivers directory of the MIDAS distribution.
+Some libraries consist only of a header file, others of a C file plus a header file.
+The file names usually refer to the manufacturer abbreviation followed by
+the model number of the device. The libraries are continuously expanding to widen
+Midas support.
+
+ESONE standard routines for CAMAC are supplied and permit the re-use of the frontend code
+among different platforms as well as among different CAMAC hardware interfaces, without
+modification of the code.
+
+
+
+@subsection FE_sw_equipment Software Equipment
+Under MIDAS, hardware equipment from the experiment is structured into software entities also called "Equipments". 
+A software "Equipment" refer to a collection of hardware equipment (devices) that are grouped together for convenience, 
+such as 
+ - a set of high voltage supplies 
+ - one or more crates of digitizing electronics e.g. ADCs and TDCs
+ - a set of scalers
+@anchor Equipment_definition
+
+From a software point of view, we keep this same term, i.e. "Equipment", to refer to the means of collecting the 
+data related to this set of hardware equipment. 
+<br>
+Thus the term <b>"Equipment"</b> refers to <em> a
+single or a collection of sub-tasks meant to collect and regroup logical or physical data under a single and 
+uniquely identified event.</em> 
+<br>
+@anchor Event_definition
+An <b>"event"</b> is thus a collection of data sent into the data stream by an "Equipment".
+<br>
+
+@subsection FE_multi Multiple Equipments and Frontends
+
+A single frontend may contain several Equipments. For example, an experiment may have a frontend to service 
+crates of ADC, TDC and Scaler modules. The ADC and TDC modules may be grouped together in 
+one Equipment, and the scalers in a second Equipment.
+
+In complex experimental setups, several frontends controlling different sets of hardware equipment may be attached 
+simultaneously to a given experiment, i.e. they share the same Online Database. For example, one frontend might 
+service the VME hardware, while another might service the CAMAC hardware.
+
+
+@subsection FE_features Frontend Features
+
+A typical frontend will:
+
+ -    Register the given Equipment list(s) to a specific Midas experiment.
+ -    Provide the mean of collecting data from the hardware source defined by each Equipment read function.
+ -    Gather these data in one of the supported formats (i.e. Fixed format or in Midas or YBOS data bank(s)) for each Equipment.
+ -    Send these data banks to the buffer manager either locally or remotely.
+ -    Periodically collect statistics of the acquisition task, and send them to the Online Database.
+
+ 
+@subsection FE_data_transfer Data transfer from the frontend
+The system frontend framework (mfe.c) sends events to the buffer manager and optionally a 
+copy to the Online Database (ODB). A "Data cache" in the frontend and on the server side 
+reduces the amount of network operations pushing the transfer speed closer to the physical 
+limit of the network configuration.
+
+@subsubsection FE_optimize_transfer Optimizing data transfer
+A frontend's data transfer can be optimized for all kinds of experiments. Those where <b> multiple small events </b> 
+are produced can have the data built into  @ref FE_Super_Event "super-events", by removing the bank headers to 
+reduce the amount of data transferred. 
+
+Other frontends that produce <b> very large amounts of data in one bank </b> (too large to be
+transferred as a single bank), can transmit the data bank as a number 
+of @ref FE_fragmented_event "fragments", which are combined into
+a single bank by the system code. 
+
+An  \ref FE_Event_Builder "event builder" mechanism is also available, 
+that can combine events from different into a composite event.    
+
+@subsection FE_event_trigger Frontend event triggers
+
+The <b> data collection </b> in the frontend framework can be \b triggered by several mechanisms.
+Currently the frontend supports five different kind of event trigger:
+<ul>
+<li>   <b> Periodic events: </b> <br>
+Scheduled event based on a fixed time interval. They can be used to read information such as scaler values, temperatures etc.
+<li>   <b> Polled events: </b> <br> 
+Hardware signal read continuously for a certain time period. If the signal is TRUE, the Equipment readout will be triggered.
+<li>   <b>  Interrupt events: </b> <br> 
+Generated by particular hardware device supporting interrupt mode (e.g. LAM if CAMAC).
+<li>   <b>  Slow Control events: </b> <br> 
+Special class of events that are used in the slow control system.
+<li>   <b>  Manual events:  </b> <br> 
+Triggered by a remote procedure call (RPC). The web interface provides an extra 
+button for manual triggering by the user.
+</ul>
+
+
+<span class="note">Each of these types of trigger can be enabled or activated for a particular experiment's  
+@ref RC_Run_States_and_Transitions "run state, transition state" or a combination of any 
+of them </span>. 
+
+Examples such as 
+ - <em> read scaler event <b>only when running</b> </em> or
+ - <em> read periodic event if the run state is <b> not paused  and on all transitions</b>   </em>
+
+are possible (see @ref FE_tbl_ReadOn "RO_Flags" ).
+<br>
+A frontend can also cause a transition to be \b delayed until a particular condition is met 
+(see  @ref FE_Deferred_Transition ).
+
+
+@subsection FE_equipment_readout_function Event Readout Functions
+<em>Associated with each Equipment </em>is an  @ref FE_readout_routine "readout function" which <em> runs when the Equipment is triggered</em>.
+<br>This function performs
+the actions required at the Equipment trigger, for example reading out the Equipment data and packing it into banks.
+
+
+@section FE_Equipment_list Equipment List
+
+<em>The user section (frontend.c) must have an <b>Equipment List</b> for each defined Equipment</em>, organized as a 
+structure definition.
+ One such structure is needed for each of the Equipments defined in the frontend. 
+Each defined Equipment is created in the Online Database when the frontend program first runs. 
+
+The specifics of the  @ref FE_eqdec "Equipment List structure" is described below.
+
+ - \subpage FE_ODB_equipment_tree
+ - \subpage FE_eqdec 
+ - \subpage FE_table 
+ - \subpage Frontend_code
+
+
+<br>
+\htmlonly
+<script type="text/javascript">
+pages(  "RC_mstat","FE_section_index", "FE_ODB_equipment_tree","FrontendOperation","" ); // back index next {top bottom}
+sections("RunControl","FrontendOperation","Utilities"); // last section; top of this section; next section
+</script>
+\endhtmlonly
+\latexonly
+@ref  RC_mstat "previous page"  - @ref Top -   @ref Organization "Map" -  @ref   FE_ODB_equipment_tree "next page"
+\endlatexonly
+<br>
+\anchor end
+<!--- end of page FrontendOperation  -->
+*/
+ 
+/*! @page FE_ODB_equipment_tree The ODB /Equipment tree
+<br>
+\htmlonly
+<script type="text/javascript">
+pages(  "FrontendOperation","FE_section_index",  "FE_eqdec", "FE_ODB_equipment_tree","end" ); // back index next {top bottom}
+sections("RunControl","FrontendOperation","Utilities"); // last section; top of this section; next section
+</script>
+\endhtmlonly
+\latexonly
+@ref  FrontendOperation "previous page"  - @ref Top -   @ref Organization "Map" -  @ref   FE_eqdec "next page"
+\endlatexonly
+<br>
+
+
+Every frontend create a entry under the /Equipment tree. The  @ref FE_tbl_EqName "name of the sub-tree" is
+taken from the frontend @ref FE_eqdec "equipment declaration". The following example shows
+the /Equipment tree of an experiment where a large number of Equipments have been defined:
+
+Example:
+\code
+$odbedit
+[local:midas:S]/>ls -lt /Equipment 
+Key name                        Type    #Val  Size  Last Opn Mode Value
+---------------------------------------------------------------------------
+HistoCheck                      DIR
+DSpecCheck                      DIR
+HistoPoll                       DIR
+HistoEOR                        DIR
+DSpecEOR                        DIR
+Scaler                          DIR
+SuconMagnet                     DIR
+TempBridge                      DIR
+Cryostat                        DIR
+Meters                          DIR
+RFSource                        DIR
+DSPec                           DIR
+\endcode  
+
+Each of these "Equipment" directories contain several subdirectories which
+by default the system creates.
+  - Common : Contains the system information. Should not be overwritten by the user.
+  - Variables : Contains the equipment data if enabled (see below).
+  - Settings : Contains the equipment specific information that the user may want to
+  maintain. In the case of a @ref Slow_Control_system equipment, extended tree
+  structure is created by the system.
+  - Statistics : Contains equipment statistics information such as event taken, event rate, data rate.
+
+\code 
+
+ 
+[local:S]ls -l -r /equipment/scaler
+Key name                        Type    #Val  Size  Last Opn Mode Value
+---------------------------------------------------------------------------
+Scaler                          DIR
+    Common                      DIR
+        Event ID                WORD    1     2     16h  0   RWD  1
+        Trigger mask            WORD    1     2     16h  0   RWD  256
+        Buffer                  STRING  1     32    16h  0   RWD  SYSTEM
+        Type                    INT     1     4     16h  0   RWD  1
+        Source                  INT     1     4     16h  0   RWD  0
+        Format                  STRING  1     8     16h  0   RWD  MIDAS
+        Enabled                 BOOL    1     4     16h  0   RWD  y
+        Read on                 INT     1     4     16h  0   RWD  377
+        Period                  INT     1     4     16h  0   RWD  1000
+        Event limit             DOUBLE  1     8     16h  0   RWD  0
+        Num subevents           DWORD   1     4     16h  0   RWD  0
+
+        Log history             INT     1     4     16h  0   RWD  0
+        Frontend host           STRING  1     32    16h  0   RWD  midtis03
+        Frontend name           STRING  1     32    16h  0   RWD  feLTNO
+        Frontend file name      STRING  1     256   16h  0   RWD  C:\online\sc_ltno.c
+    Variables                   DIR
+        SCLR                    DWORD   6     4     1s   0   RWD  
+                                        [0]             0
+                                        [1]             0
+                                        [2]             0
+                                        [3]             0
+                                        [4]             0
+                                        [5]             0
+        RATE                    FLOAT   6     4     1s   0   RWD  
+                                        [0]             0
+                                        [1]             0
+                                        [2]             0
+
+                                        [3]             0
+                                        [4]             0
+                                        [5]             0
+    Statistics                  DIR
+        Events sent             DOUBLE  1     8     1s   0   RWDE 370
+        Events per sec.         DOUBLE  1     8     1s   0   RWDE 0.789578
+        kBytes per sec.         DOUBLE  1     8     1s   0   RWDE 0.0678543
+\endcode  
+
+These subdirectories will be discussed in more detail in the following sections.
+
+\htmlonly <img ALIGN="left" alt="previous.gif" src="previous.gif"> \endhtmlonly 
+@ref  FrontendOperation "previous page"  - @ref Top -   @ref Organization "Map" - @ref FE_eqdec "next page"
+\htmlonly <img alt="next.gif" src="next.gif"> \endhtmlonly
+*/

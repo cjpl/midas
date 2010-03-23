@@ -1,0 +1,263 @@
+/*! @page RC_Example_Custom_Webpages Examples of Custom Webpages
+
+<br>
+\htmlonly
+<script type="text/javascript">
+// pages parameters: back index next {top bottom}
+pages( "RC_mhttpd_Custom_page", "RC_section_index","RC_BNMQR_status","RC_Example_Custom_Webpages",  "end" );
+sections("Features", "RunControl","FrontendOperation"); // last section; top of this section; next section
+</script>
+\endhtmlonly
+\latexonly
+ @ref  RC_mhttpd_Custom_page     "previous page" - @ref Top - @ref Organization "Map"  - @ref   RC_BNMQR_status  "next page"
+\endlatexonly
+<br>
+
+Examples of custom webpages :
+ 
+ -  \subpage RC_BNMQR_status
+ -  \subpage RC_MEG_Gas_Page
+ -  \subpage RC_Ebit_custom_page
+ -  \subpage RC_Mpet_custom_page
+ -  \subpage RC_T2K_Gas_Page
+\anchor end
+<!-- End of page  RC_Example_Custom_Webpages -->
+*/
+
+/*! @page RC_BNMQR_status Custom Status Pages for experiments BNMR and BNQR 
+
+<br>
+\htmlonly
+<script type="text/javascript">
+// pages parameters: back index next {top bottom}
+pages( "RC_Example_Custom_Webpages", "RC_section_index","RC_MEG_Gas_Page","RC_BNMQR_status",  "end" );
+sections("Features", "RunControl","FrontendOperation"); // last section; top of this section; next section
+</script>
+\endhtmlonly
+\latexonly
+ @ref RC_Example_Custom_Webpages     "previous page" - @ref Top - @ref Organization "Map"  - @ref  RC_MEG_Gas_Page  "next page"
+\endlatexonly
+<br>
+
+
+The webpages shown below replace the Midas default status pages for the BNMR and BNQR experiments at TRIUMF.
+A single file (custom_status.html) is used for the custom status pages of both experiments. The colours are 
+different to avoid confusion, since the two experiments may be run simultaneously
+with the main status page of each displayed on two adjacent consoles.  Javascript is used extensively in the
+.html file. Colours are used to indicate the status of various parameters. Both Custom buttons and the regular 
+buttons (Stop, Status, Messages etc.) are used.  
+
+In the image below the BNMR experiment is \b running, while the BNQR experiment is \b stopped.
+Note that with the BNQR run stopped, various PPG Mode buttons appear which are not available when running
+(compare with BNMR). These buttons allow the user to select the experimental mode. Various
+alias links allow the user to quickly access experimental parameters.
+
+<!--
+* <center> Custom Status Pages for the BNMR and BNQR experiments at TRIUMF 
+*  \image latex bnmr_bnqr_status_overlap.eps "bnmr and bnqr experiments custom status pages" width=13.25cm
+*  \image html bnmr_bnqr_status_overlap.gif
+*  </center>
+-->
+
+* <center> Custom Status Page for the BNMR experiment at TRIUMF 
+*  \image latex bnmr.eps "bnmr and bnqr experiments custom status pages" width=13.25cm
+*  \image html bnmr.png
+<br><br>
+   Custom Status Page for the BNQR experiment at TRIUMF 
+*  \image latex bnqr.eps "bnmr and bnqr experiments custom status pages" width=13.25cm
+*  \image html bnqr.png
+*  </center>
+
+
+<br>
+\htmlonly
+<script type="text/javascript">
+// pages parameters: back index next {top bottom}
+pages( "RC_Example_Custom_Webpages", "RC_section_index","RC_MEG_Gas_Page","RC_BNMQR_status",  "" );
+sections("Features", "RunControl","FrontendOperation"); // last section; top of this section; next section
+</script>
+\endhtmlonly
+\latexonly
+ @ref RC_Example_Custom_Webpages     "previous page" - @ref Top - @ref Organization "Map"  - @ref  RC_MEG_Gas_Page  "next page"
+\endlatexonly
+<br>
+\anchor end
+<!-- end of page  RC_BNMQR_status -->
+*/
+
+/*! @page  RC_MEG_Gas_Page Custom Page for MEG gas system
+
+<br>
+\htmlonly
+<script type="text/javascript">
+// pages parameters: back index next {top bottom}
+pages( "RC_BNMQR_status", "RC_section_index","RC_Ebit_custom_page","RC_MEG_Gas_Page",  "end" );
+sections("Features", "RunControl","FrontendOperation"); // last section; top of this section; next section
+</script>
+\endhtmlonly
+\latexonly
+ @ref  RC_BNMQR_status    "previous page" - @ref Top - @ref Organization "Map"  - @ref  RC_Ebit_custom_page  "next page"
+\endlatexonly
+<br>
+
+
+This page from the MEG experiment at PSI shows a complex gas system. This shows the use of "fills" and "labels".
+<br>
+The valves are represented as green circles. 
+If they are clicked, they close and become red (provided the user successfully supplied the correct password).
+<br>
+* <center> MEG gas system
+*  \image latex Capture_sgas.eps  "MEG Gas System" width=13.25cm
+*  \image html Capture_sgas.png
+* </center>
+<br>
+\htmlonly
+<script type="text/javascript">
+// pages parameters: back index next {top bottom}
+pages( "RC_BNMQR_status", "RC_section_index","RC_Ebit_custom_page","RC_MEG_Gas_Page",  "" );
+sections("Features", "RunControl","FrontendOperation"); // last section; top of this section; next section
+</script>
+\endhtmlonly
+\latexonly
+ @ref  RC_BNMQR_status    "previous page" - @ref Top - @ref Organization "Map"  - @ref  RC_Ebit_custom_page  "next page"
+\endlatexonly
+<br>
+\anchor end
+<!-- end of  page RC_MEG_Gas_Page  -->
+*/
+
+/*! @page   RC_Ebit_custom_page Custom Page for Ebit Experiment
+<br>
+\htmlonly
+<script type="text/javascript">
+// pages parameters: back index next {top bottom}
+pages( "RC_MEG_Gas_Page", "RC_section_index", "RC_Mpet_custom_page","RC_Ebit_custom_page", "end");
+sections("Features", "RunControl","FrontendOperation"); // last section; top of this section; next section
+</script>
+\endhtmlonly
+\latexonly
+ @ref  RC_MEG_Gas_Page   "previous page" - @ref Top - @ref Organization "Map"  - @ref  RC_Mpet_custom_page  "next page"
+\endlatexonly
+<br>
+
+This custom page allows the experimenters to easily input the parameters for the TRIUMF Pulse Programmer 
+(pulse width, offset etc.) used to control the Ebit experiment at TRIUMF, by clicking on the links on the
+diagram. Each
+value is linked to a parameter in the ODB. Several different diagrams are available for the different
+experimental modes, which are selected by the Custom Buttons (1a,1b,1c).
+<br>
+Each line represents an output from the Pulse Programmer. The x-axis ( \b not to scale) 
+represents the time from when the cycle is started (T0). 
+The boxes on the left allow the polarity of the output signal to be reversed. 
+
+* <center> 
+*  \image  latex ebit_ppg.eps  "Ebit experiment PPG custom page" width=13.25cm
+*  \image html ebit_ppg.png
+* </center>
+
+
+<br>
+\htmlonly
+<script type="text/javascript">
+// pages parameters: back index next {top bottom}
+pages( "RC_MEG_Gas_Page", "RC_section_index", "RC_Mpet_custom_page","RC_Ebit_custom_page", "");
+sections("Features", "RunControl","FrontendOperation"); // last section; top of this section; next section
+</script>
+\endhtmlonly
+\latexonly
+ @ref  RC_MEG_Gas_Page   "previous page" - @ref Top - @ref Organization "Map"  - @ref  RC_Mpet_custom_page  "next page"
+\endlatexonly
+<br>
+\anchor end
+<!-- end of  RC_Ebit_custom_page -->
+*/
+
+
+/*! @page   RC_Mpet_custom_page Mpet Optics Custom Page
+<br>
+\htmlonly
+<script type="text/javascript">
+// pages parameters: back index next {top bottom}
+pages("RC_Ebit_custom_page" , "RC_section_index", "RC_T2K_Gas_Page",  "RC_Mpet_custom_page", "end");
+sections("Features", "RunControl","FrontendOperation"); // last section; top of this section; next section
+</script>
+\endhtmlonly
+\latexonly
+ @ref  RC_Ebit_custom_page   "previous page" - @ref Top - @ref Organization "Map"  - @ref   RC_T2K_Gas_Page "next page"
+\endlatexonly
+<br>
+
+
+
+This page shows the optics for the Mpet experiment at TRIUMF displaying the Lorenz steerer parameters.
+
+* <center> 
+*  \image  latex mpet_optics.eps  "Mpet Optics custom page" width=13.25cm
+*  \image html mpet_optics.png
+* </center>
+
+
+<br>
+\htmlonly
+<script type="text/javascript">
+// pages parameters: back index next {top bottom}
+pages("RC_Ebit_custom_page" , "RC_section_index", "RC_T2K_Gas_Page", "RC_Mpet_custom_page" , "");
+sections("Features", "RunControl","FrontendOperation"); // last section; top of this section; next section
+</script>
+\endhtmlonly
+\latexonly
+ @ref  RC_Ebit_custom_page   "previous page" - @ref Top - @ref Organization "Map"  - @ref   RC_T2K_Gas_Page "next page"
+\endlatexonly
+<br>
+\anchor end
+<!-- end of  RC_Mpet_custom_page  -->
+*/
+
+
+/*! @page   RC_T2K_Gas_Page Custom Pages designed for T2K gas system
+<br>
+\htmlonly
+<script type="text/javascript">
+// pages parameters: back index next {top bottom}
+pages( "RC_Mpet_custom_page" , "RC_section_index","RC_mhttpd_Custom_page",  "RC_T2K_Gas_Page" ,  "end");
+sections("Features", "RunControl","FrontendOperation"); // last section; top of this section; next section
+</script>
+\endhtmlonly
+\latexonly
+ @ref RC_Mpet_custom_page "previous page" - @ref Top - @ref Organization "Map"  - @ref RC_mhttpd_Custom_page "next page"
+\endlatexonly
+<br>
+
+Clicking on one of the valves produces a pop-up window (a flow-control valve A0FC2 is shown), allowing the set 
+value for the flow rate to be changed, and the valve to be opened or closed. Navigation 
+between the more than 20 different pages of this large gas system is done by clicking on one of the blue
+boxes. The pop-up windows are made using javascript. "Fills" are used to change the colour of
+the valves, and "Labels" are used to display the values of various parameters.
+
+* <center> T2K future Gas System: Gas Analyzer Page showing popup
+*  \image  latex gas_analyzer_pop.eps  "T2K Gas System: Gas Analyzer page" width=13.25cm
+*  \image html gas_analyzer_pop.png
+* </center>
+
+\anchor t2k_example_2
+The following image illustrates the use of hidden alias keys to load webpages from a clickable image map.
+
+* <center> Custom pages written for the T2K experiment 
+*  \image latex gas_combo.eps "Custom pages written for the T2K experiment" width=13.25cm
+*  \image html gas_combo.gif
+*  </center>
+<br>
+\htmlonly
+<script type="text/javascript">
+// pages parameters: back index next {top bottom}
+pages( "RC_Mpet_custom_page" , "RC_section_index",  "RC_mhttpd_Custom_page","RC_T2K_Gas_Page" , "");
+sections("Features", "RunControl","FrontendOperation"); // last section; top of this section; next section
+</script>
+\endhtmlonly
+\latexonly
+ @ref RC_Mpet_custom_page "previous page" - @ref Top - @ref Organization "Map"  - @ref RC_mhttpd_Custom_page "next page"
+\endlatexonly
+<br>
+\anchor end
+<!-- end of  RC_T2K_Gas_Page -->
+*/ 

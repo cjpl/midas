@@ -1,0 +1,528 @@
+/*! \page Quickstart Quick Start
+<!-- Section Quickstart -->
+
+<!-- Navigation -->
+<br>
+\htmlonly
+<script type="text/javascript">
+// pages params : back index next {top bottom}
+pages("I_Midas_system_picture","Q_section_index","Q_Linux" ,"Quickstart","end" );
+// sections params:   last section; top of this section; next section
+sections("Intro","Quickstart","Features");
+</script>
+\endhtmlonly
+\latexonly
+ - @ref I_Midas_system_picture "previous page" - @ref Intro "previous section" - @ref Top - @ref Organization "Map"  @ref Features "next section" - @ref  Q_Linux  "next page"
+\endlatexonly
+<br>
+<!-- End of Navigation -->
+
+@section Q_QuickStartIntro Introduction
+<STRONG>
+This page is under revision to better reflect the latest installation and 
+basic operation of the <b>Midas package</b>.
+</STRONG>
+ 
+These pages contain a step-by-step description of the installation procedure of 
+the Midas package on several platforms, as well as the procedure to run a demo 
+sample experiment. Once this is successful, the frontend or the analyzer can be moved 
+to another computer to test the remote connection capability.
+
+@section Q_SVN Midas Package Source (SVN and tarball)
+The <b>Midas source code</b> is subject to the <a href="http://www.gnu.org/copyleft/gpl.html">GPL</a>
+
+An <a href="http://savannah.psi.ch/viewcvs/trunk/?root=midas" > online SVN web site 
+</a> is available for the latest developments and for easy download. See specific
+instructions under \ref Q_Linux_Midas_Installation "Linux" or \ref Q_Windows_installation "Windows".
+
+The Midas Package source (tarball) and some binaries are also kept in
+<a href="http://midas.psi.ch/download" > PSI </a> or at 
+<a href="http://ladd00.triumf.ca/~daqweb/ftp/"> TRIUMF </a>.
+
+@section  Q_Quickstart_Installation Midas Installation
+
+Even though Midas is available for multiple platforms, presently only instructions for the following are available:
+<div align=center; style="font-size: 125%;">
+<ol>
+<li> \subpage Q_Linux "Midas Linux Installation"
+<li> \subpage Q_Windows "Midas Windows Installation"
+</ol>
+</div>
+
+<!-- Navigation -->
+<br>
+\htmlonly
+<script type="text/javascript">
+pages("I_Midas_system_picture","Q_section_index","Q_Linux" ,"Quickstart","" ); // back index next {top bottom}
+sections("Intro","Quickstart","Features"); // last section; top of this section; next section
+</script>
+\endhtmlonly
+\latexonly
+ - @ref I_Midas_system_picture "previous page" - @ref Intro "previous section" - @ref Top - @ref Organization "Map"  @ref Features "next section" - @ref  Q_Linux  "next page"
+\endlatexonly
+
+\anchor end
+<!-- End of page Quickstart  (Section Head) -->
+*/
+
+/*! \page Q_Linux  Quickstart Linux
+<!-- Navigation -->
+<br>
+\htmlonly
+<script type="text/javascript" src="http://ladd00.triumf.ca/~daqweb/doc/my_midas/html/navigation.js"></script>
+<script type="text/javascript">
+pages("Quickstart","Q_section_index","Q_Windows","Q_Linux" ,"end" ); // back index next {top bottom}
+sections("Intro","Quickstart","Features"); // last section; top of this section; next section
+</script>
+\endhtmlonly
+\latexonly
+@ref  Quickstart "previous page" - @ref Top  - @ref Organization "Map"  - @ref  Q_Windows  "next page"
+\endlatexonly
+<br>
+<!-- End of Navigation -->
+
+@section  Q_Linux_system_requirements System Requirements
+not yet specified
+
+@section  Q_Linux_installation Installation
+
+Throughout the following description the midas package is assumed to be installed under
+  the directory \b $HOME/packages/midas 
+  <br> while the experiment specific directory
+  is \b $HOME/online . The user name is <em>johnfoo</em>. 
+<br>
+
+@subsection  Q_Linux_Environment_Variables Environment Variables
+The following <b>Environment Variables</b> needs to be setup, e.g.:
+  @code
+  #!/bin/echo You must source
+  setenv CVS_RSH ssh
+  setenv MIDASSYS $HOME/packages/midas  
+  setenv ROOTSYS  $HOME/packages/root   ** do not setup ROOTSYS if NOT using ROOT
+  setenv MIDAS_EXPTAB $HOME/online/exptab ** if not setup,  defaults to  /etc/exptab
+  setenv PATH .:$MIDASSYS/linux/bin:$HOME/packages/roody/bin:$ROOTSYS/bin:$PATH
+  #end
+  @endcode
+  - mkdir $HOME/packages
+  - Logout and login again, or source .cshrc for the change to take effect.
+ \n
+
+@subsection  Q_Linux_Root_Installation ROOT Package Installation 
+
+For full Midas operation \b ROOT is needed for the data logging and analysis packages.
+
+  - Identify the Linux version: RH9 (Red Hat Linux 9), FC3 (Fedora Core 3),
+    RHEL4/SL4 (Red Hat Enterprise LInux 4/Scientific Linux 4): more /etc/redhat-release
+  - cd $HOME/packages
+  - ln -s /triumfcs/trshare/olchansk/root/root_vNNN_VVV root, where NNN is the 
+    latest available version of ROOT
+    ("ls -l /triumfcs/trshare/olchansk/root") and VVV is the
+    Linux version code (RH9, FC3, SL4, etc).
+    For example: /triumfcs/trshare/olchansk/root/root_v5.10.00_SL40
+  - Check that ROOT works: "echo $ROOTSYS", "$ROOTSYS/bin/root"
+  \n
+    <br>
+     <b>Note:</b> ROOT is not essential to run Midas. Some experiments use a custom logger or analyser. If ROOT
+      is NOT installed, the environment variable ROOTSYS must be removed:
+      @code
+      unsetenv ROOTSYS
+      @endcode
+      
+    <br>
+
+
+@subsection  Q_Linux_Midas_Installation Midas Package Installation
+
+The source code can be extracted from the
+   <a HREF="http://savannah.psi.ch/viewcvs/trunk/?root=midas" > SVN repository</a>.
+  Anonymous access is available under the username \b svn and password \b svn 
+  which may be required several time. The SVN web interface provides a quick 
+  \b tarball. This suggested extraction method is shown below.
+<br>
+The Midas package requires the \b mxml auxiliary package which can be found at the same 
+    SVN site as Midas. mxml and midas are extracted at the same directory level as follows:
+  @code
+  cd $HOME/packages
+  svn co svn+ssh://svn@savannah.psi.ch/afs/psi.ch/project/meg/svn/midas/trunk midas
+  svn co svn+ssh://svn@savannah.psi.ch/afs/psi.ch/project/meg/svn/mxml/trunk mxml
+  cd midas
+  make
+  ls $MIDASSYS/linux/bin   ... should contains odbedit and all the midas applications.
+  @endcode
+  \n
+
+@subsection  Q_Linux_Rome_Installation ROME Package Installation
+
+  The PSI ROME analysis package can be found at
+  <a href="http://midas.psi.ch/rome/index.html" >ROME analyzer</a>
+  The same extraction procedure as for the Midas package can be followed. For its operation please
+  refer to the <a href="http://midas.psi.ch/rome/index.html" >ROME web site</a>.
+  @code
+  cd $HOME/packages
+  svn co svn+ssh://svn@savannah.psi.ch/afs/psi.ch/project/meg/svn/rome/trunk rome
+  cd rome
+  make
+  @endcode
+  
+
+@subsection  Q_Linux_Roody_Installation ROODY Package Installation
+
+   <a href="http://ladd00.triumf.ca/~daqweb/doc/roody/html" >
+  ROODY</a> is a Histogram display tool. This package is supported by the Triumf DAQ group. Its 
+  installation is similar to 
+  the midas package.
+  @code
+  cd $HOME/packages
+  svn checkout svn://ladd00.triumf.ca/roody/trunk roody
+  cd roody
+  make
+  $HOME/packages/roody/bin/roody, run the program
+  @endcode
+  
+<hr>
+@section  Q_Linux_Basic_Test Basic test
+
+@subsection  Q_Linux_Hardware_Requirements Hardware Requirements
+
+These instructions assume that accessibility to hardware such as VME or CAMAC is available. 
+An ADC is also required, with signals sent to its gate.
+
+@subsection  Q_Linux_Software_Requirements Software Requirements
+Packages ROOT, Midas and ROODY have been installed.
+
+@subsection Q_Linux_Expt_Setup How to Setup the Midas Experiment
+
+NOTE: these instructions provide \b local access to the experiment. For \b remote access, refer to 
+\ref Q_Linux_Installation_Considerations .
+
+  - Create a new user for this daq system (johnfoo)
+  - login as the new user
+  - mkdir online
+  - cd online
+  - mkdir elog history data
+  - create the  \ref Q_Linux_Exptab "exptab" file "$HOME/online/exptab" following the example below.
+       - The first parameter is the Midas experiment name e.g. "simptest1"
+       - The second parameter is the location of MIDAS shared memory buffers  e.g."/home/johnfoo/online"
+   (by convention, $HOME/online), 
+       - the third parameter is the username e.g. "johnfoo"
+  @code
+  simptest1 /home/johnfoo/online johnfoo
+  @endcode
+  \anchor start-all
+  - copy start_daq.sh, kill_client.perl and kill_daq.sh from the $MIDASSYS directory to the online directory.
+  - copy $MIDASSYS/examples/experiment/* to the online directory.
+  - make (creates frontend executable)
+  - run odbedit (this @ref  RC_odbedit_create_ODB "creates the ODB") and enter the commands as shown below. 
+    These commands will redirect specific data files to the given
+    directories and define the format of the data files.
+  @code
+  odbedit> 
+  set "/Logger/Message file" "/home/johnfoo/online/midas.log"
+  set "/Logger/Data Dir"     "/home/johnfoo/online/data"
+  create STRING "/Logger/History dir"
+  set "/Logger/History dir"  "/home/johnfoo/online/history"
+  create STRING "/Logger/Elog dir"
+  set "/Logger/Elog dir"     "/home/johnfoo/online/elog"
+  set "/Logger/ODB dump file" "/home/johnfoo/online/history/run%05d.xml"
+  set "/Logger/ODB dump" "y"
+  set "/Logger/Channels/0/Settings/Filename" "run%05d.mid.gz"
+  set "/Logger/Channels/0/Settings/Compression"   1
+  set "/Logger/Channels/0/Settings/ODB Dump" "y"
+  exit   exit 
+  @endcode
+  - ./start_daq.sh
+  - open a web browser http://localhost:8081
+  - save the url bookmark to the "personal toolbar"
+  - start run, end run
+  -  back from the shell, restart the DAQ to make sure all changes "take", run:
+  - ./kill_daq.sh
+  - ./start_daq.sh
+  - go back to the midas web page, everything should be green
+  - start a run
+  - send signals to the ADC gate
+  - you should be getting events
+  - to look at data, proceed with setting up the <a href="http://daq-plone.triumf.ca/SR/rootana" >
+    ROOT analyzer </a>
+\n
+
+<hr>
+@section Q_Linux_Installation_Considerations Installation Considerations
+
+@subsection Q_Linux_Remote_Access Remote Access to the experiment
+
+  While the above description in \ref  Q_Linux_Expt_Setup installs Midas under user privilege for standard operation, 
+  Midas can be installed in a more general way under root privilege. This method allows remote
+  access to the package through the xinetd daemon mechanism. In order to implement this, some extra steps 
+  are necessary as described here.
+
+  Several system files needs to be modified (as root) for the full Midas implementation.
+  - <b>/etc/services :</b> For remote access, inclusion of the midas service is needed.
+   Add following line:
+  \code 
+  # midas service
+  midas           1175/tcp                        # Midas server
+  \endcode
+  - <b>/etc/xinetd.d/midas :</b> Daemon definition. Create new file named \b midas
+  \code 
+  service midas
+  {
+           flags                   = REUSE NOLIBWRAP
+           socket_type             = stream
+           wait                    = no
+           user                    = root
+           server                  = /usr/local/bin/mserver
+           log_on_success          += USERID HOST PID
+           log_on_failure          += USERID HOST
+           disable                 = no
+  }
+  \endcode
+  - <b>/etc/ld.so.conf :</b> Dynamic Linked library list. Add directory pointing to 
+  location of the midas.so file (add /usr/local/lib).
+  \code 
+  /usr/local/lib
+  \endcode
+  The system is now build by default in static, which makes it unecessary to setup
+  the .so path through either the environment \b LD_LIBRARY_PATH or the ld.so.conf.
+  - <b>/etc/exptab :</b> Midas Experiment definition file (see below).
+<br><br>
+
+@subsection Q_Linux_Exptab  Definition of Multiple Experiments (exptab)
+
+  The Midas system supports multiple experiments running at the same time on a single computer.
+  Even though it may not be efficient, this capability makes sense when the experiments
+  are simple detector lab setups which share hardware resources for data collection.
+  In order to support this feature, Midas requires a uniquely identified set of
+  parameters for each experiment that is used to define the location of the Online Database.
+  <br><br>
+  Every experiment under Midas has its own ODB.
+  In order to differentiate them, an experiment <b> name and directory </b> are assigned to each
+  experiment. This allows several experiments to run concurrently on the same host
+  using a common Midas installation.
+  <br><br>
+  Whenever a application specific to a particular experiment is started, the experiment name
+  can be specified as a command line argument, or as an environment variable.
+  <br><br>
+  A list of all possible running experiments on a given machine is kept in the file
+  \b exptab. This file \b exptab is expected by default to be located under
+  \b /etc/exptab. This default location can be overwritten by the @ref Environment_variables  "Environment Variable"
+  @ref MIDAS_EXPTAB.
+  <br><br>
+  \b The exptab file defines each experiment on the machine, with one line per experiment. Each line
+  contains three parameters, i.e:
+  <b>experiment name</b>, <b>experiment directory name</b> and <b>user name</b>.
+  For example:
+  \code
+  #
+  # Midas experiment list
+  test   /home/johnfoo/online     johnfoo
+  decay  /home/jackfoo/decay_daq  jackfoo
+  \endcode
+  <br>
+  Experiments not defined in \b exptab are not accessible remotely, but can still be
+  accessed locally using the @ref Environment_variables "environment variable" @ref MIDAS_DIR if defined.
+  This environment variable superceeds the \b exptab definition.
+  <br><br>
+
+
+<hr>
+@section Q_Linux_Demo_Examples Demo examples
+
+
+  The midas file structure contains examples of code which should be used as a template.
+  In the <b> midas/examples/experiment</b> directory you will find a full set for frontend and analysis code.
+  The building of this example is performed with the \b Makefile of this directory.
+  \code
+  #-------------------------------------------------------------------
+  # The following lines define directories. Adjust if necessary
+  #                 
+  DRV_DIR   = $(MIDASSYS)/drivers/bus
+  INC_DIR   = $(MIDASSYS)/include
+  LIB_DIR   = $(MIDASSYS)/linux/lib
+  \endcode
+
+  For testing the system, you can start the frontend as follow:
+  \code
+  > frontend
+  Event buffer size      :     100000
+  Buffer allocation      : 2 x 100000
+  System max event size  :     524288
+  User max event size    :     10000
+  User max frag. size    :     5242880
+  # of events per buffer :     10
+  
+  Connect to experiment ...Available experiments on local computer:
+  0 : test         
+  1 : decay
+  Select number:0                    <---- predefined experiment from exptab file
+
+  Sample Frontend connected to <local>. Press "!" to exit                 17:27:47
+  ================================================================================
+  Run status:   Stopped    Run number 0
+  ================================================================================
+  Equipment     Status     Events     Events/sec Rate[kB/s] ODB->FE    FE->ODB
+  --------------------------------------------------------------------------------
+  Trigger       OK         0          0.0        0.0        0          0
+  Scaler        OK         0          0.0        0.0        0          0
+  \endcode
+  In a different terminal window
+  \code
+  >odbedit
+  Available experiments on local computer:
+  0 : test
+  1 : decay
+  Select number: 0
+  [local:test:S]/>start now
+  Starting run #1
+  17:28:58 [ODBEdit] Run #1 started
+  [local:test:R]/>
+  \endcode
+  The run has been started as seen in the frontend terminal window.
+  See the frontend.c for data generation code.
+  \code
+  Sample Frontend connected to <local>. Press "!" to exit                 17:29:07
+  ================================================================================
+  Run status:   Running    Run number 1
+  ================================================================================
+  Equipment     Status     Events     Events/sec Rate[kB/s] ODB->FE    FE->ODB
+  --------------------------------------------------------------------------------
+  Trigger       OK         865        99.3       5.4        0          9
+  Scaler        OK         1          0.0        0.0        0          1
+  \endcode
+
+<br>
+
+<!-- Navigation -->
+<br>
+\htmlonly
+<script type="text/javascript">
+pages("Quickstart","Q_section_index","Q_Windows","Q_Linux" ,"" ); // back index next {top bottom}
+sections("Intro","Quickstart","Features"); // last section; top of this section; next section
+</script>
+\endhtmlonly
+\latexonly
+@ref  Quickstart "previous page" - @ref Top  - @ref Organization "Map"  - @ref  Q_Windows  "next page"
+\endlatexonly
+<br>
+<!-- End of Navigation -->
+\anchor end
+<!-- End of page page Q_Linux  Quickstart Linux -->
+*/
+
+
+
+
+/*! \page Q_Windows  Quickstart Windows
+<!-- Navigation -->
+<br>
+\htmlonly
+<script type="text/javascript" src="http://ladd00.triumf.ca/~daqweb/doc/my_midas/html/navigation.js"></script>
+<script type="text/javascript">
+pages("Q_Linux","Q_section_index", "Features","Q_Windows" ,"end" ); // back index next {top bottom}
+sections("Intro","Quickstart","Features"); // last section; top of this section; next section
+</script>
+\endhtmlonly
+\latexonly
+@ref  Q_Linux "previous page" - @ref Top  - @ref Organization "Map"  - @ref  Features  "next page"
+\endlatexonly
+<br>
+<!-- End of Navigation -->
+
+@section Q_Windows_system_requirements System Requirements
+not yet specified
+
+@section Q_Windows_installation Installation
+
+
+Throughout the following description the midas package is assumed to be found under
+    the directory \b \%SystemDrive%\midas 
+<br>The experiment-specific directory
+    is \b \%SystemDrive%\online. The user name is <em>johnfoo</em>.
+
+  - The package extraction under Windows is similar to the Linux. The \ref Q_SVN "SVN" site is used to
+    gather the midas and mxml. The method can be the tarball or the \ref Q_SVN "svn" using the 
+    <a href="http://tortoisesvn.net" > Tortoise package</a>.
+  - Using the tarball mechanism:
+  @code
+    - Go to http://savannah.psi.ch/viewcvs/trunk/?root=midas
+    - Click "Download tarball"
+    - Extract trunk to %SystemDrive%
+    - Rename trunk to midas
+    - delete trunk.tar.gz
+    - Go to http://savannah.psi.ch/viewcvs/trunk/?root=mxml
+    - Click "Download tarball"
+    - Extract trunk to %SystemDrive%
+    - Rename trunk to mxml
+  @endcode
+
+
+@subsection Q_Windows_Environment_Variables Environment Variables
+
+Environment variables needs to be setup prior the midas build;
+  - from the "system properties" -> advanced -> Environment Variables, define new system variables
+    MIDASSYS to c:\midas (installation location).
+  - from the "system properties" -> advanced -> Environment Variables, add to PATH system variables
+    ;\%MIDASSYS%\nt\bin
+  - create file \%SystemRoot%\system32\exptab
+  @code
+  test c:\online johnfoo 
+  @endcode   
+  - The Midas build requires the Microsoft Visual C++ (2005) or .NET. the corresponding environment
+  variables for the compiler need to be set prior the Midas build. A batch file can be found 
+  under "C:\\Program Files\Microsoft Visual Studio 8\Common7\Tools\vsvar32.bat or similar...
+  @code 
+  cd %MIDASSYS%
+  nmake -f makefile.nt
+  @endcode
+\n
+
+<hr>
+@section Q_Windows_Basic_Test Basic test
+
+@subsection Q_Windows_Hardware_Requirements Hardware Requirements
+These instructions assume that accessibility to hardware such as VME or CAMAC is available. 
+
+@subsection Q_Windows_Software_Requirements Software Requirements
+Midas packages has been installed.
+
+
+@subsection Q_Windows_Expt_Setup How to Setup the Midas Experiment
+
+  - Open three "Command Prompt" windows.
+  @code
+  -w1 cd \
+  -w1 mkdir online
+  -w1 copy %MIDASSYS%\examples\experiement\frontend.exe .
+  -w1 frontend.exe
+  -w2 start mhttpd 
+  -w3 start odbedit
+  -w3 odbedit> scl
+      Name                Host
+      Sample Frontend     yourhost
+      ODBEdit             yourhost
+  @endcode  
+  - Start a web brower and go to http://localhost
+  - Click Start, confirm run number, click refresh...   Stop run.
+\n
+- Please refer to the rest of this @ref Organization "manual" for further description of the system operation.
+ 
+<!-- Navigation -->
+<br>
+\htmlonly
+<script type="text/javascript">
+pages("Q_Linux","Q_section_index", "Features","Q_Windows" ,"" ); // back index next {top bottom}
+sections("Intro","Quickstart","Features"); // last section; top of this section; next section
+</script>
+\endhtmlonly
+\latexonly
+@ref  Q_Linux "previous page" - @ref Top  - @ref Organization "Map"  - @ref  Features  "next page"
+\endlatexonly
+<br>
+<!-- End of Navigation -->
+\anchor end
+<!-- End page Q_Windows  Quickstart Windows 
+     End of Section Quickstart
+-->
+*/
+
+
+

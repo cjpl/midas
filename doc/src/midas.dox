@@ -1,0 +1,146 @@
+/*! \mainpage Midas Documentation
+
+\anchor Top 
+
+<table style="text-align: left; width: 100%;" border="0" cellpadding="2" cellspacing="2">
+<tr>
+<td style="vertical-align: top;">
+ *  \image html logo.png
+ *  \image latex logo.eps "midas" width=3cm
+</td>
+<td style="vertical-align: top;">
+
+
+<center>
+<b>M</b>aximum <b>I</b>ntegrated <b>D</b>ata <b>A</b>cquisition <b>S</b>ystem<br>
+<br><b> Welcome to the world of Midas. </b><br><br>
+ <div style="color: green; font-size: 125%;">
+ Midas is a versatile Data Acquisition System (DAQ) for medium scale physics experiments.
+   </div>
+<div style="color: red; font-size: 100%;">
+  This documentation is under construction
+   </div>
+</center>
+</td>
+<td style="vertical-align: top;">
+ *  \image html logo.png
+ *  \image latex logo.eps "midas" width=3cm
+</td>
+</tr>
+</table>
+
+<!-- Navigation -->
+<br>
+\htmlonly
+<script type="text/javascript">
+top_mainpage (  "Intro","end" ); // next_page bottom_of_page  special function 
+sections("","top","Intro"); // last section; top of this section; next section
+</script>
+\endhtmlonly
+<br>
+<!-- End of Navigation -->
+
+
+<br>
+   If you want a <b>flexible and simple DAQ </b>, @ref I_Midas_system_picture "Midas and its applications" may be what you are looking for. This document will try to answer most of your questions regarding
+   installation, setup, running, and development.
+
+
+ 
+
+   - <b>Midas</b> is a result of a development effort made by Stefan Ritt at 
+     <a href="http://www.psi.ch">PSI</a> in Switzerland
+     (<a href="http://midas.psi.ch">Midas\@PSI</a>) in collaboration with the members of the Data
+     Acquisition Group at <a href="http://www.triumf.info">Triumf</a> in Canada.
+
+   - <b>Midas</b> has a <b>dedicated discussion forum</b> (Electronic logbook) which provides common place for midas
+   users to report problems, share experience or post improvement wishes. 
+   You can browse this <b><a href="https://ladd00.triumf.ca/elog/Midas">Elog</a></b>
+   or register for Email notifications.
+
+   - The <b>Midas source code</b> is subject to the <a href="http://www.gnu.org/copyleft/gpl.html">GPL</a> and can be
+   accessed from the <b><a href="http://savannah.psi.ch/viewcvs/trunk/?root=midas">SVN</a></b>   
+   repository site in Switzerland either for inspection or download (see  @ref Quickstart ).  A 
+<b> tarball </b> is available either from the <a href="http://midas.psi.ch/download/">Swiss</a>
+     or <a href="http://ladd00.triumf.ca/~daqweb/ftp/"> Canadian</a> sites.
+   
+   - <b>Midas</b> can be run on <b>multiple platforms</b> (e.g. Linux, Windows, Mac)
+
+
+ <div style="color: green; font-size: 100%;">
+The MIDAS DAQ provides:
+</div>
+     - <b>Data collection</b> from local and/or remote hardware sources.
+     - <b>Data recording</b> to common storage media.
+     - <b>Full data flow control</b>.
+     - <b>Hardware drivers</b>: see  @ref FE_Hardware
+     - <b>Event-by-event analysis</b> through PAW or Root based application. Please refer to: 
+<ul>
+      <li> <b><a href="http://midas.psi.ch/rome">ROME</a></b> analyzer framework.
+      <li> <b><a href="http://ladd00.triumf.ca/%7Eolchansk/rootana/">Rootana</a></b> Root analyser
+      <li><b><a href="http://ladd00.triumf.ca/~daqweb/doc/roody/html/">Roody</a></b> GUI histogram visualizer
+   application. 
+</ul>
+
+Other related Midas links can be found <a href="http://daq-plone.triumf.ca/SR/MIDAS/">here</a>.
+ <a name="online midas doc">
+ <div style="font-size: 225%; text-align: center">
+  @ref Organization "Online Midas Documentation"
+</div>
+
+
+<table
+style="text-align: left; width: 50%; margin-left: auto; margin-right: auto;"
+border="0" cellpadding="2" cellspacing="2">
+<tr>
+<td style="vertical-align: top;">
+<ul>
+        <li>\subpage Organization
+        <li>     \subpage Intro
+        <li>      \subpage Quickstart
+        <li>      \subpage Features
+        <li>     \subpage RunControl
+        <li>    \subpage FrontendOperation
+        <li>    \subpage DataAnalysis
+        <li>     \subpage Performance
+        <li>     \subpage SpecialConfig
+        <li>    \subpage BuildingOptions
+        <li>    \subpage NDF
+        <li>    \subpage Glossary
+	<li>    \subpage DocIndex
+</ul>
+</td>
+</tr>
+</table>
+
+\todo
+Index - we only get the mainpage/subpages in the index on LHS. Is it possible to get the sections, subsections as well
+to automatically create my section index??
+Related Pages - what controls what gets put into this??
+
+\anchor end
+<!-- Navigation -->
+<br>
+\htmlonly
+<script type="text/javascript">
+pages("","", "Intro","index","" ); // back index next {top bottom}
+sections("","index","Intro"); // last section; top of this section; next section
+</script>
+\endhtmlonly
+\latexonly
+@ref Top - @ref Organization "Map" - @ref Intro "next section and page"
+\endlatexonly
+
+<br>
+<!-- End of Navigation -->
+
+  \htmlonly <center><small> <em>
+  Powered by<br><a href=http://www.stack.nl/~dimitri/doxygen/features.html>
+  <img src="doxygen.png" alt="doxygen" style="border: 0px solid;"></a>
+  </em> </small> </center> \endhtmlonly 
+
+
+<!-- End of midas.dox (main page)
+     Next to section : Intro -->
+*/
+

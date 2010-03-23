@@ -1,0 +1,352 @@
+/*!\page RC_mhttpd_custom_features Features available on custom pages
+<!--  
+     subpage of mhttpd_custom.dox  
+-->
+<br>
+\htmlonly
+<script type="text/javascript">
+// pages parameters: back index next {top bottom}
+pages( "RC_mhttpd_Activate", "RC_section_index","RC_mhttpd_custom_ODB_access", "RC_mhttpd_custom_features", "end" );
+sections("Features", "RunControl","FrontendOperation"); // last section; top of this section; next section
+</script>
+\endhtmlonly
+\latexonly
+ @ref RC_mhttpd_Activate  "previous page" - @ref Top - @ref Organization "Map"  - @ref RC_mhttpd_custom_ODB_access  "next page"
+\endlatexonly
+
+
+Custom pages may incorporate the following special features for use with Midas:
+
+ - @ref RC_mhttpd_custom_midas_buttons
+ - @ref RC_mhttpd_custom_script_buttons
+ - @ref RC_mhttpd_custom_refresh
+ - @ref RC_mhttpd_custom_alias
+ - @ref RC_mhttpd_custom_ODB_access
+ - @ref RC_mhttpd_custom_pw_protection
+ - @ref RC_mhttpd_custom_RPC_access
+ - @ref RC_mhttpd_custom_getmsg
+ - @ref RC_mhttpd_custom_getmouse 
+ - @ref RC_mhttpd_custom_checkboxes
+ - @ref RC_mhttpd_js_update_part
+ - @ref RC_mhttpd_custom_history
+ - @ref RC_mhttpd_custom_image
+      - @ref RC_mhttpd_custom_imagemap 
+      -  @ref  RC_mhttpd_custom_Labels_Bars_Fills
+      - @ref RC_mhttpd_custom_edit_boxes
+ - image scaling
+
+etc.
+
+<br><hr><br>
+
+@section RC_mhttpd_custom_js_lib JavaScript built-in library mhttpd.js
+
+Some of the supported features are available under HTML, but some rely on the 
+<span class="note">inclusion of a JavaScript library for ODB 
+communication </span> (available since Midas version ??).
+\todo version ?? for js library 
+
+This JavaScript library relies on certain new commands built into <span class="cl">mhttpd</span>, and is 
+therefore hardcoded into  <span class="cl">mhttpd</span>. 
+
+<span class="note">This library can be viewed by entering in your browser location box</span>
+\code
+http://<mhttpd host>/mhttpd.js
+\endcode
+
+If running <span class="cl">mhttpd</span> on host \b midaspc on \b port 8081, you would enter :
+\code
+http://midaspc:8081/mhttpd.js
+\endcode
+to view the JS library. A recent version is shown here:
+  - \subpage RC_mhttpd_js
+
+\anchor include_js_library
+<br>
+
+In order to use the  <b> JavaScript built-in functions</b>, 
+<span class="note">
+you must 
+include the  @ref RC_mhttpd_custom_js_lib "library" in your custom page</span> 
+by putting the following statement inside the <head>...</head> tags of an HTML file:
+\code
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 TRANSITIONAL//EN">
+<html><head>
+<title> ODBEdit test</title>
+<script type="text/javascript" src="../mhttpd.js"></script>
+...
+</head>
+...
+</html>
+\endcode
+
+<hr>
+
+@section RC_mhttpd_custom_create Create a custom page
+
+A custom page may be written in ordinary HTML code and/or JavaScript. It may include any of
+the  @anchor mhttpd_custom_features "special features" provided for Midas custom pages, 
+including access to the ODB  using specific HTML tags, or by 
+using functions from the JavaScript library, or a 
+combination of both. 
+It may also include  images (including history images), labels, fills etc. These features
+will be described in the following sections.
+
+ This applies to both \b external and \b internal web pages.
+Using the <b>\<script\></b> HTML tag, JavaScript code can be inserted into HTML files. This
+allows access to the ODB using the JavaScript (JS) alternatives, providing 
+the @ref RC_mhttpd_custom_js_lib is included.  Custom pages may be written
+entirely in JavaScript, if preferred, e.g. a file of user-written JS functions can be 
+included into multiple HTML custom pages. 
+
+
+<hr>
+
+@subsection RC_mhttpd_custom_key_access  Custom key access
+
+To include the custom features such as Buttons, ODB editing etc.
+a custom page needs to have an HTML <b> \<form\> </b> tag like this : 
+\code
+<form method="GET" action="http://hostname.domain:port/CS/\<Custom_page_key\>"\>
+
+.......
+
+</form>
+\endcode
+where  <span class="odb"><Custom_page_key></span> is the name of the key that has been  
+@ref RC_odb_custom_keynames "defined in the /Custom ODB directory" in order to
+@ref RC_mhttpd_Activate "activate the custom page". For a key named <span class="odb">Test&</span>
+the \b form tag would be of the form
+\code
+<form method="GET" action="http://hostname.domain:port/CS/Test&"\>
+\endcode
+
+Various form tags are shown in the examples below.  
+\anchor mhttpd_custom_external
+Since external pages
+are more commonly used, the examples below are using external file(s). Examples of internal pages are
+shown elsewhere.
+
+<hr>
+
+
+@subsection RC_mhttpd_custom_refresh Page refresh
+
+The following \<meta\> tag included in the HTML header code will cause the whole custom page to refresh
+in 60s :
+
+\code
+ \<meta http-equiv="Refresh" content="60">
+\endcode
+<br>
+
+\b Parts of a custom page may also be @ref RC_mhttpd_js_update_part "periodically updated".
+
+
+<hr>
+
+@section RC_mhttpd_custom_midas_buttons Access to the standard Midas Menu buttons
+
+Access to the standard Midas Menu buttons can
+be provided with \<input\> tags  of the form:
+- <b> \<input name="cmd" value=\<\em button-name \>  type="submit" \> </b>
+
+Valid values are the standard midas @ref RC_mhttpd_status_menu_buttons "Menu buttons" (Start, Pause, Resume, Stop,
+ODB, Elog, Alarms, History, Programs, etc).
+
+The following html fragment shows the inclusion of three of the standard buttons,
+giving access to the Main Status, ODB and Messages pages :
+\code
+<input name="cmd" value="Status" type="submit">
+<input name="cmd" value="ODB" type="submit">
+<input name="cmd" value="Messages" type="submit">
+\endcode
+
+
+<hr>
+
+@section RC_mhttpd_custom_alias Alias Links and Hyperlinks
+Any hyperlink can easily be included on a custom page by using the standard HTML <a> tag, e.g.
+\code  
+<a href="http://ladd00.triumf.ca/~daqweb/doc/midas/html/">Midas Help</a>
+\endcode
+Links on a custom page equivalent to @ref  RC_mhttpd_status_Alias_links "alias-links" can also be made e.g.
+\code
+<script>
+document.write('<a href="/SC/Cycle_Scalers?exp='+my_expt+'">Cycle Scalers</a>');
+</script>
+\endcode
+where \b my_expt is the name of the Midas experiment. 
+
+<br><hr><br>
+
+@section RC_mhttpd_custom_script_buttons CustomScript Buttons
+Midas versions 1.9.5 and later support 
+CustomScript buttons on custom webpages, using an optional ODB 
+directory  <span class="odb"> /customscript </span>. Like  @ref RC_mhttpd_status_User_buttons on the Midas Main Status page, 
+these buttons when included on a Custom page,  allow a particular action to be performed when the button is pressed.
+Their syntax in this directory is identical to that of the @ref RC_mhttpd_status_User_buttons  under the 
+ <span class="odb">/Script</span> ODB directory.
+<br>
+
+
+The following html fragment shows the inclusion of a customscript button named "myscript"  into a custom page:
+        <input type=submit name=customscript value="myscript">
+See complete example @internal_example_1 ...
+
+This JavaScript fragment also shows customscript buttons that appear only when the run is stopped 
+\code
+ if (rstate == state_stopped) // run stopped
+{
+ document.write('<input name="customscript" value="tri_config" type="submit">');
+if(ppg_mode != '1a')
+  document.write('<input name="customscript" value="1a" type="submit">');
+if(ppg_mode != '1b')
+  document.write('<input name="customscript" value="1b" type="submit">');
+if(ppg_mode != '1c')
+ document.write('<input name="customscript" value="1c" type="submit">');
+if(ppg_mode != '1d')
+ document.write('<input name="customscript" value="1d" type="submit">');
+}
+\endcode
+The corresponding entry under /customscript is as shown below. The first button (tri_config) when pressed
+will cause a user-written program tri_config to be executed. The other buttons 1a,1b etc. will cause the
+experimental mode to be changed.
+\code
+[local:ebit:S]/>ls /customscript/tri_config
+cmd                             /home/ebit/online/ppg/perl/exec.pl
+include path                    /home/ebit/online/ppg/perl/
+experiment name -> /experiment/Name
+                                ebit
+execute                         '/home/ebit/online/ppg/tri_config -s'
+beamline                        ebit
+
+[local:ebit:S]/>ls /customscript/1a
+cmd                             /home/ebit/online/ppg/perl/change_mode.pl
+include path                    /home/ebit/online/ppg/perl/
+experiment name -> /experiment/Name
+                                ebit
+ppg_mode                        1a
+modefile                        defaults
+\endcode
+1b,1c,1d are similar to 1a
+
+These buttons are illustrated in the example @ref RC_Mpet_custom_page
+
+<br><hr><br>
+
+
+
+@section  RC_mhttpd_custom_getmsg  Access to message log
+The message log can be accessed from a custom page using a call to the
+@ref RC_mhttpd_custom_js_lib  "JavaScript library function"  \b ODBGetMsg (provided the library is
+\ref include_js_library "included").  There is no HTML equivalent to this JS function.
+<br>
+<table
+ style="text-align: left; width: 100%;" border="1" cellpadding="2"
+cellspacing="0">
+  <caption>Above: ODB RPC access from JavaScript
+  </caption>
+<tr>
+<td colspan="1" style="vertical-align: top; background-color: rgb(204, 204, 255); font-weight: bold; text-align: center;">JavaScript Function</td>
+</td>
+ <td style="vertical-align: top; background-color: rgb(204, 204, 255); font-weight: bold; text-align: center;">
+Purpose
+</td>
+ <td style="vertical-align: top; background-color: rgb(204, 204, 255); font-weight: bold; text-align: center;">
+Parameters
+</td>
+</tr> 
+<!--   line    1     -->
+<tr>
+<td style="vertical-align: top; background-color: white; font-weight: bold; text-align: left;">
+\code
+ ODBGetMsg(n)
+\endcode
+</td>
+<td style="vertical-align: top; background-color: white; font-weight: normal; text-align: left;">
+Get the most recent \b n lines from the system message log
+</td>
+<td style="vertical-align: top; background-color: white; font-weight: normal; text-align: left;">
+\b n  number of lines required 
+</td>
+</tr>
+</table>
+<br>
+ This allows the inclusion of the "Last Midas message" on a custom page.
+e.g.
+\code
+<script>
+var message;
+message= ODBGetMsg(1);
+document.write('Last message:'+message+'<br>');
+</script>
+\endcode
+
+An example of this feature is on the @ref  RC_BNMQR_status .
+
+
+@section RC_mhttpd_custom_getmouse Display mouse position
+
+When writing custom pages with large background images and labels placed on that image, it is hard 
+to figure out X and Y coordinates of the labels. This can now be simplified by adding a <b>new id tag "refimg"</b> to 
+the background image of the form
+
+\code
+<img id="refimg" src="...">
+\endcode
+
+The function \b getMouseXY in the  @ref RC_mhttpd_custom_js_lib supplies the X,Y position if an element of ID \b refimg is
+present. Therefore, the  JS library must be @ref include_js_library "included".
+
+\b Usage:
+\code
+<img  id="refimg" src="ebit_pc.gif" usemap="#Custom1">   <!-- name="refimg" makes crosshairs appear -->
+<map name="Custom1">
+.....
+</map>
+\endcode
+
+If the "refimg" tag is present, the cursor changes into a crosshair, and its absolute and relative
+locations in respect to the reference image are shown in the status bar (Figure 1):
+
+
+
+ * <br><br><br>
+ * <center>
+ *  <span class="image"> Figure 1 : Cursor position on custom page
+ * <br><br><br> 
+ *  \image html cursor.png
+ *  \image latex cursor.eps "Figure 1: Cursor position on custom page" width=12cm
+ * </span></center>
+ * <br><br><br>  
+
+\note
+To make this work under Firefox, the user has to explicitly allow for status bar changes. To do so,
+enter about:config in the address bar. In the filter bar, enter status. Then locate 
+dom.disable_window_status_change and set it to false.
+
+
+
+
+
+ - \subpage  RC_mhttpd_custom_ODB_access
+ - \subpage  RC_mhttpd_custom_RPC_access
+ - \subpage  RC_mhttpd_Image_access
+
+<br>
+<br>
+\htmlonly
+<script type="text/javascript">
+// pages parameters: back index next {top bottom}
+pages( "RC_mhttpd_Activate", "RC_section_index","RC_mhttpd_custom_ODB_access", "RC_mhttpd_custom_features", "" );
+sections("Features", "RunControl","FrontendOperation"); // last section; top of this section; next section
+</script>
+\endhtmlonly
+\latexonly
+ @ref RC_mhttpd_Activate  "previous page" - @ref Top - @ref Organization "Map"  - @ref RC_mhttpd_custom_ODB_access  "next page"
+\endlatexonly
+\anchor end
+<!--- end of page  RC_mhttpd_custom_features -->
+*/
+

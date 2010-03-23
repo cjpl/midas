@@ -1,0 +1,1303 @@
+
+<!-- ------------ I M A G E     A C C E S S  ------- -->
+
+/*! \page    RC_mhttpd_Image_access Inserting an Image into a Custom page
+<br>
+\htmlonly
+<script type="text/javascript">
+// pages parameters: back index next {top bottom}
+pages( "RC_mhttpd_custom_RPC_access", "RC_section_index", "RC_mhttpd_custom_demo","RC_mhttpd_Image_access",  "end" );
+sections("Features", "RunControl","FrontendOperation"); // last section; top of this section; next section
+</script>
+\endhtmlonly
+\latexonly
+@ref  RC_mhttpd_custom_ODB_access  "previous page" - @ref Top - @ref Organization "Map"  - @ref  RC_mhttpd_custom_demo  "next page"
+\endlatexonly
+
+
+@section RC_mhttpd_custom_history Inserting a history image in a custom page
+
+In the special case where the image to be inserted is a \b History image, it can be inserted into a custom page using
+an HTML <b><img></b> tag of the following form:
+\code
+<img src="http://hostname.domain:port/HS/Meterdis.gif&scale=12h&width=300">
+\endcode
+
+\b Examples
+See  @ref RC_mhttpd_custom_demo and \example_image_all "image" created by the demo.
+
+
+<br><hr><br>
+
+@section RC_mhttpd_custom_image Image insertion into a Custom page
+\todo version ?? image insertion in webpage
+
+Since Midas version ?? image insertion into a webpage is supported. The image-file 
+can be in any format supported by your browser (e.g. &nbsp; \b gif,&nbsp; \b png,&nbsp; \b jpeg etc.).
+
+To make an image "myexpt.gif" available in a Custom Page, follow these steps:
+
+<ol>
+<li>the subdirectory <span class="odb">Images</span> must be created in the ODB  <span class="odb">/Custom</span> directory, e.g.
+using @ref RC_odbedit_task "odbedit" :
+
+\code
+[local:Default:Stopped]/>cd Custom
+[local:Default:Stopped]/Custom>mkdir Images  <-- if Images does not exist
+[local:Default:Stopped]/Custom>cd Images/
+\endcode
+
+<li>Under the subdirectory  <span class="odb">Images</span>, create another subdirectory with the name of
+the image you are going to use (in this example, \b myexpt.gif), i.e.
+
+\code
+[local:Default:Stopped]Images>mkdir myexpt.gif <-- make a subdirectory with the image name
+[local:Default:Stopped]Images>cd myexpt.gif/
+\endcode
+
+<li> Under the subdirectory  <span class="odb"> myexpt.gif</span> , create the STRING key  <span class="odb"> Background</span> :
+\code
+[local:Default:Stopped]myexpt.gif>create string Background  <-- create key "Background" 
+String length [32]: 256
+\endcode
+
+<li>Set the key  <span class="odb"> Background</span> to contain the name of the image-file.
+\code
+[local:Default:Stopped]myexpt.gif>set Background \midas\examples\custom\myexpt.gif
+\endcode
+</ol>
+
+This image must be referenced in a custom HTML file, such as  myexpt.html . This file also includes other features
+such as <b>active clickable areas, labels, bars and fills</b> superimposed on the image. These are explained in the
+sections  @ref RC_mhttpd_custom_Labels_Bars_Fills "below". 
+
+Before it can be accessed from mhttpd,  this file (myexpt.html) must be 
+@ref  RC_mhttpd_Activate "activated" by being defined in the ODB under  <span class="odb">/Custom</span>. This
+is demonstrated in the custom demo described  @ref RC_mhttpd_custom_demo "below".
+
+\b Examples
+See  @ref RC_mhttpd_custom_demo and \example_image_all "image" created by the demo.
+
+
+@section RC_mhttpd_custom_imagemap Mapping active areas onto the image
+
+HTML mapping can be activated on an image to provide "clickable" areas, using the
+\b map attribute of the HTML <b><img></b> tag.
+
+This can be done now with a new function like this:
+\code
+<map name="Custom1">
+<area shape="rect" coords="40,200,100,300" alt="Main Valve"
+  href="Custom1?cmd=Toggle&odb=/Equipment/Environment/Variables/Output[2]">
+</map>
+<img src="custom.gif" usemap="#Custom1">
+\endcode
+
+This defines a clickable map on top of the custom image. The area(s) should
+match with some area(s) on the image, e.g. the box of a valve.
+Determining the co-ordinates of this area is simplified by using the @ref RC_mhttpd_custom_getmouse
+feature.
+
+By clicking on this area,
+the supplied path to the ODB is used (in this case  <span class="odb">
+/Equipment/Environment/Variables/Output[2]</span>) and its value is toggled (set to 0 if it
+is 1, set to 0 if it is 1). If the valve value is then used in the image via a
+"fill" statement to change the color of the valve, it can turn green or red
+depending on its state.  This is illustrated in the @ref RC_MEG_Gas_Page .
+
+
+\b Examples
+See also @ref RC_mhttpd_custom_demo and \example_image_all "image" created by the demo.
+
+
+@subsection RC_mhttpd_custom_imagemap_demo Image Map demo
+
+The following code fragment is from the demo file  myexpt.html 
+(see  @ref RC_mhttpd_custom_demo "below").
+\code
+ <map name="myexpt.map">
+     <area shape=rect coords="140,70, 420,170" 
+     href="http://midas.triumf.ca/doc/html/index.html" title="Midas Doc">
+     <area shape=rect coords="200,200,400,400"
+     href="http://localhost:8080" title="Switch pump">
+     <area shape=rect coords="230,515,325,600"
+     href="http://localhost:8080" title="Logger in color level (using Fill)">
+  <img src="myexpt.gif" border=1 usemap="#myexpt.map">
+  </map>
+\endcode
+
+Three rectangular clickable areas are defined.
+
+ See the @ref mapping_demo "demo".
+
+
+<br><hr><br>
+
+
+@subsection  RC_mhttpd_custom_imagemap_pw Area map with password check
+
+For safety from accidental changes, the above area map can be combined with a  @ref RC_mhttpd_custom_pw_protection "password check".
+\anchor promptpwd
+ This is done by adding a small
+JavaScript function  \b promptpwd into the custom page:
+\code
+<script type="text/javascript">
+<!--
+function promptpwd(path)
+{
+    pwd = prompt('Please enter password', '');
+    document.cookie = "cpwd=" + pwd;
+    location.href = path;
+}
+//-->
+</script>
+\code
+
+and using it like this:
+\code
+<area shape="rect" coords="40,200,100,300" alt="Main Valve"
+  href="#"
+onClick="promptpwd('Custom1?cmd=toggle&pnam=CustomPwd?odb=/Equipment/Environment/Variables/Output[2]
+')">
+\endcode
+
+
+If the \b pwd option is present in the <span class="odbtag"> <odb> tag</span>,  <span class="cl">mhttpd</span> establishes a call to
+the \b promptpwd() function if one clicks on the value. The password is then requested
+from the user and is submitted as a cookie.  <span class="cl">mhttpd</span> then checks this password against
+the ODB entry
+<br>
+ <span class="odb">/Custom/Pwd/CustomPwd</span>
+<br>
+See  @ref RC_mhttpd_custom_pw_protection for further details.
+
+@ref RC_MEG_Gas_Page "This page" from the MEG experiment at PSI shows a complex gas system. It demonstrates the use of the area map features. 
+The valves are represented as green circles. If they are clicked, 
+they close and become red (after the user successfully supplies the correct password).
+
+
+<br><hr><br>
+
+
+
+@section RC_mhttpd_custom_Labels_Bars_Fills Superimposing Labels, Bars and Fills onto an image
+
+You can enhance your custom page by superimposing multiple features based on ODB variables 
+onto your image, such as 
+
+-  @ref RC_mhttpd_custom_labels "labels": "live" ODB values positioned in a particular location of the page
+-  @ref  RC_mhttpd_custom_bars "bars" : "bar level" showing graphically levels or rate etc.
+-  @ref  RC_mhttpd_custom_fills "fills" : "color level" where colour is used as the level indicator.
+-  @ref RC_mhttpd_custom_edit_boxes "edit boxes" : editable ODB values superimposed on the image
+
+Each entry will have an ODB tree associated to it
+defining the ODB variable path, X/Y position, colour, etc.
+Each time the page is updated, the latest ODB value/level/rate will be shown based on the
+ODB parameter to which the label, bar or fill is linked - hence the term "live".
+The overlay of the requested features is done onto the selected 
+@ref RC_mhttpd_custom_gif_image "image file". 
+
+This powerful new extension brings the <span class="cl">mhttpd</span> 
+capability closer to other experimental web controllers similar to EPICS.
+
+\note Be sure to enable the feature to  @ref RC_mhttpd_custom_getmouse in order to facilitate finding the X,Y positions 
+of the various features.
+
+\b Examples
+See  @ref RC_mhttpd_custom_demo and \example_image_all "image" created by the demo.
+
+
+@subsection RC_mhttpd_custom_labels Labels superimposed on an Image
+
+In order to include a readout of ODB values (i.e. labels), on the image
+a further ODB subdirectory  <span class="odb">labels</span> must be created. 
+Creating  <span class="odb"> Labels/\<label name\></span> sub-directory under the  
+@ref RC_mhttpd_custom_image "image filename", will, automatically at 
+the \b next web page refresh, complete the structure for that label, and fill it with default values:
+
+\code
+odbedit
+[local:Default:Stopped]/Custom>cd Images/myexpt.gif
+[local:Default:Stopped]/myexpt.gif>mkdir Labels
+[local:Default:Stopped]/myexpt.gif>cd labels
+[local:Default:Stopped]Labels>mkdir Rate
+[local:Default:Stopped]Rate>
+\endcode
+
+The above example assumes that the image-filename is \b myexpt.gif . After
+the next refresh, the structure will have been created for the  <span class="odb">Rate</span> label:
+\code
+[local:Default:Stopped]Rate>ls -l
+Key name                        Type    #Val  Size  Last Opn Mode Value
+---------------------------------------------------------------------------
+Src                             STRING  1     256   2m   0   RWD
+Format                          STRING  1     32    2m   0   RWD  %1.1f
+Font                            STRING  1     32    2m   0   RWD  Medium
+X                               INT     1     4     2m   0   RWD  0
+Y                               INT     1     4     2m   0   RWD  0
+Align                           INT     1     4     2m   0   RWD  0
+FGColor                         STRING  1     8     2m   0   RWD  000000
+BGColor                         STRING  1     8     2m   0   RWD  FFFFFF
+\endcode
+
+This procedure is repeated for all the labels required, using a unique <span class="odb"><label_name></span> subdirectory for each label.
+
+
+@subsection RC_mhttpd_labels_tree Explanation of the keys in the /Labels ODB subtree
+<table
+ style="text-align: left; width: 100%;" border="1" cellpadding="2"
+cellspacing="0">
+  <caption>Above: Meaning of keys in the ODB ../Labels/<label_name> subtree.
+  </caption>
+<tr>
+<td colspan="4" style="vertical-align: top; background-color: rgb(204, 204, 255); font-weight: bold; text-align: center;">
+Keys in the ODB subtree  ../Labels/<label_name>
+</td>
+</tr>
+
+<tr>
+<td colspan = "3" style="vertical-align: top; background-color: rgb(204, 204, 255); font-weight: bold; text-align: center;">
+ODB Key 
+</td>
+ <td style="vertical-align: top; background-color: rgb(204, 204, 255); font-weight: bold; text-align: center;"> 
+Explanation
+</td>
+</tr> 
+<!--   line    1   Labels  -->
+<tr>
+<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+.../Labels/<label_name>
+</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">DIR</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
+</tr>
+<!--   line    2   Src  -->
+<tr>
+<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
+<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+Src
+</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">STRING</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">
+Path of a valid ODB Key variable. This is the value to be used for this label
+</td>
+</tr>
+<!--   line    3   Format  -->
+<tr>
+<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
+<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+Format
+</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">STRING</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">
+Format string for this value e.g. "%5.2f%% iBu" (-> percentage of iBu) or "Rate:%1.1f kB/s" 
+</td>
+</tr>
+<!--   line    4   Font  -->
+<tr>
+<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
+<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+Font
+</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">STRING</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">
+Font size for this label. Set to one of  "small",&nbsp; "medium" or "giant".  
+</td>
+</tr>
+<!--   line    5   X  -->
+<tr>
+<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
+<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+X position of this label in pixels
+</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">INT</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">
+X position for this label in pixels  
+</td>
+</tr>
+<!--   line    6   Y  -->
+<tr>
+<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
+<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+Y
+</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">INT</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">
+Y position for this label.  
+</td>
+</tr>
+<!--   line    7   Align  -->
+<tr>
+<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
+<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+Align
+</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">INT</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">
+Integer representing Horizontal Alignment for this label. Set to one of 0 (left), 1 (center) or 2 (right).  
+</td>
+</tr>
+
+<!--   line    8   FGColor  -->
+<tr>
+<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
+<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+FGColor
+</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">STRING</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">
+Foreground colour RRGGBB (hex) for this label. See @ref  RC_html_colours "colour table".  
+</td>
+</tr>
+<!--   line    9   BGColor  -->
+<tr>
+<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
+<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+BGColor
+</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">STRING</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">
+Background colour RRGGBB (hex)  for this label, See @ref  RC_html_colours "colour table".   
+</td>
+</tr>
+</table>
+
+
+<br><hr><br>
+
+<center>
+\anchor RC_html_colours
+<table
+ style="text-align: center; width: 25%;" border="1" cellpadding="2"
+cellspacing="0">
+  <caption>Above: RGB values defined in HTML standards for some common colours 
+  </caption>
+<tr>
+<td style="vertical-align: top; background-color: rgb(204, 204, 255); font-weight: bold; text-align: center;">
+Colour</td>
+<td style="vertical-align: top; background-color: rgb(204, 204, 255); font-weight: bold; text-align: center;">
+RGB Value</td>
+</tr>
+
+<tr>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">black</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">000000</td>
+</tr>
+<tr>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">white</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">FFFFFF</td>
+</tr>
+<tr>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">red</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">FF0000</td>
+</tr>
+<tr>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">blue</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">0000FF</td>
+</tr>
+<tr>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">lime green</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">00FF00</td>
+</tr>
+<tr>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">yellow</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">FFFF00</td>
+</tr>
+<tr>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">gray</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">808080</td>
+</tr>
+</table>
+</center>
+
+
+<br><hr><br>
+
+
+@subsection RC_mhttpd_custom_bars  Bars superimposed on an Image
+To include bars on the image,
+a further subdirectory  <span class="odb">Bars</span> must be created. 
+Following the same principle as for the  @ref RC_mhttpd_custom_bars "labels", by creating  <span class="odb">Bars/\<bar_name\></span>, the
+structure for the bar will be filled with a default setting after refreshing the
+custom midas page.
+
+This procedure is repeated for all the bars required, using a unique <span class="odb"><bar_name></span> subdirectory for each bar.
+<br>
+
+@subsection RC_mhttpd_bars_tree Explanation of the keys in the ../Bars ODB subtree
+<table
+ style="text-align: left; width: 100%;" border="1" cellpadding="2"
+cellspacing="0">
+  <caption>Above: Meaning of keys in the ODB ../Bars subtree.
+  </caption>
+<tr>
+<td colspan="4" style="vertical-align: top; background-color: rgb(204, 204, 255); font-weight: bold; text-align: center;">
+Keys in the ODB subtree ../Bars/<bar_name>
+</td>
+</tr>
+<tr>
+<td colspan = "3" style="vertical-align: top; background-color: rgb(204, 204, 255); font-weight: bold; text-align: center;">
+ODB Key 
+</td>
+ <td style="vertical-align: top; background-color: rgb(204, 204, 255); font-weight: bold; text-align: center;"> 
+Explanation
+</td>
+</tr> 
+<!--   line    1   Bars  -->
+<tr>
+<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+.../Bars/<bar_name>
+</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">DIR</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
+</tr>
+<!--   line    2   Src  -->
+<tr>
+<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
+<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+Src
+</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">STRING</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">
+Path of a valid ODB Key variable. This is the value to be used for this bar
+</td>
+</tr>
+<!--   line    3   X  -->
+<tr>
+<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
+<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+X position of this bar in pixels
+</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">INT</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">
+X position for this label in pixels  
+</td>
+</tr>
+<!--   line    4   Y  -->
+<tr>
+<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
+<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+Y
+</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">INT</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">
+Y position for this bar in pixels.  
+</td>
+</tr>
+<!--   line    5   Width  -->
+<tr>
+<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
+<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+Width
+</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">INT</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">
+Width of this bar in pixels.  
+</td>
+</tr>
+<!--   line    6   Height  -->
+<tr>
+<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
+<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+Height
+</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">INT</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">
+Height of this bar in pixels.  
+</td>
+</tr>
+<!--   line    7   Direction  -->
+<tr>
+<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
+<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+Direction
+</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">INT</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">
+Direction of this bar. Either 0 (vertical) or 1 (horizontal).  
+</td>
+</tr>
+<!--   line    8   Axis  -->
+<tr>
+<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
+<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+Axis
+</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">INT</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">
+Draw axis. One of 0 (none) or 1 (left) or 2 (right).  
+</td>
+</tr>
+<!--   line    9   Logscale  -->
+<tr>
+<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
+<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+Logscale
+</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">BOOL</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">
+Draw logarithmic axis. Either "y" or "n".  
+</td>
+</tr>
+<!--   line    10   Min  -->
+<tr>
+<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
+<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+Min
+</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">DOUBLE</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">
+Minimum value for axis
+</td>
+</tr>
+<!--   line    11   Max  -->
+<tr>
+<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
+<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+Max
+</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">DOUBLE</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">
+Maximum value for axis
+</td>
+</tr>
+<!--   line    12   FGColor  -->
+<tr>
+<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
+<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+FGColor
+</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">STRING</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">
+Foreground colour RRGGBB (hex) for this bar. See @ref  RC_html_colours "colour table".  
+</td>
+</tr>
+<!--   line    13   BGColor  -->
+<tr>
+<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
+<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+BGColor
+</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">STRING</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">
+Background colour RRGGBB (hex)  for this bar. See @ref  RC_html_colours "colour table".   
+</td>
+</tr>
+<!--   line    13   BDColor  -->
+<tr>
+<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
+<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+BDColor
+</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">STRING</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">
+Border colour RRGGBB (hex)  for this bar. See @ref  RC_html_colours "colour table".   
+</td>
+</tr>
+</table>
+
+<br><hr><br>
+
+
+@section RC_mhttpd_custom_fills  Fills superimposed on an Image
+
+The last option available is the \b Fills where an area can be filled with different
+colours depending on the given ODB value (src parameter). 
+In order to include filled areas  on the image,
+a further ODB subdirectory  <span class="odb">Fills</span> must be created.
+The colour selection is
+mapped by correspondence of the index of the <span class="odb"> Limits</span> array to the  <span class="odb">Fillcolors</span> array,
+both of which must be created in the ODB  <span class="odb">Fills</span> subdirectory.
+Presently the structure is not pre-defined and needs to be entered by hand, e.g.
+
+\code
+Tue> odbedit
+[local:midas:Stopped]/>cd Custom/Images/myexpt.gif
+[local:midas:myexpt.gif]/>mkdir Fills/Level
+[local:midas:myexpt.gif]/>cd Fills/Level
+[local:midas:Level]/>create string Src
+String length [32]: 256
+[local:midas:S]Level>create int X
+[local:midas:S]Level>create int Y
+[local:midas:S]Level>create double Limits[4]
+[local:midas:S]Level>create string Fillcolors[4]
+String length [32]: 4
+
+[local:midas:S]Level>ls
+Src
+X                               0
+Y                               0
+Limits
+                                0
+                                0
+                                0
+                                0
+Fillcolors
+                                
+                                
+                                
+                                
+\endcode
+\note The array lengths, of course, depend on the user's requirements, but the length of the two arrays must be the same.
+
+
+One could  @ref RC_odbedit_set "set" the values (which is rather tedious)
+or 
+ -# @ref RC_odbedit_set "save" the structure into a file
+ -# \b edit the file to fill the values,
+ -# then @ref RC_odbedit_set  "reload",
+
+ i.e.
+\code
+[local:midas:S]Level>save level.odb
+[local:midas:S]Level>quit
+>edit level.odb
+... fill in the values & save the file ...
+
+>odbedit
+[local:midas:S]/>load level.odb
+\endcode
+
+
+Once filled with values, the saved odb file might look like this:
+
+\code
+[/Custom/Images/myexpt.gif/Fills/Level]
+Src = STRING : [256] /equipment/Trigger/statistics/events sent
+X = INT : 250
+Y = INT : 550
+Limits = DOUBLE[4] :
+[0] 0
+[1] 10
+[2] 10000
+[3] 100000
+Fillcolors = STRING[4] :
+[8] 00FF00
+[8] AAFF00
+[8] AA0000
+[8] FF0000
+\endcode
+
+This subtree ( <span class="odb">Level</span> in the example) can be duplicated for as many Fills as required, using
+a unique  <span class="odb"><fill_name></span> for each subdirectory.
+
+<br><br>
+
+@subsection RC_mhttpd_fills_tree Explanation of the keys in the ../fills ODB subtree
+<table
+ style="text-align: left; width: 100%;" border="1" cellpadding="2"
+cellspacing="0">
+  <caption>Above: Meaning of keys in the ODB ../Fills subtree.
+  </caption>
+
+<tr>
+<td colspan="4" style="vertical-align: top; background-color: rgb(204, 204, 255); font-weight: bold; text-align: center;">
+Keys in the ODB subtree ../Fills/<fill_name>
+</td>
+</tr>
+<tr>
+<td colspan = "3" style="vertical-align: top; background-color: rgb(204, 204, 255); font-weight: bold; text-align: center;">
+ODB Key 
+</td>
+ <td style="vertical-align: top; background-color: rgb(204, 204, 255); font-weight: bold; text-align: center;"> 
+Explanation
+</td>
+</tr> 
+<!--   line    1   Fills  -->
+<tr>
+<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+.../Fills/<fill_name>
+</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">DIR</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
+</tr>
+<!--   line    2   Src  -->
+<tr>
+<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
+<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+Src
+</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">STRING</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">
+Path of a valid ODB Key variable. This is the value to be used for this fill
+</td>
+</tr>
+<!--   line    3   X  -->
+<tr>
+<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
+<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+X
+</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">INT</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">
+X position for this fill in pixels  
+</td>
+</tr>
+<!--   line    4   Y  -->
+<tr>
+<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
+<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+Y
+</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">INT</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">
+Y position for this label in pixels  
+</td>
+</tr>
+<!--   line    5   Limits  -->
+<tr>
+<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
+<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+Limits[array]
+</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">INT</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">
+Variable length array containing the values of the limits that when reached cause a colour change.
+Array length must match length of array \b Fillcolors.
+</td>
+</tr>
+<!--   line    5   Fillcolors  -->
+<tr>
+<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
+<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+Fillcolors[array]
+</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">INT</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">
+Variable length array containing the colours corresponding to the \b Limits array.  Array size must match
+\b Limits array size.
+</td>
+</tr>
+</table>
+
+
+<br><hr><br>
+
+
+@subsection RC_mhttpd_custom_fill_scripts Scripts to duplicate features
+
+When including many standard features such as labels and fills on multiple images, creating and populating the
+individual subtrees becomes increasingly tedious.
+In this case, is a good idea to write a script to facilite this, based on a list of devices. Then the user
+has (merely!) to locate the X,Y positions of each device.
+
+The following example is part of a perlscript used to create labels and fills in a file suitable for loading into the odb with
+the @ref RC_odbedit_load "odbedit load" command. The subroutine shown will create subtrees for labels based on an input array of
+device names. Different colours are used for the labels depending on the device types.
+
+
+\code
+sub write_odb_labels
+{
+# parameters:
+#  inputs:
+#       $gifname
+#        and global @labels array   and FOUT is the output file handle
+#
+#
+#
+#    colours: fgcolor WHITE   BLACK   white  BLACK   white   WHITE  white
+#             bgcolor maroon  aqua    teal   orange  black   navy  purple
+#             device  AN      FC      PD     TC      HT      FM     other
+
+
+  
+  my %fgColor = (
+		 AN => "$white",
+		 FC => "$black",
+		 PD => "$white",
+		 TC => "$black",
+		 HT => "$white",
+		 FM => "$white",
+		 other => "$white"
+		 );
+  my %bgColor = (
+		 AN => "$maroon",
+		 FC => "$aqua",
+		 PD => "$teal",
+		 TC => "$orange",
+		 HT => "$black",
+		 FM => "$navy",
+		 other => "$purple"
+		 );
+  my %format = (
+		 AN => "%4.0f ppm",
+		 FC => "%5.3f l/m",
+		 PD => "%4.2f Bg",
+		 TC => "%5.1f degC",
+		 HT => "%5.1f degC",
+                 FM => "%4.1f l/m",
+		 other => "%4.2f ?"
+		 );
+
+
+
+
+  my $gifname    = shift;
+  my $len;
+  my  ($prefix,$type,$num);
+  my $append;
+  
+  $len = $#labels;
+  
+  print "len=$len; @labels\n";
+  for my $elem (0..$len)
+  {
+      print "Calling split_device with @labels[$elem] \n";
+      ($prefix,$type,$num)=split_device(@labels[$elem]);
+      print "after split_device: @labels[$elem] -> prefix: $prefix  type: $type num: $num \n";  
+      
+      
+      my $devname = $prefix.$type; # concatenate
+      if($type eq "FC") 
+         { $append="_flow"; } # FC labels have _flow appended to src
+      else
+         { $append=""; }
+      my $my_font="Giant"; # default
+      my ($my_bgcolor,$my_fgcolor,$my_format);
+
+      my $val=check_label($type); # make sure this label exists, otherwise use "other"
+      unless($val) { $type = "other" }; 
+
+      $my_format = $format { $type };  # default
+      unless ($num) { die "error in device number (@labels[$elem]); array index <0 "; }     
+      $i=$num-1; # array index for src
+      my $my_fgcolor = $fgColor { $type };
+      my $my_bgcolor = $bgColor { $type };
+	  
+      print "Colours; for @labels[$elem] $my_fgcolor,$my_bgcolor \n";
+      
+print FOUT<<EOT;
+\[/Custom/Images/$gifname.gif/labels/$devname$num\]
+Src = STRING : [256] /Equipment/gas/variables/$devname$append\[$i\]
+Format = STRING : [32] $my_format
+Font = STRING : [32] $my_font
+X = INT : 1
+Y = INT : 1
+Align = INT : 0
+FGColor = STRING : [8] $my_fgcolor
+BGColor = STRING : [8] $my_bgcolor
+
+EOT
+
+ }   # end for loop
+
+return;
+}
+
+\endcode
+
+
+
+<br><hr><br>
+ 
+
+
+@section RC_mhttpd_custom_edit_boxes Edit boxes floating on top of a graphic
+
+This option has been available from the beginning, but was not previously documented. It
+makes it possible to put an edit box right on top of a graphic by means of an HTML
+style tag.  The custom page code could look like this:
+
+\code
+<div style="position:absolute; top:100px; left:50px;">
+<odb src="/Runinfo/run number" edit=1>
+</div>
+<img src="custom.gif">
+\endcode
+
+The \b <div> tag surrounding the <span class="odbtag"><odb> tag</span> places this directly on top of the
+"custom.gif" image, where it can be clicked to be edited.
+
+The same thing could be done in JavaScript using the ODBEdit function from the @ref RC_mhttpd_custom_js_lib :
+
+\code
+<div style="position:absolute; top:100px; left:50px;">
+<script type="text/javascript">
+document.write('Using Javascript and ODBEdit:')
+path='/runinfo/run number'
+rn = ODBGet(path)
+document.write('<a href="#" onclick="ODBEdit(path)" >')
+document.write(rn)
+document.write('</a>');
+document.write('') ;
+</script>
+</div>
+<img src="custom.gif">
+\endcode
+
+The JavaScript version can be much more flexible than the HTML version. For example, for the EBIT experiment at TRIUMF,
+different images are shown depending on the experimental mode. This means that the edit boxes have to be placed 
+at different positions according to the image used. The following JavaScript code fragment illustrates this:
+
+\code
+
+// pulse1 width (TITAN beam gate 1 TIBG1 ) 
+if(ppg_mode == '1d')
+   document.write('<div style="position:absolute;  left:364px; top:225px;">') // mode 1d
+else if(ppg_mode == '1c')
+   document.write('<div style="position:absolute;  left:248px; top:207px;">') // mode 1c
+else
+   document.write('<div style="position:absolute;  left:248px; top:220px;">') // modes 1a 1b
+
+var jpath_p1w =block_path + '/pulse1/pulse width (ms)'
+jvar = ODBGet(jpath_p1w);
+document.write('<a href="#" onclick="ODBEdit(jpath_p1w)" >')
+document.write(jvar + 'ms');
+document.write('</a>');
+document.write('') ;
+document.write('</div>')
+\endcode
+
+The EBIT custom page is shown @ref RC_Ebit_custom_page "here". 
+
+
+<br><hr><br>
+
+
+@subsection RC_mhttpd_custom_pw Password protection of Edit Boxes
+
+It is a good idea to protect the Edit Box from @ref  RC_mhttpd_custom_pw_protection "accidental access".
+This is done by a using the @ref RC_mhttpd_custom_odb_htm "pwd option" in the  <span class="odbtag"><odb> tag</span>, and adding the same
+Javascript function  \b promptpwd()  as was  @ref promptpwd "used above" for password protection of an area map.
+\code
+<!--
+function promptpwd(path)
+{
+    pwd = prompt('Please enter password', '');
+    document.cookie = "cpwd=" + pwd;
+    location.href = path;
+}
+//-->
+</script>
+...
+...
+
+<odb src="/..." edit=1 pwd="CustomPwd">
+
+...
+\endcode
+
+
+<br><hr><br>
+
+  - \subpage RC_mhttpd_custom_demo
+  - \subpage RC_mhttpd_Internal
+
+
+<br>
+\htmlonly
+<script type="text/javascript">
+// pages parameters: back index next {top bottom}
+pages( "RC_mhttpd_custom_RPC_access", "RC_section_index", "RC_mhttpd_custom_demo","RC_mhttpd_Image_access",  "" );
+sections("Features", "RunControl","FrontendOperation"); // last section; top of this section; next section
+</script>
+\endhtmlonly
+\latexonly
+@ref  RC_mhttpd_custom_ODB_access  "previous page" - @ref Top - @ref Organization "Map"  - @ref  RC_mhttpd_custom_demo  "next page"
+\endlatexonly
+
+\anchor end
+<!--  End of  RC_mhttpd_Image_access   -->
+*/
+
+
+
+<!--    D E M O  -->
+
+/*!   \page  RC_mhttpd_custom_demo Demo of custom image page
+<br>
+\htmlonly
+<script type="text/javascript">
+// pages parameters: back index next {top bottom}
+pages( "RC_mhttpd_Image_access", "RC_section_index", "RC_mhttpd_Internal","RC_mhttpd_custom_demo",  "end" );
+sections("Features", "RunControl","FrontendOperation"); // last section; top of this section; next section
+</script>
+\endhtmlonly
+\latexonly
+@ref  RC_mhttpd_Image_access "previous page" - @ref Top - @ref Organization "Map"  - @ref  RC_mhttpd_Internal "next page"
+\endlatexonly
+<br>
+
+This demo will show you how to make a custom page containing an image, and superimpose
+edit boxes, clickable areas, labels, fills etc. 
+
+
+The HTML document  myexpt.html can be found in the examples/custom directory.
+This code  forms part of a custom demo. For the full operation of this
+demo, you'll need to have the frontend <b>"sample frontend"</b>
+(midas/example/experiment/frontend.c), mlogger, <span class="cl">mhttpd</span> running.
+
+The code myexpt.html is shown below for convenience:
+\code
+<html>
+  <head>
+   <title>MyExperiment Demo Status</title>
+   <meta http-equiv="Refresh" content="30">
+  </head>
+ <body>
+  <form name="form1" method="Get" action="/CS/MyExpt&">
+     <table border=3 cellpadding=2>
+          <tr><th bgcolor="#A0A0FF">Demo Experiment<th bgcolor="#A0A0FF">Custom Monitor/Control</tr> 
+          <tr><td> <b><font color="#ff 0">Actions: </font></b><input
+                      value="Status" name="cmd" type="submit"> <input type="submit"
+                      name="cmd" value="Start"><input type="submit" name="cmd" value="Stop">
+           </td><td>
+           <center> <a href="http://midas.triumf.ca/doc/html/index.html"> Help </a></center>
+           </td></tr>
+           <td>Current run #: <b><odb src="/Runinfo/run number"></b></td>
+           <td>#events: <b><odb src="/Equipment/Trigger/Statistics/Events sent"></b></td>
+           </tr><tr>
+           <td>Event Rate [/sec]: <b><odb src="/Equipment/Trigger/Statistics/Events per sec."></b></td>
+           <td>Data Rate [kB/s]: <b><odb src="/Equipment/Trigger/Statistics/kBytes per sec."></b></td>
+            </tr><tr>
+            <td>Cell Pressure: <b><odb src="/Equipment/NewEpics/Variables/CellPressure"></b></td>
+           <td>FaradayCup   : <b><odb src="/Equipment/NewEpics/Variables/ChargeFaradayCup"></b></td>
+           </tr><tr>
+           <td>Q1 Setpoint: <b><odb src="/Equipment/NewEpics/Variables/EpicsVars[17]" edit=1></b></td>
+          <td>Q2 Setpoint: <b><odb src="/Equipment/NewEpics/Variables/EpicsVars[19]" edit=1></b></td>
+          </tr><tr>
+          <th> <img src="http://localhost:8080/HS/Default/Trigger%20rate.gif?
+                          exp=default&amp;scale=12h&amp;width=250">
+          </th>
+          <th> <img src="http://localhost:8080/HS/Default/Scaler%20rate.gif?
+                          exp=default&amp;scale=10m&amp;width=250"></th>
+          </tr>
+          <tr><td colspan=2>
+          <map name="myexpt.map">
+          <area shape=rect coords="140,70, 420,170" 
+                  href="http://midas.triumf.ca/doc/html/index.html" title="Midas Doc">
+          <area shape=rect coords="200,200,400,400"
+                  href="http://localhost:8080" title="Switch pump">
+       <area shape=rect coords="230,515,325,600"
+              href="http://localhost:8080" title="Logger in color level (using Fill)">
+        <img src="myexpt.gif" border=1 usemap="#myexpt.map">
+          </map>
+          </td></tr>
+     </table></form>
+   </body>
+  </html>  
+\endcode
+
+
+To  @ref RC_mhttpd_Activate "activate" this HTML document, it has to be defined in the ODB as follow:
+\code
+[local:Default:Stopped]/>cd /Custom
+[local:Default:Stopped]/Custom>create string Myexpt&
+String length [32]: 256
+[local:Default:Stopped]/Custom>set Myexpt& /midas/examples/custom/myexpt.html
+\endcode
+After refresh, the alias-link \b Myexpt should be visible on the Main Status Page.
+If you have not already inserted the image file name \b myexpt.gif into the Custom page,
+do so now by following the instructions to @ref RC_mhttpd_custom_image "insert the image".
+
+Once the image is inserted, after refresh the image should be visible by clicking on 
+the alias-link \b Myexpt, and the mapping active.
+
+\anchor mapping_demo
+The mapping based on myexpt.map
+is active, hovering the mouse over the boxes will display the associated
+titles (Midas Doc, Switch pump, etc), By clicking on either box the browser will go to the
+defined html page specified by the map.
+
+
+ * <br><br><br>
+ * <center>
+ *  <span class="image"> Figure 1 : Demo Custom web page with external reference to html document.
+ * <br><br><br> 
+ *  \image html  mhxcustom01.jpg
+ *  \image latex  mhxcustom01.eps "Figure 1: Demo Custom web page with external reference to html document" width=12cm
+ * </span></center>
+ * <br><br><br> 
+
+In addition to these initial features, multiple ODB values can be superimposed 
+at define location on the image. Each entry will have a ODB tree associated to it
+defining the ODB variable, X/Y position, color, etc...
+
+Make the \b Rate label as explained @ref RC_mhttpd_custom_labels "above".
+After refreshing the web page, you will see the error message below:
+
+\code
+>>>>>>>> Refresh web page <<<<<<<<
+
+12:32:38 [mhttpd] [mhttpd.c:5508:show_custom_gif] Empty Src key for label "Rate"
+\endcode
+
+The keys created in the <span class="odbpath">Labels/Rate</span> subtree are explained  @ref RC_mhttpd_labels_tree "here". 
+Customize this label by assigning
+the \b Src key  to a valid ODB Key variable, and the X,Y fields to position top-left corner of the label, e.g. 
+\code
+[local:Default:Stopped]Rate>set src "/Equipment/Trigger/statistics/kbytes per sec."
+[local:Default:Stopped]Rate>set x 330
+[local:Default:Stopped]Rate>set y 250 
+[local:Default:Stopped]Rate>set format "Rate:%1.1f kB/s"
+\endcode
+
+Once the initial label is created, the simplest way to extent to multiple labels is to
+copy the existing label sub-tree and modify the label parameters.
+\code
+[local:Default:Stopped]Labels>cd .. 
+[local:Default:Stopped]Labels>copy Rate Event
+[local:Default:Stopped]Labels>cd Events/
+[local:Default:Stopped]Event>set src "/Equipment/Trigger/statistics/events per sec."
+[local:Default:Stopped]Event>set Format "Rate:%1.1f evt/s"
+[local:Default:Stopped]Event>set y 170
+[local:Default:Stopped]Event>set x 250
+\endcode
+You will now have two \b Labels, named "Rate" and "Event", both subtrees under </span class="odb">../Labels</span>.
+ 
+In the same manner, you can create @ref RC_mhttpd_custom_gif_bars  "bars" used for 
+level representation.  The keys in the Bars subdirectory are explained 
+@ref RC_mhttpd_bars_tree "above".
+
+This code will setup two ODB values defined by the fields src.
+\code
+[local:Default:Stopped]myexpt.gif>pwd
+/Custom/Images/myexpt.gif
+[local:Default:Stopped]myexpt.gif>mkdir Bars
+[local:Default:Stopped]myexpt.gif>cd bars/
+[local:Default:Stopped]Labels>mkdir Rate
+
+>>>>>>>> Refresh web page <<<<<<<<
+
+14:05:58 [mhttpd] [mhttpd.c:5508:show_custom_gif] Empty Src key for bars "Rate"
+[local:Default:Stopped]Labels>cd Rate/
+[local:Default:Stopped]Rate>set src "/Equipment/Trigger/statistics/kbytes per sec."
+[local:Default:Stopped]Rate>set x 4640
+[local:Default:Stopped]Rate>set y 210 
+[local:Default:Stopped]Rate>set max 1e6 
+[local:Default:Stopped]Labels>cd .. 
+[local:Default:Stopped]Labels>copy Rate Events
+[local:Default:Stopped]Labels>cd Events/
+[local:Default:Stopped]Event>set src "/logger/channles/0/statistics/events written"
+[local:Default:Stopped]Event>set direction 1
+[local:Default:Stopped]Event>set y 240
+[local:Default:Stopped]Event>set x 450
+[local:Default:Stopped]Rate>set max 1e6 
+\endcode
+
+You will now have two \b Bars, also named "Rate" and "Event", both subtrees under </span class="odb">../Bars</span>.
+
+
+The last feature to be added is a 
+@ref RC_mhttpd_custom_fills  "Fill" (where an area can be filled with different
+colors depending on the given ODB value). These have to be entered by hand. See instructions in  @ref RC_mhttpd_custom_fills "fills",
+which shows you how to create a \b Filled area  named "Level"  (a subtree under </span class="odb">../Fills</span>). 
+
+Once all these features have been added, the custom page will look as Figure 2:
+\anchor example_image_all
+
+ * <br><br><br>
+ * <center>
+ *  <span class="image"> Figure 2 : Demo Custom web page with labels,bars,fills and history plots
+ * <br><br><br> 
+ *  \image html  mhxcustom02.jpg
+ *  \image latex  mhxcustom02.eps "Figure 2 : Demo Custom web page with labels,bars,fills and history plots " width=12cm
+ * </span></center>
+ * <br><br><br> 
+
+
+\htmlonly
+<script type="text/javascript">
+// pages parameters: back index next {top bottom}
+pages( "RC_mhttpd_Image_access", "RC_section_index",  "RC_mhttpd_Internal","RC_mhttpd_custom_demo",  "" );
+sections("Features", "RunControl","FrontendOperation"); // last section; top of this section; next section
+</script>
+\endhtmlonly
+\latexonly
+@ref RC_mhttpd_Image_access   "previous page" - @ref Top - @ref Organization "Map"  - @ref  RC_mhttpd_Internal  "next page"
+\endlatexonly
+\anchor end
+<!-- end of page RC_mhttpd_custom_demo -->
+*/
+
+
+
+
+
+/*! \page    RC_mhttpd_Internal Internal custom page
+<br>
+\htmlonly
+<script type="text/javascript">
+// pages parameters: back index next {top bottom}
+pages( "RC_mhttpd_Image_access", "RC_section_index", "RC_monitor","RC_mhttpd_Image_access",  "end" );
+sections("Features", "RunControl","FrontendOperation"); // last section; top of this section; next section
+</script>
+\endhtmlonly
+\latexonly
+@ref  RC_mhttpd_Image_access "previous page" - @ref Top - @ref Organization "Map"  - @ref RC_monitor "next page"
+\endlatexonly
+
+
+An \b internal custom page (written in HTML and/or JavaScript)  may be imported under a given 
+<span class="odb">/Custom/</span> ODB key.
+The name of this key will appear in the Main Status page as an  @ref RC_mhttpd_Alias_page "alias-links" 
+<span class="new">(or alias-button)</span>. By clicking on this link/button, 
+the contents of this key is interpreted as html content.
+
+The insertion of a new Custom page requires the following steps:
+- Create an initial html file using your favorite HTML editor (see @ref RC_mhttpd_custom_create)
+- @ref RC_odb_custom_internal_example "Import" this file
+
+\note
+ - Once the file is imported into ODB, you can \b ONLY edit it through the web 
+  (as long as   <span class="cl">mhttpd</span> is active) by clicking on the \b ODB(button) ...
+  Custom(Key) ... Edit (Hyperlink at the bottom of the key). 
+
+ - The Custom page  can also be exported back to a ASCII file using the odbedit command @ref RC_odbedit_export "export", e.g.
+ \code
+  [local:midas:Stopped]/>cd Custom/
+  [local:midas:Stopped]/Custom>export test&
+  File name: mcustom.html
+  [local:midas:Stopped]/Custom>
+  \endcode
+
+Figure 1 shows an \b internal custom page which has been imported into the ODB at key <span class="odb">/Custom/Overview&</span>
+as shown in Figure 2. 
+
+
+ * <br><br><br>
+ * <center>
+ *  <span class="image"> Figure 1 :  Internal custom web page with history graph.
+ * <br><br><br> 
+ *  \image html  mhcustom1.gif
+ *  \image latex  mhcustom1.eps "Figure 1 :  Internal custom web page with history graph." width=12cm
+ * </span></center>
+ * <br><br><br>  
+
+
+ * <br><br><br>
+ * <center>
+ *  <span class="image"> Figure 2 :  Internal custom web page loaded into the ODB.
+ * <br><br><br> 
+ *  \image html  mhcustom2.gif
+ *  \image latex  mhcustom2.eps "Figure 2 :  Internal custom web page loaded into the ODB." width=12cm
+ * </span></center>
+ * <br><br><br>  
+
+<br>
+
+
+<br>
+<br>
+\htmlonly
+<script type="text/javascript">
+// pages parameters: back index next {top bottom}
+pages( "RC_mhttpd_Image_access", "RC_section_index", "RC_monitor","",  "end" );
+sections("Features", "RunControl","FrontendOperation"); // last section; top of this section; next section
+</script>
+\endhtmlonly
+\latexonly
+@ref  RC_mhttpd_Image_access "previous page" - @ref Top - @ref Organization "Map"  - @ref   RC_monitor "next page"
+\endlatexonly
+\anchor end
+<!-- end of Page   RC_mhttpd_Image_access  -->
+*/
+
+
+
+
+
