@@ -3,7 +3,7 @@
 <!-- this page is in the section Frontend  -->
 <br>
 \htmlonly
-<script type="text/javascript" src="http://ladd00.triumf.ca/~daqweb/doc/my_midas/html/navigation.js"></script>
+<script type="text/javascript" src="navigation.js"></script>
 <script type="text/javascript">
 pages( "FE_Super_Event","FE_section_index","FE_Slow_Control_system","FE_Event_Builder", "end" ); // back index next {top bottom}
 sections("FrontendOperation","utilities"); // last section; top of this section; next section

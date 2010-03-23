@@ -208,7 +208,7 @@ The features and customization of the logger task are fully described in the sec
 
 
 \htmlonly
-<script type="text/javascript" src="http://ladd00.triumf.ca/~daqweb/doc/my_midas/html/navigation.js"></script>
+<script type="text/javascript" src="navigation.js"></script>
 <script type="text/javascript">
 pages( "F_Midas_Code_and_Libraries",  "F_Section_Index", "F_Logging_Data", "F_Logging"); // back index next {top bottom}
 // sections params:   last section; top of this section; next section

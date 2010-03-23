@@ -69,7 +69,7 @@ sections("Intro","Quickstart","Features"); // last section; top of this section;
 <!-- Navigation -->
 <br>
 \htmlonly
-<script type="text/javascript" src="http://ladd00.triumf.ca/~daqweb/doc/my_midas/html/navigation.js"></script>
+<script type="text/javascript" src="navigation.js"></script>
 <script type="text/javascript">
 pages("Quickstart","Q_section_index","Q_Windows","Q_Linux" ,"end" ); // back index next {top bottom}
 sections("Intro","Quickstart","Features"); // last section; top of this section; next section
@@ -415,7 +415,7 @@ sections("Intro","Quickstart","Features"); // last section; top of this section;
 <!-- Navigation -->
 <br>
 \htmlonly
-<script type="text/javascript" src="http://ladd00.triumf.ca/~daqweb/doc/my_midas/html/navigation.js"></script>
+<script type="text/javascript" src="navigation.js"></script>
 <script type="text/javascript">
 pages("Q_Linux","Q_section_index", "Features","Q_Windows" ,"end" ); // back index next {top bottom}
 sections("Intro","Quickstart","Features"); // last section; top of this section; next section

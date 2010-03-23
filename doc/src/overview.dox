@@ -5,7 +5,7 @@
 <!--  This page is a subpage to Features  -->
 
 \htmlonly
-<script type="text/javascript" src="http://ladd00.triumf.ca/~daqweb/doc/my_midas/html/navigation.js"></script>
+<script type="text/javascript" src="navigation.js"></script>
 <script type="text/javascript">
 pages( "Features",  "F_Section_Index", "F_ODB_Structure","F_MainElements","end"); // back index next {this page top} {this page bottom}
 </script>
@@ -331,7 +331,7 @@ For more information see @ref Electronic_Logbook, @ref mhttpd_task.
 
 
 \htmlonly
-<script type="text/javascript" src="http://ladd00.triumf.ca/~daqweb/doc/my_midas/html/navigation.js"></script>
+<script type="text/javascript" src="navigation.js"></script>
 <script type="text/javascript">
 pages( "Features",  "F_Section_Index", "F_ODB_Structure", "F_MainElements"); // back index next { top end }
 </script>
