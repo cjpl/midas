@@ -21,6 +21,7 @@ version = 2.3.0
 all::	html
 
 html: images/done
+	cd src ; index.pl ; doit.pl ; cd ..
 	doxygen
 	cp images/next.gif html/.
 	cp images/previous.gif html/.
