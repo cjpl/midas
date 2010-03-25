@@ -1,6 +1,6 @@
 /*! @page  Organization Manual Contents 
 \htmlonly
-<script type="text/javascript" src="navigation.js"></script>
+<script type="text/javascript" src="http://ladd00.triumf.ca/~daqweb/doc/my_midas/html/navigation.js"></script>
 \endhtmlonly
 
 <span class="note">This file produced automatically ...  DO NOT EDIT </span>
@@ -463,6 +463,7 @@ are being changed/added to etc.
             <li> @ref RC_Experiment_tree_keys <!-- subsection under page RC_customize_ODB in RunControl.dox -->
          </ul> <!-- i3 -->
          <li> @ref RC_run_start_params <!-- section under page RC_customize_ODB in RunControl.dox -->
+         <li> @ref RC_run_start_params_optional <!-- section under page RC_customize_ODB in RunControl.dox -->
          <ul class="i3">
             <li> @ref RC_Edit_On_Start <!-- subsection under page RC_customize_ODB in RunControl.dox -->
          </ul> <!-- i3 -->
@@ -495,8 +496,13 @@ are being changed/added to etc.
          <li> @ref RC_Alarm_System <!-- section under page RC_customize_ODB in RunControl.dox -->
          <li> @ref RC_ODB_Alarms_Tree <!-- section under page RC_customize_ODB in RunControl.dox -->
          <ul class="i3">
+            <li> @ref RC_evaluated_alarm_condition <!-- subsection under page RC_customize_ODB in RunControl.dox -->
+         </ul> <!-- i3 -->
+         <li> @ref RC_alarms_tree_example <!-- section under page RC_customize_ODB in RunControl.dox -->
+         <ul class="i3">
             <li> @ref RC_explanation_of_alarms_tree <!-- subsection under page RC_customize_ODB in RunControl.dox -->
-         </ul> <!-- i3  end-of-page RC_customize_ODB -->
+         </ul> <!-- i3 -->
+         <li> @ref RC_alarms_email <!-- section under page RC_customize_ODB in RunControl.dox -->
       </ul> <!-- i2  end-of-page RC_customize_ODB -->
 <br>
       <li> @ref RC_Hot_Link <!-- subpage RC_Hot_Link -->
