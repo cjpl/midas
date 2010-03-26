@@ -437,7 +437,7 @@ sub fix_idx()
 
     print OUTF "/*! \@page  DocIndex Index to Documentation pages\n";
     print OUTF "\\htmlonly\n";
-    print OUTF "<script type=\"text/javascript\" src=\"http://ladd00.triumf.ca/~daqweb/doc/my_midas/html/navigation.js\"></script>\n";
+    print OUTF "<script type=\"text/javascript\" src=\"navigation.js\"></script>\n";
     print OUTF "\\endhtmlonly\n";
     print OUTF "\n<span class=\"note\">This file produced automatically ...  DO NOT EDIT </span>\n";
     print OUTF "<span class=\"warn\">\n";
@@ -1173,7 +1173,7 @@ sub header()
 {
     print OUTD "/*! \@page  Organization Manual Contents \n";
     print OUTD "\\htmlonly\n";
-    print OUTD "<script type=\"text/javascript\" src=\"http://ladd00.triumf.ca/~daqweb/doc/my_midas/html/navigation.js\"></script>\n";
+    print OUTD "<script type=\"text/javascript\" src=\"navigation.js\"></script>\n";
     print OUTD "\\endhtmlonly\n";
     print OUTD "\n<span class=\"note\">This file produced automatically ...  DO NOT EDIT </span>\n";
     print OUTD "\@section O_what What can be found in this manual?\n\n";
