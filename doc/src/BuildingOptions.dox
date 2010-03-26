@@ -200,9 +200,10 @@ will generate a warning message in the case this variable is not defined.
  as well as the @ref MIDAS_SERVER_HOST and @ref MIDAS_EXPT_NAME as a given directory
  path can only refer to a single experiment.
 @subsection BO_MCHART_DIR MCHART_DIR
- This variable is ... for later...
- This variable is valid only under Linux as the -D is not supported under WindowsXX
-
+ Obsolete
+@subsection BO_MIDAS_FRONTEND_INDEX MIDAS_FRONTEND_INDEX
+ This variable predefineds the index assigned to the equipment using the event builder option.
+ Useful if the frontend applications are started from different hosts. Refer to @ref FE_principle_eb for more information. 
 \anchor end
 */
 

@@ -18,7 +18,9 @@ sections("FrontendOperation","utilities"); // last section; top of this section;
 
 \b mevb is an event builder application which takes the Midas data output from several frontends,
 and assembling them into a new overall Midas event.
-
+Two types of event builder can be envisaged:
+- Asynchronized data collection
+ - Synchronized data collection
 In the case where overall data collection is handled by multiple
 physically separated frontends, it could be necessary to assemble these
 data fragments into a dedicated event. The synchonization of the fragment
@@ -39,7 +41,8 @@ with its corresponding statistical information.
   - [-h ] : help
   - [-h hostname ] : host name 
   - [-e exptname ] : experiment name
-  - [-b ] : Buffer name
+  - [-i index ]  : equipment index identification
+  - [-b buffer_name ] : Buffer name
   - [-v ] : Show wheel
 
   - [-d ] : debug messages
@@ -76,9 +79,10 @@ the equipment list <b> if the frontend equipment type includes the
 
 It is possible that in case of multiple frontends, the same "fragment" code may run in the different
 hardware frontends. In order to prevent having to build nFragment different frontend tasks, the 
-<b> "-i index" </b> argument given when starting the @ref FE_frontend_task "frontend tasks" will replicate 
-the same application image with the necessary dynamic modification required for the proper 
-Event Building operation.
+<b> "-i index" </b> argument given when starting the @ref FE_frontend_task "frontend tasks" will replicate the same application image with the necessary dynamic modification required for the proper Event Building operation.
+
+The index can be passed to the frontend application either by argument or by environment variable.
+@ref BO_MIDAS_FRONTEND_INDEX. 
 
 The "-i index" argument will provide the index to be appended to the minimal set of
 parameters to distinguish the different frontends. These parameters are:
@@ -86,23 +90,42 @@ parameters to distinguish the different frontends. These parameters are:
 - \b equipment \b name : Name of the equipment (from the Equipment structure).
 - \b event \b buffer: Name of the destination buffer (from the Equipment structure).
 
+To allow either synchronized fragment collection or asynchronized gathering of the fragments, the composition of the "event buffer" and "equipment name" require to have the index format part of the 
+equipment definition in the case of the synchronized fragment event builder.
+<p>
+Frontend code for asynchronized fragment collection in the event builder,
+Event buffer remains the same for all the fragments:
 \code
-Frontend code:
   /* The frontend name (client name) as seen by other MIDAS clients   */
   char *frontend_name = "ebfe";
   ...
    EQUIPMENT equipment[] = {
 
-      {"Trigger",              /* equipment name */
+      {"Trigger%02d",              /* equipment name */
        1, TRIGGER_ALL,         /* event ID, trigger mask */
-       "BUF",                  /* event buffer */
+       "BUFFER",                  /* event buffer */
+       EQ_POLLED | EQ_EB,       /* equipment type + EQ_EB flag <<<<<< */
+       LAM_SOURCE(0, 0xFFFFFF), /* event source crate 0, all stations */
+       "MIDAS",                 /* format */
+\endcode
+<p>
+Frontend code for synchronized fragment collection in the event buider:
+\code
+  /* The frontend name (client name) as seen by other MIDAS clients   */
+  char *frontend_name = "ebfe";
+  ...
+   EQUIPMENT equipment[] = {
+
+      {"Trigger%02d",              /* equipment name */
+       1, TRIGGER_ALL,         /* event ID, trigger mask */
+       "BUF%02d",                  /* event buffer */
        EQ_POLLED | EQ_EB,       /* equipment type + EQ_EB flag <<<<<< */
        LAM_SOURCE(0, 0xFFFFFF), /* event source crate 0, all stations */
        "MIDAS",                 /* format */
 \endcode
 
 Once the frontend is started with <em> -i 1 </em>, the Midas client name, equipment name and 
-buffer name will be modified.
+buffer name will be modified (case of the synchronized event builder).
 
 \code
 > ebfe -i 1 -D
