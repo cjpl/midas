@@ -55,7 +55,10 @@ void     sis3820_RegisterWrite(MVME_INTERFACE *mvme, DWORD base, int offset, uin
 /*****************************************************************/
 uint32_t sis3820_ScalerRead(MVME_INTERFACE *mvme, DWORD base, int ch)
 {
-  return regRead(mvme, base, SIS3820_COUNTER_CH1+ch*4);
+  if (ch == 0)
+    return regRead(mvme, base, SIS3820_COUNTER_CH1+ch*4);
+  else
+    return regRead(mvme, base, SIS3820_COUNTER_SHADOW_CH1+ch*4);
 }
 
 /*****************************************************************/
@@ -129,7 +132,7 @@ int main (int argc, char* argv[]) {
     printf("scaler[%i] = %d\n", i, scaler);
   }
   regWrite(myvme, SIS3820_BASE, SIS3820_KEY_OPERATION_ENABLE, 0x00);
-  sleep(1);
+  sleep(10);
   regWrite(myvme, SIS3820_BASE, SIS3820_KEY_OPERATION_DISABLE, 0x00);
   sis3820_Status(myvme, SIS3820_BASE);
 
