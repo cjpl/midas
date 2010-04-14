@@ -52,10 +52,13 @@ publish:
 	#tar -czvf midasdoc-man-$(version).tar.gz man/
 	tar -czvf midasdoc-images.tar.gz images/
 	#rsync -uv html/* /home/daqweb/public_html/doc/midas/html/.
-	#rsync -uv html/* /home/daqweb/public_html/doc/my_midas/html/.
+	rsync -uv html/* /home/daqweb/public_html/doc/midas3/html/.
 	#rsync -uv javascript/* /home/daqweb/public_html/doc/my_midas/html/.
 	rsync -av *.tar.gz daqweb@ladd00.triumf.ca:/home/daqweb/public_html/ftp/.
 	#rsync -av /midas/doc/CHANGELOG.TXT /home1/ftp/pub/midas/.
+
+publishh: 
+	rsync -uv html/* /home/daqweb/public_html/doc/midas3/html/.
 
 clean:
 	cd latex; rm -f *.*~ *.pnm *.tex *.log *.aux *.dvi *.eps

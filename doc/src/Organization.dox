@@ -687,6 +687,7 @@ are being changed/added to etc.
          <li> @ref BO_MIDAS_EXPT_NAME <!-- subsection under page BuildingOptions in BuildingOptions.dox -->
          <li> @ref BO_MIDAS_DIR <!-- subsection under page BuildingOptions in BuildingOptions.dox -->
          <li> @ref BO_MCHART_DIR <!-- subsection under page BuildingOptions in BuildingOptions.dox -->
+         <li> @ref BO_MIDAS_FRONTEND_INDEX <!-- subsection under page BuildingOptions in BuildingOptions.dox -->
       </ul> <!-- i2  end-of-page BuildingOptions -->
    </ul> <!-- i1  end-of-page BuildingOptions -->
 \anchor NDF_section_index

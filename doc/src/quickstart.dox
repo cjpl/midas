@@ -438,22 +438,43 @@ Throughout the following description the midas package is assumed to be found un
 <br>The experiment-specific directory
     is \b \%SystemDrive%\\online. The user name is <em>johnfoo</em>.
 
-  - The package extraction under Windows is similar to the Linux. The \ref Q_SVN "SVN" site is used to
+ - The package extraction under Windows is similar to the Linux. The \ref Q_SVN "SVN" site is used to
     gather the midas and mxml. The method can be the tarball or the \ref Q_SVN "svn" using the 
     <a href="http://tortoisesvn.net" > Tortoise package</a>.
-  - Using the tarball mechanism:
+
+ - Using the tarball mechanism:
   @code
-    - Go to http://savannah.psi.ch/viewcvs/trunk/?root=midas
-    - Click "Download tarball"
-    - Extract trunk to %SystemDrive%
-    - Rename trunk to midas
-    - delete trunk.tar.gz
-    - Go to http://savannah.psi.ch/viewcvs/trunk/?root=mxml
-    - Click "Download tarball"
-    - Extract trunk to %SystemDrive%
-    - Rename trunk to mxml
+ - Go to http://savannah.psi.ch/viewcvs/trunk/?root=midas
+ - Click "Download tarball"
+ - Extract trunk to %SystemDrive%
+ - Rename trunk to midas
+ - Go to http://savannah.psi.ch/viewcvs/trunk/?root=mxml
+ - Click "Download tarball"
+ - Extract trunk to %SystemDrive%
+ - Rename trunk to mxml
   @endcode
 
+
+  - Using the svn command under cygwin (pwd "svn" will be asked twice):
+  @code
+ cd %SystemDrive%\
+ svn co svn+ssh://svn@savannah.psi.ch/afs/psi.ch/project/meg/svn/midas/trunk midas
+ svn co svn+ssh://svn@savannah.psi.ch/afs/psi.ch/project/meg/svn/mxml/trunk mxml
+  @endcode
+
+  - Using the Tortoise package under windows (pwd "svn" will be requested twice)
+   - Using the file browser go to the \%SystemDrive\%
+   - right click and select "SVN checkout"
+   - Fill the "URL of Repository: with 
+     svn+ssh://svn@savannah.psi.ch/afs/psi.ch/project/meg/svn/midas/trunk
+   - Fill the "Checkout directory" with C:\midas
+   - Start transfer.
+   - Do the same for mxml
+   - right click and select "SVN checkout"
+   - Fill the "URL of Repository: with
+     svn+ssh://svn@savannah.psi.ch/afs/psi.ch/project/meg/svn/mxml/trunk
+   - Fill the "Checkout directory" with C:\mxml
+   - Start transfer.
 
 @subsection Q_Windows_Environment_Variables Environment Variables
 
