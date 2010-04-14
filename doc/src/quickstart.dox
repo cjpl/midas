@@ -434,9 +434,9 @@ not yet specified
 
 
 Throughout the following description the midas package is assumed to be found under
-    the directory \b \%SystemDrive%\midas 
+    the directory <b> \%SystemDrive%\\midas </b> 
 <br>The experiment-specific directory
-    is \b \%SystemDrive%\online. The user name is <em>johnfoo</em>.
+    is \b \%SystemDrive%\\online. The user name is <em>johnfoo</em>.
 
   - The package extraction under Windows is similar to the Linux. The \ref Q_SVN "SVN" site is used to
     gather the midas and mxml. The method can be the tarball or the \ref Q_SVN "svn" using the 
@@ -458,18 +458,22 @@ Throughout the following description the midas package is assumed to be found un
 @subsection Q_Windows_Environment_Variables Environment Variables
 
 Environment variables needs to be setup prior the midas build;
-  - from the "system properties" -> advanced -> Environment Variables, define new system variables
-    MIDASSYS to c:\midas (installation location).
-  - from the "system properties" -> advanced -> Environment Variables, add to PATH system variables
-    ;\%MIDASSYS%\nt\bin
-  - create file \%SystemRoot%\system32\exptab
+  - from the "system properties" -> advanced -> Environment Variables, define new system
+    variables \b MIDASSYS to \b c:\\midas (installation location).
+  - from the "system properties" -> advanced -> Environment Variables, add to PATH system
+    variables \b "%MIDASSYS%\nt\bin"
+  - create file \b \%SystemRoot\%\\system32\\exptab with the following content.
   @code
   test c:\online johnfoo 
   @endcode   
-  - The Midas build requires the Microsoft Visual C++ (2005) or .NET. the corresponding environment
-  variables for the compiler need to be set prior the Midas build. A batch file can be found 
-  under "C:\\Program Files\Microsoft Visual Studio 8\Common7\Tools\vsvar32.bat or similar...
+  
+  - The Midas build requires the Microsoft Visual C++ (200x) or .NET. 
+    the corresponding environment variables for the compiler need to be set prior
+    the Midas build. A batch file can be found under 
+    "C:\\Program Files\Microsoft Visual Studio 5\Common7\Tools\vsvar32.bat or similar...
+    The build then can be started as follow.  
   @code 
+  
   cd %MIDASSYS%
   nmake -f makefile.nt
   @endcode
