@@ -5929,9 +5929,21 @@ void show_custom_page(char *path, char *cookie_cpwd)
             db_get_key(hDB, hkey, &key);
             memset(data, 0, sizeof(data));
             if (key.item_size <= (int)sizeof(data)) {
-               size = sizeof(data);
-               db_sscanf(getparam("value"), data, &size, 0, key.type);
-               db_set_data_index(hDB, hkey, data, key.item_size, index, key.type);
+               if (index == -1) {
+                  p = getparam("value");
+                  for (i=0 ; p != NULL ; i++) {
+                     size = sizeof(data);
+                     db_sscanf(p, data, &size, 0, key.type);
+                     db_set_data_index(hDB, hkey, data, key.item_size, i, key.type);
+                     p = strchr(p, ',');
+                     if (p != NULL)
+                        p++;
+                  } 
+               } else {
+                  size = sizeof(data);
+                  db_sscanf(getparam("value"), data, &size, 0, key.type);
+                  db_set_data_index(hDB, hkey, data, key.item_size, index, key.type);
+               }
             }
          } else {
             if (isparam("value") && isparam("type") && isparam("len")) {
