@@ -489,7 +489,7 @@ void uart_init(unsigned char port, unsigned char baud)
       0x100 - 52,   // 115200
       0x100 - 35,   // 172800  2% error
       0x100 - 17 }; // 345600  2% error
-#elif defined(SCS_210)                // 24.5 MHz
+#elif defined(SCS_210) || defined(HVR_200) // 24.5 MHz
    unsigned char code baud_table[] =  // UART0 via timer 2
      {0x100 - 0,    //  N/A
       0x100 - 0,    //  N/A
@@ -501,6 +501,7 @@ void uart_init(unsigned char port, unsigned char baud)
       0x100 - 13,   // 115200  2.2% error
       0x100 - 9,    // 172800  1.5% error
       0x100 - 0 };  // N/A
+   #ifdef SCS_210
    unsigned char code baud_table1[] = // UART1 via timer 1
      {0x100 - 106,  //   2400  0.3% error
       0x100 - 53,   //   4800  0.3% error
@@ -512,6 +513,7 @@ void uart_init(unsigned char port, unsigned char baud)
       0x100 - 0,    //  N/A
       0x100 - 0,    //  N/A
       0x100 - 0};   //  N/A
+   #endif
 #elif defined(SUBM_260)                // 49 MHz
    unsigned char code baud_table[] =  // UART0 via timer 2
      {0xFB, 0x100 - 252,  //   2400
@@ -623,7 +625,7 @@ void uart_init(unsigned char port, unsigned char baud)
       EIP2 &= ~0x40;               // serial interrupt low priority
 
 
-#elif defined(SCS_210)             // 24.5 MHz
+#elif defined(SCS_210) || defined(HVR_200) // 24.5 MHz
       SFRPAGE = UART1_PAGE;
       SCON1 = 0x50;                // Mode 1, 8 bit, receive enable
 
@@ -790,7 +792,7 @@ void sysclock_init(void)
 #endif
 
    TMOD = (TMOD & 0x0F) | 0x01; // 16-bit counter
-#if defined(SCS_210)
+#if defined(SCS_210) || defined(HVR_200)
    CKCON = 0x02;                // use SYSCLK/48
    TH0 = 0xEC;                  // load initial value (24.5 MHz SYSCLK)
 #elif defined(CPU_C8051F120)
@@ -857,7 +859,7 @@ void timer0_int(void) interrupt 1
    tcp_timer();
 #else /* SUBM_260 */
 
-#if defined(SCS_210)
+#if defined(SCS_210) || defined(HVR_200)
    TH0 = 0xEC;                  // for 24.5 MHz clock / 48
 #elif defined(CPU_C8051F120)
    TH0 = 0xAF;                  // for 98 MHz clock   / 48
@@ -1277,7 +1279,7 @@ void delay_us(unsigned int us)
 
    if (us <= 250) {
       for (i = (unsigned char) us; i > 0; i--) {
-#if defined(SCS_210)
+#if defined(SCS_210) || defined(HVR_200)
          _nop_();
          for (j=3 ; j>0 ; j--)
             _nop_();

@@ -137,7 +137,7 @@ void setup(void)
    XBR1 = 0x00;
    XBR2 = 0x44;
 
-  #ifdef SCS_210 // run SCS_210 at 24.5 MHz
+  #if defined(SCS_210) || defined(HVR_200) // run SCS_210 and HVR_200 at 24.5 MHz
    /* Select internal quartz oscillator */
    SFRPAGE   = LEGACY_PAGE;
    FLSCL     = 0x00;            // set flash read time for <25 MHz
