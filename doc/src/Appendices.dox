@@ -193,7 +193,7 @@ conditions:
     Linux module loaded in the system first.
     Please contact mailto:midas@triumf.ca for further information.
 
-\code
+@code
 Thu> cd /midas/utils
 Thu> make -f makefile.mcnaf DRIVER=kcs2927
 gcc -O3 -I../include -DOS_LINUX -c -o mcnaf.o mcnaf.c
@@ -206,28 +206,28 @@ gcc -O3 -I../include -DOS_LINUX -o mcnaf mcnaf.o camacrpc.o  ../linux/lib/libmid
 gcc -O3 -I../include -DOS_LINUX -c -o camaclx.o ../drivers/bus/camaclx.c
 gcc -O3 -I../include -DOS_LINUX -o mdrvcnaf mcnaf.o camaclx.o  ../linux/lib/libmidas.a -lutil 
 rm *.o
-\endcode
+@endcode
 
 - <b> Running application </b>
   - Direct CAMAC access: This requires the computer to have the proper CAMAC interface
     installed and the \b BASE ADDRESS matching the value defined in the corresponding CAMAC
     driver. For kcs2926.c, kcs2927.c, dsp004.c, hyt1331.c, the base address
     (CAMAC_BASE) is set to 0x280.
-  \code
+  @code
    >dio miocnaf
-   \endcode
+   @endcode
   - RPC CAMAC through frontend: This requires to have a frontend running which
     will be able to serve the CAMAC RPC request.
     Any Midas frontend has that capability built-in but it has to have the proper
     CAMAC driver included in it.
-    \code
+    @code
      >mcnaf -e <expt> -h <host> -f <fe_name>
-     \endcode
+     @endcode
    
 - <b> Usage </b>
-  \code
+  @code
   ........
-  \endcode
+  @endcode
 
 
 
@@ -244,10 +244,10 @@ interface card is connected to.
 - <b> Arguments </b>
   - [application name ] : Program name requiring I/O permission.
 - <b> Usage </b>
- \code
+ @code
  >dio miocnaf
  >dio frontend 
- \endcode
+ @endcode
 - <b> Remark </b>
 - This "hacking" utility restricts the access
 to a range of I/O ports from 0x200 to 0x3FF.

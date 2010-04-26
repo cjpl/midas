@@ -165,9 +165,9 @@ The features and customization of the logger task are fully described in the sec
   - [-v] : Verbose (not to be used in conjunction with -D).
 
 - <b> Usage </b>
- \code
+ @code
  >mlogger -D 
-\endcode
+@endcode
 
 <b> Notes </b> 
 <ul>
@@ -244,7 +244,7 @@ sections("Quickstart", "Features", "RunControl");
 
 When mlogger is started for the first time, it will create default <b> /Logger</b> and  <b> /History </b> trees.
 The following information will be displayed (if NOT started as a daemon) :
-\code
+@code
 $ mlogger
 Log     directory is /home/midas/online/
 Data    directory is same as Log unless specified in channels/
@@ -252,7 +252,7 @@ History directory is same as Log
 ELog    directory is same as Log
 
 MIDAS logger started. Stop with "!"
-\endcode
+@endcode
 
 Most of the keys in the  <b>/Logger ODB tree</b> are used to customize logging of the data. There are also
 keys to customize the Messaging system. 
@@ -264,7 +264,7 @@ detail in the relevent sections below.  The  F_ODB_History_tree is described in 
  
 The following example shows a /logger tree as created by @ref F_mlogger_task "mlogger". See also @ref F_Logger_tree_keys .
 
-\code 
+@code 
 Key name                        Type    #Val  Size  Last Opn Mode Value
 ---------------------------------------------------------------------------
 Logger                          DIR
@@ -299,7 +299,7 @@ Logger                          DIR
                 Bytes written   DOUBLE  1     8     1h   0   RWD  0
                 Bytes written toDOUBLE  1     8     1h   0   RWD  0
                 Files written   INT     1     4     1h   0   RWD  0
-\endcode
+@endcode
 <br>
 <hr>
 <br>
@@ -622,7 +622,7 @@ duration.
 
     - <b>Note:</b> In Midas version \b 2.0.0 or later, the location of the ODB dump files can be specified in this field.
      If the string contains a DIRECTORY_SEPARATOR, it is considered as an absolute path
-   \code
+   @code
   [local:Default:S]/Logger>ls
   Data dir                        /scr0/spring2009
   Message file                    midas.log 
@@ -646,7 +646,7 @@ duration.
   ODB Dump File                   /scr0/dump/run%06d.odb
   Tape message                    y
  Channels
-   \endcode
+   @endcode
 </td>
 </tr>
 <!--   line   7       -->
@@ -671,7 +671,7 @@ individual channels.
  By default, only channel "0" is created. To define <b>multiple logging channels</b>, an existing
   channel tree can be copied, e.g.:
 
-  \code 
+  @code 
   [loca]]Logger>cd channels
   [local]Channels>ls 
   0
@@ -679,7 +679,7 @@ individual channels.
   [local]Channels>ls 
   0
   1
-  \endcode
+  @endcode
 To send different events to different logging channels, they may be selected by  
 @ref F_Logger_CS_Event_ID "Event ID" or  @ref F_Logger_CS_Trigger_Mask "Trigger Mask". 
 See also  @ref F_Logger_Event_Filtering "Event Filtering" .
@@ -1083,13 +1083,13 @@ Explanation
   - In <b> FTP mode </b>, the filename specifies the access information for the FTP server.
   It has the following format:
 
-  \code
+  @code
   <host name>, <port number>, <user name>, <password>, <directory>, <file name>
-  \endcode
+  @endcode
 for example
- \code
+ @code
   myhost.my.domain,21,john,password,/usr/users/data,run%05d.mid
-  \endcode
+  @endcode
   The normal FTP port number is 21, or 1021 for a Unitree Archive like the one used
   at the Paul Scherrer Institute. By using the FTP mode, a back-end computer can
   write directly to the archive.
@@ -1463,14 +1463,14 @@ sections("Quickstart", "Features", "RunControl");
 <br>
 
 Any client can produce status or error messages with a single call to cm_msg() using the MIDAS library, e.g.
-\code
+@code
  status = db_find_key(hDB, 0, "/Equipment/Cycle_scalers/Settings/",&hKey);
   if(status != DB_SUCCESS && status != DB_NO_KEY)
     {
       cm_msg(MERROR, "begin_of_run", "error accessing \"/Equipment/Cycle_scalers/Settings/\"  (%d)",status);
       return status;
     }
-\endcode
+@endcode
 
 
 Depending on the  @ref F_message_types "message type", these messages are forwarded to any other 
@@ -1526,7 +1526,7 @@ any application connected to the given experiment.
 
 The predefined @ref F_message_types "Midas Message macros" provide a list of possible type of messages.
 
-\code 
+@code 
 Fri Mar 24 10:48:40 2000 [CHAOS] Run 8362 started
 Fri Mar 24 10:48:40 2000 [Logger] Run #8362 started
 Fri Mar 24 10:55:04 2000 [Lazy_Tape] cni-043[10] (cp:383.6s) /dev/nst0/run08360.ybs 849.896MB file NEW
@@ -1546,7 +1546,7 @@ Fri Mar 24 11:42:40 2000 [SUSIYBOS] saving info in run log
 Fri Mar 24 11:42:41 2000 [ODBEdit] Run #8363 stopped
 Fri Mar 24 12:19:57 2000 [MChart] client [umelba.Triumf.CA]MChart failed watchdog test after 10 sec
 Fri Mar 24 12:19:57 2000 [MChart] Program MChart on host koslx0 stopped
-\endcode 
+@endcode 
 <br>
 <br>
 <hr> @section F_mspeaker_task m[lx]speaker - audible messaging
@@ -1574,9 +1574,9 @@ prior to the activation of the \b mspeaker, or \b mlxspeaker tasks.
   - [-D ] : start program as a daemon
  
 - <b> Usage </b>
-\code
+@code
 > mlxspeaker -D
-\endcode
+@endcode
 
 
 
@@ -1636,7 +1636,7 @@ function from the analyzer.c.
 The following example shows a <b>/Logger/SQL</b> tree as created by @ref F_mlogger_task "mlogger"
 (see  @ref F_Logger_mySQL "above"). See @ref  F_Logger_SQL_keys "below" 
 for an explanation of the meaning of each key.
-\code
+@code
 [local:midas:S]/Logger>ls -lr SQL
 Key name                        Type    #Val  Size  Last Opn Mode Value
 ---------------------------------------------------------------------------
@@ -1654,7 +1654,7 @@ SQL                         DIR
         Start time              LINK    1     20    58s  0   RWD  /Runinfo/Start time
     Links EOR                   DIR
         Stop time               LINK    1     19    4m   0   RWD  /Runinfo/Stop time
-\endcode    
+@endcode    
 
 @section F_Logger_SQL_keys Explanation of the keys in the ODB /Logger/SQL tree 
 
@@ -1985,7 +1985,7 @@ to the defined path.
 @subsection F_Logger_Create_History_Dir Creation of ODB Key /Logger/History dir 
 
 Using the @ref RC_odbedit_cr "odbedit command create" , the user may add this key as follows:
-\code
+@code
 [local:Default:S]/Logger>create string "History dir"
 String length [32]:128
 [local:Default:S]/Logger>set "History dir" /mypath/history/2009
@@ -2001,7 +2001,7 @@ String length [32]:128
   Elog dir                        /mypath/elog/2009
   History dir                     /mypath/history/2009
   Channels
-\endcode
+@endcode
 
 <br>
 <hr>
@@ -2161,7 +2161,7 @@ is also present, and contains 7 elements, matching the number of elements in the
 <br>
 Had the latter key not been present, the history variable names would be TGT_0 ... TGT_6.
 <br>
-\code 
+@code 
 [host:chaos:Running]cd /Equipment/Target
 
 [host:chaos:Running]Target>ls -l -r
@@ -2192,7 +2192,7 @@ Target                          DIR
     Statistics                  DIR
           ...
 
-\endcode
+@endcode
 
 <br>
 <hr>
@@ -2207,7 +2207,7 @@ The first time @ref F_mlogger_task "mlogger" is run, it creates the
 using the variables found in the \b /Equipment tree. For the Target equipment
 defined above, the /History tree produced is as follows:
 
-\code
+@code
 16:51:24 [Logger,INFO] Program Logger on host dasdevpc2 started
 [local:midas:S]/History>ls -lt
 [local:midas:S]/History>ls -lr
@@ -2227,7 +2227,7 @@ History                         DIR
                                         [5]             9[1] Target temperature
                                         [6]             9[1] Shield temperature
                                         [7]             9[1] Diode temperature
-\endcode
+@endcode
 
 @section F_History_tree_keys Explanation of the keys in the ODB /History tree
 
@@ -2353,7 +2353,7 @@ keys will be created as follows, where the 2 trigger fields are symbolic links t
 The sub-tree \b System  defines a "virtual" equipment and is assigned
 a particular "History Event ID" by the system.
 
-\code 
+@code 
 [local:midas:S]/History>ls -lrt
 Key name                        Type    #Val  Size  Last Opn Mode Value
 ---------------------------------------------------------------------------
@@ -2377,7 +2377,7 @@ History                         DIR
                                         [0]             System
                                         [1]             10[1] Trigger per sec.
                                         [2]             10[1] Trigger kB per sec                                   .
-\endcode
+@endcode
 
 
 
@@ -2386,7 +2386,7 @@ History                         DIR
 A second sub-tree is added to the /History by the @ref RC_mhttpd_task  Midas web server
 when the button "History" on the main status page is pressed.
 
-\code 
+@code 
 [local:midas:S]/History>ls -l -r Display
 Key name                        Type    #Val  Size  Last Opn Mode Value
 ---------------------------------------------------------------------------
@@ -2401,7 +2401,7 @@ Display                         DIR
                                         [1]             1
         Timescale               INT     1     4     36h  0   RWD  3600
         Zero ylow               BOOL    1     4     36h  0   RWD  y
-\endcode  
+@endcode  
 
 This defines a default history display under the Midas web server as long as the reference
 to "System" is correct. See  @ref RC_mhttpd_History_page for more information regarding
@@ -2448,7 +2448,7 @@ To enable writing history to SQL:
 <ul class="new">
 <li> setup a MySQL database, you will need to know: the server hostname and port number, database name, user name and password. It is recommended to create 3 different users: a "root" user with full priveleges, a "reader" user with read-only priveleges and a "writer" user with "insert, create table, and add column" priveleges (no permission to drop table, remove columns, etc)
 <li> setup a MySQL database (RHEL/SL 5)
-\code
+@code
 ssh root@localhost
 service mysqld start
 /usr/bin/mysql_secure_installation (enter current password for root: press <enter>, then accept default answer "Y" to all questions)
@@ -2456,9 +2456,9 @@ mysqladmin -p create history
 using mysql-administrator, create 2 users:
 history_writer, with database "history" schema privileges: select, insert, create, alter
 history_reader, with database "history" schema privileges: select
-\endcode
+@endcode
 <li> setup $HOME/.odbc.ini file:
-\code
+@code
 cat $HOME/.odbc.ini
 [history_writer]
 Description  = history_writer
@@ -2480,7 +2480,7 @@ OPTION       = 3
 SOCKET       =
 User         = history_reader
 Password     = 
-\endcode
+@endcode
 <li> set ODB "/History/PerVariableHistory" to 1 (BEWARE! This will change the format of normal midas history files. You do not have to enable per-variable history to use the SQL interface, but the layout of SQL tables may be suboptimal in the same way the layout of data in the midas history file is suboptimal).
 <li> set ODB "/Logger/ODBC_DSN" to "history_writer", "/Logger/ODBC_Debug" to 0 (or 1 to see all SQL commands)
 <li> run "mlogger -v", observe how it issues SQL commands to create the tables and columns corresponding to MIDAS history events and tags.
@@ -2536,7 +2536,7 @@ History data retriever.
  
 - <b> Usage </b>
 - <b> Example </b>
-  \code
+  @code
   --- All variables of event ID 9 during last hour with at least 5 minutes interval.
   > mhist
   Available events:
@@ -2575,11 +2575,11 @@ History data retriever.
   Jun 19 11:12:05 2000    113034  4.639   23.074  -0.498  22.896  82.117  40
   Jun 19 11:17:09 2000    113546  4.644   23.172  -0.498  22.892  82.126  40
   Jun 19 11:22:15 2000    114059  4.661   23.16   -0.498  22.888  82.099  40
-  \endcode
+  @endcode
 
   - Single variable "I-WC1+_Anode" of event 5 every hour over the full April 24/2000.
 
-  \code
+  @code
    mhist -e 5 -v "I-WC1+_Anode" -t 3600 -s 240400 -p 250400
   Apr 24 00:00:09 2000    160
   Apr 24 01:00:12 2000    160
@@ -2605,7 +2605,7 @@ History data retriever.
   Apr 24 21:01:23 2000    0
   Apr 24 22:01:32 2000    0
   Apr 24 23:01:39 2000    0
-  \endcode
+  @endcode
 - <b> Remarks </b>: History data can be retrieved and displayed through the
 Midas web page (see @ref RC_mhttpd_task).
 
@@ -2632,7 +2632,7 @@ names from the output.
 
 mhdump is completely standalone and does not require MIDAS header files and
 libraries.
-\code
+@code
 $ mhdump
 Usage: mhdump [-h] [-L] [-n] [-t] [-E event_id] [-T tag_name] file1.hst file2.hst ...
 
@@ -2648,12 +2648,12 @@ Examples:
   To show all data for event 0: mhdump -E 0 file1.hst file2.hst ...
   To show data for event 0, tag "State": mhdump -n -E 0 -T State file1.hst file2.hst ...
   To show data for event 3, tag "MCRT", array index 5: mhdump -n -E 3 -T MCRT[5] file1.hst file2.hst ...
-\endcode
+@endcode
 
 The mhdump source code and a description of the .hst file format are here:
-\code
+@code
 http://daq-plone.triumf.ca/SR/MIDAS/utils/mhdump/
-\endcode
+@endcode
 </span>
 
 
@@ -2675,7 +2675,7 @@ History file consists of definition records and data records. Definition records
 The data is written in native-endian format and big-endian history files (i.e. written on PowerPC-based computer) would not read on little-endian computers (i.e. Intel/AMD CPUs).
 
 When decoding history data records, be aware that the data is written on the format returned by db_get_data(), and follow certain alignement rules. Misaligned data may contain empty padding bytes.
-\code
+@code
 definition record:
    struct HIST_RECORD:
       uint32_t record_type = 0x46445348 (RT_DEF)
@@ -2693,9 +2693,9 @@ definition record:
       ...
    struct TAG [ntags-1]
       ...
-\endcode
+@endcode
 
-\code
+@code
 data record:
    struct HIST_RECORD: (same as above)
       uint32_t record_type = 0x41445348 (RT_DATA)
@@ -2705,10 +2705,10 @@ data record:
       uint32_t data_size   = size in bytes of following data
    event data
       char[data_size]      = history data for this event (see mhdump.cxx and examples below on decoding this data
-\endcode
+@endcode
 To decode the "event data" blob in a data record, one should parse the data definition for this event and remember the contents of all tag definitions. One way to parse the data is by computing the "offset" for each tag by adding up the tag size for each tag. For each tag, the corresponding data size is the product of n_data and the size of the MIDAS type, given in this table (extracted from midas.c):
 
-\code
+@code
 /* data type sizes */
 int tid_size[] = {
    0,                           /* tid == 0 not defined                               */
@@ -2731,10 +2731,10 @@ int tid_size[] = {
    0                            /* TID_LINK      link in online database              */
 
 };
-\endcode
+@endcode
 
 Example code for computing tag offsets:
-\code
+@code
 int offset = 0;
 for (int itag=0; itag&lt;ntags; itag++) {
    int size = tags[itag].n_data * tid_size[tags[itag].type];
@@ -2743,10 +2743,10 @@ for (int itag=0; itag&lt;ntags; itag++) {
    offset += size;
 }
 
-\endcode
+@endcode
 
 Example code for decoding the event data blob:
-\code
+@code
 char *buf = new char[data_size];
 fread(buf, 1, data_size, f); // read data blob from file
 
@@ -2764,7 +2764,7 @@ switch (type_for_tag[itag]) {
       printf("%u ",((uint32_t*)ptr)[j]);
       break;
 }
-\endcode
+@endcode
 
 
 <br>
@@ -2818,12 +2818,12 @@ defined path.
 @subsection F_Logger_Create_Elog_Dir Creation of ODB Key Elog Dir
 
 Using the @ref RC_odbedit_cr "odbedit command create" , the user may add the key as follows:
-\code
+@code
 [local:Default:S]/Logger>create string "Elog dir"
 String length [32]:128
 [local:Default:S]/Logger>set "Elog dir" /mypath/elog/2009
 [local:Default:S]/Logger>ls
-\endcode
+@endcode
 <br>
 <hr>
 <br>
@@ -2839,7 +2839,7 @@ The definition of the options are described in @ref F_ODB_Elog_Tree.
 This branch describes the Elog settings used through the Midas web server.
 See @ref RC_mhttpd_task for setting up the different Elog page displays.
 
-\code 
+@code 
 [local:midas:S]/Elog>ls -lr
 Key name                        Type    #Val  Size  Last Opn Mode Value
 ---------------------------------------------------------------------------
@@ -2898,7 +2898,7 @@ Host name                       STRING  1     256   >99d 0   RWD  myhost.triumf.
 Email DAQ                       STRING  1     45    >99d 0   RWD  daq@triumf.ca,johndoe@triumf.ca
 Email Detector                  STRING  1     32    >99d 0   RWD  janedoe@triumf.ca
 SMTP host                       STRING  1     32    >99d 0   RWD  localhost
-\endcode  
+@endcode  
 
 @subsection F_Email Email
 Defines the Email address for the Elog reply. When a user replies to an Elog message, the message with be sent
@@ -2962,14 +2962,14 @@ Electronic Log utility. Submit full Elog entry to the specified Elog port.
  message. If multiple attributes are required append before "text" field the full
  specification of the attribute. In case of multiple attachements, only one "-f"
  is required followed by up to 10 file names.
- \code
+ @code
  >melog -h myhost -p 8081 -l myexpt -a author=pierre "Just a elog message"
  >melog -h myhost -p 8081 -l myexpt -a author=pierre -f file2attach.txt \
                  "Just this message with an attachement"
  >melog -h myhost -p 8081 -l myexpt -a author=pierre -m file_containing_the_message.txt
  >melog -h myhost -p 8081 -l myexpt -a Author=pierre -a Type=routine -a system=general \
                  -a Subject="my test" "A full Elog message"
-\endcode
+@endcode
 - <b> Remarks </b>
   none so far
 
@@ -3052,7 +3052,7 @@ It is created with default parameters on the first activation
 of the  @ref F_lazylogger_task . This task connects to a defined channel (i.e: Tape).
 when started. Multiple instances of the program can run concurrently.
 
-\code
+@code
     Settings        DIR
         Maintain free space(%)    INT     1     4     3m   0   RWD  0
         Stay behind               INT     1     4     3m   0   RWD  -3
@@ -3070,7 +3070,7 @@ when started. Multiple instances of the program can run concurrently.
   Execute after writing file      STRING  1     64    11h  0   RWD  rundb_addrun.pl
   Modulo.Position                 STRING  1     8     11h  0   RWD  2.1
   Tape Data Append                BOOL    1     4     11h  0   RWD  y
-\endcode
+@endcode
  <br><br>
   - <b>[Maintain free space]</b> As the Data Logger (mlogger) runs independently from
   the Lazylogger, the disk contains all the recorded data files. Under this condition,
@@ -3108,10 +3108,10 @@ when started. Multiple instances of the program can run concurrently.
   In this latter case, condition based on a single field of the ODB can be given to
   establish when the application should be active.
     - <b> Example </b>:
-      \code
+      @code
       odbedit> set "Running condition" WHILE_ACQ_NOT_RUNNING
       odbedit> set "Running condition" "/alias/max_rate \< 200"
-      \endcode
+      @endcode
   - <b>[Data dir]</b> Specify the Data directory path of the data files. By default if the
   "/Logger/Data Dir" is present, the pointed value is taken otherwise the current directory
   where lazylogger has been started is used.
@@ -3156,12 +3156,12 @@ when started. Multiple instances of the program can run concurrently.
   running (3.) and the position of which this instance is assigned to (.1).
   As an example for 3 lazyloggers running contemporaneously the field assignment
   should be :
-  \code
+  @code
   Channel    Field    Run#
   Lazy_1     3.0      21, 24, 27, ...
   Lazy_2     3.1      22, 25, 28, ...
   Lazy_3     3.2      23, 26, 29, ...
-  \endcode
+  @endcode
  <br><br>
   - <b>[Tape Data Append]</b> Enable the spooling of the Tape device to the End_of_Device (EOD) before
   starting the lazy job. This command is valid only for "Backup Type" Tape. If this flag is not enabled
@@ -3179,12 +3179,12 @@ when started. Multiple instances of the program can run concurrently.
  This setup consists of 4 steps:
   - <b>[Step 1] </b> Invoking the lazylogger once for setting up the appropriate ODB
   tree and exit.
-  \code
+  @code
   >lazylogger -c Tape
-  \endcode
+  @endcode
   - <b>[Step 2]</b> Edit the newly created ODB tree. Correct the setting field to
   match your requirement.
-\code
+@code
 > odbedit -e midas
 [local:midas:Stopped]/>cd /Lazy/tape/
 [local:midas:Stopped]tape>ls
@@ -3218,19 +3218,19 @@ tape                            DIR
 [local:midas:Stopped]tape>cd Settings/
 [local:midas:Stopped]Settings>set "Data dir" /data
 [local:midas:Stopped]Settings>set "Capacity (Bytes)" 15e9
-\endcode
+@endcode
   - <b>[Step 3]</b> Start lazylogger in the background
-\code
+@code
 >lazylogger -c Tape -D
-\endcode
+@endcode
   - <b>[Step 4]</b> At this point, the lazylogger is running and waiting for the
   "list label" to be defined before starting the copy procedure. @ref RC_mstat_task
   will display information regarding the status of the lazylogger. 
-\code
+@code
 > odbedit -e midas
 [local:midas:Stopped]/>cd /Lazy/tape/Settings
 [local:midas:Stopped]Settings>set "List label" cni-043
-\endcode
+@endcode
 
 - <b> Remarks </b>
  - For every major operation of the lazylogger a message is sent to the
@@ -3239,7 +3239,7 @@ messages are the only mean of finding out What/When/Where/How the lazylogger has
 on a data file. A fragment of the midas.log for the chaos experiment is shown below.
 In this case, the \b Maintain free space(%) field was enabled which produces the
 cleanup of the data files and the entry in the \b List tree after copy.
-\code
+@code
 Fri Mar 24 14:40:08 2000 [Lazy_Tape] 8351 (rm:16050ms) /scr0/spring2000/run08351.ybs file REMOVED
 Fri Mar 24 14:40:08 2000 [Lazy_Tape] Tape run#8351 entry REMOVED
 Fri Mar 24 14:59:55 2000 [Logger] stopping run after having received 1200000 events
@@ -3267,7 +3267,7 @@ Fri Mar 24 15:50:15 2000 [Lazy_Tape] 8354 (rm:28867ms) /scr0/spring2000/run08354
 Fri Mar 24 15:50:15 2000 [Lazy_Tape] Tape run#8354 entry REMOVED
 ...
 
-\endcode
+@endcode
  - Once lazylogger has started a job on a data file, trying to
 terminate the application will result in producing a log message informing the user of the
 actual percentage of the backup completed so far. This message will repeat itself
@@ -3337,7 +3337,7 @@ When using mchart with -D Argument, it is necessary to have the @ref MCHART_DIR 
 in order to allow the daemon to find the location of the configuration and data files
 (see @ref Environment_variables).
 
-\code
+@code
 chaos:~/chart> more trigger.conf 
 #Equipment:            >/equipment/kos_trigger/statistics
 menu:                   on
@@ -3380,59 +3380,59 @@ begin:        kBytes_per_sec.
   minimum:      224.61
   id_char:      1
 end:            kBytes_per_sec.
- \endcode
+ @endcode
 
 A second file (data file) will be updated a fixed interval by the {\em mchart} utility.
-  \code
+  @code
   chaos:~/chart> more trigger
     Events_sent 6.620470e+05
     Events_per_sec. 6.463608e+02
     kBytes_per_sec. 4.424778e+02
- \endcode
+ @endcode
  
 - <b> Example </b>
 
 - Creation with ODBpath being one array and one element of 2 sitting under
 variables/:
- \code 
+ @code 
   chaos:~/chart> mchart -f chvv -q /equipment/chv/variables/chvv -c
   chaos:~/chart> ls -l chvv*
   -rw-r--r--   1 chaos    users         474 Apr 18 14:37 chvv
   -rw-r--r--   1 chaos    users        4656 Apr 18 14:37 chvv.conf
- \endcode
+ @endcode
 - Creation with ODBpath of all the sub-keys sittings in variables:
- \code
+ @code
   mchart -e myexpt -h myhost -f chv -q /equipment/chv/variables -c
- \endcode
+ @endcode
 - Creation and running in debug:
- \code
+ @code
   chaos:~/chart> mchart -f chv -q /equipment/chv/variables -d
   CHVV : size:68
 
   #name:17 #Values:17
   CHVI : size:68
- \endcode
+ @endcode
 - Running a pre-existing conf file (chv.conf) debug:
- \code
+ @code
   chaos:~/chart> mchart -f chv.conf -d
   CHVV : size:68
   #name:17 #Values:17
   CHVI : size:68
   #name:17 #Values:17
- \endcode
+ @endcode
 - Running a pre-existing configuration file and spawning @ref gstripchart:
- \code
+ @code
   chaos:~/chart> mchart -f chv.conf -gg
   spawning graph with gstripchart -g 500x200-200-800 -f /home/chaos/chart/chv.conf ...
- \endcode
+ @endcode
 
 - Running a pre-existing configuration file and spawning stripchart, this will work
 only if Tcl/Tk and bltwish packages are installed and the stripchart.tcl has been
 installed through the Midas Makefile.
- \code
+ @code
   chaos:~/chart> mchart -f chv.conf -gh
   spawning graph with stripchart /home/chaos/chart/chv.conf ...
- \endcode
+ @endcode
 
 <hr> @section F_mtape_task mtape  - tape manipulation
 
@@ -3446,9 +3446,9 @@ Tape manipulation utility.
  
 - <b> Usage </b>
 - <b> Example </b>
- \code
+ @code
  >mtape
- \endcode
+ @endcode
 
 <hr> @section F_stripchartfile stripchart   - graphical stripchart data display
 
@@ -3465,15 +3465,15 @@ Midas history save-set files.
  -dmhist:  debug mhist 
  -debug:   debug stripchart
  -config_file: see F_mchart_task
- \code
+ @code
  > stripchart.tcl -debug
 
  > stripchart.tcl
- \endcode
+ @endcode
 - <b> Example </b>
- \code
+ @code
  > stripchart.tcl -h
- \endcode 
+ @endcode 
 @anchor gstripchart
  * <center> gstripchart display with parameters and data pop-up.
  *  \image html gstripchart1.jpg

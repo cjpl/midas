@@ -150,23 +150,23 @@ cellspacing="2">
 <span style="font-weight: bold;">CAMAC :</span>
 </td>
 <tr><td>
-\code
+@code
 #include <stdio.h>
 #include <stdlib.h>
 #include "midas.h"
 #include "experim.h"
 #include "mvmestd.h"
 #include "vmicvme.h"
-  \endcode
+  @endcode
 </td>
 <td>
-  \code
+  @code
 #include <stdio.h>
 #include <stdlib.h>
 #include "midas.h"
 #include "mcstd.h"
 #include "experim.h"
-\endcode
+@endcode
 </td></tr></table>
 
 <br>
@@ -206,7 +206,7 @@ specifies the maximum size (in bytes) of the expected event.
 </ul>
     
 
-\code 
+@code 
 
     // The frontend name (client name) as seen by other MIDAS clients
     char *frontend_name = "Sample Frontend";
@@ -230,7 +230,7 @@ specifies the maximum size (in bytes) of the expected event.
     INT event_buffer_size = 10*10000;
 
 
-\endcode
+@endcode
 <br>
  
 <br>
@@ -251,7 +251,7 @@ cellspacing="2">
 <span style="font-weight: bold;">CAMAC :</span>
 </td>
 <tr><td>
-\code
+@code
 /* Hardware */
 /* Interrupt vector */
 int trig_level =  0;
@@ -266,10 +266,10 @@ int  inRun = 0;
 DWORD VADC0_BASE = 0x100000; // VME base address
 DWORD VLAM_BASE  = 0x800000; // VME base address
 
-\endcode
+@endcode
 </td>
 <td>
-\code
+@code
     // Global user section
     // number of channels
     #define N_ADC  8  
@@ -282,7 +282,7 @@ DWORD VLAM_BASE  = 0x800000; // VME base address
     #define SLOT_ADC   1
     #define SLOT_TDC   2
     #define SLOT_SCLR  3
-\endcode
+@endcode
 </td></td></table>
 <br>
  
@@ -290,7 +290,7 @@ DWORD VLAM_BASE  = 0x800000; // VME base address
 @section FE_system_prototypes  System prototype functions
 These prototypes declare the pre-defined system functions which should be
 present. 
-\code 
+@code 
 INT frontend_init();
 INT frontend_exit();
 INT begin_of_run(INT run_number, char *error);
@@ -298,7 +298,7 @@ INT end_of_run(INT run_number, char *error);
 INT pause_run(INT run_number, char *error);
 INT resume_run(INT run_number, char *error);
 INT frontend_loop();
-\endcode
+@endcode
 <br>
  
 <br>
@@ -308,15 +308,15 @@ Following this group is a second group of prototypes, which define the
 that run when the defined equipments are triggered.  In this example, two equipments 
 will be defined, so there are two prototypes. The user functions will be described in 
 detail in the following sections.
-\code
+@code
 INT read_trigger_event(char *pevent, INT off);
 INT read_scaler_event(char *pevent, INT off);
-\endcode
+@endcode
 
 And following this is the prototype
-\code
+@code
 void register_cnaf_callback(int debug);
-\endcode
+@endcode
 which is a routine provided in cnaf_callback.c
 
 
@@ -488,7 +488,7 @@ cellspacing="2">
 <span style="font-weight: bold;">CAMAC :</span>
 </td>
 <tr><td>
-  \code
+  @code
 INT frontend_init()
 {
  ....
@@ -502,10 +502,10 @@ INT frontend_init()
   mvme_set_dmode(myvme, MVME_DMODE_D32)
   return SUCCESS;
 }
-  \endcode
+  @endcode
 </td>
 <td>
-  \code
+  @code
 INT frontend_init()
 {
    cam_init();              // Init CAMAC access
@@ -514,7 +514,7 @@ INT frontend_init()
    cam_inhibit_set(CRATE);  // Set I crate 
    return SUCCESS;
 }
-  \endcode
+  @endcode
 </td></tr></table>
 <br>
 
@@ -548,7 +548,7 @@ cellspacing="2">
 <span style="font-weight: bold;">CAMAC :</span>
 </td>
 <tr><td>
-\code
+@code
 INT begin_of_run (INT runnumber, char * error)
 {
   ......
@@ -577,10 +577,10 @@ INT begin_of_run (INT runnumber, char * error)
   mvme_write_value(myvme, VLAM_BASE+4, inRun);
   return SUCCESS;
 }
-\endcode
+@endcode
 </td>
 <td>
-\code 
+@code 
 INT begin_of_run (INT runnumber, char * error)
 {
   ......
@@ -604,7 +604,7 @@ INT begin_of_run (INT runnumber, char * error)
   camo(CRATE, SLOT_OR1320, 0, 21, 0x0663);
   return SUCCESS;
 }
-\endcode
+@endcode
 
 </td></td></table>
 <br>
@@ -631,7 +631,7 @@ cellspacing="2">
 <span style="font-weight: bold;">CAMAC :</span>
 </td>
 <tr><td>
-  \code  
+  @code  
 INT pause_run (INT run_number, char * error)
 {
  // Disable interrupt
@@ -646,10 +646,10 @@ INT resume_run (INT run_number, char * error)
  mvme_write_value(myvme, VLAM_BASE+4, inRun);
    return SUCCESS;
 }
-\endcode
+@endcode
 </td>
 <td>
-\code 
+@code 
 INT pause_run (INT run_number, char * error)
 {
    cam_inhibit_set(CRATE)
@@ -660,7 +660,7 @@ INT resume_run (INT run_number, char * error)
    cam_inhibit_clear(CRATE)
    return SUCCESS;
 }  
-\endcode
+@endcode
 
 </td></tr></table>
 
@@ -689,7 +689,7 @@ cellspacing="2">
 <span style="font-weight: bold;">CAMAC :</span>
 </td>
 <tr><td>
-\code
+@code
 INT end_of_run(INT run_number, char *error)
 {
   // Stop DAQ for seting up the parameters
@@ -705,9 +705,9 @@ INT end_of_run(INT run_number, char *error)
   vmeio_AsyncWrite(myvme, VMEIO_BASE, 0x0);
   return SUCCESS;
 }
-\endcode
+@endcode
 </td><td>
-\code
+@code
 INT end_of_run( INT run_number, char* error)
 {
    // set and clear OR1320 pattern bits or close run gate.
@@ -721,7 +721,7 @@ INT end_of_run( INT run_number, char* error)
    cam_inhibit_set(CRATE);          
    return SUCCESS;
 }
-\endcode
+@endcode
 </td></tr></table>
   The arguments
   -  \b run_number  provides the current run number being ended.
@@ -778,7 +778,7 @@ the \b poll_event()  routine will be called as often as possible over the corres
 In this case, the @ref FE_Example_equipment_structure "Equipment declaration" would 
 have this form:
 
-    \code
+    @code
     EQUIPMENT equipment[] = {
 
       { "Trigger",            // equipment name
@@ -791,7 +791,7 @@ have this form:
           "", "", "",},
        read_trigger_event,    // readout routine 
        ...
-    \endcode
+    @endcode
 
 The user must provide suitable code in the routine <b>poll_event()</b>.
  
@@ -814,7 +814,7 @@ cellspacing="2">
 <span style="font-weight: bold;">CAMAC :</span>
 </td>
 <tr><td>
-\code
+@code
 INT poll_event(INT source, INT count, BOOL test)
 {
 /* Polling routine for events. 
@@ -835,10 +835,10 @@ INT poll_event(INT source, INT count, BOOL test)
 
   return 0;
 }
-\endcode
+@endcode
 </td><td>
 
-\code
+@code
 INT poll_event(INT source, INT count, BOOL test)
 {
 /* Polling routine for events. 
@@ -863,7 +863,7 @@ INT poll_event(INT source, INT count, BOOL test)
    }
    return 0;
 } 
-  \endcode
+  @endcode
 </td></tr></table>
 
 An  @ref  FE_poll_or_interrupt_readout_routine "event readout routine" must also be 
@@ -894,7 +894,7 @@ cellspacing="2">
 <span style="font-weight: bold;">CAMAC :</span>
 </td>
 <tr><td>
-\code
+@code
 /*-- Interrupt configuration --------------------------*/
 INT interrupt_configure(INT cmd, INT source, PTYPE adr)
 {
@@ -925,9 +925,9 @@ INT interrupt_configure(INT cmd, INT source, PTYPE adr)
    }
    return SUCCESS;
 }
-\endcode
+@endcode
 </td><td>
-\code
+@code
 INT interrupt_configure(INT cmd, INT source [], PTYPE adr)
 {
    switch(cmd)
@@ -951,7 +951,7 @@ INT interrupt_configure(INT cmd, INT source [], PTYPE adr)
       }
   return CM_SUCCESS; 
 }
-\endcode
+@endcode
 </td></tr></table>
 
 Under the four commands listed above, the user must implement the hardware
@@ -969,7 +969,7 @@ In the case of POLLED or INTERRUPT events, the event readout routine is called a
 @section FE_readout_routine Event Readout routines
 
 An event readout routine (called when an event occurs) is usually of the form
-\code
+@code
 INT function_name ( char *pevent ... )
 {
    INT event_size;
@@ -979,7 +979,7 @@ INT function_name ( char *pevent ... )
    ........
    return (event_size);
 }
-\endcode
+@endcode
 where the first argument of the readout function (<span
 style="font-weight: bold;">pevent</span>)&nbsp; provides the pointer
 to the newly constructed event, and points to the first valid location for
@@ -1028,7 +1028,7 @@ cellspacing="2">
 <span style="font-weight: bold;">CAMAC :</span>
 </td>
 <tr><td>
-\code
+@code
 EQUIPMENT equipment[] = {
 
    {"Trigger",  /* equipment name */
@@ -1046,9 +1046,9 @@ EQUIPMENT equipment[] = {
     NULL, NULL,
     trigger_bank_list,
     }
-\endcode
+@endcode
 </td><td>
-\code
+@code
     EQUIPMENT equipment[] = {
       { "Trigger",  // equipment name
          {    
@@ -1066,7 +1066,7 @@ EQUIPMENT equipment[] = {
             "", "", "",},
        read_trigger_event,   // event readout routine 
        ...
-\endcode
+@endcode
 </td></tr></table>
 
 Note that the LAM_SOURCE macro is used in both cases. It simply codes the parameters into
@@ -1088,7 +1088,7 @@ cellspacing="2">
 <span style="font-weight: bold;">CAMAC :</span>
 </td>
 <tr><td>
-\code
+@code
 INT read_trigger_event(char *pevent, INT off)
 {
 #if defined VADC0_CODE
@@ -1108,10 +1108,10 @@ INT read_trigger_event(char *pevent, INT off)
   ........
   return (size);
 }
-\endcode
+@endcode
 </td>
 <td>
-\code
+@code
   INT read_trigger_event(char *pevent, INT off)
   {
     DWORD lam;
@@ -1136,7 +1136,7 @@ INT read_trigger_event(char *pevent, INT off)
      clear_LAM(); // clear all LAMs
   return size;
 } 
-\endcode  
+@endcode  
 </td></tr>
 </table>
 \b NOTE: <br>
@@ -1152,7 +1152,7 @@ the readout routine is the only event routine that the user needs to provide in 
 
 In this case (e.g. a \b periodic event) the  @ref FE_Example_equipment_structure "Equipment declaration" may have
 this form: 
-\code
+@code
     EQUIPMENT equipment[] = {
       { "Scaler",           // equipment name
          {    
@@ -1165,11 +1165,11 @@ this form:
             "", "", "",},
        read_scaler_event,   // readout routine 
        ...
-\endcode
+@endcode
 
 An example of a scaler readout routine read_scaler_event() where the data is
 read out into @ref  FE_bank_construction "data banks" is shown below.
-\code
+@code
 INT read_scaler_event(char *pevent, INT off)
 {
    DWORD *pdata, a;
@@ -1190,7 +1190,7 @@ INT read_scaler_event(char *pevent, INT off)
    /* return event size in bytes */
    return bk_size(pevent);
 }
-\endcode
+@endcode
 
 <br>
 <hr>
@@ -1240,9 +1240,9 @@ In some cases, the same readout code may be used for two types of event: a manua
 (say) a poll event. A new feature (svn rev 4519 and later) allows the user to determine 
 whether the readout of an event was triggered by a manual trigger or a regular trigger.
 This is done in the readout routine by a call to
-\code
+@code
   flag = DATA_SIZE(pevent);
-\endcode
+@endcode
 
 If the result is  
  - flag = 0  normal call
@@ -1253,7 +1253,7 @@ If the result is
 The Equipment declaration for the manually triggered fragmented histogram event (named Histo) is
 as follows: 
 
-\code
+@code
 
  { "Histo",             /* equipment name */
     2, 0,                 /* event ID, trigger mask */
@@ -1275,7 +1275,7 @@ sition */
     histo_read,     /* readout routine */
     NULL,NULL,NULL       /* keep null */
   },
-\endcode
+@endcode
 
 The Histo event can be manually triggered only <b>when running</b>, and is also triggered by the 
 transitions <b>STOP, PAUSE</b> and \b RESUME, 
@@ -1291,7 +1291,7 @@ the event buffer (used for sending out the event fragments)
 and to determine the maximum fragment size.
 
 The standard sizes in frontend.c are
-\code
+@code
     //maximum event size produced by this frontend
     INT max_event_size = 200000; /* must be less than MAX_EVENT_SIZE in midas.h */ 
 
@@ -1300,17 +1300,17 @@ The standard sizes in frontend.c are
 
     //buffer size to hold events
     INT event_buffer_size = 10*10000;
-\endcode
+@endcode
 
 
 The frontend code under VxWorks uses the following sizes to accomodate the fragmented events:
-\code
+@code
     INT max_event_size = 10000; /* maximum size of event fragments */
 
     INT max_event_size_frag = 4300000  ; /* maximum size of event (assembled from fragments) */
 
     INT event_buffer_size = 2*10000; /* buffer size to hold events; must be  >= 2*max_event_size  */
-\endcode
+@endcode
 
 - The value of \b max_event_size is set much smaller than the standard size, and determines the size of
 the event fragments. 
@@ -1324,7 +1324,7 @@ and is no different to a readout routine for
 a non-fragmented event.  Sending the event as fragments and reassembling it is transparent to 
 the user, as it is handled by the system routine mfe.c .
  
-\code
+@code
 INT histo_read (char *pevent, INT off)
 {
   DWORD *pdata, *pmem;
@@ -1358,7 +1358,7 @@ INT histo_read (char *pevent, INT off)
 
   return bk_size(pevent);
 }
-\endcode
+@endcode
 
 
 
@@ -1381,7 +1381,7 @@ library call  rpc_client_call  in the function "trigger_histo_event" below.
 The main program uses the Midas library call bm_request_event to place an event request 
 for the desired Histo event(event ID = 2).  The following code illustrates the technique: 
 
-\code
+@code
 /*-------- Custom data logger code fragment  ------------------*/
 
 int main(unsigned int argc,char **argv)
@@ -1404,12 +1404,12 @@ int main(unsigned int argc,char **argv)
    .....................
    .....................
 }
-\endcode
+@endcode
 
 When it is time to save the data during the run, the funtion below (trigger_histo_event)  
 is called:
 
-\code
+@code
 /*-----------------------------------------------------------------------------------------------*/
 BOOL trigger_histo_event(void)
 /*-----------------------------------------------------------------------------------------------*/
@@ -1451,7 +1451,7 @@ BOOL trigger_histo_event(void)
     } // end of if running
   return(event_triggered);
 }
-\endcode
+@endcode
 <br>
 <br>
 \htmlonly
@@ -1543,7 +1543,7 @@ such a transition until the condition  is satisfied.
 The Deferred_Transition requires 3 steps for setup:
 
   - Register for the deferred transition. 
-    \code
+    @code
     //-- Frontend Init
     INT frontend_init()
     {
@@ -1555,9 +1555,9 @@ The Deferred_Transition requires 3 steps for setup:
       cm_register_deferred_transition(TR_STOP, wait_end_cycle);
       cm_register_deferred_transition(TR_PAUSE, wait_end_cycle);
       ...  
-    \endcode
+    @endcode
   - Provide callback function to serve the deferred transition 
-    \code
+    @code
   //-- Deferred transition callback
   BOOL wait_end_cycle(int transition, BOOL first)
   {
@@ -1579,10 +1579,10 @@ The Deferred_Transition requires 3 steps for setup:
     else
       return FALSE;
     ...
-  \endcode
+  @endcode
   - Implement the condition code 
 
-  \code
+  @code
   ... In this case at the end of the readout function...
     ...
 
@@ -1604,7 +1604,7 @@ The Deferred_Transition requires 3 steps for setup:
     re_arm_cycle(); 
    return bk_size(pevent);
 
-  \endcode
+  @endcode
 
   In the example above, 
 
@@ -1627,11 +1627,11 @@ The Deferred transition appears in the ODB under
 
   When the system is in deferred state, an ODBedit override command can be issued to
   \b force the transition to happen. eg:
-\code
+@code
 C:\online>odbedit
  [local]/>stop now 
  [local]/>start now
-\endcode
+@endcode
 
   This overide will call the transition function regardless of the state of the
   hardware involved.
@@ -1674,7 +1674,7 @@ sections("RunControl","FrontendOperation","Utilities");
 
 A readout event will often need to construct banks in which the data is to be sent out.
 The @ref  FE_tbl_Format "bank format" is declared in the @ref FE_Example_equipment_structure "Equipment list" , e.g.
-\code
+@code
 
     EQUIPMENT equipment[] = {
 
@@ -1684,7 +1684,7 @@ The @ref  FE_tbl_Format "bank format" is declared in the @ref FE_Example_equipme
           "Midas",            // format
           ...
       ...  
-\endcode
+@endcode
 
 Refer to the following sections for an explanation of event composition depending on the
 event type selected: 
@@ -1738,7 +1738,7 @@ The <b>Readout routine</b>
 
 <tr>
 <td>
-\code
+@code
 typedef struct {
   int adc0;
   int adc1;
@@ -1753,21 +1753,21 @@ char *trigger_event_str[] = {
 "tdc1 = INT : 0",
   ASUM_BANK;
 }
-\endcode
+@endcode
 </td>
 <td>
 
-\code{
+@code{
   "FIXED",            // FIXED format
 ...
   read_trigger_event, // readout routine 
   NULL,NULL,
   trigger_event_str,  // init string 
  ,
-\endcode
+@endcode
 <td>
 
-\code
+@code
 INT read_trigger_event(char *pevent)
 {
 TRIGGER_EVENT *ptrg;
@@ -1779,7 +1779,7 @@ TRIGGER_EVENT *ptrg;
   ptrg->tdc1 = <...>;
 
   return sizeof(TRIGGER_EVENT);
-\endcode
+@endcode
 
 </td></tr></table>
 <br>
@@ -1802,7 +1802,7 @@ cellspacing="2">
 </tr>
 <tr>
 <td>
-\code
+@code
 
 #define INFO_ODB_EVENT_DEFINED
 
@@ -1819,9 +1819,9 @@ typedef struct {
   float     campdev_read;
   DWORD     last_failed_thr_test;
 } INFO_ODB_EVENT;
-\endcode
+@endcode
 </td><td>
-\code
+@code
 #define INFO_ODB_EVENT_STR(_name)
            char *_name[] = {\
 "[.]",\
@@ -1838,12 +1838,12 @@ typedef struct {
 "last failed thr test = DWORD : 0",\
 "",\
 NULL }
-\endcode
+@endcode
 </td></tr></table>
 
 @anchor FE_RO_ODB_example
 The  @ref FE_table "Equipment definition" for this fixed event might be :
-\code
+@code
 
  { "Info ODB",     /* equipment name */
     10, 0,         /* event ID, trigger mask */
@@ -1863,7 +1863,7 @@ The  @ref FE_table "Equipment definition" for this fixed event might be :
     info_odb,      /* readout routine */
     NULL,NULL,NULL,
   },
-\endcode
+@endcode
 
 
 The frontend.c program would then include experim.h to gain access to the structure.
@@ -1872,7 +1872,7 @@ C structures from experim.h, to make sure that the structure is identical in the
 <br>
 The <b> main program </b> might look like this:
 
-\code
+@code
 /* frontend.c */
 ....
 
@@ -1904,10 +1904,10 @@ sprintf(str_set,"/Equipment/INFO ODB/Variables");
      }
 
   .......    
-\endcode
+@endcode
 
 A <b>readout routine</b> for this fixed event is as follows:
-\code
+@code
 INT info_odb(char * pevent, INT off)
 /* - periodic equipment updating the ODB ONLY
    - no event generation for the data stream.
@@ -1929,7 +1929,7 @@ INT info_odb(char * pevent, INT off)
   logMsg ("info_odb %d size:%d\n",gbl_CYCLE_N,sizeof(cyinfo),0,0,0,0);
   return sizeof(cyinfo);
 }
-\endcode
+@endcode
 <br>
 The output from a FIXED event of this type sent to the ODB using @ref RC_mhttpd_task "mhttpd" is shown 
 @ref  RC_mhttpd_eq_variables "here".
@@ -2028,7 +2028,7 @@ cellspacing="2">
 <span style="font-weight: bold;">CAMAC :</span>
 </td>
 <tr><td>
-\code
+@code
 INT read_trigger_event(char *pevent, INT off)
 {
 #if defined VADC0_CODE
@@ -2052,11 +2052,11 @@ INT read_trigger_event(char *pevent, INT off)
 
 
 }
-\endcode
+@endcode
 </td>
 <td>
 
-\code
+@code
 INT read_trigger_event(char *pevent)
 {
 WORD *pdata, a;
@@ -2084,7 +2084,7 @@ WORD *pdata, a;
 
   return bk_size(pevent);
  
-\endcode
+@endcode
 </td></td></table>
 <br>
 
@@ -2126,7 +2126,7 @@ Examples of unpacking the data from Midas banks are shown in the  @ref DataAnaly
 \anchor timestamp
 The following frontend C-code fragments from a running experiment demonstrate the use of these Macros :
   - example 1
-\code
+@code
 INT read_ge_event(char *pevent, INT offset)
 {
   static WORD *pdata;
@@ -2140,11 +2140,11 @@ INT read_ge_event(char *pevent, INT offset)
   bk_create(pevent, "GERM", TID_WORD, &pdata);
   ...
 }
-\endcode
+@endcode
 
   - example 2
 
-\code
+@code
   ...
   lam = *((DWORD *)pevent);
 
@@ -2165,7 +2165,7 @@ INT read_ge_event(char *pevent, INT offset)
   }
   ...
 
-\endcode
+@endcode
 
 <hr>
 <br>
@@ -2210,7 +2210,7 @@ sure the bank types are compatible (see also @ref ybosdefineh)
 
 The following code creates an ADC0 bank in YBOS format:
 
-\code
+@code
 INT read_trigger_event(char *pevent)
 {
   DWORD i;
@@ -2236,14 +2236,14 @@ INT read_trigger_event(char *pevent)
 
   return (ybk_size((DWORD *)pevent));
  
-\endcode
+@endcode
 <br>
 
 Basic examples using YBOS banks are available in the midas tree under examples/ybosexpt.
 
 - <b>Frontend code</b>
 Example 1 and 2 shows the bank creation with some CAMAC acquisition.
-\code
+@code
 -------- example 1 -------- Simple 16 bits bank construction
 
 void read_cft (DWORD *pevent)
@@ -2277,7 +2277,7 @@ void read_cft (DWORD *pevent)
   ybk_close((DWORD *)pevent, I4_BKTYPE, pbkdat);
   return 0;
 }
-\endcode
+@endcode
 
 Example 3 shows the creation of an EVID bank containg a duplicate of the midas header.
 As the Midas header is stripped out of the YBOS event when the data are logger, it is necessary
@@ -2288,7 +2288,7 @@ Serial number, Time stamp. In this EVID bank we added the current run number whi
 is retrieved by the frontend at the beginning of a run.
 
 
-\code
+@code
 -------- example 3 -------- Full equipment readout function
 
 INT read_cum_scaler_event(char *pevent, INT off)
@@ -2324,7 +2324,7 @@ INT read_cum_scaler_event(char *pevent, INT off)
   // event in bytes for Midas
   return (ybk_size ((DWORD *)pevent));
 }
-\endcode
+@endcode
 
 
 If the data logging is done through YBOS format (see @ref ODB_Logger_Tree Format)
@@ -2388,7 +2388,7 @@ maximum successive data sections before the closing of the bank.
 To demonstrate the use of the super-event, consider the following example:
 
 - Define equipment to be able to generate the \b Super-Event 
-  \code
+  @code
   { "GE",                 // equipment name 
       2, 0x0002,            // event ID, trigger mask 
       "SYSTEM",             // event buffer 
@@ -2409,12 +2409,12 @@ To demonstrate the use of the super-event, consider the following example:
       read_ge_event,        // readout routine 
        ,
       ...
-  \endcode
+  @endcode
 
 @section FE_Super_Event_readout Example Readout code for Super-Event
 
 Set up the readout function for Super-Event  collection, e.g. 
-  \code
+  @code
   //-- Event readout
   // Global and fixed -- Expect NWORDS 16bits data readout per sub-event
   #define NWORDS 3
@@ -2461,7 +2461,7 @@ Set up the readout function for Super-Event  collection, e.g.
       // sizeof(WORD) is defined by the TID_WORD in bk_create()
 
       return NWORDS * sizeof(WORD);
-  \endcode
+  @endcode
   <br>
 
 As shown in the example above:
@@ -2605,7 +2605,7 @@ midas page (@ref RC_mhttpd_task, @ref Equipment_page). This can be done setting 
 variable names under the directory Settings of the corresponding equipment. The variable description is given under @ref History_System. The @ref History_page will also be automatically activated if the application 
 @ref F_mlogger_task is running.
 
-\code
+@code
 Key name                        Type    #Val  Size  Last Opn Mode Value
 ---------------------------------------------------------------------------
 Epics                           DIR
@@ -2655,14 +2655,14 @@ Epics                           DIR
         Events sent             DOUBLE  1     8     17h  0   RWDE 26
         Events per sec.         DOUBLE  1     8     17h  0   RWDE 0
         kBytes per sec.         DOUBLE  1     8     17h  0   RWDE 0
-\endcode 
+@endcode 
 
 
 \todo more recent examples, description needed for slow control system
 
 Example of readout code:
 
-\code
+@code
     ...
     "FIXED",                   /* format */
     ...
@@ -2671,8 +2671,8 @@ Example of readout code:
     hv_driver,                  /* device driver list */
     NULL,                       /* init string */
     },
-\endcode
-\code
+@endcode
+@code
 INT cd_hv_read(char *pevent, int offset)
 {
    float *pdata;
@@ -2697,7 +2697,7 @@ INT cd_hv_read(char *pevent, int offset)
    }
  ....
 }
-\endcode
+@endcode
 <br>
 
 <br>
@@ -2755,20 +2755,20 @@ To increase the size of the event buffer(s):
   specified by  the @ref Q_Linux_Exptab "exptab file" for your experiment. 
   (use \b ipcrm (linux)  for shared memory segment removal).
  -# Run odbedit (which @ref RC_odbedit_create_ODB "creates the ODB").
-\code
+@code
 $odbedit
 [local:midas:Stopped]/>cd /Experiment
 [local:midas:Stopped]/>ls "Buffer Sizes"
-\endcode
+@endcode
 
         - If the Key "Buffer Sizes" does not exist, create this key, then create a 
  DWORD key of  the buffer name to be increased, and set it to the desired value, e.g.
-\code
+@code
 [local:midas:S]/Experiment>mkdir "Buffer Sizes"
 [local:midas:S]/Experiment>cd "Buffer Sizes"
 [local:midas:S]/Buffer Sizes>create DWORD SYSTEM
 [local:midas:S]/Buffer Sizes>set SYSTEM 0x1000000
-\endcode
+@endcode
         - If the SYSTEM key exists already, just set it to the desired size. 
 
  -# @ref RC_odbedit_load "Reload the ODB contents" if necessary.

@@ -14,7 +14,7 @@ in the  <span class="odb"> /customscript </span> tree to any existing user-butto
 Hold      -> /Script/BNMR Hold/
 Continue  -> /script/Continue 
 Scalers   -> /script/Scalers
-\endcode
+@endcode
 See @ref RC_mhttpd_status_toggle "example" of the above defined buttons.
 
 
@@ -50,7 +50,7 @@ is set as a link to \b CustomStatus&.
 [local:bnmr:S]/>ls /custom
 CustomStatus&                   /home/bnmr/online/custom/Custom_Status.html
 Status                          /custom/CustomStatus& -> /home/bnmr/online/custom/Custom_Status.html
-\endcode
+@endcode
 
 A user-button is set up in the custom status page (see @ref RC_mhttpd_custom_script_buttons)  as follows
 
@@ -60,7 +60,7 @@ cmd                             /home/bnmr/online/perl/set_status.pl
 include path                    /home/bnmr/online/perl
 experiment name                 bnmr
 beamline                        bnmr
-\endcode
+@endcode
 
 The script  /home/bnmr/online/perl/set_status.pl will toggle between the status page being set to the
 default or to the custom, by removing or creating the key "Status" in the /Custom subdirectory.
@@ -70,7 +70,7 @@ The following shows the /custom directory when the default Status page is select
 [local:bnmr:S]/>ls /custom
 CustomStatus&                   /home/bnmr/online/custom/Custom_Status.html
 Status                          /custom/CustomStatus& -> /home/bnmr/online/custom/Custom_Status.html
-\endcode
+@endcode
 
 
 * <center> Custom and default status pages for the BNMR experiment at TRIUMF 
@@ -200,7 +200,7 @@ else
 
 }    
 exit;
-\endcode
+@endcode
 <br>
 
 \htmlonly

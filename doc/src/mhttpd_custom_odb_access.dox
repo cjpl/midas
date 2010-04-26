@@ -84,7 +84,7 @@ Equivalent JS function
 \code
 Experiment Name: <odb src="/Experiment/Name">
 Run Number: <odb src="/runinfo/run number" edit=1>
-\endcode
+@endcode
 
 \b Examples
  - @ref  RC_mhttpd_js_example1
@@ -194,25 +194,25 @@ to obtain a value. If <<i>path</i>> points to an array in the ODB, an individual
 using an index, e.g.
 \code
   ODBGet('/Equipment/Environment/Variables/Input[3]');
-\endcode
+@endcode
 or the complete array can be obtained with
 \code
   ODBGet('/Equipment/Environment/Variables/Input[*]');
-\endcode
+@endcode
 The function then returns a JavaScript array which can be used like
 \code
   var a = ODBGet('/Equipment/Environment/Variables/Input[*]');
 
   for (i=0 ; i<a.length ; i++)
     alert(a[i]);
-\endcode
+@endcode
 
 If no <<i>format</i>> parameter is supplied, a default format is used. The following shows the
 use of a format parameter:
 \code
 path='/runinfo/run number';
 rn = ODBGet(path,"%4.4d\n");
-\endcode
+@endcode
 
 \b Example
  - @ref  RC_mhttpd_js_example1
@@ -273,7 +273,7 @@ document.writeln('Edit Run Number:')
 document.writeln('<a href="#" onclick="ODBEdit(path)" >')
 document.writeln(rn)
 document.writeln('</a>');
-\endcode
+@endcode
 
 \b Example
  - @ref  RC_mhttpd_js_example1
@@ -402,7 +402,7 @@ cellspacing="0">
 \code
 key = ODBKey('/Experiment/Name');
 document.write('key array : '+key+'<br>');
-\endcode
+@endcode
 
 \b Example:
 - @ref RC_mhttpd_js_example2 
@@ -485,7 +485,7 @@ Using edit=1 ...  Run Number:
 <br>
 </form>
 </html>
-\endcode
+@endcode
 <br>
 
 This code produces the output shown in Figures 1 and 2 below. In Figure 1, a value has been entered using the hyperlink
@@ -589,7 +589,7 @@ ODBSet(path,irn); // rewrite initial run number
 </html>
 
 
-\endcode
+@endcode
 
 * <br><br><br>
 * <center> 
@@ -646,7 +646,7 @@ sections("Features", "RunControl","FrontendOperation"); // last section; top of 
 The function <span class="js">ODBSet</span> can be used  when one clicks on an \b checkbox for example:
 \code
   <input type="checkbox" onClick="ODBSet('/Logger/Write data',this.checked?'1':'0')">
-\endcode
+@endcode
 
 If used as above, the state of the checkbox must be initialized when the page is loaded. This can be done
 with some JavaScript code called on initialization, which then uses @ref RC_mhttpd_custom_odbset as described above. 
@@ -655,7 +655,7 @@ with some JavaScript code called on initialization, which then uses @ref RC_mhtt
 Alternatively, the checkbox can be created using an <span class="odbtag"> <odb> tag</span> as follows:
 \code
   <odb src="/Logger/Write data" type="checkbox" edit="2" onclick="ODBSet('/Logger/Write data',this.checked?'1':'0')">
-\endcode
+@endcode
 
 The special code edit="2" instructs  <span class="cl">mhttpd</span> not to put any JavaScript code into the checkbox tag, since setting this value in the 
 ODB is now handled by the user-supplied  <span class="js">ODBSet()</span> code. 
@@ -697,7 +697,7 @@ document.form2.mybox.checked=ival  // initialize to the correct value
 <br>
 </form>
 </html>
-\endcode
+@endcode
 
 * <br><br><br>
 * <center> 
@@ -725,13 +725,13 @@ the web page periodically such as:
   function Refresh() {
     document.getElementById("run_number").innerHTML = ODBGet('/Runinfo/Run number');
   }
-\endcode
+@endcode
 
 This function updates the current run number every 10 seconds in the background. The custom page has to 
 contain an element with id="run_number", such as
 \code
   <td id="run_number"></td>
-\endcode
+@endcode
 <br><br>
 
 
@@ -859,7 +859,7 @@ Parameters
 <td style="vertical-align: top; background-color: white; font-weight: bold; text-align: left;">
 \code
  ODBRpc_rev0(name, rpc, args)
-\endcode
+@endcode
 </td>
 <td style="vertical-align: top; background-color: white; font-weight: normal; text-align: left;">
 to be filled

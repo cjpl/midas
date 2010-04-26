@@ -180,7 +180,7 @@ ver                     - show MIDAS library version
 webpasswd               - change WWW password for mhttpd
 wait <key>              - wait for key to get modified
 quit/exit               - exit
-\endcode
+@endcode
 
 <br>
 \htmlonly
@@ -262,7 +262,7 @@ When "odbedit" is entered on the command line, it returns a prompt, e.g.
 \code
 odbedit
 [local:midas:S]/>
-\endcode
+@endcode
 The format of the \b prompt (in the above example <b> [local:midas:S]/> </b> ) is
 controlled in the ODB by the key <b> /System/Prompt </b>. The default value is
 shown below:
@@ -274,7 +274,7 @@ Clients
 Tmp                             
 Client Notify                   0
 Prompt                          [%h:%e:%s]%p>
-\endcode
+@endcode
 <br>
 where the meanings of the Prompt symbols are shown below:
 
@@ -317,31 +317,31 @@ cellspacing="2">  <caption>Above: Meaning of Prompt symbols
 \code
   [local:midas:S]/System>set Prompt "[%h:%e:%S]%p>"
   [local:midas:Stopped]/System>
-\endcode
+@endcode
 <li>Set the prompt to the phrase  \b my_prompt
 \code
     [local:midas:Stopped]/System>set Prompt my_prompt>
     my_prompt>
-\endcode
+@endcode
 
 <li>Set the prompt to <b> name the fields </b> (i.e. Host, Expt, State, Path)
 \code  
     my_prompt>set Prompt [Host:%h-Expt:%e:State:%s]Path:%p>
     [Host:local-Expt:midas-State:S]Path:/System>
-\endcode
+@endcode
 
 <li>Set the prompt to the \b current \b time
 \code
     [Host:local-Expt:midas-State:S]Path:/System>set Prompt "%t>"
     13:29:08>
-\endcode
+@endcode
 
 <hr>
 
 @section RC_odbedit_create_ODB ODB Creation
 \code
 create <type> <key>     - create a key of a certain type
-\endcode
+@endcode
 
 After installation of Midas, before any other tasks are started, the ODB is created for the first time by 
 starting the @ref RC_odbedit_task "odbedit task". This automatically creates all the shared-memory files needed for the
@@ -358,13 +358,13 @@ ls: No match.
 [local:mpet:Stopped]/>quit
 [mpet@titan01 ~/online]$ ls .*.SHM
 .ALARM.SHM  .ELOG.SHM  .HISTORY.SHM  .MSG.SHM  .ODB.SHM  .SYSMSG.SHM  .SYSTEM.SHM
-\endcode
+@endcode
 
 The default size of the ODB is 128KB. A different size can be specified by using the -s option 
 (see @ref RC_odbedit_task "odbedit task") e.g.
 \code
 odbedit -s 204000
-\endcode
+@endcode
 
 The other shared memory files created are the system buffer .SYSTEM.SHM, the @ref F_Messaging "system messaging" buffer .SYSMSG.SHM, the message buffer .MSG.SHM,  (?? MSG.SHM what for?? )
 the  @ref F_History_logging "history" buffer .HISTORY.SHM, the  @ref F_Elog "Elog" buffer .ELOG.SHM, the alarm buffer .ALARM.SHM .
@@ -397,7 +397,7 @@ Tunes
 ControlVariables
 RunControl
 Tunes
-\endcode
+@endcode
 <b>Key names containing spaces must be enclosed in quotes</b>
 \code
 [local:mpet:Stopped]/>ls "/Equipment/TITAN_ACQ/ppg cycle/"
@@ -405,27 +405,27 @@ transition_HV
 stdpulse_START
 begin_scan
 stdpulse_3
-\endcode
+@endcode
 If the quotes are omitted
 \code
 [local:mpet:Stopped]/>ls /Equipment/TITAN_ACQ/ppg cycle
 key /Equipment/TITAN_ACQ/ppg not found
-\endcode
+@endcode
 Using <b>TAB completion,</b> one could write
  \code
 [local:mpet:Stopped]/>ls /Equipment/TITAN_ACQ/ppg  
-\endcode
+@endcode
 then pressing the TAB key would replace the line above with that below
 \code
 [local:mpet:Stopped]/>ls "/Equipment/TITAN_ACQ/ppg cycle/ 
-\endcode
+@endcode
 then press ENTER key to see the list
 \code
 transition_HV
 stdpulse_START
 begin_scan
 stdpulse_3
-\endcode
+@endcode
 
 <hr>@section RC_odbedit_corrupted Corrupted ODB
 If the @ref  F_Online_Database_overview "Online Database" becomes corrupted, @ref RC_odbedit_task "odbedit" may no longer work, and other clients
@@ -439,13 +439,13 @@ the @ref Q_Linux_Exptab "exptab file" for your experiment.
 [mpet@titan01 ~/online]$ ls .*.SHM
 .ALARM.SHM  .ELOG.SHM  .HISTORY.SHM  .MSG.SHM  .ODB.SHM  .SYSMSG.SHM  .SYSTEM.SHM
 [mpet@titan01 ~/online]$ rm .*.SHM
-\endcode
+@endcode
 Create new *.SHM files by running odbedit (see @ref  RC_odbedit_create_ODB), then load a 
 @ref RC_odbedit_save "saved file" containing the latest copy of the odb contents.
 \code 
 [mpet@titan01 ~/online] odbedit
 [local:mpet:Stopped]/>load mpet.odb
-\endcode
+@endcode
 
 <br>
 <hr>
@@ -459,7 +459,7 @@ Starting run #401
 Run #401 started
 [pol@isdaq01 src]$ odbedit -c stop
 Run #401 stopped
-\endcode
+@endcode
 or a value can be set (note the use of the @ref RC_odbedit_task "odbedit" \b -d argument)
 \code
 [pol@isdaq01 pol]$ odbedit -d /test -c "set testval 3"
@@ -469,7 +469,7 @@ testval                         3
 
 [pol@isdaq01 pol]$ odbedit -d /test -c "ls testval"
 testval 
-\endcode
+@endcode
 A filename containing a number of odbedit commands can also be entered, using the 
 @ref RC_odbedit_task "odbedit" -c \@commandfile argument e.g.
 \code
@@ -480,14 +480,14 @@ Run #403 started
 Run #403 paused
 Run #403 stopped
 [pol@isdaq01 pol]$ 
-\endcode
+@endcode
 where the file "testfile" contains odbedit commands, such as
 \code
 set testval 4
 ls testval
 start
 stop
-\endcode
+@endcode
 This external command feature of odbedit allows for sophisticated scripts to be created that can
 manipulate the odb. 
 <br>Such scripts can for example
@@ -585,7 +585,7 @@ melog -h isdaq01 -p $port -l $MIDAS_EXPT_NAME -a author=$author -a Type="Automat
 cat $fin
 
 # done
-\endcode
+@endcode
 
 <hr>@subsubsection RC_example_script_2 Perl script performing run control
 ........
@@ -601,7 +601,7 @@ $ odbedit
 [local:mpet:Stopped]/>
 [local:mpet:Stopped]/>pwd
 /
-\endcode
+@endcode
 
 
 <hr>@subsection RC_odbedit_cd cd - change current directory
@@ -609,13 +609,13 @@ $ odbedit
 
 \code
 cd <dir>                - change current directory
-\endcode
+@endcode
 For example,
 \code
 [local:mpet:Stopped]/>cd system
 [local:mpet:Stopped]/>pwd
 /System
-\endcode
+@endcode
 
 <hr>@subsection RC_odbedit_chat  chat  - enter chat mode
 This mode is used to communicate with another person also running odbedit on the same experiment.
@@ -650,7 +650,7 @@ Exit chat mode with empty line.
 12:50:27 [anna] bye
 >
 [dasdevpc:bnmr:S]/>
-\endcode
+@endcode
 </td>
 <td>
 \code
@@ -668,7 +668,7 @@ Exit chat mode with empty line.
 12:50:27 [anna] bye
 >
 [local:bnmr:S]/>  
-\endcode
+@endcode
 </td>
 </tr>
 </table>
@@ -684,7 +684,7 @@ ls/dir [-lhvrp] [<pat>] - show database entries which match pattern
   -v                      only value
   -r                      show database entries recursively
   -p                      pause between screens
-\endcode
+@endcode
 <br>List the keys ("dir" is an alternative to "ls").
 \code
 [local:mpet:Stopped]/System>ls
@@ -693,7 +693,7 @@ Tmp
 Client Notify                   0
 Prompt                          [%h:%e:%S]%p>
 [local:mpet:Stopped]/System>     
-\endcode
+@endcode
 <br>The "-l" option gives detailed information, such as the key type and size
 \code
 [local:mpet:Stopped]/>ls /experiment
@@ -708,7 +708,7 @@ Name                            STRING  1     32    3m   0   RWD  mpet
 Buffer sizes                    DIR
 Variables                       DIR
 Edit on start                   DIR
-\endcode
+@endcode
 <br>The recursive option "-r" shows the database entries recursively
 \code
 [local:pol:S]/>ls -r ppg
@@ -726,26 +726,26 @@ PPG
                                 0.0005
         DAQ service time (ms) -> /Equipment/FIFO_acq/sis mcs/Input/DAQ service time (ms)
                                 3000
-\endcode
+@endcode
 <br>The values can be displayed in hexadecimal using the "-h" option
 \code
 [local:pol:S]/>ls  "/Equipment/FIFO_acq/sis mcs/Input/e00 rf frequency (Hz)"
 e00 rf frequency (Hz)           22064585
 [local:pol:S]/>ls  -h "/Equipment/FIFO_acq/sis mcs/Input/e00 rf frequency (Hz)"
 e00 rf frequency (Hz)           0x150ADC9
-\endcode
+@endcode
 <br>or the value only displayed with the "-v" option
 \code
 [local:pol:S]/test>ls
 val                             5
 [local:pol:S]/test>ls -v
 5
-\endcode
+@endcode
 
 <hr>@subsection RC_odbedit_mkdir  mkdir - make new subdirectory
 \code
 mkdir <subdir>          - make new <subdir>
-\endcode
+@endcode
 <br>This example shows how to make a new subdirectory "/custom".
 \code
 [mpet@titan01 ~/online] odbedit
@@ -764,7 +764,7 @@ Experiment
 Runinfo
 Alarms
 Custom
-\endcode
+@endcode
 
 
 More than one level of subdirectory can be made with one command
@@ -775,14 +775,14 @@ test
 [local:pol:S]/>ls /Equipment/test
 [local:pol:S]/>
 settings
-\endcode
+@endcode
 
 
 
 <hr>@subsection RC_odbedit_move  move - move a key to a new position
 \code
 move <key> [top/bottom/[n]] - move key to position in keylist
-\endcode
+@endcode
 
 The "move" command provides a means of re-ordering the keys.
 \code
@@ -793,7 +793,7 @@ Experiment
 Runinfo
 Alarms
 Custom
-\endcode
+@endcode
 
 The key "custom" can be moved to the top (or bottom) of the list, e.g.
 \code
@@ -805,7 +805,7 @@ Programs
 Experiment
 Runinfo
 Alarms
-\endcode
+@endcode
 
 or to any position, e.g.
 \code
@@ -817,13 +817,13 @@ Programs
 Experiment
 Runinfo
 Alarms
-\endcode
+@endcode
 
 
 <hr>@subsection RC_odbedit_rename rename - rename a key
 \code
 rename <old> <new>      - rename key
-\endcode
+@endcode
 <br>
 \code
 [local:pol:S]/>ls "my string"
@@ -831,7 +831,7 @@ my string                       this is a test string
 [local:pol:S]/>rename "my string" "your string"
 [local:pol:S]/>ls
 your string                       this is a test string
-\endcode
+@endcode
 
 <hr>@subsection RC_odbedit_copy copy - copy a subtree
 \code
@@ -847,14 +847,14 @@ test
 test1
 [local:pol:S]/>ls test1
 testval       
-\endcode
+@endcode
 
 
 
 <hr>@subsection RC_odbedit_import import -  import ASCII file
 \code
 import  <filename> [key]    - import ASCII file into string key 
-\endcode
+@endcode
 
 e.g. import an @ref RC_mhttpd_Internal into a key,
 \code
@@ -862,12 +862,12 @@ Tue> odbedit
 [local:midas:Stopped]>cd custom
 [local:midas:Stopped]/Custom>import mcustom.html   <-- import an html file
   Key name: Test&  
-\endcode
+@endcode
 
 <hr>@subsection RC_odbedit_export export -  export ASCII file
 \code
 export  <filename> [key]    - import ASCII file into string key 
-\endcode
+@endcode
 
 e.g. export an  @ref RC_mhttpd_Internal into a key,
 
@@ -876,13 +876,13 @@ e.g. export an  @ref RC_mhttpd_Internal into a key,
   [local:midas:Stopped]/Custom>export test&
   File name: mcustom.html
   [local:midas:Stopped]/Custom>
-  \endcode
+  @endcode
 
 
 <hr>@subsection RC_odbedit_ln ln - create a link
 \code
 ln <source> <linkname>  - create a link to <source> key
-\endcode
+@endcode
 
 The  @ref RC_Edit_On_Start "Edit on start" area often contains links to ODB parameters e.g.
 \code
@@ -897,19 +897,19 @@ Start Frequency in MHz          /Experiment/Variables/StartFreq (MHz) -> 1.45887
 End Frequency in MHz            /Experiment/Variables/EndFreq (MHz) -> 1.4588815
 Number of frequency steps       /Experiment/Variables/NFreq -> 41
 Feedbackfilename                /Feedback/fbfilename -> /home/mpet/online/mpetfeedbackfnv1.txt
-\endcode
+@endcode
 
 These links were made using the "ln" command, e.g.
 \code
 [local:mpet:Stopped]Edit on start>ln  "/Equipment/TITAN_acq/ppg cycle/evset_2/time offset (ms)" "Capture delay (ms)"
-\endcode
+@endcode
 
 
 <hr>@subsection RC_odbedit_cr cr - create a key of a certain type 
 \code
 create <type> <key>     - create a key of a certain type
 create <type> <key>[n]  - create an array of size [n]
-\endcode
+@endcode
 
 Keys can be created of the types supported by Midas i.e.
 <br> INT DWORD BOOL FLOAT DOUBLE STRING
@@ -941,7 +941,7 @@ my_double                       DOUBLE  1     8     >99d 0   RWD  0
 my_bool                         BOOL    1     4     >99d 0   RWD  n
 my_string                       STRING  1     62    9s   0   RWD
 [local:pol:S]/test>
-\endcode
+@endcode
 
 Arrays of all these types can also be created, e.g.
 \code
@@ -953,7 +953,7 @@ fred
                                 0
                                 0
                                 0
-\endcode
+@endcode
 
 The @ref RC_odbedit_set "set" command is used to assign values to the keys.
 
@@ -965,7 +965,7 @@ set <key> <value>       - set the value of a key
 set <key>[i] <value>    - set the value of index i
 set <key>[*] <value>    - set the value of all indices of a key
 set <key>[i..j] <value> - set the value of all indices i..j
-\endcode
+@endcode
 
 After keys are  @ref RC_odbedit_cr "created", they can be assigned values with the \b set command:
 \code
@@ -988,7 +988,7 @@ ival                            INT     1     4     3s   0   RWD  8
 [local:pol:S]/>ls ival
 ival                            8
 [local:pol:S]/>   
-\endcode
+@endcode
 
 Values of \b arrays can also be set:
 
@@ -1026,7 +1026,7 @@ fred
                                 6
                                 5
 [local:pol:S]/test>           
-\endcode
+@endcode
 
 The array can easily be expanded (see also @ref RC_odbedit_trunc "trunc") :
 
@@ -1044,7 +1044,7 @@ fred
                                 0
                                 9
 
-\endcode
+@endcode
 
 @anchor RC_odbedit_set_wp
 \b NOTE that the "set" command may not work if the ODB parameter is \b write-protected. 
@@ -1054,7 +1054,7 @@ See @ref  RC_odbedit_chmod and @ref RC_Lock_when_Running.
 \code
 chmod <mode> <key>       change access mode of a key
                           1=read | 2=write | 3=RWD | 4=delete
-\endcode
+@endcode
 
 By default, a key is created in mode 3 (i.e. RWD read/write/delete). The \b chmod command
 may be used to change the protection of the key.
@@ -1077,7 +1077,7 @@ my_test                         INT     1     4     46s  0   R    3
 [local:bnmr:S]/>set my_test 6
 Write access not allowed
 [local:bnmr:S]/> 
-\endcode
+@endcode
 
 \b NOTE:<br>
 <br>Write protection when running</br> can also be performed - see @ref RC_Lock_when_Running.
@@ -1086,7 +1086,7 @@ Write access not allowed
 <hr>@subsection RC_odbedit_trunc trunc  - truncate a key
 \code
 trunc <key> <index>     - truncate key to [index] values
-\endcode
+@endcode
 
 This command is used to truncate or expand an array.
 \code
@@ -1121,7 +1121,7 @@ fred
                                 0
                                 0
 
-\endcode
+@endcode
 
 <br>
 <hr>@subsection RC_odbedit_rm rm/del - delete a key and its subkeys 
@@ -1129,7 +1129,7 @@ fred
 del/rm [-l] [-f] <key>  - delete a key and its subkeys
   -l                      follow links
   -f                      force deletion without asking
-\endcode
+@endcode
 <br>
 
 \code
@@ -1142,7 +1142,7 @@ Are you sure to delete the key
 Are you sure to delete the key "/test/try"
 and all its subkeys? (y/[n]) y
 [local:pol:S]/> 
-\endcode
+@endcode
 
 If you answer "n" the key will not be deleted.
 
@@ -1175,7 +1175,7 @@ This shows which records are open, i.e. @ref RC_Event_Notification_Intro "hot-li
 /Equipment/TITAN_ACQ/Common open 1 times by fempet
 /Equipment/TITAN_ACQ/Statistics open 1 times by fempet
 [local:mpet:Stopped]/>    
-\endcode
+@endcode
 
 <hr>@subsection RC_odbedit_save save - save database at current position 
 \code
@@ -1184,20 +1184,20 @@ save [-c -s -x -cs] <file>  - save database at current position
   -c                      as a C structure
   -s                      as a #define'd string
   -x                      as a XML file
-\endcode
+@endcode
 Saving the database regularly is essential in case the database becomes corrupted 
 (see  @ref RC_odbedit_corrupted).
 To save the complete database into an ASCII file,
 \code 
 [mpet@titan01 ~/online] odbedit
 [local:mpet:Stopped]/>save mpet.odb
-\endcode
+@endcode
 <br>
 This example shows how to save part of the database in an \b ASCII file  
 \code
 [local:pol:S]>cd "/Equipment/Info ODB/"
 [local:pol:S]Info ODB>save info.odb
-\endcode
+@endcode
 \b Contents of info.odb :
 \code
 [/Equipment/Info ODB/Common]
@@ -1243,7 +1243,7 @@ cycle when last failed thr = DWORD : 0
 Events sent = DOUBLE : 0
 Events per sec. = DOUBLE : 0
 kBytes per sec. = DOUBLE : 0
-\endcode
+@endcode
 
 <table  style="text-align: left; width: 100%;" border="0" cellpadding="2"
 cellspacing="2">
@@ -1251,13 +1251,13 @@ cellspacing="2">
 <b>Save as a C structure</b>
 \code
 [local:pol:S]Info ODB>save  -c cfile.c
-\endcode
+@endcode
 </td>
 <td>
 <b>Save as a #defined structure </b>
 \code
 [local:pol:S]Info ODB>save  -s cfile.h
-\endcode
+@endcode
 </td>
 </tr>
 
@@ -1315,7 +1315,7 @@ typedef struct {
     double    kbytes_per_sec_;
   } statistics;
 } INFO_ODB;
-\endcode
+@endcode
 </td>
 
 <td>
@@ -1366,14 +1366,14 @@ typedef struct {
 "kBytes per sec. = DOUBLE : 0",\
 "",\
 NULL }
-\endcode
+@endcode
 </td></tr>
 </table>
 <tr>
 <b> Save as an XML structure </b>
 \code
 [local:pol:S]Info ODB>save  -x xinfo.xml
-\endcode
+@endcode
 \b Contents of xinfo.xml :
 \code
 <?xml version="1.0" encoding="ISO-8859-1"?>
@@ -1424,18 +1424,18 @@ NULL }
     <key name="kBytes per sec." type="DOUBLE">0</key>
   </dir>
 </odb>
-\endcode
+@endcode
 
 <hr>@subsection RC_odbedit_load load - load database from a saved file 
 \code
 load <file>             - load database from .ODB file at current position
-\endcode
+@endcode
 To load the \b complete database from an ASCII file containing a previously @ref RC_odbedit_save 
 "saved" database:
 \code 
 [mpet@titan01 ~/online] odbedit
 [local:mpet:Stopped]/>load mpet.odb
-\endcode
+@endcode
 The entire database need not be loaded. @ref RC_odbedit_save  "Saved ASCII files" can be made of just a 
 part of the database, and these can be reloaded into the database. Since the full path is 
 given in the saved file,
@@ -1446,14 +1446,14 @@ file will be loaded.
 \code
 [mpet@titan01 ~/online] odbedit
 [local:mpet:Stopped]/>load awg0.odb
-\endcode
+@endcode
 <br>
 
 
 <hr>@subsection RC_odbedit_make make - create experim.h
 \code
 make [analyzer name]    - create experim.h
-\endcode
+@endcode
 The make command creates in the current directory \b experim.h, a file containing  C structures
 which can be included into frontend and analyzer code to enable easy access to
 the odb parameters.
@@ -1468,7 +1468,7 @@ The following example does not have an Analyzer key.
 [local:pol:S]/>make
 Analyzer "Analyzer" not found in ODB, skipping analyzer parameters
 "experim.h" has been written to /home/pol/online/pol
-\endcode
+@endcode
 Here is an part of experim.h for an experiment, showing the "Experiment" tree and one of the "Equipment" trees
 \code
 /********************************************************************\
@@ -1606,13 +1606,13 @@ NULL }
 
 etc.
 
-\endcode
+@endcode
 
 
 <hr>@subsection RC_odbedit_scl scl - show active clients
 \code
 scl [-w]                - show all active clients [with watchdog info]
-\endcode
+@endcode
 <br>
 \code
 [local:mpet:Stopped]/>scl
@@ -1624,13 +1624,13 @@ fesdac              lxmpet.triumf.ca
 fempet              lxmpet.triumf.ca
 mhttpd              titan01.triumf.ca
 ODBEdit             titan01.triumf.ca
-\endcode
+@endcode
 
 
 <hr>@subsection RC_odbedit_sh sh - shutdown a client
 \code
 shutdown <client>/all   - shutdown individual or all clients
-\endcode
+@endcode
 <br>
 \code
 [local:mpet:Stopped]/>sh rucompet
@@ -1642,7 +1642,7 @@ fesdac              lxmpet.triumf.ca
 fempet              lxmpet.triumf.ca
 mhttpd              titan01.triumf.ca
 ODBEdit             titan01.triumf.ca
-\endcode
+@endcode
 
 
 
@@ -1651,21 +1651,21 @@ ODBEdit             titan01.triumf.ca
 \code
 start [number][now][-v] - start a run [with a specific number],
                           [now] w/o asking parameters, [-v] debug output
-\endcode
+@endcode
 <br>
 
 The odbedit \b start command is used to start a run. In the following example, the run number of
 the new run is supplied.
 \code
 [local:Default:S]/Experiment>start run 503
-\endcode
+@endcode
 
 In the example below, the run number is not specified. The system will start the next consecutive run.
 \code
 [local:Default:S]/Experiment>start
 Run number [30004]: 
 Are the above parameters correct? ([y]/n/q): y
-\endcode
+@endcode
 The user may edit the run number before continuing by typing "n". Typing "y" will start the
 run, and typing "q" will abort the run start.
 <br>
@@ -1688,7 +1688,7 @@ field : 0G
 Number of scans : 0
 write data : y
 Run number [30004]:
-\endcode
+@endcode
 
 <br>
 @anchor RC_odbedit_start_now
@@ -1697,7 +1697,7 @@ By entering the command <b>"start now"</b>, the defined  @ref  RC_Edit_On_Start 
 [local:bnmr:S]/>start now
 Starting run #30129
 Run #30129 started
-\endcode
+@endcode
 @anchor RC_odbedit_start_v
 Using the <br>"-v"</br>  (verbose) option is useful for debugging. It prints messages as each client is started.
 \code
@@ -1714,7 +1714,7 @@ write data : y
 Run number [30128]:
 Are the above parameters correct? ([y]/n/q): y
 
-\endcode
+@endcode
 @anchor RC_transition_start
 \code
 Starting run #30128
@@ -1774,25 +1774,25 @@ Connecting to client "feBNMR" on host bnmrhmvw...
 Connection established to client "feBNMR" on host bnmrhmvw
 Executing RPC transition client "feBNMR" on host bnmrhmvw...
 RPC transition finished client "feBNMR" on host bnmrhmvw with status 1
-\endcode
+@endcode
 
 <hr>
 @subsection RC_odbedit_stop stop - stop a run 
 \code
 stop [-v]               - stop current run, [-v] debug output
-\endcode
+@endcode
 <br>
 \code
 [local:pol:R]/>stop
 Run #399 stopped
 [local:pol:S]/>  
-\endcode
+@endcode
 "Stop now" can be used for force a stop if there is a deferred transition. If there is no deferred transition,
 the "stop now" is the same as "stop".
 \code
 local:bnmr:R]/>stop now
 Run #30129 stopped
-\endcode
+@endcode
 Using the "-v"  (verbose) option is useful for debugging. It prints a message as each client is stopped.
 
 @anchor RC_transition_stop
@@ -1857,7 +1857,7 @@ RPC transition finished client "Logger" on host isdaq01 with status 1
 
 ---- Transition STOP finished ----
 Run #30128 stopped
-\endcode
+@endcode
 
 
 <br>

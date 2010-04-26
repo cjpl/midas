@@ -193,7 +193,7 @@ Frontend file name = STRING : [256] frontend.c
 This example shows a structured bank and a standard variable length
 bank declaration for the trigger bank list. <br>
 
-\code
+@code
    ADC0_BANK_STR(adc0_bank_str);
    BANK_LIST trigger_bank_list[] = {
       {"ADC0", TID_STRUCT, sizeof(ADC0_BANK), adc0_bank_str},
@@ -205,7 +205,7 @@ bank declaration for the trigger bank list. <br>
       {"SCLR", TID_DWORD, N_ADC, NULL},
       {""},
    };
-\endcode
+@endcode
 
 The @ref FE_tbl_Format "formats" for the ADC0 bank is "fixed", and for the TDC0 bank "midas".<br>
 This structure definition must be declared in the parameter @ref

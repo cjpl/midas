@@ -48,10 +48,10 @@ with its corresponding statistical information.
   - [-d ] : debug messages
   - [-D ] : start program as a daemon
 - <b> Usage </b>
-\code
+@code
   Thu> mevb -e midas
   Program mevb/EBuilder version 2 started
-\endcode
+@endcode
 
 <br><hr><br>
 
@@ -95,7 +95,7 @@ equipment definition in the case of the synchronized fragment event builder.
 <p>
 Frontend code for asynchronized fragment collection in the event builder,
 Event buffer remains the same for all the fragments:
-\code
+@code
   /* The frontend name (client name) as seen by other MIDAS clients   */
   char *frontend_name = "ebfe";
   ...
@@ -107,10 +107,10 @@ Event buffer remains the same for all the fragments:
        EQ_POLLED | EQ_EB,       /* equipment type + EQ_EB flag <<<<<< */
        LAM_SOURCE(0, 0xFFFFFF), /* event source crate 0, all stations */
        "MIDAS",                 /* format */
-\endcode
+@endcode
 <p>
 Frontend code for synchronized fragment collection in the event buider:
-\code
+@code
   /* The frontend name (client name) as seen by other MIDAS clients   */
   char *frontend_name = "ebfe";
   ...
@@ -122,12 +122,12 @@ Frontend code for synchronized fragment collection in the event buider:
        EQ_POLLED | EQ_EB,       /* equipment type + EQ_EB flag <<<<<< */
        LAM_SOURCE(0, 0xFFFFFF), /* event source crate 0, all stations */
        "MIDAS",                 /* format */
-\endcode
+@endcode
 
 Once the frontend is started with <em> -i 1 </em>, the Midas client name, equipment name and 
 buffer name will be modified (case of the synchronized event builder).
 
-\code
+@code
 > ebfe -i 1 -D
 ...
 odbedit
@@ -154,7 +154,7 @@ Trigger01                       DIR
         Frontend name           STRING  1     32    18h  0   RWD  ebfe01
         Frontend file name      STRING  1     256   18h  0   RWD  .../eventbuilder/ebfe.c
 ...
-\endcode
+@endcode
 
 Independently of the event ID, each fragment frontend will send its data to the composed 
 event buffer (BUFxx). The event builder task will make up a list of all the equipment
@@ -182,7 +182,7 @@ specific setting of the equipment while the \em /Variables will remain empty.
 The <b> User Field </b> is an ASCII string passed from the ODB to the
 eb_begin_of_run() which can be used for steering the event builder.
 
-\code
+@code
 [local:midas:S]EB>ls -lr
 Key name                        Type    #Val  Size  Last Opn Mode Value
 ---------------------------------------------------------------------------
@@ -215,7 +215,7 @@ EB                              DIR
         Fragment Required       BOOL    2     4     9s   0   RWD
                                         [0]             y
                                         [1]             y
-\endcode
+@endcode
 
 @section FE_eb_Operation Event Builder Operation
 
@@ -223,7 +223,7 @@ Using the "eb>" as the cwd for the example, the test procedure is the following:
 cwd : midas/examples/eventbuilder  -> refered as eb>
 
 - Build the mevb task:
-\code
+@code
 eb> setenv MIDASSYS /home/midas/midas-1.9.5
 eb> make
 cc  -g -I/usr/local/include -I../../drivers -DOS_LINUX -Dextname -c ebuser.c
@@ -235,12 +235,12 @@ cc  -g -I/usr/local/include -I../../drivers -DOS_LINUX -Dextname -o ebfe \
         ebfe.c camacnul.o /usr/local/lib/mfe.o /usr/local/lib/libmidas.a \
         -lm -lz -lutil -lnsl
 eb>
-\endcode
+@endcode
 - Start the following 4 applications in 4 differents windows connecting to
   a defined experiment.
   -- If no experiment defined yet, set the environment variable MIDAS_DIR to your
      current directory before spawning the windows.
-\code
+@code
 
 xterm1: eb> ebfe -i 1 
 xterm2: eb> ebfe -i 2 
@@ -265,7 +265,7 @@ Ebuilder            hostname
 [local:Default:S]/>
 [local:Default:S]/>start now
 Starting run #2
-\endcode
+@endcode
 
 - The xterm3 (mevb) should display something equivalent to the following,
 as the print statements are coming from the ebuser code.
@@ -288,7 +288,7 @@ This section comes from odbstruct.dox and any extra info needs combining with ab
 The Event Builder tree is created by @ref mevb_task and is placed in the  
 Equipment list.
 
-\code
+@code
 Key name                        Type    #Val  Size  Last Opn Mode Value
 ---------------------------------------------------------------------------
 EBuilder                        DIR
@@ -326,7 +326,7 @@ EBuilder                        DIR
                 Events sent     DOUBLE  1     8     3h   0   RWD  653423
                 Events per sec. DOUBLE  1     8     3h   0   RWD  1779.17
                 kBytes per sec. DOUBLE  1     8     3h   0   RWD  0
-\endcode 
+@endcode 
 
 
 <br>

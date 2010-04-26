@@ -21,7 +21,7 @@ In the special case where the image to be inserted is a \b History image, it can
 an HTML <b><img></b> tag of the following form:
 \code
 <img src="http://hostname.domain:port/HS/Meterdis.gif&scale=12h&width=300">
-\endcode
+@endcode
 
 \b Examples
 See  @ref RC_mhttpd_custom_demo and \example_image_all "image" created by the demo.
@@ -45,7 +45,7 @@ using @ref RC_odbedit_task "odbedit" :
 [local:Default:Stopped]/>cd Custom
 [local:Default:Stopped]/Custom>mkdir Images  <-- if Images does not exist
 [local:Default:Stopped]/Custom>cd Images/
-\endcode
+@endcode
 
 <li>Under the subdirectory  <span class="odb">Images</span>, create another subdirectory with the name of
 the image you are going to use (in this example, \b myexpt.gif), i.e.
@@ -53,18 +53,18 @@ the image you are going to use (in this example, \b myexpt.gif), i.e.
 \code
 [local:Default:Stopped]Images>mkdir myexpt.gif <-- make a subdirectory with the image name
 [local:Default:Stopped]Images>cd myexpt.gif/
-\endcode
+@endcode
 
 <li> Under the subdirectory  <span class="odb"> myexpt.gif</span> , create the STRING key  <span class="odb"> Background</span> :
 \code
 [local:Default:Stopped]myexpt.gif>create string Background  <-- create key "Background" 
 String length [32]: 256
-\endcode
+@endcode
 
 <li>Set the key  <span class="odb"> Background</span> to contain the name of the image-file.
 \code
 [local:Default:Stopped]myexpt.gif>set Background \midas\examples\custom\myexpt.gif
-\endcode
+@endcode
 </ol>
 
 This image must be referenced in a custom HTML file, such as  myexpt.html . This file also includes other features
@@ -91,7 +91,7 @@ This can be done now with a new function like this:
   href="Custom1?cmd=Toggle&odb=/Equipment/Environment/Variables/Output[2]">
 </map>
 <img src="custom.gif" usemap="#Custom1">
-\endcode
+@endcode
 
 This defines a clickable map on top of the custom image. The area(s) should
 match with some area(s) on the image, e.g. the box of a valve.
@@ -124,7 +124,7 @@ The following code fragment is from the demo file  myexpt.html
      href="http://localhost:8080" title="Logger in color level (using Fill)">
   <img src="myexpt.gif" border=1 usemap="#myexpt.map">
   </map>
-\endcode
+@endcode
 
 Three rectangular clickable areas are defined.
 
@@ -159,7 +159,7 @@ and using it like this:
   href="#"
 onClick="promptpwd('Custom1?cmd=toggle&pnam=CustomPwd?odb=/Equipment/Environment/Variables/Output[2]
 ')">
-\endcode
+@endcode
 
 
 If the \b pwd option is present in the <span class="odbtag"> <odb> tag</span>,  <span class="cl">mhttpd</span> establishes a call to
@@ -222,7 +222,7 @@ odbedit
 [local:Default:Stopped]/myexpt.gif>cd labels
 [local:Default:Stopped]Labels>mkdir Rate
 [local:Default:Stopped]Rate>
-\endcode
+@endcode
 
 The above example assumes that the image-filename is \b myexpt.gif . After
 the next refresh, the structure will have been created for the  <span class="odb">Rate</span> label:
@@ -238,7 +238,7 @@ Y                               INT     1     4     2m   0   RWD  0
 Align                           INT     1     4     2m   0   RWD  0
 FGColor                         STRING  1     8     2m   0   RWD  000000
 BGColor                         STRING  1     8     2m   0   RWD  FFFFFF
-\endcode
+@endcode
 
 This procedure is repeated for all the labels required, using a unique <span class="odb"><label_name></span> subdirectory for each label.
 
@@ -639,7 +639,7 @@ Fillcolors
                                 
                                 
                                 
-\endcode
+@endcode
 \note The array lengths, of course, depend on the user's requirements, but the length of the two arrays must be the same.
 
 
@@ -658,7 +658,7 @@ or
 
 >odbedit
 [local:midas:S]/>load level.odb
-\endcode
+@endcode
 
 
 Once filled with values, the saved odb file might look like this:
@@ -678,7 +678,7 @@ Fillcolors = STRING[4] :
 [8] AAFF00
 [8] AA0000
 [8] FF0000
-\endcode
+@endcode
 
 This subtree ( <span class="odb">Level</span> in the example) can be duplicated for as many Fills as required, using
 a unique  <span class="odb"><fill_name></span> for each subdirectory.
@@ -888,7 +888,7 @@ EOT
 return;
 }
 
-\endcode
+@endcode
 
 
 
@@ -907,7 +907,7 @@ style tag.  The custom page code could look like this:
 <odb src="/Runinfo/run number" edit=1>
 </div>
 <img src="custom.gif">
-\endcode
+@endcode
 
 The \b <div> tag surrounding the <span class="odbtag"><odb> tag</span> places this directly on top of the
 "custom.gif" image, where it can be clicked to be edited.
@@ -927,7 +927,7 @@ document.write('') ;
 </script>
 </div>
 <img src="custom.gif">
-\endcode
+@endcode
 
 The JavaScript version can be much more flexible than the HTML version. For example, for the EBIT experiment at TRIUMF,
 different images are shown depending on the experimental mode. This means that the edit boxes have to be placed 
@@ -950,7 +950,7 @@ document.write(jvar + 'ms');
 document.write('</a>');
 document.write('') ;
 document.write('</div>')
-\endcode
+@endcode
 
 The EBIT custom page is shown @ref RC_Ebit_custom_page "here". 
 
@@ -979,7 +979,7 @@ function promptpwd(path)
 <odb src="/..." edit=1 pwd="CustomPwd">
 
 ...
-\endcode
+@endcode
 
 
 <br><hr><br>
@@ -1080,7 +1080,7 @@ The code myexpt.html is shown below for convenience:
      </table></form>
    </body>
   </html>  
-\endcode
+@endcode
 
 
 To  @ref RC_mhttpd_Activate "activate" this HTML document, it has to be defined in the ODB as follow:
@@ -1089,7 +1089,7 @@ To  @ref RC_mhttpd_Activate "activate" this HTML document, it has to be defined 
 [local:Default:Stopped]/Custom>create string Myexpt&
 String length [32]: 256
 [local:Default:Stopped]/Custom>set Myexpt& /midas/examples/custom/myexpt.html
-\endcode
+@endcode
 After refresh, the alias-link \b Myexpt should be visible on the Main Status Page.
 If you have not already inserted the image file name \b myexpt.gif into the Custom page,
 do so now by following the instructions to @ref RC_mhttpd_custom_image "insert the image".
@@ -1124,7 +1124,7 @@ After refreshing the web page, you will see the error message below:
 >>>>>>>> Refresh web page <<<<<<<<
 
 12:32:38 [mhttpd] [mhttpd.c:5508:show_custom_gif] Empty Src key for label "Rate"
-\endcode
+@endcode
 
 The keys created in the <span class="odbpath">Labels/Rate</span> subtree are explained  @ref RC_mhttpd_labels_tree "here". 
 Customize this label by assigning
@@ -1134,7 +1134,7 @@ the \b Src key  to a valid ODB Key variable, and the X,Y fields to position top-
 [local:Default:Stopped]Rate>set x 330
 [local:Default:Stopped]Rate>set y 250 
 [local:Default:Stopped]Rate>set format "Rate:%1.1f kB/s"
-\endcode
+@endcode
 
 Once the initial label is created, the simplest way to extent to multiple labels is to
 copy the existing label sub-tree and modify the label parameters.
@@ -1146,7 +1146,7 @@ copy the existing label sub-tree and modify the label parameters.
 [local:Default:Stopped]Event>set Format "Rate:%1.1f evt/s"
 [local:Default:Stopped]Event>set y 170
 [local:Default:Stopped]Event>set x 250
-\endcode
+@endcode
 You will now have two \b Labels, named "Rate" and "Event", both subtrees under </span class="odb">../Labels</span>.
  
 In the same manner, you can create @ref RC_mhttpd_custom_gif_bars  "bars" used for 
@@ -1177,7 +1177,7 @@ This code will setup two ODB values defined by the fields src.
 [local:Default:Stopped]Event>set y 240
 [local:Default:Stopped]Event>set x 450
 [local:Default:Stopped]Rate>set max 1e6 
-\endcode
+@endcode
 
 You will now have two \b Bars, also named "Rate" and "Event", both subtrees under </span class="odb">../Bars</span>.
 
@@ -1253,7 +1253,7 @@ The insertion of a new Custom page requires the following steps:
   [local:midas:Stopped]/Custom>export test&
   File name: mcustom.html
   [local:midas:Stopped]/Custom>
-  \endcode
+  @endcode
 
 Figure 1 shows an \b internal custom page which has been imported into the ODB at key <span class="odb">/Custom/Overview&</span>
 as shown in Figure 2. 

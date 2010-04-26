@@ -56,7 +56,7 @@ or visit the <a href="http://midas.triumf.ca/forum/Package"> Midas Forum </a>
   <br><br>
 -# <b> I've seen the ODB prompt displaying the run state, how do you do that?</b>
   - Modify the \b /System/prompt field. The "S" is the trick. 
-  \code 
+  @code 
  Fri> odb -e bnmr1 -h isdaq01
  [host:expt:Stopped]/cd /System/
  [host:expt:Stopped]/System>ls
@@ -74,7 +74,7 @@ or visit the <a href="http://midas.triumf.ca/forum/Package"> Midas Forum </a>
  [host:expt:Stopped]/System>set Prompt [%h:%e:%s]%p>
  [host:expt:S]/System>set Prompt [%h:%e:%S]%p>
  [host:expt:Stopped]/System>     
-  \endcode
+  @endcode
   <br><br>
 -# <b> I've setup the alarm on one parameter in ODB but I can't make it trigger? </b>
   - The alarm scheme works only under \b ONLINE. See @ref RC_ODB_RunInfo_Tree
@@ -87,7 +87,7 @@ or visit the <a href="http://midas.triumf.ca/forum/Package"> Midas Forum </a>
   at the new index. The intermediate indices will be fill with the default value
   depending on the type of the array. This can easly corrected by using the 
   wildcard to access all or a range of indices.
-  \code 
+  @code 
 [local:midas:S]/>mkdir tmp
 [local:midas:S]/>cd tmp
 [local:midas:S]/tmp>create int number
@@ -130,7 +130,7 @@ foo                             STRING  4     32    3s   0   RWD
                                         [1]             
                                         [2]             A default string
                                         [3]             
-  \endcode
+  @endcode
   
 -# How do I ...
   - ...

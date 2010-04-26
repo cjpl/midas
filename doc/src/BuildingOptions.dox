@@ -31,9 +31,9 @@ already available in the package.
 - By default the midas applications are built for use with dynamic library 
 \b libmidas.so. If static build is required the whole package can be built using the 
 option \b static.
-\code
+@code
 > make static
-\endcode
+@endcode
 
 - The basic Midas package builds without external package library reference. But it does try
 to build an extra core analyzer application to be used in conjunction with ROOT 
@@ -46,9 +46,9 @@ library.
 
 - For development it could be useful to built individual application in static. This 
 can be done using the @ref BO_USERFLAGS option such as:
-\code
+@code
 > rm linux/bin/mstat; make USERFLAGS=-static linux/bin/mstat
-\endcode
+@endcode
 
 - The current OS support is done through fix flag established in the general
    @ref Makefile . Currently the OS supported are:
@@ -57,31 +57,31 @@ can be done using the @ref BO_USERFLAGS option such as:
 - For \b OS_IRIX please contact Pierre. The \b OS_VMS is not included in the Makefile
 as it requires a particular makefile and since several years now the VMS support
 has been dropped. 
-\code
+@code
 OSFLAGS = -DOS_LINUX ...
-\endcode
+@endcode
 - <b>OSFLAGS [2.0.0]</b> For 32 bit built, the OSFLAGS should contains the -m32. By default this flag is not
 enabled. It has to be applied to the Makefile for the frontend examples too.
-\code
+@code
 # add to compile midas in 32-bit mode
 # OSFLAGS += -m32
-\endcode
+@endcode
 - Other OS supported are: 
  - OS_WINNT : See file makefile.nt. 
  - OS_VXWORKS : See file makefile.ppc_tri.
 
 <hr> @section BO_USERFLAGS USERFLAGS
 This flag can be used at the command prompt for individual application built.
-\code
+@code
 make USERFLAGS=-static linux/bin/mstat
-\endcode
+@endcode
 
 <hr> @section BO_MIDAS_PREF_FLAGS MIDAS_PREF_FLAGS
 This flag is for internal global Makefile preference.
 Included in the \b OSFLAGS.
-\code
+@code
 MIDAS_PREF_FLAGS  = -DYBOS_VERSION_3_3 -DEVID_TWIST
-\endcode
+@endcode
 
 <hr> @section BO_HAVE_CAMAC HAVE_CAMAC
 This flag enable the CAMAC RPC service within the frontend code. The application
@@ -105,9 +105,9 @@ This flag is used for \b examples/hbookexpt/Makefile for building the midas @ref
 against \b HBOOK and \b PAW. The path to the cernlib is requested and expected to be found under
 /cern/pro/lib (see makefile). This can always be overwritten during the makefile using the
 following command:
-\code
+@code
 make CERNLIB_PACK=<your path>/libpacklib.a
-\endcode
+@endcode
 
 <hr> @section BO_HAVE_MYSQL HAVE_MYSQL
 This flag is used for the @ref F_mlogger_task to building the application with \em mySQL support.
@@ -118,7 +118,7 @@ The build requires to have access to the mysql include files as well as the mysq
  This parameter is used for event transfer across network as well, therefore it has to be applied to all the 
  midas client involved in the experiment when different value is required and a complete Midas rebuid
  needs to be done.
-\code
+@code
 > setenv MIDAS_MAX_EVENT_SIZE 8000000
 > make
 cc -c -g -O3 -Wall -Wuninitialized -Iinclude -Idrivers -I../mxml -Llinux/lib -DINCLUDE_FTPLIB  \
@@ -126,7 +126,7 @@ cc -c -g -O3 -Wall -Wuninitialized -Iinclude -Idrivers -I../mxml -Llinux/lib -DI
 -m64 -I/triumfcs/trshare/olchansk/root/root_v5.12.00_SL42_amd64/include -DHAVE_ZLIB -DOS_LINUX -fPIC \
 -Wno-unused-function -o linux/lib/midas.o src/midas.c
 ...
-\endcode
+@endcode
  But at the frontend level, the user can define his own local maximum
  event size through the \b max_event_size (see frontend examples).
 
@@ -134,9 +134,9 @@ cc -c -g -O3 -Wall -Wuninitialized -Iinclude -Idrivers -I../mxml -Llinux/lib -DI
 This flag is for internal Makefile preference. Used in particular for additional
 applications build based on the OS selection. In the example
 below @ref F_mspeaker_task and @ref U_dio_task are built only under OS_LINUX.
-\code
+@code
 SPECIFIC_OS_PRG = $(BIN_DIR)/mlxspeaker_task $(BIN_DIR)/dio_task
-\endcode
+@endcode
 
 <hr> @section BO_INCLUDE_FTPLIB INCLUDE_FTPLIB
 FTP support "INCLUDE_FTPLIB" Application such as the @ref F_mlogger_task,
@@ -147,18 +147,18 @@ The applications @ref F_lazylogger_task, @ref RC_mdump_task can be built with \b
 in order to gain direct access to the data within a file with extension
 \b mid.gz or \b ybs.gz. By default this option is disabled except for the system analyzer
 core code \b mana.c.
-\code
+@code
 make USERFLAGS=-DINCLUDE_ZLIB linux/lib/ybos.o
 make USERFLAGS=-static linux/bin/mdump
-\endcode
+@endcode
 
 <hr> @section BO_YBOS_VERSION_3_3 YBOS_VERSION_3_3
 The default built for ybos support is version 4.0.
 If lower version is required include \b YBOS_VERSION_3_3
 during compilation of the ybos.c
-\code
+@code
 make USERFLAGS=-DYBOS_VERSION_3_3 linux/lib/ybos.o
-\endcode
+@endcode
 
 <hr> @section BO_DM_DUAL_THREAD DM_DUAL_THREAD
 Valid only under VxWorks. This flag enable the dual thread task when running the

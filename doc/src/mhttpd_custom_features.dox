@@ -50,14 +50,14 @@ This JavaScript library relies on certain new commands built into <span class="c
 therefore hardcoded into  <span class="cl">mhttpd</span>. 
 
 <span class="note">This library can be viewed by entering in your browser location box</span>
-\code
+@code
 http://<mhttpd host>/mhttpd.js
-\endcode
+@endcode
 
 If running <span class="cl">mhttpd</span> on host \b midaspc on \b port 8081, you would enter :
-\code
+@code
 http://midaspc:8081/mhttpd.js
-\endcode
+@endcode
 to view the JS library. A recent version is shown here:
   - \subpage RC_mhttpd_js
 
@@ -69,7 +69,7 @@ In order to use the  <b> JavaScript built-in functions</b>,
 you must 
 include the  @ref RC_mhttpd_custom_js_lib "library" in your custom page</span> 
 by putting the following statement inside the <head>...</head> tags of an HTML file:
-\code
+@code
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 TRANSITIONAL//EN">
 <html><head>
 <title> ODBEdit test</title>
@@ -78,7 +78,7 @@ by putting the following statement inside the <head>...</head> tags of an HTML f
 </head>
 ...
 </html>
-\endcode
+@endcode
 
 <hr>
 
@@ -106,20 +106,20 @@ included into multiple HTML custom pages.
 
 To include the custom features such as Buttons, ODB editing etc.
 a custom page needs to have an HTML <b> \<form\> </b> tag like this : 
-\code
+@code
 <form method="GET" action="http://hostname.domain:port/CS/\<Custom_page_key\>"\>
 
 .......
 
 </form>
-\endcode
+@endcode
 where  <span class="odb"><Custom_page_key></span> is the name of the key that has been  
 @ref RC_odb_custom_keynames "defined in the /Custom ODB directory" in order to
 @ref RC_mhttpd_Activate "activate the custom page". For a key named <span class="odb">Test&</span>
 the \b form tag would be of the form
-\code
+@code
 <form method="GET" action="http://hostname.domain:port/CS/Test&"\>
-\endcode
+@endcode
 
 Various form tags are shown in the examples below.  
 \anchor mhttpd_custom_external
@@ -135,9 +135,9 @@ shown elsewhere.
 The following \<meta\> tag included in the HTML header code will cause the whole custom page to refresh
 in 60s :
 
-\code
+@code
  \<meta http-equiv="Refresh" content="60">
-\endcode
+@endcode
 <br>
 
 \b Parts of a custom page may also be @ref RC_mhttpd_js_update_part "periodically updated".
@@ -156,26 +156,26 @@ ODB, Elog, Alarms, History, Programs, etc).
 
 The following html fragment shows the inclusion of three of the standard buttons,
 giving access to the Main Status, ODB and Messages pages :
-\code
+@code
 <input name="cmd" value="Status" type="submit">
 <input name="cmd" value="ODB" type="submit">
 <input name="cmd" value="Messages" type="submit">
-\endcode
+@endcode
 
 
 <hr>
 
 @section RC_mhttpd_custom_alias Alias Links and Hyperlinks
 Any hyperlink can easily be included on a custom page by using the standard HTML <a> tag, e.g.
-\code  
+@code  
 <a href="http://ladd00.triumf.ca/~daqweb/doc/midas/html/">Midas Help</a>
-\endcode
+@endcode
 Links on a custom page equivalent to @ref  RC_mhttpd_status_Alias_links "alias-links" can also be made e.g.
-\code
+@code
 <script>
 document.write('<a href="/SC/Cycle_Scalers?exp='+my_expt+'">Cycle Scalers</a>');
 </script>
-\endcode
+@endcode
 where \b my_expt is the name of the Midas experiment. 
 
 <br><hr><br>
@@ -195,7 +195,7 @@ The following html fragment shows the inclusion of a customscript button named "
 See complete example @internal_example_1 ...
 
 This JavaScript fragment also shows customscript buttons that appear only when the run is stopped 
-\code
+@code
  if (rstate == state_stopped) // run stopped
 {
  document.write('<input name="customscript" value="tri_config" type="submit">');
@@ -208,11 +208,11 @@ if(ppg_mode != '1c')
 if(ppg_mode != '1d')
  document.write('<input name="customscript" value="1d" type="submit">');
 }
-\endcode
+@endcode
 The corresponding entry under /customscript is as shown below. The first button (tri_config) when pressed
 will cause a user-written program tri_config to be executed. The other buttons 1a,1b etc. will cause the
 experimental mode to be changed.
-\code
+@code
 [local:ebit:S]/>ls /customscript/tri_config
 cmd                             /home/ebit/online/ppg/perl/exec.pl
 include path                    /home/ebit/online/ppg/perl/
@@ -228,7 +228,7 @@ experiment name -> /experiment/Name
                                 ebit
 ppg_mode                        1a
 modefile                        defaults
-\endcode
+@endcode
 1b,1c,1d are similar to 1a
 
 These buttons are illustrated in the example @ref RC_Mpet_custom_page
@@ -260,9 +260,9 @@ Parameters
 <!--   line    1     -->
 <tr>
 <td style="vertical-align: top; background-color: white; font-weight: bold; text-align: left;">
-\code
+@code
  ODBGetMsg(n)
-\endcode
+@endcode
 </td>
 <td style="vertical-align: top; background-color: white; font-weight: normal; text-align: left;">
 Get the most recent \b n lines from the system message log
@@ -275,13 +275,13 @@ Get the most recent \b n lines from the system message log
 <br>
  This allows the inclusion of the "Last Midas message" on a custom page.
 e.g.
-\code
+@code
 <script>
 var message;
 message= ODBGetMsg(1);
 document.write('Last message:'+message+'<br>');
 </script>
-\endcode
+@endcode
 
 An example of this feature is on the @ref  RC_BNMQR_status .
 
@@ -292,20 +292,20 @@ When writing custom pages with large background images and labels placed on that
 to figure out X and Y coordinates of the labels. This can now be simplified by adding a <b>new id tag "refimg"</b> to 
 the background image of the form
 
-\code
+@code
 <img id="refimg" src="...">
-\endcode
+@endcode
 
 The function \b getMouseXY in the  @ref RC_mhttpd_custom_js_lib supplies the X,Y position if an element of ID \b refimg is
 present. Therefore, the  JS library must be @ref include_js_library "included".
 
 \b Usage:
-\code
+@code
 <img  id="refimg" src="ebit_pc.gif" usemap="#Custom1">   <!-- name="refimg" makes crosshairs appear -->
 <map name="Custom1">
 .....
 </map>
-\endcode
+@endcode
 
 If the "refimg" tag is present, the cursor changes into a crosshair, and its absolute and relative
 locations in respect to the reference image are shown in the status bar (Figure 1):

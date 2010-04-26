@@ -201,7 +201,7 @@ var TID_ARRAY = 13;
 var TID_STRUCT = 14;
 var TID_KEY = 15;
 var TID_LINK = 16;
-\endcode
+@endcode
 \anchor end
 \htmlonly
 <script type="text/javascript">

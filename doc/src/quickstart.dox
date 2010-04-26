@@ -102,7 +102,7 @@ The following <b>Environment Variables</b> needs to be setup, e.g.:
   setenv MIDAS_EXPTAB $HOME/online/exptab ** if not setup,  defaults to  /etc/exptab
   setenv PATH .:$MIDASSYS/linux/bin:$HOME/packages/roody/bin:$ROOTSYS/bin:$PATH
   #end
-  @endcode
+  @@endcode
   - mkdir $HOME/packages
   - Logout and login again, or source .cshrc for the change to take effect.
  \n
@@ -126,7 +126,7 @@ For full Midas operation \b ROOT is needed for the data logging and analysis pac
       is NOT installed, the environment variable ROOTSYS must be removed:
       @code
       unsetenv ROOTSYS
-      @endcode
+      @@endcode
       
     <br>
 
@@ -148,7 +148,7 @@ The Midas package requires the \b mxml auxiliary package which can be found at t
   cd midas
   make
   ls $MIDASSYS/linux/bin   ... should contains odbedit and all the midas applications.
-  @endcode
+  @@endcode
   \n
 
 @subsection  Q_Linux_Rome_Installation ROME Package Installation
@@ -162,7 +162,7 @@ The Midas package requires the \b mxml auxiliary package which can be found at t
   svn co svn+ssh://svn@savannah.psi.ch/afs/psi.ch/project/meg/svn/rome/trunk rome
   cd rome
   make
-  @endcode
+  @@endcode
   
 
 @subsection  Q_Linux_Roody_Installation ROODY Package Installation
@@ -177,7 +177,7 @@ The Midas package requires the \b mxml auxiliary package which can be found at t
   cd roody
   make
   $HOME/packages/roody/bin/roody, run the program
-  @endcode
+  @@endcode
   
 <hr>
 @section  Q_Linux_Basic_Test Basic test
@@ -207,7 +207,7 @@ NOTE: these instructions provide \b local access to the experiment. For \b remot
        - the third parameter is the username e.g. "johnfoo"
   @code
   simptest1 /home/johnfoo/online johnfoo
-  @endcode
+  @@endcode
   \anchor start-all
   - copy start_daq.sh, kill_client.perl and kill_daq.sh from the $MIDASSYS directory to the online directory.
   - copy $MIDASSYS/examples/experiment/* to the online directory.
@@ -229,7 +229,7 @@ NOTE: these instructions provide \b local access to the experiment. For \b remot
   set "/Logger/Channels/0/Settings/Compression"   1
   set "/Logger/Channels/0/Settings/ODB Dump" "y"
   exit   exit 
-  @endcode
+  @@endcode
   - ./start_daq.sh
   - open a web browser http://localhost:8081
   - save the url bookmark to the "personal toolbar"
@@ -261,7 +261,7 @@ NOTE: these instructions provide \b local access to the experiment. For \b remot
   \code 
   # midas service
   midas           1175/tcp                        # Midas server
-  \endcode
+  @endcode
   - <b>/etc/xinetd.d/midas :</b> Daemon definition. Create new file named \b midas
   \code 
   service midas
@@ -275,12 +275,12 @@ NOTE: these instructions provide \b local access to the experiment. For \b remot
            log_on_failure          += USERID HOST
            disable                 = no
   }
-  \endcode
+  @endcode
   - <b>/etc/ld.so.conf :</b> Dynamic Linked library list. Add directory pointing to 
   location of the midas.so file (add /usr/local/lib).
   \code 
   /usr/local/lib
-  \endcode
+  @endcode
   The system is now build by default in static, which makes it unecessary to setup
   the .so path through either the environment \b LD_LIBRARY_PATH or the ld.so.conf.
   - <b>/etc/exptab :</b> Midas Experiment definition file (see below).
@@ -316,7 +316,7 @@ NOTE: these instructions provide \b local access to the experiment. For \b remot
   # Midas experiment list
   test   /home/johnfoo/online     johnfoo
   decay  /home/jackfoo/decay_daq  jackfoo
-  \endcode
+  @endcode
   <br>
   Experiments not defined in \b exptab are not accessible remotely, but can still be
   accessed locally using the @ref Environment_variables "environment variable" @ref MIDAS_DIR if defined.
@@ -338,7 +338,7 @@ NOTE: these instructions provide \b local access to the experiment. For \b remot
   DRV_DIR   = $(MIDASSYS)/drivers/bus
   INC_DIR   = $(MIDASSYS)/include
   LIB_DIR   = $(MIDASSYS)/linux/lib
-  \endcode
+  @endcode
 
   For testing the system, you can start the frontend as follow:
   \code
@@ -363,7 +363,7 @@ NOTE: these instructions provide \b local access to the experiment. For \b remot
   --------------------------------------------------------------------------------
   Trigger       OK         0          0.0        0.0        0          0
   Scaler        OK         0          0.0        0.0        0          0
-  \endcode
+  @endcode
   In a different terminal window
   \code
   >odbedit
@@ -375,7 +375,7 @@ NOTE: these instructions provide \b local access to the experiment. For \b remot
   Starting run #1
   17:28:58 [ODBEdit] Run #1 started
   [local:test:R]/>
-  \endcode
+  @endcode
   The run has been started as seen in the frontend terminal window.
   See the frontend.c for data generation code.
   \code
@@ -387,7 +387,7 @@ NOTE: these instructions provide \b local access to the experiment. For \b remot
   --------------------------------------------------------------------------------
   Trigger       OK         865        99.3       5.4        0          9
   Scaler        OK         1          0.0        0.0        0          1
-  \endcode
+  @endcode
 
 <br>
 
@@ -452,7 +452,7 @@ Throughout the following description the midas package is assumed to be found un
  - Click "Download tarball"
  - Extract trunk to %SystemDrive%
  - Rename trunk to mxml
-  @endcode
+  @@endcode
 
 
   - Using the svn command under cygwin (pwd "svn" will be asked twice):
@@ -460,7 +460,7 @@ Throughout the following description the midas package is assumed to be found un
  cd %SystemDrive%\
  svn co svn+ssh://svn@savannah.psi.ch/afs/psi.ch/project/meg/svn/midas/trunk midas
  svn co svn+ssh://svn@savannah.psi.ch/afs/psi.ch/project/meg/svn/mxml/trunk mxml
-  @endcode
+  @@endcode
 
   - Using the Tortoise package under windows (pwd "svn" will be requested twice)
    - Using the file browser go to the \%SystemDrive\%
@@ -486,7 +486,7 @@ Environment variables needs to be setup prior the midas build;
   - create file \b \%SystemRoot\%\\system32\\exptab with the following content.
   @code
   test c:\online johnfoo 
-  @endcode   
+  @@endcode   
   
   - The Midas build requires the Microsoft Visual C++ (200x) or .NET. 
     the corresponding environment variables for the compiler need to be set prior
@@ -497,7 +497,7 @@ Environment variables needs to be setup prior the midas build;
   
   cd %MIDASSYS%
   nmake -f makefile.nt
-  @endcode
+  @@endcode
 \n
 
 <hr>
@@ -524,7 +524,7 @@ Midas packages has been installed.
       Name                Host
       Sample Frontend     yourhost
       ODBEdit             yourhost
-  @endcode  
+  @@endcode  
   - Start a web brower and go to http://localhost
   - Click Start, confirm run number, click refresh...   Stop run.
 \n

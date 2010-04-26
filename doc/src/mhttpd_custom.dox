@@ -103,10 +103,10 @@ must be listed in the ODB under the optional  <span class="odb">/Custom</span> t
 @ref RC_odb_custom_external_example  "external"   or @ref RC_odb_custom_internal_example  "internal"  pages.
 
  The  <span class="odb">/Custom</span> tree must be created by the user, e.g. using @ref RC_odbedit_task "odbedit"
-\code
+@code
 odbedit
 [local:midas:S] mkdir Custom
-\endcode
+@endcode
 
 @section RC_odb_custom_tree  The /Custom ODB tree
 \Note the   <span class="odb">/Custom</span> tree is applicable only to  @ref RC_mhttpd "mhttpd", and ignored by 
@@ -140,7 +140,7 @@ needed by other custom pages.
 If activating an  <span class="warn">external</span> webpage, create a link for it in the  ODB  <span class="odb">/Custom</span> tree.  
 For example, to create a link called  <span class="odb">Test&</span>  that will open a <span class="note"> local </span> \b external html file 
 <em> /home/t2ktpc/online/custom/try.html </em> in a new frame:
-\code
+@code
 odbedit
 [local:pol:S] mkdir Custom   <-- if /Custom is not present
 [local:pol:S] cd Custom
@@ -149,19 +149,19 @@ String length [32]: 80
 [local:pol:S]/>set Test& "/home/t2ktpc/online/custom/try.html"
 [local:pol:S]/>ls -lt my_page
 Test&                            STRING  1     80    >99d 0   RWD  /home/t2ktpc/online/custom/try.html
-\endcode
+@endcode
 <br>
 \anchor remote
 If the external HTML file is on a <span class="note"> remote </span> \b webserver, the link should be placed under the 
 @ref  RC_odb_alias_tree "/Alias" tree rather than the <b> /Custom </b> tree, e.g.
 
-\code
+@code
 [local:Default:Stopped]/>mkdir Alias  <-- if /Alias is not present
 [local:Default:Stopped]/>cd alias
 [local:Default:Stopped]/alias>create string WebDewpoint&
 String length [32]: 256
 [local:Default:Stopped]/alias>set WebDewpoint& "http://www.decatur.de/javascript/dew/index.html"
-\endcode
+@endcode
 
 
 @subsection RC_odb_custom_internal_example Import an internal webpage
@@ -170,14 +170,14 @@ If creating an <span class="warn">internal</span> webpage, it must be
 imported into the ODB using the  @ref  RC_odbedit_import "odbedit import command".
 This example shows a file \b mcustom.html imported into the key  <span class="odb">/Custom/Test&</span>.
 
-  \code
+  @code
   Tue> odbedit                      
   [local:midas:Stopped]/>mkdir Custom    <-- create /Custom if it does not exist
   [local:midas:Stopped]/>cd Custom/
   [local:midas:Stopped]/Custom>import mcustom.html   <-- import an html file
   Key name: Test&              
   [local:midas:Stopped]/Custom>
-  \endcode
+  @endcode
 
 Example of an  @ref RC_mhttpd_Internal is shown here.
 
@@ -185,12 +185,12 @@ Example of an  @ref RC_mhttpd_Internal is shown here.
 @subsection RC_odb_custom_keys_examples  Examples of /Custom keys 
 
 Here is an example of different keys in <span class="odb">/Custom</span>  (all for \b external webpages)
-\code
+@code
 GasMain&                        STRING  1     80    >99d 0   RWD  /home/t2ktpc/online/custom_gas/GasMain.html
 js_functions!                   STRING  1     64    >99d 0   RWD  /home/t2ktpc/online/custom_gas/custom_functions.js
 Purifier!                       STRING  1     132   >99d 0   RWD  /home/t2ktpc/online/custom_gas/purifier.html
 style0!                         STRING  1     45    >99d 0   RWD  /home/t2ktpc/online/custom_gas/t0.css                    
-\endcode
+@endcode
 
  - The first key  <span class="odb">GasMain&</span>  will produce an alias-link on the main status page called \b GasMain. 
 Clicking this alias-link will load the file \b GasMain.html into the \b same frame (the keyname ends in "&").

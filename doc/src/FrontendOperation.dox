@@ -61,14 +61,14 @@ facilitate the multiple frontend configuration operation required for the @ref F
 
 
 Start the application as a daemon, using the default host, experiment and port :
-\code
+@code
 e.g. fecamac -D
-\endcode
+@endcode
 Start the application superceding the default host, experiment and port:
-\code
+@code
 
 e.g. fegpib -e exp218 -h isdaq10 -p 7077 -D
-\endcode
+@endcode
 
 
 @subsection FE_hw_equipment Hardware Equipment
@@ -243,7 +243,7 @@ taken from the frontend @ref FE_eqdec "equipment declaration". The following exa
 the /Equipment tree of an experiment where a large number of Equipments have been defined:
 
 Example:
-\code
+@code
 $odbedit
 [local:midas:S]/>ls -lt /Equipment 
 Key name                        Type    #Val  Size  Last Opn Mode Value
@@ -260,7 +260,7 @@ Cryostat                        DIR
 Meters                          DIR
 RFSource                        DIR
 DSPec                           DIR
-\endcode  
+@endcode  
 
 Each of these "Equipment" directories contain several subdirectories which
 by default the system creates.
@@ -271,7 +271,7 @@ by default the system creates.
   structure is created by the system.
   - Statistics : Contains equipment statistics information such as event taken, event rate, data rate.
 
-\code 
+@code 
 
  
 [local:S]ls -l -r /equipment/scaler
@@ -315,7 +315,7 @@ Scaler                          DIR
         Events sent             DOUBLE  1     8     1s   0   RWDE 370
         Events per sec.         DOUBLE  1     8     1s   0   RWDE 0.789578
         kBytes per sec.         DOUBLE  1     8     1s   0   RWDE 0.0678543
-\endcode  
+@endcode  
 
 These subdirectories will be discussed in more detail in the following sections.
 

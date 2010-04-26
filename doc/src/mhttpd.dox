@@ -35,9 +35,9 @@ the web based request.
   - [-D ] : start program as a \b daemon
 
 - <b> Usage </b>
- \code
+ @code
   >mhttpd -p 8081 -D
- \endcode
+ @endcode
 
 \note
 Several copies of mhttpd can run on a single host, as long as they are started on different ports. 
@@ -52,13 +52,13 @@ To connect to a mhttpd webserver running on
 port &lt;nnnn&gt; on host &lt;hostname&gt; and experiment &lt;exptname&gt;, 
 enter the URL in your web browser in the form
 
-\code
+@code
  http://<hostname>:<nnnn>/?exp=<exptname>
-\endcode
+@endcode
 e.g.
-\code
+@code
  http://midtis09:8081/?exp=midas
-\endcode
+@endcode
 <br>
 
 The @ref RC_mhttpd_Main_Status_page should then be visible in the web browser window. If the daemon has NOT
@@ -571,7 +571,7 @@ The <b> example </b> below shows the ODB /script/dac subdirectory.
    The first key in the "dac" subdirectory is the string key "cmd" which contains the name and path of
 the script to be executed (in this case, a perl script). This script is located on the local host computer 
 on which the experiment is running. The subsequent keys are parameters input to the script.
-\code
+@code
 [local:pol:R]/>ls "/script/dac"
 cmd                             /home/pol/online/perl/change_mode.pl
 include path                    /home/pol/online/perl
@@ -581,16 +581,16 @@ select mode                     1h
 
 mode file tag                   none
 [local:pol:R]/>  
-\endcode
+@endcode
 When the user-button labelled "dac" is pressed, the script "change_mode.pl"
  will be executed with the following key contents as parameters, equivalent to the
 command:
-\code
+@code
   "/home/pol/online/perl/change_mode.pl  /home/pol/online/perl pol 1h mode"
-\endcode
+@endcode
 <br>
 This is part of the code of the script change_mode.pl :
-\code
+@code
 # input parameters :
 
 our ($inc_dir, $expt, $select_mode, $mode_name ) = @ARGV;
@@ -641,7 +641,7 @@ unless ($select_mode =~/^[12]/)
 
 etc.
 
-\endcode
+@endcode
 
 
 <hr>
@@ -733,7 +733,7 @@ The 6th and 7th equipments in the list (named "DVM" and "Wavemeter" are
 defined in a frontend called "feDVM" running on the host called "midtis07". The 8th equipment "DVMT" is
 not running.
 These are listed in the order in which they are listed in the odb, i.e.
-\code
+@code
 [pol@isdaq01 ~]$ odb
 [local:pol:S]/>ls /Equipment/
 FIFO_acq
@@ -745,7 +745,7 @@ DVM
 Wavemeter
 DVMT
 Monitor
-\endcode
+@endcode
 
 The background colour of the equipment depends on the status of the associated frontend:
 <table style="text-align: center; width: 40%;" border="1" cellpadding="2"
@@ -939,15 +939,15 @@ the link-name.
 
 This is illustrated below where the  <b>Edit on Start</b> parameter is a link named \b "number of channels", which
 links to the actual parameter  <b> /sis/nchannels </b>.
-\code
+@code
 number of channels              LINK    1     15    22m  0   RWD  /sis/nchannels
-\endcode
+@endcode
 The parameter name in <b>Parameter Comments </b> for this parameter is 
 nchannels               STRING  1     64    14m  0   RWD  <i>maximum 1024</i>
 and NOT "number of channels".
 
 
-\code
+@code
 [local:midas:S]/Experiment>ls -lr
 Key name                        Type   #Val  Size  Last Opn Mode Value
 ---------------------------------------------------------------------------
@@ -974,7 +974,7 @@ Write Data                      LINK    1     19    50m  0   RWD  /logger/Write 
 enable                          LINK    1     12    22m  0   RWD  /sis/enable
 number of channels              LINK    1     15    22m  0   RWD  /sis/nchannels
 dwelling time (ns)              LINK    1     24    12m  0   RWD  /sis/dwelling time (ns)
-\endcode 
+@endcode 
 
 This results in a start run page as shown below.
 
@@ -1011,9 +1011,9 @@ By creating the key
   <b> /Experiment/Edit on Start/Edit run number</b> 
   as a boolean variable, the ability of editing the run number is
   enabled or disabled, e.g.
-\code 
+@code 
 [local:Default:S]Edit on start>create BOOL "Edit run number"
-\endcode
+@endcode
 
 By default, if this key is NOT present the run number IS editable.  
 
@@ -1159,7 +1159,7 @@ in the ODB so that the scaler names are listed under the array \b "Names" in /Eq
 They all belong to "Scaler_B", which can be seen as a hyperlink in the above illustration. If there were
 some settings included for "Scaler_A" for example, two hyperlinks would be shown, "Scaler_A" and "Scaler_B". 
 Clicking on the hyperlink "Scaler_A" would show only the settings for Scaler_A.
-\code
+@code
 [pol@isdaq01 ~]$ odb
 [local:pol:S]/>ls /Equipment/Cycle_Scalers/Settings/
 Names
@@ -1171,13 +1171,13 @@ Names
                                 Scaler_B%Faraday Cup 15
                                 Scaler_B%Locking Feedback
 [local:pol:S]/> 
-\endcode
+@endcode
 In the odb directory  /Equipment/Cycle_Scalers/Variables/ two arrays are shown, CYCI and HSCL. These are
 the names of two data banks sent out by the frontend. The data from the banks is also sent to the ODB,
 so it can be displayed. The data shown below for CYCI and HSCL is for a different event from that in the
 variable list in the illustration above.
 
-\code
+@code
 [local:pol:S]/>ls /Equipment/Cycle_Scalers/Variables/
 CYCI
                                 2824
@@ -1194,12 +1194,12 @@ HSCL
                                 2
                                 50
 [local:pol:S]/> 
-\endcode
+@endcode
  The second equipment illustrated @ref RC_mhttpd_eq_variables  "above" is \b info_odb. This is a @ref FE_FIXED_event_readout "FIXED format" event. The variables are of different types, 
 so cannot be output as a MIDAS event. The variables are listed
 under /Equipment/info_odb/Variables. In this case, there is no information listed in the subdirectory 
 Settings for this equipment. The ODB is updated for every event so the information may be displayed by the user.
-\code
+@code
 [local:pol:S]/>ls "/Equipment/Info ODB/variables"
 Key name                        Type    #Val  Size  Last Opn Mode Value
 ---------------------------------------------------------------------------
@@ -1224,7 +1224,7 @@ Pol DAC read                    DOUBLE  1     8     15h  0   RWD  0
 last failed thr test            DWORD   1     4     15h  0   RWD  0
 cycle when last failed thr      DWORD   1     4     15h  0   RWD  0
 [local:pol:S]/>         
-\endcode
+@endcode
 
 <br>
 <br><hr><br>
@@ -1286,7 +1286,7 @@ Each variable in the table may be editable depending on the following rules
 -# If the variable name is defined as "Demand[]" or "Output[]" or "D_<var_name>" under "Settings/" it will be editable by default.
 -# If the variable name is defined under "Settings" and the variable name is also defined under the array "Settings/Editable[]" it will be editable.
 
-\code
+@code
 [local:Default:S]/>cd Equipment/MSCB/Settings/
 [local:Default:S]Settings>ls
 [local:Default:S]Settings>ls
@@ -1304,7 +1304,7 @@ Gain
                                 3
                                 4
 Editable                        Gain
-\endcode
+@endcode
 
  * <br><br><br>
  * <center>
@@ -1521,7 +1521,7 @@ information for a given form. There is no limit to the number of entries. By spe
 an entry with the name <i>Attachment0</i>,<i>Attachment1</i>,... and filling it with a fix file
 name, its content will be attached to the Elog entry for every shift report. 
 
-\code
+@code
 [local:myexpt:Running]/>cd /Elog/
 [local:myexpt:Running]/Elog>mkdir Forms
 [local:myexpt:Running]/Elog>cd Forms/
@@ -1538,7 +1538,7 @@ Vessel Temperature
 [local:xenon:Running]Gas Handling>create string Attachment0 
 String length [32]: 64
 [local:xenon:Running]Gas Handling>set Attachment0 Gaslog.txt
-\endcode
+@endcode
 
 - The \b runlog button display the content of the file \b runlog.txt which is
 expected to be in the data directory specified by the ODB key <b>/Logger/Data Dir</b>.
@@ -1601,7 +1601,7 @@ Its installation requires requires several steps described below.
     port number for communication through the web (e.g. NodeA:mhttpd -p 8080, NodeB:elogd -p 8081).
   -# copy the default midas/src/elogd.cfg from the midas distrbution to your operating directory.
   -# modify the elogd.cfg to reflect your configuration
-  \code
+  @code
   # This is a simple elogd configuration file to work with Midas
   # $Id: mhttpd.dox 4032 2007-11-02 17:13:52Z amaudruz $ 
 
@@ -1645,22 +1645,22 @@ Its installation requires requires several steps described below.
   Quick filter = Date, Type, Author
   ; Don't send any emails
   Suppress email to users = 1             
-\endcode
+@endcode
   -# start the elog daemon. <b>-x</b> is for the shell substitution of the
     command <i>Preset Run number = $shell(...)</i>
     The argument invokes the odbedit remotely if needed to retrieve the current run number.
     You will have to ensure the proper path to the odbedit and the proper -e, -h argments for
     the experiment and host. You may want to verify this command from the console.
-\code
+@code
   NodeB:~>/installation_elog_dir/elogd -c elogd.cfg -x
-\endcode
+@endcode
   -# start the mhttpd at its correct port and possibly in the daemon form.
-\code
+@code
   NodeA:~>mhttpd -p 8080 -D 
-\endcode
+@endcode
   -# At this point the Elog from the Midas web page is accessing the internal Elog.
     To activate the external Elog, include in the ODB two entries such as:
-\code
+@code
    NodeX:> odbedit -e myexpt -h NodeA
    [NodeX:myexpt:Running]/>cd elog
    [NodeX:myexpt:Running]/Elog>create string Url
@@ -1674,21 +1674,21 @@ Its installation requires requires several steps described below.
    [NodeX:myexpt:Running]/Elog>ls
 Logbook Dir                     /home/myexpt/ElogBook
 Url                             http://NodeB:8081/MyOnline
-\endcode
+@endcode
   -# Confirm proper operation of the external Elog by creating an entry. You will be
     prompted for a username and password. Click on New registration. Full control of 
     these features are described in the Elog documentation.
   -# Stop and restart the Elogd in the background. 
-\code
+@code
    NodeB:~>/installation_elog_dir/elogd -c elogd.cfg -x -D
-\endcode
+@endcode
   -# In the event you had a previous entry under the internal elog, you can convert the
     internal to external using the elconv tool.
-\code
+@code
    NodeB:~> cp internal/elog_logbook/*.log /myexpt/logbook/.
    NodeB:~> cd /myexpt/logbook
    NodeB:~> /installation_elog_dir/elconv
-\endcode
+@endcode
 
 <br>
 \htmlonly
@@ -1730,9 +1730,9 @@ This page presents the current active list of the clients (i.e. tasks) attached 
 experiment. On the right hand side, a dedicated button allows the user to stop a particular task.
 This is equivalent to the @ref RC_odbedit_sh "ODBedit shutdown" command. For example, pressing
 the <b>"stop Speaker"</b> button  (see example below) would be equivalent to 
-\code
+@code
 odbedit> sh Speaker
-\endcode
+@endcode
 
 Clicking the taskname hyperlink (on the left hand side of the page) pops up a new window pointing to the 
 ODB <b>/Programs</b> subdirectory related to that particular task (see @ref RC_ODB_programs_tree). 
@@ -1936,11 +1936,11 @@ enabled. The alarm on "fepol" has gone off, resulting in a large coloured banner
 
 \anchor RC_odb_alarm_msg
 If running @ref RC_odbedit_task "odbedit", a message appears on the screen as follows: 
-\code
+@code
 [pol@isdaq01 ~]$ odb
 Caution: Program fePOL is not running
 [local:pol:S]/> 
-\endcode
+@endcode
 
 The alarm class in this case is "Caution" and the message is "Program fePOL is not running". These
 fields have been set up in the  @ref RC_ODB_Alarms_Tree ODB as described in the @ref RC_Alarm_System .
@@ -2050,24 +2050,24 @@ To force the display of the alias-link in the \b same frame, an <b>"&"</b> has t
 the name of the alias. The \b & is stripped off the alias name when it appears on the main status page.
 
 To make  alias-links using @ref RC_odbedit_task "odbedit" :
-\code 
+@code 
 odbedit
 [local:pol:S] mkdir Alias          <--  Create the optional /Alias directory
 [local:pol:S] cd Alias
 [local:pol:S] ln /Equipment/Trigger/Common "Trig Setting"   <-- New frame, no &
 [local:pol:S] ln /Equipment/Trigger/Common "Trig Setting&"  <-- Same frame, with &
-\endcode 
+@endcode 
 
 This would create two identical alias-links called "Trig Setting". Clicking on the first alias-link would open the 
 page in a new frame, clicking on the second would open it in the same frame.
 
 In the following example, an alias-link has been set up as follows:
-\code
+@code
 odbedit
 [local:pol:S]/>ls /alias
 Hardware& -> /alias/User_hardware_dir/
                                 <subdirectory>
-\endcode
+@endcode
 
 Note that the "&" appended to the alias keyname \b Hardware causes the alias link to be opened in a different frame.
 

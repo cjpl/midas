@@ -168,7 +168,7 @@ number of 450 and to a TR_STOP  transition with a sequencing number of
 
 	return (status);
   }
-\endcode
+@endcode
 
 <ul>
 <li> On a TR_START transition, tr_prestart will run \b after the logger and event builder, 
@@ -210,7 +210,7 @@ my_application.c
     cm_register_transition(TR_START, after_logger, 300);
     ...
   }
-\endcode
+@endcode
 
 
 
@@ -338,7 +338,7 @@ Clients                         DIR
         Transition RESUME       INT     1     4     5s   0   R    500
         RPC                     DIR
             14000               BOOL    1     4     5s   0   R    y
-\endcode
+@endcode
 
 
 <br><hr><br>
@@ -383,7 +383,7 @@ Runinfo                        DIR
     Start time binary          DWORD   1     4     2h   0   RWD  953834624
     Stop time                  STRING  1     32    2h   0   RWD  Thu Mar 23 10:03:33 2000
     Stop time binary           DWORD   1     4     2h   0   RWD  0
-\endcode 
+@endcode 
 
 
 <table style="text-align: left; width: 100%;" border="1" cellpadding="2"
@@ -656,7 +656,7 @@ Clients:  MStatus/koslx0         Logger/koslx0          Lazy_Tape/koslx0
           SUSIYBOS/koslx0        History/kosal2         MStatus1/dasdevpc  
      
 *------------------------------------------------------------------------------*
-\endcode
+@endcode
 
 
 <hr> 
@@ -710,7 +710,7 @@ Specific help is available for each mode.
 \code
  > mdump -h
  > mdump -x -h
-\endcode
+@endcode
 
 
 <br><hr><br>
@@ -765,7 +765,7 @@ Evid:0001- Mask:0020- Serial:1- Time:0x393c299a- Dsize:32/0x20
 Bank:METR Length: 12(I*1)/3(I*4)/3(Type) Type:Real*4 (FMT machine dependent)
    1-> 0x00000000 0x39005d87 0x00000000 
 ...
-\endcode
+@endcode
 
 
 <br><hr><br>
@@ -776,7 +776,7 @@ The example below shows mdump operating in online mode
 - <b> Example </b>
  \code
  > mdump -j
- \endcode
+ @endcode
   
 
 <br><hr><br>
@@ -795,7 +795,7 @@ The example below shows mdump operating in online mode
 - <b> Example </b>
  \code
  >rmidas midasserver.domain
- \endcode
+ @endcode
  
  * <center> rmidas display sample. Using the example/experiment/ demo setup.
  *  \image html rmidas.jpg
@@ -825,7 +825,7 @@ The example below shows mdump operating in online mode
 - <b> Example </b>
  \code
  >hvedit
- \endcode
+ @endcode
 
 
 
@@ -907,7 +907,7 @@ Key name                        Type    #Val  Size  Last Opn Mode Value
 ---------------------------------------------------------------------------
 Experiment                      DIR
     Name                        STRING  1     32    14s  0   RWD  midas
-\endcode
+@endcode
 
 In order to provide extra run control flexibility, the user can optionally create the following 
 keys (i.e. subdirectories) under the /Experiment tree if they do not exist already. These must have the names
@@ -985,7 +985,7 @@ Experiment                      DIR
     security                    DIR
         Web Password            STRING  1     32    15h  0   RWD  mim2Q41CV.GW3
 
-  \endcode  
+  @endcode  
 
 The meaning of these keys is described in the following sections.
 
@@ -1206,7 +1206,7 @@ is 30499. The user has changed this to 500.
 [local:bnmr:S]/Experiment>start
 Run number [30499]: 500
 Are the above parameters correct? ([y]/n/q): 
-\endcode
+@endcode
 
 <br><hr><br>
 @section RC_run_start_params_optional
@@ -1229,7 +1229,7 @@ for example:
 Write data : n
 Run number [30499]:
 Are the above parameters correct? ([y]/n/q):  
-\endcode
+@endcode
 
 The first step to setting up the <b>Edit on Start</b> parameters is to <b>create the subdirectory 
 "Edit on Start"</b> in the ODB under <b>/Experiment</b> as follows:
@@ -1239,7 +1239,7 @@ $odbedit
 [local:Default:S]/Experiment>mkdir "Edit on start"
 [local:Default:S]/Experiment>cd "Edit on start"
 [local:Default:S]/Edit on start>
-\endcode
+@endcode
 
 Then the user either <b>creates the required parameters</b>, or, if the parameters already exist elsewhere in the 
 ODB, <b>creates links to the parameters</b> in the <b>Edit on start</b> subdirectory. Some users find it
@@ -1264,7 +1264,7 @@ subdirectory:
 String length [32]:128
 [local:Default:S]/Edit on start>ln "/Logger/Write data" "write data"
 [local:Default:S]/Edit on start>ln "/Equipment/FIFO_acq/hardware/num scans" "Number of scans"
-\endcode
+@endcode
 
 Here is an example of the <b>Edit on start</b> parameters from an experiment:
 
@@ -1283,7 +1283,7 @@ field                           STRING  1     32    3h   0   RWD  0G
 Number of scans                 INT     1     4     11h  0   RWD  /Equipment/FIFO_acq/hardware/num scans -> 0
 write data                      BOOL    1     4     7s   0   RWD  /Logger/Write data -> y
 Edit run number                 BOOL    1     4     11h  0   RWD  n
-\endcode
+@endcode
 
 See \b examples of starting a run with <b> edit on start </b> parameters set up, using @ref RC_EOS_example2 "odbedit" and   @ref RC_odb_edit_on_start "mhttpd" .
 <span class="note">Several extra edit-on-start features are available for mhttpd only. 
@@ -1304,13 +1304,13 @@ in the @ref  RC_ODB_Experiment_Tree.
   [local]/>cd "/Experiment/Lock when running"
   [local]/>ln "/Experiment/Run parameters" "Run parameter"
   [local]/>ln "/Logger/Write Data" "Write Data?"
-  \endcode 
+  @endcode 
 
 In the following example, the user attempts to change one of the read-only parameters:
 \code
 [local:bnmr:R]/>set "/Logger/Write Data" y
 Write access not allowed
-\endcode
+@endcode
 For other forms of write-protection, see also @ref RC_odbedit_chmod .
 
 
@@ -1345,7 +1345,7 @@ is automatically created (if not already present) when the command <b>passwd</b>
   [local]/>passwd
   Password:<xxxx>
   Retype password:<xxxx>
-  \endcode 
+  @endcode 
   After running the odb command "passwd", three new sub-fields (odb keys) will be present under
   the Security tree.
     - Password
@@ -1366,7 +1366,7 @@ This key is a fixed directory name where names of remote hosts
   [local]/>cd "/Experiment/Security/Allowed hosts"
   [local]rhosts>create int myhost.domain
   [local]rhosts>
-  \endcode 
+  @endcode 
        where \<myHost.domain\> is to be replaced by the full IP address of the host
   requesting full clearance, e.g "pierre.triumf.ca".
 
@@ -1378,7 +1378,7 @@ This key is a fixed directory name where a list of programs
   [local]/>cd "/Experiment/Security/Allowed programs"
   [local]:S>create int mstat
   [local]:S>
-  \endcode 
+  @endcode 
   <br><br>
 
 
@@ -1397,7 +1397,7 @@ is automatically created (if not already present) when the command <b>webpasswd<
   [local]/>webpasswd
   Password:<xxxx>
   Retype password:<xxxx>
-  \endcode 
+  @endcode 
 
   After running the odb command webpasswd, one new sub-field (odb key) will now be present under
   the Security tree.
@@ -1413,7 +1413,7 @@ provide the "Web Password" when accessing the requested experiment in
 \code
 [local:bnqr:S]/Experiment>ls Security/
 Web Password                    pon4@#@%SSDF2
-\endcode
+@endcode
 
 
 <hr>
@@ -1443,7 +1443,7 @@ Experiment                      DIR
             mstat               INT     1     4     >99d 0   RWD  0
             fechaos             INT     1     4     >99d 0   RWD  0
         Web Password            STRING  1     32    16h  0   RWD  pon4@#@%SSDF2
-\endcode 
+@endcode 
 
 <br><hr><br>
 
@@ -1457,7 +1457,7 @@ Key name                        Type    #Val  Size  Last Opn Mode Value
 Experiment                      DIR
     Security                    DIR
         Web Password            STRING  1     32    16h  0   RWD  pon4@#@%SSDF2
-\endcode
+@endcode
 
 
 
@@ -1472,7 +1472,7 @@ Experiment                      DIR
   Are you sure to delete the key
   "/Experiment/Security"
   and all its subkeys? (y/[n]) y
-  \endcode 
+  @endcode 
 
 To partially remove access restrictions, remove only those keys relevent to web or client security.
 i.e. to remove web access restriction only, remove the key "Web Password"
@@ -1489,7 +1489,7 @@ Web Password                    pon4@#@%SSDF2
 Are you sure to delete the key
 "/Experiment/Security/Web Password"
 (y/[n]) y
-  \endcode 
+  @endcode 
 
 Client security is retained:
 \code
@@ -1497,7 +1497,7 @@ Client security is retained:
 Password                      #@D&%F56  
 Allowed hosts
 Allowed programs
-\endcode
+@endcode
 
 Alternatively, to retain web security only, delete the keys Password, Allowed hosts and Allowed Programs
   \code
@@ -1517,7 +1517,7 @@ So that the only key remaining is the Web Password key:
 \code
 [local:bnmr:S]Security>ls
 Web Password                    pon4@#@%SSDF2
-\endcode 
+@endcode 
 
 
 <br>
@@ -1571,7 +1571,7 @@ echo Or run: firefox http://localhost:8081 &
 echo To look at live histograms, run: roody -Hlocalhost
 
 #end file
-\endcode
+@endcode
 </td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;"><br>
 \code
@@ -1584,7 +1584,7 @@ killall analyzer
 sleep 1
 
 #end file
-\endcode
+@endcode
 </td>
 </tr>
 </table>
@@ -1653,7 +1653,7 @@ echo Please point your web browser to http://localhost:8089
 fi
 #end file
 
-\endcode
+@endcode
 
 @subsection RC_kill_all_example Example of a kill-all script
 This is the kill-all script for the ebit experiment at TRIUMF.
@@ -1736,7 +1736,7 @@ mhttpd                          DIR
 mdump                           DIR
 Speaker                         DIR
 mdarc_cleanup                   DIR
-\endcode
+@endcode
 
 
 @subsection RC_ODB_programs_client The ODB /Programs/\<client\> subtree
@@ -1759,7 +1759,7 @@ Auto stop                       BOOL    1     4     4h   0   RWD  n
 Auto restart                    BOOL    1     4     4h   0   RWD  y
 Alarm class                     STRING  1     32    4h   0   RWD  Caution
 First failed                    DWORD   1     4     4h   0   RWD  1259294464
-\endcode
+@endcode
 
 The fields of the /Programs tree are explained below.
 
@@ -2109,21 +2109,21 @@ The \b condition may be simply a comparison between any ODB variable
 and a threshold parameter, e.g.
 \code
  /Runinfo/Run number > 100
-\endcode
+@endcode
 or it may be an evaluated condition. One can write conditions like
 \code
   /Equipment/HV/Variables/Input[*] < 100
-\endcode
+@endcode
 or 
 \code
   /Equipment/HV/Variables/Input[2-3] < 100
-\endcode
+@endcode
 to check all values from an array or a certain range. If one array element
 fulfills the alarm condition, the alarm is triggerrd. In addition, bit-wise alarm
 conditions are possible, e.g.
 \code
   /Equipment/Environment/Variables/Input[0] & 8
-\endcode
+@endcode
 The alarm is triggered if bit #2 is set in Input[0].
 
 
@@ -2140,7 +2140,7 @@ Part of the <b> /Alarms </b> tree is shown below using @ref RC_odbedit_task "odb
 Alarm system active             y
 Alarms
 Classes
-\endcode
+@endcode
 
 Some of the types of alarm under the <b> /Alarms/Alarms </b> tree for an experiment are shown below:
 \code
@@ -2195,7 +2195,7 @@ Alarms                          DIR
             Alarm Class         STRING  1     32    3s   0   RWD  Threshold
             Alarm Message       STRING  1     80    3s   0   RWD  Laser threshold check failed
 
-\endcode
+@endcode
 
 In the above example,
  - <b>Demo odb</b> and <b>Demo periodic</b> were created when the ODB was created. 
@@ -2255,7 +2255,7 @@ The Classes defined for the experiment are shown below:
             Display BGColor     STRING  1     32    >99d 0   RWD  yellow
             Display FGColor     STRING  1     32    >99d 0   RWD  black
 
-\endcode
+@endcode
 
 
 
@@ -2619,7 +2619,7 @@ Time triggered last	(empty)
 Condition	        /Equipment/Environment/Variables/Input[0] < 10
 Alarm Class	        Level Alarm
 Alarm Message	        Liquid Level is only %s
-\endcode
+@endcode
 In this example, the alarm triggers an alarm of class 
 "Level Alarm". This alarm class is defined as follows:
 \code
@@ -2634,14 +2634,14 @@ Execute last	        0 (0x0)
 Stop run	        n
 Display BGColor	        red
 Display FGColor	        black
-\endcode
+@endcode
 The key here is to call a script "level_alarm", which can send emails. Use 
 something like:
 \code
 #/bin/csh
 echo $1 | mail -s \"Level Alarm\" your.name@domain.edu
 odbedit -c 'msg 2 level_alarm \"Alarm was sent to your.name@domain.edu\"'
-\endcode
+@endcode
 The second command just generates a midas system message for confirmation. Most 
 cell phones (depends on the provider) have an email address. If you send an email 
 there, it will be translated into a SMS message.
@@ -2740,7 +2740,7 @@ The following commands define these levels in the ODB:
 [local]Settings>create int level1
 [local]Settings>create int level2
 [local]Settings>ls
-\endcode 
+@endcode 
 
 \anchor idx_experim.h
 @anchor RC_experim_dot_h
@@ -2766,7 +2766,7 @@ typedef struct {
 
 "",\
 NULL  
-\endcode  
+@endcode  
 
 This definition can be used to define a C structure containing the parameters in
 frontend.c:
@@ -2774,7 +2774,7 @@ frontend.c:
 #include <experim.h>
 
 TRIGGER_SETTINGS trigger_settings;
-\endcode  
+@endcode  
 
 A hot-link between the ODB values and the C structure is established in the
 frontend_init() routine:
@@ -2789,20 +2789,19 @@ TRIGGER_SETTINGS_STR(trigger_settings_str);
     "/Equipment/Trigger/Settings",
     strcomb(trigger_settings_str));
 
-  db_find_key(hDB, 0,
-    "/Equipment/Trigger/Settings", &hkey);
+  db_find_key(hDB, 0, "/Equipment/Trigger/Settings", &hkey);
 
   if (db_open_record(hDB, hkey,
       &trigger_settings,
       sizeof(trigger_settings), MODE_READ,
-      trigger_update) != DB_SUCCESS)
+      trigger_update, NULL) != DB_SUCCESS)
     {
     cm_msg(MERROR, "frontend_init",
       "Cannot open Trigger Settings in ODB");
     return -1;
      
   return SUCCESS;
-\endcode   
+@endcode   
 
 The db_create_record() function re-creates the settings sub-tree in the ODB from
 the ASCII representation in case it has been corrupted or deleted.
@@ -2821,7 +2820,7 @@ void trigger_update(INT hDB, INT hkey)
     trigger_settings.level1,
     trigger_settings.level2);
  
-\endcode  
+@endcode  
 
 Of course the printf() function should be replaced by a function which accesses
 
@@ -2831,7 +2830,7 @@ whole scheme:
 [local]/>cd /Equipment/Trigger/Settings
 [local]Settings>set level1 123
 [local]Settings>set level2 456
-\endcode  
+@endcode  
 Immediately after each modification the frontend should display the new values.
 The settings can be saved to a file and loaded back later:
 \code 
@@ -2839,7 +2838,7 @@ The settings can be saved to a file and loaded back later:
 [local]Settings>save settings.odb
 [local]Settings>set level1 789
 [local]Settings>load settings.odb
-\endcode  
+@endcode  
 The settings can also be modified from any application just by accessing the ODB.
 Following listing is a complete user application that modifies the trigger level:
 \code 
@@ -2860,7 +2859,7 @@ INT   level;
 
   cm_disconnect_experiment();
  
-\endcode  
+@endcode  
 The following figure summarizes the involved components:
 
 To make sure a hot-link exists, one can use the @ref RC_odbedit "odbedit" command @ref RC_odbedit_sor :
@@ -2868,7 +2867,7 @@ To make sure a hot-link exists, one can use the @ref RC_odbedit "odbedit" comman
 [local]/>sor
 /Equipment/Trigger/Settings open 1 times by ...
 
-\endcode  
+@endcode  
 
 
 <br>
