@@ -45,12 +45,11 @@ int tcp_port = 80;
 #define MAX_GROUPS    32
 #define MAX_VARS     100
 #define MAX_PARAM    500
-#define VALUE_SIZE   256
 #define PARAM_LENGTH 256
 #define TEXT_SIZE  50000
 
 char _param[MAX_PARAM][PARAM_LENGTH];
-char _value[MAX_PARAM][VALUE_SIZE];
+char *_value[MAX_PARAM];
 char _text[TEXT_SIZE];
 char *_attachment_buffer[3];
 INT _attachment_size[3];
@@ -530,15 +529,24 @@ void setparam(char *param, char *value)
    if (i < MAX_PARAM) {
       strlcpy(_param[i], param, PARAM_LENGTH);
 
-      if (strlen(value) >= VALUE_SIZE)
-         printf("Error: parameter \"%s\" value too big: %d\n", param,
-                (int) strlen(value));
+      _value[i] = (char*)malloc(strlen(value)+1);
+      strlcpy(_value[i], value, strlen(value)+1);
+      _value[i][strlen(value)] = 0;
 
-      strlcpy(_value[i], value, VALUE_SIZE);
-      _value[i][VALUE_SIZE - 1] = 0;
    } else {
       printf("Error: parameter array too small\n");
    }
+}
+
+void freeparam()
+{
+   int i;
+
+   for (i=0 ; i<MAX_PARAM ; i++)
+      if (_value[i] != NULL) {
+         free(_value[i]);
+         _value[i] = NULL;
+      }
 }
 
 char *getparam(char *param)
@@ -552,10 +560,13 @@ char *getparam(char *param)
       if (equal_ustring(param, _param[i]))
          break;
 
-   if (i < MAX_PARAM)
-      return _value[i];
+   if (i == MAX_PARAM)
+      return NULL;
 
-   return NULL;
+   if (_value[i] == NULL)
+      return "";
+      
+   return _value[i];
 }
 
 BOOL isparam(char *param)
@@ -12921,6 +12932,8 @@ void decode_get(char *string, char *cookie_pwd, char *cookie_wpwd, char *cookie_
    }
 
    interprete(cookie_pwd, cookie_wpwd, cookie_cpwd, path, refresh);
+
+   freeparam();
 }
 
 /*------------------------------------------------------------------*/
@@ -13392,7 +13405,7 @@ void server_loop()
             if (strncmp(net_buffer, "POST", 4) == 0) {
                printf("Contents of POST has %i bytes:\n", content_length);
                if (content_length > 2000) {
-                  printf(" Dumping first 2000 bytes only\n");
+                  printf("--- Dumping first 2000 bytes only\n");
                   temp = net_buffer[header_length + 2000];
                   net_buffer[header_length + 2000] = 0;
                   puts(net_buffer + header_length);
@@ -13435,7 +13448,7 @@ void server_loop()
 
             if (verbose) {
                if (return_length > 1000) {
-                  printf(" Dumping first 1000 bytes only\n");
+                  printf("--- Dumping first 1000 bytes only\n");
                   return_buffer[1000] = 0;
                }
                puts(return_buffer);
