@@ -10,7 +10,7 @@ $Id$
 #include "midas.h"
 #include "msystem.h"
 #include "ybos.h"
-#ifdef INCLUDE_FTPLIB
+#ifdef HAVE_FTPLIB
 #include "ftplib.h"
 #endif
 #include <assert.h>
@@ -2201,7 +2201,7 @@ int main(int argc, char **argv)
    if (debug)
       cm_set_watchdog_params(TRUE, 0);
 
-#ifdef INCLUDE_FTPLIB
+#ifdef HAVE_FTPLIB
    if (debug)
       ftp_debug((int (*)(char *)) puts, (int (*)(char *)) puts);
 #endif
