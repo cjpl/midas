@@ -912,7 +912,7 @@ int mvme_write_value(MVME_INTERFACE *mvme, mvme_addr_t vme_addr, DWORD value)
   if (status != MVME_SUCCESS)
     return status;
 
-#if 0
+#if 1
   addr += offset;
   
   /* Perform write */
