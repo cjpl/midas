@@ -5240,11 +5240,11 @@ int evaluate_src(char *key, char *src, double *fvalue)
          i+=1;
          while (src[i] == ' ')
             i++;
-         if (src[i] == '0' && src[i] == 'x')
-            sscanf(src+2, "%x", &n);
+         if (src[i] == '0' && src[i+1] == 'x')
+            sscanf(src+2+i, "%x", &n);
          else
             n = atoi(src+i);
-         while (src[i] == ' ' || isdigit(src[i]) || src[i] == 'x')
+         while (src[i] == ' ' || isxdigit(src[i]) || src[i] == 'x')
             i++;
          ivalue = (int)*fvalue;
          ivalue &= n;
