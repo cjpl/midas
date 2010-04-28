@@ -397,7 +397,7 @@ extern "C" {
    INT EXPRT ybk_iterate(DWORD * pevent, YBOS_BANK_HEADER ** pybkh, void **pdata);
    INT EXPRT ybk_close_chaos(DWORD * pevent, DWORD btype, void *pbkdat);
 
-#ifdef INCLUDE_LOGGING
+#ifdef HAVE_LOGGING
    INT EXPRT ybos_log_open(LOG_CHN * log_chn, INT run_number);
    INT EXPRT ybos_write(LOG_CHN * log_chn, EVENT_HEADER * pevent, INT evt_size);
    INT EXPRT ybos_log_close(LOG_CHN * log_chn, INT run_number);
