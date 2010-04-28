@@ -114,7 +114,7 @@ NEED_MSCB=1
 #
 CC = cc $(USERFLAGS)
 CXX = g++ $(USERFLAGS)
-CFLAGS = -g -O2 -Wall -Wuninitialized -I$(INC_DIR) -I$(DRV_DIR) -I$(MXML_DIR) -I$(MSCB_DIR) -L$(LIB_DIR) -DINCLUDE_FTPLIB $(MIDAS_PREF_FLAGS)
+CFLAGS = -g -O2 -Wall -Wuninitialized -I$(INC_DIR) -I$(DRV_DIR) -I$(MXML_DIR) -I$(MSCB_DIR) -L$(LIB_DIR) -DHAVE_FTPLIB $(MIDAS_PREF_FLAGS)
 
 #-----------------------
 # Ovevwrite MAX_EVENT_SIZE with environment variable
