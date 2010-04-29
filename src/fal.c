@@ -15,7 +15,7 @@
 #include "ftplib.h"
 #include "mcstd.h"
 
-#define INCLUDE_LOGGING
+#define HAVE_LOGGING
 #include "ybos.h"
 
 /* cernlib includes */
