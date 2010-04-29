@@ -15,7 +15,7 @@
 #include <errno.h>              /* for mkdir() */
 #include <assert.h>
 
-#define INCLUDE_LOGGING
+#define HAVE_LOGGING
 #include "ybos.h"
 
 #ifdef HAVE_ROOT
