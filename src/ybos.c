@@ -1413,7 +1413,7 @@ status : from lower function
       /* disk device */
       my.type = LOG_TYPE_DISK;
       if (strncmp(infile + strlen(infile) - 3, ".gz", 3) == 0)
-         my.zipfile = FALSE; // PAA Nov/07 ignore zip, copy blindly blocks
+	my.zipfile = TRUE;        // FALSE; // PAA Nov/07 ignore zip, copy blindly blocks
    }
 
    /* open file */
