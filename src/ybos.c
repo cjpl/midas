@@ -94,21 +94,21 @@ The YBOS file
 
 
 /* include files */
-/* moved #define INCLUDE_FTPLIB into makefile (!vxWorks) */
+/* moved #define HAVE_FTPLIB into makefile (!vxWorks) */
 
 #define TRACE
 #include "midas.h"
 #include "msystem.h"
 
-#ifdef INCLUDE_FTPLIB
+#ifdef HAVE_FTPLIB
 #include "ftplib.h"
 #endif
 
-#ifdef INCLUDE_ZLIB
+#ifdef HAVE_ZLIB
 #include "zlib.h"
 #endif
 
-#define INCLUDE_LOGGING
+#define HAVE_LOGGING
 #include "ybos.h"
 
 INT yb_tid_size[] = {
@@ -170,7 +170,7 @@ void ybos_log_dump(LOG_CHN * log_chn, short int event_id, INT run_number);
    :
    */
 
-#ifdef INCLUDE_FTPLIB
+#ifdef HAVE_FTPLIB
 FTP_CON *ftp_con;
 #endif
 
@@ -183,7 +183,7 @@ DWORD magta[3] = { 0x00000004, 0x544f422a, 0x00007ff8 };
 R_YM_FILE ymfile[MAX_YM_FILE];
 struct stat *filestat;
 
-#ifdef INCLUDE_ZLIB
+#ifdef HAVE_ZLIB
 gzFile filegz;
 #endif
 
@@ -1425,7 +1425,7 @@ status : from lower function
          return (SS_FILE_ERROR);
       }
    } else {
-#ifdef INCLUDE_ZLIB
+#ifdef HAVE_ZLIB
       if (my.type == LOG_TYPE_TAPE) {
          printf(" Zip on tape not yet supported \n");
          return (SS_FILE_ERROR);
@@ -1513,7 +1513,7 @@ status : from lower function
    case LOG_TYPE_DISK:
       /* close file */
       if (my.zipfile) {
-#ifdef INCLUDE_ZLIB
+#ifdef HAVE_ZLIB
          gzclose(filegz);
 #endif
       } else {
@@ -1542,7 +1542,7 @@ status : from lower function
    return (YB_SUCCESS);
 }
 
-#ifdef INCLUDE_FTPLIB
+#ifdef HAVE_FTPLIB
 
 INT yb_ftp_open(char *destination, FTP_CON ** con)
 {
@@ -1667,7 +1667,7 @@ status : from lower function
       } else if (data_fmt == FORMAT_MIDAS)
          status = ss_tape_open(filename, O_WRONLY | O_CREAT | O_TRUNC, hDev);
    } else if (type == LOG_TYPE_FTP) {
-#ifdef INCLUDE_FTPLIB
+#ifdef HAVE_FTPLIB
       status = yb_ftp_open(filename, (FTP_CON **) & ftp_con);
       if (status != SS_SUCCESS) {
          *hDev = 0;
@@ -1715,7 +1715,7 @@ status : from lower function
 #endif
       break;
    case LOG_TYPE_FTP:
-#ifdef INCLUDE_FTPLIB
+#ifdef HAVE_FTPLIB
       {
       char *p, filename[256];
       int  i;
@@ -1869,7 +1869,7 @@ SS_SUCCESS         Ok
       return SS_SUCCESS;        /* return for TAPE */
 #endif                          /* OS_WINNT */
    } else if (type == LOG_TYPE_FTP)
-#ifdef INCLUDE_FTPLIB
+#ifdef HAVE_FTPLIB
    {
       *written = status = ftp_send(ftp_con->data, (char *) prec,
                                    (int) nbytes) == (int) nbytes ? SS_SUCCESS : SS_FILE_ERROR;
@@ -1935,7 +1935,7 @@ YB_SUCCESS         Ok
          if (status != SS_SUCCESS)
             return (YB_DONE);
       } else {                  /* --------- GZIP ---------- */
-#ifdef INCLUDE_ZLIB
+#ifdef HAVE_ZLIB
          status = gzread(filegz, (char *) my.pmagta, 4);
          if (status <= 0)
             return (YB_DONE);
@@ -1950,7 +1950,7 @@ YB_SUCCESS         Ok
       if (status != SS_SUCCESS)
          return (YB_DONE);
    } else {
-#ifdef INCLUDE_ZLIB
+#ifdef HAVE_ZLIB
       status = gzread(filegz, (char *) my.pyh, my.size << 2);
       if (status <= 0)
          return (YB_DONE);
@@ -1968,7 +1968,7 @@ YB_SUCCESS         Ok
          if (status != SS_SUCCESS)
             return (YB_DONE);
       } else {
-#ifdef INCLUDE_ZLIB
+#ifdef HAVE_ZLIB
          status = gzread(filegz, (char *) my.pmagta, 8);
          if (status <= 0)
             return (YB_DONE);
@@ -1981,7 +1981,7 @@ YB_SUCCESS         Ok
          if (status != SS_SUCCESS)
             return (YB_DONE);
       } else {
-#ifdef INCLUDE_ZLIB
+#ifdef HAVE_ZLIB
          status = gzread(filegz, (char *) my.pyh, my.size << 2);
          if (status <= 0)
             return (YB_DONE);
@@ -2034,7 +2034,7 @@ YB_SUCCESS         Ok
    if (!my.zipfile) {
       status = yb_any_dev_os_read(my.handle, my.type, prec, my.size, readn);
    } else {
-#ifdef INCLUDE_ZLIB
+#ifdef HAVE_ZLIB
       *readn = gzread(filegz, (char *) prec, my.size);
       if (*readn <= 0)
          status = SS_FILE_ERROR;
