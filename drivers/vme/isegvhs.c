@@ -33,8 +33,9 @@ static float regReadFloat(MVME_INTERFACE *mvme, DWORD base, int offset)
   temp = mvme_read_value(mvme, base + offset);
   temp1 = mvme_read_value(mvme, base + offset+2);
   temp = (temp<<16) | (temp1 & 0xFFFF);
-  ftemp = *(float *)&temp;
-  //  printf("%f 0x%x\n", ftemp, temp);
+  //ftemp = *((float *)&temp);
+  memcpy(&ftemp, &temp, 4);
+  //  printf("regReadFloat : %f 0x%x\n", ftemp, temp);
   return (ftemp);
 }
 
@@ -52,7 +53,7 @@ static void regWrite(MVME_INTERFACE *mvme, DWORD base, int offset, uint32_t valu
 static void regWriteFloat(MVME_INTERFACE *mvme, DWORD base, int offset, float value)
 {
   uint32_t temp;
-  temp = *(uint32_t *) &value;
+  memcpy(&temp, &value, 4);
   mvme_set_am(mvme, MVME_AM_A16);
   mvme_set_dmode(mvme, MVME_DMODE_D16);
   mvme_write_value(mvme, base + offset, ((temp>>16)&0xFFFF));
@@ -68,7 +69,10 @@ uint32_t isegvhs_RegisterRead(MVME_INTERFACE *mvme, DWORD base, int offset)
 /*****************************************************************/
 float isegvhs_RegisterReadFloat(MVME_INTERFACE *mvme, DWORD base, int offset)
 {
-  return regReadFloat(mvme, base, offset);
+  float temp;
+  temp = regReadFloat(mvme, base, offset);
+  //  printf("temp:%f\n", temp);
+  return temp;
 }
 
 /*****************************************************************/
@@ -96,7 +100,7 @@ void  isegvhs_Status(MVME_INTERFACE *mvme, DWORD base)
   printf("Module Control    : 0x%x\n", regRead(mvme,base,ISEGVHS_MODULE_CONTROL));
   sn = regRead(mvme, base, ISEGVHS_SERIAL_NUMBER);
   printf("Module S/N        : %d\n", (sn<<16)|regRead(mvme, base, ISEGVHS_SERIAL_NUMBER+2));
-  printf("Module Temp.      : %f\n", regReadFloat(mvme, base, ISEGVHS_TEMPERATURE));
+  printf("Module Temp.      : %f\n", isegvhs_RegisterReadFloat(mvme, base, ISEGVHS_TEMPERATURE));
   printf("Module Supply P5  : %f\n", regReadFloat(mvme, base, ISEGVHS_SUPPLY_P5));
   printf("Module Supply P12 : %f\n", regReadFloat(mvme, base, ISEGVHS_SUPPLY_P12));
   printf("Module Supply N12 : %f\n", regReadFloat(mvme, base, ISEGVHS_SUPPLY_N12));
