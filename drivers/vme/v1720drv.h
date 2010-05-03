@@ -34,5 +34,13 @@ void     v1720_Status(MVME_INTERFACE *mvme, uint32_t a32base);
 int      v1720_Setup(MVME_INTERFACE *mvme, uint32_t a32base, int mode);
 void     v1720_info(MVME_INTERFACE *mvme, uint32_t a32base, int *nch, uint32_t *n32w);
 uint32_t v1720_DataRead(MVME_INTERFACE *mvme,uint32_t a32base, uint32_t *pdata, uint32_t n32w);
+uint32_t v1720_DataBlockRead(MVME_INTERFACE *mvme, uint32_t a32base, uint32_t *pdest, uint32_t *nentry);
+void     v1720_ChannelThresholdSet(MVME_INTERFACE *mvme, uint32_t base, uint32_t channel, uint32_t threshold);
+void     v1720_ChannelOUThresholdSet(MVME_INTERFACE *mvme, uint32_t base, uint32_t channel, uint32_t threshold);
+void     v1720_ChannelDACSet(MVME_INTERFACE *mvme, uint32_t base, uint32_t channel, uint32_t dac);
+int      v1720_ChannelDACGet(MVME_INTERFACE *mvme, uint32_t base, uint32_t channel, uint32_t *dac);
+void     v1720_ChannelSet(MVME_INTERFACE *mvme, uint32_t base, uint32_t channel, uint32_t what, uint32_t this);
+uint32_t v1720_ChannelGet(MVME_INTERFACE *mvme, uint32_t base, uint32_t channel, uint32_t what);
+void     v1720_Align64Set(MVME_INTERFACE *mvme, uint32_t base);
 
 #endif // v1720DRV_INCLUDE_H
