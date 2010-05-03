@@ -32,9 +32,9 @@ int vf48_EventRead64(MVME_INTERFACE *mvme, DWORD base, DWORD *pdest, int *nentry
   DWORD lData[VF48_IDXMAX];
   DWORD *phead;
   
-  int cmode, timeout;
+  int timeout;
   
-  mvme_get_dmode(mvme, &cmode);
+  mvme_set_am(  mvme, MVME_AM_A24);
   mvme_set_dmode(mvme, MVME_DMODE_D32);
   
   if (inbuf > VF48_IDXMAX) idx = 0;
@@ -127,10 +127,10 @@ int vf48_EventRead64(MVME_INTERFACE *mvme, DWORD base, DWORD *pdest, int *nentry
 */
 int vf48_EventRead(MVME_INTERFACE *mvme, DWORD base, DWORD *pdest, int *nentry)
 {
-  int cmode, timeout, nframe;
+  int timeout, nframe;
   DWORD hdata;
 
-  mvme_get_dmode(mvme, &cmode);
+  mvme_set_am(  mvme, MVME_AM_A24);
   mvme_set_dmode(mvme, MVME_DMODE_D32);
 
   *nentry = 0;
@@ -147,7 +147,6 @@ int vf48_EventRead(MVME_INTERFACE *mvme, DWORD base, DWORD *pdest, int *nentry)
     if (timeout == 0) {
       *nentry = 0;
       //      printf("timeout on header  data:0x%lx\n", hdata);
-      mvme_set_dmode(mvme, cmode);
       return VF48_ERR_NODATA;
     }
     //    channel = (hdata >> 24) & 0xF;
@@ -170,7 +169,7 @@ int vf48_EventRead(MVME_INTERFACE *mvme, DWORD base, DWORD *pdest, int *nentry)
     }
     nentry--;
   }
-  mvme_set_dmode(mvme, cmode);
+
   return (VF48_SUCCESS);
 }
 
@@ -205,7 +204,6 @@ int vf48_DataRead(MVME_INTERFACE *mvme, DWORD base, DWORD *pdest, int *nentry)
 int vf48_ParameterWrite(MVME_INTERFACE *mvme, DWORD base, int grp, int param, int value)
 {
   int retry;
-  int  cmode;
 
   if (grp < 0 || grp >= 6) {
     printf("vf48_ParameterWrite: Invalid grp %d\n", grp);
@@ -233,7 +231,6 @@ int vf48_ParameterWrite(MVME_INTERFACE *mvme, DWORD base, int grp, int param, in
     break;
   };
 
-  mvme_get_dmode(mvme, &cmode);
   mvme_set_dmode(mvme, MVME_DMODE_D32);
 
   if (0) {
@@ -266,7 +263,6 @@ int vf48_ParameterWrite(MVME_INTERFACE *mvme, DWORD base, int grp, int param, in
     //printf("Group %d, param %d, write %d, read %d\n", grp, param, value, rd);
 
     if (rd == value) {
-      mvme_set_dmode(mvme, cmode);
       return VF48_SUCCESS;
     }
 
@@ -288,7 +284,7 @@ Read any Parameter for a given group. Each group (0..5) handles
 */
 int vf48_ParameterRead(MVME_INTERFACE *mvme, DWORD base, int grp, int param)
 {
-  int  cmode, par, to, retry;
+  int  to, retry;
   int  debug = 0;
 
   if (vf48_isPresent(mvme, base) != VF48_SUCCESS) {
@@ -302,7 +298,6 @@ int vf48_ParameterRead(MVME_INTERFACE *mvme, DWORD base, int grp, int param)
   }
 
   mvme_set_am(mvme, MVME_AM_A24);
-  mvme_get_dmode(mvme, &cmode);
   mvme_set_dmode(mvme, MVME_DMODE_D32);
 
   for (retry=20; retry>0; retry--) {
@@ -374,7 +369,6 @@ int vf48_ParameterRead(MVME_INTERFACE *mvme, DWORD base, int grp, int param)
     if (debug)
       printf("vf48_ParameterRead: CSR 0x%x, data 0x%x\n", csr, data);
     
-    mvme_set_dmode(mvme, cmode);
     return data;
   }
 
@@ -471,16 +465,14 @@ int vf48_ResetFrontends(MVME_INTERFACE *mvme, DWORD base, int groupMask)
 /********************************************************************/
 int vf48_AcqStart(MVME_INTERFACE *mvme, DWORD base)
 {
-  int  cmode, csr;
+  int  csr;
 
-  mvme_get_dmode(mvme, &cmode);
-  mvme_set_dmode(mvme, MVME_DMODE_D32);
   mvme_set_am(mvme, MVME_AM_A24);
+  mvme_set_dmode(mvme, MVME_DMODE_D32);
   csr = mvme_read_value(mvme, base+VF48_CSR_REG_RW);
   csr |= VF48_CSR_START_ACQ;  // start ACQ
   mvme_write_value(mvme, base+VF48_CSR_REG_RW, csr);
   mvme_read_value(mvme, base+VF48_CSR_REG_RW);
-  mvme_set_dmode(mvme, cmode);
   return VF48_SUCCESS;
 
 #if 0
@@ -488,7 +480,6 @@ int vf48_AcqStart(MVME_INTERFACE *mvme, DWORD base)
   if (status <= 0xFF) {
     mvme_write_value(mvme, base+VF48_SELECTIVE_SET_W, VF48_CSR_ACTIVE_ACQ);
   }
-  mvme_set_dmode(mvme, cmode);
   return (status > 0xFF ? VF48_ERR_HW : VF48_SUCCESS);
 #endif
 }
@@ -496,16 +487,14 @@ int vf48_AcqStart(MVME_INTERFACE *mvme, DWORD base)
 /********************************************************************/
 int vf48_AcqStop(MVME_INTERFACE *mvme, DWORD base)
 {
-  int  cmode, csr;
+  int  csr;
 
-  mvme_get_dmode(mvme, &cmode);
   mvme_set_am(mvme, MVME_AM_A24);
   mvme_set_dmode(mvme, MVME_DMODE_D32);
   csr = mvme_read_value(mvme, base+VF48_CSR_REG_RW);
   csr &= ~(VF48_CSR_START_ACQ);  // stop ACQ
   mvme_write_value(mvme, base+VF48_CSR_REG_RW, csr);
   mvme_read_value(mvme, base+VF48_CSR_REG_RW);
-  mvme_set_dmode(mvme, cmode);
   return VF48_SUCCESS;
 
 #if 0
@@ -513,7 +502,6 @@ int vf48_AcqStop(MVME_INTERFACE *mvme, DWORD base)
   if (status <= 0xFF) {
     mvme_write_value(mvme, base+VF48_SELECTIVE_CLR_W, VF48_CSR_ACTIVE_ACQ);
   }
-  mvme_set_dmode(mvme, cmode);
   return (status > 0xFF ? VF48_ERR_HW : VF48_SUCCESS);
 #endif
 }
@@ -527,13 +515,12 @@ Set External Trigger enable
 */
 int vf48_ExtTrgSet(MVME_INTERFACE *mvme, DWORD base)
 {
-  int cmode, csr;
-  mvme_get_dmode(mvme, &cmode);
+  int csr;
+  mvme_set_am(mvme, MVME_AM_A24);
   mvme_set_dmode(mvme, MVME_DMODE_D32);
   csr = mvme_read_value(mvme, base+VF48_CSR_REG_RW);
   csr |= VF48_CSR_EXT_TRIGGER;  // Set
   mvme_write_value(mvme, base+VF48_CSR_REG_RW, csr);
-  mvme_set_dmode(mvme, cmode);
   return VF48_SUCCESS;
 }
 
@@ -546,14 +533,13 @@ Clear External Trigger enable
 */
 int vf48_ExtTrgClr(MVME_INTERFACE *mvme, DWORD base)
 {
-  int  cmode, csr;
+  int csr;
 
-  mvme_get_dmode(mvme, &cmode);
+  mvme_set_am(mvme, MVME_AM_A24);
   mvme_set_dmode(mvme, MVME_DMODE_D32);
   csr = mvme_read_value(mvme, base+VF48_CSR_REG_RW);
   csr &= ~(VF48_CSR_EXT_TRIGGER);  // clr
   mvme_write_value(mvme, base+VF48_CSR_REG_RW, csr);
-  mvme_set_dmode(mvme, cmode);
   return VF48_SUCCESS;
 }
 
@@ -582,49 +568,44 @@ int vf48_CsrRead(MVME_INTERFACE *mvme, DWORD base)
 /********************************************************************/
 int vf48_FeFull(MVME_INTERFACE *mvme, DWORD base)
 {
-  int  cmode, fefull;
+  int fefull;
 
-  mvme_get_dmode(mvme, &cmode);
+  mvme_set_am(mvme, MVME_AM_A24);
   mvme_set_dmode(mvme, MVME_DMODE_D32);
   fefull = mvme_read_value(mvme, base+VF48_CSR_REG_RW) & VF48_CSR_FE_FULL;
-  mvme_set_dmode(mvme, cmode);
   return fefull;
 }
 
 /********************************************************************/
 int vf48_FeNotEmpty(MVME_INTERFACE *mvme, DWORD base)
 {
-  int  cmode, fenotempty;
+  int fenotempty;
 
-  mvme_get_dmode(mvme, &cmode);
+  mvme_set_am(mvme, MVME_AM_A24);
   mvme_set_dmode(mvme, MVME_DMODE_D32);
   fenotempty = mvme_read_value(mvme, base+VF48_CSR_REG_RW) & VF48_CSR_FE_NOTEMPTY;
-  mvme_set_dmode(mvme, cmode);
   return fenotempty;
 }
 
 /********************************************************************/
 int  vf48_GrpEnable(MVME_INTERFACE *mvme, DWORD base, int grpbit)
 {
-  int  cmode;
 
-  mvme_get_dmode(mvme, &cmode);
+  mvme_set_am(mvme, MVME_AM_A24);
   mvme_set_dmode(mvme, MVME_DMODE_D16);
   grpbit &= 0x3F;
   mvme_write_value(mvme, base+VF48_GRP_REG_RW, grpbit);
-  mvme_set_dmode(mvme, cmode);
   return VF48_SUCCESS;
 }
 
 /********************************************************************/
 int vf48_GrpRead(MVME_INTERFACE *mvme, DWORD base)
 {
-  int  cmode,grp;
+  int grp;
 
-  mvme_get_dmode(mvme, &cmode);
+  mvme_set_am(mvme, MVME_AM_A24);
   mvme_set_dmode(mvme, MVME_DMODE_D16);
   grp = mvme_read_value(mvme, base+VF48_GRP_REG_RW);
-  mvme_set_dmode(mvme, cmode);
   return grp;
 }
 
@@ -634,16 +615,15 @@ Set the segment size for all 6 groups
  */
 int vf48_SegmentSizeSet(MVME_INTERFACE *mvme, DWORD base, DWORD size)
 {
-  int  cmode, i;
+  int i;
 
   assert(size>0);
   assert(size<=1000);
 
-  mvme_get_dmode(mvme, &cmode);
+  mvme_set_am(mvme, MVME_AM_A24);
   mvme_set_dmode(mvme, MVME_DMODE_D16);
   for (i=0;i<6;i++)
     vf48_ParameterWrite(mvme, base, i, VF48_SEGMENT_SIZE, size);
-  mvme_set_dmode(mvme, cmode);
   return 1;
 }
 
@@ -654,12 +634,11 @@ same for all the groups.
  */
 int vf48_SegmentSizeRead(MVME_INTERFACE *mvme, DWORD base, int grp)
 {
-  int  cmode, val;
+  int val;
 
-  mvme_get_dmode(mvme, &cmode);
+  mvme_set_am(mvme, MVME_AM_A24);
   mvme_set_dmode(mvme, MVME_DMODE_D16);
   val =  vf48_ParameterRead(mvme, base, grp, VF48_SEGMENT_SIZE);
-  mvme_set_dmode(mvme, cmode);
   return val;
 }
 
@@ -672,12 +651,10 @@ of the signal is negative, the signal should be inverted.
  */
 int vf48_TrgThresholdSet(MVME_INTERFACE *mvme, DWORD base, int grp, DWORD size)
 {
-  int  cmode;
 
-  mvme_get_dmode(mvme, &cmode);
+  mvme_set_am(mvme, MVME_AM_A24);
   mvme_set_dmode(mvme, MVME_DMODE_D16);
   vf48_ParameterWrite(mvme, base, grp, VF48_TRIG_THRESHOLD, size);
-  mvme_set_dmode(mvme, cmode);
   return grp;
 }
 
@@ -687,12 +664,11 @@ Read the trigger threshold for a given group.
 */
 int vf48_TrgThresholdRead(MVME_INTERFACE *mvme, DWORD base, int grp)
 {
-  int  cmode, val;
+  int val;
 
-  mvme_get_dmode(mvme, &cmode);
+  mvme_set_am(mvme, MVME_AM_A24); 
   mvme_set_dmode(mvme, MVME_DMODE_D16);
   val =  vf48_ParameterRead(mvme, base, grp, VF48_TRIG_THRESHOLD);
-  mvme_set_dmode(mvme, cmode);
   return val;
 }
 
@@ -707,12 +683,10 @@ of the described condition is satisfied.
  */
 int vf48_HitThresholdSet(MVME_INTERFACE *mvme, DWORD base, int grp, DWORD size)
 {
-  int  cmode;
 
-  mvme_get_dmode(mvme, &cmode);
+  mvme_set_am(mvme, MVME_AM_A24);
   mvme_set_dmode(mvme, MVME_DMODE_D16);
   vf48_ParameterWrite(mvme, base, grp, VF48_HIT_THRESHOLD, size);
-  mvme_set_dmode(mvme, cmode);
   return grp;
 }
 
@@ -722,12 +696,11 @@ Read the hit threshold for a given group.
 */
 int vf48_HitThresholdRead(MVME_INTERFACE *mvme, DWORD base, int grp)
 {
-  int  cmode, val;
+  int val;
 
-  mvme_get_dmode(mvme, &cmode);
+  mvme_set_am(mvme, MVME_AM_A24);
   mvme_set_dmode(mvme, MVME_DMODE_D16);
   val =  vf48_ParameterRead(mvme, base, grp, VF48_HIT_THRESHOLD);
-  mvme_set_dmode(mvme, cmode);
   return val;
 }
 
@@ -738,12 +711,10 @@ are enabled.
 */
 int vf48_ActiveChMaskSet(MVME_INTERFACE *mvme, DWORD base, int grp, DWORD size)
 {
-  int  cmode;
 
-  mvme_get_dmode(mvme, &cmode);
+  mvme_set_am(mvme, MVME_AM_A24);
   mvme_set_dmode(mvme, MVME_DMODE_D16);
   vf48_ParameterWrite(mvme, base, grp, VF48_ACTIVE_CH_MASK, size);
-  mvme_set_dmode(mvme, cmode);
   return grp;
 }
 
@@ -753,12 +724,11 @@ Read the channel enable mask for a given group.
  */
 int vf48_ActiveChMaskRead(MVME_INTERFACE *mvme, DWORD base, int grp)
 {
-  int  cmode, val;
+  int val;
 
-  mvme_get_dmode(mvme, &cmode);
+  mvme_set_am(mvme, MVME_AM_A24);
   mvme_set_dmode(mvme, MVME_DMODE_D16);
   val =  vf48_ParameterRead(mvme, base, grp, VF48_ACTIVE_CH_MASK);
-  mvme_set_dmode(mvme, cmode);
   return val;
 }
 
@@ -769,12 +739,10 @@ of a given group. Feature Q,T are always present expect if channel masked.
  */
 int vf48_RawDataSuppSet(MVME_INTERFACE *mvme, DWORD base, int grp, DWORD size)
 {
-  int  cmode;
 
-  mvme_get_dmode(mvme, &cmode);
+  mvme_set_am(mvme, MVME_AM_A24);
   mvme_set_dmode(mvme, MVME_DMODE_D16);
   vf48_ParameterWrite(mvme, base, grp, VF48_MBIT1, size);
-  mvme_set_dmode(mvme, cmode);
   return grp;
 }
 
@@ -784,12 +752,11 @@ Read the flag of the raw data suppression of a given channel.
  */
 int vf48_RawDataSuppRead(MVME_INTERFACE *mvme, DWORD base, int grp)
 {
-  int  cmode, val;
+  int val;
 
-  mvme_get_dmode(mvme, &cmode);
+  mvme_set_am(mvme, MVME_AM_A24);
   mvme_set_dmode(mvme, MVME_DMODE_D16);
   val =  vf48_ParameterRead(mvme, base, grp, VF48_MBIT1);
-  mvme_set_dmode(mvme, cmode);
   return val;
 }
 
@@ -803,16 +770,14 @@ function prior the divisor.
  */
 int vf48_ChSuppSet(MVME_INTERFACE *mvme, DWORD base, int grp, DWORD value)
 {
-  int  cmode;
   int  mbit2;
 
-  mvme_get_dmode(mvme, &cmode);
+  mvme_set_am(mvme, MVME_AM_A24);
   mvme_set_dmode(mvme, MVME_DMODE_D16);
   mbit2 =  vf48_ParameterRead(mvme, base, grp, VF48_MBIT2);
   mbit2 &= ~1;
   mbit2 |= value&0x1;
   vf48_ParameterWrite(mvme, base, grp, VF48_MBIT2, mbit2);
-  mvme_set_dmode(mvme, cmode);
   return grp;
 }
 
@@ -822,12 +787,11 @@ Read the channel suppression flag for a given group.
  */
 int vf48_ChSuppRead(MVME_INTERFACE *mvme, DWORD base, int grp)
 {
-  int  cmode, val;
+  int val;
 
-  mvme_get_dmode(mvme, &cmode);
+  mvme_set_am(mvme, MVME_AM_A24);
   mvme_set_dmode(mvme, MVME_DMODE_D16);
   val =  0x1 & vf48_ParameterRead(mvme, base, grp, VF48_MBIT2);
-  mvme_set_dmode(mvme, cmode);
   return val;
 }
 
@@ -872,13 +836,12 @@ should read the same value.
  */
 int vf48_DivisorRead(MVME_INTERFACE *mvme, DWORD base, int grp)
 {
-  int  cmode, val;
+  int val;
 
-  mvme_get_dmode(mvme, &cmode);
+  mvme_set_am(mvme, MVME_AM_A24);
   mvme_set_dmode(mvme, MVME_DMODE_D16);
   val = vf48_ParameterRead(mvme, base, grp, VF48_MBIT2);
   val = (val >> 8) & 0xff;
-  mvme_set_dmode(mvme, cmode);
   return val;
 }
 
@@ -898,9 +861,9 @@ int  vf48_Trigger(MVME_INTERFACE *mvme, DWORD base)
 /********************************************************************/
 int vf48_Setup(MVME_INTERFACE *mvme, DWORD base, int mode)
 {
-  int  cmode, i;
+  int  i;
 
-  mvme_get_dmode(mvme, &cmode);
+  mvme_set_am(mvme, MVME_AM_A24);
   mvme_set_dmode(mvme, MVME_DMODE_D16);
 
   switch (mode) {
@@ -922,10 +885,8 @@ int vf48_Setup(MVME_INTERFACE *mvme, DWORD base, int mode)
     break;
   default:
     printf("Unknown setup mode\n");
-    mvme_set_dmode(mvme, cmode);
     return -1;
   }
-  mvme_set_dmode(mvme, cmode);
   return 0;
 
 }
@@ -957,9 +918,9 @@ int vf48_Status(MVME_INTERFACE *mvme, DWORD base)
     "Trigger Threshold"
   };
 
-  int cmode, i, j;
+  int i, j;
 
-  mvme_get_dmode(mvme, &cmode);
+  mvme_set_am(mvme, MVME_AM_A24);
   mvme_set_dmode(mvme, MVME_DMODE_D32);
 
   printf("VF48 at VME A24 0x%06x, status:\n", base);
@@ -983,7 +944,6 @@ int vf48_Status(MVME_INTERFACE *mvme, DWORD base)
     }
   }
 
-  mvme_set_dmode(mvme, cmode);
   return VF48_SUCCESS;
 }
 
@@ -995,19 +955,15 @@ int vf48_Status(MVME_INTERFACE *mvme, DWORD base)
 */
 int vf48_isPresent(MVME_INTERFACE *mvme, DWORD base)
 {
-  int cmode;
   int missing = 0;
 
-  mvme_get_dmode(mvme, &cmode);
+  mvme_set_am(mvme, MVME_AM_A24);
   mvme_set_dmode(mvme, MVME_DMODE_D32);
 
   missing |= (0xFFFFFFFF==mvme_read_value(mvme, base + 0x0));
   missing |= (0xFFFFFFFF==mvme_read_value(mvme, base + 0x30));
 
-  mvme_set_dmode(mvme, cmode);
-
-  if (missing)
-    return VF48_ERROR;
+  if (missing) return VF48_ERROR;
 
   return VF48_SUCCESS;
 }
