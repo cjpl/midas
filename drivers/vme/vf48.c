@@ -231,6 +231,7 @@ int vf48_ParameterWrite(MVME_INTERFACE *mvme, DWORD base, int grp, int param, in
     break;
   };
 
+  mvme_set_am(  mvme, MVME_AM_A24);
   mvme_set_dmode(mvme, MVME_DMODE_D32);
 
   if (0) {
