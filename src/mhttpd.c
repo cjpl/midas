@@ -1280,7 +1280,7 @@ void show_status_page(int refresh, char *cookie_wpwd)
       } else if (stricmp(str, "Pause") == 0) {
          if (runinfo.state != STATE_STOPPED) {
             rsprintf("<noscript>\n");
-            if (runinfo.state == STATE_RUNNING == 0)
+            if (runinfo.state == STATE_RUNNING)
                rsprintf("<input type=submit name=cmd %s value=Pause>\n", runinfo.transition_in_progress?"disabled":"");
             rsprintf("</noscript>\n");
             rsprintf("<script type=\"text/javascript\">\n");
