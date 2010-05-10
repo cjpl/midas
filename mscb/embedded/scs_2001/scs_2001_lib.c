@@ -1808,7 +1808,7 @@ unsigned char i, idx;
          return 2;
       }
 
-      if (chn != 4)
+      if (chn != 5)
          return 0;
 
       /* return if ADC busy */
