@@ -11,11 +11,10 @@
 #include <stdint.h>
 #include <string.h>
 #include "v1720drv.h"
-//#include "v1720.h"
 #include "mvmestd.h"
 
 // Buffer organization map for number of samples
-uint32_t NSAMPLES_MODE[11] = { (1<<20), (1<<19), (1<<18), (1<<17), (1<<16), (1<<15)
+uint32_t V1720_NSAMPLES_MODE[11] = { (1<<20), (1<<19), (1<<18), (1<<17), (1<<16), (1<<15)
 			       ,(1<<14), (1<<13), (1<<12), (1<<11), (1<<10)};
 
 /*****************************************************************/
@@ -71,7 +70,7 @@ void v1720_ChannelCtl(MVME_INTERFACE *mvme, uint32_t base, uint32_t reg, uint32_
 }
 
 /*****************************************************************/
-void v1720_ChannelSet(MVME_INTERFACE *mvme, uint32_t base, uint32_t channel, uint32_t what, uint32_t this)
+void v1720_ChannelSet(MVME_INTERFACE *mvme, uint32_t base, uint32_t channel, uint32_t what, uint32_t that)
 {
   uint32_t reg, mask;
 
@@ -79,8 +78,8 @@ void v1720_ChannelSet(MVME_INTERFACE *mvme, uint32_t base, uint32_t channel, uin
   if (what == V1720_CHANNEL_OUTHRESHOLD) mask = 0x0FFF;
   if (what == V1720_CHANNEL_DAC)         mask = 0xFFFF;
   reg = what | (channel << 8);
-  printf("base:0x%x reg:0x%x, this:%x\n", base, reg, this);
-  regWrite(mvme, base, reg, (this & 0xFFF));
+  printf("base:0x%x reg:0x%x, this:%x\n", base, reg, that);
+  regWrite(mvme, base, reg, (that & 0xFFF));
 }
 
 /*****************************************************************/
@@ -149,28 +148,28 @@ void v1720_AcqCtl(MVME_INTERFACE *mvme, uint32_t base, uint32_t operation)
   
   reg = regRead(mvme, base, V1720_ACQUISITION_CONTROL);  
   switch (operation) {
-  case RUN_START:
+  case V1720_RUN_START:
     regWrite(mvme, base, V1720_ACQUISITION_CONTROL, (reg | 0x4));
     break;
-  case RUN_STOP:
+  case V1720_RUN_STOP:
     regWrite(mvme, base, V1720_ACQUISITION_CONTROL, (reg & ~(0x4)));
     break;
-  case REGISTER_RUN_MODE:
+  case V1720_REGISTER_RUN_MODE:
     regWrite(mvme, base, V1720_ACQUISITION_CONTROL, (reg & ~(0x3)));
     break;
-  case SIN_RUN_MODE:
+  case V1720_SIN_RUN_MODE:
     regWrite(mvme, base, V1720_ACQUISITION_CONTROL, (reg | 0x01));
     break;
-  case SIN_GATE_RUN_MODE:
+  case V1720_SIN_GATE_RUN_MODE:
     regWrite(mvme, base, V1720_ACQUISITION_CONTROL, (reg | 0x02));
     break;
-  case MULTI_BOARD_SYNC_MODE:
+  case V1720_MULTI_BOARD_SYNC_MODE:
     regWrite(mvme, base, V1720_ACQUISITION_CONTROL, (reg | 0x03));
     break;
-  case COUNT_ACCEPTED_TRIGGER:
+  case V1720_COUNT_ACCEPTED_TRIGGER:
     regWrite(mvme, base, V1720_ACQUISITION_CONTROL, (reg | 0x08));
     break;
-  case COUNT_ALL_TRIGGER:
+  case V1720_COUNT_ALL_TRIGGER:
     regWrite(mvme, base, V1720_ACQUISITION_CONTROL, (reg & ~(0x08)));
     break;
   default:
@@ -185,7 +184,7 @@ void v1720_info(MVME_INTERFACE *mvme, uint32_t base, int *nchannels, uint32_t *n
 
   // Evaluate the event size
   // Number of samples per channels
-  *n32word = NSAMPLES_MODE[regRead(mvme, base, V1720_BUFFER_ORGANIZATION)];
+  *n32word = V1720_NSAMPLES_MODE[regRead(mvme, base, V1720_BUFFER_ORGANIZATION)];
 
   // times the number of active channels
   chanmask = 0xff & regRead(mvme, base, V1720_CHANNEL_EN_MASK); 

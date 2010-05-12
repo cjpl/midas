@@ -14,7 +14,7 @@
 #include "mvmestd.h"
 
 // Buffer organization map for number of samples
-uint32_t NSAMPLES_MODE[11] = { (1024*192), (512*192), (256*192), (128*192), (64*192), (32*192)
+uint32_t V1740_NSAMPLES_MODE[11] = { (1024*192), (512*192), (256*192), (128*192), (64*192), (32*192)
 			       ,(16*192), (8*192), (4*192), (2*192), (192)};
 
 /*****************************************************************/
@@ -94,34 +94,34 @@ void v1740_AcqCtl(MVME_INTERFACE *mvme, uint32_t base, uint32_t operation)
   
   reg = regRead(mvme, base, V1740_ACQUISITION_CONTROL);  
   switch (operation) {
-  case RUN_START:
+  case V1740_RUN_START:
     regWrite(mvme, base, V1740_ACQUISITION_CONTROL, (reg | 0x4));
     break;
-  case RUN_STOP:
+  case V1740_RUN_STOP:
     regWrite(mvme, base, V1740_ACQUISITION_CONTROL, (reg & ~(0x4)));
     break;
-  case REGISTER_RUN_MODE:
+  case V1740_REGISTER_RUN_MODE:
     regWrite(mvme, base, V1740_ACQUISITION_CONTROL, (reg & ~(0x3)));
     break;
-  case SIN_RUN_MODE:
+  case V1740_SIN_RUN_MODE:
     regWrite(mvme, base, V1740_ACQUISITION_CONTROL, (reg | 0x01));
     break;
-  case SIN_GATE_RUN_MODE:
+  case V1740_SIN_GATE_RUN_MODE:
     regWrite(mvme, base, V1740_ACQUISITION_CONTROL, (reg | 0x02));
     break;
-  case MULTI_BOARD_SYNC_MODE:
+  case V1740_MULTI_BOARD_SYNC_MODE:
     regWrite(mvme, base, V1740_ACQUISITION_CONTROL, (reg | 0x03));
     break;
-  case COUNT_ACCEPTED_TRIGGER:
+  case V1740_COUNT_ACCEPTED_TRIGGER:
     regWrite(mvme, base, V1740_ACQUISITION_CONTROL, (reg | 0x08));
     break;
-  case COUNT_ALL_TRIGGER:
+  case V1740_COUNT_ALL_TRIGGER:
     regWrite(mvme, base, V1740_ACQUISITION_CONTROL, (reg & ~(0x08)));
     break;
-  case DOWNSAMPLE_ENABLE:
+  case V1740_DOWNSAMPLE_ENABLE:
     regWrite(mvme, base, V1740_ACQUISITION_CONTROL, (reg & 0x10));
     break;
-  case DOWNSAMPLE_DISABLE:
+  case V1740_DOWNSAMPLE_DISABLE:
     regWrite(mvme, base, V1740_ACQUISITION_CONTROL, (reg & ~(0x10)));
     break;
   default:
@@ -136,7 +136,7 @@ void v1740_info(MVME_INTERFACE *mvme, uint32_t base, int *ngroups, uint32_t *n32
 
   // Evaluate the event size
   // Number of samples per group (8 channels)
-  *n32word = 8 * NSAMPLES_MODE[regRead(mvme, base, V1740_BUFFER_ORGANIZATION)];
+  *n32word = 8 * V1740_NSAMPLES_MODE[regRead(mvme, base, V1740_BUFFER_ORGANIZATION)];
 
   // times the number of active group
   grpmask = 0xff & regRead(mvme, base, V1740_GROUP_EN_MASK); 

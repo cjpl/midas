@@ -60,16 +60,16 @@
 #define V1740_GROUP_ADC_CONFIG              0x109C      /* For channel 0 */
 #define V1740_GROUP_CH_TRG_MASK             0x10B0      /* For channel 0 */
 
-#define RUN_START                           1
-#define RUN_STOP                            2
-#define REGISTER_RUN_MODE                   3
-#define SIN_RUN_MODE                        4
-#define SIN_GATE_RUN_MODE                   5
-#define MULTI_BOARD_SYNC_MODE               6
-#define COUNT_ACCEPTED_TRIGGER              7
-#define COUNT_ALL_TRIGGER                   8
-#define DOWNSAMPLE_ENABLE                   9
-#define DOWNSAMPLE_DISABLE                 10
+#define V1740_RUN_START                           1
+#define V1740_RUN_STOP                            2
+#define V1740_REGISTER_RUN_MODE                   3
+#define V1740_SIN_RUN_MODE                        4
+#define V1740_SIN_GATE_RUN_MODE                   5
+#define V1740_MULTI_BOARD_SYNC_MODE               6
+#define V1740_COUNT_ACCEPTED_TRIGGER              7
+#define V1740_COUNT_ALL_TRIGGER                   8
+#define V1740_DOWNSAMPLE_ENABLE                   9
+#define V1740_DOWNSAMPLE_DISABLE                 10
 
 #define V1740_EVENT_CONFIG_ALL_ADC        0x01000000
 #define V1740_SOFT_TRIGGER                0x80000000

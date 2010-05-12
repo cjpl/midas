@@ -56,14 +56,14 @@
 #define V1720_BUFFER_OCCUPANCY                0x1094      /* For channel 0 */
 #define V1720_CHANNEL_DAC                     0x1098      /* For channel 0 */
 
-#define RUN_START                             0x0001
-#define RUN_STOP                              0x0002
-#define REGISTER_RUN_MODE                     0x0003
-#define SIN_RUN_MODE                          0x0004
-#define SIN_GATE_RUN_MODE                     0x0005
-#define MULTI_BOARD_SYNC_MODE                 0x0006
-#define COUNT_ACCEPTED_TRIGGER                0x0007
-#define COUNT_ALL_TRIGGER                     0x0008
+#define V1720_RUN_START                             0x0001
+#define V1720_RUN_STOP                              0x0002
+#define V1720_REGISTER_RUN_MODE                     0x0003
+#define V1720_SIN_RUN_MODE                          0x0004
+#define V1720_SIN_GATE_RUN_MODE                     0x0005
+#define V1720_MULTI_BOARD_SYNC_MODE                 0x0006
+#define V1720_COUNT_ACCEPTED_TRIGGER                0x0007
+#define V1720_COUNT_ALL_TRIGGER                     0x0008
 
 #define V1720_EVENT_CONFIG_ALL_ADC        0x01000000
 #define V1720_SOFT_TRIGGER                0x80000000
