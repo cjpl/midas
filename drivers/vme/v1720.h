@@ -1,4 +1,4 @@
-***************************************************************************/
+/***************************************************************************/
 /*                                                                         */
 /*  Filename: V1720.h                                                      */
 /*                                                                         */
@@ -50,8 +50,11 @@
 #define V1720_CONFIG_RELOAD                   0xEF34      /* write only; D32 */ 
 #define V1720_CONFIG_ROM                      0xF000      /* read  only; D32 */ 
 
-#define V1720_BUFFER_OCCUPANCY                0x1094      /* For channel 0 */
 #define V1720_CHANNEL_THRESHOLD               0x1080      /* For channel 0 */
+#define V1720_CHANNEL_OUTHRESHOLD             0x1084      /* For channel 0 */
+#define V1720_CHANNEL_STATUS                  0x1088      /* For channel 0 */
+#define V1720_BUFFER_OCCUPANCY                0x1094      /* For channel 0 */
+#define V1720_CHANNEL_DAC                     0x1098      /* For channel 0 */
 
 #define RUN_START                             0x0001
 #define RUN_STOP                              0x0002
@@ -65,7 +68,7 @@
 #define V1720_EVENT_CONFIG_ALL_ADC        0x01000000
 #define V1720_SOFT_TRIGGER                0x80000000
 #define V1720_EXTERNAL_TRIGGER            0x40000000
-
+#define V1720_ALIGN64                           0x20
 #define DONE                                       0
 
 #endif  //  V1720_INCLUDE_H

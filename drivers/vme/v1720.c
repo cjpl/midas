@@ -1,4 +1,5 @@
 /*********************************************************************
+
   Name:         v1720.c
   Created by:   Pierre-A. Amaudruz / K.Olchanski
 
@@ -10,6 +11,7 @@
 #include <stdint.h>
 #include <string.h>
 #include "v1720drv.h"
+//#include "v1720.h"
 #include "mvmestd.h"
 
 // Buffer organization map for number of samples
@@ -69,10 +71,75 @@ void v1720_ChannelCtl(MVME_INTERFACE *mvme, uint32_t base, uint32_t reg, uint32_
 }
 
 /*****************************************************************/
-void v1720_ChannelThreshold(MVME_INTERFACE *mvme, uint32_t base, uint32_t channel, uint32_t threshold)
+void v1720_ChannelSet(MVME_INTERFACE *mvme, uint32_t base, uint32_t channel, uint32_t what, uint32_t this)
 {
+  uint32_t reg, mask;
+
+  if (what == V1720_CHANNEL_THRESHOLD)   mask = 0x0FFF;
+  if (what == V1720_CHANNEL_OUTHRESHOLD) mask = 0x0FFF;
+  if (what == V1720_CHANNEL_DAC)         mask = 0xFFFF;
+  reg = what | (channel << 8);
+  printf("base:0x%x reg:0x%x, this:%x\n", base, reg, this);
+  regWrite(mvme, base, reg, (this & 0xFFF));
+}
+
+/*****************************************************************/
+uint32_t v1720_ChannelGet(MVME_INTERFACE *mvme, uint32_t base, uint32_t channel, uint32_t what)
+{
+  uint32_t reg, mask;
+
+  if (what == V1720_CHANNEL_THRESHOLD)   mask = 0x0FFF;
+  if (what == V1720_CHANNEL_OUTHRESHOLD) mask = 0x0FFF;
+  if (what == V1720_CHANNEL_DAC)         mask = 0xFFFF;
+  reg = what | (channel << 8);
+  return regRead(mvme, base, reg);
+}
+
+/*****************************************************************/
+void v1720_ChannelThresholdSet(MVME_INTERFACE *mvme, uint32_t base, uint32_t channel, uint32_t threshold)
+{
+  uint32_t reg;
   reg = V1720_CHANNEL_THRESHOLD | (channel << 8);
-  regWrite(mvme, base, reg, (threshold & 0xFFF);
+  printf("base:0x%x reg:0x%x, threshold:%x\n", base, reg, threshold);
+  regWrite(mvme, base, reg, (threshold & 0xFFF));
+}
+
+/*****************************************************************/
+void v1720_ChannelOUThresholdSet(MVME_INTERFACE *mvme, uint32_t base, uint32_t channel, uint32_t threshold)
+{
+  uint32_t reg;
+  reg = V1720_CHANNEL_OUTHRESHOLD | (channel << 8);
+  printf("base:0x%x reg:0x%x, outhreshold:%x\n", base, reg, threshold);
+  regWrite(mvme, base, reg, (threshold & 0xFFF));
+}
+
+/*****************************************************************/
+void v1720_ChannelDACSet(MVME_INTERFACE *mvme, uint32_t base, uint32_t channel, uint32_t dac)
+{
+  uint32_t reg;
+
+  reg = V1720_CHANNEL_DAC | (channel << 8);
+  printf("base:0x%x reg:0x%x, DAC:%x\n", base, reg, dac);
+  regWrite(mvme, base, reg, (dac & 0xFFFF));
+}
+
+/*****************************************************************/
+int v1720_ChannelDACGet(MVME_INTERFACE *mvme, uint32_t base, uint32_t channel, uint32_t *dac)
+{
+  uint32_t reg;
+  int   status;
+
+  reg = V1720_CHANNEL_DAC | (channel << 8);
+  *dac = regRead(mvme, base, reg);
+  reg = V1720_CHANNEL_STATUS | (channel << 8);
+  status = regRead(mvme, base, reg);
+  return status;
+}
+
+/*****************************************************************/
+void v1720_Align64Set(MVME_INTERFACE *mvme, uint32_t base)
+{
+  regWrite(mvme, base, V1720_VME_CONTROL, V1720_ALIGN64);
 }
 
 /*****************************************************************/
@@ -127,7 +194,7 @@ void v1720_info(MVME_INTERFACE *mvme, uint32_t base, int *nchannels, uint32_t *n
     if (chanmask & (1<<i))
       *nchannels += 1;
   }
-  
+
   *n32word *= *nchannels;
   *n32word /= 2;   // 2 samples per 32bit word
   *n32word += 4;   // Headers
@@ -137,7 +204,7 @@ void v1720_info(MVME_INTERFACE *mvme, uint32_t base, int *nchannels, uint32_t *n
 uint32_t v1720_BufferOccupancy(MVME_INTERFACE *mvme, uint32_t base, uint32_t channel)
 {
   uint32_t reg;
-  reg = V1720_BUFFER_OCCUPANCY + (channel << 8);
+  reg = V1720_BUFFER_OCCUPANCY + (channel<<16);
   return regRead(mvme, base, reg);
 }
 
@@ -162,7 +229,7 @@ uint32_t v1720_BufferFreeRead(MVME_INTERFACE *mvme, uint32_t base)
 }
 
 /*****************************************************************/
-uint32_t v1720_DataRead(MVME_INTERFACE *mvme,uint32_t base, uint32_t *pdata, uint32_t n32w)
+uint32_t v1720_DataRead(MVME_INTERFACE *mvme, uint32_t base, uint32_t *pdata, uint32_t n32w)
 {
   uint32_t i;
 
@@ -174,6 +241,33 @@ uint32_t v1720_DataRead(MVME_INTERFACE *mvme,uint32_t base, uint32_t *pdata, uin
       break;
   }
   return i;
+}
+
+/********************************************************************/
+/** v1720_DataBlockRead
+Read N entries (32bit) 
+@param mvme vme structure
+@param base  base address
+@param pdest Destination pointer
+@return nentry
+*/
+uint32_t v1720_DataBlockRead(MVME_INTERFACE *mvme, uint32_t base, uint32_t *pdest, uint32_t *nentry)
+{
+  int status;
+
+  mvme_set_am(  mvme, MVME_AM_A32);
+  mvme_set_dmode(  mvme, MVME_DMODE_D32);
+  mvme_set_blt(  mvme, MVME_BLT_MBLT64);
+  //  mvme_set_blt(  mvme, MVME_BLT_BLT32);
+  //mvme_set_blt(  mvme, 0);
+
+  // Transfer in MBLT64 (8bytes), nentry is in 32bits(VF48)
+  // *nentry * 8 / 2
+  status = mvme_read(mvme, pdest, base+V1720_EVENT_READOUT_BUFFER, *nentry<<2);
+  if (status != MVME_SUCCESS)
+    return 0;
+
+  return (*nentry);
 }
 
 
