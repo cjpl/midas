@@ -69,7 +69,7 @@
 #define V1720_SOFT_TRIGGER                0x80000000
 #define V1720_EXTERNAL_TRIGGER            0x40000000
 #define V1720_ALIGN64                           0x20
-#define DONE                                       0
+#define V1720_DONE                                 0
 
 #endif  //  V1720_INCLUDE_H
 

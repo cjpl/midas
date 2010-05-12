@@ -75,7 +75,7 @@
 #define V1740_SOFT_TRIGGER                0x80000000
 #define V1740_EXTERNAL_TRIGGER            0x40000000
 
-#define DONE                                0
+#define V1740_DONE                          0
 
 #endif  //  V1740_INCLUDE_H
 
