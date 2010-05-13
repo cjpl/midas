@@ -159,7 +159,7 @@ int main (int argc, char* argv[]) {
   // regWriteFloat(myvme, ISEGVHS_BASE, ISEGVHS_CHANNEL_BASE+ISEGVHS_CURRENT_BOUND, 0.022);
   //  regWriteFloat(myvme, ISEGVHS_BASE, ISEGVHS_CHANNEL_BASE+ISEGVHS_CURRENT_NOMINAL, 0.0012);
 
-  printf("Chn     Vrmp   Irmp      Vset      Vmes    Vbnd    Vnom      Iset     Imes    Ibnd   CSta   CCtl\n");
+  printf("Chn     Vrmp   Irmp      Vset      Vmes    Vbnd    Vnom      IsetmA   ImesmA  Ibnd   CSta   CCtl\n");
   for (i=0;i<12;i++) {
     printf("%02d ", i);
     regWriteFloat(myvme, ISEGVHS_BASE, ISEGVHS_CHANNEL_BASE+(i*ISEGVHS_CHANNEL_OFFSET)+ISEGVHS_VOLTAGE_BOUND, 0.5);
@@ -171,9 +171,9 @@ int main (int argc, char* argv[]) {
     printf("%8.2f ", regReadFloat(myvme, ISEGVHS_BASE, ISEGVHS_CHANNEL_BASE+(i*ISEGVHS_CHANNEL_OFFSET)+ISEGVHS_VOLTAGE_BOUND));
     printf("%8.2f ", regReadFloat(myvme, ISEGVHS_BASE, ISEGVHS_CHANNEL_BASE+(i*ISEGVHS_CHANNEL_OFFSET)+ISEGVHS_VOLTAGE_NOMINAL));
     
-    printf("%8.3f ", regReadFloat(myvme, ISEGVHS_BASE, ISEGVHS_CHANNEL_BASE+(i*ISEGVHS_CHANNEL_OFFSET)+ISEGVHS_CURRENT_SET));
-    printf("%8.3f ", regReadFloat(myvme, ISEGVHS_BASE, ISEGVHS_CHANNEL_BASE+(i*ISEGVHS_CHANNEL_OFFSET)+ISEGVHS_CURRENT_MEASURE));
-    printf("%8.3f ", regReadFloat(myvme, ISEGVHS_BASE, ISEGVHS_CHANNEL_BASE+(i*ISEGVHS_CHANNEL_OFFSET)+ISEGVHS_CURRENT_BOUND));
+    printf("%8.3f ", 1000.*regReadFloat(myvme, ISEGVHS_BASE, ISEGVHS_CHANNEL_BASE+(i*ISEGVHS_CHANNEL_OFFSET)+ISEGVHS_CURRENT_SET));
+    printf("%8.3f ", 1000.*regReadFloat(myvme, ISEGVHS_BASE, ISEGVHS_CHANNEL_BASE+(i*ISEGVHS_CHANNEL_OFFSET)+ISEGVHS_CURRENT_MEASURE));
+    printf("%8.2f ", regReadFloat(myvme, ISEGVHS_BASE, ISEGVHS_CHANNEL_BASE+(i*ISEGVHS_CHANNEL_OFFSET)+ISEGVHS_CURRENT_BOUND));
     
     printf("0x%04x ", regRead(myvme, ISEGVHS_BASE, ISEGVHS_CHANNEL_BASE+(i*ISEGVHS_CHANNEL_OFFSET)+ISEGVHS_CHANNEL_STATUS));
     printf("0x%04x ", regRead(myvme, ISEGVHS_BASE, ISEGVHS_CHANNEL_BASE+(i*ISEGVHS_CHANNEL_OFFSET)+ISEGVHS_CHANNEL_CONTROL));
