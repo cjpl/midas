@@ -489,7 +489,7 @@ void uart_init(unsigned char port, unsigned char baud)
       0x100 - 52,   // 115200
       0x100 - 35,   // 172800  2% error
       0x100 - 17 }; // 345600  2% error
-#elif defined(SCS_210) || defined(HVR_200) // 24.5 MHz
+#elif defined(CLK_25MHZ)              // 24.5 MHz
    unsigned char code baud_table[] =  // UART0 via timer 2
      {0x100 - 0,    //  N/A
       0x100 - 0,    //  N/A
@@ -625,7 +625,7 @@ void uart_init(unsigned char port, unsigned char baud)
       EIP2 &= ~0x40;               // serial interrupt low priority
 
 
-#elif defined(SCS_210) || defined(HVR_200) // 24.5 MHz
+#elif defined(CLK_25MHZ)           // 24.5 MHz
       SFRPAGE = UART1_PAGE;
       SCON1 = 0x50;                // Mode 1, 8 bit, receive enable
 
@@ -792,7 +792,7 @@ void sysclock_init(void)
 #endif
 
    TMOD = (TMOD & 0x0F) | 0x01; // 16-bit counter
-#if defined(SCS_210) || defined(HVR_200)
+#if defined(CLK_25MHZ)
    CKCON = 0x02;                // use SYSCLK/48
    TH0 = 0xEC;                  // load initial value (24.5 MHz SYSCLK)
 #elif defined(CPU_C8051F120)
@@ -826,6 +826,9 @@ unsigned char led_i;
          else
             led_set(led_i, LED_OFF);
 
+         if (leds[led_i].n == 1)
+            led_set(led_i, LED_OFF);
+
          leds[led_i].n--;
          if (leds[led_i].n)
             leds[led_i].timer = leds[led_i].interval;
@@ -833,9 +836,6 @@ unsigned char led_i;
 
       if (leds[led_i].timer)
          leds[led_i].timer--;
-
-      if (leds[led_i].n == 0)
-         led_set(led_i, LED_OFF);
    }
 }
 
@@ -859,7 +859,7 @@ void timer0_int(void) interrupt 1
    tcp_timer();
 #else /* SUBM_260 */
 
-#if defined(SCS_210) || defined(HVR_200)
+#if defined(CLK_25MHZ)
    TH0 = 0xEC;                  // for 24.5 MHz clock / 48
 #elif defined(CPU_C8051F120)
    TH0 = 0xAF;                  // for 98 MHz clock   / 48
@@ -948,63 +948,63 @@ void led_set(unsigned char led, unsigned char flag) reentrant
       led_0 = flag;
 #endif
 #ifdef LED_1
-   if (led == 1)
+   else if (led == 1)
       led_1 = flag;
 #endif
 #ifdef LED_2
-   if (led == 2)
+   else if (led == 2)
       led_2 = flag;
 #endif
 #ifdef LED_3
-   if (led == 3)
+   else if (led == 3)
       led_3 = flag;
 #endif
 #ifdef LED_4
-   if (led == 4)
+   else if (led == 4)
       led_4 = flag;
 #endif
 #ifdef LED_5
-   if (led == 5)
+   else if (led == 5)
       led_5 = flag;
 #endif
 #ifdef LED_6
-   if (led == 6)
+   else if (led == 6)
       led_6 = flag;
 #endif
 #ifdef LED_7
-   if (led == 7)
+   else if (led == 7)
       led_7 = flag;
 #endif
 #ifdef LED_8
-   if (led == 8)
+   else if (led == 8)
       led_8 = flag;
 #endif
 #ifdef LED_9
-   if (led == 9)
+   else if (led == 9)
       led_9 = flag;
 #endif
 #ifdef LED_10
-   if (led == 10)
+   else if (led == 10)
       led_10 = flag;
 #endif
 #ifdef LED_11
-   if (led == 11)
+   else if (led == 11)
       led_11 = flag;
 #endif
 #ifdef LED_12
-   if (led == 12)
+   else if (led == 12)
       led_12 = flag;
 #endif
 #ifdef LED_13
-   if (led == 13)
+   else if (led == 13)
       led_13 = flag;
 #endif
 #ifdef LED_14
-   if (led == 14)
+   else if (led == 14)
       led_14 = flag;
 #endif
 #ifdef LED_15
-   if (led == 15)
+   else if (led == 15)
       led_15 = flag;
 #endif
 
@@ -1279,7 +1279,7 @@ void delay_us(unsigned int us)
 
    if (us <= 250) {
       for (i = (unsigned char) us; i > 0; i--) {
-#if defined(SCS_210) || defined(HVR_200)
+#if defined(CLK_25MHZ)
          _nop_();
          for (j=3 ; j>0 ; j--)
             _nop_();

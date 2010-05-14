@@ -106,6 +106,7 @@
 #if defined(SCS_210)
 #include <c8051F120.h>
 #define CPU_C8051F120
+#define CLK_25MHZ
 
 #define LED_0 P3 ^ 4
 #define LED_1 P3 ^ 3
@@ -285,6 +286,7 @@ sbit RS485_SEC_ENABLE = P0 ^ 4;
 #elif defined(HVR_200)
 #include <c8051F120.h>
 #define CPU_C8051F120
+#define CLK_25MHZ
 
 #define LED_0 P1 ^ 6
 #define LED_1 P1 ^ 7 
@@ -323,6 +325,7 @@ sbit RS485_ENABLE = P0 ^ 7;
 #elif defined(HVR_800)
 #include <c8051F120.h>
 #define CPU_C8051F120
+#define CLK_25MHZ
 
 #define LED_0 P1 ^ 7
 #define LED_1 P1 ^ 6 
