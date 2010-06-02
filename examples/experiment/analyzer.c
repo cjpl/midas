@@ -146,7 +146,7 @@ INT analyzer_init()
 
    /* open ODB structures */
    cm_get_experiment_database(&hDB, NULL);
-   db_create_record(hDB, 0, "/Runinfo", strcomb(runinfo_str));
+   db_create_record(hDB, 0, "/Runinfo", strcomb((const char **)runinfo_str));
    db_find_key(hDB, 0, "/Runinfo", &hKey);
    if (db_open_record(hDB, hKey, &runinfo, sizeof(runinfo), MODE_READ, NULL, NULL) !=
        DB_SUCCESS) {
@@ -154,7 +154,7 @@ INT analyzer_init()
       return 0;
    }
 
-   db_create_record(hDB, 0, "/Experiment/Run Parameters", strcomb(exp_param_str));
+   db_create_record(hDB, 0, "/Experiment/Run Parameters", strcomb((const char **)exp_param_str));
    db_find_key(hDB, 0, "/Experiment/Run Parameters", &hKey);
    if (db_open_record(hDB, hKey, &exp_param, sizeof(exp_param), MODE_READ, NULL, NULL) !=
        DB_SUCCESS) {
@@ -164,7 +164,7 @@ INT analyzer_init()
    }
 
    sprintf(str, "/%s/Parameters/Global", analyzer_name);
-   db_create_record(hDB, 0, str, strcomb(global_param_str));
+   db_create_record(hDB, 0, str, strcomb((const char **)global_param_str));
    db_find_key(hDB, 0, str, &hKey);
    if (db_open_record
        (hDB, hKey, &global_param, sizeof(global_param), MODE_READ, NULL,
@@ -173,7 +173,7 @@ INT analyzer_init()
       return 0;
    }
 
-   db_create_record(hDB, 0, "/Equipment/Trigger/Settings", strcomb(trigger_settings_str));
+   db_create_record(hDB, 0, "/Equipment/Trigger/Settings", strcomb((const char **)trigger_settings_str));
    db_find_key(hDB, 0, "/Equipment/Trigger/Settings", &hKey);
 
    if (db_open_record
