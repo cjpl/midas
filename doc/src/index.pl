@@ -20,6 +20,8 @@ sub header();
 sub footer();
 sub idx();
 sub fix_idx();
+sub fix_idx2();
+sub check_line();
 sub write_idx(@);
 $|=1; # flush output buffers
 # mine.pl *.dox
@@ -35,6 +37,7 @@ our $hdrfile="header.tmp";  #   input file 2 for doxfile (used by doit.pl)
 #index files
 our $outf ="index_info.txt";
 our $idxf ="docindex.tmp";
+our $idxf2 ="docindex2.tmp";
 our $idxd ="docindex.dox";
 
 our $linenum;
@@ -52,11 +55,16 @@ my $done;
 print "$num  $param\n";
 
 if ($num > 0)
-{ idx(); 
+{
+    print "\n index.pl starting... making index only \n";
+  idx(); 
   fix_idx();
+  fix_idx2();
+  print "index.pl  docindex.dox is done. Now make or make publish \n";
   exit;
 }
 
+print "\n index.pl starting... mining files to make Organization.dox page\n";
 mine(); # mines dox files to produce mined_info.txt
 fill_page_hash(); # finds pages and mainpage in mined_info.txt
 mainpage(); # fills sorted_info.txt.0 with mainpage
@@ -322,10 +330,11 @@ sub write_idx(@)
     my (@fields, $l);
     my $letter;
     my $level;
+    my ($lclast, $lcfields);
 
 # note: array is the only parameters, so passing directly is OK.
     my @array = @_;
-    my @sorted = sort @array;
+    my @sorted = sort { lc($a) cmp lc($b) } @array; # sort as all lower case
     print "\n sorted array: @sorted\n";
     $len= $#sorted;
    
@@ -351,10 +360,13 @@ sub write_idx(@)
         {
             $j++;
 	    #    print "j=$j; level=$level  l=$l\n";
-	    if ($fields[$j] eq $last[$j])
+            #   case may be different
+            $lcfields = lc $fields[$j];
+            $lclast   = lc $last[$j];
+	    if ($lcfields eq $lclast)
             {
 		if ($fields[$j]=~/^[a-z]$/) { die "duplicate single letter $fields[$j]\n";}
-		print "duplicate:j=$j level=$level last[$level]=$last[$level]\n";
+		print "duplicate:j=$j level=$level last[$level]=$last[$level]; \n";
 		next;
 	    }
             $last[$j]=$fields[$j];
@@ -429,19 +441,22 @@ sub fix_idx()
 {
     my $num;
     my $i=0;
+    my $string;
+
     my $temp=$/;
     $/ = "\n%\n";  # page separator 
 
     open INF, "$idxf" or die "Can't open input file $idxf : $!\n";
-    open OUTF, ">$idxd" or die "Can't open output file $idxd : $!\n";
+    open OUTF, ">$idxf2" or die "Can't open output file $idxf2 : $!\n";
 
-    print OUTF "/*! \@page  DocIndex Index to Documentation pages\n";
+    print OUTF "/*! \@page  DocIndex Alphabetical Index to Documentation pages\n";
     print OUTF "\\htmlonly\n";
     print OUTF "<script type=\"text/javascript\" src=\"navigation.js\"></script>\n";
     print OUTF "\\endhtmlonly\n";
-    print OUTF "\n<span class=\"note\">This file produced automatically ...  DO NOT EDIT </span>\n";
+    print OUTF "\n<span class=\"note\">This file produced automatically ....  DO NOT EDIT </span>\n";
+    print OUTF "\n<br>";
     print OUTF "<span class=\"warn\">\n";
-    print OUTF "WARNING - this page is under construction\n";
+   # print OUTF "WARNING - this page is under construction \n";
     print OUTF "</span>\n\n";
   
 
@@ -460,9 +475,11 @@ sub fix_idx()
 	$_ = $file[$i];
         chomp $_;
 	s/\n%//;
+  
 	print "\n Item $i of $num: \n$_\n";
 	if ($_)
 	{ # string is not empty
+
 	    if ($i == 0)  # item 0 includes <ul class "i0">
 	    { 
 		print OUTF $_;
@@ -483,8 +500,116 @@ sub fix_idx()
     print OUTF "</ul>  <!-- i0 -->\n";
     print OUTF "*/\n"; # end of page
     close OUTF;
+    print "closed output file $idxf2\n";
+}
+
+sub fix_idx2()
+{
+    my $num;
+    my $i=0;
+    my $string;
+    my $linenum;
+    my $skip=1;
+
+    print ("fix_idx2: starting\n");
+
+    open INF, "$idxf2" or die "Can't open input file $idxf : $!\n";
+    open OUTF, ">$idxd" or die "Can't open output file $idxd : $!\n";
+
+	$linenum=0;
+	while (<INF>)
+	{
+	    $linenum++;
+            if ($skip)
+            {
+                unless (/class="i0"/)   # skip the top lines
+                {
+                    print "skipping line $linenum\n";   
+                    print OUTF "$_";
+                    next; 
+                }
+                else 
+                { 
+                    $skip = 0;
+                    next;
+                }
+            } 
+
+            print "working on line $linenum\n";
+  # try a few substitutions
+            chomp $_;
+            my $string = $_;
+            check_line(); # passes string with $_
+                  
+            if($string eq $_)
+            {   
+              #  print OUTF "$_\n"; #     $string has not changed
+            }
+            else 
+            { 
+                print "line $linenum:  $string: $string \n   has changed to $_\n";
+            #    print OUTF "<!-- $string -->\n";  # debug...  keep a copy of original 
+            }
+                print OUTF "$_\n";
+
+        } # end of a file 
+  
+	close INF;
+    close OUTF;
+
     print "closed output file $idxd\n";
 }
+
+sub check_line()
+{
+    my $temp;
+    my @fields;
+    my $len;
+
+    print "\n\n check_line starting with string: $_\n";
+    s/"experim-dot-h"/"experim\.h"/;
+
+if (/"(.*-see-)/) 
+{
+     print "-see-  found $1 \n";
+     $temp = $1;
+     $temp =~ s/-see-//;
+     print "temp: $temp\n";
+
+     s/"(.*-see-)/"\(see /; 
+     print "$_ \n";
+     s/"(?!\()/\)"/;
+     print "$_ \n";
+     s/\@ref/$temp \@ref/;
+   #  s/-/ /g;
+
+}
+
+# make sure we only get a single dash
+elsif (/"(.*(?<!-)-(?!-))/)  
+  { 
+     print "single dash... found $1 \n";
+     @fields= split /\"/, $_;
+     $len = $#fields;
+     print "fields @fields   len:$len\n";
+     $_ = "\"" . $fields[1]; # replace the quote used for split
+     print "$_\n";
+     s/(?<!-)-(?!-)/ /g; # substitute single dashes only (leave comments)
+     print "$_\n";
+  
+
+     $_ = $fields[0] . $_ . "\"".  $fields[2]; # replace the quote used for split
+
+  }  
+
+    
+#     print "string is now   : $_ \n";  
+     return ($_);
+}   
+
+
+
+
 
 
 sub copy($$)
@@ -1080,8 +1205,6 @@ while (<IN>)
 
 print OUT "</ol>\n\n";
 print OUT "\\anchor end\n";
-print OUT "\\htmlonly <img ALIGN=\"left\" alt=\"previous.gif\" src=\"previous.gif\"> \\endhtmlonly \@ref Top \n";
-print OUT "\\htmlonly <img alt=\"next.gif\" src=\"next.gif\"> \\endhtmlonly\n";
 print OUT "*/\n";
 close $sortfile;
 close $tempfile2;
@@ -1178,22 +1301,23 @@ sub header()
     print OUTD "\n<span class=\"note\">This file produced automatically ...  DO NOT EDIT </span>\n";
     print OUTD "\@section O_what What can be found in this manual?\n\n";
     print OUTD "<span class=\"warn\">\n";
-    print OUTD "WARNING - this page is under construction as the sections\n";
+   #  print OUTD "WARNING - this page is under construction as the sections\n";
     print OUTD "are being changed/added to etc.\n";
     print OUTD "</span>\n\n";
     print OUTD "\\anchor Organization_section_index\n";
     print OUTD "<span  style=\"font-weight: bold; font-size: 125%;\">Section Index</span>\n";
     print OUTD "<ol class=\"i0\">\n";
-    print OUTD "<li> \@ref Top \"Main Page\"\n";
+    print OUTD "<li> \@ref Main_section_index \"Main Page\"\n";
     return;
 }
 
 sub footer()
 {
     print OUTD "</ol>\n\n";
-    print OUTD "\\anchor O_main_index\n";
+    # print OUTD "\\anchor O_main_index\n";
     print OUTD "<span  style=\"font-weight: bold; font-size: 125%;\">Main Index</span>\n";
-    print OUTD "<ol class=\"i0\">\n"; 
+    print OUTD "\@anchor Main_section_index\n";
+    print OUTD "<ol class=\"i0\">\n\n"; 
     print OUTD "   <li>\@ref Top \"Main Page\"\n";
     print OUTD "   <br>\n";
     return;
