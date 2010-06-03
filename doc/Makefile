@@ -21,13 +21,9 @@ version = 2.3.0
 all::	html
 
 html: images/done
-	cd src ; index.pl ; doit.pl ; cd ..
+#       make the Contents and Index pages (Organization.dox, docindex.dox)
+	cd src ; index.pl ; doit.pl ; index.pl 1;  cd ..
 	doxygen
-	cp images/next.gif html/.
-	cp images/previous.gif html/.
-	cp images/*_page.gif html/.
-	cp images/*_sec.gif html/.
-	cp images/top.gif html/.
 	cp src/*.js html/.
 	cp src/*.css html/.
 
