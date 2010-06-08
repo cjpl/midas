@@ -364,7 +364,7 @@ INT al_trigger_class(const char *alarm_class, const char *alarm_message, BOOL fi
    }
 
    /* write system message */
-   if (ac.write_system_message && (now - ac.system_message_last >= ac.system_message_interval)) {
+   if (ac.write_system_message && (now - ac.system_message_last >= (DWORD)ac.system_message_interval)) {
       sprintf(str, "%s: %s", alarm_class, alarm_message);
       cm_msg(MTALK, "al_trigger_class", str);
       ac.system_message_last = now;
