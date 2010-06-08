@@ -11170,7 +11170,10 @@ void show_hist_page(char *path, int path_size, char *buffer, int *buffer_size,
                break;
 
             db_get_key(hDB, hkeyp, &key);
-            rsprintf("<option>%s</option>\n", key.name);
+            if (equal_ustring(path, key.name))
+               rsprintf("<option selected>%s</option>\n", key.name);
+            else
+               rsprintf("<option>%s</option>\n", key.name);
          }
       }
       if (!hkey || i == 0)
@@ -11205,6 +11208,13 @@ void show_hist_page(char *path, int path_size, char *buffer, int *buffer_size,
 
    if (*getparam("panel")) {
       strlcpy(panel, getparam("panel"), sizeof(panel));
+      
+      /* strip leading/trailing spaces */
+      while (*panel == ' ')
+         strlcpy(panel, panel+1, sizeof(panel));
+      while (strlen(panel)> 1 && panel[strlen(panel)-1] == ' ')
+         panel[strlen(panel)-1] = 0;
+
       strlcpy(hgroup, getparam("group"), sizeof(hgroup));
       /* use new group if present */
       if (isparam("new_group") && *getparam("new_group"))
@@ -11675,7 +11685,11 @@ void show_hist_page(char *path, int path_size, char *buffer, int *buffer_size,
       rsprintf("</noscript>\n");
 
       rsprintf("&nbsp;&nbsp;<input type=\"button\" name=\"New\" value=\"New\" ");
-      rsprintf("onClick=\"window.location.href='../?cmd=New'\">\n");
+
+      if (found)
+         rsprintf("onClick=\"window.location.href='../?cmd=New'\">\n");
+      else
+         rsprintf("onClick=\"window.location.href='?cmd=New'\">\n");
 
       rsprintf("</td></tr>\n");
    }
