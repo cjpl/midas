@@ -6,14 +6,12 @@
 \htmlonly
 <script type="text/javascript">
 // pages params : back index next {top bottom}
-pages("I_Midas_system_picture","Q_section_index","Q_Linux" ,"Quickstart","end" );
+pages("I_Midas_system_picture","Quickstart","Q_Linux" ,"Quickstart","end" );
 // sections params:   last section; top of this section; next section
 sections("Intro","Quickstart","Features");
 </script>
 \endhtmlonly
-\latexonly
- - @ref I_Midas_system_picture "previous page" - @ref Intro "previous section" - @ref Top - @ref Organization "Map"  @ref Features "next section" - @ref  Q_Linux  "next page"
-\endlatexonly
+
 <br>
 <!-- End of Navigation -->
 
@@ -53,13 +51,11 @@ Even though Midas is available for multiple platforms, presently only instructio
 <br>
 \htmlonly
 <script type="text/javascript">
-pages("I_Midas_system_picture","Q_section_index","Q_Linux" ,"Quickstart","" ); // back index next {top bottom}
+pages("I_Midas_system_picture","Quickstart","Q_Linux" ,"Quickstart","" ); // back index next {top bottom}
 sections("Intro","Quickstart","Features"); // last section; top of this section; next section
 </script>
 \endhtmlonly
-\latexonly
- - @ref I_Midas_system_picture "previous page" - @ref Intro "previous section" - @ref Top - @ref Organization "Map"  @ref Features "next section" - @ref  Q_Linux  "next page"
-\endlatexonly
+
 
 \anchor end
 <!-- End of page Quickstart  (Section Head) -->
@@ -69,15 +65,12 @@ sections("Intro","Quickstart","Features"); // last section; top of this section;
 <!-- Navigation -->
 <br>
 \htmlonly
-<script type="text/javascript" src="navigation.js"></script>
 <script type="text/javascript">
-pages("Quickstart","Q_section_index","Q_Windows","Q_Linux" ,"end" ); // back index next {top bottom}
+pages("Quickstart","Quickstart","Q_Windows","Q_Linux" ,"end" ); // back index next {top bottom}
 sections("Intro","Quickstart","Features"); // last section; top of this section; next section
 </script>
 \endhtmlonly
-\latexonly
-@ref  Quickstart "previous page" - @ref Top  - @ref Organization "Map"  - @ref  Q_Windows  "next page"
-\endlatexonly
+
 <br>
 <!-- End of Navigation -->
 
@@ -107,6 +100,7 @@ The following <b>Environment Variables</b> needs to be setup, e.g.:
   - Logout and login again, or source .cshrc for the change to take effect.
  \n
 
+\anchor idx_ROOT_installation 
 @subsection  Q_Linux_Root_Installation ROOT Package Installation 
 
 For full Midas operation \b ROOT is needed for the data logging and analysis packages.
@@ -151,6 +145,7 @@ The Midas package requires the \b mxml auxiliary package which can be found at t
   @@endcode
   \n
 
+ \anchor idx_ROME_installation 
 @subsection  Q_Linux_Rome_Installation ROME Package Installation
 
   The PSI ROME analysis package can be found at
@@ -164,7 +159,7 @@ The Midas package requires the \b mxml auxiliary package which can be found at t
   make
   @@endcode
   
-
+\anchor idx_ROODY_installation
 @subsection  Q_Linux_Roody_Installation ROODY Package Installation
 
    <a href="http://ladd00.triumf.ca/~daqweb/doc/roody/html" >
@@ -207,7 +202,7 @@ NOTE: these instructions provide \b local access to the experiment. For \b remot
        - the third parameter is the username e.g. "johnfoo"
   @code
   simptest1 /home/johnfoo/online johnfoo
-  @@endcode
+  @endcode
   \anchor start-all
   - copy start_daq.sh, kill_client.perl and kill_daq.sh from the $MIDASSYS directory to the online directory.
   - copy $MIDASSYS/examples/experiment/* to the online directory.
@@ -286,9 +281,11 @@ NOTE: these instructions provide \b local access to the experiment. For \b remot
   - <b>/etc/exptab :</b> Midas Experiment definition file (see below).
 <br><br>
 
-@subsection Q_Linux_Exptab  Definition of Multiple Experiments (exptab)
+\anchor idx_experiment_multiple
+\anchor idx_exptab
+@subsection Q_Linux_Exptab  Definition of Experiments (exptab)
 
-  The Midas system supports multiple experiments running at the same time on a single computer.
+  The Midas system supports <b> multiple experiments running at the same time on a single computer</b>.
   Even though it may not be efficient, this capability makes sense when the experiments
   are simple detector lab setups which share hardware resources for data collection.
   In order to support this feature, Midas requires a uniquely identified set of
@@ -395,13 +392,11 @@ NOTE: these instructions provide \b local access to the experiment. For \b remot
 <br>
 \htmlonly
 <script type="text/javascript">
-pages("Quickstart","Q_section_index","Q_Windows","Q_Linux" ,"" ); // back index next {top bottom}
+pages("Quickstart","Quickstart","Q_Windows","Q_Linux" ,"" ); // back index next {top bottom}
 sections("Intro","Quickstart","Features"); // last section; top of this section; next section
 </script>
 \endhtmlonly
-\latexonly
-@ref  Quickstart "previous page" - @ref Top  - @ref Organization "Map"  - @ref  Q_Windows  "next page"
-\endlatexonly
+
 <br>
 <!-- End of Navigation -->
 \anchor end
@@ -415,15 +410,12 @@ sections("Intro","Quickstart","Features"); // last section; top of this section;
 <!-- Navigation -->
 <br>
 \htmlonly
-<script type="text/javascript" src="navigation.js"></script>
 <script type="text/javascript">
-pages("Q_Linux","Q_section_index", "Features","Q_Windows" ,"end" ); // back index next {top bottom}
+pages("Q_Linux","Quickstart", "Features","Q_Windows" ,"end" ); // back index next {top bottom}
 sections("Intro","Quickstart","Features"); // last section; top of this section; next section
 </script>
 \endhtmlonly
-\latexonly
-@ref  Q_Linux "previous page" - @ref Top  - @ref Organization "Map"  - @ref  Features  "next page"
-\endlatexonly
+
 <br>
 <!-- End of Navigation -->
 
@@ -529,21 +521,20 @@ Midas packages has been installed.
   - Click Start, confirm run number, click refresh...   Stop run.
 \n
 - Please refer to the rest of this @ref Organization "manual" for further description of the system operation.
- 
+<br>
+\anchor end
+
 <!-- Navigation -->
 <br>
 \htmlonly
 <script type="text/javascript">
-pages("Q_Linux","Q_section_index", "Features","Q_Windows" ,"" ); // back index next {top bottom}
+pages("Q_Linux","Quickstart", "Features","Q_Windows" ,"" ); // back index next {top bottom}
 sections("Intro","Quickstart","Features"); // last section; top of this section; next section
 </script>
 \endhtmlonly
-\latexonly
-@ref  Q_Linux "previous page" - @ref Top  - @ref Organization "Map"  - @ref  Features  "next page"
-\endlatexonly
 <br>
 <!-- End of Navigation -->
-\anchor end
+
 <!-- End page Q_Windows  Quickstart Windows 
      End of Section Quickstart
 -->
