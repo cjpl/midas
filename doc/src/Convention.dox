@@ -1,12 +1,38 @@
 /*! @page Convention Convention
 
-\htmlonly <img ALIGN="left" alt="previous.gif" src="previous.gif"> \endhtmlonly 
-@ref Overview - @ref Top - @ref Quickstart
-\htmlonly <img alt="next.gif" src="next.gif"> \endhtmlonly
+<br>
+\htmlonly
+<script type="text/javascript">
+// pages parameters: back index next {top bottom}
+pages( "Glossary", "Convention","DocIndex", "Convention", "end" );
+sections("Glossary","Convention","DocIndex"); // last section; top of this section; next section
+</script>
+\endhtmlonly
+<br>
+<!--
+<span class="warn">
+WARNING - this page is under construction
+</span>
+-->
+\bStyle<br>
+<span class ="new"> New (@ref NDF) should appear like this</span><br>
+<span class ="odb"> ODB paths should appears like this  </span><br>
+<span class ="js">JavaScript should appear like this  </span><br>
+<span class ="odbtag">ODB tags should appear like this  </span><br>
+<span class ="image">Image titles should  appear like this  </span><br>
+<span class ="warn">Warnings should appear like this  </span><br>
+<span class ="note">Notes should appear like this  </span><br>
+<br>
 
-Nothing yet
+\anchor end
+\htmlonly
+<script type="text/javascript">
+// pages parameters: back index next {top bottom}
+pages( "Glossary", "Convention","DocIndex", "Convention", "end" );
+sections("Glossary","Convention","DocIndex"); // last section; top of this section; next section
+</script>
+\endhtmlonly
 
-\htmlonly <img ALIGN="left" alt="previous.gif" src="previous.gif"> \endhtmlonly 
-@ref Overview - @ref Top - @ref Quickstart
-\htmlonly <img alt="next.gif" src="next.gif"> \endhtmlonly
+
+<br>
 */
