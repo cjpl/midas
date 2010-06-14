@@ -4,21 +4,35 @@
 \htmlonly
 <script type="text/javascript">
 // pages parameters: back index next {top bottom}
-pages( "FE_event_buffer_size","FE_section_index", "FE_Data_Format","Appendices","end" );
+pages( "FE_event_buffer_size","FrontendOperation", "FE_Data_format","Appendices","end" );
 // section parameters: last section; top of this section; next section
-sections("NDF","Appendices","Glossary");
+sections("RunControl","FrontendOperation","DataAnalysis");
 </script>
 \endhtmlonly
-\latexonly
-@ref  FE_event_buffer_size "previous page" - @ref FE_section_index - @ref Top - @ref  Glossary "next page"
-\endlatexonly
+<br>
 <br>
 
-  - \subpage  FE_Data_format  <!-- appendix A -->
-  - \subpage  FE_hardware    <!-- formerly Appendix B -->
-  - \subpage  FE_camac_vme_function_calls <!-- appendix C -->
-  - \subpage  FE_utils  <!- from utilities -->
+<!-- Contains bits and pieces left over from Appendices and Utilities after documentation rearrangement -->
+<br>
+
+  - \subpage  FE_Data_format  <!-- DataFormat.dox (formerly appendix A) -->
+  - \subpage  FE_Hardware    <!--  Hardware.dox    (formerly Appendix B) -->
+  - \subpage  FE_camac_vme_function_calls <!-- this file (formerly appendix C) -->
+  - \subpage  FE_utils  <!--  this file  from utilities -->
 \anchor end
+<!-- Navigation -->
+<!-- short page... don't need it
+
+\htmlonly
+<script type="text/javascript">
+// pages parameters: back index next {top bottom}
+pages( "FE_event_buffer_size","FrontendOperation", "FE_Data_Format","Appendices","" );
+// section parameters: last section; top of this section; next section
+sections("RunControl","FrontendOperation","DataAnalysis");
+</script>
+\endhtmlonly
+-->
+
 */
 
 
@@ -27,14 +41,12 @@ sections("NDF","Appendices","Glossary");
 <br>
 \htmlonly
  <script type="text/javascript">
-pages("FE_Hardware",  "FE_section_index", "FE_utils","FE_camac_vme_function_calls","end" ); // back index next {top bottom}
+pages("FE_Hardware",  "FrontendOperation", "FE_utils","FE_camac_vme_function_calls","end" ); // back index next {top bottom}
 // section parameters: last section; top of this section; next section
-sections("RunControl","FrontendOperation","Utilities");
+sections("RunControl","FrontendOperation","DataAnalysis");
 </script>
 \endhtmlonly
-\latexonly
-@ref FE_Hardware  "previous page" - @ref FE_section_index - @ref Top - @ref   FE_mcnaf_task mcnaf "next page"
-\endlatexonly
+
 <br>
  
 Midas defines its own set of CAMAC and VME calls in order to unify the different 
@@ -101,7 +113,6 @@ to the computer:
 
  * <center> Latched trigger layout.
  *  \image html latch02.gif
- *  \image latex latch02.eps "Latched trigger layout." width=12cm
  * </center> 
 
 To reset this latch, the following bit sequence is applied to the computer output (signals
@@ -109,7 +120,6 @@ are displayed active low):
 
  * <center> Improved Latched trigger layout.
  *  \image html latch01.gif
- *  \image latex latch01.eps "Improved Latched trigger layout." width=12cm
  * </center> 
 
 The active veto signal during the reset pulse avoids the case where the latch can receive a
@@ -120,20 +130,17 @@ ADC/TDC gate signal.
 
  * <center> Veto Timing.
  *  \image html timing01.gif
- *  \image latex timing01.eps "Veto Timing." width=12cm
  * </center> 
 
 <br>
 \htmlonly
 <script type="text/javascript">
-pages("FE_Hardware",  "FE_section_index", "FE_utils","FE_camac_vme_function_calls","" ); // back index next {top bottom}
+pages("FE_Hardware",  "FrontendOperation", "FE_utils","FE_camac_vme_function_calls","" ); // back index next {top bottom}
 // section parameters: last section; top of this section; next section
-sections("RunControl","FrontendOperation","Utilities");
+sections("RunControl","FrontendOperation","DataAnalysis");
 </script>
 \endhtmlonly
-\latexonly
-@ref FE_Hardware  "previous page" - @ref FE_section_index - @ref Top - @ref    FE_utils  "next page"
-\endlatexonly
+
 <br>
 \anchor end
 <!-- End of page  FE_camac_vme_function_calls -->
@@ -141,19 +148,17 @@ sections("RunControl","FrontendOperation","Utilities");
 
 
  
-/*!  \page FE_utils Hardware utilities
+/*!  \page FE_utils Hardware Access utilities
 <!-- Formerly in utilities  -->
 <br>
 \htmlonly 
 <script type="text/javascript">
-pages("FE_camac_vme_function_calls",  "FE_section_index", "DataAnalysis","FE_utils","end" ); // back index next {top bottom}
+pages("FE_camac_vme_function_calls",  "FrontendOperation", "DataAnalysis","FE_utils","end" ); // back index next {top bottom}
 // section parameters: last section; top of this section; next section
-sections("RunControl","FrontendOperation","Utilities");
+sections("RunControl","FrontendOperation","DataAnalysis");
 </script>
 \endhtmlonly
-\latexonly
-@ref   FE_camac_vme_function_calls "previous page" - @ref FE_section_index - @ref Top - @ref  DataAnalysis  "next page"
-\endlatexonly
+
 <br>
 
  - @ref  FE_mcnaf_task 
@@ -273,14 +278,11 @@ accessible under this mode of operation.
 <br>
 \htmlonly 
 <script type="text/javascript">
-pages("FE_camac_vme_function_calls",  "FE_section_index", "DataAnalysis","FE_utils","end" ); // back index next {top bottom}
+pages("FE_camac_vme_function_calls",  "FrontendOperation", "DataAnalysis","FE_utils","end" ); // back index next {top bottom}
 // section parameters: last section; top of this section; next section
-sections("RunControl","FrontendOperation","Utilities");
+sections("RunControl","FrontendOperation","DataAnalysis");
 </script>
 \endhtmlonly
-\latexonly
-@ref   FE_camac_vme_function_calls "previous page" - @ref FE_section_index - @ref Top - @ref  DataAnalysis  "next page"
-\endlatexonly
 <br>
 */
 
