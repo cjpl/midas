@@ -4,17 +4,16 @@
 \htmlonly
 <script type="text/javascript">
 // pages parameters: back index next {top bottom}
-pages( "FE_eqdec","FE_section_index", "Frontend_code","FE_table","end" );
+pages( "FE_eqdec","FrontendOperation", "Frontend_code","FE_table","end" );
 
 // section parameters: last section; top of this section; next section
-sections("RunControl","FrontendOperation","Utilities");
+sections("RunControl","FrontendOperation","DataAnalysis");
 </script>
 \endhtmlonly
-\latexonly
-@ref FE_eqdec "previous page" - @ref FE_section_index - @ref Top - @ref  Frontend_code "next page"
-\endlatexonly
-<br>
 
+<br>
+@anchor idx_Equipment_List_Parameters
+@anchor idx_Equipment_Types
 <table
  style="text-align: left; width: 100%; background-color: rgb(255, 255, 255);"
   border="1" cellpadding="2" cellspacing="2">
@@ -31,7 +30,10 @@ sections("RunControl","FrontendOperation","Utilities");
     <tr>
       <td colspan="2" rowspan="1"
  style="vertical-align: top; background-color: rgb(255, 255, 255);"><span
- style="color: rgb(255, 0, 0);"><span style="color: rgb(0, 0, 0);">@anchor FE_tbl_EqName</span>
+ style="color: rgb(255, 0, 0);"><span style="color: rgb(0, 0, 0);">
+ @anchor FE_tbl_EqName
+ @anchor idx_Equipment_name
+ </span>
       <span style="font-weight: bold;">Equipment
 Name</span></span><br>
       </td>
@@ -66,7 +68,9 @@ Structure</span><br>
       <td
  style="vertical-align: top; background-color: rgb(204, 204, 204);"><span
  style="color: rgb(255, 0, 0);"><span style="color: rgb(0, 0, 0);">
-@anchor FE_tbl_EventID</span></span><span
+@anchor FE_tbl_EventID</span>
+@anchor idx_event_ID
+</span><span
  style="font-weight: bold; color: rgb(255, 0, 0);"><span
  style="color: rgb(0, 0, 0);"> </span>Event
 ID</span><br>
@@ -81,7 +85,9 @@ header of that particular equipment. <br>
     <tr>
       <td style="vertical-align: top; background-color: rgb(204, 204, 204);">
 <span  style="color: rgb(255, 0, 0);"><span style="color: rgb(0, 0, 0);">
-@anchor FE_tbl_TrigMask</span>
+@anchor FE_tbl_TrigMask
+@anchor idx_event_trigger-mask
+</span>
  <span style="font-weight: bold;">Trigger Mask</span></span><br>
       </td>
       <td
@@ -100,7 +106,9 @@ the maximum number of different masks available.
     <tr>
       <td
  style="vertical-align: top; background-color: rgb(204, 204, 204);"><span
- style="color: rgb(255, 0, 0);"><span style="color: rgb(0, 0, 0);">@anchor FE_tbl_Buffer</span>
+ style="color: rgb(255, 0, 0);"><span style="color: rgb(0, 0, 0);">@anchor FE_tbl_Buffer
+@anchor idx_event_buffer-name
+ </span>
       <span style="font-weight: bold;">Buffer</span></span><br>
       </td>
       <td
@@ -119,10 +127,11 @@ particular equipment can be <b>mirrored in the ODB</b> if the @ref  FE_tbl_ReadO
 turned on (see @ref  FE_RO_ODB_example "example").  Note that this feature is
 generally used only for testing or monitoring, as writing large amounts
 of data to the ODB takes time. 
-<li>By using a buffer other than the "SYSTEM" buffer,  @ref F_Logger_Event_Filtering can be 
+<li>By using a buffer other than the "SYSTEM" buffer,  @ref F_Logger_Event_Filtering "event filtering" can be 
 implemented. 
 <li>
-If using an \ref Event_Builder  "Event Builder" ( i.e. a secondary
+@anchor idx_event_builder_equipment-flag
+If using an \ref FE_Event_Builder  "Event Builder" ( i.e. a secondary
 stage
 on the back-end to collect
 and assemble events coming from different buffers in order to
@@ -142,6 +151,7 @@ Type</span><br>
  style="vertical-align: top; background-color: rgb(204, 204, 204);">One
 of the Equipment Flags EQ_XXX selected
 from the following Table: <br>
+@anchor idx_Equipment_flags
       <table
  style="text-align: left; width: 90%; height: 90%; margin-left: 0px; margin-right: auto;"
  border="1" cellpadding="2" cellspacing="2">
@@ -225,14 +235,14 @@ See  @ref FE_interrupt_event "example".
           <tr>
             <td
  style="vertical-align: top; background-color: rgb(51, 204, 255);">
+ 
 @anchor FE_tbl_EqMultithread EQ_MULTITHREAD</td>
             <td
  style="vertical-align: top; background-color: rgb(51, 204, 255);">Multithread
 Event Readout </td>
             <td
  style="vertical-align: top; background-color: rgb(51, 204, 255);">This
-new equipment type is available in Midas versions 2.0 and later. It
-implements the
+equipment type implements the
 multi-threading capability within the frontend code. The polling is
 performed within a separate thread and uses the
 @ref rbfunctionc "Midas Ring Buffer Functions" (rb_xxx) for inter-thread communication.
@@ -257,6 +267,7 @@ to be sent automatically to the /equipment/variables tree in the ODB.</td>
           <tr>
             <td
  style="vertical-align: top; background-color: rgb(51, 204, 255);">
+@anchor idx_event_manual-trigger_equipment-flag  
 @anchor FE_tbl_EqManTrig EQ_MANUAL_TRIG</td>
             <td
  style="vertical-align: top; background-color: rgb(51, 204, 255);">Manual
@@ -271,7 +282,9 @@ a client via RPC. @ref FE_manual_trigger "See example."</td>
           <tr>
             <td
  style="vertical-align: top; background-color: rgb(51, 204, 255);">
+@anchor idx_event_fragmented_equipment-flag 
 @anchor FE_tbl_EqFragmented EQ_FRAGMENTED</td>
+
             <td
  style="vertical-align: top; background-color: rgb(51, 204, 255);">Fragmented
 Event </td>
@@ -297,7 +310,7 @@ event builder </td>
  style="vertical-align: top; background-color: rgb(51, 204, 255);">This
 flag identifies the equipment as a <b>fragment event</b>  and
 should be ORed with the EQ_POLLED in order to be identified by the \ref
-Event_Builder. Not to be confused with a fragmented event (see above)!
+FE_Event_Builder. Not to be confused with a fragmented event (see above)!
  </td>
           </tr>         
       </table>
@@ -324,10 +337,13 @@ If not using an interrupt, this field can be set to 1.
       </td>
     </tr>
     <tr>
+
       <td
  style="vertical-align: top; background-color: rgb(204, 204, 204);"><span
- style="color: rgb(0, 0, 0);">@anchor FE_tbl_Format</span><span
- style="font-weight: bold; color: rgb(255, 0, 0);"> Format</span><br>
+ style="color: rgb(0, 0, 0);">@anchor FE_tbl_Format
+ @anchor idx_event_format
+ </span>
+ <span style="font-weight: bold; color: rgb(255, 0, 0);"> Format</span><br>
       </td>
       <td
  style="vertical-align: top; background-color: rgb(204, 204, 204);">Specifies
@@ -372,7 +388,9 @@ active. </td>
     </tr>
     <tr>
       <td
- style="vertical-align: top; background-color: rgb(204, 204, 204);">@anchor FE_tbl_ReadOn
+ style="vertical-align: top; background-color: rgb(204, 204, 204);">
+ @anchor FE_tbl_ReadOn
+ @anchor idx_event_readout_flags
       <span style="font-weight: bold; color: rgb(255, 0, 0);">Read
 On @ref FE_equipment_odb_common "**" </span><br>
       </td>
@@ -672,15 +690,13 @@ details. <br>
 \htmlonly
 <script type="text/javascript">
 // pages parameters: back index next {top bottom}
-pages( "FE_eqdec","FE_section_index", "Frontend_code","FE_table","" );
+pages( "FE_eqdec","FrontendOperation", "Frontend_code","FE_table","" );
 
 // section parameters: last section; top of this section; next section
-sections("RunControl","FrontendOperation","Utilities");
+sections("RunControl","FrontendOperation","DataAnalysis");
 </script>
 \endhtmlonly
-\latexonly
-@ref FE_eqdec "previous page" - @ref FE_section_index - @ref Top - @ref  Frontend_code "next page"
-\endlatexonly
+
 <br>
 \anchor end
 */

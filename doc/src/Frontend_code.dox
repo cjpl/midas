@@ -4,16 +4,14 @@
 \htmlonly
 <script type="text/javascript">
 // pages parameters: back index next {top bottom}
-pages( "FE_table","FE_section_index", "FE_code_sections","Frontend_code","end" );
+pages( "FE_table","FrontendOperation", "FE_code_sections","Frontend_code","end" );
 // section parameters: last section; top of this section; next section
-sections("RunControl","FrontendOperation","Utilities");
+sections("RunControl","FrontendOperation","DataAnalysis");
 </script>
 \endhtmlonly
-\latexonly
-@ref FE_table "previous page" - @ref FE_section_index - @ref Top - @ref  FE_code_sections "next page"
-\endlatexonly
-<br>
 
+<br>
+\anchor idx_Frontend_code
 @section FE_intro Introduction
 The features of a typical frontend program are best explained by reference to examples of the user code 
 provided in the Midas Package. 
@@ -65,6 +63,7 @@ cellspacing="2">
  Other examples of frontend code can be found in the Midas distribution under the 
 \b ../examples directory.
 
+\anchor idx_CAMAC_LAM-macro
 <!-- FE_LAM_macros came from appendix E -->
 @subsection FE_LAM_macros  CAMAC DAQ Event LAM Macros
 Midas provides <b> Macros for CAMAC LAM manipulation </b> which may be used in the 
@@ -90,25 +89,22 @@ frontend or analyzer code.
  - \subpage  FE_sequence
  - \subpage  FE_eq_event_routines
  - \subpage  FE_event_notification
- - \subpage  FE_camac_vme_function_calls
+ - \subpage  FE_Deferred_Transition
  - \subpage  FE_bank_construction
  - \subpage  FE_Super_Event
  - \subpage  FE_Event_Builder   <!-- eventbuilder.dox -->
  - \subpage  FE_Slow_Control_system
- - \subpage  FE_Deferred_Transition
+ - \subpage  FE_Appendices    <!-- Appendices.dox (FE appendices) -->
 
 
 <br>
 \htmlonly
 <script type="text/javascript">
-pages( "FE_table","FE_section_index", "FE_code_sections","Frontend_code","" ); // back index next {top bottom}
+pages( "FE_table","FrontendOperation", "FE_code_sections","Frontend_code","" ); // back index next {top bottom}
 // section parameters: last section; top of this section; next section
-sections("RunControl","FrontendOperation","Utilities");
+sections("RunControl","FrontendOperation","DataAnalysis");
 </script>
 \endhtmlonly
-\latexonly
-@ref FE_table "previous page" - @ref FE_section_index - @ref Top - @ref  FE_code_sections "next page"
-\endlatexonly
 <br>
 \anchor end
 <!-- End of page Frontend_code  -->
@@ -121,13 +117,10 @@ sections("RunControl","FrontendOperation","Utilities");
 \htmlonly
  
 <script type="text/javascript">
-pages( "Frontend_code","FE_section_index", "FE_sequence", "FE_code_sections","end" ); // back index next {top bottom}
-sections("RunControl","FrontendOperation","Utilities"); // last section; top of this section; next section
+pages( "Frontend_code","FrontendOperation", "FE_sequence", "FE_code_sections","end" ); // back index next {top bottom}
+sections("RunControl","FrontendOperation","DataAnalysis"); // last section; top of this section; next section
 </script>
 \endhtmlonly
-\latexonly
-@ref "Frontend_code "previous page" - @ref FE_section_index - @ref Top - @ref  FE_sequence "next page"
-\endlatexonly
 <br>
 
 @section FE_includes  Include files
@@ -323,14 +316,11 @@ which is a routine provided in cnaf_callback.c
 <br>
 \htmlonly
 <script type="text/javascript">
-pages( "Frontend_code","FE_section_index", "FE_sequence", "FE_code_sections","" ); // back index next {top bottom}
+pages( "Frontend_code","FrontendOperation", "FE_sequence", "FE_code_sections","" ); // back index next {top bottom}
 // section parameters: last section; top of this section; next section
-sections("RunControl","FrontendOperation","Utilities");
+sections("RunControl","FrontendOperation","DataAnalysis");
 </script>
 \endhtmlonly
-\latexonly
-@ref "Frontend_code "previous page" - @ref FE_section_index - @ref Top - @ref  FE_sequence "next page"
-\endlatexonly
 <br>
 
 \anchor end
@@ -346,16 +336,13 @@ sections("RunControl","FrontendOperation","Utilities");
 \htmlonly
  
 <script type="text/javascript">
-pages( "FE_code_sections", "FE_section_index", "FE_eq_event_routines", "FE_sequence","end" ); // back index next {top bottom}
-sections("RunControl","FrontendOperation","Utilities"); // last section; top of this section; next section
+pages( "FE_code_sections", "FrontendOperation", "FE_eq_event_routines", "FE_sequence","end" ); // back index next {top bottom}
+sections("RunControl","FrontendOperation","DataAnalysis"); // last section; top of this section; next section
 </script>
 \endhtmlonly
-\latexonly
-@ref  FE_code_sections  "previous page" - @ref FE_section_index - @ref Top - @ref FE_eq_event_routines  "next page"
-\endlatexonly
 <br>
 
-
+\idx_Frontend_sequence-of-operations
 The following table shows the sequence of operations of the frontend. These system routines are located in the frontend.c code but are called by mfe.c at the appropriate time. These routines must be present in the frontend.c code, but the contents are coded by the user. 
 
 
@@ -737,14 +724,11 @@ used for local statistic collection etc.
 <br>
 \htmlonly
 <script type="text/javascript">
-pages( "FE_code_sections", "FE_section_index", "FE_eq_event_routines", "FE_sequence","" ); // back index next {top bottom}
+pages( "FE_code_sections", "FrontendOperation", "FE_eq_event_routines", "FE_sequence","" ); // back index next {top bottom}
 // section parameters: last section; top of this section; next section
-sections("RunControl","FrontendOperation","Utilities");
+sections("RunControl","FrontendOperation","DataAnalysis");
 </script>
 \endhtmlonly
-\latexonly
-@ref  FE_code_sections  "previous page" - @ref FE_section_index - @ref Top - @ref FE_eq_event_routines  "next page"
-\endlatexonly
 <br>
 
 \anchor end
@@ -753,22 +737,21 @@ sections("RunControl","FrontendOperation","Utilities");
 
 <!-- ======================== PAGE   Frontend Routines  ============= -->
 
+\idx_event_readout_routines
 /*!  \page  FE_eq_event_routines Frontend Routines associated with Equipments
 
 <br>
 \htmlonly
  
 <script type="text/javascript">
-pages( "FE_sequence", "FE_section_index",  "FE_event_notification","FE_eq_event_routines","end" ); // back index next {top bottom}
+pages( "FE_sequence", "FrontendOperation",  "FE_event_notification","FE_eq_event_routines","end" ); // back index next {top bottom}
 // section parameters: last section; top of this section; next section
-sections("RunControl","FrontendOperation","Utilities");
+sections("RunControl","FrontendOperation","DataAnalysis");
 </script>
 \endhtmlonly
-\latexonly
-@ref  FE_sequence  "previous page" - @ref FE_section_index - @ref Top - @ref  FE_event_notification "next page"
-\endlatexonly
 <br>
 <br>
+\idx_event_polled
 @section FE_poll_event Polled event 
 
 If the @ref FE_tbl_EqType "Equipment Type" is @ref FE_tbl_EqPolled "EQ_POLLED", 
@@ -872,6 +855,7 @@ provided by the user (see below).
 <br>
  
 <br>
+\idx_event_interrupt
 @section FE_interrupt_event Interrupt event
 
 If the Equipment type is  @ref FE_tbl_EqType "EQ_INTERRUPT", an 
@@ -966,6 +950,7 @@ In the case of POLLED or INTERRUPT events, the event readout routine is called a
 <br>
  
 <br>
+
 @section FE_readout_routine Event Readout routines
 
 An event readout routine (called when an event occurs) is usually of the form
@@ -1196,11 +1181,16 @@ INT read_scaler_event(char *pevent, INT off)
 <hr>
 <br>
 
+\idx event_fragmented
 @subsection FE_fragmented_event Fragmented Event
 
 A \b fragmented event enables very large events (e.g.  beyond the Midas configuration 
 limit) to be handled 
-by the system. The event is sent out by the frontend in smaller fragments, and reassembled by the Midas
+by the system.  This is not to be confused with the use of the Event Builder, where "event fragments" are combined by
+an  @ref FE_mevb_task "event-builder".
+
+
+ The event is sent out by the frontend in smaller fragments, and reassembled by the Midas
 system into one event. This option is useful in experiments where the event rate is not an issue, but 
 the size of the data needs to be extremely large. The Equipment flag  FE_tbl_EqFragmented "EQ_FRAGMENTED"
 indicates that 
@@ -1216,6 +1206,7 @@ may be very large. The memory of the PPC is limited, and most of the free memory
 the HM, so the event buffer size is set to be relatively small. 
 Therefore the histograms can only be sent out in fragments.
 
+@anchor idx_event_manual-trigger  
 @subsection FE_manual_trigger Manual Trigger
 Another feature illustrated in this example is the <b> Manual Trigger</b>, indicated by the 
 Equipment flag  @ref FE_tbl_EqManTrig "EQ_MANUAL_TRIG".  This flag causes an 
@@ -1227,7 +1218,7 @@ generated for the Histo and Camp Equipments which were both set up with the EQ_M
   
 
  \image html mantrig.png 
- \image latex mantrig.eps "Manual Trigger button" width=10cm
+
 
 
 It is also possible for a <b> client to trigger a manual trigger event</b>. The MUSR custom 
@@ -1283,7 +1274,7 @@ transitions <b>STOP, PAUSE</b> and \b RESUME,
 <br>
 <b>RO_RUNNING | RO_EOR | RO_PAUSE | RO_RESUME</b>. 
 
-
+\idx_event_fragmented_size
 @subsection FE_frag_max_event_size Event size adjustments for fragmented event
 
 The buffer sizes in the frontend must be adjusted to suit the available memory for
@@ -1361,7 +1352,7 @@ INT histo_read (char *pevent, INT off)
 @endcode
 
 
-
+\idx_event_manual-trigger_client
 @subsection FE_backend_Manual_Trigger A Client that Manually Triggers the Equipment
 
 If the frontend equipment declares a <b>Manual Trigger</b>, in addition to the event being triggered
@@ -1456,14 +1447,11 @@ BOOL trigger_histo_event(void)
 <br>
 \htmlonly
 <script type="text/javascript">
-pages( "FE_sequence", "FE_section_index",  "FE_event_notification","FE_eq_event_routines","" ); // back index next {top bottom}
+pages( "FE_sequence", "FrontendOperation",  "FE_event_notification","FE_eq_event_routines","" ); // back index next {top bottom}
 // section parameters: last section; top of this section; next section
-sections("RunControl","FrontendOperation","Utilities");
+sections("RunControl","FrontendOperation","DataAnalysis");
 </script>
 \endhtmlonly
-\latexonly
-@ref  FE_sequence  "previous page" - @ref FE_section_index - @ref Top - @ref  FE_event_notification "next page"
-\endlatexonly
 <br>
 \anchor end
 <!-- End of page   FE_eq_event_routines  -->
@@ -1476,14 +1464,12 @@ sections("RunControl","FrontendOperation","Utilities");
 \htmlonly
  
 <script type="text/javascript">
-pages( "FE_eq_event_routines", "FE_section_index","FE_Deferred_Transition","FE_event_notification","end" ); // back index next {top bottom}
+pages( "FE_eq_event_routines", "FrontendOperation","FE_Deferred_Transition","FE_event_notification","end" ); // back index next {top bottom}
 // section parameters: last section; top of this section; next section
-sections("RunControl","FrontendOperation","Utilities");
+sections("RunControl","FrontendOperation","DataAnalysis");
 </script>
 \endhtmlonly
-\latexonly
-@ref FE_eq_event_routines   "previous page" - @ref FE_section_index - @ref Top - @ref  FE_Deferred_Transition  "next page"
-\endlatexonly
+
 <br>
 
 We have already seen how some values in the Equipment/Settings area are  @ref FE_equipment_odb_hot_links
@@ -1496,34 +1482,32 @@ the ODB.  These are described (with an example) in @ref RC_Hot_Link .
 <br>
 \htmlonly
 <script type="text/javascript">
-pages( "FE_eq_event_routines", "FE_section_index","FE_Deferred_Transition","FE_event_notification","" ); // back index next {top bottom}
+pages( "FE_eq_event_routines", "FrontendOperation","FE_Deferred_Transition","FE_event_notification","" ); // back index next {top bottom}
 // section parameters: last section; top of this section; next section
-sections("RunControl","FrontendOperation","Utilities");
+sections("RunControl","FrontendOperation","DataAnalysis");
 </script>
 \endhtmlonly
-\latexonly
-@ref FE_eq_event_routines   "previous page" - @ref FE_section_index - @ref Top - @ref  FE_Deferred_Transition "next page"
-\endlatexonly
+
 <br>
 \anchor end
 <!-- End of page FE_event_notification  -->
 */
+
+
 
 /*!  \page FE_Deferred_Transition Deferred Transition
 
 <br>
 \htmlonly
 <script type="text/javascript">
-pages("FE_event_notification","FE_section_index","FE_bank_construction","FE_Deferred_Transition", "end" ); // back index next {top bottom}
+pages("FE_event_notification","FrontendOperation","FE_bank_construction","FE_Deferred_Transition", "end" ); // back index next {top bottom}
 // section parameters: last section; top of this section; next section
-sections("RunControl","FrontendOperation","Utilities");
+sections("RunControl","FrontendOperation","DataAnalysis");
 </script>
 \endhtmlonly
-\latexonly
-@ref FE_event_notification "previous page" - @ref FE_section_index - @ref Top - @ref  FE_bank_construction "next page"
-\endlatexonly
-<br>
 
+<br>
+\anchor idx_transition_deferred
 
 This option permits the user to <b>postpone any transition issued by any requester
 until some condition is satisfied.</b>
@@ -1640,14 +1624,12 @@ C:\online>odbedit
 <br>
 \htmlonly
 <script type="text/javascript">
-pages("FE_Slow_Control_system","FE_section_index",  "FE_bank_construction","FE_Deferred_Transition", "" ); // back index next {top bottom}
+pages("FE_Slow_Control_system","FrontendOperation",  "FE_bank_construction","FE_Deferred_Transition", "" ); // back index next {top bottom}
 // section parameters: last section; top of this section; next section
-sections("RunControl","FrontendOperation","Utilities");
+sections("RunControl","FrontendOperation","DataAnalysis");
 </script>
 \endhtmlonly
-\latexonly
-@ref FE_Slow_Control_system "previous page" - @ref FE_section_index - @ref Top - @ref  FE_bank_construction "next page"
-\endlatexonly
+
 <br>
 
 \anchor end
@@ -1655,20 +1637,19 @@ sections("RunControl","FrontendOperation","Utilities");
 */
 
 
+\anchor idx_event_readout_bank_construction
 /*!  \page FE_bank_construction Bank construction in an Event readout routine
 
 <br>
 \htmlonly
  
 <script type="text/javascript">
-pages("FE_Deferred_Transition",  "FE_section_index","FE_Super_Event", "FE_bank_construction","end" ); // back index next {top bottom}
+pages("FE_Deferred_Transition",  "FrontendOperation","FE_Super_Event", "FE_bank_construction","end" ); // back index next {top bottom}
 // section parameters: last section; top of this section; next section
-sections("RunControl","FrontendOperation","Utilities");
+sections("RunControl","FrontendOperation","DataAnalysis");
 </script>
 \endhtmlonly
-\latexonly
-@ref  FE_Deferred_Transition "previous page" - @ref FE_section_index - @ref Top - @ref  FE_Super_Event "next page"
-\endlatexonly
+
 <br>
 
 
@@ -1695,6 +1676,8 @@ event type selected:
 <br>
 <hr>
 <br>
+
+\anchor idx_event_readout_format_fixed
 
 @section FE_FIXED_event_readout  FIXED format Event readout
 
@@ -1940,6 +1923,8 @@ More <b>examples of FIXED events</b> can be found in the <b>slow controls device
 <br>
 <hr>
 <br>
+\anchor idx_event_readout_format_midas
+\anchor idx_Midas_event-construction
 @section FE_MIDAS_event_construction MIDAS event construction
 
 The  @ref FE_Midas_format "MIDAS event format" is a variable length event format. It uses "banks" as
@@ -1963,7 +1948,7 @@ In this CADC bank the raw ADC values could be offset or gain-corrected.
 <hr>
 
 @subsection FE_Midas_Data_Types Midas Data Types
-Midas defines its own @ref data types for OS compatibility. It is suggested that you use them
+Midas defines its own <b> data types </b> for OS compatibility. It is suggested that you use them
 in order to ensure correct compilation when moving code from one OS to another.
 
 
@@ -1992,7 +1977,7 @@ for complete listing):
 - TID_DOUBLE    eight bytes float format                
 
 <hr>
-
+\anchor idx_Midas_bank
 @subsection FE_creation_Midas_banks Creation of MIDAS banks
 
 MIDAS banks are created in the frontend readout code with calls to the MIDAS library.
@@ -2169,6 +2154,8 @@ INT read_ge_event(char *pevent, INT offset)
 
 <hr>
 <br>
+\anchor idx_event_readout_format_YBOS
+\anchor idx_YBOS_event-construction
 @section FE_YBOS_event_construction YBOS event construction
 
 The  @ref FE_YBOS_format "YBOS event format" is also a bank format that has been used in other DAQ systems.
@@ -2327,23 +2314,21 @@ INT read_cum_scaler_event(char *pevent, INT off)
 @endcode
 
 
-If the data logging is done through YBOS format (see @ref ODB_Logger_Tree Format)
+If the data logging is done through  the @ref F_mlogger_task "Midas logger" using the YBOS @ref F_Logger_CS_Format "format",
 the events on the storage media will have been stripped of the MIDAS header used for
 transfering the event from the frontend to the backend. This means the logger data
 format is a "TRUE" YBOS format. Use of the standard YBOS library is then possible
 when analyzing the logged data. Examples of extraction of data from YBOS banks are shown 
-in the @ref DataAnalyzer section.
+in the @ref DA_Data_analyzers section.
 
 \htmlonly
 <script type="text/javascript">
-pages("FE_Deferred_Transition",  "FE_section_index","FE_Super_Event", "FE_bank_construction","" ); // back index next {top bottom}
+pages("FE_Deferred_Transition",  "FrontendOperation","FE_Super_Event", "FE_bank_construction","" ); // back index next {top bottom}
 // section parameters: last section; top of this section; next section
-sections("RunControl","FrontendOperation","Utilities");
+sections("RunControl","FrontendOperation","DataAnalysis");
 </script>
 \endhtmlonly
-\latexonly
-@ref  FE_Deferred_Transition "previous page" - @ref FE_section_index - @ref Top - @ref  FE_Super_Event "next page"
-\endlatexonly
+
 <br>
 \anchor end
 <!-- End of page  FE_bank_construction  -->
@@ -2357,16 +2342,15 @@ sections("RunControl","FrontendOperation","Utilities");
 \htmlonly
  
 <script type="text/javascript">
-pages( "FE_bank_construction",  "FE_section_index","FE_Event_Builder","FE_Super_Event", "end" ); // back index next {top bottom}
+pages( "FE_bank_construction",  "FrontendOperation","FE_Event_Builder","FE_Super_Event", "end" ); // back index next {top bottom}
 // section parameters: last section; top of this section; next section
-sections("RunControl","FrontendOperation","Utilities");
+sections("RunControl","FrontendOperation","DataAnalysis");
 </script>
 \endhtmlonly
-\latexonly
-@ref FE_bank_construction "previous page" - @ref FE_section_index - @ref Top - @ref FE_Event_Builder "next page"
-\endlatexonly
-<br>
 
+<br>
+\anchor idx_event_readout_super-event
+\anchor idx_super-event
 
 The Super-Event is an option implemented in the frontend code in order to reduce the
 amount of data to be transfered to the backend computer(s) by removing the bank header for each event
@@ -2498,14 +2482,12 @@ each sub-event.The contents of the sub-event is the choice of the user.
 <br>
 \htmlonly
 <script type="text/javascript">
-pages( "FE_bank_construction",  "FE_section_index","FE_Event_Builder","FE_Super_Event", "" ); // back index next {top bottom}
+pages( "FE_bank_construction",  "FrontendOperation","FE_Event_Builder","FE_Super_Event", "" ); // back index next {top bottom}
 // section parameters: last section; top of this section; next section
-sections("RunControl","FrontendOperation","Utilities");
+sections("RunControl","FrontendOperation","DataAnalysis");
 </script>
 \endhtmlonly
-\latexonly
-@ref FE_bank_construction "previous page" - @ref FE_section_index - @ref Top - @ref FE_Event_Builder "next page"
-\endlatexonly
+
 <br>
 \anchor end
 <!-- End of page  FE_Super_Event  -->
@@ -2515,21 +2497,19 @@ sections("RunControl","FrontendOperation","Utilities");
 <!-- eventbuilder.dox  Event_Builder  page comes next --->
 
 
-
+\idx_slow-control_system
 /*!  \page FE_Slow_Control_system Slow Control System
 
 <br>
 \htmlonly
  
 <script type="text/javascript">
-pages("FE_Event_Builder", "FE_section_index","FE_event_buffer_size","FE_Slow_Control_system", "end" ); // back index next {top bottom}
+pages("FE_Event_Builder", "FrontendOperation","FE_event_buffer_size","FE_Slow_Control_system", "end" ); // back index next {top bottom}
 // section parameters: last section; top of this section; next section
-sections("RunControl","FrontendOperation","Utilities");
+sections("RunControl","FrontendOperation","DataAnalysis");
 </script>
 \endhtmlonly
-\latexonly
-@ref FE_Event_Builder "previous page" - @ref FE_section_index - @ref Top - @ref FE_event_buffer_size "next page"
-\endlatexonly
+
 <br>
 
 
@@ -2581,8 +2561,7 @@ RS232 or GPIB to control the actual device.
  
  * <center> Class driver, Device and Bus driver in the slow control system
  *  \image html classes2.jpg
- *  \image latex classes2.eps "Class driver, Device and Bus driver in the slow control system" width=12cm
- * </center> 
+* </center> 
 
 The separation into class and device drivers has the advantage that it is
 very easy to add new devices, because only the simple device driver needs
@@ -2601,9 +2580,12 @@ Several equipment with different class drivers can be defined in a
 single frontend.
 
 Slow Control variables can be later accessed through the web using the 
-midas page (@ref RC_mhttpd_task, @ref Equipment_page). This can be done setting the
-variable names under the directory Settings of the corresponding equipment. The variable description is given under @ref History_System. The @ref History_page will also be automatically activated if the application 
-@ref F_mlogger_task is running.
+mhttpd  @ref RC_mhttpd_Equipment_page and
+<span class="new"> the new  @ref RC_mhttpd_MSCB_page "MSCB Page" (since @ref ndf_dec_2009) </span>).
+
+This can be done setting the
+variable names under the <span class="odb">Settings</span> subdirectory of the corresponding Equipment in the ODB. The variable description is given under @ref F_History_System.
+The @ref RC_mhttpd_History_page will also be automatically activated if the @ref F_mlogger_task "mlogger task" is running.
 
 @code
 Key name                        Type    #Val  Size  Last Opn Mode Value
@@ -2703,14 +2685,12 @@ INT cd_hv_read(char *pevent, int offset)
 <br>
 \htmlonly
 <script type="text/javascript">
-pages("FE_Event_Builder", "FE_section_index","FE_event_buffer_size","FE_Slow_Control_system", "" ); // back index next {top bottom}
+pages("FE_Event_Builder", "FrontendOperation","FE_event_buffer_size","FE_Slow_Control_system", "" ); // back index next {top bottom}
 // section parameters: last section; top of this section; next section
-sections("RunControl","FrontendOperation","Utilities");
+sections("RunControl","FrontendOperation","DataAnalysis");
 </script>
 \endhtmlonly
-\latexonly
-@ref FE_Event_Builder "previous page" - @ref FE_section_index - @ref Top - @ref FE_event_buffer_size "next page"
-\endlatexonly
+
 <br>
 
 \anchor end
@@ -2725,23 +2705,17 @@ sections("RunControl","FrontendOperation","Utilities");
 <br>
 \htmlonly
 <script type="text/javascript">
-pages("FE_Slow_Control_system","FE_section_index","FE_Appendices","FE_event_buffer_size", "end" ); // back index next {top bottom}
+pages("FE_Slow_Control_system","FrontendOperation","FE_Appendices","FE_event_buffer_size", "end" ); // back index next {top bottom}
 // section parameters: last section; top of this section; next section
-sections("RunControl","FrontendOperation","Utilities");
+sections("RunControl","FrontendOperation","DataAnalysis");
 </script>
 \endhtmlonly
-\latexonly
-@ref FE_Slow_Control_system "previous page" - @ref FE_section_index - @ref Top - @ref FE_Appendices "next page"
-\endlatexonly
 
-
-<hr>
 <br>
-
-
-By default the event buffer is named <i>SYSTEM</i>.
-  Its default size is 2MB. This new parameter is provided to optimize the memory usage
-  at the frontend level in case large data transfer is needed.
+\anchor idx_buffer_size_increase
+\anchor customize_buffer_sizes
+By default the event buffer (used to contain the data from the event) is named <i>SYSTEM</i>.
+  Its default size is 2MB. The memory usage can be optimized at the frontend level in case large data transfer is needed.
   This method works for all MIDAS buffers, except for the ODB buffer, where the size has to be
   specified at creation time (see  @ref RC_odbedit_create_ODB).
 <br>
@@ -2773,19 +2747,19 @@ $odbedit
 
  -# @ref RC_odbedit_load "Reload the ODB contents" if necessary.
 
-\anchor end
+
+<br>
 
 <br>
 \htmlonly
 <script type="text/javascript">
-pages("FE_Slow_Control_system","FE_section_index","FE_Appendices","FE_event_buffer_size", "" ); // back index next {top bottom}
+pages("FE_Slow_Control_system","FrontendOperation","FE_Appendices","FE_event_buffer_size", "" ); // back index next {top bottom}
 // section parameters: last section; top of this section; next section
-sections("RunControl","FrontendOperation","Utilities");
+sections("RunControl","FrontendOperation","DataAnalysis");
 </script>
 \endhtmlonly
-\latexonly
-@ref FE_Slow_Control_system "previous page" - @ref FE_section_index - @ref Top - @ref FE_Appendices "next page"
-\endlatexonly
+
+\anchor end
 <!-- end of page  FE_event_buffer_size
 
    Next ...  FE_Appendices   -->

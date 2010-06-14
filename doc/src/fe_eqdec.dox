@@ -4,17 +4,15 @@
 \htmlonly
 <script type="text/javascript">
 // pages parameters: back index next {top bottom}
-pages( "FE_ODB_equipment_tree","FE_section_index", "FE_table","FE_eqdec","end" );
+pages( "FE_ODB_equipment_tree","FrontendOperation", "FE_table","FE_eqdec","end" );
 
 // section parameters: last section; top of this section; next section
-sections("RunControl","FrontendOperation","Utilities");
+sections("RunControl","FrontendOperation","DataAnalysis");
 </script>
 \endhtmlonly
-\latexonly
-@ref  FE_ODB_equipment_tree "previous page"  - @ref FE_section_index - @ref Top - @ref  FE_table "next page" 
-\endlatexonly
-<br>
 
+<br>
+\anchor idx_Equipment_declaration
 @section FE_Example_equipment_structure Example of equipment declaration
 <div style="text-align: center;">
 <span style="color: rgb(255, 0, 0); font-weight: bold;">Click on
@@ -187,6 +185,7 @@ Frontend file name = STRING : [256] frontend.c
     </tr>
 </table>
 
+\anchor idx_Equipment_declaration_ROOT
 @section FE_ROOT_Structure_Def ROOT structure definition for frontend EQUIPMENT list
 
 
@@ -213,6 +212,7 @@ FE_tbl_BankDef "Bank Definition" in the equipment list
 as in the example @ref FE_Example_equipment_structure "above".<br>
 <br>
 
+\anchor idx_Equipment_settings
 @section FE_equipment_odb_common Equipment Settings in ODB
 
 
@@ -220,6 +220,7 @@ Every time the frontend is initialized, it <b>copies the equipment
 settings to the ODB</b> under <span style="font-style: italic;">/Equipment/&lt;equipment
 name&gt;/Common</span> (see @ref FE_scaler_common "example").<br>
 <br>
+\anchor idx_hot-links_Equipment-settings
 @subsection FE_equipment_odb_hot_links Hot-linked equipment settings
 
 Hot-links to the   <span style="font-style: italic;">/Equipment/&lt;equipment
@@ -270,12 +271,10 @@ Modification from the ODB is immediately reflected into the frontend, which will
 \htmlonly
 <script type="text/javascript">
 // pages parameters: back index next {top bottom}
-pages( "FE_ODB_equipment_tree","FE_section_index", "FE_table","FE_eqdec","end" );
+pages( "FE_ODB_equipment_tree","FrontendOperation", "FE_table","FE_eqdec","end" );
 // section parameters: last section; top of this section; next section
-sections("RunControl","FrontendOperation","Utilities");
+sections("RunControl","FrontendOperation","DataAnalysis");
 </script>
 \endhtmlonly
-\latexonly
-@ref  FE_ODB_equipment_tree "previous page"  - @ref FE_section_index - @ref Top - @ref  FE_table "next page" 
-\endlatexonly
+
 */

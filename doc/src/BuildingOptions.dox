@@ -18,11 +18,13 @@ as well as the different @ref BO_Environment_variables options for its operation
 
 <hr> @section BO_building_option Building Options
 
-- By default Midas is build with a minimum of pre-compiler flags. But the @ref Makefile 
+- By default, Midas is built with a minimum of pre-compiler flags. But the @ref Makefile 
 contains options for the user to apply customization by enabling internal options 
 already available in the package.
- - @ref BO_YBOS_VERSION_3_3 , EVID_TWIST , @ref BO_INCLUDE_FTPLIB , @ref BO_INCLUDE_ZLIB , 
+ - @ref BO_YBOS_VERSION_3_3, @ref BO_INCLUDE_FTPLIB , @ref BO_INCLUDE_ZLIB , 
   @ref BO_SPECIFIC_OS_PRG
+
+  <!-- EVID_TWIST no information obsolete ?? -->
 
 - Other flags are avaiable at the application level:
  - @ref BO_HAVE_CAMAC , @ref BO_HAVE_ROOT , @ref BO_HAVE_HBOOK , @ref BO_HAVE_MYSQL , 
@@ -50,12 +52,12 @@ can be done using the @ref BO_USERFLAGS option such as:
 > rm linux/bin/mstat; make USERFLAGS=-static linux/bin/mstat
 @endcode
 
-- The current OS support is done through fix flag established in the general
+- The current OS support is done through a fixed flag established in the general
    @ref Makefile . Currently the OS supported are:
  - \b OS_OSF1 , \b OS_ULTRIX , \b OS_FREEBSD ,  \b OS_LINUX , \b OS_SOLARIS.
 
 - For \b OS_IRIX please contact Pierre. The \b OS_VMS is not included in the Makefile
-as it requires a particular makefile and since several years now the VMS support
+as it requires a particular makefile and for several years now the VMS support
 has been dropped. 
 @code
 OSFLAGS = -DOS_LINUX ...
@@ -85,33 +87,32 @@ MIDAS_PREF_FLAGS  = -DYBOS_VERSION_3_3 -DEVID_TWIST
 
 <hr> @section BO_HAVE_CAMAC HAVE_CAMAC
 This flag enable the CAMAC RPC service within the frontend code. The application
-@ref FE_mcnaf_task and the web @ref RC_mhttpd_CNAF_page are by default not CAMAC enabled
-(HAVE_CAMAC undefined).
-
+@ref FE_mcnaf_task "mcnaf" and the web @ref RC_mhttpd_CNAF_page are by default not CAMAC enabled
+(\b HAVE_CAMAC undefined).
 
 
 <hr> @section BO_HAVE_ROOT HAVE_ROOT
-This flag is used for the midas @ref DA_analyzer_task in the case \b ROOT environment
+This flag is used for the midas @ref DA_analyzer_task "analyzer" in the case \b ROOT environment
 is required. An example of the makefile resides in \b examples/experiment/Makefile.
 This flag is enabled by the presence of a valid \b ROOTSYS environment variable.
-In the case \b ROOTSYS is not found the analyzer is build without \b ROOT support.
-In this later case, the application @ref RC_rmidas_task will be missing. refer to @ref analyzer_struct
+In the case that \b ROOTSYS is not found, the analyzer is build without \b ROOT support.
+In this latter case, the application @ref RC_rmidas_task "rmidas" will be missing. refer to the
+@ref DA_Midas_Analyzer "analyzer structure"
 for further details.
 
-\todo no such reference as analyzer_struct
 
 <hr> @section BO_HAVE_HBOOK HAVE_HBOOK
 This flag is used for \b examples/hbookexpt/Makefile for building the midas @ref DA_analyzer_task
 against \b HBOOK and \b PAW. The path to the cernlib is requested and expected to be found under
-/cern/pro/lib (see makefile). This can always be overwritten during the makefile using the
+/cern/pro/lib (see makefile). This can always be overwritten during the make using the
 following command:
 @code
 make CERNLIB_PACK=<your path>/libpacklib.a
 @endcode
 
 <hr> @section BO_HAVE_MYSQL HAVE_MYSQL
-This flag is used for the @ref F_mlogger_task to building the application with \em mySQL support.
-The build requires to have access to the mysql include files as well as the mysql library.
+This flag is used in @ref F_mlogger_task "mlogger" to build the application with \em mySQL support.
+The build requires access to the mysql include files as well as the mysql library.
 
 <hr> @section BO_MIDAS_MAX_EVENT_SIZE MIDAS_MAX_EVENT_SIZE
  By default the Midas package is build with the maximum event size set to 4MB (MAX_EVENT_SIZE/midas.h).
@@ -127,23 +128,23 @@ cc -c -g -O3 -Wall -Wuninitialized -Iinclude -Idrivers -I../mxml -Llinux/lib -DI
 -Wno-unused-function -o linux/lib/midas.o src/midas.c
 ...
 @endcode
- But at the frontend level, the user can define his own local maximum
+ But at the frontend level, the user can define his/her own local maximum
  event size through the \b max_event_size (see frontend examples).
 
 <hr> @section BO_SPECIFIC_OS_PRG SPECIFIC_OS_PRG
 This flag is for internal Makefile preference. Used in particular for additional
 applications build based on the OS selection. In the example
-below @ref F_mspeaker_task and @ref U_dio_task are built only under OS_LINUX.
+below @ref F_mspeaker_task "mspeaker" and @ref FE_dio_task "dio" tasks are built only under OS_LINUX.
 @code
-SPECIFIC_OS_PRG = $(BIN_DIR)/mlxspeaker_task $(BIN_DIR)/dio_task
+SPECIFIC_OS_PRG = $(BIN_DIR)/mlxspeaker $(BIN_DIR)/dio
 @endcode
 
 <hr> @section BO_INCLUDE_FTPLIB INCLUDE_FTPLIB
-FTP support "INCLUDE_FTPLIB" Application such as the @ref F_mlogger_task,
-@ref F_lazylogger_task can use the ftp channel for data transfer.
+FTP support "INCLUDE_FTPLIB" . Applications such as the @ref F_mlogger_task "mlogger" and
+@ref F_lazylogger_task "lazylogger" can use the ftp channel for data transfer.
 
 <hr> @section BO_INCLUDE_ZLIB INCLUDE_ZLIB
-The applications @ref F_lazylogger_task, @ref RC_mdump_task can be built with \b zlib.a
+The applications @ref F_lazylogger_task "lazylogger", @ref RC_mdump_task "mdump" can be built with \b zlib.a
 in order to gain direct access to the data within a file with extension
 \b mid.gz or \b ybs.gz. By default this option is disabled except for the system analyzer
 core code \b mana.c.
@@ -153,8 +154,8 @@ make USERFLAGS=-static linux/bin/mdump
 @endcode
 
 <hr> @section BO_YBOS_VERSION_3_3 YBOS_VERSION_3_3
-The default built for ybos support is version 4.0.
-If lower version is required include \b YBOS_VERSION_3_3
+The default build for ybos support is version 4.0.
+If a lower version is required, include the flag \b YBOS_VERSION_3_3
 during compilation of the ybos.c
 @code
 make USERFLAGS=-DYBOS_VERSION_3_3 linux/lib/ybos.o
@@ -173,36 +174,35 @@ In @ref mfe.c. Enable the use of interrupt mechanism. This option is so far only
 under VxWorks Operating system. (Contact Stefan or Pierre for further information).
 
 <hr> @section BO_Environment_variables Environment variables
-Midas uses a several environment variables to facilitate the different application
-startup.
+Midas uses a several environment variables to facilitate the startup of the different applications.
  
 @subsection BO_MIDASSYS MIDASSYS
- From version 1.9.4 this environmental variable is required. It should point
+This environmental variable is \b required. It should point
 to the main path of the installed Midas package. The application odbedit
 will generate a warning message in the case this variable is not defined.
 @subsection BO_MIDAS_EXPTAB MIDAS_EXPTAB
- This variable specify the location of the \b exptab file containing the predefined
+ This variable specifies the location of the \b exptab file containing the predefined
  midas experiment. The default location is for OS_UNIX: /etc, /. For OS_WINNT:
  \\system32, \\system.
 @subsection BO_MIDAS_SERVER_HOST MIDAS_SERVER_HOST
- This variable predefines the names of the host on which the Midas experiment
- shared memories are residing. It is needed when connection to a remote experiment
+ This variable predefines the name of the host on which the Midas experiment
+ shared memories are residing. It is needed when a connection to a remote experiment
  is requested. This variable is valid for Unix as well as Windows OS.
 @subsection BO_MIDAS_EXPT_NAME MIDAS_EXPT_NAME
- This variable predefines the name of the experiment to connect by default. It
- prevents the requested application to ask for the experiment name when multiple
- experiments are available on the host or to add the -e \<expt_name\> argument to
+ This variable predefines the default name of the experiment to connect to. It
+ prevents the requested application from asking for the experiment name when multiple
+ experiments are available on the host, and the need to add the -e \<expt_name\> argument to
  the application command.
  This variable is valid for Unix as well as Windows OS.
 @subsection BO_MIDAS_DIR MIDAS_DIR
  This variable predefines the LOCAL directory path where the shared memories
- for the experiment are located. It supersede the host_name and the expt_name
+ for the experiment are located. It supersedes the host_name and the expt_name
  as well as the @ref MIDAS_SERVER_HOST and @ref MIDAS_EXPT_NAME as a given directory
  path can only refer to a single experiment.
 @subsection BO_MCHART_DIR MCHART_DIR
  Obsolete
 @subsection BO_MIDAS_FRONTEND_INDEX MIDAS_FRONTEND_INDEX
- This variable predefineds the index assigned to the equipment using the event builder option.
+ This variable predefines the index assigned to the equipment using the event builder option.
  Useful if the frontend applications are started from different hosts. Refer to @ref FE_principle_eb for more information. 
 \anchor end
 */

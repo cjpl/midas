@@ -4,16 +4,15 @@
 \htmlonly
 <script type="text/javascript">
 // pages parameters: back index next {top bottom}
-pages( "FE_Appendices","FE_section_index", "FE_Hardware","FE_Data_format","end" );
+pages( "FE_Appendices","FrontendOperation", "FE_Hardware","FE_Data_format","end" );
 
 // section parameters: last section; top of this section; next section
 sections("RunControl","FrontendOperation","DataAnalysis");
 </script>
 \endhtmlonly
-\latexonly
-@ref FE_Appendices "previous page" - @ref FE_section_index - @ref Top - @ref FE_Hardware "next page"
-\endlatexonly
 
+<br>
+<br>
 Excluding the  @ref FE_FIXED_event_readout "FIXED" format, Midas supports two different data formats in the frontend so far. A possible new candidate would be the
 NeXus format, but presently no implementation has been developed.
 - @ref FE_Midas_format
@@ -34,7 +33,6 @@ It has following structure:
 
  * <center> Event and bank headers with data block.
  *  \image html mEHBH.jpg
- *  \image latex mEHBH.eps "Event and bank headers with data block." width=12cm
  * </center> 
 
 The event ID describes the type of event. Usually 1 is used for triggered events,
@@ -137,13 +135,12 @@ the data section which has to end on a 4 bytes boundary.
 
  * <center> Ybos Event and bank headers with data block.
  *  \image html yEHBH.jpg
- *  \image latex yEHBH.eps "Ybos Event and bank headers with data block." width=12cm
  * </center> 
 
 The bank length parameter corresponds to the size of the data section in double
 word count + 1.
 The supported bank type are defined in the ybos.h file see
-@ref YBOS_Bank_Types. 
+@ref FE_YBOS_Bank_Types. 
 
 - [Physical Record (Tape/Disk Format)]
   The YBOS physical record structure is based on a fixed block size
@@ -152,7 +149,6 @@ The supported bank type are defined in the ybos.h file see
 
  * <center> Ybos Physical record structure with data block.
  *  \image html yPH.jpg
- *  \image latex yPH.eps "Ybos Physical record structure with data block.." width=12cm
  * </center> 
 
 The Offset is computed with the following rules:
@@ -173,14 +169,12 @@ The Offset is computed with the following rules:
 \htmlonly
 <script type="text/javascript">
 // pages parameters: back index next {top bottom}
-pages( "FE_Appendices","FE_section_index", "FE_Hardware","FE_Data_format","" );
+pages( "FE_Appendices","FrontendOperation", "FE_Hardware","FE_Data_format","" );
 
 // section parameters: last section; top of this section; next section
 sections("RunControl","FrontendOperation","DataAnalysis");
 </script>
 \endhtmlonly
-\latexonly
-@ref FE_Appendices "previous page" - @ref FE_section_index - @ref Top - @ref FE_Hardware "next page"
-\endlatexonly
+
 <br>
 */

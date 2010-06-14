@@ -3,16 +3,16 @@
 <!-- this page is in the section Frontend  -->
 <br>
 \htmlonly
-<script type="text/javascript" src="navigation.js"></script>
 <script type="text/javascript">
-pages( "FE_Super_Event","FE_section_index","FE_Slow_Control_system","FE_Event_Builder", "end" ); // back index next {top bottom}
-sections("FrontendOperation","utilities"); // last section; top of this section; next section
+pages( "FE_Super_Event","FrontendOperation","FE_Slow_Control_system","FE_Event_Builder", "end" ); // back index next {top bottom}
+// section parameters: last section; top of this section; next section
+sections("RunControl","FrontendOperation","DataAnalysis");
 </script>
 \endhtmlonly
-\latexonly
-@ref FE_Super_Event "previous page" - @ref FE_section_index - @ref Top - @ref FE_Slow_Control_system "next page"
-\endlatexonly
+
 <br>
+\anchor idx_mevb-task
+\anchor idx_event_builder_task-see-mevb
 
 <hr> @section FE_mevb_task mevb - event builder task
 
@@ -30,7 +30,7 @@ Once the fragments are composed in each frontend, they are sent
 to the "Event Builder" (eb) where the serial number (pheader-\>serial_number)
 of each fragment is compared one event at a time for serial match.
 In case of a match, a new event will be composed with its own event ID and
-serial number, followed by all the expected fragments.
+serial number, followed by all the expected event fragments.
 The composed event is then sent to the next stage which is usually the
 data logger (mlogger).
 
@@ -44,7 +44,6 @@ with its corresponding statistical information.
   - [-i index ]  : equipment index identification
   - [-b buffer_name ] : Buffer name
   - [-v ] : Show wheel
-
   - [-d ] : debug messages
   - [-D ] : start program as a daemon
 - <b> Usage </b>
@@ -54,6 +53,7 @@ with its corresponding statistical information.
 @endcode
 
 <br><hr><br>
+\anchor idx_event_builder
 
 @section FE_eb Introduction to Event building in Midas
 
@@ -75,13 +75,17 @@ handle the building of an event based on the identical buffer name found in
 the equipment list <b> if the frontend equipment type includes the  
 @ref FE_tbl_EqEb "EQ_EB" flag </b>.
 
+\Note that the "event fragments" used by the event builder are not to be confused with the  @ref FE_fragmented_event "fragmented event"
+mechanism.
+
+\anchor idx_event_fragment
 @section FE_principle_eb Principle of the Event Builder and related frontend fragment
 
 It is possible that in case of multiple frontends, the same "fragment" code may run in the different
 hardware frontends. In order to prevent having to build nFragment different frontend tasks, the 
 <b> "-i index" </b> argument given when starting the @ref FE_frontend_task "frontend tasks" will replicate the same application image with the necessary dynamic modification required for the proper Event Building operation.
 
-The index can be passed to the frontend application either by argument or by environment variable.
+The index can be passed to the frontend application either by this argument, or by environment variable.
 @ref BO_MIDAS_FRONTEND_INDEX. 
 
 The "-i index" argument will provide the index to be appended to the minimal set of
@@ -161,6 +165,7 @@ event buffer (BUFxx). The event builder task will make up a list of all the equi
 belonging to the same event buffer name (BUFxx). If multiple equipments exists in the same 
 frontend, the equipment type (EQ_EB) and the event buffer name will distinguish them.
 
+\anchor idx_event_builder_flowchart
 The Event Builder flowchart below shows a general picture of the event process cycle of the
 task. The Event Builder runs in polling mode over all the source buffers collected at the 
 begin of run procedure. Once a fragment has been received from all enabled source
@@ -170,10 +175,68 @@ the user code for further consistency check.
 
  * <center> Event Builder Flowchart.
  *  \image html eventbuilder.jpg
- *  \image latex eventbuilder.eps "Event Builder Flowchart." width=8cm
  * </center> 
 
-@section FE_eb_tree Event builder ODB Tree
+\anchor idx_ODB_tree_event-builder
+
+<hr> @section FE_ODB_EBuilder_Tree The ODB Event Builder Tree
+
+<!--
+NOTE :
+This section comes from odbstruct.dox and may be more up-to-date than the next section.
+
+-->
+\todo Event Builder tree - there are two versions that need combining !!
+
+The Event Builder tree is created by @ref FE_mevb_task and is placed in the  
+Equipment list.
+
+@code
+Key name                        Type    #Val  Size  Last Opn Mode Value
+---------------------------------------------------------------------------
+EBuilder                        DIR
+    Settings                    DIR
+        Event ID                WORD    1     2     65h  0   RWD  1
+        Trigger mask            WORD    1     2     65h  0   RWD  1
+        Buffer                  STRING  1     32    65h  0   RWD  SYSTEM
+        Format                  STRING  1     32    65h  0   RWD  YBOS
+        Event mask              DWORD   1     4     65h  0   RWD  3
+        hostname                STRING  1     64    3h   0   RWD  myhost
+    Statistics                  DIR
+        Events sent             DOUBLE  1     8     3h   0   RWD  653423
+        Events per sec.         DOUBLE  1     8     3h   0   RWD  1779.17
+        kBytes per sec.         DOUBLE  1     8     3h   0   RWD  0
+    Channels                    DIR
+        Frag1                   DIR
+            Settings            DIR
+                Event ID        WORD    1     2     65h  0   RWD  1
+                Trigger mask    WORD    1     2     65h  0   RWD  65535
+                Buffer          STRING  1     32    65h  0   RWD  YBUF1
+                Format          STRING  1     32    65h  0   RWD  YBOS
+                Event mask      DWORD   1     4     65h  0   RWD  1
+            Statistics          DIR
+                Events sent     DOUBLE  1     8     3h   0   RWD  653423
+                Events per sec. DOUBLE  1     8     3h   0   RWD  1779.17
+                kBytes per sec. DOUBLE  1     8     3h   0   RWD  0
+        Frag2                   DIR
+            Settings            DIR
+                Event ID        WORD    1     2     65h  0   RWD  5
+                Trigger mask    WORD    1     2     65h  0   RWD  65535
+                Buffer          STRING  1     32    65h  0   RWD  YBUF2
+                Format          STRING  1     32    65h  0   RWD  YBOS
+                Event mask      DWORD   1     4     65h  0   RWD  2
+            Statistics          DIR
+                Events sent     DOUBLE  1     8     3h   0   RWD  653423
+                Events per sec. DOUBLE  1     8     3h   0   RWD  1779.17
+                kBytes per sec. DOUBLE  1     8     3h   0   RWD  0
+@endcode 
+
+
+
+
+@section FE_eb_tree_2 Event builder ODB Tree (version 2)
+
+\todo Is the tree /EB or /EBuilder as above ??
 
 The Event builder tree will be created under the Equipment list and will
 appear as a standard equipment. The sub tree \em /Common will contains the
@@ -218,6 +281,8 @@ EB                              DIR
 @endcode
 
 @section FE_eb_Operation Event Builder Operation
+
+\todo definition of cwd ?
 
 Using the "eb>" as the cwd for the example, the test procedure is the following:
 cwd : midas/examples/eventbuilder  -> refered as eb>
@@ -280,64 +345,16 @@ as the print statements are coming from the ebuser code.
 
 
 
-<hr> @section FE_ODB_EBuilder_Tree ODB /EBuilder Tree
-<span class="warn">
-This section comes from odbstruct.dox and any extra info needs combining with above
-</span>
-
-The Event Builder tree is created by @ref mevb_task and is placed in the  
-Equipment list.
-
-@code
-Key name                        Type    #Val  Size  Last Opn Mode Value
----------------------------------------------------------------------------
-EBuilder                        DIR
-    Settings                    DIR
-        Event ID                WORD    1     2     65h  0   RWD  1
-        Trigger mask            WORD    1     2     65h  0   RWD  1
-        Buffer                  STRING  1     32    65h  0   RWD  SYSTEM
-        Format                  STRING  1     32    65h  0   RWD  YBOS
-        Event mask              DWORD   1     4     65h  0   RWD  3
-        hostname                STRING  1     64    3h   0   RWD  myhost
-    Statistics                  DIR
-        Events sent             DOUBLE  1     8     3h   0   RWD  653423
-        Events per sec.         DOUBLE  1     8     3h   0   RWD  1779.17
-        kBytes per sec.         DOUBLE  1     8     3h   0   RWD  0
-    Channels                    DIR
-        Frag1                   DIR
-            Settings            DIR
-                Event ID        WORD    1     2     65h  0   RWD  1
-                Trigger mask    WORD    1     2     65h  0   RWD  65535
-                Buffer          STRING  1     32    65h  0   RWD  YBUF1
-                Format          STRING  1     32    65h  0   RWD  YBOS
-                Event mask      DWORD   1     4     65h  0   RWD  1
-            Statistics          DIR
-                Events sent     DOUBLE  1     8     3h   0   RWD  653423
-                Events per sec. DOUBLE  1     8     3h   0   RWD  1779.17
-                kBytes per sec. DOUBLE  1     8     3h   0   RWD  0
-        Frag2                   DIR
-            Settings            DIR
-                Event ID        WORD    1     2     65h  0   RWD  5
-                Trigger mask    WORD    1     2     65h  0   RWD  65535
-                Buffer          STRING  1     32    65h  0   RWD  YBUF2
-                Format          STRING  1     32    65h  0   RWD  YBOS
-                Event mask      DWORD   1     4     65h  0   RWD  2
-            Statistics          DIR
-                Events sent     DOUBLE  1     8     3h   0   RWD  653423
-                Events per sec. DOUBLE  1     8     3h   0   RWD  1779.17
-                kBytes per sec. DOUBLE  1     8     3h   0   RWD  0
-@endcode 
-
 
 <br>
 \htmlonly
 <script type="text/javascript">
-pages( "FE_Super_Event","FE_section_index","FE_Slow_Control_system","FE_Event_Builder","" ); // back index next {top bottom}
+pages( "FE_Super_Event","FrontendOperation","FE_Slow_Control_system","FE_Event_Builder","" ); // back index next {top bottom}
+// section parameters: last section; top of this section; next section
+sections("RunControl","FrontendOperation","DataAnalysis");
 </script>
 \endhtmlonly
-\latexonly
-@ref FE_Super_Event "previous page" - @ref FE_section_index - @ref Top - @ref FE_Slow_Control_system "next page"
-\endlatexonly
+
 <br>
 \anchor end
 */

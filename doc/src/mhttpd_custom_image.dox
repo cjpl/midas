@@ -3,16 +3,15 @@
 
 /*! \page    RC_mhttpd_Image_access Inserting an Image into a Custom page
 <br>
-\htmlonly
-<script type="text/javascript">
+ 
+\htmlonly <script type="text/javascript">
 // pages parameters: back index next {top bottom}
-pages( "RC_mhttpd_custom_RPC_access", "RC_section_index", "RC_mhttpd_custom_demo","RC_mhttpd_Image_access",  "end" );
+pages( "RC_mhttpd_custom_RPC_access", "RunControl", "RC_mhttpd_custom_demo","RC_mhttpd_Image_access",  "end" );
 sections("Features", "RunControl","FrontendOperation"); // last section; top of this section; next section
 </script>
 \endhtmlonly
-\latexonly
-@ref  RC_mhttpd_custom_ODB_access  "previous page" - @ref Top - @ref Organization "Map"  - @ref  RC_mhttpd_custom_demo  "next page"
-\endlatexonly
+ 
+
 
 
 @section RC_mhttpd_custom_history Inserting a history image in a custom page
@@ -24,17 +23,28 @@ an HTML <b><img></b> tag of the following form:
 @endcode
 
 \b Examples
-See  @ref RC_mhttpd_custom_demo and \example_image_all "image" created by the demo.
+See  @ref RC_mhttpd_custom_demo and \ref example_image_all "image" created by the demo.
 
 
 <br><hr><br>
-
+\anchor idx_mhttpd_page_custom_image_insert-image
 @section RC_mhttpd_custom_image Image insertion into a Custom page
-\todo version ?? image insertion in webpage
-
-Since Midas version ?? image insertion into a webpage is supported. The image-file 
-can be in any format supported by your browser (e.g. &nbsp; \b gif,&nbsp; \b png,&nbsp; \b jpeg etc.).
-
+\anchor idx_mhttpd_page_custom_image_history-image
+An image may be inserted into a custom webpage by using an HTML <img> tag.
+The image file can be in any format supported by the browser (e.g. &nbsp; \b gif,&nbsp; \b png,&nbsp; \b jpg etc.).
+<br>
+For example, a
+ \b History image can be inserted into a custom page using
+an HTML <b><img></b> tag of the following form:
+\code
+<img src="http://hostname.domain:port/HS/Meterdis.gif&scale=12h&width=300">
+@endcode
+<br>
+See  @ref RC_mhttpd_custom_demo and \ref example_image_all "image" created by the demo.
+<br>
+Alternatively, by defining the image in the subdirectory "images" in the <span class="odb">/Custom ODB tree </span>
+features such as labels, bars and fills can be superimposed on the image.
+<br>
 To make an image "myexpt.gif" available in a Custom Page, follow these steps:
 
 <ol>
@@ -73,12 +83,145 @@ sections  @ref RC_mhttpd_custom_Labels_Bars_Fills "below".
 
 Before it can be accessed from mhttpd,  this file (myexpt.html) must be 
 @ref  RC_mhttpd_Activate "activated" by being defined in the ODB under  <span class="odb">/Custom</span>. This
-is demonstrated in the custom demo described  @ref RC_mhttpd_custom_demo "below".
+is demonstrated in the custom demo  @ref RC_mhttpd_custom_demo "example" and the @ref example_image_all "image" created by the demo.
 
-\b Examples
-See  @ref RC_mhttpd_custom_demo and \example_image_all "image" created by the demo.
+\anchor idx_ODB_tree_custom_images
+@subsection RC_mhttpd_custom_images_tree_keys Explanation of the keys in the ODB /Custom/images  subtree 
+<table
+ style="text-align: left; width: 100%;" border="1" cellpadding="2"
+cellspacing="0">
+  <caption>Above: Meaning of keys in the ODB /Custom/ tree.
+  </caption>
+<tr>
+<td colspan="6" style="vertical-align: top; background-color: rgb(204, 204, 255); font-weight: bold; text-align: center;">
+Keys in the ODB tree  ../Custom
+</td>
+</tr>
+<tr>
+<td colspan = "5" style="vertical-align: top; background-color: rgb(204, 204, 255); font-weight: bold; text-align: center;">
+ODB Key 
+</td>
+ <td style="vertical-align: top; background-color: rgb(204, 204, 255); font-weight: bold; text-align: center;"> 
+Explanation
+</td>
+</tr>
+<!--   line    1   Custom  -->
+<tr>
+<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+Custom/
+</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">DIR</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">
+User-created directory to contain custom page information</td>
+</tr>
+
+<!--   line    2   custom page key  -->
+<tr>
+<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
+<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+<custom_page_link>
+</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">STRING</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">
+User-defined custom page link(s) contains path(s) of custom page HTML code. Each custom page must be defined with a separate custom page link. Each link
+created here will appear as a button on the Status page (except where noted - see @ref RC_mhttpd_Activate for details). The user chooses suitable
+names for the link(s).
+</td>
+</tr>
 
 
+
+
+<!--   line    3   Images subdir -->
+<tr>
+<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
+<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+Images/
+</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">DIR</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">
+User-created subdirectory to contain the name(s) of the defined image(s). 
+</td>
+</tr>
+<!--   line    4   Image Name  -->
+<tr>
+<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
+<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+<Image_name>/
+</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">DIR</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">
+User-created subdirectory named for the corresponding image, e.g. Gas.gif, switches.gif etc. For multiple custom pages, multiple
+subdirectories may be defined.
+</td>
+</tr>
+<!--   line    5   background key  -->
+<tr>
+<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
+<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+background
+</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">STRING</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">
+Path of image file to be displayed on the custom page, e.g. <b>/home/t2ktpc/online/t2kgas/all_images/Gas.gif</b>  (local file)
+</td>
+</tr>
+<!--   line    6   labels  -->
+<tr>
+<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
+<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+labels/
+</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">DIR</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">
+Optional subdirectory to be used for superimposing labels on top of the image. (See  @ref RC_mhttpd_labels_tree "labels subtree")
+</td>
+</tr>
+<!--   line    7   bars  -->
+<tr>
+<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
+<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+bars/
+</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">DIR</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">
+Optional subdirectory to be used for superimposing bars on top of the image. (See  @ref  RC_mhttpd_bars_tree "bars subtree")
+</td>
+</tr>
+<!--   line    8  fills  -->
+<tr>
+<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
+<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+fills/
+</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">DIR</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">
+Optional subdirectory to be used for superimposing fills on top of the image. (See  @ref RC_mhttpd_fills_tree "fills subtree")
+</td>
+</tr>
+
+</table>
+
+
+\anchor idx_mhttpd_page_custom_image_mapping
+\anchor idx_mhttpd_page_custom_image_clickable-area
 @section RC_mhttpd_custom_imagemap Mapping active areas onto the image
 
 HTML mapping can be activated on an image to provide "clickable" areas, using the
@@ -107,7 +250,7 @@ depending on its state.  This is illustrated in the @ref RC_MEG_Gas_Page .
 
 
 \b Examples
-See also @ref RC_mhttpd_custom_demo and \example_image_all "image" created by the demo.
+See also @ref RC_mhttpd_custom_demo and \ref example_image_all "image" created by the demo.
 
 
 @subsection RC_mhttpd_custom_imagemap_demo Image Map demo
@@ -151,7 +294,7 @@ function promptpwd(path)
 }
 //-->
 </script>
-\code
+\endcode
 
 and using it like this:
 \code
@@ -204,9 +347,10 @@ capability closer to other experimental web controllers similar to EPICS.
 of the various features.
 
 \b Examples
-See  @ref RC_mhttpd_custom_demo and \example_image_all "image" created by the demo.
+See  @ref RC_mhttpd_custom_demo and \ref example_image_all "image" created by the demo.
 
-
+\anchor idx_mhttpd_page_custom_image_labels
+\anchor idx_labels-see-mhttpd-page-custom
 @subsection RC_mhttpd_custom_labels Labels superimposed on an Image
 
 In order to include a readout of ODB values (i.e. labels), on the image
@@ -243,11 +387,11 @@ BGColor                         STRING  1     8     2m   0   RWD  FFFFFF
 This procedure is repeated for all the labels required, using a unique <span class="odb"><label_name></span> subdirectory for each label.
 
 
-@subsection RC_mhttpd_labels_tree Explanation of the keys in the /Labels ODB subtree
+@subsection RC_mhttpd_labels_tree Explanation of the keys in the /Custom/images/Labels ODB subtree
 <table
  style="text-align: left; width: 100%;" border="1" cellpadding="2"
 cellspacing="0">
-  <caption>Above: Meaning of keys in the ODB ../Labels/<label_name> subtree.
+  <caption>Above: Meaning of keys in the ODB /Custom/images/Labels/<label_name> subtree.
   </caption>
 <tr>
 <td colspan="4" style="vertical-align: top; background-color: rgb(204, 204, 255); font-weight: bold; text-align: center;">
@@ -414,7 +558,8 @@ RGB Value</td>
 
 <br><hr><br>
 
-
+\anchor idx_mhttpd_page_custom_image_bars
+\anchor idx_bars-see-mhttpd-page-custom
 @subsection RC_mhttpd_custom_bars  Bars superimposed on an Image
 To include bars on the image,
 a further subdirectory  <span class="odb">Bars</span> must be created. 
@@ -425,11 +570,11 @@ custom midas page.
 This procedure is repeated for all the bars required, using a unique <span class="odb"><bar_name></span> subdirectory for each bar.
 <br>
 
-@subsection RC_mhttpd_bars_tree Explanation of the keys in the ../Bars ODB subtree
+@subsection RC_mhttpd_bars_tree Explanation of the keys in the /Custom/Images/Bars ODB subtree
 <table
  style="text-align: left; width: 100%;" border="1" cellpadding="2"
 cellspacing="0">
-  <caption>Above: Meaning of keys in the ODB ../Bars subtree.
+  <caption>Above: Meaning of keys in the ODB /Custom/Images/Bars/<bar_name> subtree.
   </caption>
 <tr>
 <td colspan="4" style="vertical-align: top; background-color: rgb(204, 204, 255); font-weight: bold; text-align: center;">
@@ -600,7 +745,8 @@ Border colour RRGGBB (hex)  for this bar. See @ref  RC_html_colours "colour tabl
 
 <br><hr><br>
 
-
+\anchor idx_mhttpd_page_custom_image_fills
+\anchor idx_fills-see-mhttpd-page-custom
 @section RC_mhttpd_custom_fills  Fills superimposed on an Image
 
 The last option available is the \b Fills where an area can be filled with different
@@ -610,7 +756,10 @@ a further ODB subdirectory  <span class="odb">Fills</span> must be created.
 The colour selection is
 mapped by correspondence of the index of the <span class="odb"> Limits</span> array to the  <span class="odb">Fillcolors</span> array,
 both of which must be created in the ODB  <span class="odb">Fills</span> subdirectory.
-Presently the structure is not pre-defined and needs to be entered by hand, e.g.
+
+@subsection RC_mhttpd_custom_fills_create Create the custom  Fills keys
+
+Presently the  <span class="odb">fills</span> structure is not pre-defined and needs to be entered by hand, e.g.
 
 \code
 Tue> odbedit
@@ -635,10 +784,11 @@ Limits
                                 0
                                 0
 Fillcolors
+
                                 
                                 
                                 
-                                
+[local:midas:S]Level>                                
 @endcode
 \note The array lengths, of course, depend on the user's requirements, but the length of the two arrays must be the same.
 
@@ -685,11 +835,11 @@ a unique  <span class="odb"><fill_name></span> for each subdirectory.
 
 <br><br>
 
-@subsection RC_mhttpd_fills_tree Explanation of the keys in the ../fills ODB subtree
+@subsection RC_mhttpd_fills_tree Explanation of the keys in the /Custom/images/fills ODB subtree
 <table
  style="text-align: left; width: 100%;" border="1" cellpadding="2"
 cellspacing="0">
-  <caption>Above: Meaning of keys in the ODB ../Fills subtree.
+  <caption>Above: Meaning of keys in the ODB /Custom/Images/Fills/<fill_name> subtree.
   </caption>
 
 <tr>
@@ -722,7 +872,8 @@ Src
 </td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;">STRING</td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;">
-Path of a valid ODB Key variable. This is the value to be used for this fill
+Path of a valid ODB Key variable. May also include a
+@ref RC_mhttpd_fills_src_logical "logic calculation". This is the value to be used for this fill.
 </td>
 </tr>
 <!--   line    3   X  -->
@@ -773,129 +924,53 @@ Variable length array containing the colours corresponding to the \b Limits arra
 </tr>
 </table>
 
+@subsubsection RC_mhttpd_fills_src_logical  fills/SRC: Logical  calculation
 
-<br><hr><br>
+<span class="new">An extra feature has been added (@ref  ndf_may_2010)  to the SRC key to allow a logical
+calculation to determine the value used for the fill.</span>
+<br>
+Up to two operators are permitted and they must
+be either
+<ul>
+<li>">>" (shift to the right) or
+<li>"&" (bitwise AND).
+</ul>
+A hexadecimal number preceded by "0x" is also supported.
+<br>
+This feature enables a SRC key that is actually a bit pattern to be used for a fill.
+<br>
+In the following example, a gas valve is
+open if bit 14 of PLCR[136]
+is TRUE and closed if bit 15 is TRUE (bits are from 0-15).  The contents of PLCR[136] are shifted
+to the right by 14 and then a logical AND is performed to clear all but the lowest 2 bits. 
+The result is used to colour the valve body lime green is the valve is open and black if it is closed.
+If neither bit is set (i.e. the valve is neither open nor closed) the valve body is coloured red to
+indicate an error. Anything else (i.e. both bits TRUE) will give a gray colour. 
 
+\code  
+[local:t2kgas:S]/>ls /custom/images/Pump_20.gif/fills/d2vb3
+Src                             /Equipment/TpcGasPlc/Variables/PLCR[136] >> 14 & 0x3
+X                               905
+Y                               536
+limits
+                                0
+                                1
+                                2
+                                3
+Fillcolors
+                                808080
+                                00FF00
+                                000000
+                                808080
+[local:t2kgas:S]/>                    
+\endcode
 
-@subsection RC_mhttpd_custom_fill_scripts Scripts to duplicate features
-
-When including many standard features such as labels and fills on multiple images, creating and populating the
-individual subtrees becomes increasingly tedious.
-In this case, is a good idea to write a script to facilite this, based on a list of devices. Then the user
-has (merely!) to locate the X,Y positions of each device.
-
-The following example is part of a perlscript used to create labels and fills in a file suitable for loading into the odb with
-the @ref RC_odbedit_load "odbedit load" command. The subroutine shown will create subtrees for labels based on an input array of
-device names. Different colours are used for the labels depending on the device types.
-
-
-\code
-sub write_odb_labels
-{
-# parameters:
-#  inputs:
-#       $gifname
-#        and global @labels array   and FOUT is the output file handle
-#
-#
-#
-#    colours: fgcolor WHITE   BLACK   white  BLACK   white   WHITE  white
-#             bgcolor maroon  aqua    teal   orange  black   navy  purple
-#             device  AN      FC      PD     TC      HT      FM     other
-
-
-  
-  my %fgColor = (
-		 AN => "$white",
-		 FC => "$black",
-		 PD => "$white",
-		 TC => "$black",
-		 HT => "$white",
-		 FM => "$white",
-		 other => "$white"
-		 );
-  my %bgColor = (
-		 AN => "$maroon",
-		 FC => "$aqua",
-		 PD => "$teal",
-		 TC => "$orange",
-		 HT => "$black",
-		 FM => "$navy",
-		 other => "$purple"
-		 );
-  my %format = (
-		 AN => "%4.0f ppm",
-		 FC => "%5.3f l/m",
-		 PD => "%4.2f Bg",
-		 TC => "%5.1f degC",
-		 HT => "%5.1f degC",
-                 FM => "%4.1f l/m",
-		 other => "%4.2f ?"
-		 );
-
-
-
-
-  my $gifname    = shift;
-  my $len;
-  my  ($prefix,$type,$num);
-  my $append;
-  
-  $len = $#labels;
-  
-  print "len=$len; @labels\n";
-  for my $elem (0..$len)
-  {
-      print "Calling split_device with @labels[$elem] \n";
-      ($prefix,$type,$num)=split_device(@labels[$elem]);
-      print "after split_device: @labels[$elem] -> prefix: $prefix  type: $type num: $num \n";  
-      
-      
-      my $devname = $prefix.$type; # concatenate
-      if($type eq "FC") 
-         { $append="_flow"; } # FC labels have _flow appended to src
-      else
-         { $append=""; }
-      my $my_font="Giant"; # default
-      my ($my_bgcolor,$my_fgcolor,$my_format);
-
-      my $val=check_label($type); # make sure this label exists, otherwise use "other"
-      unless($val) { $type = "other" }; 
-
-      $my_format = $format { $type };  # default
-      unless ($num) { die "error in device number (@labels[$elem]); array index <0 "; }     
-      $i=$num-1; # array index for src
-      my $my_fgcolor = $fgColor { $type };
-      my $my_bgcolor = $bgColor { $type };
-	  
-      print "Colours; for @labels[$elem] $my_fgcolor,$my_bgcolor \n";
-      
-print FOUT<<EOT;
-\[/Custom/Images/$gifname.gif/labels/$devname$num\]
-Src = STRING : [256] /Equipment/gas/variables/$devname$append\[$i\]
-Format = STRING : [32] $my_format
-Font = STRING : [32] $my_font
-X = INT : 1
-Y = INT : 1
-Align = INT : 0
-FGColor = STRING : [8] $my_fgcolor
-BGColor = STRING : [8] $my_bgcolor
-
-EOT
-
- }   # end for loop
-
-return;
-}
-
-@endcode
-
+Any fill that requires a more complicated calculation than this, will have to be done using Javascript.
 
 
 <br><hr><br>
- 
-
-
+\anchor edit-boxes-see-mhttpd-custom-image
+\anchor idx_mhttpd_page_custom_image_edit-boxes
 @section RC_mhttpd_custom_edit_boxes Edit boxes floating on top of a graphic
 
 This option has been available from the beginning, but was not previously documented. It
@@ -989,17 +1064,13 @@ function promptpwd(path)
 
 
 <br>
-\htmlonly
-<script type="text/javascript">
+ 
+\htmlonly <script type="text/javascript">
 // pages parameters: back index next {top bottom}
-pages( "RC_mhttpd_custom_RPC_access", "RC_section_index", "RC_mhttpd_custom_demo","RC_mhttpd_Image_access",  "" );
+pages( "RC_mhttpd_custom_RPC_access", "RunControl", "RC_mhttpd_custom_demo","RC_mhttpd_Image_access",  "" );
 sections("Features", "RunControl","FrontendOperation"); // last section; top of this section; next section
-</script>
-\endhtmlonly
-\latexonly
-@ref  RC_mhttpd_custom_ODB_access  "previous page" - @ref Top - @ref Organization "Map"  - @ref  RC_mhttpd_custom_demo  "next page"
-\endlatexonly
-
+</script> \endhtmlonly
+ 
 \anchor end
 <!--  End of  RC_mhttpd_Image_access   -->
 */
@@ -1010,16 +1081,13 @@ sections("Features", "RunControl","FrontendOperation"); // last section; top of 
 
 /*!   \page  RC_mhttpd_custom_demo Demo of custom image page
 <br>
-\htmlonly
-<script type="text/javascript">
+ 
+\htmlonly <script type="text/javascript">
 // pages parameters: back index next {top bottom}
-pages( "RC_mhttpd_Image_access", "RC_section_index", "RC_mhttpd_Internal","RC_mhttpd_custom_demo",  "end" );
+pages( "RC_mhttpd_Image_access", "RunControl", "RC_mhttpd_Internal","RC_mhttpd_custom_demo",  "end" );
 sections("Features", "RunControl","FrontendOperation"); // last section; top of this section; next section
-</script>
-\endhtmlonly
-\latexonly
-@ref  RC_mhttpd_Image_access "previous page" - @ref Top - @ref Organization "Map"  - @ref  RC_mhttpd_Internal "next page"
-\endlatexonly
+</script> \endhtmlonly
+
 <br>
 
 This demo will show you how to make a custom page containing an image, and superimpose
@@ -1109,7 +1177,6 @@ defined html page specified by the map.
  *  <span class="image"> Figure 1 : Demo Custom web page with external reference to html document.
  * <br><br><br> 
  *  \image html  mhxcustom01.jpg
- *  \image latex  mhxcustom01.eps "Figure 1: Demo Custom web page with external reference to html document" width=12cm
  * </span></center>
  * <br><br><br> 
 
@@ -1195,21 +1262,18 @@ Once all these features have been added, the custom page will look as Figure 2:
  *  <span class="image"> Figure 2 : Demo Custom web page with labels,bars,fills and history plots
  * <br><br><br> 
  *  \image html  mhxcustom02.jpg
- *  \image latex  mhxcustom02.eps "Figure 2 : Demo Custom web page with labels,bars,fills and history plots " width=12cm
  * </span></center>
  * <br><br><br> 
 
 
-\htmlonly
-<script type="text/javascript">
+ 
+\htmlonly <script type="text/javascript">
 // pages parameters: back index next {top bottom}
-pages( "RC_mhttpd_Image_access", "RC_section_index",  "RC_mhttpd_Internal","RC_mhttpd_custom_demo",  "" );
+pages( "RC_mhttpd_Image_access", "RunControl",  "RC_mhttpd_Internal","RC_mhttpd_custom_demo",  "" );
 sections("Features", "RunControl","FrontendOperation"); // last section; top of this section; next section
-</script>
-\endhtmlonly
-\latexonly
-@ref RC_mhttpd_Image_access   "previous page" - @ref Top - @ref Organization "Map"  - @ref  RC_mhttpd_Internal  "next page"
-\endlatexonly
+</script> \endhtmlonly
+ 
+
 \anchor end
 <!-- end of page RC_mhttpd_custom_demo -->
 */
@@ -1220,22 +1284,18 @@ sections("Features", "RunControl","FrontendOperation"); // last section; top of 
 
 /*! \page    RC_mhttpd_Internal Internal custom page
 <br>
-\htmlonly
-<script type="text/javascript">
+ 
+\htmlonly <script type="text/javascript">
 // pages parameters: back index next {top bottom}
-pages( "RC_mhttpd_Image_access", "RC_section_index", "RC_monitor","RC_mhttpd_Image_access",  "end" );
+pages( "RC_mhttpd_custom_demo", "RunControl", "RC_mhttpd_custom_status","RC_mhttpd_Image_access",  "end" );
 sections("Features", "RunControl","FrontendOperation"); // last section; top of this section; next section
 </script>
 \endhtmlonly
-\latexonly
-@ref  RC_mhttpd_Image_access "previous page" - @ref Top - @ref Organization "Map"  - @ref RC_monitor "next page"
-\endlatexonly
-
 
 An \b internal custom page (written in HTML and/or JavaScript)  may be imported under a given 
 <span class="odb">/Custom/</span> ODB key.
 The name of this key will appear in the Main Status page as an  @ref RC_mhttpd_Alias_page "alias-links" 
-<span class="new">(or alias-button)</span>. By clicking on this link/button, 
+<span class="new">(or alias-button - @ref ndf_dec_2009)</span>. By clicking on this link/button, 
 the contents of this key is interpreted as html content.
 
 The insertion of a new Custom page requires the following steps:
@@ -1264,7 +1324,6 @@ as shown in Figure 2.
  *  <span class="image"> Figure 1 :  Internal custom web page with history graph.
  * <br><br><br> 
  *  \image html  mhcustom1.gif
- *  \image latex  mhcustom1.eps "Figure 1 :  Internal custom web page with history graph." width=12cm
  * </span></center>
  * <br><br><br>  
 
@@ -1274,7 +1333,6 @@ as shown in Figure 2.
  *  <span class="image"> Figure 2 :  Internal custom web page loaded into the ODB.
  * <br><br><br> 
  *  \image html  mhcustom2.gif
- *  \image latex  mhcustom2.eps "Figure 2 :  Internal custom web page loaded into the ODB." width=12cm
  * </span></center>
  * <br><br><br>  
 
@@ -1283,18 +1341,15 @@ as shown in Figure 2.
 
 <br>
 <br>
-\htmlonly
-<script type="text/javascript">
+ 
+\htmlonly <script type="text/javascript">
 // pages parameters: back index next {top bottom}
-pages( "RC_mhttpd_Image_access", "RC_section_index", "RC_monitor","",  "end" );
+pages( "RC_mhttpd_custom_demo", "RunControl", "RC_mhttpd_custom_status","RC_mhttpd_Image_access",  "" );
 sections("Features", "RunControl","FrontendOperation"); // last section; top of this section; next section
-</script>
-\endhtmlonly
-\latexonly
-@ref  RC_mhttpd_Image_access "previous page" - @ref Top - @ref Organization "Map"  - @ref   RC_monitor "next page"
-\endlatexonly
+</script> \endhtmlonly
+
 \anchor end
-<!-- end of Page   RC_mhttpd_Image_access  -->
+<!-- end of Page    RC_mhttpd_Internal  -->
 */
 
 

@@ -41,6 +41,35 @@ function top_mainpage( next_page,bottom_of_page)
 //document.write('</div>'); 
 }
 
+// Single functions (needed by Contents page)
+function az()
+{
+   document.writeln('<a href="DocIndex.html">  <!-- docindex -->');
+   document.writeln(' <img  ALIGN="left" alt="/\" src="../images/page_index.gif" title="Alphabetical Index"   border=0 >');
+   document.writeln('</a>');
+}
+function bot(top_of_page,bottom_of_page)
+{
+      if(top_of_page)
+      {  // bottom arrow only
+         document.writeln('<a href="'+top_of_page+'.html#'+bottom_of_page+'">  <!-- BOTTOM OF THIS PAGE -->');
+         document.writeln(' <img  ALIGN="left" alt="\/" src="../images/page_down.gif" title="Bottom of Page"   border=0 >');
+         document.writeln('</a>');
+      }
+
+}
+function top(top_of_page)
+{
+      if(top_of_page)
+      {
+         document.writeln('<a href="'+top_of_page+'.html">  <!-- TOP OF THIS PAGE -->');
+         document.writeln(' <img  ALIGN="left" alt="/\" src="../images/page_up.gif" title="Top of Page"   border=0  >');
+         document.writeln('</a>');
+      }   
+}
+
+
+
 
 function pages(previous_page,  page_index, next_page, top_of_page, bottom_of_page  ) // bottom is a reference #
 {
@@ -135,8 +164,12 @@ function sections(previous_section, section_top, next_section)
       document.writeln('<img ALIGN="right" alt="-" src="../images/section_left.gif" title="Previous Section: '+previous_section+'" border=0 >');
       document.writeln('</a>');
    }
+
+   document.writeln('</a>');
 //document.write('<div style="text-align: right;color: aqua;">Section<br>')
 //document.write('</div>');
+
+  document.write('<br><br>');
 }
  
 

@@ -3,16 +3,15 @@
 /*! @page F_MainElements Overview of the Main Elements of the Midas DAQ System
 
 <!--  This page is a subpage to Features  -->
-
 \htmlonly
-<script type="text/javascript" src="navigation.js"></script>
 <script type="text/javascript">
-pages( "Features",  "F_Section_Index", "F_ODB_Structure","F_MainElements","end"); // back index next {this page top} {this page bottom}
+// pages params : back index next {top bottom}
+pages( "Features",  "Features","F_ODB_Structure","F_MainElements", "end"); // back index next {top bottom}
+// sections params:   last section; top of this section; next section
+sections("Quickstart", "Features", "RunControl");
 </script>
 \endhtmlonly
-\latexonly
-@ref Features "back" - @ref Top - @ref Organization "Map" - @ref F_ODB_Structure "next"
-\endlatexonly
+
 <br>
 
 
@@ -71,7 +70,7 @@ of message. A dedicated buffer (i.e. shared memory) is used to receive and distr
 Predefined message types contained in the Midas library cover most of the message
 requirements. See @ref F_Logging and  @ref F_Logging_Data for more details.
 
-\anchor idx_odb_system-overview
+\anchor idx_ODB_overview
 @section F_Online_Database_overview Online Database (ODB)
 In a distributed DAQ environment, configuration data is usually stored in several files
 on different computers.
@@ -93,15 +92,17 @@ by the receiver. Measurement shows that up to 50,000 accesses per second with a 
 and around 500 accesses per second remotely over the MIDAS server, can be obtained (numbers from 1990).
 
 The ODB is hierarchically structured, similar to a file system, with directories and
-sub-directories. The data are stored in  key/data pairs, similar to the Windows
+sub-directories (see @ref F_ODB_Structure) .
+ The data are stored in  key/data pairs, similar to the Windows
 NT registry.
 Keys can be dynamically created and deleted. The data associated with a key can be of
 different types such as: byte, words, double words, float, strings, etc. or arrays
 of any of those. A key can also be a directory or a symbolic link (c.f. Unix).
 
-\anchor idx_hot-link_overview
+\anchor idx_hot-links_overview
 The Midas library provides a complete set of functions to manage and operate on these keys.
-Furthermore, any ODB client can register a @ref RC_Hot_Link between a local C-structure
+<br>
+Any ODB client can register a "hot-link" between a local C-structure
 and any element of the ODB. The hot-link mechanism ensures that whenever a client (program) 
 changes a value in this ODB sub-tree, the local C-structure automatically receives an update of 
 the changed data.
@@ -190,12 +191,15 @@ For more information see @ref  F_Logging .
 
 \anchor idx_analyzer_overview
 @section F_Analyzer_sec_overview Analyzer
+
 The Analyzer is a \em backend task (as opposed to the frontend). 
 As in the front-end section, the analyzer provided by Midas is a framework on which
 the user can develop his/her own applications.
 This framework can be built for private analysis (no external analyzer hooks) or specific analysis
 packages such as HBOOK, ROOT from the CERN (none of those libraries are included in the MIDAS
-distribution). The analyzer takes care of receiving events
+distribution).  See  @ref DataAnalysis for more information.
+
+ The analyzer takes care of receiving events
 (a few lines of code are necessary to receive events from the buffer manager);
 initializing the HBOOK or ROOT system; and automatically booking N-tuples/TTree for all events.
 Interface to user routines for event analysis is provided.
@@ -206,9 +210,7 @@ stages can calculate "physics" results.
 The same analyzer executable can be used to run online (where events are received from the
 buffer manager) and off-line (where events are read from file).
 When running online, generated N-tuples/TTree are stored in a ring-buffer in shared memory.
-They can be analysed with PAW without stopping the run. For ROOT please refer to the 
-documentation ... Recently, a ROOT-based analyzer is the unique type of analyzer supported by 
-several implementation of that package (analyzer, ROME, Rootana).
+They can be analysed with PAW without stopping the run.
 
 When running off-line, the analyzer can read MIDAS binary files, analyse the events, add
 calculated data for each event and produce a HBOOK RZ output file which can be read
@@ -219,7 +221,7 @@ To control the analyzer, only the values in the ODB have to be changed, which ar
 automatically propagated to the analyzer parameters.
 If analysis software has been already developed, Midas provides the functionality
 necessary to interface the analyzer code to the Midas data channel.
-Support for languages such as C, C++ is available (previously support for FORTRAN, PASCAL were available).
+Support for languages such as C, C++ is available.
 
 
 \anchor idx_run-control_overview
@@ -243,19 +245,18 @@ In order to provide more flexibility to the transition sequence of all the
 midas clients connected to a given experiment, each transition function has 
 a \em transition \em sequence \em number attached to it. This transition sequence is 
 used to establish within a given transition the order of the invocation of the 
-Midas clients (from the lowest sequence number to the highest). See \ref Transition_priority
+Midas clients (from the lowest sequence number to the highest). See \ref RC_Transition_priority
 for details.
 
  * <center> Transitions
  *  \image html transition.gif
- *  \image latex transition.eps "Transitions" width=12cm
  * </center> 
 
 \anchor idx_slow-control_overview
 @section F_Slow_Control_overview Slow Control
 The Slow Control system is a special front-end equipment or program dedicated to
 the control of hardware modules based on user parameters.
-It takes advantage of the Online Database and its @ref RC_Hot_Link capability.
+It takes advantage of the Online Database and its @ref RC_Hot_Link "hot-link" capability.
 Demand and Measured values from Slow Control system equipment like high voltage
 power supplies or beam line magnets are stored directly in the ODB.
 
@@ -299,7 +300,7 @@ Due to its simple use and good display quality, this section has been reworked t
 to handle larger number of parameters. This is one of the main version 2.1.0 modification, 
 see @ref  F_History_System .
 
-\midas_idx_alarm_system_overview
+\anchor idx_alarm_system_overview
 @section F_Alarm_System_overview Alarm System
 The Midas alarm mechanism is a built-in feature of the Midas server. It acts upon the
 description of the required alarm defined in the Online Database (ODB).
@@ -315,30 +316,30 @@ Currently the internal alarms supports the following mechanism:
 The action triggered by the alarm is left to the user through the means of a detached script.
 But basic alarm report is available such as:
 - Logging the alarm message to the experiment log file.
-- Sending a "Electronic Log message" (see @ref Electronic_Logbook).
+- Sending an "Electronic Log message" (see @ref F_Elog).
 - Interrupt data acquisition.
-For more information see @ref Alarm_System, @ref ODB_Alarms_Tree.
+For more information see @ref RC_Alarm_System , @ref  RC_ODB_Alarms_Tree .
 
-\anchor idx_elog_overview
+\anchor idx_Elog_overview
 @section F_Electronic_Logbook_overview Electronic Logbook
 The Electronic logbook is a feature which provides the experimenter an alternative
 way of logging his/her own information related to the current experiment. This
 electronic logbook may supplement or complement the standard paper logbook and
 in the mean time allow "web publishing" of this information. Indeed the electronic
-logbook information is accessible from any web browser as long as the
-@ref mhttpd_task (Midas web server) is running in the background of the system.
-For more information see @ref Electronic_Logbook, @ref mhttpd_task.
+logbook information is accessible from any web browser as long as  the Midas web server
+( @ref RC_mhttpd_task "mhttpd") is running in the background of the system.
+For more information see @ref F_Elog, @ref RC_mhttpd_Elog_page .
 
 
 \htmlonly
-<script type="text/javascript" src="navigation.js"></script>
 <script type="text/javascript">
-pages( "Features",  "F_Section_Index", "F_ODB_Structure", "F_MainElements"); // back index next { top end }
+// pages params : back index next {top bottom}
+pages( "Features",  "Features","F_ODB_Structure","F_MainElements", ""); // back index next {top bottom}
+// sections params:   last section; top of this section; next section
+sections("Quickstart", "Features", "RunControl");
 </script>
 \endhtmlonly
-\latexonly
-@ref Features "back" - @ref Top - @ref Organization "Map" - @ref F_ODB_Structure "next"
-\endlatexonly
+
 
 @anchor end
 

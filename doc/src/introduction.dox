@@ -7,14 +7,11 @@
 <!-- Navigation -->
 <script type="text/javascript">
 // pages params : back index next {top bottom}
-pages("index","I_section_index", "I_Midas_system_picture","Intro","end" ); 
+pages("index","Intro", "I_Midas_system_picture","Intro","end" ); 
 // sections params:   last section; top of this section; next section
 sections("index","Intro","Quickstart");
 </script>
 \endhtmlonly
-\latexonly
-@ref Top - @ref Organization "Map" - @ref I_Midas_system_picture "next page"
-\endlatexonly
 <br>
 <!-- End of Navigation -->
 
@@ -27,8 +24,8 @@ experiments. It is an ongoing development at the Paul Scherrer Institute (Switze
 and at TRIUMF (Canada), since 1993.
 Presently, ongoing development is focused on the interfacing capability of
 the Midas package to external applications such as ROOT for data analysis 
-(see @ref analyzer_struct). 
-\todo no such reference as analyzer_struct
+(see @ref  DA_Data_analyzers). 
+
 
 MIDAS is based on a <b>modular networking capability</b> and a <b>central database 
 system</b>. MIDAS consists of a C library and several applications, which can run on many
@@ -70,7 +67,7 @@ frontend  program  can also run on the backend computer,  thus eliminating the n
 receive data from several frontends, and may send the data to another backend computer for analysis.
 
 \image html small_and_large_systems.gif
-\image latex small_and_large_systems.eps
+
 
 \anchor idx_device-driver
 @subsection I_device_drivers  Device Drivers for Midas
@@ -79,7 +76,7 @@ Frontends require Device Drivers to access and acquire data from the various har
 Device drivers for common PC-CAMAC interfaces have been written for Windows NT and Linux. Drivers for 
 PC-VME interfaces are commercially available for Windows NT and for Linux as well. 
 <b>Midas provides a large variety of drivers</b> based on their use within the physics community.
-See @ref Hardware .
+See @ref FE_Hardware .
 
 As CAMAC modules are 
 slowly phased out, VME based modules replace them.
@@ -112,14 +109,12 @@ together with event data (written to tape or disk).
 <br>
 \htmlonly
 <script type="text/javascript">
-pages("index","I_section_index", "I_Midas_system_picture","Intro","" ); // back index next {top bottom}
+pages("index","Intro", "I_Midas_system_picture","Intro","" ); // back index next {top bottom}
 
 sections("index","Intro","Quickstart"); // last section; top of this section; next section
 </script>
 \endhtmlonly
-\latexonly
-@ref Top - @ref Organization "Map" - @ref I_Midas_system_picture "next page"
-\endlatexonly
+
 <br>
 <!-- End of Navigation -->
 
@@ -136,13 +131,11 @@ sections("index","Intro","Quickstart"); // last section; top of this section; ne
 <br>
 \htmlonly
 <script type="text/javascript">
-pages("Intro","I_section_index",  "Quickstart",   "I_Midas_system_picture","end" ); // back index next {top bottom}
+pages("Intro","Intro",  "Quickstart",   "I_Midas_system_picture","end" ); // back index next {top bottom}
 sections("index","Intro","Quickstart"); // last section; top of this section; next section
 </script>
 \endhtmlonly
-\latexonly
-@ref Top - @ref Organization "Map" - @ref  Quickstart  "next page"
-\endlatexonly
+
 <br>
 <!-- End of Navigation -->
 \anchor idx_midas_overview
@@ -151,25 +144,21 @@ the section @ref Features.
 
  * <center> 
  *  \image html midasintro.jpg
- *  \image latex midasintro.eps "Components" width=13.25cm
  * </center> 
 
 For information on the Midas features shown here, see the @ref  F_MainElements "overview"  .
-
+\anchor end
 <!-- Navigation -->
 <br>
 \htmlonly
 <script type="text/javascript">
-pages("Intro","I_section_index",  "Quickstart",   "I_Midas_system_picture","" ); // back index next {top bottom}
+pages("Intro","Intro",  "Quickstart",   "I_Midas_system_picture","" ); // back index next {top bottom}
 sections("index","Intro","Quickstart"); // last section; top of this section; next section
 </script>
 \endhtmlonly
-\latexonly
-@ref Top - @ref Organization "Map" - @ref  Quickstart  "next page"
-\endlatexonly
 <br>
 <!-- End of Navigation -->
-\end
+
 <!-- End of page I_Midas_system_picture Diagram of the Midas system
          and
      End of Section Intro   

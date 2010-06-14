@@ -3,13 +3,10 @@
 \htmlonly
 <script type="text/javascript">
 // pages parameters: back index next {top bottom}
-pages( "RC_mhttpd_Custom_page", "RC_section_index", "RC_mhttpd_custom_js_lib","RC_mhttpd_js",  "end" );
+pages( "RC_mhttpd_Custom_page", "RunControl", "RC_mhttpd_custom_js_lib","RC_mhttpd_js",  "end" );
 sections("Features", "RunControl","FrontendOperation"); // last section; top of this section; next section
 </script>
 \endhtmlonly
-\latexonly
- @ref   RC_mhttpd_Custom_page   "previous page" - @ref Top - @ref Organization "Map"  - @ref    RC_mhttpd_custom_js_lib  "next page"
-\endlatexonly
 <br>
 
 The following code is the Javascript Built-in library <b>mhttpd.js<\b> for mhttpd.c version 4505
@@ -206,12 +203,9 @@ var TID_LINK = 16;
 \htmlonly
 <script type="text/javascript">
 // pages parameters: back index next {top bottom}
-pages( "RC_mhttpd_custom_features", "RC_section_index", "RC_mhttpd_custom_js_lib","RC_mhttpd_js",  "end" );
+pages( "RC_mhttpd_custom_features", "RunControl", "RC_mhttpd_custom_js_lib","RC_mhttpd_js",  "end" );
 sections("Features", "RunControl","FrontendOperation"); // last section; top of this section; next section
 </script>
 \endhtmlonly
-\latexonly
- @ref   RC_mhttpd_custom_features   "previous page" - @ref Top - @ref Organization "Map"  - @ref    RC_mhttpd_custom_features  "next page"
-\endlatexonly
 <br>
 */

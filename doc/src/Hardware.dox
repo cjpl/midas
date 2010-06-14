@@ -7,14 +7,12 @@
 <br>
 \htmlonly
 <script type="text/javascript">
-pages("FE_Data_format","FE_section_index","FE_camac_vme_function_calls","FE_Hardware", "end" ); // back index next {top bottom}
+pages("FE_Data_format","FrontendOperation","FE_camac_vme_function_calls","FE_Hardware", "end" ); // back index next {top bottom}
 // section parameters: last section; top of this section; next section
-sections("RunControl","FrontendOperation","Utilities");
+sections("RunControl","FrontendOperation","DataAnalysis");
 </script>
 \endhtmlonly
-\latexonly
-@ref FE_Data_format "previous page" - @ref FE_section_index - @ref Top - @ref FE_camac_vme_function_calls  "next page"
-\endlatexonly
+
 
 The driver library is continuously extended to suit the needs of various
 experiments based on the selected hardware modules. Not all commercially 
@@ -37,7 +35,6 @@ midas</a> for specific support or for submitting new drivers.
 
  * <center> Non exhaustive Drivers/ directory structure
  *  \image html driverlisting.jpg
- *  \image latex driverlisting.eps "Drivers/ directory structure" width=12cm
  * </center> 
 
 - @ref CAMAC_drivers This section is slowly getting obsolete. But still some ISA
@@ -73,13 +70,14 @@ remarks about these particular hardware modules.
   is used. Wrong returned data can be expected when CPU clocks is above 250MHz.
   Attempt on "slowing down" the IO through software has not guaranteed perfect result.
   Contact has been taken with HYTEC in order to see if possible fix can be applied to
-  the interface. First revision of the PC-card PAL has been tested but did not
+  the interface.
+  First revision of the PC-card PAL has been tested but did not
   show improvement. CVS version of the hyt1331.c until 1.2 contains "fast readout
   cycle" and should not be trusted. CVS 1.3 driver revision contains a patch to
   this problem. In the mean time you can apply your own patch
-  (see @ref AppendixG) and also <a href="http://www.hytec-electronics.co.uk/index.html"> Hytec </a>)
+  (see @ref FAQ) and also <a href="http://www.hytec-electronics.co.uk/index.html"> Hytec </a>)
   - <b> [hyt1331.c Version >= 1.8.3]</b>
-  This version has been modified for 5331 PCI card support running under the @ref U_dio_task.  
+  This version has been modified for 5331 PCI card support running under the @ref FE_dio_task.  
   - <b>[khyt1331.c Version >= 1.8.3]</b>
   A full Linux driver is available for the 5331 PCI card interfacing to the
   hyt1331. The kernel driver has been written for the Linux kernel 2.4.2,
@@ -176,18 +174,18 @@ For GPIB Linux support please refer to
 - <b>[SCSI driver]</b> Support for the jorway73a SCSI/CAMAC controller under Linux has been done
    by Greg Hackman (see @ref CAMAC_drivers).
 
-\anchor end
+<br>
+<br>
+
 
 \htmlonly
 <script type="text/javascript">
-pages("FE_Data_format","FE_section_index","FE_camac_vme_function_calls","FE_Hardware", "" ); // back index next {top bottom}
+pages("FE_Data_format","FrontendOperation","FE_camac_vme_function_calls","FE_Hardware", "" ); // back index next {top bottom}
 // section parameters: last section; top of this section; next section
-sections("RunControl","FrontendOperation","Utilities");
+sections("RunControl","FrontendOperation","DataAnalysis");
 </script>
 \endhtmlonly
-\latexonly
-@ref FE_Data_format "previous page" - @ref FE_section_index - @ref Top - @ref FE_camac_vme_function_calls  "next page"
-\endlatexonly
-
+<br>
+\anchor end
 <!-- end of page FE_Hardware -->
 */

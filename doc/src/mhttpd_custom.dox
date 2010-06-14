@@ -13,7 +13,9 @@
       
        subpage mhttpd_custom_status.dox    - custom pages that replace the main status page
 -->
+
 /*! \page    RC_mhttpd_Custom_page Custom pages
+
 <br>
 \htmlonly
 <script type="text/javascript">
@@ -22,11 +24,10 @@ pages( "RC_mhttpd_Alarm_page", "RC_section_index", "RC_mhttpd_Activate","RC_mhtt
 sections("Features", "RunControl","FrontendOperation"); // last section; top of this section; next section
 </script>
 \endhtmlonly
-\latexonly
- @ref   RC_mhttpd_Alarm_page   "previous page" - @ref Top - @ref Organization "Map"  - @ref   RC_mhttpd_Activate  "next page"
-\endlatexonly
+\anchor idx_mhttpd_page_custom
+\anchor idx_custom-see-mhttpd-page-custom
 <br>
-
+<br>
 @section RC_mhttpd_custom_intro Introduction
 
 Custom web pages provide the user with a means of creating secondary user-created
@@ -77,9 +78,7 @@ pages( "RC_mhttpd_Alarm_page", "RC_section_index"," RC_mhttpd_Activate","RC_mhtt
 sections("Features", "RunControl","FrontendOperation"); // last section; top of this section; next section
 </script>
 \endhtmlonly
-\latexonly
- @ref   RC_mhttpd_Alarm_page   "previous page" - @ref Top - @ref Organization "Map"  - @ref  RC_mhttpd_Activate   "next page"
-\endlatexonly
+
 <!-- end of page  RC_mhttpd_Custom_page Custom pages -->
 
 */
@@ -94,20 +93,22 @@ pages( "RC_mhttpd_Custom_page", "RC_section_index","RC_mhttpd_custom_features", 
 sections("Features", "RunControl","FrontendOperation"); // last section; top of this section; next section
 </script>
 \endhtmlonly
-\latexonly
- @ref   RC_mhttpd_Alarm_page   "previous page" - @ref Top - @ref Organization "Map"  - @ref  RC_customize_ODB   "next page"
-\endlatexonly
-
+<br>
+<br>
+@section RC_odb_custom_intro Introduction
+<span class="note">
 In order to activate a  custom page from the within the Midas web interface, the pages
-must be listed in the ODB under the optional  <span class="odb">/Custom</span> tree as described below for 
-@ref RC_odb_custom_external_example  "external"   or @ref RC_odb_custom_internal_example  "internal"  pages.
+must be listed in the ODB under the optional</span>  <span class="odb">/Custom</span>
+<span class="note"> tree as described below for 
+@ref RC_odb_custom_external_example  "external"   or @ref RC_odb_custom_internal_example  "internal"  pages.</span>
 
  The  <span class="odb">/Custom</span> tree must be created by the user, e.g. using @ref RC_odbedit_task "odbedit"
 @code
 odbedit
 [local:midas:S] mkdir Custom
 @endcode
-
+\anchor idx_mhttpd_buttons_custom
+\anchor idx_ODB_tree_custom
 @section RC_odb_custom_tree  The /Custom ODB tree
 \Note the   <span class="odb">/Custom</span> tree is applicable only to  @ref RC_mhttpd "mhttpd", and ignored by 
 @ref RC_odbedit "odbedit".
@@ -117,10 +118,12 @@ The optional ODB  <span class="odb">/Custom</span> tree may contain
  -  links to \b local external custom web pages created by the user (see @ref remote "below" 
 for \b remote \b external pages)
  -  HTML content of an \b internal custom web page created by the user.
+ -  \b images subtree (explained @ref  RC_mhttpd_custom_image "later") used to specify images for custom pages 
 
 If keys are defined in this tree, except where noted @ref RC_odb_custom_keynames "below",  
-the names of the keys will appear as @ref RC_mhttpd_Alias_page "alias-links" <span class="new">(or alias-buttons)</span> in the 
-<span class="cl">mhttpd</span>  @ref RC_mhttpd_pol_status_example "Main Status page". By clicking on one of these
+the names of the keys will appear as  <span class="new">custom-buttons</span>  @ref ndf_dec_2009  (or @ref RC_mhttpd_Alias_page "custom-links")
+in the 
+<span class="cl"> mhttpd</span>  @ref RC_mhttpd_pol_status_example "Main Status page". By clicking on one of these
 alias-buttons, the custom page will be visible in a new frame.
 <br>
 
@@ -153,7 +156,7 @@ Test&                            STRING  1     80    >99d 0   RWD  /home/t2ktpc/
 <br>
 \anchor remote
 If the external HTML file is on a <span class="note"> remote </span> \b webserver, the link should be placed under the 
-@ref  RC_odb_alias_tree "/Alias" tree rather than the <b> /Custom </b> tree, e.g.
+@ref  RC_odb_alias_tree "/Alias" tree rather than the  <span class="odb">/Custom</span> tree, e.g.
 
 @code
 [local:Default:Stopped]/>mkdir Alias  <-- if /Alias is not present
@@ -199,18 +202,22 @@ Clicking this alias-link will load the file \b GasMain.html into the \b same fra
 
 - The key  <span class="odb">js_functions!</span> is used to 
 load some javascript functions needed by the html code of the other custom pages.
-- The key  <span class="odb">ArforAir!</span> is a
+- The key  <span class="odb">Purifier!</span> is a
 custom page that can be loaded by clicking on a box in the custom page GasMain.
 - The key  <span class="odb">style0!</span> contains
 a style sheet for use with all the html custom pages. 
 
-The output looks like @ref t2k_example_2 "this".
+The output is shown in @ref T2K_example_2 "this example". 
 
-@subsection RC_odb_custom_status  Replace the default Status page by a Custom Status page
+
+@section RC_odb_custom_status  How to replace the default Status page by a Custom Status page
 
 By using a keyname of  <span class="odb">Status</span> (no "&") in the link to a custom page, that page 
 will replace the Default main status page. Clicking on the \b Status button on any of the sub-pages will return
-to the \b Custom status page. See  @ref RC_mhttpd_custom_status for more information and examples.
+to the \b Custom status page.
+
+<br>
+See  @ref RC_mhttpd_custom_status for more information and examples.
 
 
 <br>
@@ -221,9 +228,6 @@ pages( "RC_mhttpd_Custom_page", "RC_section_index","RC_mhttpd_custom_features", 
 sections("Features", "RunControl","FrontendOperation"); // last section; top of this section; next section
 </script>
 \endhtmlonly
-\latexonly
- @ref   RC_mhttpd_Alarm_page   "previous page" - @ref Top - @ref Organization "Map"  - @ref RC_mhttpd_custom_features   "next page"
-\endlatexonly
 
 \anchor end
 <!-- end of page  RC_mhttpd_Activate   -->

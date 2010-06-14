@@ -1,78 +1,88 @@
 /*! \page NDF New Documented Features
 
-<!-- Subpage of Introduction Section -->
+<br>
+\htmlonly
+<script type="text/javascript">
+// pages parameters: back index next {top bottom}
+pages( "BuildingOptions","NDF", "Glossary", "NDF", "end" );
+sections("BuildingOptions","NDF","Glossary"); // last section; top of this section; next section
+</script>
+\endhtmlonly
+<br>
 
-\htmlonly <img ALIGN="left" alt="previous.gif" src="previous.gif"> \endhtmlonly 
-@ref  - @ref Top - @ref SpecialConfig
-\htmlonly <img alt="next.gif" src="next.gif"> \endhtmlonly
-
-\todo newdocfeatures.dox needs work
 
 \section ndf_info  General Information
 
 This section will describe what new features are available with new versions
 of the Midas code. References will be given to these features in the documentation, and they
-will be highlighted in the text <span class ="new">like this</span>.
+will be highlighted in the text <span class ="new">like this</span>.  
 
 See also the <a href="https://ladd00.triumf.ca/elog/Midas">Midas Elog Forum</a> for
   - Requests for new features, 
   - Bug reports etc https://ladd00.triumf.ca/elog/Midas
-  - yet-to-be-documented new features ??
+  - yet-to-be-documented new features
 
-\todo are we still going by Midas Version 2.2.? or are we going by e.g. version nnn of mhttpd.c ??
+\subsection NDF_versions Note on Midas Versions
 
-\section ndf_section_220 Version 2.2.0
-- Software version: 2.2.0 (2009)
-\TODO fill all ?? versions
- -  ?? (mhttpd.c) <b>/Experiment/Hide Run Buttons</b> used to hide run buttons on mhttpd main status page ( see  @ref RC_mhttpd_status_action_buttons "details")
- -  ?? (mhttpd.c) <b>/Experiment/Menu Buttons</b> to select which buttons appear on mhttpd main status page ( see  @ref RC_mhttpd_status_action_buttons "details")
- -  4434 (mhttpd.c) and 4435 (mlogger.c)  \b Note: backup ODB before using the following !!
-    - history in SQL database (see @ref History_sql_internal)
-    - experimental implementation of "ODBRpc" @ref RC_mhttpd_custom_RPC_access  added to the midas javascript library
-    - see  @ref note_history_tags "Note on /History/Tags"
-    - @ref F_mhdump_task
+Historically, the Midas package was released with an overall version (e.g. 1.9.5, 2.2.0 etc). This had the disadvantage that
+many new features were not available until the release of the next version.
 
-
-
-\section ndf_section_210 Version 2.1.0
-- Software version: 2.1.0 (in progress June 4/2008)
- - 2.0.0 has been touched heavly for compilation errors and warnings corrections, as well
-   as mlogger, history, mhttpd for inclusion of new features. All these changes WILL require 
-   a new release under the number 2.1.0. The list of the main modifications
-   is given here below:
-  - in progress...
-  - ...
-\todo Version 2.1.0 list of main modifications missing
-
-\section ndf_section_200 Version 2.0.0
-- <b> [>2.0.0] Nov 02/2007 </b>
- - @ref F_mlogger_task supports zip files for MIDAS format.
- - New environment variable @ref BO_MIDAS_MAX_EVENT_SIZE.
- - @ref F_lazylogger_task new features (remark).
- - @ref F_Midas_Library <b> alarm, history, elog </b> functions have been placed in dedicate files.
- - @ref sc_page new editable field for web display.
-
-- <b> [2.0.0] </b>
- - Update the whole midas package for support of 64 bits machine,
-   OSLFAGS should have -m32 for 32bit  (@ref BO_building_option).
- - Implementation of the external standalone Elog package (@ref External_Elog).
- - ODB Buffer size parameter (@ref  ODB_Experiment_Tree).  
- - Fix buffer level handling.
- - Improve midas.log, ODB Dump file directory destination (@ref Data_Dir).
- - Multiple minor buf fixes
-  - Buffer level handling.
-  - mdump single bank display.
-  - mhttpd (multiple buggies).
- - EQ_MULTITHREAD frontend type (see @ref EQ_xxx).
- - @ref rbfunctionc for multi-threading and cascading data transfer.
+<br>
+The package release system has been discontinued. The latest version of the Midas package is now
+available from the  <a href="http://savannah.psi.ch/viewcvs/trunk/?root=midas" > online SVN 
+</a> repository. As a changes are made to the files in the Midas package, a common version number is incremented. Each file has an
+individual version number, but updates of a particular file in svn will not necessarily have consecutive version numbers.
+For example, the next version of mhttpd.c after 4708 is 4722. The missing version numbers have been used to update different
+files in the package. Checking out the Midas package on a particular day will get the latest working version of the Midas package
+with all the new features.
+<br>
+In this documentation, new features will be dated (month/year) after which an update from svn will include the new feature.
+The version of the file (and therefore of the Midas package) that included the new feature is listed  @ref ndf_New_Features "below".
+Features will be considered to be "new" for a year or so, then will become standard, and no longer be listed is this file, 
 
 
-- <b> [<2.0.0] </b>
-  - Unsupported version.
+\section ndf_New_Features New Documented Features
 
-\todo 2.0.0 needs cleaning up
-  
-\htmlonly <img ALIGN="left" alt="previous.gif" src="previous.gif"> \endhtmlonly
-@ref Quickstart - @ref Top - @ref SpecialConfig
-\htmlonly <img alt="next.gif" src="next.gif"> \endhtmlonly
+\subsection ndf_may_2010 May 2010
+ - bit operations for custom fills - see @ref RC_mhttpd_fills_src_logical  (mhttpd.c 4708)
+ - Arrays can now be written with  @RC_mhttpd_custom_odbset   (mhttpd.c 4707)
+
+\subsection ndf_jan_2010 Jan 2010
+ - Four different rows for the various buttons on the @ref alias_buttons_status_page "Status page"
+
+\subsection ndf_dec_2009 Dec 2009
+ - Implemented MSCB Page (mhttpd.c 4659)
+ - Option to customize the  @ref RC_mhttpd_status_menu_buttons "menu buttons" appearing on the main status page (mhttpd.c 4646)
+ - Removed 'analyzed' column (Main Status page)  (mhttpd.c 4644)
+ - Changed Alias and Custom links to Buttons - see @ref alias_buttons_status_page "example" (mhttpd.c 4633)
+ -
+ 
+\subsection ndf_nov_2009 Nov 2009
+ - Direct serving of GIF images from file system in custom pages (mhttpd.c 4631)
+ - Option to hide the run start/stop buttons  ( see  @ref customize_mhttpd_run_buttons "details" );
+ - experiment name now shown in status page title and elog email (mhttpd.c 4629)
+
+\subsection ndf_jun_2009 Jun 2009  
+ - shows Run start/stop requested on main status page until mtransition starts - see @ref  RC_mhttpd_Start_page (mhttpd.c 4520)
+
+\subsection ndf_jan_2009 Jan 2009 
+    
+ - Improvements to the History system (mlogger.c,  mhttpd.c 4435)<br> \b Note: backup ODB before using the following: 
+      - history in SQL database (see @ref History_sql_internal)
+          - see  @ref  F_new_history_tags "Note on /History/Tags"
+      - experimental implementation of "ODBRpc" @ref RC_mhttpd_custom_RPC_access  added to the midas javascript library
+
+
+    
+<br>
+\anchor end
+\htmlonly
+<script type="text/javascript">
+// pages parameters: back index next {top bottom}
+pages( "BuildingOptions","NDF", "Glossary", "NDF", "" );
+sections("BuildingOptions","NDF","Glossary"); // last section; top of this section; next section
+</script>
+\endhtmlonly
+<br>
+
 */

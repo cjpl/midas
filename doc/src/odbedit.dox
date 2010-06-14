@@ -1,4 +1,5 @@
 /*! @page RC_odbedit  odbedit: The ODB Editor and run control
+\anchor idx_odbedit
 
 <!--  odbedit functionality is a sub-page of the Run Control section; 
       
@@ -6,13 +7,11 @@
 <br>
 \htmlonly
 <script type="text/javascript">
-pages( "RC_Controlling_run",  "RC_section_index","RC_odbedit_task", "RC_odbedit", "end" ); // back index next {top bottom}
+pages( "RC_Controlling_run",  "RunControl","RC_odbedit_task", "RC_odbedit", "end" ); // back index next {top bottom}
 sections("Features", "RunControl","FrontendOperation"); // last section; top of this section; next section
 </script>
 \endhtmlonly
-\latexonly
-@ref  RC_Controlling_run "previous page" - @ref Top - @ref Organization "Map"  -   @ref  RC_odbedit_task "next page"
-\endlatexonly
+
 <br>
 
 <!-- ------------------------------------------------------------------------------- -->
@@ -35,13 +34,11 @@ troubleshooting.
 <br>
 \htmlonly
 <script type="text/javascript">
-pages( "RC_Controlling_run",  "RC_section_index","RC_odbedit_task", "RC_odbedit", "" ); // back index next {top bottom}
+pages( "RC_Controlling_run",  "RunControl","RC_odbedit_task", "RC_odbedit", "" ); // back index next {top bottom}
 sections("Features", "RunControl","FrontendOperation"); // last section; top of this section; next section
 </script>
 \endhtmlonly
-\latexonly
-@ref  RC_Controlling_run "previous page" - @ref Top - @ref Organization "Map"  -   @ref  RC_odbedit_task "next page"
-\endlatexonly
+
 <br>
 \anchor end
 <!-- End of page RC_odbedit -->
@@ -50,21 +47,19 @@ sections("Features", "RunControl","FrontendOperation"); // last section; top of 
 
 
 /*! @page RC_odbedit_task odbedit - ODB Editor and run control task
-
+\anchor idx_odbedit_task
 <br>
 \htmlonly
 <script type="text/javascript">
-pages( "RC_odbedit",  "RC_section_index","RC_odbedit_examples", "RC_odbedit_task", "end" ); // back index next {top bottom}
+pages( "RC_odbedit",  "RunControl","RC_odbedit_examples", "RC_odbedit_task", "end" ); // back index next {top bottom}
 sections("Features", "RunControl","FrontendOperation"); // last section; top of this section; next section
 </script>
 \endhtmlonly
-\latexonly
-@ref  RC_Controlling_run "previous page" - @ref Top - @ref Organization "Map"  -   @ref   RC_odbedit_examples "next page"
-\endlatexonly
+
 <br>
 
 <!-- ------------------------------------------------------------------------------- -->
-     
+\anchor idx_edit_ODB_odbedit     
 \b odbedit is primarily an @ref F_Online_Database_overview Editor. It also acts as a run control and
 has limited run monitoring features. It is an alternative to the web-based run control program
 @ref RC_mhttpd_task.
@@ -113,7 +108,7 @@ has limited run monitoring features. It is an alternative to the web-based run c
 
    The odbedit commands and mode of operation are described fully in the following sections.
 
-
+\anchor idx_odbedit_command_list
 @section  RC_odbedit_help odbedit command list
 Running  @ref RC_odbedit_task "odbedit" and issuing the command "help" displays the list of commands:
 \code
@@ -185,13 +180,11 @@ quit/exit               - exit
 <br>
 \htmlonly
 <script type="text/javascript">
-pages( "RC_odbedit",  "RC_section_index","RC_odbedit_examples", "RC_odbedit_task", "" ); // back index next {top bottom}
+pages( "RC_odbedit",  "RunControl","RC_odbedit_examples", "RC_odbedit_task", "" ); // back index next {top bottom}
 sections("Features", "RunControl","FrontendOperation"); // last section; top of this section; next section
 </script>
 \endhtmlonly
-\latexonly
- @ref  RC_odbedit "previous page" - @ref Top - @ref Organization "Map"  -   @ref RC_odbedit_examples "next page"
-\endlatexonly
+
 \anchor end
 
 <!-- End of page  RC_odbedit_task -->
@@ -200,17 +193,15 @@ sections("Features", "RunControl","FrontendOperation"); // last section; top of 
 
 
 /*! @page RC_odbedit_examples Using odbedit 
-
+\anchor idx_odbedit_examples
 <br>
 \htmlonly
 <script type="text/javascript">
-pages( "RC_odbedit_task",  "RC_section_index","RC_mhttpd","RC_odbedit_examples",  "end" ); // back index next {top bottom}
+pages( "RC_odbedit_task",  "RunControl","RC_mhttpd","RC_odbedit_examples",  "end" ); // back index next {top bottom}
 sections("Features", "RunControl","FrontendOperation"); // last section; top of this section; next section
 </script>
 \endhtmlonly
-\latexonly
-@ref  RC_odbedit_task "previous page"  - @ref Top - @ref Organization "Map" - @ref   RC_mhttpd "next page"
-\endlatexonly
+
  
 <ul>
 <li>  @ref RC_odbedit_prompt
@@ -233,6 +224,8 @@ sections("Features", "RunControl","FrontendOperation"); // last section; top of 
     <li> @ref RC_odbedit_help   "help - list of commands"
     <li> @ref RC_odbedit_pwd   
     <li> @ref RC_odbedit_cd
+    <li> @ref RC_odbedit_chat
+    <li> @ref RC_odbedit_chmod
     <li> @ref RC_odbedit_ls
     <li> @ref RC_odbedit_mkdir
     <li> @ref RC_odbedit_move
@@ -338,6 +331,7 @@ cellspacing="2">  <caption>Above: Meaning of Prompt symbols
 
 <hr>
 
+\anchor idx_ODB_create
 @section RC_odbedit_create_ODB ODB Creation
 \code
 create <type> <key>     - create a key of a certain type
@@ -383,6 +377,7 @@ For example, starting the @ref F_mlogger_task "Midas logger" will cause the tree
 
 <hr>
 <br>
+\anchor idx_ODB_key_names
 @section RC_odbedit_keynames ODB Key names: UPPER/lower case, spaces in key names 
 <b>ODB Key names are  case-independent,</b>
 \code
@@ -427,6 +422,7 @@ begin_scan
 stdpulse_3
 @endcode
 
+\anchor idx_ODB_corrupted
 <hr>@section RC_odbedit_corrupted Corrupted ODB
 If the @ref  F_Online_Database_overview "Online Database" becomes corrupted, @ref RC_odbedit_task "odbedit" may no longer work, and other clients
 will also fail to open the database. In this case, the old ODB should be deleted and
@@ -450,6 +446,10 @@ Create new *.SHM files by running odbedit (see @ref  RC_odbedit_create_ODB), the
 <br>
 <hr>
 <br>
+
+\anchor idx_scripts_odbedit
+\anchor idx_odbedit_scripts
+
 @subsection RC_odbedit_extcommand Using the external command (the  -c argument)
  @ref RC_odbedit_task -c argument
 In the simplest case, a single odbedit command can be entered on the command line, 
@@ -508,9 +508,14 @@ odbedit -c "create STRING Test[8][40]"
 - @ref  RC_example_script_1
 - @ref  RC_example_script_2
 
+
 @subsubsection RC_example_script_1 Shell script run at end-of-run
+
 This script runs at the end of run, and reads some parameters from the odb and sends 
 them to the elog by using the @ref U_melog_task.
+To make the script run at end of run, the name of the script is entered in the "Execute on stop run" key in the
+@ref RC_ODB_programs_tree .
+ 
 \code
 #!/bin/tcsh
 
@@ -589,6 +594,9 @@ cat $fin
 
 <hr>@subsubsection RC_example_script_2 Perl script performing run control
 ........
+\todo  Missing example of Perl script performing run control
+
+
 
 
 <hr>@section RC_odbedit_cmd_examples Examples using odbedit commands
@@ -675,6 +683,56 @@ Exit chat mode with empty line.
 
 The chat conversation can also be heard over the speakers if @ref F_mspeaker_task is running.
 
+\anchor idx_access-control_ODB_keys
+<hr>@subsection RC_odbedit_chmod chmod - change mode
+By default the mode of ODB keys are RWD i.e. the permission is to Read, Write or Delete them. To avoid them being inadvertently
+changed or deleted the mode can be set to read-only, e.g
+\code 
+[local:t2kgas:S]GasMain.gif>chmod 1 background
+Are you sure to change the mode of key
+  /Custom/Images/GasMain.gif/background
+and all its subkeys
+to mode [R]? (y/[n]) y
+[local:t2kgas:S]GasMain.gif>ls -lt
+Key name                        Type    #Val  Size  Last Opn Mode Value
+---------------------------------------------------------------------------
+refresh time (s)                DWORD   1     4     13h  0   RWD  10
+background                      STRING  1     256   13h  0   R    /home/suz/online/t2kgas/images/GasMain.gif
+labels                          DIR
+fills                           DIR
+
+\endcode
+After setting the mode to read-only, the key cannot be written to:
+\code
+[local:t2kgas:S]GasMain.gif>set background dddd
+Write access not allowed
+\endcode
+or deleted
+\code
+[local:t2kgas:S]GasMain.gif>rm background
+Are you sure to delete the key
+"/Custom/Images/GasMain.gif/background"
+(y/[n]) y
+deletion of key not allowed
+[local:t2kgas:S]GasMain.gif> 
+\endcode 
+
+To restore the key to mode RWD,
+\code
+[local:t2kgas:S]GasMain.gif>chmod 7 background
+Are you sure to change the mode of key
+  /Custom/Images/GasMain.gif/background
+and all its subkeys
+to mode [RWD]? (y/[n]) y
+[local:t2kgas:S]GasMain.gif>ls -lt
+Key name                        Type    #Val  Size  Last Opn Mode Value
+---------------------------------------------------------------------------
+refresh time (s)                DWORD   1     4     13h  0   RWD  10
+background                      STRING  1     256   13h  0   RWD  /home/suz/online/t2kgas/images/GasMain.gif
+labels                          DIR
+fills                           DIR
+[local:t2kgas:S]GasMain.gif>
+\endcode
 
 <hr>@subsection RC_odbedit_ls ls - list
 \code
@@ -1449,14 +1507,14 @@ file will be loaded.
 @endcode
 <br>
 
-
+\anchor idx_experim-dot-h_make
 <hr>@subsection RC_odbedit_make make - create experim.h
 \code
 make [analyzer name]    - create experim.h
 @endcode
-The make command creates in the current directory \b experim.h, a file containing  C structures
+The \b make command creates in the current directory \b experim.h, a file containing  C structures
 which can be included into frontend and analyzer code to enable easy access to
-the odb parameters.
+the odb parameters (see also  RC_experim_dot_h "using experim.h with hot-links"
 <br>
  In order to include the @ref DA_analyzer_task "analyzer section", the ODB key \b /\<Analyzer>/Parameters
  has to be present, where \<Analyzer> is the name of the analyzer. The command used  is then 
@@ -1608,7 +1666,7 @@ etc.
 
 @endcode
 
-
+\anchor idx_clients_active_odbedit
 <hr>@subsection RC_odbedit_scl scl - show active clients
 \code
 scl [-w]                - show all active clients [with watchdog info]
@@ -1863,13 +1921,11 @@ Run #30128 stopped
 <br>
 \htmlonly
 <script type="text/javascript">
-pages( "RC_odbedit_task",  "RC_section_index","RC_mhttpd","RC_odbedit_examples",  "" ); // back index next {top bottom}
+pages( "RC_odbedit_task",  "RunControl","RC_mhttpd","RC_odbedit_examples",  "" ); // back index next {top bottom}
 sections("Features", "RunControl","FrontendOperation"); // last section; top of this section; next section
 </script>
 \endhtmlonly
-\latexonly
-@ref  RC_odbedit_task "previous page"  - @ref Top - @ref Organization "Map"  - @ref   RC_mhttpd "next page"
-\endlatexonly
+
 \anchor end
 <!-- end of page RC_odbedit_examples -->
 */

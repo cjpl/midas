@@ -1,6 +1,3 @@
-
-
-
 /*! @page Features Features of the Midas DAQ System
 
 <!-- Section:      Features -->
@@ -8,14 +5,12 @@
 \htmlonly
 <script type="text/javascript">
 // pages params : back index next {top bottom}
-pages( "Q_Windows",  "F_Section_Index", "F_MainElements", "Features","end"); // back index next {top bottom}
+pages( "Q_Windows",  "Features", "F_MainElements", "Features","end"); // back index next {top bottom}
 // sections params:   last section; top of this section; next section
 sections("Quickstart", "Features", "RunControl");
 </script>
 \endhtmlonly
-\latexonly 
- @ref Q_Windows "previous page" - @ref Top - @ref Organization "Map"- @ref  F_MainElements "next page"
-\endlatexonly
+
 <br>
 
 
@@ -45,23 +40,13 @@ by activation of the component through the @ref F_Online_Database_overview.
 <br>
 
 
-<!--  page is too short ... don't need this 
-\htmlonly
-<script type="text/javascript">
-// pages params : back index next {top bottom}
-pages( "Q_Windows",  "F_Section_Index", "F_MainElements", "Features",""); // back index next {top bottom}
-// sections params:   last section; top of this section; next section
-sections("Quickstart", "Features", "RunControl");
-</script>
-\endhtmlonly
-\latexonly 
- @ref Q_Windows "previous page" - @ref Top - @ref Organization "Map"- @ref  F_MainElements "next page"
-\endlatexonly
--->
+
 <br>
 \anchor end
 <!-- End of page  Features Features of the Midas DAQ System -->
 */
+
+
 
 <!--  page  F_MainElements next (overview.dox)  -->
 <!--  page  F_ODB_Structure next (midas_features.dox) -->
@@ -72,19 +57,17 @@ sections("Quickstart", "Features", "RunControl");
 
 <!-- ============================ L O G G I N G ==================== -->
 /*! @page F_Logging Logging in Midas
-
+\anchor idx_Logging
 \htmlonly
 <script type="text/javascript">
-pages( "F_Midas_Code_and_Libraries",  "F_Section_Index", "F_Logging_Data", "F_Logging","end"); // back index next {top bottom}
+pages( "F_Midas_Code_and_Libraries",  "Features", "F_Logging_Data", "F_Logging","end"); // back index next {top bottom}
 // sections params:   last section; top of this section; next section
 sections("Quickstart", "Features", "RunControl");
 </script>
 \endhtmlonly
-\latexonly 
- @ref F_Midas_Code_and_Libraries "previous page" - @ref Top - @ref Organization "Map"- @ref  F_Logging_Data "next page"
-\endlatexonly
-<br>
 
+<br>
+\anchor idx_Logging_Data
 @section F_Midas_Logger Introduction
 A Midas utility (@ref F_mlogger_task) is supplied in the Midas package. 
 This utility can perform several functions (<b>selected by the user </b> via the  
@@ -148,6 +131,8 @@ Data can currently be written in five different  @ref F_Logger_CS_Format "format
 The user may of course write their own custom data logger to save the data in any format they choose.
 <br>
 <br><hr><br>
+\anchor idx_Logging_task-see-mlogger
+\anchor idx_mlogger-task
 
 @section F_mlogger_task mlogger     - Midas Logger
 
@@ -171,7 +156,7 @@ The features and customization of the logger task are fully described in the sec
 
 <b> Notes </b> 
 <ul>
-<li>The \b mlogger application requires an existing \b /Equipment/ tree
+<li>The \b mlogger application requires an existing @ref FE_ODB_equipment_tree "/Equipment tree"
   in the ODB  
 <li>Once the mlogger is running, you should be able to monitor its state
   with @ref RC_mstat_task or with @ref RC_mhttpd_task .
@@ -183,7 +168,7 @@ The features and customization of the logger task are fully described in the sec
   <ul>
      <li> mlogger will not run if started remotely (argument -h hostname has been removed).
      <li> The file size limitation (<2GB) has been removed for older OS version.
-     <li> @ref mySQL data entry support.
+     <li> @ref F_mySQL data entry support.
   </ul>
 
 <li>Midas version 2.0.0 and later
@@ -201,23 +186,20 @@ The features and customization of the logger task are fully described in the sec
  - \subpage F_Messaging
  - \subpage F_mySQL
  - \subpage F_History_logging
-     - @ref History_sql_internal  <span class="new">New</span>
+     - @ref History_sql_internal  <span class="new">New (since @ref  ndf_jan_2009 )</span>
  - \subpage F_Elog
  - \subpage F_LogUtil
 <br><br>
 
 
 \htmlonly
-<script type="text/javascript" src="navigation.js"></script>
 <script type="text/javascript">
-pages( "F_Midas_Code_and_Libraries",  "F_Section_Index", "F_Logging_Data", "F_Logging"); // back index next {top bottom}
+pages( "F_Midas_Code_and_Libraries",  "Features", "F_Logging_Data", "F_Logging"); // back index next {top bottom}
 // sections params:   last section; top of this section; next section
 sections("Quickstart", "Features", "RunControl");
 </script>
 \endhtmlonly
-\latexonly 
- @ref F_Midas_Code_and_Libraries "previous page" - @ref Top - @ref Organization "Map"- @ref  F_Logging_Data "next page"
-\endlatexonly
+
 
 <br><br>
 
@@ -229,17 +211,15 @@ sections("Quickstart", "Features", "RunControl");
  
 <!-- ======================== F_LOGGING_DATA ================= -->
 /*! @page F_Logging_Data Customizing the Midas data logging
-
+\anchor idx_Logging_Customizing
 \htmlonly
 <script type="text/javascript">
-pages( "F_Logging",  "F_Section_Index", "F_Messaging", "F_Logging_Data","end"); // back index next {top bottom}
+pages( "F_Logging",  "Features", "F_Messaging", "F_Logging_Data","end"); // back index next {top bottom}
 // sections params:   last section; top of this section; next section
 sections("Quickstart", "Features", "RunControl");
 </script>
 \endhtmlonly
-\latexonly
-@ref  F_Logging "previous page" - @ref Top - @ref Organization "Map" - @ref  F_Messaging "next page"
-\endlatexonly
+
 <br>
 
 When mlogger is started for the first time, it will create default <b> /Logger</b> and  <b> /History </b> trees.
@@ -258,8 +238,10 @@ Most of the keys in the  <b>/Logger ODB tree</b> are used to customize logging o
 keys to customize the Messaging system. 
 The logger tree also may contain @ref F_Logger_Optional_Keys "optional keys" relevent to logging the history,
 the elog, or logging to a mySQL database. Customizing the optional keys will be described in 
-detail in the relevent sections below.  The  F_ODB_History_tree is described in the section @ref F_History_logging .
+detail in the relevent sections below.  The  @ref F_ODB_History_tree is described in the section @ref F_History_logging .
 
+
+\anchor idx_ODB_tree_Logger
 @section F_Logger_tree /Logger ODB tree
  
 The following example shows a /logger tree as created by @ref F_mlogger_task "mlogger". See also @ref F_Logger_tree_keys .
@@ -825,7 +807,7 @@ cellspacing="0">
       </td>
       <td style="vertical-align: top;"><br>
       </td>
-      <td style="vertical-align: top;"> @ref F_Logger_CS_Compression "Compression"
+      <td style="vertical-align: top;"> @ref F_Logger_CS_Compression  "Compression"
       </td>
     </tr>
     <tr>
@@ -1380,7 +1362,7 @@ when to stop a run automatically by checking against @ref  F_Logger_CS_Byte_Limi
 \anchor F_Logger_CStat_Bytes_Written_Uncompressed Bytes written uncompressed
 </td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;"> 
- If @ref  F_Logger_CS_Compression_Level "Compression level" is 0 (i.e. not compressed), the values of 
+ If @ref  F_Logger_CS_Compression "Compression level" is 0 (i.e. not compressed), the values of 
 <b>Bytes written uncompressed</b> and <b>Bytes written</b> will be identical.
 </td>
 </tr>
@@ -1414,6 +1396,7 @@ to be skipped in order to reach a specific run.
 <hr>
 <br>
  
+\anchor idx_ODB_tree_Logger_Optional-keys
 
 @section F_Logger_Optional_Keys Optional Keys in the ODB /Logger tree
 Three optional subdirectories with special meaning may be created in the @ref F_Logger_tree . These are not created
@@ -1427,15 +1410,11 @@ They are described under the sections  @ref F_Elog,  @ref F_History_logging  and
 
 \htmlonly
 <script type="text/javascript">
-pages( "F_Logging",  "F_Section_Index", "F_Messaging", "F_Logging_Data",""); // back index next {top bottom}
+pages( "F_Logging",  "Features", "F_Messaging", "F_Logging_Data",""); // back index next {top bottom}
 // sections params:   last section; top of this section; next section
 sections("Quickstart", "Features", "RunControl");
 </script>
 \endhtmlonly
-\latexonly
-@ref  F_Logging "previous page" - @ref Top - @ref Organization "Map" - @ref  F_Messaging "next page"
-\endlatexonly
-
 
 <!-- End of page F_Logging_Data
           a sub-page of F_Logging 
@@ -1447,19 +1426,18 @@ sections("Quickstart", "Features", "RunControl");
 
 
 /*! @page F_Messaging Messaging
-
+\anchor idx_Messaging
+\anchor idx_Logging_Messaging
 <!-- Navigation -->
 \htmlonly
 <script type="text/javascript">
-pages( "F_Logging_Data",  "F_Section_Index","F_mySQL","F_Messaging","end"); // back index next {top bottom}
+pages( "F_Logging_Data",  "Features","F_mySQL","F_Messaging","end"); // back index next {top bottom}
 // sections params:   last section; top of this section; next section
 sections("Quickstart", "Features", "RunControl");
 </script>
 \endhtmlonly
-\latexonly
-@ref  F_Logging_Data "previous page" - @ref Top - @ref Organization "Map" - @ref  F_mySQL "next page"
-\endlatexonly
-<!------------- end of navigation -------------------------------->
+
+
 <br>
 
 Any client can produce status or error messages with a single call to cm_msg() using the MIDAS library, e.g.
@@ -1482,6 +1460,7 @@ of message. A dedicated buffer (i.e. shared memory)  @ref RC_odbedit_create_ODB 
 \todo dedicated buffer SYSMSG.SHM   ?? or is it .MSG.SHM ... ??  What is .MSG.SHM used for?
 
 <br>
+\anchor idx_message_types
 @anchor F_message_types
 Predefined Message Macros contained in the Midas library cover most of the message
 requirements. These Macros compact the 3 first arguments of the cm_msg() call.
@@ -1498,6 +1477,7 @@ The available message types ( defined in midas.h ) for use with cm_msg() are:
   - @ref MCALL : Info message for telephone call (MT_CALL, __FILE__, __LINE__)
 
 <br>
+\anchor idx_log-file
 <hr> @section F_Log_File Log file
 
 Midas provides a general log file \b midas.log for recording system and
@@ -1505,19 +1485,20 @@ user messages across the different components of the data acquisition clients.
 It is not necessary for @ref F_mlogger_task "mlogger" to be running for this message logging system to
 work. 
 <br>
+
 The location of this file is dependent on the mode of installation of the system.
 
-- \b with  @ref F_logger_tree /Logger Tree The \b midas.log  will be located in the
-defined directory specified by the key @ref Data_Dir . In this case,  this name of the log file can be 
+- \b with  @ref F_Logger_tree /Logger Tree The \b midas.log  will be located in the
+defined directory specified by the key @ref  F_Logger_Data_Dir "Data dir" . In this case,  this name of the log file can be 
 changed using the key @ref F_Logger_Message_File "Message file" in
 the <b> /Logger </b> ODB tree. 
 
 - \b without the ODB /logger tree , i.e. midas logger not being used
   <br> In this case the location is defined
-by either the @ref MIDAS_DIR  environment (see @ref Environment_variables )
+by either the @ref BO_MIDAS_DIR  environment (see @ref BO_Environment_variables )
 or the definition of the experiment in the \b exptab  file
-(see @ref Experiment_Definition ). In both cases the log file will be in
-the experiment specific directory.
+(see @ref  Q_Linux_Exptab ). In both cases the log file will be in
+the experiment-specific directory.
 
 <br>
 
@@ -1582,14 +1563,12 @@ prior to the activation of the \b mspeaker, or \b mlxspeaker tasks.
 
 \htmlonly
 <script type="text/javascript">
-pages( "F_Logging_Data",  "F_Section_Index","F_mySQL","F_Messaging",""); // back index next {top bottom}
+pages( "F_Logging_Data",  "Features","F_mySQL","F_Messaging",""); // back index next {top bottom}
 // sections params:   last section; top of this section; next section
 sections("Quickstart", "Features", "RunControl");
 </script>
 \endhtmlonly
-\latexonly
-@ref  F_Logging_Data "previous page" - @ref Top - @ref Organization "Map" - @ref  F_mySQL "next page"
-\endlatexonly
+
 \anchor end
 <!-- End of page  F_Messaging Messaging  -->
 */
@@ -1598,17 +1577,16 @@ sections("Quickstart", "Features", "RunControl");
 
 <!-- ============= S Q L  ==================================== -->
 /*! @page F_mySQL Logging information to a mySQL database
-
+\anchor idx_Logging_mySQL
+\anchor idx_mySQL
 \htmlonly
 <script type="text/javascript">
-pages( "F_Messaging",  "F_Section_Index","F_History_logging","F_mySQL","end"); // back index next {top bottom}
+pages( "F_Messaging",  "Features","F_History_logging","F_mySQL","end"); // back index next {top bottom}
 // sections params:   last section; top of this section; next section
 sections("Quickstart", "Features", "RunControl");
 </script>
 \endhtmlonly
-\latexonly
-@ref   F_Messaging "previous page" - @ref Top - @ref Organization "Map" - @ref  F_History_logging "next page"
-\endlatexonly
+
 <br>
 
 @section F_Logger_mySQL mySQL
@@ -1917,14 +1895,12 @@ links as desired.
 <br>
 \htmlonly
 <script type="text/javascript">
-pages( "F_Messaging",  "F_Section_Index","F_History_logging","F_mySQL",""); // back index next {top bottom}
+pages( "F_Messaging",  "Features","F_History_logging","F_mySQL",""); // back index next {top bottom}
 // sections params:   last section; top of this section; next section
 sections("Quickstart", "Features", "RunControl");
 </script>
 \endhtmlonly
-\latexonly
-@ref   F_Messaging "previous page" - @ref Top - @ref Organization "Map" - @ref  F_History_logging "next page"
-\endlatexonly
+
 \anchor end
 <!-- End of page F_mySQL Logging information to a mySQL database -->
 */
@@ -1934,18 +1910,19 @@ sections("Quickstart", "Features", "RunControl");
 
 /*! @page F_History_logging  History Logging
 <br>
+\anchor idx_Logging_History
+\anchor idx_History_Logging
 \htmlonly
 <script type="text/javascript">
-pages( "F_mySQL",  "F_Section_Index","F_Elog", "F_History_logging","end"); // back index next {top bottom}
+pages( "F_mySQL",  "Features","F_Elog", "F_History_logging","end"); // back index next {top bottom}
 // sections params:   last section; top of this section; next section
 sections("Quickstart", "Features", "RunControl");
 </script>
 \endhtmlonly
-\latexonly
-@ref   F_mySQL "previous page"  - @ref Top  - @ref Organization "Map" - @ref F_Elog "next page"
-\endlatexonly
+
 <br>
 \anchor idx_history_system
+
 @section F_History_System Midas History System
 \todo The history section needs to be reviewed - it is muddled.  Old and new style tags ??  example of old-style tags needed
  
@@ -1963,7 +1940,7 @@ have any logging channel enabled.
 
  <span class="new">
 See also @ref  History_sql_internal History , where the History is saved instead into an SQL database.
-(mlogger.c version 4435 and later). 
+( @ref ndf_jan_2009 ). 
 </span>
 
 
@@ -2028,7 +2005,7 @@ There are two basic types of history events, which are defined in different ways
 
 <li> \b "Virtual" History event 
 <br>Composed within the Online Database (ODB) under the
-specific tree "/History/Links" (see @ref F_ODB_history_tree "ODB History tree")
+specific tree "/History/Links" (see @ref F_ODB_History_tree "ODB History tree")
 
 </ul>
 
@@ -2039,7 +2016,7 @@ is started.
 <br>
 <hr>
 <br>
-
+\anchor idx_History_events
 @section F_Frontend_History_Event Frontend History Event
 
 <br>  Each  @ref FE_sw_equipment "Equipment" has the capability to generate <b> "history data" </b>.
@@ -2057,7 +2034,7 @@ Equipment - see
 Enabling the history system for an Equipment causes the event contents to 
 be copied to the <b>/Equipment/\<<em>Eqpname</em>\>/Variables </b> tree of the ODB for the use of the  @ref F_History_System_overview .
 The contents of the event will then be completely copied into the history files, using the 
-definition of the event as  @ref F_history_tag_name "tag names" for every element of the event.
+definition of the event as  <b> tag names </b> for every element of the event.
 <br>
 
 
@@ -2088,16 +2065,18 @@ Then <b> restart @ref F_mlogger_task "mlogger" </b> .
 The data from the equipment should now appear in the @ref RC_mhttpd_History_page  "mhttpd history page" and in the 
 history file  (@ref F_mhdump_task "mhdump" can be used to read the history file).
 
-@subsubsection  new_history_tags  
+
+\anchor idx_history_tag-names
+@subsubsection  F_new_history_tags New History Tags  
 <span class="note">Note on /History/Tags format</span><br>
 <span class="new"> 
 The mlogger/mhttpd implementation of /History/Tags has proved troublesome and
-we are moving away from it. The @ref History_sql_internal  "SQL database history implementation" already does
-not use it. 
+we are moving away from it. The @ref History_sql_internal  "SQL database history implementation"  ( @ref ndf_jan_2009 ) already does
+not use it . 
 <br>During the present transition period:
 </span>
 <ul class="new">
-  <li>Implementations starting with Version  4435 of @ref RC_mlogger_task "mlogger" and  Version 4435 of @ref RC_mhttpd_task "mhttpd",
+  <li>Implementations starting with Version 4435 of @ref F_mlogger_task "mlogger" ans  @ref RC_mhttpd_task "mhttpd",
  will now work without /History/Tags. 
 The history tags are read directly from the history files themselves. Two downsides to
 this are 
@@ -2120,7 +2099,7 @@ of /History/Tags.
 </ul>
 
 \subsubsection F_history_old_tags Definition of old-style history tags
-Prior to version 4435 of @ref RC_mlogger_task "mlogger" and  version  4435 of @ref RC_mhttpd_task "mhttpd"
+Prior to version 4435 of @ref F_mlogger_task "mlogger" and  version  4435 of @ref RC_mhttpd_task "mhttpd"
 old-style history tags were generated.
 The history variable name for each element of the Frontend History Event was composed as follows, where
 <ul>
@@ -2140,7 +2119,7 @@ The history variable name for each element of the Frontend History Event was com
    </ul>
 <br>See  @ref F_example_FE_history_event "example below" .
 
-In the case of a @FE_Fixed_event_readout "Fixed format" event :
+In the case of a @ref FE_FIXED_event_readout "Fixed format" event :
   
 <ul>
 <li> \b No array : the names of the individual element under
@@ -2198,10 +2177,10 @@ Target                          DIR
 <hr>
 <br>
 \anchor idx_history_ODB-tree
-\anchor idx_ODB_History-tree
+\anchor idx_ODB_tree_History
 
 @section F_ODB_History_tree ODB /History tree
-
+\anchor idx_logger_task_mlogger
 The first time @ref F_mlogger_task "mlogger" is run, it creates the 
 <b> /History </b> tree.  This tree is created 
 using the variables found in the \b /Equipment tree. For the Target equipment
@@ -2298,7 +2277,7 @@ INT
 <td style="vertical-align: top; font-weight: normal; text-align: left;"> 
 \todo version ??
 
-This key appears starting with version ?? of mlogger. See @ref note_history_tags "note"
+This key appears starting with version ?? of mlogger. See @ref   F_new_history_tags "note"
 </td>
 </tr>
 <!--   line     4     -->
@@ -2312,7 +2291,7 @@ This key appears starting with version ?? of mlogger. See @ref note_history_tags
 BOOL
 </td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;"> 
-This key appears starting with version ?? of mlogger. See @ref note_history_tags "note"
+This key appears starting with version ?? of mlogger. See @ref   F_new_history_tags "note"
 \todo version ??
 
 </td>
@@ -2329,7 +2308,7 @@ This key appears starting with version ?? of mlogger. See @ref note_history_tags
 DIR
 </td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;"> 
-See @ref note_history_tags "note"
+See @ref   F_new_history_tags "note"
 </td>
 </tr>
 <!--   line     6     -->
@@ -2416,7 +2395,7 @@ This tree is created automatically when the logger  is started.
 <hr>
  <span class="new">
 @section History_sql_internal MIDAS SQL History system
-(Available in mlogger.c version 4435 and later).
+(Added  @ref ndf_jan_2009 ).
 
 This section describes the internal workings of the midas SQL history system.
 
@@ -2486,7 +2465,7 @@ Password     =
 <li> run "mlogger -v", observe how it issues SQL commands to create the tables and columns corresponding to MIDAS history events and tags.
 <li> mlogger is programmed to raise alarms if connection to SQL database is interrupted or if some events cannot be written into the database (i.e. data type mismatch, SQL syntax errors, etc). The traditional midas history never raised alarms because it "never failed". (Other than from "disk full" errors, which are immediately obvious).
 </ul>
-<span class="new">
+<span class="new">  ( @ref ndf_jan_2009 )
 To enable reading history from an SQL database:
 </span>
 <ul class = "new">
@@ -2502,15 +2481,15 @@ Layout of SQL tables:
 <li> one column is created for each history tag (history variable). Column name is the same as the tag name (as reported by mhdump). For array tags, one column is created for each array element: array a[3] will produce columns a_0, a_1 and a_2.
 <li> 2 special columns are always created: _i_time and _t_time are the timestamps in the UNIX-time integer format and in the SQL "time" format. (Apriory, it is not clear which timestamp format is more useful for end users. mhttpd uses the _i_time integer time format). Note that this timestamp is the time when mlogger receives the hotlink signal (see above) and it can be a fe wseconds behind from when the user placed the data into the midas bank. For high precision (and sub-second time resolution) time stamps, users should generate their own timestamps and include them as part of the data itself.
 <li> a special table called _history_index is created to remember the mapping between SQL names and MIDAS names for event names, variable name and tag names.
-</ul><span class="new">
-Schema evolution:</span>
+</ul>
+<span class="new">Schema evolution: </span>
 <ul class = "new">
 <li> when new data fields are added, new SQL columns are created automatically
 <li> existing SQL columns are never deleted
 <li> arrays are expanded automatically, and arrays never shrink.
 <li> if type of a data field changes, a conflict may occur with existing SQL columns, for example if previous type was "FLOAT" and new type is "DOUBLE", the existing SQL columns would have the SQL data type "float", too narrow to store new values. mlogger will complain about this. Such conflicts may be resolved by changing the type of the SQL column using SQL tools. In general, SQL names are created from MIDAS names by replacing all non-alphanumerical characters to an underscore "_". If this procedure creates duplicate column names, the column names and made unique by appending them with a random number, i.e. MIDAS names "A+B" and "A-B" will be translated to "A_B" and "A_B_12345" (random integer). True MIDAS names are saved into the _history_index.
 </ul>
-</span> <!-- New -->
+
 
 
 
@@ -2613,18 +2592,17 @@ Midas web page (see @ref RC_mhttpd_task).
 - <b> Example </b> 
  * <center> Midas Web History display.
  *  \image html mhhist.gif
- *  \image latex mhhist.eps "Midas Web History display." width=12cm
  * </center> 
 
 <hr>
 
-
+\anchor idx_mhdump-task
+\anchor idx_history_dump-files
 @section F_mhdump_task mhdump - dump history files
 <!-- the following added from elog https://ladd00.triumf.ca/elog/Midas/361  -->
 
-\todo mhdump incomplete ?? Info from elog and mhdump help
+\todo mhdump information incomplete 
 
-<span class="new">
 \b mhdump is intended to be easier to use, compared to @ref F_mhist_task "mhist". By default it reads
 and decodes all the data in the given .hst files, with options to limit the
 decoding to specified events and tags, and an option to omit the event and tag
@@ -2654,7 +2632,7 @@ The mhdump source code and a description of the .hst file format are here:
 @code
 http://daq-plone.triumf.ca/SR/MIDAS/utils/mhdump/
 @endcode
-</span>
+
 
 
 
@@ -2662,7 +2640,7 @@ http://daq-plone.triumf.ca/SR/MIDAS/utils/mhdump/
 
 
 <!-- formerly in Appendix A -->
-
+\anchor idx_History_file_format
 @section  F_History_format History format
 
 MIDAS history data are written to MIDAS .hst files. For a complete working
@@ -2770,17 +2748,16 @@ switch (type_for_tag[itag]) {
 <br>
 \htmlonly
 <script type="text/javascript">
-pages( "F_mySQL",  "F_Section_Index","F_Elog", "F_History_logging",""); // back index next {top bottom}
+pages( "F_mySQL",  "Features","F_Elog", "F_History_logging",""); // back index next {top bottom}
 // sections params:   last section; top of this section; next section
 sections("Quickstart", "Features", "RunControl");
 </script>
 \endhtmlonly
-\latexonly
-@ref   F_mySQL "previous page"  - @ref Top  - @ref Organization "Map" - @ref F_Elog "next page"
-\endlatexonly
+
 
 \anchor end
 <!-- End of page F_History_logging  History Logging -->
+
 */
 
 <!-- ============= E L O G ==================================== -->
@@ -2789,22 +2766,23 @@ sections("Quickstart", "Features", "RunControl");
 <br>
 \htmlonly
 <script type="text/javascript">
-pages( "F_History_logging" ,  "F_Section_Index","F_LogUtil","F_Elog","end"); // back index next {top bottom}
+pages( "F_History_logging" ,  "Features","F_LogUtil","F_Elog","end"); // back index next {top bottom}
 // sections params:   last section; top of this section; next section
 sections("Quickstart", "Features", "RunControl");
 </script>
 \endhtmlonly
-\latexonly
-@ref   F_History_logging "previous page" - @ref Top  - @ref Organization "Map" - @ref  F_LogUtil "next page"
-\endlatexonly
+
 <br>
+\anchor idx_Elog_Introduction
+\anchor idx_Logging_Elog
 @section F_Elog_Intro Introduction
 The Electronic logbook (Elog) is an alternative way of recording experiment information.
-This is implemented through the Midas web server @ref RC_mhttpd_task (see @ref Elog_page).
+This is implemented through the Midas web server @ref RC_mhttpd_task (see @ref RC_mhttpd_Elog_page).
 
 
 @section F_Logger_Elog_Files_Location Location of Elog Files
 \anchor F_Logger_Elog_Dir
+\anchor         idx_Elog_Files_location
 By default,  @ref F_Elog "elog" files are written into the 
 directory path given by  the ODB key @ref F_Logger_Data_Dir "Data Dir" in  @ref F_Logger_tree .
 
@@ -2830,10 +2808,10 @@ String length [32]:128
 
 @section F_Elog_Custom Customizing the Elog
 The Electronic logbook (Elog) is an alternative way of recording experiment information.
-This is implemented through the Midas web server @ref RC_mhttpd_task (see @ref Elog_page).
+This is implemented through the Midas web server @ref RC_mhttpd_task (see @ref RC_mhttpd_Elog_page ).
 The /Elog tree is created automatically when the Midas Logger (mlogger) is started for the first time.
 The definition of the options are described in @ref F_ODB_Elog_Tree.
-
+\anchor idx_ODB_tree_Elog
 @subsection F_ODB_Elog_Tree ODB /Elog Tree
 
 This branch describes the Elog settings used through the Midas web server.
@@ -2900,6 +2878,7 @@ Email Detector                  STRING  1     32    >99d 0   RWD  janedoe@triumf
 SMTP host                       STRING  1     32    >99d 0   RWD  localhost
 @endcode  
 
+\anchor idx_Elog_Email
 @subsection F_Email Email
 Defines the Email address for the Elog reply. When a user replies to an Elog message, the message with be sent
 to this address.
@@ -2931,7 +2910,8 @@ button.
 @subsection F_Host_name Host name
 Host name.
 
-@subsection F_Email_D Email \<...\> e.g. Email DAQ, Email Detector 
+@subsection F_Email_D Email 
+e.g. Email DAQ, Email Detector 
 Optional field(s) created by user. It may be desirable that a person receives an email copy of all elog messages
 sent under a particular system type. The example shows that email copies of messages sent under the System
 types of "DAQ" and "Detector" will be sent to the addresses listed. 
@@ -2939,6 +2919,9 @@ types of "DAQ" and "Detector" will be sent to the addresses listed.
 <br>
 <hr>
 <br>
+
+\anchor idx_melog-task
+\anchor Elog_submit-entry
 @section F_melog_task melog        - submits an entry to the Elog
 
 Electronic Log utility. Submit full Elog entry to the specified Elog port.
@@ -2978,14 +2961,12 @@ Electronic Log utility. Submit full Elog entry to the specified Elog port.
 
 \htmlonly
 <script type="text/javascript">
-pages( "F_History_logging" ,  "F_Section_Index","F_LogUtil","F_Elog",""); // back index next {top bottom}
+pages( "F_History_logging" ,  "Features","F_LogUtil","F_Elog",""); // back index next {top bottom}
 // sections params:   last section; top of this section; next section
 sections("Quickstart", "Features", "RunControl");
 </script>
 \endhtmlonly
-\latexonly
-@ref   F_History_logging "previous page" - @ref Top  - @ref Organization "Map" -  F_LogUtil "next page"
-\endlatexonly
+
 
 \anchor end
 <!-- End of  F_Elog  Electronic logbook (Elog) -->
@@ -2997,16 +2978,15 @@ sections("Quickstart", "Features", "RunControl");
 <br>
 \htmlonly
 <script type="text/javascript">
-pages( "F_Elog" ,  "F_Section_Index","RunControl","F_LogUtil","end"); // back index next {top bottom}
+pages( "F_Elog" ,  "Features","RunControl","F_LogUtil","end"); // back index next {top bottom}
 // sections params:   last section; top of this section; next section
 sections("Quickstart", "Features", "RunControl");
 </script>
 \endhtmlonly
-\latexonly
-@ref   F_Elog "previous page" - @ref Top  - @ref Organization "Map" - @ref RunControl "next page"
-\endlatexonly
-<br>
 
+<br>
+\anchor idx_Logging_lazylogger
+\anchor idx_lazylogger-task
 @section F_lazylogger_task lazylogger  - logger to copy/move stored files
 \b lazylogger is an application which decouples the data acquisition from the data logging
 mechanism. The need for such application has been dictated by the slow response time of
@@ -3044,7 +3024,7 @@ This list won't exist until the first successful operation of the channel is com
   - [-z ] : zap statistics. Clear the statistics tree of all the defined
             lazylogger channels. 
  
-
+\anchor ODB_tree_Lazy
 <hr> @section F_ODB_Lazy_Tree ODB /Lazy Tree
 
 This tree is used by the Lazylogger (if running).
@@ -3280,11 +3260,12 @@ has to be redone. In order to do this, you need:
  - Restart the  lazylogger with the -z switch which will "zap" the statistics entries.
  - In order to facilitate the recovery procedure, \b lazylogger produces an
 ODB ASCII file of the lazy channel tree after completion of successful operation.
-This file (\b Tape_recover.odb) stored in @ref Data_Dir can be used for ODB
+This file (\b Tape_recover.odb) stored in @ref  F_Logger_Data_Dir "Data dir" can be used for ODB
 as well as lazylogger recovery.
 
 <br><hr><br>
-
+\anchor idx_mchart-task
+\anchor idx_stripchart
 @section F_mchart_task mchart       - assembles data for stripchart
 
 mchart is a periodic data retriever of a specific path in the ODB, which can be used
@@ -3300,6 +3281,7 @@ in conjunction with a stripchart graphic program.
   type of graph.
 Two possible stripcharts available are:
 
+\anchor  F_gstripchart
 - \b gstripchart The configuration file generated by mchart is compatible
 with the GNU stripchart which permits sophisticated data equation manipulation. On the
 other hand, the data display is not very fancy and provides just a basic chart recorder.
@@ -3333,9 +3315,9 @@ In the case of the use of the \em stripchart from G.Hofman, only the "filename",
 "pattern", "maximum", "minimum" fields are used.
 
 
-When using mchart with -D Argument, it is necessary to have the @ref MCHART_DIR defined
+When using mchart with -D Argument, it is necessary to have the @ref BO_MCHART_DIR defined
 in order to allow the daemon to find the location of the configuration and data files
-(see @ref Environment_variables).
+(see @ref BO_Environment_variables).
 
 @code
 chaos:~/chart> more trigger.conf 
@@ -3420,7 +3402,7 @@ variables/:
   CHVI : size:68
   #name:17 #Values:17
  @endcode
-- Running a pre-existing configuration file and spawning @ref gstripchart:
+- Running a pre-existing configuration file and spawning @ref F_gstripchart:
  @code
   chaos:~/chart> mchart -f chv.conf -gg
   spawning graph with gstripchart -g 500x200-200-800 -f /home/chaos/chart/chv.conf ...
@@ -3434,6 +3416,7 @@ installed through the Midas Makefile.
   spawning graph with stripchart /home/chaos/chart/chv.conf ...
  @endcode
 
+\anchor idx_mtape_task  
 <hr> @section F_mtape_task mtape  - tape manipulation
 
 Tape manipulation utility.
@@ -3455,7 +3438,7 @@ Tape manipulation utility.
 This is a tcl file (stripchart.tcl) which operates on @ref F_mchart_task data or on 
 Midas history save-set files.
 
-(see also @ref History_System).
+(see also @ref F_History_System).
 
 - <b> Arguments </b>
    - [-mhist ] : start stripchart for Midas history data.
@@ -3474,34 +3457,29 @@ Midas history save-set files.
  @code
  > stripchart.tcl -h
  @endcode 
-@anchor gstripchart
+
  * <center> gstripchart display with parameters and data pop-up.
  *  \image html gstripchart1.jpg
- *  \image latex gstripchart1.eps "gstripchart display with parameters and data pop-up." width=12cm
  * </center> 
 
  * <center> stripchart.tcl mhist mode: main window with pull-downs.
  *  \image html stripchart1.jpg
- *  \image latex stripchart1.eps "stripchart.tcl mhist mode: main window with pull-downs." width=12cm
  * </center> 
 
  * <center> stripchart.tcl Online data, running in conjunction with mchart
  *  \image html stripchart2.jpg
- *  \image latex stripchart2.eps "stripchart.tcl Online data, running in conjunction with mchart" width=12cm
  * </center> 
 
 
 
 \htmlonly
 <script type="text/javascript">
-pages( "F_Elog" ,  "F_Section_Index","RunControl","F_LogUtil",""); // back index next {top bottom}
+pages( "F_Elog" ,  "Features","RunControl","F_LogUtil",""); // back index next {top bottom}
 // sections params:   last section; top of this section; next section
 sections("Quickstart", "Features", "RunControl");
 </script>
 \endhtmlonly
-\latexonly
-@ref   F_Elog "previous page" - @ref Top  - @ref Organization "Map" - @ref RunControl "next page"
-\endlatexonly
+
 <br>
 \anchor end
 <!-- End of page F_LogUtil -->

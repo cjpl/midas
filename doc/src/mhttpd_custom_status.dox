@@ -1,12 +1,21 @@
 /*! @page RC_mhttpd_custom_status Custom Status page
 
+<br>
+\htmlonly
+<script type="text/javascript">
+// pages parameters: back index next {top bottom}
+pages( "RC_mhttpd_Internal", "RunControl", "RC_Monitor", "RC_mhttpd_custom_status",  "end" );
+sections("Features", "RunControl","FrontendOperation"); // last section; top of this section; next section
+</script>
+\endhtmlonly
 
-A custom Status page is a custom page that replaces the default Midas status page. The page is activated as described 
-@ref RC_odb_custom_status here. Features such as @ref RC_mhttpd_custom_midas_buttons ,  @ref RC_mhttpd_custom_alias etc. can
-be provided in the same was as for any other custom page. Any user-buttons defined on the original
-Midas Status page can be easily turned into  @ref RC_mhttpd_custom_script_buttons on the Custom Status page by placing links 
-When replacing the default Status page by a Custom Status page, and
-in the  <span class="odb"> /customscript </span> tree to any existing user-buttons under the  
+A custom Status page is a custom page that replaces the default Midas status page.
+<br>
+The custom Status page is activated as described @ref RC_odb_custom_status "previously".
+Features such as the standard @ref RC_mhttpd_custom_midas_buttons "Menu buttons",  @ref RC_mhttpd_custom_alias etc. can
+be provided in the same way as for any other custom page. When replacing the default Status page by a Custom Status page,
+any user-buttons defined on the original Midas Status page can be easily turned into  @ref RC_mhttpd_custom_script_buttons
+on the Custom Status page by placing links in the  <span class="odb"> /customscript </span> tree to any existing user-buttons under the  
 <span class="odb"> /Script </span> tree.
 
 \code  
@@ -18,24 +27,8 @@ Scalers   -> /script/Scalers
 See @ref RC_mhttpd_status_toggle "example" of the above defined buttons.
 
 
-*/
 
-
-/*! @page RC_mhttpd_status_toggle Toggle between Default and Custom Status pages
-
-<!--  this is a sub-page of the page  RC_mhttpd_Custom_page
- -->
-<br>
-\htmlonly
-<script type="text/javascript">
-pages( "RC_mhttpd_Custom_page",  "RC_section_index", "RC_mhttpd_Activate", "RC_mhttpd_status_toggle",  "end" ); // back index next {top bottom}
-sections("Features", "RunControl","FrontendOperation"); // last section; top of this section; next section
-</script>
-\endhtmlonly
-\latexonly
- @ref   RC_mhttpd_Custom_page   "previous page" - @ref Top - @ref Organization "Map"  - @ref   RC_mhttpd_Activate  "next page"
-\endlatexonly
-<br>
+@section RC_mhttpd_status_toggle Toggle between Default and Custom Status pages
 
 In the following example,  the main Status page can be toggled between the Custom version  and the default Midas status page. 
  
@@ -74,7 +67,6 @@ Status                          /custom/CustomStatus& -> /home/bnmr/online/custo
 
 
 * <center> Custom and default status pages for the BNMR experiment at TRIUMF 
-*  \image latex bnmr_both_status_pages.eps "TRIUMF BNMR experiment: custom and default status pages" width=13.25cm
 *  \image html bnmr_both_status_pages.gif
 *  </center>
 
@@ -203,14 +195,14 @@ exit;
 @endcode
 <br>
 
+<br>
 \htmlonly
 <script type="text/javascript">
-pages( "RC_mhttpd_Custom_page",  "RC_section_index", "RC_mhttpd_Activate", "RC_mhttpd_status_toggle",  "" ); // back index next {top bottom}
+// pages parameters: back index next {top bottom}
+pages( "RC_mhttpd_Internal", "RunControl", "RC_Monitor", "RC_mhttpd_custom_status",  "end" );
 sections("Features", "RunControl","FrontendOperation"); // last section; top of this section; next section
 </script>
 \endhtmlonly
-\latexonly
- @ref   RC_mhttpd_Custom_page   "previous page" - @ref Top - @ref Organization "Map"  - @ref   RC_mhttpd_Activate  "next page"
-\endlatexonly
-<br>
+\anchor end
+<!-- end of Page    RC_mhttpd_custom_status  -->
 */

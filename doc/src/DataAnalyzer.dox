@@ -10,16 +10,14 @@ pages("FE_Deferred_Transition","DA_section_index", "DA_Midas_Analyzer","Data Ana
 sections("FrontendOperation","DataAnalysis","Performance"); // last section; top of this section; next section
 </script>
 \endhtmlonly
-\latexonly
-@ref   FE_Deferred_Transition "previous page" - @ref Top  - @ref Organization "Map" - @ref  DA_Midas_Analyzer "next page"
-\endlatexonly
 <br>
 <!-- End of Navigation -->
-<span class="warn">
-WARNING - this page is under construction .
-Contents is almost a straight copy from  analyzer.dox 
-</span>
 
+
+
+
+@section DA_Data_analyzers  Data Analyzers
+The following are available for Midas Data Analysis:
 <ul>
   <li>  @ref DA_Midas_Analyzer
   <li> <b><a href="http://midas.psi.ch/rome">ROME</a></b> analyzer framework.
@@ -38,7 +36,7 @@ The \b analyzer task is the main online/offline event analysis application. \b a
 uses fully the \b ODB capabilities as all the analyzer parameters are dynamically
 controllable from the Online Database editor @ref RC_odbedit_task.
 
-For more detailed information on the analyzers available see @ref analyzer_struct
+For more detailed information on the analyzers available see  @ref DA_Data_analyzers "list above".
 
 - <b> Arguments </b> 
  - -c \<filename1> \<filename2> Configuration file name(s).
@@ -82,7 +80,7 @@ For more detailed information on the analyzers available see @ref analyzer_struc
                     default, column-wise N-tuples are used.
 - <b> Remarks </b>
   - The creation of the \b experim.h is done through the 
-  @ref U_odbedit_make "odbedit make" command.
+  @ref RC_odbedit_make "odbedit make" command.
 
 - <b> Usage </b>
  @code
@@ -221,7 +219,6 @@ particles:
 
  * <center> 
  *  \image html multistage.jpg
- *  \image latex multistage.eps "Three stage analyzer." width=12cm
  * </center> 
 
 Since data is contained in MIDAS banks (for YBOS banks see @ref DA_YBOS_bank_examples ), 
@@ -712,7 +709,6 @@ PAW > nt/plot 1.sum cadc0>3000
 
  * <center> 
  *  \image html paw01.jpg
- *  \image latex paw01.eps "PAW output for online N-tuples." width=12cm
  * </center> 
 
 While histograms contain the full statistics of a run, N-tuples are kept in a ring-buffer.
@@ -889,9 +885,6 @@ pages("FE_Deferred_Transition","DA_section_index", "DA_Midas_Analyzer","Data Ana
 sections("FrontendOperation","DataAnalysis","Performance"); // last section; top of this section; next section
 </script>
 \endhtmlonly
-\latexonly
-@ref   FE_Deferred_Transition "previous page" - @ref Top  - @ref Organization "Map" - @ref  DA_Midas_Analyzer "next page"
-\endlatexonly
 */
 
 

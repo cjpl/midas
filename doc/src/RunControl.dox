@@ -6,15 +6,40 @@
 <script type="text/javascript">
 //
 // pages params : back index next {top bottom}
-pages( "F_Elog",  "RC_section_index", "RC_Run_States_and_Transitions","RunControl","end" );
+pages( "F_Elog",  "RunControl", "RC_Run_States_and_Transitions","RunControl","end" );
 //
 // sections params:   last section; top of this section; next section
 sections("Features", "RunControl","FrontendOperation");
 </script>
 \endhtmlonly
-\latexonly
-@ref F_Elog "previous page" - @ref Features "previous section" - @ref Top - @ref Organization "Map" - @ref  FrontendOperation "next section" - @ref  RC_Run_States_and_Transitions  "next page"
-\endlatexonly
+<br>
+
+
+@section RC_Intro  Introduction
+This section describes \b Run \b Control and \b Monitoring of the experiment.  
+
+A  \b "run" starts when the Midas system receivs a <b> Start Transition </b>, and continues 
+until it receives a <b> Stop transition </b>. In the simplest case, this is when the 
+commands \b "Start" and \b "Stop" are issued. 
+
+<b> "Run Control" </b> describes how that run may be controlled, including
+ - where the data is to be stored (e.g. tape), 
+ - on what conditions the run should be allowed to start (e.g. hardware is ready, beam is on) 
+ - when it should stop (e.g. beam goes off, hardware failure). 
+
+<b> "Monitoring" </b> involves
+ - informing the user on the progress of the run,
+ - displaying statistics or history plots,
+ - sending information or alarm messages to warn the user of any problems.
+
+<br>
+Fundamental to 
+Run Control and Monitoring is the @ref F_Online_Database_overview which contains all of the 
+information for an experiment. Therefore a run control program requires access only to information in the ODB.
+
+<br>
+Programming exactly what data is read during the run falls under the category  @ref FrontendOperation ,
+and analyzing the data during or after the run is described under  @ref DataAnalysis .   
 <br>
 
 <!-- declare the sub-pages for this section -->
@@ -25,40 +50,18 @@ sections("Features", "RunControl","FrontendOperation");
  - \subpage RC_customize_ODB
  - \subpage RC_Hot_Link
 
+<br><br>
 
-@section RC_Intro  Introduction
-This section describes Run Control and Monitoring.  
 
-A  \b "run" starts when the Midas system receivs a <b> Start Transition </b>, and continues 
-until it receives a <b> Stop transition </b>. In the simplest case, this is when the 
-commands "Start" and "Stop" are issued. 
-
-<b> "Run Control" </b> describes how that run may be controlled, e.g. where the data is to be stored (e.g. tape), 
-on what conditions the run should be allowed to start (e.g. hardware is ready, beam is on) 
-and when it should stop (e.g. beam goes off, hardware failure). 
-
-<b> "Monitoring" </b> involves informing the user on the progress of the run, displaying statistics or history plots, and sending information or alarm messages to warn the user of any problems.
-
-<br>
-Fundamental to 
-Run Control and Monitoring is the @ref F_Online_Database_overview which contains all of the 
-information for an experiment. Therefore a run control program requires access only to the ODB.
-
-<br>
-Programming exactly what data is read during the run falls under the category  @ref FrontendOperation , and analyzing the data during or after the run is described under  @ref DataAnalysis .   
-<br>
-
+\anchor end
 \htmlonly
 <script type="text/javascript">
-pages( "F_Elog",  "RC_section_index", "RC_Run_States_and_Transitions","RunControl","" ); // back index next {top bottom}
+pages( "F_Elog",  "RunControl", "RC_Run_States_and_Transitions","RunControl","" ); // back index next {top bottom}
 sections("Features", "RunControl","FrontendOperation"); // last section; top of this section; next section
 </script>
 \endhtmlonly
-\latexonly
-@ref F_Elog "previous page"  - @ref Top - @ref Organization "Map"  - @ref  RC_Run_States_and_Transitions  "next page"
-\endlatexonly
 <br>
-\anchor end
+
 <!-- End of page RunControl Run Control -->
 */
 
@@ -68,13 +71,11 @@ sections("Features", "RunControl","FrontendOperation"); // last section; top of 
 <br>
 \htmlonly
 <script type="text/javascript">
-pages( "RunControl",  "RC_section_index", "RC_Controlling_run","RC_Run_States_and_Transitions","end" ); // back index next {top bottom}
+pages( "RunControl",  "RunControl", "RC_Controlling_run","RC_Run_States_and_Transitions","end" ); // back index next {top bottom}
 sections("Features", "RunControl","FrontendOperation"); // last section; top of this section; next section
 </script>
 \endhtmlonly
-\latexonly
-@ref RunControl "previous page" - @ref Top - @ref Organization - @ref RC_Controlling_run "next page"
-\endlatexonly
+
 <br>
 \anchor idx_run_states
 \anchor idx_transitions
@@ -89,11 +90,10 @@ In order to change from one state to another, Midas provides four basic
 
  * <center> Transitions
  *  \image html transition.gif
- *  \image latex transition.eps "Transitions" width=12cm
  * </center> 
 
-\anchor idx_run_states_codes
-\anchor idx_transitions_codes
+\anchor idx_run_state_codes
+\anchor idx_run_transition_codes
 @section RC_state_transition Midas State and Transition Codes
 
 Midas provides three <b> State Codes </b> (defined in midas.h)  for the three run states (Stopped, Paused and Running).
@@ -113,7 +113,7 @@ While a transition is in progress, these Transition Codes will be found under
 the @ref ODB_RunInfo_Tree for an experiment.
 
 <hr> 
-\anchor idx_transitions_priority
+\anchor idx_run_transition_priority
 @section RC_Transition_priority Run Transition Priority
 
 During these transition periods, any Midas client registered to
@@ -215,6 +215,7 @@ my_application.c
 
 
 <br><hr><br>
+\anchor idx_run_transition_sequence
 @subsection RC_Default_Seq_Numbers Default Transition Sequence Numbers
 
 By default the following sequence numbers are used:
@@ -285,7 +286,7 @@ cellspacing="2">
 <br><hr><br>
 @subsection RC_Review_Seq_Num Review the Client Transition Sequence Numbers in the ODB
 \anchor RC_odb_system_tree
-\anchor idx_ODB_System-tree
+\anchor idx_ODB_tree_System
 The <b> ODB /System tree </b> contains information specific to each "Midas client" currently
 connected to the experiment. The sequence number appears in the ODB under /System/Clients/
 \code
@@ -357,7 +358,7 @@ in a frontend (see @ref FE_Deferred_Transition "setup Deferred Transition" for f
 <br>
 <hr>
 <br>
-\anchor idx_ODB_RunInfo-tree
+\anchor idx_ODB_tree_RunInfo
 @section RC_ODB_RunInfo Run Information
 Basic information about the state of the current run is available in the 
 @ref RC_ODB_RunInfo_Tree . This information is displayed on the 
@@ -492,18 +493,15 @@ Stop Time binary
 
 
 
-
+\anchor end
 \htmlonly
 <script type="text/javascript">
-pages( "RunControl",  "RC_section_index","RC_Controlling_run", "RC_Run_States_and_Transitions","" ); // back index next {top bottom}
+pages( "RunControl",  "RunControl","RC_Controlling_run", "RC_Run_States_and_Transitions","" ); // back index next {top bottom}
 sections("Features", "RunControl","FrontendOperation"); // last section; top of this section; next section
 </script>
 \endhtmlonly
-\latexonly
-@ref RunControl "previous page" - @ref Top - @ref Organization - @ref RC_Controlling_run "next page"
-\endlatexonly
 <br>
-\anchor end
+
 <!-- End of page RC_Run_States_and_Transitions Run States and Transitions  -->
 
 */
@@ -514,13 +512,10 @@ sections("Features", "RunControl","FrontendOperation"); // last section; top of 
 <br>
 \htmlonly
 <script type="text/javascript">
-pages( "RC_Run_States_and_Transitions",  "RC_section_index","RC_odbedit", "RC_Controlling_run","end" ); // back index next {top bottom}
+pages( "RC_Run_States_and_Transitions",  "RunControl","RC_odbedit", "RC_Controlling_run","end" ); // back index next {top bottom}
 sections("Features", "RunControl","FrontendOperation"); // last section; top of this section; next section
 </script>
 \endhtmlonly
-\latexonly
-@ref RC_Run_States_and_Transitions "previous page" - @ref Top - @ref Organization "Map" - @ref  RC_odbedit "next page"
-\endlatexonly
 <br>
 
 @section RC_run_control Run Control programs
@@ -533,14 +528,14 @@ a program with a simple command line interface, and @ref RC_mhttpd_task "mhttpd"
 run control program. 
 <br>
 \b mhttpd is the usual choice for experimenters, since it provides a graphical
-interface,  and has many features not available in odbedit, such as history display, 
-electronic logbook, custom pages and alias-links. It also provided monitoring of the run. However, it has 
-limited functionality as an ODB editor. 
+interface, and is used both for run control and monitoring. It has many features not available in odbedit, such as history display, 
+electronic logbook, custom pages and alias-links.  However, it has limited functionality as an ODB editor. 
 <br>
 \b odbedit is very useful for debugging, is often quicker 
-and simpler to use, and is a fully functional odb editor (hence its name). 
+and simpler to use, and is a fully functional odb editor (hence its name). It has limited monitoring
+capability. 
 <br>
-Other utilities are also provided, such as @ref RC_mstat_task "mstat", a simple monitoring utility, and 
+Other utilities for monitoring are also provided, such as @ref RC_mstat_task "mstat", a simple monitoring utility, and 
 @ref RC_mdump_task "mdump" which can dump the raw data. 
 <br>
 
@@ -557,19 +552,20 @@ The odbedit and mhttpd utilities will be described next.
 <br>
 \htmlonly
 <script type="text/javascript">
-pages( "RC_Run_States_and_Transitions",  "RC_section_index","RC_odbedit", "RC_Controlling_run","" ); // back index next {top bottom}
+pages( "RC_Run_States_and_Transitions",  "RunControl","RC_odbedit", "RC_Controlling_run","" ); // back index next {top bottom}
 sections("Features", "RunControl","FrontendOperation"); // last section; top of this section; next section
 </script>
 \endhtmlonly
-\latexonly
-@ref RC_Run_States_and_Transitions "previous page" - @ref Top - @ref Organization "Map" - @ref  RC_odbedit "next page"
-\endlatexonly
 \anchor end
 <!-- End of page RC_Controlling_run Controlling and Monitoring the Experiment -->
 */
 
 
-<!--  CONTROLLING ...   odbedit, mhttpd pages go in here  
+<!--
+
+
+
+CONTROLLING ...   odbedit, mhttpd pages go in here  
 
       
 -->
@@ -581,22 +577,21 @@ sections("Features", "RunControl","FrontendOperation"); // last section; top of 
 <br>
 \htmlonly
 <script type="text/javascript">
-pages( "RC_mhttpd_Custom_page" ,"RC_section_index", "RC_customize_ODB","RC_Monitor","end" ); // back index next {top bottom}
+pages( "RC_mhttpd_custom_status" ,"RunControl", "RC_customize_ODB","RC_Monitor","end" ); // back index next {top bottom}
 sections("Features", "RunControl","FrontendOperation"); // last section; top of this section; next section
 </script>
 \endhtmlonly
-\latexonly
-@ref RC_mhttpd_Custom_page  "previous page"  - @ref Top -   @ref Organization "Map" -  @ref  RC_customize_ODB "next page"
-\endlatexonly
 <br>
 
-The Midas system provides several off-the-shelf programs for monitoring the data acquistion system. These
-include  @ref RC_mstat_task "mstat"  to display
-the run statistics, and @ref RC_task_mdump "mdump", to dump the raw data.
+The most powerful tool for \b monitoring a Midas experiment is of course @ref RC_mhttpd "mhttpd", used for
+both Run Control and Monitoring. However, it does not (yet) cover every feature needed, and the Midas system also
+provides several other utilities for monitoring aspects of the data acquistion system. These
+include  @ref RC_mstat_task "mstat"  to display the run statistics, and @ref RC_mdump_task "mdump", to dump the raw data, which is particularly
+useful for debugging. These utilities do provide information without having to use a browser.
 
-
- - @ref RC_mstat_task
- - @ref RC_mdump_task
+ - @ref RC_mhttpd "Monitoring and Run Control using the Midas Web Server" 
+ - @ref RC_mstat_task 
+ - @ref RC_mdump_task 
  - @ref RC_rmidas_task
  - @ref RC_hvedit_task
 <br>
@@ -614,7 +609,7 @@ of the experiment. The section displayed in order from top to bottom refer to:
 - Logger information and statistics if  @ref F_mlogger_task "mlogger" is active.
 - Lazylogger status if  @ref F_lazylogger_task "lazylogger" is active.
 - Client listing.
-
+lock
 - <b> Arguments </b>
   - [-h ] : help
   - [-h hostname ] : host name (see @ref RC_odbedit_task)
@@ -786,6 +781,10 @@ The example below shows mdump operating in online mode
  Root/Midas remote GUI application for root histograms and possible run control under the ROOT.
  environment.
 
+<span class="new">
+Users of this utility may also be interested in a @ref RC_ROOT_analyzer_page written for  @ref RC_mhttpd "mhttpd", (Dec 2009)
+</span>
+
 - <b> Arguments </b>
   - [-h ] : help
   - [-h hostname ] : host name 
@@ -799,7 +798,6 @@ The example below shows mdump operating in online mode
  
  * <center> rmidas display sample. Using the example/experiment/ demo setup.
  *  \image html rmidas.jpg
- *  \image latex rmidas.eps "rmidas display sample. Using the example/experiment/ demo setup." width=12cm
  * </center> 
  
 
@@ -837,30 +835,24 @@ The example below shows mdump operating in online mode
 <br>
 \htmlonly
 <script type="text/javascript">
-pages( "RC_mhttpd_Custom_page" ,"RC_section_index", "RC_customize_ODB","RC_Monitor","" ); // back index next {top bottom}
+pages( "RC_mhttpd_custom_status" ,"RunControl", "RC_customize_ODB","RC_Monitor","" ); // back index next {top bottom}
 sections("Features", "RunControl","FrontendOperation"); // last section; top of this section; next section
 </script>
 \endhtmlonly
-\latexonly
-@ref RC_mhttpd_Custom_page  "previous page"  - @ref Top -   @ref Organization "Map" -  @ref   RC_customize_ODB  "next page"
-\endlatexonly
 <br>
 
 \anchor end
 */  <!-- end of page RC_Monitor -->
 
 
-/*! @page RC_customize_ODB Customizing the ODB
+/*! @page RC_customize_ODB Customizing the Experiment
 <br>
 \htmlonly
 <script type="text/javascript">
-pages("RC_Monitor" ,"RC_section_index", "RC_Hot_Link", "RC_customize_ODB","end" ); // back index next {top bottom}
+pages("RC_Monitor" ,"RunControl", "RC_Hot_Link", "RC_customize_ODB","end" ); // back index next {top bottom}
 sections("Features", "RunControl","FrontendOperation"); // last section; top of this section; next section
 </script>
 \endhtmlonly
-\latexonly
-@ref RC_Monitor  "previous page"  - @ref Top -   @ref Organization "Map" -  @ref RC_Hot_Link  "next page"
-\endlatexonly
 <br>
 
 
@@ -868,7 +860,9 @@ sections("Features", "RunControl","FrontendOperation"); // last section; top of 
 
 When the Midas system is installed, the ODB is loaded with default values, which will provide the user
 with a working system. However, by customizing the ODB, the user can enable powerful features, thus providing
-him or herself with very sophisticated DAQ system to suit almost every experiment. 
+him or herself with very sophisticated DAQ system to suit almost every experiment. The user
+may even wish to customize their experiment further by providing   @ref RC_mhttpd_Custom_page "custom web-pages"
+for their particular application. 
  
 Customizing the ODB for Run Control involves some or all of: 
  - setting up the @ref  RC_run_start_params
@@ -878,13 +872,13 @@ Customizing the ODB for Run Control involves some or all of:
  - setting up the  @ref F_Logging_Data "data logging"
  - setting up the  @ref F_History_logging "history logging"
  - setting up scripts to act at end and begin of run
- - setting up alarm system
- - setting up alias links
+ - setting up  the @ref  RC_Alarm_System
+ - setting up @ref RC_mhttpd_Alias_page "alias links"
  - setting up the  @ref F_Elog "elog"
- - setting up custom web-pages
  - changing the size of the Midas buffers
 
- 
+Other customization may include
+ - @ref @ref RC_starting_clients
 
  
 
@@ -894,40 +888,74 @@ sections.
 
 <hr>
 
-\anchor idx_ODB_Experiment-tree
-@section  RC_customize_experiment_tree Customizing parameters under the /Experiment tree
- 
-When initially created by the Midas installation, the ODB /Experiment tree contains a key
-labeled \b Name  which contains the experiment name. More key(s) may also 
-be created automatically when clients are started.
+\anchor idx_ODB_tree_Experiment
+@section RC_Experiment_tree The ODB /Experiment tree
+
+When initially created by the Midas installation, the ODB /Experiment tree contains the following keys:
 
 \code
-[local:pol:S]/>ls -rlt /experiment
+[local:t2kgas:S]/>ls -rlt /experiment
 Key name                        Type    #Val  Size  Last Opn Mode Value
 ---------------------------------------------------------------------------
 Experiment                      DIR
-    Name                        STRING  1     32    14s  0   RWD  midas
+    Name                        STRING  1     32    13m  0   RWD  t2kgas
+    Buffer sizes                DIR
+        SYSMSG                  DWORD   1     4     25h  0   RWD  100000
+    Menu Buttons                STRING  1     256   25h  0   RWD  Start, ODB, Messages, ELog, Alarms, Programs, History, MSCB, Config, Help
 @endcode
 
-In order to provide extra run control flexibility, the user can optionally create the following 
-keys (i.e. subdirectories) under the /Experiment tree if they do not exist already. These must have the names
+The meaning of these keys is explained @ref  RC_Experiment_tree_keys "below".
+
+\anchor idx_ODB_tree_Experiment_Customize
+@subsection  RC_customize_experiment_tree Customizing parameters under the /Experiment tree
+
+Several of the default parameters shown above can be customized. The Midas Buffer sizes can be optimized
+(see  @ref FE_event_buffer_size "buffer sizes").
+<br>
+\anchor customize_mhttpd_run_buttons
+<span class="new">The key  <span class="odb">Menu Buttons</span> was added in  @ref ndf_dec_2009 to allow
+the  @ref  RC_mhttpd_status_menu_buttons  that appear on the mhttpd @ref RC_mhttpd_Main_Status_page
+to be customized. </span>
+By default,  <span class="odb">Menu Buttons</span> contains
+
+<br>
+<b>Start, ODB, Messages, ELog, Alarms, Programs, History, MSCB, Config, Help</b>
+<br>
+
+which is the standard set (<span  class="new">the old \b CNAF key was replaced by the \b MSCB key in @ref ndf_dec_2009 </span>).
+
+Users can customize the set of buttons by removing unnecessary buttons or by changing their order.
+\Note The \b "Start" entry above actually causes the whole set of  @ref RC_mhttpd_status_RC_buttons  to appear, 
+depending on the current run state.
+
+
+<br>
+<span class="new">
+A further optional key <span class="odb">/Experiment/Hide Run Buttons</span> can also be created
+(available since @ref ndf_nov_2009 )  which, if set to "y", will 
+hide the @ref RC_mhttpd_status_RC_buttons on the mhttpd  @ref RC_mhttpd_Main_Status_page .
+</span>
+<br>
+\anchor idx_ODB_tree_Experiment_Parameter-comments
+In order to provide extra  flexibility, the user can optionally create the following 
+subdirectories under the /Experiment tree if they do not exist already. These must have the names
 <b>
+
   -  "Parameter Comments/"
   -  "Lock when running/"
   -  "Security/"
 
+</b>These keynames have a particular meaning for the Midas system which will be described  @ref RC_ODB_Experiment_Tree "below".
 
 
-</b>These keynames have a particular meaning for the Midas system which will be described below.
+<br>
 
 \todo    NOTE: "Run Parameters" - is there anything special about this directory??
 
 The user may create any other keys as desired in the /Experiment tree. For example, some users find it
 convenient to create their run parameters in a subdirectory of /Experiment named 
 @ref  RC_Edit_On_Start "run parameters".
-<br>
-
- The example below shows an /Experiment tree containing various optional keys.
+The example below shows an /Experiment tree containing various optional keys.
 
 
 <br><hr><br>
@@ -943,6 +971,7 @@ Experiment                      DIR
     Buffer sizes                DIR
         SYSMSG                  DWORD   1     4     56h  0   RWD  100000
         SYSTEM                  DWORD   1     4     56h  0   RWD  8388608
+    Menu Buttons                STRING  1     256   25h  0   RWD  Start, ODB, Messages, ELog, Alarms, Programs, History, MSCB, Config        
     Edit on start               DIR
         run_title               STRING  1     88    3h   0   RWD  , 28.2keV resonant energy 7Li
         experiment number       DWORD   1     4     3h   0   RWD  12
@@ -1035,40 +1064,8 @@ style="vertical-align: top; font-weight: bold; background-color: rgb(255, 255, 5
 experiment. Filled automatically when the ODB is created.</td>
 </tr>
 
-<!-- line 2  optional Menu Buttons  -->
-<tr>
-<td
-style="vertical-align: top; font-weight: bold; background-color: rgb(255, 255, 51);">
-\anchor experiment_hide_run_buttons Hide Run Buttons<br>
-</td>
-<td style="vertical-align: top;">BOOL<br>
-</td>
-<td style="vertical-align: top;"><br>
-</td>
-<td style="vertical-align: top;">
-<span class="new">If set to "y" the @ref RC_mhttpd_status_RC_buttons will be hidden on the
-mhttpd Main Status Page. (Version ?? mhttpd.c and later). See @ref RC_mhttpd_status_action_buttons. </span>
-</td>
-</tr>
 
-<!-- line 3  optional Menu Buttons  -->
-<tr>
-<td
-style="vertical-align: top; font-weight: bold; background-color: rgb(255, 255, 51);">
-\anchor experiment_menu_buttons Menu Buttons<br>
-</td>
-<td style="vertical-align: top;">STRING<br>
-</td>
-<td style="vertical-align: top;"><br>
-</td>
-<td style="vertical-align: top;">
-<span class="new">This key added automatically by  mhttpd (version ?? and later).
-Contains default menu buttons for mhttpd main status page. See @ref  RC_mhttpd_status_action_buttons "mhttpd buttons"
-for details. Used to customize buttons appearing on mhttpd Main Status Page.</span>
-</td>
-</tr>
-
-
+<!-- line 2 Buffer Sizes -->
 <tr>
 <td
 style="vertical-align: top; font-weight: bold; background-color: rgb(255, 255, 51);">Buffer
@@ -1078,10 +1075,8 @@ Sizes<br>
 </td>
 <td style="vertical-align: top;"><br>
 </td>
-<td style="vertical-align: top;">Note that for
-<span class="new">Midas versions 2.0.0 and later, the <b> event buffer size </b> for
-each buffer involved in the experiment can be specified in the
-/Experiment tree. </span> See @ref FE_event_buffer_size  for details. 
+<td style="vertical-align: top;">Contains the sizes of the \b Midas \b Buffers for the experiment. Created with default values. The sizes can be
+changed to optimize the memory usage. See @ref FE_event_buffer_size  for details. 
 </td>
 </tr>
 <tr>
@@ -1102,8 +1097,46 @@ style="vertical-align: top; font-weight: bold; background-color: rgb(255, 255, 5
 <td style="vertical-align: top;">SYSTEM </td>
 <td style="vertical-align: top;">Size of SYSTEM buffer </td>
 </tr>
+
+
+
+<!-- line 3  Menu Buttons  -->
 <tr>
+<td
+style="vertical-align: top; font-weight: bold; background-color: rgb(255, 255, 51);">
+\anchor experiment_menu_buttons Menu Buttons<br>
+</td>
+<td style="vertical-align: top;">STRING<br>
+</td>
+<td style="vertical-align: top;"><br>
+</td>
+<td style="vertical-align: top;">
+<span class="new">This key added automatically by  mhttpd (since  @ref ndf_dec_2009). </span>
+Contains  @ref  RC_mhttpd_status_menu_buttons that appear on the mhttpd @ref RC_mhttpd_Main_Status_page .
+The default set of buttons is <b>Start, ODB, Messages, ELog, Alarms, Programs, History, MSCB Config, Help</b>
+Can be  @ref RC_customize_experiment_tree "customized".
+
+</td>
+</tr>
+
+<!-- line 4  optional Hide Run Buttons  -->
+<tr>
+<td
+style="vertical-align: top; font-weight: bold; background-color: rgb(255, 255, 51);">
+\anchor experiment_hide_run_buttons Hide Run Buttons<br>
+</td>
+<td style="vertical-align: top;">BOOL<br>
+</td>
+<td style="vertical-align: top;"><br>
+</td>
+<td style="vertical-align: top;">
+<span class="new">Optional key -  hides the @ref RC_mhttpd_status_RC_buttons on the
+mhttpd Main Status Page if set to "y" (since  @ref ndf_nov_2009 ). </span>
+</td>
+</tr>
+
 <!-- Line 5 -->
+
 <td
 style="vertical-align: top; font-weight: bold; background-color: rgb(255, 255, 51);">Edit
 on Start<br>
@@ -1209,8 +1242,9 @@ Are the above parameters correct? ([y]/n/q):
 @endcode
 
 <br><hr><br>
-@section RC_run_start_params_optional
+@section RC_run_start_params_optional Optional Parameters
 \anchor idx_ODB_edit-on-start
+\anchor idx_ODB_tree_Experiment_Edit-on-Start-parameters
 @subsection  RC_Edit_On_Start Setting up "Edit on Start" Parameters
  It is often convenient to <b>display and edit additional parameters </b>
 at this time. These parameters can be made to appear every time a run starts, in
@@ -1289,7 +1323,7 @@ See \b examples of starting a run with <b> edit on start </b> parameters set up,
 <span class="note">Several extra edit-on-start features are available for mhttpd only. 
 </span> These are @ref RC_Edit_PC  and  @ref RC_Prevent_Edit_RN .
 <br><hr><br>
-
+\anchor idx_ODB_tree_Experiment_Lock-when-Running
 @section RC_Lock_when_Running  Lock when Running
 
 Often it is desirable that various experimental ODB parameters should not to be changed when a run
@@ -1318,6 +1352,7 @@ For other forms of write-protection, see also @ref RC_odbedit_chmod .
 
 \anchor idx_security-see-access-control
 \anchor idx_access-control
+
 @section RC_Access_Control Access Control (Security)
 
 
@@ -1333,6 +1368,7 @@ The user can select \b either or \b both of these security features.
 
 <br><hr><br>
 
+\anchor idx_ODB_tree_Experiment_Security
 @subsection RC_Setup_Security How to Setup Client Access Restriction 
 \anchor idx_access-control_client
 In order provide access restriction, a password mechanism needs to be defined. This is
@@ -1383,7 +1419,7 @@ This key is a fixed directory name where a list of programs
 
 
 <br><hr><br>
-
+\anchor idx_ODB_tree_Experiment_Security_Restrict-Web-access
 @subsection RC_Setup_Web_Security How to Setup Web Access Restriction
 \anchor idx_access-control_web
 <small>This is only applicable to access using mhttpd (web access). Access with odbedit is unaffected.
@@ -1462,7 +1498,7 @@ Experiment                      DIR
 
 
 <hr>
-
+\anchor idx_ODB_tree_Experiment_Security_Remove-Access-restrictions
 @subsection RC_Remove_Security To Remove Access Restrictions
 \anchor idx_access-control_remove
  To remove the full password checking mechanism completely, the ODB security sub-tree has to
@@ -1672,7 +1708,7 @@ else
   sleep 1
 fi
 #end file
-\code
+\endcode
 
 <br><hr><br>
 \anchor idx_mserver-task
@@ -1703,7 +1739,7 @@ To connect a client to this version of mserver, use the format "hostname:port", 
 
 
 
-\anchor idx_ODB_Programs-tree
+\anchor idx_ODB_tree_Programs
 @section RC_ODB_programs_tree The ODB /Programs tree
 
 The ODB <b>/Programs</b> tree is created by the system. It contains
@@ -1826,7 +1862,7 @@ Execute on stop run
 <td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;">STRING</td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;">
-Contains optional command or script to be executed on STOP transition.
+Contains optional command or script to be executed on STOP transition (see  @ref RC_example_script_1 "example")
 </td>
 </tr>
 <!--   line    2    client name  -->
@@ -1977,7 +2013,7 @@ Value filled by the System to indicate when client first failed.
 
 <br>
 
-\anchor idx_alarm-system
+\anchor idx_alarm_system
 <hr> @section RC_Alarm_System Midas Alarm System
 
 
@@ -2010,7 +2046,7 @@ The alarm system can be customized through @ref RC_odbedit_task "ODBEdit" or the
 @ref RC_mhttpd_ODB_page "mhttpd Alarm page".  
 Some of the features (such as colour) are applicable only to \b mhttpd.
 
-\anchor idx_ODB_Alarms-tree
+\anchor idx_ODB_tree_Alarms
 <hr> @section RC_ODB_Alarms_Tree ODB /Alarms Tree
 
 The <b> ODB /Alarms tree </b> contains user and system information related to alarms.
@@ -2670,17 +2706,14 @@ indicate that something in the midas system is wrong.
 
 \htmlonly
 <script type="text/javascript">
-pages("RC_Monitor" ,"RC_section_index", "RC_Hot_Link", "RC_customize_ODB","" ); // back index next {top bottom}
+pages("RC_Monitor" ,"RunControl", "RC_Hot_Link", "RC_customize_ODB","" ); // back index next {top bottom}
 sections("Features", "RunControl","FrontendOperation"); // last section; top of this section; next section
 </script>
 \endhtmlonly
-\latexonly
-@ref RC_Monitor  "previous page"  - @ref Top -   @ref Organization "Map" -  @ref RC_Hot_Link  "next page"
-\endlatexonly
 <br>
 
 \anchor end
-*/ <!-- End of page RC_customize_ODB Customizing the ODB for Run Control  -->
+*/ <!-- End of page RC_customize_ODB Customizing the Experiment for Run Control  -->
 
 
 <!-- ============================ H O T   L I N K S ========================== -->
@@ -2689,16 +2722,14 @@ sections("Features", "RunControl","FrontendOperation"); // last section; top of 
 <br>
 \htmlonly
 <script type="text/javascript">
-pages("RC_customize_ODB", "RC_section_index","FrontendOperation", "RC_Hot_Link", "end" ); // back index next {top bottom}
+pages("RC_customize_ODB", "RunControl","FrontendOperation", "RC_Hot_Link", "end" ); // back index next {top bottom}
 sections("Features", "RunControl","FrontendOperation"); // last section; top of this section; next section
 </script>
 \endhtmlonly
-\latexonly
-@ref RC_customize_ODB  "previous page" - @ref Top - @ref Organization - @ref FrontendOperation  "next page"
-\endlatexonly
+
 <br>
 \anchor idx_hot-links
-\anchor idx_event-notification-see-hot-links
+\anchor idx_event_notification-see-hot-links
 @section RC_Hot_Link_Intro Introduction
 Midas implements event notification through <b> "hot-links" </b>. Once a hot-link is established to
 a key in the ODB, \b immediately that key is accessed, a call-back routine associated with
@@ -2726,7 +2757,6 @@ is established between the frontend and the ODB itself.
  * <center>
  *  Hot-Link process
  * \image html hotlink.gif 
- * \image latex hotlink.eps "HotLink process" width=12cm
  * </center> 
 
 First the parameters have to be defined in the ODB under the Settings tree
@@ -2742,7 +2772,7 @@ The following commands define these levels in the ODB:
 [local]Settings>ls
 @endcode 
 
-\anchor idx_experim.h
+\anchor idx_experim-dot-h
 @anchor RC_experim_dot_h
 The frontend can now map a C structure to these settings.
 In order to simplify this process,  @ref RC_odbedit "ODBEdit" can be requested to generate a
@@ -2871,19 +2901,16 @@ To make sure a hot-link exists, one can use the @ref RC_odbedit "odbedit" comman
 
 
 <br>
+\anchor end
+
 \htmlonly
 <script type="text/javascript">
-pages("RC_customize_ODB" , "RC_section_index","FrontendOperation", "RC_Hot_Link", "" ); // back index next {top bottom}
+pages("RC_customize_ODB" , "RunControl","FrontendOperation", "RC_Hot_Link", "" ); // back index next {top bottom}
 sections("Features", "RunControl","FrontendOperation"); // last section; top of this section; next section
 </script>
 \endhtmlonly
-\latexonly
-@ref  RC_customize_ODB "previous page" - @ref Top - @ref Organization - @ref FrontendOperation  "next page"
-\endlatexonly
 <br>
 
-
-\anchor end
  <!-- end of page  RC_Hot_Link Event Notification (Hot-Link)
 */
 

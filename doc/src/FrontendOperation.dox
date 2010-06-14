@@ -3,13 +3,11 @@
 <br>
 \htmlonly
 <script type="text/javascript">
-pages(  "RC_mstat","FE_section_index", "FE_ODB_equipment_tree","FrontendOperation","end" ); // back index next {top bottom}
-sections("RunControl","FrontendOperation","Utilities"); // last section; top of this section; next section
+pages(  "RC_Hot_Link","FrontendOperation", "FE_ODB_equipment_tree","FrontendOperation","end" ); // back index next {top bottom}
+sections("RunControl","FrontendOperation","DataAnalysis"); // last section; top of this section; next section
 </script>
 \endhtmlonly
-\latexonly
-@ref  RC_mstat "previous page"  - @ref Top -   @ref Organization "Map" -  @ref   FE_ODB_equipment_tree "next page"
-\endlatexonly
+
 <br>
 
 @section FE_Intro Introduction
@@ -33,6 +31,7 @@ in this document usually refers to the user part, since the system framework is 
 
 The frontend task, once built, is run as described as follows.
 
+\anchor idx_frontend_task
 @subsection FE_frontend_task frontend  - Midas Frontend application
 
 The "frontend" task is built by the user and may have any name the user chooses
@@ -42,19 +41,18 @@ analysis can be performed. This task is achieved with
 
  -# a specific @ref Frontend_code  written by the user describing the sequence of action to acquire
 the hardware data and 
- -#  a framework code handling the data flow control, data transmission and run
-control operation.
-The framework code (mfe.c) has the following arguments:
-- <b> Arguments </b>
-  - [-h hostname ] : host name (see @ref RC_odbedit_task)
-  - [-e exptname ] : experiment name (see @ref RC_odbedit_task)
-  - [-D ] : Become a Daemon.
-  - [-O ] : Become a Daemon but keep stdout 
+ -#  a framework code handling the data flow control, data transmission and run control operation.
 
-  - [-d ] : Used for debugging the frontend
-  - [-i index] : Set frontend index (used with @ref FE_mevb_task . See also @ref  FE_principle_eb).
+ The framework code (mfe.c) has the following arguments:
+ - <b> Arguments </b>
+    - [-h hostname ] : host name (see @ref RC_odbedit_task)
+    - [-e exptname ] : experiment name (see @ref RC_odbedit_task)
+    - [-D ] : Become a Daemon.
+    - [-O ] : Become a Daemon but keep stdout 
+    - [-d ] : Used for debugging the frontend
+    - [-i index] : Set frontend index (used with @ref FE_mevb_task . See also @ref  FE_principle_eb).
 
-Note that the new argument (-i index) has been introduced (in Midas versions 1.9.5 and later) to
+Note that the new argument (-i index) has been introduced to
 facilitate the multiple frontend configuration operation required for the @ref FE_Event_Builder.
 
 - <b> Usage </b>
@@ -70,7 +68,7 @@ Start the application superceding the default host, experiment and port:
 e.g. fegpib -e exp218 -h isdaq10 -p 7077 -D
 @endcode
 
-
+@anchor idx_Equipment_hardware 
 @subsection FE_hw_equipment Hardware Equipment
 Examples of hardware equipment accessed by the frontend are ADC modules, TDC modules, Scaler modules etc. 
 
@@ -93,7 +91,7 @@ among different platforms as well as among different CAMAC hardware interfaces, 
 modification of the code.
 
 
-
+@anchor idx_Equipment_software 
 @subsection FE_sw_equipment Software Equipment
 Under MIDAS, hardware equipment from the experiment is structured into software entities also called "Equipments". 
 A software "Equipment" refer to a collection of hardware equipment (devices) that are grouped together for convenience, 
@@ -101,6 +99,7 @@ such as
  - a set of high voltage supplies 
  - one or more crates of digitizing electronics e.g. ADCs and TDCs
  - a set of scalers
+@anchor idx_Equipment 
 @anchor Equipment_definition
 
 From a software point of view, we keep this same term, i.e. "Equipment", to refer to the means of collecting the 
@@ -135,7 +134,7 @@ A typical frontend will:
  -    Send these data banks to the buffer manager either locally or remotely.
  -    Periodically collect statistics of the acquisition task, and send them to the Online Database.
 
- 
+\anchor idx_data_transfer_optimize 
 @subsection FE_data_transfer Data transfer from the frontend
 The system frontend framework (mfe.c) sends events to the buffer manager and optionally a 
 copy to the Online Database (ODB). A "Data cache" in the frontend and on the server side 
@@ -155,6 +154,7 @@ a single bank by the system code.
 An  \ref FE_Event_Builder "event builder" mechanism is also available, 
 that can combine events from different into a composite event.    
 
+@anchor idx_frontend_event_triggers
 @subsection FE_event_trigger Frontend event triggers
 
 The <b> data collection </b> in the frontend framework can be \b triggered by several mechanisms.
@@ -187,13 +187,13 @@ are possible (see @ref FE_tbl_ReadOn "RO_Flags" ).
 A frontend can also cause a transition to be \b delayed until a particular condition is met 
 (see  @ref FE_Deferred_Transition ).
 
-
+\anchor idx_event_readout
 @subsection FE_equipment_readout_function Event Readout Functions
 <em>Associated with each Equipment </em>is an  @ref FE_readout_routine "readout function" which <em> runs when the Equipment is triggered</em>.
 <br>This function performs
 the actions required at the Equipment trigger, for example reading out the Equipment data and packing it into banks.
 
-
+@anchor idx_Equipment_list
 @section FE_Equipment_list Equipment List
 
 <em>The user section (frontend.c) must have an <b>Equipment List</b> for each defined Equipment</em>, organized as a 
@@ -212,13 +212,11 @@ The specifics of the  @ref FE_eqdec "Equipment List structure" is described belo
 <br>
 \htmlonly
 <script type="text/javascript">
-pages(  "RC_mstat","FE_section_index", "FE_ODB_equipment_tree","FrontendOperation","" ); // back index next {top bottom}
-sections("RunControl","FrontendOperation","Utilities"); // last section; top of this section; next section
+pages(  "RC_Hot_Link","FrontendOperation", "FE_ODB_equipment_tree","FrontendOperation","" ); // back index next {top bottom}
+sections("RunControl","FrontendOperation","DataAnalysis"); // last section; top of this section; next section
 </script>
 \endhtmlonly
-\latexonly
-@ref  RC_mstat "previous page"  - @ref Top -   @ref Organization "Map" -  @ref   FE_ODB_equipment_tree "next page"
-\endlatexonly
+
 <br>
 \anchor end
 <!--- end of page FrontendOperation  -->
@@ -226,15 +224,14 @@ sections("RunControl","FrontendOperation","Utilities"); // last section; top of 
  
 /*! @page FE_ODB_equipment_tree The ODB /Equipment tree
 <br>
+\anchor idx_ODB_tree_equipment
 \htmlonly
 <script type="text/javascript">
-pages(  "FrontendOperation","FE_section_index",  "FE_eqdec", "FE_ODB_equipment_tree","end" ); // back index next {top bottom}
-sections("RunControl","FrontendOperation","Utilities"); // last section; top of this section; next section
+pages(  "FrontendOperation","FrontendOperation",  "FE_eqdec", "FE_ODB_equipment_tree","end" ); // back index next {top bottom}
+sections("RunControl","FrontendOperation","DataAnalysis"); // last section; top of this section; next section
 </script>
 \endhtmlonly
-\latexonly
-@ref  FrontendOperation "previous page"  - @ref Top -   @ref Organization "Map" -  @ref   FE_eqdec "next page"
-\endlatexonly
+
 <br>
 
 
@@ -267,7 +264,7 @@ by default the system creates.
   - Common : Contains the system information. Should not be overwritten by the user.
   - Variables : Contains the equipment data if enabled (see below).
   - Settings : Contains the equipment specific information that the user may want to
-  maintain. In the case of a @ref Slow_Control_system equipment, extended tree
+  maintain. In the case of a @ref FE_Slow_Control_system equipment, extended tree
   structure is created by the system.
   - Statistics : Contains equipment statistics information such as event taken, event rate, data rate.
 
@@ -317,9 +314,17 @@ Scaler                          DIR
         kBytes per sec.         DOUBLE  1     8     1s   0   RWDE 0.0678543
 @endcode  
 
-These subdirectories will be discussed in more detail in the following sections.
+These subdirectories will be discussed in more detail in the following pages.
+<br>
+\anchor end
+\htmlonly
+<script type="text/javascript">
+pages(  "FrontendOperation","FrontendOperation",  "FE_eqdec", "FE_ODB_equipment_tree","" ); // back index next {top bottom}
+sections("RunControl","FrontendOperation","DataAnalysis"); // last section; top of this section; next section
+</script>
+\endhtmlonly
 
-\htmlonly <img ALIGN="left" alt="previous.gif" src="previous.gif"> \endhtmlonly 
-@ref  FrontendOperation "previous page"  - @ref Top -   @ref Organization "Map" - @ref FE_eqdec "next page"
-\htmlonly <img alt="next.gif" src="next.gif"> \endhtmlonly
+
+
+
 */

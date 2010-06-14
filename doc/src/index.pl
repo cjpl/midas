@@ -35,17 +35,22 @@ our $tempfile2="level_info.txt"; #  input file 1 for doxfile (used by doit.pl)
 our $hdrfile="header.tmp";  #   input file 2 for doxfile (used by doit.pl)
 
 #index files
+our $indexfile="index_add.txt"; # extra items to be added to the index (input)
 our $outf ="index_info.txt";
 our $idxf ="docindex.tmp";
 our $idxf2 ="docindex2.tmp";
 our $idxd ="docindex.dox";
-
+            
+our @alpha=qw( a b c d e f g h i j k l m n o p q r s t u v w x y z ); 
+our @skip_alpha; # needed for indexing
 our $linenum;
 our @indent;
 # concatenate strings with . and use ".." as any two characters
 #   $lpattern =  $gifpath."\/"."Labels"."\/"."..".$dev; # specific device
 our %hashpages;
 our %hashpagelevel;
+
+
 # input parameters:
 my ($param) = @ARGV;
 unless($num){$param=0};
@@ -235,19 +240,30 @@ sub idx()
     my $comment;
     my $temp;
     my $len; 
-    my @array=qw( a b c d e f g h i j k l m n o p q r s t u v w x y z );
 
     indent();
-        my $idx="idx_";
-    $len=$#array;
+    my $idxstr="idx_";
+    my @array = @alpha; # a-z
+
+#   $indexfile (index_add.txt) contains info to add to the index (e.g. "format-see-event->format")
+    open IN, $indexfile or print "Can't open input file $indexfile : $!\n"; # non-fatal
+
+    while (<IN>)
+       {
+           chomp $_;
+           if (/^#/){ next;} # skip any comments
+           $_=$_."!"; # add ! to mark these as having no references
+           push @array,$_; # add to the array
+       }    
+    
+    $len=$#array+1;
     $i=0;
     while ($i<$len)
     {
-	$array[$i]=$idx.$array[$i];
+	$array[$i]=$idxstr.$array[$i]; # precede with idx_
 	$i++;
     }
-    print "@array\n";
-    
+    print "@array\n";    
     print "index starting\n";
     open OUTF, ">$outf" or die "Can't open output file $outf : $!\n";
     print "Successfully opened $outf\n";
@@ -331,8 +347,10 @@ sub write_idx(@)
     my $letter;
     my $level;
     my ($lclast, $lcfields);
+    my $flag=0; # no link wanted if flag is set
+    my $match;
 
-# note: array is the only parameters, so passing directly is OK.
+# note: array is the only parameter, so passing directly is OK.
     my @array = @_;
     my @sorted = sort { lc($a) cmp lc($b) } @array; # sort as all lower case
     print "\n sorted array: @sorted\n";
@@ -345,13 +363,14 @@ sub write_idx(@)
     open OUTF, ">$idxf" or die "Can't open input file $idxf : $!\n";
     print OUTF "\n <!-- sorted array:\n @sorted \n  -->\n";
     $level=0; 
-    print OUTF "$indent[$level]<ul class=\"i$level\"> <!-- i$level -->\n";
+    print OUTF "$indent[$level]<ul class=\"j$level\"> <!-- j$level -->\n";
     while ($i<$len+1)
     {
 	
 	$_=$sorted[$i];
         print "next sorted value $i:$_\n";
 	# s/idx_//;
+        @fields=qw( 0 0 0 0 0 0 0 ); # clear out all levels
         @fields=split('_');
         $l=$#fields;
 	$j=0;
@@ -359,7 +378,7 @@ sub write_idx(@)
         while ($j < $l)
         {
             $j++;
-	    #    print "j=$j; level=$level  l=$l\n";
+	        print "j=$j; level=$level;  l=$l;  last= $last[$j]\n";
             #   case may be different
             $lcfields = lc $fields[$j];
             $lclast   = lc $last[$j];
@@ -369,9 +388,41 @@ sub write_idx(@)
 		print "duplicate:j=$j level=$level last[$level]=$last[$level]; \n";
 		next;
 	    }
+#           there could be a comment on a matching item (e.g. buffer and buffer-see-also-  )
+#           buffer-see-also- comes before buffer_ in the sorting so this should work
+            my @ftemp = split /-see/, $lcfields;
+            my @ltemp =  split /-see/, $lclast;
+        
+            #print "ftemp = @ftemp\n";
+            #print "ltemp = @ltemp\n";
+        
+            if ($ftemp[0] eq $ltemp[0]) 
+            {     
+                print "matched $ftemp[0] and $ltemp[0] \n"; 
+                print "\"see\" match:  $fields[$j] and $last[$j]; keeping $last[$j]\n";
+                print " at j=$j level=$level last[$level]=$last[$level]; \n";
+                next;
+            }
+            # else {  print " $ftemp[0] and $ltemp[0] do not match \n"; }
+            
+            
+            
+            
             $last[$j]=$fields[$j];
-           
-	    if ($fields[$j]=~/^[a-z]$/)
+            
+            if ($fields[$j]=~/!$/)
+            {  
+                print "found item with \"!\" (i.e. from index_add.txt; no \"\@ref\") ; setting flag  :  $fields[$j]\n";
+               $fields[$j]=~s/!$//;  # remove the !
+               $fields[$j]=~s/-(?!>)/ /g; # replace the hyphens
+               $flag = 1;
+               print "line: $_";
+               print "j=$j; l=$l; @fields\n";
+              
+	
+
+            }           
+	    elsif ($fields[$j]=~/^[a-z]$/)
 	    {  # found single letter
 		$letter = uc $fields[$j] ; # convert to Upper Case
                 if ($j != 1){ die "single letter $letter found at fields index $j. Expect 1\n";}
@@ -379,15 +430,19 @@ sub write_idx(@)
 		$k=0;  # take level down to zero for single letter
 		while ($k < $level)
 		{
-		    print OUTF "$indent[$level]</ul>  <!-- i$level -->\n";
+		    print OUTF "$indent[$level]</ul>  <!-- j$level -->\n";
 		    $level--;
 		}
 		print OUTF "\n\%\n"; #marker
+                # can't seem to get this to work properly for "A" so skip it
+                unless ($letter eq "A"){ print OUTF "\@anchor IDX_$letter\n"; } # print an anchor for this letter
+
 		print OUTF "$indent[$level]<li><b>$letter</b><br>\n"; # write single bold letter at level 0
 		while ($j > $level)
 		{ # restore level to previous
 		    $level++;
-		    print OUTF "<br>$indent[$level]<ul class=\"i$level\"> <!-- i$level -->\n";
+#		    print OUTF "<br>$indent[$level]<ul class=\"j$level\"> <!-- j$level -->\n";
+		    print OUTF "<br>$indent[$level]<ul class=\"j$level\"> <!-- j$level -->\n";
 		}
 		next;
 	    }
@@ -398,29 +453,38 @@ sub write_idx(@)
             
             while ($j < $level)
 	    {
-                print OUTF "$indent[$level]</ul>  <!-- i$level -->\n";
+                print OUTF "$indent[$level]</ul>  <!-- j$level -->\n";
                 $level--;
 	    }
 
             while ($j > $level)
             { 
                 $level++;
-                print OUTF "$indent[$level]<ul class=\"i$level\"> <!-- i$level -->\n";
+                print OUTF "$indent[$level]<ul class=\"j$level\"> <!-- j$level -->\n";
             }
            
             
             if( $j == $l)
             { # last term
                 #print "level=$level l=$l  last[$level]=$last[$level]\n";
-	        print "$indent[$level]<li>\@ref $sorted[$i] \"$fields[$level]\"<br>\n";
-	        print OUTF "$indent[$level]<li>\@ref $sorted[$i] \"$fields[$level]\"<br>\n";
+                if ($flag)
+                {
+                    print "$indent[$level]<li>$fields[$level]<br>\n";  # no link for this item
+                    print OUTF "$indent[$level]<li>$fields[$level]<br>\n";
+                    $flag = 0;
+                }
+                else
+                {
+                    print "$indent[$level]<li>\@ref $sorted[$i] \"$fields[$level]\"<br>\n";
+                    print OUTF "$indent[$level]<li>\@ref $sorted[$i] \"$fields[$level]\"<br>\n";
+                }
 		
             }
             else
             {
                 #print "level=$level l=$l  last[$level]=$last[$level]\n";
-	        print "$indent[$level]<li>$fields[$level]<br>\n";
-  	        print OUTF "$indent[$level]<li>$fields[$level]<br>\n";
+                print "$indent[$level]<li>$fields[$level]<br>\n";
+                print OUTF "$indent[$level]<li>$fields[$level]<br>\n";
 	    }
 	}
 	$i++;
@@ -428,12 +492,13 @@ sub write_idx(@)
     $level=0;
     while ($j < $level)
     {
-	print OUTF "$indent[$level]</ul>  <!-- i$level -->\n";
+	print OUTF "$indent[$level]</ul>  <!-- j$level -->\n";
 	$level--;
     }
     print OUTF "*/\n";             
     close OUTF; 
     print "closed $idxf\n";
+
     return;    
 } 
 
@@ -449,18 +514,16 @@ sub fix_idx()
     open INF, "$idxf" or die "Can't open input file $idxf : $!\n";
     open OUTF, ">$idxf2" or die "Can't open output file $idxf2 : $!\n";
 
-    print OUTF "/*! \@page  DocIndex Alphabetical Index to Documentation pages\n";
-    print OUTF "\\htmlonly\n";
-    print OUTF "<script type=\"text/javascript\" src=\"navigation.js\"></script>\n";
-    print OUTF "\\endhtmlonly\n";
-    print OUTF "\n<span class=\"note\">This file produced automatically ....  DO NOT EDIT </span>\n";
-    print OUTF "\n<br>";
-    print OUTF "<span class=\"warn\">\n";
-   # print OUTF "WARNING - this page is under construction \n";
-    print OUTF "</span>\n\n";
+    print OUTF<<EOT;
+
+    /*! \@page  DocIndex Alphabetical Index to Documentation pages
+
+
+
+<!--  This file produced automatically ....  DO NOT EDIT -->
+
+EOT
   
-
-
     my @file = <INF>;
     close INF;
     print "closed input file $idxf\n";
@@ -480,7 +543,7 @@ sub fix_idx()
 	if ($_)
 	{ # string is not empty
 
-	    if ($i == 0)  # item 0 includes <ul class "i0">
+	    if ($i == 0)  # item 0 includes <ul class "j0">
 	    { 
 		print OUTF $_;
 		next;
@@ -491,16 +554,33 @@ sub fix_idx()
 	    }
 	    else
 	    {
-		print "found a repeated letter at : \n $_ \n skipping...\n";
+                if (/<b>([A-Z])<\/b>/) 
+                {  push @skip_alpha,$1; } # remember which letters are skipped
+		print "found no index items for letter $1 at : \n $_ \n skipping...\n";
 		next;
 	    }
 	}
     } # while
-    # add the footer
-    print OUTF "</ul>  <!-- i0 -->\n";
-    print OUTF "*/\n"; # end of page
+    # add the index page footer (at end of the page)
+    print OUTF<<EOT;
+
+    </ul>  <!-- j0 -->
+
+    \\anchor end
+    \\htmlonly
+    <script type="text/javascript">
+    // pages param : back index next {top bottom}
+    pages("Convention","DocIndex","" ,"DocIndex","" );
+    // sections params:   last section; top of this section; next section
+    sections("Convention","DocIndex","");
+    </script>
+    \\endhtmlonly
+
+    */
+EOT
     close OUTF;
     print "closed output file $idxf2\n";
+    print "skip_alpha: @skip_alpha\n";
 }
 
 sub fix_idx2()
@@ -509,10 +589,12 @@ sub fix_idx2()
     my $i=0;
     my $string;
     my $linenum;
+    my $letter;
+    my $element;
     my $skip=1;
 
-    print ("fix_idx2: starting\n");
-
+    print "fix_idx2: starting\n";
+    print "fix_idx2: @skip_alpha\n";
     open INF, "$idxf2" or die "Can't open input file $idxf : $!\n";
     open OUTF, ">$idxd" or die "Can't open output file $idxd : $!\n";
 
@@ -522,17 +604,41 @@ sub fix_idx2()
 	    $linenum++;
             if ($skip)
             {
-                unless (/class="i0"/)   # skip the top lines
+                unless (/class="j0"/)   # skip the top lines
                 {
-                    print "skipping line $linenum\n";   
-                    print OUTF "$_";
-                    next; 
+                    print "skipping line $linenum: $_\n";   
                 }
                 else 
                 { 
                     $skip = 0;
-                    next;
-                }
+                    print "Found \"class=\"j0\"\" at Line $linenum\n";
+                    # add Alphabet Index links   
+                     print  "\n";
+                     $letter = shift @skip_alpha; # the first letter to be skipped
+
+                     for $element (@alpha)  # a-z
+                     { 
+                         $element = uc $element;
+                         #  print " element=$element, letter=$letter\n";
+                         if ($element eq $letter)
+                         {   # skip this letter
+                             #  print "...skipping letter $letter \n";
+                             $letter = shift @skip_alpha;
+                         }
+                         else
+                         {
+                           #  print  "\@ref IDX_$element \"$element\" \n";
+                           # can't seem to get anchor to work properly for "A" so skip it
+                             unless ($element eq "A"){  print OUTF  "\@ref IDX_$element \"$element\" "; }
+                             else {  print OUTF  " $element "; }
+                          }
+         
+                       }
+                   print OUTF "\n\n";
+                } 
+                print OUTF "$_ \n";
+
+                next;
             } 
 
             print "working on line $linenum\n";
@@ -553,7 +659,6 @@ sub fix_idx2()
                 print OUTF "$_\n";
 
         } # end of a file 
-  
 	close INF;
     close OUTF;
 
@@ -565,23 +670,25 @@ sub check_line()
     my $temp;
     my @fields;
     my $len;
-
+    
     print "\n\n check_line starting with string: $_\n";
     s/"experim-dot-h"/"experim\.h"/;
-
-if (/"(.*-see-)/) 
-{
-     print "-see-  found $1 \n";
-     $temp = $1;
-     $temp =~ s/-see-//;
-     print "temp: $temp\n";
-
-     s/"(.*-see-)/"\(see /; 
-     print "$_ \n";
-     s/"(?!\()/\)"/;
+    
+    
+    
+    if (/"(.*-see-)/) 
+    {
+       print "-see-  found $1 \n";
+       $temp = $1;
+    $temp =~ s/-see-//;
+    print "temp: $temp\n";
+    
+    s/"(.*-see-)/"\(see /; 
+    print "$_ \n";
+    s/"(?!\()/\)"/;
      print "$_ \n";
      s/\@ref/$temp \@ref/;
-   #  s/-/ /g;
+    
 
 }
 
@@ -601,6 +708,7 @@ elsif (/"(.*(?<!-)-(?!-))/)
      $_ = $fields[0] . $_ . "\"".  $fields[2]; # replace the quote used for split
 
   }  
+
 
     
 #     print "string is now   : $_ \n";  
@@ -1202,10 +1310,20 @@ while (<IN>)
     print " line unmodified $_ \n";
     print OUT "$_\n";
 } # while in
+print OUT<<EOT;
 
-print OUT "</ol>\n\n";
-print OUT "\\anchor end\n";
-print OUT "*/\n";
+</ol>\n\n
+\\anchor end
+    \\htmlonly
+    <script type="text/javascript">
+    // top {top }
+    top("Organization");
+    // az(); 
+    </script>
+    \\endhtmlonly
+    <br>
+*/
+EOT
 close $sortfile;
 close $tempfile2;
 print "closed $sortfile and $tempfile2\n";
@@ -1294,31 +1412,44 @@ sub next_fields_levels($$$)
 
 sub header()
 {
-    print OUTD "/*! \@page  Organization Manual Contents \n";
-    print OUTD "\\htmlonly\n";
-    print OUTD "<script type=\"text/javascript\" src=\"navigation.js\"></script>\n";
-    print OUTD "\\endhtmlonly\n";
-    print OUTD "\n<span class=\"note\">This file produced automatically ...  DO NOT EDIT </span>\n";
-    print OUTD "\@section O_what What can be found in this manual?\n\n";
-    print OUTD "<span class=\"warn\">\n";
-   #  print OUTD "WARNING - this page is under construction as the sections\n";
-    print OUTD "are being changed/added to etc.\n";
-    print OUTD "</span>\n\n";
-    print OUTD "\\anchor Organization_section_index\n";
-    print OUTD "<span  style=\"font-weight: bold; font-size: 125%;\">Section Index</span>\n";
-    print OUTD "<ol class=\"i0\">\n";
-    print OUTD "<li> \@ref Main_section_index \"Main Page\"\n";
+    print OUTD<<EOT;
+
+    /*! \@page  Organization Manual Contents
+    \\htmlonly
+    <script type="text/javascript">
+    // bot {top bottom}
+    bot("Organization","end");
+    az();
+    </script>
+    \\endhtmlonly
+    <br><br>
+ 
+    <!--   This file produced automatically ...  DO NOT EDIT     -->
+
+    \@section O_what What can be found in this manual?
+  
+   
+    \\anchor Organization_section_index
+    <span  style="font-weight: bold; font-size: 125%;">Section Index</span>
+    <ol class="i0">
+    <li> \@ref Main_section_index "Main Page"
+EOT
     return;
 }
 
 sub footer()
-{
-    print OUTD "</ol>\n\n";
-    # print OUTD "\\anchor O_main_index\n";
-    print OUTD "<span  style=\"font-weight: bold; font-size: 125%;\">Main Index</span>\n";
-    print OUTD "\@anchor Main_section_index\n";
-    print OUTD "<ol class=\"i0\">\n\n"; 
-    print OUTD "   <li>\@ref Top \"Main Page\"\n";
-    print OUTD "   <br>\n";
+{  # write last lines of the header to the file
+
+    print OUTD<<EOT;
+    </ol>
+
+ 
+    <span  style="font-weight: bold; font-size: 125%;">Main Index</span>
+    \@anchor Main_section_index
+    <ol class="i0">
+       <li>\@ref Top "Main Page"
+       <br>
+
+EOT
     return;
 }

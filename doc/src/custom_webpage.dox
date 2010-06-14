@@ -1,20 +1,19 @@
 /*! @page RC_Example_Custom_Webpages Examples of Custom Webpages
 
 <br>
-\htmlonly
+\htmlonly  
 <script type="text/javascript">
 // pages parameters: back index next {top bottom}
-pages( "RC_mhttpd_Custom_page", "RC_section_index","RC_BNMQR_status","RC_Example_Custom_Webpages",  "end" );
+pages( "RC_mhttpd_Custom_page", "RunControl","RC_ROOT_analyzer_page","RC_Example_Custom_Webpages",  "end" );
 sections("Features", "RunControl","FrontendOperation"); // last section; top of this section; next section
 </script>
-\endhtmlonly
-\latexonly
- @ref  RC_mhttpd_Custom_page     "previous page" - @ref Top - @ref Organization "Map"  - @ref   RC_BNMQR_status  "next page"
-\endlatexonly
-<br>
+\endhtmlonly  
 
+<br>
+\anchor idx_mhttpd_page_custom_example-pages
 Examples of custom webpages :
- 
+
+ -  \subpage RC_ROOT_analyzer_page
  -  \subpage RC_BNMQR_status
  -  \subpage RC_MEG_Gas_Page
  -  \subpage RC_Ebit_custom_page
@@ -24,21 +23,248 @@ Examples of custom webpages :
 <!-- End of page  RC_Example_Custom_Webpages -->
 */
 
-/*! @page RC_BNMQR_status Custom Status Pages for experiments BNMR and BNQR 
 
+/*! @page RC_ROOT_analyzer_page Custom Page showing ROOT analyzer output
+\anchor idx_mhttpd_page_custom_examples_ROOT
 <br>
-\htmlonly
+\htmlonly  
 <script type="text/javascript">
 // pages parameters: back index next {top bottom}
-pages( "RC_Example_Custom_Webpages", "RC_section_index","RC_MEG_Gas_Page","RC_BNMQR_status",  "end" );
+pages( "RC_Example_Custom_Webpages", "RunControl","RC_MEG_ROOT_code","RC_ROOT_analyzer_page",  "end" );
+sections("Features", "RunControl","FrontendOperation"); // last section; top of this section; next section
+</script>
+\endhtmlonly  
+
+Many midas experiments work with ROOT based analyzers today. One problem there is that the graphical output of the
+root analyzer can only be seen through the X server and not through the web. At the MEG experiment, this problem was
+solved in an elegant way: The ROOT analyzer runs in the background, using a "virtual" X server called Xvfb.
+It plots its output (several panels) normally using this X server, then saves this panels every ten seconds
+into GIF files. These GIF files are then served through mhttpd using a custom page. The output looks like this:
+
+<br>
+* <center> Custom page showing ROOT Analyzer (MEG Experiment)
+*  \image html custom_ROOT_analyzer_page.png
+* </center>
+<br>
+The buttons on the left sides are actually HTML buttons on that custom page overlaid to the GIF image, which in this case
+shows one of the 800 PMT channels digitized at 1.6 GSPS. With these buttons one can cycle through the different GIF images,
+which then automatically update ever ten seconds. Of course it is not possible to feed interaction back to the analyzer
+(i.e. the waveform cannot be fitted interactively) but for monitoring an experiment in production mode this tool is
+ extremely helpful, since it is seamlessly integrated into mhttpd. All the magic is done with JavaScript, and the
+ buttons are overlaid on the graphics using CSS with absolute positioning. The analysis ratio on the top right is
+ also done with JavaScript accessing the required information from the ODB.
+<br>
+
+The custom page file is shown here:
+
+  - \subpage RC_MEG_ROOT_code
+
+ For details using Xvfb server, please contact Ryu Sawada <sawada@icepp.s.u-tokyo.ac.jp>.
+
+<br>
+<br>
+\anchor end
+\htmlonly  
+<script type="text/javascript">
+// pages parameters: back index next {top bottom}
+pages( "RC_Example_Custom_Webpages", "RunControl","RC_MEG_ROOT_code","RC_ROOT_analyzer_page",  "" );
+sections("Features", "RunControl","FrontendOperation"); // last section; top of this section; next section
+</script>
+\endhtmlonly  
+*/
+
+
+/*! @page RC_MEG_ROOT_code HTML code for the MEG ROOT Analyzer page
+
+
+\htmlonly  
+<script type="text/javascript">
+// pages parameters: back index next {top bottom}
+pages( "RC_ROOT_analyzer_page", "RunControl", "RC_BNMQR_status","RC_MEG_ROOT_code",  "end" );
 sections("Features", "RunControl","FrontendOperation"); // last section; top of this section; next section
 </script>
 \endhtmlonly
-\latexonly
- @ref RC_Example_Custom_Webpages     "previous page" - @ref Top - @ref Organization "Map"  - @ref  RC_MEG_Gas_Page  "next page"
-\endlatexonly
-<br>
 
+
+The following code is used for the @ref RC_ROOT_analyzer_page :
+\code
+<html><head>
+<meta http-equiv="content-type" content="text/html; charset=ISO-8859-1"><!-- $Id: analyzer.html 14662 2009-12-05 01:51:33Z ritt $ -->
+
+  
+    <title>Crates Status Page</title>
+    <style type="text/css">
+      <!--
+      a:link     {
+      text-decoration:none;
+      color:#0000A0;
+      }
+      a:visited  {
+      color:#0000A0;
+      text-decoration:none;
+      }
+      body       {
+      font-family:verdana,tahome,sans-serif;
+      font-size:16px;
+      line-height:16px;
+      margin: 2px;
+      }
+
+      #i { position:relative; }
+      #t { position:absolute; left:0px; top:140px; }
+      #b { width:130px; }
+      -->
+    </style>
+  <script type="text/javascript" src="MEG_analyzer_files/mhttpd.html"></script>
+  <script type="text/javascript">
+  
+  var image_name = [  
+    "eventdisplay2d.gif",
+    "trgrate.gif",
+    "trgsync.gif",
+    "trgdaqrate.gif",
+    "trgmonitor.gif",
+    "drscount.gif",
+    "-",
+    "xec2d.gif",
+    "xecwaveform.gif",
+    "-",
+    "dch2d.gif",
+    "dch_hitmap.gif",
+    "-",
+    "tic2d.gif",
+    "ticphit.gif",
+  ];
+
+  var image_title = [ 
+    "Event Display 2D",
+    "Trigger Scalers",
+    "Trigger Sync",
+    "Trigger Rates",
+    "Trigger Monitor",
+    "DRS Count",
+    "-",
+    "XEC 2D",
+    "XEC Waveforms",
+    "-",
+    "DCH 2D",
+    "DCH Hitmap",
+    "-",
+    "TIC 2D",
+    "TIC Hits",
+  ];
+
+  var refreshID = null;
+
+  function disp(i)
+  {
+    /* update image */
+    var image = document.getElementById('img');
+    var d = new Date();
+    var s = d.toString();
+    var t = document.getElementById('title_line');
+
+    image.src = 'monitor/'+image_name[i]+'?'+d.getTime();
+    if (navigator.appName == "Netscape")
+      t.innerHTML = '<B>'+image_title[i]+'</B>'+'&nbsp;&nbsp;'+s.slice(16, 25)+' CET';
+    else
+      t.innerHTML = '<B>'+image_title[i]+'</B>'+'&nbsp;&nbsp;'+s.slice(10, 19)+' CET'; // mainly IE
+
+    var n1 = ODBGet('/BGAnalyzer/Trigger/Statistics/Events received');
+    var n2 = ODBGet('/Equipment/Trigger/Statistics/Events sent');
+    document.getElementById('ratio').innerHTML = 'Analysis ratio: '+n1+'/'+n2;
+
+    if (refreshID != null)
+      clearInterval(refreshID);
+    refreshID = setTimeout("disp("+i+")", 10000);
+  }
+  
+  </script>
+  </head><body onload="disp(0);">
+    <form name="form1" method="GET" action="Crates">
+      <table border="3" cellpadding="2">
+        <tbody><tr>
+          <td id="title_line" colspan="2" align="center" bgcolor="#a0a0ff"><b>Event Display 2D</b>&nbsp;&nbsp;13:19:21  CET</td>
+        </tr>
+        <tr>
+          <td bgcolor="#c0c0c0">
+            <input name="cmd" value="ODB" type="submit">
+            <input name="cmd" value="Alarms" type="submit">
+            <input name="cmd" value="Status" type="submit">
+          </td>
+          <td id="ratio" nowrap="nowrap" width="200" align="center" bgcolor="#c0c0c0">
+            Analysis ratio: 0/0
+          </td>
+        </tr>  
+        <tr>
+          <td colspan="2">
+            <div id="i">
+              <img id="img" src="MEG_analyzer_files/eventdisplay2d.html" alt="Analyzer Screendump" border="0">
+              <table id="t">
+                <tbody><tr>
+                  <td nowrap="nowrap" valign="top" bgcolor="#c0c0c0">
+                    <hr>
+<script type="text/javascript">
+
+  for (var i=0 ; i<image_name.length ; i++)
+    if (image_name[i] == "-")
+       document.writeln("<hr>");
+    else
+       document.writeln("<button type=\"button\" id=\"b\" onclick=\"disp("+i+");\">"+image_title[i]+"</button><br>");
+
+</script><button type="button" id="b" onclick="disp(0);">Event Display 2D</button><br>
+<button type="button" id="b" onclick="disp(1);">Trigger Scalers</button><br>
+<button type="button" id="b" onclick="disp(2);">Trigger Sync</button><br>
+<button type="button" id="b" onclick="disp(3);">Trigger Rates</button><br>
+<button type="button" id="b" onclick="disp(4);">Trigger Monitor</button><br>
+<button type="button" id="b" onclick="disp(5);">DRS Count</button><br>
+<hr>
+<button type="button" id="b" onclick="disp(7);">XEC 2D</button><br>
+<button type="button" id="b" onclick="disp(8);">XEC Waveforms</button><br>
+<hr>
+<button type="button" id="b" onclick="disp(10);">DCH 2D</button><br>
+<button type="button" id="b" onclick="disp(11);">DCH Hitmap</button><br>
+<hr>
+<button type="button" id="b" onclick="disp(13);">TIC 2D</button><br>
+<button type="button" id="b" onclick="disp(14);">TIC Hits</button><br>
+
+                  </td>
+                </tr>
+              </tbody></table>
+            </div></td>
+          
+        </tr>
+      </tbody></table>
+    </form>
+  </body></html>
+
+\endcode
+
+\anchor end
+\htmlonly  
+<script type="text/javascript">
+// pages parameters: back index next {top bottom}
+pages( "RC_ROOT_analyzer_page", "RunControl", "RC_BNMQR_status","RC_MEG_ROOT_code",  "" );
+sections("Features", "RunControl","FrontendOperation"); // last section; top of this section; next section
+</script>
+\endhtmlonly
+
+
+*/
+
+
+
+/*! @page RC_BNMQR_status Custom Status Pages for experiments BNMR and BNQR 
+
+<br>
+\htmlonly 
+<script type="text/javascript">
+// pages parameters: back index next {top bottom}
+pages( "RC_MEG_ROOT_code", "RunControl","RC_MEG_Gas_Page","RC_BNMQR_status",  "end" );
+sections("Features", "RunControl","FrontendOperation"); // last section; top of this section; next section
+</script>
+\endhtmlonly
+ 
 
 The webpages shown below replace the Midas default status pages for the BNMR and BNQR experiments at TRIUMF.
 A single file (custom_status.html) is used for the custom status pages of both experiments. The colours are 
@@ -54,32 +280,27 @@ alias links allow the user to quickly access experimental parameters.
 
 <!--
 * <center> Custom Status Pages for the BNMR and BNQR experiments at TRIUMF 
-*  \image latex bnmr_bnqr_status_overlap.eps "bnmr and bnqr experiments custom status pages" width=13.25cm
 *  \image html bnmr_bnqr_status_overlap.gif
 *  </center>
 -->
 
 * <center> Custom Status Page for the BNMR experiment at TRIUMF 
-*  \image latex bnmr.eps "bnmr and bnqr experiments custom status pages" width=13.25cm
 *  \image html bnmr.png
 <br><br>
    Custom Status Page for the BNQR experiment at TRIUMF 
-*  \image latex bnqr.eps "bnmr and bnqr experiments custom status pages" width=13.25cm
 *  \image html bnqr.png
 *  </center>
 
 
 <br>
-\htmlonly
-<script type="text/javascript">
+ 
+\htmlonly <script type="text/javascript">
 // pages parameters: back index next {top bottom}
-pages( "RC_Example_Custom_Webpages", "RC_section_index","RC_MEG_Gas_Page","RC_BNMQR_status",  "" );
+pages( "RC_ROOT_analyzer_page", "RunControl","RC_MEG_Gas_Page","RC_BNMQR_status",  "" );
 sections("Features", "RunControl","FrontendOperation"); // last section; top of this section; next section
-</script>
-\endhtmlonly
-\latexonly
- @ref RC_Example_Custom_Webpages     "previous page" - @ref Top - @ref Organization "Map"  - @ref  RC_MEG_Gas_Page  "next page"
-\endlatexonly
+</script> \endhtmlonly
+ 
+
 <br>
 \anchor end
 <!-- end of page  RC_BNMQR_status -->
@@ -88,16 +309,14 @@ sections("Features", "RunControl","FrontendOperation"); // last section; top of 
 /*! @page  RC_MEG_Gas_Page Custom Page for MEG gas system
 
 <br>
-\htmlonly
-<script type="text/javascript">
+ 
+\htmlonly <script type="text/javascript">
 // pages parameters: back index next {top bottom}
-pages( "RC_BNMQR_status", "RC_section_index","RC_Ebit_custom_page","RC_MEG_Gas_Page",  "end" );
+pages( "RC_BNMQR_status", "RunControl","RC_Ebit_custom_page","RC_MEG_Gas_Page",  "end" );
 sections("Features", "RunControl","FrontendOperation"); // last section; top of this section; next section
-</script>
-\endhtmlonly
-\latexonly
- @ref  RC_BNMQR_status    "previous page" - @ref Top - @ref Organization "Map"  - @ref  RC_Ebit_custom_page  "next page"
-\endlatexonly
+</script> \endhtmlonly
+ 
+
 <br>
 
 
@@ -107,20 +326,17 @@ The valves are represented as green circles.
 If they are clicked, they close and become red (provided the user successfully supplied the correct password).
 <br>
 * <center> MEG gas system
-*  \image latex Capture_sgas.eps  "MEG Gas System" width=13.25cm
 *  \image html Capture_sgas.png
 * </center>
 <br>
-\htmlonly
-<script type="text/javascript">
+ 
+\htmlonly <script type="text/javascript">
 // pages parameters: back index next {top bottom}
-pages( "RC_BNMQR_status", "RC_section_index","RC_Ebit_custom_page","RC_MEG_Gas_Page",  "" );
+pages( "RC_BNMQR_status", "RunControl","RC_Ebit_custom_page","RC_MEG_Gas_Page",  "" );
 sections("Features", "RunControl","FrontendOperation"); // last section; top of this section; next section
-</script>
-\endhtmlonly
-\latexonly
- @ref  RC_BNMQR_status    "previous page" - @ref Top - @ref Organization "Map"  - @ref  RC_Ebit_custom_page  "next page"
-\endlatexonly
+</script> \endhtmlonly
+ 
+
 <br>
 \anchor end
 <!-- end of  page RC_MEG_Gas_Page  -->
@@ -128,16 +344,14 @@ sections("Features", "RunControl","FrontendOperation"); // last section; top of 
 
 /*! @page   RC_Ebit_custom_page Custom Page for Ebit Experiment
 <br>
-\htmlonly
-<script type="text/javascript">
+ 
+\htmlonly <script type="text/javascript">
 // pages parameters: back index next {top bottom}
-pages( "RC_MEG_Gas_Page", "RC_section_index", "RC_Mpet_custom_page","RC_Ebit_custom_page", "end");
+pages( "RC_MEG_Gas_Page", "RunControl", "RC_Mpet_custom_page","RC_Ebit_custom_page", "end");
 sections("Features", "RunControl","FrontendOperation"); // last section; top of this section; next section
-</script>
-\endhtmlonly
-\latexonly
- @ref  RC_MEG_Gas_Page   "previous page" - @ref Top - @ref Organization "Map"  - @ref  RC_Mpet_custom_page  "next page"
-\endlatexonly
+</script> \endhtmlonly
+ 
+
 <br>
 
 This custom page allows the experimenters to easily input the parameters for the TRIUMF Pulse Programmer 
@@ -151,22 +365,19 @@ represents the time from when the cycle is started (T0).
 The boxes on the left allow the polarity of the output signal to be reversed. 
 
 * <center> 
-*  \image  latex ebit_ppg.eps  "Ebit experiment PPG custom page" width=13.25cm
 *  \image html ebit_ppg.png
 * </center>
 
 
 <br>
-\htmlonly
-<script type="text/javascript">
+ 
+\htmlonly <script type="text/javascript">
 // pages parameters: back index next {top bottom}
-pages( "RC_MEG_Gas_Page", "RC_section_index", "RC_Mpet_custom_page","RC_Ebit_custom_page", "");
+pages( "RC_MEG_Gas_Page", "RunControl", "RC_Mpet_custom_page","RC_Ebit_custom_page", "");
 sections("Features", "RunControl","FrontendOperation"); // last section; top of this section; next section
-</script>
-\endhtmlonly
-\latexonly
- @ref  RC_MEG_Gas_Page   "previous page" - @ref Top - @ref Organization "Map"  - @ref  RC_Mpet_custom_page  "next page"
-\endlatexonly
+</script> \endhtmlonly
+ 
+
 <br>
 \anchor end
 <!-- end of  RC_Ebit_custom_page -->
@@ -175,16 +386,14 @@ sections("Features", "RunControl","FrontendOperation"); // last section; top of 
 
 /*! @page   RC_Mpet_custom_page Mpet Optics Custom Page
 <br>
-\htmlonly
-<script type="text/javascript">
+ 
+\htmlonly <script type="text/javascript">
 // pages parameters: back index next {top bottom}
-pages("RC_Ebit_custom_page" , "RC_section_index", "RC_T2K_Gas_Page",  "RC_Mpet_custom_page", "end");
+pages("RC_Ebit_custom_page" , "RunControl", "RC_T2K_Gas_Page",  "RC_Mpet_custom_page", "end");
 sections("Features", "RunControl","FrontendOperation"); // last section; top of this section; next section
-</script>
-\endhtmlonly
-\latexonly
- @ref  RC_Ebit_custom_page   "previous page" - @ref Top - @ref Organization "Map"  - @ref   RC_T2K_Gas_Page "next page"
-\endlatexonly
+</script> \endhtmlonly
+ 
+
 <br>
 
 
@@ -192,22 +401,19 @@ sections("Features", "RunControl","FrontendOperation"); // last section; top of 
 This page shows the optics for the Mpet experiment at TRIUMF displaying the Lorenz steerer parameters.
 
 * <center> 
-*  \image  latex mpet_optics.eps  "Mpet Optics custom page" width=13.25cm
 *  \image html mpet_optics.png
 * </center>
 
 
 <br>
-\htmlonly
-<script type="text/javascript">
+ 
+\htmlonly <script type="text/javascript">
 // pages parameters: back index next {top bottom}
-pages("RC_Ebit_custom_page" , "RC_section_index", "RC_T2K_Gas_Page", "RC_Mpet_custom_page" , "");
+pages("RC_Ebit_custom_page" , "RunControl", "RC_T2K_Gas_Page", "RC_Mpet_custom_page" , "");
 sections("Features", "RunControl","FrontendOperation"); // last section; top of this section; next section
-</script>
-\endhtmlonly
-\latexonly
- @ref  RC_Ebit_custom_page   "previous page" - @ref Top - @ref Organization "Map"  - @ref   RC_T2K_Gas_Page "next page"
-\endlatexonly
+</script> \endhtmlonly
+ 
+
 <br>
 \anchor end
 <!-- end of  RC_Mpet_custom_page  -->
@@ -216,17 +422,17 @@ sections("Features", "RunControl","FrontendOperation"); // last section; top of 
 
 /*! @page   RC_T2K_Gas_Page Custom Pages designed for T2K gas system
 <br>
-\htmlonly
-<script type="text/javascript">
+ 
+\htmlonly <script type="text/javascript">
 // pages parameters: back index next {top bottom}
-pages( "RC_Mpet_custom_page" , "RC_section_index","RC_mhttpd_Custom_page",  "RC_T2K_Gas_Page" ,  "end");
+pages( "RC_Mpet_custom_page" , "RunControl","RC_mhttpd_Custom_page",  "RC_T2K_Gas_Page" ,  "end");
 sections("Features", "RunControl","FrontendOperation"); // last section; top of this section; next section
-</script>
-\endhtmlonly
-\latexonly
- @ref RC_Mpet_custom_page "previous page" - @ref Top - @ref Organization "Map"  - @ref RC_mhttpd_Custom_page "next page"
-\endlatexonly
+</script> \endhtmlonly
+ 
+
 <br>
+
+@section T2K_example_1 Example custom page: pop-up window, clickable boxes
 
 Clicking on one of the valves produces a pop-up window (a flow-control valve A0FC2 is shown), allowing the set 
 value for the flow rate to be changed, and the valve to be opened or closed. Navigation 
@@ -235,28 +441,25 @@ boxes. The pop-up windows are made using javascript. "Fills" are used to change 
 the valves, and "Labels" are used to display the values of various parameters.
 
 * <center> T2K future Gas System: Gas Analyzer Page showing popup
-*  \image  latex gas_analyzer_pop.eps  "T2K Gas System: Gas Analyzer page" width=13.25cm
 *  \image html gas_analyzer_pop.png
 * </center>
 
-\anchor t2k_example_2
+<br>
+<br>
+@section T2K_example_2 Example custom page: hidden alias keys
+
 The following image illustrates the use of hidden alias keys to load webpages from a clickable image map.
 
 * <center> Custom pages written for the T2K experiment 
-*  \image latex gas_combo.eps "Custom pages written for the T2K experiment" width=13.25cm
 *  \image html gas_combo.gif
 *  </center>
 <br>
-\htmlonly
-<script type="text/javascript">
+\htmlonly <script type="text/javascript">
 // pages parameters: back index next {top bottom}
-pages( "RC_Mpet_custom_page" , "RC_section_index",  "RC_mhttpd_Custom_page","RC_T2K_Gas_Page" , "");
+pages( "RC_Mpet_custom_page" , "RunControl",  "RC_mhttpd_Custom_page","RC_T2K_Gas_Page" , "");
 sections("Features", "RunControl","FrontendOperation"); // last section; top of this section; next section
-</script>
-\endhtmlonly
-\latexonly
- @ref RC_Mpet_custom_page "previous page" - @ref Top - @ref Organization "Map"  - @ref RC_mhttpd_Custom_page "next page"
-\endlatexonly
+</script> \endhtmlonly
+
 <br>
 \anchor end
 <!-- end of  RC_T2K_Gas_Page -->

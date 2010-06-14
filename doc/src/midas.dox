@@ -6,7 +6,6 @@
 <tr>
 <td style="vertical-align: top;">
  *  \image html logo.png
- *  \image latex logo.eps "midas" width=3cm
 </td>
 <td style="vertical-align: top;">
 
@@ -24,7 +23,6 @@
 </td>
 <td style="vertical-align: top;">
  *  \image html logo.png
- *  \image latex logo.eps "midas" width=3cm
 </td>
 </tr>
 </table>
@@ -34,7 +32,7 @@
 \htmlonly
 <script type="text/javascript">
 top_mainpage (  "Intro","end" ); // next_page bottom_of_page  special function 
-sections("","top","Intro"); // last section; top of this section; next section
+sections("","","Intro"); // last section; top of this section; next section
 </script>
 \endhtmlonly
 <br>
@@ -107,16 +105,13 @@ border="0" cellpadding="2" cellspacing="2">
         <li>    \subpage BuildingOptions
         <li>    \subpage NDF
         <li>    \subpage Glossary
+        <li>    \subpage Convention
 	<li>    \subpage DocIndex
 </ul>
 </td>
 </tr>
 </table>
 
-\todo
-Index - we only get the mainpage/subpages in the index on LHS. Is it possible to get the sections, subsections as well
-to automatically create my section index??
-Related Pages - what controls what gets put into this??
 
 \anchor end
 <!-- Navigation -->
@@ -127,9 +122,7 @@ pages("","", "Intro","index","" ); // back index next {top bottom}
 sections("","index","Intro"); // last section; top of this section; next section
 </script>
 \endhtmlonly
-\latexonly
-@ref Top - @ref Organization "Map" - @ref Intro "next section and page"
-\endlatexonly
+
 
 <br>
 <!-- End of Navigation -->

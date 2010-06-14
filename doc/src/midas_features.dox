@@ -1,15 +1,13 @@
 /*! \page F_ODB_Structure ODB Structure
-
+\anchor idx_ODB_structure
 \htmlonly
 <script type="text/javascript">
-pages( "F_MainElements",  "F_Section_Index", "F_Midas_Code_and_Libraries", "F_ODB_Structure","end"); // back index next {top bottom}
+pages( "F_MainElements",  "Features", "F_Midas_Code_and_Libraries", "F_ODB_Structure","end"); // back index next {top bottom}
 // sections params:   last section; top of this section; next section
 sections("Quickstart", "Features", "RunControl");
 </script>
 \endhtmlonly
-\latexonly 
- @ref F_MainElements "previous page" - @ref Top - @ref Organization "Map"- @ref F_Midas_Code_and_Libraries "next page"
-\endlatexonly
+
 <br>
 The Online Database contains information that System and User wants to share.
 Basically all transactions for experiment setup and monitoring go through the ODB.
@@ -45,7 +43,7 @@ The following lists many of the Midas ODB trees, with links into the documentati
 - @ref FE_ODB_equipment_tree "/Equipment tree"
 - @ref F_Logger_tree "/Logger tree"
 - @ref RC_ODB_Experiment_Tree "/Experiment tree"
-- @ref F_ODB_history_tree "/History tree"
+- @ref F_ODB_History_tree "/History tree"
 - @ref RC_ODB_Alarms_Tree "/Alarms tree"
 - @ref RC_odb_script_tree "/Script tree"
 - @ref RC_odb_alias_tree "/Alias tree"
@@ -59,14 +57,12 @@ The following lists many of the Midas ODB trees, with links into the documentati
 \anchor end
 \htmlonly
 <script type="text/javascript">
-pages( "F_MainElements",  "F_Section_Index", "F_Midas_Code_and_Libraries", "F_ODB_Structure",""); // back index next {top bottom}
+pages( "F_MainElements",  "Features", "F_Midas_Code_and_Libraries", "F_ODB_Structure",""); // back index next {top bottom}
 // sections params:   last section; top of this section; next section
 sections("Quickstart", "Features", "RunControl");
 </script>
 \endhtmlonly
-\latexonly 
- @ref F_MainElements "previous page" - @ref Top - @ref Organization "Map"- @ref F_Midas_Code_and_Libraries "next page"
-\endlatexonly
+
 
 <!-- end of page F_ODB_Structure
        a sub-page of FEATURES
@@ -77,14 +73,12 @@ sections("Quickstart", "Features", "RunControl");
 
 \htmlonly
 <script type="text/javascript">
-pages( "F_ODB_Structure",  "F_Section_Index", "F_Logging","F_Midas_Code_and_Libraries","end"); // back index next {top bottom}
+pages( "F_ODB_Structure",  "Features", "F_Logging","F_Midas_Code_and_Libraries","end"); // back index next {top bottom}
 // sections params:   last section; top of this section; next section
 sections("Quickstart", "Features", "RunControl");
 </script>
 \endhtmlonly
-\latexonly 
- @ref F_ODB_Structure "previous page" - @ref Top - @ref Organization "Map"- @ref  F_Logging "next page"
-\endlatexonly
+
 <br>
 
 
@@ -171,14 +165,12 @@ Exportable ybos functions through inclusion of ybos.h
 
 \htmlonly
 <script type="text/javascript">
-pages( "F_ODB_Structure",  "F_Section_Index", "F_Logging","F_Midas_Code_and_Libraries",""); // back index next {top bottom}
+pages( "F_ODB_Structure",  "Features", "F_Logging","F_Midas_Code_and_Libraries",""); // back index next {top bottom}
 // sections params:   last section; top of this section; next section
 sections("Quickstart", "Features", "RunControl");
 </script>
 \endhtmlonly
-\latexonly 
- @ref F_ODB_Structure "previous page" - @ref Top - @ref Organization "Map"- @ref  F_Logging "next page"
-\endlatexonly
+
 <br>
 
 <!-- End of Page  F_Midas_Code_and_Libraries 

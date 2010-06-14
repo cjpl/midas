@@ -52,7 +52,8 @@ or visit the <a href="http://midas.triumf.ca/forum/Package"> Midas Forum </a>
   will be available on the Web status page with the name of the key. Each key entry
   is then composed with a list of ODB field (or links) starting with 
   the executable command followed by as many arguments as you wish to be
-  passed to the script. See @ref RC_ODB_Script_Tree.
+  passed to the script. See @ref RC_odb_script_Tree. Scripts can also be invoked
+  from a Custom page (see @ref RC_odb_customscript_tree ).
   <br><br>
 -# <b> I've seen the ODB prompt displaying the run state, how do you do that?</b>
   - Modify the \b /System/prompt field. The "S" is the trick. 
