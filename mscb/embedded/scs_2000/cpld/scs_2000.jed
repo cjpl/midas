@@ -1,5 +1,5 @@
 Programmer Jedec Bit Map
-Date Extracted: Wed May 07 14:14:55 2008
+Date Extracted: Tue Jun 15 12:19:22 2010
 
 QF209357*
 QP144*
@@ -7,7 +7,7 @@ QV0*
 F0*
 X0*
 J0 0*
-N VERSION J.39*
+N VERSION K.39*
 N DEVICE XC2C384-7-TQ144*
 
 Note Block 0 *
@@ -4338,4 +4338,4 @@ Note VREF enable *
 L209356 1*
 
 C4655*
-ADC7
+ADC8
