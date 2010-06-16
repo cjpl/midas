@@ -89,19 +89,19 @@ MSCB_INFO_VAR code vars_lhe[] = {
 };
 
 MSCB_INFO_VAR code vars_din[] =
-   { 1, UNIT_BOOLEAN, 0,          0,           0, "P%Din#",  (void xdata *)8 };
+   { 1, UNIT_BOOLEAN, 0,          0,           0, "P%Din#",  (void xdata *)8, 1 };
 
 MSCB_INFO_VAR code vars_optin[] =
-   { 1, UNIT_BOOLEAN, 0,          0,           0, "P%Din#",  (void xdata *)4 };
+   { 1, UNIT_BOOLEAN, 0,          0,           0, "P%Din#",  (void xdata *)4, 1 };
 
 MSCB_INFO_VAR code vars_dout[] =
-   { 1, UNIT_BOOLEAN, 0,          0,           0, "P%Dout#", (void xdata *)8, 0,  1,  1 };
+   { 1, UNIT_BOOLEAN, 0,          0,           0, "P%Dout#", (void xdata *)8, 1,  0,  1,  1 };
 
 MSCB_INFO_VAR code vars_relais[] =
-   { 1, UNIT_BOOLEAN, 0,          0,           0, "P%Rel#",  (void xdata *)4, 0,  1,  1 };
+   { 1, UNIT_BOOLEAN, 0,          0,           0, "P%Rel#",  (void xdata *)4, 1,  0,  1,  1 };
 
 MSCB_INFO_VAR code vars_optout[] =
-   { 1, UNIT_BOOLEAN, 0,          0,           0, "P%Out#",  (void xdata *)4, 0,  1,  1 };
+   { 1, UNIT_BOOLEAN, 0,          0,           0, "P%Out#",  (void xdata *)4, 1,  0,  1,  1 };
 
 SCS_2001_MODULE code scs_2001_module[] = {
   /* 0x01-0x1F misc. */
