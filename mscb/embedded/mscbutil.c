@@ -2224,10 +2224,10 @@ void emif_test(unsigned char n_banks)
       lcd_goto(i, 3);
       putchar(218);
 
-      for (p=0 ; p<0xFFFF ; p++)
+      for (p=0x2000 ; p<0xFFFF ; p++)
          *p = 0;
 
-      for (p=0 ; p<0xFFFF ; p++)
+      for (p=0x2000 ; p<0xFFFF ; p++)
          if (*p != 0) {
             error = 1;
             break;
@@ -2238,10 +2238,10 @@ void emif_test(unsigned char n_banks)
       lcd_goto(i, 3);
       putchar(217);
 
-      for (p=0 ; p<0xFFFF ; p++)
+      for (p=0x2000 ; p<0xFFFF ; p++)
          *p = 0x55;
 
-      for (p=0 ; p<0xFFFF ; p++)
+      for (p=0x2000 ; p<0xFFFF ; p++)
          if (*p != 0x55) {
             error = 1;
             break;
@@ -2253,10 +2253,10 @@ void emif_test(unsigned char n_banks)
       lcd_goto(i, 3);
       putchar(216);
 
-      for (p=0 ; p<0xFFFF ; p++)
+      for (p=0x2000 ; p<0xFFFF ; p++)
          *p = 0xAA;
 
-      for (p=0 ; p<0xFFFF ; p++)
+      for (p=0x2000 ; p<0xFFFF ; p++)
          if (*p != 0xAA) {
             error = 1;
             break;
@@ -2267,10 +2267,10 @@ void emif_test(unsigned char n_banks)
       lcd_goto(i, 3);
       putchar(215);
 
-      for (p=0 ; p<0xFFFF ; p++)
+      for (p=0x2000 ; p<0xFFFF ; p++)
          *p = 0xFF;
 
-      for (p=0 ; p<0xFFFF ; p++)
+      for (p=0x2000 ; p<0xFFFF ; p++)
          if (*p != 0xFF) {
             error = 1;
             break;
@@ -2304,7 +2304,8 @@ unsigned char idata d;
 
    /* setup EMIF interface and probe external memory */
    SFRPAGE = EMI0_PAGE;
-   EMI0CF  = 0x3C; // active on P4-P7, non-multiplexed, external only
+   //EMI0CF  = 0x3C; // active on P4-P7, non-multiplexed, external only
+   EMI0CF  = 0x38; // active on P4-P7, non-multiplexed, split mode
    EMI0CN  = 0x00; // page zero
    EMI0TC  = 0x04; // 2 SYSCLK cycles (=20ns) /WR and /RD signals
 
@@ -2320,7 +2321,7 @@ unsigned char idata d;
 
    /* test for external memory */
    emif_switch(0);
-   p = NULL;
+   p = 0x2000;
    d = *p;
    *p = 0x55;
    if (*p != 0x55) {
@@ -2344,6 +2345,7 @@ unsigned char idata d;
    *p = d; // restore previous data;
 
    emif_switch(0);
+
    return 8;
 }
 
