@@ -358,6 +358,10 @@ void display_name(unsigned char index, MSCB_INFO_VAR *pvar)
    /* display variable name */
    memcpy(str, pvar->name, 8);
    str[8] = 0;
+   if (str[6]) { // 'P0DOut1' -> 'P0DOu1' because only 6 chars possible
+      str[5] = str[6];
+      str[6] = 0;
+   }
    printf("%2bu:%s", index, str);
    puts("        ");
 }
