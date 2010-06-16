@@ -57,8 +57,12 @@ publishh:
 	rsync -uv html/* /home/daqweb/public_html/doc/midas3/html/.
 
 clean:
+#       remove files docindex, Organization made each time by index.pl
+	rm -f src/docindex.dox
+	rm -f src/Organization.dox
 	cd latex; rm -f *.*~ *.pnm *.tex *.log *.aux *.dvi *.eps
 	-rm -rf html
+        
 
 ver:	
 	echo $(version)
