@@ -43,7 +43,7 @@ Equivalent JS function
 <tr>
 <td style="vertical-align: top; background-color: white; font-weight: bold; text-align: left;">
 <span class="odbtag">
-<odb src="odb path">
+\<odb src="odb path"\>
 </span>
 </td>
 <td style="vertical-align: top; background-color: white; font-weight: normal; text-align: left;">
@@ -58,7 +58,7 @@ Equivalent JS function
 <td style="vertical-align: top; background-color: white; font-weight: bold; text-align: left;">
 \anchor odb_edit_tag
 <span class="odbtag">
-<odb src="odb path" edit=1 pwd="CustomPwd">
+\<odb src="odb path" edit=1 pwd="CustomPwd"\>
 </span>
 </td>
 <td style="vertical-align: top; background-color: white; font-weight: normal; text-align: left;">
@@ -70,7 +70,7 @@ Equivalent JS function
 <tr>
 <td style="vertical-align: top; background-color: white; font-weight: bold; text-align: left;">
 <span class="odbtag">
-<odb src="odb path" edit=2 pwd="CustomPwd" >
+\<odb src="odb path" edit=2 pwd="CustomPwd" \>
 </span>
 </td>
 <td style="vertical-align: top; background-color: white; font-weight: normal; text-align: left;">
@@ -116,7 +116,7 @@ in your custom page.
 
 <br><hr><br>
 
-
+\anchor idx_ODBGet
 @subsection RC_mhttpd_custom_odbget ODBGet()
 
 <table
@@ -223,7 +223,7 @@ rn = ODBGet(path,"%4.4d\n");
 <br><hr><br>
 
 
-
+\anchor idx_ODBEdit
 @subsection RC_mhttpd_custom_odbedit ODBEdit()
 
 <table
@@ -283,7 +283,7 @@ document.writeln('</a>');
 <br><hr><br>
 
 
-
+\anchor idx_ODBSet
 @subsection RC_mhttpd_custom_odbset ODBSet()
 
 <table
@@ -344,11 +344,11 @@ cellspacing="0">
 <span class="new">Writing arrays with ODBSet has been available since @ref  ndf_may_2010 .</span>
 \b Usage:
 Individual ODB values can be set in the background with
-<span class="js">ODBSet</span>(<<i>path</i>>,<<i>value</i>></span>
+<span class="js">ODBSet(<i>\<path\>,\<value\></i></span>
 or
-<span class="js">ODBSet(<<i>path</i>>,<<i>value</i>>,<<i>password_name</i>>)</span>
+<span class="js">ODBSet(<i>\<path\>,\<value\>,\<password_name\></i>)</span>
 
-If using a password, the <<i>password_name</i>> must be defined as an ODB entry (see  @ref RC_mhttpd_custom_pw_protection)
+If using a password, the \<<i>password_name</i>\> must be defined as an ODB entry (see  @ref RC_mhttpd_custom_pw_protection)
 
 
 \b Example
@@ -357,7 +357,7 @@ If using a password, the <<i>password_name</i>> must be defined as an ODB entry 
 
 <br><hr><br>
 
-
+\anchor idx_ODBKey
 @subsection RC_mhttpd_custom_odbkey ODBKey()
 
 <table
@@ -442,7 +442,7 @@ sections("Features", "RunControl","FrontendOperation"); // last section; top of 
 @section RC_mhttpd_js_example1 Example of ODB access with HTML and JavaScript equivalent
 
 The following simple HTML code shows ODB access using JavaScript (<span class="js">ODBGet, ODBEdit</span>) and
-using the HTML <span class="odbtag"> <odb> tag</span> :
+using the HTML <span class="odbtag"> \<odb\> tag</span> :
 \code
 
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 TRANSITIONAL//EN">
@@ -731,7 +731,7 @@ If used as above, the state of the checkbox must be initialized when the page is
 with some JavaScript code called on initialization, which then uses @ref RC_mhttpd_custom_odbset as described above. 
 
 
-Alternatively, the checkbox can be created using an <span class="odbtag"> <odb> tag</span> as follows:
+Alternatively, the checkbox can be created using an <span class="odbtag"> \<odb\> tag</span> as follows:
 \code
   <odb src="/Logger/Write data" type="checkbox" edit="2" onclick="ODBSet('/Logger/Write data',this.checked?'1':'0')">
 @endcode
@@ -828,7 +828,7 @@ critical valve, this might be a problem. In order to restrict access to some
 custom page.
 
 The <i>password</i> must be defined as an ODB entry of the form
-<span class="odb"> /Custom/Pwd/<password> </span>.
+<span class="odb"> /Custom/Pwd/\<password\> </span>.
 If the password is <i>CustomPwd</i>, the ODB key
 <span class="odb">/Custom/Pwd/CustomPwd </span>
 would be defined.

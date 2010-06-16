@@ -68,11 +68,11 @@ Definition of Trigger Equipment :</span></span></span><br>
      { 1,                            @ref FE_tbl_EventID "// event ID"
        0,                            @ref FE_tbl_TrigMask "// trigger mask"
        "SYSTEM",                     @ref FE_tbl_Buffer "// event buffer"
-#ifdef USE_INT
+\#ifdef USE_INT
        EQ_INTERRUPT,                 @ref FE_tbl_EqType "// equipment type" 
-#else
+\#else
        EQ_POLLED,                    @ref FE_tbl_EqType "// equipment type "
-#endif
+\#endif
        LAM_SOURCE(0, 0xFFFFFF),      @ref FE_tbl_IntSrc "// event source crate 0, all stations"
        "MIDAS",                      @ref FE_tbl_Format "// format"
        TRUE,                         @ref FE_tbl_EqEnabled "// enabled "
@@ -169,7 +169,7 @@ Frontend file name = STRING : [256] frontend.c
     <tr>
  <td
  style="vertical-align: top; background-color: rgb(102, 255, 153);"><span
- style="color: rgb(0, 102, 0);">//  '''''''''''                         Repeat for any other defined Equipments </span><br>
+ style="color: rgb(0, 102, 0);">//             Repeat for any other defined Equipments </span><br>
       </td>
     </tr>
 

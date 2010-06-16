@@ -17,7 +17,7 @@ WARNING - this page is under construction
 
 <ul>
 <li> @ref idx_backend "backend"
-<li> @ref idx_device_driver "driver"
+<li> @ref idx_device-driver "driver"
 <li> @ref Equipment_definition "equipment"
   <ul>
      <li> @ref FE_hw_equipment "hardware"

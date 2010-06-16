@@ -301,8 +301,8 @@ NOTE: these instructions provide \b local access to the experiment. For \b remot
   <br><br>
   A list of all possible running experiments on a given machine is kept in the file
   \b exptab. This file \b exptab is expected by default to be located under
-  \b /etc/exptab. This default location can be overwritten by the @ref Environment_variables  "Environment Variable"
-  @ref MIDAS_EXPTAB.
+  \b /etc/exptab. This default location can be overwritten by the @ref BO_Environment_variables  "Environment Variable"
+  @ref BO_MIDAS_EXPTAB.
   <br><br>
   \b The exptab file defines each experiment on the machine, with one line per experiment. Each line
   contains three parameters, i.e:
@@ -316,7 +316,7 @@ NOTE: these instructions provide \b local access to the experiment. For \b remot
   @endcode
   <br>
   Experiments not defined in \b exptab are not accessible remotely, but can still be
-  accessed locally using the @ref Environment_variables "environment variable" @ref MIDAS_DIR if defined.
+  accessed locally using the @ref BO_Environment_variables "environment variable" @ref BO_MIDAS_DIR if defined.
   This environment variable superceeds the \b exptab definition.
   <br><br>
 
@@ -458,13 +458,13 @@ Throughout the following description the midas package is assumed to be found un
    - Using the file browser go to the \%SystemDrive\%
    - right click and select "SVN checkout"
    - Fill the "URL of Repository: with 
-     svn+ssh://svn@savannah.psi.ch/afs/psi.ch/project/meg/svn/midas/trunk
+     svn+ssh://svn\@savannah.psi.ch/afs/psi.ch/project/meg/svn/midas/trunk
    - Fill the "Checkout directory" with C:\midas
    - Start transfer.
    - Do the same for mxml
    - right click and select "SVN checkout"
    - Fill the "URL of Repository: with
-     svn+ssh://svn@savannah.psi.ch/afs/psi.ch/project/meg/svn/mxml/trunk
+     svn+ssh://svn\@savannah.psi.ch/afs/psi.ch/project/meg/svn/mxml/trunk
    - Fill the "Checkout directory" with C:\mxml
    - Start transfer.
 
@@ -519,7 +519,7 @@ Midas packages has been installed.
   @@endcode  
   - Start a web brower and go to http://localhost
   - Click Start, confirm run number, click refresh...   Stop run.
-\n
+
 - Please refer to the rest of this @ref Organization "manual" for further description of the system operation.
 <br>
 \anchor end

@@ -150,10 +150,10 @@ cellspacing="2">
 #include "experim.h"
 #include "mvmestd.h"
 #include "vmicvme.h"
-  @endcode
+@endcode
 </td>
 <td>
-  @code
+@code
 #include <stdio.h>
 #include <stdlib.h>
 #include "midas.h"
@@ -342,7 +342,7 @@ sections("RunControl","FrontendOperation","DataAnalysis"); // last section; top 
 \endhtmlonly
 <br>
 
-\idx_Frontend_sequence-of-operations
+\anchor idx_Frontend_sequence-of-operations
 The following table shows the sequence of operations of the frontend. These system routines are located in the frontend.c code but are called by mfe.c at the appropriate time. These routines must be present in the frontend.c code, but the contents are coded by the user. 
 
 
@@ -475,7 +475,7 @@ cellspacing="2">
 <span style="font-weight: bold;">CAMAC :</span>
 </td>
 <tr><td>
-  @code
+@code
 INT frontend_init()
 {
  ....
@@ -489,10 +489,10 @@ INT frontend_init()
   mvme_set_dmode(myvme, MVME_DMODE_D32)
   return SUCCESS;
 }
-  @endcode
+@endcode
 </td>
 <td>
-  @code
+@code
 INT frontend_init()
 {
    cam_init();              // Init CAMAC access
@@ -501,7 +501,7 @@ INT frontend_init()
    cam_inhibit_set(CRATE);  // Set I crate 
    return SUCCESS;
 }
-  @endcode
+@endcode
 </td></tr></table>
 <br>
 
@@ -618,7 +618,7 @@ cellspacing="2">
 <span style="font-weight: bold;">CAMAC :</span>
 </td>
 <tr><td>
-  @code  
+@code  
 INT pause_run (INT run_number, char * error)
 {
  // Disable interrupt
@@ -737,9 +737,9 @@ sections("RunControl","FrontendOperation","DataAnalysis");
 
 <!-- ======================== PAGE   Frontend Routines  ============= -->
 
-\idx_event_readout_routines
-/*!  \page  FE_eq_event_routines Frontend Routines associated with Equipments
 
+/*!  \page  FE_eq_event_routines Frontend Routines associated with Equipments
+\anchor idx_event_readout_routines
 <br>
 \htmlonly
  
@@ -751,7 +751,7 @@ sections("RunControl","FrontendOperation","DataAnalysis");
 \endhtmlonly
 <br>
 <br>
-\idx_event_polled
+\anchor idx_event_polled
 @section FE_poll_event Polled event 
 
 If the @ref FE_tbl_EqType "Equipment Type" is @ref FE_tbl_EqPolled "EQ_POLLED", 
@@ -761,7 +761,7 @@ the \b poll_event()  routine will be called as often as possible over the corres
 In this case, the @ref FE_Example_equipment_structure "Equipment declaration" would 
 have this form:
 
-    @code
+@code
     EQUIPMENT equipment[] = {
 
       { "Trigger",            // equipment name
@@ -774,7 +774,7 @@ have this form:
           "", "", "",},
        read_trigger_event,    // readout routine 
        ...
-    @endcode
+@endcode
 
 The user must provide suitable code in the routine <b>poll_event()</b>.
  
@@ -855,7 +855,7 @@ provided by the user (see below).
 <br>
  
 <br>
-\idx_event_interrupt
+\anchor idx_event_interrupt
 @section FE_interrupt_event Interrupt event
 
 If the Equipment type is  @ref FE_tbl_EqType "EQ_INTERRUPT", an 
@@ -1181,7 +1181,7 @@ INT read_scaler_event(char *pevent, INT off)
 <hr>
 <br>
 
-\idx event_fragmented
+\anchor idx event_fragmented
 @subsection FE_fragmented_event Fragmented Event
 
 A \b fragmented event enables very large events (e.g.  beyond the Midas configuration 
@@ -1274,7 +1274,7 @@ transitions <b>STOP, PAUSE</b> and \b RESUME,
 <br>
 <b>RO_RUNNING | RO_EOR | RO_PAUSE | RO_RESUME</b>. 
 
-\idx_event_fragmented_size
+\anchor idx_event_fragmented_size
 @subsection FE_frag_max_event_size Event size adjustments for fragmented event
 
 The buffer sizes in the frontend must be adjusted to suit the available memory for
@@ -1352,7 +1352,7 @@ INT histo_read (char *pevent, INT off)
 @endcode
 
 
-\idx_event_manual-trigger_client
+\anchor idx_event_manual-trigger_client
 @subsection FE_backend_Manual_Trigger A Client that Manually Triggers the Equipment
 
 If the frontend equipment declares a <b>Manual Trigger</b>, in addition to the event being triggered
@@ -1527,7 +1527,7 @@ such a transition until the condition  is satisfied.
 The Deferred_Transition requires 3 steps for setup:
 
   - Register for the deferred transition. 
-    @code
+@code
     //-- Frontend Init
     INT frontend_init()
     {
@@ -1563,10 +1563,10 @@ The Deferred_Transition requires 3 steps for setup:
     else
       return FALSE;
     ...
-  @endcode
+@endcode
   - Implement the condition code 
 
-  @code
+@code
   ... In this case at the end of the readout function...
     ...
 
@@ -1588,7 +1588,7 @@ The Deferred_Transition requires 3 steps for setup:
     re_arm_cycle(); 
    return bk_size(pevent);
 
-  @endcode
+@endcode
 
   In the example above, 
 
@@ -1637,9 +1637,10 @@ sections("RunControl","FrontendOperation","DataAnalysis");
 */
 
 
-\anchor idx_event_readout_bank_construction
-/*!  \page FE_bank_construction Bank construction in an Event readout routine
 
+
+/*!  \page FE_bank_construction Bank construction in an Event readout routine
+\anchor idx_event_readout_bank_construction
 <br>
 \htmlonly
  
@@ -2179,7 +2180,7 @@ The following routines exist:
 - ybk_size() Returns the size in bytes of all banks including the bank
 headers in an event.
 
-
+\anchor YBOS_Bank_Types YBOS
 <hr> @section FE_YBOS_Bank_Types YBOS Bank Types
 YBOS defines several types, but all types should be 4 bytes aligned.
 There is no distinction of signed and unsigned. When mixing MIDAS and YBOS
@@ -2497,9 +2498,9 @@ sections("RunControl","FrontendOperation","DataAnalysis");
 <!-- eventbuilder.dox  Event_Builder  page comes next --->
 
 
-\idx_slow-control_system
-/*!  \page FE_Slow_Control_system Slow Control System
 
+/*!  \page FE_Slow_Control_system Slow Control System
+\anchor idx_slow-control_system
 <br>
 \htmlonly
  
@@ -2653,8 +2654,8 @@ Example of readout code:
     hv_driver,                  /* device driver list */
     NULL,                       /* init string */
     },
-@endcode
-@code
+
+
 INT cd_hv_read(char *pevent, int offset)
 {
    float *pdata;

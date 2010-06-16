@@ -102,6 +102,8 @@ been started on the correct port, an error page will be visible instead.
 <hr>
 <br>
 
+
+\anchor idx_mhttpd
 @section RC_mhttpd_functionality Features of mhttpd
 
 The basic functionality of mhttpd is:
@@ -1565,7 +1567,7 @@ ELOG is disabled.
 
 
 <hr> 
-
+\anchor idx_Elog_internal
 @subsection RC_mhttpd_Internal_Elog  Internal Elog
 
 By default the mhttpd provides the internal Elog. The entry destination directory is established by the logger key in ODB (see @ref  F_Logger_Elog_Dir "Elog Dir")
@@ -1656,30 +1658,39 @@ is fixed to 20 maximum, but any remaining field can be left empty.
  * <br><br><br>  
 
 <hr> 
-
+\anchor idx_Elog_external
 @subsection RC_mhttpd_External_Elog  External Elog
 The advantage of using the external Elog over the built-in version is its flexibility.
 This package is used worldwide and improvements are constantly being made. A full-features
 documentation and standalone installation can be found at the
 <a href="http://midas.psi.ch/elog/">Elog</a> web site.
 
-Its installation requires requires several steps described below.
-- Download the Elog package from the web site mentioned above.
- - Windows, Linux, Mac version can be found there. Simple installation procedures
+Installation requires requires several steps described below.
+
+<ul>
+<li> Download the Elog package from the web site mentioned above.
+   <ul>
+   <li> Windows, Linux, Mac version can be found there. Simple installation procedures
    are also described. Its installation can be done at the system level or at the
    user level. The Elog can service multiple Electronic logbooks in parallel and 
    therefore an extra entry in its configuration file can provide specific experimental
    elog in a similar fashion as the internal one.
- - You need to take note of several consideration for its installation. You need
-   to determine several locations for the different files that elog deals with.
-  - elog resource directory ( e.g. /elog_installation_dir where elog is installed)
-  - logbook directory (ex: /myexpt/logbook where the pwd and elog entries are stored).
-    The pwd file uses encryption for the user password.
- - As this Elog installation is tailored towards an experiment, a restriction applies i.e. <i> ensure that the mhttpd and elog applications shares at least the same file system.</i>
-   <br>This means that either 
-        - both applications runs on the same machine or 
-        - a nsf mount provides file sharing.
-  - You need to know the node and ports for both applications. Like mhttpd, elogd also requires a
+
+   <li> You need to take note of several consideration for its installation.
+   Several locations are required for the different files that elog deals with.
+      <ul>
+      <li> elog resource directory ( e.g. /elog_installation_dir where elog is installed)
+      <li> logbook directory (ex: /myexpt/logbook where the pwd and elog entries are stored).
+      </ul>
+   <li>The pwd file uses encryption for the user password.
+   <li> As this Elog installation is tailored towards an experiment, a restriction applies i.e.
+         <i> ensure that the mhttpd and elog applications shares at least the same file system.</i>
+   <br>This means that either
+       <ul> 
+        <li> both applications runs on the same machine or 
+        <li> a nsf mount provides file sharing.
+        </ul>
+  <li> You need to know the node and ports for both applications. Like mhttpd, elogd also requires a
     port number for communication through the web (e.g. NodeA:mhttpd -p 8080, NodeB:elogd -p 8081).
   -# copy the default midas/src/elogd.cfg from the midas distrbution to your operating directory.
   -# modify the elogd.cfg to reflect your configuration
@@ -1772,7 +1783,7 @@ Url                             http://NodeB:8081/MyOnline
    NodeB:~> /installation_elog_dir/elconv
 @endcode
 
-<br>
+</ul></ul><br>
  
 \htmlonly
 <script type="text/javascript">

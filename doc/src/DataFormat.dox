@@ -21,6 +21,8 @@ NeXus format, but presently no implementation has been developed.
 Note that a frontend cannot write data directly into ROOT format. A conversion to ROOT may be done from one of the 
 supported formats (see  @ref FE_tbl_Format "equipment list" for details).
 
+\anchor idx_Midas_format
+\anchor Midas_format
 <hr> @section FE_Midas_format Midas format
 Special formats are used in MIDAS for the event header, banks and when writing to disk
 or tape.
@@ -83,7 +85,8 @@ A tape can therefore be identified as a MIDAS formatted tape.
 The routine tape_copy() in the utility mtape.c is an example of how to read
 a tape in MIDAS format.
 
-
+\anchor idx_YBOS_format
+\anchor YBOS_format  <!-- c code needs this -->
 <hr> @section FE_YBOS_format YBOS format
 As mentioned earlier the YBOS documentation is available at the following URL
 address:

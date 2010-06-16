@@ -23,15 +23,15 @@ these elements interract to form the Midas system.
 - @ref F_Buffer_Manager_overview 
 - @ref F_Message_System_overview 
 - @ref F_Online_Database_overview
-- @ref F_Frontend_sec_overview </b> Acquisition code.
-- @ref F_Midas_Server_overview </b> Remote access server (RPC server).
-- @ref F_Data_Logger_overview </b> Data storage.
-- @ref F_Analyzer_sec_overview </b> Data analyzer.
-- @ref F_Run_Control_overview </b> Data flow control.
-- @ref F_Slow_Control_overview </b> system Device monitoring and control.
-- @ref F_History_System_overview </b> Event history storage and retrival.
-- @ref F_Alarm_System_overview </b> Overall system and user alarm.
-- @ref F_Electronic_Logbook_overview </b> Online User Logbook.
+- @ref F_Frontend_sec_overview  Acquisition code.
+- @ref F_Midas_Server_overview  Remote access server (RPC server).
+- @ref F_Data_Logger_overview  Data storage.
+- @ref F_Analyzer_sec_overview Data analyzer.
+- @ref F_Run_Control_overview  Data flow control.
+- @ref F_Slow_Control_overview  system Device monitoring and control.
+- @ref F_History_System_overview  Event history storage and retrival.
+- @ref F_Alarm_System_overview  Overall system and user alarm.
+- @ref F_Electronic_Logbook_overview  Online User Logbook.
 
 \anchor idx_buffer_manager
 \anchor idx_shared_memory
@@ -175,7 +175,7 @@ saving them onto disk, tape or via FTP to a remote computer.
 It supports several parallel logging channels with individual event selection criteria.
 Data can currently be written in five different formats:
 <em> MIDAS binary, YBOS binary, ASCII, ROOT and DUMP </em>
-(see @ref Midas_format, @ref YBOS_format).
+(see @ref FE_Midas_format, @ref FE_YBOS_format).
 
 Basic functionality of the logger includes:
 - Run Control based on:
@@ -184,7 +184,7 @@ Basic functionality of the logger includes:
   - logging device not full.
 - Logging selection of particular events based on Event Identifier.
 - Auto restart feature allowing logging of several runs of a given size without user intervention.
-- Recording of ODB values to a so-called @ref History_System
+- Recording of ODB values to a so-called @ref F_History_System
 - Recording of the ODB to all or individual logging channels at the begin-of-run and end-of-run States, as well as to a separate disk file in a ASCII format.
 <br>
 For more information see @ref  F_Logging .
@@ -281,7 +281,7 @@ that class.
 
 \anchor idx_history_system_overview
 @section F_History_System_overview History system
-The MIDAS history system is a recording function embedded in the @ref mlogger_task.
+The MIDAS history system is a recording function embedded in the @ref F_mlogger_task.
 Parallel to its main data logging function of defined channels, the Midas logger
 can store slow control data and/or periodic events on disk file.
 Each history entry consists of the time-stamp at which the event has occurred, and
@@ -292,7 +292,7 @@ actual equipment (see @ref  F_History_System).
 This permits a higher flexibility of the history system such as dynamic modification
 of the event structure without restarting the Midas logger.
 At any given time, data-over-time relations can be queried from the disk file
-through a Midas utility @ref mhist_task, or displayed through the @ref mhttpd_task.
+through a Midas utility @ref F_mhist_task, or displayed through the @ref RC_mhttpd_task.
 
 The history data extraction from the disk file is done using low level file functions
 giving similar results as a standard database mechanism but with faster access time.

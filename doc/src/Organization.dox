@@ -239,7 +239,9 @@
                <li> @ref RC_odbedit_corrupted <!-- section under page RC_odbedit_examples in odbedit.dox -->
                <ul class="i5">
                   <li> @ref RC_odbedit_extcommand <!-- subsection under page RC_odbedit_examples in odbedit.dox -->
+                  <li> @ref RC_odbedit_script_examples <!-- subsection under page RC_odbedit_examples in odbedit.dox -->
                   <ul class="i6" > 
+                     <li> @ref RC_example_script_1 <!-- subsubsection under page RC_odbedit_examples in odbedit.dox -->
                      <li> @ref RC_example_script_2 <!-- subsubsection under page RC_odbedit_examples in odbedit.dox -->
                      </ul> <!-- i7 -->
                   </ul> <!-- i6 -->
@@ -763,6 +765,9 @@
 \anchor Convention_section_index
 <br>
    <li> @ref Convention <!-- subpage Convention -->
+   <ul class="i1"> <!-- i1 -->
+      <li> @ref C_Document_Style <!-- section under page Convention in Convention.dox -->
+   </ul> <!-- i1  end-of-page Convention -->
 \anchor DocIndex_section_index
 <br>
    <li> @ref DocIndex <!-- subpage DocIndex -->

@@ -90,7 +90,9 @@ This section covers several aspects of the Midas system.
   - @ref F_midas_macro
   - @ref FE_YBOS_Bank_Types
   - @ref F_YBOS_library
-
+  
+\anchor idx_Midas_Data_Types  
+\anchor Midas_Data_Types
 @section F_Midas_Data_Types Midas Data Types
 Midas defines its own data type for OS compatibility. It is suggested that you use them
 in order to ensure correct compilation when moving code from one OS to another.
@@ -147,6 +149,7 @@ Within these files, all the functions have been categorized depending on their s
 - \b rb_xxx(...) : Ring buffer calls
 - \b ybk_xxx(...) : YBOS bank manipulation
 
+\anchor midas_macro <!-- needed by C code -->
 <hr> @section F_midas_macro MIDAS Macros
 Several group of MACROs are available for simplifying the users' job on setting or getting Midas
 information. They are also listed in the @ref F_Midas_Library. All of them are defined in

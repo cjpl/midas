@@ -1,26 +1,20 @@
+/*! @page  DocIndex Alphabetical Index to Documentation pages
+
+<!--  This file produced automatically (by index.pl)  ....  DO NOT EDIT -->
+ 
+\htmlonly
+<script type="text/javascript">
+// bot {top bottom}
+bot("DocIndex","end");
+contents();
+</script>
+\endhtmlonly
+<br><br>
+@anchor IDX_A
+<br>
 
  
-    /*! @page  DocIndex Alphabetical Index to Documentation pages
- 
-
- 
-
- 
-
- 
-<!--  This file produced automatically ....  DO NOT EDIT -->
- 
-
- 
-
- 
- <!-- sorted array:
- 
- idx_a idx_access-control idx_access-control_client idx_access-control_ODB_keys idx_access-control_remove idx_access-control_web idx_alarm_system idx_alarm_system_overview idx_alias_buttons/links-see-mhttpd! idx_analyzer_overview idx_b idx_backend idx_bank-see-event->readout! idx_bars-see-mhttpd-page-custom idx_buffer-see-also-event->buffer-name! idx_buffer_manager idx_buffer_size_increase idx_c idx_CAMAC_LAM-macro idx_clients_active_mhttpd idx_clients_active_odbedit idx_custom-see-mhttpd-page-custom idx_custom_buttons/links-see-mhttpd! idx_d idx_data_analysis idx_data_bank-see-event->readout->bank! idx_data_logger_overview idx_data_transfer_optimize idx_device-driver idx_e idx_edit_boxes-see-mhttpd! idx_edit_ODB-see-also-mhttpd! idx_edit_ODB_mhttpd idx_edit_ODB_odbedit idx_edit_on-start-parameters-see-ODB->edit-on-start! idx_Elog_Email idx_Elog_Files_location idx_Elog_Introduction idx_Elog_overview idx_Equipment idx_Equipment_declaration idx_Equipment_declaration_ROOT idx_Equipment_flags idx_Equipment_hardware idx_Equipment_list idx_Equipment_List_Parameters idx_Equipment_name idx_equipment_readout_flags->see-event->readout->flags! idx_Equipment_settings idx_Equipment_software idx_Equipment_Types idx_event_buffer-name idx_event_builder idx_event_builder-see-event-builder! idx_event_builder_equipment-flag idx_event_builder_flowchart idx_event_builder_task-see-mevb idx_event_format idx_event_fragment idx_event_fragment-see-also-event->builder->flag! idx_event_fragmented_equipment-flag idx_event_ID idx_event_manual-trigger idx_event_manual-trigger_equipment-flag idx_event_notification-see-hot-links idx_event_readout idx_event_readout_bank_construction idx_event_readout_flags idx_event_readout_format_fixed idx_event_readout_format_midas idx_event_readout_format_YBOS idx_event_readout_super-event idx_event_trigger-mask idx_experim-dot-h idx_experim-dot-h_make idx_experiment_multiple idx_exptab idx_f idx_fills-see-mhttpd-page-custom idx_format-see-event->format! idx_fragmented-event-see-event->fragmented! idx_frontend idx_Frontend_code idx_frontend_event_triggers idx_frontend_program_overview idx_frontend_task idx_g idx_h idx_history_dump-files idx_History_events idx_History_file_format idx_history_files_location idx_History_Logging idx_history_ODB-tree idx_history_system idx_history_system_overview idx_history_tag-names idx_hot-links idx_hot-links_Equipment-settings idx_hot-links_overview idx_hvedit-task idx_i idx_j idx_k idx_l idx_labels-see-mhttpd-page-custom idx_lazylogger-task idx_log-file idx_logger_task_mlogger idx_Logging idx_Logging_Customizing idx_Logging_Data idx_Logging_Elog idx_Logging_History idx_Logging_lazylogger idx_Logging_Messaging idx_Logging_mySQL idx_Logging_task-see-mlogger idx_m idx_mchart-task idx_mdump-task idx_melog-task idx_message_last idx_message_system-overview idx_message_types idx_Messaging idx_mevb-task idx_mhdump-task idx_mhttpd-task idx_mhttpd-task_connect idx_mhttpd_buttons_alias idx_mhttpd_buttons_custom idx_mhttpd_buttons_customscript idx_mhttpd_buttons_menu idx_mhttpd_buttons_page-switch idx_mhttpd_buttons_run-control idx_mhttpd_buttons_user idx_mhttpd_custom-see-mhttpd->page->custom! idx_mhttpd_custom_user-button idx_mhttpd_customscript-see-mhttpd->buttons->custom! idx_mhttpd_links_see-buttons ! idx_mhttpd_page_alarm idx_mhttpd_page_alias idx_mhttpd_page_CNAF idx_mhttpd_page_custom idx_mhttpd_page_custom_example-pages idx_mhttpd_page_custom_examples_ROOT idx_mhttpd_page_custom_image_bars idx_mhttpd_page_custom_image_clickable-area idx_mhttpd_page_custom_image_edit-boxes idx_mhttpd_page_custom_image_fills idx_mhttpd_page_custom_image_history-image idx_mhttpd_page_custom_image_insert-image idx_mhttpd_page_custom_image_labels idx_mhttpd_page_custom_image_mapping idx_mhttpd_page_elog idx_mhttpd_page_equipment idx_mhttpd_page_history idx_mhttpd_page_message idx_mhttpd_page_MSCB idx_mhttpd_page_ODB idx_mhttpd_page_program idx_mhttpd_page_slow-control idx_mhttpd_page_start idx_mhttpd_page_status idx_mhttpd_page_status_equipment idx_mhttpd_page_status_event-rate idx_mhttpd_proxy-access idx_midas idx_Midas_bank idx_Midas_event-construction idx_midas_features idx_midas_logger-see-mlogger! idx_midas_overview idx_midas_server idx_midas_webserver idx_mlogger-task idx_mserver-task idx_mstat-task idx_mtape_task idx_mySQL idx_n idx_o idx_ODB_corrupted idx_ODB_create idx_ODB_edit-on-start idx_ODB_key_names idx_ODB_overview idx_ODB_structure idx_ODB_tree_Alarms idx_ODB_tree_Alias idx_ODB_tree_custom idx_ODB_tree_custom_images idx_ODB_tree_customscript idx_ODB_tree_Elog idx_ODB_tree_equipment idx_ODB_tree_event-builder idx_ODB_tree_Experiment idx_ODB_tree_Experiment_Customize idx_ODB_tree_Experiment_Edit-on-Start-parameters idx_ODB_tree_Experiment_Lock-when-Running idx_ODB_tree_Experiment_Parameter-comments idx_ODB_tree_Experiment_Security idx_ODB_tree_Experiment_Security_Remove-Access-restrictions idx_ODB_tree_Experiment_Security_Restrict-Web-access idx_ODB_tree_History idx_ODB_tree_Logger idx_ODB_tree_Logger_Optional-keys idx_ODB_tree_Programs idx_ODB_tree_RunInfo idx_ODB_tree_Script idx_ODB_tree_System idx_odbedit idx_odbedit_command_list idx_odbedit_examples idx_odbedit_scripts idx_odbedit_task idx_p idx_q idx_r idx_rmidas-task idx_run-control_overview idx_run_start_parameters idx_run_state_codes idx_run_states idx_run_transition_codes idx_run_transition_priority idx_run_transition_sequence idx_s idx_scripts_odbedit idx_security-see-access-control idx_shared_memory idx_shutdown_script idx_slow-control_MySQL-database idx_slow-control_overview idx_startup_script idx_state-see-run->state! idx_stripchart idx_super-event idx_t idx_transition-see-run->transition! idx_transition_deferred idx_transition_register idx_transitions idx_u idx_user_buttons/links-see-mhttpd! idx_v idx_w idx_watchdog idx_x idx_y idx_YBOS_event-construction idx_z 
- 
-  -->
- 
- A @ref IDX_B "B" @ref IDX_C "C" @ref IDX_D "D" @ref IDX_E "E" @ref IDX_F "F" @ref IDX_H "H" @ref IDX_L "L" @ref IDX_M "M" @ref IDX_O "O" @ref IDX_R "R" @ref IDX_S "S" @ref IDX_T "T" @ref IDX_W "W" @ref IDX_Y "Y" 
+@ref IDX_A "A" @ref IDX_B "B" @ref IDX_C "C" @ref IDX_D "D" @ref IDX_E "E" @ref IDX_F "F" @ref IDX_H "H" @ref IDX_J "J" @ref IDX_L "L" @ref IDX_M "M" @ref IDX_O "O" @ref IDX_R "R" @ref IDX_S "S" @ref IDX_T "T" @ref IDX_W "W" @ref IDX_Y "Y" 
 
 <ul class="j0"> <!-- j0 -->
  
@@ -38,10 +32,12 @@
       </ul>  <!-- j2 -->
    <li>alarm<br>
       <ul class="j2"> <!-- j2 -->
+      <li>@ref idx_alarm_classes "classes"<br>
       <li>@ref idx_alarm_system "system"<br>
          <ul class="j3"> <!-- j3 -->
          <li>@ref idx_alarm_system_overview "overview"<br>
          </ul>  <!-- j3 -->
+      <li>@ref idx_alarm_type "type"<br>
       </ul>  <!-- j2 -->
    <li>alias<br>
       <ul class="j2"> <!-- j2 -->
@@ -56,7 +52,12 @@
 <li><b>B</b><br>
 <br>   <ul class="j1"> <!-- j1 -->
    <li>@ref idx_backend "backend"<br>
-   <li>bank see event->readout<br>
+   <li>bank see also event->readout<br>
+      <ul class="j2"> <!-- j2 -->
+      <li>format see event->readout<br>
+      <li>MIDAS see midas->bank<br>
+      <li>YBOS see YBOS->bank<br>
+      </ul>  <!-- j2 -->
    <li>bars @ref idx_bars-see-mhttpd-page-custom "(see mhttpd-page-custom)"<br>
    <li>buffer see also event->buffer name<br>
       <ul class="j2"> <!-- j2 -->
@@ -93,7 +94,7 @@
    <li>data<br>
       <ul class="j2"> <!-- j2 -->
       <li>@ref idx_data_analysis "analysis"<br>
-      <li>bank see event->readout->bank<br>
+      <li>bank see bank<br>
       <li>logger<br>
          <ul class="j3"> <!-- j3 -->
          <li>@ref idx_data_logger_overview "overview"<br>
@@ -121,12 +122,18 @@
    <li>Elog<br>
       <ul class="j2"> <!-- j2 -->
       <li>@ref idx_Elog_Email "Email"<br>
+      <li>@ref idx_Elog_external "external"<br>
       <li>Files<br>
          <ul class="j3"> <!-- j3 -->
          <li>@ref idx_Elog_Files_location "location"<br>
          </ul>  <!-- j3 -->
+      <li>@ref idx_Elog_internal "internal"<br>
       <li>@ref idx_Elog_Introduction "Introduction"<br>
       <li>@ref idx_Elog_overview "overview"<br>
+      </ul>  <!-- j2 -->
+   <li>environment<br>
+      <ul class="j2"> <!-- j2 -->
+      <li>@ref idx_environment_variables "variables"<br>
       </ul>  <!-- j2 -->
    <li>@ref idx_Equipment "Equipment"<br>
       <ul class="j2"> <!-- j2 -->
@@ -163,10 +170,17 @@
       <li>fragmented<br>
          <ul class="j3"> <!-- j3 -->
          <li>@ref idx_event_fragmented_equipment-flag "equipment flag"<br>
+         <li>@ref idx_event_fragmented_size "size"<br>
          </ul>  <!-- j3 -->
       <li>@ref idx_event_ID "ID"<br>
+      <li>@ref idx_event_interrupt "interrupt"<br>
       <li>@ref idx_event_manual-trigger "manual trigger"<br>
+         <ul class="j3"> <!-- j3 -->
+         <li>@ref idx_event_manual-trigger_client "client"<br>
+         <li>@ref idx_event_manual-trigger_equipment-flag "equipment flag"<br>
+         </ul>  <!-- j3 -->
       <li>notification @ref idx_event_notification-see-hot-links "(see hot-links)"<br>
+      <li>@ref idx_event_polled "polled"<br>
       <li>@ref idx_event_readout "readout"<br>
          <ul class="j3"> <!-- j3 -->
          <li>bank<br>
@@ -180,6 +194,7 @@
             <li>@ref idx_event_readout_format_midas "midas"<br>
             <li>@ref idx_event_readout_format_YBOS "YBOS"<br>
             </ul>  <!-- j4 -->
+         <li>@ref idx_event_readout_routines "routines"<br>
          <li>@ref idx_event_readout_super-event "super event"<br>
          </ul>  <!-- j3 -->
       <li>@ref idx_event_trigger-mask "trigger mask"<br>
@@ -190,6 +205,7 @@
       </ul>  <!-- j2 -->
    <li>experiment<br>
       <ul class="j2"> <!-- j2 -->
+      <li>define->see exptab<br>
       <li>@ref idx_experiment_multiple "multiple"<br>
       </ul>  <!-- j2 -->
    <li>@ref idx_exptab "exptab"<br>
@@ -211,6 +227,7 @@
          <ul class="j3"> <!-- j3 -->
          <li>@ref idx_frontend_program_overview "overview"<br>
          </ul>  <!-- j3 -->
+      <li>@ref idx_Frontend_sequence-of-operations "sequence of operations"<br>
       <li>@ref idx_frontend_task "task"<br>
       </ul>  <!-- j2 -->
    </ul>  <!-- j1 -->
@@ -243,6 +260,14 @@
       <li>@ref idx_hot-links_overview "overview"<br>
       </ul>  <!-- j2 -->
    <li>@ref idx_hvedit-task "hvedit task"<br>
+   </ul>  <!-- j1 -->
+@anchor IDX_J
+<li><b>J</b><br>
+<br>   <ul class="j1"> <!-- j1 -->
+   <li>JavaScript<br>
+      <ul class="j2"> <!-- j2 -->
+      <li>@ref idx_JavaScript_built-in-library "built in library"<br>
+      </ul>  <!-- j2 -->
    </ul>  <!-- j1 -->
 @anchor IDX_L
 <li><b>L</b><br>
@@ -284,12 +309,9 @@
    <li>@ref idx_Messaging "Messaging"<br>
    <li>@ref idx_mevb-task "mevb task"<br>
    <li>@ref idx_mhdump-task "mhdump task"<br>
-   <li>@ref idx_mhttpd-task "mhttpd task"<br>
+   <li>@ref idx_mhttpd "mhttpd"<br>
       <ul class="j2"> <!-- j2 -->
       <li>@ref idx_mhttpd-task_connect "connect"<br>
-      </ul>  <!-- j2 -->
-   <li>mhttpd<br>
-      <ul class="j2"> <!-- j2 -->
       <li>buttons<br>
          <ul class="j3"> <!-- j3 -->
          <li>@ref idx_mhttpd_buttons_alias "alias"<br>
@@ -301,9 +323,6 @@
          <li>@ref idx_mhttpd_buttons_user "user"<br>
          </ul>  <!-- j3 -->
       <li>custom see mhttpd->page->custom<br>
-         <ul class="j3"> <!-- j3 -->
-         <li>@ref idx_mhttpd_custom_user-button "user button"<br>
-         </ul>  <!-- j3 -->
       <li>customscript see mhttpd->buttons->custom<br>
       <li>links<br>
          <ul class="j3"> <!-- j3 -->
@@ -321,6 +340,7 @@
                <ul class="j5"> <!-- j5 -->
                <li>@ref idx_mhttpd_page_custom_examples_ROOT "ROOT"<br>
                </ul>  <!-- j5 -->
+            <li>@ref idx_mhttpd_page_custom_external "external"<br>
             <li>image<br>
                <ul class="j5"> <!-- j5 -->
                <li>@ref idx_mhttpd_page_custom_image_bars "bars"<br>
@@ -332,6 +352,7 @@
                <li>@ref idx_mhttpd_page_custom_image_labels "labels"<br>
                <li>@ref idx_mhttpd_page_custom_image_mapping "mapping"<br>
                </ul>  <!-- j5 -->
+            <li>@ref idx_mhttpd_page_custom_refresh "refresh"<br>
             </ul>  <!-- j4 -->
          <li>@ref idx_mhttpd_page_elog "elog"<br>
          <li>@ref idx_mhttpd_page_equipment "equipment"<br>
@@ -353,8 +374,13 @@
    <li>@ref idx_midas "midas"<br>
       <ul class="j2"> <!-- j2 -->
       <li>@ref idx_Midas_bank "bank"<br>
+      <li>Data<br>
+         <ul class="j3"> <!-- j3 -->
+         <li>@ref idx_Midas_Data_Types "Types"<br>
+         </ul>  <!-- j3 -->
       <li>@ref idx_Midas_event-construction "event construction"<br>
       <li>@ref idx_midas_features "features"<br>
+      <li>@ref idx_Midas_format "format"<br>
       <li>logger see mlogger<br>
       <li>@ref idx_midas_overview "overview"<br>
       <li>@ref idx_midas_server "server"<br>
@@ -418,7 +444,7 @@
          <li>@ref idx_ODB_tree_System "System"<br>
          </ul>  <!-- j3 -->
       </ul>  <!-- j2 -->
-   <li>@ref idx_odbedit "odbedit"<br>
+   <li>@ref idx_ODBEdit "ODBEdit"<br>
       <ul class="j2"> <!-- j2 -->
       <li>command<br>
          <ul class="j3"> <!-- j3 -->
@@ -428,6 +454,10 @@
       <li>@ref idx_odbedit_scripts "scripts"<br>
       <li>@ref idx_odbedit_task "task"<br>
       </ul>  <!-- j2 -->
+   <li>@ref idx_ODBGet "ODBGet"<br>
+   <li>@ref idx_ODBGetMsg "ODBGetMsg"<br>
+   <li>@ref idx_ODBKey "ODBKey"<br>
+   <li>@ref idx_ODBSet "ODBSet"<br>
    </ul>  <!-- j1 -->
 @anchor IDX_R
 <li><b>R</b><br>
@@ -436,9 +466,6 @@
    <li>run-control<br>
       <ul class="j2"> <!-- j2 -->
       <li>@ref idx_run-control_overview "overview"<br>
-      </ul>  <!-- j2 -->
-   <li>run<br>
-      <ul class="j2"> <!-- j2 -->
       <li>start<br>
          <ul class="j3"> <!-- j3 -->
          <li>@ref idx_run_start_parameters "parameters"<br>
@@ -458,6 +485,11 @@
 @anchor IDX_S
 <li><b>S</b><br>
 <br>   <ul class="j1"> <!-- j1 -->
+   <li>script<br>
+      <ul class="j2"> <!-- j2 -->
+      <li>@ref idx_script_end-of-run "end of run"<br>
+      <li>@ref idx_script_start-of-run "start of run"<br>
+      </ul>  <!-- j2 -->
    <li>scripts<br>
       <ul class="j2"> <!-- j2 -->
       <li>@ref idx_scripts_odbedit "odbedit"<br>
@@ -475,6 +507,7 @@
       <ul class="j2"> <!-- j2 -->
       <li>@ref idx_slow-control_MySQL-database "MySQL database"<br>
       <li>@ref idx_slow-control_overview "overview"<br>
+      <li>@ref idx_slow-control_system "system"<br>
       </ul>  <!-- j2 -->
    <li>startup<br>
       <ul class="j2"> <!-- j2 -->
@@ -487,12 +520,11 @@
 @anchor IDX_T
 <li><b>T</b><br>
 <br>   <ul class="j1"> <!-- j1 -->
-   <li>transition see run->transition<br>
+   <li>@ref idx_transition "transition"<br>
       <ul class="j2"> <!-- j2 -->
       <li>@ref idx_transition_deferred "deferred"<br>
       <li>@ref idx_transition_register "register"<br>
       </ul>  <!-- j2 -->
-   <li>@ref idx_transitions "transitions"<br>
    </ul>  <!-- j1 -->
 @anchor IDX_W
 <li><b>W</b><br>
@@ -505,19 +537,18 @@
    <li>YBOS<br>
       <ul class="j2"> <!-- j2 -->
       <li>@ref idx_YBOS_event-construction "event construction"<br>
+      <li>@ref idx_YBOS_format "format"<br>
       </ul>  <!-- j2 -->
    </ul>  <!-- j1 -->
+</ul>  <!-- j0 -->
+@ref IDX_A "A" @ref IDX_B "B" @ref IDX_C "C" @ref IDX_D "D" @ref IDX_E "E" @ref IDX_F "F" @ref IDX_H "H" @ref IDX_J "J" @ref IDX_L "L" @ref IDX_M "M" @ref IDX_O "O" @ref IDX_R "R" @ref IDX_S "S" @ref IDX_T "T" @ref IDX_W "W" @ref IDX_Y "Y" 
 
-    </ul>  <!-- j0 -->
 
-    \anchor end
-    \htmlonly
-    <script type="text/javascript">
-    // pages param : back index next {top bottom}
-    pages("Convention","DocIndex","" ,"DocIndex","" );
-    // sections params:   last section; top of this section; next section
-    sections("Convention","DocIndex","");
-    </script>
-    \endhtmlonly
-
-    */
+\anchor end
+\htmlonly
+<script type="text/javascript">
+top("DocIndex");    
+contents();
+</script>
+\endhtmlonly
+*/

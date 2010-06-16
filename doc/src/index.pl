@@ -389,12 +389,12 @@ sub write_idx(@)
 		next;
 	    }
 #           there could be a comment on a matching item (e.g. buffer and buffer-see-also-  )
-#           buffer-see-also- comes before buffer_ in the sorting so this should work
-            my @ftemp = split /-see/, $lcfields;
-            my @ltemp =  split /-see/, $lclast;
+#           or  mhttpd and mhttpd-dot-h
+
+            my @ftemp = split /-/, $lcfields;
+            my @ltemp =  split /-/, $lclast;
         
-            #print "ftemp = @ftemp\n";
-            #print "ltemp = @ltemp\n";
+            print "ftemp = @ftemp;  ltemp = @ltemp\n";
         
             if ($ftemp[0] eq $ltemp[0]) 
             {     
@@ -403,7 +403,7 @@ sub write_idx(@)
                 print " at j=$j level=$level last[$level]=$last[$level]; \n";
                 next;
             }
-            # else {  print " $ftemp[0] and $ltemp[0] do not match \n"; }
+             else {  print " $ftemp[0] and $ltemp[0] do not match \n"; }
             
             
             
@@ -435,7 +435,8 @@ sub write_idx(@)
 		}
 		print OUTF "\n\%\n"; #marker
                 # can't seem to get this to work properly for "A" so skip it
-                unless ($letter eq "A"){ print OUTF "\@anchor IDX_$letter\n"; } # print an anchor for this letter
+                unless ($letter eq "A")
+                { print OUTF "\@anchor IDX_$letter\n"; } # print an anchor for this letter
 
 		print OUTF "$indent[$level]<li><b>$letter</b><br>\n"; # write single bold letter at level 0
 		while ($j > $level)
@@ -514,16 +515,7 @@ sub fix_idx()
     open INF, "$idxf" or die "Can't open input file $idxf : $!\n";
     open OUTF, ">$idxf2" or die "Can't open output file $idxf2 : $!\n";
 
-    print OUTF<<EOT;
 
-    /*! \@page  DocIndex Alphabetical Index to Documentation pages
-
-
-
-<!--  This file produced automatically ....  DO NOT EDIT -->
-
-EOT
-  
     my @file = <INF>;
     close INF;
     print "closed input file $idxf\n";
@@ -561,23 +553,7 @@ EOT
 	    }
 	}
     } # while
-    # add the index page footer (at end of the page)
-    print OUTF<<EOT;
 
-    </ul>  <!-- j0 -->
-
-    \\anchor end
-    \\htmlonly
-    <script type="text/javascript">
-    // pages param : back index next {top bottom}
-    pages("Convention","DocIndex","" ,"DocIndex","" );
-    // sections params:   last section; top of this section; next section
-    sections("Convention","DocIndex","");
-    </script>
-    \\endhtmlonly
-
-    */
-EOT
     close OUTF;
     print "closed output file $idxf2\n";
     print "skip_alpha: @skip_alpha\n";
@@ -591,30 +567,71 @@ sub fix_idx2()
     my $linenum;
     my $letter;
     my $element;
-    my $skip=1;
+    my $copy=1;
+    my $skip=0;
+    my @temp = @skip_alpha;
 
     print "fix_idx2: starting\n";
-    print "fix_idx2: @skip_alpha\n";
+    print "fix_idx2: @temp\n";
     open INF, "$idxf2" or die "Can't open input file $idxf : $!\n";
     open OUTF, ">$idxd" or die "Can't open output file $idxd : $!\n";
+
+
+# add information and navigation to top of docindex (A-Z)
+    print OUTF<<EOT;
+/*! \@page  DocIndex Alphabetical Index to Documentation pages
+
+<!--  This file produced automatically (by index.pl)  ....  DO NOT EDIT -->
+ 
+\\htmlonly
+<script type="text/javascript">
+// bot {top bottom}
+bot("DocIndex","end");
+contents();
+</script>
+\\endhtmlonly
+<br><br>
+\@anchor IDX_A
+<br>
+EOT
+
 
 	$linenum=0;
 	while (<INF>)
 	{
 	    $linenum++;
-            if ($skip)
+            if ($copy)
             {
-                unless (/class="j0"/)   # skip the top lines
+                unless (/class="j0"/)   # find the top lines of the file (if any)
                 {
-                    print "skipping line $linenum: $_\n";   
+                    if ($skip)
+                    {
+                        if (/-->/)
+                        {
+                            print "last line to skip is line $linenum : $_\n";
+                            $skip=0;
+                        }
+                        print "skipping line $linenum : $_\n";
+                        next;
+                    }
+
+                    elsif (/<!-- sorted array/)
+                    {
+                        # no need to copy sorted array to docindex.dox
+                        print "first line to skip is line $linenum : $_\n";
+                        $skip=1;
+                        next;
+                    }
+                         
+                    print "copying line $linenum: $_ to file $idxd\n";   
                 }
                 else 
                 { 
-                    $skip = 0;
+                    $copy = 0;
                     print "Found \"class=\"j0\"\" at Line $linenum\n";
                     # add Alphabet Index links   
                      print  "\n";
-                     $letter = shift @skip_alpha; # the first letter to be skipped
+                     $letter = shift @temp; # the first letter to be skipped
 
                      for $element (@alpha)  # a-z
                      { 
@@ -623,14 +640,15 @@ sub fix_idx2()
                          if ($element eq $letter)
                          {   # skip this letter
                              #  print "...skipping letter $letter \n";
-                             $letter = shift @skip_alpha;
+                             $letter = shift @temp;
                          }
                          else
                          {
                            #  print  "\@ref IDX_$element \"$element\" \n";
-                           # can't seem to get anchor to work properly for "A" so skip it
-                             unless ($element eq "A"){  print OUTF  "\@ref IDX_$element \"$element\" "; }
-                             else {  print OUTF  " $element "; }
+                           # can't seem to get anchor to work properly for "A" so skip it here
+                           # A's anchor IDX_A is added to top of file
+                           #  unless ($element eq "A")
+                                  {  print OUTF  "\@ref IDX_$element \"$element\" "; }
                           }
          
                        }
@@ -658,8 +676,51 @@ sub fix_idx2()
             }
                 print OUTF "$_\n";
 
-        } # end of a file 
+        } # end of file 
 	close INF;
+
+
+    print OUTF "</ul>  <!-- j0 -->\n"; # close list level j0 
+
+    # add Alphabet Index links   at EOF
+    print  "\n";
+    @temp = @skip_alpha;
+    $letter = shift @temp; # the first letter to be skipped
+    
+    for $element (@alpha)  # a-z
+    { 
+        $element = uc $element;
+        #  print " element=$element, letter=$letter\n";
+        if ($element eq $letter)
+        {   # skip this letter
+            #  print "...skipping letter $letter \n";
+            $letter = shift @temp;
+        }
+        else
+        {
+            #  print  "\@ref IDX_$element \"$element\" \n";
+            # can't seem to get anchor to work properly for "A" so skip it
+            # unless ($element eq "A")
+            {  print OUTF  "\@ref IDX_$element \"$element\" "; }
+            # else {  print OUTF  " $element "; }
+        }
+        
+    }
+    print OUTF "\n\n";
+    
+    # add the docindex page footer (at end of the page)
+    print OUTF<<EOT;
+
+\\anchor end
+\\htmlonly
+<script type="text/javascript">
+top("DocIndex");    
+contents();
+</script>
+\\endhtmlonly
+*/
+EOT
+
     close OUTF;
 
     print "closed output file $idxd\n";
@@ -672,10 +733,20 @@ sub check_line()
     my $len;
     
     print "\n\n check_line starting with string: $_\n";
-    s/"experim-dot-h"/"experim\.h"/;
-    
-    
-    
+#    s/"experim-dot-h"/"experim\.h"/;
+    if (/"(.*-dot-)/)
+    { 
+        print "found dot; $1\n"; 
+        $temp = $1;
+        $temp =~ s/-dot-/./;
+        print "temp: $temp\n";
+        s/"(.*-dot-)/"$temp/;    
+     }
+
+
+
+
+        
     if (/"(.*-see-)/) 
     {
        print "-see-  found $1 \n";
@@ -1310,18 +1381,20 @@ while (<IN>)
     print " line unmodified $_ \n";
     print OUT "$_\n";
 } # while in
+
+# add navigation to end of the Contents file
 print OUT<<EOT;
 
 </ol>\n\n
 \\anchor end
-    \\htmlonly
-    <script type="text/javascript">
-    // top {top }
-    top("Organization");
-    // az(); 
-    </script>
-    \\endhtmlonly
-    <br>
+\\htmlonly
+<script type="text/javascript">
+// top {top }
+top("Organization");
+// az(); 
+</script>
+\\endhtmlonly
+<br>
 */
 EOT
 close $sortfile;
@@ -1412,43 +1485,44 @@ sub next_fields_levels($$$)
 
 sub header()
 {
-    print OUTD<<EOT;
+#   add title and navigation to the top of the Contents file
+print OUTD<<EOT;
 
-    /*! \@page  Organization Manual Contents
-    \\htmlonly
-    <script type="text/javascript">
-    // bot {top bottom}
-    bot("Organization","end");
-    az();
-    </script>
-    \\endhtmlonly
-    <br><br>
+/*! \@page  Organization Manual Contents
+\\htmlonly
+<script type="text/javascript">
+// bot {top bottom}
+bot("Organization","end");
+az();
+</script>
+\\endhtmlonly
+<br><br>
  
-    <!--   This file produced automatically ...  DO NOT EDIT     -->
+<!--   This file produced automatically ...  DO NOT EDIT     -->
 
-    \@section O_what What can be found in this manual?
+\@section O_what What can be found in this manual?
   
    
-    \\anchor Organization_section_index
-    <span  style="font-weight: bold; font-size: 125%;">Section Index</span>
-    <ol class="i0">
-    <li> \@ref Main_section_index "Main Page"
+\\anchor Organization_section_index
+<span  style="font-weight: bold; font-size: 125%;">Section Index</span>
+<ol class="i0">
+<li> \@ref Main_section_index "Main Page"
 EOT
     return;
 }
 
 sub footer()
-{  # write last lines of the header to the file
+{  # write last lines of the header to the Contents file
 
     print OUTD<<EOT;
-    </ol>
+</ol>
 
  
-    <span  style="font-weight: bold; font-size: 125%;">Main Index</span>
-    \@anchor Main_section_index
-    <ol class="i0">
-       <li>\@ref Top "Main Page"
-       <br>
+<span  style="font-weight: bold; font-size: 125%;">Main Index</span>
+\@anchor Main_section_index
+<ol class="i0">
+<li>\@ref Top "Main Page"
+<br>
 
 EOT
     return;

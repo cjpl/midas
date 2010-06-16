@@ -10,7 +10,7 @@
 //       page_index.gif                                         Alphabetical Index
 //
 
-
+// Used only by first page of document
 function top_mainpage( next_page,bottom_of_page)
 {
    if(next_page)
@@ -41,13 +41,19 @@ function top_mainpage( next_page,bottom_of_page)
 //document.write('</div>'); 
 }
 
+
 // Single functions (needed by Contents page)
+
+// az A-Z Index symbol
 function az()
 {
    document.writeln('<a href="DocIndex.html">  <!-- docindex -->');
    document.writeln(' <img  ALIGN="left" alt="/\" src="../images/page_index.gif" title="Alphabetical Index"   border=0 >');
    document.writeln('</a>');
 }
+
+
+// Bottom of page symbol; bottom_of_page is usually "end"
 function bot(top_of_page,bottom_of_page)
 {
       if(top_of_page)
@@ -58,6 +64,7 @@ function bot(top_of_page,bottom_of_page)
       }
 
 }
+// Top of page symbol
 function top(top_of_page)
 {
       if(top_of_page)
@@ -68,6 +75,13 @@ function top(top_of_page)
       }   
 }
 
+// Contents symbol
+function contents()
+{
+   document.writeln('<a href="Organization.html">  <!-- LIST of section names -->');
+   document.writeln(' <img  ALIGN="right" alt="map" src="../images/section_contents.gif" title="Section List"    border=0 >');
+   document.writeln('</a>');     
+}
 
 
 

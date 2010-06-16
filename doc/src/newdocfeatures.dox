@@ -45,7 +45,7 @@ Features will be considered to be "new" for a year or so, then will become stand
 
 \subsection ndf_may_2010 May 2010
  - bit operations for custom fills - see @ref RC_mhttpd_fills_src_logical  (mhttpd.c 4708)
- - Arrays can now be written with  @RC_mhttpd_custom_odbset   (mhttpd.c 4707)
+ - Arrays can now be written with  @ref RC_mhttpd_custom_odbset   (mhttpd.c 4707)
 
 \subsection ndf_jan_2010 Jan 2010
  - Four different rows for the various buttons on the @ref alias_buttons_status_page "Status page"

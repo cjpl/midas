@@ -1,5 +1,6 @@
 /*! @page BuildingOptions Midas build options and operation considerations
 <!-- formerly appendixD -->
+\anchor AppendixD <!-- needed by C code -->
 <br>
 \htmlonly
 <script type="text/javascript">
@@ -167,12 +168,14 @@ frontend code under VxWorks. The main function calls are the dm_xxxx in @ref mid
 (Contact Pierre for more information).
 
 <hr> @section BO_USE_EVENT_CHANNEL USE_EVENT_CHANNEL
-To be used in conjunction with the @ref U_DM_DUAL_THREAD.
+To be used in conjunction with the @ref BO_DM_DUAL_THREAD.
 
 <hr> @section BO_USE_INT USE_INT
 In @ref mfe.c. Enable the use of interrupt mechanism. This option is so far only valid
 under VxWorks Operating system. (Contact Stefan or Pierre for further information).
 
+\anchor idx_environment_variables
+\anchor Environment_variables  <!-- needed for C code -->
 <hr> @section BO_Environment_variables Environment variables
 Midas uses a several environment variables to facilitate the startup of the different applications.
  
@@ -197,7 +200,7 @@ will generate a warning message in the case this variable is not defined.
 @subsection BO_MIDAS_DIR MIDAS_DIR
  This variable predefines the LOCAL directory path where the shared memories
  for the experiment are located. It supersedes the host_name and the expt_name
- as well as the @ref MIDAS_SERVER_HOST and @ref MIDAS_EXPT_NAME as a given directory
+ as well as the @ref BO_MIDAS_SERVER_HOST and @ref BO_MIDAS_EXPT_NAME as a given directory
  path can only refer to a single experiment.
 @subsection BO_MCHART_DIR MCHART_DIR
  Obsolete

@@ -470,6 +470,14 @@ testval                         3
 [pol@isdaq01 pol]$ odbedit -d /test -c "ls testval"
 testval 
 @endcode
+
+Note that the syntax to create an ODB STRING array using the "-c" command is
+\code
+odbedit -c "create STRING Test[1][40]"
+odbedit -c "create STRING Test[8][40]"
+\endcode
+
+
 A filename containing a number of odbedit commands can also be entered, using the 
 @ref RC_odbedit_task "odbedit" -c \@commandfile argument e.g.
 \code
@@ -497,22 +505,15 @@ manipulate the odb.
 
  Some examples are shown below.
 
-Note that the syntax to create an ODB STRING array using the "-c" command has been fixed (in
-svn rev 4555 odbedit.c) and later to be e.g.
-\code
-odbedit -c "create STRING Test[1][40]"
-odbedit -c "create STRING Test[8][40]"
-\code
-
 @subsection RC_odbedit_script_examples Examples of scripts sending odbedit commands
 - @ref  RC_example_script_1
 - @ref  RC_example_script_2
 
-
+\anchor idx_script_end-of-run
 @subsubsection RC_example_script_1 Shell script run at end-of-run
 
 This script runs at the end of run, and reads some parameters from the odb and sends 
-them to the elog by using the @ref U_melog_task.
+them to the elog by using the @ref F_melog_task.
 To make the script run at end of run, the name of the script is entered in the "Execute on stop run" key in the
 @ref RC_ODB_programs_tree .
  
@@ -591,10 +592,91 @@ cat $fin
 
 # done
 @endcode
+\anchor idx_script_start-of-run
+<hr>@subsubsection RC_example_script_2 Shell script run at beginning of run
+The following example is part of a shell script run at the beginning of run for the TRIUMF BNMR experiment to check
+the status of various slow controls required for logging during the run.
+To make the script run at beginning of run, the name of the script is entered in the "Execute on start run" key in the
+@ref RC_ODB_programs_tree .
 
-<hr>@subsubsection RC_example_script_2 Perl script performing run control
-........
-\todo  Missing example of Perl script performing run control
+
+#!/bin/csh
+#
+
+# Add an input parameter
+#  0 default
+#  1 (for redo camp slow controls from custom page) to stop statistics being zeroed
+#  2 (redo epics slow controls from custom page)
+#
+#
+# NOTE: msg [type] [user] <msg> - compose user message
+#
+#  odb msg 1 -> error msg  (in black/red)
+#  odb msg 2 -> info msg   (in black/white)
+
+#echo "argv: $argv ; number of args: $#argv"
+set param = 0
+if  ($#argv > 0) then
+    set param = $argv[1];
+   endif
+#echo "param: $param ;  $MIDAS_EXPT_NAME"
+
+set my_path = "/home/$MIDAS_EXPT_NAME/online/$MIDAS_EXPT_NAME/bin"
+#echo "my_path:$my_path"
+
+odb -e $MIDAS_EXPT_NAME -c "msg 'at_start_run'  '(at start) starting with param= $param' "
+
+# clear elog (camp log) alarm flag
+odb -e $MIDAS_EXPT_NAME -c 'set "/equipment/fifo_acq/client flags/elog alarm" 0'
+# clear epicslog alarm flag
+odb -e $MIDAS_EXPT_NAME -c 'set "/equipment/fifo_acq/client flags/epicslog alarm" 0'
+
+if ($param == 1) then
+# redo CAMP only
+   odb -e $MIDAS_EXPT_NAME -c "msg 'at_start_run'  '(at start) sets camp ok to 4'"
+   odb -e $MIDAS_EXPT_NAME -c "set '/equipment/camp/settings/camp ok' 4" # camp_ok = 4 indicates redoing CAMP only
+else if  ($param == 2) then
+# redo EPICS only
+   odb -e $MIDAS_EXPT_NAME -c "msg 'at_start_run'  '(at start) sets epics ok to4'"
+   odb -e $MIDAS_EXPT_NAME -c "set '/equipment/epicslog/settings/epics ok' 4" #epics_ok =4 indicates redoing EPICS only
+else
+# run start - redo EPICS and CAMP
+   odb -e $MIDAS_EXPT_NAME  -c "msg 'at_start_run'  '(at start) sets epics ok and camp ok to 2' "
+   odb -e $MIDAS_EXPT_NAME -c "set '/equipment/camp/settings/camp ok' 2"      #camp_ok=2 indicates redoing CAMP
+   odb -e $MIDAS_EXPT_NAME -c "set '/equipment/epicslog/settings/epics ok' 2" #epics_ok=2 indicates redoing EPICS
+endif
+
+if ($param == 0 || $param == 2) then
+#
+#  Check epics logged variables
+#
+   odb -e $MIDAS_EXPT_NAME -c "msg 'at_start_run' 'calling check_epics.csh' "
+   $my_path/check_epics.csh
+    set stat = $status
+    if ($stat != 0) then
+       echo "error return from check_epics.csh"
+       odb -e $MIDAS_EXPT_NAME -c "msg '1' 'at_start_run' 'error return from check_epics.csh' "
+       odb -e $MIDAS_EXPT_NAME -c "set '/equipment/epicslog/settings/epics ok' 0
+" # EPICS failure
+    else
+       odb -e $MIDAS_EXPT_NAME -c "msg 'at_start_run' 'after check_epics.csh (success)' "
+       odb -e $MIDAS_EXPT_NAME -c "set '/equipment/epicslog/settings/epics ok' 1" # EPICS success
+    endif
+
+else
+   odb -e $MIDAS_EXPT_NAME -c "msg 'at_start_run' '(at start) NOT calling check_epics.csh ($param)' "
+endif
+
+if ($param == 2) then  # checks epics only ; no camp
+  exit
+endif
+
+ ..............
+    etc.
+
+\endcode
+
+
 
 
 
@@ -1138,7 +1220,7 @@ Write access not allowed
 @endcode
 
 \b NOTE:<br>
-<br>Write protection when running</br> can also be performed - see @ref RC_Lock_when_Running.
+<br>Write protection when running can also be performed - see @ref RC_Lock_when_Running.
 
 
 <hr>@subsection RC_odbedit_trunc trunc  - truncate a key
@@ -1207,7 +1289,7 @@ If you answer "n" the key will not be deleted.
 
 <hr>@subsection RC_odbedit_sor sor - show open records
 
-This shows which records are open, i.e. @ref RC_Event_Notification_Intro "hot-linked" .
+This shows which records are open, i.e. @ref RC_Hot_Link_Intro "hot-linked" .
 \code
 
 [local:mpet:Stopped]/>sor
@@ -1312,7 +1394,7 @@ cellspacing="2">
 @endcode
 </td>
 <td>
-<b>Save as a #defined structure </b>
+<b>Save as a \#defined structure </b>
 \code
 [local:pol:S]Info ODB>save  -s cfile.h
 @endcode
@@ -1757,7 +1839,7 @@ Starting run #30129
 Run #30129 started
 @endcode
 @anchor RC_odbedit_start_v
-Using the <br>"-v"</br>  (verbose) option is useful for debugging. It prints messages as each client is started.
+Using the \b "-v" (verbose) option is useful for debugging. It prints messages as each client is started.
 \code
 [local:bnmr:S]/>start -v
 run_title : test

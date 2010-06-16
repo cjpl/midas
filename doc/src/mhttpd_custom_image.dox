@@ -17,7 +17,7 @@ sections("Features", "RunControl","FrontendOperation"); // last section; top of 
 @section RC_mhttpd_custom_history Inserting a history image in a custom page
 
 In the special case where the image to be inserted is a \b History image, it can be inserted into a custom page using
-an HTML <b><img></b> tag of the following form:
+an HTML <b>\<img\></b> tag of the following form:
 \code
 <img src="http://hostname.domain:port/HS/Meterdis.gif&scale=12h&width=300">
 @endcode
@@ -30,12 +30,12 @@ See  @ref RC_mhttpd_custom_demo and \ref example_image_all "image" created by th
 \anchor idx_mhttpd_page_custom_image_insert-image
 @section RC_mhttpd_custom_image Image insertion into a Custom page
 \anchor idx_mhttpd_page_custom_image_history-image
-An image may be inserted into a custom webpage by using an HTML <img> tag.
+An image may be inserted into a custom webpage by using an HTML \<img\> tag.
 The image file can be in any format supported by the browser (e.g. &nbsp; \b gif,&nbsp; \b png,&nbsp; \b jpg etc.).
 <br>
 For example, a
  \b History image can be inserted into a custom page using
-an HTML <b><img></b> tag of the following form:
+an HTML <b>\<img\></b> tag of the following form:
 \code
 <img src="http://hostname.domain:port/HS/Meterdis.gif&scale=12h&width=300">
 @endcode
@@ -122,7 +122,7 @@ User-created directory to contain custom page information</td>
 <tr>
 <td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
 <td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
-<custom_page_link>
+\<custom_page_link\>
 </td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
@@ -155,7 +155,7 @@ User-created subdirectory to contain the name(s) of the defined image(s).
 <td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
 <td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
-<Image_name>/
+\<Image_name\>/
 </td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;">DIR</td>
@@ -225,7 +225,7 @@ Optional subdirectory to be used for superimposing fills on top of the image. (S
 @section RC_mhttpd_custom_imagemap Mapping active areas onto the image
 
 HTML mapping can be activated on an image to provide "clickable" areas, using the
-\b map attribute of the HTML <b><img></b> tag.
+\b map attribute of the HTML <b>\<img\></b> tag.
 
 This can be done now with a new function like this:
 \code
@@ -305,7 +305,7 @@ onClick="promptpwd('Custom1?cmd=toggle&pnam=CustomPwd?odb=/Equipment/Environment
 @endcode
 
 
-If the \b pwd option is present in the <span class="odbtag"> <odb> tag</span>,  <span class="cl">mhttpd</span> establishes a call to
+If the \b pwd option is present in the <span class="odbtag"> \<odb\> tag</span>,  <span class="cl">mhttpd</span> establishes a call to
 the \b promptpwd() function if one clicks on the value. The password is then requested
 from the user and is submitted as a cookie.  <span class="cl">mhttpd</span> then checks this password against
 the ODB entry
@@ -338,7 +338,7 @@ defining the ODB variable path, X/Y position, colour, etc.
 Each time the page is updated, the latest ODB value/level/rate will be shown based on the
 ODB parameter to which the label, bar or fill is linked - hence the term "live".
 The overlay of the requested features is done onto the selected 
-@ref RC_mhttpd_custom_gif_image "image file". 
+@ref RC_mhttpd_custom_image "image file". 
 
 This powerful new extension brings the <span class="cl">mhttpd</span> 
 capability closer to other experimental web controllers similar to EPICS.
@@ -384,18 +384,18 @@ FGColor                         STRING  1     8     2m   0   RWD  000000
 BGColor                         STRING  1     8     2m   0   RWD  FFFFFF
 @endcode
 
-This procedure is repeated for all the labels required, using a unique <span class="odb"><label_name></span> subdirectory for each label.
+This procedure is repeated for all the labels required, using a unique <span class="odb">\<label_name\></span> subdirectory for each label.
 
 
 @subsection RC_mhttpd_labels_tree Explanation of the keys in the /Custom/images/Labels ODB subtree
 <table
  style="text-align: left; width: 100%;" border="1" cellpadding="2"
 cellspacing="0">
-  <caption>Above: Meaning of keys in the ODB /Custom/images/Labels/<label_name> subtree.
+  <caption>Above: Meaning of keys in the ODB /Custom/images/Labels/\<label_name\> subtree.
   </caption>
 <tr>
 <td colspan="4" style="vertical-align: top; background-color: rgb(204, 204, 255); font-weight: bold; text-align: center;">
-Keys in the ODB subtree  ../Labels/<label_name>
+Keys in the ODB subtree  ../Labels/\<label_name\>
 </td>
 </tr>
 
@@ -410,7 +410,7 @@ Explanation
 <!--   line    1   Labels  -->
 <tr>
 <td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
-.../Labels/<label_name>
+.../Labels/\<label_name\>
 </td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;">DIR</td>
@@ -567,18 +567,18 @@ Following the same principle as for the  @ref RC_mhttpd_custom_bars "labels", by
 structure for the bar will be filled with a default setting after refreshing the
 custom midas page.
 
-This procedure is repeated for all the bars required, using a unique <span class="odb"><bar_name></span> subdirectory for each bar.
+This procedure is repeated for all the bars required, using a unique <span class="odb">\<bar_name\></span> subdirectory for each bar.
 <br>
 
 @subsection RC_mhttpd_bars_tree Explanation of the keys in the /Custom/Images/Bars ODB subtree
 <table
  style="text-align: left; width: 100%;" border="1" cellpadding="2"
 cellspacing="0">
-  <caption>Above: Meaning of keys in the ODB /Custom/Images/Bars/<bar_name> subtree.
+  <caption>Above: Meaning of keys in the ODB /Custom/Images/Bars/\<bar_name\> subtree.
   </caption>
 <tr>
 <td colspan="4" style="vertical-align: top; background-color: rgb(204, 204, 255); font-weight: bold; text-align: center;">
-Keys in the ODB subtree ../Bars/<bar_name>
+Keys in the ODB subtree ../Bars/\<bar_name\>
 </td>
 </tr>
 <tr>
@@ -592,7 +592,7 @@ Explanation
 <!--   line    1   Bars  -->
 <tr>
 <td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
-.../Bars/<bar_name>
+.../Bars/\<bar_name\>
 </td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;">DIR</td>
@@ -831,7 +831,7 @@ Fillcolors = STRING[4] :
 @endcode
 
 This subtree ( <span class="odb">Level</span> in the example) can be duplicated for as many Fills as required, using
-a unique  <span class="odb"><fill_name></span> for each subdirectory.
+a unique  <span class="odb">\<fill_name\></span> for each subdirectory.
 
 <br><br>
 
@@ -839,12 +839,12 @@ a unique  <span class="odb"><fill_name></span> for each subdirectory.
 <table
  style="text-align: left; width: 100%;" border="1" cellpadding="2"
 cellspacing="0">
-  <caption>Above: Meaning of keys in the ODB /Custom/Images/Fills/<fill_name> subtree.
+  <caption>Above: Meaning of keys in the ODB /Custom/Images/Fills/\<fill_name\> subtree.
   </caption>
 
 <tr>
 <td colspan="4" style="vertical-align: top; background-color: rgb(204, 204, 255); font-weight: bold; text-align: center;">
-Keys in the ODB subtree ../Fills/<fill_name>
+Keys in the ODB subtree ../Fills/\<fill_name\>
 </td>
 </tr>
 <tr>
@@ -858,7 +858,7 @@ Explanation
 <!--   line    1   Fills  -->
 <tr>
 <td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
-.../Fills/<fill_name>
+.../Fills/\<fill_name\>
 </td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;">DIR</td>
@@ -984,7 +984,7 @@ style tag.  The custom page code could look like this:
 <img src="custom.gif">
 @endcode
 
-The \b <div> tag surrounding the <span class="odbtag"><odb> tag</span> places this directly on top of the
+The \b \<div\> tag surrounding the <span class="odbtag">\<odb\> tag</span> places this directly on top of the
 "custom.gif" image, where it can be clicked to be edited.
 
 The same thing could be done in JavaScript using the ODBEdit function from the @ref RC_mhttpd_custom_js_lib :
@@ -1036,7 +1036,7 @@ The EBIT custom page is shown @ref RC_Ebit_custom_page "here".
 @subsection RC_mhttpd_custom_pw Password protection of Edit Boxes
 
 It is a good idea to protect the Edit Box from @ref  RC_mhttpd_custom_pw_protection "accidental access".
-This is done by a using the @ref RC_mhttpd_custom_odb_htm "pwd option" in the  <span class="odbtag"><odb> tag</span>, and adding the same
+This is done by a using the @ref RC_mhttpd_custom_odb_html "pwd option" in the  <span class="odbtag">\<odb\> tag</span>, and adding the same
 Javascript function  \b promptpwd()  as was  @ref promptpwd "used above" for password protection of an area map.
 \code
 <!--
@@ -1214,9 +1214,9 @@ copy the existing label sub-tree and modify the label parameters.
 [local:Default:Stopped]Event>set y 170
 [local:Default:Stopped]Event>set x 250
 @endcode
-You will now have two \b Labels, named "Rate" and "Event", both subtrees under </span class="odb">../Labels</span>.
+You will now have two \b Labels, named "Rate" and "Event", both subtrees under <span class="odb">../Labels</span>.
  
-In the same manner, you can create @ref RC_mhttpd_custom_gif_bars  "bars" used for 
+In the same manner, you can create @ref RC_mhttpd_custom_bars  "bars" used for 
 level representation.  The keys in the Bars subdirectory are explained 
 @ref RC_mhttpd_bars_tree "above".
 
@@ -1246,13 +1246,13 @@ This code will setup two ODB values defined by the fields src.
 [local:Default:Stopped]Rate>set max 1e6 
 @endcode
 
-You will now have two \b Bars, also named "Rate" and "Event", both subtrees under </span class="odb">../Bars</span>.
+You will now have two \b Bars, also named "Rate" and "Event", both subtrees under <span class="odb">../Bars</span>.
 
 
 The last feature to be added is a 
 @ref RC_mhttpd_custom_fills  "Fill" (where an area can be filled with different
 colors depending on the given ODB value). These have to be entered by hand. See instructions in  @ref RC_mhttpd_custom_fills "fills",
-which shows you how to create a \b Filled area  named "Level"  (a subtree under </span class="odb">../Fills</span>). 
+which shows you how to create a \b Filled area  named "Level"  (a subtree under <span class="odb">../Fills</span>). 
 
 Once all these features have been added, the custom page will look as Figure 2:
 \anchor example_image_all

@@ -78,7 +78,7 @@ sections("Features", "RunControl","FrontendOperation"); // last section; top of 
 
 <br>
 \anchor idx_run_states
-\anchor idx_transitions
+\anchor idx_transition
 Three <b>Run States</b> define the states of the Midas DAQ system:
 <br>
 <br><center> <b>\em Stopped, \em Paused, and \em Running.</b> </center>
@@ -94,6 +94,7 @@ In order to change from one state to another, Midas provides four basic
 
 \anchor idx_run_state_codes
 \anchor idx_run_transition_codes
+\anchor state_transition <!-- needed by C code -->
 @section RC_state_transition Midas State and Transition Codes
 
 Midas provides three <b> State Codes </b> (defined in midas.h)  for the three run states (Stopped, Paused and Running).
@@ -110,7 +111,7 @@ and four <b> Transition Codes </b> for the four Transitions:
   - TR_RESUME
 
 While a transition is in progress, these Transition Codes will be found under 
-the @ref ODB_RunInfo_Tree for an experiment.
+the @ref RC_ODB_RunInfo_Tree for an experiment.
 
 <hr> 
 \anchor idx_run_transition_priority
@@ -179,7 +180,7 @@ but \b before the Frontend (see \ref RC_Default_Seq_Numbers).
 <br><hr><br>
 @subsubsection RC_Multiple_Registration Multiple Registration to a Transition
 Multiple registration to a given transition
-can be requested. This last option allows (for example) two callback functions to be invoked </b> before and after a given transition </b>, such as the start of the logger.
+can be requested. This last option allows (for example) <b> two callback functions to be invoked  before and after a given transition </b>, such as the start of the logger.
 
 
 \code
@@ -878,7 +879,7 @@ Customizing the ODB for Run Control involves some or all of:
  - changing the size of the Midas buffers
 
 Other customization may include
- - @ref @ref RC_starting_clients
+ - @ref RC_starting_clients
 
  
 
@@ -1229,8 +1230,8 @@ security features. See @ref RC_Access_Control "Security" for details </td>
 @section RC_run_start_params Run start parameters
 
 With no optional parameters set up, i.e. with the default setup, 
-when a run is started, either by @ref odbedit (see  @ref  RC_odbedit_start )
- or @ref mhttpd (see @ref RC_mhttpd_Start_page) , a <b> TR_START transition </b> is received, 
+when a run is started, either by @ref RC_odbedit_task "odbedit" (see  @ref  RC_odbedit_start )
+ or @ref RC_mhttpd_task "mhttpd"  (see @ref RC_mhttpd_Start_page) , a <b> TR_START transition </b> is received, 
 and the <b>run number</b> of the upcoming run will be displayed for editing. 
 It will have been <b>automatically incremented</b> relative to the last run.  
 The following example shows a run started using odbedit. The default run number of the next run
@@ -1319,7 +1320,7 @@ write data                      BOOL    1     4     7s   0   RWD  /Logger/Write 
 Edit run number                 BOOL    1     4     11h  0   RWD  n
 @endcode
 
-See \b examples of starting a run with <b> edit on start </b> parameters set up, using @ref RC_EOS_example2 "odbedit" and   @ref RC_odb_edit_on_start "mhttpd" .
+See \b examples of starting a run with <b> edit on start </b> parameters set up, using @ref RC_EOS_example2 "odbedit" and   @ref  RC_Edit_On_Start "mhttpd" .
 <span class="note">Several extra edit-on-start features are available for mhttpd only. 
 </span> These are @ref RC_Edit_PC  and  @ref RC_Prevent_Edit_RN .
 <br><hr><br>
@@ -1779,7 +1780,7 @@ mdarc_cleanup                   DIR
  
 The subdirectory for each client contains system information as well as task-specific characteristics, 
 such as the watchdog timeout, optionally a command to restart the task,  the optional 
-@ref Alarm_System "alarm condition" etc.
+@ref RC_Alarm_System "alarm condition" etc.
 The following example shows the subdirectory for the @ref F_mlogger_task "mlogger" client:
 
 \code
@@ -2046,7 +2047,11 @@ The alarm system can be customized through @ref RC_odbedit_task "ODBEdit" or the
 @ref RC_mhttpd_ODB_page "mhttpd Alarm page".  
 Some of the features (such as colour) are applicable only to \b mhttpd.
 
+\anchor idx_alarm_classes
+\anchor idx_alarm_type
 \anchor idx_ODB_tree_Alarms
+\anchor  RC_alarm_classes
+\anchor  RC_alarm_type
 <hr> @section RC_ODB_Alarms_Tree ODB /Alarms Tree
 
 The <b> ODB /Alarms tree </b> contains user and system information related to alarms.
@@ -2057,7 +2062,7 @@ When the ODB is created,
 
 Currently, the overall alarm is checked once every minute. Once the alarm has been
 triggered, the message associated with the alarm can be repeated at a different rate.
-The \Alarms structure is split into 2 sections:
+The \b Alarms structure is split into 2 sections:
  - \b "Alarms"  which define the condition to be tested. The user can create as many Alarms as desired, but each must be one of the four defined  @ref RC_alarm_types "Alarm Types" .
  - \b "Classes"  which define the action to be taken when the alarm occurs. Two Classes (Alarm and Warning) are defined by default. The user can add more Classes as desired.
 

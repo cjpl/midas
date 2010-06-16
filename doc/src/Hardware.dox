@@ -24,7 +24,7 @@ The <b>/drivers</b> directory is subdivided in several directories which
 refers to either the type of bus ie: CAMAC, FastBus, VME, PCI, USB or type
 of software layer such as Class, Device, Bus. 
 
-The software layers sections are used in particular for @ref Slow_Control_system.
+The software layers sections are used in particular for @ref FE_Slow_Control_system.
 Example are available in the distribution under \b examples/slowcont/frontend.c 
 including the \b hv and \b multi class with the \b nulldev device and \b null 
 bus driver. Note: not all the device drivers implement the triple layer 

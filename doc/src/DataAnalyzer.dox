@@ -811,7 +811,11 @@ Prevents the system to kill the analyzer when the debugger stops at a breakpoint
 
 <br><hr><br>
 
-<!-- the following sections came from appendixE.dox -->
+<!-- the following sections came from appendixE.dox
+
+      need YBOS_bank_examples anchor for c code
+-->
+\anchor YBOS_bank_examples
 @section DA_YBOS_bank_examples YBOS bank examples
 
 Example of YBOS bank extraction :
