@@ -16,25 +16,25 @@ function top_mainpage( next_page,bottom_of_page)
    if(next_page)
    {
       document.writeln('<a href="'+next_page+'.html">                <!-- Next Page -->')
-      document.writeln(' <img  ALIGN="left" alt="->" src="../images/page_right.gif" title="Next Page: '+next_page+'" border=0>');
+      document.writeln(' <img  ALIGN="left" alt="->" src="page_right.gif" title="Next Page: '+next_page+'" border=0>');
       document.writeln('</a>')
    }
 
    page_index = "Organization"  
    var ref = '#'+page_index+'_section_index';
    document.writeln('<a href="Organization.html'+ref+'">  <!-- PAGES IN THIS SECTION -->');
-   document.writeln(' <img  ALIGN="left" alt="map" src="../images/page_contents.gif" title="Page List"    border=0 >');
+   document.writeln(' <img  ALIGN="left" alt="map" src="page_contents.gif" title="Page List"    border=0 >');
    document.writeln('</a>'); 
    
 
    document.writeln('<a href="DocIndex.html">  <!-- docindex -->');
-   document.writeln(' <img  ALIGN="left" alt="/\" src="../images/page_index.gif" title="Alphabetical Index"   border=0 >');
+   document.writeln(' <img  ALIGN="left" alt="/\" src="page_index.gif" title="Alphabetical Index"   border=0 >');
    document.writeln('</a>');
    
    if(bottom_of_page)
       {  // bottom arrow only
          document.writeln('<a href="index.html#'+bottom_of_page+'">  <!-- BOTTOM OF PAGE -->');
-         document.writeln(' <img  ALIGN="left" alt="\/" src="../images/page_down.gif" title="Bottom of Page"   border=0 >');
+         document.writeln(' <img  ALIGN="left" alt="\/" src="page_down.gif" title="Bottom of Page"   border=0 >');
          document.writeln('</a>');
       }
 //document.write('<div style="color: teal;">Page');
@@ -48,7 +48,7 @@ function top_mainpage( next_page,bottom_of_page)
 function az()
 {
    document.writeln('<a href="DocIndex.html">  <!-- docindex -->');
-   document.writeln(' <img  ALIGN="left" alt="/\" src="../images/page_index.gif" title="Alphabetical Index"   border=0 >');
+   document.writeln(' <img  ALIGN="left" alt="/\" src="page_index.gif" title="Alphabetical Index"   border=0 >');
    document.writeln('</a>');
 }
 
@@ -59,7 +59,7 @@ function bot(top_of_page,bottom_of_page)
       if(top_of_page)
       {  // bottom arrow only
          document.writeln('<a href="'+top_of_page+'.html#'+bottom_of_page+'">  <!-- BOTTOM OF THIS PAGE -->');
-         document.writeln(' <img  ALIGN="left" alt="\/" src="../images/page_down.gif" title="Bottom of Page"   border=0 >');
+         document.writeln(' <img  ALIGN="left" alt="\/" src="page_down.gif" title="Bottom of Page"   border=0 >');
          document.writeln('</a>');
       }
 
@@ -70,7 +70,7 @@ function top(top_of_page)
       if(top_of_page)
       {
          document.writeln('<a href="'+top_of_page+'.html">  <!-- TOP OF THIS PAGE -->');
-         document.writeln(' <img  ALIGN="left" alt="/\" src="../images/page_up.gif" title="Top of Page"   border=0  >');
+         document.writeln(' <img  ALIGN="left" alt="/\" src="page_up.gif" title="Top of Page"   border=0  >');
          document.writeln('</a>');
       }   
 }
@@ -79,7 +79,7 @@ function top(top_of_page)
 function contents()
 {
    document.writeln('<a href="Organization.html">  <!-- LIST of section names -->');
-   document.writeln(' <img  ALIGN="right" alt="map" src="../images/section_contents.gif" title="Section List"    border=0 >');
+   document.writeln(' <img  ALIGN="right" alt="map" src="section_contents.gif" title="Section List"    border=0 >');
    document.writeln('</a>');     
 }
 
@@ -92,14 +92,14 @@ function pages(previous_page,  page_index, next_page, top_of_page, bottom_of_pag
    {
       string = clean(previous_page);
       document.writeln('<a href="'+previous_page+'.html#end">      <!-- Previous Page -->');
-      document.writeln(' <img  ALIGN="left" alt="<-" src="../images/page_left.gif" title="Previous Page: '+string+'"   border=0 >');
+      document.writeln(' <img  ALIGN="left" alt="<-" src="page_left.gif" title="Previous Page: '+string+'"   border=0 >');
       document.writeln('</a>');
    }
 
 
 
    document.writeln('<a href="index.html#Top">  <!-- TOP OF DOCUMENT blue with line -->');
-   document.writeln(' <img  ALIGN="left" alt="top" src="../images/page_up_hat.gif" title="Start of Document"    border=0>');
+   document.writeln(' <img  ALIGN="left" alt="top" src="page_up_hat.gif" title="Start of Document"    border=0>');
    document.writeln('</a>');
 
    
@@ -110,13 +110,13 @@ function pages(previous_page,  page_index, next_page, top_of_page, bottom_of_pag
       if(bottom_of_page)
       {  // bottom arrow only
          document.writeln('<a href="'+top_of_page+'.html#'+bottom_of_page+'">  <!-- BOTTOM OF THIS PAGE -->');
-         document.writeln(' <img  ALIGN="left" alt="\/" src="../images/page_down.gif" title="Bottom of Page"   border=0 >');
+         document.writeln(' <img  ALIGN="left" alt="\/" src="page_down.gif" title="Bottom of Page"   border=0 >');
          document.writeln('</a>');
       }
       else
       {   
          document.writeln('<a href="'+top_of_page+'.html">  <!-- TOP OF THIS PAGE -->');
-         document.writeln(' <img  ALIGN="left" alt="/\" src="../images/page_up.gif" title="Top of Page"   border=0  >');
+         document.writeln(' <img  ALIGN="left" alt="/\" src="page_up.gif" title="Top of Page"   border=0  >');
          document.writeln('</a>');
       }
     }
@@ -124,19 +124,19 @@ function pages(previous_page,  page_index, next_page, top_of_page, bottom_of_pag
    {
       var ref = '#'+page_index+'_section_index';
       document.writeln('<a href="Organization.html'+ref+'">  <!-- PAGES IN THIS SECTION -->');
-      document.writeln(' <img  ALIGN="left" alt="map" src="../images/page_contents.gif" title="Page List"    border=0 >');
+      document.writeln(' <img  ALIGN="left" alt="map" src="page_contents.gif" title="Page List"    border=0 >');
       document.writeln('</a>'); 
    }
 
    document.writeln('<a href="DocIndex.html">  <!-- docindex -->');
-   document.writeln(' <img  ALIGN="left" alt="/\" src="../images/page_index.gif" title="Alphabetical Index"   border=0 >');
+   document.writeln(' <img  ALIGN="left" alt="/\" src="page_index.gif" title="Alphabetical Index"   border=0 >');
    document.writeln('</a>');
    
    if(next_page)
    {
       string = clean(next_page);
       document.writeln('<a href="'+next_page+'.html">                <!-- Next Page -->')
-      document.writeln(' <img  ALIGN="left" alt="->" src="../images/page_right.gif" title="Next Page: '+string+'" border=0>');
+      document.writeln(' <img  ALIGN="left" alt="->" src="page_right.gif" title="Next Page: '+string+'" border=0>');
       document.writeln('</a>')
    }
 //document.write('<div style="color: teal;">Page');
@@ -153,14 +153,14 @@ function sections(previous_section, section_top, next_section)
    {
       string = clean(next_section);
       document.writeln('<a href="'+next_section+'.html">               <!-- Next Section -->');
-      document.writeln('<img  ALIGN="right" alt="->>" src="../images/section_right.gif" title="Next Section: '+string+'" border=0 >');
+      document.writeln('<img  ALIGN="right" alt="->>" src="section_right.gif" title="Next Section: '+string+'" border=0 >');
       document.writeln('</a>');
    }
  
    
  
    document.writeln('<a href="Organization.html">  <!-- LIST of section names -->');
-   document.writeln(' <img  ALIGN="right" alt="map" src="../images/section_contents.gif" title="Section List"    border=0 >');
+   document.writeln(' <img  ALIGN="right" alt="map" src="section_contents.gif" title="Section List"    border=0 >');
    document.writeln('</a>');     
 
 
@@ -168,14 +168,14 @@ function sections(previous_section, section_top, next_section)
    {
       string = clean(section_top);
       document.writeln('<a href="'+section_top+'.html">    <!-- Top of this Section -->');
-      document.writeln('<img ALIGN="right" alt="-" src="../images/section_up.gif" title="Top of Section '+string+'" border=0 >');
+      document.writeln('<img ALIGN="right" alt="-" src="section_up.gif" title="Top of Section '+string+'" border=0 >');
       document.writeln('</a>');
    }
 
   if(previous_section)
    {
       document.writeln('<a href="'+previous_section+'.html">         <!-- Previous Section -->');
-      document.writeln('<img ALIGN="right" alt="-" src="../images/section_left.gif" title="Previous Section: '+previous_section+'" border=0 >');
+      document.writeln('<img ALIGN="right" alt="-" src="section_left.gif" title="Previous Section: '+previous_section+'" border=0 >');
       document.writeln('</a>');
    }
 
