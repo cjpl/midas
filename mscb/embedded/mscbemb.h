@@ -513,12 +513,6 @@ sbit RS485_ENABLE = P0 ^ 3;
 char putchar1(char c);                   // putchar cannot be used with LCD support
 #endif
 
-#ifndef UART1_DEVICE
-#if defined(SCS_1000) || defined(SCS_1001) || defined(SCS_2000) || defined(SCS_2001)
-#define UART1_MSCB                       // UART1 connected as master to MSCB slave bus
-#endif
-#endif
-
 /* handle enable bit for RS485 */
 #ifdef RS485_ENABLE_INVERT
 #define RS485_ENABLE_ON 0
