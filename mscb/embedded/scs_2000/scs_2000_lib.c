@@ -34,7 +34,7 @@ sbit OPT_SPARE2 = P3 ^ 7;
 /*---- List of modules ---------------------------------------------*/
 
 MSCB_INFO_VAR code vars_bout[] =
-   { 1, UNIT_BYTE,    0,          0,           0, "P%Out",   (void xdata *)1, 0, 0, 255, 1 };
+   { 1, UNIT_BYTE,    0,          0,           0, "P%Out",   (void xdata *)1, 3, 0, 0, 255, 1 };
 
 MSCB_INFO_VAR code vars_uin[] =
    { 4, UNIT_VOLT,    0,          0, MSCBF_FLOAT, "P%Uin#",  (void xdata *)8, 4 };
@@ -70,19 +70,19 @@ MSCB_INFO_VAR code vars_lhe[] = {
 };
 
 MSCB_INFO_VAR code vars_din[] =
-   { 1, UNIT_BOOLEAN, 0,          0,           0, "P%Din#",  (void xdata *)8 };
+   { 1, UNIT_BOOLEAN, 0,          0,           0, "P%Din#",  (void xdata *)8, 1 };
 
 MSCB_INFO_VAR code vars_optin[] =
-   { 1, UNIT_BOOLEAN, 0,          0,           0, "P%Din#",  (void xdata *)4 };
+   { 1, UNIT_BOOLEAN, 0,          0,           0, "P%Din#",  (void xdata *)4, 1 };
 
 MSCB_INFO_VAR code vars_dout[] =
-   { 1, UNIT_BOOLEAN, 0,          0,           0, "P%Dout#", (void xdata *)8, 0,  1,  1 };
+   { 1, UNIT_BOOLEAN, 0,          0,           0, "P%Dout#", (void xdata *)8, 1, 0,  1,  1 };
 
 MSCB_INFO_VAR code vars_relais[] =
-   { 1, UNIT_BOOLEAN, 0,          0,           0, "P%Rel#",  (void xdata *)4, 0,  1,  1 };
+   { 1, UNIT_BOOLEAN, 0,          0,           0, "P%Rel#",  (void xdata *)4, 1, 0,  1,  1 };
 
 MSCB_INFO_VAR code vars_optout[] =
-   { 1, UNIT_BOOLEAN, 0,          0,           0, "P%Out#",  (void xdata *)4, 0,  1,  1 };
+   { 1, UNIT_BOOLEAN, 0,          0,           0, "P%Out#",  (void xdata *)4, 1, 0,  1,  1 };
 
 SCS_2000_MODULE code scs_2000_module[] = {
   /* 0x01-0x1F misc. */
