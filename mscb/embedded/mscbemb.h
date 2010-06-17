@@ -260,7 +260,6 @@ sbit RS485_SEC_ENABLE = P0 ^ 4;
 #define HAVE_LCD
 #define LCD_8BIT
 #define DYN_VARIABLES
-#define HAVE_RTC
 
 /*--------------------------------*/
 #elif defined(SCS_2001)
