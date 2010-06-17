@@ -288,21 +288,21 @@ unsigned char xdata port, id, i, j, k, n_var, n_mod, n_var_mod, changed;
 char xdata * pvardata;
 
    /* open drain(*) /push-pull: 
-      P0.0 TX1      P1.0 LCD_D1       P2.0 WATCHDOG     P3.0 OPT_CLK
-      P0.1*RX1      P1.1 LCD_D2       P2.1 LCD_E        P3.1 OPT_ALE
-      P0.2 TX2      P1.2 RTC_IO       P2.2 LCD_RW       P3.2 OPT_STR
-      P0.3*RX2      P1.3 RTC_CLK      P2.3 LCD_RS       P3.3 OPT_DATAO
+      P0.0 TX1      P1.0 LCD_D1       P2.0 LCD_DB0      P3.0 OPT_CLK
+      P0.1*RX1      P1.1 LCD_D2       P2.1 LCD_DB1      P3.1 OPT_ALE
+      P0.2 TX2      P1.2 RTC_IO       P2.2 LCD_DB2      P3.2 OPT_STR
+      P0.3*RX2      P1.3 RTC_CLK      P2.3 LCD_DB3      P3.3 OPT_DATAO
                                                                       
-      P0.4 EN1      P1.4              P2.4 LCD_DB4      P3.4*OPT_DATAI
-      P0.5 EN2      P1.5              P2.5 LCD_DB5      P3.5*OPT_STAT
-      P0.6 LED1     P1.6              P2.6 LCD_DB6      P3.6*OPT_SPARE1
+      P0.4 EN1      P1.4 LCD_RS       P2.4 LCD_DB4      P3.4*OPT_DATAI
+      P0.5 EN2      P1.5 LCD_RW       P2.5 LCD_DB5      P3.5*OPT_STAT
+      P0.6 LED1     P1.6 LCD_E        P2.6 LCD_DB6      P3.6*OPT_SPARE1
       P0.7 LED2     P1.7 BUZZER       P2.7 LCD_DB7      P3.7*OPT_SPARE2
     */
    SFRPAGE = CONFIG_PAGE;
    P0MDOUT = 0xF5;
-   P1MDOUT = 0xFF;
+   P1MDOUT = 0xF0;
    P2MDOUT = 0xFF;
-   P3MDOUT = 0x0F;
+   P3MDOUT = 0x00;
 
    /* enable ADC & DAC */
    SFRPAGE = ADC0_PAGE;
@@ -318,9 +318,6 @@ char xdata * pvardata;
    DAC0CN = 0x80;               // enable DAC0
    SFRPAGE = DAC1_PAGE;
    DAC1CN = 0x80;               // enable DAC1
-
-   /* initizlize real time clock */
-   rtc_init();
 
    /* reset clock on cold start */
    SFRPAGE = LEGACY_PAGE;
@@ -531,9 +528,6 @@ unsigned char xdata i, n, j, col;
       puts(" ** ");
       lcd_goto(0, 1);
       printf("   Address:  %04X", sys_info.node_addr);
-
-      lcd_goto(1, 2);
-      rtc_print();
 
       lcd_goto(0, 3);
       puts("MOD  VARS  SYS      ");
