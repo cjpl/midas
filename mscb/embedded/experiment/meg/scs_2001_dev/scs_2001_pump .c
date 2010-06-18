@@ -6,7 +6,7 @@
 
   Contents:     Control program for PSI pump station
 
-  $Id: scs_2000.c 2874 2005-11-15 08:47:14Z ritt $
+  $Id$
 
 \********************************************************************/
 
@@ -19,7 +19,7 @@
 #include "scs_2001.h"
 
 char code node_name[] = "PUMP-STATION";
-char code svn_revision[] = "$Id: scs_2000_pump.c 2874 2005-11-15 08:47:14Z ritt $";
+char code svn_revision[] = "$Id$";
 
 /* declare number of sub-addresses to framework */
 unsigned char idata _n_sub_addr = 1;
@@ -262,6 +262,8 @@ void user_init(unsigned char init)
    strcpy(str, svn_revision + 21);
    *strchr(str, ' ') = 0;
    printf("  Revision:  %s", str);
+   lcd_goto(0, 3);
+   printf("                    ");
 
    user_data.error = 0;
 }
@@ -897,6 +899,10 @@ float xdata value;
       update_data[8] = 0;
       dr_dout_bits(0x40, MC_WRITE, 0, 4, 5, &user_data.bypass_valve);
    }
+
+   /* output Vacuum OK signal directly */
+   dr_dout_bits(0x40, MC_WRITE, 0, 4, 6, &user_data.vacuum_ok);
+   dr_dout_bits(0x40, MC_WRITE, 0, 4, 7, &user_data.vacuum_ok);
 
    /* read ADC channels */
    dr_ad7718(0x61, MC_READ, 0, 0, 0, &value);
