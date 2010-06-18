@@ -56,11 +56,17 @@ struct {
    unsigned char valve_locked;
    unsigned char vacuum_ok;
    unsigned char man_mode;
-   unsigned char relais[4];
+   unsigned char fore_pump;
+   unsigned char fore_valve;
+   unsigned char main_valve;
+   unsigned char bypass_valve;
    unsigned char turbo_on;
    unsigned short rot_speed;
    float tmp_current;
-   unsigned char din[4];
+   unsigned char fp_on;
+   unsigned char fv_open;
+   unsigned char fv_close;
+   unsigned char hv_open;
    unsigned char hv_close;
    unsigned char bv_open;
    unsigned char bv_close;
@@ -72,9 +78,6 @@ struct {
    float vv_max;
    float vv_min;
    float hv_thresh;
-   float adc[8];
-   float aofs[8];
-   float again[8];
 } xdata user_data;
 
 MSCB_INFO_VAR code vars[] = {
@@ -86,19 +89,19 @@ MSCB_INFO_VAR code vars[] = {
    { 1, UNIT_BOOLEAN, 0, 0, 0,                               "Vac OK",   &user_data.vacuum_ok,  0, 0, 1, 1 },       // 3
    { 1, UNIT_BOOLEAN, 0, 0, 0,                               "ManMode",  &user_data.man_mode,  0, 0, 1, 1 },        // 4
                                                                                                                
-   { 1, UNIT_BOOLEAN, 0, 0, 0,                               "Forepump", &user_data.relais[0], 0, 0, 1, 1 },        // 5
-   { 1, UNIT_BOOLEAN, 0, 0, 0,                               "Forevlv",  &user_data.relais[1], 0, 0, 1, 1 },        // 6
-   { 1, UNIT_BOOLEAN, 0, 0, 0,                               "Mainvlv",  &user_data.relais[2], 0, 0, 1, 1 },        // 7
-   { 1, UNIT_BOOLEAN, 0, 0, 0,                               "Bypvlv",   &user_data.relais[3], 0, 0, 1, 1 },        // 8
+   { 1, UNIT_BOOLEAN, 0, 0, 0,                               "Forepump", &user_data.fore_pump, 0, 0, 1, 1 },        // 5
+   { 1, UNIT_BOOLEAN, 0, 0, 0,                               "Forevlv",  &user_data.fore_valve, 0, 0, 1, 1 },       // 6
+   { 1, UNIT_BOOLEAN, 0, 0, 0,                               "Mainvlv",  &user_data.main_valve, 0, 0, 1, 1 },       // 7
+   { 1, UNIT_BOOLEAN, 0, 0, 0,                               "Bypvlv",   &user_data.bypass_valve, 0, 0, 1, 1 },     // 8
                                                                                                                
    { 1, UNIT_BOOLEAN, 0, 0, 0,                               "Turbo on", &user_data.turbo_on,  0, 0, 1, 1 },        // 9
    { 2, UNIT_HERTZ,   0, 0, 0,                               "RotSpd",   &user_data.rot_speed, },                   // 10
    { 4, UNIT_AMPERE,  0, 0, MSCBF_FLOAT,                     "TMPcur",   &user_data.tmp_current, },                 // 11
                                                                                                                
-   { 1, UNIT_BOOLEAN, 0, 0, 0,                               "VP on",    &user_data.din[0] },                       // 12
-   { 1, UNIT_BOOLEAN, 0, 0, 0,                               "VV open",  &user_data.din[1] },                       // 13
-   { 1, UNIT_BOOLEAN, 0, 0, 0,                               "VV close", &user_data.din[2] },                       // 14
-   { 1, UNIT_BOOLEAN, 0, 0, 0,                               "HV open",  &user_data.din[3] },                       // 15
+   { 1, UNIT_BOOLEAN, 0, 0, 0,                               "VP on",    &user_data.fp_on },                        // 12
+   { 1, UNIT_BOOLEAN, 0, 0, 0,                               "VV open",  &user_data.fv_open },                      // 13
+   { 1, UNIT_BOOLEAN, 0, 0, 0,                               "VV close", &user_data.fv_close },                     // 14
+   { 1, UNIT_BOOLEAN, 0, 0, 0,                               "HV open",  &user_data.hv_open  },                     // 15
    { 1, UNIT_BOOLEAN, 0, 0, 0,                               "HV close", &user_data.hv_close },                     // 16
    { 1, UNIT_BOOLEAN, 0, 0, 0,                               "BV open",  &user_data.bv_open  },                     // 17
    { 1, UNIT_BOOLEAN, 0, 0, 0,                               "BV close", &user_data.bv_close },                     // 18
@@ -112,33 +115,6 @@ MSCB_INFO_VAR code vars[] = {
    { 4, UNIT_BAR, PRFX_MILLI, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "VV max",   &user_data.vv_max, 1, 1, 10, 1 },          // 24
    { 4, UNIT_BAR, PRFX_MILLI, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "VV min",   &user_data.vv_min, 1, 0.1, 1, 0.1 },       // 25
    { 4, UNIT_BAR, PRFX_MILLI, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "HV thrsh", &user_data.hv_thresh, 3, 0.001, 1, 0.001 },// 26
-
-   { 4, UNIT_VOLT,   0, 0, MSCBF_FLOAT | MSCBF_HIDDEN,       "ADC0",     &user_data.adc[0] },                    
-   { 4, UNIT_VOLT,   0, 0, MSCBF_FLOAT | MSCBF_HIDDEN,       "ADC1",     &user_data.adc[1] },                    
-   { 4, UNIT_VOLT,   0, 0, MSCBF_FLOAT | MSCBF_HIDDEN,       "ADC2",     &user_data.adc[2] },                    
-   { 4, UNIT_VOLT,   0, 0, MSCBF_FLOAT | MSCBF_HIDDEN,       "ADC3",     &user_data.adc[3] },                    
-   { 4, UNIT_VOLT,   0, 0, MSCBF_FLOAT | MSCBF_HIDDEN,       "ADC4",     &user_data.adc[4] },                    
-   { 4, UNIT_VOLT,   0, 0, MSCBF_FLOAT | MSCBF_HIDDEN,       "ADC5",     &user_data.adc[5] },                    
-   { 4, UNIT_VOLT,   0, 0, MSCBF_FLOAT | MSCBF_HIDDEN,       "ADC6",     &user_data.adc[6] },                    
-   { 4, UNIT_VOLT,   0, 0, MSCBF_FLOAT | MSCBF_HIDDEN,       "ADC7",     &user_data.adc[7] },                    
-                                                                                                                
-   { 4, UNIT_VOLT,   0, 0, MSCBF_FLOAT | MSCBF_HIDDEN,       "AOFS0",    &user_data.aofs[0], 3, -0.1, 0.1, 0.001 }, 
-   { 4, UNIT_VOLT,   0, 0, MSCBF_FLOAT | MSCBF_HIDDEN,       "AOFS1",    &user_data.aofs[1], 3, -0.1, 0.1, 0.001 }, 
-   { 4, UNIT_VOLT,   0, 0, MSCBF_FLOAT | MSCBF_HIDDEN,       "AOFS2",    &user_data.aofs[2], 3, -0.1, 0.1, 0.001 }, 
-   { 4, UNIT_VOLT,   0, 0, MSCBF_FLOAT | MSCBF_HIDDEN,       "AOFS3",    &user_data.aofs[3], 3, -0.1, 0.1, 0.001 }, 
-   { 4, UNIT_VOLT,   0, 0, MSCBF_FLOAT | MSCBF_HIDDEN,       "AOFS4",    &user_data.aofs[4], 3, -0.1, 0.1, 0.001 }, 
-   { 4, UNIT_VOLT,   0, 0, MSCBF_FLOAT | MSCBF_HIDDEN,       "AOFS5",    &user_data.aofs[5], 3, -0.1, 0.1, 0.001 }, 
-   { 4, UNIT_VOLT,   0, 0, MSCBF_FLOAT | MSCBF_HIDDEN,       "AOFS6",    &user_data.aofs[6], 3, -0.1, 0.1, 0.001 }, 
-   { 4, UNIT_VOLT,   0, 0, MSCBF_FLOAT | MSCBF_HIDDEN,       "AOFS7",    &user_data.aofs[7], 3, -0.1, 0.1, 0.001 }, 
-                                                                                                                
-   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN,       "AGAIN0",   &user_data.again[0], 3, 0.9, 1.1, 0.001 }, 
-   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN,       "AGAIN1",   &user_data.again[1], 3, 0.9, 1.1, 0.001 }, 
-   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN,       "AGAIN2",   &user_data.again[2], 3, 0.9, 1.1, 0.001 }, 
-   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN,       "AGAIN3",   &user_data.again[3], 3, 0.9, 1.1, 0.001 }, 
-   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN,       "AGAIN4",   &user_data.again[4], 3, 0.9, 1.1, 0.001 }, 
-   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN,       "AGAIN5",   &user_data.again[5], 3, 0.9, 1.1, 0.001 }, 
-   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN,       "AGAIN6",   &user_data.again[6], 3, 0.9, 1.1, 0.001 }, 
-   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN,       "AGAIN7",   &user_data.again[7], 3, 0.9, 1.1, 0.001 }, 
 
    { 0 }
 };
@@ -191,22 +167,33 @@ void setup_variables(void)
    DAC1CN = 0x80;               // enable DAC1
 
    lcd_goto(0, 0);
-   /* check if correct modules are inserted */
 
-   /*
+   /* check if correct modules are inserted */
    if (!verify_module(0, 0, 0x61)) {
       printf("Please insert module");
       printf(" 'Uin +-10V' (0x61) ");
       printf("     into port 0    ");
       while (!button(0)) watchdog_refresh(0);
    }
-   */
+   if (!verify_module(0, 4, 0x40)) {
+      printf("Please insert module");
+      printf(" 'Dout 24V' (0x40)  ");
+      printf("     into port 4    ");
+      while (!button(0)) watchdog_refresh(0);
+   }
+   if (!verify_module(0, 5, 0x20)) {
+      printf("Please insert module");
+      printf("  'Din 5V' (0x40)   ");
+      printf("     into port 5    ");
+      while (!button(0)) watchdog_refresh(0);
+   }
 
    sysclock_reset();
 
    /* initialize drivers */
    dr_ad7718(0x61, MC_INIT, 0, 0, 0, NULL);
-   dr_dout_bits(0x40, MC_INIT, 0, 1, 0, NULL);
+   dr_dout_bits(0x40, MC_INIT, 0, 4, 0, NULL);
+   dr_din_bits(0x20, MC_INIT, 0, 5, 0, NULL);
 }
 
 /*---- User init function ------------------------------------------*/
@@ -236,14 +223,10 @@ void user_init(unsigned char init)
       user_data.valve_locked = 0;
       user_data.vacuum_ok = 0;
       user_data.man_mode = 0;
-
-      for (i=0 ; i<4 ; i++)
-         user_data.relais[i] = 0;
-
-      for (i=0 ; i<8 ; i++) {
-         user_data.aofs[i] = 0;
-         user_data.again[i] = 1;
-      }
+      user_data.fore_pump = 0;
+	  user_data.fore_valve = 0;
+	  user_data.main_valve = 0;
+	  user_data.bypass_valve = 0;
 
       user_data.evac_timeout = 60; // 1h to pump recipient
       user_data.fp_cycle = 20;     // run fore pump for min. 20 sec.
@@ -515,25 +498,25 @@ unsigned char xdata pump_state = ST_OFF;
 
 void set_forepump(unsigned char flag)
 {
-   user_data.relais[0] = flag;
+   user_data.fore_pump = flag;
    user_write(5);
 }
 
 void set_forevalve(unsigned char flag)
 {
-   user_data.relais[1] = flag;
+   user_data.fore_valve = flag;
    user_write(6);
 }
 
 void set_mainvalve(unsigned char flag)
 {
-   user_data.relais[2] = flag;
+   user_data.main_valve = flag;
    user_write(7);
 }
 
 void set_bypassvalve(unsigned char flag)
 {
-   user_data.relais[3] = flag;
+   user_data.bypass_valve = flag;
    user_write(8);
 }
 
@@ -547,17 +530,22 @@ static bit b0_old = 0, b1_old = 0, b2_old = 0, b3_old = 0,
 
    /* display pressures */
    lcd_goto(0, 0);
-   if (user_data.relais[0] && user_data.relais[1])
+   if (user_data.fore_pump && user_data.fore_valve)
       printf("P1*: %9.2E mbar", user_data.vv_mbar);
    else
       printf("P1: %10.2E mbar", user_data.vv_mbar);
    
    lcd_goto(0, 1);
-   if (user_data.turbo_on && (user_data.relais[2] || user_data.relais[3]))
+   if (user_data.turbo_on && (user_data.main_valve || user_data.bypass_valve))
       printf("P2*: %9.2E mbar", user_data.hv_mbar);
    else
       printf("P2: %10.2E mbar", user_data.hv_mbar);
- 
+
+   /* blink LED in error status */
+   if (user_data.error) {
+      led_blink(1, 1, 100);
+   }
+
    lcd_goto(0, 2);
    if (user_data.error & ERR_TURBO_COMM)
       printf("ERROR: turbo comm.  ");
@@ -590,25 +578,25 @@ static bit b0_old = 0, b1_old = 0, b2_old = 0, b3_old = 0,
    if (user_data.man_mode) {
 
       lcd_goto(0, 3);
-      printf(user_data.relais[0] ? "FP0" : "FP1");
+      printf(user_data.fore_pump ? "VP0" : "VP1");
 
       lcd_goto(5, 3);
-      printf(user_data.relais[1] ? "VV0" : "VV1");
+      printf(user_data.fore_valve ? "VV0 " : "VV1 ");
 
       lcd_goto(11, 3);
-      printf(user_data.relais[2] ? "HV0" : "HV1");
+      printf(user_data.main_valve ? "HV0" : "HV1");
 
       lcd_goto(16, 3);
-      printf(user_data.relais[3] ? "BV0" : "BV1");
+      printf(user_data.bypass_valve ? "BV0" : "BV1");
 
       if (b0 && !b0_old)
-         user_data.relais[0] = !user_data.relais[0];
+         user_data.fore_pump = !user_data.fore_pump;
       if (b1 && !b1_old)
-         user_data.relais[1] = !user_data.relais[1];
+         user_data.fore_valve = !user_data.fore_valve;
       if (b2 && !b2_old)
-         user_data.relais[2] = !user_data.relais[2];
+         user_data.main_valve = !user_data.main_valve;
       if (b3 && !b3_old)
-         user_data.relais[3] = !user_data.relais[3];
+         user_data.bypass_valve = !user_data.bypass_valve;
          
       user_write(5);
       user_write(6);
@@ -830,7 +818,7 @@ static bit b0_old = 0, b1_old = 0, b2_old = 0, b3_old = 0,
          pump_state = ST_RUN_FPON;
       }
    }
-   
+
    /* set vacuum status */
    user_data.vacuum_ok = (user_data.hv_mbar <= user_data.hv_thresh);
    user_write(3);
@@ -887,43 +875,59 @@ static bit b0_old = 0, b1_old = 0, b2_old = 0, b3_old = 0,
 void user_loop(void)
 {
 char xdata str[32];
-static unsigned char xdata adc_chn = 0;
 static char xdata turbo_on_last = -1;
 static unsigned long xdata last_read = 0;
- 
-unsigned char xdata i, n;
+unsigned char xdata n;
 float xdata value;
 
    /* check if anything to write */
-   for (i=0 ; i<4 ; i++) {
-      if (update_data[i+5]) {
-         update_data[i+5] = 0;
-         dr_dout_bits(0x40, MC_WRITE, 0, 1, i, &user_data.relais[i]);
-      }
+   if (update_data[5]) {
+      update_data[5] = 0;
+      dr_dout_bits(0x40, MC_WRITE, 0, 4, 2, &user_data.fore_pump);
+   }
+   if (update_data[6]) {
+      update_data[6] = 0;
+      dr_dout_bits(0x40, MC_WRITE, 0, 4, 3, &user_data.fore_valve);
+   }
+   if (update_data[7]) {
+      update_data[7] = 0;
+      dr_dout_bits(0x40, MC_WRITE, 0, 4, 4, &user_data.main_valve);
+   }
+   if (update_data[8]) {
+      update_data[8] = 0;
+      dr_dout_bits(0x40, MC_WRITE, 0, 4, 5, &user_data.bypass_valve);
    }
 
-   /* read one ADC channel */
-   n = dr_ad7718(0x61, MC_READ, 0, 0, adc_chn, &value);
+   /* read ADC channels */
+   dr_ad7718(0x61, MC_READ, 0, 0, 0, &value);
+   dr_ad7718(0x61, MC_READ, 0, 0, 1, &value);
+   dr_ad7718(0x61, MC_READ, 0, 0, 2, &value);
+   n = dr_ad7718(0x61, MC_READ, 0, 0, 3, &value);
    if (n > 0) {
+      value  = pow(10, 1.667 * value - 11.33);   // PKR 251
       DISABLE_INTERRUPTS;
-      user_data.adc[adc_chn] = value;
+      user_data.hv_mbar = value;
       ENABLE_INTERRUPTS;
    }
-   
+   dr_ad7718(0x61, MC_READ, 0, 0, 4, &value);
+   n = dr_ad7718(0x61, MC_READ, 0, 0, 5, &value);
+   if (n > 0) {
+      value  = pow(10, value - 5.5);  // TPR 280
+      DISABLE_INTERRUPTS;
+      user_data.vv_mbar = value;
+      ENABLE_INTERRUPTS;
+   }
+   dr_ad7718(0x61, MC_READ, 0, 0, 6, &value);
+   dr_ad7718(0x61, MC_READ, 0, 0, 7, &value);
 
-   /* convert voltage to pressure, see data sheets */
-   if (adc_chn == 0)
-      user_data.hv_mbar  = pow(10, 1.667 * user_data.adc[0] - 11.33); // PKR 251
-   if (adc_chn == 1)
-      user_data.vv_mbar  = pow(10, user_data.adc[1] - 5.5);           // TPR 280
-   if (adc_chn == 5)
-      user_data.hv_close = user_data.adc[5] > 5;                      // ADC as digital input
-   if (adc_chn == 6)
-      user_data.bv_open  = user_data.adc[6] > 5;                      // ADC as digital input
-   if (adc_chn == 7)
-      user_data.bv_close = user_data.adc[7] > 5;                      // ADC as digital input
-
-   adc_chn = (adc_chn + 1) % 8;
+   /* read DIN */
+   dr_din_bits(0x20, MC_READ, 0, 5, 2, &user_data.fp_on);
+   dr_din_bits(0x20, MC_READ, 0, 5, 3, &user_data.fv_open);
+   dr_din_bits(0x20, MC_READ, 0, 5, 4, &user_data.fv_close);
+   dr_din_bits(0x20, MC_READ, 0, 5, 5, &user_data.hv_open);
+   dr_din_bits(0x20, MC_READ, 0, 5, 6, &user_data.hv_close);
+   dr_din_bits(0x20, MC_READ, 0, 5, 0, &user_data.bv_open);
+   dr_din_bits(0x20, MC_READ, 0, 5, 1, &user_data.bv_close);
 
    /* read buttons and digital input */
    b0 = button(0);
