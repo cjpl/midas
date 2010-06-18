@@ -160,7 +160,9 @@ void serial_int1(void) interrupt 20
 
       SCON1 &= ~0x01;           // clear RI flag
 
+#ifdef UART1_BLINK
       led_blink(1, 1, 100);
+#endif
    }
 }
 
