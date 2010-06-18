@@ -23,6 +23,8 @@ sub fix_idx();
 sub fix_idx2();
 sub check_line();
 sub write_idx(@);
+sub create_dummy_files();
+
 $|=1; # flush output buffers
 # mine.pl *.dox
 our $debug =0;
@@ -59,9 +61,16 @@ my $done;
 
 print "$num  $param\n";
 
+# Makefile does this : 
+#
+# First, makes Organization.dox
+#  index.pl; doit.pl;
+# Second, makes docindex.dox
+#  index.pl 1;
+
 if ($num > 0)
 {
-    print "\n index.pl starting... making index only \n";
+    print "\n index.pl starting... making index ($idxd) \n";
   idx(); 
   fix_idx();
   fix_idx2();
@@ -69,6 +78,8 @@ if ($num > 0)
   exit;
 }
 
+print "\n index.pl starting... checking for Organization.dox and $idxd...\n";
+create_dummy_files(); # if files are deleted, makes dummies for mine.pl (will be overwritten later);
 print "\n index.pl starting... mining files to make Organization.dox page\n";
 mine(); # mines dox files to produce mined_info.txt
 fill_page_hash(); # finds pages and mainpage in mined_info.txt
@@ -859,10 +870,13 @@ sub subpage($)
             print OUTS "\n<!-- substituting $pagename for subpage $pagename (level $level) -->\n";  
 	    if($hashpages{$pagename})
 	    { 
-		print OUTS "$hashpages{$pagename}"; # copy to OUTS
+		print OUTS "$hashpages{$pagename}"; # copy to OUTS 
 		delete $hashpages{$pagename};
 	    }
-	    else {die "subpage: could not find page $pagename in hashpages; may be used already\n";}
+	    else 
+            {  # now dummy Organization.dox and docindex.dox are created so should not get this after make clean 
+               die "subpage: could not find page $pagename in hashpages; may be used already (declared as subpage twice??)\n"; 
+            }
 	}
 	else
 	{
@@ -912,7 +926,7 @@ sub fill_page_hash()
 #	s/\n%\n/\n/; 
 		if ( $hashpages{$pagename} )
 		{ 
-		    die "ERROR main page $pagename is already known; duplicate page?? \n"; 
+		    die "ERROR main page $pagename is already known; duplicate page in the .dox files ?? \n"; 
 		}
 		$hashpages{$pagename}="$_"; # make an entry
 	    }
@@ -1525,5 +1539,53 @@ sub footer()
 <br>
 
 EOT
+    return;
+}
+
+
+
+sub create_dummy_files()
+{
+#   If Organization.,dox and docindex.dox have been deleted, mine.pl does not find these pages
+#   so we need to have dummies
+#
+    my $file1="Organization.dox";
+    my $file2="docindex.dox";
+
+    unless (-e $file1 )
+    {
+        open OUT, ">$file1" or die "Can't open dummy output file $file1 : $!\n";
+        print OUT<<EOT;
+/*! \@page  Organization Manual Contents
+    \@section O_what What can be found in this manual?
+
+     This is a dummy
+
+     Content to be supplied by running perlscripts from Makefile
+*/
+EOT
+       close OUT;
+       print "$file1 not found - created dummy file $file1\n";
+    }
+    else
+    {  print "$file1 already exists\n"; }
+
+
+    unless (-e $file2 )
+    {
+        open OUT, ">$file2" or die "Can't open dummy output file $file2 : $!\n";
+        print OUT<<EOT;
+/*! \@page  DocIndex Alphabetical Index to Documentation pages
+
+     This is a dummy
+
+     Content to be supplied by running perlscripts from Makefile
+*/
+EOT
+       close OUT;
+       print "$file2 not found - created dummy file $file2\n";
+    }
+    else
+    {  print "$file2 already exists\n"; }
     return;
 }
