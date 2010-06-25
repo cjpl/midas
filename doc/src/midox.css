@@ -393,10 +393,10 @@ HR { height: 1px;
  /* A-Z index page */
  ul.j0 { color: red ; background-color: white; font-weight: bold; font-size: 100%;  }
  ul.j1 { color: black ; background-color: mintcream; font-weight: bold; font-size: 100%;  } 
- ul.j2 { color: maroon ; background-color: mintcream; font-weight: normal; font-size: 95%;  } 
- ul.j3 { color: deeppink ; background-color: mintcream; font-weight: normal;  font-size: 95%;  } 
- ul.j4 { color: magenta ; background-color: mintcream; font-weight: normal;  font-size: 95%; }
- ul.j5 { color: green ; background-color: mintcream; font-weight: normal; font-size: 95%;   } 
- ul.j6 { color: darkorange ; background-color: mintcream; font-weight: normal;   font-size: 95%;  } 
- ul.j7 { color: teal ; background-color: mintcream; font-weight: normal;  font-size: 95%; } 
+ ul.j2 { color: black ; background-color: mintcream; font-weight: normal; font-size: 95%;  } 
+ ul.j3 { color: black ; background-color: mintcream; font-weight: normal;  font-size: 95%;  } 
+ ul.j4 { color: black ; background-color: mintcream; font-weight: normal;  font-size: 95%; }
+ ul.j5 { color: black ; background-color: mintcream; font-weight: normal; font-size: 95%;   } 
+ ul.j6 { color: black ; background-color: mintcream; font-weight: normal;   font-size: 95%;  } 
+ ul.j7 { color: black ; background-color: mintcream; font-weight: normal;  font-size: 95%; } 
  ul.j8 { color: black ; background-color: mintcream; font-weight: normal;  font-size: 95%;   } 
