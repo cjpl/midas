@@ -97,13 +97,13 @@ This utility can perform several functions (<b>selected by the user </b> via the
 <span style="color: green; font-size: 100%;">
 When the Midas logger (@ref F_mlogger_task "mlogger") is started for the first time, it creates the <b> /Logger </b> tree in the ODB, including 
 a single logger channel (channel 0), and fills it with default settings. 
-</span> The @ref F_Logger_tree  contains all the relevant information for mlogger to run properly.
+</span> The @ref F_Logger_tree  contains all the relevant information for <span class="cl">mlogger</span> to run properly.
 The user has no code to write in order for the system to operate correctly. However, the user will want
 to  @ref F_Logging_Data "customize the logger" for his/her own experiment, by setting the keys 
-in the mlogger tree to suitable values.  
+in the <span class="odb">/Logger</span> tree to suitable values.  
 
 <br>
-In addition to the \b /Logger tree, mlogger also creates the \b /History and \b /Elog trees, used in the optional
+In addition to the \b /Logger tree,<span class="cl">mlogger</span>  also creates the \b /History and \b /Elog trees, used in the optional
 \b History and \b Electronic Logbook features.  If Midas is compiled with mySQL support, a \b mySQL subtree will 
 also be created in the \b /Logger tree. These are all described below.
 
@@ -136,7 +136,7 @@ The user may of course write their own custom data logger to save the data in an
 
 @section F_mlogger_task mlogger     - Midas Logger
 
-The Midas Logger, \b mlogger,  is the main application that collects data from one or more frontends
+The Midas Logger, <span class="cl">mlogger</span>,  is the main application that collects data from one or more frontends
 under certain conditions and stores them onto a physical device such as \em disk or
 \em tape. It also acts as a <b> history event </b> collector and can also store data in a \b mySQL database. 
 <br>
@@ -156,24 +156,24 @@ The features and customization of the logger task are fully described in the sec
 
 <b> Notes </b> 
 <ul>
-<li>The \b mlogger application requires an existing @ref FE_ODB_equipment_tree "/Equipment tree"
+<li>The <span class="cl">mlogger</span> application requires an existing @ref FE_ODB_equipment_tree "/Equipment tree"
   in the ODB  
-<li>Once the mlogger is running, you should be able to monitor its state
-  with @ref RC_mstat_task or with @ref RC_mhttpd_task .
+<li>Once the <span class="cl">mlogger</span> is running, you should be able to monitor its state
+  with @ref RC_mstat_task "mstat" or with @ref RC_mhttpd_task "mhttpd" .
 </ul>
 <br>
 <b> Versions </b> 
 <ul>
 <li>Midas version 1.9.5 and later
   <ul>
-     <li> mlogger will not run if started remotely (argument -h hostname has been removed).
+     <li> <span class="cl">mlogger</span> will not run if started remotely (argument -h hostname has been removed).
      <li> The file size limitation (<2GB) has been removed for older OS version.
      <li> @ref F_mySQL data entry support.
   </ul>
 
 <li>Midas version 2.0.0 and later
   <ul>
-     <li> mlogger implements compression such that the data file name can be given as 
+     <li> <span class="cl">mlogger</span> implements compression such that the data file name can be given as 
     <b>\<file.mid.gz\></b>
 </ul>
 </ul>
@@ -186,7 +186,7 @@ The features and customization of the logger task are fully described in the sec
  - \subpage F_Messaging
  - \subpage F_mySQL
  - \subpage F_History_logging
-     - @ref History_sql_internal  <span class="new">New (since @ref  ndf_jan_2009 )</span>
+     - @ref F_History_sql_internal  <span class="new">New (since @ref  ndf_jan_2009 )</span>
  - \subpage F_Elog
  - \subpage F_LogUtil
 <br><br>
@@ -222,7 +222,7 @@ sections("Quickstart", "Features", "RunControl");
 
 <br>
 
-When mlogger is started for the first time, it will create default <b> /Logger</b> and  <b> /History </b> trees.
+When <span class="cl">mlogger</span> is started for the first time, it will create default <b> /Logger</b> and  <b> /History </b> trees.
 The following information will be displayed (if NOT started as a daemon) :
 @code
 $ mlogger
@@ -234,7 +234,7 @@ ELog    directory is same as Log
 MIDAS logger started. Stop with "!"
 @endcode
 
-Most of the keys in the  <b>/Logger ODB tree</b> are used to customize logging of the data. There are also
+Most of the keys in the  <span class="odb">/Logger</span> ODB tree</b> are used to customize logging of the data. There are also
 keys to customize the Messaging system. 
 The logger tree also may contain @ref F_Logger_Optional_Keys "optional keys" relevent to logging the history,
 the elog, or logging to a mySQL database. Customizing the optional keys will be described in 
@@ -287,14 +287,14 @@ Logger                          DIR
 <br>
 @section F_Logger_tree_keys Explanation of the keys in the ODB /Logger tree 
 
-An example of a default /Logger tree is shown @ref F_Logger_tree "above". This table
+An example of a default <span class="odb">/Logger</span> tree is shown @ref F_Logger_tree "above". This table
 also includes the optional keys that the user may create. The following table is an
-index to the explanation of each key in the /Logger tree.
+index to the explanation of each key in the <span class="odb">/Logger</span> tree.
 <br>
 <table
  style="text-align: left; width: 50%;" border="0" cellpadding="0"
 cellspacing="0">
-  <caption>Above: The ODB /Logger tree. Click on a key for details.
+  <caption>Above: The ODB <span class="odb">/Logger</span> tree. Click on a key for details.
   </caption>
     <tr>
       <td style="vertical-align: top;">\b /Logger
@@ -474,11 +474,11 @@ cellspacing="0">
 
 <table style="text-align: left; width: 100%;" border="1" cellpadding="2"
 cellspacing="2">
-<caption>Above: meaning of keys in the /Logger ODB tree
+<caption>Above: meaning of keys in the <span class="odb">/Logger</span> ODB tree
 </caption>
 <tr>
 <td colspan="2" style="vertical-align: top; background-color: rgb(204, 204, 255); font-weight: bold; text-align: center;">
-Keys in the ODB tree /Logger
+Keys in the ODB tree <span class="odb">/Logger</span>
 </td>
 </tr>
 <tr>
@@ -570,7 +570,7 @@ duration.
 <td style="vertical-align: top; font-weight: normal; text-align: left;"> 
  Global flag which turns data logging on and off for all channels.
   It can be set to zero temporarily to make a short test run without data logging.
-  The key "Write data?" is a predefined logger key for enabling data logging.
+  The key <span class="odb">Write data?</span> is a predefined logger key for enabling data logging.
   This action can be overridden by setting the  @ref F_Logger_CS_Active "Active" key (in the
   @ref F_Logger_Settings "/Logger/Channels" tree) to 1.
 </td>
@@ -701,7 +701,7 @@ Optional directory
 
 @section F_Logger_Settings  Explanation of keys in the ODB /Logger/Channels tree 
 
-The keys in the ODB <b> /Logger/Channel/0/Settings </b> tree are shown below. 
+The keys in the ODB <span class="odb">/Logger/Channel/0/Settings </span> tree are shown below. 
 <br><span class="note">This is the tree for Channel 0.
 If more than one logging channel is defined, there will be a Settings tree for each channel (0,1...).  
 </span>
@@ -1011,11 +1011,11 @@ cellspacing="0">
 
 <table style="text-align: left; width: 100%;" border="1" cellpadding="2"
 cellspacing="2">
-<caption>Above: meaning of keys in the /Logger/channels/0/Settings ODB tree
+<caption>Above: meaning of keys in the <span class="odb">/Logger/channels/0/Settings</span> ODB tree
 </caption>
 <tr>
 <td colspan="2" style="vertical-align: top; background-color: rgb(204, 204, 255); font-weight: bold; text-align: center;">
-Keys in the ODB tree /Logger/channels/0/Settings
+Keys in the ODB tree <span class="odb">/Logger/channels/0/Settings</span>
 </td>
 </tr>
 <tr>
@@ -1308,8 +1308,8 @@ will reflect the full path of the current saved data file.
 
 @section F_Logger_CStat_Statistics   /Logger/Channel/0/Statistics tree 
 
-The keys in the <b> /Logger/Channel/0/Statistics </b> tree are shown below. 
-If more than one logging channel is defined, there will be a <b>Statistics tree for each 
+The keys in the <span class="odb">/Logger/Channel/0/Statistics </span> tree are shown below. 
+If more than one logging channel is defined, there will be a <b> <span class="odb">Statistics</span> tree for each 
 defined channel</b>  
 (see @ref F_Logger_Channels "multiple channels").  
 
@@ -1319,11 +1319,11 @@ defined channel</b>
 
 <table style="text-align: left; width: 100%;" border="1" cellpadding="2"
 cellspacing="2">
-<caption>Above: meaning of keys in the /Logger/channels/0/Statistics ODB tree
+<caption>Above: meaning of keys in the <span class="odb">/Logger/channels/0/Statistics</span> ODB tree
 </caption>
 <tr>
 <td colspan="2" style="vertical-align: top; background-color: rgb(204, 204, 255); font-weight: bold; text-align: center;">
-Keys in the ODB tree /Logger/channels/0/Statistics
+Keys in the ODB tree <span class="odb">/Logger/channels/0/Statistics</span>
 </td>
 </tr>
 <tr>
@@ -1398,7 +1398,7 @@ to be skipped in order to reach a specific run.
  
 \anchor idx_ODB_tree_Logger_Optional-keys
 
-@section F_Logger_Optional_Keys Optional Keys in the ODB /Logger tree
+@section F_Logger_Optional_Keys Optional Keys in the ODB <span class="odb">/Logger</span> tree
 Three optional subdirectories with special meaning may be created in the @ref F_Logger_tree . These are not created
 automatically by the logger.
 They are 
@@ -1491,9 +1491,9 @@ The location of this file is dependent on the mode of installation of the system
 - \b with  @ref F_Logger_tree /Logger Tree The \b midas.log  will be located in the
 defined directory specified by the key @ref  F_Logger_Data_Dir "Data dir" . In this case,  this name of the log file can be 
 changed using the key @ref F_Logger_Message_File "Message file" in
-the <b> /Logger </b> ODB tree. 
+the <span class="odb">/Logger</span> ODB tree. 
 
-- \b without the ODB /logger tree , i.e. midas logger not being used
+- \b without the ODB <span class="odb">/logger</span> tree , i.e. midas logger not being used
   <br> In this case the location is defined
 by either the @ref BO_MIDAS_DIR  environment (see @ref BO_Environment_variables )
 or the definition of the experiment in the \b exptab  file
@@ -1588,7 +1588,7 @@ sections("Quickstart", "Features", "RunControl");
 \endhtmlonly
 
 <br>
-
+@anchor idx_mySQL_database
 @section F_Logger_mySQL mySQL
 In Midas versions later than 1.9.5, the logger is able to store information in a 
 \b mySQL database. 
@@ -1643,7 +1643,7 @@ the explanation of each key in this tree.
 <table
  style="text-align: left; width: 30%;" border="0" cellpadding="0"
 cellspacing="0">
-  <caption>The ODB /Logger/SQL tree. Click on a key for explanation.
+  <caption>The ODB <span class="odb">/Logger/SQL tree</span>. Click on a key for explanation.
   </caption>
  
  <tr>
@@ -1785,11 +1785,11 @@ cellspacing="0">
 <br>
 <table style="text-align: left; width: 100%;" border="1" cellpadding="2"
 cellspacing="2">
-<caption>Above: meaning of keys in the /Logger/SQL ODB tree
+<caption>Above: meaning of keys in the <span class="odb">/Logger/SQL</span> ODB tree
 </caption>
 <tr>
 <td colspan="2" style="vertical-align: top; background-color: rgb(204, 204, 255); font-weight: bold; text-align: center;">
-Keys in the ODB tree /Logger/SQL
+Keys in the ODB tree <span class="odb">/Logger/SQL</span>
 </td>
 </tr>
 <tr>
@@ -1939,7 +1939,7 @@ The history logging will be in action \b only if the logger is running, but it i
 have any logging channel enabled.
 
  <span class="new">
-See also @ref  History_sql_internal History , where the History is saved instead into an SQL database.
+See also @ref  F_History_sql_internal , where the History is saved instead into an SQL database.
 ( @ref ndf_jan_2009 ). 
 </span>
 
@@ -1953,13 +1953,13 @@ By default,  @ref F_History_logging "history" files are written into the
 directory path given by the ODB key  @ref F_Logger_Data_Dir "Data Dir"  
 in the  @ref F_Logger_tree.
 
-This location can be changed by use of the ODB Key <b>History dir</b> in the  
+This location can be changed by use of the ODB Key <span class="odb">History dir</span> in the  
 @ref F_Logger_tree_keys "/Logger" directory. This key is optional and doesn't appear by default in
 the  @ref F_Logger_tree.
 If this key IS present the location of the history  files is reassigned
 to the defined path.
 
-@subsection F_Logger_Create_History_Dir Creation of ODB Key /Logger/History dir 
+@subsection F_Logger_Create_History_Dir Creation of ODB Key  /Logger/History dir 
 
 Using the @ref RC_odbedit_cr "odbedit command create" , the user may add this key as follows:
 @code
@@ -1987,14 +1987,6 @@ String length [32]:128
 
 
 
-
-
-
-
-
-
-<hr>
-
 @section F_History_Event_Types Types of History Events
 
 There are two basic types of history events, which are defined in different ways:
@@ -2005,12 +1997,12 @@ There are two basic types of history events, which are defined in different ways
 
 <li> \b "Virtual" History event 
 <br>Composed within the Online Database (ODB) under the
-specific tree "/History/Links" (see @ref F_ODB_History_tree "ODB History tree")
+specific tree <span class="odb">/History/Links</span> (see @ref F_ODB_History_tree "ODB History tree")
 
 </ul>
 
-Both these history event definitions take effect when the data logger gets a "start run"
-transition. Any modification during the run is not applied until the next run
+Both these history event definitions <b>take effect when the data logger gets a "start run"
+transition</b>. Any modifications made during the run are not applied until the start of the next run.
 is started.
 
 <br>
@@ -2019,20 +2011,21 @@ is started.
 \anchor idx_History_events
 @section F_Frontend_History_Event Frontend History Event
 
-<br>  Each  @ref FE_sw_equipment "Equipment" has the capability to generate <b> "history data" </b>.
+Each  @ref FE_sw_equipment "Equipment" has the capability to generate <b> "history data" </b>.
+<br>
 <span class="note">
 To enable the  history logging system for an Equipment, the  
 @ref  FE_tbl_History "History value" in the corresponding  @ref FE_Equipment_list is set non-zero.
-</span> 
+</span> <br>
 This value also controls how \b frequently the history events are generated. A reasonable value to set for the 
 History value is "60", so that the
 history events are generated once/minute. This value will appear in the ODB as the key
-<b>/Equipment/\<<em>Eqpname</em>\>/Common/Log history</b> (where \<<em>Eqpname</em>\> is the name of the 
+<span class="odb">/Equipment/\<<em>Eqpname</em>\>/Common/Log history</span> (where \<<em>Eqpname</em>\> is the name of the 
 Equipment - see  
 @ref FE_Example_equipment_structure ). 
 <br>
 Enabling the history system for an Equipment causes the event contents to 
-be copied to the <b>/Equipment/\<<em>Eqpname</em>\>/Variables </b> tree of the ODB for the use of the  @ref F_History_System_overview .
+be copied to the <span class="odb">/Equipment/\<<em>Eqpname</em>\>/Variables </span> tree of the ODB for the use of the  @ref F_History_System_overview .
 The contents of the event will then be completely copied into the history files, using the 
 definition of the event as  <b> tag names </b> for every element of the event.
 <br>
@@ -2044,11 +2037,14 @@ The main data path for the frontend History Event is as follows:
 placing it into a @ref FE_MIDAS_event_construction "MIDAS data bank"
   -# In mfe.c, if equipment->history > 0 (i.e. the history system is enabled for this equipment), this data bank 
 is written into ODB (by update_odb()).
+
+@anchor idx_hot-link_history-event
+@anchor F_history_hot_link
  The frequency of ODB writes is limited by ODB_UPDATE_TIME (1/sec in mfe.c rev 4298).
   -# The odb write triggers an odb @ref RC_Hot_Link "hot-link" into  @ref F_mlogger_task "mlogger"
   -# The hot-link calls mlogger.c::log_history(), which calls hs_write() to write the data into the history file. 
 The frequency of the history writes is specified by the number of seconds between writes stored in the 
-ODB key <b>/Equipment/\<<em>Eqpname</em>\>/Common/Log history</b>.
+ODB key <span class="odb">/Equipment/\<<em>Eqpname</em>\>/Common/Log history</span>.
   -# history.c::hs_write() or history_odbc::hs_write_odbc() writes the data into a history file or into an SQL database.
 
 The internal structure of midas history files is documented in  @ref F_History_format .
@@ -2058,7 +2054,7 @@ The internal structure of midas history files is documented in  @ref F_History_f
 <!-- from Konstantin's MIDAS History_internal System (internal.dox) -->
 
 After  @ref F_Frontend_History_Event "enabling" the history system for an Equipment, <b> restart the frontend </b>. The ODB key 
-"/equipment/Eqpname/Common/Log history" will have been 
+<span class="odb">/equipment/Eqpname/Common/Log history</span> will have been 
 updated with the new value. It may be changed manually if necessary, using @ref RC_mhttpd_ODB_page "mhttpd" or 
 the @ref RC_odbedit_set "odbedit set command". 
 Then <b> restart @ref F_mlogger_task "mlogger" </b> . 
@@ -2068,16 +2064,16 @@ history file  (@ref F_mhdump_task "mhdump" can be used to read the history file)
 
 \anchor idx_history_tag-names
 @subsubsection  F_new_history_tags New History Tags  
-<span class="note">Note on /History/Tags format</span><br>
+<span class="note">Note on <span class="odb">/History/Tags</span> format</span><br>
 <span class="new"> 
-The mlogger/mhttpd implementation of /History/Tags has proved troublesome and
-we are moving away from it. The @ref History_sql_internal  "SQL database history implementation"  ( @ref ndf_jan_2009 ) already does
+The <span class="cl">mlogger/mhttpd</span> implementation of <span class="odb">/History/Tags</span> has proved troublesome and
+we are moving away from it. The @ref F_History_sql_internal  "SQL database history implementation"  ( @ref ndf_jan_2009 ) already does
 not use it . 
 <br>During the present transition period:
 </span>
 <ul class="new">
   <li>Implementations starting with Version 4435 of @ref F_mlogger_task "mlogger" and  @ref RC_mhttpd_task "mhttpd",
- will now work without /History/Tags. 
+ will now work without <span class="odb">/History/Tags</span>. 
 The history tags are read directly from the history files themselves. Two downsides to
 this are 
 <ol>
@@ -2086,59 +2082,64 @@ this are
 been running for a while, their variables may vanish from the history panel
 editor. 
 </ol>
-To run in this mode, set "/History/DisableTags" to "y". Existing
+To run in this mode, set <span class="odb">/History/DisableTags</span> to "y". Existing
 /History/Tags will be automatically deleted.
 <li> for the above 2 reasons, using /History/Tags is still recommended, but the format
-of the tags is now changed to simplify management and reduce odb size. mlogger
+of the tags is now changed to simplify management and reduce odb size. <span class="cl">mlogger</span>
 will automatically convert the tags to this new format (this is why you should
 make a backup of your ODB).
-<li> using old mlogger with new mhttpd is OK: new mhttpd understands both formats
+<li> using old <span class="cl">mlogger</span> with new <span class="cl">mhttpd</span> is OK: new <span class="cl">mhttpd</span> understands both formats
 of /History/Tags.
-<li> using old mhttpd with new mlogger is OK: please set ODB
-"/History/CreateOldTags" to "y" (type TID_BOOL/"boolean") before starting mlogger.
+<li> using old <span class="cl">mhttpd</span> with new <span class="cl">mlogger</span> is OK: please set ODB
+<span class="odb">/History/CreateOldTags</span> to "y" (type TID_BOOL/"boolean") before starting
+<span class="cl">mlogger</span>.
 </ul>
 
 \subsubsection F_history_old_tags Definition of old-style history tags
-Prior to version 4435 of @ref F_mlogger_task "mlogger" and  version  4435 of @ref RC_mhttpd_task "mhttpd"
-old-style history tags were generated.
-The history variable name for each element of the Frontend History Event was composed as follows, where
+Prior to version 4435 of @ref F_mlogger_task "mlogger" and  version  4435 of @ref RC_mhttpd_task "mhttpd",
+\b old-style history tags were generated.
+The <b>history variable name</b> for each element of the Frontend History Event was composed as follows, where
 <ul>
   <li> \b "eqpname" is the name of the equipment, and 
   <li> \b "bankname" is the name of a bank generated by the \b "eqpname" equipment  :
 
-
-   <br> In the case of a @ref  FE_Midas_format "Midas format" event:
-
+   
      <ul>
-     <li>If the ODB key <b>/Equipment / eqpname /Settings /Names /bankname[ ] </b>  is present, 
-     <br>the history name is composed of the corresponding name found in the <b> "Names /bankname[ ]" </b> array. 
-     <br>The size of this array must match the size of the <b> /equipment /eqpname /Variables /bankname[ ] </b>  array, 
-      or an error will be generated.
+     <li>In the case of a @ref  FE_Midas_format "Midas format" event:
 
-   <li> Otherwise the history name is composed of the bank name followed by the corresponding index of the element.
-   </ul>
-<br>See  @ref F_example_FE_history_event "example below" .
+        <ul>
+        <li><b>If the ODB key</b>  <span class="odb">/Equipment/eqpname/Settings/Names/bankname[ ]</span>  <b>IS present</b>, 
+           <ul>
+             <li>the \b history \b name is composed of the corresponding name found in the  <span class="odb"> Names /bankname[ ]</span> array. 
+             <li>The \b size of this array must match the size of the  <span class="odb">/equipment/eqpname/Variables/bankname[ ]</span>  array, 
+        or an error will be generated.
+           </ul>
+        <li> \b Otherwise the \b history \b name is composed of the bank name followed by the corresponding index of the element.
+        </ul>
+        See  @ref F_example_FE_history_event "example below" .
 
-In the case of a @ref FE_FIXED_event_readout "Fixed format" event :
+        <li>In the case of a @ref FE_FIXED_event_readout "Fixed format" event :
   
-<ul>
-<li> \b No array : the names of the individual element under
-<b> /Equipment /eqpname /Variables/ </b> are used for the history name composition.
-<li> \b With array: if the key <b> /Equipment/eqpname/Settings/Names[ ] </b> 
-exists, each element of the array is referenced using the corresponding
-name of the <b> ../Settings/Names[ ] </b>  array.
-</ul>
+        <ul>
+            <li> \b No array : the names of the individual element under
+                  <span class="odb">/Equipment/eqpname/Variables/</span> are used for the history name composition.
+            <li> \b With array: if the key   <span class="odb">/Equipment/eqpname/Settings/Names[ ]</span> 
+                  exists, each element of the array is referenced using the corresponding
+                  name of the  <span class="odb">../Settings/Names[ ]</span>  array.
+        </ul>
+    </ul>
 </ul>
 
-
-@subsection F_example_FE_history_event  Example Frontend History Event
+@subsection F_example_FE_history_event  Example Frontend History Event (old-style History tags)
 
 The following example shows the ODB keys for a  Frontend Equipment named "Target" that sends out 
-data in a @ref FE_MIDAS_event_construction  "Midas bank" named "TGT_". The key <b>/equipment/Target/Settings/Names/TGT_</b> is present, 
-which is a 7-element array containing the history variable names. The key <b>/equipment/Target/Variables/TGT_</b> 
-is also present, and contains 7 elements, matching the number of elements in the "Names TGT_" array. 
+data in a @ref FE_MIDAS_event_construction  "Midas bank" named "TGT_".
+<br>The key <span class="odb">/equipment/Target/Settings/Names/TGT_</span> is present, 
+which is a 7-element array containing the history variable names. The key
+<span class="odb">/equipment/Target/Variables/TGT_</span> 
+is also present, and contains 7 elements, matching the number of elements in the  <span class="odb">Names/TGT_</span> array. 
 <br>
-Had the latter key not been present, the history variable names would be TGT_0 ... TGT_6.
+Had the latter key \b not been present, the history variable names would be TGT_0 ... TGT_6.
 <br>
 @code 
 [host:chaos:Running]cd /Equipment/Target
@@ -2182,9 +2183,9 @@ Target                          DIR
 @section F_ODB_History_tree ODB /History tree
 \anchor idx_logger_task_mlogger
 The first time @ref F_mlogger_task "mlogger" is run, it creates the 
-<b> /History </b> tree.  This tree is created 
-using the variables found in the \b /Equipment tree. For the Target equipment
-defined above, the /History tree produced is as follows:
+<span class="odb">/History </span> tree.  This tree is created 
+using the variables found in the  <span class="odb">/Equipment</span> tree. For the "Target" equipment
+defined above, the  <span class="odb">/History</span> tree produced is as follows:
 
 @code
 16:51:24 [Logger,INFO] Program Logger on host dasdevpc2 started
@@ -2216,7 +2217,7 @@ cellspacing="2">
 </caption>
 <tr>
 <td colspan="5" style="vertical-align: top; background-color: rgb(204, 204, 255); font-weight: bold; text-align: center;">
-Keys in the ODB  /History tree
+Keys in the ODB  <span class="odb">/History</span> tree
 </td>
 </tr>
 
@@ -2275,9 +2276,9 @@ directory containing...
 INT
 </td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;"> 
-\todo version ??
+\todo version ?? of mlogger
 
-This key appears starting with version ?? of mlogger. See @ref   F_new_history_tags "note"
+This key appears starting with version ?? of <span class="cl">mlogger</span>. See @ref   F_new_history_tags "note"
 </td>
 </tr>
 <!--   line     4     -->
@@ -2291,8 +2292,8 @@ This key appears starting with version ?? of mlogger. See @ref   F_new_history_t
 BOOL
 </td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;"> 
-This key appears starting with version ?? of mlogger. See @ref   F_new_history_tags "note"
-\todo version ??
+This key appears starting with version ?? of <span class="cl">mlogger</span>. See @ref   F_new_history_tags "note"
+\todo version ?? of mlogger
 
 </td>
 </tr>
@@ -2332,7 +2333,7 @@ Array containing tag values ??
 
 If a @ref FE_eqdec "Frontend Trigger Equipment" is defined, i.e. an Equipment whose name is "Trigger", extra 
 keys will be created as follows, where the 2 trigger fields are symbolic links to the given path.
-The sub-tree \b System  defines a "virtual" equipment and is assigned
+The sub-tree  <span class="odb">System</span>  defines a "virtual" equipment and is assigned
 a particular "History Event ID" by the system.
 
 @code 
@@ -2365,8 +2366,8 @@ History                         DIR
 
 
 
-A second sub-tree is added to the /History by the @ref RC_mhttpd_task  Midas web server
-when the button "History" on the main status page is pressed.
+A second sub-tree is added to the <span class="odb">/History</span> by the @ref RC_mhttpd_task  "Midas web server"
+when the @ref RC_mhttpd_History_page "History" button on the main status page is pressed.
 
 @code 
 [local:midas:S]/History>ls -l -r Display
@@ -2387,12 +2388,12 @@ Display                         DIR
 
 This defines a default history display under the Midas web server as long as the reference
 to "System" is correct. See  @ref RC_mhttpd_History_page for more information regarding
-explanation on these fields.
+explanation of these fields.
 
 @section F_customizing_History Customizing the History logging
 
 
-The History logging is customized by changing the values in the ODB \b /history tree.
+The History logging is customized by changing the values in the ODB  <span class="odb">/history</span> tree.
 This tree is created automatically when the logger  is started.
 
 <hr>
@@ -2404,13 +2405,13 @@ This tree is created automatically when the logger  is started.
 <br>This section describes the internal workings of the midas SQL history system.
 
 The SQL history system implements the MIDAS history using
-an SQL database for data storage instead of flat binary files.
+a @ref F_Logger_mySQL "SQL database" for data storage instead of flat binary files.
 
-The SQL history code lives in a separate files history.h and history_sql.cxx.
+The SQL history code lives in a separate files \b history.h and \b history_sql.cxx.
 The present implentation uses the ODBC API for accessing SQL databases.
-As of revision 4433, only MySQL database is supported, with support for PgSQL
-written and partially tested but not enabled. Drivers for SQL DB APIs other
-than ODBC should be easy to add in history_sql and most SQL operations
+<span class="new"> As of revision 4433, only MySQL database is supported, with support for PgSQL
+written and partially tested but not enabled.</span> Drivers for SQL DB APIs other
+than ODBC should be easy to add in \b history_sql and most SQL operations
 are done using an interface class.
 
 Preliminary testing with MySQL and PgSQL indicates that disk space
@@ -2474,26 +2475,45 @@ SOCKET       =
 User         = history_reader
 Password     = 
 @endcode
-<li> set ODB "/History/PerVariableHistory" to 1 (BEWARE! This will change the format of normal midas history files. You do not have to enable per-variable history to use the SQL interface, but the layout of SQL tables may be suboptimal in the same way the layout of data in the midas history file is suboptimal).
-<li> set ODB "/Logger/ODBC_DSN" to "history_writer", "/Logger/ODBC_Debug" to 0 (or 1 to see all SQL commands)
-<li> run "mlogger -v", observe how it issues SQL commands to create the tables and columns corresponding to MIDAS history events and tags.
-<li> mlogger is programmed to raise alarms if connection to SQL database is interrupted or if some events cannot be written into the database (i.e. data type mismatch, SQL syntax errors, etc). The traditional midas history never raised alarms because it "never failed". (Other than from "disk full" errors, which are immediately obvious).
+<li> set key <span class="odb">/History/PerVariableHistory</span> to 1
+<br>(\b BEWARE! This will change the format of normal midas history files. You do not have to enable per-variable history to use the SQL interface, but the layout of SQL tables may be suboptimal in the same way the layout of data in the midas history file is suboptimal).
+<li> set ODB keys
+    <ul>
+    <li> <span class="odb">/Logger/ODBC_DSN</span> to "history_writer"
+    <li> <span class="odb">/Logger/ODBC_Debug</span> to 0 (or 1 to see all SQL commands)
+    </ul>
+<li> run <span class="cl">mlogger -v</span>, and observe how it issues SQL commands to create the tables and columns corresponding to MIDAS history events and tags.
+<li> <span class="cl">mlogger</span> is programmed to raise alarms if connection to SQL database is interrupted or if some events cannot be
+written into the database (i.e. data type mismatch, SQL syntax errors, etc). The traditional midas history never raised
+alarms because it "never failed" - other than from "disk full" errors, which are immediately obvious.
 </ol>
 
 @subsection F_History_sql_enable How to enable reading history from an SQL database:
 
 <ol>
-<li> set ODB "/History/ODBC_DSN" to "history_reader"
-<li> restart mhttpd (not required?)
-<li> from this moment mhttpd will only use history information from the SQL database - to make history plots and to extract history variable names for the history plot editor. The ODB "/History/Tags" and "/History/Events" are not used. The on-disk .hst & co history are not used.
-<li> variable names presented to the user may change from MIDAS names to SQL names (use the history panel "Label" text fields to create permanent plot labels).
+<li> set key <span class="odb">/History/ODBC_DSN</span> to "history_reader"
+<li> restart <span class="cl">mhttpd</span> (may not be required?)
+<li> from this moment <span class="cl">mhttpd</span> will only use history information from the SQL database to make history plots and to
+extract history variable names for the history plot editor. The <span class="odb">/History/Tags</span> and
+<span class="odb">/History/Events</span> keys are not used. The on-disk .hst & co history are not used.
+\todo What is the co history?
+
+<li> variable names presented to the user may change from MIDAS names to SQL names
+(use the history panel "Label" text fields to create permanent plot labels).
 </ol>
 @subsection F_SQL_Layout Layout of SQL tables:
 
 <ul>
-<li> one table is created for each history event. Table name is the same as the history event name (as reported by mhdump).
-<li> one column is created for each history tag (history variable). Column name is the same as the tag name (as reported by mhdump). For array tags, one column is created for each array element: array a[3] will produce columns a_0, a_1 and a_2.
-<li> 2 special columns are always created: \b _i_time and \b _t_time are the timestamps in the UNIX-time integer format and in the SQL "time" format. (Apriory, it is not clear which timestamp format is more useful for end users. mhttpd uses the _i_time integer time format). Note that this timestamp is the time when mlogger receives the hotlink signal (see above) and it can be a fe wseconds behind from when the user placed the data into the midas bank. For high precision (and sub-second time resolution) time stamps, users should generate their own timestamps and include them as part of the data itself.
+<li> one table is created for each history event. Table name is the same as the history event name
+(as reported by @ref F_mhdump_task "mhdump").
+<li> one column is created for each history tag (history variable). Column name is the same as
+the tag name (as reported by  @ref F_mhdump_task "mhdump"). For array tags, one column is created for
+each array element: array a[3] will produce columns a_0, a_1 and a_2.
+<li> 2 special columns are always created: \b _i_time and \b _t_time are the timestamps in the UNIX-time integer format
+and in the SQL "time" format. (A priori, it is not clear which timestamp format is more useful for end users. <span class="cl">mhttpd</span> uses
+the _i_time integer time format). Note that this timestamp is the time when <span class="cl">mlogger</span> receives the hot-link signal
+(see  @ref F_history_hot_link "above")
+and it can be a few seconds behind the time when the user placed the data into the midas bank. For high precision (and sub-second time resolution) time stamps, users should generate their own timestamps and include them as part of the data itself.
 <li> a special table called \b _history_index is created to remember the mapping between SQL names and MIDAS names for event names, variable name and tag names.
 </ul>
 
@@ -2502,9 +2522,9 @@ Password     =
 <li> when new data fields are added, new SQL columns are created automatically
 <li> existing SQL columns are never deleted
 <li> arrays are expanded automatically, and arrays never shrink.
-<li> if type of a data field changes, a conflict may occur with existing SQL columns, for example if previous type was
+<li> if the type of a data field changes, a conflict may occur with existing SQL columns, for example if previous type was
 "FLOAT" and new type is "DOUBLE", the existing SQL columns would have the SQL data type "float", too narrow to store
-new values. mlogger will complain about this. Such conflicts may be resolved by changing the type of the SQL column
+new values. <span class="cl">mlogger</span> will complain about this. Such conflicts may be resolved by changing the type of the SQL column
 using SQL tools. In general, SQL names are created from MIDAS names by replacing all non-alphanumerical characters to
 an underscore "_". If this procedure creates duplicate column names, the column names and made unique by appending
 them with a random number, i.e. MIDAS names "A+B" and "A-B" will be translated to "A_B" and "A_B_12345" (random integer).
@@ -2607,7 +2627,7 @@ History data retriever.
   Apr 24 23:01:39 2000    0
   @endcode
 - <b> Remarks </b>: History data can be retrieved and displayed through the
-Midas web page (see @ref RC_mhttpd_task).
+Midas web page (see @ref RC_mhttpd_task "mhttpd").
 
 
 - <b> Example </b> 
@@ -2798,7 +2818,7 @@ sections("Quickstart", "Features", "RunControl");
 \anchor idx_Logging_Elog
 @section F_Elog_Intro Introduction
 The Electronic logbook (Elog) is an alternative way of recording experiment information.
-This is implemented through the Midas web server @ref RC_mhttpd_task (see @ref RC_mhttpd_Elog_page).
+This is implemented through the Midas web server @ref RC_mhttpd_task "mhttpd" (see @ref RC_mhttpd_Elog_page).
 
 
 @section F_Logger_Elog_Files_Location Location of Elog Files
@@ -2807,7 +2827,7 @@ This is implemented through the Midas web server @ref RC_mhttpd_task (see @ref R
 By default,  @ref F_Elog "elog" files are written into the 
 directory path given by  the ODB key @ref F_Logger_Data_Dir "Data Dir" in  @ref F_Logger_tree .
 
-This location can be changed by use of the ODB Key <b>Elog dir</b> in the
+This location can be changed by use of the ODB Key <span class="odb">Elog dir</span> in the
 @ref F_Logger_tree_keys directory. This key is optional and doesn't appear by default in
 the  @ref F_Logger_tree .
 <br>
@@ -2829,14 +2849,14 @@ String length [32]:128
 
 @section F_Elog_Custom Customizing the Elog
 The Electronic logbook (Elog) is an alternative way of recording experiment information.
-This is implemented through the Midas web server @ref RC_mhttpd_task (see @ref RC_mhttpd_Elog_page ).
-The /Elog tree is created automatically when the Midas Logger (mlogger) is started for the first time.
+This is implemented through the Midas web server @ref RC_mhttpd_task "mhttpd" (see @ref RC_mhttpd_Elog_page ).
+The <span class="odb">/Elog</span> tree is created automatically when the Midas Logger (<span class="cl">mlogger</span>) is started for the first time.
 The definition of the options are described in @ref F_ODB_Elog_Tree.
 \anchor idx_ODB_tree_Elog
 @subsection F_ODB_Elog_Tree ODB /Elog Tree
 
 This branch describes the Elog settings used through the Midas web server.
-See @ref RC_mhttpd_task for setting up the different Elog page displays.
+See @ref RC_mhttpd_task "mhttpd" for setting up the different Elog page displays.
 
 @code 
 [local:midas:S]/Elog>ls -lr
@@ -3013,17 +3033,18 @@ sections("Quickstart", "Features", "RunControl");
 mechanism. The need for such application has been dictated by the slow response time of
 some of the media logging devices (i.e. tape devices). Delay due to tape mounting,
 retensioning and repositioning implies that the data acquisition has to be held until 
-operation completion. By using \b mlogger to log data to disk in a first stage and then using
+operation completion. By using <span class="cl">mlogger</span> to log data to disk in a first stage and then using
 \b lazylogger to copy or move the stored files to the "slow device", we can keep the
 acquisition running without interruption.
 - Multiple lazyloggers can be running simultaneously on the same computer, each one 
   taking care of a particular channel.
 - Each lazylogger channels will have a dedicated ODB tree containing its own information.
-- All the lazylogger channels will be in the ODB under  \b /Lazy/\<channel_name\>/...
-- Each channel tree is composed of three sub-trees <b> Settings, Statistics, List</b>.
+- All the lazylogger channels will be in the ODB under  <span class="odb">/Lazy/\<channel_name\>/...</span>
+- Each channel tree is composed of three sub-trees <span class="odb">Settings, Statistics, List</span>.
 
-The \b Settings and \b Statistics trees are self-explanatory, and contain the operational 
-parameters of the channel(s). The \b List key will have a dynamic list of run numbers which have
+The <span class="odb">Settings</span> and <span class="odb">Statistics</span> trees are self-explanatory,
+and contain the operational 
+parameters of the channel(s). The <span class="odb">List</span> key will have a dynamic list of run numbers which have
 been successfully dealt with by the Lazylogger channel.
 This list won't exist until the first successful operation of the channel is completed.
 
@@ -3073,7 +3094,7 @@ when started. Multiple instances of the program can run concurrently.
   Tape Data Append                BOOL    1     4     11h  0   RWD  y
 @endcode
  <br><br>
-  - <b>[Maintain free space]</b> As the Data Logger (mlogger) runs independently from
+  - <b>[Maintain free space]</b> As the Data Logger (<span class="cl">mlogger</span>) runs independently from
   the Lazylogger, the disk contains all the recorded data files. Under this condition,
   Lazylogger can be instructed to "purge" the data logging device (disk) after successful
   backup of the data onto the "slow device". The \em Maintain free space(\%) parameter
@@ -3090,7 +3111,7 @@ when started. Multiple instances of the program can run concurrently.
   - <b>[Stay behind]</b> This parameter defines how many consecutive data files should be kept
   between the current run and the last lazylogger run.
     - <b> Example  with "Stay behind = -3" </b>:
-    -# Current acquisition run number 253 -\> run00253.mid is being logged by mlogger.
+    -# Current acquisition run number 253 -\> run00253.mid is being logged by <span class="cl">mlogger</span>.
     -# Files available on the disk corresponding to run \#248, \#249, \#250, \#251, \#252.
     -# Lazylogger will start backing up run \#250 as soon as the new run 254 starts.
     -3 "Stay behind = -3" corresponds to 3 file untouched on the disk
@@ -3143,7 +3164,7 @@ when started. Multiple instances of the program can run concurrently.
   new array composed of the backed up runs until the "Capacity" value has been reached.
   As the backup set is complete, lazylogger will clear this field and therefore
   prevent any further backup until a none empty label list is entered again.
-  In the other hand the list label will remain under the "/List" key to display all
+  In the other hand the list label will remain under the <span class="odb">/List</span> key to display all
   run being backed up until the corresponding files have been removed from the disk.
   - <b>[Exec preW file]</b> Permits to run a script before the begining of the lazy job.
   The <b> arguments </b> passed to the scripts are: input file name , output file name, current block number.
