@@ -1961,7 +1961,8 @@ to the defined path.
 
 @subsection F_Logger_Create_History_Dir Creation of ODB Key  /Logger/History dir 
 
-Using the @ref RC_odbedit_cr "odbedit command create" , the user may add this key as follows:
+Using the  @ref RC_mhttpd_ODB_page "mhttpd ODB editor" or the  @ref RC_odbedit_cr "odbedit command create" as shown below,
+the user may add this key:
 @code
 [local:Default:S]/Logger>create string "History dir"
 String length [32]:128
@@ -2209,128 +2210,6 @@ History                         DIR
                                         [7]             9[1] Diode temperature
 @endcode
 
-@section F_History_tree_keys Explanation of the keys in the ODB /History tree
-
-<table style="text-align: left; width: 100%;" border="1" cellpadding="2"
-cellspacing="2">
-<caption>Above: meaning of keys in the /History ODB tree
-</caption>
-<tr>
-<td colspan="5" style="vertical-align: top; background-color: rgb(204, 204, 255); font-weight: bold; text-align: center;">
-Keys in the ODB  <span class="odb">/History</span> tree
-</td>
-</tr>
-
-<tr>
-<td  colspan="3" style="vertical-align: top; background-color: rgb(204, 204, 255); font-weight: bold; text-align: center;">
-ODB Key 
-</td>
-<td style="vertical-align: top; background-color: rgb(204, 204, 255); font-weight: bold; text-align: center;">
-Type
-</td>
-
-
-
-<td style="vertical-align: top; background-color: rgb(204, 204, 255); font-weight: bold; text-align: center;"> 
-Explanation
-</td>
-</tr>
-<!--   line    1      -->
-<tr>
-<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
-History
-</td>
-<td><br></td>
-<td><br></td>
-<td style="vertical-align: top; font-weight: normal; text-align: left;">
-DIR
-</td>
-<td style="vertical-align: top; font-weight: normal; text-align: left;"> 
-directory containing...
-</td>
-</tr>
-
-<!--   line    2      -->
-<tr>
-<td><br></td>
-<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
-\anchor F_History_links Links
-</td>
-<td><br></td>
-<td style="vertical-align: top; font-weight: normal; text-align: left;">
-DIR
-</td>
-<td style="vertical-align: top; font-weight: normal; text-align: left;"> 
-directory containing...
-</td>
-</tr>
-
-<!--   line     3     -->
-<tr>
-<td><br></td>
-<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
-\anchor F_History_pervar PerVariableHistory
-</td>
-<td><br></td>
-<td style="vertical-align: top; font-weight: normal; text-align: left;">
-INT
-</td>
-<td style="vertical-align: top; font-weight: normal; text-align: left;"> 
-\todo version ?? of mlogger
-
-This key appears starting with version ?? of <span class="cl">mlogger</span>. See @ref   F_new_history_tags "note"
-</td>
-</tr>
-<!--   line     4     -->
-<tr>
-<td><br></td>
-<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
-\anchor F_History_Disable_tags Disable tags
-</td>
-<td><br></td>
-<td style="vertical-align: top; font-weight: normal; text-align: left;">
-BOOL
-</td>
-<td style="vertical-align: top; font-weight: normal; text-align: left;"> 
-This key appears starting with version ?? of <span class="cl">mlogger</span>. See @ref   F_new_history_tags "note"
-\todo version ?? of mlogger
-
-</td>
-</tr>
-
-<!--   line     5     -->
-<tr>
-<td><br></td>
-<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
-\anchor F_History_tags Tags
-</td>
-<td><br></td>
-<td style="vertical-align: top; font-weight: normal; text-align: left;">
-DIR
-</td>
-<td style="vertical-align: top; font-weight: normal; text-align: left;"> 
-See @ref   F_new_history_tags "note"
-</td>
-</tr>
-<!--   line     6     -->
-<tr>
-<td><br></td>
-<td><br></td>
-<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
-\anchor F_History_2 2
-</td>
-<td style="vertical-align: top; font-weight: normal; text-align: left;">
-STRING
-</td>
-<td style="vertical-align: top; font-weight: normal; text-align: left;"> 
-Array containing tag values ??  
-\todo explanation of format of /history/tags is required.  In the example, where has the number 2 (Tags/2) and 9 (9[1]) come from?
-
-
-</td>
-</tr>
-</table>
-
 If a @ref FE_eqdec "Frontend Trigger Equipment" is defined, i.e. an Equipment whose name is "Trigger", extra 
 keys will be created as follows, where the 2 trigger fields are symbolic links to the given path.
 The sub-tree  <span class="odb">System</span>  defines a "virtual" equipment and is assigned
@@ -2387,8 +2266,353 @@ Display                         DIR
 @endcode  
 
 This defines a default history display under the Midas web server as long as the reference
-to "System" is correct. See  @ref RC_mhttpd_History_page for more information regarding
-explanation of these fields.
+to "System" is correct. See  @ref RC_mhttpd_History_page  and the @ref  F_History_tree_keys "table below" for
+more information regarding explanation of these fields.
+\todo There is not much more information on the History page
+
+
+
+@section F_History_tree_keys Explanation of the keys in the ODB /History tree
+
+<table style="text-align: left; width: 100%;" border="1" cellpadding="2"
+cellspacing="2">
+<caption>Above: meaning of keys in the /History ODB tree
+</caption>
+<tr>
+<td colspan="7" style="vertical-align: top; background-color: rgb(204, 204, 255); font-weight: bold; text-align: center;">
+Keys in the ODB  <span class="odb">/History</span> tree
+</td>
+</tr>
+
+<tr>
+<td  colspan="5" style="vertical-align: top; background-color: rgb(204, 204, 255); font-weight: bold; text-align: center;">
+ODB Key 
+</td>
+<td style="vertical-align: top; background-color: rgb(204, 204, 255); font-weight: bold; text-align: center;">
+Type
+</td>
+
+
+
+<td style="vertical-align: top; background-color: rgb(204, 204, 255); font-weight: bold; text-align: center;"> 
+Explanation
+</td>
+</tr>
+<!--   line    1      -->
+<tr>
+<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+History
+</td>
+<td><br></td>
+<td><br></td>
+<td><br></td>
+<td><br></td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">
+DIR
+</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;"> 
+directory containing...
+</td>
+</tr>
+
+<!--   line    2      -->
+<tr>
+<td><br></td>
+<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+\anchor F_History_links Links
+</td>
+<td><br></td>
+<td><br></td>
+<td><br></td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">
+DIR
+</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;"> 
+directory containing...
+</td>
+</tr>
+
+<!--   line    3      -->
+<tr>
+<td><br></td>
+<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+\anchor F_History_System System
+</td>
+<td><br></td>
+<td><br></td>
+<td><br></td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">
+DIR
+</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;"> 
+info
+</td>
+</tr>
+
+<!--   line    4     -->
+<tr>
+<td><br></td>
+<td><br></td>
+<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+Trigger per sec. </td>
+<td><br></td>
+<td><br></td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">
+DOUBLE
+</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;"> 
+link to <span class="odb">/Equipment/Trigger/Statistics/Events per sec.</span>
+</td>
+</tr>
+<!--   line    5     -->
+<tr>
+<td><br></td>
+<td><br></td>
+<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+Trigger kB per sec. </td>
+<td><br></td>
+<td><br></td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">
+DOUBLE
+</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;"> 
+link to <span class="odb">/Equipment/Trigger/Statistics/kBytes per sec.</span>
+</td>
+</tr>
+
+<!--   line     6     -->
+<tr>
+<td><br></td>
+<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+\anchor F_History_pervar PerVariableHistory
+</td>
+<td><br></td>
+<td><br></td>
+<td><br></td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">
+INT
+</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;"> 
+\todo version ?? of mlogger
+
+This key appears starting with version ?? of <span class="cl">mlogger</span>. See @ref   F_new_history_tags "note"
+</td>
+</tr>
+<!--   line     7     -->
+<tr>
+<td><br></td>
+<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+\anchor F_History_Disable_tags Disable tags
+</td>
+<td><br></td>
+<td><br></td>
+<td><br></td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">
+BOOL
+</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;"> 
+This key appears starting with version ?? of <span class="cl">mlogger</span>. See @ref   F_new_history_tags "note"
+\todo version ?? of mlogger
+Set this key to "y" if reading the history tags directly from the history files.
+
+</td>
+</tr>
+
+<!--   line     7.5     -->
+<tr>
+<td><br></td>
+<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+\anchor F_History_CreateOldTags CreateOldTags
+</td>
+<td><br></td>
+<td><br></td>
+<td><br></td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">
+BOOL
+</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;"> 
+This key appears starting with version ?? of <span class="cl">mlogger</span>. See @ref   F_new_history_tags "note"
+Set this key to "y" if using old mhttpd with new mlogger
+\todo version ?? of mlogger
+
+</td>
+</tr>
+
+
+<!--   line     8     -->
+<tr>
+<td><br></td>
+<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+\anchor F_History_tags Tags
+</td>
+<td><br></td>
+<td><br></td>
+<td><br></td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">
+DIR
+</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;"> 
+See @ref   F_new_history_tags "note"
+</td>
+</tr>
+<!--   line     9     -->
+<tr>
+<td><br></td>
+<td><br></td>
+<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+\anchor F_History_2 2
+</td>
+<td><br></td>
+<td><br></td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">
+STRING
+</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;"> 
+Array containing tag values ??  
+\todo In the examples, where is the number 2 (Tags/2) assigned by the system? The array length and contents has changed between
+the two examples 
+
+
+</td>
+</tr>
+
+<!--   line     10     -->
+<tr>
+<td><br></td>
+<td><br></td>
+<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+10
+</td>
+<td><br></td>
+<td><br></td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">
+STRING
+</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;"> 
+Array of length 3 containing System tags??  
+\todo System?
+
+
+</td>
+</tr>
+
+<!--   line    11     -->
+<tr>
+<td><br></td>
+<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+\anchor F_History_Display Display
+</td>
+<td><br></td>
+<td><br></td>
+<td><br></td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">
+DIR
+</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;"> 
+info
+</td>
+</tr>
+
+<!--   line    12     -->
+<tr>
+<td><br></td>
+<td><br></td>
+<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+Default </td>
+<td><br></td>
+<td><br></td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">
+DIR
+</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;"> 
+<br>
+</td>
+</tr>
+
+<!--   line    13     -->
+<tr>
+<td><br></td>
+<td><br></td>
+<td><br></td>
+<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+Trigger Rate </td>
+<td><br></td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">
+DIR
+</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;"> 
+<br>
+</td>
+</tr>
+
+
+<!--   line    14     -->
+<tr>
+<td><br></td>
+<td><br></td>
+<td><br></td>
+<td><br></td>
+<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+Variables </td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">
+STRING
+</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;"> 
+Array containing System  trigger rates ??
+</td>
+</tr>
+
+<!--   line    15     -->
+<tr>
+<td><br></td>
+<td><br></td>
+<td><br></td>
+<td><br></td>
+<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+Factor </td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">
+FLOAT
+</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;"> 
+Array containing  ??
+</td>
+</tr>
+
+<!--   line    16     -->
+<tr>
+<td><br></td>
+<td><br></td>
+<td><br></td>
+<td><br></td>
+<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+Timescale </td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">
+INT
+</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;"> 
+ Appears as an input box on the @ref RC_mhttpd_History_page . Timescale is in date format. Explanation??  
+</td>
+</tr>
+
+<!--   line    17     -->
+<tr>
+<td><br></td>
+<td><br></td>
+<td><br></td>
+<td><br></td>
+<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+Zero ylow </td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">
+BOOL
+</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;"> 
+Appears as a button to zero something ?? on the   @ref RC_mhttpd_History_page
+</td>
+</tr>
+</table>
+
+
+
 
 @section F_customizing_History Customizing the History logging
 
@@ -2836,7 +3060,8 @@ defined path.
 
 @subsection F_Logger_Create_Elog_Dir Creation of ODB Key Elog Dir
 
-Using the @ref RC_odbedit_cr "odbedit command create" , the user may add the key as follows:
+Using the @ref RC_mhttpd_ODB_page "mhttpd ODB editor" or the  @ref RC_odbedit_cr "odbedit command create" as shown below,
+the user may add this key:
 @code
 [local:Default:S]/Logger>create string "Elog dir"
 String length [32]:128
