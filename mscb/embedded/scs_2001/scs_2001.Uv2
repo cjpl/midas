@@ -71,7 +71,7 @@ Options 1,0,0  // Target 'ICE'
  C51FL=21630224
  C51VA=0
  C51MSC ()
- C51DEF (scs_2001)
+ C51DEF (scs_2001 UART1_MSCB)
  C51UDF ()
  INCC5 (\midas\mscb\embedded)
  AX51FL=4
