@@ -799,7 +799,7 @@ float xdata value;
 
    /* turn off beeper after 100 ms */
    if (beeper_on && time() > 10) {
-      beeper_on = 1;
+      beeper_on = 0;
       for (i=0 ; i<n_box ; i++)
          power_beeper(i, 0);
    }
