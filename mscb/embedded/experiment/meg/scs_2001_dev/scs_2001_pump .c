@@ -662,8 +662,8 @@ static bit b0_old = 0, b1_old = 0, b2_old = 0, b3_old = 0,
       start_time = time();     // remember start time
    }
 
-   /* wait 5s for forepump to start (turbo could be still rotating!) */
-   if (pump_state == ST_START_FORE && time() > start_time + 5*100) {
+   /* wait 15s for forepump to start (turbo could be still rotating!) */
+   if (pump_state == ST_START_FORE && time() > start_time + 15*100) {
 
       set_forevalve(1);
 
@@ -702,7 +702,7 @@ static bit b0_old = 0, b1_old = 0, b2_old = 0, b3_old = 0,
          
             /* evacuate recipient through bypass valve */
             set_forevalve(0);
-            delay_ms(2000);          // wait 2s
+            delay_ms(5000);          // wait 5 s
             set_bypassvalve(1);
       
             start_time = time();     // remember start time
@@ -858,11 +858,9 @@ static bit b0_old = 0, b1_old = 0, b2_old = 0, b3_old = 0,
 
    if (!user_data.valve_locked && valve_locked_old) {
       if (user_data.station_on) {
-         start_time = time();       // remember start time
-         pump_state = ST_EVAC_FORE; // start with buffer tank evacuation
+         start_time = time();        // remember start time
+         pump_state = ST_START_FORE; // start with starting forepump
          set_forepump(1);
-         delay_ms(1000);
-         set_forevalve(1);
       }
    }
 
