@@ -347,11 +347,6 @@
           <GroupName>Source Files</GroupName>
           <Files>
             <File>
-              <FileName>scs_2001_pump .c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\scs_2001_pump .c</FilePath>
-            </File>
-            <File>
               <FileName>mscbmain.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\..\..\mscbmain.c</FilePath>
@@ -370,6 +365,11 @@
               <FileName>scs_2001_lib.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\..\..\scs_2001\scs_2001_lib.c</FilePath>
+            </File>
+            <File>
+              <FileName>scs_2001_pump.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\scs_2001_pump.c</FilePath>
             </File>
           </Files>
         </Group>
@@ -731,11 +731,6 @@
           <GroupName>Source Files</GroupName>
           <Files>
             <File>
-              <FileName>scs_2001_pump .c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\scs_2001_pump .c</FilePath>
-            </File>
-            <File>
               <FileName>mscbmain.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\..\..\mscbmain.c</FilePath>
@@ -754,6 +749,11 @@
               <FileName>scs_2001_lib.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\..\..\scs_2001\scs_2001_lib.c</FilePath>
+            </File>
+            <File>
+              <FileName>scs_2001_pump.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\scs_2001_pump.c</FilePath>
             </File>
           </Files>
         </Group>
