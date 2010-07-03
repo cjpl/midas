@@ -24,7 +24,7 @@ sub fix_idx2();
 sub check_line();
 sub write_idx(@);
 sub create_dummy_files();
-
+sub dosort($$);
 $|=1; # flush output buffers
 # mine.pl *.dox
 our $debug =0;
@@ -358,12 +358,17 @@ sub write_idx(@)
     my $letter;
     my $level;
     my ($lclast, $lcfields);
-    my $flag=0; # no link wanted if flag is set
+    my $flag=0; # index_add flag
     my $match;
+    my @anchor; # split for anchors
+    my $tempstring="";
+    my ($len1,$len2);
+    my @sorted;
 
 # note: array is the only parameter, so passing directly is OK.
     my @array = @_;
-    my @sorted = sort { lc($a) cmp lc($b) } @array; # sort as all lower case
+#    @sorted = sort { lc($a) cmp lc($b);  } @array; # sort as all lower case
+    @sorted = sort { dosort ($a,$b)} @array; # special sort to deal with hyphens
     print "\n sorted array: @sorted\n";
     $len= $#sorted;
    
@@ -374,6 +379,7 @@ sub write_idx(@)
     open OUTF, ">$idxf" or die "Can't open input file $idxf : $!\n";
     print OUTF "\n <!-- sorted array:\n @sorted \n  -->\n";
     $level=0; 
+    print OUTF "\@anchor IDX_A\n";  # print an anchor for A
     print OUTF "$indent[$level]<ul class=\"j$level\"> <!-- j$level -->\n";
     while ($i<$len+1)
     {
@@ -405,16 +411,31 @@ sub write_idx(@)
             my @ftemp = split /-/, $lcfields;
             my @ltemp =  split /-/, $lclast;
         
-            print "ftemp = @ftemp;  ltemp = @ltemp\n";
+            print "split by  hyphen:  ftemp = @ftemp;  ltemp = @ltemp\n";
         
+# this section gets rid of some duplications
             if ($ftemp[0] eq $ltemp[0]) 
-            {     
-                print "matched $ftemp[0] and $ltemp[0] \n"; 
-                print "\"see\" match:  $fields[$j] and $last[$j]; keeping $last[$j]\n";
-                print " at j=$j level=$level last[$level]=$last[$level]; \n";
-                next;
-            }
-             else {  print " $ftemp[0] and $ltemp[0] do not match \n"; }
+            { 
+    
+               print "matched $ftemp[0] and $ltemp[0] \n"; 
+      #             because of dosort, if there is a hyphen, the previous value should have it
+                $len2=$#ftemp; $len1=$#ltemp;
+
+                if ($len1 > 0)
+                {   
+                   if ($ltemp[1] eq "see")  # if the previous line has "-see" on it, then combine; otherwise don't
+                   {                        # event-see-blah and event should combine;
+                      print "\"see\" match:  $fields[$j] and $last[$j]; keeping $last[$j]\n";
+                      print " at j=$j level=$level last[$level]=$last[$level]; \n";
+                      next;
+                   }
+                  else
+                   {
+              #         print "NOT a \"see\" match:  $fields[$j] and $last[$j]; keeping both\n";
+                   }
+                }
+             }
+          #   else {  print " $ftemp[0] and $ltemp[0] do not match \n"; }
             
             
             
@@ -423,12 +444,17 @@ sub write_idx(@)
             
             if ($fields[$j]=~/!$/)
             {  
-                print "found item with \"!\" (i.e. from index_add.txt; no \"\@ref\") ; setting flag  :  $fields[$j]\n";
-               $fields[$j]=~s/!$//;  # remove the !
-               $fields[$j]=~s/-(?!>)/ /g; # replace the hyphens
-               $flag = 1;
-               print "line: $_";
-               print "j=$j; l=$l; @fields\n";
+                print "found item with \"!\" (i.e. from index_add.txt): $fields[$j]\n";
+                $flag=1;  # item will be parsed and fixed up in check_line
+                 
+                $fields[$j]=~s/!$//;  # remove the final !
+                print "now item is : $fields[$j]   and flag is set instead \n";
+             #  originally these may not have had the reference. Now their format has changed to include a reference.
+
+             #  $fields[$j]=~s/!$//;  # remove the final !
+             #  $fields[$j]=~s/-(?!>)/ /g; # replace the hyphens (NOT -> )
+             #  print "line: $_";
+             #  print "j=$j; l=$l; @fields\n";
               
 	
 
@@ -446,21 +472,20 @@ sub write_idx(@)
 		}
 		print OUTF "\n\%\n"; #marker
                 # can't seem to get this to work properly for "A" so skip it
-                unless ($letter eq "A")
-                { print OUTF "\@anchor IDX_$letter\n"; } # print an anchor for this letter
+                unless ($letter eq "A"){
+                   print OUTF "\@anchor IDX_$letter\n";} # print an anchor for this letter
 
-		print OUTF "$indent[$level]<li><b>$letter</b><br>\n"; # write single bold letter at level 0
+		   print OUTF "$indent[$level]<li><b>$letter</b><br>\n"; # write single bold letter at level 0
 		while ($j > $level)
 		{ # restore level to previous
 		    $level++;
-#		    print OUTF "<br>$indent[$level]<ul class=\"j$level\"> <!-- j$level -->\n";
-		    print OUTF "<br>$indent[$level]<ul class=\"j$level\"> <!-- j$level -->\n";
+		  #  print OUTF "<br>$indent[$level]<ul class=\"j$level\"> <!-- j$level --> replace by tempstring\n";
+                    $tempstring=sprintf("<br>%s<ul class=\"j%s\"> <!-- j%s -->",$indent[$level],$level,$level);
 		}
 		next;
 	    }
 
 
-	   
 
             
             while ($j < $level)
@@ -474,23 +499,41 @@ sub write_idx(@)
                 $level++;
                 print OUTF "$indent[$level]<ul class=\"j$level\"> <!-- j$level -->\n";
             }
-           
+
+
+            if ($j == 1)
+            {
+                @anchor=split('\b', $fields[$level]); # one word only for anchor
+               
             
+
+                # anchor
+                print OUTF "\@anchor IDX_$anchor[0] \n"; 
+                if($tempstring)
+                {
+                    print OUTF "$tempstring  <!--- wrote  tempstring -->\n";
+                    $tempstring="";
+                }
+            }
+
+
             if( $j == $l)
             { # last term
                 #print "level=$level l=$l  last[$level]=$last[$level]\n";
+                
                 if ($flag)
                 {
-                    print "$indent[$level]<li>$fields[$level]<br>\n";  # no link for this item
-                    print OUTF "$indent[$level]<li>$fields[$level]<br>\n";
+                    print "flagged line: $indent[$level]<li>$fields[$level]\n";
+                    print OUTF "$indent[$level]<li>$fields[$level]<br> <!-- line from index_add.txt -->\n";
+                  #  print "$indent[$level]<li>$fields[$level]<br>\n";  # no link for this item
+                  #  print OUTF "$indent[$level]<li>$fields[$level]<br>\n";
                     $flag = 0;
                 }
                 else
                 {
                     print "$indent[$level]<li>\@ref $sorted[$i] \"$fields[$level]\"<br>\n";
                     print OUTF "$indent[$level]<li>\@ref $sorted[$i] \"$fields[$level]\"<br>\n";
-                }
-		
+                }		
             }
             else
             {
@@ -513,6 +556,60 @@ sub write_idx(@)
 
     return;    
 } 
+
+
+sub dosort($$)
+{
+    my $a = shift;
+    my $b = shift;
+    my $code;
+    my ($a1,$b1,$l1,$l2);
+    my (@array1,@array2);
+
+
+    $l1=$l2=0;
+    if ($a=~/-/)
+    {
+        $_ = $a;
+        @array1 = split ('-');
+        $l1 =$#array1; 
+       # print "array1: @array1; l1=$l1\n";
+    }
+    if ($b=~/-/)
+    {
+        $_ = $b;
+        @array2 = split ('-');
+        $l2 =$#array2; 
+      #  print "dosort: array2: @array2; l2=$l2\n";
+    }
+
+    if ($l1 == $l2) # neither or both have hyphens
+    {
+        $code = (lc($a) cmp lc($b)); # compare lower case
+     #   print "dosort: a=$a; b=$b; code = $code\n";
+        return ($code);
+    }
+
+    $a1 = $a; $b1 = $b;
+    if ($l1 > 0){ $a1 = $array1[0];}
+    if ($l2 > 0){ $b1 = $array2[0];}
+
+    #  print "dosort: found hyphen; comparing a1=$a1; b1=$b1;\n";
+    $code = (lc($a1) cmp lc($b1)); 
+    if ($code == 0)
+    {
+        print "dosort: a=$a; b=$b; code = $code\n";  # the same
+        if ($l1 > 0 ) { $code = -1 };
+        if ($l2 > 0 ) { $code = 1 };
+        print "dosort: original code is 0; now code is $code\n";
+
+    }
+
+
+  return ($code);
+}
+exit;
+
 
 sub fix_idx()
 {
@@ -602,8 +699,6 @@ contents();
 </script>
 \\endhtmlonly
 <br><br>
-\@anchor IDX_A
-<br>
 EOT
 
 
@@ -742,8 +837,16 @@ sub check_line()
     my $temp;
     my @fields;
     my $len;
+    my $flag=0;
     
     print "\n\n check_line starting with string: $_\n";
+    if (/index_add.txt/)
+    {
+        print "Flagged line (i.e. line from index_add.txt  !! \n";
+        $flag=1;
+    }
+
+
 #    s/"experim-dot-h"/"experim\.h"/;
     if (/"(.*-dot-)/)
     { 
@@ -756,44 +859,96 @@ sub check_line()
 
 
 
-
         
     if (/"(.*-see-)/) 
     {
-       print "-see-  found $1 \n";
-       $temp = $1;
-    $temp =~ s/-see-//;
-    print "temp: $temp\n";
-    
-    s/"(.*-see-)/"\(see /; 
-    print "$_ \n";
-    s/"(?!\()/\)"/;
-     print "$_ \n";
-     s/\@ref/$temp \@ref/;
-    
+        print "\"-see-  found $1 \n";
+        $temp = $1;
+        $temp =~ s/-see-//;
+        print "temp: $temp\n";
+        
+        s/"(.*-see-)/"\(see /; 
+        print "$_ \n";
+        s/"(?!\()/\)"/;
+        print "$_ \n";
+        s/\@ref/$temp \@ref/;              
+    }
 
-}
 
+
+
+#  Reminder
+#  ?< look behind              ? lookahead
+#  ?<! look behind negatively  ?! lookahead negatively
+#
 # make sure we only get a single dash
-elsif (/"(.*(?<!-)-(?!-))/)  
+#    elsif (/"(.*(?<!-)-(?!-))/)) 
+
+
+
+
+  if (  /"(.*(?<!-)-(?!-))/ ) 
   { 
-     print "single dash... found $1 \n";
+     print "single dash within quotes ... found $1 \n";
+    
+     print "$_\n";
+     
      @fields= split /\"/, $_;
      $len = $#fields;
      print "fields @fields   len:$len\n";
-     $_ = "\"" . $fields[1]; # replace the quote used for split
-     print "$_\n";
-     s/(?<!-)-(?!-)/ /g; # substitute single dashes only (leave comments)
-     print "$_\n";
+
+     $_ = $fields[1];
+     print "Working on $_\n";
+     s/(?<!-)-(?!(-|>))/ /g; # substitute single dashes only (leave comments and ->)
+     print "Substituted single dashes only: $_\n";       
   
+     $fields[1] = $_;
 
-     $_ = $fields[0] . $_ . "\"".  $fields[2]; # replace the quote used for split
 
-  }  
+#	print "working on field: $_\n";
+     print "fields: @fields\n";
+     
+     $_ = join "\"", @fields;
+  
+     print "Complete Line is now $_\n";
+     
 
+     }
+
+    if ($flag)
+    {
+        print "Flag is set... looking for any remaining single dashes...\n";
+
+        if (/(.*(?<!-)-(?!-))/ ) 
+        {
+
+
+           print "single dash NOT within quotes ... found $1 \n";
+        
+           s/(?<!-)-(?!(-|>))/ /g; # substitute single dashes only (leave comments and ->)
+           # print "Now line is $_\n";
+           if (/on start param/){ s/on start/on-start/;} # restore hyphen for edit-on-start parameters
+
+
+           print "Substituted single dashes only: $_\n";
+           print "Now line is $_\n";
+        }
+
+        # line from index_add.txt   may have @ref IDX=  (underscores marked by =)
+        print "Line $_ is from index_add.txt \n";
+        s/IDX=/IDX_/g;
+        s/ see also/ <span class="see">see also<\/span> /;
+        s/ see / <span class="see">see<\/span> /;
+        #s/!//;  # remove the first !
+        print "Now line is $_\n";
+       
+     
+
+    }
 
     
-#     print "string is now   : $_ \n";  
+     print "check_line: returning line  : $_ \n";  
+     
      return ($_);
 }   
 
@@ -1010,7 +1165,7 @@ sub next_field($$$)
 	if  (/(\\|@)$item/i)
 	{ 
 	    $gotcha=$_; # found new item
-	    print "found string \"$item\":  $gotcha\n";
+	    if($debug){ print "next_field: found string \"$item\":  $gotcha\n"; }
 	    next; # find next field
 	} 
 
