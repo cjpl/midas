@@ -350,7 +350,7 @@ of the various features.
 See  @ref RC_mhttpd_custom_demo and \ref example_image_all "image" created by the demo.
 
 \anchor idx_mhttpd_page_custom_image_labels
-\anchor idx_labels-see-mhttpd-page-custom
+\anchor idx_labels
 @subsection RC_mhttpd_custom_labels Labels superimposed on an Image
 
 In order to include a readout of ODB values (i.e. labels), on the image
@@ -559,7 +559,7 @@ RGB Value</td>
 <br><hr><br>
 
 \anchor idx_mhttpd_page_custom_image_bars
-\anchor idx_bars-see-mhttpd-page-custom
+\anchor idx_bars
 @subsection RC_mhttpd_custom_bars  Bars superimposed on an Image
 To include bars on the image,
 a further subdirectory  <span class="odb">Bars</span> must be created. 
@@ -746,7 +746,7 @@ Border colour RRGGBB (hex)  for this bar. See @ref  RC_html_colours "colour tabl
 <br><hr><br>
 
 \anchor idx_mhttpd_page_custom_image_fills
-\anchor idx_fills-see-mhttpd-page-custom
+\anchor idx_fills
 @section RC_mhttpd_custom_fills  Fills superimposed on an Image
 
 The last option available is the \b Fills where an area can be filled with different

@@ -2051,6 +2051,7 @@ ODB key <span class="odb">/Equipment/\<<em>Eqpname</em>\>/Common/Log history</sp
 The internal structure of midas history files is documented in  @ref F_History_format .
 <br>
 
+/anchor idx_history_enable
 @subsection F_Enable_History_Event Enable the History system for a frontend event
 <!-- from Konstantin's MIDAS History_internal System (internal.dox) -->
 
@@ -2063,7 +2064,7 @@ The data from the equipment should now appear in the @ref RC_mhttpd_History_page
 history file  (@ref F_mhdump_task "mhdump" can be used to read the history file).
 
 
-\anchor idx_history_tag-names
+\anchor idx_history_tags_new
 @subsubsection  F_new_history_tags New History Tags  
 <span class="note">Note on <span class="odb">/History/Tags</span> format</span><br>
 <span class="new"> 
@@ -2095,6 +2096,11 @@ of /History/Tags.
 <span class="odb">/History/CreateOldTags</span> to "y" (type TID_BOOL/"boolean") before starting
 <span class="cl">mlogger</span>.
 </ul>
+\anchor idx_ardvaark
+\anchor idx_ardvaark_control
+\anchor idx_ardvaark-and-me
+
+\anchor idx_history_tags_old
 
 \subsubsection F_history_old_tags Definition of old-style history tags
 Prior to version 4435 of @ref F_mlogger_task "mlogger" and  version  4435 of @ref RC_mhttpd_task "mhttpd",
@@ -2130,6 +2136,7 @@ The <b>history variable name</b> for each element of the Frontend History Event 
         </ul>
     </ul>
 </ul>
+
 
 @subsection F_example_FE_history_event  Example Frontend History Event (old-style History tags)
 

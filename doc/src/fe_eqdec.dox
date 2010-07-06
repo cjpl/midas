@@ -220,7 +220,7 @@ Every time the frontend is initialized, it <b>copies the equipment
 settings to the ODB</b> under <span style="font-style: italic;">/Equipment/&lt;equipment
 name&gt;/Common</span> (see @ref FE_scaler_common "example").<br>
 <br>
-\anchor idx_hot-links_Equipment-settings
+\anchor idx_hot-link_Equipment-settings
 @subsection FE_equipment_odb_hot_links Hot-linked equipment settings
 
 Hot-links to the   <span style="font-style: italic;">/Equipment/&lt;equipment

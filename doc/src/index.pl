@@ -936,7 +936,7 @@ sub check_line()
 
         # line from index_add.txt   may have @ref IDX=  (underscores marked by =)
         print "Line $_ is from index_add.txt \n";
-        s/IDX=/IDX_/g;
+        s/=/_/g;
         s/ see also/ <span class="see">see also<\/span> /;
         s/ see / <span class="see">see<\/span> /;
         #s/!//;  # remove the first !

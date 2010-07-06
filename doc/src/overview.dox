@@ -99,7 +99,7 @@ Keys can be dynamically created and deleted. The data associated with a key can 
 different types such as: byte, words, double words, float, strings, etc. or arrays
 of any of those. A key can also be a directory or a symbolic link (c.f. Unix).
 
-\anchor idx_hot-links_overview
+\anchor idx_hot-link_overview
 The Midas library provides a complete set of functions to manage and operate on these keys.
 <br>
 Any ODB client can register a "hot-link" between a local C-structure

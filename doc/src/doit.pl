@@ -77,5 +77,5 @@ while (<IN>)
 print "copied $linenum lines to $doxfile\n";
 close IN;
 close OUTD;
-print "$doxfile is done. Now make or make publish (dox-> html)\n";
+print "$doxfile is done. Now  make the index (docindex.dox) with \"index.pl 1\", then make or make publish (dox-> html)\n";
 exit;

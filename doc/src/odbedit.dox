@@ -59,7 +59,7 @@ sections("Features", "RunControl","FrontendOperation"); // last section; top of 
 <br>
 
 <!-- ------------------------------------------------------------------------------- -->
-\anchor idx_edit_ODB_odbedit     
+\anchor idx_edit_ODB_using-odbedit     
 \b odbedit is primarily an @ref F_Online_Database_overview Editor. It also acts as a run control and
 has limited run monitoring features. It is an alternative to the web-based run control program
 @ref RC_mhttpd_task.
@@ -221,30 +221,34 @@ sections("Features", "RunControl","FrontendOperation"); // last section; top of 
     </ul>
 <li>  @ref RC_odbedit_cmd_examples 
     <ul>
-    <li> @ref RC_odbedit_help   "help - list of commands"
-    <li> @ref RC_odbedit_pwd   
     <li> @ref RC_odbedit_cd
     <li> @ref RC_odbedit_chat
     <li> @ref RC_odbedit_chmod
+    <li> @ref RC_odbedit_cr
+    <li> @ref RC_odbedit_export
+    <li> @ref RC_odbedit_help   "help - list of commands"
+    <li> @ref RC_odbedit_import
+    <li> @ref RC_odbedit_ln
+    <li> @ref RC_odbedit_load    
     <li> @ref RC_odbedit_ls
+    <li> @ref RC_odbedit_make
     <li> @ref RC_odbedit_mkdir
     <li> @ref RC_odbedit_move
+    <li> @ref RC_odbedit_msg
+    <li> @ref RC_odbedit_old
+    <li> @ref RC_odbedit_passwd      
+    <li> @ref RC_odbedit_pwd 
     <li> @ref RC_odbedit_rename
-    <li> @ref RC_odbedit_ln
-    <li> @ref RC_odbedit_cr
-    <li> @ref RC_odbedit_set
-    <li> @ref RC_odbedit_trunc
     <li> @ref RC_odbedit_rm
+    <li> @ref RC_odbedit_set
     <li> @ref RC_odbedit_sor
     <li> @ref RC_odbedit_save
-    <li> @ref RC_odbedit_load
-    <li> @ref RC_odbedit_make
     <li> @ref RC_odbedit_scl
     <li> @ref RC_odbedit_sh
     <li> @ref RC_odbedit_start
     <li> @ref RC_odbedit_stop
-    <li> @ref RC_odbedit_import
-    <li> @ref RC_odbedit_export
+    <li> @ref RC_odbedit_trunc
+    <li> @ref RC_odbedit_webpasswd  
 </ul>
 </ul>
 
@@ -333,9 +337,7 @@ cellspacing="2">  <caption>Above: Meaning of Prompt symbols
 
 \anchor idx_ODB_create
 @section RC_odbedit_create_ODB ODB Creation
-\code
-create <type> <key>     - create a key of a certain type
-@endcode
+
 
 After installation of Midas, before any other tasks are started, the ODB is created for the first time by 
 starting the @ref RC_odbedit_task "odbedit task". This automatically creates all the shared-memory files needed for the
@@ -360,7 +362,8 @@ The default size of the ODB is 128KB. A different size can be specified by using
 odbedit -s 204000
 @endcode
 
-The other shared memory files created are the system buffer .SYSTEM.SHM, the @ref F_Messaging "system messaging" buffer .SYSMSG.SHM, the message buffer .MSG.SHM,  (?? MSG.SHM what for?? )
+The other shared memory files created are the system buffer .SYSTEM.SHM, the @ref F_Messaging "system messaging" buffer .SYSMSG.SHM, the message buffer .MSG.SHM,
+\todo  (?? MSG.SHM what for?? )
 the  @ref F_History_logging "history" buffer .HISTORY.SHM, the  @ref F_Elog "Elog" buffer .ELOG.SHM, the alarm buffer .ALARM.SHM .
 <br>
 \b Note: 
@@ -447,7 +450,7 @@ Create new *.SHM files by running odbedit (see @ref  RC_odbedit_create_ODB), the
 <hr>
 <br>
 
-\anchor idx_scripts_odbedit
+\anchor idx_script_odbedit
 \anchor idx_odbedit_scripts
 
 @subsection RC_odbedit_extcommand Using the external command (the  -c argument)
@@ -766,8 +769,14 @@ Exit chat mode with empty line.
 The chat conversation can also be heard over the speakers if @ref F_mspeaker_task is running.
 
 \anchor idx_access-control_ODB_keys
-<hr>@subsection RC_odbedit_chmod chmod - change mode
-By default the mode of ODB keys are RWD i.e. the permission is to Read, Write or Delete them. To avoid them being inadvertently
+<hr>@subsection RC_odbedit_chmod chmod - change access mode
+The access mode can be changed with the chmod command between
+
+- 1 read   R
+- 2 write  W
+- 4 delete D
+
+By default the access mode of ODB keys are RWD i.e. the permission is to Read, Write or Delete them. To avoid them being inadvertently
 changed or deleted the mode can be set to read-only, e.g
 \code 
 [local:t2kgas:S]GasMain.gif>chmod 1 background
@@ -816,7 +825,8 @@ fills                           DIR
 [local:t2kgas:S]GasMain.gif>
 \endcode
 
-<hr>@subsection RC_odbedit_ls ls - list
+
+<hr>@subsection RC_odbedit_ls ls - list the database entries
 \code
 ls/dir [-lhvrp] [<pat>] - show database entries which match pattern
   -l                      detailed info
@@ -917,6 +927,38 @@ test
 settings
 @endcode
 
+<hr>@subsection RC_odbedit_msg  msg - send a user message
+This command can be used to send a message to any client that is receiving midas messages, including the midas message logger, e.g
+\code
+[local:cg:S]/>
+16:30:48 [fred] hi
+[local:cg:S]/>msg george "is there a problem?"
+[george,USER] is there a problem?
+16:30:48 [fred] power supply has failed
+\endcode
+
+The messages have gone into the Midas log (see @ref RC_odbedit_old "below").
+
+<hr>@subsection RC_odbedit_old  old - display old messages
+This command displays the last N Midas messages, e.g.
+\code
+[local:customgas:S]/>old 9
+Fri May 21 13:36:27 2010 [ODBEdit,INFO] Program ODBEdit on host dasdevpc2 started
+Fri May 21 13:36:40 2010 [ODBEdit,INFO] Program ODBEdit on host dasdevpc2 stopped
+Mon May 31 15:56:28 2010 [ODBEdit,INFO] Program ODBEdit on host dasdevpc2 started
+Wed Jun  9 20:49:42 2010 [mhttpd] Program mhttpd on host dasdevpc2 stopped
+Wed Jun  9 20:49:42 2010 [mhttpd] Program mhttpd on host dasdevpc2 started
+Wed Jun 16 16:27:51 2010 [fred] hi
+Wed Jun 16 16:29:15 2010 [fred] hi
+Wed Jun 16 16:30:10 2010 [george] is there a problem?
+Wed Jun 16 16:30:48 2010 [fred] power supply has failed
+\endcode
+
+<hr>@subsection RC_odbedit_passwd  passwd - change/set up the Midas password
+see @ref RC_Setup_Security for an example of this command.
+
+<hr>@subsection RC_odbedit_webpasswd  webpasswd - change/set up the web password for mhttpd
+see @ref RC_Setup_Web_Security for an example of this command.
 
 
 <hr>@subsection RC_odbedit_move  move - move a key to a new position
@@ -1045,7 +1087,7 @@ These links were made using the "ln" command, e.g.
 @endcode
 
 
-<hr>@subsection RC_odbedit_cr cr - create a key of a certain type 
+<hr>@subsection RC_odbedit_cr create - create a key of a certain type 
 \code
 create <type> <key>     - create a key of a certain type
 create <type> <key>[n]  - create an array of size [n]

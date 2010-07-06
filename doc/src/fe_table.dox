@@ -143,7 +143,9 @@ the frontend are called \b fragments.
     </tr>
     <tr>
       <td
- style="vertical-align: top; background-color: rgb(204, 204, 204);">@anchor FE_tbl_EqType
+ style="vertical-align: top; background-color: rgb(204, 204, 204);">
+ @anchor FE_tbl_EqType
+ @anchor idx_equipment_flags
       <span style="font-weight: bold; color: rgb(255, 0, 0);">Equipment
 Type</span><br>
       </td>
@@ -151,7 +153,6 @@ Type</span><br>
  style="vertical-align: top; background-color: rgb(204, 204, 204);">One
 of the Equipment Flags EQ_XXX selected
 from the following Table: <br>
-@anchor idx_Equipment_flags
       <table
  style="text-align: left; width: 90%; height: 90%; margin-left: 0px; margin-right: auto;"
  border="1" cellpadding="2" cellspacing="2">
@@ -170,7 +171,9 @@ from the following Table: <br>
           </tr>
           <tr>
             <td
- style="vertical-align: top; background-color: rgb(51, 204, 255);">@anchor FE_tbl_EqPeriodic
+ style="vertical-align: top; background-color: rgb(51, 204, 255);">
+ @anchor FE_tbl_EqPeriodic
+ @anchor idx_equipment_flags_periodic
 EQ_PERIODIC</td>
             <td
  style="vertical-align: top; background-color: rgb(51, 204, 255);">Periodic
@@ -187,7 +190,9 @@ readout function.  See @ref FE_other_event "example". </td>
           </tr>
           <tr>
             <td
- style="vertical-align: top; background-color: rgb(51, 204, 255);">@anchor FE_tbl_EqPolled
+ style="vertical-align: top; background-color: rgb(51, 204, 255);">
+ @anchor FE_tbl_EqPolled
+ @anchor idx_equipment_flags_polled
 EQ_POLLED</td>
             <td
  style="vertical-align: top; background-color: rgb(51, 204, 255);">Polling
@@ -214,7 +219,9 @@ See  @ref FE_poll_event "example".
           <tr>
             <td
  style="vertical-align: top; background-color: rgb(51, 204, 255);">
-@anchor FE_tbl_EqInterrupt EQ_INTERRUPT</td>
+@anchor FE_tbl_EqInterrupt
+ @anchor idx_equipment_flags_interrupt
+EQ_INTERRUPT</td>
             <td
  style="vertical-align: top; background-color: rgb(51, 204, 255);">Interrupt
 Event </td>
@@ -236,7 +243,9 @@ See  @ref FE_interrupt_event "example".
             <td
  style="vertical-align: top; background-color: rgb(51, 204, 255);">
  
-@anchor FE_tbl_EqMultithread EQ_MULTITHREAD</td>
+@anchor FE_tbl_EqMultithread
+ @anchor idx_equipment_flags_multithread
+EQ_MULTITHREAD</td>
             <td
  style="vertical-align: top; background-color: rgb(51, 204, 255);">Multithread
 Event Readout </td>
@@ -254,7 +263,9 @@ multi-core processor to free up CPU for tasks other than polling.<br>
           </tr>
           <tr>
             <td
- style="vertical-align: top; background-color: rgb(51, 204, 255);">EQ_SLOW</td>
+ style="vertical-align: top; background-color: rgb(51, 204, 255);">
+ @anchor idx_equipment_flags_slow-control
+ EQ_SLOW</td>
             <td
  style="vertical-align: top; background-color: rgb(51, 204, 255);">Slow
 Control Event </td>
@@ -267,7 +278,8 @@ to be sent automatically to the /equipment/variables tree in the ODB.</td>
           <tr>
             <td
  style="vertical-align: top; background-color: rgb(51, 204, 255);">
-@anchor idx_event_manual-trigger_equipment-flag  
+@anchor idx_event_manual-trigger_equipment-flag
+@anchor idx_equipment_flags_manual-trigger
 @anchor FE_tbl_EqManTrig EQ_MANUAL_TRIG</td>
             <td
  style="vertical-align: top; background-color: rgb(51, 204, 255);">Manual
@@ -282,7 +294,8 @@ a client via RPC. @ref FE_manual_trigger "See example."</td>
           <tr>
             <td
  style="vertical-align: top; background-color: rgb(51, 204, 255);">
-@anchor idx_event_fragmented_equipment-flag 
+@anchor idx_event_fragmented 
+@anchor idx_equipment_flags_fragmented
 @anchor FE_tbl_EqFragmented EQ_FRAGMENTED</td>
 
             <td
@@ -301,7 +314,10 @@ be used in experiments where the event \b rate is not an issue but the
           <tr>
             <td
  style="vertical-align: top; background-color: rgb(51, 204, 255);">
-@anchor FE_tbl_EqEb EQ_EB</td>
+@anchor FE_tbl_EqEb
+@anchor idx_event_builder_equipment-flag
+@anchor idx_equipment_flags_event-builder
+EQ_EB</td>
             <td
  style="vertical-align: top; background-color: rgb(51, 204, 255);">Event
 run through the
@@ -319,7 +335,9 @@ FE_Event_Builder. Not to be confused with a fragmented event (see above)!
     <tr>
       <td
  style="vertical-align: top; background-color: rgb(204, 204, 204);"><span
- style="color: rgb(0, 0, 0);">@anchor FE_tbl_IntSrc</span><span
+ style="color: rgb(0, 0, 0);">@anchor FE_tbl_IntSrc</span>
+@anchor idx_event_interrupt_source
+ <span
  style="font-weight: bold; color: rgb(255, 0, 0);"> Interrupt
 Source</span><br>
       </td>
@@ -377,7 +395,10 @@ have different formats in the same frontend.<b><br>
     <tr>
       <td
  style="vertical-align: top; background-color: rgb(204, 204, 204);"><span
- style="color: rgb(0, 0, 0);">@anchor FE_tbl_EqEnabled</span><span
+ style="color: rgb(0, 0, 0);">
+ @anchor FE_tbl_EqEnabled</span>
+@anchor idx_equipment_enable
+ <span
  style="font-weight: bold; color: rgb(255, 0, 0);">
 Equipment Enabled  @ref FE_equipment_odb_common "**" </span>
       </td>
@@ -391,6 +412,7 @@ active. </td>
  style="vertical-align: top; background-color: rgb(204, 204, 204);">
  @anchor FE_tbl_ReadOn
  @anchor idx_event_readout_flags
+
       <span style="font-weight: bold; color: rgb(255, 0, 0);">Read
 On @ref FE_equipment_odb_common "**" </span><br>
       </td>
@@ -516,7 +538,11 @@ running and additionally on all transitions. <br>
     <tr>
       <td
  style="vertical-align: top; background-color: rgb(204, 204, 204);"><span
- style="color: rgb(0, 0, 0);">@anchor FE_tbl_Period</span><span
+ style="color: rgb(0, 0, 0);">
+ @anchor FE_tbl_Period</span>
+ @anchor idx_equipment_periodic_time-interval
+
+ <span
  style="font-weight: bold; color: rgb(255, 0, 0);"> Period @ref FE_equipment_odb_common "**"</span><br>
       </td>
       <td
@@ -553,12 +579,15 @@ subevents in the @ref FE_Super_Event "Super event". \b Not applicable to @ref FE
     <tr>
       <td
  style="vertical-align: top; background-color: rgb(204, 204, 204);"><span
- style="color: rgb(0, 0, 0);">@anchor FE_tbl_History</span><span
+ style="color: rgb(0, 0, 0);">
+ @anchor FE_tbl_History</span>
+@anchor idx_history_enable
+ <span
  style="font-weight: bold; color: rgb(255, 0, 0);"> History</span><br>
       </td>
       <td
  style="vertical-align: top; background-color: rgb(204, 204, 204);">Enable/disable
-the @ref  F_History_System for that equipment. The value (positive
+the @ref  F_History_System "history system" for that equipment. The value (positive
 in seconds) specifies the time interval between subsequent history events.
 A positive value enables history logging, in which case the event data will also
 be sent automatically to the ODB in the /equipment/variables tree. 

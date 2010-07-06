@@ -1367,12 +1367,14 @@ There are two levels of access restriction available each of which can be enable
 
 The user can select \b either or \b both of these security features.
 
+In addition, access control on individual keys in the experiment's ODB can be set up using the @ref  RC_odbedit_chmod , and
+write access can be restricted during a run (see  @ref RC_Lock_when_Running ).
 <br><hr><br>
 
 \anchor idx_ODB_tree_Experiment_Security
 @subsection RC_Setup_Security How to Setup Client Access Restriction 
 \anchor idx_access-control_client
-In order provide access restriction, a password mechanism needs to be defined. This is
+In order provide access restriction to the experiment, a password mechanism needs to be defined. This is
 provided by the "Security" subdirectory in odb. This subdirectory 
 is automatically created (if not already present) when the command <b>passwd</b>
   is issued in ODB as follows:
@@ -1712,18 +1714,45 @@ fi
 \endcode
 
 <br><hr><br>
+\anchor idx_access-control_remote
 \anchor idx_mserver-task
 @section RC_mserver_task  mserver      - Midas Remote server
 
-\todo find somewhere better to put mserver task information
 
-\em mserver provides remote access to any midas client. This task usually runs in the
+\em mserver provides remote access to any midas client. It is needed when <b>one or more of the midas clients
+for an experiment are running on a different host</b>. In this case, an \b mserver client must be started on the host
+where the experiment resides. 
+
+For example, if an \b mserver client is running on host isdaq01 but not on host dasdevpc2 :
+\code
+[bnmr@isdaq01 ~/online]$ odb -e t2kgas -h dasdevpc2
+Cannot connect to remote host
+\endcode
+However, one can connect from dasdevpc2 to an experiment running on isdaq01
+\code
+[suz@dasdevpc2 ~]$ odbedit -e bnmr -h isdaq01
+[isdaq01:bnmr:S]/>quit
+\endcode
+
+If an mserver client is now started on dasdevpc2
+\code
+[suz@dasdevpc2 ~]$ mserver -D
+mserver started interactively
+Becoming a daemon...
+\endcode
+Now one can connect to the remote experiment :
+\code
+[bnmr@isdaq01 ~/online]$ odb -e t2kgas -h dasdevpc2
+[dasdevpc2:t2kgas:S]/>quit
+\endcode
+The mserver task usually runs in the
 background and doesn't need to be modified. In the case where debugging is required, the
 \em mserver can be started with the -d flag which will write an entry for each transaction
 appearing onto the mserver. This log entry contains the time stamp and RPC call request.
 <br>
+
 More than one mserver can be started on a system, provided they use different tcp ports. This is useful if, 
-for example, different versions of Midas are in use at the same time.
+for example, different versions of Midas are in use on a single host at the same time.
 To start a version of mserver on a different port, use -p argument, 
 e.g. mserver -p XXXX
 <br> 

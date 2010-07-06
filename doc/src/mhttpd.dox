@@ -408,7 +408,6 @@ the run<br>
 <br><hr><br>
 
 \anchor idx_mhttpd_buttons_page-switch
-\anchor idx_edit_ODB_mhttpd
 @subsection RC_mhttpd_status_Page_buttons Page switch buttons
 
 The Page switch buttons on the @ref RC_mhttpd_pol_status_example "main status page"  change the page to one of the sub-pages. The sub-pages
@@ -1154,14 +1153,20 @@ sections("Features", "RunControl","FrontendOperation"); // last section; top of 
 </script>
 \endhtmlonly
  
-
+\anchor idx_edit_ODB_using-mhttpd
 <br>
 
 The ODB page is displayed by clicking on the "ODB"  @ref RC_mhttpd_status_Page_buttons "page switch button"
-(@ref RC_mhttpd_status_menu_buttons "if present") on 
-the @ref RC_mhttpd_pol_status_example "main status page"  .
+(@ref RC_mhttpd_status_menu_buttons "if present") on the @ref RC_mhttpd_pol_status_example "main status page".
+
 The ODB page initially displays the ODB root tree. Clicking on the hyperlink "/", "Equipment" .. "Channels" will take
-you to the requested ODB field. The <b> Example </b> below show the sequence for changing
+you to the requested ODB field.
+
+The ODB page includes the useful capabilities of editing the ODB values and creating or deleting new keys. But for copying ODB trees,
+saving and reloading the ODB, re-ordering the keys etc., the much more powerful @ref RC_odbedit_task "odbedit" task must be used.
+
+
+The <b> Example </b> below show the sequence for changing
 the variable "PA" under the /Equipment/PA/Settings/Channels ODB directory.
 
 If the ODB is @ref RC_Access_Control "Write protected", a <b> popup window will request the web password </b> before
@@ -1176,8 +1181,6 @@ you can change a value.
  * <br><br><br>  
 <br>
 
-The ODB page does include some capability of editing the ODB values and creating new keys. But for copying ODB trees,
-saving and reloading the ODB, re-ordering the keys etc., @ref RC_odbedit_task "odbedit" must be used.
 
 
  
@@ -1926,7 +1929,10 @@ sections("Features", "RunControl","FrontendOperation"); // last section; top of 
 The \b History page is displayed by clicking on the \b History \b Button on the  @ref RC_mhttpd_Main_Status_page
 ( @ref RC_mhttpd_status_menu_buttons "if present").
 
-This page reflects the @ref F_History_logging "History System" settings (CVS r1.271). It lists on the
+This page reflects the @ref F_History_logging "History System" settings (CVS r1.271).
+\todo We are using SVN now - do we need this reference?
+
+ It lists on the
 top of the page the possible group names containing a list of panels defined in
 the ODB.
 Next a series of buttons defines the time scale of the graph with predefined time
