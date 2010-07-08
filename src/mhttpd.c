@@ -10399,13 +10399,13 @@ void show_hist_config_page(char *path, char *hgroup, char *panel)
       }
 
       if (!found_selected)
-         if (strlen(display_name_odb[index]) > 0) {
-            char event_name[256];
-            strlcpy(event_name, display_name_odb[index], sizeof(event_name));
-            char *s = strchr(event_name, ':');
+         if ((strlen(event_name) > 0) && (strlen(display_name_odb[index]) > 0)) {
+            char xevent_name[256];
+            strlcpy(xevent_name, display_name_odb[index], sizeof(event_name));
+            char *s = strchr(xevent_name, ':');
             if (s)
                *s = 0;
-            rsprintf("<option selected value=\"%s\">%s\n", event_name, event_name);
+            rsprintf("<option selected value=\"%s\">%s\n", xevent_name, xevent_name);
          }
 
       rsprintf("</select></td>\n");
@@ -10428,19 +10428,6 @@ void show_hist_config_page(char *path, char *hgroup, char *panel)
          status = mh->hs_get_tags(event_name, &tags);
 
          if (tags.size() > 0) {
-
-            static char previous_event[NAME_LENGTH];
-            static char previous_var[NAME_LENGTH];
-
-            if (strlen(selected_var) < 1) {
-               if (strcmp(event_name, previous_event) == 0)
-                  STRLCPY(selected_var, previous_var);
-            }
-
-            //printf("entry [%s] event [%s] tag [%s], previous [%s] [%s]\n", display_name[index], event_name, selected_var, previous_event, previous_var);
-
-            STRLCPY(previous_event, event_name);
-            STRLCPY(previous_var, selected_var);
 
             if (0) {
                printf("Compare %d\n", cmp_names("AAA", "BBB"));
@@ -11075,7 +11062,7 @@ void show_hist_page(char *path, int path_size, char *buffer, int *buffer_size,
    char *poffset, *pscale, *pmag, *pindex, *fbuffer, *p;
    HNDLE hDB, hkey, hikeyp, hkeyp, hkeybutton;
    KEY key, ikey;
-   int i, j, k, scale, offset, index, width, size, status, labels, fh, fsize, found;
+   int i, j, k, scale, offset, index, width, size, status, labels, fh, fsize;
    float factor[2];
    char def_button[][NAME_LENGTH] = { "10m", "1h", "3h", "12h", "24h", "3d", "7d" };
    time_t now;
@@ -11604,6 +11591,7 @@ void show_hist_page(char *path, int path_size, char *buffer, int *buffer_size,
       rsprintf("</table></tr>\n");
 
    } else {
+      int found = 0;
 
       /* show drop-down selectors */
       rsprintf("<tr><td colspan=2 bgcolor=\"#FFFFA0\">\n");
