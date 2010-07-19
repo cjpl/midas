@@ -853,7 +853,7 @@ typedef struct {
    char name[NAME_LENGTH];            /**< name of client             */
    INT pid;                           /**< process ID                 */
    INT tid;                           /**< thread ID                  */
-   INT thandle;                       /**< thread handle              */
+   INT unused;                        /**< was thread handle          */
    INT port;                          /**< UDP port for wake up       */
    INT read_pointer;                  /**< read pointer to buffer     */
    INT max_request_index;             /**< index of last request      */

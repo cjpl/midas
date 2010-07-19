@@ -4465,7 +4465,6 @@ INT bm_open_buffer(char *buffer_name, INT buffer_size, INT * buffer_handle)
          strcpy(pclient->name, "unknown");
       pclient->pid = ss_getpid();
       pclient->tid = ss_gettid();
-      pclient->thandle = ss_getthandle();
 
       ss_suspend_get_port(&pclient->port);
 

@@ -841,12 +841,10 @@ int main(int argc, char **argv)
 
                for (i=0; i<buffer_header.max_client_index; i++)
                   if (buffer_header.client[i].pid) {
-                     printf("  client %d: name [%s], pid: %d, tid: %d, thandle: %d, port: %d, rp: %d, max_req: %d, read_wait: %d, write_wait: %d, wake_up: %d, get_all: %d, active: %d, timeout: %d\n",
+                     printf("  client %d: name [%s], pid: %d, port: %d, rp: %d, max_req: %d, read_wait: %d, write_wait: %d, wake_up: %d, get_all: %d, active: %d, timeout: %d\n",
                             i,
                             buffer_header.client[i].name,
                             buffer_header.client[i].pid,
-                            buffer_header.client[i].tid,
-                            buffer_header.client[i].thandle,
                             buffer_header.client[i].port,
                             buffer_header.client[i].read_pointer,
                             buffer_header.client[i].max_request_index,

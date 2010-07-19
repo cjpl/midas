@@ -358,7 +358,7 @@ typedef struct {
    char name[NAME_LENGTH];      /* name of client             */
    INT pid;                     /* process ID                 */
    INT tid;                     /* thread ID                  */
-   INT thandle;                 /* thread handle              */
+   INT unused;                  /* was thread handle          */
    INT port;                    /* UDP port for wake up       */
    INT num_open_records;        /* number of open records     */
    DWORD last_activity;         /* time of last activity      */
@@ -605,7 +605,6 @@ extern "C" {
    BOOL EXPRT ss_existpid(INT pid);
    INT EXPRT ss_getpid(void);
    INT EXPRT ss_gettid(void);
-   INT ss_getthandle(void);
    INT ss_set_async_flag(INT flag);
    INT EXPRT ss_semaphore_create(const char *semaphore_name, HNDLE * semaphore_handle);
    INT EXPRT ss_semaphore_wait_for(HNDLE semaphore_handle, INT timeout);
@@ -615,7 +614,6 @@ extern "C" {
    INT EXPRT ss_mutex_wait_for(MUTEX_T *mutex, INT timeout);
    INT EXPRT ss_mutex_release(MUTEX_T *mutex);
    INT EXPRT ss_mutex_delete(MUTEX_T *mutex);
-   INT ss_wake(INT pid, INT tid, INT thandle);
    INT ss_alarm(INT millitime, void (*func) (int));
    INT ss_suspend_get_port(INT * port);
    INT ss_suspend_set_dispatch(INT channel, void *connection, INT(*dispatch) ());
