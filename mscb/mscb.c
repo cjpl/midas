@@ -1008,7 +1008,7 @@ int mrpc_connected(int fd)
 
 /*------------------------------------------------------------------*/
 
-int mscb_init(char *device, int bufsize, char *password, int debug)
+int mscb_init(char *device, int bufsize, const char *password, int debug)
 /********************************************************************\
 
   Routine: mscb_init
