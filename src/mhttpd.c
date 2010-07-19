@@ -9,7 +9,7 @@
 
 \********************************************************************/
 
-char *mhttpd_svn_revision = "$Rev$";
+const char *mhttpd_svn_revision = "$Rev$";
 
 #include <math.h>
 #include <assert.h>
@@ -64,7 +64,7 @@ char midas_expt[256];
 char allowed_host[MAX_N_ALLOWED_HOSTS][PARAM_LENGTH];
 int  n_allowed_hosts;
 
-char *mname[] = {
+const char *mname[] = {
    "January",
    "February",
    "March",
@@ -109,7 +109,7 @@ struct Filetype {
    char type[32];
 };
 
-Filetype filetype[] = {
+const Filetype filetype[] = {
 
    {
    ".JPG", "image/jpeg",}, {
@@ -129,7 +129,7 @@ Filetype filetype[] = {
 
 /*------------------------------------------------------------------*/
 
-unsigned char favicon_png[] = {
+const unsigned char favicon_png[] = {
    0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0x00, 0x00, 0x00, 0x0D, 0x49, 0x48,
    0x44, 0x52,
    0x00, 0x00, 0x00, 0x10, 0x00, 0x00, 0x00, 0x10, 0x08, 0x02, 0x00, 0x00, 0x00, 0x90,
@@ -193,7 +193,7 @@ unsigned char favicon_png[] = {
    0x3F, 0x68, 0x00, 0x00, 0x00, 0x00, 0x49, 0x45, 0x4E, 0x44, 0xAE, 0x42, 0x60, 0x82
 };
 
-unsigned char favicon_ico[] = {
+const unsigned char favicon_ico[] = {
    0x00, 0x00, 0x01, 0x00, 0x01, 0x00, 0x10, 0x10, 0x10, 0x00, 0x01, 0x00, 0x04, 0x00,
    0x28, 0x01,
    0x00, 0x00, 0x16, 0x00, 0x00, 0x00, 0x28, 0x00, 0x00, 0x00, 0x10, 0x00, 0x00, 0x00,
@@ -235,7 +235,7 @@ unsigned char favicon_ico[] = {
    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
 };
 
-unsigned char reload_png[] = {
+const unsigned char reload_png[] = {
 0x89,0x50,0x4E,0x47,0x0D,0x0A,0x1A,0x0A,0x00,0x00,0x00,0x0D,0x49,0x48,0x44,0x52,
 0x00,0x00,0x00,0x20,0x00,0x00,0x00,0x20,0x08,0x06,0x00,0x00,0x00,0x73,0x7A,0x7A,
 0xF4,0x00,0x00,0x00,0x07,0x74,0x49,0x4D,0x45,0x07,0xD9,0x0C,0x0B,0x0B,0x00,0x2D,
@@ -379,7 +379,7 @@ unsigned char reload_png[] = {
 
 /*------------------------------------------------------------------*/
 
-void show_hist_page(char *path, int path_size, char *buffer, int *buffer_size,
+void show_hist_page(const char *path, int path_size, char *buffer, int *buffer_size,
                     int refresh);
 int vaxis(gdImagePtr im, gdFont * font, int col, int gcol, int x1, int y1, int width,
           int minor, int major, int text, int label, int grid, double ymin, double ymax,
@@ -509,7 +509,7 @@ void initparam()
    _text[0] = 0;
 }
 
-void setparam(char *param, char *value)
+void setparam(const char *param, const char *value)
 {
    int i;
 
@@ -549,7 +549,7 @@ void freeparam()
       }
 }
 
-char *getparam(char *param)
+const char *getparam(const char *param)
 {
    int i;
 
@@ -569,7 +569,7 @@ char *getparam(char *param)
    return _value[i];
 }
 
-BOOL isparam(char *param)
+BOOL isparam(const char *param)
 {
    int i;
 
@@ -583,7 +583,7 @@ BOOL isparam(char *param)
    return FALSE;
 }
 
-void unsetparam(char *param)
+void unsetparam(const char *param)
 {
    int i;
 
@@ -691,12 +691,12 @@ void receive_message(HNDLE hBuf, HNDLE id, EVENT_HEADER * pheader, void *message
 
 /*-------------------------------------------------------------------*/
 
-INT sendmail(char *smtp_host, char *from, char *to, char *subject, char *text)
+INT sendmail(const char *smtp_host, const char *from, const char *to, const char *subject, const char *text)
 {
    struct sockaddr_in bind_addr;
    struct hostent *phe;
    int i, s, strsize, offset;
-   char *str, *p, buf[256];
+   char *str, buf[256];
    time_t now;
    struct tm *ts;
 
@@ -805,7 +805,7 @@ INT sendmail(char *smtp_host, char *from, char *to, char *subject, char *text)
       puts(str);
 
    /* analyze text for "." at beginning of line */
-   p = text;
+   const char* p = text;
    str[0] = 0;
    while (strstr(p, "\r\n.\r\n")) {
       i = (POINTER_T) strstr(p, "\r\n.\r\n") - (POINTER_T) p + 1;
@@ -844,7 +844,7 @@ INT sendmail(char *smtp_host, char *from, char *to, char *subject, char *text)
 
 /*------------------------------------------------------------------*/
 
-void redirect(char *path)
+void redirect(const char *path)
 {
    char str[256];
 
@@ -868,7 +868,7 @@ void redirect(char *path)
    }
 }
 
-void redirect2(char *path)
+void redirect2(const char *path)
 {
    redirect(path);
    send_tcp(_sock, return_buffer, strlen(return_buffer) + 1, 0x10000);
@@ -989,7 +989,7 @@ void show_help_page()
 
 /*------------------------------------------------------------------*/
 
-void show_header(HNDLE hDB, char *title, char *method, char *path, int colspan,
+void show_header(HNDLE hDB, const char *title, const char *method, const char *path, int colspan,
                  int refresh)
 {
    time_t now;
@@ -1061,7 +1061,7 @@ void show_text_header()
 
 /*------------------------------------------------------------------*/
 
-void show_error(char *error)
+void show_error(const char *error)
 {
    /* header */
    rsprintf("HTTP/1.0 200 Document follows\r\n");
@@ -1150,13 +1150,13 @@ void exec_script(HNDLE hkey)
 int requested_transition = 0;
 int requested_old_state = 0;
 
-void show_status_page(int refresh, char *cookie_wpwd)
+void show_status_page(int refresh, const char *cookie_wpwd)
 {
    int i, j, k, h, m, s, status, size, type;
    BOOL flag, first;
    char str[1000], msg[256], name[32], ref[256], bgcol[32], fgcol[32], alarm_class[32],
       value_str[256], *p;
-   char *trans_name[] = { "Start", "Stop", "Pause", "Resume" };
+   const char *trans_name[] = { "Start", "Stop", "Pause", "Resume" };
    time_t now;
    DWORD difftime;
    double d, value, compression_ratio;
@@ -2083,7 +2083,7 @@ void strencode3(char *text)
 
 /*------------------------------------------------------------------*/
 
-void show_elog_new(char *path, BOOL bedit, char *odb_att, char *action_path)
+void show_elog_new(const char *path, BOOL bedit, const char *odb_att, const char *action_path)
 {
    int i, j, size, run_number, wrap, status;
    char str[256], ref[256], *p;
@@ -4965,7 +4965,7 @@ char *find_odb_tag(char *p, char *path, char *format, int *edit, char *type, cha
 
 /*------------------------------------------------------------------*/
 
-void show_odb_tag(char *path, char *keypath, char *format, int n_var, int edit, char *type, char *pwd, char *tail)
+void show_odb_tag(const char *path, const char *keypath, const char *format, int n_var, int edit, char *type, char *pwd, char *tail)
 {
    int size, index, i_edit, i_set;
    char str[TEXT_SIZE], data[TEXT_SIZE], options[1000], full_keypath[256], *p;
@@ -5258,7 +5258,7 @@ int evaluate_src(char *key, char *src, double *fvalue)
 
 /*------------------------------------------------------------------*/
 
-void show_custom_gif(char *name)
+void show_custom_gif(const char *name)
 {
    char str[256], filename[256], data[256], value[256], src[256], custom_path[256],
       full_filename[256];
@@ -5659,14 +5659,17 @@ void do_jrpc_rev0()
 
    int status, count = 0, substring = 0, rpc;
 
-   char *sname   = getparam("name");
-   char *srpc    = getparam("rpc");
+   const char *xname   = getparam("name");
+   const char *srpc    = getparam("rpc");
 
-   if (!srpc || !sname) {
+   if (!srpc || !xname) {
       show_text_header();
       rsprintf("<INVALID_ARGUMENTS>");
       return;
    }
+
+   char sname[256];
+   strlcpy(sname, xname, sizeof(sname));
 
    if (sname[strlen(sname)-1]=='*') {
       sname[strlen(sname)-1] = 0;
@@ -5763,7 +5766,7 @@ void do_jrpc_rev0()
 
 /*------------------------------------------------------------------*/
 
-void show_custom_page(char *path, char *cookie_cpwd)
+void show_custom_page(const char *path, const char *cookie_cpwd)
 {
    int size, i, n_var, fh, index, edit;
    char str[TEXT_SIZE], keypath[256], type[32], *p, *ps, custom_path[256],
@@ -5941,7 +5944,7 @@ void show_custom_page(char *path, char *cookie_cpwd)
             memset(data, 0, sizeof(data));
             if (key.item_size <= (int)sizeof(data)) {
                if (index == -1) {
-                  p = getparam("value");
+                  const char* p = getparam("value");
                   for (i=0 ; p != NULL ; i++) {
                      size = sizeof(data);
                      db_sscanf(p, data, &size, 0, key.type);
@@ -6110,7 +6113,7 @@ void show_custom_page(char *path, char *cookie_cpwd)
 
 void show_cnaf_page()
 {
-   char *cmd, str[256], *pd;
+   char str[256];
    int c, n, a, f, d, q, x, r, ia, id, w;
    int i, size, status;
    HNDLE hDB, hrootkey, hsubkey, hkey;
@@ -6200,7 +6203,7 @@ void show_cnaf_page()
    /* execute commands */
    size = sizeof(d);
 
-   cmd = getparam("cmd");
+   const char* cmd = getparam("cmd");
    if (equal_ustring(cmd, "C cycle")) {
       rpc_client_call(hconn, RPC_CNAF16, CNAF_CRATE_CLEAR, 0, 0, 0, 0, 0, &d, &size, &x,
                       &q);
@@ -6233,7 +6236,7 @@ void show_cnaf_page()
       id = atoi(getparam("ID"));
       ia = atoi(getparam("IA"));
 
-      pd = getparam("D");
+      const char* pd = getparam("D");
       if (strncmp(pd, "0x", 2) == 0)
          sscanf(pd + 2, "%x", &d);
       else
@@ -6586,7 +6589,7 @@ void create_mscb_tree()
 
             /* create or open submaster entry */
             db_find_key(hDB, hKeySubm, mscb_dev, &hKey);
-            if (&hKey) {
+            if (!hKey) {
                db_create_key(hDB, hKeySubm, mscb_dev, TID_KEY);
                db_find_key(hDB, hKeySubm, mscb_dev, &hKey);
             }
@@ -7005,7 +7008,7 @@ mscb_error:
 
 /*------------------------------------------------------------------*/
 
-void show_password_page(char *password, char *experiment)
+void show_password_page(const char *password, const char *experiment)
 {
    rsprintf("HTTP/1.0 200 Document follows\r\n");
    rsprintf("Server: MIDAS HTTP %d\r\n", mhttpd_revision());
@@ -7038,7 +7041,7 @@ void show_password_page(char *password, char *experiment)
 
 /*------------------------------------------------------------------*/
 
-BOOL check_web_password(char *password, char *redir, char *experiment)
+BOOL check_web_password(const char *password, const char *redir, const char *experiment)
 {
    HNDLE hDB, hkey;
    INT size;
@@ -7457,8 +7460,8 @@ void show_odb_page(char *enc_path, int enc_path_size, char *dec_path)
 
 /*------------------------------------------------------------------*/
 
-void show_set_page(char *enc_path, int enc_path_size, char *dec_path, char *group,
-                   int index, char *value)
+void show_set_page(char *enc_path, int enc_path_size, char *dec_path, const char *group,
+                   int index, const char *value)
 {
    int status, size;
    HNDLE hDB, hkey;
@@ -7610,17 +7613,17 @@ void show_set_page(char *enc_path, int enc_path_size, char *dec_path, char *grou
 
 /*------------------------------------------------------------------*/
 
-void show_find_page(char *enc_path, char *value)
+void show_find_page(const char *enc_path, const char *value)
 {
    HNDLE hDB, hkey;
-   char str[256], *p;
+   char str[256];
 
    cm_get_experiment_database(&hDB, NULL);
 
    if (value[0] == 0) {
       /* without value, show find dialog */
       str[0] = 0;
-      for (p=enc_path ; *p ; p++)
+      for (const char* p=enc_path ; *p ; p++)
          if (*p == '/')
             strlcat(str, "../", sizeof(str));
       show_header(hDB, "Find value", "GET", str, 1, 0);
@@ -7669,7 +7672,7 @@ void show_find_page(char *enc_path, char *value)
 
 /*------------------------------------------------------------------*/
 
-void show_create_page(char *enc_path, char *dec_path, char *value, int index, int type)
+void show_create_page(const char *enc_path, const char *dec_path, const char *value, int index, int type)
 {
    char str[256], link[256], error[256], *p;
    char data[10000];
@@ -7802,7 +7805,7 @@ void show_create_page(char *enc_path, char *dec_path, char *value, int index, in
 
 /*------------------------------------------------------------------*/
 
-void show_delete_page(char *enc_path, char *dec_path, char *value, int index)
+void show_delete_page(const char *enc_path, const char *dec_path, const char *value, int index)
 {
    char str[256];
    int i, status;
@@ -8780,7 +8783,7 @@ int vaxis(gdImagePtr im, gdFont * font, int col, int gcol,
 
 /*------------------------------------------------------------------*/
 
-int time_to_sec(char *str)
+int time_to_sec(const char *str)
 {
    double s;
 
@@ -8872,7 +8875,7 @@ static void set_history_path()
 
 /*------------------------------------------------------------------*/
 
-void generate_hist_graph(char *path, char *buffer, int *buffer_size,
+void generate_hist_graph(const char *path, char *buffer, int *buffer_size,
                          int width, int height, int scale, int toffset, int index,
                          int labels, char *bgcolor, char *fgcolor, char *gridcolor)
 {
@@ -9777,7 +9780,7 @@ void generate_hist_graph(char *path, char *buffer, int *buffer_size,
 
 /*------------------------------------------------------------------*/
 
-void show_query_page(char *path)
+void show_query_page(const char *path)
 {
    int i;
    time_t ltime_start, ltime_end;
@@ -9992,13 +9995,13 @@ static void sort_tags(int ntags, TAG* tags)
 
 /*------------------------------------------------------------------*/
 
-void show_hist_config_page(char *path, char *hgroup, char *panel)
+void show_hist_config_page(const char *path, const char *hgroup, const char *panel)
 {
    int status, size, index, sort_vars;
    BOOL flag;
    HNDLE hDB, hKeyVar, hKey;
    KEY key;
-   char str[256], var_name[256], cmd[256], ref[256], *p;
+   char str[256], var_name[256], cmd[256], ref[256];
    char display_name[MAX_VARS][2 * NAME_LENGTH];
    char display_name_odb[MAX_VARS][2 * NAME_LENGTH];
    float value;
@@ -10142,7 +10145,7 @@ void show_hist_config_page(char *path, char *hgroup, char *panel)
 
    if (panel[0]) {
       str[0] = 0;
-      for (p=path ; *p ; p++)
+      for (const char* p=path ; *p ; p++)
          if (*p == '/')
             strlcat(str, "../", sizeof(str));
       strlcat(str, hgroup, sizeof(str));
@@ -10348,7 +10351,6 @@ void show_hist_config_page(char *path, char *hgroup, char *panel)
    /* extract colours */
    for (index = 0; index < MAX_VARS; index++) {
       char event_name[NAME_LENGTH];
-      char *s;
 
       if (equal_ustring(cmd, "refresh")) {
          /* get value from parameters */
@@ -10379,7 +10381,7 @@ void show_hist_config_page(char *path, char *hgroup, char *panel)
       /* enumerate events */
 
       strlcpy(event_name, display_name[index], sizeof(event_name));
-      s = strchr(event_name, ':');
+      char* s = strchr(event_name, ':');
       if (s)
          *s = 0;
 
@@ -10388,13 +10390,12 @@ void show_hist_config_page(char *path, char *hgroup, char *panel)
 
       bool found_selected = false;
       for (unsigned e=0; e<events.size(); e++) {
+         const char *s = "";
          const char *p = events[e].c_str();
          if (equal_ustring(event_name, p)) {
             s = "selected";
             found_selected = true;
          }
-         else
-            s = "";
          rsprintf("<option %s value=\"%s\">%s\n", s, p, p);
       }
 
@@ -10584,7 +10585,7 @@ void show_hist_config_page(char *path, char *hgroup, char *panel)
 
 /*------------------------------------------------------------------*/
 
-void export_hist(char *path, int scale, int toffset, int index, int labels)
+void export_hist(const char *path, int scale, int toffset, int index, int labels)
 {
    HNDLE hDB, hkey, hkeypanel, hkeyeq, hkeydvar, hkeyvars, hkeyroot, hkeynames;
    KEY key;
@@ -11052,14 +11053,14 @@ void export_hist(char *path, int scale, int toffset, int index, int labels)
 
 /*------------------------------------------------------------------*/
 
-void show_hist_page(char *path, int path_size, char *buffer, int *buffer_size,
+void show_hist_page(const char *path, int path_size, char *buffer, int *buffer_size,
                     int refresh)
 {
    char str[256], ref[256], ref2[256], paramstr[256], scalestr[256], hgroup[256],
        bgcolor[32], fgcolor[32], gridcolor[32], url[256], dir[256], file_name[256],
        back_path[256], panel[256];
    char hurl[256];
-   char *poffset, *pscale, *pmag, *pindex, *fbuffer, *p;
+   const char *p;
    HNDLE hDB, hkey, hikeyp, hkeyp, hkeybutton;
    KEY key, ikey;
    int i, j, k, scale, offset, index, width, size, status, labels, fh, fsize;
@@ -11125,6 +11126,7 @@ void show_hist_page(char *path, int path_size, char *buffer, int *buffer_size,
 
       /* rewrite path if parameters come from a form submission */
 
+      char path[256];
       /* check if group changed */
       if (!equal_ustring(getparam("fgroup"), hgroup))
          sprintf(path, "%s%s", back_path, getparam("fgroup"));
@@ -11234,16 +11236,16 @@ void show_hist_page(char *path, int path_size, char *buffer, int *buffer_size,
       return;
    }
 
-   pscale = getparam("scale");
+   const char* pscale = getparam("scale");
    if (pscale == NULL || *pscale == 0)
       pscale = getparam("hscale");
-   poffset = getparam("offset");
+   const char* poffset = getparam("offset");
    if (poffset == NULL || *poffset == 0)
       poffset = getparam("hoffset");
-   pmag = getparam("width");
+   const char* pmag = getparam("width");
    if (pmag == NULL || *pmag == 0)
       pmag = getparam("hwidth");
-   pindex = getparam("index");
+   const char* pindex = getparam("index");
    if (pindex == NULL || *pindex == 0)
       pindex = getparam("hindex");
 
@@ -11298,7 +11300,7 @@ void show_hist_page(char *path, int path_size, char *buffer, int *buffer_size,
 
          /*---- use external ELOG ----*/
          fsize = 100000;
-         fbuffer = (char*)M_MALLOC(fsize);
+         char* fbuffer = (char*)M_MALLOC(fsize);
          assert(fbuffer != NULL);
 
          if (equal_ustring(pmag, "Large"))
@@ -11862,10 +11864,10 @@ void get_password(char *password)
 
 /*------------------------------------------------------------------*/
 
-void send_icon(char *icon)
+void send_icon(const char *icon)
 {
    int length;
-   unsigned char *picon;
+   const unsigned char *picon;
    char str[256], format[256];
    time_t now;
    struct tm *gmt;
@@ -11952,7 +11954,7 @@ void send_css()
 
 /*------------------------------------------------------------------*/
 
-char *mhttpd_js = 
+const char *mhttpd_js = 
 "\n"
 "document.onmousemove = getMouseXY;\n"
 "\n"
@@ -12164,7 +12166,7 @@ void send_js()
 
 /*------------------------------------------------------------------*/
 
-void interprete(char *cookie_pwd, char *cookie_wpwd, char *cookie_cpwd, char *path, int refresh)
+void interprete(const char *cookie_pwd, const char *cookie_wpwd, const char *cookie_cpwd, const char *path, int refresh)
 /********************************************************************\
 
   Routine: interprete
@@ -12187,7 +12189,6 @@ void interprete(char *cookie_pwd, char *cookie_wpwd, char *cookie_cpwd, char *pa
    char *p, str[256];
    char enc_path[256], dec_path[256], eq_name[NAME_LENGTH], fe_name[NAME_LENGTH];
    char data[TEXT_SIZE];
-   char *experiment, *password, *wpassword, *command, *value, *group;
    time_t now;
    struct tm *gmt;
 
@@ -12215,12 +12216,12 @@ void interprete(char *cookie_pwd, char *cookie_wpwd, char *cookie_cpwd, char *pa
    strlcpy(enc_path, dec_path, sizeof(enc_path));
    urlEncode(enc_path, sizeof(enc_path));
 
-   experiment = getparam("exp");
-   password = getparam("pwd");
-   wpassword = getparam("wpwd");
-   command = getparam("cmd");
-   value = getparam("value");
-   group = getparam("group");
+   const char* experiment = getparam("exp");
+   const char* password = getparam("pwd");
+   const char* wpassword = getparam("wpwd");
+   const char* command = getparam("cmd");
+   const char* value = getparam("value");
+   const char* group = getparam("group");
    index = atoi(getparam("index"));
 
    cm_get_experiment_database(&hDB, NULL);
@@ -13483,7 +13484,7 @@ int main(int argc, char *argv[])
    int i, status;
    int daemon = FALSE;
    char str[256];
-   char *myname = "mhttpd";
+   const char *myname = "mhttpd";
 
    setbuf(stdout, NULL);
    setbuf(stderr, NULL);

@@ -1588,13 +1588,13 @@ extern "C" {
    INT EXPRT cm_get_revision(void);
    INT EXPRT cm_get_environment(char *host_name, int host_name_size,
                                 char *exp_name, int exp_name_size);
-   INT EXPRT cm_list_experiments(char *host_name,
+   INT EXPRT cm_list_experiments(const char *host_name,
                                  char exp_name[MAX_EXPERIMENT][NAME_LENGTH]);
-   INT EXPRT cm_select_experiment(char *host_name, char *exp_name);
-   INT EXPRT cm_connect_experiment(char *host_name, char *exp_name,
-                                   char *client_name, void (*func) (char *));
-   INT EXPRT cm_connect_experiment1(char *host_name, char *exp_name,
-                                    char *client_name,
+   INT EXPRT cm_select_experiment(const char *host_name, char *exp_name);
+   INT EXPRT cm_connect_experiment(const char *host_name, const char *exp_name,
+                                   const char *client_name, void (*func) (char *));
+   INT EXPRT cm_connect_experiment1(const char *host_name, const char *exp_name,
+                                    const char *client_name,
                                     void (*func) (char *), INT odb_size,
                                     DWORD watchdog_timeout);
    INT EXPRT cm_disconnect_experiment(void);
@@ -1626,11 +1626,11 @@ extern "C" {
                                   DWORD * timeout, DWORD * last);
    INT EXPRT cm_enable_watchdog(BOOL flag);
    void EXPRT cm_watchdog(int);
-   INT EXPRT cm_shutdown(char *name, BOOL bUnique);
-   INT EXPRT cm_exist(char *name, BOOL bUnique);
-   INT EXPRT cm_cleanup(char *client_name, BOOL ignore_timeout);
+   INT EXPRT cm_shutdown(const char *name, BOOL bUnique);
+   INT EXPRT cm_exist(const char *name, BOOL bUnique);
+   INT EXPRT cm_cleanup(const char *client_name, BOOL ignore_timeout);
    INT EXPRT cm_yield(INT millisec);
-   INT EXPRT cm_execute(char *command, char *result, INT buf_size);
+   INT EXPRT cm_execute(const char *command, char *result, INT buf_size);
    INT EXPRT cm_synchronize(DWORD * sec);
    INT EXPRT cm_asctime(char *str, INT buf_size);
    INT EXPRT cm_time(DWORD * t);
@@ -1772,7 +1772,7 @@ extern "C" {
    INT EXPRT db_sprintf(char *string, const void *data, INT data_size, INT index, DWORD type);
    INT EXPRT db_sprintff(char *string, const char *format, const void *data, INT data_size, INT index, DWORD type);
    INT EXPRT db_sprintfh(char *string, const void *data, INT data_size, INT index, DWORD type);
-   INT EXPRT db_sscanf(char *string, void *data, INT * data_size, INT index, DWORD type);
+   INT EXPRT db_sscanf(const char *string, void *data, INT * data_size, INT index, DWORD type);
    char EXPRT *strcomb(const char **list);
 
    /*---- Bank routines ----*/
@@ -1792,28 +1792,28 @@ extern "C" {
                      DWORD * bktype, void **pdata);
 
    /*---- RPC routines ----*/
-   INT EXPRT rpc_register_functions(RPC_LIST * new_list, INT(*func) (INT, void **));
+   INT EXPRT rpc_register_functions(const RPC_LIST * new_list, INT(*func) (INT, void **));
    INT EXPRT rpc_register_function(INT id, INT(*func) (INT, void **));
    INT EXPRT rpc_get_option(HNDLE hConn, INT item);
    INT EXPRT rpc_set_option(HNDLE hConn, INT item, INT value);
-   INT EXPRT rpc_set_name(char *name);
+   INT EXPRT rpc_set_name(const char *name);
    INT EXPRT rpc_get_name(char *name);
    INT EXPRT rpc_is_remote(void);
    INT EXPRT rpc_set_debug(void (*func) (char *), INT mode);
-   void EXPRT rpc_debug_printf(char *format, ...);
+   void EXPRT rpc_debug_printf(const char *format, ...);
 
-   INT EXPRT rpc_register_server(INT server_type, char *name, INT * port,
+   INT EXPRT rpc_register_server(INT server_type, const char *name, INT * port,
                                  INT(*func) (INT, void **));
-   INT EXPRT rpc_register_client(char *name, RPC_LIST * list);
+   INT EXPRT rpc_register_client(const char *name, RPC_LIST * list);
    INT EXPRT rpc_server_thread(void *pointer);
    INT EXPRT rpc_server_shutdown(void);
    INT EXPRT rpc_client_call(HNDLE hConn, const INT routine_id, ...);
    INT EXPRT rpc_call(const INT routine_id, ...);
    INT EXPRT rpc_tid_size(INT id);
    char EXPRT *rpc_tid_name(INT id);
-   INT EXPRT rpc_server_connect(char *host_name, char *exp_name);
-   INT EXPRT rpc_client_connect(char *host_name, INT midas_port,
-                                char *client_name, HNDLE * hConnection);
+   INT EXPRT rpc_server_connect(const char *host_name, const char *exp_name);
+   INT EXPRT rpc_client_connect(const char *host_name, INT midas_port,
+                                const char *client_name, HNDLE * hConnection);
    INT EXPRT rpc_client_disconnect(HNDLE hConn, BOOL bShutdown);
 
    INT EXPRT rpc_send_event(INT buffer_handle, void *source, INT buf_size,
@@ -1843,7 +1843,7 @@ extern "C" {
 
    char EXPRT *ss_getpass(char *prompt);
    INT EXPRT ss_getchar(BOOL reset);
-   char EXPRT *ss_crypt(char *key, char *salt);
+   char EXPRT *ss_crypt(const char *key, const char *salt);
    char EXPRT *ss_gets(char *string, int size);
 
    void EXPRT *ss_ctrlc_handler(void (*func) (int));

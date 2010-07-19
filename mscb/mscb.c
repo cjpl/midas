@@ -114,7 +114,7 @@ MSCB_FD mscb_fd[MSCB_MAX_FD];
 #define TO_LONG          5000   /* 5 s    */
 
 int _debug_flag;         /* global debug flag */
-void debug_log(char *format, int start, ...);
+void debug_log(const char *format, int start, ...);
 
 /* RS485 flags for USB submaster */
 #define RS485_FLAG_BIT9      (1<<0)
@@ -185,7 +185,7 @@ int kbhit()
 
 /*------------------------------------------------------------------*/
 
-void debug_log(char *format, int start, ...)
+void debug_log(const char *format, int start, ...)
 {
    int fh;
    char str[2000], line[2000];
@@ -437,7 +437,7 @@ int EXPRT mscb_set_eth_max_retry(int fd, int eth_max_retry)
 
 /*---- semaphore functions ------------------------------------------*/
 
-int mscb_semaphore_create(char *device)
+int mscb_semaphore_create(const char *device)
 {
 #ifdef _MSC_VER
    HANDLE semaphore_handle;

@@ -571,7 +571,7 @@ INT cm_msg_log1(INT message_type, const char *message, const char *facility)
          printf("Cannot open message log file %s\n", path);
       } else {
          strcpy(str, ss_asctime());
-         fprintf(f, str);
+         fprintf(f, "%s", str);
          fprintf(f, " %s\n", message);
          fclose(f);
       }
@@ -1822,7 +1822,7 @@ usage:
 @return CM_SUCCESS, CM_UNDEF_EXP, CM_SET_ERROR, RPC_NET_ERROR <br>
 CM_VERSION_MISMATCH MIDAS library version different on local and remote computer
 */
-INT cm_connect_experiment(char *host_name, char *exp_name, char *client_name, void (*func) (char *))
+INT cm_connect_experiment(const char *host_name, const char *exp_name, const char *client_name, void (*func) (char *))
 {
    INT status;
    char str[256];
@@ -1844,8 +1844,8 @@ Connect to a MIDAS experiment (to the online database) on
            a specific host.
 @internal
 */
-INT cm_connect_experiment1(char *host_name, char *exp_name,
-                           char *client_name, void (*func) (char *), INT odb_size, DWORD watchdog_timeout)
+INT cm_connect_experiment1(const char *host_name, const char *exp_name,
+                           const char *client_name, void (*func) (char *), INT odb_size, DWORD watchdog_timeout)
 {
    INT status, i, semaphore_elog, semaphore_alarm, semaphore_history, semaphore_msg, size;
    char local_host_name[HOST_NAME_LENGTH];
@@ -1862,7 +1862,7 @@ INT cm_connect_experiment1(char *host_name, char *exp_name,
 
    /* check for local host */
    if (equal_ustring(host_name, "local"))
-      host_name[0] = 0;
+      host_name = NULL;
 
 #ifdef OS_WINNT
    {
@@ -1886,7 +1886,7 @@ INT cm_connect_experiment1(char *host_name, char *exp_name,
    }
 
    /* connect to MIDAS server */
-   if (host_name[0]) {
+   if (host_name && host_name[0]) {
       status = rpc_server_connect(host_name, exp_name1);
       if (status != RPC_SUCCESS)
          return status;
@@ -2047,7 +2047,7 @@ Connect to a MIDAS server and return all defined
 @param  exp_name          list of experiment names
 @return CM_SUCCESS, RPC_NET_ERROR
 */
-INT cm_list_experiments(char *host_name, char exp_name[MAX_EXPERIMENT][NAME_LENGTH])
+INT cm_list_experiments(const char *host_name, char exp_name[MAX_EXPERIMENT][NAME_LENGTH])
 {
    INT i, status;
    struct sockaddr_in bind_addr;
@@ -2058,7 +2058,7 @@ INT cm_list_experiments(char *host_name, char exp_name[MAX_EXPERIMENT][NAME_LENG
    char hname[256];
    char *s;
 
-   if (host_name[0] == 0 || equal_ustring(host_name, "local")) {
+   if (host_name == NULL || host_name[0] == 0 || equal_ustring(host_name, "local")) {
       status = cm_scan_experiments();
       if (status != CM_SUCCESS)
          return status;
@@ -2161,7 +2161,7 @@ Connect to a MIDAS server and select an experiment
 @param  exp_name          list of experiment names
 @return CM_SUCCESS, RPC_NET_ERROR
 */
-INT cm_select_experiment(char *host_name, char *exp_name)
+INT cm_select_experiment(const char *host_name, char *exp_name)
 {
    INT status, i;
    char expts[MAX_EXPERIMENT][NAME_LENGTH];
@@ -4011,7 +4011,7 @@ Executes command via system() call
 @param    bufsize          string size in byte
 @return   CM_SUCCESS
 */
-INT cm_execute(char *command, char *result, INT bufsize)
+INT cm_execute(const char *command, char *result, INT bufsize)
 {
    char str[256];
    INT n;
@@ -4825,7 +4825,7 @@ Shutdown (exit) other MIDAS client
 
 @return CM_SUCCESS, CM_NO_CLIENT, DB_NO_KEY
 */
-INT cm_shutdown(char *name, BOOL bUnique)
+INT cm_shutdown(const char *name, BOOL bUnique)
 {
    INT status, return_status, i, size;
    HNDLE hDB, hKeyClient, hKey, hSubkey, hKeyTmp, hConn;
@@ -4934,7 +4934,7 @@ Check if a MIDAS client exists in current experiment
                           a any number
 @return   CM_SUCCESS, CM_NO_CLIENT
 */
-INT cm_exist(char *name, BOOL bUnique)
+INT cm_exist(const char *name, BOOL bUnique)
 {
    INT status, i, size;
    HNDLE hDB, hKeyClient, hKey, hSubkey;
@@ -5012,7 +5012,7 @@ killed after 2*WATCHDOG_INTERVAL.
                            timeout defined by each client.
 @return   CM_SUCCESS
 */
-INT cm_cleanup(char *client_name, BOOL ignore_timeout)
+INT cm_cleanup(const char *client_name, BOOL ignore_timeout)
 {
    if (rpc_is_remote())
       return rpc_call(RPC_CM_CLEANUP, client_name);
@@ -8060,7 +8060,7 @@ Register RPC client for standalone mode (without standard
 @param name          Name of this client
 @return RPC_SUCCESS
 */
-INT rpc_register_client(char *name, RPC_LIST * list)
+INT rpc_register_client(const char *name, RPC_LIST * list)
 {
    rpc_set_name(name);
    rpc_register_functions(rpc_get_internal_list(0), NULL);
@@ -8080,7 +8080,7 @@ Register a set of RPC functions (both as clients or servers)
 
 @return RPC_SUCCESS, RPC_NO_MEMORY, RPC_DOUBLE_DEFINED
 */
-INT rpc_register_functions(RPC_LIST * new_list, INT(*func) (INT, void **))
+INT rpc_register_functions(const RPC_LIST * new_list, INT(*func) (INT, void **))
 {
    INT i, j, iold, inew;
 
@@ -8278,7 +8278,7 @@ INT rpc_client_dispatch(int sock)
 
 
 /********************************************************************/
-INT rpc_client_connect(char *host_name, INT port, char *client_name, HNDLE * hConnection)
+INT rpc_client_connect(const char *host_name, INT port, const char *client_name, HNDLE * hConnection)
 /********************************************************************\
 
   Routine: rpc_client_connect
@@ -8511,7 +8511,7 @@ void rpc_client_check()
 
 
 /********************************************************************/
-INT rpc_server_connect(char *host_name, char *exp_name)
+INT rpc_server_connect(const char *host_name, const char *exp_name)
 /********************************************************************\
 
   Routine: rpc_server_connect
@@ -9296,7 +9296,7 @@ INT rpc_get_name(char *name)
 
 
 /********************************************************************/
-INT rpc_set_name(char *name)
+INT rpc_set_name(const char *name)
 /********************************************************************\
 
   Routine: rpc_set_name
@@ -9349,7 +9349,7 @@ INT rpc_set_debug(void (*func) (char *), INT mode)
 }
 
 /********************************************************************/
-void rpc_debug_printf(char *format, ...)
+void rpc_debug_printf(const char *format, ...)
 /********************************************************************\
 
   Routine: rpc_debug_print
@@ -10845,7 +10845,7 @@ INT recv_event_check(int sock)
 
 
 /********************************************************************/
-INT rpc_register_server(INT server_type, char *name, INT * port, INT(*func) (INT, void **))
+INT rpc_register_server(INT server_type, const char *name, INT * port, INT(*func) (INT, void **))
 /********************************************************************\
 
   Routine: rpc_register_server

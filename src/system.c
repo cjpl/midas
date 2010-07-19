@@ -6092,7 +6092,7 @@ const char *pstr[2];
 
 #define bin_to_ascii(c) ((c)>=38?((c)-38+'a'):(c)>=12?((c)-12+'A'):(c)+'.')
 
-char *ss_crypt(char *buf, char *salt)
+char *ss_crypt(const char *buf, const char *salt)
 /********************************************************************\
 
   Routine: ss_crypt

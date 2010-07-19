@@ -264,7 +264,7 @@ extern "C" {
 #endif
 #endif
 
-   int EXPRT mscb_init(char *device, int size, char *password, int debug);
+   int EXPRT mscb_init(const char *device, int size, const char *password, int debug);
    int EXPRT mscb_select_device(char *data, int size, int select);
    void EXPRT mscb_get_device(int fd, char *device, int bufsize);
    void EXPRT mscb_get_version(char *lib_version, char *prot_version);

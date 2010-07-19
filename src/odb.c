@@ -7152,7 +7152,7 @@ INT db_sprintfh(char *string, const void *data, INT data_size, INT idx, DWORD ty
 }
 
 /*------------------------------------------------------------------*/
-INT db_sscanf(char *data_str, void *data, INT * data_size, INT i, DWORD tid)
+INT db_sscanf(const char *data_str, void *data, INT * data_size, INT i, DWORD tid)
 /********************************************************************\
 
   Routine: db_sscanf
