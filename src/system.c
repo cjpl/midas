@@ -2177,7 +2177,9 @@ INT ss_mutex_create(MUTEX_T ** mutex)
 #endif
 }
 
-#ifdef OS_UNIX
+#if defined(OS_DARWIN)
+// empty
+#elif defined(OS_UNIX)
 extern int pthread_mutex_timedlock (pthread_mutex_t *__restrict __mutex,
                                     __const struct timespec *__restrict
                                     __abstime) __THROW;
@@ -2229,7 +2231,17 @@ INT ss_mutex_wait_for(MUTEX_T *mutex, INT timeout)
    return SS_SUCCESS;
 
 #endif                          /* OS_VXWORKS */
-#ifdef OS_UNIX
+#if defined(OS_DARWIN)
+   {
+      status = pthread_mutex_lock(mutex);
+      if (status != 0) {
+         cm_msg(MERROR, "ss_mutex_wait_for", "pthread_mutex_lock() failed, errno %d (%s)", status, strerror(status));
+         return SS_NO_MUTEX;
+      }
+
+      return SS_SUCCESS;
+   }
+#elif defined(OS_UNIX)
    {
       struct timespec st;
 
@@ -2238,7 +2250,7 @@ INT ss_mutex_wait_for(MUTEX_T *mutex, INT timeout)
       st.tv_nsec += (timeout % 1000) * 1E6;
       status = pthread_mutex_timedlock(mutex, &st);
       if (status != 0) {
-         cm_msg(MERROR, "ss_mutex_wait_for", "pthread_mutex_timedlock() failed, error = %s", strerror(status));
+         cm_msg(MERROR, "ss_mutex_wait_for", "pthread_mutex_timedlock() failed, errno %d (%s)", status, strerror(status));
          return SS_NO_MUTEX;
       }
 
@@ -4199,8 +4211,6 @@ INT ss_tape_open(char *path, INT oflag, INT * channel)
 \********************************************************************/
 {
 #ifdef OS_UNIX
-   struct mtop arg;
-
    cm_enable_watchdog(FALSE);
 
    *channel = open(path, oflag, 0644);
@@ -4218,11 +4228,14 @@ INT ss_tape_open(char *path, INT oflag, INT * channel)
       return errno;
    }
 #ifdef MTSETBLK
+   {
    /* set variable block size */
+   struct mtop arg;
    arg.mt_op = MTSETBLK;
    arg.mt_count = 0;
 
    ioctl(*channel, MTIOCTOP, &arg);
+   }
 #endif                          /* MTSETBLK */
 
 #endif                          /* OS_UNIX */
@@ -4546,7 +4559,7 @@ INT ss_tape_write_eof(INT channel)
 {
    INT status;
 
-#ifdef OS_UNIX
+#ifdef MTIOCTOP
    struct mtop arg;
 
    arg.mt_op = MTWEOF;
@@ -4613,7 +4626,7 @@ INT ss_tape_fskip(INT channel, INT count)
 {
    INT status;
 
-#ifdef OS_UNIX
+#ifdef MTIOCTOP
    struct mtop arg;
 
    if (count > 0)
@@ -4673,7 +4686,7 @@ INT ss_tape_rskip(INT channel, INT count)
 {
    INT status;
 
-#ifdef OS_UNIX
+#ifdef MTIOCTOP
    struct mtop arg;
 
    if (count > 0)
@@ -4728,7 +4741,7 @@ INT ss_tape_rewind(INT channel)
 {
    INT status;
 
-#ifdef OS_UNIX
+#ifdef MTIOCTOP
    struct mtop arg;
 
    arg.mt_op = MTREW;
@@ -4780,7 +4793,7 @@ INT ss_tape_spool(INT channel)
 {
    INT status;
 
-#ifdef OS_UNIX
+#ifdef MTIOCTOP
    struct mtop arg;
 
 #ifdef MTEOM
@@ -4836,7 +4849,7 @@ INT ss_tape_mount(INT channel)
 {
    INT status;
 
-#ifdef OS_UNIX
+#ifdef MTIOCTOP
    struct mtop arg;
 
 #ifdef MTLOAD
@@ -4892,7 +4905,7 @@ INT ss_tape_unmount(INT channel)
 {
    INT status;
 
-#ifdef OS_UNIX
+#ifdef MTIOCTOP
    struct mtop arg;
 
 #ifdef MTOFFL
@@ -4970,7 +4983,6 @@ blockn:  >0 = block number, =0 option not available, <0 errno
 
 #endif
 }
-
 
 /*------------------------------------------------------------------*/
 /********************************************************************\
@@ -5410,7 +5422,7 @@ void ss_printf(INT x, INT y, const char *format, ...)
 
 #if defined(OS_UNIX) || defined(OS_VXWORKS) || defined(OS_VMS)
    printf("\033[%1d;%1d;H", y + 1, x + 1);
-   printf(str);
+   printf("%s", str);
    fflush(stdout);
 #endif
 
@@ -5441,7 +5453,7 @@ char *ss_getpass(char *prompt)
 {
    static char password[32];
 
-   printf(prompt);
+   printf("%s", prompt);
    memset(password, 0, sizeof(password));
 
 #ifdef OS_UNIX

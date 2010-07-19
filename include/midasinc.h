@@ -127,7 +127,13 @@
 #include <sys/socket.h>
 #include <sys/timeb.h>
 #include <sys/stat.h>
+
+#if defined(OS_DARWIN)
+/* mtio.h vanished from MacOS 10.6 */
+#elif defined(OS_LINUX)
 #include <sys/mtio.h>
+#endif
+
 #include <sys/syscall.h>
 #include <dirent.h>
 #include <pthread.h>
