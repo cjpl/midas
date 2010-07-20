@@ -4965,10 +4965,10 @@ char *find_odb_tag(char *p, char *path, char *format, int *edit, char *type, cha
 
 /*------------------------------------------------------------------*/
 
-void show_odb_tag(const char *path, const char *keypath, const char *format, int n_var, int edit, char *type, char *pwd, char *tail)
+void show_odb_tag(const char *path, const char *keypath1, const char *format, int n_var, int edit, char *type, char *pwd, char *tail)
 {
    int size, index, i_edit, i_set;
-   char str[TEXT_SIZE], data[TEXT_SIZE], options[1000], full_keypath[256], *p;
+   char str[TEXT_SIZE], data[TEXT_SIZE], options[1000], full_keypath[256], keypath[256], *p;
    HNDLE hDB, hkey;
    KEY key;
 
@@ -4984,6 +4984,7 @@ void show_odb_tag(const char *path, const char *keypath, const char *format, int
 
    /* check if path contains index */
    strlcpy(full_keypath, keypath, sizeof(full_keypath));
+   strlcpy(keypath, keypath1, sizeof(keypath));
    index = 0;
 
    if (strchr(keypath, '[') && strchr(keypath, ']')) {
