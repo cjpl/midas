@@ -1,9 +1,23 @@
 # these items are added to the index by index.pl
 #
-# Links are within the index (docindex.dox) to IDX=item (level 1 items only have anchors)
-#          IDX=item will be substituted to IDX_item (check_line)
+# used to add "see" links in the index without putting more anchors into the text
+#
+# Links are within the index (docindex.dox) to e.g. IDX_item
+#       (IDX anchors automatically created for level 1 items only)
+#                            
+#          IDX=item in this file will be substituted to IDX_item (by check_line in index.pl)
 #   dashes will be substituted to spaces; can leave spaces rather than dashes in this file
-#   
+#
+# e.g
+# 
+# mhttpd_links-see-@ref IDX=mhttpd "mhttpd buttons" will become in docindex.dox
+# <li>links <span class="see">see</span> @ref IDX_mhttpd "mhttpd buttons"<br> <!-- line from index_add.txt -->
+#
+#  mhttpd
+#        links see mhttpd buttons
+#
+#
+# List of links
 mhttpd_links-see-@ref IDX=mhttpd "mhttpd buttons"
 alias_buttons/links-see-@ref IDX=mhttpd "mhttpd"
 event_equipment_flags-see-@ref IDX=equipment "equipment->flags"
