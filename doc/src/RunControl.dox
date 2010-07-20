@@ -412,8 +412,9 @@ Explanation
 Specifies the state of the current run (see @ref RC_state_transition) .
     The possible states are 
          - 1: STOPPED  ( STATE_STOPPED )
-         - 2: RUNNING  ( STATE_RUNNING )
-         - 3: PAUSED   ( STATE_PAUSED )
+         - 2: PAUSED   ( STATE_PAUSED )
+         - 3: RUNNING  ( STATE_RUNNING )
+
 </td>
 </tr>
 <tr>
