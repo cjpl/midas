@@ -20,17 +20,16 @@ version = 2.3.0
 
 all::	html
 
-html: images/done
-#       make the Contents and Index pages (Organization.dox, docindex.dox)
-	cd src ; ./index.pl ; ./doit.pl ; ./index.pl 1;  cd ..
+html: index rmtmp images/done
 	doxygen
-#       copy Javascript files/images to html
+#	Javascript : copy files and required images to html
 	cp src/*.js html/.
 	cp src/*.css html/.
 	cp images/page_*.gif html/.
 	cp images/section_*.gif html/.
 
-images/done: midasdoc-images.tar.gz
+images/done: 
+	midasdoc-images.tar.gz
 	tar xzvf midasdoc-images.tar.gz
 	touch $@
 
@@ -44,23 +43,18 @@ midasdoc-images.tar.gz:
 #	cd latex; ps2pdf midas.ps midas.pdf ; cp midas.pdf ../.
 
 publish:
-	# temp for newmidas
-	#tar -czvf midasdoc-pdf-$(version).tar.gz latex/midas.pdf
-	#tar -czvf midasdoc-ps-$(version).tar.gz  latex/midas.ps
 	#tar -czvf midasdoc-html-$(version).tar.gz html/
 	#tar -czvf midasdoc-man-$(version).tar.gz man/
 	tar -czvf midasdoc-images.tar.gz images/
-	#rsync -uv html/* /home/daqweb/public_html/doc/midas/html/.
 	rsync -uv html/* /home/daqweb/public_html/doc/midas3/html/.
-	#rsync -uv javascript/* /home/daqweb/public_html/doc/my_midas/html/.
-	rsync -av *.tar.gz daqweb@ladd00.triumf.ca:/home/daqweb/public_html/ftp/.
+	#rsync -av *.tar.gz daqweb@ladd00.triumf.ca:/home/daqweb/public_html/ftp/.
 	#rsync -av /midas/doc/CHANGELOG.TXT /home1/ftp/pub/midas/.
 
 publishh: 
 	rsync -uv html/* /home/daqweb/public_html/doc/midas3/html/.
 
-clean:
-#       remove files docindex, Organization made each time by index.pl
+clean:	rmtmp
+#       remove files docindex.dox and Organization.dox. These are created each time by index.pl
 	rm -f src/docindex.dox
 	rm -f src/Organization.dox
 	cd latex; rm -f *.*~ *.pnm *.tex *.log *.aux *.dvi *.eps
@@ -69,5 +63,14 @@ clean:
 
 ver:	
 	echo $(version)
+
+index:
+#       make the Contents and Index pages (Organization.dox, docindex.dox)
+	cd src ; ./index.pl ; ./doit.pl ; ./index.pl 1;   cd ..
+rmtmp:
+#	remove temporary files created by index.pl
+	rm -f src/*.tmp
+	rm -f src/*_info.txt*
+
 
 # end
