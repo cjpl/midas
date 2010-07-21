@@ -357,7 +357,7 @@ typedef struct {
 typedef struct {
    char name[NAME_LENGTH];      /* name of client             */
    INT pid;                     /* process ID                 */
-   INT tid;                     /* thread ID                  */
+   INT unused0;                 /* was thread ID              */
    INT unused;                  /* was thread handle          */
    INT port;                    /* UDP port for wake up       */
    INT num_open_records;        /* number of open records     */

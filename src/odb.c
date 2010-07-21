@@ -1007,7 +1007,6 @@ INT db_open_database(const char *xdatabase_name, INT database_size, HNDLE * hDB,
       /* use client name previously set by bm_set_name */
       strlcpy(pclient->name, client_name, sizeof(pclient->name));
       pclient->pid = ss_getpid();
-      pclient->tid = ss_gettid();
       pclient->num_open_records = 0;
 
       ss_suspend_get_port(&pclient->port);

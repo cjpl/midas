@@ -1353,7 +1353,7 @@ INT cm_delete_client_info(HNDLE hDB, INT pid)
       char str[256];
 
       if (!pid)
-         pid = ss_gettid();
+         pid = ss_getpid();
 
       /* don't delete info from a closed database */
       if (_database_entries == 0)
@@ -1419,7 +1419,7 @@ INT cm_check_client(HNDLE hDB, HNDLE hKeyClient)
 
          /* loop through clients */
          for (i = 0; i < pheader->max_client_index; i++, pclient++)
-            if (pclient->tid == client_pid) {
+            if (pclient->pid == client_pid) {
                found = 1;
                break;
             }
@@ -1525,7 +1525,7 @@ INT cm_set_client_info(HNDLE hDB, HNDLE * hKeyClient, char *host_name,
       db_lock_database(hDB);
 
       /* check if entry with this pid exists already */
-      pid = ss_gettid();
+      pid = ss_getpid();
 
       sprintf(str, "System/Clients/%0d", pid);
       status = db_find_key(hDB, 0, str, &hKey);
@@ -4464,7 +4464,6 @@ INT bm_open_buffer(char *buffer_name, INT buffer_size, INT * buffer_handle)
       if (pclient->name[0] == 0)
          strcpy(pclient->name, "unknown");
       pclient->pid = ss_getpid();
-      pclient->tid = ss_gettid();
 
       ss_suspend_get_port(&pclient->port);
 
@@ -4716,7 +4715,7 @@ void cm_watchdog(int dummy)
             /* If client process has no activity, clear its buffer entry. */
             if (pdbclient->pid && pdbclient->watchdog_timeout > 0 &&
                 actual_time - pdbclient->last_activity > pdbclient->watchdog_timeout) {
-               client_pid = pdbclient->tid;
+               client_pid = pdbclient->pid;
                bDeleted = FALSE;
                db_lock_database(i + 1);
                str[0] = 0;
@@ -5092,7 +5091,7 @@ INT cm_cleanup(const char *client_name, BOOL ignore_timeout)
                if (j != _database[i].client_index && pdbclient->pid &&
                    (client_name == NULL || client_name[0] == 0
                     || strncmp(pdbclient->name, client_name, strlen(client_name)) == 0)) {
-                  client_pid = pdbclient->tid;
+                  client_pid = pdbclient->pid;
                   if (ignore_timeout)
                      interval = 2 * WATCHDOG_INTERVAL;
                   else
@@ -6003,15 +6002,14 @@ static void bm_wakeup_producers(const BUFFER_HEADER * pheader, const BUFFER_CLIE
 
    if (size >= pheader->size * 0.5)
       for (i = 0; i < pheader->max_client_index; i++, pctmp++)
-         if (pctmp->pid && (pctmp->write_wait < size) && (pctmp->pid != ss_getpid() ||  /* check if not own thread */
-                                                          (pctmp->pid == ss_getpid()
-                                                           && pctmp->tid != ss_gettid()))) {
+	if (pctmp->pid)
+           if (pctmp->write_wait < size) {
 #ifdef DEBUG_MSG
             cm_msg(MDEBUG, "Receive wake: rp=%d, wp=%d, level=%1.1lf",
                    pheader->read_pointer, pheader->write_pointer, 100 - 100.0 * size / pheader->size);
 #endif
             ss_resume(pctmp->port, "B  ");
-         }
+            }
 }
 
 static void bm_dispatch_event(int buffer_handle, EVENT_HEADER * pevent)
