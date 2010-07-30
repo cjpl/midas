@@ -71,7 +71,7 @@ void debug_print(char *msg)
    strlcat(str, "\n", sizeof(str));
 
    if (f != NULL) {
-      fprintf(f, str);
+      fputs(str, f);
       fclose(f);
    } else {
       printf("Cannot open \"%s\": %s\n", file_name, strerror(errno));
