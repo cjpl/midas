@@ -33,7 +33,7 @@ typedef struct {
    WORD id;
    WORD msk;
    WORD fmt;
-   char Fmt[8];
+   char Fmt[16];
    char Eqname[256];
 } FMT_ID;
 
