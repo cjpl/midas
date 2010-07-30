@@ -1294,9 +1294,6 @@ int send_event(INT idx, BOOL manual_trig)
 
       equipment[idx].bytes_sent += pevent->data_size + sizeof(EVENT_HEADER);
       equipment[idx].events_sent++;
-
-      equipment[idx].stats.events_sent += equipment[idx].events_sent;
-      equipment[idx].events_sent = 0;
    } else
       equipment[idx].serial_number--;
 
