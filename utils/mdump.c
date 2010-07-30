@@ -433,7 +433,7 @@ int main(int argc, char **argv)
             if (i + 1 >= argc || argv[i + 1][0] == '-')
                goto repusage;
             if (strncmp(argv[i], "-t", 2) == 0) {
-               sprintf(str, argv[++i]);
+               strlcpy(str, argv[++i], sizeof(str));
                if (strncmp(str, "m", 1) == 0)
                   data_fmt = FORMAT_MIDAS;
                if (strncmp(str, "y", 1) == 0)
@@ -445,13 +445,13 @@ int main(int argc, char **argv)
             else if (strncmp(argv[i], "-k", 2) == 0)
                event_msk = atoi(argv[++i]);
             else if (strncmp(argv[i], "-m", 2) == 0) {
-               sprintf(str, argv[++i]);
+               strlcpy(str, argv[++i], sizeof(str));
                if (strncmp(str, "r", 1) == 0)
                   dsp_mode = DSP_RAW;
                if (strncmp(str, "b", 1) == 0)
                   dsp_mode = DSP_BANK;
             } else if (strncmp(argv[i], "-w", 2) == 0) {
-               sprintf(str, argv[++i]);
+               strlcpy(str, argv[++i], sizeof(str));
                if (strncmp(str, "h", 1) == 0)
                   action = REP_HEADER;
                else if (strncmp(str, "r", 1) == 0)
@@ -471,7 +471,7 @@ int main(int argc, char **argv)
                if (strncmp(str, "a", 1) == 0 || strncmp(str, "A", 1) == 0)
                   file_mode = YB_ADD_RUN;
             } else if (strncmp(argv[i], "-f", 2) == 0) {
-               sprintf(str, argv[++i]);
+               strlcpy(str, argv[++i], sizeof(str));
                if (strncmp(str, "d", 1) == 0)
                   dsp_fmt = DSP_DEC;
                if (strncmp(str, "x", 1) == 0)
@@ -543,19 +543,19 @@ int main(int argc, char **argv)
             else if (strncmp(argv[i], "-w", 2) == 0)
                dsp_time = 1000 * (atoi(argv[++i]));
             else if (strncmp(argv[i], "-m", 2) == 0) {
-               sprintf(str, argv[++i]);
+               strlcpy(str, argv[++i], sizeof(str));
                if (strncmp(str, "r", 1) == 0)
                   dsp_mode = DSP_RAW;
                if (strncmp(str, "y", 1) == 0)
                   dsp_mode = DSP_BANK;
             } else if (strncmp(argv[i], "-g", 2) == 0) {
-               sprintf(str, argv[++i]);
+               strlcpy(str, argv[++i], sizeof(str));
                if (strncmp(str, "s", 1) == 0)
                   get_flag = GET_NONBLOCKING;
                if (strncmp(str, "a", 1) == 0)
                   get_flag = GET_ALL;
             } else if (strncmp(argv[i], "-f", 2) == 0) {
-               sprintf(str, argv[++i]);
+               strlcpy(str, argv[++i], sizeof(str));
                if (strncmp(str, "d", 1) == 0)
                   dsp_fmt = DSP_DEC;
                if (strncmp(str, "x", 1) == 0)
@@ -571,7 +571,7 @@ int main(int argc, char **argv)
             else if (strncmp(argv[i], "-z", 2) == 0)
                strcpy(buf_name, argv[++i]);
             else if (strncmp(argv[i], "-t", 2) == 0) {
-               sprintf(str, argv[++i]);
+               strlcpy(str, argv[++i], sizeof(str));
                if (strncmp(str, "m", 1) == 0)
                   data_fmt = FORMAT_MIDAS;
                if (strncmp(str, "y", 1) == 0)
@@ -718,7 +718,7 @@ int main(int argc, char **argv)
             if (!hSubkey)
                break;
             db_get_key(hDB, hSubkey, &key);
-            sprintf(eq[l].Eqname, key.name);
+            strlcpy(eq[l].Eqname, key.name, sizeof(eq[l].Eqname));
             /* check if client running this equipment is present */
             /* extract client name from equipment */
             size = sizeof(strtmp);
