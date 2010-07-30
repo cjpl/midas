@@ -190,7 +190,6 @@ void debug_log(const char *format, int start, ...)
    int fh;
    char str[2000], line[2000];
    va_list argptr;
-   struct timeb tb;
 
    if (!_debug_flag)
       return;
@@ -198,12 +197,16 @@ void debug_log(const char *format, int start, ...)
    line[0] = 0;
    if (start) {
 #ifdef OS_DARWIN
-      assert(!"No ftime(), sorry!");
+      struct timeval tv;
+      gettimeofday(&tv, NULL);
+      strcpy(line, ctime(&tv.tv_sec) + 11);
+      sprintf(line + 8, ".%03d ", tv.tv_usec/1000);
 #else
+      struct timeb tb;
       ftime(&tb);
-#endif
       strcpy(line, ctime(&tb.time) + 11);
       sprintf(line + 8, ".%03d ", tb.millitm);
+#endif
    }
 
    va_start(argptr, start);
