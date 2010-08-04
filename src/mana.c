@@ -14,7 +14,10 @@
 #include "midas.h"
 #include "msystem.h"
 #include "hardware.h"
+
+#ifdef HAVE_YBOS
 #include "ybos.h"
+#endif
 
 #ifdef HAVE_ZLIB
 #include "zlib.h"
@@ -3304,6 +3307,7 @@ INT process_event(ANALYZE_REQUEST * par, EVENT_HEADER * pevent)
    }
 
    if (event_def->format == FORMAT_YBOS) {
+#ifdef HAVE_YBOS
       /* check if event got too large */
       i = ybk_size((DWORD *) (pevent + 1));
       if (i > MAX_EVENT_SIZE)
@@ -3311,6 +3315,9 @@ INT process_event(ANALYZE_REQUEST * par, EVENT_HEADER * pevent)
 
       /* correct for increased event size */
       pevent->data_size = i;
+#else
+      assert(!"YBOS support not compiled in");
+#endif
    }
 
    /* increment tests */
@@ -3853,6 +3860,7 @@ INT init_module_parameters(BOOL bclose)
 
 /*------------------------------------------------------------------*/
 
+#ifdef HAVE_YBOS
 INT bevid_2_mheader(EVENT_HEADER * pevent, DWORD * pybos)
 {
    INT status;
@@ -3880,6 +3888,7 @@ INT bevid_2_mheader(EVENT_HEADER * pevent, DWORD * pybos)
    }
    return SS_SUCCESS;
 }
+#endif // HAVE_YBOS
 
 /*------------------------------------------------------------------*/
 
@@ -4057,11 +4066,15 @@ MA_FILE *ma_open(char *file_name)
 
    if (file->device == MA_DEVICE_DISK) {
       if (file->format == MA_FORMAT_YBOS) {
+#ifdef HAVE_YBOS
          status = yb_any_file_ropen(file_name, FORMAT_YBOS);
          if (status != SS_SUCCESS)
             return NULL;
          if (yb_any_physrec_skip(FORMAT_YBOS, -1) != YB_SUCCESS)
             return (NULL);
+#else
+         assert(!"YBOS support not compiled in");
+#endif
       } else {
 #ifdef HAVE_ZLIB
          file->gzfile = gzopen(file_name, "rb");
@@ -4083,7 +4096,11 @@ MA_FILE *ma_open(char *file_name)
 int ma_close(MA_FILE * file)
 {
    if (file->format == MA_FORMAT_YBOS)
+#ifdef HAVE_YBOS
       yb_any_file_rclose(FORMAT_YBOS);
+#else
+      assert(!"YBOS support not compiled in");
+#endif
    else
 #ifdef HAVE_ZLIB
       gzclose(file->gzfile);
@@ -4150,6 +4167,7 @@ int ma_read_event(MA_FILE * file, EVENT_HEADER * pevent, int size)
 
          return n + sizeof(EVENT_HEADER);
       } else if (file->format == MA_FORMAT_YBOS) {
+#ifdef HAVE_YBOS
          DWORD *pybos, readn;
          if (ybos_event_get(&pybos, &readn) != SS_SUCCESS)
             return -1;
@@ -4157,6 +4175,10 @@ int ma_read_event(MA_FILE * file, EVENT_HEADER * pevent, int size)
          memcpy((char *) (pevent + 1), (char *) pybos, readn);
          status = bevid_2_mheader(pevent, pybos);
          return readn;
+#else
+         assert(!"YBOS support not compiled in");
+         return 0;
+#endif
       }
    } else if (file->device == MA_DEVICE_PVM) {
 #ifdef HAVE_PVM
@@ -5792,3 +5814,17 @@ int main(int argc, char *argv[])
 
    return 0;
 }
+
+#ifdef LINK_TEST
+int   odb_size;
+char* analyzer_name;
+int   analyzer_loop_period;
+ANALYZE_REQUEST analyze_request[1];
+int analyzer_init(void) { return 0; }
+int analyzer_loop(void) { return 0; }
+int analyzer_exit(void) { return 0; }
+int ana_end_of_run(INT run_number, char *error) { return 0; }
+int ana_begin_of_run(INT run_number, char *error) { return 0; }
+int ana_resume_run(INT run_number, char *error) { return 0; }
+int ana_pause_run(INT run_number, char *error) { return 0; }
+#endif

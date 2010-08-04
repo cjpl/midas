@@ -16,7 +16,9 @@
 #include <assert.h>
 
 #define HAVE_LOGGING
+#ifdef HAVE_YBOS
 #include "ybos.h"
+#endif
 
 #ifdef HAVE_ROOT
 #undef GetCurrentTime
@@ -2265,7 +2267,11 @@ INT log_open(LOG_CHN * log_chn, INT run_number)
 
    if (equal_ustring(log_chn->settings.format, "YBOS")) {
       log_chn->format = FORMAT_YBOS;
+#ifdef HAVE_YBOS
       status = ybos_log_open(log_chn, run_number);
+#else
+      assert(!"YBOS support not compiled in");
+#endif
    } else if (equal_ustring(log_chn->settings.format, "ASCII")) {
       log_chn->format = FORMAT_ASCII;
       status = ascii_log_open(log_chn, run_number);
@@ -2293,7 +2299,11 @@ INT log_open(LOG_CHN * log_chn, INT run_number)
 INT log_close(LOG_CHN * log_chn, INT run_number)
 {
    if (log_chn->format == FORMAT_YBOS)
+#ifdef HAVE_YBOS
       ybos_log_close(log_chn, run_number);
+#else
+      assert(!"YBOS support not compiled in");
+#endif
 
    if (log_chn->format == FORMAT_ASCII)
       ascii_log_close(log_chn, run_number);
@@ -2424,7 +2434,11 @@ INT log_write(LOG_CHN * log_chn, EVENT_HEADER * pevent)
    start_time = ss_millitime();
 
    if (log_chn->format == FORMAT_YBOS)
+#ifdef HAVE_YBOS
       status = ybos_write(log_chn, pevent, pevent->data_size + sizeof(EVENT_HEADER));
+#else
+      assert(!"YBOS support not compiled in");
+#endif
 
    if (log_chn->format == FORMAT_ASCII)
       status = ascii_write(log_chn, pevent, pevent->data_size + sizeof(EVENT_HEADER));

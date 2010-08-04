@@ -9,7 +9,9 @@ $Id$
 \********************************************************************/
 #include "midas.h"
 #include "msystem.h"
+#ifdef HAVE_YBOS
 #include "ybos.h"
+#endif
 #ifdef HAVE_FTPLIB
 #include "ftplib.h"
 #endif
@@ -99,6 +101,10 @@ bool cmp_dirlog(const DIRLOG&a, const DIRLOG&b)
    //printf("compare %s %s yields %d\n", a.filename.c_str(), b.filename.c_str(), r);
    return r;
 }
+
+#ifndef MAX_FILE_PATH
+#define MAX_FILE_PATH 128 // must match value of 128 in LAZY_SETTINGS_STRING
+#endif
 
 #define LAZY_SETTINGS_STRING "\
 Period = INT : 10\n\
@@ -1143,6 +1149,10 @@ Function value:
    BOOL watchdog_flag, exit_request = FALSE;
    char filename[256];
 
+#ifndef HAVE_YBOS
+   assert(!"YBOS support is not compiled in. Please use the \'SCRIPT\' backup type method");
+#else
+
    // SR Nov 07, outcommented for "raw" .gz transfer
    //pext = malloc(strlen(infile));
    //strcpy(pext, infile);
@@ -1294,6 +1304,7 @@ Function value:
    if (exit_request)
       return (EXIT_REQUEST);
    return 0;
+#endif // HAVE_YBOS
 }
 
 /*------------------------------------------------------------------*/

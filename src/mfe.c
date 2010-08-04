@@ -16,7 +16,7 @@
 #include "msystem.h"
 #include "mcstd.h"
 
-#ifdef YBOS_SUPPORT
+#ifdef HAVE_YBOS
 #include "ybos.h"
 #endif
 
@@ -74,7 +74,7 @@ BOOL lockout_readout_thread = TRUE; /* manual triggers, periodic events and 1Hz 
 
 HNDLE hDB;
 
-#ifdef YBOS_SUPPORT
+#ifdef HAVE_YBOS
 struct {
    DWORD ybos_type;
    DWORD odb_type;
@@ -1097,7 +1097,7 @@ void update_odb(EVENT_HEADER * pevent, HNDLE hKey, INT format)
 
       } while (1);
    } else if (format == FORMAT_YBOS) {
-#ifdef YBOS_SUPPORT
+#ifdef HAVE_YBOS
       YBOS_BANK_HEADER *pybkh;
 
       /* skip the lrl (4 bytes per event) */
@@ -2812,3 +2812,23 @@ int main(int argc, char *argv[])
 
    return 0;
 }
+
+#ifdef LINK_TEST
+char* frontend_name;
+char* frontend_file_name;
+BOOL  frontend_call_loop;
+int event_buffer_size;
+int max_event_size;
+int max_event_size_frag;
+int display_period;
+EQUIPMENT equipment[1];
+int frontend_init() { return 0; };
+int frontend_exit() { return 0; };
+int begin_of_run(int runno,char* errstr) { return 0; };
+int end_of_run(int runno,char* errstr) { return 0; };
+int pause_run(int runno,char* errstr) { return 0; };
+int resume_run(int runno,char* errstr) { return 0; };
+int interrupt_configure(INT cmd, INT source, POINTER_T adr) { return 0; };
+int frontend_loop() { return 0; };
+int poll_event(INT source, INT count, BOOL test) { return 0; };
+#endif

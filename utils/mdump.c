@@ -10,7 +10,9 @@ Contents:     Dump event on screen with MIDAS or YBOS data format
 
 #include "midas.h"
 #include "msystem.h"
+#ifdef HAVE_YBOS
 #include "ybos.h"
+#endif
 #include "mrpc.h"
 
 #define  REP_HEADER    1
@@ -87,7 +89,11 @@ DWORD data_format_check(EVENT_HEADER * pevent, INT * i)
 /*----- Replog function ----------------------------------------*/
 int replog(int data_fmt, char *rep_file, int bl, int action)
 {
-   char banklist[YB_STRING_BANKLIST_MAX];
+#ifdef HAVE_YBOS
+   char banklist[YB_STRING_BANKLIST_MAX + STRING_BANKLIST_MAX];
+#else
+   char banklist[STRING_BANKLIST_MAX];
+#endif
    short int msk, id;
    static char bars[] = "|/-\\";
    static int i_bar;
@@ -102,6 +108,11 @@ int replog(int data_fmt, char *rep_file, int bl, int action)
    YBOS_BANK_HEADER *pybk;
    DWORD *pdata;
    DWORD bklen, bktyp;
+
+#ifndef HAVE_YBOS
+   if (data_fmt == FORMAT_YBOS)
+     assert(!"YBOS support not compiled in");
+#endif
 
    /* open data file */
    if (yb_any_file_ropen(rep_file, data_fmt) != SS_SUCCESS)
@@ -161,7 +172,9 @@ int replog(int data_fmt, char *rep_file, int bl, int action)
             status = yb_any_all_info_display(D_EVTLEN);
          if ((action == REP_BANKLIST) || (disp_bank_list == 1)) {
             if (data_fmt == FORMAT_YBOS)
+#ifdef HAVE_YBOS
                status = ybk_list((DWORD *) pmyevt, banklist);
+#endif
             else if (data_fmt == FORMAT_MIDAS) {
                pme = (EVENT_HEADER *) pmyevt;
                if (pme->event_id == EVENTID_BOR ||
@@ -199,6 +212,7 @@ int replog(int data_fmt, char *rep_file, int bl, int action)
                   }
                }
             } else if (data_fmt == FORMAT_YBOS) {
+#ifdef HAVE_YBOS
                /* check id EVID found in event for id and msk selection */
                if ((status =
                     ybk_find((DWORD *) pmyevt, "EVID", &bklen, &bktyp,
@@ -215,6 +229,7 @@ int replog(int data_fmt, char *rep_file, int bl, int action)
                      bank_found = TRUE;
                   }
                }
+#endif
             }
             /* check user request through switch setting (id, msk ,bank) */
             if ((event_msk != TRIGGER_ALL) || (event_id != EVENTID_ALL) || (sbank_name[0] != 0)) {      /* check request or skip event if not satisfied */
@@ -253,7 +268,11 @@ void process_event(HNDLE hBuf, HNDLE request_id, EVENT_HEADER * pheader, void *p
    static EVENT_HEADER pevh;
    INT internal_data_fmt, status, index, size;
    DWORD *plrl, *pybk, bklen, bktyp;
+#ifdef HAVE_YBOS
    char banklist[YB_STRING_BANKLIST_MAX + STRING_BANKLIST_MAX];
+#else
+   char banklist[STRING_BANKLIST_MAX];
+#endif
    BANK_HEADER *pmbh;
 
    if (speed == 1) {
@@ -286,6 +305,11 @@ void process_event(HNDLE hBuf, HNDLE request_id, EVENT_HEADER * pheader, void *p
 
       internal_data_fmt = data_format_check(pheader, &index);
 
+#ifndef HAVE_YBOS
+      if (internal_data_fmt == FORMAT_YBOS)
+	assert(!"YBOS support not compiled in");
+#endif
+
       /* pointer to data section */
       plrl = (DWORD *) pevent;
       pmbh = (BANK_HEADER *) pevent;
@@ -294,7 +318,12 @@ void process_event(HNDLE hBuf, HNDLE request_id, EVENT_HEADER * pheader, void *p
       printf("------------------------ Event# %i ------------------------\n",
              save_dsp - evt_display);
       /* selection based on data format */
-      if ((internal_data_fmt == FORMAT_YBOS) && (yb_any_event_swap(FORMAT_YBOS, plrl) >= YB_SUCCESS)) { /* ---- YBOS FMT ---- */
+      if ((internal_data_fmt == FORMAT_YBOS)
+#ifdef HAVE_YBOS
+	  && (yb_any_event_swap(FORMAT_YBOS, plrl) >= YB_SUCCESS)
+#endif
+	  ) { /* ---- YBOS FMT ---- */
+#ifdef HAVE_YBOS
          if (file_mode != YB_NO_RECOVER)
             if ((status =
                  yb_file_recompose(pevent, internal_data_fmt, svpath,
@@ -324,6 +353,7 @@ void process_event(HNDLE hBuf, HNDLE request_id, EVENT_HEADER * pheader, void *p
             } else
                yb_any_event_display(plrl, FORMAT_YBOS, dsp_mode, dsp_fmt, sbank_name);
          }
+#endif // HAVE_YBOS
       } else if ((internal_data_fmt == FORMAT_MIDAS) && (yb_any_event_swap(FORMAT_MIDAS, pheader) >= YB_SUCCESS)) {     /* ---- MIDAS FMT ---- */
          if (file_mode != YB_NO_RECOVER)
             status = yb_file_recompose(pheader, internal_data_fmt, svpath, file_mode);

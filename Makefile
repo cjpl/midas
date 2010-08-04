@@ -105,6 +105,11 @@ NEED_ZLIB=
 #
 NEED_MSCB=1
 
+#
+# Optional support for YBOS data format
+#
+#HAVE_YBOS=1
+
 #####################################################################
 # Nothing needs to be modified after this line 
 #####################################################################
@@ -122,7 +127,6 @@ CFLAGS = -g -O2 -Wall -Wuninitialized -I$(INC_DIR) -I$(DRV_DIR) -I$(MXML_DIR) -I
 ifdef MIDAS_MAX_EVENT_SIZE
 CFLAGS += -DMAX_EVENT_SIZE=$(MIDAS_MAX_EVENT_SIZE)
 endif
-
 
 #-----------------------
 # Cross-compilation, change GCC_PREFIX
@@ -275,12 +279,15 @@ PROGS = $(BIN_DIR)/mserver $(BIN_DIR)/mhttpd \
 	$(BIN_DIR)/mlogger $(BIN_DIR)/odbedit \
 	$(BIN_DIR)/mtape $(BIN_DIR)/mhist \
 	$(BIN_DIR)/mstat $(BIN_DIR)/mcnaf \
-	$(BIN_DIR)/mdump $(BIN_DIR)/lazylogger \
+	$(BIN_DIR)/mdump \
+	$(BIN_DIR)/lazylogger \
 	$(BIN_DIR)/mtransition \
 	$(BIN_DIR)/mhdump \
 	$(BIN_DIR)/mchart $(BIN_DIR)/stripchart.tcl \
 	$(BIN_DIR)/webpaw $(BIN_DIR)/odbhist \
 	$(BIN_DIR)/melog \
+	$(BIN_DIR)/mfe_link_test \
+	$(BIN_DIR)/mana_link_test \
 	$(SPECIFIC_OS_PRG)
 
 ANALYZER = $(LIB_DIR)/mana.o
@@ -298,11 +305,16 @@ PROGS += $(BIN_DIR)/mh2sql
 endif
 
 OBJS =  $(LIB_DIR)/midas.o $(LIB_DIR)/system.o $(LIB_DIR)/mrpc.o \
-	$(LIB_DIR)/odb.o $(LIB_DIR)/ybos.o $(LIB_DIR)/ftplib.o \
+	$(LIB_DIR)/odb.o $(LIB_DIR)/ftplib.o \
 	$(LIB_DIR)/mxml.o \
 	$(LIB_DIR)/history_midas.o \
 	$(LIB_DIR)/history_sql.o \
 	$(LIB_DIR)/history.o $(LIB_DIR)/alarm.o $(LIB_DIR)/elog.o
+
+ifdef HAVE_YBOS
+CFLAGS += -DHAVE_YBOS
+OBJS   += $(LIB_DIR)/ybos.o
+endif
 
 ifdef NEED_STRLCPY
 OBJS += $(LIB_DIR)/strlcpy.o
@@ -552,8 +564,14 @@ $(BIN_DIR)/%:$(UTL_DIR)/%.c
 $(BIN_DIR)/mcnaf: $(UTL_DIR)/mcnaf.c $(DRV_DIR)/camac/camacrpc.c
 	$(CC) $(CFLAGS) $(OSFLAGS) -o $@ $(UTL_DIR)/mcnaf.c $(DRV_DIR)/camac/camacrpc.c $(LIB) $(LIBS)
 
-$(BIN_DIR)/mdump: $(UTL_DIR)/mdump.c
-	$(CC) $(CFLAGS) $(OSFLAGS) -o $@ $(UTL_DIR)/mdump.c $(LIB) $(LIBS)
+$(BIN_DIR)/mdump: $(UTL_DIR)/mdump.c $(SRC_DIR)/ybos.c
+	$(CC) $(CFLAGS) $(OSFLAGS) -DHAVE_YBOS -o $@ $(UTL_DIR)/mdump.c $(SRC_DIR)/ybos.c $(LIB) $(LIBS)
+
+$(BIN_DIR)/mfe_link_test: $(SRC_DIR)/mfe.c
+	$(CC) $(CFLAGS) $(OSFLAGS) -DLINK_TEST -o $@ $(SRC_DIR)/mfe.c $(LIB) $(LIBS)
+
+$(BIN_DIR)/mana_link_test: $(SRC_DIR)/mana.c
+	$(CC) $(CFLAGS) $(OSFLAGS) -DLINK_TEST -o $@ $(SRC_DIR)/mana.c $(LIB) $(LIBS)
 
 $(BIN_DIR)/mhdump: $(UTL_DIR)/mhdump.cxx
 	$(CXX) $(CFLAGS) $(OSFLAGS) -o $@ $<
