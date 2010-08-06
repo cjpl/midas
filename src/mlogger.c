@@ -3549,7 +3549,7 @@ void log_history(HNDLE hDB, HNDLE hKey, void *info)
    hist_log[i].last_log = ss_time();
 
    if (verbose)
-      printf("write event: id %d, timestamp %d, buffer %p, size %d\n", hist_log[i].event_id, hist_log[i].last_log, hist_log[i].buffer, hist_log[i].buffer_size);
+      printf("write history event: id %d, timestamp %d, buffer %p, size %d\n", hist_log[i].event_id, hist_log[i].last_log, hist_log[i].buffer, hist_log[i].buffer_size);
 
    hs_write_event(hist_log[i].event_id, hist_log[i].buffer, hist_log[i].buffer_size);
 
@@ -4301,6 +4301,9 @@ INT tr_resume(INT run_number, char *error)
 void receive_event(HNDLE hBuf, HNDLE request_id, EVENT_HEADER * pheader, void *pevent)
 {
    INT i;
+
+   if (verbose)
+      printf("write data event: req %d, evid %d, timestamp %d, size %d\n", request_id, pheader->event_id, pheader->time_stamp, pheader->data_size);
 
    /* find logging channel for this request id */
    for (i = 0; i < MAX_CHANNELS; i++) {

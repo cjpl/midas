@@ -307,6 +307,7 @@ endif
 OBJS =  $(LIB_DIR)/midas.o $(LIB_DIR)/system.o $(LIB_DIR)/mrpc.o \
 	$(LIB_DIR)/odb.o $(LIB_DIR)/ftplib.o \
 	$(LIB_DIR)/mxml.o \
+	$(LIB_DIR)/dm_eb.o \
 	$(LIB_DIR)/history_midas.o \
 	$(LIB_DIR)/history_sql.o \
 	$(LIB_DIR)/history.o $(LIB_DIR)/alarm.o $(LIB_DIR)/elog.o
