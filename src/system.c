@@ -3853,6 +3853,11 @@ INT recv_tcp(int sock, char *net_buffer, DWORD buffer_size, INT flags)
    if (param_size == 0)
       return sizeof(NET_COMMAND_HEADER);
 
+   if (param_size > buffer_size) {
+      cm_msg(MERROR, "recv_tcp", "param: receive buffer size %d is too small for received data size %d", buffer_size, param_size);
+      return -1;
+   }
+
    do {
 #ifdef OS_UNIX
       do {
