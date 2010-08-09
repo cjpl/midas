@@ -127,6 +127,7 @@ static INT _event_buffer_size = 0;
 
 static char *_net_recv_buffer;
 static INT _net_recv_buffer_size = 0;
+static INT _net_recv_buffer_size_odb = 0;
 
 static char *_net_send_buffer;
 static INT _net_send_buffer_size = 0;
@@ -262,6 +263,24 @@ void dbg_free(void *adr, char *file, int line)
          fprintf(f, "%s:%d %s:%d size=%d adr=%p\n", _mem_loc[i].file, _mem_loc[i].line,
                  file, line, _mem_loc[i].size, _mem_loc[i].adr);
    fclose(f);
+}
+
+/********************************************************************/
+static int resize_net_send_buffer(const char* from, int new_size)
+/********************************************************************/
+{
+   if (new_size <= _net_send_buffer_size)
+      return SUCCESS;
+
+   _net_send_buffer = (char *) realloc(_net_send_buffer, new_size);
+   if (_net_send_buffer == NULL) {
+      cm_msg(MERROR, from, "Cannot allocate %d bytes for network buffer", new_size);
+      return RPC_EXCEED_BUFFER;
+   }
+
+   //printf("reallocate_net_send_buffer %p size %d->%d from %s\n", _net_send_buffer, _net_send_buffer_size, new_size, from);
+   _net_send_buffer_size = new_size;
+   return SUCCESS;
 }
 
 /********************************************************************\
@@ -2337,6 +2356,7 @@ INT cm_disconnect_experiment(void)
    if (_net_recv_buffer_size > 0) {
       M_FREE(_net_recv_buffer);
       _net_recv_buffer_size = 0;
+      _net_recv_buffer_size_odb = 0;
    }
 
    if (_net_send_buffer_size > 0) {
@@ -6721,11 +6741,9 @@ INT bm_receive_event(INT buffer_handle, void *destination, INT * buf_size, INT a
    if (rpc_is_remote()) {
       int status, old_timeout = 0;
 
-      if (*buf_size > (INT) NET_BUFFER_SIZE) {
-         cm_msg(MERROR, "bm_receive_event", "max. event size %d larger than NET_BUFFER_SIZE %d", *buf_size,
-                NET_BUFFER_SIZE);
-         return RPC_NET_ERROR;
-      }
+      status = resize_net_send_buffer("bm_receive_event", *buf_size);
+      if (status != SUCCESS)
+         return status;  
 
       if (!async_flag) {
          old_timeout = rpc_get_option(-1, RPC_OTIMEOUT);
@@ -9421,7 +9439,6 @@ void rpc_va_arg(va_list * arg_ptr, INT arg_type, void *arg)
    }
 }
 
-
 /********************************************************************/
 INT rpc_client_call(HNDLE hConn, const INT routine_id, ...)
 /********************************************************************\
@@ -9474,15 +9491,9 @@ INT rpc_client_call(HNDLE hConn, const INT routine_id, ...)
    rpc_timeout = _client_connection[idx].rpc_timeout;
    transport = _client_connection[idx].transport;
 
-   /* init network buffer */
-   if (_net_send_buffer_size == 0) {
-      _net_send_buffer = (char *) M_MALLOC(NET_BUFFER_SIZE);
-      if (_net_send_buffer == NULL) {
-         cm_msg(MERROR, "rpc_client_call", "Cannot allocate %d bytes for network buffer", NET_BUFFER_SIZE);
-         return RPC_EXCEED_BUFFER;
-      }
-      _net_send_buffer_size = NET_BUFFER_SIZE;
-   }
+   status = resize_net_send_buffer("rpc_client_call", NET_BUFFER_SIZE);
+   if (status != SUCCESS)
+      return RPC_EXCEED_BUFFER;
 
    nc = (NET_COMMAND *) _net_send_buffer;
    nc->header.routine_id = routine_id;
@@ -9763,12 +9774,9 @@ INT rpc_call(const INT routine_id, ...)
 
    /* init network buffer */
    if (_net_send_buffer_size == 0) {
-      _net_send_buffer = (char *) M_MALLOC(NET_BUFFER_SIZE);
-      if (_net_send_buffer == NULL) {
-         cm_msg(MERROR, "rpc_call", "Cannot allocate %d bytes for network buffer", NET_BUFFER_SIZE);
+      status = resize_net_send_buffer("rpc_call", NET_BUFFER_SIZE);
+      if (status != SUCCESS)
          return RPC_EXCEED_BUFFER;
-      }
-      _net_send_buffer_size = NET_BUFFER_SIZE;
 
       /* create a local mutex for multi-threaded applications */
       ss_mutex_create(&_mutex_rpc);
@@ -10673,6 +10681,8 @@ INT recv_event_server(INT idx, char *buffer, DWORD buffer_size, INT flags, INT *
    psa = &_server_acception[idx];
    sock = psa->event_sock;
 
+   //printf("recv_event_server: idx %d, buffer %p, buffer_size %d\n", idx, buffer, buffer_size);
+
    if (flags & MSG_PEEK) {
       status = recv(sock, buffer, buffer_size, flags);
       if (status == -1)
@@ -10688,6 +10698,9 @@ INT recv_event_server(INT idx, char *buffer, DWORD buffer_size, INT flags, INT *
          psa->net_buffer_size = NET_BUFFER_SIZE;
 
       psa->ev_net_buffer = (char *) M_MALLOC(psa->net_buffer_size);
+
+      //printf("allocate %p size %d\n", psa->ev_net_buffer, psa->net_buffer_size);
+
       psa->ev_write_ptr = 0;
       psa->ev_read_ptr = 0;
       psa->ev_misalign = 0;
@@ -12363,12 +12376,45 @@ INT rpc_server_receive(INT idx, int sock, BOOL check)
 
    /* init network buffer */
    if (_net_recv_buffer_size == 0) {
-      _net_recv_buffer = (char *) M_MALLOC(NET_BUFFER_SIZE);
+      int size = MAX_EVENT_SIZE + sizeof(EVENT_HEADER) + 1024;
+      _net_recv_buffer = (char *) M_MALLOC(size);
       if (_net_recv_buffer == NULL) {
-         cm_msg(MERROR, "rpc_server_receive", "Cannot allocate %d bytes for network buffer", NET_BUFFER_SIZE);
+         cm_msg(MERROR, "rpc_server_receive", "Cannot allocate %d bytes for network buffer", size);
          return RPC_EXCEED_BUFFER;
       }
-      _net_recv_buffer_size = NET_BUFFER_SIZE;
+      _net_recv_buffer_size = size;
+      _net_recv_buffer_size_odb = 0;
+      //printf("allocated _net_recv_buffer size %d\n", _net_recv_buffer_size);
+   }
+
+   /* init network buffer */
+   if (_net_recv_buffer_size_odb == 0) {
+      HNDLE hDB;
+      int size;
+      int max_event_size = MAX_EVENT_SIZE;
+
+      /* get max event size from ODB */
+      status = cm_get_experiment_database(&hDB, NULL);
+      assert(status == CM_SUCCESS);
+
+      if (hDB) {
+         size = sizeof(INT);
+         status = db_get_value(hDB, 0, "/Experiment/MAX_EVENT_SIZE", &max_event_size, &size, TID_DWORD, TRUE);
+
+         size = max_event_size + sizeof(EVENT_HEADER) + 1024;
+
+         _net_recv_buffer_size_odb = size;
+
+         if (size > _net_recv_buffer_size) {
+            _net_recv_buffer = (char *) realloc(_net_recv_buffer, size);
+            if (_net_recv_buffer == NULL) {
+               cm_msg(MERROR, "rpc_server_receive", "Cannot allocate %d bytes for network buffer", size);
+               return RPC_EXCEED_BUFFER;
+            }
+            _net_recv_buffer_size = size;
+            //printf("allocated _net_recv_buffer size %d\n", _net_recv_buffer_size);
+         }
+      }
    }
 
    /* only check if TCP connection is broken */
