@@ -134,11 +134,12 @@ endif
 ifeq ($(OSTYPE),crosscompile)
 GCC_PREFIX=$(HOME)/linuxdcc/Cross-Compiler/gcc-4.0.2/build/gcc-4.0.2-glibc-2.3.6/powerpc-405-linux-gnu
 GCC_BIN=$(GCC_PREFIX)/bin/powerpc-405-linux-gnu-
-LIBS=-L$(HOME)/linuxdcc/userland/lib -pthread -lutil
+LIBS=-L$(HOME)/linuxdcc/userland/lib -pthread -lutil -lrt
 CC  = $(GCC_BIN)gcc
 CXX = $(GCC_BIN)g++
 OSTYPE = cross-ppc405
 OS_DIR = $(OSTYPE)
+CFLAGS += -DOS_LINUX
 NEED_MYSQL=
 HAVE_ODBC=
 endif
