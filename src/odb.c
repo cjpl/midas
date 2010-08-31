@@ -1169,7 +1169,7 @@ INT db_close_database(HNDLE hDB)
       destroy_flag = (pheader->num_clients == 0);
 
       /* flush shared memory to disk */
-      ss_shm_flush(pheader->name, pheader, sizeof(DATABASE_HEADER) + 2 * pheader->data_size);
+      ss_shm_flush(pheader->name, pheader, sizeof(DATABASE_HEADER) + 2 * pheader->data_size, _database[hDB - 1].shm_handle);
 
       /* unmap shared memory, delete it if we are the last */
       ss_shm_close(pheader->name, pheader, _database[hDB - 1].shm_handle, destroy_flag);
@@ -1279,7 +1279,7 @@ INT db_flush_database(HNDLE hDB)
       }
 
       /* flush shared memory to disk */
-      ss_shm_flush(pheader->name, pheader, sizeof(DATABASE_HEADER) + 2 * pheader->data_size);
+      ss_shm_flush(pheader->name, pheader, sizeof(DATABASE_HEADER) + 2 * pheader->data_size, _database[hDB - 1].shm_handle);
       db_unlock_database(hDB);
 
    }

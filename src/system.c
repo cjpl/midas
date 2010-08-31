@@ -101,7 +101,7 @@ static int mmap_size[MAX_MMAP];
 #endif
 
 /*------------------------------------------------------------------*/
-INT ss_shm_open(char *name, INT size, void **adr, HNDLE * handle, BOOL get_size)
+INT ss_shm_open(const char *name, INT size, void **adr, HNDLE * handle, BOOL get_size)
 /********************************************************************\
 
   Routine: ss_shm_open
@@ -434,7 +434,7 @@ INT ss_shm_open(char *name, INT size, void **adr, HNDLE * handle, BOOL get_size)
 }
 
 /*------------------------------------------------------------------*/
-INT ss_shm_close(char *name, void *adr, HNDLE handle, INT destroy_flag)
+INT ss_shm_close(const char *name, void *adr, HNDLE handle, INT destroy_flag)
 /********************************************************************\
 
   Routine: ss_shm_close
@@ -718,7 +718,7 @@ INT ss_shm_unprotect(HNDLE handle, void **adr)
 }
 
 /*------------------------------------------------------------------*/
-INT ss_shm_flush(char *name, void *adr, INT size)
+INT ss_shm_flush(const char *name, const void *adr, INT size, HNDLE handle)
 /********************************************************************\
 
   Routine: ss_shm_flush

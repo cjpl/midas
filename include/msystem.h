@@ -592,9 +592,10 @@ extern "C" {
    INT EXPRT rpc_get_opt_tcp_size(void);
 
    /*---- system services ----*/
-   INT ss_shm_open(char *name, INT size, void **adr, HNDLE *handle, BOOL get_size);
-   INT ss_shm_close(char *name, void *adr, HNDLE handle, INT destroy_flag);
-   INT ss_shm_flush(char *name, void *adr, INT size);
+   INT ss_shm_open(const char *name, INT size, void **adr, HNDLE *handle, BOOL get_size);
+   INT ss_shm_close(const char *name, void *adr, HNDLE handle, INT destroy_flag);
+   INT ss_shm_flush(const char *name, const void *adr, INT size, HNDLE handle);
+   INT ss_shm_delete(const char *name);
    INT ss_shm_protect(HNDLE handle, void *adr);
    INT ss_shm_unprotect(HNDLE handle, void **adr);
    INT ss_spawnv(INT mode, char *cmdname, char *argv[]);
