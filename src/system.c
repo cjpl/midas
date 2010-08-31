@@ -98,7 +98,7 @@ INT ss_set_async_flag(INT flag)
 #include <sys/stat.h>
 #include <sys/mman.h>
 
-#ifdef USE_POSIX_SHM
+#if defined(USE_POSIX_SHM) && defined(OS_DARWIN)
 #include <sys/posix_shm.h>
 #endif
 
@@ -106,7 +106,7 @@ INT ss_set_async_flag(INT flag)
 static void *mmap_addr[MAX_MMAP];
 static int mmap_size[MAX_MMAP];
 
-static int debug = 1;
+static int debug = 0;
 
 #endif
 
@@ -143,12 +143,19 @@ static int ss_shm_name(const char* name, char* mem_name, int mem_name_size, char
    strlcat(file_name, ".SHM", file_name_size);
 
    if (shm_name) {
+      char* s;
+
 #if 0
       strlcpy(shm_name, name, shm_name_size);
       strlcat(shm_name, "_", shm_name_size);
       strlcat(shm_name, name, shm_name_size);
 #endif
-      strlcpy(shm_name, file_name, shm_name_size);
+      strlcpy(shm_name, "/", shm_name_size);
+      strlcat(shm_name, file_name, shm_name_size);
+
+      for (s=shm_name+1; *s; s++)
+         if (*s == '/')
+            *s = '_';
 
 #ifdef PSHMNAMLEN
       if (strlen(shm_name) >= PSHMNAMLEN)
@@ -586,6 +593,9 @@ INT ss_shm_open(const char *name, INT size, void **adr, HNDLE * handle, BOOL get
       
       /* if shared memory was created, try to load it from file */
       if (created) {
+         if (debug)
+            printf("ss_shm_open(%s), loading contents of %s, size %d\n", name, file_name, size);
+
          status = read(fh, *adr, size);
          if (status != size) {
             cm_msg(MERROR, "ss_shm_open", "Cannot read \'%s\', read() returned %d instead of %d, errno %d (%s)", file_name, status, size, errno, strerror(errno));
@@ -828,6 +838,8 @@ INT ss_shm_delete(const char *name)
 #ifdef USE_SYSV_SHM
    if (1) {
       int shmid;
+      struct shmid_ds buf;
+      
       status = ss_shm_file_name_to_shmid(file_name, &shmid);
 
       if (status != SS_SUCCESS)
@@ -1026,10 +1038,10 @@ INT ss_shm_flush(const char *name, const void *adr, INT size, HNDLE handle)
       int fd;
       int ret;
 
+#ifdef USE_POSIX_SHM
       if (debug)
          printf("ss_shm_flush(%s) size %d\n", file_name, size);
 
-#ifdef USE_POSIX_SHM
       assert(handle>=0 && handle<MAX_MMAP);
       assert(adr == mmap_addr[handle]);
       assert(size == mmap_size[handle]);
