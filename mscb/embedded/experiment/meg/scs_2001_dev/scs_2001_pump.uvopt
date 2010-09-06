@@ -130,6 +130,23 @@
           <Name>-S1 -B115200 -O1793 -J0 -K0 -L0 -M0 -A3 -P1</Name>
         </SetRegEntry>
       </TargetDriverDllRegistry>
+      <Breakpoint>
+        <Bp>
+          <Number>0</Number>
+          <Type>0</Type>
+          <LineNumber>568</LineNumber>
+          <EnabledFlag>1</EnabledFlag>
+          <Address>-16732403</Address>
+          <ByteObject>0</ByteObject>
+          <ManyObjects>0</ManyObjects>
+          <SizeOfObject>0</SizeOfObject>
+          <BreakByAccess>0</BreakByAccess>
+          <BreakIfRCount>1</BreakIfRCount>
+          <Filename>MSCBUTIL.C</Filename>
+          <ExecCommand></ExecCommand>
+          <Expression></Expression>
+        </Bp>
+      </Breakpoint>
       <DebugFlag>
         <trace>0</trace>
         <periodic>0</periodic>
@@ -303,8 +320,8 @@
       <Focus>0</Focus>
       <ColumnNumber>0</ColumnNumber>
       <tvExpOptDlg>0</tvExpOptDlg>
-      <TopLine>1559</TopLine>
-      <CurrentLine>1572</CurrentLine>
+      <TopLine>337</TopLine>
+      <CurrentLine>347</CurrentLine>
       <bDave2>0</bDave2>
       <PathWithFileName>..\..\..\mscbmain.c</PathWithFileName>
       <FilenameWithoutPath>mscbmain.c</FilenameWithoutPath>
@@ -321,10 +338,10 @@
           <yPos>-25</yPos>
         </MaxPosition>
         <NormalPosition>
-          <Top>24</Top>
-          <Left>22</Left>
-          <Right>1427</Right>
-          <Bottom>603</Bottom>
+          <Top>144</Top>
+          <Left>132</Left>
+          <Right>1126</Right>
+          <Bottom>657</Bottom>
         </NormalPosition>
       </WindowPosition>
     </File>
@@ -336,8 +353,8 @@
       <Focus>0</Focus>
       <ColumnNumber>0</ColumnNumber>
       <tvExpOptDlg>0</tvExpOptDlg>
-      <TopLine>1275</TopLine>
-      <CurrentLine>1288</CurrentLine>
+      <TopLine>161</TopLine>
+      <CurrentLine>165</CurrentLine>
       <bDave2>0</bDave2>
       <PathWithFileName>..\..\..\mscbutil.c</PathWithFileName>
       <FilenameWithoutPath>mscbutil.c</FilenameWithoutPath>
@@ -354,10 +371,10 @@
           <yPos>-25</yPos>
         </MaxPosition>
         <NormalPosition>
-          <Top>48</Top>
-          <Left>44</Left>
-          <Right>1449</Right>
-          <Bottom>627</Bottom>
+          <Top>144</Top>
+          <Left>132</Left>
+          <Right>1126</Right>
+          <Bottom>657</Bottom>
         </NormalPosition>
       </WindowPosition>
     </File>
@@ -383,11 +400,30 @@
       <Focus>0</Focus>
       <ColumnNumber>0</ColumnNumber>
       <tvExpOptDlg>0</tvExpOptDlg>
-      <TopLine>0</TopLine>
-      <CurrentLine>0</CurrentLine>
+      <TopLine>191</TopLine>
+      <CurrentLine>201</CurrentLine>
       <bDave2>0</bDave2>
       <PathWithFileName>..\..\..\scs_2001\scs_2001_lib.c</PathWithFileName>
       <FilenameWithoutPath>scs_2001_lib.c</FilenameWithoutPath>
+      <WindowPosition>
+        <length>44</length>
+        <flags>0</flags>
+        <showCmd>1</showCmd>
+        <MinPosition>
+          <xPos>-1</xPos>
+          <yPos>-1</yPos>
+        </MinPosition>
+        <MaxPosition>
+          <xPos>-4</xPos>
+          <yPos>-25</yPos>
+        </MaxPosition>
+        <NormalPosition>
+          <Top>72</Top>
+          <Left>66</Left>
+          <Right>1060</Right>
+          <Bottom>585</Bottom>
+        </NormalPosition>
+      </WindowPosition>
     </File>
     <File>
       <GroupNumber>1</GroupNumber>
@@ -397,8 +433,8 @@
       <Focus>0</Focus>
       <ColumnNumber>0</ColumnNumber>
       <tvExpOptDlg>0</tvExpOptDlg>
-      <TopLine>0</TopLine>
-      <CurrentLine>0</CurrentLine>
+      <TopLine>678</TopLine>
+      <CurrentLine>714</CurrentLine>
       <bDave2>0</bDave2>
       <PathWithFileName>.\scs_2001_pump.c</PathWithFileName>
       <FilenameWithoutPath>scs_2001_pump.c</FilenameWithoutPath>
@@ -407,7 +443,7 @@
 
   <Group>
     <GroupName>Include Files</GroupName>
-    <tvExp>1</tvExp>
+    <tvExp>0</tvExp>
     <tvExpOptDlg>0</tvExpOptDlg>
     <cbSel>0</cbSel>
     <File>
@@ -430,10 +466,10 @@
       <FileType>5</FileType>
       <tvExp>0</tvExp>
       <Focus>0</Focus>
-      <ColumnNumber>0</ColumnNumber>
+      <ColumnNumber>15</ColumnNumber>
       <tvExpOptDlg>0</tvExpOptDlg>
-      <TopLine>817</TopLine>
-      <CurrentLine>817</CurrentLine>
+      <TopLine>650</TopLine>
+      <CurrentLine>666</CurrentLine>
       <bDave2>0</bDave2>
       <PathWithFileName>..\..\..\mscbemb.h</PathWithFileName>
       <FilenameWithoutPath>mscbemb.h</FilenameWithoutPath>
@@ -450,10 +486,10 @@
           <yPos>-25</yPos>
         </MaxPosition>
         <NormalPosition>
-          <Top>72</Top>
-          <Left>66</Left>
-          <Right>1471</Right>
-          <Bottom>651</Bottom>
+          <Top>240</Top>
+          <Left>220</Left>
+          <Right>1214</Right>
+          <Bottom>753</Bottom>
         </NormalPosition>
       </WindowPosition>
     </File>
@@ -1794,5 +1830,22 @@
       </Window>
     </View>
   </WinLayout>
+
+  <MDIGroups>
+    <Orientation>1</Orientation>
+    <ActiveMDIGroup>0</ActiveMDIGroup>
+    <MDIGroup>
+      <Size>100</Size>
+      <ActiveTab>0</ActiveTab>
+      <Documents>
+        <Doc>
+          <Name>.\scs_2001_pump.c</Name>
+          <ColumnNumber>0</ColumnNumber>
+          <TopLine>678</TopLine>
+          <CurrentLine>714</CurrentLine>
+        </Doc>
+      </Documents>
+    </MDIGroup>
+  </MDIGroups>
 
 </ProjectOpt>
