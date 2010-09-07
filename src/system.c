@@ -231,13 +231,14 @@ INT ss_shm_open(const char *name, INT size, void **adr, HNDLE * handle, BOOL get
 
    {
       HANDLE hFile, hMap;
-      char str[256], *p;
+      char str[256], path[256], *p;
       DWORD file_size;
 
       /* make the memory name unique using the pathname. This is necessary
          because NT doesn't use ftok. So if different experiments are
          running in different directories, they should not see the same
          shared memory */
+      cm_get_path(path);
       strcpy(str, path);
 
       /* replace special chars by '*' */
@@ -4126,7 +4127,7 @@ INT recv_tcp(int sock, char *net_buffer, DWORD buffer_size, INT flags)
    if (param_size == 0)
       return sizeof(NET_COMMAND_HEADER);
 
-   if (param_size > buffer_size) {
+   if (param_size > (INT)buffer_size) {
       cm_msg(MERROR, "recv_tcp", "param: receive buffer size %d is too small for received data size %d", buffer_size, param_size);
       return -1;
    }
