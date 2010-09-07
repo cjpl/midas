@@ -4983,7 +4983,7 @@ void show_odb_tag(const char *path, const char *keypath1, const char *format, in
       i_set = atoi(getparam("index"));
 
    /* check if path contains index */
-   strlcpy(full_keypath, keypath, sizeof(full_keypath));
+   strlcpy(full_keypath, keypath1, sizeof(full_keypath));
    strlcpy(keypath, keypath1, sizeof(keypath));
    index = 0;
 
