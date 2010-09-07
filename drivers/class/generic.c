@@ -10,6 +10,7 @@
 \********************************************************************/
 
 #include <stdio.h>
+#include <assert.h>
 #include "midas.h"
 #include "ybos.h"
 
@@ -418,9 +419,11 @@ INT gen_idle(EQUIPMENT * pequipment)
 INT cd_gen_read(char *pevent, int offset)
 {
    float *pdata;
-   DWORD *pdw;
    GEN_INFO *gen_info;
    EQUIPMENT *pequipment;
+#ifdef HAVE_YBOS
+   DWORD *pdw;
+#endif
 
    pequipment = *((EQUIPMENT **) pevent);
    gen_info = (GEN_INFO *) pequipment->cd_info;
@@ -450,6 +453,7 @@ INT cd_gen_read(char *pevent, int offset)
 
       return bk_size(pevent);
    } else if (gen_info->format == FORMAT_YBOS) {
+#ifdef HAVE_YBOS
       ybk_init((DWORD *) pevent);
 
       /* create EVID bank */
@@ -472,6 +476,9 @@ INT cd_gen_read(char *pevent, int offset)
       ybk_close((DWORD *) pevent, pdata);
 
       return ybk_size((DWORD *) pevent);
+#else
+      assert(!"YBOS support not compiled in");
+#endif
    } else
       return 0;
 }
