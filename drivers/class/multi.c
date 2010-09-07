@@ -596,9 +596,11 @@ INT multi_idle(EQUIPMENT * pequipment)
 INT cd_multi_read(char *pevent, int offset)
 {
    float *pdata;
-   DWORD *pdw;
    MULTI_INFO *m_info;
    EQUIPMENT *pequipment;
+#ifdef HAVE_YBOS
+   DWORD *pdw;
+#endif
 
    pequipment = *((EQUIPMENT **) pevent);
    m_info = (MULTI_INFO *) pequipment->cd_info;
@@ -628,6 +630,7 @@ INT cd_multi_read(char *pevent, int offset)
 
       return bk_size(pevent);
    } else if (m_info->format == FORMAT_YBOS) {
+#ifdef HAVE_YBOS
       ybk_init((DWORD *) pevent);
 
       /* create EVID bank */
@@ -650,6 +653,9 @@ INT cd_multi_read(char *pevent, int offset)
       ybk_close((DWORD *) pevent, pdata);
 
       return ybk_size((DWORD *) pevent);
+#lese
+      assert(!"YBOS support not compiled in");
+#endif
    }
 
    return 0;
