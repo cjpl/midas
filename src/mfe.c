@@ -1010,18 +1010,22 @@ int set_equipment_status(const char *name, const char *eqipment_status, const ch
 
 void update_odb(EVENT_HEADER * pevent, HNDLE hKey, INT format)
 {
-   INT size, i, ni4, tsize, status, n_data;
+   INT size, i, status, n_data;
    char *pdata;
    char name[5];
    BANK_HEADER *pbh;
    BANK *pbk;
    BANK32 *pbk32;
-   char *pydata;
-   DWORD odb_type;
-   DWORD *pyevt, bkname;
+   DWORD bkname;
    WORD bktype;
    HNDLE hKeyRoot, hKeyl;
    KEY key;
+#ifdef HAVE_YBOS
+   INT ni4, tsize;
+   DWORD odb_type;
+   char *pydata;
+   DWORD *pyevt;
+#endif
 
    /* outcommented since db_find_key does not work in FTCP mode, SR 25.4.03
       rpc_set_option(-1, RPC_OTRANSPORT, RPC_FTCP); */
