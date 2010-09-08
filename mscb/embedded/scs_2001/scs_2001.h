@@ -62,4 +62,5 @@ unsigned char dr_temp8(unsigned char id, unsigned char cmd, unsigned char addr, 
 unsigned char dr_temp2(unsigned char id, unsigned char cmd, unsigned char addr, unsigned char port, unsigned char chn, void *pd) reentrant;
 unsigned char dr_ad590(unsigned char id, unsigned char cmd, unsigned char addr, unsigned char port, unsigned char chn, void *pd) reentrant;
 unsigned char dr_lhe(unsigned char id, unsigned char cmd, unsigned char addr, unsigned char port, unsigned char chn, void *pd) reentrant;
+unsigned char dr_floatin(unsigned char id, unsigned char cmd, unsigned char addr, unsigned char port, unsigned char chn, void *pd) reentrant;
 

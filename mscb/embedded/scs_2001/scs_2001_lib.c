@@ -44,6 +44,9 @@ MSCB_INFO_VAR code vars_uin[] =
 MSCB_INFO_VAR code vars_diffin[] =
    { 4, UNIT_VOLT,    0,          0, MSCBF_FLOAT, "P%Uin#",  (void xdata *)4, 4 };
 
+MSCB_INFO_VAR code vars_floatin[] =
+   { 4, UNIT_VOLT,    0,          0, MSCBF_FLOAT, "P%Uin#",  (void xdata *)2, 4 };
+
 MSCB_INFO_VAR code vars_uin_range[] = {
    { 4, UNIT_VOLT,    0,          0, MSCBF_FLOAT, "P%Uin#",  (void xdata *)8, 4 },
    { 1, UNIT_BYTE,    0,          0, MSCBF_HIDDEN,"P%Range", (void xdata *)0 },
@@ -129,6 +132,7 @@ SCS_2001_MODULE code scs_2001_module[] = {
   { 0x66, "Iin 0-2.5mA Fst", vars_iin,    1, dr_ads1256     },
   { 0x67, "Iin 0-25mA Fst",  vars_iin,    1, dr_ads1256     },
   { 0x68, "Uin +-10V Diff",  vars_diffin, 1, dr_ad7718      },
+  { 0x69, "Uin +-10V Flt",   vars_floatin, 1, dr_floatin    },
 
   { 0x70, "Cin 0-10nF",      vars_cin,    1, dr_capmeter    },
   { 0x71, "Cin 0-1uF",       vars_cin,    1, dr_capmeter    },
@@ -187,7 +191,6 @@ unsigned char xdata i;
       OPT_DATAO = ((addr << i) & 8) > 0;
       CLOCK;
    }
-
 
    /* address port */
    for (i=0 ; i<3 ; i++) {
@@ -1854,4 +1857,68 @@ unsigned char i, idx;
    return 1;
 }
 
+/*---- Floating analog in via dual LTC2400 ----*/
 
+unsigned char dr_floatin(unsigned char id, unsigned char cmd, unsigned char addr, 
+                         unsigned char port, unsigned char chn, void *pd) reentrant
+{
+float value;
+unsigned long d;
+unsigned char i;
+
+   if (id || chn);
+
+   if (cmd == MC_INIT) {
+      /* set CS_CH0 & CS_CH1 high */
+      write_port(addr, port, 0xFF);
+      /* switch port to output */
+      write_dir(addr, port, 0xFF);
+   }
+
+   if (cmd == MC_READ) {
+
+      if (chn == 1)
+         return 0;
+
+      /* lower !CS of first ADC */
+      // write_port(addr, port, 0xFE);
+
+      address_port(addr, port, AM_RW_SERIAL);
+
+      /* check for end of conversion */
+      DELAY_US_REENTRANT(2);
+
+      if (OPT_DATAI == 1) {
+         write_port(addr, port, 0xFF);
+         return 0;
+      }
+   
+      /* read 28 bit data */
+      d = 0;
+      for (i=0 ; i<27 ; i++) {
+         CLOCK;
+         DELAY_CLK;
+         d = (d << 1) | OPT_DATAI;
+      }
+
+      /* raise !CS of first ADC */
+      write_port(addr, port, 0xFF);
+
+      /* convert to volts */
+      if ((d & (1l<<25)) == 0) // negative sign
+        value = (((float)((long)((d & 0xFFFFFF) | 0xFF000000))) / (1l<<24)) * 2.5;
+      else   
+        value = ((float)(d & 0xFFFFFF) / (1l<<24)) * 2.5;
+   
+      /* correct for voltage divider */
+      value = value * 8 - 10;
+
+      /* round result to 6 digits */
+      value = floor(value*1E6+0.5)/1E6;
+
+      *((float *)pd) = value;
+      return 4;
+   }
+
+   return 0;
+}
