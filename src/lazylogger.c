@@ -1139,6 +1139,7 @@ Function value:
 0           success
 \********************************************************************/
 {
+#ifdef HAVE_YBOS
    void *plazy = NULL;
    DWORD szlazy;
    INT status, no_cpy_last_time = 0;
@@ -1148,6 +1149,7 @@ Function value:
    //char *pext;
    BOOL watchdog_flag, exit_request = FALSE;
    char filename[256];
+#endif
 
 #ifndef HAVE_YBOS
    assert(!"YBOS support is not compiled in. Please use the \'SCRIPT\' backup type method");
