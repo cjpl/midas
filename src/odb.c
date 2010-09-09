@@ -2092,7 +2092,8 @@ INT db_find_key(HNDLE hDB, HNDLE hKey, const char *key_name, HNDLE * subhKey)
       }
 
       if (pkey->type != TID_KEY) {
-         cm_msg(MERROR, "db_find_key", "key has no subkeys");
+         db_get_path(hDB, hKey, str, sizeof(str));
+         cm_msg(MERROR, "db_find_key", "key \"%s\" has no subkeys", str);
          *subhKey = 0;
          db_unlock_database(hDB);
          return DB_NO_KEY;
