@@ -128,7 +128,7 @@
           <Target>
             <UseTarget>1</UseTarget>
             <LoadApplicationAtStartup>1</LoadApplicationAtStartup>
-            <RunToMain>1</RunToMain>
+            <RunToMain>0</RunToMain>
             <RestoreBreakpoints>0</RestoreBreakpoints>
             <RestoreWatchpoints>0</RestoreWatchpoints>
             <RestoreMemoryDisplay>0</RestoreMemoryDisplay>
@@ -370,6 +370,11 @@
               <FileName>scs_2001_lib.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\scs_2001_lib.c</FilePath>
+            </File>
+            <File>
+              <FileName>STARTUP_VDDMON.A51</FileName>
+              <FileType>2</FileType>
+              <FilePath>..\STARTUP_VDDMON.A51</FilePath>
             </File>
           </Files>
         </Group>
@@ -754,6 +759,11 @@
               <FileName>scs_2001_lib.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\scs_2001_lib.c</FilePath>
+            </File>
+            <File>
+              <FileName>STARTUP_VDDMON.A51</FileName>
+              <FileType>2</FileType>
+              <FilePath>..\STARTUP_VDDMON.A51</FilePath>
             </File>
           </Files>
         </Group>
