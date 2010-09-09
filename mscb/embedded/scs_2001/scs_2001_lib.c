@@ -1905,10 +1905,18 @@ unsigned char i;
       write_port(addr, port, 0xFF);
 
       /* convert to volts */
-      if ((d & (1l<<25)) == 0) // negative sign
-        value = (((float)((long)((d & 0xFFFFFF) | 0xFF000000))) / (1l<<24)) * 2.5;
-      else   
-        value = ((float)(d & 0xFFFFFF) / (1l<<24)) * 2.5;
+      if ((d & (1l<<25)) && (d & (1l<<24))) // positive overflow
+         value = 2.5;
+      else {
+         if ((d & (1l<<25)) == 0 && (d & (1l<<24))) // negative overflow
+            value = 0;
+         else {
+            if ((d & (1l<<25)) == 0) // negative sign
+               value = (((float)((long)((d & 0xFFFFFF) | 0xFF000000))) / (1l<<24)) * 2.5;
+            else   
+               value = ((float)(d & 0xFFFFFF) / (1l<<24)) * 2.5;
+         }
+      }
    
       /* correct for voltage divider */
       value = value * 8 - 10;
