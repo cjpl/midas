@@ -371,6 +371,11 @@
               <FileType>1</FileType>
               <FilePath>.\scs_2001_pump.c</FilePath>
             </File>
+            <File>
+              <FileName>STARTUP_VDDMON.A51</FileName>
+              <FileType>2</FileType>
+              <FilePath>..\..\..\STARTUP_VDDMON.A51</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
@@ -754,6 +759,11 @@
               <FileName>scs_2001_pump.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\scs_2001_pump.c</FilePath>
+            </File>
+            <File>
+              <FileName>STARTUP_VDDMON.A51</FileName>
+              <FileType>2</FileType>
+              <FilePath>..\..\..\STARTUP_VDDMON.A51</FilePath>
             </File>
           </Files>
         </Group>
