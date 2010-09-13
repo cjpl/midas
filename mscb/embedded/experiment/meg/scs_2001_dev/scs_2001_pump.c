@@ -33,6 +33,20 @@ unsigned char button(unsigned char i);
 unsigned char tc600_read(unsigned short param, char *result);
 unsigned char tc600_write(unsigned short param, unsigned char len, unsigned long value);
 
+/*---- pump station states ----*/
+
+#define ST_OFF           1  // station if off
+#define ST_START_FORE    2  // fore pump is starting up
+#define ST_EVAC_FORE     3  // evacuating buffer tank
+#define ST_PREEVAC_MAIN  4  // wait for forevalve to be closed
+#define ST_EVAC_MAIN     5  // evacuating main recipient
+#define ST_RAMP_TURBO    6  // ramp up turbo pump
+#define ST_RUN_FPON      7  // running, fore pump on
+#define ST_RUN_FPOFF     8  // running, fore pump off
+#define ST_RUN_FPUP      9  // running, fore pump ramping up
+#define ST_RUN_FPDOWN   10  // running, fore pump ramping down
+#define ST_ERROR        11  // error condition
+
 /*---- Error codes ----*/
 
 char xdata turbo_err[10];
@@ -78,6 +92,7 @@ struct {
    float vv_max;
    float vv_min;
    float hv_thresh;
+   unsigned char pump_state;
 } xdata user_data;
 
 MSCB_INFO_VAR code vars[] = {
@@ -115,6 +130,8 @@ MSCB_INFO_VAR code vars[] = {
    { 4, UNIT_BAR, PRFX_MILLI, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "VV max",   &user_data.vv_max, 1, 1, 10, 1 },          // 24
    { 4, UNIT_BAR, PRFX_MILLI, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "VV min",   &user_data.vv_min, 1, 0.1, 1, 0.1 },       // 25
    { 4, UNIT_BAR, PRFX_MILLI, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "HV thrsh", &user_data.hv_thresh, 3, 0.001, 1, 0.001 },// 26
+
+   { 1, UNIT_BYTE,    0, 0, 0,                               "State",    &user_data.pump_state },                   // 27
 
    { 0 }
 };
@@ -224,9 +241,9 @@ void user_init(unsigned char init)
       user_data.vacuum_ok = 0;
       user_data.man_mode = 0;
       user_data.fore_pump = 0;
-	  user_data.fore_valve = 0;
-	  user_data.main_valve = 0;
-	  user_data.bypass_valve = 0;
+      user_data.fore_valve = 0;
+	   user_data.main_valve = 0;
+	   user_data.bypass_valve = 0;
 
       user_data.evac_timeout = 60; // 1h to pump recipient
       user_data.fp_cycle = 20;     // run fore pump for min. 20 sec.
@@ -248,6 +265,9 @@ void user_init(unsigned char init)
    /* get parameter 315 (TMP finspd) */
    tc600_read(315, str);
    user_data.final_speed = atoi(str);
+
+   /* initially the pump state is off */
+   user_data.pump_state = ST_OFF;
 
    /* display startup screen */
    lcd_goto(0, 0);
@@ -484,20 +504,7 @@ unsigned char user_func(unsigned char *data_in, unsigned char *data_out)
 
 /*---- Pumpstation specific code -----------------------------------*/
 
-#define ST_OFF           1  // station if off
-#define ST_START_FORE    2  // fore pump is starting up
-#define ST_EVAC_FORE     3  // evacuating buffer tank
-#define ST_PREEVAC_MAIN  4  // wait for forevalve to be closed
-#define ST_EVAC_MAIN     5  // evacuating main recipient
-#define ST_RAMP_TURBO    6  // ramp up turbo pump
-#define ST_RUN_FPON      7  // running, fore pump on
-#define ST_RUN_FPOFF     8  // running, fore pump off
-#define ST_RUN_FPUP      9  // running, fore pump ramping up
-#define ST_RUN_FPDOWN   10  // running, fore pump ramping down
-#define ST_ERROR        11  // error condition
-
 unsigned long xdata start_time;
-unsigned char xdata pump_state = ST_OFF;
 
 void set_forepump(unsigned char flag)
 {
@@ -562,16 +569,16 @@ static bit b0_old = 0, b1_old = 0, b2_old = 0, b3_old = 0,
       if (user_data.man_mode) {
          printf("TMP: %4d Hz, %4.2f A", user_data.rot_speed, user_data.tmp_current);
       } else {
-         if (pump_state == ST_OFF) {
+         if (user_data.pump_state == ST_OFF) {
             if (user_data.rot_speed > 10)
                printf("Rmp down TMP:%4d Hz", user_data.rot_speed);
             else
                printf("Pump station off    ");
-         } else if (pump_state == ST_START_FORE)
+         } else if (user_data.pump_state == ST_START_FORE)
             printf("Starting fore pump  ");
-         else if (pump_state == ST_EVAC_FORE)
+         else if (user_data.pump_state == ST_EVAC_FORE)
             printf("Pumping buffer tank ");
-         else if (pump_state == ST_EVAC_MAIN)
+         else if (user_data.pump_state == ST_EVAC_MAIN)
             printf("Pumping recipient   ");
          else
             printf("TMP: %4d Hz, %4.2f A", user_data.rot_speed, user_data.tmp_current);
@@ -658,36 +665,36 @@ static bit b0_old = 0, b1_old = 0, b2_old = 0, b3_old = 0,
       set_bypassvalve(0);
 
       set_forepump(1);
-      pump_state = ST_START_FORE;
+      user_data.pump_state = ST_START_FORE;
 
       start_time = time();     // remember start time
    }
 
    /* wait 15s for forepump to start (turbo could be still rotating!) */
-   if (pump_state == ST_START_FORE && time() > start_time + 15*100) {
+   if (user_data.pump_state == ST_START_FORE && time() > start_time + 15*100) {
 
       set_forevalve(1);
 
       start_time = time();     // remember start time
-      pump_state = ST_EVAC_FORE;
+      user_data.pump_state = ST_EVAC_FORE;
    }
 
    /* check if buffer tank gets evacuated in less than 15 min */
-   if (pump_state == ST_EVAC_FORE && time() > start_time + 15*60*100) {
-      pump_state = ST_ERROR;
+   if (user_data.pump_state == ST_EVAC_FORE && time() > start_time + 15*60*100) {
+      user_data.pump_state = ST_ERROR;
       user_data.error = ERR_FOREVAC;
       set_forevalve(0);
       set_forepump(0);
    }
 
    /* check if evacuation of forepump and buffer tank is ready */
-   if (pump_state == ST_EVAC_FORE && user_data.vv_mbar < user_data.vv_min) {
+   if (user_data.pump_state == ST_EVAC_FORE && user_data.vv_mbar < user_data.vv_min) {
 
       if (user_data.hv_mbar < 1) {
          
          /* recipient is already evacuated, go to running mode */
          start_time = time();     // remember start time
-         pump_state = ST_EVAC_MAIN ;
+         user_data.pump_state = ST_EVAC_MAIN ;
       
       } else {
 
@@ -697,53 +704,54 @@ static bit b0_old = 0, b1_old = 0, b2_old = 0, b3_old = 0,
             set_forevalve(1);
       
             start_time = time();     // remember start time
-            pump_state = ST_RAMP_TURBO;
+            user_data.pump_state = ST_RAMP_TURBO;
 
          } else {
             /* evacuate recipient through bypass valve */
             set_forevalve(0);
-            pump_state = ST_PREEVAC_MAIN;
+            user_data.pump_state = ST_PREEVAC_MAIN;
             start_time = time();
          }
       }
    }
 
    /* after 5 sec. evacuate through bypass valve */
-   if (pump_state == ST_PREEVAC_MAIN && time() > start_time + 5*100) {
+   if (user_data.pump_state == ST_PREEVAC_MAIN && time() > start_time + 5*100) {
       set_bypassvalve(1);
       start_time = time();
-      pump_state = ST_EVAC_MAIN;
+      user_data.pump_state = ST_EVAC_MAIN;
    }
 
    /* check if recipient gets evacuated in less than evac_timeout minutes */
-   if (pump_state == ST_EVAC_MAIN && 
+   if (user_data.pump_state == ST_EVAC_MAIN && 
        user_data.evac_timeout > 0 && 
        time() > start_time + (unsigned long)user_data.evac_timeout*60*100) {
-      pump_state = ST_ERROR;
+      user_data.pump_state = ST_ERROR;
       user_data.error = ERR_MAINVAC;
+      set_bypassvalve(0);
       set_forevalve(0);
       set_forepump(0);
    }
 
    /* check if evacuation of main recipient is ready, may take very long time */
-   if (pump_state == ST_EVAC_MAIN && user_data.hv_mbar < 1) {
+   if (user_data.pump_state == ST_EVAC_MAIN && user_data.hv_mbar < 1) {
       
       set_forevalve(1);        // now evacuate both recipient and buffer tank
    }
 
    /* check if vacuum on both sides of main valve is ok */
-   if (pump_state == ST_EVAC_MAIN && user_data.hv_mbar < 1 && user_data.vv_mbar < user_data.vv_min) {
+   if (user_data.pump_state == ST_EVAC_MAIN && user_data.hv_mbar < 1 && user_data.vv_mbar < user_data.vv_min) {
 
       /* turn on turbo pump */
       user_data.turbo_on = 1;
 
       start_time = time();     // remember start time
-      pump_state = ST_RAMP_TURBO;
+      user_data.pump_state = ST_RAMP_TURBO;
    }
 
    /* check if vacuum leak after ramping */
-   if (pump_state == ST_RAMP_TURBO || pump_state == ST_RUN_FPON || pump_state == ST_RUN_FPOFF ||
-       pump_state == ST_RUN_FPUP || pump_state == ST_RUN_FPDOWN) {
+   if (user_data.pump_state == ST_RAMP_TURBO || user_data.pump_state == ST_RUN_FPON || user_data.pump_state == ST_RUN_FPOFF ||
+       user_data.pump_state == ST_RUN_FPUP || user_data.pump_state == ST_RUN_FPDOWN) {
 
        if (user_data.hv_mbar > 4 && user_data.valve_locked == 0) {
 
@@ -755,7 +763,7 @@ static bit b0_old = 0, b1_old = 0, b2_old = 0, b3_old = 0,
           /* force restart of pump station */
           if (user_data.station_on) {
              station_on_old = 0;
-             pump_state = ST_OFF;
+             user_data.pump_state = ST_OFF;
              return 0;
           }
        }
@@ -763,7 +771,7 @@ static bit b0_old = 0, b1_old = 0, b2_old = 0, b3_old = 0,
    
 
    /* check if turbo pump started successfully in unlocked mode */
-   if (user_data.valve_locked == 0 && pump_state == ST_RAMP_TURBO && 
+   if (user_data.valve_locked == 0 && user_data.pump_state == ST_RAMP_TURBO && 
        user_data.rot_speed > user_data.final_speed*0.8 &&
        user_data.hv_mbar < 1 && user_data.vv_mbar < user_data.vv_min) {
     
@@ -773,55 +781,55 @@ static bit b0_old = 0, b1_old = 0, b2_old = 0, b3_old = 0,
       set_mainvalve(1);
 
       start_time = time();     // remember start time
-      pump_state = ST_RUN_FPON;
+      user_data.pump_state = ST_RUN_FPON;
    }
 
    /* check if turbo pump started successfully in locked mode */
-   if (user_data.valve_locked == 1 && pump_state == ST_RAMP_TURBO && 
+   if (user_data.valve_locked == 1 && user_data.pump_state == ST_RAMP_TURBO && 
        user_data.rot_speed > user_data.final_speed*0.8 &&
        user_data.vv_mbar < user_data.vv_min) {
     
       start_time = time();     // remember start time
-      pump_state = ST_RUN_FPON;
+      user_data.pump_state = ST_RUN_FPON;
    }
 
 
    /* check for fore pump off */
-   if (pump_state == ST_RUN_FPON) {
+   if (user_data.pump_state == ST_RUN_FPON) {
 
       if (time() > start_time + user_data.fp_cycle*100 && 
           user_data.vv_mbar < user_data.vv_min) {
          set_forevalve(0);
-         pump_state = ST_RUN_FPDOWN;
+         user_data.pump_state = ST_RUN_FPDOWN;
          start_time = time();
       }
    }
 
    /* turn fore pump off */
-   if (pump_state == ST_RUN_FPDOWN) {
+   if (user_data.pump_state == ST_RUN_FPDOWN) {
 
       if (time() > start_time + 3*100) {  // wait 3s
          set_forepump(0);                 // turn fore pump off
-         pump_state = ST_RUN_FPOFF;
+         user_data.pump_state = ST_RUN_FPOFF;
       }
    }
 
    /* check for fore pump on */
-   if (pump_state == ST_RUN_FPOFF) {
+   if (user_data.pump_state == ST_RUN_FPOFF) {
 
       if (user_data.vv_mbar > user_data.vv_max) {
          set_forepump(1);
-         pump_state = ST_RUN_FPUP;
+         user_data.pump_state = ST_RUN_FPUP;
          start_time = time();
       }
    }
    
    /* turn fore pump on */
-   if (pump_state == ST_RUN_FPUP) {
+   if (user_data.pump_state == ST_RUN_FPUP) {
 
       if (time() > start_time + 10*100) { // wait 10s
          set_forevalve(1); 
-         pump_state = ST_RUN_FPON;
+         user_data.pump_state = ST_RUN_FPON;
       }
    }
 
@@ -849,7 +857,7 @@ static bit b0_old = 0, b1_old = 0, b2_old = 0, b3_old = 0,
       /* vent mode auto */
       tc600_write(30, 3, 0);
 
-      pump_state = ST_OFF;
+      user_data.pump_state = ST_OFF;
       user_data.error = 0;
    }
    
@@ -863,7 +871,7 @@ static bit b0_old = 0, b1_old = 0, b2_old = 0, b3_old = 0,
    if (!user_data.valve_locked && valve_locked_old) {
       if (user_data.station_on) {
          start_time = time();        // remember start time
-         pump_state = ST_START_FORE; // start with starting forepump
+         user_data.pump_state = ST_START_FORE; // start with starting forepump
          set_forepump(1);
       }
    }
