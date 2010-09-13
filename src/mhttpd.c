@@ -9973,6 +9973,11 @@ static int cmp_names(const void *a, const void *b)
   // NOT REACHED
 }
 
+const bool cmp_events(const std::string& a, const std::string& b)
+{
+  return cmp_names(a.c_str(), b.c_str()) < 0;
+}
+
 const bool cmp_tags(const TAG& a, const TAG& b)
 {
   return cmp_names(a.name, b.name) < 0;
@@ -9993,6 +9998,225 @@ static void sort_tags(int ntags, TAG* tags)
 #endif
 
 #define STRLCPY(dst, src) strlcpy((dst), (src), sizeof(dst))
+#define STRLCAT(dst, src) strlcat((dst), (src), sizeof(dst))
+
+struct hist_var_t
+{
+   char event_name[NAME_LENGTH];
+   char var_name[NAME_LENGTH];
+   float hist_factor;
+   float hist_offset;
+   char hist_col[NAME_LENGTH];
+   char hist_label[NAME_LENGTH];
+   int  hist_order;
+};
+
+static int cmp_vars(const void *a, const void *b)
+{
+   return ((const hist_var_t*)a)->hist_order >= ((const hist_var_t*)b)->hist_order;
+}
+
+static void print_vars(const hist_var_t vars[])
+{
+   for (int i=0; i<MAX_VARS; i++) {
+      if (vars[i].event_name[0]==0)
+         break;
+      printf("%d event [%s][%s] factor %f, offset %f, color [%s] label [%s] order %d\n", i, vars[i].event_name, vars[i].var_name, vars[i].hist_factor, vars[i].hist_offset, vars[i].hist_col, vars[i].hist_label, vars[i].hist_order);
+   }
+}
+
+int xdb_get_data_index(HNDLE hDB, const char* str, void *value, int size, int index, int tid)
+{
+   HNDLE hKey;
+   int status = db_find_key(hDB, 0, str, &hKey);
+   if (status != DB_SUCCESS)
+      return status;
+
+   KEY key;
+   db_get_key(hDB, hKey, &key);
+   if (index >= key.num_values)
+      return DB_OUT_OF_RANGE;
+
+   status = db_get_data_index(hDB, hKey, value, &size, index, tid);
+   return status;
+}
+
+static void load_vars_odb(HNDLE hDB, const char* path, hist_var_t vars[])
+{
+   for (int index=0; index<MAX_VARS; index++) {
+      char str[256];
+      char var_name_odb[256];
+
+      var_name_odb[0] = 0;
+
+      sprintf(str, "/History/Display/%s/Variables", path);
+      xdb_get_data_index(hDB, str, var_name_odb, sizeof(var_name_odb), index, TID_STRING);
+
+      if (var_name_odb[0] == 0)
+         break;
+
+      //printf("index %d, var_name_odb %s\n", index, var_name_odb);
+
+      char* s = strchr(var_name_odb, ':');
+
+      //printf("index %d, var_name_odb [%s] %p [%s]\n", index, var_name_odb, s, s?s:"");
+
+      if (s)
+         *s = 0;
+      STRLCPY(vars[index].event_name, var_name_odb);
+      if (s)
+         STRLCPY(vars[index].var_name, s+1);
+
+      //printf("index %d, var_name_odb [%s] %p [%s]\n", index, var_name_odb, s, s?(s+1):"");
+
+      vars[index].hist_factor = 1;
+
+      sprintf(str, "/History/Display/%s/Factor", path);
+      xdb_get_data_index(hDB, str, &vars[index].hist_factor, sizeof(float), index, TID_FLOAT);
+
+      vars[index].hist_offset = 0;
+
+      sprintf(str, "/History/Display/%s/Offset", path);
+      xdb_get_data_index(hDB, str, &vars[index].hist_offset, sizeof(float), index, TID_FLOAT);
+
+      sprintf(str, "/History/Display/%s/Colour", path);
+      xdb_get_data_index(hDB, str, &vars[index].hist_col, sizeof(vars[index].hist_col), index, TID_STRING);
+
+      sprintf(str, "/History/Display/%s/Label", path);
+      xdb_get_data_index(hDB, str, &vars[index].hist_label, sizeof(vars[index].hist_label), index, TID_STRING);
+
+      vars[index].hist_order = (index+1)*10;
+   }
+
+   //print_vars(vars);
+}
+
+static void load_vars_param(hist_var_t vars[])
+{
+   for (int index=0; index<MAX_VARS; index++) {
+      char str[256];
+
+      sprintf(str, "event%d", index);
+      STRLCPY(vars[index].event_name, getparam(str));
+
+      if (strlen(vars[index].event_name) < 1) {
+         vars[index].event_name[0] = 0;
+         break;
+      }
+
+      sprintf(str, "var%d", index);
+      STRLCPY(vars[index].var_name, getparam(str));
+
+      sprintf(str, "fac%d", index);
+      vars[index].hist_factor = (float) atof(getparam(str));
+    
+      sprintf(str, "ofs%d", index);
+      vars[index].hist_offset = (float) atof(getparam(str));
+    
+      sprintf(str, "col%d", index);
+      STRLCPY(vars[index].hist_col, getparam(str));
+
+      sprintf(str, "lab%d", index);
+      STRLCPY(vars[index].hist_label, getparam(str));
+
+      sprintf(str, "ord%d", index);
+      vars[index].hist_order = atoi(getparam(str));
+   }
+}
+
+static int xdb_find_key(HNDLE hDB, HNDLE dir, const char* str, HNDLE* hKey, int tid)
+{
+   int status = db_find_key(hDB, dir, str, hKey);
+   if (status == DB_SUCCESS)
+      return status;
+
+   db_create_key(hDB, dir, str, tid);
+   return db_find_key(hDB, dir, str, hKey);
+}
+
+static void resize_vars_odb(HNDLE hDB, const char* path, int index)
+{
+   HNDLE hKey;
+   char str[256];
+
+   sprintf(str, "/History/Display/%s/Variables", path);
+   xdb_find_key(hDB, 0, str, &hKey, TID_STRING);
+
+   if (index == 0) {
+      db_set_data_index(hDB, hKey, "", 2*NAME_LENGTH, index, TID_STRING);
+      index = 1;
+   }
+
+   db_set_num_values(hDB, hKey, index);
+
+   sprintf(str, "/History/Display/%s/Label", path);
+   xdb_find_key(hDB, 0, str, &hKey, TID_STRING);
+   db_set_num_values(hDB, hKey, index);
+
+   sprintf(str, "/History/Display/%s/Colour", path);
+   xdb_find_key(hDB, 0, str, &hKey, TID_STRING);
+   db_set_num_values(hDB, hKey, index);
+
+   sprintf(str, "/History/Display/%s/Factor", path);
+   xdb_find_key(hDB, 0, str, &hKey, TID_FLOAT);
+   db_set_num_values(hDB, hKey, index);
+
+   sprintf(str, "/History/Display/%s/Offset", path);
+   xdb_find_key(hDB, 0, str, &hKey, TID_FLOAT);
+   db_set_num_values(hDB, hKey, index);
+}
+
+void save_vars_odb(HNDLE hDB, const char* path, const hist_var_t vars[])
+{
+   int numvars = 0;
+   for (int i=0; i<MAX_VARS; i++)
+      if (vars[i].event_name[0] == 0) {
+         numvars = i;
+         break;
+      }
+
+   resize_vars_odb(hDB, path, numvars);
+
+   for (int index=0; index<numvars; index++) {
+      HNDLE hKey;
+      char str[256];
+      char var_name[256];
+      sprintf(var_name, "%s:%s", vars[index].event_name, vars[index].var_name);
+
+      sprintf(str, "/History/Display/%s/Variables", path);
+      xdb_find_key(hDB, 0, str, &hKey, TID_STRING);
+      db_set_data_index(hDB, hKey, var_name, 2 * NAME_LENGTH, index, TID_STRING);
+
+      sprintf(str, "/History/Display/%s/Factor", path);
+      xdb_find_key(hDB, 0, str, &hKey, TID_FLOAT);
+      db_set_data_index(hDB, hKey, &vars[index].hist_factor, sizeof(float), index, TID_FLOAT);
+     
+      sprintf(str, "/History/Display/%s/Offset", path);
+      xdb_find_key(hDB, 0, str, &hKey, TID_FLOAT);
+      db_set_data_index(hDB, hKey, &vars[index].hist_offset, sizeof(float), index, TID_FLOAT);
+     
+      sprintf(str, "/History/Display/%s/Colour", path);
+      xdb_find_key(hDB, 0, str, &hKey, TID_STRING);
+      db_set_data_index(hDB, hKey, vars[index].hist_col, NAME_LENGTH, index, TID_STRING);
+     
+      sprintf(str, "/History/Display/%s/Label", path);
+      xdb_find_key(hDB, 0, str, &hKey, TID_STRING);
+      db_set_data_index(hDB, hKey, vars[index].hist_label, NAME_LENGTH, index, TID_STRING);
+   }
+}
+
+static void add_vars(struct hist_var_t vars[], const char* event_name, const char* tag_name)
+{
+   for (int i=0; i<MAX_VARS; i++) {
+     if (vars[i].event_name[0] == 0) {
+       STRLCPY(vars[i].event_name, event_name);
+       STRLCPY(vars[i].var_name, tag_name);
+       vars[i].hist_factor = 1;
+       vars[i].hist_order = (i+1)*10;
+       return;
+     }
+   }
+}
 
 /*------------------------------------------------------------------*/
 
@@ -10000,16 +10224,12 @@ void show_hist_config_page(const char *path, const char *hgroup, const char *pan
 {
    int status, size, index, sort_vars;
    BOOL flag;
-   HNDLE hDB, hKeyVar, hKey;
-   KEY key;
-   char str[256], var_name[256], cmd[256], ref[256];
-   char display_name[MAX_VARS][2 * NAME_LENGTH];
-   char display_name_odb[MAX_VARS][2 * NAME_LENGTH];
-   float value;
-   char hist_col[MAX_VARS][NAME_LENGTH] = { "#0000FF", "#00C000", "#FF0000", "#00C0C0", "#FF00FF",
+   HNDLE hDB, hKeyVar;
+   char str[256], cmd[256], ref[256];
+   struct hist_var_t vars[MAX_VARS];
+   char def_hist_col[MAX_VARS][NAME_LENGTH] = { "#0000FF", "#00C000", "#FF0000", "#00C0C0", "#FF00FF",
       "#C0C000", "#808080", "#80FF80", "#FF8080", "#8080FF"
    };
-   char hist_label[MAX_VARS][NAME_LENGTH];
 
    cm_get_experiment_database(&hDB, NULL);
    strlcpy(cmd, getparam("cmd"), sizeof(cmd));
@@ -10021,83 +10241,86 @@ void show_hist_config_page(const char *path, const char *hgroup, const char *pan
          mh->hs_clear_cache();
    }
 
-   if (cmd[0] && equal_ustring(cmd, "save")) {
-      /* copy parameters to their ODB location */
-      for (index = 0; index < MAX_VARS; index++) {
-         sprintf(str, "event%d", index);
-         if (*getparam(str)) {
-            strlcpy(var_name, getparam(str), sizeof(var_name));
-            strlcat(var_name, ":", sizeof(var_name));
-            sprintf(str, "var%d", index);
-            strlcat(var_name, getparam(str), sizeof(var_name));
+   memset(vars, 0, sizeof(vars));
 
-            sprintf(str, "/History/Display/%s/Variables", path);
-            db_find_key(hDB, 0, str, &hKeyVar);
-            if (hKeyVar) {
-               /* make sure size is correct */
-               if (index == 0) {
-                  db_delete_key(hDB, hKeyVar, FALSE);
-                  db_create_key(hDB, 0, str, TID_STRING);
-                  db_find_key(hDB, 0, str, &hKeyVar);
-               }
-               db_set_data_index(hDB, hKeyVar, var_name, 2 * NAME_LENGTH, index,
-                                 TID_STRING);
-            }
+   for (int i=0; i<MAX_VARS; i++) {
+      if (def_hist_col[i])
+         STRLCPY(vars[i].hist_col, def_hist_col[i]);
+      vars[i].hist_factor = 1;
+   }
 
-            sprintf(str, "/History/Display/%s/Factor", path);
-            db_find_key(hDB, 0, str, &hKey);
-            sprintf(str, "fac%d", index);
-            value = (float) atof(getparam(str));
-            if (hKey)
-               db_set_data_index(hDB, hKey, &value, sizeof(float), index, TID_FLOAT);
+   //printf("cmd [%s]\n", cmd);
+   //printf("cmdx [%s]\n", getparam("cmdx"));
 
-            sprintf(str, "/History/Display/%s/Offset", path);
-            db_find_key(hDB, 0, str, &hKey);
-            sprintf(str, "ofs%d", index);
-            value = (float) atof(getparam(str));
-            if (hKey)
-               db_set_data_index(hDB, hKey, &value, sizeof(float), index, TID_FLOAT);
+   /* load variables from web request parameters */
+   /* if list is empty, we are here for the first time,
+    * load variables from ODB */
 
-            sprintf(str, "/History/Display/%s/Colour", path);
-            db_find_key(hDB, 0, str, &hKey);
-            if (!hKey) {
-               db_create_key(hDB, 0, str, TID_STRING);
-               db_find_key(hDB, 0, str, &hKey);
-            }
-            sprintf(str, "col%d", index);
-            strlcpy(hist_col[index], getparam(str), NAME_LENGTH);
-            if (hKey)
-               db_set_data_index(hDB, hKey, hist_col[index], NAME_LENGTH, index, TID_STRING);
+   load_vars_param(vars);
+   if ((vars[0].event_name[0] == 0) && !equal_ustring(cmd, "refresh") && !equal_ustring(cmd, "save"))
+      load_vars_odb(hDB, path, vars);
 
-            sprintf(str, "/History/Display/%s/Label", path);
-            db_find_key(hDB, 0, str, &hKey);
-            if (!hKey) {
-               db_create_key(hDB, 0, str, TID_STRING);
-               db_find_key(hDB, 0, str, &hKey);
-            }
-            sprintf(str, "lab%d", index);
-            strlcpy(hist_label[index], getparam(str), NAME_LENGTH);
-            if (hKey)
-               db_set_data_index(hDB, hKey, hist_label[index], NAME_LENGTH, index, TID_STRING);
-         } else {
-            sprintf(str, "/History/Display/%s/Variables", path);
-            db_find_key(hDB, 0, str, &hKey);
-            db_set_num_values(hDB, hKey, index);
-            sprintf(str, "/History/Display/%s/Label", path);
-            db_find_key(hDB, 0, str, &hKey);
-            db_set_num_values(hDB, hKey, index);
-            sprintf(str, "/History/Display/%s/Factor", path);
-            db_find_key(hDB, 0, str, &hKey);
-            db_set_num_values(hDB, hKey, index);
-            sprintf(str, "/History/Display/%s/Offset", path);
-            db_find_key(hDB, 0, str, &hKey);
-            db_set_num_values(hDB, hKey, index);
-            sprintf(str, "/History/Display/%s/Colour", path);
-            db_find_key(hDB, 0, str, &hKey);
-            db_set_num_values(hDB, hKey, index);
-            break;
-         }
+   /* delete variables according to "hist_order" */
+
+   for (int i=0; i<MAX_VARS; i++) {
+      if (vars[i].event_name[0]==0) {
+         break;
       }
+
+      while ((vars[i].hist_order <= 0) && (vars[i].event_name[0] != 0)) {
+         for (int j=i+1; j<MAX_VARS; j++)
+            vars[j-1] = vars[j];
+      }
+   }
+
+   /* sort variables according to "hist_order" */
+
+   bool need_sort = false;
+   int num_vars = 0;
+   for (int i=1; i<MAX_VARS; i++) {
+      if (vars[i].event_name[0]==0) {
+         num_vars = i;
+         break;
+      }
+      if (vars[i-1].hist_order >= vars[i].hist_order) {
+         need_sort = true;
+      }
+   }
+
+   if (need_sort) {
+      /* sort variables by order */
+      qsort(vars, num_vars, sizeof(vars[0]), cmp_vars);
+
+      for (int index=0; index<MAX_VARS; index++)
+         vars[index].hist_order = (index+1)*10;
+   }
+
+   if (strlen(getparam("seln")) > 0) {
+      int seln = atoi(getparam("seln"));
+      for (int i=0; i<seln; i++) {
+         char str[256];
+         sprintf(str, "sel%d", i);
+
+	 char event_name[256];
+	 STRLCPY(event_name, getparam(str));
+	 if (strlen(event_name) < 1)
+            continue;
+
+	 char tag_name[256];
+	 char* s = strchr(event_name, ':');
+	 if (!s)
+            continue;
+	 *s = 0;
+	 STRLCPY(tag_name, s+1);
+
+         add_vars(vars, event_name, tag_name);
+      } 
+   }
+
+   //print_vars(vars);
+
+   if (cmd[0] && equal_ustring(cmd, "save")) {
+      save_vars_odb(hDB, path, vars);
 
       if (*getparam("timescale")) {
          sprintf(ref, "/History/Display/%s/Timescale", path);
@@ -10160,7 +10383,7 @@ void show_hist_config_page(const char *path, const char *hgroup, const char *pan
    show_header(hDB, "History Config", "GET", str, 4, 0);
 
    /* menu buttons */
-   rsprintf("<tr><td colspan=7 bgcolor=\"#C0C0C0\">\n");
+   rsprintf("<tr><td colspan=8 bgcolor=\"#C0C0C0\">\n");
    rsprintf("<input type=submit name=cmd value=Save>\n");
    rsprintf("<input type=submit name=cmd value=Cancel>\n");
    rsprintf("<input type=submit name=cmd value=Refresh>\n");
@@ -10168,7 +10391,7 @@ void show_hist_config_page(const char *path, const char *hgroup, const char *pan
    rsprintf("<input type=submit name=cmd value=\"Delete Panel\">\n");
    rsprintf("</td></tr>\n");
 
-   rsprintf("<tr><td colspan=7 bgcolor=\"#FFFF00\" align=center><b>Panel \"%s / %s\"</b>\n",
+   rsprintf("<tr><td colspan=8 bgcolor=\"#FFFF00\" align=center><b>Panel \"%s / %s\"</b>\n",
             hgroup, panel);
 
    /* hidden command for refresh */
@@ -10185,7 +10408,7 @@ void show_hist_config_page(const char *path, const char *hgroup, const char *pan
       size = NAME_LENGTH;
       db_get_value(hDB, 0, ref, str, &size, TID_STRING, TRUE);
    }
-   rsprintf("<tr><td bgcolor=\"#E0E0E0\" colspan=7>Time scale: &nbsp;&nbsp;");
+   rsprintf("<tr><td bgcolor=\"#E0E0E0\" colspan=8>Time scale: &nbsp;&nbsp;");
    rsprintf("<input type=text name=timescale value=%s></td></tr>\n", str);
 
    /* ylow_zero */
@@ -10198,11 +10421,11 @@ void show_hist_config_page(const char *path, const char *hgroup, const char *pan
    }
    if (flag)
       rsprintf
-          ("<tr><td bgcolor=\"#E0E0E0\" colspan=7><input type=checkbox checked name=zero_ylow value=1>",
+          ("<tr><td bgcolor=\"#E0E0E0\" colspan=8><input type=checkbox checked name=zero_ylow value=1>",
            str);
    else
       rsprintf
-          ("<tr><td bgcolor=\"#E0E0E0\" colspan=7><input type=checkbox name=zero_ylow value=1>",
+          ("<tr><td bgcolor=\"#E0E0E0\" colspan=8><input type=checkbox name=zero_ylow value=1>",
            str);
    rsprintf("&nbsp;&nbsp;Zero Ylow</td></tr>\n");
 
@@ -10216,7 +10439,7 @@ void show_hist_config_page(const char *path, const char *hgroup, const char *pan
       db_get_value(hDB, 0, ref, &xxminimum, &size, TID_FLOAT, TRUE);
       sprintf(str, "%f", xxminimum);
    }
-   rsprintf("<tr><td bgcolor=\"#E0E0E0\" colspan=7>Minimum: &nbsp;&nbsp;");
+   rsprintf("<tr><td bgcolor=\"#E0E0E0\" colspan=8>Minimum: &nbsp;&nbsp;");
    rsprintf("<input type=text name=minimum value=%s></td></tr>\n", str);
 
    /* maximum */
@@ -10229,7 +10452,7 @@ void show_hist_config_page(const char *path, const char *hgroup, const char *pan
       db_get_value(hDB, 0, ref, &xxmaximum, &size, TID_FLOAT, TRUE);
       sprintf(str, "%f", xxmaximum);
    }
-   rsprintf("<tr><td bgcolor=\"#E0E0E0\" colspan=7>Maximum: &nbsp;&nbsp;");
+   rsprintf("<tr><td bgcolor=\"#E0E0E0\" colspan=8>Maximum: &nbsp;&nbsp;");
    rsprintf("<input type=text name=maximum value=%s></td></tr>\n", str);
 
    /* log_axis */
@@ -10242,11 +10465,11 @@ void show_hist_config_page(const char *path, const char *hgroup, const char *pan
    }
    if (flag)
       rsprintf
-          ("<tr><td bgcolor=\"#E0E0E0\" colspan=7><input type=checkbox checked name=log_axis value=1>",
+          ("<tr><td bgcolor=\"#E0E0E0\" colspan=8><input type=checkbox checked name=log_axis value=1>",
            str);
    else
       rsprintf
-          ("<tr><td bgcolor=\"#E0E0E0\" colspan=7><input type=checkbox name=log_axis value=1>",
+          ("<tr><td bgcolor=\"#E0E0E0\" colspan=8><input type=checkbox name=log_axis value=1>",
            str);
    rsprintf("&nbsp;&nbsp;Logarithmic Y axis</td></tr>\n");
 
@@ -10260,11 +10483,11 @@ void show_hist_config_page(const char *path, const char *hgroup, const char *pan
    }
    if (flag)
       rsprintf
-          ("<tr><td bgcolor=\"#E0E0E0\" colspan=7><input type=checkbox checked name=run_markers value=1>",
+          ("<tr><td bgcolor=\"#E0E0E0\" colspan=8><input type=checkbox checked name=run_markers value=1>",
            str);
    else
       rsprintf
-          ("<tr><td bgcolor=\"#E0E0E0\" colspan=7><input type=checkbox name=run_markers value=1>",
+          ("<tr><td bgcolor=\"#E0E0E0\" colspan=8><input type=checkbox name=run_markers value=1>",
            str);
    rsprintf("&nbsp;&nbsp;Show run markers</td></tr>\n");
 
@@ -10279,11 +10502,11 @@ void show_hist_config_page(const char *path, const char *hgroup, const char *pan
    }
    if (flag)
       rsprintf
-          ("<tr><td bgcolor=\"#E0E0E0\" colspan=7><input type=checkbox checked name=show_values value=1>",
+          ("<tr><td bgcolor=\"#E0E0E0\" colspan=8><input type=checkbox checked name=show_values value=1>",
            str);
    else
       rsprintf
-          ("<tr><td bgcolor=\"#E0E0E0\" colspan=7><input type=checkbox name=show_values value=1>",
+          ("<tr><td bgcolor=\"#E0E0E0\" colspan=8><input type=checkbox name=show_values value=1>",
            str);
    rsprintf("&nbsp;&nbsp;Show values of variables</td></tr>\n");
 
@@ -10298,82 +10521,92 @@ void show_hist_config_page(const char *path, const char *hgroup, const char *pan
    }
    if (sort_vars)
       rsprintf
-          ("<tr><td bgcolor=\"#E0E0E0\" colspan=7><input type=checkbox checked name=sort_vars value=1>",
+          ("<tr><td bgcolor=\"#E0E0E0\" colspan=8><input type=checkbox checked name=sort_vars value=1>",
            str);
    else
       rsprintf
-          ("<tr><td bgcolor=\"#E0E0E0\" colspan=7><input type=checkbox name=sort_vars value=1>",
+          ("<tr><td bgcolor=\"#E0E0E0\" colspan=8><input type=checkbox name=sort_vars value=1>",
            str);
    rsprintf("&nbsp;&nbsp;Sort variable names (\"Save\" or \"Refresh\" to update the list)</td></tr>\n");
 
    /*---- events and variables ----*/
 
-   /* read display event names from odb */
-
-   sprintf(str, "/History/Display/%s/%s/Variables", hgroup, panel);
-   db_find_key(hDB, 0, str, &hKey);
-
-   memset(display_name_odb, 0, sizeof(display_name_odb));
-   if (hKey) {
-      db_get_key(hDB, hKey, &key);
-      
-      for (int i = 0; i < key.num_values; i++) {
-         size = 2 * NAME_LENGTH;
-         db_get_data_index(hDB, hKey, display_name_odb[i], &size, i, TID_STRING);
-      }
-   }
-
    /* get display event name */
-
-   if (equal_ustring(cmd, "refresh")) {
-      /* from parameters in a refresh */
-      for (int i = 0; i < MAX_VARS; i++) {
-         sprintf(str, "event%d", i);
-         strlcpy(display_name[i], getparam(str), sizeof(display_name[0]));
-
-         if (display_name[i][0]) {
-            sprintf(str, "var%d", i);
-            strlcat(display_name[i], ":", sizeof(display_name[0]));
-            strlcat(display_name[i], getparam(str), sizeof(display_name[0]));
-         }
-      }
-   } else {
-      for (int i = 0; i < MAX_VARS; i++)
-         strlcpy(display_name[i], display_name_odb[i], sizeof(display_name[i]));
-   }
 
    set_history_path();
 
    std::vector<std::string> events;
    mh->hs_get_events(&events);
 
-   rsprintf("<tr><th>Col<th>Event<th>Variable<th>Factor<th>Offset<th>Colour<th>Label</tr>\n");
+   if (true)
+      std::sort(events.begin(), events.end(), cmp_events);
+
+   if (strlen(getparam("cmdx")) > 0) {
+      rsprintf("<tr><th colspan=1>Sel<th colspan=1>Event<th colspan=1>Variable</tr>\n");
+
+      int i=0;
+      for (unsigned e=0; e<events.size(); e++) {
+         std::vector<TAG> tags;
+
+         status = mh->hs_get_tags(events[e].c_str(), &tags);
+
+         if (tags.size() > 0) {
+
+            if (sort_vars)
+               std::sort(tags.begin(), tags.end(), cmp_tags);
+
+            for (unsigned v=0; v<tags.size(); v++) {
+
+               for (unsigned j=0; j<tags[v].n_data; j++) {
+                  char tagname[256];
+
+                  if (tags[v].n_data == 1)
+                     sprintf(tagname, "%s", tags[v].name);
+                  else
+                     sprintf(tagname, "%s[%d]", tags[v].name, j);
+
+		  bool checked = false;
+#if 0
+		  for (int index=0; index<MAX_VARS; index++) {
+		    if (equal_ustring(vars[index].event_name, events[e].c_str()) && equal_ustring(vars[index].var_name, tagname)) {
+		      checked = true;
+		      break;
+		    }
+		  }
+#endif
+
+		  rsprintf("<tr>");
+		  rsprintf("<td align=center colspan=1><input type=checkbox %s name=\"sel%d\" value=\"%s:%s\"></td>\n", checked?"checked":"", i++, events[e].c_str(), tagname);
+		  rsprintf("<td align=center colspan=1>%s<td align=center colspan=1>%s",
+			   events[e].c_str(),
+			   tagname
+			   );
+		  rsprintf("</tr>\n");
+	       }
+	    }
+	 }
+      }
+
+      rsprintf("<tr>\n");
+      rsprintf("<td></td>\n");
+      rsprintf("<td>\n");
+      rsprintf("<input type=hidden name=seln value=%d>\n", i);
+      rsprintf("<input type=submit value=\"Add Selected\">\n");
+      rsprintf("</td>\n");
+      rsprintf("</tr>\n");
+   }
+
+   rsprintf("<tr><th>Col<th>Event<th>Variable<th>Factor<th>Offset<th>Colour<th>Label<th>Order</tr>\n");
+
+   //print_vars(vars);
 
    /* extract colours */
    for (index = 0; index < MAX_VARS; index++) {
-      char event_name[NAME_LENGTH];
 
-      if (equal_ustring(cmd, "refresh")) {
-         /* get value from parameters */
-         sprintf(str, "col%d", index);
-         if (*getparam(str))
-            strlcpy(hist_col[index], getparam(str), NAME_LENGTH);
-      } else {
-         /* get value from ODB */
-         sprintf(str, "/History/Display/%s/%s/Colour", hgroup, panel);
-         db_find_key(hDB, 0, str, &hKey);
-         size = NAME_LENGTH;
-         if (hKey) {
-            db_get_key(hDB, hKey, &key);
-            if (index < key.num_values)
-               db_get_data_index(hDB, hKey, hist_col[index], &size, index, TID_STRING);
-         }
-      }
+      if (!vars[index].hist_col[0])
+         strlcpy(vars[index].hist_col, "#808080", NAME_LENGTH);
 
-      if (!hist_col[index][0])
-         strlcpy(hist_col[index], "#808080", NAME_LENGTH);
-
-      rsprintf("<tr><td bgcolor=\"%s\">&nbsp;<td>\n", hist_col[index]);
+      rsprintf("<tr><td bgcolor=\"%s\">&nbsp;<td>\n", vars[index].hist_col);
 
       /* event and variable selection */
 
@@ -10381,53 +10614,42 @@ void show_hist_config_page(const char *path, const char *hgroup, const char *pan
 
       /* enumerate events */
 
-      strlcpy(event_name, display_name[index], sizeof(event_name));
-      char* s = strchr(event_name, ':');
-      if (s)
-         *s = 0;
-
       /* empty option */
       rsprintf("<option value=\"\">&lt;empty&gt;\n");
 
-      bool found_selected = false;
+      bool found_event = false;
       for (unsigned e=0; e<events.size(); e++) {
          const char *s = "";
          const char *p = events[e].c_str();
-         if (equal_ustring(event_name, p)) {
+         if (equal_ustring(vars[index].event_name, p)) {
             s = "selected";
-            found_selected = true;
+            found_event = true;
          }
          rsprintf("<option %s value=\"%s\">%s\n", s, p, p);
       }
 
-      if (!found_selected)
-         if ((strlen(event_name) > 0) && (strlen(display_name_odb[index]) > 0)) {
-            char xevent_name[256];
-            strlcpy(xevent_name, display_name_odb[index], sizeof(event_name));
-            char *s = strchr(xevent_name, ':');
-            if (s)
-               *s = 0;
-            rsprintf("<option selected value=\"%s\">%s\n", xevent_name, xevent_name);
+      if (!found_event)
+         if (strlen(vars[index].event_name) > 0) {
+            rsprintf("<option selected value=\"%s\">%s\n", vars[index].event_name, vars[index].event_name);
          }
 
       rsprintf("</select></td>\n");
 
-      if (display_name[index][0]) {
+      //if (vars[index].hist_order <= 0)
+      //vars[index].hist_order = (index+1)*10;
 
+      if (vars[index].event_name[0]) {
          char selected_var[NAME_LENGTH];
 
-         s = strchr(display_name[index], ':');
+         bool found_var = false;
 
-         if (s)
-            strlcpy(selected_var, s + 1, sizeof(selected_var));
-         else
-            selected_var[0] = 0;
+	 STRLCPY(selected_var, vars[index].var_name);
 
          rsprintf("<td><select name=\"var%d\">\n", index);
 
          std::vector<TAG> tags;
 
-         status = mh->hs_get_tags(event_name, &tags);
+         status = mh->hs_get_tags(vars[index].event_name, &tags);
 
          if (tags.size() > 0) {
 
@@ -10442,13 +10664,14 @@ void show_hist_config_page(const char *path, const char *hgroup, const char *pan
                printf("Compare %d\n", cmp_names("A111a", "A111b"));
             }
 
-            //if (sort_vars)
-            //sort_tags(ntags, tags);
-
             if (sort_vars)
                std::sort(tags.begin(), tags.end(), cmp_tags);
 
-            found_selected = false;
+            //printf("Event [%s] %d tags\n", vars[index].event_name, tags.size());
+
+            for (unsigned v=0; v<tags.size(); v++) {
+              //printf("tag[%d] [%s]\n", v, tags[v].name);
+            }
 
             for (unsigned v=0; v<tags.size(); v++) {
 
@@ -10459,124 +10682,47 @@ void show_hist_config_page(const char *path, const char *hgroup, const char *pan
                      sprintf(tagname, "%s", tags[v].name);
                   else
                      sprintf(tagname, "%s[%d]", tags[v].name, j);
-                  
+
                   if (equal_ustring(selected_var, tagname)) {
                      rsprintf("<option selected value=\"%s\">%s\n", tagname, tagname);
-                     found_selected = true;
+                     found_var = true;
                   }
                   else
                      rsprintf("<option value=\"%s\">%s\n", tagname, tagname);
+
+                  //printf("%d [%s] [%s] [%s][%s] %d\n", index, vars[index].event_name, tagname, vars[index].var_name, selected_var, found_var);
                }
             }
          }
 
-         if (!found_selected)
-            if (strlen(display_name_odb[index]) > 0) {
-               char varname[NAME_LENGTH];
-               strlcpy(varname, display_name_odb[index], sizeof(varname));
-               char *s = strchr(display_name_odb[index], ':');
-               if (s)
-                  strlcpy(varname, s+1, sizeof(varname));
-               rsprintf("<option selected value=\"%s\">%s\n", varname, varname);
-            }
+         if (!found_var)
+            if (strlen(vars[index].var_name) > 0)
+               rsprintf("<option selected value=\"%s\">%s\n", vars[index].var_name, vars[index].var_name);
 
          rsprintf("</select></td>\n");
 
-      } else
-         rsprintf("<td></td>\n");
+      rsprintf("<td><input type=text size=10 maxlength=10 name=\"fac%d\" value=%g></td>\n", index, vars[index].hist_factor);
 
-      if (equal_ustring(cmd, "refresh")) {
-         /* get value from parameters */
-         sprintf(str, "fac%d", index);
-         if (*getparam(str))
-            value = (float) atof(getparam(str));
-         else
-            value = 1.0;
+      rsprintf("<td><input type=text size=10 maxlength=10 name=\"ofs%d\" value=%g></td>\n", index, vars[index].hist_offset);
+
+      rsprintf("<td><input type=text size=10 maxlength=10 name=\"col%d\" value=%s></td>\n", index, vars[index].hist_col);
+
+      rsprintf("<td><input type=text size=10 maxlength=%d name=\"lab%d\" value=\"%s\"></td>\n", NAME_LENGTH, index, vars[index].hist_label);
+
+      rsprintf("<td><input type=text size=5 maxlength=10 name=\"ord%d\" value=\"%d\"></td>\n", index, vars[index].hist_order);
+
       } else {
-         /* get value from ODB */
-         value = 1;
-         sprintf(str, "/History/Display/%s/%s/Factor", hgroup, panel);
-         db_find_key(hDB, 0, str, &hKey);
-         size = sizeof(float);
-         if (hKey) {
-            db_get_key(hDB, hKey, &key);
-            if (index < key.num_values)
-               db_get_data_index(hDB, hKey, &value, &size, index, TID_FLOAT);
-         }
+         rsprintf("<td><input type=submit name=cmdx value=\"List all\"></td>\n");
+         rsprintf("<input type=hidden name=\"fac%d\" value=%g>\n", index, vars[index].hist_factor);
+         rsprintf("<input type=hidden name=\"col%d\" value=%s>\n", index, vars[index].hist_col);
+         rsprintf("<input type=hidden name=\"ord%d\" value=\"%d\">\n", index, (index+1)*10);
       }
-
-      rsprintf
-          ("<td><input type=text size=10 maxlength=10 name=\"fac%d\" value=%g></td>\n",
-           index, value);
-
-      if (equal_ustring(cmd, "refresh")) {
-         /* get value from parameters */
-         sprintf(str, "ofs%d", index);
-         value = (float) atof(getparam(str));
-      } else {
-         /* get value from ODB */
-         value = 0;
-         sprintf(str, "/History/Display/%s/%s/Offset", hgroup, panel);
-         db_find_key(hDB, 0, str, &hKey);
-         size = sizeof(float);
-         if (hKey) {
-            db_get_key(hDB, hKey, &key);
-            if (index < key.num_values)
-               db_get_data_index(hDB, hKey, &value, &size, index, TID_FLOAT);
-         }
-      }
-      rsprintf
-          ("<td><input type=text size=10 maxlength=10 name=\"ofs%d\" value=%g></td>\n",
-           index, value);
-
-      if (equal_ustring(cmd, "refresh")) {
-         /* get value from parameters */
-         sprintf(str, "col%d", index);
-         if (*getparam(str))
-            strlcpy(hist_col[index], getparam(str), NAME_LENGTH);
-      } else {
-         /* get value from ODB */
-         sprintf(str, "/History/Display/%s/%s/Colour", hgroup, panel);
-         db_find_key(hDB, 0, str, &hKey);
-         size = NAME_LENGTH;
-         if (hKey) {
-            db_get_key(hDB, hKey, &key);
-            if (index < key.num_values)
-               db_get_data_index(hDB, hKey, hist_col[index], &size, index, TID_STRING);
-         }
-      }
-      rsprintf
-          ("<td><input type=text size=10 maxlength=10 name=\"col%d\" value=%s></td>\n",
-           index, hist_col[index]);
-
-      hist_label[index][0] = 0;
-
-      if (equal_ustring(cmd, "refresh")) {
-         /* get value from parameters */
-         sprintf(str, "lab%d", index);
-         if (*getparam(str))
-            strlcpy(hist_label[index], getparam(str), NAME_LENGTH);
-      } else {
-         /* get value from ODB */
-         sprintf(str, "/History/Display/%s/Label", path);
-         db_find_key(hDB, 0, str, &hKey);
-         size = NAME_LENGTH;
-         if (hKey) {
-            db_get_key(hDB, hKey, &key);
-            if (index < key.num_values)
-               db_get_data_index(hDB, hKey, hist_label[index], &size, index, TID_STRING);
-         }
-      }
-
-      rsprintf
-          ("<td><input type=text size=10 maxlength=%d name=\"lab%d\" value=\"%s\"></td>\n",
-           NAME_LENGTH, index, hist_label[index]);
 
       rsprintf("</tr>\n");
 
       /* loop over all already defined entries,
        * show one "empty" entry and exit */
-      if (!display_name[index][0])
+      if (!vars[index].event_name[0])
          break;
    }
 
@@ -11214,13 +11360,6 @@ void show_hist_page(const char *path, int path_size, char *buffer, int *buffer_s
       sprintf(str, "/History/Display/%s/%s", hgroup, panel);
       db_create_key(hDB, 0, str, TID_KEY);
       db_find_key(hDB, 0, str, &hkey);
-      db_set_value(hDB, hkey, "Variables", "", NAME_LENGTH * 2, 1, TID_STRING);
-      db_set_value(hDB, hkey, "Label", "", NAME_LENGTH, 1, TID_STRING);
-
-      factor[0] = 1;
-      db_set_value(hDB, hkey, "Factor", factor, 1 * sizeof(float), 1, TID_FLOAT);
-      factor[0] = 0;
-      db_set_value(hDB, hkey, "Offset", factor, 1 * sizeof(float), 1, TID_FLOAT);
       db_set_value(hDB, hkey, "Timescale", "1h", NAME_LENGTH, 1, TID_STRING);
       i = 1;
       db_set_value(hDB, hkey, "Zero ylow", &i, sizeof(BOOL), 1, TID_BOOL);
