@@ -9978,6 +9978,11 @@ const bool cmp_events(const std::string& a, const std::string& b)
   return cmp_names(a.c_str(), b.c_str()) < 0;
 }
 
+const bool cmp_events1(const std::string& a, const std::string& b)
+{
+  return a < b;
+}
+
 const bool cmp_tags(const TAG& a, const TAG& b)
 {
   return cmp_names(a.name, b.name) < 0;
@@ -10225,6 +10230,8 @@ void show_hist_config_page(const char *path, const char *hgroup, const char *pan
    int status, size, index, sort_vars;
    BOOL flag;
    HNDLE hDB, hKeyVar;
+   int max_display_events = 20;
+   int max_display_tags = 200;
    char str[256], cmd[256], ref[256];
    struct hist_var_t vars[MAX_VARS];
    char def_hist_col[MAX_VARS][NAME_LENGTH] = { "#0000FF", "#00C000", "#FF0000", "#00C0C0", "#FF00FF",
@@ -10232,6 +10239,13 @@ void show_hist_config_page(const char *path, const char *hgroup, const char *pan
    };
 
    cm_get_experiment_database(&hDB, NULL);
+
+   size = sizeof(max_display_events);
+   db_get_value(hDB, 0, "/History/MaxDisplayEvents", &max_display_events, &size, TID_INT, TRUE);
+
+   size = sizeof(max_display_tags);
+   db_get_value(hDB, 0, "/History/MaxDisplayTags", &max_display_tags, &size, TID_INT, TRUE);
+
    strlcpy(cmd, getparam("cmd"), sizeof(cmd));
    hKeyVar = 0;
 
@@ -10538,14 +10552,83 @@ void show_hist_config_page(const char *path, const char *hgroup, const char *pan
    std::vector<std::string> events;
    mh->hs_get_events(&events);
 
-   if (true)
-      std::sort(events.begin(), events.end(), cmp_events);
+   // has to be sorted of equipment name code below would not work
+   //std::sort(events.begin(), events.end(), cmp_events);
+   std::sort(events.begin(), events.end(), cmp_events1);
 
    if (strlen(getparam("cmdx")) > 0) {
-      rsprintf("<tr><th colspan=1>Sel<th colspan=1>Event<th colspan=1>Variable</tr>\n");
+      rsprintf("<tr><th colspan=1>Sel<th colspan=1>Equipment<th colspan=1>Event<th colspan=1>Variable</tr>\n");
+
+      std::string cmdx = getparam("cmdx");
+      std::string xeqname;
 
       int i=0;
       for (unsigned e=0; e<events.size(); e++) {
+         std::string eqname;
+         eqname = events[e].substr(0, events[e].find("/"));
+
+         if (eqname.length() < 1)
+            eqname = events[e];
+
+         bool once = false;
+         if (eqname != xeqname)
+            once = true;
+
+         std::string qcmd = "Expand " + eqname;
+
+         //printf("param [%s] is [%s]\n", qcmd.c_str(), getparam(qcmd.c_str()));
+
+         bool collapsed = true;
+
+         if (cmdx == qcmd)
+            collapsed = false;
+
+         if (strlen(getparam(qcmd.c_str())) > 0)
+            collapsed = false;
+
+         if (collapsed) {
+            if (eqname == xeqname)
+               continue;
+
+            rsprintf("<tr align=left>\n");
+            rsprintf("<td></td>\n");
+            rsprintf("<td>%s</td>\n", eqname.c_str());
+            rsprintf("<td><input type=submit name=cmdx value=\"%s\"></td>\n", qcmd.c_str());
+            rsprintf("<td>%s</td>\n", "");
+            rsprintf("</tr>\n");
+            xeqname = eqname;
+            continue;
+         }
+
+         if (once)
+            rsprintf("<tr><input type=hidden name=\"%s\" value=%d></tr>\n", qcmd.c_str(), 1);
+
+         std::string rcmd = "Expand " + events[e];
+
+         //printf("param [%s] is [%s]\n", rcmd.c_str(), getparam(rcmd.c_str()));
+
+         collapsed = true;
+
+         if (cmdx == rcmd)
+            collapsed = false;
+
+         if (strlen(getparam(rcmd.c_str())) > 0)
+            collapsed = false;
+
+         if (collapsed) {
+            rsprintf("<tr align=left>\n");
+            rsprintf("<td></td>\n");
+            rsprintf("<td>%s</td>\n", eqname.c_str());
+            rsprintf("<td>%s</td>\n", events[e].c_str());
+            rsprintf("<td><input type=submit name=cmdx value=\"%s\"></td>\n", rcmd.c_str());
+            rsprintf("</tr>\n");
+            continue;
+         }
+
+         rsprintf("<tr><input type=hidden name=\"%s\" value=%d></tr>\n", rcmd.c_str(), 1);
+
+         xeqname = eqname;
+
          std::vector<TAG> tags;
 
          status = mh->hs_get_tags(events[e].c_str(), &tags);
@@ -10574,13 +10657,14 @@ void show_hist_config_page(const char *path, const char *hgroup, const char *pan
 		    }
 		  }
 #endif
+                  
 
-		  rsprintf("<tr>");
-		  rsprintf("<td align=center colspan=1><input type=checkbox %s name=\"sel%d\" value=\"%s:%s\"></td>\n", checked?"checked":"", i++, events[e].c_str(), tagname);
-		  rsprintf("<td align=center colspan=1>%s<td align=center colspan=1>%s",
-			   events[e].c_str(),
-			   tagname
-			   );
+
+		  rsprintf("<tr align=left>\n");
+		  rsprintf("<td><input type=checkbox %s name=\"sel%d\" value=\"%s:%s\"></td>\n", checked?"checked":"", i++, events[e].c_str(), tagname);
+		  rsprintf("<td>%s</td>\n", eqname.c_str());
+		  rsprintf("<td>%s</td>\n", events[e].c_str());
+		  rsprintf("<td>%s</td>\n", tagname);
 		  rsprintf("</tr>\n");
 	       }
 	    }
@@ -10618,14 +10702,17 @@ void show_hist_config_page(const char *path, const char *hgroup, const char *pan
       rsprintf("<option value=\"\">&lt;empty&gt;\n");
 
       bool found_event = false;
-      for (unsigned e=0; e<events.size(); e++) {
-         const char *s = "";
-         const char *p = events[e].c_str();
-         if (equal_ustring(vars[index].event_name, p)) {
-            s = "selected";
-            found_event = true;
+
+      if ((int)events.size() < max_display_events || (strlen(vars[index].event_name) <= 0)) {
+         for (unsigned e=0; e<events.size(); e++) {
+            const char *s = "";
+            const char *p = events[e].c_str();
+            if (equal_ustring(vars[index].event_name, p)) {
+               s = "selected";
+               found_event = true;
+            }
+            rsprintf("<option %s value=\"%s\">%s\n", s, p, p);
          }
-         rsprintf("<option %s value=\"%s\">%s\n", s, p, p);
       }
 
       if (!found_event)
@@ -10667,30 +10754,40 @@ void show_hist_config_page(const char *path, const char *hgroup, const char *pan
             if (sort_vars)
                std::sort(tags.begin(), tags.end(), cmp_tags);
 
-            //printf("Event [%s] %d tags\n", vars[index].event_name, tags.size());
+            if (0) {
+               printf("Event [%s] %d tags\n", vars[index].event_name, (int)tags.size());
 
-            for (unsigned v=0; v<tags.size(); v++) {
-              //printf("tag[%d] [%s]\n", v, tags[v].name);
+               for (unsigned v=0; v<tags.size(); v++) {
+                 printf("tag[%d] [%s]\n", v, tags[v].name);
+               }
             }
 
-            for (unsigned v=0; v<tags.size(); v++) {
+            int count_tags = 0;
+            for (unsigned v=0; v<tags.size(); v++)
+               count_tags += tags[v].n_data;
 
-               for (unsigned j=0; j<tags[v].n_data; j++) {
-                  char tagname[256];
+            //printf("output %d option tags\n", count_tags);
 
-                  if (tags[v].n_data == 1)
-                     sprintf(tagname, "%s", tags[v].name);
-                  else
-                     sprintf(tagname, "%s[%d]", tags[v].name, j);
+            if (count_tags < max_display_tags) {
+               for (unsigned v=0; v<tags.size(); v++) {
 
-                  if (equal_ustring(selected_var, tagname)) {
-                     rsprintf("<option selected value=\"%s\">%s\n", tagname, tagname);
-                     found_var = true;
-                  }
-                  else
-                     rsprintf("<option value=\"%s\">%s\n", tagname, tagname);
+                 for (unsigned j=0; j<tags[v].n_data; j++) {
+                    char tagname[256];
 
-                  //printf("%d [%s] [%s] [%s][%s] %d\n", index, vars[index].event_name, tagname, vars[index].var_name, selected_var, found_var);
+                    if (tags[v].n_data == 1)
+                       sprintf(tagname, "%s", tags[v].name);
+                    else
+                       sprintf(tagname, "%s[%d]", tags[v].name, j);
+
+                    if (equal_ustring(selected_var, tagname)) {
+                       rsprintf("<option selected value=\"%s\">%s\n", tagname, tagname);
+                       found_var = true;
+                    }
+                    else
+                       rsprintf("<option value=\"%s\">%s\n", tagname, tagname);
+
+                    //printf("%d [%s] [%s] [%s][%s] %d\n", index, vars[index].event_name, tagname, vars[index].var_name, selected_var, found_var);
+                 }
                }
             }
          }
@@ -10712,7 +10809,7 @@ void show_hist_config_page(const char *path, const char *hgroup, const char *pan
       rsprintf("<td><input type=text size=5 maxlength=10 name=\"ord%d\" value=\"%d\"></td>\n", index, vars[index].hist_order);
 
       } else {
-         rsprintf("<td><input type=submit name=cmdx value=\"List all\"></td>\n");
+         rsprintf("<td><input type=submit name=cmdx value=\"List all variables\"></td>\n");
          rsprintf("<input type=hidden name=\"fac%d\" value=%g>\n", index, vars[index].hist_factor);
          rsprintf("<input type=hidden name=\"col%d\" value=%s>\n", index, vars[index].hist_col);
          rsprintf("<input type=hidden name=\"ord%d\" value=\"%d\">\n", index, (index+1)*10);
