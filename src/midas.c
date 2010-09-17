@@ -11676,6 +11676,57 @@ INT rpc_execute_ascii(INT sock, char *buffer)
    return RPC_SUCCESS;
 }
 
+#define MAX_N_ALLOWED_HOSTS 100
+static char allowed_host[MAX_N_ALLOWED_HOSTS][256];
+static int  n_allowed_hosts = 0;
+
+/********************************************************************/
+INT rpc_clear_allowed_hosts()
+/********************************************************************\
+  Routine: rpc_clear_allowed_hosts
+
+  Purpose: Clear list of allowed hosts and permit connections from anybody
+
+  Input:
+    none
+
+  Output:
+    none
+
+  Function value:
+    RPC_SUCCESS             Successful completion
+
+\********************************************************************/
+{
+   n_allowed_hosts = 0;
+   return RPC_SUCCESS;
+}
+
+/********************************************************************/
+INT rpc_add_allowed_host(const char* hostname)
+/********************************************************************\
+  Routine: rpc_add_allowed_host
+
+  Purpose: Permit connections from listed hosts only
+
+  Input:
+    none
+
+  Output:
+    none
+
+  Function value:
+    RPC_SUCCESS             Successful completion
+    RPC_NO_MEMORY           Too many allowed hosts
+
+\********************************************************************/
+{
+   if (n_allowed_hosts >= MAX_N_ALLOWED_HOSTS)
+      return RPC_NO_MEMORY;
+
+   strlcpy(allowed_host[n_allowed_hosts++], hostname, sizeof(allowed_host[0]));
+   return RPC_SUCCESS;
+}
 
 /********************************************************************/
 INT rpc_server_accept(int lsock)
@@ -11740,6 +11791,45 @@ INT rpc_server_accept(int lsock)
 #else
       getpeername(sock, (struct sockaddr *) &acc_addr, &size);
 #endif
+   }
+
+   /* check access control list */
+   if (n_allowed_hosts > 0) {
+      int allowed = FALSE;
+      struct hostent *remote_phe;
+      char hname[256];
+      struct in_addr remote_addr;
+
+      /* save remote host address */
+      memcpy(&remote_addr, &(acc_addr.sin_addr), sizeof(remote_addr));
+
+      remote_phe = gethostbyaddr((char *) &remote_addr, 4, PF_INET);
+
+      if (remote_phe == NULL) {
+         /* use IP number instead */
+         strlcpy(hname, (char *)inet_ntoa(remote_addr), sizeof(hname));
+      } else
+         strlcpy(hname, remote_phe->h_name, sizeof(hname));
+
+      /* always permit localhost */
+      if (strcmp(hname, "localhost.localdomain") == 0)
+         allowed = TRUE;
+      if (strcmp(hname, "localhost") == 0)
+         allowed = TRUE;
+
+      if (!allowed) {
+         for (i=0 ; i<n_allowed_hosts ; i++)
+            if (strcmp(hname, allowed_host[i]) == 0) {
+               allowed = TRUE;
+               break;
+            }
+      }
+
+      if (!allowed) {
+         cm_msg(MERROR, "rpc_server_accept", "rejecting connection from unallowed host \'%s\'", hname);
+         closesocket(sock);
+         return RPC_NET_ERROR;
+      }
    }
 
    /* receive string with timeout */

@@ -1792,6 +1792,9 @@ extern "C" {
                      DWORD * bktype, void **pdata);
 
    /*---- RPC routines ----*/
+   INT EXPRT rpc_clear_allowed_hosts();
+   INT EXPRT rpc_add_allowed_host(const char* hostname);
+
    INT EXPRT rpc_register_functions(const RPC_LIST * new_list, INT(*func) (INT, void **));
    INT EXPRT rpc_register_function(INT id, INT(*func) (INT, void **));
    INT EXPRT rpc_get_option(HNDLE hConn, INT item);
