@@ -1884,6 +1884,12 @@ public:
 
       if (ie)
          it = FindIndexByTagName(ie, tag_name);
+
+      if (ie && !it) { // maybe this is an array without "Names"?
+         char xxx[256];
+         sprintf(xxx, "%s[%d]", tag_name, tag_index);
+         it = FindIndexByTagName(ie, xxx);
+      }
          
       // new-style event name: "equipment_name/variable_name:tag_name"
       // old style event name: "equipment_name:tag_name" ("variable_name" is missing)
