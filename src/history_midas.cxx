@@ -20,6 +20,8 @@
 #include "msystem.h"
 #include "history.h"
 
+#define STRLCPY(dst, src) strlcpy(dst, src, sizeof(dst))
+
 static WORD get_variable_id(DWORD ltime, const char* evname, const char* tagname)
 {
    HNDLE hDB, hKeyRoot;
@@ -174,6 +176,87 @@ static WORD get_variable_id_tags(const char* evname, const char* tagname)
    return 0;
 }
 
+static int get_event_id(const char* event_name)
+{
+   HNDLE hDB, hKeyRoot;
+   int status, i;
+   char name[256];
+   STRLCPY(name, event_name);
+   char *s = strchr(name, '/');
+   if (s)
+      *s = ':';
+
+   //printf("Looking for event id for \'%s\'\n", name);
+
+   cm_get_experiment_database(&hDB, NULL);
+   
+   status = db_find_key(hDB, 0, "/History/Events", &hKeyRoot);
+   if (status == DB_SUCCESS) {
+      for (i = 0;; i++) {
+         HNDLE hKey;
+         KEY key;
+         WORD evid;
+         int size;
+         char tmp[NAME_LENGTH+NAME_LENGTH+2];
+         
+         status = db_enum_key(hDB, hKeyRoot, i, &hKey);
+         if (status != DB_SUCCESS)
+           break;
+         
+         status = db_get_key(hDB, hKey, &key);
+         assert(status == DB_SUCCESS);
+         
+         //printf("key \'%s\'\n", key.name);
+         
+         evid = (WORD) strtol(key.name, NULL, 0);
+         if (evid == 0)
+            continue;
+
+         size = sizeof(tmp);
+         status = db_get_data(hDB, hKey, tmp, &size, TID_STRING);
+         //printf("status %d\n", status);
+         assert(status == DB_SUCCESS);
+
+         //printf("got %d \'%s\' looking for \'%s\'\n", evid, tmp, name);
+
+         if (equal_ustring(name, tmp))
+            return evid;
+      }
+   }
+
+   int max_id = 100;
+
+   // special event id for run transitions
+   if (strcmp(name, "Run transitions")==0) {
+      status = db_set_value(hDB, 0, "/History/Events/0", name, strlen(name)+1, 1, TID_STRING);
+      assert(status == DB_SUCCESS);
+      return 0;
+   }
+
+   while (1) {
+      char tmp[NAME_LENGTH+NAME_LENGTH+2];
+      HNDLE hKey;
+      WORD evid = max_id + 1;
+
+      sprintf(tmp,"/History/Events/%d", evid);
+
+      status = db_find_key(hDB, 0, tmp, &hKey);
+      if (status == DB_SUCCESS) {
+         max_id = evid;
+         assert(max_id < 65000);
+         continue;
+      }
+
+      status = db_set_value(hDB, 0, tmp, name, strlen(name)+1, 1, TID_STRING);
+      assert(status == DB_SUCCESS);
+
+      return evid;
+   }
+
+   /* not reached */
+   return -1;
+}
+
 #if 0
 char* sort_names(char* names)
 {
@@ -217,8 +300,6 @@ char* sort_names(char* names)
 }
 #endif
 
-#define STRLCPY(dst, src) strlcpy(dst, src, sizeof(dst))
-
 /*------------------------------------------------------------------*/
 
 class MidasHistory: public MidasHistoryInterface
@@ -230,6 +311,7 @@ public:
 
    std::vector<std::string> fEventsCache;
    std::map<std::string, std::vector<TAG> > fTagsCache;
+   std::map<std::string, int > fEvidCache;
 
 public:
    MidasHistory() // ctor
@@ -245,7 +327,7 @@ public:
 
    /*------------------------------------------------------------------*/
 
-   int hs_connect(const char* connect_string)
+   int hs_connect(const char* unused_connect_string)
    {
       HNDLE hDB;
       int status;
@@ -323,26 +405,23 @@ public:
 
       fEventsCache.clear();
       fTagsCache.clear();
+      fEvidCache.clear();
       return HS_SUCCESS;
    }
 
    /*------------------------------------------------------------------*/
 
-   int xxx(const char*)
-   {
-      assert(!"not implemented!");
-      return 0;
-   }
-
    int hs_define_event(const char* event_name, int ntags, const TAG tags[])
    {
-      int event_id = xxx(event_name);
+      int event_id = get_event_id(event_name);
+      fEvidCache[event_name] = event_id;
       return ::hs_define_event(event_id, (char*)event_name, (TAG*)tags, ntags*sizeof(TAG));
    }
 
    int hs_write_event(const char*  event_name, time_t timestamp, int data_size, const char* data)
    {
-      int event_id = xxx(event_name);
+      int event_id = fEvidCache[event_name];
+      //printf("write event [%s] evid %d\n", event_name, event_id);
       return ::hs_write_event(event_id, (void*)data, data_size);
    }
 
