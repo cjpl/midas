@@ -2175,6 +2175,15 @@ INT scheduler(void)
 
                actual_millitime = ss_millitime();
 
+               /* send event to ODB */
+               if (pevent->data_size && (eq_info->read_on & RO_ODB)) {
+                  if (actual_millitime - eq->last_called > ODB_UPDATE_TIME) {
+                     eq->last_called = actual_millitime;
+                     update_odb(pevent, eq->hkey_variables, eq->format);
+                     eq->odb_out++;
+                  }
+               }
+
                /* repeat no more than period */
                if (actual_millitime - readout_start > (DWORD) eq_info->period)
                   break;
