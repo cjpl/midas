@@ -1691,11 +1691,13 @@ void show_status_page(int refresh, const char *cookie_wpwd)
          db_get_key(hDB, hsubkey, &key);
 
          db_find_key(hDB, hsubkey, "Settings", &hkeytmp);
+	 assert(hkeytmp);
          size = sizeof(chn_settings);
          if (db_get_record(hDB, hkeytmp, &chn_settings, &size, 0) != DB_SUCCESS)
             continue;
 
          db_find_key(hDB, hsubkey, "Statistics", &hkeytmp);
+	 assert(hkeytmp);
          size = sizeof(chn_stats);
          if (db_get_record(hDB, hkeytmp, &chn_stats, &size, 0) != DB_SUCCESS)
             continue;
@@ -3279,6 +3281,7 @@ void gen_odb_attachment(char *path, char *b)
 
    cm_get_experiment_database(&hDB, NULL);
    db_find_key(hDB, 0, path, &hkeyroot);
+   assert(hkeyroot);
 
    /* title row */
    size = sizeof(str);
@@ -4065,6 +4068,7 @@ void show_elog_page(char *path, int path_size)
       /* create default buttons */
       db_create_key(hDB, 0, "/Elog/Buttons", TID_STRING);
       db_find_key(hDB, 0, "/Elog/Buttons", &hkeybutton);
+      assert(hkeybutton);
       db_set_data(hDB, hkeybutton, def_button, sizeof(def_button), 3, TID_STRING);
    }
 
@@ -4533,6 +4537,7 @@ void show_sc_page(char *path, int refresh)
       /* data for current group */
       sprintf(str, "/Equipment/%s/Settings/Names", eq_name);
       db_find_key(hDB, 0, str, &hkeyset);
+      assert(hkeyset);
       db_get_key(hDB, hkeyset, &key);
       for (i = 0; i < key.num_values; i++) {
          size = sizeof(str);
@@ -4616,6 +4621,7 @@ void show_sc_page(char *path, int refresh)
 
       sprintf(str, "/Equipment/%s/Variables", eq_name);
       db_find_key(hDB, 0, str, &hkeyvar);
+      assert(hkeyvar);
 
       for (i = 0;; i++) {
          db_enum_link(hDB, hkeyvar, i, &hkey);
@@ -5962,9 +5968,21 @@ void show_custom_page(const char *path, const char *cookie_cpwd)
             }
          } else {
             if (isparam("value") && isparam("type") && isparam("len")) {
-               db_create_key(hDB, 0, str, atoi(getparam("type")));
-
+               int type = atoi(getparam("type"));
+               if (type == 0) {
+                  show_text_header();
+                  rsprintf("Invalid type %d!", type);
+                  free(ctext);
+                  return;
+               }
+               db_create_key(hDB, 0, str, type);
                db_find_key(hDB, 0, str, &hkey);
+               if (!hkey) {
+                  show_text_header();
+                  rsprintf("Cannot create \'%s\' type %d", str, type);
+                  free(ctext);
+                  return;
+               }
                db_get_key(hDB, hkey, &key);
                memset(data, 0, sizeof(data));
                size = sizeof(data);
@@ -6541,6 +6559,7 @@ void create_mscb_tree()
 
    /*---- go through equipment list ----*/
    db_find_key(hDB, 0, "Equipment", &hKeyEq);
+   assert(hKeyEq);
    for (i=0 ; ; i++) {
       db_enum_key(hDB, hKeyEq, i, &hKey);
       if (!hKey)
@@ -6593,6 +6612,7 @@ void create_mscb_tree()
             if (!hKey) {
                db_create_key(hDB, hKeySubm, mscb_dev, TID_KEY);
                db_find_key(hDB, hKeySubm, mscb_dev, &hKey);
+               assert(hKey);
             }
 
             /* get old address list */
@@ -7662,6 +7682,7 @@ void show_find_page(const char *enc_path, const char *value)
 
       /* start from root */
       db_find_key(hDB, 0, "", &hkey);
+      assert(hkey);
 
       /* scan tree, call "search_callback" for each key */
       db_scan_tree(hDB, hkey, 0, search_callback, (void *) value);
@@ -7782,6 +7803,7 @@ void show_create_page(const char *enc_path, const char *dec_path, const char *va
          }
 
          db_find_key(hDB, 0, str, &hkey);
+	 assert(hkey);
          db_get_key(hDB, hkey, &key);
          memset(data, 0, sizeof(data));
          if (key.type == TID_STRING || key.type == TID_LINK)
@@ -10136,7 +10158,9 @@ static int xdb_find_key(HNDLE hDB, HNDLE dir, const char* str, HNDLE* hKey, int 
       return status;
 
    db_create_key(hDB, dir, str, tid);
-   return db_find_key(hDB, dir, str, hKey);
+   status = db_find_key(hDB, dir, str, hKey);
+   assert(hKey);
+   return status;
 }
 
 static void resize_vars_odb(HNDLE hDB, const char* path, int index)
@@ -11432,7 +11456,7 @@ void show_hist_page(const char *path, int path_size, char *buffer, int *buffer_s
 
    if (equal_ustring(getparam("cmd"), "Delete Panel")) {
       sprintf(str, "/History/Display/%s", path);
-      if (db_find_key(hDB, 0, str, &hkey))
+      if (db_find_key(hDB, 0, str, &hkey)==DB_SUCCESS)
          db_delete_key(hDB, hkey, FALSE);
 
       redirect("../");
@@ -11457,6 +11481,7 @@ void show_hist_page(const char *path, int path_size, char *buffer, int *buffer_s
       sprintf(str, "/History/Display/%s/%s", hgroup, panel);
       db_create_key(hDB, 0, str, TID_KEY);
       db_find_key(hDB, 0, str, &hkey);
+      assert(hkey);
       db_set_value(hDB, hkey, "Timescale", "1h", NAME_LENGTH, 1, TID_STRING);
       i = 1;
       db_set_value(hDB, hkey, "Zero ylow", &i, sizeof(BOOL), 1, TID_BOOL);
@@ -11961,6 +11986,7 @@ void show_hist_page(const char *path, int path_size, char *buffer, int *buffer_s
          /* create default buttons */
          db_create_key(hDB, 0, str, TID_STRING);
          db_find_key(hDB, 0, str, &hkeybutton);
+	 assert(hkeybutton);
          db_set_data(hDB, hkeybutton, def_button, sizeof(def_button), 7, TID_STRING);
       }
 
