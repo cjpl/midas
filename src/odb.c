@@ -1606,8 +1606,8 @@ INT db_create_key(HNDLE hDB, HNDLE hKey, const char *key_name, DWORD type)
       }
 
       /* check type */
-      if (type >= TID_LAST) {
-         cm_msg(MERROR, "db_create_key", "invalid key type %d", type);
+      if (type <= 0 || type >= TID_LAST) {
+         cm_msg(MERROR, "db_create_key", "invalid key type %d for \'%s\'", type, key_name);
          return DB_INVALID_PARAM;
       }
 
