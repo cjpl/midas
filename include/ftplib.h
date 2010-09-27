@@ -46,24 +46,23 @@ typedef struct {
 extern "C" {
 #endif
 
-
    int EXPRT ftp_bye(FTP_CON * con);
    int EXPRT ftp_close(FTP_CON * con);
-   int EXPRT ftp_connect(FTP_CON ** con, char *host_name, unsigned short port);
-   int EXPRT ftp_login(FTP_CON ** con, char *host, unsigned short port, char *user,
-                       char *pass, char *acct);
-   int EXPRT ftp_move(FTP_CON * con, char *old_name, char *new_name);
-   int EXPRT ftp_data(FTP_CON * con, char *command, char *param);
+   int EXPRT ftp_connect(FTP_CON ** con, const char *host_name, unsigned short port);
+   int EXPRT ftp_login(FTP_CON ** con, const char *host, unsigned short port, const char *user,
+                       const char *pass, const char *acct);
+   int EXPRT ftp_move(FTP_CON * con, const char *old_name, const char *new_name);
+   int EXPRT ftp_data(FTP_CON * con, const char *command, const char *param);
    int EXPRT ftp_port(FTP_CON * con, int, int, int, int, int, int);
-   int EXPRT ftp_get(FTP_CON * con, char *local_name, char *remote_name);
-   int EXPRT ftp_put(FTP_CON * con, char *local_name, char *remote_name);
+   int EXPRT ftp_get(FTP_CON * con, const char *local_name, const char *remote_name);
+   int EXPRT ftp_put(FTP_CON * con, const char *local_name, const char *remote_name);
    int EXPRT ftp_send(int sock, char *buffer, int n_bytes);
    int EXPRT ftp_receive(int sock, char *buffer, int bsize);
    int EXPRT ftp_send_message(FTP_CON * con, char *message);
    int EXPRT ftp_get_message(FTP_CON * con, char *message);
    BOOL EXPRT ftp_good(int number, ...);
-   int EXPRT ftp_command(FTP_CON * con, char *command, char *param, ...);
-   int EXPRT ftp_dir(FTP_CON * con, char *file);
+   int EXPRT ftp_command(FTP_CON * con, const char *command, const char *param, ...);
+   int EXPRT ftp_dir(FTP_CON * con, const char *file);
    char EXPRT *ftp_pwd(FTP_CON * con);
    void EXPRT ftp_debug(int (*debug_func) (char *message),
                         int (*error_func) (char *message));
