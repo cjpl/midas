@@ -9,12 +9,12 @@ $Id$
 \********************************************************************/
 #include "midas.h"
 #include "msystem.h"
-#ifdef HAVE_YBOS
-#include "ybos.h"
-#endif
+
 #ifdef HAVE_FTPLIB
 #include "ftplib.h"
 #endif
+
+#include <mdsupport.h>
 #include <assert.h>
 
 #include <vector>
@@ -29,7 +29,6 @@ $Id$
 #define REMOVE_ENTRY  3
 #define MAX_LAZY_CHANNEL 100
 #define TRACE
-
 #define LOG_TYPE_SCRIPT (-1)
 
 #define STRLCPY(dst, src) strlcpy((dst), (src), sizeof(dst))
@@ -145,7 +144,7 @@ typedef struct {
    char alarm[32];              /* Alarm Class */
    char condition[128];         /* key condition */
    char dir[256];               /* path to the data dir */
-   char format[8];              /* Data format (YBOS, MIDAS) */
+   char format[8];              /* Data format (MIDAS) */
    char backfmt[MAX_FILE_PATH]; /* format for the run files run%05d.mid */
    char type[8];                /* Backup device type  (Disk, Tape, Ftp, Script) */
    char command[64];            /* command to run after rewind */
@@ -1139,7 +1138,6 @@ Function value:
 0           success
 \********************************************************************/
 {
-#ifdef HAVE_YBOS
    void *plazy = NULL;
    DWORD szlazy;
    INT status, no_cpy_last_time = 0;
@@ -1149,21 +1147,6 @@ Function value:
    //char *pext;
    BOOL watchdog_flag, exit_request = FALSE;
    char filename[256];
-#endif
-
-#ifndef HAVE_YBOS
-   assert(!"YBOS support is not compiled in. Please use the \'SCRIPT\' backup type method");
-#else
-
-   // SR Nov 07, outcommented for "raw" .gz transfer
-   //pext = malloc(strlen(infile));
-   //strcpy(pext, infile);
-
-   /* find out what format it is from the extension. */
-   //if (strncmp(pext + strlen(pext) - 3, ".gz", 3) == 0) {
-   /* extension .gz terminator on . */
-   // *(pext + strlen(pext) - 3) = '\0'; SR Nov 07
-   //}
 
    /* init copy variables */
    lazyst.cur_size = 0.0f;
@@ -1171,7 +1154,7 @@ Function value:
 
    /* open any logging file (output) */
    strlcpy(filename, outfile, sizeof(filename));        // ftp modifies filename
-   if ((status = yb_any_file_wopen(dev_type, data_fmt, filename, &hDev)) != 1) {
+   if ((status = md_file_wopen(dev_type, data_fmt, filename, &hDev)) != 1) {
       if ((ss_time() - last_error) > 60) {
          last_error = ss_time();
          cm_msg(MTALK, "Lazy_copy", "cannot open %s, error %d", outfile, status);
@@ -1199,7 +1182,7 @@ Function value:
    last_error = 0;
 
    /* open input data file */
-   if (yb_any_file_ropen(infile, data_fmt) != YB_SUCCESS)
+   if (md_file_ropen(infile, data_fmt) != MD_SUCCESS)
       return (FORCE_EXIT);
 
    /* run shell command if available */
@@ -1236,13 +1219,13 @@ Function value:
    /* infinite loop while copying */
    while (1) {
       if (copy_continue) {
-         if (yb_any_physrec_get(data_fmt, &plazy, &szlazy) == YB_SUCCESS) {
-            status = yb_any_log_write(hDev, data_fmt, dev_type, plazy, szlazy);
+         if (md_physrec_get(data_fmt, &plazy, &szlazy) == MD_SUCCESS) {
+            status = md_log_write(hDev, data_fmt, dev_type, plazy, szlazy);
             if (status != SS_SUCCESS) {
                /* close source file */
-               yb_any_file_rclose(dev_type);
+               md_file_rclose(dev_type);
                /* close output data file */
-               yb_any_file_wclose(hDev, dev_type, data_fmt, outfile);
+               md_file_wclose(hDev, dev_type, data_fmt, outfile);
                /* szlazy is the requested block size. Why is it copied to cm_msg?
                   cm_msg(MERROR,"lazy_copy","Write error %i",szlazy); */
                cm_msg(MERROR, "lazy_copy", "Write error ");
@@ -1289,13 +1272,13 @@ Function value:
    lazy_statistics_update(0);
 
    /* close input log device */
-   yb_any_file_rclose(dev_type);
+   md_file_rclose(dev_type);
 
    /* close output data file */
    if (equal_ustring(lazy.type, "Tape")) {
       blockn = ss_tape_get_blockn(hDev);
    }
-   status = yb_any_file_wclose(hDev, dev_type, data_fmt, outfile);
+   status = md_file_wclose(hDev, dev_type, data_fmt, outfile);
    if (status != SS_SUCCESS) {
       if (status == SS_NO_SPACE)
          return status;
@@ -1306,7 +1289,7 @@ Function value:
    if (exit_request)
       return (EXIT_REQUEST);
    return 0;
-#endif // HAVE_YBOS
+
 }
 
 /*------------------------------------------------------------------*/
@@ -1575,12 +1558,10 @@ Function value:
    pLch = &pLall[channel];
 
    /* extract Data format from the struct */
-   if (equal_ustring(lazy.format, "YBOS"))
-      data_fmt = FORMAT_YBOS;
-   else if (equal_ustring(lazy.format, "MIDAS"))
+   if (equal_ustring(lazy.format, "MIDAS"))
       data_fmt = FORMAT_MIDAS;
    else {
-      cm_msg(MERROR, "Lazy", "Unknown data format %s (MIDAS, YBOS)", lazy.format);
+      cm_msg(MERROR, "Lazy", "Unknown data format %s (MIDAS)", lazy.format);
       return DB_NO_ACCESS;
    }
 
@@ -2015,7 +1996,7 @@ int main(int argc, char **argv)
          printf("                           '/equipment/scaler/variables/scal[4] < 23.45'\n");
          printf("                           '/equipment/trigger/statistics/events per sec. < 400'\n");
          printf("Data dir                  : MIDAS Data Directory (same as \"/Logger/Data Dir\")\n");
-         printf("Data format               : Data format (YBOS/MIDAS)\n");
+         printf("Data format               : Data format (MIDAS)\n");
          printf("Filename format           : Run format i.e. \"run%%05d.mid\", or \"*.mid.gz\" or \"*.mid.gz,*.xml\" \n");
          printf("List label                : Label of destination save_set.\n");
          printf("                            Prevent lazylogger to run if not given.\n");
@@ -2086,7 +2067,7 @@ int main(int argc, char **argv)
       db_create_record(hDB, 0, str, LAZY_SETTINGS_STRING);
    }
 
-   {                            /* Selection of client */
+   {  /* Selection of client */
       INT i, j;
       char str[32];
 
@@ -2141,7 +2122,8 @@ int main(int argc, char **argv)
                i = j + 1;
             }
          }
-         if (i == 0) {          /* new entry */
+
+         if (i == 0) { /* new entry */
             char strclient[32];
             for (j = 0; j < MAX_LAZY_CHANNEL; j++) {
                if (lazyinfo[j].hKey == 0) {
@@ -2162,74 +2144,71 @@ int main(int argc, char **argv)
          else
             channel = -1;
       }
-
-      if ((channel < 0) && (lazyinfo[channel].hKey != 0))
-         goto error;
-      if (channel < 0)
-         channel = 0;
-
-      {                         /* creation of the lazy channel */
-         char str[128];
-
-         if (lazyinfo[channel].hKey == 0)
-            printf(" Creating Lazy channel %s\n", lazyinfo[channel].name);
-
-         /* create/update settings */
-         sprintf(str, "/Lazy/%s/Settings", lazyinfo[channel].name);
-         db_create_record(hDB, 0, str, LAZY_SETTINGS_STRING);
-         /* create/update statistics */
-         sprintf(str, "/Lazy/%s/Statistics", lazyinfo[channel].name);
-         db_create_record(hDB, 0, str, LAZY_STATISTICS_STRING);
-         sprintf(str, "/Lazy/%s", lazyinfo[channel].name);
-         db_find_key(hDB, 0, str, &lazyinfo[channel].hKey);
+      
+      if (channel < 0) goto error;
+      
+      { /* creation of the lazy channel */
+	char str[128];
+	
+	if (lazyinfo[channel].hKey == 0)
+	  printf(" Creating Lazy channel %s\n", lazyinfo[channel].name);
+	
+	/* create/update settings */
+	sprintf(str, "/Lazy/%s/Settings", lazyinfo[channel].name);
+	db_create_record(hDB, 0, str, LAZY_SETTINGS_STRING);
+	/* create/update statistics */
+	sprintf(str, "/Lazy/%s/Statistics", lazyinfo[channel].name);
+	db_create_record(hDB, 0, str, LAZY_STATISTICS_STRING);
+	sprintf(str, "/Lazy/%s", lazyinfo[channel].name);
+	db_find_key(hDB, 0, str, &lazyinfo[channel].hKey);
       }
    }
-   /* disconnect  from expriment */
+   /* disconnect from experiment */
    cm_disconnect_experiment();
-
+   
    {                            /* reconnect to experiment with proper name */
-      char str[32];
-      sprintf(str, "Lazy_%s", lazyinfo[channel].name);
-      status = cm_connect_experiment1(host_name, expt_name, str, 0, DEFAULT_ODB_SIZE, WATCHDOG_TIMEOUT);
+     char str[32];
+     sprintf(str, "Lazy_%s", lazyinfo[channel].name);
+     status = cm_connect_experiment1(host_name, expt_name, str, 0, DEFAULT_ODB_SIZE, WATCHDOG_TIMEOUT);
    }
    if (status != CM_SUCCESS)
-      goto error;
-
+     goto error;
+   
    cm_get_experiment_database(&hDB, &hKey);
-
+   
    /* Remove temporary Lazy entry */
    {
-      HNDLE hPkey;
-
-      status = db_find_key(hDB, 0, "Programs/Lazy", &hPkey);
-      if (status == DB_SUCCESS) {
-         status = db_delete_key(hDB, hPkey, FALSE);
-         if (status != DB_SUCCESS) {
-            cm_msg(MERROR, "Lazy", "Cannot delete /Programs/Lazy");
-         }
-      }
+     HNDLE hPkey;
+     
+     status = db_find_key(hDB, 0, "Programs/Lazy", &hPkey);
+     if (status == DB_SUCCESS) {
+       status = db_delete_key(hDB, hPkey, FALSE);
+       if (status != DB_SUCCESS) {
+	 cm_msg(MERROR, "Lazy", "Cannot delete /Programs/Lazy");
+       }
+     }
    }
-
+   
    /* turn on keepalive messages with increased timeout */
    if (debug)
-      cm_set_watchdog_params(TRUE, 0);
-
+     cm_set_watchdog_params(TRUE, 0);
+   
 #ifdef HAVE_FTPLIB
    if (debug)
-      ftp_debug((int (*)(char *)) puts, (int (*)(char *)) puts);
+     ftp_debug((int (*)(char *)) puts, (int (*)(char *)) puts);
 #endif
-
+   
    printf("Lazy_%s starting... " "!" " to exit \n", lazyinfo[channel].name);
-
+   
    if (zap_flag) {
-      /* reset the statistics */
-      cm_msg(MINFO, "Lazy", "zapping %s/statistics content", lazyinfo[channel].name);
-      size = sizeof(lazyst);
-      memset(&lazyst, 0, size);
-      if (db_find_key(hDB, lazyinfo[channel].hKey, "Statistics", &hKeyst) == DB_SUCCESS)
-         status = db_set_record(hDB, hKeyst, &lazyst, size, 0);
-      else
-         cm_msg(MERROR, "Lazy", "did not find %s/Statistics for zapping", lazyinfo[channel].name);
+     /* reset the statistics */
+     cm_msg(MINFO, "Lazy", "zapping %s/statistics content", lazyinfo[channel].name);
+     size = sizeof(lazyst);
+     memset(&lazyst, 0, size);
+     if (db_find_key(hDB, lazyinfo[channel].hKey, "Statistics", &hKeyst) == DB_SUCCESS)
+       status = db_set_record(hDB, hKeyst, &lazyst, size, 0);
+     else
+       cm_msg(MERROR, "Lazy", "did not find %s/Statistics for zapping", lazyinfo[channel].name);
    }
 
    /* get value once & hot links the run state */
