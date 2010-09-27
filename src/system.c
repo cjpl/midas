@@ -1048,7 +1048,7 @@ INT ss_shm_flush(const char *name, const void *adr, INT size, HNDLE handle)
       assert(size == mmap_size[handle]);
 #endif
 
-      fd = open(file_name, O_RDWR | O_CREAT);
+      fd = open(file_name, O_RDWR | O_CREAT, 0777);
       if (fd < 0) {
 	cm_msg(MERROR, "ss_shm_flush", "Cannot write to file \'%s\', fopen() errno %d (%s)", file_name, errno, strerror(errno));
 	return SS_NO_MEMORY;
