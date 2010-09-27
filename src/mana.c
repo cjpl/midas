@@ -15,9 +15,7 @@
 #include "msystem.h"
 #include "hardware.h"
 
-#ifdef HAVE_YBOS
-#include "ybos.h"
-#endif
+#include "mdsupport.h"
 
 #ifdef HAVE_ZLIB
 #include "zlib.h"
@@ -2678,142 +2676,10 @@ INT write_event_hbook(FILE * file, EVENT_HEADER * pevent, ANALYZE_REQUEST * par)
    /* if (event_def->format == FORMAT_MIDAS) */
  /*---- YBOS format ----------------------------------------------*/
    else if (event_def->format == FORMAT_YBOS) {
-      YBOS_BANK_HEADER *pybk;
-
-      /* first fill number block */
-      strcpy(str, "Number");
-      if (!clp.rwnt)
-         HFNTB(pevent->event_id, str);
-
-      pbk = NULL;
-      exclude_all = TRUE;
-      do {
-         /* scan all banks */
-         size = ybk_iterate((DWORD *) (pevent + 1), &pybk, (void *) (&pdata));
-         if (pybk == NULL)
-            break;
-
-         /* in bytes */
-         size <<= 2;
-
-         /* look if bank is in exclude list */
-         *((DWORD *) block_name) = pybk->name;
-         block_name[4] = 0;
-
-         exclude = FALSE;
-         pbl = NULL;
-         if (par->bank_list != NULL) {
-            for (i = 0; par->bank_list[i].name[0]; i++)
-               if (*((DWORD *) par->bank_list[i].name) == pybk->name) {
-                  pbl = &par->bank_list[i];
-                  exclude = (pbl->output_flag == 0);
-                  break;
-               }
-            if (par->bank_list[i].name[0] == 0)
-               cm_msg(MERROR, "write_event_hbook", "Received unknown bank %s",
-                      block_name);
-         }
-
-         /* fill CW N-tuple */
-         if (!exclude && pbl != NULL && !clp.rwnt) {
-            /* set array size in bank list */
-            if ((pybk->type & 0xFF) < MAX_BKTYPE) {
-               item_size = ybos_get_tid_size(pybk->type & 0xFF);
-               if (item_size == 0) {
-                  cm_msg(MERROR, "write_event_hbook",
-                         "Received bank %s with unknown item size", block_name);
-                  continue;
-               }
-
-               pbl->n_data = size / item_size;
-
-               /* check bank size */
-               if (pbl->n_data > pbl->size) {
-                  cm_msg(MERROR, "write_event_hbook",
-                         "Bank %s has more (%d) entries than maximum value (%d)",
-                         block_name, pbl->n_data, pbl->size);
-                  continue;
-               }
-
-               /* copy bank to buffer in bank list, DWORD aligned */
-               if (item_size >= 4) {
-                  size = MIN((INT) pbl->size * item_size, size);
-                  memcpy(pbl->addr, pdata, size);
-               } else if (item_size == 2)
-                  for (i = 0; i < (INT) pbl->n_data; i++)
-                     *((DWORD *) pbl->addr + i) = (DWORD) * ((WORD *) pdata + i);
-               else if (item_size == 1)
-                  for (i = 0; i < (INT) pbl->n_data; i++)
-                     *((DWORD *) pbl->addr + i) = (DWORD) * ((BYTE *) pdata + i);
-            } else {
-               /* hope that structure members are aligned as HBOOK thinks ... */
-               memcpy(pbl->addr, pdata, size);
-            }
-
-            /* fill N-tuple */
-            HFNTB(pevent->event_id, block_name);
-         }
-
-         /* fill RW N-tuple */
-         if (!exclude && pbl != NULL && clp.rwnt) {
-            exclude_all = FALSE;
-
-            item_size = ybos_get_tid_size(pybk->type & 0xFF);
-            /* set array size in bank list */
-            if ((pybk->type & 0xFF) < MAX_BKTYPE) {
-               n = size / item_size;
-
-               /* check bank size */
-               if (n > (INT) pbl->size) {
-                  cm_msg(MERROR, "write_event_hbook",
-                         "Bank %s has more (%d) entries than maximum value (%d)",
-                         block_name, n, pbl->size);
-                  continue;
-               }
-
-               /* convert bank to float values */
-               for (i = 0; i < n; i++) {
-                  switch (pybk->type & 0xFF) {
-                  case I1_BKTYPE:
-                     rwnt[pbl->n_data + i] = (float) (*((BYTE *) pdata + i));
-                     break;
-                  case I2_BKTYPE:
-                     rwnt[pbl->n_data + i] = (float) (*((WORD *) pdata + i));
-                     break;
-                  case I4_BKTYPE:
-                     rwnt[pbl->n_data + i] = (float) (*((DWORD *) pdata + i));
-                     break;
-                  case F4_BKTYPE:
-                     rwnt[pbl->n_data + i] = (float) (*((float *) pdata + i));
-                     break;
-                  case D8_BKTYPE:
-                     rwnt[pbl->n_data + i] = (float) (*((double *) pdata + i));
-                     break;
-                  }
-               }
-
-               /* zero padding */
-               for (; i < (INT) pbl->size; i++)
-                  rwnt[pbl->n_data + i] = 0.f;
-            } else {
-               printf("YBOS is not supporting STRUCTURE banks \n");
-            }
-         }
-
-      } while (TRUE);
-
-      /* fill RW N-tuple */
-      if (clp.rwnt && file != NULL && !exclude_all)
-         HFN(pevent->event_id, rwnt);
-
-      /* fill shared memory */
-      if (file == NULL)
-         HFNOV(pevent->event_id, rwnt);
-
+     assert(!"YBOS not supported anymore");
    }
 
 
-   /* if (event_def->format == FORMAT_YBOS) */
  /*---- FIXED format ----------------------------------------------*/
    if (event_def->format == FORMAT_FIXED) {
       if (clp.rwnt) {
@@ -3307,17 +3173,7 @@ INT process_event(ANALYZE_REQUEST * par, EVENT_HEADER * pevent)
    }
 
    if (event_def->format == FORMAT_YBOS) {
-#ifdef HAVE_YBOS
-      /* check if event got too large */
-      i = ybk_size((DWORD *) (pevent + 1));
-      if (i > MAX_EVENT_SIZE)
-         cm_msg(MERROR, "process_event", "Event got too large (%d Bytes) in analyzer", i);
-
-      /* correct for increased event size */
-      pevent->data_size = i;
-#else
-      assert(!"YBOS support not compiled in");
-#endif
+     assert(!"YBOS not supported anymore");
    }
 
    /* increment tests */
@@ -3859,39 +3715,6 @@ INT init_module_parameters(BOOL bclose)
 }
 
 /*------------------------------------------------------------------*/
-
-#ifdef HAVE_YBOS
-INT bevid_2_mheader(EVENT_HEADER * pevent, DWORD * pybos)
-{
-   INT status;
-   DWORD bklen, bktyp, *pdata;
-   YBOS_BANK_HEADER *pybk;
-   void *pvybk;
-
-   /* check if EVID is present if so display its content */
-   if ((status = ybk_find(pybos, "EVID", &bklen, &bktyp, &pvybk)) == YB_SUCCESS) {
-      pybk = (YBOS_BANK_HEADER *) pvybk;
-      pdata = (DWORD *) ((YBOS_BANK_HEADER *) pybk + 1);
-      if (clp.verbose) {
-         printf("--------- EVID --------- Event# %i ------Run#:%i--------\n",
-                (int) (YBOS_EVID_EVENT_NB(pdata)), (int) (YBOS_EVID_RUN_NUMBER(pdata)));
-         printf("Evid:%4.4x- Mask:%4.4x- Serial:%i- Time:0x%x- Dsize:%i/0x%x",
-                (int) YBOS_EVID_EVENT_ID(pdata), (int) YBOS_EVID_TRIGGER_MASK(pdata)
-                , (int) YBOS_EVID_SERIAL(pdata), (int) YBOS_EVID_TIME(pdata)
-                , (int) pybk->length, (int) pybk->length);
-      }
-      pevent->event_id = YBOS_EVID_EVENT_ID(pdata);
-      pevent->trigger_mask = YBOS_EVID_TRIGGER_MASK(pdata);
-      pevent->serial_number = YBOS_EVID_SERIAL(pdata);
-      pevent->time_stamp = YBOS_EVID_TIME(pdata);
-      pevent->data_size = pybk->length;
-   }
-   return SS_SUCCESS;
-}
-#endif // HAVE_YBOS
-
-/*------------------------------------------------------------------*/
-
 void odb_load(EVENT_HEADER * pevent)
 {
    BOOL flag;
@@ -4056,7 +3879,7 @@ MA_FILE *ma_open(char *file_name)
    else if (strncmp(ext_str, ".mid", 4) == 0)
       file->format = MA_FORMAT_MIDAS;
    else if (strncmp(ext_str, ".ybs", 4) == 0)
-      file->format = MA_FORMAT_YBOS;
+     assert(!"YBOS not supported anymore");
    else {
       printf
           ("Unknown input data format \"%s\". Please use file extension .mid or mid.gz.\n",
@@ -4066,15 +3889,7 @@ MA_FILE *ma_open(char *file_name)
 
    if (file->device == MA_DEVICE_DISK) {
       if (file->format == MA_FORMAT_YBOS) {
-#ifdef HAVE_YBOS
-         status = yb_any_file_ropen(file_name, FORMAT_YBOS);
-         if (status != SS_SUCCESS)
-            return NULL;
-         if (yb_any_physrec_skip(FORMAT_YBOS, -1) != YB_SUCCESS)
-            return (NULL);
-#else
-         assert(!"YBOS support not compiled in");
-#endif
+	assert(!"YBOS not supported anymore");
       } else {
 #ifdef HAVE_ZLIB
          file->gzfile = gzopen(file_name, "rb");
@@ -4096,11 +3911,7 @@ MA_FILE *ma_open(char *file_name)
 int ma_close(MA_FILE * file)
 {
    if (file->format == MA_FORMAT_YBOS)
-#ifdef HAVE_YBOS
-      yb_any_file_rclose(FORMAT_YBOS);
-#else
-      assert(!"YBOS support not compiled in");
-#endif
+     assert(!"YBOS not supported anymore");
    else
 #ifdef HAVE_ZLIB
       gzclose(file->gzfile);
@@ -4167,18 +3978,7 @@ int ma_read_event(MA_FILE * file, EVENT_HEADER * pevent, int size)
 
          return n + sizeof(EVENT_HEADER);
       } else if (file->format == MA_FORMAT_YBOS) {
-#ifdef HAVE_YBOS
-         DWORD *pybos, readn;
-         if (ybos_event_get(&pybos, &readn) != SS_SUCCESS)
-            return -1;
-         status = yb_any_event_swap(FORMAT_YBOS, pybos);
-         memcpy((char *) (pevent + 1), (char *) pybos, readn);
-         status = bevid_2_mheader(pevent, pybos);
-         return readn;
-#else
-         assert(!"YBOS support not compiled in");
-         return 0;
-#endif
+	assert(!"YBOS not supported anymore");
       }
    } else if (file->device == MA_DEVICE_PVM) {
 #ifdef HAVE_PVM
