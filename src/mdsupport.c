@@ -565,11 +565,9 @@ status : from lower function
 \********************************************************************/
 {
    *precord = my.pmp;
-   if (data_fmt == FORMAT_MIDAS)
+   if (data_fmt == FORMAT_MIDAS) {
       return midas_physrec_get(*precord, readn);
-   else if (data_fmt == FORMAT_YBOS)
-     assert(!"YBOS not supported anymore");
-   else
+   } else
      return MD_UNKNOWN_FORMAT;
 }
 
@@ -622,9 +620,7 @@ status : from lower function
    if (data_fmt == FORMAT_MIDAS) {
       status = midas_event_skip(bl);
       return MD_SUCCESS;
-   } else if (data_fmt == FORMAT_YBOS)
-     assert(!"YBOS NOT supported anymore");
-   else
+   } else
       return MD_UNKNOWN_FORMAT;
 }
 
