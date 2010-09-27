@@ -38,7 +38,7 @@ void ftp_debug(int (*debug_func) (char *message), int (*error_func) (char *messa
 
 /*------------------------------------------------------------------*/
 
-int ftp_connect(FTP_CON ** con, char *host_name, unsigned short port)
+int ftp_connect(FTP_CON ** con, const char *host_name, unsigned short port)
 /* Connect to a FTP server on a host at a given port (usually 21).
    Return a FTP_CON structure if successful */
 {
@@ -143,7 +143,7 @@ int ftp_send_message(FTP_CON * con, char *message)
 
 /*------------------------------------------------------------------*/
 
-int ftp_command(FTP_CON * con, char *command, char *param, ...)
+int ftp_command(FTP_CON * con, const char *command, const char *param, ...)
 /* execute FTP command, check for return codes */
 {
    va_list args;
@@ -247,7 +247,7 @@ BOOL ftp_good(int number, ...)
 
 /*------------------------------------------------------------------*/
 
-int ftp_data(FTP_CON * con, char *command, char *file)
+int ftp_data(FTP_CON * con, const char *command, const char *file)
 /* open data socket */
 {
    struct sockaddr_in data, from;
@@ -385,8 +385,8 @@ int ftp_receive(int sock, char *buffer, int bsize)
 
 /*------------------------------------------------------------------*/
 
-int ftp_login(FTP_CON ** con, char *host, unsigned short port,
-              char *user, char *password, char *account)
+int ftp_login(FTP_CON ** con, const char *host, unsigned short port,
+              const char *user, const char *password, const char *account)
 /* FTP login with username and password */
 {
    int status;
@@ -457,7 +457,7 @@ int ftp_port(FTP_CON * con, int a, int b, int c, int d, int e, int f)
 
 /*------------------------------------------------------------------*/
 
-int ftp_move(FTP_CON * con, char *oldname, char *newname)
+int ftp_move(FTP_CON * con, const char *oldname, const char *newname)
 /* move/rename file */
 {
    int status;
@@ -472,7 +472,7 @@ int ftp_move(FTP_CON * con, char *oldname, char *newname)
 
 /*------------------------------------------------------------------*/
 
-int ftp_get(FTP_CON * con, char *local_name, char *remote_name)
+int ftp_get(FTP_CON * con, const char *local_name, const char *remote_name)
 /* get file */
 {
    int fh;
@@ -515,7 +515,7 @@ int ftp_get(FTP_CON * con, char *local_name, char *remote_name)
 
 /*------------------------------------------------------------------*/
 
-int ftp_put(FTP_CON * con, char *local_name, char *remote_name)
+int ftp_put(FTP_CON * con, const char *local_name, const char *remote_name)
 /* put file */
 {
    int fh;
@@ -584,7 +584,7 @@ char *ftp_pwd(FTP_CON * con)
 
 /*------------------------------------------------------------------*/
 
-int ftp_dir(FTP_CON * con, char *file)
+int ftp_dir(FTP_CON * con, const char *file)
 /* display directory */
 {
    char command[256], buffer[8192];
