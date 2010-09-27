@@ -16,7 +16,7 @@
 #include "mcstd.h"
 
 #define HAVE_LOGGING
-#include "ybos.h"
+#include "mdsupport.h"
 
 /* cernlib includes */
 #ifdef OS_WINNT
@@ -1360,7 +1360,7 @@ EVENT_DEF *db_get_event_definition(short int event_id)
          else if (equal_ustring(str, "MIDAS"))
             event_def[index].format = FORMAT_MIDAS;
          else if (equal_ustring(str, "YBOS"))
-            event_def[index].format = FORMAT_YBOS;
+	   assert(!"YBOS not supported anymore");
          else if (equal_ustring(str, "DUMP"))
             event_def[index].format = FORMAT_DUMP;
          else {
@@ -2298,8 +2298,7 @@ INT log_open(LOG_CHN * log_chn, INT run_number)
    INT status;
 
    if (equal_ustring(log_chn->settings.format, "YBOS")) {
-      log_chn->format = FORMAT_YBOS;
-      status = ybos_log_open(log_chn, run_number);
+      assert(!"YBOS not supported anymore");
    } else if (equal_ustring(log_chn->settings.format, "ASCII")) {
       log_chn->format = FORMAT_ASCII;
       status = ascii_log_open(log_chn, run_number);
@@ -2327,26 +2326,25 @@ INT log_open(LOG_CHN * log_chn, INT run_number)
 INT log_close(LOG_CHN * log_chn, INT run_number)
 {
    if (log_chn->format == FORMAT_YBOS)
-      ybos_log_close(log_chn, run_number);
-
+     assert(!"YBOS not supported anymore");
    if (log_chn->format == FORMAT_ASCII)
-      ascii_log_close(log_chn, run_number);
-
+     ascii_log_close(log_chn, run_number);
+   
    if (log_chn->format == FORMAT_DUMP)
-      dump_log_close(log_chn, run_number);
-
+     dump_log_close(log_chn, run_number);
+   
 #ifdef USE_ROOT
    if (log_chn->format == FORMAT_ROOT)
-      root_log_close(log_chn, run_number);
+     root_log_close(log_chn, run_number);
 #endif
-
+   
    if (log_chn->format == FORMAT_MIDAS)
-      midas_log_close(log_chn, run_number);
-
+     midas_log_close(log_chn, run_number);
+   
    log_chn->statistics.files_written += 1;
    log_chn->handle = 0;
    log_chn->ftp_con = NULL;
-
+   
    return SS_SUCCESS;
 }
 
@@ -2366,8 +2364,8 @@ INT log_write(LOG_CHN * log_chn, EVENT_HEADER * pevent)
    start_time = ss_millitime();
 
    if (log_chn->format == FORMAT_YBOS)
-      status = ybos_write(log_chn, pevent, pevent->data_size + sizeof(EVENT_HEADER));
-
+     assert(!"YBOS not supported anymore");
+   
    if (log_chn->format == FORMAT_ASCII)
       status = ascii_write(log_chn, pevent, pevent->data_size + sizeof(EVENT_HEADER));
 
@@ -3307,7 +3305,7 @@ INT tr_start(INT run_number, char *error)
 
             if (status == SS_INVALID_FORMAT)
                sprintf(error,
-                       "Invalid data format, please use \"MIDAS\", \"YBOS\", \"ASCII\", \"DUMP\" or \"ROOT\"");
+                       "Invalid data format, please use \"MIDAS\", \"ASCII\", \"DUMP\" or \"ROOT\"");
 
             cm_msg(MERROR, "tr_prestart", error);
             return 0;
@@ -4589,8 +4587,6 @@ void process_event(EVENT_HEADER * pevent)
 
          if (event_def->format == FORMAT_MIDAS)
             pevent->data_size = bk_size((void *) (pevent + 1));
-         if (event_def->format == FORMAT_YBOS)
-            pevent->data_size = ybk_size((DWORD *) (pevent + 1));
 
          /* increment tests */
          test_increment();
@@ -4699,7 +4695,7 @@ INT register_equipment(void)
       db_find_key(hDB, 0, str, &hKey);
 
       if (equal_ustring(eq_info->format, "YBOS"))
-         equipment[index].format = FORMAT_YBOS;
+	assert(!"YBOS not supported anymore");
       else if (equal_ustring(eq_info->format, "FIXED"))
          equipment[index].format = FORMAT_FIXED;
       else                      /* default format is MIDAS */
