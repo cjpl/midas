@@ -16,10 +16,6 @@
 #include "msystem.h"
 #include "mcstd.h"
 
-#ifdef HAVE_YBOS
-#include "ybos.h"
-#endif
-
 /*------------------------------------------------------------------*/
 
 /* items defined in frontend.c */
@@ -73,23 +69,6 @@ INT frontend_index = -1;        /* frontend index for event building */
 BOOL lockout_readout_thread = TRUE; /* manual triggers, periodic events and 1Hz flush cache lockout the readout thread */
 
 HNDLE hDB;
-
-#ifdef HAVE_YBOS
-struct {
-   DWORD ybos_type;
-   DWORD odb_type;
-   INT tsize;
-} id_map[] = {
-   {
-   A1_BKTYPE, TID_CHAR, 1}, {
-   I1_BKTYPE, TID_BYTE, 1}, {
-   I2_BKTYPE, TID_WORD, 2}, {
-   I4_BKTYPE, TID_DWORD, 4}, {
-   F4_BKTYPE, TID_FLOAT, 4}, {
-   D8_BKTYPE, TID_DOUBLE, 8}, {
-   0, 0, 0}
-};
-#endif
 
 extern EQUIPMENT equipment[];
 
@@ -648,7 +627,7 @@ INT register_equipment(void)
       db_open_record(hDB, hKey, eq_info, sizeof(EQUIPMENT_INFO), MODE_READ, NULL, NULL);
 
       if (equal_ustring(eq_info->format, "YBOS"))
-         equipment[idx].format = FORMAT_YBOS;
+	assert(!"YBOS not supported anymore");
       else if (equal_ustring(eq_info->format, "FIXED"))
          equipment[idx].format = FORMAT_FIXED;
       else                      /* default format is MIDAS */
@@ -1020,12 +999,7 @@ void update_odb(EVENT_HEADER * pevent, HNDLE hKey, INT format)
    WORD bktype;
    HNDLE hKeyRoot, hKeyl;
    KEY key;
-#ifdef HAVE_YBOS
-   INT ni4, tsize;
-   DWORD odb_type;
-   char *pydata;
-   DWORD *pyevt;
-#endif
+
 
    /* outcommented since db_find_key does not work in FTCP mode, SR 25.4.03
       rpc_set_option(-1, RPC_OTRANSPORT, RPC_FTCP); */
@@ -1101,58 +1075,7 @@ void update_odb(EVENT_HEADER * pevent, HNDLE hKey, INT format)
 
       } while (1);
    } else if (format == FORMAT_YBOS) {
-#ifdef HAVE_YBOS
-      YBOS_BANK_HEADER *pybkh;
-
-      /* skip the lrl (4 bytes per event) */
-      pyevt = (DWORD *) (pevent + 1);
-      pybkh = NULL;
-      do {
-         /* scan all banks */
-         ni4 = ybk_iterate(pyevt, &pybkh, (void *) (&pydata));
-         if (pybkh == NULL || ni4 == 0)
-            break;
-
-         /* find the corresponding odb type */
-         tsize = odb_type = 0;
-         for (i = 0; id_map[0].ybos_type > 0; i++) {
-            if (pybkh->type == id_map[i].ybos_type) {
-               odb_type = id_map[i].odb_type;
-               tsize = id_map[i].tsize;
-               break;
-            }
-         }
-
-         /* extract bank name (key name) */
-         *((DWORD *) name) = pybkh->name;
-         name[4] = 0;
-
-         /* reject EVID bank */
-         if (strncmp(name, "EVID", 4) == 0)
-            continue;
-
-         /* correct YBS number of entries */
-         if (pybkh->type == D8_BKTYPE)
-            ni4 /= 2;
-         if (pybkh->type == I2_BKTYPE)
-            ni4 *= 2;
-         if (pybkh->type == I1_BKTYPE || pybkh->type == A1_BKTYPE)
-            ni4 *= 4;
-
-         /* write bank to ODB, ni4 always in I*4 */
-         size = ni4 * tsize;
-         if ((status =
-              db_set_value(hDB, hKey, name, pydata, size, ni4,
-                           odb_type & 0xFF)) != DB_SUCCESS) {
-            printf("status:%d odb_type:%d name:%s ni4:%d size:%d tsize:%d\n", status,
-                   odb_type, name, ni4, size, tsize);
-            for (i = 0; i < 6; i++) {
-               printf("data: %f\n", *((float *) (pydata)));
-               pydata += sizeof(float);
-            }
-         }
-      } while (1);
-#endif                          /* YBOS_SUPPORT */
+     assert(!"YBOS not supported anymore");
    }
 
    rpc_set_option(-1, RPC_OTRANSPORT, RPC_TCP);
