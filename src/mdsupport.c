@@ -5,7 +5,7 @@
  *  Email: online@triumf.ca         Tel: (604) 222-1047    Fax: (604) 222-1074
  *         amaudruz@triumf.ca                            Local:           6234
  * ---------------------------------------------------------------------------
- * $Id:$
+ * $Id$
  *
  *  Description : mdsupport.c :
  *  contains support for the mdump and lazylogger data support.
