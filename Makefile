@@ -45,11 +45,6 @@ SYSLIB_DIR = $(PREFIX)/lib
 SYSINC_DIR = $(PREFIX)/include
 
 #
-#  Midas preference flags
-#  -DYBOS_VERSION_3_3  for YBOS up to version 3.3 
-MIDAS_PREF_FLAGS  =
-
-#
 # Option to set the shared library path on MIDAS executables
 #
 NEED_RPATH=1
@@ -105,11 +100,6 @@ NEED_ZLIB=
 #
 NEED_MSCB=1
 
-#
-# Optional support for YBOS data format
-#
-#HAVE_YBOS=1
-
 #####################################################################
 # Nothing needs to be modified after this line 
 #####################################################################
@@ -119,7 +109,7 @@ NEED_MSCB=1
 #
 CC = cc $(USERFLAGS)
 CXX = g++ $(USERFLAGS)
-CFLAGS = -g -O2 -Wall -Wuninitialized -I$(INC_DIR) -I$(DRV_DIR) -I$(MXML_DIR) -I$(MSCB_DIR) -L$(LIB_DIR) -DHAVE_FTPLIB $(MIDAS_PREF_FLAGS)
+CFLAGS = -g -O2 -Wall -Wuninitialized -I$(INC_DIR) -I$(DRV_DIR) -I$(MXML_DIR) -I$(MSCB_DIR) -L$(LIB_DIR) -DHAVE_FTPLIB
 
 #-----------------------
 # Ovevwrite MAX_EVENT_SIZE with environment variable
@@ -313,11 +303,6 @@ OBJS =  $(LIB_DIR)/midas.o $(LIB_DIR)/system.o $(LIB_DIR)/mrpc.o \
 	$(LIB_DIR)/history_midas.o \
 	$(LIB_DIR)/history_sql.o \
 	$(LIB_DIR)/history.o $(LIB_DIR)/alarm.o $(LIB_DIR)/elog.o
-
-ifdef HAVE_YBOS
-CFLAGS += -DHAVE_YBOS
-OBJS   += $(LIB_DIR)/ybos.o
-endif
 
 ifdef NEED_STRLCPY
 OBJS += $(LIB_DIR)/strlcpy.o
@@ -552,7 +537,7 @@ $(LIB_DIR)/midas.o: msystem.h midas.h midasinc.h mrpc.h
 $(LIB_DIR)/system.o: msystem.h midas.h midasinc.h mrpc.h
 $(LIB_DIR)/mrpc.o: msystem.h midas.h mrpc.h
 $(LIB_DIR)/odb.o: msystem.h midas.h midasinc.h mrpc.h
-$(LIB_DIR)/ybos.o: msystem.h midas.h midasinc.h mrpc.h
+$(LIB_DIR)/mdsupport.o: msystem.h midas.h midasinc.h
 $(LIB_DIR)/ftplib.o: msystem.h midas.h midasinc.h
 $(LIB_DIR)/mxml.o: msystem.h midas.h midasinc.h $(MXML_DIR)/mxml.h
 $(LIB_DIR)/alarm.o: msystem.h midas.h midasinc.h
@@ -567,8 +552,8 @@ $(BIN_DIR)/%:$(UTL_DIR)/%.c
 $(BIN_DIR)/mcnaf: $(UTL_DIR)/mcnaf.c $(DRV_DIR)/camac/camacrpc.c
 	$(CC) $(CFLAGS) $(OSFLAGS) -o $@ $(UTL_DIR)/mcnaf.c $(DRV_DIR)/camac/camacrpc.c $(LIB) $(LIBS)
 
-$(BIN_DIR)/mdump: $(UTL_DIR)/mdump.c $(SRC_DIR)/ybos.c
-	$(CC) $(CFLAGS) $(OSFLAGS) -DHAVE_YBOS -o $@ $(UTL_DIR)/mdump.c $(SRC_DIR)/ybos.c $(LIB) $(LIBS)
+$(BIN_DIR)/mdump: $(UTL_DIR)/mdump.c $(SRC_DIR)/mdsupport.c
+	$(CC) $(CFLAGS) $(OSFLAGS) -o $@ $(UTL_DIR)/mdump.c $(SRC_DIR)/mdsupport.c $(LIB) $(LIBS)
 
 $(BIN_DIR)/mfe_link_test: $(SRC_DIR)/mfe.c
 	$(CC) $(CFLAGS) $(OSFLAGS) -DLINK_TEST -o $@ $(SRC_DIR)/mfe.c $(LIB) $(LIBS)
@@ -585,8 +570,8 @@ $(BIN_DIR)/mtransition: $(SRC_DIR)/mtransition.cxx
 $(BIN_DIR)/mh2sql: $(UTL_DIR)/mh2sql.cxx
 	$(CXX) $(CFLAGS) $(OSFLAGS) -o $@ $^ $(LIBS)
 
-$(BIN_DIR)/lazylogger: $(SRC_DIR)/lazylogger.c
-	$(CXX) $(CFLAGS) $(OSFLAGS) -o $@ $< $(LIB) $(LIBS)
+$(BIN_DIR)/lazylogger: $(SRC_DIR)/lazylogger.c $(SRC_DIR)/mdsupport.c
+	$(CXX) $(CFLAGS) $(OSFLAGS) -o $@ $<  $(SRC_DIR)/mdsupport.c $(LIB) $(LIBS)
 
 $(BIN_DIR)/dio: $(UTL_DIR)/dio.c
 	$(CC) $(CFLAGS) $(OSFLAGS) -o $@ $(UTL_DIR)/dio.c
@@ -665,7 +650,7 @@ endif
 	  done
 
 #--------------------------------------------------------------
-# mininal_install
+# minimal_install
 minimal_install:
 # system programs
 	@echo "... "
