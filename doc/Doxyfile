@@ -77,8 +77,8 @@ INPUT                  = . \
                          ../include/mvmestd.h \
                          ../include/mcstd.h \
                          ../include/midas.h \
-                         ../include/ybos.h \
-                         ../src/ybos.c \
+                         ../include/mdsupport.h \
+                         ../src/mdsupport.c \
                          ../src/mfe.c \
                          ../src/midas.c \
                          ../src/system.c \
