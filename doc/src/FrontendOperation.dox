@@ -130,7 +130,7 @@ A typical frontend will:
 
  -    Register the given Equipment list(s) to a specific Midas experiment.
  -    Provide the mean of collecting data from the hardware source defined by each Equipment read function.
- -    Gather these data in one of the supported formats (i.e. Fixed format or in Midas or YBOS data bank(s)) for each Equipment.
+ -    Gather these data in one of the supported formats (i.e. Fixed format or in Midas data bank(s)) for each Equipment.
  -    Send these data banks to the buffer manager either locally or remotely.
  -    Periodically collect statistics of the acquisition task, and send them to the Online Database.
 

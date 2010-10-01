@@ -88,8 +88,6 @@ This section covers several aspects of the Midas system.
   - @ref F_Midas_Data_Types 
   - @ref F_Midas_Library
   - @ref F_midas_macro
-  - @ref FE_YBOS_Bank_Types
-  - @ref F_YBOS_library
   
 \anchor idx_Midas_Data_Types  
 \anchor Midas_Data_Types
@@ -133,7 +131,6 @@ The Midas libraries are composed of 5 main source codes and their corresponding 
 -# @ref elfunctioncode : Midas Elog functions.
 -# @ref mrpcincludecode : Midas RPC functions.
 -# @ref odbcode : Online Database functions.
--# @ref ybosincludecode : YBOS specific functions.
 
 
 Within these files, all the functions have been categorized depending on their scope.
@@ -147,22 +144,17 @@ Within these files, all the functions have been categorized depending on their s
 - \b hs_xxx(...) : History manipulation calls
 - \b ss_xxx(...) : System calls
 - \b rb_xxx(...) : Ring buffer calls
-- \b ybk_xxx(...) : YBOS bank manipulation
 
 \anchor midas_macro <!-- needed by C code -->
 <hr> @section F_midas_macro MIDAS Macros
 Several group of MACROs are available for simplifying the users' job on setting or getting Midas
 information. They are also listed in the @ref F_Midas_Library. All of them are defined in
-the @ref mmacroh, @ref msmacroh, @ref ybosmacroh header files.
+the @ref mmacroh, @ref msmacroh header files.
 
   - @ref F_message_types "Message macros"
   - @ref FE_Midas_Event_Header_Macros "Event Header macros"
   - @ref DA_Byte_Swap_Macros
   - @ref FE_LAM_macros
-
-<hr> @subsection F_YBOS_library YBOS library
-Exportable ybos functions through inclusion of ybos.h
-
 
 \anchor end
 

@@ -1672,7 +1672,6 @@ Refer to the following sections for an explanation of event composition dependin
 event type selected: 
   -  @ref  FE_FIXED_event_readout,
   -  @ref  FE_MIDAS_event_construction, 
-  -  @ref  FE_YBOS_event_construction.
 
 <br>
 <hr>
@@ -2150,177 +2149,10 @@ INT read_ge_event(char *pevent, INT offset)
     ...
   }
   ...
-
 @endcode
 
 <hr>
 <br>
-\anchor idx_event_readout_format_YBOS
-\anchor idx_YBOS_event-construction
-@section FE_YBOS_event_construction YBOS event construction
-
-The  @ref FE_YBOS_format "YBOS event format" is also a bank format that has been used in other DAQ systems.
-
- 
-The advantage of using the YBOS format is the fact that recorded data can be analyzed
-with pre-existing analyzers understanding @ref  FE_YBOS_format. The disadvantage is that it
-has a slightly larger overhead than the  @ref FE_Midas_format , and it supports fewer
-bank types. An introduction to YBOS can be found under
-<a href="http://www-cdf.fnal.gov/offline/ybos/ybos.html"> YBOS </a>  
-YBOS functions are available through the  @ref F_YBOS_library .
-
-The scheme of bank creation is exactly the same as for MIDAS events, only the
-routines are named differently. The YBOS format is double-word oriented i.e. all
-incrementation are done in 4 bytes steps.
-The following routines exist:
-
-- ybk_init() Initializes a bank structure in an event.
-- ybk_create() Creates a bank with a given name (exactly four characters)
-- ybk_close() Closes a bank previously opened with ybk_create().
-- ybk_size() Returns the size in bytes of all banks including the bank
-headers in an event.
-
-\anchor YBOS_Bank_Types YBOS
-<hr> @section FE_YBOS_Bank_Types YBOS Bank Types
-YBOS defines several types, but all types should be 4 bytes aligned.
-There is no distinction of signed and unsigned. When mixing MIDAS and YBOS
-in the frontend for  @ref  FE_tbl_ReadOn "RO_ODB"  make
-sure the bank types are compatible (see also @ref ybosdefineh)
-
-- \b I1_BKTYPE  Bank of Bytes
-- \b I2_BKTYPE  Bank of 2 bytes data
-- \b I4_BKTYPE  Bank of 4 bytes data
-- \b F4_BKTYPE  Bank of float data
-- \b D8_BKTYPE  Bank of double data
-- \b A1_BKTYPE  Bank of ASCII char 
-
-@subsection FE_creation_YBOS_banks Creation of YBOS banks
-
-The following code creates an ADC0 bank in YBOS format:
-
-@code
-INT read_trigger_event(char *pevent)
-{
-  DWORD i;
-  DWORD *pbkdat;
-
-  ybk_init((DWORD *) pevent);
-
-  // collect user hardware data 
-  ybk_create((DWORD *)pevent, "ADC0", I4_BKTYPE, (DWORD *)(&pbkdat));
-  for (i=0 ; i<8 ; i++)
-    *pbkdat++ = i & 0xFFF;
-  ybk_close((DWORD *)pevent, pbkdat);
-
-  ybk_create((DWORD *)pevent, "TDC0", I2_BKTYPE, (DWORD *)(&pbkdat));
-  for (i=0 ; i<8 ; i++)
-    *((WORD *)pbkdat)++ = (WORD)(0x10+i) & 0xFFF;
-  ybk_close((DWORD *) pevent, pbkdat);
-
-  ybk_create((DWORD *)pevent, "SIMU", I2_BKTYPE, (DWORD *)(&pbkdat));
-  for (i=0 ; i<9 ; i++)
-    *((WORD *)pbkdat)++ = (WORD) (0x20+i) & 0xFFF;
-  ybk_close((DWORD *) pevent, I2_BKTYPE, pbkdat);
-
-  return (ybk_size((DWORD *)pevent));
- 
-@endcode
-<br>
-
-Basic examples using YBOS banks are available in the midas tree under examples/ybosexpt.
-
-- <b>Frontend code</b>
-Example 1 and 2 shows the bank creation with some CAMAC acquisition.
-@code
--------- example 1 -------- Simple 16 bits bank construction
-
-void read_cft (DWORD *pevent)
-{
-  DWORD *pbkdat, slot;
-  
-  ybk_create((DWORD *)pevent, "TDCP", I2_BKTYPE, &pbkdat);
-  for (slot=FIRST_CFT;slot<=LAST_CFT;slot++)
-    {
-      cami(3,slot,1,6,(WORD *)pbkdat);
-      ((WORD *)pbkdat)++;
-
-      cam16i_rq(3,slot,0,4,(WORD **)&pbkdat,16);
-    }
-  ybk_close((DWORD *)pevent, I2_BKTYPE, pbkdat);
-  return;
-}
--------- example 2 -------- Simple 32bit bank construction
-{
-  DWORD *pbkdat;
-  
-  ybk_create((DWORD *)pevent, "TICS", I4_BKTYPE, &pbkdat);
-  camo(2,22,0,17,ZERO);
-  cam24i_r(2,22,0,0,(DWORD **) &pbkdat,10);
-  cam24i_r(2,22,0,0,(DWORD **) &pbkdat,10);
-  cam24i_r(2,22,0,0,(DWORD **) &pbkdat,10);
-  cam24i_r(2,22,0,0,(DWORD **) &pbkdat,10);
-
-
-  cam24i_r(2,22,0,0,(DWORD **) &pbkdat,9);
-  ybk_close((DWORD *)pevent, I4_BKTYPE, pbkdat);
-  return 0;
-}
-@endcode
-
-Example 3 shows the creation of an EVID bank containg a duplicate of the midas header.
-As the Midas header is stripped out of the YBOS event when the data are logger, it is necessary
-to compose such an event to retain event information for off-line analysis. Use of
-predefined macros (see @ref F_Midas_Library) are available in order to extract from a
-pre-composed Midas event the internal header fields i.e. Midas Event ID, Trigger mask,
-Serial number, Time stamp. In this EVID bank we added the current run number which
-is retrieved by the frontend at the beginning of a run.
-
-
-@code
--------- example 3 -------- Full equipment readout function
-
-INT read_cum_scaler_event(char *pevent, INT off)
-{
-  INT i;
-  DWORD *pbkdat, *pbktop, *podbvar;
-  
-  ybk_init((DWORD *) pevent);
-  
-  // collect user hardware SCALER data
-  ybk_create((DWORD *)pevent, "EVID", I4_BKTYPE, (DWORD *)(&pbkdat));
-  *(pbkdat)++ = gbl_tgt_counter++;                      // event counter 
-  *((WORD *)pbkdat) = EVENT_ID(pevent);     ((WORD *)pbkdat)++;
-  *((WORD *)pbkdat) = TRIGGER_MASK(pevent); ((WORD *)pbkdat)++;
-
-  *(pbkdat)++ = SERIAL_NUMBER(pevent);
-  *(pbkdat)++ = TIME_STAMP(pevent);
-  *(pbkdat)++ = gbl_run_number;                         // run number
-  ybk_close((DWORD *)pevent, pbkdat);
-  
-  // BEGIN OF CUMULATIVE SCALER EVENT
-  ybk_create((DWORD *)pevent, "CUSC", I4_BKTYPE, (DWORD *)(&pbkdat));
-  for (i=0 ; i<NSCALERS ; i++){
-    *pbkdat++ = scaler[i].cuval[0];
-    *pbkdat++ = scaler[i].cuval[1];
-  }
-
-  ybk_close(DWORD *)pevent, I4_BKTYPE, pbkdat);
-  // END OF CUMULATIVE SCALER EVENT
-
-
-  
-  // event in bytes for Midas
-  return (ybk_size ((DWORD *)pevent));
-}
-@endcode
-
-
-If the data logging is done through  the @ref F_mlogger_task "Midas logger" using the YBOS @ref F_Logger_CS_Format "format",
-the events on the storage media will have been stripped of the MIDAS header used for
-transfering the event from the frontend to the backend. This means the logger data
-format is a "TRUE" YBOS format. Use of the standard YBOS library is then possible
-when analyzing the logged data. Examples of extraction of data from YBOS banks are shown 
-in the @ref DA_Data_analyzers section.
 
 \htmlonly
 <script type="text/javascript">
@@ -2357,8 +2189,7 @@ The Super-Event is an option implemented in the frontend code in order to reduce
 amount of data to be transfered to the backend computer(s) by removing the bank header for each event
 constructed. It is not applicable to FIXED format events. 
 
-In other words, when an equipment readout in either \em MIDAS or
-\em YBOS  bank format is complete, the event is composed of the bank header
+In other words, when an equipment readout in \em MIDAS bank format is complete, the event is composed of the bank header
 followed by the data section.
 
 The overhead in bytes of the bank structure is 16 bytes for bk_init(),

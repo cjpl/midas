@@ -366,8 +366,7 @@ If not using an interrupt, this field can be set to 1.
       <td
  style="vertical-align: top; background-color: rgb(204, 204, 204);">Specifies
 the data format used for generating the
-event. The following three options are possible: "MIDAS", "YBOS" and
-"FIXED".
+event. The following two options are possible: "MIDAS" and "FIXED".
 The format must agree with the way the event is composed in the 
 Equipment @ref FE_tbl_ReadoutRoutine "readout routine".  
 It tells the system how to interpret an event when it
@@ -381,7 +380,7 @@ may contain the  @ref FE_tbl_InitString "Init String".
 format is done from one the three available formats.
 </li>
       <center>
-      <div style="text-align: left;"> MIDAS, YBOS or FIXED data format can be
+      <div style="text-align: left;"> MIDAS or FIXED data format can be
 mixed at the frontend level, but the data logger (mlogger) is not able
 to handle this format diversity on a event-by-event basis.  <b>In
 practice 

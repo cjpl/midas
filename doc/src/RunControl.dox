@@ -650,7 +650,7 @@ Clients:  MStatus/koslx0         Logger/koslx0          Lazy_Tape/koslx0
           CHV/pcch02             MChart1/umelba         ODBEdit/koslx0          
           CHAOS/vwchaos          ecl/koslx0             Speaker/koslx0          
           MChart/umelba          targetFE/pcch02        HV_MONITOR/umelba       
-          SUSIYBOS/koslx0        History/kosal2         MStatus1/dasdevpc  
+          SUSI/koslx0            History/kosal2         MStatus1/dasdevpc  
      
 *------------------------------------------------------------------------------*
 @endcode
@@ -666,7 +666,7 @@ snap-shot of the event. Its use is particularly powerful during experimental set
 <br>In addition \b mdump has
 the capability to operate on data save-set files stored on disk or tape.
 The main \b mdump restriction is the fact that it works only for events formatted
-in @ref FE_bank_construction "banks" (i.e.: MIDAS, YBOS banks).
+in @ref FE_bank_construction "banks" (i.e.: MIDAS banks).
 
 - <b> Arguments </b> for Online use
   - [-h ] : help for online use.
@@ -680,11 +680,9 @@ in @ref FE_bank_construction "banks" (i.e.: MIDAS, YBOS banks).
   - [-i id ] : Event Id.
   - [-j ] : Display bank header only.
   - [-k id ] : Event mask.
-     \>\>\> -i and -k are valid for YBOS ONLY if EVID bank is present in the event
   - [-l number ] : Number of consecutive event to display (def:1).
   - [-m mode] : Display mode either Bank or Raw (def:B)
 
-  - [-p path] : Path for file composition (see -c)
   - [-s ] : Data transfer rate diagnositic.
   - [-w time] : Insert wait in [sec] between each display.
   - [-x filename ] : Input channel. data file name of data device. (def:online)
@@ -694,12 +692,8 @@ in @ref FE_bank_construction "banks" (i.e.: MIDAS, YBOS banks).
 
 - Additional <b> Arguments </b> for Offline
   - [-x -h ] : help for offline use.
-  - [-t type ] : Bank format (Midas/Ybos).
-     \>\>\> if -x is a /dev/xxx, -t has to be specified.
-  - [-r \#] : skip record(YBOS) or event(MIDAS) to \#.
+  - [-t type ] : Bank format (Midas).
   - [-w what] :  Header, Record, Length, Event, Jbank_list (def:E)
-     \>\>\> Header & Record are not supported for MIDAS as it has no physical record  structure.
- 
  
 - <b> Usage </b>
 mdump can operate on either data stream (online) or on save-set data files.

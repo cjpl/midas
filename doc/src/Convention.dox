@@ -14,7 +14,7 @@ sections("Glossary","Convention","DocIndex"); // last section; top of this secti
 WARNING - this page is under construction
 </span>
 -->
-\bStyle<br>
+\b Style<br>
 <span class ="new"> New (@ref NDF) should appear like this</span><br>
 <span class ="odb"> ODB paths should appears like this  </span><br>
 <span class ="js">JavaScript should appear like this  </span><br>

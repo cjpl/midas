@@ -22,14 +22,11 @@ as well as the different @ref BO_Environment_variables options for its operation
 - By default, Midas is built with a minimum of pre-compiler flags. But the @ref Makefile 
 contains options for the user to apply customization by enabling internal options 
 already available in the package.
- - @ref BO_YBOS_VERSION_3_3, @ref BO_INCLUDE_FTPLIB , @ref BO_INCLUDE_ZLIB , 
-  @ref BO_SPECIFIC_OS_PRG
-
-  <!-- EVID_TWIST no information obsolete ?? -->
+ - @ref BO_INCLUDE_FTPLIB , @ref BO_INCLUDE_ZLIB , @ref BO_SPECIFIC_OS_PRG
 
 - Other flags are avaiable at the application level:
  - @ref BO_HAVE_CAMAC , @ref BO_HAVE_ROOT , @ref BO_HAVE_HBOOK , @ref BO_HAVE_MYSQL , 
-  @ref BO_USE_EVENT_CHANNEL ,  @ref BO_DM_DUAL_THREAD , @ref BO_USE_INT , @ref BO_MIDAS_MAX_EVENT_SIZE
+   @ref BO_USE_INT , @ref BO_MIDAS_MAX_EVENT_SIZE
 
 - By default the midas applications are built for use with dynamic library 
 \b libmidas.so. If static build is required the whole package can be built using the 
@@ -77,13 +74,6 @@ enabled. It has to be applied to the Makefile for the frontend examples too.
 This flag can be used at the command prompt for individual application built.
 @code
 make USERFLAGS=-static linux/bin/mstat
-@endcode
-
-<hr> @section BO_MIDAS_PREF_FLAGS MIDAS_PREF_FLAGS
-This flag is for internal global Makefile preference.
-Included in the \b OSFLAGS.
-@code
-MIDAS_PREF_FLAGS  = -DYBOS_VERSION_3_3 -DEVID_TWIST
 @endcode
 
 <hr> @section BO_HAVE_CAMAC HAVE_CAMAC
@@ -147,28 +137,7 @@ FTP support "INCLUDE_FTPLIB" . Applications such as the @ref F_mlogger_task "mlo
 <hr> @section BO_INCLUDE_ZLIB INCLUDE_ZLIB
 The applications @ref F_lazylogger_task "lazylogger", @ref RC_mdump_task "mdump" can be built with \b zlib.a
 in order to gain direct access to the data within a file with extension
-\b mid.gz or \b ybs.gz. By default this option is disabled except for the system analyzer
-core code \b mana.c.
-@code
-make USERFLAGS=-DINCLUDE_ZLIB linux/lib/ybos.o
-make USERFLAGS=-static linux/bin/mdump
-@endcode
-
-<hr> @section BO_YBOS_VERSION_3_3 YBOS_VERSION_3_3
-The default build for ybos support is version 4.0.
-If a lower version is required, include the flag \b YBOS_VERSION_3_3
-during compilation of the ybos.c
-@code
-make USERFLAGS=-DYBOS_VERSION_3_3 linux/lib/ybos.o
-@endcode
-
-<hr> @section BO_DM_DUAL_THREAD DM_DUAL_THREAD
-Valid only under VxWorks. This flag enable the dual thread task when running the
-frontend code under VxWorks. The main function calls are the dm_xxxx in @ref midas.c
-(Contact Pierre for more information).
-
-<hr> @section BO_USE_EVENT_CHANNEL USE_EVENT_CHANNEL
-To be used in conjunction with the @ref BO_DM_DUAL_THREAD.
+\b mid.gz. By default this option is disabled except for the system analyzer core code \b mana.c.
 
 <hr> @section BO_USE_INT USE_INT
 In @ref mfe.c. Enable the use of interrupt mechanism. This option is so far only valid

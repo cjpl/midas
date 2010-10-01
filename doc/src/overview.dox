@@ -135,7 +135,7 @@ The frontend program is composed of a general framework which is experiment-inde
 and a set of template routines for the user to fill in. This program will:
 - Register the given \em Equipment(s) list to a specific Midas experiment.
 - Provide the means of collecting data from hardware sources defined by each Equipment Read function.
-- Gather these data in a known format (e.g. Fixed, Midas, Ybos) for each equipment.
+- Gather these data in a known format (e.g. Fixed, Midas) for each equipment.
 - Send these data to the buffer manager either locally or remotely.
 - Periodically collect statistics of the acquisition task, and send them to the Online Database.
 
@@ -174,8 +174,8 @@ The data logger is a client running on the backend computer receiving events fro
 saving them onto disk, tape or via FTP to a remote computer.
 It supports several parallel logging channels with individual event selection criteria.
 Data can currently be written in five different formats:
-<em> MIDAS binary, YBOS binary, ASCII, ROOT and DUMP </em>
-(see @ref FE_Midas_format, @ref FE_YBOS_format).
+<em> MIDAS binary, ASCII, ROOT and DUMP </em>
+(see @ref FE_Midas_format).
 
 Basic functionality of the logger includes:
 - Run Control based on:

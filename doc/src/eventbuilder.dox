@@ -75,7 +75,7 @@ handle the building of an event based on the identical buffer name found in
 the equipment list <b> if the frontend equipment type includes the  
 @ref FE_tbl_EqEb "EQ_EB" flag </b>.
 
-\Note that the "event fragments" used by the event builder are not to be confused with the  @ref FE_fragmented_event "fragmented event"
+@Note that the "event fragments" used by the event builder are not to be confused with the  @ref FE_fragmented_event "fragmented event"
 mechanism.
 
 \anchor idx_event_fragment
@@ -199,7 +199,7 @@ EBuilder                        DIR
         Event ID                WORD    1     2     65h  0   RWD  1
         Trigger mask            WORD    1     2     65h  0   RWD  1
         Buffer                  STRING  1     32    65h  0   RWD  SYSTEM
-        Format                  STRING  1     32    65h  0   RWD  YBOS
+        Format                  STRING  1     32    65h  0   RWD  MIDAS
         Event mask              DWORD   1     4     65h  0   RWD  3
         hostname                STRING  1     64    3h   0   RWD  myhost
     Statistics                  DIR
@@ -211,8 +211,8 @@ EBuilder                        DIR
             Settings            DIR
                 Event ID        WORD    1     2     65h  0   RWD  1
                 Trigger mask    WORD    1     2     65h  0   RWD  65535
-                Buffer          STRING  1     32    65h  0   RWD  YBUF1
-                Format          STRING  1     32    65h  0   RWD  YBOS
+                Buffer          STRING  1     32    65h  0   RWD  BUF1
+                Format          STRING  1     32    65h  0   RWD  MIDAS
                 Event mask      DWORD   1     4     65h  0   RWD  1
             Statistics          DIR
                 Events sent     DOUBLE  1     8     3h   0   RWD  653423
@@ -222,8 +222,8 @@ EBuilder                        DIR
             Settings            DIR
                 Event ID        WORD    1     2     65h  0   RWD  5
                 Trigger mask    WORD    1     2     65h  0   RWD  65535
-                Buffer          STRING  1     32    65h  0   RWD  YBUF2
-                Format          STRING  1     32    65h  0   RWD  YBOS
+                Buffer          STRING  1     32    65h  0   RWD  BUF2
+                Format          STRING  1     32    65h  0   RWD  MIDAS
                 Event mask      DWORD   1     4     65h  0   RWD  2
             Statistics          DIR
                 Events sent     DOUBLE  1     8     3h   0   RWD  653423

@@ -13,10 +13,8 @@ sections("RunControl","FrontendOperation","DataAnalysis");
 
 <br>
 <br>
-Excluding the  @ref FE_FIXED_event_readout "FIXED" format, Midas supports two different data formats in the frontend so far. A possible new candidate would be the
-NeXus format, but presently no implementation has been developed.
+Excluding the  @ref FE_FIXED_event_readout "FIXED" format, Midas doesn't support YBOS dat format anymore.
 - @ref FE_Midas_format
-- @ref FE_YBOS_format
 
 Note that a frontend cannot write data directly into ROOT format. A conversion to ROOT may be done from one of the 
 supported formats (see  @ref FE_tbl_Format "equipment list" for details).
@@ -85,90 +83,6 @@ A tape can therefore be identified as a MIDAS formatted tape.
 The routine tape_copy() in the utility mtape.c is an example of how to read
 a tape in MIDAS format.
 
-\anchor idx_YBOS_format
-\anchor YBOS_format  <!-- c code needs this -->
-<hr> @section FE_YBOS_format YBOS format
-As mentioned earlier the YBOS documentation is available at the following URL
-address:
-<a href="http://www-cdf.fnal.gov/offline/ybos/ybos.html">Ybos site</a>
-Originally YBOS is a collection of FORTRAN functions which facilitate the
-manipulation of group of data. It also describes a mode of encoding/storing
-data in an organized way.
-YBOS defines specific ways for:
-- Gathering related data (bank structure).
-- Gathering banks structure (logical record).
-- Gathering/Writing/Reading logical record from/to storage device such as disk
-or tape. (Physical record).
-
-YBOS is organized on a 4-byte alignment structure.
-
-The YBOS library function provides all the tools for manipulation of the above
-mentioned elements in a independent Operating System like.
-But the implementation of the YBOS part in Midas does not use any reference to
-the YBOS library code. Instead only the strict necessary functions  have to be
-re-written in C and incorporated into the Midas package.
-This has been motivated by the fact that only a sub-set of function is
-essential to the operation of:
-- The front-end code: for the composition of the YBOS event (bank structure, logical record).
-- The data logger: for writing data to storage device (physical record).
-
-This Midas/YBOS implementation restricts the user to a subset of the YBOS
-package only for the front-end part.
-It doesn't prevent him/her to use the full YBOS library for stand alone
-program accessing data file written by Midas. 
-
-The YBOS implementation under Midas has the following restrictions:
-- Single leveled bank structures only (no recursive bank allowed).
-- Bank structure of the following type: ASCII, BINARY, WORD, DOUBLE WORD, IEEE FLOATING.
-- No mixed data type bank structure allowed.
-
-- Logical Record format (Event Format)
-In the YBOS terminology a logical record refers to a collection of YBOS
-bank while in the Midas front-end, it can be referred to as an event.
-The logical record consists of a logical record length of a 32bit-word
-size followed by a single or collection of YBOS bank.
-The logical record length counts the number of double word (32bit word)
-composing the record without counting itself.
-
-YBOS uses "double word" unit for all length references.
-
-- [Bank Format]
-The YBOS bank is composed of a bank header 5 double long words followed by
-the data section which has to end on a 4 bytes boundary.
-
- * <center> Ybos Event and bank headers with data block.
- *  \image html yEHBH.jpg
- * </center> 
-
-The bank length parameter corresponds to the size of the data section in double
-word count + 1.
-The supported bank type are defined in the ybos.h file see
-@ref FE_YBOS_Bank_Types. 
-
-- [Physical Record (Tape/Disk Format)]
-  The YBOS physical record structure is based on a fixed block size
-  (8190 double words) composed of a physical record header followed by data
-  from logical records.
-
- * <center> Ybos Physical record structure with data block.
- *  \image html yPH.jpg
- * </center> 
-
-The Offset is computed with the following rules:
-- If the logical record fits completely in the space of the physical record,
-  the offset value in the physical record header will be 4.
-- If the block contains first the left over fragment of the previous
-  event started in the previous block, the offset will be equal to the length
-  of the physical record header + the left over fragment size.
-- If the logical record extent beyond a full block, the offset will be set to -1.
-- The mark of the end of file is defined with a logical record length set to -1.
-
-<!-- History format F_History_format moved to History section in Features -->
-
-\anchor end
-
-<br>
-<!-- Navigation -->
 \htmlonly
 <script type="text/javascript">
 // pages parameters: back index next {top bottom}
