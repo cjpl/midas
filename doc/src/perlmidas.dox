@@ -1,0 +1,474 @@
+<!-- ------------ P E R L  M I D A S   P A G E  ------- -->
+/*! \page  RC_mhttpd_perlrc  Examples of MPET Perlscripts for run control 
+<br>
+
+\htmlonly
+<script type="text/javascript">
+pages( "RC_mhttpd_defining_user_buttons",  "RunControl","RC_mhttpd_Main_Status_page#RC_mhttpd_status_User_buttons", "RC_mhttpd_perlrc",  "end" ); // back index next {top bottom}
+sections("Features", "RunControl","FrontendOperation"); // last section; top of this section; next section
+</script>
+\endhtmlonly
+ 
+Part of the run control perlscripts for MPET experiment at TRIUMF (written by Vladimir Rykov) are reproduced below. The script
+@ref  RC_mhttpd_perlrc_script calls a script called @ref  RC_mhttpd_perlmidas_script to access the ODB.
+
+\NOTE @ref  RC_mhttpd_perlmidas_script may be of interest to users who wish to interact with the ODB through scripts. 
+ 
+
+
+@section   RC_mhttpd_perlmidas_script perlmidas.pl
+
+\code
+# common subroutines
+use strict;
+use warnings;
+##############################################################
+sub MIDAS_env
+# set up proper MIDAS environment...
+##############################################################
+{
+    our ($MIDAS_HOSTNAME,$MIDAS_EXPERIMENT,$ODB_SUCCESS,$DEBUG);
+    our ($CMDFLAG_HOST, $CMDFLAG_EXPT);
+
+    $ODB_SUCCESS=0;
+
+    $MIDAS_HOSTNAME = $ENV{"MIDAS_SERVER_HOST"};
+    if (defined($MIDAS_HOSTNAME) &&   $MIDAS_HOSTNAME ne "")
+    {
+        $CMDFLAG_HOST = "-h $MIDAS_HOSTNAME";
+    }
+    else
+    {
+        $MIDAS_HOSTNAME = "";
+        $CMDFLAG_HOST = "";
+    }
+
+    $MIDAS_EXPERIMENT = $ENV{"MIDAS_EXPT_NAME"};
+    if (defined($MIDAS_EXPERIMENT) &&   $MIDAS_EXPERIMENT ne "")
+    {
+        $CMDFLAG_EXPT = "-e ${MIDAS_EXPERIMENT}";
+    }
+    else
+    {
+        $MIDAS_EXPERIMENT = "";
+        $CMDFLAG_EXPT = "";
+    }
+
+}
+
+
+##############################################################
+sub MIDAS_sendmsg
+##############################################################
+{
+# send a message to odb message logger
+    my ($name, $message) =  @_;
+
+    our ($MIDAS_HOSTNAME,$MIDAS_EXPERIMENT,$ODB_SUCCESS,$DEBUG);
+    our ($CMDFLAG_HOST, $CMDFLAG_EXPT);
+    our ($COMMAND, $ANSWER);
+
+    my $status;
+    my $host="";
+    my $dquote='"';
+    my $squote="'";
+    my $command="${dquote}msg ${name} ${squote}${message}${squote}${dquote}";
+    print "name=$name, message=$message\n";
+    print "command is: $command \n";
+
+    $COMMAND ="`odb ${CMDFLAG_EXPT} ${CMDFLAG_HOST} -c ${command}`";
+    $ANSWER=`odb ${CMDFLAG_EXPT} ${CMDFLAG_HOST} -c ${command}`;
+    $status=$?;
+    chomp $ANSWER;  # strip trailing linefeed
+    if($DEBUG)
+    {
+	print "command: $COMMAND\n";
+	print " answer: $ANSWER\n";
+    }
+
+    if($status != $ODB_SUCCESS) 
+    { # this status value is NOT the midas status code
+	print "send_message:  Failure status returned from odb msg (status=$status)\n";
+    }
+    return;
+}
+
+sub strip
+{
+# removes / from end of string, // becomes /
+    my $string=shift;
+    $string=~ (s!//!/!g);
+    $string=~s!/$!!;
+    print "strip: now \"$string\"\n";
+    return ($string);
+}
+
+sub MIDAS_varset
+##############################################################
+{
+# set a value of an odb key
+    my ($key, $value) =  @_;
+
+    our ($MIDAS_HOSTNAME,$MIDAS_EXPERIMENT,$ODB_SUCCESS,$DEBUG);
+    our ($CMDFLAG_HOST, $CMDFLAG_EXPT);
+    our ($COMMAND, $ANSWER);
+
+    my $status;
+    my $host="";
+    my $dquote='"';
+    my $squote="'";
+    my $command="${dquote}set ${squote}${key}${squote} ${squote}${value}${squote}${dquote}";
+    print "key=$key, new value=${value}\n";
+    print "command is: $command \n";
+
+    $COMMAND ="`odb ${CMDFLAG_EXPT} ${CMDFLAG_HOST} -c command`";
+    $ANSWER=`odb ${CMDFLAG_EXPT} ${CMDFLAG_HOST} -c $command `;
+    $status=$?;
+    chomp $ANSWER;  # strip trailing linefeed
+    if($DEBUG)
+    {
+	print "command: $COMMAND\n";
+	print " answer: $ANSWER\n";
+    }
+
+    if($status != $ODB_SUCCESS) 
+    { # this status value is NOT the midas status code
+	print "send_message:  Failure status returned from odb msg (status=$status)\n";
+    }
+    return;
+}
+
+sub MIDAS_varget
+##############################################################
+{
+# set a value of an odb key
+    my ($key) =  @_;
+
+    our ($MIDAS_HOSTNAME,$MIDAS_EXPERIMENT,$ODB_SUCCESS,$DEBUG);
+    our ($CMDFLAG_HOST, $CMDFLAG_EXPT);
+    our ($COMMAND, $ANSWER);
+
+    my $status;
+    my $host="";
+    my $dquote='"';
+    my $squote="'";
+    my $command="${dquote}ls -v ${squote}${key}${squote}${dquote}";
+    print "key=$key\n";
+    print "command is: $command \n";
+    
+    $COMMAND ="`odb ${CMDFLAG_EXPT} ${CMDFLAG_HOST} -c command`";
+    $ANSWER=`odb ${CMDFLAG_EXPT} ${CMDFLAG_HOST} -c $command `;  
+    $status=$?;
+    chomp $ANSWER;  # strip trailing linefeed
+    if($DEBUG)
+    {
+	print "command: $COMMAND\n";
+	print " answer: $ANSWER\n";
+    }
+
+    if($status != 0) 
+    { # this status value is NOT the midas status code
+	print "send_varset  Failure status returned from odb msg (status=$status)\n";
+    }
+    return $ANSWER;
+}
+
+sub MIDAS_dirlist
+##############################################################
+{
+# return a directory list of directory given by odb key
+    my ($key) =  @_;
+
+    our ($MIDAS_HOSTNAME,$MIDAS_EXPERIMENT,$ODB_SUCCESS,$DEBUG);
+    our ($CMDFLAG_HOST, $CMDFLAG_EXPT);
+    our ($COMMAND, $ANSWER);
+
+    my $status;
+    my $host="";
+    my $dquote='"';
+    my $squote="'";
+    my $command="${dquote}ls ${squote}${key}${squote}${dquote}";
+    print "key=$key\n";
+    print "command is: $command \n";
+    
+    $COMMAND ="`odb ${CMDFLAG_EXPT} ${CMDFLAG_HOST} -c command`";
+    $ANSWER=`odb ${CMDFLAG_EXPT} ${CMDFLAG_HOST} -c $command `;  
+    $status=$?;
+    chomp $ANSWER;  # strip trailing linefeed
+    if($DEBUG)
+    {
+	print "command: $COMMAND\n";
+	print " answer: $ANSWER\n";
+    }
+
+    if($status != 0) 
+    { # this status value is NOT the midas status code
+	print "send_varset  Failure status returned from odb msg (status=$status)\n";
+    }
+    return $ANSWER;
+}
+
+sub MIDAS_startrun
+##############################################################
+{
+# start MIDAS run
+    my ($key) =  @_;
+
+    our ($MIDAS_HOSTNAME,$MIDAS_EXPERIMENT,$ODB_SUCCESS,$DEBUG);
+    our ($CMDFLAG_HOST, $CMDFLAG_EXPT);
+    our ($COMMAND, $ANSWER);
+
+    our ($SCANLOG_FH);
+
+    my $status;
+    my $host="";
+    my $dquote='"';
+    my $squote="'";
+    my $command="${dquote}start now${dquote}";
+    print "command is: $command \n";
+
+    #sleep(10);
+
+    $COMMAND ="`odb ${CMDFLAG_EXPT} ${CMDFLAG_HOST} -c ${command}`";
+    $ANSWER=`odb ${CMDFLAG_EXPT} ${CMDFLAG_HOST} -c ${command}`;
+    $status=$?;
+    chomp $ANSWER;  # strip trailing linefeed
+    if($DEBUG)
+    {
+        print "command: $COMMAND\n";
+        print " answer: $ANSWER\n";
+
+	#print $SCANLOG_FH "status: $status\n";
+        #print $SCANLOG_FH "command: $COMMAND\n";
+        #print $SCANLOG_FH " answer: $ANSWER\n";
+
+    }
+
+    if($status != 0)
+    { # this status value is NOT the midas status code
+        print "startrun:  Failure status returned from odb msg (status=$status)\n";
+	print $SCANLOG_FH " answer: $ANSWER\n";
+
+    }
+    return $ANSWER;
+}   
+1;
+\endcode
+
+
+
+<br><hr><br>
+
+
+ @section RC_mhttpd_perlrc_script  perlrc.pl
+\code
+ #!/usr/bin/perl
+
+################################################################
+#
+#  PerlRC
+#
+#  MIDAS piggyback perl script that is exectuted upon completion
+#  of a run. It checks its parameters, modifies the MIDAS variables
+#  as required, and starts a new run. This way it can run through
+#  different DAQ settings. Implemented scans:
+#  1) Scan1D - scans a set of variables from beginning values
+#     to ending values. All valiables are changed simultaneously.
+#  2) Scan2D - scans 2 sets of variables.
+#  3) SettingsSwitch - switches between different settings sets
+#     typically to be used to switch between ion species.
+#
+#  V. Ryjkov
+#  June 2008
+#
+################################################################
+
+require "/home/mpet/vr/perl/PerlRC/perlmidas.pl";
+
+our $DEBUG = true;
+our $PERLSCAN_PREF = "/PerlRC";
+our $PERLSCAN_CONTROLVARS = $PERLSCAN_PREF . "/ControlVariables";
+our $PERLSCAN_START = $PERLSCAN_PREF . "/RunControl/RCActive";
+our $PERLSCAN_NRUNS = $PERLSCAN_PREF . "/RunControl/RCTotalRuns";
+our $PERLSCAN_CURRUN = $PERLSCAN_PREF . "/RunControl/RCCurrentRun";
+our $SCANLOG_PATH = "/data/mpet/PerlRC.log";
+our $SCANLOG_FH;
+our $MIDAS_RUNNO = "/Runinfo/Run number";
+my  $PERLSCAN_SCANTYPE = $PERLSCAN_PREF . "/RunControl/RCType";
+
+MIDAS_env();
+# MIDAS_sendmsg("test","run stop");
+my $ScanStart  =MIDAS_varget($PERLSCAN_START);
+my $ScanType   =MIDAS_varget($PERLSCAN_SCANTYPE);
+my $NRuns      =MIDAS_varget($PERLSCAN_NRUNS);
+my $CurrentRun =MIDAS_varget($PERLSCAN_CURRUN);
+my $retval;
+my $MIDASrunno;
+
+open(SCANLOG,">>${SCANLOG_PATH}");
+$SCANLOG_FH=\*SCANLOG;
+
+if(scalar(@ARGV)==1 && $ARGV[0] =~ /start/) {
+    MIDAS_varset($PERLSCAN_START,'y');
+    $ScanStart = "y";
+}
+if(scalar(@ARGV)==1 && $ARGV[0] =~ /stop/) {
+    MIDAS_varset($PERLSCAN_START,'n');
+    $ScanStart = "n";
+}
+if( $ScanStart eq "y") {
+    if( $CurrentRun == 0) {
+	print $SCANLOG_FH "=== NEW PerlRC scan. Scan type is \"${ScanType}\" ===\n";
+	print $SCANLOG_FH "===    Number of runs in this scan is ${NRuns}    ===\n";
+    }
+    if( $CurrentRun == $NRuns) {
+	print $SCANLOG_FH "=== Finished PerlRC scan ===\n";
+	print $SCANLOG_FH "============================\n";
+    }
+    if( ++$CurrentRun <= $NRuns ) {
+	$MIDASrunno=MIDAS_varget($MIDAS_RUNNO);
+	$MIDASrunno++;
+	print $SCANLOG_FH "<Run #${MIDASrunno}> ";
+	MIDAS_varset($PERLSCAN_CURRUN,$CurrentRun);
+	for ($ScanType) {
+	    if    (/Scan1D/)   {$retval=Scan1D(); }     # do something
+	    elsif (/Scan2D/)   {$retval=Scan2D(); }     # do something else
+	    elsif (/TuneSwitch/) {$retval=TuneSwitch(); } # do something else
+	}
+	if($retval != 0) {
+	    MIDAS_varset($PERLSCAN_CURRUN,0);
+	    MIDAS_varset($PERLSCAN_START,"n");
+	    print $SCANLOG_FH "!!!#### Aborting scan! ####!!!\n";
+	}
+	else {
+	    sleep(1);
+	    #print $SCANLOG_FH "pausing 10 sec...\n";
+	    MIDAS_startrun();
+	    #print $SCANLOG_FH "start the run\n";
+	}
+    }
+    else {
+	MIDAS_varset($PERLSCAN_CURRUN,0);
+	MIDAS_varset($PERLSCAN_START,"n");
+    }
+}
+else {
+    if(scalar(@ARGV)==2 && $ARGV[0] =~ /tune/) {
+	SwitchToTune($ARGV[1]);
+    }
+}
+close(SCANLOG);
+
+sub Scan1D
+{
+
+    ............
+
+
+}    
+
+
+sub SetControlVar
+{
+    our $SCANLOG_FH;
+    our $PERLSCAN_CONTROLVARS;
+    my ($varname,$varvalue)=@_;
+    my $retval;
+    my $varpath;
+
+    #print $SCANLOG_FH "variablename: $varname \n";
+
+    $varpath=MIDAS_varget($PERLSCAN_CONTROLVARS . "/" . $varname);
+    if($varpath =~ /^key (.*) not found/) {
+	print $SCANLOG_FH "! Control variable ${varname}(${1}) is not listed in ${PERLSCAN_CONTROLVARS}\n";
+	return -4;
+    }
+
+    .............
+    
+    
+    val=MIDAS_varset($varpath,$varvalue);
+	if($retval =~ /^key not found/) {return -5;}
+    }
+    return 0;
+}
+
+sub SwitchToTune
+{
+    our $SCANLOG_FH;
+    our $PERLSCAN_CONTROLVARS;
+    our $PERLSCAN_PREF;
+    my $PERLSCAN_TUNEDIR = $PERLSCAN_PREF . "/Tunes";
+    my ($tunename)=@_;
+    my $retval;
+    my $varpath;
+    my $varval;
+    my $cvarname;
+
+    $retval = MIDAS_dirlist($PERLSCAN_TUNEDIR . "/" . $tunename);
+    if($retval =~ /^key not found/){
+	print $SCANLOG_FH "! Could not locate tune ${tunename} in the tune directory ${PERLSCAN_TUNEDIR}\n";
+	return -7;
+    }
+    my @TuneVars=split(/\n/,$retval);
+    foreach (@TuneVars) {
+	if (/^(.+\S)\s{2,}.*/) {
+	    $cvarname = $1;
+	    $varval = MIDAS_varget($PERLSCAN_TUNEDIR . "/" . $tunename . "/" .$cvarname);
+	    $retval = SetControlVar($cvarname, $varval);
+	    if($retval < 0) {return $retval;}
+	}
+	else {
+	    print $SCANLOG_FH "! Cannot decipher tune variable list, offending line: $_\n";
+	    return -8;
+	}
+	sleep(1);
+    }
+    return 0;
+}
+
+sub Scan2D
+{
+   .................
+}
+
+
+sub TuneSwitch
+{   
+    our  ($PERLSCAN_PREF, $PERLSCAN_START);
+    our $SCANLOG_FH;
+    my $PERLSCAN_TUNESWITCHDIR = "/RunControl/TuneSwitch";
+    my $PERLSCAN_TUNESLIST = $PERLSCAN_PREF . $PERLSCAN_TUNESWITCHDIR .  "/TunesList";
+    my $PERLSCAN_TUNEIDX = $PERLSCAN_PREF . $PERLSCAN_TUNESWITCHDIR .  "/CurrentTuneIndex";
+    my $PERLSCAN_TUNENAME = $PERLSCAN_PREF . $PERLSCAN_TUNESWITCHDIR .  "/CurrentTuneName";
+
+    my $TunesList = MIDAS_varget($PERLSCAN_TUNESLIST);
+    my $TuneIdx = MIDAS_varget($PERLSCAN_TUNEIDX);
+    my $TuneName = MIDAS_varget($PERLSCAN_TUNENAME);
+    
+    my @tunes = split(/\s*;\s*/,$TunesList);
+    print "tunes length= ",scalar(@tunes),"\n";
+    if( ++$TuneIdx > scalar(@tunes) ) {
+	    $TuneIdx=1;
+    }
+    MIDAS_varset($PERLSCAN_TUNEIDX,$TuneIdx);
+
+    $retval=SwitchToTune($tunes[$TuneIdx-1]);
+    if($retval < 0) {return $retval;}
+    MIDAS_varset($PERLSCAN_TUNENAME,$tunes[$TuneIdx-1]);
+    print $SCANLOG_FH "Tune is \"",$tunes[$TuneIdx-1],"\"\n";
+    return 0;
+}
+\endcode
+
+
+\htmlonly
+<script type="text/javascript">
+pages( "RC_mhttpd_defining_user_buttons",  "RunControl","RC_mhttpd_Main_Status_page#RC_mhttpd_status_User_buttons", "RC_mhttpd_perlrc",  "" ); // back index next {top bottom}
+sections("Features", "RunControl","FrontendOperation"); // last section; top of this section; next section
+</script>
+\endhtmlonly
+<br>
+\anchor end
+<!-- end of page RC_mhttpd_perlrc -->
+*/

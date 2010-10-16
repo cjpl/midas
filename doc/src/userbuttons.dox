@@ -1,0 +1,180 @@
+
+<!-- ------------ D E F I N I N G   U S E R   B U T T O N S      P A G E  ------- -->
+/*! \page  RC_mhttpd_defining_user_buttons Defining User Buttons on the Status Page
+<br>
+
+\htmlonly
+<script type="text/javascript">
+pages( "RC_mhttpd_Main_Status_page#RC_mhttpd_status_User_buttons",  "RunControl","RC_mhttpd_Start_page", "RC_mhttpd_defining_user_buttons",  "end" ); // back index next {top bottom}
+sections("Features", "RunControl","FrontendOperation"); // last section; top of this section; next section
+</script>
+\endhtmlonly
+ 
+
+@section RC_odb_script_example1 Example 1: creation of a User-button; parameters passed to the associated script 
+The <b> example </b> below shows the ODB  <span class="odb">/script/dac</span> subdirectory.
+   The user-button \b "dac" associated with this subdirectory is shown on the 
+@ref RC_mhttpd_pol_status "example status page".
+
+   The first key in the  <span class="odb">dac</span> subdirectory is the string key <span class="odb">cmd</span> which contains the name and path of
+the script to be executed (in this case, a perl script). This script is located on the local host computer 
+on which the experiment is running. The subsequent keys are parameters input to the script.
+@code
+[local:pol:R]/>ls "/script/dac"
+cmd                             /home/pol/online/perl/change_mode.pl
+include path                    /home/pol/online/perl
+experiment name -> /experiment/name
+                                pol
+select mode                     1h
+
+mode file tag                   none
+[local:pol:R]/>  
+@endcode
+When the user-button labelled \b "dac" is pressed, the script \b "change_mode.pl"
+ will be executed with the following key contents as parameters, equivalent to the
+command:
+@code
+  "/home/pol/online/perl/change_mode.pl  /home/pol/online/perl pol 1h mode"
+@endcode
+<br>
+
+The following is part of the code of the script \b "change_mode.pl" :
+@code
+# input parameters :
+
+our ($inc_dir, $expt, $select_mode, $mode_name ) = @ARGV;
+our $len = $#ARGV; # array length
+our $name = "change_mode" ; # same as filename
+our $outfile = "change_mode.txt"; # path will be added by file open function
+our $parameter_msg = "include path , experiment , select_new_mode  mode_name";
+our $nparam = 4;  # no. of input parameters
+our $beamline = $expt; # beamline is not supplied. Same as $expt for bnm/qr, pol
+############################################################################
+# local variables:
+my ($transition, $run_state, $path, $key, $status);
+
+# Inc_dir needed because when script is invoked by browser it can't find the
+# code for require
+
+unless ($inc_dir) { die "$name: No include directory path has been supplied\n";}
+$inc_dir =~ s/\/$//;  # remove any trailing slash
+require "$inc_dir/odb_access.pl";
+require "$inc_dir/do_link.pl";
+
+# init_check.pl checks:
+#   one copy of this script running
+#   no. of input parameters is correct
+#   opens output file:
+#
+require "$inc_dir/init_check.pl"; 
+
+# Output will be sent to file $outfile (file handle FOUT)
+# because this is for use with the browser and STDOUT and STDERR get set to null
+
+
+print FOUT  "$name starting with parameters:  \n";
+print FOUT  "Experiment = $expt, select new mode = $select_mode;  load file mode_name=$mode_name \n";
+
+unless ($select_mode)
+{
+    print FOUT "FAILURE: selected mode  not supplied\n";
+        odb_cmd ( "msg","$MERROR","","$name", "FAILURE:  selected mode not supplied " ) ;
+        unless ($status) { print FOUT "$name: Failure return after msg \n"; }
+        die  "FAILURE:  selected mode  not supplied \n";
+
+}
+unless ($select_mode =~/^[12]/)
+{
+    print_3 ($name,"FAILURE: invalid selected mode ($select_mode)",$MERROR,1);
+}
+
+etc.
+
+@endcode
+
+
+@section RC_odb_script_example2 Example 2: MPET experiment run controller
+This example is from the MPET experiment at TRIUMF, which uses a sophisticated run controller. This includes perlscripts actived by
+user buttons. The experiment can be set to perform a number of consecutive runs without user intervention, changing some condition(s) between each run.
+The results are written to a log file.
+
+It involves the use of large number of user-buttons on the Main Status
+page to activate the perlscripts  (see Figure 1). Clicking on one of these buttons causes a user-defined shell-script to be
+run with a particular parameter. 
+
+
+ * <br><br><br>
+ * <center> 
+ * <span class="image">Figure 1 Main Status page of MPET experiment
+ *  \image html mpet_status_only.png
+ * </span>
+ * </center> 
+ * <br><br><br>
+
+The user-buttons are defined in the ODB
+<span class="odb">/Script</span> tree (see Figure 2).
+All activate the shell-script <span style="font-style: italic;">perlrc.sh</span> with
+the appropriate parameter.  The first two user-buttons labelled "Start PerlRC" and "Stop PerlRC" start and stop the run control
+respectively.  These access parameters read from the ODB to determine the scan type, the number of runs to be performed, etc.
+The other buttons "Tune..." are used to set up run parameters into particular known states or "Tunes".
+
+<br>
+ * <br><br><br>
+ * <center> 
+ * <span class="image">Figure 2 /Script ODB tree for the MPET experiment
+ *  \image html mpet_script.png
+ * </span>
+ * </center> 
+ * <br><br><br>
+
+This script calls the perlscript <span
+ style="font-style: italic;">perlrc.pl,</span> passing through the
+parameter. (Alternatively, this could have been done by  @ref RC_odb_script_tree "passing the parameter" directly to the perlscript, eliminating
+the intermediate shell-script).
+
+The following image shows the ODB parameters associated with the run control user buttons.
+
+ * <br><br><br>
+ * <center> 
+ * <span class="image">Run Control ODB parameters for the MPET experiment
+ *  \image html mpet_status.png
+ * </span>
+ * </center> 
+ * <br><br><br>
+ <ul>
+  <li>Clicking on <span style="color: rgb(51, 102, 255);">ODB...PerlRC...RunControl...Scan2D</span>
+shows the RunControl Parameters</li>
+  <li>Clicking on<span style="color: rgb(51, 102, 255);">
+ODB...PerlRC...RunControl...TuneSwitch</span> shows the Tuning
+Parameters</li>
+</ul>
+
+<br>
+<hr>
+<br>
+
+@subsection RC_odb_script_ex2_perlscript MPET perlscripts to perform run control
+
+
+   - \subpage    RC_mhttpd_perlrc     <!--  \level+2  subpage defined within a subsection --> 
+
+The scripts interact with the ODB through a library @ref RC_mhttpd_perlmidas_script . This may be of general interest. 
+
+
+ \htmlonly
+<script type="text/javascript">
+pages( "RC_mhttpd_Main_Status_page#RC_mhttpd_status_User_buttons",  "RunControl","RC_mhttpd_perlrc", "RC_mhttpd_defining_user_buttons",  "" ); // back index next {top bottom}
+sections("Features", "RunControl","FrontendOperation"); // last section; top of this section; next section
+</script>
+\endhtmlonly
+
+<br>
+\anchor end
+
+<!-- end of page RC_mhttpd_defining_user_buttons -->
+
+*/
+
+
+
+
