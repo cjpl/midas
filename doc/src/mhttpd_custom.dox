@@ -3,6 +3,8 @@
 
 <!--      subpage  custom_webpage.dox  - examples of fancy custom pages
           subpage  RC_mhttpd_activate (this file)
+          subpage  RC_mhttpd_custom_js_lib   --> file mhttpd_custom_features.dox
+               subpage  RC_mhttpd_js  JS library  --> file mhttpd_js.dox
           subpage  RC_mhttpd_custom_features --> file mhttpd_custom_features.dox 
                              subpage  RC_mhttpd_js  JS library
                              subpage  RC_mhttpd_custom_ODB_access  file mhttpd_custom_odb_access.dox - access the odb
@@ -45,13 +47,13 @@ essential parameters of the controlled experiment in a more compact way.  A cust
 
 Two ways of implementing custom pages are available:
 <ol>
-  <li> Internal  
+  <li> \b Internal  
   <ul>
       <li>  The html code is fully stored in the Online Database (ODB). 
       <li>  Limited capability, size restricted. 
       <li>  The page is web editable. 
    </ul>
-  <li> External
+  <li> \b External
   <ul> 
       <li>ODB contains links to external html or Javascript document(s). 
       <li> Multiple custom pages are supported,
@@ -59,12 +61,13 @@ Two ways of implementing custom pages are available:
   </ul>
 </ol>
 <br>
-External pages are more commonly used, hence most of the examples in this section are those of
-external pages.  All the features described are available for both internal and external pages. 
-An example of an internal page is shown  @ref RC_mhttpd_Internal "here". 
+ External pages are more commonly used, hence most of the <b>examples in this section are those of
+external</b> pages.  All the features described are available for both internal and external pages. 
+An example of an \b internal page is shown  @ref RC_mhttpd_Internal "here". 
 
 
  - \subpage RC_mhttpd_Activate
+ - \subpage  RC_mhttpd_custom_js_lib
  - \subpage RC_mhttpd_custom_features
 
 <br>
@@ -89,7 +92,7 @@ sections("Features", "RunControl","FrontendOperation"); // last section; top of 
 \htmlonly
 <script type="text/javascript">
 // pages parameters: back index next {top bottom}
-pages( "RC_mhttpd_Custom_page", "RC_section_index","RC_mhttpd_custom_features", "RC_mhttpd_Activate",  "end" );
+pages( "RC_mhttpd_Custom_page", "RC_section_index","RC_mhttpd_custom_js_lib", "RC_mhttpd_Activate",  "end" );
 sections("Features", "RunControl","FrontendOperation"); // last section; top of this section; next section
 </script>
 \endhtmlonly
@@ -99,10 +102,11 @@ sections("Features", "RunControl","FrontendOperation"); // last section; top of 
 <span class="note">
 In order to activate a  custom page from the within the Midas web interface, the pages
 must be listed in the ODB under the optional</span>  <span class="odb">/Custom</span>
-<span class="note"> tree as described below for 
-@ref RC_odb_custom_external_example  "external"   or @ref RC_odb_custom_internal_example  "internal"  pages.</span>
+<span class="note"> tree as described below. This applies to 
+@ref RC_odb_custom_external_example  "external"  and  @ref RC_odb_custom_internal_example  "internal"  custom pages,
+as explained below.</span>
 
- The  <span class="odb">/Custom</span> tree must be created by the user, e.g. using @ref RC_odbedit_task "odbedit"
+ The  <span class="odb">/Custom</span> tree must be created by the user, e.g. using @ref RC_odbedit_utility "odbedit"
 @code
 odbedit
 [local:midas:S] mkdir Custom
@@ -110,30 +114,30 @@ odbedit
 \anchor idx_mhttpd_buttons_custom
 \anchor idx_ODB_tree_custom
 @section RC_odb_custom_tree  The /Custom ODB tree
-\Note the   <span class="odb">/Custom</span> tree is applicable only to  @ref RC_mhttpd "mhttpd", and ignored by 
-@ref RC_odbedit "odbedit".
+\Note Features involving the <span class="odb">/Custom</span> tree is applicable only to  @ref RC_mhttpd "mhttpd", and ignored by 
+@ref RC_odbedit "odbedit" , which has no web capabilities.
 
 <br>
 The optional ODB  <span class="odb">/Custom</span> tree may contain
- -  links to \b local external custom web pages created by the user (see @ref remote "below" 
+ -  links to \b local \b external custom web pages created by the user (see @ref remote "below" 
 for \b remote \b external pages)
  -  HTML content of an \b internal custom web page created by the user.
  -  \b images subtree (explained @ref  RC_mhttpd_custom_image "later") used to specify images for custom pages 
 
 If keys are defined in this tree, except where noted @ref RC_odb_custom_keynames "below",  
-the names of the keys will appear as  <span class="new">custom-buttons</span>  @ref ndf_dec_2009  (or @ref RC_mhttpd_Alias_page "custom-links")
-in the 
-<span class="cl"> mhttpd</span>  @ref RC_mhttpd_pol_status_example "Main Status page". By clicking on one of these
+the names of the keys will appear as  <span class="new">custom-buttons</span> in versions after @ref ndf_dec_2009
+(or @ref RC_mhttpd_Alias_page "custom-links" in earlier versions) on the 
+<span class="utility"> mhttpd</span>  @ref RC_mhttpd_pol_status_example "Main Status page". By clicking on one of these
 alias-buttons, the custom page will be visible in a new frame.
 <br>
 
 @subsection RC_odb_custom_keynames Keynames in the /Custom directory
 
-There are two characters that have special meaning if they are the last character of the keyname:
+There are two characters that have special meaning if they are the \b last character of the keyname:
  - The character <b>"&"</b> forces the page to be opened within the current frame. 
 If this character is omitted, the page will be opened in a new frame (default). 
 
- - The character <b>"!"</b> suppresses the link appearing on the main status page with the Alias-links. This can be used to
+ - The character <b>"!"</b> suppresses the link appearing on the main status page as a button (or link). This can be used to
 provide external webpages initially hidden from the user, such as code for pop-ups, or to access a file of Javascript functions
 needed by other custom pages.
 
@@ -224,7 +228,7 @@ See  @ref RC_mhttpd_custom_status for more information and examples.
 \htmlonly
 <script type="text/javascript">
 // pages parameters: back index next {top bottom}
-pages( "RC_mhttpd_Custom_page", "RC_section_index","RC_mhttpd_custom_features", "RC_mhttpd_Activate",  "" );
+pages( "RC_mhttpd_Custom_page", "RC_section_index","RC_mhttpd_custom_js_lib", "RC_mhttpd_Activate",  "" );
 sections("Features", "RunControl","FrontendOperation"); // last section; top of this section; next section
 </script>
 \endhtmlonly

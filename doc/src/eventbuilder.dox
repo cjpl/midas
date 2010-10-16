@@ -11,10 +11,10 @@ sections("RunControl","FrontendOperation","DataAnalysis");
 \endhtmlonly
 
 <br>
-\anchor idx_mevb-task
-\anchor idx_event_builder_task-see-mevb
+\anchor idx_mevb-utility
+\anchor idx_event_builder_utility-see-mevb
 
-<hr> @section FE_mevb_task mevb - event builder task
+<hr> @section FE_mevb_utility mevb - event builder utility
 
 \b mevb is an event builder application which takes the Midas data output from several frontends,
 and assembling them into a new overall Midas event.
@@ -34,7 +34,7 @@ serial number, followed by all the expected event fragments.
 The composed event is then sent to the next stage which is usually the
 data logger (mlogger).
 
-The @ref RC_mhttpd_task will present the status of the event builder as an extra equipment
+The @ref RC_mhttpd_utility will present the status of the event builder as an extra equipment
 with its corresponding statistical information.
 
 - <b> Arguments </b>
@@ -57,8 +57,8 @@ with its corresponding statistical information.
 
 @section FE_eb Introduction to Event building in Midas
 
-Midas supports event building through a dedicated @ref FE_mevb_task 
-application. Similar to the @ref FE_frontend_task, the \b mevb application
+Midas supports event building through a dedicated @ref FE_mevb_utility 
+application. Similar to the @ref FE_frontend_utility, the \b mevb application
 requires the definition of an equipment structure which describes its mode
 of operation. 
 <br>The set of parameter for this equipment is limited to:
@@ -69,8 +69,8 @@ of operation.
 - Data format (should match the source data format).
 
 Based on the given buffer name provided at the startup time through the 
-<em> -b buffer_name </em> argument of the @ref FE_mevb_task "mevb task",
-the mevb task will scan all the equipments and 
+<em> -b buffer_name </em> argument, the @ref FE_mevb_utility "mevb task",
+will scan all the equipments and 
 handle the building of an event based on the identical buffer name found in 
 the equipment list <b> if the frontend equipment type includes the  
 @ref FE_tbl_EqEb "EQ_EB" flag </b>.
@@ -83,7 +83,8 @@ mechanism.
 
 It is possible that in case of multiple frontends, the same "fragment" code may run in the different
 hardware frontends. In order to prevent having to build nFragment different frontend tasks, the 
-<b> "-i index" </b> argument given when starting the @ref FE_frontend_task "frontend tasks" will replicate the same application image with the necessary dynamic modification required for the proper Event Building operation.
+<b> "-i index" </b> argument given when starting the @ref FE_frontend_utility "frontends" will replicate
+the same application image with the necessary dynamic modification required for the proper Event Building operation.
 
 The index can be passed to the frontend application either by this argument, or by environment variable.
 @ref BO_MIDAS_FRONTEND_INDEX. 
@@ -188,7 +189,7 @@ This section comes from odbstruct.dox and may be more up-to-date than the next s
 -->
 \todo Event Builder tree - there are two versions that need combining !!
 
-The Event Builder tree is created by @ref FE_mevb_task and is placed in the  
+The Event Builder tree is created by @ref FE_mevb_utility and is placed in the  
 Equipment list.
 
 @code

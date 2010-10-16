@@ -1,4 +1,4 @@
-/*! @page Intro Introduction
+/*! @page Intro SECTION 2: Introduction
 <!-- Section Intro
 
  -->
@@ -80,7 +80,7 @@ See @ref FE_Hardware .
 
 As CAMAC modules are 
 slowly phased out, VME based modules replace them.
-\todo Is this statement still true??... No cPCI modules have yet been included in our physics 
+No cPCI modules have yet been included in our physics 
 experiments. 
 
 \anchor idx_data_analysis

@@ -1,5 +1,4 @@
-/*! @page RunControl Run Control
-
+/*! @page RunControl SECTION 5: Run Control
 <!-- Section:      RUN CONTROL   -->
 <br>
 \htmlonly
@@ -99,9 +98,20 @@ In order to change from one state to another, Midas provides four basic
 
 Midas provides three <b> State Codes </b> (defined in midas.h)  for the three run states (Stopped, Paused and Running).
 The current State of an experiment is available under the @ref RC_ODB_RunInfo_Tree.
-  - STATE_STOPPED 
-  - STATE_PAUSED  
-  - STATE_RUNNING 
+
+<table style="text-align: left; width: 25%;" border="0" cellpadding="2"
+cellspacing="2">
+<tr>
+<td colspan="1" rowspan="1" style=" text-align: left;" > <b>Transition</b> <br>
+</td>
+<td colspan="1" rowspan="1" style=" text-align: left;">
+<b>Value</b><br>
+</td>
+</tr>
+<tr><td>STATE_STOPPED</td><td>1</td></tr>  
+<tr><td>STATE_PAUSED</td><td>2</td></tr>   
+<tr><td>STATE_RUNNING</td><td>3</td></tr>
+</table>
 
 and four <b> Transition Codes </b> for the four Transitions: 
 
@@ -364,7 +374,7 @@ in a frontend (see @ref FE_Deferred_Transition "setup Deferred Transition" for f
 Basic information about the state of the current run is available in the 
 @ref RC_ODB_RunInfo_Tree . This information is displayed on the 
 @ref  RC_mhttpd_minimal_status_page  "Main Status page of mhttpd" or can viewed with 
-@ref RC_odbedit_task "odbedit" as shown @ref RC_ODB_RunInfo_Tree "below" .
+@ref RC_odbedit_utility "odbedit" as shown @ref RC_ODB_RunInfo_Tree "below" .
 
 
 @subsection RC_ODB_RunInfo_Tree ODB /RunInfo Tree
@@ -403,9 +413,9 @@ ODB Key
 </td>
 <td style="vertical-align: top; background-color: rgb(204, 204, 255); font-weight: bold; text-align: center;"> 
 Explanation
-</td>
+</td></tr>
 <tr>
-<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
  State 
 </td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;"> 
@@ -418,7 +428,7 @@ Specifies the state of the current run (see @ref RC_state_transition) .
 </td>
 </tr>
 <tr>
-<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
 Online Mode
 </td>
 <td style="vertical-align: top;  font-weight: normal; text-align: left;"> 
@@ -429,7 +439,7 @@ Specifies the expected acquisition mode.
 </td>
 </tr>
 <tr>
-<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
 Run number
 </td>
 <td style="vertical-align: top;  font-weight: normal; text-align: left;"> 
@@ -438,7 +448,7 @@ Run number
 </td>
 </tr>
 <tr>
-<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
 Transition in progress
 </td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;"> 
@@ -447,7 +457,7 @@ Transition in progress
 </td>
 </tr>
 <tr>
-<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
 Requested transition
 </td>
 <td style="vertical-align: top;  font-weight: normal; text-align: left;"> 
@@ -455,7 +465,7 @@ Requested transition
 </td>
 </tr>
 <tr>
-<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
 Start Time
 </td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;"> 
@@ -463,7 +473,7 @@ Start Time
 </td>
 </tr>
 <tr>
-<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;"> 
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;"> 
 Start Time binary
 </td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;"> 
@@ -472,7 +482,7 @@ Specifies in a binary format at the time at which the
 </td>
 </tr>
 <tr>
-<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;"> 
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;"> 
 Stop Time
 </td>
 <td style="vertical-align: top;  font-weight: normal; text-align: left;"> 
@@ -481,7 +491,7 @@ Specifies in an ASCII format the time at which the last run has
 </td>
 </tr>
 <tr>
-<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;"> 
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;"> 
 Stop Time binary
 </td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;"> 
@@ -525,8 +535,8 @@ Users must have some way of controlling the experiment (i.e. starting and stoppi
 run parameters etc.) and of determining the progress of the run (e.g. whether the run started 
 successfully, whether data is being taken and saved, and whether any error conditions have occurred).
 <br>
-Two options for <b> Run Control </b> are provided in the Midas package. They are @ref RC_odbedit_task "odbedit",
-a program with a simple command line interface, and @ref RC_mhttpd_task "mhttpd", the web-based 
+Two options for <b> Run Control </b> are provided in the Midas package. They are @ref RC_odbedit_utility "odbedit",
+a program with a simple command line interface, and @ref RC_mhttpd_utility "mhttpd", the web-based 
 run control program. 
 <br>
 \b mhttpd is the usual choice for experimenters, since it provides a graphical
@@ -537,8 +547,8 @@ electronic logbook, custom pages and alias-links.  However, it has limited funct
 and simpler to use, and is a fully functional odb editor (hence its name). It has limited monitoring
 capability. 
 <br>
-Other utilities for monitoring are also provided, such as @ref RC_mstat_task "mstat", a simple monitoring utility, and 
-@ref RC_mdump_task "mdump" which can dump the raw data. 
+Other utilities for monitoring are also provided, such as @ref RC_mstat_utility "mstat", a simple monitoring task, and 
+@ref RC_mdump_utility "mdump" which can dump the raw data. 
 <br>
 
 Various keys in the ODB can be customized for Run Control. This involves creating and/or editing keys using odbedit or
@@ -588,34 +598,34 @@ sections("Features", "RunControl","FrontendOperation"); // last section; top of 
 The most powerful tool for \b monitoring a Midas experiment is of course @ref RC_mhttpd "mhttpd", used for
 both Run Control and Monitoring. However, it does not (yet) cover every feature needed, and the Midas system also
 provides several other utilities for monitoring aspects of the data acquistion system. These
-include  @ref RC_mstat_task "mstat"  to display the run statistics, and @ref RC_mdump_task "mdump", to dump the raw data, which is particularly
+include  @ref RC_mstat_utility "mstat"  to display the run statistics, and @ref RC_mdump_utility "mdump", to dump the raw data, which is particularly
 useful for debugging. These utilities do provide information without having to use a browser.
 
  - @ref RC_mhttpd "Monitoring and Run Control using the Midas Web Server" 
- - @ref RC_mstat_task 
- - @ref RC_mdump_task 
- - @ref RC_rmidas_task
- - @ref RC_hvedit_task
+ - @ref RC_mstat_utility 
+ - @ref RC_mdump_utility 
+ - @ref RC_rmidas_utility
+ - @ref RC_hvedit_utility
 <br>
 
 <br><hr><br>
-\anchor idx_mstat-task
-@section  RC_mstat_task  mstat - monitor application display
+\anchor idx_mstat-utility
+@section  RC_mstat_utility  mstat - monitor application display
 
 \b mstat is a simple ASCII status display. It presents in a compact form the most valuable
 information of the current condition of the Midas Acquisition system.
 The display is composed at the most of 5 sections depending on the current status
 of the experiment. The section displayed in order from top to bottom refer to:
 - Run information.
-- Equipment listing and statistics if any @ref FE_frontend_task "frontend" is active.
-- Logger information and statistics if  @ref F_mlogger_task "mlogger" is active.
-- Lazylogger status if  @ref F_lazylogger_task "lazylogger" is active.
+- Equipment listing and statistics if any @ref FE_frontend_utility "frontend" is active.
+- Logger information and statistics if  @ref F_mlogger_utility "mlogger" is active.
+- Lazylogger status if  @ref F_lazylogger_utility "lazylogger" is active.
 - Client listing.
 lock
 - <b> Arguments </b>
   - [-h ] : help
-  - [-h hostname ] : host name (see @ref RC_odbedit_task)
-  - [-e exptname ] : experiment name (see @ref RC_odbedit_task)
+  - [-h hostname ] : host name (see @ref RC_odbedit_utility)
+  - [-e exptname ] : experiment name (see @ref RC_odbedit_utility)
   - [-l ] : loop.
   Forces mstat to remain in a display loop. Enter "!" to terminate the command.
   - [-w time ] : refresh rate in second.
@@ -658,15 +668,20 @@ Clients:  MStatus/koslx0         Logger/koslx0          Lazy_Tape/koslx0
 
 <hr> 
 
-\anchor idx_mdump-task
-@section RC_mdump_task mdump       - displays event bank contents (online or offline)
+\anchor idx_mdump-utility
+@section RC_mdump_utility mdump       - displays event bank contents (online or offline)
 
 This application allows the experimenter to "peep" into the data flow in order to display a
 snap-shot of the event. Its use is particularly powerful during experimental setup.
-<br>In addition \b mdump has
+<br>In addition <span class="utility">mdump</span> has
 the capability to operate on data save-set files stored on disk or tape.
 The main \b mdump restriction is the fact that it works only for events formatted
 in @ref FE_bank_construction "banks" (i.e.: MIDAS banks).
+
+<span class="utility">mdump</span> can be built with  \b zlib.a
+in order to gain direct access to the data within a file with extension
+\b mid.gz or \b ybs.gz. See @ref BO_NEED_ZLIB Building Option.
+
 
 - <b> Arguments </b> for Online use
   - [-h ] : help for online use.
@@ -707,7 +722,7 @@ Specific help is available for each mode.
 <br><hr><br>
 @subsection RC_mdump_ex1 Example 1 mdump in offline mode
 
-The example below shows mdump operating on a file: 
+The example below shows mdump operating on a file of saved data in  @ref FE_Midas_format "MIDAS format" : 
 \code
 Tue> mdump -x run37496.mid | more
 ------------------------ Event# 0 --------------------------------
@@ -761,19 +776,38 @@ Bank:METR Length: 12(I*1)/3(I*4)/3(Type) Type:Real*4 (FMT machine dependent)
 
 <br><hr><br>
 @subsection RC_mdump_ex2 Example 2 : mdump in online mode
-\todo Missing example: mdump
 
-The example below shows mdump operating in online mode 
-- <b> Example </b>
- \code
- > mdump -j
- @endcode
+
+The examples below shows mdump operating in online mode (data is in  @ref FE_Midas_format "MIDAS format").
+  - <b> Example 1 : dump the bankheaders</b>
+\code
+> mdump -j
+[pol@isdaq01 pol]$ mdump -j
+-4506 -- Enter <!> to Exit ------- Midas Dump ---
+------------------------ Event# 1 ------------------------
+Evid:0002- Mask:0001- Serial:2- Time:0x4c9a4c2b- Dsize:832/0x340
+#banks:2 Bank list:-HI00HI01-
+\endcode
+ 
+
+- <b> Example 2 : dump the bank CYCI in decimal format  </b>
+\code
+[pol@isdaq01 pol]$ mdump -b CYCI -l 2 -f d
+-4506 -- Enter <!> to Exit ------- Midas Dump ---
+------------------------ Event# 1 ------------------------
+Bank -CYCI- not found (2) in #banks:2 Bank list:-HI00HI01-
+------------------------ Event# 2 ------------------------
+#banks:2 Bank list:-CYCIHSCL-
+Bank:CYCI Length: 36(I*1)/9(I*4)/9(Type) Type:Unsigned Integer*4
+   1->       16       16        1        0        4        0        0        0
+   9->        0
+@endcode
   
 
 <br><hr><br>
 
-@section RC_rmidas_task rmidas       - ROOT Midas application for histograms/run control
-\anchor idx_rmidas-task
+@section RC_rmidas_utility rmidas       - ROOT Midas application for histograms/run control
+\anchor idx_rmidas-utility
  Root/Midas remote GUI application for root histograms and possible run control under the ROOT.
  environment.
 
@@ -800,8 +834,8 @@ Users of this utility may also be interested in a @ref RC_ROOT_analyzer_page wri
 
 <hr>
 
- @section RC_hvedit_task hvedit       - High Voltage editor and GUI
-\anchor idx_hvedit-task
+ @section RC_hvedit_utility hvedit       - High Voltage editor and GUI
+\anchor idx_hvedit-utility
  High Voltage editor, graphical interface to the Slow Control System. Originally for
  Windows machines, but recently ported on Linux under Qt by Andreas Suter.
 
@@ -861,7 +895,7 @@ may even wish to customize their experiment further by providing   @ref RC_mhttp
 for their particular application. 
  
 Customizing the ODB for Run Control involves some or all of: 
- - setting up the @ref  RC_run_start_params
+ - setting up the @ref  RC_Edit_On_Start "Edit-on-Start" parameters
  - setting up @ref RC_Access_Control "Access control (web security)"
  - setting up @ref RC_Lock_when_Running "write-protection when running"
  - setting up @ref RC_Hot_Link "hot-links"
@@ -885,9 +919,9 @@ sections.
 <hr>
 
 \anchor idx_ODB_tree_Experiment
-@section RC_Experiment_tree The ODB /Experiment tree
+@section RC_ODB_Experiment_Tree The ODB /Experiment tree
 
-When initially created by the Midas installation, the ODB /Experiment tree contains the following keys:
+When initially created by the Midas installation, the ODB <span class="odb">/Experiment</span> tree contains the following keys:
 
 \code
 [local:t2kgas:S]/>ls -rlt /experiment
@@ -902,60 +936,255 @@ Experiment                      DIR
 
 The meaning of these keys is explained @ref  RC_Experiment_tree_keys "below".
 
-\anchor idx_ODB_tree_Experiment_Customize
-@subsection  RC_customize_experiment_tree Customizing parameters under the /Experiment tree
-
-Several of the default parameters shown above can be customized. The Midas Buffer sizes can be optimized
-(see  @ref FE_event_buffer_size "buffer sizes").
 <br>
-\anchor customize_mhttpd_run_buttons
-<span class="new">The key  <span class="odb">Menu Buttons</span> was added in  @ref ndf_dec_2009 to allow
-the  @ref  RC_mhttpd_status_menu_buttons  that appear on the mhttpd @ref RC_mhttpd_Main_Status_page
-to be customized. </span>
-By default,  <span class="odb">Menu Buttons</span> contains
+@subsection RC_Experiment_tree_keys Explanation of the keys in the ODB /Experiment tree 
+\anchor RC_customize_mhttpd_run_buttons
+This table also includes some of the <b>optional keys</b> that the user may create.
 
-<br>
-<b>Start, ODB, Messages, ELog, Alarms, Programs, History, MSCB, Config, Help</b>
-<br>
-
-which is the standard set (<span  class="new">the old \b CNAF key was replaced by the \b MSCB key in @ref ndf_dec_2009 </span>).
-
-Users can customize the set of buttons by removing unnecessary buttons or by changing their order.
-\Note The \b "Start" entry above actually causes the whole set of  @ref RC_mhttpd_status_RC_buttons  to appear, 
-depending on the current run state.
+\Note that parameters  <span class="odb">Menu Buttons</span> and  <span class="odb">Hide Run Buttons</span> allow the customization of the
+run control buttons appearing on the @ref RC_mhttpd_Main_Status_page . They have no effect when running @ref RC_odbedit_utility "odbedit";
 
 
-<br>
-<span class="new">
-A further optional key <span class="odb">/Experiment/Hide Run Buttons</span> can also be created
-(available since @ref ndf_nov_2009 )  which, if set to "y", will 
-hide the @ref RC_mhttpd_status_RC_buttons on the mhttpd  @ref RC_mhttpd_Main_Status_page .
-</span>
-<br>
-\anchor idx_ODB_tree_Experiment_Parameter-comments
-In order to provide extra  flexibility, the user can optionally create the following 
-subdirectories under the /Experiment tree if they do not exist already. These must have the names
-<b>
+<table style="text-align: left; width: 100%;" border="1" cellpadding="2" cellspacing="2">
+<caption>Above: Explanation of keys in /Experiment ODB tree</caption>
+<tr align="center">
+<td colspan="4" rowspan="1"
+style="vertical-align: top; background-color: rgb(204, 204, 255); font-weight: bold; font-size: 125% ;">
+Keys in /Experiment ODB tree<br>
+</td>
+</tr>
+<tr>
+<td colspan="2"
+style="vertical-align: top; font-weight: bold; text-align: center; background-color: rgb(204, 204, 255);">Key<br>
+</td>
+<td
+style="vertical-align: top; font-weight: bold; text-align: center; background-color: rgb(204, 204, 255);">Type<br>
+</td>
+<td
+style="vertical-align: top; font-weight: bold; text-align: center; background-color: rgb(204, 204, 255);">Explanation<br>
+</td>
+</tr>
+<!-- line 1 -->
+<tr>
+<td
+style="vertical-align: top; font-weight: bold; background-color: lightyellow;">Name<br>
+</td>
+<td
+style="vertical-align: top; font-weight: bold; background-color: lightyellow;"><br>
+</td>
+<td style="vertical-align: top;">STRING<br>
+</td>
+<td style="vertical-align: top;">Contains the name of the
+experiment. Filled automatically when the ODB is created.</td>
+</tr>
 
-  -  "Parameter Comments/"
-  -  "Lock when running/"
-  -  "Security/"
 
-</b>These keynames have a particular meaning for the Midas system which will be described  @ref RC_ODB_Experiment_Tree "below".
+<!-- line 2 Buffer Sizes -->
+<tr>
+<td
+style="vertical-align: top; font-weight: bold; background-color: lightyellow;">Buffer
+Sizes<br>
+</td>
+<td
+style="vertical-align: top; font-weight: bold; background-color: lightyellow;"><br>
+</td>
+<td style="vertical-align: top;">DIR<br>
+</td>
+
+<td style="vertical-align: top;">Contains the sizes of the \b Midas \b Buffers for the experiment. Created with default values. The sizes can be
+changed to optimize the memory usage. See @ref FE_event_buffer_size  for details. 
+</td>
+</tr>
+
+<tr>
+<td
+style="vertical-align: top; font-weight: bold; background-color: lightyellow;"> <br>
+</td>
+<td
+style="vertical-align: top; font-weight: bold; background-color: lightyellow;">SYSMSG
+</td>
+<td style="vertical-align: top;">DWORD
+</td>
+<td style="vertical-align: top;">Size of SYSMSG buffer</td>
+</tr>
+
+<tr>
+<td
+style="vertical-align: top; font-weight: bold; background-color: lightyellow;"><br>
+</td>
+<td
+style="vertical-align: top; font-weight: bold; background-color: lightyellow;">SYSTEM
+</td>
+<td style="vertical-align: top;">DWORD
+</td>
+<td style="vertical-align: top;">Size of SYSTEM buffer </td>
+</tr>
 
 
-<br>
 
-\todo    NOTE: "Run Parameters" - is there anything special about this directory??
+<!-- line 3  Menu Buttons  -->
+<tr>
+<td
+style="vertical-align: top; font-weight: bold; background-color: lightyellow;">
+\anchor experiment_menu_buttons Menu Buttons<br>
+</td>
+<td
+style="vertical-align: top; font-weight: bold; background-color: lightyellow;"><br>
+</td>
+<td style="vertical-align: top;">STRING<br>
+</td>
 
-The user may create any other keys as desired in the /Experiment tree. For example, some users find it
-convenient to create their run parameters in a subdirectory of /Experiment named 
-@ref  RC_Edit_On_Start "run parameters".
-The example below shows an /Experiment tree containing various optional keys.
+<td style="vertical-align: top;">
+This key added automatically by  mhttpd <span class="new"> (since  @ref ndf_dec_2009). </span>
+Contains  @ref  RC_mhttpd_status_menu_buttons that appear on the mhttpd @ref RC_mhttpd_Main_Status_page .
+The default set of buttons is <b>Start, ODB, Messages, ELog, Alarms, Programs, History, MSCB Config, Help</b>
+Can be  @ref RC_customize_experiment_tree "customized".
+
+</td>
+</tr>
+
+<!-- line 4  optional Hide Run Buttons  -->
+<tr>
+<td
+style="vertical-align: top; font-weight: bold; background-color: lightyellow;">
+\anchor experiment_hide_run_buttons Hide Run Buttons<br>
+</td>
+<td
+style="vertical-align: top; font-weight: bold; background-color: lightyellow;"><br>
+</td>
+<td style="vertical-align: top;">BOOL<br>
+</td>
+<td style="vertical-align: top;">
+Optional key -  hides the @ref RC_mhttpd_status_RC_buttons on the
+mhttpd Main Status Page if set to "y" <span class="new"> (since  @ref ndf_nov_2009 ). </span>
+</td>
+</tr>
+
+<!-- Line 5 -->
+<tr>
+<td
+style="vertical-align: top; font-weight: bold; background-color: lightyellow;">Edit
+on Start<br>
+</td>
+<td
+style="vertical-align: top; font-weight: bold; background-color: lightyellow;"><br>
+</td>
+<td style="vertical-align: top;">DIR<br>
+</td>
+<td style="vertical-align: top;">This subdirectory may
+contain user-defined parameters which
+will be displayed for editing at the beginning of each run.
+See @ref RC_Edit_On_Start for details.
+</td>
+</tr>
 
 
-<br><hr><br>
-@subsection  RC_ODB_Experiment_Tree  ODB Optional parameters in /Experiment tree
+<tr>
+<td
+style="vertical-align: top; font-weight: bold; background-color: lightyellow;"><br>
+</td>
+<td
+style="vertical-align: top; font-weight: bold; background-color: lightyellow;">Edit run number
+</td>
+<td style="vertical-align: top;">BOOL
+</td>
+<td style="vertical-align: top;">Optional key. If present and set to "y" will @ref RC_Prevent_Edit_RN .
+Active for \b mhttpd only (ignored by \b odbedit)  </td>
+</tr>
+
+<tr>
+<td
+style="vertical-align: top; font-weight: bold; background-color: lightyellow;"><br>
+</td>
+<td
+style="vertical-align: top; font-weight: bold; background-color: lightyellow;"><br>
+</td>
+<td style="vertical-align: top;"><br>
+</td>
+
+<td style="vertical-align: top;">Any number of user-defined keys or links may be defined (i.e. the edit-on-start parameters). See
+example  @ref RC_Experiment_Tree_Example "below" </td>
+</tr>
+
+<tr>
+<td
+style="vertical-align: top; font-weight: bold; background-color: lightyellow;">Lock
+when running<br>
+</td>
+<td
+style="vertical-align: top; font-weight: bold; background-color: lightyellow;"><br>
+</td>
+<td style="vertical-align: top;">DIR<br>
+</td>
+<td style="vertical-align: top;">An optional subdirectory
+that may be created by the user 
+</td>
+</tr>
+
+<tr>
+<td
+style="vertical-align: top; font-weight: bold; background-color: lightyellow;"><br>
+</td>
+<td
+style="vertical-align: top; font-weight: bold; background-color: lightyellow;"><br>
+</td>
+<td style="vertical-align: top;"><br>
+</td>
+
+<td style="vertical-align: top;">may contain user-defined links to keys that are to be write-protected when a run is in progress.
+See @ref RC_Lock_when_Running  for details.</td>
+</tr>
+
+<tr>
+<td
+style="vertical-align: top; font-weight: bold; background-color: lightyellow;">Parameter
+Comments<br>
+</td>
+<td
+style="vertical-align: top; font-weight: bold; background-color: lightyellow;"><br>
+</td>
+<td style="vertical-align: top;">DIR<br>
+</td>
+<td style="vertical-align: top;">Optional subdirectory may be
+created by the user.<br>
+</td>
+</tr>
+
+<tr>
+<td
+style="vertical-align: top; font-weight: bold; background-color: lightyellow;"><br>
+</td>
+<td
+style="vertical-align: top; font-weight: bold; background-color: lightyellow;"><br>
+</td>
+<td style="vertical-align: top;"><br>
+</td>
+<td style="vertical-align: top;">Optional keys may be
+created by the user to contain parameter comments associated with the  
+@ref RC_Edit_On_Start "Edit on Start" Parameters. See @ref RC_Edit_PC for details.
+Active for \b mhttpd only (ignored by \b odbedit) 
+</td>
+</tr>
+<tr>
+<td
+style="vertical-align: top; font-weight: bold; background-color: lightyellow;">Security<br>
+</td>
+<td
+style="vertical-align: top; font-weight: bold; background-color: lightyellow;"><br>
+</td>
+<td style="vertical-align: top;">DIR<br>
+</td>
+<td style="vertical-align: top;">subdirectory for user to set up
+security features. See @ref RC_Access_Control "Security" for details </td>
+</tr>
+</table>
+
+
+@subsection RC_Experiment_Tree_Example  Example of an  ODB /Experiment tree with optional subdirectories
+
+An example of a typical <span class="odb">/Experiment</span> tree  containing various optional keys is shown below.
+
+
 \code
 
 [local:pol:S]/>ls -rlt /experiment
@@ -1012,224 +1241,39 @@ Experiment                      DIR
 
   @endcode  
 
-The meaning of these keys is described in the following sections.
-
-<br><hr><br>
-@subsection RC_Experiment_tree_keys Explanation of the keys in the ODB /Experiment tree 
-
-An example of an /Experiment tree is shown @ref  RC_ODB_Experiment_Tree "above". This table
-also includes some of the optional keys that the user may create.
+The meaning of these keys is described  @ref  RC_Experiment_tree_keys "above" and in the following sections.
 
 
+\anchor idx_ODB_tree_Experiment_Customize
+\anchor idx_ODB_tree_Experiment_Parameter-comments
+@subsection  RC_customize_experiment_tree Customizing parameters under the <span class="odb">/Experiment</odb> tree
+In addition to  @ref RC_customize_mhttpd_run_buttons "customizing the run control buttons"
+to provide extra  flexibility, the user can optionally create the following 
+subdirectories under the /Experiment tree if they do not exist already. These must have the names
+<b>
 
+  -  @ref RC_Edit_On_Start "Edit on Start"
+  -  @ref RC_parameter_comments "Parameter Comments"
+  -  @ref RC_Lock_when_Running "Lock when running"
+  -  @ref RC_Access_Control "Security"
 
-<table style="text-align: left; width: 100%;" border="1" cellpadding="2"
-cellspacing="2">
-<caption>Above: Explanation of keys in /Experiment ODB tree</caption>
-<tr align="center">
-<td colspan="4" rowspan="1"
-style="vertical-align: top; background-color: rgb(204, 204, 255); font-weight: bold; font-size: 125% ;">
-Keys in /Experiment ODB tree<br>
-</td>
-</tr>
-<tr>
-<td
-style="vertical-align: top; font-weight: bold; text-align: center; background-color: rgb(204, 204, 255);">Key<br>
-</td>
-<td
-style="vertical-align: top; font-weight: bold; text-align: center; background-color: rgb(204, 204, 255);">Type<br>
-</td>
-<td
-style="vertical-align: top; font-weight: bold; text-align: center; background-color: rgb(204, 204, 255);">Contents<br>
-</td>
-<td
-style="vertical-align: top; font-weight: bold; text-align: center; background-color: rgb(204, 204, 255);">Explanation<br>
-</td>
-</tr>
-
-<!-- line 1 -->
-<tr>
-<td
-style="vertical-align: top; font-weight: bold; background-color: rgb(255, 255, 51);">Name<br>
-</td>
-<td style="vertical-align: top;">STRING<br>
-</td>
-<td style="vertical-align: top;"><br>
-</td>
-<td style="vertical-align: top;">Contains the name of the
-experiment. Filled automatically when the ODB is created.</td>
-</tr>
-
-
-<!-- line 2 Buffer Sizes -->
-<tr>
-<td
-style="vertical-align: top; font-weight: bold; background-color: rgb(255, 255, 51);">Buffer
-Sizes<br>
-</td>
-<td style="vertical-align: top;">DIR<br>
-</td>
-<td style="vertical-align: top;"><br>
-</td>
-<td style="vertical-align: top;">Contains the sizes of the \b Midas \b Buffers for the experiment. Created with default values. The sizes can be
-changed to optimize the memory usage. See @ref FE_event_buffer_size  for details. 
-</td>
-</tr>
-<tr>
-<td
-style="vertical-align: top; font-weight: bold; background-color: rgb(255, 255, 51);"> <br>
-</td>
-<td style="vertical-align: top;"> <br>
-</td>
-<td style="vertical-align: top;">SYSMSG<br> </td>
-<td style="vertical-align: top;">size of SYSMSG buffer</td>
-</tr>
-<tr>
-<td
-style="vertical-align: top; font-weight: bold; background-color: rgb(255, 255, 51);"> <br>
-</td>
-<td style="vertical-align: top;"> <br>
-</td>
-<td style="vertical-align: top;">SYSTEM </td>
-<td style="vertical-align: top;">Size of SYSTEM buffer </td>
-</tr>
-
-
-
-<!-- line 3  Menu Buttons  -->
-<tr>
-<td
-style="vertical-align: top; font-weight: bold; background-color: rgb(255, 255, 51);">
-\anchor experiment_menu_buttons Menu Buttons<br>
-</td>
-<td style="vertical-align: top;">STRING<br>
-</td>
-<td style="vertical-align: top;"><br>
-</td>
-<td style="vertical-align: top;">
-<span class="new">This key added automatically by  mhttpd (since  @ref ndf_dec_2009). </span>
-Contains  @ref  RC_mhttpd_status_menu_buttons that appear on the mhttpd @ref RC_mhttpd_Main_Status_page .
-The default set of buttons is <b>Start, ODB, Messages, ELog, Alarms, Programs, History, MSCB Config, Help</b>
-Can be  @ref RC_customize_experiment_tree "customized".
-
-</td>
-</tr>
-
-<!-- line 4  optional Hide Run Buttons  -->
-<tr>
-<td
-style="vertical-align: top; font-weight: bold; background-color: rgb(255, 255, 51);">
-\anchor experiment_hide_run_buttons Hide Run Buttons<br>
-</td>
-<td style="vertical-align: top;">BOOL<br>
-</td>
-<td style="vertical-align: top;"><br>
-</td>
-<td style="vertical-align: top;">
-<span class="new">Optional key -  hides the @ref RC_mhttpd_status_RC_buttons on the
-mhttpd Main Status Page if set to "y" (since  @ref ndf_nov_2009 ). </span>
-</td>
-</tr>
-
-<!-- Line 5 -->
-
-<td
-style="vertical-align: top; font-weight: bold; background-color: rgb(255, 255, 51);">Edit
-on Start<br>
-</td>
-<td style="vertical-align: top;">DIR<br>
-</td>
-<td style="vertical-align: top;"><br>
-</td>
-<td style="vertical-align: top;"><br>
-</td>
-</tr>
-<tr>
-<td
-style="vertical-align: top; font-weight: bold; background-color: rgb(255, 255, 51);"><br>
-</td>
-<td style="vertical-align: top;"><br>
-</td>
-<td style="vertical-align: top;">user-defined keys or links </td>
-<td style="vertical-align: top;">This subdirectory may
-contain user-defined parameters which
-will be displayed for editing at the beginning of each run. See @ref RC_run_start_params 
-for details.<br>
-The <b>Edit run number</b> key if present in this subdirectory is used to @ref RC_Prevent_Edit_RN . </td>
-</tr>
-<tr>
-<td
-style="vertical-align: top; font-weight: bold; background-color: rgb(255, 255, 51);">Lock
-when running<br>
-</td>
-<td style="vertical-align: top;">DIR<br>
-</td>
-<td style="vertical-align: top;"><br>
-</td>
-<td style="vertical-align: top;"><span> </span><br>
-</td>
-</tr>
-<tr>
-<td
-style="vertical-align: top; font-weight: bold; background-color: rgb(255, 255, 51);"><br>
-</td>
-<td style="vertical-align: top;"><br>
-</td>
-<td style="vertical-align: top;">user-defined links </td>
-<td style="vertical-align: top;">An optional subdirectory
-that may be used to write-protect ODB keys when a run is in progress.
-See @ref RC_Lock_when_Running  for details.</td>
-</tr>
-<tr>
-<td
-style="vertical-align: top; font-weight: bold; background-color: rgb(255, 255, 51);">Parameter
-Comments<br>
-</td>
-<td style="vertical-align: top;">DIR<br>
-</td>
-<td style="vertical-align: top;"><br>
-</td>
-<td style="vertical-align: top;">Optional subdirectory may be
-created by the user.<br>
-</td>
-</tr>
-<tr>
-<td
-style="vertical-align: top; font-weight: bold; background-color: rgb(255, 255, 51);"><br>
-</td>
-<td style="vertical-align: top;"><br>
-</td>
-<td style="vertical-align: top;">user-defined keys </td>
-<td style="vertical-align: top;">Optional keys may be
-created by the user to contain parameter comments associated with the  
-@ref RC_Edit_On_Start "Edit on Start" Parameters. See @ref RC_Edit_PC for details.
-</td>
-</tr>
-<tr>
-<td
-style="vertical-align: top; font-weight: bold; background-color: rgb(255, 255, 51);">Security<br>
-</td>
-<td style="vertical-align: top;">DIR<br>
-</td>
-<td style="vertical-align: top;"><br>
-</td>
-<td style="vertical-align: top;">subdirectory for user to set up
-security features. See @ref RC_Access_Control "Security" for details </td>
-</tr>
-</table>
+</b>These keynames have a particular meaning for the Midas system which will be described below.
 
 
 
 <br><hr><br>
 \anchor idx_run_start_parameters
-@section RC_run_start_params Run start parameters
+
+@subsubsection RC_Edit_On_Start Defining Edit-on-start Parameters
 
 With no optional parameters set up, i.e. with the default setup, 
-when a run is started, either by @ref RC_odbedit_task "odbedit" (see  @ref  RC_odbedit_start )
- or @ref RC_mhttpd_task "mhttpd"  (see @ref RC_mhttpd_Start_page) , a <b> TR_START transition </b> is received, 
-and the <b>run number</b> of the upcoming run will be displayed for editing. 
+when a run is started,
+ - either by the @ref RC_odbedit_utility "odbedit" command @ref  RC_odbedit_start "start"
+ - or by clicking the @ref RC_mhttpd_utility "mhttpd" start button  (see @ref RC_mhttpd_Start_page) ,
+
+a <b> TR_START transition </b> is received, and the <b>run number</b> of the upcoming run will be displayed for editing. 
 It will have been <b>automatically incremented</b> relative to the last run.  
-The following example shows a run started using odbedit. The default run number of the next run
+The following example shows a run started using <span class="utility"> odbedit</span>. The default run number of the next run
 is 30499. The user has changed this to 500.
 \code
 [local:bnmr:S]/Experiment>start
@@ -1237,21 +1281,17 @@ Run number [30499]: 500
 Are the above parameters correct? ([y]/n/q): 
 @endcode
 
-<br><hr><br>
-@section RC_run_start_params_optional Optional Parameters
-\anchor idx_ODB_edit-on-start
+
+\anchor idx_edit-on-start
 \anchor idx_ODB_tree_Experiment_Edit-on-Start-parameters
-@subsection  RC_Edit_On_Start Setting up "Edit on Start" Parameters
+
  It is often convenient to <b>display and edit additional parameters </b>
-at this time. These parameters can be made to appear every time a run starts, in
-addition to the run number. 
-
- This is
-performed by creating them or linking to them in a special subdirectory  named <b>Edit on start</b>  that the 
-user creates in  @ref  RC_ODB_Experiment_Tree.
- 
-
-These links can point to any ODB key including the logger settings. It is convenient to create a link to 
+at this time.  These parameters are known as <b>Edit-on-start</b> parameters since
+they automatically appear every time a run starts, and they are editable by the user.
+\b Edit-on-start parameters are defined  by creating them or linking to them in a special subdirectory  named
+<span class="odb">"Edit on start"</span>  that the 
+user may create in the ODB @ref  RC_ODB_Experiment_Tree "/Experiment tree".  
+Links can point to any ODB key including the logger settings. It is often convenient to create a link to 
 the logger setting which enables/disables writing of data. A quick test run can then be made without data logging,
 for example:
 \code
@@ -1273,7 +1313,7 @@ $odbedit
 
 Then the user either <b>creates the required parameters</b>, or, if the parameters already exist elsewhere in the 
 ODB, <b>creates links to the parameters</b> in the <b>Edit on start</b> subdirectory. Some users find it
-convenient to create their run parameters in a subdirectory of /Experiment named "run parameters", and
+convenient to create their run parameters in a subdirectory of /Experiment named "\b run \b parameters", and
 create links to them in the <b>Edit on start</b> subdirectory. 
 
 <br><br>The example below shows the creation of three parameters in the <b>Edit on start</b> 
@@ -1315,17 +1355,25 @@ write data                      BOOL    1     4     7s   0   RWD  /Logger/Write 
 Edit run number                 BOOL    1     4     11h  0   RWD  n
 @endcode
 
-See \b examples of starting a run with <b> edit on start </b> parameters set up, using @ref RC_EOS_example2 "odbedit" and   @ref  RC_Edit_On_Start "mhttpd" .
-<span class="note">Several extra edit-on-start features are available for mhttpd only. 
-</span> These are @ref RC_Edit_PC  and  @ref RC_Prevent_Edit_RN .
+\Note Note that the "Edit run number" feature (that prevents editing the run number) is available for <span class="utility">mhttpd</span> only. See  @ref RC_Prevent_Edit_RN .
+
+ 
+See \b examples of starting a run with <b> edit on start </b> parameters set up, using @ref RC_EOS_example2 "odbedit" and   @ref RC_mhttpd_Edit_On_Start "mhttpd" .
+
+<!-- \level+ -->
+@subsubsection RC_parameter_comments  Parameter Comments
+Optional parameter comments (in the "Parameter Comments" subdirectory can be set up to give more information about the Edit-on-Start parameters. This feature
+is only active when using  <span class="utility">mhttpd</span>. Setting up @ref RC_Edit_PC is described in the mhttpd @ref RC_mhttpd_Start_page section.
 <br><hr><br>
+
+
 \anchor idx_ODB_tree_Experiment_Lock-when-Running
-@section RC_Lock_when_Running  Lock when Running
+@subsubsection RC_Lock_when_Running  Lock when Running
 
 Often it is desirable that various experimental ODB parameters should not to be changed when a run
 is in progress, i.e. that they are set to a "read-only" mode while running.
-This can be done by creating logical links to these ODB keys in the optional directory "Lock when Running"
-in the @ref  RC_ODB_Experiment_Tree.
+This can be done by creating logical links to these ODB keys in the optional directory <b> "Lock when Running" </b>
+in the @ref  RC_ODB_Experiment_Tree. 
 <br>
   In the example below, all the parameters under the declared tree will
   be switched to read-only, thus  preventing any modification of these parameters during the run.
@@ -1341,7 +1389,7 @@ In the following example, the user attempts to change one of the read-only param
 [local:bnmr:R]/>set "/Logger/Write Data" y
 Write access not allowed
 @endcode
-For other forms of write-protection, see also @ref RC_odbedit_chmod .
+
 
 
 <br><hr><br>
@@ -1349,7 +1397,7 @@ For other forms of write-protection, see also @ref RC_odbedit_chmod .
 \anchor idx_security-see-access-control
 \anchor idx_access-control
 
-@section RC_Access_Control Access Control (Security)
+@subsubsection RC_Access_Control Access Control (Security)
 
 
 By default, there is no restriction for any user to connect locally or remotely
@@ -1362,17 +1410,22 @@ There are two levels of access restriction available each of which can be enable
 
 The user can select \b either or \b both of these security features.
 
-In addition, access control on individual keys in the experiment's ODB can be set up using the @ref  RC_odbedit_chmod , and
-write access can be restricted during a run (see  @ref RC_Lock_when_Running ).
+\Note Note that other forms of ODB access control independent of the security features is available.
+Write access can be restricted during a run (see  @ref RC_Lock_when_Running ), and
+individual keys or subdirectories in the experiment's ODB can be set "read only" with the
+<span class="utility">odbedit</span> command @ref  RC_odbedit_chmod "chmod".
+
 <br><hr><br>
 
 \anchor idx_ODB_tree_Experiment_Security
-@subsection RC_Setup_Security How to Setup Client Access Restriction 
+<!-- \level+  following should be  subsubsubsection (contents hierarchy) -->
+@subsubsection RC_Setup_Security How to Setup Client Access Restrictions
+
 \anchor idx_access-control_client
 In order provide access restriction to the experiment, a password mechanism needs to be defined. This is
 provided by the "Security" subdirectory in odb. This subdirectory 
-is automatically created (if not already present) when the command <b>passwd</b>
-  is issued in ODB as follows:
+is automatically created (if not already present) when the @ref RC_odbedit_utility "odbedit" command <b>passwd</b>
+is issued as follows:
   \code
   C:\online>odbedit
   [local:Default:S]/>cd Experiment/
@@ -1381,12 +1434,127 @@ is automatically created (if not already present) when the command <b>passwd</b>
   Retype password:<xxxx>
   @endcode 
   After running the odb command "passwd", three new sub-fields (odb keys) will be present under
-  the Security tree.
-    - Password
-    - Allowed hosts                   
-    - Allowed programs                  
+  the <span class="odb">/Experiment/Security</span> subtree.
 
-@subsubsection RC_security_allowed_hosts ODB /Security key "allowed hosts"
+<table style="text-align: left; width: 100%;" border="1" cellpadding="2"
+cellspacing="2">
+<caption>Above: Explanation of keys in ODB /Experiment/Security subtree</caption>
+<tr align="center">
+<td colspan="4" rowspan="1"
+style="vertical-align: top; background-color: rgb(204, 204, 255); font-weight: bold; font-size: 125% ;">
+Keys in ODB /Experiment/Security subtree<br>
+</td>
+</tr>
+<tr>
+<td  colspan="2"
+style="vertical-align: top; font-weight: bold; text-align: center; background-color: rgb(204, 204, 255);">Key<br>
+</td>
+<td
+style="vertical-align: top; font-weight: bold; text-align: center; background-color: rgb(204, 204, 255);">Type<br>
+</td>
+<td
+style="vertical-align: top; font-weight: bold; text-align: center; background-color: rgb(204, 204, 255);">Explanation<br>
+</td>
+</tr>
+<!-- line 1 -->
+<tr>
+<td
+style="vertical-align: top; font-weight: bold; background-color: lightyellow;">Password
+</td>
+<td
+style="vertical-align: top; font-weight: bold; background-color: lightyellow;"><br>
+</td>
+<td style="vertical-align: top;">STRING<br>
+</td>
+<td style="vertical-align: top;">Contains the encrypted password.  Key is created when @ref RC_odbedit_utility "odbedit" command <b>passwd</b> is issued.
+</td>
+</tr>
+
+
+<!-- Line 5 -->
+<tr>
+<td
+style="vertical-align: top; font-weight: bold; background-color: lightyellow;">Allowed hosts<br>
+</td>
+<td
+style="vertical-align: top; font-weight: bold; background-color: lightyellow;"><br>
+</td>
+<td style="vertical-align: top;">DIR
+</td>
+<td style="vertical-align: top;">This key is created when @ref RC_odbedit_utility "odbedit" command <b>passwd</b> is issued. Subdirectory may contain
+names of remote hosts  allowed to have free access (i.e. without password) to the current experiment. See @ref RC_security_allowed_hosts .
+</td>
+</tr>
+
+<!-- Line 6 -->
+<tr>
+<td
+style="vertical-align: top; font-weight: bold; background-color: lightyellow;"><br>
+</td>
+<td
+style="vertical-align: top; font-weight: bold; background-color: lightyellow;">pierre.triumf.ca
+</td>
+<td style="vertical-align: top;"><br>INT
+</td>
+<td style="vertical-align: top;"><br>Example - name of a host allowed password-less access to experiment (key created by the user).
+</td>
+</tr>
+
+<!-- Line 8 -->
+<tr>
+<td
+style="vertical-align: top; font-weight: bold; background-color: lightyellow;">Allowed programs
+</td>
+<td
+style="vertical-align: top; font-weight: bold; background-color: lightyellow;"><br>
+</td>
+<td style="vertical-align: top;">DIR
+</td>
+<td style="vertical-align: top;">This key is created when @ref RC_odbedit_utility "odbedit" command <b>passwd</b> is issued. Subdirectory may contain
+names of clients allowed to have free access (i.e. without password) to the current experiment.  See @ref RC_security_allowed_programs .
+</td>
+</tr>
+
+<!-- Line 9 -->
+<tr>
+<td
+style="vertical-align: top; font-weight: bold; background-color: lightyellow;"><br>
+</td>
+<td
+style="vertical-align: top; font-weight: bold; background-color: lightyellow;">mstat
+</td>
+<td style="vertical-align: top;"><br>INT
+</td>
+<td style="vertical-align: top;"><br>Example - name of a client (run from any host) allowed password-less access to the experiment (key created by the user).
+</td>
+</tr>
+
+
+
+
+<!-- Line 10 -->
+<tr>
+<td
+style="vertical-align: top; font-weight: bold; background-color: lightyellow;">Web Password
+</td>
+<td
+style="vertical-align: top; font-weight: bold; background-color: lightyellow;"><br>
+</td>
+<td style="vertical-align: top;">STRING<br>
+</td>
+<td style="vertical-align: top;">This key specifies a separate encrypted
+password for Web server access.  Key is created when @ref RC_odbedit_utility "odbedit" command <b>webpasswd</b> is issued.
+See  @ref RC_Setup_Web_Security "Web Access restriction".
+</td>
+</tr>
+
+</table>
+  
+
+                     
+<!-- \level+  subsubsubsection -->
+@subsubsection RC_security_allowed_hosts Allowed Hosts
+
 This key is a fixed directory name where names of remote hosts
   can be defined for free access to the current experiment.
   While the access restriction can make sense to deny access to outsider to a
@@ -1404,7 +1572,9 @@ This key is a fixed directory name where names of remote hosts
        where \<myHost.domain\> is to be replaced by the full IP address of the host
   requesting full clearance, e.g "pierre.triumf.ca".
 
-@subsubsection RC_security_allowed_programs ODB /Security key "allowed programs"
+
+<!-- \level+  subsubsubsection -->  
+@subsubsection RC_security_allowed_programs Allowed programs
 This key is a fixed directory name where a list of programs 
   can be defined that have full access to the ODB <em>regardless of the node they 
   are running on.</em>
@@ -1418,12 +1588,15 @@ This key is a fixed directory name where a list of programs
 
 <br><hr><br>
 \anchor idx_ODB_tree_Experiment_Security_Restrict-Web-access
-@subsection RC_Setup_Web_Security How to Setup Web Access Restriction
+@subsubsection RC_Setup_Web_Security How to Setup Web Access Restriction
 \anchor idx_access-control_web
-<small>This is only applicable to access using mhttpd (web access). Access with odbedit is unaffected.
-</small>
-Web access restriction is also provided by the "Security" subdirectory in odb. This subdirectory 
-is automatically created (if not already present) when the command <b>webpasswd</b>
+
+\Note  This section is only applicable to access using  <span class="utility">mhttpd</span> (i.e. web access). Access with <span class="utility">odbedit</span> is unaffected.
+
+
+
+Web access restriction is also provided by the \b "Security" subdirectory in odb. This subdirectory 
+is automatically created (if not already present) when the <span class="utility">odbedit</span> command <b>webpasswd</b>
   is issued in ODB as follows:
   \code
   C:\online>odbedit
@@ -1433,15 +1606,14 @@ is automatically created (if not already present) when the command <b>webpasswd<
   Retype password:<xxxx>
   @endcode 
 
-  After running the odb command webpasswd, one new sub-field (odb key) will now be present under
-  the Security tree.
-    - Web Password
+  After running \b webpasswd, one new sub-field (odb key) i.e. <b>"Web Password"</b> will be present under
+  the Security tree. If, of course, @ref RC_Setup_Security "client security" is ALSO enabled, there will now be a total of four keys present.
 
- If, of course, @ref RC_Setup_Security "client security" is ALSO enabled, there will now be a total of four keys present.
-@subsubsection RC_security_web_pw ODB /Security key "Web Password"
+<!-- \level+  subsubsubsection -->  
+ @subsubsection RC_security_web_pw Web Password
 
-This key specifies a separate password for the Web server access
-  (@ref RC_mhttpd_task ). If this field is active, the user will be requested to
+This key specifies a separate password for the Web server access via
+@ref RC_mhttpd_utility "mhttpd". If this field is active, the user will be requested to
 provide the "Web Password" when accessing the requested experiment in 
 "Write Access" mode (see  @ref RC_mhttpd_ODB_page "example").  The "Read Only Access" mode is still available to all users.
 \code
@@ -1452,8 +1624,9 @@ Web Password                    pon4@#@%SSDF2
 
 <hr>
 
-@subsection RC_Example_security Access Control setup examples
+@subsubsection RC_Example_security Access Control setup examples
 
+<!-- \level+  subsubsubsection -->  
 @subsubsection RC_Example_full_security Example of Full access control  setup for an experiment
 
 The following example shows the odb when <b>both client and web security</b> have been
@@ -1480,7 +1653,7 @@ Experiment                      DIR
 @endcode 
 
 <br><hr><br>
-
+<!-- \level+  subsubsubsection -->  
 @subsubsection RC_Example_web_security Example of Web-Only access control setup for an experiment
 
 The following example shows the odb when <b>web security only</b> has been enabled. 
@@ -1497,7 +1670,7 @@ Experiment                      DIR
 
 <hr>
 \anchor idx_ODB_tree_Experiment_Security_Remove-Access-restrictions
-@subsection RC_Remove_Security To Remove Access Restrictions
+@subsubsection RC_Remove_Security To Remove Access Restrictions
 \anchor idx_access-control_remove
  To remove the full password checking mechanism completely, the ODB security sub-tree has to
   be entirely deleted using the following command:
@@ -1558,6 +1731,9 @@ Web Password                    pon4@#@%SSDF2
 <hr>
 <br>
 
+
+
+
 @section RC_starting_clients Customize the scripts that start up and shut down the clients.
 \anchor idx_startup_script
 \anchor idx_shutdown_script
@@ -1567,8 +1743,8 @@ clients are provided in the Midas package. These must be customized for your exp
 shows  the template start-up script  \b start_daq.sh that starts  
  - a frontend
  - an analyzer, 
- - @ref F_mlogger_task "midas logger" to save the data  
- - the run-control/monitoring program @ref RC_mhttpd_task "mhttpd" 
+ - @ref F_mlogger_utility "midas logger" to save the data  
+ - the run-control/monitoring program @ref RC_mhttpd_utility "mhttpd" 
 and the template kill script \b kill_daq.sh that shuts then all down.
 
 <table
@@ -1625,7 +1801,7 @@ sleep 1
 
 @subsection RC_start_all_example Example of a start-all script
 The following is a start-all script from an experiment at TRIUMF. It can be run at any time to restart any clients that
-have stopped. Note that it also starts @ref RC_mserver_task "mserver", because the frontend is run on a remote host.
+have stopped. Note that it also starts @ref RC_mserver_utility "mserver", because the frontend is run on a remote host.
 
 \code
 #!/bin/sh
@@ -1710,26 +1886,21 @@ fi
 
 <br><hr><br>
 \anchor idx_access-control_remote
-\anchor idx_mserver-task
-@section RC_mserver_task  mserver      - Midas Remote server
+\anchor idx_mserver-utility
+@section RC_mserver_utility  mserver      - Midas Remote server
 
 
-\em mserver provides remote access to any midas client. It is needed when <b>one or more of the midas clients
-for an experiment are running on a different host</b>. In this case, an \b mserver client must be started on the host
+<span class="utility">mserver</span> provides remote access to any midas client. It is needed when <b>one or more of the midas clients
+for an experiment are running on a different host</b>. In this case, an <span class="utility">mserver</span> client must be started on the host
 where the experiment resides. 
 
-For example, if an \b mserver client is running on host isdaq01 but not on host dasdevpc2 :
+For example, if there is no <span class="utility">mserver</span> client is running on host dasdevpc2, then an attempt to run a
+client on dasdevpc2 from a remote computer (isdaq01) will result in an error message:
 \code
 [bnmr@isdaq01 ~/online]$ odb -e t2kgas -h dasdevpc2
 Cannot connect to remote host
 \endcode
-However, one can connect from dasdevpc2 to an experiment running on isdaq01
-\code
-[suz@dasdevpc2 ~]$ odbedit -e bnmr -h isdaq01
-[isdaq01:bnmr:S]/>quit
-\endcode
-
-If an mserver client is now started on dasdevpc2
+If an  <span class="utility">mserver</span> client is now started on  host dasdevpc2, 
 \code
 [suz@dasdevpc2 ~]$ mserver -D
 mserver started interactively
@@ -1740,20 +1911,27 @@ Now one can connect to the remote experiment :
 [bnmr@isdaq01 ~/online]$ odb -e t2kgas -h dasdevpc2
 [dasdevpc2:t2kgas:S]/>quit
 \endcode
-The mserver task usually runs in the
+
+The <span class="utility">mserver</span> utility usually runs in the
 background and doesn't need to be modified. In the case where debugging is required, the
-\em mserver can be started with the -d flag which will write an entry for each transaction
-appearing onto the mserver. This log entry contains the time stamp and RPC call request.
+<span class="utility">mserver</span> can be started with the -d flag which will write an entry for each transaction to
+a log file <i> /tmp/mserver.log </i> . The log entry contains the time stamp and RPC call request.
 <br>
 
-More than one mserver can be started on a system, provided they use different tcp ports. This is useful if, 
+More than one <span class="utility">mserver</span> can be started on a system, provided they use different tcp ports. This is useful if, 
 for example, different versions of Midas are in use on a single host at the same time.
-To start a version of mserver on a different port, use -p argument, 
-e.g. mserver -p XXXX
+To start a version of <span class="utility">mserver</span> on a different port, use the  -p argument, 
+e.g. mserver -p XXXX -D
 <br> 
-To connect a client to this version of mserver, use the format "hostname:port", e.g. myhost:XXXX .  
+To connect a client to this version of <span class="utility">mserver</span>, use the format "hostname:port", e.g.
+\code
+   fe_test -h lin08:7066 -e expt
+\endcode   
 <br>
-- <b> Arguments </b>
+
+@subsection RC_mserver_arguments  mserver arguments
+
+ - <b> Arguments </b>
    - [-h ] : help
    - [-s ] : Single process  server
    - [-t ] : Multi thread server
@@ -1765,7 +1943,8 @@ To connect a client to this version of mserver, use the format "hostname:port", 
 
 
 \anchor idx_ODB_tree_Programs
-@section RC_ODB_programs_tree The ODB /Programs tree
+
+@section RC_ODB_Programs_Tree The ODB /Programs tree
 
 The ODB <b>/Programs</b> tree is created by the system. It contains
 
@@ -1805,7 +1984,7 @@ mdarc_cleanup                   DIR
 The subdirectory for each client contains system information as well as task-specific characteristics, 
 such as the watchdog timeout, optionally a command to restart the task,  the optional 
 @ref RC_Alarm_System "alarm condition" etc.
-The following example shows the subdirectory for the @ref F_mlogger_task "mlogger" client:
+The following example shows the subdirectory for the @ref F_mlogger_utility "mlogger" client:
 
 \code
 [local:bnmr:S]/>ls -lt /programs/logger
@@ -1835,7 +2014,7 @@ Customizing is done individually for each client.
 The fields  <b>Execute on start run</b> and <b>Execute on stop run</b> 
 may be filled by the user with a command to be executed on the appropriate run 
 transition, for example 
- - an @ref RC_odbedit_task "odbedit"  command, to set or clear an odb parameter e.g <br> <b> odb -c 'set  "/Equipment/fifo_acq/client flags/client alarm" 0' </b>
+ - an @ref RC_odbedit_utility "odbedit"  command, to set or clear an odb parameter e.g <br> <b> odb -c 'set  "/Equipment/fifo_acq/client flags/client alarm" 0' </b>
  - or the <b> name and path of a script</b> as shown in the example above. 
  
 <table
@@ -1858,7 +2037,7 @@ Explanation
 </tr>
 <!--   line    1   programs   -->
 <tr>
-<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
 Programs
 </td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
@@ -1869,7 +2048,7 @@ Programs
 <!--   line    1.1   Execute on start run   -->
 <tr>
 <td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
-<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
 Execute on start run
 </td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
@@ -1881,7 +2060,7 @@ Contains optional command or script to be executed on START transition.
 <!--   line    1.2   Execute on stop run   -->
 <tr>
 <td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
-<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
 Execute on stop run
 </td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
@@ -1893,7 +2072,7 @@ Contains optional command or script to be executed on STOP transition (see  @ref
 <!--   line    2    client name  -->
 <tr>
 <td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
-<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
 Logger</td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;">STRING</td>
@@ -1906,7 +2085,7 @@ subdirectory for the client "Logger".
 <tr>
 <td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
-<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
 \anchor RC_programs_Required Required</td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;">BOOL</td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;">
@@ -1917,14 +2096,14 @@ and/or @ref RC_programs_Auto_restart "Auto restart" to "y",
 and supplying a @ref RC_programs_Start_command "Start command".
 If set to "n", the run will start successfully without this client running.
 <span class="note">Note that this field also changes the display in the </span>
- @ref RC_mhttpd_task "mhttpd" @ref  RC_mhttpd_Program_page.
+ @ref RC_mhttpd_utility "mhttpd" @ref  RC_mhttpd_Program_page.
 </td>
 </tr>
 <!--   line   4 watchdog     -->
 <tr>
 <td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
-<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
 \anchor RC_programs_Watchdog_timeout Watchdog timeout</td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;">INT</td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;">This value is
@@ -1941,7 +2120,7 @@ they may timeout before the operation is complete.
 <tr>
 <td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
-<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
 \anchor RC_programs_Check_interval Check interval</td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;">INT</td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;">
@@ -1953,7 +2132,7 @@ see if it is responding. See @ref  RC_programs_Watchdog_timeout "Watchdog timeou
 <tr>
 <td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
-<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
 \anchor RC_programs_Start_command Start Command</td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;">STRING</td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;">
@@ -1968,7 +2147,7 @@ using the (customized) script \anchor start-all  "start_daq.sh" .
 <tr>
 <td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
-<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
 \anchor RC_programs_Auto_start Auto start</td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;">BOOL</td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;">
@@ -1983,7 +2162,7 @@ unless @ref RC_programs_Auto_restart "Auto restart" is set to "y".
 <tr>
 <td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
-<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
 \anchor RC_programs_Auto_stop Auto stop</td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;">BOOL</td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;">
@@ -1994,7 +2173,7 @@ If this is set to "y" ...
 <tr>
 <td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
-<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
 \anchor RC_programs_Auto_restart Auto restart</td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;">BOOL</td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;">
@@ -2010,7 +2189,7 @@ See also @ref RC_programs_Auto_start "Auto start".
 <tr>
 <td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
-<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
 \anchor RC_programs_Alarm_class Alarm class</td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;">STRING</td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;">
@@ -2025,7 +2204,7 @@ to go off if the program is not running (provided both the @ref RC_alarm_system_
 <tr>
 <td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
-<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
 \anchor RC_programs_First_failed First_failed</td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;">DWORD</td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;">
@@ -2045,15 +2224,15 @@ Value filled by the System to indicate when client first failed.
 Midas provides an alarm system, which by default is turned off. When the alarm system is 
 @ref  RC_alarm_system_active  "activated" 
 and an alarm condition is detected, alarms messages are sent by the system which appear
-as an  @ref RC_mhttpd_alarm_banner "alarm banner" on the @ref RC_mhttpd_task "mhttpd" main status page, 
-and as a @ref RC_odb_alarm_msg "message" on any windows running @ref RC_odbedit_task "odbedit" clients. The alarm system is flexible and can be extensively customized for each experiment. 
+as an  @ref RC_mhttpd_alarm_banner "alarm banner" on the @ref RC_mhttpd_utility "mhttpd" main status page, 
+and as a @ref RC_odb_alarm_msg "message" on any windows running @ref RC_odbedit_utility "odbedit" clients.
+The alarm system is flexible and can be extensively customized for each experiment. 
 
 
 The Midas alarm system is built-in and part of the main experiment scheduler.
 This means no separate task is necessary to benefit from the alarm system. 
-<span class="note">This feature is active during \b ONLINE  mode \b ONLY. </span> 
-Alarm setup and activation is done
-through the Online DataBase (ODB).
+<span class="note">The Alarm feature is active during \b ONLINE  mode \b ONLY. </span> 
+Alarm setup and activation is done through the Online DataBase (ODB).
 The alarm system includes several other features such as sequencing and control of the
 experiment.
 The alarm capabilities are:
@@ -2067,16 +2246,21 @@ The alarm capabilities are:
 - @ref RC_alarms_email "email or SMS alerts" can be sent
 - Program control on run transition.
 
-The alarm system can be customized through @ref RC_odbedit_task "ODBEdit" or the  
+The alarm system can be customized through @ref RC_odbedit_utility "ODBEdit" or the  
 @ref RC_mhttpd_ODB_page "mhttpd Alarm page".  
 Some of the features (such as colour) are applicable only to \b mhttpd.
+
+The following sections describe how to use the Midas Alarm System.
+
+See also @ref RC_ODB_Alarm_system_implementation
+
 
 \anchor idx_alarm_classes
 \anchor idx_alarm_type
 \anchor idx_ODB_tree_Alarms
 \anchor  RC_alarm_classes
 \anchor  RC_alarm_type
-<hr> @section RC_ODB_Alarms_Tree ODB /Alarms Tree
+<hr> @subsection RC_ODB_Alarms_Tree ODB /Alarms Tree
 
 The <b> ODB /Alarms tree </b> contains user and system information related to alarms.
 When the ODB is created, 
@@ -2163,7 +2347,7 @@ run or spawn a detached script listed in the ODB variable
 <span class="odb">/Programs/Classes/Execute command</span>.
 This feature is used when an  @ref RC_alarms_email .
 
-@subsection RC_evaluated_alarm_condition Evaluated Alarm conditions
+@subsubsection RC_evaluated_alarm_condition Evaluated Alarm conditions
 
 The alarm \b condition for evaluated alarms is entered into the ODB key
 <span class="odb">/Alarms/Alarms/\<alarm_name\>/Condition </span>
@@ -2194,9 +2378,351 @@ The alarm is triggered if bit #2 is set in Input[0].
 
 
 
-@section RC_alarms_tree_example Examples of an /Alarms tree
 
-Part of the <b> /Alarms </b> tree is shown below using @ref RC_odbedit_task "odbedit" 
+<hr>
+
+@subsubsection RC_explanation_of_alarms_tree Meaning of the keys in the /Alarms ODB tree
+
+
+<table
+ style="text-align: left; width: 100%;" border="1" cellpadding="2"
+cellspacing="0">
+  <caption>Above: Meaning of keys in the ODB /Alarms tree.
+  </caption>
+<tr>
+<td colspan="6" style="vertical-align: top; background-color: rgb(204, 204, 255); font-weight: bold; text-align: center;">
+Keys in the ODB tree /Alarms
+</td>
+</tr>
+<tr>
+<td colspan = "5" style="vertical-align: top; background-color: rgb(204, 204, 255); font-weight: bold; text-align: center;">
+ODB Key 
+</td>
+<td style="vertical-align: top; background-color: rgb(204, 204, 255); font-weight: bold; text-align: center;"> 
+Explanation
+</td>
+</tr>
+<!--   line    1   Alarms   -->
+<tr>
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
+Alarms
+</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">DIR</td>
+
+<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
+</tr>
+<!--   line    2  Alarm system active    -->
+<tr>
+<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
+\anchor RC_alarm_system_active
+Alarm system active</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">BOOL</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">
+ <span class="note">If set to "y"the alarm system is active</span>. Set to "n" to deactivate.
+</td>
+</tr>
+
+<!--   line    3    alarms  -->
+<tr>
+<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
+Alarms</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">DIR</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">
+Sub-tree defining each individual alarm condition.</td>
+</tr>
+<!--   line    4    demo odb  -->
+<tr>
+<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
+Demo odb</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">DIR</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">
+Name of one of the defined alarms</td>
+</tr>
+<!--   line    5    active  -->
+<tr>
+<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
+\anchor RC_active 
+Active</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">BOOL</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">
+If set to "y" , this particular alarm is active.
+</td>
+</tr>
+
+<!--   line    6  triggered -->
+<tr>
+<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
+Triggered</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">INT</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">
+If non-zero, alarm is triggered. Filled by System.
+</td>
+</tr>
+
+
+<!--   line    7  type -->
+<tr>
+<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
+Type</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">INT</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">
+One of the listed  @ref  RC_alarm_types "Alarm Types"  
+</td>
+</tr>
+
+
+<!--   line    8  Check interval -->
+<tr>
+<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
+Check interval</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">INT</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">
+Frequency in seconds that alarm condition is checked
+</td>
+</tr>
+<!--   line    9  Checked last -->
+<tr>
+<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
+Checked last</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">DWORD</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">
+Written by Alarm System
+</td>
+</tr>
+
+<!--   line    10  Time triggered first -->
+<tr>
+<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
+Time triggered first</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">STRING</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">
+Written by Alarm System
+</td>
+</tr>
+<!--   line    11  Time triggered last -->
+<tr>
+<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
+Time triggered last</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">STRING</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">
+Written by Alarm System
+</td>
+</tr>
+
+<!--   line    12 Condition -->
+<tr>
+<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
+\anchor RC_condition
+Condition</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">STRING</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">
+@ref RC_evaluated_alarm_condition "Condition" on which alarm should trigger.
+</td>
+</tr>
+
+
+<!--   line    13  Alarm class -->
+<tr>
+<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
+Alarm class</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">STRING</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">
+Set to one of the existing Alarm classes, e.g. Alarm, Warning
+</td>
+</tr>
+<!--   line    14 Alarm message -->
+<tr>
+<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
+Alarm message</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">STRING</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">
+Message to be written when alarm triggers
+</td>
+</tr>
+
+<!--   line    15   classes  -->
+<tr>
+<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
+Classes</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">DIR</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">
+ Sub-tree defining each individual action to be performed by a
+  pre-defined and requested alarm.</td>
+</tr>
+
+
+<!--   line    16    warning  -->
+<tr>
+<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
+Warning</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">DIR</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">
+Name of one of the defined classes</td>
+</tr>
+
+<!--   line    17    write system msg  -->
+<tr>
+<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
+Write System Message</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">BOOL</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">
+If set to "y" a message will be sent to the System log when alarm is triggered.  
+</td>
+</tr>
+<!--   line    18    write elog msg  -->
+<tr>
+<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
+Write Elog Message</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">BOOL</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">
+If set to "y" a message will be written to the Elog when alarm is triggered   
+</td>
+</tr>
+<!--   line    19    System message interval  -->
+<tr>
+<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
+System message interval</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">INT</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">
+Interval in seconds between successive system messages when alarm is triggered
+</td>
+</tr>
+<!--   line    20    System message last  -->
+<tr>
+<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
+System message last</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">DWORD</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">
+Filled by System...
+</td>
+</tr>
+<!--   line    21    Execute cmd  -->
+<tr>
+<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
+Execute command</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">STRING</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">
+Command to be executed when alarm is triggered.
+</td>
+</tr>
+<!--   line    22    Execute last  -->
+<tr>
+<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
+Execute last</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">DWORD</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">
+<br>  
+</td>
+</tr>
+<!--   line    23    Stop run  -->
+<tr>
+<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
+Stop run</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">BOOL</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">
+<br>  
+</td>
+</tr>
+
+<!--   line    24   Display BGColor -->
+<tr>
+<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
+ Display BGColor</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">STRING</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">
+Background colour of @ref RC_mhttpd_alarm_banner  "alarm banner" (mhttpd only).
+</td>
+</tr>
+<!--   line    25    Display FGColor  -->
+<tr>
+<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
+Display FGColor</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">STRING</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">
+Foreground colour of @ref RC_mhttpd_alarm_banner  "alarm banner" (mhttpd only). 
+</td>
+</tr>
+</table>
+<br><hr><br>
+
+@subsubsection RC_alarms_tree_example Examples of an /Alarms tree
+
+Part of the <b> /Alarms </b> tree is shown below using @ref RC_odbedit_utility "odbedit" 
 (see also @ref RC_mhttpd_Alarm_page "mhttpd Alarm page").
 
 \code
@@ -2323,348 +2849,7 @@ The Classes defined for the experiment are shown below:
 @endcode
 
 
-
-<hr>
-
-@subsection RC_explanation_of_alarms_tree Explanation of the keys in the /Alarms ODB tree
-
-
-<table
- style="text-align: left; width: 100%;" border="1" cellpadding="2"
-cellspacing="0">
-  <caption>Above: Meaning of keys in the ODB /Alarms tree.
-  </caption>
-<tr>
-<td colspan="6" style="vertical-align: top; background-color: rgb(204, 204, 255); font-weight: bold; text-align: center;">
-Keys in the ODB tree /Alarms
-</td>
-</tr>
-<tr>
-<td colspan = "5" style="vertical-align: top; background-color: rgb(204, 204, 255); font-weight: bold; text-align: center;">
-ODB Key 
-</td>
-<td style="vertical-align: top; background-color: rgb(204, 204, 255); font-weight: bold; text-align: center;"> 
-Explanation
-</td>
-</tr>
-<!--   line    1   Alarms   -->
-<tr>
-<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
-Alarms
-</td>
-<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
-<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
-<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
-<td style="vertical-align: top; font-weight: normal; text-align: left;">DIR</td>
-
-<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
-</tr>
-<!--   line    2  Alarm system active    -->
-<tr>
-<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
-<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
-\anchor RC_alarm_system_active
-Alarm system active</td>
-<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
-<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
-<td style="vertical-align: top; font-weight: normal; text-align: left;">BOOL</td>
-<td style="vertical-align: top; font-weight: normal; text-align: left;">
- <span class="note">If set to "y"the alarm system is active</span>. Set to "n" to deactivate.
-</td>
-</tr>
-
-<!--   line    3    alarms  -->
-<tr>
-<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
-<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
-Alarms</td>
-<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
-<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
-<td style="vertical-align: top; font-weight: normal; text-align: left;">DIR</td>
-<td style="vertical-align: top; font-weight: normal; text-align: left;">
-Sub-tree defining each individual alarm condition.</td>
-</tr>
-<!--   line    4    demo odb  -->
-<tr>
-<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
-<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
-<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
-Demo odb</td>
-<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
-<td style="vertical-align: top; font-weight: normal; text-align: left;">DIR</td>
-<td style="vertical-align: top; font-weight: normal; text-align: left;">
-Name of one of the defined alarms</td>
-</tr>
-<!--   line    5    active  -->
-<tr>
-<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
-<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
-<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
-<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
-\anchor RC_active 
-Active</td>
-<td style="vertical-align: top; font-weight: normal; text-align: left;">BOOL</td>
-<td style="vertical-align: top; font-weight: normal; text-align: left;">
-If set to "y" , this particular alarm is active.
-</td>
-</tr>
-
-<!--   line    6  triggered -->
-<tr>
-<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
-<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
-<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
-<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
-Triggered</td>
-<td style="vertical-align: top; font-weight: normal; text-align: left;">INT</td>
-<td style="vertical-align: top; font-weight: normal; text-align: left;">
-If non-zero, alarm is triggered. Filled by System.
-</td>
-</tr>
-
-
-<!--   line    7  type -->
-<tr>
-<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
-<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
-<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
-<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
-Type</td>
-<td style="vertical-align: top; font-weight: normal; text-align: left;">INT</td>
-<td style="vertical-align: top; font-weight: normal; text-align: left;">
-One of the listed  @ref  RC_alarm_types "Alarm Types"  
-</td>
-</tr>
-
-
-<!--   line    8  Check interval -->
-<tr>
-<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
-<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
-<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
-<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
-Check interval</td>
-<td style="vertical-align: top; font-weight: normal; text-align: left;">INT</td>
-<td style="vertical-align: top; font-weight: normal; text-align: left;">
-Frequency in seconds that alarm condition is checked
-</td>
-</tr>
-<!--   line    9  Checked last -->
-<tr>
-<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
-<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
-<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
-<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
-Checked last</td>
-<td style="vertical-align: top; font-weight: normal; text-align: left;">DWORD</td>
-<td style="vertical-align: top; font-weight: normal; text-align: left;">
-Written by Alarm System
-</td>
-</tr>
-
-<!--   line    10  Time triggered first -->
-<tr>
-<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
-<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
-<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
-<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
-Time triggered first</td>
-<td style="vertical-align: top; font-weight: normal; text-align: left;">STRING</td>
-<td style="vertical-align: top; font-weight: normal; text-align: left;">
-Written by Alarm System
-</td>
-</tr>
-<!--   line    11  Time triggered last -->
-<tr>
-<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
-<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
-<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
-<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
-Time triggered last</td>
-<td style="vertical-align: top; font-weight: normal; text-align: left;">STRING</td>
-<td style="vertical-align: top; font-weight: normal; text-align: left;">
-Written by Alarm System
-</td>
-</tr>
-
-<!--   line    12 Condition -->
-<tr>
-<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
-<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
-<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
-<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
-\anchor RC_condition
-Condition</td>
-<td style="vertical-align: top; font-weight: normal; text-align: left;">STRING</td>
-<td style="vertical-align: top; font-weight: normal; text-align: left;">
-@ref RC_evaluated_alarm_condition "Condition" on which alarm should trigger.
-</td>
-</tr>
-
-
-<!--   line    13  Alarm class -->
-<tr>
-<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
-<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
-<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
-<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
-Alarm class</td>
-<td style="vertical-align: top; font-weight: normal; text-align: left;">STRING</td>
-<td style="vertical-align: top; font-weight: normal; text-align: left;">
-Set to one of the existing Alarm classes, e.g. Alarm, Warning
-</td>
-</tr>
-<!--   line    14 Alarm message -->
-<tr>
-<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
-<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
-<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
-<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
-Alarm message</td>
-<td style="vertical-align: top; font-weight: normal; text-align: left;">STRING</td>
-<td style="vertical-align: top; font-weight: normal; text-align: left;">
-Message to be written when alarm triggers
-</td>
-</tr>
-
-<!--   line    15   classes  -->
-<tr>
-<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
-<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
-Classes</td>
-<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
-<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
-<td style="vertical-align: top; font-weight: normal; text-align: left;">DIR</td>
-<td style="vertical-align: top; font-weight: normal; text-align: left;">
- Sub-tree defining each individual action to be performed by a
-  pre-defined and requested alarm.</td>
-</tr>
-
-
-<!--   line    16    warning  -->
-<tr>
-<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
-<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
-<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
-Warning</td>
-<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
-<td style="vertical-align: top; font-weight: normal; text-align: left;">DIR</td>
-<td style="vertical-align: top; font-weight: normal; text-align: left;">
-Name of one of the defined classes</td>
-</tr>
-
-<!--   line    17    write system msg  -->
-<tr>
-<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
-<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
-<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
-<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
-Write System Message</td>
-<td style="vertical-align: top; font-weight: normal; text-align: left;">BOOL</td>
-<td style="vertical-align: top; font-weight: normal; text-align: left;">
-If set to "y" a message will be sent to the System log when alarm is triggered.  
-</td>
-</tr>
-<!--   line    18    write elog msg  -->
-<tr>
-<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
-<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
-<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
-<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
-Write Elog Message</td>
-<td style="vertical-align: top; font-weight: normal; text-align: left;">BOOL</td>
-<td style="vertical-align: top; font-weight: normal; text-align: left;">
-If set to "y" a message will be written to the Elog when alarm is triggered   
-</td>
-</tr>
-<!--   line    19    System message interval  -->
-<tr>
-<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
-<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
-<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
-<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
-System message interval</td>
-<td style="vertical-align: top; font-weight: normal; text-align: left;">INT</td>
-<td style="vertical-align: top; font-weight: normal; text-align: left;">
-Interval in seconds between successive system messages when alarm is triggered
-</td>
-</tr>
-<!--   line    20    System message last  -->
-<tr>
-<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
-<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
-<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
-<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
-System message last</td>
-<td style="vertical-align: top; font-weight: normal; text-align: left;">DWORD</td>
-<td style="vertical-align: top; font-weight: normal; text-align: left;">
-Filled by System...
-</td>
-</tr>
-<!--   line    21    Execute cmd  -->
-<tr>
-<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
-<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
-<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
-<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
-Execute command</td>
-<td style="vertical-align: top; font-weight: normal; text-align: left;">STRING</td>
-<td style="vertical-align: top; font-weight: normal; text-align: left;">
-Command to be executed when alarm is triggered.
-</td>
-</tr>
-<!--   line    22    Execute last  -->
-<tr>
-<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
-<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
-<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
-<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
-Execute last</td>
-<td style="vertical-align: top; font-weight: normal; text-align: left;">DWORD</td>
-<td style="vertical-align: top; font-weight: normal; text-align: left;">
-<br>  
-</td>
-</tr>
-<!--   line    23    Stop run  -->
-<tr>
-<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
-<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
-<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
-<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
-Stop run</td>
-<td style="vertical-align: top; font-weight: normal; text-align: left;">BOOL</td>
-<td style="vertical-align: top; font-weight: normal; text-align: left;">
-<br>  
-</td>
-</tr>
-
-<!--   line    24   Display BGColor -->
-<tr>
-<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
-<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
-<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
-<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
- Display BGColor</td>
-<td style="vertical-align: top; font-weight: normal; text-align: left;">STRING</td>
-<td style="vertical-align: top; font-weight: normal; text-align: left;">
-Background colour of @ref RC_mhttpd_alarm_banner  "alarm banner" (mhttpd only).
-</td>
-</tr>
-<!--   line    25    Display FGColor  -->
-<tr>
-<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
-<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
-<td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
-<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
-Display FGColor</td>
-<td style="vertical-align: top; font-weight: normal; text-align: left;">STRING</td>
-<td style="vertical-align: top; font-weight: normal; text-align: left;">
-Foreground colour of @ref RC_mhttpd_alarm_banner  "alarm banner" (mhttpd only). 
-</td>
-</tr>
-</table>
-<br>
-
+<br><hr><br>
 
 @section RC_alarms_email Alarm triggers Email or SMS alerts 
 
@@ -2725,7 +2910,61 @@ indicate that something in the midas system is wrong.
 
 
 
+@section RC_ODB_Alarm_system_implementation Implementation of the Midas Alarm System
 
+
+Alarms are checked inside alarm.c::al_check(). This function is called by
+cm_yield() every 10 seconds and by rpc_server_thread(), also every 10 seconds.
+For remote midas clients, their al_check() issues an RPC_AL_CHECK RPC call into
+the  Midas server utility @ref RC_mserver_utility "mserver", where rpc_server_dispatch() calls the local al_check().
+As result, all alarm checks run inside a process directly attached to the local
+midas shared memory (inside a local client or inside an <span class="utility">mserver</span> process for a
+remote client).
+Each and every midas client runs the alarm checks. To prevent race conditions
+between different midas clients, access to al_check() is serialized using the
+ALARM semaphore.
+Inside al_check(), alarms are triggered using al_trigger_alarm(), which in turn
+calls al_trigger_class(). Inside al_trigger_class(), the alarm is recorded into
+an elog or into midas.log using cm_msg(MTALK).
+
+Special note should be made of the ODB setting "/Alarm/Classes/xxx/System
+message interval", which has a surprising effect - after an alarm is recorded
+into system messages (using cm_msg(MTALK)), no record is made of any subsequent
+alarms until the time interval set by this variable elapses. With default value
+of 60 seconds, after one alarm, no more alarms are recorded for 60 seconds.
+Also, because all the alarms are checked at the same time, only the first
+triggered alarm will be recorded.
+
+<span class="new">As of alarm.c rev 4683, </span> "System message interval" is set to 0 ensures that every
+alarm is recorded into the midas log file. (In previous revisions, this setting
+may still miss some alarms).
+
+There are 3 types of alarms:
+
+1) "program not running" alarms.
+
+These alarms are enabled in ODB by setting <span class="odb">/Programs/ppp/Alarm class</span>. Each
+time al_check() runs, every program listed in <span class="odb">/Programs</span> is tested using
+"cm_exist()" and if the program is not running, the time of first failure is
+remembered in <span class="odb">/Programs/ppp/First failed</span>.
+
+If the program has not been running for longer than the time set in ODB key
+<span class="odb">/Programs/ppp/Check interval</span>, an alarm is triggered (if enabled by
+<span class="odb">/Programs/ppp/Alarm class</span> and the program is restarted (if enabled by
+<span class="odb">/Programs/ppp/Auto restart</span>).
+
+The "not running" condition is tested every 10 seconds (each time al_check() is
+called), but the frequency of "program not running" alarms can be reduced by
+increasing the value of <span class="odb">/Alarms/Alarms/ppp/Check interval</span> (default value 60
+seconds). This can be useful if <span class="odb">System message interval</span> is set to zero.
+
+2) "evaluated" alarms
+
+3) "periodic" alarms
+
+There is nothing surprising in these alarms. Each alarm is checked with a time
+period set by  <span class="odb">/Alarm/xxx/Check interval</span>. The value of an evaluated alarm is
+computed using al_evaluate_condition().
 
 
 
@@ -2757,8 +2996,8 @@ sections("Features", "RunControl","FrontendOperation"); // last section; top of 
 \endhtmlonly
 
 <br>
-\anchor idx_hot-links
-\anchor idx_event_notification-see-hot-links
+\anchor idx_hotlink
+\anchor idx_event_notification-see-hotlink
 @section RC_Hot_Link_Intro Introduction
 Midas implements event notification through <b> "hot-links" </b>. Once a hot-link is established to
 a key in the ODB, \b immediately that key is accessed, a call-back routine associated with

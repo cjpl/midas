@@ -2,7 +2,7 @@
 \anchor idx_ODB_structure
 \htmlonly
 <script type="text/javascript">
-pages( "F_MainElements",  "Features", "F_Midas_Code_and_Libraries", "F_ODB_Structure","end"); // back index next {top bottom}
+pages( "F_MainElements",  "Features", "F_Utilities_List", "F_ODB_Structure","end"); // back index next {top bottom}
 // sections params:   last section; top of this section; next section
 sections("Quickstart", "Features", "RunControl");
 </script>
@@ -15,49 +15,54 @@ The ODB also contains some specific system information related to the "Midas cli
 currently involved in an experiment (/system).
 
 Each ODB field or so called \b KEY is accessible by the user through 
- - either interactively (see @ref RC_odbedit_task and @ref RC_mhttpd_task ) 
+ - either interactively (see @ref RC_odbedit_utility "odbedit" or @ref RC_mhttpd_utility "mhtppd" ) 
  - or by C-programming (see functions db_xxx in @ref F_Midas_Library).
 
 The ODB information is stored in a "tree/branch" structure where each branch refers
 to a specific set of data. On the first invocation of the database (first Midas
 application) a minimal system record will be created. Later on each application
 will add its own set of parameters to the database depending on its requirement.
-For instance, starting the ODB for the first time, the tree \b /Runfinfo,
-/Experiment, /System  will be created. The application @ref F_mlogger_task "mlogger"
-will add its own trees (i.e. <b> /Logger /History  </b>). 
+For instance, starting the task  @ref RC_odbedit_utility "odbedit" for the first time will
+cause the trees <span class="odb">/Runinfo,
+/Experiment, /System</span> to be created. The application @ref F_mlogger_utility "mlogger"
+will add its own trees (i.e.  <span class="odb"> /Logger /History</span> ). 
 
-ODB is the main communication platform between Midas applications. As such, the contents of 
+The ODB is the main communication platform between Midas applications. As such, the contents of 
 the ODB is application dependent.
 Several optional trees (and subtrees) can be added by the user in order to provide extra
-functionality of the system. Such optional trees are <b> Alias, Script, Edit on Start,
-Security, Custom, Run parameters etc. </b>.
+functionality of the system. Such optional trees or subtrees are
+<span class="odb">/Alias, /Script, /Experiment/Edit on Start,
+/Experiment/Security, /Custom, /Experiment/Run parameters</span> etc.
 
 
 The ODB is of course available to the users for storage of data and communication between their own 
 custom clients.  Users are expected to customize the ODB for their experiments, by  addding their own trees, 
 subtrees and keys as desired, as well as customizing the existing system keys to suit their own needs.
 
-The following lists many of the Midas ODB trees, with links into the documentation: 
-- @ref RC_odb_system_tree "/System tree"
-- @ref RC_ODB_RunInfo_Tree  "/Runinfo tree"
-- @ref FE_ODB_equipment_tree "/Equipment tree"
-- @ref F_Logger_tree "/Logger tree"
-- @ref RC_ODB_Experiment_Tree "/Experiment tree"
-- @ref F_ODB_History_tree "/History tree"
+\anchor idx_ODB_tree-list-of-MIDAS
+
+The following lists many of the standard Midas ODB trees, with links into the documentation: 
+
 - @ref RC_ODB_Alarms_Tree "/Alarms tree"
-- @ref RC_odb_script_tree "/Script tree"
 - @ref RC_odb_alias_tree "/Alias tree"
-- @ref F_ODB_Elog_Tree "/Elog tree"
-- @ref RC_ODB_programs_tree "/Programs tree"
-- @ref F_ODB_Lazy_Tree "/Lazy tree"
-- @ref FE_ODB_EBuilder_Tree "/Ebuilder tree"
 - @ref RC_odb_custom_tree "/Custom tree"
 - @ref RC_odb_customscript_tree "/CustomScript tree"
+- @ref FE_ODB_EBuilder_Tree "/Ebuilder tree"
+- @ref F_ODB_Elog_Tree "/Elog tree"
+- @ref FE_ODB_equipment_tree "/Equipment tree"
+- @ref RC_ODB_Experiment_Tree "/Experiment tree"
+- @ref F_ODB_History_tree "/History tree"
+- @ref F_ODB_Lazy_Tree "/Lazy tree"
+- @ref F_Logger_tree "/Logger tree"
+- @ref RC_ODB_Programs_Tree "/Programs tree"
+- @ref RC_ODB_RunInfo_Tree  "/Runinfo tree"
+- @ref RC_odb_script_tree "/Script tree"
+- @ref RC_odb_system_tree "/System tree"
 
 \anchor end
 \htmlonly
 <script type="text/javascript">
-pages( "F_MainElements",  "Features", "F_Midas_Code_and_Libraries", "F_ODB_Structure",""); // back index next {top bottom}
+pages( "F_MainElements",  "Features", "F_Utilities_List", "F_ODB_Structure",""); // back index next {top bottom}
 // sections params:   last section; top of this section; next section
 sections("Quickstart", "Features", "RunControl");
 </script>
@@ -69,11 +74,82 @@ sections("Quickstart", "Features", "RunControl");
 -->
 */
 
+/*! @page F_Utilities_List List of Midas Utilities
+<!-- a sub-page of FEATURES  -->
+
+\htmlonly
+<script type="text/javascript">
+pages( "F_ODB_Structure",  "Features", "F_Midas_Code_and_Libraries",  "F_Utilities_List","end"); // back index next {top bottom}
+// sections params:   last section; top of this section; next section
+sections("Quickstart", "Features", "RunControl");
+</script>
+\endhtmlonly
+\anchor idx_utilities_list-of-Midas-utilities
+The Midas package provides the following utilities (tasks). For more information on each utility, follow the link.
+
+ - @ref DA_Data_analyzers "Data Analyzers" (Midas Analyzer, ROOT, ROODY, ROOTANA)
+ - @ref FE_dio_utility "dio" direct I/O driver utility
+ - @ref FE_frontend_utility "frontend" frontend utility
+ - @ref RC_hvedit_utility "hvedit" High Voltage Editor and GUI
+ - @ref F_lazylogger_utility "lazylogger" data archiver
+ - @ref F_mchart_utility "mchart" assembles data for stripchart
+ - @ref FE_mcnaf_utility "mcnaf" Camac hardware access
+ - @ref RC_mdump_utility "mdump" display contents of event banks 
+ - @ref FE_mevb_utility "mevb" event builder application
+ - @ref F_mh2sql_utility "mh2spl" import history files into SQL database
+ - @ref F_mhdump_utility "mhdump" display history events
+ - @ref F_mhist_utility "mhist" history data retriever
+ - @ref RC_mhttpd_utility "mhttpd" web-based run control and monitoring 
+ - @ref F_mlogger_utility "mlogger" data logger
+ - @ref RC_mserver_utility "mserver" remote server
+ - @ref F_mspeaker_utility  "m[lx]speaker" audible messaging
+ - @ref RC_mstat_utility "mstat"  monitor and display
+ - @ref F_mtape_utility "mtape" tape manipulation
+ - @ref RC_odbedit_utility "odbedit" ODB editor and run controller.
+ - @ref RC_rmidas_utility "rmidas" ROOT application for histogram/run control
+ - @ref F_stripchartfile "stripchart" graphical stripchart data display
+
+@anchor idx_MIDAS-host
+@anchor idx_MIDAS-experiment 
+@section F_utilities_params  Common Parameters to Midas Utilities
+Each of the above utilities define a number of input parameters (click on the utilities listed above for details); however
+they all have the following common parameters: 
+ 
+  - [\b -h \<hostname\> ] Specifies the <b>MIDAS host</b> to connect to when connecting to an experiment running on a
+    \b remote \b host.   \b "hostname" must be a valid IP host name. This option supersedes 
+   the default hostname given by the environment variable @ref BO_MIDAS_SERVER_HOST , if defined. Note that
+   the @ref RC_mserver_utility "mserver" utility must be running on the remote host in this case.
+   If the experiment is running on the local host, this argument need not be supplied.
+   
+  - [\b -e \<exptname\> ] Specifies the <b>MIDAS experiment</b> to connect to (where  Q_Linux_Exptab "multiple experiments" are defined on
+    the MIDAS host.  This option supersedes the default experiment name given by the  environment variable @ref BO_MIDAS_EXPT_NAME ,
+    if defined. If multiple experiments are defined, unless @ref BO_MIDAS_EXPT_NAME is defined or this argument is supplied,
+    the application will request the experiment name.
+
+    \Note
+    If the environment variable @ref BO_MIDAS_DIR  (i.e. single default experiment) is defined, both the above arguments and environment variables will be superceded.
+
+<br>
+\anchor end
+\htmlonly
+<script type="text/javascript">
+pages( "F_ODB_Structure",  "Features", "F_Midas_Code_and_Libraries",  "F_Utilities_List",""); // back index next {top bottom}
+// sections params:   last section; top of this section; next section
+sections("Quickstart", "Features", "RunControl");
+</script>
+\endhtmlonly
+
+<!-- end of page F_Utilities_List
+       a sub-page of FEATURES
+-->
+*/
+
+
 /*! @page F_Midas_Code_and_Libraries Midas Code and Libraries
 
 \htmlonly
 <script type="text/javascript">
-pages( "F_ODB_Structure",  "Features", "F_Logging","F_Midas_Code_and_Libraries","end"); // back index next {top bottom}
+pages( "F_Utilities_List",  "Features", "F_Logging","F_Midas_Code_and_Libraries","end"); // back index next {top bottom}
 // sections params:   last section; top of this section; next section
 sections("Quickstart", "Features", "RunControl");
 </script>
@@ -160,7 +236,7 @@ the @ref mmacroh, @ref msmacroh header files.
 
 \htmlonly
 <script type="text/javascript">
-pages( "F_ODB_Structure",  "Features", "F_Logging","F_Midas_Code_and_Libraries",""); // back index next {top bottom}
+pages( "F_Utilities_List",  "Features", "F_Logging","F_Midas_Code_and_Libraries",""); // back index next {top bottom}
 // sections params:   last section; top of this section; next section
 sections("Quickstart", "Features", "RunControl");
 </script>

@@ -1,11 +1,11 @@
-/*! @page DataAnalysis Data Analysis ( Midas Analyzer, ROOT, ROODY, ROOTANA)
+/*! @page DataAnalysis SECTION 7: Data Analysis
 
 <!-- Navigation -->
 <br>
 \htmlonly
 <script type="text/javascript">
 // pages parameters: back index next {top bottom}
-pages("FE_Deferred_Transition","DA_section_index", "DA_Midas_Analyzer","Data Analysis","end" ); // back index next {top bottom}
+pages("FE_utils","DataAnalysis", "Performance","DataAnalysis","end" ); // back index next {top bottom}
 // section parameters: last section; top of this section; next section
 sections("FrontendOperation","DataAnalysis","Performance"); // last section; top of this section; next section
 </script>
@@ -15,6 +15,10 @@ sections("FrontendOperation","DataAnalysis","Performance"); // last section; top
 
 
 
+@anchor idx_analyzers
+@anchor idx_analyzer_ROME_documentation
+@anchor idx_analyzer_Rootana_documentation
+@anchor idx_analyzer_Roody_documentation
 
 @section DA_Data_analyzers  Data Analyzers
 The following are available for Midas Data Analysis:
@@ -26,31 +30,32 @@ The following are available for Midas Data Analysis:
    application.
 </ul>
 
-@section DA_analyzer_task  analyzer    - event analysis
+@anchor idx_analyzer_utility
+@section DA_analyzer_utility  analyzer    - event analysis
 
-A template for an "analyzer" task is provided,
+A template for an <b>"analyzer"</b/> utility is provided
 so that the users may customize it to fit their own experiments, and so build their own custom 
 data analyzer.  
 
-The \b analyzer task is the main online/offline event analysis application. \b analyzer
-uses fully the \b ODB capabilities as all the analyzer parameters are dynamically
-controllable from the Online Database editor @ref RC_odbedit_task.
+The <span class="utility">analyzer</span> utility is the main online/offline event analysis application. The
+<span class="utility">analyzer</span>
+uses fully the \b ODB capabilities, as all the analyzer parameters are dynamically
+controllable from the ODB editor @ref RC_odbedit_utility "odbedit" or @ref RC_mhttpd_utility "mhttpd".
 
 For more detailed information on the analyzers available see  @ref DA_Data_analyzers "list above".
 
 - <b> Arguments </b> 
- - -c \<filename1> \<filename2> Configuration file name(s).
-                     May contain a '%05d' to be replaced by the run number.
+ - \b -c \<filename1> \<filename2> Configuration file name(s).
+                     May contain a '\%05d' to be replaced by the run number.
                      Up to ten files can be specified in one "-c" statement.
- - -d                Debug flag when starts the analyzer from a debugger.
-                     Prevents the system to kill the analyzer when the
+ - \b -d             Debug flag should be set when starting the analyzer from a debugger.
+                     Prevents the system from killing the analyzer when the
                      debugger stops at a breakpoint
- - -D                Start analyzer as a daemon in the background (UNIX only).
- - -e \<experiment>  MIDAS experiment to connect to. (see @ref RC_odbedit_task)
- - -f                Filter mode. Write original events to output file
+ - \b -D                Start analyzer as a daemon in the background (UNIX only).
+ - \b -e \<experiment>  @ref F_utilities_params "MIDAS experiment" to connect to.
+ - \b -f                Filter mode. Write original events to output file
                      only if the analyzer accepts them (doesn't return ANA_SKIP).
- - -h \<hostname>    MIDAS host to connect to when running the analyzer online
-                     (see @ref RC_odbedit_task)
+ - \b -h \<hostname>     @ref F_utilities_params "MIDAS host" to connect to when running the analyzer online, connecting to a \b remote experiment.
  - -i \<filename1> \<filename2> Input file name. May contain a '%05d' to be
             replaced by the run number. 
             Up to ten input files can be specified in one "-i" statement.
@@ -91,12 +96,18 @@ For more detailed information on the analyzers available see  @ref DA_Data_analy
  @endcode
 
 <br><hr><br>
-
+@anchor idx_analyzer_HBOOK
+@anchor idx_analyzer_PAW
+@anchor idx_analyzer_ROOT
+@anchor idx_analyzer_MIDAS
+@anchor idx_analyzer_demo
 @section DA_Midas_Analyzer MIDAS Analyzer
 
 - The Midas Analyzer application is composed of a collection of files providing a 
 framework in which the user can gain access to the online data during data acquisition
 or offline data through a replay of a stored data save-set.
+
+- The analyzer core code is \b mana.c.
 
 - The Midas distribution contains 2 directories where predefined set of analyzer files
 and their corresponding working demo code are available. The internal functionality of 
@@ -173,18 +184,18 @@ INT adc_calib_init(void)
 - The build is also specific to the type of histogram package involved and requires the 
 proper libraries to generate the executable. Each directory has its own \b Makefile:
  - \b ROOT (examples/experiment)
-  - The environment \b $ROOTSYS is expected to point to a valid ROOT installed path.
+  - The environment variable \b  $ROOTSYS is expected to point to a valid ROOT installed path.
   - The analyzer build requires a Midas core analyzer object file which should be present
   in the standard midas/\<os\>/lib directory. In order to have this file \b (rmana.o),
-  the ROOTSYS had to be valid at the time of the Midas build too (See @ref BO_HAVE_HBOOK).
- - \b HBOOK (examples/hbookexpt)
+  the ROOTSYS had to be valid at the time of the Midas build too (See @ref BO_HAVE_ROOT).
+ - \b HBOOK - see @ref BO_HAVE_HBOOK (examples/hbookexpt)
   - The analyzer build requires a Midas core analyzer object file which should be present
   in the standatd midas/\<os\>/lib directory. This file \b (hmana.o) doesn't require any 
   specific library.
   - The analyzer build requires also at that stage to have access to some of the cernlib
   library files (See @ref BO_HAVE_HBOOK). 
  - \b Analyzer \b Lite
-  - In the case private histogramming or simple analyzed data storage is requested, 
+  - In the case that private histogramming or simple analyzed data storage is requested, 
   ROOT and HBOOK can be disabled by undefining both HAVE_ROOT and HAVE_HBOOK during the
   build.
   - This Lite version does't require any reference to the external histogramming package.
@@ -194,10 +205,11 @@ proper libraries to generate the executable. Each directory has its own \b Makef
   system analyzer framework, therefore this operation has to be performed by the user
   in the user code (module). 
 
-The following @ref Multi_Stage_Concept section describes in more details the analyzer 
+The following @ref DA_Multi_Stage_Concept section describes in more details the analyzer 
 concept and specific of the operation of the demo.
 
-<hr> @section Multi_Stage_Concept MultiStage Concept
+@anchor idx_analyzer_multi-stage-concept
+<hr> @section DA_Multi_Stage_Concept MultiStage Concept
 
 In order to make data analysis more flexible, a multi-stage concept has been chosen
 for the analyzer. A raw event is passed through several stages in the analyzer,
@@ -824,7 +836,7 @@ Prevents the system to kill the analyzer when the debugger stops at a breakpoint
 \htmlonly
 <script type="text/javascript">
 // pages parameters: back index next {top bottom}
-pages("FE_Deferred_Transition","DA_section_index", "DA_Midas_Analyzer","Data Analysis","" ); // back index next {top bottom}
+pages("FE_utils","DataAnalysis", "Performance","DataAnalysis","" ); // back index next {top bottom}
 // section parameters: last section; top of this section; next section
 sections("FrontendOperation","DataAnalysis","Performance"); // last section; top of this section; next section
 </script>

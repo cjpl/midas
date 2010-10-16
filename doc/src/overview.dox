@@ -99,7 +99,7 @@ Keys can be dynamically created and deleted. The data associated with a key can 
 different types such as: byte, words, double words, float, strings, etc. or arrays
 of any of those. A key can also be a directory or a symbolic link (c.f. Unix).
 
-\anchor idx_hot-link_overview
+\anchor idx_hotlink_overview
 The Midas library provides a complete set of functions to manage and operate on these keys.
 <br>
 Any ODB client can register a "hot-link" between a local C-structure
@@ -112,7 +112,7 @@ For more information see @ref RC_Hot_Link .
 
 \anchor idx_midas_server
 @section F_Midas_Server_overview Midas Server
-For remote access to a MIDAS experiment, a remote procedure call (RPC) server is available  (@ref RC_mserver_task "mserver").
+For remote access to a MIDAS experiment, a remote procedure call (RPC) server is available  (@ref RC_mserver_utility "mserver").
 It uses an optimized MIDAS RPC scheme for improved access speed.
 The server can be started manually or via inetd (UNIX) or as a service under Windows NT.
 For each incoming connection it creates a new sub-process which serves this connection
@@ -183,9 +183,9 @@ Basic functionality of the logger includes:
   - recorded byte limit not reached yet.
   - logging device not full.
 - Logging selection of particular events based on Event Identifier.
-- Auto restart feature allowing logging of several runs of a given size without user intervention.
+- Auto restart feature allowing logging of several runs of a given size or duration without user intervention.
 - Recording of ODB values to a so-called @ref F_History_System
-- Recording of the ODB to all or individual logging channels at the begin-of-run and end-of-run States, as well as to a separate disk file in a ASCII format.
+- Recording of the ODB to all or individual logging channels at the begin-of-run and end-of-run States, as well as to a separate disk file in XML or ASCII format.
 <br>
 For more information see @ref  F_Logging .
 
@@ -281,7 +281,7 @@ that class.
 
 \anchor idx_history_system_overview
 @section F_History_System_overview History system
-The MIDAS history system is a recording function embedded in the @ref F_mlogger_task.
+The MIDAS history system is a recording function embedded in the @ref F_mlogger_utility.
 Parallel to its main data logging function of defined channels, the Midas logger
 can store slow control data and/or periodic events on disk file.
 Each history entry consists of the time-stamp at which the event has occurred, and
@@ -292,7 +292,7 @@ actual equipment (see @ref  F_History_System).
 This permits a higher flexibility of the history system such as dynamic modification
 of the event structure without restarting the Midas logger.
 At any given time, data-over-time relations can be queried from the disk file
-through a Midas utility @ref F_mhist_task, or displayed through the @ref RC_mhttpd_task.
+through a Midas utility @ref F_mhist_utility, or displayed through the @ref RC_mhttpd_utility.
 
 The history data extraction from the disk file is done using low level file functions
 giving similar results as a standard database mechanism but with faster access time.
@@ -327,7 +327,7 @@ way of logging his/her own information related to the current experiment. This
 electronic logbook may supplement or complement the standard paper logbook and
 in the mean time allow "web publishing" of this information. Indeed the electronic
 logbook information is accessible from any web browser as long as  the Midas web server
-( @ref RC_mhttpd_task "mhttpd") is running in the background of the system.
+( @ref RC_mhttpd_utility "mhttpd") is running in the background of the system.
 For more information see @ref F_Elog, @ref RC_mhttpd_Elog_page .
 
 

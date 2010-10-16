@@ -1,61 +1,61 @@
-/*! @page FAQ  Frequently Asked Questions
+/*! @page FAQ  SECTION 12: Frequently Asked Questions
 
-
+<br>
+\htmlonly
+<script type="text/javascript">
+// pages parameters: back index next {top bottom}
+pages( "NDF", "FAQ", "Convention", "FAQ", "end" );
+sections("NDF","FAQ","Convention"); // last section; top of this section; next section
+</script>
+\endhtmlonly
+<br>
 Feel free to ask questions to one of us (
 <a href="mailto:midas@psi.ch"> Stefan Ritt </a>,
 <a href="mailto:midas@triumf.ca"> Pierre-Andre Amaudruz</a>)
 or visit the <a href="http://midas.triumf.ca/forum/Package"> Midas Forum </a>
 
--# <b> Why does the CAMAC frontend generate a core dump (linux)?</b>
-  - If you're not using a Linux driver for the CAMAC access, you need to
-  start the CAMAC frontend application through the task launcher first.
-  See @ref FE_dio_task or @ref FE_mcnaf_task.
-  This task laucher will grant you access permission to the IO port
-  mapped to your CAMAC interface.
-  <br><br>
--# <b> Where does Midas log file resides?</b>
-  - As soon as any midas application is started, a file midas.log is
-  produce. The location of this file depends on the setup of the experiment.
-  -# if \b exptab is present and contains the experiment name with the
-  corresponding directory, this is where the file \b midas.log will reside.
-  -# if the midas logger @ref F_mlogger_task is running the
-  midas.log will be in the directory pointed by the "Data Dir" key
-  under the /logger key in the ODB tree.
-  -# Otherwise the file midas.log will be created in the current
-  directory in which the Midas application is started.
-  <br><br>
--# <b> How do I protected my experiment from being controlled by aliases?</b> 
+- @ref FAQ_GENERAL
+- @ref FAQ_CUSTOM
+- @ref FAQ_CAMAC 
+
+@section FAQ_GENERAL General questions
+<ol>
+<li> <b> Where does the Midas log file reside?</b>
+       See  @ref F_Log_File
+  
+<li> <b> How do I protected my experiment from being controlled by aliens?</b>
+    
   - Every experiment may have a dedicated password for accessing the experiment
-  from the web browser. This is setup through the ODBedit program with the
-  command \b webpass. This will create a \b Security tree under
+  from the web browser . This is setup through the @ref RC_odbedit_utility "odbedit" program with the
+  command \b webpass (see  @ref RC_Setup_Web_Security). This will create a \b Security tree under
   \b /Experiment with a new key <b> Web Password</b> with the encrypted word.
   By default Midas allows Full Read Access to all the Midas Web pages. Only
   when modification of a Midas field the web password will be requested. The
-  password is stared as a cookie in the target web client for 24 hours
-  See @ref RC_ODB_Experiment_Tree.
-  - Other options of protection are described in @ref RC_ODB_Experiment_Tree
-  which gives to dedicated hosts access to ODB or dedicated programs.
+  password is stared as a cookie in the target web client for 24 hours.
+  
+  - Other options of protection are described in @ref RC_Setup_Security
+  which gives access to the ODB to dedicated hosts or programs.
   <br><br>
--# <b> Can I compose my own experimental web page?</b>
-  - Only under 1.8.3 though. You can create your own html code using your
-  favorite HMTL editor. By including custom Midas Tags, you will have access
-  to any field in the ODB of your experiment as well as the standard button for
-  start/stop and page switch. See @ref RC_mhttpd_task , @ref RC_mhttpd_Custom_page. 
+
+  
+<li> <b> How do I prevent the user from modifying ODB values while the run is in progress?</b>
+  - By creating the particular <span class="odb">/Experiment/Lock when running</span>
+  ODB subtree , you
+  can include symbolic links to any ODB field which needs to be set to 
+  <b>Read Only</b>  while the  @ref RC_Run_States_and_Transitions "run state" is "running".
+  See @ref RC_Lock_when_Running .
   <br><br>
--# <b> How do I prevent user to modify ODB values while the run is in progress?</b>
-  - By creating the particular \b /Experiment/Lock when running/ ODB tree, you
-  can include symbolic links to any odb field which needs to be set to 
-  <b>Read Only</b> field while the run state is on. See @ref RC_ODB_Experiment_Tree. 
-  <br><br>
--# <b> Is there a way to invoke my own scripts from the web?</b>
-  - Yes, by creating the ODB tree \b /Script every entry in that tree
-  will be available on the Web status page with the name of the key. Each key entry
-  is then composed with a list of ODB field (or links) starting with 
+  
+<li> <b> Is there a way to invoke my own scripts from the web?</b>
+  - Yes, by creating the ODB tree <span class="odb"> /Script</span> every entry in that tree
+  will be available on the Web status page with the name of the key
+  (see @ref RC_mhttpd_defining_user_buttons ). Each key entry
+  is then composed with a list of ODB fields (or links) starting with 
   the executable command followed by as many arguments as you wish to be
   passed to the script. See @ref RC_odb_script_tree. Scripts can also be invoked
   from a Custom page (see @ref RC_odb_customscript_tree ).
   <br><br>
--# <b> I've seen the ODB prompt displaying the run state, how do you do that?</b>
+<li> <b> I've seen the ODB prompt displaying the run state, how do you do that?</b>
   - Modify the \b /System/prompt field. The "S" is the trick. 
   @code 
  Fri> odb -e bnmr1 -h isdaq01
@@ -77,12 +77,12 @@ or visit the <a href="http://midas.triumf.ca/forum/Package"> Midas Forum </a>
  [host:expt:Stopped]/System>     
   @endcode
   <br><br>
--# <b> I've setup the alarm on one parameter in ODB but I can't make it trigger? </b>
+<li> <b> I've setup the alarm on one parameter in ODB but I can't make it trigger? </b>
   - The alarm scheme works only under \b ONLINE. See @ref RC_ODB_RunInfo_Tree
   for <b> Online Mode</b>. This flag may have been turned off due to analysis
   replay using this ODB. Set this key back to 1 to get the alarm to work again.
   <br><br>
--# <b> How do I extend an array in ODB? </b>
+<li> <b> How do I extend an array in ODB? </b>
   - When listing the array from ODB with the -l switch, you get a column indicating
   the index of the listed array. You can extend the array by setting the array value 
   at the new index. The intermediate indices will be fill with the default value
@@ -132,9 +132,52 @@ foo                             STRING  4     32    3s   0   RWD
                                         [2]             A default string
                                         [3]             
   @endcode
-  
--# How do I ...
-  - ...
+</ol>  
+<br><hr><br>
+@section FAQ_CUSTOM Questions about custom web pages   
+<ol>
+<li> <b> Can I compose my own experimental web page?</b>
+  - You can create your own html or javascript code using your
+  favourite HMTL editor. See @ref RC_mhttpd_custom_features .
+   By including custom Midas HTML Tags or custom
+   @ref RC_mhttpd_custom_js_lib "Javascript built-in functions" , you will have access
+  to any field in the ODB of your experiment as well as the standard buttons for
+  start/stop and page switch. See @ref RC_mhttpd_utility "mhttpd" , @ref RC_mhttpd_Custom_page. 
   <br><br>
 
+<li> <b> Is there any way to show the cursor position on my custom web page so I can easily
+       place the fills and labels? </b>
+    - Yes. Using the   @ref RC_mhttpd_custom_js_lib "Javascript built-in function" \b getMouseXY 
+      and the HTML "img" tag with an id of  "refimg". See @ref  RC_mhttpd_custom_getmouse for
+      details.
+
+</ol> 
+
+
+<br><hr><br>
+@section FAQ_CAMAC Questions about CAMAC
+<ol>
+<li> <b> Why does the CAMAC frontend generate a core dump (linux)? </b>
+  - If you're not using a Linux driver for the CAMAC access, you need to
+  start the CAMAC frontend application through the task launcher first.
+  See @ref FE_dio_utility or @ref FE_mcnaf_utility.
+  This task launcher will grant you access permission to the IO port
+  mapped to your CAMAC interface.
+  <br><br>
+
+  
+<li> How do I ...
+  - ...
+  <br><br>
+</ol>  
+\anchor end
+<br>
+\htmlonly
+<script type="text/javascript">
+// pages parameters: back index next {top bottom}
+pages( "NDF", "FAQ", "Convention", "FAQ", "" );
+sections("NDF","FAQ","Convention"); // last section; top of this section; next section
+</script>
+\endhtmlonly
+<br>
 */

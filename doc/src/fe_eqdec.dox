@@ -220,49 +220,6 @@ Every time the frontend is initialized, it <b>copies the equipment
 settings to the ODB</b> under <span style="font-style: italic;">/Equipment/&lt;equipment
 name&gt;/Common</span> (see @ref FE_scaler_common "example").<br>
 <br>
-\anchor idx_hot-link_Equipment-settings
-@subsection FE_equipment_odb_hot_links Hot-linked equipment settings
-
-Hot-links to the   <span style="font-style: italic;">/Equipment/&lt;equipment
-name&gt;/Common</span> area are created, allowing some of the settings
-to be <span style="font-weight: bold;">changed during run-time</span>,
-rather than having to edit, recompile and reload the frontend. These
-settings are the
-<br>
-<table style="text-align: left; width: 25%; background-color: rgb(204, 204, 204); margin-left: auto; margin-right: auto;" border="1" cellpadding="2" cellspacing="2">
-
-
-
-<tr align="center">
-<td
-style="vertical-align: top; background-color: rgb(255, 255, 204);"><span
-style="font-weight: bold;">Equipment Settings hot-linked in ODB</span><br>
-</td>
-</tr>
-<tr align="center">
-<td style="vertical-align: top;">**  
-@ref FE_tbl_EqEnabled "Enabled" flag
-</td>
-</tr>
-<tr align="center">
-<td style="vertical-align: top;">**  
-@ref FE_tbl_ReadOn "RO_XX" flags
-</td>
-</tr>
-<tr align="center">
-<td style="vertical-align: top;">**  
-@ref  FE_tbl_Period "Period"
-</td>
-</tr>
-<tr align="center">
-<td style="vertical-align: top;">**  
-@ref  FE_tbl_EventLimit "Event Limit"
-</td>
-</tr>
-
-</table>
-
-Modification from the ODB is immediately reflected into the frontend, which will act upon the new setting.
 
 <br>
 \anchor end

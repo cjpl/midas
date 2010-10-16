@@ -362,34 +362,56 @@ HR { height: 1px;
 /* midas.css */
  span.warn { color: red ; background-color: white; font-weight: bold; font-size: 125%; } 
  span.note { color: green ; background-color: white; font-weight: bold;  } 
- span.new { color: black ; background-color: oldlace; font-weight: normal;  } 
- ul.new { color: black ; background-color: oldlace; font-weight: normal;  } 
- span.image {color: black ; background-color: honeydew; font-weight: normal; font-size: 125%; } 
+ /* new feature */
+  span.new {color: black ; background-color:lightgoldenrodyellow ; font-weight: bold;  }   
+  ul.new  {color: black ; background-color:lightgoldenrodyellow ; font-weight: bold;  }
+  
+ /* image title */
+ span.image {color: black ; background-color: mintcream; font-weight: normal ;font-style: normal; font-size: 100%; } 
 
+ /* utility/task or client e.g. mhttpd  */
+  span.utility {color: darkcyan ; background-color: white; font-weight: normal ;font-style: normal; font-size: 100%; } 
+
+   /* odb key */
  span.odb { color: DarkOrchid; background-color: white;  font-weight: normal;  font-style: italic; } 
-
- span.cl {color: black ; background-color:linen ; font-weight: bold;  } 
  span.js { color: black ; background-color: LightCyan; font-weight:bold; } 
- span.odbtag { color: DarkOrchid ; background-color: azure; font-weight:normal; } 
+ span.odbtag { color: brown  ; background-color: linen; font-weight:normal; } 
+ span.htmltag { color: brown  ; background-color: white; font-weight:normal; } 
 
+div.az {
+	width: 100%;
+	background-color: #e8eef2;
+	border: 1px solid #84b0c7;
+	text-align: center;
+	margin: 2px;
+	padding: 2px;
+	line-height: 140%;
+        font-size: 120%;
+}
  span.test3 {color: PaleGreen ; background-color:white ; font-weight: bold;  } 
-
  span.test4 {color: black ; background-color: PaleGreen;  font-weight: normal;  } 
 
-  span.page { color: black ; background-color: lightsteelblue ;  font-weight: bold; font-size: 125%; }
- div.section { text-align: right; color: limegreen ; background-color: white;  font-weight: bold; font-size: 125%; }
-
+  span.page { color: black ; background-color: lightsteelblue ;  font-weight: bold; font-size: 150%; }
+  span.secthdr { color: black ; background-color: gold  ;  font-weight: bold; font-size: 125%; }
+  span.vertsect { color: red ; background-color: white;  font-weight: bold; font-size: 100%; }
+   div.section { text-align: right; color: limegreen ; background-color: white;  font-weight: bold; font-size: 125%; }
+  ul.c0 { color: blue ; background-color: white; font-weight: bold; font-size: 125%;  }
+  
  /* contents page */
- ol.i0 { color: red ; background-color: white; font-weight: bold; font-size: 100%;  }
- ul.i1 { color: red ; background-color: linen; font-weight: bold; font-size: 100%;  } 
- ul.i2 { color: maroon ; background-color: ivory; font-weight: normal; font-size: 95%;  } 
- ul.i3 { color: deeppink ; background-color: oldlace; font-weight: normal;  font-size: 95%;  } 
- ul.i4 { color: magenta ; background-color: whitesmoke; font-weight: normal;  font-size: 95%; }
- ul.i5 { color: green ; background-color: mistyrose; font-weight: normal; font-size: 95%;   } 
- ul.i6 { color: darkorange ; background-color: mintcream; font-weight: normal;   font-size: 95%;  } 
- ul.i7 { color: teal ; background-color: snow; font-weight: normal;  font-size: 95%; } 
- ul.i8 { color: black ; background-color: lightgoldenrodyellow; font-weight: normal;  font-size: 95%;   } 
+ ol.i0 { color: red ; background-color: white; font-weight: bold; font-size: 125%; } 
+ ul.i0 { color: red ; background-color: white; font-weight: bold; font-size: 125%;  }
+ ul.i1 { color: red ; background-color: linen; font-weight: bold; font-size: 97%;  } 
+ ul.i2 { color: maroon ; background-color: ivory; font-weight: normal; font-size: 97%;  } 
+ ul.i3 { color: deeppink ; background-color: oldlace; font-weight: normal;  font-size: 97%;  } 
+ ul.i4 { color: magenta ; background-color: whitesmoke; font-weight: normal;  font-size: 97%; }
+ ul.i5 { color: green ; background-color: mistyrose; font-weight: normal; font-size: 97%;   } 
+ ul.i6 { color: darkorange ; background-color: mintcream; font-weight: normal;   font-size: 97%;  } 
+ ul.i7 { color: teal ; background-color: snow; font-weight: normal;  font-size: 97%; } 
+ ul.i8 { color: black ; background-color: lightgoldenrodyellow; font-weight: normal;  font-size: 97%;   }
+ ul.i9 { color: white ; background-color: lightgray; font-weight: normal;  font-size: 97%;   }
+ ul.i10 { color: teal ; background-color: pink; font-weight: normal;  font-size: 97%;   }
 
+  
  /* A-Z index page */
  ul.j0 { color: red ; background-color: white; font-weight: bold; font-size: 100%;  }
  ul.j1 { color: black ; background-color: mintcream; font-weight: bold; font-size: 100%;  } 
@@ -399,5 +421,5 @@ HR { height: 1px;
  ul.j5 { color: black ; background-color: mintcream; font-weight: bold; font-size: 95%;   } 
  ul.j6 { color: black ; background-color: mintcream; font-weight: bold;   font-size: 95%;  } 
  ul.j7 { color: black ; background-color: mintcream; font-weight: bold;  font-size: 95%; } 
- ul.j8 { color: black ; background-color: mintcream; font-weight: bold;  font-size: 95%;   } 
+ ul.j8 { color: black ; background-color: mintcream; font-weight: bold;  font-size: 95%;   }
  span.see { color: green ; background-color: mintcream; font-weight: normal;  } 

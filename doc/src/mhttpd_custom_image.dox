@@ -17,7 +17,7 @@ sections("Features", "RunControl","FrontendOperation"); // last section; top of 
 @section RC_mhttpd_custom_history Inserting a history image in a custom page
 
 In the special case where the image to be inserted is a \b History image, it can be inserted into a custom page using
-an HTML <b>\<img\></b> tag of the following form:
+an HTML   <span class = "htmltag"><\<img...\></span> tag of the following form:
 \code
 <img src="http://hostname.domain:port/HS/Meterdis.gif&scale=12h&width=300">
 @endcode
@@ -30,26 +30,17 @@ See  @ref RC_mhttpd_custom_demo and \ref example_image_all "image" created by th
 \anchor idx_mhttpd_page_custom_image_insert-image
 @section RC_mhttpd_custom_image Image insertion into a Custom page
 \anchor idx_mhttpd_page_custom_image_history-image
-An image may be inserted into a custom webpage by using an HTML \<img\> tag.
+ - An image may be inserted into a custom webpage by using an HTML   <span class = "htmltag">\<img...\></span> tag.
 The image file can be in any format supported by the browser (e.g. &nbsp; \b gif,&nbsp; \b png,&nbsp; \b jpg etc.).
-<br>
-For example, a
- \b History image can be inserted into a custom page using
-an HTML <b>\<img\></b> tag of the following form:
-\code
-<img src="http://hostname.domain:port/HS/Meterdis.gif&scale=12h&width=300">
-@endcode
-<br>
-See  @ref RC_mhttpd_custom_demo and \ref example_image_all "image" created by the demo.
-<br>
-Alternatively, by defining the image in the subdirectory "images" in the <span class="odb">/Custom ODB tree </span>
+
+ - Alternatively, by defining the image in the subdirectory "images" in the <span class="odb">/Custom ODB tree </span>
 features such as labels, bars and fills can be superimposed on the image.
 <br>
-To make an image "myexpt.gif" available in a Custom Page, follow these steps:
+To make an image <i>"myexpt.gif"</i> available in a Custom Page, follow these steps:
 
 <ol>
 <li>the subdirectory <span class="odb">Images</span> must be created in the ODB  <span class="odb">/Custom</span> directory, e.g.
-using @ref RC_odbedit_task "odbedit" :
+using @ref RC_odbedit_utility "odbedit" :
 
 \code
 [local:Default:Stopped]/>cd Custom
@@ -90,13 +81,9 @@ is demonstrated in the custom demo  @ref RC_mhttpd_custom_demo "example" and the
 <table
  style="text-align: left; width: 100%;" border="1" cellpadding="2"
 cellspacing="0">
-  <caption>Above: Meaning of keys in the ODB /Custom/ tree.
+  <caption>Above: Meaning of keys in the ODB /Custom tree.
   </caption>
-<tr>
-<td colspan="6" style="vertical-align: top; background-color: rgb(204, 204, 255); font-weight: bold; text-align: center;">
-Keys in the ODB tree  ../Custom
-</td>
-</tr>
+
 <tr>
 <td colspan = "5" style="vertical-align: top; background-color: rgb(204, 204, 255); font-weight: bold; text-align: center;">
 ODB Key 
@@ -107,7 +94,7 @@ Explanation
 </tr>
 <!--   line    1   Custom  -->
 <tr>
-<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
 Custom/
 </td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
@@ -121,7 +108,7 @@ User-created directory to contain custom page information</td>
 <!--   line    2   custom page key  -->
 <tr>
 <td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
-<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
 \<custom_page_link\>
 </td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
@@ -140,7 +127,7 @@ names for the link(s).
 <!--   line    3   Images subdir -->
 <tr>
 <td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
-<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
 Images/
 </td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
@@ -154,7 +141,7 @@ User-created subdirectory to contain the name(s) of the defined image(s).
 <tr>
 <td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
-<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
 \<Image_name\>/
 </td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
@@ -169,7 +156,7 @@ subdirectories may be defined.
 <td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
-<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
 background
 </td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;">STRING</td>
@@ -182,7 +169,7 @@ Path of image file to be displayed on the custom page, e.g. <b>/home/t2ktpc/onli
 <td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
-<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
 labels/
 </td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;">DIR</td>
@@ -195,7 +182,7 @@ Optional subdirectory to be used for superimposing labels on top of the image. (
 <td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
-<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
 bars/
 </td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;">DIR</td>
@@ -208,7 +195,7 @@ Optional subdirectory to be used for superimposing bars on top of the image. (Se
 <td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
-<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
 fills/
 </td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;">DIR</td>
@@ -225,7 +212,7 @@ Optional subdirectory to be used for superimposing fills on top of the image. (S
 @section RC_mhttpd_custom_imagemap Mapping active areas onto the image
 
 HTML mapping can be activated on an image to provide "clickable" areas, using the
-\b map attribute of the HTML <b>\<img\></b> tag.
+\b map attribute of the HTML   <span class = "htmltag">\<img\></span> tag.
 
 This can be done now with a new function like this:
 \code
@@ -305,9 +292,9 @@ onClick="promptpwd('Custom1?cmd=toggle&pnam=CustomPwd?odb=/Equipment/Environment
 @endcode
 
 
-If the \b pwd option is present in the <span class="odbtag"> \<odb\> tag</span>,  <span class="cl">mhttpd</span> establishes a call to
+If the \b pwd option is present in the <span class="odbtag"> \<odb\> </span> tag,  <span class="utility">mhttpd</span> establishes a call to
 the \b promptpwd() function if one clicks on the value. The password is then requested
-from the user and is submitted as a cookie.  <span class="cl">mhttpd</span> then checks this password against
+from the user and is submitted as a cookie.  <span class="utility">mhttpd</span> then checks this password against
 the ODB entry
 <br>
  <span class="odb">/Custom/Pwd/CustomPwd</span>
@@ -320,6 +307,53 @@ they close and become red (after the user successfully supplies the correct pass
 
 
 <br><hr><br>
+
+
+\anchor idx_getMouseXY-JavaScript-function
+@section RC_mhttpd_custom_getmouse Display mouse position
+
+When writing custom pages with large background images and labels and fills placed on that image, it is hard 
+to figure out X and Y coordinates of the labels. This can now be simplified by setting
+the label ("id") of the background HTML  
+<span class="htmltag">\<img...\></span> tag  to <b>"refimg"</b>, e.g.
+
+@code
+<img id="refimg" src="...">
+@endcode
+
+The function \b getMouseXY in the  @ref RC_mhttpd_custom_js_lib supplies the X,Y position if an element of ID \b refimg is
+present. Therefore, the  JS library must be @ref RC_mhttpd_include_js_library "included".
+
+\b Usage:
+@code
+<img  id="refimg" src="ebit_pc.gif" usemap="#Custom1">   <!-- name="refimg" makes crosshairs appear -->
+<map name="Custom1">
+.....
+</map>
+@endcode
+
+If the "refimg" tag is present, the cursor changes into a crosshair, and its absolute and relative
+locations in respect to the reference image are shown in the status bar (Figure 1):
+
+
+
+ * <br><br><br>
+ * <center>
+ *  <span class="image"> Figure 1 : Cursor position on custom page
+ * <br><br><br> 
+ *  \image html cursor.png
+ * </span></center>
+ * <br><br><br>  
+
+\note
+To make this work under Firefox, the user has to explicitly allow for status bar changes. To do so,
+enter about:config in the address bar. In the filter bar, enter status. Then locate 
+dom.disable_window_status_change and set it to false.
+
+
+
+
+
 
 
 
@@ -340,7 +374,7 @@ ODB parameter to which the label, bar or fill is linked - hence the term "live".
 The overlay of the requested features is done onto the selected 
 @ref RC_mhttpd_custom_image "image file". 
 
-This powerful new extension brings the <span class="cl">mhttpd</span> 
+This powerful new extension brings the <span class="utility">mhttpd</span> 
 capability closer to other experimental web controllers similar to EPICS.
 
 \note Be sure to enable the feature to  @ref RC_mhttpd_custom_getmouse in order to facilitate finding the X,Y positions 
@@ -409,7 +443,7 @@ Explanation
 </tr> 
 <!--   line    1   Labels  -->
 <tr>
-<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
 .../Labels/\<label_name\>
 </td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
@@ -419,7 +453,7 @@ Explanation
 <!--   line    2   Src  -->
 <tr>
 <td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
-<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
 Src
 </td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;">STRING</td>
@@ -430,7 +464,7 @@ Path of a valid ODB Key variable. This is the value to be used for this label
 <!--   line    3   Format  -->
 <tr>
 <td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
-<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
 Format
 </td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;">STRING</td>
@@ -441,7 +475,7 @@ Format string for this value e.g. "%5.2f%% iBu" (-> percentage of iBu) or "Rate:
 <!--   line    4   Font  -->
 <tr>
 <td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
-<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
 Font
 </td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;">STRING</td>
@@ -452,7 +486,7 @@ Font size for this label. Set to one of  "small",&nbsp; "medium" or "giant".
 <!--   line    5   X  -->
 <tr>
 <td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
-<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
 X position of this label in pixels
 </td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;">INT</td>
@@ -463,7 +497,7 @@ X position for this label in pixels
 <!--   line    6   Y  -->
 <tr>
 <td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
-<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
 Y
 </td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;">INT</td>
@@ -474,7 +508,7 @@ Y position for this label.
 <!--   line    7   Align  -->
 <tr>
 <td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
-<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
 Align
 </td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;">INT</td>
@@ -486,7 +520,7 @@ Integer representing Horizontal Alignment for this label. Set to one of 0 (left)
 <!--   line    8   FGColor  -->
 <tr>
 <td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
-<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
 FGColor
 </td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;">STRING</td>
@@ -497,7 +531,7 @@ Foreground colour RRGGBB (hex) for this label. See @ref  RC_html_colours "colour
 <!--   line    9   BGColor  -->
 <tr>
 <td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
-<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
 BGColor
 </td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;">STRING</td>
@@ -591,7 +625,7 @@ Explanation
 </tr> 
 <!--   line    1   Bars  -->
 <tr>
-<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
 .../Bars/\<bar_name\>
 </td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
@@ -601,7 +635,7 @@ Explanation
 <!--   line    2   Src  -->
 <tr>
 <td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
-<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
 Src
 </td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;">STRING</td>
@@ -612,7 +646,7 @@ Path of a valid ODB Key variable. This is the value to be used for this bar
 <!--   line    3   X  -->
 <tr>
 <td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
-<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
 X position of this bar in pixels
 </td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;">INT</td>
@@ -623,7 +657,7 @@ X position for this label in pixels
 <!--   line    4   Y  -->
 <tr>
 <td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
-<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
 Y
 </td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;">INT</td>
@@ -634,7 +668,7 @@ Y position for this bar in pixels.
 <!--   line    5   Width  -->
 <tr>
 <td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
-<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
 Width
 </td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;">INT</td>
@@ -645,7 +679,7 @@ Width of this bar in pixels.
 <!--   line    6   Height  -->
 <tr>
 <td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
-<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
 Height
 </td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;">INT</td>
@@ -656,7 +690,7 @@ Height of this bar in pixels.
 <!--   line    7   Direction  -->
 <tr>
 <td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
-<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
 Direction
 </td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;">INT</td>
@@ -667,7 +701,7 @@ Direction of this bar. Either 0 (vertical) or 1 (horizontal).
 <!--   line    8   Axis  -->
 <tr>
 <td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
-<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
 Axis
 </td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;">INT</td>
@@ -678,7 +712,7 @@ Draw axis. One of 0 (none) or 1 (left) or 2 (right).
 <!--   line    9   Logscale  -->
 <tr>
 <td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
-<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
 Logscale
 </td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;">BOOL</td>
@@ -689,7 +723,7 @@ Draw logarithmic axis. Either "y" or "n".
 <!--   line    10   Min  -->
 <tr>
 <td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
-<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
 Min
 </td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;">DOUBLE</td>
@@ -700,7 +734,7 @@ Minimum value for axis
 <!--   line    11   Max  -->
 <tr>
 <td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
-<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
 Max
 </td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;">DOUBLE</td>
@@ -711,7 +745,7 @@ Maximum value for axis
 <!--   line    12   FGColor  -->
 <tr>
 <td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
-<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
 FGColor
 </td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;">STRING</td>
@@ -722,7 +756,7 @@ Foreground colour RRGGBB (hex) for this bar. See @ref  RC_html_colours "colour t
 <!--   line    13   BGColor  -->
 <tr>
 <td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
-<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
 BGColor
 </td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;">STRING</td>
@@ -733,7 +767,7 @@ Background colour RRGGBB (hex)  for this bar. See @ref  RC_html_colours "colour 
 <!--   line    13   BDColor  -->
 <tr>
 <td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
-<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
 BDColor
 </td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;">STRING</td>
@@ -857,7 +891,7 @@ Explanation
 </tr> 
 <!--   line    1   Fills  -->
 <tr>
-<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
 .../Fills/\<fill_name\>
 </td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
@@ -867,7 +901,7 @@ Explanation
 <!--   line    2   Src  -->
 <tr>
 <td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
-<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
 Src
 </td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;">STRING</td>
@@ -879,7 +913,7 @@ Path of a valid ODB Key variable. May also include a
 <!--   line    3   X  -->
 <tr>
 <td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
-<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
 X
 </td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;">INT</td>
@@ -890,7 +924,7 @@ X position for this fill in pixels
 <!--   line    4   Y  -->
 <tr>
 <td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
-<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
 Y
 </td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;">INT</td>
@@ -901,7 +935,7 @@ Y position for this label in pixels
 <!--   line    5   Limits  -->
 <tr>
 <td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
-<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
 Limits[array]
 </td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;">INT</td>
@@ -913,7 +947,7 @@ Array length must match length of array \b Fillcolors.
 <!--   line    5   Fillcolors  -->
 <tr>
 <td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
-<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
 Fillcolors[array]
 </td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;">INT</td>
@@ -973,9 +1007,8 @@ Any fill that requires a more complicated calculation than this, will have to be
 \anchor idx_mhttpd_page_custom_image_edit-boxes
 @section RC_mhttpd_custom_edit_boxes Edit boxes floating on top of a graphic
 
-This option has been available from the beginning, but was not previously documented. It
-makes it possible to put an edit box right on top of a graphic by means of an HTML
-style tag.  The custom page code could look like this:
+An edit box can be placed  on top of a graphic by means of an HTML
+style tag.  The custom page code would look like this:
 
 \code
 <div style="position:absolute; top:100px; left:50px;">
@@ -984,10 +1017,10 @@ style tag.  The custom page code could look like this:
 <img src="custom.gif">
 @endcode
 
-The \b \<div\> tag surrounding the <span class="odbtag">\<odb\> tag</span> places this directly on top of the
+The \b \<div ...\> tag surrounding the <span class="odbtag">\<odb ...\> tag</span> places this directly on top of the
 "custom.gif" image, where it can be clicked to be edited.
 
-The same thing could be done in JavaScript using the ODBEdit function from the @ref RC_mhttpd_custom_js_lib :
+The same thing could be done in JavaScript using the <span class="js">ODBEdit</span> function from the @ref RC_mhttpd_custom_js_lib :
 
 \code
 <div style="position:absolute; top:100px; left:50px;">
@@ -1036,7 +1069,7 @@ The EBIT custom page is shown @ref RC_Ebit_custom_page "here".
 @subsection RC_mhttpd_custom_pw Password protection of Edit Boxes
 
 It is a good idea to protect the Edit Box from @ref  RC_mhttpd_custom_pw_protection "accidental access".
-This is done by a using the @ref RC_mhttpd_custom_odb_html "pwd option" in the  <span class="odbtag">\<odb\> tag</span>, and adding the same
+This is done by a using the @ref RC_mhttpd_custom_odb_html "pwd option" in the  <span class="odbtag">\<odb ...\> tag</span>, and adding the same
 Javascript function  \b promptpwd()  as was  @ref promptpwd "used above" for password protection of an area map.
 \code
 <!--
@@ -1097,7 +1130,7 @@ edit boxes, clickable areas, labels, fills etc.
 The HTML document  myexpt.html can be found in the examples/custom directory.
 This code  forms part of a custom demo. For the full operation of this
 demo, you'll need to have the frontend <b>"sample frontend"</b>
-(midas/example/experiment/frontend.c), mlogger, <span class="cl">mhttpd</span> running.
+(midas/example/experiment/frontend.c), mlogger, <span class="utility">mhttpd</span> running.
 
 The code myexpt.html is shown below for convenience:
 \code
@@ -1304,7 +1337,7 @@ The insertion of a new Custom page requires the following steps:
 
 \note
  - Once the file is imported into ODB, you can \b ONLY edit it through the web 
-  (as long as   <span class="cl">mhttpd</span> is active) by clicking on the \b ODB(button) ...
+  (as long as   <span class="utility">mhttpd</span> is active) by clicking on the \b ODB(button) ...
   Custom(Key) ... Edit (Hyperlink at the bottom of the key). 
 
  - The Custom page  can also be exported back to a ASCII file using the odbedit command @ref RC_odbedit_export "export", e.g.

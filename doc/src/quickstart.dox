@@ -1,4 +1,4 @@
-/*! \page Quickstart Quick Start
+/*! \page Quickstart SECTION 3: Quick Start
 <!-- Section Quickstart -->
 
 <!-- Navigation -->
@@ -318,8 +318,9 @@ NOTE: these instructions provide \b local access to the experiment. For \b remot
   Experiments not defined in \b exptab are not accessible remotely, but can still be
   accessed locally using the @ref BO_Environment_variables "environment variable" @ref BO_MIDAS_DIR if defined.
   This environment variable superceeds the \b exptab definition.
-  <br><br>
-
+  <br>
+  \Note  Where more than one experiment is defined, the default name of the experiment to connect to can be
+  provided using the  @ref BO_MIDAS_EXPT_NAME environment variable.
 
 <hr>
 @section Q_Linux_Demo_Examples Demo examples
@@ -457,15 +458,15 @@ Throughout the following description the midas package is assumed to be found un
   - Using the Tortoise package under windows (pwd "svn" will be requested twice)
    - Using the file browser go to the \%SystemDrive\%
    - right click and select "SVN checkout"
-   - Fill the "URL of Repository: with 
+   - Fill the "URL of Repository:" with 
      svn+ssh://svn\@savannah.psi.ch/afs/psi.ch/project/meg/svn/midas/trunk
-   - Fill the "Checkout directory" with C:\midas
+   - Fill the "Checkout directory" with C:\\midas
    - Start transfer.
    - Do the same for mxml
    - right click and select "SVN checkout"
    - Fill the "URL of Repository: with
      svn+ssh://svn\@savannah.psi.ch/afs/psi.ch/project/meg/svn/mxml/trunk
-   - Fill the "Checkout directory" with C:\mxml
+   - Fill the "Checkout directory" with C:\\mxml
    - Start transfer.
 
 @subsection Q_Windows_Environment_Variables Environment Variables
@@ -483,7 +484,7 @@ Environment variables needs to be setup prior the midas build;
   - The Midas build requires the Microsoft Visual C++ (200x) or .NET. 
     the corresponding environment variables for the compiler need to be set prior
     the Midas build. A batch file can be found under 
-    "C:\\Program Files\Microsoft Visual Studio 5\Common7\Tools\vsvar32.bat or similar...
+    "C:\\Program Files\\Microsoft Visual Studio 5\\Common7\\Tools\\vsvar32.bat or similar...
     The build then can be started as follow.  
   @code 
   

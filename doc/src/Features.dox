@@ -1,4 +1,4 @@
-/*! @page Features Features of the Midas DAQ System
+/*! @page Features SECTION 4: Features
 
 <!-- Section:      Features -->
 
@@ -13,14 +13,13 @@ sections("Quickstart", "Features", "RunControl");
 
 <br>
 
-
 @section F_Midas_Overview_Intro General Acquisition Principles
 The Midas DAQ system is based on a modular scheme that allows scalability and flexibility.
 The operation of each component is handled by a subset of functions, but all the components
 are grouped in a single library (libmidas.a, libmidas.so (UNIX),  midas.dll (NT)).
 
-The overall C-code is about 80,000 lines long and makes up over 450 functions
-(version 1.9.0). However, from the user's point of view, only a subset of these routines are needed 
+The overall C-code is over 80,000 lines long and makes up more than 450 functions
+However, from the user's point of view, only a subset of these routines are needed 
 for most operations.
  
 Each Midas component is briefly described below but links will be provided to
@@ -35,6 +34,7 @@ by activation of the component through the @ref F_Online_Database_overview.
 <!-- Declare the FEATURES subpages  -->
   - \subpage F_MainElements
   - \subpage F_ODB_Structure
+  - \subpage F_Utilities_List
   - \subpage F_Midas_Code_and_Libraries
   - \subpage F_Logging
 <br>
@@ -67,55 +67,57 @@ sections("Quickstart", "Features", "RunControl");
 \endhtmlonly
 
 <br>
-\anchor idx_Logging_Data
 @section F_Midas_Logger Introduction
-A Midas utility (@ref F_mlogger_task) is supplied in the Midas package. 
-This utility can perform several functions (<b>selected by the user </b> via the  
+A Midas utility @ref F_mlogger_utility is supplied in the Midas package. 
+This utility can perform several functions (selected by the user via the  
 @ref F_Logger_tree ) including:
 
 <!--  <li style="color:green"> -->
 <ul>
-  <li><b>logging System messages</b> to a file  
-  <li><b>logging Experimental data </b> to storage device(s) such as disk or tape     
-      <br>Extensive customization of the data logging is available e.g.
-      <ul>
-         <li> <b>multiple logging channels</b> can be defined
-         <li> several <b>different storage devices, formats and compression levels</b> can be selected
-         <li> data can be <b>logged to different subdirectories</b> on disk
-         <li> runs can be automatically stopped and restarted after a certain number of events, or a certain time 
-         <li><b>event filtering</b> can be implemented
-      </ul>
-       
-  <li> <b>saving the complete ODB </b> at the beginning and/or end of run
-
-  <li> <b>logging information to a @ref F_Logger_mySQL database</b>
-
-  <li> writing information to an <b>electronic logbook</b>
-
-  <li> collecting and logging <b>history events</b>
+  <li>logging <b>System messages</b> to a @ref F_Logger_Message_File "Message file" or as @ref  F_Logger_CS_Log_Messages  "message events"
+  <li>logging <b>Experimental data </b> to storage device(s) such as disk or tape
+  <ul>         
+     <li>  @ref F_Logger_multiple_logging_channels  can be defined
+     <li> several different @ref F_Logger_CS_Filename "storage devices, formats and compression levels" can be selected
+     <li> data can be logged to different @ref F_Logger_CS_Subdir_Format "subdirectories" on disk
+     <li> data can be logged to a remote computer, using the  @ref F_Logger_CS_Filename "FTP mode"
+     <li> events can be selected for logging by  @ref F_Logger_CS_Event_ID "Event ID" or @ref F_Logger_CS_Trigger_Mask "Trigger mask"
+     <li> @ref F_Logger_Event_Filtering "Event Filtering" can be implemented
+     <li> runs can be automatically stopped and @ref F_Logger_Auto_Restart "restarted" after a certain @ref  FE_ODB_equipment_common "number of events", or a @ref F_Logger_Run_Duration "certain time" 
+     <li> the complete ODB contents can be saved
+        <ul>
+        <li>  @ref F_Logger_ODB_Dump "into a file" at the beginning and/or end of run 
+        <li>  and/or into the @ref F_Logger_CS_ODB_Dump "data stream"
+       </ul> 
+     </ul>
+  <li> logging information to a @ref F_Logger_mySQL database
+  <li> writing information to an  @ref F_Elog "electronic logbook"
+  <li> collecting and logging  @ref F_History_logging "history events"
 </ul>
 <span style="color: green; font-size: 100%;">
-When the Midas logger (@ref F_mlogger_task "mlogger") is started for the first time, it creates the <b> /Logger </b> tree in the ODB, including 
-a single logger channel (channel 0), and fills it with default settings. 
-</span> The @ref F_Logger_tree  contains all the relevant information for <span class="cl">mlogger</span> to run properly.
+When the Midas logger (@ref F_mlogger_utility "mlogger") is started for the first time, it creates the
+@ref F_Logger_tree (including a single logger channel - channel 0), and fills it with default settings. 
+</span> The  <span class="odb">/Logger</span> tree contains all the relevant information for <span class="utility">mlogger</span> to run properly.
 The user has no code to write in order for the system to operate correctly. However, the user will want
 to  @ref F_Logging_Data "customize the logger" for his/her own experiment, by setting the keys 
 in the <span class="odb">/Logger</span> tree to suitable values.  
 
 <br>
-In addition to the \b /Logger tree,<span class="cl">mlogger</span>  also creates the \b /History and \b /Elog trees, used in the optional
-\b History and \b Electronic Logbook features.  If Midas is compiled with mySQL support, a \b mySQL subtree will 
-also be created in the \b /Logger tree. These are all described below.
+In addition to the <span class="odb">/Logger</span> tree, <span class="utility">mlogger</span>  also creates
+the <span class="odb">/History</span> and <span class="odb">/Elog</span> ODB trees, used in the optional
+@ref F_History_logging "History" and @ref F_Elog  "Electronic Logbook" features.  If Midas is compiled
+with mySQL support, a <span class="odb">mySQL</span> subtree will 
+also be created in the \b /Logger tree (see @ref F_mySQL). All these features are described in the following pages.
 
 <span style="color: green; font-size: 100%;">
 The data channels as well as the history logging are rescanned automatically at each 
 @ref RC_Run_States_and_Transitions "start" transition. 
 </span>
-In other words, additional logging channels can be defined while running, but the effect will take place only at the 
+In other words,  @ref F_Logger_Channels "additional logging channels" can be defined while running, but the effect will take place only at the 
 following start transition.
 <br>
-
-The @ref F_mlogger_task "mlogger task" runs on the backend computer, receiving events 
+\anchor idx_FTP_channel_mlogger
+The @ref F_mlogger_utility "mlogger utility" runs on the backend computer, receiving events 
 from the  @ref F_Buffer_Manager_overview "buffer manager". It supports three type of storage devices so far, i.e.
  - \em Disk,
  - \em Tape
@@ -130,20 +132,20 @@ Data can currently be written in five different  @ref F_Logger_CS_Format "format
 The user may of course write their own custom data logger to save the data in any format they choose.
 <br>
 <br><hr><br>
-\anchor idx_Logging_task-see-mlogger
-\anchor idx_mlogger-task
+\anchor idx_Logging_utility-see-mlogger
+\anchor idx_mlogger-utility
 
-@section F_mlogger_task mlogger     - Midas Logger
+@section F_mlogger_utility mlogger     - Midas Logger
 
-The Midas Logger, <span class="cl">mlogger</span>,  is the main application that collects data from one or more frontends
+The Midas Logger, <span class="utility">mlogger</span>,  is the main application that collects data from one or more frontends
 under certain conditions and stores them onto a physical device such as \em disk or
 \em tape. It also acts as a <b> history event </b> collector and can also store data in a \b mySQL database. 
 <br>
-The features and customization of the logger task are fully described in the section @ref F_Logging .
+The features and customization of the logger utility are fully described in the section @ref F_Logging .
 
 - <b> Arguments </b> 
   - [-h ] : help
-  - [-e exptname ] : experiment name (see @ref RC_odbedit_task)
+  - [-e exptname ] : experiment name (see @ref RC_odbedit_utility)
   - [-D ] : start program as a daemon (UNIX only).
   - [-s] : Save mode (debugging: protect ODB).
   - [-v] : Verbose (not to be used in conjunction with -D).
@@ -155,27 +157,14 @@ The features and customization of the logger task are fully described in the sec
 
 <b> Notes </b> 
 <ul>
-<li>The <span class="cl">mlogger</span> application requires an existing @ref FE_ODB_equipment_tree "/Equipment tree"
+<li>The <span class="utility">mlogger</span> application requires an existing @ref FE_ODB_equipment_tree "/Equipment tree"
   in the ODB  
-<li>Once the <span class="cl">mlogger</span> is running, you should be able to monitor its state
-  with @ref RC_mstat_task "mstat" or with @ref RC_mhttpd_task "mhttpd" .
+<li>Once the <span class="utility">mlogger</span> is running, you should be able to monitor its state
+  with @ref RC_mstat_utility "mstat" or with @ref RC_mhttpd_utility "mhttpd" .
 </ul>
 <br>
-<b> Versions </b> 
-<ul>
-<li>Midas version 1.9.5 and later
-  <ul>
-     <li> <span class="cl">mlogger</span> will not run if started remotely (argument -h hostname has been removed).
-     <li> The file size limitation (<2GB) has been removed for older OS version.
-     <li> @ref F_mySQL data entry support.
-  </ul>
 
-<li>Midas version 2.0.0 and later
-  <ul>
-     <li> <span class="cl">mlogger</span> implements compression such that the data file name can be given as 
-    <b>\<file.mid.gz\></b>
-</ul>
-</ul>
+
 
  <br><hr><br>
 
@@ -210,7 +199,7 @@ sections("Quickstart", "Features", "RunControl");
  
 <!-- ======================== F_LOGGING_DATA ================= -->
 /*! @page F_Logging_Data Customizing the Midas data logging
-\anchor idx_Logging_Customizing
+\anchor idx_Logging_Data
 \htmlonly
 <script type="text/javascript">
 pages( "F_Logging",  "Features", "F_Messaging", "F_Logging_Data","end"); // back index next {top bottom}
@@ -221,8 +210,10 @@ sections("Quickstart", "Features", "RunControl");
 
 <br>
 
-When <span class="cl">mlogger</span> is started for the first time, it will create default <b> /Logger</b> and  <b> /History </b> trees.
-The following information will be displayed (if NOT started as a daemon) :
+When <span class="utility">mlogger</span> is started for the first time, it will create default
+<span class="odb">/Logger</span> and   <span class="odb">/History</span> trees.
+The following information will be displayed (providing  <span class="utility">mlogger</span> has  NOT been
+started as a daemon) :
 @code
 $ mlogger
 Log     directory is /home/midas/online/
@@ -233,17 +224,20 @@ ELog    directory is same as Log
 MIDAS logger started. Stop with "!"
 @endcode
 
-Most of the keys in the  <span class="odb">/Logger</span> ODB tree</b> are used to customize logging of the data. There are also
+Most of the keys in the  <span class="odb">/Logger</span> ODB tree are used to customize logging of the data. There are also
 keys to customize the Messaging system. 
-The logger tree also may contain @ref F_Logger_Optional_Keys "optional keys" relevent to logging the history,
-the elog, or logging to a mySQL database. Customizing the optional keys will be described in 
-detail in the relevent sections below.  The  @ref F_ODB_History_tree is described in the section @ref F_History_logging .
-
+The  <span class="odb">/Logger</span> tree also may contain optional keys relevent to
+storing the History and Elog files (i.e. the  @ref F_Logger_History_Dir "History" and  @ref F_Logger_Elog_Dir "Elog" Keys). 
+The optional subtree
+<span class="odb">/Logger/SQL</span> is
+described in the section  @ref F_mySQL "mySQL database".
+The  @ref F_ODB_History_tree is described in the section @ref F_History_logging .
+and the @ref F_ODB_Elog_Tree in the  @ref F_Elog "Elog" section.
 
 \anchor idx_ODB_tree_Logger
 @section F_Logger_tree /Logger ODB tree
  
-The following example shows a /logger tree as created by @ref F_mlogger_task "mlogger". See also @ref F_Logger_tree_keys .
+The following example shows a /logger tree as created by @ref F_mlogger_utility "mlogger". See also @ref F_Logger_tree_keys .
 
 @code 
 Key name                        Type    #Val  Size  Last Opn Mode Value
@@ -257,6 +251,8 @@ Logger                          DIR
     Auto restart                BOOL    1     4     22h  0   RWD  n
     Auto restart delay          INT     1     4     94h  0   RWD  0
     Tape message                BOOL    1     4     15h  0   RWD  y
+    ODBC_Debug                  INT     1     4     >99d 0   RWD  0
+    ODBC_DSN                    STRING  1     256   >99d 0   RWD
     Channels                    DIR
         0 
             Settings            DIR
@@ -293,7 +289,7 @@ index to the explanation of each key in the <span class="odb">/Logger</span> tre
 <table
  style="text-align: left; width: 50%;" border="0" cellpadding="0"
 cellspacing="0">
-  <caption>Above: The ODB <span class="odb">/Logger</span> tree. Click on a key for details.
+  <caption>Above: The ODB /Logger tree. Click on a key for details.
   </caption>
     <tr>
       <td style="vertical-align: top;">\b /Logger
@@ -473,10 +469,10 @@ cellspacing="0">
 
 <table style="text-align: left; width: 100%;" border="1" cellpadding="2"
 cellspacing="2">
-<caption>Above: meaning of keys in the <span class="odb">/Logger</span> ODB tree
+<caption>Above: meaning of keys in the /Logger ODB tree
 </caption>
 <tr>
-<td colspan="2" style="vertical-align: top; background-color: rgb(204, 204, 255); font-weight: bold; text-align: center;">
+<td colspan="3" style="vertical-align: top; background-color: rgb(204, 204, 255); font-weight: bold; text-align: center;">
 Keys in the ODB tree <span class="odb">/Logger</span>
 </td>
 </tr>
@@ -485,17 +481,23 @@ Keys in the ODB tree <span class="odb">/Logger</span>
 ODB Key 
 </td>
 <td style="vertical-align: top; background-color: rgb(204, 204, 255); font-weight: bold; text-align: center;"> 
+Type
+</td>
+<td style="vertical-align: top; background-color: rgb(204, 204, 255); font-weight: bold; text-align: center;"> 
 Explanation
 </td>
 </tr>
 <!--   line    1      -->
 <tr>
-<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
+\anchor idx_midas_message-file_location
 \anchor F_Logger_Data_Dir Data dir
 </td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">STRING
+</td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;"> 
-  Specifies in which directory files produced by   @ref F_mlogger_task "mlogger" should
-  be written. Once the Logger is running, <b> Data Dir </b>  will be pointing to
+  Specifies in which directory files produced by   @ref F_mlogger_utility "mlogger" should
+  be written. Once the Logger is running, <b>"Data Dir"</b>  will be pointing to
   the location of 
 - the data file(s) (unless overruled by  @ref F_Logger_CS_Filename "Filename").
 - the message log file (unless overruled by  @ref F_Logger_Message_File "Message file") , 
@@ -504,105 +506,130 @@ Explanation
 and the optional
 -   elog files (unless overruled by @ref F_Logger_Elog_Dir "Elog Dir") 
 -   history files (unless overruled by @ref F_Logger_History_Dir "History Dir").
-
-  In the case of <b>multiple logging channels</b>, the data path for all the channels is defaulted
-  to the same location. In the case where a specific directory has to be assigned to each
-  individual logging channel, the field \b /logger/channel/\<<em>eqpname</em>\>/Settings/Filename 
-  can contain the full path of the location of the \b .mid, .ybs, .asc  file. If
-  the OS specific \b SEPARATOR_DIR  ("/", "\") is found in the field  
-@ref F_Logger_CS_Filename "Filename" , the 
-  the global @ref F_Logger_Data_Dir "Data Dir" will be overwritten with the setting for that particular channel.
+\anchor F_Logger_Dir_Separator 
+\NOTE  When  @ref F_Logger_multiple_logging_channels are enabled,
+ - by default the data path for \b all the channels is set to the same location, given by  @ref F_Logger_Data_Dir "Data Dir".
+ - If different directories have to be assigned to individual logging channels, the ODB key
+  @ref F_Logger_CS_Filename "/Logger/channels/\<channel-number\>/Settings/Filename" 
+  can contain the full path of the location of the \b .mid, .ybs, .asc  file.
+ - If this key contains the full directory path (i.e. contains the OS specific \b DIR_SEPARATOR  (e.g. "/" for Linux or "\" for Windows),
+   then  the \b global @ref F_Logger_Data_Dir "Data Dir" will be <b>overwritten with the setting for that particular channel</b>.
+   For example, if
+      - Key @ref F_Logger_CS_Filename "Filename" contains <i>"run%05.mid"</i>.  @ref F_Logger_Data_Dir "Data Dir" will \b not be overwritten
+      - Key @ref F_Logger_CS_Filename "Filename" contains <i>"/data1/ch1log/run%05.mid"</i>.  @ref F_Logger_Data_Dir "Data Dir" \b will be overwritten
 </td>
 </tr>
 <tr>
 <!--   line     2     -->
-<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
+\anchor idx_midas_message-file_name
 \anchor F_Logger_Message_File Message file
 </td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">STRING
+</td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;"> 
-  Specifies the file name for the log file which contains all messages
-  from the MIDAS message system. The message log file is a simple ASCII file, which
-  can be viewed at any time to see a history of what happened in an experiment.
+  Specifies the <b>filename</b> of the  @ref F_Log_File "message log", which is a simple ASCII file containing all the messages
+  from the MIDAS message system.  The default filename is <b> "midas.log" </b>. This file can
+  can be viewed at any time to see a record of what happened in an experiment, since each entry is time-stamped (see  @ref F_Log_File "example").
 </td>
 </tr>
 <!--   line    3      -->
 <tr>
-<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
 \anchor F_Logger_Auto_Restart Auto restart
 </td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">BOOL
+</td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;"> 
-   When this flag is true, a new run is automatically restarted
-  when the previous run has been stopped by the logger due to an event or byte limit.
+   When this flag is set to "y" (i.e. TRUE), a new run is automatically restarted
+  when the previous run has been stopped by the logger due to an event or byte limit. Default value is "n".
 </td>
 </tr>
 <!--   line    3.5      -->
 <tr>
-<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
 \anchor F_Logger_Auto_Restart_Delay Auto restart delay
 </td>
-<td style="vertical-align: top; font-weight: normal; text-align: left;"> 
-   When this integer value is non-zero, delays by this number of milliseconds  before automatically 
-starting a new run, provided  @ref F_Logger_Auto_Restart "Auto restart" is set true.
-</td>
-</tr>
- F_Logger_Run_Duration
-<!--   line    3.6      -->
-<tr>
-<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
-\anchor  F_Logger_Run_Duration Run duration
+<td style="vertical-align: top; font-weight: normal; text-align: left;">INT
 </td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;">
-Optional value supported in revision 4561 an later,  which allows runs with a 
-certain duration. To use this, one has to create and set this INT variable to a 
-non-zero value in seconds. After a run has lasted for this duration, it will be 
-stopped automatically by the logger. If the  @ref F_Logger_Auto_Restart  "Auto restart"
-flag is on, this allows 
-sequences of automatically started and stopped runs, all with the same 
-duration.
+   Providing   @ref F_Logger_Auto_Restart "Auto restart" is set TRUE, the automatic start of the
+   next run will be delayed by this number of milliseconds.
+</td>
+</tr>
+
+<!--   line    3.6      -->
+<tr>
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
+\anchor  F_Logger_Run_Duration Run duration
+</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">INT
+</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">
+<span class="new">Optional value new since</span> @ref ndf_sep_2009 This key allows for runs with a 
+certain duration. To use this option, the user creates and sets this  variable to a 
+non-zero \b integer value (in seconds). After a run has lasted for this duration, it will be 
+stopped automatically by the logger. To automatically produce <b>sequences of runs all with the same duration</b>, also set
+the  @ref F_Logger_Auto_Restart  "Auto restart" flag to "y" . 
 </td>
 </tr>
 <!--   line  4        -->
 <tr>
-<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
 \anchor F_Logger_Write_Data Write data
 </td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">BOOL
+</td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;"> 
- Global flag which turns data logging on and off for all channels.
-  It can be set to zero temporarily to make a short test run without data logging.
-  The key <span class="odb">Write data?</span> is a predefined logger key for enabling data logging.
-  This action can be overridden by setting the  @ref F_Logger_CS_Active "Active" key (in the
-  @ref F_Logger_Settings "/Logger/Channels" tree) to 1.
+ Global flag which enables or disables data logging for all channels. Default value is "y" (data logging enabled).
+  It can be set to "n" (FALSE) temporarily to make a short test run without data logging.
+  The key <span class="odb">Write data</span> is a predefined logger key for enabling data logging.
+  \Note The  @ref F_Logger_CS_Active "Active" key (in the
+@ref F_Logger_Settings "/Logger/Channels/\<channel-number\>" tree) must \b also be set to "y" for the data from that channel to be logged.
+
 </td>
 </tr>
 <!--   line  5        -->
 <tr>
-<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
 \anchor F_Logger_ODB_Dump ODB Dump
+\anchor idx_ODB_Dump_to-ascii-file
+\anchor idx_ODB_Dump_to-xml-file
+</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">BOOL
 </td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;"> 
-  If set true (y) a dump of the complete ODB will be written to the file
+  If this flag is set to "y", a dump of the complete ODB will be written to the file
   specified by @ref F_Logger_ODB_Dump_File "ODB Dump file" at the end of each run.
+  Default value is "n".
+  \NOTE
+   - The ODB contents is \b always saved into a file "last.xml" at the beginning of each run regardless of the setting of this key.
+   - The ODB contents can also be saved into the data stream as an event (see @ref F_Logger_CS_ODB_Dump "ODB Dump per logging channel").
 </td>
 </tr>
 <!--   line    6      -->
 <tr>
-<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
 \anchor F_Logger_ODB_Dump_File ODB Dump File
+</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">STRING
 </td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;"> 
   Specifies the filename in which the dump of the complete ODB will be written at the end of
-  each run if the @ref F_Logger_ODB_Dump "ODB Dump" flag is set.
-  
-  If the file name contains a "%",
-  this will be replaced by the current run number similar to the format string of the 
-  printf() C function.
-  The format specifier "%05d" from the above example would be evaluated to a five digit run number
-  with leading zeros e.g. run00002.odb. The ODB dump file is in ASCII format and can
-  be used for off-line analysis to check run parameters etc. For a description of the
-  ASCII format see db_copy().
+  each run if the @ref F_Logger_ODB_Dump "ODB Dump" flag is set to "y".   The default value is <i>"run%05d.odb"</i>.
+    If this filename has the extension ".xml" or ".XML"
+  the file will be written in XML format, otherwise in ASCII format.  For a description of the format see db_copy_xml()
+or db_copy() respectively. 
+  <br>
+  If this filename contains a "%", the "%" will be replaced by the current run number (cf. format string of 
+  printf() C function). The format specifier "%05d" from the example would be evaluated to a five digit run number
+  with leading zeros e.g. run00002.odb. The ODB dump file can be used for off-line analysis to check run parameters etc.
+  (see also  @ref F_Logger_CS_ODB_Dump "ODB Dump per logging channel").
 
-    - <b>Note:</b> In Midas version \b 2.0.0 or later, the location of the ODB dump files can be specified in this field.
-     If the string contains a DIRECTORY_SEPARATOR, it is considered as an absolute path
+    - <b>Note:</b> The location of the ODB dump files can also be specified in this field.
+     If the  @ref F_Logger_ODB_Dump_File "ODB Dump File" string contains a  @ref F_Logger_Dir_Separator "DIR_SEPARATOR" as in the following example,
+     it is considered as an absolute path. If no \b DIR_SEPARATOR is present, the dump file will be written to the location given by  @ref F_Logger_Data_Dir "Data dir". 
+     
    @code
   [local:Default:S]/Logger>ls
   Data dir                        /scr0/spring2009
@@ -632,27 +659,103 @@ duration.
 </tr>
 <!--   line   7       -->
 <tr>
-<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
 \anchor F_Logger_Tape_Message Tape message
 </td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">BOOL
+</td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;"> 
- Specifies whether tape messages during mounting and writing of EOF
+ If set to "y", midas messages during mounting tapes and writing of EOF
   marks are generated. This can be useful for slow tapes to inform all users in a
-  counting house about the tape status.
+  counting house about the tape status. Default value is "y".
+</td>
+</tr><!--   line  7.3        -->
+<tr>
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
+\anchor F_Logger_ODBC_Debug ODBC_Debug
+</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">INT
+</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;"> 
+Optional key created if ODBC is installed (see @ref  BO_building_option). Used by the @ref F_History_sql_internal .
+Set to 1 to see all SQL commands. Default value is 0.
 </td>
 </tr>
+
+<!--   line  7.6       -->
+<tr>
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
+\anchor F_Logger_ODBC_DSN  ODBC_DSN
+</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">STRING
+</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;"> 
+Optional key created  if ODBC is installed (see @ref BO_building_option).  Default value is blank.
+See @ref F_History_sql_internal for details.
+</td>
+</tr>
+
 <!--   line  8        -->
 <tr>
-<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
 \anchor F_Logger_Channels Channels
+\anchor idx_Logging_Channels_multiple
+</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">DIR
 </td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;"> 
 This is a subdirectory under the  @ref F_Logger_tree which contains settings for 
 individual channels.
- By default, only channel "0" is created. To define <b>multiple logging channels</b>, an existing
-  channel tree can be copied, e.g.:
+ By default, only channel "0" is created. See  @ref F_Logger_multiple_logging_channels .
+</td>
+</tr>
+<!--   line  9        -->
+<tr>
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
+History dir
+</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">STRING
+</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;"> 
+This optional key is used to reassign the location of history files. See  @ref F_Logger_History_Files_Location .
+</td>
+</tr>
 
-  @code 
+
+<!--   line  10        -->
+<tr>
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
+Elog dir
+</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">STRING
+</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;"> 
+This optional key is used to reassign the location of elog files.  See @ref F_Logger_Elog_Files_Location .
+</td>
+</tr>
+
+<!--   line  11        -->
+<tr>
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
+@ref F_Logger_mySQL "SQL"
+</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">DIR
+</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;"> 
+Optional directory for SQL. See  @ref F_Logger_mySQL .
+</td>
+</tr>
+</table>
+
+
+
+@section F_Logger_multiple_logging_channels Multiple Logging Channels
+By default, only \b one logging channel is created (Logging Channel 0).
+To create \b multiple logging channels, an existing  Channel subtree can be copied, e.g. to
+create a second logging channel (Channel 1) using @ref RC_odbedit_utility "odbedit" :
+
+  @code
+  [local]cd /Logger
   [loca]]Logger>cd channels
   [local]Channels>ls 
   0
@@ -661,58 +764,26 @@ individual channels.
   0
   1
   @endcode
-To send different events to different logging channels, they may be selected by  
-@ref F_Logger_CS_Event_ID "Event ID" or  @ref F_Logger_CS_Trigger_Mask "Trigger Mask". 
-See also  @ref F_Logger_Event_Filtering "Event Filtering" .
-</td>
-</tr>
-<!--   line  9        -->
-<tr>
-<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
-@ref F_Logger_History_Dir "History dir"
-</td>
-<td style="vertical-align: top; font-weight: normal; text-align: left;"> 
-Optional directory
-</td>
-</tr>
 
-
-<!--   line  10        -->
-<tr>
-<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
- @ref F_Logger_Elog_Dir "Elog dir"
-</td>
-<td style="vertical-align: top; font-weight: normal; text-align: left;"> 
-Optional directory
-</td>
-</tr>
-
-<!--   line  11        -->
-<tr>
-<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
-@ref F_Logger_mySQL "SQL"
-</td>
-<td style="vertical-align: top; font-weight: normal; text-align: left;"> 
-Optional directory
-</td>
-</tr>
-</table>
+\Note
+  - If more than one logging channel is defined, there will be a <b>Settings tree for each channel</b> (0,1...). Thus the parameters for \b each logging channel can be set \b individually.
+  - To send different events to different logging channels, they may be selected by  @ref F_Logger_CS_Event_ID "Event ID" or  @ref F_Logger_CS_Trigger_Mask "Trigger Mask".  See also  @ref F_Logger_Event_Filtering "Event Filtering" .
 
 @section F_Logger_Settings  Explanation of keys in the ODB /Logger/Channels tree 
 
-The keys in the ODB <span class="odb">/Logger/Channel/0/Settings </span> tree are shown below. 
-<br><span class="note">This is the tree for Channel 0.
-If more than one logging channel is defined, there will be a Settings tree for each channel (0,1...).  
-</span>
-Thus <b> the parameters for each logging channel can be set individually</b>.
-
-The following table is an index to the explanation of each key in this tree. 
+The keys in the ODB <span class="odb">/Logger/Channels/\<channel-number\>/Settings </span> tree are shown below.
+By default, <i> <channel-number> </i> has the value 0 (for Logging Channel 0).
+<br>
+If @ref  F_Logger_multiple_logging_channels
+are defined, there will be a Settings tree for each defined Logging Channel.
+The tree <span class="odb">/Logger/Channels/0/Settings</span> is shown below.
+ 
 <br> 
 
 <table
  style="text-align: left; width: 50%;" border="0" cellpadding="0"
 cellspacing="0">
-  <caption>Above: The ODB /Logger/Channels tree. Click on a key for details.
+  <caption>Above: The ODB /Logger/Channels/0/Settings tree. Click on a key for details.
   </caption>
     <tr>
       <td style="vertical-align: top;"><br>
@@ -843,6 +914,18 @@ cellspacing="0">
       <td style="vertical-align: top;"><br>
       </td>
       <td style="vertical-align: top;">@ref F_Logger_CS_Buffer "Buffer"
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;"><br>
+      </td>
+      <td style="vertical-align: top;"><br>
+      </td>
+      <td style="vertical-align: top;"><br>
+      </td>
+      <td style="vertical-align: top;"><br>
+      </td>
+      <td style="vertical-align: top;">@ref F_Logger_Event_Filtering "Event Filtering"
       </td>
     </tr>
     <tr>
@@ -1007,62 +1090,75 @@ cellspacing="0">
 <br>
 <hr>
 <br>
-
+\anchor F_logger_channels_settings
+\anchor idx_FTP_mlogger
 <table style="text-align: left; width: 100%;" border="1" cellpadding="2"
 cellspacing="2">
-<caption>Above: meaning of keys in the <span class="odb">/Logger/channels/0/Settings</span> ODB tree
+<caption>Above: meaning of keys in the /Logger/Channels/<i>\<channel-number\></i>/Settings ODB tree
 </caption>
 <tr>
-<td colspan="2" style="vertical-align: top; background-color: rgb(204, 204, 255); font-weight: bold; text-align: center;">
-Keys in the ODB tree <span class="odb">/Logger/channels/0/Settings</span>
+<td colspan="3" style="vertical-align: top; background-color: rgb(204, 204, 255); font-weight: bold; text-align: center;">
+Keys in the ODB tree <span class="odb">/Logger/Channels/0/Settings</span>
 </td>
 </tr>
 <tr>
 <td style="vertical-align: top; background-color: rgb(204, 204, 255); font-weight: bold; text-align: center;">
 ODB Key 
 </td>
+<td style="vertical-align: top; background-color: rgb(204, 204, 255); font-weight: bold; text-align: center;">
+Type
+</td> 
 <td style="vertical-align: top; background-color: rgb(204, 204, 255); font-weight: bold; text-align: center;"> 
 Explanation
 </td>
 <!--   line 1          -->
 <tr>
-<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
 \anchor  F_Logger_CS_Active  Active
 </td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">BOOL
+</td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;"> 
- turns a logging channel on (y) or off (n). Data is only logged to channels that
-    are active. See also @ref F_Logger_Write_Data "Write Data" key.
+If set to "y" logging channel is \b active.  Data is only logged for channels that
+    are active. See also @ref F_Logger_Write_Data "Write Data" key. Set to "n" to disable data logging from this channel.
+    Default value is "y".
 </td>
 </tr>
 <!--   line  2        -->
 <tr>
-<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
 \anchor F_Logger_CS_Type Type
+</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">STRING
 </td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;"> 
  Specify the type of media on which the logging should take place.
-  It can be \b Disk, \b Tape or \b FTP to write directly to a remote computer via FTP.
+  It can be \b "Disk", \b "Tape" or \b "FTP" (see @ref F_Logger_CS_Filename "Filename"). Default value is "Disk".
 </td>
 </tr>
 <!--   line   3       -->
 <tr>
-<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
 \anchor F_Logger_CS_Filename  Filename
+\anchor idx_FTP_server
+</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">STRING
 </td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;"> 
-  - for <b> disk logging </b>, specifies the name of a file where "%05d" in the example  @ref F_Logger_tree "above" is
-  replaced by the current run number in the same way as described for the 
+  - for <b> disk logging </b>, specifies the name of a file to contain the data. Default value is <i>"run%05d.mid"</i>
+  where <i>"%05d"</i> is replaced by the current run number in the same way as described for the 
 @ref F_Logger_ODB_Dump_File "ODB Dump file" key.
-  This key may also contain a directory string as well as a filename, so that different logging channels may
+  This key may  contain a directory string in addition to a filename, so that different logging channels may
   have their data logged into specific directories. If the key does NOT also contain a directory string, the 
-  directory given in the  key @ref F_Logger_Data_Dir "Data dir" will be used.
+  directory given in the  key @ref F_Logger_Data_Dir "Data dir" will be used. The filename must match the @ref F_Logger_CS_Format "Format"
+  Key specified below.
 
 
   - for <b> tape logging </b>, the filename specifies a tape device i.e.
         - /dev/nrmt0 or /dev/nst0 under UNIX or 
         -  \\\\.\\tape0 under Windows NT.
-  - In <b> FTP mode </b>, the filename specifies the access information for the FTP server.
-  It has the following format:
+  - In <b> FTP mode </b>, the data is written directly to a remote computer via FTP.
+    \b "Filename" specifies the access information for the FTP server. It has the following format:
 
   @code
   <host name>, <port number>, <user name>, <password>, <directory>, <file name>
@@ -1080,63 +1176,79 @@ for example
 
 <!--   line    4      -->
 <tr>
-<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
-\anchor  F_Logger_CS_Format  Format
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
+\anchor  F_Logger_CS_Format
+\anchor  idx_Logging_Data_Format  Format
+</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">STRING
 </td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;"> 
   Specifies the format to be used for writing the data to the logging
   channel. It can take one of four values: <b>MIDAS, ROOT, ASCII and DUMP</b>.
-  The MIDAS binary formats is specified in the @ref FE_tbl_Format "equipment list"
-for the event. The first two formats are described in @ref FE_Midas_format.  
-Writing data in ROOT format requires conversion from one of MIDAS or FIXED formats, see  @ref FE_tbl_Format "equipment list" for details.
 <br>
-  The extension for the file name must match one of the following:
-      -  <b> .mid </b>  for \b MIDAS 
+
+  \Note
+  For \b disk \b logging, the extension for the @ref  F_Logger_CS_Filename "Filename" Key above must match one of the following:
+      -  <b> .mid </b>  for \b MIDAS  (or <b>.mid.gz</b> - see  @ref F_Logger_CS_Compression "Compression")
       -  <b> .root </b> for \b ROOT 
       -  <b> .asc </b>  for \b ASCII 
       -  <b> .txt </b>  for \b DUMP
 
-Note that the <b> ASCII format </b> converts events into readable text format which can be easily 
+  For \b ROOT \b format the data logger will automatically convert the format specified in the frontend  @ref FE_tbl_Format "equipment list"
+  to ROOT format (see   @ref FE_tbl_Format "format" for details).       
+The <b> ASCII format </b> converts events into readable text format which can be easily 
     analyzed by programs that have problems reading binary data. While the ASCII
-  format tries to minimize the file size by printing one event per line, the DUMP
-  format gives a very detailed ASCII representation of the event including bank
-  information, serial numbers etc., so it should be used for diagnostics.
-  <b>Consistency of this type of format has to be maintained between the frontend
- declaration and the logger.</b>
+  format tries to minimize the file size by printing one event per line, the \b DUMP
+  \b format gives a very detailed ASCII representation of the event including bank
+  information, serial numbers etc., so it should be used mainly for diagnostics.
 </td>
+
 </tr>
 <!--   line    5      -->
 <tr>
-<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
 \anchor F_Logger_CS_Compression   Compression
+\anchor idx_Logging_Data_Format_compression 
+</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">INT
 </td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;"> 
-If the Compression Level is set to be 0, compression is turned off. 
+If the Compression Level is set to 0, compression is turned off. 
 If set &gt; 0,  the data files are compressed before 
-being written. In this case, the file extension must be ".gz" and ZLIB support compiled into the Midas package.
+being written. In this case,
+ - the file extension ".gz" must be appended to the @ref F_Logger_CS_Filename "Filename" Key (see also @ref F_Logger_CS_Format "Format" Key)
+ - and ZLIB support must be compiled into the Midas package (see @ref BO_NEED_ZLIB ).
+ 
+This feature applies only to files saved onto  \b disk in MIDAS format. ROOT format is already compressed.
 </td>
 </tr>
 
 
 <!--   line    6      -->
 <tr>
-<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
 \anchor  F_Logger_CS_ODB_Dump  ODB Dump
+\anchor idx_ODB_Dump_to-logging-channel
+</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">BOOL
 </td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;"> 
 If this flag is set, a complete dump of the ODB  is performed <b>to this logging channel</b> before
   and after every run. The ODB content is dumped in one long ASCII string reflecting
   the status at begin-of-run event and at end-of-run event. These special events have
   an ID of EVENTID_BOR and EVENTID_EOR and a serial number
-  equal to the current run number. An analyzer in the off-line analysis stage can
-  use the dump to restore the ODB to its online state. This is not to be confused with the
-  parameter @ref F_Logger_ODB_Dump "/Logger/ODB Dump"
+  equal to the current run number, and are not visible using the @ref RC_mdump_utility "mdump" utility. An analyzer in the off-line
+  analysis stage can use these special events to restore the ODB to its online state. 
+  \NOTE The dump of the ODB into the event stream for this logger channel is independent of the
+  @ref F_Logger_ODB_Dump "/Logger/ODB Dump" parameter, which is used to dump the ODB to an ASCII or XML file on disk.
 </td>
 </tr>
 <!--   line    7      -->
 <tr>
-<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
 \anchor F_Logger_CS_Log_Messages  Log messages
+</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">DWORD
 </td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;"> 
  This is a bit-field for logging system messages as message events along with
@@ -1152,18 +1264,23 @@ If this flag is set, a complete dump of the ODB  is performed <b>to this logging
 </tr>
 <!--   line    8      -->
 <tr>
-<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
 \anchor  F_Logger_CS_Buffer Buffer
+</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">STRING
 </td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;"> 
   This specifies the buffer where the logger will find the event. It is usually set to
-  "System" and is specified in the @ref FE_tbl_Buffer "equipment list" for this event.
+  "SYSTEM" and is specified in the @ref FE_tbl_Buffer "equipment list" for this event.
 </td>
 </tr>
 <!--   line    9      -->
 <tr>
-<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
 \anchor  F_Logger_Event_Filtering Event Filtering
+\anchor idx_Event_Filter
+</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">STRING
 </td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;"> 
 By specifying a buffer other than the "SYSTEM" buffer,  <b>event filters</b> can be 
@@ -1179,8 +1296,11 @@ Event selection for logging channels can also be done by specifying the
 
 <!--   line    10      -->
 <tr>
-<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
 \anchor F_Logger_CS_Event_ID Event ID
+\anchor idx_Event_log-by-ID
+</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">INT
 </td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;"> 
  This is the ID of the event(s) to be logged. It is specified in the  @ref FE_tbl_EventID
@@ -1192,8 +1312,10 @@ Event selection for logging channels can also be done by specifying the
 </tr>
 <!--   line    11      -->
 <tr>
-<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
 \anchor  F_Logger_CS_Trigger_Mask Trigger Mask
+</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">INT
 </td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;"> 
   Specifies which events to log. See @ref FE_table to see 
@@ -1207,8 +1329,11 @@ sent to particular logging channels, or for  @ref F_Logger_Event_Filtering "Even
 </tr>
 <!--   line    12      -->
 <tr>
-<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
 \anchor F_Logger_CS_Event_Limit Event Limit
+\anchor idx_Event_Limit
+</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">DWORD
 </td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;"> 
  This field can be used to stop
@@ -1220,8 +1345,11 @@ then be started automatically if desired (see @ref  F_Logger_Auto_Restart "Auto 
 </tr>
 <!--   line    13     -->
 <tr>
-<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
 \anchor F_Logger_CS_Byte_Limit Byte limit
+\anchor idx_Byte_Limit
+</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">DOUBLE
 </td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;"> 
  This field can be used to stop
@@ -1235,8 +1363,10 @@ then be started automatically if desired (see @ref  F_Logger_Auto_Restart "Auto 
 </tr>
 <!--   line    14     -->
 <tr>
-<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
 \anchor F_Logger_CS_Tape_Capacity Tape capacity
+</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">DOUBLE
 </td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;"> 
   This field can be used to stop
@@ -1248,8 +1378,10 @@ then be started automatically if desired (see @ref  F_Logger_Auto_Restart "Auto 
 </tr>
 <!--   line    15     -->
 <tr>
-<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
 \anchor  F_Logger_CS_Subdir_Format Subdir format
+</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">STRING
 </td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;"> 
 This field optionally specifies a subdirectory, which is appended to the directory string in 
@@ -1263,22 +1395,26 @@ This can be done automatically using the <b>Subdir format</b> field.
   If the <b>Subdir format</b> field is not empty, the data log file will be
   placed in a subdirectory. The name
   of this subdirectory is composed by the given  <b>Subdir format</b> string. Its format
-  follows the definition of the system call strftime() . Ordinary characters placed
-  in the format string are copied to s without conversion.  Conversion specifiers are
-  introduced by a `%' character, and are replaced in s as follows for the most used one:
-    - %Y : Year  (ex: 2002)    - %y : Year  (range:00..99)
-    - %m : Month (range: 01..12)
-    - %d : Day   (range: 00..31)
-  The other characters are: %a, %A, %b, %B, %c, %C, %d, %D, %e, %E, %G, %g, %h, %H, %I,
-  %j, %k, %l, %m, %M, %n, %O, %p, %P, %r, %R, %s, %S, %t, %T, %u, %U, %V, %w, %W, %x,
-  %X, %y, %Y, %z, %Z, %+, %%. (See man strftime() for explanation).
+  follows the definition of the system call strftime() . (See man strftime). Ordinary characters placed
+  in the format string are copied to the output character array "s" without conversion.  Conversion specifiers are
+  introduced by a '\%' character, and are replaced in "s" as follows for the most common ones:
+    - \%Y : Year  (ex: 2002)
+    - \%y : Year  (range:00..99)
+    - \%m : Month (range: 01..12)
+    - \%d : Day   (range: 00..31)
+
+  The other characters are: \%a, \%A, \%b, \%B, \%c, \%C, \%d, \%D, \%e, \%E, \%G, \%g, \%h, \%H, \%I,
+  \%j, \%k, \%l, \%m, \%M, \%n, \%O, \%p, \%P, \%r, \%R, \%s, \%S, \%t, \%T, \%u, \%U, \%V, \%w, \%W, \%x,
+  \%X, \%y, \%Y, \%z, \%Z, \%+. (See man strftime for explanation).
 </td>
 </tr>
 
 <!--   line    14     -->
 <tr>
-<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
 \anchor F_Logger_CS_Current_Filename Current filename
+</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">STRING
 </td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;"> 
 will reflect the full path of the current saved data file.
@@ -1289,23 +1425,14 @@ will reflect the full path of the current saved data file.
 </table>
 
 
-<!--   line    1     -->
-<tr>
-<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
-
-</td>
-<td style="vertical-align: top; font-weight: normal; text-align: left;"> 
-
-</td>
-</tr>
-</table>
 
 
 
 
-@section F_Logger_CStat_Statistics   /Logger/Channel/0/Statistics tree 
 
-The keys in the <span class="odb">/Logger/Channel/0/Statistics </span> tree are shown below. 
+@section F_Logger_CStat_Statistics   /Logger/Channels/0/Statistics tree 
+
+The keys in the <span class="odb">/Logger/Channels/0/Statistics </span> tree are shown below. 
 If more than one logging channel is defined, there will be a <b> <span class="odb">Statistics</span> tree for each 
 defined channel</b>  
 (see @ref F_Logger_Channels "multiple channels").  
@@ -1316,24 +1443,29 @@ defined channel</b>
 
 <table style="text-align: left; width: 100%;" border="1" cellpadding="2"
 cellspacing="2">
-<caption>Above: meaning of keys in the <span class="odb">/Logger/channels/0/Statistics</span> ODB tree
+<caption>Above: meaning of keys in the /Logger/Channels/0/Statistics ODB tree
 </caption>
 <tr>
-<td colspan="2" style="vertical-align: top; background-color: rgb(204, 204, 255); font-weight: bold; text-align: center;">
-Keys in the ODB tree <span class="odb">/Logger/channels/0/Statistics</span>
+<td colspan="3" style="vertical-align: top; background-color: rgb(204, 204, 255); font-weight: bold; text-align: center;">
+Keys in the ODB tree <span class="odb">/Logger/Channels/0/Statistics</span>
 </td>
 </tr>
 <tr>
 <td style="vertical-align: top; background-color: rgb(204, 204, 255); font-weight: bold; text-align: center;">
 ODB Key 
 </td>
+<td style="vertical-align: top; background-color: rgb(204, 204, 255); font-weight: bold; text-align: center;">
+Type 
+</td>
 <td style="vertical-align: top; background-color: rgb(204, 204, 255); font-weight: bold; text-align: center;"> 
 Explanation
 </td>
 <!--   line 1          -->
 <tr>
-<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
 \anchor F_Logger_CStat_Events_Written events written
+</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;"> DOUBLE
 </td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;"> 
 Number of events written. Cleared at begin of run. <b>Events written</b> statistics are used to determine 
@@ -1344,8 +1476,10 @@ when to stop a run automatically  by checking against @ref F_Logger_CS_Event_Lim
 
 <!--   line 2          -->
 <tr>
-<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
 \anchor F_Logger_CStat_Bytes_Written Bytes written
+</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;"> DOUBLE
 </td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;"> 
 Number of bytes written. Cleared at begin of run. <b>Bytes written</b> statistics are used to determine 
@@ -1355,8 +1489,10 @@ when to stop a run automatically by checking against @ref  F_Logger_CS_Byte_Limi
 
 <!--   line 3          -->
 <tr>
-<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
 \anchor F_Logger_CStat_Bytes_Written_Uncompressed Bytes written uncompressed
+</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;"> DOUBLE
 </td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;"> 
  If @ref  F_Logger_CS_Compression "Compression level" is 0 (i.e. not compressed), the values of 
@@ -1365,8 +1501,10 @@ when to stop a run automatically by checking against @ref  F_Logger_CS_Byte_Limi
 </tr>
 <!--   line 4          -->
 <tr>
-<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
 \anchor F_Logger_CStat_Bytes_Written_Total  Bytes written total
+</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;"> DOUBLE
 </td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;"> 
 Total number of bytes written. Cleared only when  a tape is rewound with the @ref RC_odbedit "ODBEdit" 
@@ -1377,8 +1515,10 @@ of when a tape is full by checking against the limit @ref F_Logger_CS_Tape_Capac
 </tr>
 <!--   line 3          -->
 <tr>
-<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
 \anchor F_Logger_CStat_Files_Written files written
+</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">INT
 </td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;"> 
 Number of files written. Cleared only when  a tape is rewound with the @ref RC_odbedit "ODBEdit" 
@@ -1393,17 +1533,9 @@ to be skipped in order to reach a specific run.
 <hr>
 <br>
  
-\anchor idx_ODB_tree_Logger_Optional-keys
 
-@section F_Logger_Optional_Keys Optional Keys in the ODB <span class="odb">/Logger</span> tree
-Three optional subdirectories with special meaning may be created in the @ref F_Logger_tree . These are not created
-automatically by the logger.
-They are 
-- @ref  F_Logger_Elog_Dir "Elog Dir"
-- @ref  F_Logger_History_Dir "History Dir"
-- @ref  F_Logger_mySQL
-
-They are described under the sections  @ref F_Elog,  @ref F_History_logging  and  @ref F_mySQL respectively.
+@section F_Logger_Optional_Keys Optional SQL subtree in the ODB /Logger tree
+The "SQL" optional subdirectory may be created in the @ref F_Logger_tree . See  @ref F_mySQL for details.
 
 \htmlonly
 <script type="text/javascript">
@@ -1454,7 +1586,7 @@ The message system is based on the buffer manager scheme, but with a dedicated h
 of message. A dedicated buffer (i.e. shared memory)  @ref RC_odbedit_create_ODB ".SYSMSG.SHM"
  is used to receive and distribute messages.
 
-\todo dedicated buffer SYSMSG.SHM   ?? or is it .MSG.SHM ... ??  What is .MSG.SHM used for?
+\todo what is .MSG.SHM used for?
 
 <br>
 \anchor idx_message_types
@@ -1474,35 +1606,38 @@ The available message types ( defined in midas.h ) for use with cm_msg() are:
   - @ref MCALL : Info message for telephone call (MT_CALL, __FILE__, __LINE__)
 
 <br>
-\anchor idx_log-file
-<hr> @section F_Log_File Log file
+\anchor idx_message_log-file
+<hr> @section F_Log_File Midas Log file
 
-Midas provides a general log file \b midas.log for recording system and
-user messages across the different components of the data acquisition clients.
-It is not necessary for @ref F_mlogger_task "mlogger" to be running for this message logging system to
-work. 
+Midas provides a general log file for recording system and
+user messages across the different components of the data acquisition clients. The default name of this file is <b>"midas.log"</b>,
+It is not necessary for @ref F_mlogger_utility "mlogger" to be running for the Midas message logging system to
+work. As soon as any midas application is started, the log file is
+produced.
+<br>
+\anchor idx_message_log-file_location
+The location of this file is dependent on the setup of the experiment.
+
+ - \b with the <span class="odb">/Logger tree</span> :
+     -  If the  @ref F_Logger_tree exists (i.e. has been created by @ref F_mlogger_utility "mlogger")
+     the message file will be located in the defined directory specified by the key
+         @ref  F_Logger_Data_Dir "/Logger/Data dir" .
+     -  The \b name of the message file may be changed using the ODB key @ref F_Logger_Message_File "/Logger/Message File".
+ 
+
+ - \b without the <span class="odb">/Logger tree</span> :
+    - If the ODB <span class="odb">/Logger</span> tree does NOT exist , i.e. the Midas standard logger
+@ref F_mlogger_utility "mlogger" is not being used, then the location of the log file will be in
+the <b> experiment-specific </b> directory defined by either
+         - the  @ref BO_Environment_variables "Environment Variable" named  @ref BO_MIDAS_DIR ,  or if this not defined, 
+         - the @ref  Q_Linux_Exptab "exptab file" .
+
 <br>
 
-The location of this file is dependent on the mode of installation of the system.
-
-- \b with  @ref F_Logger_tree /Logger Tree The \b midas.log  will be located in the
-defined directory specified by the key @ref  F_Logger_Data_Dir "Data dir" . In this case,  this name of the log file can be 
-changed using the key @ref F_Logger_Message_File "Message file" in
-the <span class="odb">/Logger</span> ODB tree. 
-
-- \b without the ODB <span class="odb">/logger</span> tree , i.e. midas logger not being used
-  <br> In this case the location is defined
-by either the @ref BO_MIDAS_DIR  environment (see @ref BO_Environment_variables )
-or the definition of the experiment in the \b exptab  file
-(see @ref  Q_Linux_Exptab ). In both cases the log file will be in
-the experiment-specific directory.
-
-<br>
-
-The Midas log file (by default \b midas.log) contains system and user messages generated by
+The Midas log file contains system and user messages generated by
 any application connected to the given experiment.
 
-The predefined @ref F_message_types "Midas Message macros" provide a list of possible type of messages.
+The predefined @ref F_message_types "Midas Message macros" provide a list of defined messages types.
 
 @code 
 Fri Mar 24 10:48:40 2000 [CHAOS] Run 8362 started
@@ -1527,7 +1662,7 @@ Fri Mar 24 12:19:57 2000 [MChart] Program MChart on host koslx0 stopped
 @endcode 
 <br>
 <br>
-<hr> @section F_mspeaker_task m[lx]speaker - audible messaging
+<hr> @section F_mspeaker_utility m[lx]speaker - audible messaging
 
 \b mspeaker, mlxspeaker are utilities which listen to the Midas messages system
 and pipe these messages to a speech synthesizer application. \b mspeaker
@@ -1538,7 +1673,7 @@ The \b mlxspeaker is for the Linux based system and interface to the
 package.
 
 If either package is used, the speech synthesis system has to be installed
-prior to the activation of the \b mspeaker, or \b mlxspeaker tasks.
+prior to the activation of the \b mspeaker, or \b mlxspeaker utilities.
 
 - <b> Arguments </b>
   - [-h ] : help
@@ -1587,18 +1722,18 @@ sections("Quickstart", "Features", "RunControl");
 <br>
 @anchor idx_mySQL_database
 @section F_Logger_mySQL mySQL
-In Midas versions later than 1.9.5, the logger is able to store information in a 
-\b mySQL database. 
+The logger is able to store information in a \b mySQL database. 
 This option is an alternative to the  @ref DA_run_log_file "runlog.txt" file handled by the 
 @ref DA_Midas_Analyzer .
 The two main advantages using the SQL are:
  - The recording is done by the logger and therefore is independent of the user analyzer.
  - The definition of the parameters to be recorded in the database is entirely setup 
-   in the ODB under the /logger/SQL tree.
+   in the ODB under the <span class="odb">/Logger/SQL</span> tree.
 
-The SQL option is enabled by defining the preprocessor flag
-@ref BO_HAVE_MYSQL at  @ref BO_building_option "build time". This option when enabled will create a 
-sub tree \em SQL under  the @ref F_Logger_tree . This tree contains information for mySQL access with the predefined
+The SQL option is enabled by the preprocessor flag
+@ref BO_NEED_MYSQL at  @ref BO_building_option "build time". This option, when enabled, will cause
+@ref F_mlogger_utility "mlogger"  to create a 
+subtree <span class="odb">SQL</span> under  the @ref F_Logger_tree . This tree contains information for mySQL access with the predefined
 mySQL database name \em "Midas" and table \em "Runlog". Under two dedicated subdirectories
 \b Link_BOR and \b Link_EOR, predefined links exists which will be used at
 BOR and EOR respectively for storing parameter values into the database. These elements are ODB links 
@@ -1608,8 +1743,8 @@ function from the analyzer.c.
 
 
 @anchor F_Logger_SQL_tree 
-The following example shows a <b>/Logger/SQL</b> tree as created by @ref F_mlogger_task "mlogger"
-(see  @ref F_Logger_mySQL "above"). See @ref  F_Logger_SQL_keys "below" 
+The following example shows a  <span class="odb">/Logger/SQL</span> tree as created by @ref F_mlogger_utility "mlogger"
+See @ref  F_Logger_SQL_keys "below" 
 for an explanation of the meaning of each key.
 @code
 [local:midas:S]/Logger>ls -lr SQL
@@ -1633,14 +1768,14 @@ SQL                         DIR
 
 @section F_Logger_SQL_keys Explanation of the keys in the ODB /Logger/SQL tree 
 
-An example of a <b>/Logger/SQL</b> tree is shown @ref  F_Logger_SQL_tree "above". The table below serves as an index to
+An example of a  <span class="odb">/Logger/SQL</span> tree is shown @ref  F_Logger_SQL_tree "above". The table below serves as an index to
 the explanation of each key in this tree.
 
 <br>
 <table
  style="text-align: left; width: 30%;" border="0" cellpadding="0"
 cellspacing="0">
-  <caption>The ODB <span class="odb">/Logger/SQL tree</span>. Click on a key for explanation.
+  <caption>The ODB /Logger/SQL tree. Click on a key for explanation.
   </caption>
  
  <tr>
@@ -1782,7 +1917,7 @@ cellspacing="0">
 <br>
 <table style="text-align: left; width: 100%;" border="1" cellpadding="2"
 cellspacing="2">
-<caption>Above: meaning of keys in the <span class="odb">/Logger/SQL</span> ODB tree
+<caption>Above: meaning of keys in the /Logger/SQL ODB tree
 </caption>
 <tr>
 <td colspan="2" style="vertical-align: top; background-color: rgb(204, 204, 255); font-weight: bold; text-align: center;">
@@ -1799,7 +1934,7 @@ Explanation
 </tr>
 <!--   line    1      -->
 <tr>
-<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
 \anchor   F_Logger_SQL_Create_Database  Create Database 
 </td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;"> 
@@ -1808,7 +1943,7 @@ BOOL value. If this flag is set, the SQL database will be created.
 </tr>
 <!--   line     2     -->
 <tr>
-<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
 \anchor   F_Logger_SQL_Write_data  Write data 
 </td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;"> 
@@ -1818,7 +1953,7 @@ BOOL value. If this flag is set , the data will be written to the SQL database.
 </tr>
 <!--   line     3     -->
 <tr>
-<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
 \anchor F_Logger_SQL_Hostname  Hostname 
 </td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;"> 
@@ -1827,7 +1962,7 @@ The name of the host where the SQL database is located.
 </tr>
 <!--   line     4     -->
 <tr>
-<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
 \anchor  F_Logger_SQL_Username  Username 
 </td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;"> 
@@ -1836,7 +1971,7 @@ Username for access to the SQL Database.
 </tr>
 <!--   line     5     -->
 <tr>
-<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
 \anchor  F_Logger_SQL_Password  Password 
 </td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;"> 
@@ -1845,7 +1980,7 @@ Username for access to the SQL Database.
 </tr>
 <!--   line     6     -->
 <tr>
-<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
 \anchor  F_Logger_SQL_Database  Database 
 </td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;"> 
@@ -1854,7 +1989,7 @@ Name of the SQL Database (predefined as "midas").
 </tr>
 <!--   line     7     -->
 <tr>
-<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
 \anchor  F_Logger_SQL_Table  Table 
 </td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;"> 
@@ -1863,7 +1998,7 @@ Name of the Table in the SQL Database (predefined as "Runlog").
 </tr>
 <!--   line     8     -->
 <tr>
-<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
 \anchor  F_Logger_SQL_Links_BOR  Links BOR 
 </td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;"> 
@@ -1877,7 +2012,7 @@ links as desired.
 </tr>
 <!--   line     9     -->
 <tr>
-<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
 \anchor  F_Logger_Links_EOR  Links EOR 
 </td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;"> 
@@ -1921,22 +2056,23 @@ sections("Quickstart", "Features", "RunControl");
 \anchor idx_history_system
 
 @section F_History_System Midas History System
-\todo The history section needs to be reviewed - I tried to combine the old and new and it is muddled.  Old and new style tags ?? 
+
+\todo The history section needs to be reviewed 
  
-The history system is an add-on capability built into the Midas data logger
-( @ref F_mlogger_task ) to record useful information in parallel to the data logging.
+The history system is an add-on capability built into the  @ref F_mlogger_utility "Midas data logger"
+to record useful information in parallel to the data logging.
 This information is recorded with a time stamp and saved into a history file (in a  
 @ref F_History_format "special format" of the form of a database)
 for later retrieval.  One set of files is created per day containing all
 the requested history events.  The history data may be displayed in graphical form using
-the  @ref RC_mhttpd_task "mhttpd" Midas webserver utility, giving the user an easy way of seeing 
+the  @ref RC_mhttpd_utility "mhttpd" Midas webserver utility, giving the user an easy way of seeing 
 how experimental variables have changed with time.
 <br>
 The history logging will be in action \b only if the logger is running, but it is not necessary to
 have any logging channel enabled.
 
  <span class="new">
-See also @ref  F_History_sql_internal , where the History is saved instead into an SQL database.
+See also @ref  F_History_sql_internal , where the History is saved into an SQL database instead of a History file.
 ( @ref ndf_jan_2009 ). 
 </span>
 
@@ -1947,7 +2083,7 @@ See also @ref  F_History_sql_internal , where the History is saved instead into 
 
 \anchor idx_history_files_location
 By default,  @ref F_History_logging "history" files are written into the
-directory path given by the ODB key  @ref F_Logger_Data_Dir "Data Dir"  
+directory path given by the ODB key  @ref F_Logger_Data_Dir "Data Dir"
 in the  @ref F_Logger_tree.
 
 This location can be changed by use of the ODB Key <span class="odb">History dir</span> in the  
@@ -1956,7 +2092,7 @@ the  @ref F_Logger_tree.
 If this key IS present the location of the history  files is reassigned
 to the defined path.
 
-@subsection F_Logger_Create_History_Dir Creation of ODB Key  /Logger/History dir 
+@subsection F_Logger_Create_History_Dir Creation of ODB Key  "/Logger/History dir" 
 
 Using the  @ref RC_mhttpd_ODB_page "mhttpd ODB editor" or the  @ref RC_odbedit_cr "odbedit command create" as shown below,
 the user may add this key:
@@ -2001,7 +2137,6 @@ specific tree <span class="odb">/History/Links</span> (see @ref F_ODB_History_tr
 
 Both these history event definitions <b>take effect when the data logger gets a "start run"
 transition</b>. Any modifications made during the run are not applied until the start of the next run.
-is started.
 
 <br>
 <hr>
@@ -2011,19 +2146,23 @@ is started.
 
 Each  @ref FE_sw_equipment "Equipment" has the capability to generate <b> "history data" </b>.
 <br>
-<span class="note">
-To enable the  history logging system for an Equipment, the  
-@ref  FE_tbl_History "History value" in the corresponding  @ref FE_Equipment_list is set non-zero.
-</span> <br>
+<span class ="note">
+\NOTE To enable the  history logging system for an Equipment, the  
+@ref  FE_tbl_History "Log History" field in the corresponding  @ref FE_Equipment_list is set non-zero.
+
+
+</span>
+
 This value also controls how \b frequently the history events are generated. A reasonable value to set for the 
 History value is "60", so that the
-history events are generated once/minute. This value will appear in the ODB as the key
-<span class="odb">/Equipment/\<<em>Eqpname</em>\>/Common/Log history</span> (where \<<em>Eqpname</em>\> is the name of the 
-Equipment - see  
-@ref FE_Example_equipment_structure ). 
+history events are generated once per minute. This value will appear in the ODB  @ref FE_ODB_equipment_tree "/Equipment tree"
+as the key <span class="odb">/Equipment/<equipment-name>/Common/Log history</span> (where <equipment-name> is the name of the 
+Equipment - see also  @ref  FE_ODB_equipment_common ). 
+
 <br>
 Enabling the history system for an Equipment causes the event contents to 
-be copied to the <span class="odb">/Equipment/\<<em>Eqpname</em>\>/Variables </span> tree of the ODB for the use of the  @ref F_History_System_overview .
+be copied to the <span class="odb">/Equipment/<equipment-name>/Variables</span> tree of the ODB for the use of the
+@ref F_History_System_overview .
 The contents of the event will then be completely copied into the history files, using the 
 definition of the event as  <b> tag names </b> for every element of the event.
 <br>
@@ -2033,46 +2172,47 @@ definition of the event as  <b> tag names </b> for every element of the event.
 The main data path for the frontend History Event is as follows:
   -# The user code in the frontend equipment @ref FE_readout_routine  reads the data,
 placing it into a @ref FE_MIDAS_event_construction "MIDAS data bank"
-  -# In mfe.c, if equipment->history > 0 (i.e. the history system is enabled for this equipment), this data bank 
+  -# In mfe.c, if <span class="odb">/Equipment/<equipment-name>/Common/Log history</span> > 0 (i.e. the history system is enabled for this equipment), this data bank 
 is written into ODB (by update_odb()).
 
-@anchor idx_hot-link_history-event
+@anchor idx_hotlink_history-event
 @anchor F_history_hot_link
  The frequency of ODB writes is limited by ODB_UPDATE_TIME (1/sec in mfe.c rev 4298).
-  -# The odb write triggers an odb @ref RC_Hot_Link "hot-link" into  @ref F_mlogger_task "mlogger"
+  -# The odb write triggers an odb @ref RC_Hot_Link "hot-link" into  @ref F_mlogger_utility "mlogger"
   -# The hot-link calls mlogger.c::log_history(), which calls hs_write() to write the data into the history file. 
 The frequency of the history writes is specified by the number of seconds between writes stored in the 
-ODB key <span class="odb">/Equipment/\<<em>Eqpname</em>\>/Common/Log history</span>.
+ODB key <span class="odb">/Equipment/\<<em>Equipment-Name</em>\>/Common/Log history</span>.
   -# history.c::hs_write() or history_odbc::hs_write_odbc() writes the data into a history file or into an SQL database.
 
 The internal structure of midas history files is documented in  @ref F_History_format .
 <br>
 
-/anchor idx_history_enable
+\anchor idx_history_enable
 @subsection F_Enable_History_Event Enable the History system for a frontend event
 <!-- from Konstantin's MIDAS History_internal System (internal.dox) -->
 
 After  @ref F_Frontend_History_Event "enabling" the history system for an Equipment, <b> restart the frontend </b>. The ODB key 
-<span class="odb">/equipment/Eqpname/Common/Log history</span> will have been 
+<span class="odb">/equipment/Equipment-Name/Common/Log history</span> will have been 
 updated with the new value. It may be changed manually if necessary, using @ref RC_mhttpd_ODB_page "mhttpd" or 
 the @ref RC_odbedit_set "odbedit set command". 
-Then <b> restart @ref F_mlogger_task "mlogger" </b> . 
+Then <b> restart @ref F_mlogger_utility "mlogger" </b> . 
 The data from the equipment should now appear in the @ref RC_mhttpd_History_page  "mhttpd history page" and in the 
-history file  (@ref F_mhdump_task "mhdump" can be used to read the history file).
+history file  (@ref F_mhdump_utility "mhdump" can be used to read the history file).
 
 
 \anchor idx_history_tags_new
 @subsubsection  F_new_history_tags New History Tags  
-<span class="note">Note on <span class="odb">/History/Tags</span> format</span><br>
-<span class="new"> 
-The <span class="cl">mlogger/mhttpd</span> implementation of <span class="odb">/History/Tags</span> has proved troublesome and
+<span class="new">Note on NEW format of </span> <span class="odb">/History/Tags</span>
+<span class="new">Version 4435 of @ref F_mlogger_utility "mlogger" and  @ref RC_mhttpd_utility "mhttpd" and later: </span> <br>
+
+The <span class="utility">mlogger/mhttpd</span> implementation of <span class="odb">/History/Tags</span> has proved troublesome and
 we are moving away from it. The @ref F_History_sql_internal  "SQL database history implementation"  ( @ref ndf_jan_2009 ) already does
 not use it . 
 <br>During the present transition period:
-</span>
-<ul class="new">
-  <li>Implementations starting with Version 4435 of @ref F_mlogger_task "mlogger" and  @ref RC_mhttpd_task "mhttpd",
- will now work without <span class="odb">/History/Tags</span>. 
+
+<ul>
+  <li><span class="new">Implementations starting with Version 4435 of @ref F_mlogger_utility "mlogger" and  @ref RC_mhttpd_utility "mhttpd" (i.e. \b "new" versions)
+ will now work without <span class="odb">/History/Tags</span>. </span>
 The history tags are read directly from the history files themselves. Two downsides to
 this are 
 <ol>
@@ -2082,49 +2222,49 @@ been running for a while, their variables may vanish from the history panel
 editor. 
 </ol>
 To run in this mode, set <span class="odb">/History/DisableTags</span> to "y". Existing
-/History/Tags will be automatically deleted.
-<li> for the above 2 reasons, using /History/Tags is still recommended, but the format
-of the tags is now changed to simplify management and reduce odb size. <span class="cl">mlogger</span>
+ <span class="odb">/History/Tags</span> will be automatically deleted.
+<li> for the above 2 reasons, using  <span class="odb">/History/Tags</span> is still recommended, but the format
+of the tags is now changed to simplify management and reduce odb size. <span class="utility">mlogger</span>
 will automatically convert the tags to this new format (this is why you should
 make a backup of your ODB).
-<li> using old <span class="cl">mlogger</span> with new <span class="cl">mhttpd</span> is OK: new <span class="cl">mhttpd</span> understands both formats
-of /History/Tags.
-<li> using old <span class="cl">mhttpd</span> with new <span class="cl">mlogger</span> is OK: please set ODB
-<span class="odb">/History/CreateOldTags</span> to "y" (type TID_BOOL/"boolean") before starting
-<span class="cl">mlogger</span>.
+<li> using "old" (i.e. pre Version 4435) <span class="utility">mlogger</span> with "new" <span class="utility">mhttpd</span> is OK: new <span class="utility">mhttpd</span> understands both formats
+of  <span class="odb">/History/Tags</span>.
+<li> using  "old" <span class="utility">mhttpd</span> with  "new" <span class="utility">mlogger</span> is OK <b>provided the ODB key 
+<span class="odb">/History/CreateOldTags</span> is set to "y" before starting</b>
+<span class="utility">mlogger</span>.
 </ul>
 
 \anchor idx_history_tags_old
 
 \subsubsection F_history_old_tags Definition of old-style history tags
-Prior to version 4435 of @ref F_mlogger_task "mlogger" and  version  4435 of @ref RC_mhttpd_task "mhttpd",
+Prior to versions 4435 of @ref F_mlogger_utility "mlogger" and @ref RC_mhttpd_utility "mhttpd",
 \b old-style history tags were generated.
 The <b>history variable name</b> for each element of the Frontend History Event was composed as follows, where
 <ul>
-  <li> \b "eqpname" is the name of the equipment, and 
-  <li> \b "bankname" is the name of a bank generated by the \b "eqpname" equipment  :
+  <li> \b "equipment-name" is the name of the equipment, and 
+  <li> \b "bankname" is the name of a bank generated by the \b "equipment-name" equipment  :
 
    
      <ul>
      <li>In the case of a @ref  FE_Midas_format "Midas format" event:
 
         <ul>
-        <li><b>If the ODB key</b>  <span class="odb">/Equipment/eqpname/Settings/Names/bankname[ ]</span>  <b>IS present</b>, 
+        <li><b>If the ODB key</b>  <span class="odb">/Equipment/equipment-name/Settings/Names \<bankname\>[ ]</span>  <b>IS present</b>, 
            <ul>
-             <li>the \b history \b name is composed of the corresponding name found in the  <span class="odb"> Names /bankname[ ]</span> array. 
-             <li>The \b size of this array must match the size of the  <span class="odb">/equipment/eqpname/Variables/bankname[ ]</span>  array, 
+             <li>the \b history \b name is composed of the corresponding name found in the  <span class="odb"> Names \<bankname\>[ ]</span> array. 
+             <li>The \b size of this array must match the size of the  <span class="odb">/equipment/equipment-name/Variables/\<bankname\>[ ]</span>  array, 
         or an error will be generated.
            </ul>
         <li> \b Otherwise the \b history \b name is composed of the bank name followed by the corresponding index of the element.
         </ul>
-        See  @ref F_example_FE_history_event "example below" .
+        See  @ref RC_mhttpd_Equipment_example4 "example" .
 
         <li>In the case of a @ref FE_FIXED_event_readout "Fixed format" event :
   
         <ul>
             <li> \b No array : the names of the individual element under
-                  <span class="odb">/Equipment/eqpname/Variables/</span> are used for the history name composition.
-            <li> \b With array: if the key   <span class="odb">/Equipment/eqpname/Settings/Names[ ]</span> 
+                  <span class="odb">/Equipment/equipment-name/Variables/</span> are used for the history name composition.
+            <li> \b With array: if the key   <span class="odb">/Equipment/equipment-name/Settings/Names[ ]</span> 
                   exists, each element of the array is referenced using the corresponding
                   name of the  <span class="odb">../Settings/Names[ ]</span>  array.
         </ul>
@@ -2134,14 +2274,15 @@ The <b>history variable name</b> for each element of the Frontend History Event 
 
 @subsection F_example_FE_history_event  Example Frontend History Event (old-style History tags)
 
-The following example shows the ODB keys for a  Frontend Equipment named "Target" that sends out 
-data in a @ref FE_MIDAS_event_construction  "Midas bank" named "TGT_".
-<br>The key <span class="odb">/equipment/Target/Settings/Names/TGT_</span> is present, 
-which is a 7-element array containing the history variable names. The key
-<span class="odb">/equipment/Target/Variables/TGT_</span> 
-is also present, and contains 7 elements, matching the number of elements in the  <span class="odb">Names/TGT_</span> array. 
+The @ref RC_mhttpd_Equipment_example4 "example" shows the ODB keys for a  Frontend Equipment named "Target" that sends out 
+data in two @ref FE_MIDAS_event_construction  "Midas banks" named "TGT_" and "SCAL". For simplicity, only the
+"TGT_" bank is discussed here. The relevent keys are reproduced below.
+
+<br>The key <span class="odb">"/Equipment/Target/Settings/Names TGT_"</span> is defined as a 7-element array containing the variable names. The key
+<span class="odb">/Equipment/Target/Variables/TGT_</span> 
+is also present, and contains 7 elements, matching the number of elements in the  <span class="odb">"Names TGT_"</span> array. 
 <br>
-Had the latter key \b not been present, the history variable names would be TGT_0 ... TGT_6.
+Had the latter key \b not been present, the history variable names would be <b>TGT_0 ... TGT_6.</b>
 <br>
 @code 
 [host:chaos:Running]cd /Equipment/Target
@@ -2183,8 +2324,8 @@ Target                          DIR
 \anchor idx_ODB_tree_History
 
 @section F_ODB_History_tree ODB /History tree
-\anchor idx_logger_task_mlogger
-The first time @ref F_mlogger_task "mlogger" is run, it creates the 
+\anchor idx_logger_utility_mlogger
+The first time @ref F_mlogger_utility "mlogger" is run, it creates the 
 <span class="odb">/History </span> tree.  This tree is created 
 using the variables found in the  <span class="odb">/Equipment</span> tree. For the "Target" equipment
 defined above, the  <span class="odb">/History</span> tree produced is as follows:
@@ -2246,7 +2387,7 @@ History                         DIR
 
 
 
-A second sub-tree is added to the <span class="odb">/History</span> by the @ref RC_mhttpd_task  "Midas web server"
+A second sub-tree is added to the <span class="odb">/History</span> by the @ref RC_mhttpd_utility  "Midas web server"
 when the @ref RC_mhttpd_History_page "History" button on the main status page is pressed.
 
 @code 
@@ -2268,9 +2409,7 @@ Display                         DIR
 
 This defines a default history display under the Midas web server as long as the reference
 to "System" is correct. See  @ref RC_mhttpd_History_page  and the @ref  F_History_tree_keys "table below" for
-more information regarding explanation of these fields.
-\todo There is not much more information on the History page
-
+more information about these these fields.
 
 
 @section F_History_tree_keys Explanation of the keys in the ODB /History tree
@@ -2301,7 +2440,7 @@ Explanation
 </tr>
 <!--   line    1      -->
 <tr>
-<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
 History
 </td>
 <td><br></td>
@@ -2319,7 +2458,7 @@ directory containing...
 <!--   line    2      -->
 <tr>
 <td><br></td>
-<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
 \anchor F_History_links Links
 </td>
 <td><br></td>
@@ -2336,8 +2475,8 @@ directory containing...
 <!--   line    3      -->
 <tr>
 <td><br></td>
-<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
-\anchor F_History_System System
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
+\anchor F_History_System_dir System
 </td>
 <td><br></td>
 <td><br></td>
@@ -2354,7 +2493,7 @@ info
 <tr>
 <td><br></td>
 <td><br></td>
-<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
 Trigger per sec. </td>
 <td><br></td>
 <td><br></td>
@@ -2369,7 +2508,7 @@ link to <span class="odb">/Equipment/Trigger/Statistics/Events per sec.</span>
 <tr>
 <td><br></td>
 <td><br></td>
-<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
 Trigger kB per sec. </td>
 <td><br></td>
 <td><br></td>
@@ -2384,7 +2523,7 @@ link to <span class="odb">/Equipment/Trigger/Statistics/kBytes per sec.</span>
 <!--   line     6     -->
 <tr>
 <td><br></td>
-<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
 \anchor F_History_pervar PerVariableHistory
 </td>
 <td><br></td>
@@ -2393,17 +2532,15 @@ link to <span class="odb">/Equipment/Trigger/Statistics/kBytes per sec.</span>
 <td style="vertical-align: top; font-weight: normal; text-align: left;">
 INT
 </td>
-<td style="vertical-align: top; font-weight: normal; text-align: left;"> 
-\todo version ?? of mlogger
-
-This key appears starting with version ?? of <span class="cl">mlogger</span>. See @ref   F_new_history_tags "note"
+<td style="vertical-align: top; font-weight: normal; text-align: left;"> Enables/Disables the per-variable History.
+<span class="new">This key appears starting with version 4203</span> of <span class="utility">mlogger</span>. See @ref  F_History_sql_pervariable "Note2"
 </td>
 </tr>
 <!--   line     7     -->
 <tr>
 <td><br></td>
-<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
-\anchor F_History_Disable_tags Disable tags
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
+\anchor F_History_Disable_tags DisableTags
 </td>
 <td><br></td>
 <td><br></td>
@@ -2411,18 +2548,16 @@ This key appears starting with version ?? of <span class="cl">mlogger</span>. Se
 <td style="vertical-align: top; font-weight: normal; text-align: left;">
 BOOL
 </td>
-<td style="vertical-align: top; font-weight: normal; text-align: left;"> 
-This key appears starting with version ?? of <span class="cl">mlogger</span>. See @ref   F_new_history_tags "note"
-\todo version ?? of mlogger
-Set this key to "y" if reading the history tags directly from the history files.
-
+<td style="vertical-align: top; font-weight: normal; text-align: left;">Set this key to "y" if reading the history tags
+directly from the history files. Set to "n" to read the history tags from the ODB.
+<span class="new">This key appears starting with version 4435</span> of <span class="utility">mlogger</span>. See @ref   F_new_history_tags "Note1"
 </td>
 </tr>
 
 <!--   line     7.5     -->
 <tr>
 <td><br></td>
-<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
 \anchor F_History_CreateOldTags CreateOldTags
 </td>
 <td><br></td>
@@ -2432,9 +2567,11 @@ Set this key to "y" if reading the history tags directly from the history files.
 BOOL
 </td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;"> 
-This key appears starting with version ?? of <span class="cl">mlogger</span>. See @ref   F_new_history_tags "note"
-Set this key to "y" if using old mhttpd with new mlogger
-\todo version ?? of mlogger
+Set this key to "y" to force creation of <span class="odb">/History/Tags</span> using the old format.
+<span class="new">This key appears starting with version 4435 of</span> <span class="utility">mlogger</span>.
+See @ref   F_new_history_tags "Note1".
+
+
 
 </td>
 </tr>
@@ -2443,7 +2580,7 @@ Set this key to "y" if using old mhttpd with new mlogger
 <!--   line     8     -->
 <tr>
 <td><br></td>
-<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
 \anchor F_History_tags Tags
 </td>
 <td><br></td>
@@ -2453,14 +2590,14 @@ Set this key to "y" if using old mhttpd with new mlogger
 DIR
 </td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;"> 
-See @ref   F_new_history_tags "note"
+subtree containing the old-style History tags. See @ref   F_new_history_tags "Note1"
 </td>
 </tr>
 <!--   line     9     -->
 <tr>
 <td><br></td>
 <td><br></td>
-<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
 \anchor F_History_2 2
 </td>
 <td><br></td>
@@ -2469,11 +2606,8 @@ See @ref   F_new_history_tags "note"
 STRING
 </td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;"> 
-Array containing tag values ??  
-\todo In the examples, where is the number 2 (Tags/2) assigned by the system? The array length and contents has changed between
-the two examples 
-
-
+Array containing ...
+\todo Explanation needed
 </td>
 </tr>
 
@@ -2481,7 +2615,7 @@ the two examples
 <tr>
 <td><br></td>
 <td><br></td>
-<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
 10
 </td>
 <td><br></td>
@@ -2490,8 +2624,8 @@ the two examples
 STRING
 </td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;"> 
-Array of length 3 containing System tags??  
-\todo System?
+Array of length 3 containing ... 
+\todo Explanation needed
 
 
 </td>
@@ -2500,7 +2634,7 @@ Array of length 3 containing System tags??
 <!--   line    11     -->
 <tr>
 <td><br></td>
-<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
 \anchor F_History_Display Display
 </td>
 <td><br></td>
@@ -2510,7 +2644,7 @@ Array of length 3 containing System tags??
 DIR
 </td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;"> 
-info
+<br>
 </td>
 </tr>
 
@@ -2518,7 +2652,7 @@ info
 <tr>
 <td><br></td>
 <td><br></td>
-<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
 Default </td>
 <td><br></td>
 <td><br></td>
@@ -2535,7 +2669,7 @@ DIR
 <td><br></td>
 <td><br></td>
 <td><br></td>
-<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
 Trigger Rate </td>
 <td><br></td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;">
@@ -2553,13 +2687,14 @@ DIR
 <td><br></td>
 <td><br></td>
 <td><br></td>
-<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
 Variables </td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;">
 STRING
 </td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;"> 
-Array containing System  trigger rates ??
+Array containing ...
+\todo Explanation needed
 </td>
 </tr>
 
@@ -2569,13 +2704,14 @@ Array containing System  trigger rates ??
 <td><br></td>
 <td><br></td>
 <td><br></td>
-<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
 Factor </td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;">
 FLOAT
 </td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;"> 
-Array containing  ??
+Array containing  ...
+\todo Explanation needed
 </td>
 </tr>
 
@@ -2585,13 +2721,13 @@ Array containing  ??
 <td><br></td>
 <td><br></td>
 <td><br></td>
-<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
 Timescale </td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;">
 INT
 </td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;"> 
- Appears as an input box on the @ref RC_mhttpd_History_page . Timescale is in date format. Explanation??  
+ Appears as an input box on the @ref RC_mhttpd_History_page . Timescale is in date format. 
 </td>
 </tr>
 
@@ -2601,13 +2737,13 @@ INT
 <td><br></td>
 <td><br></td>
 <td><br></td>
-<td style="vertical-align: top; background-color: yellow; font-weight: bold; text-align: left;">
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
 Zero ylow </td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;">
 BOOL
 </td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;"> 
-Appears as a button to zero something ?? on the   @ref RC_mhttpd_History_page
+Appears as a button on the   @ref RC_mhttpd_History_page . \todo Explanation needed
 </td>
 </tr>
 </table>
@@ -2622,7 +2758,7 @@ The History logging is customized by changing the values in the ODB  <span class
 This tree is created automatically when the logger  is started.
 
 <hr>
-
+@anchor idx_ODBC_SQL-history-system
 @section F_History_sql_internal MIDAS SQL History system
  <span class="new">
 (SQL History System added  @ref ndf_jan_2009 ).
@@ -2633,7 +2769,7 @@ The SQL history system implements the MIDAS history using
 a @ref F_Logger_mySQL "SQL database" for data storage instead of flat binary files.
 
 The SQL history code lives in a separate files \b history.h and \b history_sql.cxx.
-The present implentation uses the ODBC API for accessing SQL databases.
+The present implentation uses the @ref BO_HAVE_ODBC "ODBC" API for accessing SQL databases.
 <span class="new"> As of revision 4433, only MySQL database is supported, with support for PgSQL
 written and partially tested but not enabled.</span> Drivers for SQL DB APIs other
 than ODBC should be easy to add in \b history_sql and most SQL operations
@@ -2700,6 +2836,7 @@ SOCKET       =
 User         = history_reader
 Password     = 
 @endcode
+\anchor  F_History_sql_pervariable
 <li> set key <span class="odb">/History/PerVariableHistory</span> to 1
 <br>(\b BEWARE! This will change the format of normal midas history files. You do not have to enable per-variable history to use the SQL interface, but the layout of SQL tables may be suboptimal in the same way the layout of data in the midas history file is suboptimal).
 <li> set ODB keys
@@ -2707,8 +2844,8 @@ Password     =
     <li> <span class="odb">/Logger/ODBC_DSN</span> to "history_writer"
     <li> <span class="odb">/Logger/ODBC_Debug</span> to 0 (or 1 to see all SQL commands)
     </ul>
-<li> run <span class="cl">mlogger -v</span>, and observe how it issues SQL commands to create the tables and columns corresponding to MIDAS history events and tags.
-<li> <span class="cl">mlogger</span> is programmed to raise alarms if connection to SQL database is interrupted or if some events cannot be
+<li> run <span class="utility">mlogger -v</span>, and observe how it issues SQL commands to create the tables and columns corresponding to MIDAS history events and tags.
+<li> <span class="utility">mlogger</span> is programmed to raise alarms if connection to SQL database is interrupted or if some events cannot be
 written into the database (i.e. data type mismatch, SQL syntax errors, etc). The traditional midas history never raised
 alarms because it "never failed" - other than from "disk full" errors, which are immediately obvious.
 </ol>
@@ -2717,8 +2854,8 @@ alarms because it "never failed" - other than from "disk full" errors, which are
 
 <ol>
 <li> set key <span class="odb">/History/ODBC_DSN</span> to "history_reader"
-<li> restart <span class="cl">mhttpd</span> (may not be required?)
-<li> from this moment <span class="cl">mhttpd</span> will only use history information from the SQL database to make history plots and to
+<li> restart <span class="utility">mhttpd</span> (may not be required?)
+<li> from this moment <span class="utility">mhttpd</span> will only use history information from the SQL database to make history plots and to
 extract history variable names for the history plot editor. The <span class="odb">/History/Tags</span> and
 <span class="odb">/History/Events</span> keys are not used. The on-disk .hst & co history are not used.
 \todo What is the co history?
@@ -2730,13 +2867,13 @@ extract history variable names for the history plot editor. The <span class="odb
 
 <ul>
 <li> one table is created for each history event. Table name is the same as the history event name
-(as reported by @ref F_mhdump_task "mhdump").
+(as reported by @ref F_mhdump_utility "mhdump").
 <li> one column is created for each history tag (history variable). Column name is the same as
-the tag name (as reported by  @ref F_mhdump_task "mhdump"). For array tags, one column is created for
+the tag name (as reported by  @ref F_mhdump_utility "mhdump"). For array tags, one column is created for
 each array element: array a[3] will produce columns a_0, a_1 and a_2.
 <li> 2 special columns are always created: \b _i_time and \b _t_time are the timestamps in the UNIX-time integer format
-and in the SQL "time" format. (A priori, it is not clear which timestamp format is more useful for end users. <span class="cl">mhttpd</span> uses
-the _i_time integer time format). Note that this timestamp is the time when <span class="cl">mlogger</span> receives the hot-link signal
+and in the SQL "time" format. (A priori, it is not clear which timestamp format is more useful for end users. <span class="utility">mhttpd</span> uses
+the _i_time integer time format). Note that this timestamp is the time when <span class="utility">mlogger</span> receives the hot-link signal
 (see  @ref F_history_hot_link "above")
 and it can be a few seconds behind the time when the user placed the data into the midas bank. For high precision (and sub-second time resolution) time stamps, users should generate their own timestamps and include them as part of the data itself.
 <li> a special table called \b _history_index is created to remember the mapping between SQL names and MIDAS names for event names, variable name and tag names.
@@ -2749,7 +2886,7 @@ and it can be a few seconds behind the time when the user placed the data into t
 <li> arrays are expanded automatically, and arrays never shrink.
 <li> if the type of a data field changes, a conflict may occur with existing SQL columns, for example if previous type was
 "FLOAT" and new type is "DOUBLE", the existing SQL columns would have the SQL data type "float", too narrow to store
-new values. <span class="cl">mlogger</span> will complain about this. Such conflicts may be resolved by changing the type of the SQL column
+new values. <span class="utility">mlogger</span> will complain about this. Such conflicts may be resolved by changing the type of the SQL column
 using SQL tools. In general, SQL names are created from MIDAS names by replacing all non-alphanumerical characters to
 an underscore "_". If this procedure creates duplicate column names, the column names and made unique by appending
 them with a random number, i.e. MIDAS names "A+B" and "A-B" will be translated to "A_B" and "A_B_12345" (random integer).
@@ -2757,9 +2894,25 @@ True MIDAS names are saved into the _history_index.
 </ul>
 
 
+<br><hr><br> @section F_mh2sql_utility  mh2sql - import history files into SQL database.
+<br>
 
 
-<hr> @section F_mhist_task mhist  - history data retriever
+<span class="utility">mh2sql</span> imports history files into an SQL database in the same way as if they were written into the database by
+<span class="utility">mlogger</span>.
+
+
+ - \b Arguments:
+   [-h ] : help - prints this help message
+
+ - <b> Usage </b>
+      mh2sql odbc_dsn file1.hst file2.hst ...
+   
+
+
+
+
+<br><hr><br> @section F_mhist_utility mhist  - history data retriever
 
 History data retriever.
 
@@ -2852,24 +3005,23 @@ History data retriever.
   Apr 24 23:01:39 2000    0
   @endcode
 - <b> Remarks </b>: History data can be retrieved and displayed through the
-Midas web page (see @ref RC_mhttpd_task "mhttpd").
+Midas web page (see @ref RC_mhttpd_utility "mhttpd").
 
 
 - <b> Example </b> 
- * <center> Midas Web History display.
+ * <center>  <span class="image"> Midas Web History display.</span>
  *  \image html mhhist.gif
  * </center> 
 
 <hr>
 
-\anchor idx_mhdump-task
+\anchor idx_mhdump-utility
 \anchor idx_history_dump-files
-@section F_mhdump_task mhdump - dump history files
+@section F_mhdump_utility mhdump - dump history files
 <!-- the following added from elog https://ladd00.triumf.ca/elog/Midas/361  -->
 
-\todo mhdump information incomplete 
 
-\b mhdump is intended to be easier to use, compared to @ref F_mhist_task "mhist". By default it reads
+\b mhdump is intended to be easier to use, compared to @ref F_mhist_utility "mhist". By default it reads
 and decodes all the data in the given .hst files, with options to limit the
 decoding to specified events and tags, and an option to omit the event and tag
 names from the output.
@@ -3043,7 +3195,7 @@ sections("Quickstart", "Features", "RunControl");
 \anchor idx_Logging_Elog
 @section F_Elog_Intro Introduction
 The Electronic logbook (Elog) is an alternative way of recording experiment information.
-This is implemented through the Midas web server @ref RC_mhttpd_task "mhttpd" (see @ref RC_mhttpd_Elog_page).
+This is implemented through the Midas web server @ref RC_mhttpd_utility "mhttpd" (see @ref RC_mhttpd_Elog_page).
 
 
 @section F_Logger_Elog_Files_Location Location of Elog Files
@@ -3052,9 +3204,9 @@ This is implemented through the Midas web server @ref RC_mhttpd_task "mhttpd" (s
 By default,  @ref F_Elog "elog" files are written into the 
 directory path given by  the ODB key @ref F_Logger_Data_Dir "Data Dir" in  @ref F_Logger_tree .
 
-This location can be changed by use of the ODB Key <span class="odb">Elog dir</span> in the
-@ref F_Logger_tree_keys directory. This key is optional and doesn't appear by default in
-the  @ref F_Logger_tree .
+This location can be changed by use of the ODB Key <span class="odb">Elog dir</span> in the  @ref F_Logger_tree .
+This key is optional and doesn't appear by default in
+the  <span class="odb">/Logger</span> tree.
 <br>
 If this key \b is present, the location of the @ref  F_Elog  files is reassigned to the
 defined path.
@@ -3067,22 +3219,24 @@ the user may add this key:
 [local:Default:S]/Logger>create string "Elog dir"
 String length [32]:128
 [local:Default:S]/Logger>set "Elog dir" /mypath/elog/2009
-[local:Default:S]/Logger>ls
 @endcode
+
 <br>
 <hr>
 <br>
 
 @section F_Elog_Custom Customizing the Elog
 The Electronic logbook (Elog) is an alternative way of recording experiment information.
-This is implemented through the Midas web server @ref RC_mhttpd_task "mhttpd" (see @ref RC_mhttpd_Elog_page ).
-The <span class="odb">/Elog</span> tree is created automatically when the Midas Logger (<span class="cl">mlogger</span>) is started for the first time.
+This is implemented through the Midas web server @ref RC_mhttpd_utility "mhttpd" (see @ref RC_mhttpd_Elog_page ).
+The <span class="odb">/Elog</span> tree is created automatically when the Midas Logger (<span class="utility">mlogger</span>) is started for the first time.
 The definition of the options are described in @ref F_ODB_Elog_Tree.
-\anchor idx_ODB_tree_Elog
-@subsection F_ODB_Elog_Tree ODB /Elog Tree
 
-This branch describes the Elog settings used through the Midas web server.
-See @ref RC_mhttpd_task "mhttpd" for setting up the different Elog page displays.
+\anchor idx_ODB_tree_Elog
+@subsection F_ODB_Elog_Tree The ODB /Elog Tree
+
+This tree describes the Elog settings used through the Midas web server.
+See @ref  RC_mhttpd_Elog_page "mhttpd Elog page" for setting up the different Elog page displays.
+The meaning of each key is described in the  @ref F_ODB_Elog_Tree_Keys "table below".
 
 @code 
 [local:midas:S]/Elog>ls -lr
@@ -3145,51 +3299,216 @@ Email Detector                  STRING  1     32    >99d 0   RWD  janedoe@triumf
 SMTP host                       STRING  1     32    >99d 0   RWD  localhost
 @endcode  
 
+@subsection F_ODB_Elog_Tree_Keys Meaning of the keys in the /Elog tree
+
+<table style="text-align: left; width: 100%;" border="1" cellpadding="2"
+cellspacing="2">
+<caption>Above: Explanation of keys in ODB /Elog tree </caption>
+<tr align="center">
+<td colspan="4" rowspan="1"
+style="vertical-align: top; background-color: rgb(204, 204, 255); font-weight: bold; font-size: 125% ;">
+Keys in ODB /Elog tree<br>
+</td>
+</tr>
+
+<tr>
+<td  colspan="2"
+style="vertical-align: top; font-weight: bold; text-align: center; background-color: rgb(204, 204, 255);">Key<br>
+</td>
+<td
+style="vertical-align: top; font-weight: bold; text-align: center; background-color: rgb(204, 204, 255);">Type<br>
+</td>
+<td
+style="vertical-align: top; font-weight: bold; text-align: center; background-color: rgb(204, 204, 255);">Explanation<br>
+</td>
+</tr>
+
+<!-- line 1 -->
+<tr>
+<td
+style="vertical-align: top; font-weight: bold; background-color: lightyellow;">
+Elog
+</td>
+<td
+style="vertical-align: top; font-weight: bold; background-color: lightyellow;"><br>
+</td>
+<td style="vertical-align: top;">DIR<br>
+</td>
+<td style="vertical-align: top;">Directory containing information for the Elog (Electronic log book)
+</td>
+</tr>
+
+<!-- line 2 -->
+<tr>
+<td
+style="vertical-align: top; font-weight: bold; background-color: lightyellow;"><br>
+</td>
+<td
+style="vertical-align: top; font-weight: bold; background-color: lightyellow;">
 \anchor idx_Elog_Email
-@subsection F_Email Email
-Defines the Email address for the Elog reply. When a user replies to an Elog message, the message with be sent
+\anchor F_Email
+Email
+</td>
+<td style="vertical-align: top;">STRING<br>
+</td>
+<td style="vertical-align: top;">Defines the Email address for the Elog reply. When a user replies to an Elog message, the message with be sent
 to this address.
+</td>
+</tr>
 
-@subsection F_Display_RN  Display run number 
-Enable/disable the run number display in the Elog entries.
+<!-- line 3 -->
+<tr>
+<td
+style="vertical-align: top; font-weight: bold; background-color: lightyellow;"><br>
+</td>
+<td
+style="vertical-align: top; font-weight: bold; background-color: lightyellow;">
+\anchor F_Display_RN
+Display run number 
+</td>
+<td style="vertical-align: top;">BOOL<br>
+</td>
+<td style="vertical-align: top;">Enable/disable the run number display in the Elog entries.
+</td>
+</tr>
 
-@subsection F_Allow_Delete  Allow delete 
-Permits or prevents Elog entries from being deleted
 
-@subsection F_Types Types
-Pre-defined array of allowed types displayed when composing an Elog entry. A maximum of 20 types are available.
+
+<!-- line 4 -->
+<tr>
+<td
+style="vertical-align: top; font-weight: bold; background-color: lightyellow;"><br>
+</td>
+<td
+style="vertical-align: top; font-weight: bold; background-color: lightyellow;">
+\anchor F_Allow_Delete
+Allow delete
+</td>
+<td style="vertical-align: top;">BOOL<br>
+</td>
+<td style="vertical-align: top;">Permits or prevents Elog entries from being deleted
+</td>
+</tr>
+
+<!-- line 5 -->
+<tr>
+<td
+style="vertical-align: top; font-weight: bold; background-color: lightyellow;"><br>
+</td>
+<td
+style="vertical-align: top; font-weight: bold; background-color: lightyellow;">
+\anchor  F_Types
+Types
+</td>
+<td style="vertical-align: top;">STRING<br>
+</td>
+<td style="vertical-align: top;">Pre-defined array of allowed types displayed when composing an Elog entry. A maximum of 20 types are available.
  The list will be terminated by the encounter of the first blank type. Users can adjust this list as desired.
+</td>
+</tr>
 
-@subsection F_Systems Systems
-Pre-defined array of categories displayed when composing an Elog entry.
+<!-- line 6 -->
+<tr>
+<td
+style="vertical-align: top; font-weight: bold; background-color: lightyellow;"><br>
+</td>
+<td
+style="vertical-align: top; font-weight: bold; background-color: lightyellow;">
+\anchor  F_Systems
+Systems
+</td>
+<td style="vertical-align: top;">STRING<br>
+</td>
+<td style="vertical-align: top;">Pre-defined array of categories displayed when composing an Elog entry.
   A maximum of 20 types are available. The list will be terminated by the encounter of the first blank type. 
 Users can adjust this list as desired.
+</td>
+</tr>
 
-@subsection F_SMTP_Host SMTP host 
-Mail server address for routing the composed Elog message to the destination.
 
-@subsection F_Buttons Buttons
-Permits the user to easily recall Elog messages for up to four possible time spans. The example above shows that 
+
+<!-- line 7 -->
+<tr>
+<td
+style="vertical-align: top; font-weight: bold; background-color: lightyellow;"><br>
+</td>
+<td
+style="vertical-align: top; font-weight: bold; background-color: lightyellow;">
+\anchor F_Buttons
+Buttons
+</td>
+<td style="vertical-align: top;">STRING<br>
+</td>
+<td style="vertical-align: top;">Permits the user to easily recall Elog messages for up to four possible time spans. The example above shows that 
 all messages in the last 8 hours, 24 hours, 3 days or 7 days can be recalled by pressing the appropriate
 button.
+</td>
+</tr>
 
 
-@subsection F_Host_name Host name
-Host name.
+<!-- line 8 -->
+<tr>
+<td
+style="vertical-align: top; font-weight: bold; background-color: lightyellow;"><br>
+</td>
+<td
+style="vertical-align: top; font-weight: bold; background-color: lightyellow;">
+\anchor  F_Host_name
+Host name
+</td>
+<td style="vertical-align: top;">STRING<br>
+</td>
+<td style="vertical-align: top;">Host name
+</td>
+</tr>
 
-@subsection F_Email_D Email 
-e.g. Email DAQ, Email Detector 
-Optional field(s) created by user. It may be desirable that a person receives an email copy of all elog messages
+<!-- line 9 -->
+<tr>
+<td
+style="vertical-align: top; font-weight: bold; background-color: lightyellow;"><br>
+</td>
+<td
+style="vertical-align: top; font-weight: bold; background-color: lightyellow;">
+\anchor  F_Email_DAQ
+Email DAQ 
+</td>
+<td style="vertical-align: top;">STRING<br>
+</td>
+<td style="vertical-align: top;">Optional field(s) created by user. It may be desirable that a person receives an email copy of all elog messages
 sent under a particular system type. The example shows that email copies of messages sent under the System
 types of "DAQ" and "Detector" will be sent to the addresses listed. 
-<br>
+</td>
+</tr>
+
+<!-- line 10 -->
+<tr>
+<td
+style="vertical-align: top; font-weight: bold; background-color: lightyellow;"><br>
+</td>
+<td
+style="vertical-align: top; font-weight: bold; background-color: lightyellow;">
+\anchor  F_SMTP_Host
+ SMTP host 
+</td>
+<td style="vertical-align: top;">STRING<br>
+</td>
+<td style="vertical-align: top;">Mail server address for routing the composed Elog message to the destination.
+</td>
+</tr>
+
+</tr>
+</table>
+
+\Note
+The optional subtree <span class="odb">/Elog/Forms</span> is described on the  @ref  RC_mhttpd_Internal_Elog_shift_check "mhttpd Elog page". 
+
 <br>
 <hr>
 <br>
 
-\anchor idx_melog-task
+\anchor idx_melog-utility
 \anchor Elog_submit-entry
-@section F_melog_task melog        - submits an entry to the Elog
+@section F_melog_utility melog        - submits an entry to the Elog
 
 Electronic Log utility. Submit full Elog entry to the specified Elog port.
 
@@ -3253,29 +3572,29 @@ sections("Quickstart", "Features", "RunControl");
 
 <br>
 \anchor idx_Logging_lazylogger
-\anchor idx_lazylogger-task
-@section F_lazylogger_task lazylogger  - logger to copy/move stored files
-\b lazylogger is an application which decouples the data acquisition from the data logging
+\anchor idx_lazylogger-utility
+@section F_lazylogger_utility lazylogger  - logger to copy/move stored files
+
+<span class="utility">lazylogger</span> is an application which decouples the data acquisition from the data logging
 mechanism. The need for such application has been dictated by the slow response time of
 some of the media logging devices (i.e. tape devices). Delay due to tape mounting,
 retensioning and repositioning implies that the data acquisition has to be held until 
-operation completion. By using <span class="cl">mlogger</span> to log data to disk in a first stage and then using
-\b lazylogger to copy or move the stored files to the "slow device", we can keep the
+operation completion. By using @ref F_mlogger_utility "mlogger" to log data to disk in a first stage and then using
+<span class="utility">lazylogger</span> to copy or move the stored files to the "slow device", we can keep the
 acquisition running without interruption.
-- Multiple lazyloggers can be running simultaneously on the same computer, each one 
+- Multiple <span class="utility">lazyloggers</span>  can be running simultaneously on the same computer, each one 
   taking care of a particular channel.
-- Each lazylogger channels will have a dedicated ODB tree containing its own information.
-- All the lazylogger channels will be in the ODB under  <span class="odb">/Lazy/\<channel_name\>/...</span>
+- Each <span class="utility">lazylogger</span> channel will have a dedicated ODB tree (see @ref F_ODB_Lazy_Tree )  containing its own information.
+- All the <span class="utility">lazylogger</span> channels will be in the ODB under  <span class="odb">/Lazy/\<channel-name\>/...</span>
 - Each channel tree is composed of three sub-trees <span class="odb">Settings, Statistics, List</span>.
 
 The <span class="odb">Settings</span> and <span class="odb">Statistics</span> trees are self-explanatory,
 and contain the operational 
 parameters of the channel(s). The <span class="odb">List</span> key will have a dynamic list of run numbers which have
-been successfully dealt with by the Lazylogger channel.
+been successfully dealt with by the <span class="utility">lazylogger</span>  channel.
 This list won't exist until the first successful operation of the channel is completed.
-
-- <b> Remarks >2.0.0</b> 
- - While the lazylogger was developed specifically for tape device, it also supports data file
+\anchor idx_FTP_channel_lazylogger
+While the <span class="utility">lazylogger</span>  was developed specifically for tape device, it also supports data file
   transfer to FTP repository system. Improvement towards a more generic support has been done
   which includes:
   - dynamic directory destination based on run number or date.
@@ -3291,17 +3610,37 @@ This list won't exist until the first successful operation of the channel is com
   - [-c channel ] : logging channel. Specify the lazylogger to activate.
   - [-z ] : zap statistics. Clear the statistics tree of all the defined
             lazylogger channels. 
- 
-\anchor ODB_tree_Lazy
-<hr> @section F_ODB_Lazy_Tree ODB /Lazy Tree
 
-This tree is used by the Lazylogger (if running).
+<br><hr><br>
+            
+\anchor ODB_tree_Lazy
+@section F_ODB_Lazy_Tree ODB /Lazy Tree
+
+This tree is used by the <span class="utility">lazylogger</span> (if running).
 It is created with default parameters on the first activation
-of the  @ref F_lazylogger_task . This task connects to a defined channel (i.e: Tape).
-when started. Multiple instances of the program can run concurrently.
+of the  @ref F_lazylogger_utility "lazylogger utility" . This task connects to a defined channel (e.g. Tape, Disk)
+when started.  Multiple instances of the program can run concurrently, connecting to a different
+channel (see  @ref F_lazylogger_utility "lazylogger" above).
+
+The following example shows a  <span class="odb">/lazy</span> tree with a <i> \<channel-name\> </i> of \b "Disk". 
+A sub-tree  <span class="odb">/lazy/disk</span> has been created, containing
+sub-trees  <span class="odb">"Settings"</span> and <span class="odb">"Statistics"</span> . A third sub-tree  <span class="odb">"List"</span>
+will be created after the first successful operation of the channel.
+The contents of these sub-trees is discussed below
+(see  @ref F_ODB_Lazy_Settings "Settings",  @ref F_ODB_Lazy_Statistics "Statistics" and @ref F_ODB_Lazy_List "List" subtrees.)
+\code
+[local:pol:S]/>ls /lazy/disk
+Settings
+Statistics
+List
+\endcode
+
+<br><hr><br>
+@subsection F_ODB_Lazy_Settings The  ODB /Lazy/<channel_name>/Settings subtree
+An example of the <span class="odb">Settings</span> subtree for a lazylogger channel is shown below:
 
 @code
-    Settings        DIR
+    Settings                      DIR
         Maintain free space(%)    INT     1     4     3m   0   RWD  0
         Stay behind               INT     1     4     3m   0   RWD  -3
         Alarm Class               STRING  1     32    3m   0   RWD  
@@ -3319,90 +3658,339 @@ when started. Multiple instances of the program can run concurrently.
   Modulo.Position                 STRING  1     8     11h  0   RWD  2.1
   Tape Data Append                BOOL    1     4     11h  0   RWD  y
 @endcode
- <br><br>
-  - <b>[Maintain free space]</b> As the Data Logger (<span class="cl">mlogger</span>) runs independently from
-  the Lazylogger, the disk contains all the recorded data files. Under this condition,
-  Lazylogger can be instructed to "purge" the data logging device (disk) after successful
-  backup of the data onto the "slow device". The \em Maintain free space(\%) parameter
-  controls (if none zero) the percentage of disk space required to be maintain free.
-    - The condition for removing a data file is defined as:
-  <b><center>
-  The data file corresponding to the given run number following the format declared
-  under "Settings/Filename format" IS PRESENT on the "Settings/Data Dir" path.
-  \b AND  The given run number appears anywhere under the "List/" directory of ALL the Lazy
-  channel having the same "Settings/Filename format"as this channel.
-  \b AND  The given run number appears anywhere under the "List/" directory of that channel
-  </center></b>
- <br><br>
-  - <b>[Stay behind]</b> This parameter defines how many consecutive data files should be kept
+
+<br><hr><br>
+@subsection F_ODB_Lazy_Settings Explanation of the Keys in the  ODB /Lazy/<channel_name>/Settings  subtree
+The following table explains the meaning of the keys in the <span class="odb">Settings</span> subtree. An example of
+the subtree is shown  @ref F_ODB_Lazy_Settings "above".
+
+<table style="text-align: left; width: 100%;" border="1" cellpadding="2"
+cellspacing="2">
+<caption>Above: meaning of keys in the /Lazy/\<channel_name\>/Settings ODB tree
+</caption>
+<tr>
+<td colspan="4" style="vertical-align: top; background-color: rgb(204, 204, 255); font-weight: bold; text-align: center;">
+Keys in the ODB tree <span class="odb">/Lazy/\<channel_name\>/Settings</span>
+</td>
+</tr>
+<tr>
+<td colspan="2" style="vertical-align: top; background-color: rgb(204, 204, 255); font-weight: bold; text-align: center;">
+ODB Key 
+</td>
+<td style="vertical-align: top; background-color: rgb(204, 204, 255); font-weight: bold; text-align: center;">
+Type
+<td style="vertical-align: top; background-color: rgb(204, 204, 255); font-weight: bold; text-align: center;"> 
+Explanation
+</td>
+<!--   line 1          -->
+<tr>
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
+Settings
+</td>
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;"><br></td>
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">DIR</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;"> ODB Settings subtree for a Lazylogger channel.
+</td>
+</tr>
+<!--   line 2         -->
+<tr>
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
+<br>
+</td>
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
+\anchor F_Lazy_maintain_free_space
+Maintain free space(%)
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">INT
+<td style="vertical-align: top; font-weight: normal; text-align: left;">
+As the data Logger (<span class="utility">mlogger</span>) runs independently from
+  the  @ref F_lazylogger_utility "Lazylogger", the data logging device (e.g. disk) contains all the recorded data files. Under this condition,
+  Lazylogger can be instructed to "purge" the disk after successful
+  backup of the data onto a "slow device" (e.g. tape). The  <span class="odb">"Maintain free space(\%)"</span> parameter
+  controls the percentage of disk space required to be maintained as free (for "none" set to 0).
+  <ul>
+  <li>The conditions that must \b ALL be satisfied before \b removing a data file are defined as:
+  <ol>
+      <li> The data file corresponding to the given run number following the format declared
+      under @ref F_Lazy_filename_format "Settings/Filename format" IS PRESENT on the @ref F_Lazy_data_dir "Settings/Data Dir" path.
+      <li> The given run number MUST appear anywhere under the  @ref F_ODB_Lazy_List  "Settings/List/" directory of ALL the Lazy
+  channels having the same  @ref F_Lazy_filename_format "Settings/Filename format" as this channel.
+      <li> The given run number MUST appear anywhere under the   @ref F_ODB_Lazy_List "Settings/List/" directory of that channel
+  </ol>
+  </ul>      
+</td>
+</tr>
+
+
+<!--   line 3           -->
+<tr>
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
+<br>
+</td>
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
+\anchor F_Lazy_stay_behind Stay behind
+</td>
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">INT</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">
+ This parameter defines how many consecutive data files should be kept
   between the current run and the last lazylogger run.
     - <b> Example  with "Stay behind = -3" </b>:
-    -# Current acquisition run number 253 -\> run00253.mid is being logged by <span class="cl">mlogger</span>.
-    -# Files available on the disk corresponding to run \#248, \#249, \#250, \#251, \#252.
+    -# Current acquisition run number 253 -\> run00253.mid is being logged by <span class="utility">mlogger</span>.
+    -# Files available on the disk corresponding to runs \#248, \#249, \#250, \#251, \#252.
     -# Lazylogger will start backing up run \#250 as soon as the new run 254 starts.
-    -3 "Stay behind = -3" corresponds to 3 file untouched on the disk
-    (\#251, \#252, \#253).
-  The negative sign instructs the lazylogger to \b always scan the entire "Data Dir" from the
-  oldest to the most recent file sitting on the disk at the "Data Dir" path- for backup.
-  If the "Stay behind" is positive, lazylogger will \b backup starting from- x behind
+    -# "Stay behind = -3" corresponds to 3 files untouched on the disk (\#251, \#252, \#253).
+    
+  \Note If the sign (+/-) of the <b>"Stay behind"</b> parameter is
+    - \b negative: the lazylogger will \b always scan the entire disk at the "Data Dir" path, from the
+  oldest to the most recent file present for backup.
+    - \b positive: lazylogger will \b backup starting from -x behind
   the current acquisition run number. Run order will be ignored.
-  <br><br>
-  - <b>[Alarm Class]</b> Specify the Alarm class to be used in case of triggered alarm.
-  <br><br>
-  - <b>[Running condition]</b> Specify the type of condition for which the lazylogger should
-  be actived. By default lazylogger is \b ALWAYS running. In the case of high data
-  rate acquisition it could be necessary to activate the lazylogger only when the run is either
-  paused, stopped or when some external condition is satisfied such as "Low beam intensity".
-  In this latter case, condition based on a single field of the ODB can be given to
-  establish when the application should be active.
-    - <b> Example </b>:
+</td>
+</tr>
+
+
+<!--   line    4       -->
+<tr>
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
+<br>
+</td>
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
+\anchor F_Lazy_alarm_class Alarm Class
+</td>
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">STRING</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">
+Specify the  @ref RC_alarm_classes "Alarm class" to be used in case of an alarm being triggered.
+</td>
+</tr>
+
+<!--   line    5       -->
+<tr>
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
+<br>
+</td>
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
+\anchor F_Lazy_running_condition Running Condition
+</td>
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">STRING</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">
+Specify the type of condition for which the lazylogger should
+  be actived. By default lazylogger is \b ALWAYS running. The choices are
+   - ALWAYS, NEVER, WHILE_NO_ACQ_RUNNING,
+   - or a condition based on a single field of the ODB  key<=>value
+   
+  <b> Example </b>: In the case of high data
+  rate acquisition it could be necessary to activate the lazylogger only
+   - when the run is either paused or stopped (i.e. WHILE_NO_ACQ_RUNNING) 
       @code
       odbedit> set "Running condition" WHILE_ACQ_NOT_RUNNING
+      @endcode
+   -  or when some external condition is satisfied such as "low beam intensity". 
+      @code
       odbedit> set "Running condition" "/alias/max_rate \< 200"
       @endcode
+</td>
+</tr>
+
+
+<!--   line    6       -->
+<tr>
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
+<br>
+</td>
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
+\anchor F_Lazy_data_dir Data dir
+</td>
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">STRING</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">
+ Specifies the data directory path of the data logging device (e.g. disk). If the
+ Key <span class="odb">"Data Dir"</span> is present, the contents is taken as the path,  otherwise the current directory is used
+ (i.e. the path where the lazylogger client was started).
+</td>
+</tr>
+
+<!--   line     7      -->
+<tr>
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
+<br>
+</td>
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
+\anchor F_Lazy_data_format Data format 
+</td>
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">STRING</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">
+ Specifies the Data Format of the data files. Currently supported formats
+  are \b MIDAS (Note that YBOS is no longer supported - see @ref ndf_sep_2010).
+</td>
+</tr>
+
+<!--   line   8        -->
+<tr>
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
+<br>
+</td>
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
+\anchor F_Lazy_filename_format Filename format
+</td>
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">STRING</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">
+ Specifies the file format of the data files on the data logging device (i.e. disk). This should be the same
+ @ref F_Logger_CS_Filename "filename format" as
+ used by the data logger to save the files.
+</td>
+</tr>
+
+
+<!--   line    9       -->
+<tr>
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
+<br>
+</td>
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
+\anchor F_Lazy_backup_type Backup type
+</td>
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">STRING</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">
+Specifies the "slow device" backup type. Default \b Tape.
+=======
   - <b>[Data dir]</b> Specify the Data directory path of the data files. By default if the
   "/Logger/Data Dir" is present, the pointed value is taken otherwise the current directory
   where lazylogger has been started is used.
    <br><br>
   - <b>[Data format]</b> Specify the Data format of the data files. Currently supported formats
-  are: \b MIDAS (The \b YBOS format is not anymore supported since September 2010).
+  are: \b MIDAS (Note that \b YBOS format is no longer supported  - see @ref  ndf_sep_2010 ).
    <br><br>
   - <b>[Filename format]</b> Specify the file format of the data files. Same format as
   given for the data logger.
  <br><br>
   - <b>[Backup type]</b> Specify the "slow device" backup type. Default \b Tape.
+>>>>>>> .r4846
   Can be \b Disk or \b Ftp. 
-   <br><br>
-  - <b>[Execute after rewind]</b> Specify a script to run after completion of a lazylogger
+</td>
+</tr>
+
+
+
+<!--   line    10       -->
+<tr>
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
+<br>
+</td>
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
+\anchor F_Lazy_execute_after_rewind Execute after rewind
+</td>
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">STRING</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">
+Specifies an optional script to run after completion of a lazylogger
   backup set (see below "Capacity (Bytes)").
-   <br><br>
-  - <b>[Path]</b> Specify the "slow device" path. Three possible types of Path:
+</td>
+</tr>
+
+
+<!--   line  11         -->
+<tr>
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
+<br>
+</td>
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
+\anchor F_Lazy_path Path
+</td>
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">STRING</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">
+ Specifies the "slow device" path. Three possible types of Path:
     - For Tape : \b /dev/nst0- (UNIX like).
     - For Disk : \b /data1/myexpt
-    - For Ftp  : \b host,port,user,password,directory
-   <br><br>
-  - <b>[Capacity (Bytes)]</b> Specify the maximum "slow device" capacity in bytes.
+    - For Ftp  : <b> host,port,user,password,directory</b>
+</td>
+</tr>
+
+
+<!--   line      12     -->
+<tr>
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
+<br>
+</td>
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
+\anchor F_Lazy_capacity Capacity (Bytes)
+</td>
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">STRING</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">
+Specifies the maximum "slow device" capacity in bytes.
   When this capacity is reached,the lazylogger will close the backup device and clear
-  the "List Label" field to prevent further backup (see below).
-  It will aslo rewind the stream device if possible.
-  - <b>[List label]</b> Specify a label for a set of backed up files to the "slow device".
-  This label is used only internaly by the lazylogger for creating under the "/List" a
-  new array composed of the backed up runs until the "Capacity" value has been reached.
-  As the backup set is complete, lazylogger will clear this field and therefore
-  prevent any further backup until a none empty label list is entered again.
-  In the other hand the list label will remain under the <span class="odb">/List</span> key to display all
+  the  @ref F_Lazy_list_label "List Label" field to prevent further backup.
+  It will also rewind the stream device if possible.
+</td>
+</tr>
+
+
+<!--   line   13        -->
+<tr>
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
+<br>
+</td>
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
+\anchor F_Lazy_list_label List label
+</td>
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">STRING</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">
+ Specify a label for a set of backed up files to the "slow device".
+  This label is used only internaly by the lazylogger for creating a
+  new array composed of the backed up runs under the @ref F_ODB_Lazy_List "/Settings/List" subdirectory,
+  until the @ref F_Lazy_capacity "Capacity" value has been reached.
+  Once the backup set is complete, lazylogger will clear the  <span class="odb">"List label"</span> field and therefore
+  prevent any further backup until a non-empty <span class="odb">"List label"</span>  is entered again.
+  On the other hand the list label will remain under the <span class="odb">/List</span> key to display all
   run being backed up until the corresponding files have been removed from the disk.
-  - <b>[Exec preW file]</b> Permits to run a script before the begining of the lazy job.
-  The <b> arguments </b> passed to the scripts are: input file name , output file name, current block number.
-  - <b>[Exec postW file]</b> Permits to run a script after the completion of the lazy job.
-  The <b> arguments </b> passed to the scripts are: list label, current job number, source path,
-  file name, file size in MB, current block number.
- <br><br>
-  - <b>[Modulo.Position]</b> This field is for multiple instances of the lazylogger where each instance
-  works on a sub-set of run number. By specifying the <b>Modulo.Position</b>
+</td>
+</tr>
+
+
+<!--   line    14       -->
+<tr>
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
+<br>
+</td>
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
+\anchor F_Lazy_exec_prew_file Exec preW file
+</td>
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">STRING</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">
+ Permits a script to be run before the begining of the lazy job.
+  The \b arguments passed to the scripts are: <b>input file name , output file name, current block number</b>.
+</td>
+</tr>
+
+
+<!--   line    15       -->
+<tr>
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
+<br>
+</td>
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
+\anchor F_Lazy_exec_postw_file Exec postW file
+</td>
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">STRING</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">
+ Permits a script to be run after the completion of the lazy job.
+  The <b> arguments </b> passed to the scripts are: <b>list label, current job number, source path,
+  file name, file size in MB, current block number</b>.
+</td>
+</tr>
+
+
+<!--   line    16       -->
+<tr>
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
+<br>
+</td>
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
+\anchor F_Lazy_modulo_position Modulo.Position
+</td>
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">STRING</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">
+ This field is for multiple instances of the lazylogger where each instance
+  works on a sub-set of run number. By specifying the <span class="odb">Modulo.Position</span>
   you're telling the current lazy instance how many instances are simultaneously
-  running (3.) and the position of which this instance is assigned to (.1).
-  As an example for 3 lazyloggers running contemporaneously the field assignment
+  running (3.) and the position of which this instance is assigned to (.1) 
+  As an example for 3 lazyloggers running simultaneously the field assignment
   should be :
   @code
   Channel    Field    Run#
@@ -3410,28 +3998,89 @@ when started. Multiple instances of the program can run concurrently.
   Lazy_2     3.1      22, 25, 28, ...
   Lazy_3     3.2      23, 26, 29, ...
   @endcode
- <br><br>
-  - <b>[Tape Data Append]</b> Enable the spooling of the Tape device to the End_of_Device (EOD) before
-  starting the lazy job. This command is valid only for "Backup Type" Tape. If this flag is not enabled
+
+  In the example of  the <span class="odb">/Settings</span> tree  @ref F_ODB_Lazy_Settings "above",
+  the <span class="odb">Modulo.Position</span> is set to 2.1 , indicating
+  this is instance 1, and two lazyloggers are running.
+</td>
+</tr>
+
+
+<!--   line  17         -->
+<tr>
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
+<br>
+</td>
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
+\anchor F_Lazy_tape_data_append Tape Data Append 
+</td>
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">BOOL</td>
+<td style="vertical-align: top; font-weight: normal; text-align: left;">
+ If this key is set to "y", the spooling of the Tape device to the End_of_Device (EOD) before
+  starting the lazy job is \b enabled. This command is valid only for "Backup Type" Tape. If this flag is not enabled
   the lazy job starts at the current tape position.
- <br><br>
-  - <b>[Statistics/]</b> ODB tree specifying general information about the status of
-  the current lazylogger channel state.
- <br><br>
-  - <b>[List/]</b> ODB tree, will contain arrays of run number associated with the
-   array name backup-set label. Any run number appearing in any of the arrays is
+</td>
+</tr>
+</table>
+
+<br><hr><br>
+@subsection F_ODB_Lazy_Statistics The  ODB /Lazy/<channel_name>/Statistics subtree
+The  <span class="odb">Statistics</span> ODB subtree contains general information about the status of
+the current lazylogger channel.
+
+An example of the <span class="odb">Statistics</span> subtree for a lazylogger channel is shown below:
+
+@code
+[local:pol:S]/>ls /lazy/disk/Statistics/
+Backup file                     000321.mid
+File size (Bytes)               0
+KBytes copied                   0
+Total Bytes copied              0
+Copy progress (%)               0
+Copy Rate (Bytes per s)         0
+Backup status (%)               0
+Number of Files                 173
+Current Lazy run                321
+@endcode
+
+<br><hr><br>
+ 
+@subsection F_ODB_Lazy_List The  ODB /Lazy/<channel_name>/List subtree
+The  <span class="odb">List</span> ODB subtree will contain arrays of run number associated with the
+   array name backup-set label (see @ref F_Lazy_list_label "list label") . Any run number appearing in any of the arrays is
    considered to have been backed up.
-  
-- <b> Usage </b>
- lazylogger requires to be setup prior data file can be moved.
+
+An example of the <span class="odb">List</span> subtree for a lazylogger channel is shown below. In this case, the
+@ref F_Lazy_list_label "list label" was set to "archive".
+
+@code
+[local:pol:S]/>ls /lazy/disk/List
+archive
+                                230
+                                231
+                                232
+                                233
+                                234
+                                235
+                                236
+                                237
+@endcode
+ 
+<br><hr><br>
+
+@section F_ODB_Lazy_setup Setting up the Lazylogger 
+
+The Lazylogger requires to be \b setup before data file can be moved.
  This setup consists of 4 steps:
-  - <b>[Step 1] </b> Invoking the lazylogger once for setting up the appropriate ODB
-  tree and exit.
+
+ <ol>
+ <li>Invoke the lazylogger once for setting up the appropriate ODB
+  tree and exit.  In this example, the channel is "Tape".
   @code
   >lazylogger -c Tape
   @endcode
-  - <b>[Step 2]</b> Edit the newly created ODB tree. Correct the setting field to
-  match your requirement.
+  <li> Edit the newly created ODB tree. Set the <span class="odb">Settings</span> field(s) to
+  match your requirements.
 @code
 > odbedit -e midas
 [local:midas:Stopped]/>cd /Lazy/tape/
@@ -3467,12 +4116,12 @@ tape                            DIR
 [local:midas:Stopped]Settings>set "Data dir" /data
 [local:midas:Stopped]Settings>set "Capacity (Bytes)" 15e9
 @endcode
-  - <b>[Step 3]</b> Start lazylogger in the background
+   <li> Start <span class="utility">lazylogger</span> in the background
 @code
 >lazylogger -c Tape -D
 @endcode
-  - <b>[Step 4]</b> At this point, the lazylogger is running and waiting for the
-  "list label" to be defined before starting the copy procedure. @ref RC_mstat_task
+ <li> At this point, the lazylogger is running and waiting for the
+  @ref F_Lazy_list_label "list label" key to be defined before starting the copy procedure. The @ref RC_mstat_utility "mstat" utility
   will display information regarding the status of the lazylogger. 
 @code
 > odbedit -e midas
@@ -3480,12 +4129,15 @@ tape                            DIR
 [local:midas:Stopped]Settings>set "List label" cni-043
 @endcode
 
-- <b> Remarks </b>
- - For every major operation of the lazylogger a message is sent to the
-Message buffer and will be appended to the default Midas log file (midas.log). These
+<br><hr><br>
+
+@subsection F_ODB_Lazy_operation  Operation of the Lazylogger
+
+For every major operation of the lazylogger a message is sent to the
+Message buffer and will be appended to the default Midas log file  (@ref F_Log_File "midas.log"). These
 messages are the only mean of finding out What/When/Where/How the lazylogger has operated
-on a data file. A fragment of the midas.log for the chaos experiment is shown below.
-In this case, the \b Maintain free space(%) field was enabled which produces the
+on a data file. A fragment of the <b>midas.log</b> for the chaos experiment is shown below.
+In this case, the @ref F_Lazy_maintain_free_space "Maintain free space(%)" field was enabled which produces the
 cleanup of the data files and the entry in the \b List tree after copy.
 @code
 Fri Mar 24 14:40:08 2000 [Lazy_Tape] 8351 (rm:16050ms) /scr0/spring2000/run08351.ybs file REMOVED
@@ -3516,7 +4168,7 @@ Fri Mar 24 15:50:15 2000 [Lazy_Tape] Tape run#8354 entry REMOVED
 ...
 
 @endcode
- - Once lazylogger has started a job on a data file, trying to
+ - Once the lazylogger has started a job on a data file, trying to
 terminate the application will result in producing a log message informing the user of the
 actual percentage of the backup completed so far. This message will repeat itself
 until completion of the backup, and only then the lazylogger application will terminate.
@@ -3524,20 +4176,27 @@ until completion of the backup, and only then the lazylogger application will te
 of the backup device is undetermined. Recovery is not possible, and the full backup set
 has to be redone. In order to do this, you need:
  - To rewind the backup device.
- - Delete the /Lazy/\<channel_name>/List/\<list label> array.
+ - Delete the <span class="odb">/Lazy/\<channel_name>/List/\<list label></span> array.
  - Restart the  lazylogger with the -z switch which will "zap" the statistics entries.
- - In order to facilitate the recovery procedure, \b lazylogger produces an
+ - In order to facilitate the recovery procedure,   <span class="utility">lazylogger</span> produces an
 ODB ASCII file of the lazy channel tree after completion of successful operation.
-This file (\b Tape_recover.odb) stored in @ref  F_Logger_Data_Dir "Data dir" can be used for ODB
+This file (\b Tape_recover.odb) stored in @ref  F_Lazy_data_dir "Data dir" can be used for ODB
 as well as lazylogger recovery.
 
-<br><hr><br>
-\anchor idx_mchart-task
-\anchor idx_stripchart
-@section F_mchart_task mchart       - assembles data for stripchart
+<br>
 
-mchart is a periodic data retriever of a specific path in the ODB, which can be used
-in conjunction with a stripchart graphic program.
+
+
+<br><hr><br>
+
+
+\anchor idx_mchart-utility
+\anchor idx_stripchart
+@section F_mchart_utility mchart       - assembles data for stripchart
+
+<span class="utility">mchart</span> is a periodic data retriever of a specific path in the ODB, which can be used
+in conjunction with a stripchart graphic program. The mchart/stripchart feature has been largely superceded
+by the @ref  F_History_System . 
 
 - In the first of two-step procedure, a specific path in the ODB can be scanned
   for composing a configuration file by extracting all numerical data
@@ -3685,8 +4344,8 @@ installed through the Midas Makefile.
   spawning graph with stripchart /home/chaos/chart/chv.conf ...
  @endcode
 
-\anchor idx_mtape_task  
-<hr> @section F_mtape_task mtape  - tape manipulation
+\anchor idx_mtape_utility  
+<hr> @section F_mtape_utility mtape  - tape manipulation
 
 Tape manipulation utility.
 
@@ -3704,10 +4363,8 @@ Tape manipulation utility.
 
 <hr> @section F_stripchartfile stripchart   - graphical stripchart data display
 
-This is a tcl file (stripchart.tcl) which operates on @ref F_mchart_task data or on 
-Midas history save-set files.
-
-(see also @ref F_History_System).
+This is a tcl file (stripchart.tcl) which operates on @ref F_mchart_utility data or on 
+Midas history save-set files (see also @ref F_History_System).
 
 - <b> Arguments </b>
    - [-mhist ] : start stripchart for Midas history data.
@@ -3716,7 +4373,7 @@ Midas history save-set files.
  -mhist:   (look at history file -default)
  -dmhist:  debug mhist 
  -debug:   debug stripchart
- -config_file: see F_mchart_task
+ -config_file: see F_mchart_utility
  @code
  > stripchart.tcl -debug
 
@@ -3727,15 +4384,15 @@ Midas history save-set files.
  > stripchart.tcl -h
  @endcode 
 
- * <center> gstripchart display with parameters and data pop-up.
+ * <center> <span class="image"> gstripchart display with parameters and data pop-up.</span>
  *  \image html gstripchart1.jpg
  * </center> 
 
- * <center> stripchart.tcl mhist mode: main window with pull-downs.
+ * <center>  <span class="image"> stripchart.tcl mhist mode: main window with pull-downs.</span>
  *  \image html stripchart1.jpg
  * </center> 
 
- * <center> stripchart.tcl Online data, running in conjunction with mchart
+ * <center>  <span class="image"> stripchart.tcl Online data, running in conjunction with mchart</span>
  *  \image html stripchart2.jpg
  * </center> 
 

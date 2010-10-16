@@ -1,9 +1,9 @@
 
 /*! @page RC_mhttpd mhttpd -  Run Control using the Midas Web Server
 \anchor idx_midas_webserver
-\anchor idx_mhttpd-task
+\anchor idx_mhttpd-utility
 <!--  mhttpd functionality is a sub-page of the Run Control section; 
-      mhttpd Usage is in the Utility section RC_mhttpd_task
+      mhttpd Usage is in the  section RC_mhttpd_utility
  -->
 <br>
 \htmlonly 
@@ -14,7 +14,7 @@ sections("Features", "RunControl","FrontendOperation"); // last section; top of 
 \endhtmlonly 
 
 <br>
-@section RC_mhttpd_task mhttpd - Run control & Monitoring through the web
+@section RC_mhttpd_utility mhttpd - Run control & Monitoring through the web
 
 The Midas Web Server utility \b "mhttpd" provides Midas DAQ control through
 the web using any web browser. Provided the @ref RC_mhttpd_Usage "daemon application" is running,
@@ -80,7 +80,7 @@ correctly to
 <br>
 <hr>
 <br>
-\anchor idx_mhttpd-task_connect
+\anchor idx_mhttpd-utility_connect
 @subsection RC_mhttpd_connect Connect to the mhttpd webserver
 To connect to a mhttpd webserver running on 
 port &lt;nnnn&gt; on host &lt;hostname&gt; and experiment &lt;exptname&gt;, 
@@ -125,6 +125,7 @@ These functions are available on one or more of the various \b pages described b
 - \subpage RC_mhttpd_Start_page - Run control page
 - \subpage RC_mhttpd_ODB_page - Online Database manipulation (equivalent to ODBedit)
 - \subpage RC_mhttpd_Equipment_page (Frontend info)
+- \subpage RC_mhttpd_sc_page (Slow Control page)
 - \subpage RC_mhttpd_CNAF_page (CAMAC access page)
 - \subpage RC_mhttpd_Message_page (Message Log) 
 - \subpage RC_mhttpd_Elog_page (Electronic Log)
@@ -166,12 +167,13 @@ sections("Features", "RunControl","FrontendOperation"); // last section; top of 
  
 \htmlonly
 <script type="text/javascript">
-pages( "RC_mhttpd",  "RunControl","RC_mhttpd_Start_page", "RC_mhttpd_Main_Status_page",  "end" ); // back index next {top bottom}
+pages( "RC_mhttpd",  "RunControl","RC_mhttpd_defining_user_buttons", "RC_mhttpd_Main_Status_page",  "end" ); // back index next {top bottom}
 sections("Features", "RunControl","FrontendOperation"); // last section; top of this section; next section
 </script>
 \endhtmlonly
  
 
+  
 <br>
 @section RC_mhttpd_msp_default Status Page (minimal) 
 
@@ -198,8 +200,8 @@ and only the standard  buttons are shown.
 
 @anchor RC_mhttpd_pol_status
 Once the user has customized their experiment, by 
- - starting some of the Midas tasks (e.g. the Midas logger @ref F_mlogger_task "mlogger" and the 
-@ref F_lazylogger_task "lazylogger" )
+ - starting some of the Midas utilities (e.g. the Midas logger @ref F_mlogger_utility "mlogger" and the 
+@ref F_lazylogger_utility "lazylogger" )
  - creating and starting some frontend(s), which define various equipment(s)
  - defining user and alias-links (buttons)
 
@@ -219,12 +221,12 @@ of the "pol" experiment at TRIUMF:
 @section RC_mhttpd_status_page_redesign Redesign of Main Status Page
 \anchor alias_buttons_status_page
 <span class="new">
-The appearance of the Main Status Page has been changed  (@ref ndf_dec_2009) 
-<ul class="new">
+The appearance of the Main Status Page has been changed  (@ref ndf_dec_2009) as follows:</span>
+<ul>
  <li> the \b "Analyzed" column has been dropped ( \ref RC_analyzer_column "see below")
  <li> \b alias-hyperlinks and links to Custom pages on the main Status Page have been changed from \b hyperlinks to \b Buttons  (@ref RC_mhttpd_alias_buttons),
  <li>  there are now four different background colors (@ref ndf_jan_2010) for the four rows of buttons, i.e. :
-    <ul class="new">
+    <ul>
         <li> Main menu buttons,
         <li> Scripts,
         <li> Manually triggered events,
@@ -252,7 +254,7 @@ The new format is illustrated below:
  * </span></center> 
  * <br><br><br>
 
-Note also that the column "Analyzed" has also been removed.</span>
+Note also that the column "Analyzed" has also been removed.
  
 <hr>
 
@@ -299,7 +301,7 @@ It is also possible (since @ref ndf_nov_2009) to optionally hide the
 \anchor idx_mhttpd_buttons_run-control
 @subsection RC_mhttpd_status_RC_buttons Run Control buttons
 
-<span class="new">Since  @ref ndf_nov_2009 , if the Run Buttons are present (see @ref customize_mhttpd_run_buttons "customize run buttons") 
+<span class="new">Since  @ref ndf_nov_2009 , if the Run Buttons are present (see @ref RC_customize_mhttpd_run_buttons "customize run buttons") 
 </span>,
 depending on the @ref RC_Run_States_and_Transitions  "run state", a single or the two first buttons  on the @ref RC_mhttpd_pol_status_example "main status page"
 will show the possible action that can be taken, i.e.
@@ -423,7 +425,7 @@ cellspacing="2">
 <tr>
 <td style="vertical-align: top; font-weight: bold; text-align: center; background-color: rgb(204, 204, 255); ">Page Switch Button</td>
 <td  style="vertical-align: top; font-weight: bold; text-align: center; background-color: rgb(204, 204, 255); ">Explanation</td>
-
+</tr>
 <! -- Line 1  ODB  -->
 <tr>
 <td style="vertical-align: top; font-weight: bold; text-align: center; background-color: rgb(153, 153, 153);">
@@ -441,7 +443,7 @@ style="font-weight: bold;">ODB</span><br>
 <td  style="vertical-align: top;">
 This button provides (limited) access to the Online Data Base.  
 Depending on the security, read/write access to any ODB field can be gained (see @ref RC_mhttpd_ODB_page).
-For more sophisticated editing, use @ref RC_odbedit_task "odbedit".
+For more sophisticated editing, use @ref RC_odbedit_utility "odbedit".
 </td></tr>
 
 
@@ -634,18 +636,20 @@ Help and link to the main Midas web documentation (i.e. this document).
 <br><hr><br>
 \anchor idx_mhttpd_buttons_user
 @subsection RC_mhttpd_status_User_buttons Optional User buttons
-User buttons that appear on the @ref RC_mhttpd_pol_status_example "main status page"  may be defined through @ref RC_odb_script_tree .
-<br>
+User buttons that appear on the @ref RC_mhttpd_pol_status_example "main status page" are used to execute user-defined scripts.
 
 \anchor idx_ODB_tree_Script
+User-buttons on the mhttpd main Status Page are defined through the optional ODB <span class="odb">/script</span>
+tree.
+
 @subsubsection RC_odb_script_tree The ODB /Script tree
 \note 
 The  <span class="odb">/Script</span> tree is applicable to @ref RC_mhttpd "mhttpd", and ignored by 
 @ref RC_odbedit "odbedit".
 
+The optional ODB tree  <span class="odb">/Script</span> provides the user with a way to execute a script when a button is clicked, including
+the <b>capability of passing parameters from the ODB to the script</b>.
 
-
-The optional ODB tree  <span class="odb">/Script</span> provides the user with a way to execute a script when a button is clicked.  
 <br>
 If the user defines a new tree in ODB named  <span class="odb">/Script</span> , then any key created in this tree will appear as a 
 user-button of that name on the default mhttpd main status page. Each sub-tree
@@ -653,87 +657,12 @@ user-button of that name on the default mhttpd main status page. Each sub-tree
     script command to be executed. Further keys will be passed as
    <b> arguments </b> to the script. Midas symbolic links are permitted.
 
-<hr>
-
-@subsubsection RC_odb_script_example Example of creating a User-button
-The <b> example </b> below shows the ODB  <span class="odb">/script/dac</span> subdirectory.
-   The user-button \b "dac" associated with this subdirectory is shown on the 
-@ref RC_mhttpd_pol_status "example status page".
-
-   The first key in the  <span class="odb">dac</span> subdirectory is the string key <span class="odb">cmd</span> which contains the name and path of
-the script to be executed (in this case, a perl script). This script is located on the local host computer 
-on which the experiment is running. The subsequent keys are parameters input to the script.
-@code
-[local:pol:R]/>ls "/script/dac"
-cmd                             /home/pol/online/perl/change_mode.pl
-include path                    /home/pol/online/perl
-experiment name -> /experiment/name
-                                pol
-select mode                     1h
-
-mode file tag                   none
-[local:pol:R]/>  
-@endcode
-When the user-button labelled \b "dac" is pressed, the script \b "change_mode.pl"
- will be executed with the following key contents as parameters, equivalent to the
-command:
-@code
-  "/home/pol/online/perl/change_mode.pl  /home/pol/online/perl pol 1h mode"
-@endcode
-<br>
-This is part of the code of the script \b "change_mode.pl" :
-@code
-# input parameters :
-
-our ($inc_dir, $expt, $select_mode, $mode_name ) = @ARGV;
-our $len = $#ARGV; # array length
-our $name = "change_mode" ; # same as filename
-our $outfile = "change_mode.txt"; # path will be added by file open function
-our $parameter_msg = "include path , experiment , select_new_mode  mode_name";
-our $nparam = 4;  # no. of input parameters
-our $beamline = $expt; # beamline is not supplied. Same as $expt for bnm/qr, pol
-############################################################################
-# local variables:
-my ($transition, $run_state, $path, $key, $status);
-
-# Inc_dir needed because when script is invoked by browser it can't find the
-# code for require
-
-unless ($inc_dir) { die "$name: No include directory path has been supplied\n";}
-$inc_dir =~ s/\/$//;  # remove any trailing slash
-require "$inc_dir/odb_access.pl";
-require "$inc_dir/do_link.pl";
-
-# init_check.pl checks:
-#   one copy of this script running
-#   no. of input parameters is correct
-#   opens output file:
-#
-require "$inc_dir/init_check.pl";
-
-# Output will be sent to file $outfile
-# because this is for use with the browser and STDOUT and STDERR get set to null
 
 
-print FOUT  "$name starting with parameters:  \n";
-print FOUT  "Experiment = $expt, select new mode = $select_mode;  load file mode_name=$mode_name \n";
+See
+ - \subpage  RC_mhttpd_defining_user_buttons "Examples of defining user buttons" <!--  \level+2  subpage defined within a subsection -->  
 
-unless ($select_mode)
-{
-    print FOUT "FAILURE: selected mode  not supplied\n";
-        odb_cmd ( "msg","$MERROR","","$name", "FAILURE:  selected mode not supplied " ) ;
-        unless ($status) { print FOUT "$name: Failure return after msg \n"; }
-        die  "FAILURE:  selected mode  not supplied \n";
-
-}
-unless ($select_mode =~/^[12]/)
-{
-    print_3 ($name,"FAILURE: invalid selected mode ($select_mode)",$MERROR,1);
-}
-
-etc.
-
-@endcode
+for details.
 
 
 <hr>
@@ -778,7 +707,7 @@ style="vertical-align: top; background-color: rgb(255, 204, 204); font-weight: b
 </tr>
 </table>
 
- - the @ref F_mlogger_task "midas logger" status. 
+ - the @ref F_mlogger_utility "midas logger" status. 
 <table style="text-align: left; width: 50%;" border="1" cellpadding="2"
 cellspacing="2">
 
@@ -880,7 +809,7 @@ The event statistics for the current run are also shown on the @ref RC_mhttpd_po
 
 
 @subsection RC_mhttpd_status_Logger Midas Logger Information
-This information is present on the @ref RC_mhttpd_pol_status_example "main status page"  \b only if the @ref F_mlogger_task "Midas Logger" is running. Compare the examples for a
+This information is present on the @ref RC_mhttpd_pol_status_example "main status page"  \b only if the @ref F_mlogger_utility "Midas Logger" is running. Compare the examples for a
  @ref RC_mhttpd_pol_status_example "running experiment" with a @ref RC_mhttpd_minimal_status_page
 "minimal" status page. 
 <br>
@@ -893,7 +822,7 @@ The name of the saved data file is also shown.
 
 @subsection RC_mhttpd_status_Lazylogger Optional Lazylogger Information
 This line on the @ref RC_mhttpd_pol_status_example "main status page"  shows the  Lazylogger list. Multiple lazy application can be active.
-This information is present only if the  @ref F_lazylogger_task is running.
+This information is present only if the  @ref F_lazylogger_utility is running.
 
 <br><hr><br>
 \anchor idx_message_last
@@ -913,10 +842,10 @@ At the bottom  of the @ref RC_mhttpd_pol_status_example "main status page" is a 
 
 
 <br><br>
- 
+   
 \htmlonly
 <script type="text/javascript">
-pages( "RC_mhttpd",  "RunControl","RC_mhttpd_Start_page", "RC_mhttpd_Main_Status_page",  "" ); // back index next {top bottom}
+pages( "RC_mhttpd",  "RunControl","RC_mhttpd_defining_user_buttons", "RC_mhttpd_Main_Status_page",  "" ); // back index next {top bottom}
 sections("Features", "RunControl","FrontendOperation"); // last section; top of this section; next section
 </script>
 \endhtmlonly
@@ -925,7 +854,11 @@ sections("Features", "RunControl","FrontendOperation"); // last section; top of 
 <br>
 \anchor end
 <!-- end of page RC_mhttpd_Main_Status_page -->
+
 */
+
+
+
 
 
 <!-- ------------ S T A R T  P A G E  ------- -->
@@ -936,7 +869,7 @@ sections("Features", "RunControl","FrontendOperation"); // last section; top of 
  
 \htmlonly
 <script type="text/javascript">
-pages( "RC_mhttpd_Main_Status_page",  "RunControl","RC_mhttpd_ODB_page", "RC_mhttpd_Start_page",   "end" ); // back index next {top bottom}
+pages( "RC_mhttpd_defining_user_buttons",  "RunControl","RC_mhttpd_ODB_page", "RC_mhttpd_Start_page",   "end" ); // back index next {top bottom}
 sections("Features", "RunControl","FrontendOperation"); // last section; top of this section; next section
 </script>
 \endhtmlonly
@@ -998,8 +931,8 @@ explanation can be supplied by creating @ref RC_Edit_PC .
 
 @subsection RC_EOS_web_features Features available for mhttpd only
 
-Several extra <b>Edit on start</b> features are available when using the mhttpd task 
-for starting the run, which are ignored by odbedit. These are described below:
+Several extra <b>Edit on start</b> features are available when using mhttpd 
+to start the run, which are ignored by odbedit. These are described below:
 
 - @ref RC_Edit_PC 
 - @ref RC_Prevent_Edit_RN 
@@ -1009,7 +942,7 @@ for starting the run, which are ignored by odbedit. These are described below:
 
 @subsection RC_Edit_PC Parameter Comments
 
-An optional subdirectory <b>Parameter Comments</b> can created under the @ref RC_ODB_Experiment_Tree to
+An optional subdirectory <b>Parameter Comments</b> can be created under  @ref  RC_ODB_Experiment_Tree to
 display some extra text on the Start page under an <b>Edit on start</b> parameter. Usually the 
 parameter names are self-explanatory, but the parameter name may not contain enough information. 
 In this case, a <b>parameter comment</b> can be created by the user.  
@@ -1124,7 +1057,7 @@ be edited by odbedit.
  
 \htmlonly
 <script type="text/javascript">
-pages("RC_mhttpd_Main_Status_page", "RunControl","RC_mhttpd_ODB_page","RC_mhttpd_Start_page","" ); // back index next {top bottom}
+pages("RC_mhttpd_defining_user_buttons", "RunControl","RC_mhttpd_ODB_page","RC_mhttpd_Start_page","" ); // back index next {top bottom}
 sections("Features", "RunControl","FrontendOperation"); // last section; top of this section; next section
 </script>
 \endhtmlonly
@@ -1159,30 +1092,57 @@ sections("Features", "RunControl","FrontendOperation"); // last section; top of 
 The ODB page is displayed by clicking on the "ODB"  @ref RC_mhttpd_status_Page_buttons "page switch button"
 (@ref RC_mhttpd_status_menu_buttons "if present") on the @ref RC_mhttpd_pol_status_example "main status page".
 
-The ODB page initially displays the ODB root tree. Clicking on the hyperlink "/", "Equipment" .. "Channels" will take
+ * <br><br><br>
+ * <center>
+ *  <span class="image">  Clicking on the "ODB" button will bring up a page showing the root tree of the ODB </span>
+ * <br><br><br> 
+ *  \image html mhttpd_odb_page.gif
+ * </center> 
+ * <br><br><br> 
+
+
+The ODB page initially displays the ODB root tree. Clicking on the hyperlink "/", then e.g. "Equipment" ... will take
 you to the requested ODB field.
 
-The ODB page includes the useful capabilities of editing the ODB values and creating or deleting new keys. But for copying ODB trees,
-saving and reloading the ODB, re-ordering the keys etc., the much more powerful @ref RC_odbedit_task "odbedit" task must be used.
+The ODB page includes the useful capabilities of \b editing the ODB values and \b creating or \b deleting new keys. But for copying ODB trees,
+saving and reloading the ODB, re-ordering the keys etc., the much more powerful @ref RC_odbedit_utility "odbedit" utility must be used.
+<br><br>
 
+\b Examples:
 
-The <b> Example </b> below show the sequence for changing
-the variable "PA" under the /Equipment/PA/Settings/Channels ODB directory.
+- @ref RC_mhttpd_ODB_page_example1
+- @ref RC_mhttpd_ODB_page_example2
 
-If the ODB is @ref RC_Access_Control "Write protected", a <b> popup window will request the web password </b> before
-you can change a value.
+@section RC_mhttpd_ODB_page_example1 Changing a variable
+
+This example shows how to change the variable "PA" under the /Equipment/PA/Settings/Channels ODB directory.
+If the ODB is @ref RC_Access_Control "Write protected" (as in the example below) a <b> popup window will request the
+web password </b> before you can change a value.
 
  * <br><br><br>
  * <center>
- *  <span class="image">  ODB page access
+ *  <span class="image">  ODB page access </span>
  * <br><br><br> 
  *  \image html mhedit.gif
- * </span></center> 
+ * </center> 
  * <br><br><br>  
 <br>
 
+@section RC_mhttpd_ODB_page_example2 Creating a subdirectory and an array
 
+The following sequence shows how to
+ - create the subdirectory \b "Settings" in the ODB tree <span class="odb">/Equipment/Detector</span>,
+ - create an array called \b "Names" in the <span class="odb">Settings</span> subdirectory,
+ - fill the first element of \b "Names" with the string \b "LeftFront"
 
+ 
+ * <br><br><br>
+ * <center>
+ *  <span class="image">  Creating subdirectory "Settings" and the array "Names"
+ * <br><br><br> 
+ *  \image html mhttpd_create.gif
+ * </span></center> 
+ * <br><br><br> 
  
 \htmlonly
 <script type="text/javascript">
@@ -1210,136 +1170,491 @@ pages( "RC_mhttpd_ODB_page", "RunControl", "RC_mhttpd_sc_page","RC_mhttpd_Equipm
 \endhtmlonly
  
 
-<br>
+<br><br>
+\anchor idx_Equipment_data_display
+@section  RC_mhttpd_Equipment_var  How to Display the Equipment Page
 
-@section  RC_mhttpd_Equipment_var  Equipment hyperlinks
-The Equipment page is displayed by clicking on one of the <b> equipment hyperlinks </b> on the  
-@ref RC_mhttpd_pol_status_example "main status page". This provides a short-cut so the user may quickly see
-the values of the parameters in the <b> /Equipment/.../Variables/ </b> subdirectory. The values in the
-/Equipment/.../Variables subdirectory are filled by the associated frontend (see @ref Frontend_code) if either
+The \b Equipment \b Page is displayed by clicking on one of the @ref RC_mhttpd_Equipment_Hyperlink "Equipment Hyperlinks" on the  
+@ref RC_mhttpd_pol_status_example "main status page".
+<br>
+This provides a short-cut so the user may see the contents of the defined banks for that equipment
+<b>providing that the data from the Equipment is being sent to the ODB</b>
+because either
+
  - the @ref  FE_tbl_ReadOn "RO_ODB" flag  or
  - the @ref  FE_tbl_History "History value"
+
 in the corresponding  @ref FE_Equipment_list is non-zero.
+
+In this case, the  <span class="odb">/Equipment/<equipment-name>/Variables/</span> subdirectory ( where <i> "<equipment-name>" </i>
+is replaced with the name of the defined equipment) is filled by the associated
+frontend (see @ref FrontendOperation and   @ref FE_ODB_equipment_tree "the ODB /Equipment tree").
+The data is written into array(s) with the same name(s) as the bankname(s).
+ 
+
+<span class="note">
+
+\Note The data of Equipments that do not have either of these flags set cannot be viewed in this way.
+Instead it can be viewed with @ref RC_mdump_utility "mdump"  or an  @ref DA_analyzer_utility "analyzer".
+
+</span>
 <br>
-The data of Equipments that do not have either of these flags set cannot be viewed in this way.
-<br> 
+@section RC_mhttpd_Equipment_Naming Naming the Equipment data
 
-<br><hr><br>
+The Equipment data is  @ref RC_mhttpd_Equipment_var "displayed on the Equipment page" using either the \b default \b names or
+<b>names assigned by the user</b>, if a \b "Names" array has been created.
+The following examples illustrate both cases.
 
+@subsection RC_mhttpd_Equipment_Examples Examples of named Equipment data
 
-@subsection RC_mhttpd_Equipment_example1 Example showing data from two Equipments
+ - MIDAS format:
+      - @ref RC_mhttpd_Equipment_example1
+      - @ref  RC_mhttpd_Equipment_example2
+      - @ref  RC_mhttpd_Equipment_example3
+      - @ref  RC_mhttpd_Equipment_example4
+      - @ref RC_mhttpd_Equipment_example5
+ - FIXED format:
+      - @ref RC_mhttpd_Equipment_example6
+      - @ref RC_mhttpd_Equipment_example7
+<br>
 
-In the example below, the links \b "cycle_scalers" and 
-\b "info_odb" have been clicked. The resulting pages show a list of variables defined by the respective equipments. 
-Both these equipments send their data to the ODB
-(using the  @ref  FE_tbl_ReadOn "RO_ODB" flag).
+@subsubsection RC_mhttpd_Equipment_example1  Data from an Equipment with one bank using the default Names
+\anchor RC_mhttpd_Equipment_Hyperlink
+The main Status page from an experiment with two Equipments defined (\b "TpcGasPlc" and \b "Detector") is shown below. Clicking the
+<b>Equipment Hyperlink</b>  "Detector"
+(circled in green) will show the data from  <span class="odb">/Equipment/Detector/Variables</span>.
+This illustration  shows how the mhttpd display combines the names of the variables in a 
+@ref  FE_MIDAS_event_construction "Midas format" event with the variables read out in the equipment's data bank.
+<br>
+The "Detector" equipment has one bank only (SCLR) which is an array of 10 data words.
+The "Names" column shows the default name, which is derived from the \b bankname and the array element number , i.e. "SCLR[0]...SCLR[9]".
 
  * <br><br><br>
  * <center>
- * <span class="image">  Clicking on "cycle_scalers" or on "info_odb" on Status page shows variable list
+ * <span class="image">  Clicking on the "Detector" Equipment Hyperlink shows SCLR bank contents with default Names
  * <br><br><br> 
- *  \image html pol_cycle_popup.gif
+ *  \image html gas_equipment_1banknoname.gif
+ * </span></center> 
+ * <br><br><br>  
+
+The corresponding ODB data is shown below using @ref RC_odbedit_utility "odbedit". 
+
+\code
+[local:t2kgas:S]Variables>ls /Equipment/Detector/Variables -lt
+Key name                        Type    #Val  Size  Last Opn Mode Value
+---------------------------------------------------------------------------
+SCLR                            DWORD   10    4     55m  0   RWD
+                                        [0]             3453
+                                        [1]             2701
+                                        [2]             896
+                                        [3]             4351
+                                        [4]             2051
+                                        [5]             1467
+                                        [6]             1952
+                                        [7]             4931
+                                        [8]             783
+                                        [9]             902
+
+\endcode
+
+
+
+
+
+<br><hr><br>
+ 
+@subsubsection RC_mhttpd_Equipment_example2 Named data from an Equipment with one bank
+
+It is often helpful to define an <b> individual name for each element of the databank</b>.
+This is done by creating an array called \b "Names" in the
+<span class="odb">/Equipment/<equipment-name>/Settings/</span> subdirectory, with the same number of elements as the databank.
+This array is then filled by the user with a suitable name corresponding to each element in the databank.
+This procedure is shown @ref  RC_mhttpd_ODB_page_example2 "here using the mhttpd ODB page commands" , or with @ref RC_odbedit_utility "odbedit"
+below:
+
+\code
+[local:t2kgas:S]>cd /Equipment/Detector
+[local:t2kgas:S]>mkdir Settings
+[local:t2kgas:S]Detector>cd Settings
+[local:t2kgas:S]Settings>create string Names[10]
+String length [32]:
+[local:t2kgas:S]Settings>set Names[0] LeftFront
+[local:t2kgas:S]Settings>set Names[1] LeftCentre
+[local:t2kgas:S]Settings>ls
+Names
+                                LeftFront
+                                LeftCentre
+
+
+
+
+
+
+
+
+[local:t2kgas:S]Settings>
+\endcode
+<br>
+Now when the hyperlink "Detector" is clicked, the elements of the SCLR bank will be named using data from the \b Names array as follows:
+<br>
+
+ * <br><br><br>
+ * <center>
+ * <span class="image">  Clicking on "Detector" Equipment Hyperlink shows SCLR bank contents with defined Names
+ * <br><br><br> 
+ *  \image html gas_equipment_1namedbank.gif
+ * </span></center> 
+ * <br><br><br>  
+
+ The complete \b Names array is shown below using @ref RC_odbedit_utility "odbedit" :
+
+ \code
+[local:t2kgas:S]settings>ls -lt
+Key name                        Type    #Val  Size  Last Opn Mode Value
+---------------------------------------------------------------------------
+ Names                           STRING  10    32    22m  0   RWD
+                                        [0]             LeftFront
+                                        [1]             LeftCentre
+                                        [2]             LeftBack
+                                        [3]             RightFront
+                                        [4]             RightCentre
+                                        [5]             RightBack
+                                        [6]             MidFront
+                                        [7]             MidCentre
+                                        [8]             MidBack
+                                        [9]             Dump
+
+\endcode                                        
+
+<br><hr><br>
+
+@subsubsection RC_mhttpd_Equipment_example3  Named data from an Equipment with two banks of the same length
+
+Sometimes the data consists of more than one bank that corresponds to the same list of names, i.e. both banks have the
+same length. In that case, the \b Names array will refer to both, e.g.
+ * <br><br>
+ * <center>
+ * <span class="image">Clicking on "Detector"  Equipment Hyperlink shows SCLR and TDCT bank contents with the same defined Names
+ * <br><br><br> 
+ *  \image html gas_equipment_2banks.gif
+ * </span></center> 
+ * <br><br><br> 
+
+
+
+The "Detector" equipment now has two banks (SCLR and TDCT) which are both arrays of 10 data words:
+
+\code
+[local:t2kgas:S]Variables>ls /Equipment/Detector/Variables -lt
+Key name                        Type    #Val  Size  Last Opn Mode Value
+---------------------------------------------------------------------------
+SCLR                            DWORD   10    4     55m  0   RWD
+                                        [0]             3453
+                                        [1]             2701
+                                        [2]             896
+                                        [3]             4351
+                                        [4]             2051
+                                        [5]             1467
+                                        [6]             1952
+                                        [7]             4931
+                                        [8]             783
+                                        [9]             902  
+TDCT                            FLOAT   10    4     3m   0   RWD
+                                        [0]             503
+                                        [1]             679
+                                        [2]             321
+                                        [3]             1072
+                                        [4]             760
+                                        [5]             2315
+                                        [6]             474
+                                        [7]             846
+                                        [8]             39
+                                        [9]             691
+
+
+
+                                        
+\endcode
+
+
+
+ 
+<br><hr><br>
+
+@subsubsection RC_mhttpd_Equipment_example4 Event containing two Named Banks of different sizes
+
+If the equipment contains several banks that cannot share the same "Names[]" array, individual "Names" arrays
+can be set up for each bank. The banks then may be of different lengths. The following examples shows an
+equipment named "Target" that has two named banks, SCLR and TGT_ .
+
+ * <br><br><br>
+ * <center>
+ * <span class="image"> Clicking on "Detector"  Equipment Hyperlink shows SCLR and  TGT_ bank contents each with defined Names
+ * <br><br><br> 
+ *  \image html gas_equipment.gif
+ * </span></center> 
+ * <br><br><br> 
+
+In this case, instead of one "Names" array, an array has been defined for each bank of the form "Names  <i><bankname>[<Len>]</i>"
+where
+ - <i>\<bankname\></i> is the \b name of the bank and
+ - <i>\<Len\></i> is the \b length of the bank.
+
+Note that two extra hyperlinks appear on the \b "Groups" line. These Group Hyperlinks are labelled as the name of each bank, and provide a
+shortcut to the top of the bank, useful when the bank is very large.
+ 
+Shown below are the contents of the arrays <b> "Names TGT_" </b>and <b>"Names SCAL"</b> in <span class="odb">/Equipment/target/settings</span>:
+\code
+ls /Equipment/target/settings
+Names TGT_
+                                Time
+                                Cryostat vacuum
+                                Heat Pipe pressure
+                                Target pressure
+                                Target temperature
+                                Shield temperature
+                                Diode temperature
+                                Diode current
+                                Laser intensity
+                                gas pressure
+                                gas temperature
+Names SCAL
+                                LSeg0
+                                LSeg1
+                                LSeg2
+                                LSeg3
+                                RSeg0
+                                RSeg1
+                                RSeg2
+                                RSeg3
+[local:t2kgas:S]/Equipment>
+
+\endcode
+and the contents of  <span class="odb">/Equipment/target/variables</span> showing the two corresponding banks \b TGT_ and \b SCAL :
+\code
+
+[local:t2kgas:S]/Equipment>ls /Equipment/target/variables
+SCAL
+                                3453
+                                2701
+                                896
+                                4351
+                                2051
+                                1467
+                                1952
+TGT_
+                                114059
+                                4.661
+                                23.16
+                                -0.498
+                                22.888
+                                82.099
+                                40
+                                14.2
+                                9.871
+                                -70.9
+\endcode
+
+<br><hr><br>
+ 
+
+@subsubsection RC_mhttpd_Equipment_example5 Names array Grouped for a large number of elements in a bank
+
+
+This example shows the main status page of an experiment which has a number of Equipments defined. 
+The Equipment Hyperlink of the Equipment \b "cycle_scalers" ( @ref  FE_MIDAS_event_construction "Midas format")
+has been clicked. This hyperlink is circled in the following illustration. The resulting pages show the list of variables
+in the bank HSCL. This large bank has been divided into the groups:
+
+ - <b> All Back Front Scaler_B General</b>
+
+The names of the Groups appear in the Groups line of the Equipment pages. The example shows the complete bank ("All" which is the default) as
+well as the Groups of scalers which appears when each Group Hyperlink (circled) is pressed.  
+  
+\anchor RC_mhttpd_Equipment_image5
+ * <br><br><br>
+ * <center>
+ * <span class="image">  Clicking on the Equipment Hyperlink "cycle_scalers" on Status page showing "All" scaler values, plus the defined Groups
+ * <br><br><br> 
+ *  \image html bnmr_equipment.gif
  * </span></center> 
  * <br><br><br>  
 
 <br>
 
 The illustration above shows how the mhttpd display combines the names of the variables in a 
-@ref  FE_MIDAS_event_construction "Midas format event" 
-with the variables read out in the equipment's data banks. The \b "cycle_scalers" equipment has been set up 
-in the ODB so that the scaler names are listed under the array \b "Names" in /Equipment/Cycle_Scalers/Settings .
-They all belong to "Scaler_B", which can be seen as a hyperlink in the above illustration. If there were
-some settings included for "Scaler_A" for example, two hyperlinks would be shown, "Scaler_A" and "Scaler_B". 
-Clicking on the hyperlink "Scaler_A" would show only the settings for Scaler_A.
-@code
-[pol@isdaq01 ~]$ odb
-[local:pol:S]/>ls /Equipment/Cycle_Scalers/Settings/
+@ref  FE_MIDAS_event_construction "Midas format" event with the variables read out in the Equipment's databank.
+The \b "cycle_scalers" equipment has been set up 
+in the ODB so that the scaler names are listed under the array \b "Names" in
+<span class="odb">/Equipment/Cycle_Scalers/Settings</span>. Since there are a great many scalers in this one bank,
+they have been divided into the groups "Back" "Front" "ScalerB" and "General"  in the \b Names array using a
+<i>"<group>%"</i> construct as shown below:
+
+
+\code
+[local:bnmr:S]>cd /Equipment/Cycle_Scalers/Settings
+[local:bnmr:S]Settings>ls
 Names
- 
+                                Back%BSeg00
+                                Back%BSeg01
+                                Back%BSeg02
+                                Back%BSeg03
+                                Back%BSeg04
+                                Back%BSeg05
+                                Back%BSeg06
+                                Back%BSeg07
+                                Back%BSeg08
+                                Back%BSeg09
+                                Back%BSeg10
+                                Back%BSeg11
+                                Back%BSeg12
+                                Back%BSeg13
+                                Back%BSeg14
+                                Back%BSeg15
+                                Front%FSeg00
+                                Front%FSeg01
+                                Front%FSeg02
+                                Front%FSeg03
+                                Front%FSeg04
+                                Front%FSeg05
+                                Front%FSeg06
+                                Front%FSeg07
+                                Front%FSeg08
+                                Front%FSeg09
+                                Front%FSeg10
+                                Front%FSeg11
+                                Front%FSeg12
+                                Front%FSeg13
+                                Front%FSeg14
+                                Front%FSeg15
                                 Scaler_B%SIS Ref pulse
-                                Scaler_B%Fluor. mon
-                                Scaler_B%P+ beam
-                                Scaler_B%Laser power
-                                Scaler_B%Faraday Cup 15
-                                Scaler_B%Locking Feedback
-[local:pol:S]/> 
-@endcode
-In the odb directory  /Equipment/Cycle_Scalers/Variables/ two arrays are shown, CYCI and HSCL. These are
-the names of two data banks sent out by the frontend. The data from the banks is also sent to the ODB,
-so it can be displayed. The data shown below for CYCI and HSCL is for a different event from that in the
-variable list in the illustration above.
+                                Scaler_B%Fluor. mon 2
+                                Scaler_B%Polariz Left
+                                Scaler_B%Polariz Right
+                                Scaler_B%Neutral Beam B1
+                                Scaler_B%Neutral Beam B2
+                                Scaler_B%Neutral Beam B3
+                                Scaler_B%Neutral Beam B4
+                                Scaler_B%Neutral Beam F1
+                                Scaler_B%Neutral Beam F2
+                                Scaler_B%Neutral Beam F3
+                                Scaler_B%Neutral Beam F4
+                                General%Back Userbit=0
+                                General%Back Userbit=1
+                                General%Back Userbit=2
+                                General%Back Userbit=3
+                                General%Front Userbit=0
+                                General%Front Userbit=1
+                                General%Front Userbit=2
+                                General%Front Userbit=3
+                                General%Back Cycle Sum
+                                General%Front Cycle Sum
+                                General%B/F Cycle
+                                General%Asym Cycle
+                                General%Pol Cycle Sum
+                                General%Pol Cycle Asym
+                                General%NeutBm Cycle Sum
+                                General%NeutBm Cycle Asym
+[local:bnmr:S]Settings> 
+\endcode
 
-@code
-[local:pol:S]/>ls /Equipment/Cycle_Scalers/Variables/
-CYCI
-                                2824
-                                2824
-                                4
-                                0
-                                8
-                                0
-HSCL
-                                8222499
-                                2
-                                8384
-                                3173
-                                2
-                                50
-[local:pol:S]/> 
-@endcode
- The second equipment illustrated @ref RC_mhttpd_eq_variables  "above" is \b info_odb. This is a @ref FE_FIXED_event_readout "FIXED format" event. The variables are of different types, 
-so cannot be output as a MIDAS event. The variables are listed
-under /Equipment/info_odb/Variables. In this case, there is no information listed in the subdirectory 
-Settings for this equipment. The ODB is updated for every event so the information may be displayed by the user.
-@code
-[local:pol:S]/>ls "/Equipment/Info ODB/variables"
-Key name                        Type    #Val  Size  Last Opn Mode Value
----------------------------------------------------------------------------
-helicity                        DWORD   1     4     15h  0   RWD  0
-current cycle                   DWORD   1     4     15h  0   RWD  2825
-cancelled cycle                 DWORD   1     4     15h  0   RWD  1
-current scan                    DWORD   1     4     15h  0   RWD  4
-Ref P+ thr                      DOUBLE  1     8     15h  0   RWD  8316
-Ref Laser thr                   DOUBLE  1     8     15h  0   RWD  3233
-Ref Fcup thr                    DOUBLE  1     8     15h  0   RWD  1
-Current P+ thr                  DOUBLE  1     8     15h  0   RWD  8384
-Current Laser thr               DOUBLE  1     8     15h  0   RWD  3173
-Current Fcup thr                DOUBLE  1     8     15h  0   RWD  2
-RF state                        DWORD   1     4     15h  0   RWD  0
-Fluor monitor counts            DWORD   1     4     15h  0   RWD  2
-EpicsDev Set(V)                 FLOAT   1     4     15h  0   RWD  0
-EpicsDev Read(V)                FLOAT   1     4     15h  0   RWD  0
-Campdev set                     FLOAT   1     4     15h  0   RWD  0
-Campdev read                    FLOAT   1     4     15h  0   RWD  0
-Pol DAC set                     DOUBLE  1     8     15h  0   RWD  0
-Pol DAC read                    DOUBLE  1     8     15h  0   RWD  0
-last failed thr test            DWORD   1     4     15h  0   RWD  0
-cycle when last failed thr      DWORD   1     4     15h  0   RWD  0
-[local:pol:S]/>         
-@endcode
 
-<br>
+
+
 <br><hr><br>
-
-@subsection RC_mhttpd_Equipment_example2 Example showing Slow Control data
-
-In the case where the equipment is a <b> slow control </b> equipment, clicking on the
- <b> equipment hyperlink </b> on the  @ref RC_mhttpd_pol_status_example "main status page"
-will show a parameter table (see below). This may be hyperlinked for parameter modification.
-This option is possible only if the parameter names have a particular name syntax. 
-<br>See also
-
-         - \subpage RC_mhttpd_sc_page (Equipment info specific to Slow Control)
+ 
+@subsubsection RC_mhttpd_Equipment_example6 Fixed-Format event with named Variables
+ 
+An example of a  @ref FE_FIXED_event_readout "FIXED format" event is shown below.
+The equipment \b "Info ODB" is defined as FIXED-format. The variables are of different types, 
+so cannot be output as a MIDAS event. In this example, there is no information listed in the subdirectory 
+<span class="odb">Settings</span> for this equipment. The name of each element is listed in the <span class="odb">"Variables"</span> subtree.
+The <span class="odb">Settings</span> subtree is not defined.
 
  * <br><br><br>
  * <center>
- *  <span class="image">  Slow control page.
- * <br><br><br>
- *  \image html mhsc.gif
- * </span></center>
+ * <span class="image">  Clicking on the "Info ODB" Equipment Hyperlink on Status page showing the FIXED format event 
+ * <br><br><br> 
+ *  \image html bnmr_info_odb.gif
+ * </span></center> 
  * <br><br><br>  
 
 
+
+\code
+[local:bnmr:S]Settings>ls "/Equipment/Info ODB/"
+Common
+Statistics
+Variables
+\endcode
+
+The names of the variables for this FIXED-format event are in the <span class="odb">/Equipment/Info ODB/Variables</span> subtree, i.e.
+
+\code
+[local:bnmr:S]>ls -lt "/Equipment/Info ODB/Variables"
+Key name                        Type    #Val  Size  Last Opn Mode Value
+---------------------------------------------------------------------------
+helicity                        DWORD   1     4     8h   0   RWD  0
+current cycle                   DWORD   1     4     8h   0   RWD  710
+cancelled cycle                 DWORD   1     4     8h   0   RWD  9
+current scan                    DWORD   1     4     8h   0   RWD  13
+Ref HelUp thr                   DOUBLE  1     8     8h   0   RWD  6626873
+Ref HelDown thr                 DOUBLE  1     8     8h   0   RWD  6626873
+Current HelUp thr               DOUBLE  1     8     8h   0   RWD  6659381
+Current HelDown thr             DOUBLE  1     8     8h   0   RWD  75
+Prev HelUp thr                  DOUBLE  1     8     8h   0   RWD  6652944
+Prev HelDown thr                DOUBLE  1     8     8h   0   RWD  133
+RF state                        DWORD   1     4     8h   0   RWD  0
+Fluor monitor counts            DWORD   1     4     8h   0   RWD  0
+EpicsDev Set(V)                 FLOAT   1     4     8h   0   RWD  0
+EpicsDev Read(V)                FLOAT   1     4     8h   0   RWD  0
+Campdev set                     FLOAT   1     4     8h   0   RWD  0
+Campdev read                    FLOAT   1     4     8h   0   RWD  0
+Laser Power(V)                  FLOAT   1     4     8h   0   RWD  0
+last failed thr test            DWORD   1     4     8h   0   RWD  0
+cycle when last failed thr      DWORD   1     4     8h   0   RWD  710
+last good hel                   DWORD   1     4     8h   0   RWD  1
+ncycle sk tol                   DWORD   1     4     8h   0   RWD  2
+hel_read                        DWORD   1     4     8h   0   RWD  9
+[local:bnmr:S]>  
+\endcode
+
+
+@subsubsection RC_mhttpd_Equipment_example7 Fixed-Format event with defined Names array
+Alternatively, if the FIXED format event consists of an array , a "Names" array can be defined in the same way as for the MIDAS event.
+In this case, each element of the array under "Variables" will be referenced using the equivalent elements of the "Settings/Names" array,
+as shown in the following example:
+ * <br><br><br>
+ * <center>
+ * <span class="image">  FIXED format event with a  "Names" array defined 
+ * <br><br><br> 
+ *  \image html parameters.png
+ * </span></center> 
+ * <br><br><br>  
+
+This event is defined as follows: 
+
+\code
+ 
+[local:t2kgas:S]/>cd /Equipment/parameters
+
+[local:t2kgas:S]/parameters>ls  -rlt
+    ...............
+    Variables                   DIR
+        IODB                    STRING  5     32    26m  0   RWD
+                                        [0]             123352
+                                        [1]             pulse
+                                        [2]             43.21
+                                        [3]             DRT_9
+                                        [4]             0.321
+    settings                    DIR
+        Names                   STRING  5     32    10m  0   RWD
+                                        [0]             Rejected
+                                        [1]             Type
+                                        [2]             LTX Voltage
+                                        [3]             Trig type
+                                        [4]             PXV Current
+\endcode                                     
 <br>
  
 \htmlonly
@@ -1370,17 +1685,31 @@ sections("Features", "RunControl","FrontendOperation"); // last section; top of 
  
 
 <br>
+@section RC_mhttpd_slow_control_intro Introduction
+The Slow Control page refers to the specific display of a <b>Slow Control Equipment</b> (see @ref  FE_Slow_Control_system). 
+This is a special @ref RC_mhttpd_Equipment_page "Equipment page" that may be accessed from the  @ref RC_mhttpd_pol_status_example "main status page"
+by clicking on the @ref  RC_mhttpd_Equipment_Hyperlink "Equipment Hyperlink". The Slow Control page 
+will show a parameter table (such as those shown below). Parameters that are editable will be hyperlinked for parameter modification.
+This option is possible only if the parameter names have a particular \b name \b syntax.
+ 
+@section RC_mhttpd_slow_control_name_syntax Name Syntax for Slow Control Page
 
-The Slow Control page refers to the specific display of a Slow control equipment (see @ref  FE_Slow_Control_system). 
-This is a special Equipment page that may be accessed from the main Status page 
-by clicking on the equipment hyperlink (see  @ref RC_mhttpd_Equipment_page) .
-<br>
-In this case, the matching information (defined under "Settings") of the Equipment variables defined under "Variables"
-will be combined to compose a table. 
-Each variable in the table may be editable depending on the following rules
--# If the variable name is defined as "Demand[]" or "Output[]" or "D_<var_name>" under "Settings/" it will be editable by default.
--# If the variable name is defined under "Settings" and the variable name is also defined under the array "Settings/Editable[]" it will be editable.
+The name syntax is similar to that already described on the  @ref RC_mhttpd_Equipment_page "Equipment Page", where the Equipment variables are located
+in the <span class="odb">/Equipment/<equipment-name>/Variables</span> subtree with the matching information defined under the
+<span class="odb">/Equipment/<equipment-name>/Settings</span> subtree.  Additinally, for a Slow Control Equipment  
+each variable in the table may be \b editable depending on the following rules :
 
+- If the variable name is defined  under the <span class="odb">"Settings/"</span> directory
+   -# as one of the following names, it will be editable by default:
+        - in a \b "Demand" array or
+        - in an \b "Output" array or
+        - as \b "D_<var_name>"
+    
+   -# the variable is ALSO defined under the array<span class="odb">"Settings/Editable[]"</span>
+        -  it will be editable.
+
+
+ This information will be combined to compose a table.
 @code
 [local:Default:S]/>cd Equipment/MSCB/Settings/
 [local:Default:S]Settings>ls
@@ -1410,7 +1739,16 @@ Editable                        Gain
  * <br><br><br>  
 
 
-See also @ref  RC_mhttpd_Equipment_example2 .
+The following is an example of a Slow Control Page from another experiment, showing a High Voltage system for two crates,
+with  multiple parameters set up.
+
+ * <br><br><br>
+ * <center>
+ *  <span class="image">  Slow control page for a High Voltage system.
+ * <br><br><br>
+ *  \image html mhsc.gif
+ * </span></center>
+ * <br><br><br>  
 
 <br>
  
@@ -1431,7 +1769,7 @@ sections("Features", "RunControl","FrontendOperation"); // last section; top of 
 
 <!-- ------------ C N A F    P A G E  ------- -->
 
-/*! \page   RC_mhttpd_CNAF_page CNAF page
+/*! \page   RC_mhttpd_CNAF_page CAMAC Access page 
 \anchor idx_mhttpd_page_CNAF
 <br>
  
@@ -1443,9 +1781,13 @@ pages("RC_mhttpd_sc_page",  "RunControl", "RC_mhttpd_Message_page", "RC_mhttpd_C
  
 
 <br>
+\NOTE
+<span class="new">The CNAF page has been replaced by the MSCB Page (@ref ndf_dec_2009) </span>
 
-The CNAF page is accessed by clicking on the CNAF button  (@ref RC_mhttpd_status_menu_buttons "if present") on the Main Status page.  will only be active
-If one of the active equipments is a CAMAC-based data collector, it will be possible to
+
+<br>
+The CNAF page is accessed by clicking on the CNAF button  (@ref RC_mhttpd_status_menu_buttons "if present") on the Main Status page.
+It will only be active if one of the active equipments is a CAMAC-based data collector, it will be possible to
 remotely access CAMAC through this web-based CAMAC page (accessed by clicking the 
 @ref RC_mhttpd_status_menu_buttons "CNAF button" on the @ref RC_mhttpd_pol_status_example "main status page").
 <br>
@@ -1556,25 +1898,27 @@ to access it remotely, and provide a general knowledge of the experiment.
 On the other hand, the Elog is not limited strictly to experiments. Worldwide Elog implementations can be found 
 on the internet.
 
-Since Midas version 2.0.0, Elog comes in two flavours, i.e
+Two different implementations of the Elog are available i.e
  - @ref RC_mhttpd_Internal_Elog where the Elog is built in the mhttpd Midas web interface, or 
  - @ref RC_mhttpd_External_Elog where the Elog runs independently from the experiment and  mhttpd as well.
 
 
-While the internal doesn't requires any setup, the latter requires a proper
+While the Internal implementation doesn't requires any setup, the External implementation requires a proper
 Elog installation which is fully described on the
 <a href="http://midas.psi.ch/elog/">Elog</a> web site.
-The External Elog implementation requires a dedicated entry in the ODB as shown in the code below. It also requires
+The External Elog implementation also requires a dedicated entry in the ODB as shown in the code below. It also requires
 the package \b Elog to be already installed, and properly configured. Once the ODB entry is present, the internal 
 ELOG is disabled.
+<br>
+The Elog is @ref  F_Elog_Custom "customized" through the ODB <span class="odb">/Elog</span> tree.
 
 
 <hr> 
 \anchor idx_Elog_internal
 @subsection RC_mhttpd_Internal_Elog  Internal Elog
 
-By default the mhttpd provides the internal Elog. The entry destination directory is established by the logger key in ODB (see @ref  F_Logger_Elog_Dir "Elog Dir")
-The Electronic Log page shows the most recent Log message recorded in the system. The top buttons allows you to either Create/Edit/Reply/Query/Show a message
+By default the mhttpd provides the internal Elog. The entry destination directory is established by the logger key in ODB (see @ref  F_Logger_Elog_Dir "Elog Dir").
+The Electronic Log page shows the most recent Log message recorded in the system. The top buttons allows you to either <b>Create/Edit/Reply/Query/Show</b> a message
 
  * <br><br><br>
  * <center>
@@ -1594,9 +1938,13 @@ The format of the message log can be written in HTML format.
  * </span></center>
  * <br><br><br>  
 
-- A feature of the Elog entry page is the <b>Shift Check</b> button, this permits the 
+@subsubsection RC_mhttpd_Internal_Elog_shift_check The Shift Check button
+\anchor idx_elog_shift-check-form
+
+- A feature of the Elog entry page is the optional <b>Shift Check</b> button, which permits the 
 experimenter on shift to go through a checklist and record his/her findings in the Elog
-system. The checklist is user-defined and can be found in the ODB under <b>/Elog</b>
+system. The checklist is user-defined and can be found in the ODB under  the @ref F_ODB_Elog_Tree "/Elog tree".
+In the following example, a Shift Check button labelled <i>"Gas Handling"</i> has been created:
 
  * <br><br><br>
  * <center>
@@ -1608,7 +1956,7 @@ system. The checklist is user-defined and can be found in the ODB under <b>/Elog
 
 - The code below generates the above screen. The key <i>Gas Handling</i> contains all the 
 information for a given form. There is no limit to the number of entries. By specifying
-an entry with the name <i>Attachment0</i>,<i>Attachment1</i>,... and filling it with a fix file
+an entry with the name <i>Attachment0</i>,<i>Attachment1</i>,... and filling it with a fixed file
 name, its content will be attached to the Elog entry for every shift report. 
 
 @code
@@ -1630,13 +1978,16 @@ String length [32]: 64
 [local:xenon:Running]Gas Handling>set Attachment0 Gaslog.txt
 @endcode
 
+
+@subsubsection RC_mhttpd_Internal_Elog_runlog Runlog Button
+
 - The \b runlog button display the content of the file \b runlog.txt which is
 expected to be in the data directory specified by the ODB key <b>/Logger/Data Dir</b>.
 Regardless of its content, it will be displayed in the web page.
-Its common uses is to \b append lines after every run.
-The task appending this run information can be any of the midas application.
-<b> Example </b> is available in the <i>examples/experiment/analyzer.c</i> which at each
-end-of-run (EOR) will write to the runlog.txt some statistical informations.
+Its common use is to \b append \b lines after every run.
+The client appending this run information can be any of the midas applications.
+An <b> example </b> is available in the <i>examples/experiment/analyzer.c</i> which
+will write some statistical information at end-of-run to the file runlog.txt
 
 
  * <br><br><br>
@@ -1648,9 +1999,9 @@ end-of-run (EOR) will write to the runlog.txt some statistical informations.
 
 - When composing a new entry into the Elog, several fields are available to specify
 the nature of the message i.e: Author, Type, System, Subject. Under Type and
-System a pulldown menu provides multiple category. These categories are user definable
-through the odb under the tree \b /Elog/Types, \b /Elog/Systems. The number of categories
-is fixed to 20 maximum, but any remaining field can be left empty.
+System a pulldown menu provides a choice of categories. These categories are user definable
+through the <span class="odb">/Elog</span> ODB tree under the keys  @ref F_Types "Types" and $ref F_Systems "Systems". The number of categories
+is limited to 20 maximum. Any usused fields can be left empty.
 
  * <br><br><br>
  * <center>
@@ -1823,17 +2174,17 @@ sections("Features", "RunControl","FrontendOperation"); // last section; top of 
 The \b Programs page is displayed by clicking on the \b Programs \b Button on the  @ref RC_mhttpd_Main_Status_page
 ( @ref RC_mhttpd_status_menu_buttons "if present").
 
-This page presents the current active list of the clients (i.e. tasks) attached to the given
-experiment. On the right hand side, a dedicated button allows the user to stop a particular task.
+This page presents the current active list of the clients  attached to the given
+experiment. On the right hand side, a dedicated button allows the user to stop a particular client.
 This is equivalent to the @ref RC_odbedit_sh "ODBedit shutdown" command. For example, pressing
 the <b>"stop Speaker"</b> button  (see example below) would be equivalent to 
 @code
 odbedit> sh Speaker
 @endcode
 
-Clicking the taskname hyperlink (on the left hand side of the page) pops up a new window pointing to the 
-ODB <b>/Programs</b> subdirectory related to that particular task (see @ref RC_ODB_programs_tree). 
-Example 1 shows the Programs page with a number of tasks running. The hyperlink for the task \b ltnoRC has been clicked,
+Clicking the client name hyperlink (on the left hand side of the page) pops up a new window pointing to the 
+ODB <b>/Programs</b> subdirectory related to that particular client (see @ref RC_ODB_Programs_Tree). 
+Example 1 shows the Programs page with a number of clients running. The hyperlink for the client \b ltnoRC has been clicked,
 and the popup window shows the ODB path <b>/Programs/ltnoRC</b>. 
 
  * <br><br><br>
@@ -1846,7 +2197,7 @@ and the popup window shows the ODB path <b>/Programs/ltnoRC</b>.
  * </center>
  * <br><br><br>
  
-The ODB structure for  @ref RC_ODB_programs_client "each task" should be  customized by the 
+The ODB structure for  @ref RC_ODB_programs_client "each client" should be  customized by the 
 user (see @ref  RC_customize_Programs_tree ). 
 <br>
 \note The buttons and other information that appears on the \b Programs mhttpd
@@ -1864,7 +2215,7 @@ This is because <span class="note"> clients which are not \b Required are not sh
  * <br><br><br>
  * <center>
  * <span class="image">
- * Example 2: Programs page - mlogger task is not  @ref  RC_mhttpd_Required "Required" 
+ * Example 2: Programs page - mlogger utility is not  @ref  RC_mhttpd_Required "Required" 
  * <br><br><br>
  *  \image html program1.png
  * </span>
@@ -1884,7 +2235,7 @@ on the main status page. See  @ref  RC_Alarm_System for details.
 
  * <br><br><br><center>
  * <span class="image">
- * Example 3: Programs page - mlogger task \b is  @ref RC_programs_Required "Required" and an alarm class has been specified
+ * Example 3: Programs page - mlogger utility \b is  @ref RC_programs_Required "Required" and an alarm class has been specified
  * <br><br><br>
  *  \image html program.png
  * </span></center>
@@ -1929,8 +2280,7 @@ sections("Features", "RunControl","FrontendOperation"); // last section; top of 
 The \b History page is displayed by clicking on the \b History \b Button on the  @ref RC_mhttpd_Main_Status_page
 ( @ref RC_mhttpd_status_menu_buttons "if present").
 
-This page reflects the @ref F_History_logging "History System" settings (CVS r1.271).
-\todo We are using SVN now - do we need this reference?
+This page reflects the @ref F_History_logging "History System" settings.
 
  It lists on the
 top of the page the possible group names containing a list of panels defined in
@@ -1946,7 +2296,7 @@ The configuration options for a given panel consists in:
 - Zooming capability, run markers, logarithmic scale.
 - Data query in time.
 - Time scale in date format.
-- Web based page creation ("new" button) for up to 10 history channels per page.
+- Web based page creation (button labelled "New") for up to 10 history channels per page.
 
  * <br><br><br>
  * <center>
@@ -2031,7 +2381,7 @@ enabled. The alarm on "fepol" has gone off, resulting in a large coloured banner
  * <br><br><br>  
 
 \anchor RC_odb_alarm_msg
-If running @ref RC_odbedit_task "odbedit", a message appears on the screen as follows: 
+If running @ref RC_odbedit_utility "odbedit", a message appears on the screen as follows: 
 @code
 [pol@isdaq01 ~]$ odb
 Caution: Program fePOL is not running
@@ -2197,12 +2547,12 @@ An Alias page is displayed by clicking on a user-defined
 on the  @ref RC_mhttpd_pol_status_example "main status page".
 
  <span class="new"> The \b appearance of the alias-links on the Main Status page have been changed (@ref ndf_dec_2009 ) from
-@ref RC_mhttpd_pol_status_example  "hyperlinks"  to @ref  RC_mhttpd_status_page_redesign "buttons"
+@ref RC_mhttpd_pol_status_example  "hyperlinks"  to @ref  RC_mhttpd_status_page_redesign "buttons" </span>
 <br>
 This change has been made because the original alias hyperlinks were hard to read if they included spaces.
 It also gives a more homogeneous look to the page.
 See @ref   RC_mhttpd_status_page_redesign to see the new look of alias buttons.
- </span>
+
  The examples below show the old-style alias-links.
 
 <br><hr><br>
@@ -2249,7 +2599,7 @@ By default, the clicking of the alias-link (button) in the web interface will sp
 To force the display of the alias page in the \b same \b frame, an <b>"&"</b> has to be appended to
 the name of the alias. The \b & is stripped off the alias name when it appears on the main status page.
 
-To make  alias-links (buttons) using @ref RC_odbedit_task "odbedit" :
+To make  alias-links (buttons) using @ref RC_odbedit_utility "odbedit" :
 @code 
 odbedit
 [local:pol:S] mkdir Alias          <--  Create the optional /Alias directory

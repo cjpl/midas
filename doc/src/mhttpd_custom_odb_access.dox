@@ -12,16 +12,24 @@ sections("Features", "RunControl","FrontendOperation"); // last section; top of 
 <br>
 
 Access to the ODB is available @ref RC_mhttpd_custom_odb_html "using HTML tags" and using @ref RC_mhttpd_custom_odb_js 
-"JavaScript functions" with the  @ref RC_mhttpd_custom_js_lib . Both methods are described in the following sections.
+"JavaScript functions" with the  @ref RC_mhttpd_custom_js_lib . Both methods are described in the following sections:
 
-
+ - @ref RC_mhttpd_custom_odb_html
+ - @ref RC_mhttpd_custom_odb_js
  - \subpage  RC_mhttpd_custom_ODB_access_examples
  - \subpage  RC_mhttpd_custom_ODB_access_features
 
-
+ 
+\anchor idx_odb-HTML-tag 
 @section RC_mhttpd_custom_odb_html ODB access using HTML tags
 
-The following tags are defined for read/write access to the ODB for \b HTML : 
+The   <span class = "htmltag">\<odb...\></span> tag has been defined for read/write access to the ODB under HTML. Also shown
+in the table below is the equivalent JavaScript function.
+
+\Note that the  <span class = "htmltag">\<odb...\></span> tags  and JavaScript equivalent must be declared
+within enclosing HTML <span class="htmltag">\<form...\>....\</form\> </span> tags (see @ref RC_mhttpd_custom_key_access "above").
+
+ 
 
 <table
  style="text-align: left; width: 80%;" border="1" cellpadding="2"
@@ -96,35 +104,36 @@ Run Number: <odb src="/runinfo/run number" edit=1>
 
 
 
-@section RC_mhttpd_custom_odb_js ODB Access using JavaScript functions
+@section RC_mhttpd_custom_odb_js ODB Access using mhttpd JavaScript built-in functions
 
 
-The following @ref RC_mhttpd_custom_js_lib  "JavaScript library functions" are defined for ODB access:
-- @ref RC_mhttpd_custom_odbget
-- @ref RC_mhttpd_custom_odbedit
-- @ref RC_mhttpd_custom_odbset
-- @ref RC_mhttpd_custom_odbkey
+The following @ref RC_mhttpd_custom_js_lib  "mhttpd JS built-in functions" are defined for ODB access:
+- @ref RC_mhttpd_custom_odbget "ODBGet"
+- @ref RC_mhttpd_custom_odbedit "ODBEdit"
+- @ref RC_mhttpd_custom_odbset "ODBSet"
+- @ref RC_mhttpd_custom_odbkey "ODBKey"
 
 \b Examples:
  - @ref  RC_mhttpd_js_example1
  - @ref  RC_mhttpd_js_example2
 
 \note
-The built-in library must be  @ref include_js_library "included" 
-in your custom page.
+The built-in library must be  @ref RC_mhttpd_include_js_library "included" 
+in your custom page when using any of the JS built-in functions.
 
 
 <br><hr><br>
 
-\anchor idx_ODBGet
-@subsection RC_mhttpd_custom_odbget ODBGet()
+\anchor idx_ODBGet-JavaScript-function
+@subsection RC_mhttpd_custom_odbget ODBGet JavaScript function
 
 <table
  style="text-align: left; width: 80%;" border="1" cellpadding="2"
 cellspacing="0">
   <caption>Above: Access to ODB from JavaScript
-  </caption>
-<tr>
+  </caption>  
+<!--  table 1  title     -->  
+<tr>  
 <td colspan="1" style="vertical-align: top; background-color: rgb(204, 204, 255); font-weight: bold; text-align: center;">JavaScript Function</td>
 </td>
  <td style="vertical-align: top; background-color: rgb(204, 204, 255); font-weight: bold; text-align: center;">
@@ -134,7 +143,7 @@ Purpose
 Parameters
 </td>
 </tr> 
-<!--   line    1     -->
+<!--  table 1  line    1     -->
 <tr>
 <td style="vertical-align: top; background-color: white; font-weight: bold; text-align: left;">
  <span class="js">
@@ -145,47 +154,49 @@ ODBGet(path, format, defval, len, type)
 Retrieves individual or array values from the ODB.
 </td>
 <td style="vertical-align: top; background-color: white; font-weight: normal; text-align: left;">
+
+<! --  table 2  -->
 <table
  style="text-align: left; width: 100%;" border="0" cellpadding="2"
 cellspacing="0">
 
- <!-- Line 1 -->
+ <!--  table 2  Line 1 -->
 <tr>
 <td colspan="1" style="vertical-align: top; background-color: white; font-weight: bold; text-align: left;">path</td>
 <td colspan="1" style="vertical-align: top;  font-weight: normal; text-align: left;">ODB path
 </td>
 </tr>
- <!-- Line 2 -->
+ <!-- table 2  Line 2 -->
 <tr>
 <td colspan="1" style="vertical-align: top; background-color: white; font-weight: bold; text-align: left;">format</td>
 <td colspan="1" style="vertical-align: top; background-color: white; font-weight: normal; text-align: left;">Format to write out value read from ODB. Do not include spaces.
 </td>
 </tr>
- <!-- Line 3 -->
+ <!--  table 2 Line 3 -->
 <tr>
 <td colspan="1" style="vertical-align: top; background-color: white; font-weight: bold; text-align: left;">
 defval</td>
 <td colspan="1" style="vertical-align: top; font-weight: normal; text-align: left;">Value to write if creating the key.
 </td>
 </tr>
- <!-- Line 4 -->
+ <!--  table 2 Line 4 -->
 <tr>
 
 <td colspan="1" style="vertical-align: top; background-color: white; font-weight: bold; text-align: left; ">len</td>
 <td colspan="1" style="vertical-align: top; font-weight: normal; text-align: left; ">Key length to use if creating the key.
 </td>
 </tr>
- <!-- Line 5 -->
+ <!--  table 2 Line 5 -->
 <tr>
 <td colspan="1" style="vertical-align: top; background-color: white; font-weight: bold; text-align: left;  ">type</td>
 <td colspan="1" style="vertical-align:top;  font-weight: normal; text-align: left; ">
 Type to use if creating the key. One of the Midas Type definitions (see @ref F_Midas_Data_Types).
 </td>
 </tr>
-</table>
+</table> <!--  table 2 -->
 </td>
 </tr>
-</table>
+</table> <!--  table 1 -->
 
 \b Usage:
 <span class="js">ODBGet</span> works in a similar way to db_set_value() .   If the path does not exist, 
@@ -223,8 +234,8 @@ rn = ODBGet(path,"%4.4d\n");
 <br><hr><br>
 
 
-\anchor idx_ODBEdit
-@subsection RC_mhttpd_custom_odbedit ODBEdit()
+\anchor idx_ODBEdit-JavaScript-function
+@subsection RC_mhttpd_custom_odbedit ODBEdit  JavaScript function
 
 <table
  style="text-align: left; width: 100%;" border="1" cellpadding="2"
@@ -241,7 +252,7 @@ Purpose
 Parameters
 </td>
 </tr> 
-<!--   line    1     -->
+<!--  table 1  line    1     -->
 <tr>
 <td style="vertical-align: top; background-color: white; font-weight: bold; text-align: left;">
  <span class="js">
@@ -253,11 +264,13 @@ ODBEdit(path)
 
 </td>
 <td style="vertical-align: top; background-color: white; font-weight: normal; text-align: left;">
+
+<!-- table 2 --> 
 <table
  style="text-align: left; width: 50%;" border="0" cellpadding="2"
 cellspacing="0">
 
- <!-- Line 1 -->
+ <!--  table 2 Line 1 -->
 <tr>
 <td colspan="1" style="vertical-align: top; background-color: white; font-weight: bold; text-align: left;">path</td>
 <td colspan="1" style="vertical-align: top;  font-weight: normal; text-align: left;">ODB path
@@ -283,8 +296,8 @@ document.writeln('</a>');
 <br><hr><br>
 
 
-\anchor idx_ODBSet
-@subsection RC_mhttpd_custom_odbset ODBSet()
+\anchor idx_ODBSet-Javascript-function
+@subsection RC_mhttpd_custom_odbset ODBSet JavaScript function
 
 <table
  style="text-align: left; width: 100%;" border="1" cellpadding="2"
@@ -301,7 +314,7 @@ Purpose
 Parameters
 </td>
 </tr> 
-<!--   line    1    -->
+<!--  table 1   line    1    -->
 <tr>
 <td style="vertical-align: top; background-color: white; font-weight: bold; text-align: left;">
  <span class="js">
@@ -317,19 +330,19 @@ ODBSet(path, value, pwdname)
 cellspacing="0">
  
 
- <!-- Line 1 -->
+ <!-- table 2  Line 1 -->
 <tr>
 <td colspan="1" style="vertical-align: top; background-color: white; font-weight: bold; text-align: left;">path</td>
 <td colspan="1" style="vertical-align: top; background-color: white; font-weight: normal; text-align: left; ;">ODB path
 </td>
 </tr>
- <!-- Line 2 -->
+ <!--  table 2 Line 2 -->
 <tr>
 <td colspan="1" style="vertical-align: top; background-color: white; font-weight: bold; text-align: left;">value</td>
 <td colspan="1" style="vertical-align: top;  font-weight: normal; text-align: left;">Set value or array of values
 </td>
 </tr>
- <!-- Line 3 -->
+ <!--  table 2 Line 3 -->
 <tr>
 <td colspan="1" style="vertical-align: top; background-color: white; font-weight: bold; text-align: left; ">pwdname</td>
 <td colspan="1" style="vertical-align: top;  font-weight: normal; text-align: left; ">Password (needed if web security is set up).
@@ -342,6 +355,7 @@ cellspacing="0">
 
 @anchor RC_mhttpd_array_note
 <span class="new">Writing arrays with ODBSet has been available since @ref  ndf_may_2010 .</span>
+<br>
 \b Usage:
 Individual ODB values can be set in the background with
 <span class="js">ODBSet(<i>\<path\>,\<value\></i></span>
@@ -357,8 +371,8 @@ If using a password, the \<<i>password_name</i>\> must be defined as an ODB entr
 
 <br><hr><br>
 
-\anchor idx_ODBKey
-@subsection RC_mhttpd_custom_odbkey ODBKey()
+\anchor idx_ODBKey-JavaScript-function
+@subsection RC_mhttpd_custom_odbkey ODBKey   JaverScript function
 
 <table
  style="text-align: left; width: 100%;" border="1" cellpadding="2"
@@ -376,7 +390,7 @@ Parameters
 </td>
 </tr> 
 
-<!--   line    1    -->
+<!--   table 1  line    1    -->
 <tr>
 <td style="vertical-align: top; background-color: white; font-weight: bold; text-align: left;">
  <span class="js">
@@ -391,7 +405,7 @@ ODBKey(path)
  style="text-align: left; width: 50%;" border="0" cellpadding="2"
 cellspacing="0">
 
- <!-- Line 1 -->
+ <!--  table 2 Line 1 -->
 <tr>
 <td colspan="1" style="vertical-align: top; background-color: white; font-weight: bold; text-align: left;">path</td>
 <td colspan="1" style="vertical-align: top; font-weight: normal; text-align: left; ">ODB path
@@ -442,7 +456,7 @@ sections("Features", "RunControl","FrontendOperation"); // last section; top of 
 @section RC_mhttpd_js_example1 Example of ODB access with HTML and JavaScript equivalent
 
 The following simple HTML code shows ODB access using JavaScript (<span class="js">ODBGet, ODBEdit</span>) and
-using the HTML <span class="odbtag"> \<odb\> tag</span> :
+using the HTML <span class="odbtag"> \<odb\></span> tag . The output produced by this code is shown below.
 \code
 
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 TRANSITIONAL//EN">
@@ -713,10 +727,11 @@ sections("Features", "RunControl","FrontendOperation"); // last section; top of 
 </script> \endhtmlonly
 
 <br>
+This page describes several features with ODB access on a custom page.
 
  -  @ref RC_mhttpd_custom_checkboxes
  -  @ref RC_mhttpd_js_update_part
-
+ -  @ref RC_mhttpd_custom_pw_protection
 
 
 
@@ -731,12 +746,13 @@ If used as above, the state of the checkbox must be initialized when the page is
 with some JavaScript code called on initialization, which then uses @ref RC_mhttpd_custom_odbset as described above. 
 
 
-Alternatively, the checkbox can be created using an <span class="odbtag"> \<odb\> tag</span> as follows:
+Alternatively, the checkbox can be created using an <span class="odbtag"> \<odb...\> </span>  @ref RC_mhttpd_custom_odb_html "tag"
+ as follows:
 \code
   <odb src="/Logger/Write data" type="checkbox" edit="2" onclick="ODBSet('/Logger/Write data',this.checked?'1':'0')">
 @endcode
 
-The special code edit="2" instructs  <span class="cl">mhttpd</span> not to put any JavaScript code into the checkbox tag, since setting this value in the 
+The special code <b>edit="2"</b> instructs  <span class="utility">mhttpd</span> not to put any JavaScript code into the checkbox tag, since setting this value in the 
 ODB is now handled by the user-supplied  <span class="js">ODBSet()</span> code. 
 
 
@@ -792,11 +808,17 @@ document.form2.mybox.checked=ival  // initialize to the correct value
 
 <br><hr><br>
 
-
+\anchor idx_mhttpd_page_custom_refresh_partial
 @section RC_mhttpd_js_update_part Periodic update of parts of a custom page
 
-The functionality of <span class="js">ODBGet</span> together with the <b>window.setInterval()</b> function can be used to update parts of 
-the web page periodically such as:
+ The functionality of <span class="js">ODBGet</span> together with the
+  - <b>window.setInterval()</b> function
+
+  can be used to update parts of 
+the web page periodically.
+<br>
+For example the Javascript fragment below contains a function which updates the current run number
+every 10 seconds in the background :
 \code
   window.setInterval("Refresh()", 10000);
 
@@ -805,8 +827,7 @@ the web page periodically such as:
   }
 @endcode
 
-This function updates the current run number every 10 seconds in the background. The custom page has to 
-contain an element with id="run_number", such as
+The custom page has to contain an element with id="run_number", such as
 \code
   <td id="run_number"></td>
 @endcode
@@ -820,13 +841,14 @@ contain an element with id="run_number", such as
 @section RC_mhttpd_custom_pw_protection Password protection of ODB variables accessed from a custom page
 
 Being able to control an experiment through a web interface of course raises the
-question of safety. This is not so much about external access (for which we
-have other protection schemes like host lists etc.) but it's about accidental
+question of safety. This is not so much about external access (for which there are
+other protection schemes like host lists etc.) but it's about accidental
 access by the normal shift crew. If a single click on a web page opens a
 critical valve, this might be a problem. In order to restrict access to some
 "experts", an additional password can be chosen for all or some controls on a
 custom page.
 
+Password protection is optional, and must be set up by the user.
 The <i>password</i> must be defined as an ODB entry of the form
 <span class="odb"> /Custom/Pwd/\<password\> </span>.
 If the password is <i>CustomPwd</i>, the ODB key
@@ -847,14 +869,14 @@ The password is of course not
 secure in the sense that it's placed in plain text into the ODB, but its purpose is to
 prevent accidental modification, rather than malicious interference.
 
-
-Password protection is optional, and must be set up by the user. Password protection is available for 
+<br>
+ Password protection is available for 
  - @ref RC_mhttpd_custom_pw
- - setting ODB values with  @ref RC_mhttpd_custom_odbset
- - clickable  @ref RC_mhttpd_custom_imagemap_pw 
+ - @ref RC_mhttpd_custom_odbset
+ - @ref RC_mhttpd_custom_imagemap_pw 
 
 
-If password protection is set up, <span class="cl">mhttpd</span> will check the supplied password against the ODB entry, and show an error if they don't match.
+If password protection \b is set up, <span class="utility">mhttpd</span> will check the supplied password against the ODB entry, and show an error if they don't match.
 
 
 
@@ -890,7 +912,7 @@ sections("Features", "RunControl","FrontendOperation"); // last section; top of 
 <span class="new"> RPC access has been available from custom webpages since  @ref  ndf_jan_2009 . </span>
 
 The @ref RC_mhttpd_custom_js_lib  "JavaScript library function" \b ODBRpc is defined for RPC access
-(the library must be @ref include_js_library "included") :
+(the library must be @ref RC_mhttpd_include_js_library "included") :
 This permits buttons on midas "custom" web pages to
 invoke RPC calls directly into user frontend programs, for example to turn
 hardware modules on or off.

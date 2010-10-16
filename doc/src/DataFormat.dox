@@ -13,12 +13,15 @@ sections("RunControl","FrontendOperation","DataAnalysis");
 
 <br>
 <br>
-Excluding the  @ref FE_FIXED_event_readout "FIXED" format, Midas doesn't support YBOS dat format anymore.
-- @ref FE_Midas_format
+\anchor idx_format_frontend
+Only two formats are now now supported by the frontend,  @ref FE_Midas_format "MIDAS" and @ref FE_FIXED_event_readout "FIXED"
+(support for YBOS format has been discontinued (@ref  ndf_sep_2010). @ref  FE_MIDAS_event_construction has been described
+previously. This section gives a detailed description of the MIDAS format.
 
-Note that a frontend cannot write data directly into ROOT format. A conversion to ROOT may be done from one of the 
+Note that a frontend cannot write data directly into ROOT format. A conversion to ROOT may be done (e.g. by the data logger) from one of the 
 supported formats (see  @ref FE_tbl_Format "equipment list" for details).
 
+\anchor idx_format_MIDAS
 \anchor idx_Midas_format
 \anchor Midas_format
 <hr> @section FE_Midas_format Midas format
@@ -31,36 +34,65 @@ different events.
 The header is defined in the EVENT_HEADER structure in midas.h.
 It has following structure:
 
- * <center> Event and bank headers with data block.
+ * <center><span class="image"> Figure 1:  Event and bank headers with data block.</span>
  *  \image html mEHBH.jpg
  * </center> 
 
-The event ID describes the type of event. Usually 1 is used for triggered events,
-2 for scaler events, 3 for HV events etc.
-The trigger mask can be used to describe the sub-type of an event.
-A trigger event can have different trigger sources like "physics event",
-"calibration event", "clock event". These trigger sources are usually read in
-by the front-end in a pattern unit. Consumers can request events with a specific
+ - The @ref  FE_tbl_EventID "event ID" describes the type of event. Usually 1 is used for triggered events, 2 for scaler events, 3 for HV events etc. 
+ - The  @ref FE_tbl_TrigMask "trigger mask" can be used to describe the sub-type of an event. A trigger event can have different trigger sources like "physics event",
+"calibration event", "clock event". These trigger sources are usually read in by the front-end in a pattern unit. Consumers can request events with a specific
 triggering mask.
-The serial number starts at one and is incremented by the front-end for each event.
-The time stamp is written by the front-end before an event is read out.
-It uses the time() function which returns the time in seconds since
+ - The <b>serial number</b> starts at 1 and is incremented by the front-end for each event.
+ - The <b>time stamp</b> is written by the front-end before an event is read out. It uses the time() function which returns the time in seconds since
 1.1.1970 00:00:00 UTC.
-The data size contains the number of bytes that follows the event header.
-The data area of the event can contain information in any user format,
-although only certain formats are supported when events are copied to the
-ODB or written by the logger in ASCII format.
-Event headers are always kept in the byte ordering of the local machine.
-If events are sent over the network between computers with different byte
+ - The <b>data size</b> contains the number of bytes that follows the event header.
+ - The <b>data area</b> of the event can contain information in any user format (integer, real etc.),
+although only certain formats are supported when events are copied to the ODB or written by the logger in ASCII format.
+
+\anchor idx_byte-ordering
+Event headers are always kept in the <b>byte ordering</b> of the local machine. If events are sent over the network between computers with different byte
 ordering, the event header is swapped automatically, but not the event contents.
 
-- [Bank Format]
+@subsection FE_Bank_Format Bank Format
 Events in MIDAS format contain "MIDAS banks". A bank is a substructure of an event
 and can contain only one type of data, either a single value or an array of values.
-Banks have a name of exactly four characters, which are treated, as a bank ID.
-Banks in an event consist of a global bank header and an individual bank header
-for each bank. Following picture shows a MIDAS event containing banks:
+Banks have a name of exactly four characters, which are treated as a <b>bank ID</b>.
+Banks in an event consist of a \b global bank header and an \b individual bank header
+for each bank.
+
+Figure 2 shows a MIDAS event containing banks coloured to match the structure in Figure 1. This has been
+obtained from a MIDAS data file using the  @ref RC_mdump_utility "mdump utility".
+
 <br><br>
+<span class="image"> Figure 2: Example of midas banks dumped by <span class="client">mdump</span>.</span>
+<br>
+------------------------ Event# 2 --------------------------------<br>
+<span style="background-color: rgb(204, 204, 255);">Evid:000d- Mask:0000- Serial:0- Time:0x4c7a6869- Dsize:48/0x30</span><br>
+<span style="background-color: lightgreen;">\#banks:1 - Bank list:-SDAS-</span><br>
+<br>
+<span style="background-color: orange;">Bank:SDAS Length: 32(I*1)/8(I*4)/8(Type)Type:Real*4 (FMT machine dependent)</span><br>
+<span style="background-color: pink;">  1-> 4.000e+00 1.000e+01 1.000e+00 3.400e+00 3.400e+00 3.400e+00 3.400e+00 3.400e+00</span><br>
+<br>
+------------------------ Event# 3 --------------------------------<br>
+<span style="background-color: rgb(204, 204, 255);">Evid:0001- Mask:0000- Serial:0- Time:0x4c7a686b- Dsize:344/0x158</span><br>
+<span style="background-color: lightgreen;">\#banks:2 - Bank list:-MPETMCPP-</span><br>
+<br>
+<span style="background-color: orange;">Bank:MPET Length: 304(I*1)/76(I*4)/76(Type) Type:Unsigned Integer*4</span><br>
+<span style="background-color: pink;">    1-> 0x80010000 0x00000002 0x10010000 0x00004e21 0x80020000 0x00000002 0x20020000 0x000015f4<br>
+   9-> 0x20020000 0x00001660 0x20020000 0x0000185f 0x20020000 0x0000191e 0x20020000 0x000019d6<br>
+  17-> 0x40020000 0x00001a37 0x20020000 0x00001a77 0x20020000 0x00001ba2 0x10020000 0x00004e22<br>
+  25-> 0x80030000 0x00000002 0x20030000 0x00001637 0x20030000 0x000018d1 0x20030000 0x000019bc<br>
+  33-> 0x20030000 0x00001b35 0x20030000 0x00001bb2 0x10030000 0x00004e21 0x80040000 0x00000002<br>
+  41-> 0x10040000 0x00004e22 0x80050000 0x00000002 0x20050000 0x000013c5 0x20050000 0x000017f2<br>
+  49-> 0x20050000 0x0000185f 0x20050000 0x00001976 0x20050000 0x00001aa8 0x10050000 0x00004e21<br>
+  57-> 0x80060000 0x00000002 0x20060000 0x000015c3 0x20060000 0x000018d8 0x20060000 0x0000198d<br>
+  65-> 0x20060000 0x00001ac4 0x10060000 0x00004e22 0x80070000 0x00000002 0x20070000 0x00001747<br>
+  73-> 0x20070000 0x000019ae 0x10070000 0x00004e21</span><br>
+<br>
+<span style="background-color: orange;">Bank:MCPP Length: 16(I*1)/4(I*4)/4(Type) Type:Unsigned Integer*4</span><br>
+<span style="background-color: pink;">   1-> 0x00005e4c 0x0000352d 0x00006453 0x00006d5b</span><br>
+<br>
+
 The "data size total" is the size in bytes of all bank headers and bank data.
 Flags are currently not used. The bank header contains four characters as
 identification, a bank type that is one of the TID_xxx values defined in
@@ -68,9 +100,11 @@ midas.h, and the data size in bytes.
 If the byte ordering of the contents of a complete event has to be swapped,
 the routine bk_swap() can be used.
 
-- [Tape Format]
+<br><hr><br>
+\anchor idx_format_Midas_Tape
+@subsection Tape Format
 Events are written to disk files without any reformatting.
-For tapes, a fixed block size is used. The block size TAPE_BUFFER_SIZE
+For tapes, however, a fixed block size is used. The block size TAPE_BUFFER_SIZE
 is defined in midas.h and usually 32kB. Three special events are produced
 by the system. A begin-of-run (BOR) and end-of-run (EOR)
 event is produced which contains an ASCII dump of the ODB in its data area.
@@ -83,6 +117,10 @@ A tape can therefore be identified as a MIDAS formatted tape.
 The routine tape_copy() in the utility mtape.c is an example of how to read
 a tape in MIDAS format.
 
+\anchor end
+
+<br>
+<!-- Navigation -->
 \htmlonly
 <script type="text/javascript">
 // pages parameters: back index next {top bottom}

@@ -1,4 +1,4 @@
-/*! @page FrontendOperation Frontend Operation
+/*! @page FrontendOperation SECTION 6: Frontend Operation
 
 <br>
 \htmlonly
@@ -18,7 +18,7 @@ frontend program will then be explained by reference to some of the examples inc
 
 @subsection FE_program Frontend Program
 
-A "frontend program" refers to a  @ref FE_frontend_task running on a particular computer which has access to hardware equipment 
+A "frontend program" refers to a  @ref FE_frontend_utility running on a particular computer which has access to hardware equipment 
 in use by the experiment.  The frontend program (image) consists of  
  - a fixed  <em>experiment-independent system framework</em> (mfe.c)
  - a <em>user part</em> (frontend.c)
@@ -31,8 +31,8 @@ in this document usually refers to the user part, since the system framework is 
 
 The frontend task, once built, is run as described as follows.
 
-\anchor idx_frontend_task
-@subsection FE_frontend_task frontend  - Midas Frontend application
+\anchor idx_frontend_utility
+@subsection FE_frontend_utility frontend  - Midas Frontend application
 
 The "frontend" task is built by the user and may have any name the user chooses
 (e.g. fecamac, fegpib). The purpose of a @ref FE_program is to collect data from 
@@ -45,12 +45,12 @@ the hardware data and
 
  The framework code (mfe.c) has the following arguments:
  - <b> Arguments </b>
-    - [-h hostname ] : host name (see @ref RC_odbedit_task)
-    - [-e exptname ] : experiment name (see @ref RC_odbedit_task)
+    - [-h hostname ] : host name (see @ref RC_odbedit_utility)
+    - [-e exptname ] : experiment name (see @ref RC_odbedit_utility)
     - [-D ] : Become a Daemon.
     - [-O ] : Become a Daemon but keep stdout 
     - [-d ] : Used for debugging the frontend
-    - [-i index] : Set frontend index (used with @ref FE_mevb_task . See also @ref  FE_principle_eb).
+    - [-i index] : Set frontend index (used with @ref FE_mevb_utility . See also @ref  FE_principle_eb).
 
 Note that the new argument (-i index) has been introduced to
 facilitate the multiple frontend configuration operation required for the @ref FE_Event_Builder.
@@ -235,9 +235,10 @@ sections("RunControl","FrontendOperation","DataAnalysis"); // last section; top 
 <br>
 
 
-Every frontend create a entry under the /Equipment tree. The  @ref FE_tbl_EqName "name of the sub-tree" is
-taken from the frontend @ref FE_eqdec "equipment declaration". The following example shows
-the /Equipment tree of an experiment where a large number of Equipments have been defined:
+Every  @ref FE_Intro "frontend" or other client that contains an   @ref FE_eqdec "Equipment Declaration" will, when run for the first time, create a entry
+(i.e. a sub-tree) in the ODB under the <span class="odb">/Equipment</span> tree. The  @ref FE_tbl_EqName "name" of a particular sub-tree (i.e. the
+name of that Equipment) is taken from the Equipment Declaration in the client(s).  The following example shows the  <span class="odb">/Equipment</span> tree of an experiment where a large number of Equipments
+have been defined:
 
 Example:
 @code
@@ -259,15 +260,15 @@ RFSource                        DIR
 DSPec                           DIR
 @endcode  
 
-Each of these "Equipment" directories contain several subdirectories which
-by default the system creates.
-  - Common : Contains the system information. Should not be overwritten by the user.
-  - Variables : Contains the equipment data if enabled (see below).
-  - Settings : Contains the equipment specific information that the user may want to
-  maintain. In the case of a @ref FE_Slow_Control_system equipment, extended tree
-  structure is created by the system.
-  - Statistics : Contains equipment statistics information such as event taken, event rate, data rate.
 
+Each of these "Equipment" directories contain several subdirectories (i.e. "Common","Variables" and "Statistics") which
+the system creates by default.
+
+\Note These sub-trees will be referred to as  e.g. <span class="odb">/Equipment/<equipment-name>/Common</span>
+where the name of the particular equipment is to be substituted into <i>"<equipment-name>"</i>
+(e.g. <span class="odb">/Equipment/scaler/Common</span>).
+
+An example of an Equipment called "Scaler" is shown below:
 @code 
 
  
@@ -314,7 +315,442 @@ Scaler                          DIR
         kBytes per sec.         DOUBLE  1     8     1s   0   RWDE 0.0678543
 @endcode  
 
-These subdirectories will be discussed in more detail in the following pages.
+
+@section FE_ODB_equipment_common The ODB /Equipment/<equipment-name>/Common subtree
+
+The <span class="odb">/Equipment/<equipment-name>/Common</span> subtree contains system information, which is derived from the
+@ref FE_eqdec "Equipment Declaration" for that Equipment.
+<br>
+Every time the frontend is initialized,  it <b>copies the equipment
+settings to the ODB</b> under  <span class="odb">/Equipment/<equipment-name>/Common</span>
+<br>
+
+
+
+<table style="text-align: left; width: 100%;" border="1" cellpadding="2"
+cellspacing="2">
+<caption>Above: meaning of keys in the ODB subtree /Equipment/<equipment-name>/Common 
+</caption>
+<tr>
+<td colspan="5" style="vertical-align: top; background-color: rgb(204, 204, 255); font-weight: bold; text-align: center;">
+Keys in the ODB /Equipment/Common subtree
+</td>
+</tr>
+<tr>
+<td colspan="3" style="vertical-align: top; background-color: rgb(204, 204, 255); font-weight: bold; text-align: center;">
+Key 
+</td>
+<td
+style="vertical-align: top; font-weight: bold; text-align: center; background-color: rgb(204, 204, 255);">Type<br>
+</td>
+<td style="vertical-align: top; background-color: rgb(204, 204, 255); font-weight: bold; text-align: center;"> 
+Explanation
+</td></tr>
+
+<!-- line 1 -->
+<tr>
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
+<equipment-name>
+</td>
+<td
+style="vertical-align: top; font-weight: bold; background-color: lightyellow;"><br>
+</td>
+<td
+style="vertical-align: top; font-weight: bold; background-color: lightyellow;"><br>
+</td>
+<td style="vertical-align: top;">DIR<br>
+</td>
+<td style="vertical-align: top;"> @ref  FE_tbl_EqName "Name of this equipment"
+</td>
+</tr>
+
+
+<!-- line 2 -->
+<tr>
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
+<br>
+</td>
+<td
+style="vertical-align: top; font-weight: bold; background-color: lightyellow;">Common
+</td>
+<td
+style="vertical-align: top; font-weight: bold; background-color: lightyellow;"><br>
+</td>
+<td style="vertical-align: top;">DIR<br>
+</td>
+<td style="vertical-align: top;">Subdirectory created when the frontend is first run
+</td>
+</tr>
+
+<!-- line 3 -->
+<tr>
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
+<br>
+</td>
+<td
+style="vertical-align: top; font-weight: bold; background-color: lightyellow;"><br>
+</td>
+<td
+style="vertical-align: top; font-weight: bold; background-color: lightyellow;">Event ID
+</td>
+<td style="vertical-align: top;">WORD<br>
+</td>
+<td style="vertical-align: top;">@ref FE_tbl_EventID "Unique Event ID"
+</td>
+</tr>
+
+
+<!-- line 4 -->
+<tr>
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
+<br>
+</td>
+<td
+style="vertical-align: top; font-weight: bold; background-color: lightyellow;"><br>
+</td>
+<td
+style="vertical-align: top; font-weight: bold; background-color: lightyellow;">Trigger mask
+</td>
+<td style="vertical-align: top;">WORD<br>
+</td>
+<td style="vertical-align: top;">@ref  FE_tbl_TrigMask "Trigger Mask"
+</td>
+</tr>
+
+
+<!-- line 5 -->
+<tr>
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
+<br>
+</td>
+<td
+style="vertical-align: top; font-weight: bold; background-color: lightyellow;"><br>
+</td>
+<td
+style="vertical-align: top; font-weight: bold; background-color: lightyellow;">Buffer
+</td>
+<td style="vertical-align: top;">WORD<br>
+</td>
+<td style="vertical-align: top;">@ref  FE_tbl_Buffer "Buffer"
+</td>
+</tr>
+
+<!-- line 6 -->
+<tr>
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
+<br>
+</td>
+<td
+style="vertical-align: top; font-weight: bold; background-color: lightyellow;"><br>
+</td>
+<td
+style="vertical-align: top; font-weight: bold; background-color: lightyellow;">Type
+</td>
+<td style="vertical-align: top;">WORD<br>
+</td>
+<td style="vertical-align: top;">@ref   FE_tbl_EqType "Type"
+</td>
+</tr>
+
+<!-- line 7 -->
+<tr>
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
+<br>
+</td>
+<td
+style="vertical-align: top; font-weight: bold; background-color: lightyellow;"><br>
+</td>
+<td
+style="vertical-align: top; font-weight: bold; background-color: lightyellow;">Source
+</td>
+<td style="vertical-align: top;">WORD<br>
+</td>
+<td style="vertical-align: top;">@ref  FE_tbl_IntSrc  "Interrupt Source"
+</td>
+</tr>
+
+
+<!-- line 8 -->
+<tr>
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
+<br>
+</td>
+<td
+style="vertical-align: top; font-weight: bold; background-color: lightyellow;"><br>
+</td>
+<td
+style="vertical-align: top; font-weight: bold; background-color: lightyellow;">Format
+</td>
+<td style="vertical-align: top;">WORD<br>
+</td>
+<td style="vertical-align: top;">@ref   FE_tbl_Format  "Data Format"
+</td>
+</tr>
+
+<!-- line 9 -->
+<tr>
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
+<br>
+</td>
+<td
+style="vertical-align: top; font-weight: bold; background-color: lightyellow;"><br>
+</td>
+<td
+style="vertical-align: top; font-weight: bold; background-color: lightyellow;">Enabled
+</td>
+<td style="vertical-align: top;">WORD<br>
+</td>
+<td style="vertical-align: top;">@ref  FE_tbl_EqEnabled  "Equipment Enabled".  May be changed during run-time  (@ref FE_equipment_odb_hot_links "Hot-linked"). 
+</td>
+</tr>
+
+<!-- line 10 -->
+<tr>
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
+<br>
+</td>
+<td
+style="vertical-align: top; font-weight: bold; background-color: lightyellow;"><br>
+</td>
+<td
+style="vertical-align: top; font-weight: bold; background-color: lightyellow;">Read On
+</td>
+<td style="vertical-align: top;">WORD<br>
+</td>
+<td style="vertical-align: top;">@ref  FE_tbl_ReadOn  "Read-On Flag(s)". May be changed during run-time (@ref FE_equipment_odb_hot_links "Hot-linked"). 
+</td>
+</tr>
+
+<!-- line 11 -->
+<tr>
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
+<br>
+</td>
+<td
+style="vertical-align: top; font-weight: bold; background-color: lightyellow;"><br>
+</td>
+<td
+style="vertical-align: top; font-weight: bold; background-color: lightyellow;">Period
+</td>
+<td style="vertical-align: top;">WORD<br>
+</td>
+<td style="vertical-align: top;">@ref  FE_tbl_Period  "Time interval". May be changed during run-time (@ref FE_equipment_odb_hot_links "Hot-linked"). 
+</td>
+</tr>
+
+<!-- line 12 -->
+<tr>
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
+<br>
+</td>
+<td
+style="vertical-align: top; font-weight: bold; background-color: lightyellow;"><br>
+</td>
+<td
+style="vertical-align: top; font-weight: bold; background-color: lightyellow;">Event limit
+</td>
+<td style="vertical-align: top;">WORD<br>
+</td>
+<td style="vertical-align: top;">@ref  FE_tbl_EventLimit "Event limit".  May be changed during run-time (@ref FE_equipment_odb_hot_links "Hot-linked").
+</td>
+</tr>
+
+<!-- line 13 -->
+<tr>
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
+<br>
+</td>
+<td
+style="vertical-align: top; font-weight: bold; background-color: lightyellow;"><br>
+</td>
+<td
+style="vertical-align: top; font-weight: bold; background-color: lightyellow;">Num Subevents
+</td>
+<td style="vertical-align: top;">WORD<br>
+</td>
+<td style="vertical-align: top;">@ref   FE_tbl_NumSubevents "Number of sub-events"
+</td>
+</tr>
+
+
+<!-- line 14 -->
+<tr>
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
+<br>
+</td>
+<td
+style="vertical-align: top; font-weight: bold; background-color: lightyellow;"><br>
+</td>
+<td
+style="vertical-align: top; font-weight: bold; background-color: lightyellow;">Log history
+</td>
+<td style="vertical-align: top;">WORD<br>
+</td>
+<td style="vertical-align: top;">@ref  FE_tbl_History  "Enable history system"
+</td>
+</tr>
+
+
+<!-- line 15 -->
+<tr>
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
+<br>
+</td>
+<td
+style="vertical-align: top; font-weight: bold; background-color: lightyellow;"><br>
+</td>
+<td
+style="vertical-align: top; font-weight: bold; background-color: lightyellow;">Frontend host
+</td>
+<td style="vertical-align: top;">WORD<br>
+</td>
+<td style="vertical-align: top;">
+@anchor FE_frontend_host
+Name of the computer running the frontend that defines this equipment
+</td>
+</tr>
+
+
+<!-- line 16 -->
+<tr>
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
+<br>
+</td>
+<td
+style="vertical-align: top; font-weight: bold; background-color: lightyellow;"><br>
+</td>
+<td
+style="vertical-align: top; font-weight: bold; background-color: lightyellow;">Frontend name
+</td>
+<td style="vertical-align: top;">WORD<br>
+</td>
+<td style="vertical-align: top;">
+@anchor FE_frontend_name
+Name of the frontend that defines this equipment
+</td>
+</tr>
+
+
+<!-- line 17 -->
+<tr>
+<td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
+<br>
+</td>
+<td
+style="vertical-align: top; font-weight: bold; background-color: lightyellow;"><br>
+</td>
+<td
+style="vertical-align: top; font-weight: bold; background-color: lightyellow;">Frontend file name
+</td>
+<td style="vertical-align: top;">WORD<br>
+</td>
+<td style="vertical-align: top;">
+@anchor FE_frontend_file_name
+Name of the file that contains the frontend code
+</td>
+</tr>
+
+
+
+
+
+</table>
+
+
+\anchor idx_hotlink_Equipment-common-parameters
+@subsection FE_equipment_odb_hot_links Hot-linked Equipment/Common parameters
+
+ @ref RC_Hot_Link "Hot-links" to  the <span class="odb">/Equipment/<equipment-name>/Common</span> area are created, allowing some of the settings
+to be <span style="font-weight: bold;">changed during run-time</span>, rather than having to edit, recompile and reload the frontend.
+These settings are listed below:
+<br>
+<table style="text-align: left; width: 25%; background-color: rgb(204, 204, 204); margin-left: auto; margin-right: auto;" border="1" cellpadding="2" cellspacing="2">
+
+
+
+<tr align="center">
+<td
+style="vertical-align: top; background-color: rgb(255, 255, 204);"><span
+style="font-weight: bold;">Equipment Settings hot-linked in ODB</span><br>
+</td>
+</tr>
+<tr align="center">
+<td style="vertical-align: top;">**  
+@ref FE_tbl_EqEnabled "Enabled" flag
+</td>
+</tr>
+<tr align="center">
+<td style="vertical-align: top;">**  
+@ref FE_tbl_ReadOn "Read-On (RO_XX)" flags
+</td>
+</tr>
+<tr align="center">
+<td style="vertical-align: top;">**  
+@ref  FE_tbl_Period "Period"
+</td>
+</tr>
+<tr align="center">
+<td style="vertical-align: top;">**  
+@ref  FE_tbl_EventLimit "Event Limit"
+</td>
+</tr>
+
+</table>
+
+Modification from the ODB is \b immediately reflected into the frontend, which will act upon the new setting.
+
+
+
+
+@section FE_ODB_equipment_variables The ODB /Equipment/<equipment-name>/Variables subtree
+The ODB <span class="odb">Variables</span> subtree contains the equipment data <b>if enabled</b> by either the @ref  FE_tbl_ReadOn "RO_ODB" flag
+or the  @ref  FE_tbl_History "History flag". 
+This means that it contains the data banks for an event. The data will be updated when the equipment read-out routine is run, i.e. when
+an event is sent. If the  @ref  FE_tbl_ReadOn "RO_ODB" flag is \b not set for the equipment, the  <span class="odb">Variables</span> subtree will
+be empty.
+
+The /Equipment/<equipment-name>/Variables (if present) are displayed on the  @ref RC_mhttpd_utility "mhttpd" @ref RC_mhttpd_Equipment_page .
+
+
+
+@section FE_ODB_equipment_statistics The ODB /Equipment/<equipment-name>/Statistics subtree
+The ODB <span class="odb">Statistics</span> subtree contains equipment system statistics information such as number of event taken, the event rate
+and the data rate.
+
+
+@section FE_ODB_equipment_settings The ODB /Equipment/<equipment-name>/Settings subtree
+The ODB <span class="odb">Settings</span> subtree contains any equipment-specific information that the user may wish to place there. 
+<br>
+The following example is for the "Epicslog" equipment for the BNMR experiment at TRIUMF. The "settings" sub-tree contains a list of the EPICS variables
+that the user wishes to read out, including the information into the data stream.
+
+\code
+[local:bnmr:S]/>ls /Equipment/epicslog/Settings/
+epics OK                        1
+n_epics_logged                  4
+epics_path
+                                BNMR:HVBIAS:POS:RDVOL
+                                BNMR:HVBIAS:NEG:RDVOL
+                                ITW:BIAS:RDVOL
+                                ILE2:BIAS15:RDVOL
+                                BNMR:HVBIAS:NEG:RDVOL
+                                BNMR:HVBIAS:NEG:RDVOL
+
+\endcode
+
+
+An important feature of the <span class="odb">Settings</span> sub-tree is only active when using @ref RC_mhttpd_utility "mhttpd" (ignored by @ref RC_odbedit_utility "odbedit"), which
+is the display of data from <span class="odb">/Equipment/<equipment-names>/variables</span> sub-tree on the  @ref RC_mhttpd_Equipment_page , together with the corresponding information defined
+in a "Names" array. See the mhttpd @ref RC_mhttpd_Equipment_page for details.
+
+In the case of a @ref FE_Slow_Control_system equipment, an extended tree is structure is automatically created by the system, which will be displayed on the
+mhttpd @ref RC_mhttpd_Equipment_page - see @ref RC_mhttpd_Equipment_example2 .
+
+
+
+
+
+
 <br>
 \anchor end
 \htmlonly

@@ -77,7 +77,7 @@ remarks about these particular hardware modules.
   this problem. In the mean time you can apply your own patch
   (see @ref FAQ) and also <a href="http://www.hytec-electronics.co.uk/index.html"> Hytec </a>)
   - <b> [hyt1331.c Version >= 1.8.3]</b>
-  This version has been modified for 5331 PCI card support running under the @ref FE_dio_task.  
+  This version has been modified for 5331 PCI card support running under the @ref FE_dio_utility.  
   - <b>[khyt1331.c Version >= 1.8.3]</b>
   A full Linux driver is available for the 5331 PCI card interfacing to the
   hyt1331. The kernel driver has been written for the Linux kernel 2.4.2,
@@ -116,7 +116,7 @@ remarks about these particular hardware modules.
   - \b [camacnul.c] Handy fake CAMAC driver for code development.
   - \b [camacrpc.c] Remote Procedure Call CAMAC driver used for accessing the CAMAC
   server part of the standard Midas frontend code. This driver is used for example
-  in the @ref FE_mcnaf_task, @ref RC_mhttpd_task utilities.
+  in the @ref FE_mcnaf_utility "mcnaf" and @ref RC_mhttpd_utility "mhttpd" utilities.
 
 
 <hr> @section VME_drivers VME drivers

@@ -9,12 +9,12 @@ sections("Features", "RunControl","FrontendOperation"); // last section; top of 
 </script>
 \endhtmlonly
 
-A custom Status page is a custom page that replaces the default Midas status page.
-<br>
-The custom Status page is activated as described @ref RC_odb_custom_status "previously".
+<b>A Custom Status page</b> is a custom page that <b>replaces the default Midas status page.</b>
+<br><br>
+A custom Status page is activated as described @ref RC_odb_custom_status "previously".
 Features such as the standard @ref RC_mhttpd_custom_midas_buttons "Menu buttons",  @ref RC_mhttpd_custom_alias etc. can
 be provided in the same way as for any other custom page. When replacing the default Status page by a Custom Status page,
-any user-buttons defined on the original Midas Status page can be easily turned into  @ref RC_mhttpd_custom_script_buttons
+any  @ref RC_mhttpd_status_User_buttons "user-buttons" defined on the original Midas Status page can be easily turned into  @ref RC_mhttpd_custom_script_buttons
 on the Custom Status page by placing links in the  <span class="odb"> /customscript </span> tree to any existing user-buttons under the  
 <span class="odb"> /Script </span> tree.
 
@@ -70,7 +70,7 @@ Status                          /custom/CustomStatus& -> /home/bnmr/online/custo
 *  \image html bnmr_both_status_pages.gif
 *  </center>
 
-The script file set_status.pl is as follows:
+The script file <i> set_status.pl </i> is as follows:
 
 
 \code
@@ -114,6 +114,11 @@ our $DIE = $TRUE;  # die after print_3
 our $CONT = $FALSE; # do not die after print_3 (set_status)
 #e.g.    print_3($name,  "ERROR: no path supplied",$MERROR,$DIE);
 #    or   print_3($name,  "INFO: run number has not changed",$MINFO,$CONT);
+# print_3 is a subroutine that prints the message to three places:
+#     the output file, standard output, MIDAS message log
+# print_2 is a subroutine that prints the message to two places:
+#     the output file and standard output
+
 #######################################################################
 #  parameters needed by init_check.pl (required code common to perlscripts) :
 # init_check uses $inc_dir, $expt, $beamline from the input parameters
@@ -142,7 +147,7 @@ require "$inc_dir/odb_access.pl";
 # Init_check.pl checks:
 #   one copy of script running
 #   no. of input parameters
-#   opens output file:
+#   opens output file $outfile on file handle FOUT
 #
 require "$inc_dir/init_check.pl";
 
@@ -192,6 +197,8 @@ else
 
 }    
 exit;
+
+
 @endcode
 <br>
 

@@ -1,5 +1,4 @@
-/*! @page RC_odbedit  odbedit: The ODB Editor and run control
-\anchor idx_odbedit
+/*! @page RC_odbedit  odbedit: The ODB Editor and Run Control utility
 
 <!--  odbedit functionality is a sub-page of the Run Control section; 
       
@@ -7,7 +6,7 @@
 <br>
 \htmlonly
 <script type="text/javascript">
-pages( "RC_Controlling_run",  "RunControl","RC_odbedit_task", "RC_odbedit", "end" ); // back index next {top bottom}
+pages( "RC_Controlling_run",  "RunControl","RC_odbedit_utility", "RC_odbedit", "end" ); // back index next {top bottom}
 sections("Features", "RunControl","FrontendOperation"); // last section; top of this section; next section
 </script>
 \endhtmlonly
@@ -16,16 +15,16 @@ sections("Features", "RunControl","FrontendOperation"); // last section; top of 
 
 <!-- ------------------------------------------------------------------------------- -->
                      
-The @ref RC_odbedit_task "odbedit utility" is both an @ref F_Online_Database_overview Editor and a <b>Run Control</b> program. 
+The @ref RC_odbedit_utility "odbedit utility" is both an @ref F_Online_Database_overview Editor and a <b>Run Control</b> program. 
 <br>
 This is one of the main applications to interact with the different components of the Midas system. It is
-a simpler alternative to the web-based run control program @ref RC_mhttpd_task "mhttpd". There are many occasions 
+a simpler alternative to the web-based run control program @ref RC_mhttpd_utility "mhttpd". There are many occasions 
 where \b odbedit is more convenient and faster to use than mhttpd. 
 \b odbedit is used to create the initial ODB, and is a powerful editing tool. It is often used for debugging and
 troubleshooting.
 <br>
 
- - \subpage RC_odbedit_task
+ - \subpage RC_odbedit_utility
  - @ref  RC_odbedit_help
  - \subpage RC_odbedit_examples
 
@@ -34,7 +33,7 @@ troubleshooting.
 <br>
 \htmlonly
 <script type="text/javascript">
-pages( "RC_Controlling_run",  "RunControl","RC_odbedit_task", "RC_odbedit", "" ); // back index next {top bottom}
+pages( "RC_Controlling_run",  "RunControl","RC_odbedit_utility", "RC_odbedit", "" ); // back index next {top bottom}
 sections("Features", "RunControl","FrontendOperation"); // last section; top of this section; next section
 </script>
 \endhtmlonly
@@ -46,12 +45,12 @@ sections("Features", "RunControl","FrontendOperation"); // last section; top of 
 
 
 
-/*! @page RC_odbedit_task odbedit - ODB Editor and run control task
-\anchor idx_odbedit_task
+/*! @page RC_odbedit_utility odbedit - ODB Editor and run control utility
+\anchor idx_odbedit-utility
 <br>
 \htmlonly
 <script type="text/javascript">
-pages( "RC_odbedit",  "RunControl","RC_odbedit_examples", "RC_odbedit_task", "end" ); // back index next {top bottom}
+pages( "RC_odbedit",  "RunControl","RC_odbedit_examples", "RC_odbedit_utility", "end" ); // back index next {top bottom}
 sections("Features", "RunControl","FrontendOperation"); // last section; top of this section; next section
 </script>
 \endhtmlonly
@@ -62,16 +61,11 @@ sections("Features", "RunControl","FrontendOperation"); // last section; top of 
 \anchor idx_edit_ODB_using-odbedit     
 \b odbedit is primarily an @ref F_Online_Database_overview Editor. It also acts as a run control and
 has limited run monitoring features. It is an alternative to the web-based run control program
-@ref RC_mhttpd_task.
+@ref RC_mhttpd_utility.
 
 - <b> Arguments </b>
-  - [-h hostname ] :Specifies host to connect to. Must be a valid IP host name. This option supersedes 
-   the default hostname given by the environment variable MIDAS_SERVER_HOST
-  environment variable.
-  - [-e exptname ] :Specifies the experiment to connect to. 
-    This option supersedes the 
-  default experiment name given by the  environment variable MIDAS_EXPT_NAME
-  environment variable.
+  - [-h hostname ] :Specifies host to connect to. See @ref F_utilities_params "hostname" for details.
+  - [-e exptname ] :Specifies the experiment to connect to. See @ref F_utilities_params "experiment" for details.
   - [-c command ] :Perform a single command
   - [-c \@commandFile ] :Perform commands in sequence found in the commandFile.  Can be used to perform operations in
   script files. See @ref RC_odbedit_extcommand "examples".
@@ -108,9 +102,9 @@ has limited run monitoring features. It is an alternative to the web-based run c
 
    The odbedit commands and mode of operation are described fully in the following sections.
 
-\anchor idx_odbedit_command_list
+\anchor idx_odbedit-utility_command_list
 @section  RC_odbedit_help odbedit command list
-Running  @ref RC_odbedit_task "odbedit" and issuing the command "help" displays the list of commands:
+Running  @ref RC_odbedit_utility "odbedit" and issuing the command "help" displays the list of commands:
 \code
 $ odbedit
 
@@ -180,24 +174,24 @@ quit/exit               - exit
 <br>
 \htmlonly
 <script type="text/javascript">
-pages( "RC_odbedit",  "RunControl","RC_odbedit_examples", "RC_odbedit_task", "" ); // back index next {top bottom}
+pages( "RC_odbedit",  "RunControl","RC_odbedit_examples", "RC_odbedit_utility", "" ); // back index next {top bottom}
 sections("Features", "RunControl","FrontendOperation"); // last section; top of this section; next section
 </script>
 \endhtmlonly
 
 \anchor end
 
-<!-- End of page  RC_odbedit_task -->
+<!-- End of page  RC_odbedit_utility -->
 */
 
 
 
 /*! @page RC_odbedit_examples Using odbedit 
-\anchor idx_odbedit_examples
+\anchor idx_odbedit-utility_examples
 <br>
 \htmlonly
 <script type="text/javascript">
-pages( "RC_odbedit_task",  "RunControl","RC_mhttpd","RC_odbedit_examples",  "end" ); // back index next {top bottom}
+pages( "RC_odbedit_utility",  "RunControl","RC_mhttpd","RC_odbedit_examples",  "end" ); // back index next {top bottom}
 sections("Features", "RunControl","FrontendOperation"); // last section; top of this section; next section
 </script>
 \endhtmlonly
@@ -340,12 +334,12 @@ cellspacing="2">  <caption>Above: Meaning of Prompt symbols
 
 
 After installation of Midas, before any other tasks are started, the ODB is created for the first time by 
-starting the @ref RC_odbedit_task "odbedit task". This automatically creates all the shared-memory files needed for the
+starting the @ref RC_odbedit_utility "odbedit utility". This automatically creates all the shared-memory files needed for the
 experiment. By default, these files will be created in the area indicated in the 
 @ref Q_Linux_Exptab "exptab file" for your experiment. 
 <br>
 If MIDAS_EXPT_NAME is defined, this experiment will be used, unless superceded by the
--e  option (see @ref RC_odbedit_task "odbedit").
+-e  option (see @ref RC_odbedit_utility "odbedit").
 <br>
 \code
 [mpet@titan01 ~/online]$ ls .*.SHM
@@ -357,15 +351,17 @@ ls: No match.
 @endcode
 
 The default size of the ODB is 128KB. A different size can be specified by using the -s option 
-(see @ref RC_odbedit_task "odbedit task") e.g.
+(see @ref RC_odbedit_utility "odbedit utility") e.g.
 \code
 odbedit -s 204000
 @endcode
 
 The other shared memory files created are the system buffer .SYSTEM.SHM, the @ref F_Messaging "system messaging" buffer .SYSMSG.SHM, the message buffer .MSG.SHM,
-\todo  (?? MSG.SHM what for?? )
+\todo  ( MSG.SHM what for? )
+
 the  @ref F_History_logging "history" buffer .HISTORY.SHM, the  @ref F_Elog "Elog" buffer .ELOG.SHM, the alarm buffer .ALARM.SHM .
 <br>
+
 \b Note: 
 <br>to change the size of the event buffer(s) (e.g. SYSTEM buffer) see  @ref FE_event_buffer_size .
 <br>
@@ -373,7 +369,7 @@ the  @ref F_History_logging "history" buffer .HISTORY.SHM, the  @ref F_Elog "Elo
 Running odbedit for the first time creates the trees /Runinfo, /Experiment, /System in the ODB. 
 </div>
 Each application will then add its own set of parameters to the database depending on its requirements. 
-For example, starting the @ref F_mlogger_task "Midas logger" will cause the tree /Logger to be created.
+For example, starting the @ref F_mlogger_utility "Midas logger" will cause the tree /Logger to be created.
 
 
 
@@ -427,7 +423,7 @@ stdpulse_3
 
 \anchor idx_ODB_corrupted
 <hr>@section RC_odbedit_corrupted Corrupted ODB
-If the @ref  F_Online_Database_overview "Online Database" becomes corrupted, @ref RC_odbedit_task "odbedit" may no longer work, and other clients
+If the @ref  F_Online_Database_overview "Online Database" becomes corrupted, @ref RC_odbedit_utility "odbedit" may no longer work, and other clients
 will also fail to open the database. In this case, the old ODB should be deleted and
 a new one created. The contents of the ODB can be reloaded from a  @ref RC_odbedit_save "saved file".
 Since the ODB may become corrupted, it is advisable to  @ref F_Logger_ODB_Dump "save a copy automatically" at the end of each run.
@@ -454,7 +450,7 @@ Create new *.SHM files by running odbedit (see @ref  RC_odbedit_create_ODB), the
 \anchor idx_odbedit_scripts
 
 @subsection RC_odbedit_extcommand Using the external command (the  -c argument)
- @ref RC_odbedit_task -c argument
+ @ref RC_odbedit_utility -c argument
 In the simplest case, a single odbedit command can be entered on the command line, 
 \code
 [pol@isdaq01 src]$ odbedit -c start
@@ -463,7 +459,7 @@ Run #401 started
 [pol@isdaq01 src]$ odbedit -c stop
 Run #401 stopped
 @endcode
-or a value can be set (note the use of the @ref RC_odbedit_task "odbedit" \b -d argument)
+or a value can be set (note the use of the @ref RC_odbedit_utility "odbedit" \b -d argument)
 \code
 [pol@isdaq01 pol]$ odbedit -d /test -c "set testval 3"
 [pol@isdaq01 pol]$ odb
@@ -482,7 +478,7 @@ odbedit -c "create STRING Test[8][40]"
 
 
 A filename containing a number of odbedit commands can also be entered, using the 
-@ref RC_odbedit_task "odbedit" -c \@commandfile argument e.g.
+@ref RC_odbedit_utility "odbedit" -c \@commandfile argument e.g.
 \code
 [pol@isdaq01 pol]$ odbedit -d /test <b> -c @testfile.com </b>
 testval                         4
@@ -512,13 +508,15 @@ manipulate the odb.
 - @ref  RC_example_script_1
 - @ref  RC_example_script_2
 
+See also @ref  RC_odb_script_ex2_perlscript .
+
 \anchor idx_script_end-of-run
 @subsubsection RC_example_script_1 Shell script run at end-of-run
 
 This script runs at the end of run, and reads some parameters from the odb and sends 
-them to the elog by using the @ref F_melog_task.
+them to the elog by using the @ref F_melog_utility.
 To make the script run at end of run, the name of the script is entered in the "Execute on stop run" key in the
-@ref RC_ODB_programs_tree .
+@ref RC_ODB_Programs_Tree .
  
 \code
 #!/bin/tcsh
@@ -600,9 +598,9 @@ cat $fin
 The following example is part of a shell script run at the beginning of run for the TRIUMF BNMR experiment to check
 the status of various slow controls required for logging during the run.
 To make the script run at beginning of run, the name of the script is entered in the "Execute on start run" key in the
-@ref RC_ODB_programs_tree .
+@ref RC_ODB_Programs_Tree .
 
-
+\code
 #!/bin/csh
 #
 
@@ -685,10 +683,10 @@ endif
 
 
 <hr>@section RC_odbedit_cmd_examples Examples using odbedit commands
-Here are some examples of the most commonly used  @ref RC_odbedit_task "odbedit" commands:
+Here are some examples of the most commonly used  @ref RC_odbedit_utility "odbedit" commands:
 
 @subsection RC_odbedit_pwd pwd - show current directory
-<small> One of the @ref RC_odbedit_task "odbedit"  @ref RC_odbedit_help "commands" </small><br><br>
+<small> One of the @ref RC_odbedit_utility "odbedit"  @ref RC_odbedit_help "commands" </small><br><br>
 \code
 $ odbedit
 [local:mpet:Stopped]/>
@@ -698,7 +696,7 @@ $ odbedit
 
 
 <hr>@subsection RC_odbedit_cd cd - change current directory
-<small> One of the @ref RC_odbedit_task "odbedit"  @ref RC_odbedit_help "commands" </small><br><br>
+<small> One of the @ref RC_odbedit_utility "odbedit"  @ref RC_odbedit_help "commands" </small><br><br>
 
 \code
 cd <dir>                - change current directory
@@ -766,7 +764,7 @@ Exit chat mode with empty line.
 </tr>
 </table>
 
-The chat conversation can also be heard over the speakers if @ref F_mspeaker_task is running.
+The chat conversation can also be heard over the speakers if @ref F_mspeaker_utility is running.
 
 \anchor idx_access-control_ODB_keys
 <hr>@subsection RC_odbedit_chmod chmod - change access mode
@@ -955,10 +953,10 @@ Wed Jun 16 16:30:48 2010 [fred] power supply has failed
 \endcode
 
 <hr>@subsection RC_odbedit_passwd  passwd - change/set up the Midas password
-see @ref RC_Setup_Security for an example of this command.
+Example is shown @ref RC_Setup_Security "here". 
 
 <hr>@subsection RC_odbedit_webpasswd  webpasswd - change/set up the web password for mhttpd
-see @ref RC_Setup_Web_Security for an example of this command.
+Example is shown @ref RC_Setup_Web_Security "here".
 
 
 <hr>@subsection RC_odbedit_move  move - move a key to a new position
@@ -1640,7 +1638,7 @@ The \b make command creates in the current directory \b experim.h, a file contai
 which can be included into frontend and analyzer code to enable easy access to
 the odb parameters (see also  RC_experim_dot_h "using experim.h with hot-links"
 <br>
- In order to include the @ref DA_analyzer_task "analyzer section", the ODB key \b /\<Analyzer>/Parameters
+ In order to include the @ref DA_analyzer_utility "analyzer section", the ODB key \b /\<Analyzer>/Parameters
  has to be present, where \<Analyzer> is the name of the analyzer. The command used  is then 
  "make \<Analyzer> "
 <br>
@@ -1828,7 +1826,7 @@ ODBEdit             titan01.triumf.ca
 
 
 
-
+\anchor idx_run_start
 <hr>@subsection RC_odbedit_start start - start a run 
 \code
 start [number][now][-v] - start a run [with a specific number],
@@ -1836,12 +1834,18 @@ start [number][now][-v] - start a run [with a specific number],
 @endcode
 <br>
 
-The odbedit \b start command is used to start a run. In the following example, the run number of
-the new run is supplied.
-\code
-[local:Default:S]/Experiment>start run 503
-@endcode
+The odbedit \b start command is used to start a run.
 
+<br>
+\subsubsection RC_EOS_example1  Run start examples
+
+  
+ In the following example, the run number of the new run is supplied.
+\code
+[local:Default:S]/Experiment>start 503
+@endcode
+<br>
+ 
 In the example below, the run number is not specified. The system will start the next consecutive run.
 \code
 [local:Default:S]/Experiment>start
@@ -1852,10 +1856,10 @@ The user may edit the run number before continuing by typing "n". Typing "y" wil
 run, and typing "q" will abort the run start.
 <br>
 
-In the above example, there are no @ref  RC_Edit_On_Start  defined by the user. If any are defined,
+In the above example, there are no @ref  RC_Edit_On_Start "edit-on-start paramaters"  defined by the user. If any are defined,
 the command "start" will display the "edit on start" parameters e.g.
 
-\subsection RC_EOS_example2 Run Start Examples showing "Edit on Start" parameters 
+\subsubsection RC_EOS_example2 Run Start example with "Edit on Start" parameters 
 
 Note that when using odbedit,  Parameter comments are NOT visible, and the run number IS editable.
 \code
@@ -1873,13 +1877,17 @@ Run number [30004]:
 @endcode
 
 <br>
+\subsubsection RC_EOS_example3 Run Start Example with "start now"
 @anchor RC_odbedit_start_now
-By entering the command <b>"start now"</b>, the defined  @ref  RC_Edit_On_Start can be skipped.
+By entering the command <b>"start now"</b>, all defined  @ref  RC_Edit_On_Start "Edit-on-Start parameters"  can be skipped.
 \code
 [local:bnmr:S]/>start now
 Starting run #30129
 Run #30129 started
 @endcode
+
+
+\subsubsection RC_EOS_example4 Run Start Example with "-v" verbose option
 @anchor RC_odbedit_start_v
 Using the \b "-v" (verbose) option is useful for debugging. It prints messages as each client is started.
 \code
@@ -1959,6 +1967,7 @@ RPC transition finished client "feBNMR" on host bnmrhmvw with status 1
 @endcode
 
 <hr>
+\anchor idx_run_stop
 @subsection RC_odbedit_stop stop - stop a run 
 \code
 stop [-v]               - stop current run, [-v] debug output
@@ -1969,7 +1978,8 @@ stop [-v]               - stop current run, [-v] debug output
 Run #399 stopped
 [local:pol:S]/>  
 @endcode
-"Stop now" can be used for force a stop if there is a deferred transition. If there is no deferred transition,
+\anchor idx_run_stop_immediately
+"Stop now" can be used to force a stop if there is a deferred transition. If there is no deferred transition,
 the "stop now" is the same as "stop".
 \code
 local:bnmr:R]/>stop now
@@ -2045,7 +2055,7 @@ Run #30128 stopped
 <br>
 \htmlonly
 <script type="text/javascript">
-pages( "RC_odbedit_task",  "RunControl","RC_mhttpd","RC_odbedit_examples",  "" ); // back index next {top bottom}
+pages( "RC_odbedit_utility",  "RunControl","RC_mhttpd","RC_odbedit_examples",  "" ); // back index next {top bottom}
 sections("Features", "RunControl","FrontendOperation"); // last section; top of this section; next section
 </script>
 \endhtmlonly

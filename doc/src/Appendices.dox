@@ -161,10 +161,10 @@ sections("RunControl","FrontendOperation","DataAnalysis");
 
 <br>
 
- - @ref  FE_mcnaf_task 
- - @ref  FE_dio_task    
+ - @ref  FE_mcnaf_utility 
+ - @ref  FE_dio_utility    
 
-@section  FE_mcnaf_task mcnaf        - CAMAC hardware access
+@section  FE_mcnaf_utility mcnaf        - CAMAC hardware access
 
 \b mcnaf is an interactive CAMAC tool which allows "direct" access to the CAMAC
 hardware. This application is operational under either of the two following
@@ -187,7 +187,7 @@ conditions:
   applications which are hardware dependent, see <b> Example </b> below:
   - <b>[miocnaf]</b> cnaf application using the declared CAMAC hardware DRIVER
     (kcs2927 in this case). To be used with \b dio CAMAC application starter
-    (see @ref FE_dio_task).
+    (see @ref FE_dio_utility).
   - <b>[mwecnaf]</b> cnaf application using the WI-E-N-ER PCI/CAMAC interface
     (see @ref CAMAC_drivers). Please contact: midas@triumf.ca
     for further information.
@@ -238,7 +238,7 @@ rm *.o
 
 
 <hr> 
-@section FE_dio_task dio          - direct I/O driver
+@section FE_dio_utility dio          - direct I/O driver
 
 Direct I/O task provider (LINUX).
 
@@ -266,19 +266,12 @@ application to a given port in order to prevent potential hangup problem.
 - Interrupt handling, DMA capabilities of the interface will not be
 accessible under this mode of operation.
 
-
-
-
-
-
-
-
-
 \anchor end
 <br>
+
 \htmlonly 
 <script type="text/javascript">
-pages("FE_camac_vme_function_calls",  "FrontendOperation", "DataAnalysis","FE_utils","end" ); // back index next {top bottom}
+pages("FE_camac_vme_function_calls",  "FrontendOperation", "DataAnalysis","FE_utils","" ); // back index next {top bottom}
 // section parameters: last section; top of this section; next section
 sections("RunControl","FrontendOperation","DataAnalysis");
 </script>

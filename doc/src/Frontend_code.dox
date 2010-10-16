@@ -89,12 +89,13 @@ frontend or analyzer code.
  - \subpage  FE_sequence
  - \subpage  FE_eq_event_routines
  - \subpage  FE_event_notification
- - \subpage  FE_Deferred_Transition
+ - @ref FE_Deferred_Transition  <!-- was a subpage, now a section -->
  - \subpage  FE_bank_construction
  - \subpage  FE_Super_Event
  - \subpage  FE_Event_Builder   <!-- eventbuilder.dox -->
  - \subpage  FE_Slow_Control_system
- - \subpage  FE_Appendices    <!-- Appendices.dox (FE appendices) -->
+  - \subpage  FE_event_buffer_size 
+  - \subpage  FE_Appendices    <!-- Appendices.dox (FE appendices) -->
 
 
 <br>
@@ -1187,7 +1188,7 @@ INT read_scaler_event(char *pevent, INT off)
 A \b fragmented event enables very large events (e.g.  beyond the Midas configuration 
 limit) to be handled 
 by the system.  This is not to be confused with the use of the Event Builder, where "event fragments" are combined by
-an  @ref FE_mevb_task "event-builder".
+an  @ref FE_mevb_utility "event-builder".
 
 
  The event is sent out by the frontend in smaller fragments, and reassembled by the Midas
@@ -1458,57 +1459,26 @@ sections("RunControl","FrontendOperation","DataAnalysis");
 */
 
 
+/*!  \page  FE_event_notification Frontend Event Notification
 
-/*!  \page  FE_event_notification Event Notification
 <br>
 \htmlonly
- 
 <script type="text/javascript">
-pages( "FE_eq_event_routines", "FrontendOperation","FE_Deferred_Transition","FE_event_notification","end" ); // back index next {top bottom}
+pages("FE_eq_event_routines","FrontendOperation","FE_bank_construction","FE_event_notification", "end" ); // back index next {top bottom}
 // section parameters: last section; top of this section; next section
 sections("RunControl","FrontendOperation","DataAnalysis");
 </script>
 \endhtmlonly
-
-<br>
 
 We have already seen how some values in the Equipment/Settings area are  @ref FE_equipment_odb_hot_links
 "automatically hot-linked" for convenience.   
 Most frontends also contain user-defined \b hot-links for event notification. These are 
-often used to set or read back hardware value(s) with immediate effect, based on the user changing a setting in
+often used to set or read back hardware value(s) with \b immediate \b effect, based on the user changing a setting in
 the ODB.  These are described (with an example) in @ref RC_Hot_Link .
 
-
-<br>
-\htmlonly
-<script type="text/javascript">
-pages( "FE_eq_event_routines", "FrontendOperation","FE_Deferred_Transition","FE_event_notification","" ); // back index next {top bottom}
-// section parameters: last section; top of this section; next section
-sections("RunControl","FrontendOperation","DataAnalysis");
-</script>
-\endhtmlonly
-
-<br>
-\anchor end
-<!-- End of page FE_event_notification  -->
-*/
-
-
-
-/*!  \page FE_Deferred_Transition Deferred Transition
-
-<br>
-\htmlonly
-<script type="text/javascript">
-pages("FE_event_notification","FrontendOperation","FE_bank_construction","FE_Deferred_Transition", "end" ); // back index next {top bottom}
-// section parameters: last section; top of this section; next section
-sections("RunControl","FrontendOperation","DataAnalysis");
-</script>
-\endhtmlonly
-
-<br>
+<br><hr><br>
 \anchor idx_transition_deferred
-
+@section  FE_Deferred_Transition Deferred Transition
 This option permits the user to <b>postpone any transition issued by any requester
 until some condition is satisfied.</b>
 <br> For example:
@@ -1624,7 +1594,7 @@ C:\online>odbedit
 <br>
 \htmlonly
 <script type="text/javascript">
-pages("FE_Slow_Control_system","FrontendOperation",  "FE_bank_construction","FE_Deferred_Transition", "" ); // back index next {top bottom}
+pages("FE_eq_event_routines","FrontendOperation",  "FE_bank_construction","FE_event_notification", "" ); // back index next {top bottom}
 // section parameters: last section; top of this section; next section
 sections("RunControl","FrontendOperation","DataAnalysis");
 </script>
@@ -1633,19 +1603,19 @@ sections("RunControl","FrontendOperation","DataAnalysis");
 <br>
 
 \anchor end
-<!-- End of page  FE_Deferred_Transition  -->
+<!-- End of page  FE_event_notification   -->
 */
 
 
 
 
 /*!  \page FE_bank_construction Bank construction in an Event readout routine
-\anchor idx_event_readout_bank_construction
+\anchor idx_bank_construction
 <br>
 \htmlonly
  
 <script type="text/javascript">
-pages("FE_Deferred_Transition",  "FrontendOperation","FE_Super_Event", "FE_bank_construction","end" ); // back index next {top bottom}
+pages(" FE_event_notification",  "FrontendOperation","FE_Super_Event", "FE_bank_construction","end" ); // back index next {top bottom}
 // section parameters: last section; top of this section; next section
 sections("RunControl","FrontendOperation","DataAnalysis");
 </script>
@@ -1676,7 +1646,7 @@ event type selected:
 <br>
 <hr>
 <br>
-
+\anchor idx_format_FIXED
 \anchor idx_event_readout_format_fixed
 
 @section FE_FIXED_event_readout  FIXED format Event readout
@@ -1914,7 +1884,7 @@ INT info_odb(char * pevent, INT off)
 }
 @endcode
 <br>
-The output from a FIXED event of this type sent to the ODB using @ref RC_mhttpd_task "mhttpd" is shown 
+The output from a FIXED event of this type sent to the ODB using @ref RC_mhttpd_utility "mhttpd" is shown 
 @ref  RC_mhttpd_eq_variables "here".
  
 More <b>examples of FIXED events</b> can be found in the <b>slow controls device drivers</b>, for example 
@@ -2154,9 +2124,10 @@ INT read_ge_event(char *pevent, INT offset)
 <hr>
 <br>
 
+
 \htmlonly
 <script type="text/javascript">
-pages("FE_Deferred_Transition",  "FrontendOperation","FE_Super_Event", "FE_bank_construction","" ); // back index next {top bottom}
+pages("FE_event_notification",  "FrontendOperation","FE_Super_Event", "FE_bank_construction","" ); // back index next {top bottom}
 // section parameters: last section; top of this section; next section
 sections("RunControl","FrontendOperation","DataAnalysis");
 </script>
@@ -2344,57 +2315,69 @@ sections("RunControl","FrontendOperation","DataAnalysis");
 
 <br>
 
-
-
-Instead of talking directly to each other, frontend and control programs exchange
-information through the ODB. Each slow control equipment gets a corresponding
-ODB tree under /Equipment. This tree contains variables needed to control the
+Slow Control Systems are used for setup and monitoring of hardware that is not time-critical, and can be run at a
+low priority. Slow Control systems in a typical experiment are often used to setup and/or monitor components such as
+high voltage modules, temperature sensors, pressure gauges, leak detectors, RF generators, PID controllers etc.
+often from a large number of hardware vendors.
+ 
+In the Midas Slow Control System, instead of talking directly to each other, frontend and control programs exchange
+information through the ODB. If several types of hardware are to be included in a Slow Control System, they may be
+assigned to a separate Slow Control Equipments.  Each Slow Control Equipment is assigned a corresponding
+ODB subtree under <span class="odb">/Equipment</span>. This tree contains variables needed to control the
 equipment as well as variables measured by the equipment.
-In case of a high voltage equipment this is a Demand array which contains
-voltages to be set, a Measured array which contains read back voltages and a
-Current array which contains the current drawn from each channel.
-To change the voltage of a channel, a control program writes to the Demand
-array the desired value.
-This array is connected to the high voltage frontend via a ODB hot-link.
-Each time it gets modified, the frontend receives a notification and sets
-the new value. In the other direction the frontend continuously reads the
-voltage and current values from all channels and updates the according ODB
-arrays if there has been a significant change.
-This design has a possible inconvenience due to the fact that ODB is the key
+
+In the case of a high voltage equipment this is 
+ - a \b Demand array which contains voltages to be set,
+ - a \b Measured array which contains read back voltages and
+ - a \b Current array which contains the current drawn from each channel.
+ 
+To change the voltage of a channel, a control program writes the desired value to the Demand
+array. This array is connected to the high voltage frontend via an ODB  @ref RC_Hot_Link "hot-link".
+Each time the Demand value is modified, the frontend receives a notification and sets
+the new value. In the other direction, the frontend continuously reads the
+voltage and current values from all channels and updates the appropriate ODB array(s) if there has
+been a significant change.
+
+This design has a possible drawback due to the fact that the ODB is the key
 element of that control. Any failure or corruption of the database can
-result in wrong driver control. Therefore it is not recommended to use
+result in incorrect driver control. Therefore it is not recommended to use
 this system to control systems that need redundancy for safety purposes.
-On the other hand this system has several advantages:
+On the other hand, this system has several advantages:
 
 - The control program does not need any knowledge of the frontend,
   it only talks to the ODB.
 - The control variables only exist at one place that guarantees consistency
   among all clients.
-- Basic control can be done through ODBEdit without the need of a special
+- Basic control can be done through @ref RC_odbedit_utility "ODBEdit" (or using mhttpd @ref RC_mhttpd_ODB_page) without the need of a special
   control program.
 - A special control program can be tested without having a frontend running.
-- In case of n frontend and m control programs, only n+m network
-connections are needed instead of n*m connection for point-to-point connections.
-Since all slow control values are contained in the ODB, they get automatically
+- In case of n frontend and m control programs, only n+m network connections are needed instead of n*m connection for point-to-point connections.
+
+Since all slow control values are contained in the ODB, they are automatically
 dumped to the logging channels.
-The slow control frontend uses the same framework as the normal frontend and
-behaves similar in many respects.
+The slow control frontend uses the same framework as the normal frontend, and
+behaves similarly in many respects.
 They also create periodic events that contain the slow control variables and are
 logged together with trigger and scaler events. The only difference is that a
-routine is called periodically from the framework that has the task to
-read channels and to update the ODB.
+routine is called periodically from the framework that has the task of
+reading channels and updating the ODB.
+<br>
+\anchor idx_slow-control_drivers
 To access slow control hardware, a two-layer driver concept is used.
-The upper layer is a "class driver", which establishes the connection to the
+The upper layer is a <b>"class driver"</b>, which establishes the connection to the
 ODB variables and contains high level functionality like channel limits,
-ramping etc. It uses a "device driver" to access the channels.
+ramping etc. It uses a <b>"device driver"</b> to access the channels.
 These drivers implement only very simple commands like "set channel"
 and "read channel". The device drivers themselves can use bus drivers like
 RS232 or GPIB to control the actual device.
  
- * <center> Class driver, Device and Bus driver in the slow control system
+ * <center>
+ * <span class="image"> Class driver, Device and Bus driver in the slow control system
+ * <br><br><br> 
  *  \image html classes2.jpg
-* </center> 
-
+ * </span></center> 
+ * <br><br><br>
+ 
 The separation into class and device drivers has the advantage that it is
 very easy to add new devices, because only the simple device driver needs
 to be written. All higher functionality is inherited from the class driver.
@@ -2408,16 +2391,17 @@ This makes it possible to control
 several high voltage devices for example with one frontend in one equipment.
 The number of channels for each device driver is defined in the slow
 control frontend.
-Several equipment with different class drivers can be defined in a
+Several equipments with different class drivers can be defined in a
 single frontend.
 
-Slow Control variables can be later accessed through the web using the 
+Slow Control variables can be accessed later through the web using the 
 mhttpd  @ref RC_mhttpd_Equipment_page and
-<span class="new"> the new  @ref RC_mhttpd_MSCB_page "MSCB Page" (since @ref ndf_dec_2009) </span>).
+<span class="new"> the new  @ref RC_mhttpd_MSCB_page "MSCB Page" (since @ref ndf_dec_2009) </span>.
 
-This can be done setting the
-variable names under the <span class="odb">Settings</span> subdirectory of the corresponding Equipment in the ODB. The variable description is given under @ref F_History_System.
-The @ref RC_mhttpd_History_page will also be automatically activated if the @ref F_mlogger_task "mlogger task" is running.
+This can be done by setting the
+variable names under the <span class="odb">Settings</span> subdirectory of the corresponding Equipment in the ODB.
+The variable description is given under @ref F_History_System .
+The @ref RC_mhttpd_History_page will also be automatically activated if the @ref F_mlogger_utility "mlogger utility" is running.
 
 @code
 Key name                        Type    #Val  Size  Last Opn Mode Value
@@ -2594,5 +2578,5 @@ sections("RunControl","FrontendOperation","DataAnalysis");
 \anchor end
 <!-- end of page  FE_event_buffer_size
 
-   Next ...  FE_Appendices   -->
+   Next ...  FE_Appendices  in file Appendices.dox  -->
 */

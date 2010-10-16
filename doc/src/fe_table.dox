@@ -1,4 +1,4 @@
-/*! @page FE_table Explanation of Equipment list parameters
+/*! @page FE_table Explanation of Equipment list parameters 
 
 <!-- Navigation -->
 \htmlonly
@@ -12,6 +12,8 @@ sections("RunControl","FrontendOperation","DataAnalysis");
 \endhtmlonly
 
 <br>
+\Note These parameters are copied to the ODB <span class="odb">/Equipment/<equipment-name>/Common subdirectory</span> when the frontend is initialized.
+
 @anchor idx_Equipment_List_Parameters
 @anchor idx_Equipment_Types
 <table
@@ -124,8 +126,8 @@ the readout function associated with that equipment will still be performed, but
 actual event won't
 be sent to the buffer. Instead, that
 particular equipment can be <b>mirrored in the ODB</b> if the @ref  FE_tbl_ReadOn "RO_ODB" flag is
-turned on (see @ref  FE_RO_ODB_example "example").  Note that this feature is
-generally used only for testing or monitoring, as writing large amounts
+turned on (see @ref  FE_RO_ODB_example "example").  The ODB is updated with a new event approximately
+every second. Note that this feature is generally used only for testing or monitoring, as writing large amounts
 of data to the ODB takes time. 
 <li>By using a buffer other than the "SYSTEM" buffer,  @ref F_Logger_Event_Filtering "event filtering" can be 
 implemented. 
@@ -146,12 +148,12 @@ the frontend are called \b fragments.
  style="vertical-align: top; background-color: rgb(204, 204, 204);">
  @anchor FE_tbl_EqType
  @anchor idx_equipment_flags
-      <span style="font-weight: bold; color: rgb(255, 0, 0);">Equipment
-Type</span><br>
+      <span style="font-weight: bold; color: rgb(255, 0, 0);">
+      Type</span><br>
       </td>
       <td
- style="vertical-align: top; background-color: rgb(204, 204, 204);">One
-of the Equipment Flags EQ_XXX selected
+ style="vertical-align: top; background-color: rgb(204, 204, 204);">
+ Equipment Type should be set to one of the Equipment Flags EQ_XXX selected
 from the following Table: <br>
       <table
  style="text-align: left; width: 90%; height: 90%; margin-left: 0px; margin-right: auto;"
@@ -338,12 +340,12 @@ FE_Event_Builder. Not to be confused with a fragmented event (see above)!
  style="color: rgb(0, 0, 0);">@anchor FE_tbl_IntSrc</span>
 @anchor idx_event_interrupt_source
  <span
- style="font-weight: bold; color: rgb(255, 0, 0);"> Interrupt
+ style="font-weight: bold; color: rgb(255, 0, 0);">
 Source</span><br>
       </td>
       <td
  style="vertical-align: top; background-color: rgb(204, 204, 204);">
-This field (also called the "event source") is only used if the  @ref  FE_tbl_EqType
+This field (i.e. the \b interrupt or \b event \b source) is only used if the  @ref  FE_tbl_EqType
 "Equipment Type" is set to  @ref FE_tbl_EqInterrupt "EQ_INTERRUPT" or 
 @ref  FE_tbl_EqMultithread "EQ_MULTITHREAD".
 The Interrupt Source field is a bit-wise pattern representing the interrupt that is
@@ -366,30 +368,29 @@ If not using an interrupt, this field can be set to 1.
       <td
  style="vertical-align: top; background-color: rgb(204, 204, 204);">Specifies
 the data format used for generating the
-event. The following two options are possible: "MIDAS" and "FIXED".
+event. Only the following formats are possible: @ref FE_Midas_format "MIDAS" and  @ref FE_FIXED_event_readout "FIXED".
 The format must agree with the way the event is composed in the 
 Equipment @ref FE_tbl_ReadoutRoutine "readout routine".  
 It tells the system how to interpret an event when it
-is copied to the ODB or displayed in a user-readable form. 
-NOTE:
+is copied to the ODB or displayed in a user-readable form. Data in "MIDAS" and/or "FIXED" format
+can be saved by the MIDAS data logger in a number of formats (see @ref F_Logger_CS_Format "mlogger format"). 
+\NOTE
 <ul>
+<li>MIDAS or FIXED data format can be
+mixed at the frontend level, but the data logger (mlogger) is not able
+to handle this format diversity on a event-by-event basis.
+<br><b>In practice
+<ol>
+<li>The data format (MIDAS/FIXED) should be identical throughout the equipment definition
+<li>Different equipments can, of course, have different formats in the same frontend.
+</ol>
+</b>
+<li>"ROOT" format cannot be specified in the equipment definition. To save raw data in ROOT format,  the 
+@ref FE_tbl_BankDef "Bank definition" must be supplied, and a conversion to ROOT
+format is done by the data logger.
 <li>For FIXED events, the  @ref FE_tbl_BankDef "Bank definition" parameter 
 may contain the  @ref FE_tbl_InitString "Init String".
-<li>There is no "ROOT" format. To save raw data in ROOT format,  the 
-@ref FE_tbl_BankDef "Bank definition" must be supplied, and a conversion to ROOT
-format is done from one the three available formats.
-</li>
-      <center>
-      <div style="text-align: left;"> MIDAS or FIXED data format can be
-mixed at the frontend level, but the data logger (mlogger) is not able
-to handle this format diversity on a event-by-event basis.  <b>In
-practice 
-a given experiment should keep the data format identical throughout the
-equipment definition. </b>Different equipments can, of course, 
-have different formats in the same frontend.<b><br>
-      </b></div>
-      </center>
-      </td>
+</ul>      </td>
     </tr>
     <tr>
       <td
@@ -399,11 +400,11 @@ have different formats in the same frontend.<b><br>
 @anchor idx_equipment_enable
  <span
  style="font-weight: bold; color: rgb(255, 0, 0);">
-Equipment Enabled  @ref FE_equipment_odb_common "**" </span>
+Enabled  @ref FE_equipment_odb_common "**" </span>
       </td>
       <td
  style="vertical-align: top; background-color: rgb(204, 204, 204);">"Enable"
-switch for the equipment. Only when enabled (i.e. TRUE) is this equipment is
+switch for the equipment. Only when enabled (i.e. TRUE) is this equipment 
 active. </td>
     </tr>
     <tr>
@@ -456,8 +457,8 @@ stopping a run<br>
  style="vertical-align: top; background-color: rgb(102, 255, 153);">RO_PAUSED<br>
             </td>
             <td
- style="vertical-align: top; background-color: rgb(102, 255, 153);">While
-run is paused ?<br>
+ style="vertical-align: top; background-color: rgb(102, 255, 153);">When
+run is paused<br>
             </td>
           </tr>
           <tr>
@@ -521,7 +522,7 @@ run status)<br>
 RO_ODB<br>
             </td>
             <td
- style="vertical-align: top; background-color: rgb(102, 255, 153);">Copy
+ style="vertical-align: top; background-color: rgb(102, 255, 153);">Copies
 the event to the
 /Equipment/&lt;equipment name&gt;/Variables ODB tree.  See
 @ref  FE_tbl_mirrorODB "above". </td>
@@ -566,13 +567,13 @@ transition. The value 0 disables this option. </td>
       <td
  style="vertical-align: top; background-color: rgb(204, 204, 204);"><span
  style="color: rgb(0, 0, 0);">@anchor FE_tbl_NumSubevents</span><span
- style="font-weight: bold; color: rgb(255, 0, 0);"> Number
-of sub-events</span><br>
+ style="font-weight: bold; color: rgb(255, 0, 0);">
+ Num subevents</span><br>
       </td>
       <td
  style="vertical-align: top; background-color: rgb(204, 204, 204);">Enables
 the Super event capability if &gt; 0 . Specifies the maximum number of
-subevents in the @ref FE_Super_Event "Super event". \b Not applicable to @ref FE_tbl_Format "FIXED format" events.<br>
+sub-events in the @ref FE_Super_Event "Super event". \b Not applicable to @ref FE_tbl_Format "FIXED format" events.<br>
       </td>
     </tr>
     <tr>
@@ -582,7 +583,7 @@ subevents in the @ref FE_Super_Event "Super event". \b Not applicable to @ref FE
  @anchor FE_tbl_History</span>
 @anchor idx_history_enable
  <span
- style="font-weight: bold; color: rgb(255, 0, 0);"> History</span><br>
+ style="font-weight: bold; color: rgb(255, 0, 0);">Log History</span><br>
       </td>
       <td
  style="vertical-align: top; background-color: rgb(204, 204, 204);">Enable/disable
@@ -603,7 +604,7 @@ To disable history logging of this event, set this parameter to 0.
       </td>
       <td
  style="vertical-align: top; background-color: rgb(204, 204, 204);">Reserved
-field for system. Should be present and set to "" in the frontend.
+field for system  (used for @ref  FE_frontend_host "Frontend hostname"). Should be present and set to "" in the frontend.
       </td>
     </tr>
     <tr>
@@ -612,7 +613,7 @@ field for system. Should be present and set to "" in the frontend.
  style="font-weight: bold; color: rgb(255, 0, 0);">Reserved</span> </td>
       <td
  style="vertical-align: top; background-color: rgb(204, 204, 204);">Reserved
-field for system. Should be present and set to "" in the frontend.</td>
+field for system  (used for @ref FE_frontend_name "Frontend name"). Should be present and set to "" in the frontend.</td>
     </tr>
     <tr>
       <td
@@ -620,14 +621,14 @@ field for system. Should be present and set to "" in the frontend.</td>
  style="font-weight: bold; color: rgb(255, 0, 0);">Reserved</span> </td>
       <td
  style="vertical-align: top; background-color: rgb(204, 204, 204);">Reserved
-field for system. Should be present and set to "" in the frontend. </td>
+field for system (used for @ref  FE_frontend_file_name "Frontend file name"). Should be present and set to "" in the frontend. </td>
     </tr>
    <tr>
       <td colspan="2" rowspan="1"
- style="text-align: center; vertical-align: top; background-color: rgb(153, 153, 153);">
- <span
- style="color: rgb(255, 255, 255);">
+ style="text-align: center; vertical-align: top; background-color: lavender;">
+ <span style="color: maroon;"><br>
 End of EQUIPMENT_INFO structure</span> <!-- white -->
+<br>
       </td>
     </tr>  
     <tr>
@@ -694,18 +695,21 @@ or
 
       </td>
       <td  colspan="2" rowspan="1"
- style="vertical-align: top; background-color: rgb(255, 255, 255);">Bank
-declaration  (ROOT only) or Init String (@anchor FE_tbl_Format "FIXED event format" only), or set to NULL. <br>
+ style="vertical-align: top; background-color: rgb(255, 255, 255);">
+This field contains either
+<ul>
+<li>  Bank declaration if saving data in ROOT format (see @ref FE_tbl_Format "Format")  or
+<li>  Init String (@anchor FE_tbl_Format "FIXED event format" only) or
+<li>  NULL
+</ul>
       <span style="font-weight: bold;"></span>Since the introduction of
       <b>ROOT</b> , the frontend is required to
-contain the definition of the banks. in the case the raw data is to be
+contain the definition of the banks when the raw data is to be
 converted to and stored in <b>ROOT</b>
 format. The conversion is needed since there is no <span
  style="font-weight: bold;">ROOT</span> @ref FE_tbl_Format "format"
-supported. This procedure is equivalent to the bank declaration
-in the
-analyser. See @ref FE_ROOT_Structure_Def example for
-details. <br>
+supported. This procedure is equivalent to the bank declaration in the
+analyser. See @ref FE_ROOT_Structure_Def example for details. <br>
       <br>
       </td>
     </tr>

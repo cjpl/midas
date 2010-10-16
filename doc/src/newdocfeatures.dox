@@ -1,11 +1,11 @@
-/*! \page NDF New Documented Features
+/*! \page NDF SECTION 11 New Features
 
 <br>
 \htmlonly
 <script type="text/javascript">
 // pages parameters: back index next {top bottom}
-pages( "BuildingOptions","NDF", "Glossary", "NDF", "end" );
-sections("BuildingOptions","NDF","Glossary"); // last section; top of this section; next section
+pages( "BuildingOptions","NDF", "FAQ", "NDF", "end" );
+sections("BuildingOptions","NDF","FAQ"); // last section; top of this section; next section
 </script>
 \endhtmlonly
 <br>
@@ -13,9 +13,11 @@ sections("BuildingOptions","NDF","Glossary"); // last section; top of this secti
 
 \section ndf_info  General Information
 
-This section will describe what new features are available with new versions
+This section will describe what <b>new features</b> are available with new versions
 of the Midas code. References will be given to these features in the documentation, and they
-will be highlighted in the text <span class ="new">like this</span>.  
+will be highlighted in the text <span class ="new">like this</span>.
+Also included will be any other relevent changes, such as "old features" that were standard, but have since
+become obsolescent. These may have been made optional or removed.   
 
 See also the <a href="https://ladd00.triumf.ca/elog/Midas">Midas Elog Forum</a> for
   - Requests for new features, 
@@ -43,6 +45,7 @@ Features will be considered to be "new" for a year or so, then will become stand
 
 \section ndf_New_Features New Documented Features
 
+\anchor idx_YBOS
 \subsection ndf_sep_2010 Sep 2010
  - Removal of the YBOS support, ybos files replaced by mdsupport.
 
@@ -54,7 +57,7 @@ Features will be considered to be "new" for a year or so, then will become stand
  - Four different rows for the various buttons on the @ref alias_buttons_status_page "Status page"
 
 \subsection ndf_dec_2009 Dec 2009
- - Implemented MSCB Page (mhttpd.c 4659)
+ - Implemented MSCB Page (mhttpd.c 4659) replacing the old CNAF page
  - Option to customize the  @ref RC_mhttpd_status_menu_buttons "menu buttons" appearing on the main status page (mhttpd.c 4646)
  - Removed 'analyzed' column (Main Status page)  (mhttpd.c 4644)
  - Changed Alias and Custom links to Buttons - see @ref alias_buttons_status_page "example" (mhttpd.c 4633)
@@ -62,16 +65,19 @@ Features will be considered to be "new" for a year or so, then will become stand
  
 \subsection ndf_nov_2009 Nov 2009
  - Direct serving of GIF images from file system in custom pages (mhttpd.c 4631)
- - Option to hide the run start/stop buttons  ( see  @ref customize_mhttpd_run_buttons "details" );
+ - Option to hide the run start/stop buttons  ( see  @ref RC_customize_mhttpd_run_buttons "details" );
  - experiment name now shown in status page title and elog email (mhttpd.c 4629)
 
+\subsection ndf_sep_2009 Sep 2009
+ - implemented @ref  F_Logger_Run_Duration "run duration" (mlogger.c 4561)
+ 
 \subsection ndf_jun_2009 Jun 2009  
  - shows Run start/stop requested on main status page until mtransition starts - see @ref  RC_mhttpd_Start_page (mhttpd.c 4520)
 
 \subsection ndf_jan_2009 Jan 2009 
     
  - Improvements to the History system (mlogger.c,  mhttpd.c 4435)<br> \b Note: backup ODB before using the following: 
-      - history in SQL database (see @ref History_sql_internal)
+      - history in SQL database (see @ref F_History_sql_internal)
           - see  @ref  F_new_history_tags "Note on /History/Tags"
       - experimental implementation of "ODBRpc" @ref RC_mhttpd_custom_RPC_access  added to the midas javascript library
 
@@ -82,8 +88,8 @@ Features will be considered to be "new" for a year or so, then will become stand
 \htmlonly
 <script type="text/javascript">
 // pages parameters: back index next {top bottom}
-pages( "BuildingOptions","NDF", "Glossary", "NDF", "" );
-sections("BuildingOptions","NDF","Glossary"); // last section; top of this section; next section
+pages( "BuildingOptions","NDF", "FAQ", "NDF", "" );
+sections("BuildingOptions","NDF","FAQ"); // last section; top of this section; next section
 </script>
 \endhtmlonly
 <br>

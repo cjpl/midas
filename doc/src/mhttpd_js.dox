@@ -1,9 +1,13 @@
 /*! \page    RC_mhttpd_js Javascript Built-In library
-<br>
+<!--  
+     subpage of mhttpd_custom_features.dox  
+-->
+
 \htmlonly
 <script type="text/javascript">
 // pages parameters: back index next {top bottom}
-pages( "RC_mhttpd_Custom_page", "RunControl", "RC_mhttpd_custom_js_lib","RC_mhttpd_js",  "end" );
+// this is an extra page inserted in, so both previous and next go to the same place
+pages( "RC_mhttpd_custom_js_lib", "RunControl",  "RC_mhttpd_custom_js_lib","RC_mhttpd_js",  "end" );
 sections("Features", "RunControl","FrontendOperation"); // last section; top of this section; next section
 </script>
 \endhtmlonly
@@ -203,7 +207,7 @@ var TID_LINK = 16;
 \htmlonly
 <script type="text/javascript">
 // pages parameters: back index next {top bottom}
-pages( "RC_mhttpd_custom_features", "RunControl", "RC_mhttpd_custom_js_lib","RC_mhttpd_js",  "end" );
+pages( "RC_mhttpd_custom_features", "RunControl", "RC_mhttpd_custom_features","RC_mhttpd_js",  "" );
 sections("Features", "RunControl","FrontendOperation"); // last section; top of this section; next section
 </script>
 \endhtmlonly
