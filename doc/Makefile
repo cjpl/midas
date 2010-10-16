@@ -20,6 +20,9 @@ version = 2.3.0
 
 all::	html
 
+noindex::	images/done
+	doxygen
+
 html: index rmtmp images/done
 	doxygen
 #	Javascript : copy files and required images to html
@@ -54,7 +57,7 @@ publishh:
 	rsync -uv html/* /home/daqweb/public_html/doc/midas3/html/.
 
 clean:	rmtmp
-#       remove files docindex.dox and Organization.dox. These are created each time by index.pl
+#       remove files docindex.dox and Organization.dox. These are created each time by make_index.pl
 	rm -f src/docindex.dox
 	rm -f src/Organization.dox
 	cd latex; rm -f *.*~ *.pnm *.tex *.log *.aux *.dvi *.eps
@@ -66,9 +69,9 @@ ver:
 
 index:
 #       make the Contents and Index pages (Organization.dox, docindex.dox)
-	cd src ; ./index.pl ; ./doit.pl ; ./index.pl 1;   cd ..
+	cd src ; ./make_contents.pl ; ./doit.pl ; ./make_index.pl ;   cd ..
 rmtmp:
-#	remove temporary files created by index.pl
+#	remove temporary files created by make_index.pl
 	rm -f src/*.tmp
 	rm -f src/*_info.txt*
 
