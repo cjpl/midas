@@ -12,7 +12,7 @@ sections("NDF","FAQ","Convention"); // last section; top of this section; next s
 Feel free to ask questions to one of us (
 <a href="mailto:midas@psi.ch"> Stefan Ritt </a>,
 <a href="mailto:midas@triumf.ca"> Pierre-Andre Amaudruz</a>)
-or visit the <a href="http://midas.triumf.ca/forum/Package"> Midas Forum </a>
+or visit the <a href="http://midas.triumf.ca/forum/Package"> MIDAS Forum </a>
 
 - @ref FAQ_GENERAL
 - @ref FAQ_CUSTOM
@@ -20,8 +20,11 @@ or visit the <a href="http://midas.triumf.ca/forum/Package"> Midas Forum </a>
 
 @section FAQ_GENERAL General questions
 <ol>
-<li> <b> Where does the Midas log file reside?</b>
-       See  @ref F_Log_File
+<li> <b> How can I find anything in this manual? 
+          - See @ref  C_Navigation
+
+<li> <b> Where does the MIDAS log file reside?</b>
+         - See  @ref F_Log_File
   
 <li> <b> How do I protected my experiment from being controlled by aliens?</b>
     
@@ -29,8 +32,8 @@ or visit the <a href="http://midas.triumf.ca/forum/Package"> Midas Forum </a>
   from the web browser . This is setup through the @ref RC_odbedit_utility "odbedit" program with the
   command \b webpass (see  @ref RC_Setup_Web_Security). This will create a \b Security tree under
   \b /Experiment with a new key <b> Web Password</b> with the encrypted word.
-  By default Midas allows Full Read Access to all the Midas Web pages. Only
-  when modification of a Midas field the web password will be requested. The
+  By default MIDAS allows Full Read Access to all the MIDAS Web pages. Only
+  when modification of a MIDAS field the web password will be requested. The
   password is stared as a cookie in the target web client for 24 hours.
   
   - Other options of protection are described in @ref RC_Setup_Security
@@ -139,7 +142,7 @@ foo                             STRING  4     32    3s   0   RWD
 <li> <b> Can I compose my own experimental web page?</b>
   - You can create your own html or javascript code using your
   favourite HMTL editor. See @ref RC_mhttpd_custom_features .
-   By including custom Midas HTML Tags or custom
+   By including custom MIDAS HTML Tags or custom
    @ref RC_mhttpd_custom_js_lib "Javascript built-in functions" , you will have access
   to any field in the ODB of your experiment as well as the standard buttons for
   start/stop and page switch. See @ref RC_mhttpd_utility "mhttpd" , @ref RC_mhttpd_Custom_page. 

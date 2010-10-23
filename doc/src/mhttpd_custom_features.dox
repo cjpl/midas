@@ -15,7 +15,7 @@ sections("Features", "RunControl","FrontendOperation"); // last section; top of 
 \anchor idx_mhttpd-dot-js
 
 
-Many of the supported features of Midas Custom web pages are available under HTML, but others rely on the 
+Many of the supported features of MIDAS Custom web pages are available under HTML, but others rely on the 
 <span class="note">inclusion of the mhttpd JavaScript (JS) library </span>. This JS library relies on
 certain new commands which are built into <span class="utility">mhttpd</span>, and is 
 therefore hardcoded into  mhttpd.c . 
@@ -96,7 +96,7 @@ sections("Features", "RunControl","FrontendOperation"); // last section; top of 
 @section RC_mhttpd_custom_create How to create a custom page
 
 A custom page may be written in ordinary HTML code and/or JavaScript. It may include any of
-the  following special features provided for use with Midas: 
+the  following special features provided for use with MIDAS: 
 
 \anchor idx_mhttpd_page_custom_features
 
@@ -231,13 +231,13 @@ in 60 seconds :
 
 <hr>
 
-@section RC_mhttpd_custom_midas_buttons Access to the standard Midas Menu buttons
+@section RC_mhttpd_custom_midas_buttons Access to the standard MIDAS Menu buttons
 
-Access to the standard Midas Menu buttons can
+Access to the standard MIDAS Menu buttons can
 be provided with HTML  <span class = "htmltag">\<input...\></span> tags  of the form:
 -  <span class = "htmltag"> \<input name="cmd" value=\<\em button-name \>  type="submit" \> </span>
 
-Valid values are the standard Midas @ref RC_mhttpd_status_menu_buttons "Menu buttons" (Start, Pause, Resume, Stop,
+Valid values are the standard MIDAS @ref RC_mhttpd_status_menu_buttons "Menu buttons" (Start, Pause, Resume, Stop,
 ODB, Elog, Alarms, History, Programs, etc). The  <span class = "htmltag">\<input...\></span> tags  must be declared
 within enclosing HTML <span class="htmltag">\<form...\>....\</form\> </span> tags (see @ref RC_mhttpd_custom_key_access "above").
 
@@ -266,7 +266,7 @@ Links on a custom page equivalent to @ref  RC_mhttpd_status_Alias_links "alias-l
 document.write('<a href="/SC/Cycle_Scalers?exp='+my_expt+'">Cycle Scalers</a>');
 </script>
 @endcode
-where <i> my_expt </i> is the name of the Midas experiment. 
+where <i> my_expt </i> is the name of the MIDAS experiment. 
 
 <br><hr><br>
 \anchor idx_mhttpd_buttons_customscript
@@ -274,7 +274,7 @@ where <i> my_expt </i> is the name of the Midas experiment.
 @section RC_mhttpd_custom_script_buttons CustomScript Buttons
 
 CustomScript buttons can be provided on custom webpages. These buttons are equivalent to @ref RC_mhttpd_status_User_buttons
-on the Midas Main Status page, and allow a particular action to be performed when the button is pressed.
+on the MIDAS Main Status page, and allow a particular action to be performed when the button is pressed.
 
 If the user defines a new tree in ODB named   <span class="odb">/CustomScript</span> ,
 then any key created in the  <span class="odb">/CustomScript</span> tree will appear as a 
@@ -299,7 +299,7 @@ the @ref RC_mhttpd_status_User_buttons  under the  <span class="odb">/Script</sp
     ( <span class="odb">/CustomScript/\<button name>/</span>) should contain at least one string key which is the
     custom script command to be executed.
  - Further keys will be passed as  <b> arguments </b> to the script.
- - Midas symbolic links are permitted.
+ - MIDAS symbolic links are permitted.
 
 
 

@@ -9,12 +9,12 @@ sections("Features", "RunControl","FrontendOperation"); // last section; top of 
 </script>
 \endhtmlonly
 
-<b>A Custom Status page</b> is a custom page that <b>replaces the default Midas status page.</b>
+<b>A Custom Status page</b> is a custom page that <b>replaces the default MIDAS status page.</b>
 <br><br>
 A custom Status page is activated as described @ref RC_odb_custom_status "previously".
 Features such as the standard @ref RC_mhttpd_custom_midas_buttons "Menu buttons",  @ref RC_mhttpd_custom_alias etc. can
 be provided in the same way as for any other custom page. When replacing the default Status page by a Custom Status page,
-any  @ref RC_mhttpd_status_User_buttons "user-buttons" defined on the original Midas Status page can be easily turned into  @ref RC_mhttpd_custom_script_buttons
+any  @ref RC_mhttpd_status_User_buttons "user-buttons" defined on the original MIDAS Status page can be easily turned into  @ref RC_mhttpd_custom_script_buttons
 on the Custom Status page by placing links in the  <span class="odb"> /customscript </span> tree to any existing user-buttons under the  
 <span class="odb"> /Script </span> tree.
 
@@ -30,7 +30,7 @@ See @ref RC_mhttpd_status_toggle "example" of the above defined buttons.
 
 @section RC_mhttpd_status_toggle Toggle between Default and Custom Status pages
 
-In the following example,  the main Status page can be toggled between the Custom version  and the default Midas status page. 
+In the following example,  the main Status page can be toggled between the Custom version  and the default MIDAS status page. 
  
 The Custom status page contains a button \b ToggleStatusPage that will toggle between the two cases.
 A custom-link has been provided on the Default status page in order to access the custom status page 
@@ -87,7 +87,7 @@ The script file <i> set_status.pl </i> is as follows:
 # set_status.pl /home/bnmr/online/perl       bnmr             bnmr
 # set_status.pl /home/bnqr/online/perl       bnqr             bnqr
 #
-# toggles Status page between std Midas page and Custom Status page
+# toggles Status page between std MIDAS page and Custom Status page
 # by either deleting odb key /Custom/Status
 # or creating odb key /Custom/Status by loading a file /home/bn<mq>r/online/custom/status.odb
 #

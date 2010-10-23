@@ -1,4 +1,4 @@
-/*! \page FE_Appendices  Appendices
+/*! \page FE_Appendices  Frontend Appendices
 <br>
 <!-- Navigation -->
 \htmlonly
@@ -35,7 +35,7 @@ sections("RunControl","FrontendOperation","DataAnalysis");
 
 */
 
-
+\anchor idx_hardware_function-calls
 /*!  \page  FE_camac_vme_function_calls CAMAC and VME access function calls
 <!-- Formerly  appendixC.dox  -->
 <br>
@@ -48,38 +48,45 @@ sections("RunControl","FrontendOperation","DataAnalysis");
 \endhtmlonly
 
 <br>
- 
-Midas defines its own set of CAMAC and VME calls in order to unify the different 
+\anchor idx_hardware_standard_interface
+MIDAS defines its own set of CAMAC and VME calls in order to unify the different 
 hardware modules that it supports. This interface method permits code to be totally 
 <em> hardware as well as OS  independent </em>. For example, the same user code developed 
 on a system can be used as a template for another application on a different operating 
 system.
 
-While the file mcstd.h (Midas Camac Standard) provides the interface for the 
-CAMAC access, the file mvmestd.h (Midas VME Standard) is for the VME access.
-An extra CAMAC interface built on the top of \b mcstd provides the ESONE standard
-CAMAC calls (esone.c).
+<span class="note">MIDAS provides \b Standard \b Interfaces for VME and CAMAC</span>
+ -  \b mcstd.h  for \b CAMAC access
+ -  \b mvmestd.h for \b VME access
 
-Refer to the corresponding directories under \b /drivers to find out what
-module of each family is already supported by the current Midas distribution.
-/drivers/divers contains older drivers which have not yet been converted to the
+<span class="note">An extra CAMAC interface built on top of \b mcstd provides the ESONE standard
+CAMAC calls (esone.c).</span>
+
+Refer to the corresponding directories under  $(@ref BO_MIDASSYS)<i>/drivers</i>  to find out what
+module of each family is already supported by the current MIDAS distribution.
+The directory $(@ref BO_MIDASSYS)<i>/drivers/divers</i> contains older drivers which have not yet been converted to the
 latest API.
 
-<hr> @section FE_Midas_CAMAC_standard_functions Midas CAMAC standard functions
+\anchor idx_hardware_standard_interface_CAMAC
+<hr> @section FE_Midas_CAMAC_standard_functions MIDAS CAMAC standard functions
 Please refer to @ref mcstdfunctionh for function description.  
 
+\anchor idx_hardware_CAMAC_functions_ESONE
 <hr> @section FE_ESONE_CAMAC_standard_functions ESONE CAMAC standard functions
 
 <strong>Not all the functionality of ESONE standard has been fully tested</strong>
 
 Please refer to @ref mesonefunctionc for function description.  
 
-<hr> @section FE_Midas_VME_standard_functions Midas VME standard functions
+
+\anchor idx_hardware_standard_interface_VME
+<hr> @section FE_Midas_VME_standard_functions MIDAS VME standard functions
 
 This API provides basic VME access through a \b simple set of functions.
 Refer to @ref mvmestdfunctionh for more specific information. mvme_open() contains
 a general access code sample summarizing most of the mvme commands.
 
+\anchor idx_hardware_computer-busy
 <hr> @section FE_Compute_Busy_Logic Computer Busy Logic
 
 A "computer busy logic" has to be implemented for a front-end to work properly.
@@ -191,7 +198,7 @@ conditions:
   - <b>[mwecnaf]</b> cnaf application using the WI-E-N-ER PCI/CAMAC interface
     (see @ref CAMAC_drivers). Please contact: midas@triumf.ca
     for further information.
-  - <b>[mcnaf]</b> cnaf application using the CAMAC RPC capability of any Midas
+  - <b>[mcnaf]</b> cnaf application using the CAMAC RPC capability of any MIDAS
     frontend program having CAMAC access.
   - <b>[mdrvcnaf]</b> cnaf application using the Linux CAMAC driver for either
     kcs2927, kcs2926, dsp004. This application would require to have the proper
@@ -223,7 +230,7 @@ rm *.o
    @endcode
   - RPC CAMAC through frontend: This requires to have a frontend running which
     will be able to serve the CAMAC RPC request.
-    Any Midas frontend has that capability built-in but it has to have the proper
+    Any MIDAS frontend has that capability built-in but it has to have the proper
     CAMAC driver included in it.
     @code
      >mcnaf -e <expt> -h <host> -f <fe_name>

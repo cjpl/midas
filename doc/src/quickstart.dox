@@ -18,32 +18,32 @@ sections("Intro","Quickstart","Features");
 @section Q_QuickStartIntro Introduction
 <STRONG>
 This page is under revision to better reflect the latest installation and 
-basic operation of the <b>Midas package</b>.
+basic operation of the <b>MIDAS package</b>.
 </STRONG>
  
 These pages contain a step-by-step description of the installation procedure of 
-the Midas package on several platforms, as well as the procedure to run a demo 
+the MIDAS package on several platforms, as well as the procedure to run a demo 
 sample experiment. Once this is successful, the frontend or the analyzer can be moved 
 to another computer to test the remote connection capability.
 
-@section Q_SVN Midas Package Source (SVN and tarball)
-The <b>Midas source code</b> is subject to the <a href="http://www.gnu.org/copyleft/gpl.html">GPL</a>
+@section Q_SVN MIDAS Package Source (SVN and tarball)
+The <b>MIDAS source code</b> is subject to the <a href="http://www.gnu.org/copyleft/gpl.html">GPL</a>
 
 An <a href="http://savannah.psi.ch/viewcvs/trunk/?root=midas" > online SVN web site 
 </a> is available for the latest developments and for easy download. See specific
 instructions under \ref Q_Linux_Midas_Installation "Linux" or \ref Q_Windows_installation "Windows".
 
-The Midas Package source (tarball) and some binaries are also kept in
+The MIDAS Package source (tarball) and some binaries are also kept in
 <a href="http://midas.psi.ch/download" > PSI </a> or at 
 <a href="http://ladd00.triumf.ca/~daqweb/ftp/"> TRIUMF </a>.
 
-@section  Q_Quickstart_Installation Midas Installation
+@section  Q_Quickstart_Installation MIDAS Installation
 
-Even though Midas is available for multiple platforms, presently only instructions for the following are available:
+Even though MIDAS is available for multiple platforms, presently only instructions for the following are available:
 <div align=center; style="font-size: 125%;">
 <ol>
-<li> \subpage Q_Linux "Midas Linux Installation"
-<li> \subpage Q_Windows "Midas Windows Installation"
+<li> \subpage Q_Linux "MIDAS Linux Installation"
+<li> \subpage Q_Windows "MIDAS Windows Installation"
 </ol>
 </div>
 
@@ -79,14 +79,14 @@ not yet specified
 
 @section  Q_Linux_installation Installation
 
-Throughout the following description the midas package is assumed to be installed under
+Throughout the following description the MIDAS package is assumed to be installed under
   the directory \b $HOME/packages/midas 
   <br> while the experiment specific directory
   is \b $HOME/online . The user name is <em>johnfoo</em>. 
 <br>
 
 @subsection  Q_Linux_Environment_Variables Environment Variables
-The following <b>Environment Variables</b> needs to be setup, e.g.:
+The following @ref BO_Environment_variables needs to be setup, e.g.:
   @code
   #!/bin/echo You must source
   setenv CVS_RSH ssh
@@ -103,7 +103,7 @@ The following <b>Environment Variables</b> needs to be setup, e.g.:
 \anchor idx_ROOT_installation 
 @subsection  Q_Linux_Root_Installation ROOT Package Installation 
 
-For full Midas operation \b ROOT is needed for the data logging and analysis packages.
+For full MIDAS operation \b ROOT is needed for the data logging and analysis packages.
 
   - Identify the Linux version: RH9 (Red Hat Linux 9), FC3 (Fedora Core 3),
     RHEL4/SL4 (Red Hat Enterprise LInux 4/Scientific Linux 4): more /etc/redhat-release
@@ -116,7 +116,7 @@ For full Midas operation \b ROOT is needed for the data logging and analysis pac
   - Check that ROOT works: "echo $ROOTSYS", "$ROOTSYS/bin/root"
   \n
     <br>
-     <b>Note:</b> ROOT is not essential to run Midas. Some experiments use a custom logger or analyser. If ROOT
+     <b>Note:</b> ROOT is not essential to run MIDAS. Some experiments use a custom logger or analyser. If ROOT
       is NOT installed, the environment variable ROOTSYS must be removed:
       @code
       unsetenv ROOTSYS
@@ -125,7 +125,7 @@ For full Midas operation \b ROOT is needed for the data logging and analysis pac
     <br>
 
 
-@subsection  Q_Linux_Midas_Installation Midas Package Installation
+@subsection  Q_Linux_Midas_Installation MIDAS Package Installation
 
 The source code can be extracted from the
    <a HREF="http://savannah.psi.ch/viewcvs/trunk/?root=midas" > SVN repository</a>.
@@ -133,15 +133,15 @@ The source code can be extracted from the
   which may be required several time. The SVN web interface provides a quick 
   \b tarball. This suggested extraction method is shown below.
 <br>
-The Midas package requires the \b mxml auxiliary package which can be found at the same 
-    SVN site as Midas. mxml and midas are extracted at the same directory level as follows:
+The MIDAS package requires the \b mxml auxiliary package which can be found at the same 
+    SVN site as MIDAS. mxml and MIDAS are extracted at the same directory level as follows:
   @code
   cd $HOME/packages
   svn co svn+ssh://svn@savannah.psi.ch/afs/psi.ch/project/meg/svn/midas/trunk midas
   svn co svn+ssh://svn@savannah.psi.ch/afs/psi.ch/project/meg/svn/mxml/trunk mxml
   cd midas
   make
-  ls $MIDASSYS/linux/bin   ... should contains odbedit and all the midas applications.
+  ls $MIDASSYS/linux/bin   ... should contains odbedit and all the MIDAS applications.
   @@endcode
   \n
 
@@ -150,7 +150,7 @@ The Midas package requires the \b mxml auxiliary package which can be found at t
 
   The PSI ROME analysis package can be found at
   <a href="http://midas.psi.ch/rome/index.html" >ROME analyzer</a>
-  The same extraction procedure as for the Midas package can be followed. For its operation please
+  The same extraction procedure as for the MIDAS package can be followed. For its operation please
   refer to the <a href="http://midas.psi.ch/rome/index.html" >ROME web site</a>.
   @code
   cd $HOME/packages
@@ -165,7 +165,7 @@ The Midas package requires the \b mxml auxiliary package which can be found at t
    <a href="http://ladd00.triumf.ca/~daqweb/doc/roody/html" >
   ROODY</a> is a Histogram display tool. This package is supported by the Triumf DAQ group. Its 
   installation is similar to 
-  the midas package.
+  the MIDAS package.
   @code
   cd $HOME/packages
   svn checkout svn://ladd00.triumf.ca/roody/trunk roody
@@ -183,9 +183,9 @@ These instructions assume that accessibility to hardware such as VME or CAMAC is
 An ADC is also required, with signals sent to its gate.
 
 @subsection  Q_Linux_Software_Requirements Software Requirements
-Packages ROOT, Midas and ROODY have been installed.
+Packages ROOT, MIDAS and ROODY have been installed.
 
-@subsection Q_Linux_Expt_Setup How to Setup the Midas Experiment
+@subsection Q_Linux_Expt_Setup How to Setup the MIDAS Experiment
 
 NOTE: these instructions provide \b local access to the experiment. For \b remote access, refer to 
 \ref Q_Linux_Installation_Considerations .
@@ -195,8 +195,8 @@ NOTE: these instructions provide \b local access to the experiment. For \b remot
   - mkdir online
   - cd online
   - mkdir elog history data
-  - create the  \ref Q_Linux_Exptab "exptab" file "$HOME/online/exptab" following the example below.
-       - The first parameter is the Midas experiment name e.g. "simptest1"
+  - create the  \ref Q_Linux_Exptab "exptab" file "$HOME/online/exptab" following the example below
+       - The first parameter is the MIDAS experiment name e.g. "simptest1"
        - The second parameter is the location of MIDAS shared memory buffers  e.g."/home/johnfoo/online"
    (by convention, $HOME/online), 
        - the third parameter is the username e.g. "johnfoo"
@@ -232,7 +232,7 @@ NOTE: these instructions provide \b local access to the experiment. For \b remot
   -  back from the shell, restart the DAQ to make sure all changes "take", run:
   - ./kill_daq.sh
   - ./start_daq.sh
-  - go back to the midas web page, everything should be green
+  - go back to the MIDAS web page, everything should be green
   - start a run
   - send signals to the ADC gate
   - you should be getting events
@@ -245,13 +245,13 @@ NOTE: these instructions provide \b local access to the experiment. For \b remot
 
 @subsection Q_Linux_Remote_Access Remote Access to the experiment
 
-  While the above description in \ref  Q_Linux_Expt_Setup installs Midas under user privilege for standard operation, 
-  Midas can be installed in a more general way under root privilege. This method allows remote
+  While the above description in \ref  Q_Linux_Expt_Setup installs MIDAS under user privilege for standard operation, 
+  MIDAS can be installed in a more general way under root privilege. This method allows remote
   access to the package through the xinetd daemon mechanism. In order to implement this, some extra steps 
   are necessary as described here.
 
-  Several system files needs to be modified (as root) for the full Midas implementation.
-  - <b>/etc/services :</b> For remote access, inclusion of the midas service is needed.
+  Several system files needs to be modified (as root) for the full MIDAS implementation.
+  - <b>/etc/services :</b> For remote access, inclusion of the "midas" service is needed.
    Add following line:
   \code 
   # midas service
@@ -278,23 +278,23 @@ NOTE: these instructions provide \b local access to the experiment. For \b remot
   @endcode
   The system is now build by default in static, which makes it unecessary to setup
   the .so path through either the environment \b LD_LIBRARY_PATH or the ld.so.conf.
-  - <b>/etc/exptab :</b> Midas Experiment definition file (see below).
+  - <b>/etc/exptab :</b> MIDAS Experiment definition file (see below).
 <br><br>
 
 \anchor idx_experiment_multiple
 \anchor idx_exptab
 @subsection Q_Linux_Exptab  Definition of Experiments (exptab)
 
-  The Midas system supports <b> multiple experiments running at the same time on a single computer</b>.
+  The MIDAS system supports <b> multiple experiments running at the same time on a single computer</b>.
   Even though it may not be efficient, this capability makes sense when the experiments
   are simple detector lab setups which share hardware resources for data collection.
-  In order to support this feature, Midas requires a uniquely identified set of
+  In order to support this feature, MIDAS requires a uniquely identified set of
   parameters for each experiment that is used to define the location of the Online Database.
   <br><br>
-  Every experiment under Midas has its own ODB.
+  Every experiment under MIDAS has its own ODB.
   In order to differentiate them, an experiment <b> name and directory </b> are assigned to each
   experiment. This allows several experiments to run concurrently on the same host
-  using a common Midas installation.
+  using a common MIDAS installation.
   <br><br>
   Whenever a application specific to a particular experiment is started, the experiment name
   can be specified as a command line argument, or as an environment variable.
@@ -426,7 +426,7 @@ not yet specified
 @section Q_Windows_installation Installation
 
 
-Throughout the following description the midas package is assumed to be found under
+Throughout the following description the MIDAS package is assumed to be found under
     the directory <b> \%SystemDrive%\\midas </b> 
 <br>The experiment-specific directory
     is \b \%SystemDrive%\\online. The user name is <em>johnfoo</em>.
@@ -471,7 +471,7 @@ Throughout the following description the midas package is assumed to be found un
 
 @subsection Q_Windows_Environment_Variables Environment Variables
 
-Environment variables needs to be setup prior the midas build;
+Environment variables needs to be setup prior the MIDAS build;
   - from the "system properties" -> advanced -> Environment Variables, define new system
     variables \b MIDASSYS to \b c:\\midas (installation location).
   - from the "system properties" -> advanced -> Environment Variables, add to PATH system
@@ -481,9 +481,9 @@ Environment variables needs to be setup prior the midas build;
   test c:\online johnfoo 
   @@endcode   
   
-  - The Midas build requires the Microsoft Visual C++ (200x) or .NET. 
+  - The MIDAS build requires the Microsoft Visual C++ (200x) or .NET. 
     the corresponding environment variables for the compiler need to be set prior
-    the Midas build. A batch file can be found under 
+    the MIDAS build. A batch file can be found under 
     "C:\\Program Files\\Microsoft Visual Studio 5\\Common7\\Tools\\vsvar32.bat or similar...
     The build then can be started as follow.  
   @code 
@@ -500,10 +500,10 @@ Environment variables needs to be setup prior the midas build;
 These instructions assume that accessibility to hardware such as VME or CAMAC is available. 
 
 @subsection Q_Windows_Software_Requirements Software Requirements
-Midas packages has been installed.
+MIDAS packages has been installed.
 
 
-@subsection Q_Windows_Expt_Setup How to Setup the Midas Experiment
+@subsection Q_Windows_Expt_Setup How to Setup the MIDAS Experiment
 
   - Open three "Command Prompt" windows.
   @code

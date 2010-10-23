@@ -72,7 +72,7 @@ sub fill_indent()
     for ($i=1; $i<$maxlevel; $i++)
     {
 	$indent[$i]=$indent[$i-1]."   ";
-        print "fill_indent: indent[$i]=\"$indent[$i]\"\n";
+#        print "fill_indent: indent[$i]=\"$indent[$i]\"\n";
     }
 }
 

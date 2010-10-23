@@ -599,7 +599,7 @@ To include bars on the image,
 a further subdirectory  <span class="odb">Bars</span> must be created. 
 Following the same principle as for the  @ref RC_mhttpd_custom_bars "labels", by creating  <span class="odb">Bars/\<bar_name\></span>, the
 structure for the bar will be filled with a default setting after refreshing the
-custom midas page.
+custom MIDAS page.
 
 This procedure is repeated for all the bars required, using a unique <span class="odb">\<bar_name\></span> subdirectory for each bar.
 <br>

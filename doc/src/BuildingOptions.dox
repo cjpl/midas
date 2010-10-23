@@ -11,18 +11,32 @@ sections("SpecialConfig", "BuildingOptions","NDF"); // last section; top of this
 \endhtmlonly
 
 @section BO_Intro Introduction
-This section covers the various options available for customization of the DAQ system. The options fall into the following two categories:
+This section covers the various options available for customization of the MIDAS data acquisition system. The options fall into the
+following categories:
 
+ -  @ref BO_makefile_option
  -  @ref BO_building_option
  -  @ref BO_Environment_variables
 
+<hr>  @section BO_makefile_option Makefile Options
+
+
+
+    - "make", "make all" : compile the default midas system
+    - "make clean" : remove all compiled object files and executables
+    - "make dox" : make this documentation (in directory .../doxfiles/html)
+    - "make linux32", "make clean32" : compile subset of midas with gcc "-m32" switch, useful for cross-compiling 32-bit midas on a 64-bit machine
+    - "make linux64", "make clean64" : compile subset of midas with gcc "-m64" switch, useful for compiling 64-bit midas when default ROOTSYS points to a 32-bit ROOT version
+    - "make crosscompile" : compile midas using a cross-compiler, for example, to produce midas libraries and executables that will run on a PPC Linux distribution, see Makefile for details.
+    - "make examples" : compile example code in .../examples
+
 <hr> @section BO_building_option Building Options
 
-By default, Midas is built with a minimum of pre-compiler flags. The @ref Makefile 
+By default, MIDAS is built with a minimum of pre-compiler flags. The @ref Makefile 
 contains options for the user to apply customization by enabling internal options 
 already available in the package. Generally the options are named "NEED_OPTION" where
 "OPTION" is replaced by the desired option (ZLIB,LIBROOTA etc.). This
-will set a compiler flag called "HAVE_OPTION" .   To link midas with the
+will set a compiler flag called "HAVE_OPTION" .   To link MIDAS with the
 required option(s), say
 \code
 make ... NEED_OPTION=1
@@ -33,17 +47,17 @@ make ... NEED_OPTION=1
  - @ref  BO_NEED_ZLIB @ref  BO_NEED_RPATH @ref  BO_NEED_LIBROOTA  @ref BO_NEED_MYSQL  @ref BO_NEED_STRLCPY  @ref BO_SPECIFIC_OS_PRG
 
 - Other flags are available at the application level:
- - @ref BO_HAVE_ROOT , @ref BO_HAVE_HBOOK ,  
+ - @ref BO_HAVE_ROOT , @ref BO_HAVE_HBOOK ,  @ref BO_HAVE_CAMAC
    @ref BO_MIDAS_MAX_EVENT_SIZE , @ref BO_HAVE_ODBC
 
-- By default the midas applications are built for use with dynamic library 
+- By default the MIDAS applications are built for use with dynamic library 
 \b libmidas.so. If static build is required the whole package can be built using the 
 option \b static.
 @code
 > make static
 @endcode
 
-- The basic Midas package builds without external package library reference. But it does try
+- The basic MIDAS package builds without external package library reference. But it does try
 to build an extra core analyzer application to be used in conjunction with ROOT 
 if the environment variable @ref BO_ROOTSYS is found. This is required ONLY if the examples/experiment makefile is used for 
 generating a complete Midas/ROOT analyzer application.
@@ -69,7 +83,7 @@ OSFLAGS = -DOS_LINUX ...
 - For 32 bit built, the OSFLAGS should contains the -m32 flag. By default this flag is not
 enabled. It has to be applied to the Makefile for the frontend examples too.
 @code
-# add to compile midas in 32-bit mode
+# add to compile MIDAS in 32-bit mode
 # OSFLAGS += -m32
 @endcode
 - Other OS supported are: 
@@ -84,7 +98,7 @@ make USERFLAGS=-static linux/bin/mstat
 
 \anchor idx_ROOT_build-flag
 <hr> @subsection BO_HAVE_ROOT HAVE_ROOT
-This flag is used for the @ref DA_analyzer_utility "Midas analyzer" in the case \b ROOT environment
+This flag is used for the @ref DA_analyzer_utility "MIDAS analyzer" in the case \b ROOT environment
 is required. An example of the makefile resides in \b examples/experiment/Makefile.
 This flag is enabled by the presence of a valid @ref BO_ROOTSYS environment variable.
 In the case that @ref BO_ROOTSYS is not found, the analyzer is build without \b ROOT support.
@@ -94,7 +108,7 @@ for further details.
 
 \anchor idx_HBOOK_build-flag
 <hr> @subsection BO_HAVE_HBOOK HAVE_HBOOK
-This flag is used for \b examples/hbookexpt/Makefile for building the midas @ref DA_analyzer_utility
+This flag is used for \b examples/hbookexpt/Makefile for building the MIDAS @ref DA_analyzer_utility
 against \b HBOOK and \b PAW. The path to the cernlib is requested and expected to be found under
 /cern/pro/lib (see makefile). This can always be overwritten during the make using the
 following command:
@@ -111,17 +125,23 @@ in order to set the default value of NEED_MYSQL.
 
 \anchor idx_ODBC
 <hr>@subsection BO_HAVE_ODBC HAVE_ODBC
-ODBC (Open DataBase Connectivity) is a standard database access method. In Midas, it may be used in the History system (see
+ODBC (Open DataBase Connectivity) is a standard database access method. In MIDAS, it may be used in the History system (see
 @ref F_History_sql_internal ).
 The Makefile will automatically include ODBC (HAVE_ODBC = 1) if the file <i> /usr/include/sql.h </i> is found.
 Otherwise ODBC will not be included.
 
+<hr> @subsection  BO_HAVE_CAMAC HAVE_CAMAC
+This flag enable the CAMAC RPC service within the frontend code.
+ - The application <span class="utility">mcnaf</span> utility and
+ - the  @ref RC_mhttpd_CNAF_page "web CNAF page"  (in versions prior to @ref ndf_dec_2009 )
+
+  are by default \b not CAMAC enabled (i.e. \b HAVE_CAMAC is undefined).
 
 \anchor idx_event_size_build-flag 
 <hr> @subsection BO_MIDAS_MAX_EVENT_SIZE MIDAS_MAX_EVENT_SIZE
- By default the Midas package is build with the maximum event size set to 4MB (MAX_EVENT_SIZE/midas.h).
+ By default the MIDAS package is build with the maximum event size set to 4MB (MAX_EVENT_SIZE/midas.h).
  This parameter is used for event transfer across network as well, therefore it has to be applied to all the 
- midas client involved in the experiment when different value is required and a complete Midas rebuid
+ MIDAS client involved in the experiment when different value is required and a complete MIDAS rebuid
  needs to be done.
 @code
 > setenv MIDAS_MAX_EVENT_SIZE 8000000
@@ -146,16 +166,16 @@ SPECIFIC_OS_PRG = $(BIN_DIR)/mlxspeaker $(BIN_DIR)/dio
 \anchor idx_LIBROOTA
 \anchor idx_ROOT_static-library
 <hr>@subsection BO_NEED_LIBROOTA NEED_LIBROOTA
-This option if set links midas with the static ROOT library. By default this option is disabled. 
+This option if set links MIDAS with the static ROOT library. By default this option is disabled. 
 To link with the static ROOT library,
 <br>make ... NEED_LIBROOTA=1
 
 
 
-\anchor idx_ZLIB_build_flag
+\anchor idx_ZLIB_build-flag
 <hr> @subsection  BO_NEED_ZLIB NEED_ZLIB
 
-If  @ref F_Logger_CS_Compression "data compression" is required by the data logger, the Midas package must be compiled with ZLIB support.
+If  @ref F_Logger_CS_Compression "data compression" is required by the data logger, the MIDAS package must be compiled with ZLIB support.
 The applications @ref F_lazylogger_utility "lazylogger", @ref RC_mdump_utility "mdump" can be built with \b zlib.a
 in order to gain direct access to the data within a file with extension
 \b mid.gz. By default this option is disabled except for the system analyzer core code \b mana.c.
@@ -173,23 +193,32 @@ Option to use our own implementation of strlcat and strlcpy.  By default this op
 \anchor idx_Environment_Variables
 \anchor Environment_variables  <!-- needed for C code -->
 <br><br> @section BO_Environment_variables Environment variables
-Midas uses a several environment variables to facilitate the startup of the different applications:
+MIDAS uses a several environment variables to facilitate the startup of the different applications. These
+are also discussed in the  @ref Quickstart "QuickStart" section.
 
 \anchor idx_MIDASSYS 
 <hr>@subsection BO_MIDASSYS MIDASSYS
 This environmental variable is \b required. It should point
-to the main path of the installed Midas package. The application @ref RC_odbedit_utility "odbedit"
+to the main path of the installed MIDAS package. The application @ref RC_odbedit_utility "odbedit"
 will generate a warning message in the case this variable is not defined.
+<br>For example
+\code
+  setenv MIDASSYS $HOME/packages/midas  
+\endcode
 
 \anchor idx_MIDAS_EXPTAB 
 <hr>@subsection BO_MIDAS_EXPTAB MIDAS_EXPTAB
  This variable specifies the location of the \b exptab file containing the predefined
- midas experiment. The default location is for OS_UNIX: /etc, /. For OS_WINNT:
- \\system32, \\system.
+ MIDAS experiment. If MIDAS_EXPTAB is \b not defined, the \b default location will be used (i.e. for OS_UNIX: /etc, / and for OS_WINNT:
+ \\system32, \\system ).
+ <br>For example
+\code
+  setenv MIDAS_EXPTAB $HOME/online/exptab
+\endcode
 
 \anchor idx_MIDAS_SERVER_HOST 
  <hr>@subsection BO_MIDAS_SERVER_HOST MIDAS_SERVER_HOST
- This variable predefines the name of the host on which the Midas experiment
+ This variable predefines the name of the host on which the MIDAS experiment
  shared memories are residing. It is needed when a connection to a remote experiment
  is requested. It obviates the need to add the "-h <hostname>" argument to
  the application command (see @ref F_utilities_params).  Superceded by @ref BO_MIDAS_DIR if defined.
@@ -215,7 +244,7 @@ will generate a warning message in the case this variable is not defined.
 
  \anchor idx_ROOTSYS
  <hr>@subsection BO_ROOTSYS ROOTSYS
- This variable must point to the ROOT package if generating a complete Midas/ROOT analyzer application (see @ref   Q_Linux_Environment_Variables ).
+ This variable must point to the ROOT package if generating a complete MIDAS/ROOT analyzer application (see @ref   Q_Linux_Environment_Variables ).
  If not using ROOT, ROOTSYS should be undefined.
 
  \anchor idx_CERNLIB_PACK

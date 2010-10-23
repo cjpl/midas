@@ -17,7 +17,7 @@ sections("Features", "RunControl","FrontendOperation");
 @section RC_Intro  Introduction
 This section describes \b Run \b Control and \b Monitoring of the experiment.  
 
-A  \b "run" starts when the Midas system receivs a <b> Start Transition </b>, and continues 
+A  \b "run" starts when the MIDAS system receivs a <b> Start Transition </b>, and continues 
 until it receives a <b> Stop transition </b>. In the simplest case, this is when the 
 commands \b "Start" and \b "Stop" are issued. 
 
@@ -44,7 +44,7 @@ and analyzing the data during or after the run is described under  @ref DataAnal
 <!-- declare the sub-pages for this section -->
 
  - \subpage RC_Run_States_and_Transitions
- - \subpage RC_Controlling_run
+ - \subpage RC_run_control
  - \subpage RC_Monitor
  - \subpage RC_customize_ODB
  - \subpage RC_Hot_Link
@@ -70,7 +70,7 @@ sections("Features", "RunControl","FrontendOperation"); // last section; top of 
 <br>
 \htmlonly
 <script type="text/javascript">
-pages( "RunControl",  "RunControl", "RC_Controlling_run","RC_Run_States_and_Transitions","end" ); // back index next {top bottom}
+pages( "RunControl",  "RunControl", "RC_run_control","RC_Run_States_and_Transitions","end" ); // back index next {top bottom}
 sections("Features", "RunControl","FrontendOperation"); // last section; top of this section; next section
 </script>
 \endhtmlonly
@@ -78,11 +78,11 @@ sections("Features", "RunControl","FrontendOperation"); // last section; top of 
 <br>
 \anchor idx_run_states
 \anchor idx_transition
-Three <b>Run States</b> define the states of the Midas DAQ system:
+Three <b>Run States</b> define the states of the MIDAS DAQ system:
 <br>
 <br><center> <b>\em Stopped, \em Paused, and \em Running.</b> </center>
 <br>
-In order to change from one state to another, Midas provides four basic
+In order to change from one state to another, MIDAS provides four basic
 \b transition \b functions : <br>
 <br><center><b>\em TR_START,  \em TR_PAUSE, \em TR_RESUME, \em TR_STOP </b></center>
 
@@ -94,9 +94,9 @@ In order to change from one state to another, Midas provides four basic
 \anchor idx_run_state_codes
 \anchor idx_run_transition_codes
 \anchor state_transition <!-- needed by C code -->
-@section RC_state_transition Midas State and Transition Codes
+@section RC_state_transition MIDAS State and Transition Codes
 
-Midas provides three <b> State Codes </b> (defined in midas.h)  for the three run states (Stopped, Paused and Running).
+MIDAS provides three <b> State Codes </b> (defined in midas.h)  for the three run states (Stopped, Paused and Running).
 The current State of an experiment is available under the @ref RC_ODB_RunInfo_Tree.
 
 <table style="text-align: left; width: 25%;" border="0" cellpadding="2"
@@ -127,16 +127,16 @@ the @ref RC_ODB_RunInfo_Tree for an experiment.
 \anchor idx_run_transition_priority
 @section RC_Transition_priority Run Transition Priority
 
-During these transition periods, any Midas client registered to
+During these transition periods, any MIDAS client registered to
 receive notification of such a transition will be able to perform dedicated tasks in either
 synchronized or asynchronized mode, within the overall run control of the experiment. 
 
 In order to provide more flexibility to the transition sequence of all the 
-midas clients connected to a given experiment, each transition function has 
+MIDAS clients connected to a given experiment, each transition function has 
 a <b> transition  sequence  number </b> attached to it. This transition sequence is 
 used to establish within a given transition the  order of the invocation of the 
-Midas clients  (from the lowest sequence number to the highest).  By this means, 
-<b> Midas provides the user with full control of the sequencing of any Midas client. </b>
+MIDAS clients  (from the lowest sequence number to the highest).  By this means, 
+<b> MIDAS provides the user with full control of the sequencing of any MIDAS client. </b>
 
 Click on the links to see an example of how the transition priority operates 
 at @ref RC_transition_start "start of run" and 
@@ -146,7 +146,7 @@ at @ref RC_transition_stop  "end of run".
 \anchor idx_transition_register
 @subsection RC_Register_for_run_transition Registering for a run transition
 
-Any Midas client can  register to receive notification  for a run transition. 
+Any MIDAS client can  register to receive notification  for a run transition. 
 This notification is done by registering to the system for a given transition
 ( cm_register_transition() ) by specifying the transition type and the
 sequencing number (1 to 1000). 
@@ -298,7 +298,7 @@ cellspacing="2">
 @subsection RC_Review_Seq_Num Review the Client Transition Sequence Numbers in the ODB
 \anchor RC_odb_system_tree
 \anchor idx_ODB_tree_System
-The <b> ODB /System tree </b> contains information specific to each "Midas client" currently
+The <b> ODB /System tree </b> contains information specific to each "MIDAS client" currently
 connected to the experiment. The sequence number appears in the ODB under /System/Clients/
 \code
 [local:midas:S]Clients>ls -lr
@@ -357,7 +357,7 @@ Clients                         DIR
 @subsection RC_Change_Seq_Num Change the Client Sequence Number
 
 The \em /System/Clients/... tree reflects the system at a given time. If a permanent
-change of a client sequence number is required, the midas system call cm_set_transition_sequence()
+change of a client sequence number is required, the MIDAS system call cm_set_transition_sequence()
 can be used. 
 
 
@@ -508,7 +508,7 @@ Stop Time binary
 \anchor end
 \htmlonly
 <script type="text/javascript">
-pages( "RunControl",  "RunControl","RC_Controlling_run", "RC_Run_States_and_Transitions","" ); // back index next {top bottom}
+pages( "RunControl",  "RunControl","RC_run_control", "RC_Run_States_and_Transitions","" ); // back index next {top bottom}
 sections("Features", "RunControl","FrontendOperation"); // last section; top of this section; next section
 </script>
 \endhtmlonly
@@ -517,25 +517,24 @@ sections("Features", "RunControl","FrontendOperation"); // last section; top of 
 <!-- End of page RC_Run_States_and_Transitions Run States and Transitions  -->
 
 */
-<!-- ============================ C O N T R O L L I N G  R U N   ==================== -->
+<!-- ============================  R U N  C O N T R O L   ==================== -->
 
-/*! @page RC_Controlling_run Controlling the Experiment
+/*! @page  RC_run_control Run Control Programs
 
 <br>
 \htmlonly
 <script type="text/javascript">
-pages( "RC_Run_States_and_Transitions",  "RunControl","RC_odbedit", "RC_Controlling_run","end" ); // back index next {top bottom}
+pages( "RC_Run_States_and_Transitions",  "RunControl","RC_odbedit", "RC_run_control","end" ); // back index next {top bottom}
 sections("Features", "RunControl","FrontendOperation"); // last section; top of this section; next section
 </script>
 \endhtmlonly
 <br>
 
-@section RC_run_control Run Control programs
 Users must have some way of controlling the experiment (i.e. starting and stopping a run, changing the 
 run parameters etc.) and of determining the progress of the run (e.g. whether the run started 
 successfully, whether data is being taken and saved, and whether any error conditions have occurred).
 <br>
-Two options for <b> Run Control </b> are provided in the Midas package. They are @ref RC_odbedit_utility "odbedit",
+Two options for <b> Run Control </b> are provided in the MIDAS package. They are @ref RC_odbedit_utility "odbedit",
 a program with a simple command line interface, and @ref RC_mhttpd_utility "mhttpd", the web-based 
 run control program. 
 <br>
@@ -564,12 +563,12 @@ The odbedit and mhttpd utilities will be described next.
 <br>
 \htmlonly
 <script type="text/javascript">
-pages( "RC_Run_States_and_Transitions",  "RunControl","RC_odbedit", "RC_Controlling_run","" ); // back index next {top bottom}
+pages( "RC_Run_States_and_Transitions",  "RunControl","RC_odbedit", "RC_run_control","" ); // back index next {top bottom}
 sections("Features", "RunControl","FrontendOperation"); // last section; top of this section; next section
 </script>
 \endhtmlonly
 \anchor end
-<!-- End of page RC_Controlling_run Controlling and Monitoring the Experiment -->
+<!-- End of page RC_run_control Run Control Programs -->
 */
 
 
@@ -595,13 +594,13 @@ sections("Features", "RunControl","FrontendOperation"); // last section; top of 
 \endhtmlonly
 <br>
 
-The most powerful tool for \b monitoring a Midas experiment is of course @ref RC_mhttpd "mhttpd", used for
-both Run Control and Monitoring. However, it does not (yet) cover every feature needed, and the Midas system also
+The most powerful tool for \b monitoring a MIDAS experiment is of course @ref RC_mhttpd "mhttpd", used for
+both Run Control and Monitoring. However, it does not (yet) cover every feature needed, and the MIDAS system also
 provides several other utilities for monitoring aspects of the data acquistion system. These
 include  @ref RC_mstat_utility "mstat"  to display the run statistics, and @ref RC_mdump_utility "mdump", to dump the raw data, which is particularly
 useful for debugging. These utilities do provide information without having to use a browser.
 
- - @ref RC_mhttpd "Monitoring and Run Control using the Midas Web Server" 
+ - @ref RC_mhttpd "Monitoring and Run Control using the MIDAS Web Server" 
  - @ref RC_mstat_utility 
  - @ref RC_mdump_utility 
  - @ref RC_rmidas_utility
@@ -613,7 +612,7 @@ useful for debugging. These utilities do provide information without having to u
 @section  RC_mstat_utility  mstat - monitor application display
 
 \b mstat is a simple ASCII status display. It presents in a compact form the most valuable
-information of the current condition of the Midas Acquisition system.
+information of the current condition of the MIDAS Acquisition system.
 The display is composed at the most of 5 sections depending on the current status
 of the experiment. The section displayed in order from top to bottom refer to:
 - Run information.
@@ -676,7 +675,7 @@ snap-shot of the event. Its use is particularly powerful during experimental set
 <br>In addition <span class="utility">mdump</span> has
 the capability to operate on data save-set files stored on disk or tape.
 The main \b mdump restriction is the fact that it works only for events formatted
-in @ref FE_bank_construction "banks" (i.e.: MIDAS banks).
+in @ref FE_bank_construction "banks" (i.e. MIDAS banks).
 
 <span class="utility">mdump</span> can be built with  \b zlib.a
 in order to gain direct access to the data within a file with extension
@@ -707,7 +706,7 @@ in order to gain direct access to the data within a file with extension
 
 - Additional <b> Arguments </b> for Offline
   - [-x -h ] : help for offline use.
-  - [-t type ] : Bank format (Midas).
+  - [-t type ] : Bank format (MIDAS).
   - [-w what] :  Header, Record, Length, Event, Jbank_list (def:E)
  
 - <b> Usage </b>
@@ -888,7 +887,7 @@ sections("Features", "RunControl","FrontendOperation"); // last section; top of 
 
 @section RC_customize_intro Introduction
 
-When the Midas system is installed, the ODB is loaded with default values, which will provide the user
+When the MIDAS system is installed, the ODB is loaded with default values, which will provide the user
 with a working system. However, by customizing the ODB, the user can enable powerful features, thus providing
 him or herself with very sophisticated DAQ system to suit almost every experiment. The user
 may even wish to customize their experiment further by providing   @ref RC_mhttpd_Custom_page "custom web-pages"
@@ -921,7 +920,7 @@ sections.
 \anchor idx_ODB_tree_Experiment
 @section RC_ODB_Experiment_Tree The ODB /Experiment tree
 
-When initially created by the Midas installation, the ODB <span class="odb">/Experiment</span> tree contains the following keys:
+When initially created by the MIDAS installation, the ODB <span class="odb">/Experiment</span> tree contains the following keys:
 
 \code
 [local:t2kgas:S]/>ls -rlt /experiment
@@ -1257,7 +1256,7 @@ subdirectories under the /Experiment tree if they do not exist already. These mu
   -  @ref RC_Lock_when_Running "Lock when running"
   -  @ref RC_Access_Control "Security"
 
-</b>These keynames have a particular meaning for the Midas system which will be described below.
+</b>These keynames have a particular meaning for the MIDAS system which will be described below.
 
 
 
@@ -1401,11 +1400,11 @@ Write access not allowed
 
 
 By default, there is no restriction for any user to connect locally or remotely
-to a given experiment. Midas provides a means to setup access restriction 
+to a given experiment. MIDAS provides a means to setup access restriction 
 in order to protect the experiment from unauthorized access.
 
 There are two levels of access restriction available each of which can be enabled independently:
-- To require a password before Midas clients can start running on the host. 
+- To require a password before MIDAS clients can start running on the host. 
 - To restrict write access via the web by requiring a password before any parameter can be changed.
 
 The user can select \b either or \b both of these security features.
@@ -1739,11 +1738,11 @@ Web Password                    pon4@#@%SSDF2
 \anchor idx_shutdown_script
 Before a run can be started, all the clients necessary to the experiment must be started. We have already
 seen in  @ref Quickstart that templates of scripts to @ref start-all "start and kill" the required 
-clients are provided in the Midas package. These must be customized for your experiment. The following example
+clients are provided in the MIDAS package. These must be customized for your experiment. The following example
 shows  the template start-up script  \b start_daq.sh that starts  
  - a frontend
  - an analyzer, 
- - @ref F_mlogger_utility "midas logger" to save the data  
+ - @ref F_mlogger_utility "MIDAS logger" to save the data  
  - the run-control/monitoring program @ref RC_mhttpd_utility "mhttpd" 
 and the template kill script \b kill_daq.sh that shuts then all down.
 
@@ -1827,7 +1826,7 @@ else
 fi
 rm ~/temp
 
-# Start the http midas server
+# Start the http MIDAS server
 ps -ef > ~/temp
 grep --silent "mhttpd -p 8089" ~/temp
 if [ "$?" != "0" ] ; then
@@ -1842,7 +1841,7 @@ sleep 2
 #xterm -e ./frontend &
 #xterm -e ./analyzer &
 
-# The  midas logger
+# The  MIDAS logger
 # Start the logger
 $MIDASSYS/linux/bin/odbedit -c scl | grep --silent  Logger
 if [ "$?" != "0" ] ; then
@@ -1887,10 +1886,10 @@ fi
 <br><hr><br>
 \anchor idx_access-control_remote
 \anchor idx_mserver-utility
-@section RC_mserver_utility  mserver      - Midas Remote server
+@section RC_mserver_utility  mserver      - MIDAS Remote server
 
 
-<span class="utility">mserver</span> provides remote access to any midas client. It is needed when <b>one or more of the midas clients
+<span class="utility">mserver</span> provides remote access to any MIDAS client. It is needed when <b>one or more of the MIDAS clients
 for an experiment are running on a different host</b>. In this case, an <span class="utility">mserver</span> client must be started on the host
 where the experiment resides. 
 
@@ -1919,7 +1918,7 @@ a log file <i> /tmp/mserver.log </i> . The log entry contains the time stamp and
 <br>
 
 More than one <span class="utility">mserver</span> can be started on a system, provided they use different tcp ports. This is useful if, 
-for example, different versions of Midas are in use on a single host at the same time.
+for example, different versions of MIDAS are in use on a single host at the same time.
 To start a version of <span class="utility">mserver</span> on a different port, use the  -p argument, 
 e.g. mserver -p XXXX -D
 <br> 
@@ -2218,10 +2217,10 @@ Value filled by the System to indicate when client first failed.
 <br>
 
 \anchor idx_alarm_system
-<hr> @section RC_Alarm_System Midas Alarm System
+<hr> @section RC_Alarm_System MIDAS Alarm System
 
 
-Midas provides an alarm system, which by default is turned off. When the alarm system is 
+MIDAS provides an alarm system, which by default is turned off. When the alarm system is 
 @ref  RC_alarm_system_active  "activated" 
 and an alarm condition is detected, alarms messages are sent by the system which appear
 as an  @ref RC_mhttpd_alarm_banner "alarm banner" on the @ref RC_mhttpd_utility "mhttpd" main status page, 
@@ -2229,7 +2228,7 @@ and as a @ref RC_odb_alarm_msg "message" on any windows running @ref RC_odbedit_
 The alarm system is flexible and can be extensively customized for each experiment. 
 
 
-The Midas alarm system is built-in and part of the main experiment scheduler.
+The MIDAS alarm system is built-in and part of the main experiment scheduler.
 This means no separate task is necessary to benefit from the alarm system. 
 <span class="note">The Alarm feature is active during \b ONLINE  mode \b ONLY. </span> 
 Alarm setup and activation is done through the Online DataBase (ODB).
@@ -2250,7 +2249,7 @@ The alarm system can be customized through @ref RC_odbedit_utility "ODBEdit" or 
 @ref RC_mhttpd_ODB_page "mhttpd Alarm page".  
 Some of the features (such as colour) are applicable only to \b mhttpd.
 
-The following sections describe how to use the Midas Alarm System.
+The following sections describe how to use the MIDAS Alarm System.
 
 See also @ref RC_ODB_Alarm_system_implementation
 
@@ -2892,7 +2891,7 @@ something like:
 echo $1 | mail -s \"Level Alarm\" your.name@domain.edu
 odbedit -c 'msg 2 level_alarm \"Alarm was sent to your.name@domain.edu\"'
 @endcode
-The second command just generates a midas system message for confirmation. Most 
+The second command just generates a MIDAS system message for confirmation. Most 
 cell phones (depends on the provider) have an email address. If you send an email 
 there, it will be translated into a SMS message.
 
@@ -2905,23 +2904,23 @@ For very sensitive systems, having an alarm via SMS may not be sufficient, since
 alarm system could be down (e.g. computer crash, network failure). In this case 
 'negative alarms' can be used. For example, every 30 minutes the system may send 
 an SMS with the current parameter values. If the expected message is not received, it may
-indicate that something in the midas system is wrong.
+indicate that something in the MIDAS system is wrong.
 
 
 
 
-@section RC_ODB_Alarm_system_implementation Implementation of the Midas Alarm System
+@section RC_ODB_Alarm_system_implementation Implementation of the MIDAS Alarm System
 
 
 Alarms are checked inside alarm.c::al_check(). This function is called by
 cm_yield() every 10 seconds and by rpc_server_thread(), also every 10 seconds.
-For remote midas clients, their al_check() issues an RPC_AL_CHECK RPC call into
-the  Midas server utility @ref RC_mserver_utility "mserver", where rpc_server_dispatch() calls the local al_check().
+For remote MIDAS clients, their al_check() issues an RPC_AL_CHECK RPC call into
+the  MIDAS server utility @ref RC_mserver_utility "mserver", where rpc_server_dispatch() calls the local al_check().
 As result, all alarm checks run inside a process directly attached to the local
-midas shared memory (inside a local client or inside an <span class="utility">mserver</span> process for a
+MIDAS shared memory (inside a local client or inside an <span class="utility">mserver</span> process for a
 remote client).
-Each and every midas client runs the alarm checks. To prevent race conditions
-between different midas clients, access to al_check() is serialized using the
+Each and every MIDAS client runs the alarm checks. To prevent race conditions
+between different MIDAS clients, access to al_check() is serialized using the
 ALARM semaphore.
 Inside al_check(), alarms are triggered using al_trigger_alarm(), which in turn
 calls al_trigger_class(). Inside al_trigger_class(), the alarm is recorded into
@@ -2936,7 +2935,7 @@ Also, because all the alarms are checked at the same time, only the first
 triggered alarm will be recorded.
 
 <span class="new">As of alarm.c rev 4683, </span> "System message interval" is set to 0 ensures that every
-alarm is recorded into the midas log file. (In previous revisions, this setting
+alarm is recorded into the MIDAS log file. (In previous revisions, this setting
 may still miss some alarms).
 
 There are 3 types of alarms:
@@ -2999,9 +2998,9 @@ sections("Features", "RunControl","FrontendOperation"); // last section; top of 
 \anchor idx_hotlink
 \anchor idx_event_notification-see-hotlink
 @section RC_Hot_Link_Intro Introduction
-Midas implements event notification through <b> "hot-links" </b>. Once a hot-link is established to
+MIDAS implements event notification through <b> "hot-links" </b>. Once a hot-link is established to
 a key in the ODB, \b immediately that key is accessed, a call-back routine associated with
-the hot-link is called to perform whatever action has been programmed. The Midas system uses hot-links
+the hot-link is called to perform whatever action has been programmed. The MIDAS system uses hot-links
 to update keys in the ODB for communication between system clients 
 (e.g.  @ref F_Frontend_History_Event "history system").
  

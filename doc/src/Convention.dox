@@ -1,4 +1,4 @@
-/*! @page Convention SECTION 13: Convention
+/*! @page Convention SECTION 13: Document Navigation and Convention
 
 <br>
 \htmlonly
@@ -9,44 +9,19 @@ sections("FAQ","Convention","DocIndex"); // last section; top of this section; n
 </script>
 \endhtmlonly
 <br>
-
-@section C_Document_Style  Document Style
-
-
-
- - New Features :
-   - <span class ="new"> This feature is new since  @ref NDF "this date" </span>
- - ODB paths should appears like this :
-   - <span class ="odb"> /Equipment/test  </span><br>
- - Midas Utilities :
-   - <span class ="utility">midas_utility</span><br>
- - JavaScript functions :
-   - <span class ="js">ODBGet</span><br>
- - HTML tags :
-   - <span class ="htmltag">\<img ...\> </span><br>
- - ODB tags (in HTML files) :
-   - <span class ="odbtag">\<odb...\> </span><br>
- - Image titles should  appear like this :
-   - <span class ="image"> Figure 1 Example  </span><br>
- - Warnings :
-   - <span class ="warn">This is a Warning  </span><br>
- - Notes :
-   - <span class ="note">This is important </span><br>
- - or
-\Note so is this
-
-
-<br><hr><br>
+ - @ref C_Navigation
+ - @ref C_Document_Style
 
 @section C_Navigation  Navigating this document
-
+<span style="font-size: 120%;">
+ - Use the \b "Search" box at top right of each page
  - This document is divided into @ref Organization "sections" containing one or more \b pages.
  - Each page has \b navigation \b icons at the top and bottom to enable navigation between
 pages and sections.
      -  \b blue symbols navigate between \b pages,
      -  \b yellow symbols navigate between \b sections.
- - There are also navigation icons to jump to the @ref DocIndex  and the @ref Organization "Section Contents".    
-
+ - There are also navigation icons to jump to the @ref DocIndex "Alphabetical Documentation Index"  and the @ref Organization "Section Contents".    
+</span>
 <table style="text-align: left; width: 100%;" border="8" cellpadding="5 "
 cellspacing="3">
 <tr>
@@ -192,6 +167,36 @@ style="vertical-align: top; background-color: white ; text-align: center; ">
 \Note Placing mouse over navigation symbols will display a description of the tag's destination.
 <!-- table 1 (outer) -->
 </td></tr></table>
+
+<br><hr><br>
+
+@section C_Document_Style  Document Style
+
+
+
+ - New Features :
+   - <span class ="new"> This feature is new since  @ref NDF "this date" </span>
+ - ODB paths should appears like this :
+   - <span class ="odb"> /Equipment/test  </span><br>
+ - Midas Utilities :
+   - <span class ="utility">midas_utility</span><br>
+ - JavaScript functions :
+   - <span class ="js">ODBGet</span><br>
+ - HTML tags :
+   - <span class ="htmltag">\<img ...\> </span><br>
+ - ODB tags (in HTML files) :
+   - <span class ="odbtag">\<odb...\> </span><br>
+ - Image titles should  appear like this :
+   - <span class ="image"> Figure 1 Example  </span><br>
+ - Warnings :
+   - <span class ="warn">This is a Warning  </span><br>
+ - Notes :
+   - <span class ="note">This is important </span><br>
+ - or
+\Note so is this
+
+
+<br><br><br>
 
 \anchor end
 \htmlonly

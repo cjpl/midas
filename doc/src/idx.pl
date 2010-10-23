@@ -16,7 +16,8 @@ sub write_idx(@);
 sub dosort($$);
 #
 #index files
-our $indexfile="index_add.txt"; # extra items to be added to the index (input)
+our $indexfile; # index_add.txt contains  extra items to be added to the index (input)
+                # index_add.txt is produced by index_add.pl
 our $outf ="index_info.txt";
 our $idxf ="docindex.tmp";
 our $idxf2 ="docindex2.tmp";
@@ -45,13 +46,15 @@ sub idx()
     my $idxstr="idx_";
     my @array = @alpha; # a-z
 
-#   $indexfile (index_add.txt) contains info to add to the index (e.g. "format-see-event->format")
-    open IN, $indexfile or print "Can't open input file $indexfile : $!\n"; # non-fatal
+#   $indexfile (index_add.info) contains info to add to the index (e.g. "format-see-event->format")
+    open IN, $indexfile or print "\n\n ******  Can't open input file $indexfile : $! *****\n\n"; #non-fatal 
 
     while (<IN>)
        {
            chomp $_;
+           unless ($_){ next; } # skip any blank lines
            if (/^#/){ next;} # skip any comments
+
            $_=$_."!"; # add ! to mark these as having no references
            push @array,$_; # add to the array
        }    
@@ -240,7 +243,7 @@ sub write_idx(@)
             
             if ($fields[$j]=~/!$/)
             {  
-                print "found item with \"!\" (i.e. from index_add.txt): $fields[$j]\n";
+                print "found item with \"!\" (i.e. from \"$indexfile\" ): $fields[$j]\n";
                 $flag=1;  # item will be parsed and fixed up in check_line
                  
                 $fields[$j]=~s/!$//;  # remove the final !
@@ -328,7 +331,7 @@ sub write_idx(@)
                 if ($flag)
                 {
                     print "flagged line: $indent[$level]<li>$fields[$level]\n";
-                    print OUTF "$indent[$level]<li>$fields[$level]<br> <!-- line from index_add.txt -->\n";
+                    print OUTF "$indent[$level]<li>$fields[$level]<br> <!-- line from  $indexfile -->\n";
                   #  print "$indent[$level]<li>$fields[$level]<br>\n";  # no link for this item
                   #  print OUTF "$indent[$level]<li>$fields[$level]<br>\n";
                     $flag = 0;
@@ -669,9 +672,9 @@ sub check_line()
     my $flag=0;
     
     print "\n\n check_line starting with string: $_\n";
-    if (/index_add.txt/)
+    if (/$indexfile/)
     {
-        print "Flagged line (i.e. line from index_add.txt  !! \n";
+        print "Flagged line (i.e. line from  $indexfile  !! \n";
         $flag=1;
     }
 
@@ -763,8 +766,8 @@ sub check_line()
            print "Now line is $_\n";
         }
 
-        # line from index_add.txt   may have @ref IDX=  (underscores marked by =)
-        print "Line $_ is from index_add.txt \n";
+        # line from  $indexfile  may have @ref IDX=  (underscores marked by =)
+        print "Line $_ is from  $indexfile \n";
         s/=/_/g;
         s/ see also/ <span class="see">see also<\/span> /;
         s/ see / <span class="see">see<\/span> /;

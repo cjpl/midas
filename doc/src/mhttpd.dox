@@ -1,5 +1,5 @@
 
-/*! @page RC_mhttpd mhttpd -  Run Control using the Midas Web Server
+/*! @page RC_mhttpd mhttpd -  Run Control using the MIDAS Web Server
 \anchor idx_midas_webserver
 \anchor idx_mhttpd-utility
 <!--  mhttpd functionality is a sub-page of the Run Control section; 
@@ -16,12 +16,12 @@ sections("Features", "RunControl","FrontendOperation"); // last section; top of 
 <br>
 @section RC_mhttpd_utility mhttpd - Run control & Monitoring through the web
 
-The Midas Web Server utility \b "mhttpd" provides Midas DAQ control through
+The MIDAS Web Server utility \b "mhttpd" provides MIDAS DAQ control through
 the web using any web browser. Provided the @ref RC_mhttpd_Usage "daemon application" is running,
-the user may access any Midas experiment running on a given host from a Web browser.
+the user may access any MIDAS experiment running on a given host from a Web browser.
 
 Full monitoring and almost full control of a particular experiment can be achieved
-through the Midas Web server.
+through the MIDAS Web server.
 
 @anchor RC_mhttpd_Usage Usage :
 <br>
@@ -178,7 +178,7 @@ sections("Features", "RunControl","FrontendOperation"); // last section; top of 
 @section RC_mhttpd_msp_default Status Page (minimal) 
 
 Once the @ref RC_mhttpd_connect "connection" to a given experiment is established, the <b>Main Status
-Page</b> of the Midas webserver is displayed with the current ODB information related to this experiment.
+Page</b> of the MIDAS webserver is displayed with the current ODB information related to this experiment.
 
 With a \b minimal odb and experiment name "midas" the mhttpd <b> Status Page </b> might look like this:
 @anchor RC_mhttpd_minimal_status_page
@@ -200,7 +200,7 @@ and only the standard  buttons are shown.
 
 @anchor RC_mhttpd_pol_status
 Once the user has customized their experiment, by 
- - starting some of the Midas utilities (e.g. the Midas logger @ref F_mlogger_utility "mlogger" and the 
+ - starting some of the MIDAS utilities (e.g. the MIDAS logger @ref F_mlogger_utility "mlogger" and the 
 @ref F_lazylogger_utility "lazylogger" )
  - creating and starting some frontend(s), which define various equipment(s)
  - defining user and alias-links (buttons)
@@ -211,7 +211,7 @@ of the "pol" experiment at TRIUMF:
 @anchor RC_mhttpd_pol_status_example
  * <br><br><br>
  * <center> 
- * <span class="image">Midas Status Page for experiment "pol"
+ * <span class="image">MIDAS Status Page for experiment "pol"
  * <br><br><br>
  *  \image html pol_running.gif
  * </span></center> 
@@ -235,7 +235,7 @@ The appearance of the Main Status Page has been changed  (@ref ndf_dec_2009) as 
 </ul>
      
 \anchor RC_analyzer_column        
-Since the column on the main midas status page with fraction of analyzed events was
+Since the column on the main MIDAS status page with fraction of analyzed events was
 barely used, it has been dropped. It did not make sense for all slow 
 control events. In case this feature is required in some experiment, it will be moved  
 into a custom page and the ratio calculated in JavaScript, where there is much more 
@@ -462,7 +462,7 @@ style="font-weight: bold;">MSCB</span><br>
 </table>
 </td>
 <td style="vertical-align: top;"><span class="new">
-The @ref RC_mhttpd_MSCB_page gives access to devices in a Midas Slow Control Bus system.
+The @ref RC_mhttpd_MSCB_page gives access to devices in a MIDAS Slow Control Bus system.
 (Implemented @ref ndf_dec_2009)</span>
 
 </td>
@@ -504,7 +504,7 @@ style="font-weight: bold;">Messages</span><br>
 </td>
 <td  style="vertical-align: top;">
 Clicking this button opens the @ref RC_mhttpd_Message_page "message page" and shows the n last entries
-of the   @ref F_Messaging  "Midas system message log".
+of the   @ref F_Messaging  "MIDAS system message log".
 The last entry is always present in the status page (see  @ref RC_mhttpd_status_latest_msg ).
 </td></tr>
 <tr>
@@ -562,7 +562,7 @@ style="font-weight: bold;">Programs</span><br>
 </td>
 <td  style="vertical-align: top;">
 This button gives access to the Programs page, which displays the status of
-the current programs (i.e. midas applications/clients) which are or have been running
+the current programs (i.e. MIDAS applications/clients) which are or have been running
 for this experiment. Each program  has a specific information record associated with it in the ODB.
 This record is tagged as a hyperlink in the listing (see @ref RC_mhttpd_Program_page).
 </td></tr>
@@ -627,7 +627,7 @@ style="font-weight: bold;">Help</span><br>
 </table>
 </td>
 <td  style="vertical-align: top;">
-Help and link to the main Midas web documentation (i.e. this document).
+Help and link to the main MIDAS web documentation (i.e. this document).
 </td></tr>
 
 </table>
@@ -655,7 +655,7 @@ If the user defines a new tree in ODB named  <span class="odb">/Script</span> , 
 user-button of that name on the default mhttpd main status page. Each sub-tree
     ( <span class="odb">/Script/\<button name>/</span>) should contain at least one string key which is the
     script command to be executed. Further keys will be passed as
-   <b> arguments </b> to the script. Midas symbolic links are permitted.
+   <b> arguments </b> to the script. MIDAS symbolic links are permitted.
 
 
 
@@ -707,7 +707,7 @@ style="vertical-align: top; background-color: rgb(255, 204, 204); font-weight: b
 </tr>
 </table>
 
- - the @ref F_mlogger_utility "midas logger" status. 
+ - the @ref F_mlogger_utility "MIDAS logger" status. 
 <table style="text-align: left; width: 50%;" border="1" cellpadding="2"
 cellspacing="2">
 
@@ -808,8 +808,8 @@ The event statistics for the current run are also shown on the @ref RC_mhttpd_po
 <br><hr><br>
 
 
-@subsection RC_mhttpd_status_Logger Midas Logger Information
-This information is present on the @ref RC_mhttpd_pol_status_example "main status page"  \b only if the @ref F_mlogger_utility "Midas Logger" is running. Compare the examples for a
+@subsection RC_mhttpd_status_Logger MIDAS Logger Information
+This information is present on the @ref RC_mhttpd_pol_status_example "main status page"  \b only if the @ref F_mlogger_utility "MIDAS Logger" is running. Compare the examples for a
  @ref RC_mhttpd_pol_status_example "running experiment" with a @ref RC_mhttpd_minimal_status_page
 "minimal" status page. 
 <br>
@@ -837,7 +837,7 @@ by pressing the   @ref RC_mhttpd_status_Page_buttons "Message button". This open
 
 \anchor idx_clients_active_mhttpd
 @subsection RC_mhttpd_status_clients Active Client list
-At the bottom  of the @ref RC_mhttpd_pol_status_example "main status page" is a list of the Midas clients for this experiment that are currently active. The hostname is also shown. This information is derived from the
+At the bottom  of the @ref RC_mhttpd_pol_status_example "main status page" is a list of the MIDAS clients for this experiment that are currently active. The hostname is also shown. This information is derived from the
 @ref  RC_odb_system_tree "ODB /System" tree .
 
 
@@ -947,7 +947,7 @@ display some extra text on the Start page under an <b>Edit on start</b> paramete
 parameter names are self-explanatory, but the parameter name may not contain enough information. 
 In this case, a <b>parameter comment</b> can be created by the user.  
 
-This "parameter comment" option is visible \b ONLY under the midas
+This "parameter comment" option is visible \b ONLY under the MIDAS
 web page (\b mhttpd ), the <b> odbedit start </b> command will not display this extra information.
 
 
@@ -1224,7 +1224,7 @@ The main Status page from an experiment with two Equipments defined (\b "TpcGasP
 <b>Equipment Hyperlink</b>  "Detector"
 (circled in green) will show the data from  <span class="odb">/Equipment/Detector/Variables</span>.
 This illustration  shows how the mhttpd display combines the names of the variables in a 
-@ref  FE_MIDAS_event_construction "Midas format" event with the variables read out in the equipment's data bank.
+@ref  FE_MIDAS_event_construction "MIDAS format" event with the variables read out in the equipment's data bank.
 <br>
 The "Detector" equipment has one bank only (SCLR) which is an array of 10 data words.
 The "Names" column shows the default name, which is derived from the \b bankname and the array element number , i.e. "SCLR[0]...SCLR[9]".
@@ -1462,7 +1462,7 @@ TGT_
 
 
 This example shows the main status page of an experiment which has a number of Equipments defined. 
-The Equipment Hyperlink of the Equipment \b "cycle_scalers" ( @ref  FE_MIDAS_event_construction "Midas format")
+The Equipment Hyperlink of the Equipment \b "cycle_scalers" ( @ref  FE_MIDAS_event_construction "MIDAS format")
 has been clicked. This hyperlink is circled in the following illustration. The resulting pages show the list of variables
 in the bank HSCL. This large bank has been divided into the groups:
 
@@ -1483,7 +1483,7 @@ well as the Groups of scalers which appears when each Group Hyperlink (circled) 
 <br>
 
 The illustration above shows how the mhttpd display combines the names of the variables in a 
-@ref  FE_MIDAS_event_construction "Midas format" event with the variables read out in the Equipment's databank.
+@ref  FE_MIDAS_event_construction "MIDAS format" event with the variables read out in the Equipment's databank.
 The \b "cycle_scalers" equipment has been set up 
 in the ODB so that the scaler names are listed under the array \b "Names" in
 <span class="odb">/Equipment/Cycle_Scalers/Settings</span>. Since there are a great many scalers in this one bank,
@@ -1840,8 +1840,8 @@ sections("Features", "RunControl","FrontendOperation"); // last section; top of 
 
 This page (accessed by clicking the @ref RC_mhttpd_status_Page_buttons "Message button"  @ref RC_mhttpd_status_menu_buttons "if present"
  on the @ref RC_mhttpd_pol_status_example "main status page" )
-displays the contents of the Midas System log file in blocks of 100 lines
-starting with the most recent messages. The Midas log file resides in the directory
+displays the contents of the MIDAS System log file in blocks of 100 lines
+starting with the most recent messages. The MIDAS log file resides in the directory
 defined @ref  F_Log_File "in the ODB".
 
 
@@ -1899,7 +1899,7 @@ On the other hand, the Elog is not limited strictly to experiments. Worldwide El
 on the internet.
 
 Two different implementations of the Elog are available i.e
- - @ref RC_mhttpd_Internal_Elog where the Elog is built in the mhttpd Midas web interface, or 
+ - @ref RC_mhttpd_Internal_Elog where the Elog is built in the mhttpd MIDAS web interface, or 
  - @ref RC_mhttpd_External_Elog where the Elog runs independently from the experiment and  mhttpd as well.
 
 
@@ -1985,7 +1985,7 @@ String length [32]: 64
 expected to be in the data directory specified by the ODB key <b>/Logger/Data Dir</b>.
 Regardless of its content, it will be displayed in the web page.
 Its common use is to \b append \b lines after every run.
-The client appending this run information can be any of the midas applications.
+The client appending this run information can be any of the MIDAS applications.
 An <b> example </b> is available in the <i>examples/experiment/analyzer.c</i> which
 will write some statistical information at end-of-run to the file runlog.txt
 
@@ -2046,10 +2046,10 @@ Installation requires requires several steps described below.
         </ul>
   <li> You need to know the node and ports for both applications. Like mhttpd, elogd also requires a
     port number for communication through the web (e.g. NodeA:mhttpd -p 8080, NodeB:elogd -p 8081).
-  -# copy the default midas/src/elogd.cfg from the midas distrbution to your operating directory.
+  -# copy the default midas/src/elogd.cfg from the MIDAS distrbution to your operating directory.
   -# modify the elogd.cfg to reflect your configuration
   @code
-  # This is a simple elogd configuration file to work with Midas
+  # This is a simple elogd configuration file to work with MIDAS
   # $Id: mhttpd.dox 4032 2007-11-02 17:13:52Z amaudruz $ 
 
   [global]
@@ -2105,7 +2105,7 @@ Installation requires requires several steps described below.
 @code
   NodeA:~>mhttpd -p 8080 -D 
 @endcode
-  -# At this point the Elog from the Midas web page is accessing the internal Elog.
+  -# At this point the Elog from the MIDAS web page is accessing the internal Elog.
     To activate the external Elog, include in the ODB two entries such as:
 @code
    NodeX:> odbedit -e myexpt -h NodeA
@@ -2367,7 +2367,7 @@ be reset.
  * <br><br><br>  
 
 \anchor RC_mhttpd_alarm_banner
-When an alarm has goes off, a banner will appear on the Midas Main Status page.
+When an alarm has goes off, a banner will appear on the MIDAS Main Status page.
 
 This following image shows the Main status page for the TRIUMF Pol experiment running with the alarm system
 enabled. The alarm on "fepol" has gone off, resulting in a large coloured banner with an alarm message.   
@@ -2396,7 +2396,7 @@ A separate banner will appear for each alarm that is activated. Here three alarm
 are activated. The classes have been set up with different colours for each class of alarm:
  * <br><br><br>
  * <center>
- *  <span class="image">  Midas Main Status page showing three alarm banners
+ *  <span class="image">  MIDAS Main Status page showing three alarm banners
  * <br><br><br>
  *  \image html three_alarms.png
  * </span></center>
@@ -2436,7 +2436,7 @@ sections("Features", "RunControl","FrontendOperation"); // last section; top of 
 
 
 
-<span class = "new">The MSCB (Midas Slow Control Bus) page is a new page that has been recently implemented in
+<span class = "new">The MSCB (MIDAS Slow Control Bus) page is a new page that has been recently implemented in
 mhttpd (@ref ndf_dec_2009) </span>.
 
 <br> This allows web access to all devices in an
@@ -2623,7 +2623,7 @@ Hardware& -> /alias/User_hardware_dir/
 
  * <br><br><br>
  * <center>
- *  <span class="image">  Midas Web server
+ *  <span class="image">  MIDAS Web server
  * <br><br><br>
  *  \image html pol_click_alias.gif
  * </span></center>

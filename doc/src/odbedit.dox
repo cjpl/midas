@@ -6,7 +6,7 @@
 <br>
 \htmlonly
 <script type="text/javascript">
-pages( "RC_Controlling_run",  "RunControl","RC_odbedit_utility", "RC_odbedit", "end" ); // back index next {top bottom}
+pages( "RC_run_control",  "RunControl","RC_odbedit_utility", "RC_odbedit", "end" ); // back index next {top bottom}
 sections("Features", "RunControl","FrontendOperation"); // last section; top of this section; next section
 </script>
 \endhtmlonly
@@ -17,7 +17,7 @@ sections("Features", "RunControl","FrontendOperation"); // last section; top of 
                      
 The @ref RC_odbedit_utility "odbedit utility" is both an @ref F_Online_Database_overview Editor and a <b>Run Control</b> program. 
 <br>
-This is one of the main applications to interact with the different components of the Midas system. It is
+This is one of the main applications to interact with the different components of the MIDAS system. It is
 a simpler alternative to the web-based run control program @ref RC_mhttpd_utility "mhttpd". There are many occasions 
 where \b odbedit is more convenient and faster to use than mhttpd. 
 \b odbedit is used to create the initial ODB, and is a powerful editing tool. It is often used for debugging and
@@ -33,7 +33,7 @@ troubleshooting.
 <br>
 \htmlonly
 <script type="text/javascript">
-pages( "RC_Controlling_run",  "RunControl","RC_odbedit_utility", "RC_odbedit", "" ); // back index next {top bottom}
+pages( "RC_run_control",  "RunControl","RC_odbedit_utility", "RC_odbedit", "" ); // back index next {top bottom}
 sections("Features", "RunControl","FrontendOperation"); // last section; top of this section; next section
 </script>
 \endhtmlonly
@@ -333,7 +333,7 @@ cellspacing="2">  <caption>Above: Meaning of Prompt symbols
 @section RC_odbedit_create_ODB ODB Creation
 
 
-After installation of Midas, before any other tasks are started, the ODB is created for the first time by 
+After installation of MIDAS, before any other tasks are started, the ODB is created for the first time by 
 starting the @ref RC_odbedit_utility "odbedit utility". This automatically creates all the shared-memory files needed for the
 experiment. By default, these files will be created in the area indicated in the 
 @ref Q_Linux_Exptab "exptab file" for your experiment. 
@@ -369,7 +369,7 @@ the  @ref F_History_logging "history" buffer .HISTORY.SHM, the  @ref F_Elog "Elo
 Running odbedit for the first time creates the trees /Runinfo, /Experiment, /System in the ODB. 
 </div>
 Each application will then add its own set of parameters to the database depending on its requirements. 
-For example, starting the @ref F_mlogger_utility "Midas logger" will cause the tree /Logger to be created.
+For example, starting the @ref F_mlogger_utility "MIDAS logger" will cause the tree /Logger to be created.
 
 
 
@@ -926,7 +926,7 @@ settings
 @endcode
 
 <hr>@subsection RC_odbedit_msg  msg - send a user message
-This command can be used to send a message to any client that is receiving midas messages, including the midas message logger, e.g
+This command can be used to send a message to any client that is receiving MIDAS messages, including the MIDAS message logger, e.g
 \code
 [local:cg:S]/>
 16:30:48 [fred] hi
@@ -935,10 +935,10 @@ This command can be used to send a message to any client that is receiving midas
 16:30:48 [fred] power supply has failed
 \endcode
 
-The messages have gone into the Midas log (see @ref RC_odbedit_old "below").
+The messages have gone into the MIDAS log (see @ref RC_odbedit_old "below").
 
 <hr>@subsection RC_odbedit_old  old - display old messages
-This command displays the last N Midas messages, e.g.
+This command displays the last N MIDAS messages, e.g.
 \code
 [local:customgas:S]/>old 9
 Fri May 21 13:36:27 2010 [ODBEdit,INFO] Program ODBEdit on host dasdevpc2 started
@@ -952,7 +952,7 @@ Wed Jun 16 16:30:10 2010 [george] is there a problem?
 Wed Jun 16 16:30:48 2010 [fred] power supply has failed
 \endcode
 
-<hr>@subsection RC_odbedit_passwd  passwd - change/set up the Midas password
+<hr>@subsection RC_odbedit_passwd  passwd - change/set up the MIDAS password
 Example is shown @ref RC_Setup_Security "here". 
 
 <hr>@subsection RC_odbedit_webpasswd  webpasswd - change/set up the web password for mhttpd
@@ -1091,7 +1091,7 @@ create <type> <key>     - create a key of a certain type
 create <type> <key>[n]  - create an array of size [n]
 @endcode
 
-Keys can be created of the types supported by Midas i.e.
+Keys can be created of the types supported by MIDAS i.e.
 <br> INT DWORD BOOL FLOAT DOUBLE STRING
 
 \code

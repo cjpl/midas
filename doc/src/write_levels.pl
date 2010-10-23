@@ -47,19 +47,47 @@ sub write_levels()
 
     $pagelevel=$level=1;
     $il=0;
-    print "\n\nwrite_levels starting\n\n";
-    
+    print "\n\n==============================================================\n";
+    print "write_levels starting...  working on $sortfile\n";
+    print " output files are $tempfile2 (input to doit.pl)  and $hdrfile\n";
+    print "\n================================================================\n\n";    
 
    
     $linenum=0;
     while (<IN>)
     {
         $linenum++;
-        print "\n ***** write_levels:  working on line $linenum: $_  of $sortfile";
         chomp $_;
         unless ($_){ next; } # blank line
+        print "\n write_levels:  working on line $linenum of $sortfile:\n";
+        print "     $_ \n";       
         
-        if ($linenum < 7) { next; } # skip lines containing Organization
+        ### Organization has been moved to the end (section 15) 
+        ###if ($linenum < 7) { next; } # skip lines containing Organization
+        
+#       Expect first line of sorted_info.txt to contain "mainpage"
+        if ($linenum < 2) 
+        {  # skip line containing Mainpage
+            if (/mainpage/i) 
+            {
+                print "found mainpage... skipping line $_ \n";
+                next; 
+            }
+            else
+            {
+                print "write_levels: error... expect first line of sorted_info.txt to contain \"mainpage\" \n";
+                exit; 
+            }
+        }
+# remove dummy Organization from end of file
+        if (/Organization/) 
+        {
+            print "found \"Organization in line %linenum of $sortfile \n";
+            print " ... skipping this line:  $_ \n";
+            next; 
+        }
+
+
         
         if(/^\<!--/)
         {  # comment
@@ -81,9 +109,7 @@ sub write_levels()
             next;
         }
         
-	print "line $linenum \n";
-	print "pagelevel:$pagelevel\n";
-	print "level:$level\n";
+	print "write_levels:  line $linenum;  pagelevel:$pagelevel;   level:$level\n";
 
         
 # look for begin of page 
@@ -148,7 +174,8 @@ sub write_levels()
                 print OUT "\\anchor $pagename$section_index\n"; # match name to ref on next line
 #                print OUTD "<li>\@ref $pagename$section_index \"@comment\"  <!-- level $level -->  \n";
 #               add section to "List of Sections" table 
-                $contents [$sectioncntr]= "\@ref $pagename$section_index  \"@comment\"  <!-- level $level --> <br>";
+#                $contents [$sectioncntr]= "\@ref $pagename$section_index  \"@comment\"  <!-- level $level --> <br>";
+                $contents [$sectioncntr]= "\@ref $pagename$section_index";
 #                print OUTD "<li> \@ref $pagename \"@comment\"  --> \@ref $pagename$section_index \"contents\"  <!-- level $level -->  \n";
                 print OUTD "<li> \@ref $pagename   <!-- level $level -->  \n";
                 print OUT "<br>\n";
@@ -292,17 +319,30 @@ EOT
    close $tempfile2;
    print "closed $sortfile and $tempfile2\n";
     
-    print OUTD  "<li>\@ref Organization  \n";
+  #  print OUTD  "<li>\@ref Organization  \n";
     print OUTD  "</ol></td>\n";
+    #
+    # Write Manual Sections Table  column 2 (Links to Section Indices)
+    #
     print OUTD  "<td  style=\"vertical-align: top; font-weight: bold; background-color: mintcream;\">\n";
-    $contents[0]="\@ref O_Contents_Page  \"SECTION 1: Main\"<br>";
+
+    my @spiel =  qw ( Main Intro Quick-Start Features Run-Control Frontend-Operation Data-Analysis Performance Special-Configurations
+                      Build-Options New-Features Frequently-Asked-Questions Convention Alphabetical Manual-Contents);
+
+    $contents[0]="\@ref O_Contents_Page"; # Main index (top of Section contents page)
     my $elem;
     my $len = $#contents + 1;
-    $contents[$len]="\@ref Main_section_index  \"SECTION 15: Manual Contents\"<br>";
-    print OUTD "<ul class=\"c0\">";
+    $contents[$len]="\@ref O_Contents_Page"; # Section contents page
+    print OUTD "<ul class=\"c1\">\n";
+    my $i=0;
+    for $elem (@spiel)
+    {
+        $elem=~s/-/ /g;
+    }
     for $elem (@contents)
     {
-        print OUTD "<li>$elem \n";
+        print OUTD "<li> $elem \"$spiel[$i] index\" \n";
+        $i++;
     }
 
     footer(); # write the last lines of the header to OUTD ( $hdrfile )

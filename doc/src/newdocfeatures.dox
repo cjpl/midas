@@ -14,7 +14,7 @@ sections("BuildingOptions","NDF","FAQ"); // last section; top of this section; n
 \section ndf_info  General Information
 
 This section will describe what <b>new features</b> are available with new versions
-of the Midas code. References will be given to these features in the documentation, and they
+of the MIDAS code. References will be given to these features in the documentation, and they
 will be highlighted in the text <span class ="new">like this</span>.
 Also included will be any other relevent changes, such as "old features" that were standard, but have since
 become obsolescent. These may have been made optional or removed.   
@@ -24,22 +24,22 @@ See also the <a href="https://ladd00.triumf.ca/elog/Midas">Midas Elog Forum</a> 
   - Bug reports etc https://ladd00.triumf.ca/elog/Midas
   - yet-to-be-documented new features
 
-\subsection NDF_versions Note on Midas Versions
+\subsection NDF_versions Note on MIDAS Versions
 
-Historically, the Midas package was released with an overall version (e.g. 1.9.5, 2.2.0 etc). This had the disadvantage that
+Historically, the MIDAS package was released with an overall version (e.g. 1.9.5, 2.2.0 etc). This had the disadvantage that
 many new features were not available until the release of the next version.
 
 <br>
-The package release system has been discontinued. The latest version of the Midas package is now
+The package release system has been discontinued. The latest version of the MIDAS package is now
 available from the  <a href="http://savannah.psi.ch/viewcvs/trunk/?root=midas" > online SVN 
-</a> repository. As a changes are made to the files in the Midas package, a common version number is incremented. Each file has an
+</a> repository. As a changes are made to the files in the MIDAS package, a common version number is incremented. Each file has an
 individual version number, but updates of a particular file in svn will not necessarily have consecutive version numbers.
 For example, the next version of mhttpd.c after 4708 is 4722. The missing version numbers have been used to update different
-files in the package. Checking out the Midas package on a particular day will get the latest working version of the Midas package
+files in the package. Checking out the MIDAS package on a particular day will get the latest working version of the MIDAS package
 with all the new features.
 <br>
 In this documentation, new features will be dated (month/year) after which an update from svn will include the new feature.
-The version of the file (and therefore of the Midas package) that included the new feature is listed  @ref ndf_New_Features "below".
+The version of the file (and therefore of the MIDAS package) that included the new feature is listed  @ref ndf_New_Features "below".
 Features will be considered to be "new" for a year or so, then will become standard, and no longer be listed is this file, 
 
 
@@ -79,7 +79,7 @@ Features will be considered to be "new" for a year or so, then will become stand
  - Improvements to the History system (mlogger.c,  mhttpd.c 4435)<br> \b Note: backup ODB before using the following: 
       - history in SQL database (see @ref F_History_sql_internal)
           - see  @ref  F_new_history_tags "Note on /History/Tags"
-      - experimental implementation of "ODBRpc" @ref RC_mhttpd_custom_RPC_access  added to the midas javascript library
+      - experimental implementation of "ODBRpc" @ref RC_mhttpd_custom_RPC_access  added to the MIDAS javascript library
 
 
     

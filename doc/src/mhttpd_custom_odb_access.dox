@@ -190,7 +190,7 @@ defval</td>
 <tr>
 <td colspan="1" style="vertical-align: top; background-color: white; font-weight: bold; text-align: left;  ">type</td>
 <td colspan="1" style="vertical-align:top;  font-weight: normal; text-align: left; ">
-Type to use if creating the key. One of the Midas Type definitions (see @ref F_Midas_Data_Types).
+Type to use if creating the key. One of the MIDAS Type definitions (see @ref F_Midas_Data_Types).
 </td>
 </tr>
 </table> <!--  table 2 -->
@@ -913,7 +913,7 @@ sections("Features", "RunControl","FrontendOperation"); // last section; top of 
 
 The @ref RC_mhttpd_custom_js_lib  "JavaScript library function" \b ODBRpc is defined for RPC access
 (the library must be @ref RC_mhttpd_include_js_library "included") :
-This permits buttons on midas "custom" web pages to
+This permits buttons on MIDAS "custom" web pages to
 invoke RPC calls directly into user frontend programs, for example to turn
 hardware modules on or off.
  

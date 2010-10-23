@@ -24,7 +24,7 @@ supported formats (see  @ref FE_tbl_Format "equipment list" for details).
 \anchor idx_format_MIDAS
 \anchor idx_Midas_format
 \anchor Midas_format
-<hr> @section FE_Midas_format Midas format
+<hr> @section FE_Midas_format MIDAS format
 Special formats are used in MIDAS for the event header, banks and when writing to disk
 or tape.
 This section explains these formats in detail.
@@ -64,7 +64,7 @@ Figure 2 shows a MIDAS event containing banks coloured to match the structure in
 obtained from a MIDAS data file using the  @ref RC_mdump_utility "mdump utility".
 
 <br><br>
-<span class="image"> Figure 2: Example of midas banks dumped by <span class="client">mdump</span>.</span>
+<span class="image"> Figure 2: Example of MIDAS banks dumped by <span class="client">mdump</span>.</span>
 <br>
 ------------------------ Event# 2 --------------------------------<br>
 <span style="background-color: rgb(204, 204, 255);">Evid:000d- Mask:0000- Serial:0- Time:0x4c7a6869- Dsize:48/0x30</span><br>

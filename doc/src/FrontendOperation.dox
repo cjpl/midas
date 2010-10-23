@@ -13,7 +13,7 @@ sections("RunControl","FrontendOperation","DataAnalysis"); // last section; top 
 @section FE_Intro Introduction
 
 The \b terms that are needed for a discussion of the frontend will be introduced here. The features of a typical 
-frontend program will then be explained by reference to some of the examples included with the Midas package. 
+frontend program will then be explained by reference to some of the examples included with the MIDAS package. 
 <br>
 
 @subsection FE_program Frontend Program
@@ -23,16 +23,16 @@ in use by the experiment.  The frontend program (image) consists of
  - a fixed  <em>experiment-independent system framework</em> (mfe.c)
  - a <em>user part</em> (frontend.c)
 
-A set of templates for the user part is provided in the Midas package. The hardware access is only 
+A set of templates for the user part is provided in the MIDAS package. The hardware access is only 
 apparent in the user part ( referred to here as frontend.c, but the user may select any name). The system 
-framework is contained in the file mfe.c, which is part of the Midas package. The term "frontend code" 
+framework is contained in the file mfe.c, which is part of the MIDAS package. The term "frontend code" 
 in this document usually refers to the user part, since the system framework is fixed. 
 <br>
 
 The frontend task, once built, is run as described as follows.
 
 \anchor idx_frontend_utility
-@subsection FE_frontend_utility frontend  - Midas Frontend application
+@subsection FE_frontend_utility frontend  - MIDAS Frontend application
 
 The "frontend" task is built by the user and may have any name the user chooses
 (e.g. fecamac, fegpib). The purpose of a @ref FE_program is to collect data from 
@@ -68,15 +68,16 @@ Start the application superceding the default host, experiment and port:
 e.g. fegpib -e exp218 -h isdaq10 -p 7077 -D
 @endcode
 
-@anchor idx_Equipment_hardware 
-@subsection FE_hw_equipment Hardware Equipment
-Examples of hardware equipment accessed by the frontend are ADC modules, TDC modules, Scaler modules etc. 
+@anchor idx_hardware 
+@subsection FE_hw_equipment Hardware Modules
+Examples of hardware modules accessed by the frontend are ADC modules, TDC modules, Scaler modules etc. 
 
+@anchor idx_hardware_drivers
 @subsection FE_drivers Hardware Drivers
 
 The frontend is usually linked to a \b driver for the particular hardware in use. Dedicated header and library 
 files (drivers) for hardware access 
-to CAMAC, VME, Fastbus, GPIB and RS232 are part of the Midas distribution set.
+to CAMAC, VME, Fastbus, GPIB and RS232 are part of the MIDAS distribution set.
 Several libraries and drivers exist for the various bus systems.
 See @ref FE_Hardware.
 
@@ -84,7 +85,7 @@ The drivers are located in the drivers directory of the MIDAS distribution.
 Some libraries consist only of a header file, others of a C file plus a header file.
 The file names usually refer to the manufacturer abbreviation followed by
 the model number of the device. The libraries are continuously expanding to widen
-Midas support.
+MIDAS support.
 
 ESONE standard routines for CAMAC are supplied and permit the re-use of the frontend code
 among different platforms as well as among different CAMAC hardware interfaces, without
@@ -128,9 +129,9 @@ service the VME hardware, while another might service the CAMAC hardware.
 
 A typical frontend will:
 
- -    Register the given Equipment list(s) to a specific Midas experiment.
+ -    Register the given Equipment list(s) to a specific MIDAS experiment.
  -    Provide the mean of collecting data from the hardware source defined by each Equipment read function.
- -    Gather these data in one of the supported formats (i.e. Fixed format or in Midas data bank(s)) for each Equipment.
+ -    Gather these data in one of the supported formats (i.e. Fixed format or in MIDAS data bank(s)) for each Equipment.
  -    Send these data banks to the buffer manager either locally or remotely.
  -    Periodically collect statistics of the acquisition task, and send them to the Online Database.
 

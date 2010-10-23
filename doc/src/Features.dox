@@ -14,7 +14,7 @@ sections("Quickstart", "Features", "RunControl");
 <br>
 
 @section F_Midas_Overview_Intro General Acquisition Principles
-The Midas DAQ system is based on a modular scheme that allows scalability and flexibility.
+The MIDAS DAQ system is based on a modular scheme that allows scalability and flexibility.
 The operation of each component is handled by a subset of functions, but all the components
 are grouped in a single library (libmidas.a, libmidas.so (UNIX),  midas.dll (NT)).
 
@@ -22,7 +22,7 @@ The overall C-code is over 80,000 lines long and makes up more than 450 function
 However, from the user's point of view, only a subset of these routines are needed 
 for most operations.
  
-Each Midas component is briefly described below but links will be provided to
+Each MIDAS component is briefly described below but links will be provided to
 more detailed information in the documentation. 
 All these software components are available from the standard package.
 Basic components such as the  @ref F_Buffer_Manager_overview, @ref F_Online_Database_overview,
@@ -43,7 +43,7 @@ by activation of the component through the @ref F_Online_Database_overview.
 
 <br>
 \anchor end
-<!-- End of page  Features Features of the Midas DAQ System -->
+<!-- End of page  Features Features of the MIDAS DAQ System -->
 */
 
 
@@ -56,7 +56,7 @@ by activation of the component through the @ref F_Online_Database_overview.
 
 
 <!-- ============================ L O G G I N G ==================== -->
-/*! @page F_Logging Logging in Midas
+/*! @page F_Logging Logging in MIDAS
 \anchor idx_Logging
 \htmlonly
 <script type="text/javascript">
@@ -68,7 +68,7 @@ sections("Quickstart", "Features", "RunControl");
 
 <br>
 @section F_Midas_Logger Introduction
-A Midas utility @ref F_mlogger_utility is supplied in the Midas package. 
+A MIDAS utility @ref F_mlogger_utility is supplied in the MIDAS package. 
 This utility can perform several functions (selected by the user via the  
 @ref F_Logger_tree ) including:
 
@@ -95,7 +95,7 @@ This utility can perform several functions (selected by the user via the
   <li> collecting and logging  @ref F_History_logging "history events"
 </ul>
 <span style="color: green; font-size: 100%;">
-When the Midas logger (@ref F_mlogger_utility "mlogger") is started for the first time, it creates the
+When the MIDAS logger (@ref F_mlogger_utility "mlogger") is started for the first time, it creates the
 @ref F_Logger_tree (including a single logger channel - channel 0), and fills it with default settings. 
 </span> The  <span class="odb">/Logger</span> tree contains all the relevant information for <span class="utility">mlogger</span> to run properly.
 The user has no code to write in order for the system to operate correctly. However, the user will want
@@ -105,7 +105,7 @@ in the <span class="odb">/Logger</span> tree to suitable values.
 <br>
 In addition to the <span class="odb">/Logger</span> tree, <span class="utility">mlogger</span>  also creates
 the <span class="odb">/History</span> and <span class="odb">/Elog</span> ODB trees, used in the optional
-@ref F_History_logging "History" and @ref F_Elog  "Electronic Logbook" features.  If Midas is compiled
+@ref F_History_logging "History" and @ref F_Elog  "Electronic Logbook" features.  If MIDAS is compiled
 with mySQL support, a <span class="odb">mySQL</span> subtree will 
 also be created in the \b /Logger tree (see @ref F_mySQL). All these features are described in the following pages.
 
@@ -135,9 +135,9 @@ The user may of course write their own custom data logger to save the data in an
 \anchor idx_Logging_utility-see-mlogger
 \anchor idx_mlogger-utility
 
-@section F_mlogger_utility mlogger     - Midas Logger
+@section F_mlogger_utility mlogger     - MIDAS Logger
 
-The Midas Logger, <span class="utility">mlogger</span>,  is the main application that collects data from one or more frontends
+The MIDAS Logger, <span class="utility">mlogger</span>,  is the main application that collects data from one or more frontends
 under certain conditions and stores them onto a physical device such as \em disk or
 \em tape. It also acts as a <b> history event </b> collector and can also store data in a \b mySQL database. 
 <br>
@@ -192,13 +192,13 @@ sections("Quickstart", "Features", "RunControl");
 <br><br>
 
 @anchor  end
-<!-- End of page F_Logging Logging in Midas 
+<!-- End of page F_Logging Logging in MIDAS 
 
      a sub-page of FEATURES -->
 */
  
 <!-- ======================== F_LOGGING_DATA ================= -->
-/*! @page F_Logging_Data Customizing the Midas data logging
+/*! @page F_Logging_Data Customizing the MIDAS data logging
 \anchor idx_Logging_Data
 \htmlonly
 <script type="text/javascript">
@@ -665,7 +665,7 @@ or db_copy() respectively.
 <td style="vertical-align: top; font-weight: normal; text-align: left;">BOOL
 </td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;"> 
- If set to "y", midas messages during mounting tapes and writing of EOF
+ If set to "y", MIDAS messages during mounting tapes and writing of EOF
   marks are generated. This can be useful for slow tapes to inform all users in a
   counting house about the tape status. Default value is "y".
 </td>
@@ -1217,7 +1217,7 @@ If the Compression Level is set to 0, compression is turned off.
 If set &gt; 0,  the data files are compressed before 
 being written. In this case,
  - the file extension ".gz" must be appended to the @ref F_Logger_CS_Filename "Filename" Key (see also @ref F_Logger_CS_Format "Format" Key)
- - and ZLIB support must be compiled into the Midas package (see @ref BO_NEED_ZLIB ).
+ - and ZLIB support must be compiled into the MIDAS package (see @ref BO_NEED_ZLIB ).
  
 This feature applies only to files saved onto  \b disk in MIDAS format. ROOT format is already compressed.
 </td>
@@ -1591,7 +1591,7 @@ of message. A dedicated buffer (i.e. shared memory)  @ref RC_odbedit_create_ODB 
 <br>
 \anchor idx_message_types
 @anchor F_message_types
-Predefined Message Macros contained in the Midas library cover most of the message
+Predefined Message Macros contained in the MIDAS library cover most of the message
 requirements. These Macros compact the 3 first arguments of the cm_msg() call.
 The Macro replaces the type of message, the routine name and the line number in the
 C-code. See example in cm_msg().
@@ -1607,12 +1607,12 @@ The available message types ( defined in midas.h ) for use with cm_msg() are:
 
 <br>
 \anchor idx_message_log-file
-<hr> @section F_Log_File Midas Log file
+<hr> @section F_Log_File MIDAS Log file
 
-Midas provides a general log file for recording system and
+MIDAS provides a general log file for recording system and
 user messages across the different components of the data acquisition clients. The default name of this file is <b>"midas.log"</b>,
-It is not necessary for @ref F_mlogger_utility "mlogger" to be running for the Midas message logging system to
-work. As soon as any midas application is started, the log file is
+It is not necessary for @ref F_mlogger_utility "mlogger" to be running for the MIDAS message logging system to
+work. As soon as any MIDAS application is started, the log file is
 produced.
 <br>
 \anchor idx_message_log-file_location
@@ -1626,7 +1626,7 @@ The location of this file is dependent on the setup of the experiment.
  
 
  - \b without the <span class="odb">/Logger tree</span> :
-    - If the ODB <span class="odb">/Logger</span> tree does NOT exist , i.e. the Midas standard logger
+    - If the ODB <span class="odb">/Logger</span> tree does NOT exist , i.e. the MIDAS standard logger
 @ref F_mlogger_utility "mlogger" is not being used, then the location of the log file will be in
 the <b> experiment-specific </b> directory defined by either
          - the  @ref BO_Environment_variables "Environment Variable" named  @ref BO_MIDAS_DIR ,  or if this not defined, 
@@ -1634,10 +1634,10 @@ the <b> experiment-specific </b> directory defined by either
 
 <br>
 
-The Midas log file contains system and user messages generated by
+The MIDAS log file contains system and user messages generated by
 any application connected to the given experiment.
 
-The predefined @ref F_message_types "Midas Message macros" provide a list of defined messages types.
+The predefined @ref F_message_types "MIDAS Message macros" provide a list of defined messages types.
 
 @code 
 Fri Mar 24 10:48:40 2000 [CHAOS] Run 8362 started
@@ -1664,7 +1664,7 @@ Fri Mar 24 12:19:57 2000 [MChart] Program MChart on host koslx0 stopped
 <br>
 <hr> @section F_mspeaker_utility m[lx]speaker - audible messaging
 
-\b mspeaker, mlxspeaker are utilities which listen to the Midas messages system
+\b mspeaker, mlxspeaker are utilities which listen to the MIDAS messages system
 and pipe these messages to a speech synthesizer application. \b mspeaker
 is for the Windows based system and interface to the
 <a href="http://www.fbyte.com"> FirstByte/ProVoice package</a>.
@@ -2055,17 +2055,17 @@ sections("Quickstart", "Features", "RunControl");
 <br>
 \anchor idx_history_system
 
-@section F_History_System Midas History System
+@section F_History_System MIDAS History System
 
 \todo The history section needs to be reviewed 
  
-The history system is an add-on capability built into the  @ref F_mlogger_utility "Midas data logger"
+The history system is an add-on capability built into the  @ref F_mlogger_utility "MIDAS data logger"
 to record useful information in parallel to the data logging.
 This information is recorded with a time stamp and saved into a history file (in a  
 @ref F_History_format "special format" of the form of a database)
 for later retrieval.  One set of files is created per day containing all
 the requested history events.  The history data may be displayed in graphical form using
-the  @ref RC_mhttpd_utility "mhttpd" Midas webserver utility, giving the user an easy way of seeing 
+the  @ref RC_mhttpd_utility "mhttpd" MIDAS webserver utility, giving the user an easy way of seeing 
 how experimental variables have changed with time.
 <br>
 The history logging will be in action \b only if the logger is running, but it is not necessary to
@@ -2184,7 +2184,7 @@ The frequency of the history writes is specified by the number of seconds betwee
 ODB key <span class="odb">/Equipment/\<<em>Equipment-Name</em>\>/Common/Log history</span>.
   -# history.c::hs_write() or history_odbc::hs_write_odbc() writes the data into a history file or into an SQL database.
 
-The internal structure of midas history files is documented in  @ref F_History_format .
+The internal structure of MIDAS history files is documented in  @ref F_History_format .
 <br>
 
 \anchor idx_history_enable
@@ -2246,7 +2246,7 @@ The <b>history variable name</b> for each element of the Frontend History Event 
 
    
      <ul>
-     <li>In the case of a @ref  FE_Midas_format "Midas format" event:
+     <li>In the case of a @ref  FE_Midas_format "MIDAS format" event:
 
         <ul>
         <li><b>If the ODB key</b>  <span class="odb">/Equipment/equipment-name/Settings/Names \<bankname\>[ ]</span>  <b>IS present</b>, 
@@ -2387,7 +2387,7 @@ History                         DIR
 
 
 
-A second sub-tree is added to the <span class="odb">/History</span> by the @ref RC_mhttpd_utility  "Midas web server"
+A second sub-tree is added to the <span class="odb">/History</span> by the @ref RC_mhttpd_utility  "MIDAS web server"
 when the @ref RC_mhttpd_History_page "History" button on the main status page is pressed.
 
 @code 
@@ -2407,7 +2407,7 @@ Display                         DIR
         Zero ylow               BOOL    1     4     36h  0   RWD  y
 @endcode  
 
-This defines a default history display under the Midas web server as long as the reference
+This defines a default history display under the MIDAS web server as long as the reference
 to "System" is correct. See  @ref RC_mhttpd_History_page  and the @ref  F_History_tree_keys "table below" for
 more information about these these fields.
 
@@ -2763,7 +2763,7 @@ This tree is created automatically when the logger  is started.
  <span class="new">
 (SQL History System added  @ref ndf_jan_2009 ).
 </span>
-<br>This section describes the internal workings of the midas SQL history system.
+<br>This section describes the internal workings of the MIDAS SQL history system.
 
 The SQL history system implements the MIDAS history using
 a @ref F_Logger_mySQL "SQL database" for data storage instead of flat binary files.
@@ -2785,7 +2785,7 @@ history files are 50% or better).
 Preliminary testing also indicates that MySQL database is "not too slow" for use
 by T2K/ND280 slow control system. Using MySQL, performance seems to
 improve somewhat compared to traditional history because each SQL table is stored
-into a separate file, compared to everything-in-one-file in traditional midas
+into a separate file, compared to everything-in-one-file in traditional MIDAS
 history.
 
 @subsection F_History_sql_enable How to enable writing history to SQL
@@ -2838,7 +2838,7 @@ Password     =
 @endcode
 \anchor  F_History_sql_pervariable
 <li> set key <span class="odb">/History/PerVariableHistory</span> to 1
-<br>(\b BEWARE! This will change the format of normal midas history files. You do not have to enable per-variable history to use the SQL interface, but the layout of SQL tables may be suboptimal in the same way the layout of data in the midas history file is suboptimal).
+<br>(\b BEWARE! This will change the format of normal MIDAS history files. You do not have to enable per-variable history to use the SQL interface, but the layout of SQL tables may be suboptimal in the same way the layout of data in the MIDAS history file is suboptimal).
 <li> set ODB keys
     <ul>
     <li> <span class="odb">/Logger/ODBC_DSN</span> to "history_writer"
@@ -2846,7 +2846,7 @@ Password     =
     </ul>
 <li> run <span class="utility">mlogger -v</span>, and observe how it issues SQL commands to create the tables and columns corresponding to MIDAS history events and tags.
 <li> <span class="utility">mlogger</span> is programmed to raise alarms if connection to SQL database is interrupted or if some events cannot be
-written into the database (i.e. data type mismatch, SQL syntax errors, etc). The traditional midas history never raised
+written into the database (i.e. data type mismatch, SQL syntax errors, etc). The traditional MIDAS history never raised
 alarms because it "never failed" - other than from "disk full" errors, which are immediately obvious.
 </ol>
 
@@ -2875,7 +2875,7 @@ each array element: array a[3] will produce columns a_0, a_1 and a_2.
 and in the SQL "time" format. (A priori, it is not clear which timestamp format is more useful for end users. <span class="utility">mhttpd</span> uses
 the _i_time integer time format). Note that this timestamp is the time when <span class="utility">mlogger</span> receives the hot-link signal
 (see  @ref F_history_hot_link "above")
-and it can be a few seconds behind the time when the user placed the data into the midas bank. For high precision (and sub-second time resolution) time stamps, users should generate their own timestamps and include them as part of the data itself.
+and it can be a few seconds behind the time when the user placed the data into the MIDAS bank. For high precision (and sub-second time resolution) time stamps, users should generate their own timestamps and include them as part of the data itself.
 <li> a special table called \b _history_index is created to remember the mapping between SQL names and MIDAS names for event names, variable name and tag names.
 </ul>
 
@@ -3005,11 +3005,11 @@ History data retriever.
   Apr 24 23:01:39 2000    0
   @endcode
 - <b> Remarks </b>: History data can be retrieved and displayed through the
-Midas web page (see @ref RC_mhttpd_utility "mhttpd").
+MIDAS web page (see @ref RC_mhttpd_utility "mhttpd").
 
 
 - <b> Example </b> 
- * <center>  <span class="image"> Midas Web History display.</span>
+ * <center>  <span class="image"> MIDAS Web History display.</span>
  *  \image html mhhist.gif
  * </center> 
 
@@ -3195,7 +3195,7 @@ sections("Quickstart", "Features", "RunControl");
 \anchor idx_Logging_Elog
 @section F_Elog_Intro Introduction
 The Electronic logbook (Elog) is an alternative way of recording experiment information.
-This is implemented through the Midas web server @ref RC_mhttpd_utility "mhttpd" (see @ref RC_mhttpd_Elog_page).
+This is implemented through the MIDAS web server @ref RC_mhttpd_utility "mhttpd" (see @ref RC_mhttpd_Elog_page).
 
 
 @section F_Logger_Elog_Files_Location Location of Elog Files
@@ -3227,14 +3227,14 @@ String length [32]:128
 
 @section F_Elog_Custom Customizing the Elog
 The Electronic logbook (Elog) is an alternative way of recording experiment information.
-This is implemented through the Midas web server @ref RC_mhttpd_utility "mhttpd" (see @ref RC_mhttpd_Elog_page ).
-The <span class="odb">/Elog</span> tree is created automatically when the Midas Logger (<span class="utility">mlogger</span>) is started for the first time.
+This is implemented through the MIDAS web server @ref RC_mhttpd_utility "mhttpd" (see @ref RC_mhttpd_Elog_page ).
+The <span class="odb">/Elog</span> tree is created automatically when the MIDAS Logger (<span class="utility">mlogger</span>) is started for the first time.
 The definition of the options are described in @ref F_ODB_Elog_Tree.
 
 \anchor idx_ODB_tree_Elog
 @subsection F_ODB_Elog_Tree The ODB /Elog Tree
 
-This tree describes the Elog settings used through the Midas web server.
+This tree describes the Elog settings used through the MIDAS web server.
 See @ref  RC_mhttpd_Elog_page "mhttpd Elog page" for setting up the different Elog page displays.
 The meaning of each key is described in the  @ref F_ODB_Elog_Tree_Keys "table below".
 
@@ -3636,7 +3636,7 @@ List
 \endcode
 
 <br><hr><br>
-@subsection F_ODB_Lazy_Settings The  ODB /Lazy/<channel_name>/Settings subtree
+@subsection F_ODB_Lazy_Settings_example Example of the  ODB /Lazy/<channel_name>/Settings subtree
 An example of the <span class="odb">Settings</span> subtree for a lazylogger channel is shown below:
 
 @code
@@ -3662,7 +3662,7 @@ An example of the <span class="odb">Settings</span> subtree for a lazylogger cha
 <br><hr><br>
 @subsection F_ODB_Lazy_Settings Explanation of the Keys in the  ODB /Lazy/<channel_name>/Settings  subtree
 The following table explains the meaning of the keys in the <span class="odb">Settings</span> subtree. An example of
-the subtree is shown  @ref F_ODB_Lazy_Settings "above".
+the subtree is shown  @ref F_ODB_Lazy_Settings_example "above".
 
 <table style="text-align: left; width: 100%;" border="1" cellpadding="2"
 cellspacing="2">
@@ -3999,7 +3999,7 @@ Specifies the maximum "slow device" capacity in bytes.
   Lazy_3     3.2      23, 26, 29, ...
   @endcode
 
-  In the example of  the <span class="odb">/Settings</span> tree  @ref F_ODB_Lazy_Settings "above",
+  In the example of  the <span class="odb">/Settings</span> tree  @ref F_ODB_Lazy_Settings_example "above",
   the <span class="odb">Modulo.Position</span> is set to 2.1 , indicating
   this is instance 1, and two lazyloggers are running.
 </td>
@@ -4134,7 +4134,7 @@ tape                            DIR
 @subsection F_ODB_Lazy_operation  Operation of the Lazylogger
 
 For every major operation of the lazylogger a message is sent to the
-Message buffer and will be appended to the default Midas log file  (@ref F_Log_File "midas.log"). These
+Message buffer and will be appended to the default MIDAS log file  (@ref F_Log_File "midas.log"). These
 messages are the only mean of finding out What/When/Where/How the lazylogger has operated
 on a data file. A fragment of the <b>midas.log</b> for the chaos experiment is shown below.
 In this case, the @ref F_Lazy_maintain_free_space "Maintain free space(%)" field was enabled which produces the
@@ -4338,7 +4338,7 @@ variables/:
 
 - Running a pre-existing configuration file and spawning stripchart, this will work
 only if Tcl/Tk and bltwish packages are installed and the stripchart.tcl has been
-installed through the Midas Makefile.
+installed through the MIDAS Makefile.
  @code
   chaos:~/chart> mchart -f chv.conf -gh
   spawning graph with stripchart /home/chaos/chart/chv.conf ...
@@ -4364,10 +4364,10 @@ Tape manipulation utility.
 <hr> @section F_stripchartfile stripchart   - graphical stripchart data display
 
 This is a tcl file (stripchart.tcl) which operates on @ref F_mchart_utility data or on 
-Midas history save-set files (see also @ref F_History_System).
+MIDAS history save-set files (see also @ref F_History_System).
 
 - <b> Arguments </b>
-   - [-mhist ] : start stripchart for Midas history data.
+   - [-mhist ] : start stripchart for MIDAS history data.
 - <b> Usage </b>:
  stripchart <-options> \<config-file\>
  -mhist:   (look at history file -default)

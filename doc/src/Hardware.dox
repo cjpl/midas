@@ -1,4 +1,4 @@
-/*! @page FE_Hardware Supported Hardware: Midas driver library
+/*! @page FE_Hardware Supported Hardware: MIDAS driver library
 <!-- formerly Appendix B 
 
   Now in Frontend appendix section. Follows page FE_Data_format  
@@ -13,6 +13,7 @@ sections("RunControl","FrontendOperation","DataAnalysis");
 </script>
 \endhtmlonly
 
+\anchor idx_Hardware_driver_library
 
 The driver library is continuously extended to suit the needs of various
 experiments based on the selected hardware modules. Not all commercially 
@@ -41,7 +42,7 @@ midas</a> for specific support or for submitting new drivers.
   and PCI interface are in use. Most recent development is the USB/CAMAC
   interface from Wiener (<a href="http://www.wiener-d.com/M/17/7.html">CCUSB</a>).
   While this interface permits <b>CAMAC Command Stacks</b> this option is not
-  yet supported by the Midas API limiting the access speed of a R/W 24bit cycle 
+  yet supported by the MIDAS API limiting the access speed of a R/W 24bit cycle 
   to ~360us!
    
 - @ref VME_drivers The VME API has been revisited for a better function call set.
@@ -57,6 +58,7 @@ midas</a> for specific support or for submitting new drivers.
 
 - @ref Other_drivers This include the TCP/IP, Serial access layer.
 
+\anchor idx_Hardware_drivers_CAMAC
 <hr> @section CAMAC_drivers CAMAC drivers
 The CAMAC drivers can be used in different configuration and may have special
 behaviors depending on the type of hardware involved. Below are summurized some
@@ -87,19 +89,19 @@ remarks about these particular hardware modules.
   The driver supports only one 5331 card with up to four CAMAC crates.
   - <b>[kcs292x.c]</b>
   The 2926 is an 8 bit ISA board, while the 2927 is a 16bit ISA board.
-  An equivalent PCI interface (2915) exists but is not yet supported by Midas (See
+  An equivalent PCI interface (2915) exists but is not yet supported by MIDAS (See
   <a href="http://www.kscorp.com/www/camac/1000/2915.html">KCS</a>).
   No support for Windowx yet.
   <br><br>
   Both cards can be used also through a proper Linux driver \em camaclx.c.
   This requires to first load a module \em camac-kcs292x.o.
-  This software is available but not part of the Midas distribution yet.
+  This software is available but not part of the MIDAS distribution yet.
   Please contact <a href="mailto:midas@triumf.ca?subject=KCS driver">midas</a> for further information.
   <br><br>
   - <b>[wecc32.c]</b>
   The CAMAC crate controller CC32 interface to a PCI card... you will need the
   proper Linux module... Currently under test. WindowsNT and W95 drivers available but not
-  implemented under Midas.
+  implemented under MIDAS.
   (see <a href="http://www.wiener-d.com/cc32.htm">CC32</a>)
   - <b>[dsp004.c]</b>
   The dsp004 is an 8 bit ISA board PC interface which connect to the
@@ -107,7 +109,7 @@ remarks about these particular hardware modules.
   somehow several labs still have that controller in use.
   - <b>[ces8210.c]</b>
   The CAMAC crate controller CBD8210 interface is a VME module to give access up to 7 CAMAC
-  crate. In conjunction with the mvmestd.h and mcstd.h, this driver can be used on any Midas/VME interface.
+  crate. In conjunction with the mvmestd.h and mcstd.h, this driver can be used on any MIDAS/VME interface.
   - <b>[jorway73a.c]</b>
   The CAMAC crate controller Jorway73a is accessed through SCSI commands.
   This driver implement the mcstd.h calls.
@@ -115,13 +117,13 @@ remarks about these particular hardware modules.
 - CAMAC drivers
   - \b [camacnul.c] Handy fake CAMAC driver for code development.
   - \b [camacrpc.c] Remote Procedure Call CAMAC driver used for accessing the CAMAC
-  server part of the standard Midas frontend code. This driver is used for example
+  server part of the standard MIDAS frontend code. This driver is used for example
   in the @ref FE_mcnaf_utility "mcnaf" and @ref RC_mhttpd_utility "mhttpd" utilities.
 
-
+\anchor idx_Hardware_drivers_VME
 <hr> @section VME_drivers VME drivers
 The VME modules drivers can be interfaced to any type of PCI/VME controller.
-This is done by dedicated Midas VME Standard calls from the mvmestd.h files.
+This is done by dedicated MIDAS VME Standard calls from the mvmestd.h files.
 
 - PCI/VME interface
   - \b [sis1100.c]
@@ -130,7 +132,7 @@ This is done by dedicated Midas VME Standard calls from the mvmestd.h files.
   - \b [bt617.c]
   Routines for accessing VME over SBS Bit3 Model 617 interface under Windows NT
   using the NT device driver Model 983 and under Linux using the vmehb device driver.
-  The VME calls are implemented for the "mvmestd" Midas VME Standard.
+  The VME calls are implemented for the "mvmestd" MIDAS VME Standard.
   (see <a href="http://www.sbs.com/computer/products/cp_adapters.shtml">Bit3</a>).
   - \b [wevmemm.c]
   PCI/VME Wiener board supported. (see <a href="http://www.wiener-d.com/vmepci.htm">Wiener PCI</a>).
@@ -149,16 +151,16 @@ This is done by dedicated Midas VME Standard calls from the mvmestd.h files.
   - \b [ces8210.c] CES CAMAC crate controller.
   - \b [vmeio.c] Triumf VMEIO General purpose I/O 24bits.
 
+\anchor idx_Hardware_drivers_USB
 <hr> @section USB_drivers USB drivers
 This section is under development for the Wiener USB/CAMAC CCUSB controller. 
 Support for Linux and XP is undergo. 
 Please contact <a href="mailto:midas@psi.ch, midas@triumf.ca?subject=USB driver">midas</a> for further information.
 
-For GPIB Linux support please refer to
-<a href="http://www.llp.fu-berlin.de/pool/software/busses/">The Linux Lab Project</a>
 
+\anchor idx_Hardware_drivers_GPIB
 <hr> @section GPIB_drivers GPIB drivers
-There is no specific GPIB driver part of the Midas package. But GPIB is used at
+There is no specific GPIB driver part of the MIDAS package. But GPIB is used at
 Triumf under WindowsNT for several Slow Control frontends.
 The basic GPIB DLL library is provided by
 <a href="http://www.ni.com/default.htm">National Instrument</a>.
@@ -167,6 +169,7 @@ Please contact <a href="mailto:midas@triumf.ca?subject=GPIB driver">midas</a> fo
 For GPIB Linux support please refer to
 <a href="http://www.llp.fu-berlin.de/pool/software/busses/">The Linux Lab Project</a>
 
+\anchor idx_Hardware_drivers_other
 <hr> @section Other_drivers Other drivers
 
 - <b>[Serial driver]</b> rs232.c communication routines.

@@ -70,8 +70,8 @@ sub mine()
 	
 #	if ($infile eq "Organization.dox")
 #	{ print "Skipping Organization.dox\n";next;}
-	print "Working on file $infile :\n";
-	#print OUT "\n ********* Working on file $infile :\n";
+
+	print  "\n ********* Working on file $infile *********** \n";
 	open IN, $infile or die "Can't open input file $infile : $!\n";
 	$code=0; #new file 
 	$linenum=0;
@@ -145,7 +145,7 @@ sub mine()
 		{   
                    # see if there's any level information for this subpage (e.g. <-- \level= + or - -->
                     $tmpstr = check_sublevel($_); # returns any \level string
-                    print "after check_sublevel, tmpstr=\"$tmpstr\" \n"; 
+                    # print "after check_sublevel, tmpstr=\"$tmpstr\" \n"; 
 		    #note which page this is a subpage of
 		    print OUT "\\subpage $temp   <!-- subpage under page $pagename in $infile  $tmpstr -->\n";
                     next;
@@ -227,53 +227,47 @@ sub set_sublevel($$$)
     my ($temp,$sign);
     my $x=0;
     my (@fields);
-    print ("check_level starting...");
-    print ("Line:$_\n");
+
 #    print ("Item:$item\n");
 #    print ("Len:$len\n");
-    print "level = $level\n";
+#    print "level = $level\n";
     
     
     
     unless (/(\\|@)$item((.\d*)?)/) 
-    {   print "next_field: page $linenum: did not find $item in $_\n";
+    {   #  print "set_sublevel: page $linenum: did not find $item in $_\n";
         return $level; 
     }
-    print "found $item in line:$_ \n";
-    print "dollar1=$1\n";
-    print "dollar2=$2\n";
+    print "set_sublevel: at level $level; found $item in line:$_ \n";
+    #print "dollar1=$1\n";
+    #print "dollar2=$2\n";
     $temp = $2;
     if ($temp =~/(\+|\-)/)
     {
-        print "found + or - in  dollar2; $1\n";
+        # print "set_sublevel: found + or - in  dollar2; $1\n";
         $sign=$1;
         $x=1; # default
         
         if  ($temp=~ /(\d$)/ )
              {
                  $x=$1;
-                 print "found a digit $x\n";
+                 # print "set_sublevel: found a digit $x\n";
              }
              
              
              if ($sign=~/\+/)
              { 
-                 print "found + $x \n";
+                # print "set_sublevel: found + $x \n";
                  $level += $x;
              }
              else 
              { 
-                 print "found - $x \n";
+                # print "set_sublevel: found - $x \n";
                  $level -= $x;
              }
-             print "level was 5, now level is $level\n";
+             print "set_sublevel: level was 5, now level is $level\n";
          }
-        
-        return $level;
-        
-        
-        
-        
+        return $level;        
 }
     
 sub check_sublevel($)
@@ -294,18 +288,19 @@ sub check_sublevel($)
 
     my $item = "level"; # looking for @level or \level (level change with a subpage)
     
-    print ("check_sublevel working on line $_");
+    # print ("check_sublevel working on line $_");
     
     unless (/(\\|@)$item((.\d*)?)/) 
     {   
-        print "check_level: did not find $item in $_\n";
+        # print "check_sublevel: did not find $item in $_\n";
         return " "; 
     }
-    print "check_level: found $item in line:$_ \n";
-    print "dollar1=$1\n";
-    print "dollar2=$2\n";
+    print "check_sublevel: found \"\\level\" or \"\@level\" (i.e. level change) in line:\n";
+    print "    $_";
+    #print "dollar1=$1\n";
+    #print "dollar2=$2\n";
     
-    print "check_level: returning \"\@level$2\" \n";
+    print "check_sublevel: returning \"\@level$2\" \n";
     return "\@level$2";  # for mine
 }
 
@@ -313,11 +308,11 @@ sub reverse_sublevel($)
 {   
 
   my $tmpstr = shift; #line
-  print "reverse_sublevel: tmpstr: $tmpstr\n";
+  print "reverse_sublevel: starting with \"$tmpstr\"\n";
   $tmpstr =~  tr/-/%/  ;
   $tmpstr =~  tr/+/-/  ;
   $tmpstr =~  tr/%/+/  ;
-  print "tmpstr: $tmpstr\n";
+  print "reverse_sublevel: returning  \"$tmpstr\"\n";
   return $tmpstr;
 }
     
@@ -460,7 +455,7 @@ sub subpage($)
     {
 	$_ = $file[$i];
 	s/\n%\n//;
-	print "\n\n Item $i of $num \n";
+	print "\n\n Item $i of $num :";  # no carriage return
 	if ($_)
 	{ # string is not empty
 	    
@@ -469,7 +464,7 @@ sub subpage($)
 	    $pagename=next_field($_, "page",$i); # returns pagename if new page
 	    if($pagename)
 	    { #         newpage 
-		print "page name : $pagename\n";
+		print "page name : $pagename";  # has a <CR>
 #	s/\n%\n/\n/; 
 		if ( $hashpages{$pagename} )
 		{ 
@@ -614,20 +609,21 @@ sub next_fields($$$)
     foreach $_ (@fields)
     {
         $i++; 
-	print "working on field: $_  (linenum $linenum)\n";
+	print "next_fields: working on field: $_  (linenum $linenum)\n";
 	
 	if  (/(\\|@)$item/i)
 	{ 
-	    print "fields:found string \"$item\" in $_\n";
+	    print "next_fields: found string \"$item\" in $_\n";
 	    $value=$fields[$i];
             my $comment="";
             while ($i < $len)
 	    { 
 		$i++;
 		$comment=$comment." ".$fields[$i];
-                print "$i comment:$comment\n";
+              #  print "$i comment:$comment\n";
 	    }
             chomp $comment;
+            print "next_fields: returning value=$value and comment: $comment\n";
             return($value,$comment);
 	} 
     }
@@ -650,16 +646,16 @@ sub next_fields_levels($$$)
     my ($value);
     my (@fields,@hash,@comment);
     $_ = $line;
-#    print ("next_fields starting...");
+#    print ("next_fields_levels starting...");
 #    print ("Line:$_\n");
 #    print ("Item:$item\n");
 #    print ("Len:$len\n");
     
     unless (/(\\|@)$item /) 
-    {  # print "next_field: page $linenum: did not find $item in $_\n";
+    {  # print "next_fields_levels: page $linenum: did not find $item in $_\n";
         return 0; 
     }
-    # print "found $item in line:$_ \n";
+    # print "next_fields_levels: found $item in line:$_ \n";
     #print "$linenum:";
     s/ +/ /g; # compact
 
@@ -673,7 +669,7 @@ sub next_fields_levels($$$)
 	
 	if  (/(\\|@)$item/i)
 	{ 
-	    print "fields:found string \"$item\" in $_\n";
+	    print " next_fields_levels: found string \"$item\" in $_\n";
 	    $value=$fields[$i];
 # now find the comment enclosed by # signs
             $_=$line;
@@ -689,7 +685,7 @@ sub next_fields_levels($$$)
             else {@comment=0;}
            # for ($i=0; $i<$len; $i++)
            # { print "$i, $hash[$i]\n";}
-            print "returning \"@comment\"\n";
+            print "next_fields_levels: returning value=$value and comment: \"@comment\"\n";
             return($value,@comment);
 	} 
     }
@@ -723,28 +719,28 @@ pages("","","O_Contents_Page","","");
 <span  style=" font-size: 120%;">This manual is divided into the \\b sections listed in the following table:</span>
 
 \\anchor Organization_section_index
-<center>
-<table style="text-align: left; width: 75%;" border="8" cellpadding="5"  cellspacing="3">
+
+<table style="text-align: left; width: 100%;" border="0" cellpadding="1"  cellspacing="1">
 <tr>
-<td  colspan="2" style="vertical-align: top; font-weight: bold; background-color:  rgb(204, 204, 255); color: red; text-align: center;  font-size: 150%;">
-Manual Sections</td>
+<td  colspan="2" style="vertical-align: top; font-weight: bold; background-color:  rgb(204, 204, 255); color: black; text-align: center;  font-size: 150%;">
+List of Manual Sections</td>
 </tr>
 <tr>
-<td style="vertical-align: top; font-weight: bold; background-color:  blue; color: white; text-align: center;  font-size: 125%;">
-Links to Start of Section</td>
-<td style="vertical-align: top; font-weight: bold; background-color:  blue; color: white; text-align: center;  font-size: 125%;">
-Links to Section Contents List</td>
+<td style="vertical-align: top; font-weight: bold; background-color:  rgb(204, 204, 255); color: black; text-align: center;  font-size: 125%;">
+Links to <span style="color: white;">Start</span> of Section</td>
+<td style="vertical-align: top; font-weight: bold; background-color:  rgb(204, 204, 255);  color: black; text-align: center;  font-size: 125%;">
+Links to Section  <span style="color: white;">Index</span></td>
 </tr>
 <tr>
 <td  style="vertical-align: top; font-weight: bold; background-color: mistyrose;">
-<ul class="i0">
+<ul class="c0">
 <li> \@ref Top "SECTION 1: Main" 
 EOT
     return;
 }
 
 sub footer()
-{  # write last lines of the header to the Contents file - including last <li> item, a link to the section index
+{  # write last lines of the header to the Contents file
     print OUTD<<EOT;
 </ul>
 </td>
@@ -815,47 +811,60 @@ EOT
 
 sub create_dummy_files()
 {
-#   If Organization.,dox and docindex.dox have been deleted, mine.pl does not find these pages
-#   so we need to have dummies
+#   1. removes previous  Organization.dox and docindex.dox 
+#   2. creates dummy Organization.dox and docindex.dox so mine.pl can find them
 #
     my $file1="Organization.dox";
     my $file2="docindex.dox";
 
-    unless (-e $file1 )
-    {
-        open OUT, ">$file1" or die "Can't open dummy output file $file1 : $!\n";
-        print OUT<<EOT;
-/*! \@page  Organization SECTION 15: Manual Contents
-    \@section O_what What can be found in this manual?
+    if(-e $file1) 
+    {  
+        print "create_dummy_files: removing old version of $file1 \n";
+        system("rm -f $file1"); 
+        if(-e $file1) { die "create_dummy_files: could not remove $file1 "; }
+    }
+    if(-e $file2) 
+    {  
+        print "create_dummy_files: removing old version of $file2 \n";
+        system("rm -f $file2"); 
+        if(-e $file2) { die "create_dummy_files: could not remove $file2 "; }
+    }
+
+    open OUT, ">$file1" or die "Can't open dummy output file $file1 : $!\n";
+    print OUT<<EOT;
+/*! \@page  Organization SECTION 15: Manual Contents  (dummy)
+\@section O_what What can be found in this manual?
+        
+        This is a dummy
+        
+        Content to be supplied by Makefile running script "make_contents.pl"
+
+        If successful, you will not see this message.
+
+
+*/
+EOT
+close OUT;
+    print "create_dummy_files: created dummy file $file1\n";
+
+
+ 
+    open OUT, ">$file2" or die "Can't open dummy output file $file2 : $!\n";
+    print OUT<<EOT;
+/*! \@page  DocIndex SECTION 15: Alphabetical Index to Documentation 
 
      This is a dummy
 
-     Content to be supplied by running perlscripts from Makefile
+     Content to be supplied by Makefile running script "make_index.pl"
+
+     If successful, you will not see this message.
+
+
 */
 EOT
-       close OUT;
-       print "$file1 not found - created dummy file $file1\n";
-    }
-    else
-    {  print "$file1 already exists\n"; }
+    close OUT;
+    print "create_dummy_files: created dummy file $file2\n";
 
-
-    unless (-e $file2 )
-    {
-        open OUT, ">$file2" or die "Can't open dummy output file $file2 : $!\n";
-        print OUT<<EOT;
-/*! \@page  DocIndex SECTION 15: Alphabetical Index to Documentation
-
-     This is a dummy
-
-     Content to be supplied by running perlscripts from Makefile
-*/
-EOT
-       close OUT;
-       print "$file2 not found - created dummy file $file2\n";
-    }
-    else
-    {  print "$file2 already exists\n"; }
     return;
 }
 

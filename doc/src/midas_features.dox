@@ -11,7 +11,7 @@ sections("Quickstart", "Features", "RunControl");
 <br>
 The Online Database contains information that System and User wants to share.
 Basically all transactions for experiment setup and monitoring go through the ODB.
-The ODB also contains some specific system information related to the "Midas client"
+The ODB also contains some specific system information related to the "MIDAS client"
 currently involved in an experiment (/system).
 
 Each ODB field or so called \b KEY is accessible by the user through 
@@ -19,7 +19,7 @@ Each ODB field or so called \b KEY is accessible by the user through
  - or by C-programming (see functions db_xxx in @ref F_Midas_Library).
 
 The ODB information is stored in a "tree/branch" structure where each branch refers
-to a specific set of data. On the first invocation of the database (first Midas
+to a specific set of data. On the first invocation of the database (first MIDAS
 application) a minimal system record will be created. Later on each application
 will add its own set of parameters to the database depending on its requirement.
 For instance, starting the task  @ref RC_odbedit_utility "odbedit" for the first time will
@@ -27,7 +27,7 @@ cause the trees <span class="odb">/Runinfo,
 /Experiment, /System</span> to be created. The application @ref F_mlogger_utility "mlogger"
 will add its own trees (i.e.  <span class="odb"> /Logger /History</span> ). 
 
-The ODB is the main communication platform between Midas applications. As such, the contents of 
+The ODB is the main communication platform between MIDAS applications. As such, the contents of 
 the ODB is application dependent.
 Several optional trees (and subtrees) can be added by the user in order to provide extra
 functionality of the system. Such optional trees or subtrees are
@@ -41,7 +41,7 @@ subtrees and keys as desired, as well as customizing the existing system keys to
 
 \anchor idx_ODB_tree-list-of-MIDAS
 
-The following lists many of the standard Midas ODB trees, with links into the documentation: 
+The following lists many of the standard MIDAS ODB trees, with links into the documentation: 
 
 - @ref RC_ODB_Alarms_Tree "/Alarms tree"
 - @ref RC_odb_alias_tree "/Alias tree"
@@ -74,7 +74,7 @@ sections("Quickstart", "Features", "RunControl");
 -->
 */
 
-/*! @page F_Utilities_List List of Midas Utilities
+/*! @page F_Utilities_List List of MIDAS Utilities
 <!-- a sub-page of FEATURES  -->
 
 \htmlonly
@@ -85,9 +85,9 @@ sections("Quickstart", "Features", "RunControl");
 </script>
 \endhtmlonly
 \anchor idx_utilities_list-of-Midas-utilities
-The Midas package provides the following utilities (tasks). For more information on each utility, follow the link.
+The MIDAS package provides the following utilities (tasks). For more information on each utility, follow the link.
 
- - @ref DA_Data_analyzers "Data Analyzers" (Midas Analyzer, ROOT, ROODY, ROOTANA)
+ - @ref DA_Data_analyzers "Data Analyzers" (MIDAS Analyzer, ROOT, ROODY, ROOTANA)
  - @ref FE_dio_utility "dio" direct I/O driver utility
  - @ref FE_frontend_utility "frontend" frontend utility
  - @ref RC_hvedit_utility "hvedit" High Voltage Editor and GUI
@@ -111,7 +111,7 @@ The Midas package provides the following utilities (tasks). For more information
 
 @anchor idx_MIDAS-host
 @anchor idx_MIDAS-experiment 
-@section F_utilities_params  Common Parameters to Midas Utilities
+@section F_utilities_params  Common Parameters to MIDAS Utilities
 Each of the above utilities define a number of input parameters (click on the utilities listed above for details); however
 they all have the following common parameters: 
  
@@ -121,7 +121,7 @@ they all have the following common parameters:
    the @ref RC_mserver_utility "mserver" utility must be running on the remote host in this case.
    If the experiment is running on the local host, this argument need not be supplied.
    
-  - [\b -e \<exptname\> ] Specifies the <b>MIDAS experiment</b> to connect to (where  Q_Linux_Exptab "multiple experiments" are defined on
+  - [\b -e \<exptname\> ] Specifies the <b>MIDAS experiment</b> to connect to (where  @ref Q_Linux_Exptab "multiple experiments" are defined on
     the MIDAS host.  This option supersedes the default experiment name given by the  environment variable @ref BO_MIDAS_EXPT_NAME ,
     if defined. If multiple experiments are defined, unless @ref BO_MIDAS_EXPT_NAME is defined or this argument is supplied,
     the application will request the experiment name.
@@ -145,7 +145,7 @@ sections("Quickstart", "Features", "RunControl");
 */
 
 
-/*! @page F_Midas_Code_and_Libraries Midas Code and Libraries
+/*! @page F_Midas_Code_and_Libraries MIDAS Code and Libraries
 
 \htmlonly
 <script type="text/javascript">
@@ -158,7 +158,7 @@ sections("Quickstart", "Features", "RunControl");
 <br>
 
 
-This section covers several aspects of the Midas system.
+This section covers several aspects of the MIDAS system.
 
   - @ref RC_state_transition
   - @ref F_Midas_Data_Types 
@@ -167,8 +167,8 @@ This section covers several aspects of the Midas system.
   
 \anchor idx_Midas_Data_Types  
 \anchor Midas_Data_Types
-@section F_Midas_Data_Types Midas Data Types
-Midas defines its own data type for OS compatibility. It is suggested that you use them
+@section F_Midas_Data_Types MIDAS Data Types
+MIDAS defines its own data type for OS compatibility. It is suggested that you use them
 in order to ensure correct compilation when moving code from one OS to another.
 \em float and \em double retain OS definition.
 
@@ -179,7 +179,7 @@ in order to ensure correct compilation when moving code from one OS to another.
 - BOOL      OS dependent.
 
 When defining a data type either in the frontend code for bank definition or in user code
-to define ODB variables, Midas requires the use of its own data type declaration. The list
+to define ODB variables, MIDAS requires the use of its own data type declaration. The list
 below shows the main Type IDentification to be used (refer to @ref mdefineh
 for complete listing):
 
@@ -196,23 +196,23 @@ for complete listing):
 
 <hr>
 
-<hr> @section F_Midas_Library Midas Code and Libraries
+<hr> @section F_Midas_Library MIDAS Code and Libraries
 
-The Midas libraries are composed of 5 main source codes and their corresponding header files.
+The MIDAS libraries are composed of 5 main source codes and their corresponding header files.
 
--# @ref midasincludecode : Midas abstract layer.
--# @ref msystemincludecode : Midas function implementation.
--# @ref alfunctioncode : Midas Alarm functions.
--# @ref hsfunctioncode : Midas History functions.
--# @ref elfunctioncode : Midas Elog functions.
--# @ref mrpcincludecode : Midas RPC functions.
+-# @ref midasincludecode : MIDAS abstract layer.
+-# @ref msystemincludecode : MIDAS function implementation.
+-# @ref alfunctioncode : MIDAS Alarm functions.
+-# @ref hsfunctioncode : MIDAS History functions.
+-# @ref elfunctioncode : MIDAS Elog functions.
+-# @ref mrpcincludecode : MIDAS RPC functions.
 -# @ref odbcode : Online Database functions.
 
 
 Within these files, all the functions have been categorized depending on their scope.
 
 - \b al_xxx(...) : Alarm system calls
-- \b bk_xxx(...) : Midas bank manipulation calls
+- \b bk_xxx(...) : MIDAS bank manipulation calls
 - \b bm_xxx(...) : Buffer management calls
 - \b cm_xxx(...) : Common system calls
 - \b db_xxx(...) : Database management calls
@@ -223,7 +223,7 @@ Within these files, all the functions have been categorized depending on their s
 
 \anchor midas_macro <!-- needed by C code -->
 <hr> @section F_midas_macro MIDAS Macros
-Several group of MACROs are available for simplifying the users' job on setting or getting Midas
+Several group of MACROs are available for simplifying the users' job on setting or getting MIDAS
 information. They are also listed in the @ref F_Midas_Library. All of them are defined in
 the @ref mmacroh, @ref msmacroh header files.
 

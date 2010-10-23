@@ -21,7 +21,7 @@ sections("FrontendOperation","DataAnalysis","Performance"); // last section; top
 @anchor idx_analyzer_Roody_documentation
 
 @section DA_Data_analyzers  Data Analyzers
-The following are available for Midas Data Analysis:
+The following are available for MIDAS Data Analysis:
 <ul>
   <li>  @ref DA_Midas_Analyzer
   <li> <b><a href="http://midas.psi.ch/rome">ROME</a></b> analyzer framework.
@@ -103,13 +103,13 @@ For more detailed information on the analyzers available see  @ref DA_Data_analy
 @anchor idx_analyzer_demo
 @section DA_Midas_Analyzer MIDAS Analyzer
 
-- The Midas Analyzer application is composed of a collection of files providing a 
+- The MIDAS Analyzer application is composed of a collection of files providing a 
 framework in which the user can gain access to the online data during data acquisition
 or offline data through a replay of a stored data save-set.
 
 - The analyzer core code is \b mana.c.
 
-- The Midas distribution contains 2 directories where predefined set of analyzer files
+- The MIDAS distribution contains 2 directories where predefined set of analyzer files
 and their corresponding working demo code are available. The internal functionality of 
 both example is similar and differ only on the histogram tool used for the data representation.
 These analyzer set are specific to 2 major data analysis tools i.e: \b ROOT, \b HBOOK:
@@ -185,11 +185,11 @@ INT adc_calib_init(void)
 proper libraries to generate the executable. Each directory has its own \b Makefile:
  - \b ROOT (examples/experiment)
   - The environment variable \b  $ROOTSYS is expected to point to a valid ROOT installed path.
-  - The analyzer build requires a Midas core analyzer object file which should be present
+  - The analyzer build requires a MIDAS core analyzer object file which should be present
   in the standard midas/\<os\>/lib directory. In order to have this file \b (rmana.o),
-  the ROOTSYS had to be valid at the time of the Midas build too (See @ref BO_HAVE_ROOT).
+  the ROOTSYS had to be valid at the time of the MIDAS build too (See @ref BO_HAVE_ROOT).
  - \b HBOOK - see @ref BO_HAVE_HBOOK (examples/hbookexpt)
-  - The analyzer build requires a Midas core analyzer object file which should be present
+  - The analyzer build requires a MIDAS core analyzer object file which should be present
   in the standatd midas/\<os\>/lib directory. This file \b (hmana.o) doesn't require any 
   specific library.
   - The analyzer build requires also at that stage to have access to some of the cernlib
@@ -293,7 +293,7 @@ Output                          DIR
  - \b Last \b Histo \b Filename : Temporary results file for recovery procedure.
  - \b Event \b to \b ODB : Boolean flag for debugging purpose allowing a copy
  of the data to be sent to the ODB at regular time interval (1 second).
- - \b Global \b Memory \b Name : Shared memory name for communication between Midas
+ - \b Global \b Memory \b Name : Shared memory name for communication between MIDAS
  and HBOOK. To be ignored for \b ROOT as the data sharing is done through a TCP/IP channel.
 
 - \b Bank \b switches : Contains the list of all declared banks (BANK_LIST in analyzer.c)
@@ -405,7 +405,7 @@ ANA_MODULE adc_calib_module = {
 
 @subsection Analyzer_flow_chart Analyzer Flow chart
 The general operation of the analyzer can be summarized as follow:
-- The analyzer is a Midas client at the same level as the odb or any other Midas applications.
+- The analyzer is a MIDAS client at the same level as the odb or any other MIDAS applications.
 - When the analyzer is started with the proper argument (experiment, host for remote
 connection or -i input_file, -o output_file for off-line use), the initialization 
 phase will setup the following items:
@@ -494,7 +494,7 @@ phase will setup the following items:
   - if the module switch is enabled, the event will be presented in the module at the
     defined event-by-event function declared in the module structure (adccalib.c)
     in this case the function is adc_calib().
-  - The Midas event header is accessible through the pointer \b pheader
+  - The MIDAS event header is accessible through the pointer \b pheader
     while the data is located by the pointer \b pevent
   @code
   INT adc_calib(EVENT_HEADER * pheader, void *pevent)
@@ -517,7 +517,7 @@ and \b examples/hbookexpt directory for \b HBOOK analyzer.
 PAWC_DEFINE(8000000);
  
 This defines a section of 8 megabytes or 2 megawords of share memory for
-HBOOK/Midas data storage. This definition is found in analyzer.c.
+HBOOK/MIDAS data storage. This definition is found in analyzer.c.
 In case many histograms are booked in the user code, this value probably has 
 to be increased in order not to crash HBOOK.
 If the analyzer runs online, the section is kept in shared memory.

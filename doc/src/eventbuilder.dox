@@ -16,8 +16,8 @@ sections("RunControl","FrontendOperation","DataAnalysis");
 
 <hr> @section FE_mevb_utility mevb - event builder utility
 
-\b mevb is an event builder application which takes the Midas data output from several frontends,
-and assembling them into a new overall Midas event.
+\b mevb is an event builder application which takes the MIDAS data output from several frontends,
+and assembling them into a new overall MIDAS event.
 Two types of event builder can be envisaged:
 - Asynchronized data collection
  - Synchronized data collection
@@ -55,9 +55,9 @@ with its corresponding statistical information.
 <br><hr><br>
 \anchor idx_event_builder
 
-@section FE_eb Introduction to Event building in Midas
+@section FE_eb Introduction to Event building in MIDAS
 
-Midas supports event building through a dedicated @ref FE_mevb_utility 
+MIDAS supports event building through a dedicated @ref FE_mevb_utility 
 application. Similar to the @ref FE_frontend_utility, the \b mevb application
 requires the definition of an equipment structure which describes its mode
 of operation. 
@@ -129,7 +129,7 @@ Frontend code for synchronized fragment collection in the event buider:
        "MIDAS",                 /* format */
 @endcode
 
-Once the frontend is started with <em> -i 1 </em>, the Midas client name, equipment name and 
+Once the frontend is started with <em> -i 1 </em>, the MIDAS client name, equipment name and 
 buffer name will be modified (case of the synchronized event builder).
 
 @code

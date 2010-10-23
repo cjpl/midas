@@ -1,6 +1,6 @@
 
 <!--  ======================= M A I N   E L E M E N T S  =====================   -->
-/*! @page F_MainElements Overview of the Main Elements of the Midas DAQ System
+/*! @page F_MainElements Overview of the Main Elements of the MIDAS DAQ System
 
 <!--  This page is a subpage to Features  -->
 \htmlonly
@@ -15,9 +15,9 @@ sections("Quickstart", "Features", "RunControl");
 <br>
 
 
-The main elements of the \b Midas package are listed below with a short description of
-their function. Please refer to the @ref I_Midas_system_picture "diagram of the Midas system" to see how
-these elements interract to form the Midas system. 
+The main elements of the \b MIDAS package are listed below with a short description of
+their function. Please refer to the @ref I_Midas_system_picture "diagram of the MIDAS system" to see how
+these elements interract to form the MIDAS system. 
 
 \anchor idx_midas_features
 - @ref F_Buffer_Manager_overview 
@@ -67,7 +67,7 @@ These messages are then forwarded to any other clients who may be available to
 receive these messages, as well as to a central log file system. The message system
 is based on the buffer manager scheme, but with a dedicated header to identify the type 
 of message. A dedicated buffer (i.e. shared memory) is used to receive and distribute messages.
-Predefined message types contained in the Midas library cover most of the message
+Predefined message types contained in the MIDAS library cover most of the message
 requirements. See @ref F_Logging and  @ref F_Logging_Data for more details.
 
 \anchor idx_ODB_overview
@@ -84,7 +84,7 @@ The main advantage of this concept is that all programs participating in an
 experiment have full access to these data without having to contact different computers.
 A possible disadvantage could be the extra load put on the particular host serving
 the ODB. As the access to such a database can be remote, the connection is performed 
-through an RPC layer. Midas includes its own RPC which has been optimized for speed.
+through an RPC layer. MIDAS includes its own RPC which has been optimized for speed.
 Byte ordering (i.e. big/little endian) is taken care of, such that cross-platform database
 access is possible, with the advantage that the RPC doesn't define a byte ordering. Instead it
 uses the transmitter type, and converts to the required byte ordering only if needed 
@@ -100,7 +100,7 @@ different types such as: byte, words, double words, float, strings, etc. or arra
 of any of those. A key can also be a directory or a symbolic link (c.f. Unix).
 
 \anchor idx_hotlink_overview
-The Midas library provides a complete set of functions to manage and operate on these keys.
+The MIDAS library provides a complete set of functions to manage and operate on these keys.
 <br>
 Any ODB client can register a "hot-link" between a local C-structure
 and any element of the ODB. The hot-link mechanism ensures that whenever a client (program) 
@@ -111,14 +111,14 @@ the hot-link's update has been received.
 For more information see @ref RC_Hot_Link .
 
 \anchor idx_midas_server
-@section F_Midas_Server_overview Midas Server
+@section F_Midas_Server_overview MIDAS Server
 For remote access to a MIDAS experiment, a remote procedure call (RPC) server is available  (@ref RC_mserver_utility "mserver").
 It uses an optimized MIDAS RPC scheme for improved access speed.
 The server can be started manually or via inetd (UNIX) or as a service under Windows NT.
 For each incoming connection it creates a new sub-process which serves this connection
 over a TCP link.
-The Midas server not only serves client connections to a given experiment, but takes the
-experiment's name as a parameter meaning that only one Midas server is necessary to manage
+The MIDAS server not only serves client connections to a given experiment, but takes the
+experiment's name as a parameter meaning that only one MIDAS server is necessary to manage
 several experiments on the same node.
 
 \anchor idx_frontend_program_overview
@@ -133,9 +133,9 @@ identified event.
 
 The frontend program is composed of a general framework which is experiment-independent,
 and a set of template routines for the user to fill in. This program will:
-- Register the given \em Equipment(s) list to a specific Midas experiment.
+- Register the given \em Equipment(s) list to a specific MIDAS experiment.
 - Provide the means of collecting data from hardware sources defined by each Equipment Read function.
-- Gather these data in a known format (e.g. Fixed, Midas) for each equipment.
+- Gather these data in a known format (e.g. Fixed, MIDAS) for each equipment.
 - Send these data to the buffer manager either locally or remotely.
 - Periodically collect statistics of the acquisition task, and send them to the Online Database.
 
@@ -164,7 +164,7 @@ transitions" are possible.
 
 
 Dedicated header and library files for hardware access to CAMAC, VME, Fastbus, GPIB and
-RS232 are part of the Midas distribution set. 
+RS232 are part of the MIDAS distribution set. 
 <br>
 For full details see @ref FrontendOperation .
 
@@ -193,7 +193,7 @@ For more information see @ref  F_Logging .
 @section F_Analyzer_sec_overview Analyzer
 
 The Analyzer is a \em backend task (as opposed to the frontend). 
-As in the front-end section, the analyzer provided by Midas is a framework on which
+As in the front-end section, the analyzer provided by MIDAS is a framework on which
 the user can develop his/her own applications.
 This framework can be built for private analysis (no external analyzer hooks) or specific analysis
 packages such as HBOOK, ROOT from the CERN (none of those libraries are included in the MIDAS
@@ -219,8 +219,8 @@ The analyzer framework also supports analyzer parameters. It automatically maps
 C-structures used in the analyzer to ODB records via @ref RC_Hot_Link.
 To control the analyzer, only the values in the ODB have to be changed, which are
 automatically propagated to the analyzer parameters.
-If analysis software has been already developed, Midas provides the functionality
-necessary to interface the analyzer code to the Midas data channel.
+If analysis software has been already developed, MIDAS provides the functionality
+necessary to interface the analyzer code to the MIDAS data channel.
 Support for languages such as C, C++ is available.
 
 
@@ -231,21 +231,21 @@ As mentioned earlier, the Online Database (ODB) contains all the pertinent
 information regarding an experiment. For that reason a run control program requires
 only to access the ODB. A basic program supplied in the package called ODBEdit
 provides a simple and safe mean for interacting with ODB.
-Through ODBEdit essentially all the Midas capability are available to the
+Through ODBEdit essentially all the MIDAS capability are available to the
 user's fingertips. 
 
-Three "Run States" define the state of Midas: \em Stopped, \em Paused, and \em Running.
-In order to change from one state to another, Midas provides four basic
+Three "Run States" define the state of the MIDAS data acquisition system: \em Stopped, \em Paused, and \em Running.
+In order to change from one state to another, MIDAS provides four basic
 "Transition" functions: \em Tr_Start, \em Tr_pause, \em Tr_resume, and \em Tr_Stop.
-During these transition periods, any Midas client registered to
+During these transition periods, any MIDAS client registered to
 receive notification of such a transition will be able to perform dedicated tasks in either
 synchronized or asynchronized mode, within the overall run control of the experiment. 
 
 In order to provide more flexibility to the transition sequence of all the 
-midas clients connected to a given experiment, each transition function has 
+MIDAS clients connected to a given experiment, each transition function has 
 a \em transition \em sequence \em number attached to it. This transition sequence is 
 used to establish within a given transition the order of the invocation of the 
-Midas clients (from the lowest sequence number to the highest). See \ref RC_Transition_priority
+MIDAS clients (from the lowest sequence number to the highest). See \ref RC_Transition_priority
 for details.
 
  * <center> Transitions
@@ -272,7 +272,7 @@ particular set of functionality of that class i.e. High-Voltage, Temperature, Ge
 Magnet etc. The implementation of the device-specific calls is done in a second stage 
 "Device Driver" while the actual hardware implementation is done in a third layer "Bus Driver".
 The current MIDAS distribution already has some device driver for general I/O and
-commercial High Voltage power supply systems (see @ref FE_Hardware ).
+commercial High Voltage power supply systems (see @ref FE_Hardware "supported hardware" ).
 The necessary code composing the hardware device driver is kept simple by only
 requiring a "set channel value" and "read channel value" for example.
 For the High Voltage class driver, a GUI (graphical user interface) under Windows or Qt
@@ -281,8 +281,8 @@ that class.
 
 \anchor idx_history_system_overview
 @section F_History_System_overview History system
-The MIDAS history system is a recording function embedded in the @ref F_mlogger_utility.
-Parallel to its main data logging function of defined channels, the Midas logger
+The MIDAS history system is a recording function embedded in the @ref F_mlogger_utility "MIDAS logger".
+Parallel to its main data logging function of defined channels, the MIDAS logger
 can store slow control data and/or periodic events on disk file.
 Each history entry consists of the time-stamp at which the event has occurred, and
 the value[s] of the parameter to be recorded.
@@ -290,25 +290,24 @@ the value[s] of the parameter to be recorded.
 The activation of a recording is not controlled by the history function, but by the
 actual equipment (see @ref  F_History_System).
 This permits a higher flexibility of the history system such as dynamic modification
-of the event structure without restarting the Midas logger.
-At any given time, data-over-time relations can be queried from the disk file
-through a Midas utility @ref F_mhist_utility, or displayed through the @ref RC_mhttpd_utility.
+of the event structure without restarting the MIDAS logger.
+At any given time, data-over-time relations can be displayed through the web with the MIDAS  @ref RC_mhttpd_utility "mhttpd"
+utility or queried from the disk file through the MIDAS  @ref F_mhist_utility "mhist" utility,
 
 The history data extraction from the disk file is done using low level file functions
 giving similar results as a standard database mechanism but with faster access time.
 Due to its simple use and good display quality, this section has been reworked to be able
-to handle larger number of parameters. This is one of the main version 2.1.0 modification, 
-see @ref  F_History_System .
+to handle larger number of parameters (see @ref  F_History_System ).
 
 \anchor idx_alarm_system_overview
 @section F_Alarm_System_overview Alarm System
-The Midas alarm mechanism is a built-in feature of the Midas server. It acts upon the
+The MIDAS alarm mechanism is a built-in feature of the MIDAS server. It acts upon the
 description of the required alarm defined in the Online Database (ODB).
 Currently the internal alarms supports the following mechanism:
 - ODB value over fixed threshold
   at regular time interval, a pre-defined ODB value will be compared to a fixed value.
-- Midas client control
-  During Run State transitions, pre-defined Midas client names will be checked if currently
+- MIDAS client control
+  During Run State transitions, pre-defined MIDAS client names will be checked if currently
   present.
 - General C-code alarm setting
   Alarm C function permitting to issue user defined alarm.
@@ -318,7 +317,7 @@ But basic alarm report is available such as:
 - Logging the alarm message to the experiment log file.
 - Sending an "Electronic Log message" (see @ref F_Elog).
 - Interrupt data acquisition.
-For more information see @ref RC_Alarm_System , @ref  RC_ODB_Alarms_Tree .
+For more information see @ref RC_Alarm_System  and  @ref  RC_ODB_Alarms_Tree .
 
 \anchor idx_Elog_overview
 @section F_Electronic_Logbook_overview Electronic Logbook
@@ -326,9 +325,9 @@ The Electronic logbook is a feature which provides the experimenter an alternati
 way of logging his/her own information related to the current experiment. This
 electronic logbook may supplement or complement the standard paper logbook and
 in the mean time allow "web publishing" of this information. Indeed the electronic
-logbook information is accessible from any web browser as long as  the Midas web server
+logbook information is accessible from any web browser as long as  the MIDAS web server
 ( @ref RC_mhttpd_utility "mhttpd") is running in the background of the system.
-For more information see @ref F_Elog, @ref RC_mhttpd_Elog_page .
+For more information see @ref F_Elog "Electronic Logbook" and @ref RC_mhttpd_Elog_page "mhttpd Elog  page".
 
 
 \htmlonly
@@ -343,7 +342,7 @@ sections("Quickstart", "Features", "RunControl");
 
 @anchor end
 
-<!-- End of Page  F_MainElements Overview of the Main Elements of the Midas DAQ System
+<!-- End of Page  F_MainElements Overview of the Main Elements of the MIDAS DAQ System
        a sub-page of FEATURES
 -->
 */

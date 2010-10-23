@@ -15,15 +15,16 @@ sections("index","Intro","Quickstart");
 <br>
 <!-- End of Navigation -->
 
-\anchor idx_midas
- * \section I_WhatIsMidas What is MIDAS?
+\anchor idx_MIDAS
+\section I_WhatIsMidas What is MIDAS?
 
-"MIDAS" is an acronym for "Maximum Integrated Data Acquisition System". MIDAS is a 
+"MIDAS" is an acronym for <b>M</b>aximum <b>I</b>ntegrated <b>D</b>ata <b>A</b>cquisition <b>S</b>ystem.
+<br><br> MIDAS is a 
 general-purpose system for event-based data acquisition in small and medium scale Physics 
-experiments. It is an ongoing development at the Paul Scherrer Institute (Switzerland)
+experiments. It is an on-going development at the Paul Scherrer Institute (Switzerland)
 and at TRIUMF (Canada), since 1993.
-Presently, ongoing development is focused on the interfacing capability of
-the Midas package to external applications such as ROOT for data analysis 
+Presently, on-going development is focused on the interfacing capability of
+the MIDAS package to external applications such as ROOT for data analysis 
 (see @ref  DA_Data_analyzers). 
 
 
@@ -37,7 +38,7 @@ Recent developments involve multi-threading, FGPA/Linux support, MSCB extension.
    <a HREF="http://midas.triumf.ca"> Canada </a>
 
 
-@section I_Midas_exp Midas is for small and medium sized experiments
+@section I_Midas_exp MIDAS is for small and medium sized experiments
 
 MIDAS has been designed for small and medium experiments. It can be used in <em>distributed
 environments</em> where one or more <em>frontends</em> are connected to the <em>backend</em> via the network (i.e.Ethernet). 
@@ -52,7 +53,7 @@ such as a VME CPU running Linux or VxWorks, or a PC running Windows NT or Linux.
 running the frontend application (or program). For example, it might be programmed to read data from several TDC 
 and ADC modules. 
 
-The data is transferred from the frontend to the <em>"backend"</em>".  Midas transfer data rate capabilities are close 
+The data is transferred from the frontend to the <em>"backend"</em>".  MIDAS transfer data rate capabilities are close 
 to the type of hardware limits used.
 
 A <em>"backend"</em> is usually concerned with storage and/or analysis of this data. It is often a PC running 
@@ -70,13 +71,13 @@ receive data from several frontends, and may send the data to another backend co
 
 
 \anchor idx_device-driver
-@subsection I_device_drivers  Device Drivers for Midas
+@subsection I_device_drivers  Device Drivers for MIDAS
 
 Frontends require Device Drivers to access and acquire data from the various hardware modules available. 
 Device drivers for common PC-CAMAC interfaces have been written for Windows NT and Linux. Drivers for 
 PC-VME interfaces are commercially available for Windows NT and for Linux as well. 
-<b>Midas provides a large variety of drivers</b> based on their use within the physics community.
-See @ref FE_Hardware .
+<b>MIDAS provides a large variety of drivers</b> based on their use within the physics community.
+See @ref FE_Hardware "MIDAS driver library" .
 
 As CAMAC modules are 
 slowly phased out, VME based modules replace them.
@@ -84,11 +85,11 @@ No cPCI modules have yet been included in our physics
 experiments. 
 
 \anchor idx_data_analysis
-@subsection I_Analysis Analysis of Midas data
-For data analysis, users can write their own analyser using simple Midas calls to retrieve the necessary data, or 
+@subsection I_Analysis Analysis of MIDAS data
+For data analysis, users can write their own analyser using simple MIDAS calls to retrieve the necessary data, or 
 they can use one of the standard MIDAS analysers:
 - HBOOK based routines for histogramming and PAW for histogram display (currently being phased out)
-- ROOT based with <b>analyser</b> (part of the Midas package)
+- ROOT based with <b>analyser</b> (part of the MIDAS package)
 - <a href="http://midas.psi.ch/rome">ROME</a> analyser framework using XML description
 - <a href="http://ladd00.triumf.ca/%7Eolchansk/rootana/">Rootana</a> C++ standalone application. 
 
@@ -96,8 +97,8 @@ they can use one of the standard MIDAS analysers:
 @subsection I_slow_controls Slow controls
 The MIDAS package also contains a <b>slow control system</b> which can be used for all sorts of slow 
 controls,  such as high voltage supplies, temperature control units, GPIB, serial devices such as 
-<a href="http://midas.psi.ch/mscb">MSCB</a> (Midas Slow Control Bus), RS232 or Ethernet-based modules. The term "slow controls" refers to hardware that does not need high speed access.  
-The Midas slow control system is fully integrated into the main data acquisition, and acts as a 
+<a href="http://midas.psi.ch/mscb">MSCB</a> (MIDAS Slow Control Bus), RS232 or Ethernet-based modules. The term "slow controls" refers to hardware that does not need high speed access.  
+The MIDAS slow control system is fully integrated into the main data acquisition, and acts as a 
 front-end with particular built-in control mechanisms. Slow control values can be saved 
 together with event data (written to tape or disk).
 <br>
@@ -125,7 +126,7 @@ sections("index","Intro","Quickstart"); // last section; top of this section; ne
 
 <!--  =======================S Y S T E M   P I C T U R E  =====================   -->
 
-/*! @page I_Midas_system_picture Diagram of the Midas system
+/*! @page I_Midas_system_picture Diagram of the MIDAS system
 
 <!-- Navigation -->
 <br>
@@ -139,14 +140,14 @@ sections("index","Intro","Quickstart"); // last section; top of this section; ne
 <br>
 <!-- End of Navigation -->
 \anchor idx_midas_overview
-A general picture of the Midas system is displayed below. The @ref F_MainElements "main elements" of the system will be described in
-the section @ref Features.
+A general picture of the MIDAS system is displayed below. The @ref F_MainElements "main elements" of the system will be described in
+@ref Features .
 
  * <center> 
  *  \image html midasintro.jpg
  * </center> 
 
-For information on the Midas features shown here, see the @ref  F_MainElements "overview"  .
+For information on the MIDAS features shown here, see the @ref  F_MainElements "overview"  .
 \anchor end
 <!-- Navigation -->
 <br>
@@ -159,7 +160,7 @@ sections("index","Intro","Quickstart"); // last section; top of this section; ne
 <br>
 <!-- End of Navigation -->
 
-<!-- End of page I_Midas_system_picture Diagram of the Midas system
+<!-- End of page I_Midas_system_picture Diagram of the MIDAS system
          and
      End of Section Intro   
  -->

@@ -105,7 +105,7 @@ DIV.groupHeader {
 }
 DIV.groupText { margin-left: 16px; font-style: italic; font-size: 90% }
 BODY {
-	background: white;
+	background: white; 
 	color: black;
 	margin-right: 20px;
 	margin-left: 20px;
@@ -361,7 +361,8 @@ HR { height: 1px;
 
 /* midas.css */
  span.warn { color: red ; background-color: white; font-weight: bold; font-size: 125%; } 
- span.note { color: green ; background-color: white; font-weight: bold;  } 
+ span.note { color: green ; background-color: white; font-weight: bold;  }
+  span.emphasis { color: darkviolet ; background-color: white; font-weight: bold;  } 
  /* new feature */
   span.new {color: black ; background-color:lightgoldenrodyellow ; font-weight: bold;  }   
   ul.new  {color: black ; background-color:lightgoldenrodyellow ; font-weight: bold;  }
@@ -388,14 +389,18 @@ div.az {
 	line-height: 140%;
         font-size: 120%;
 }
- span.test3 {color: PaleGreen ; background-color:white ; font-weight: bold;  } 
+/* span.test3 {color: PaleGreen ; background-color:white ; font-weight: bold;  } 
  span.test4 {color: black ; background-color: PaleGreen;  font-weight: normal;  } 
+*/
+ span.lcmidas {color: blue ; background-color: white;  font-weight: bold;   font-style: italic; font-size: 150%;  } 
+ span.ucmidas {color: fuchsia ; background-color: white;  font-weight: bold;   font-style: italic; font-size: 200%;  } 
 
   span.page { color: black ; background-color: lightsteelblue ;  font-weight: bold; font-size: 150%; }
   span.secthdr { color: black ; background-color: gold  ;  font-weight: bold; font-size: 125%; }
   span.vertsect { color: red ; background-color: white;  font-weight: bold; font-size: 100%; }
    div.section { text-align: right; color: limegreen ; background-color: white;  font-weight: bold; font-size: 125%; }
-  ul.c0 { color: blue ; background-color: white; font-weight: bold; font-size: 125%;  }
+  ul.c0 { color: black ; background-color: mistryrose; font-weight: bold; font-size: 125%;  } 
+  ul.c1 { color: black ; background-color: mintcream; font-weight: bold; font-size: 125%;  }
   
  /* contents page */
  ol.i0 { color: red ; background-color: white; font-weight: bold; font-size: 125%; } 

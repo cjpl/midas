@@ -33,10 +33,10 @@ sections("Features", "RunControl","FrontendOperation"); // last section; top of 
 @section RC_mhttpd_custom_intro Introduction
 
 Custom web pages provide the user with a means of creating secondary user-created
-web page(s)  activated within the standard Midas web interface. These custom pages can
+web page(s)  activated within the standard MIDAS web interface. These custom pages can
 contain specific links to the ODB, and therefore can present the
 essential parameters of the controlled experiment in a more compact way.  A custom page may even  
-@ref  RC_odb_custom_status "replace" the default Midas Status Page.
+@ref  RC_odb_custom_status "replace" the default MIDAS Status Page.
 <br>
 
  - \subpage RC_Example_Custom_Webpages
@@ -100,7 +100,7 @@ sections("Features", "RunControl","FrontendOperation"); // last section; top of 
 <br>
 @section RC_odb_custom_intro Introduction
 <span class="note">
-In order to activate a  custom page from the within the Midas web interface, the pages
+In order to activate a  custom page from the within the MIDAS web interface, the pages
 must be listed in the ODB under the optional</span>  <span class="odb">/Custom</span>
 <span class="note"> tree as described below. This applies to 
 @ref RC_odb_custom_external_example  "external"  and  @ref RC_odb_custom_internal_example  "internal"  custom pages,

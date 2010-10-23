@@ -35,7 +35,7 @@ sections("Features", "RunControl","FrontendOperation"); // last section; top of 
 </script>
 \endhtmlonly  
 
-Many midas experiments work with ROOT based analyzers today. One problem there is that the graphical output of the
+Many MIDAS experiments work with ROOT based analyzers today. One problem there is that the graphical output of the
 root analyzer can only be seen through the X server and not through the web. At the MEG experiment, this problem was
 solved in an elegant way: The ROOT analyzer runs in the background, using a "virtual" X server called Xvfb.
 It plots its output (several panels) normally using this X server, then saves this panels every ten seconds
@@ -266,7 +266,7 @@ sections("Features", "RunControl","FrontendOperation"); // last section; top of 
 \endhtmlonly
  
 
-The webpages shown below replace the Midas default status pages for the BNMR and BNQR experiments at TRIUMF.
+The webpages shown below replace the MIDAS default status pages for the BNMR and BNQR experiments at TRIUMF.
 A single file (custom_status.html) is used for the custom status pages of both experiments. The colours are 
 different to avoid confusion, since the two experiments may be run simultaneously
 with the main status page of each displayed on two adjacent consoles.  Javascript is used extensively in the
