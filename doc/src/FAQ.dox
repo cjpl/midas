@@ -20,7 +20,7 @@ or visit the <a href="http://midas.triumf.ca/forum/Package"> MIDAS Forum </a>
 
 @section FAQ_GENERAL General questions
 <ol>
-<li> <b> How can I find anything in this manual? 
+<li> <b> How can I find anything in this manual? </b>
           - See @ref  C_Navigation
 
 <li> <b> Where does the MIDAS log file reside?</b>
