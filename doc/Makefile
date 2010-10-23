@@ -56,24 +56,21 @@ publish:
 publishh: 
 	rsync -uv html/* /home/daqweb/public_html/doc/midas3/html/.
 
-clean:	rmtmp
-#       remove files docindex.dox and Organization.dox. These are created each time by make_index.pl
-	rm -f src/docindex.dox
-	rm -f src/Organization.dox
+clean:	
 	cd latex; rm -f *.*~ *.pnm *.tex *.log *.aux *.dvi *.eps
 	-rm -rf html
-        
+#	remove docindex.dox and Organization.dox created by perlscripts
+	rm -f src/docindex.dox src/Organization.dox src/*.txt       
 
 ver:	
 	echo $(version)
 
+
 index:
 #       make the Contents and Index pages (Organization.dox, docindex.dox)
-	cd src ; ./make_contents.pl ; ./doit.pl ; ./make_index.pl ;   cd ..
+#       output files *_output.txt are for debug.
+	cd src ; ./make_contents.pl > contents_output.txt ; ./doit.pl > doit_output.txt ; ./make_index.pl > index_output.txt ;   cd ..
 rmtmp:
 #	remove temporary files created by make_index.pl
-	rm -f src/*.tmp
-	rm -f src/*_info.txt*
-
-
+	rm -f src/*.tmp src/sorted_info.txt.*
 # end
