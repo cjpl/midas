@@ -118,6 +118,7 @@ GPIB-see-\@ref IDX=hardware "hardware"
 USB-see-\@ref IDX=hardware "hardware"
 Equipment_hardware-see-\@ref IDX=hardware "hardware"
 hardware_supported-see-\@ref IDX=hardware "hardware->driver->library"
+security-see-\@ref IDX=access "access control"
 #
 # DO NOT EDIT index_add.txt
 # 

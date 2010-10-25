@@ -36,10 +36,11 @@ or visit the <a href="http://midas.triumf.ca/forum/Package"> MIDAS Forum </a>
   when modification of a MIDAS field the web password will be requested. The
   password is stared as a cookie in the target web client for 24 hours.
   
-  - Other options of protection are described in @ref RC_Setup_Security
+  - Other options for protection are described in @ref RC_Setup_Security
   which gives access to the ODB to dedicated hosts or programs.
-  <br><br>
-
+  
+  - @ref  RC_mhttpd_proxy is also supported, where the experiment can be securely accessed 
+      through a firewall, or configured to allow a secure SSL connection to the proxy.
   
 <li> <b> How do I prevent the user from modifying ODB values while the run is in progress?</b>
   - By creating the particular <span class="odb">/Experiment/Lock when running</span>

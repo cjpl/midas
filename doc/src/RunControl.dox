@@ -1393,15 +1393,20 @@ Write access not allowed
 
 <br><hr><br>
 
-\anchor idx_security-see-access-control
-\anchor idx_access-control
 
-@subsubsection RC_Access_Control Access Control (Security)
+\anchor idx_access-control_ODB
+\anchor idx_ODB-access-control
+@subsubsection RC_Access_Control Access Control (Security) using the ODB
+
+\note
+To prevent access by determined or malicious hackers, a \b firewall and/or <b>restrictions on off-site
+access</b> should be implemented. This kind of security can be provided by setting up @ref RC_mhttpd_proxy .
+<br>
 
 
 By default, there is no restriction for any user to connect locally or remotely
-to a given experiment. MIDAS provides a means to setup access restriction 
-in order to protect the experiment from unauthorized access.
+to a given experiment. MIDAS provides a means to setup access restrictions using the ODB 
+in order to protect the experiment from accidental or unauthorized access.
 
 There are two levels of access restriction available each of which can be enabled independently:
 - To require a password before MIDAS clients can start running on the host. 
@@ -1409,10 +1414,12 @@ There are two levels of access restriction available each of which can be enable
 
 The user can select \b either or \b both of these security features.
 
-\Note Note that other forms of ODB access control independent of the security features is available.
-Write access can be restricted during a run (see  @ref RC_Lock_when_Running ), and
-individual keys or subdirectories in the experiment's ODB can be set "read only" with the
-<span class="utility">odbedit</span> command @ref  RC_odbedit_chmod "chmod".
+Note that other forms of ODB access control independent of these security features is also available:
+
+        - Write access can be restricted during a run (see  @ref RC_Lock_when_Running )
+        - Individual keys or subdirectories in the experiment's ODB can be set "read only" with the
+             <span class="utility">odbedit</span> command @ref  RC_odbedit_chmod "chmod".
+     
 
 <br><hr><br>
 
@@ -1421,7 +1428,7 @@ individual keys or subdirectories in the experiment's ODB can be set "read only"
 @subsubsection RC_Setup_Security How to Setup Client Access Restrictions
 
 \anchor idx_access-control_client
-In order provide access restriction to the experiment, a password mechanism needs to be defined. This is
+In order to  @ref RC_Access_Control "restrict access" to the experiment, a password mechanism needs to be defined. This is
 provided by the "Security" subdirectory in odb. This subdirectory 
 is automatically created (if not already present) when the @ref RC_odbedit_utility "odbedit" command <b>passwd</b>
 is issued as follows:
@@ -1593,10 +1600,10 @@ This key is a fixed directory name where a list of programs
 \Note  This section is only applicable to access using  <span class="utility">mhttpd</span> (i.e. web access). Access with <span class="utility">odbedit</span> is unaffected.
 
 
-
-Web access restriction is also provided by the \b "Security" subdirectory in odb. This subdirectory 
+The ODB <span class="odb">/Experiment/Security</span> subtree can also be used to  @ref RC_Access_Control "restrict access" to the experiment via the Web.
+This subtree 
 is automatically created (if not already present) when the <span class="utility">odbedit</span> command <b>webpasswd</b>
-  is issued in ODB as follows:
+  is issued as follows:
   \code
   C:\online>odbedit
   [local:Default:S]/>cd Experiment/
@@ -1623,8 +1630,9 @@ Web Password                    pon4@#@%SSDF2
 
 <hr>
 
-@subsubsection RC_Example_security Access Control setup examples
+@subsubsection RC_Example_security Examples of Access Control using the ODB Security subtree 
 
+The following examples illustrate @ref RC_Access_Control "access control" using the ODB Security features:
 <!-- \level+  subsubsubsection -->  
 @subsubsection RC_Example_full_security Example of Full access control  setup for an experiment
 

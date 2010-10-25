@@ -81,8 +81,10 @@ Features will be considered to be "new" for a year or so, then will become stand
           - see  @ref  F_new_history_tags "Note on /History/Tags"
       - experimental implementation of "ODBRpc" @ref RC_mhttpd_custom_RPC_access  added to the MIDAS javascript library
 
+\subsection ndf_feb_2008 Feb 2008
 
-    
+ -  @ref RC_mhttpd_proxy
+ 
 <br>
 \anchor end
 \htmlonly

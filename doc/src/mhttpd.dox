@@ -44,36 +44,56 @@ If more than one experiment runs on the same host, a server for each experiment 
 started on a different port.
 
 \anchor idx_mhttpd_proxy-access
+\anchor idx_access-control_mhttpd-proxy
+\anchor idx_Apache
 @subsection RC_mhttpd_proxy Proxy Access to mhttpd
 
-A major change was made to mhttpd in Feb 2008, changing all internal URLs to relative paths.
-This allows proxy access to mhttpd via an apache server for example, which might
+A major change was made to   <span class="utility">mhttpd</span> in @ref ndf_feb_2008 , changing all internal URLs to relative paths.
+This allows <b>proxy access</b> to <span class="utility">mhttpd</span> via an
+ <a href="http://apache.org/">Apache</a>   server for example, which might
 be needed to securely access an experiment from outside the lab through a
-firewall. The following settings can be placed into the Apache configuration,
-assuming the experiment runs on machine "online1.your.domain", and apache on a
-publically available machine "www.your.domain":
-<br>
-Redirect permanent /online1 <a href="http://www.your.domain/online1">http://www.your.domain/online1</a>
-ProxyPass /online1/ <a href="http://online1.your.domain/">http://online1.your.domain/</a>
+firewall. Apache can also be configured to allow a secure SSL connection to the proxy.
 
-&lt;Location "/online1"&gt;
+In order to add SSL encryption to  <span class="utility">mhttpd</span>,
+the following settings can be placed into an <b>Apache configuration</b> :
+<br>
+Assuming
+ - the experiment runs on machine <i>online1.your.domain</i>, and
+ - apache is running on a publically available machine <i>www.your.domain</i>
+<br>
+
+\code
+Redirect permanent /online1 http://www.your.domain/online1
+ProxyPass /online1/  http://online1.your.domain/
+
+<Location "/online1">
   AuthType Basic
   AuthName ...
   AuthUserFile ...
   Require user ...
-&lt;/Location&gt;
+</Location>
+\endcode
 
-If  the URL <a href="http://www.your.domain/online1">http://www.your.domain/online1</a> is accessed, it will be redirected
-(after optional authentication) to <a href="http://online1.your.domain/">http://online1.your.domain</a>. If you click on
-the mhttpd history page for example, mhttpd would normally redirect this to 
-
-<a href="http://online1.your.domain/HS/">http://online1.your.domain/HS/</a>
-
-but this is not correct since you want to go through the proxy www.your.domain.
-The new relative redirection inside mhttpd now redirects the history page
+If  the URL
+\code
+http://www.your.domain/online1
+\endcode
+is accessed, it will be redirected (after optional authentication) to
+\code
+http://online1.your.domain/
+\endcode
+<br>
+If you click on
+the   <span class="utility">mhttpd</span> @ref RC_mhttpd_History_page  for example,   <span class="utility">mhttpd</span>  would normally redirect this to 
+\code
+http://online1.your.domain/HS/
+\endcode
+but this is not correct since you want to go through the proxy <i>www.your.domain</i>.
+The new relative redirection inside   <span class="utility">mhttpd</span> now redirects the history page
 correctly to
-
-<a href="http://www.your.domain/onlin1/HS/">http://www.your.domain/onlin1/HS/</a>
+\code
+http://www.your.domain/online1/HS/
+\endcode
 
 
 
@@ -83,7 +103,7 @@ correctly to
 \anchor idx_mhttpd-utility_connect
 @subsection RC_mhttpd_connect Connect to the mhttpd webserver
 To connect to a mhttpd webserver running on 
-port &lt;nnnn&gt; on host &lt;hostname&gt; and experiment &lt;exptname&gt;, 
+port <i>&lt;nnnn&gt</i>; on host <i>&lt;hostname&gt</i>; and experiment <i>&lt;exptname&gt;</i>, 
 enter the URL in your web browser in the form
 
 @code
