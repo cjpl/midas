@@ -2655,8 +2655,10 @@ static int add_event(int* indexp, int event_id, const char* event_name, HNDLE hK
       }
    }
 
+#ifdef OLD_HISTORY
    status = hs_define_event(event_id, (char*)event_name, (TAG*)tags, sizeof(TAG) * ntags);
    assert(status == DB_SUCCESS);
+#endif
 
    status = db_get_record_size(hDB, hKey, 0, &size);
    assert(status == DB_SUCCESS);
@@ -3013,6 +3015,26 @@ INT open_history()
       delete mh[i];
    mh.clear();
 
+   i = 1;
+   size = sizeof(i);
+   status = db_get_value(hDB, 0, "/Logger/WriteFileHistory", &i, &size, TID_BOOL, TRUE);
+   assert(status==DB_SUCCESS);
+
+   if (i) {
+      MidasHistoryInterface* hi = MakeMidasHistory();
+      assert(hi);
+
+      //hi->hs_set_debug(debug);
+      
+      status = hi->hs_connect(NULL);
+      if (status != HS_SUCCESS) {
+         cm_msg(MERROR, "open_history", "Cannot connect to MIDAS history, status %d", status);
+         return status;
+      }
+
+      mh.push_back(hi);
+   }
+
 #ifdef HAVE_ODBC
    int debug = 0;
    size = sizeof(debug);
@@ -3064,6 +3086,7 @@ INT open_history()
       assert(status == HS_SUCCESS);
    }
 
+#ifdef OLD_HISTORY
    /* set directory for history files */
    size = sizeof(str);
    str[0] = 0;
@@ -3073,6 +3096,7 @@ INT open_history()
 
    if (str[0] != 0)
       hs_set_path(str);
+#endif
 
    if (db_find_key(hDB, 0, "/History/Links", &hKeyRoot) != DB_SUCCESS ||
        db_find_key(hDB, 0, "/History/Links/System", &hKeyRoot) != DB_SUCCESS) {
@@ -3464,7 +3488,10 @@ INT open_history()
       }
    }
 
+#ifdef OLD_HISTORY
    hs_define_event(0, (char*)event_name, tag, sizeof(TAG) * 2);
+#endif
+
    free(tag);
 
    /* outcommented not to produce a log entry on every run
@@ -3536,7 +3563,9 @@ void log_history(HNDLE hDB, HNDLE hKey, void *info)
    if (verbose)
       printf("write history event: id %d, timestamp %d, buffer %p, size %d\n", hist_log[i].event_id, hist_log[i].last_log, hist_log[i].buffer, hist_log[i].buffer_size);
 
+#ifdef OLD_HISTORY
    hs_write_event(hist_log[i].event_id, hist_log[i].buffer, hist_log[i].buffer_size);
+#endif
 
    for (unsigned h=0; h<mh.size(); h++) {
       int status = mh[h]->hs_write_event(hist_log[i].event_name, hist_log[i].last_log, hist_log[i].buffer_size, hist_log[i].buffer);
@@ -3577,7 +3606,9 @@ void log_system_history(HNDLE hDB, HNDLE hKey, void *info)
    } else {
       hist_log[index].last_log = ss_time();
 
+#ifdef OLD_HISTORY
       hs_write_event(hist_log[index].event_id, hist_log[index].buffer, hist_log[index].buffer_size);
+#endif
 
       for (unsigned h=0; h<mh.size(); h++)
          mh[h]->hs_write_event(hist_log[index].event_name, hist_log[index].last_log, hist_log[index].buffer_size, hist_log[index].buffer);
@@ -3846,7 +3877,9 @@ static int write_history(DWORD transition, DWORD run_number)
    eb[0] = transition;
    eb[1] = run_number;
 
+#ifdef OLD_HISTORY
    hs_write_event(0, eb, sizeof(eb));
+#endif
 
    time_t now = time(NULL);
 
