@@ -189,6 +189,7 @@ double lastsz;
 HNDLE hKeyst;
 INT run_state, hDev;
 BOOL msg_flag;
+BOOL convert_flag = FALSE;
 BOOL copy_continue = TRUE;
 INT data_fmt, dev_type;
 char lazylog[MAX_STRING_LENGTH];
@@ -656,7 +657,21 @@ Function value:      number of elements
 \********************************************************************/
 {
    DIRLOGLIST dlist;
+
    build_log_list(lazy.backfmt, lazy.dir, &dlist);
+
+   KEY key;
+   int status = db_get_key(hDB, hLch, &key);
+   assert(status == DB_SUCCESS);
+
+   HNDLE hKey;
+   status = db_find_key(hDB, hLch, "List", &hKey);
+
+   if (status != DB_SUCCESS) {
+      cm_msg(MERROR, "convert_done_list", "Cannot find \'/Lazy/%s/List\' db_find_key() status %d", key.name);
+      cm_disconnect_experiment();
+      exit(1);
+   }
 
    INT *pdo = NULL;
    int n = build_done_list_odb(hLch, &pdo);
@@ -670,11 +685,15 @@ Function value:      number of elements
 
    free(pdo);
 
-   KEY key;
-   int status = db_get_key(hDB, hLch, &key);
+   save_list(key.name, "donelist", &done);
+
+   status = db_rename_key(hDB, hKey, "List.converted");
    assert(status == DB_SUCCESS);
 
-   save_list(key.name, "donelist", &done);
+   cm_msg(MINFO, "convert_done_list", "Done list converted from old ODB \'/Lazy/%s/List\' format to new file-based format. ODB \'List\' renamed to \'List.converted\'", key.name);
+
+   cm_disconnect_experiment();
+   exit(1);
 }
 
 /*------------------------------------------------------------------*/
@@ -690,16 +709,18 @@ Output:
 Function value:      number of elements
 \********************************************************************/
 {
+   HNDLE hKey;
    KEY key;
    int status = db_get_key(hDB, hLch, &key);
    assert(status == DB_SUCCESS);
 
-   load_done_list(key.name, pdirlist, pdone);
-
-   if (pdone->size() == 0) {
-      convert_done_list(hLch);
-      load_done_list(key.name, pdirlist, pdone);
+   if (db_find_key(hDB, hLch, "List", &hKey) == DB_SUCCESS) {
+      cm_msg(MERROR, "build_done_list", "lazylogger cannot continue: found old-style done list in ODB \'/Lazy/%s/List\'. Please convert to new done list format using \'lazylogger -C\'", key.name);
+      cm_disconnect_experiment();
+      exit(1);
    }
+
+   load_done_list(key.name, pdirlist, pdone);
 
    return pdone->size();
 }
@@ -1331,7 +1352,7 @@ Function value:
       sprintf(str, "Starting lazy job \'%s\'", cmd);
       if (msg_flag)
          cm_msg(MTALK, "Lazy", str);
-      cm_msg(MINFO, "Lazy", str);
+      cm_msg(MINFO, "lazy_script_copy", str);
       cm_msg1(MINFO, "lazy_log_update", "lazy", str);
    }
 
@@ -1339,7 +1360,7 @@ Function value:
    fin = popen(cmd, "r");
 
    if (fin == NULL) {
-      cm_msg(MTALK, "Lazy_copy", "cannot start %s, errno %d (%s)", cmd, errno, strerror(errno));
+      cm_msg(MTALK, "lazy_script_copy", "Cannot start \'%s\', errno %d (%s)", cmd, errno, strerror(errno));
       return FORCE_EXIT;
    }
 
@@ -1365,8 +1386,7 @@ Function value:
             continue;
          }
 
-         cm_msg(MERROR, "lazy_copy", "Error reading output of the backup script, errno %d (%s)", errno,
-                strerror(errno));
+         cm_msg(MERROR, "lazy_script_copy", "Error reading output of the backup script, errno %d (%s)", errno, strerror(errno));
          break;
       } else {
          char *p;
@@ -1385,7 +1405,7 @@ Function value:
                if (q[0] == 0)   // check for end of line
                   q = NULL;
             }
-            cm_msg(MINFO, "lazy_copy", p);
+            cm_msg(MINFO, "lazy_script_copy", p);
             p = q;
          }
       }
@@ -1397,12 +1417,17 @@ Function value:
    /* close input log device */
    status = pclose(fin);
 
+   if (status == -1) {
+      cm_msg(MERROR, "lazy_script_copy", "pclose() returned %d, errno %d (%s)", status, errno, strerror(errno));
+      return FORCE_EXIT;
+   }
+
    if (status != 0) {
-      cm_msg(MERROR, "lazy_copy", "Backup script finished with exit code %d, status 0x%x", (status >> 8), status);
+      cm_msg(MERROR, "lazy_script_copy", "Backup script finished with exit code %d, status 0x%x", (status >> 8), status);
       return SS_NO_SPACE;
    }
 
-   cm_msg(MINFO, "lazy_copy", "Backup script finished in %.1f sec with exit code %d",
+   cm_msg(MINFO, "lazy_script_copy", "Backup script finished in %.1f sec with exit code %d",
           (ss_millitime() - cpy_loop_time) / 1000.0, (status >> 8));
 
    /* request exit */
@@ -1556,6 +1581,11 @@ Function value:
 
    /* current channel */
    pLch = &pLall[channel];
+
+   if (convert_flag) {
+      convert_done_list(pLch->hKey);
+      assert(!"NOT REACHED");
+   }
 
    /* extract Data format from the struct */
    if (equal_ustring(lazy.format, "MIDAS"))
@@ -1949,6 +1979,8 @@ int main(int argc, char **argv)
          nodelete = TRUE;
       else if (argv[i][0] == '-' && argv[i][1] == 'D')
          daemon = TRUE;
+      else if (strncmp(argv[i], "-C", 2) == 0)
+         convert_flag = TRUE;
       else if (strncmp(argv[i], "-z", 2) == 0)
          zap_flag = TRUE;
       else if (strncmp(argv[i], "-t", 2) == 0)
@@ -1966,9 +1998,11 @@ int main(int argc, char **argv)
        usage:
          printf("Lazylogger: Multi channel background data copier\n");
          printf("\n");
-         printf("Usage: lazylogger [-d] [-n] [-D] [-h <Hostname>] [-e <Experiment>] [-z] [-t] -c <channel name>\n");
+         printf("Usage: lazylogger [-d] [-n] [-D] [-h <Hostname>] [-e <Experiment>] [-z] [-t] [-C] -c <channel name>\n");
          printf("\n");
          printf("Options:\n");
+         printf(" -c <channel name> - specify lazylogger channel name\n");
+         printf(" -C - convert old-format done list to new file-based format\n");
          printf(" -d - enable debug printout\n");
          printf(" -n - do not delete any files (for testing \"Maintain free space\")\n");
          printf(" -D - start as a daemon\n");
