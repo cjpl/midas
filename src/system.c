@@ -189,6 +189,57 @@ static int ss_shm_file_name_to_shmid(const char* file_name, int* shmid)
 }
 #endif
 
+static void check_shm_type(const char* shm_type)
+{
+   char file_name[256];
+   const int file_name_size = sizeof(file_name);
+   char path[256];
+   char buf[256];
+   char* s;
+
+   cm_get_path(path);
+   if (path[0] == 0) {
+      getcwd(path, 256);
+#if defined(OS_VMS)
+#elif defined(OS_UNIX)
+      strcat(path, "/");
+#elif defined(OS_WINNT)
+      strcat(path, "\\");
+#endif
+   }
+
+   strlcpy(file_name, path, file_name_size);
+#if defined (OS_UNIX)
+   strlcat(file_name, ".", file_name_size); /* dot file under UNIX */
+#endif
+   strlcat(file_name, "SHM_TYPE", file_name_size);
+   strlcat(file_name, ".TXT", file_name_size);
+
+   FILE *fp = fopen(file_name, "r");
+   if (!fp) {
+      fp = fopen(file_name, "w");
+      if (!fp)
+         cm_msg(MERROR, "ss_shm_open", "Cannot write to \'%s\', errno %d (%s)", file_name, errno, strerror(errno));
+      assert(fp != NULL);
+      fprintf(fp, "%s\n", shm_type);
+      fclose(fp);
+      return;
+   }
+
+   fgets(buf, sizeof(buf), fp);
+   fclose(fp);
+
+   s = strchr(buf, '\n');
+   if (s)
+      *s = 0;
+
+   if (strcmp(buf, shm_type) == 0)
+      return; // success!
+
+   cm_msg(MERROR, "ss_shm_open", "Error: This MIDAS is built for %s while this experiment uses %s (see \'%s\')", shm_type, buf, file_name);
+   exit(1);
+}
+
 /*------------------------------------------------------------------*/
 INT ss_shm_open(const char *name, INT size, void **adr, HNDLE * handle, BOOL get_size)
 /********************************************************************\
@@ -333,6 +384,10 @@ INT ss_shm_open(const char *name, INT size, void **adr, HNDLE * handle, BOOL get
    status = SS_SUCCESS;
 
    {
+      check_shm_type("SYSV_SHM");
+   }
+
+   {
       int key, shmid, fh, file_size;
       struct shmid_ds buf;
 
@@ -421,6 +476,10 @@ INT ss_shm_open(const char *name, INT size, void **adr, HNDLE * handle, BOOL get
 #endif                          /* USE_SYSV_SHM */
 #ifdef USE_MMAP_SHM
 
+   {
+      check_shm_type("MMAP_SHM");
+   }
+
    if (1) {
       static int once = 1;
       if (once && strstr(file_name, "ODB")) {
@@ -466,7 +525,7 @@ INT ss_shm_open(const char *name, INT size, void **adr, HNDLE * handle, BOOL get
          ret = lseek(fh, 0, SEEK_SET);
          assert(ret == 0);
 
-         cm_msg(MINFO, "ss_shm_open", "Created shared memory file \'%s\', size %d", file_name, size);
+         //cm_msg(MINFO, "ss_shm_open", "Created shared memory file \'%s\', size %d", file_name, size);
 
          status = SS_CREATED;
       }
@@ -505,7 +564,11 @@ INT ss_shm_open(const char *name, INT size, void **adr, HNDLE * handle, BOOL get
 #endif /* USE_MMAP_SHM */
 #if defined(USE_POSIX_SHM)
 
-   if (1) {
+   {
+      check_shm_type("POSIX_SHM");
+   }
+
+   if (0) {
       static int once = 1;
       if (once && strstr(file_name, "ODB")) {
          once = 0;
@@ -541,7 +604,7 @@ INT ss_shm_open(const char *name, INT size, void **adr, HNDLE * handle, BOOL get
             return SS_FILE_ERROR;
          }
 
-         cm_msg(MINFO, "ss_shm_open", "Created shared memory file \'%s\', size %d", file_name, size);
+         //cm_msg(MINFO, "ss_shm_open", "Created shared memory file \'%s\', size %d", file_name, size);
 
          /* delete shared memory segment containing now stale data */
          ss_shm_delete(name);
@@ -576,7 +639,7 @@ INT ss_shm_open(const char *name, INT size, void **adr, HNDLE * handle, BOOL get
 	    return SS_NO_MEMORY;
 	 }
 	 
-	 cm_msg(MINFO, "ss_shm_open", "Created shared memory segment \'%s\', size %d", shm_name, size);
+	 //cm_msg(MINFO, "ss_shm_open", "Created shared memory segment \'%s\', size %d", shm_name, size);
 
 	 created = 1;
       }

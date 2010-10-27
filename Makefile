@@ -222,10 +222,11 @@ CFLAGS += -D_LARGEFILE64_SOURCE
 # include ZLIB support
 NEED_ZLIB=1
 
+# Uncomment to use POSIX shared memory (SYSV shared memory is the traditional default)
+# OSFLAGS += -DUSE_POSIX_SHM
+
 OS_DIR = linux
-OSFLAGS = -DOS_LINUX -fPIC -Wno-unused-function
-# add to compile midas in 32-bit mode
-# OSFLAGS += -m32
+OSFLAGS += -DOS_LINUX -fPIC -Wno-unused-function
 LIBS = -lutil -lpthread -lrt
 SPECIFIC_OS_PRG = $(BIN_DIR)/mlxspeaker $(BIN_DIR)/dio
 endif
