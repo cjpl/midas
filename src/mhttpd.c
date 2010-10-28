@@ -10536,7 +10536,7 @@ void show_hist_config_page(const char *path, const char *hgroup, const char *pan
       sprintf(ref, "/History/Display/%s/Show values", path);
       size = sizeof(flag);
       flag = 0;
-      db_get_value(hDB, 0, ref, &flag, &size, TID_BOOL, TRUE);
+      db_get_value(hDB, 0, ref, &flag, &size, TID_BOOL, FALSE);
    }
    if (flag)
       rsprintf
@@ -10555,7 +10555,7 @@ void show_hist_config_page(const char *path, const char *hgroup, const char *pan
       sprintf(ref, "/History/Display/%s/Sort Vars", path);
       size = sizeof(sort_vars);
       sort_vars = 0;
-      db_get_value(hDB, 0, ref, &sort_vars, &size, TID_BOOL, TRUE);
+      db_get_value(hDB, 0, ref, &sort_vars, &size, TID_BOOL, FALSE);
    }
    if (sort_vars)
       rsprintf
