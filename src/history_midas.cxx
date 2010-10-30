@@ -1143,11 +1143,14 @@ public:
 
 MidasHistoryInterface* MakeMidasHistory()
 {
+#if 0
    // midas history is a singleton class
    static MidasHistory* gh = NULL;
    if (!gh)
       gh = new MidasHistory;
    return gh;
+#endif
+   return new MidasHistory();
 }
 
 // end
