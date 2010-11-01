@@ -4923,6 +4923,11 @@ INT db_set_num_values(HNDLE hDB, HNDLE hKey, INT num_values)
          return DB_INVALID_HANDLE;
       }
 
+      if (num_values <= 0) {
+         cm_msg(MERROR, "db_set_num_values", "invalid num_values %d", num_values);
+         return DB_INVALID_PARAM;
+      }
+
       if (num_values == 0)
          return DB_INVALID_PARAM;
 
@@ -4956,6 +4961,12 @@ INT db_set_num_values(HNDLE hDB, HNDLE hKey, INT num_values)
          return DB_CORRUPTED;
       }
 
+      if (pkey->item_size == 0) {
+         db_unlock_database(hDB);
+         cm_msg(MERROR, "db_set_num_values", "Cannot resize array with item_size equal to zero");
+         return DB_INVALID_PARAM;
+      }
+
       /* resize data size if necessary */
       if (pkey->num_values != num_values) {
          new_size = pkey->item_size * num_values;
@@ -4964,7 +4975,7 @@ INT db_set_num_values(HNDLE hDB, HNDLE hKey, INT num_values)
 
          if (pkey->data == 0) {
             db_unlock_database(hDB);
-            cm_msg(MERROR, "db_set_num_values", "online database full");
+            cm_msg(MERROR, "db_set_num_values", "hkey %d, num_values %d, new_size %d, online database full", hKey, num_values, new_size);
             return DB_FULL;
          }
 

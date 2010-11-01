@@ -10151,7 +10151,7 @@ static void load_vars_param(hist_var_t vars[])
    }
 }
 
-static int xdb_find_key(HNDLE hDB, HNDLE dir, const char* str, HNDLE* hKey, int tid)
+static int xdb_find_key(HNDLE hDB, HNDLE dir, const char* str, HNDLE* hKey, int tid, int size)
 {
    int status = db_find_key(hDB, dir, str, hKey);
    if (status == DB_SUCCESS)
@@ -10159,40 +10159,50 @@ static int xdb_find_key(HNDLE hDB, HNDLE dir, const char* str, HNDLE* hKey, int 
 
    db_create_key(hDB, dir, str, tid);
    status = db_find_key(hDB, dir, str, hKey);
-   assert(hKey);
+   assert(*hKey);
+
+   if (tid == TID_STRING) {
+      db_set_data_index(hDB, *hKey, "", size, 0, TID_STRING);
+   }
+
    return status;
 }
 
 static void resize_vars_odb(HNDLE hDB, const char* path, int index)
 {
+   int status;
    HNDLE hKey;
    char str[256];
 
-   sprintf(str, "/History/Display/%s/Variables", path);
-   xdb_find_key(hDB, 0, str, &hKey, TID_STRING);
-
    if (index == 0) {
-      db_set_data_index(hDB, hKey, "", 2*NAME_LENGTH, index, TID_STRING);
       index = 1;
    }
 
-   db_set_num_values(hDB, hKey, index);
+   sprintf(str, "/History/Display/%s/Variables", path);
+   xdb_find_key(hDB, 0, str, &hKey, TID_STRING, 2*NAME_LENGTH);
+
+   status = db_set_num_values(hDB, hKey, index);
+   assert(status == DB_SUCCESS);
 
    sprintf(str, "/History/Display/%s/Label", path);
-   xdb_find_key(hDB, 0, str, &hKey, TID_STRING);
-   db_set_num_values(hDB, hKey, index);
+   xdb_find_key(hDB, 0, str, &hKey, TID_STRING, NAME_LENGTH);
+   status = db_set_num_values(hDB, hKey, index);
+   assert(status == DB_SUCCESS);
 
    sprintf(str, "/History/Display/%s/Colour", path);
-   xdb_find_key(hDB, 0, str, &hKey, TID_STRING);
-   db_set_num_values(hDB, hKey, index);
+   xdb_find_key(hDB, 0, str, &hKey, TID_STRING, NAME_LENGTH);
+   status = db_set_num_values(hDB, hKey, index);
+   assert(status == DB_SUCCESS);
 
    sprintf(str, "/History/Display/%s/Factor", path);
-   xdb_find_key(hDB, 0, str, &hKey, TID_FLOAT);
-   db_set_num_values(hDB, hKey, index);
+   xdb_find_key(hDB, 0, str, &hKey, TID_FLOAT, 0);
+   status = db_set_num_values(hDB, hKey, index);
+   assert(status == DB_SUCCESS);
 
    sprintf(str, "/History/Display/%s/Offset", path);
-   xdb_find_key(hDB, 0, str, &hKey, TID_FLOAT);
-   db_set_num_values(hDB, hKey, index);
+   xdb_find_key(hDB, 0, str, &hKey, TID_FLOAT, 0);
+   status = db_set_num_values(hDB, hKey, index);
+   assert(status == DB_SUCCESS);
 }
 
 void save_vars_odb(HNDLE hDB, const char* path, const hist_var_t vars[])
@@ -10213,23 +10223,23 @@ void save_vars_odb(HNDLE hDB, const char* path, const hist_var_t vars[])
       sprintf(var_name, "%s:%s", vars[index].event_name, vars[index].var_name);
 
       sprintf(str, "/History/Display/%s/Variables", path);
-      xdb_find_key(hDB, 0, str, &hKey, TID_STRING);
+      xdb_find_key(hDB, 0, str, &hKey, TID_STRING, 2*NAME_LENGTH);
       db_set_data_index(hDB, hKey, var_name, 2 * NAME_LENGTH, index, TID_STRING);
 
       sprintf(str, "/History/Display/%s/Factor", path);
-      xdb_find_key(hDB, 0, str, &hKey, TID_FLOAT);
+      xdb_find_key(hDB, 0, str, &hKey, TID_FLOAT, 0);
       db_set_data_index(hDB, hKey, &vars[index].hist_factor, sizeof(float), index, TID_FLOAT);
      
       sprintf(str, "/History/Display/%s/Offset", path);
-      xdb_find_key(hDB, 0, str, &hKey, TID_FLOAT);
+      xdb_find_key(hDB, 0, str, &hKey, TID_FLOAT, 0);
       db_set_data_index(hDB, hKey, &vars[index].hist_offset, sizeof(float), index, TID_FLOAT);
      
       sprintf(str, "/History/Display/%s/Colour", path);
-      xdb_find_key(hDB, 0, str, &hKey, TID_STRING);
+      xdb_find_key(hDB, 0, str, &hKey, TID_STRING, NAME_LENGTH);
       db_set_data_index(hDB, hKey, vars[index].hist_col, NAME_LENGTH, index, TID_STRING);
      
       sprintf(str, "/History/Display/%s/Label", path);
-      xdb_find_key(hDB, 0, str, &hKey, TID_STRING);
+      xdb_find_key(hDB, 0, str, &hKey, TID_STRING, NAME_LENGTH);
       db_set_data_index(hDB, hKey, vars[index].hist_label, NAME_LENGTH, index, TID_STRING);
    }
 }
