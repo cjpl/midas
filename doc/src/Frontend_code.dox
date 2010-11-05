@@ -453,6 +453,24 @@ However, the <b>system transition functions</b>
 <br>all run \b prior to the equipment functions. This gives the 
 system the chance to take basic
 action on the transition request (e.g. enable/disable interrupt) before the equipment runs.
+
+@section FE_frontend_status Reporting Equipment status
+If running with run control utility @ref RC_mhttpd_utility "mhttpd", a frontend can send an update to the main status page,
+to report on its progress, using the function set_equipment_status. This is very useful when hardware can take a long time to respond. 
+For example, a frontend might add  calls in the @ref FE_frontend_init routine e.g.
+\code
+INT frontend_init()
+{
+   set_equipment_status(equipment[idx].name, "Initializing...", "yellow");
+   ......  // Initialize hardware 
+   ......
+   set_equipment_status(equipment[idx].name, "OK", "green");
+}
+\endcode
+
+The status messages appear next to the equipment name on the @ref idx_mhttpd_page_status_equipment "main status page".
+
+
   
 <br>
 <br>
@@ -1182,7 +1200,7 @@ INT read_scaler_event(char *pevent, INT off)
 <hr>
 <br>
 
-\anchor idx event_fragmented
+\anchor idx_event_fragmented
 @subsection FE_fragmented_event Fragmented Event
 
 A \b fragmented event enables very large events (e.g.  beyond the Midas configuration 
@@ -1193,12 +1211,12 @@ an  @ref FE_mevb_utility "event-builder".
 
  The event is sent out by the frontend in smaller fragments, and reassembled by the Midas
 system into one event. This option is useful in experiments where the event rate is not an issue, but 
-the size of the data needs to be extremely large. The Equipment flag  FE_tbl_EqFragmented "EQ_FRAGMENTED"
+the size of the data needs to be extremely large. The Equipment flag  @ref FE_tbl_EqFragmented "EQ_FRAGMENTED"
 indicates that 
 the event is fragmented. The <b>fragment size</b> is determined by "max_event_size" in the frontend code 
 @ref FE_frag_max_event_size "(see below)".
 
-The example used here is taken from the TRIUMF TD-MUSR experiment, where a VME PowerPC (PPC) running 
+The example used  @ref FE_tdmusr_equipment "below" is taken from the TRIUMF TD-MUSR experiment, where a VME PowerPC (PPC) running 
 VxWorks  is used as the frontend cpu, and acts as a Histogramming Memory (HM).  The backend 
 computer is a Linux PC.
 
@@ -1209,33 +1227,38 @@ Therefore the histograms can only be sent out in fragments.
 
 @anchor idx_event_manual-trigger  
 @subsection FE_manual_trigger Manual Trigger
-Another feature illustrated in this example is the <b> Manual Trigger</b>, indicated by the 
+Another feature illustrated in this example  @ref FE_tdmusr_equipment "below" is the <b> Manual Trigger</b>, indicated by the 
 Equipment flag  @ref FE_tbl_EqManTrig "EQ_MANUAL_TRIG".  This flag causes an 
-extra button to be present on the web interface to enable the user to trigger the event. The following 
+extra button to be present on the mhttpd web interface to enable the user to trigger the event. The following 
 image is of the main status page of the MUSR experiment,  where two manual trigger buttons are
 shown, labelled 
- "Trigger Histo event" and "Trigger Camp event". These have been 
-generated for the Histo and Camp Equipments which were both set up with the EQ_MANUAL_TRIG flag.
-  
+  - "Trigger Histo event" and
+  - "Trigger Camp event".
 
+These have been generated for the Histo and Camp Equipments which were both set up with the EQ_MANUAL_TRIG flag.
+ * <br>  
+ * <center>
+ *  <span class="image">mhttpd status page showing Manual Trigger Buttons</span> 
  \image html mantrig.png 
+ * </center>
+ * <br>
 
 
-
-It is also possible for a <b> client to trigger a manual trigger event</b>. The MUSR custom 
+It is also possible for a  @ref FE_backend_Manual_Trigger "client to trigger a manual trigger event". The MUSR custom 
 data archiver  (a backend Midas client) controls when an event is sent, by means of
 a   @ref FE_backend_Manual_Trigger "routine" that requests an event by triggering the event sending 
 mechanism with a RPC call.
 
 @subsubsection FE_manual_trig_determine How to determine if trigger was a manual trigger
 In some cases, the same readout code may be used for two types of event: a manual trigger and
-(say) a poll event. A new feature (svn rev 4519 and later) allows the user to determine 
-whether the readout of an event was triggered by a manual trigger or a regular trigger.
-This is done in the readout routine by a call to
+(say) a poll event.  It is possible to determine 
+whether the readout of an event was triggered by a manual trigger or a regular trigger by
+adding the following call to the readout routine:
 @code
   flag = DATA_SIZE(pevent);
 @endcode
 
+<br>
 If the result is  
  - flag = 0  normal call
  - flag = 1  manual trigger 

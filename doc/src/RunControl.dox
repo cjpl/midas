@@ -45,6 +45,8 @@ and analyzing the data during or after the run is described under  @ref DataAnal
 
  - \subpage RC_Run_States_and_Transitions
  - \subpage RC_run_control
+    - @ref RC_odbedit_utility "odbedit"
+    - @ref RC_mhttpd "mhttpd"
  - \subpage RC_Monitor
  - \subpage RC_customize_ODB
  - \subpage RC_Hot_Link
@@ -1034,10 +1036,11 @@ style="vertical-align: top; font-weight: bold; background-color: lightyellow;"><
 </td>
 
 <td style="vertical-align: top;">
-This key added automatically by  mhttpd <span class="new"> (since  @ref ndf_dec_2009). </span>
-Contains  @ref  RC_mhttpd_status_menu_buttons that appear on the mhttpd @ref RC_mhttpd_Main_Status_page .
+This key added automatically by  mhttpd <span class="new"> (since  @ref ndf_dec_2009). </span> to allow
+the @ref  RC_mhttpd_status_menu_buttons that appear on the mhttpd @ref RC_mhttpd_Main_Status_page to
+be customized.
 The default set of buttons is <b>Start, ODB, Messages, ELog, Alarms, Programs, History, MSCB Config, Help</b>
-Can be  @ref RC_customize_experiment_tree "customized".
+
 
 </td>
 </tr>
@@ -1186,21 +1189,29 @@ An example of a typical <span class="odb">/Experiment</span> tree  containing va
 
 \code
 
-[local:pol:S]/>ls -rlt /experiment
+[local:midas:S]/>ls -rlt /experiment
 Key name                        Type    #Val  Size  Last Opn Mode Value
 ---------------------------------------------------------------------------
 Experiment                      DIR
-    Name                        STRING  1     32    14s  0   RWD  pol
+    Name                        STRING  1     32    14s  0   RWD  midas
     Hide Run Buttons            BOOL    1     4     3h   0   RWD  n
     Buffer sizes                DIR
         SYSMSG                  DWORD   1     4     56h  0   RWD  100000
         SYSTEM                  DWORD   1     4     56h  0   RWD  8388608
-    Menu Buttons                STRING  1     256   25h  0   RWD  Start, ODB, Messages, ELog, Alarms, Programs, History, MSCB, Config        
-    Edit on start               DIR
-        run_title               STRING  1     88    3h   0   RWD  , 28.2keV resonant energy 7Li
+    Menu Buttons                STRING  1     256   25h  0   RWD  Start, ODB, Messages, ELog, Alarms, Programs, History, MSCB, Config
+    Run Parameters              DIR
+        Comment                 STRING  1     32    3m   0   RWD   no beam, test only
+        Run Description         STRING  1     32    3m   0   RWD  28.2keV resonant energy 7Li
+        Sample                  STRING  1     15    3h   0   RWD  NA
+    Edit on Start               DIR
+        run_title -> /Experiment/run parameters/Run Description
+                                STRING  1     32    3m   0   RWD  28.2keV resonant energy 7Li
+        run_comment -> /Experiment/run parameters/comment
+                                STRING  1     32    3m   0   RWD   no beam, test only
         experiment number       DWORD   1     4     3h   0   RWD  12
-        experimenter            STRING  1     32    3h   0   RWD  Matt  Thomas
-        sample                  STRING  1     15    3h   0   RWD  test_ernesto
+        experimenter            STRING  1     32    3h   0   RWD  Douglas,Thomas,Minnie
+        sample ->  /Experiment/run parameters/Sample
+                                STRING  1     15    3h   0   RWD  NA
         orientation             STRING  1     15    3h   0   RWD
         temperature             STRING  1     15    3h   0   RWD
         field                   STRING  1     15    3h   0   RWD
@@ -1245,19 +1256,21 @@ The meaning of these keys is described  @ref  RC_Experiment_tree_keys "above" an
 
 \anchor idx_ODB_tree_Experiment_Customize
 \anchor idx_ODB_tree_Experiment_Parameter-comments
-@subsection  RC_customize_experiment_tree Customizing parameters under the <span class="odb">/Experiment</odb> tree
-In addition to  @ref RC_customize_mhttpd_run_buttons "customizing the run control buttons"
-to provide extra  flexibility, the user can optionally create the following 
-subdirectories under the /Experiment tree if they do not exist already. These must have the names
+
+@subsection  RC_customize_experiment_tree Customizing parameters under the ODB /Experiment tree
+ 
+The user can optionally create the following 
+subdirectories under the  <span class="odb">/Experiment</span> tree if they do not exist already. These must have the names
 <b>
+ - <span class="odb">/Experiment/</span> 
+    -  @ref RC_Edit_On_Start "Edit on Start"
+    -  @ref RC_parameter_comments "Parameter Comments"  
+    -  @ref RC_Run_Parameters "Run Parameters"            
+    -  @ref RC_Lock_when_Running "Lock when running"
+    -  @ref RC_Access_Control "Security"
 
-  -  @ref RC_Edit_On_Start "Edit on Start"
-  -  @ref RC_parameter_comments "Parameter Comments"
-  -  @ref RC_Lock_when_Running "Lock when running"
-  -  @ref RC_Access_Control "Security"
-
-</b>These keynames have a particular meaning for the MIDAS system which will be described below.
-
+</b>
+These keynames have a particular meaning for the MIDAS system which will be described below. 
 
 
 <br><hr><br>
@@ -1265,19 +1278,27 @@ subdirectories under the /Experiment tree if they do not exist already. These mu
 
 @subsubsection RC_Edit_On_Start Defining Edit-on-start Parameters
 
-With no optional parameters set up, i.e. with the default setup, 
+With \b no optional "edit-on-start" parameters set up,
 when a run is started,
  - either by the @ref RC_odbedit_utility "odbedit" command @ref  RC_odbedit_start "start"
- - or by clicking the @ref RC_mhttpd_utility "mhttpd" start button  (see @ref RC_mhttpd_Start_page) ,
+ - or by clicking the @ref RC_mhttpd_utility "mhttpd" start button (see @ref RC_mhttpd_status_menu_buttons "menu buttons" ) on the mhttpd main status page
+
+
 
 a <b> TR_START transition </b> is received, and the <b>run number</b> of the upcoming run will be displayed for editing. 
-It will have been <b>automatically incremented</b> relative to the last run.  
-The following example shows a run started using <span class="utility"> odbedit</span>. The default run number of the next run
+It will have been <b>automatically incremented</b> relative to the last run.
+
+The following example shows a run started using <span class="utility"> odbedit</span>. See   (see @ref RC_mhttpd_Start_page) ,
+
+
+ The default run number of the next run
 is 30499. The user has changed this to 500.
 \code
 [local:bnmr:S]/Experiment>start
 Run number [30499]: 500
 Are the above parameters correct? ([y]/n/q): 
+
+
 @endcode
 
 
@@ -1310,20 +1331,23 @@ $odbedit
 [local:Default:S]/Edit on start>
 @endcode
 
+\anchor RC_rp
 Then the user either <b>creates the required parameters</b>, or, if the parameters already exist elsewhere in the 
-ODB, <b>creates links to the parameters</b> in the <b>Edit on start</b> subdirectory. Some users find it
-convenient to create their run parameters in a subdirectory of /Experiment named "\b run \b parameters", and
-create links to them in the <b>Edit on start</b> subdirectory. 
+ODB, <b>creates links to the parameters</b> in the  <span class="odb">Edit on start</span> subdirectory. Many users find it
+convenient to create their run parameters in a subdirectory of  <span class="odb">/Experiment</span> named <b>"Run Parameters"</b>, and
+create links to them in the <span class="odb">Edit on start</span> subdirectory. 
 
-<br><br>The example below shows the creation of three parameters in the <b>Edit on start</b> 
+<br><br>The example below shows the creation of three parameters in the  <span class="odb">Edit on start</span>
 subdirectory:
 <ol>
  <li> a \b parameter to contain the title of the run (called "run_title")
         <br> The user will be able to enter the title of each run before it starts 
- <li> a \b link to the ODB parameter  <b>/Logger/Write data</b>   
+ <li> a \b link to the ODB parameter   <span class="odb">/Logger/Write data</span>   
         <br>  It can make sense to create a link to the logger setting which enables/disables writing
                  of data. A quick test run can then be made without data logging
- <li> a \b link to the ODB parameter <b>/Equipment/FIFO_acq/hardware/num scans</b> which has been previously
+ <li> a \b link to the ODB parameter <span class="odb">/Equipment/FIFO_acq/hardware/num scans</span> which has been previously
+      created by the user
+ <li> a \b link to the ODB parameter  <span class="odb">/Equipment/Run Parameters/Sample</span>  which has been previously
       created by the user
 </ol>
 
@@ -1333,6 +1357,7 @@ subdirectory:
 String length [32]:128
 [local:Default:S]/Edit on start>ln "/Logger/Write data" "write data"
 [local:Default:S]/Edit on start>ln "/Equipment/FIFO_acq/hardware/num scans" "Number of scans"
+[local:Default:S]/Edit on start>ln "/Experiment/Run Parameters/Sample" "sample"
 @endcode
 
 Here is an example of the <b>Edit on start</b> parameters from an experiment:
@@ -1345,7 +1370,7 @@ Key name                        Type    #Val  Size  Last Opn Mode Value
 run_title                       STRING  1     128   3h   0   RWD  2e test
 experiment number               DWORD   1     4     3h   0   RWD  9999
 experimenter                    STRING  1     32    3h   0   RWD  gdm
-sample                          STRING  1     23    3h   0   RWD  NA
+sample                          STRING  1     23    3h   0   RWD  /Experiment/Run Parameters/Sample -> NA
 orientation                     STRING  1     15    11h  0   RWD  
 temperature                     STRING  1     32    3h   0   RWD  285.12K
 field                           STRING  1     32    3h   0   RWD  0G
@@ -1354,16 +1379,32 @@ write data                      BOOL    1     4     7s   0   RWD  /Logger/Write 
 Edit run number                 BOOL    1     4     11h  0   RWD  n
 @endcode
 
-\Note Note that the "Edit run number" feature (that prevents editing the run number) is available for <span class="utility">mhttpd</span> only. See  @ref RC_Prevent_Edit_RN .
+\Note that the "Edit run number" feature (that prevents editing the run number) is available for <span class="utility">mhttpd</span> only. See  @ref RC_Prevent_Edit_RN .
 
  
-See \b examples of starting a run with <b> edit on start </b> parameters set up, using @ref RC_EOS_example2 "odbedit" and   @ref RC_mhttpd_Edit_On_Start "mhttpd" .
+\b Examples of starting a run with <b> edit on start </b> parameters are shown here:
+  - using @ref RC_EOS_example2 "odbedit" or
+  - using   @ref RC_mhttpd_Edit_On_Start "mhttpd" .
 
 <!-- \level+ -->
-@subsubsection RC_parameter_comments  Parameter Comments
-Optional parameter comments (in the "Parameter Comments" subdirectory can be set up to give more information about the Edit-on-Start parameters. This feature
-is only active when using  <span class="utility">mhttpd</span>. Setting up @ref RC_Edit_PC is described in the mhttpd @ref RC_mhttpd_Start_page section.
+@subsubsection RC_parameter_comments  Parameter Comments subdirectory
+Optional parameter comments (in the <span class="odb">/Experiment/Parameter Comments</span> subdirectory) can be set up to give more information about the Edit-on-Start parameters.
+This feature is only active when using  <span class="utility">mhttpd</span>. Setting up @ref RC_Edit_PC is described in the mhttpd
+@ref RC_mhttpd_Start_page section.
 <br><hr><br>
+
+
+<!-- \level+ -->
+@subsubsection RC_Run_Parameters Run Parameters subdirectory
+Users often create a subdirectory  <span class="odb">/Experiment/Run Parameters</span> to contain any  parameters needed for the run.
+These may be the subject of links from the  <span class="odb">Edit on start</span> subdirectory (see  @ref RC_rp "example above"). 
+<br>
+In the case of <span class="utility">mhttpd</span>, two keys in this directory have special meaning.
+If the keys \b "Comment" or \b "Run Description" are created in the  <span class="odb">"Run Parameter"</span> subdirectory,
+the contents of each key will be displayed on an extra line on the  <span class="utility">mhttpd</span> main status page.
+See  @ref RC_Edit_RP for details.
+<br><hr><br>
+
 
 
 \anchor idx_ODB_tree_Experiment_Lock-when-Running
@@ -2155,7 +2196,9 @@ using the (customized) script \anchor start-all  "start_daq.sh" .
 <td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
 <td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
-\anchor RC_programs_Auto_start Auto start</td>
+\anchor RC_programs_Auto_start
+\anchor idx_Auto_client_start
+Auto start</td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;">BOOL</td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;">
 If set to "y" the client will be started automatically using the 
@@ -2170,7 +2213,9 @@ unless @ref RC_programs_Auto_restart "Auto restart" is set to "y".
 <td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
 <td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
-\anchor RC_programs_Auto_stop Auto stop</td>
+\anchor RC_programs_Auto_stop
+\anchor idx_Auto_client_stop
+Auto stop</td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;">BOOL</td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;">
 If this is set to "y" ... 
@@ -2181,7 +2226,9 @@ If this is set to "y" ...
 <td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;"><br></td>
 <td style="vertical-align: top; background-color: lightyellow; font-weight: bold; text-align: left;">
-\anchor RC_programs_Auto_restart Auto restart</td>
+\anchor RC_programs_Auto_restart
+\anchor idx_Auto_client_restart
+Auto restart</td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;">BOOL</td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;">
 If set to "y" the client will be restarted automatically using the 

@@ -144,9 +144,10 @@ sub idx()
 sub write_idx(@)
 {
     my $len;
-    my ($i,$j,$k);
-    my @last=qw( 0 0 0 0 0 0 0 );
-    my (@fields, $l);
+    my ($i,$j,$k,$l,$m);
+    my @last= qw( 0 0 0 0 0 0 0 );
+#    my @last1=qw( x x x x x x x );
+    my (@fields, $first);
     my $letter;
     my $level;
     my ($lclast, $lcfields);
@@ -159,8 +160,8 @@ sub write_idx(@)
 
 # note: array is the only parameter, so passing directly is OK.
     my @array = @_;
-#    @sorted = sort { lc($a) cmp lc($b);  } @array; # sort as all lower case
-    @sorted = sort { dosort ($a,$b)} @array; # special sort to deal with hyphens
+   @sorted = sort { lc($a) cmp lc($b);  } @array; # sort as all lower case
+#    @sorted = sort { dosort ($a,$b)} @array; # special sort to deal with hyphens # works better with regular sort
     print "\n sorted array: @sorted\n";
     $len= $#sorted;
    
@@ -180,29 +181,60 @@ sub write_idx(@)
     print OUTF "<tr>\n";
     print OUTF "<td style=\"vertical-align: top; font-weight: bold; text-align: left; background-color: white;\">\n";
     print OUTF "$indent[$level]<ul class=\"j$level\"> <!-- j$level -->\n";
+    $first = 1; # first time
     while ($i<$len+1)
     {
-	
+	if ($first) { $first = 0; }
+        else { @last = @fields; } # remember last item for comparison (duplicates)
+
+
 	$_=$sorted[$i];
         print "next sorted value $i:$_\n";
 	# s/idx_//;
         @fields=qw( 0 0 0 0 0 0 0 ); # clear out all levels
         @fields=split('_');
+        print "\n *****  new item; last=@last;   fields=@fields  ******** \n"; 
         $l=$#fields;
+        $m=$#last;
+#        print "m=$m  l=$l \n";
+        while ($m < $l)  # make sure last is the same length as fields by adding blanks
+        {   $last[$m+1] = " "; $m++;  }
+        # print "\n *** now last=@last;   fields=@fields  ******** \n"; 
 	$j=0;
-	#   print "l=$l fields: @fields\n";
+        print "l=$l fields: @fields\n";
         while ($j < $l)
         {
             $j++;
-	        print "j=$j; level=$level;  l=$l;  last= $last[$j]\n";
+            print "j=$j; level=$level;  l=$l;  last= $last[$j]\n";
             #   case may be different
             $lcfields = lc $fields[$j];
             $lclast   = lc $last[$j];
+            my $duplicate = 0;
 	    if ($lcfields eq $lclast)
             {
+                $duplicate = 1;
 		if ($fields[$j]=~/^[a-z]$/) { die "duplicate single letter $fields[$j]\n";}
-		print "duplicate:j=$j level=$level last[$level]=$last[$level]; \n";
-		next;
+                # check previous levels to be sure
+                print "found a duplicate at j=$j;$lcfields=\"$lcfields\" and lclast=\"$lclast\" ";
+                if ($j > 1)
+                {
+                    $m=$j-1;
+                    print "checking higher level (j=$m)\n";
+              
+                    $lcfields = lc $fields[$m];
+                    $lclast = lc $last[$m];
+                    print "now comparing \"$lcfields\" to \"$lclast\" \n";   
+                    if($lcfields ne $lclast) 
+                    { 
+                        print "!!! saved a duplicate \n";
+                        $duplicate = 0;
+                    } 
+                }   
+                if ($duplicate > 0)
+                {
+                    print "\nduplicate:j=$j level=$level last[$level]=$last[$level]; \n";
+                    next;
+                }
 	    }
 #           there could be a comment on a matching item (e.g. buffer and buffer-see-also-  )
 #           or  mhttpd and mhttpd-dot-h
@@ -234,13 +266,7 @@ sub write_idx(@)
                    }
                 }
              }
-          #   else {  print " $ftemp[0] and $ltemp[0] do not match \n"; }
-            
-            
-            
-            
-            $last[$j]=$fields[$j];
-            
+          #   else {  print " $ftemp[0] and $ltemp[0] do not match \n"; }            
             if ($fields[$j]=~/!$/)
             {  
                 print "found item with \"!\" (i.e. from \"$indexfile\" ): $fields[$j]\n";
@@ -326,8 +352,7 @@ sub write_idx(@)
 
             if( $j == $l)
             { # last term
-                #print "level=$level l=$l  last[$level]=$last[$level]\n";
-                
+                print "level=$level l=$l  last[$level]=$last[$level]\n";              
                 if ($flag)
                 {
                     print "flagged line: $indent[$level]<li>$fields[$level]\n";
@@ -352,6 +377,7 @@ sub write_idx(@)
 	$i++;
     }
     print "at end; i=$i level=$level l=$l  last[$level]=$last[$level]  j=$j\n";
+
     $level=$j;
     $j=0;
     while ($j < $level)
@@ -610,7 +636,7 @@ EOT
 
 
 
-
+# dosort not used at present
 sub dosort($$)
 {
     my $a = shift;

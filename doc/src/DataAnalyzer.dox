@@ -16,9 +16,9 @@ sections("FrontendOperation","DataAnalysis","Performance"); // last section; top
 
 
 @anchor idx_analyzers
-@anchor idx_analyzer_ROME_documentation
-@anchor idx_analyzer_Rootana_documentation
-@anchor idx_analyzer_Roody_documentation
+@anchor idx_analyzer_documentation_ROME
+@anchor idx_analyzer_documentation_Rootana
+@anchor idx_analyzer_documentation_Roody
 
 @section DA_Data_analyzers  Data Analyzers
 The following are available for MIDAS Data Analysis:

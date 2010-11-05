@@ -39,8 +39,18 @@ essential parameters of the controlled experiment in a more compact way.  A cust
 @ref  RC_odb_custom_status "replace" the default MIDAS Status Page.
 <br>
 
- - \subpage RC_Example_Custom_Webpages
+\anchor idx_mhttpd_page_custom_example-pages
+@section  RC_Example_Custom_Webpages Examples of Custom Webpages
 
+Examples of custom webpages :
+
+ -  \subpage RC_ROOT_analyzer_page -  ROOT graphical output served through an mhttpd custom page 
+ -  \subpage RC_MEG_Gas_Page - complex gas system illustrating use of "fills" and "labels"
+ -  \subpage RC_Ebit_custom_page - page showing clickable input boxes, checkboxes
+ -  \subpage RC_Mpet_custom_page - page showing labels
+ -  \subpage RC_T2K_Gas_Page - highly complex gas system showing popups, labels, fills, clickable areas
+ -  \subpage RC_BNMQR_status - custom status page replaces MIDAS standard status page
+\anchor end
 
 <br>
 
@@ -127,7 +137,7 @@ for \b remote \b external pages)
 If keys are defined in this tree, except where noted @ref RC_odb_custom_keynames "below",  
 the names of the keys will appear as  <span class="new">custom-buttons</span> in versions after @ref ndf_dec_2009
 (or @ref RC_mhttpd_Alias_page "custom-links" in earlier versions) on the 
-<span class="utility"> mhttpd</span>  @ref RC_mhttpd_pol_status_example "Main Status page". By clicking on one of these
+<span class="utility"> mhttpd</span>  @ref RC_mhttpd_main_status "Main Status page". By clicking on one of these
 alias-buttons, the custom page will be visible in a new frame.
 <br>
 

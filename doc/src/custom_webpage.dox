@@ -1,29 +1,3 @@
-/*! @page RC_Example_Custom_Webpages Examples of Custom Webpages
-
-<br>
-\htmlonly  
-<script type="text/javascript">
-// pages parameters: back index next {top bottom}
-pages( "RC_mhttpd_Custom_page", "RunControl","RC_ROOT_analyzer_page","RC_Example_Custom_Webpages",  "end" );
-sections("Features", "RunControl","FrontendOperation"); // last section; top of this section; next section
-</script>
-\endhtmlonly  
-
-<br>
-\anchor idx_mhttpd_page_custom_example-pages
-Examples of custom webpages :
-
- -  \subpage RC_ROOT_analyzer_page
- -  \subpage RC_BNMQR_status
- -  \subpage RC_MEG_Gas_Page
- -  \subpage RC_Ebit_custom_page
- -  \subpage RC_Mpet_custom_page
- -  \subpage RC_T2K_Gas_Page
-\anchor end
-<!-- End of page  RC_Example_Custom_Webpages -->
-*/
-
-
 /*! @page RC_ROOT_analyzer_page Custom Page showing ROOT analyzer output
 \anchor idx_mhttpd_page_custom_examples_ROOT
 <br>

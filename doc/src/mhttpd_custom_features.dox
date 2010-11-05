@@ -12,7 +12,7 @@ sections("Features", "RunControl","FrontendOperation"); // last section; top of 
 \endhtmlonly
 
 \anchor idx_JavaScript_built-in-library
-\anchor idx_mhttpd-dot-js
+\anchor idx_mhttpd-javascript-library
 
 
 Many of the supported features of MIDAS Custom web pages are available under HTML, but others rely on the 
@@ -255,30 +255,118 @@ giving access to the Main Status, ODB and Messages pages :
 
 <hr>
 
-@section RC_mhttpd_custom_alias Alias Links and Hyperlinks
+@section RC_mhttpd_custom_alias Alias Buttons and Hyperlinks
 Any hyperlink can easily be included on a custom page by using the standard HTML anchor <span class = "htmltag">\<a...\></span> tag, e.g.
 @code  
 <a href="http://ladd00.triumf.ca/~daqweb/doc/midas/html/">Midas Help</a>
 @endcode
-Links on a custom page equivalent to @ref  RC_mhttpd_status_Alias_links "alias-links" can also be made e.g.
-@code
-<script>
-document.write('<a href="/SC/Cycle_Scalers?exp='+my_expt+'">Cycle Scalers</a>');
-</script>
-@endcode
-where <i> my_expt </i> is the name of the MIDAS experiment. 
 
+Links on a custom page equivalent to @ref  RC_mhttpd_status_Alias_buttons "alias-buttons" can also be made e.g.
+
+\code
+<button type="button" onclick="document.location.href='/Alias/alias&';">alias</button>
+@endcode
+
+
+
+@section RC_mhttpd_custom_simple_example Simple Example of a custom page in HTML
+Here is a simple example of an HTML custom page demonstrating the features described above, including access to
+ - the standard MIDAS Menu buttons
+    - "Status" and "ODB"
+ - alias buttons
+    - "TPC Button" a local link through the <span class="odb">/alias</span> ODB tree 
+    - "triumf" an external link
+ - alias links
+    - "TpcGasPlc" local link to  <span class="odb">/Equipment/TpcGasPlc</span>
+    - "TPC Alias-link" local link  through the <span class="odb">/alias</span> ODB tree (to same area as "TPC Button")
+
+ * <br>
+ * <center> 
+ * <span class="image">A simple custom page</span>
+ *  \image html simple_custom.jpg
+ * </center> 
+ * <br>
+
+The code for this page is shown below:
+ \code
+ <!DOCTYPE html PUBLIC "-//w3c//dtd html 4.0 transitional//en">
+<html>
+<head>
+<title>simple custom page</title>
+</head>
+<body>
+<form name="form1" method="Get" action="/CS/Colour&">
+<table style="text-align: center; width: 40%;" border="1" cellpadding="2" cellspacing="2">
+<tr>
+<td colspan="2"
+style="vertical-align: top; background-color: mediumslateblue; color: white; text-align: center;">
+Custom Page for experiment <odb src="/Experiment/Name">
+</td>
+</tr>
+<td
+style="vertical-align: top; background-color: lightyellow;  text-align: center;">
+Run Control Buttons:</td>
+<td
+style="vertical-align: top; background-color: lightyellow;  text-align: center;">
+<input name="cmd" value="Status" type="submit">
+<input name="cmd" value="ODB" type="submit">
+</td>
+</tr>
+<tr>
+<td
+style="vertical-align: top; background-color: seagreen; color: white; text-align: center;">Alias Buttons:</td>
+<td
+style="vertical-align: top; background-color: seagreen;  text-align: center;">
+<button type="button" onclick="document.location.href='/Alias/TPC Common&';">TPC Button</button>
+<button type="button" onclick="window.open('http://triumf.ca');">triumf</button>
+</td>
+</tr>
+<tr>
+<td
+style="vertical-align: top; background-color: fuschia;  text-align: center;">Links:</td>
+<td
+style="vertical-align: top; background-color: fuschia;  text-align: center;">
+<a href="/SC/TpcGasPlc">TpcGasPlc</a>
+<a href="/Alias/TPC Common&">TPC Alias-link</a>
+</td>
+</tr>
+</table>
+</form>
+</body>
+\endcode
+
+
+To create this page, you need an existing MIDAS experiment. To have all the buttons/links work, you need the
+ODB keys
+   -  <span class="odb">/Equipment/\<eqp-name\></span>  (<i>\<eqp-name\></i> is "TpcGasPlc" in the example)
+   -  <span class="odb">/Alias/\<alias-name\></span>  (<i>\<alias-name\></i> is "TPC Common&" in the example)
+   
+ - create a file <i>custom.html</i> containing the above code. In this example, the code is in path <i>/home/mydir/custom.html</i>
+ - in  <i>custom.html</i>
+       -  change  <i>TPC Common&</i> to your <i> \<alias-name\> </i> if different
+       -  change  <i>TpcGasPlc</i> to your  <i>\<eqp-name\> </i> if different
+ - in the ODB for your experiment, create a key <span class="odb">/custom/test</span> as shown below:
+ \code
+     $ odb
+     [local:customgas:S]/>cd /custom
+     [local:customgas:S]/Custom>create string test
+     String length [32]:
+     [local:customgas:S]/Custom>set test "/home/mydir/custom.html"
+\endcode
+ - on the mhttpd status page for the experiment, there should now be a custom-button labelled "custom" 
+ - click on this "custom" button to see the custom page
+ 
 <br><hr><br>
 \anchor idx_mhttpd_buttons_customscript
-\anchor idx_mhttpd_custom_user-button
+\anchor idx_mhttpd_custom_script-button
 @section RC_mhttpd_custom_script_buttons CustomScript Buttons
 
-CustomScript buttons can be provided on custom webpages. These buttons are equivalent to @ref RC_mhttpd_status_User_buttons
+CustomScript buttons can be provided on custom webpages. These buttons are equivalent to @ref RC_mhttpd_status_script_buttons
 on the MIDAS Main Status page, and allow a particular action to be performed when the button is pressed.
 
 If the user defines a new tree in ODB named   <span class="odb">/CustomScript</span> ,
 then any key created in the  <span class="odb">/CustomScript</span> tree will appear as a 
-user-button of that name on a custom page that includes an HTML  <span class = "htmltag">\<input...\></span> tag of the form:
+script-button of that name on a custom page that includes an HTML  <span class = "htmltag">\<input...\></span> tag of the form:
 \code
         <input type=submit name=customscript value="my button">
 \endcode
@@ -293,7 +381,7 @@ The optional <span class="odb">/CustomScript</span> tree is applicable only to @
 
 
 The syntax of CustomScript buttons in the  <span class="odb"> /customscript </span> directory is identical to that of
-the @ref RC_mhttpd_status_User_buttons  under the  <span class="odb">/Script</span> ODB directory, i.e.
+the @ref RC_mhttpd_status_script_buttons  under the  <span class="odb">/Script</span> ODB directory, i.e.
 
  - each sub-directory
     ( <span class="odb">/CustomScript/\<button name>/</span>) should contain at least one string key which is the
@@ -348,6 +436,7 @@ modefile                        defaults
 
 These buttons are illustrated in the example @ref RC_Ebit_custom_page
 
+
 <br><hr><br>
 
 
@@ -399,8 +488,43 @@ document.write('Last message:'+message+'<br>');
 </script>
 @endcode
 
-An example of this feature is on the @ref  RC_BNMQR_status .
+ * <br>
+ * <center> 
+ * <span class="image">A simple custom page with a call to ODBGetMsg()</span>
+ *  \image html simple_msg.jpg
+ * </center> 
+ * <br>
+
+The Javascript call has been added to the  @ref RC_mhttpd_custom_simple_example  above, by
+ - adding access to the standard MIDAS Javascript library to the header
+ -  adding the call to ODBGetMsg()
+
+as detailed below: 
+\code
+<!DOCTYPE html PUBLIC "-//w3c//dtd html 4.0 transitional//en">
+<html>
+<head>
+<title> table test</title>
+<script type="text/javascript" src="../mhttpd.js"></script>
+</head>
+............
+............
+</table>
+
+<script>
+var message;
+message= ODBGetMsg(1);
+document.write('<h2>Last message:</h2>'+message+'<br>');
+</script>
+</form>
+</body>
+\endcode
+
+
+
+
 <br><hr><br>
+
 
  - \subpage  RC_mhttpd_custom_ODB_access
  - \subpage  RC_mhttpd_custom_RPC_access

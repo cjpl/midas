@@ -542,7 +542,9 @@ and the optional
 </td>
 <td style="vertical-align: top; font-weight: normal; text-align: left;"> 
    When this flag is set to "y" (i.e. TRUE), a new run is automatically restarted
-  when the previous run has been stopped by the logger due to an event or byte limit. Default value is "n".
+  when the previous run has been stopped by the logger due to an event or byte limit. Default value is "n". The run start can
+  be prevented by the user manually e.g. from @ref RC_odbedit_utility "odbedit".
+  \Note this key may be accessed from the  mhttpd main status page  @ref RC_mhttpd_status_Run_info "Run status information" as \b "restart".
 </td>
 </tr>
 <!--   line    3.5      -->

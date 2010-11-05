@@ -1,162 +1,75 @@
-
-/*! @page RC_mhttpd mhttpd -  Run Control using the MIDAS Web Server
-\anchor idx_midas_webserver
+/*! @page  RC_mhttpd  mhttpd: the MIDAS Web-based Run Control utility
 \anchor idx_mhttpd-utility
-<!--  mhttpd functionality is a sub-page of the Run Control section; 
-      mhttpd Usage is in the  section RC_mhttpd_utility
+<!--  
+      RC_mhttpd_utility  is a sub-page of the Run Control section
+            RC_mhttpd_utility  is a sub-page of this page
  -->
 <br>
 \htmlonly 
 <script type="text/javascript">
-pages( "RC_odbedit_examples",  "RunControl", "RC_mhttpd_Main_Status_page", "RC_mhttpd",  "end" ); // back index next {top bottom}
+pages( "RC_odbedit_examples",  "RunControl", "RC_mhttpd_utility", "RC_mhttpd",  "end" ); // back index next {top bottom}
 sections("Features", "RunControl","FrontendOperation"); // last section; top of this section; next section
 </script>
 \endhtmlonly 
 
-<br>
-@section RC_mhttpd_utility mhttpd - Run control & Monitoring through the web
+\anchor idx_mhttpd
+\anchor idx_midas_webserver
+ * <center> 
+ * <br><br><br>
+ * \image html montage4.jpg
+ * </center> 
 
-The MIDAS Web Server utility \b "mhttpd" provides MIDAS DAQ control through
-the web using any web browser. Provided the @ref RC_mhttpd_Usage "daemon application" is running,
+
+@section RC_mhttpd_intro Introduction
+The MIDAS Web Server utility  <span class="utility">mhttpd</span> provides MIDAS DAQ control through
+the web using any web browser. Provided the @ref RC_mhttpd_utility "daemon application" is running,
 the user may access any MIDAS experiment running on a given host from a Web browser.
 
 Full monitoring and almost full control of a particular experiment can be achieved
 through the MIDAS Web server.
+   
 
-@anchor RC_mhttpd_Usage Usage :
-<br>
-\b mhttpd requires as argument the TCP/IP port number in order to listen to
-the web based request.
+      - \subpage RC_mhttpd_utility
+      - @ref RC_mhttpd_functionality
+          - @ref RC_mhttpd_page_list "list of mhttpd pages" 
+          - @ref RC_mhttpd_tree_list "list of mhttpd-specific odb trees"
+      
 
-- <b> Arguments </b>
-  - [-h ] : help
-  - [-p port ] : port number, no default, should be 8081 for <b> Example </b>.
-  - [-D ] : start program as a \b daemon
 
-- <b> Usage </b>
- @code
-  >mhttpd -p 8081 -D
- @endcode
+ @section  RC_mhttpd_functionality Features of mhttpd
 
-\note
-Several copies of mhttpd can run on a single host, as long as they are started on different ports. 
-If more than one experiment runs on the same host, a server for each experiment must be
-started on a different port.
-
-\anchor idx_mhttpd_proxy-access
-\anchor idx_access-control_mhttpd-proxy
-\anchor idx_Apache
-@subsection RC_mhttpd_proxy Proxy Access to mhttpd
-
-A major change was made to   <span class="utility">mhttpd</span> in @ref ndf_feb_2008 , changing all internal URLs to relative paths.
-This allows <b>proxy access</b> to <span class="utility">mhttpd</span> via an
- <a href="http://apache.org/">Apache</a>   server for example, which might
-be needed to securely access an experiment from outside the lab through a
-firewall. Apache can also be configured to allow a secure SSL connection to the proxy.
-
-In order to add SSL encryption to  <span class="utility">mhttpd</span>,
-the following settings can be placed into an <b>Apache configuration</b> :
-<br>
-Assuming
- - the experiment runs on machine <i>online1.your.domain</i>, and
- - apache is running on a publically available machine <i>www.your.domain</i>
-<br>
-
-\code
-Redirect permanent /online1 http://www.your.domain/online1
-ProxyPass /online1/  http://online1.your.domain/
-
-<Location "/online1">
-  AuthType Basic
-  AuthName ...
-  AuthUserFile ...
-  Require user ...
-</Location>
-\endcode
-
-If  the URL
-\code
-http://www.your.domain/online1
-\endcode
-is accessed, it will be redirected (after optional authentication) to
-\code
-http://online1.your.domain/
-\endcode
-<br>
-If you click on
-the   <span class="utility">mhttpd</span> @ref RC_mhttpd_History_page  for example,   <span class="utility">mhttpd</span>  would normally redirect this to 
-\code
-http://online1.your.domain/HS/
-\endcode
-but this is not correct since you want to go through the proxy <i>www.your.domain</i>.
-The new relative redirection inside   <span class="utility">mhttpd</span> now redirects the history page
-correctly to
-\code
-http://www.your.domain/online1/HS/
-\endcode
+The basic functionality of  <span class="utility">mhttpd</span> includes:
+ - <b>Run control</b> (start/stop/pause).
+ - Up-to-date <b>client status and  statistics display</b> (frontend(s) logger(s) etc.)
+ - <b>Graphical history data</b> display.
+ - <b>Electronic LogBook</b> recording/retrieval messages
+ - \b Alarm monitoring/control
+ - \b Slow \b control data display.
+ - Listing of currently \b connected \b clients
+ - Basic <b>access to ODB</b>.
 
 
 
-<br>
-<hr>
-<br>
-\anchor idx_mhttpd-utility_connect
-@subsection RC_mhttpd_connect Connect to the mhttpd webserver
-To connect to a mhttpd webserver running on 
-port <i>&lt;nnnn&gt</i>; on host <i>&lt;hostname&gt</i>; and experiment <i>&lt;exptname&gt;</i>, 
-enter the URL in your web browser in the form
+These functions are available on one or more of the various \b mhttpd \b pages described below :
+\anchor RC_mhttpd_page_list
 
-@code
- http://<hostname>:<nnnn>/?exp=<exptname>
-@endcode
-e.g.
-@code
- http://midtis09:8081/?exp=midas
-@endcode
-<br>
+- \subpage RC_mhttpd_Main_Status_page : monitoring, statistics display, access to other pages etc.
+- \subpage RC_mhttpd_Start_page : Run control page
+- \subpage RC_mhttpd_ODB_page : Online Database manipulation ( an alternative to using <span class="utility">odbedit</span> )
+- \subpage RC_mhttpd_Equipment_page : Frontend information
+- \subpage RC_mhttpd_sc_page : Slow Control information
+- \subpage RC_mhttpd_Message_page : Message Log 
+- \subpage RC_mhttpd_Elog_page : Electronic Log
+- \subpage RC_mhttpd_Program_page : Program control (clients)
+- \subpage RC_mhttpd_History_page : History display
+- \subpage RC_mhttpd_Alarm_page : Alarm system control
+- \subpage RC_mhttpd_MSCB_page MIDAS Slow Control Bus
+- \subpage RC_mhttpd_CNAF_page : CAMAC access
+- \subpage RC_mhttpd_Alias_page : user defined  Alias page(s) 
+- \subpage RC_mhttpd_Custom_page : user defined Web page(s)
 
-The @ref RC_mhttpd_Main_Status_page should then be visible in the web browser window. If the daemon has NOT
-been started on the correct port, an error page will be visible instead.
-
-<br>
-<hr>
-<br>
-
-
-\anchor idx_mhttpd
-@section RC_mhttpd_functionality Features of mhttpd
-
-The basic functionality of mhttpd is:
-- Run control (start/stop).
-- Frontend up-to-date status and statistics display.
-- Logger up-to-date status and statistics display.
-- Lazylogger up-to-date status and statistics display.
-- Current connected client listing.
-- Slow control data display.
-- Basic access to ODB.
-- Graphical history data display.
-- Electronic LogBook recording/retrieval messages
-- Alarm monitoring/control
-
-
-These functions are available on one or more of the various \b pages described below :
-
-- \subpage RC_mhttpd_Main_Status_page - Main status page
-- \subpage RC_mhttpd_Start_page - Run control page
-- \subpage RC_mhttpd_ODB_page - Online Database manipulation (equivalent to ODBedit)
-- \subpage RC_mhttpd_Equipment_page (Frontend info)
-- \subpage RC_mhttpd_sc_page (Slow Control page)
-- \subpage RC_mhttpd_CNAF_page (CAMAC access page)
-- \subpage RC_mhttpd_Message_page (Message Log) 
-- \subpage RC_mhttpd_Elog_page (Electronic Log)
-- \subpage RC_mhttpd_Program_page (Program control)
-- \subpage RC_mhttpd_History_page (History display)
-- \subpage RC_mhttpd_Alarm_page (Alarm control)
-- \subpage RC_mhttpd_MSCB_page (Slow Control)
-- \subpage RC_mhttpd_Alias_page (User defined Alias page(s) )
-- \subpage RC_mhttpd_Custom_page (User defined Web page(s) )
-
-Several directory trees in the ODB are specific to mhttpd, or have additional features if mhttpd
+\anchor RC_mhttpd_tree_list
+Several directory trees in the ODB are <b> specific to mhttpd</b>, or have \b additional \b features if <span class="utility">mhttpd</span>
 is running. They are described below in the appropriate section.
 -  @ref RC_odb_alias_tree
 -  @ref RC_odb_custom_tree
@@ -178,6 +91,15 @@ sections("Features", "RunControl","FrontendOperation"); // last section; top of 
 <!-- End of page RC_mhttpd -->
 */
 
+
+
+
+
+
+
+
+
+
 <!-- ------------ M A I N  S T A T U S  P A G E  ------- -->
 
 /*! \page RC_mhttpd_Main_Status_page Main Status Page 
@@ -187,146 +109,182 @@ sections("Features", "RunControl","FrontendOperation"); // last section; top of 
  
 \htmlonly
 <script type="text/javascript">
-pages( "RC_mhttpd",  "RunControl","RC_mhttpd_defining_user_buttons", "RC_mhttpd_Main_Status_page",  "end" ); // back index next {top bottom}
+pages( "RC_mhttpd",  "RunControl","RC_mhttpd_status_page_features", "RC_mhttpd_Main_Status_page",  "end" ); // back index next {top bottom}
 sections("Features", "RunControl","FrontendOperation"); // last section; top of this section; next section
 </script>
 \endhtmlonly
+ <br>
  
+@anchor RC_mhttpd_main_status
+@section RC_mhttpd_msp_customized Status Page for a Running Experiment
 
-  
-<br>
-@section RC_mhttpd_msp_default Status Page (minimal) 
+The following image shows the main Status Page of one of the experiments at TRIUMF:
 
-Once the @ref RC_mhttpd_connect "connection" to a given experiment is established, the <b>Main Status
-Page</b> of the MIDAS webserver is displayed with the current ODB information related to this experiment.
-
-With a \b minimal odb and experiment name "midas" the mhttpd <b> Status Page </b> might look like this:
-@anchor RC_mhttpd_minimal_status_page
-
- * <br><br><br>
  * <center> 
- * <span class="image">Main Status Page with minimal ODB
+ * <span class="image">MIDAS Status Page for a running experiment
  * <br><br><br>
- *  \image html status_nothing.png
- * </span>
- * </center> 
- * <br><br><br>
+ * \image html mhttpd_status.jpg
+ * </span></center> 
+ * <br>
 
-In this case, there is only one client running (mhttpd), no  @ref FE_sw_equipment "equipments" have been defined, 
-and only the standard  buttons are shown.
-<br>
-
-@section RC_mhttpd_msp_customized Status Page for a running experiment
-
-@anchor RC_mhttpd_pol_status
-Once the user has customized their experiment, by 
+ In this case, the experiment has been customized by
+ - creating and starting some frontend(s), which define various equipment(s)
+ - defining "script" and "alias" buttons
  - starting some of the MIDAS utilities (e.g. the MIDAS logger @ref F_mlogger_utility "mlogger" and the 
 @ref F_lazylogger_utility "lazylogger" )
- - creating and starting some frontend(s), which define various equipment(s)
- - defining user and alias-links (buttons)
 
-the main <b> Status Page </b> will show more information. The following image shows the Status Page
-of the "pol" experiment at TRIUMF:
+Compared with the @ref  RC_mhttpd_minimal_status_page "minimal status page" (where no clients are running) it's clear that the 
+the Status Page above shows a lot more information.
 
-@anchor RC_mhttpd_pol_status_example
- * <br><br><br>
- * <center> 
- * <span class="image">MIDAS Status Page for experiment "pol"
- * <br><br><br>
- *  \image html pol_running.gif
- * </span></center> 
- * <br><br><br>
+The main status page will be discussed line-by-line in the following section ( @ref RC_mhttpd_status_page_features ).
+
+ - \subpage RC_mhttpd_status_page_features
+ - \subpage  RC_mhttpd_status_page_redesign
 
 
-@section RC_mhttpd_status_page_redesign Redesign of Main Status Page
+ 
+\htmlonly
+<script type="text/javascript">
+pages( "RC_mhttpd",  "RunControl","RC_mhttpd_status_page_features", "RC_mhttpd_Main_Status_page",  "" ); // back index next {top bottom}
+sections("Features", "RunControl","FrontendOperation"); // last section; top of this section; next section
+</script>
+\endhtmlonly
+
+\anchor end
+*/
+ <!-- ------------ end of M A I N  S T A T U S  P A G E  ------- -->
+
+
+ 
+<!-- ------------ R E D E S I G N  O F  M A I N  S T A T U S  P A G E  -------
+
+                   subpage of RC_mhttpd_Main_Status_page
+-->
+/*! \page  RC_mhttpd_status_page_redesign Redesign of mhttpd Main Status Page
+
+
+\htmlonly
+<script type="text/javascript">
+pages( "RC_mhttpd_Main_Status_page",  "RunControl","RC_mhttpd_Main_Status_page", " RC_mhttpd_status_page_redesign",  "end" ); // back index next {top bottom}
+sections("Features", "RunControl","FrontendOperation"); // last section; top of this section; next section
+</script>
+\endhtmlonly
+
+\anchor idx_mhttpd_page_status
+
+<br>
 \anchor alias_buttons_status_page
 <span class="new">
-The appearance of the Main Status Page has been changed  (@ref ndf_dec_2009) as follows:</span>
+The appearance of the Main Status Page has been changed  (in versions after to @ref ndf_dec_2009) </span>.
 <ul>
- <li> the \b "Analyzed" column has been dropped ( \ref RC_analyzer_column "see below")
- <li> \b alias-hyperlinks and links to Custom pages on the main Status Page have been changed from \b hyperlinks to \b Buttons  (@ref RC_mhttpd_alias_buttons),
+ <li> the \b "Analyzed" column has been dropped
+ <li> the \b "FE Node" column is now labelled \b "Status" and may show equipment status information
+ <li> the user-defined @ref RC_mhttpd_alias_buttons "alias",   @ref RC_mhttpd_status_script_buttons "script" and "custom" hyperlinks now appear as  \b buttons
  <li>  there are now four different background colors (@ref ndf_jan_2010) for the four rows of buttons, i.e. :
     <ul>
         <li> Main menu buttons,
-        <li> Scripts,
+        <li> Script buttons,
         <li> Manually triggered events,
-        <li> Alias & Custom pages.
+        <li> Alias & Custom page buttons.
      </ul>
+
+This change has been made because the original alias hyperlinks were hard to read if they included spaces.
+It also gives a more homogeneous look to the page.  A status page of the new format is shown here.
 </ul>
-     
-\anchor RC_analyzer_column        
-Since the column on the main MIDAS status page with fraction of analyzed events was
-barely used, it has been dropped. It did not make sense for all slow 
-control events. In case this feature is required in some experiment, it will be moved  
-into a custom page and the ratio calculated in JavaScript, where there is much more 
-flexibility.
 
-This modification frees up more space on the status page for the "Status" column, where 
-front-end programs can report errors etc.
-        
-The new format is illustrated below:
-
- * <br><br><br>
+ * <br>
  * <center>
- * <span class="image">Status page showing four rows of buttons
+ * <span class="image">New format Status page showing four rows of buttons
  * <br><br><br>
  *  \image html new_status_page.png
  * </span></center> 
  * <br><br><br>
 
-Note also that the column "Analyzed" has also been removed.
+\anchor RC_mhttpd_old_alias_buttons
+<span class="new"> Prior to  @ref ndf_dec_2009 </span> the Custom Page and Alias hyperlinks appeared as \b links rather than buttons,
+as shown below:
+<br><br><br>
+ * <center>
+ * <span class="image">Older version of mhttpd main Status page showing Custom Page and Alias \b Links
+ *  \image html  old_status_opt_buttons.jpg
+ * </span></center> 
+ * <br><br><br>
+  
+\htmlonly
+<script type="text/javascript">
+pages( "RC_mhttpd_Main_Status_page",  "RunControl","RC_mhttpd_Main_Status_page", " RC_mhttpd_status_page_redesign",  "end" ); // back index next {top bottom}
+sections("Features", "RunControl","FrontendOperation"); // last section; top of this section; next section
+</script>
+\endhtmlonly
  
-<hr>
+\anchor end
+ <br>
+ <!-- ------------ end of R E D E S I G N  O F  M A I N  S T A T U S  P A G E  ------- -->
+*/
 
+ 
 <!-- ==========  S T A T U S    P A G E  : -     F E A T U R E S  =============== -->
-@section RC_mhttpd_status_page_features Features of the Main Status Page
-
-The Status Page is sub-divided in several sections:
+/*! @page  RC_mhttpd_status_page_features Features of the Main Status Page
+\htmlonly
+<script type="text/javascript">
+pages( "RC_mhttpd_Main_Status_page",  "RunControl","RC_mhttpd_defining_script_buttons", "RC_mhttpd_status_page_features",  "end" ); // back index next {top bottom}
+sections("Features", "RunControl","FrontendOperation"); // last section; top of this section; next section
+</script>
+\endhtmlonly
+The Status Page is sub-divided in several parts:
  - @ref RC_mhttpd_status_title
  - @ref RC_mhttpd_status_menu_buttons 
         - @ref RC_mhttpd_status_RC_buttons
         - @ref RC_mhttpd_status_Page_buttons
- - @ref RC_mhttpd_status_User_buttons
- - @ref RC_mhttpd_status_Alias_links
+ - @ref RC_mhttpd_status_script_buttons
+ - @ref RC_mhttpd_status_Manual_Trigger_buttons
+ - @ref RC_mhttpd_status_Alias_buttons
  - @ref RC_mhttpd_status_Run_info
  - @ref RC_mhttpd_status_Equipment_info
  - @ref RC_mhttpd_status_Logger
- - @ref RC_mhttpd_status_Lazylogger
  - @ref RC_mhttpd_status_latest_msg
  - @ref RC_mhttpd_status_clients
 
-The following explanation refers to the status page example
-@ref RC_mhttpd_pol_status_example "shown above".
+These will be discussed in detail in the following sections.
+<br>
+\anchor RC_mhttpd_main_status_new
+ * <center>
+ * <span class="image">mhttpd main status page showing Menu Buttons
+ * <br><br><br>
+ *  \image html new_status_buttons.jpg
+ * </span></center> 
+ * <br>
+ 
+@section RC_mhttpd_status_title Experiment/Date/Refresh information
 
+The top line on the main status page @ref RC_mhttpd_main_status_new "above" shows
+ - the Experiment name ("Online")
+ - the current date 
+ - the refresh period (Refr:600) - see note below
+
+\Note
+It is important to note that the \b refresh of the Status Page is not "event driven" but is controlled by a 
+timer whose rate is adjustable through the  @ref RC_mhttpd_Config_button "Config button".
+This means the information at any given time may reflect the experiment state of up to
+n seconds in the past, where n is the timer setting of the refresh parameter. 
 
 <hr>
 
-
-@subsection RC_mhttpd_status_title Experiment/Date information 
-The top line on the @ref RC_mhttpd_pol_status_example "main status page" shows the Experiment name and the current date.
-
-
-<hr>
 \anchor idx_mhttpd_buttons_menu
-@subsection  RC_mhttpd_status_menu_buttons Menu buttons
+@section  RC_mhttpd_status_menu_buttons Menu buttons
+The top row of buttons on the @ref RC_mhttpd_main_status_new "main status page" are the
+ -  @ref RC_mhttpd_status_RC_buttons
+ -  @ref RC_mhttpd_status_Page_buttons
 
-The top row of buttons on the @ref RC_mhttpd_pol_status_example "main status page" are the  @ref RC_mhttpd_status_RC_buttons
- and the nine  @ref RC_mhttpd_status_Page_buttons . These buttons are present by default, 
-<span class="new">but can now (since @ref ndf_dec_2009) be customized
-(see   @ref RC_customize_experiment_tree).
-It is also possible (since @ref ndf_nov_2009) to optionally hide the   
-@ref RC_mhttpd_status_RC_buttons  (see @ref RC_customize_experiment_tree). </span>
 
-<br><hr><br>
 \anchor idx_mhttpd_buttons_run-control
 @subsection RC_mhttpd_status_RC_buttons Run Control buttons
-
-<span class="new">Since  @ref ndf_nov_2009 , if the Run Buttons are present (see @ref RC_customize_mhttpd_run_buttons "customize run buttons") 
-</span>,
-depending on the @ref RC_Run_States_and_Transitions  "run state", a single or the two first buttons  on the @ref RC_mhttpd_pol_status_example "main status page"
+Depending on the @ref RC_Run_States_and_Transitions  "run state", a single or the two first buttons
+on the @ref  RC_mhttpd_main_status_new  "main status page"
 will show the possible action that can be taken, i.e.
 
 \anchor RC_table_run_state
+
 <table style="text-align: center; width: 40%;" border="1" cellpadding="2"
 cellspacing="2">
 <caption>Run Control buttons visible depending on Run State
@@ -334,11 +292,11 @@ cellspacing="2">
 <tr>
 <td
 style="vertical-align: top; background-color: rgb(204, 204, 255); text-align: center;"><span
-style="font-weight: bold;">Run State</span><br>
+style="font-weight: bold;">Run Control Buttons present</span><br>(see Note  @ref RC_mhttpd_note1 "below")<br>
 </td>
 <td
 style="vertical-align: top; background-color: rgb(204, 204, 255); text-align: center;"><span
-style="font-weight: bold;">Run Control Buttons present</span><br>
+style="font-weight: bold;">Run State</span><br>
 </td>
 <td
 style="vertical-align: top;  background-color: rgb(204, 204, 255); text-align: center;"><span
@@ -346,8 +304,6 @@ style="font-weight: bold;">Action</span><br>
 </td>
 </tr>
 <tr>
-<td style="vertical-align: top; background-color: rgb(255, 0, 0);">STOPPED<br>
-</td>
 <td style="vertical-align: top; font-weight: bold; text-align: center; background-color: rgb(153, 153, 153);">
 <table
 style="text-align: left; width: 20%; margin-left: auto; margin-right: auto;"
@@ -360,15 +316,15 @@ style="font-weight: bold;">Start</span><br>
 </tr>
 </table>
 </td>
+<td style="vertical-align: top; background-color: rgb(255, 0, 0);">STOPPED<br>
+</td>
 <td
 style="vertical-align: top; background-color: rgb(255, 255, 255);">Start
 the run<br>
 </td>
 </tr>
 <tr>
-<td colspan="1" rowspan="2"
-style="vertical-align: top; background-color: rgb(51, 255, 51);">RUNNING<br>
-</td>
+
 <td style="vertical-align: top; font-weight: bold; text-align: center; background-color: rgb(153, 153, 153);">
 <table
 style="text-align: left; width: 20%; margin-left: auto; margin-right: auto;"
@@ -380,6 +336,9 @@ style="font-weight: bold;">Stop</span><br>
 </td>
 </tr>
 </table>
+</td>
+<td colspan="1" rowspan="2"
+style="vertical-align: top; background-color: rgb(51, 255, 51);">RUNNING<br>
 </td>
 <td
 style="vertical-align: top; background-color: rgb(255, 255, 255);">Stop
@@ -405,9 +364,7 @@ the run<br>
 </td>
 </tr>
 <tr>
-<td colspan="1" rowspan="1"
-style="vertical-align: top; background-color: rgb(255, 255, 0);">PAUSED<br>
-</td>
+
 <td style="vertical-align: top; font-weight: bold; text-align: center; background-color: rgb(153, 153, 153);">
 <table
 style="text-align: left; width: 20%; margin-left: auto; margin-right: auto;"
@@ -420,6 +377,9 @@ style="font-weight: bold;">Resume</span><br>
 </tr>
 </table>
 </td>
+<td colspan="1" rowspan="1"
+style="vertical-align: top; background-color: rgb(255, 255, 0);">PAUSED<br>
+</td>
 <td
 style="vertical-align: top; background-color: rgb(255, 255, 255);">Resume
 the run<br>
@@ -427,16 +387,24 @@ the run<br>
 </tr>
 </table>
 
-<br><hr><br>
+@anchor RC_mhttpd_note1
+\Note
+<span class="new">Since  @ref ndf_nov_2009 </span>, the Run Buttons may be hidden
+(see @ref RC_Experiment_tree_keys "Hide Run Buttons" ),
 
 \anchor idx_mhttpd_buttons_page-switch
-@subsection RC_mhttpd_status_Page_buttons Page switch buttons
+@subsection RC_mhttpd_status_Page_buttons Page Switch buttons
 
-The Page switch buttons on the @ref RC_mhttpd_pol_status_example "main status page"  change the page to one of the sub-pages. The sub-pages
-all provide a button labelled \b Status, which returns to the main Status page when clicked.
+The <b>Page Switch buttons</b> on the <span class="utility">mhttpd</span> main status page
+(see  @ref RC_mhttpd_main_status_new "example above") change the page to one
+of the sub-pages. The sub-pages all provide a button labelled \b Status, which returns to the main Status page when clicked.
+The purpose of each Page Switch button is explained in the following table:
 
-<span class="new">Note that the Page switch buttons can now be @ref RC_mhttpd_status_menu_buttons "customized", so not all the possible
-Page switch buttons may be visible on a particular status page.</span>
+\Note
+The Page switch buttons can now be   @ref RC_ODB_Experiment_Tree "customized"
+( <span class="new">since @ref ndf_dec_2009 </span>) , so not all the possible
+Page Switch buttons may be visible on the status page for a particular experiment.
+
 
 
 <table style="text-align: left; width: 100%;" border="1" cellpadding="2"
@@ -446,7 +414,7 @@ cellspacing="2">
 <td style="vertical-align: top; font-weight: bold; text-align: center; background-color: rgb(204, 204, 255); ">Page Switch Button</td>
 <td  style="vertical-align: top; font-weight: bold; text-align: center; background-color: rgb(204, 204, 255); ">Explanation</td>
 </tr>
-<! -- Line 1  ODB  -->
+<!-- Line 1  ODB  -->
 <tr>
 <td style="vertical-align: top; font-weight: bold; text-align: center; background-color: rgb(153, 153, 153);">
 <table
@@ -455,15 +423,13 @@ border="1" cellpadding="2" cellspacing="2">
 <tr>
 <td
 style="vertical-align: top; background-color: rgb(204, 204, 204) ; text-align: center; "><span
-style="font-weight: bold;">ODB</span><br>
+style="font-weight: bold;"> @ref RC_mhttpd_ODB_page "ODB"</span><br>
 </td>
 </tr>
 </table>
 </td>
 <td  style="vertical-align: top;">
-This button provides (limited) access to the Online Data Base.  
-Depending on the security, read/write access to any ODB field can be gained (see @ref RC_mhttpd_ODB_page).
-For more sophisticated editing, use @ref RC_odbedit_utility "odbedit".
+This button switches to the  (see @ref RC_mhttpd_ODB_page), which provides access to the Online Data Base.  
 </td></tr>
 
 
@@ -476,14 +442,14 @@ border="1" cellpadding="2" cellspacing="2">
 <tr>
 <td
 style="vertical-align: top; background-color: rgb(204, 204, 204); text-align: center;"><span
-style="font-weight: bold;">MSCB</span><br>
+style="font-weight: bold;">@ref RC_mhttpd_MSCB_page "MSCB"</span><br>
 </td>
 </tr>
 </table>
 </td>
-<td style="vertical-align: top;"><span class="new">
-The @ref RC_mhttpd_MSCB_page gives access to devices in a MIDAS Slow Control Bus system.
-(Implemented @ref ndf_dec_2009)</span>
+<td style="vertical-align: top;">
+This button switches to the @ref RC_mhttpd_MSCB_page , which gives access to devices in a MIDAS Slow Control Bus system.
+<span class="new">(Implemented @ref ndf_dec_2009)</span>
 
 </td>
 </tr>
@@ -496,16 +462,16 @@ border="1" cellpadding="2" cellspacing="2">
 <tr>
 <td
 style="vertical-align: top; background-color: rgb(204, 204, 204) ; text-align: center; "><span
-style="font-weight: bold;">CNAF</span><br>
+style="font-weight: bold;"> @ref RC_mhttpd_CNAF_page "CNAF"</span><br>
 </td>
 </tr>
 </table>
 </td>
 <td  style="vertical-align: top;">
-\b Note: <span  class="new">in versions since  @ref ndf_dec_2009 <b>this button has been removed</b> and replaced by the MSCB button</span>.
-<br>If one of the equipments is a CAMAC frontend, it is possible to
-issue CAMAC commands through this button. In this case the frontend is acting as a
-RPC CAMAC server for the request.  See @ref RC_mhttpd_CNAF_page
+<span  class="new">In versions since @ref ndf_dec_2009 the default is that this button has been replaced by the MSCB button.
+If the CNAF button is needed, it must be added to the list of  @ref RC_ODB_Experiment_Tree "menu buttons"</span>.
+<br>This button switches to the @ref RC_mhttpd_CNAF_page . If one of the equipments is a CAMAC frontend, it is possible to
+issue CAMAC commands through this button.
 </td></tr>
 <tr>
 
@@ -517,13 +483,13 @@ border="1" cellpadding="2" cellspacing="2">
 <tr>
 <td
 style="vertical-align: top; background-color: rgb(204, 204, 204) ; text-align: center; "><span
-style="font-weight: bold;">Messages</span><br>
+style="font-weight: bold;"> @ref RC_mhttpd_Message_page "Messages"</span><br>
 </td>
 </tr>
 </table>
 </td>
 <td  style="vertical-align: top;">
-Clicking this button opens the @ref RC_mhttpd_Message_page "message page" and shows the n last entries
+Clicking this button opens the @ref RC_mhttpd_Message_page "message page" and shows the N last entries
 of the   @ref F_Messaging  "MIDAS system message log".
 The last entry is always present in the status page (see  @ref RC_mhttpd_status_latest_msg ).
 </td></tr>
@@ -536,7 +502,7 @@ border="1" cellpadding="2" cellspacing="2">
 <tr>
 <td
 style="vertical-align: top; background-color: rgb(204, 204, 204) ; text-align: center; "><span
-style="font-weight: bold;">ELog</span><br>
+style="font-weight: bold;">@ref RC_mhttpd_Elog_page "ELog"</span><br>
 </td>
 </tr>
 </table>
@@ -555,13 +521,13 @@ border="1" cellpadding="2" cellspacing="2">
 <tr>
 <td
 style="vertical-align: top; background-color: rgb(204, 204, 204) ; text-align: center; "><span
-style="font-weight: bold;">Alarms</span><br>
+style="font-weight: bold;">@ref  RC_mhttpd_Alarm_page "Alarms"</span><br>
 </td>
 </tr>
 </table>
 </td>
 <td  style="vertical-align: top;">
-Clicking this button displays the Alarm page, which shows the current Alarm setting 
+Clicking this button displays the  @ref RC_mhttpd_Alarm_page , which shows the current Alarm setting 
 for the entire experiment. The activation of an alarm is done through the ODB under the \b /Alarms
 tree (See @ref RC_Alarm_System)
 </td></tr>
@@ -575,16 +541,15 @@ border="1" cellpadding="2" cellspacing="2">
 <tr>
 <td
 style="vertical-align: top; background-color: rgb(204, 204, 204) ; text-align: center; "><span
-style="font-weight: bold;">Programs</span><br>
+style="font-weight: bold;">  @ref RC_mhttpd_Program_page "Programs"</span><br>
 </td>
 </tr>
 </table>
 </td>
 <td  style="vertical-align: top;">
-This button gives access to the Programs page, which displays the status of
+This button gives access to the  @ref RC_mhttpd_Program_page, which displays the status of
 the current programs (i.e. MIDAS applications/clients) which are or have been running
-for this experiment. Each program  has a specific information record associated with it in the ODB.
-This record is tagged as a hyperlink in the listing (see @ref RC_mhttpd_Program_page).
+for this experiment.
 </td></tr>
 
 <!-- Line 8 -->
@@ -596,7 +561,7 @@ border="1" cellpadding="2" cellspacing="2">
 <tr>
 <td
 style="vertical-align: top; background-color: rgb(204, 204, 204) ; text-align: center; "><span
-style="font-weight: bold;">History</span><br>
+style="font-weight: bold;">@ref RC_mhttpd_History_page "History"</span><br>
 </td>
 </tr>
 </table>
@@ -616,20 +581,19 @@ style="text-align: left; width: 20%; margin-left: auto; margin-right: auto;"
 border="1" cellpadding="2" cellspacing="2">
 <tr>
 <td
-style="vertical-align: top; background-color: rgb(204, 204, 204) ; text-align: center; "><span
-style="font-weight: bold;">\anchor  RC_mhttpd_Config_button Config</span><br>
+style="vertical-align: top; background-color: rgb(204, 204, 204) ; text-align: center; ">
+\anchor  RC_mhttpd_Config_button
+@anchor RC_mhttpd_refresh
+<span
+style="font-weight: bold;">@ref RC_mhttpd_Config_page "Config"</span><br>
 </td>
 </tr>
 </table>
 </td>
 <td  style="vertical-align: top;">
- Allows the <b> page refresh rate </b> to be changed.
-@anchor RC_mhttpd_refresh
-<span class="note">
-It is important to note the \b refresh of the Status Page is not "event driven" but is controlled by a 
-timer (see @ref RC_mhttpd_Config_button "Config button" ).
-This means the information at any given time may reflect the experiment state of up to
-n seconds in the past, where n is the timer setting of the refresh parameter. </span>
+ Allows the <b> page refresh rate </b> to be changed. See @ref RC_mhttpd_Config_page .
+
+
 </td></tr>
 
 <!-- Line 10 -->
@@ -647,207 +611,233 @@ style="font-weight: bold;">Help</span><br>
 </table>
 </td>
 <td  style="vertical-align: top;">
-Help and link to the main MIDAS web documentation (i.e. this document).
+Help button will link to the main MIDAS web documentation (i.e. this document).
 </td></tr>
 
 </table>
 
 
 <br><hr><br>
-\anchor idx_mhttpd_buttons_user
-@subsection RC_mhttpd_status_User_buttons Optional User buttons
-User buttons that appear on the @ref RC_mhttpd_pol_status_example "main status page" are used to execute user-defined scripts.
 
-\anchor idx_ODB_tree_Script
-User-buttons on the mhttpd main Status Page are defined through the optional ODB <span class="odb">/script</span>
-tree.
+@section RC_mhpptd_optional_buttons Optional Buttons on the main Status page
 
-@subsubsection RC_odb_script_tree The ODB /Script tree
-\note 
-The  <span class="odb">/Script</span> tree is applicable to @ref RC_mhttpd "mhttpd", and ignored by 
-@ref RC_odbedit "odbedit".
+ * <center>
+ * <span class="image">mhttpd main Status page (part) showing optional buttons
+ * <br>
+ * \image html new_status_opt_buttons.jpg
+ * </span></center> 
+ * <br>
 
-The optional ODB tree  <span class="odb">/Script</span> provides the user with a way to execute a script when a button is clicked, including
-the <b>capability of passing parameters from the ODB to the script</b>.
+\Note 
+<span class="new"> Since  @ref ndf_dec_2009 </span> there may be up to three rows of buttons below the Menu buttons 
+ - Script (User) buttons
+ - Manually triggered event buttons
+ - Custom Page and Alias buttons
 
-<br>
-If the user defines a new tree in ODB named  <span class="odb">/Script</span> , then any key created in this tree will appear as a 
-user-button of that name on the default mhttpd main status page. Each sub-tree
-    ( <span class="odb">/Script/\<button name>/</span>) should contain at least one string key which is the
-    script command to be executed. Further keys will be passed as
-   <b> arguments </b> to the script. MIDAS symbolic links are permitted.
+<span class="new"> Prior to  @ref ndf_dec_2009 </span> the Custom Page and Alias hyperlinks appeared as \b links rather than buttons,
+as shown  @ref RC_mhttpd_old_alias_buttons "here".
+
+<br><hr><br>  
+\anchor idx_mhttpd_buttons_script
+@subsection RC_mhttpd_status_script_buttons Optional Script buttons
+Script (or User) buttons that appear on the @ref  RC_mhpptd_optional_buttons "main status page" are used to execute user-defined scripts.
+These buttons are defined through the optional ODB <span class="odb">/script</span> tree.
 
 
 
 See
- - \subpage  RC_mhttpd_defining_user_buttons "Examples of defining user buttons" <!--  \level+2  subpage defined within a subsection -->  
+ - \subpage  RC_mhttpd_defining_script_buttons "Defining script buttons" <!--  \level+2  subpage defined within a subsection -->  
 
 for details.
 
-
-<hr>
-
-@subsection RC_mhttpd_status_Alias_links Alias-Buttons (buttons or hyperlinks)
-
-User-defined \b Alias-links <span class="new"> or more recently, ( @ref ndf_dec_2009 ) @ref RC_mhttpd_alias_buttons "Alias-buttons")</span> 
-give access to Alias pages (see  @ref RC_mhttpd_Alias_page for details).
+<br><hr><br>
+\anchor idx_manual-trigger_button
+@subsection RC_mhttpd_status_Manual_Trigger_buttons Manual-Trigger Buttons
+See @ref FE_manual_trigger .
 
 <br><hr><br>
-  
-@subsection RC_mhttpd_status_Run_info Run status information
-This first line of run status information on the @ref RC_mhttpd_pol_status_example "main status page"  shows 
- - the current run number
- - the @ref RC_table_run_state "run state"
- - the Alarm and Auto Restart status:
-<table style="text-align: left; width: 30%;" border="1" cellpadding="2"
-cellspacing="2">
-<tr>
-<td
-style="vertical-align: top; background-color: rgb(204, 204, 255); font-weight: bold; text-align: center;">Alarms
-status<br>
-</td>
-<td
-style="vertical-align: top; background-color: rgb(204, 204, 255); font-weight: bold; text-align: center;">Restart
-status<br>
-</td>
-</tr>
-<tr>
-<td
-style="vertical-align: top; background-color: rgb(51, 255, 51); font-weight: bold; text-align: center; ">Alarms:on </td>
-<td
-style="vertical-align: top; background-color: rgb(51, 255, 51); font-weight: bold; text-align: center; ">Restart:
-yes</td>
-</tr>
-<tr>
-<td
-style="vertical-align: top; background-color: rgb(255, 204, 204); font-weight: bold; text-align: center; ">Alarms:
-off</td>
-<td
-style="vertical-align: top; background-color: rgb(255, 204, 204); font-weight: bold; text-align: center; ">Restart:no</td>
-</tr>
-</table>
+@subsection RC_mhttpd_status_Alias_buttons Alias-Buttons
 
- - the @ref F_mlogger_utility "MIDAS logger" status. 
-<table style="text-align: left; width: 50%;" border="1" cellpadding="2"
-cellspacing="2">
+User-defined  \b Alias-buttons that appear on the @ref  RC_mhpptd_optional_buttons "main status page"
+give access to  @ref RC_mhttpd_Alias_page "Alias pages".
 
-<tr>
-<td
-style="vertical-align: top; background-color: rgb(204, 204, 255); font-weight: bold; text-align: center;">mlogger<br>
-</td>
-<td
-style="vertical-align: top; background-color: rgb(204, 204, 255); font-weight: bold; text-align: center;">message<br>
-</td>
-</tr>
-<tr>
-<td style="vertical-align: top;">enabled<br>
-</td>
-<td style="vertical-align: top; text-align: center; ">
-<span style="font-weight: bold;">Data dir:/data1/pol/data/current</span></td>
-</tr>
-<tr>
-<td style="vertical-align: top;">disabled<br>
-</td>
-<td
-style="vertical-align: top; background-color: rgb(255, 255, 0); text-align: center; ">
-<span style="font-weight: bold;">Logging disabled</span></td>
-</tr>
-<tr>
-<td style="vertical-align: top;">not running<br>
-</td>
-<td
-style="vertical-align: top; background-color: rgb(255, 0, 0); text-align: center; ">
-<span style="font-weight: bold;">Logger not running</span>
-</td>
-</tr>
-</table>
+ - @ref  RC_mhttpd_alias_define
+
+ 
+<br><hr><br>
+ 
 
 
-<hr>
+@section RC_mhttpd_status_Run_info Run status information
+
+ * <center>
+ *  <span class="image">mhttpd status page showing Run Status information</span> 
+ * \image html runstatus.jpg
+ * </center><br>
+
+ The run status information on the @ref RC_mhttpd_main_status "main status page"  shows 
+ - current run number
+ - @ref RC_table_run_state "run state"
+ - Alarm status
+ - @ref F_Logger_Auto_Restart "Restart" (automatically restart run)
+ - mlogger status
+ - run duration
+ 
+The appearance and contents of this information changes depending on the conditions. The images below demonstrate
+how the appearance may change when the run is in transition.
+
+ * <center>
+ *  <span class="image">mhttpd status page showing Run Status information when the run is stopping</span> 
+ * \image html stoppingrun.jpg
+ * </center><br>
+
+ * <center>
+ *  <span class="image">mhttpd status page showing Run Status information when the run is starting</span> 
+ * \image html startingrun.jpg
+ * </center><br>
+
+
+
+
+
+<br><hr><br>
+@section RC_Edit_RP Comment and Run Description
+
+Optionally, the user can define a "comment" and/or a "Run Description" that will appear on the mhttpd main status page.
+This is done by creating keys
+ \b "Comment" and/or \b "Run Description" in the  @ref  RC_Run_Parameters under  <span class="odb">/Experiment</span>.
+The contents of each key will then be displayed on an extra line on the <span class="utility">mhttpd</span> main status page. See  @ref  RC_ODB_Experiment_Tree
+for more information.
+
+\code
+[local:t2kgas:S]/>ls -lt "/Experiment/Run Parameters/"
+Key name                        Type    #Val  Size  Last Opn Mode Value
+---------------------------------------------------------------------------
+Comment                         STRING  1     32    19h  0   RWD   no beam, test only
+Run Description                 STRING  1     32    19h  0   RWD  28.2keV resonant energy 7Li
+\endcode
+
+
+ * <br>
+ * <center>
+ *  <span class="image">mhttpd main status page showing "Comment" and "Run Description" fields</span>
+ * \image html runcomment.jpg
+ * </center>
+<br><hr><br>
+
 \anchor idx_mhttpd_page_status_equipment
-@subsection RC_mhttpd_status_Equipment_info Equipment information and Event rates
-This first two columns of this section on the @ref RC_mhttpd_pol_status_example "main status page"  shows any defined Equipments (see @ref RC_mhttpd_Equipment_page) 
-and the host on which the frontend containing that equipment is running.
-In the @ref RC_mhttpd_pol_status_example "example" ,  the first 5 equipments and the last equipment in the list are all 
-defined in the frontend called "fePOL" which is running on the host called vwisac2.  
-The 6th and 7th equipments in the list (named "DVM" and "Wavemeter" are
-defined in a frontend called "feDVM" running on the host called "midtis07". The 8th equipment "DVMT" is
-not running.
-These are listed in the order in which they are listed in the odb, i.e.
-@code
-[pol@isdaq01 ~]$ odb
-[local:pol:S]/>ls /Equipment/
-FIFO_acq
-Cycle_Scalers
-Histo
-Hdiagnosis
-Info ODB
-DVM
-Wavemeter
-DVMT
-Monitor
-@endcode
+@section RC_mhttpd_status_Equipment_info Equipment information and Event rates
+The  <span class="utility">mhttpd</span> status page contains a table of  @ref FE_sw_equipment "Equipment"
+information and event rates.  Equipments are usually defined in @ref FE_features "frontends". Other MIDAS clients which may define
+Equipments include slow controls and eventbuilder clients.
 
-The background colour of the equipment depends on the status of the associated frontend:
+ * <center>
+ *  <span class="image">mhttpd status page showing Equipment information and Event rate statistics</span> 
+ * \image html equipstatus1.jpg
+ * </center>
+
+
+@subsection RC_mhttpd_eq_variables Monitor the Equipment variables
+
+The "Equipment" column of this table lists the names of any defined  @ref FE_sw_equipment "Equipments". These appear in the
+order in which they are listed in the ODB  @ref FE_ODB_equipment_tree "/Equipment" tree.
+ 
+The names of the equipment in this column are hyperlinks to their respective
+<span class="odb">/Equipment/<equipment-name>/Variables</span> sub-tree.  
+Clicking on any of the equipment links will show an @ref RC_mhttpd_Equipment_page ,
+allowing a shortcut for the user to access the current values of the equipment.
+<br><hr><br>
+
+@subsection RC_mhttpd_eq_status Status display of each Equipment
+
+The "Status" column of the @ref RC_mhttpd_status_Equipment_info "mhttpd status page"  shows the status of each equipment.
+It usually shows the name of the client defining that equipment, and the host computer on which that client is running,
+The background colour of each equipment  "Status" box will also change
+depending on the status of the associated frontend. The usual colours are shown in the following table:
+
+<center>
 <table style="text-align: center; width: 40%;" border="1" cellpadding="2"
 cellspacing="2">
-<caption>Colour coding of Equipment status
+<caption>Default colour coding of Equipment status
 </caption>
 <tr>
-<td style="vertical-align: top; background-color: lime; text-align: left;">
+<td style="vertical-align: top; background-color: lime; text-align: center;">
 Frontend is RUNNING and equipment is ENABLED
 </td>
 <tr>
-<td style="vertical-align: top; background-color: red; text-align: left;">
+<td style="vertical-align: top; background-color: red; text-align: center;">
 Frontend is MISSING
 </td>
 </tr>
 <tr>
-<td style="vertical-align: top; background-color: yellow; text-align: left;">
+<td style="vertical-align: top; background-color: yellow; text-align: center;">
 Frontend is RUNNING but equipment is DISABLED
 </td></tr></table>
 <br>
-<br>
+</center>
 
 
-<hr>
+When a run is in transition, or when a client takes a long time to respond, the status information may change to give
+a status report on the client. Optionally, users may program a client to send their own status reports that appear in this area of the
+mhttpd status page by incorporating calls to the routine <i>set_equipment_status</i>  (see  @ref FE_frontend_status).
+This routine allows the message and the status box background colour to be specified. 
+For example, the last client in the image above (HV_SY2527) gives a Status of "OK" rather than the
+default client and hostname.
 
-
-@subsubsection RC_mhttpd_eq_variables Monitor the Equipment variables
-The equipment names are linked to their respective \b /Variables sub-tree.
-Clicking on any of the equipment links will show an @ref RC_mhttpd_Equipment_page ,
-allowing a shortcut for the user to access the current values of the equipment.
+\Note
+<span class="new">In versions prior to @ref ndf_dec_2009 </span>,
+the "Status" column was labelled \b "FE Node" and the client status information was not shown
+(see @ref RC_mhttpd_status_page_redesign ).
 
 <br><hr><br>
 \anchor idx_mhttpd_page_status_event-rate
 @subsection RC_mhttpd_status_Event_Rates Event Rates
-The event statistics for the current run are also shown on the @ref RC_mhttpd_pol_status_example "main status page" , and the percentage of events analyzed by the
-  "analyzer" (The numbers are valid only if the name of the analyzer is "Analyzer").
+The event statistics for the current run are also shown on the @ref  RC_mhttpd_status_Equipment_info  "main status page" ,
+in the columns labelled \b "Events", \b "Events[/s]" and \b "Data[MB/s]".
 
+<br><hr><br>
+@subsection RC_mhttpd_status_analyzer Number of events analyzed
+<span class="new">In versions prior to @ref ndf_dec_2009 </span>, there is an extra column labelled  "analyzer"
+which shows the number of events analyzed (valid only if the name of the analyzer is "Analyzer").
 
 <br><hr><br>
 
+@section RC_mhttpd_status_Logger Data Logging Information
 
-@subsection RC_mhttpd_status_Logger MIDAS Logger Information
-This information is present on the @ref RC_mhttpd_pol_status_example "main status page"  \b only if the @ref F_mlogger_utility "MIDAS Logger" is running. Compare the examples for a
- @ref RC_mhttpd_pol_status_example "running experiment" with a @ref RC_mhttpd_minimal_status_page
-"minimal" status page. 
+The image below shows the information on the status page if both
+@ref F_mlogger_utility "mlogger" and @ref F_lazylogger_utility "lazylogger" are running.
+
+ * <center> 
+ * <span class="image">logger information on mhttpd main status page</span>
+ * <br><br><br>
+ * \image html loggerstatus1.jpg
+ * </center> 
+ * <br>
+
+Compare this example with the  @ref RC_mhttpd_minimal_status_page
+"minimal" status page where neither of these clients are running.
+
 <br>
-The Logger list is shown. Multiple logger channels can be active, in which case the hyperlink 1... will
-be present in addition to "0".
-  The hyperlink "0" will bring you to the odb tree /Logger/channels/0/Settings.
-The name of the saved data file is also shown.
-
-<br><hr><br>
-
-@subsection RC_mhttpd_status_Lazylogger Optional Lazylogger Information
-This line on the @ref RC_mhttpd_pol_status_example "main status page"  shows the  Lazylogger list. Multiple lazy application can be active.
-This information is present only if the  @ref F_lazylogger_utility is running.
+In the image above,
+ - one mlogger channel  (Channel 0) is active. <br>Multiple logger channels can be active,
+in which case a line for each channel would be shown.
+The hyperlink \b "0" opens a @ref  RC_mhttpd_Logger_page showing the settings information.
+ - one lazylogger channel (\b Dcache ) is also active. Multiple lazy applications can be active, in which case
+multiple lines of Lazy information would be present. Clicking on the hyperlink \b "Dcache" 
+ opens a @ref  RC_mhttpd_Logger_page showing the  @ref RC_mhttpd_Logger_lazylogger .
 
 <br><hr><br>
 \anchor idx_message_last
-@subsection RC_mhttpd_status_latest_msg Last system message
-The last system message to be received at the time of the last display refresh is displayed  on the @ref RC_mhttpd_pol_status_example "main status page" 
+@section RC_mhttpd_status_latest_msg Last system message
+ * <center> 
+ * <span class="image">Example of last system message on mhttpd main status page</span>
+ * <br><br><br>
+ * \image html lastmsg.jpg
+ * </center> 
+ * <br>
+
+
+The last system message to be received at the time of the last display refresh is displayed  on the @ref RC_mhttpd_main_status "main status page" 
 (see  @ref F_Messaging). More messages can be viewed
 by pressing the   @ref RC_mhttpd_status_Page_buttons "Message button". This opens the  
 @ref RC_mhttpd_Message_page "Message page".
@@ -856,8 +846,15 @@ by pressing the   @ref RC_mhttpd_status_Page_buttons "Message button". This open
 <br><hr><br>
 
 \anchor idx_clients_active_mhttpd
-@subsection RC_mhttpd_status_clients Active Client list
-At the bottom  of the @ref RC_mhttpd_pol_status_example "main status page" is a list of the MIDAS clients for this experiment that are currently active. The hostname is also shown. This information is derived from the
+@section RC_mhttpd_status_clients Active Client list
+ * <center> 
+ * <span class="image">Example of Active client list on mhttpd main status page</span>
+ * <br><br><br>
+ * \image html clientlist.jpg
+ * </center> 
+ * <br>
+
+At the bottom  of the @ref RC_mhttpd_main_status "main status page" is a list of the MIDAS clients for this experiment that are currently active. The hostname is also shown. This information is derived from the
 @ref  RC_odb_system_tree "ODB /System" tree .
 
 
@@ -865,15 +862,13 @@ At the bottom  of the @ref RC_mhttpd_pol_status_example "main status page" is a 
    
 \htmlonly
 <script type="text/javascript">
-pages( "RC_mhttpd",  "RunControl","RC_mhttpd_defining_user_buttons", "RC_mhttpd_Main_Status_page",  "" ); // back index next {top bottom}
+pages( "RC_mhttpd_Main_Status_page",  "RunControl","RC_mhttpd_defining_script_buttons", "RC_mhttpd_status_page_features",  "" ); // back index next {top bottom}
 sections("Features", "RunControl","FrontendOperation"); // last section; top of this section; next section
 </script>
 \endhtmlonly
- 
-
-<br>
+ <br>
 \anchor end
-<!-- end of page RC_mhttpd_Main_Status_page -->
+<!-- end of page RC_mhttpd_status_page_features -->
 
 */
 
@@ -889,7 +884,7 @@ sections("Features", "RunControl","FrontendOperation"); // last section; top of 
  
 \htmlonly
 <script type="text/javascript">
-pages( "RC_mhttpd_defining_user_buttons",  "RunControl","RC_mhttpd_ODB_page", "RC_mhttpd_Start_page",   "end" ); // back index next {top bottom}
+pages( "RC_mhttpd_defining_script_buttons",  "RunControl","RC_mhttpd_ODB_page", "RC_mhttpd_Start_page",   "end" ); // back index next {top bottom}
 sections("Features", "RunControl","FrontendOperation"); // last section; top of this section; next section
 </script>
 \endhtmlonly
@@ -954,13 +949,14 @@ explanation can be supplied by creating @ref RC_Edit_PC .
 Several extra <b>Edit on start</b> features are available when using mhttpd 
 to start the run, which are ignored by odbedit. These are described below:
 
-- @ref RC_Edit_PC 
+- @ref RC_Edit_PC
+- @ref RC_Edit_RP
 - @ref RC_Prevent_Edit_RN 
 
 
 <br><hr><br>
 
-@subsection RC_Edit_PC Parameter Comments
+@subsection RC_Edit_PC Edit-on-start Parameter Comments
 
 An optional subdirectory <b>Parameter Comments</b> can be created under  @ref  RC_ODB_Experiment_Tree to
 display some extra text on the Start page under an <b>Edit on start</b> parameter. Usually the 
@@ -1031,25 +1027,21 @@ entry.
  * </span></center>
  * <br><br><br>  
 
-<br>
-
-<br><hr><br>
-
+<hr><br>
 
 @subsection RC_Prevent_Edit_RN Prevent the run number being edited at Run Start
 @anchor RC_Edit_RN
 
 By default, the user has the option to edit the run number at begin of run. To prevent this,
-the user may add an optional key <b>Edit run number</b> to the <b>Edit on Start</b> subdirectory
+the user may add an optional key  <b>Edit run number</b> to the  <span class="odb">Edit on Start</span> subdirectory
 in the  @ref  RC_ODB_Experiment_Tree. If this key
 is set to "N", the user will not be able to edit the run number on the mhttpd start page at the begin of run. 
 
 This feature is required where the run number is strictly controlled with a custom run number
-  checking system that assigns the run number automatically based on the type of run (e.g. "real" or "test"), 
-  and also to avoid holes in the run number sequence due to failed runs.
+checking system that assigns the run number automatically based on the type of run.
 
 By creating the key
-  <b> /Experiment/Edit on Start/Edit run number</b> 
+  <span class="odb">/Experiment/Edit on Start/Edit run number</span> 
   as a boolean variable, the ability of editing the run number is
   enabled or disabled, e.g.
 @code 
@@ -1058,7 +1050,7 @@ By creating the key
 
 By default, if this key is NOT present the run number IS editable.  
 
- * <br><br><br>
+ * <br>
  * <center>
  *  <span class="image">Start run request page showing the run number write-protected.  
 @ref RC_Edit_PC are also  defined.
@@ -1068,8 +1060,8 @@ By default, if this key is NOT present the run number IS editable.
  * <br><br><br>  
 <br>
 
-\note This feature is ignored by odbedit; regardless of whether "Edit run number" is present, the run number may 
-be edited by odbedit. 
+\note This feature is ignored by  <span class="utility">odbedit</span>; regardless of whether  the key
+<span class="odb">Edit run number</span> is present, the run number may be edited when starting a run using  <span class="utility">odbedit</span>.
 
 
 
@@ -1077,7 +1069,7 @@ be edited by odbedit.
  
 \htmlonly
 <script type="text/javascript">
-pages("RC_mhttpd_defining_user_buttons", "RunControl","RC_mhttpd_ODB_page","RC_mhttpd_Start_page","" ); // back index next {top bottom}
+pages("RC_mhttpd_defining_script_buttons", "RunControl","RC_mhttpd_ODB_page","RC_mhttpd_Start_page","" ); // back index next {top bottom}
 sections("Features", "RunControl","FrontendOperation"); // last section; top of this section; next section
 </script>
 \endhtmlonly
@@ -1110,7 +1102,7 @@ sections("Features", "RunControl","FrontendOperation"); // last section; top of 
 <br>
 
 The ODB page is displayed by clicking on the "ODB"  @ref RC_mhttpd_status_Page_buttons "page switch button"
-(@ref RC_mhttpd_status_menu_buttons "if present") on the @ref RC_mhttpd_pol_status_example "main status page".
+(@ref RC_mhttpd_status_menu_buttons "if present") on the @ref RC_mhttpd_main_status "main status page".
 
  * <br><br><br>
  * <center>
@@ -1121,8 +1113,8 @@ The ODB page is displayed by clicking on the "ODB"  @ref RC_mhttpd_status_Page_b
  * <br><br><br> 
 
 
-The ODB page initially displays the ODB root tree. Clicking on the hyperlink "/", then e.g. "Equipment" ... will take
-you to the requested ODB field.
+The ODB page initially displays the ODB \b root \b tree. Clicking on the hyperlink "/", then one of the other hyperlinks ( e.g. "Equipment")  will take
+you to the requested ODB field.  Depending on the  @ref RC_Access_Control "security", read/write access to any ODB field can be gained .
 
 The ODB page includes the useful capabilities of \b editing the ODB values and \b creating or \b deleting new keys. But for copying ODB trees,
 saving and reloading the ODB, re-ordering the keys etc., the much more powerful @ref RC_odbedit_utility "odbedit" utility must be used.
@@ -1195,7 +1187,7 @@ pages( "RC_mhttpd_ODB_page", "RunControl", "RC_mhttpd_sc_page","RC_mhttpd_Equipm
 @section  RC_mhttpd_Equipment_var  How to Display the Equipment Page
 
 The \b Equipment \b Page is displayed by clicking on one of the @ref RC_mhttpd_Equipment_Hyperlink "Equipment Hyperlinks" on the  
-@ref RC_mhttpd_pol_status_example "main status page".
+@ref RC_mhttpd_main_status "main status page".
 <br>
 This provides a short-cut so the user may see the contents of the defined banks for that equipment
 <b>providing that the data from the Equipment is being sent to the ODB</b>
@@ -1415,7 +1407,7 @@ equipment named "Target" that has two named banks, SCLR and TGT_ .
  * </span></center> 
  * <br><br><br> 
 
-In this case, instead of one "Names" array, an array has been defined for each bank of the form "Names  <i><bankname>[<Len>]</i>"
+In this case, instead of one "Names" array, an array has been defined for each bank of the form <i>"Names  <bankname>[<Len>]"</i>
 where
  - <i>\<bankname\></i> is the \b name of the bank and
  - <i>\<Len\></i> is the \b length of the bank.
@@ -1707,7 +1699,7 @@ sections("Features", "RunControl","FrontendOperation"); // last section; top of 
 <br>
 @section RC_mhttpd_slow_control_intro Introduction
 The Slow Control page refers to the specific display of a <b>Slow Control Equipment</b> (see @ref  FE_Slow_Control_system). 
-This is a special @ref RC_mhttpd_Equipment_page "Equipment page" that may be accessed from the  @ref RC_mhttpd_pol_status_example "main status page"
+This is a special @ref RC_mhttpd_Equipment_page "Equipment page" that may be accessed from the  @ref RC_mhttpd_main_status "main status page"
 by clicking on the @ref  RC_mhttpd_Equipment_Hyperlink "Equipment Hyperlink". The Slow Control page 
 will show a parameter table (such as those shown below). Parameters that are editable will be hyperlinked for parameter modification.
 This option is possible only if the parameter names have a particular \b name \b syntax.
@@ -1802,14 +1794,16 @@ pages("RC_mhttpd_sc_page",  "RunControl", "RC_mhttpd_Message_page", "RC_mhttpd_C
 
 <br>
 \NOTE
-<span class="new">The CNAF page has been replaced by the MSCB Page (@ref ndf_dec_2009) </span>
+<span class="new">By default, the CNAF page has been replaced by the MSCB Page (@ref ndf_dec_2009) </span>
 
 
 <br>
-The CNAF page is accessed by clicking on the CNAF button  (@ref RC_mhttpd_status_menu_buttons "if present") on the Main Status page.
+The CNAF page is accessed by clicking on the @ref RC_mhttpd_status_menu_buttons "CNAF button"  (@ref RC_mhttpd_status_menu_buttons "if present")
+on the Main Status page.
+<br>
 It will only be active if one of the active equipments is a CAMAC-based data collector, it will be possible to
-remotely access CAMAC through this web-based CAMAC page (accessed by clicking the 
-@ref RC_mhttpd_status_menu_buttons "CNAF button" on the @ref RC_mhttpd_pol_status_example "main status page").
+remotely access CAMAC through this web-based CAMAC page,  in which case the frontend is acting as a
+RPC CAMAC server for the request.  
 <br>
 The status of the connection
 is displayed in the top right hand side corner of the window.
@@ -1859,7 +1853,7 @@ sections("Features", "RunControl","FrontendOperation"); // last section; top of 
 <br>
 
 This page (accessed by clicking the @ref RC_mhttpd_status_Page_buttons "Message button"  @ref RC_mhttpd_status_menu_buttons "if present"
- on the @ref RC_mhttpd_pol_status_example "main status page" )
+ on the @ref RC_mhttpd_main_status "main status page" )
 displays the contents of the MIDAS System log file in blocks of 100 lines
 starting with the most recent messages. The MIDAS log file resides in the directory
 defined @ref  F_Log_File "in the ODB".
@@ -1911,7 +1905,7 @@ sections("Features", "RunControl","FrontendOperation"); // last section; top of 
 
 @section RC_mhttpd_Elog_intro Introduction
 The ELOG page  (accessed by clicking the @ref RC_mhttpd_status_Page_buttons "Elog button"  @ref RC_mhttpd_status_menu_buttons "if present"
- on the @ref RC_mhttpd_pol_status_example "main status page" ) provides access to an electronic logbook. 
+ on the @ref RC_mhttpd_main_status "main status page" ) provides access to an electronic logbook. 
 This tool can replace the 
 experimental logbook for daily entries. The main advantage of the Elog over a paper logbook  is the possiblity 
 to access it remotely, and provide a general knowledge of the experiment.
@@ -2191,8 +2185,8 @@ sections("Features", "RunControl","FrontendOperation"); // last section; top of 
  
 
 <br>
-The \b Programs page is displayed by clicking on the \b Programs \b Button on the  @ref RC_mhttpd_Main_Status_page
-( @ref RC_mhttpd_status_menu_buttons "if present").
+The \b Programs page is displayed by clicking on the \b Programs \b Button ( @ref RC_mhttpd_status_menu_buttons "if present")
+on the  @ref RC_mhttpd_Main_Status_page .
 
 This page presents the current active list of the clients  attached to the given
 experiment. On the right hand side, a dedicated button allows the user to stop a particular client.
@@ -2449,7 +2443,7 @@ sections("Features", "RunControl","FrontendOperation"); // last section; top of 
 \htmlonly
 <script type="text/javascript">
 // pages parameters: back index next {top bottom}
-pages( "RC_mhttpd_Alarm_page", "RunControl","RC_mhttpd_Alias_page",  "RC_mhttpd_MSCB_page", "end" );
+pages( "RC_mhttpd_Alarm_page", "RunControl","RC_mhttpd_Config_page",  "RC_mhttpd_MSCB_page", "end" );
 sections("Features", "RunControl","FrontendOperation"); // last section; top of this section; next section
 </script>
 \endhtmlonly
@@ -2527,7 +2521,7 @@ can be removed or reordered by hand.<br>
 \htmlonly
 <script type="text/javascript">
 // pages parameters: back index next {top bottom}
-pages( "RC_mhttpd_Alarm_page", "RunControl","RC_mhttpd_Alias_page",  "RC_mhttpd_MSCB_page", "" );
+pages( "RC_mhttpd_Alarm_page", "RunControl","RC_mhttpd_Config_page",  "RC_mhttpd_MSCB_page", "" );
 sections("Features", "RunControl","FrontendOperation"); // last section; top of this section; next section
 </script>
 \endhtmlonly
@@ -2536,14 +2530,49 @@ sections("Features", "RunControl","FrontendOperation"); // last section; top of 
 */
 
 
+<!-- ------------ C O N F I G  P A G E  ------- -->
 
+/*! @page   RC_mhttpd_Config_page Config page
 
+\htmlonly
+<script type="text/javascript">
+// pages parameters: back index next {top bottom}
+pages( "RC_mhttpd_MSCB_page", "RunControl","RC_mhttpd_Alias_page",  "RC_mhttpd_Config_page", "end" );
+sections("Features", "RunControl","FrontendOperation"); // last section; top of this section; next section
+</script>
+\endhtmlonly
 
+This page is displayed by pressing the <b>Config Button</b>  ( @ref RC_mhttpd_status_menu_buttons "if present")
+on the  @ref RC_mhttpd_Main_Status_page . This allows the user to change the refresh period of the Status page.
+
+ * <center> 
+ * <span class="image">mhttpd Config page</span>
+ * <br>
+ *  \image html config.jpg
+ * </center> 
+
+\Note
+It is important to note that the \b refresh of the Status Page is not "event driven" but is controlled by a 
+timer whose rate is adjustable through the  @ref RC_mhttpd_Config_button "Config button".
+This means the information at any given time may reflect the experiment state of up to
+<i> n </i> seconds in the past, where <i> n </i> is the timer setting of the refresh parameter.
+
+\anchor end
+\htmlonly
+<script type="text/javascript">
+// pages parameters: back index next {top bottom}
+pages( "RC_mhttpd_MSCB_page", "RunControl","RC_mhttpd_Alias_page",  "RC_mhttpd_Config_page", "" );
+sections("Features", "RunControl","FrontendOperation"); // last section; top of this section; next section
+</script>
+\endhtmlonly
+
+<!--  end of   RC_mhttpd_Config_page Config page   -->
+*/
 
 
 <!-- ------------ A L I A S   P A G E  ------- -->
 
-/*! @page   RC_mhttpd_Alias_page Alias page
+/*! @page   RC_mhttpd_Alias_page mhttpd Alias page
 \anchor idx_mhttpd_page_alias
 \anchor idx_mhttpd_buttons_alias
 <br>
@@ -2552,7 +2581,7 @@ sections("Features", "RunControl","FrontendOperation"); // last section; top of 
 \htmlonly
 <script type="text/javascript">
 // pages parameters: back index next {top bottom}
-pages( "RC_mhttpd_Alarm_page", "RunControl","RC_mhttpd_Custom_page",  "RC_mhttpd_Alias_page", "end" );
+pages( "RC_mhttpd_Config_page", "RunControl","RC_mhttpd_Logger_page",  "RC_mhttpd_Alias_page", "end" );
 sections("Features", "RunControl","FrontendOperation"); // last section; top of this section; next section
 </script>
 \endhtmlonly
@@ -2560,95 +2589,91 @@ sections("Features", "RunControl","FrontendOperation"); // last section; top of 
 
 <br>
 @section RC_mhttpd_alias_buttons Alias-Buttons (or Hyperlinks)
-An Alias page is displayed by clicking on a user-defined
- - <span class="new"> <b> Alias-button </b> (since @ref ndf_dec_2009 ) </span> or
- - <b> Alias hyperlink </b> (older versions) 
+An Alias page is displayed by clicking on a user-defined <span class="new"> <b> Alias-button </b> (\b alias-hyperlink prior to the
+@ref   RC_mhttpd_status_page_redesign "redesign") </span>
+on the <span class="utility">mhttpd</span>  @ref  RC_mhpptd_optional_buttons "main status page".
 
-on the  @ref RC_mhttpd_pol_status_example "main status page".
-
- <span class="new"> The \b appearance of the alias-links on the Main Status page have been changed (@ref ndf_dec_2009 ) from
-@ref RC_mhttpd_pol_status_example  "hyperlinks"  to @ref  RC_mhttpd_status_page_redesign "buttons" </span>
+Alias-buttons provide the user with a simple way to access other webpages (remote or local).
+They are
+often used to provide "shortcuts" from the main Status page
+to the documentation for an experiment, or to a particular ODB location. For example, if the experiment requires frequent
+reference to a list of parameters under  <span class="odb">/Equipment/TpcGasPlc/Common/</span>, an <b> alias button </b>
+can be set up on the main status page to allow the user access to this tree with one click of the mouse.
+\Note
+Alias and  @ref  RC_mhttpd_Activate "Custom" buttons are displayed on the
+@ref   RC_mhttpd_status_page_redesign "same line" on the status page.
 <br>
-This change has been made because the original alias hyperlinks were hard to read if they included spaces.
-It also gives a more homogeneous look to the page.
-See @ref   RC_mhttpd_status_page_redesign to see the new look of alias buttons.
 
- The examples below show the old-style alias-links.
-
+ - @ref  RC_mhttpd_alias_define
+ - @ref  RC_odb_alias_tree
+ 
+\anchor mhttpd_alias_image
+ * <br><br><br>
+ * <center> 
+ * <span class="image">Clicking on an alias-button displays the link contents
+ *  \image html alias.jpg
+ * </span>
+ * </center> 
+ * <br><br><br>
 <br><hr><br>
 
-@section RC_mhttpd_alias_define Creation of Alias-Buttons (or Hyperlinks) 
+@section RC_mhttpd_alias_define How to create Alias-Buttons 
 
-Alias Buttons  (or Hyperlinks) on the @ref RC_mhttpd_pol_status_example "main status page"
-are defined  through the ODB  <span class="odb"> /Alias </span> tree.
-<br><br>
-<span class ="note">
-Note that Alias and  @ref  RC_mhttpd_Activate "Custom" buttons (or hyperlinks in older versions) are displayed on the same line on the
-Main Status Page.  </span>
+Alias-Buttons  <span class="new">(hyperlinks prior to @ref ndf_dec_2009)</span> on the @ref  RC_mhpptd_optional_buttons "main status page"
+are defined  through the  @ref RC_odb_alias_tree "ODB Alias tree". 
+<br>
 
 
-<br><hr><br>
 \anchor idx_ODB_tree_Alias
-@subsection RC_odb_alias_tree Alias links - the ODB /Alias Tree
+@subsection RC_odb_alias_tree The ODB /Alias Tree
 \note The   <span class="odb"> /Alias </span>  tree is applicable to @ref RC_mhttpd "mhttpd" only, and ignored by 
 @ref RC_odbedit "odbedit".
 
 
 This optional ODB tree provides the user with a way to access other webpages via \b buttons 
-placed on the mhttpd  @ref RC_mhttpd_status_page_redesign "main Status page" (<span class="new"> versions since @ref ndf_dec_2009).</span>
-or by \b hyperlinks in older versions (also on the @ref RC_mhttpd_pol_status_example "main Status page").
-<br>
-The \b alias-links can link to any 
-webpage (remote or local);  however they are
-often used to provide "shortcuts" from the main Status page
-to a particular ODB location. For example, if the experiment requires frequent
-reference to a list of parameters under  <span class="odb">/Equipment/Trigger/Common</span>, an <b> alias-link (or button) </b>
-can be set up on the main status page to allow the user access to this tree by one  
-click. 
+placed on the mhttpd  @ref RC_mhttpd_status_page_redesign "main Status page" (<span class="new">\b hyperlinks prior to @ref ndf_dec_2009).</span>
+
 <br>
 
+
 The ODB <span class="odb">/Alias</span> key is not present until the user creates it. It is intended to
-contain a list of symbolic links to any desired ODB location. Any keys created under
-<span class="odb">/Alias</span> will appear as 
-  @ref RC_mhttpd_status_page_redesign "Buttons" or  (in older versions) @ref RC_mhttpd_pol_status "links"
-on the Main Status page with the same names as the keys created in 
-the <span class="odb">/Alias</span> tree, except where noted below (i.e. alias links spawned in the same frame).
+contain a list of symbolic links to any desired ODB location. Any key created under
+<span class="odb">/Alias</span> will appear as a \b Button or
+  @ref RC_mhttpd_status_page_redesign "Hyperlink" on the Main Status page, with the same name as the key,
+  except where noted below (e.g. alias links spawned in the same frame).
 <br>
 <br>
-By default, the clicking of the alias-link (button) in the web interface will spawn a \b new \b frame.
+By default, the clicking of the alias-button in the web interface will spawn a \b new \b frame.
 To force the display of the alias page in the \b same \b frame, an <b>"&"</b> has to be appended to
 the name of the alias. The \b & is stripped off the alias name when it appears on the main status page.
 
-To make  alias-links (buttons) using @ref RC_odbedit_utility "odbedit" :
+The following code demonstrates creating alias-buttons linking to ODB keys using @ref RC_odbedit_utility "odbedit" :
 @code 
 odbedit
-[local:pol:S] mkdir Alias          <--  Create the optional /Alias directory
-[local:pol:S] cd Alias
-[local:pol:S] ln /Equipment/Trigger/Common "Trig Setting"   <-- New frame, no &
-[local:pol:S] ln /Equipment/Trigger/Common "Trig Setting&"  <-- Same frame, with &
-@endcode 
+[local:t2kgas:S] mkdir Alias          ***  Create the optional /Alias directory
+[local:t2kgas:S] cd Alias
+[local:t2kgas:S] ln /Equipment/TpcGasPlc/Common/ "TPC Common"    *** New frame, no &
+[local:t2kgas:S] ln /Equipment/TpcGasPlc/Common/ "TPC Common"&"  *** Same frame, with &
 
-This would create two identical alias-links (buttons) called "Trig Setting". Clicking on the first alias-link (button) would open the 
-page in a new frame, clicking on the second would open it in the same frame.
-
-In the following example, an alias-link has been set up as follows:
-@code
-odbedit
-[local:pol:S]/>ls /alias
-Hardware& -> /alias/User_hardware_dir/
-                                <subdirectory>
 @endcode
+\Note
+The items preceded by \b *** are comments
 
-<span class="note">Note that the "&" appended to the alias keyname "Hardware" causes the alias link to be opened in a different frame.</span>
+This would create two identical alias-buttons called "TPC Common". Clicking on the first alias-button "TPC Common"
+would open the page in a \b new frame as shown  @ref mhttpd_alias_image "above"; clicking on the second would
+open it in the \b same frame. 
+(Two identical buttons have been created for demonstration purposes only. 
+Normally all buttons would be created with unique names.)
 
- * <br><br><br>
- * <center>
- *  <span class="image">  MIDAS Web server
- * <br><br><br>
- *  \image html pol_click_alias.gif
- * </span></center>
- * <br><br><br>  
 
+The following code demonstrates how to make a link to an external webpage:
+\code 
+[local:t2kgas:S] cd Alias
+[local:t2kgas:S]create string triumf
+String length [32]:
+[local:t2kgas:S] set triumf "http://triumf.ca"
+\endcode
+Clicking on the alias-button "triumf" will show the contents of the link in a new page (see   @ref mhttpd_alias_image "above").
 
 <br>
 \anchor end
@@ -2656,10 +2681,75 @@ Hardware& -> /alias/User_hardware_dir/
 \htmlonly
 <script type="text/javascript">
 // pages parameters: back index next {top bottom}
-pages( "RC_mhttpd_Alarm_page", "RunControl","RC_mhttpd_Custom_page",  "RC_mhttpd_Alias_page", "" );
+pages( "RC_mhttpd_Config_page", "RunControl","RC_mhttpd_Logger_page",  "RC_mhttpd_Alias_page", "" );
 sections("Features", "RunControl","FrontendOperation"); // last section; top of this section; next section
 </script>
 \endhtmlonly
 
 <br>
+*/
+
+
+<!-- ------------ L O G G E R   P A G E  ------- -->
+
+/*! @page   RC_mhttpd_Logger_page mhttpd Logger page
+\anchor idx_mhttpd_page_logger
+<br>
+ 
+\htmlonly
+<script type="text/javascript">
+// pages parameters: back index next {top bottom}
+pages( "RC_mhttpd_Alias_page", "RunControl","RC_mhttpd_Custom_page",  "RC_mhttpd_Logger_page", "end" );
+sections("Features", "RunControl","FrontendOperation"); // last section; top of this section; next section
+</script>
+\endhtmlonly
+
+
+
+@section RC_mhttpd_Logger_mlogger  mlogger settings information
+Provided the MIDAS logger  @ref  F_mlogger_utility "mlogger" is running, the mhttpd main status page
+shows logger information and statistics. 
+<br>
+
+
+<span class="utility">mlogger</span> channel  information is displayed by clicking on a mlogger channel hyperlink
+on the <span class="utility">mhttpd</span>  main status page (see  @ref RC_mhttpd_Logger_image "below").
+The subtree <span class="odb">/Logger/Channels/<channel-number>/Settings</span>
+is shown.  See @ref F_Logging "mlogger" for more information.
+In the example below, only one mlogger channel is defined (channel 0). If multiple logging channels are active, additional
+hyperlinks will be present on the main status page.
+<br>
+\anchor RC_mhttpd_Logger_image
+ * <center> 
+ * <span class="image">mlogger channel information on mhttpd main status page</span>
+ * <br><br><br>
+ * \image html loggerstatuspage.jpg
+ * </center> 
+ * <br>
+
+<br><hr><br>
+
+
+@section RC_mhttpd_Logger_lazylogger  lazylogger settings information
+Provided the MIDAS lazylogger  @ref  F_lazylogger_utility "lazylogger" is running,
+the mhttpd  @ref RC_mhttpd_Logger_image "main status page"
+shows lazylogger information and statistics. 
+<br>
+
+
+<span class="utility">Lazylogger</span> settings information is displayed by clicking on a lazylogger Label hyperlink
+on the <span class="utility">mhttpd</span>  main status page  (see  @ref RC_mhttpd_Logger_image "above").
+The subtree <span class="odb">/Lazy/<label>/Settings</span>
+is shown.  See @ref F_lazylogger_utility "lazylogger" for more information.
+
+
+\htmlonly
+<script type="text/javascript">
+// pages parameters: back index next {top bottom}
+pages( "RC_mhttpd_Alias_page", "RunControl","RC_mhttpd_Custom_page",  "RC_mhttpd_Logger_page", "" );
+sections("Features", "RunControl","FrontendOperation"); // last section; top of this section; next section
+</script>
+\endhtmlonly
+\anchor end
+
 */

@@ -1,19 +1,35 @@
 
-<!-- ------------ D E F I N I N G   U S E R   B U T T O N S      P A G E  ------- -->
-/*! \page  RC_mhttpd_defining_user_buttons Defining User Buttons on the Status Page
+<!-- ------------ D E F I N I N G   S C R I P T  (U S E R)   B U T T O N S      P A G E  ------- -->
+/*! \page  RC_mhttpd_defining_script_buttons Defining Script Buttons on the main Status Page
 <br>
 
 \htmlonly
 <script type="text/javascript">
-pages( "RC_mhttpd_Main_Status_page#RC_mhttpd_status_User_buttons",  "RunControl","RC_mhttpd_Start_page", "RC_mhttpd_defining_user_buttons",  "end" ); // back index next {top bottom}
+pages( "RC_mhttpd_Main_Status_page#RC_mhttpd_status_script_buttons",  "RunControl","RC_mhttpd_Start_page", "RC_mhttpd_defining_script_buttons",  "end" ); // back index next {top bottom}
 sections("Features", "RunControl","FrontendOperation"); // last section; top of this section; next section
 </script>
 \endhtmlonly
  
+\anchor idx_ODB_tree_Script
+@section RC_odb_script_tree The ODB /Script tree
+\note 
+The  <span class="odb">/Script</span> tree is applicable to @ref RC_mhttpd "mhttpd", and ignored by 
+@ref RC_odbedit "odbedit".
 
-@section RC_odb_script_example1 Example 1: creation of a User-button; parameters passed to the associated script 
+The optional ODB tree  <span class="odb">/Script</span> provides the user with a way to execute a script when a button is clicked, including
+the <b>capability of passing parameters from the ODB to the script</b>.
+
+<br>
+If the user defines a new tree in ODB named  <span class="odb">/Script</span> , then any key created in this tree will appear as a 
+script-button of that name on the default mhttpd main status page. Each sub-tree
+    ( <span class="odb">/Script/\<button name>/</span>) should contain at least one string key which is the
+    script command to be executed. Further keys will be passed as
+   <b> arguments </b> to the script. MIDAS symbolic links are permitted.
+
+   
+@section RC_odb_script_example1 Example 1: creation of a Script-button; parameters passed to the associated script 
 The <b> example </b> below shows the ODB  <span class="odb">/script/dac</span> subdirectory.
-   The user-button \b "dac" associated with this subdirectory is shown on the 
+   The script-button \b "dac" associated with this subdirectory is shown on the 
 @ref RC_mhttpd_pol_status "example status page".
 
    The first key in the  <span class="odb">dac</span> subdirectory is the string key <span class="odb">cmd</span> which contains the name and path of
@@ -30,7 +46,15 @@ select mode                     1h
 mode file tag                   none
 [local:pol:R]/>  
 @endcode
-When the user-button labelled \b "dac" is pressed, the script \b "change_mode.pl"
+
+This will cause a script-button labelled \b "DAC" to appear on the mhttpd main status page :
+ * <br>
+ * <center> 
+ * <span class="image">Script button "DAC" on the mhttpd main status page</span>
+ * \image html dac_button.jpg
+ * </center><br>
+
+When the \b "DAC" script-button is pressed, the script \b "change_mode.pl"
  will be executed with the following key contents as parameters, equivalent to the
 command:
 @code
@@ -95,10 +119,10 @@ etc.
 
 @section RC_odb_script_example2 Example 2: MPET experiment run controller
 This example is from the MPET experiment at TRIUMF, which uses a sophisticated run controller. This includes perlscripts actived by
-user buttons. The experiment can be set to perform a number of consecutive runs without user intervention, changing some condition(s) between each run.
+script buttons. The experiment can be set to perform a number of consecutive runs without user intervention, changing some condition(s) between each run.
 The results are written to a log file.
 
-It involves the use of large number of user-buttons on the Main Status
+It involves the use of large number of script-buttons on the Main Status
 page to activate the perlscripts  (see Figure 1). Clicking on one of these buttons causes a user-defined shell-script to be
 run with a particular parameter. 
 
@@ -111,10 +135,13 @@ run with a particular parameter.
  * </center> 
  * <br><br><br>
 
-The user-buttons are defined in the ODB
+\Note
+ This experiment is using an older version of mhttpd (see  @ref RC_mhttpd_status_page_redesign ). 
+ 
+The script-buttons are defined in the ODB
 <span class="odb">/Script</span> tree (see Figure 2).
 All activate the shell-script <span style="font-style: italic;">perlrc.sh</span> with
-the appropriate parameter.  The first two user-buttons labelled "Start PerlRC" and "Stop PerlRC" start and stop the run control
+the appropriate parameter.  The first two script-buttons labelled "Start PerlRC" and "Stop PerlRC" start and stop the run control
 respectively.  These access parameters read from the ODB to determine the scan type, the number of runs to be performed, etc.
 The other buttons "Tune..." are used to set up run parameters into particular known states or "Tunes".
 
@@ -132,7 +159,7 @@ This script calls the perlscript <span
 parameter. (Alternatively, this could have been done by  @ref RC_odb_script_tree "passing the parameter" directly to the perlscript, eliminating
 the intermediate shell-script).
 
-The following image shows the ODB parameters associated with the run control user buttons.
+The following image shows the ODB parameters associated with the run control script buttons.
 
  * <br><br><br>
  * <center> 
@@ -163,7 +190,7 @@ The scripts interact with the ODB through a library @ref RC_mhttpd_perlmidas_scr
 
  \htmlonly
 <script type="text/javascript">
-pages( "RC_mhttpd_Main_Status_page#RC_mhttpd_status_User_buttons",  "RunControl","RC_mhttpd_perlrc", "RC_mhttpd_defining_user_buttons",  "" ); // back index next {top bottom}
+pages( "RC_mhttpd_status_page_features#RC_mhttpd_status_script_buttons",  "RunControl","RC_mhttpd_perlrc", "RC_mhttpd_defining_script_buttons",  "" ); // back index next {top bottom}
 sections("Features", "RunControl","FrontendOperation"); // last section; top of this section; next section
 </script>
 \endhtmlonly
@@ -171,7 +198,7 @@ sections("Features", "RunControl","FrontendOperation"); // last section; top of 
 <br>
 \anchor end
 
-<!-- end of page RC_mhttpd_defining_user_buttons -->
+<!-- end of page RC_mhttpd_defining_script_buttons -->
 
 */
 

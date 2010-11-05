@@ -9,7 +9,7 @@ sections("NDF","FAQ","Convention"); // last section; top of this section; next s
 </script>
 \endhtmlonly
 <br>
-Feel free to ask questions to one of us (
+Feel free to ask questions of one of us (
 <a href="mailto:midas@psi.ch"> Stefan Ritt </a>,
 <a href="mailto:midas@triumf.ca"> Pierre-Andre Amaudruz</a>)
 or visit the <a href="http://midas.triumf.ca/forum/Package"> MIDAS Forum </a>
@@ -53,7 +53,7 @@ or visit the <a href="http://midas.triumf.ca/forum/Package"> MIDAS Forum </a>
 <li> <b> Is there a way to invoke my own scripts from the web?</b>
   - Yes, by creating the ODB tree <span class="odb"> /Script</span> every entry in that tree
   will be available on the Web status page with the name of the key
-  (see @ref RC_mhttpd_defining_user_buttons ). Each key entry
+  (see @ref RC_mhttpd_defining_script_buttons ). Each key entry
   is then composed with a list of ODB fields (or links) starting with 
   the executable command followed by as many arguments as you wish to be
   passed to the script. See @ref RC_odb_script_tree. Scripts can also be invoked

@@ -61,7 +61,16 @@ Features will be considered to be "new" for a year or so, then will become stand
  - Option to customize the  @ref RC_mhttpd_status_menu_buttons "menu buttons" appearing on the main status page (mhttpd.c 4646)
  - Removed 'analyzed' column (Main Status page)  (mhttpd.c 4644)
  - Changed Alias and Custom links to Buttons - see @ref alias_buttons_status_page "example" (mhttpd.c 4633)
- -
+
+  
+Since the column on the main MIDAS status page with fraction of analyzed events was
+barely used, it has been dropped. It did not make sense for all slow 
+control events. In case this feature is required in some experiment, it will be moved  
+into a custom page and the ratio calculated in JavaScript, where there is much more 
+flexibility.
+
+This modification frees up more space on the status page for the "Status" column, where 
+front-end programs can report errors etc.
  
 \subsection ndf_nov_2009 Nov 2009
  - Direct serving of GIF images from file system in custom pages (mhttpd.c 4631)

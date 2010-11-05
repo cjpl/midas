@@ -119,6 +119,7 @@ USB-see-\@ref IDX=hardware "hardware"
 Equipment_hardware-see-\@ref IDX=hardware "hardware"
 hardware_supported-see-\@ref IDX=hardware "hardware->driver->library"
 security-see-\@ref IDX=access "access control"
+manual-trigger-see-also-\@ref IDX=event "event->manual-trigger"
 #
 # DO NOT EDIT index_add.txt
 # 

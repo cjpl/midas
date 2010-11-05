@@ -14,8 +14,8 @@ sections("Features", "RunControl","FrontendOperation"); // last section; top of 
 A custom Status page is activated as described @ref RC_odb_custom_status "previously".
 Features such as the standard @ref RC_mhttpd_custom_midas_buttons "Menu buttons",  @ref RC_mhttpd_custom_alias etc. can
 be provided in the same way as for any other custom page. When replacing the default Status page by a Custom Status page,
-any  @ref RC_mhttpd_status_User_buttons "user-buttons" defined on the original MIDAS Status page can be easily turned into  @ref RC_mhttpd_custom_script_buttons
-on the Custom Status page by placing links in the  <span class="odb"> /customscript </span> tree to any existing user-buttons under the  
+any  @ref RC_mhttpd_status_script_buttons "script-buttons" defined on the original MIDAS Status page can be easily turned into  @ref RC_mhttpd_custom_script_buttons
+on the Custom Status page by placing links in the  <span class="odb"> /customscript </span> tree to any existing script-buttons under the  
 <span class="odb"> /Script </span> tree.
 
 \code  
@@ -45,7 +45,7 @@ CustomStatus&                   /home/bnmr/online/custom/Custom_Status.html
 Status                          /custom/CustomStatus& -> /home/bnmr/online/custom/Custom_Status.html
 @endcode
 
-A user-button is set up in the custom status page (see @ref RC_mhttpd_custom_script_buttons)  as follows
+A script-button is set up in the custom status page (see @ref RC_mhttpd_custom_script_buttons)  as follows
 
 \code
 [local:bnmr:S]/>ls /customscript/ToggleStatusPage

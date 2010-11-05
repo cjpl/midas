@@ -4,11 +4,12 @@
 
 \htmlonly
 <script type="text/javascript">
-pages( "RC_mhttpd_defining_user_buttons",  "RunControl","RC_mhttpd_Main_Status_page#RC_mhttpd_status_User_buttons", "RC_mhttpd_perlrc",  "end" ); // back index next {top bottom}
+pages( "RC_mhttpd_defining_script_buttons",  "RunControl","RC_mhttpd_Main_Status_page#RC_mhttpd_status_script_buttons", "RC_mhttpd_perlrc",  "end" ); // back index next {top bottom}
 sections("Features", "RunControl","FrontendOperation"); // last section; top of this section; next section
 </script>
 \endhtmlonly
- 
+\anchor idx_script_perlmidas
+
 Part of the run control perlscripts for MPET experiment at TRIUMF (written by Vladimir Rykov) are reproduced below. The script
 @ref  RC_mhttpd_perlrc_script calls a script called @ref  RC_mhttpd_perlmidas_script to access the ODB.
 
@@ -463,8 +464,8 @@ sub TuneSwitch
 
 
 \htmlonly
-<script type="text/javascript">
-pages( "RC_mhttpd_defining_user_buttons",  "RunControl","RC_mhttpd_Main_Status_page#RC_mhttpd_status_User_buttons", "RC_mhttpd_perlrc",  "" ); // back index next {top bottom}
+<script type="text/javascript">                            
+pages( "RC_mhttpd_defining_script_buttons",  "RunControl","RC_mhttpd_status_page_features#RC_mhttpd_status_script_buttons", "RC_mhttpd_perlrc",  "" ); // back index next {top bottom}
 sections("Features", "RunControl","FrontendOperation"); // last section; top of this section; next section
 </script>
 \endhtmlonly

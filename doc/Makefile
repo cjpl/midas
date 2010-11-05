@@ -69,7 +69,7 @@ ver:
 index:
 #       make the Contents and Index pages (Organization.dox, docindex.dox)
 #       output files *_output.txt are for debug.
-	cd src ; ./make_contents.pl > contents_output.txt ; ./doit.pl > doit_output.txt ; ./make_index.pl > index_output.txt ;   cd ..
+	cd src ; ./make_contents.pl >& contents_output.txt ; ./doit.pl >& doit_output.txt ; ./make_index.pl >& index_output.txt ;   cd ..
 rmtmp:
 #	remove temporary files created by make_index.pl
 	rm -f src/*.tmp src/sorted_info.txt.*

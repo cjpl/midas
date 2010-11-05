@@ -96,9 +96,30 @@ Experiment Name: <odb src="/Experiment/Name">
 Run Number: <odb src="/runinfo/run number" edit=1>
 @endcode
 
+\anchor odb_tag_ex1
 \b Examples
- - @ref  RC_mhttpd_js_example1
+<ol> 
+ <li> The following image shows the status of the ODB key <span class="odb">/logger/write data</span>:<br>
+ * <center>
+ *  <span class="image">ODB access using <span class="odbtag">\<odb..\></span> tag</span>
+ * <br>
+ * \image html html_ex1.jpg
+ * </center>
+ 
+  The HTML code fragment producing the image above is shown below: 
 
+\code
+<table style="text-align: center; width: 40%;" border="1" cellpadding="2"
+cellspacing="2">
+<tr><td style="vertical-align: top; background-color: lightyellow; text-align: center;">
+Logging data</td>
+<td><odb src="/logger/write data">
+</td></tr</table>
+\endcode
+
+
+ <li> @ref  RC_mhttpd_js_example1
+</ol>
 <br><hr><br>
 
 
@@ -114,8 +135,39 @@ The following @ref RC_mhttpd_custom_js_lib  "mhttpd JS built-in functions" are d
 - @ref RC_mhttpd_custom_odbkey "ODBKey"
 
 \b Examples:
- - @ref  RC_mhttpd_js_example1
- - @ref  RC_mhttpd_js_example2
+<ol>
+<li>As in the HTML example @ref odb_tag_ex1 "above", the status of the ODB key <span class="odb">/logger/write data</span> is displayed in the following image,
+but in this case the background colour is changed (using Javascript) depending on the value of the key:
+
+ * <center>
+ *  <span class="image">ODB access using  <span class="js">ODBGet</span> showing colour change depending on state of ODB variable</span>
+ * \image html js_ex1.jpg
+ * <br>
+ * \image html js_ex2.jpg
+ * </center>
+<br> 
+The code fragment for the above images is shown below:
+\code
+<script>
+var wd= ODBGet('/logger/write data')
+alert ('wd = '+wd);
+</script>
+<table style="text-align: center; width: 40%;" border="1" cellpadding="2"
+cellspacing="2">
+<tr>
+<td style="vertical-align: top; background-color:  lightyellow; text-align: center;">Logging data</td>
+<script>
+if (wd == "y")
+   document.write('<td style="vertical-align: top; background-color: lime; text-align: center;">'+wd);
+else
+   document.write('<td style="vertical-align: top; background-color: red; text-align: center;">'+wd);
+</script>
+</td></tr></table>
+\endcode
+
+ <li> @ref  RC_mhttpd_js_example1
+ <li> @ref  RC_mhttpd_js_example2
+</ol>
 
 \note
 The built-in library must be  @ref RC_mhttpd_include_js_library "included" 
@@ -155,7 +207,7 @@ Retrieves individual or array values from the ODB.
 </td>
 <td style="vertical-align: top; background-color: white; font-weight: normal; text-align: left;">
 
-<! --  table 2  -->
+<!--  table 2  -->
 <table
  style="text-align: left; width: 100%;" border="0" cellpadding="2"
 cellspacing="0">
@@ -169,7 +221,7 @@ cellspacing="0">
  <!-- table 2  Line 2 -->
 <tr>
 <td colspan="1" style="vertical-align: top; background-color: white; font-weight: bold; text-align: left;">format</td>
-<td colspan="1" style="vertical-align: top; background-color: white; font-weight: normal; text-align: left;">Format to write out value read from ODB. Do not include spaces.
+<td colspan="1" style="vertical-align: top; background-color: white; font-weight: normal; text-align: left;">optional format to write out value read from ODB. Do not include spaces.
 </td>
 </tr>
  <!--  table 2 Line 3 -->
@@ -372,7 +424,7 @@ If using a password, the \<<i>password_name</i>\> must be defined as an ODB entr
 <br><hr><br>
 
 \anchor idx_ODBKey-JavaScript-function
-@subsection RC_mhttpd_custom_odbkey ODBKey   JaverScript function
+@subsection RC_mhttpd_custom_odbkey ODBKey   JavaScript function
 
 <table
  style="text-align: left; width: 100%;" border="1" cellpadding="2"
@@ -523,7 +575,7 @@ Figure 2 shows entering a value using the \b HTML tags. The two different styles
 * </span></center> 
 
 
-@section RC_mhttpd_js_example2  Example of ODB access with JavaScript functions
+@section RC_mhttpd_js_example2  Example of ODB access with JavaScript functions ODBSet and ODBKey
 
 
 
