@@ -20,8 +20,10 @@ sections("FAQ","Convention","DocIndex"); // last section; top of this section; n
 pages and sections.
      -  \b blue symbols navigate between \b pages,
      -  \b yellow symbols navigate between \b sections.
- - There are also navigation icons to jump to the @ref DocIndex "Alphabetical Documentation Index"  and the @ref Organization "Section Contents".    
-</span>
+ - There are also navigation icons to jump to the @ref DocIndex "Alphabetical Documentation Index"
+ and the @ref Organization "Section Contents".</span>
+
+<br>
 <table style="text-align: left; width: 100%;" border="8" cellpadding="5 "
 cellspacing="3">
 <tr>

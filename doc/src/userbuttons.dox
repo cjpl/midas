@@ -16,7 +16,8 @@ sections("Features", "RunControl","FrontendOperation"); // last section; top of 
 The  <span class="odb">/Script</span> tree is applicable to @ref RC_mhttpd "mhttpd", and ignored by 
 @ref RC_odbedit "odbedit".
 
-The optional ODB tree  <span class="odb">/Script</span> provides the user with a way to execute a script when a button is clicked, including
+The optional ODB tree  <span class="odb">/Script</span> provides the user with a way to execute a script when a button
+on the  <span class="utility">mhttpd</span> @ref RC_mhttpd_main_status "main status page" is clicked, including
 the <b>capability of passing parameters from the ODB to the script</b>.
 
 <br>
@@ -29,8 +30,7 @@ script-button of that name on the default mhttpd main status page. Each sub-tree
    
 @section RC_odb_script_example1 Example 1: creation of a Script-button; parameters passed to the associated script 
 The <b> example </b> below shows the ODB  <span class="odb">/script/dac</span> subdirectory.
-   The script-button \b "dac" associated with this subdirectory is shown on the 
-@ref RC_mhttpd_pol_status "example status page".
+   The script-button \b "dac" associated with this subdirectory is shown on the example mhttpd status page below.
 
    The first key in the  <span class="odb">dac</span> subdirectory is the string key <span class="odb">cmd</span> which contains the name and path of
 the script to be executed (in this case, a perl script). This script is located on the local host computer 

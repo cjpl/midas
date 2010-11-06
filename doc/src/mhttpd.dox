@@ -2739,7 +2739,7 @@ shows lazylogger information and statistics.
 
 <span class="utility">Lazylogger</span> settings information is displayed by clicking on a lazylogger Label hyperlink
 on the <span class="utility">mhttpd</span>  main status page  (see  @ref RC_mhttpd_Logger_image "above").
-The subtree <span class="odb">/Lazy/<label>/Settings</span>
+The subtree <span class="odb">/Lazy/\<label\>/Settings</span>
 is shown.  See @ref F_lazylogger_utility "lazylogger" for more information.
 
 
