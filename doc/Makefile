@@ -31,8 +31,7 @@ html: index rmtmp images/done
 	cp images/page_*.gif html/.
 	cp images/section_*.gif html/.
 
-images/done: 
-	midasdoc-images.tar.gz
+images/done: midasdoc-images.tar.gz
 	tar xzvf midasdoc-images.tar.gz
 	touch $@
 
