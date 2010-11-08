@@ -48,11 +48,11 @@ publish:
 	#tar -czvf midasdoc-html-$(version).tar.gz html/
 	#tar -czvf midasdoc-man-$(version).tar.gz man/
 	tar -czvf midasdoc-images.tar.gz images/
-	rsync -uv html/* /home/daqweb/public_html/doc/midas3/html/.
+	rsync -uv html/* /home/daqweb/public_html/doc/midas/html/.
 	#rsync -av *.tar.gz daqweb@ladd00.triumf.ca:/home/daqweb/public_html/ftp/.
 	#rsync -av /midas/doc/CHANGELOG.TXT /home1/ftp/pub/midas/.
 
-publishh: 
+publish3: 
 	rsync -uv html/* /home/daqweb/public_html/doc/midas3/html/.
 
 clean:	
