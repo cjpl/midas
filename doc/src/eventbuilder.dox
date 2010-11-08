@@ -283,10 +283,8 @@ EB                              DIR
 
 @section FE_eb_Operation Event Builder Operation
 
-\todo definition of cwd ?
-
-Using the "eb>" as the cwd for the example, the test procedure is the following:
-cwd : midas/examples/eventbuilder  -> refered as eb>
+Using the "eb>" as the current working directory (cwd) for the example, the test procedure is the following:
+cwd : midas/examples/eventbuilder  -> referred to as eb>
 
 - Build the mevb task:
 @code
