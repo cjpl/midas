@@ -1,0 +1,153 @@
+/*! @page  RC_mhttpd_utility The mhttpd daemon
+\anchor idx_mhttpd-utility
+<!--  
+     page RC_mhttpd_utility is a sub-page of  page RC_mhttpd_utility  
+ 
+ -->
+<br>
+\htmlonly 
+<script type="text/javascript">
+pages( "RC_mhttpd",  "RunControl", "RC_mhttpd", "RC_mhttpd_utility",  "end" ); // back index next {top bottom}
+sections("Features", "RunControl","FrontendOperation"); // last section; top of this section; next section
+</script>
+\endhtmlonly
+
+@section RC_mhttpd_Usage Start the mhttpd daemon
+The <span class="utility">mhttpd</span> utility requires the TCP/IP port number as an argument in order to listen to
+the web-based request.
+
+- <b> Arguments </b>
+
+  - [-h] : connect to midas server (mserver) on given host
+  - [-e] : experiment to connect to
+  - [-p port ] : port number e.g. 8081 (no default)
+  - [-v] : display verbose HTTP communication
+  - [-D] : starts program as a \b daemon
+  - [-E] : only display ELog system
+  - [-H] : only display history plots
+  - [-a] : only allow access for specific host(s). Several [-a Hostname] statements might be given
+  - [-help] : display usage information
+        
+- <b> Usage </b>
+<br> mhttpd [-h Hostname] [-e Experiment] [-p port] [-v] [-D] [-c] [-a Hostname]
+<br>e.g.
+<br> <b>mhttpd -p 8081 -D </b>
+ 
+
+\note
+ - Several copies of  <span class="utility">mhttpd</span> can run on a single host, as long as they are <b>started on different ports</b>. 
+ - If <b>more than one experiment</b> runs on the same host, a server for each experiment must be
+      started on a \b different port, e.g.
+          - mhttpd -e midas -p 8081 -D
+          - mhttpd -e midgas -p 8082 -D
+
+<br><hr><br>
+
+\anchor idx_mhttpd-utility_connect
+@subsection RC_mhttpd_connect Connect to the mhttpd webserver
+
+To connect to a  <span class="utility">mhttpd</span> webserver running on 
+port <i>&lt;nnnn&gt;</i> on host <i>&lt;hostname&gt;</i> and experiment <i>&lt;exptname&gt;</i>, 
+<b>enter the URL in your web browser location box</b> in the form
+
+\code
+ http://<hostname>:<nnnn>/?exp=<exptname>
+\endcode
+e.g.
+@code
+ http://midtis09:8081/?exp=midas
+@endcode
+<br>
+
+
+
+\anchor RC_mhttpd_msp_default
+
+Once the  @ref RC_mhttpd_connect "connection" to a given experiment is established, the <b>Main Status
+Page</b> of the MIDAS webserver is displayed in the web browser window.
+<br>
+An error page will appear instead if the  @ref RC_mhttpd_utility "mhttpd daemon" has NOT been started on the specified port
+(or has not been started at all).
+<br>
+
+
+@anchor RC_mhttpd_minimal_status_page
+ * <center> 
+ * <span class="image">mhttpd main status page (no clients are running)
+ * <br><br><br>
+ *  \image html status_nothing.png
+ * </span>
+ * </center> 
+<br>
+
+Once clients are started (e.g. frontend, logger etc.) the main status page will look more like @ref  RC_mhttpd_msp_customized "this".
+
+ \Note the image above shows a pre- @ref  ndf_dec_2009 version of mhttpd (see @ref RC_mhttpd_status_page_redesign).
+
+<br>
+<hr>
+<br>
+
+\anchor idx_mhttpd_proxy-access
+\anchor idx_access-control_mhttpd-proxy
+\anchor idx_Apache
+@section RC_mhttpd_proxy Proxy Access to mhttpd
+
+A major change was made to   <span class="utility">mhttpd</span> in @ref ndf_feb_2008 , changing all internal URLs to relative paths.
+This allows <b>proxy access</b> to <span class="utility">mhttpd</span> via an
+ <a href="http://apache.org/">Apache</a>   server for example, which might
+be needed to securely access an experiment from outside the lab through a
+firewall. Apache can also be configured to allow a secure SSL connection to the proxy.
+
+In order to add SSL encryption to  <span class="utility">mhttpd</span>,
+the following settings can be placed into an <b>Apache configuration</b> :
+<br>
+Assuming
+ - the experiment runs on machine <i>online1.your.domain</i>, and
+ - apache is running on a publically available machine <i>www.your.domain</i>
+<br>
+
+\code
+Redirect permanent /online1 http://www.your.domain/online1
+ProxyPass /online1/  http://online1.your.domain/
+
+<Location "/online1">
+  AuthType Basic
+  AuthName ...
+  AuthUserFile ...
+  Require user ...
+</Location>
+\endcode
+
+If  the URL
+\code
+http://www.your.domain/online1
+\endcode
+is accessed, it will be redirected (after optional authentication) to
+\code
+http://online1.your.domain/
+\endcode
+<br>
+If you click on
+the   <span class="utility">mhttpd</span> @ref RC_mhttpd_History_page  for example,   <span class="utility">mhttpd</span>  would normally redirect this to 
+\code
+http://online1.your.domain/HS/
+\endcode
+but this is not correct since you want to go through the proxy <i>www.your.domain</i>.
+The new relative redirection inside   <span class="utility">mhttpd</span> now redirects the history page
+correctly to
+\code
+http://www.your.domain/online1/HS/
+\endcode
+
+ 
+\anchor end
+<br>
+\htmlonly 
+<script type="text/javascript">
+pages( "RC_mhttpd",  "RunControl", "RC_mhttpd", "RC_mhttpd_utility",  "" ); // back index next {top bottom}
+sections("Features", "RunControl","FrontendOperation"); // last section; top of this section; next section
+</script>
+\endhtmlonly 
+
+*/
