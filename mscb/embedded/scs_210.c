@@ -80,12 +80,20 @@ char idata obuf[8];
 
 void user_write(unsigned char index) reentrant
 {
-   unsigned char i, n;
+   unsigned char i, n, ofs;
 
    if (index == 0) {
-      n = in_buf[1]-1;
+      n = in_buf[0] & 0x07;
+	   ofs = 2;
+
+      if (n == 0x07) { // variable length
+         n = in_buf[1];
+		   ofs = 3;
+	   }
+      n--; // skip channel
+
       for (i = 0; i < n; i++)
-         putchar(in_buf[3 + i]);
+         putchar(in_buf[ofs + i]);
       flush_flag = 1;
    }
 
@@ -111,6 +119,7 @@ unsigned char user_read(unsigned char channel)
 
          /* put character directly in return buffer */
          out_buf[2 + n] = c;
+         led_blink(1, 1, 50);
       }
       return n;
    }
