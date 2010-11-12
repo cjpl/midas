@@ -1327,7 +1327,7 @@ void cmd_loop(int fd, char *cmd, unsigned short adr)
             size = sizeof(line);
             mscb_read(fd, (unsigned short) current_addr, 0, line, &size);
             if (size > 0)
-               fputs(line, stdout);
+               fputs(line+1, stdout);
 
             Sleep(10);
          } while (TRUE);
