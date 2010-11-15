@@ -6083,6 +6083,18 @@ void show_custom_page(const char *path, const char *cookie_cpwd)
          return;
       }
 
+      /* process "jgenmsg" command */
+      if (equal_ustring(getparam("cmd"), "jgenmsg")) {
+
+         if (*getparam("msg")) {
+            cm_msg(MINFO, "show_custom_page", getparam("msg"));
+         }
+
+         show_text_header();
+         rsputs("Message successfully created\n");
+         return;
+      }
+
       /* process "jrpc" command */
       if (equal_ustring(getparam("cmd"), "jrpc_rev0")) {
          free(ctext);
@@ -12387,6 +12399,16 @@ const char *mhttpd_js =
 "      return array;\n"
 "   } else\n"
 "      return request.responseText;\n"
+"}\n"
+"\n"
+"function ODBGenerateMsg(m)\n"
+"{\n"
+"   request = XMLHttpRequestGeneric();\n"
+"\n"
+"   var url = '?cmd=jgenmsg&msg=' + m;\n"
+"   request.open('GET', url, false);\n"
+"   request.send(null);\n"
+"   return request.responseText;\n"
 "}\n"
 "\n"
 "function ODBEdit(path)\n"
