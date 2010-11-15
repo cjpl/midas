@@ -3831,7 +3831,6 @@ typedef struct {
 MA_FILE *ma_open(char *file_name)
 {
    char *ext_str;
-   int status;
    MA_FILE *file;
 
    /* allocate MA_FILE structure */
@@ -3927,7 +3926,7 @@ int ma_close(MA_FILE * file)
 
 int ma_read_event(MA_FILE * file, EVENT_HEADER * pevent, int size)
 {
-   int status, n;
+   int n;
 
    if (file->device == MA_DEVICE_DISK) {
       if (file->format == MA_FORMAT_MIDAS) {
