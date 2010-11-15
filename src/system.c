@@ -196,6 +196,7 @@ static void check_shm_type(const char* shm_type)
    char path[256];
    char buf[256];
    char* s;
+   FILE *fp;
 
    cm_get_path(path);
    if (path[0] == 0) {
@@ -215,7 +216,7 @@ static void check_shm_type(const char* shm_type)
    strlcat(file_name, "SHM_TYPE", file_name_size);
    strlcat(file_name, ".TXT", file_name_size);
 
-   FILE *fp = fopen(file_name, "r");
+   fp = fopen(file_name, "r");
    if (!fp) {
       fp = fopen(file_name, "w");
       if (!fp)
