@@ -316,7 +316,7 @@ sections("Features", "RunControl","FrontendOperation"); // last section; top of 
 <!-- end of  page RC_MEG_Gas_Page  -->
 */
 
-/*! @page   RC_Ebit_custom_page Custom Page for Ebit Experiment
+/*! @page   RC_Ebit_custom_page Custom Pages for Ebit Experiment
 <br>
  
 \htmlonly <script type="text/javascript">
@@ -328,22 +328,34 @@ sections("Features", "RunControl","FrontendOperation"); // last section; top of 
 
 <br>
 
-This custom page allows the experimenters to easily input the parameters for the TRIUMF Pulse Programmer 
-(pulse width, offset etc.) used to control the Ebit experiment at TRIUMF, by clicking on the links on the
-diagram. Each
-value is linked to a parameter in the ODB. Several different diagrams are available for the different
-experimental modes, which are selected by the Custom Buttons (1a,1b,1c).
-<br>
-Each line represents an output from the Pulse Programmer. The x-axis ( \b not to scale) 
-represents the time from when the cycle is started (T0). 
-The boxes on the left allow the polarity of the output signal to be reversed. 
+The following two custom pages are from the EBIT experiment at TRIUMF. They 
+allow the experimenters easy access to the parameters for the TRIUMF Pulse Programmer (PPG) 
+(i.e. pulse width, offset etc.) used to control the experiment.
 
-* <center> 
+Several different modes are available (each with its own custom page). Two of the custom pages are shown,
+for modes 1c and 1e. The experimenters change modes by clicking one of the customscript buttons (1a...1e).
+The mode script automatically loads a different set of parameters and a different custom page.
+
+In the first example, the PPG parameters are changed by clicking on the links on the image. Each
+value is linked to a parameter in the ODB. Each line on the image represents an output from the Pulse Programmer.
+The x-axis ( \b not to scale) represents the time from when the cycle is started (T0). 
+The boxes on the left allow the polarity of the output signal to be reversed. 
+<br>
+* <center>
+* <span class="image">EBIT experiment custom page (Mode 1c)</span><br><br>
 *  \image html ebit_ppg.png
 * </center>
+<br><br>
 
+For the simplest mode (1e) a timing diagram is not necessary, and a table is used instead.  To change the parameters the
+experimenters click on the links in the table. 
+<br><br>
+* <center>
+* <span class="image">EBIT experiment custom page (Mode 1e)</span><br><br>
+*  \image html ebit_1e.jpg
+* </center>
 
-<br>
+<br><br>
  
 \htmlonly <script type="text/javascript">
 // pages parameters: back index next {top bottom}
@@ -414,7 +426,8 @@ between the more than 20 different pages of this large gas system is done by cli
 boxes. The pop-up windows are made using javascript. "Fills" are used to change the colour of
 the valves, and "Labels" are used to display the values of various parameters.
 
-* <center> T2K future Gas System: Gas Analyzer Page showing popup
+* <center>
+* <span class="image">T2K  Gas System: Gas Analyzer Page showing popup</span><br>
 *  \image html gas_analyzer_pop.png
 * </center>
 
