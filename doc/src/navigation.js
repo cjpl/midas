@@ -20,11 +20,11 @@ function top_mainpage( next_page,bottom_of_page)
       document.writeln('</a>')
    }
 
-   page_index = "Organization"  
-   var ref = '#'+page_index+'_section_index';
-   document.writeln('<a href="Organization.html'+ref+'">  <!-- PAGES IN THIS SECTION -->');
-   document.writeln(' <img  ALIGN="left" alt="map" src="page_contents.gif" title="Page List"    border=0 >');
-   document.writeln('</a>'); 
+//   page_index = "Organization"  
+//   var ref = '#'+page_index+'_section_index';
+//   document.writeln('<a href="Organization.html'+ref+'">  <!-- PAGES IN THIS SECTION -->');
+//   document.writeln(' <img  ALIGN="left" alt="map" src="page_contents.gif" title="Page List"    border=0 >');
+//   document.writeln('</a>'); 
    
 
    document.writeln('<a href="DocIndex.html">  <!-- docindex -->');
