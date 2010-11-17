@@ -12507,7 +12507,7 @@ void interprete(const char *cookie_pwd, const char *cookie_wpwd, const char *coo
    /* encode path for further usage */
    strlcpy(dec_path, path, sizeof(dec_path));
    urlDecode(dec_path);
-   // ##urlDecode(dec_path); /* necessary for %2520 -> %20 -> ' ' */
+   urlDecode(dec_path); /* necessary for %2520 -> %20 -> ' ', used e.g. in deleting ODB entries with blanks in path */
    strlcpy(enc_path, dec_path, sizeof(enc_path));
    urlEncode(enc_path, sizeof(enc_path));
 
