@@ -479,8 +479,9 @@ INT cd_gen_read(char *pevent, int offset)
 #else
       assert(!"YBOS support not compiled in");
 #endif
-   } else
-      return 0;
+   }
+
+   return 0;
 }
 
 /*------------------------------------------------------------------*/
