@@ -67,7 +67,7 @@ int mscbbus_write(MSCBBUS_INFO * info, char *data, int size)
       fclose(f);
    }
 
-   i = mscb_write_block(info->fd, info->settings.address, 0, data, size);
+   i = mscb_write(info->fd, info->settings.address, 0, data, size);
 
    return i;
 }
@@ -128,7 +128,7 @@ int mscbbus_puts(MSCBBUS_INFO * info, char *str)
       fclose(f);
    }
 
-   mscb_write_block(info->fd, info->settings.address, 0, str, strlen(str));
+   mscb_write(info->fd, info->settings.address, 0, str, strlen(str));
 
    return strlen(str);
 }
@@ -213,7 +213,7 @@ int mscbbus_init(HNDLE hkey, void **pinfo)
    /* check if scs_210 is alive */
    status = mscb_addr(info->fd, MCMD_PING16, info->settings.address, 1);
    if (status != MSCB_SUCCESS) {
-      if (status == MSCB_MUTEX)
+      if (status == MSCB_SEMAPHORE)
          printf("MSCB used by other process\n");
       else if (status == MSCB_SUBM_ERROR)
          printf("Error: MSCB Submaster not responding\n");
