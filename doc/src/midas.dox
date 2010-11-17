@@ -2,6 +2,11 @@
 
 \anchor Top 
 
+
+
+
+
+
 <table style=" text-align: left; width: 100%;" border="0" cellpadding="2" cellspacing="2">
 <tr>
 <td style="vertical-align: top;">
@@ -16,18 +21,39 @@
 <span class="ucmidas">A</span>cquisition <span class="ucmidas">S</span>ystem</span><br>
 <br>
 <span style=" font-size: 150%; font-weight: bold; ">  Welcome to the world of <br> <span  style="color: green; font-size: 125%;">MIDAS</span>. </span>
-<br><br>
-
-<span  style="color: green; font-size: 125%;">
- \b MIDAS is a versatile Data Acquisition System (DAQ) for medium scale physics experiments.
-   </span>
+<br>
 </center>
 </td>
 <td style="vertical-align: top;">
  *  \image html logo.png
 </td>
 </tr>
+<tr>
+<td style="vertical-align: top;">
+<!-- Navigation (page) -->
+\htmlonly
+<script type="text/javascript">
+//pages("","", "Intro","","" ); // back index next {top bottom}
+top_mainpage("Intro","end")
+</script>
+\endhtmlonly
+</td>
+<td style="vertical-align: top; text-align: center;">
+<span  style="color: green; font-size: 125%;">
+ \b MIDAS is a versatile Data Acquisition System (DAQ) for medium scale physics experiments.
+   </span>
+   </td>
+<td style="vertical-align: top;">
+<!-- Navigation (section) -->
+\htmlonly
+<script type="text/javascript">
+sections("","","Intro"); // last section; top of this section; next section
+</script>
+\endhtmlonly
+</td></tr>
 </table>
+
+
 
 <br>
    If you want a <b>flexible and simple DAQ </b>, @ref I_Midas_system_picture "MIDAS and its applications" may be what you are looking for. This document will try to answer most of your questions regarding
