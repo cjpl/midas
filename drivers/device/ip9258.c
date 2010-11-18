@@ -250,7 +250,7 @@ INT ip9258_set(IP9258_INFO * info, INT channel, float value)
    sprintf(req, "GET /Set.cmd?CMD=SetPower+P6%d=%d HTTP/1.1\r\n", channel, (int)value);
    strcat(req, "Accept: text/html\r\n");
    sprintf(str, "%s:%s", info->ip9258_settings.username, info->ip9258_settings.password);
-   base64_encode(str, enc, sizeof(enc));
+   base64_encode((unsigned char*)str, (unsigned char*)enc, sizeof(enc));
    sprintf(req+strlen(req), "Authorization: Basic %s\r\n\r\n", enc);
    send(sock, req, strlen(req), 0);
    recv_string(sock, req, sizeof(req), 10000);
@@ -286,7 +286,7 @@ INT ip9258_get(IP9258_INFO * info, INT channel, float *pvalue)
       strcpy(req, "GET /Set.cmd?CMD=GetPower HTTP/1.1\r\n");
       strcat(req, "Accept: text/html\r\n");
       sprintf(str, "%s:%s", info->ip9258_settings.username, info->ip9258_settings.password);
-      base64_encode(str, enc, sizeof(enc));
+      base64_encode((unsigned char*)str, (unsigned char*)enc, sizeof(enc));
       sprintf(req+strlen(req), "Authorization: Basic %s\r\n\r\n", enc);
       send(sock, req, strlen(req), 0);
       recv_string(sock, req, sizeof(req), 10000);
