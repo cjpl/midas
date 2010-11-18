@@ -124,6 +124,7 @@ static INT tcp_connect(char *host, int port, int *sock)
    status = bind(*sock, (void *) &bind_addr, sizeof(bind_addr));
    if (status < 0) {
       mfe_error("Cannot bind");
+      closesocket(*sock);
       return RPC_NET_ERROR;
    }
 
@@ -144,6 +145,7 @@ static INT tcp_connect(char *host, int port, int *sock)
    phe = gethostbyname(host);
    if (phe == NULL) {
       mfe_error("Cannot get host name");
+      closesocket(*sock);
       return RPC_NET_ERROR;
    }
    memcpy((char *) &(bind_addr.sin_addr), phe->h_addr, phe->h_length);
@@ -296,6 +298,7 @@ INT ip9258_get(IP9258_INFO * info, INT channel, float *pvalue)
          recv_string(sock, req, sizeof(req), 1000);
          for (i=0 ; i<info->num_channels ; i++)
             info->var_cache[i] = (float)atoi(req+10+i*6);
+         closesocket(sock);
       }  else {
 
          if (strstr(req, "Unauthorized")) 
@@ -307,6 +310,7 @@ INT ip9258_get(IP9258_INFO * info, INT channel, float *pvalue)
          for (i=0 ; i<info->num_channels ; i++)
             info->var_cache[i] = (float)ss_nan();
          last_update = 0;
+         closesocket(sock);
          return FE_ERR_HW;
       }
    }
