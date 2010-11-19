@@ -4,7 +4,7 @@
 \htmlonly  
 <script type="text/javascript">
 // pages parameters: back index next {top bottom}
-pages( "RC_Example_Custom_Webpages", "RunControl","RC_MEG_ROOT_code","RC_ROOT_analyzer_page",  "end" );
+pages( "RC_mhttpd_Custom_page#RC_Example_Custom_Webpages", "RunControl","RC_MEG_ROOT_code","RC_ROOT_analyzer_page",  "end" );
 sections("Features", "RunControl","FrontendOperation"); // last section; top of this section; next section
 </script>
 \endhtmlonly  
@@ -41,7 +41,7 @@ The custom page file is shown here:
 \htmlonly  
 <script type="text/javascript">
 // pages parameters: back index next {top bottom}
-pages( "RC_Example_Custom_Webpages", "RunControl","RC_MEG_ROOT_code","RC_ROOT_analyzer_page",  "" );
+pages( "RC_mhttpd_Custom_page#RC_Example_Custom_Webpages", "RunControl","RC_MEG_ROOT_code","RC_ROOT_analyzer_page",  "" );
 sections("Features", "RunControl","FrontendOperation"); // last section; top of this section; next section
 </script>
 \endhtmlonly  
@@ -54,7 +54,7 @@ sections("Features", "RunControl","FrontendOperation"); // last section; top of 
 \htmlonly  
 <script type="text/javascript">
 // pages parameters: back index next {top bottom}
-pages( "RC_ROOT_analyzer_page", "RunControl", "RC_BNMQR_status","RC_MEG_ROOT_code",  "end" );
+pages( "RC_mhttpd_Custom_page#RC_Example_Custom_Webpages", "RunControl", "RC_BNMQR_status","RC_MEG_ROOT_code",  "end" );
 sections("Features", "RunControl","FrontendOperation"); // last section; top of this section; next section
 </script>
 \endhtmlonly
@@ -218,7 +218,7 @@ The following code is used for the @ref RC_ROOT_analyzer_page :
 \htmlonly  
 <script type="text/javascript">
 // pages parameters: back index next {top bottom}
-pages( "RC_ROOT_analyzer_page", "RunControl", "RC_BNMQR_status","RC_MEG_ROOT_code",  "" );
+pages( "RC_mhttpd_Custom_page#RC_Example_Custom_Webpages", "RunControl", "RC_BNMQR_status","RC_MEG_ROOT_code",  "" );
 sections("Features", "RunControl","FrontendOperation"); // last section; top of this section; next section
 </script>
 \endhtmlonly
@@ -234,7 +234,7 @@ sections("Features", "RunControl","FrontendOperation"); // last section; top of 
 \htmlonly 
 <script type="text/javascript">
 // pages parameters: back index next {top bottom}
-pages( "RC_MEG_ROOT_code", "RunControl","RC_MEG_Gas_Page","RC_BNMQR_status",  "end" );
+pages( "RC_mhttpd_Custom_page#RC_Example_Custom_Webpages", "RunControl","RC_MEG_Gas_Page","RC_BNMQR_status",  "end" );
 sections("Features", "RunControl","FrontendOperation"); // last section; top of this section; next section
 </script>
 \endhtmlonly
@@ -270,7 +270,7 @@ alias links allow the user to quickly access experimental parameters.
  
 \htmlonly <script type="text/javascript">
 // pages parameters: back index next {top bottom}
-pages( "RC_ROOT_analyzer_page", "RunControl","RC_MEG_Gas_Page","RC_BNMQR_status",  "" );
+pages( "RC_mhttpd_Custom_page#RC_Example_Custom_Webpages", "RunControl","RC_MEG_Gas_Page","RC_BNMQR_status",  "" );
 sections("Features", "RunControl","FrontendOperation"); // last section; top of this section; next section
 </script> \endhtmlonly
  
@@ -286,7 +286,7 @@ sections("Features", "RunControl","FrontendOperation"); // last section; top of 
  
 \htmlonly <script type="text/javascript">
 // pages parameters: back index next {top bottom}
-pages( "RC_BNMQR_status", "RunControl","RC_Ebit_custom_page","RC_MEG_Gas_Page",  "end" );
+pages( "RC_mhttpd_Custom_page#RC_Example_Custom_Webpages", "RunControl","RC_Ebit_custom_page","RC_MEG_Gas_Page",  "end" );
 sections("Features", "RunControl","FrontendOperation"); // last section; top of this section; next section
 </script> \endhtmlonly
  
@@ -306,7 +306,7 @@ If they are clicked, they close and become red (provided the user successfully s
  
 \htmlonly <script type="text/javascript">
 // pages parameters: back index next {top bottom}
-pages( "RC_BNMQR_status", "RunControl","RC_Ebit_custom_page","RC_MEG_Gas_Page",  "" );
+pages( "RC_mhttpd_Custom_page#RC_Example_Custom_Webpages", "RunControl","RC_Ebit_custom_page","RC_MEG_Gas_Page",  "" );
 sections("Features", "RunControl","FrontendOperation"); // last section; top of this section; next section
 </script> \endhtmlonly
  
@@ -321,7 +321,7 @@ sections("Features", "RunControl","FrontendOperation"); // last section; top of 
  
 \htmlonly <script type="text/javascript">
 // pages parameters: back index next {top bottom}
-pages( "RC_MEG_Gas_Page", "RunControl", "RC_Mpet_custom_page","RC_Ebit_custom_page", "end");
+pages( "RC_mhttpd_Custom_page#RC_Example_Custom_Webpages", "RunControl", "RC_Mpet_custom_page","RC_Ebit_custom_page", "end");
 sections("Features", "RunControl","FrontendOperation"); // last section; top of this section; next section
 </script> \endhtmlonly
  
@@ -359,7 +359,7 @@ experimenters click on the links in the table.
  
 \htmlonly <script type="text/javascript">
 // pages parameters: back index next {top bottom}
-pages( "RC_MEG_Gas_Page", "RunControl", "RC_Mpet_custom_page","RC_Ebit_custom_page", "");
+pages( "RC_mhttpd_Custom_page#RC_Example_Custom_Webpages", "RunControl", "RC_Mpet_custom_page","RC_Ebit_custom_page", "");
 sections("Features", "RunControl","FrontendOperation"); // last section; top of this section; next section
 </script> \endhtmlonly
  
@@ -375,7 +375,7 @@ sections("Features", "RunControl","FrontendOperation"); // last section; top of 
  
 \htmlonly <script type="text/javascript">
 // pages parameters: back index next {top bottom}
-pages("RC_Ebit_custom_page" , "RunControl", "RC_T2K_Gas_Page",  "RC_Mpet_custom_page", "end");
+pages("RC_mhttpd_Custom_page#RC_Example_Custom_Webpages" , "RunControl", "RC_T2K_Gas_Page",  "RC_Mpet_custom_page", "end");
 sections("Features", "RunControl","FrontendOperation"); // last section; top of this section; next section
 </script> \endhtmlonly
  
@@ -395,7 +395,7 @@ This page shows the optics for the Mpet experiment at TRIUMF displaying the Lore
  
 \htmlonly <script type="text/javascript">
 // pages parameters: back index next {top bottom}
-pages("RC_Ebit_custom_page" , "RunControl", "RC_T2K_Gas_Page", "RC_Mpet_custom_page" , "");
+pages("RC_mhttpd_Custom_page#RC_Example_Custom_Webpages" , "RunControl", "RC_T2K_Gas_Page", "RC_Mpet_custom_page" , "");
 sections("Features", "RunControl","FrontendOperation"); // last section; top of this section; next section
 </script> \endhtmlonly
  
@@ -411,7 +411,7 @@ sections("Features", "RunControl","FrontendOperation"); // last section; top of 
  
 \htmlonly <script type="text/javascript">
 // pages parameters: back index next {top bottom}
-pages( "RC_Mpet_custom_page" , "RunControl","RC_mhttpd_Custom_page",  "RC_T2K_Gas_Page" ,  "end");
+pages( "RC_mhttpd_Custom_page#RC_Example_Custom_Webpages" , "RunControl","RC_mhttpd_Custom_page",  "RC_T2K_Gas_Page" ,  "end");
 sections("Features", "RunControl","FrontendOperation"); // last section; top of this section; next section
 </script> \endhtmlonly
  
@@ -443,7 +443,7 @@ The following image illustrates the use of hidden alias keys to load webpages fr
 <br>
 \htmlonly <script type="text/javascript">
 // pages parameters: back index next {top bottom}
-pages( "RC_Mpet_custom_page" , "RunControl",  "RC_mhttpd_Custom_page","RC_T2K_Gas_Page" , "");
+pages( "RC_mhttpd_Custom_page#RC_Example_Custom_Webpages" , "RunControl",  "RC_mhttpd_Custom_page","RC_T2K_Gas_Page" , "");
 sections("Features", "RunControl","FrontendOperation"); // last section; top of this section; next section
 </script> \endhtmlonly
 
