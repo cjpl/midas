@@ -98,19 +98,14 @@ RSTSRC  DATA    0EFH
                 PUBLIC  ?C_STARTUP
 
                 CSEG    AT      0
-?C_STARTUP:     LJMP    STARTUP0
+?C_STARTUP:     LJMP    STARTUP
 
                 RSEG    ?C_C51STARTUP
 
-STARTUP0:	    MOV     SFRPAGE,#0                ;Ensure SFR PAGE selection
+STARTUP:	       MOV     SFRPAGE,#0                ;Ensure SFR PAGE selection
                 MOV     RSTSRC,#02H               ;Select VddMon as a reset source
-
-                MOV     A,RSTSRC                  ;read type of  reset?"
-                JNB     ACC.1,STARTUP1            ;check for PORSF "power up reset"
-                ORL     PCON,#01                  ;force CPU to idle mode, and wait for WDT
-                MOV     PCON,PCON                 ;required 3 byte dummy intruction after setting this bit
-
-STARTUP1:
+                MOV     R0,#100
+STLOOP:         DJNZ    R0,STLOOP                 ;Wait for VDD stabilized
 
 IF IDATALEN <> 0
                 MOV     R0,#IDATALEN - 1
