@@ -86,9 +86,11 @@ print "\n hashpages....\n";
 for(keys %hashpages) 
 { print  "Page $_ Level $hashpages{$_}\n";}
 print "NOTE: \n";
-print "Any pages listed above that are not Level 0 or 1 may not be listed in the contents\n";
-print "because they are not listed anywhere as a \\subpage (which they should be!!)  \n\n";
-print "Now run doit.pl to produce Organization.dox\n";
+print "The only subpages that should be listed above between \"hashpages...\" and \"NOTE:\"\n" ;
+print "are the list of Sections (Intro to Organization) at level 0 \n\n";
+print "Any extra pages listed above will likely not be listed in the contents or appear in the documentation\n";
+print "because they are not listed in any dox file  as a \\subpage (which they should be!!)  \n\n";
+print "Continue by running doit.pl to produce Organization.dox\n";
 
 
 exit;
