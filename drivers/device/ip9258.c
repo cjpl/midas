@@ -276,46 +276,54 @@ INT ip9258_set(IP9258_INFO * info, INT channel, float value)
 
 INT ip9258_get(IP9258_INFO * info, INT channel, float *pvalue)
 {
-   INT status, sock, i;
+   INT status, sock, i, retry;
    char req[1000], str[256], enc[256];
 
-   if (ss_time() - last_update > 10) {
+   if (ss_time() - last_update > 60) {
       last_update = ss_time();
-      status = tcp_connect(info->ip9258_settings.address, 80, &sock);
-      if (status != FE_SUCCESS)
-         return status;
 
-      strcpy(req, "GET /Set.cmd?CMD=GetPower HTTP/1.1\r\n");
-      strcat(req, "Accept: text/html\r\n");
-      sprintf(str, "%s:%s", info->ip9258_settings.username, info->ip9258_settings.password);
-      base64_encode((unsigned char*)str, (unsigned char*)enc, sizeof(enc));
-      sprintf(req+strlen(req), "Authorization: Basic %s\r\n\r\n", enc);
-      send(sock, req, strlen(req), 0);
-      recv_string(sock, req, sizeof(req), 10000);
-      if (strstr(req, "HTTP/1.0 200 OK")) {
-         recv_string(sock, req, sizeof(req), 1000);
-         recv_string(sock, req, sizeof(req), 1000);
-         recv_string(sock, req, sizeof(req), 1000);
-         for (i=0 ; i<info->num_channels ; i++)
-            info->var_cache[i] = (float)atoi(req+10+i*6);
+      for (retry=0 ; retry<10 ; retry++) {
+         status = tcp_connect(info->ip9258_settings.address, 80, &sock);
+         if (status != FE_SUCCESS)
+            return status;
+
+         strcpy(req, "GET /Set.cmd?CMD=GetPower HTTP/1.1\r\n");
+         strcat(req, "Accept: text/html\r\n");
+         sprintf(str, "%s:%s", info->ip9258_settings.username, info->ip9258_settings.password);
+         base64_encode((unsigned char*)str, (unsigned char*)enc, sizeof(enc));
+         sprintf(req+strlen(req), "Authorization: Basic %s\r\n\r\n", enc);
+         send(sock, req, strlen(req), 0);
+         recv_string(sock, req, sizeof(req), 10000);
+         if (strstr(req, "HTTP/1.0 200 OK")) {
+            recv_string(sock, req, sizeof(req), 1000);
+            recv_string(sock, req, sizeof(req), 1000);
+            recv_string(sock, req, sizeof(req), 1000);
+            for (i=0 ; i<info->num_channels ; i++)
+               info->var_cache[i] = (float)atoi(req+10+i*6);
+            closesocket(sock);
+            *pvalue = info->var_cache[channel];
+            return FE_SUCCESS;
+         }  else {
+            if (strstr(req, "Unauthorized")) {
+               sprintf(str, "Authorization failure for IP9258 at %s", info->ip9258_settings.address);
+               mfe_error(str);
+               for (i=0 ; i<info->num_channels ; i++)
+                  info->var_cache[i] = (float)ss_nan();
+               closesocket(sock);
+               return FE_ERR_HW;
+            }
+         }
          closesocket(sock);
-      }  else {
-
-         if (strstr(req, "Unauthorized")) 
-            sprintf(str, "Authorization failure for IP9258 at %s", info->ip9258_settings.address);
-         else
-            sprintf(str, "Error writing to IP9258 at %s: %s", info->ip9258_settings.address, req);
-         mfe_error(str);
-
-         for (i=0 ; i<info->num_channels ; i++)
-            info->var_cache[i] = (float)ss_nan();
-         last_update = 0;
-         closesocket(sock);
-         return FE_ERR_HW;
       }
-   }
 
-   *pvalue = info->var_cache[channel];
+      sprintf(str, "Error reading from IP9258 at %s", info->ip9258_settings.address);
+      for (i=0 ; i<info->num_channels ; i++)
+         info->var_cache[i] = (float)ss_nan();
+      *pvalue = (float)ss_nan();
+      return FE_ERR_HW;
+   } else
+      *pvalue = info->var_cache[channel];
+
    return FE_SUCCESS;
 }
 
