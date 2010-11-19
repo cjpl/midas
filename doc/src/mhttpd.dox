@@ -65,7 +65,9 @@ These functions are available on one or more of the various \b mhttpd \b pages d
 - \subpage RC_mhttpd_Alarm_page : Alarm system control
 - \subpage RC_mhttpd_MSCB_page MIDAS Slow Control Bus
 - \subpage RC_mhttpd_CNAF_page : CAMAC access
-- \subpage RC_mhttpd_Alias_page : user defined  Alias page(s) 
+- \subpage RC_mhttpd_Alias_page : user defined  Alias page(s)
+- \subpage RC_mhttpd_Logger_page : data logger settings information
+- \subpage RC_mhttpd_Config_page : status page update period
 - \subpage RC_mhttpd_Custom_page : user defined Web page(s)
 
 \anchor RC_mhttpd_tree_list
