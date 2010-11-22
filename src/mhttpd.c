@@ -1152,10 +1152,10 @@ int requested_old_state = 0;
 
 void show_status_page(int refresh, const char *cookie_wpwd)
 {
-   int i, j, k, h, m, s, status, size, type, n_alarm;
+   int i, j, k, h, m, s, status, size, type, n_alarm, n_items;
    BOOL flag, first;
    char str[1000], msg[256], name[32], ref[256], bgcol[32], fgcol[32], alarm_class[32],
-      value_str[256], *p;
+      value_str[256], status_data[256], *p;
    const char *trans_name[] = { "Start", "Stop", "Pause", "Resume" };
    time_t now;
    DWORD difftime;
@@ -1629,19 +1629,32 @@ void show_status_page(int refresh, const char *cookie_wpwd)
    else
       rsprintf("<td colspan=3>Running time: %dh%02dm%02ds</tr>\n", h, m, s);
 
+   /*---- Status items ----*/
 
-   /*---- run comment ----*/
+   n_items = 0;
+   if (db_find_key(hDB, 0, "/Experiment/Status items", &hkey) == DB_SUCCESS) {
+      for (i = 0;; i++) {
+         db_enum_link(hDB, hkey, i, &hsubkey);
+         if (!hsubkey)
+            break;
 
-   size = sizeof(str);
-   if (db_get_value(hDB, 0, "/Experiment/Run parameters/Comment", str,
-                    &size, TID_STRING, FALSE) == DB_SUCCESS)
-      rsprintf("<tr align=center><td colspan=6 bgcolor=#E0E0FF><b>%s</b></td></tr>\n",
-               str);
-   size = sizeof(str);
-   if (db_get_value(hDB, 0, "/Experiment/Run parameters/Run Description", str,
-                    &size, TID_STRING, FALSE) == DB_SUCCESS)
-      rsprintf("<tr align=center><td colspan=6 bgcolor=#E0E0FF><b>%s</b></td></tr>\n",
-               str);
+         if (n_items++ == 0)
+            rsprintf("<tr><td colspan=6><table width=100%%>\n");
+
+         db_get_key(hDB, hsubkey, &key);
+         rsprintf("<tr><td align=right width=30%% bgcolor=\"#E0E0FF\">%s:</td>", key.name);
+         
+         db_enum_key(hDB, hkey, i, &hsubkey);
+         db_get_key(hDB, hsubkey, &key);
+         size = sizeof(status_data);
+         if (db_get_data(hDB, hsubkey, status_data, &size, key.type) == DB_SUCCESS) {
+            db_sprintf(str, status_data, key.item_size, 0, key.type);
+            rsprintf("<td >%s</td></tr>\n", str);
+         }
+      }
+      if (n_items)
+         rsprintf("</table></td></tr>\n");
+   }
 
    /*---- Equipment list ----*/
 
