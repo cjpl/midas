@@ -208,7 +208,7 @@ INT al_trigger_alarm(const char *alarm_name, const char *alarm_message, const ch
 #ifdef LOCAL_ROUTINES
    {
       int status, size;
-      HNDLE hDB, hkeyalarm;
+      HNDLE hDB, hkeyalarm, hkey;
       char str[256];
       ALARM a;
       BOOL flag;
@@ -290,6 +290,10 @@ INT al_trigger_alarm(const char *alarm_name, const char *alarm_message, const ch
       /* now trigger alarm class defined in this alarm */
       if (a.alarm_class[0])
          al_trigger_class(a.alarm_class, alarm_message, a.triggered > 0);
+
+      /* check for and trigger "All" class */
+      if (db_find_key(hDB, 0, "/Alarms/Classes/All", &hkey) == DB_SUCCESS)
+         al_trigger_class("All", alarm_message, a.triggered > 0);
 
       /* signal alarm being triggered */
       cm_asctime(str, sizeof(str));
