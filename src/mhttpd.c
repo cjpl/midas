@@ -1152,7 +1152,7 @@ int requested_old_state = 0;
 
 void show_status_page(int refresh, const char *cookie_wpwd)
 {
-   int i, j, k, h, m, s, status, size, type;
+   int i, j, k, h, m, s, status, size, type, n_alarm;
    BOOL flag, first;
    char str[1000], msg[256], name[32], ref[256], bgcol[32], fgcol[32], alarm_class[32],
       value_str[256], *p;
@@ -1197,6 +1197,29 @@ void show_status_page(int refresh, const char *cookie_wpwd)
    status = db_get_record(hDB, hkey, &runinfo, &size, 0);
    assert(status == DB_SUCCESS);
 
+   /* count alarms */
+   db_find_key(hDB, 0, "/Alarms/Alarms", &hkey);
+   n_alarm = 0;
+   if (hkey) {
+      /* check global alarm flag */
+      flag = TRUE;
+      size = sizeof(flag);
+      db_get_value(hDB, 0, "/Alarms/Alarm System active", &flag, &size, TID_BOOL, TRUE);
+      if (flag) {
+         for (i = 0;; i++) {
+            db_enum_link(hDB, hkey, i, &hsubkey);
+
+            if (!hsubkey)
+               break;
+
+            size = sizeof(flag);
+            db_get_value(hDB, hsubkey, "Triggered", &flag, &size, TID_INT, TRUE);
+            if (flag)
+               n_alarm = 1;
+         }
+      }
+   }
+
    /* header */
    rsprintf("HTTP/1.1 200 OK\r\n");
    rsprintf("Server: MIDAS HTTP %d\r\n", mhttpd_revision());
@@ -1226,9 +1249,19 @@ void show_status_page(int refresh, const char *cookie_wpwd)
    db_get_value(hDB, 0, "/Experiment/Name", str, &size, TID_STRING, TRUE);
    time(&now);
 
-   rsprintf("<title>%s status</title></head>\n", str);
+   rsprintf("<title>%s status</title>\n", str);
+   
+   if (n_alarm) {
+      rsprintf("<bgsound src=\"alarm.mid\" loop=\"false\">\n");
+   }
+   
+   rsprintf("</head>\n");
 
    rsprintf("<body><form method=\"GET\" action=\".\">\n");
+
+   if (n_alarm) {
+      rsprintf("<embed src=\"alarm.mid\" autostart=\"true\" loop=\"false\" hidden=\"true\" height=\"0\" width=\"0\">\n");
+   }
 
    rsprintf("<table border=3 cellpadding=2>\n");
 
@@ -1486,10 +1519,12 @@ void show_status_page(int refresh, const char *cookie_wpwd)
                } else
                   strlcpy(str, msg, sizeof(str));
 
-               rsprintf("<tr><td colspan=6 bgcolor=\"%s\" align=center>", bgcol);
 
-               rsprintf("<font color=\"%s\" size=+3>%s: %s</font></tr>\n", fgcol,
+               db_get_key(hDB, hsubkey, &key);
+               rsprintf("<tr><td colspan=6 bgcolor=\"%s\" align=center>", bgcol);
+               rsprintf("<table width=\"100%%\"><tr><td align=center width=\"99%%\"><font color=\"%s\" size=+3>%s: %s</font></td>\n", fgcol,
                         alarm_class, str);
+               rsprintf("<td width=\"1%%\"><button type=\"button\" onclick=\"document.location.href='?cmd=alrst&name=%s'\"n\">Reset</button></td></tr></table></td></tr>\n", key.name);
             }
          }
       }
@@ -12461,6 +12496,34 @@ void send_js()
 
 /*------------------------------------------------------------------*/
 
+// 0x27: handclap
+// 0x39: crash
+// 0x51: open triangle
+
+unsigned char alarm_sound[] = {
+0x4D,0x54,0x68,0x64,0x00,0x00,0x00,0x06,0x00,0x01,
+0x00,0x01,0x01,0xE0,0x4D,0x54,0x72,0x6B,0x00,0x00,
+0x00,0x2B,0x00,0xFF,0x03,0x07,0x44,0x72,0x75,0x6D,
+0x6B,0x69,0x74,0x00,0xC9,0x00,0x00,0xFF,0x51,0x03,
+0x07,0xA1,0x20,0x00,0xFF,0x58,0x04,0x04,0x02,0x18,
+0x08,0x87,0x40,0x99,0x51,0x48,0x96,0x40,0x89,0x51,  // <-- 4 & 9
+0x40,0x00,0xFF,0x2F,0x00,
+};
+
+void send_alarm_sound()
+{
+   rsprintf("HTTP/1.1 200 Document follows\r\n");
+   rsprintf("Server: MIDAS HTTP %d\r\n", mhttpd_revision());
+   rsprintf("Accept-Ranges: bytes\r\n");
+   rsprintf("Content-Type: audio/midi\r\n");
+   rsprintf("Content-Length: %d\r\n\r\n", sizeof(alarm_sound));
+
+   memcpy(return_buffer + strlen_retbuf, alarm_sound, sizeof(alarm_sound));
+   return_length = strlen_retbuf + sizeof(alarm_sound);
+}
+
+/*------------------------------------------------------------------*/
+
 void interprete(const char *cookie_pwd, const char *cookie_wpwd, const char *cookie_cpwd, const char *path, int refresh)
 /********************************************************************\
 
@@ -12604,6 +12667,13 @@ void interprete(const char *cookie_pwd, const char *cookie_wpwd, const char *coo
       return;
    }
 
+   /*---- send sound file -------------------------------------------*/
+
+   if (equal_ustring(dec_path, "alarm.mid")) {
+      send_alarm_sound();
+      return;
+   }
+
    /*---- redirect if SC command ------------------------------------*/
 
    if (equal_ustring(command, "SC")) {
@@ -12691,6 +12761,15 @@ void interprete(const char *cookie_pwd, const char *cookie_wpwd, const char *coo
          return;
       }
       show_alarm_page();
+      return;
+   }
+
+   /*---- alarms reset command --------------------------------------*/
+
+   if (equal_ustring(command, "alrst")) {
+      if (*getparam("name"))
+         al_reset_alarm(getparam("name"));
+      redirect("");
       return;
    }
 
