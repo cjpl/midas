@@ -266,7 +266,7 @@ void print_channel_str(int index, MSCB_INFO_VAR * info_chn, void *pdata, int ver
    /* evaluate prefix */
    if (info_chn->prefix) {
       for (i = 0; prefix_table[i].id != 99; i++)
-         if (prefix_table[i].id == info_chn->prefix)
+	if ((unsigned char)prefix_table[i].id == info_chn->prefix)
             break;
       if (prefix_table[i].id)
          sprintf(line + strlen(line), prefix_table[i].name);
@@ -275,7 +275,7 @@ void print_channel_str(int index, MSCB_INFO_VAR * info_chn, void *pdata, int ver
    /* evaluate unit */
    if (info_chn->unit && info_chn->unit != UNIT_STRING) {
       for (i = 0; unit_table[i].id; i++)
-         if (unit_table[i].id == info_chn->unit)
+	if ((unsigned char) unit_table[i].id == info_chn->unit)
             break;
       if (unit_table[i].id)
          sprintf(line + strlen(line), unit_table[i].name);
