@@ -5764,7 +5764,7 @@ void ss_printf(INT x, INT y, const char *format, ...)
 #endif                          /* OS_WINNT */
 
 #if defined(OS_UNIX) || defined(OS_VXWORKS) || defined(OS_VMS)
-   printf("\033[%1d;%1d;H", y + 1, x + 1);
+   printf("\033[%1d;%1dH", y + 1, x + 1);
    printf("%s", str);
    fflush(stdout);
 #endif
