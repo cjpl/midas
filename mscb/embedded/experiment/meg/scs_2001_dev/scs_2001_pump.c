@@ -40,12 +40,13 @@ unsigned char tc600_write(unsigned short param, unsigned char len, unsigned long
 #define ST_EVAC_FORE     3  // evacuating buffer tank
 #define ST_PREEVAC_MAIN  4  // wait for forevalve to be closed
 #define ST_EVAC_MAIN     5  // evacuating main recipient
-#define ST_RAMP_TURBO    6  // ramp up turbo pump
-#define ST_RUN_FPON      7  // running, fore pump on
-#define ST_RUN_FPOFF     8  // running, fore pump off
-#define ST_RUN_FPUP      9  // running, fore pump ramping up
-#define ST_RUN_FPDOWN   10  // running, fore pump ramping down
-#define ST_ERROR        11  // error condition
+#define ST_POSTEVAC_MAIN 6  // checking buffer vacuum again
+#define ST_RAMP_TURBO    7  // ramp up turbo pump
+#define ST_RUN_FPON      8  // running, fore pump on
+#define ST_RUN_FPOFF     9  // running, fore pump off
+#define ST_RUN_FPUP     10  // running, fore pump ramping up
+#define ST_RUN_FPDOWN   11  // running, fore pump ramping down
+#define ST_ERROR        12  // error condition
 
 /*---- Error codes ----*/
 
@@ -546,7 +547,8 @@ static bit b0_old = 0, b1_old = 0, b2_old = 0, b3_old = 0,
       printf("P1: %10.2E mbar", user_data.vv_mbar);
    
    lcd_goto(0, 1);
-   if (user_data.turbo_on && (user_data.main_valve || user_data.bypass_valve))
+   if ((user_data.turbo_on && (user_data.main_valve || user_data.bypass_valve)) ||
+       (user_data.fore_pump && user_data.bypass_valve))
       printf("P2*: %9.2E mbar", user_data.hv_mbar);
    else
       printf("P2: %10.2E mbar", user_data.hv_mbar);
@@ -633,6 +635,8 @@ static bit b0_old = 0, b1_old = 0, b2_old = 0, b3_old = 0,
       lcd_goto(4, 3);
       printf(user_data.valve_locked ? "UNLOCK" : " LOCK ");
    
+      printf("          ");
+
       /* toggle main switch with button 0 */
       if (b0 && !b0_old)
          user_data.station_on = !user_data.station_on;
@@ -685,6 +689,7 @@ static bit b0_old = 0, b1_old = 0, b2_old = 0, b3_old = 0,
       user_data.error = ERR_FOREVAC;
       set_forevalve(0);
       set_forepump(0);
+      set_bypassvalve(0);
    }
 
    /* check if evacuation of forepump and buffer tank is ready */
@@ -735,12 +740,24 @@ static bit b0_old = 0, b1_old = 0, b2_old = 0, b3_old = 0,
 
    /* check if evacuation of main recipient is ready, may take very long time */
    if (user_data.pump_state == ST_EVAC_MAIN && user_data.hv_mbar < 1) {
-      
-      set_forevalve(1);        // now evacuate both recipient and buffer tank
+      set_bypassvalve(0);
+      start_time = time();
+      user_data.pump_state = ST_POSTEVAC_MAIN;
+   }
+
+   /* wait for 2s to open forvalve */
+   if (user_data.pump_state == ST_POSTEVAC_MAIN && time() > start_time + 2*100) {
+      set_forevalve(1);
+   }
+
+   /* wait for 10s to open bypass valve */
+   if (user_data.pump_state == ST_POSTEVAC_MAIN && time() > start_time + 12*100) {
+      set_bypassvalve(1);
    }
 
    /* check if vacuum on both sides of main valve is ok */
-   if (user_data.pump_state == ST_EVAC_MAIN && user_data.hv_mbar < 1 && user_data.vv_mbar < user_data.vv_min) {
+   if (user_data.pump_state == ST_POSTEVAC_MAIN && time() > start_time + 12*100 &&
+       user_data.hv_mbar < 1 && user_data.vv_mbar < user_data.vv_min) {
 
       /* turn on turbo pump */
       user_data.turbo_on = 1;
