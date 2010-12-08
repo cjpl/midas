@@ -87,6 +87,7 @@ struct {
    unsigned char bv_close;
    float hv_mbar;
    float vv_mbar;
+   unsigned char  pbr_type;
    unsigned short final_speed;
    unsigned short evac_timeout;
    unsigned short fp_cycle;
@@ -126,13 +127,14 @@ MSCB_INFO_VAR code vars[] = {
    { 4, UNIT_BAR, PRFX_MILLI, 0, MSCBF_FLOAT,                "VV",       &user_data.vv_mbar },                      // 20
                                                                                                                
    { 2, UNIT_HERTZ,   0, 0, MSCBF_HIDDEN,                    "FinSpd",   &user_data.final_speed },                  // 21
-   { 2, UNIT_MINUTE,  0, 0, MSCBF_HIDDEN,                    "Timeout",  &user_data.evac_timeout, 0, 0, 300, 10 },  // 22
-   { 2, UNIT_SECOND,  0, 0, MSCBF_HIDDEN,                    "FP cycle", &user_data.fp_cycle, 0, 10, 600, 10 },     // 23
-   { 4, UNIT_BAR, PRFX_MILLI, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "VV max",   &user_data.vv_max, 1, 1, 10, 1 },          // 24
-   { 4, UNIT_BAR, PRFX_MILLI, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "VV min",   &user_data.vv_min, 1, 0.1, 1, 0.1 },       // 25
-   { 4, UNIT_BAR, PRFX_MILLI, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "HV thrsh", &user_data.hv_thresh, 3, 0.001, 1, 0.001 },// 26
+   { 1, UNIT_BYTE,    0, 0, MSCBF_HIDDEN,                    "PBR",      &user_data.pbr_type },                     // 22
+   { 2, UNIT_MINUTE,  0, 0, MSCBF_HIDDEN,                    "Timeout",  &user_data.evac_timeout, 0, 0, 300, 10 },  // 23
+   { 2, UNIT_SECOND,  0, 0, MSCBF_HIDDEN,                    "FP cycle", &user_data.fp_cycle, 0, 10, 600, 10 },     // 24
+   { 4, UNIT_BAR, PRFX_MILLI, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "VV max",   &user_data.vv_max, 1, 1, 10, 1 },          // 25
+   { 4, UNIT_BAR, PRFX_MILLI, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "VV min",   &user_data.vv_min, 1, 0.1, 1, 0.1 },       // 26
+   { 4, UNIT_BAR, PRFX_MILLI, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "HV thrsh", &user_data.hv_thresh, 3, 0.001, 1, 0.001 },// 27
 
-   { 1, UNIT_BYTE,    0, 0, 0,                               "State",    &user_data.pump_state },                   // 27
+   { 1, UNIT_BYTE,    0, 0, 0,                               "State",    &user_data.pump_state },                   // 28
 
    { 0 }
 };
@@ -246,6 +248,7 @@ void user_init(unsigned char init)
 	   user_data.main_valve = 0;
 	   user_data.bypass_valve = 0;
 
+      user_data.pbr_type = 0;      // PKR sensor type by default
       user_data.evac_timeout = 60; // 1h to pump recipient
       user_data.fp_cycle = 20;     // run fore pump for min. 20 sec.
       user_data.vv_max = 4;        // start fore pump at 4 mbar     
@@ -888,8 +891,14 @@ static bit b0_old = 0, b1_old = 0, b2_old = 0, b3_old = 0,
    if (!user_data.valve_locked && valve_locked_old) {
       if (user_data.station_on) {
          start_time = time();        // remember start time
-         user_data.pump_state = ST_START_FORE; // start with starting forepump
-         set_forepump(1);
+         if (user_data.rot_speed > user_data.final_speed*0.8 &&
+             user_data.hv_mbar < 1) {
+            user_data.pump_state = ST_RUN_FPON;
+            set_mainvalve(1);
+         } else {
+            user_data.pump_state = ST_START_FORE; // start with starting forepump
+            set_forepump(1);
+         }
       }
    }
 
@@ -937,7 +946,10 @@ float xdata value;
    dr_ad7718(0x61, MC_READ, 0, 0, 2, &value);
    n = dr_ad7718(0x61, MC_READ, 0, 0, 3, &value);
    if (n > 0) {
-      value  = pow(10, 1.667 * value - 11.33);   // PKR 251
+      if (user_data.pbr_type == 0)
+         value  = pow(10, 1.667 * value - 11.33);   // PKR 251
+      else
+         value = pow(10, (value-7.75)/0.75);        // PBR 260
       DISABLE_INTERRUPTS;
       user_data.hv_mbar = value;
       ENABLE_INTERRUPTS;
