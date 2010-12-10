@@ -14,7 +14,7 @@
 #include <stdio.h>
 #include "mscbemb.h"
 
-#ifdef CFG_UART1_MSCB
+#ifdef RS485_SEC_EN_PIN
 sbit RS485_SEC_ENABLE = RS485_SEC_EN_PIN; // port pin for secondary RS485 enable
 #endif
 
@@ -140,7 +140,7 @@ void serial_int1(void) interrupt 20
 {
    if (SCON1 & 0x02) {          // TI1
 
-#ifdef CFG_UART1_MSCB
+#ifdef RS485_SEC_EN_PIN
       if (sbuf_wp == sbuf_rp)
          RS485_SEC_ENABLE = 0;
 #endif
@@ -177,7 +177,7 @@ void rs232_output(void)
 {
    if (sbuf_wp != sbuf_rp && ti1_shadow == 1) {
       ti1_shadow = 0;
-#ifdef CFG_UART1_MSCB
+#ifdef RS485_SEC_EN_PIN
       RS485_SEC_ENABLE = 1;
 #endif
 
