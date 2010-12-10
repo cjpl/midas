@@ -264,12 +264,12 @@ void user_init(unsigned char init)
    /* initialize UART1 for TC600 */
    uart_init(1, BD_9600);
 
-   /* turn on turbo pump motor (not pump station) */
-   tc600_write(23, 6, 111111);
-
    /* get parameter 315 (TMP finspd) */
    tc600_read(315, str);
    user_data.final_speed = atoi(str);
+
+   /* turn on turbo pump motor (not pump station) */
+   tc600_write(23, 6, 111111);
 
    /* initially the pump state is off */
    user_data.pump_state = ST_OFF;
@@ -1008,7 +1008,12 @@ float xdata value;
       } else
          user_data.error |= ERR_TURBO_COMM;
 
-       last_read = time();
+      if (user_data.final_speed < 100) {
+         tc600_read(315, str);
+         user_data.final_speed = atoi(str);
+      }
+
+      last_read = time();
    }
    
    /* manage menu on LCD display */
