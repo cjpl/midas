@@ -20,6 +20,7 @@
 extern unsigned char application_display(bit init);
 extern void user_write(unsigned char index) reentrant;
 extern unsigned char button(unsigned char i);
+extern void monitor_read(unsigned char uaddr, unsigned char cmd, unsigned char raddr, unsigned char *pd, unsigned char nbytes);
 extern MSCB_INFO_VAR *variables;
 extern SYS_INFO idata sys_info;
 extern bit flash_param;
