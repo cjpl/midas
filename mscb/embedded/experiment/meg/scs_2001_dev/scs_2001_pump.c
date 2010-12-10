@@ -25,6 +25,7 @@ char code svn_revision[] = "$Id$";
 unsigned char idata _n_sub_addr = 1;
 
 extern lcd_menu(void);
+extern char putchar1(char c);
 
 unsigned char button(unsigned char i);
 
