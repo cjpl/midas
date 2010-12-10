@@ -48,9 +48,12 @@ char code svn_rev_main[] = "$Rev$";
 /*------------------------------------------------------------------*/
 
 /* funtions in mscbutil.c */
-extern bit lcd_present;
 
-#if defined(UART1_DEVICE)
+#ifdef CFG_HAVE_LCD
+extern bit lcd_present;
+#endif
+
+#ifdef CFG_UART1_DEVICE
 extern void rs232_output(void);
 #endif
 
@@ -77,13 +80,13 @@ unsigned char idata n_out _at_ 0x81;
 
 unsigned char idata _cur_sub_addr, _var_size;
 
-#ifdef UART1_MSCB
+#ifdef CFG_UART1_MSCB
 unsigned char idata var_to_send = 0xFF;
 #endif
 
 SYS_INFO idata sys_info;
 
-#ifdef HAVE_RTC
+#ifdef CFG_HAVE_RTC
 /* buffer for setting RTC */
 unsigned char xdata rtc_bread[6];
 unsigned char xdata rtc_bwrite[6];
@@ -93,6 +96,8 @@ bit rtc_set;
 /*------------------------------------------------------------------*/
 
 /* bit variables in internal RAM */
+
+sbit RS485_ENABLE = RS485_EN_PIN; // port pin for RS485 enable
 
 unsigned char bdata CSR;        // byte address of CSR consisting of bits below 
 
@@ -145,7 +150,7 @@ void setup(void)
    SFRPAGE   = CONFIG_PAGE;
    OSCICN    = 0x83;            // divide by 1
    CLKSEL    = 0x00;            // select internal oscillator
-  #else          // run SCS_1001 at 98 MHz
+  #else          // 98 MHz
    /* Select internal quartz oscillator */
    SFRPAGE   = LEGACY_PAGE;
    FLSCL     = 0xB0;            // set flash read time for 100 MHz
@@ -171,15 +176,6 @@ void setup(void)
    XBR1 = 0x00;
    XBR2 = 0x44;
 
-   P0MDOUT = 0x01;              // P0.0: TX = Push Pull
-   P1MDOUT = 0x00;              // P1: LPT
-   P2MDOUT = 0x00;              // P2: LPT
-   P3MDOUT = 0xE0;              // P3.5,6,7: Optocouplers
-
-  #ifdef SCS_220
-   P0MDOUT |= 0x40;             // P0.6: RS485_SEC_ENABLE = Push Pull
-  #endif
-
    /* Select external quartz oscillator */
    OSCXCN = 0x67;               // Crystal mode, Power Factor 22E6
    OSCICN = 0x08;               // CLKSL=1 (external)
@@ -188,12 +184,6 @@ void setup(void)
 
    XBR0 = 0x01;                 // Enable RX/TX
    XBR1 = 0x40;                 // Enable crossbar
-
-  #ifdef SCS_320
-   P0MDOUT = 0x18;              // P0.3:TX, P0.4:RS485 enable Push/Pull
-  #else
-   P0MDOUT = 0x90;              // P0.4:TX, P0.7:RS485 enable Push/Pull
-  #endif
 
    /* Select internal quartz oscillator */
    OSCICN = 0x83;               // IOSCEN=1, SYSCLK=24.5 MHz
@@ -216,11 +206,11 @@ void setup(void)
 
 #endif
         
-#ifdef HAVE_LCD
+#ifdef CFG_HAVE_LCD
    lcd_setup();
 #endif
 
-#ifdef HAVE_EMIF
+#ifdef CFG_HAVE_EMIF
    /* initialize external memory interface */
    d = emif_init();
 
@@ -252,7 +242,7 @@ void setup(void)
    wrong_cpu = 0;
    _flkey = 0;
 
-#ifdef HAVE_RTC
+#ifdef CFG_HAVE_RTC
    rtc_set = 0;
 #endif
 
@@ -272,11 +262,11 @@ void setup(void)
    /* initialize UART(s) */
    uart_init(0, BD_115200);
 
-#ifdef UART1_MSCB
+#ifdef CFG_UART1_MSCB
    uart_init(1, BD_115200);
 #endif
 
-#ifdef DYN_VARIABLES
+#ifdef CFG_DYN_VARIABLES
    setup_variables();
 #endif
 
@@ -601,7 +591,7 @@ void interprete(void)
       RS485_ENABLE = RS485_ENABLE_ON;
 
       send_byte(CMD_ACK + 7, &crc);      // send acknowledge, variable data length
-#ifdef HAVE_RTC
+#ifdef CFG_HAVE_RTC
       send_byte(30, &crc);               // send data length
 #else
       send_byte(24, &crc);               // send data length
@@ -622,7 +612,7 @@ void interprete(void)
       for (i = 0; i < 16; i++)  // send node name
          send_byte(sys_info.node_name[i], &crc);
 
-#ifdef HAVE_RTC
+#ifdef CFG_HAVE_RTC
       for (i = 0; i < 6 ; i++)
          send_byte(rtc_bread[i], &crc);
 #endif
@@ -727,7 +717,7 @@ void interprete(void)
       break;
 
    case CMD_SET_TIME:
-#ifdef HAVE_RTC
+#ifdef CFG_HAVE_RTC
       led_blink(0, 1, 50);
       for (i=0 ; i<6 ; i++)
          rtc_bwrite[i] = in_buf[i+1];
@@ -925,7 +915,7 @@ void interprete(void)
          }
          _cur_sub_addr = a1; // restore previous value
    
-#ifdef UART1_MSCB
+#ifdef CFG_UART1_MSCB
          /* mark variable to be send in main loop */
          if (variables[ch].flags & MSCBF_REMOUT)
             var_to_send = ch;
@@ -1001,7 +991,7 @@ void interprete(void)
 
 /*------------------------------------------------------------------*/
 
-#ifdef UART1_MSCB
+#ifdef CFG_UART1_MSCB
 
 static unsigned short xdata last_addr = -1;
 static unsigned char xdata uart1_buf[10];
@@ -1200,7 +1190,7 @@ receive_cmd:
          for (i=0 ; !RI0 && i<5000 ; i++)
             DELAY_US(10);
          led_0 = !led_0;
-#ifdef EXT_WATCHDOG
+#if defined(CFG_EXT_WATCHDOG) && defined(EXT_WATCHDOG_PIN)
          EXT_WATCHDOG_PIN = !EXT_WATCHDOG_PIN;
 #endif
       }
@@ -1208,7 +1198,7 @@ receive_cmd:
       cmd = SBUF0;
       RI0 = 0;
 
-#ifdef EXT_WATCHDOG
+#if defined(CFG_EXT_WATCHDOG) && defined(EXT_WATCHDOG_PIN)
       EXT_WATCHDOG_PIN = !EXT_WATCHDOG_PIN;
 #endif
 
@@ -1489,7 +1479,7 @@ erase_ok:
 
 \*------------------------------------------------------------------*/
 
-#ifdef HAVE_RTC
+#ifdef CFG_HAVE_RTC
 unsigned long xdata rtc_last;   
 #endif
 
@@ -1498,7 +1488,7 @@ void yield(void)
    watchdog_refresh(0);
 
    /* output RS232 data if present */
-#if defined(UART1_DEVICE)
+#ifdef CFG_UART1_DEVICE
    rs232_output();
 #endif
 
@@ -1531,7 +1521,7 @@ void yield(void)
    if (flash_program && flash_allowed) {
       flash_program = 0;
 
-#ifdef HAVE_LCD
+#ifdef CFG_HAVE_LCD
       lcd_clear();
       lcd_goto(0, 0);
       puts("    Upgrading"); 
@@ -1543,7 +1533,7 @@ void yield(void)
       upgrade();
    }
 
-#ifdef HAVE_RTC
+#ifdef CFG_HAVE_RTC
    if (rtc_set) {
       rtc_write(rtc_bwrite);
       rtc_set = 0;
@@ -1574,7 +1564,7 @@ void main(void)
    do {
       yield();
       
-#ifdef UART1_MSCB
+#ifdef CFG_UART1_MSCB
       manage_remote_vars();
 #endif
       

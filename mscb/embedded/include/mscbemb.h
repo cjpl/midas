@@ -9,11 +9,15 @@
 
 \********************************************************************/
 
+/* default flags */
+#define CFG_USE_WATCHDOG
+#define CFG_HAVE_EEPROM
+
+/* application-specific configuration (selects CPU etc.) */
+#include "config.h"
+
 /*---- map small defines from makefile to capital defines ----------*/
 
-#ifdef scs_210
-#define SCS_210
-#endif
 #ifdef scs_220
 #define SCS_220
 #endif
@@ -68,9 +72,6 @@
 #ifdef scs_2000
 #define SCS_2000
 #endif
-#ifdef scs_2001
-#define SCS_2001
-#endif
 #ifdef hvr_200
 #define HVR_200
 #endif
@@ -98,23 +99,9 @@
 
 /*---- CPU specific items ------------------------------------------*/
 
-/* default flags */
-#define USE_WATCHDOG
-#define HAVE_EEPROM
 
 /*--------------------------------*/
-#if defined(SCS_210)
-#include <c8051F120.h>
-#define CPU_C8051F120
-#define CLK_25MHZ
-
-#define LED_0 P3 ^ 4
-#define LED_1 P3 ^ 3
-#define LED_ON 0
-sbit RS485_ENABLE = P3 ^ 5;
-
-/*--------------------------------*/
-#elif defined(SCS_220)
+#if defined(SCS_220)
 #include <c8051F020.h>
 #define CPU_C8051F020
 
@@ -137,22 +124,7 @@ sbit RS485_ENABLE = P1 ^ 0;
 #define EXT_WATCHDOG
 sbit EXT_WATCHDOG_PIN = P2 ^ 1;
 
-#undef HAVE_EEPROM
-
-/*--------------------------------*/
-#elif defined(SUBM_260)
-#include <c8051F120.h>
-#define CPU_C8051F120
-
-#define LED_0 P0 ^ 2
-#define LED_1 P0 ^ 3
-#define LED_ON 0
-sbit RS485_ENABLE = P0 ^ 4;
-
-#undef HAVE_EEPROM
-
-#define EXT_WATCHDOG
-#define EXT_WATCHDOG_PIN_DAC1
+#undef CFG_HAVE_EEPROM
 
 /*--------------------------------*/
 #elif defined(SCS_300) || defined(SCS_310)
@@ -183,7 +155,7 @@ sbit RS485_ENABLE = P0 ^ 3;
 #define LED_ON 0
 sbit RS485_ENABLE = P3 ^ 5;
 
-#undef HAVE_EEPROM
+#undef CFG_HAVE_EEPROM
 
 /*--------------------------------*/
 #elif defined(SCS_400) || defined(SCS_500)
@@ -227,23 +199,6 @@ sbit RS485_SEC_ENABLE = P0 ^ 4;
 #define HAVE_LCD
 
 /*--------------------------------*/
-#elif defined(SCS_1001)
-#include <c8051F120.h>
-#define CPU_C8051F120
-
-#define LED_0 P2 ^ 0
-#define LED_1 P0 ^ 6
-#define LED_2 P0 ^ 7 // buzzer
-#define LED_ON 1
-sbit RS485_ENABLE = P0 ^ 5;
-sbit RS485_SEC_ENABLE = P0 ^ 4;
-
-//#define EXT_WATCHDOG              // use external watchdog
-sbit EXT_WATCHDOG_PIN = P1 ^ 4;
-
-#define HAVE_LCD
-
-/*--------------------------------*/
 #elif defined(SCS_2000)
 #include <c8051F120.h>
 #define CPU_C8051F120
@@ -260,26 +215,6 @@ sbit RS485_SEC_ENABLE = P0 ^ 4;
 #define HAVE_LCD
 #define LCD_8BIT
 #define DYN_VARIABLES
-
-/*--------------------------------*/
-#elif defined(SCS_2001)
-#include <c8051F120.h>
-#define CPU_C8051F120
-
-#define LED_0 P0 ^ 6
-#define LED_1 P0 ^ 7
-#define LED_ON 0
-sbit RS485_ENABLE = P0 ^ 5;
-sbit RS485_SEC_ENABLE = P0 ^ 4;
-
-//#define EXT_WATCHDOG              // use external watchdog
-//sbit EXT_WATCHDOG_PIN = DAC0;
-
-#define HAVE_LCD
-#define LCD_8BIT
-#define DYN_VARIABLES
-#define HAVE_RTC
-#define HAVE_EMIF
 
 /*--------------------------------*/
 #elif defined(HVR_200)
@@ -435,8 +370,6 @@ sbit RS485_ENABLE = P0 ^ 5;
 
 sbit RS485_ENABLE = P0 ^ 3;
 /*--------------------------------*/
-#else
-#error Please define SCS_xxx or HVR_xxx in project options
 #endif
 
 #define LED_OFF !LED_ON
@@ -503,13 +436,7 @@ sbit RS485_ENABLE = P0 ^ 3;
 #define N_EEPROM_PAGE      8 // 8 pages @ 512 bytes
 #endif
 
-
-/* UART1 specific definitions */
-#if defined(SCS_210) | defined(SCS_220)
-#define UART1_DEVICE                     // use direct device communication
-#endif
-
-#if defined(UART1_DEVICE) && defined(HAVE_LCD)
+#if defined(CFG_UART1_DEVICE) && defined(CFG_HAVE_LCD)
 char putchar1(char c);                   // putchar cannot be used with LCD support
 #endif
 
@@ -693,7 +620,7 @@ typedef struct {
    char name[8];                // name
    void *ud;                    // point to user data buffer
 
-#if defined(SCS_1000) || defined(SCS_1001) || defined(SCS_2000) || defined(SCS_2001)
+#ifdef CFG_EXTENDED_VARIABLES
    unsigned char  digits;       // number of digits to display after period
    float min, max, delta;       // limits for button control
    unsigned short node_address; // address for remote node on subbus
@@ -829,22 +756,20 @@ unsigned char user_func(unsigned char *data_in, unsigned char *data_out);
 void set_n_sub_addr(unsigned char n);
 unsigned char cur_sub_addr(void);
 
+/*---- configuration specific equipment ----------------------------*/
+
+#ifdef CFG_HAVE_RTC
 void rtc_init(void);
-unsigned char rtc_present(void);
 void rtc_write(unsigned char d[6]);
 void rtc_read(unsigned char d[6]);
-void rtc_write_item(unsigned char item, unsigned char d);
-void rtc_conv_date(unsigned char d[6], char *str);
-void rtc_conv_time(unsigned char d[6], char *str);
 void rtc_print(void);
+#endif // CFG_HAVE_RTC
 
-void monitor_init(unsigned char addr);
-void monitor_read(unsigned char uaddr, unsigned char cmd, unsigned char raddr, unsigned char *pd, unsigned char nbytes);
-void monitor_clear(unsigned char addr);
-
+#ifdef CFG_HAVE_EMIF
 unsigned char emif_init(void);
 void emif_test(unsigned char n_banks);
 void emif_switch(unsigned char bk);
+#endif // CFG_HAVE_EMIF
 
 
 

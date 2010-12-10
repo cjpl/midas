@@ -9,7 +9,7 @@
   $Id$
 
 \********************************************************************/
-
+      
 #include <stdio.h>
 #include <string.h>
 #include <intrins.h>
@@ -57,6 +57,7 @@ unsigned short exclusive_port;
 unsigned short exclusive_timer;  // timer to reset exclusive access
 
 sbit CS8900A_RESET = P0 ^ 5;
+sbit RS485_ENABLE = RS485_EN_PIN;
 
 /*---- MSCB commands -----------------------------------------------*/
 

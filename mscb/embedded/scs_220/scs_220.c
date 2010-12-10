@@ -61,6 +61,11 @@ void write_gain(void);
 
 void user_init(unsigned char init)
 {
+   P0MDOUT |= 0x40;             // P0.6: RS485_SEC_ENABLE = Push Pull
+   P1MDOUT = 0x00;              // P1: LPT
+   P2MDOUT = 0x00;              // P2: LPT
+   P3MDOUT = 0xE0;              // P3.5,6,7: Optocouplers
+
    /* initialize UART1 */
    if (init)
       user_data.baud = BD_9600;    // 9600 by default

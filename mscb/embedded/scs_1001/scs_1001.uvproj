@@ -7,7 +7,7 @@
 
   <Targets>
     <Target>
-      <TargetName>Simulator</TargetName>
+      <TargetName>ICE</TargetName>
       <ToolsetNumber>0x0</ToolsetNumber>
       <ToolsetName>MCS-51</ToolsetName>
       <TargetOption>
@@ -43,7 +43,7 @@
             <InvalidFlash>1</InvalidFlash>
           </TargetStatus>
           <OutputDirectory>.\</OutputDirectory>
-          <OutputName>scs_210</OutputName>
+          <OutputName>scs_1001</OutputName>
           <CreateExecutable>1</CreateExecutable>
           <CreateLib>0</CreateLib>
           <CreateHexFile>1</CreateHexFile>
@@ -128,7 +128,7 @@
           <Target>
             <UseTarget>1</UseTarget>
             <LoadApplicationAtStartup>1</LoadApplicationAtStartup>
-            <RunToMain>0</RunToMain>
+            <RunToMain>1</RunToMain>
             <RestoreBreakpoints>0</RestoreBreakpoints>
             <RestoreWatchpoints>0</RestoreWatchpoints>
             <RestoreMemoryDisplay>0</RestoreMemoryDisplay>
@@ -160,7 +160,7 @@
             <RunIndependent>0</RunIndependent>
             <UpdateFlashBeforeDebugging>0</UpdateFlashBeforeDebugging>
             <Capability>1</Capability>
-            <DriverSelection>4101</DriverSelection>
+            <DriverSelection>0</DriverSelection>
           </Flash1>
           <Flash2>BIN\SiC8051F.dll</Flash2>
           <Flash3>"" ()</Flash3>
@@ -334,7 +334,7 @@
             <IDataBaseAddress></IDataBaseAddress>
             <Precede></Precede>
             <Stack></Stack>
-            <CodeSegmentName>?PR?UPGRADE?MSCBMAIN (0x7000)</CodeSegmentName>
+            <CodeSegmentName>?PR?UPGRADE?MSCBMAIN (0xF000)</CodeSegmentName>
             <XDataSegmentName></XDataSegmentName>
             <BitSegmentName></BitSegmentName>
             <DataSegmentName></DataSegmentName>
@@ -347,9 +347,9 @@
           <GroupName>Source Files</GroupName>
           <Files>
             <File>
-              <FileName>scs_210.c</FileName>
+              <FileName>scs_1001.c</FileName>
               <FileType>1</FileType>
-              <FilePath>.\scs_210.c</FilePath>
+              <FilePath>.\scs_1001.c</FilePath>
             </File>
             <File>
               <FileName>mscbmain.c</FileName>
@@ -362,9 +362,9 @@
               <FilePath>..\src\mscbutil.c</FilePath>
             </File>
             <File>
-              <FileName>STARTUP_VDDMON.A51</FileName>
-              <FileType>2</FileType>
-              <FilePath>..\src\STARTUP_VDDMON.A51</FilePath>
+              <FileName>lcd_menu.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\lcd_menu.c</FilePath>
             </File>
           </Files>
         </Group>
@@ -386,19 +386,19 @@
       </Groups>
     </Target>
     <Target>
-      <TargetName>ICE</TargetName>
+      <TargetName>Simulator</TargetName>
       <ToolsetNumber>0x0</ToolsetNumber>
       <ToolsetName>MCS-51</ToolsetName>
       <TargetOption>
         <TargetCommonOption>
-          <Device>C8051F020/021</Device>
+          <Device>C8051F000/001/002</Device>
           <Vendor>Cygnal Integrated Products</Vendor>
-          <Cpu>IRAM(0 - 0xFF) XRAM(0 - 0xFFF) IROM(0 - 0xFFFF) CLOCK(25000000)</Cpu>
+          <Cpu>IRAM(0 - 0xFF) IROM(0 - 0x7FFF) CLOCK(20000000)</Cpu>
           <FlashUtilSpec></FlashUtilSpec>
           <StartupFile></StartupFile>
           <FlashDriverDll></FlashDriverDll>
           <DeviceId></DeviceId>
-          <RegisterFile>REG51F020.H</RegisterFile>
+          <RegisterFile>C8051F000.H</RegisterFile>
           <MemoryEnv></MemoryEnv>
           <Cmp></Cmp>
           <Asm></Asm>
@@ -422,10 +422,10 @@
             <InvalidFlash>1</InvalidFlash>
           </TargetStatus>
           <OutputDirectory>.\</OutputDirectory>
-          <OutputName>scs_210</OutputName>
+          <OutputName>scs_500</OutputName>
           <CreateExecutable>1</CreateExecutable>
           <CreateLib>0</CreateLib>
-          <CreateHexFile>1</CreateHexFile>
+          <CreateHexFile>0</CreateHexFile>
           <DebugInformation>1</DebugInformation>
           <BrowseInformation>1</BrowseInformation>
           <ListingPath>.\</ListingPath>
@@ -494,7 +494,7 @@
             <Oh166RecLen>16</Oh166RecLen>
           </OPTHX>
           <Simulator>
-            <UseSimulator>0</UseSimulator>
+            <UseSimulator>1</UseSimulator>
             <LoadApplicationAtStartup>1</LoadApplicationAtStartup>
             <RunToMain>1</RunToMain>
             <RestoreBreakpoints>1</RestoreBreakpoints>
@@ -505,9 +505,9 @@
             <LimitSpeedToRealTime>0</LimitSpeedToRealTime>
           </Simulator>
           <Target>
-            <UseTarget>1</UseTarget>
-            <LoadApplicationAtStartup>1</LoadApplicationAtStartup>
-            <RunToMain>1</RunToMain>
+            <UseTarget>0</UseTarget>
+            <LoadApplicationAtStartup>0</LoadApplicationAtStartup>
+            <RunToMain>0</RunToMain>
             <RestoreBreakpoints>0</RestoreBreakpoints>
             <RestoreWatchpoints>0</RestoreWatchpoints>
             <RestoreMemoryDisplay>0</RestoreMemoryDisplay>
@@ -515,7 +515,7 @@
             <RestoreToolbox>0</RestoreToolbox>
           </Target>
           <RunDebugAfterBuild>0</RunDebugAfterBuild>
-          <TargetSelection>3</TargetSelection>
+          <TargetSelection>0</TargetSelection>
           <SimDlls>
             <CpuDll></CpuDll>
             <CpuDllArguments></CpuDllArguments>
@@ -557,7 +557,7 @@
             <UseMultipleDPTR>0</UseMultipleDPTR>
             <UseOnchipXram>0</UseOnchipXram>
             <HadIRAM>1</HadIRAM>
-            <HadXRAM>1</HadXRAM>
+            <HadXRAM>0</HadXRAM>
             <HadIROM>1</HadIROM>
             <Moda2>0</Moda2>
             <Moddp2>0</Moddp2>
@@ -632,7 +632,7 @@
               <IRO>
                 <Type>1</Type>
                 <StartAddress>0x0</StartAddress>
-                <Size>0x10000</Size>
+                <Size>0x8000</Size>
               </IRO>
               <IRA>
                 <Type>0</Type>
@@ -642,7 +642,7 @@
               <XRA>
                 <Type>0</Type>
                 <StartAddress>0x0</StartAddress>
-                <Size>0x1000</Size>
+                <Size>0x0</Size>
               </XRA>
               <XRA512>
                 <Type>0</Type>
@@ -671,7 +671,7 @@
             <InterruptVectorAddress>0</InterruptVectorAddress>
             <VariousControls>
               <MiscControls></MiscControls>
-              <Define>SCS_210</Define>
+              <Define>SCS_500</Define>
               <Undefine></Undefine>
               <IncludePath></IncludePath>
             </VariousControls>
@@ -726,9 +726,9 @@
           <GroupName>Source Files</GroupName>
           <Files>
             <File>
-              <FileName>scs_210.c</FileName>
+              <FileName>scs_1001.c</FileName>
               <FileType>1</FileType>
-              <FilePath>.\scs_210.c</FilePath>
+              <FilePath>.\scs_1001.c</FilePath>
             </File>
             <File>
               <FileName>mscbmain.c</FileName>
@@ -741,9 +741,9 @@
               <FilePath>..\src\mscbutil.c</FilePath>
             </File>
             <File>
-              <FileName>STARTUP_VDDMON.A51</FileName>
-              <FileType>2</FileType>
-              <FilePath>..\src\STARTUP_VDDMON.A51</FilePath>
+              <FileName>lcd_menu.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\lcd_menu.c</FilePath>
             </File>
           </Files>
         </Group>

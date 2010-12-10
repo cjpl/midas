@@ -4,7 +4,7 @@
   Created by:   Stefan Ritt
 
 
-  Contents:     Menu functions for SCS-1000 using LCD display
+  Contents:     Menu functions for SCS-1000/2000 using LCD display
                 and four buttons
 
   $Id$

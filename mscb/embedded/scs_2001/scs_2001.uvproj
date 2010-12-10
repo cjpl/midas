@@ -292,9 +292,9 @@
             <InterruptVectorAddress>0</InterruptVectorAddress>
             <VariousControls>
               <MiscControls></MiscControls>
-              <Define>scs_2001 UART1_MSCB</Define>
+              <Define></Define>
               <Undefine></Undefine>
-              <IncludePath>\midas\mscb\embedded</IncludePath>
+              <IncludePath>..\include</IncludePath>
             </VariousControls>
           </C51>
           <Ax51>
@@ -352,29 +352,29 @@
               <FilePath>.\scs_2001.c</FilePath>
             </File>
             <File>
-              <FileName>mscbmain.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\mscbmain.c</FilePath>
-            </File>
-            <File>
-              <FileName>mscbutil.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\mscbutil.c</FilePath>
-            </File>
-            <File>
-              <FileName>lcd_menu.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\lcd_menu.c</FilePath>
-            </File>
-            <File>
               <FileName>scs_2001_lib.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\scs_2001_lib.c</FilePath>
             </File>
             <File>
-              <FileName>STARTUP_VDDMON.A51</FileName>
-              <FileType>2</FileType>
-              <FilePath>..\STARTUP_VDDMON.A51</FilePath>
+              <FileName>mscbmain.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\src\mscbmain.c</FilePath>
+            </File>
+            <File>
+              <FileName>mscbutil.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\src\mscbutil.c</FilePath>
+            </File>
+            <File>
+              <FileName>rtc.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\rtc.c</FilePath>
+            </File>
+            <File>
+              <FileName>lcd_menu.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\lcd_menu.c</FilePath>
             </File>
           </Files>
         </Group>
@@ -382,14 +382,19 @@
           <GroupName>Include Files</GroupName>
           <Files>
             <File>
-              <FileName>mscbemb.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>..\mscbemb.h</FilePath>
-            </File>
-            <File>
               <FileName>scs_2001.h</FileName>
               <FileType>5</FileType>
               <FilePath>.\scs_2001.h</FilePath>
+            </File>
+            <File>
+              <FileName>mscbemb.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\include\mscbemb.h</FilePath>
+            </File>
+            <File>
+              <FileName>config.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\config.h</FilePath>
             </File>
           </Files>
         </Group>
@@ -741,29 +746,29 @@
               <FilePath>.\scs_2001.c</FilePath>
             </File>
             <File>
-              <FileName>mscbmain.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\mscbmain.c</FilePath>
-            </File>
-            <File>
-              <FileName>mscbutil.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\mscbutil.c</FilePath>
-            </File>
-            <File>
-              <FileName>lcd_menu.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\lcd_menu.c</FilePath>
-            </File>
-            <File>
               <FileName>scs_2001_lib.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\scs_2001_lib.c</FilePath>
             </File>
             <File>
-              <FileName>STARTUP_VDDMON.A51</FileName>
-              <FileType>2</FileType>
-              <FilePath>..\STARTUP_VDDMON.A51</FilePath>
+              <FileName>mscbmain.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\src\mscbmain.c</FilePath>
+            </File>
+            <File>
+              <FileName>mscbutil.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\src\mscbutil.c</FilePath>
+            </File>
+            <File>
+              <FileName>rtc.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\rtc.c</FilePath>
+            </File>
+            <File>
+              <FileName>lcd_menu.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\lcd_menu.c</FilePath>
             </File>
           </Files>
         </Group>
@@ -771,14 +776,19 @@
           <GroupName>Include Files</GroupName>
           <Files>
             <File>
-              <FileName>mscbemb.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>..\mscbemb.h</FilePath>
-            </File>
-            <File>
               <FileName>scs_2001.h</FileName>
               <FileType>5</FileType>
               <FilePath>.\scs_2001.h</FilePath>
+            </File>
+            <File>
+              <FileName>mscbemb.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\include\mscbemb.h</FilePath>
+            </File>
+            <File>
+              <FileName>config.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\config.h</FilePath>
             </File>
           </Files>
         </Group>

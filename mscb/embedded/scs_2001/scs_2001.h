@@ -48,6 +48,10 @@ unsigned char is_present(unsigned char addr);
 unsigned char is_master();
 unsigned char slave_addr();
 
+void monitor_init(unsigned char addr);
+void monitor_read(unsigned char uaddr, unsigned char cmd, unsigned char raddr, unsigned char *pd, unsigned char nbytes);
+void monitor_clear(unsigned char addr);
+
 /*---- Drivers -----------------------------------------------------*/
 
 unsigned char dr_dout_bits(unsigned char id, unsigned char cmd, unsigned char addr, unsigned char port, unsigned char chn, void *pd) reentrant;

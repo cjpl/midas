@@ -89,6 +89,8 @@ bit do_sys_reset;
 
 void user_init(unsigned char init)
 {
+   P0MDOUT = 0x18;              // P0.3:TX, P0.4:RS485 enable Push/Pull
+
    /* set initial state of lines */
    VME_SYS_RESET = 1; // negative polarity
    VME_INHIBIT   = 1; // negative polarity

@@ -82,6 +82,11 @@ char send_byte(unsigned char b);
 
 void user_init(unsigned char init)
 {
+   P0MDOUT = 0x01;              // P0.0: TX = Push Pull
+   P1MDOUT = 0x00;              // P1: LPT
+   P2MDOUT = 0x00;              // P2: LPT
+   P3MDOUT = 0xE0;              // P3.5,6,7: Optocouplers
+
    /* set initial state of lines */
    GPIB_DATA = 0xFF;
    GPIB_EOI = 1;

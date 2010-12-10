@@ -163,6 +163,8 @@ void user_init(unsigned char init)
 {
    unsigned char i;
 
+   P0MDOUT = 0x90;              // P0.4:TX, P0.7:RS485 enable Push/Pull
+
    AMX0CF = 0x00;               // select single ended analog inputs
    ADC0CF = 0xE0;               // 16 system clocks, gain 1
    ADC0CN = 0x80;               // enable ADC

@@ -21,7 +21,7 @@
   </DaveTm>
 
   <Target>
-    <TargetName>ICE</TargetName>
+    <TargetName>Download</TargetName>
     <ToolsetNumber>0x0</ToolsetNumber>
     <ToolsetName>MCS-51</ToolsetName>
     <TargetOption>
@@ -98,11 +98,11 @@
         <sRbox>1</sRbox>
         <tLdApp>1</tLdApp>
         <tGomain>1</tGomain>
-        <tRbreak>0</tRbreak>
-        <tRwatch>0</tRwatch>
-        <tRmem>0</tRmem>
+        <tRbreak>1</tRbreak>
+        <tRwatch>1</tRwatch>
+        <tRmem>1</tRmem>
         <tRfunc>0</tRfunc>
-        <tRbox>0</tRbox>
+        <tRbox>1</tRbox>
         <sRunDeb>0</sRunDeb>
         <sLrtime>0</sLrtime>
         <nTsel>9</nTsel>
@@ -150,11 +150,11 @@
   </Target>
 
   <Target>
-    <TargetName>Simulator</TargetName>
+    <TargetName>Simulation</TargetName>
     <ToolsetNumber>0x0</ToolsetNumber>
     <ToolsetName>MCS-51</ToolsetName>
     <TargetOption>
-      <CLK51>20000000</CLK51>
+      <CLK51>100000000</CLK51>
       <OPTTT>
         <gFlags>0</gFlags>
         <BeepAtEnd>1</BeepAtEnd>
@@ -208,12 +208,12 @@
       <DllOpt>
         <SimDllName>S8051.DLL</SimDllName>
         <SimDllArguments></SimDllArguments>
-        <SimDlgDllName>DP51.DLL</SimDlgDllName>
-        <SimDlgDllArguments>-p51F00</SimDlgDllArguments>
+        <SimDlgDllName>DCYG.DLL</SimDlgDllName>
+        <SimDlgDllArguments>-pCYGF121</SimDlgDllArguments>
         <TargetDllName>S8051.DLL</TargetDllName>
         <TargetDllArguments></TargetDllArguments>
-        <TargetDlgDllName>TP51.DLL</TargetDlgDllName>
-        <TargetDlgDllArguments>-p51F00</TargetDlgDllArguments>
+        <TargetDlgDllName>TCYG.DLL</TargetDlgDllName>
+        <TargetDlgDllArguments>-pCYGF121</TargetDlgDllArguments>
       </DllOpt>
       <DebugOpt>
         <uSim>1</uSim>
@@ -225,16 +225,16 @@
         <sRmem>1</sRmem>
         <sRfunc>1</sRfunc>
         <sRbox>1</sRbox>
-        <tLdApp>0</tLdApp>
+        <tLdApp>1</tLdApp>
         <tGomain>0</tGomain>
-        <tRbreak>0</tRbreak>
+        <tRbreak>1</tRbreak>
         <tRwatch>0</tRwatch>
-        <tRmem>0</tRmem>
+        <tRmem>1</tRmem>
         <tRfunc>0</tRfunc>
-        <tRbox>0</tRbox>
+        <tRbox>1</tRbox>
         <sRunDeb>0</sRunDeb>
         <sLrtime>0</sLrtime>
-        <nTsel>0</nTsel>
+        <nTsel>-1</nTsel>
         <sDll></sDll>
         <sDllPa></sDllPa>
         <sDlgDll></sDlgDll>
@@ -245,7 +245,7 @@
         <tDlgDll></tDlgDll>
         <tDlgPa></tDlgPa>
         <tIfile></tIfile>
-        <pMon></pMon>
+        <pMon>BIN\SiC8051F.dll</pMon>
       </DebugOpt>
       <DebugFlag>
         <trace>0</trace>
@@ -289,13 +289,13 @@
       <FileType>1</FileType>
       <tvExp>0</tvExp>
       <Focus>0</Focus>
-      <ColumnNumber>9</ColumnNumber>
+      <ColumnNumber>23</ColumnNumber>
       <tvExpOptDlg>0</tvExpOptDlg>
-      <TopLine>1</TopLine>
-      <CurrentLine>26</CurrentLine>
+      <TopLine>13</TopLine>
+      <CurrentLine>39</CurrentLine>
       <bDave2>0</bDave2>
-      <PathWithFileName>.\scs_2001.c</PathWithFileName>
-      <FilenameWithoutPath>scs_2001.c</FilenameWithoutPath>
+      <PathWithFileName>.\subm_260.c</PathWithFileName>
+      <FilenameWithoutPath>subm_260.c</FilenameWithoutPath>
     </File>
     <File>
       <GroupNumber>1</GroupNumber>
@@ -303,80 +303,17 @@
       <FileType>1</FileType>
       <tvExp>0</tvExp>
       <Focus>0</Focus>
-      <ColumnNumber>5</ColumnNumber>
+      <ColumnNumber>0</ColumnNumber>
       <tvExpOptDlg>0</tvExpOptDlg>
-      <TopLine>481</TopLine>
-      <CurrentLine>529</CurrentLine>
-      <bDave2>0</bDave2>
-      <PathWithFileName>.\scs_2001_lib.c</PathWithFileName>
-      <FilenameWithoutPath>scs_2001_lib.c</FilenameWithoutPath>
-    </File>
-    <File>
-      <GroupNumber>1</GroupNumber>
-      <FileNumber>4</FileNumber>
-      <FileType>1</FileType>
-      <tvExp>0</tvExp>
-      <Focus>0</Focus>
-      <ColumnNumber>10</ColumnNumber>
-      <tvExpOptDlg>0</tvExpOptDlg>
-      <TopLine>1501</TopLine>
-      <CurrentLine>1526</CurrentLine>
-      <bDave2>0</bDave2>
-      <PathWithFileName>..\src\mscbmain.c</PathWithFileName>
-      <FilenameWithoutPath>mscbmain.c</FilenameWithoutPath>
-    </File>
-    <File>
-      <GroupNumber>1</GroupNumber>
-      <FileNumber>5</FileNumber>
-      <FileType>1</FileType>
-      <tvExp>0</tvExp>
-      <Focus>0</Focus>
-      <ColumnNumber>16</ColumnNumber>
-      <tvExpOptDlg>0</tvExpOptDlg>
-      <TopLine>1210</TopLine>
-      <CurrentLine>1235</CurrentLine>
+      <TopLine>1</TopLine>
+      <CurrentLine>1</CurrentLine>
       <bDave2>0</bDave2>
       <PathWithFileName>..\src\mscbutil.c</PathWithFileName>
       <FilenameWithoutPath>mscbutil.c</FilenameWithoutPath>
     </File>
     <File>
       <GroupNumber>1</GroupNumber>
-      <FileNumber>6</FileNumber>
-      <FileType>1</FileType>
-      <tvExp>0</tvExp>
-      <Focus>0</Focus>
-      <ColumnNumber>0</ColumnNumber>
-      <tvExpOptDlg>0</tvExpOptDlg>
-      <TopLine>0</TopLine>
-      <CurrentLine>0</CurrentLine>
-      <bDave2>0</bDave2>
-      <PathWithFileName>.\rtc.c</PathWithFileName>
-      <FilenameWithoutPath>rtc.c</FilenameWithoutPath>
-    </File>
-    <File>
-      <GroupNumber>1</GroupNumber>
       <FileNumber>0</FileNumber>
-      <FileType>1</FileType>
-      <tvExp>0</tvExp>
-      <Focus>0</Focus>
-      <ColumnNumber>48</ColumnNumber>
-      <tvExpOptDlg>0</tvExpOptDlg>
-      <TopLine>1</TopLine>
-      <CurrentLine>7</CurrentLine>
-      <bDave2>0</bDave2>
-      <PathWithFileName>.\lcd_menu.c</PathWithFileName>
-      <FilenameWithoutPath>lcd_menu.c</FilenameWithoutPath>
-    </File>
-  </Group>
-
-  <Group>
-    <GroupName>Include Files</GroupName>
-    <tvExp>1</tvExp>
-    <tvExpOptDlg>0</tvExpOptDlg>
-    <cbSel>0</cbSel>
-    <File>
-      <GroupNumber>2</GroupNumber>
-      <FileNumber>7</FileNumber>
       <FileType>5</FileType>
       <tvExp>0</tvExp>
       <Focus>0</Focus>
@@ -385,12 +322,19 @@
       <TopLine>0</TopLine>
       <CurrentLine>0</CurrentLine>
       <bDave2>0</bDave2>
-      <PathWithFileName>.\scs_2001.h</PathWithFileName>
-      <FilenameWithoutPath>scs_2001.h</FilenameWithoutPath>
+      <PathWithFileName>.\config.h</PathWithFileName>
+      <FilenameWithoutPath>config.h</FilenameWithoutPath>
     </File>
+  </Group>
+
+  <Group>
+    <GroupName>Header Files</GroupName>
+    <tvExp>1</tvExp>
+    <tvExpOptDlg>0</tvExpOptDlg>
+    <cbSel>0</cbSel>
     <File>
       <GroupNumber>2</GroupNumber>
-      <FileNumber>8</FileNumber>
+      <FileNumber>3</FileNumber>
       <FileType>5</FileType>
       <tvExp>0</tvExp>
       <Focus>0</Focus>
@@ -404,7 +348,7 @@
     </File>
     <File>
       <GroupNumber>2</GroupNumber>
-      <FileNumber>9</FileNumber>
+      <FileNumber>4</FileNumber>
       <FileType>5</FileType>
       <tvExp>0</tvExp>
       <Focus>0</Focus>
@@ -413,8 +357,29 @@
       <TopLine>0</TopLine>
       <CurrentLine>0</CurrentLine>
       <bDave2>0</bDave2>
-      <PathWithFileName>.\config.h</PathWithFileName>
-      <FilenameWithoutPath>config.h</FilenameWithoutPath>
+      <PathWithFileName>..\include\net.h</PathWithFileName>
+      <FilenameWithoutPath>net.h</FilenameWithoutPath>
+    </File>
+  </Group>
+
+  <Group>
+    <GroupName>Libraries</GroupName>
+    <tvExp>1</tvExp>
+    <tvExpOptDlg>0</tvExpOptDlg>
+    <cbSel>0</cbSel>
+    <File>
+      <GroupNumber>3</GroupNumber>
+      <FileNumber>5</FileNumber>
+      <FileType>4</FileType>
+      <tvExp>0</tvExp>
+      <Focus>0</Focus>
+      <ColumnNumber>0</ColumnNumber>
+      <tvExpOptDlg>0</tvExpOptDlg>
+      <TopLine>0</TopLine>
+      <CurrentLine>0</CurrentLine>
+      <bDave2>0</bDave2>
+      <PathWithFileName>..\lib\netlib.lib</PathWithFileName>
+      <FilenameWithoutPath>netlib.lib</FilenameWithoutPath>
     </File>
   </Group>
 
@@ -1759,43 +1724,31 @@
     <ActiveMDIGroup>0</ActiveMDIGroup>
     <MDIGroup>
       <Size>100</Size>
-      <ActiveTab>3</ActiveTab>
+      <ActiveTab>0</ActiveTab>
       <Documents>
         <Doc>
-          <Name>.\scs_2001.c</Name>
-          <ColumnNumber>9</ColumnNumber>
+          <Name>CONFIG.H</Name>
+          <ColumnNumber>52</ColumnNumber>
           <TopLine>1</TopLine>
-          <CurrentLine>26</CurrentLine>
+          <CurrentLine>42</CurrentLine>
+        </Doc>
+        <Doc>
+          <Name>.\subm_260.c</Name>
+          <ColumnNumber>23</ColumnNumber>
+          <TopLine>13</TopLine>
+          <CurrentLine>39</CurrentLine>
         </Doc>
         <Doc>
           <Name>..\INCLUDE\MSCBEMB.H</Name>
           <ColumnNumber>0</ColumnNumber>
-          <TopLine>766</TopLine>
-          <CurrentLine>798</CurrentLine>
-        </Doc>
-        <Doc>
-          <Name>CONFIG.H</Name>
-          <ColumnNumber>10</ColumnNumber>
-          <TopLine>3</TopLine>
-          <CurrentLine>33</CurrentLine>
-        </Doc>
-        <Doc>
-          <Name>..\src\mscbmain.c</Name>
-          <ColumnNumber>10</ColumnNumber>
-          <TopLine>1501</TopLine>
-          <CurrentLine>1526</CurrentLine>
+          <TopLine>1</TopLine>
+          <CurrentLine>1</CurrentLine>
         </Doc>
         <Doc>
           <Name>..\src\mscbutil.c</Name>
-          <ColumnNumber>16</ColumnNumber>
-          <TopLine>1210</TopLine>
-          <CurrentLine>1235</CurrentLine>
-        </Doc>
-        <Doc>
-          <Name>.\lcd_menu.c</Name>
-          <ColumnNumber>48</ColumnNumber>
+          <ColumnNumber>0</ColumnNumber>
           <TopLine>1</TopLine>
-          <CurrentLine>7</CurrentLine>
+          <CurrentLine>1</CurrentLine>
         </Doc>
       </Documents>
     </MDIGroup>

@@ -14,7 +14,11 @@
 #include <stdio.h>
 #include "mscbemb.h"
 
-#ifdef HAVE_EEPROM
+#ifdef CFG_UART1_MSCB
+sbit RS485_SEC_ENABLE = RS485_SEC_EN_PIN; // port pin for secondary RS485 enable
+#endif
+
+#ifdef CFG_HAVE_EEPROM
 
 extern SYS_INFO idata sys_info;          // for eeprom functions
 extern MSCB_INFO_VAR *variables;
@@ -118,7 +122,7 @@ unsigned char crc8_add(unsigned char crc, unsigned int c)
 /*------------------------------------------------------------------*/
 
 //####################################################################
-#if defined(UART1_DEVICE) // user-level device communication via UART1
+#if defined(CFG_UART1_DEVICE) // user-level device communication via UART1
 
 bit ti1_shadow = 1;
 
@@ -136,7 +140,7 @@ void serial_int1(void) interrupt 20
 {
    if (SCON1 & 0x02) {          // TI1
 
-#if defined(SCS_220) || defined(SCS_1000) || defined(SCS_1001) || defined(SCS_2000) || defined(SCS_2001)
+#ifdef CFG_UART1_MSCB
       if (sbuf_wp == sbuf_rp)
          RS485_SEC_ENABLE = 0;
 #endif
@@ -173,7 +177,7 @@ void rs232_output(void)
 {
    if (sbuf_wp != sbuf_rp && ti1_shadow == 1) {
       ti1_shadow = 0;
-#if defined(SCS_220) || defined(SCS_1000) || defined(SCS_1001) || defined(SCS_2000) || defined(SCS_2001)
+#ifdef CFG_UART1_MSCB
       RS485_SEC_ENABLE = 1;
 #endif
 
@@ -254,7 +258,7 @@ unsigned char gets_wait(char *str, unsigned char size, unsigned char timeout)
 
 /*------------------------------------------------------------------*/
 
-#ifdef HAVE_LCD // putchar is already used for LCD
+#ifdef CFG_HAVE_LCD // putchar is already used for LCD
 
 char putchar1(char c)
 {
@@ -269,7 +273,7 @@ char putchar1(char c)
    return c;
 }
 
-#else // HAVE_LCD
+#else // CFG_HAVE_LCD
 
 char putchar(char c)
 {
@@ -284,7 +288,7 @@ char putchar(char c)
    return c;
 }
 
-#endif // HAVE_LCD
+#endif // CFG_HAVE_LCD
 
 /*------------------------------------------------------------------*/
 
@@ -310,9 +314,9 @@ void uart1_init_buffer()
 
 /*------------------------------------------------------------------*/
 
-#endif // UART1_DEVICE ###############################################
+#endif // CFG_UART1_DEVICE ###########################################
 
-#if defined(UART1_MSCB) // UART1 connected as master to MSCB slave bus
+#if defined(CFG_UART1_MSCB) // UART1 connected as master to MSCB slave bus
 
 bit ti1_shadow = 1;
 unsigned char idata n_recv;
@@ -440,7 +444,7 @@ void uart1_init_buffer()
 
 /*------------------------------------------------------------------*/
 
-#endif // UART1_MSCB ##################################################
+#endif // CFG_UART1_MSCB ##############################################
 
 /*------------------------------------------------------------------*/
 
@@ -503,7 +507,7 @@ void uart_init(unsigned char port, unsigned char baud)
       0x100 - 13,   // 115200  2.2% error
       0x100 - 9,    // 172800  1.5% error
       0x100 - 0 };  // N/A
-   #ifdef SCS_210
+   #if defined(CFG_UART1_DEVICE) || defined(CFG_UART1_MSCB)
    unsigned char code baud_table1[] = // UART1 via timer 1
      {0x100 - 106,  //   2400  0.3% error
       0x100 - 53,   //   4800  0.3% error
@@ -516,7 +520,7 @@ void uart_init(unsigned char port, unsigned char baud)
       0x100 - 0,    //  N/A
       0x100 - 0};   //  N/A
    #endif
-#elif defined(SUBM_260)                // 49 MHz
+#elif defined(CLK_49MHZ)              // 49 MHz
    unsigned char code baud_table[] =  // UART0 via timer 2
      {0xFB, 0x100 - 252,  //   2400
       0xFD, 0x100 - 126,  //   4800
@@ -528,7 +532,7 @@ void uart_init(unsigned char port, unsigned char baud)
       0xFF, 0x100 - 27,   // 115200  1.5% error
       0xFF, 0x100 - 18,   // 172800  1.5% error
       0xFF, 0x100 - 9 };  // 345600  1.5% error
-#elif defined(CPU_C8051F120)          // 98 MHz
+#elif defined(CLK_98MHZ)          // 98 MHz
    unsigned char code baud_table[] =  // UART0 via timer 2
      {0x100 - 0,    //  N/A
       0x100 - 0,    //  N/A
@@ -540,7 +544,7 @@ void uart_init(unsigned char port, unsigned char baud)
       0x100 - 53,   // 115200  0.3% error
       0x100 - 35,   // 172800  1.3% error
       0x100 - 18 }; // 345600  1.6% error
-#if defined(UART1_MSCB) || defined(UART1_DEVICE)
+#if defined(CFG_UART1_MSCB) || defined(CFG_UART1_DEVICE)
    unsigned char code baud_table1[] = // UART1 via timer 1
      {0x100 - 0,    //  N/A
       0x100 - 212,  //   4800  0.3% error
@@ -582,7 +586,7 @@ void uart_init(unsigned char port, unsigned char baud)
 
       SFRPAGE = TMR2_PAGE;
       TMR2CF = 0x08;               // use system clock for timer 2
-#ifdef SUBM_260
+#ifdef CLK_49MHZ
       RCAP2H = baud_table[(baud - 1)*2];    // load high byte
       RCAP2L = baud_table[(baud - 1)*2+1];  // load low byte
 #else
@@ -612,7 +616,7 @@ void uart_init(unsigned char port, unsigned char baud)
       PS0 = 0;                     // serial interrupt low priority
 
 
-#if defined(UART1_MSCB) || defined(UART1_DEVICE)
+#if defined(CFG_UART1_MSCB) || defined(CFG_UART1_DEVICE)
 
    } else { /*---- UART1 ----*/
 
@@ -642,7 +646,7 @@ void uart_init(unsigned char port, unsigned char baud)
       EIP2 &= ~0x40;               // serial interrupt low priority
 #elif defined(CPU_C8051F120)       // 98 MHz
       SFRPAGE = UART1_PAGE;
-#ifdef UART1_MSCB
+#ifdef CFG_UART1_MSCB
       SCON1 = 0xD0;                // Mode 3, 9 bit, receive enable
 #else
       SCON1 = 0x50;                // Mode 1, 8 bit, receive enable
@@ -661,7 +665,7 @@ void uart_init(unsigned char port, unsigned char baud)
 #endif
 
       uart1_init_buffer();
-#endif // defined(UART1_MSCB) || defined(UART1_DEVICE)
+#endif // defined(CFG_UART1_MSCB) || defined(CFG_UART1_DEVICE)
    }
 
    EA = 1;                         // general interrupt enable
@@ -1055,7 +1059,7 @@ unsigned long uptime(void)
 
 /*------------------------------------------------------------------*/
 
-#ifdef USE_WATCHDOG
+#ifdef CFG_USE_WATCHDOG
 #define DEFAULT_WATCHDOG_TIMEOUT 10    // 10 seconds
 unsigned short idata watchdog_timer;
 unsigned char  idata watchdog_timeout = DEFAULT_WATCHDOG_TIMEOUT;
@@ -1083,7 +1087,7 @@ void watchdog_refresh(unsigned char from_interrupt) reentrant
 {
    if (from_interrupt);
 
-#ifdef USE_WATCHDOG
+#ifdef CFG_USE_WATCHDOG
    if (from_interrupt == 0)
       watchdog_timer = 0;
 
@@ -1138,7 +1142,7 @@ void watchdog_enable(unsigned char timeout)
 \********************************************************************/
 {
    if (timeout);
-#ifdef USE_WATCHDOG
+#ifdef CFG_USE_WATCHDOG
 
    watchdog_on = 1;
    watchdog_timer = 0;
@@ -1171,7 +1175,7 @@ void watchdog_enable(unsigned char timeout)
 
 #endif /* not CPU_C8051F310 */
 #endif /* not EXT_WATCHDOG */
-#endif /* USE_WATCHDOG */
+#endif /* CFG_USE_WATCHDOG */
 }
 
 /*------------------------------------------------------------------*/
@@ -1185,7 +1189,7 @@ void watchdog_disable(void)
 
 \********************************************************************/
 {
-#ifdef USE_WATCHDOG
+#ifdef CFG_USE_WATCHDOG
    watchdog_on = 0;
    watchdog_timer = 0;
    watchdog_timeout = 255;
@@ -1210,7 +1214,7 @@ void watchdog_int(void) reentrant
 
 \********************************************************************/
 {
-#ifdef USE_WATCHDOG
+#ifdef CFG_USE_WATCHDOG
 
    /* timer expires after 10 sec of inactivity */
    watchdog_timer++;
@@ -1246,7 +1250,7 @@ void watchdog_int(void) reentrant
    }
 #endif // EXT_WATCHDOG
 
-#endif // USE_WATCHDOG
+#endif // CFG_USE_WATCHDOG
 }
 
 /*------------------------------------------------------------------*\
@@ -1312,7 +1316,7 @@ void delay_us(unsigned int us)
 
 /*------------------------------------------------------------------*/
 
-#ifdef HAVE_EEPROM
+#ifdef CFG_HAVE_EEPROM
 
 void eeprom_read(void * dst, unsigned char len, unsigned short *offset)
 /********************************************************************\
@@ -1543,11 +1547,11 @@ unsigned char eeprom_retrieve(unsigned char flag)
    return status;
 }
 
-#endif /* HAVE_EEPROM */
+#endif /* CFG_HAVE_EEPROM */
 
 /*------------------------------------------------------------------*/
 
-#ifdef HAVE_LCD
+#ifdef CFG_HAVE_LCD
 
 bit lcd_present;
 
@@ -1846,348 +1850,11 @@ void lcd_puts(char *str)
       lcd_out(*str++, 1);
 }
 
-#endif // HAVE_LCD
-
-/*------------------------------------------------------------------*/
-
-#ifdef HAVE_RTC
-
-sbit RTC_IO  = P1 ^ 2;
-sbit RTC_CLK = P1 ^ 3;
-
-/********************************************************************\
-
-  Routine: Real time clock (RTC) routines
-
-  Purpose: Read and set date/time on DS1302 RTC chip on SCS-2001
-
-\********************************************************************/
-
-
-/*------------------------------------------------------------------*/
-
-void rtc_output(unsigned char d)
-{
-   unsigned char idata i;
-
-   for (i=0 ; i<8 ; i++) {
-      RTC_IO = d & 0x01;
-      delay_us(10);
-      RTC_CLK = 1;
-      delay_us(10);
-      RTC_CLK = 0;
-
-      d >>= 1;
-   }
-}
-
-/*------------------------------------------------------------------*/
-
-unsigned char rtc_read_byte(unsigned char adr)
-{
-   unsigned char idata i, d, m;
-
-   RTC_CLK = 0;
-
-#ifdef SCS_2000
-   SFRPAGE = DAC1_PAGE;
-   DAC1L = 0xFF;
-   DAC1H = 0x0F;
-#else
-   SFRPAGE = DAC0_PAGE;
-   DAC0L = 0xFF;
-   DAC0H = 0x0F;
-#endif
-
-   delay_us(10); // wait for DAC
-
-   /* switch port to output */
-   SFRPAGE = CONFIG_PAGE;
-   P1MDOUT |= 0x04; 
-
-   rtc_output(adr);
-
-   /* switch port to input */
-   SFRPAGE = CONFIG_PAGE;
-   P1MDOUT &= ~ 0x04;
-   RTC_IO = 1;
-
-   delay_us(10);
-   for (i=d=0,m=1 ; i<8 ; i++) {
-      if (RTC_IO)
-         d |= m;
-      RTC_CLK = 1;
-      delay_us(10);
-      RTC_CLK = 0;
-      delay_us(10);
-      m <<= 1;
-   }
-
-#ifdef SCS_2000
-   SFRPAGE = DAC1_PAGE;
-   DAC1L = 0;
-   DAC1H = 0;
-#else
-   SFRPAGE = DAC0_PAGE;
-   DAC0L = 0;
-   DAC0H = 0;
-#endif
-
-   delay_us(10); // wait for DAC
-
-   return d;
-}
-
-/*------------------------------------------------------------------*/
-
-void rtc_read(unsigned char d[6])
-{
-   unsigned char idata i, j, b, m;
-
-   RTC_CLK = 0;
-
-#ifdef SCS_2000
-   SFRPAGE = DAC1_PAGE;
-   DAC1L = 0xFF;
-   DAC1H = 0x0F;
-#else
-   SFRPAGE = DAC0_PAGE;
-   DAC0L = 0xFF;
-   DAC0H = 0x0F;
-#endif
-
-   delay_us(10); // wait for DAC
-
-   /* switch port to output */
-   SFRPAGE = CONFIG_PAGE;
-   P1MDOUT |= 0x04; 
-
-   rtc_output(0xBF); // burst read
-
-   /* switch port to input */
-   SFRPAGE = CONFIG_PAGE;
-   P1MDOUT &= ~ 0x04;
-   RTC_IO = 1;
-
-   delay_us(10); // wait for RTC output
-
-   for (j=0 ; j<7 ; j++) {
-      for (i=b=0,m=1 ; i<8 ; i++) {
-         if (RTC_IO)
-            b |= m;
-         RTC_CLK = 1;
-         delay_us(10);
-         RTC_CLK = 0;
-         delay_us(10);
-         m <<= 1;
-      }
-
-      if (j<3)
-        d[5-j] = b;
-      else if (j < 5)
-        d[j-3] = b;
-      else if (j == 6)
-        d[2] = b;
-   }
-
-#ifdef SCS_2000
-   SFRPAGE = DAC1_PAGE;
-   DAC1L = 0;
-   DAC1H = 0;
-#else
-   SFRPAGE = DAC0_PAGE;
-   DAC0L = 0;
-   DAC0H = 0;
-#endif
-
-   delay_us(10); // wait for DAC
-}
-
-/*------------------------------------------------------------------*/
-
-void rtc_write_byte(unsigned char adr, unsigned char d)
-{
-   RTC_CLK = 0;
-
-#ifdef SCS_2000
-   SFRPAGE = DAC1_PAGE;
-   DAC1L = 0xFF;
-   DAC1H = 0x0F;
-#else
-   SFRPAGE = DAC0_PAGE;
-   DAC0L = 0xFF;
-   DAC0H = 0x0F;
-#endif
-
-   delay_us(10); // wait for DAC
-
-   /* switch port to output */
-   SFRPAGE = CONFIG_PAGE;
-   P1MDOUT |= 0x04; 
-
-   rtc_output(adr);
-   rtc_output(d);
-
-#ifdef SCS_2000
-   SFRPAGE = DAC1_PAGE;
-   DAC1L = 0;
-   DAC1H = 0;
-#else
-   SFRPAGE = DAC0_PAGE;
-   DAC0L = 0;
-   DAC0H = 0;
-#endif
-
-   delay_us(10); // wait for DAC
-}
-
-/*------------------------------------------------------------------*/
-
-void rtc_write(unsigned char d[6])
-{
-   RTC_CLK = 0;
-
-#ifdef SCS_2000
-   SFRPAGE = DAC1_PAGE;
-   DAC1L = 0xFF;
-   DAC1H = 0x0F;
-#else
-   SFRPAGE = DAC0_PAGE;
-   DAC0L = 0xFF;
-   DAC0H = 0x0F;
-#endif
-
-   delay_us(10); // wait for DAC
-
-   /* switch port to output */
-   SFRPAGE = CONFIG_PAGE;
-   P1MDOUT |= 0x04; 
-
-   rtc_output(0xBE); // clock burst write
-
-   rtc_output(d[5]);     // sec
-   rtc_output(d[4]);     // min
-   rtc_output(d[3]);     // hour
-   rtc_output(d[0]);     // date
-   rtc_output(d[1]);     // month
-   rtc_output(1);        // weekday
-   rtc_output(d[2]);     // year
-   rtc_output(0);        // WP
-
-#ifdef SCS_2000
-   SFRPAGE = DAC1_PAGE;
-   DAC1L = 0;
-   DAC1H = 0;
-#else
-   SFRPAGE = DAC0_PAGE;
-   DAC0L = 0;
-   DAC0H = 0;
-#endif
-
-   delay_us(10); // wait for DAC
-}
-
-/*------------------------------------------------------------------*/
-
-void rtc_write_item(unsigned char item, unsigned char d)
-{
-   switch (item) {
-      case 0: rtc_write_byte(0x86, d); break; // day
-      case 1: rtc_write_byte(0x88, d); break; // month
-      case 2: rtc_write_byte(0x8C, d); break; // year
-      case 3: rtc_write_byte(0x84, d); break; // hour
-      case 4: rtc_write_byte(0x82, d); break; // minute
-      case 5: rtc_write_byte(0x80, d); break; // second
-   }
-}
-
-/*------------------------------------------------------------------*/
-
-void rtc_conv_date(unsigned char d[6], char *str)
-{
-   if (d[0] == 0xFF) { // no clock mounted
-      str[0] = str[1] = str[3] = str[4] = str[6] = str[7] = '?';
-      str[2] = str[5] = '-';
-      str[8] = 0;
-      return;
-   }
-   str[0] = '0'+d[0]/0x10;
-   str[1] = '0'+d[0]%0x10;
-   str[2] = '-';
-
-   str[3] = '0'+d[1]/0x10;
-   str[4] = '0'+d[1]%0x10;
-   str[5] = '-';
-
-   str[6] = '0'+d[2]/0x10;
-   str[7] = '0'+d[2]%0x10;
-   str[8] = 0;
-}
-
-/*------------------------------------------------------------------*/
-
-void rtc_conv_time(unsigned char d[6], char *str)
-{
-   if (d[0] == 0xFF) { // no clock mounted
-      str[0] = str[1] = str[3] = str[4] = str[6] = str[7] = '?';
-      str[2] = str[5] = ':';
-      str[8] = 0;
-      return;
-   }
-   str[0] = '0'+d[3]/0x10;
-   str[1] = '0'+d[3]%0x10;
-   str[2] = ':';
-
-   str[3] = '0'+d[4]/0x10;
-   str[4] = '0'+d[4]%0x10;
-   str[5] = ':';
-
-   str[6] = '0'+d[5]/0x10;
-   str[7] = '0'+d[5]%0x10;
-   str[8] = 0;
-}
-
-/*------------------------------------------------------------------*/
-
-void rtc_print()
-{
-   unsigned char xdata d[6];
-   char xdata str[10];
-
-   rtc_read(d);
-   if (d[0] != 0xFF) {
-      rtc_conv_date(d, str);
-      puts(str);
-      puts("  ");
-      rtc_conv_time(d, str);
-      puts(str);
-   }
-}
-
-/*------------------------------------------------------------------*/
-
-unsigned char rtc_present()
-{
-   unsigned char idata d;
-
-   d = rtc_read_byte(0);
-   return d != 0xFF;
-}
-
-/*------------------------------------------------------------------*/
-
-void rtc_init()
-{
-   /* remove write protection */
-   rtc_write_byte(0x8E, 0);
-}
-
-#endif // HAVE_RTC
-
+#endif // CFG_HAVE_LCD
 
 /*---- EMIF routines -----------------------------------------------*/
 
-#ifdef HAVE_EMIF
+#ifdef CFG_HAVE_EMIF
 
 void emif_switch(unsigned char bk)
 {
@@ -2351,4 +2018,4 @@ unsigned char idata d;
    return 8;
 }
 
-#endif // HAVE_EMIF
+#endif // CFG_HAVE_EMIF

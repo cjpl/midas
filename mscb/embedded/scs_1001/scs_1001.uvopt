@@ -289,59 +289,17 @@
       <FileType>1</FileType>
       <tvExp>0</tvExp>
       <Focus>0</Focus>
-      <ColumnNumber>9</ColumnNumber>
+      <ColumnNumber>0</ColumnNumber>
       <tvExpOptDlg>0</tvExpOptDlg>
       <TopLine>1</TopLine>
-      <CurrentLine>26</CurrentLine>
+      <CurrentLine>18</CurrentLine>
       <bDave2>0</bDave2>
-      <PathWithFileName>.\scs_2001.c</PathWithFileName>
-      <FilenameWithoutPath>scs_2001.c</FilenameWithoutPath>
+      <PathWithFileName>.\scs_1001.c</PathWithFileName>
+      <FilenameWithoutPath>scs_1001.c</FilenameWithoutPath>
     </File>
     <File>
       <GroupNumber>1</GroupNumber>
       <FileNumber>2</FileNumber>
-      <FileType>1</FileType>
-      <tvExp>0</tvExp>
-      <Focus>0</Focus>
-      <ColumnNumber>5</ColumnNumber>
-      <tvExpOptDlg>0</tvExpOptDlg>
-      <TopLine>481</TopLine>
-      <CurrentLine>529</CurrentLine>
-      <bDave2>0</bDave2>
-      <PathWithFileName>.\scs_2001_lib.c</PathWithFileName>
-      <FilenameWithoutPath>scs_2001_lib.c</FilenameWithoutPath>
-    </File>
-    <File>
-      <GroupNumber>1</GroupNumber>
-      <FileNumber>4</FileNumber>
-      <FileType>1</FileType>
-      <tvExp>0</tvExp>
-      <Focus>0</Focus>
-      <ColumnNumber>10</ColumnNumber>
-      <tvExpOptDlg>0</tvExpOptDlg>
-      <TopLine>1501</TopLine>
-      <CurrentLine>1526</CurrentLine>
-      <bDave2>0</bDave2>
-      <PathWithFileName>..\src\mscbmain.c</PathWithFileName>
-      <FilenameWithoutPath>mscbmain.c</FilenameWithoutPath>
-    </File>
-    <File>
-      <GroupNumber>1</GroupNumber>
-      <FileNumber>5</FileNumber>
-      <FileType>1</FileType>
-      <tvExp>0</tvExp>
-      <Focus>0</Focus>
-      <ColumnNumber>16</ColumnNumber>
-      <tvExpOptDlg>0</tvExpOptDlg>
-      <TopLine>1210</TopLine>
-      <CurrentLine>1235</CurrentLine>
-      <bDave2>0</bDave2>
-      <PathWithFileName>..\src\mscbutil.c</PathWithFileName>
-      <FilenameWithoutPath>mscbutil.c</FilenameWithoutPath>
-    </File>
-    <File>
-      <GroupNumber>1</GroupNumber>
-      <FileNumber>6</FileNumber>
       <FileType>1</FileType>
       <tvExp>0</tvExp>
       <Focus>0</Focus>
@@ -350,19 +308,33 @@
       <TopLine>0</TopLine>
       <CurrentLine>0</CurrentLine>
       <bDave2>0</bDave2>
-      <PathWithFileName>.\rtc.c</PathWithFileName>
-      <FilenameWithoutPath>rtc.c</FilenameWithoutPath>
+      <PathWithFileName>..\src\mscbmain.c</PathWithFileName>
+      <FilenameWithoutPath>mscbmain.c</FilenameWithoutPath>
     </File>
     <File>
       <GroupNumber>1</GroupNumber>
-      <FileNumber>0</FileNumber>
+      <FileNumber>3</FileNumber>
       <FileType>1</FileType>
       <tvExp>0</tvExp>
       <Focus>0</Focus>
-      <ColumnNumber>48</ColumnNumber>
+      <ColumnNumber>0</ColumnNumber>
       <tvExpOptDlg>0</tvExpOptDlg>
-      <TopLine>1</TopLine>
-      <CurrentLine>7</CurrentLine>
+      <TopLine>0</TopLine>
+      <CurrentLine>0</CurrentLine>
+      <bDave2>0</bDave2>
+      <PathWithFileName>..\src\mscbutil.c</PathWithFileName>
+      <FilenameWithoutPath>mscbutil.c</FilenameWithoutPath>
+    </File>
+    <File>
+      <GroupNumber>1</GroupNumber>
+      <FileNumber>4</FileNumber>
+      <FileType>1</FileType>
+      <tvExp>0</tvExp>
+      <Focus>0</Focus>
+      <ColumnNumber>0</ColumnNumber>
+      <tvExpOptDlg>0</tvExpOptDlg>
+      <TopLine>0</TopLine>
+      <CurrentLine>0</CurrentLine>
       <bDave2>0</bDave2>
       <PathWithFileName>.\lcd_menu.c</PathWithFileName>
       <FilenameWithoutPath>lcd_menu.c</FilenameWithoutPath>
@@ -376,21 +348,7 @@
     <cbSel>0</cbSel>
     <File>
       <GroupNumber>2</GroupNumber>
-      <FileNumber>7</FileNumber>
-      <FileType>5</FileType>
-      <tvExp>0</tvExp>
-      <Focus>0</Focus>
-      <ColumnNumber>0</ColumnNumber>
-      <tvExpOptDlg>0</tvExpOptDlg>
-      <TopLine>0</TopLine>
-      <CurrentLine>0</CurrentLine>
-      <bDave2>0</bDave2>
-      <PathWithFileName>.\scs_2001.h</PathWithFileName>
-      <FilenameWithoutPath>scs_2001.h</FilenameWithoutPath>
-    </File>
-    <File>
-      <GroupNumber>2</GroupNumber>
-      <FileNumber>8</FileNumber>
+      <FileNumber>5</FileNumber>
       <FileType>5</FileType>
       <tvExp>0</tvExp>
       <Focus>0</Focus>
@@ -404,7 +362,7 @@
     </File>
     <File>
       <GroupNumber>2</GroupNumber>
-      <FileNumber>9</FileNumber>
+      <FileNumber>6</FileNumber>
       <FileType>5</FileType>
       <tvExp>0</tvExp>
       <Focus>0</Focus>
@@ -1759,43 +1717,25 @@
     <ActiveMDIGroup>0</ActiveMDIGroup>
     <MDIGroup>
       <Size>100</Size>
-      <ActiveTab>3</ActiveTab>
+      <ActiveTab>0</ActiveTab>
       <Documents>
         <Doc>
-          <Name>.\scs_2001.c</Name>
-          <ColumnNumber>9</ColumnNumber>
+          <Name>CONFIG.H</Name>
+          <ColumnNumber>0</ColumnNumber>
           <TopLine>1</TopLine>
-          <CurrentLine>26</CurrentLine>
+          <CurrentLine>32</CurrentLine>
+        </Doc>
+        <Doc>
+          <Name>.\scs_1001.c</Name>
+          <ColumnNumber>0</ColumnNumber>
+          <TopLine>1</TopLine>
+          <CurrentLine>18</CurrentLine>
         </Doc>
         <Doc>
           <Name>..\INCLUDE\MSCBEMB.H</Name>
           <ColumnNumber>0</ColumnNumber>
-          <TopLine>766</TopLine>
-          <CurrentLine>798</CurrentLine>
-        </Doc>
-        <Doc>
-          <Name>CONFIG.H</Name>
-          <ColumnNumber>10</ColumnNumber>
-          <TopLine>3</TopLine>
-          <CurrentLine>33</CurrentLine>
-        </Doc>
-        <Doc>
-          <Name>..\src\mscbmain.c</Name>
-          <ColumnNumber>10</ColumnNumber>
-          <TopLine>1501</TopLine>
-          <CurrentLine>1526</CurrentLine>
-        </Doc>
-        <Doc>
-          <Name>..\src\mscbutil.c</Name>
-          <ColumnNumber>16</ColumnNumber>
-          <TopLine>1210</TopLine>
-          <CurrentLine>1235</CurrentLine>
-        </Doc>
-        <Doc>
-          <Name>.\lcd_menu.c</Name>
-          <ColumnNumber>48</ColumnNumber>
-          <TopLine>1</TopLine>
-          <CurrentLine>7</CurrentLine>
+          <TopLine>193</TopLine>
+          <CurrentLine>216</CurrentLine>
         </Doc>
       </Documents>
     </MDIGroup>
