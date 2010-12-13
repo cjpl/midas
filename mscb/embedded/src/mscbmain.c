@@ -99,6 +99,10 @@ bit rtc_set;
 
 sbit RS485_ENABLE = RS485_EN_PIN; // port pin for RS485 enable
 
+#ifdef EXT_WATCHDOG_PIN
+sbit EXT_WATCHDOG = EXT_WATCHDOG_PIN; // port pin for external watchdog
+#endif
+
 unsigned char bdata CSR;        // byte address of CSR consisting of bits below 
 
 sbit DEBUG_MODE = CSR ^ 0;      // debugging mode
@@ -1191,7 +1195,7 @@ receive_cmd:
             DELAY_US(10);
          led_0 = !led_0;
 #if defined(CFG_EXT_WATCHDOG) && defined(EXT_WATCHDOG_PIN)
-         EXT_WATCHDOG_PIN = !EXT_WATCHDOG_PIN;
+         EXT_WATCHDOG = !EXT_WATCHDOG;
 #endif
       }
 
@@ -1199,7 +1203,7 @@ receive_cmd:
       RI0 = 0;
 
 #if defined(CFG_EXT_WATCHDOG) && defined(EXT_WATCHDOG_PIN)
-      EXT_WATCHDOG_PIN = !EXT_WATCHDOG_PIN;
+      EXT_WATCHDOG = !EXT_WATCHDOG;
 #endif
 
       /* cannot use case since it calls the C library */

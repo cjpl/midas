@@ -18,16 +18,20 @@
 sbit RS485_SEC_ENABLE = RS485_SEC_EN_PIN; // port pin for secondary RS485 enable
 #endif
 
+#ifdef EXT_WATCHDOG_PIN
+sbit EXT_WATCHDOG = EXT_WATCHDOG_PIN;     // port pin for external watchdog
+#endif
+
 #ifdef CFG_HAVE_EEPROM
 
-extern SYS_INFO idata sys_info;          // for eeprom functions
+extern SYS_INFO idata sys_info;           // for eeprom functions
 extern MSCB_INFO_VAR *variables;
 
 #endif
 
 extern unsigned char idata _n_sub_addr, _var_size, _flkey;
 
-#pragma NOAREGS                 // all functions can be called from interrupt routine!
+#pragma NOAREGS    // all functions can be called from interrupt routine!
 
 /*------------------------------------------------------------------*/
 
@@ -1093,17 +1097,17 @@ void watchdog_refresh(unsigned char from_interrupt) reentrant
 
    if (watchdog_on && watchdog_timer < watchdog_timeout*100) {
 
-#ifndef EXT_WATCHDOG
+#ifndef CFG_EXT_WATCHDOG
 #if defined(CPU_C8051F310) || defined(CPU_C8051F320)
       PCA0CPH4 = 0x00;
 #else
       WDTCN = 0xA5;
 #endif
-#endif // !EXT_WATCHDOG
+#endif // !CFG_EXT_WATCHDOG
 
    }
 
-#ifdef EXT_WATCHDOG // reset external watchdog even if not on
+#ifdef CFG_EXT_WATCHDOG // reset external watchdog even if not on
    if (watchdog_timer < watchdog_timeout*100) {
 #ifdef EXT_WATCHDOG_PIN_DAC1
       unsigned char old_page;
@@ -1118,10 +1122,10 @@ void watchdog_refresh(unsigned char from_interrupt) reentrant
       DAC1H = DAC1L;
       SFRPAGE = old_page;
 #else
-      EXT_WATCHDOG_PIN = !EXT_WATCHDOG_PIN;
+      EXT_WATCHDOG = !EXT_WATCHDOG;
 #endif
    }
-#endif // EXT_WATCHDOG
+#endif // CFG_EXT_WATCHDOG
    
 
 #endif
@@ -1151,7 +1155,7 @@ void watchdog_enable(unsigned char timeout)
    else
       watchdog_timeout = DEFAULT_WATCHDOG_TIMEOUT;
 
-#ifndef EXT_WATCHDOG
+#ifndef CFG_EXT_WATCHDOG
 #if defined(CPU_C8051F310) || defined(CPU_C8051F320)
    PCA0MD   = 0x00;             // disable watchdog
    PCA0CPL4 = 255;              // 65.5 msec @ 12 MHz
@@ -1174,7 +1178,7 @@ void watchdog_enable(unsigned char timeout)
 #endif
 
 #endif /* not CPU_C8051F310 */
-#endif /* not EXT_WATCHDOG */
+#endif /* not CFG_EXT_WATCHDOG */
 #endif /* CFG_USE_WATCHDOG */
 }
 
@@ -1220,17 +1224,17 @@ void watchdog_int(void) reentrant
    watchdog_timer++;
    if (watchdog_on && watchdog_timer < watchdog_timeout*100) {
 
-#ifndef EXT_WATCHDOG // internal watchdog
+#ifndef CFG_EXT_WATCHDOG // internal watchdog
 #if defined(CPU_C8051F310) || defined(CPU_C8051F320)
       PCA0CPH4 = 0x00;
 #else
       WDTCN = 0xA5;
 #endif
-#endif // !EXT_WATCHDOG
+#endif // !CFG_EXT_WATCHDOG
 
    }
 
-#ifdef EXT_WATCHDOG // reset external watchdog even if not on
+#ifdef CFG_EXT_WATCHDOG // reset external watchdog even if not on
    if (watchdog_timer < watchdog_timeout*100) {
 #ifdef EXT_WATCHDOG_PIN_DAC1
       unsigned char old_page;
@@ -1245,10 +1249,10 @@ void watchdog_int(void) reentrant
       DAC1H = DAC1L;
       SFRPAGE = old_page;
 #else
-      EXT_WATCHDOG_PIN = !EXT_WATCHDOG_PIN;
+      EXT_WATCHDOG = !EXT_WATCHDOG;
 #endif
    }
-#endif // EXT_WATCHDOG
+#endif // CFG_EXT_WATCHDOG
 
 #endif // CFG_USE_WATCHDOG
 }

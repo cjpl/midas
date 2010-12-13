@@ -72,9 +72,6 @@
 #ifdef scs_2000
 #define SCS_2000
 #endif
-#ifdef hvr_200
-#define HVR_200
-#endif
 #ifdef hvr_400
 #define HVR_400
 #endif
@@ -89,9 +86,6 @@
 #endif
 #ifdef hvr_test
 #define HVR_TEST
-#endif
-#ifdef meg_splt_bp   // MEG experiment "Lecce" splitter backplane
-#define MEG_SPLT_BP
 #endif
 #ifdef   fgd_008     // T2K-FGD SiPM 8-channel bias board K. Mizouchi Sep/19/2006
 #define  FGD_008
@@ -217,20 +211,6 @@ sbit RS485_SEC_ENABLE = P0 ^ 4;
 #define DYN_VARIABLES
 
 /*--------------------------------*/
-#elif defined(HVR_200)
-#include <c8051F120.h>
-#define CPU_C8051F120
-#define CLK_25MHZ
-
-#define LED_0 P1 ^ 6
-#define LED_1 P1 ^ 7 
-#define LED_ON 1
-sbit RS485_ENABLE = P0 ^ 5;
-
-#define EXT_WATCHDOG              // use external watchdog
-sbit EXT_WATCHDOG_PIN = P0 ^ 4;
-
-/*--------------------------------*/
 #elif defined(HVR_400)
 #include <c8051F310.h>
 #define CPU_C8051F310
@@ -307,15 +287,6 @@ sbit RS485_ENABLE = P0 ^ 5;
 sbit RS485_ENABLE = P3 ^ 5;
 
 /*--------------------------------*/
-#elif defined(MEG_SPLT_BP)
-#include <c8051F120.h>
-#define CPU_C8051F120
-
-#define LED_0 P3 ^ 3
-#define LED_ON 1
-sbit RS485_ENABLE = P0 ^ 4;
-
-/*--------------------------------*/
 
 #elif defined(CRATE_MONITOR)
 #include <c8051F120.h>
@@ -325,6 +296,7 @@ sbit RS485_ENABLE = P0 ^ 4;
 #define LED_ON 0
 sbit RS485_ENABLE = P0 ^ 5;
 
+/*--------------------------------*/
 
 #elif defined(PT100X8)
 #include <c8051F120.h>
