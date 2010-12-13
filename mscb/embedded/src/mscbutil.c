@@ -1280,7 +1280,7 @@ void delay_ms(unsigned int ms)
 
 void delay_us(unsigned int us)
 {
-#if defined(CPU_C8051F120) || defined(CPU_C8051F310)
+#if defined(CPU_C8051F120) || defined(CPU_C8051F310) || defined(CPU_C8051F000)
    unsigned char j;
 #endif
 

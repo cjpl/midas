@@ -13,7 +13,7 @@
 
 /* Define device name. Used by various parts of the framwork to enable
    or disable device-specific features */
-#define SCS_210
+#define HVR_200
 
 /* define CPU type */
 #define CPU_C8051F120

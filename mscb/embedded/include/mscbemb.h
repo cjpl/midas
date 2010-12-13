@@ -72,21 +72,6 @@
 #ifdef scs_2000
 #define SCS_2000
 #endif
-#ifdef hvr_400
-#define HVR_400
-#endif
-#ifdef hvr_500
-#define HVR_500
-#endif
-#ifdef hvr_800
-#define HVR_800
-#endif
-#ifdef hvr_1600
-#define HVR_1600
-#endif
-#ifdef hvr_test
-#define HVR_TEST
-#endif
 #ifdef   fgd_008     // T2K-FGD SiPM 8-channel bias board K. Mizouchi Sep/19/2006
 #define  FGD_008
 #endif
@@ -209,82 +194,6 @@ sbit RS485_SEC_ENABLE = P0 ^ 4;
 #define HAVE_LCD
 #define LCD_8BIT
 #define DYN_VARIABLES
-
-/*--------------------------------*/
-#elif defined(HVR_400)
-#include <c8051F310.h>
-#define CPU_C8051F310
-
-#define LED_0 P2 ^ 4
-#define LED_1 P2 ^ 5 
-#define LED_2 P2 ^ 6 
-#define LED_3 P2 ^ 7
-#define LED_ON 1
-sbit RS485_ENABLE = P0 ^ 7;
-
-/*--------------------------------*/
-#elif defined(HVR_500)
-#include <c8051F310.h>
-#define CPU_C8051F310
-
-#define LED_0 P2 ^ 7
-#define LED_1 P2 ^ 6 
-#define LED_2 P2 ^ 5 
-#define LED_3 P2 ^ 4
-#define LED_4 P2 ^ 3
-#define LED_ON 1
-sbit RS485_ENABLE = P0 ^ 7;
-
-/*--------------------------------*/
-#elif defined(HVR_800)
-#include <c8051F120.h>
-#define CPU_C8051F120
-#define CLK_25MHZ
-
-#define LED_0 P1 ^ 7
-#define LED_1 P1 ^ 6 
-#define LED_2 P1 ^ 5 
-#define LED_3 P1 ^ 4
-#define LED_4 P1 ^ 3
-#define LED_5 P1 ^ 2
-#define LED_6 P1 ^ 1
-#define LED_7 P1 ^ 0
-#define LED_ON 1
-sbit RS485_ENABLE = P0 ^ 5;
-
-/*--------------------------------*/
-#elif defined(HVR_1600)
-#include <c8051F120.h>
-#define CPU_C8051F120
-
-#define LED_0 P7 ^ 0
-#define LED_1 P7 ^ 1 
-#define LED_2 P7 ^ 2 
-#define LED_3 P7 ^ 3
-#define LED_4 P7 ^ 4
-#define LED_5 P7 ^ 5
-#define LED_6 P7 ^ 6
-#define LED_7 P7 ^ 7
-#define LED_8 P3 ^ 0
-#define LED_9 P3 ^ 1 
-#define LED_10 P3 ^ 2 
-#define LED_11 P3 ^ 3
-#define LED_12 P3 ^ 4
-#define LED_13 P3 ^ 5
-#define LED_14 P3 ^ 6
-#define LED_15 P3 ^ 7
-
-#define LED_ON 1
-sbit RS485_ENABLE = P0 ^ 5;
-
-/*--------------------------------*/
-#elif defined(HVR_TEST)
-#include <c8051F000.h>
-#define CPU_C8051F000
-
-#define LED_0 P3 ^ 4
-#define LED_ON 0
-sbit RS485_ENABLE = P3 ^ 5;
 
 /*--------------------------------*/
 
