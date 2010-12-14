@@ -39,7 +39,7 @@ struct {
 } idata user_data;
 
 
-MSCB_INFO_VAR code variables[] = {
+MSCB_INFO_VAR code vars[] = {
    1, UNIT_ASCII,  0, 0, MSCBF_DATALESS, "RS232",               0,
    4, UNIT_PASCAL, 0, 0,    MSCBF_FLOAT, "P1",      &user_data.p1,
    4, UNIT_PASCAL, 0, 0,    MSCBF_FLOAT, "P2",      &user_data.p2,
@@ -47,6 +47,8 @@ MSCB_INFO_VAR code variables[] = {
    1, UNIT_BAUD,   0, 0,              0, "Baud",  &user_data.baud,
    0
 };
+
+MSCB_INFO_VAR *variables = vars;
 
 /********************************************************************\
 

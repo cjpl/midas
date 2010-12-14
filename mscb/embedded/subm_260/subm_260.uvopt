@@ -1724,13 +1724,13 @@
     <ActiveMDIGroup>0</ActiveMDIGroup>
     <MDIGroup>
       <Size>100</Size>
-      <ActiveTab>0</ActiveTab>
+      <ActiveTab>2</ActiveTab>
       <Documents>
         <Doc>
           <Name>CONFIG.H</Name>
-          <ColumnNumber>52</ColumnNumber>
+          <ColumnNumber>17</ColumnNumber>
           <TopLine>1</TopLine>
-          <CurrentLine>42</CurrentLine>
+          <CurrentLine>25</CurrentLine>
         </Doc>
         <Doc>
           <Name>.\subm_260.c</Name>
@@ -1740,9 +1740,9 @@
         </Doc>
         <Doc>
           <Name>..\INCLUDE\MSCBEMB.H</Name>
-          <ColumnNumber>0</ColumnNumber>
-          <TopLine>1</TopLine>
-          <CurrentLine>1</CurrentLine>
+          <ColumnNumber>22</ColumnNumber>
+          <TopLine>325</TopLine>
+          <CurrentLine>352</CurrentLine>
         </Doc>
         <Doc>
           <Name>..\src\mscbutil.c</Name>

@@ -35,6 +35,8 @@ unsigned char n_usb_rx, n_rs485_tx, i_rs485_tx, i_rs485_rx;
 
 unsigned char rs485_tx_bit9[4];
 
+sbit RS485_ENABLE = RS485_EN_PIN; // port pin for RS485 enable
+
 /*------------------------------------------------------------------*/
 
 extern void watchdog_refresh(unsigned char from_interrupt) reentrant;

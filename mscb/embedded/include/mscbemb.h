@@ -18,186 +18,15 @@
 
 /*---- map small defines from makefile to capital defines ----------*/
 
-#ifdef scs_220
-#define SCS_220
-#endif
-#ifdef subm_250
-#define SUBM_250
-#endif
-#ifdef subm_300
-#define SUBM_300
-#endif
-#ifdef scs_300
-#define SCS_300
-#endif
-#ifdef scs_310
-#define SCS_310
-#endif
-#ifdef scs_320
-#define SCS_320
-#endif
-#ifdef scs_400
-#define SCS_400
-#endif
-#ifdef scs_500
-#define SCS_500
-#endif
-#ifdef scs_520
-#define SCS_520
-#endif
-#ifdef scs_600
-#define SCS_600
-#endif
-#ifdef scs_700
-#define SCS_700
-#endif
-#ifdef scs_800
-#define SCS_800
-#endif
-#ifdef scs_900
-#define SCS_900
-#endif
-#ifdef scs_910
-#define SCS_910
-#endif
-#ifdef scs_920
-#define SCS_920
-#endif
-#ifdef scs_1000
-#define SCS_1000
-#endif
-#ifdef scs_1001
-#define SCS_1001
-#endif
-#ifdef scs_2000
-#define SCS_2000
-#endif
 #ifdef   fgd_008     // T2K-FGD SiPM 8-channel bias board K. Mizouchi Sep/19/2006
 #define  FGD_008
 #endif
 
 /*---- CPU specific items ------------------------------------------*/
 
-
-/*--------------------------------*/
-#if defined(SCS_220)
-#include <c8051F020.h>
-#define CPU_C8051F020
-
-#define LED_0 P3 ^ 4
-#define LED_1 P3 ^ 3
-#define LED_ON 0
-sbit RS485_ENABLE = P3 ^ 5;
-sbit RS485_SEC_ENABLE = P0 ^ 6;
-
-/*--------------------------------*/
-#elif defined(SUBM_250)
-#include "c8051F320.h" // don't use the one from Keil !!
-#define CPU_C8051F320
-
-#define LED_0 P1 ^ 2
-#define LED_1 P1 ^ 3
-#define LED_ON 0
-sbit RS485_ENABLE = P1 ^ 0;
-
-#define EXT_WATCHDOG
-sbit EXT_WATCHDOG_PIN = P2 ^ 1;
-
-#undef CFG_HAVE_EEPROM
-
-/*--------------------------------*/
-#elif defined(SCS_300) || defined(SCS_310)
-#include <c8051F020.h>
-#define CPU_C8051F020
-
-#define LED_0 P3 ^ 3
-#define LED_1 P3 ^ 4
-#define LED_ON 0
-sbit RS485_ENABLE = P3 ^ 5;
-
-/*--------------------------------*/
-#elif defined(SCS_320)
-#include <c8051F320.h>
-#define CPU_C8051F320
-
-#define LED_0 P2 ^ 7
-#define LED_ON 0
-sbit RS485_ENABLE = P0 ^ 3;
-
-/*--------------------------------*/
-#elif defined(SUBM_300)
-#include <c8051F020.h>
-#define CPU_C8051F020
-
-#define LED_0 P3 ^ 3
-#define LED_1 P3 ^ 4
-#define LED_ON 0
-sbit RS485_ENABLE = P3 ^ 5;
-
-#undef CFG_HAVE_EEPROM
-
-/*--------------------------------*/
-#elif defined(SCS_400) || defined(SCS_500)
-#include <c8051F000.h>
-#define CPU_C8051F000
-
-#define LED_0 P3 ^ 4
-#define LED_ON 1
-sbit RS485_ENABLE = P3 ^ 5;
-
-/*--------------------------------*/
-#elif defined(SCS_520) || defined(SCS_600) || defined(SCS_700) || defined (SCS_800) || defined (SCS_900) || defined (SCS_910) || defined(CFD_950)
-#include <c8051F000.h>
-#define CPU_C8051F000
-
-#define LED_0 P3 ^ 4
-#define LED_ON 0
-sbit RS485_ENABLE = P3 ^ 5;
-
-/*--------------------------------*/
-#elif defined (SCS_920)
-#include <c8051F000.h>
-#define CPU_C8051F000
-
-#define LED_0 P3 ^ 4
-#define LED_ON 1
-sbit RS485_ENABLE = P3 ^ 5;
-
-/*--------------------------------*/
-#elif defined(SCS_1000)
-#include <c8051F120.h>
-#define CPU_C8051F120
-
-#define LED_0 P2 ^ 0
-#define LED_1 P0 ^ 6
-#define LED_2 P0 ^ 7 // buzzer
-#define LED_ON 1     // will be zero when 2981 will be used instead of 2982
-sbit RS485_ENABLE = P0 ^ 5;
-sbit RS485_SEC_ENABLE = P0 ^ 4;
-
-#define HAVE_LCD
-
-/*--------------------------------*/
-#elif defined(SCS_2000)
-#include <c8051F120.h>
-#define CPU_C8051F120
-
-#define LED_0 P0 ^ 6
-#define LED_1 P0 ^ 7
-#define LED_ON 0
-sbit RS485_ENABLE = P0 ^ 5;
-sbit RS485_SEC_ENABLE = P0 ^ 4;
-
-//#define EXT_WATCHDOG              // use external watchdog
-//sbit EXT_WATCHDOG_PIN = DAC0;
-
-#define HAVE_LCD
-#define LCD_8BIT
-#define DYN_VARIABLES
-
 /*--------------------------------*/
 
-#elif defined(CRATE_MONITOR)
+#if defined(CRATE_MONITOR)
 #include <c8051F120.h>
 #define CPU_C8051F120
 
@@ -332,14 +161,14 @@ char putchar1(char c);                   // putchar cannot be used with LCD supp
 
 /*---- Delay macro to be used in interrupt routines etc. -----------*/
 
-#if defined(SUBM_260)
+#if defined(CLK_49MHZ)
 #define DELAY_US(_us) { \
    unsigned char _i,_j; \
    for (_i = (unsigned char) _us; _i > 0; _i--) \
       for (_j=2 ; _j>0 ; _j--) \
          _nop_(); \
 }
-#elif defined(SCS_210)
+#elif defined(CLK_25MHZ)
 #define DELAY_US(_us) { \
    unsigned char _i,_j; \
    for (_i = (unsigned char) _us; _i > 0; _i--) { \
@@ -348,7 +177,7 @@ char putchar1(char c);                   // putchar cannot be used with LCD supp
          _nop_(); \
    } \
 }
-#elif defined(CPU_C8051F120)
+#elif defined(CLK_98MHZ)
 #define DELAY_US(_us) { \
    unsigned char _i,_j; \
    for (_i = (unsigned char) _us; _i > 0; _i--) \
@@ -615,6 +444,7 @@ char scs_lcd1_read();
 char getchar_nowait(void) reentrant;
 unsigned char gets_wait(char *str, unsigned char size, unsigned char timeout);
 void flush(void);
+void uart1_init_buffer(void);
 
 void eeprom_flash(void);
 unsigned char eeprom_retrieve(unsigned char flag);

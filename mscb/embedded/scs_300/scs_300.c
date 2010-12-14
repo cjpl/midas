@@ -129,7 +129,7 @@ char putchar(char c)
    return c;
 }
 
-char getchar_nowait()
+char getchar_nowait1()
 {
    char c;
 
@@ -148,6 +148,8 @@ char getchar_nowait()
 
    /* remove select */
    LPT_SELECT = 1;
+
+   return c;
 }
 
 unsigned char gets_wait(char *str, unsigned char size, unsigned char timeout)
@@ -159,7 +161,7 @@ unsigned char gets_wait(char *str, unsigned char size, unsigned char timeout)
    start = time();
    i = 0;
    do {
-      c = getchar_nowait();
+      c = getchar_nowait1();
       if (c != -1 && c != '\n') {
          if (c == '\r') {
             str[i] = 0;

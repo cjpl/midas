@@ -648,7 +648,7 @@ void uart_init(unsigned char port, unsigned char baud)
 
       EIE2 |= 0x40;                // enable serial interrupt
       EIP2 &= ~0x40;               // serial interrupt low priority
-#elif defined(CPU_C8051F120)       // 98 MHz
+#elif defined(CLK_98MHZ)           // 98 MHz
       SFRPAGE = UART1_PAGE;
 #ifdef CFG_UART1_MSCB
       SCON1 = 0xD0;                // Mode 3, 9 bit, receive enable
@@ -1280,11 +1280,7 @@ void delay_ms(unsigned int ms)
 
 void delay_us(unsigned int us)
 {
-#if defined(CPU_C8051F120) || defined(CPU_C8051F310) || defined(CPU_C8051F000)
-   unsigned char j;
-#endif
-
-   unsigned char i;
+   unsigned char i, j;
    unsigned int remaining_us;
 
    if (us <= 250) {
@@ -1293,7 +1289,7 @@ void delay_us(unsigned int us)
          _nop_();
          for (j=3 ; j>0 ; j--)
             _nop_();
-#elif defined(CPU_C8051F120)
+#elif defined(CLK_98MHZ)
          for (j=22 ; j>0 ; j--)
             _nop_();
 #elif defined(CPU_C8051F310)
@@ -1301,6 +1297,7 @@ void delay_us(unsigned int us)
          for (j=3 ; j>0 ; j--)
             _nop_();
 #elif defined(CPU_C8051F320)
+         if (j);
          _nop_();
          _nop_();
 #else

@@ -51,8 +51,6 @@ unsigned char tc600_write(unsigned short param, unsigned char len, unsigned long
 
 /*---- Error codes ----*/
 
-char xdata turbo_err[10];
-
 #define ERR_TURBO_COMM (1<<0)
 #define ERR_FOREVAC    (1<<1)
 #define ERR_MAINVAC    (1<<2)
@@ -96,6 +94,7 @@ struct {
    float vv_min;
    float hv_thresh;
    unsigned char pump_state;
+   char turbo_err[10];
 } xdata user_data;
 
 MSCB_INFO_VAR code vars[] = {
@@ -135,7 +134,8 @@ MSCB_INFO_VAR code vars[] = {
    { 4, UNIT_BAR, PRFX_MILLI, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "VV min",   &user_data.vv_min, 1, 0.1, 1, 0.1 },       // 26
    { 4, UNIT_BAR, PRFX_MILLI, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "HV thrsh", &user_data.hv_thresh, 3, 0.001, 1, 0.001 },// 27
 
-   { 1, UNIT_BYTE,    0, 0, 0,                               "State",    &user_data.pump_state },                   // 28
+   { 1, UNIT_BYTE,    0, 0, MSCBF_HIDDEN,                    "State",    &user_data.pump_state },                   // 28
+   {10, UNIT_STRING,  0, 0, MSCBF_HIDDEN,                    "TMPErr",   &user_data.turbo_err[0] },                 // 29
 
    { 0 }
 };
@@ -570,7 +570,7 @@ static bit b0_old = 0, b1_old = 0, b2_old = 0, b3_old = 0,
    else if (user_data.error & ERR_MAINVAC)
       printf("ERROR: main vaccuum ");
    else if (user_data.error & ERR_TURBO)
-      printf("TMP ERROR: %s    ", turbo_err);
+      printf("TMP ERROR: %s    ", user_data.turbo_err);
    else {
       if (user_data.man_mode) {
          printf("TMP: %4d Hz, %4.2f A", user_data.rot_speed, user_data.tmp_current);
@@ -981,8 +981,8 @@ float xdata value;
    b2 = button(2);
    b3 = button(3);
 
-   /* read turbo pump parameters once each second */
-   if (time() > last_read + 100) {
+   /* read turbo pump parameters once each two seconds */
+   if (time() > last_read + 200) {
 
       if (user_data.turbo_on != turbo_on_last) {
          tc600_write(10, 6, user_data.turbo_on ? 111111 : 0);
@@ -999,10 +999,10 @@ float xdata value;
          if (tc600_read(303, str)) {
             if (atoi(str) != 0) {
                user_data.error |= ERR_TURBO;
-               strcpy(turbo_err, str);
+               strcpy(user_data.turbo_err, str);
             } else {
                user_data.error &= ~ERR_TURBO;
-               turbo_err[0] = 0;
+               user_data.turbo_err[0] = 0;
             }
          }
       } else

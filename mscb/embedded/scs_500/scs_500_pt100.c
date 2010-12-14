@@ -36,7 +36,7 @@ struct {
 
 float idata gain[8];            // gain resulting from PGA bits
 
-MSCB_INFO_CHN code channel[] = {
+MSCB_INFO_CHN code vars[] = {
    4, UNIT_CELSIUS, 0, 0, MSCBF_FLOAT, "Temp0", &user_data.temp[0],
    4, UNIT_CELSIUS, 0, 0, MSCBF_FLOAT, "Temp1", &user_data.temp[1],
    4, UNIT_CELSIUS, 0, 0, MSCBF_FLOAT, "Temp2", &user_data.temp[2],

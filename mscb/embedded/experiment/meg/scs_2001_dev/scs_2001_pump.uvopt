@@ -317,8 +317,8 @@
       <Focus>0</Focus>
       <ColumnNumber>0</ColumnNumber>
       <tvExpOptDlg>0</tvExpOptDlg>
-      <TopLine>256</TopLine>
-      <CurrentLine>270</CurrentLine>
+      <TopLine>49</TopLine>
+      <CurrentLine>49</CurrentLine>
       <bDave2>0</bDave2>
       <PathWithFileName>.\scs_2001_pump.c</PathWithFileName>
       <FilenameWithoutPath>scs_2001_pump.c</FilenameWithoutPath>
@@ -343,10 +343,10 @@
       <FileType>1</FileType>
       <tvExp>0</tvExp>
       <Focus>0</Focus>
-      <ColumnNumber>0</ColumnNumber>
+      <ColumnNumber>7</ColumnNumber>
       <tvExpOptDlg>0</tvExpOptDlg>
-      <TopLine>996</TopLine>
-      <CurrentLine>996</CurrentLine>
+      <TopLine>287</TopLine>
+      <CurrentLine>299</CurrentLine>
       <bDave2>0</bDave2>
       <PathWithFileName>..\..\..\src\mscbutil.c</PathWithFileName>
       <FilenameWithoutPath>mscbutil.c</FilenameWithoutPath>
@@ -429,6 +429,32 @@
       <FilenameWithoutPath>scs_2001.h</FilenameWithoutPath>
     </File>
   </Group>
+
+  <AlienFiles>
+    <PathWithFilename>C:\midas\mscb\embedded\scs_210\scs_210.c</PathWithFilename>
+    <TopLine>19</TopLine>
+    <CurrentLine>45</CurrentLine>
+    <Constant>0</Constant>
+    <WindowPosition>
+      <length>0</length>
+      <flags>0</flags>
+      <showCmd>0</showCmd>
+      <MinPosition>
+        <xPos>0</xPos>
+        <yPos>0</yPos>
+      </MinPosition>
+      <MaxPosition>
+        <xPos>0</xPos>
+        <yPos>0</yPos>
+      </MaxPosition>
+      <NormalPosition>
+        <Top>0</Top>
+        <Left>0</Left>
+        <Right>0</Right>
+        <Bottom>0</Bottom>
+      </NormalPosition>
+    </WindowPosition>
+  </AlienFiles>
 
   <WinLayout>
     <sActiveDebugView>Default</sActiveDebugView>
@@ -1771,13 +1797,13 @@
     <ActiveMDIGroup>0</ActiveMDIGroup>
     <MDIGroup>
       <Size>100</Size>
-      <ActiveTab>3</ActiveTab>
+      <ActiveTab>0</ActiveTab>
       <Documents>
         <Doc>
           <Name>.\scs_2001_pump.c</Name>
           <ColumnNumber>0</ColumnNumber>
-          <TopLine>256</TopLine>
-          <CurrentLine>270</CurrentLine>
+          <TopLine>49</TopLine>
+          <CurrentLine>49</CurrentLine>
         </Doc>
         <Doc>
           <Name>..\..\..\src\mscbmain.c</Name>
@@ -1787,9 +1813,9 @@
         </Doc>
         <Doc>
           <Name>..\..\..\src\mscbutil.c</Name>
-          <ColumnNumber>0</ColumnNumber>
-          <TopLine>996</TopLine>
-          <CurrentLine>996</CurrentLine>
+          <ColumnNumber>7</ColumnNumber>
+          <TopLine>287</TopLine>
+          <CurrentLine>299</CurrentLine>
         </Doc>
         <Doc>
           <Name>CONFIG.H</Name>
@@ -1805,9 +1831,15 @@
         </Doc>
         <Doc>
           <Name>\MIDAS\MSCB\EMBEDDED\INCLUDE\MSCBEMB.H</Name>
-          <ColumnNumber>18</ColumnNumber>
-          <TopLine>284</TopLine>
-          <CurrentLine>308</CurrentLine>
+          <ColumnNumber>0</ColumnNumber>
+          <TopLine>577</TopLine>
+          <CurrentLine>583</CurrentLine>
+        </Doc>
+        <Doc>
+          <Name>C:\midas\mscb\embedded\scs_210\scs_210.c</Name>
+          <ColumnNumber>0</ColumnNumber>
+          <TopLine>19</TopLine>
+          <CurrentLine>45</CurrentLine>
         </Doc>
       </Documents>
     </MDIGroup>

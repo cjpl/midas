@@ -873,7 +873,7 @@ void GetInterfaceRequest()
       else
       {
          // Get current interface setting
-         gEp0Status.pData = (void *)&gDeviceStatus.IfStatus->bCurrentAlt;
+         gEp0Status.pData = (void *)&gDeviceStatus.IfStatus.bCurrentAlt;
 
          // Length must be 1
          gEp0Status.uNumBytes = 1;
