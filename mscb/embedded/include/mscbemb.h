@@ -16,71 +16,7 @@
 /* application-specific configuration (selects CPU etc.) */
 #include "config.h"
 
-/*---- map small defines from makefile to capital defines ----------*/
-
-#ifdef   fgd_008     // T2K-FGD SiPM 8-channel bias board K. Mizouchi Sep/19/2006
-#define  FGD_008
-#endif
-
-/*---- CPU specific items ------------------------------------------*/
-
-/*--------------------------------*/
-
-#if defined(CRATE_MONITOR)
-#include <c8051F120.h>
-#define CPU_C8051F120
-
-#define LED_0 P0 ^ 6
-#define LED_ON 0
-sbit RS485_ENABLE = P0 ^ 5;
-
-/*--------------------------------*/
-
-#elif defined(PT100X8)
-#include <c8051F120.h>
-#define CPU_C8051F120
-
-#define LED_0 P0 ^ 6
-#define LED_ON 0
-sbit RS485_ENABLE = P0 ^ 5;
-#define RS485_EANBLE_INVERT
-
-/*--------------------------------*/
-
-#elif defined(FGD_008)
-#include <c8051F310.h>
-#define  CPU_C8051F310
-
-// Add a new entry for the T2K-FGD SiPM 8-channel bias board
-// K. Mizouchi Sep/19/2006 
-//
-// LED_0, which is used as a primary led in the system, is 
-// connected to a spare pin (NC) and secondary LED, LED_1, 
-// is made to be undefined. It is only used in mscbutil 
-// libraries and we don't have it physically.
-// 
-// We define the SELECT_LED_DACX pin here, because we want to 
-// use led_xxxx() in mscbutil.c for DAC LED control. 
-#define LED_0 P2 ^ 4
-
-#if defined(LED_1) 
-#undef LED_1
-#endif
-
-#define LED_2 P1 ^ 4
-#define LED_3 P1 ^ 5
-#define LED_4 P1 ^ 6
-#define LED_5 P1 ^ 7
-#define LED_6 P2 ^ 0
-#define LED_7 P2 ^ 1
-#define LED_8 P2 ^ 2
-#define LED_9 P2 ^ 3
-
-#define LED_ON 0
-
-sbit RS485_ENABLE = P0 ^ 3;
-/*--------------------------------*/
-#endif
+/* determine number of LEDs */
 
 #define LED_OFF !LED_ON
 
@@ -481,7 +417,3 @@ unsigned char emif_init(void);
 void emif_test(unsigned char n_banks);
 void emif_switch(unsigned char bk);
 #endif // CFG_HAVE_EMIF
-
-
-
-
