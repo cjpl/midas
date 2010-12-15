@@ -984,7 +984,7 @@ Retrieve old messages from log file
 */
 INT cm_msg_retrieve(INT n_message, char *message, INT buf_size)
 {
-   char dir[256], str[256];
+   char dir[256];
    char filename[256], filename2[256];
    char path[256], *message2;
    INT status, size, n, i;
@@ -1011,7 +1011,7 @@ INT cm_msg_retrieve(INT n_message, char *message, INT buf_size)
          time(&now);
          tms = localtime(&now);
 
-         strftime(filename2, sizeof(str), filename, tms);
+         strftime(filename2, sizeof(filename2), filename, tms);
       }
 
       if (strchr(filename2, DIR_SEPARATOR) == NULL) {
@@ -1047,7 +1047,7 @@ INT cm_msg_retrieve(INT n_message, char *message, INT buf_size)
       now -= 3600 * 24;         // go one day back 
       tms = localtime(&now);
 
-      strftime(filename2, sizeof(str), filename, tms);
+      strftime(filename2, sizeof(filename2), filename, tms);
 
       if (strchr(filename2, DIR_SEPARATOR) == NULL) {
          status = db_find_key(hDB, 0, "/Logger/Data dir", &hKey);

@@ -376,6 +376,11 @@
               <FileType>1</FileType>
               <FilePath>.\lcd_menu.c</FilePath>
             </File>
+            <File>
+              <FileName>STARTUP_VDDMON.A51</FileName>
+              <FileType>2</FileType>
+              <FilePath>..\src\STARTUP_VDDMON.A51</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
@@ -769,6 +774,11 @@
               <FileName>lcd_menu.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\lcd_menu.c</FilePath>
+            </File>
+            <File>
+              <FileName>STARTUP_VDDMON.A51</FileName>
+              <FileType>2</FileType>
+              <FilePath>..\src\STARTUP_VDDMON.A51</FilePath>
             </File>
           </Files>
         </Group>

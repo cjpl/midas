@@ -27,6 +27,9 @@
 #endif
 
 #ifdef HAVE_ZLIB
+#ifdef OS_WINNT
+#define ZLIB_WINAPI
+#endif
 #include <zlib.h>
 #endif
 
@@ -1975,7 +1978,7 @@ INT root_book_bank(EVENT_TREE * et, HNDLE hKeyDef, int event_id, char *bank_name
          break;
       }
 
-      et->branch[et->n_branch] = et->tree->Branch(bank_name, NULL, str);
+      et->branch[et->n_branch] = et->tree->Branch(bank_name, NULL, (const char*)str);
       et->branch_name[et->n_branch] = *(DWORD *) bank_name;
       et->n_branch++;
    } else {
@@ -2029,7 +2032,7 @@ INT root_book_bank(EVENT_TREE * et, HNDLE hKeyDef, int event_id, char *bank_name
          }
       }
 
-      et->branch[et->n_branch] = et->tree->Branch(bank_name, NULL, str);
+      et->branch[et->n_branch] = et->tree->Branch(bank_name, NULL, (const char*)str);
       et->branch_name[et->n_branch] = *(DWORD *) bank_name;
       et->n_branch++;
    }
@@ -2414,7 +2417,7 @@ INT log_write(LOG_CHN * log_chn, EVENT_HEADER * pevent)
 {
    INT status = 0, size, izero;
    DWORD actual_time, start_time, watchdog_timeout, duration;
-   BOOL watchdog_flag;
+   BOOL watchdog_flag, next_subrun;
    static DWORD last_checked = 0;
    HNDLE htape, stats_hkey;
    char tape_name[256];
@@ -2509,6 +2512,32 @@ INT log_write(LOG_CHN * log_chn, EVENT_HEADER * pevent)
       log_open(log_chn, run_number);
       subrun_start_time = ss_time();
       stop_requested = FALSE;
+   }
+
+   /* check if new subrun is requested manually */
+   next_subrun = FALSE;
+   size = sizeof(next_subrun);
+   db_get_value(hDB, 0, "/Logger/Next subrun", &next_subrun, &size, TID_BOOL, true);
+   if (!stop_requested && next_subrun) {
+      int run_number;
+
+      // cm_msg(MTALK, "main", "stopping subrun by user request");
+
+      size = sizeof(run_number);
+      status = db_get_value(hDB, 0, "Runinfo/Run number", &run_number, &size, TID_INT, TRUE);
+      assert(status == SUCCESS);
+
+      stop_requested = TRUE; // avoid recursive call thourgh log_odb_dump
+      log_close(log_chn, run_number);
+      log_chn->subrun_number++;
+      log_chn->statistics.bytes_written_subrun = 0;
+      log_generate_file_name(log_chn);
+      log_open(log_chn, run_number);
+      subrun_start_time = ss_time();
+      stop_requested = FALSE;
+
+      next_subrun = FALSE;
+      db_set_value(hDB, 0, "/Logger/Next subrun", &next_subrun, sizeof(next_subrun), 1, TID_BOOL);
    }
 
    /* check if byte limit is reached to stop run */
@@ -3934,6 +3963,10 @@ INT tr_start(INT run_number, char *error)
    /* read tape message flag */
    size = sizeof(tape_message);
    db_get_value(hDB, 0, "/Logger/Tape message", &tape_message, &size, TID_BOOL, TRUE);
+
+   /* reset next subrun flag */
+   status = FALSE;
+   db_set_value(hDB, 0, "/Logger/Next subrun", &status, sizeof(status), 1, TID_BOOL);
 
    /* loop over all channels */
    status = db_find_key(hDB, 0, "/Logger/Channels", &hKeyRoot);

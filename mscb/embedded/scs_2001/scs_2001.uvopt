@@ -331,10 +331,10 @@
       <FileType>1</FileType>
       <tvExp>0</tvExp>
       <Focus>0</Focus>
-      <ColumnNumber>16</ColumnNumber>
+      <ColumnNumber>23</ColumnNumber>
       <tvExpOptDlg>0</tvExpOptDlg>
-      <TopLine>1210</TopLine>
-      <CurrentLine>1235</CurrentLine>
+      <TopLine>225</TopLine>
+      <CurrentLine>237</CurrentLine>
       <bDave2>0</bDave2>
       <PathWithFileName>..\src\mscbutil.c</PathWithFileName>
       <FilenameWithoutPath>mscbutil.c</FilenameWithoutPath>
@@ -367,6 +367,20 @@
       <PathWithFileName>.\lcd_menu.c</PathWithFileName>
       <FilenameWithoutPath>lcd_menu.c</FilenameWithoutPath>
     </File>
+    <File>
+      <GroupNumber>1</GroupNumber>
+      <FileNumber>7</FileNumber>
+      <FileType>2</FileType>
+      <tvExp>0</tvExp>
+      <Focus>0</Focus>
+      <ColumnNumber>0</ColumnNumber>
+      <tvExpOptDlg>0</tvExpOptDlg>
+      <TopLine>0</TopLine>
+      <CurrentLine>0</CurrentLine>
+      <bDave2>0</bDave2>
+      <PathWithFileName>..\src\STARTUP_VDDMON.A51</PathWithFileName>
+      <FilenameWithoutPath>STARTUP_VDDMON.A51</FilenameWithoutPath>
+    </File>
   </Group>
 
   <Group>
@@ -376,7 +390,7 @@
     <cbSel>0</cbSel>
     <File>
       <GroupNumber>2</GroupNumber>
-      <FileNumber>7</FileNumber>
+      <FileNumber>8</FileNumber>
       <FileType>5</FileType>
       <tvExp>0</tvExp>
       <Focus>0</Focus>
@@ -390,7 +404,7 @@
     </File>
     <File>
       <GroupNumber>2</GroupNumber>
-      <FileNumber>8</FileNumber>
+      <FileNumber>9</FileNumber>
       <FileType>5</FileType>
       <tvExp>0</tvExp>
       <Focus>0</Focus>
@@ -404,7 +418,7 @@
     </File>
     <File>
       <GroupNumber>2</GroupNumber>
-      <FileNumber>9</FileNumber>
+      <FileNumber>10</FileNumber>
       <FileType>5</FileType>
       <tvExp>0</tvExp>
       <Focus>0</Focus>
@@ -1759,7 +1773,7 @@
     <ActiveMDIGroup>0</ActiveMDIGroup>
     <MDIGroup>
       <Size>100</Size>
-      <ActiveTab>1</ActiveTab>
+      <ActiveTab>4</ActiveTab>
       <Documents>
         <Doc>
           <Name>.\scs_2001.c</Name>
@@ -1775,9 +1789,9 @@
         </Doc>
         <Doc>
           <Name>CONFIG.H</Name>
-          <ColumnNumber>10</ColumnNumber>
+          <ColumnNumber>28</ColumnNumber>
           <TopLine>3</TopLine>
-          <CurrentLine>33</CurrentLine>
+          <CurrentLine>8</CurrentLine>
         </Doc>
         <Doc>
           <Name>..\src\mscbmain.c</Name>
@@ -1787,9 +1801,9 @@
         </Doc>
         <Doc>
           <Name>..\src\mscbutil.c</Name>
-          <ColumnNumber>16</ColumnNumber>
-          <TopLine>1210</TopLine>
-          <CurrentLine>1235</CurrentLine>
+          <ColumnNumber>23</ColumnNumber>
+          <TopLine>225</TopLine>
+          <CurrentLine>237</CurrentLine>
         </Doc>
         <Doc>
           <Name>.\lcd_menu.c</Name>

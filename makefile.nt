@@ -47,7 +47,6 @@ OBJS =  $(LIB_DIR)/midas.obj \
   $(LIB_DIR)/system.obj \
   $(LIB_DIR)/mrpc.obj \
   $(LIB_DIR)/odb.obj \
-  $(LIB_DIR)/ybos.obj \
   $(LIB_DIR)/ftplib.obj \
   $(LIB_DIR)/mxml.obj \
   $(LIB_DIR)/alarm.obj \
@@ -136,8 +135,6 @@ $(LIB_DIR)/history.obj: $(SRC_DIR)/history.c $(INC_DIR)/msystem.h $(INC_DIR)/mid
 	$(CC) /c /DMIDAS_DLL $(CFLAGS) /Fo$(LIB_DIR)/history.obj $(SRC_DIR)/history.c
 $(LIB_DIR)/odb.obj: $(SRC_DIR)/odb.c $(INC_DIR)/msystem.h $(INC_DIR)/midas.h $(INC_DIR)/midasinc.h $(INC_DIR)/mrpc.h
 	$(CC) /c /DMIDAS_DLL $(CFLAGS) /Fo$(LIB_DIR)/odb.obj $(SRC_DIR)/odb.c
-$(LIB_DIR)/ybos.obj: $(SRC_DIR)/ybos.c $(INC_DIR)/msystem.h $(INC_DIR)/midas.h $(INC_DIR)/midasinc.h $(INC_DIR)/mrpc.h
-	$(CC) /c /DMIDAS_DLL $(CFLAGS) /Fo$(LIB_DIR)/ybos.obj $(SRC_DIR)/ybos.c
 $(LIB_DIR)/ftplib.obj: $(SRC_DIR)/ftplib.c $(INC_DIR)/msystem.h $(INC_DIR)/midas.h $(INC_DIR)/midasinc.h
 	$(CC) /c /DMIDAS_DLL $(CFLAGS) /Fo$(LIB_DIR)/ftplib.obj $(SRC_DIR)/ftplib.c
 $(LIB_DIR)/mxml.obj: $(MXML_DIR)/mxml.c $(INC_DIR)/msystem.h $(INC_DIR)/midas.h $(INC_DIR)/midasinc.h $(MXML_DIR)/mxml.h

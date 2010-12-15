@@ -1283,11 +1283,15 @@ void show_status_page(int refresh, const char *cookie_wpwd)
    size = sizeof(str);
    db_get_value(hDB, 0, "/Experiment/Menu Buttons", str, &size, TID_STRING, TRUE);
 
-   p = strtok(str, ", ");
+   p = strtok(str, ",");
 
    while (p) {
 
+      while (*p == ' ')
+         p++;
       strlcpy(str, p, sizeof(str));
+      while (str[strlen(str)-1] == ' ')
+         str[strlen(str)-1] = 0;
 
       if (stricmp(str, "Start") == 0) {
          if (runinfo.state == STATE_STOPPED)
@@ -1334,7 +1338,7 @@ void show_status_page(int refresh, const char *cookie_wpwd)
       } else
          rsprintf("<input type=submit name=cmd value=\"%s\">\n", str);
 
-      p = strtok(NULL, ", ");
+      p = strtok(NULL, ",");
    }
 
    /*---- script buttons ----*/
@@ -13020,6 +13024,15 @@ void interprete(const char *cookie_pwd, const char *cookie_wpwd, const char *coo
          }
       }
 
+      return;
+   }
+
+   /*---- switch to next subrun -------------------------------------*/
+
+   if (strncmp(command, "Next Subrun", 11) == 0) {
+      i = TRUE;
+      db_set_value(hDB, 0, "/Logger/Next subrun", &i, sizeof(i), 1, TID_BOOL);
+      redirect("");
       return;
    }
 
