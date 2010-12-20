@@ -368,6 +368,7 @@ void delay_ms(unsigned int ms);
 
 unsigned char crc8(unsigned char *buffer, int len) reentrant;
 unsigned char crc8_add(unsigned char crc, unsigned int c);
+float nan(void);
 
 void lcd_setup();
 void lcd_clear();

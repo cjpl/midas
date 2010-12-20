@@ -35,6 +35,21 @@ extern unsigned char idata _n_sub_addr, _var_size, _flkey;
 
 /*------------------------------------------------------------------*/
 
+union _f_ul {
+  float f;
+  unsigned long ul;
+};
+
+float nan(void)
+{
+  union _f_ul x;
+
+  x.ul = 0xFFFFFFFF;
+  return x.f;
+}
+
+/*------------------------------------------------------------------*/
+
 unsigned char code crc8_data[] = {
    0x00, 0x5e, 0xbc, 0xe2, 0x61, 0x3f, 0xdd, 0x83,
    0xc2, 0x9c, 0x7e, 0x20, 0xa3, 0xfd, 0x1f, 0x41,

@@ -434,6 +434,8 @@ unsigned char tc600_read(unsigned short param, char *result)
    char xdata str[32];
    unsigned char xdata i, j, cs, len;
 
+   uart1_init_buffer();
+
    sprintf(str, "%03Bd00%03d02=?", TC600_ADDRESS, param);
 
    for (i = cs = 0; i < 12; i++)
@@ -464,6 +466,8 @@ unsigned char tc600_write(unsigned short param, unsigned char len, unsigned long
 {
    char xdata str[32];
    unsigned char xdata i, cs;
+
+   uart1_init_buffer();
 
    if (len == 6)
       sprintf(str, "%03Bd10%03d06%06ld", TC600_ADDRESS, param, value);
@@ -995,6 +999,8 @@ float xdata value;
 
          if (tc600_read(310, str))
             user_data.tmp_current = atoi(str) / 100.0;
+         else 
+            user_data.tmp_current = nan();
 
          if (tc600_read(303, str)) {
             if (atoi(str) != 0) {
@@ -1005,8 +1011,10 @@ float xdata value;
                user_data.turbo_err[0] = 0;
             }
          }
-      } else
+      } else {
+         user_data.rot_speed = 9999;
          user_data.error |= ERR_TURBO_COMM;
+      }
 
       if (user_data.final_speed < 100) {
          tc600_read(315, str);
