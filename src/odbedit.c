@@ -2699,6 +2699,7 @@ int main(int argc, char *argv[])
    char cmd[2000], dir[256], str[2000];
    BOOL debug;
    BOOL corrupted;
+   BOOL reload_from_file = FALSE;
    HNDLE hDB;
 
    cmd[0] = dir[0] = 0;
@@ -2723,6 +2724,8 @@ int main(int argc, char *argv[])
    for (i = 1; i < argc; i++) {
       if (argv[i][0] == '-' && argv[i][1] == 'g')
          debug = TRUE;
+      else if (argv[i][0] == '-' && argv[i][1] == 'R')
+         reload_from_file = TRUE;
       else if (argv[i][0] == '-' && argv[i][1] == 'C')
          corrupted = TRUE;
       else if (argv[i][0] == '-') {
@@ -2747,7 +2750,7 @@ int main(int argc, char *argv[])
           usage:
             printf("usage: odbedit [-h Hostname] [-e Experiment] [-d ODB Subtree]\n");
             printf("               [-c Command] [-c @CommandFile] [-s size]\n");
-            printf("               [-g (debug)] [-C (connect to corrupted ODB)]\n\n");
+            printf("               [-g (debug)] [-C (connect to corrupted ODB)] [-R (reload ODB from .ODB.SHM)]\n\n");
             printf("For a list of valid commands start odbedit interactively\n");
             printf("and type \"help\".\n");
             return 0;
@@ -2763,6 +2766,14 @@ int main(int argc, char *argv[])
 
    status = cm_connect_experiment1(host_name, exp_name, "ODBEdit", NULL,
                                    odb_size, DEFAULT_WATCHDOG_TIMEOUT);
+
+   if (reload_from_file) {
+      status = ss_shm_delete("ODB");
+      printf("ss_shm_delete(ODB) status %d\n", status);
+      printf("Please run odbedit again without \'-R\' and ODB will be reloaded from .ODB.SHM\n");
+      return 1;
+   }
+
    if (status == CM_WRONG_PASSWORD)
       return 1;
    else if ((status == DB_INVALID_HANDLE) && corrupted) {
