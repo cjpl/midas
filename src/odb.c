@@ -3157,9 +3157,9 @@ INT db_set_value_index(HNDLE hDB, HNDLE hKeyRoot, const char *key_name, const vo
       db_create_key(hDB, hKeyRoot, key_name, type);
       db_find_key(hDB, hKeyRoot, key_name, &hkey);
       assert(hkey);
-   }
-   if (trunc)
-      db_set_num_values(hDB, hkey, idx + 1);
+   } else
+      if (trunc)
+         db_set_num_values(hDB, hkey, idx + 1);
 
    return db_set_data_index(hDB, hkey, data, data_size, idx, type);
 }
