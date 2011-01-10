@@ -916,15 +916,22 @@ INT initialize_equipment(void)
             equipment[idx].status = equipment[idx].cd(CMD_INIT, &equipment[idx]);
 
             if (equipment[idx].status == FE_SUCCESS)
-               set_equipment_status(equipment[idx].name, "Ok", "#00FF00");
+               strcpy(str, "Ok");
             else if (equipment[idx].status == FE_ERR_HW)
-               set_equipment_status(equipment[idx].name, "Hardware error", "#FF0000");
+               strcpy(str, "Hardware error");
             else if (equipment[idx].status == FE_ERR_ODB)
-               set_equipment_status(equipment[idx].name, "ODB error", "#FF0000");
+               strcpy(str, "ODB error");
             else if (equipment[idx].status == FE_ERR_DRIVER)
-               set_equipment_status(equipment[idx].name, "Driver error", "#FF0000");
+               strcpy(str, "Driver error");
             else
-               set_equipment_status(equipment[idx].name, "Error", "#FF0000");
+               strcpy(str, "Error");
+
+            if (equipment[idx].status == FE_SUCCESS)
+               set_equipment_status(equipment[idx].name, str, "#00FF00");
+            else {
+               set_equipment_status(equipment[idx].name, str, "#FF0000");
+               cm_msg(MERROR, "initialize_equipment", "Equipment %s disabled because of %s", equipment[idx].name, str);
+            }
 
          } else {
             equipment[idx].status = FE_ERR_DISABLED;
