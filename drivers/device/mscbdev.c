@@ -39,7 +39,7 @@ typedef struct {
 
 /*---- device driver routines --------------------------------------*/
 
-void addr_changed(HNDLE hDB, HNDLE hKey, void *arg)
+int addr_changed(HNDLE hDB, HNDLE hKey, void *arg)
 {
    INT i, status;
    MSCB_INFO_VAR var_info;
@@ -56,9 +56,15 @@ void addr_changed(HNDLE hDB, HNDLE hKey, void *arg)
             info->mscbdev_settings.var_size[i] = -1;
          else
             info->mscbdev_settings.var_size[i] = var_info.width;
-      } else
+      } else {
          info->mscbdev_settings.var_size[i] = 0;
+         cm_msg(MERROR, "addr_changed", "Cannot read from address %d at submaster %s", 
+            info->mscbdev_settings.mscb_address[i], info->mscbdev_settings.mscb_device);
+         return FE_ERR_HW;
+      }
    }
+
+   return FE_SUCCESS;
 }
 
 /*----------------------------------------------------------------------------*/
@@ -143,9 +149,7 @@ INT mscbdev_init(HNDLE hkey, void **pinfo, INT channels, INT(*bd) (INT cmd, ...)
       return FE_ERR_ODB;
 
    /* read initial variable sizes */
-   addr_changed(0, 0, info);
-
-   return FE_SUCCESS;
+   return addr_changed(0, 0, info);
 }
 
 /*----------------------------------------------------------------------------*/
@@ -219,6 +223,7 @@ INT mscbdev_read_all(MSCBDEV_INFO * info)
             /* only produce error once every minute */
             if (ss_time() - last_error >= 60) {
                last_error = ss_time();
+               sprintf(str, "Read error submaster %s address %d", info->mscbdev_settings.mscb_device, addr);
                mfe_error(str);
             }
             for (j = v_start; j <= v_stop; j++)
