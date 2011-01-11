@@ -989,10 +989,10 @@ INT db_open_database(const char *xdatabase_name, INT database_size, HNDLE * hDB,
          errno = 0;
          kill(pheader->client[i].pid, 0);
          if (errno == ESRCH) {
-	   char client_name[NAME_LENGTH];
+	   char client_name_tmp[NAME_LENGTH];
 	   int client_pid;
 
-	   strlcpy(client_name, pheader->client[i].name, sizeof(client_name));
+	   strlcpy(client_name_tmp, pheader->client[i].name, sizeof(client_name_tmp));
 	   client_pid = pheader->client[i].pid;
 
             /* decrement notify_count for open records and clear exclusive mode */
@@ -1012,7 +1012,7 @@ INT db_open_database(const char *xdatabase_name, INT database_size, HNDLE * hDB,
 
 	    db_unlock_database(handle + 1);
 
-            cm_msg(MERROR, "db_open_database", "Removed ODB client \'%s\', index %d because process pid %d does not exists", client_name, i, client_pid);
+            cm_msg(MERROR, "db_open_database", "Removed ODB client \'%s\', index %d because process pid %d does not exists", client_name_tmp, i, client_pid);
 
 	    db_lock_database(handle + 1);
          }
