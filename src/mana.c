@@ -1272,7 +1272,7 @@ INT book_ttree()
              (int *) realloc(et->branch_len, sizeof(int) * (et->n_branch + 1));
 
          et->branch[et->n_branch] =
-             et->tree->Branch(analyze_request[index].event_name, NULL, leaf_tags);
+             et->tree->Branch((const char*)analyze_request[index].event_name, (const char*)NULL, leaf_tags);
          strcpy(&et->branch_name[et->n_branch * NAME_LENGTH],
                 analyze_request[index].event_name);
          et->n_branch++;
@@ -1313,7 +1313,7 @@ INT book_ttree()
                    (int *) realloc(et->branch_len, sizeof(int) * (et->n_branch + 1));
 
                et->branch[et->n_branch] =
-                   et->tree->Branch(bank_list->name, NULL, leaf_tags);
+                   et->tree->Branch((const char*)bank_list->name, (const char*)NULL, leaf_tags);
                strcpy(&et->branch_name[et->n_branch * NAME_LENGTH], bank_list->name);
                et->n_branch++;
             } else {
@@ -1357,7 +1357,7 @@ INT book_ttree()
                    (int *) realloc(et->branch_len, sizeof(int) * (et->n_branch + 1));
 
                et->branch[et->n_branch] =
-                   et->tree->Branch(bank_list->name, NULL, leaf_tags);
+                   et->tree->Branch((const char*)bank_list->name, (const char*)NULL, leaf_tags);
                strcpy(&et->branch_name[et->n_branch * NAME_LENGTH], bank_list->name);
                et->n_branch++;
             }
