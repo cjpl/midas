@@ -313,12 +313,12 @@
       <GroupNumber>1</GroupNumber>
       <FileNumber>2</FileNumber>
       <FileType>1</FileType>
-      <tvExp>0</tvExp>
+      <tvExp>1</tvExp>
       <Focus>0</Focus>
-      <ColumnNumber>0</ColumnNumber>
+      <ColumnNumber>9</ColumnNumber>
       <tvExpOptDlg>0</tvExpOptDlg>
-      <TopLine>49</TopLine>
-      <CurrentLine>49</CurrentLine>
+      <TopLine>980</TopLine>
+      <CurrentLine>1015</CurrentLine>
       <bDave2>0</bDave2>
       <PathWithFileName>.\scs_2001_pump.c</PathWithFileName>
       <FilenameWithoutPath>scs_2001_pump.c</FilenameWithoutPath>
@@ -343,10 +343,10 @@
       <FileType>1</FileType>
       <tvExp>0</tvExp>
       <Focus>0</Focus>
-      <ColumnNumber>7</ColumnNumber>
+      <ColumnNumber>2</ColumnNumber>
       <tvExpOptDlg>0</tvExpOptDlg>
-      <TopLine>287</TopLine>
-      <CurrentLine>299</CurrentLine>
+      <TopLine>26</TopLine>
+      <CurrentLine>43</CurrentLine>
       <bDave2>0</bDave2>
       <PathWithFileName>..\..\..\src\mscbutil.c</PathWithFileName>
       <FilenameWithoutPath>mscbutil.c</FilenameWithoutPath>
@@ -1801,21 +1801,15 @@
       <Documents>
         <Doc>
           <Name>.\scs_2001_pump.c</Name>
-          <ColumnNumber>0</ColumnNumber>
-          <TopLine>49</TopLine>
-          <CurrentLine>49</CurrentLine>
+          <ColumnNumber>9</ColumnNumber>
+          <TopLine>980</TopLine>
+          <CurrentLine>1015</CurrentLine>
         </Doc>
         <Doc>
           <Name>..\..\..\src\mscbmain.c</Name>
           <ColumnNumber>3</ColumnNumber>
           <TopLine>1543</TopLine>
           <CurrentLine>1567</CurrentLine>
-        </Doc>
-        <Doc>
-          <Name>..\..\..\src\mscbutil.c</Name>
-          <ColumnNumber>7</ColumnNumber>
-          <TopLine>287</TopLine>
-          <CurrentLine>299</CurrentLine>
         </Doc>
         <Doc>
           <Name>CONFIG.H</Name>
@@ -1832,14 +1826,20 @@
         <Doc>
           <Name>\MIDAS\MSCB\EMBEDDED\INCLUDE\MSCBEMB.H</Name>
           <ColumnNumber>0</ColumnNumber>
-          <TopLine>577</TopLine>
-          <CurrentLine>583</CurrentLine>
+          <TopLine>337</TopLine>
+          <CurrentLine>372</CurrentLine>
         </Doc>
         <Doc>
           <Name>C:\midas\mscb\embedded\scs_210\scs_210.c</Name>
           <ColumnNumber>0</ColumnNumber>
           <TopLine>19</TopLine>
           <CurrentLine>45</CurrentLine>
+        </Doc>
+        <Doc>
+          <Name>..\..\..\src\mscbutil.c</Name>
+          <ColumnNumber>2</ColumnNumber>
+          <TopLine>26</TopLine>
+          <CurrentLine>43</CurrentLine>
         </Doc>
       </Documents>
     </MDIGroup>
