@@ -31,6 +31,7 @@ zip mscb%version%.zip calib_hvr.exe
 
 zip -rp mscb%version%.zip embedded -i \*.h
 zip -rp mscb%version%.zip embedded -i \*.c
+zip -rp mscb%version%.zip embedded -i \*.A51
 zip -rp mscb%version%.zip embedded -i \*.uvproj
 zip -rp mscb%version%.zip embedded -i \*.uvopt
 zip -rp mscb%version%.zip embedded -i \*.hex
