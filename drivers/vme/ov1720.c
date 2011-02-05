@@ -1,8 +1,8 @@
 /*********************************************************************
 
-  Name:         v1720.c
+  Name:         ov1720.c
   Created by:   Pierre-A. Amaudruz / K.Olchanski
-
+                    implementation of the CAENCommLib functions
   Contents:     V1720 8 ch. 12bit 250Msps for Optical link
  
   $Id$
@@ -14,7 +14,7 @@
 
 // Buffer organization map for number of samples
 uint32_t V1720_NSAMPLES_MODE[11] = { (1<<20), (1<<19), (1<<18), (1<<17), (1<<16), (1<<15)
-			       ,(1<<14), (1<<13), (1<<12), (1<<11), (1<<10)};
+              ,(1<<14), (1<<13), (1<<12), (1<<11), (1<<10)};
 
 /*****************************************************************/
 CAENComm_ErrorCode ov1720_ChannelSet(int handle, uint32_t channel, uint32_t what, uint32_t that)

@@ -2,10 +2,10 @@
 
   Name:         ov1720drv.h
   Created by:   K.Olchanski
-
+                    implementation of the CAENCommLib functions
   Contents:     v1720 8-channel 200 MHz 12-bit ADC
 
-  $Id: v1720drv.h 4728 2010-05-12 05:34:44Z svn $
+  $Id$
                 
 *********************************************************************/
 #ifndef  OV1720DRV_INCLUDE_H
