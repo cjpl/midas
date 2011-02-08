@@ -705,12 +705,19 @@ INT register_equipment(void)
       eq_stats->kbytes_per_sec = 0;
 
       /* open hot link to statistics tree */
-      status =
-          db_open_record(hDB, hKey, eq_stats, sizeof(EQUIPMENT_STATS), MODE_WRITE, NULL,
-                         NULL);
+      status =db_open_record(hDB, hKey, eq_stats, sizeof(EQUIPMENT_STATS), MODE_WRITE, NULL, NULL);
+      if (status == DB_NO_ACCESS) {
+         /* record is probably still in exclusive access by dead FE, so reset it */
+         status = db_set_mode(hDB, hKey, MODE_READ | MODE_WRITE | MODE_DELETE, TRUE);
+         if (status != DB_SUCCESS)
+            cm_msg(MERROR, "register_equipment", "Cannot change access mode for record \'%s\', error %d", str, status);
+         else
+            cm_msg(MINFO, "register_equipment", "Recovered access mode for record \'%s\'", str);
+         status = db_open_record(hDB, hKey, eq_stats, sizeof(EQUIPMENT_STATS), MODE_WRITE, NULL, NULL);
+      }
       if (status != DB_SUCCESS) {
          cm_msg(MERROR, "register_equipment",
-                "Cannot open statistics record \'%s\', error %d. Probably other FE is using it",
+                "Cannot open statistics record \'%s\', error %d",
                 str, status);
          ss_sleep(3000);
       }
