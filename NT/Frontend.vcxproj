@@ -125,8 +125,8 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\src\alarm.c" />
     <ClCompile Include="..\drivers\camac\camacnul.c" />
+    <ClCompile Include="..\src\alarm.c" />
     <ClCompile Include="..\src\cnaf_callback.c" />
     <ClCompile Include="..\src\elog.c" />
     <ClCompile Include="..\examples\experiment\frontend.c">
