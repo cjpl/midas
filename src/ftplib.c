@@ -598,7 +598,7 @@ int ftp_dir(FTP_CON * con, const char *file)
       return con->err_no;
 
    while (ftp_receive(con->data, buffer, sizeof(buffer)))
-      printf(buffer);
+      printf("%s", buffer);
 
    return ftp_close(con);
 }

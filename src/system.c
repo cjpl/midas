@@ -4925,10 +4925,9 @@ INT ss_tape_write_eof(INT channel)
 
 \********************************************************************/
 {
-   INT status;
-
 #ifdef MTIOCTOP
    struct mtop arg;
+   INT status;
 
    arg.mt_op = MTWEOF;
    arg.mt_count = 1;
@@ -4949,6 +4948,7 @@ INT ss_tape_write_eof(INT channel)
 
    TAPE_GET_DRIVE_PARAMETERS d;
    DWORD size;
+   INT status;
 
    size = sizeof(TAPE_GET_DRIVE_PARAMETERS);
    GetTapeParameters((HANDLE) channel, GET_TAPE_DRIVE_INFORMATION, &size, &d);
@@ -4992,10 +4992,9 @@ INT ss_tape_fskip(INT channel, INT count)
 
 \********************************************************************/
 {
-   INT status;
-
 #ifdef MTIOCTOP
    struct mtop arg;
+   INT status;
 
    if (count > 0)
       arg.mt_op = MTFSF;
@@ -5016,6 +5015,7 @@ INT ss_tape_fskip(INT channel, INT count)
 #endif                          /* OS_UNIX */
 
 #ifdef OS_WINNT
+   INT status;
 
    status = SetTapePosition((HANDLE) channel, TAPE_SPACE_FILEMARKS, 0, (DWORD) count, 0, FALSE);
 
@@ -5052,10 +5052,9 @@ INT ss_tape_rskip(INT channel, INT count)
 
 \********************************************************************/
 {
-   INT status;
-
 #ifdef MTIOCTOP
    struct mtop arg;
+   INT status;
 
    if (count > 0)
       arg.mt_op = MTFSR;
@@ -5076,6 +5075,7 @@ INT ss_tape_rskip(INT channel, INT count)
 #endif                          /* OS_UNIX */
 
 #ifdef OS_WINNT
+   INT status;
 
    status = SetTapePosition((HANDLE) channel, TAPE_SPACE_RELATIVE_BLOCKS, 0, (DWORD) count, 0, FALSE);
    if (status != NO_ERROR) {
@@ -5107,10 +5107,9 @@ INT ss_tape_rewind(INT channel)
 
 \********************************************************************/
 {
-   INT status;
-
 #ifdef MTIOCTOP
    struct mtop arg;
+   INT status;
 
    arg.mt_op = MTREW;
    arg.mt_count = 0;
@@ -5128,6 +5127,7 @@ INT ss_tape_rewind(INT channel)
 #endif                          /* OS_UNIX */
 
 #ifdef OS_WINNT
+   INT status;
 
    status = SetTapePosition((HANDLE) channel, TAPE_REWIND, 0, 0, 0, FALSE);
    if (status != NO_ERROR) {
@@ -5159,10 +5159,9 @@ INT ss_tape_spool(INT channel)
 
 \********************************************************************/
 {
-   INT status;
-
 #ifdef MTIOCTOP
    struct mtop arg;
+   INT status;
 
 #ifdef MTEOM
    arg.mt_op = MTEOM;
@@ -5184,6 +5183,7 @@ INT ss_tape_spool(INT channel)
 #endif                          /* OS_UNIX */
 
 #ifdef OS_WINNT
+   INT status;
 
    status = SetTapePosition((HANDLE) channel, TAPE_SPACE_END_OF_DATA, 0, 0, 0, FALSE);
    if (status != NO_ERROR) {
@@ -5215,10 +5215,9 @@ INT ss_tape_mount(INT channel)
 
 \********************************************************************/
 {
-   INT status;
-
 #ifdef MTIOCTOP
    struct mtop arg;
+   INT status;
 
 #ifdef MTLOAD
    arg.mt_op = MTLOAD;
@@ -5240,6 +5239,7 @@ INT ss_tape_mount(INT channel)
 #endif                          /* OS_UNIX */
 
 #ifdef OS_WINNT
+   INT status;
 
    status = PrepareTape((HANDLE) channel, TAPE_LOAD, FALSE);
    if (status != NO_ERROR) {
@@ -5271,10 +5271,9 @@ INT ss_tape_unmount(INT channel)
 
 \********************************************************************/
 {
-   INT status;
-
 #ifdef MTIOCTOP
    struct mtop arg;
+   INT status;
 
 #ifdef MTOFFL
    arg.mt_op = MTOFFL;
@@ -5296,6 +5295,7 @@ INT ss_tape_unmount(INT channel)
 #endif                          /* OS_UNIX */
 
 #ifdef OS_WINNT
+   INT status;
 
    status = PrepareTape((HANDLE) channel, TAPE_UNLOAD, FALSE);
    if (status != NO_ERROR) {
