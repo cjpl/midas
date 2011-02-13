@@ -18,7 +18,7 @@ The Event builder main file
 #include "midas.h"
 #include "mevb.h"
 #include "msystem.h"
-#include "ybos.h"
+#include "mdsupport.h"
 
 #define SERVER_CACHE_SIZE  100000       /* event cache before buffer */
 
@@ -77,7 +77,7 @@ extern INT ebuilder_exit(void);
 extern INT ebuilder_loop(void);
 
 extern EQUIPMENT equipment[];
-extern INT ybos_event_swap(DWORD * pevt);
+extern INT md_event_swap(INT fmt, void * pevt);
 
 #define EQUIPMENT_COMMON_STR "\
 Event ID = WORD : 0\n\
@@ -483,7 +483,7 @@ INT eb_yfragment_add(char *pdest, char *psrce, INT * size)
     */
    char *psdata, *pddata;
    DWORD *pslrl, *pdlrl;
-   INT i4frgsize, i1frgsize, status;
+   INT i4frgsize, i1frgsize;
 
    /* Condition for new EVENT the data_size should be ZERO */
    *size = ((EVENT_HEADER *) pdest)->data_size;
@@ -499,7 +499,7 @@ INT eb_yfragment_add(char *pdest, char *psrce, INT * size)
       pslrl = (DWORD *) (((EVENT_HEADER *) psrce) + 1);
 
       /* Swap event if necessary */
-      status = ybos_event_swap(pslrl);
+      md_event_swap(FORMAT_MIDAS, pslrl);
 
       /* copy done in bytes, do not include LRL */
       psdata = (char *) (pslrl + 1);
@@ -531,7 +531,7 @@ INT eb_yfragment_add(char *pdest, char *psrce, INT * size)
       pslrl = (DWORD *) (((EVENT_HEADER *) psrce) + 1);
 
       /* Swap event if necessary */
-      status = ybos_event_swap(pslrl);
+      md_event_swap(FORMAT_MIDAS, pslrl);
 
       /* size in byte from the source midas header */
       *size = ((EVENT_HEADER *) psrce)->data_size;
@@ -908,7 +908,7 @@ INT source_scan(INT fmt, EQUIPMENT_INFO * eq_info)
             switch (fmt) {
             case FORMAT_YBOS:
                plrl = (DWORD *) (((EVENT_HEADER *) ebch[i].pfragment) + 1);
-               ybos_event_swap(plrl);
+              md_event_swap(fmt, plrl);
                break;
             case FORMAT_MIDAS:
                psbh = (BANK_HEADER *) (((EVENT_HEADER *) ebch[i].pfragment) + 1);
