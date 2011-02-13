@@ -88,6 +88,7 @@ MY my;
 /**dox***************************************************************/
 #endif                          /* DOXYGEN_SHOULD_SKIP_THIS */
 
+#ifdef HAVE_FTPLIB
 /*------------------------------------------------------------------*/
 INT mftp_open(char *destination, FTP_CON ** con)
 {
@@ -252,6 +253,7 @@ status : from lower function
    my.evtn = 0;
    return (MD_SUCCESS);
 }
+#endif                          /* DOXYGEN_SHOULD_SKIP_THIS */
 
 /*------------------------------------------------------------------*/
 INT md_file_rclose(INT data_fmt)
