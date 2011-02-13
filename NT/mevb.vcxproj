@@ -102,7 +102,6 @@
     <ClCompile Include="..\src\odb.c" />
     <ClCompile Include="..\..\mxml\strlcpy.c" />
     <ClCompile Include="..\src\system.c" />
-    <ClCompile Include="..\src\ybos.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\examples\eventbuilder\mevb.h" />
