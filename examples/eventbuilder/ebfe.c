@@ -88,7 +88,7 @@ extern "C" {
    EQUIPMENT equipment[] = {
 
       {"Trigger",               /* equipment name */
-       2, 0,                    /* event ID, trigger mask */
+       {2, 0,                    /* event ID, trigger mask */
        "BUF",                   /* event buffer */
 #ifdef USE_INT
        EQ_INTERRUPT,            /* equipment type */
@@ -104,12 +104,12 @@ extern "C" {
        0,                       /* stop run after this event limit */
        0,                       /* number of sub events */
        0,                       /* don't log history */
-       "", "", "",
+	   "", "", "",},
        read_trigger_event,      /* readout routine */
        },
 
       {"Scaler",                /* equipment name */
-       3, 0,                    /* event ID, trigger mask */
+       {3, 0,                   /* event ID, trigger mask */
        "BIF",                   /* event buffer */
        EQ_PERIODIC | EQ_EB | 
        EQ_MANUAL_TRIG,          /* equipment type */
@@ -122,7 +122,7 @@ extern "C" {
        0,                       /* stop run after this event limit */
        0,                       /* number of sub events */
        0,                       /* log history */
-       "", "", "",
+	   "", "", "",},
        read_scaler_event,       /* readout routine */
        },
 
