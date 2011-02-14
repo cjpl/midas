@@ -117,6 +117,8 @@ static BUFFER *_buffer;
 static INT _buffer_entries = 0;
 
 static INT _msg_buffer = 0;
+static INT _msg_rb = 0;
+static MUTEX_T *_msg_mutex = NULL;
 static void (*_msg_dispatch) (HNDLE, HNDLE, EVENT_HEADER *, void *);
 
 static REQUEST_LIST *_request_list;
@@ -597,47 +599,10 @@ INT cm_msg_log1(INT message_type, const char *message, const char *facility)
    return CM_SUCCESS;
 }
 
-/********************************************************************/
-/**
-This routine can be called whenever an internal error occurs
-or an informative message is produced. Different message
-types can be enabled or disabled by setting the type bits
-via cm_set_msg_print().
-@attention Do not add the "\n" escape carriage control at the end of the
-formated line as it is already added by the client on the receiving side.
-\code
-   ...
-   cm_msg(MINFO, "my program", "This is a information message only);
-   cm_msg(MERROR, "my program", "This is an error message with status:%d", my_status);
-   cm_msg(MTALK, "my_program", My program is Done!");
-   ...
-\endcode
-@param message_type (See @ref midas_macro).
-@param filename Name of source file where error occured
-@param line Line number where error occured
-@param routine Routine name.
-@param format message to printout, ... Parameters like for printf()
-@return CM_SUCCESS
-*/
-INT cm_msg(INT message_type, const char *filename, INT line, const char *routine, const char *format, ...)
+static INT cm_msg_format(char* local_message, int sizeof_local_message, char* send_message, int sizeof_send_message, INT message_type, const char *filename, INT line, const char *routine, const char *format, va_list* argptr)
 {
-   va_list argptr;
-   char event[1000], type_str[256], str[1000], format_cpy[900], local_message[1000], send_message[1000];
+   char type_str[256], str[1000], format_cpy[900];
    const char *pc;
-   EVENT_HEADER *pevent;
-   INT status;
-   static BOOL in_routine = FALSE;
-
-   /* avoid recursive calls */
-   if (in_routine)
-      return 0;
-
-   if (0 && _database[0].lock_cnt != 0) {
-      fprintf(stderr, "cm_msg(%d,%s,%d,%s,%s: ODB lock count %d, my pid %d\n", message_type, filename, line, routine, format, _database[0].lock_cnt, getpid());
-      //return 0;
-   }
-
-   in_routine = TRUE;
 
    /* strip path */
    pc = filename + strlen(filename);
@@ -677,8 +642,8 @@ INT cm_msg(INT message_type, const char *filename, INT line, const char *routine
    /* preceed error messages with file and line info */
    if (message_type == MT_ERROR) {
       sprintf(str, "[%s:%d:%s,%s] ", pc, line, routine, type_str);
-      strlcat(send_message, str, sizeof(send_message));
-      strlcat(local_message, str, sizeof(send_message));
+      strlcat(send_message, str, sizeof_send_message);
+      strlcat(local_message, str, sizeof_send_message);
    } else if (message_type == MT_USER)
       sprintf(local_message, "[%s,%s] ", routine, type_str);
 
@@ -686,21 +651,21 @@ INT cm_msg(INT message_type, const char *filename, INT line, const char *routine
    strlcpy(format_cpy, format, sizeof(format_cpy));
 
    /* print argument list into message */
-   va_start(argptr, format);
-   vsprintf(str, (char *) format, argptr);
-   va_end(argptr);
-   strcat(send_message, str);
-   strcat(local_message, str);
+   vsprintf(str, (char *) format, *argptr);
 
-   /* call user function if set via cm_set_msg_print */
-   if (_message_print != NULL && (message_type & _message_mask_user) != 0)
-      _message_print(local_message);
+   strlcat(send_message, str, sizeof_send_message);
+   strlcat(local_message, str, sizeof_local_message);
 
-   /* return if system mask is not set */
-   if ((message_type & _message_mask_system) == 0) {
-      in_routine = FALSE;
-      return CM_SUCCESS;
-   }
+   return CM_SUCCESS;
+}
+
+static INT cm_msg_send_event(INT ts, INT message_type, const char *send_message)
+{
+   int status;
+   char event[1000];
+   EVENT_HEADER *pevent;
+
+   //printf("cm_msg_send: ts %d, type %d, message [%s]\n", ts, message_type, send_message);
 
    /* copy message to event */
    pevent = (EVENT_HEADER *) event;
@@ -712,22 +677,199 @@ INT cm_msg(INT message_type, const char *filename, INT line, const char *routine
       if (_msg_buffer == 0) {
          status = bm_open_buffer(MESSAGE_BUFFER_NAME, MESSAGE_BUFFER_SIZE, &_msg_buffer);
          if (status != BM_SUCCESS && status != BM_CREATED) {
-            in_routine = FALSE;
             return status;
          }
       }
 
       /* setup the event header and send the message */
       bm_compose_event(pevent, EVENTID_MESSAGE, (WORD) message_type, strlen(event + sizeof(EVENT_HEADER)) + 1, 0);
+      pevent->time_stamp = ts;
       bm_send_event(_msg_buffer, event, pevent->data_size + sizeof(EVENT_HEADER), SYNC);
    }
 
-   /* log message */
-   cm_msg_log(message_type, send_message);
+   return CM_SUCCESS;
+}
+
+static INT cm_msg_buffer(int ts, int message_type, const char *message)
+{
+   int status;
+   int len;
+   char *wp;
+
+   //printf("cm_msg_buffer ts %d, type %d, message [%s]!\n", ts, message_type, message);
+
+   if (!_msg_rb) {
+      status = rb_create(100*1024, 1024, &_msg_rb);
+      assert(status==SUCCESS);
+
+      status = ss_mutex_create(&_msg_mutex);
+      assert(status==SUCCESS);
+   }
+
+   len = strlen(message) + 1;
+
+   // lock
+   status = ss_mutex_wait_for(_msg_mutex, 0);
+   assert(status == SS_SUCCESS);
+
+   status = rb_get_wp(_msg_rb, (void*)&wp, 1000);
+   
+   if (status != SUCCESS || wp == NULL) {
+      // unlock
+      ss_mutex_release(_msg_mutex);
+      return SS_NO_MEMORY;
+   }
+
+   *wp++ = 'M';
+   *wp++ = 'S';
+   *wp++ = 'G';
+   *wp++ = '_';
+   *(int*)wp = ts;
+   wp += sizeof(int);
+   *(int*)wp = message_type;
+   wp += sizeof(int);
+   *(int*)wp = len;
+   wp += sizeof(int);
+   memcpy(wp, message, len);
+   rb_increment_wp(_msg_rb, 4+3*sizeof(int)+len);
+
+   // unlock
+   ss_mutex_release(_msg_mutex);
+
+   return CM_SUCCESS;
+}
+
+/********************************************************************/
+/**
+This routine can be called to process messages buffered by cm_msg(). Normally
+it is called from cm_yield() and cm_disconnect_experiment() to make sure
+all accumulated messages are processed.
+*/
+INT cm_msg_flush_buffer()
+{
+   int i;
+
+   //printf("cm_msg_flush_buffer!\n");
+
+   if (!_msg_rb)
+     return CM_SUCCESS;
+
+   for (i=0; i<100; i++) {
+      int status;
+      int ts;
+      int message_type;
+      char message[1024];
+      int n_bytes;
+      char* rp;
+      int len;
+
+      status = rb_get_buffer_level(_msg_rb, &n_bytes);
+      
+      if (status != SUCCESS || n_bytes <= 0)
+	break;
+
+      // lock
+      status = ss_mutex_wait_for(_msg_mutex, 0);
+      assert(status == SS_SUCCESS);
+      
+      status = rb_get_rp(_msg_rb, (void*)&rp, 0);
+      if (status != SUCCESS || rp == NULL) {
+         // unlock
+         ss_mutex_release(_msg_mutex);
+         return SS_NO_MEMORY;
+      }
+
+      assert(rp);
+      assert(rp[0]=='M');
+      assert(rp[1]=='S');
+      assert(rp[2]=='G');
+      assert(rp[3]=='_');
+      rp += 4;
+
+      ts = *(int*)rp;
+      rp += sizeof(int);
+
+      message_type = *(int*)rp;
+      rp += sizeof(int);
+
+      len = *(int*)rp;
+      rp += sizeof(int);
+
+      strlcpy(message, rp, sizeof(message));
+      
+      rb_increment_rp(_msg_rb, 4+3*sizeof(int)+len);
+
+      // unlock
+      ss_mutex_release(_msg_mutex);
+      
+      /* log message */
+      cm_msg_log(message_type, message);
+
+      /* send message to SYSMSG */
+      status = cm_msg_send_event(ts, message_type, message);
+      if (status != CM_SUCCESS)
+         return status;
+   }
+
+   return CM_SUCCESS;
+}
+
+/********************************************************************/
+/**
+This routine can be called whenever an internal error occurs
+or an informative message is produced. Different message
+types can be enabled or disabled by setting the type bits
+via cm_set_msg_print().
+@attention Do not add the "\n" escape carriage control at the end of the
+formated line as it is already added by the client on the receiving side.
+\code
+   ...
+   cm_msg(MINFO, "my program", "This is a information message only);
+   cm_msg(MERROR, "my program", "This is an error message with status:%d", my_status);
+   cm_msg(MTALK, "my_program", My program is Done!");
+   ...
+\endcode
+@param message_type (See @ref midas_macro).
+@param filename Name of source file where error occured
+@param line Line number where error occured
+@param routine Routine name.
+@param format message to printout, ... Parameters like for printf()
+@return CM_SUCCESS
+*/
+INT cm_msg(INT message_type, const char *filename, INT line, const char *routine, const char *format, ...)
+{
+   va_list argptr;
+   char local_message[1000], send_message[1000];
+   INT status;
+   static BOOL in_routine = FALSE;
+   int ts = ss_time();
+
+   /* avoid recursive calls */
+   if (in_routine)
+      return CM_SUCCESS;
+
+   in_routine = TRUE;
+
+   /* print argument list into message */
+   va_start(argptr, format);
+   cm_msg_format(local_message, sizeof(local_message), send_message, sizeof(send_message), message_type, filename, line, routine, format, &argptr);
+   va_end(argptr);
+
+   /* call user function if set via cm_set_msg_print */
+   if (_message_print != NULL && (message_type & _message_mask_user) != 0)
+      _message_print(local_message);
+
+   /* return if system mask is not set */
+   if ((message_type & _message_mask_system) == 0) {
+      in_routine = FALSE;
+      return CM_SUCCESS;
+   }
+
+   status = cm_msg_buffer(ts, message_type, send_message);
 
    in_routine = FALSE;
 
-   return CM_SUCCESS;
+   return status;
 }
 
 /********************************************************************/
@@ -1777,8 +1919,10 @@ INT cm_get_environment(char *host_name, int host_name_size, char *exp_name, int 
 /********************************************************************/
 void cm_check_connect(void)
 {
-   if (_hKeyClient)
+   if (_hKeyClient) {
       cm_msg(MERROR, "", "cm_disconnect_experiment not called at end of program");
+      cm_msg_flush_buffer();
+   }
 }
 
 /**dox***************************************************************/
@@ -1862,6 +2006,7 @@ INT cm_connect_experiment(const char *host_name, const char *exp_name, const cha
    status =
        cm_connect_experiment1(host_name, exp_name, client_name, func, DEFAULT_ODB_SIZE,
                               DEFAULT_WATCHDOG_TIMEOUT);
+   cm_msg_flush_buffer();
    if (status != CM_SUCCESS) {
       cm_get_error(status, str);
       puts(str);
@@ -2327,6 +2472,8 @@ INT cm_disconnect_experiment(void)
    _message_print = NULL;
 
    cm_msg(MINFO, "cm_disconnect_experiment", "Program %s on host %s stopped", client_name, local_host_name);
+
+   cm_msg_flush_buffer();
 
    if (rpc_is_remote()) {
       /* close open records */
@@ -4003,6 +4150,9 @@ INT cm_yield(INT millisec)
    if (_ctrlc_pressed)
       return RPC_SHUTDOWN;
 
+   /* flush the cm_msg buffer */
+   cm_msg_flush_buffer();
+
    /* check for available events */
    if (rpc_is_remote()) {
       bMore = bm_poll_event(TRUE);
@@ -4034,6 +4184,9 @@ INT cm_yield(INT millisec)
       /* unmark event buffers for ready-to-receive */
       bm_mark_read_waiting(FALSE);
    }
+
+   /* flush the cm_msg buffer */
+   cm_msg_flush_buffer();
 
    return status;
 }
@@ -4221,11 +4374,8 @@ static void bm_cleanup_buffer_locked(int i, const char *who, DWORD actual_time)
         errno = 0;
         kill(pbclient->pid, 0);
         if (errno == ESRCH) {
-           fprintf(stderr, "bm_cleanup: Client \'%s\' on buffer \'%s\' removed by %s because process pid %d does not exist, my pid %d\n",
-                   pbclient->name, pheader->name, who, pbclient->pid, getpid());
-           // will deadlock on SYSMSG lock - cm_msg(MINFO, "bm_cleanup",
-           //       "Client \'%s\' on buffer \'%s\' removed by %s because process pid %d does not exist",
-           //       pbclient->name, pheader->name, who, pbclient->pid);
+           //fprintf(stderr, "bm_cleanup: Client \'%s\' on buffer \'%s\' removed by %s because process pid %d does not exist, my pid %d\n", pbclient->name, pheader->name, who, pbclient->pid, getpid());
+           cm_msg(MINFO, "bm_cleanup", "Client \'%s\' on buffer \'%s\' removed by %s because process pid %d does not exist", pbclient->name, pheader->name, who, pbclient->pid);
 
            bm_remove_client_locked(pheader, j);
            continue;
@@ -4359,22 +4509,27 @@ INT bm_open_buffer(char *buffer_name, INT buffer_size, INT * buffer_handle)
 
       bm_cleanup("bm_open_buffer", ss_millitime(), FALSE);
 
+      if (!buffer_name || !buffer_name[0]) {
+         cm_msg(MERROR, "bm_open_buffer", "cannot open buffer with zero name");
+         return BM_INVALID_PARAM;
+      }
+
+      status = cm_get_experiment_database(&hDB, &odb_key);
+
+      if (status != SUCCESS || hDB == 0) {
+         //cm_msg(MERROR, "bm_open_buffer", "cannot open buffer \'%s\' - not connected to ODB", buffer_name);
+         return BM_NO_SHM;
+      }
+
       /* get buffer size from ODB, user parameter as default if not present in ODB */
       strlcpy(odb_path, "/Experiment/Buffer sizes/", sizeof(odb_path));
       strlcat(odb_path, buffer_name, sizeof(odb_path));
 
-      status = cm_get_experiment_database(&hDB, &odb_key);
-      assert(status == SUCCESS);
       size = sizeof(INT);
       status = db_get_value(hDB, 0, odb_path, &buffer_size, &size, TID_DWORD, TRUE);
 
       if (buffer_size <= 0 || buffer_size > 1 * 1024 * 1024 * 1024) {
-         cm_msg(MERROR, "bm_open_buffer", "invalid buffer size %d", buffer_size);
-         return BM_INVALID_PARAM;
-      }
-
-      if (!buffer_name[0]) {
-         cm_msg(MERROR, "bm_open_buffer", "cannot open buffer with zero name");
+         cm_msg(MERROR, "bm_open_buffer", "cannot open buffer \'%s\' - invalid buffer size %d", buffer_name, buffer_size);
          return BM_INVALID_PARAM;
       }
 
@@ -5112,7 +5267,9 @@ INT cm_cleanup(const char *client_name, BOOL ignore_timeout)
                   /* If client process has no activity, clear its buffer entry. */
                   if (interval > 0
                       && now > pbclient->last_activity && now - pbclient->last_activity > interval) {
+
                      bm_lock_buffer(i + 1);
+
                      str[0] = 0;
 
                      /* now make again the check with the buffer locked */
@@ -12467,6 +12624,8 @@ INT rpc_server_thread(void *pointer)
          al_check();
          last_checked = ss_time();
       }
+
+      cm_msg_flush_buffer();
 
    } while (status != SS_ABORT && status != SS_EXIT);
 
