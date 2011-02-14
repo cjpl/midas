@@ -1416,7 +1416,9 @@ INT db_lock_database(HNDLE hDB)
       return DB_NO_SEMAPHORE;
    }
 
-   if (_database[hDB - 1].lock_cnt == 0) {
+   _database[hDB - 1].lock_cnt++;
+
+   if (_database[hDB - 1].lock_cnt == 1) {
       /* wait max. 5 minutes for semaphore (required if locking process is being debugged) */
       status = ss_semaphore_wait_for(_database[hDB - 1].semaphore, 5 * 60 * 1000);
       if (status == SS_TIMEOUT) {
@@ -1430,8 +1432,6 @@ INT db_lock_database(HNDLE hDB)
          return DB_NO_SEMAPHORE;
       }
    }
-
-   _database[hDB - 1].lock_cnt++;
 
 #ifdef CHECK_LOCK_COUNT
    {
@@ -1486,13 +1486,14 @@ INT db_unlock_database(HNDLE hDB)
    if (_database[hDB - 1].lock_cnt == 1)
       ss_semaphore_release(_database[hDB - 1].semaphore);
 
-   if (_database[hDB - 1].lock_cnt > 0)
-      _database[hDB - 1].lock_cnt--;
-
    if (_database[hDB - 1].protect) {
       ss_shm_protect(_database[hDB - 1].shm_handle, _database[hDB - 1].database_header);
       _database[hDB - 1].database_header = NULL;
    }
+
+   assert(_database[hDB - 1].lock_cnt > 0);
+   _database[hDB - 1].lock_cnt--;
+
 #endif                          /* LOCAL_ROUTINES */
    return DB_SUCCESS;
 }
