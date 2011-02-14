@@ -1010,11 +1010,7 @@ INT db_open_database(const char *xdatabase_name, INT database_size, HNDLE * hDB,
             /* clear entry from client structure in database header */
             memset(&(pheader->client[i]), 0, sizeof(DATABASE_CLIENT));
 
-	    db_unlock_database(handle + 1);
-
             cm_msg(MERROR, "db_open_database", "Removed ODB client \'%s\', index %d because process pid %d does not exists", client_name_tmp, i, client_pid);
-
-	    db_lock_database(handle + 1);
          }
       }
 #endif
@@ -1942,7 +1938,7 @@ INT db_delete_key1(HNDLE hDB, HNDLE hKey, INT level, BOOL follow_links)
 
       /* follow links if requested */
       if (pkey->type == TID_LINK && follow_links) {
-         status = db_find_key(hDB, 0, (char *) pheader + pkey->data, &hKeyLink);
+         status = db_find_key1(hDB, 0, (char *) pheader + pkey->data, &hKeyLink);
          if (status == DB_SUCCESS && follow_links < 100)
             db_delete_key1(hDB, hKeyLink, level + 1, follow_links + 1);
 
@@ -2360,7 +2356,6 @@ INT db_find_key1(HNDLE hDB, HNDLE hKey, const char *key_name, HNDLE * subhKey)
          if (*pkey_name == '/') {
             if (pkey->type != TID_KEY) {
                *subhKey = 0;
-               db_unlock_database(hDB);
                return DB_NO_KEY;
             }
          }
@@ -2594,7 +2589,6 @@ INT db_find_link1(HNDLE hDB, HNDLE hKey, const char *key_name, HNDLE * subhKey)
 
       /* check if hKey argument is correct */
       if (!db_validate_hkey(pheader, hKey)) {
-         db_unlock_database(hDB);
          return DB_INVALID_HANDLE;
       }
 
@@ -3775,17 +3769,17 @@ INT db_get_link(HNDLE hDB, HNDLE hKey, KEY * key)
       KEY *pkey;
 
       if (hDB > _database_entries || hDB <= 0) {
-         cm_msg(MERROR, "db_get_key", "invalid database handle");
+         cm_msg(MERROR, "db_get_link", "invalid database handle");
          return DB_INVALID_HANDLE;
       }
 
       if (!_database[hDB - 1].attached) {
-         cm_msg(MERROR, "db_get_key", "invalid database handle");
+         cm_msg(MERROR, "db_get_link", "invalid database handle");
          return DB_INVALID_HANDLE;
       }
 
       if (hKey < (int) sizeof(DATABASE_HEADER) && hKey != 0) {
-         cm_msg(MERROR, "db_get_key", "invalid key handle");
+         cm_msg(MERROR, "db_get_link", "invalid key handle");
          return DB_INVALID_HANDLE;
       }
 
@@ -3806,7 +3800,7 @@ INT db_get_link(HNDLE hDB, HNDLE hKey, KEY * key)
 
       if (pkey->type < 1 || pkey->type >= TID_LAST) {
          db_unlock_database(hDB);
-         cm_msg(MERROR, "db_get_key", "hkey %d invalid key type %d", hKey, pkey->type);
+         cm_msg(MERROR, "db_get_link", "hkey %d invalid key type %d", hKey, pkey->type);
          return DB_INVALID_HANDLE;
       }
 
@@ -5470,8 +5464,9 @@ INT db_set_mode(HNDLE hDB, HNDLE hKey, WORD mode, BOOL recurse)
     DWORD  mode             Access mode, any or'ed combination of
                             MODE_READ, MODE_WRITE, MODE_EXCLUSIVE
                             and MODE_DELETE
-    BOOL   recurse          Recurse subtree if TRUE, also used
-                            as recurse level
+    BOOL   recurse          Value of 0 (FALSE): do not recurse subtree,
+                            value of 1 (TRUE): recurse subtree,
+                            value of 2: recurse subtree, assume database is locked by caller.
 
   Output:
     none
@@ -5540,14 +5535,12 @@ INT db_set_mode(HNDLE hDB, HNDLE hKey, WORD mode, BOOL recurse)
 
       /* resolve links */
       if (pkey->type == TID_LINK) {
-         db_unlock_database(hDB);
          if (*((char *) pheader + pkey->data) == '/')
-            db_find_key(hDB, 0, (char *) pheader + pkey->data, &hKeyLink);
+            db_find_key1(hDB, 0, (char *) pheader + pkey->data, &hKeyLink);
          else
-            db_find_key(hDB, hKey, (char *) pheader + pkey->data, &hKeyLink);
+            db_find_key1(hDB, hKey, (char *) pheader + pkey->data, &hKeyLink);
          if (hKeyLink)
             db_set_mode(hDB, hKeyLink, mode, recurse > 0);
-         db_lock_database(hDB);
          pheader = _database[hDB - 1].database_header;
          pkey = (KEY *) ((char *) pheader + hKey);
       }
