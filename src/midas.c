@@ -4885,6 +4885,35 @@ void cm_watchdog(int dummy)
    if (!_call_watchdog)
       return;
 
+   /* prevent deadlock between ODB and SYSMSG by skipping watchdog tests if odb is locked by us */
+   if (1) {
+      int count = -1;
+      HNDLE hDB;
+
+      cm_get_experiment_database(&hDB, NULL);
+
+      if (hDB)
+         count = db_get_lock_cnt(hDB);
+
+      if (count) {
+         //cm_msg(MINFO, "cm_watchdog", "Called with ODB lock count %d!", count);
+
+         /* Schedule next watchdog call */
+         if (_call_watchdog)
+            ss_alarm(WATCHDOG_INTERVAL, cm_watchdog);
+         
+         return;
+      }
+   }
+
+   /* extra check on watchdog interval */
+   if (0) {
+      static time_t last = 0;
+      time_t now = time(NULL);
+      fprintf(stderr, "cm_watchdog interval %d\n", (int)(now - last));
+      last = now;
+   }
+
    /* tell system services that we are in async mode ... */
    ss_set_async_flag(TRUE);
 
