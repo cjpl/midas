@@ -1584,6 +1584,7 @@ INT cm_check_client(HNDLE hDB, HNDLE hKeyClient)
          return CM_NO_CLIENT;
 
       db_lock_database(hDB);
+
       if (_database[hDB - 1].attached) {
          pheader = _database[hDB - 1].database_header;
          pclient = pheader->client;
@@ -2665,7 +2666,7 @@ INT cm_get_experiment_semaphore(INT * semaphore_alarm, INT * semaphore_elog, INT
 /**dox***************************************************************/
 #endif                          /* DOXYGEN_SHOULD_SKIP_THIS */
 
-static int bm_validate_client_index(const BUFFER * buf)
+static int bm_validate_client_index(const BUFFER * buf) // , BOOL abort_if_invalid)
 {
    int badindex = 0;
    BUFFER_CLIENT *bcl = buf->buffer_header->client;
@@ -2691,6 +2692,10 @@ static int bm_validate_client_index(const BUFFER * buf)
 #endif
 
    if (badindex) {
+
+      //if (!abort_if_invalid)
+      //return -1;
+
       static int prevent_recursion = 1;
       if (prevent_recursion) {
          prevent_recursion = 0;
@@ -2698,8 +2703,9 @@ static int bm_validate_client_index(const BUFFER * buf)
                 "Invalid client index %d in buffer \'%s\'. Client name \'%s\', pid %d should be %d",
                 buf->client_index, buf->buffer_header->name, bcl->name, bcl->pid, ss_getpid());
          cm_msg(MERROR, "bm_validate_client_index",
-                "Maybe this client was removed by a timeout. Cannot continue, exiting.");
+                "Maybe this client was removed by a timeout. Cannot continue, aborting...");
       }
+
       abort();
       exit(1);
    }
@@ -2799,7 +2805,7 @@ INT cm_set_watchdog_params(BOOL call_watchdog, DWORD timeout)
          pclient->last_activity = ss_millitime();
       }
 
-      /* set watchdog flag of alll open databases */
+      /* set watchdog flag of all open databases */
       for (i = _database_entries; i > 0; i--) {
          DATABASE_HEADER *pheader;
          DATABASE_CLIENT *pclient;
@@ -4749,12 +4755,14 @@ INT bm_close_buffer(INT buffer_handle)
       pheader = _buffer[buffer_handle - 1].buffer_header;
 
       if (rpc_get_server_option(RPC_OSERVER_TYPE) == ST_SINGLE &&
-          _buffer[buffer_handle - 1].index != rpc_get_server_acception())
+          _buffer[buffer_handle - 1].index != rpc_get_server_acception()) {
          return BM_INVALID_HANDLE;
+      }
 
       if (rpc_get_server_option(RPC_OSERVER_TYPE) != ST_SINGLE
-          && _buffer[buffer_handle - 1].index != ss_gettid())
+          && _buffer[buffer_handle - 1].index != ss_gettid()) {
          return BM_INVALID_HANDLE;
+      }
 
       if (!_buffer[buffer_handle - 1].attached) {
          /* don't produce error, since bm_close_all_buffers() might want to close an
@@ -4978,8 +4986,7 @@ void cm_watchdog(int dummy)
                            pkey->notify_count--;
 
                         if (pdbclient->open_record[k].access_mode & MODE_WRITE)
-                           db_set_mode(i + 1, pdbclient->open_record[k].handle,
-                                       (WORD) (pkey->access_mode & ~MODE_EXCLUSIVE), 2);
+                           db_set_mode(i + 1, pdbclient->open_record[k].handle, (WORD) (pkey->access_mode & ~MODE_EXCLUSIVE), 2);
                      }
 
                   /* clear entry from client structure in buffer header */
@@ -5188,6 +5195,8 @@ INT cm_exist(const char *name, BOOL bUnique)
    if (status != DB_SUCCESS)
       return DB_NO_KEY;
 
+   //db_lock_database(hDB);
+
    /* loop over all clients */
    for (i = 0;; i++) {
       status = db_enum_key(hDB, hKey, i, &hSubkey);
@@ -5207,16 +5216,22 @@ INT cm_exist(const char *name, BOOL bUnique)
             continue;
          }
 
-         if (equal_ustring(client_name, name))
+         if (equal_ustring(client_name, name)) {
+            //db_unlock_database(hDB);
             return CM_SUCCESS;
+         }
 
          if (!bUnique) {
             client_name[strlen(name)] = 0;      /* strip number */
-            if (equal_ustring(client_name, name))
+            if (equal_ustring(client_name, name)) {
+               //db_unlock_database(hDB);
                return CM_SUCCESS;
+            }
          }
       }
    }
+
+   //db_unlock_database(hDB);
 
    return CM_NO_CLIENT;
 }
@@ -5328,6 +5343,7 @@ INT cm_cleanup(const char *client_name, BOOL ignore_timeout)
       for (i = 0; i < _database_entries; i++)
          if (_database[i].attached) {
             /* update the last_activity entry to show that we are alive */
+
             db_lock_database(i + 1);
 
             pdbheader = _database[i].database_header;
@@ -5366,8 +5382,7 @@ INT cm_cleanup(const char *client_name, BOOL ignore_timeout)
                                  pkey->notify_count--;
 
                               if (pdbclient->open_record[k].access_mode & MODE_WRITE)
-                                 db_set_mode(i + 1, pdbclient->open_record[k].handle,
-                                             (WORD) (pkey->access_mode & ~MODE_EXCLUSIVE), 2);
+                                 db_set_mode(i + 1, pdbclient->open_record[k].handle, (WORD) (pkey->access_mode & ~MODE_EXCLUSIVE), 2);
                            }
 
                         /* clear entry from client structure in buffer header */
@@ -5565,15 +5580,11 @@ INT bm_lock_buffer(INT buffer_handle)
       return BM_INVALID_HANDLE;
    }
 
-   if (0 && _database[0].lock_cnt != 0) {
-      fprintf(stderr, "bm_lock_buffer: ODB lock count %d, my pid %d\n", _database[0].lock_cnt, getpid());
-   }
-
    status = ss_semaphore_wait_for(_buffer[buffer_handle - 1].semaphore, 5 * 60 * 1000);
 
    if (status != SS_SUCCESS) {
       cm_msg(MERROR, "bm_lock_buffer",
-             "Cannot lock buffer handle %d, ss_semaphore_wait_for() status %d", buffer_handle, status);
+             "Cannot lock buffer handle %d, ss_semaphore_wait_for() status %d, aborting...", buffer_handle, status);
       abort();
       return BM_INVALID_HANDLE;
    }
@@ -7892,10 +7903,12 @@ INT bm_empty_buffers()
          /* empty cache */
          pbuf->read_cache_rp = pbuf->read_cache_wp = 0;
 
+         bm_lock_buffer(idx + 1);
+
          /* set read pointer to write pointer */
          pclient = (pbuf->buffer_header)->client + bm_validate_client_index(pbuf);
-         bm_lock_buffer(idx + 1);
          pclient->read_pointer = (pbuf->buffer_header)->write_pointer;
+
          bm_unlock_buffer(idx + 1);
       }
 
@@ -8693,7 +8706,7 @@ INT rpc_client_connect(const char *host_name, INT port, const char *client_name,
          *strchr(strchr(str, '.') + 1, '.') = 0;
 
    if (strcmp(v1, str) != 0) {
-      sprintf(str, "remote MIDAS version %s differs from local version %s", version, cm_get_version());
+      sprintf(str, "remote MIDAS version \'%s\' differs from local version \'%s\'", version, cm_get_version());
       cm_msg(MERROR, "rpc_client_connect", str);
    }
 
@@ -8981,7 +8994,7 @@ INT rpc_server_connect(const char *host_name, const char *exp_name)
          *strchr(strchr(str, '.') + 1, '.') = 0;
 
    if (strcmp(v1, str) != 0) {
-      sprintf(str, "remote MIDAS version %s differs from local version %s", version, cm_get_version());
+      sprintf(str, "remote MIDAS version \'%s\' differs from local version \'%s\'", version, cm_get_version());
       cm_msg(MERROR, "rpc_server_connect", str);
    }
 
