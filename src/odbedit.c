@@ -45,10 +45,11 @@ MUTEX_T *tm;
 
 INT thread(void *p)
 {
+   int status;
    do {
       ss_sleep(1000);
-      ss_mutex_wait_for(tm, 10000);
-      printf("%d in critical section\n", ss_gettid());
+      status = ss_mutex_wait_for(tm, 10000);
+      printf("%d in critical section, mutex lock status %d\n", ss_gettid(), status);
       ss_sleep(3000);
       printf("%d out of critical section\n", ss_gettid());
       ss_mutex_release(tm);
@@ -2766,6 +2767,8 @@ int main(int argc, char *argv[])
 
    status = cm_connect_experiment1(host_name, exp_name, "ODBEdit", NULL,
                                    odb_size, DEFAULT_WATCHDOG_TIMEOUT);
+
+   cm_msg_flush_buffer();
 
    if (reload_from_file) {
       status = ss_shm_delete("ODB");
