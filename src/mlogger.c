@@ -2590,10 +2590,10 @@ INT log_write(LOG_CHN * log_chn, EVENT_HEADER * pevent)
 
    /* stop run if less than 10MB free disk space */
    actual_time = ss_millitime();
-   if (log_chn->type == LOG_TYPE_DISK && actual_time - last_checked > 1000) {
+   if (log_chn->type == LOG_TYPE_DISK && actual_time - last_checked > 10000) {
       last_checked = actual_time;
 
-      if (ss_disk_free(log_chn->path) < 1E7 && !stop_requested && !in_stop_transition) {
+      if (ss_disk_free(log_chn->path) < 1E7) {
          stop_requested = TRUE;
          cm_msg(MTALK, "log_write", "disk nearly full, stopping run");
 
