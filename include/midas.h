@@ -1642,6 +1642,7 @@ extern "C" {
                     const char *routine, const char *format, ...);
    INT EXPRT cm_msg1(INT message_type, const char *filename, INT line,
                      const char *facility, const char *routine, const char *format, ...);
+   INT EXPRT cm_msg_flush_buffer();
    INT EXPRT cm_msg_register(void (*func)
                               (HNDLE, HNDLE, EVENT_HEADER *, void *));
    INT EXPRT cm_msg_retrieve(INT n_message, char *message, INT buf_size);
