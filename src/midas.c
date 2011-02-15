@@ -1526,6 +1526,12 @@ INT cm_delete_client_info(HNDLE hDB, INT pid)
 
       sprintf(str, "System/Clients/%0d", pid);
       status = db_find_key1(hDB, 0, str, &hKey);
+
+      if (status == DB_NO_KEY) {
+         db_unlock_database(hDB);
+         return DB_SUCCESS;
+      }
+
       if (status != DB_SUCCESS) {
          db_unlock_database(hDB);
          return status;
@@ -1568,6 +1574,8 @@ INT cm_check_client(HNDLE hDB, HNDLE hKeyClient)
       INT i, client_pid, status, dead = 0, found = 0;
       char name[NAME_LENGTH];
 
+      db_lock_database(hDB);
+
       status = db_get_key(hDB, hKeyClient, &key);
       if (status != DB_SUCCESS)
          return CM_NO_CLIENT;
@@ -1580,10 +1588,10 @@ INT cm_check_client(HNDLE hDB, HNDLE hKeyClient)
 
       //fprintf(stderr, "cm_check_client: hkey %d, status %d, pid %d, name \'%s\', my name %s\n", hKeyClient, status, client_pid, name, _client_name);
 
-      if (status != DB_SUCCESS)
+      if (status != DB_SUCCESS) {
+         db_unlock_database(hDB);
          return CM_NO_CLIENT;
-
-      db_lock_database(hDB);
+      }
 
       if (_database[hDB - 1].attached) {
          pheader = _database[hDB - 1].database_header;
@@ -1611,9 +1619,9 @@ INT cm_check_client(HNDLE hDB, HNDLE hKeyClient)
 
          if (!found || dead) {
             /* client not found : delete ODB stucture */
-            db_unlock_database(hDB);
 
             status = cm_delete_client_info(hDB, client_pid);
+
             if (status != CM_SUCCESS)
                cm_msg(MERROR, "cm_check_client",
                       "Cannot delete client info for client \'%s\', pid %d, cm_delete_client_info() status %d", name, client_pid, status);
@@ -1624,6 +1632,7 @@ INT cm_check_client(HNDLE hDB, HNDLE hKeyClient)
                cm_msg(MINFO, "cm_check_client",
                       "Deleted entry \'/System/Clients/%d\' for client \'%s\' because process pid %d does not exists", client_pid, name, client_pid);
 
+            db_unlock_database(hDB);
 
             return CM_NO_CLIENT;
          }
@@ -2673,7 +2682,7 @@ INT cm_get_experiment_semaphore(INT * semaphore_alarm, INT * semaphore_elog, INT
 /**dox***************************************************************/
 #endif                          /* DOXYGEN_SHOULD_SKIP_THIS */
 
-static int bm_validate_client_index(const BUFFER * buf) // , BOOL abort_if_invalid)
+static int bm_validate_client_index(const BUFFER * buf, BOOL abort_if_invalid)
 {
    int badindex = 0;
    BUFFER_CLIENT *bcl = buf->buffer_header->client;
@@ -2700,14 +2709,14 @@ static int bm_validate_client_index(const BUFFER * buf) // , BOOL abort_if_inval
 
    if (badindex) {
 
-      //if (!abort_if_invalid)
-      //return -1;
+      if (!abort_if_invalid)
+         return -1;
 
       static int prevent_recursion = 1;
       if (prevent_recursion) {
          prevent_recursion = 0;
          cm_msg(MERROR, "bm_validate_client_index",
-                "Invalid client index %d in buffer \'%s\'. Client name \'%s\', pid %d should be %d",
+                "My client index %d in buffer \'%s\' is invalid: client name \'%s\', pid %d should be my pid %d",
                 buf->client_index, buf->buffer_header->name, bcl->name, bcl->pid, ss_getpid());
          cm_msg(MERROR, "bm_validate_client_index",
                 "Maybe this client was removed by a timeout. Cannot continue, aborting...");
@@ -2801,7 +2810,7 @@ INT cm_set_watchdog_params(BOOL call_watchdog, DWORD timeout)
          if (!_buffer[i - 1].attached)
             continue;
 
-         idx = bm_validate_client_index(&_buffer[i - 1]);
+         idx = bm_validate_client_index(&_buffer[i - 1], TRUE);
          pheader = _buffer[i - 1].buffer_header;
          pclient = &pheader->client[idx];
 
@@ -4380,48 +4389,66 @@ static void bm_cleanup_buffer_locked(int i, const char *who, DWORD actual_time)
 
    /* now check other clients */
    for (j = 0; j < pheader->max_client_index; j++, pbclient++) {
-
+      
 #ifdef OS_UNIX
 #ifdef ESRCH
-     if (pbclient->pid) {
-        errno = 0;
-        kill(pbclient->pid, 0);
-        if (errno == ESRCH) {
-           //fprintf(stderr, "bm_cleanup: Client \'%s\' on buffer \'%s\' removed by %s because process pid %d does not exist, my pid %d\n", pbclient->name, pheader->name, who, pbclient->pid, getpid());
-           cm_msg(MINFO, "bm_cleanup", "Client \'%s\' on buffer \'%s\' removed by %s because process pid %d does not exist", pbclient->name, pheader->name, who, pbclient->pid);
-
-           bm_remove_client_locked(pheader, j);
-           continue;
-        }
-     }
+      if (pbclient->pid) {
+         errno = 0;
+         kill(pbclient->pid, 0);
+         if (errno == ESRCH) {
+            cm_msg(MINFO, "bm_cleanup", "Client \'%s\' on buffer \'%s\' removed by %s because process pid %d does not exist", pbclient->name, pheader->name, who, pbclient->pid);
+            
+            bm_remove_client_locked(pheader, j);
+            continue;
+         }
+      }
 #endif
 #endif
-
-     /* If client process has no activity, clear its buffer entry. */
-     if (pbclient->pid && pbclient->watchdog_timeout > 0 &&
-	 actual_time > pbclient->last_activity &&
-	 actual_time - pbclient->last_activity > pbclient->watchdog_timeout) {
-       
-       /* now make again the check with the buffer locked */
-       actual_time = ss_millitime();
-       if (pbclient->pid && pbclient->watchdog_timeout > 0 &&
-	   actual_time > pbclient->last_activity &&
-	   actual_time - pbclient->last_activity > pbclient->watchdog_timeout) {
-
-	 char str[256];
-	 sprintf(str,
-		 "Client \'%s\' on buffer \'%s\' removed by %s (idle %1.1lfs,TO %1.0lfs)",
-		 pbclient->name, pheader->name, who,
-		 (actual_time - pbclient->last_activity) / 1000.0,
-		 pbclient->watchdog_timeout / 1000.0);
-	 
-	 bm_remove_client_locked(pheader, j);
-
-	 fprintf(stderr, "bm_cleanup: %s, my pid %d\n", str, getpid());
-	 // will deadlock on SYSMSG lock - cm_msg(MINFO, "bm_cleanup", str);
-       }
-     }
+      
+      /* If client process has no activity, clear its buffer entry. */
+      if (pbclient->pid && pbclient->watchdog_timeout > 0 &&
+          actual_time > pbclient->last_activity &&
+          actual_time - pbclient->last_activity > pbclient->watchdog_timeout) {
+         
+         /* now make again the check with the buffer locked */
+         actual_time = ss_millitime();
+         if (pbclient->pid && pbclient->watchdog_timeout > 0 &&
+             actual_time > pbclient->last_activity &&
+             actual_time - pbclient->last_activity > pbclient->watchdog_timeout) {
+            
+            cm_msg(MINFO, "bm_cleanup", "Client \'%s\' on buffer \'%s\' removed by %s (idle %1.1lfs,TO %1.0lfs)",
+                   pbclient->name, pheader->name, who,
+                   (actual_time - pbclient->last_activity) / 1000.0,
+                   pbclient->watchdog_timeout / 1000.0);
+            
+            bm_remove_client_locked(pheader, j);
+         }
+      }
    }
+}
+
+/**
+Update last activity time
+*/
+static void cm_update_last_activity(DWORD actual_time)
+{
+   int i, idx;
+
+   /* check buffers */
+   for (i = 0; i < _buffer_entries; i++)
+      if (_buffer[i].attached) {
+         idx = bm_validate_client_index(&_buffer[i], FALSE);
+         if (idx >= 0) {
+            _buffer[i].buffer_header->client[idx].last_activity = actual_time;
+         }
+      }
+
+   /* check online databases */
+   for (i = 0; i < _database_entries; i++)
+      if (_database[i].attached) {
+         /* update the last_activity entry to show that we are alive */
+         _database[i].database_header->client[_database[i].client_index].last_activity = actual_time;
+      }
 }
 
 /**
@@ -4431,7 +4458,7 @@ static void bm_cleanup(const char *who, DWORD actual_time, BOOL wrong_interval)
 {
    BUFFER_HEADER *pheader;
    BUFFER_CLIENT *pbclient;
-   int i;
+   int i, idx;
 
    /* check buffers */
    for (i = 0; i < _buffer_entries; i++)
@@ -4442,7 +4469,8 @@ static void bm_cleanup(const char *who, DWORD actual_time, BOOL wrong_interval)
 
          pheader = _buffer[i].buffer_header;
          pbclient = pheader->client;
-         pbclient[bm_validate_client_index(&_buffer[i])].last_activity = actual_time;
+         idx = bm_validate_client_index(&_buffer[i], TRUE);
+         pbclient[idx].last_activity = actual_time;
 
          /* don't check other clients if interval is strange */
          if (!wrong_interval)
@@ -4758,7 +4786,7 @@ INT bm_close_buffer(INT buffer_handle)
          of other threads.
        */
 
-      idx = bm_validate_client_index(&_buffer[buffer_handle - 1]);
+      idx = bm_validate_client_index(&_buffer[buffer_handle - 1], FALSE);
       pheader = _buffer[buffer_handle - 1].buffer_header;
 
       if (rpc_get_server_option(RPC_OSERVER_TYPE) == ST_SINGLE &&
@@ -4788,8 +4816,10 @@ INT bm_close_buffer(INT buffer_handle)
       /* mark entry in _buffer as empty */
       _buffer[buffer_handle - 1].attached = FALSE;
 
-      /* clear entry from client structure in buffer header */
-      memset(&(pheader->client[idx]), 0, sizeof(BUFFER_CLIENT));
+      if (idx >= 0) {
+         /* clear entry from client structure in buffer header */
+         memset(&(pheader->client[idx]), 0, sizeof(BUFFER_CLIENT));
+      }
 
       /* calculate new max_client_index entry */
       for (i = MAX_CLIENTS - 1; i >= 0; i--)
@@ -4891,14 +4921,28 @@ void cm_watchdog(int dummy)
    DWORD actual_time, interval;
    INT client_pid;
    INT i, j, k, nc, status;
-   BOOL bDeleted, time_changed, wrong_interval;
-   char str[256];
+   BOOL time_changed, wrong_interval;
 
    i = dummy;                   /* avoid compiler warning */
 
    /* return immediately if watchdog has been disabled in meantime */
    if (!_call_watchdog)
       return;
+
+#if 0
+   actual_time = ss_millitime();
+
+   cm_update_last_activity(actual_time);
+
+   if ((actual_time > _watchdog_last_called) && (actual_time - _watchdog_last_called < 10000)) {
+
+      /* Schedule next watchdog call */
+      if (_call_watchdog)
+         ss_alarm(WATCHDOG_INTERVAL, cm_watchdog);
+      
+      return;
+   }
+#endif
 
    /* prevent deadlock between ODB and SYSMSG by skipping watchdog tests if odb is locked by us */
    if (1) {
@@ -4912,6 +4956,8 @@ void cm_watchdog(int dummy)
 
       if (count) {
          //cm_msg(MINFO, "cm_watchdog", "Called with ODB lock count %d!", count);
+
+         cm_update_last_activity(ss_millitime());
 
          /* Schedule next watchdog call */
          if (_call_watchdog)
@@ -4968,22 +5014,19 @@ void cm_watchdog(int dummy)
             if (pdbclient->pid && pdbclient->watchdog_timeout > 0 &&
                 actual_time - pdbclient->last_activity > pdbclient->watchdog_timeout) {
                client_pid = pdbclient->pid;
-               bDeleted = FALSE;
 
                db_lock_database(i + 1);
-
-               str[0] = 0;
 
                /* now make again the check with the buffer locked */
                actual_time = ss_millitime();
                if (pdbclient->pid && pdbclient->watchdog_timeout &&
                    actual_time > pdbclient->last_activity &&
                    actual_time - pdbclient->last_activity > pdbclient->watchdog_timeout) {
-                  sprintf(str,
-                          "Client \'%s\' (PID %d) on buffer \'%s\' removed by cm_watchdog (idle %1.1lfs,TO %1.0lfs)",
-                          pdbclient->name, client_pid, pdbheader->name,
-                          (actual_time - pdbclient->last_activity) / 1000.0,
-                          pdbclient->watchdog_timeout / 1000.0);
+
+                  cm_msg(MINFO, "cm_watchdog", "Client \'%s\' (PID %d) on database \'%s\' removed by cm_watchdog (idle %1.1lfs,TO %1.0lfs)",
+                         pdbclient->name, client_pid, pdbheader->name,
+                         (actual_time - pdbclient->last_activity) / 1000.0,
+                         pdbclient->watchdog_timeout / 1000.0);
 
                   /* decrement notify_count for open records and clear exclusive mode */
                   for (k = 0; k < pdbclient->max_index; k++)
@@ -4995,6 +5038,10 @@ void cm_watchdog(int dummy)
                         if (pdbclient->open_record[k].access_mode & MODE_WRITE)
                            db_set_mode(i + 1, pdbclient->open_record[k].handle, (WORD) (pkey->access_mode & ~MODE_EXCLUSIVE), 2);
                      }
+
+                  status = cm_delete_client_info(i + 1, client_pid);
+                  if (status != CM_SUCCESS)
+                     cm_msg(MERROR, "cm_watchdog", "Cannot delete client info for client \'%s\', pid %d from database \'%s\', status %d", pdbclient->name, client_pid, pdbheader->name, status);
 
                   /* clear entry from client structure in buffer header */
                   memset(&(pdbheader->client[j]), 0, sizeof(DATABASE_CLIENT));
@@ -5010,23 +5057,9 @@ void cm_watchdog(int dummy)
                      if (pdbheader->client[k].pid != 0)
                         nc++;
                   pdbheader->num_clients = nc;
-                  bDeleted = TRUE;
                }
 
                db_unlock_database(i + 1);
-
-               /* delete client entry before unlocking db */
-               if (bDeleted) {
-                  status = cm_delete_client_info(i + 1, client_pid);
-                  if (status != CM_SUCCESS)
-                     cm_msg(MERROR, "cm_watchdog",
-                            "Cannot delete client info for client \'%s\', pid %d from buffer \'%s\', status %d",
-                            pdbclient->name, client_pid, pdbheader->name, status);
-               }
-
-               /* display info message after unlocking db */
-               if (str[0])
-                  cm_msg(MINFO, "cm_watchdog", str);
             }
       }
 
@@ -5202,7 +5235,7 @@ INT cm_exist(const char *name, BOOL bUnique)
    if (status != DB_SUCCESS)
       return DB_NO_KEY;
 
-   //db_lock_database(hDB);
+   db_lock_database(hDB);
 
    /* loop over all clients */
    for (i = 0;; i++) {
@@ -5224,21 +5257,21 @@ INT cm_exist(const char *name, BOOL bUnique)
          }
 
          if (equal_ustring(client_name, name)) {
-            //db_unlock_database(hDB);
+            db_unlock_database(hDB);
             return CM_SUCCESS;
          }
 
          if (!bUnique) {
             client_name[strlen(name)] = 0;      /* strip number */
             if (equal_ustring(client_name, name)) {
-               //db_unlock_database(hDB);
+               db_unlock_database(hDB);
                return CM_SUCCESS;
             }
          }
       }
    }
 
-   //db_unlock_database(hDB);
+   db_unlock_database(hDB);
 
    return CM_NO_CLIENT;
 }
@@ -5300,10 +5333,13 @@ INT cm_cleanup(const char *client_name, BOOL ignore_timeout)
       /* check buffers */
       for (i = 0; i < _buffer_entries; i++)
          if (_buffer[i].attached) {
+            int idx;
             /* update the last_activity entry to show that we are alive */
             pheader = _buffer[i].buffer_header;
             pbclient = pheader->client;
-            pbclient[bm_validate_client_index(&_buffer[i])].last_activity = ss_millitime();
+            idx = bm_validate_client_index(&_buffer[i], FALSE);
+            if (idx >= 0)
+               pbclient[idx].last_activity = ss_millitime();
 
             /* now check other clients */
             for (j = 0; j < pheader->max_client_index; j++, pbclient++)
@@ -5372,14 +5408,12 @@ INT cm_cleanup(const char *client_name, BOOL ignore_timeout)
 
                   if (interval > 0 && ss_millitime() - pdbclient->last_activity > interval) {
                      bDeleted = FALSE;
-                     str[0] = 0;
 
                      /* now make again the check with the buffer locked */
                      if (interval > 0 && ss_millitime() - pdbclient->last_activity > interval) {
-                        sprintf(str,
-                                "Client \'%s\' on \'%s\' removed by cm_cleanup (idle %1.1lfs,TO %1.0lfs)",
-                                pdbclient->name, pdbheader->name,
-                                (ss_millitime() - pdbclient->last_activity) / 1000.0, interval / 1000.0);
+                        cm_msg(MINFO, "cm_cleanup", "Client \'%s\' on \'%s\' removed by cm_cleanup (idle %1.1lfs,TO %1.0lfs)",
+                               pdbclient->name, pdbheader->name,
+                               (ss_millitime() - pdbclient->last_activity) / 1000.0, interval / 1000.0);
 
                         /* decrement notify_count for open records and clear exclusive mode */
                         for (k = 0; k < pdbclient->max_index; k++)
@@ -5413,17 +5447,11 @@ INT cm_cleanup(const char *client_name, BOOL ignore_timeout)
 
                      /* delete client entry after unlocking db */
                      if (bDeleted) {
-                        db_unlock_database(i + 1);
-
-                        /* display info message after unlocking buffer */
-                        cm_msg(MINFO, "cm_cleanup", str);
 
                         status = cm_delete_client_info(i + 1, client_pid);
                         if (status != CM_SUCCESS)
-                           cm_msg(MERROR, "cm_cleanup", "cannot delete client info");
+                           cm_msg(MERROR, "cm_cleanup", "cannot delete client info, status %d", status);
 
-                        /* re-lock database */
-                        db_lock_database(i + 1);
                         pdbheader = _database[i].database_header;
                         pdbclient = pdbheader->client;
 
@@ -5540,7 +5568,7 @@ INT bm_get_buffer_level(INT buffer_handle, INT * n_bytes)
 
       bm_lock_buffer(buffer_handle);
 
-      pclient = &(pheader->client[bm_validate_client_index(pbuf)]);
+      pclient = &(pheader->client[bm_validate_client_index(pbuf, TRUE)]);
 
       *n_bytes = pheader->write_pointer - pclient->read_pointer;
       if (*n_bytes < 0)
@@ -5893,12 +5921,12 @@ INT bm_add_event_request(INT buffer_handle, short int event_id,
       if (sampling_type == GET_RECENT && _buffer[buffer_handle - 1].read_cache_size > 0)
          return BM_INVALID_PARAM;
 
-      /* get a pointer to the proper client structure */
-      pclient = &(_buffer[buffer_handle - 1].buffer_header->
-                  client[bm_validate_client_index(&_buffer[buffer_handle - 1])]);
-
       /* lock buffer */
       bm_lock_buffer(buffer_handle);
+
+      /* get a pointer to the proper client structure */
+      pclient = &(_buffer[buffer_handle - 1].buffer_header->
+                  client[bm_validate_client_index(&_buffer[buffer_handle - 1], TRUE)]);
 
       /* look for a empty request entry */
       for (i = 0; i < MAX_EVENT_REQUESTS; i++)
@@ -6053,12 +6081,12 @@ INT bm_remove_event_request(INT buffer_handle, INT request_id)
          return BM_INVALID_HANDLE;
       }
 
-      /* get a pointer to the proper client structure */
-      pclient = &(_buffer[buffer_handle - 1].buffer_header->
-                  client[bm_validate_client_index(&_buffer[buffer_handle - 1])]);
-
       /* lock buffer */
       bm_lock_buffer(buffer_handle);
+
+      /* get a pointer to the proper client structure */
+      pclient = &(_buffer[buffer_handle - 1].buffer_header->
+                  client[bm_validate_client_index(&_buffer[buffer_handle - 1], TRUE)]);
 
       /* check all requests and set to zero if matching */
       for (i = 0, deleted = 0; i < pclient->max_request_index; i++)
@@ -6397,6 +6425,7 @@ static int bm_wait_for_free_space(int buffer_handle, BUFFER * pbuf, int async_fl
       int n_blocking;
       int i;
       int size;
+      int idx;
 
       /* check if enough space in buffer */
 
@@ -6517,7 +6546,9 @@ static int bm_wait_for_free_space(int buffer_handle, BUFFER * pbuf, int async_fl
 #endif
 
       /* signal other clients wait mode */
-      pheader->client[bm_validate_client_index(pbuf)].write_wait = requested_space;
+      idx = bm_validate_client_index(pbuf, FALSE);
+      if (idx >= 0)
+         pheader->client[idx].write_wait = requested_space;
 
       bm_cleanup("bm_wait_for_free_space", ss_millitime(), FALSE);
 
@@ -6534,7 +6565,13 @@ static int bm_wait_for_free_space(int buffer_handle, BUFFER * pbuf, int async_fl
          ss_sleep(10);
 
       /* validate client index: we could have been removed from the buffer */
-      pheader->client[bm_validate_client_index(pbuf)].write_wait = 0;
+      idx = bm_validate_client_index(pbuf, FALSE);
+      if (idx >= 0)
+         pheader->client[idx].write_wait = 0;
+      else {
+         cm_msg(MERROR, "bm_wait_for_free_space", "our client index is no longer valid, exiting...");
+         status = SS_ABORT;
+      }
 
       /* return if TCP connection broken */
       if (status == SS_ABORT)
@@ -6671,21 +6708,22 @@ INT bm_send_event(INT buffer_handle, void *source, INT buf_size, INT async_flag)
 
       /* we come here only for events that are too big to fit into the cache */
 
+      /* lock the buffer */
+      bm_lock_buffer(buffer_handle);
+
       /* calculate some shorthands */
       pheader = pbuf->buffer_header;
       pdata = (char *) (pheader + 1);
-      my_client_index = bm_validate_client_index(pbuf);
+      my_client_index = bm_validate_client_index(pbuf, TRUE);
       pclient = pheader->client;
 
       /* check if buffer is large enough */
       if (total_size >= pheader->size) {
+         bm_unlock_buffer(buffer_handle);
          cm_msg(MERROR, "bm_send_event",
                 "total event size (%d) larger than size (%d) of buffer \'%s\'", total_size, pheader->size, pheader->name);
          return BM_NO_MEMORY;
       }
-
-      /* lock the buffer */
-      bm_lock_buffer(buffer_handle);
 
       status = bm_wait_for_free_space(buffer_handle, pbuf, async_flag, total_size);
       if (status != BM_SUCCESS) {
@@ -6824,15 +6862,15 @@ INT bm_flush_cache(INT buffer_handle, INT async_flag)
       if (pbuf->write_cache_rp == pbuf->write_cache_wp)
          return BM_SUCCESS;
 
+      /* lock the buffer */
+      bm_lock_buffer(buffer_handle);
+
       /* calculate some shorthands */
       pheader = _buffer[buffer_handle - 1].buffer_header;
       pdata = (char *) (pheader + 1);
-      my_client_index = bm_validate_client_index(pbuf);
+      my_client_index = bm_validate_client_index(pbuf, TRUE);
       pclient = pheader->client;
       pevent = (EVENT_HEADER *) (pbuf->write_cache + pbuf->write_cache_rp);
-
-      /* lock the buffer */
-      bm_lock_buffer(buffer_handle);
 
 #ifdef DEBUG_MSG
       cm_msg(MDEBUG, "bm_flush_cache initial: rp=%d, wp=%d", pheader->read_pointer, pheader->write_pointer);
@@ -7052,7 +7090,7 @@ INT bm_receive_event(INT buffer_handle, void *destination, INT * buf_size, INT a
       /* calculate some shorthands */
       pheader = pbuf->buffer_header;
       pdata = (char *) (pheader + 1);
-      my_client_index = bm_validate_client_index(pbuf);
+      my_client_index = bm_validate_client_index(pbuf, TRUE);
       pclient = pheader->client;
       pc = pheader->client + my_client_index;
 
@@ -7094,7 +7132,7 @@ INT bm_receive_event(INT buffer_handle, void *destination, INT * buf_size, INT a
          pc->read_wait = FALSE;
 
          /* validate client_index: somebody may have disconnected us from the buffer */
-         bm_validate_client_index(pbuf);
+         bm_validate_client_index(pbuf, TRUE);
 
          bm_lock_buffer(buffer_handle);
       }
@@ -7301,7 +7339,7 @@ INT bm_skip_event(INT buffer_handle)
       bm_lock_buffer(buffer_handle);
 
       /* forward read pointer to global write pointer */
-      pclient = pheader->client + bm_validate_client_index(pbuf);
+      pclient = pheader->client + bm_validate_client_index(pbuf, TRUE);
       pclient->read_pointer = pheader->write_pointer;
 
       bm_unlock_buffer(buffer_handle);
@@ -7366,7 +7404,7 @@ INT bm_push_event(char *buffer_name)
       /* calculate some shorthands */
       pheader = pbuf->buffer_header;
       pdata = (char *) (pheader + 1);
-      my_client_index = bm_validate_client_index(pbuf);
+      my_client_index = bm_validate_client_index(pbuf, TRUE);
       pclient = pheader->client;
       pc = pheader->client + my_client_index;
 
@@ -7660,7 +7698,7 @@ INT bm_mark_read_waiting(BOOL flag)
             continue;
 
          pheader = _buffer[i].buffer_header;
-         pclient = pheader->client + bm_validate_client_index(&_buffer[i]);
+         pclient = pheader->client + bm_validate_client_index(&_buffer[i], TRUE);
          pclient->read_wait = flag;
       }
    }
@@ -7913,7 +7951,7 @@ INT bm_empty_buffers()
          bm_lock_buffer(idx + 1);
 
          /* set read pointer to write pointer */
-         pclient = (pbuf->buffer_header)->client + bm_validate_client_index(pbuf);
+         pclient = (pbuf->buffer_header)->client + bm_validate_client_index(pbuf, TRUE);
          pclient->read_pointer = (pbuf->buffer_header)->write_pointer;
 
          bm_unlock_buffer(idx + 1);
@@ -12866,9 +12904,8 @@ INT rpc_server_receive(INT idx, int sock, BOOL check)
          ss_alarm(0, cm_watchdog);
 #endif
 
-         cm_delete_client_info(hDB, 0);
-
          bm_close_all_buffers();
+         cm_delete_client_info(hDB, 0);
          db_close_all_databases();
 
          rpc_deregister_functions();
