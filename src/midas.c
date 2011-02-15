@@ -703,7 +703,7 @@ static INT cm_msg_buffer(int ts, int message_type, const char *message)
       assert(status==SUCCESS);
 
       status = ss_mutex_create(&_msg_mutex);
-      assert(status==SUCCESS);
+      assert(status==SS_SUCCESS || status==SS_CREATED);
    }
 
    len = strlen(message) + 1;
@@ -2507,6 +2507,13 @@ INT cm_disconnect_experiment(void)
    rpc_deregister_functions();
 
    cm_set_experiment_database(0, 0);
+
+   if (_msg_mutex)
+      ss_mutex_delete(_msg_mutex);
+   _msg_mutex = 0;
+   if (_msg_rb)
+      rb_delete(_msg_rb);
+   _msg_rb = 0;
 
    _msg_buffer = 0;
 
@@ -12867,6 +12874,14 @@ INT rpc_server_receive(INT idx, int sock, BOOL check)
          rpc_deregister_functions();
 
          cm_set_experiment_database(0, 0);
+
+         if (_msg_mutex)
+            ss_mutex_delete(_msg_mutex);
+         _msg_mutex = 0;
+
+         if (_msg_rb)
+            rb_delete(_msg_rb);
+         _msg_rb = 0;
 
          _msg_buffer = 0;
       }
