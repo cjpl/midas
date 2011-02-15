@@ -52,7 +52,9 @@ INT thread(void *p)
       printf("%d in critical section, mutex lock status %d\n", ss_gettid(), status);
       ss_sleep(3000);
       printf("%d out of critical section\n", ss_gettid());
-      ss_mutex_release(tm);
+      status = ss_mutex_release(tm);
+      if (status != SUCCESS)
+         printf("%d unlock status %d\n", ss_gettid(), status);
    } while (1);
 }
 
