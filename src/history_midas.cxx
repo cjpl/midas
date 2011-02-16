@@ -187,7 +187,7 @@ static int get_event_id(const char* event_name)
       *s = ':';
 
    //printf("Looking for event id for \'%s\'\n", name);
-
+   
    cm_get_experiment_database(&hDB, NULL);
    
    status = db_find_key(hDB, 0, "/History/Events", &hKeyRoot);
@@ -224,14 +224,36 @@ static int get_event_id(const char* event_name)
       }
    }
 
-   int max_id = 100;
-
    // special event id for run transitions
    if (strcmp(name, "Run transitions")==0) {
       status = db_set_value(hDB, 0, "/History/Events/0", name, strlen(name)+1, 1, TID_STRING);
       assert(status == DB_SUCCESS);
       return 0;
    }
+
+   if (1) {
+      char tmp[256];
+      WORD evid;
+      int size;
+
+      sprintf(tmp,"/Equipment/%s/Common/Event ID", name);
+      assert(strlen(tmp) < sizeof(tmp));
+
+      size = sizeof(evid);
+      status = db_get_value(hDB, 0, tmp, &evid, &size, TID_WORD, FALSE);
+      if (status == DB_SUCCESS) {
+
+         sprintf(tmp,"/History/Events/%d", evid);
+         assert(strlen(tmp) < sizeof(tmp));
+
+         status = db_set_value(hDB, 0, tmp, name, strlen(name)+1, 1, TID_STRING);
+         assert(status == DB_SUCCESS);
+
+         return evid;
+      }
+   }
+
+   int max_id = 100;
 
    while (1) {
       char tmp[NAME_LENGTH+NAME_LENGTH+2];
