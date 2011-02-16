@@ -1,14 +1,14 @@
 # Makefile
 
 #ifndef MIDASSYS
-#MIDASSYS=$(HOME)/packages/midas
-#MIDAS_OS=linux
+MIDASSYS=$(HOME)/packages/midas
+MIDAS_OS=linux
 #endif
 
-ifndef MIDASSYS
-MIDASSYS=$(HOME)/daq/midas
-MIDAS_OS=darwin
-endif
+#ifndef MIDASSYS
+#MIDASSYS=$(HOME)/daq/midas
+#MIDAS_OS=darwin
+#endif
 
 OSFLAGS  = -DOS_LINUX -Dextname
 CFLAGS   = -g -O2 -Wall -Wuninitialized -I$(MIDASSYS)/include -I$(DRV_DIR) -I$(HOME)/daq/rootana
@@ -16,7 +16,7 @@ CXXFLAGS = $(CFLAGS)
 
 #OSFLAGS += -m32
 
-LIBS = -lm -lutil -lpthread
+LIBS = -lm -lutil -lpthread -lrt
 
 # MIDAS library
 MIDASLIBS = $(MIDASSYS)/$(MIDAS_OS)/lib/libmidas.a
