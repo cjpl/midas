@@ -1,0 +1,27 @@
+
+Example experiment "history1"
+
+Purpose:
+example and test of a simple periodic frontend writing slow controls data into midas history
+
+To run:
+use bash shell
+assuming MIDAS is installed in $HOME/packages/midas on linux, otherwise edit setup.sh and Makefile
+run make to build feslow.exe
+run source ./setup.sh
+when starting this experiment for the very first time, load experiment settings from odb.xml: odbedit -c "load odb.xml"
+run ./start_daq.sh
+mlogger and mhttpd should now be running
+connect to the midas status page at http://localhost:8080 (port number is set in start_daq.sh
+start the example frontend from the "programs" page
+observe event number of equipment "slow" is incrementing
+go to the "Slow" equipment page (click on "Slow" on the midas status page)
+observe numbers are changing when you refresh the web page
+from the midas status page, go to "history" -> "slow" - observe history plot for "SLOW[2]" shows a sine wave
+from shell, examine contents of history file: "mhdump *.hst"
+study feslow.cxx
+
+Enjoy,
+K.O.
+
+
