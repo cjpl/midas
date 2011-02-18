@@ -4235,6 +4235,7 @@ void mscb_scan_udp()
 
    mscb_fd[0].type = MSCB_TYPE_ETH; 
    mscb_fd[0].semaphore_handle = mscb_semaphore_create("mscb");
+   mscb_fd[0].eth_max_retry = 5;
    mscb_fd[0].fd = socket(AF_INET, SOCK_DGRAM, 0);
    if (mscb_fd[0].fd == -1) {
       printf("cannot create socket\n");
