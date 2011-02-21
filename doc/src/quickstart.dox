@@ -87,6 +87,7 @@ Throughout the following description the MIDAS package is assumed to be installe
 
 @subsection  Q_Linux_Environment_Variables Environment Variables
 The following @ref BO_Environment_variables needs to be setup, e.g.:
+  csh:
   @code
   #!/bin/echo You must source
   setenv CVS_RSH ssh
@@ -95,9 +96,20 @@ The following @ref BO_Environment_variables needs to be setup, e.g.:
   setenv MIDAS_EXPTAB $HOME/online/exptab ** if not setup,  defaults to  /etc/exptab
   setenv PATH .:$MIDASSYS/linux/bin:$HOME/packages/roody/bin:$ROOTSYS/bin:$PATH
   #end
-  @@endcode
+  @endcode
+  \n
+  bash:
+  @code
+  #!/bin/echo You must source
+  export CVS_RSH=ssh
+  export MIDASSYS=$HOME/packages/midas  
+  export ROOTSYS=$HOME/packages/root   ** do not setup ROOTSYS if NOT using ROOT
+  export MIDAS_EXPTAB=$HOME/online/exptab ** if not setup,  defaults to  /etc/exptab
+  export PATH=.:$MIDASSYS/linux/bin:$HOME/packages/roody/bin:$ROOTSYS/bin:$PATH
+  #end
+  @endcode
   - mkdir $HOME/packages
-  - Logout and login again, or source .cshrc for the change to take effect.
+  - Logout and login again, or source .cshrc (source .bashrc) for the change to take effect.
  \n
 
 \anchor idx_ROOT_installation 
@@ -120,7 +132,7 @@ For full MIDAS operation \b ROOT is needed for the data logging and analysis pac
       is NOT installed, the environment variable ROOTSYS must be removed:
       @code
       unsetenv ROOTSYS
-      @@endcode
+      @endcode
       
     <br>
 
@@ -142,7 +154,7 @@ The MIDAS package requires the \b mxml auxiliary package which can be found at t
   cd midas
   make
   ls $MIDASSYS/linux/bin   ... should contains odbedit and all the MIDAS applications.
-  @@endcode
+  @endcode
   \n
 
  \anchor idx_ROME_installation 
@@ -157,7 +169,7 @@ The MIDAS package requires the \b mxml auxiliary package which can be found at t
   svn co svn+ssh://svn@savannah.psi.ch/afs/psi.ch/project/meg/svn/rome/trunk rome
   cd rome
   make
-  @@endcode
+  @endcode
   
 \anchor idx_ROODY_installation
 @subsection  Q_Linux_Roody_Installation ROODY Package Installation
@@ -171,8 +183,8 @@ The MIDAS package requires the \b mxml auxiliary package which can be found at t
   svn checkout svn://ladd00.triumf.ca/roody/trunk roody
   cd roody
   make
-  $HOME/packages/roody/bin/roody, run the program
-  @@endcode
+  $HOME/packages/roody/bin/roody   ... to run the program
+  @endcode
   
 <hr>
 @section  Q_Linux_Basic_Test Basic test
@@ -204,27 +216,36 @@ NOTE: these instructions provide \b local access to the experiment. For \b remot
   simptest1 /home/johnfoo/online johnfoo
   @endcode
   \anchor start-all
-  - copy start_daq.sh, kill_client.perl and kill_daq.sh from the $MIDASSYS directory to the online directory.
   - copy $MIDASSYS/examples/experiment/* to the online directory.
   - make (creates frontend executable)
-  - run odbedit (this @ref  RC_odbedit_create_ODB "creates the ODB") and enter the commands as shown below. 
-    These commands will redirect specific data files to the given
-    directories and define the format of the data files.
   @code
+  cd online
+  cp $MIDASSYS/examples/experiment/* .
+  make
+  @endcode
+  - run odbedit (this @ref  RC_odbedit_create_ODB "creates the ODB") and enter the commands as shown below. 
+    These commands will redirect specific data files to the given directories and define the format of the data files.
+	Note the STRING creation will request a max tring length defaulted to 32.
+	The minimal set of odb commands at that point is none where the midas.log will be in the online directory
+	as well as the data, history and elog. The data format will be run%05d.mid uncompressed. Refer to @ref F_Logging
+	for further options.
+  @code
+  odbedit
   odbedit> 
-  set "/Logger/Message file" "/home/johnfoo/online/midas.log"
-  set "/Logger/Data Dir"     "/home/johnfoo/online/data"
-  create STRING "/Logger/History dir"
-  set "/Logger/History dir"  "/home/johnfoo/online/history"
-  create STRING "/Logger/Elog dir"
-  set "/Logger/Elog dir"     "/home/johnfoo/online/elog"
-  set "/Logger/ODB dump file" "/home/johnfoo/online/history/run%05d.xml"
-  set "/Logger/ODB dump" "y"
-  set "/Logger/Channels/0/Settings/Filename" "run%05d.mid.gz"
-  set "/Logger/Channels/0/Settings/Compression"   1
-  set "/Logger/Channels/0/Settings/ODB Dump" "y"
-  exit   exit 
-  @@endcode
+  > set "/Logger/Message file" "/home/johnfoo/online/midas.log"
+  > set "/Logger/Data Dir"     "/home/johnfoo/online/data"
+  > create STRING "/Logger/History dir"
+  > set "/Logger/History dir"  "/home/johnfoo/online/history"
+  > create STRING "/Logger/Elog dir"
+  > set "/Logger/Elog dir"     "/home/johnfoo/online/elog"
+  > set "/Logger/ODB dump file" "/home/johnfoo/online/history/run%05d.xml"
+  > set "/Logger/ODB dump" "y"
+  > set "/Logger/Channels/0/Settings/Filename" "run%05d.mid.gz"
+  > set "/Logger/Channels/0/Settings/Compression"   1
+  > set "/Logger/Channels/0/Settings/ODB Dump" "y"
+  > exit
+  @endcode
+  
   - ./start_daq.sh
   - open a web browser http://localhost:8081
   - save the url bookmark to the "personal toolbar"
@@ -445,7 +466,7 @@ Throughout the following description the MIDAS package is assumed to be found un
  - Click "Download tarball"
  - Extract trunk to %SystemDrive%
  - Rename trunk to mxml
-  @@endcode
+  @endcode
 
 
   - Using the svn command under cygwin (pwd "svn" will be asked twice):
@@ -453,7 +474,7 @@ Throughout the following description the MIDAS package is assumed to be found un
  cd %SystemDrive%\
  svn co svn+ssh://svn@savannah.psi.ch/afs/psi.ch/project/meg/svn/midas/trunk midas
  svn co svn+ssh://svn@savannah.psi.ch/afs/psi.ch/project/meg/svn/mxml/trunk mxml
-  @@endcode
+  @endcode
 
   - Using the Tortoise package under windows (pwd "svn" will be requested twice)
    - Using the file browser go to the \%SystemDrive\%
@@ -479,7 +500,7 @@ Environment variables needs to be setup prior the MIDAS build;
   - create file \b \%SystemRoot\%\\system32\\exptab with the following content.
   @code
   test c:\online johnfoo 
-  @@endcode   
+  @endcode   
   
   - The MIDAS build requires the Microsoft Visual C++ (200x) or .NET. 
     the corresponding environment variables for the compiler need to be set prior
@@ -490,7 +511,7 @@ Environment variables needs to be setup prior the MIDAS build;
   
   cd %MIDASSYS%
   nmake -f makefile.nt
-  @@endcode
+  @endcode
 \n
 
 <hr>
@@ -517,7 +538,7 @@ MIDAS packages has been installed.
       Name                Host
       Sample Frontend     yourhost
       ODBEdit             yourhost
-  @@endcode  
+  @endcode  
   - Start a web brower and go to http://localhost
   - Click Start, confirm run number, click refresh...   Stop run.
 
