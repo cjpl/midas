@@ -217,48 +217,48 @@ NOTE: these instructions provide \b local access to the experiment. For \b remot
   @endcode
   \anchor start-all
   - copy $MIDASSYS/examples/experiment/* to the online directory.
-  - make (creates frontend executable)
+  - make (creates frontend executable frontend.exe)
   @code
   cd online
   cp $MIDASSYS/examples/experiment/* .
   make
   @endcode
-  - run odbedit (this @ref  RC_odbedit_create_ODB "creates the ODB") and enter the commands as shown below. 
-    These commands will redirect specific data files to the given directories and define the format of the data files.
-	Note the STRING creation will request a max tring length defaulted to 32.
-	The minimal set of odb commands at that point is none where the midas.log will be in the online directory
-	as well as the data, history and elog. The data format will be run%05d.mid uncompressed. Refer to @ref F_Logging
-	for further options.
-  @code
-  odbedit
-  odbedit> 
-  > set "/Logger/Message file" "/home/johnfoo/online/midas.log"
-  > set "/Logger/Data Dir"     "/home/johnfoo/online/data"
-  > create STRING "/Logger/History dir"
-  > set "/Logger/History dir"  "/home/johnfoo/online/history"
-  > create STRING "/Logger/Elog dir"
-  > set "/Logger/Elog dir"     "/home/johnfoo/online/elog"
-  > set "/Logger/ODB dump file" "/home/johnfoo/online/history/run%05d.xml"
-  > set "/Logger/ODB dump" "y"
-  > set "/Logger/Channels/0/Settings/Filename" "run%05d.mid.gz"
-  > set "/Logger/Channels/0/Settings/Compression"   1
-  > set "/Logger/Channels/0/Settings/ODB Dump" "y"
-  > exit
-  @endcode
-  
-  - ./start_daq.sh
-  - open a web browser http://localhost:8081
-  - save the url bookmark to the "personal toolbar"
-  - start run, end run
-  -  back from the shell, restart the DAQ to make sure all changes "take", run:
-  - ./kill_daq.sh
-  - ./start_daq.sh
-  - go back to the MIDAS web page, everything should be green
-  - start a run
-  - send signals to the ADC gate
-  - you should be getting events
-  - to look at data, proceed with setting up the <a href="http://daq-plone.triumf.ca/SR/rootana" >
-    ROOT analyzer </a>
+  - The analyzer will build properly if ROOT has been previously installed. 
+  - At this point the frontend and the analyzer should be ready if no error where generated during the build.
+    By running the script <b> start_daq.sh </b> several midas applications will be started in sequence.
+   -# Cleanup previous midas application (if any).
+   -# Start the midas web server [mhttpd]
+   -# Start the frontend application in its own xterm (for debugging purpose).
+   -# Start the analyzer application in its own xterm (for debugging purpose). 
+   -# Start the Midas Data logger [mlogger]
+
+   @code
+   $ sh ./start_daq
+   @endcode
+   
+ - Once all these applications are running, you can invoke the Midas web page by using your
+   browser to http://localhost:8081 . A Midas run status page should be appearing with multiple buttons for 
+   run control as well as equipment listing and application listing. Please refers to @ref RC_mhttpd for further information.
+ - You can also run the MIDAS Online Editor [odbedit] in a new terminal to provide you command line access to the database. 
+  - The content of the database is accessible with Unix-like commands. There are directories related to specifics 
+    of the Midas environment. One in particular is the "Logger". Please refer to @ref F_Logging_Data for discussion on the different 
+    logger configuration options.
+ - Run can be started and stopped under odbedit or through the web page.
+ - While a run is in progress, the midas application <b>mdump</b> will provide you an event dump of the collected
+   data from the running frontend.
+ - For further data processing/analysis, either the <b> midas analyzer </b> or the 
+   <a href="http://daq-plone.triumf.ca/SR/rootana" > rootana </a> can used for data display as well. 
+    @code
+    $odbedit
+	[local:exp:S]> ls
+	...
+	[local:exp:S]> help
+	...
+	[local:exp:S]> start
+	[local:exp:S]> exit
+	...
+	$ mdump
+	@endcode
 \n
 
 <hr>
@@ -267,9 +267,15 @@ NOTE: these instructions provide \b local access to the experiment. For \b remot
 @subsection Q_Linux_Remote_Access Remote Access to the experiment
 
   While the above description in \ref  Q_Linux_Expt_Setup installs MIDAS under user privilege for standard operation, 
-  MIDAS can be installed in a more general way under root privilege. This method allows remote
+  MIDAS can also be installed in a more general way under root privilege. This method allows remote
   access to the package through the xinetd daemon mechanism. In order to implement this, some extra steps 
   are necessary as described here.
+  
+  - <b> It is to be noted that remote access can be also obtained under user privilege by starting the Midas server [mserver]
+  by hand.</b>
+  @code
+  $ mserver -D
+  @endcode
 
   Several system files needs to be modified (as root) for the full MIDAS implementation.
   - <b>/etc/services :</b> For remote access, inclusion of the "midas" service is needed.
