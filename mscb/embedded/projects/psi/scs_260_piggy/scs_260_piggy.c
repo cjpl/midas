@@ -193,6 +193,9 @@ void adc_read(channel, float *d)
    gvalue -= user_data.aofs[channel];
    gvalue *= user_data.again[channel];
 
+   // round to two significant digits
+   gvalue = (long)(gvalue*1E2+0.5)/1E2;
+
    DISABLE_INTERRUPTS;
    *d = gvalue;
    ENABLE_INTERRUPTS;

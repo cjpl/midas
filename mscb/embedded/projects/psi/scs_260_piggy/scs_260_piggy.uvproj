@@ -294,7 +294,7 @@
               <MiscControls></MiscControls>
               <Define></Define>
               <Undefine></Undefine>
-              <IncludePath>..\include</IncludePath>
+              <IncludePath>..\..\..\include</IncludePath>
             </VariousControls>
           </C51>
           <Ax51>
@@ -352,19 +352,14 @@
               <FilePath>.\scs_260_piggy.c</FilePath>
             </File>
             <File>
-              <FileName>lcd_menu.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\lcd_menu.c</FilePath>
-            </File>
-            <File>
               <FileName>mscbmain.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\src\mscbmain.c</FilePath>
+              <FilePath>..\..\..\src\mscbmain.c</FilePath>
             </File>
             <File>
               <FileName>mscbutil.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\src\mscbutil.c</FilePath>
+              <FilePath>..\..\..\src\mscbutil.c</FilePath>
             </File>
           </Files>
         </Group>
@@ -372,14 +367,14 @@
           <GroupName>Include Files</GroupName>
           <Files>
             <File>
-              <FileName>mscbemb.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>..\include\mscbemb.h</FilePath>
-            </File>
-            <File>
               <FileName>config.h</FileName>
               <FileType>5</FileType>
               <FilePath>.\config.h</FilePath>
+            </File>
+            <File>
+              <FileName>mscbemb.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\..\..\include\mscbemb.h</FilePath>
             </File>
           </Files>
         </Group>
@@ -731,19 +726,14 @@
               <FilePath>.\scs_260_piggy.c</FilePath>
             </File>
             <File>
-              <FileName>lcd_menu.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\lcd_menu.c</FilePath>
-            </File>
-            <File>
               <FileName>mscbmain.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\src\mscbmain.c</FilePath>
+              <FilePath>..\..\..\src\mscbmain.c</FilePath>
             </File>
             <File>
               <FileName>mscbutil.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\src\mscbutil.c</FilePath>
+              <FilePath>..\..\..\src\mscbutil.c</FilePath>
             </File>
           </Files>
         </Group>
@@ -751,14 +741,14 @@
           <GroupName>Include Files</GroupName>
           <Files>
             <File>
-              <FileName>mscbemb.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>..\include\mscbemb.h</FilePath>
-            </File>
-            <File>
               <FileName>config.h</FileName>
               <FileType>5</FileType>
               <FilePath>.\config.h</FilePath>
+            </File>
+            <File>
+              <FileName>mscbemb.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\..\..\include\mscbemb.h</FilePath>
             </File>
           </Files>
         </Group>
