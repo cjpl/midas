@@ -9582,6 +9582,9 @@ void generate_hist_graph(const char *path, char *buffer, int *buffer_size,
       double *dbuf[3];
       int     st[3];
 
+      num_entries[0] = 0;
+      num_entries[1] = 0;
+
       status = mh->hs_read(ss_time() - scale + toffset - scale, ss_time() + toffset, 0,
                            2, event_names, tag_names, tag_indexes,
                            num_entries, tbuf, dbuf, st);
