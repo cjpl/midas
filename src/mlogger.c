@@ -63,9 +63,13 @@ DWORD run_start_time, subrun_start_time;
 
 LOG_CHN log_chn[MAX_CHANNELS];
 
+//#define OLD_HISTORY 1
+
 struct hist_log_s {
    char event_name[256];
+#ifdef OLD_HISTORY
    WORD event_id;
+#endif
    char *buffer;
    INT buffer_size;
    HNDLE hKeyVar;
@@ -2616,8 +2620,6 @@ static int add_event(int* indexp, int event_id, const char* event_name, HNDLE hK
 {
    int status;
    int size, i;
-   int oldTags = 0;
-   int disableTags = 0;
    int index = *indexp;
 
    if (0) {   
@@ -2628,13 +2630,14 @@ static int add_event(int* indexp, int event_id, const char* event_name, HNDLE hK
       }
    }
 
-
    /* check for duplicate event id's */
    for (i=0; i<index; i++) {
+#ifdef OLD_HISTORY
       if (hist_log[i].event_id == event_id) {
          cm_msg(MERROR, "add_event", "Duplicate event id %d for \'%s\'", event_id, event_name);
          return 0;
       }
+#endif
       if (strcmp(hist_log[i].event_name, event_name) == 0) {
          cm_msg(MERROR, "add_event", "Duplicate event name \'%s\' with event id %d", event_name, event_id);
          return 0;
@@ -2694,7 +2697,9 @@ static int add_event(int* indexp, int event_id, const char* event_name, HNDLE hK
 
    /* setup hist_log structure for this event */
    strlcpy(hist_log[index].event_name, event_name, sizeof(hist_log[index].event_name));
+#ifdef OLD_HISTORY
    hist_log[index].event_id    = event_id;
+#endif
    hist_log[index].n_var       = ntags;
    hist_log[index].hKeyVar     = hKey;
    hist_log[index].buffer_size = size;
@@ -2722,225 +2727,12 @@ static int add_event(int* indexp, int event_id, const char* event_name, HNDLE hK
    if (verbose)
       printf("Created event %d for equipment \"%s\", %d tags, size %d\n", event_id, event_name, ntags, size);
 
-   /* create history tags for mhttpd */
-
-   disableTags = 0;
-   size = sizeof(disableTags);
-   status = db_get_value(hDB, 0, "/History/DisableTags", &disableTags, &size, TID_BOOL, TRUE);
-
-   oldTags = 0;
-   size = sizeof(oldTags);
-   status = db_get_value(hDB, 0, "/History/CreateOldTags", &oldTags, &size, TID_BOOL, FALSE);
-
-   if (disableTags) {
-      HNDLE hKey;
-
-      status = db_find_key(hDB, 0, "/History/Tags", &hKey);
-      if (status == DB_SUCCESS) {
-         status = db_delete_key(hDB, hKey, FALSE);
-         if (status != DB_SUCCESS)
-            cm_msg(MERROR, "add_event", "Cannot delete /History/Tags, db_delete_key() status %d", status);
-      }
-
-   } else if (oldTags) {
-
-      char buf[256];
-
-      sprintf(buf, "/History/Tags/%d", event_id);
-
-      //printf("Set tag \'%s\' = \'%s\'\n", buf, event_name);
-
-      status = db_set_value(hDB, 0, buf, (void*)event_name, strlen(event_name)+1, 1, TID_STRING);
-      assert(status == DB_SUCCESS);
-
-      for (i=0; i<ntags; i++) {
-         WORD v = (WORD) tags[i].n_data;
-         sprintf(buf, "/History/Tags/Tags %d/%s", event_id, tags[i].name);
-
-         //printf("Set tag \'%s\' = %d\n", buf, v);
-
-         status = db_set_value(hDB, 0, buf, &v, sizeof(v), 1, TID_WORD);
-         assert(status == DB_SUCCESS);
-
-         if (strlen(tags[i].name) == NAME_LENGTH-1)
-            cm_msg(MERROR, "add_event",
-                   "Tag name \'%s\' in event %d (%s) may have been truncated to %d characters",
-                   tags[i].name, event_id, event_name, NAME_LENGTH-1);
-      }
-
-   } else {
-
-      const int kLength = 32 + NAME_LENGTH + NAME_LENGTH;
-      char buf[kLength];
-      HNDLE hKey;
-
-      sprintf(buf, "/History/Tags/%d", event_id);
-      status = db_find_key(hDB, 0, buf, &hKey);
-
-      if (status == DB_SUCCESS) {
-         // add new tags
-         KEY key;
-
-         status = db_get_key(hDB, hKey, &key);
-         assert(status == DB_SUCCESS);
-
-         assert(key.type == TID_STRING);
-
-         if (key.item_size < kLength && key.num_values == 1) {
-            // old style tags are present. Convert them to new style!
-
-            HNDLE hTags;
-
-            cm_msg(MINFO, "add_event", "Converting old event %d (%s) tags to new style", event_id, event_name);
-
-            status = db_set_data(hDB, hKey, event_name, kLength, 1, TID_STRING);
-            assert(status == DB_SUCCESS);
-
-            sprintf(buf, "/History/Tags/Tags %d", event_id);
-
-            status = db_find_key(hDB, 0, buf, &hTags);
-
-            if (status == DB_SUCCESS) {
-               for (i=0; ; i++) {
-                  HNDLE h;
-                  int size;
-                  KEY key;
-                  WORD w;
-
-                  status = db_enum_key(hDB, hTags, i, &h);
-                  if (status == DB_NO_MORE_SUBKEYS)
-                     break;
-                  assert(status == DB_SUCCESS);
-
-                  status = db_get_key(hDB, h, &key);
-
-                  size = sizeof(w);
-                  status = db_get_data(hDB, h, &w, &size, TID_WORD);
-                  assert(status == DB_SUCCESS);
-
-                  sprintf(buf, "%d[%d] %s", 0, w, key.name);
-                  
-                  status = db_set_data_index(hDB, hKey, buf, kLength, 1+i, TID_STRING);
-                  assert(status == DB_SUCCESS);
-               }
-
-               status = db_delete_key(hDB, hTags, TRUE);
-               assert(status == DB_SUCCESS);
-            }
-
-            // format conversion has changed the key, get it again
-            status = db_get_key(hDB, hKey, &key);
-            assert(status == DB_SUCCESS);
-         }
-
-         if (1) {
-            // add new tags
-         
-            int size = key.item_size * key.num_values;
-            int num = key.num_values;
-
-            char* s = (char*)malloc(size);
-            assert(s != NULL);
-
-            TAG* t = (TAG*)malloc(sizeof(TAG)*(key.num_values + ntags));
-            assert(t != NULL);
-
-            status = db_get_data(hDB, hKey, s, &size, TID_STRING);
-            assert(status == DB_SUCCESS);
-
-            for (i=1; i<key.num_values; i++) {
-               char* ss = s + i*key.item_size;
-
-               t[i].type = 0;
-               t[i].n_data = 0;
-               t[i].name[0] = 0;
-
-               if (isdigit(ss[0])) {
-                  //sscanf(ss, "%d[%d] %s", &t[i].type, &t[i].n_data, t[i].name);
-
-                  t[i].type = strtoul(ss, &ss, 0);
-                  assert(*ss == '[');
-                  ss++;
-                  t[i].n_data = strtoul(ss, &ss, 0);
-                  assert(*ss == ']');
-                  ss++;
-                  assert(*ss == ' ');
-                  ss++;
-                  strlcpy(t[i].name, ss, sizeof(t[i].name));
-
-                  //printf("type %d, n_data %d, name [%s]\n", t[i].type, t[i].n_data, t[i].name);
-               }
-            }
-
-            for (i=0; i<ntags; i++) {
-               int j;
-               int k = 0;
-
-               for (j=1; j<key.num_values; j++) {
-                  if (equal_ustring((char*)tags[i].name, (char*)t[j].name)) {
-                     if ((tags[i].type!=t[j].type) || (tags[i].n_data!=t[j].n_data)) {
-                        cm_msg(MINFO, "add_event", "Event %d (%s) tag \"%s\" type and size changed from %d[%d] to %d[%d]",
-                               event_id, event_name,
-                               tags[i].name,
-                               t[j].type, t[j].n_data,
-                               tags[i].type, tags[i].n_data);
-                        k = j;
-                        break;
-                     }
-
-                     k = -1;
-                     break;
-                  }
-               }
-
-               // if tag not present, k==0, so append it to the array
-
-               if (k==0)
-                  k = num;
-
-               if (k > 0) {
-                  sprintf(buf, "%d[%d] %s", tags[i].type, tags[i].n_data, tags[i].name);
-
-                  status = db_set_data_index(hDB, hKey, buf, kLength, k, TID_STRING);
-                  assert(status == DB_SUCCESS);
-
-                  if (k >= num)
-                     num = k+1;
-               }
-            }
-
-            free(s);
-            free(t);
-         }
-
-      } else if (status == DB_NO_KEY) {
-         // create new array of tags
-         status = db_create_key(hDB, 0, buf, TID_STRING);
-         assert(status == DB_SUCCESS);
-
-         status = db_find_key(hDB, 0, buf, &hKey);
-         assert(status == DB_SUCCESS);
-
-         status = db_set_data(hDB, hKey, event_name, kLength, 1, TID_STRING);
-         assert(status == DB_SUCCESS);
-
-         for (i=0; i<ntags; i++) {
-            sprintf(buf, "%d[%d] %s", tags[i].type, tags[i].n_data, tags[i].name);
-
-            status = db_set_data_index(hDB, hKey, buf, kLength, 1+i, TID_STRING);
-            assert(status == DB_SUCCESS);
-         }
-      } else {
-         cm_msg(MERROR, "add_event", "Error: db_find_key(%s) status %d", buf, status);
-         return 0;
-      }
-   }
-
    *indexp = index+1;
 
    return SUCCESS;
 }
 
+#ifdef OLD_HISTORY
 static int get_event_id(int eq_id, const char* eq_name, const char* var_name)
 {
    HNDLE hDB, hKeyRoot;
@@ -3024,6 +2816,7 @@ static int get_event_id(int eq_id, const char* eq_name, const char* var_name)
    /* not reached */
    return 0;
 }
+#endif
 
 INT open_history()
 {
@@ -3353,11 +3146,13 @@ INT open_history()
             }
 
             if (per_variable_history && i_tag>0) {
-               WORD event_id;
+               WORD event_id = 0;
                char event_name[NAME_LENGTH];
 
+#ifdef OLD_HISTORY
                event_id = get_event_id(eq_id, eq_name, varkey.name);
                assert(event_id > 0);
+#endif
 
                strlcpy(event_name, eq_name, NAME_LENGTH);
                strlcat(event_name, "/", NAME_LENGTH);
@@ -3590,7 +3385,7 @@ void log_history(HNDLE hDB, HNDLE hKey, void *info)
    hist_log[i].last_log = ss_time();
 
    if (verbose)
-      printf("write history event: id %d, timestamp %d, buffer %p, size %d\n", hist_log[i].event_id, hist_log[i].last_log, hist_log[i].buffer, hist_log[i].buffer_size);
+      printf("write history event: \'%s\', timestamp %d, buffer %p, size %d\n", hist_log[i].event_name, hist_log[i].last_log, hist_log[i].buffer, hist_log[i].buffer_size);
 
 #ifdef OLD_HISTORY
    hs_write_event(hist_log[i].event_id, hist_log[i].buffer, hist_log[i].buffer_size);

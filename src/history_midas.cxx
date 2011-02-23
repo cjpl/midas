@@ -22,263 +22,6 @@
 
 #define STRLCPY(dst, src) strlcpy(dst, src, sizeof(dst))
 
-static WORD get_variable_id(DWORD ltime, const char* evname, const char* tagname)
-{
-   HNDLE hDB, hKeyRoot;
-   int status, i;
-
-   cm_get_experiment_database(&hDB, NULL);
-   
-   status = db_find_key(hDB, 0, "/History/Events", &hKeyRoot);
-   if (status != DB_SUCCESS) {
-      return 0;
-   }
-
-   for (i = 0;; i++) {
-      HNDLE hKey;
-      KEY key;
-      WORD evid;
-      char buf[256];
-      int size;
-      char *s;
-      int j;
-      int ntags = 0;
-      TAG* tags = NULL;
-      char event_name[NAME_LENGTH];
-
-      status = db_enum_key(hDB, hKeyRoot, i, &hKey);
-      if (status != DB_SUCCESS)
-	 break;
-
-      status = db_get_key(hDB, hKey, &key);
-      assert(status == DB_SUCCESS);
-
-      if (!isdigit(key.name[0]))
-         continue;
-
-      evid = atoi(key.name);
-
-      assert(key.item_size < (int)sizeof(buf));
-
-      size = sizeof(buf);
-      status = db_get_data(hDB, hKey, buf, &size, TID_STRING);
-      assert(status == DB_SUCCESS);
-
-      strlcpy(event_name, buf, sizeof(event_name));
-
-      s = strchr(buf,':');
-      if (s)
-         *s = 0;
-
-      //printf("Found event %d, event [%s] name [%s], looking for [%s][%s]\n", evid, event_name, buf, evname, tagname);
-
-      if (!equal_ustring((char *)evname, buf))
-         continue;
-
-      status = hs_get_tags(ltime, evid, event_name, &ntags, &tags);
-
-      //printf("status %d, ntags %d\n", status, ntags);
-
-      //status = hs_get_tags(ltime, evid, event_name, &ntags, &tags);
-
-      for (j=0; j<ntags; j++) {
-         //printf("at %d [%s] looking for [%s]\n", j, tags[j].name, tagname);
-
-         if (equal_ustring((char *)tagname, tags[j].name)) {
-            if (tags)
-               free(tags);
-            return evid;
-         }
-      }
-
-      if (tags)
-         free(tags);
-      tags = NULL;
-   }
-
-   return 0;
-}
-
-static WORD get_variable_id_tags(const char* evname, const char* tagname)
-{
-   HNDLE hDB, hKeyRoot;
-   int status, i;
-
-   cm_get_experiment_database(&hDB, NULL);
-   
-   status = db_find_key(hDB, 0, "/History/Tags", &hKeyRoot);
-   if (status != DB_SUCCESS) {
-      return 0;
-   }
-
-   for (i = 0;; i++) {
-      HNDLE hKey;
-      KEY key;
-      WORD evid;
-      char buf[256];
-      int size;
-      char *s;
-      int j;
-
-      status = db_enum_key(hDB, hKeyRoot, i, &hKey);
-      if (status != DB_SUCCESS)
-	 break;
-
-      status = db_get_key(hDB, hKey, &key);
-      assert(status == DB_SUCCESS);
-
-      if (key.type != TID_STRING)
-         continue;
-
-      if (!isdigit(key.name[0]))
-         continue;
-
-      evid = atoi(key.name);
-
-      assert(key.item_size < (int)sizeof(buf));
-
-      size = sizeof(buf);
-      status = db_get_data_index(hDB, hKey, buf, &size, 0, TID_STRING);
-      assert(status == DB_SUCCESS);
-
-      s = strchr(buf,'/');
-      if (s)
-         *s = 0;
-
-      //printf("Found event %d, name [%s], looking for [%s][%s]\n", evid, buf, evname, tagname);
-
-      if (!equal_ustring((char *)evname, buf))
-         continue;
-
-      for (j=1; j<key.num_values; j++) {
-         size = sizeof(buf);
-         status = db_get_data_index(hDB, hKey, buf, &size, j, TID_STRING);
-         assert(status == DB_SUCCESS);
-
-         if (!isdigit(buf[0]))
-            continue;
-
-         s = strchr(buf,' ');
-         if (!s)
-            continue;
-
-         s++;
- 
-         //printf("at %d [%s] [%s] compare to [%s]\n", j, buf, s, tagname);
-
-         if (equal_ustring((char *)tagname, s)) {
-            //printf("Found evid %d\n", evid);
-            return evid;
-         }
-      }
-   }
-
-   return 0;
-}
-
-static int get_event_id(const char* event_name)
-{
-   HNDLE hDB, hKeyRoot;
-   int status, i;
-   char name[256];
-   STRLCPY(name, event_name);
-   char *s = strchr(name, '/');
-   if (s)
-      *s = ':';
-
-   //printf("Looking for event id for \'%s\'\n", name);
-   
-   cm_get_experiment_database(&hDB, NULL);
-   
-   status = db_find_key(hDB, 0, "/History/Events", &hKeyRoot);
-   if (status == DB_SUCCESS) {
-      for (i = 0;; i++) {
-         HNDLE hKey;
-         KEY key;
-         WORD evid;
-         int size;
-         char tmp[NAME_LENGTH+NAME_LENGTH+2];
-         
-         status = db_enum_key(hDB, hKeyRoot, i, &hKey);
-         if (status != DB_SUCCESS)
-           break;
-         
-         status = db_get_key(hDB, hKey, &key);
-         assert(status == DB_SUCCESS);
-         
-         //printf("key \'%s\'\n", key.name);
-         
-         evid = (WORD) strtol(key.name, NULL, 0);
-         if (evid == 0)
-            continue;
-
-         size = sizeof(tmp);
-         status = db_get_data(hDB, hKey, tmp, &size, TID_STRING);
-         //printf("status %d\n", status);
-         assert(status == DB_SUCCESS);
-
-         //printf("got %d \'%s\' looking for \'%s\'\n", evid, tmp, name);
-
-         if (equal_ustring(name, tmp))
-            return evid;
-      }
-   }
-
-   // special event id for run transitions
-   if (strcmp(name, "Run transitions")==0) {
-      status = db_set_value(hDB, 0, "/History/Events/0", name, strlen(name)+1, 1, TID_STRING);
-      assert(status == DB_SUCCESS);
-      return 0;
-   }
-
-   if (1) {
-      char tmp[256];
-      WORD evid;
-      int size;
-
-      sprintf(tmp,"/Equipment/%s/Common/Event ID", name);
-      assert(strlen(tmp) < sizeof(tmp));
-
-      size = sizeof(evid);
-      status = db_get_value(hDB, 0, tmp, &evid, &size, TID_WORD, FALSE);
-      if (status == DB_SUCCESS) {
-
-         sprintf(tmp,"/History/Events/%d", evid);
-         assert(strlen(tmp) < sizeof(tmp));
-
-         status = db_set_value(hDB, 0, tmp, name, strlen(name)+1, 1, TID_STRING);
-         assert(status == DB_SUCCESS);
-
-         return evid;
-      }
-   }
-
-   int max_id = 100;
-
-   while (1) {
-      char tmp[NAME_LENGTH+NAME_LENGTH+2];
-      HNDLE hKey;
-      WORD evid = max_id + 1;
-
-      sprintf(tmp,"/History/Events/%d", evid);
-
-      status = db_find_key(hDB, 0, tmp, &hKey);
-      if (status == DB_SUCCESS) {
-         max_id = evid;
-         assert(max_id < 65000);
-         continue;
-      }
-
-      status = db_set_value(hDB, 0, tmp, name, strlen(name)+1, 1, TID_STRING);
-      assert(status == DB_SUCCESS);
-
-      return evid;
-   }
-
-   /* not reached */
-   return -1;
-}
-
 #if 0
 char* sort_names(char* names)
 {
@@ -327,9 +70,8 @@ char* sort_names(char* names)
 class MidasHistory: public MidasHistoryInterface
 {
 public:
+   HNDLE fDB;
    int fDebug;
-
-   int fListSource;
 
    std::vector<std::string> fEventsCache;
    std::map<std::string, std::vector<TAG> > fTagsCache;
@@ -339,7 +81,6 @@ public:
    MidasHistory() // ctor
    {
       fDebug = 0;
-      fListSource = 0;
    }
 
    ~MidasHistory() // dtor
@@ -351,54 +92,35 @@ public:
 
    int hs_connect(const char* unused_connect_string)
    {
-      HNDLE hDB;
       int status;
       char str[1024];
 
-      cm_get_experiment_database(&hDB, NULL);
+      status = cm_get_experiment_database(&fDB, NULL);
+      assert(status == CM_SUCCESS);
+      assert(fDB != 0);
+
+      /* delete obsolete odb entries */
+
+      if (1) {
+         HNDLE hKey;
+         status = db_find_key(fDB, 0, "/History/ListSource", &hKey);
+         if (status == DB_SUCCESS)
+            db_delete_key(fDB, hKey, FALSE);
+      }
 
       /* check dedicated history path */
       int size = sizeof(str);
       memset(str, 0, size);
       
-      status = db_get_value(hDB, 0, "/Logger/History dir", str, &size, TID_STRING, FALSE);
+      status = db_get_value(fDB, 0, "/Logger/History dir", str, &size, TID_STRING, FALSE);
       if (status != DB_SUCCESS)
-         status = db_get_value(hDB, 0, "/Logger/Data dir", str, &size, TID_STRING, TRUE);
+         status = db_get_value(fDB, 0, "/Logger/Data dir", str, &size, TID_STRING, TRUE);
 
       if (status == DB_SUCCESS)
          ::hs_set_path(str);
 
-      /* select which list of events and variables to use */
-
-      int oldListSource = fListSource;
-      
-      fListSource = 0;
-      size = sizeof(fListSource);
-      status = db_get_value(hDB, 0, "/History/ListSource", &fListSource, &size, TID_INT, TRUE);
-      
-      /* by default "/History/ListSource" is set to zero, then use /History/Tags if available */
-      
-      if (fListSource == 0) {
-         HNDLE hKey;
-         status = db_find_key(hDB, 0, "/History/Tags", &hKey);
-         if (status == DB_SUCCESS)
-            fListSource = 2;
-      }
-      
-      /* if "Tags" not present use "/History/Events" in conjunction with hs_get_tags() */
-      
-      if (fListSource == 0) {
-         HNDLE hKey;
-         status = db_find_key(hDB, 0, "/History/Events", &hKey);
-         if (status == DB_SUCCESS)
-            fListSource = 3;
-      }
-
-      if (fListSource != oldListSource)
-         hs_clear_cache();
-
       if (fDebug)
-         printf("hs_connect: path [%s], list source %d\n", str, fListSource);
+         printf("hs_connect: path [%s]\n", str);
 
       return HS_SUCCESS;
    }
@@ -433,12 +155,351 @@ public:
 
    /*------------------------------------------------------------------*/
 
+   int FindEventId(const char* event_name)
+   {
+      HNDLE hKeyRoot;
+      int status;
+      char name[256];
+      STRLCPY(name, event_name);
+      char *s = strchr(name, '/');
+      if (s)
+         *s = ':';
+
+      //printf("Looking for event id for \'%s\'\n", name);
+   
+      status = db_find_key(fDB, 0, "/History/Events", &hKeyRoot);
+      if (status == DB_SUCCESS) {
+         for (int i = 0;; i++) {
+            HNDLE hKey;
+            KEY key;
+         
+            status = db_enum_key(fDB, hKeyRoot, i, &hKey);
+            if (status != DB_SUCCESS)
+               break;
+         
+            status = db_get_key(fDB, hKey, &key);
+            assert(status == DB_SUCCESS);
+         
+            //printf("key \'%s\'\n", key.name);
+         
+            int evid = (WORD) strtol(key.name, NULL, 0);
+            if (evid == 0)
+               continue;
+
+            char tmp[NAME_LENGTH+NAME_LENGTH+2];
+            int size = sizeof(tmp);
+            status = db_get_data(fDB, hKey, tmp, &size, TID_STRING);
+            assert(status == DB_SUCCESS);
+
+            //printf("got %d \'%s\' looking for \'%s\'\n", evid, tmp, name);
+
+            if (equal_ustring(name, tmp))
+               return evid;
+         }
+      }
+
+      return -1;
+   }
+
+   /*------------------------------------------------------------------*/
+
+   int AllocateEventId(const char* event_name)
+   {
+      int status;
+      char name[256];
+      STRLCPY(name, event_name);
+      char *s = strchr(name, '/');
+      if (s)
+         *s = ':';
+      
+      // special event id for run transitions
+      if (strcmp(name, "Run transitions")==0) {
+         status = db_set_value(fDB, 0, "/History/Events/0", name, strlen(name)+1, 1, TID_STRING);
+         assert(status == DB_SUCCESS);
+         return 0;
+      }
+
+      if (1) {
+         char tmp[256];
+         WORD evid;
+         int size;
+
+         sprintf(tmp,"/Equipment/%s/Common/Event ID", name);
+         assert(strlen(tmp) < sizeof(tmp));
+
+         size = sizeof(evid);
+         status = db_get_value(fDB, 0, tmp, &evid, &size, TID_WORD, FALSE);
+         if (status == DB_SUCCESS) {
+
+            sprintf(tmp,"/History/Events/%d", evid);
+            assert(strlen(tmp) < sizeof(tmp));
+
+            status = db_set_value(fDB, 0, tmp, name, strlen(name)+1, 1, TID_STRING);
+            assert(status == DB_SUCCESS);
+
+            return evid;
+         }
+      }
+
+      for (int evid = 101; evid < 65000; evid++) {
+         char tmp[256];
+         HNDLE hKey;
+
+         sprintf(tmp,"/History/Events/%d", evid);
+
+         status = db_find_key(fDB, 0, tmp, &hKey);
+         if (status != DB_SUCCESS) {
+
+            status = db_set_value(fDB, 0, tmp, name, strlen(name)+1, 1, TID_STRING);
+            assert(status == DB_SUCCESS);
+            
+            return evid;
+         }
+      }
+
+      cm_msg(MERROR, "AllocateEventId", "Cannot allocate history event id - all in use - please examine /History/Events");
+      return -1;
+   }
+
+   /*------------------------------------------------------------------*/
+
+   int CreateOdbTags(int event_id, const char* event_name, int ntags, const TAG tags[])
+   {
+      int disableTags;
+      int oldTags;
+      int size, status;
+
+      /* create history tags for mhttpd */
+
+      disableTags = 0;
+      size = sizeof(disableTags);
+      status = db_get_value(fDB, 0, "/History/DisableTags", &disableTags, &size, TID_BOOL, TRUE);
+
+      oldTags = 0;
+      size = sizeof(oldTags);
+      status = db_get_value(fDB, 0, "/History/CreateOldTags", &oldTags, &size, TID_BOOL, FALSE);
+
+      if (disableTags) {
+         HNDLE hKey;
+
+         status = db_find_key(fDB, 0, "/History/Tags", &hKey);
+         if (status == DB_SUCCESS) {
+            status = db_delete_key(fDB, hKey, FALSE);
+            if (status != DB_SUCCESS)
+               cm_msg(MERROR, "add_event", "Cannot delete /History/Tags, db_delete_key() status %d", status);
+         }
+
+      } else if (oldTags) {
+
+         char buf[256];
+
+         sprintf(buf, "/History/Tags/%d", event_id);
+
+         //printf("Set tag \'%s\' = \'%s\'\n", buf, event_name);
+
+         status = db_set_value(fDB, 0, buf, (void*)event_name, strlen(event_name)+1, 1, TID_STRING);
+         assert(status == DB_SUCCESS);
+
+         for (int i=0; i<ntags; i++) {
+            WORD v = (WORD) tags[i].n_data;
+            sprintf(buf, "/History/Tags/Tags %d/%s", event_id, tags[i].name);
+
+            //printf("Set tag \'%s\' = %d\n", buf, v);
+
+            status = db_set_value(fDB, 0, buf, &v, sizeof(v), 1, TID_WORD);
+            assert(status == DB_SUCCESS);
+
+            if (strlen(tags[i].name) == NAME_LENGTH-1)
+               cm_msg(MERROR, "add_event",
+                      "Tag name \'%s\' in event %d (%s) may have been truncated to %d characters",
+                      tags[i].name, event_id, event_name, NAME_LENGTH-1);
+         }
+
+      } else {
+
+         const int kLength = 32 + NAME_LENGTH + NAME_LENGTH;
+         char buf[kLength];
+         HNDLE hKey;
+
+         sprintf(buf, "/History/Tags/%d", event_id);
+         status = db_find_key(fDB, 0, buf, &hKey);
+
+         if (status == DB_SUCCESS) {
+            // add new tags
+            KEY key;
+
+            status = db_get_key(fDB, hKey, &key);
+            assert(status == DB_SUCCESS);
+
+            assert(key.type == TID_STRING);
+
+            if (key.item_size < kLength && key.num_values == 1) {
+               // old style tags are present. Convert them to new style!
+
+               HNDLE hTags;
+
+               cm_msg(MINFO, "add_event", "Converting old event %d (%s) tags to new style", event_id, event_name);
+
+               status = db_set_data(fDB, hKey, event_name, kLength, 1, TID_STRING);
+               assert(status == DB_SUCCESS);
+
+               sprintf(buf, "/History/Tags/Tags %d", event_id);
+
+               status = db_find_key(fDB, 0, buf, &hTags);
+
+               if (status == DB_SUCCESS) {
+                  for (int i=0; ; i++) {
+                     HNDLE h;
+                     int size;
+                     KEY key;
+                     WORD w;
+
+                     status = db_enum_key(fDB, hTags, i, &h);
+                     if (status == DB_NO_MORE_SUBKEYS)
+                        break;
+                     assert(status == DB_SUCCESS);
+
+                     status = db_get_key(fDB, h, &key);
+
+                     size = sizeof(w);
+                     status = db_get_data(fDB, h, &w, &size, TID_WORD);
+                     assert(status == DB_SUCCESS);
+
+                     sprintf(buf, "%d[%d] %s", 0, w, key.name);
+                  
+                     status = db_set_data_index(fDB, hKey, buf, kLength, 1+i, TID_STRING);
+                     assert(status == DB_SUCCESS);
+                  }
+
+                  status = db_delete_key(fDB, hTags, TRUE);
+                  assert(status == DB_SUCCESS);
+               }
+
+               // format conversion has changed the key, get it again
+               status = db_get_key(fDB, hKey, &key);
+               assert(status == DB_SUCCESS);
+            }
+
+            if (1) {
+               // add new tags
+         
+               int size = key.item_size * key.num_values;
+               int num = key.num_values;
+
+               char* s = (char*)malloc(size);
+               assert(s != NULL);
+
+               TAG* t = (TAG*)malloc(sizeof(TAG)*(key.num_values + ntags));
+               assert(t != NULL);
+
+               status = db_get_data(fDB, hKey, s, &size, TID_STRING);
+               assert(status == DB_SUCCESS);
+
+               for (int i=1; i<key.num_values; i++) {
+                  char* ss = s + i*key.item_size;
+
+                  t[i].type = 0;
+                  t[i].n_data = 0;
+                  t[i].name[0] = 0;
+
+                  if (isdigit(ss[0])) {
+                     //sscanf(ss, "%d[%d] %s", &t[i].type, &t[i].n_data, t[i].name);
+
+                     t[i].type = strtoul(ss, &ss, 0);
+                     assert(*ss == '[');
+                     ss++;
+                     t[i].n_data = strtoul(ss, &ss, 0);
+                     assert(*ss == ']');
+                     ss++;
+                     assert(*ss == ' ');
+                     ss++;
+                     strlcpy(t[i].name, ss, sizeof(t[i].name));
+
+                     //printf("type %d, n_data %d, name [%s]\n", t[i].type, t[i].n_data, t[i].name);
+                  }
+               }
+
+               for (int i=0; i<ntags; i++) {
+                  int k = 0;
+
+                  for (int j=1; j<key.num_values; j++) {
+                     if (equal_ustring((char*)tags[i].name, (char*)t[j].name)) {
+                        if ((tags[i].type!=t[j].type) || (tags[i].n_data!=t[j].n_data)) {
+                           cm_msg(MINFO, "add_event", "Event %d (%s) tag \"%s\" type and size changed from %d[%d] to %d[%d]",
+                                  event_id, event_name,
+                                  tags[i].name,
+                                  t[j].type, t[j].n_data,
+                                  tags[i].type, tags[i].n_data);
+                           k = j;
+                           break;
+                        }
+
+                        k = -1;
+                        break;
+                     }
+                  }
+
+                  // if tag not present, k==0, so append it to the array
+
+                  if (k==0)
+                     k = num;
+
+                  if (k > 0) {
+                     sprintf(buf, "%d[%d] %s", tags[i].type, tags[i].n_data, tags[i].name);
+
+                     status = db_set_data_index(fDB, hKey, buf, kLength, k, TID_STRING);
+                     assert(status == DB_SUCCESS);
+
+                     if (k >= num)
+                        num = k+1;
+                  }
+               }
+
+               free(s);
+               free(t);
+            }
+
+         } else if (status == DB_NO_KEY) {
+            // create new array of tags
+            status = db_create_key(fDB, 0, buf, TID_STRING);
+            assert(status == DB_SUCCESS);
+
+            status = db_find_key(fDB, 0, buf, &hKey);
+            assert(status == DB_SUCCESS);
+
+            status = db_set_data(fDB, hKey, event_name, kLength, 1, TID_STRING);
+            assert(status == DB_SUCCESS);
+
+            for (int i=0; i<ntags; i++) {
+               sprintf(buf, "%d[%d] %s", tags[i].type, tags[i].n_data, tags[i].name);
+
+               status = db_set_data_index(fDB, hKey, buf, kLength, 1+i, TID_STRING);
+               assert(status == DB_SUCCESS);
+            }
+         } else {
+            cm_msg(MERROR, "add_event", "Error: db_find_key(%s) status %d", buf, status);
+            return HS_FILE_ERROR;
+         }
+      }
+
+      return HS_SUCCESS;
+   }
+
+   /*------------------------------------------------------------------*/
+
    int hs_define_event(const char* event_name, int ntags, const TAG tags[])
    {
-      int event_id = get_event_id(event_name);
+      int event_id = FindEventId(event_name);
+      if (event_id < 0)
+         event_id = AllocateEventId(event_name);
+      if (event_id < 0)
+         return HS_FILE_ERROR;
       fEvidCache[event_name] = event_id;
+      CreateOdbTags(event_id, event_name, ntags, tags);
       return ::hs_define_event(event_id, (char*)event_name, (TAG*)tags, ntags*sizeof(TAG));
    }
+
+   /*------------------------------------------------------------------*/
 
    int hs_write_event(const char*  event_name, time_t timestamp, int data_size, const char* data)
    {
@@ -449,99 +510,29 @@ public:
 
    /*------------------------------------------------------------------*/
 
-   int GetEventsFromEquipment(std::vector<std::string> *events)
-   {
-      HNDLE hDB, hKeyRoot;
-      int i, status;
-
-      cm_get_experiment_database(&hDB, NULL);
-
-      status = db_find_key(hDB, 0, "/Equipment", &hKeyRoot);
-      if (status != DB_SUCCESS) {
-         return HS_FILE_ERROR;
-      }
-
-      /* loop over equipment to display event name */
-      for (i = 0;; i++) {
-         HNDLE hKeyEq;
-         int history;
-         int size;
-      
-         status = db_enum_key(hDB, hKeyRoot, i, &hKeyEq);
-         if (status != DB_SUCCESS)
-            break;
-    
-         /* check history flag */
-         size = sizeof(history);
-         db_get_value(hDB, hKeyEq, "Common/Log history", &history, &size, TID_INT, TRUE);
-    
-         /* show event only if log history flag is on */
-         if (history > 0) {
-            KEY key;
-            char *evname;
-
-            /* get equipment name */
-            db_get_key(hDB, hKeyEq, &key);
-
-            evname = key.name;
-
-            events->push_back(evname);
-         
-            //printf("event \'%s\'\n", evname);
-         }
-      }
-   
-      /* loop over history links to display event name */
-      status = db_find_key(hDB, 0, "/History/Links", &hKeyRoot);
-      if (status == DB_SUCCESS) {
-         for (i = 0;; i++) {
-            HNDLE hKey;
-            KEY key;
-            char* evname;
-
-            status = db_enum_link(hDB, hKeyRoot, i, &hKey);
-            if (status == DB_NO_MORE_SUBKEYS)
-               break;
-      
-            db_get_key(hDB, hKey, &key);
-      
-            evname = key.name;
-
-            events->push_back(evname);
-
-            //printf("event \'%s\'\n", evname);
-         }
-      }
-
-      return HS_SUCCESS;
-   }
-
    int GetEventsFromOdbEvents(std::vector<std::string> *events)
    {
-      int i;
-      HNDLE hDB, hKeyRoot;
+      HNDLE hKeyRoot;
       int status;
 
-      cm_get_experiment_database(&hDB, NULL);
-
-      status = db_find_key(hDB, 0, "/History/Events", &hKeyRoot);
+      status = db_find_key(fDB, 0, "/History/Events", &hKeyRoot);
       if (status != DB_SUCCESS) {
          return HS_FILE_ERROR;
       }
 
       /* loop over tags to display event names */
-      for (i = 0;; i++) {
+      for (int i = 0;; i++) {
          HNDLE hKeyEq;
          char *s;
          char evname[1024+NAME_LENGTH];
          int size;
       
-         status = db_enum_key(hDB, hKeyRoot, i, &hKeyEq);
+         status = db_enum_key(fDB, hKeyRoot, i, &hKeyEq);
          if (status != DB_SUCCESS)
             break;
     
          size = sizeof(evname);
-         status = db_get_data(hDB, hKeyEq, evname, &size, TID_STRING);
+         status = db_get_data(fDB, hKeyEq, evname, &size, TID_STRING);
          assert(status == DB_SUCCESS);
 
          s = strchr(evname,':');
@@ -571,20 +562,16 @@ public:
 
    int GetEventsFromOdbTags(std::vector<std::string> *events)
    {
-      HNDLE hDB;
-      int i;
       HNDLE hKeyRoot;
       int status;
 
-      cm_get_experiment_database(&hDB, NULL);
-
-      status = db_find_key(hDB, 0, "/History/Tags", &hKeyRoot);
+      status = db_find_key(fDB, 0, "/History/Tags", &hKeyRoot);
       if (status != DB_SUCCESS) {
          return HS_FILE_ERROR;
       }
    
       /* loop over tags to display event names */
-      for (i = 0;; i++) {
+      for (int i = 0;; i++) {
          HNDLE hKeyEq;
          KEY key;
          char *s;
@@ -592,12 +579,12 @@ public:
          char evname[1024+NAME_LENGTH];
          int size;
       
-         status = db_enum_key(hDB, hKeyRoot, i, &hKeyEq);
+         status = db_enum_key(fDB, hKeyRoot, i, &hKeyEq);
          if (status != DB_SUCCESS)
             break;
     
          /* get event name */
-         db_get_key(hDB, hKeyEq, &key);
+         db_get_key(fDB, hKeyEq, &key);
       
          //printf("key \'%s\'\n", key.name);
       
@@ -614,7 +601,7 @@ public:
             continue;
 
          size = sizeof(evname);
-         status = db_get_data_index(hDB, hKeyEq, evname, &size, 0, TID_STRING);
+         status = db_get_data_index(fDB, hKeyEq, evname, &size, 0, TID_STRING);
          assert(status == DB_SUCCESS);
 
          /* skip duplicated event names */
@@ -645,26 +632,14 @@ public:
 
       if (fEventsCache.size() == 0) {
          int status;
-         HNDLE hDB;
-         cm_get_experiment_database(&hDB, NULL);
 
          if (fDebug)
             printf("hs_get_events: reading events list!\n");
          
-         switch (fListSource) {
-         case 0:
-         case 1:
-            status = GetEventsFromEquipment(&fEventsCache);
-            break;
-         case 2:
-            status = GetEventsFromOdbTags(&fEventsCache);
-            break;
-         case 3:
+         status = GetEventsFromOdbTags(&fEventsCache);
+
+         if (status != HS_SUCCESS)
             status = GetEventsFromOdbEvents(&fEventsCache);
-            break;
-         default:
-            return HS_FILE_ERROR;
-         }
 
          if (status != HS_SUCCESS)
             return status;
@@ -676,34 +651,176 @@ public:
       return HS_SUCCESS;
    }
 
-   int xhs_event_id(time_t t, const char* event_name, const char* tag_name, int *pevid)
+   int GetEventIdFromHS(time_t ltime, const char* evname, const char* tagname)
    {
+      HNDLE hKeyRoot;
+      int status;
+
+      status = db_find_key(fDB, 0, "/History/Events", &hKeyRoot);
+      if (status != DB_SUCCESS) {
+         return -1;
+      }
+
+      for (int i = 0;; i++) {
+         HNDLE hKey;
+         KEY key;
+         int  evid;
+         char buf[256];
+         int size;
+         char *s;
+         int ntags = 0;
+         TAG* tags = NULL;
+         char event_name[NAME_LENGTH];
+
+         status = db_enum_key(fDB, hKeyRoot, i, &hKey);
+         if (status != DB_SUCCESS)
+            break;
+
+         status = db_get_key(fDB, hKey, &key);
+         assert(status == DB_SUCCESS);
+
+         if (!isdigit(key.name[0]))
+            continue;
+
+         evid = atoi(key.name);
+
+         assert(key.item_size < (int)sizeof(buf));
+
+         size = sizeof(buf);
+         status = db_get_data(fDB, hKey, buf, &size, TID_STRING);
+         assert(status == DB_SUCCESS);
+
+         strlcpy(event_name, buf, sizeof(event_name));
+
+         s = strchr(buf,':');
+         if (s)
+            *s = 0;
+
+         //printf("Found event %d, event [%s] name [%s], looking for [%s][%s]\n", evid, event_name, buf, evname, tagname);
+
+         if (!equal_ustring((char *)evname, buf))
+            continue;
+
+         status = ::hs_get_tags(ltime, evid, event_name, &ntags, &tags);
+
+         for (int j=0; j<ntags; j++) {
+            //printf("at %d [%s] looking for [%s]\n", j, tags[j].name, tagname);
+
+            if (equal_ustring((char *)tagname, tags[j].name)) {
+               if (tags)
+                  free(tags);
+               return evid;
+            }
+         }
+
+         if (tags)
+            free(tags);
+         tags = NULL;
+      }
+
+      return -1;
+   }
+
+   int GetEventIdFromOdbTags(const char* evname, const char* tagname)
+   {
+      HNDLE hKeyRoot;
+      int status;
+      
+      status = db_find_key(fDB, 0, "/History/Tags", &hKeyRoot);
+      if (status != DB_SUCCESS) {
+         return -1;
+      }
+
+      for (int i = 0;; i++) {
+         HNDLE hKey;
+         KEY key;
+         int evid;
+         char buf[256];
+         int size;
+         char *s;
+
+         status = db_enum_key(fDB, hKeyRoot, i, &hKey);
+         if (status != DB_SUCCESS)
+            break;
+
+         status = db_get_key(fDB, hKey, &key);
+         assert(status == DB_SUCCESS);
+
+         if (key.type != TID_STRING)
+            continue;
+
+         if (!isdigit(key.name[0]))
+            continue;
+
+         evid = atoi(key.name);
+
+         assert(key.item_size < (int)sizeof(buf));
+
+         size = sizeof(buf);
+         status = db_get_data_index(fDB, hKey, buf, &size, 0, TID_STRING);
+         assert(status == DB_SUCCESS);
+
+         s = strchr(buf,'/');
+         if (s)
+            *s = 0;
+
+         //printf("Found event %d, name [%s], looking for [%s][%s]\n", evid, buf, evname, tagname);
+
+         if (!equal_ustring((char *)evname, buf))
+            continue;
+
+         for (int j=1; j<key.num_values; j++) {
+            size = sizeof(buf);
+            status = db_get_data_index(fDB, hKey, buf, &size, j, TID_STRING);
+            assert(status == DB_SUCCESS);
+
+            if (!isdigit(buf[0]))
+               continue;
+
+            s = strchr(buf,' ');
+            if (!s)
+               continue;
+
+            s++;
+ 
+            //printf("at %d [%s] [%s] compare to [%s]\n", j, buf, s, tagname);
+
+            if (equal_ustring((char *)tagname, s)) {
+               //printf("Found evid %d\n", evid);
+               return evid;
+            }
+         }
+      }
+
+      return -1;
+   }
+
+   int GetEventId(time_t t, const char* event_name, const char* tag_name, int *pevid)
+   {
+      int event_id = -1;
+
       if (fDebug)
          printf("xhs_event_id for event [%s], tag [%s]\n", event_name, tag_name);
 
       *pevid = 0;
 
       /* use "/History/Tags" if available */
-      DWORD event_id = get_variable_id_tags(event_name, tag_name);
+      event_id = GetEventIdFromOdbTags(event_name, tag_name);
       
       /* if no Tags, use "/History/Events" and hs_get_tags() to read definition from history files */
-      if (event_id == 0)
-         event_id = get_variable_id((DWORD)t, event_name, tag_name);
+      if (event_id < 0)
+         event_id = GetEventIdFromHS(t, event_name, tag_name);
 
-      /* special kludge because run transitions are not listed in /History/Events */
-      if ((event_id == 0) && equal_ustring(event_name, "Run transitions")) {
-         *pevid = 0;
-         return HS_SUCCESS;
-      }
-      
       /* if nothing works, use hs_get_event_id() */
-      if (event_id == 0) {
-         int status = hs_get_event_id(0, (char*)event_name, &event_id);
+      if (event_id <= 0) {
+         DWORD evid = 0;
+         int status = ::hs_get_event_id(t, (char*)event_name, &evid);
          if (status != HS_SUCCESS)
             return status;
+         event_id = evid;
       }
       
-      if (event_id == 0)
+      if (event_id < 0)
          return HS_UNDEFINED_VAR;
       
       *pevid = event_id;
@@ -711,132 +828,11 @@ public:
       return HS_SUCCESS;
    }
    
-   int GetTagsFromEquipment(const char* event_name, std::vector<TAG> *ptags)
-   {
-      HNDLE hDB, hKeyRoot;
-      HNDLE hKey, hKeyEq, hKeyVar;
-      BOOL is_link = FALSE;
-      int status;
-      int i;
-      char eq_name[NAME_LENGTH];
-      char str[256];
-
-      cm_get_experiment_database(&hDB, NULL);
-
-      status = db_find_key(hDB, 0, "/Equipment", &hKeyRoot);
-      if (status != DB_SUCCESS) {
-         return HS_FILE_ERROR;
-      }
-
-      /* display variables for selected event */
-   
-      STRLCPY(eq_name, event_name);
-  
-      is_link = FALSE;
-      db_find_key(hDB, hKeyRoot, eq_name, &hKeyEq);
-      if (!hKeyEq) {
-         sprintf(str, "/History/Links/%s", eq_name);
-         status = db_find_link(hDB, 0, str, &hKeyVar);
-         if (status != DB_SUCCESS) {
-            return HS_FILE_ERROR;
-         } else
-            is_link = TRUE;
-      }
-  
-      /* go through variables for selected event */
-      if (!is_link) {
-         sprintf(str, "/Equipment/%s/Variables", eq_name);
-         status = db_find_key(hDB, 0, str, &hKeyVar);
-         if (status != DB_SUCCESS) {
-            return HS_FILE_ERROR;
-         }
-      }
-  
-      for (i = 0;; i++) {
-         KEY varkey;
-
-         status = db_enum_link(hDB, hKeyVar, i, &hKey);
-         if (status == DB_NO_MORE_SUBKEYS)
-            break;
-
-         if (is_link) {
-            db_get_key(hDB, hKey, &varkey);
-            TAG t;
-            STRLCPY(t.name, varkey.name);
-            t.n_data = varkey.num_values;
-            t.type = varkey.type;
-            ptags->push_back(t);
-         } else {
-            int n_names;
-            int single_names;
-            HNDLE hKeyNames;
-            char var_name[NAME_LENGTH];
-         
-            /* get variable key */
-            db_get_key(hDB, hKey, &varkey);
-            n_names = 0;
-         
-            /* look for names */
-            db_find_key(hDB, hKeyEq, "Settings/Names", &hKeyNames);
-            single_names = (hKeyNames > 0);
-            if (hKeyNames) {
-               KEY key;
-               /* get variables from names list */
-               db_get_key(hDB, hKeyNames, &key);
-               n_names = key.num_values;
-            } else {
-               KEY key;
-               sprintf(str, "Settings/Names %s", varkey.name);
-               db_find_key(hDB, hKeyEq, str, &hKeyNames);
-               if (hKeyNames) {
-                  /* get variables from names list */
-                  db_get_key(hDB, hKeyNames, &key);
-                  n_names = key.num_values;
-               }
-            }
-      
-            if (hKeyNames) {
-               int j;
-
-               /* loop over array elements */
-               for (j = 0; j < n_names; j++) {
-                  int size;
-                  /* get name #j */
-                  size = NAME_LENGTH;
-                  db_get_data_index(hDB, hKeyNames, var_name, &size, j, TID_STRING);
-               
-                  /* append variable key name for single name array */
-                  if (single_names) {
-                     strlcat(var_name, " ", sizeof(var_name));
-                     strlcat(var_name, varkey.name, sizeof(var_name));
-                  }
-
-                  TAG t;
-                  STRLCPY(t.name, var_name);
-                  t.type = varkey.type;
-                  t.n_data = 1;
-                  
-                  ptags->push_back(t);
-               }
-            } else {
-               TAG t;
-               STRLCPY(t.name, varkey.name);
-               t.n_data = varkey.num_values;
-               t.type = varkey.type;
-
-               ptags->push_back(t);
-            }
-         }
-      }
-
-      return HS_SUCCESS;
-   }
-
    int GetTagsFromHS(const char* event_name, std::vector<TAG> *ptags)
    {
       time_t now = time(NULL);
       int evid;
-      int status = xhs_event_id(now, event_name, NULL, &evid);
+      int status = GetEventId(now, event_name, NULL, &evid);
       if (status != HS_SUCCESS)
          return status;
       
@@ -864,19 +860,16 @@ public:
 
    int GetTagsFromOdb(const char* event_name, std::vector<TAG> *ptags)
    {
-      HNDLE hDB, hKeyRoot;
-      int i, j;
+      HNDLE hKeyRoot;
       int status;
 
-      cm_get_experiment_database(&hDB, NULL);
-
-      status = db_find_key(hDB, 0, "/History/Tags", &hKeyRoot);
+      status = db_find_key(fDB, 0, "/History/Tags", &hKeyRoot);
       if (status != DB_SUCCESS) {
          return HS_FILE_ERROR;
       }
    
       /* loop over equipment to display event name */
-      for (i = 0;; i++) {
+      for (int i = 0;; i++) {
          HNDLE hKey;
          KEY key;
          WORD event_id;
@@ -884,12 +877,12 @@ public:
          int size;
          char* s;
       
-         status = db_enum_key(hDB, hKeyRoot, i, &hKey);
+         status = db_enum_key(fDB, hKeyRoot, i, &hKey);
          if (status != DB_SUCCESS)
             break;
     
          /* get event name */
-         status = db_get_key(hDB, hKey, &key);
+         status = db_get_key(fDB, hKey, &key);
          assert(status == DB_SUCCESS);
       
          /* parse event id */
@@ -907,28 +900,28 @@ public:
 
             HNDLE hKeyDir;
             sprintf(buf, "Tags %d", event_id);
-            status = db_find_key(hDB, hKeyRoot, buf, &hKeyDir);
+            status = db_find_key(fDB, hKeyRoot, buf, &hKeyDir);
             if (status != DB_SUCCESS)
                continue;
 
             /* loop over tags */
-            for (j=0; ; j++) {
+            for (int j=0; ; j++) {
                HNDLE hKey;
                WORD array;
                int size;
                char var_name[NAME_LENGTH];
             
-               status = db_enum_key(hDB, hKeyDir, j, &hKey);
+               status = db_enum_key(fDB, hKeyDir, j, &hKey);
                if (status != DB_SUCCESS)
                   break;
             
                /* get event name */
-               status = db_get_key(hDB, hKey, &key);
+               status = db_get_key(fDB, hKey, &key);
                assert(status == DB_SUCCESS);
             
                array = 1;
                size  = sizeof(array);
-               status = db_get_data(hDB, hKey, &array, &size, TID_WORD);
+               status = db_get_data(fDB, hKey, &array, &size, TID_WORD);
                assert(status == DB_SUCCESS);
             
                strlcpy(var_name, key.name, sizeof(var_name));
@@ -950,7 +943,7 @@ public:
             continue;
 
          size = sizeof(buf);
-         status = db_get_data_index(hDB, hKey, buf, &size, 0, TID_STRING);
+         status = db_get_data_index(fDB, hKey, buf, &size, 0, TID_STRING);
          assert(status == DB_SUCCESS);
 
          if (strchr(event_name, '/')==NULL) {
@@ -965,14 +958,14 @@ public:
             continue;
 
          /* loop over tags */
-         for (j=1; j<key.num_values; j++) {
+         for (int j=1; j<key.num_values; j++) {
             int array;
             int size;
             char var_name[NAME_LENGTH];
             int ev_type;
          
             size = sizeof(buf);
-            status = db_get_data_index(hDB, hKey, buf, &size, j, TID_STRING);
+            status = db_get_data_index(fDB, hKey, buf, &size, j, TID_STRING);
             assert(status == DB_SUCCESS);
 
             //printf("index %d [%s]\n", j, buf);
@@ -1013,20 +1006,12 @@ public:
          int status = HS_FILE_ERROR;
 
          if (fDebug)
-            printf("hs_get_tags: reading tags for event [%s] using list source %d\n", event_name, fListSource);
+            printf("hs_get_tags: reading tags for event [%s]\n", event_name);
 
-         switch (fListSource) {
-         case 0:
-         case 1:
-            status = GetTagsFromEquipment(event_name, &ttt);
-            break;
-         case 2:
-            status = GetTagsFromOdb(event_name, &ttt);
-            break;
-         case 3:
+         status = GetTagsFromOdb(event_name, &ttt);
+
+         if (status != HS_SUCCESS)
             status = GetTagsFromHS(event_name, &ttt);
-            break;
-         }
 
          if (status != HS_SUCCESS)
             return status;
@@ -1068,7 +1053,7 @@ public:
             continue;
          }
          
-         int status = xhs_event_id(start_time, event_name[i], tag_name[i], &event_id);
+         int status = GetEventId(start_time, event_name[i], tag_name[i], &event_id);
          
          if (status != HS_SUCCESS) {
             st[i] = status;
