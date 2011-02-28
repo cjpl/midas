@@ -5825,6 +5825,187 @@ void do_jrpc_rev0()
 
 /*------------------------------------------------------------------*/
 
+void do_jrpc_rev1()
+{
+   static RPC_LIST rpc_list[] = {
+      { 9998, "mhttpd_jrpc_rev1", {
+            {TID_STRING, RPC_OUT}, // return string
+            {TID_INT,    RPC_IN},  // return string max length
+            {TID_STRING, RPC_IN}, // arg0
+            {TID_STRING, RPC_IN}, // arg1
+            {TID_STRING, RPC_IN}, // arg2
+            {TID_STRING, RPC_IN}, // arg3
+            {TID_STRING, RPC_IN}, // arg4
+            {TID_STRING, RPC_IN}, // arg5
+            {TID_STRING, RPC_IN}, // arg6
+            {TID_STRING, RPC_IN}, // arg7
+            {TID_STRING, RPC_IN}, // arg8
+            {TID_STRING, RPC_IN}, // arg9
+            {0}} },
+      { 0 }
+   };
+
+   int status, count = 0, substring = 0, rpc;
+
+   const char *xname   = getparam("name");
+   const char *srpc    = getparam("rpc");
+
+   if (!srpc || !xname) {
+      show_text_header();
+      rsprintf("<INVALID_ARGUMENTS>");
+      return;
+   }
+
+   char sname[256];
+   strlcpy(sname, xname, sizeof(sname));
+
+   if (sname[strlen(sname)-1]=='*') {
+      sname[strlen(sname)-1] = 0;
+      substring = 1;
+   }
+
+   rpc = atoi(srpc);
+
+   if (rpc<RPC_MIN_ID || rpc>RPC_MAX_ID) {
+      show_text_header();
+      rsprintf("<INVALID_RPC_ID>");
+      return;
+   }
+
+   rpc_list[0].id = rpc;
+   status = rpc_register_functions(rpc_list, NULL);
+
+   //printf("cm_register_functions() for format \'%s\' status %d\n", sformat, status);
+
+   show_text_header();
+
+   std::string reply_header;
+   std::string reply_body;
+
+   //rsprintf("<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>\n");
+   //rsprintf("<!-- created by MHTTPD on (timestamp) -->\n");
+   //rsprintf("<jrpc_rev1>\n");
+   //rsprintf("  <rpc>%d</rpc>\n", rpc);
+
+   if (1) {
+      HNDLE hDB, hrootkey, hsubkey, hkey;
+
+      cm_get_experiment_database(&hDB, NULL);
+      
+      int buf_length = 1024;
+
+      int max_reply_length = atoi(getparam("max_reply_length"));
+      if (max_reply_length > buf_length)
+         buf_length = max_reply_length;
+
+      char* buf = (char*)malloc(buf_length);
+
+      /* find client which exports our RPC function */
+      status = db_find_key(hDB, 0, "System/Clients", &hrootkey);
+      if (status == DB_SUCCESS) {
+         for (int i=0; ; i++) {
+            status = db_enum_key(hDB, hrootkey, i, &hsubkey);
+            if (status == DB_NO_MORE_SUBKEYS)
+               break;
+            
+            char str[256];
+            sprintf(str, "RPC/%d", rpc);
+            status = db_find_key(hDB, hsubkey, str, &hkey);
+            if (status == DB_SUCCESS) {
+               char client_name[NAME_LENGTH];
+               HNDLE hconn;
+               int size;
+
+               size = sizeof(client_name);
+               status = db_get_value(hDB, hsubkey, "Name", client_name, &size, TID_STRING, FALSE);
+               if (status != DB_SUCCESS)
+                  continue;
+
+               if (strlen(sname) > 0) {
+                  if (substring) {
+                     if (strstr(client_name, sname) != client_name)
+                        continue;
+                  } else {
+                     if (strcmp(sname, client_name) != 0)
+                        continue;
+                  }
+               }
+
+               count++;
+
+               //rsprintf("  <client>\n");
+               //rsprintf("    <name>%s</name>\n", client_name);
+
+               int connect_status = -1;
+               int call_status = -1;
+               int call_length = 0;
+               int disconnect_status = -1;
+
+               connect_status = cm_connect_client(client_name, &hconn);
+
+               //rsprintf("    <connect_status>%d</connect_status>\n", status);
+
+               if (connect_status == RPC_SUCCESS) {
+                  buf[0] = 0;
+
+                  call_status = rpc_client_call(hconn, rpc,
+                                                buf,
+                                                buf_length,
+                                                getparam("arg0"),
+                                                getparam("arg1"),
+                                                getparam("arg2"),
+                                                getparam("arg3"),
+                                                getparam("arg4"),
+                                                getparam("arg5"),
+                                                getparam("arg6"),
+                                                getparam("arg7"),
+                                                getparam("arg8"),
+                                                getparam("arg9")
+                                                );
+
+                  //rsprintf("    <rpc_status>%d</rpc_status>\n", status);
+                  ////rsprintf("    <data>%s</data>\n", buf);
+                  //rsputs("<data>");
+                  //rsputs(buf);
+                  //rsputs("</data>\n");
+
+                  if (call_status == RPC_SUCCESS) {
+                     call_length = strlen(buf);
+                     reply_body += buf;
+                  }
+
+                  disconnect_status = cm_disconnect_client(hconn, FALSE);
+                  //rsprintf("    <disconnect_status>%d</disconnect_status>\n", status);
+               }
+
+               //rsprintf("  </client>\n");
+
+               if (reply_header.length() > 0)
+                  reply_header += " | ";
+
+               char tmp[256];
+               sprintf(tmp, "%s %d %d %d %d", client_name, connect_status, call_status, disconnect_status, call_length);
+               reply_header += tmp;
+            }
+         }
+      }
+
+      free(buf);
+   }
+
+   //rsprintf("  <called_clients>%d</called_clients>\n", count);
+   //rsprintf("</jrpc_rev1>\n");
+
+   if (reply_header.length() > 0) {
+      rsputs(reply_header.c_str());
+      rsputs(" || ");
+      rsputs(reply_body.c_str());
+      rsputs("\n");
+   }
+}
+
+/*------------------------------------------------------------------*/
+
 void show_custom_page(const char *path, const char *cookie_cpwd)
 {
    int size, i, n_var, fh, index, edit;
@@ -6151,6 +6332,13 @@ void show_custom_page(const char *path, const char *cookie_cpwd)
       if (equal_ustring(getparam("cmd"), "jrpc_rev0")) {
          free(ctext);
          do_jrpc_rev0();
+         return;
+      }
+
+      /* process "jrpc" command */
+      if (equal_ustring(getparam("cmd"), "jrpc_rev1")) {
+         free(ctext);
+         do_jrpc_rev1();
          return;
       }
 
@@ -10653,7 +10841,7 @@ void show_hist_config_page(const char *path, const char *hgroup, const char *pan
    std::vector<std::string> events;
    mh->hs_get_events(&events);
 
-   // has to be sorted of equipment name code below would not work
+   // has to be sorted or equipment name code below would not work
    //std::sort(events.begin(), events.end(), cmp_events);
    std::sort(events.begin(), events.end(), cmp_events1);
 
@@ -10812,6 +11000,7 @@ void show_hist_config_page(const char *path, const char *hgroup, const char *pan
                s = "selected";
                found_event = true;
             }
+            //printf("s [%s] p [%s]\n", s, p);
             rsprintf("<option %s value=\"%s\">%s\n", s, p, p);
          }
       }
@@ -12439,6 +12628,21 @@ const char *mhttpd_js =
 "   if (request.responseText == null)\n"
 "      return null;\n"
 "   this.reply = request.responseText.split('\\n');\n"
+"}\n"
+"\n"
+"function ODBRpc_rev1(name, rpc, max_reply_length, args)\n"
+"{\n"
+"   request = XMLHttpRequestGeneric();\n"
+"\n"
+"   var url = '?cmd=jrpc_rev1&name=' + name + '&rpc=' + rpc + '&max_reply_length=' + max_reply_length;\n"
+"   for (var i = 3; i < arguments.length; i++) {\n"
+"     url += '&arg'+(i-3)+'='+arguments[i];\n"
+"   };\n"
+"   request.open('GET', url, false);\n"
+"   request.send(null);\n"
+"   if (request.responseText == null)\n"
+"      return null;\n"
+"   return request.responseText;\n"
 "}\n"
 "\n"
 "function ODBGetMsg(n)\n"
