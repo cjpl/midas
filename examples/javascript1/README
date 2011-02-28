@@ -1,0 +1,26 @@
+
+Example experiment "javascript1"
+
+Purpose:
+example and test of mhttpd javascript functions for interacting with ODB and MIDAS
+
+To run:
+use bash shell
+assuming MIDAS is installed in $HOME/packages/midas on linux, otherwise edit setup.sh and Makefile
+run make to build fejrpc.exe
+run source ./setup.sh
+when starting this experiment for the very first time, load experiment settings from odb.xml: odbedit -c "load odb.xml"
+run ./start_daq.sh
+mlogger and mhttpd should now be running
+connect to the midas status page at http://localhost:8080 (port number is set in start_daq.sh
+start the example frontend from the "programs" page
+observe event number of example equipment is incrementing
+go to the "example" page (click on "example" button on the midas status page)
+on the example page, press buttons, read text, etc
+to use MIDAS javascript functions, cut and paste these examples into your page
+to use MIDAS jrpc functions, also study fejrpc.cxx
+
+Enjoy,
+K.O.
+
+

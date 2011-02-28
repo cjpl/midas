@@ -1,0 +1,154 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+  <head>
+    <title>Example MIDAS Javascript functions</title>
+
+    <script src='mhttpd.js'></script>
+  </head>
+
+  <body>
+    <h1>Example MIDAS Javascript functions</h1>
+
+    <p id="LastUpdated">Last updated: never</p>
+
+    <h2>Example of mhttpd &lt;odb&gt; tag</h2>
+
+    <p>
+      <i>This data is updated by web page reload - press your web browser "reload" button</i>
+    </p>
+    <p>
+      Settings/Example_int: <odb src="/Equipment/RpcExample/Settings/Example_int"></odb>
+    </p>
+    <p>
+      Variables/SLOW[2]: <odb src="/Equipment/RpcExample/Variables/SLOW[2]" format="%.3f"></odb>
+    </p>
+    
+    <h2>Example javascript update function</h2>
+
+    <input type=button value='Update once' onClick='updatePeriod=0; update();'></input>
+    <input type=button value='Update every 1 sec' onClick='updatePeriod=1000; update();'></input>
+    <input type=button value='Update every 10 sec' onClick='updatePeriod=10000; update();'></input>
+      
+    <h2>Example of ODBGet() javascript function</h2>
+
+    <p>
+      <i>This data is updated by the javascript update() function - press the "update" button</i>
+    </p>
+    <p>
+      Settings/Example_int: <tt id="example_int">not loaded yet</tt>
+    </p>
+    <p>
+      Variables/SLOW[2]: <tt id="slow_2">not loaded yet</tt>
+    </p>
+
+    
+    <h2>Example of ODBSet() javascript function</h2>
+      
+    <p>
+      <i>Press these buttons to write new values to ODB. ODB variables of appropriate type have to be created before calling ODBSet(). Observe updated values in the section above.</i>
+    </p>
+    <p>
+      Set Settings/Example_int to:
+      <input type=button value='value 1' onClick='clearTimeout(updateTimerId); ODBSet("/Equipment/RpcExample/Settings/Example_int", "1"); update();'></input>
+      <input type=button value='value 2' onClick='clearTimeout(updateTimerId); ODBSet("/Equipment/RpcExample/Settings/Example_int", "2"); update();'></input>
+      <input type=button value='value 3' onClick='clearTimeout(updateTimerId); ODBSet("/Equipment/RpcExample/Settings/Example_int", "3"); update();'></input>
+    </p>
+
+    <p>
+      Set Settings/Example_int to any value:
+      <input type=input size=5 value='200' onKeyPress='if (event.keyCode==13) { clearTimeout(updateTimerId); ODBSet("/Equipment/RpcExample/Settings/Example_int", this.value); update(); }'></input>
+      (type in any value and press Enter)
+    </p>
+
+    <h2>Example of ODBRpc_rev0() javascript function</h2>
+      
+    <p>
+      Call the rpc_callback function in our frontend program: 
+      <input type=button value='Push me' onClick='clearTimeout(updateTimerId); ODBRpc_rev0("fejrpc*", 101, "123", "arg2", "arg3"); update();'></input>
+    </p>
+    <p>
+      <i>Observe the output of our rpc handler in midas messages</i>
+    </p>
+
+    <h2>Example of ODBRpc_rev1() javascript function</h2>
+      
+    <p>
+      Call the rpc_callback function in fejrpc.cxx: 
+      <input type=button value='Push me' onClick='clearTimeout(updateTimerId); var ret = ODBRpc_rev1("fejrpc*", 102, 0, "123", "arg2", "arg3"); process(ret); update();'></input>
+    </p>
+
+    <p>
+      Data returned by the RPC call: <pre id="rpc_result"></pre>
+    </p>
+    <p>
+      <i>Observe the output of our rpc handler in midas messages</i>
+    </p>
+
+    <h2>Example of ODBGetMsg() javascript function</h2>
+      
+    <p>
+      <input type=button value='Get MIDAS messages' onClick='var data = ODBGetMsg(10); document.getElementById("getmsg_target").innerHTML = data.join("\n");'></input>
+    </p>
+    <pre id='getmsg_target'>
+(empty)
+    </pre>
+
+    <h2>Example of ODBGenerateMsg() javascript function</h2>
+      
+    <p>
+      <i>Type in a message and press Enter. To see the new message, press "Get MIDAS messages" above</i>
+    </p>
+    <p>
+      <input type=input size=40 value='' onKeyPress='if (event.keyCode==13) { ODBGenerateMsg(this.value); }'></input>
+    </p>
+
+    <script type="text/javascript">
+
+      var updatePeriod = 0; // 10000; // in msec
+      var updateTimerId = 0;
+
+      var parser;
+
+      function load()
+      {
+      document.getElementById('LastUpdated').innerHTML = "Updating..." + new Date;
+      
+      document.getElementById('example_int').innerHTML = ODBGet('/Equipment/RpcExample/Settings/Example_int');
+      document.getElementById('slow_2').innerHTML = ODBGet('/Equipment/RpcExample/Variables/SLOW[2]', '%.6f');
+      
+      document.getElementById('LastUpdated').innerHTML = "Last updated: " + new Date;
+      }
+
+      function process(ret)
+      {
+      var rv = ret.slice(ret.indexOf(" || ") + 4);
+      document.getElementById("rpc_result").innerHTML = "[" + rv + "]";
+      }
+      
+      function update()
+      {
+      clearTimeout(updateTimerId);
+      load();
+      if (updatePeriod > 0)
+      updateTimerId = setTimeout('update()', updatePeriod);
+      }
+      
+      function main()
+      {
+      clearTimeout(updateTimerId);
+      }
+
+      main();
+      if (updatePeriod > 0)
+      update();
+
+    </script>
+
+    <hr>
+    <address><a href="mailto:xxx@xxx">MIDAS Example</a></address>
+<!-- Created: Tue Sep 21 15:44:39 PDT 2010 -->
+<!-- hhmts start -->
+Last modified: Mon Feb 28 08:21:38 PST 2011
+<!-- hhmts end -->
+  </body>
+</html>
