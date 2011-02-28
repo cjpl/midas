@@ -11448,8 +11448,13 @@ INT rpc_execute(INT sock, char *buffer, INT convert_flags)
          param_size = ALIGN8(tid_size[tid]);
 
          if (flags & RPC_VARARRAY || tid == TID_STRING) {
-            /* save maximum array length */
+
+            /* save maximum array length from the value of the next argument.
+             * this means RPC_OUT arrays and strings should always be passed like this:
+             * rpc_call(..., array_ptr, array_max_size, ...); */
+
             max_size = *((INT *) in_param_ptr);
+
             if (convert_flags)
                rpc_convert_single(&max_size, TID_INT, 0, convert_flags);
             max_size = ALIGN8(max_size);
@@ -11477,9 +11482,10 @@ INT rpc_execute(INT sock, char *buffer, INT convert_flags)
             int itls;
             int new_size = (POINTER_T) out_param_ptr - (POINTER_T) nc_out + param_size + 1024;
 
-            //cm_msg(MINFO, "rpc_execute",
-            //      "rpc_execute: return parameters (%d) too large for network buffer (%d), new buffer size (%d)",
-            //      (POINTER_T) out_param_ptr - (POINTER_T) nc_out + param_size, return_buffer_size, new_size);
+            if (0)
+               cm_msg(MINFO, "rpc_execute",
+                      "rpc_execute: return parameters (%d) too large for network buffer (%d), new buffer size (%d)",
+                      (POINTER_T) out_param_ptr - (POINTER_T) nc_out + param_size, return_buffer_size, new_size);
 
             itls = return_buffer_tls;
 
