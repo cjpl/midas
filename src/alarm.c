@@ -369,7 +369,10 @@ INT al_trigger_class(const char *alarm_class, const char *alarm_message, BOOL fi
 
    /* write system message */
    if (ac.write_system_message && (now - ac.system_message_last >= (DWORD)ac.system_message_interval)) {
-      sprintf(str, "%s: %s", alarm_class, alarm_message);
+      if (equal_ustring(alarm_class, "All"))
+         sprintf(str, "General alarm: %s", alarm_message);
+      else
+         sprintf(str, "%s: %s", alarm_class, alarm_message);
       cm_msg(MTALK, "al_trigger_class", str);
       ac.system_message_last = now;
    }
@@ -384,7 +387,10 @@ INT al_trigger_class(const char *alarm_class, const char *alarm_message, BOOL fi
    /* execute command */
    if (ac.execute_command[0] &&
        ac.execute_interval > 0 && (INT) ss_time() - (INT) ac.execute_last > ac.execute_interval) {
-      sprintf(str, "%s: %s", alarm_class, alarm_message);
+      if (equal_ustring(alarm_class, "All"))
+         sprintf(str, "General alarm: %s", alarm_message);
+      else
+         sprintf(str, "%s: %s", alarm_class, alarm_message);
       sprintf(command, ac.execute_command, str);
       cm_msg(MINFO, "al_trigger_class", "Execute: %s", command);
       ss_system(command);
