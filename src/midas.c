@@ -2684,6 +2684,7 @@ INT cm_get_experiment_semaphore(INT * semaphore_alarm, INT * semaphore_elog, INT
 
 static int bm_validate_client_index(const BUFFER * buf, BOOL abort_if_invalid)
 {
+   static int prevent_recursion = 1;
    int badindex = 0;
    BUFFER_CLIENT *bcl = buf->buffer_header->client;
 
@@ -2712,7 +2713,6 @@ static int bm_validate_client_index(const BUFFER * buf, BOOL abort_if_invalid)
       if (!abort_if_invalid)
          return -1;
 
-      static int prevent_recursion = 1;
       if (prevent_recursion) {
          prevent_recursion = 0;
          cm_msg(MERROR, "bm_validate_client_index",
@@ -5206,6 +5206,9 @@ INT cm_shutdown(const char *name, BOOL bUnique)
             }
          }
       }
+
+      /* display any message created during each shutdown */
+      cm_msg_flush_buffer();
    }
 
    return return_status;
