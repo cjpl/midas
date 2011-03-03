@@ -40,6 +40,7 @@ typedef struct {
    void *interface;
    int usb_configuration;
    int usb_interface;
+   int usb_type;
 } MUSB_INTERFACE;
 
 #else
