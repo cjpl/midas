@@ -269,7 +269,7 @@ void print_channel_str(int index, MSCB_INFO_VAR * info_chn, void *pdata, int ver
 	if ((unsigned char)prefix_table[i].id == info_chn->prefix)
             break;
       if (prefix_table[i].id)
-         sprintf(line + strlen(line), prefix_table[i].name);
+         strcpy(line + strlen(line), prefix_table[i].name);
    }
 
    /* evaluate unit */
@@ -278,7 +278,7 @@ void print_channel_str(int index, MSCB_INFO_VAR * info_chn, void *pdata, int ver
 	if ((unsigned char) unit_table[i].id == info_chn->unit)
             break;
       if (unit_table[i].id)
-         sprintf(line + strlen(line), unit_table[i].name);
+         strcpy(line + strlen(line), unit_table[i].name);
    }
 
    if (verbose)
