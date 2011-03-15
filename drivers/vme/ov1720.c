@@ -88,7 +88,7 @@ CAENComm_ErrorCode ov1720_AcqCtl(int handle, uint32_t operation)
   CAENComm_ErrorCode sCAEN;
   
   sCAEN = CAENComm_Read32(handle, V1720_ACQUISITION_CONTROL, &reg);
-  printf("sCAEN:%d ACQ Acq Control:0x%x\n", sCAEN, reg);
+  //  printf("sCAEN:%d ACQ Acq Control:0x%x\n", sCAEN, reg);
 
   switch (operation) {
   case V1720_RUN_START:
@@ -128,23 +128,39 @@ CAENComm_ErrorCode ov1720_ChannelConfig(int handle, uint32_t operation)
   CAENComm_ErrorCode sCAEN;
   uint32_t reg, cfg;
   
-  sCAEN = CAENComm_Write32(handle, V1720_CHANNEL_CONFIG, 0x10);
   sCAEN = CAENComm_Read32(handle, V1720_CHANNEL_CONFIG, &reg);  
   sCAEN = CAENComm_Read32(handle, V1720_CHANNEL_CONFIG, &cfg);  
-  printf("Channel_config1: 0x%x\n", cfg);  
+  //  printf("Channel_config1: 0x%x\n", cfg);  
 
   switch (operation) {
   case V1720_TRIGGER_UNDERTH:
-  sCAEN = CAENComm_Write32(handle, V1720_CHANNEL_CONFIG, (reg | 0x40));
+    sCAEN = CAENComm_Write32(handle, V1720_CHANNEL_CFG_BIT_SET, 0x40);
     break;
   case V1720_TRIGGER_OVERTH:
-    sCAEN = CAENComm_Write32(handle, V1720_CHANNEL_CONFIG, (reg & ~(0x40)));
+    sCAEN = CAENComm_Write32(handle, V1720_CHANNEL_CFG_BIT_CLR, 0x40);
+    break;
+  case V1720_PACK25_ENABLE:
+    sCAEN = CAENComm_Write32(handle, V1720_CHANNEL_CONFIG, (reg | 0x800));
+    break;
+  case V1720_PACK25_DISABLE:
+    sCAEN = CAENComm_Write32(handle, V1720_CHANNEL_CONFIG, (reg & ~(0x800)));
+    break;
+  case V1720_NO_ZERO_SUPPRESSION:
+    sCAEN = CAENComm_Write32(handle, V1720_CHANNEL_CONFIG, (reg & ~(0xF000)));
+    break;
+  case V1720_ZLE:
+    reg &= ~(0xF000);
+    sCAEN = CAENComm_Write32(handle, V1720_CHANNEL_CONFIG, (reg | 0x2000));
+    break;
+  case V1720_ZS_AMP:
+    reg &= ~(0xF000);
+    sCAEN = CAENComm_Write32(handle, V1720_CHANNEL_CONFIG, (reg | 0x3000));
     break;
   default:
     break;
   }
   sCAEN = CAENComm_Read32(handle, V1720_CHANNEL_CONFIG, &cfg);  
-  printf("Channel_config2: 0x%x\n", cfg);
+  //  printf("Channel_config2: 0x%x\n", cfg);
   return sCAEN;
 }
 
