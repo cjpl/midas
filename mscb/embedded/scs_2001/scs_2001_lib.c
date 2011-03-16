@@ -21,18 +21,6 @@ char code svn_rev_lib[] = "$Rev: 4169 $";
 
 #define N_PORT 24 /* maximal one master and two slave modules */
 
-/*---- Port definitions ----*/
-
-sbit OPT_CLK    = P3 ^ 0;
-sbit OPT_ALE    = P3 ^ 1;
-sbit OPT_STR    = P3 ^ 2;
-sbit OPT_DATAO  = P3 ^ 3;
-
-sbit OPT_DATAI  = P3 ^ 4;
-sbit OPT_STAT   = P3 ^ 5;
-sbit OPT_SPARE1 = P3 ^ 6;
-sbit OPT_SPARE2 = P3 ^ 7;
-
 /*---- List of modules ---------------------------------------------*/
 
 MSCB_INFO_VAR code vars_bout[] =

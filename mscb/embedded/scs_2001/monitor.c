@@ -15,40 +15,7 @@
 #include <math.h>
 #include <intrins.h>
 #include "mscbemb.h"
-
-/*---- Port definitions ----*/
-
-sbit OPT_CLK    = P3 ^ 0;
-sbit OPT_ALE    = P3 ^ 1;
-sbit OPT_STR    = P3 ^ 2;
-sbit OPT_DATAO  = P3 ^ 3;
-
-sbit OPT_DATAI  = P3 ^ 4;
-sbit OPT_STAT   = P3 ^ 5;
-sbit OPT_SPARE1 = P3 ^ 6;
-sbit OPT_SPARE2 = P3 ^ 7;
-
-#define DELAY_CLK { \
-_nop_(); _nop_(); _nop_(); _nop_(); _nop_(); _nop_(); _nop_(); _nop_(); _nop_(); _nop_(); \
-_nop_(); _nop_(); _nop_(); _nop_(); _nop_(); _nop_(); _nop_(); _nop_(); _nop_(); _nop_(); }
-
-#define CLOCK  { DELAY_CLK; OPT_CLK = 1; DELAY_CLK; OPT_CLK = 0; }
-#define STROBE { OPT_STR = 1; DELAY_CLK; OPT_CLK = 1; DELAY_CLK; OPT_CLK = 0; OPT_STR = 0; }
-
-#define AM_READ_PORT    0 // switch port to input and read pin value
-#define AM_READ_REG     1 // readback port output register
-#define AM_WRITE_PORT   2 // write to port output register
-#define AM_WRITE_DIR    3 // set port direction (1=output, 0=input)
-#define AM_READ_CSR     4 // read CPLD CSR:  bit0: beeper; bit4-6: firmware; bit7:slave
-#define AM_WRITE_CSR    5 // write CPLD CSR
-#define AM_RW_SERIAL    6 // read/write to serial device on port
-#define AM_RW_EEPROM    7 // read/write to eeprom on port
-#define AM_RW_MONITOR   8 // read/write to power monitor MAX1253
-
-/* functions implemented scs_2001_lib.c */
-extern void address_port(unsigned char addr, unsigned char port_no, unsigned char am);
-extern void read_csr(unsigned char addr, unsigned char *pd);
-extern void write_csr(unsigned char addr, unsigned char d);
+#include "scs_2001.h"
 
 /*------------------------------------------------------------------*/
 
