@@ -339,14 +339,14 @@ unsigned char i;
 
 unsigned char xdata port_reg[8];
 
-unsigned char dr_pulser(unsigned char id, unsigned char cmd, unsigned char addr, 
+unsigned char dr_pulser(unsigned char cmd, unsigned char addr, 
                         unsigned char port, unsigned char chn, void *pd)
 {
 float value;
 unsigned char d;
 unsigned long f;
 
-   if (id || chn || pd); // suppress compiler warning
+   if (chn || pd); // suppress compiler warning
 
    if (cmd == MC_INIT) {
       /* clear port register */
@@ -356,11 +356,6 @@ unsigned long f;
       /* set DAC to zero */
       value = 0;
       dr_ltc2600(0x02, MC_WRITE, addr, port, chn, &value);
-
-      /* switch port to output */
-      read_csr(addr, CSR_PORT_DIR, &d);
-      d |= (1 << port);
-      write_csr(addr, CSR_PORT_DIR, d);
    }
 
    if (cmd == MC_WRITE) {

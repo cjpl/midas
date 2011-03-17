@@ -48,7 +48,6 @@ typedef struct {
 } USER_DATA;
 
 USER_DATA xdata user_data;
-USER_DATA xdata backup_data;
 unsigned char xdata update_data[42];
 
 MSCB_INFO_VAR code vars[] = {
@@ -172,22 +171,35 @@ void user_init(unsigned char init)
    if (init) {
       memset(&user_data, 0, sizeof(user_data));
       user_data.freq = 7;
-      user_data.pwidth = 3;
-   } else {
-      /* retrieve backup data from RAM if not reset by power on */
-      SFRPAGE = LEGACY_PAGE;
-      if ((RSTSRC & 0x02) == 0)
-         memcpy(&user_data, &backup_data, sizeof(user_data));
+      user_data.pwidth = 6;
    }
 
    /* write digital outputs */
    for (i=0 ; i<n_variables ; i++)
       user_write(i);
 
-   /* write remote variables */
-   for (i = 0; variables[i].width; i++)
-      if (variables[i].flags & MSCBF_REMOUT)
-         send_remote_var(i);
+   /* check if correct modules are inserted */
+   for (i=0 ; i<5 ; i++) {
+      if (!verify_module(0, i, 0x02)) {
+         lcd_goto(0, 0);
+         printf("Please insert module");
+         printf("'LED Pulser' (0x02) ");
+         printf("     into port %bd    ", i);
+         printf("                    ");
+//         while (1) watchdog_refresh(0);
+      }
+   }   if (!verify_module(0, 5, 0x20)) {
+      lcd_goto(0, 0);
+      printf("Please insert module");
+      printf("  'DIN 5V' (0x20)   ");
+      printf("    into port 5     ");
+      printf("                    ");
+      while (1) watchdog_refresh(0);
+   }
+
+   /* initialize drivers */
+   for (i=0 ; i<5 ; i++)
+      dr_pulser(MC_INIT, 0, i, 0, NULL);
 
    /* display startup screen */
    lcd_goto(0, 0);
@@ -197,7 +209,7 @@ void user_init(unsigned char init)
    puts(sys_info.node_name);
    puts(" **");
    lcd_goto(0, 1);
-   printf("   Address:  %04X", sys_info.node_addr);
+   printf("   Address:  %04X    ", sys_info.node_addr);
    lcd_goto(0, 2);
    strncpy(str, svn_revision + 16, 6);
    *strchr(str, ' ') = 0;
@@ -274,6 +286,7 @@ unsigned short xdata d;
          return_status = 1;
       }
 
+      /*
       monitor_read(0, 0x01, 0, a, 3); // Read alarm register
       if (a[0] & 0x08) {
          led_blink(1, 1, 100);
@@ -319,6 +332,7 @@ unsigned short xdata d;
             lcd_clear();
          }
       }
+      */
    } else if (trip_24V || trip_5V || wrong_firmware)
       return_status = 1; // do not go into application_display
   
@@ -335,62 +349,31 @@ typedef struct {
   unsigned char  exp;
 } FREQ_TABLE;
 
-/* frequency table for 50MHz quartz clodk */
+/* frequency table for 100MHz quartz clodk */
 
 FREQ_TABLE code freq_table[] = {
    { 0,          0, 0 },   //    EXT
-   { 50000000,   1, 0 },   //    1 Hz
-   { 25000000,   2, 0 },   //    2 Hz
-   { 10000000,   5, 0 },   //    5 Hz
-   { 5000000,   10, 0 },   //   10 Hz
-   { 2500000,   20, 0 },   //   20 Hz
-   { 1000000,   50, 0 },   //   50 Hz
-   { 500000,   100, 0 },   //  100 Hz
-   { 250000,   200, 0 },   //  200 Hz
-   { 100000,   500, 0 },   //  500 Hz
-   { 50000,      1, 1 },   //    1 kHz
-   { 25000,      2, 1 },   //    2 kHz
-   { 10000,      5, 1 },   //    5 kHz
-   { 5000,      10, 1 },   //   10 kHz
-   { 2500,      20, 1 },   //   20 kHz
-   { 1000,      50, 1 },   //   50 kHz
-   { 500,      100, 1 },   //  100 kHz
-   { 250,      200, 1 },   //  200 kHz
-   { 100,      500, 1 },   //  500 kHz
-   { 50,         1, 2 },   //    1 MHz
+   { 100000000,  1, 0 },   //    1 Hz
+   { 50000000,   2, 0 },   //    2 Hz
+   { 20000000,   5, 0 },   //    5 Hz
+   { 10000000,  10, 0 },   //   10 Hz
+   { 5000000,   20, 0 },   //   20 Hz
+   { 2000000,   50, 0 },   //   50 Hz
+   { 1000000,  100, 0 },   //  100 Hz
+   { 500000,   200, 0 },   //  200 Hz
+   { 200000,   500, 0 },   //  500 Hz
+   { 100000,     1, 1 },   //    1 kHz
+   { 50000,      2, 1 },   //    2 kHz
+   { 20000,      5, 1 },   //    5 kHz
+   { 10000,     10, 1 },   //   10 kHz
+   { 5000,      20, 1 },   //   20 kHz
+   { 2000,      50, 1 },   //   50 kHz
+   { 1000,     100, 1 },   //  100 kHz
+   { 500,      200, 1 },   //  200 kHz
+   { 200,      500, 1 },   //  500 kHz
+   { 100,        1, 2 },   //    1 MHz
    0,
 };
-
-/*---- Module scan -------------------------------------------------*/
-
-void setup_variables(void)
-{
-unsigned char xdata i;
-
-   /* check if correct modules are inserted */
-
-   for (i=0 ; i<5 ; i++) {
-      if (!verify_module(0, 0, 0x02)) {
-         lcd_goto(0, 0);
-         printf("Please insert module");
-         printf("'LED Pulser' (0x02) ");
-         printf("     into port 0    ");
-         while (1) watchdog_refresh(0);
-      }
-   }
-
-   if (!verify_module(0, 5, 0x20)) {
-      lcd_goto(0, 0);
-      printf("Please insert module");
-      printf("  'DIN 5V' (0x20)   ");
-      printf("    into port 5     ");
-      while (1) watchdog_refresh(0);
-   }
-
-   /* initialize drivers */
-   for (i=0 ; i<5 ; i++)
-      dr_pulser(0x02, MC_INIT, 0, i, 0, NULL);
-}
 
 /*---- User write function -----------------------------------------*/
 
@@ -500,30 +483,32 @@ unsigned char i;
 
 static unsigned char idata port_index = 0, first_var_index = 0;
 
+void read_port_reg(unsigned char addr, unsigned char port_no, unsigned char *pd); //##
+
 void user_loop(void)
 {
 unsigned char xdata i;
+unsigned char d;
 
    /* internal variables */
    if (update_data[0]) {
       update_data[0] = 0;
-      dr_pulser(0x02, MC_FREQ, 0, 0, 0, &freq_table[user_data.freq].count);
+      dr_pulser(MC_FREQ, 0, 0, 0, &freq_table[user_data.freq].count);
    }
 
    if (update_data[1]) {
       update_data[1] = 0;
-      dr_pulser(0x02, MC_PWIDTH, 0, 0, 0, &user_data.pwidth);
+      dr_pulser(MC_PWIDTH, 0, 0, 0, &user_data.pwidth);
    }
 
    for (i=2 ; i<n_variables ; i++) {
       if (update_data[i]) {
          update_data[i] = 0;
-         dr_pulser(0x02, MC_WRITE, 0, (i-2)/8, (i-2)%8, &user_data.ampl[i-2]);
+         dr_pulser(MC_WRITE, 0, (i-2)/8, (i-2)%8, &user_data.ampl[i-2]);
       }
    }
 
-   /* backup data */
-   memcpy(&backup_data, &user_data, sizeof(user_data));
+   read_port_reg(0, 0, &d);
 
    /* read buttons */
    b0 = button(0);
