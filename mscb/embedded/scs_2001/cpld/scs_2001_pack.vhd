@@ -19,7 +19,6 @@ package scs_2001_pack is
   constant AM_WRITE_DIR     : integer := 3;
   constant AM_READ_CSR      : integer := 4;
   constant AM_WRITE_CSR     : integer := 5;
-  
   constant AM_RW_SERIAL     : integer := 6;
   constant AM_RW_EEPROM     : integer := 7;
   constant AM_RW_MONITOR    : integer := 8;
