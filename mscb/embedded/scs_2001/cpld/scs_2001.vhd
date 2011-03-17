@@ -22,11 +22,11 @@ entity scs_2001 is
            P_I_ADDR        : in std_logic_vector(3 downto 0);
            P_IO_EXT        : inout std_logic_vector(7 downto 0);
            P_IO_PORTS      : inout type_port_array;
-			  P_O_SCLK_MON    : out std_logic;
-			  P_O_CS_MON      : out std_logic;
-        	  P_I_DOUT_MON    : in std_logic;
-			  P_O_DIN_MON     : out std_logic;
-			  P_I_INT_MON     : in std_logic;
+           P_O_SCLK_MON    : out std_logic;
+           P_O_CS_MON      : out std_logic;
+           P_I_DOUT_MON    : in std_logic;
+           P_O_DIN_MON     : out std_logic;
+           P_I_INT_MON     : in std_logic;
            P_O_BEEPER      : out std_logic;
            P_O_24V_EN      : out std_logic
          );
@@ -104,7 +104,7 @@ begin
   
   P_O_UC_DATA_OUT <= o_sl_data_out when master = '0'
                      else P_IO_EXT(4) when addr_unit /= my_addr
-							else P_I_DOUT_MON when addr_mod = AM_RW_MONITOR
+                     else P_I_DOUT_MON when addr_mod = AM_RW_MONITOR
                      else o_uc_data_out when addr_mod /= AM_RW_SERIAL and addr_mod /= AM_RW_EEPROM
                      else P_I_SDO;
   P_O_UC_STAT     <= P_IO_PORTS(CONV_INTEGER(addr_port)).port_pin(0) when addr_unit = my_addr
@@ -125,8 +125,8 @@ begin
   -- output o_uc_data_out and STAT in slave mode when addressed
   P_IO_EXT(4)     <= 'Z' when master = '1' or addr_unit /= my_addr
                      else P_I_SDO when addr_mod = AM_RW_SERIAL or addr_mod = AM_RW_EEPROM
-							else P_I_DOUT_MON when addr_mod = AM_RW_MONITOR
-							else o_uc_data_out;
+                     else P_I_DOUT_MON when addr_mod = AM_RW_MONITOR
+                     else o_uc_data_out;
                      
   P_IO_EXT(5)     <= P_IO_PORTS(CONV_INTEGER(addr_port)).port_pin(0) when
                      master = '0' and addr_unit = my_addr else 'Z';
@@ -172,11 +172,11 @@ begin
             port_dir(CONV_INTEGER(addr_port)) <= ser_reg_in(7 downto 0);
           elsif (addr_mod = AM_READ_CSR) then
             -- read CSR
-				ser_reg_out(7)          <= '0'; -- indicate master mode
-				ser_reg_out(6 downto 4) <= firmware_version(2 downto 0);
-				ser_reg_out(3 downto 0) <= csr;
-			 elsif (addr_mod = AM_WRITE_CSR) then
-            -- write CSR			 
+            ser_reg_out(7)          <= '0'; -- indicate master mode
+            ser_reg_out(6 downto 4) <= firmware_version(2 downto 0);
+            ser_reg_out(3 downto 0) <= csr;
+          elsif (addr_mod = AM_WRITE_CSR) then
+            -- write CSR
             csr(2 downto 0) <= ser_reg_in(2 downto 0);
           end if;
         
@@ -273,16 +273,16 @@ begin
   
   P_O_SCLK_MON    <= i_uc_clk when
                      i_uc_ale = '0'
-							else '0';
+                     else '0';
   P_O_DIN_MON     <= i_uc_data_in when
                      i_uc_ale = '0'
-							else '0';
+                     else '0';
   P_O_CS_MON      <= '0' when
                      i_uc_ale = '0' and
-							i_uc_strobe = '0' and
-							addr_unit = my_addr and
-							addr_mod = AM_RW_MONITOR
-							else '1';
+                     i_uc_strobe = '0' and
+                     addr_unit = my_addr and
+                     addr_mod = AM_RW_MONITOR
+                     else '1';
 
   ------------------
   -- quartz clock --
