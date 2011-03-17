@@ -39,8 +39,8 @@ signal addr_port    : std_logic_vector(2 downto 0);
 signal my_addr      : std_logic_vector(3 downto 0);
 
 -- address modifiers:
--- # 0  000  AM_READ_PORT
--- # 1  001  AM_READ_REG
+-- 0  000  AM_READ_PORT
+-- 1  001  AM_READ_REG
 -- 2  010  AM_WRITE_PORT
 -- 3  011  AM_READ_CSR
 --   0       port_dir
@@ -98,7 +98,13 @@ begin
         end if;
       else
         if (P_I_UC_STROBE = '1' and addr_unit = my_addr) then
-          if (addr_mod = "010") then
+          if (addr_mod = "000") then
+            -- read from port
+            ser_reg(7 downto 0) <= P_IO_PORTS(CONV_INTEGER(addr_port)).port_pin;
+          elsif (addr_mod = "001") then
+            -- read from register
+            ser_reg(7 downto 0) <= port_reg(CONV_INTEGER(addr_port));
+          elsif (addr_mod = "010") then
             -- write to port
             port_reg(CONV_INTEGER(addr_port)) <= ser_reg(7 downto 0);
           elsif (addr_mod = "011") then
@@ -233,7 +239,7 @@ begin
   
   clk_pulse_out <= '0' when maxcnt = 0 else clk_pulse;
   ext_trig <= P_IO_PORTS(5).port_pin(1) and not P_IO_PORTS(5).port_pin(0);
-  led_pulse <= clk_pulse_out or ext_trig; 
+  led_pulse <= (clk_pulse_out or ext_trig) and P_IO_PORTS(6).port_pin(0); 
   
   P_IO_EXT(0) <= led_pulse;
  

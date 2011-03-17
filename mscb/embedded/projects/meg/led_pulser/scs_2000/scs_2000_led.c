@@ -44,6 +44,7 @@ bit b0, b1, b2, b3;
 typedef struct {
    unsigned char freq;
    unsigned char pwidth;
+   unsigned char veto;
    float ampl[40];
 } USER_DATA;
 
@@ -97,6 +98,7 @@ MSCB_INFO_VAR code vars[] = {
    { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT, "Ampl38", &user_data.ampl[38], 0, 100, 1 },
    { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT, "Ampl39", &user_data.ampl[39], 0, 100, 1 },
 
+   { 1, UNIT_BYTE,   0, 0, 0,           "Veto",   &user_data.veto,     0,   0, 0 },
 
    { 0 }
 };
@@ -337,7 +339,7 @@ unsigned char xdata i;
 
    /*
    for (i=0 ; i<5 ; i++) {
-      if (!verify_module(0, 0, 0x02)) {
+      if (!verify_module(0, i, 0x02)) {
          lcd_goto(0, 0);
          printf("Please insert module");
          printf("'LED Pulser' (0x02) ");
@@ -345,6 +347,7 @@ unsigned char xdata i;
          while (1) watchdog_refresh(0);
       }
    }
+   */
 
    if (!verify_module(0, 5, 0x20)) {
       lcd_goto(0, 0);
@@ -353,7 +356,6 @@ unsigned char xdata i;
       printf("    into port 5     ");
       while (1) watchdog_refresh(0);
    }
-   */
 
    /* initialize drivers */
    for (i=0 ; i<5 ; i++)
@@ -468,9 +470,12 @@ unsigned char i;
 
 static unsigned char idata port_index = 0, first_var_index = 0;
 
+void read_port(unsigned char addr, unsigned char port_no, unsigned char *pd) reentrant;
+
 void user_loop(void)
 {
 unsigned char xdata i;
+unsigned char d;
 
    /* internal variables */
    if (update_data[0]) {
@@ -489,6 +494,9 @@ unsigned char xdata i;
          dr_pulser(0x02, MC_WRITE, 0, (i-2)/8, (i-2)%8, &user_data.ampl[i-2]);
       }
    }
+
+   read_port(0, 6, &d);
+   user_data.veto = (d & 0x01) == 0;
 
    /* backup data */
    memcpy(&backup_data, &user_data, sizeof(user_data));

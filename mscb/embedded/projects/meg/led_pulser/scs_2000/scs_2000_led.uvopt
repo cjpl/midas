@@ -289,10 +289,10 @@
       <FileType>1</FileType>
       <tvExp>0</tvExp>
       <Focus>0</Focus>
-      <ColumnNumber>0</ColumnNumber>
+      <ColumnNumber>33</ColumnNumber>
       <tvExpOptDlg>0</tvExpOptDlg>
-      <TopLine>1</TopLine>
-      <CurrentLine>17</CurrentLine>
+      <TopLine>460</TopLine>
+      <CurrentLine>499</CurrentLine>
       <bDave2>0</bDave2>
       <PathWithFileName>.\scs_2000_led.c</PathWithFileName>
       <FilenameWithoutPath>scs_2000_led.c</FilenameWithoutPath>
@@ -305,8 +305,8 @@
       <Focus>0</Focus>
       <ColumnNumber>0</ColumnNumber>
       <tvExpOptDlg>0</tvExpOptDlg>
-      <TopLine>0</TopLine>
-      <CurrentLine>0</CurrentLine>
+      <TopLine>91</TopLine>
+      <CurrentLine>116</CurrentLine>
       <bDave2>0</bDave2>
       <PathWithFileName>.\scs_2000_ledlib.c</PathWithFileName>
       <FilenameWithoutPath>scs_2000_ledlib.c</FilenameWithoutPath>
@@ -322,7 +322,7 @@
       <TopLine>0</TopLine>
       <CurrentLine>0</CurrentLine>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\..\..\src\mscbmain.c</PathWithFileName>
+      <PathWithFileName>..\..\..\..\src\mscbmain.c</PathWithFileName>
       <FilenameWithoutPath>mscbmain.c</FilenameWithoutPath>
     </File>
     <File>
@@ -336,7 +336,7 @@
       <TopLine>0</TopLine>
       <CurrentLine>0</CurrentLine>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\..\..\src\mscbutil.c</PathWithFileName>
+      <PathWithFileName>..\..\..\..\src\mscbutil.c</PathWithFileName>
       <FilenameWithoutPath>mscbutil.c</FilenameWithoutPath>
     </File>
     <File>
@@ -350,7 +350,7 @@
       <TopLine>0</TopLine>
       <CurrentLine>0</CurrentLine>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\..\..\scs_2000\lcd_menu.c</PathWithFileName>
+      <PathWithFileName>.\lcd_menu.c</PathWithFileName>
       <FilenameWithoutPath>lcd_menu.c</FilenameWithoutPath>
     </File>
   </Group>
@@ -376,7 +376,7 @@
     </File>
     <File>
       <GroupNumber>2</GroupNumber>
-      <FileNumber>0</FileNumber>
+      <FileNumber>8</FileNumber>
       <FileType>5</FileType>
       <tvExp>0</tvExp>
       <Focus>0</Focus>
@@ -385,8 +385,8 @@
       <TopLine>0</TopLine>
       <CurrentLine>0</CurrentLine>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\..\..\include\mscbemb.h</PathWithFileName>
-      <FilenameWithoutPath>mscbemb.h</FilenameWithoutPath>
+      <PathWithFileName>.\config.h</PathWithFileName>
+      <FilenameWithoutPath>config.h</FilenameWithoutPath>
     </File>
     <File>
       <GroupNumber>2</GroupNumber>
@@ -399,8 +399,8 @@
       <TopLine>0</TopLine>
       <CurrentLine>0</CurrentLine>
       <bDave2>0</bDave2>
-      <PathWithFileName>.\config.h</PathWithFileName>
-      <FilenameWithoutPath>config.h</FilenameWithoutPath>
+      <PathWithFileName>..\..\..\..\include\mscbemb.h</PathWithFileName>
+      <FilenameWithoutPath>mscbemb.h</FilenameWithoutPath>
     </File>
   </Group>
 
@@ -1745,19 +1745,25 @@
     <ActiveMDIGroup>0</ActiveMDIGroup>
     <MDIGroup>
       <Size>100</Size>
-      <ActiveTab>1</ActiveTab>
+      <ActiveTab>0</ActiveTab>
       <Documents>
         <Doc>
           <Name>.\scs_2000_led.c</Name>
-          <ColumnNumber>0</ColumnNumber>
-          <TopLine>1</TopLine>
-          <CurrentLine>17</CurrentLine>
+          <ColumnNumber>33</ColumnNumber>
+          <TopLine>460</TopLine>
+          <CurrentLine>499</CurrentLine>
         </Doc>
         <Doc>
           <Name>CONFIG.H</Name>
-          <ColumnNumber>0</ColumnNumber>
+          <ColumnNumber>13</ColumnNumber>
           <TopLine>1</TopLine>
-          <CurrentLine>1</CurrentLine>
+          <CurrentLine>36</CurrentLine>
+        </Doc>
+        <Doc>
+          <Name>.\scs_2000_ledlib.c</Name>
+          <ColumnNumber>0</ColumnNumber>
+          <TopLine>91</TopLine>
+          <CurrentLine>116</CurrentLine>
         </Doc>
       </Documents>
     </MDIGroup>

@@ -359,17 +359,17 @@
             <File>
               <FileName>mscbmain.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\..\..\src\mscbmain.c</FilePath>
+              <FilePath>..\..\..\..\src\mscbmain.c</FilePath>
             </File>
             <File>
               <FileName>mscbutil.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\..\..\src\mscbutil.c</FilePath>
+              <FilePath>..\..\..\..\src\mscbutil.c</FilePath>
             </File>
             <File>
               <FileName>lcd_menu.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\..\..\scs_2000\lcd_menu.c</FilePath>
+              <FilePath>.\lcd_menu.c</FilePath>
             </File>
           </Files>
         </Group>
@@ -382,14 +382,14 @@
               <FilePath>.\scs_2000_led.h</FilePath>
             </File>
             <File>
-              <FileName>mscbemb.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>..\..\..\include\mscbemb.h</FilePath>
-            </File>
-            <File>
               <FileName>config.h</FileName>
               <FileType>5</FileType>
               <FilePath>.\config.h</FilePath>
+            </File>
+            <File>
+              <FileName>mscbemb.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\..\..\..\include\mscbemb.h</FilePath>
             </File>
           </Files>
         </Group>
@@ -748,17 +748,17 @@
             <File>
               <FileName>mscbmain.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\..\..\src\mscbmain.c</FilePath>
+              <FilePath>..\..\..\..\src\mscbmain.c</FilePath>
             </File>
             <File>
               <FileName>mscbutil.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\..\..\src\mscbutil.c</FilePath>
+              <FilePath>..\..\..\..\src\mscbutil.c</FilePath>
             </File>
             <File>
               <FileName>lcd_menu.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\..\..\scs_2000\lcd_menu.c</FilePath>
+              <FilePath>.\lcd_menu.c</FilePath>
             </File>
           </Files>
         </Group>
@@ -771,14 +771,14 @@
               <FilePath>.\scs_2000_led.h</FilePath>
             </File>
             <File>
-              <FileName>mscbemb.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>..\..\..\include\mscbemb.h</FilePath>
-            </File>
-            <File>
               <FileName>config.h</FileName>
               <FileType>5</FileType>
               <FilePath>.\config.h</FilePath>
+            </File>
+            <File>
+              <FileName>mscbemb.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\..\..\..\include\mscbemb.h</FilePath>
             </File>
           </Files>
         </Group>
