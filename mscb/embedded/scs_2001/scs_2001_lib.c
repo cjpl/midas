@@ -40,8 +40,11 @@ MSCB_INFO_VAR code vars_uin_range[] = {
    { 1, UNIT_BYTE,    0,          0, MSCBF_HIDDEN,"P%Range", (void xdata *)0 },
 };
 
-MSCB_INFO_VAR code vars_uout[] =
-   { 4, UNIT_VOLT,    0,          0, MSCBF_FLOAT, "P%Uout#", (void xdata *)8, 2, 0, 30,  0.5 };
+MSCB_INFO_VAR code vars_uout25[] =
+   { 4, UNIT_VOLT,    0,          0, MSCBF_FLOAT, "P%Uout#", (void xdata *)8, 2, 0, 2.5,  0.1 };
+
+MSCB_INFO_VAR code vars_uout10[] =
+   { 4, UNIT_VOLT,    0,          0, MSCBF_FLOAT, "P%Uout#", (void xdata *)8, 2, -10, 10,  0.5 };
 
 MSCB_INFO_VAR code vars_iin[] =
    { 4, UNIT_AMPERE,  PRFX_MILLI, 0, MSCBF_FLOAT, "P%Iin#",  (void xdata *)8, 4 };
@@ -134,8 +137,8 @@ SCS_2001_MODULE code scs_2001_module[] = {
   { 0x77, "CERNOX-2",        vars_temp2_k,1, dr_temp2       },
 
   /* 0x80-0x9F analog out */
-  { 0x80, "UOut 0-2.5V",     vars_uout,   1, dr_ltc2600     },
-  { 0x81, "UOut +-10V",      vars_uout,   1, dr_ad5764      },
+  { 0x80, "UOut 0-2.5V",     vars_uout25, 1, dr_ltc2600     },
+  { 0x81, "UOut +-10V",      vars_uout10, 1, dr_ad5764      },
   { 0x82, "IOut 0-2.5mA",    vars_iout,   1, dr_ltc2600     },
   { 0x83, "IOut 0-25mA",     vars_iout,   1, dr_ltc2600     },
   { 0x84, "Liq.He level",    vars_lhe,    6, dr_lhe         },
