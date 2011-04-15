@@ -15,11 +15,9 @@
 #include <stdarg.h>
 #include <string.h>
 #include <assert.h>
-//#include <malloc.h>
+#include <malloc.h>
 #include "midas.h"
 #include "mscb.h"
-
-#include <Windows.h>
 
 int netsnmp_free(void *);
 #include "WIENER_SNMP.h"
