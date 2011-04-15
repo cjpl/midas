@@ -29,7 +29,7 @@ double  getOutputSenseMeasurement(HSNMP m_sessp, int channel);
 double  getOutputTerminalMeasurement(HSNMP m_sessp, int channel);
 double  getCurrentMeasurement(HSNMP m_sessp, int channel);
 int  getTemperatureMeasurement(HSNMP m_sessp, int channel);
-int  __cdecl setChannelSwitch(HSNMP m_sessmp, int channel, int value);
+int  setChannelSwitch(HSNMP m_sessmp, int channel, int value);
 int  getChannelSwitch(HSNMP m_sessmp, int channel);
 double  getOutputVoltage(HSNMP m_sessp,int channel);
 double  setOutputVoltage(HSNMP m_sessp,int channel,double value);
