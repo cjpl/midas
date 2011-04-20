@@ -323,6 +323,22 @@ static int makeDmaPacket(vmeDmaPacket_t *pkt, int blt_mode, int am, uint32_t vme
       pkt->srcVmeAttr.maxDataWidth = VME_D32;
       pkt->srcVmeAttr.xferProtocol = VME_MBLT;
       break;
+    case MVME_BLT_2EVME:
+      assert(vme_addr%8 == 0);
+      assert(nbytes%8 == 0);
+      pkt->srcVmeAttr.maxDataWidth = VME_D32;
+      pkt->srcVmeAttr.xferProtocol = VME_2eVME;
+      break;
+    case MVME_BLT_2ESST:
+      assert(vme_addr%8 == 0);
+      assert(nbytes%8 == 0);
+      pkt->srcVmeAttr.maxDataWidth = VME_D32;
+      pkt->srcVmeAttr.xferProtocol = VME_2eSST;
+      //pkt->srcVmeAttr.xferRate2esst = VME_SST320;
+      //pkt->srcVmeAttr.xferRate2esst = VME_SST267;
+      //pkt->srcVmeAttr.xferRate2esst = VME_SST160;
+      pkt->srcVmeAttr.xferRate2esst = VME_SSTNONE;
+      break;
     default:
       fprintf(stderr,"makeDmaPacket: Unknown mvme->blt_mode DMA mode %d\n", blt_mode);
       assert(!"makeDmaPacket: Unknown DMA mode!");
@@ -512,6 +528,38 @@ int mvme_open(MVME_INTERFACE **mvme, int index)
      close(fd);
   }
   
+  if (1) {
+     char devname[256];
+     int fd;
+     int status;
+     struct vmeArbiterCfg cfg;
+
+     sprintf(devname, "%s", "/dev/vme_ctl");
+     fd = open(devname, O_RDWR);
+     if (fd < 0) {
+        fprintf(stderr,"mvme_open: GEFVME VME driver not present? Cannot open VME device \'%s\', errno %d (%s)\n", devname, errno, strerror(errno));
+        exit(1);
+     }
+
+     status = ioctl(fd, VME_IOCTL_GET_CONTROLLER, &cfg);
+     if (status != 0) {
+        fprintf(stderr,"mvme_open: Cannot get GEFVME VME_IOCTL_GET_CONTROLLER, errno %d (%s)\n", errno, strerror(errno));
+     } else {
+        //cfg.arbiterMode = xxx;          /*  Arbitration Scheduling Algorithm */
+        //cfg.arbiterTimeoutFlag = xxx;   /*  Arbiter Time-out Timer Indicator */
+        cfg.globalTimeoutTimer = 8;     /*  VMEbus Global Time-out Timer */
+        //cfg.noEarlyReleaseFlag = xxx;   /*  No Early Release on BBUSY */
+        
+        status = ioctl(fd, VME_IOCTL_SET_CONTROLLER, &cfg);
+        if (status != 0) {
+           fprintf(stderr,"mvme_open: Cannot set GEFVME VME_IOCTL_SET_CONTROLLER, errno %d (%s)\n", errno, strerror(errno));
+           exit(1);
+        }
+     }
+
+     close(fd);
+  }
+  
   return MVME_SUCCESS;
 }
 
@@ -608,7 +656,8 @@ int gefvme_read_dma(MVME_INTERFACE *mvme, void *dst, mvme_addr_t vme_addr, int n
     //*((uint32_t*)dst) = 0xdeadbeef;
     printf("mvme_read_dma: DMA error, read %6d out of %6d bytes from 0x%08x, status 0x%08x, srcAddr 0x%08x, dstAddr 0x%08x\n", bytesRead, n_bytes, vme_addr, vmeDma.vmeDmaStatus, vmeDma.srcAddr, vmeDma.dstAddr);
     fprintf(stderr,"mvme_read_dma: ioctl(VME_IOCTL_START_DMA) returned vmeDmaStatus 0x%08x\n", vmeDma.vmeDmaStatus);
-    return MVME_ACCESS_ERROR;
+    n_bytes = bytesRead;
+    //return MVME_ACCESS_ERROR;
   }
   
   if (bytesRead!=0 && bytesRead!=n_bytes) {
@@ -672,9 +721,12 @@ int mvme_read(MVME_INTERFACE *mvme, void *dst, mvme_addr_t vme_addr, mvme_size_t
   case MVME_AM_A32_NMBLT:
   case MVME_BLT_BLT32:
   case MVME_BLT_MBLT64:
+  case MVME_BLT_2EVME:
+  case MVME_BLT_2ESST:
     return gefvme_read_dma(mvme, dst, vme_addr, n_bytes);
 
   case 0: // no block transfers
+  case MVME_BLT_NONE: // no block transfers
   
     status = gefvme_mapcheck(mvme, vme_addr, n_bytes, &fd, &offset, &addr);
     if (status != MVME_SUCCESS)
@@ -702,7 +754,8 @@ int mvme_read(MVME_INTERFACE *mvme, void *dst, mvme_addr_t vme_addr, mvme_size_t
       return MVME_ACCESS_ERROR;
     }
 
-#if 0
+    if (1) {
+       char* ptr = dst;
       for (i=0; i<n_bytes; i+=4) {
         char tmp;
         tmp = ptr[i+0];
@@ -712,7 +765,7 @@ int mvme_read(MVME_INTERFACE *mvme, void *dst, mvme_addr_t vme_addr, mvme_size_t
         ptr[i+1] = ptr[i+2];
         ptr[i+2] = tmp;
       }
-#endif
+    }
 
 #if 0
     status = pread(fd, dst, n_bytes, offset);
