@@ -8695,7 +8695,7 @@ INT rpc_client_connect(const char *host_name, INT port, const char *client_name,
 #else
    phe = gethostbyname(host_name);
    if (phe == NULL) {
-      cm_msg(MERROR, "rpc_client_connect", "cannot get host name");
+      cm_msg(MERROR, "rpc_client_connect", "cannot lookup host name \'%s\'", host_name);
       return RPC_NET_ERROR;
    }
    memcpy((char *) &(bind_addr.sin_addr), phe->h_addr, phe->h_length);
@@ -12233,7 +12233,7 @@ INT rpc_server_accept(int lsock)
             INT status;
             status = hostGetByAddr(acc_addr.sin_addr.s_addr, callback.host_name);
             if (status != 0) {
-               cm_msg(MERROR, "rpc_server_accept", "cannot get host name");
+               cm_msg(MERROR, "rpc_server_accept", "cannot get host name for IP address");
                break;
             }
          }
@@ -12537,7 +12537,7 @@ INT rpc_server_callback(struct callback_addr * pcallback)
 #else
    phe = gethostbyname(callback.host_name);
    if (phe == NULL) {
-      cm_msg(MERROR, "rpc_server_callback", "cannot get host name");
+      cm_msg(MERROR, "rpc_server_callback", "cannot lookup host name \'%s\'", callback.host_name);
       return RPC_NET_ERROR;
    }
    memcpy((char *) &(bind_addr.sin_addr), phe->h_addr, phe->h_length);
