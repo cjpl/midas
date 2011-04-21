@@ -204,7 +204,7 @@ int main(int argc, char **argv)
    debug = daemon = FALSE;
    server_type = ST_MPROCESS;
 
-   if (argc < 7) {
+   if (argc < 7 || argv[1][0] == '-') {
       /* parse command line parameters */
       for (i = 1; i < argc; i++) {
          if (argv[i][0] == '-' && argv[i][1] == 'd')
@@ -219,7 +219,7 @@ int main(int argc, char **argv)
             server_type = ST_MPROCESS;
          else if (argv[i][0] == '-' && argv[i][1] == 'p')
             port = strtoul(argv[++i], NULL, 0);
-         else if (argv[i][1] == 'a')
+         else if (argv[i][0] == '-' && argv[i][1] == 'a')
             rpc_add_allowed_host(argv[++i]);
          else if (argv[i][0] == '-') {
             if (i + 1 >= argc || argv[i + 1][0] == '-')
