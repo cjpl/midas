@@ -12810,7 +12810,12 @@ INT rpc_server_receive(INT idx, int sock, BOOL check)
 
    /* only check if TCP connection is broken */
    if (check) {
-      n_received = recv(sock, test_buffer, sizeof(test_buffer), MSG_PEEK);
+      n_received = recv(sock, test_buffer, sizeof(test_buffer), MSG_PEEK|MSG_DONTWAIT);
+
+      /* check if we caught a signal */
+      if ((n_received == -1) && (errno == EAGAIN))
+         return SS_SUCCESS;
+ 
 
       if (n_received == -1)
          cm_msg(MERROR, "rpc_server_receive",
