@@ -324,14 +324,14 @@ static int makeDmaPacket(vmeDmaPacket_t *pkt, int blt_mode, int am, uint32_t vme
       pkt->srcVmeAttr.xferProtocol = VME_MBLT;
       break;
     case MVME_BLT_2EVME:
-      assert(vme_addr%8 == 0);
-      assert(nbytes%8 == 0);
+      assert(vme_addr%16 == 0);
+      assert(nbytes%16 == 0);
       pkt->srcVmeAttr.maxDataWidth = VME_D32;
       pkt->srcVmeAttr.xferProtocol = VME_2eVME;
       break;
     case MVME_BLT_2ESST:
-      assert(vme_addr%8 == 0);
-      assert(nbytes%8 == 0);
+      assert(vme_addr%16 == 0);
+      assert(nbytes%16 == 0);
       pkt->srcVmeAttr.maxDataWidth = VME_D32;
       pkt->srcVmeAttr.xferProtocol = VME_2eSST;
       //pkt->srcVmeAttr.xferRate2esst = VME_SST320;
@@ -721,9 +721,11 @@ int mvme_read(MVME_INTERFACE *mvme, void *dst, mvme_addr_t vme_addr, mvme_size_t
   case MVME_AM_A32_NMBLT:
   case MVME_BLT_BLT32:
   case MVME_BLT_MBLT64:
+    return gefvme_read_dma(mvme, dst, vme_addr, n_bytes);
   case MVME_BLT_2EVME:
   case MVME_BLT_2ESST:
     return gefvme_read_dma(mvme, dst, vme_addr, n_bytes);
+    //return gefvme_read_dma_multiple(mvme, 1, &dst, &vme_addr, &n_bytes);
 
   case 0: // no block transfers
   case MVME_BLT_NONE: // no block transfers
