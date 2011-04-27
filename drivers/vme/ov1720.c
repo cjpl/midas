@@ -8,8 +8,9 @@
   $Id$
 *********************************************************************/
 #include <stdio.h>
-#include <stdint.h>
+#include <stdlib.h>
 #include <string.h>
+#include <sys/time.h>
 #include "ov1720drv.h"
 
 // Buffer organization map for number of samples
@@ -61,23 +62,32 @@ CAENComm_ErrorCode ov1720_ChannelOUThresholdSet(int handle, uint32_t channel, ui
 /*****************************************************************/
 CAENComm_ErrorCode ov1720_ChannelDACSet(int handle, uint32_t channel, uint32_t dac)
 {
-  uint32_t reg;
-
-  reg = V1720_CHANNEL_DAC | (channel << 8);
-  printf("reg:0x%x, DAC:%x\n", reg, dac);
-  return CAENComm_Write32(handle, reg, (dac & 0xFFFF));
+  uint32_t reg, status, ncount;
+  
+  if ((channel >= 0) && (channel < 8)) {
+    reg = V1720_CHANNEL_STATUS | (channel << 8);
+    ncount = 10000;
+    do {
+      CAENComm_Read32(handle, reg, &status);
+    } while ((status & 0x04) && (ncount--));
+    if (ncount == 0) return -1;
+    reg = V1720_CHANNEL_DAC | (channel << 8);
+    printf("reg:0x%x, DAC:%x\n", reg, dac);
+    return CAENComm_Write32(handle, reg, (dac & 0xFFFF));
+  }
+  return -1;
 }
 
 /*****************************************************************/
 CAENComm_ErrorCode ov1720_ChannelDACGet(int handle, uint32_t channel, uint32_t *dac)
 {
   uint32_t reg;
-  CAENComm_ErrorCode sCAEN;
+  CAENComm_ErrorCode sCAEN = -1;
 
-  reg = V1720_CHANNEL_DAC | (channel << 8);
-  sCAEN = CAENComm_Read32(handle, reg, dac);
-  reg = V1720_CHANNEL_STATUS | (channel << 8);
-  sCAEN = CAENComm_Read32(handle, reg, dac);
+  if ((channel >= 0) && (channel < 8)) {
+    reg = V1720_CHANNEL_DAC | (channel << 8);
+    sCAEN = CAENComm_Read32(handle, reg, dac);
+  }
   return sCAEN;
 }
 
@@ -284,56 +294,161 @@ CAENComm_ErrorCode  ov1720_Setup(int handle, int mode)
 int main (int argc, char* argv[]) {
 
   CAENComm_ErrorCode sCAEN;
-  int handle;
-  int nw;
-  uint32_t i, status, Address, data[1000];
+  int handle[2];
+  int nw, l, d, h, Nh;
+  uint32_t i, lcount, data[10000], temp, lam;
+  int Nmodulo=10;
+  int wcount = 0, tcount=0;
+  uint32_t   *pdata, eStored, eSize;
+  int loop, Nloop=10;
+  int bshowData=0;
+  int debug = 0;
+  uint32_t pct=0, ct;
+  struct timeval t1;
+  int   dt1;
 
-  // Open VME interface   
-  sCAEN = CAENComm_OpenDevice(CAENComm_PCIE_OpticalLink, 0, 0, 0, &handle); 
-  if (sCAEN != CAENComm_Success) {
-    printf("CAENComm_OpenDevice: %d\n", sCAEN);
+   /* get parameters */
+   /* parse command line parameters */
+  for (i = 1; i < argc; i++) {
+    if (argv[i][0] == '-' && argv[i][1] == 'd')
+      debug = 1;
+    else if (strncmp(argv[i], "-s", 2) == 0)
+      bshowData = 1;
+    else if (argv[i][0] == '-') {
+      if (i + 1 >= argc || argv[i + 1][0] == '-')
+	goto usage;
+      if (strncmp(argv[i], "-l", 2) == 0)
+	Nloop =  (atoi(argv[++i]));
+      else if (strncmp(argv[i], "-m", 2) == 0)
+	Nmodulo =  (atoi(argv[++i]));
+    } else {
+    usage:
+      printf("usage: ov1720 -l (loop count) \n");
+      printf("              -m modulo display\n");
+      printf("              -s show data\n\n");
+      return 0;
+         }
+  }
+  
+  printf("in ov1720\n");
+  
+  //
+  // Open devices
+  for (h=0, l=0;l<1;l++) {
+    for (d=0;d<2;d++) {
+      // Open VME interface   
+      sCAEN = CAENComm_OpenDevice(CAENComm_PCIE_OpticalLink, l, d, 0, &(handle[h])); 
+      if (sCAEN != CAENComm_Success) {
+	handle[h] = -1;
+	printf("CAENComm_OpenDevice [l:%d, d:%d]: Error %d\n", l, d, sCAEN);
+      } else {
+	printf("Device found : Link:%d  Daisy:%d Handle[%d]:%d\n", l, d, h, handle[h]);
+	sCAEN = ov1720_Status(handle[h]);
+	h++;
+      }
+    }
+  }
+  Nh = h;
+  printf("Handles opened (%d)\n", Nh);
+
+#if 1
+  for (h=0;h<Nh;h++) {
+    sCAEN = CAENComm_Write32(handle[h], V1720_SW_RESET              , 0);
+    
+    sCAEN = ov1720_AcqCtl(handle[h], 0x3);
+    sCAEN = CAENComm_Write32(handle[h], V1720_CHANNEL_CONFIG        , 0x10);
+    sCAEN = CAENComm_Write32(handle[h], V1720_BUFFER_ORGANIZATION   , 0xa);
+    sCAEN = CAENComm_Write32(handle[h], V1720_CHANNEL_EN_MASK       , 0x3);
+    sCAEN = CAENComm_Write32(handle[h], V1720_TRIG_SRCE_EN_MASK     , 0x40000003);
+
+    // 
+    // Set Channel threshold
+    for (i=0;i<8;i++) {
+      ov1720_ChannelSet(handle[h], i, V1720_CHANNEL_THRESHOLD, 0x820);
+      sCAEN = ov1720_ChannelGet(handle[h], i, V1720_CHANNEL_THRESHOLD, &temp);
+      printf("Board: %d Threshold[%i] = %d \n", h, i, temp);
+    }
+
+    //
+    // Set DAC value
+    for (i=0;i<8;i++) {
+      sCAEN = ov1720_ChannelDACSet(handle[h], i, 0x88b8);
+      sCAEN = ov1720_ChannelDACGet(handle[h], i, &temp);
+      printf("Board :%d DAC[%i] = %d \n", h, i, temp);
+    }
+    
+  }
+  printf("Modules configured\n");
+
+
+  // Start boards
+  for (h=0;h<Nh;h++) {
+    if (handle[h] < 0) continue;   // Skip unconnected board
+    // Start run then wait for trigger
+    ov1720_AcqCtl(handle[h], V1720_RUN_START);
+  }  
+  
+  printf("Modules started\n");
+ 
+  for (loop=0;loop<Nloop;loop++) {
+
+    do {
+      sCAEN = CAENComm_Read32(handle[0], V1720_VME_STATUS, &lam);
+      //    printf("lam:%x, sCAEN:%d\n",lam, sCAEN);
+      lam &= 0x1;
+    } while (lam == 0);
+    
+    //    printf(">> Lam %d found on Modules 0\n", loop);
+    
+    for (h=0; h<Nh; h++) {
+
+      if (handle[h] < 0) continue;   // Skip unconnected board
+      
+      // Check if data ready
+      lcount=10000000;
+      do {
+	sCAEN = CAENComm_Read32(handle[h], V1720_VME_STATUS, &lam);
+	lam &= 0x1;
+      } while ((lam==0) && (lcount--));
+      
+      if (lcount == 0) {
+	printf("timeout on LAM for module %d\n", h);
+	goto out;
+      }
+      // buffer info
+      sCAEN = CAENComm_Read32(handle[h], V1720_EVENT_STORED, &eStored);
+      sCAEN = CAENComm_Read32(handle[h], V1720_EVENT_SIZE, &eSize);
+      
+      // Some info display
+      if ((h==1) && ((loop % Nmodulo) == 0)) {
+	gettimeofday(&t1, NULL);
+	ct = t1.tv_sec * 1e6 + t1.tv_usec;
+	dt1 = ct-pct;
+	pct = ct;
+	printf("B:%02d Hndle:%d sCAEN:%d Evt#:%d Event Stored:0x%x Event Size:0x%x KB/s:%6.2f\n"
+	       , h, handle[h], sCAEN, loop, eStored, eSize, (float) 1e3*tcount/dt1);
+	tcount = 0;
+      }
+      
+      // Read data
+      pdata = &data[0];
+      wcount = 0;
+      do {
+	sCAEN = CAENComm_BLTRead(handle[h], V1720_EVENT_READOUT_BUFFER, pdata, eSize, &nw);
+	wcount += nw;
+	tcount += nw;
+	pdata += nw;
+      } while (nw!=0 && wcount<10000);
+      
+      if (bshowData) printf("Module:%d nw:%d data: 0x%8.8x 0x%8.8x 0x%8.8x 0x%8.8x 0x%8.8x 0x%8.8x 0x%8.8x 0x%8.8x\n"
+			    ,h , nw, data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7]);
+    } // loop over Nh
+    
+    //    printf("Modules all readout\n");
   }
 
-  ov1720_Setup(handle, 1);
-  // Run control by register
-  sCAEN = CAENComm_Write32(handle, V1720_ACQUISITION_CONTROL, 0);
-  // Soft or External trigger
-  sCAEN = CAENComm_Write32(handle, V1720_TRIG_SRCE_EN_MASK, V1720_SOFT_TRIGGER|V1720_EXTERNAL_TRIGGER);
-  // Soft and External trigger output
-  sCAEN = CAENComm_Write32(handle, V1720_FP_TRIGGER_OUT_EN_MASK, V1720_SOFT_TRIGGER|V1720_EXTERNAL_TRIGGER);
-  // Enabled channels
-  sCAEN = CAENComm_Write32(handle, V1720_CHANNEL_EN_MASK, 0x3);
-  //  sleep(1);
+#endif
 
-  // Start run then wait for trigger
-  ov1720_AcqCtl(handle, V1720_RUN_START);
-  sCAEN = CAENComm_Read32(handle, V1720_ACQUISITION_CONTROL, &status);
-  printf("sCAEN:%d Acq Control:0x%x\n", sCAEN, status&0x1F);
-  sCAEN = CAENComm_Read32(handle, V1720_BUFFER_ORGANIZATION, &status);
-  printf("sCAEN:%d Buff org :0x%x\n", sCAEN, status);
-  sCAEN = CAENComm_Read32(handle, V1720_ACQUISITION_STATUS, &status);
-  printf("sCAEN:%d Acq Status:0x%x\n", sCAEN, status&0x1FF);
-
-  sleep(1);
-  sCAEN = CAENComm_Write32(handle,  V1720_SW_TRIGGER, 0);
-
-  sCAEN = CAENComm_Write32(handle,  V1720_SW_TRIGGER, 0);
-  sleep(1);
-
-  sCAEN = CAENComm_Read32(handle, V1720_EVENT_STORED, &status);
-  printf("sCAEN:%d Event Stored:0x%x\n", sCAEN, status);
-  sCAEN = CAENComm_Read32(handle, V1720_EVENT_SIZE, &status);
-  printf("sCAEN:%d Event Size:0x%x\n", sCAEN, status);
-
-  ov1720_AcqCtl(handle, V1720_RUN_STOP);
-  sCAEN = CAENComm_Read32(handle, V1720_ACQUISITION_CONTROL, &status);
-  printf("sCAEN:%d Acq Control:0x%x\n", sCAEN, status&0x1F);
-  sCAEN = CAENComm_Read32(handle, V1720_BUFFER_ORGANIZATION, &status);
-  printf("sCAEN:%d Buff org :0x%x\n", sCAEN, status);
-  sCAEN = CAENComm_Read32(handle, V1720_ACQUISITION_STATUS, &status);
-  printf("sCAEN:%d Acq Status:0x%x\n", sCAEN, status&0x1FF);
-  
-  
 #if 0
   Address = V1720_EVENT_READOUT_BUFFER;
   CAENComm_MultiRead32(handle, &Address, status/4, &(data[0]), &sCAEN);
@@ -350,7 +465,7 @@ int main (int argc, char* argv[]) {
   }
 #endif
   
-#if 1
+#if 0
   Address = V1720_EVENT_READOUT_BUFFER;
   for (i=0;i<32;i++) {
     sCAEN = CAENComm_MBLTRead(handle, Address, &(data[0]), 128, &nw);
@@ -359,11 +474,24 @@ int main (int argc, char* argv[]) {
   }
 #endif
   
+#if 0
   for (i=0;i<nw;i++) {
     printf(" Data[%d] = 0x%8.8x\n", i, data[i]);
   }
+#endif
 
-  sCAEN = CAENComm_CloseDevice(handle); 
+  // Exit port
+ out:
+  for (h=0;h<Nh;h++) {
+    sCAEN = ov1720_AcqCtl(handle[h], V1720_RUN_STOP);
+  }
+  printf("Modules stopped\n");
+
+  for (h=0;h<Nh;h++) {
+    sCAEN = CAENComm_CloseDevice(handle[h]); 
+  }
+  printf("Handles released\n");
+
   return 1;
 
 }
