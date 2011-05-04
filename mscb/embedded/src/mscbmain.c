@@ -120,8 +120,6 @@ bit wrong_cpu;                  // TRUE if code uses xdata and CPU does't have i
 
 /*------------------------------------------------------------------*/
 
-/* put on idata not to be erased on reboot */
-
 void setup(void)
 {
    unsigned char adr, flags, d;
@@ -1475,6 +1473,9 @@ erase_ok:
    _flkey = 0;
    EA = 1;                      // re-enable interrupts
 }
+
+/* block regmainder of segment for linker */
+unsigned char code BLOCK_F000_REMAINGER[0x9F2] _at_ 0xF60D;
 
 /*------------------------------------------------------------------*\
 

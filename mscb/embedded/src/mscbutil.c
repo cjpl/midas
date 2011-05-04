@@ -1334,6 +1334,8 @@ void delay_us(unsigned int us)
 
 #ifdef CFG_HAVE_EEPROM
 
+unsigned char code EEPROM_AREA[N_EEPROM_PAGE*512] _at_ EEPROM_OFFSET;
+
 void eeprom_read(void * dst, unsigned char len, unsigned short *offset)
 /********************************************************************\
 
