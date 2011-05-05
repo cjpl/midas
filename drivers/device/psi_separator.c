@@ -163,7 +163,7 @@ INT psi_separator_exit(PSI_SEPARATOR_INFO * info)
 //! \param info is a pointer to the DD specific info structure
 INT psi_separator_rall(PSI_SEPARATOR_INFO * info)
 {
-   INT status, j;
+   INT status, j, read_status;
    char str[STR_SIZE];
    DWORD nowtime, difftime;
 
@@ -229,60 +229,60 @@ INT psi_separator_rall(PSI_SEPARATOR_INFO * info)
       }
    }
 
-   // get first string, should be "HVP <voltage> <current>"
-   status = info->bd(CMD_GETS, info->bd_info, str, sizeof(str), "\n", 500);
+   read_status = 0;
+   do {
+      // get strings and interprete them
+      status = info->bd(CMD_GETS, info->bd_info, str, sizeof(str), "\n", 500);
 
-   if (strstr(str, "HVP")) {
-      // skip name
-      for (j = 0; j < (int) strlen(str) && str[j] != ' '; j++);
+      if (strstr(str, "HVP")) {
+         // skip name
+         for (j = 0; j < (int) strlen(str) && str[j] != ' '; j++);
 
-      // extract demand voltage
-      info->hv_demand = (float) atof(str + j + 1);
-      for (j++; j < (int) strlen(str) && str[j] != ' '; j++);
+         // extract demand voltage
+         info->hv_demand = (float) atof(str + j + 1);
+         for (j++; j < (int) strlen(str) && str[j] != ' '; j++);
 
-      // extract measured voltage
-      info->hv_measured = (float) atof(str + j + 1);
-      for (j++; j < (int) strlen(str) && str[j] != ' '; j++);
+         // extract measured voltage
+         info->hv_measured = (float) atof(str + j + 1);
+         for (j++; j < (int) strlen(str) && str[j] != ' '; j++);
 
-      // extract maximal current
-      info->cur_max = (float) atof(str + j + 1);
-      for (j++; j < (int) strlen(str) && str[j] != ' '; j++);
+         // extract maximal current
+         info->cur_max = (float) atof(str + j + 1);
+         for (j++; j < (int) strlen(str) && str[j] != ' '; j++);
 
-      // extract measured current
-      info->cur_measured = (float) atof(str + j + 1);
-   }
+         // extract measured current
+         info->cur_measured = (float) atof(str + j + 1);
+      }
 
-   // get second string, should be "HVN <voltage> <current>"
-   status = info->bd(CMD_GETS, info->bd_info, str, sizeof(str), "\n", 500);
+      if (strstr(str, "VAC")) {
+         for (j = 0; j < (int) strlen(str) && str[j] != ' '; j++);
+         info->sepvac = (float) atof(str + j + 1);
+      }
 
-   // get third string, should be "VAC <vacuum>"
-   status = info->bd(CMD_GETS, info->bd_info, str, sizeof(str), "\n", 500);
-   if (strstr(str, "VAC")) {
-      for (j = 0; j < (int) strlen(str) && str[j] != ' '; j++);
-      info->sepvac = (float) atof(str + j + 1);
-   }
-
-   // get Xray string
-   status = info->bd(CMD_GETS, info->bd_info, str, sizeof(str), "\n", 500);
-   if (strstr(str, "Xray")) {
-      for (j = 0; j < (int) strlen(str) && str[j] != ' '; j++);
-      info->xray = (float) atof(str + j + 1);
-   }
+      if (strstr(str, "Xray")) {
+         for (j = 0; j < (int) strlen(str) && str[j] != ' '; j++);
+         info->xray = (float) atof(str + j + 1);
+      }
    
-   // get status string
-   status = info->bd(CMD_GETS, info->bd_info, str, sizeof(str), "\n", 500);
+      if (strstr(str, "OVC") != NULL) {
+         read_status = 1;
+         if (info->cur_measured > 0.9 * info->cur_max) {
+            mfe_error("Separator in Overcurrent");
+         }
+      }
 
-   if ((strstr(str, "OK") == NULL) && (strstr(str, "OVC") == NULL)) {
+      if (strstr(str, "OK") != NULL) {
+         read_status = 1;
+      }
+
+   } while (status > 0);
+
+   if (!read_status) {
       if (info->errorcount < MAX_ERROR && info->errorcount >= MIN_ERROR)
          mfe_error("Error reading separator status");
       info->errorcount++;
    }
 
-   if (strstr(str, "OVC") != NULL) {
-      if (info->cur_measured > 0.9 * info->cur_max) {
-         mfe_error("Separator in Overcurrent");
-      }
-   }
    info->bd(CMD_CLOSE, info->bd_info);
 
    return FE_SUCCESS;
