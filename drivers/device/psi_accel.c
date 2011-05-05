@@ -110,13 +110,14 @@ INT psi_accel_get(PSI_ACCEL_INFO * info, INT channel, float *pvalue)
 {
 char str[10000];
 struct sockaddr_in addr;
-unsigned int size, n;
+unsigned int size, i, n;
 fd_set readfds;
 struct timeval timeout;
 
    str[0] = 0;
+   n = 0;
    /* continue until nothing received to drain old messages */
-   do {
+   for (i=0 ; i<120 ; i++) { // maximum 120*10ms = 1.2s
       FD_ZERO(&readfds);
       FD_SET(info->sock, &readfds);
 
@@ -125,13 +126,15 @@ struct timeval timeout;
 
       select(FD_SETSIZE, (void *) &readfds, NULL, NULL, (void *) &timeout);
 
-      if (!FD_ISSET(info->sock, &readfds))
+      if (!FD_ISSET(info->sock, &readfds) && n > 0)
          break;
 
-      memset(str, 0, sizeof(str));
-      size = sizeof(addr);
-      n = recvfrom(info->sock, str, sizeof(str), 0, (struct sockaddr *)&addr, &size);
-   } while (1);
+      if (FD_ISSET(info->sock, &readfds)) {
+         memset(str, 0, sizeof(str));
+         size = sizeof(addr);
+         n = recvfrom(info->sock, str, sizeof(str), 0, (struct sockaddr *)&addr, &size);
+      }
+   } 
 
    if (strstr(str, "MHC3"))
       *pvalue = (float)atof(strstr(str, "MHC3")+15);
