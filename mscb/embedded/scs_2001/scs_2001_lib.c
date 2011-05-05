@@ -1695,18 +1695,20 @@ unsigned char i;
 
    if (cmd == MC_READ) {
 
-      if (chn == 1)
-         return 0;
-
-      /* lower !CS of first ADC */
-      // write_port(addr, port, 0xFE);
+      if (chn == 0)
+         /* lower !CS of first ADC */
+         write_port(addr, port, 0xFE);
+      else
+         /* lower !CS of second ADC */
+         write_port(addr, port, 0xFD);
 
       address_port(addr, port, AM_RW_SERIAL);
 
       /* check for end of conversion */
-      DELAY_US_REENTRANT(2);
+      DELAY_US_REENTRANT(10);
 
       if (OPT_DATAI == 1) {
+         /* raise !CS of both ADC */
          write_port(addr, port, 0xFF);
          return 0;
       }
@@ -1719,7 +1721,7 @@ unsigned char i;
          d = (d << 1) | OPT_DATAI;
       }
 
-      /* raise !CS of first ADC */
+      /* raise !CS of both ADC */
       write_port(addr, port, 0xFF);
 
       /* convert to volts */
