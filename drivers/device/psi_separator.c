@@ -54,7 +54,8 @@ typedef struct {
    float hv_measured;           //!< measured HV
    float cur_max;               //!< maximal current
    float cur_measured;          //!< measured current
-   float sepvac;                //!< separator vacuum;
+   float sepvac;                //!< separator vacuum
+   float xray;                  //!< Xray counter
     INT(*bd) (INT cmd, ...);    //!< bus driver entry function
    void *bd_info;               //!< private info of bus driver
    HNDLE hkey;                  //!< ODB key for bus driver info
@@ -82,8 +83,8 @@ INT psi_separator_init(HNDLE hkey, void **pinfo, INT channels, INT(*bd) (INT cmd
    HNDLE hDB, hkeydd;
    PSI_SEPARATOR_INFO *info;
 
-   if (channels != 3) {
-      cm_msg(MERROR, "psi_separator_init", "Driver requires 3 channels, not %d", channels);
+   if (channels != 4) {
+      cm_msg(MERROR, "psi_separator_init", "Driver requires 4 channels, not %d", channels);
       return FE_ERR_ODB;
    }
    //allocate info structure
@@ -228,10 +229,10 @@ INT psi_separator_rall(PSI_SEPARATOR_INFO * info)
       }
    }
 
-   // get first string, should be "HVN <voltage> <current>"
+   // get first string, should be "HVP <voltage> <current>"
    status = info->bd(CMD_GETS, info->bd_info, str, sizeof(str), "\n", 500);
 
-   if (strstr(str, "HVN")) {
+   if (strstr(str, "HVP")) {
       // skip name
       for (j = 0; j < (int) strlen(str) && str[j] != ' '; j++);
 
@@ -251,13 +252,23 @@ INT psi_separator_rall(PSI_SEPARATOR_INFO * info)
       info->cur_measured = (float) atof(str + j + 1);
    }
 
-   // get second string, should be "VAC <vacuum>"
+   // get second string, should be "HVN <voltage> <current>"
    status = info->bd(CMD_GETS, info->bd_info, str, sizeof(str), "\n", 500);
 
+   // get third string, should be "VAC <vacuum>"
+   status = info->bd(CMD_GETS, info->bd_info, str, sizeof(str), "\n", 500);
    if (strstr(str, "VAC")) {
       for (j = 0; j < (int) strlen(str) && str[j] != ' '; j++);
       info->sepvac = (float) atof(str + j + 1);
    }
+
+   // get Xray string
+   status = info->bd(CMD_GETS, info->bd_info, str, sizeof(str), "\n", 500);
+   if (strstr(str, "Xray")) {
+      for (j = 0; j < (int) strlen(str) && str[j] != ' '; j++);
+      info->xray = (float) atof(str + j + 1);
+   }
+   
    // get status string
    status = info->bd(CMD_GETS, info->bd_info, str, sizeof(str), "\n", 500);
 
@@ -364,6 +375,8 @@ INT psi_separator_get(PSI_SEPARATOR_INFO * info, INT channel, float *pvalue)
       *pvalue = info->cur_measured;
    else if (channel == 2)
       *pvalue = info->sepvac;
+   else if (channel == 3)
+      *pvalue = info->xray;
 
    return status;
 }
@@ -394,6 +407,8 @@ INT psi_separator_get_label(PSI_SEPARATOR_INFO * info, INT channel, char *name)
       strcpy(name, "Sep. current (uA)");
    else if (channel == 2)
       strcpy(name, "Sep. vacuum (mbar)");
+   else if (channel == 3)
+      strcpy(name, "Xray counter");
 
    return FE_SUCCESS;
 }
