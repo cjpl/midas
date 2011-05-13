@@ -13,6 +13,7 @@
 #include <stdlib.h>
 #include <stdarg.h>
 #include "midas.h"
+#include "msystem.h"
 
 #ifndef _MSC_VER
 #include <sys/socket.h>
