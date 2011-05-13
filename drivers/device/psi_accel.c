@@ -27,11 +27,11 @@
 /* multicast address */
 
 typedef struct {
-   char multicast_group[32];
+   char multicast_host[32];
 } PSI_ACCEL_SETTINGS;
 
 #define PSI_ACCEL_SETTINGS_STR "\
-Multicast Group = STRING : [32] 226.129.145.246\n\
+Multicast Host = STRING : [32] hipa129-sta\n\
 "
 
 typedef struct {
@@ -44,13 +44,15 @@ typedef struct {
 INT psi_accel_init(HNDLE hKey, void **pinfo, INT channels, INT(*bd) (INT cmd, ...))
 {
    int status, size, n;
+   char str[80];
    HNDLE hDB;
    PSI_ACCEL_INFO *info;
    struct sockaddr_in myaddr;
    struct ip_mreq req;
+   struct hostent *ph;
 
    /* allocate info structure */
-   info = calloc(1, sizeof(PSI_ACCEL_INFO));
+   info = (PSI_ACCEL_INFO *)calloc(1, sizeof(PSI_ACCEL_INFO));
    *pinfo = info;
    
    cm_get_experiment_database(&hDB, NULL);
@@ -83,7 +85,13 @@ INT psi_accel_init(HNDLE hKey, void **pinfo, INT channels, INT(*bd) (INT cmd, ..
 
    /* set multicast group */
    memset(&req, 0, sizeof(req));
-   req.imr_multiaddr.s_addr = inet_addr(info->psi_accel_settings.multicast_group);
+   ph = gethostbyname(info->psi_accel_settings.multicast_host);
+   if (ph == NULL) {
+      cm_msg(MERROR, "psi_accel_init", "cannot retrieve IP address of %s", info->psi_accel_settings.multicast_host);
+      return FE_ERR_HW;
+   }
+   sprintf(str, "226.%d.%d.%d", ph->h_addr[1]&0xFF, ph->h_addr[2]&0xFF, ph->h_addr[3]&0xFF);
+   req.imr_multiaddr.s_addr = inet_addr(str);
    req.imr_interface.s_addr = INADDR_ANY;
    
    if (setsockopt(info->sock, IPPROTO_IP, IP_ADD_MEMBERSHIP, (char *)&req, sizeof(req)) < 0) {
