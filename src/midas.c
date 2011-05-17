@@ -695,6 +695,7 @@ static INT cm_msg_buffer(int ts, int message_type, const char *message)
    int status;
    int len;
    char *wp;
+   void *vp;
 
    //printf("cm_msg_buffer ts %d, type %d, message [%s]!\n", ts, message_type, message);
 
@@ -712,7 +713,8 @@ static INT cm_msg_buffer(int ts, int message_type, const char *message)
    status = ss_mutex_wait_for(_msg_mutex, 0);
    assert(status == SS_SUCCESS);
 
-   status = rb_get_wp(_msg_rb, (void**)&wp, 1000);
+   status = rb_get_wp(_msg_rb, &vp, 1000);
+   wp = (char *)vp;
    
    if (status != SUCCESS || wp == NULL) {
       // unlock
@@ -760,7 +762,8 @@ INT cm_msg_flush_buffer()
       int message_type;
       char message[1024];
       int n_bytes;
-      char* rp;
+      char *rp;
+      void *vp;
       int len;
 
       status = rb_get_buffer_level(_msg_rb, &n_bytes);
@@ -772,7 +775,8 @@ INT cm_msg_flush_buffer()
       status = ss_mutex_wait_for(_msg_mutex, 0);
       assert(status == SS_SUCCESS);
       
-      status = rb_get_rp(_msg_rb, (void**)&rp, 0);
+      status = rb_get_rp(_msg_rb, &vp, 0);
+      rp = (char *)vp;
       if (status != SUCCESS || rp == NULL) {
          // unlock
          ss_mutex_release(_msg_mutex);
