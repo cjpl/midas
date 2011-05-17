@@ -3926,11 +3926,22 @@ INT tr_start(INT run_number, char *error)
             db_close_record(hDB, log_chn[index].settings_hkey);
 
          /* open hot link to statistics tree */
-         status =
-             db_open_record(hDB, log_chn[index].stats_hkey, &log_chn[index].statistics,
+         status = db_open_record(hDB, log_chn[index].stats_hkey, &log_chn[index].statistics,
                             sizeof(CHN_STATISTICS), MODE_WRITE, NULL, NULL);
+         if (status == DB_NO_ACCESS) {
+            /* record is probably still in exclusive access by dead logger, so reset it */
+            status = db_set_mode(hDB, log_chn[index].stats_hkey, MODE_READ | MODE_WRITE | MODE_DELETE, TRUE);
+            if (status != DB_SUCCESS)
+               cm_msg(MERROR, "tr_start", 
+                      "Cannot change access mode for statistics record, error %d", status);
+            else
+               cm_msg(MINFO, "tr_start", "Recovered access mode for statistics record of channel %d", index);
+            status = db_open_record(hDB, log_chn[index].stats_hkey, &log_chn[index].statistics,
+                               sizeof(CHN_STATISTICS), MODE_WRITE, NULL, NULL);
+         }
+
          if (status != DB_SUCCESS)
-            cm_msg(MERROR, "tr_start", "cannot open statistics record, probably other logger is using it");
+            cm_msg(MERROR, "tr_start", "Cannot open statistics record for channel %d, error %d", index, status);
 
          /* open hot link to settings tree */
          status =
