@@ -712,7 +712,7 @@ static INT cm_msg_buffer(int ts, int message_type, const char *message)
    status = ss_mutex_wait_for(_msg_mutex, 0);
    assert(status == SS_SUCCESS);
 
-   status = rb_get_wp(_msg_rb, (void*)&wp, 1000);
+   status = rb_get_wp(_msg_rb, (void**)&wp, 1000);
    
    if (status != SUCCESS || wp == NULL) {
       // unlock
@@ -772,7 +772,7 @@ INT cm_msg_flush_buffer()
       status = ss_mutex_wait_for(_msg_mutex, 0);
       assert(status == SS_SUCCESS);
       
-      status = rb_get_rp(_msg_rb, (void*)&rp, 0);
+      status = rb_get_rp(_msg_rb, (void**)&rp, 0);
       if (status != SUCCESS || rp == NULL) {
          // unlock
          ss_mutex_release(_msg_mutex);
