@@ -701,7 +701,7 @@ public:
          if (!equal_ustring((char *)evname, buf))
             continue;
 
-         status = ::hs_get_tags(ltime, evid, event_name, &ntags, &tags);
+         status = ::hs_get_tags((DWORD)ltime, evid, event_name, &ntags, &tags);
 
          for (int j=0; j<ntags; j++) {
             //printf("at %d [%s] looking for [%s]\n", j, tags[j].name, tagname);
@@ -814,7 +814,7 @@ public:
       /* if nothing works, use hs_get_event_id() */
       if (event_id <= 0) {
          DWORD evid = 0;
-         int status = ::hs_get_event_id(t, (char*)event_name, &evid);
+         int status = ::hs_get_event_id((DWORD)t, (char*)event_name, &evid);
          if (status != HS_SUCCESS)
             return status;
          event_id = evid;
