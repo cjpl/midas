@@ -2079,7 +2079,7 @@ int command_loop(char *host_name, char *exp_name, char *cmd, char *start_dir)
                      memset(data, 0, size);
                      db_get_data(hDB, hKey, data, &size, key.type);
 
-                     fprintf(f, data);
+                     fprintf(f, "%s", data);
                      fclose(f);
                   }
                }
@@ -2182,7 +2182,7 @@ int command_loop(char *host_name, char *exp_name, char *cmd, char *start_dir)
       else if (param[0][0] == 's' && param[0][1] == 'o') {
          db_find_key(hDB, 0, pwd, &hKey);
          db_get_open_records(hDB, hKey, data, sizeof(data), FALSE);
-         printf(data);
+         printf("%s", data);
       }
 
       /* scl (show clients ) */
@@ -2206,13 +2206,13 @@ int command_loop(char *host_name, char *exp_name, char *cmd, char *start_dir)
                if (status == DB_SUCCESS) {
                   size = sizeof(name);
                   db_get_value(hDB, hSubkey, "Name", name, &size, TID_STRING, TRUE);
-                  printf(name);
+                  printf("%s", name);
                   for (j = 0; j < 20 - (int) strlen(name); j++)
                      printf(" ");
 
                   size = sizeof(str);
                   db_get_value(hDB, hSubkey, "Host", str, &size, TID_STRING, TRUE);
-                  printf(str);
+                  printf("%s", str);
                   for (j = 0; j < 20 - (int) strlen(str); j++)
                      printf(" ");
 
@@ -2487,8 +2487,7 @@ int command_loop(char *host_name, char *exp_name, char *cmd, char *start_dir)
             i = atoi(param[1]);
 
          cm_msg_retrieve(i, data, sizeof(data));
-         printf(data);
-         printf("\n\n");
+         printf("%s\n\n", data);
       }
 
       /* cleanup */
