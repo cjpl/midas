@@ -207,7 +207,7 @@ typedef HANDLE MUTEX_T;
 #elif defined(OS_LINUX)
 typedef pthread_mutex_t MUTEX_T;
 #else
-typedef INT MUTEX_T
+typedef INT MUTEX_T;
 #endif
 
 /**dox***************************************************************/
