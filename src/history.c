@@ -1865,7 +1865,7 @@ INT hs_dump(DWORD event_id, DWORD start_time, DWORD end_time, DWORD interval, BO
                ltime = (time_t) irec.time;
                sprintf(str, "%s", ctime(&ltime) + 4);
                str[20] = '\t';
-               printf(str);
+               printf("%s", str);
             }
 
             /* read data */
