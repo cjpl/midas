@@ -11461,7 +11461,7 @@ void export_hist(const char *path, int scale, int toffset, int index, int labels
       /* read run state */
 
       status = hs_read(0, ss_time() - scale + toffset - scale, ss_time() + toffset, 0,
-                       "State", 0, tbuffer, &tsize, ybuffer, &bsize, &type, &n_run_number);
+                       (char *)"State", 0, tbuffer, &tsize, ybuffer, &bsize, &type, &n_run_number);
 
       if (status != HS_UNDEFINED_VAR) {
         state = (DWORD*)M_MALLOC(sizeof(DWORD) * n_run_number);
@@ -11475,7 +11475,7 @@ void export_hist(const char *path, int scale, int toffset, int index, int labels
       /* read run number */
 
       status = hs_read(0, ss_time() - scale + toffset - scale, ss_time() + toffset, 0,
-                       "Run number", 0, tbuffer, &tsize, ybuffer, &bsize, &type,
+                       (char *)"Run number", 0, tbuffer, &tsize, ybuffer, &bsize, &type,
                        &n_run_number);
 
       if (status != HS_UNDEFINED_VAR) {
@@ -13820,8 +13820,7 @@ void server_loop()
             struct hostent *remote_phe;
             char str[256];
 
-            strcpy(str, ss_asctime());
-            printf(str);
+            printf("%s", ss_asctime());
             printf("=== Received request from ");
 
             remote_phe = gethostbyaddr((char *) &remote_addr, 4, PF_INET);
@@ -13951,7 +13950,7 @@ void server_loop()
             } else if (strstr(net_buffer, "OPTIONS") != NULL)
                goto error;
             else {
-               printf(net_buffer);
+               printf("%s", net_buffer);
                goto error;
             }
 
@@ -14047,9 +14046,7 @@ void server_loop()
                return_length = strlen(return_buffer);
 
             if (verbose) {
-               char str[256];
-               strcpy(str, ss_asctime());
-               printf(str);
+               printf("%s", ss_asctime());
                printf("==== Return buffer %i bytes ===\n", return_length);
                printf("\n\n");
             }
