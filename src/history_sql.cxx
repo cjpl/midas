@@ -81,7 +81,7 @@ static const char *tid_name[] = {
 };
 
 // SQL types
-/*
+#ifdef HAVE_ODBC
 static const char *sql_type_pgsql[] = {
    "xxxINVALIDxxxNULL", // TID_NULL
    "SMALLINT",  // MYSQL "TINYINT SIGNED", // TID_BYTE
@@ -101,7 +101,7 @@ static const char *sql_type_pgsql[] = {
    "xxxINVALIDxxxKEY",
    "xxxINVALIDxxxLINK"
 };
-*/
+#endif
 
 static const char *sql_type_mysql[] = {
    "xxxINVALIDxxxNULL", // TID_NULL
