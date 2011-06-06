@@ -67,9 +67,9 @@ INT tape_dir(INT channel, INT count)
 
             /* start after ':' */
             if (strchr(buffer, ':'))
-               printf(strchr(buffer, ':') + 2);
+               printf("%s", strchr(buffer, ':') + 2);
             else
-               printf(buffer);
+               printf("%s", buffer);
             printf("\n");
             fclose(f);
          }

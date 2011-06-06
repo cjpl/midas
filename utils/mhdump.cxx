@@ -70,7 +70,7 @@ int tid_size[] = {
 };
 
 /* data type names */
-char *tid_name[] = {
+const char *tid_name[] = {
    "NULL",
    "BYTE",
    "SBYTE",

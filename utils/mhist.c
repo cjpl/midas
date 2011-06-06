@@ -269,7 +269,7 @@ void display_single_hist(DWORD event_id, DWORD start_time, DWORD end_time,
 
          strcat(str, "\n");
 
-         printf(str);
+         printf("%s", str);
       }
 
       if (status == HS_TRUNCATED)
@@ -336,7 +336,7 @@ void display_range_hist(DWORD event_id, DWORD start_time, DWORD end_time,
 
       strcat(str, "\n");
 
-      printf(str);
+      printf("%s", str);
    }
 }
 

@@ -79,11 +79,11 @@ void receive_message(HNDLE hBuf, HNDLE id, EVENT_HEADER * header, void *message)
          switch (header->trigger_mask) {
          case MT_TALK:
             if (mtTalkStr[0])
-               sprintf(str, mtTalkStr);
+               sprintf(str, "%s", mtTalkStr);
             break;
          case MT_USER:
             if (mtUserStr[0])
-               sprintf(str, mtUserStr);
+               sprintf(str, "%s", mtUserStr);
             break;
          }
          ss_system(str);

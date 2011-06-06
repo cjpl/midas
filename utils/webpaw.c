@@ -87,11 +87,11 @@ void debug_message(char *str)
    if (debug_file[0]) {
       f = fopen(debug_file, "a");
       if (f) {
-         fprintf(f, str);
+         fprintf(f, "%s", str);
          fclose(f);
       }
    } else {
-      printf(str);
+      printf("%s", str);
       fflush(stdout);
    }
 }
@@ -1479,7 +1479,7 @@ void server_loop(int tcp_port, int daemon)
                if (len > 6 && strcmp(&net_buffer[len - 6], "\r\r\n\r\r\n") == 0)
                   break;
             } else {
-               printf(net_buffer);
+               printf("%s", net_buffer);
                goto error;
             }
 

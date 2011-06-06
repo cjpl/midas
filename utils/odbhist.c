@@ -151,7 +151,7 @@ int odb_hist(char *file_name, int run_number, char *var_name, int quiet,
                            if (str[0] == '[' && strchr(str, ']') != NULL)
                               strcpy(str, strchr(str, ']') + 2);
                            if (print)
-                              printf(str);
+                              printf("%s", str);
                            *value = strtod(str, NULL);
                            goto finish;
                         }
@@ -164,7 +164,7 @@ int odb_hist(char *file_name, int run_number, char *var_name, int quiet,
                            if (strchr(str, '\n') != NULL)
                               *strchr(str, '\n') = 0;
                            if (print)
-                              printf(str);
+                              printf("%s", str);
                            *value = strtod(str, NULL);
                         }
                         goto finish;
@@ -441,7 +441,7 @@ int main(int argc, char *argv[])
    for (i = 1; i < argc; i++) {
       if (argv[i][0] == '-')
          if (argv[i][1] == 'c') {
-            printf(argv[i + 1]);
+            printf("%s", argv[i + 1]);
             printf("\n");
             if (!(load_pars_from_file(argv[i + 1])))
                goto usage;

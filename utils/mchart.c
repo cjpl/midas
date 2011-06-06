@@ -145,8 +145,8 @@ INT mchart_get_names(HNDLE hDB, char *eqpstr, char *element, char **pname, INT *
    p = eqpstr;
    for (i = 0; i < 128; i++)
       strtmp[i] = 0;
-   while (*p)
-     *(p++) = (char) tolower(*p);
+   for (i=0 ; i<strlen(eqpstr) ; i++)
+      eqpstr[i] = tolower(eqpstr[i]);
 
    /* I don't remember what I'm doing here but it's useful! */
    if (strncmp(eqpstr, "equipment/", 10) == 0)
