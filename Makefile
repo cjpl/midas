@@ -515,7 +515,7 @@ endif
 # library objects
 #
 
-$(LIB_DIR)/mhttpd.o: $(LIB_DIR)/%.o:$(SRC_DIR)/%.c
+$(LIB_DIR)/mhttpd.o: $(LIB_DIR)/%.o: $(SRC_DIR)/%.cxx
 	$(CXX) -c $(CFLAGS) $(OSFLAGS) -o $@ $<
 
 $(LIB_DIR)/%.o:$(SRC_DIR)/%.c
