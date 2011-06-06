@@ -1450,7 +1450,7 @@ typedef struct {
 
 typedef struct {
    INT id;
-   char *name;
+   const char *name;
    RPC_PARAM param[20];
     INT(*dispatch) (INT, void **);
 } RPC_LIST;
