@@ -80,7 +80,7 @@ struct hist_log_s {
 
 static int         hist_log_size = 0;
 static int         hist_log_max = 0;
-static hist_log_s *hist_log = NULL;
+static struct hist_log_s *hist_log = NULL;
 
 HNDLE hDB;
 
@@ -2477,7 +2477,7 @@ INT log_write(LOG_CHN * log_chn, EVENT_HEADER * pevent)
    /* check if duration is reached for subrun */
    duration = 0;
    size = sizeof(duration);
-   db_get_value(hDB, 0, "/Logger/Subrun duration", &duration, &size, TID_DWORD, true);
+   db_get_value(hDB, 0, "/Logger/Subrun duration", &duration, &size, TID_DWORD, TRUE);
    if (!stop_requested && duration > 0 && ss_time() >= subrun_start_time + duration) {
       int run_number;
 
