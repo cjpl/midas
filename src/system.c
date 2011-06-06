@@ -1275,7 +1275,7 @@ INT ss_gettid(void)
 
 #elif defined OS_DARWIN
 
-   return (int)pthread_self();
+   return (int)(long int)pthread_self();
 
 #elif defined OS_CYGWIN
 
