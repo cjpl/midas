@@ -69,7 +69,7 @@ void create_sql_tree();
 #define MAX_EVENTS   10
 #define MAX_HISTORY  20
 
-char *fal_name = "FAL";
+const char *fal_name = "FAL";
 
 #ifndef DEBUG_TRANS
 #define DEBUG_TRANS 0
@@ -122,7 +122,7 @@ int *PAWC;
 extern int QUEST[100];
 #endif
 
-char *bstr = " ";
+const char *bstr = " ";
 
 /*---- ODB records -------------------------------------------------*/
 
@@ -2866,7 +2866,7 @@ INT open_history()
    tag[1].type = TID_DWORD;
    tag[1].n_data = 1;
 
-   hs_define_event(0, "Run transitions", tag, sizeof(TAG) * 2);
+   hs_define_event(0, (char *)"Run transitions", tag, sizeof(TAG) * 2);
    free(tag);
 
    return CM_SUCCESS;
@@ -3094,7 +3094,7 @@ INT tr_start(INT run_number, char *error)
    struct tm *tms;
 
    /* save current ODB */
-   odb_save("last.xml");
+   odb_save((char*)"last.xml");
 
    /* read global logging flag */
    size = sizeof(BOOL);
