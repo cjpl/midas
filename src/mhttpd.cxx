@@ -1,6 +1,6 @@
 /********************************************************************\
 
-  Name:         mhttpd.c
+  Name:         mhttpd.cxx
   Created by:   Stefan Ritt
 
   Contents:     Web server program for midas RPC calls

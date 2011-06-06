@@ -1,6 +1,6 @@
 /********************************************************************\
 
-  Name:         mlogger.c
+  Name:         mlogger.cxx
   Created by:   Stefan Ritt
 
   Contents:     MIDAS logger program

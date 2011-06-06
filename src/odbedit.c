@@ -56,6 +56,8 @@ INT thread(void *p)
       if (status != SUCCESS)
          printf("%d unlock status %d\n", ss_gettid(), status);
    } while (1);
+   
+   return 0;
 }
 
 /*------------------------------------------------------------------*/
