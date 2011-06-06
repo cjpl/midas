@@ -44,7 +44,7 @@ USBDIR        = ../drivers/usb/
 endif
 
 OUTNAME       = msc 
-CC            = gcc -g -O -DHAVE_MRPC
+CC            = gcc -g -O0 -DHAVE_MRPC
 FLAGS         = -Wall -Wuninitialized -I$(MXMLDIR) -I$(MIDASINC)
 
 STRLCPY       = strlcpy.o
@@ -55,7 +55,7 @@ LIBS  = -lusb
 endif
 
 ifeq ($(OSTYPE),darwin)
-CC   += -DOS_DARWIN -DOS_LINUX
+CC   += -DOS_DARWIN -DOS_LINUX -DHAVE_USB
 LIBS  = -lIOKit /System/Library/Frameworks/CoreFoundation.framework/CoreFoundation
 STRLCPY       =
 endif
