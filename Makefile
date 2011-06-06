@@ -426,7 +426,7 @@ ifdef NEED_MSCB
 CFLAGS     += -DHAVE_MSCB
 endif
 
-$(BIN_DIR)/mlogger: $(BIN_DIR)/%: $(SRC_DIR)/%.c
+$(BIN_DIR)/mlogger: $(BIN_DIR)/%: $(SRC_DIR)/%.cxx
 	$(CXX) $(CFLAGS) $(OSFLAGS) -o $@ $< $(LIB) $(ROOTLIBS) $(MYSQL_LIBS) $(LIBS)
 
 $(BIN_DIR)/%:$(SRC_DIR)/%.c
