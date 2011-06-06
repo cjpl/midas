@@ -3976,7 +3976,7 @@ INT tr_start(INT run_number, char *error)
          /* open message buffer if requested */
          if (chn_settings->log_messages) {
             status =
-                bm_open_buffer(MESSAGE_BUFFER_NAME, MESSAGE_BUFFER_SIZE, &log_chn[index].msg_buffer_handle);
+                bm_open_buffer((char*)MESSAGE_BUFFER_NAME, MESSAGE_BUFFER_SIZE, &log_chn[index].msg_buffer_handle);
             if (status != BM_SUCCESS && status != BM_CREATED) {
                sprintf(error, "Cannot open buffer %s", MESSAGE_BUFFER_NAME);
                cm_msg(MERROR, "tr_start", error);
