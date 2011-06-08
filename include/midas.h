@@ -1876,6 +1876,7 @@ extern "C" {
    double EXPRT ss_file_size(char *path);
    INT EXPRT ss_file_remove(char *path);
    INT EXPRT ss_file_find(char *path, char *pattern, char **plist);
+   INT EXPRT ss_dir_find(char *path, char *pattern, char **plist);
    double EXPRT ss_disk_size(char *path);
 
    /*---- history routines ----*/
