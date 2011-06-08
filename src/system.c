@@ -5452,6 +5452,7 @@ int fnmatch(const char *pat, const char *str, const int flag)
 HANDLE pffile;
 LPWIN32_FIND_DATA lpfdata;
 #endif
+
 INT ss_file_find(char *path, char *pattern, char **plist)
 /********************************************************************\
 
@@ -5481,7 +5482,7 @@ INT ss_file_find(char *path, char *pattern, char **plist)
    *plist = (char *) malloc(MAX_STRING_LENGTH);
    i = 0;
    for (dp = readdir(dir_pointer); dp != NULL; dp = readdir(dir_pointer)) {
-      if (fnmatch(pattern, dp->d_name, 0) == 0) {
+      if (fnmatch(pattern, dp->d_name, 0) == 0 && dp->d_type == DT_REG) {
          *plist = (char *) realloc(*plist, (i + 1) * MAX_STRING_LENGTH);
          strncpy(*plist + (i * MAX_STRING_LENGTH), dp->d_name, strlen(dp->d_name));
          *(*plist + (i * MAX_STRING_LENGTH) + strlen(dp->d_name)) = '\0';
@@ -5495,6 +5496,75 @@ INT ss_file_find(char *path, char *pattern, char **plist)
    char str[255];
    int first;
 
+   strcpy(str, path);
+   strcat(str, "\\");
+   strcat(str, pattern);
+   first = 1;
+   i = 0;
+   lpfdata = (WIN32_FIND_DATA *) malloc(sizeof(WIN32_FIND_DATA));
+   *plist = (char *) malloc(MAX_STRING_LENGTH);
+   pffile = FindFirstFile(str, lpfdata);
+   if (pffile == INVALID_HANDLE_VALUE)
+      return 0;
+   first = 0;
+   *plist = (char *) realloc(*plist, (i + 1) * MAX_STRING_LENGTH);
+   strncpy(*plist + (i * MAX_STRING_LENGTH), lpfdata->cFileName, strlen(lpfdata->cFileName));
+   *(*plist + (i * MAX_STRING_LENGTH) + strlen(lpfdata->cFileName)) = '\0';
+   i++;
+   while (FindNextFile(pffile, lpfdata)) {
+      *plist = (char *) realloc(*plist, (i + 1) * MAX_STRING_LENGTH);
+      strncpy(*plist + (i * MAX_STRING_LENGTH), lpfdata->cFileName, strlen(lpfdata->cFileName));
+      *(*plist + (i * MAX_STRING_LENGTH) + strlen(lpfdata->cFileName)) = '\0';
+      i++;
+   }
+   free(lpfdata);
+#endif
+   return i;
+}
+
+INT ss_dir_find(char *path, char *pattern, char **plist)
+/********************************************************************\
+ 
+ Routine: ss_dir_find
+ 
+ Purpose: Return list of direcories matching 'pattern' from the 'path' location
+ 
+ Input:
+ char  *path             Name of a file in file system to check
+ char  *pattern          pattern string (wildcard allowed)
+ 
+ Output:
+ char  **plist           pointer to the lfile list
+ 
+ Function value:
+ int                     Number of files matching request
+ 
+ \********************************************************************/
+{
+   int i;
+#ifdef OS_UNIX
+   DIR *dir_pointer;
+   struct dirent *dp;
+   
+   if ((dir_pointer = opendir(path)) == NULL)
+      return 0;
+   *plist = (char *) malloc(MAX_STRING_LENGTH);
+   i = 0;
+   for (dp = readdir(dir_pointer); dp != NULL; dp = readdir(dir_pointer)) {
+      if (fnmatch(pattern, dp->d_name, 0) == 0 && dp->d_type == DT_DIR) {
+         *plist = (char *) realloc(*plist, (i + 1) * MAX_STRING_LENGTH);
+         strncpy(*plist + (i * MAX_STRING_LENGTH), dp->d_name, strlen(dp->d_name));
+         *(*plist + (i * MAX_STRING_LENGTH) + strlen(dp->d_name)) = '\0';
+         i++;
+         seekdir(dir_pointer, telldir(dir_pointer));
+      }
+   }
+   closedir(dir_pointer);
+#endif
+#ifdef OS_WINNT
+   char str[255];
+   int first;
+   
    strcpy(str, path);
    strcat(str, "\\");
    strcat(str, pattern);
