@@ -17,6 +17,7 @@ const char *mhttpd_svn_revision = "$Rev$";
 #include <algorithm>
 #include "midas.h"
 #include "msystem.h"
+#include "mxml.h"
 extern "C" {
 #include "mgd.h"
 }
@@ -1276,9 +1277,9 @@ void show_status_page(int refresh, const char *cookie_wpwd)
    rsprintf("<tr><td colspan=6 bgcolor=#C0C0C0>\n");
 
 #ifdef HAVE_MSCB
-   strlcpy(str, "Start, Pause, ODB, Messages, ELog, Alarms, Programs, History, MSCB, Config, Help", sizeof(str));
+   strlcpy(str, "Start, Pause, ODB, Messages, ELog, Alarms, Programs, History, MSCB, Sequencer, Config, Help", sizeof(str));
 #else
-   strlcpy(str, "Start, Pause, ODB, Messages, ELog, Alarms, Programs, History, Config, Help", sizeof(str));
+   strlcpy(str, "Start, Pause, ODB, Messages, ELog, Alarms, Programs, History, Sequencer, Config, Help", sizeof(str));
 #endif
    size = sizeof(str);
    db_get_value(hDB, 0, "/Experiment/Menu Buttons", str, &size, TID_STRING, TRUE);
@@ -2131,6 +2132,38 @@ void strencode3(char *text)
          break;
       default:
          rsprintf("%c", text[i]);
+      }
+   }
+}
+
+/*------------------------------------------------------------------*/
+
+void strencode4(char *text)
+{
+   int i;
+   
+   for (i = 0; i < (int) strlen(text); i++) {
+      switch (text[i]) {
+         case '\n':
+            rsprintf("<br>\n");
+            break;
+         case '<':
+            rsprintf("&lt;");
+            break;
+         case '>':
+            rsprintf("&gt;");
+            break;
+         case '&':
+            rsprintf("&amp;");
+            break;
+         case '\"':
+            rsprintf("&quot;");
+            break;
+         case ' ':
+            rsprintf("&nbsp;");
+            break;
+         default:
+            rsprintf("%c", text[i]);
       }
    }
 }
@@ -8596,6 +8629,270 @@ void show_config_page(int refresh)
 
 /*------------------------------------------------------------------*/
 
+typedef struct {
+   char  path[256];
+   char  filename[256];
+   BOOL  running;
+   int   line_number;
+   BOOL  stop_after_run;
+   BOOL  stop_now;
+   float loop_progress;
+   float run_progress;
+} SEQUENCER;
+
+#define SEQUENCER_STR(_name) const char *_name[] = {\
+"[.]",\
+"Path = STRING : [256] ",\
+"Filename = STRING : [256] ",\
+"Running = BOOL : 0",\
+"Line number = INT : 0",\
+"Stop after run = BOOL : 0",\
+"Stop now = BOOL : 0",\
+"Loop progress = FLOAT : 0",\
+"Run progress = FLOAT : 0",\
+"",\
+NULL}
+
+void show_seq_page()
+{
+   INT i, size, status, n;
+   HNDLE hDB;
+   char str[256], path[256], dir[256], error[256], comment[256], filename[256];
+   time_t now;
+   char *flist = NULL, *pc;
+   PMXML_NODE pr, pn;
+   FILE *f;
+   HNDLE hKey;
+   
+   SEQUENCER_STR(sequencer_str);
+   SEQUENCER seq;
+
+   cm_get_experiment_database(&hDB, NULL);
+   
+   /*---- check for sequencer record ----*/
+   status = db_check_record(hDB, 0, "/Sequencer", strcomb(sequencer_str), TRUE);
+   if (status == DB_STRUCT_MISMATCH) {
+      cm_msg(MERROR, "show_seq_page", "Aborting on mismatching /Sequencer structure");
+      cm_disconnect_experiment();
+      abort();
+   }
+   db_find_key(hDB, 0, "/Sequencer", &hKey);
+   size = sizeof(seq);
+   db_get_record(hDB, hKey, &seq, &size, 0);
+   if (seq.path[0] == 0) {
+      getcwd(seq.path, sizeof(seq.path));
+      strlcat(seq.path, DIR_SEPARATOR_STR, sizeof(seq.path));
+      db_set_record(hDB, hKey, &seq, sizeof(seq), 0);
+   }
+   if (strlen(seq.path)>0 && seq.path[strlen(seq.path)-1] != DIR_SEPARATOR) {
+      strlcat(seq.path, DIR_SEPARATOR_STR, sizeof(seq.path));
+      db_set_record(hDB, hKey, &seq, sizeof(seq), 0);
+   }
+
+   /*---- load XML file ----*/
+   if (equal_ustring(getparam("cmd"), "Load")) {
+      if (isparam("dir"))
+         strlcpy(filename, getparam("dir"), sizeof(filename));
+      else
+         filename[0] = 0;
+      if (isparam("fs"))
+         strlcat(filename, getparam("fs"), sizeof(filename));
+      
+      db_set_value(hDB, 0, "/Sequencer/Filename", filename, sizeof(filename), 1, TID_STRING); 
+      redirect("");
+   }
+
+   /*---- start script ----*/
+   if (equal_ustring(getparam("cmd"), "Start Script")) {
+      seq.running = TRUE;
+      seq.run_progress = 0;
+      seq.loop_progress = 0;
+      db_set_record(hDB, hKey, &seq, sizeof(seq), 0);
+      redirect("");
+   }
+   
+   /*---- stop after current run ----*/
+   if (equal_ustring(getparam("cmd"), "Stop after current run")) {
+      seq.stop_after_run = TRUE;
+      db_set_record(hDB, hKey, &seq, sizeof(seq), 0);
+      redirect("");
+   }
+   if (equal_ustring(getparam("cmd"), "Cancel 'Stop after current run'")) {
+      seq.stop_after_run = FALSE;
+      db_set_record(hDB, hKey, &seq, sizeof(seq), 0);
+      redirect("");
+   }
+   if (equal_ustring(getparam("cmd"), "Stop immediately")) {
+      seq.stop_after_run = FALSE;
+      seq.stop_now = TRUE;
+      db_set_record(hDB, hKey, &seq, sizeof(seq), 0);
+      redirect("");
+   }
+
+   /* header */
+   rsprintf("HTTP/1.0 200 Document follows\r\n");
+   rsprintf("Server: MIDAS HTTP %d\r\n", mhttpd_revision());
+   rsprintf("Content-Type: text/html; charset=iso-8859-1\r\n\r\n");
+   
+   rsprintf("<html><head>\n");
+   rsprintf("<link rel=\"icon\" href=\"favicon.png\" type=\"image/png\" />\n");
+   rsprintf("<link rel=\"stylesheet\" href=\"mhttpd.css\" type=\"text/css\" />\n");
+   rsprintf("<title>Sequencer</title></head>\n");
+   rsprintf("<body>\n");
+   
+   /* title row */
+   size = sizeof(str);
+   str[0] = 0;
+   db_get_value(hDB, 0, "/Experiment/Name", str, &size, TID_STRING, TRUE);
+   time(&now);
+   
+   rsprintf("<form name=\"form1\" method=\"GET\" action=\".\">\n");
+   
+   rsprintf("<table border=3 cellpadding=2>\n");
+   rsprintf("<tr><th bgcolor=#A0A0FF>MIDAS experiment \"%s\"", str);
+   rsprintf("<th bgcolor=#A0A0FF>%s</tr>\n", ctime(&now));
+   
+   /*---- menu buttons ----*/
+   
+   rsprintf("<tr>\n");
+   rsprintf("<td colspan=2 bgcolor=#C0C0C0>\n");
+   
+   if (seq.running) {
+      if (seq.stop_after_run)
+         rsprintf("<input type=submit name=cmd value=\"Cancel 'Stop after current run'\">\n");
+      else
+         rsprintf("<input type=submit name=cmd value=\"Stop after current run\">\n");
+      rsprintf("<input type=submit name=cmd value=\"Stop immediately\">\n");
+   } else {
+      rsprintf("<input type=submit name=cmd value=\"Load Script\">\n");
+      rsprintf("<input type=submit name=cmd value=\"Start Script\">\n");
+   }
+   rsprintf("<input type=submit name=cmd value=Status>\n");
+   
+   rsprintf("</tr>\n");
+   
+   /*---- file selector ----*/
+   
+   if (equal_ustring(getparam("cmd"), "Load Script") || isparam("fs")) {
+      rsprintf("<tr><td align=center colspan=2 bgcolor=#FFFFFF>\n");
+      rsprintf("<b>Select a sequence file:</b><br>\n");
+      rsprintf("<select name=\"fs\" size=20 style=\"width:300\">\n");
+      
+      if (isparam("dir"))
+         strlcpy(dir, getparam("dir"), sizeof(dir));
+      else
+         dir[0] = 0;
+      strlcpy(path, seq.path, sizeof(path));
+      
+      if (isparam("fs")) {
+         strlcpy(str, getparam("fs"), sizeof(str));
+         if (str[0] == '[') {
+            strcpy(str, str+1);
+            str[strlen(str)-1] = 0;
+         }
+         if (equal_ustring(str, "..")) {
+            pc = dir+strlen(dir)-1;
+            if (pc > dir && *pc == '/')
+               *(pc--) = 0;
+            while (pc >= dir && *pc != '/')
+               *(pc--) = 0;
+         } else {
+            strlcat(dir, str, sizeof(dir));
+            strlcat(dir, DIR_SEPARATOR_STR, sizeof(dir));
+         }
+      }
+      strlcat(path, dir, sizeof(path));
+      
+      /*---- go over subdirectories ----*/
+      n = ss_dir_find(path, (char *)"*", &flist);     
+      if (dir[0])
+         rsprintf("<option onClick=\"document.form1.submit()\">[..]</option>\n");
+      for (i=0 ; i<n ; i++) {
+         if (flist[i*MAX_STRING_LENGTH] != '.')
+            rsprintf("<option onClick=\"document.form1.submit()\">[%s]</option>\n", flist+i*MAX_STRING_LENGTH);
+      }
+      
+      /*---- go over XML files in sequencer directory ----*/
+      n = ss_file_find(path, (char *)"*.xml", &flist);
+      for (i=0 ; i<n ; i++) {
+         strlcpy(str, path, sizeof(str));
+         strlcat(str, flist+i*MAX_STRING_LENGTH, sizeof(str));
+         comment[0] = 0;
+         pr = mxml_parse_file(str, error, sizeof(error));
+         if (error[0])
+            sprintf(comment, "Error in XML: %s", error);
+         else {
+            if (pr) {
+               pn = mxml_find_node(pr, "RunSequence/Comment");
+               if (pn)
+                  strlcpy(comment, mxml_get_value(pn), sizeof(comment));
+               else
+                  strcpy(comment, "<No description in XML file>");
+            }
+         }
+         if (pr)
+            mxml_free_tree(pr);
+         
+         rsprintf("<option onClick=\"document.getElementById('cmnt').innerHTML='%s'\">%s</option>\n", comment, flist+i*MAX_STRING_LENGTH);
+      }
+      
+      free(flist);
+      rsprintf("</select>\n");
+      rsprintf("<input type=hidden name=dir value=\"%s\">", dir);
+      rsprintf("</td></tr>\n");
+      
+      rsprintf("<tr><td align=center colspan=2 id=\"cmnt\">&nbsp;</td></tr>\n");
+      rsprintf("<tr><td align=center colspan=2>\n");
+      rsprintf("<input type=submit name=cmd value=\"Load\">\n");
+      rsprintf("<input type=submit name=cmd value=\"Cancel\">\n");
+      rsprintf("</td></tr>\n");
+   }
+            
+   /*---- show XML file ----*/
+   
+   else {
+      if (seq.filename[0]) {
+         if (seq.loop_progress > 0) {
+            rsprintf("<tr><td colspan=2>\n");
+            rsprintf("<table width=\"100%%\"><tr><td>Loop:</td><td width=\"100%%\"><table width=\"%d%%\" height=\"25\">\n", (int)(seq.loop_progress*100+0.5));
+            rsprintf("<tr><td style=\"background-color:#80FF80;border:2px solid #00FF00;border-top:2px solid #E0FFE0;border-left:2px solid #E0FFE0;\">&nbsp;\n");
+            rsprintf("</td></tr></table></td></tr></table></td></tr>\n");
+         }
+         if (seq.running) {
+            rsprintf("<tr><td colspan=2>\n");
+            rsprintf("<table width=\"100%%\"><tr><td>Run:</td><td width=\"100%%\"><table width=\"%d%%\" height=\"25\">\n", (int)(seq.run_progress*100+0.5));
+            rsprintf("<tr><td style=\"background-color:#8080FF;border:2px solid #0000FF;border-top:2px solid #E0E0FF;border-left:2px solid #E0E0FF;\">&nbsp;\n");
+            rsprintf("</td></tr></table></td></tr></table></td></tr>\n");
+         }
+         strlcpy(str, seq.path, sizeof(str));
+         strlcat(str, seq.filename, sizeof(str));
+         f = fopen(str, "rt");
+         if (f) {
+            rsprintf("<tr><td colspan=2>Filename:<b>%s</b></td></tr>\n", seq.filename);
+            rsprintf("<tr><td colspan=2>\n");
+            for (int line=0 ; !feof(f) ; line++) {
+               fgets(str, sizeof(str), f);
+               if (line == seq.line_number)
+                  rsprintf("<font style=\"font-family:monospace;font-weight:bold;color:white;background-color:blue;weight:bold\">");
+               else
+                  rsprintf("<font style=\"font-family:monospace\">");
+               strencode4(str);
+               rsprintf("</font>");
+            }
+            rsprintf("</tr></td>\n");
+            fclose(f);
+         }
+      } else {
+         rsprintf("<tr><td colspan=2><b>No script loaded</b></td></tr>\n");
+      }
+   }
+
+   rsprintf("</table>\n");
+   rsprintf("</form></body></html>\r\n");
+}
+
+/*------------------------------------------------------------------*/
+
 #define LN10 2.302585094
 #define LOG2 0.301029996
 #define LOG5 0.698970005
@@ -8633,16 +8930,13 @@ void haxis(gdImagePtr im, gdFont * font, int col, int gcol,
    if (xmin == 0)
       n_sig1 = 0;
    else
-      n_sig1 =
-          (int) floor(log(fabs(xmin)) / LN10) - (int) floor(log(fabs(label_dx)) / LN10) +
-          1;
+      n_sig1 = (int) floor(log(fabs(xmin)) / LN10) - (int) floor(log(fabs(label_dx)) / LN10) + 1;
 
    if (xmax == 0)
       n_sig2 = 0;
    else
       n_sig2 =
-          (int) floor(log(fabs(xmax)) / LN10) - (int) floor(log(fabs(label_dx)) / LN10) +
-          1;
+         (int) floor(log(fabs(xmax)) / LN10) - (int) floor(log(fabs(label_dx)) / LN10) + 1;
 
    n_sig1 = MAX(n_sig1, n_sig2);
    n_sig1 = MAX(n_sig1, 4);
@@ -13459,6 +13753,23 @@ void interprete(const char *cookie_pwd, const char *cookie_wpwd, const char *coo
       return;
    }
 
+   /*---- sequencer page --------------------------------------------*/
+
+   if (equal_ustring(command, "sequencer")) {
+      str[0] = 0;
+      for (p=dec_path ; *p ; p++)
+         if (*p == '/')
+            strlcat(str, "../", sizeof(str));
+      strlcat(str, "SEQ/", sizeof(str));
+      redirect(str);
+      return;
+   }
+
+   if (strncmp(path, "SEQ/", 4) == 0) {
+      show_seq_page();
+      return;
+   }
+   
    /*---- custom page -----------------------------------------------*/
 
    if (strncmp(path, "CS/", 3) == 0) {
