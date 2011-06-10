@@ -13,6 +13,7 @@
 #include <sys/time.h>
 #include "ov1720drv.h"
 
+#define LARGE_NUMBER 10000000
 // Buffer organization map for number of samples
 uint32_t V1720_NSAMPLES_MODE[11] = { (1<<20), (1<<19), (1<<18), (1<<17), (1<<16), (1<<15)
               ,(1<<14), (1<<13), (1<<12), (1<<11), (1<<10)};
@@ -295,17 +296,17 @@ int main (int argc, char* argv[]) {
 
   CAENComm_ErrorCode sCAEN;
   int handle[2];
-  int nw, l, d, h, Nh;
-  uint32_t i, lcount, data[10000], temp, lam;
+  int nw, l=0, d=0, h=0, Nh;
+  uint32_t i, lcount, data[50000], temp, lam;
   int Nmodulo=10;
-  int wcount = 0, tcount=0;
+  int tcount=0, eloop=0;
   uint32_t   *pdata, eStored, eSize;
   int loop, Nloop=10;
   int bshowData=0;
   int debug = 0;
   uint32_t pct=0, ct;
   struct timeval t1;
-  int   dt1;
+  int   dt1, savelcount=0;
 
    /* get parameters */
    /* parse command line parameters */
@@ -319,11 +320,17 @@ int main (int argc, char* argv[]) {
 	goto usage;
       if (strncmp(argv[i], "-l", 2) == 0)
 	Nloop =  (atoi(argv[++i]));
+      else if (strncmp(argv[i], "-o", 2) == 0)
+	l =  (atoi(argv[++i]));
+      else if (strncmp(argv[i], "-b", 2) == 0)
+	d =  (atoi(argv[++i]));
       else if (strncmp(argv[i], "-m", 2) == 0)
 	Nmodulo =  (atoi(argv[++i]));
     } else {
     usage:
       printf("usage: ov1720 -l (loop count) \n");
+      printf("              -o link#\n");
+      printf("              -b board#\n");
       printf("              -m modulo display\n");
       printf("              -s show data\n\n");
       return 0;
@@ -332,6 +339,22 @@ int main (int argc, char* argv[]) {
   
   printf("in ov1720\n");
   
+#if 1
+  //
+  // Open devices
+  sCAEN = CAENComm_OpenDevice(CAENComm_PCIE_OpticalLink, l, d, 0, &(handle[h])); 
+  if (sCAEN != CAENComm_Success) {
+    handle[h] = -1;
+    printf("CAENComm_OpenDevice [l:%d, d:%d]: Error %d\n", l, d, sCAEN);
+  } else {
+    printf("Device found : Link:%d  Daisy:%d Handle[%d]:%d\n", l, d, h, handle[h]);
+    sCAEN = ov1720_Status(handle[h]);
+    h++;
+  }
+  Nh = h;
+  printf("Handles opened (%d)\n", Nh);
+#endif
+#if 0
   //
   // Open devices
   for (h=0, l=0;l<1;l++) {
@@ -350,7 +373,7 @@ int main (int argc, char* argv[]) {
   }
   Nh = h;
   printf("Handles opened (%d)\n", Nh);
-
+#endif
 #if 1
   for (h=0;h<Nh;h++) {
     sCAEN = CAENComm_Write32(handle[h], V1720_SW_RESET              , 0);
@@ -360,7 +383,7 @@ int main (int argc, char* argv[]) {
     sCAEN = CAENComm_Write32(handle[h], V1720_BUFFER_ORGANIZATION   , 0xa);
     sCAEN = CAENComm_Write32(handle[h], V1720_CHANNEL_EN_MASK       , 0x3);
     sCAEN = CAENComm_Write32(handle[h], V1720_TRIG_SRCE_EN_MASK     , 0x40000003);
-
+    sCAEN = CAENComm_Write32(handle[h], V1720_MONITOR_MODE          , 0x3);  // buffer occupancy
     // 
     // Set Channel threshold
     for (i=0;i<8;i++) {
@@ -385,32 +408,32 @@ int main (int argc, char* argv[]) {
   for (h=0;h<Nh;h++) {
     if (handle[h] < 0) continue;   // Skip unconnected board
     // Start run then wait for trigger
+    sCAEN = CAENComm_Write32(handle[h], V1720_SW_CLEAR, 0);
+    sleep(1);
     ov1720_AcqCtl(handle[h], V1720_RUN_START);
   }  
   
   printf("Modules started\n");
  
   for (loop=0;loop<Nloop;loop++) {
-
     do {
       sCAEN = CAENComm_Read32(handle[0], V1720_VME_STATUS, &lam);
       //    printf("lam:%x, sCAEN:%d\n",lam, sCAEN);
       lam &= 0x1;
     } while (lam == 0);
-    
-    //    printf(">> Lam %d found on Modules 0\n", loop);
-    
-    for (h=0; h<Nh; h++) {
 
+    // Read all modules
+    for (h=0; h<Nh; h++) {
+      // Skip unconnected devices
       if (handle[h] < 0) continue;   // Skip unconnected board
       
       // Check if data ready
-      lcount=10000000;
+      lcount=LARGE_NUMBER;
       do {
 	sCAEN = CAENComm_Read32(handle[h], V1720_VME_STATUS, &lam);
 	lam &= 0x1;
       } while ((lam==0) && (lcount--));
-      
+      if (h==1) savelcount = LARGE_NUMBER - lcount;
       if (lcount == 0) {
 	printf("timeout on LAM for module %d\n", h);
 	goto out;
@@ -420,25 +443,26 @@ int main (int argc, char* argv[]) {
       sCAEN = CAENComm_Read32(handle[h], V1720_EVENT_SIZE, &eSize);
       
       // Some info display
-      if ((h==1) && ((loop % Nmodulo) == 0)) {
+      if ((h==0) && ((loop % Nmodulo) == 0)) {
 	gettimeofday(&t1, NULL);
 	ct = t1.tv_sec * 1e6 + t1.tv_usec;
 	dt1 = ct-pct;
 	pct = ct;
-	printf("B:%02d Hndle:%d sCAEN:%d Evt#:%d Event Stored:0x%x Event Size:0x%x KB/s:%6.2f\n"
-	       , h, handle[h], sCAEN, loop, eStored, eSize, (float) 1e3*tcount/dt1);
+	printf("B:%02d Hndle:%d sCAEN:%d Evt#:%d Event Stored:0x%x Event Size:0x%x try:%d KB/s:%6.2f BLTl:%d\n"
+	       , h, handle[h], sCAEN, loop, eStored, eSize, savelcount, (float) 1e3*tcount/dt1, eloop);
 	tcount = 0;
       }
       
       // Read data
       pdata = &data[0];
-      wcount = 0;
+      eloop = 0;
       do {
-	sCAEN = CAENComm_BLTRead(handle[h], V1720_EVENT_READOUT_BUFFER, pdata, eSize, &nw);
-	wcount += nw;
-	tcount += nw;
+	sCAEN = CAENComm_BLTRead(handle[h], V1720_EVENT_READOUT_BUFFER, pdata, eSize < 1028 ? eSize : 1028, &nw);
+	eSize -= nw;
 	pdata += nw;
-      } while (nw!=0 && wcount<10000);
+	tcount += nw;  // debugging
+	eloop++;       // debugging
+      } while (eSize);
       
       if (bshowData) printf("Module:%d nw:%d data: 0x%8.8x 0x%8.8x 0x%8.8x 0x%8.8x 0x%8.8x 0x%8.8x 0x%8.8x 0x%8.8x\n"
 			    ,h , nw, data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7]);
