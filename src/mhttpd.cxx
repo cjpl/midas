@@ -8634,9 +8634,9 @@ typedef struct {
    char  filename[256];
    char  xmlerror[256];
    BOOL  running;
-   int   line_number;
+   int   current_line_number;
    BOOL  stop_after_run;
-   BOOL  stop_now;
+   int   loop_counter;
    float loop_progress;
    float run_progress;
 } SEQUENCER;
@@ -8647,31 +8647,26 @@ typedef struct {
 "Filename = STRING : [256] ",\
 "XMLError = STRING : [256] ",\
 "Running = BOOL : 0",\
-"Line number = INT : 0",\
+"Current Line number = INT : 0",\
 "Stop after run = BOOL : 0",\
-"Stop now = BOOL : 0",\
+"Loop counter = INT : 0",\
 "Loop progress = FLOAT : 0",\
 "Run progress = FLOAT : 0",\
 "",\
 NULL}
 
-void show_seq_page()
-{
-   INT i, size, status, n, errorline;
-   HNDLE hDB;
-   char str[256], path[256], dir[256], error[256], comment[256], filename[256];
-   time_t now;
-   char *flist = NULL, *pc;
-   PMXML_NODE pr, pn;
-   FILE *f;
-   HNDLE hKey;
-   
-   SEQUENCER_STR(sequencer_str);
-   SEQUENCER seq;
+SEQUENCER_STR(sequencer_str);
+SEQUENCER seq;
+PMXML_NODE xseq = NULL;
 
-   cm_get_experiment_database(&hDB, NULL);
+void init_sequencer()
+{
+   int status, size;
+   HNDLE hDB;
+   HNDLE hKey;
+   char str[256];
    
-   /*---- check for sequencer record ----*/
+   cm_get_experiment_database(&hDB, NULL);
    status = db_check_record(hDB, 0, "/Sequencer", strcomb(sequencer_str), TRUE);
    if (status == DB_STRUCT_MISMATCH) {
       cm_msg(MERROR, "show_seq_page", "Aborting on mismatching /Sequencer structure");
@@ -8680,7 +8675,7 @@ void show_seq_page()
    }
    db_find_key(hDB, 0, "/Sequencer", &hKey);
    size = sizeof(seq);
-   db_get_record(hDB, hKey, &seq, &size, 0);
+   db_open_record(hDB, hKey, &seq, sizeof(seq), MODE_READ, NULL, NULL);
    if (seq.path[0] == 0) {
       getcwd(seq.path, sizeof(seq.path));
       strlcat(seq.path, DIR_SEPARATOR_STR, sizeof(seq.path));
@@ -8690,6 +8685,35 @@ void show_seq_page()
       strlcat(seq.path, DIR_SEPARATOR_STR, sizeof(seq.path));
       db_set_record(hDB, hKey, &seq, sizeof(seq), 0);
    }
+
+   if (seq.filename[0]) {
+      strlcpy(str, seq.path, sizeof(str));
+      strlcat(str, seq.filename, sizeof(str));
+      seq.xmlerror[0] = 0;
+      if (xseq) {
+         mxml_free_tree(xseq);
+         xseq = NULL;
+      }
+      xseq = mxml_parse_file(str, seq.xmlerror, sizeof(seq.xmlerror));
+   }
+}
+
+/*------------------------------------------------------------------*/
+
+void show_seq_page()
+{
+   INT i, size, n, errorline;
+   HNDLE hDB;
+   char str[256], path[256], dir[256], error[256], comment[256], filename[256];
+   time_t now;
+   char *flist = NULL, *pc;
+   PMXML_NODE pn;
+   FILE *f;
+   HNDLE hKey;
+   
+   cm_get_experiment_database(&hDB, NULL);
+   db_find_key(hDB, 0, "/Sequencer", &hKey);
+   assert(hKey);
 
    /*---- load XML file ----*/
    if (equal_ustring(getparam("cmd"), "Load")) {
@@ -8703,7 +8727,11 @@ void show_seq_page()
       strlcpy(str, seq.path, sizeof(str));
       strlcat(str, seq.filename, sizeof(str));
       seq.xmlerror[0] = 0;
-      pr = mxml_parse_file(str, seq.xmlerror, sizeof(seq.xmlerror));
+      if (xseq) {
+         mxml_free_tree(xseq);
+         xseq = NULL;
+      }
+      xseq = mxml_parse_file(str, seq.xmlerror, sizeof(seq.xmlerror));
       db_set_record(hDB, hKey, &seq, sizeof(seq), 0);
       redirect("");
       return;
@@ -8714,6 +8742,7 @@ void show_seq_page()
       seq.running = TRUE;
       seq.run_progress = 0;
       seq.loop_progress = 0;
+      seq.current_line_number = 1;
       db_set_record(hDB, hKey, &seq, sizeof(seq), 0);
       redirect("");
       return;
@@ -8731,7 +8760,11 @@ void show_seq_page()
       strlcpy(str, seq.path, sizeof(str));
       strlcat(str, seq.filename, sizeof(str));
       seq.xmlerror[0] = 0;
-      pr = mxml_parse_file(str, seq.xmlerror, sizeof(seq.xmlerror));
+      if (xseq) {
+         mxml_free_tree(xseq);
+         xseq = NULL;
+      }
+      xseq = mxml_parse_file(str, seq.xmlerror, sizeof(seq.xmlerror));
       db_set_record(hDB, hKey, &seq, sizeof(seq), 0);
       redirect("");
       return;
@@ -8750,9 +8783,13 @@ void show_seq_page()
       redirect("");
       return;
    }
+
+   /*---- stop immediately ----*/
    if (equal_ustring(getparam("cmd"), "Stop immediately")) {
+      seq.running = FALSE;
+      seq.run_progress = 0;
+      seq.loop_progress = 0;
       seq.stop_after_run = FALSE;
-      seq.stop_now = TRUE;
       db_set_record(hDB, hKey, &seq, sizeof(seq), 0);
       redirect("");
       return;
@@ -8783,24 +8820,37 @@ void show_seq_page()
    
    /*---- menu buttons ----*/
    
-   rsprintf("<tr>\n");
-   rsprintf("<td colspan=2 bgcolor=#C0C0C0>\n");
-   
-   if (seq.running) {
-      if (seq.stop_after_run)
-         rsprintf("<input type=submit name=cmd value=\"Cancel 'Stop after current run'\">\n");
-      else
-         rsprintf("<input type=submit name=cmd value=\"Stop after current run\">\n");
-      rsprintf("<input type=submit name=cmd value=\"Stop immediately\">\n");
-   } else {
-      rsprintf("<input type=submit name=cmd value=\"Load Script\">\n");
-      rsprintf("<input type=submit name=cmd value=\"Start Script\">\n");
+   if (!equal_ustring(getparam("cmd"), "Load Script") && !isparam("fs")) {
+      rsprintf("<tr>\n");
+      rsprintf("<td colspan=2 bgcolor=#C0C0C0>\n");
+      
+      if (seq.running) {
+         if (seq.stop_after_run)
+            rsprintf("<input type=submit name=cmd value=\"Cancel 'Stop after current run'\">\n");
+         else
+            rsprintf("<input type=submit name=cmd value=\"Stop after current run\">\n");
+
+         rsprintf("<script type=\"text/javascript\">\n");
+         rsprintf("<!--\n");
+         rsprintf("function stop_immediately()\n");
+         rsprintf("{\n");
+         rsprintf("   flag = confirm('Are you sure to stop the script immediately?');\n");
+         rsprintf("   if (flag == true)\n");
+         rsprintf("      window.location.href = '?cmd=Stop immediately';\n");
+         rsprintf("}\n");
+         rsprintf("//-->\n");
+         rsprintf("</script>\n");
+         rsprintf("<input type=button onClick=\"stop_immediately()\" value=\"Stop immediately\"");
+      } else {
+         rsprintf("<input type=submit name=cmd value=\"Load Script\">\n");
+         rsprintf("<input type=submit name=cmd value=\"Start Script\">\n");
+      }
+      if (seq.filename[0] && !seq.running && !equal_ustring(getparam("cmd"), "Load Script") && !isparam("fs"))
+         rsprintf("<input type=submit name=cmd value=\"Edit Script\">\n");
+      rsprintf("<input type=submit name=cmd value=Status>\n");
+      
+      rsprintf("</tr>\n");
    }
-   if (seq.filename[0] && !seq.running && !equal_ustring(getparam("cmd"), "Load Script") && !isparam("fs"))
-      rsprintf("<input type=submit name=cmd value=\"Edit Script\">\n");
-   rsprintf("<input type=submit name=cmd value=Status>\n");
-   
-   rsprintf("</tr>\n");
    
    /*---- file selector ----*/
    
@@ -8849,20 +8899,26 @@ void show_seq_page()
          strlcpy(str, path, sizeof(str));
          strlcat(str, flist+i*MAX_STRING_LENGTH, sizeof(str));
          comment[0] = 0;
-         pr = mxml_parse_file(str, error, sizeof(error));
+         if (xseq) {
+            mxml_free_tree(xseq);
+            xseq = NULL;
+         }
+         xseq = mxml_parse_file(str, error, sizeof(error));
          if (error[0])
             sprintf(comment, "Error in XML: %s", error);
          else {
-            if (pr) {
-               pn = mxml_find_node(pr, "RunSequence/Comment");
+            if (xseq) {
+               pn = mxml_find_node(xseq, "RunSequence/Comment");
                if (pn)
                   strlcpy(comment, mxml_get_value(pn), sizeof(comment));
                else
                   strcpy(comment, "<No description in XML file>");
             }
          }
-         if (pr)
-            mxml_free_tree(pr);
+         if (xseq) {
+            mxml_free_tree(xseq);
+            xseq = NULL;
+         }
          
          rsprintf("<option onClick=\"document.getElementById('cmnt').innerHTML='%s'\">%s</option>\n", comment, flist+i*MAX_STRING_LENGTH);
       }
@@ -8928,13 +8984,13 @@ void show_seq_page()
                   errorline = atoi(seq.xmlerror+21);
                }
                rsprintf("<tr><td colspan=2>\n");
-               for (int line=0 ; !feof(f) ; line++) {
+               for (int line=1 ; !feof(f) ; line++) {
                   str[0] = 0;
                   fgets(str, sizeof(str), f);
                   if (str[0]) {
-                     if (line == errorline-1)
+                     if (line == errorline)
                         rsprintf("<font style=\"font-family:monospace;font-weight:bold;color:white;background-color:red;weight:bold\">");
-                     else if (line == seq.line_number)
+                     else if (seq.running && line == seq.current_line_number)
                         rsprintf("<font style=\"font-family:monospace;font-weight:bold;color:white;background-color:blue;weight:bold\">");
                      else
                         rsprintf("<font style=\"font-family:monospace\">");
@@ -8953,6 +9009,28 @@ void show_seq_page()
 
    rsprintf("</table>\n");
    rsprintf("</form></body></html>\r\n");
+}
+
+/*------------------------------------------------------------------*/
+
+void sequencer()
+{
+   PMXML_NODE pn;
+   
+   if (!seq.running || xseq == NULL)
+      return;
+   
+   /* find node belonging to current line */
+   pn = mxml_get_node_at_line(xseq, seq.current_line_number);
+   if (!pn)
+      return;
+   
+   printf("%d %s\n", seq.current_line_number, mxml_get_name(pn));
+   
+   if (equal_ustring(mxml_get_name(pn), "ODBSet")) {
+      
+   } else
+      seq.current_line_number++;
 }
 
 /*------------------------------------------------------------------*/
@@ -14450,6 +14528,9 @@ void server_loop()
       status = cm_yield(0);
       if (status == RPC_SHUTDOWN)
          break;
+      
+      /* call sequencer periodically */
+      sequencer();
 
    } while (!_abort);
 
@@ -14542,6 +14623,9 @@ int main(int argc, char *argv[])
    /* redirect message display, turn on message logging */
    cm_set_msg_print(MT_ALL, MT_ALL, print_message);
 
+   /* initialize sequencer */
+   init_sequencer();
+   
    server_loop();
 
    return 0;
