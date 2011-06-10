@@ -8632,6 +8632,7 @@ void show_config_page(int refresh)
 typedef struct {
    char  path[256];
    char  filename[256];
+   char  xmlerror[256];
    BOOL  running;
    int   line_number;
    BOOL  stop_after_run;
@@ -8644,6 +8645,7 @@ typedef struct {
 "[.]",\
 "Path = STRING : [256] ",\
 "Filename = STRING : [256] ",\
+"XMLError = STRING : [256] ",\
 "Running = BOOL : 0",\
 "Line number = INT : 0",\
 "Stop after run = BOOL : 0",\
@@ -8655,7 +8657,7 @@ NULL}
 
 void show_seq_page()
 {
-   INT i, size, status, n;
+   INT i, size, status, n, errorline;
    HNDLE hDB;
    char str[256], path[256], dir[256], error[256], comment[256], filename[256];
    time_t now;
@@ -8692,14 +8694,19 @@ void show_seq_page()
    /*---- load XML file ----*/
    if (equal_ustring(getparam("cmd"), "Load")) {
       if (isparam("dir"))
-         strlcpy(filename, getparam("dir"), sizeof(filename));
+         strlcpy(seq.filename, getparam("dir"), sizeof(seq.filename));
       else
          filename[0] = 0;
       if (isparam("fs"))
-         strlcat(filename, getparam("fs"), sizeof(filename));
+         strlcat(seq.filename, getparam("fs"), sizeof(seq.filename));
       
-      db_set_value(hDB, 0, "/Sequencer/Filename", filename, sizeof(filename), 1, TID_STRING); 
+      strlcpy(str, seq.path, sizeof(str));
+      strlcat(str, seq.filename, sizeof(str));
+      seq.xmlerror[0] = 0;
+      pr = mxml_parse_file(str, seq.xmlerror, sizeof(seq.xmlerror));
+      db_set_record(hDB, hKey, &seq, sizeof(seq), 0);
       redirect("");
+      return;
    }
 
    /*---- start script ----*/
@@ -8709,6 +8716,25 @@ void show_seq_page()
       seq.loop_progress = 0;
       db_set_record(hDB, hKey, &seq, sizeof(seq), 0);
       redirect("");
+      return;
+   }
+   
+   /*---- save script ----*/
+   if (equal_ustring(getparam("cmd"), "Save")) {
+      strlcpy(str, seq.path, sizeof(str));
+      strlcat(str, seq.filename, sizeof(str));
+      f = fopen(str, "wt");
+      if (f && isparam("scripttext")) {
+         fwrite(getparam("scripttext"), strlen(getparam("scripttext")), 1, f);
+         fclose(f);
+      }
+      strlcpy(str, seq.path, sizeof(str));
+      strlcat(str, seq.filename, sizeof(str));
+      seq.xmlerror[0] = 0;
+      pr = mxml_parse_file(str, seq.xmlerror, sizeof(seq.xmlerror));
+      db_set_record(hDB, hKey, &seq, sizeof(seq), 0);
+      redirect("");
+      return;
    }
    
    /*---- stop after current run ----*/
@@ -8716,17 +8742,20 @@ void show_seq_page()
       seq.stop_after_run = TRUE;
       db_set_record(hDB, hKey, &seq, sizeof(seq), 0);
       redirect("");
+      return;
    }
    if (equal_ustring(getparam("cmd"), "Cancel 'Stop after current run'")) {
       seq.stop_after_run = FALSE;
       db_set_record(hDB, hKey, &seq, sizeof(seq), 0);
       redirect("");
+      return;
    }
    if (equal_ustring(getparam("cmd"), "Stop immediately")) {
       seq.stop_after_run = FALSE;
       seq.stop_now = TRUE;
       db_set_record(hDB, hKey, &seq, sizeof(seq), 0);
       redirect("");
+      return;
    }
 
    /* header */
@@ -8767,6 +8796,8 @@ void show_seq_page()
       rsprintf("<input type=submit name=cmd value=\"Load Script\">\n");
       rsprintf("<input type=submit name=cmd value=\"Start Script\">\n");
    }
+   if (seq.filename[0] && !seq.running && !equal_ustring(getparam("cmd"), "Load Script") && !isparam("fs"))
+      rsprintf("<input type=submit name=cmd value=\"Edit Script\">\n");
    rsprintf("<input type=submit name=cmd value=Status>\n");
    
    rsprintf("</tr>\n");
@@ -8852,35 +8883,68 @@ void show_seq_page()
    
    else {
       if (seq.filename[0]) {
-         if (seq.loop_progress > 0) {
-            rsprintf("<tr><td colspan=2>\n");
-            rsprintf("<table width=\"100%%\"><tr><td>Loop:</td><td width=\"100%%\"><table width=\"%d%%\" height=\"25\">\n", (int)(seq.loop_progress*100+0.5));
-            rsprintf("<tr><td style=\"background-color:#80FF80;border:2px solid #00FF00;border-top:2px solid #E0FFE0;border-left:2px solid #E0FFE0;\">&nbsp;\n");
-            rsprintf("</td></tr></table></td></tr></table></td></tr>\n");
-         }
-         if (seq.running) {
-            rsprintf("<tr><td colspan=2>\n");
-            rsprintf("<table width=\"100%%\"><tr><td>Run:</td><td width=\"100%%\"><table width=\"%d%%\" height=\"25\">\n", (int)(seq.run_progress*100+0.5));
-            rsprintf("<tr><td style=\"background-color:#8080FF;border:2px solid #0000FF;border-top:2px solid #E0E0FF;border-left:2px solid #E0E0FF;\">&nbsp;\n");
-            rsprintf("</td></tr></table></td></tr></table></td></tr>\n");
-         }
-         strlcpy(str, seq.path, sizeof(str));
-         strlcat(str, seq.filename, sizeof(str));
-         f = fopen(str, "rt");
-         if (f) {
+         if (equal_ustring(getparam("cmd"), "Edit Script")) {
             rsprintf("<tr><td colspan=2>Filename:<b>%s</b></td></tr>\n", seq.filename);
-            rsprintf("<tr><td colspan=2>\n");
-            for (int line=0 ; !feof(f) ; line++) {
-               fgets(str, sizeof(str), f);
-               if (line == seq.line_number)
-                  rsprintf("<font style=\"font-family:monospace;font-weight:bold;color:white;background-color:blue;weight:bold\">");
-               else
-                  rsprintf("<font style=\"font-family:monospace\">");
-               strencode4(str);
-               rsprintf("</font>");
+            rsprintf("<tr><td colspan=2><textarea rows=30 cols=80 name=\"scripttext\">\n");
+            strlcpy(str, seq.path, sizeof(str));
+            strlcat(str, seq.filename, sizeof(str));
+            f = fopen(str, "rt");
+            if (f) {
+               for (int line=0 ; !feof(f) ; line++) {
+                  str[0] = 0;
+                  fgets(str, sizeof(str), f);
+                  rsprintf(str);
+               }
+               fclose(f);
             }
-            rsprintf("</tr></td>\n");
-            fclose(f);
+            rsprintf("</textarea></td></tr>\n");
+            rsprintf("<tr><td align=center colspan=2>\n");
+            rsprintf("<input type=submit name=cmd value=\"Save\">\n");
+            rsprintf("<input type=submit name=cmd value=\"Cancel\">\n");
+            rsprintf("</td></tr>\n");
+         } else {
+            if (seq.loop_progress > 0) {
+               rsprintf("<tr><td colspan=2>\n");
+               rsprintf("<table width=\"100%%\"><tr><td>Loop:</td><td width=\"100%%\"><table width=\"%d%%\" height=\"25\">\n", (int)(seq.loop_progress*100+0.5));
+               rsprintf("<tr><td style=\"background-color:#80FF80;border:2px solid #00FF00;border-top:2px solid #E0FFE0;border-left:2px solid #E0FFE0;\">&nbsp;\n");
+               rsprintf("</td></tr></table></td></tr></table></td></tr>\n");
+            }
+            if (seq.running) {
+               rsprintf("<tr><td colspan=2>\n");
+               rsprintf("<table width=\"100%%\"><tr><td>Run:</td><td width=\"100%%\"><table width=\"%d%%\" height=\"25\">\n", (int)(seq.run_progress*100+0.5));
+               rsprintf("<tr><td style=\"background-color:#8080FF;border:2px solid #0000FF;border-top:2px solid #E0E0FF;border-left:2px solid #E0E0FF;\">&nbsp;\n");
+               rsprintf("</td></tr></table></td></tr></table></td></tr>\n");
+            }
+            strlcpy(str, seq.path, sizeof(str));
+            strlcat(str, seq.filename, sizeof(str));
+            f = fopen(str, "rt");
+            if (f) {
+               rsprintf("<tr><td colspan=2>Filename:<b>%s</b></td></tr>\n", seq.filename);
+               errorline = -1;
+               if (seq.xmlerror[0]) {
+                  rsprintf("<tr><td bgcolor=red colspan=2><b>");
+                  strencode(seq.xmlerror);
+                  rsprintf("</b></td></tr>\n");
+                  errorline = atoi(seq.xmlerror+21);
+               }
+               rsprintf("<tr><td colspan=2>\n");
+               for (int line=0 ; !feof(f) ; line++) {
+                  str[0] = 0;
+                  fgets(str, sizeof(str), f);
+                  if (str[0]) {
+                     if (line == errorline-1)
+                        rsprintf("<font style=\"font-family:monospace;font-weight:bold;color:white;background-color:red;weight:bold\">");
+                     else if (line == seq.line_number)
+                        rsprintf("<font style=\"font-family:monospace;font-weight:bold;color:white;background-color:blue;weight:bold\">");
+                     else
+                        rsprintf("<font style=\"font-family:monospace\">");
+                     strencode4(str);
+                     rsprintf("</font>");
+                  }
+               }
+               rsprintf("</tr></td>\n");
+               fclose(f);
+            }
          }
       } else {
          rsprintf("<tr><td colspan=2><b>No script loaded</b></td></tr>\n");
