@@ -4,7 +4,12 @@
   Created by:   Pierre-A. Amaudruz / K.Olchanski
                     implementation of the CAENCommLib functions
   Contents:     V1720 8 ch. 12bit 250Msps for Optical link
- 
+  MAIN_ENABLE Build : ov1720.c, v1720.h, ov1720drv.h
+   > gcc -g -O2 -Wall -DDO_TIMING -DMAIN_ENABLE -o ov1720.exe ov1720.c -lCAENComm -lrt 
+  Operation:
+  > ./ov1720 -l 100 -l 0 -b 0
+  > ./ov1720 -l 10000 -m 100 -l 1 -b 0
+
   $Id$
 *********************************************************************/
 #include <stdio.h>
