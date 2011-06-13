@@ -8632,8 +8632,10 @@ void show_config_page(int refresh)
 typedef struct {
    char  path[256];
    char  filename[256];
-   char  xmlerror[256];
+   char  error[256];
+   int   error_line;
    BOOL  running;
+   BOOL  finished;
    int   current_line_number;
    BOOL  stop_after_run;
    int   loop_counter;
@@ -8645,8 +8647,10 @@ typedef struct {
 "[.]",\
 "Path = STRING : [256] ",\
 "Filename = STRING : [256] ",\
-"XMLError = STRING : [256] ",\
+"Error = STRING : [256] ",\
+"Error line = INT : 0",\
 "Running = BOOL : 0",\
+"Finished = BOOL : 0",\
 "Current Line number = INT : 0",\
 "Stop after run = BOOL : 0",\
 "Loop counter = INT : 0",\
@@ -8657,7 +8661,7 @@ NULL}
 
 SEQUENCER_STR(sequencer_str);
 SEQUENCER seq;
-PMXML_NODE xseq = NULL;
+PMXML_NODE pnseq = NULL;
 
 void init_sequencer()
 {
@@ -8689,12 +8693,16 @@ void init_sequencer()
    if (seq.filename[0]) {
       strlcpy(str, seq.path, sizeof(str));
       strlcat(str, seq.filename, sizeof(str));
-      seq.xmlerror[0] = 0;
-      if (xseq) {
-         mxml_free_tree(xseq);
-         xseq = NULL;
+      seq.error[0] = 0;
+      seq.error_line = -1;
+      if (pnseq) {
+         mxml_free_tree(pnseq);
+         pnseq = NULL;
       }
-      xseq = mxml_parse_file(str, seq.xmlerror, sizeof(seq.xmlerror));
+      pnseq = mxml_parse_file(str, seq.error, sizeof(seq.error));
+      if (seq.error[0])
+         seq.error_line = atoi(seq.error+21);
+      db_set_record(hDB, hKey, &seq, sizeof(seq), 0);
    }
 }
 
@@ -8702,7 +8710,7 @@ void init_sequencer()
 
 void show_seq_page()
 {
-   INT i, size, n, errorline;
+   INT i, size, n;
    HNDLE hDB;
    char str[256], path[256], dir[256], error[256], comment[256], filename[256];
    time_t now;
@@ -8726,12 +8734,17 @@ void show_seq_page()
       
       strlcpy(str, seq.path, sizeof(str));
       strlcat(str, seq.filename, sizeof(str));
-      seq.xmlerror[0] = 0;
-      if (xseq) {
-         mxml_free_tree(xseq);
-         xseq = NULL;
+      seq.error[0] = 0;
+      if (pnseq) {
+         mxml_free_tree(pnseq);
+         pnseq = NULL;
       }
-      xseq = mxml_parse_file(str, seq.xmlerror, sizeof(seq.xmlerror));
+      pnseq = mxml_parse_file(str, seq.error, sizeof(seq.error));
+      if (seq.error[0])
+         seq.error_line = atoi(seq.error+21);
+      else
+         seq.error_line = -1;
+      seq.finished = FALSE;
       db_set_record(hDB, hKey, &seq, sizeof(seq), 0);
       redirect("");
       return;
@@ -8740,6 +8753,7 @@ void show_seq_page()
    /*---- start script ----*/
    if (equal_ustring(getparam("cmd"), "Start Script")) {
       seq.running = TRUE;
+      seq.finished = FALSE;
       seq.run_progress = 0;
       seq.loop_progress = 0;
       seq.current_line_number = 1;
@@ -8759,12 +8773,16 @@ void show_seq_page()
       }
       strlcpy(str, seq.path, sizeof(str));
       strlcat(str, seq.filename, sizeof(str));
-      seq.xmlerror[0] = 0;
-      if (xseq) {
-         mxml_free_tree(xseq);
-         xseq = NULL;
+      seq.error[0] = 0;
+      if (pnseq) {
+         mxml_free_tree(pnseq);
+         pnseq = NULL;
       }
-      xseq = mxml_parse_file(str, seq.xmlerror, sizeof(seq.xmlerror));
+      pnseq = mxml_parse_file(str, seq.error, sizeof(seq.error));
+      if (seq.error[0])
+         seq.error_line = atoi(seq.error+21);
+      else
+         seq.error_line = -1;
       db_set_record(hDB, hKey, &seq, sizeof(seq), 0);
       redirect("");
       return;
@@ -8787,6 +8805,7 @@ void show_seq_page()
    /*---- stop immediately ----*/
    if (equal_ustring(getparam("cmd"), "Stop immediately")) {
       seq.running = FALSE;
+      seq.finished = FALSE;
       seq.run_progress = 0;
       seq.loop_progress = 0;
       seq.stop_after_run = FALSE;
@@ -8899,25 +8918,25 @@ void show_seq_page()
          strlcpy(str, path, sizeof(str));
          strlcat(str, flist+i*MAX_STRING_LENGTH, sizeof(str));
          comment[0] = 0;
-         if (xseq) {
-            mxml_free_tree(xseq);
-            xseq = NULL;
+         if (pnseq) {
+            mxml_free_tree(pnseq);
+            pnseq = NULL;
          }
-         xseq = mxml_parse_file(str, error, sizeof(error));
+         pnseq = mxml_parse_file(str, error, sizeof(error));
          if (error[0])
             sprintf(comment, "Error in XML: %s", error);
          else {
-            if (xseq) {
-               pn = mxml_find_node(xseq, "RunSequence/Comment");
+            if (pnseq) {
+               pn = mxml_find_node(pnseq, "RunSequence/Comment");
                if (pn)
                   strlcpy(comment, mxml_get_value(pn), sizeof(comment));
                else
                   strcpy(comment, "<No description in XML file>");
             }
          }
-         if (xseq) {
-            mxml_free_tree(xseq);
-            xseq = NULL;
+         if (pnseq) {
+            mxml_free_tree(pnseq);
+            pnseq = NULL;
          }
          
          rsprintf("<option onClick=\"document.getElementById('cmnt').innerHTML='%s'\">%s</option>\n", comment, flist+i*MAX_STRING_LENGTH);
@@ -8971,24 +8990,26 @@ void show_seq_page()
                rsprintf("<tr><td style=\"background-color:#8080FF;border:2px solid #0000FF;border-top:2px solid #E0E0FF;border-left:2px solid #E0E0FF;\">&nbsp;\n");
                rsprintf("</td></tr></table></td></tr></table></td></tr>\n");
             }
+            if (seq.finished) {
+               rsprintf("<tr><td colspan=2 style=\"background-color:#80FF80;\"><b>Sequence is finisehd</b>\n");
+               rsprintf("</td></tr>\n");
+            }
             strlcpy(str, seq.path, sizeof(str));
             strlcat(str, seq.filename, sizeof(str));
             f = fopen(str, "rt");
             if (f) {
                rsprintf("<tr><td colspan=2>Filename:<b>%s</b></td></tr>\n", seq.filename);
-               errorline = -1;
-               if (seq.xmlerror[0]) {
+               if (seq.error[0]) {
                   rsprintf("<tr><td bgcolor=red colspan=2><b>");
-                  strencode(seq.xmlerror);
+                  strencode(seq.error);
                   rsprintf("</b></td></tr>\n");
-                  errorline = atoi(seq.xmlerror+21);
                }
                rsprintf("<tr><td colspan=2>\n");
                for (int line=1 ; !feof(f) ; line++) {
                   str[0] = 0;
                   fgets(str, sizeof(str), f);
                   if (str[0]) {
-                     if (line == errorline)
+                     if (line == seq.error_line)
                         rsprintf("<font style=\"font-family:monospace;font-weight:bold;color:white;background-color:red;weight:bold\">");
                      else if (seq.running && line == seq.current_line_number)
                         rsprintf("<font style=\"font-family:monospace;font-weight:bold;color:white;background-color:blue;weight:bold\">");
@@ -9015,22 +9036,104 @@ void show_seq_page()
 
 void sequencer()
 {
-   PMXML_NODE pn;
+   PMXML_NODE pn, pr;
+   char odbpath[256], value[256], data[256], str[256];
+   int status, size, index, last_line;
+   HNDLE hDB, hKey, hKeySeq;
+   KEY key;
    
-   if (!seq.running || xseq == NULL)
+   if (!seq.running || pnseq == NULL)
       return;
    
+   cm_get_experiment_database(&hDB, NULL);
+   db_find_key(hDB, 0, "/Sequencer", &hKeySeq);
+   if (!hKeySeq)
+      return;
+   
+   pr = mxml_find_node(pnseq, "RunSequence");
+   if (!pr)
+      return;
+   last_line = mxml_get_line_number_end(pr);
+   
+   if (seq.current_line_number >= last_line) {
+      seq.running = FALSE;
+      seq.finished = TRUE;
+      db_set_record(hDB, hKeySeq, &seq, sizeof(seq), 0);
+      return;
+   }
+ 
    /* find node belonging to current line */
-   pn = mxml_get_node_at_line(xseq, seq.current_line_number);
-   if (!pn)
+   pn = mxml_get_node_at_line(pnseq, seq.current_line_number);
+   if (!pn) {
+      printf("%d Skip\n", seq.current_line_number);
+      seq.current_line_number++;
+      db_set_record(hDB, hKeySeq, &seq, sizeof(seq), 0);
       return;
+   }
    
    printf("%d %s\n", seq.current_line_number, mxml_get_name(pn));
    
-   if (equal_ustring(mxml_get_name(pn), "ODBSet")) {
-      
-   } else
+   if (equal_ustring(mxml_get_name(pn), "PI") || 
+       equal_ustring(mxml_get_name(pn), "RunSequence") ||
+       equal_ustring(mxml_get_name(pn), "Comment")) {
+      // just skip
       seq.current_line_number++;
+      db_set_record(hDB, hKeySeq, &seq, sizeof(seq), 0);
+   }
+   
+   /*---- ODBSet ----*/
+   else if (equal_ustring(mxml_get_name(pn), "ODBSet")) {
+      strlcpy(odbpath, mxml_get_attribute(pn, "path"), sizeof(odbpath));
+      if (strchr(odbpath, '[')) {
+         index = atoi(strchr(odbpath, '[')+1);
+         *strchr(odbpath, '[') = 0;
+      } else
+         index = 0;
+      strlcpy(value, mxml_get_value(pn), sizeof(value));
+      status = db_find_key(hDB, 0, odbpath, &hKey);
+      if (status != DB_SUCCESS) {
+         sprintf(seq.error, "Cannot find ODB key \"%s\"", odbpath);
+         seq.error_line = seq.current_line_number;
+         seq.running = FALSE;
+      } else {
+         db_get_key(hDB, hKey, &key);
+         size = sizeof(data);
+         db_sscanf(value, data, &size, 0, key.type);
+         db_set_data_index(hDB, hKey, data, key.item_size, index, key.type);
+      }
+      seq.current_line_number++;
+      db_set_record(hDB, hKeySeq, &seq, sizeof(seq), 0);
+   }
+   
+   /*---- RunDescription ----*/
+   else if (equal_ustring(mxml_get_name(pn), "RunDescription")) {
+      db_set_value(hDB, 0, "/Experiment/Run Parameters/Run Description", mxml_get_value(pn), 256, 1, TID_STRING);
+      seq.current_line_number++;
+      db_set_record(hDB, hKeySeq, &seq, sizeof(seq), 0);
+   }
+   
+   /*---- Transition ----*/
+   else if (equal_ustring(mxml_get_name(pn), "Transition")) {
+      if (equal_ustring(mxml_get_value(pn), "Start")) {
+         status = cm_transition(TR_START, 0, str, sizeof(str), SYNC, FALSE);
+         if (status != CM_SUCCESS) {
+            sprintf(seq.error, "Cannot start run: %s", str);
+            seq.error_line = seq.current_line_number;
+            seq.running = FALSE;
+         } else
+            seq.current_line_number++;
+      }
+      db_set_record(hDB, hKeySeq, &seq, sizeof(seq), 0);
+   }
+
+   /*---- <unknown> ----*/   
+   else {
+      sprintf(seq.error, "Unknown command \"%s\"", mxml_get_name(pn));
+      seq.error_line = seq.current_line_number;
+      seq.running = FALSE;
+      db_set_record(hDB, hKeySeq, &seq, sizeof(seq), 0);
+   }
+   
 }
 
 /*------------------------------------------------------------------*/
