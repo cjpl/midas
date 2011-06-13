@@ -326,11 +326,14 @@ int main (int argc, char* argv[]) {
 	d =  (atoi(argv[++i]));
       else if (strncmp(argv[i], "-m", 2) == 0)
 	Nmodulo =  (atoi(argv[++i]));
+      else if (strncmp(argv[i], "-d", 2) == 0)
+	d =  (atoi(argv[++i]));
     } else {
     usage:
       printf("usage: ov1720 -l (loop count) \n");
       printf("              -o link#\n");
       printf("              -b board#\n");
+      printf("              -d daisy#\n");
       printf("              -m modulo display\n");
       printf("              -s show data\n\n");
       return 0;
