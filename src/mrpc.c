@@ -814,6 +814,8 @@ static RPC_LIST rpc_list_library[] = {
      ,
      {TID_INT, RPC_IN}
      ,
+     {TID_BOOL, RPC_IN}
+     ,
      {0}
      }
     }

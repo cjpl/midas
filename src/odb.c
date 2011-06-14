@@ -7773,7 +7773,7 @@ INT db_remove_open_record(HNDLE hDB, HNDLE hKey, BOOL lock)
 \********************************************************************/
 {
    if (rpc_is_remote())
-      return rpc_call(RPC_DB_REMOVE_OPEN_RECORD, hDB, hKey);
+      return rpc_call(RPC_DB_REMOVE_OPEN_RECORD, hDB, hKey, lock);
 
 #ifdef LOCAL_ROUTINES
    {
