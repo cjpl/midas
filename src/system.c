@@ -3018,6 +3018,8 @@ INT ss_sleep(INT millisec)
 
    do {
       status = nanosleep(&ts, &ts);
+      if (ts.tv_sec < 0) 
+         break; // can be negative under OSX
    } while (status == -1 && errno == EINTR);
 #endif
 
