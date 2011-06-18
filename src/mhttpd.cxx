@@ -6039,9 +6039,233 @@ void do_jrpc_rev1()
 
 /*------------------------------------------------------------------*/
 
+void output_key(HNDLE hkey, int index)
+{
+   int size, i;
+   char str[TEXT_SIZE];
+   HNDLE hDB, hsubkey;
+   KEY key;
+   char data[TEXT_SIZE];
+   
+   cm_get_experiment_database(&hDB, NULL);
+   
+   db_get_key(hDB, hkey, &key);
+   if (key.type == TID_KEY) {
+      for (i=0 ; ; i++) {
+         db_enum_key(hDB, hkey, i, &hsubkey);
+         if (!hsubkey)
+            break;
+         output_key(hsubkey, -1);
+      }
+   } else {
+      if (key.item_size <= (int)sizeof(data)) {
+         size = sizeof(data);
+         db_get_data(hDB, hkey, data, &size, key.type);
+         if (index == -1) {
+            for (i=0 ; i<key.num_values ; i++) {
+               if (isparam("name") && atoi(getparam("name")) == 1) {
+                  if (key.num_values == 1)
+                     rsprintf("%s:", key.name);
+                  else
+                     rsprintf("%s[%d]:", key.name, i);
+               }
+               if (isparam("format"))
+                  db_sprintff(str, getparam("format"), data, key.item_size, i, key.type);
+               else
+                  db_sprintf(str, data, key.item_size, i, key.type);
+               rsputs(str);
+               if (i<key.num_values-1)
+                  rsputs("\n");
+            }
+         } else {
+            if (isparam("name") && atoi(getparam("name")) == 1)
+               rsprintf("%s[%d]:", key.name, index);
+            if (index >= key.num_values)
+               rsputs("<DB_OUT_OF_RANGE>");
+            else {
+               if (isparam("format"))
+                  db_sprintff(str, getparam("format"), data, key.item_size, index, key.type);
+               else
+                  db_sprintf(str, data, key.item_size, index, key.type);
+               rsputs(str);
+            }
+         }
+         rsputs("\n");
+      }
+   }
+}
+   
+/*------------------------------------------------------------------*/
+
+void java_script_commands(const char *path, const char *cookie_cpwd)
+{
+   int size, i, index;
+   char str[TEXT_SIZE], ppath[256];
+   HNDLE hDB, hkey;
+   KEY key;
+   char data[TEXT_SIZE];
+
+   cm_get_experiment_database(&hDB, NULL);
+   
+   /* process "jset" command */
+   if (equal_ustring(getparam("cmd"), "jset")) {
+      
+      if (*getparam("pnam")) {
+         sprintf(ppath, "/Custom/Pwd/%s", getparam("pnam"));
+         str[0] = 0;
+         db_get_value(hDB, 0, ppath, str, &size, TID_STRING, TRUE);
+         if (!equal_ustring(cookie_cpwd, str)) {
+            show_text_header();
+            rsprintf("Invalid password!");
+            return;
+         }
+      }
+      strlcpy(str, getparam("odb"), sizeof(str));
+      if (strchr(str, '[')) {
+         if (*(strchr(str, '[')+1) == '*')
+            index = -1;
+         else
+            index = atoi(strchr(str, '[')+1);
+         *strchr(str, '[') = 0;
+      } else
+         index = 0;
+      
+      if (db_find_key(hDB, 0, str, &hkey) == DB_SUCCESS && isparam("value")) {
+         db_get_key(hDB, hkey, &key);
+         memset(data, 0, sizeof(data));
+         if (key.item_size <= (int)sizeof(data)) {
+            if (index == -1) {
+               const char* p = getparam("value");
+               for (i=0 ; p != NULL ; i++) {
+                  size = sizeof(data);
+                  db_sscanf(p, data, &size, 0, key.type);
+                  db_set_data_index(hDB, hkey, data, key.item_size, i, key.type);
+                  p = strchr(p, ',');
+                  if (p != NULL)
+                     p++;
+               } 
+            } else {
+               size = sizeof(data);
+               db_sscanf(getparam("value"), data, &size, 0, key.type);
+               db_set_data_index(hDB, hkey, data, key.item_size, index, key.type);
+            }
+         }
+      } else {
+         if (isparam("value") && isparam("type") && isparam("len")) {
+            int type = atoi(getparam("type"));
+            if (type == 0) {
+               show_text_header();
+               rsprintf("Invalid type %d!", type);
+               return;
+            }
+            db_create_key(hDB, 0, str, type);
+            db_find_key(hDB, 0, str, &hkey);
+            if (!hkey) {
+               show_text_header();
+               rsprintf("Cannot create \'%s\' type %d", str, type);
+               return;
+            }
+            db_get_key(hDB, hkey, &key);
+            memset(data, 0, sizeof(data));
+            size = sizeof(data);
+            db_sscanf(getparam("value"), data, &size, 0, key.type);
+            if (key.type == TID_STRING)
+               db_set_data(hDB, hkey, data, atoi(getparam("len")), 1, TID_STRING);
+            else {
+               for (i=0 ; i<atoi(getparam("len")) ; i++)
+                  db_set_data_index(hDB, hkey, data, rpc_tid_size(key.type), i, key.type);
+            }
+         }
+      }
+      
+      show_text_header();
+      rsprintf("OK");
+      return;
+   }
+   
+   /* process "jget" command */
+   if (equal_ustring(getparam("cmd"), "jget")) {
+      
+      strlcpy(str, getparam("odb"), sizeof(str));
+      if (strchr(str, '[')) {
+         if (*(strchr(str, '[')+1) == '*')
+            index = -1;
+         else
+            index = atoi(strchr(str, '[')+1);
+         *strchr(str, '[') = 0;
+      } else
+         index = 0;
+      
+      show_text_header();
+      
+      if (db_find_key(hDB, 0, str, &hkey) == DB_SUCCESS)
+         output_key(hkey, index);
+      else
+         rsputs("<DB_NO_KEY>");
+      
+      return;
+   }
+   
+   /* process "jkey" command */
+   if (equal_ustring(getparam("cmd"), "jkey")) {
+      
+      show_text_header();
+      
+      if (isparam("odb") && db_find_key(hDB, 0, getparam("odb"), &hkey) == DB_SUCCESS) {
+         db_get_key(hDB, hkey, &key);
+         rsprintf("%s\n", key.name);
+         rsprintf("TID_%s\n", rpc_tid_name(key.type));
+         rsprintf("%d\n", key.num_values);
+         rsprintf("%d", key.item_size);
+      } else
+         rsputs("<DB_NO_KEY>");
+      
+      return;
+   }
+   
+   /* process "jmsg" command */
+   if (equal_ustring(getparam("cmd"), "jmsg")) {
+      
+      i = 1;
+      if (*getparam("n"))
+         i = atoi(getparam("n"));
+      
+      show_text_header();
+      cm_msg_retrieve(i, str, sizeof(str));
+      rsputs(str);
+      return;
+   }
+   
+   /* process "jgenmsg" command */
+   if (equal_ustring(getparam("cmd"), "jgenmsg")) {
+      
+      if (*getparam("msg")) {
+         cm_msg(MINFO, "show_custom_page", getparam("msg"));
+      }
+      
+      show_text_header();
+      rsputs("Message successfully created\n");
+      return;
+   }
+   
+   /* process "jrpc" command */
+   if (equal_ustring(getparam("cmd"), "jrpc_rev0")) {
+      do_jrpc_rev0();
+      return;
+   }
+   
+   /* process "jrpc" command */
+   if (equal_ustring(getparam("cmd"), "jrpc_rev1")) {
+      do_jrpc_rev1();
+      return;
+   }
+}
+
+/*------------------------------------------------------------------*/
+
 void show_custom_page(const char *path, const char *cookie_cpwd)
 {
-   int size, i, n_var, fh, index, edit;
+   int size, n_var, fh, index, edit;
    char str[TEXT_SIZE], keypath[256], type[32], *p, *ps, custom_path[256],
       filename[256], pwd[256], ppath[256], tail[256];
    HNDLE hDB, hkey;
@@ -6185,193 +6409,6 @@ void show_custom_page(const char *path, const char *cookie_cpwd)
          /* redirect (so that 'reload' does not toggle again) */
          redirect(path);
          free(ctext);
-         return;
-      }
-
-      /* process "jset" command */
-      if (equal_ustring(getparam("cmd"), "jset")) {
-
-         if (*getparam("pnam")) {
-            sprintf(ppath, "/Custom/Pwd/%s", getparam("pnam"));
-            str[0] = 0;
-            db_get_value(hDB, 0, ppath, str, &size, TID_STRING, TRUE);
-            if (!equal_ustring(cookie_cpwd, str)) {
-               show_text_header();
-               rsprintf("Invalid password!");
-               free(ctext);
-               return;
-            }
-         }
-         strlcpy(str, getparam("odb"), sizeof(str));
-         if (strchr(str, '[')) {
-            if (*(strchr(str, '[')+1) == '*')
-               index = -1;
-            else
-               index = atoi(strchr(str, '[')+1);
-            *strchr(str, '[') = 0;
-         } else
-            index = 0;
-
-         if (db_find_key(hDB, 0, str, &hkey) == DB_SUCCESS && isparam("value")) {
-            db_get_key(hDB, hkey, &key);
-            memset(data, 0, sizeof(data));
-            if (key.item_size <= (int)sizeof(data)) {
-               if (index == -1) {
-                  const char* p = getparam("value");
-                  for (i=0 ; p != NULL ; i++) {
-                     size = sizeof(data);
-                     db_sscanf(p, data, &size, 0, key.type);
-                     db_set_data_index(hDB, hkey, data, key.item_size, i, key.type);
-                     p = strchr(p, ',');
-                     if (p != NULL)
-                        p++;
-                  } 
-               } else {
-                  size = sizeof(data);
-                  db_sscanf(getparam("value"), data, &size, 0, key.type);
-                  db_set_data_index(hDB, hkey, data, key.item_size, index, key.type);
-               }
-            }
-         } else {
-            if (isparam("value") && isparam("type") && isparam("len")) {
-               int type = atoi(getparam("type"));
-               if (type == 0) {
-                  show_text_header();
-                  rsprintf("Invalid type %d!", type);
-                  free(ctext);
-                  return;
-               }
-               db_create_key(hDB, 0, str, type);
-               db_find_key(hDB, 0, str, &hkey);
-               if (!hkey) {
-                  show_text_header();
-                  rsprintf("Cannot create \'%s\' type %d", str, type);
-                  free(ctext);
-                  return;
-               }
-               db_get_key(hDB, hkey, &key);
-               memset(data, 0, sizeof(data));
-               size = sizeof(data);
-               db_sscanf(getparam("value"), data, &size, 0, key.type);
-               if (key.type == TID_STRING)
-                  db_set_data(hDB, hkey, data, atoi(getparam("len")), 1, TID_STRING);
-               else {
-                  for (i=0 ; i<atoi(getparam("len")) ; i++)
-                     db_set_data_index(hDB, hkey, data, rpc_tid_size(key.type), i, key.type);
-               }
-            }
-         }
-
-         show_text_header();
-         rsprintf("OK");
-         free(ctext);
-         return;
-      }
-
-      /* process "jget" command */
-      if (equal_ustring(getparam("cmd"), "jget")) {
-
-         strlcpy(str, getparam("odb"), sizeof(str));
-         if (strchr(str, '[')) {
-            if (*(strchr(str, '[')+1) == '*')
-               index = -1;
-            else
-               index = atoi(strchr(str, '[')+1);
-            *strchr(str, '[') = 0;
-         } else
-            index = 0;
-
-         show_text_header();
-
-         if (db_find_key(hDB, 0, str, &hkey) == DB_SUCCESS) {
-            db_get_key(hDB, hkey, &key);
-            if (key.item_size <= (int)sizeof(data)) {
-               size = sizeof(data);
-               db_get_data(hDB, hkey, data, &size, key.type);
-               if (index == -1) {
-                  for (i=0 ; i<key.num_values ; i++) {
-                     if (isparam("format"))
-                        db_sprintff(str, getparam("format"), data, key.item_size, i, key.type);
-                     else
-                        db_sprintf(str, data, key.item_size, i, key.type);
-                     rsputs(str);
-                     if (i<key.num_values-1)
-                        rsputs("\n");
-                  }
-               } else {
-                  if (index >= key.num_values)
-                     rsputs("<DB_OUT_OF_RANGE>");
-                  else {
-                     if (isparam("format"))
-                        db_sprintff(str, getparam("format"), data, key.item_size, index, key.type);
-                     else
-                        db_sprintf(str, data, key.item_size, index, key.type);
-                     rsputs(str);
-                  }
-               }
-            }
-         } else
-            rsputs("<DB_NO_KEY>");
-
-         free(ctext);
-         return;
-      }
-
-      /* process "jkey" command */
-      if (equal_ustring(getparam("cmd"), "jkey")) {
-
-         show_text_header();
-
-         if (isparam("odb") && db_find_key(hDB, 0, getparam("odb"), &hkey) == DB_SUCCESS) {
-            db_get_key(hDB, hkey, &key);
-            rsprintf("%s\n", key.name);
-            rsprintf("TID_%s\n", rpc_tid_name(key.type));
-            rsprintf("%d\n", key.num_values);
-            rsprintf("%d", key.item_size);
-         } else
-            rsputs("<DB_NO_KEY>");
-
-         free(ctext);
-         return;
-      }
-
-      /* process "jmsg" command */
-      if (equal_ustring(getparam("cmd"), "jmsg")) {
-
-         i = 1;
-         if (*getparam("n"))
-            i = atoi(getparam("n"));
-
-         show_text_header();
-         cm_msg_retrieve(i, str, sizeof(str));
-         rsputs(str);
-         free(ctext);
-         return;
-      }
-
-      /* process "jgenmsg" command */
-      if (equal_ustring(getparam("cmd"), "jgenmsg")) {
-
-         if (*getparam("msg")) {
-            cm_msg(MINFO, "show_custom_page", getparam("msg"));
-         }
-
-         show_text_header();
-         rsputs("Message successfully created\n");
-         return;
-      }
-
-      /* process "jrpc" command */
-      if (equal_ustring(getparam("cmd"), "jrpc_rev0")) {
-         free(ctext);
-         do_jrpc_rev0();
-         return;
-      }
-
-      /* process "jrpc" command */
-      if (equal_ustring(getparam("cmd"), "jrpc_rev1")) {
-         free(ctext);
-         do_jrpc_rev1();
          return;
       }
 
@@ -8638,26 +8675,52 @@ typedef struct {
    BOOL  finished;
    int   current_line_number;
    BOOL  stop_after_run;
-   int   loop_counter;
-   float loop_progress;
-   float run_progress;
+   BOOL  transition_request;
+   int   loop_start_line[4];
+   int   loop_end_line[4];
+   int   loop_counter[4];
+   int   loop_n[4];
+   int   wait_counter;
+   int   wait_n;
+   DWORD start_time;
 } SEQUENCER;
 
 #define SEQUENCER_STR(_name) const char *_name[] = {\
 "[.]",\
-"Path = STRING : [256] ",\
-"Filename = STRING : [256] ",\
+"Path = STRING : [256] /online/",\
+"Filename = STRING : [256] xml/xmltest.xml",\
 "Error = STRING : [256] ",\
 "Error line = INT : 0",\
-"Running = BOOL : 0",\
-"Finished = BOOL : 0",\
-"Current Line number = INT : 0",\
-"Stop after run = BOOL : 0",\
-"Loop counter = INT : 0",\
-"Loop progress = FLOAT : 0",\
-"Run progress = FLOAT : 0",\
+"Running = BOOL : n",\
+"Finished = BOOL : y",\
+"Current line number = INT : 12",\
+"Stop after run = BOOL : n",\
+"Transition request = BOOL : n",\
+"Loop start line = INT[4] :",\
+"[0] 0",\
+"[1] 0",\
+"[2] 0",\
+"[3] 0",\
+"Loop end line = INT[4] :",\
+"[0] 0",\
+"[1] 0",\
+"[2] 0",\
+"[3] 0",\
+"Loop counter = INT[4] :",\
+"[0] 0",\
+"[1] 0",\
+"[2] 0",\
+"[3] 0",\
+"Loop n = INT[4] :",\
+"[0] 0",\
+"[1] 0",\
+"[2] 0",\
+"[3] 0",\
+"Wait counter = INT : 0",\
+"Wait n = INT : 0",\
+"Start time = DWORD : 0",\
 "",\
-NULL}
+NULL }
 
 SEQUENCER_STR(sequencer_str);
 SEQUENCER seq;
@@ -8683,18 +8746,16 @@ void init_sequencer()
    if (seq.path[0] == 0) {
       getcwd(seq.path, sizeof(seq.path));
       strlcat(seq.path, DIR_SEPARATOR_STR, sizeof(seq.path));
-      db_set_record(hDB, hKey, &seq, sizeof(seq), 0);
    }
    if (strlen(seq.path)>0 && seq.path[strlen(seq.path)-1] != DIR_SEPARATOR) {
       strlcat(seq.path, DIR_SEPARATOR_STR, sizeof(seq.path));
-      db_set_record(hDB, hKey, &seq, sizeof(seq), 0);
    }
 
    if (seq.filename[0]) {
       strlcpy(str, seq.path, sizeof(str));
       strlcat(str, seq.filename, sizeof(str));
       seq.error[0] = 0;
-      seq.error_line = -1;
+      seq.error_line = 0;
       if (pnseq) {
          mxml_free_tree(pnseq);
          pnseq = NULL;
@@ -8702,11 +8763,16 @@ void init_sequencer()
       pnseq = mxml_parse_file(str, seq.error, sizeof(seq.error));
       if (seq.error[0])
          seq.error_line = atoi(seq.error+21);
-      db_set_record(hDB, hKey, &seq, sizeof(seq), 0);
    }
+   
+   seq.transition_request = FALSE;
+   
+   db_set_record(hDB, hKey, &seq, sizeof(seq), 0);
 }
 
 /*------------------------------------------------------------------*/
+
+const char *bar_col[] = {"#8080FF", "#A0A0FF", "#C0C0FF", "#E0E0FF"};
 
 void show_seq_page()
 {
@@ -8743,7 +8809,7 @@ void show_seq_page()
       if (seq.error[0])
          seq.error_line = atoi(seq.error+21);
       else
-         seq.error_line = -1;
+         seq.error_line = 0;
       seq.finished = FALSE;
       db_set_record(hDB, hKey, &seq, sizeof(seq), 0);
       redirect("");
@@ -8754,8 +8820,14 @@ void show_seq_page()
    if (equal_ustring(getparam("cmd"), "Start Script")) {
       seq.running = TRUE;
       seq.finished = FALSE;
-      seq.run_progress = 0;
-      seq.loop_progress = 0;
+      seq.wait_counter = 0;
+      seq.wait_n = 0;
+      for (i=0 ; i<4 ; i++) {
+         seq.loop_start_line[i] = 0;
+         seq.loop_end_line[i] = 0;
+         seq.loop_counter[i] = 0;
+         seq.loop_n[i] = 0;
+      }
       seq.current_line_number = 1;
       db_set_record(hDB, hKey, &seq, sizeof(seq), 0);
       redirect("");
@@ -8806,8 +8878,14 @@ void show_seq_page()
    if (equal_ustring(getparam("cmd"), "Stop immediately")) {
       seq.running = FALSE;
       seq.finished = FALSE;
-      seq.run_progress = 0;
-      seq.loop_progress = 0;
+      seq.wait_counter = 0;
+      seq.wait_n = 0;
+      for (i=0 ; i<4 ; i++) {
+         seq.loop_start_line[i] = 0;
+         seq.loop_end_line[i] = 0;
+         seq.loop_counter[i] = 0;
+         seq.loop_n[i] = 0;
+      }
       seq.stop_after_run = FALSE;
       db_set_record(hDB, hKey, &seq, sizeof(seq), 0);
       redirect("");
@@ -8822,8 +8900,84 @@ void show_seq_page()
    rsprintf("<html><head>\n");
    rsprintf("<link rel=\"icon\" href=\"favicon.png\" type=\"image/png\" />\n");
    rsprintf("<link rel=\"stylesheet\" href=\"mhttpd.css\" type=\"text/css\" />\n");
+
+   /* update script */
+   rsprintf("<script type=\"text/javascript\" src=\"../mhttpd.js\"></script>\n");
+   rsprintf("<script type=\"text/javascript\">\n");
+   rsprintf("<!--\n");
+   rsprintf("function seq_refresh()\n");
+   rsprintf("{\n");
+   rsprintf("   seq = ODBGetRecord('/Sequencer');\n");
+   rsprintf("   var current_line = ODBExtractRecord(seq, 'Current line number');\n");
+   rsprintf("   var error_line = ODBExtractRecord(seq, 'Error line');\n");
+   rsprintf("   var wait_counter = ODBExtractRecord(seq, 'Wait counter');\n");
+   rsprintf("   var wait_n = ODBExtractRecord(seq, 'Wait n');\n");
+   rsprintf("   var loop_n = ODBExtractRecord(seq, 'Loop n');\n");
+   rsprintf("   var loop_counter = ODBExtractRecord(seq, 'Loop counter');\n");
+   rsprintf("   var loop_start_line = ODBExtractRecord(seq, 'Loop start line');\n");
+   rsprintf("   var loop_end_line = ODBExtractRecord(seq, 'Loop end line');\n");
+   rsprintf("   var finished = ODBExtractRecord(seq, 'Finished');\n");
+   rsprintf("   var start_time = ODBExtractRecord(seq, 'Start time');\n");
+   rsprintf("   \n");
+   rsprintf("   for (var l=1 ; ; l++) {\n");
+   rsprintf("      line = document.getElementById('line'+l);\n");
+   rsprintf("      if (line == null)\n");
+   rsprintf("         break;\n");
+   rsprintf("      else if (l == error_line)\n");
+   rsprintf("         line.style.backgroundColor = '#FF0000';\n");
+   rsprintf("      else if (l == current_line)\n");
+   rsprintf("         line.style.backgroundColor = '#80FF80';\n");
+   rsprintf("      else if (l >= loop_start_line[3] && l <= loop_end_line[3])\n");
+   rsprintf("         line.style.backgroundColor = '%s';\n", bar_col[3]);
+   rsprintf("      else if (l >= loop_start_line[2] && l <= loop_end_line[2])\n");
+   rsprintf("         line.style.backgroundColor = '%s';\n", bar_col[2]);
+   rsprintf("      else if (l >= loop_start_line[1] && l <= loop_end_line[1])\n");
+   rsprintf("         line.style.backgroundColor = '%s';\n", bar_col[1]);
+   rsprintf("      else if (l >= loop_start_line[0] && l <= loop_end_line[0])\n");
+   rsprintf("         line.style.backgroundColor = '%s';\n", bar_col[0]);
+   rsprintf("      else\n");
+   rsprintf("         line.style.backgroundColor = '#FFFFFF';\n");
+   rsprintf("   }\n");
+   rsprintf("   \n");
+   rsprintf("   var wl = document.getElementById('wait_label');\n");
+   rsprintf("   if (wl != null) {\n");
+   rsprintf("      if (start_time > 0)\n");
+   rsprintf("         wl.innerHTML = 'Wait:&nbsp['+wait_counter+'/'+wait_n+'&nbsp;s]';\n");
+   rsprintf("      else\n");
+   rsprintf("         wl.innerHTML = 'Run:&nbsp['+wait_counter+'/'+wait_n+'&nbsp;events]';\n");
+   rsprintf("   }\n");
+   rsprintf("   var rp = document.getElementById('runprgs');\n");
+   rsprintf("   if (rp != null) {\n");
+   rsprintf("      var width = Math.round(100.0*wait_counter/wait_n);\n");
+   rsprintf("      if (width > 100)\n");
+   rsprintf("         width = 100;\n");
+   rsprintf("      rp.width = width+'%%';\n");
+   rsprintf("   }\n");
+   rsprintf("   if (finished == 'y' || error_line > 0) {\n");
+   rsprintf("      window.location.href = '.';\n");
+   rsprintf("   }\n");
+   rsprintf("   \n");
+   rsprintf("   for (var i=0 ; i<4 ; i++) {\n");
+   rsprintf("      var l = document.getElementById('loop'+i);\n");
+   rsprintf("      if (loop_start_line[i] > 0) {\n");
+   rsprintf("         var ll = document.getElementById('loop_label'+i);\n");
+   rsprintf("         ll.innerHTML = 'Loop:&nbsp['+loop_counter[i]+'/'+loop_n[i]+']';\n");
+   rsprintf("         l.style.display = 'table-row';\n");
+   rsprintf("         var lp = document.getElementById('loopprgs'+i);\n");
+   rsprintf("         lp.width = Math.round(100.0*loop_counter[i]/loop_n[i])+'%%';\n");
+   rsprintf("      } else\n");
+   rsprintf("         l.style.display = 'none';\n");
+   rsprintf("   }\n");
+   rsprintf("   \n");
+   rsprintf("   refreshID = setTimeout('seq_refresh()', 1000);\n");
+   rsprintf("}\n");
+   
+   rsprintf("//-->\n");
+   rsprintf("</script>\n");
+   
    rsprintf("<title>Sequencer</title></head>\n");
-   rsprintf("<body>\n");
+   if (seq.running)
+      rsprintf("<body onLoad=\"seq_refresh();\">\n");
    
    /* title row */
    size = sizeof(str);
@@ -8862,13 +9016,23 @@ void show_seq_page()
          rsprintf("<input type=button onClick=\"stop_immediately()\" value=\"Stop immediately\"");
       } else {
          rsprintf("<input type=submit name=cmd value=\"Load Script\">\n");
-         rsprintf("<input type=submit name=cmd value=\"Start Script\">\n");
+         rsprintf("<script type=\"text/javascript\">\n");
+         rsprintf("<!--\n");
+         rsprintf("function start_confirm()\n");
+         rsprintf("{\n");
+         rsprintf("   flag = confirm('Are you sure to start the script?');\n");
+         rsprintf("   if (flag == true)\n");
+         rsprintf("      window.location.href = '?cmd=Start Script';\n");
+         rsprintf("}\n");
+         rsprintf("//-->\n");
+         rsprintf("</script>\n");
+         rsprintf("<input type=button onClick=\"start_confirm()\" value=\"Start Script\">\n");
       }
       if (seq.filename[0] && !seq.running && !equal_ustring(getparam("cmd"), "Load Script") && !isparam("fs"))
          rsprintf("<input type=submit name=cmd value=\"Edit Script\">\n");
       rsprintf("<input type=submit name=cmd value=Status>\n");
       
-      rsprintf("</tr>\n");
+      rsprintf("</td></tr>\n");
    }
    
    /*---- file selector ----*/
@@ -8959,7 +9123,10 @@ void show_seq_page()
    else {
       if (seq.filename[0]) {
          if (equal_ustring(getparam("cmd"), "Edit Script")) {
-            rsprintf("<tr><td colspan=2>Filename:<b>%s</b></td></tr>\n", seq.filename);
+            rsprintf("<tr><td colspan=2>Filename:<b>%s</b>&nbsp;&nbsp;", seq.filename);
+            rsprintf("<input type=submit name=cmd value=\"Save\">\n");
+            rsprintf("<input type=submit name=cmd value=\"Cancel\">\n");
+            rsprintf("</td></tr>\n");
             rsprintf("<tr><td colspan=2><textarea rows=30 cols=80 name=\"scripttext\">\n");
             strlcpy(str, seq.path, sizeof(str));
             strlcat(str, seq.filename, sizeof(str));
@@ -8978,16 +9145,19 @@ void show_seq_page()
             rsprintf("<input type=submit name=cmd value=\"Cancel\">\n");
             rsprintf("</td></tr>\n");
          } else {
-            if (seq.loop_progress > 0) {
-               rsprintf("<tr><td colspan=2>\n");
-               rsprintf("<table width=\"100%%\"><tr><td>Loop:</td><td width=\"100%%\"><table width=\"%d%%\" height=\"25\">\n", (int)(seq.loop_progress*100+0.5));
-               rsprintf("<tr><td style=\"background-color:#80FF80;border:2px solid #00FF00;border-top:2px solid #E0FFE0;border-left:2px solid #E0FFE0;\">&nbsp;\n");
+            for (i=0 ; i<4 ; i++) {
+               rsprintf("<tr id=\"loop%d\" style=\"display:none\"><td colspan=2>\n", i);
+               rsprintf("<table width=\"100%%\"><tr><td id=\"loop_label%d\">Loop&nbsp;%d:</td><td width=\"100%%\"><table id=\"loopprgs%d\" width=\"%d%%\" height=\"25\">\n", i, i, i, 
+                        (int)(((double)seq.loop_counter[i]/seq.loop_n[i])*100+0.5));
+               rsprintf("<tr><td style=\"background-color:%s;", bar_col[i]);
+               rsprintf("border:2px solid #000080;border-top:2px solid #E0E0FF;border-left:2px solid #E0E0FF;\">&nbsp;\n");
                rsprintf("</td></tr></table></td></tr></table></td></tr>\n");
             }
             if (seq.running) {
                rsprintf("<tr><td colspan=2>\n");
-               rsprintf("<table width=\"100%%\"><tr><td>Run:</td><td width=\"100%%\"><table width=\"%d%%\" height=\"25\">\n", (int)(seq.run_progress*100+0.5));
-               rsprintf("<tr><td style=\"background-color:#8080FF;border:2px solid #0000FF;border-top:2px solid #E0E0FF;border-left:2px solid #E0E0FF;\">&nbsp;\n");
+               rsprintf("<table width=\"100%%\"><tr><td id=\"wait_label\">Run:</td><td width=\"100%%\"><table id=\"runprgs\" width=\"%d%%\" height=\"25\">\n", 
+                        (int)(((double)seq.wait_counter/seq.wait_n)*100+0.5));
+               rsprintf("<tr><td style=\"background-color:#80FF80;border:2px solid #008000;border-top:2px solid #E0E0FF;border-left:2px solid #E0E0FF;\">&nbsp;\n");
                rsprintf("</td></tr></table></td></tr></table></td></tr>\n");
             }
             if (seq.finished) {
@@ -9010,11 +9180,11 @@ void show_seq_page()
                   fgets(str, sizeof(str), f);
                   if (str[0]) {
                      if (line == seq.error_line)
-                        rsprintf("<font style=\"font-family:monospace;font-weight:bold;color:white;background-color:red;weight:bold\">");
+                        rsprintf("<font id=\"line%d\" style=\"font-family:monospace;background-color:red;\">", line);
                      else if (seq.running && line == seq.current_line_number)
-                        rsprintf("<font style=\"font-family:monospace;font-weight:bold;color:white;background-color:blue;weight:bold\">");
+                        rsprintf("<font id=\"line%d\" style=\"font-family:monospace;background-color:#80FF00\">", line);
                      else
-                        rsprintf("<font style=\"font-family:monospace\">");
+                        rsprintf("<font id=\"line%d\" style=\"font-family:monospace\">", line);
                      strencode4(str);
                      rsprintf("</font>");
                   }
@@ -9038,9 +9208,10 @@ void sequencer()
 {
    PMXML_NODE pn, pr;
    char odbpath[256], value[256], data[256], str[256];
-   int status, size, index, last_line;
+   int i, n, status, size, index, last_line, state;
    HNDLE hDB, hKey, hKeySeq;
    KEY key;
+   double d;
    
    if (!seq.running || pnseq == NULL)
       return;
@@ -9062,6 +9233,28 @@ void sequencer()
       return;
    }
  
+   /* check for loop end */
+   for (i=3 ; i>=0 ; i--)
+      if (seq.loop_start_line[i] > 0)
+         break;
+   if (i >= 0) {
+      if (seq.current_line_number == seq.loop_end_line[i]) {
+         if (seq.loop_counter[i] == seq.loop_n[i]) {
+            seq.loop_counter[i] = 0;
+            seq.loop_start_line[i] = 0;
+            seq.loop_end_line[i] = 0;
+            seq.loop_n[i] = 0;
+            seq.current_line_number++;
+         } else {
+            seq.loop_counter[i]++;
+            seq.current_line_number = seq.loop_start_line[i]+1;
+         }
+         db_set_record(hDB, hKeySeq, &seq, sizeof(seq), 0);
+         printf("%d loop end %d\n", seq.current_line_number, i);
+         return;
+      }
+   }
+
    /* find node belonging to current line */
    pn = mxml_get_node_at_line(pnseq, seq.current_line_number);
    if (!pn) {
@@ -9100,8 +9293,8 @@ void sequencer()
          size = sizeof(data);
          db_sscanf(value, data, &size, 0, key.type);
          db_set_data_index(hDB, hKey, data, key.item_size, index, key.type);
+         seq.current_line_number++;
       }
-      seq.current_line_number++;
       db_set_record(hDB, hKeySeq, &seq, sizeof(seq), 0);
    }
    
@@ -9112,17 +9305,118 @@ void sequencer()
       db_set_record(hDB, hKeySeq, &seq, sizeof(seq), 0);
    }
    
+   /*---- Script ----*/
+   else if (equal_ustring(mxml_get_name(pn), "Script")) {
+      ss_system(mxml_get_value(pn));
+      seq.current_line_number++;
+      db_set_record(hDB, hKeySeq, &seq, sizeof(seq), 0);
+   }
+
    /*---- Transition ----*/
    else if (equal_ustring(mxml_get_name(pn), "Transition")) {
       if (equal_ustring(mxml_get_value(pn), "Start")) {
-         status = cm_transition(TR_START, 0, str, sizeof(str), SYNC, FALSE);
-         if (status != CM_SUCCESS) {
-            sprintf(seq.error, "Cannot start run: %s", str);
-            seq.error_line = seq.current_line_number;
-            seq.running = FALSE;
-         } else
-            seq.current_line_number++;
+         if (!seq.transition_request) {
+            seq.transition_request = TRUE;
+            size = sizeof(state);
+            db_get_value(hDB, 0, "/Runinfo/State", &state, &size, TID_INT, FALSE);
+            if (state != STATE_RUNNING) {
+               status = cm_transition(TR_START, 0, str, sizeof(str), DETACH, FALSE);
+               if (status != CM_SUCCESS) {
+                  sprintf(seq.error, "Cannot start run: %s", str);
+                  seq.error_line = seq.current_line_number;
+                  seq.running = FALSE;
+                  seq.transition_request = FALSE;
+               }
+            }
+         } else {
+            // Wait until transition has finished
+            size = sizeof(state);
+            db_get_value(hDB, 0, "/Runinfo/State", &state, &size, TID_INT, FALSE);
+            if (state == STATE_RUNNING) {
+               printf("Run hast started -> advance\n");
+               
+               seq.transition_request = FALSE;
+               seq.current_line_number++;
+            }
+         }
+      } else if (equal_ustring(mxml_get_value(pn), "Stop")) {
+         if (!seq.transition_request) {
+            seq.transition_request = TRUE;
+            size = sizeof(state);
+            db_get_value(hDB, 0, "/Runinfo/State", &state, &size, TID_INT, FALSE);
+            if (state != STATE_STOPPED) {
+               status = cm_transition(TR_STOP, 0, str, sizeof(str), DETACH, FALSE);
+               if (status != CM_SUCCESS) {
+                  sprintf(seq.error, "Cannot stop run: %s", str);
+                  seq.error_line = seq.current_line_number;
+                  seq.running = FALSE;
+                  seq.transition_request = FALSE;
+               }
+            }
+         } else {
+            // Wait until transition has finished
+            size = sizeof(state);
+            db_get_value(hDB, 0, "/Runinfo/State", &state, &size, TID_INT, FALSE);
+            if (state == STATE_STOPPED) {
+               printf("Run hast stopped -> advance\n");
+               
+               seq.transition_request = FALSE;
+               seq.current_line_number++;
+            }
+         }
       }
+      db_set_record(hDB, hKeySeq, &seq, sizeof(seq), 0);
+   }
+
+   /*---- Wait ----*/
+   else if (equal_ustring(mxml_get_name(pn), "Wait")) {
+      if (equal_ustring(mxml_get_attribute(pn, "for"), "Events")) {
+         n = atoi(mxml_get_value(pn));
+         seq.wait_n = n;
+         size = sizeof(d);
+         db_get_value(hDB, 0, "/Equipment/Trigger/Statistics/Events sent", &d, &size, TID_DOUBLE, FALSE);
+         seq.wait_counter = d;
+         if (d >= n) {
+            seq.current_line_number++;
+         }
+         seq.wait_counter = d;
+      } else if (equal_ustring(mxml_get_attribute(pn, "for"), "Seconds")) {
+         n = atoi(mxml_get_value(pn));
+         seq.wait_n = n;
+         if (seq.start_time == 0) {
+            seq.start_time = ss_time();
+            seq.wait_counter = 0;
+         } else {
+            seq.wait_counter = ss_time() - seq.start_time;
+            if (seq.wait_counter > seq.wait_n)
+               seq.wait_counter = seq.wait_n;
+         }
+         if (ss_time() - seq.start_time > seq.wait_n) {
+            seq.current_line_number++;
+            seq.start_time = 0;
+            seq.wait_n = 0;
+            seq.wait_counter = 0;
+         }
+         printf("Wait %d/%d\n", seq.wait_counter, seq.wait_n);
+      }
+      db_set_record(hDB, hKeySeq, &seq, sizeof(seq), 0);
+   }
+
+   /*---- Loop start ----*/
+   else if (equal_ustring(mxml_get_name(pn), "Loop")) {
+      for (i=0 ; i<4 ; i++)
+         if (seq.loop_start_line[i] == 0)
+            break;
+      if (i == 4) {
+         sprintf(seq.error, "Maximum loop nesting exceeded");
+         seq.error_line = seq.current_line_number;
+         seq.running = FALSE;
+      }
+      seq.loop_start_line[i] = seq.current_line_number;
+      seq.loop_end_line[i] = mxml_get_line_number_end(pn);
+      seq.loop_counter[i] = 1;
+      seq.loop_n[i] = atoi(mxml_get_attribute(pn, "n"));
+      seq.current_line_number++;
       db_set_record(hDB, hKeySeq, &seq, sizeof(seq), 0);
    }
 
@@ -9133,7 +9427,6 @@ void sequencer()
       seq.running = FALSE;
       db_set_record(hDB, hKeySeq, &seq, sizeof(seq), 0);
    }
-   
 }
 
 /*------------------------------------------------------------------*/
@@ -13138,6 +13431,44 @@ const char *mhttpd_js =
 "   }\n"
 "}\n"
 "\n"
+"function ODBGetRecord(path)\n"
+"{\n"
+"   request = XMLHttpRequestGeneric();\n"
+"\n"
+"   var url = '?cmd=jget&odb=' + path + '&name=1';\n"
+"   request.open('GET', url, false);\n"
+"   request.send(null);\n"
+"   return request.responseText;\n"
+"}\n"
+"\n"
+"function ODBExtractRecord(record, key)\n"
+"{\n"
+"   var array = record.split('\\n');\n"
+"   for (var i=0 ; i<array.length ; i++) {\n"
+"      var ind = array[i].indexOf(':');\n"
+"      if (ind > 0) {\n"
+"         var k = array[i].substr(0, ind);\n"
+"         if (k == key)\n"
+"            return array[i].substr(ind+1, array[i].length);\n"
+"      }\n"
+"      var ind = array[i].indexOf('[');\n"
+"      if (ind > 0) {\n"
+"         var k = array[i].substr(0, ind);\n"
+"         if (k == key) {\n"
+"            var a = new Array();\n"
+"            for (var j=0 ; ; j++,i++) {\n"
+"               if (array[i].substr(0, ind) != key)\n"
+"                  break;\n"
+"               var k = array[i].indexOf(':');\n"
+"               a[j] = array[i].substr(k+1, array[i].length);\n"
+"            }\n"
+"            return a;\n"
+"         }\n"
+"      }\n"
+"   }\n"
+"   return null;\n"
+"}\n"
+"\n"
 "function ODBKey(path)\n"
 "{\n"
 "   request = XMLHttpRequestGeneric();\n"
@@ -13437,6 +13768,19 @@ void interprete(const char *cookie_pwd, const char *cookie_wpwd, const char *coo
       return;
    }
 
+   /*---- java script commands --------------------------------------*/
+   
+   if (equal_ustring(command, "jset") ||
+       equal_ustring(command, "jget") ||
+       equal_ustring(command, "jkey") ||
+       equal_ustring(command, "jmsg") ||
+       equal_ustring(command, "jgenmsg") ||
+       equal_ustring(command, "jrpc_rev0") ||
+       equal_ustring(command, "jrpc_rev1")) {
+      java_script_commands(path, cookie_cpwd);
+      return;
+   }
+   
    /*---- redirect if SC command ------------------------------------*/
 
    if (equal_ustring(command, "SC")) {
@@ -14016,7 +14360,7 @@ void interprete(const char *cookie_pwd, const char *cookie_wpwd, const char *coo
    }
    
    /*---- custom page -----------------------------------------------*/
-
+   
    if (strncmp(path, "CS/", 3) == 0) {
       if (equal_ustring(command, "edit")) {
          sprintf(str, "%s?cmd=Edit&index=%d", path+3, index);
@@ -14659,6 +15003,8 @@ int main(int argc, char *argv[])
    /* get default from environment */
    cm_get_environment(midas_hostname, sizeof(midas_hostname), midas_expt, sizeof(midas_expt));
 
+   printf("PATH: %s\n", getenv("PATH"));
+   
    /* parse command line parameters */
    n_allowed_hosts = 0;
    for (i = 1; i < argc; i++) {
