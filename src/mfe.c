@@ -150,14 +150,17 @@ INT tr_start(INT rn, char *error)
     * if somehow it was not stopped from previous run */
    readout_enable(FALSE);
 
-   /* reset serial numbers */
+   /* reset serial numbers and statistics */
    for (i = 0; equipment[i].name[0]; i++) {
       equipment[i].serial_number = 0;
       equipment[i].subevent_number = 0;
       equipment[i].stats.events_sent = 0;
+      equipment[i].stats.events_per_sec = 0;
+      equipment[i].stats.kbytes_per_sec = 0;
       equipment[i].odb_in = equipment[i].odb_out = 0;
       n_events[i] = 0;
    }
+   db_send_changed_records();
 
    status = begin_of_run(rn, error);
 
@@ -627,7 +630,7 @@ INT register_equipment(void)
       db_open_record(hDB, hKey, eq_info, sizeof(EQUIPMENT_INFO), MODE_READ, NULL, NULL);
 
       if (equal_ustring(eq_info->format, "YBOS"))
-	assert(!"YBOS not supported anymore");
+	      assert(!"YBOS not supported anymore");
       else if (equal_ustring(eq_info->format, "FIXED"))
          equipment[idx].format = FORMAT_FIXED;
       else                      /* default format is MIDAS */
