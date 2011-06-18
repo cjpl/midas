@@ -9208,7 +9208,7 @@ void sequencer()
 {
    PMXML_NODE pn, pr;
    char odbpath[256], value[256], data[256], str[256];
-   int i, n, status, size, index, last_line, state;
+   int i, n, status, size, index, last_line, state, run_number;
    HNDLE hDB, hKey, hKeySeq;
    KEY key;
    double d;
@@ -9298,6 +9298,36 @@ void sequencer()
       db_set_record(hDB, hKeySeq, &seq, sizeof(seq), 0);
    }
    
+   /*---- ODBInc ----*/
+   else if (equal_ustring(mxml_get_name(pn), "ODBInc")) {
+      strlcpy(odbpath, mxml_get_attribute(pn, "path"), sizeof(odbpath));
+      if (strchr(odbpath, '[')) {
+         index = atoi(strchr(odbpath, '[')+1);
+         *strchr(odbpath, '[') = 0;
+      } else
+         index = 0;
+      strlcpy(value, mxml_get_value(pn), sizeof(value));
+      status = db_find_key(hDB, 0, odbpath, &hKey);
+      if (status != DB_SUCCESS) {
+         sprintf(seq.error, "Cannot find ODB key \"%s\"", odbpath);
+         seq.error_line = seq.current_line_number;
+         seq.running = FALSE;
+      } else {
+         db_get_key(hDB, hKey, &key);
+         size = sizeof(data);
+         db_get_data_index(hDB, hKey, data, &size, index, key.type);
+         db_sprintf(str, data, size, 0, key.type);
+         d = atof(str);
+         d += atof(value);
+         sprintf(str, "%lf", d);
+         size = sizeof(data);
+         db_sscanf(str, data, &size, 0, key.type);
+         db_set_data_index(hDB, hKey, data, key.item_size, index, key.type);
+         seq.current_line_number++;
+      }
+      db_set_record(hDB, hKeySeq, &seq, sizeof(seq), 0);
+   }
+
    /*---- RunDescription ----*/
    else if (equal_ustring(mxml_get_name(pn), "RunDescription")) {
       db_set_value(hDB, 0, "/Experiment/Run Parameters/Run Description", mxml_get_value(pn), 256, 1, TID_STRING);
@@ -9320,7 +9350,9 @@ void sequencer()
             size = sizeof(state);
             db_get_value(hDB, 0, "/Runinfo/State", &state, &size, TID_INT, FALSE);
             if (state != STATE_RUNNING) {
-               status = cm_transition(TR_START, 0, str, sizeof(str), DETACH, FALSE);
+               size = sizeof(run_number);
+               db_get_value(hDB, 0, "/Runinfo/Run number", &run_number, &size, TID_INT, FALSE);
+               status = cm_transition(TR_START, run_number+1, str, sizeof(str), DETACH, FALSE);
                if (status != CM_SUCCESS) {
                   sprintf(seq.error, "Cannot start run: %s", str);
                   seq.error_line = seq.current_line_number;
@@ -9380,6 +9412,35 @@ void sequencer()
             seq.current_line_number++;
          }
          seq.wait_counter = d;
+      } else  if (equal_ustring(mxml_get_attribute(pn, "for"), "ODBValue")) {
+         n = atoi(mxml_get_value(pn));
+         seq.wait_n = n;
+         if (!mxml_get_attribute(pn, "path")) {
+            sprintf(seq.error, "\"path\" must be given for ODB values");
+            seq.error_line = seq.current_line_number;
+            seq.running = FALSE;
+         } else {
+            strlcpy(odbpath, mxml_get_attribute(pn, "path"), sizeof(odbpath));
+            if (strchr(odbpath, '[')) {
+               index = atoi(strchr(odbpath, '[')+1);
+               *strchr(odbpath, '[') = 0;
+            } else
+               index = 0;
+            status = db_find_key(hDB, 0, odbpath, &hKey);
+            if (status != DB_SUCCESS) {
+               sprintf(seq.error, "Cannot find ODB key \"%s\"", odbpath);
+               seq.error_line = seq.current_line_number;
+               seq.running = FALSE;
+            } else {
+               db_get_key(hDB, hKey, &key);
+               size = sizeof(data);
+               db_get_data_index(hDB, hKey, data, &size, index, key.type);
+               db_sprintf(str, data, size, 0, key.type);
+               seq.wait_counter = atoi(str);
+               if (seq.wait_counter >= seq.wait_n)
+                  seq.current_line_number++;
+            }
+         }
       } else if (equal_ustring(mxml_get_attribute(pn, "for"), "Seconds")) {
          n = atoi(mxml_get_value(pn));
          seq.wait_n = n;
