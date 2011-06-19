@@ -8776,7 +8776,7 @@ const char *bar_col[] = {"#8080FF", "#A0A0FF", "#C0C0FF", "#E0E0FF"};
 
 void show_seq_page()
 {
-   INT i, size, n;
+   INT i, size, n, state;
    HNDLE hDB;
    char str[256], path[256], dir[256], error[256], comment[256], filename[256];
    time_t now;
@@ -8887,6 +8887,13 @@ void show_seq_page()
          seq.loop_n[i] = 0;
       }
       seq.stop_after_run = FALSE;
+      
+      /* stop run if not already stopped */
+      size = sizeof(state);
+      db_get_value(hDB, 0, "/Runinfo/State", &state, &size, TID_INT, FALSE);
+      if (state != STATE_STOPPED)
+         cm_transition(TR_STOP, 0, str, sizeof(str), DETACH, FALSE);
+      
       db_set_record(hDB, hKey, &seq, sizeof(seq), 0);
       redirect("");
       return;
@@ -8900,6 +8907,8 @@ void show_seq_page()
    rsprintf("<html><head>\n");
    rsprintf("<link rel=\"icon\" href=\"favicon.png\" type=\"image/png\" />\n");
    rsprintf("<link rel=\"stylesheet\" href=\"mhttpd.css\" type=\"text/css\" />\n");
+
+   rsprintf("<meta http-equiv=\"Refresh\" content=\"10\">\n");
 
    /* update script */
    rsprintf("<script type=\"text/javascript\" src=\"../mhttpd.js\"></script>\n");
@@ -9145,6 +9154,11 @@ void show_seq_page()
             rsprintf("<input type=submit name=cmd value=\"Cancel\">\n");
             rsprintf("</td></tr>\n");
          } else {
+            if (seq.stop_after_run)
+               rsprintf("<tr id=\"msg\" style=\"display:table-row\"><td colspan=2><b>Sequence will be stopped after current run</b></td></tr>\n");
+            else
+               rsprintf("<tr id=\"msg\" style=\"display:none\"><td colspan=2><b>Sequence will be stopped after current run</b></td></tr>\n");
+            
             for (i=0 ; i<4 ; i++) {
                rsprintf("<tr id=\"loop%d\" style=\"display:none\"><td colspan=2>\n", i);
                rsprintf("<table width=\"100%%\"><tr><td id=\"loop_label%d\">Loop&nbsp;%d:</td><td width=\"100%%\"><table id=\"loopprgs%d\" width=\"%d%%\" height=\"25\">\n", i, i, i, 
@@ -9391,9 +9405,16 @@ void sequencer()
             db_get_value(hDB, 0, "/Runinfo/State", &state, &size, TID_INT, FALSE);
             if (state == STATE_STOPPED) {
                printf("Run hast stopped -> advance\n");
-               
                seq.transition_request = FALSE;
-               seq.current_line_number++;
+               
+               if (seq.stop_after_run) {
+                  seq.stop_after_run = FALSE;
+                  seq.running = FALSE;
+                  seq.finished = TRUE;
+               } else
+                  seq.current_line_number++;
+               
+               db_set_record(hDB, hKeySeq, &seq, sizeof(seq), 0);
             }
          }
       }
