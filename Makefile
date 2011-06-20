@@ -109,7 +109,8 @@ NEED_MSCB=1
 #
 CC = cc $(USERFLAGS)
 CXX = g++ $(USERFLAGS)
-CFLAGS = -g -O2 -Wall -Wuninitialized -I$(INC_DIR) -I$(DRV_DIR) -I$(MXML_DIR) -I$(MSCB_DIR) -L$(LIB_DIR) -DHAVE_FTPLIB
+#CFLAGS = -g -O2 -Wall -Wuninitialized -I$(INC_DIR) -I$(DRV_DIR) -I$(MXML_DIR) -I$(MSCB_DIR) -L$(LIB_DIR) -DHAVE_FTPLIB
+CFLAGS = -g -O2 -Wall -Wno-unused-result -Wno-strict-aliasing -Wuninitialized -I$(INC_DIR) -I$(DRV_DIR) -I$(MXML_DIR) -I$(MSCB_DIR) -L$(LIB_DIR) -DHAVE_FTPLIB
 
 #-----------------------
 # Ovevwrite MAX_EVENT_SIZE with environment variable
@@ -272,8 +273,7 @@ EXAMPLES = $(BIN_DIR)/consume $(BIN_DIR)/produce \
 PROGS = $(BIN_DIR)/mserver $(BIN_DIR)/mhttpd \
 	$(BIN_DIR)/mlogger $(BIN_DIR)/odbedit \
 	$(BIN_DIR)/mtape $(BIN_DIR)/mhist \
-	$(BIN_DIR)/mstat $(BIN_DIR)/mcnaf \
-	$(BIN_DIR)/mdump \
+	$(BIN_DIR)/mstat $(BIN_DIR)/mdump \
 	$(BIN_DIR)/lazylogger \
 	$(BIN_DIR)/mtransition \
 	$(BIN_DIR)/mhdump \
@@ -335,7 +335,7 @@ doxfiles/html/midasintro.jpg: midasdoc-images.tar.gz
 	cp -pv images/* doxfiles/html/
 
 midasdoc-images.tar.gz:
-	wget --no-check-certificate https://midas.psi.ch/download/doc/midasdoc-images.tar.gz
+	wget https://midas.psi.ch/download/doc/midasdoc-images.tar.gz
 
 linux32:
 	$(MAKE) ROOTSYS= OS_DIR=linux-m32 USERFLAGS=-m32
