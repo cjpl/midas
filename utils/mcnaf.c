@@ -177,8 +177,8 @@ void mcstd_func(CAMAC * PP)
       switch (status) {
          /* system */
       case CAMST:
-         printf("camop\n");
-         camop();
+         printf("cam_op\n");
+         cam_op();
          break;
       case CAM_LAM_ENABLE:
          cam_lam_enable(p->c, p->n);

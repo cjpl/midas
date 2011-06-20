@@ -741,7 +741,7 @@ Detach service routine from LAM.
 @return void
 */
   EXTERNAL INLINE void EXPRT cam_interrupt_detach(const int c, const int n);
-  EXTERNAL INLINE void EXPRT camop();
+  EXTERNAL INLINE void EXPRT cam_op();
   
 #ifdef __cplusplus
 }
