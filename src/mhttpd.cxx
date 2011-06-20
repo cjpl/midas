@@ -6039,7 +6039,7 @@ void do_jrpc_rev1()
 
 /*------------------------------------------------------------------*/
 
-void output_key(HNDLE hkey, int index)
+void output_key(HNDLE hkey, int index, const char *format)
 {
    int size, i;
    char str[TEXT_SIZE];
@@ -6055,7 +6055,7 @@ void output_key(HNDLE hkey, int index)
          db_enum_key(hDB, hkey, i, &hsubkey);
          if (!hsubkey)
             break;
-         output_key(hsubkey, -1);
+         output_key(hsubkey, -1, format);
       }
    } else {
       if (key.item_size <= (int)sizeof(data)) {
@@ -6069,8 +6069,8 @@ void output_key(HNDLE hkey, int index)
                   else
                      rsprintf("%s[%d]:", key.name, i);
                }
-               if (isparam("format"))
-                  db_sprintff(str, getparam("format"), data, key.item_size, i, key.type);
+               if (format && format[0])
+                  db_sprintff(str, format, data, key.item_size, i, key.type);
                else
                   db_sprintf(str, data, key.item_size, i, key.type);
                rsputs(str);
@@ -6100,7 +6100,7 @@ void output_key(HNDLE hkey, int index)
 void java_script_commands(const char *path, const char *cookie_cpwd)
 {
    int size, i, index;
-   char str[TEXT_SIZE], ppath[256];
+   char str[TEXT_SIZE], ppath[256], format[256];
    HNDLE hDB, hkey;
    KEY key;
    char data[TEXT_SIZE];
@@ -6186,22 +6186,51 @@ void java_script_commands(const char *path, const char *cookie_cpwd)
    /* process "jget" command */
    if (equal_ustring(getparam("cmd"), "jget")) {
       
-      strlcpy(str, getparam("odb"), sizeof(str));
-      if (strchr(str, '[')) {
-         if (*(strchr(str, '[')+1) == '*')
-            index = -1;
+      if (isparam("odb")) {
+         strlcpy(str, getparam("odb"), sizeof(str));
+         if (strchr(str, '[')) {
+            if (*(strchr(str, '[')+1) == '*')
+               index = -1;
+            else
+               index = atoi(strchr(str, '[')+1);
+            *strchr(str, '[') = 0;
+         } else
+            index = 0;
+         
+         show_text_header();
+         
+         if (db_find_key(hDB, 0, str, &hkey) == DB_SUCCESS)
+            output_key(hkey, index, getparam("format"));
          else
-            index = atoi(strchr(str, '[')+1);
-         *strchr(str, '[') = 0;
-      } else
-         index = 0;
+            rsputs("<DB_NO_KEY>\n");
+      }
       
-      show_text_header();
-      
-      if (db_find_key(hDB, 0, str, &hkey) == DB_SUCCESS)
-         output_key(hkey, index);
-      else
-         rsputs("<DB_NO_KEY>");
+      if (isparam("odb0")) {
+         show_text_header();
+         for (i=0 ; ; i++) {
+            sprintf(ppath, "odb%d", i);
+            sprintf(format, "format%d", i);
+            if (isparam(ppath)) {
+               strlcpy(str, getparam(ppath), sizeof(str));
+               if (strchr(str, '[')) {
+                  if (*(strchr(str, '[')+1) == '*')
+                     index = -1;
+                  else
+                     index = atoi(strchr(str, '[')+1);
+                  *strchr(str, '[') = 0;
+               } else
+                  index = 0;
+               if (i > 0)
+                  rsputs("$#----#$\n");
+               if (db_find_key(hDB, 0, str, &hkey) == DB_SUCCESS)
+                  output_key(hkey, index, getparam(format));
+               else
+                  rsputs("<DB_NO_KEY>\n");
+               
+            } else
+               break;
+         }
+      }
       
       return;
    }
@@ -8820,6 +8849,7 @@ void show_seq_page()
    if (equal_ustring(getparam("cmd"), "Start Script")) {
       seq.running = TRUE;
       seq.finished = FALSE;
+      seq.transition_request = FALSE;
       seq.wait_counter = 0;
       seq.wait_n = 0;
       for (i=0 ; i<4 ; i++) {
@@ -8908,7 +8938,9 @@ void show_seq_page()
    rsprintf("<link rel=\"icon\" href=\"favicon.png\" type=\"image/png\" />\n");
    rsprintf("<link rel=\"stylesheet\" href=\"mhttpd.css\" type=\"text/css\" />\n");
 
-   rsprintf("<meta http-equiv=\"Refresh\" content=\"10\">\n");
+   if (!equal_ustring(getparam("cmd"), "Load Script") && !isparam("fs") &&
+       !equal_ustring(getparam("cmd"), "Edit Script"))
+      rsprintf("<meta http-equiv=\"Refresh\" content=\"10\">\n");
 
    /* update script */
    rsprintf("<script type=\"text/javascript\" src=\"../mhttpd.js\"></script>\n");
@@ -9306,6 +9338,10 @@ void sequencer()
          db_get_key(hDB, hKey, &key);
          size = sizeof(data);
          db_sscanf(value, data, &size, 0, key.type);
+         if (mxml_get_attribute(pn, "notify")) {
+            n = atoi(mxml_get_attribute(pn, "notify"));
+            db_set_data_index2(hDB, hKey, data, key.item_size, index, key.type, n);
+         }
          db_set_data_index(hDB, hKey, data, key.item_size, index, key.type);
          seq.current_line_number++;
       }
@@ -13511,6 +13547,34 @@ const char *mhttpd_js =
 "      }\n"
 "      return request.responseText;\n"
 "   }\n"
+"}\n"
+"\n"
+"function ODBMGet(paths, callback, formats)\n"
+"{\n"
+"   request = XMLHttpRequestGeneric();\n"
+"\n"   
+"   var url = '?cmd=jget';\n"
+"   for (var i=0 ; i<paths.length ; i++) {\n"
+"      url += '&odb'+i+'='+paths[i];\n"
+"      if (formats != undefined && formats != '')\n"
+"         url += '&format'+i+'=' + formats[i];\n"
+"   }\n"
+"\n"   
+"   if (callback != undefined) {\n"
+"      request.onreadystatechange = function() \n"
+"         {\n"
+"         if (request.readyState == 4) {\n"
+"            if (request.status == 200)\n"
+"               callback(request.responseText.split('$#----#$\\n'));\n"
+"         }\n"
+"      }\n"
+"      request.open('GET', url, true);\n"
+"   } else\n"
+"      request.open('GET', url, false);\n"
+"   request.send(null);\n"
+"\n"   
+"   if (callback == undefined)\n"
+"      return request.responseText.split('$#----#$\\n');\n"
 "}\n"
 "\n"
 "function ODBGetRecord(path)\n"
