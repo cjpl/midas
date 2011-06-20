@@ -8852,6 +8852,7 @@ void show_seq_page()
       seq.transition_request = FALSE;
       seq.wait_counter = 0;
       seq.wait_n = 0;
+      seq.start_time = 0;
       for (i=0 ; i<4 ; i++) {
          seq.loop_start_line[i] = 0;
          seq.loop_end_line[i] = 0;
@@ -9207,7 +9208,7 @@ void show_seq_page()
                rsprintf("</td></tr></table></td></tr></table></td></tr>\n");
             }
             if (seq.finished) {
-               rsprintf("<tr><td colspan=2 style=\"background-color:#80FF80;\"><b>Sequence is finisehd</b>\n");
+               rsprintf("<tr><td colspan=2 style=\"background-color:#80FF80;\"><b>Sequence is finished</b>\n");
                rsprintf("</td></tr>\n");
             }
             strlcpy(str, seq.path, sizeof(str));
@@ -9387,7 +9388,11 @@ void sequencer()
    
    /*---- Script ----*/
    else if (equal_ustring(mxml_get_name(pn), "Script")) {
-      ss_system(mxml_get_value(pn));
+      if (mxml_get_attribute(pn, "loop_counter"))
+         sprintf(str, "%s %d %d %d %d", mxml_get_value(pn), seq.loop_counter[0], seq.loop_counter[1], seq.loop_counter[2], seq.loop_counter[3]);
+      else
+         sprintf(str, "%s", mxml_get_value(pn));
+      ss_system(str);
       seq.current_line_number++;
       db_set_record(hDB, hKeySeq, &seq, sizeof(seq), 0);
    }
