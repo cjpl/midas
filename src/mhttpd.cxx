@@ -9003,10 +9003,16 @@ void show_seq_page()
    rsprintf("      var l = document.getElementById('loop'+i);\n");
    rsprintf("      if (loop_start_line[i] > 0) {\n");
    rsprintf("         var ll = document.getElementById('loop_label'+i);\n");
-   rsprintf("         ll.innerHTML = 'Loop:&nbsp['+loop_counter[i]+'/'+loop_n[i]+']';\n");
+   rsprintf("         if (loop_n[i] == -1)\n");
+   rsprintf("            ll.innerHTML = 'Loop:&nbsp['+loop_counter[i]+']';\n");
+   rsprintf("         else\n");
+   rsprintf("            ll.innerHTML = 'Loop:&nbsp['+loop_counter[i]+'/'+loop_n[i]+']';\n");
    rsprintf("         l.style.display = 'table-row';\n");
    rsprintf("         var lp = document.getElementById('loopprgs'+i);\n");
-   rsprintf("         lp.width = Math.round(100.0*loop_counter[i]/loop_n[i])+'%%';\n");
+   rsprintf("         if (loop_n[i] == -1)\n");
+   rsprintf("            lp.style.display = 'none';\n");
+   rsprintf("         else\n");
+   rsprintf("            lp.width = Math.round(100.0*loop_counter[i]/loop_n[i])+'%%';\n");
    rsprintf("      } else\n");
    rsprintf("         l.style.display = 'none';\n");
    rsprintf("   }\n");
@@ -9538,7 +9544,10 @@ void sequencer()
       seq.loop_start_line[i] = seq.current_line_number;
       seq.loop_end_line[i] = mxml_get_line_number_end(pn);
       seq.loop_counter[i] = 1;
-      seq.loop_n[i] = atoi(mxml_get_attribute(pn, "n"));
+      if (equal_ustring(mxml_get_attribute(pn, "n"), "infinite"))
+         seq.loop_n[i] = -1;
+      else
+         seq.loop_n[i] = atoi(mxml_get_attribute(pn, "n"));
       seq.current_line_number++;
       db_set_record(hDB, hKeySeq, &seq, sizeof(seq), 0);
    }
@@ -13500,7 +13509,7 @@ const char *mhttpd_js =
 "   else\n"
 "      pwd = '';\n"
 "\n"
-"   request = XMLHttpRequestGeneric();\n"
+"   var request = XMLHttpRequestGeneric();\n"
 "\n"
 "   url = '?cmd=jset&odb=' + path + '&value=' + value;\n"
 "\n"
@@ -13520,7 +13529,7 @@ const char *mhttpd_js =
 "\n"
 "function ODBGet(path, format, defval, len, type)\n"
 "{\n"
-"   request = XMLHttpRequestGeneric();\n"
+"   var request = XMLHttpRequestGeneric();\n"
 "\n"
 "   var url = '?cmd=jget&odb=' + path;\n"
 "   if (format != undefined && format != '')\n"
@@ -13556,7 +13565,7 @@ const char *mhttpd_js =
 "\n"
 "function ODBMGet(paths, callback, formats)\n"
 "{\n"
-"   request = XMLHttpRequestGeneric();\n"
+"   var request = XMLHttpRequestGeneric();\n"
 "\n"   
 "   var url = '?cmd=jget';\n"
 "   for (var i=0 ; i<paths.length ; i++) {\n"
@@ -13584,7 +13593,7 @@ const char *mhttpd_js =
 "\n"
 "function ODBGetRecord(path)\n"
 "{\n"
-"   request = XMLHttpRequestGeneric();\n"
+"   var request = XMLHttpRequestGeneric();\n"
 "\n"
 "   var url = '?cmd=jget&odb=' + path + '&name=1';\n"
 "   request.open('GET', url, false);\n"
@@ -13622,7 +13631,7 @@ const char *mhttpd_js =
 "\n"
 "function ODBKey(path)\n"
 "{\n"
-"   request = XMLHttpRequestGeneric();\n"
+"   var request = XMLHttpRequestGeneric();\n"
 "\n"
 "   var url = '?cmd=jkey&odb=' + path;\n"
 "   request.open('GET', url, false);\n"
@@ -13638,7 +13647,7 @@ const char *mhttpd_js =
 "\n"
 "function ODBRpc_rev0(name, rpc, args)\n"
 "{\n"
-"   request = XMLHttpRequestGeneric();\n"
+"   var request = XMLHttpRequestGeneric();\n"
 "\n"
 "   var url = '?cmd=jrpc_rev0&name=' + name + '&rpc=' + rpc;\n"
 "   for (var i = 2; i < arguments.length; i++) {\n"
@@ -13653,7 +13662,7 @@ const char *mhttpd_js =
 "\n"
 "function ODBRpc_rev1(name, rpc, max_reply_length, args)\n"
 "{\n"
-"   request = XMLHttpRequestGeneric();\n"
+"   var request = XMLHttpRequestGeneric();\n"
 "\n"
 "   var url = '?cmd=jrpc_rev1&name=' + name + '&rpc=' + rpc + '&max_reply_length=' + max_reply_length;\n"
 "   for (var i = 3; i < arguments.length; i++) {\n"
@@ -13668,7 +13677,7 @@ const char *mhttpd_js =
 "\n"
 "function ODBGetMsg(n)\n"
 "{\n"
-"   request = XMLHttpRequestGeneric();\n"
+"   var request = XMLHttpRequestGeneric();\n"
 "\n"
 "   var url = '?cmd=jmsg&n=' + n;\n"
 "   request.open('GET', url, false);\n"
@@ -13683,7 +13692,7 @@ const char *mhttpd_js =
 "\n"
 "function ODBGenerateMsg(m)\n"
 "{\n"
-"   request = XMLHttpRequestGeneric();\n"
+"   var request = XMLHttpRequestGeneric();\n"
 "\n"
 "   var url = '?cmd=jgenmsg&msg=' + m;\n"
 "   request.open('GET', url, false);\n"
