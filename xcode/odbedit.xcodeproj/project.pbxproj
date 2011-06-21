@@ -227,8 +227,8 @@
 				);
 				GCC_WARN_64_TO_32_BIT_CONVERSION = NO;
 				HEADER_SEARCH_PATHS = (
-					/midas/include/,
-					/mxml/,
+					../include/,
+					../../mxml/,
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
@@ -243,8 +243,8 @@
 				GCC_ENABLE_OBJC_EXCEPTIONS = YES;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = NO;
 				HEADER_SEARCH_PATHS = (
-					/midas/include/,
-					/mxml/,
+					../include/,
+					../../mxml/,
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
