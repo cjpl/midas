@@ -9303,7 +9303,6 @@ void sequencer()
             seq.current_line_number = seq.loop_start_line[i]+1;
          }
          db_set_record(hDB, hKeySeq, &seq, sizeof(seq), 0);
-         printf("%d loop end %d\n", seq.current_line_number, i);
          return;
       }
    }
@@ -9311,13 +9310,10 @@ void sequencer()
    /* find node belonging to current line */
    pn = mxml_get_node_at_line(pnseq, seq.current_line_number);
    if (!pn) {
-      printf("%d Skip\n", seq.current_line_number);
       seq.current_line_number++;
       db_set_record(hDB, hKeySeq, &seq, sizeof(seq), 0);
       return;
    }
-   
-   printf("%d %s\n", seq.current_line_number, mxml_get_name(pn));
    
    if (equal_ustring(mxml_get_name(pn), "PI") || 
        equal_ustring(mxml_get_name(pn), "RunSequence") ||
@@ -9426,8 +9422,6 @@ void sequencer()
             size = sizeof(state);
             db_get_value(hDB, 0, "/Runinfo/State", &state, &size, TID_INT, FALSE);
             if (state == STATE_RUNNING) {
-               printf("Run hast started -> advance\n");
-               
                seq.transition_request = FALSE;
                seq.current_line_number++;
             }
@@ -9451,7 +9445,6 @@ void sequencer()
             size = sizeof(state);
             db_get_value(hDB, 0, "/Runinfo/State", &state, &size, TID_INT, FALSE);
             if (state == STATE_STOPPED) {
-               printf("Run hast stopped -> advance\n");
                seq.transition_request = FALSE;
                
                if (seq.stop_after_run) {
@@ -9526,7 +9519,6 @@ void sequencer()
             seq.wait_n = 0;
             seq.wait_counter = 0;
          }
-         printf("Wait %d/%d\n", seq.wait_counter, seq.wait_n);
       }
       db_set_record(hDB, hKeySeq, &seq, sizeof(seq), 0);
    }
