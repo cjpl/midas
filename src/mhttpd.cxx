@@ -9474,11 +9474,11 @@ void sequencer()
          seq.wait_n = n;
          size = sizeof(d);
          db_get_value(hDB, 0, "/Equipment/Trigger/Statistics/Events sent", &d, &size, TID_DOUBLE, FALSE);
-         seq.wait_counter = d;
+         seq.wait_counter = (int)d;
          if (d >= n) {
             seq.current_line_number++;
          }
-         seq.wait_counter = d;
+         seq.wait_counter = (int)d;
       } else  if (equal_ustring(mxml_get_attribute(pn, "for"), "ODBValue")) {
          n = atoi(mxml_get_value(pn));
          seq.wait_n = n;
