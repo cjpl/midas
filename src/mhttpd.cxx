@@ -8801,7 +8801,7 @@ void init_sequencer()
 
 /*------------------------------------------------------------------*/
 
-const char *bar_col[] = {"#8080FF", "#A0A0FF", "#C0C0FF", "#E0E0FF"};
+const char *bar_col[] = {"#B0B0FF", "#C0C0FF", "#D0D0FF", "#E0E0FF"};
 
 void show_seq_page()
 {
@@ -9061,7 +9061,7 @@ void show_seq_page()
          rsprintf("}\n");
          rsprintf("//-->\n");
          rsprintf("</script>\n");
-         rsprintf("<input type=button onClick=\"stop_immediately()\" value=\"Stop immediately\"");
+         rsprintf("<input type=button onClick=\"stop_immediately()\" value=\"Stop immediately\">");
       } else {
          rsprintf("<input type=submit name=cmd value=\"Load Script\">\n");
          rsprintf("<script type=\"text/javascript\">\n");
