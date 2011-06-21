@@ -9513,7 +9513,7 @@ void sequencer()
             if (seq.wait_counter > seq.wait_n)
                seq.wait_counter = seq.wait_n;
          }
-         if (ss_time() - seq.start_time > seq.wait_n) {
+         if (ss_time() - seq.start_time > (DWORD)seq.wait_n) {
             seq.current_line_number++;
             seq.start_time = 0;
             seq.wait_n = 0;
