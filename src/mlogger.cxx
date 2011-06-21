@@ -2298,6 +2298,8 @@ INT log_open(LOG_CHN * log_chn, INT run_number)
 
 INT log_close(LOG_CHN * log_chn, INT run_number)
 {
+   char str[256], *p;
+
    if (log_chn->format == FORMAT_YBOS)
      assert(!"YBOS not supported anymore");
 
@@ -2315,6 +2317,17 @@ INT log_close(LOG_CHN * log_chn, INT run_number)
    if (log_chn->format == FORMAT_MIDAS)
       midas_log_close(log_chn, run_number);
 
+   /* if file name starts with '.', rename it */
+   strlcpy(str, log_chn->path, sizeof(str));
+   if (strrchr(str, DIR_SEPARATOR))
+      p = strrchr(str, DIR_SEPARATOR)+1;
+   else
+      p = str;
+   if (*p == '.') {
+      strlcpy(p, p+1, sizeof(str));
+      rename(log_chn->path, str);
+   }
+   
    log_chn->statistics.files_written += 1;
    log_chn->handle = 0;
    log_chn->ftp_con = NULL;
