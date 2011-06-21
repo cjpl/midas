@@ -8860,6 +8860,8 @@ void show_seq_page()
          seq.loop_n[i] = 0;
       }
       seq.current_line_number = 1;
+      seq.error[0] = 0;
+      seq.error_line = 0;
       db_set_record(hDB, hKey, &seq, sizeof(seq), 0);
       redirect("");
       return;
@@ -9244,6 +9246,10 @@ void show_seq_page()
                }
                rsprintf("</tr></td>\n");
                fclose(f);
+            } else {
+               if (str[0]) {
+                  rsprintf("<tr><td colspan=2><b>Cannot open file \"%s\"</td></tr>\n", str);
+               }
             }
          }
       } else {
