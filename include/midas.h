@@ -1586,6 +1586,7 @@ extern "C" {
    INT EXPRT cm_get_error(INT code, char *string);
    char EXPRT *cm_get_version(void);
    INT EXPRT cm_get_revision(void);
+   INT EXPRT cm_get_experiment_name(char *name, int name_size);
    INT EXPRT cm_get_environment(char *host_name, int host_name_size,
                                 char *exp_name, int exp_name_size);
    INT EXPRT cm_list_experiments(const char *host_name,

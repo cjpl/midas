@@ -538,8 +538,10 @@ extern "C" {
 #endif
 
    /*---- common function ----*/
-   INT EXPRT cm_set_path(char *path);
+   INT EXPRT cm_set_path(const char *path);
    INT EXPRT cm_get_path(char *path);
+   INT EXPRT cm_get_path1(char *path, int path_size);
+   INT EXPRT cm_set_experiment_name(const char *name);
    INT cm_dispatch_ipc(char *message, int s);
    INT EXPRT cm_msg_log(INT message_type, const char *message);
    INT EXPRT cm_msg_log1(INT message_type, const char *message, const char *facility);

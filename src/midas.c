@@ -1324,6 +1324,7 @@ INT cm_time(DWORD * t)
 
 static HNDLE _hKeyClient = 0;   /* key handle for client in ODB */
 static HNDLE _hDB = 0;          /* Database handle */
+static char _experiment_name[NAME_LENGTH];
 static char _client_name[NAME_LENGTH];
 static char _path_name[MAX_STRING_LENGTH];
 static INT _call_watchdog = TRUE;
@@ -1362,9 +1363,9 @@ The path is then used for all shared memory routines.
 @param  path             Pathname
 @return CM_SUCCESS
 */
-INT cm_set_path(char *path)
+INT cm_set_path(const char *path)
 {
-   strcpy(_path_name, path);
+   strlcpy(_path_name, path, sizeof(_path_name));
 
    /* check for trailing directory seperator */
    if (strlen(_path_name) > 0 && _path_name[strlen(_path_name) - 1] != DIR_SEPARATOR)
@@ -1382,6 +1383,39 @@ Return the path name previously set with cm_set_path.
 INT cm_get_path(char *path)
 {
    strcpy(path, _path_name);
+
+   return CM_SUCCESS;
+}
+
+INT cm_get_path1(char *path, int path_size)
+{
+   strlcpy(path, _path_name, path_size);
+
+   return CM_SUCCESS;
+}
+
+/********************************************************************/
+/**
+Set name of the experiment
+@param  name             Experiment name
+@return CM_SUCCESS
+*/
+INT cm_set_experiment_name(const char *name)
+{
+   strlcpy(_experiment_name, name, sizeof(_experiment_name));
+   return CM_SUCCESS;
+}
+
+/********************************************************************/
+/**
+Return the experiment name
+@param  name             Pointer to user string, size should be at least NAME_LENGTH
+@param  name_size        Size of user string
+@return CM_SUCCESS
+*/
+INT cm_get_experiment_name(char *name, int name_length)
+{
+   strlcpy(name, _experiment_name, name_length);
 
    return CM_SUCCESS;
 }
@@ -2105,6 +2139,7 @@ INT cm_connect_experiment1(const char *host_name, const char *exp_name,
          return CM_UNDEF_EXP;
       }
 
+      cm_set_experiment_name(exptab[i].name);
       cm_set_path(exptab[i].directory);
 
       /* create alarm and elog semaphores */
