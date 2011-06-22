@@ -324,17 +324,7 @@ all: check-mxml \
 	$(LIB_DIR)/fal.o $(PROGS)
 
 dox:
-	cd doxfiles; doxygen midox.cfg
-	$(MAKE) dox_images
-
-dox_images: doxfiles/html/midasintro.jpg
-
-doxfiles/html/midasintro.jpg: midasdoc-images.tar.gz
-	tar xzvf $^
-	cp -pv images/* doxfiles/html/
-
-midasdoc-images.tar.gz:
-	wget https://midas.psi.ch/download/doc/midasdoc-images.tar.gz
+	cd doc; make
 
 linux32:
 	$(MAKE) ROOTSYS= OS_DIR=linux-m32 USERFLAGS=-m32
