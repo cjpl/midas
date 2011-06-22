@@ -28,8 +28,8 @@ html: index rmtmp images/done
 #	Javascript : copy files and required images to html
 	cp src/*.js html/.
 	cp src/*.css html/.
-	cp images/page_*.gif html/.
-	cp images/section_*.gif html/.
+	#cp images/page_*.gif html/.
+	#cp images/section_*.gif html/.
 
 images/done: midasdoc-images.tar.gz
 	tar xzvf midasdoc-images.tar.gz
