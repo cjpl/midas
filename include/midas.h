@@ -727,7 +727,8 @@ Slow control device driver commands */
 #define CMD_GET_RAMPUP               CMD_GET_DIRECT+3
 #define CMD_GET_RAMPDOWN             CMD_GET_DIRECT+4
 #define CMD_GET_TRIP_TIME            CMD_GET_DIRECT+5 
-#define CMD_GET_DIRECT_LAST          CMD_GET_DIRECT+5 /* update this if you add new commands ! */
+#define CMD_GET_TRIP                 CMD_GET_DIRECT+6
+#define CMD_GET_DIRECT_LAST          CMD_GET_DIRECT+6 /* update this if you add new commands ! */
 
 #define CMD_ENABLE_COMMAND       (1<<14)  /* these two commands can be used to enable/disable */
 #define CMD_DISABLE_COMMAND      (1<<15)  /* one of the other commands                        */
