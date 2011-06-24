@@ -102,7 +102,13 @@ INT iseg_hv_mpod_init(HNDLE hkey, void **pinfo, INT channels, INT(*bd) (INT cmd,
    info->crate = SnmpOpen(info->settings.mpod_device);
 
    // check main switch
-   status = getMainSwitch(info->crate);
+   for (i=0 ; i<100 ; i++) {
+      status = getMainSwitch(info->crate);
+      if (status == -1)
+         ss_sleep(10);
+      else
+         break;
+   }
    if (status < 0) {
       cm_msg(MERROR, "iseg_hv_mpod_init",
              "Cannot access MPOD crate at \"%s\". Check power and connection.",
@@ -117,12 +123,12 @@ INT iseg_hv_mpod_init(HNDLE hkey, void **pinfo, INT channels, INT(*bd) (INT cmd,
    }
     
    // reset any trip and clear all events
-   for (i=0; i<channels ; i++)
-      status = setChannelSwitch(info->crate, i+1, 10);
+   //for (i=0; i<channels ; i++)
+   //   status = setChannelSwitch(info->crate, i+1, 10);
        
    // switch all channels on
-   for (i=0; i<channels ; i++)
-      status = setChannelSwitch(info->crate, i+1, 1); 
+   //for (i=0; i<channels ; i++)
+   //   status = setChannelSwitch(info->crate, i+1, 1); 
 
    /* read all values from HV devices */
    for (i=0; i<channels; i++) {
@@ -166,11 +172,32 @@ INT iseg_hv_mpod_set(ISEG_HV_MPOD_INFO * info, INT channel, float value)
 INT iseg_hv_mpod_get(ISEG_HV_MPOD_INFO * info, INT channel, float *pvalue)
 {
    double value;
+   int i, status;
 
-   value = getOutputSenseMeasurement(info->crate, channel+1);
+   for (i=0 ; i<100 ; i++) {
+      status = getChannelStatus(info->crate, channel+1);
+      if (status == -1)
+         ss_sleep(10);
+      else
+         break;
+   }
 
-   /* round to 3 digites */
-   *pvalue = (float)((int)(value*1e3+0.5)/1E3);
+   if (status & 1<<10)
+      printf("Channel %d tripped\n", channel);
+
+   for (i=0 ; i<100 ; i++) {
+      value = getOutputSenseMeasurement(info->crate, channel+1);
+      if (value == -1)
+         ss_sleep(10);
+      else
+         break;
+   }
+
+   if (value != -1) {
+      /* round to 3 digites */
+      *pvalue = (float)((int)(value*1e3+0.5)/1E3);
+   } else
+      *pvalue = (float)ss_nan();
 
    return FE_SUCCESS;
 }
@@ -180,15 +207,48 @@ INT iseg_hv_mpod_get(ISEG_HV_MPOD_INFO * info, INT channel, float *pvalue)
 INT iseg_hv_mpod_get_current(ISEG_HV_MPOD_INFO * info, INT channel, float *pvalue)
 {
    double value;
+   int i; 
 
-   value = (float)(getCurrentMeasurement(info->crate, channel+1)*1E6); // convert to uA
+   for (i=0 ; i<100 ; i++) {
+      value = getCurrentMeasurement(info->crate, channel+1);
+      if (value == -1)
+         ss_sleep(10);
+      else
+         break;
+   }
 
-   /* round to 3 digites */
-   *pvalue = (float)((int)(value*1e3+0.5)/1E3);
+   if (value != -1) {
+      value = value * 1E6; // convert to uA
+      /* round to 3 digites */
+      *pvalue = (float)((int)(value*1e3+0.5)/1E3);
+   } else
+      *pvalue = (float)ss_nan();
 
    return FE_SUCCESS;
 }
 
+/*----------------------------------------------------------------------------*/
+
+INT iseg_hv_mpod_get_trip(ISEG_HV_MPOD_INFO * info, INT channel, INT *pvalue)
+{
+   int i, status;
+
+   for (i=0 ; i<100 ; i++) {
+      status = getChannelStatus(info->crate, channel+1);
+      if (status == -1)
+         ss_sleep(10);
+      else
+         break;
+   }
+
+   if (status & 1<<10)
+      *pvalue = 1;
+   else
+      *pvalue = 0;
+
+   return FE_SUCCESS;
+}
+    
 /*----------------------------------------------------------------------------*/
 
 INT iseg_hv_mpod_get_demand(ISEG_HV_MPOD_INFO * info, INT channel, float *pvalue)
@@ -265,7 +325,7 @@ INT iseg_hv_mpod(INT cmd, ...)
 {
    va_list argptr;
    HNDLE hKey;
-   INT channel, status;
+   INT channel, status, *pivalue;
    float value, *pvalue;
    void *bd;
    ISEG_HV_MPOD_INFO *info;
@@ -384,6 +444,13 @@ INT iseg_hv_mpod(INT cmd, ...)
       channel = va_arg(argptr, INT);
       pvalue = va_arg(argptr, float *);
       status = iseg_hv_mpod_get_rampdown(info, channel, pvalue);
+      break;
+
+   case CMD_GET_TRIP:
+      info = va_arg(argptr, ISEG_HV_MPOD_INFO *);
+      channel = va_arg(argptr, INT);
+      pivalue = va_arg(argptr, INT *);
+      status = iseg_hv_mpod_get_trip(info, channel, pivalue);
       break;
 
    case CMD_GET_TRIP_TIME:
