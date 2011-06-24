@@ -944,6 +944,7 @@ int snmpGetInt(HSNMP m_sessp, const oid* parameter, size_t length) {
   /*
   * Process the response.
   */
+  value = -1;
   if (status == STAT_SUCCESS && response->errstat == SNMP_ERR_NOERROR) {
     /*
     * SUCCESS: Print the result variables
@@ -961,6 +962,9 @@ int snmpGetInt(HSNMP m_sessp, const oid* parameter, size_t length) {
 			else if(vars->type == ASN_INTEGER) {				      // 0x02
 				value = (double)*vars->val.integer;
       }
+			else if(vars->type == ASN_OCTET_STR) {				      // 0x04
+            value = vars->val.bitstring[0]*256+vars->val.bitstring[1];
+      }
     }
   } else {
     /*
@@ -970,9 +974,10 @@ int snmpGetInt(HSNMP m_sessp, const oid* parameter, size_t length) {
     if (status == STAT_SUCCESS)
       fprintf(stderr, "Error in packet\nReason: %s\n",
       snmp_errstring(response->errstat));
-    else
-      snmp_sess_perror("snmpget",snmp_sess_session(m_sessp));
-    return -1;
+    // do not clutter up screen
+    //else
+    //  snmp_sess_perror("snmpget",snmp_sess_session(m_sessp));
+    value = -1;
   }
   snmp_free_pdu(response);
   return (int) value;
@@ -1078,7 +1083,8 @@ double snmpGetDouble(HSNMP m_sessp, const oid* parameter, size_t length) {
       fprintf(stderr, "Error in packet\nReason: %s\n",
       snmp_errstring(response->errstat));
     else
-      snmp_sess_perror("snmpget",snmp_sess_session(m_sessp));
+       // suppress timeout's not to clutter the screen
+       // snmp_sess_perror("snmpget",snmp_sess_session(m_sessp));
     return -1;
   }
   snmp_free_pdu(response);
