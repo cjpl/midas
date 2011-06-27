@@ -85,20 +85,13 @@ INT ss_set_async_flag(INT flag)
    return old_flag;
 }
 
-/*#define USE_MMAP_SHM 1*/
-/*#define USE_POSIX_SHM 1*/
-
-#if defined(OS_UNIX) && !defined(USE_POSIX_SHM) && !defined(USE_MMAP_SHM)
-#define USE_SYSV_SHM  1
-#endif
-
-#if defined(USE_MMAP_SHM) || defined(USE_POSIX_SHM)
+#if defined(OS_UNIX)
 
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/mman.h>
 
-#if defined(USE_POSIX_SHM) && defined(OS_DARWIN)
+#if defined(OS_DARWIN)
 #include <sys/posix_shm.h>
 #endif
 
@@ -108,10 +101,17 @@ static int mmap_size[MAX_MMAP];
 
 static int debug = 0;
 
+static int use_sysv_shm = 0;
+static int use_mmap_shm = 0;
+static int use_posix_shm = 0;
+static int use_posix1_shm = 0;
+static int use_posix2_shm = 0;
+
 #endif
 
 static int ss_shm_name(const char* name, char* mem_name, int mem_name_size, char* file_name, int file_name_size, char* shm_name, int shm_name_size)
 {
+   char exptname[256];
    char path[256];
 
    if (mem_name) {
@@ -124,7 +124,12 @@ static int ss_shm_name(const char* name, char* mem_name, int mem_name_size, char
    }
 
    /* append .SHM and preceed the path for the shared memory file name */
-   cm_get_path(path);
+
+   cm_get_experiment_name(exptname, sizeof(exptname));
+   cm_get_path1(path, sizeof(path));
+
+   //printf("shm name [%s], expt name [%s], path [%s]\n", name, exptname, path);
+
    if (path[0] == 0) {
       getcwd(path, 256);
 #if defined(OS_VMS)
@@ -145,13 +150,16 @@ static int ss_shm_name(const char* name, char* mem_name, int mem_name_size, char
    if (shm_name) {
       char* s;
 
-#if 0
-      strlcpy(shm_name, name, shm_name_size);
-      strlcat(shm_name, "_", shm_name_size);
-      strlcat(shm_name, name, shm_name_size);
-#endif
+#if defined(OS_UNIX)
       strlcpy(shm_name, "/", shm_name_size);
-      strlcat(shm_name, file_name, shm_name_size);
+      if (use_posix1_shm)
+         strlcat(shm_name, file_name, shm_name_size);
+      else {
+         strlcat(shm_name, exptname, shm_name_size);
+         strlcat(shm_name, "_", shm_name_size);
+         strlcat(shm_name, name, shm_name_size);
+         strlcat(shm_name, "_SHM", shm_name_size);
+      }
 
       for (s=shm_name+1; *s; s++)
          if (*s == '/')
@@ -162,13 +170,15 @@ static int ss_shm_name(const char* name, char* mem_name, int mem_name_size, char
          strlcpy(shm_name, name, shm_name_size);
 #endif
 
+      //printf("shm_name [%s]\n", shm_name);
 
+#endif
    }
 
    return SS_SUCCESS;
 }
 
-#ifdef USE_SYSV_SHM
+#if defined OS_UNIX
 static int ss_shm_file_name_to_shmid(const char* file_name, int* shmid)
 {
    int key, status;
@@ -234,10 +244,96 @@ static void check_shm_type(const char* shm_type)
    if (s)
       *s = 0;
 
+   //printf("shm_type [%s]\n", buf);
+
+   if (strcmp(buf, "SYSV_SHM") == 0) {
+      use_sysv_shm = 1;
+      return;
+   }
+
+   if (strcmp(buf, "MMAP_SHM") == 0) {
+      use_mmap_shm = 1;
+      return;
+   }
+
+   if (strcmp(buf, "POSIX_SHM") == 0) {
+      use_posix1_shm = 1;
+      use_posix_shm = 1;
+      return;
+   }
+
+   if (strcmp(buf, "POSIXv2_SHM") == 0) {
+      use_posix2_shm = 1;
+      use_posix_shm = 1;
+      return;
+   }
+
+#if 0
    if (strcmp(buf, shm_type) == 0)
       return; // success!
+#endif
 
    cm_msg(MERROR, "ss_shm_open", "Error: This MIDAS is built for %s while this experiment uses %s (see \'%s\')", shm_type, buf, file_name);
+   exit(1);
+}
+
+static void check_shm_host()
+{
+   char file_name[256];
+   const int file_name_size = sizeof(file_name);
+   char path[256];
+   char buf[256];
+   char hostname[256];
+   char* s;
+   FILE *fp;
+
+   gethostname(hostname, sizeof(hostname));
+
+   //printf("hostname [%s]\n", hostname);
+
+   cm_get_path1(path, sizeof(path));
+   if (path[0] == 0) {
+      getcwd(path, 256);
+#if defined(OS_VMS)
+#elif defined(OS_UNIX)
+      strcat(path, "/");
+#elif defined(OS_WINNT)
+      strcat(path, "\\");
+#endif
+   }
+
+   strlcpy(file_name, path, file_name_size);
+#if defined (OS_UNIX)
+   strlcat(file_name, ".", file_name_size); /* dot file under UNIX */
+#endif
+   strlcat(file_name, "SHM_HOST", file_name_size);
+   strlcat(file_name, ".TXT", file_name_size);
+
+   fp = fopen(file_name, "r");
+   if (!fp) {
+      fp = fopen(file_name, "w");
+      if (!fp)
+         cm_msg(MERROR, "ss_shm_open", "Cannot write to \'%s\', errno %d (%s)", file_name, errno, strerror(errno));
+      assert(fp != NULL);
+      fprintf(fp, "%s\n", hostname);
+      fclose(fp);
+      return;
+   }
+
+   fgets(buf, sizeof(buf), fp);
+   fclose(fp);
+
+   s = strchr(buf, '\n');
+   if (s)
+      *s = 0;
+
+   if (strlen(buf) < 1)
+      return; // success - provide user with a way to defeat this check
+
+   if (strcmp(buf, hostname) == 0)
+      return; // success!
+
+   cm_msg(MERROR, "ss_shm_open", "Error: Cannot connect to MIDAS shared memory - this computer hostname is \'%s\' while \'%s\' says that MIDAS shared memory for this experiment is located on computer \'%s\'. To connect to this experiment from this computer, use the mserver. Please see the MIDAS documentation for details.", hostname, file_name, buf);
    exit(1);
 }
 
@@ -274,6 +370,11 @@ INT ss_shm_open(const char *name, INT size, void **adr, HNDLE * handle, BOOL get
    char mem_name[256];
    char file_name[256];
    char shm_name[256];
+
+   check_shm_host();
+#ifdef OS_UNIX
+   check_shm_type("POSIXv2_SHM"); // find type of shared memory in use
+#endif
 
    ss_shm_name(name, mem_name, sizeof(mem_name), file_name, sizeof(file_name), shm_name, sizeof(shm_name));
 
@@ -380,17 +481,14 @@ INT ss_shm_open(const char *name, INT size, void **adr, HNDLE * handle, BOOL get
    }
 
 #endif                          /* OS_VMS */
-#ifdef USE_SYSV_SHM
+#ifdef OS_UNIX
 
-   status = SS_SUCCESS;
+   if (use_sysv_shm) {
 
-   {
-      check_shm_type("SYSV_SHM");
-   }
-
-   {
       int key, shmid, fh, file_size;
       struct shmid_ds buf;
+
+      status = SS_SUCCESS;
 
       /* create a unique key from the file name */
       key = ftok(file_name, 'M');
@@ -474,28 +572,22 @@ INT ss_shm_open(const char *name, INT size, void **adr, HNDLE * handle, BOOL get
       return status;
    }
 
-#endif                          /* USE_SYSV_SHM */
-#ifdef USE_MMAP_SHM
+   if (use_mmap_shm) {
 
-   {
-      check_shm_type("MMAP_SHM");
-   }
-
-   if (1) {
-      static int once = 1;
-      if (once && strstr(file_name, "ODB")) {
-         once = 0;
-         cm_msg(MINFO, "ss_shm_open",
-                "WARNING: This version of MIDAS system.c uses the experimental mmap() based implementation of MIDAS shared memory.");
-      }
-   }
-
-   status = SS_SUCCESS;
-
-   {
       int ret;
       int fh, file_size;
       int i;
+
+      if (1) {
+         static int once = 1;
+         if (once && strstr(file_name, "ODB")) {
+            once = 0;
+            cm_msg(MINFO, "ss_shm_open",
+                   "WARNING: This version of MIDAS system.c uses the experimental mmap() based implementation of MIDAS shared memory.");
+         }
+      }
+
+      status = SS_SUCCESS;
 
       fh = open(file_name, O_RDWR | O_BINARY | O_LARGEFILE, 0644);
 
@@ -562,30 +654,13 @@ INT ss_shm_open(const char *name, INT size, void **adr, HNDLE * handle, BOOL get
       return status;
    }
 
-#endif /* USE_MMAP_SHM */
-#if defined(USE_POSIX_SHM)
+   if (use_posix_shm) {
 
-   {
-      check_shm_type("POSIX_SHM");
-   }
-
-   if (0) {
-      static int once = 1;
-      if (once && strstr(file_name, "ODB")) {
-         once = 0;
-         cm_msg(MINFO, "ss_shm_open", "WARNING: This version of MIDAS system.c uses the experimental POSIX+mmap() based implementation of MIDAS shared memory.");
-      }
-   }
-
-   status = SS_SUCCESS;
-
-   if (debug)
-      printf("ss_shm_open(%s), file_name %s, shm_name %s, size %d\n", name, file_name, shm_name, size);
-
-   {
       int fh, sh, file_size;
       int created = 0;
       int i;
+
+      status = SS_SUCCESS;
 
       fh = open(file_name, O_RDWR | O_BINARY | O_LARGEFILE, 0644);
 
@@ -687,7 +762,9 @@ INT ss_shm_open(const char *name, INT size, void **adr, HNDLE * handle, BOOL get
 	return SS_SUCCESS;
    }
 
-#endif /* USE_POSIX_SHM */
+#endif /* OS_UNIX */
+
+   return SS_FILE_ERROR;
 }
 
 /*------------------------------------------------------------------*/
@@ -780,9 +857,10 @@ INT ss_shm_close(const char *name, void *adr, HNDLE handle, INT destroy_flag)
    return SS_INVALID_ADDRESS;
 
 #endif                          /* OS_VMS */
-#ifdef USE_SYSV_SHM
+#ifdef OS_UNIX
 
-   {
+   if (use_sysv_shm) {
+
       struct shmid_ds buf;
       FILE *fh;
       int i;
@@ -831,10 +909,7 @@ INT ss_shm_close(const char *name, void *adr, HNDLE handle, INT destroy_flag)
       return SS_SUCCESS;
    }
 
-#endif                          /* USE_SYSV_SHM */
-#if defined(USE_MMAP_SHM) || defined (USE_POSIX_SHM)
-
-   if (1) {
+   if (use_mmap_shm || use_posix_shm) {
       int status;
 
       if (debug)
@@ -860,8 +935,9 @@ INT ss_shm_close(const char *name, void *adr, HNDLE handle, INT destroy_flag)
 
       return SS_SUCCESS;
    }
-#endif                          /* USE_MMAP_SHM */
+#endif /* OS_UNIX */
 
+   return SS_FILE_ERROR;
 }
 
 /*------------------------------------------------------------------*/
@@ -900,8 +976,9 @@ INT ss_shm_delete(const char *name)
    return SS_NO_MEMORY;
 #endif                          /* OS_VMS */
 
-#ifdef USE_SYSV_SHM
-   if (1) {
+#ifdef OS_UNIX
+
+   if (use_posix_shm) {
       int shmid;
       struct shmid_ds buf;
       
@@ -919,23 +996,27 @@ INT ss_shm_delete(const char *name)
 
       return SS_SUCCESS;
    }
-#endif /* USE_SYSV_SHM */
 
-#if defined(USE_MMAP_SHM)
-   /* no shared memory segments to delete */
-   return SS_SUCCESS;
-#endif /* USE_MMAP_SHM */
-
-#if defined(USE_POSIX_SHM)
-   printf("ss_shm_delete(%s) shm_name %s\n", name, shm_name);
-   status = shm_unlink(shm_name);
-   if (status < 0) {
-      cm_msg(MERROR, "ss_shm_delete", "shm_unlink(%s) errno %d (%s)", shm_name, errno, strerror(errno));
-      return SS_NO_MEMORY;
+   if (use_mmap_shm) {
+      /* no shared memory segments to delete */
+      return SS_SUCCESS;
    }
 
-   return SS_SUCCESS;
-#endif /* USE_POSIX_SHM */
+   if (use_posix_shm) {
+
+      //printf("ss_shm_delete(%s) shm_name %s\n", name, shm_name);
+      status = shm_unlink(shm_name);
+      if (status < 0) {
+         cm_msg(MERROR, "ss_shm_delete", "shm_unlink(%s) errno %d (%s)", shm_name, errno, strerror(errno));
+         return SS_NO_MEMORY;
+      }
+
+      return SS_SUCCESS;
+   }
+
+#endif /* OS_UNIX */
+
+   return SS_FILE_ERROR;
 }
 
 /*------------------------------------------------------------------*/
@@ -966,27 +1047,26 @@ INT ss_shm_protect(HNDLE handle, void *adr)
       return SS_INVALID_ADDRESS;
 
 #endif                          /* OS_WINNT */
-#ifdef USE_SYSV_SHM
+#ifdef OS_UNIX
 
-   int i;
-   i = handle;                  /* avoid compiler warning */
+   if (use_sysv_shm) {
 
-   if (shmdt(adr) < 0) {
-      cm_msg(MERROR, "ss_shm_protect", "shmdt() failed");
-      return SS_INVALID_ADDRESS;
+      int i;
+      i = handle;                  /* avoid compiler warning */
+      
+      if (shmdt(adr) < 0) {
+         cm_msg(MERROR, "ss_shm_protect", "shmdt() failed");
+         return SS_INVALID_ADDRESS;
+      }
    }
-#endif                          /* USE_SYSV_SHM */
-#if defined(USE_MMAP_SHM) || defined(USE_POSIX_SHM)
 
-   int i;
-   i = handle;                  /* avoid compiler warning */
+   if (use_mmap_shm || use_posix_shm) {
 
-   if (1) {
       int ret;
 
       assert(handle>=0 && handle<MAX_MMAP);
       assert(adr == mmap_addr[handle]);
-
+      
       ret = mprotect(mmap_addr[handle], mmap_size[handle], PROT_NONE);
       if (ret != 0) {
          cm_msg(MERROR, "ss_shm_protect",
@@ -994,7 +1074,9 @@ INT ss_shm_protect(HNDLE handle, void *adr)
          return SS_INVALID_ADDRESS;
       }
    }
-#endif                          /* USE_MMAP_SHM */
+
+#endif // OS_UNIX
+
    return SS_SUCCESS;
 }
 
@@ -1029,18 +1111,19 @@ INT ss_shm_unprotect(HNDLE handle, void **adr)
       return SS_NO_MEMORY;
    }
 #endif                          /* OS_WINNT */
-#ifdef USE_SYSV_SHM
+#ifdef OS_UNIX
 
-   *adr = shmat(handle, 0, 0);
+   if (use_sysv_shm) {
 
-   if ((*adr) == (void *) (-1)) {
-      cm_msg(MERROR, "ss_shm_unprotect", "shmat() failed, errno = %d", errno);
-      return SS_NO_MEMORY;
+      *adr = shmat(handle, 0, 0);
+      
+      if ((*adr) == (void *) (-1)) {
+         cm_msg(MERROR, "ss_shm_unprotect", "shmat() failed, errno = %d", errno);
+         return SS_NO_MEMORY;
+      }
    }
-#endif                          /* USE_SYSV_SHM */
-#if defined(USE_MMAP_SHM) || defined(USE_POSIX_SHM)
 
-   if (1) {
+   if (use_mmap_shm || use_posix_shm) {
       int ret;
 
       assert(adr == mmap_addr[handle]);
@@ -1052,7 +1135,8 @@ INT ss_shm_unprotect(HNDLE handle, void **adr)
          return SS_INVALID_ADDRESS;
       }
    }
-#endif                          /* USE_MMAP_SHM */
+
+#endif // OS_UNIX
 
    return SS_SUCCESS;
 }
@@ -1097,20 +1181,21 @@ INT ss_shm_flush(const char *name, const void *adr, INT size, HNDLE handle)
    return SS_SUCCESS;
 
 #endif                          /* OS_VMS */
-#if defined(USE_SYSV_SHM) || defined(USE_POSIX_SHM)
+#ifdef OS_UNIX
 
-   if (!disable_shm_write) {
+   if ((use_sysv_shm || use_posix_shm) && !disable_shm_write) {
+
       int fd;
       int ret;
 
-#ifdef USE_POSIX_SHM
-      if (debug)
-         printf("ss_shm_flush(%s) size %d\n", file_name, size);
-
-      assert(handle>=0 && handle<MAX_MMAP);
-      assert(adr == mmap_addr[handle]);
-      assert(size == mmap_size[handle]);
-#endif
+      if (use_posix_shm) {
+         if (debug)
+            printf("ss_shm_flush(%s) size %d\n", file_name, size);
+         
+         assert(handle>=0 && handle<MAX_MMAP);
+         assert(adr == mmap_addr[handle]);
+         assert(size == mmap_size[handle]);
+      }
 
       fd = open(file_name, O_RDWR | O_CREAT, 0777);
       if (fd < 0) {
@@ -1131,23 +1216,23 @@ INT ss_shm_flush(const char *name, const void *adr, INT size, HNDLE handle)
 	cm_msg(MERROR, "ss_shm_flush", "Cannot write to file \'%s\', close() errno %d (%s)", file_name, errno, strerror(errno));
 	return SS_NO_MEMORY;
       }
+
+      return SS_SUCCESS;
    }
-   return SS_SUCCESS;
 
-#endif /* USE_SYSV_SHM || USE_POSIX_SHM */
-#ifdef USE_MMAP_SHM
-
-   if (1) {
+   if (use_mmap_shm) {
       int ret = msync(adr, size, MS_ASYNC);
       if (ret != 0) {
          cm_msg(MERROR, "ss_shm_flush", "Cannot msync(): return value %d, errno %d (%s)", ret, errno, strerror(errno));
          return SS_INVALID_ADDRESS;
       }
+      return SS_SUCCESS;
    }
 
-   return SS_SUCCESS;
 
-#endif                          /* USE_MMAP_SHM */
+#endif // OS_UNIX
+
+   return SS_SUCCESS;
 }
 
 #endif                          /* LOCAL_ROUTINES */
@@ -2525,9 +2610,12 @@ INT ss_mutex_create(MUTEX_T ** mutex)
       int status;
 
       *mutex = malloc(sizeof(pthread_mutex_t));
+      assert(*mutex);
+
       status = pthread_mutex_init(*mutex, NULL);
       if (status != 0) {
-         cm_msg(MERROR, "ss_mutex_create", "pthread_mutex_init() failed, status = %d", status);
+         fprintf(stderr, "ss_mutex_create: pthread_mutex_init() returned errno %d (%s), aborting...\n", status, strerror(status));
+         abort(); // does not return
          return SS_NO_MUTEX;
       }
 
@@ -2539,14 +2627,6 @@ INT ss_mutex_create(MUTEX_T ** mutex)
    return SS_NO_SEMAPHORE;
 #endif
 }
-
-#if defined(OS_DARWIN)
-// empty
-#elif defined(OS_UNIX)
-extern int pthread_mutex_timedlock (pthread_mutex_t *__restrict __mutex,
-                                    __const struct timespec *__restrict
-                                    __abstime) __THROW;
-#endif
 
 /*------------------------------------------------------------------*/
 INT ss_mutex_wait_for(MUTEX_T *mutex, INT timeout)
@@ -2575,13 +2655,15 @@ INT ss_mutex_wait_for(MUTEX_T *mutex, INT timeout)
 #ifdef OS_WINNT
 
    status = WaitForSingleObject(*mutex, timeout == 0 ? INFINITE : timeout);
-   if (status == WAIT_FAILED) {
-      cm_msg(MERROR, "ss_mutex_wait_for", "WaitForSingleObject() failed, status = %d", status);
-      return SS_NO_MUTEX;
-   }
+
    if (status == WAIT_TIMEOUT) {
-      cm_msg(MERROR, "ss_mutex_wait_for", "Mutex timeout after %d ms", timeout);
       return SS_TIMEOUT;
+   }
+
+   if (status == WAIT_FAILED) {
+      fprintf(stderr, "ss_mutex_wait_for: WaitForSingleObject() failed, status = %d", status);
+      abort(); // does not return
+      return SS_NO_MUTEX;
    }
 
    return SS_SUCCESS;
@@ -2594,32 +2676,40 @@ INT ss_mutex_wait_for(MUTEX_T *mutex, INT timeout)
    return SS_SUCCESS;
 
 #endif                          /* OS_VXWORKS */
-#if defined(OS_DARWIN)
-   {
-      status = pthread_mutex_lock(mutex);
-      if (status != 0) {
-         cm_msg(MERROR, "ss_mutex_wait_for", "pthread_mutex_lock() failed, errno %d (%s)", status, strerror(status));
-         return SS_NO_MUTEX;
-      }
+#if defined(OS_UNIX)
 
-      return SS_SUCCESS;
-   }
-#elif defined(OS_UNIX)
-   {
+#if !defined(OS_DARWIN)
+   if (timeout > 0) {
+      extern int pthread_mutex_timedlock (pthread_mutex_t *__restrict __mutex, __const struct timespec *__restrict __abstime) __THROW;
       struct timespec st;
 
       clock_gettime(CLOCK_REALTIME, &st);
       st.tv_sec += timeout / 1000;
       st.tv_nsec += (timeout % 1000) * 1E6;
       status = pthread_mutex_timedlock(mutex, &st);
+      if (status == ETIMEDOUT)
+         return SS_TIMEOUT;
       if (status != 0) {
-         cm_msg(MERROR, "ss_mutex_wait_for", "pthread_mutex_timedlock() failed, errno %d (%s)", status, strerror(status));
+         fprintf(stderr, "ss_mutex_wait_for: pthread_mutex_timedlock() returned errno %d (%s), aborting...\n", status, strerror(status));
+         abort(); // does not return
          return SS_NO_MUTEX;
       }
 
       return SS_SUCCESS;
    }
-#endif                          /* OS_UNIX */
+#endif
+
+   // no timeout or OS_DARWIN
+
+   status = pthread_mutex_lock(mutex);
+   if (status != 0) {
+      fprintf(stderr, "ss_mutex_wait_for: pthread_mutex_lock() returned errno %d (%s), aborting...\n", status, strerror(status));
+      abort(); // does not return
+      return SS_NO_MUTEX;
+   }
+
+   return SS_SUCCESS;
+#endif /* OS_UNIX */
 
 #ifdef OS_MSDOS
    return SS_NO_MUTEX;
@@ -2667,7 +2757,8 @@ INT ss_mutex_release(MUTEX_T *mutex)
 
       status = pthread_mutex_unlock(mutex);
       if (status != 0) {
-         cm_msg(MERROR, "ss_mutex_wait_for", "pthread_mutex_unlock() failed, status = %d", status);
+         fprintf(stderr, "ss_mutex_release: pthread_mutex_unlock() returned error %d (%s), aborting...\n", status, strerror(status));
+         abort(); // does not return
          return SS_NO_MUTEX;
       }
 
@@ -2722,7 +2813,8 @@ INT ss_mutex_delete(MUTEX_T *mutex)
       
       status = pthread_mutex_destroy(mutex);
       if (status != 0) {
-         cm_msg(MERROR, "ss_mutex_wait_for", "pthread_mutex_unlock() failed, status = %d", status);
+         fprintf(stderr, "ss_mutex_delete: pthread_mutex_destroy() returned errno %d (%s), aborting...\n", status, strerror(status));
+         abort(); // do not return
          return SS_NO_MUTEX;
       }
 
