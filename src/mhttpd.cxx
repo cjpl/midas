@@ -10112,6 +10112,193 @@ static void set_history_path()
 
 /*------------------------------------------------------------------*/
 
+#define ALLOC(t,n) (t*)calloc(sizeof(t),(n))
+#define DELETE(x) if (x) { free(x); (x)=NULL; }
+#define DELETEA(x, n) if (x) { for (int i=0; i<(n); i++) { free((x)[i]); (x)[i]=NULL; }; DELETE(x); }
+#define STRDUP(x) strdup(x)
+
+struct HistoryData
+{
+   int nvars;
+   int alloc_nvars;
+   char** event_names;
+   char** var_names;
+   int* var_index;
+   int* odb_index;
+   int* status;
+   int* num_entries;
+   time_t** t;
+   double** v;
+
+   time_t tstart;
+   time_t tend;
+   time_t scale;
+
+   void Allocate(int xnvars) {
+      nvars = 0;
+      alloc_nvars = xnvars;
+      event_names = ALLOC(char*, alloc_nvars);
+      var_names = ALLOC(char*, alloc_nvars);
+      var_index = ALLOC(int, alloc_nvars);
+      odb_index = ALLOC(int, alloc_nvars);
+      status = ALLOC(int, alloc_nvars);
+      num_entries = ALLOC(int, alloc_nvars);
+      t = ALLOC(time_t*, alloc_nvars);
+      v = ALLOC(double*, alloc_nvars);
+   }
+
+   void Free() {
+      nvars = 0;
+      alloc_nvars = 0;
+      DELETEA(event_names, alloc_nvars);
+      DELETEA(var_names, alloc_nvars);
+      DELETE(var_index);
+      DELETE(odb_index);
+      DELETE(status);
+      DELETE(num_entries);
+      DELETEA(t, alloc_nvars);
+      DELETEA(v, alloc_nvars);
+   }
+
+   void Print() const {
+      printf("this %p, nvars %d. tstart %d, tend %d, scale %d\n", this, nvars, (int)tstart, (int)tend, (int)scale);
+      for (int i=0; i<nvars; i++) {
+         printf("var[%d]: [%s/%s][%d] %d entries, status %d", i, event_names[i], var_names[i], var_index[i], num_entries[i], status[i]);
+         if (status[i]==HS_SUCCESS && num_entries[i]>0 && t[i] && v[i])
+            printf(", t %d:%d, v %g:%g\n", (int)t[i][0], (int)t[i][num_entries[i]-1], v[i][0], v[i][num_entries[i]-1]);
+         else
+            printf("\n");
+      }
+   }
+
+   HistoryData() // ctor
+   {
+      nvars = 0;
+   }
+
+   ~HistoryData() // dtor
+   {
+      if (nvars > 0)
+         Free();
+   }
+};
+
+int read_history(HNDLE hDB, const char *path, int index, int runmarker, time_t tstart, time_t tend, time_t scale, HistoryData *data)
+{
+   HNDLE hkeypanel, hkeydvar, hkey;
+   KEY key;
+   int n_vars, status;
+
+   printf("read_history, path %s, index %d, runmarker %d, start %d, end %d, scale %d, data %p\n", path, index, runmarker, (int)tstart, (int)tend, (int)scale, data);
+
+   /* connect to history */
+   set_history_path();
+
+   /* check panel name in ODB */
+   status = db_find_key(hDB, 0, "/History/Display", &hkey);
+   if (!hkey) {
+      cm_msg(MERROR, "read_history", "Cannot find \'/History/Display\' in ODB, status %d", status);
+      return HS_FILE_ERROR;
+   }
+
+   /* check panel name in ODB */
+   status = db_find_key(hDB, hkey, path, &hkeypanel);
+   if (!hkeypanel) {
+      cm_msg(MERROR, "read_history", "Cannot find \'%s\' in ODB, status %d", path, status);
+      return HS_FILE_ERROR;
+   }
+
+   status = db_find_key(hDB, hkeypanel, "Variables", &hkeydvar);
+   if (!hkeydvar) {
+      cm_msg(MERROR, "read_history", "Cannot find \'%s/Variables\' in ODB, status %d", path, status);
+      return HS_FILE_ERROR;
+   }
+
+   db_get_key(hDB, hkeydvar, &key);
+   n_vars = key.num_values;
+
+   data->Allocate(n_vars+2);
+
+   data->tstart = tstart;
+   data->tend = tend;
+   data->scale = scale;
+
+   for (int i=0; i<n_vars; i++) {
+      if (index != -1 && index != i)
+         continue;
+
+      char str[256];
+      int size = sizeof(str);
+      status = db_get_data_index(hDB, hkeydvar, str, &size, i, TID_STRING);
+      if (status != DB_SUCCESS) {
+         cm_msg(MERROR, "read_history", "Cannot read tag %d in panel %s, status %d", i, path, status);
+         continue;
+      }
+
+      /* split varname in event, variable and index: "event/tag[index]" */
+
+      char *p = strchr(str, ':');
+      if (!p)
+         p = strchr(str, '/');
+
+      if (!p) {
+         cm_msg(MERROR, "read_history", "Tag \"%s\" has wrong format in panel \"%s\"", str, path);
+         continue;
+      }
+
+      *p = 0;
+      
+      data->odb_index[data->nvars] = i;
+      data->event_names[data->nvars] = STRDUP(str);
+      data->var_index[data->nvars] = 0;
+
+      char *q = strchr(p+1, '[');
+      if (q) {
+         data->var_index[data->nvars] = atoi(q+1);
+         *q = 0;
+      }
+
+      data->var_names[data->nvars] = STRDUP(p+1);
+
+      data->nvars++;
+   } // loop over variables
+
+   /* write run markes if selected */
+   if (runmarker) {
+
+      data->event_names[data->nvars+0] = STRDUP("Run transitions");
+      data->event_names[data->nvars+1] = STRDUP("Run transitions");
+
+      data->var_names[data->nvars+0] = STRDUP("State");
+      data->var_names[data->nvars+1] = STRDUP("Run number");
+
+      data->var_index[data->nvars+0] = 0;
+      data->var_index[data->nvars+1] = 0;
+
+      data->odb_index[data->nvars+0] = -1;
+      data->odb_index[data->nvars+1] = -2;
+
+      data->nvars += 2;
+   }
+
+   status = mh->hs_read(tstart, tend, scale,
+                        data->nvars,
+                        data->event_names,
+                        data->var_names,
+                        data->var_index,
+                        data->num_entries,
+                        data->t,
+                        data->v,
+                        data->status);
+   
+   if (status != HS_SUCCESS) {
+      cm_msg(MERROR, "read_history", "Complete history failure, hs_read() status %d, see messages", status);
+      return HS_FILE_ERROR;
+   }
+   
+   return SUCCESS;
+}
+
 void generate_hist_graph(const char *path, char *buffer, int *buffer_size,
                          int width, int height, int scale, int toffset, int index,
                          int labels, char *bgcolor, char *fgcolor, char *gridcolor)
@@ -10509,6 +10696,80 @@ void generate_hist_graph(const char *path, char *buffer, int *buffer_size,
    } // loop over variables
 
    if (1) {
+      HistoryData  hsxxx;
+      HistoryData* hsdata = &hsxxx;
+      time_t now = ss_time();
+   
+      status = read_history(hDB, panel, index, runmarker, now-scale+toffset, now+toffset, scale/1000+1, hsdata);
+      
+      if (status != HS_SUCCESS) {
+         sprintf(str, "Complete history failure, read_history() status %d, see messages", status);
+         gdImageString(im, gdFontSmall, width / 2 - (strlen(str) * gdFontSmall->w) / 2,
+                       height / 2, str, red);
+         goto error;
+      }
+      
+      for (int k=0; k<hsdata->nvars; k++) {
+         int i = hsdata->odb_index[k];
+
+         if (i<0)
+            continue;
+
+         if (index != -1 && index != i)
+            continue;
+
+         n_point[i] = 0;
+
+         var_status[i][0] = 0;
+         if (hsdata->status[k] == HS_UNDEFINED_VAR) {
+            sprintf(var_status[i], "not found in history");
+            continue;
+         } else if (hsdata->status[k] != HS_SUCCESS) {
+            sprintf(var_status[i], "hs_read() error %d, see messages", hsdata->status[k]);
+            continue;
+         }
+
+         for (int j = n_vp = 0; j < hsdata->num_entries[k]; j++) {
+            x[i][n_vp] = (int)(hsdata->t[k][j] - now);
+            y[i][n_vp] = hsdata->v[k][j];
+         
+            /* skip NaNs */
+            if (ss_isnan(y[i][n_vp]))
+               continue;
+         
+            /* skip INFs */
+            if (!ss_isfin(y[i][n_vp]))
+               continue;
+         
+            /* avoid overflow */
+            if (y[i][n_vp] > 1E30)
+               y[i][n_vp] = 1E30f;
+         
+            /* apply factor and offset */
+            y[i][n_vp] = y[i][n_vp] * factor[i] + offset[i];
+         
+            /* calculate ymin and ymax */
+            if ((i == 0 || index != -1) && n_vp == 0)
+               ymin = ymax = y[i][0];
+            else {
+               if (y[i][n_vp] > ymax)
+                  ymax = y[i][n_vp];
+               if (y[i][n_vp] < ymin)
+                  ymin = y[i][n_vp];
+            }
+         
+            /* increment number of valid points */
+            n_vp++;
+
+         } // loop over data
+
+         n_point[i] = n_vp;
+
+         assert(n_point[i]<=MAX_POINTS);
+      }
+   }
+
+   if (0) {
       time_t now = ss_time();
 
       int num_entries[MAX_VARS];
@@ -12083,33 +12344,9 @@ void show_hist_config_page(const char *path, const char *hgroup, const char *pan
 
 void export_hist(const char *path, int scale, int toffset, int index, int labels)
 {
-   HNDLE hDB, hkey, hkeypanel, hkeyeq, hkeydvar, hkeyvars, hkeyroot, hkeynames;
-   KEY key;
-   int i, j, k, l, n_vars, n_all_vars, size, status, n_vp;
-   DWORD bsize, tsize, n_run_number, *state, *run_number, *t_run_number, i_run, *i_var;
-   char str[256], fmt[256], *p, odbpath[256];
-   INT var_index[MAX_VARS];
-   DWORD type, event_id, dt;
-   time_t t;
-   char event_name[MAX_VARS][NAME_LENGTH];
-   char tag_name[MAX_VARS][64], var_name[MAX_VARS][NAME_LENGTH], varname[64],
-       key_name[256];
-   DWORD n_point[MAX_VARS];
-   DWORD *x[MAX_VARS];
-   float *y[MAX_VARS];
-   float factor[MAX_VARS], offset[MAX_VARS];
-   BOOL runmarker;
-   struct tm *tms;
-
-   static char *ybuffer;
-   static DWORD *tbuffer;
-   static int hbuffer_size = 0;
-
-   if (hbuffer_size == 0) {
-      hbuffer_size = 1000 * sizeof(DWORD);
-      tbuffer = (DWORD*)malloc(hbuffer_size);
-      ybuffer = (char*)malloc(hbuffer_size);
-   }
+   HNDLE hDB, hkey, hkeypanel;
+   int size, status;
+   char str[256];
 
    /* header */
    rsprintf("HTTP/1.1 200 Document follows\r\n");
@@ -12123,428 +12360,178 @@ void export_hist(const char *path, int scale, int toffset, int index, int labels
 
    cm_get_experiment_database(&hDB, NULL);
 
-   /* set history path */
-   status = db_find_key(hDB, 0, "/Logger/Data dir", &hkey);
-   if (status != DB_SUCCESS) {
-      rsprintf("No data directory defined in ODB");
-      return;
-   }
-
-   /* check dedicated history path */
-   set_history_path();
-
    /* check panel name in ODB */
    sprintf(str, "/History/Display/%s", path);
    db_find_key(hDB, 0, str, &hkeypanel);
    if (!hkey) {
-      rsprintf("Cannot find /History/Display/%s in ODB", path);
+      rsprintf("Cannot find /History/Display/%s in ODB\n", path);
       return;
    }
 
-   db_find_key(hDB, hkeypanel, "Variables", &hkeydvar);
-   if (!hkeydvar) {
-      rsprintf("Cannot find /History/Display/%s/Variables in ODB", str);
-      return;
-   }
+   /* get runmarker flag */
+   BOOL runmarker = 1;
+   size = sizeof(runmarker);
+   db_get_value(hDB, hkeypanel, "Show run markers", &runmarker, &size, TID_BOOL, TRUE);
 
-   db_get_key(hDB, hkeydvar, &key);
-   n_all_vars = key.num_values;
-
-   if (n_all_vars > MAX_VARS) {
-      rsprintf(str, "Too many variables in panel %s", path);
-      return;
-   }
-
-   for (i = n_vars = 0; i < n_all_vars; i++) {
-      if (index != -1 && index != i)
-         continue;
-
-      size = sizeof(str);
-      db_get_data_index(hDB, hkeydvar, str, &size, i, TID_STRING);
-      strlcpy(tag_name[n_vars], str, sizeof(tag_name[0]));
-
-      /* split varname in event, variable and index */
-      if (strchr(tag_name[n_vars], ':')) {
-         strlcpy(event_name[n_vars], tag_name[n_vars], sizeof(event_name[0]));
-         *strchr(event_name[n_vars], ':') = 0;
-         strlcpy(var_name[n_vars], strchr(tag_name[n_vars], ':') + 1, sizeof(var_name[0]));
-         var_index[n_vars] = 0;
-         if (strchr(var_name[n_vars], '[')) {
-            var_index[n_vars] = atoi(strchr(var_name[n_vars], '[') + 1);
-            *strchr(var_name[n_vars], '[') = 0;
-         }
-      } else {
-         rsprintf("Tag \"%s\" has wrong format in panel %s", tag_name[n_vars], path);
-         return;
-      }
-
-      /* search event_id */
-      status = hs_get_event_id(0, event_name[n_vars], &event_id);
-
-      if (status != HS_SUCCESS) {
-         rsprintf("Event \"%s\" from panel \"%s\" not found in history",
-                  event_name[n_vars], path);
-         return;
-      }
-
+   if (scale == 0) {
       /* get timescale */
-      if (scale == 0) {
-         strlcpy(str, "1h", sizeof(str));
+      strlcpy(str, "1h", sizeof(str));
+      size = NAME_LENGTH;
+      status = db_get_value(hDB, hkeypanel, "Timescale", str, &size, TID_STRING, TRUE);
+      if (status != DB_SUCCESS) {
+         /* delete old integer key */
+         db_find_key(hDB, hkeypanel, "Timescale", &hkey);
+         if (hkey)
+            db_delete_key(hDB, hkey, FALSE);
+         
+         strcpy(str, "1h");
          size = NAME_LENGTH;
          status = db_get_value(hDB, hkeypanel, "Timescale", str, &size, TID_STRING, TRUE);
-         if (status != DB_SUCCESS) {
-            /* delete old integer key */
-            db_find_key(hDB, hkeypanel, "Timescale", &hkey);
-            if (hkey)
-               db_delete_key(hDB, hkey, FALSE);
-
-            strcpy(str, "1h");
-            size = NAME_LENGTH;
-            status =
-                db_get_value(hDB, hkeypanel, "Timescale", str, &size, TID_STRING, TRUE);
-         }
-
-         scale = time_to_sec(str);
       }
-
-      for (j = 0; j < MAX_VARS; j++) {
-         factor[j] = 1;
-         offset[j] = 0;
-      }
-
-      /* get factors */
-      size = sizeof(float) * n_vars;
-      db_get_value(hDB, hkeypanel, "Factor", factor, &size, TID_FLOAT, TRUE);
-
-      /* get offsets */
-      size = sizeof(float) * n_vars;
-      db_get_value(hDB, hkeypanel, "Offset", offset, &size, TID_FLOAT, TRUE);
-
-      /* get runmarker flag */
-      size = sizeof(runmarker);
-      runmarker = 1;
-      db_get_value(hDB, hkeypanel, "Show run markers", &runmarker, &size, TID_BOOL, TRUE);
-
-      /* make ODB path from tag name */
-      odbpath[0] = 0;
-      db_find_key(hDB, 0, "/Equipment", &hkeyroot);
-      if (hkeyroot) {
-         for (j = 0;; j++) {
-            db_enum_key(hDB, hkeyroot, j, &hkeyeq);
-
-            if (!hkeyeq)
-               break;
-
-            db_get_key(hDB, hkeyeq, &key);
-            if (equal_ustring(key.name, event_name[n_vars])) {
-               /* check if variable is individual key under variabels/ */
-               sprintf(str, "Variables/%s", var_name[n_vars]);
-               db_find_key(hDB, hkeyeq, str, &hkey);
-               if (hkey) {
-                  sprintf(odbpath, "/Equipment/%s/Variables/%s", event_name[n_vars],
-                          var_name[n_vars]);
-                  break;
-               }
-
-               /* check if variable is in setttins/names array */
-               db_find_key(hDB, hkeyeq, "Settings/Names", &hkeynames);
-               if (hkeynames) {
-                  /* extract variable name and Variables/<key> */
-                  strlcpy(str, var_name[n_vars], sizeof(str));
-                  p = str + strlen(str) - 1;
-                  while (p > str && *p != ' ')
-                     p--;
-                  strlcpy(key_name, p + 1, sizeof(key_name));
-                  *p = 0;
-                  strlcpy(varname, str, sizeof(varname));
-
-                  /* find key in single name array */
-                  db_get_key(hDB, hkeynames, &key);
-                  for (k = 0; k < key.num_values; k++) {
-                     size = sizeof(str);
-                     db_get_data_index(hDB, hkeynames, str, &size, k, TID_STRING);
-                     if (equal_ustring(str, varname)) {
-                        sprintf(odbpath, "/Equipment/%s/Variables/%s[%d]", event_name[n_vars],
-                                key_name, k);
-                        break;
-                     }
-                  }
-               } else {
-                  /* go through /variables/<name> entries */
-                  db_find_key(hDB, hkeyeq, "Variables", &hkeyvars);
-                  if (hkeyvars) {
-                     for (k = 0;; k++) {
-                        db_enum_key(hDB, hkeyvars, k, &hkey);
-
-                        if (!hkey)
-                           break;
-
-                        /* find "settins/names <key>" for this key */
-                        db_get_key(hDB, hkey, &key);
-
-                        /* find key in key_name array */
-                        strlcpy(key_name, key.name, sizeof(key_name));
-                        sprintf(str, "Settings/Names %s", key_name);
-
-                        db_find_key(hDB, hkeyeq, str, &hkeynames);
-                        if (hkeynames) {
-                           db_get_key(hDB, hkeynames, &key);
-                           for (l = 0; l < key.num_values; l++) {
-                              size = sizeof(str);
-                              db_get_data_index(hDB, hkeynames, str, &size, l,
-                                                TID_STRING);
-                              if (equal_ustring(str, var_name[n_vars])) {
-                                 sprintf(odbpath, "/Equipment/%s/Variables/%s[%d]",
-                                         event_name[n_vars], key_name, l);
-                                 break;
-                              }
-                           }
-                        }
-                     }
-                  }
-               }
-
-               break;
-            }
-         }
-
-         if (!hkeyeq) {
-            db_find_key(hDB, 0, "/History/Links", &hkeyroot);
-            if (hkeyroot) {
-               for (j = 0;; j++) {
-                  db_enum_link(hDB, hkeyroot, j, &hkey);
-
-                  if (!hkey)
-                     break;
-
-                  db_get_key(hDB, hkey, &key);
-                  if (equal_ustring(key.name, event_name[n_vars])) {
-                     db_enum_key(hDB, hkeyroot, j, &hkey);
-                     db_find_key(hDB, hkey, var_name[n_vars], &hkey);
-                     if (hkey) {
-                        db_get_key(hDB, hkey, &key);
-                        db_get_path(hDB, hkey, odbpath, sizeof(odbpath));
-                        if (key.num_values > 1)
-                           sprintf(odbpath + strlen(odbpath), "[%d]", var_index[n_vars]);
-                        break;
-                     }
-                  }
-               }
-            }
-         }
-      }
-
-      do {
-         bsize = tsize = hbuffer_size;
-         memset(ybuffer, 0, bsize);
-         status =
-             hs_read(event_id, ss_time() - scale + toffset, ss_time() + toffset,
-                     0, var_name[n_vars], var_index[n_vars], tbuffer, &tsize,
-                     ybuffer, &bsize, &type, &n_point[n_vars]);
-
-         if (status == HS_TRUNCATED) {
-            hbuffer_size *= 2;
-            tbuffer = (DWORD*)realloc(tbuffer, hbuffer_size);
-            assert(tbuffer);
-            ybuffer = (char*)realloc(ybuffer, hbuffer_size);
-            assert(ybuffer);
-         }
-
-      } while (status == HS_TRUNCATED);
-
-      if (status == HS_UNDEFINED_VAR) {
-         rsprintf("Variable \"%s\" not found in history", var_name[n_vars]);
-         return;
-      }
-
-      x[n_vars] = (DWORD*)M_MALLOC(sizeof(DWORD) * n_point[n_vars]);
-      y[n_vars] = (float*)M_MALLOC(sizeof(DWORD) * n_point[n_vars]);
-
-      for (j = n_vp = 0; j < (int) n_point[n_vars]; j++) {
-         x[n_vars][n_vp] = tbuffer[j];
-
-         /* convert data to float */
-         switch (type) {
-         case TID_BYTE:
-            y[n_vars][n_vp] = (float) *(((BYTE *) ybuffer) + j);
-            break;
-         case TID_SBYTE:
-            y[n_vars][n_vp] = (float) *(((char *) ybuffer) + j);
-            break;
-         case TID_CHAR:
-            y[n_vars][n_vp] = (float) *(((char *) ybuffer) + j);
-            break;
-         case TID_WORD:
-            y[n_vars][n_vp] = (float) *(((WORD *) ybuffer) + j);
-            break;
-         case TID_SHORT:
-            y[n_vars][n_vp] = (float) *(((short *) ybuffer) + j);
-            break;
-         case TID_DWORD:
-            y[n_vars][n_vp] = (float) *(((DWORD *) ybuffer) + j);
-            break;
-         case TID_INT:
-            y[n_vars][n_vp] = (float) *(((INT *) ybuffer) + j);
-            break;
-         case TID_BOOL:
-            y[n_vars][n_vp] = (float) *(((BOOL *) ybuffer) + j);
-            break;
-         case TID_FLOAT:
-            y[n_vars][n_vp] = (float) *(((float *) ybuffer) + j);
-            break;
-         case TID_DOUBLE:
-            y[n_vars][n_vp] = (float) *(((double *) ybuffer) + j);
-            break;
-         }
-
-         /* skip NaNs */
-         if (ss_isnan(y[n_vars][n_vp]))
-            continue;
-
-         /* apply factor and offset */
-         y[n_vars][n_vp] = y[n_vars][n_vp] * factor[n_vars] + offset[n_vars];
-
-         /* increment number of valid points */
-         n_vp++;
-      }
-
-      n_point[n_vars] = n_vp;
-
-      n_vars ++;
+      
+      scale = time_to_sec(str);
    }
 
-   /* read run markes if selected */
-   state = run_number = t_run_number = NULL;
-   n_run_number = 0;
-   if (runmarker) {
-      bsize = hbuffer_size;
-      tsize = hbuffer_size;
+   HistoryData hsxxx;
+   HistoryData* hsdata = &hsxxx;
 
-      /* read run state */
+   time_t now = ss_time();
 
-      status = hs_read(0, ss_time() - scale + toffset - scale, ss_time() + toffset, 0,
-                       (char *)"State", 0, tbuffer, &tsize, ybuffer, &bsize, &type, &n_run_number);
-
-      if (status != HS_UNDEFINED_VAR) {
-        state = (DWORD*)M_MALLOC(sizeof(DWORD) * n_run_number);
-         for (j = 0; j < (int) n_run_number; j++)
-            state[j] = *((DWORD *) ybuffer + j);
-      }
-
-      bsize = hbuffer_size;
-      tsize = hbuffer_size;
-
-      /* read run number */
-
-      status = hs_read(0, ss_time() - scale + toffset - scale, ss_time() + toffset, 0,
-                       (char *)"Run number", 0, tbuffer, &tsize, ybuffer, &bsize, &type,
-                       &n_run_number);
-
-      if (status != HS_UNDEFINED_VAR) {
-        run_number = (DWORD*)M_MALLOC(sizeof(DWORD) * n_run_number);
-        t_run_number = (DWORD*)M_MALLOC(sizeof(DWORD) * n_run_number);
-         for (j = 0; j < (int) n_run_number; j++) {
-            t_run_number[j] = tbuffer[j];
-            run_number[j] = *((DWORD *) ybuffer + j);
-         }
-      }
-
+   status = read_history(hDB, path, index, runmarker, now - scale + toffset, now + toffset, 0, hsdata);
+   if (status != HS_SUCCESS) {
+      rsprintf(str, "History error, status %d\n", status);
+      return;
    }
 
-   /* output header line with variable names */
-   if (runmarker)
-      rsprintf("Time, Run, Run State, ");
-   else
-      rsprintf("Time, ");
+   //hsdata->Print();
 
-   for (i = 0; i < n_vars; i++) {
-      rsprintf(var_name[i]);
-      if (i < n_vars-1)
-         rsprintf(", ");
-   }
-   rsprintf("\n");
+   int i_var[hsdata->nvars];
 
-   i_var = (DWORD*)M_MALLOC(sizeof(DWORD) * n_vars);
+   for (int i = 0; i < hsdata->nvars; i++) 
+      i_var[i] = -1;
 
-   i_run = 0;
-   for (i = 0; i < n_vars; i++) 
-      i_var[i] = 0;
+   time_t t = 0;
 
    /* find first time where all variables are available */
-   if (n_vars == 1)
-      t = x[0][0];
-   else {
-      t = 0;
-      for (i = 1; i < n_vars; i++) 
-         if (n_point[i] > 0 && x[i][0] > (DWORD)t)
-            t = x[i][0];
-   }
+   for (int i = 0; i < hsdata->nvars; i++)
+      if (hsdata->odb_index[i] >= 0)
+         if ((t == 0) || (hsdata->num_entries[i] > 0 && hsdata->t[i][0] > t))
+            t = hsdata->t[i][0];
 
-   if (t == 0 && n_vars > 1) {
+   if (t == 0 && hsdata->nvars > 1) {
       rsprintf("=== No history available for choosen period ===\n");
       return;
    }
 
+   int run_index = -1;
+   int state_index = -1;
+   int n_run_number = 0;
+   time_t* t_run_number = NULL;
+   if (runmarker)
+      for (int i = 0; i < hsdata->nvars; i++)
+         if (hsdata->odb_index[i] == -2) {
+            n_run_number = hsdata->num_entries[i];
+            t_run_number = hsdata->t[i];
+            run_index = i;
+         }
+         else if (hsdata->odb_index[i] == -1) {
+            state_index = i;
+         }
+
+   //printf("runmarker %d, state %d, run %d\n", runmarker, state_index, run_index);
+
+   /* output header line with variable names */
+   if (runmarker && t_run_number)
+      rsprintf("Time, Timestamp, Run, Run State, ");
+   else
+      rsprintf("Time, Timestamp, ");
+
+   for (int i = 0, first = 1; i < hsdata->nvars; i++) {
+      if (hsdata->odb_index[i] < 0)
+         continue;
+      if (hsdata->num_entries[i] <= 0)
+         continue;
+      if (!first)
+         rsprintf(", ");
+      first = 0;
+      rsprintf("%s", hsdata->var_names[i]);
+   }
+   rsprintf("\n");
+
+   int i_run = 0;
+
    do {
+
+      //printf("hsdata %p, t %d, irun %d\n", hsdata, t, i_run);
+
       /* find run number/state which is valid for t */
-      if (runmarker)
-         while (i_run < n_run_number-1 && t_run_number[i_run+1] <= (DWORD)t)
+      if (runmarker && t_run_number)
+         while (i_run < n_run_number-1 && t_run_number[i_run+1] <= t)
             i_run++;
 
+      //printf("irun %d\n", i_run);
+
       /* find index for all variables which is valid for t */
-      for (i = 0; i < n_vars; i++)
-         while (n_point[i] > 0 && i_var[i] < n_point[i] - 1 && x[i][i_var[i]+1] <= (DWORD)t)
+      for (int i = 0; i < hsdata->nvars; i++)
+         while (hsdata->num_entries[i] > 0 && i_var[i] < hsdata->num_entries[i] - 1 && hsdata->t[i][i_var[i]+1] <= t)
             i_var[i]++;
 
       /* finish if last point for all variables reached */
-      for (i = 0 ; i < n_vars ; i++)
-         if (n_point[i] > 0 && i_var[i] < n_point[i] - 1)
+      bool done = true;
+      for (int i = 0 ; i < hsdata->nvars ; i++)
+         if (hsdata->num_entries[i] > 0 && i_var[i] < hsdata->num_entries[i] - 1) {
+            done = false;
             break;
-      if (i == n_vars)
+         }
+
+      if (done)
          break;
 
-      tms = localtime(&t);
-      strcpy(fmt, "%c");
+      struct tm* tms = localtime(&t);
+
+      char fmt[256];
+      //strcpy(fmt, "%c");
+      strcpy(fmt, "%Y.%m.%d %H:%M:%S");
       strftime(str, sizeof(str), fmt, tms);
 
-      if (runmarker) {
-         if (t_run_number[i_run] <= (DWORD)t)
-            rsprintf("%s, %d, %d, ", str, run_number[i_run], state[i_run]);
+      if (t_run_number && run_index>=0 && state_index>=0) {
+         if (t_run_number[i_run] <= t)
+            rsprintf("%s, %d, %.0f, %.0f, ", str, (int)t, hsdata->v[run_index][i_run], hsdata->v[state_index][i_run]);
          else
-            rsprintf("%s, N/A, N/A, ", str);
+            rsprintf("%s, %d, N/A, N/A, ", str, (int)t);
       } else
-         rsprintf("%s, ", str);
+         rsprintf("%s, %d, ", str, (int)t);
+      
+      //for (int i= 0 ; i < hsdata->nvars ; i++)
+      //printf(" %d", i_var[i]);
+      //printf("\n");
 
-      for (i= 0 ; i < n_vars ; i++) {
-            rsprintf("%lf", y[i][i_var[i]]);
-         if (i < n_vars-1)
+      for (int i=0, first=1 ; i<hsdata->nvars ; i++) {
+         if (i_var[i] < 0)
+            continue;
+         if (hsdata->odb_index[i] < 0)
+            continue;
+         if (!first)
             rsprintf(", ");
+         first = 0;
+         //rsprintf("(%d %g)", i_var[i], hsdata->v[i][i_var[i]]);
+         rsprintf("%g", hsdata->v[i][i_var[i]]);
       }
       rsprintf("\n");
 
       /* find next t as smallest delta t */
-      dt = (DWORD) (x[0][i_var[0]+1] - t);
-      for (i = 1 ; i < n_vars ; i++)
-         if (x[i][i_var[i]+1] - t < dt)
-            dt = (DWORD) (x[i][i_var[i]+1] - t);
+      int dt = -1;
+      for (int i = 0 ; i < hsdata->nvars ; i++)
+         if (i_var[i]>=0 && hsdata->odb_index[i]>=0)
+            if (dt <= 0 || hsdata->t[i][i_var[i]+1] - t < dt)
+               dt = (hsdata->t[i][i_var[i]+1] - t);
+
+      if (dt <= 0)
+         break;
+
       t += dt;
 
    } while (1);
-
-   M_FREE(i_var);
-   for (i=0 ; i<n_vars ; i++) {
-      M_FREE(x[i]);
-      M_FREE(y[i]);
-   }
-
-   if (state)
-      M_FREE(state);
-
-   if (run_number)
-      M_FREE(run_number);
-
-   if (t_run_number)
-      M_FREE(t_run_number);
 }
 
 /*------------------------------------------------------------------*/
