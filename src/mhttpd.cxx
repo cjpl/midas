@@ -12914,7 +12914,7 @@ void show_hist_page(const char *path, int path_size, char *buffer, int *buffer_s
    strlcpy(str, path, sizeof(str));
    if (strrchr(str, '/'))
       strlcpy(str, strrchr(str, '/')+1, sizeof(str));
-   show_header(hDB, "History", "GET", str, 1, offset == 0 ? refresh : 0);
+   show_header(hDB, str, "GET", str, 1, offset == 0 ? refresh : 0);
 
    /* menu buttons */
    rsprintf("<tr><td colspan=2 bgcolor=\"#C0C0C0\">\n");
