@@ -322,16 +322,8 @@ INT psi_separator_set(PSI_SEPARATOR_INFO * info, INT channel, float value)
    if (info->hv_demand == -1) {
       sprintf(str, "*RST");
       info->hv_demand = 0;
-   } else if (fabs(info->hv_demand - info->hv_measured) <= 10 || info->hv_demand < info->hv_measured)
-      sprintf(str, "*HV %1.0lf %1.0lf", info->hv_demand, info->cur_max);
-   else {
-      if (info->hv_demand <= 150)
-         sprintf(str, "*RAMP %1.0lf %1.0lf %1.0lf", info->hv_demand, info->hv_demand, info->cur_max);
-      else if (info->hv_measured < 150)
-         sprintf(str, "*RAMP 150 %1.0lf %1.0lf 5", info->hv_demand, info->cur_max);
-      else
-         sprintf(str, "*RAMP %1.0lf %1.0lf %1.0lf 5", info->hv_measured, info->hv_demand, info->cur_max);
-   }
+   } else
+      sprintf(str, "*SETHV %1.0lf %1.0lf", info->hv_demand, info->cur_max);
 
    status = info->bd(CMD_WRITE, info->bd_info, str, strlen(str) + 1);   // send string zero terminated
    if (status <= 0) {
@@ -343,7 +335,7 @@ INT psi_separator_set(PSI_SEPARATOR_INFO * info, INT channel, float value)
    status = info->bd(CMD_GETS, info->bd_info, str, sizeof(str), "\n", 3000);
    info->bd(CMD_CLOSE, info->bd_info);
 
-   if (strstr(str, "*HV *") == NULL && strstr(str, "*RAMP *") == NULL) {
+   if (strstr(str, "*SETHV") == NULL) {
       mfe_error("Didn't get acknowledgement after setting new HV");
       return FE_ERR_HW;
    }
