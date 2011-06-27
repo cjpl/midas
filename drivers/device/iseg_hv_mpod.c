@@ -102,7 +102,7 @@ INT iseg_hv_mpod_init(HNDLE hkey, void **pinfo, INT channels, INT(*bd) (INT cmd,
    info->crate = SnmpOpen(info->settings.mpod_device);
 
    // check main switch
-   for (i=0 ; i<100 ; i++) {
+   for (i=0 ; i<10 ; i++) {
       status = getMainSwitch(info->crate);
       if (status == -1)
          ss_sleep(10);
@@ -123,12 +123,12 @@ INT iseg_hv_mpod_init(HNDLE hkey, void **pinfo, INT channels, INT(*bd) (INT cmd,
    }
     
    // reset any trip and clear all events
-   //for (i=0; i<channels ; i++)
-   //   status = setChannelSwitch(info->crate, i+1, 10);
+   for (i=0; i<channels ; i++)
+      status = setChannelSwitch(info->crate, i+1, 10);
        
    // switch all channels on
-   //for (i=0; i<channels ; i++)
-   //   status = setChannelSwitch(info->crate, i+1, 1); 
+   for (i=0; i<channels ; i++)
+      status = setChannelSwitch(info->crate, i+1, 1); 
 
    /* read all values from HV devices */
    for (i=0; i<channels; i++) {
@@ -174,7 +174,7 @@ INT iseg_hv_mpod_get(ISEG_HV_MPOD_INFO * info, INT channel, float *pvalue)
    double value;
    int i, status;
 
-   for (i=0 ; i<100 ; i++) {
+   for (i=0 ; i<10 ; i++) {
       status = getChannelStatus(info->crate, channel+1);
       if (status == -1)
          ss_sleep(10);
@@ -185,7 +185,7 @@ INT iseg_hv_mpod_get(ISEG_HV_MPOD_INFO * info, INT channel, float *pvalue)
    if (status & 1<<10)
       printf("Channel %d tripped\n", channel);
 
-   for (i=0 ; i<100 ; i++) {
+   for (i=0 ; i<10 ; i++) {
       value = getOutputSenseMeasurement(info->crate, channel+1);
       if (value == -1)
          ss_sleep(10);
@@ -209,7 +209,7 @@ INT iseg_hv_mpod_get_current(ISEG_HV_MPOD_INFO * info, INT channel, float *pvalu
    double value;
    int i; 
 
-   for (i=0 ; i<100 ; i++) {
+   for (i=0 ; i<10 ; i++) {
       value = getCurrentMeasurement(info->crate, channel+1);
       if (value == -1)
          ss_sleep(10);
@@ -233,7 +233,7 @@ INT iseg_hv_mpod_get_trip(ISEG_HV_MPOD_INFO * info, INT channel, INT *pvalue)
 {
    int i, status;
 
-   for (i=0 ; i<100 ; i++) {
+   for (i=0 ; i<10 ; i++) {
       status = getChannelStatus(info->crate, channel+1);
       if (status == -1)
          ss_sleep(10);
