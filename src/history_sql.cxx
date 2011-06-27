@@ -2034,7 +2034,7 @@ public:
 
    int hs_read(time_t start_time, time_t end_time, time_t interval,
                int num_var,
-               const char* event_name[], const char* tag_name[], const int tag_index[],
+               const char* const event_name[], const char* const tag_name[], const int tag_index[],
                int num_entries[],
                time_t* time_buffer[], double* data_buffer[],
                int st[])
