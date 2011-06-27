@@ -34,9 +34,11 @@ extern "C" {
 #define CONNECT_TIME  3600*24
 
 /* size of buffer for incoming data, must fit sum of all attachments */
-#define WEB_BUFFER_SIZE 10000000
+#define WEB_BUFFER_SIZE 100000
 
-char return_buffer[WEB_BUFFER_SIZE];
+size_t return_size = WEB_BUFFER_SIZE;
+char *return_buffer = (char*)malloc(return_size);
+
 int strlen_retbuf;
 int return_length;
 char host_name[256];
@@ -426,14 +428,40 @@ char *stristr(const char *str, const char *pattern)
 
 /*------------------------------------------------------------------*/
 
+int return_grow(size_t len)
+{
+   //printf("size %d, grow %d, room %d\n", return_size, len, return_size - strlen_retbuf);
+
+   for (int i=0; i<1000; i++) { // infinite loop with protection against infinite looping
+      if (strlen_retbuf + len < return_size-40)
+         return SUCCESS;
+   
+      return_size *= 2;
+      return_buffer = (char*)realloc(return_buffer, return_size);
+
+      assert(return_buffer);
+
+      //printf("new size %d\n", return_size);
+   }
+
+   assert(!"Cannot happen!"); // does not return
+   return 0;
+}
+
+/*------------------------------------------------------------------*/
+
 void rsputs(const char *str)
 {
-   if (strlen_retbuf + strlen(str) > sizeof(return_buffer)-40) {
+   size_t len = strlen(str);
+
+   return_grow(len);
+
+   if (strlen_retbuf + len > return_size-40) {
       strcpy(return_buffer, "<H1>Error: return buffer too small</H1>");
       strlen_retbuf = strlen(return_buffer);
    } else {
       strcpy(return_buffer + strlen_retbuf, str);
-      strlen_retbuf += strlen(str);
+      strlen_retbuf += len;
    }
 }
 
@@ -441,18 +469,21 @@ void rsputs(const char *str)
 
 void rsputs2(const char *str)
 {
-   int i, j, k;
-   char *p, link[256];
+   size_t len = strlen(str);
 
-   if (strlen_retbuf + strlen(str) > sizeof(return_buffer)) {
-      strlcpy(return_buffer, "<H1>Error: return buffer too small</H1>",
-              sizeof(return_buffer));
+   return_grow(len);
+
+   if (strlen_retbuf + len > return_size) {
+      strlcpy(return_buffer, "<H1>Error: return buffer too small</H1>", return_size);
       strlen_retbuf = strlen(return_buffer);
    } else {
-      j = strlen_retbuf;
-      for (i = 0; i < (int) strlen(str); i++) {
+      int j = strlen_retbuf;
+      for (size_t i = 0; i < len; i++) {
          if (strncmp(str + i, "http://", 7) == 0) {
-            p = (char *) (str + i + 7);
+            int k;
+            char link[256];
+            char* p = (char *) (str + i + 7);
+
             i += 7;
             for (k = 0; *p && *p != ' ' && *p != '\n'; k++, i++)
                link[k] = *p++;
@@ -463,11 +494,11 @@ void rsputs2(const char *str)
          } else
             switch (str[i]) {
             case '<':
-               strlcat(return_buffer, "&lt;", sizeof(return_buffer));
+               strlcat(return_buffer, "&lt;", return_size);
                j += 4;
                break;
             case '>':
-               strlcat(return_buffer, "&gt;", sizeof(return_buffer));
+               strlcat(return_buffer, "&gt;", return_size);
                j += 4;
                break;
             default:
@@ -491,7 +522,12 @@ void rsprintf(const char *format, ...)
    vsprintf(str, (char *) format, argptr);
    va_end(argptr);
 
-   if (strlen_retbuf + strlen(str) > sizeof(return_buffer))
+   // catch array overrun. better too late than never...
+   assert(strlen(str) < sizeof(str));
+
+   return_grow(strlen(str));
+
+   if (strlen_retbuf + strlen(str) > return_size)
       strcpy(return_buffer, "<H1>Error: return buffer too small</H1>");
    else
       strcpy(return_buffer + strlen_retbuf, str);
@@ -3977,7 +4013,7 @@ void show_elog_page(char *path, int path_size)
          rsprintf("Content-Length: %d\r\n\r\n", length);
 
          /* return if file too big */
-         if (length > (int) (sizeof(return_buffer) - strlen(return_buffer))) {
+         if (length > (int) (return_size - strlen(return_buffer))) {
             printf("return buffer too small\n");
             close(fh);
             return;
@@ -5400,7 +5436,7 @@ void show_custom_gif(const char *name)
       rsprintf("Pragma: no-cache\r\n");
       rsprintf("Expires: Fri, 01-Jan-1983 00:00:00 GMT\r\n\r\n");
 
-      if (size > (int) (sizeof(return_buffer) - strlen(return_buffer))) {
+      if (size > (int) (return_size - strlen(return_buffer))) {
          printf("return buffer too small\n");
          return;
       }
@@ -5720,7 +5756,7 @@ void show_custom_gif(const char *name)
    rsprintf("Pragma: no-cache\r\n");
    rsprintf("Expires: Fri, 01-Jan-1983 00:00:00 GMT\r\n\r\n");
 
-   if (length > (int) (sizeof(return_buffer) - strlen(return_buffer))) {
+   if (length > (int) (return_size - strlen(return_buffer))) {
       printf("return buffer too small\n");
       return;
    }
@@ -11261,7 +11297,7 @@ void generate_hist_graph(const char *path, char *buffer, int *buffer_size,
       rsprintf("Pragma: no-cache\r\n");
       rsprintf("Expires: Fri, 01-Jan-1983 00:00:00 GMT\r\n\r\n");
 
-      if (length > (int) (sizeof(return_buffer) - strlen(return_buffer))) {
+      if (length > (int) (return_size - strlen(return_buffer))) {
          printf("return buffer too small\n");
          return;
       }
@@ -14943,7 +14979,7 @@ void server_loop()
                      break;
                } while (i);
 
-               memset(return_buffer, 0, sizeof(return_buffer));
+               memset(return_buffer, 0, return_size);
                strlen_retbuf = 0;
                return_length = 0;
 
@@ -15054,7 +15090,7 @@ void server_loop()
                *p = 0;
          }
 
-         memset(return_buffer, 0, sizeof(return_buffer));
+         memset(return_buffer, 0, return_size);
          strlen_retbuf = 0;
 
          if (strncmp(net_buffer, "GET", 3) != 0 && strncmp(net_buffer, "POST", 4) != 0)
