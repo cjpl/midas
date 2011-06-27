@@ -183,7 +183,6 @@ endif
 ifeq ($(OSTYPE),darwin)
 OS_DIR = darwin
 OSFLAGS = -DOS_LINUX -DOS_DARWIN -DHAVE_STRLCPY -fPIC -Wno-unused-function
-OSFLAGS += -DUSE_POSIX_SHM
 LIBS = -lpthread
 SPECIFIC_OS_PRG = $(BIN_DIR)/mlxspeaker
 NEED_ZLIB=1
@@ -222,9 +221,6 @@ CFLAGS += -D_LARGEFILE64_SOURCE
 
 # include ZLIB support
 NEED_ZLIB=1
-
-# Uncomment to use POSIX shared memory (SYSV shared memory is the traditional default)
-# OSFLAGS += -DUSE_POSIX_SHM
 
 OS_DIR = linux
 OSFLAGS += -DOS_LINUX -fPIC -Wno-unused-function
