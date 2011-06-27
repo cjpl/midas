@@ -439,7 +439,7 @@ int gefvme_read_dma_multiple(MVME_INTERFACE *mvme, int nseg, void* dstaddr[], co
   for (i=0; i<nseg; i++)
     {
       if (gefvme_dma_debug)
-        printf("packet %p+%d, blt %d, am 0x%x, vmeaddr 0x%x, dstaddr %p, nbytes %d\n",  pkt+i, sizeof(vmeDmaPacket_t), mvme->blt_mode, mvme->am, vmeaddr[i], dstaddr[i], nbytes[i]);
+         printf("packet %p+%d, blt %d, am 0x%x, vmeaddr 0x%x, dstaddr %p, nbytes %d\n",  pkt+i, (int)sizeof(vmeDmaPacket_t), mvme->blt_mode, mvme->am, vmeaddr[i], dstaddr[i], nbytes[i]);
       makeDmaPacket(pkt+i, mvme->blt_mode, mvme->am, vmeaddr[i], dstaddr[i], nbytes[i]);
       pkt[i].pNextPacket = pkt+i+1;
     }
@@ -638,7 +638,7 @@ int gefvme_read_dma(MVME_INTERFACE *mvme, void *dst, mvme_addr_t vme_addr, int n
       printf("  vmeDmaStartTick: %d\n", vmeDma.vmeDmaStartTick);
       printf("  vmeDmaStopTick: %d\n", vmeDma.vmeDmaStopTick);
       printf("  vmeDmaElapsedTime: %d\n", vmeDma.vmeDmaElapsedTime);
-      printf("  vmeDmaStatus: %d\n", vmeDma.vmeDmaStatus);
+      printf("  vmeDmaStatus: 0x%08x\n", vmeDma.vmeDmaStatus);
       printf("  byte count: %d\n", vmeDma.byteCount);
       //assert(!"Crash here!");
     }
@@ -674,15 +674,17 @@ int gefvme_read_dma(MVME_INTERFACE *mvme, void *dst, mvme_addr_t vme_addr, int n
         printf("dma at %d is 0x%08x\n", i, p32[i]);
     }
   
-  ptr = (char*)dst;
-  for (i=0; i<n_bytes; i+=4) {
-    char tmp;
-    tmp = ptr[i+0];
-    ptr[i+0] = ptr[i+3];
-    ptr[i+3] = tmp;
-    tmp = ptr[i+1];
-    ptr[i+1] = ptr[i+2];
-    ptr[i+2] = tmp;
+  if (1) {
+     ptr = (char*)dst;
+     for (i=0; i<n_bytes; i+=4) {
+        char tmp;
+        tmp = ptr[i+0];
+        ptr[i+0] = ptr[i+3];
+        ptr[i+3] = tmp;
+        tmp = ptr[i+1];
+        ptr[i+1] = ptr[i+2];
+        ptr[i+2] = tmp;
+     }
   }
     
   return MVME_SUCCESS;
