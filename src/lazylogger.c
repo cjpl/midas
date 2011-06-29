@@ -2258,7 +2258,17 @@ int main(int argc, char **argv)
    if (db_find_key(hDB, lazyinfo[channel].hKey, "Statistics", &hKey) == DB_SUCCESS)
       db_get_record(hDB, hKey, &lazyst, &size, 0);
    status = db_open_record(hDB, hKey, &lazyst, sizeof(lazyst), MODE_WRITE, NULL, NULL);
-   if (status != DB_SUCCESS) {
+   if (status == DB_NO_ACCESS) {
+      /* record is probably still in exclusive access by dead FE, so reset it */
+      status = db_set_mode(hDB, hKey, MODE_READ | MODE_WRITE | MODE_DELETE, TRUE);
+      if (status != DB_SUCCESS)
+         cm_msg(MERROR, "Lazy", 
+                "Cannot change access mode for %s/Statistics record, error %d", lazyinfo[channel].name, status);
+      else
+         cm_msg(MINFO, "Lazy", "Recovered access mode for %s/Statistics record", lazyinfo[channel].name);
+      status = db_open_record(hDB, hKey, &lazyst, sizeof(lazyst), MODE_WRITE, NULL, NULL);
+   }
+   if (status != DB_SUCCESS) {      
       cm_msg(MERROR, "Lazy", "cannot open %s/Statistics record", lazyinfo[channel].name);
    }
    /* get /settings once & hot link settings in read mode */
