@@ -182,8 +182,10 @@ INT iseg_hv_mpod_get(ISEG_HV_MPOD_INFO * info, INT channel, float *pvalue)
          break;
    }
 
+   /*
    if (status & 1<<10)
       printf("Channel %d tripped\n", channel);
+   */
 
    for (i=0 ; i<10 ; i++) {
       value = getOutputSenseMeasurement(info->crate, channel+1);
