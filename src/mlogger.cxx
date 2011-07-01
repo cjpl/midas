@@ -1982,7 +1982,7 @@ INT root_book_bank(EVENT_TREE * et, HNDLE hKeyDef, int event_id, char *bank_name
          break;
       }
 
-      et->branch[et->n_branch] = et->tree->Branch(bank_name, NULL, (const char*)str);
+      et->branch[et->n_branch] = et->tree->Branch(bank_name, 0, (const char*)str);
       et->branch_name[et->n_branch] = *(DWORD *) bank_name;
       et->n_branch++;
    } else {
@@ -2036,7 +2036,7 @@ INT root_book_bank(EVENT_TREE * et, HNDLE hKeyDef, int event_id, char *bank_name
          }
       }
 
-      et->branch[et->n_branch] = et->tree->Branch(bank_name, NULL, (const char*)str);
+      et->branch[et->n_branch] = et->tree->Branch(bank_name, 0, (const char*)str);
       et->branch_name[et->n_branch] = *(DWORD *) bank_name;
       et->n_branch++;
    }
