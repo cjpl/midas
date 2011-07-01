@@ -818,9 +818,18 @@ INT initialize_equipment(void)
 
       /*---- evaluate polling count ----------------------------------*/
 
-      if ((eq_info->eq_type & EQ_POLLED) > 0 && (eq_info->eq_type & EQ_MULTITHREAD) == 0) {
-         /* do this only for single-threaded polled equipment, since for multi-threaded equipment
-            polling is done by the thread itself */
+      if (eq_info->eq_type & (EQ_POLLED | EQ_MULTITHREAD)) {
+         if (eq_info->eq_type & EQ_INTERRUPT) {
+            if (eq_info->eq_type & EQ_POLLED)
+               cm_msg(MERROR, "register_equipment",
+                      "Equipment \"%s\" cannot be of type EQ_INTERRUPT and EQ_POLLED at the same time", 
+                      equipment[idx].name);
+            else
+               cm_msg(MERROR, "register_equipment",
+                      "Equipment \"%s\" cannot be of type EQ_INTERRUPT and EQ_MULTITHREAD at the same time", 
+                      equipment[idx].name);
+            return 0;
+         }
 
          if (display_period)
             printf("\nCalibrating");
