@@ -1221,7 +1221,7 @@ INT ss_shm_flush(const char *name, const void *adr, INT size, HNDLE handle)
    }
 
    if (use_mmap_shm) {
-      int ret = msync(adr, size, MS_ASYNC);
+      int ret = msync((void *)adr, size, MS_ASYNC);
       if (ret != 0) {
          cm_msg(MERROR, "ss_shm_flush", "Cannot msync(): return value %d, errno %d (%s)", ret, errno, strerror(errno));
          return SS_INVALID_ADDRESS;
