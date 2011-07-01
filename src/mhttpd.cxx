@@ -15194,8 +15194,6 @@ int main(int argc, char *argv[])
    /* get default from environment */
    cm_get_environment(midas_hostname, sizeof(midas_hostname), midas_expt, sizeof(midas_expt));
 
-   printf("PATH: %s\n", getenv("PATH"));
-   
    /* parse command line parameters */
    n_allowed_hosts = 0;
    for (i = 1; i < argc; i++) {
