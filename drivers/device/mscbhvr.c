@@ -351,6 +351,7 @@ INT mscbhvr(INT cmd, ...)
    HNDLE hKey;
    INT channel, status;
    float value, *pvalue;
+   int *pivalue;
    void *bd;
    MSCBHVR_INFO *info;
 
@@ -496,6 +497,14 @@ INT mscbhvr(INT cmd, ...)
       channel = va_arg(argptr, INT);
       value = (float) va_arg(argptr, double);
       status = mscbhvr_set_triptime(info, channel, value);
+      break;
+
+   case CMD_GET_TRIP:
+      info = va_arg(argptr, void *);
+      channel = va_arg(argptr, INT);
+      pivalue = va_arg(argptr, INT *);
+      *pivalue = 0; // not implemented for the moment...
+      status = FE_SUCCESS;
       break;
 
    default:
