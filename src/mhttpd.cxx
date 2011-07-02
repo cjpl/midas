@@ -1769,7 +1769,7 @@ void show_status_page(int refresh, const char *cookie_wpwd)
    /*---- Logging channels ----*/
 
    rsprintf
-       ("<tr><th colspan=2>Channel<th>Events<th>MB written<th>Compression<th>GB total</tr>\n");
+       ("<tr><th colspan=2>Channel<th>Events<th>MB written<th>Compression<th width=\"150px\">Disk level</tr>\n");
 
    if (db_find_key(hDB, 0, "/Logger/Channels", &hkey) == DB_SUCCESS) {
       for (i = 0;; i++) {
@@ -1851,7 +1851,18 @@ void show_status_page(int refresh, const char *cookie_wpwd)
             rsprintf("<td align=center>N/A</td>");
          }
 
-         rsprintf("<td align=center>%1.3lf</tr>\n", chn_stats.bytes_written_total / 1024 / 1024 / 1024);
+         char col[80];
+         if (chn_stats.disk_level >= 0.9)
+            strcpy(col, "red");
+         else if (chn_stats.disk_level >= 0.7)
+            strcpy(col, "yellow");
+         else
+            strcpy(col, "#00FF00");
+         
+         rsprintf("<td style=\"padding:0;\">\n");
+         rsprintf("<div style=\"background-color:%s;width:%dpx;height:23px;\">\n", col, (int)(chn_stats.disk_level*150));
+         rsprintf("<div style=\"position:relative;top:2px;left:15px\">%1.1lf&nbsp;%%</div>\n", chn_stats.disk_level*100);
+         rsprintf("</td></tr>\n");
       }
    }
 
