@@ -458,6 +458,7 @@ typedef struct {
 "Bytes written total = DOUBLE : 0",\
 "Bytes written subrun = DOUBLE : 0",\
 "Files written = DOUBLE : 0",\
+"Disk level = DOUBLE : 0",\
 "",\
 NULL}
 
@@ -487,6 +488,7 @@ typedef struct {
    double bytes_written_total;
    double bytes_written_subrun;
    double files_written;
+   double disk_level;
 } CHN_STATISTICS;
 
 typedef struct {

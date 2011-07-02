@@ -1083,6 +1083,7 @@ INT midas_write(LOG_CHN * log_chn, EVENT_HEADER * pevent, INT evt_size)
    log_chn->statistics.bytes_written += written;
    log_chn->statistics.bytes_written_subrun += written;
    log_chn->statistics.bytes_written_total += written;
+   log_chn->statistics.disk_level = 1.0-ss_disk_free(log_chn->path)/ss_disk_size(log_chn->path);
 
    return SS_SUCCESS;
 }
@@ -1551,6 +1552,7 @@ INT dump_write(LOG_CHN * log_chn, EVENT_HEADER * pevent, INT evt_size)
    log_chn->statistics.events_written++;
    log_chn->statistics.bytes_written += size;
    log_chn->statistics.bytes_written_total += size;
+   log_chn->statistics.disk_level = 1.0-ss_disk_free(log_chn->path)/ss_disk_size(log_chn->path);
 
    return status;
 }
@@ -1770,6 +1772,7 @@ INT ascii_write(LOG_CHN * log_chn, EVENT_HEADER * pevent, INT evt_size)
    log_chn->statistics.events_written++;
    log_chn->statistics.bytes_written += size;
    log_chn->statistics.bytes_written_total += size;
+   log_chn->statistics.disk_level = 1.0-ss_disk_free(log_chn->path)/ss_disk_size(log_chn->path);
 
    return status;
 }
@@ -2165,6 +2168,7 @@ INT root_write(LOG_CHN * log_chn, EVENT_HEADER * pevent, INT evt_size)
    log_chn->statistics.events_written++;
    log_chn->statistics.bytes_written += size;
    log_chn->statistics.bytes_written_total += size;
+   log_chn->statistics.disk_level = 1.0-ss_disk_free(log_chn->path)/ss_disk_size(log_chn->path);
 
    return SS_SUCCESS;
 }
@@ -3747,6 +3751,7 @@ INT tr_start(INT run_number, char *error)
    CHN_SETTINGS *chn_settings;
    KEY key;
    BOOL write_data, tape_flag = FALSE;
+   char str[256];
 
    if (verbose)
       printf("tr_start: run %d\n", run_number);
@@ -3904,6 +3909,14 @@ INT tr_start(INT run_number, char *error)
             cm_msg(MTALK, "tr_start", "mounting tape #%d, please wait", index);
          }
 
+         if (log_chn[index].type == LOG_TYPE_DISK) {
+            size = sizeof(str);
+            str[0] = 0;
+            db_get_value(hDB, 0, "/Logger/Data Dir", str, &size, TID_STRING, TRUE);
+
+            log_chn[index].statistics.disk_level = 1.0-ss_disk_free(str)/ss_disk_size(str);
+         }
+            
          /* open logging channel */
          status = log_open(&log_chn[index], run_number);
 
