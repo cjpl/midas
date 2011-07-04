@@ -945,7 +945,7 @@ INT initialize_equipment(void)
 
          } else {
             equipment[idx].status = FE_ERR_DISABLED;
-            set_equipment_status(equipment[idx].name, "Disbled", "yellow");
+            set_equipment_status(equipment[idx].name, "Disabled", "yellow");
          }
 
          /* now start threads if requested */
