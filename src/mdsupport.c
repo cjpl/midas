@@ -197,8 +197,11 @@ status : from lower function
    } else {
       /* disk device */
       my.type = LOG_TYPE_DISK;
-      if (strncmp(infile + strlen(infile) - 3, ".gz", 3) == 0)
-	my.zipfile = TRUE;        // FALSE; // PAA Nov/07 ignore zip, copy blindly blocks
+      if (strncmp(infile + strlen(infile) - 3, ".gz", 3) == 0) {
+        // FALSE will for now prevent the mdump to see inside the .gz
+	// But lazylogger will NOT unzip during copy!
+	my.zipfile = FALSE; // PAA Jul04 ignore zip, copy blindly blocks
+      }
    }
 
    /* open file */
