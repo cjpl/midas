@@ -148,7 +148,6 @@ static int ss_shm_name(const char* name, char* mem_name, int mem_name_size, char
    strlcat(file_name, ".SHM", file_name_size);
 
    if (shm_name) {
-      char* s;
 
 #if defined(OS_UNIX)
       strlcpy(shm_name, "/", shm_name_size);
@@ -161,6 +160,7 @@ static int ss_shm_name(const char* name, char* mem_name, int mem_name_size, char
          strlcat(shm_name, "_SHM", shm_name_size);
       }
 
+      char* s;
       for (s=shm_name+1; *s; s++)
          if (*s == '/')
             *s = '_';
@@ -201,6 +201,7 @@ static int ss_shm_file_name_to_shmid(const char* file_name, int* shmid)
 
 static void check_shm_type(const char* shm_type)
 {
+#ifdef OS_UNIX
    char file_name[256];
    const int file_name_size = sizeof(file_name);
    char path[256];
@@ -211,18 +212,11 @@ static void check_shm_type(const char* shm_type)
    cm_get_path(path);
    if (path[0] == 0) {
       getcwd(path, 256);
-#if defined(OS_VMS)
-#elif defined(OS_UNIX)
       strcat(path, "/");
-#elif defined(OS_WINNT)
-      strcat(path, "\\");
-#endif
    }
 
    strlcpy(file_name, path, file_name_size);
-#if defined (OS_UNIX)
    strlcat(file_name, ".", file_name_size); /* dot file under UNIX */
-#endif
    strlcat(file_name, "SHM_TYPE", file_name_size);
    strlcat(file_name, ".TXT", file_name_size);
 
@@ -275,6 +269,7 @@ static void check_shm_type(const char* shm_type)
 
    cm_msg(MERROR, "ss_shm_open", "Error: This MIDAS is built for %s while this experiment uses %s (see \'%s\')", shm_type, buf, file_name);
    exit(1);
+#endif
 }
 
 static void check_shm_host()
