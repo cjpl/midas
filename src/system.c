@@ -228,7 +228,12 @@ static void check_shm_type(const char* shm_type)
       assert(fp != NULL);
       fprintf(fp, "%s\n", shm_type);
       fclose(fp);
-      return;
+
+      fp = fopen(file_name, "r");
+      if (!fp) {
+         cm_msg(MERROR, "ss_shm_open", "Cannot open \'%s\', errno %d (%s)", file_name, errno, strerror(errno));
+         return;
+      }
    }
 
    fgets(buf, sizeof(buf), fp);
