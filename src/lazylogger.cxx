@@ -14,7 +14,7 @@ $Id$
 #include "ftplib.h"
 #endif
 
-#include <mdsupport.h>
+#include "mdsupport.h"
 #include <assert.h>
 
 #include <vector>
