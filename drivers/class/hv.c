@@ -297,7 +297,7 @@ void hv_demand(INT hDB, INT hKey, void *info)
 
    /* check for voltage limit */
    for (i = 0; i < hv_info->num_channels; i++)
-      if (hv_info->demand[i] > hv_info->voltage_limit[i])
+      if (fabs(hv_info->demand[i]) > fabs(hv_info->voltage_limit[i]))
          hv_info->demand[i] = hv_info->voltage_limit[i];
 
    /* set individual channels only if demand value differs */
