@@ -170,7 +170,7 @@ INT mftp_open(char *destination, FTP_CON ** con)
 }
 
 /*------------------------------------------------------------------*/
-INT md_file_ropen(char *infile, INT data_fmt)
+INT md_file_ropen(char *infile, INT data_fmt, INT openzip)
 /********************************************************************\
 Routine: external md_any_file_ropen
 Purpose: Open data file for replay for the given data format.
@@ -200,7 +200,8 @@ status : from lower function
       if (strncmp(infile + strlen(infile) - 3, ".gz", 3) == 0) {
         // FALSE will for now prevent the mdump to see inside the .gz
 	// But lazylogger will NOT unzip during copy!
-	my.zipfile = FALSE; // PAA Jul04 ignore zip, copy blindly blocks
+	if (openzip == 0) my.zipfile = FALSE; // ignore zip, copy blindly blocks
+	else my.zipfile = TRUE; // Open Zip file
       }
    }
 
