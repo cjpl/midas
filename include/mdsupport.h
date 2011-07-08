@@ -125,7 +125,7 @@ extern "C" {
   INT EXPRT md_physrec_skip(INT data_fmt, INT bl);
   INT EXPRT md_physrec_get(INT data_fmt, void **prec, DWORD * psize);
   INT EXPRT md_file_rclose(INT data_fmt);
-  INT EXPRT md_file_ropen(char *infile, INT data_fmt);
+  INT EXPRT md_file_ropen(char *infile, INT data_fmt, INT openzip);
   INT EXPRT md_file_wopen(INT type, INT data_fmt, char *filename, INT * hDev);
   INT EXPRT md_file_wclose(INT handle, INT type, INT data_fmt, char *filename);
   INT EXPRT md_log_write(INT handle, INT data_fmt, INT type, void *prec, DWORD nbytes);
