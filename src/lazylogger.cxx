@@ -30,6 +30,7 @@ $Id$
 #define MAX_LAZY_CHANNEL 100
 #define TRACE
 #define LOG_TYPE_SCRIPT (-1)
+#define DONTOPENZIP   0
 
 #define STRLCPY(dst, src) strlcpy((dst), (src), sizeof(dst))
 
@@ -1203,7 +1204,7 @@ Function value:
    last_error = 0;
 
    /* open input data file */
-   if (md_file_ropen(infile, data_fmt) != MD_SUCCESS)
+   if (md_file_ropen(infile, data_fmt, DONTOPENZIP) != MD_SUCCESS)
       return (FORCE_EXIT);
 
    /* run shell command if available */
