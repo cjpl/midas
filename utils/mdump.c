@@ -23,7 +23,7 @@ char bank_name[4], sbank_name[4];
 INT hBufEvent;
 INT save_dsp = 1, evt_display = 0;
 INT speed = 0, dsp_time = 0, dsp_fmt = 0, dsp_mode = 0, bl = -1;
-INT consistency = 0, disp_bank_list = 0;
+INT consistency = 0, disp_bank_list = 0, openzip = 0;
 BOOL via_callback;
 INT i, data_fmt, count;
 KEY key;
@@ -105,7 +105,7 @@ int replog(int data_fmt, char *rep_file, int bl, int action)
     assert(!"YBOS not supported anymore");
   
   /* open data file */
-  if (md_file_ropen(rep_file, data_fmt) != SS_SUCCESS)
+  if (md_file_ropen(rep_file, data_fmt, openzip) != SS_SUCCESS)
     return (-1);
   
   switch (action) {
@@ -562,6 +562,9 @@ int main(int argc, char **argv)
       }
     }
   }
+  
+  // Set flag to inform that we're coming from mdump -> open zip  (.mid.gz)
+  if ((strstr(argv[0], "mdump") == NULL)) openzip = 0; else  openzip = 1;
 
   if ((sbank_name[0] != 0) && single) dsp_mode += 1;
   
