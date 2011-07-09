@@ -484,15 +484,15 @@ INT ss_shm_open(const char *name, INT size, void **adr, HNDLE * handle, BOOL get
 #ifdef OS_UNIX
 
    if (use_sysv_shm) {
-
+      
       int key, shmid, fh, file_size;
       struct shmid_ds buf;
-
+      
       status = SS_SUCCESS;
-
+      
       /* create a unique key from the file name */
       key = ftok(file_name, 'M');
-
+      
       /* if file doesn't exist, create it */
       if (key == -1) {
          fh = open(file_name, O_CREAT | O_TRUNC | O_BINARY | O_RDWR, 0644);
@@ -501,16 +501,16 @@ INT ss_shm_open(const char *name, INT size, void **adr, HNDLE * handle, BOOL get
             close(fh);
          }
          key = ftok(file_name, 'M');
-
+         
          if (key == -1) {
             cm_msg(MERROR, "ss_shm_open", "ftok() failed");
             return SS_FILE_ERROR;
          }
-
+         
          status = SS_CREATED;
-
+         
          /* delete any previously created memory */
-
+         
          shmid = shmget(key, 0, 0);
          shmctl(shmid, IPC_RMID, &buf);
       } else {
@@ -524,7 +524,7 @@ INT ss_shm_open(const char *name, INT size, void **adr, HNDLE * handle, BOOL get
             return SS_SIZE_MISMATCH;
          }
       }
-
+      
       /* get the shared memory, create if not existing */
       shmid = shmget(key, size, 0);
       if (shmid == -1) {
@@ -538,27 +538,27 @@ INT ss_shm_open(const char *name, INT size, void **adr, HNDLE * handle, BOOL get
          }
          status = SS_CREATED;
       }
-
+      
       if (shmid == -1) {
          cm_msg(MERROR, "ss_shm_open", "shmget(key=0x%x,size=%d) failed, errno %d (%s)",
                 key, size, errno, strerror(errno));
          return SS_NO_MEMORY;
       }
-
+      
       memset(&buf, 0, sizeof(buf));
       buf.shm_perm.uid = getuid();
       buf.shm_perm.gid = getgid();
       buf.shm_perm.mode = 0666;
       shmctl(shmid, IPC_SET, &buf);
-
+      
       *adr = shmat(shmid, 0, 0);
       *handle = (HNDLE) shmid;
-
+      
       if ((*adr) == (void *) (-1)) {
          cm_msg(MERROR, "ss_shm_open", "shmat(shmid=%d) failed, errno %d (%s)", shmid, errno, strerror(errno));
          return SS_NO_MEMORY;
       }
-
+      
       /* if shared memory was created, try to load it from file */
       if (status == SS_CREATED) {
          fh = open(file_name, O_RDONLY, 0644);
@@ -568,16 +568,16 @@ INT ss_shm_open(const char *name, INT size, void **adr, HNDLE * handle, BOOL get
             read(fh, *adr, size);
          close(fh);
       }
-
+      
       return status;
    }
-
+   
    if (use_mmap_shm) {
-
+      
       int ret;
       int fh, file_size;
       int i;
-
+      
       if (1) {
          static int once = 1;
          if (once && strstr(file_name, "ODB")) {
@@ -586,43 +586,43 @@ INT ss_shm_open(const char *name, INT size, void **adr, HNDLE * handle, BOOL get
                    "WARNING: This version of MIDAS system.c uses the experimental mmap() based implementation of MIDAS shared memory.");
          }
       }
-
+      
       status = SS_SUCCESS;
-
+      
       fh = open(file_name, O_RDWR | O_BINARY | O_LARGEFILE, 0644);
-
+      
       if (fh < 0) {
          if (errno == ENOENT) { // file does not exist
             fh = open(file_name, O_CREAT | O_RDWR | O_BINARY | O_LARGEFILE, 0644);
          }
-
+         
          if (fh < 0) {
             cm_msg(MERROR, "ss_shm_open",
                    "Cannot create shared memory file \'%s\', errno %d (%s)", file_name, errno, strerror(errno));
             return SS_FILE_ERROR;
          }
-
+         
          ret = lseek(fh, size - 1, SEEK_SET);
-
+         
          if (ret == (off_t) - 1) {
             cm_msg(MERROR, "ss_shm_open",
                    "Cannot create shared memory file \'%s\', size %d, lseek() errno %d (%s)",
                    file_name, size, errno, strerror(errno));
             return SS_FILE_ERROR;
          }
-
+         
          ret = 0;
          ret = write(fh, &ret, 1);
          assert(ret == 1);
-
+         
          ret = lseek(fh, 0, SEEK_SET);
          assert(ret == 0);
-
+         
          //cm_msg(MINFO, "ss_shm_open", "Created shared memory file \'%s\', size %d", file_name, size);
-
+         
          status = SS_CREATED;
       }
-
+      
       /* if file exists, retrieve its size */
       file_size = (INT) ss_file_size(file_name);
       if (file_size < size) {
@@ -631,16 +631,16 @@ INT ss_shm_open(const char *name, INT size, void **adr, HNDLE * handle, BOOL get
                 file_name, file_size, size);
          return SS_NO_MEMORY;
       }
-
+      
       size = file_size;
-
+      
       *adr = mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_SHARED, fh, 0);
-
+      
       if ((*adr) == MAP_FAILED) {
          cm_msg(MERROR, "ss_shm_open", "mmap() failed, errno %d (%s)", errno, strerror(errno));
          return SS_NO_MEMORY;
       }
-
+      
       *handle = -1;
       for (i = 0; i < MAX_MMAP; i++)
          if (mmap_addr[i] == NULL) {
@@ -650,102 +650,102 @@ INT ss_shm_open(const char *name, INT size, void **adr, HNDLE * handle, BOOL get
             break;
          }
       assert((*handle) >= 0);
-
+      
       return status;
    }
-
+   
    if (use_posix_shm) {
-
+      
       int fh, sh, file_size;
       int created = 0;
       int i;
-
+      
       status = SS_SUCCESS;
-
+      
       fh = open(file_name, O_RDWR | O_BINARY | O_LARGEFILE, 0644);
-
+      
       if (fh < 0) {
          // if cannot open file, try to create it
          fh = open(file_name, O_CREAT | O_RDWR | O_BINARY | O_LARGEFILE, 0644);
-
+         
          if (fh < 0) {
             cm_msg(MERROR, "ss_shm_open", "Cannot create shared memory file \'%s\', errno %d (%s)", file_name, errno, strerror(errno));
             return SS_FILE_ERROR;
          }
-
+         
          status = ftruncate(fh, size);
          if (status < 0) {
             cm_msg(MERROR, "ss_shm_open", "Cannot resize shared memory file \'%s\', size %d, errno %d (%s)", file_name, size, errno, strerror(errno));
-	    close(fh);
+            close(fh);
             return SS_FILE_ERROR;
          }
-
+         
          //cm_msg(MINFO, "ss_shm_open", "Created shared memory file \'%s\', size %d", file_name, size);
-
+         
          /* delete shared memory segment containing now stale data */
          ss_shm_delete(name);
-
+         
          status = SS_CREATED;
       }
-
+      
       /* if file exists, retrieve its size */
       file_size = (INT) ss_file_size(file_name);
       if (file_size < size) {
          cm_msg(MERROR, "ss_shm_open", "Shared memory file \'%s\' size %d is smaller than requested size %d. Please backup and remove this file and try again", file_name, file_size, size);
          return SS_NO_MEMORY;
       }
-
+      
       size = file_size;
-
+      
       sh = shm_open(shm_name, O_RDWR, 0777);
-
+      
       if (sh < 0) {
-	 // cannot open, try to create new one
-
+         // cannot open, try to create new one
+         
          sh = shm_open(shm_name, O_RDWR | O_CREAT, 0777);
-
-	 if (sh < 0) {
-	    cm_msg(MERROR, "ss_shm_open", "Cannot create shared memory segment \'%s\', shm_open() errno %d (%s)", shm_name, errno, strerror(errno));
-	    return SS_NO_MEMORY;
-	 }
-
-	 status = ftruncate(sh, size);
-	 if (status < 0) {
-	    cm_msg(MERROR, "ss_shm_open", "Cannot resize shared memory segment \'%s\', ftruncate(%d) errno %d (%s)", shm_name, size, errno, strerror(errno));
-	    return SS_NO_MEMORY;
-	 }
-	 
-	 //cm_msg(MINFO, "ss_shm_open", "Created shared memory segment \'%s\', size %d", shm_name, size);
-
-	 created = 1;
+         
+         if (sh < 0) {
+            cm_msg(MERROR, "ss_shm_open", "Cannot create shared memory segment \'%s\', shm_open() errno %d (%s)", shm_name, errno, strerror(errno));
+            return SS_NO_MEMORY;
+         }
+         
+         status = ftruncate(sh, size);
+         if (status < 0) {
+            cm_msg(MERROR, "ss_shm_open", "Cannot resize shared memory segment \'%s\', ftruncate(%d) errno %d (%s)", shm_name, size, errno, strerror(errno));
+            return SS_NO_MEMORY;
+         }
+         
+         //cm_msg(MINFO, "ss_shm_open", "Created shared memory segment \'%s\', size %d", shm_name, size);
+         
+         created = 1;
       }
-
+      
       *adr = mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_SHARED, sh, 0);
-
+      
       if ((*adr) == MAP_FAILED) {
-	 cm_msg(MERROR, "ss_shm_open", "Cannot mmap() shared memory \'%s\', errno %d (%s)", shm_name, errno, strerror(errno));
-	 close(fh);
-	 close(sh);
-	 return SS_NO_MEMORY;
+         cm_msg(MERROR, "ss_shm_open", "Cannot mmap() shared memory \'%s\', errno %d (%s)", shm_name, errno, strerror(errno));
+         close(fh);
+         close(sh);
+         return SS_NO_MEMORY;
       }
-
+      
       close(sh);
       
       /* if shared memory was created, try to load it from file */
       if (created) {
          if (debug)
             printf("ss_shm_open(%s), loading contents of %s, size %d\n", name, file_name, size);
-
+         
          status = read(fh, *adr, size);
          if (status != size) {
             cm_msg(MERROR, "ss_shm_open", "Cannot read \'%s\', read() returned %d instead of %d, errno %d (%s)", file_name, status, size, errno, strerror(errno));
             close(fh);
             return SS_NO_MEMORY;
-	 }
+         }
       }
-
+      
       close(fh);
-
+      
       *handle = -1;
       for (i = 0; i < MAX_MMAP; i++)
          if (mmap_addr[i] == NULL) {
@@ -755,11 +755,11 @@ INT ss_shm_open(const char *name, INT size, void **adr, HNDLE * handle, BOOL get
             break;
          }
       assert((*handle) >= 0);
-
+      
       if (created)
-	return SS_CREATED;
+         return SS_CREATED;
       else
-	return SS_SUCCESS;
+         return SS_SUCCESS;
    }
 
 #endif /* OS_UNIX */
@@ -983,20 +983,20 @@ INT ss_shm_delete(const char *name)
       struct shmid_ds buf;
       
       status = ss_shm_file_name_to_shmid(file_name, &shmid);
-
+      
       if (status != SS_SUCCESS)
          return status;
-
+      
       status = shmctl(shmid, IPC_RMID, &buf);
-
+      
       if (status == -1) {
          cm_msg(MERROR, "ss_shm_delete", "Cannot delete shared memory \'%s\', shmctl(IPC_RMID) failed, errno %d (%s)", name, errno, strerror(errno));
-	 return SS_FILE_ERROR;
+         return SS_FILE_ERROR;
       }
-
+      
       return SS_SUCCESS;
    }
-
+   
    if (use_mmap_shm) {
       /* no shared memory segments to delete */
       return SS_SUCCESS;
