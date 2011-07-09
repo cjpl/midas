@@ -7515,7 +7515,7 @@ BOOL check_web_password(const char *password, const char *redir, const char *exp
 
 /*------------------------------------------------------------------*/
 
-void show_start_page(void)
+void show_start_page(int script)
 {
    int rn, i, j, n, size, status, maxlength;
    HNDLE hDB, hkey, hsubkey, hkeycomm, hkeyc;
@@ -7525,32 +7525,39 @@ void show_start_page(void)
 
    cm_get_experiment_database(&hDB, NULL);
 
-   show_header(hDB, "Start run", "GET", "", 1, 0);
+   if (script) {
+      show_header(hDB, "Start sequence", "GET", "", 1, 0);
+      rsprintf("<tr><th bgcolor=#A0A0FF colspan=2>Start script</th>\n");
+   } else {
+      show_header(hDB, "Start run", "GET", "", 1, 0);
 
-   rsprintf("<tr><th bgcolor=#A0A0FF colspan=2>Start new run</tr>\n");
-   rsprintf("<tr><td>Run number");
-
-   /* run number */
-   size = sizeof(rn);
-   status = db_get_value(hDB, 0, "/Runinfo/Run number", &rn, &size, TID_INT, TRUE);
-   assert(status == SUCCESS);
-
-   if (rn < 0) { // value "zero" is ok
-      cm_msg(MERROR, "show_start_page",
-             "aborting on attempt to use invalid run number %d", rn);
-      abort();
+      rsprintf("<tr><th bgcolor=#A0A0FF colspan=2>Start new run</tr>\n");
+      rsprintf("<tr><td>Run number");
+      
+      /* run number */
+      size = sizeof(rn);
+      status = db_get_value(hDB, 0, "/Runinfo/Run number", &rn, &size, TID_INT, TRUE);
+      assert(status == SUCCESS);
+      
+      if (rn < 0) { // value "zero" is ok
+         cm_msg(MERROR, "show_start_page",
+                "aborting on attempt to use invalid run number %d", rn);
+         abort();
+      }
+      
+      size = sizeof(i);
+      if (db_find_key(hDB, 0, "/Experiment/Edit on start/Edit Run number", &hkey) ==
+          DB_SUCCESS && db_get_data(hDB, hkey, &i, &size, TID_BOOL) && i == 0)
+         rsprintf("<td><input type=hidden name=value value=%d>%d</tr>\n", rn + 1, rn + 1);
+      else
+         rsprintf("<td><input type=text size=20 maxlength=80 name=value value=%d></tr>\n",
+                  rn + 1);
    }
-
-   size = sizeof(i);
-   if (db_find_key(hDB, 0, "/Experiment/Edit on start/Edit Run number", &hkey) ==
-       DB_SUCCESS && db_get_data(hDB, hkey, &i, &size, TID_BOOL) && i == 0)
-      rsprintf("<td><input type=hidden name=value value=%d>%d</tr>\n", rn + 1, rn + 1);
-   else
-      rsprintf("<td><input type=text size=20 maxlength=80 name=value value=%d></tr>\n",
-               rn + 1);
-
    /* run parameters */
-   db_find_key(hDB, 0, "/Experiment/Edit on start", &hkey);
+   if (script)
+      db_find_key(hDB, 0, "/Experiment/Edit on sequence", &hkey);
+   else
+      db_find_key(hDB, 0, "/Experiment/Edit on start", &hkey);
    db_find_key(hDB, 0, "/Experiment/Parameter Comments", &hkeycomm);
    if (hkey) {
       for (i = 0, n = 0;; i++) {
@@ -7607,7 +7614,11 @@ void show_start_page(void)
    }
 
    rsprintf("<tr><td align=center colspan=2>\n");
-   rsprintf("<input type=submit name=cmd value=Start>\n");
+   if (script) {
+      rsprintf("<input type=submit name=cmd value=\"Start Script\">\n");
+      rsprintf("<input type=hidden name=params value=1>\n");
+   } else
+      rsprintf("<input type=submit name=cmd value=Start>\n");
    rsprintf("<input type=submit name=cmd value=Cancel>\n");
    rsprintf("</tr>\n");
    rsprintf("</table>\n");
@@ -8756,6 +8767,9 @@ typedef struct {
    int   loop_end_line[4];
    int   loop_counter[4];
    int   loop_n[4];
+   char  subdir[256];
+   int   subdir_end_line;
+   int   subdir_not_notify;
    int   wait_counter;
    int   wait_n;
    DWORD start_time;
@@ -8792,6 +8806,9 @@ typedef struct {
 "[1] 0",\
 "[2] 0",\
 "[3] 0",\
+"Subdir = STRING : [256] ",\
+"Subdir end line = INT : 0",\
+"Subdir not notify = INT : 0",\
 "Wait counter = INT : 0",\
 "Wait n = INT : 0",\
 "Start time = DWORD : 0",\
@@ -8852,14 +8869,15 @@ const char *bar_col[] = {"#B0B0FF", "#C0C0FF", "#D0D0FF", "#E0E0FF"};
 
 void show_seq_page()
 {
-   INT i, size, n, state;
+   INT i, size, n, state, eob;
    HNDLE hDB;
-   char str[256], path[256], dir[256], error[256], comment[256], filename[256];
+   char str[256], path[256], dir[256], error[256], comment[256], filename[256], data[256], buffer[10000], line[256];
    time_t now;
-   char *flist = NULL, *pc;
+   char *flist = NULL, *pc, *pline;
    PMXML_NODE pn;
    FILE *f;
-   HNDLE hKey;
+   HNDLE hKey, hparam, hsubkey;
+   KEY key;
    
    cm_get_experiment_database(&hDB, NULL);
    db_find_key(hDB, 0, "/Sequencer", &hKey);
@@ -8894,24 +8912,56 @@ void show_seq_page()
 
    /*---- start script ----*/
    if (equal_ustring(getparam("cmd"), "Start Script")) {
-      seq.running = TRUE;
-      seq.finished = FALSE;
-      seq.transition_request = FALSE;
-      seq.wait_counter = 0;
-      seq.wait_n = 0;
-      seq.start_time = 0;
-      for (i=0 ; i<4 ; i++) {
-         seq.loop_start_line[i] = 0;
-         seq.loop_end_line[i] = 0;
-         seq.loop_counter[i] = 0;
-         seq.loop_n[i] = 0;
+      if (isparam("params")) {
+         
+         /* set run parameters */
+         db_find_key(hDB, 0, "/Experiment/Edit on sequence", &hparam);
+         if (hparam) {
+            for (i = 0, n = 0;; i++) {
+               db_enum_key(hDB, hparam, i, &hsubkey);
+               
+               if (!hsubkey)
+                  break;
+               
+               db_get_key(hDB, hsubkey, &key);
+               
+               for (int j = 0; j < key.num_values; j++) {
+                  size = key.item_size;
+                  sprintf(str, "x%d", n++);
+                  db_sscanf(getparam(str), data, &size, 0, key.type);
+                  db_set_data_index(hDB, hsubkey, data, key.item_size, j, key.type);
+               }
+            }
+         }
+
+         /* start sequencer */
+         seq.running = TRUE;
+         seq.finished = FALSE;
+         seq.transition_request = FALSE;
+         seq.wait_counter = 0;
+         seq.wait_n = 0;
+         seq.start_time = 0;
+         for (i=0 ; i<4 ; i++) {
+            seq.loop_start_line[i] = 0;
+            seq.loop_end_line[i] = 0;
+            seq.loop_counter[i] = 0;
+            seq.loop_n[i] = 0;
+         }
+         seq.current_line_number = 1;
+         seq.error[0] = 0;
+         seq.error_line = 0;
+         seq.subdir[0] = 0;
+         seq.subdir_end_line = 0;
+         seq.subdir_not_notify = 0;
+         db_set_record(hDB, hKey, &seq, sizeof(seq), 0);
+         redirect("");
+         return;
+         
+      } else {
+         
+         show_start_page(TRUE);
+         return;
       }
-      seq.current_line_number = 1;
-      seq.error[0] = 0;
-      seq.error_line = 0;
-      db_set_record(hDB, hKey, &seq, sizeof(seq), 0);
-      redirect("");
-      return;
    }
    
    /*---- save script ----*/
@@ -8967,6 +9017,7 @@ void show_seq_page()
          seq.loop_n[i] = 0;
       }
       seq.stop_after_run = FALSE;
+      seq.subdir[0] = 0;
       
       /* stop run if not already stopped */
       size = sizeof(state);
@@ -8990,7 +9041,7 @@ void show_seq_page()
 
    if (!equal_ustring(getparam("cmd"), "Load Script") && !isparam("fs") &&
        !equal_ustring(getparam("cmd"), "Edit Script"))
-      rsprintf("<meta http-equiv=\"Refresh\" content=\"10\">\n");
+      rsprintf("<meta http-equiv=\"Refresh\" content=\"60\">\n");
 
    /* update script */
    rsprintf("<script type=\"text/javascript\" src=\"../mhttpd.js\"></script>\n");
@@ -9012,9 +9063,19 @@ void show_seq_page()
    rsprintf("   \n");
    rsprintf("   for (var l=1 ; ; l++) {\n");
    rsprintf("      line = document.getElementById('line'+l);\n");
-   rsprintf("      if (line == null)\n");
+   rsprintf("      if (line == null) {\n");
+   rsprintf("         var last_line = l-1;\n");
    rsprintf("         break;\n");
-   rsprintf("      else if (l == error_line)\n");
+   rsprintf("      }\n");
+   rsprintf("      if (Math.abs(l - current_line) > 10)\n");
+   rsprintf("         line.style.display = 'none';\n");
+   rsprintf("      else\n");
+   rsprintf("         line.style.display = 'inline';\n");
+   rsprintf("      if (current_line > 10)\n");
+   rsprintf("          document.getElementById('linedots1').style.display = 'inline';\n");
+   rsprintf("      else\n");
+   rsprintf("          document.getElementById('linedots1').style.display = 'none';\n");
+   rsprintf("      if (l == error_line)\n");
    rsprintf("         line.style.backgroundColor = '#FF0000';\n");
    rsprintf("      else if (l == current_line)\n");
    rsprintf("         line.style.backgroundColor = '#80FF80';\n");
@@ -9029,6 +9090,11 @@ void show_seq_page()
    rsprintf("      else\n");
    rsprintf("         line.style.backgroundColor = '#FFFFFF';\n");
    rsprintf("   }\n");
+   rsprintf("   \n");
+   rsprintf("   if (current_line < last_line-10)\n");
+   rsprintf("       document.getElementById('linedots2').style.display = 'inline';\n");
+   rsprintf("   else\n");
+   rsprintf("       document.getElementById('linedots2').style.display = 'none';\n");
    rsprintf("   \n");
    rsprintf("   var wl = document.getElementById('wait_label');\n");
    rsprintf("   if (wl != null) {\n");
@@ -9113,17 +9179,7 @@ void show_seq_page()
          rsprintf("<input type=button onClick=\"stop_immediately()\" value=\"Stop immediately\">");
       } else {
          rsprintf("<input type=submit name=cmd value=\"Load Script\">\n");
-         rsprintf("<script type=\"text/javascript\">\n");
-         rsprintf("<!--\n");
-         rsprintf("function start_confirm()\n");
-         rsprintf("{\n");
-         rsprintf("   flag = confirm('Are you sure to start the script?');\n");
-         rsprintf("   if (flag == true)\n");
-         rsprintf("      window.location.href = '?cmd=Start Script';\n");
-         rsprintf("}\n");
-         rsprintf("//-->\n");
-         rsprintf("</script>\n");
-         rsprintf("<input type=button onClick=\"start_confirm()\" value=\"Start Script\">\n");
+         rsprintf("<input type=submit name=cmd value=\"Start Script\">\n");
       }
       if (seq.filename[0] && !seq.running && !equal_ustring(getparam("cmd"), "Load Script") && !isparam("fs"))
          rsprintf("<input type=submit name=cmd value=\"Edit Script\">\n");
@@ -9277,6 +9333,7 @@ void show_seq_page()
                   rsprintf("</b></td></tr>\n");
                }
                rsprintf("<tr><td colspan=2>\n");
+               rsprintf("<font id=\"linedots1\" style=\"display:none;\">...<br></font>\n");
                for (int line=1 ; !feof(f) ; line++) {
                   str[0] = 0;
                   fgets(str, sizeof(str), f);
@@ -9291,6 +9348,7 @@ void show_seq_page()
                      rsprintf("</font>");
                   }
                }
+               rsprintf("<font id=\"linedots2\" style=\"display:none;\">...<br></font>\n");
                rsprintf("</tr></td>\n");
                fclose(f);
             } else {
@@ -9298,12 +9356,53 @@ void show_seq_page()
                   rsprintf("<tr><td colspan=2><b>Cannot open file \"%s\"</td></tr>\n", str);
                }
             }
+            
+            /*---- show messages ----*/
+            if (seq.running) {
+               rsprintf("<tr><td colspan=2>\n");
+               rsprintf("<font style=\"font-family:monospace\">\n");
+               cm_msg_retrieve(20, buffer, sizeof(buffer));
+               
+               pline = buffer;
+               eob = FALSE;
+               
+               do {
+                  strlcpy(line, pline, sizeof(line));
+                  
+                  /* extract single line */
+                  if (strchr(line, '\n'))
+                     *strchr(line, '\n') = 0;
+                  if (strchr(line, '\r'))
+                     *strchr(line, '\r') = 0;
+                  
+                  pline += strlen(line);
+                  
+                  while (*pline == '\r' || *pline == '\n')
+                     pline++;
+                  
+                  strlcpy(str, line+11, sizeof(str));
+                  pc = strchr(line+25, ' ');
+                  if (pc)
+                     strlcpy(str+8, pc, sizeof(str)-9);
+                  
+                  /* check for error */
+                  if (strstr(line, ",ERROR]"))
+                     rsprintf("<span style=\"color:white;background-color:red\">%s</span>", str);
+                  else
+                     rsprintf("%s", str);
+                  
+                  rsprintf("<br>\n");
+               } while (!eob && *pline);
+               
+               
+               rsprintf("</font></td></tr>\n");
+            }
          }
       } else {
          rsprintf("<tr><td colspan=2><b>No script loaded</b></td></tr>\n");
       }
    }
-
+   
    rsprintf("</table>\n");
    rsprintf("</form></body></html>\r\n");
 }
@@ -9359,6 +9458,13 @@ void sequencer()
          return;
       }
    }
+   
+   /* check for ODBSubdir end */
+   if (seq.current_line_number == seq.subdir_end_line) {
+      seq.subdir_end_line = 0;
+      seq.subdir[0] = 0;
+      seq.subdir_not_notify = FALSE;
+   }
 
    /* find node belonging to current line */
    pn = mxml_get_node_at_line(pnseq, seq.current_line_number);
@@ -9376,62 +9482,106 @@ void sequencer()
       db_set_record(hDB, hKeySeq, &seq, sizeof(seq), 0);
    }
    
-   /*---- ODBSet ----*/
-   else if (equal_ustring(mxml_get_name(pn), "ODBSet")) {
-      strlcpy(odbpath, mxml_get_attribute(pn, "path"), sizeof(odbpath));
-      if (strchr(odbpath, '[')) {
-         index = atoi(strchr(odbpath, '[')+1);
-         *strchr(odbpath, '[') = 0;
-      } else
-         index = 0;
-      strlcpy(value, mxml_get_value(pn), sizeof(value));
-      status = db_find_key(hDB, 0, odbpath, &hKey);
-      if (status != DB_SUCCESS) {
-         sprintf(seq.error, "Cannot find ODB key \"%s\"", odbpath);
+   /*---- ODBSubdir ----*/
+   else if (equal_ustring(mxml_get_name(pn), "ODBSubdir")) {
+      if (!mxml_get_attribute(pn, "path")) {
+         sprintf(seq.error, "Missing attribute \"path\"");
          seq.error_line = seq.current_line_number;
          seq.running = FALSE;
       } else {
-         db_get_key(hDB, hKey, &key);
-         size = sizeof(data);
-         db_sscanf(value, data, &size, 0, key.type);
-         if (mxml_get_attribute(pn, "notify")) {
-            n = atoi(mxml_get_attribute(pn, "notify"));
-            db_set_data_index2(hDB, hKey, data, key.item_size, index, key.type, n);
-         }
-         db_set_data_index(hDB, hKey, data, key.item_size, index, key.type);
+         strlcpy(seq.subdir, mxml_get_attribute(pn, "path"), sizeof(seq.subdir));
+         if (mxml_get_attribute(pn, "notify"))
+            seq.subdir_not_notify = !atoi(mxml_get_attribute(pn, "notify"));
+         seq.subdir_end_line = mxml_get_line_number_end(pn);
          seq.current_line_number++;
+         db_set_record(hDB, hKeySeq, &seq, sizeof(seq), 0);
       }
-      db_set_record(hDB, hKeySeq, &seq, sizeof(seq), 0);
    }
    
-   /*---- ODBInc ----*/
-   else if (equal_ustring(mxml_get_name(pn), "ODBInc")) {
-      strlcpy(odbpath, mxml_get_attribute(pn, "path"), sizeof(odbpath));
-      if (strchr(odbpath, '[')) {
-         index = atoi(strchr(odbpath, '[')+1);
-         *strchr(odbpath, '[') = 0;
-      } else
-         index = 0;
-      strlcpy(value, mxml_get_value(pn), sizeof(value));
-      status = db_find_key(hDB, 0, odbpath, &hKey);
-      if (status != DB_SUCCESS) {
-         sprintf(seq.error, "Cannot find ODB key \"%s\"", odbpath);
+   /*---- ODBSet ----*/
+   else if (equal_ustring(mxml_get_name(pn), "ODBSet")) {
+      if (!mxml_get_attribute(pn, "path")) {
+         sprintf(seq.error, "Missing attribute \"path\"");
          seq.error_line = seq.current_line_number;
          seq.running = FALSE;
       } else {
-         db_get_key(hDB, hKey, &key);
-         size = sizeof(data);
-         db_get_data_index(hDB, hKey, data, &size, index, key.type);
-         db_sprintf(str, data, size, 0, key.type);
-         d = atof(str);
-         d += atof(value);
-         sprintf(str, "%lf", d);
-         size = sizeof(data);
-         db_sscanf(str, data, &size, 0, key.type);
-         db_set_data_index(hDB, hKey, data, key.item_size, index, key.type);
-         seq.current_line_number++;
+         strlcpy(odbpath, seq.subdir, sizeof(odbpath));
+         if (strlen(odbpath) > 0 && odbpath[strlen(odbpath)-1] != '/')
+            strlcat(odbpath, "/", sizeof(odbpath));
+         strlcat(odbpath, mxml_get_attribute(pn, "path"), sizeof(odbpath));
+         if (strchr(odbpath, '[')) {
+            index = atoi(strchr(odbpath, '[')+1);
+            *strchr(odbpath, '[') = 0;
+         } else
+            index = 0;
+         strlcpy(value, mxml_get_value(pn), sizeof(value));
+         status = db_find_key(hDB, 0, odbpath, &hKey);
+         if (status != DB_SUCCESS) {
+            sprintf(seq.error, "Cannot find ODB key \"%s\"", odbpath);
+            seq.error_line = seq.current_line_number;
+            seq.running = FALSE;
+         } else {
+            db_get_key(hDB, hKey, &key);
+            size = sizeof(data);
+            db_sscanf(value, data, &size, 0, key.type);
+            
+            int notify = TRUE;
+            if (seq.subdir_not_notify)
+               notify = FALSE;
+            if (mxml_get_attribute(pn, "notify"))
+               notify = atoi(mxml_get_attribute(pn, "notify"));
+
+            db_set_data_index2(hDB, hKey, data, key.item_size, index, key.type, notify);
+            seq.current_line_number++;
+         }
+         db_set_record(hDB, hKeySeq, &seq, sizeof(seq), 0);
       }
-      db_set_record(hDB, hKeySeq, &seq, sizeof(seq), 0);
+   }
+
+   /*---- ODBInc ----*/
+   else if (equal_ustring(mxml_get_name(pn), "ODBInc")) {
+      if (!mxml_get_attribute(pn, "path")) {
+         sprintf(seq.error, "Missing attribute \"path\"");
+         seq.error_line = seq.current_line_number;
+         seq.running = FALSE;
+      } else {
+         strlcpy(odbpath, seq.subdir, sizeof(odbpath));
+         if (strlen(odbpath) > 0 && odbpath[strlen(odbpath)-1] != '/')
+            strlcat(odbpath, "/", sizeof(odbpath));
+         strlcat(odbpath, mxml_get_attribute(pn, "path"), sizeof(odbpath));
+         if (strchr(odbpath, '[')) {
+            index = atoi(strchr(odbpath, '[')+1);
+            *strchr(odbpath, '[') = 0;
+         } else
+            index = 0;
+         strlcpy(value, mxml_get_value(pn), sizeof(value));
+         status = db_find_key(hDB, 0, odbpath, &hKey);
+         if (status != DB_SUCCESS) {
+            sprintf(seq.error, "Cannot find ODB key \"%s\"", odbpath);
+            seq.error_line = seq.current_line_number;
+            seq.running = FALSE;
+         } else {
+            db_get_key(hDB, hKey, &key);
+            size = sizeof(data);
+            db_get_data_index(hDB, hKey, data, &size, index, key.type);
+            db_sprintf(str, data, size, 0, key.type);
+            d = atof(str);
+            d += atof(value);
+            sprintf(str, "%lf", d);
+            size = sizeof(data);
+            db_sscanf(str, data, &size, 0, key.type);
+            
+            int notify = TRUE;
+            if (seq.subdir_not_notify)
+               notify = FALSE;
+            if (mxml_get_attribute(pn, "notify"))
+               notify = atoi(mxml_get_attribute(pn, "notify"));
+            
+            db_set_data_index2(hDB, hKey, data, key.item_size, index, key.type, notify);
+            seq.current_line_number++;
+         }
+         db_set_record(hDB, hKeySeq, &seq, sizeof(seq), 0);
+      }
    }
 
    /*---- RunDescription ----*/
@@ -14202,7 +14352,7 @@ void interprete(const char *cookie_pwd, const char *cookie_wpwd, const char *coo
       if (value[0] == 0) {
          if (!check_web_password(cookie_wpwd, "?cmd=start", experiment))
             return;
-         show_start_page();
+         show_start_page(FALSE);
       } else {
          /* set run parameters */
          db_find_key(hDB, 0, "/Experiment/Edit on start", &hkey);
