@@ -109,96 +109,6 @@ static int use_posix2_shm = 0;
 
 #endif
 
-static int ss_shm_name(const char* name, char* mem_name, int mem_name_size, char* file_name, int file_name_size, char* shm_name, int shm_name_size)
-{
-   char exptname[256];
-   char path[256];
-
-   if (mem_name) {
-      /*
-         append a leading SM_ to the memory name to resolve name conflicts
-         with mutex or semaphore names
-       */
-      strlcpy(mem_name, "SM_", mem_name_size);
-      strlcat(mem_name, name, mem_name_size);
-   }
-
-   /* append .SHM and preceed the path for the shared memory file name */
-
-   cm_get_experiment_name(exptname, sizeof(exptname));
-   cm_get_path1(path, sizeof(path));
-
-   //printf("shm name [%s], expt name [%s], path [%s]\n", name, exptname, path);
-
-   if (path[0] == 0) {
-      getcwd(path, 256);
-#if defined(OS_VMS)
-#elif defined(OS_UNIX)
-      strcat(path, "/");
-#elif defined(OS_WINNT)
-      strcat(path, "\\");
-#endif
-   }
-
-   strlcpy(file_name, path, file_name_size);
-#if defined (OS_UNIX)
-   strlcat(file_name, ".", file_name_size); /* dot file under UNIX */
-#endif
-   strlcat(file_name, name, file_name_size);
-   strlcat(file_name, ".SHM", file_name_size);
-
-   if (shm_name) {
-
-#if defined(OS_UNIX)
-      strlcpy(shm_name, "/", shm_name_size);
-      if (use_posix1_shm)
-         strlcat(shm_name, file_name, shm_name_size);
-      else {
-         strlcat(shm_name, exptname, shm_name_size);
-         strlcat(shm_name, "_", shm_name_size);
-         strlcat(shm_name, name, shm_name_size);
-         strlcat(shm_name, "_SHM", shm_name_size);
-      }
-
-      char* s;
-      for (s=shm_name+1; *s; s++)
-         if (*s == '/')
-            *s = '_';
-
-#ifdef PSHMNAMLEN
-      if (strlen(shm_name) >= PSHMNAMLEN)
-         strlcpy(shm_name, name, shm_name_size);
-#endif
-
-      //printf("shm_name [%s]\n", shm_name);
-
-#endif
-   }
-
-   return SS_SUCCESS;
-}
-
-#if defined OS_UNIX
-static int ss_shm_file_name_to_shmid(const char* file_name, int* shmid)
-{
-   int key, status;
-
-   /* create a unique key from the file name */
-   key = ftok(file_name, 'M');
-
-   /* if file doesn't exist ... */
-   if (key == -1)
-      return SS_NO_MEMORY;
-
-   status = shmget(key, 0, 0);
-   if (status == -1)
-      return SS_NO_MEMORY;
-
-   (*shmid) = status;
-   return SS_SUCCESS;
-}
-#endif
-
 static void check_shm_type(const char* shm_type)
 {
 #ifdef OS_UNIX
@@ -337,6 +247,101 @@ static void check_shm_host()
    exit(1);
 }
 
+static int ss_shm_name(const char* name, char* mem_name, int mem_name_size, char* file_name, int file_name_size, char* shm_name, int shm_name_size)
+{
+   char exptname[256];
+   char path[256];
+
+   check_shm_host();
+#ifdef OS_UNIX
+   check_shm_type("POSIXv2_SHM"); // find type of shared memory in use
+#endif
+
+   if (mem_name) {
+      /*
+         append a leading SM_ to the memory name to resolve name conflicts
+         with mutex or semaphore names
+       */
+      strlcpy(mem_name, "SM_", mem_name_size);
+      strlcat(mem_name, name, mem_name_size);
+   }
+
+   /* append .SHM and preceed the path for the shared memory file name */
+
+   cm_get_experiment_name(exptname, sizeof(exptname));
+   cm_get_path1(path, sizeof(path));
+
+   //printf("shm name [%s], expt name [%s], path [%s]\n", name, exptname, path);
+
+   if (path[0] == 0) {
+      getcwd(path, 256);
+#if defined(OS_VMS)
+#elif defined(OS_UNIX)
+      strcat(path, "/");
+#elif defined(OS_WINNT)
+      strcat(path, "\\");
+#endif
+   }
+
+   strlcpy(file_name, path, file_name_size);
+#if defined (OS_UNIX)
+   strlcat(file_name, ".", file_name_size); /* dot file under UNIX */
+#endif
+   strlcat(file_name, name, file_name_size);
+   strlcat(file_name, ".SHM", file_name_size);
+
+   if (shm_name) {
+
+#if defined(OS_UNIX)
+      strlcpy(shm_name, "/", shm_name_size);
+      if (use_posix1_shm)
+         strlcat(shm_name, file_name, shm_name_size);
+      else {
+         strlcat(shm_name, exptname, shm_name_size);
+         strlcat(shm_name, "_", shm_name_size);
+         strlcat(shm_name, name, shm_name_size);
+         strlcat(shm_name, "_SHM", shm_name_size);
+      }
+
+      char* s;
+      for (s=shm_name+1; *s; s++)
+         if (*s == '/')
+            *s = '_';
+
+#ifdef PSHMNAMLEN
+      if (strlen(shm_name) >= PSHMNAMLEN)
+         strlcpy(shm_name, name, shm_name_size);
+#endif
+
+      //printf("shm_name [%s]\n", shm_name);
+
+#endif
+   }
+
+   return SS_SUCCESS;
+}
+
+#if defined OS_UNIX
+static int ss_shm_file_name_to_shmid(const char* file_name, int* shmid)
+{
+   int key, status;
+
+   /* create a unique key from the file name */
+   key = ftok(file_name, 'M');
+
+   /* if file doesn't exist ... */
+   if (key == -1)
+      return SS_NO_MEMORY;
+
+   status = shmget(key, 0, 0);
+   if (status == -1)
+      return SS_NO_MEMORY;
+
+   (*shmid) = status;
+   return SS_SUCCESS;
+}
+#endif
+
 /*------------------------------------------------------------------*/
 INT ss_shm_open(const char *name, INT size, void **adr, HNDLE * handle, BOOL get_size)
 /********************************************************************\
@@ -370,11 +375,6 @@ INT ss_shm_open(const char *name, INT size, void **adr, HNDLE * handle, BOOL get
    char mem_name[256];
    char file_name[256];
    char shm_name[256];
-
-   check_shm_host();
-#ifdef OS_UNIX
-   check_shm_type("POSIXv2_SHM"); // find type of shared memory in use
-#endif
 
    ss_shm_name(name, mem_name, sizeof(mem_name), file_name, sizeof(file_name), shm_name, sizeof(shm_name));
 
@@ -978,7 +978,7 @@ INT ss_shm_delete(const char *name)
 
 #ifdef OS_UNIX
 
-   if (use_posix_shm) {
+   if (use_sysv_shm) {
       int shmid;
       struct shmid_ds buf;
       
