@@ -337,6 +337,14 @@ int main(int argc, char **argv)
          if (chdir(callback.directory) != 0)
             rpc_debug_printf("Cannot change to directory \"%s\"", callback.directory);
 
+      /* set the experiment name and expt path name */
+
+      if (callback.directory[0])
+         cm_set_path(callback.directory);
+      
+      if (callback.experiment[0])
+         cm_set_experiment_name(callback.experiment);
+
 #ifdef OS_UNIX
 
       /* under UNIX, change user and group ID if started under root */
