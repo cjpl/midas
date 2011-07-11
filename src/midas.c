@@ -3912,13 +3912,18 @@ INT cm_transition1(INT transition, INT run_number, char *errstr, INT errstr_size
             cm_shutdown(tr_client[idx].client_name, TRUE);
             cm_cleanup(tr_client[idx].client_name, TRUE);
 
-            /* indicate abort */
-            i = 1;
-            db_set_value(hDB, 0, "/Runinfo/Start abort", &i, sizeof(INT), 1, TID_INT);
-            i = 0;
-            db_set_value(hDB, 0, "/Runinfo/Transition in progress", &i, sizeof(INT), 1, TID_INT);
+            if (transition != TR_STOP) {
+               /* indicate abort */
+               i = 1;
+               db_set_value(hDB, 0, "/Runinfo/Start abort", &i, sizeof(INT), 1, TID_INT);
+               i = 0;
+               db_set_value(hDB, 0, "/Runinfo/Transition in progress", &i, sizeof(INT), 1, TID_INT);
 
-            return status;
+               free(tr_client);
+               return status;
+            }
+
+            continue;
          }
 
          if (debug_flag == 1)
@@ -3976,7 +3981,7 @@ INT cm_transition1(INT transition, INT run_number, char *errstr, INT errstr_size
                       (INT) strlen(error) + 1 < (INT) errstr_size ? (INT) strlen(error) + 1 : errstr_size);
          }
 
-         if (status != CM_SUCCESS) {
+         if (transition != TR_STOP && status != CM_SUCCESS) {
             /* indicate abort */
             i = 1;
             db_set_value(hDB, 0, "/Runinfo/Start abort", &i, sizeof(INT), 1, TID_INT);
