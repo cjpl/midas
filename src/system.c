@@ -273,6 +273,9 @@ static int ss_shm_name(const char* name, char* mem_name, int mem_name_size, char
 
    //printf("shm name [%s], expt name [%s], path [%s]\n", name, exptname, path);
 
+   assert(strlen(path) > 0);
+   assert(strlen(exptname) > 0);
+
    if (path[0] == 0) {
       getcwd(path, 256);
 #if defined(OS_VMS)
@@ -696,7 +699,7 @@ INT ss_shm_open(const char *name, INT size, void **adr, HNDLE * handle, BOOL get
       }
       
       size = file_size;
-      
+
       sh = shm_open(shm_name, O_RDWR, 0777);
       
       if (sh < 0) {
@@ -1199,22 +1202,22 @@ INT ss_shm_flush(const char *name, const void *adr, INT size, HNDLE handle)
 
       fd = open(file_name, O_RDWR | O_CREAT, 0777);
       if (fd < 0) {
-	cm_msg(MERROR, "ss_shm_flush", "Cannot write to file \'%s\', fopen() errno %d (%s)", file_name, errno, strerror(errno));
-	return SS_NO_MEMORY;
+         cm_msg(MERROR, "ss_shm_flush", "Cannot write to file \'%s\', fopen() errno %d (%s)", file_name, errno, strerror(errno));
+         return SS_NO_MEMORY;
       }
 
       /* write shared memory to file */
       ret = write(fd, adr, size);
       if (ret != size) {
-	cm_msg(MERROR, "ss_shm_flush", "Cannot write to file \'%s\', write() returned %d instead of %d, errno %d (%s)", file_name, ret, size, errno, strerror(errno));
-	close(fd);
-	return SS_NO_MEMORY;
+         cm_msg(MERROR, "ss_shm_flush", "Cannot write to file \'%s\', write() returned %d instead of %d, errno %d (%s)", file_name, ret, size, errno, strerror(errno));
+         close(fd);
+         return SS_NO_MEMORY;
       }
 
       ret = close(fd);
       if (ret < 0) {
-	cm_msg(MERROR, "ss_shm_flush", "Cannot write to file \'%s\', close() errno %d (%s)", file_name, errno, strerror(errno));
-	return SS_NO_MEMORY;
+         cm_msg(MERROR, "ss_shm_flush", "Cannot write to file \'%s\', close() errno %d (%s)", file_name, errno, strerror(errno));
+         return SS_NO_MEMORY;
       }
 
       return SS_SUCCESS;
@@ -2239,7 +2242,7 @@ INT ss_semaphore_create(const char *name, HNDLE * semaphore_handle)
       }
 
       if (*semaphore_handle < 0) {
-         cm_msg(MERROR, "ss_semaphore_create", "semget() failed, errno = %d", errno);
+         cm_msg(MERROR, "ss_semaphore_create", "Cannot create semaphore \'%s\', semget(0x%x) failed, errno %d (%s)", name, key, errno, strerror(errno));
          return SS_NO_SEMAPHORE;
       }
 
@@ -2386,6 +2389,7 @@ INT ss_semaphore_wait_for(HNDLE semaphore_handle, INT timeout)
             continue;
          }
 
+         fprintf(stderr, "ss_semaphore_wait_for: semop/semtimedop(%d) returned %d, errno %d (%s)\n", semaphore_handle, status, errno, strerror(errno));
          return SS_NO_SEMAPHORE;
       } while (1);
 
@@ -2485,6 +2489,7 @@ INT ss_semaphore_release(HNDLE semaphore_handle)
          if (errno == EINTR)
             continue;
 
+         fprintf(stderr, "ss_semaphore_release: semop/semtimedop(%d) returned %d, errno %d (%s)\n", semaphore_handle, status, errno, strerror(errno));
          return SS_NO_SEMAPHORE;
       } while (1);
 
