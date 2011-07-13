@@ -8829,7 +8829,7 @@ void init_sequencer()
    cm_get_experiment_database(&hDB, NULL);
    status = db_check_record(hDB, 0, "/Sequencer", strcomb(sequencer_str), TRUE);
    if (status == DB_STRUCT_MISMATCH) {
-      cm_msg(MERROR, "show_seq_page", "Aborting on mismatching /Sequencer structure");
+      cm_msg(MERROR, "init_sequencer", "Aborting on mismatching /Sequencer structure");
       cm_disconnect_experiment();
       abort();
    }
@@ -9473,7 +9473,7 @@ void sequencer()
       db_set_record(hDB, hKeySeq, &seq, sizeof(seq), 0);
       return;
    }
-   
+
    if (equal_ustring(mxml_get_name(pn), "PI") || 
        equal_ustring(mxml_get_name(pn), "RunSequence") ||
        equal_ustring(mxml_get_name(pn), "Comment")) {
@@ -9660,6 +9660,11 @@ void sequencer()
                db_set_record(hDB, hKeySeq, &seq, sizeof(seq), 0);
             }
          }
+      } else {
+         sprintf(seq.error, "Unknown transition \"%s\"", mxml_get_value(pn));
+         seq.error_line = seq.current_line_number;
+         seq.running = FALSE;
+         seq.transition_request = FALSE;
       }
       db_set_record(hDB, hKeySeq, &seq, sizeof(seq), 0);
    }
@@ -9672,9 +9677,8 @@ void sequencer()
          size = sizeof(d);
          db_get_value(hDB, 0, "/Equipment/Trigger/Statistics/Events sent", &d, &size, TID_DOUBLE, FALSE);
          seq.wait_counter = (int)d;
-         if (d >= n) {
+         if (d >= n)
             seq.current_line_number++;
-         }
          seq.wait_counter = (int)d;
       } else  if (equal_ustring(mxml_get_attribute(pn, "for"), "ODBValue")) {
          n = atoi(mxml_get_value(pn));
@@ -10386,7 +10390,7 @@ int read_history(HNDLE hDB, const char *path, int index, int runmarker, time_t t
    KEY key;
    int n_vars, status;
 
-   printf("read_history, path %s, index %d, runmarker %d, start %d, end %d, scale %d, data %p\n", path, index, runmarker, (int)tstart, (int)tend, (int)scale, data);
+   // printf("read_history, path %s, index %d, runmarker %d, start %d, end %d, scale %d, data %p\n", path, index, runmarker, (int)tstart, (int)tend, (int)scale, data);
 
    /* connect to history */
    set_history_path();
