@@ -266,54 +266,50 @@ INT multi_init(EQUIPMENT * pequipment)
    }
 
    /* Allocate memory for buffers */
-   m_info->names_input = (char *) calloc(m_info->num_channels_input, NAME_LENGTH);
-   m_info->names_output = (char *) calloc(m_info->num_channels_output, NAME_LENGTH);
-
-   m_info->var_input = (float *) calloc(m_info->num_channels_input, sizeof(float));
-   m_info->var_output = (float *) calloc(m_info->num_channels_output, sizeof(float));
-
-   m_info->update_threshold = (float *) calloc(m_info->num_channels_input, sizeof(float));
-   m_info->offset_input = (float *) calloc(m_info->num_channels_input, sizeof(float));
-   m_info->factor_input = (float *) calloc(m_info->num_channels_input, sizeof(float));
-   m_info->offset_output = (float *) calloc(m_info->num_channels_output, sizeof(float));
-   m_info->factor_output = (float *) calloc(m_info->num_channels_output, sizeof(float));
-
-   m_info->input_mirror = (float *) calloc(m_info->num_channels_input, sizeof(float));
-   m_info->output_mirror = (float *) calloc(m_info->num_channels_output, sizeof(float));
-
-   m_info->channel_offset_input = (INT *) calloc(m_info->num_channels_input, sizeof(INT));
-   m_info->channel_offset_output =
-       (INT *) calloc(m_info->num_channels_output, sizeof(DWORD));
-
-   m_info->driver_input = (void *) calloc(m_info->num_channels_input, sizeof(void *));
-   m_info->driver_output = (void *) calloc(m_info->num_channels_output, sizeof(void *));
-
-   if (!m_info->driver_output) {
-      cm_msg(MERROR, "multi_init", "Not enough memory");
-      return FE_ERR_ODB;
+   if (m_info->num_channels_input) {
+      m_info->names_input = (char *) calloc(m_info->num_channels_input, NAME_LENGTH);
+      m_info->var_input = (float *) calloc(m_info->num_channels_input, sizeof(float));
+      m_info->update_threshold = (float *) calloc(m_info->num_channels_input, sizeof(float));
+      m_info->offset_input = (float *) calloc(m_info->num_channels_input, sizeof(float));
+      m_info->factor_input = (float *) calloc(m_info->num_channels_input, sizeof(float));
+      m_info->input_mirror = (float *) calloc(m_info->num_channels_input, sizeof(float));
+      m_info->channel_offset_input = (INT *) calloc(m_info->num_channels_input, sizeof(INT));
+      m_info->driver_input = (void *) calloc(m_info->num_channels_input, sizeof(void *));
    }
-
+   
+   if (m_info->num_channels_output) {
+      m_info->names_output = (char *) calloc(m_info->num_channels_output, NAME_LENGTH);
+      m_info->var_output = (float *) calloc(m_info->num_channels_output, sizeof(float));
+      m_info->offset_output = (float *) calloc(m_info->num_channels_output, sizeof(float));
+      m_info->factor_output = (float *) calloc(m_info->num_channels_output, sizeof(float));
+      m_info->output_mirror = (float *) calloc(m_info->num_channels_output, sizeof(float));
+      m_info->channel_offset_output = (INT *) calloc(m_info->num_channels_output, sizeof(DWORD));
+      m_info->driver_output = (void *) calloc(m_info->num_channels_output, sizeof(void *));
+   }
+ 
    /*---- Create/Read settings ----*/
 
-   /* Update threshold */
-   for (i = 0; i < m_info->num_channels_input; i++)
-      m_info->update_threshold[i] = 0.1f;       /* default 0.1 */
-   db_merge_data(hDB, m_info->hKeyRoot, "Settings/Update Threshold",
-                 m_info->update_threshold, m_info->num_channels_input * sizeof(float),
-                 m_info->num_channels_input, TID_FLOAT);
-   db_find_key(hDB, m_info->hKeyRoot, "Settings/Update Threshold", &hKey);
-   db_open_record(hDB, hKey, m_info->update_threshold,
-                  m_info->num_channels_input * sizeof(float), MODE_READ, NULL, NULL);
+   if (m_info->num_channels_input) {
+      /* Update threshold */
+      for (i = 0; i < m_info->num_channels_input; i++)
+         m_info->update_threshold[i] = 0.1f;       /* default 0.1 */
+      db_merge_data(hDB, m_info->hKeyRoot, "Settings/Update Threshold",
+                    m_info->update_threshold, m_info->num_channels_input * sizeof(float),
+                    m_info->num_channels_input, TID_FLOAT);
+      db_find_key(hDB, m_info->hKeyRoot, "Settings/Update Threshold", &hKey);
+      db_open_record(hDB, hKey, m_info->update_threshold,
+                     m_info->num_channels_input * sizeof(float), MODE_READ, NULL, NULL);
 
-   /* Offset */
-   for (i = 0; i < m_info->num_channels_input; i++)
-      m_info->offset_input[i] = 0.f;    /* default 0 */
-   db_merge_data(hDB, m_info->hKeyRoot, "Settings/Input Offset",
-                 m_info->offset_input, m_info->num_channels_input * sizeof(float),
-                 m_info->num_channels_input, TID_FLOAT);
-   db_find_key(hDB, m_info->hKeyRoot, "Settings/Input Offset", &hKey);
-   db_open_record(hDB, hKey, m_info->offset_input,
-                  m_info->num_channels_input * sizeof(float), MODE_READ, NULL, NULL);
+      /* Offset */
+      for (i = 0; i < m_info->num_channels_input; i++)
+         m_info->offset_input[i] = 0.f;    /* default 0 */
+      db_merge_data(hDB, m_info->hKeyRoot, "Settings/Input Offset",
+                    m_info->offset_input, m_info->num_channels_input * sizeof(float),
+                    m_info->num_channels_input, TID_FLOAT);
+      db_find_key(hDB, m_info->hKeyRoot, "Settings/Input Offset", &hKey);
+      db_open_record(hDB, hKey, m_info->offset_input,
+                     m_info->num_channels_input * sizeof(float), MODE_READ, NULL, NULL);
+   }
 
    for (i = 0; i < m_info->num_channels_output; i++)
       m_info->offset_output[i] = 0.f;
@@ -423,39 +419,45 @@ INT multi_init(EQUIPMENT * pequipment)
    }
 
    /*---- get default names from device driver ----*/
-   for (i = 0; i < m_info->num_channels_input; i++) {
-      sprintf(m_info->names_input + NAME_LENGTH * i, "Input Channel %d", i);
-      device_driver(m_info->driver_input[i], CMD_GET_LABEL,
-                    i - m_info->channel_offset_input[i], 
-                    m_info->names_input + NAME_LENGTH * i);
+   if (m_info->num_channels_input) {
+      for (i = 0; i < m_info->num_channels_input; i++) {
+         sprintf(m_info->names_input + NAME_LENGTH * i, "Input Channel %d", i);
+         device_driver(m_info->driver_input[i], CMD_GET_LABEL,
+                       i - m_info->channel_offset_input[i], 
+                       m_info->names_input + NAME_LENGTH * i);
+      }
+      db_merge_data(hDB, m_info->hKeyRoot, "Settings/Names Input",
+                    m_info->names_input, NAME_LENGTH * m_info->num_channels_input,
+                    m_info->num_channels_input, TID_STRING);
    }
-   db_merge_data(hDB, m_info->hKeyRoot, "Settings/Names Input",
-                 m_info->names_input, NAME_LENGTH * m_info->num_channels_input,
-                 m_info->num_channels_input, TID_STRING);
 
-   for (i = 0; i < m_info->num_channels_output; i++) {
-      sprintf(m_info->names_output + NAME_LENGTH * i, "Output Channel %d", i);
-      device_driver(m_info->driver_output[i], CMD_GET_LABEL, 
-                    i - m_info->channel_offset_output[i], 
-                    m_info->names_output + NAME_LENGTH * i);
+   if (m_info->num_channels_output) {
+      for (i = 0; i < m_info->num_channels_output; i++) {
+         sprintf(m_info->names_output + NAME_LENGTH * i, "Output Channel %d", i);
+         device_driver(m_info->driver_output[i], CMD_GET_LABEL, 
+                       i - m_info->channel_offset_output[i], 
+                       m_info->names_output + NAME_LENGTH * i);
+      }
+      db_merge_data(hDB, m_info->hKeyRoot, "Settings/Names Output",
+                    m_info->names_output, NAME_LENGTH * m_info->num_channels_output,
+                    m_info->num_channels_output, TID_STRING);
    }
-   db_merge_data(hDB, m_info->hKeyRoot, "Settings/Names Output",
-                 m_info->names_output, NAME_LENGTH * m_info->num_channels_output,
-                 m_info->num_channels_output, TID_STRING);
 
    /*---- set labels from midas SC names ----*/
-   for (i = 0; i < m_info->num_channels_input; i++) {
-      device_driver(m_info->driver_input[i], CMD_SET_LABEL,
-                    i - m_info->channel_offset_input[i],
-                    m_info->names_input + NAME_LENGTH * i);
-   }
+   if (m_info->num_channels_input) {
+      for (i = 0; i < m_info->num_channels_input; i++) {
+         device_driver(m_info->driver_input[i], CMD_SET_LABEL,
+                       i - m_info->channel_offset_input[i],
+                       m_info->names_input + NAME_LENGTH * i);
+      }
 
-   /* open hotlink on input channel names */
-   if (db_find_key(hDB, m_info->hKeyRoot, "Settings/Names Input", &hNamesIn) ==
-       DB_SUCCESS)
-      db_open_record(hDB, hNamesIn, m_info->names_input,
-                     NAME_LENGTH * m_info->num_channels_input, MODE_READ,
-                     multi_update_label, pequipment);
+      /* open hotlink on input channel names */
+      if (db_find_key(hDB, m_info->hKeyRoot, "Settings/Names Input", &hNamesIn) ==
+          DB_SUCCESS)
+         db_open_record(hDB, hNamesIn, m_info->names_input,
+                        NAME_LENGTH * m_info->num_channels_input, MODE_READ,
+                        multi_update_label, pequipment);
+   }
 
    for (i = 0; i < m_info->num_channels_output; i++) {
       device_driver(m_info->driver_output[i], CMD_SET_LABEL,
@@ -499,8 +501,9 @@ INT multi_init(EQUIPMENT * pequipment)
       db_set_record(hDB, m_info->hKeyOutput, m_info->output_mirror,
                     m_info->num_channels_output * sizeof(float), 0);
 
-   /* initially read all channels */
-   multi_read(pequipment, -1);
+   /* initially read all input channels */
+   if (m_info->num_channels_input)
+      multi_read(pequipment, -1);
 
    return FE_SUCCESS;
 }
@@ -617,16 +620,20 @@ INT cd_multi_read(char *pevent, int offset)
       bk_init(pevent);
 
       /* create INPT bank */
-      bk_create(pevent, "INPT", TID_FLOAT, &pdata);
-      memcpy(pdata, m_info->var_input, sizeof(float) * m_info->num_channels_input);
-      pdata += m_info->num_channels_input;
-      bk_close(pevent, pdata);
+      if (m_info->num_channels_input) {
+         bk_create(pevent, "INPT", TID_FLOAT, &pdata);
+         memcpy(pdata, m_info->var_input, sizeof(float) * m_info->num_channels_input);
+         pdata += m_info->num_channels_input;
+         bk_close(pevent, pdata);
+      }
 
       /* create OUTP bank */
-      bk_create(pevent, "OUTP", TID_FLOAT, &pdata);
-      memcpy(pdata, m_info->var_output, sizeof(float) * m_info->num_channels_output);
-      pdata += m_info->num_channels_output;
-      bk_close(pevent, pdata);
+      if (m_info->num_channels_output) {
+         bk_create(pevent, "OUTP", TID_FLOAT, &pdata);
+         memcpy(pdata, m_info->var_output, sizeof(float) * m_info->num_channels_output);
+         pdata += m_info->num_channels_output;
+         bk_close(pevent, pdata);
+      }
 
       return bk_size(pevent);
    } else if (m_info->format == FORMAT_YBOS) {
