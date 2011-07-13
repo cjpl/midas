@@ -1629,7 +1629,11 @@ void show_status_page(int refresh, const char *cookie_wpwd)
 
    sprintf(ref, "Logger/Auto restart?cmd=set");
 
-   if (cm_exist("RunSubmit", FALSE) == CM_SUCCESS)
+   size = sizeof(flag);
+   db_get_value(hDB, 0, "/Sequencer/Running", &flag, &size, TID_BOOL, FALSE);
+   if (flag)
+      rsprintf("<td bgcolor=#00FF00>Restart: Sequencer");
+   else if (cm_exist("RunSubmit", FALSE) == CM_SUCCESS)
       rsprintf("<td bgcolor=#00FF00>Restart: RunSubmit");
    else {
      size = sizeof(flag);
@@ -9361,7 +9365,9 @@ void show_seq_page()
             if (seq.running) {
                rsprintf("<tr><td colspan=2>\n");
                rsprintf("<font style=\"font-family:monospace\">\n");
-               cm_msg_retrieve(20, buffer, sizeof(buffer));
+               rsprintf("<a href=\"../?cmd=Messages\">...</a><br>\n");
+
+               cm_msg_retrieve(10, buffer, sizeof(buffer));
                
                pline = buffer;
                eob = FALSE;
