@@ -8960,6 +8960,7 @@ void show_seq_page()
          seq.subdir_end_line = 0;
          seq.subdir_not_notify = 0;
          db_set_record(hDB, hKey, &seq, sizeof(seq), 0);
+         cm_msg(MTALK, "show_seq_page", "Sequencer has been started.");
          redirect("");
          return;
          
