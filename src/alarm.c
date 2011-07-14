@@ -141,9 +141,8 @@ BOOL al_evaluate_condition(const char *condition, char *value)
          size = sizeof(state);
          db_get_value(hDB, 0, "/Runinfo/State", &state, &size, TID_INT, FALSE);
          if (state != STATE_RUNNING)
-            value1 = 0;
-         else
-            value1 = atof(value1_str);
+            strcpy(value1_str, "0");
+         value1 = atof(value1_str);
       } else {
          /* get key data and convert to double */
          db_get_key(hDB, hkey, &key);
