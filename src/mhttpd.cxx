@@ -8777,6 +8777,7 @@ typedef struct {
    int   wait_counter;
    int   wait_n;
    DWORD start_time;
+   char  last_msg[10];
 } SEQUENCER;
 
 #define SEQUENCER_STR(_name) const char *_name[] = {\
@@ -8816,6 +8817,7 @@ typedef struct {
 "Wait counter = INT : 0",\
 "Wait n = INT : 0",\
 "Start time = DWORD : 0",\
+"Last msg = STRING : [10] 00:00:00",\
 "",\
 NULL }
 
@@ -9051,6 +9053,9 @@ void show_seq_page()
    rsprintf("<script type=\"text/javascript\" src=\"../mhttpd.js\"></script>\n");
    rsprintf("<script type=\"text/javascript\">\n");
    rsprintf("<!--\n");
+   rsprintf("var show_all_lines = false;\n");
+   rsprintf("var last_msg = null;\n");
+   rsprintf("\n");
    rsprintf("function seq_refresh()\n");
    rsprintf("{\n");
    rsprintf("   seq = ODBGetRecord('/Sequencer');\n");
@@ -9064,6 +9069,12 @@ void show_seq_page()
    rsprintf("   var loop_end_line = ODBExtractRecord(seq, 'Loop end line');\n");
    rsprintf("   var finished = ODBExtractRecord(seq, 'Finished');\n");
    rsprintf("   var start_time = ODBExtractRecord(seq, 'Start time');\n");
+   rsprintf("   var msg = ODBExtractRecord(seq, 'Last msg');\n");
+   rsprintf("   \n");
+   rsprintf("   if (last_msg == null)\n");
+   rsprintf("      last_msg = msg;\n");
+   rsprintf("   else if (last_msg != msg)\n");
+   rsprintf("      window.location.href = '.';\n");
    rsprintf("   \n");
    rsprintf("   for (var l=1 ; ; l++) {\n");
    rsprintf("      line = document.getElementById('line'+l);\n");
@@ -9071,11 +9082,11 @@ void show_seq_page()
    rsprintf("         var last_line = l-1;\n");
    rsprintf("         break;\n");
    rsprintf("      }\n");
-   rsprintf("      if (Math.abs(l - current_line) > 10)\n");
+   rsprintf("      if (Math.abs(l - current_line) > 10 && !show_all_lines)\n");
    rsprintf("         line.style.display = 'none';\n");
    rsprintf("      else\n");
    rsprintf("         line.style.display = 'inline';\n");
-   rsprintf("      if (current_line > 10)\n");
+   rsprintf("      if (current_line > 10 || show_all_lines)\n");
    rsprintf("          document.getElementById('linedots1').style.display = 'inline';\n");
    rsprintf("      else\n");
    rsprintf("          document.getElementById('linedots1').style.display = 'none';\n");
@@ -9095,7 +9106,7 @@ void show_seq_page()
    rsprintf("         line.style.backgroundColor = '#FFFFFF';\n");
    rsprintf("   }\n");
    rsprintf("   \n");
-   rsprintf("   if (current_line < last_line-10)\n");
+   rsprintf("   if (current_line < last_line-10 && !show_all_lines)\n");
    rsprintf("       document.getElementById('linedots2').style.display = 'inline';\n");
    rsprintf("   else\n");
    rsprintf("       document.getElementById('linedots2').style.display = 'none';\n");
@@ -9137,6 +9148,12 @@ void show_seq_page()
    rsprintf("   }\n");
    rsprintf("   \n");
    rsprintf("   refreshID = setTimeout('seq_refresh()', 1000);\n");
+   rsprintf("}\n");
+   rsprintf("\n");
+   rsprintf("function show_lines()\n");
+   rsprintf("{\n");
+   rsprintf("   show_all_lines = !show_all_lines;\n");
+   rsprintf("   seq_refresh();\n");
    rsprintf("}\n");
    
    rsprintf("//-->\n");
@@ -9337,7 +9354,7 @@ void show_seq_page()
                   rsprintf("</b></td></tr>\n");
                }
                rsprintf("<tr><td colspan=2>\n");
-               rsprintf("<font id=\"linedots1\" style=\"display:none;\">...<br></font>\n");
+               rsprintf("<div onClick=\"show_lines();\" id=\"linedots1\" style=\"display:none;\">...<br></div>\n");
                for (int line=1 ; !feof(f) ; line++) {
                   str[0] = 0;
                   fgets(str, sizeof(str), f);
@@ -9352,7 +9369,7 @@ void show_seq_page()
                      rsprintf("</font>");
                   }
                }
-               rsprintf("<font id=\"linedots2\" style=\"display:none;\">...<br></font>\n");
+               rsprintf("<div onClick=\"show_lines();\" id=\"linedots2\" style=\"display:none;\">...<br></div>\n");
                rsprintf("</tr></td>\n");
                fclose(f);
             } else {
@@ -9431,6 +9448,10 @@ void sequencer()
    db_find_key(hDB, 0, "/Sequencer", &hKeySeq);
    if (!hKeySeq)
       return;
+   
+   cm_msg_retrieve(1, str, sizeof(str));
+   str[19] = 0;
+   strcpy(seq.last_msg, str+11);
    
    pr = mxml_find_node(pnseq, "RunSequence");
    if (!pr)
