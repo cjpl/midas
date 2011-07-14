@@ -9032,6 +9032,7 @@ void show_seq_page()
          cm_transition(TR_STOP, 0, str, sizeof(str), DETACH, FALSE);
       
       db_set_record(hDB, hKey, &seq, sizeof(seq), 0);
+      cm_msg(MTALK, "show_seq_page", "Sequencer is finished.");
       redirect("");
       return;
    }
@@ -9462,6 +9463,7 @@ void sequencer()
       seq.running = FALSE;
       seq.finished = TRUE;
       db_set_record(hDB, hKeySeq, &seq, sizeof(seq), 0);
+      cm_msg(MTALK, "sequencer", "Sequencer is finished.");
       return;
    }
  
@@ -9515,6 +9517,7 @@ void sequencer()
          sprintf(seq.error, "Missing attribute \"path\"");
          seq.error_line = seq.current_line_number;
          seq.running = FALSE;
+         cm_msg(MTALK, "sequencer", "Sequencer has stopped with error.");
       } else {
          strlcpy(seq.subdir, mxml_get_attribute(pn, "path"), sizeof(seq.subdir));
          if (mxml_get_attribute(pn, "notify"))
@@ -9531,6 +9534,7 @@ void sequencer()
          sprintf(seq.error, "Missing attribute \"path\"");
          seq.error_line = seq.current_line_number;
          seq.running = FALSE;
+         cm_msg(MTALK, "sequencer", "Sequencer has stopped with error.");
       } else {
          strlcpy(odbpath, seq.subdir, sizeof(odbpath));
          if (strlen(odbpath) > 0 && odbpath[strlen(odbpath)-1] != '/')
@@ -9547,6 +9551,7 @@ void sequencer()
             sprintf(seq.error, "Cannot find ODB key \"%s\"", odbpath);
             seq.error_line = seq.current_line_number;
             seq.running = FALSE;
+            cm_msg(MTALK, "sequencer", "Sequencer has stopped with error.");
          } else {
             db_get_key(hDB, hKey, &key);
             size = sizeof(data);
@@ -9558,7 +9563,7 @@ void sequencer()
             if (mxml_get_attribute(pn, "notify"))
                notify = atoi(mxml_get_attribute(pn, "notify"));
 
-            db_set_data_index2(hDB, hKey, data, key.item_size, index, key.type, notify);
+            status = db_set_data_index2(hDB, hKey, data, key.item_size, index, key.type, notify);
             seq.current_line_number++;
          }
          db_set_record(hDB, hKeySeq, &seq, sizeof(seq), 0);
@@ -9571,6 +9576,7 @@ void sequencer()
          sprintf(seq.error, "Missing attribute \"path\"");
          seq.error_line = seq.current_line_number;
          seq.running = FALSE;
+         cm_msg(MTALK, "sequencer", "Sequencer has stopped with error.");
       } else {
          strlcpy(odbpath, seq.subdir, sizeof(odbpath));
          if (strlen(odbpath) > 0 && odbpath[strlen(odbpath)-1] != '/')
@@ -9587,6 +9593,7 @@ void sequencer()
             sprintf(seq.error, "Cannot find ODB key \"%s\"", odbpath);
             seq.error_line = seq.current_line_number;
             seq.running = FALSE;
+            cm_msg(MTALK, "sequencer", "Sequencer has stopped with error.");
          } else {
             db_get_key(hDB, hKey, &key);
             size = sizeof(data);
@@ -9645,6 +9652,7 @@ void sequencer()
                   seq.error_line = seq.current_line_number;
                   seq.running = FALSE;
                   seq.transition_request = FALSE;
+                  cm_msg(MTALK, "sequencer", "Sequencer has stopped with error.");
                }
             }
          } else {
@@ -9668,6 +9676,7 @@ void sequencer()
                   seq.error_line = seq.current_line_number;
                   seq.running = FALSE;
                   seq.transition_request = FALSE;
+                  cm_msg(MTALK, "sequencer", "Sequencer has stopped with error.");
                }
             }
          } else {
@@ -9681,6 +9690,7 @@ void sequencer()
                   seq.stop_after_run = FALSE;
                   seq.running = FALSE;
                   seq.finished = TRUE;
+                  cm_msg(MTALK, "sequencer", "Sequencer is finished.");
                } else
                   seq.current_line_number++;
                
@@ -9692,6 +9702,7 @@ void sequencer()
          seq.error_line = seq.current_line_number;
          seq.running = FALSE;
          seq.transition_request = FALSE;
+         cm_msg(MTALK, "sequencer", "Sequencer has stopped with error.");
       }
       db_set_record(hDB, hKeySeq, &seq, sizeof(seq), 0);
    }
@@ -9714,6 +9725,7 @@ void sequencer()
             sprintf(seq.error, "\"path\" must be given for ODB values");
             seq.error_line = seq.current_line_number;
             seq.running = FALSE;
+            cm_msg(MTALK, "sequencer", "Sequencer has stopped with error.");
          } else {
             strlcpy(odbpath, mxml_get_attribute(pn, "path"), sizeof(odbpath));
             if (strchr(odbpath, '[')) {
@@ -9726,6 +9738,7 @@ void sequencer()
                sprintf(seq.error, "Cannot find ODB key \"%s\"", odbpath);
                seq.error_line = seq.current_line_number;
                seq.running = FALSE;
+               cm_msg(MTALK, "sequencer", "Sequencer has stopped with error.");
             } else {
                db_get_key(hDB, hKey, &key);
                size = sizeof(data);
@@ -9766,6 +9779,7 @@ void sequencer()
          sprintf(seq.error, "Maximum loop nesting exceeded");
          seq.error_line = seq.current_line_number;
          seq.running = FALSE;
+         cm_msg(MTALK, "sequencer", "Sequencer has stopped with error.");
       }
       seq.loop_start_line[i] = seq.current_line_number;
       seq.loop_end_line[i] = mxml_get_line_number_end(pn);
@@ -9783,6 +9797,7 @@ void sequencer()
       sprintf(seq.error, "Unknown command \"%s\"", mxml_get_name(pn));
       seq.error_line = seq.current_line_number;
       seq.running = FALSE;
+      cm_msg(MTALK, "sequencer", "Sequencer has stopped with error.");
       db_set_record(hDB, hKeySeq, &seq, sizeof(seq), 0);
    }
 }
