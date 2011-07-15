@@ -1,0 +1,251 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 46;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		D56C8F2D13CFD60800C67791 /* alarm.c in Sources */ = {isa = PBXBuildFile; fileRef = D56C8F2713CFD60800C67791 /* alarm.c */; };
+		D56C8F2E13CFD60800C67791 /* elog.c in Sources */ = {isa = PBXBuildFile; fileRef = D56C8F2813CFD60800C67791 /* elog.c */; };
+		D56C8F2F13CFD60800C67791 /* midas.c in Sources */ = {isa = PBXBuildFile; fileRef = D56C8F2913CFD60800C67791 /* midas.c */; };
+		D56C8F3013CFD60800C67791 /* mrpc.c in Sources */ = {isa = PBXBuildFile; fileRef = D56C8F2A13CFD60800C67791 /* mrpc.c */; };
+		D56C8F3113CFD60800C67791 /* odb.c in Sources */ = {isa = PBXBuildFile; fileRef = D56C8F2B13CFD60800C67791 /* odb.c */; };
+		D56C8F3213CFD60800C67791 /* system.c in Sources */ = {isa = PBXBuildFile; fileRef = D56C8F2C13CFD60800C67791 /* system.c */; };
+		D56C8F3413CFD61800C67791 /* mlxspeaker.c in Sources */ = {isa = PBXBuildFile; fileRef = D56C8F3313CFD61800C67791 /* mlxspeaker.c */; };
+		D56C8F3713CFD62E00C67791 /* mxml.c in Sources */ = {isa = PBXBuildFile; fileRef = D56C8F3513CFD62E00C67791 /* mxml.c */; };
+		D56C8F3813CFD62E00C67791 /* strlcpy.c in Sources */ = {isa = PBXBuildFile; fileRef = D56C8F3613CFD62E00C67791 /* strlcpy.c */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		D523A22813CFD58A0013BA25 /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = /usr/share/man/man1/;
+			dstSubfolderSpec = 0;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 1;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		D523A22A13CFD58A0013BA25 /* mlxspeaker */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = mlxspeaker; sourceTree = BUILT_PRODUCTS_DIR; };
+		D56C8F2713CFD60800C67791 /* alarm.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = alarm.c; path = ../../src/alarm.c; sourceTree = "<group>"; };
+		D56C8F2813CFD60800C67791 /* elog.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = elog.c; path = ../../src/elog.c; sourceTree = "<group>"; };
+		D56C8F2913CFD60800C67791 /* midas.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = midas.c; path = ../../src/midas.c; sourceTree = "<group>"; };
+		D56C8F2A13CFD60800C67791 /* mrpc.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = mrpc.c; path = ../../src/mrpc.c; sourceTree = "<group>"; };
+		D56C8F2B13CFD60800C67791 /* odb.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = odb.c; path = ../../src/odb.c; sourceTree = "<group>"; };
+		D56C8F2C13CFD60800C67791 /* system.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = system.c; path = ../../src/system.c; sourceTree = "<group>"; };
+		D56C8F3313CFD61800C67791 /* mlxspeaker.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = mlxspeaker.c; path = ../../utils/mlxspeaker.c; sourceTree = "<group>"; };
+		D56C8F3513CFD62E00C67791 /* mxml.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = mxml.c; path = ../../../mxml/mxml.c; sourceTree = "<group>"; };
+		D56C8F3613CFD62E00C67791 /* strlcpy.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = strlcpy.c; path = ../../../mxml/strlcpy.c; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		D523A22713CFD58A0013BA25 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		D523A21F13CFD58A0013BA25 = {
+			isa = PBXGroup;
+			children = (
+				D523A22D13CFD58A0013BA25 /* mlxspeaker */,
+				D523A22B13CFD58A0013BA25 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		D523A22B13CFD58A0013BA25 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				D523A22A13CFD58A0013BA25 /* mlxspeaker */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		D523A22D13CFD58A0013BA25 /* mlxspeaker */ = {
+			isa = PBXGroup;
+			children = (
+				D56C8F3513CFD62E00C67791 /* mxml.c */,
+				D56C8F3613CFD62E00C67791 /* strlcpy.c */,
+				D56C8F3313CFD61800C67791 /* mlxspeaker.c */,
+				D56C8F2713CFD60800C67791 /* alarm.c */,
+				D56C8F2813CFD60800C67791 /* elog.c */,
+				D56C8F2913CFD60800C67791 /* midas.c */,
+				D56C8F2A13CFD60800C67791 /* mrpc.c */,
+				D56C8F2B13CFD60800C67791 /* odb.c */,
+				D56C8F2C13CFD60800C67791 /* system.c */,
+			);
+			path = mlxspeaker;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		D523A22913CFD58A0013BA25 /* mlxspeaker */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = D523A23313CFD58A0013BA25 /* Build configuration list for PBXNativeTarget "mlxspeaker" */;
+			buildPhases = (
+				D523A22613CFD58A0013BA25 /* Sources */,
+				D523A22713CFD58A0013BA25 /* Frameworks */,
+				D523A22813CFD58A0013BA25 /* CopyFiles */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = mlxspeaker;
+			productName = mlxspeaker;
+			productReference = D523A22A13CFD58A0013BA25 /* mlxspeaker */;
+			productType = "com.apple.product-type.tool";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		D523A22113CFD58A0013BA25 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				ORGANIZATIONNAME = PSI;
+			};
+			buildConfigurationList = D523A22413CFD58A0013BA25 /* Build configuration list for PBXProject "mlxspeaker" */;
+			compatibilityVersion = "Xcode 3.2";
+			developmentRegion = English;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+			);
+			mainGroup = D523A21F13CFD58A0013BA25;
+			productRefGroup = D523A22B13CFD58A0013BA25 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				D523A22913CFD58A0013BA25 /* mlxspeaker */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		D523A22613CFD58A0013BA25 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				D56C8F2D13CFD60800C67791 /* alarm.c in Sources */,
+				D56C8F2E13CFD60800C67791 /* elog.c in Sources */,
+				D56C8F2F13CFD60800C67791 /* midas.c in Sources */,
+				D56C8F3013CFD60800C67791 /* mrpc.c in Sources */,
+				D56C8F3113CFD60800C67791 /* odb.c in Sources */,
+				D56C8F3213CFD60800C67791 /* system.c in Sources */,
+				D56C8F3413CFD61800C67791 /* mlxspeaker.c in Sources */,
+				D56C8F3713CFD62E00C67791 /* mxml.c in Sources */,
+				D56C8F3813CFD62E00C67791 /* strlcpy.c in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		D523A23113CFD58A0013BA25 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ARCHS = "$(ARCHS_STANDARD_32_64_BIT)";
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = DEBUG;
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				GCC_VERSION = com.apple.compilers.llvm.clang.1_0;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 10.6;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = macosx;
+			};
+			name = Debug;
+		};
+		D523A23213CFD58A0013BA25 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ARCHS = "$(ARCHS_STANDARD_32_64_BIT)";
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_VERSION = com.apple.compilers.llvm.clang.1_0;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 10.6;
+				SDKROOT = macosx;
+			};
+			name = Release;
+		};
+		D523A23413CFD58A0013BA25 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				COPY_PHASE_STRIP = NO;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_ENABLE_OBJC_EXCEPTIONS = YES;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					DEBUG,
+					OS_LINUX,
+					OS_DARWIN,
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = NO;
+				HEADER_SEARCH_PATHS = (
+					/mxml,
+					/midas/include,
+				);
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Debug;
+		};
+		D523A23513CFD58A0013BA25 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				COPY_PHASE_STRIP = YES;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				GCC_ENABLE_OBJC_EXCEPTIONS = YES;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					OS_LINUX,
+					OS_DARWIN,
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = NO;
+				HEADER_SEARCH_PATHS = (
+					/mxml,
+					/midas/include,
+				);
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		D523A22413CFD58A0013BA25 /* Build configuration list for PBXProject "mlxspeaker" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				D523A23113CFD58A0013BA25 /* Debug */,
+				D523A23213CFD58A0013BA25 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		D523A23313CFD58A0013BA25 /* Build configuration list for PBXNativeTarget "mlxspeaker" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				D523A23413CFD58A0013BA25 /* Debug */,
+				D523A23513CFD58A0013BA25 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = D523A22113CFD58A0013BA25 /* Project object */;
+}
