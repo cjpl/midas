@@ -111,8 +111,8 @@ int main(int argc, char *argv[])
    cm_get_environment(host_name, sizeof(host_name), exp_name, sizeof(exp_name));
 
 #ifdef OS_DARWIN
-   strlcpy(mtTalkStr, "afplay /midas/utils/notify.wav", sizeof(mtTalkStr));
-   strlcpy(mtUserStr, "afplay /midas/utils/notify.wav", sizeof(mtTalkStr));
+   strlcpy(mtTalkStr, "afplay $MIDASSYS/utils/notify.wav", sizeof(mtTalkStr));
+   strlcpy(mtUserStr, "afplay $MIDASSYS/utils/notify.wav", sizeof(mtTalkStr));
 #endif   
 
    /* parse command line parameters */
