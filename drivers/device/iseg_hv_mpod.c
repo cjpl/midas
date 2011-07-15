@@ -15,7 +15,7 @@
 #include <stdarg.h>
 #include <string.h>
 #include <assert.h>
-#include <malloc.h>
+#include <stdlib.h>
 #include "midas.h"
 #include "mscb.h"
 
