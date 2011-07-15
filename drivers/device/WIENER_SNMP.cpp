@@ -17,136 +17,136 @@ const char* readCommunity = "public";       ///< community name for read operati
 const char* writeCommunity = "guru";        ///< community name for write operation
 
 // System Information OIDS
-char *S_sysMainSwitch = "sysMainSwitch.0";
+const char *S_sysMainSwitch = "sysMainSwitch.0";
 oid oidSysMainSwitch [MAX_OID_LEN];
 size_t lengthSysMainSwitch;
 
-char *S_sysStatus = "sysStatus.0";
+const char *S_sysStatus = "sysStatus.0";
 oid oidSysStatus [MAX_OID_LEN];
 size_t lengthSysStatus;
 
-char *S_sysVmeSysReset = "sysVmeSysReset.0";
+const char *S_sysVmeSysReset = "sysVmeSysReset.0";
 oid oidSysVmeSysReset [MAX_OID_LEN];
 size_t lengthSysVmeSysReset;
 
 
 //Output Count Information
-char *S_outputNumber = "outputNumber.0";
+const char *S_outputNumber = "outputNumber.0";
 oid oidOutputNumber [MAX_OID_LEN];
 size_t lengthOutputNumber;
 
-char *S_groupsNumber = "groupsNumber.0";
+const char *S_groupsNumber = "groupsNumber.0";
 oid oidGroupsNumber [MAX_OID_LEN];
 size_t lengthGroupsNumber;
 
 
 //Ouput Channel information
-char *S_outputNameBase = "outputName.";
+const char *S_outputNameBase = "outputName.";
 char *S_outputName[320];
 oid oidOutputName[320] [MAX_OID_LEN];
 size_t lengthOutputName[320];
 
-char *S_outputGroupBase = "outputGroup.";
+const char *S_outputGroupBase = "outputGroup.";
 char *S_outputGroup[320];
 oid oidOutputGroup[320] [MAX_OID_LEN];
 size_t lengthOutputGroup[320];
 
-char *S_outputStatusBase = "outputStatus.";
+const char *S_outputStatusBase = "outputStatus.";
 char *S_outputStatus[320];
 oid oidOutputStatus[320] [MAX_OID_LEN];
 size_t lengthOutputStatus[320];
 
-char *S_outputMeasurementSenseVoltageBase = "outputMeasurementSenseVoltage.";
+const char *S_outputMeasurementSenseVoltageBase = "outputMeasurementSenseVoltage.";
 char *S_outputMeasurementSenseVoltage[320];
 oid oidOutputMeasurementSenseVoltage[320] [MAX_OID_LEN];
 size_t lengthOutputMeasurementSenseVoltage[320];
 
-char *S_outputMeasurementTerminalVoltageBase = "outputMeasurementTerminalVoltage.";
+const char *S_outputMeasurementTerminalVoltageBase = "outputMeasurementTerminalVoltage.";
 char *S_outputMeasurementTerminalVoltage[320];
 oid oidOutputMeasurementTerminalVoltage[320] [MAX_OID_LEN];
 size_t lengthOutputMeasurementTerminalVoltage[320];
 
-char *S_outputMeasurementCurrentBase ="outputMeasurementCurrent.";
+const char *S_outputMeasurementCurrentBase ="outputMeasurementCurrent.";
 char *S_outputMeasurementCurrent[320];
 oid oidOutputMeasurementCurrent[320] [MAX_OID_LEN];
 size_t lengthOutputMeasurementCurrent[320];
 
-char *S_outputMeasurementTemperatureBase ="outputMeasurementTemperature.";
+const char *S_outputMeasurementTemperatureBase ="outputMeasurementTemperature.";
 char *S_outputMeasurementTemperature[320];
 oid oidOutputMeasurementTemperature[320] [MAX_OID_LEN];
 size_t lengthOutputMeasurementTemperature[320];
 
-char *S_outputSwitchBase = "outputSwitch.";
+const char *S_outputSwitchBase = "outputSwitch.";
 char *S_outputSwitch[320];
 oid oidChannelSwitch[320] [MAX_OID_LEN];
 size_t lengthChannelSwitch[320];
 
-char *S_outputVoltageBase ="outputVoltage.";
+const char *S_outputVoltageBase ="outputVoltage.";
 char *S_outputVoltage[320];
 oid oidOutputVoltage[320] [MAX_OID_LEN];
 size_t lengthOutputVoltage[320];
 
-char *S_outputCurrentBase = "outputCurrent.";
+const char *S_outputCurrentBase = "outputCurrent.";
 char *S_outputCurrent[320];
 oid oidOutputCurrent[320] [MAX_OID_LEN];
 size_t lengthOutputCurrent[320];
 
-char *S_outputRiseRateBase ="outputVoltageRiseRate.";
+const char *S_outputRiseRateBase ="outputVoltageRiseRate.";
 char *S_outputRiseRate[320];
 oid oidOutputRiseRate[320] [MAX_OID_LEN];
 size_t lengthOutputRiseRate[320];
 
-char *S_outputFallRateBase ="outputVoltageFallRate.";
+const char *S_outputFallRateBase ="outputVoltageFallRate.";
 char *S_outputFallRate[320];
 oid oidOutputFallRate[320] [MAX_OID_LEN];
 size_t lengthOutputFallRate[320];
 
-char *S_outputSupervisionBehaviorBase ="outputSupervisionBehavior.";
+const char *S_outputSupervisionBehaviorBase ="outputSupervisionBehavior.";
 char *S_outputSupervisionBehavior[320];
 oid oidOutputSupervisionBehavior[320] [MAX_OID_LEN];
 size_t lengthOutputSupervisionBehavior[320];
 
-char *S_outputSupervisionMinSenseVoltageBase ="outputSupervisionMinSenseVoltage.";
+const char *S_outputSupervisionMinSenseVoltageBase ="outputSupervisionMinSenseVoltage.";
 char *S_outputSupervisionMinSenseVoltage[320];
 oid oidOutputSupervisionMinSenseVoltage[320] [MAX_OID_LEN];
 size_t lengthOutputSupervisionMinSenseVoltage[320];
 
-char *S_outputSupervisionMaxSenseVoltageBase ="outputSupervisionMaxSenseVoltage.";
+const char *S_outputSupervisionMaxSenseVoltageBase ="outputSupervisionMaxSenseVoltage.";
 char *S_outputSupervisionMaxSenseVoltage[320];
 oid oidOutputSupervisionMaxSenseVoltage[320] [MAX_OID_LEN];
 size_t lengthOutputSupervisionMaxSenseVoltage[320];
 
-char *S_outputSupervisionMaxTerminalVoltageBase ="outputSupervisionMaxTerminalVoltage.";
+const char *S_outputSupervisionMaxTerminalVoltageBase ="outputSupervisionMaxTerminalVoltage.";
 char *S_outputSupervisionMaxTerminalVoltage[320];
 oid oidOutputSupervisionMaxTerminalVoltage[320] [MAX_OID_LEN];
 size_t lengthOutputSupervisionMaxTerminalVoltage[320];
 
-char *S_outputSupervisionMaxCurrentBase ="outputSupervisionMaxCurrent.";
+const char *S_outputSupervisionMaxCurrentBase ="outputSupervisionMaxCurrent.";
 char *S_outputSupervisionMaxCurrent[320];
 oid oidOutputSupervisionMaxCurrent[320] [MAX_OID_LEN];
 size_t lengthOutputSupervisionMaxCurrent[320];
 
-char *S_outputSupervisionMaxTemperatureBase ="outputSupervisionMaxTemperature.";
+const char *S_outputSupervisionMaxTemperatureBase ="outputSupervisionMaxTemperature.";
 char *S_outputSupervisionMaxTemperature[320];
 oid oidOutputSupervisionMaxTemperature[320] [MAX_OID_LEN];
 size_t lengthOutputSupervisionMaxTemperature[320];
 
-char *S_outputConfigMaxSenseVoltageBase ="outputConfigMaxSenseVoltage.";
+const char *S_outputConfigMaxSenseVoltageBase ="outputConfigMaxSenseVoltage.";
 char *S_outputConfigMaxSenseVoltage[320];
 oid oidOutputConfigMaxSenseVoltage[320] [MAX_OID_LEN];
 size_t lengthOutputConfigMaxSenseVoltage[320];
 
-char *S_outputConfigMaxTerminalVoltageBase ="outputConfigMaxTerminalVoltage.";
+const char *S_outputConfigMaxTerminalVoltageBase ="outputConfigMaxTerminalVoltage.";
 char *S_outputConfigMaxTerminalVoltage[320];
 oid oidOutputConfigMaxTerminalVoltage[320] [MAX_OID_LEN];
 size_t lengthOutputConfigMaxTerminalVoltage[320];
 
-char *S_outputConfigMaxCurrentBase ="outputConfigMaxCurrent.";
+const char *S_outputConfigMaxCurrentBase ="outputConfigMaxCurrent.";
 char *S_outputConfigMaxCurrent[320];
 oid oidOutputConfigMaxCurrent[320] [MAX_OID_LEN];
 size_t lengthOutputConfigMaxCurrent[320];
 
-char *S_outputConfigMaxPowerBase ="outputSupervisionMaxPower.";
+const char *S_outputConfigMaxPowerBase ="outputSupervisionMaxPower.";
 char *S_outputConfigMaxPower[320];
 oid oidOutputConfigMaxPower[320] [MAX_OID_LEN];
 size_t lengthOutputConfigMaxPower[320];
@@ -154,21 +154,21 @@ size_t lengthOutputConfigMaxPower[320];
 
 
 //Sensor Information
-char *S_sensorNumber ="sensorNumber.0";
+const char *S_sensorNumber ="sensorNumber.0";
 oid oidSensorNumber [MAX_OID_LEN];
 size_t lengthSensorNumber;
 
-char *S_sensorTemperatureBase ="sensorTemperature.";
+const char *S_sensorTemperatureBase ="sensorTemperature.";
 char *S_sensorTemperature[12];
 oid oidSensorTemperature[12] [MAX_OID_LEN];
 size_t lengthSensorTemperature[12];
 
-char *S_sensorWarningThresholdBase ="sensorWarningThreshold.";
+const char *S_sensorWarningThresholdBase ="sensorWarningThreshold.";
 char *S_sensorWarningThreshold[12];
 oid oidSensorWarningThreshold[12] [MAX_OID_LEN];
 size_t lengthSensorWarningThreshold[12];
 
-char *S_sensorFailureThresholdBase ="sensorFailureThreshold.";
+const char *S_sensorFailureThresholdBase ="sensorFailureThreshold.";
 char *S_sensorFailureThreshold[12];
 oid oidSensorFailureThreshold[12] [MAX_OID_LEN];
 size_t lengthSensorFailureThreshold[12];
@@ -176,7 +176,7 @@ size_t lengthSensorFailureThreshold[12];
 
 
 //SNMP Community Information
-char *S_snmpCommunityNameBase ="snmpCommunityName.";
+const char *S_snmpCommunityNameBase ="snmpCommunityName.";
 char *S_snmpCommunityName[4];
 oid oidSnmpCommunityName[4] [MAX_OID_LEN];
 size_t lengthSnmpCommunityName[4];
@@ -184,53 +184,53 @@ size_t lengthSnmpCommunityName[4];
 
 
 // Power Supply Details
-char *S_psFirmwareVersion ="psFirmwareVersion.0";
+const char *S_psFirmwareVersion ="psFirmwareVersion.0";
 oid oidPsFirmwareVersion[MAX_OID_LEN];
 size_t lengthPsFirmwareVersion;
 
-char *S_psSerialNumber ="psSerialNumber.0";
+const char *S_psSerialNumber ="psSerialNumber.0";
 oid oidPsSerialNumber[MAX_OID_LEN];
 size_t lengthPsSerialNumber;
 
-char *S_psOperatingTime ="psOperatingTime.0";
+const char *S_psOperatingTime ="psOperatingTime.0";
 oid oidPsOperatingTime[MAX_OID_LEN];
 size_t lengthPsOperatingTime;
 
-char *S_psDirectAccess ="psDirectAccess.0";
+const char *S_psDirectAccess ="psDirectAccess.0";
 oid oidPsDirectAccess[MAX_OID_LEN];
 size_t lengthPsDirectAccess;
 
 
 //Fan Tray Specific OIDs
-char *S_fanFirmwareVersion ="fanFirmwareVersion.0";
+const char *S_fanFirmwareVersion ="fanFirmwareVersion.0";
 oid oidFanFirmwareVersion[MAX_OID_LEN];
 size_t lengthFanFirmwareVersion;
 
-char *S_fanSerialNumber ="fanSerialNumber.0";
+const char *S_fanSerialNumber ="fanSerialNumber.0";
 oid oidFanSerialNumber[MAX_OID_LEN];
 size_t lengthFanSerialNumber;
 
-char *S_fanOperatingTime ="fanOperatingTime.0";
+const char *S_fanOperatingTime ="fanOperatingTime.0";
 oid oidFanOperatingTime[MAX_OID_LEN];
 size_t lengthFanOperatingTime;
 
-char *S_fanAirTemperature ="fanAirTemperature.0";
+const char *S_fanAirTemperature ="fanAirTemperature.0";
 oid oidFanAirTemperature[MAX_OID_LEN];
 size_t lengthFanAirTemperature;
 
-char *S_fanSwitchOffDelay ="fanSwitchOffDelay.0";
+const char *S_fanSwitchOffDelay ="fanSwitchOffDelay.0";
 oid oidFanSwitchOffDelay[MAX_OID_LEN];
 size_t lengthFanSwitchOffDelay;
 
-char *S_fanNominalSpeed ="fanNominalSpeed.0";
+const char *S_fanNominalSpeed ="fanNominalSpeed.0";
 oid oidFanNominalSpeed[MAX_OID_LEN];
 size_t lengthFanNominalSpeed;
 
-char *S_fanNumberOfFans ="fanNumberOfFans.0";
+const char *S_fanNumberOfFans ="fanNumberOfFans.0";
 oid oidFanNumberOfFans[MAX_OID_LEN];
 size_t lengthFanNumberOfFans;
 
-char *S_fanSpeedBase ="fanSpeed.";
+const char *S_fanSpeedBase ="fanSpeed.";
 char *S_fanSpeed[6];
 oid oidFanSpeed[6] [MAX_OID_LEN];
 size_t lengthFanSpeed[6];
