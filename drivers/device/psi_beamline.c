@@ -122,7 +122,7 @@ static INT tcp_connect(char *host, int port, int *sock)
    if (status != 0) {
       closesocket(*sock);
       *sock = -1;
-      sprintf("cannot connec to host %s", host);
+      sprintf(str, "cannot connec to host %s", host);
       mfe_error(str);
       return FE_ERR_HW;
    }
