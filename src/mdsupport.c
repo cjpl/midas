@@ -168,6 +168,7 @@ INT mftp_open(char *destination, FTP_CON ** con)
 
    return SS_SUCCESS;
 }
+#endif // HAVE_FTPLIB
 
 /*------------------------------------------------------------------*/
 INT md_file_ropen(char *infile, INT data_fmt, INT openzip)
@@ -257,7 +258,6 @@ status : from lower function
    my.evtn = 0;
    return (MD_SUCCESS);
 }
-#endif                          /* DOXYGEN_SHOULD_SKIP_THIS */
 
 /*------------------------------------------------------------------*/
 INT md_file_rclose(INT data_fmt)
