@@ -39,7 +39,7 @@ typedef struct {
 
 /*---- device driver routines --------------------------------------*/
 
-int addr_changed(HNDLE hDB, HNDLE hKey, void *arg)
+INT addr_changed(HNDLE hDB, HNDLE hKey, void *arg)
 {
    INT i, status;
    MSCB_INFO_VAR var_info;
@@ -120,14 +120,14 @@ INT mscbdev_init(HNDLE hkey, void **pinfo, INT channels, INT(*bd) (INT cmd, ...)
    db_find_key(hDB, hkey, "MSCB Address", &hsubkey);
    size = sizeof(INT) * channels;
    db_set_data(hDB, hsubkey, info->mscbdev_settings.mscb_address, size, channels, TID_INT);
-   db_open_record(hDB, hsubkey, info->mscbdev_settings.mscb_address, size, MODE_READ, addr_changed, info);
+   db_open_record(hDB, hsubkey, info->mscbdev_settings.mscb_address, size, MODE_READ, (void (*)(INT,INT,void*))addr_changed, info);
 
    size = sizeof(BYTE) * channels;
    db_get_value(hDB, hkey, "MSCB Index", info->mscbdev_settings.mscb_index, &size, TID_BYTE, TRUE);
    db_find_key(hDB, hkey, "MSCB Index", &hsubkey);
    size = sizeof(BYTE) * channels;
    db_set_data(hDB, hsubkey, info->mscbdev_settings.mscb_index, size, channels, TID_BYTE);
-   db_open_record(hDB, hsubkey, info->mscbdev_settings.mscb_index, size, MODE_READ, addr_changed, info);
+   db_open_record(hDB, hsubkey, info->mscbdev_settings.mscb_index, size, MODE_READ, (void (*)(INT,INT,void*))addr_changed, info);
 
    /* initialize info structure */
    info->num_channels = channels;
