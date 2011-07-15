@@ -1,0 +1,274 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 46;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		D552C25613C31774004448B5 /* alarm.c in Sources */ = {isa = PBXBuildFile; fileRef = D552C24E13C31774004448B5 /* alarm.c */; };
+		D552C25713C31774004448B5 /* elog.c in Sources */ = {isa = PBXBuildFile; fileRef = D552C24F13C31774004448B5 /* elog.c */; };
+		D552C25913C31774004448B5 /* mdsupport.c in Sources */ = {isa = PBXBuildFile; fileRef = D552C25113C31774004448B5 /* mdsupport.c */; };
+		D552C25A13C31774004448B5 /* midas.c in Sources */ = {isa = PBXBuildFile; fileRef = D552C25213C31774004448B5 /* midas.c */; };
+		D552C25B13C31774004448B5 /* mrpc.c in Sources */ = {isa = PBXBuildFile; fileRef = D552C25313C31774004448B5 /* mrpc.c */; };
+		D552C25C13C31774004448B5 /* odb.c in Sources */ = {isa = PBXBuildFile; fileRef = D552C25413C31774004448B5 /* odb.c */; };
+		D552C25D13C31774004448B5 /* system.c in Sources */ = {isa = PBXBuildFile; fileRef = D552C25513C31774004448B5 /* system.c */; };
+		D552C26513C317A0004448B5 /* mxml.c in Sources */ = {isa = PBXBuildFile; fileRef = D552C26113C317A0004448B5 /* mxml.c */; };
+		D552C26613C317A0004448B5 /* strlcpy.c in Sources */ = {isa = PBXBuildFile; fileRef = D552C26313C317A0004448B5 /* strlcpy.c */; };
+		D552C26913C31981004448B5 /* lazylogger.cxx in Sources */ = {isa = PBXBuildFile; fileRef = D552C26813C31981004448B5 /* lazylogger.cxx */; };
+		D5B6FDF513CFFA7600575A76 /* ftplib.c in Sources */ = {isa = PBXBuildFile; fileRef = D5B6FDF413CFFA7600575A76 /* ftplib.c */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		D5766A1213C31719007C0B40 /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = /usr/share/man/man1/;
+			dstSubfolderSpec = 0;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 1;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		D552C24E13C31774004448B5 /* alarm.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = alarm.c; path = ../../src/alarm.c; sourceTree = "<group>"; };
+		D552C24F13C31774004448B5 /* elog.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = elog.c; path = ../../src/elog.c; sourceTree = "<group>"; };
+		D552C25113C31774004448B5 /* mdsupport.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = mdsupport.c; path = ../../src/mdsupport.c; sourceTree = "<group>"; };
+		D552C25213C31774004448B5 /* midas.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = midas.c; path = ../../src/midas.c; sourceTree = "<group>"; };
+		D552C25313C31774004448B5 /* mrpc.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = mrpc.c; path = ../../src/mrpc.c; sourceTree = "<group>"; };
+		D552C25413C31774004448B5 /* odb.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = odb.c; path = ../../src/odb.c; sourceTree = "<group>"; };
+		D552C25513C31774004448B5 /* system.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = system.c; path = ../../src/system.c; sourceTree = "<group>"; };
+		D552C25F13C31792004448B5 /* midas.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = midas.h; path = ../include/midas.h; sourceTree = "<group>"; };
+		D552C26013C31792004448B5 /* msystem.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = msystem.h; path = ../include/msystem.h; sourceTree = "<group>"; };
+		D552C26113C317A0004448B5 /* mxml.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = mxml.c; path = ../../../mxml/mxml.c; sourceTree = "<group>"; };
+		D552C26213C317A0004448B5 /* mxml.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = mxml.h; path = /mxml/mxml.h; sourceTree = "<absolute>"; };
+		D552C26313C317A0004448B5 /* strlcpy.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = strlcpy.c; path = ../../../mxml/strlcpy.c; sourceTree = "<group>"; };
+		D552C26413C317A0004448B5 /* strlcpy.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = strlcpy.h; path = /mxml/strlcpy.h; sourceTree = "<absolute>"; };
+		D552C26713C31815004448B5 /* mdsupport.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = mdsupport.h; path = ../include/mdsupport.h; sourceTree = "<group>"; };
+		D552C26813C31981004448B5 /* lazylogger.cxx */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = lazylogger.cxx; path = ../../src/lazylogger.cxx; sourceTree = "<group>"; };
+		D5766A1413C31719007C0B40 /* lazylogger */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = lazylogger; sourceTree = BUILT_PRODUCTS_DIR; };
+		D5B6FDF413CFFA7600575A76 /* ftplib.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = ftplib.c; path = ../../src/ftplib.c; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		D5766A1113C31719007C0B40 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		D552C25E13C3177B004448B5 /* Header Files */ = {
+			isa = PBXGroup;
+			children = (
+				D552C26713C31815004448B5 /* mdsupport.h */,
+				D552C25F13C31792004448B5 /* midas.h */,
+				D552C26013C31792004448B5 /* msystem.h */,
+				D552C26213C317A0004448B5 /* mxml.h */,
+				D552C26413C317A0004448B5 /* strlcpy.h */,
+			);
+			name = "Header Files";
+			sourceTree = "<group>";
+		};
+		D5766A0913C31719007C0B40 = {
+			isa = PBXGroup;
+			children = (
+				D552C25E13C3177B004448B5 /* Header Files */,
+				D5766A1713C31719007C0B40 /* Source Files */,
+				D5766A1513C31719007C0B40 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		D5766A1513C31719007C0B40 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				D5766A1413C31719007C0B40 /* lazylogger */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		D5766A1713C31719007C0B40 /* Source Files */ = {
+			isa = PBXGroup;
+			children = (
+				D5B6FDF413CFFA7600575A76 /* ftplib.c */,
+				D552C26813C31981004448B5 /* lazylogger.cxx */,
+				D552C26113C317A0004448B5 /* mxml.c */,
+				D552C26313C317A0004448B5 /* strlcpy.c */,
+				D552C24E13C31774004448B5 /* alarm.c */,
+				D552C24F13C31774004448B5 /* elog.c */,
+				D552C25113C31774004448B5 /* mdsupport.c */,
+				D552C25213C31774004448B5 /* midas.c */,
+				D552C25313C31774004448B5 /* mrpc.c */,
+				D552C25413C31774004448B5 /* odb.c */,
+				D552C25513C31774004448B5 /* system.c */,
+			);
+			name = "Source Files";
+			path = lazylogger;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		D5766A1313C31719007C0B40 /* lazylogger */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = D5766A1D13C31719007C0B40 /* Build configuration list for PBXNativeTarget "lazylogger" */;
+			buildPhases = (
+				D5766A1013C31719007C0B40 /* Sources */,
+				D5766A1113C31719007C0B40 /* Frameworks */,
+				D5766A1213C31719007C0B40 /* CopyFiles */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = lazylogger;
+			productName = lazylogger;
+			productReference = D5766A1413C31719007C0B40 /* lazylogger */;
+			productType = "com.apple.product-type.tool";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		D5766A0B13C31719007C0B40 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				ORGANIZATIONNAME = PSI;
+			};
+			buildConfigurationList = D5766A0E13C31719007C0B40 /* Build configuration list for PBXProject "lazylogger" */;
+			compatibilityVersion = "Xcode 3.2";
+			developmentRegion = English;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+			);
+			mainGroup = D5766A0913C31719007C0B40;
+			productRefGroup = D5766A1513C31719007C0B40 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				D5766A1313C31719007C0B40 /* lazylogger */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		D5766A1013C31719007C0B40 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				D552C25613C31774004448B5 /* alarm.c in Sources */,
+				D552C25713C31774004448B5 /* elog.c in Sources */,
+				D552C25913C31774004448B5 /* mdsupport.c in Sources */,
+				D552C25A13C31774004448B5 /* midas.c in Sources */,
+				D552C25B13C31774004448B5 /* mrpc.c in Sources */,
+				D552C25C13C31774004448B5 /* odb.c in Sources */,
+				D552C25D13C31774004448B5 /* system.c in Sources */,
+				D552C26513C317A0004448B5 /* mxml.c in Sources */,
+				D552C26613C317A0004448B5 /* strlcpy.c in Sources */,
+				D552C26913C31981004448B5 /* lazylogger.cxx in Sources */,
+				D5B6FDF513CFFA7600575A76 /* ftplib.c in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		D5766A1B13C31719007C0B40 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ARCHS = "$(ARCHS_STANDARD_32_64_BIT)";
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = DEBUG;
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				GCC_VERSION = com.apple.compilers.llvm.clang.1_0;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 10.6;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = macosx;
+			};
+			name = Debug;
+		};
+		D5766A1C13C31719007C0B40 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ARCHS = "$(ARCHS_STANDARD_32_64_BIT)";
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_VERSION = com.apple.compilers.llvm.clang.1_0;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 10.6;
+				SDKROOT = macosx;
+			};
+			name = Release;
+		};
+		D5766A1E13C31719007C0B40 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				COPY_PHASE_STRIP = NO;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_ENABLE_OBJC_EXCEPTIONS = YES;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					DEBUG,
+					OS_LINUX,
+					OS_DARWIN,
+					HAVE_FTPLIB,
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = NO;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				USER_HEADER_SEARCH_PATHS = "/midas/include /mxml";
+			};
+			name = Debug;
+		};
+		D5766A1F13C31719007C0B40 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				COPY_PHASE_STRIP = YES;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				GCC_ENABLE_OBJC_EXCEPTIONS = YES;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					OS_LINUX,
+					OS_DARWIN,
+					HAVE_FTPLIB,
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = NO;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				USER_HEADER_SEARCH_PATHS = "/midas/include /mxml";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		D5766A0E13C31719007C0B40 /* Build configuration list for PBXProject "lazylogger" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				D5766A1B13C31719007C0B40 /* Debug */,
+				D5766A1C13C31719007C0B40 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		D5766A1D13C31719007C0B40 /* Build configuration list for PBXNativeTarget "lazylogger" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				D5766A1E13C31719007C0B40 /* Debug */,
+				D5766A1F13C31719007C0B40 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = D5766A0B13C31719007C0B40 /* Project object */;
+}
