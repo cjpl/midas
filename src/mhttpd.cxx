@@ -2723,7 +2723,7 @@ void show_elog_submit_query(INT last_n)
    int i, size, run, status, m1, d2, m2, y2, index, colspan;
    char date[80], author[80], type[80], system[80], subject[256], text[10000],
        orig_tag[80], reply_tag[80], attachment[3][256], encoding[80];
-   char str[256], str2[10000], tag[256], ref[256], file_name[256];
+   char str[256], str2[10000], tag[256], ref[256], file_name[256], *pc;
    HNDLE hDB;
    BOOL full, show_attachments, display_run_number;
    time_t ltime_start, ltime_end, ltime_current, now;
@@ -3108,7 +3108,9 @@ void show_elog_submit_query(INT last_n)
                            if (f != NULL) {
                               while (!feof(f)) {
                                  str[0] = 0;
-                                 fgets(str, sizeof(str), f);
+                                 pc = fgets(str, sizeof(str), f);
+                                 if (pc == NULL)
+                                    break;
                                  rsputs2(str);
                               }
                               fclose(f);
@@ -9157,6 +9159,18 @@ void show_seq_page()
    rsprintf("   show_all_lines = !show_all_lines;\n");
    rsprintf("   seq_refresh();\n");
    rsprintf("}\n");
+   rsprintf("\n");
+   rsprintf("function load()\n");
+   rsprintf("{\n");
+   rsprintf("   if (document.getElementById('fs').selectedIndex == -1)\n");
+   rsprintf("      alert('Please select a file to load');\n");
+   rsprintf("   else {\n");
+   rsprintf("      var o = document.createElement('input');\n");
+   rsprintf("      o.type = 'hidden'; o.name='cmd'; o.value='Load';\n");
+   rsprintf("      document.form1.appendChild(o);\n");
+   rsprintf("      document.form1.submit();\n");
+   rsprintf("   }\n");
+   rsprintf("}\n");
    
    rsprintf("//-->\n");
    rsprintf("</script>\n");
@@ -9216,7 +9230,7 @@ void show_seq_page()
    if (equal_ustring(getparam("cmd"), "Load Script") || isparam("fs")) {
       rsprintf("<tr><td align=center colspan=2 bgcolor=#FFFFFF>\n");
       rsprintf("<b>Select a sequence file:</b><br>\n");
-      rsprintf("<select name=\"fs\" size=20 style=\"width:300\">\n");
+      rsprintf("<select name=\"fs\" id=\"fs\" size=20 style=\"width:300\">\n");
       
       if (isparam("dir"))
          strlcpy(dir, getparam("dir"), sizeof(dir));
@@ -9289,7 +9303,7 @@ void show_seq_page()
       
       rsprintf("<tr><td align=center colspan=2 id=\"cmnt\">&nbsp;</td></tr>\n");
       rsprintf("<tr><td align=center colspan=2>\n");
-      rsprintf("<input type=submit name=cmd value=\"Load\">\n");
+      rsprintf("<input type=button onClick=\"load();\" value=\"Load\">\n");
       rsprintf("<input type=submit name=cmd value=\"Cancel\">\n");
       rsprintf("</td></tr>\n");
    }
@@ -9359,7 +9373,9 @@ void show_seq_page()
                rsprintf("<div onClick=\"show_lines();\" id=\"linedots1\" style=\"display:none;\">...<br></div>\n");
                for (int line=1 ; !feof(f) ; line++) {
                   str[0] = 0;
-                  fgets(str, sizeof(str), f);
+                  pc = fgets(str, sizeof(str), f);
+                  if (pc == NULL)
+                     break;
                   if (str[0]) {
                      if (line == seq.error_line)
                         rsprintf("<font id=\"line%d\" style=\"font-family:monospace;background-color:red;\">", line);
