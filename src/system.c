@@ -230,6 +230,8 @@ static void check_shm_host()
       return;
    }
 
+   buf[0] = 0;
+
    fgets(buf, sizeof(buf), fp);
    fclose(fp);
 
