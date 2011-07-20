@@ -2012,7 +2012,7 @@ void show_status_page(int refresh, const char *cookie_wpwd)
 void show_messages_page(int refresh, int n_message)
 {
    int size, more;
-   char str[256], buffer[100000], line[256], *pline;
+   char str[256], *buffer, line[256], *pline;
    time_t now;
    HNDLE hDB;
    BOOL eob;
@@ -2070,7 +2070,8 @@ void show_messages_page(int refresh, int n_message)
 
    rsprintf("<input type=submit name=cmd value=More%d><p>\n", more);
 
-   cm_msg_retrieve(n_message, buffer, sizeof(buffer));
+   buffer = (char *)malloc(1000000);
+   cm_msg_retrieve(n_message, buffer, 1000000);
 
    pline = buffer;
    eob = FALSE;
@@ -2100,6 +2101,7 @@ void show_messages_page(int refresh, int n_message)
 
    rsprintf("</tr></table>\n");
    rsprintf("</body></html>\r\n");
+   free(buffer);
 }
 
 /*------------------------------------------------------------------*/
