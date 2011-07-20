@@ -10372,6 +10372,10 @@ static void set_history_path()
 
 /*------------------------------------------------------------------*/
 
+#ifdef OS_WINNT
+#undef DELETE
+#endif
+
 #define ALLOC(t,n) (t*)calloc(sizeof(t),(n))
 #define DELETE(x) if (x) { free(x); (x)=NULL; }
 #define DELETEA(x, n) if (x) { for (int i=0; i<(n); i++) { free((x)[i]); (x)[i]=NULL; }; DELETE(x); }
@@ -12623,7 +12627,7 @@ void export_hist(const char *path, int scale, int toffset, int index, int labels
    /* check panel name in ODB */
    sprintf(str, "/History/Display/%s", path);
    db_find_key(hDB, 0, str, &hkeypanel);
-   if (!hkey) {
+   if (!hkeypanel) {
       rsprintf("Cannot find /History/Display/%s in ODB\n", path);
       return;
    }
@@ -12665,7 +12669,7 @@ void export_hist(const char *path, int scale, int toffset, int index, int labels
 
    //hsdata->Print();
 
-   int i_var[hsdata->nvars];
+   int *i_var = (int *)malloc(sizeof(int)*hsdata->nvars);
 
    for (int i = 0; i < hsdata->nvars; i++) 
       i_var[i] = -1;
@@ -12680,6 +12684,7 @@ void export_hist(const char *path, int scale, int toffset, int index, int labels
 
    if (t == 0 && hsdata->nvars > 1) {
       rsprintf("=== No history available for choosen period ===\n");
+      free(i_var);
       return;
    }
 
@@ -12784,7 +12789,7 @@ void export_hist(const char *path, int scale, int toffset, int index, int labels
       for (int i = 0 ; i < hsdata->nvars ; i++)
          if (i_var[i]>=0 && hsdata->odb_index[i]>=0)
             if (dt <= 0 || hsdata->t[i][i_var[i]+1] - t < dt)
-               dt = (hsdata->t[i][i_var[i]+1] - t);
+               dt = (int)(hsdata->t[i][i_var[i]+1] - t);
 
       if (dt <= 0)
          break;
@@ -12792,6 +12797,8 @@ void export_hist(const char *path, int scale, int toffset, int index, int labels
       t += dt;
 
    } while (1);
+
+   free(i_var);
 }
 
 /*------------------------------------------------------------------*/
