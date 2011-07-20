@@ -1063,6 +1063,9 @@ INT cm_msg_retrieve1(char *filename, INT n_message, char *message, INT buf_size)
       return -1;
    }
 
+   if (buf_size <= 2)
+      return 0;
+
    /* position buf_size bytes before the EOF */
    fseek(f, -(buf_size - 1), SEEK_END);
    offset = ftell(f);
@@ -1090,7 +1093,6 @@ INT cm_msg_retrieve1(char *filename, INT n_message, char *message, INT buf_size)
       *(p--) = 0;
       j = 1;
    }
-
 
    /* trim buffer so that last n_messages remain */
    for (i = 0; i < n_message; i++) {
