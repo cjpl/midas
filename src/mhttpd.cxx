@@ -1674,6 +1674,19 @@ void show_status_page(int refresh, const char *cookie_wpwd)
    else
       rsprintf("<td colspan=3>Running time: %dh%02dm%02ds</tr>\n", h, m, s);
 
+   /*---- run comment ----*/ 
+ 
+   size = sizeof(str); 
+   if (db_get_value(hDB, 0, "/Experiment/Run parameters/Comment", str, 
+                    &size, TID_STRING, FALSE) == DB_SUCCESS) 
+      rsprintf("<tr align=center><td colspan=6 bgcolor=#E0E0FF><b>%s</b></td></tr>\n", 
+               str); 
+   size = sizeof(str); 
+   if (db_get_value(hDB, 0, "/Experiment/Run parameters/Run Description", str, 
+                    &size, TID_STRING, FALSE) == DB_SUCCESS) 
+      rsprintf("<tr align=center><td colspan=6 bgcolor=#E0E0FF><b>%s</b></td></tr>\n", 
+               str); 
+ 
    /*---- Status items ----*/
 
    n_items = 0;
