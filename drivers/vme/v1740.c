@@ -234,6 +234,7 @@ void  v1740_Status(MVME_INTERFACE *mvme, uint32_t base)
   printf("V1740 at A32 0x%x\n", (int)base);
   printf("Board ID             : 0x%x\n", regRead(mvme, base, V1740_BOARD_ID));
   printf("Board Info           : 0x%x\n", regRead(mvme, base, V1740_BOARD_INFO));
+  printf("ROC FPGA FW Rev      : 0x%x\n", regRead(mvme, base, V1740_ROC_FPGA_FW_REV));
   printf("Acquisition status   : 0x%8.8x\n", regRead(mvme, base, V1740_ACQUISITION_STATUS));
   printf("================================================\n");
 }
@@ -305,7 +306,7 @@ int main (int argc, char* argv[]) {
 
   v1740_Setup(myvme, V1740_BASE, 1);
   // Run control by register
-  v1740_AcqCtl(myvme, V1740_BASE, REGISTER_RUN_MODE);
+  v1740_AcqCtl(myvme, V1740_BASE, V1740_REGISTER_RUN_MODE);
   // Soft or External trigger
   v1740_TrgCtl(myvme, V1740_BASE, V1740_TRIG_SRCE_EN_MASK, V1740_SOFT_TRIGGER|V1740_EXTERNAL_TRIGGER);
   // Soft and External trigger output
@@ -321,7 +322,7 @@ int main (int argc, char* argv[]) {
   printf("Occupancy for group %d = %d\n", group, v1740_BufferOccupancy(myvme, V1740_BASE, group)); 
 
   // Start run then wait for trigger
-  v1740_AcqCtl(myvme, V1740_BASE, RUN_START);
+  v1740_AcqCtl(myvme, V1740_BASE, V1740_RUN_START);
   sleep(1);
 
   regWrite(myvme, V1740_BASE, V1740_SOFTWARE_TRIGGER, 1);
@@ -346,7 +347,7 @@ int main (int argc, char* argv[]) {
 	 , i, data[i], i+1, data[i+1], i+2, data[i+2], i+3, data[i+3]);
   }
   
-  v1740_AcqCtl(myvme, V1740_BASE, RUN_STOP);
+  v1740_AcqCtl(myvme, V1740_BASE, V1740_RUN_STOP);
   
   regRead(myvme, V1740_BASE, V1740_ACQUISITION_CONTROL);
   status = mvme_close(myvme);
