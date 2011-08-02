@@ -41,6 +41,7 @@ void     v1720_ChannelDACSet(MVME_INTERFACE *mvme, uint32_t base, uint32_t chann
 int      v1720_ChannelDACGet(MVME_INTERFACE *mvme, uint32_t base, uint32_t channel, uint32_t *dac);
 void     v1720_ChannelSet(MVME_INTERFACE *mvme, uint32_t base, uint32_t channel, uint32_t what, uint32_t that);
 uint32_t v1720_ChannelGet(MVME_INTERFACE *mvme, uint32_t base, uint32_t channel, uint32_t what);
+void     v1720_ChannelConfig(MVME_INTERFACE *mvme, uint32_t base, uint32_t operation);
 void     v1720_Align64Set(MVME_INTERFACE *mvme, uint32_t base);
 
 #endif // v1720DRV_INCLUDE_H
