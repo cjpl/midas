@@ -425,7 +425,7 @@ int main (int argc, char* argv[]) {
  
   for (loop=0;loop<Nloop;loop++) {
     do {
-      sCAEN = CAENComm_Read32(handle[0], V1720_VME_STATUS, &lam);
+      sCAEN = CAENComm_Read32(handle[0], V1720_ACQUISITION_STATUS, &lam);
       //    printf("lam:%x, sCAEN:%d\n",lam, sCAEN);
       lam &= 0x1;
     } while (lam == 0);
