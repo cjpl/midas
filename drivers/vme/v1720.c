@@ -178,6 +178,27 @@ void v1720_AcqCtl(MVME_INTERFACE *mvme, uint32_t base, uint32_t operation)
 }
 
 /*****************************************************************/
+void v1720_ChannelConfig(MVME_INTERFACE *mvme, uint32_t base, uint32_t operation)
+{
+  uint32_t reg;
+  
+  regWrite(mvme, base, V1720_CHANNEL_CONFIG, 0x10);
+  reg = regRead(mvme, base, V1720_CHANNEL_CONFIG);  
+  printf("Channel_config1: 0x%x\n", regRead(mvme, base, V1720_CHANNEL_CONFIG));  
+  switch (operation) {
+  case V1720_TRIGGER_UNDERTH:
+    regWrite(mvme, base, V1720_CHANNEL_CONFIG, (reg | 0x40));
+    break;
+  case V1720_TRIGGER_OVERTH:
+    regWrite(mvme, base, V1720_CHANNEL_CONFIG, (reg & ~(0x40)));
+    break;
+  default:
+    break;
+  }
+  printf("Channel_config2: 0x%x\n", regRead(mvme, base, V1720_CHANNEL_CONFIG));  
+}
+
+/*****************************************************************/
 void v1720_info(MVME_INTERFACE *mvme, uint32_t base, int *nchannels, uint32_t *n32word)
 {
   int i, chanmask;
@@ -234,10 +255,11 @@ uint32_t v1720_DataRead(MVME_INTERFACE *mvme, uint32_t base, uint32_t *pdata, ui
 
   for (i=0;i<n32w;i++) {
     *pdata = regRead(mvme, base, V1720_EVENT_READOUT_BUFFER);
-    if (*pdata != 0xffffffff)
-      pdata++;
-    else
-      break;
+    //    printf ("pdata[%i]:%x\n", i, *pdata); 
+//    if (*pdata != 0xffffffff)
+    pdata++;
+    //    else
+      //      break;
   }
   return i;
 }
@@ -348,7 +370,7 @@ int main (int argc, char* argv[]) {
 
   v1720_Setup(myvme, V1720_BASE, 1);
   // Run control by register
-  v1720_AcqCtl(myvme, V1720_BASE, REGISTER_RUN_MODE);
+  v1720_AcqCtl(myvme, V1720_BASE, V1720_REGISTER_RUN_MODE);
   // Soft or External trigger
   v1720_TrgCtl(myvme, V1720_BASE, V1720_TRIG_SRCE_EN_MASK     , V1720_SOFT_TRIGGER|V1720_EXTERNAL_TRIGGER);
   // Soft and External trigger output
@@ -359,7 +381,7 @@ int main (int argc, char* argv[]) {
 
   channel = 0;
   // Start run then wait for trigger
-  v1720_AcqCtl(myvme, V1720_BASE, RUN_START);
+  v1720_AcqCtl(myvme, V1720_BASE, V1720_RUN_START);
   sleep(1);
 
   //  regWrite(myvme, V1720_BASE, V1720_SW_TRIGGER, 1);
@@ -385,7 +407,7 @@ int main (int argc, char* argv[]) {
     printf("Acq Status1:0x%x\n", status);
   } while ((status & 0x8)==0);
   
-  n32read = v1720_dataRead(myvme, V1720_BASE, &(data[0]), n32word);
+  n32read = v1720_DataRead(myvme, V1720_BASE, &(data[0]), n32word);
   printf("n32read:%d\n", n32read);
   
   for (i=0; i<n32read;i+=4) {
