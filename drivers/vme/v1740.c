@@ -295,7 +295,7 @@ int main (int argc, char* argv[]) {
   MVME_INTERFACE *myvme;
 
   uint32_t data[100000], n32word, n32read;
-  int i, status, group, ngroups=0;
+  int status, group, i, j, ngroups=0, chanmask;
 
   if (argc>1) {
     sscanf(argv[1],"%x", &V1740_BASE);
@@ -308,17 +308,34 @@ int main (int argc, char* argv[]) {
   // Run control by register
   v1740_AcqCtl(myvme, V1740_BASE, V1740_REGISTER_RUN_MODE);
   // Soft or External trigger
-  v1740_TrgCtl(myvme, V1740_BASE, V1740_TRIG_SRCE_EN_MASK, V1740_SOFT_TRIGGER|V1740_EXTERNAL_TRIGGER);
+  v1740_TrgCtl(myvme, V1740_BASE, V1740_TRIG_SRCE_EN_MASK     , V1740_SOFT_TRIGGER|V1740_EXTERNAL_TRIGGER);
   // Soft and External trigger output
   v1740_TrgCtl(myvme, V1740_BASE, V1740_FP_TRIGGER_OUT_EN_MASK, V1740_SOFT_TRIGGER|V1740_EXTERNAL_TRIGGER);
   // Enabled groups
-  v1740_GroupCtl(myvme, V1740_BASE, V1740_GROUP_EN_MASK, 0x1);
+  v1740_GroupCtl(myvme, V1740_BASE, V1740_GROUP_EN_MASK, 0x3);
   //  sleep(1);
 
   group = 0;
+  // Start run then wait for trigger
+  v1740_AcqCtl(myvme, V1740_BASE, V1740_RUN_START);
+  sleep(1);
+
+  //  regWrite(myvme, V1740_BASE, V1740_SW_TRIGGER, 1);
+
   // Evaluate the event size
-  v1740_info(myvme, V1740_BASE, &ngroups, &n32word);
-  printf("ngroups: %d  n32word: %d\n", ngroups, n32word);
+  // Number of samples per groups
+  n32word  =  1<<regRead(myvme, V1740_BASE, V1740_BUFFER_ORGANIZATION);
+  // times the number of active groups
+  chanmask = 0xff & regRead(myvme, V1740_BASE, V1740_GROUP_EN_MASK); 
+  for (i=0;i<8;i++) 
+    if (chanmask & (1<<i))
+      ngroups++;
+  printf("chanmask : %x , ngroups:  %d\n", chanmask, ngroups);
+  n32word *= ngroups;
+  n32word /= 2;   // 2 samples per 32bit word
+  n32word += 4;   // Headers
+  printf("n32word:%d\n", n32word);
+
   printf("Occupancy for group %d = %d\n", group, v1740_BufferOccupancy(myvme, V1740_BASE, group)); 
 
   // Start run then wait for trigger
@@ -330,24 +347,29 @@ int main (int argc, char* argv[]) {
 #if 0
   do {
     status = regRead(myvme, V1740_BASE, V1740_ACQUISITION_STATUS);
-    printf("Acq Status:0x%x\n", status);
+    printf("Acq Status1:0x%x\n", status);
   } while ((status & 0x8)==0);
   
   n32read = v1740_DataRead(myvme, V1740_BASE, &(data[0]), n32word);
   printf("n32read:%d\n", n32read);
-}
-#endif
-
-#if 1
-  n32read = v1740_DataBlockRead(myvme, V1740_BASE, &(data[0]), &n32word);
-#endif  
-
+  
   for (i=0; i<n32read;i+=4) {
-    printf("[%3d]:0x%8.8x - [%3d]:0x%8.8x - [%3d]:0x%8.8x - [%3d]:0x%8.8x\n"
-	 , i, data[i], i+1, data[i+1], i+2, data[i+2], i+3, data[i+3]);
+    printf("[%d]:0x%x - [%d]:0x%x - [%d]:0x%x - [%d]:0x%x\n"
+	   , i, data[i], i+1, data[i+1], i+2, data[i+2], i+3, data[i+3]);
   }
   
   v1740_AcqCtl(myvme, V1740_BASE, V1740_RUN_STOP);
+  
+  n32read = v1740_dataRead(myvme, V1740_BASE, &(data[0]), n32word);
+  printf("n32read:%d\n", n32read);
+  
+  for (i=0; i<n32read;i+=4) {
+    printf("[%d]:0x%x - [%d]:0x%x - [%d]:0x%x - [%d]:0x%x\n"
+	   , i, data[i], i+1, data[i+1], i+2, data[i+2], i+3, data[i+3]);
+  }
+  
+  
+  //  v1740_AcqCtl(myvme, V1740_BASE, RUN_STOP);
   
   regRead(myvme, V1740_BASE, V1740_ACQUISITION_CONTROL);
   status = mvme_close(myvme);

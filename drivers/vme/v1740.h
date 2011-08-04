@@ -5,7 +5,7 @@
 /*  Function: headerfile for V1740                                         */
 /*                                                                         */
 /* ----------------------------------------------------------------------- */
-/*  $Id$                                                                   */
+/*  $Id$                           */
 /***************************************************************************/
 
 #ifndef  V1740_INCLUDE_H
@@ -52,7 +52,7 @@
 #define V1740_CONFIG_ROM                    0xF000      /* read  only; D32 */ 
 
 #define V1740_GROUP_THRESHOLD               0x1080      /* For channeln 0x1n80 */
-#define V1740_GROUP_O_U_THRESHOLD           0x1084      /* For channel 0 */
+#define V1740_GROUP_OUTHRESHOLD             0x1084      /* For channel 0 */
 #define V1740_GROUP_STATUS                  0x1088      /* For channel 0 */
 #define V1740_GROUP_FW_REV                  0x108C      /* For channel 0 */
 #define V1740_GROUP_BUFFER_OCCUPANCY        0x1094      /* For channel 0 */
@@ -65,15 +65,19 @@
 #define V1740_REGISTER_RUN_MODE                   3
 #define V1740_SIN_RUN_MODE                        4
 #define V1740_SIN_GATE_RUN_MODE                   5
-#define V1740_MULTI_BOARD_SYNC_MODE               6
-#define V1740_COUNT_ACCEPTED_TRIGGER              7
-#define V1740_COUNT_ALL_TRIGGER                   8
-#define V1740_DOWNSAMPLE_ENABLE                   9
-#define V1740_DOWNSAMPLE_DISABLE                 10
+#define V1740_TRIGGER_OVERTH                      6
+#define V1740_TRIGGER_UNDERTH                     7
+#define V1740_MULTI_BOARD_SYNC_MODE               8
+#define V1740_COUNT_ACCEPTED_TRIGGER              9
+#define V1740_COUNT_ALL_TRIGGER                  10
+#define V1740_DOWNSAMPLE_ENABLE                  11
+#define V1740_DOWNSAMPLE_DISABLE                 12
+#define V1740_NO_ZERO_SUPPRESSION                13
 
 #define V1740_EVENT_CONFIG_ALL_ADC        0x01000000
 #define V1740_SOFT_TRIGGER                0x80000000
 #define V1740_EXTERNAL_TRIGGER            0x40000000
+#define V1740_ALIGN64                           0x20
 
 #define V1740_DONE                          0
 

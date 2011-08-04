@@ -14,7 +14,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>
-#include <CAENComm.h>
+#include "CAENComm.h"
 #include "v1720.h"
 
 CAENComm_ErrorCode ov1720_ChannelSet(int handle, uint32_t channel, uint32_t what, uint32_t that);

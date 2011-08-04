@@ -301,7 +301,7 @@ int main (int argc, char* argv[]) {
 
   CAENComm_ErrorCode sCAEN;
   int handle[2];
-  int nw, l=0, d=0, h=0, Nh;
+  int nw, l=0, c=0, d=0, h=0, Nh;
   uint32_t i, lcount, data[50000], temp, lam;
   int Nmodulo=10;
   int tcount=0, eloop=0;
@@ -329,6 +329,8 @@ int main (int argc, char* argv[]) {
 	l =  (atoi(argv[++i]));
       else if (strncmp(argv[i], "-b", 2) == 0)
 	d =  (atoi(argv[++i]));
+      else if (strncmp(argv[i], "-c", 2) == 0)
+	c =  (atoi(argv[++i]));
       else if (strncmp(argv[i], "-m", 2) == 0)
 	Nmodulo =  (atoi(argv[++i]));
       else if (strncmp(argv[i], "-d", 2) == 0)
@@ -338,6 +340,7 @@ int main (int argc, char* argv[]) {
       printf("usage: ov1720 -l (loop count) \n");
       printf("              -o link#\n");
       printf("              -b board#\n");
+      printf("              -c interface# (PCIe)\n");
       printf("              -d daisy#\n");
       printf("              -m modulo display\n");
       printf("              -s show data\n\n");
@@ -345,17 +348,17 @@ int main (int argc, char* argv[]) {
          }
   }
   
-  printf("in ov1720\n");
+  //  printf("in ov1720, l %d, d %d, c %d\n", l, d, c);
   
 #if 1
   //
   // Open devices
-  sCAEN = CAENComm_OpenDevice(CAENComm_PCIE_OpticalLink, l, d, 0, &(handle[h])); 
+  sCAEN = CAENComm_OpenDevice(CAENComm_PCIE_OpticalLink, l, d, c, &(handle[h])); 
   if (sCAEN != CAENComm_Success) {
     handle[h] = -1;
     printf("CAENComm_OpenDevice [l:%d, d:%d]: Error %d\n", l, d, sCAEN);
   } else {
-    printf("Device found : Link:%d  Daisy:%d Handle[%d]:%d\n", l, d, h, handle[h]);
+    printf("Device found : Interface:%d Link:%d  Daisy:%d Handle[%d]:%d\n", c, l, d, h, handle[h]);
     sCAEN = ov1720_Status(handle[h]);
     h++;
   }
@@ -368,7 +371,7 @@ int main (int argc, char* argv[]) {
   for (h=0, l=0;l<1;l++) {
     for (d=0;d<2;d++) {
       // Open VME interface   
-      sCAEN = CAENComm_OpenDevice(CAENComm_PCIE_OpticalLink, l, d, 0, &(handle[h])); 
+      sCAEN = CAENComm_OpenDevice(CAENComm_PCIE_OpticalLink, l, d, c, &(handle[h])); 
       if (sCAEN != CAENComm_Success) {
 	handle[h] = -1;
 	printf("CAENComm_OpenDevice [l:%d, d:%d]: Error %d\n", l, d, sCAEN);
@@ -384,7 +387,14 @@ int main (int argc, char* argv[]) {
 #endif
 #if 1
   for (h=0;h<Nh;h++) {
-    sCAEN = CAENComm_Write32(handle[h], V1720_SW_RESET              , 0);
+    
+    ////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////
+    // sCAEN = CAENComm_Write32(handle[h], V1720_SW_RESET              , 0);
+    ////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////
     
     sCAEN = ov1720_AcqCtl(handle[h], 0x3);
     sCAEN = CAENComm_Write32(handle[h], V1720_CHANNEL_CONFIG        , 0x10);
@@ -426,8 +436,8 @@ int main (int argc, char* argv[]) {
   for (loop=0;loop<Nloop;loop++) {
     do {
       sCAEN = CAENComm_Read32(handle[0], V1720_ACQUISITION_STATUS, &lam);
-      //    printf("lam:%x, sCAEN:%d\n",lam, sCAEN);
-      lam &= 0x1;
+      //printf("lam:0x%x, sCAEN:%d\n",lam, sCAEN);
+      lam &= 0x8;
     } while (lam == 0);
 
     // Read all modules
