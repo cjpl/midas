@@ -378,9 +378,9 @@ endif
 
 ifdef HAVE_ODBC
 CFLAGS      += -DHAVE_ODBC
-LIBS        += -lodbc
+ODBC_LIBS   += -lodbc
 ifeq ($(OSTYPE),darwin)
-LIBS        += /System/Library/Frameworks/CoreFoundation.framework/CoreFoundation
+ODBC_LIBS   += /System/Library/Frameworks/CoreFoundation.framework/CoreFoundation
 endif
 endif
 
@@ -413,7 +413,7 @@ CFLAGS     += -DHAVE_MSCB
 endif
 
 $(BIN_DIR)/mlogger: $(BIN_DIR)/%: $(SRC_DIR)/%.cxx
-	$(CXX) $(CFLAGS) $(OSFLAGS) -o $@ $< $(LIB) $(ROOTLIBS) $(MYSQL_LIBS) $(LIBS)
+	$(CXX) $(CFLAGS) $(OSFLAGS) -o $@ $< $(LIB) $(ROOTLIBS) $(ODBC_LIBS) $(MYSQL_LIBS) $(LIBS)
 
 $(BIN_DIR)/%:$(SRC_DIR)/%.c
 	$(CC) $(CFLAGS) $(OSFLAGS) -o $@ $< $(LIB) $(LIBS)
@@ -424,10 +424,10 @@ $(BIN_DIR)/odbedit: $(SRC_DIR)/odbedit.c $(SRC_DIR)/cmdedit.c
 
 ifdef NEED_MSCB
 $(BIN_DIR)/mhttpd: $(LIB_DIR)/mhttpd.o $(LIB_DIR)/mgd.o $(LIB_DIR)/mscb.o
-	$(CXX) $(CFLAGS) $(OSFLAGS) -o $@ $^ $(LIB) $(LIBS) -lm
+	$(CXX) $(CFLAGS) $(OSFLAGS) -o $@ $^ $(LIB) $(ODBC_LIBS) $(LIBS) -lm
 else
 $(BIN_DIR)/mhttpd: $(LIB_DIR)/mhttpd.o $(LIB_DIR)/mgd.o
-	$(CXX) $(CFLAGS) $(OSFLAGS) -o $@ $^ $(LIB) $(LIBS) -lm
+	$(CXX) $(CFLAGS) $(OSFLAGS) -o $@ $^ $(LIB) $(ODBC_LIBS) $(LIBS) -lm
 endif
 
 $(PROGS): $(LIBNAME)
@@ -556,7 +556,7 @@ $(BIN_DIR)/mtransition: $(SRC_DIR)/mtransition.cxx
 	$(CXX) $(CFLAGS) $(OSFLAGS) -o $@ $< $(LIB) $(LIBS)
 
 $(BIN_DIR)/mh2sql: $(UTL_DIR)/mh2sql.cxx
-	$(CXX) $(CFLAGS) $(OSFLAGS) -o $@ $^ $(LIBS)
+	$(CXX) $(CFLAGS) $(OSFLAGS) -o $@ $^ $(ODBC_LIBS) $(LIBS)
 
 $(BIN_DIR)/lazylogger: $(SRC_DIR)/lazylogger.cxx $(SRC_DIR)/mdsupport.c
 	$(CXX) $(CFLAGS) $(OSFLAGS) -o $@ $<  $(SRC_DIR)/mdsupport.c $(LIB) $(LIBS)
