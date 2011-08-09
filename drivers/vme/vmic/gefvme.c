@@ -306,6 +306,12 @@ static int makeDmaPacket(vmeDmaPacket_t *pkt, int blt_mode, int am, uint32_t vme
   
   switch (blt_mode)
     {
+    case MVME_BLT_NONE:
+      assert(vme_addr%4 == 0);
+      assert(nbytes%4 == 0);
+      pkt->srcVmeAttr.maxDataWidth = VME_D32;
+      pkt->srcVmeAttr.xferProtocol = VME_SCT;
+      break;
     case MVME_BLT_BLT32:
       assert(vme_addr%4 == 0);
       assert(nbytes%4 == 0);
