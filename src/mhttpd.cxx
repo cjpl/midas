@@ -15484,6 +15484,15 @@ int main(int argc, char *argv[])
       ss_daemon_init(FALSE);
    }
 
+#ifdef OS_LINUX
+   /* write PID file */
+   FILE *f = fopen("/var/run/mhttpd.pid", "w");
+   if (f != NULL) {
+      fprintf(f, "%d\r\n", ss_getpid());
+      fclose(f);
+   }
+#endif
+
    if (history_mode)
       myname = "mhttpd_history";
 
