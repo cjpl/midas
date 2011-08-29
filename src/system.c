@@ -6456,7 +6456,7 @@ INT ss_syslog(const char *message)
       init = TRUE;
    }
 
-   syslog(LOG_DEBUG, message);
+   syslog(LOG_DEBUG, message, 0);
    return SS_SUCCESS;
 #elif defined(OS_WINNT)         /* OS_UNIX */
 /*
