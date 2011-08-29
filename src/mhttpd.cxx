@@ -15501,7 +15501,7 @@ int main(int argc, char *argv[])
                                    DEFAULT_ODB_SIZE, DEFAULT_WATCHDOG_TIMEOUT);
    if (status == CM_WRONG_PASSWORD)
       return 1;
-   else if ((status == DB_INVALID_HANDLE)) {
+   else if (status == DB_INVALID_HANDLE) {
       cm_get_error(status, str);
       puts(str);
    } else if (status != CM_SUCCESS) {
