@@ -7544,7 +7544,9 @@ INT db_get_record(HNDLE hDB, HNDLE hKey, void *data, INT * buf_size, INT align)
       if (key.type != TID_KEY) {
          /* copy single key */
          if (key.item_size * key.num_values != *buf_size) {
-            cm_msg(MERROR, "db_get_record", "struct size mismatch for \"%s\"", key.name);
+            db_get_path(hDB, hKey, str, sizeof(str));
+            cm_msg(MERROR, "db_get_record", 
+                   "struct size mismatch for \"%s\" (expected size: %d, size in ODB: %d", str, *buf_size, key.item_size * key.num_values);
             return DB_STRUCT_SIZE_MISMATCH;
          }
 
