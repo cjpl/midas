@@ -313,12 +313,12 @@
       <GroupNumber>1</GroupNumber>
       <FileNumber>2</FileNumber>
       <FileType>1</FileType>
-      <tvExp>1</tvExp>
+      <tvExp>0</tvExp>
       <Focus>0</Focus>
-      <ColumnNumber>9</ColumnNumber>
+      <ColumnNumber>3</ColumnNumber>
       <tvExpOptDlg>0</tvExpOptDlg>
-      <TopLine>980</TopLine>
-      <CurrentLine>1015</CurrentLine>
+      <TopLine>843</TopLine>
+      <CurrentLine>914</CurrentLine>
       <bDave2>0</bDave2>
       <PathWithFileName>.\scs_2001_pump.c</PathWithFileName>
       <FilenameWithoutPath>scs_2001_pump.c</FilenameWithoutPath>
@@ -343,10 +343,10 @@
       <FileType>1</FileType>
       <tvExp>0</tvExp>
       <Focus>0</Focus>
-      <ColumnNumber>2</ColumnNumber>
+      <ColumnNumber>12</ColumnNumber>
       <tvExpOptDlg>0</tvExpOptDlg>
-      <TopLine>26</TopLine>
-      <CurrentLine>43</CurrentLine>
+      <TopLine>120</TopLine>
+      <CurrentLine>144</CurrentLine>
       <bDave2>0</bDave2>
       <PathWithFileName>..\..\..\src\mscbutil.c</PathWithFileName>
       <FilenameWithoutPath>mscbutil.c</FilenameWithoutPath>
@@ -379,6 +379,20 @@
       <PathWithFileName>.\rtc.c</PathWithFileName>
       <FilenameWithoutPath>rtc.c</FilenameWithoutPath>
     </File>
+    <File>
+      <GroupNumber>1</GroupNumber>
+      <FileNumber>0</FileNumber>
+      <FileType>1</FileType>
+      <tvExp>0</tvExp>
+      <Focus>0</Focus>
+      <ColumnNumber>0</ColumnNumber>
+      <tvExpOptDlg>0</tvExpOptDlg>
+      <TopLine>0</TopLine>
+      <CurrentLine>0</CurrentLine>
+      <bDave2>0</bDave2>
+      <PathWithFileName>.\monitor.c</PathWithFileName>
+      <FilenameWithoutPath>monitor.c</FilenameWithoutPath>
+    </File>
   </Group>
 
   <Group>
@@ -402,7 +416,7 @@
     </File>
     <File>
       <GroupNumber>2</GroupNumber>
-      <FileNumber>8</FileNumber>
+      <FileNumber>0</FileNumber>
       <FileType>5</FileType>
       <tvExp>0</tvExp>
       <Focus>0</Focus>
@@ -416,7 +430,7 @@
     </File>
     <File>
       <GroupNumber>2</GroupNumber>
-      <FileNumber>9</FileNumber>
+      <FileNumber>0</FileNumber>
       <FileType>5</FileType>
       <tvExp>0</tvExp>
       <Focus>0</Focus>
@@ -1797,25 +1811,19 @@
     <ActiveMDIGroup>0</ActiveMDIGroup>
     <MDIGroup>
       <Size>100</Size>
-      <ActiveTab>7</ActiveTab>
+      <ActiveTab>0</ActiveTab>
       <Documents>
         <Doc>
           <Name>.\scs_2001_pump.c</Name>
-          <ColumnNumber>9</ColumnNumber>
-          <TopLine>980</TopLine>
-          <CurrentLine>1015</CurrentLine>
+          <ColumnNumber>3</ColumnNumber>
+          <TopLine>843</TopLine>
+          <CurrentLine>914</CurrentLine>
         </Doc>
         <Doc>
           <Name>..\..\..\src\mscbmain.c</Name>
           <ColumnNumber>3</ColumnNumber>
           <TopLine>1543</TopLine>
           <CurrentLine>1567</CurrentLine>
-        </Doc>
-        <Doc>
-          <Name>CONFIG.H</Name>
-          <ColumnNumber>0</ColumnNumber>
-          <TopLine>1</TopLine>
-          <CurrentLine>1</CurrentLine>
         </Doc>
         <Doc>
           <Name>.\lcd_menu.c</Name>
@@ -1837,15 +1845,21 @@
         </Doc>
         <Doc>
           <Name>..\..\..\src\mscbutil.c</Name>
-          <ColumnNumber>2</ColumnNumber>
-          <TopLine>26</TopLine>
-          <CurrentLine>43</CurrentLine>
+          <ColumnNumber>12</ColumnNumber>
+          <TopLine>120</TopLine>
+          <CurrentLine>144</CurrentLine>
         </Doc>
         <Doc>
           <Name>.\rtc.c</Name>
           <ColumnNumber>0</ColumnNumber>
           <TopLine>1</TopLine>
           <CurrentLine>1</CurrentLine>
+        </Doc>
+        <Doc>
+          <Name>CONFIG.H</Name>
+          <ColumnNumber>55</ColumnNumber>
+          <TopLine>1</TopLine>
+          <CurrentLine>46</CurrentLine>
         </Doc>
       </Documents>
     </MDIGroup>

@@ -643,7 +643,8 @@ static bit b0_old = 0, b1_old = 0, b2_old = 0, b3_old = 0,
       lcd_goto(4, 3);
       printf(user_data.valve_locked ? "UNLOCK" : " LOCK ");
    
-      printf("          ");
+      printf("        ");
+      printf("%2d", user_data.pump_state);
 
       /* toggle main switch with button 0 */
       if (b0 && !b0_old)
@@ -793,7 +794,6 @@ static bit b0_old = 0, b1_old = 0, b2_old = 0, b3_old = 0,
           }
        }
    }
-   
 
    /* check if turbo pump started successfully in unlocked mode */
    if (user_data.valve_locked == 0 && user_data.pump_state == ST_RAMP_TURBO && 
@@ -909,6 +909,16 @@ static bit b0_old = 0, b1_old = 0, b2_old = 0, b3_old = 0,
 
    station_on_old = user_data.station_on;
    valve_locked_old = user_data.valve_locked;
+
+   /*---- Turbo error ----*/
+
+   if (user_data.error == ERR_TURBO_COMM) {
+      user_data.pump_state = ST_ERROR;
+      set_forevalve(0);
+      set_mainvalve(0);
+      set_bypassvalve(0);
+      set_forepump(0);
+   }
 
    return 0;
 }
