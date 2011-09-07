@@ -301,10 +301,10 @@
       <FileType>1</FileType>
       <tvExp>0</tvExp>
       <Focus>0</Focus>
-      <ColumnNumber>0</ColumnNumber>
+      <ColumnNumber>15</ColumnNumber>
       <tvExpOptDlg>0</tvExpOptDlg>
-      <TopLine>0</TopLine>
-      <CurrentLine>0</CurrentLine>
+      <TopLine>1603</TopLine>
+      <CurrentLine>1651</CurrentLine>
       <bDave2>0</bDave2>
       <PathWithFileName>..\..\..\scs_2001\scs_2001_lib.c</PathWithFileName>
       <FilenameWithoutPath>scs_2001_lib.c</FilenameWithoutPath>
@@ -315,10 +315,10 @@
       <FileType>1</FileType>
       <tvExp>0</tvExp>
       <Focus>0</Focus>
-      <ColumnNumber>3</ColumnNumber>
+      <ColumnNumber>0</ColumnNumber>
       <tvExpOptDlg>0</tvExpOptDlg>
-      <TopLine>843</TopLine>
-      <CurrentLine>914</CurrentLine>
+      <TopLine>96</TopLine>
+      <CurrentLine>96</CurrentLine>
       <bDave2>0</bDave2>
       <PathWithFileName>.\scs_2001_pump.c</PathWithFileName>
       <FilenameWithoutPath>scs_2001_pump.c</FilenameWithoutPath>
@@ -357,10 +357,10 @@
       <FileType>1</FileType>
       <tvExp>0</tvExp>
       <Focus>0</Focus>
-      <ColumnNumber>12</ColumnNumber>
+      <ColumnNumber>22</ColumnNumber>
       <tvExpOptDlg>0</tvExpOptDlg>
-      <TopLine>389</TopLine>
-      <CurrentLine>409</CurrentLine>
+      <TopLine>165</TopLine>
+      <CurrentLine>189</CurrentLine>
       <bDave2>0</bDave2>
       <PathWithFileName>.\lcd_menu.c</PathWithFileName>
       <FilenameWithoutPath>lcd_menu.c</FilenameWithoutPath>
@@ -373,15 +373,15 @@
       <Focus>0</Focus>
       <ColumnNumber>0</ColumnNumber>
       <tvExpOptDlg>0</tvExpOptDlg>
-      <TopLine>1</TopLine>
-      <CurrentLine>1</CurrentLine>
+      <TopLine>4</TopLine>
+      <CurrentLine>4</CurrentLine>
       <bDave2>0</bDave2>
       <PathWithFileName>.\rtc.c</PathWithFileName>
       <FilenameWithoutPath>rtc.c</FilenameWithoutPath>
     </File>
     <File>
       <GroupNumber>1</GroupNumber>
-      <FileNumber>0</FileNumber>
+      <FileNumber>7</FileNumber>
       <FileType>1</FileType>
       <tvExp>0</tvExp>
       <Focus>0</Focus>
@@ -402,7 +402,7 @@
     <cbSel>0</cbSel>
     <File>
       <GroupNumber>2</GroupNumber>
-      <FileNumber>7</FileNumber>
+      <FileNumber>8</FileNumber>
       <FileType>5</FileType>
       <tvExp>0</tvExp>
       <Focus>0</Focus>
@@ -416,7 +416,7 @@
     </File>
     <File>
       <GroupNumber>2</GroupNumber>
-      <FileNumber>0</FileNumber>
+      <FileNumber>9</FileNumber>
       <FileType>5</FileType>
       <tvExp>0</tvExp>
       <Focus>0</Focus>
@@ -430,7 +430,7 @@
     </File>
     <File>
       <GroupNumber>2</GroupNumber>
-      <FileNumber>0</FileNumber>
+      <FileNumber>10</FileNumber>
       <FileType>5</FileType>
       <tvExp>0</tvExp>
       <Focus>0</Focus>
@@ -1811,13 +1811,31 @@
     <ActiveMDIGroup>0</ActiveMDIGroup>
     <MDIGroup>
       <Size>100</Size>
-      <ActiveTab>0</ActiveTab>
+      <ActiveTab>3</ActiveTab>
       <Documents>
         <Doc>
+          <Name>.\rtc.c</Name>
+          <ColumnNumber>0</ColumnNumber>
+          <TopLine>4</TopLine>
+          <CurrentLine>4</CurrentLine>
+        </Doc>
+        <Doc>
+          <Name>CONFIG.H</Name>
+          <ColumnNumber>55</ColumnNumber>
+          <TopLine>1</TopLine>
+          <CurrentLine>46</CurrentLine>
+        </Doc>
+        <Doc>
+          <Name>..\..\..\scs_2001\scs_2001_lib.c</Name>
+          <ColumnNumber>15</ColumnNumber>
+          <TopLine>1603</TopLine>
+          <CurrentLine>1651</CurrentLine>
+        </Doc>
+        <Doc>
           <Name>.\scs_2001_pump.c</Name>
-          <ColumnNumber>3</ColumnNumber>
-          <TopLine>843</TopLine>
-          <CurrentLine>914</CurrentLine>
+          <ColumnNumber>0</ColumnNumber>
+          <TopLine>96</TopLine>
+          <CurrentLine>96</CurrentLine>
         </Doc>
         <Doc>
           <Name>..\..\..\src\mscbmain.c</Name>
@@ -1827,9 +1845,9 @@
         </Doc>
         <Doc>
           <Name>.\lcd_menu.c</Name>
-          <ColumnNumber>12</ColumnNumber>
-          <TopLine>389</TopLine>
-          <CurrentLine>409</CurrentLine>
+          <ColumnNumber>22</ColumnNumber>
+          <TopLine>165</TopLine>
+          <CurrentLine>189</CurrentLine>
         </Doc>
         <Doc>
           <Name>\MIDAS\MSCB\EMBEDDED\INCLUDE\MSCBEMB.H</Name>
@@ -1848,18 +1866,6 @@
           <ColumnNumber>12</ColumnNumber>
           <TopLine>120</TopLine>
           <CurrentLine>144</CurrentLine>
-        </Doc>
-        <Doc>
-          <Name>.\rtc.c</Name>
-          <ColumnNumber>0</ColumnNumber>
-          <TopLine>1</TopLine>
-          <CurrentLine>1</CurrentLine>
-        </Doc>
-        <Doc>
-          <Name>CONFIG.H</Name>
-          <ColumnNumber>55</ColumnNumber>
-          <TopLine>1</TopLine>
-          <CurrentLine>46</CurrentLine>
         </Doc>
       </Documents>
     </MDIGroup>
