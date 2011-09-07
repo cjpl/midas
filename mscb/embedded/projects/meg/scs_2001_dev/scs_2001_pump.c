@@ -759,14 +759,9 @@ static bit b0_old = 0, b1_old = 0, b2_old = 0, b3_old = 0,
       set_forevalve(1);
    }
 
-   /* wait for 10s to open bypass valve */
-   if (user_data.pump_state == ST_POSTEVAC_MAIN && time() > start_time + 12*100) {
-      set_bypassvalve(1);
-   }
-
    /* check if vacuum on both sides of main valve is ok */
-   if (user_data.pump_state == ST_POSTEVAC_MAIN && time() > start_time + 12*100 &&
-       user_data.hv_mbar < 1 && user_data.vv_mbar < user_data.vv_min) {
+   if (user_data.pump_state == ST_POSTEVAC_MAIN && time() > start_time + 4*100 &&
+       user_data.vv_mbar < user_data.vv_min) {
 
       /* turn on turbo pump */
       user_data.turbo_on = 1;
@@ -795,13 +790,20 @@ static bit b0_old = 0, b1_old = 0, b2_old = 0, b3_old = 0,
        }
    }
 
+   /* if main vaccum got back, go back to evacuation */
+   if (user_data.valve_locked == 0 && user_data.pump_state == ST_RAMP_TURBO && 
+       user_data.hv_mbar > 1) {
+    
+      set_forevalve(0);
+      start_time = time();     // remember start time
+      user_data.pump_state = ST_PREEVAC_MAIN;
+   }
+
    /* check if turbo pump started successfully in unlocked mode */
    if (user_data.valve_locked == 0 && user_data.pump_state == ST_RAMP_TURBO && 
        user_data.rot_speed > user_data.final_speed*0.8 &&
        user_data.hv_mbar < 1 && user_data.vv_mbar < user_data.vv_min) {
     
-      set_bypassvalve(0);
-
       /* now open main (gate) valve */
       set_mainvalve(1);
 
@@ -821,6 +823,13 @@ static bit b0_old = 0, b1_old = 0, b2_old = 0, b3_old = 0,
 
    /* check for fore pump off */
    if (user_data.pump_state == ST_RUN_FPON) {
+
+      /* close main valve if turbe speed dropped */
+      if (user_data.rot_speed < user_data.final_speed * 0.8) {
+         set_mainvalve(0);
+         start_time = time();     // remember start time
+         user_data.pump_state = ST_RAMP_TURBO;
+      }
 
       if (time() > start_time + user_data.fp_cycle*100 && 
           user_data.vv_mbar < user_data.vv_min) {
