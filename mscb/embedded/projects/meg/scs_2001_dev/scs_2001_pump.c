@@ -644,7 +644,7 @@ static bit b0_old = 0, b1_old = 0, b2_old = 0, b3_old = 0,
       printf(user_data.valve_locked ? "UNLOCK" : " LOCK ");
    
       printf("        ");
-      printf("%2d", user_data.pump_state);
+      printf("%2bd", user_data.pump_state);
 
       /* toggle main switch with button 0 */
       if (b0 && !b0_old)
