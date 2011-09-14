@@ -75,6 +75,7 @@ int EXPRT musb_write(MUSB_INTERFACE *musb_interface,int endpoint,const void *buf
 int EXPRT musb_read(MUSB_INTERFACE *musb_interface,int endpoint,void *buf,int count,int timeout_ms);
 int EXPRT musb_reset(MUSB_INTERFACE *musb_interface);
 int EXPRT musb_set_altinterface(MUSB_INTERFACE *musb_interface, int index);
+int EXPRT musb_get_device(MUSB_INTERFACE *musb_interface);
 
 #ifdef __cplusplus
 }
