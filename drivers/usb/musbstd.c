@@ -571,4 +571,15 @@ int musb_reset(MUSB_INTERFACE *musb_interface)
    return 0;
 }
 
+int musb_get_device(MUSB_INTERFACE *usb_interface)
+{
+#ifdef HAVE_LIBUSB
+   struct usb_device_descriptor d;
+   usb_get_descriptor(usb_interface->dev, USB_DT_DEVICE, 0, &d, sizeof(d));
+   return d.bcdDevice;
+#else
+   return 0;
+#endif
+}
+
 /* end */
