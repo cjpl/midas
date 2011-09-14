@@ -61,6 +61,7 @@ DEFINE_GUID(GUID_CLASS_MSCB_BULK, 0xcbeb3fb1, 0xae9f, 0x471c, 0x90, 0x16, 0x9b, 
 #include <usb.h>
 #endif
 
+#ifndef HAVE_LIBUSB
 #ifdef OS_DARWIN
 
 IOReturn darwin_configure_device(MUSB_INTERFACE* musb)
@@ -132,6 +133,8 @@ IOReturn darwin_configure_device(MUSB_INTERFACE* musb)
    return -1;
 }
     
+#endif
+
 #endif
 
 int musb_open(MUSB_INTERFACE **musb_interface, int vendor, int product, int instance, int configuration, int usbinterface)
