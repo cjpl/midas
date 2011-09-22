@@ -23,6 +23,17 @@ typedef struct {
    int usb_type;
 } MUSB_INTERFACE;
 
+#elif defined(HAVE_LIBUSB10)
+
+#include <libusb.h>
+
+typedef struct {
+   libusb_device_handle *dev;
+   int usb_configuration;
+   int usb_interface;
+   int usb_type;
+} MUSB_INTERFACE;
+
 #elif defined(_MSC_VER)
 
 #include <windows.h>
