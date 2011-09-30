@@ -502,6 +502,13 @@ int main (int argc, char* argv[]) {
     sCAEN = ov1740_AcqCtl(handle[h], V1740_RUN_STOP);
   }
   printf("Modules stopped\n");
+#if 0
+  sleep(5);
+  printf("Sleep sCAEN:%d\n", sCAEN);
+  sCAEN = CAENComm_Read32(handle[h], V1740_EVENT_SIZE, &eSize);
+  sCAEN = CAENComm_BLTRead(handle[h], V1740_EVENT_READOUT_BUFFER, pdata, eSize, &nw);
+  printf("read sCAEN:%d\n", sCAEN);
+#endif
 
   for (h=0;h<Nh;h++) {
     sCAEN = CAENComm_CloseDevice(handle[h]); 
