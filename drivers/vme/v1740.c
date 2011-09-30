@@ -70,21 +70,28 @@ void v1740_GroupCtl(MVME_INTERFACE *mvme, uint32_t base, uint32_t reg, uint32_t 
 }
 
 /*****************************************************************/
-void v1740_GroupThreshold(MVME_INTERFACE *mvme, uint32_t base, uint16_t group, uint16_t threshold)
+void v1740_GroupSet(MVME_INTERFACE *mvme, uint32_t base, uint32_t channel, uint32_t what, uint32_t that)
 {
-  uint32_t reg;
-  
-  reg = V1740_GROUP_THRESHOLD | (group << 8);
-  regWrite(mvme, base, reg, (threshold & 0xFFF));
+  uint32_t reg, mask;
+
+  if (what == V1740_GROUP_THRESHOLD)   mask = 0x0FFF;
+  if (what == V1740_GROUP_OUTHRESHOLD) mask = 0x0FFF;
+  if (what == V1740_GROUP_DAC)         mask = 0xFFFF;
+  reg = what | (channel << 8);
+  printf("base:0x%x reg:0x%x, this:%x\n", base, reg, that);
+  regWrite(mvme, base, reg, (that & 0xFFF));
 }
 
 /*****************************************************************/
-void v1740_GroupDAC(MVME_INTERFACE *mvme, uint32_t base, uint16_t group, uint16_t dac)
+uint32_t v1740_GroupGet(MVME_INTERFACE *mvme, uint32_t base, uint32_t channel, uint32_t what)
 {
-  uint32_t reg;
-  
-  reg = V1740_GROUP_DAC | (group << 8);
-  regWrite(mvme, base, reg, (dac & 0xFFFF));
+  uint32_t reg, mask;
+
+  if (what == V1740_GROUP_THRESHOLD)   mask = 0x0FFF;
+  if (what == V1740_GROUP_OUTHRESHOLD) mask = 0x0FFF;
+  if (what == V1740_GROUP_DAC)         mask = 0xFFFF;
+  reg = what | (channel << 8);
+  return regRead(mvme, base, reg);
 }
 
 /*****************************************************************/
@@ -127,6 +134,27 @@ void v1740_AcqCtl(MVME_INTERFACE *mvme, uint32_t base, uint32_t operation)
   default:
     break;
   }
+}
+
+/*****************************************************************/
+void v1740_GroupConfig(MVME_INTERFACE *mvme, uint32_t base, uint32_t operation)
+{
+  uint32_t reg;
+  
+  regWrite(mvme, base, V1740_GROUP_CONFIG, 0x10);  // must be set to 1
+  reg = regRead(mvme, base, V1740_GROUP_CONFIG);  
+  printf("Channel_config1: 0x%x\n", regRead(mvme, base, V1740_GROUP_CONFIG));  
+  switch (operation) {
+  case V1740_TRIGGER_UNDERTH:
+    regWrite(mvme, base, V1740_GROUP_CONFIG, (reg | 0x40));
+    break;
+  case V1740_TRIGGER_OVERTH:
+    regWrite(mvme, base, V1740_GROUP_CONFIG, (reg & ~(0x40)));
+    break;
+  default:
+    break;
+  }
+  printf("Channel_config2: 0x%x\n", regRead(mvme, base, V1740_GROUP_CONFIG));  
 }
 
 /*****************************************************************/
@@ -360,6 +388,7 @@ int main (int argc, char* argv[]) {
   
   v1740_AcqCtl(myvme, V1740_BASE, V1740_RUN_STOP);
   
+#endif
   n32read = v1740_dataRead(myvme, V1740_BASE, &(data[0]), n32word);
   printf("n32read:%d\n", n32read);
   
