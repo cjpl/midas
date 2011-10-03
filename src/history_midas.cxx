@@ -1089,7 +1089,7 @@ public:
          time_t* x = (time_t*)malloc(n_point*sizeof(time_t));
          assert(x);
          double* y = (double*)malloc(n_point*sizeof(double));
-         assert(x);
+         assert(y);
 
          time_buffer[i] = x;
          data_buffer[i] = y;
