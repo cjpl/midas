@@ -11046,6 +11046,14 @@ void generate_hist_graph(const char *path, char *buffer, int *buffer_size,
 
          assert(n_point[i]<=MAX_POINTS);
       }
+      
+      // free arrays in history data
+      for (i=0 ; i<hsdata->nvars ; i++) {
+         free(hsdata->event_names[i]);
+         free(hsdata->var_names[i]);
+         free(hsdata->t[i]);
+         free(hsdata->v[i]);
+      }
    }
 
    if (0) {
