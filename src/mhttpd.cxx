@@ -8892,7 +8892,7 @@ const char *bar_col[] = {"#B0B0FF", "#C0C0FF", "#D0D0FF", "#E0E0FF"};
 
 void show_seq_page()
 {
-   INT i, size, n, state, eob;
+   INT i, size, n, width, state, eob;
    HNDLE hDB;
    char str[256], path[256], dir[256], error[256], comment[256], filename[256], data[256], buffer[10000], line[256];
    time_t now;
@@ -9357,16 +9357,24 @@ void show_seq_page()
             
             for (i=0 ; i<4 ; i++) {
                rsprintf("<tr id=\"loop%d\" style=\"display:none\"><td colspan=2>\n", i);
-               rsprintf("<table width=\"100%%\"><tr><td id=\"loop_label%d\">Loop&nbsp;%d:</td><td width=\"100%%\"><table id=\"loopprgs%d\" width=\"%d%%\" height=\"25\">\n", i, i, i, 
-                        (int)(((double)seq.loop_counter[i]/seq.loop_n[i])*100+0.5));
+               rsprintf("<table width=\"100%%\"><tr><td id=\"loop_label%d\">Loop&nbsp;%d:</td>\n", i, i);
+               if (seq.loop_n[i] == 0)
+                  width = 0;
+               else
+                  width = (int)(((double)seq.loop_counter[i]/seq.loop_n[i])*100+0.5);
+               rsprintf("<td width=\"100%%\"><table id=\"loopprgs%d\" width=\"%d%%\" height=\"25\">\n", i, width);
                rsprintf("<tr><td style=\"background-color:%s;", bar_col[i]);
                rsprintf("border:2px solid #000080;border-top:2px solid #E0E0FF;border-left:2px solid #E0E0FF;\">&nbsp;\n");
                rsprintf("</td></tr></table></td></tr></table></td></tr>\n");
             }
             if (seq.running) {
                rsprintf("<tr><td colspan=2>\n");
-               rsprintf("<table width=\"100%%\"><tr><td id=\"wait_label\">Run:</td><td width=\"100%%\"><table id=\"runprgs\" width=\"%d%%\" height=\"25\">\n", 
-                        (int)(((double)seq.wait_counter/seq.wait_n)*100+0.5));
+               if (seq.wait_n == 0)
+                  width = 0;
+               else
+                  width = (int)(((double)seq.wait_counter/seq.wait_n)*100+0.5);
+               rsprintf("<table width=\"100%%\"><tr><td id=\"wait_label\">Run:</td>\n");
+               rsprintf("<td width=\"100%%\"><table id=\"runprgs\" width=\"%d%%\" height=\"25\">\n", width);
                rsprintf("<tr><td style=\"background-color:#80FF80;border:2px solid #008000;border-top:2px solid #E0E0FF;border-left:2px solid #E0E0FF;\">&nbsp;\n");
                rsprintf("</td></tr></table></td></tr></table></td></tr>\n");
             }
