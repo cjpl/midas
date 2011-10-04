@@ -9358,7 +9358,7 @@ void show_seq_page()
             for (i=0 ; i<4 ; i++) {
                rsprintf("<tr id=\"loop%d\" style=\"display:none\"><td colspan=2>\n", i);
                rsprintf("<table width=\"100%%\"><tr><td id=\"loop_label%d\">Loop&nbsp;%d:</td>\n", i, i);
-               if (seq.loop_n[i] == 0)
+               if (seq.loop_n[i] <= 0)
                   width = 0;
                else
                   width = (int)(((double)seq.loop_counter[i]/seq.loop_n[i])*100+0.5);
@@ -9369,7 +9369,7 @@ void show_seq_page()
             }
             if (seq.running) {
                rsprintf("<tr><td colspan=2>\n");
-               if (seq.wait_n == 0)
+               if (seq.wait_n <= 0)
                   width = 0;
                else
                   width = (int)(((double)seq.wait_counter/seq.wait_n)*100+0.5);
