@@ -5367,7 +5367,7 @@ int evaluate_src(char *key, char *src, double *fvalue)
 
    db_find_key(hDB, 0, str, &hkeyval);
    if (!hkeyval) {
-      cm_msg(MERROR, "show_custom_gif", "Invalid Src key \"%s\" for Fill \"%s\"",
+      cm_msg(MERROR, "evaluate_src", "Invalid Src key \"%s\" for Fill \"%s\"",
              src, key);
       return 0;
    }
@@ -5795,6 +5795,56 @@ void show_custom_gif(const char *name)
 
    return_length = strlen(return_buffer) + length;
    memcpy(return_buffer + strlen(return_buffer), gb.data, length);
+}
+
+/*------------------------------------------------------------------*/
+
+void show_custom_audio(const char *name)
+{
+   char str[256], filename[256], custom_path[256];
+   int fh, size;
+   HNDLE hDB;
+
+   cm_get_experiment_database(&hDB, NULL);
+   
+   custom_path[0] = 0;
+   size = sizeof(custom_path);
+   db_get_value(hDB, 0, "/Custom/Path", custom_path, &size, TID_STRING, FALSE);
+   
+   /* check for file */
+   strlcpy(filename, custom_path, sizeof(str));
+   if (filename[strlen(filename)-1] != DIR_SEPARATOR)
+      strlcat(filename, DIR_SEPARATOR_STR, sizeof(filename));
+   strlcat(filename, name, sizeof(filename));
+   fh = open(filename, O_RDONLY | O_BINARY);
+   if (fh < 0) {
+      sprintf(str, "Cannot open file \"%s\" and cannot find ODB key \"/Custom/Images/%s\"", filename, name);
+      show_error(str);
+      return;
+   }
+   
+   size = lseek(fh, 0, SEEK_END);
+   lseek(fh, 0, SEEK_SET);
+   
+   /* return audio file */
+   rsprintf("HTTP/1.0 200 Document follows\r\n");
+   rsprintf("Server: MIDAS HTTP %d\r\n", mhttpd_revision());
+   
+   if (strstr(name, ".mp3"))
+      rsprintf("Content-Type: audio/mp3\r\n");
+   else
+      rsprintf("Content-Type: audio/ogg\r\n");
+   rsprintf("Content-Length: %d\r\n\r\n", size);
+   
+   if (size > (int) (return_size - strlen(return_buffer))) {
+      printf("return buffer too small\n");
+      return;
+   }
+   
+   return_length = strlen(return_buffer) + size;
+   read(fh, return_buffer + strlen(return_buffer), size);
+   close(fh);
+   return;
 }
 
 /*------------------------------------------------------------------*/
@@ -6374,6 +6424,10 @@ void show_custom_page(const char *path, const char *cookie_cpwd)
       return;
    }
 
+   if (strstr(path, ".mp3") || strstr(path, ".ogg")) {
+      show_custom_audio(path);
+      return;
+   }
    cm_get_experiment_database(&hDB, NULL);
 
    if (path[0] == 0) {
