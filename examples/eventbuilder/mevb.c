@@ -26,6 +26,10 @@ The Event builder main file
 
 #define DEFAULT_FE_TIMEOUT  60000       /* 60 seconds for watchdog timeout */
 
+//RP#define TIMEOUT_ABORT          10       /* seconds waiting for data before aborting run */
+//#define TIMEOUT_ABORT          120       /* seconds waiting for data before aborting run */
+#define TIMEOUT_ABORT          300       /* seconds waiting for data before aborting run */
+
 EBUILDER_SETTINGS ebset;
 EBUILDER_CHANNEL ebch[MAX_CHANNELS];
 
@@ -95,6 +99,8 @@ Log history = INT : 0\n\
 Frontend host = STRING : [32] \n\
 Frontend name = STRING : [32] \n\
 Frontend file name = STRING : [256] \n\
+Status = STRING : [256] \n\
+Status color = STRING : [32] \n\
 "
 
 #define EQUIPMENT_STATISTICS_STR "\
@@ -102,6 +108,7 @@ Events sent = DOUBLE : 0\n\
 Events per sec. = DOUBLE : 0\n\
 kBytes per sec. = DOUBLE : 0\n\
 "
+static int waiting_for_stop = FALSE;
 
 /********************************************************************/
 INT register_equipment(void)
@@ -154,9 +161,7 @@ INT register_equipment(void)
       }
       db_find_key(hDB, 0, str, &hKey);
 
-      if (equal_ustring(eq_info->format, "YBOS"))
-         equipment[index].format = FORMAT_YBOS;
-      else if (equal_ustring(eq_info->format, "FIXED"))
+      if (equal_ustring(eq_info->format, "FIXED"))
          equipment[index].format = FORMAT_FIXED;
       else                      /* default format is MIDAS */
          equipment[index].format = FORMAT_MIDAS;
@@ -216,6 +221,13 @@ INT register_equipment(void)
             return 0;
          }
 
+	 if (1)
+	   {
+	     int level = 0;
+	     bm_get_buffer_level(equipment[index].buffer_handle, &level);
+	     printf("Buffer %s, level %d, info: \n", eq_info->buffer, level);
+	   }
+
          /* set the default buffer cache size */
          bm_set_cache_size(equipment[index].buffer_handle, 0, SERVER_CACHE_SIZE);
       } else {
@@ -264,7 +276,10 @@ INT load_fragment(void)
          size = sizeof(format);
          db_get_value(hDB, hSubkey, "common/Format", format, &size, TID_STRING, 0);
          /* Check if equipment match EB requirements */
-         if ((type & EQ_EB)
+	 //	 if (debug)
+	 //  printf("Equipment name: %s, Type: 0x%x, Buffer: %s, Format: %s\n", 
+	 //	  key.name, type, buffer, format);
+	 if ((type & EQ_EB)
              && (strncmp(buffer, buffer_name, strlen(buffer_name)) == 0)
              && (strncmp(format, eq_info->format, strlen(format)) == 0)) {
             /* match=> fill internal eb structure */
@@ -275,6 +290,8 @@ INT load_fragment(void)
                          0);
             size = sizeof(WORD);
             db_get_value(hDB, hSubkey, "common/Event ID", &ebch[nfragment].event_id, &size, TID_WORD, 0);
+	    printf("Fragment %d: Equipment name %s,  evID %d, buffer %s\n",nfragment,key.name, ebch[nfragment].event_id, buffer);
+	    //	    printf("Fragment %d: Equipment name %s,  evID %d, buffer %s\n",key.name, ebch[nfragment].event_id, buffer);
             nfragment++;
          }
       }
@@ -289,8 +306,6 @@ INT load_fragment(void)
    /* Set fragment_add function based on the format */
    if (equipment[0].format == FORMAT_MIDAS)
       meb_fragment_add = eb_mfragment_add;
-   else if (equipment[0].format == FORMAT_YBOS)
-      meb_fragment_add = eb_yfragment_add;
    else {
       cm_msg(MERROR, "load_fragment", "Unknown data format :%d", format);
       return EB_ERROR;
@@ -335,11 +350,48 @@ INT scan_fragment(void)
          status = source_scan(equipment[0].format, eq_info);
          switch (status) {
          case BM_ASYNC_RETURN: // No event found for now, Check for timeout 
-            for (fragn = 0; fragn < nfragment; fragn++) {
-               if (ebch[fragn].timeout > TIMEOUT) {     /* Timeout */
+
+	   if (1) {
+	     /* advanced checking for timeouts */
+
+	     time_t now = time(NULL);
+	     int empty = 1;
+	     int badfrag = -1;
+
+	     /* check if we recieved any data */
+	     for (fragn = 0; fragn < nfragment; fragn++)
+	       if (ebset.received[fragn])
+		 empty = 0;
+
+	     /* only look for timeout if there is received data from any fragment */
+	     if (!empty)
+	       for (fragn = 0; fragn < nfragment; fragn++) {
+		 //if (debug)
+		 //  printf("frag %d, timeout %d, threshold %d, received %d, time %d\n", fragn, ebch[fragn].timeout, TIMEOUT, ebset.received[fragn], now - ebch[fragn].time);
+		 if (ebch[fragn].time && ebch[fragn].timeout)
+		   if (now - ebch[fragn].time > TIMEOUT_ABORT) {
+		     //cm_msg(MERROR, "scan_fragment", "frag %d, timeout %d, %d sec", fragn, ebch[fragn].timeout, now - ebch[fragn].time);
+		     badfrag = fragn;
+		   }
+	       }
+
+	     if (badfrag >= 0) {
+	       //status = SS_ABORT;
+	       if (!waiting_for_stop && !stop_requested) {
+		 cm_msg(MERROR, "scan_fragment", "timeout waiting for fragment %d, restarting run", badfrag);
+		 cm_msg(MINFO, "scan_fragment", "spawning mtransition");
+		 ss_system("mtransition STOP IF \"/Logger/Auto restart\" DELAY \"/Logger/Auto restart delay\" START &");
+		 waiting_for_stop = TRUE;
+	       }
+	       break;
+	     }
+	   }
+
+	    for (fragn = 0; fragn < nfragment; fragn++) {
+	       if (ebch[fragn].timeout > TIMEOUT) {     /* Timeout */
                   if (stop_requested) { /* Stop */
                      if (debug)
-                        printf("Stop requested on timeout %d\n", status);
+                        printf("Timeout waiting for fragment %d while stopping the run\n", fragn);
                      status = close_buffers();
                      break;
                   } else {
@@ -350,6 +402,7 @@ INT scan_fragment(void)
                         printf("...%c Timing on %1.0lf\r", bars[i_bar++ % 4], eq->stats.events_sent);
                         fflush(stdout);
                      }
+
                   }
                }
                //else { /* No timeout loop back */
@@ -363,13 +416,24 @@ INT scan_fragment(void)
                       frontend_name);
             else
                cm_msg(MTALK, "EBuilder", "%s: Event mismatch - Stopping run...", frontend_name);
-            if (cm_transition(TR_STOP, 0, NULL, 0, ASYNC, 0) != CM_SUCCESS) {
-               cm_msg(MERROR, "scan_fragment", "%s: Stop Transition request failed", frontend_name);
-               return status;
-            }
+
             if (debug)
                printf("Stop requested on Error %d\n", status);
-            status = close_buffers();
+            close_buffers();
+
+#if 0
+	    if (!waiting_for_stop && !stop_requested) {
+	      cm_msg(MINFO, "scan_fragment", "spawning mtransition");
+	      //ss_system("mtransition STOP IF \"/Logger/Auto restart\" DELAY \"/Logger/Auto restart delay\" START &");
+	      ss_system("mtransition STOP &");
+	      waiting_for_stop = TRUE;
+	    }
+#endif
+	    for (ch=0; ch<5; ch++) {
+	       if (cm_transition(TR_STOP, 0, NULL, 0, SYNC, 0) == CM_SUCCESS)
+		  break;
+	       cm_msg(MERROR, "scan_fragment", "%s: Stop Transition request failed, trying again!", frontend_name);
+            }
             return status;
             break;
          case EB_SUCCESS:
@@ -483,7 +547,7 @@ INT eb_yfragment_add(char *pdest, char *psrce, INT * size)
     */
    char *psdata, *pddata;
    DWORD *pslrl, *pdlrl;
-   INT i4frgsize, i1frgsize;
+   INT i4frgsize, i1frgsize, status;
 
    /* Condition for new EVENT the data_size should be ZERO */
    *size = ((EVENT_HEADER *) pdest)->data_size;
@@ -499,7 +563,7 @@ INT eb_yfragment_add(char *pdest, char *psrce, INT * size)
       pslrl = (DWORD *) (((EVENT_HEADER *) psrce) + 1);
 
       /* Swap event if necessary */
-      md_event_swap(FORMAT_MIDAS, pslrl);
+      status = md_event_swap(FORMAT_MIDAS, pslrl);
 
       /* copy done in bytes, do not include LRL */
       psdata = (char *) (pslrl + 1);
@@ -531,7 +595,7 @@ INT eb_yfragment_add(char *pdest, char *psrce, INT * size)
       pslrl = (DWORD *) (((EVENT_HEADER *) psrce) + 1);
 
       /* Swap event if necessary */
-      md_event_swap(FORMAT_MIDAS, pslrl);
+      status = md_event_swap(FORMAT_MIDAS, pslrl);
 
       /* size in byte from the source midas header */
       *size = ((EVENT_HEADER *) psrce)->data_size;
@@ -556,6 +620,8 @@ INT tr_start(INT rn, char *error)
    HNDLE hKey, hEqkey, hEqFRkey;
    EQUIPMENT_INFO *eq_info;
 
+   if (debug)
+     printf("tr_start: run %d\n", rn);
 
    eq_info = &equipment[0].info;
 
@@ -659,14 +725,55 @@ INT tr_start(INT rn, char *error)
    abort_requested = FALSE;
    printf("%s-Starting New Run: %d\n", frontend_name, rn);
 
+   if (1) {
+     int fragn;
+     time_t now = time(NULL);
+     
+     // reset timeouts
+     for (fragn = 0; fragn < nfragment; fragn++) {
+       ebch[fragn].time = now;
+       ebch[fragn].timeout = 0;
+     }
+   }
+
    /* Reset global trigger mask */
+   return CM_SUCCESS;
+}
+
+/*--------------------------------------------------------------------*/
+INT tr_resume(INT rn, char *error)
+{
+  int fragn;
+  time_t now = time(NULL);
+
+   printf("\n%s-Resume Run: %d detected\n", frontend_name, rn);
+
+   // reset timeouts
+   for (fragn = 0; fragn < nfragment; fragn++) {
+     ebch[fragn].time = now;
+     ebch[fragn].timeout = 0;
+   }
+
+   run_state = STATE_RUNNING;
+   return CM_SUCCESS;
+}
+
+/*--------------------------------------------------------------------*/
+INT tr_pause(INT rn, char *error)
+{
+   printf("\n%s-Pause Run: %d detected\n", frontend_name, rn);
+
+   run_state = STATE_PAUSED;
    return CM_SUCCESS;
 }
 
 /*--------------------------------------------------------------------*/
 INT tr_stop(INT rn, char *error)
 {
-   printf("\n%s-Stopping Run: %d detected\n", frontend_name, rn);
+   waiting_for_stop = FALSE;
+
+   if (debug)
+     printf("tr_stop: run %d\n", rn);
 
    /* local stop */
    stop_requested = TRUE;
@@ -742,6 +849,15 @@ INT source_booking()
          if (debug)
             printf("bm_open_buffer frag:%d buf:%s handle:%d stat:%d\n",
                    i, ebch[i].buffer, ebch[i].hBuf, status1);
+
+	 if (1)
+	   {
+	     int level = 0;
+	     bm_get_buffer_level(ebch[i].hBuf, &level);
+	     printf("Buffer %s, level %d, info: \n", ebch[i].buffer, level);
+	   }
+
+
          /* Register for specified channel event ID and Trigger mask */
          status2 =
              bm_request_event(ebch[i].hBuf, ebch[i].event_id,
@@ -848,8 +964,8 @@ INT close_buffers(void)
 
    /* Compose message */
    stop_time = ss_millitime() - request_stop_time;
-   sprintf(error, "Run %d Stop after %1.0lf events sent DT:%d[ms]",
-           run_number, eq->stats.events_sent, stop_time);
+   sprintf(error, "Run %d Stop after %1.0lf + %d events sent DT:%d[ms]",
+           run_number, eq->stats.events_sent, eq->events_sent, stop_time);
    cm_msg(MINFO, "close_buffers", "%s", error);
 
    run_state = STATE_STOPPED;
@@ -897,19 +1013,19 @@ INT source_scan(INT fmt, EQUIPMENT_INFO * eq_info)
          /* Get fragment and store it in ebch[i].pfragment */
          size = max_event_size;
          status = bm_receive_event(ebch[i].hBuf, ebch[i].pfragment, &size, ASYNC);
+	 //printf("call bm_receive_event from %s, serial %d, status %d\n", ebch[i].buffer, serial, status);
          switch (status) {
          case BM_SUCCESS:      /* event received */
             /* Mask event */
             ebset.received[i] = TRUE;
             /* Keep local serial */
             ebch[i].serial = ((EVENT_HEADER *) ebch[i].pfragment)->serial_number;
+	    /* clear timeout */
+            ebch[i].timeout = 0;
+	    ebch[i].time = time(NULL);
 
             /* Swap event depending on data format */
             switch (fmt) {
-            case FORMAT_YBOS:
-               plrl = (DWORD *) (((EVENT_HEADER *) ebch[i].pfragment) + 1);
-              md_event_swap(fmt, plrl);
-               break;
             case FORMAT_MIDAS:
                psbh = (BANK_HEADER *) (((EVENT_HEADER *) ebch[i].pfragment) + 1);
                bk_swap(psbh, FALSE);
@@ -923,8 +1039,9 @@ INT source_scan(INT fmt, EQUIPMENT_INFO * eq_info)
          case BM_ASYNC_RETURN: /* timeout */
             ebch[i].timeout++;
             if (debug1) {
-               printf("ASYNC: ch:%d ser:%d rec:%d sz:%d\n", i, ebch[i].serial, ebset.received[i], size);
+	      printf("ASYNC: ch:%d ser:%d rec:%d sz:%d, timeout:%d\n", i, ebch[i].serial, ebset.received[i], size, ebch[i].timeout);
             }
+	    //return status;
             break;
          default:              /* Error */
             cm_msg(MERROR, "source_scan", "bm_receive_event error %d", status);
@@ -1045,6 +1162,8 @@ int main(int argc, char **argv)
    HNDLE hEqkey;
    EBUILDER(ebuilder_str);
    char str[128];
+   int auto_restart = 0;
+   int restart_count = 0;
 
    /* init structure */
    memset(&ebch[0], 0, sizeof(ebch));
@@ -1158,8 +1277,14 @@ int main(int argc, char **argv)
    /* Register transition for reset counters */
    if (cm_register_transition(TR_START, tr_start, 400) != CM_SUCCESS)
       return status;
+   if (cm_register_transition(TR_RESUME, tr_resume, 400) != CM_SUCCESS)
+      return status;
+   if (cm_register_transition(TR_PAUSE, tr_pause, 600) != CM_SUCCESS)
+      goto exit;
    if (cm_register_transition(TR_STOP, tr_stop, 600) != CM_SUCCESS)
       goto exit;
+
+ restart:
 
    /* Set Initial EB/Settings */
    sprintf(str, "/Equipment/%s/Settings", equipment[0].name);
@@ -1167,6 +1292,18 @@ int main(int argc, char **argv)
       status = db_create_record(hDB, 0, str, strcomb(ebuilder_str));
    }
 
+   if (auto_restart && restart_count > 0)
+     {
+       int run_number = 0;
+       int size = sizeof(run_number);
+       status = db_get_value(hDB, 0, "Runinfo/Run number", &run_number, &size, TID_INT, TRUE);
+       assert(status == SUCCESS);
+
+       cm_msg(MINFO, frontend_name, "Restart the run!");
+
+       cm_transition(TR_START, run_number+1, NULL, 0, SYNC, 0);
+     }
+     
    /* initialize ss_getchar */
    ss_getchar(0);
 
@@ -1179,6 +1316,17 @@ int main(int argc, char **argv)
    source_unbooking();
 
    ebuilder_exit();
+
+   auto_restart = 0;
+   db_get_value(hDB, 0, "/Logger/Auto restart", &auto_restart, &size, TID_BOOL, FALSE);
+
+   cm_msg(MINFO, frontend_name, "evb exit status %d, auto_restart %d", status, auto_restart);
+
+   if (status == EB_USER_ERROR)
+     {
+       restart_count ++;
+       goto restart;
+     }
 
    /* reset terminal */
    ss_getchar(TRUE);
