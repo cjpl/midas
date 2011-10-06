@@ -31,7 +31,7 @@ CFLAGS =
 #FF = cc
 # for egcs g77, use this
 FF = g77
-LIBS = -lm -lz -lutil -lnsl -lpthread
+LIBS = -lm -lz -lutil -lnsl -lpthread -lrt
 
 #-------------------------------------------------------------------
 # The following lines define direcories. Adjust it if necessary.
@@ -67,8 +67,11 @@ ebfe: $(LIB) $(LIB_DIR)/mfe.o $(DRV_DIR)/camac/$(DRIVER).o ebfe.c
 $(DRIVER).o: $(DRV_DIR)/camac/$(DRIVER).c
 	$(CC) $(CFLAGS) $(OSFLAGS) -c -o $(DRIVER).o $(DRV_DIR)/bus/$(DRIVER).c
 
-mevb:   $(LIB) mevb.c ebuser.o
-	$(CC) $(CFLAGS) $(OSFLAGS) -o mevb mevb.c ebuser.o $(LIB) $(LDFEFLAGS) $(LIBS)
+mdsupport.o: $(MIDASSYS)/src/mdsupport.c
+	$(CC) $(CFLAGS) $(OSFLAGS) -o $@ -c $<
+
+mevb:   $(LIB) mevb.c ebuser.o mdsupport.o
+	$(CC) $(CFLAGS) $(OSFLAGS) -o mevb mevb.c ebuser.o mdsupport.o $(LIB) $(LDFEFLAGS) $(LIBS)
 
 .c.o:
 	$(CC) $(CFLAGS) $(OSFLAGS) -c $<
