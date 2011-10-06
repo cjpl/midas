@@ -8,7 +8,7 @@ Name:         mevb.h
 
 \********************************************************************/
 
-#define EBUILDER(_name) char *_name[] = {\
+#define EBUILDER(_name) char const *_name[] = {\
 "[.]",\
 "Number of Fragment = INT : 0",\
 "User build = BOOL : n",\
@@ -48,6 +48,7 @@ typedef struct {
    INT hBuf;
    INT req_id;
    INT hStat;
+   time_t time;
    INT timeout;
    DWORD serial;
    char *pfragment;
