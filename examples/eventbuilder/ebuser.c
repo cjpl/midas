@@ -15,7 +15,7 @@ The Event builder user file
 #include <stdio.h>
 #include "midas.h"
 #include "mevb.h"
-#include "ybos.h"
+//#include "ybos.h"
 
 /*-- Globals -------------------------------------------------------*/
 
@@ -32,13 +32,13 @@ BOOL ebuilder_call_loop = FALSE;
 INT display_period = 3000;
 
 /* maximum event size produced by this frontend */
-INT max_event_size = 10000;
+INT max_event_size = 500000;
 
 /* maximum event size for fragmented events (EQ_FRAGMENTED) */
 INT max_event_size_frag = 5 * 1024 * 1024;
 
 /* buffer size to hold events */
-INT event_buffer_size = 10 * 10000;
+INT event_buffer_size = 20 * 50000;
 
 /**
 Globals */
@@ -58,7 +58,7 @@ extern BOOL debug;
 /*-- Equipment list ------------------------------------------------*/
 EQUIPMENT equipment[] = {
    {"EB",                /* equipment name */
-    {1, 1,                   /* event ID, trigger mask */
+    {1, 0,                   /* event ID, trigger mask */
      "SYSTEM",               /* event buffer */
      0,                      /* equipment type */
      0,                      /* event source */
@@ -79,6 +79,8 @@ EQUIPMENT equipment[] = {
 /********************************************************************/
 INT ebuilder_init()
 {
+  setbuf(stdout, NULL);
+  setbuf(stderr, NULL);
   return EB_SUCCESS;
 }
 
@@ -161,9 +163,8 @@ It is not possible to mix within the same destination event different event form
   bk_init(pevent);
   bk_create(pevent, bank_name, TID_xxxx, &pdata);
   *pdata++ = ...;
-
-  *dest_size = bk_size(pevent) + sizeof(EVENT_HEADER);
-  pheader->data_size = bk_size(pevent);
+  *dest_size = bk_close(pevent, pdata);
+  pheader->data_size = *dest_size + sizeof(EVENT_HEADER);
 \endcode
 
 For YBOS format, use the following example.
@@ -175,7 +176,7 @@ For YBOS format, use the following example.
   *pdata++ = 0x87654321;
   *dest_size = ybk_close(pevent, pdata);
   *dest_size *= 4;
-  pheader->data_size = *dest_size;
+  pheader->data_size = *dest_size + sizeof(YBOS_BANK_HEADER);
 \endcode
 @param nfrag Number of fragment.
 @param mismatch Midas Serial number mismatch flag.
@@ -191,7 +192,9 @@ INT eb_user(INT nfrag, BOOL mismatch, EBUILDER_CHANNEL * ebch
   INT i, frag_size, serial;
   DWORD *psrcData;
   DWORD  *pdata;
+  INT my_trigger_mask;
 
+  //if(debug)printf("Entering eb_user\n");
   //
   // Do some extra fragment consistency check
   if (mismatch){
@@ -206,17 +209,23 @@ INT eb_user(INT nfrag, BOOL mismatch, EBUILDER_CHANNEL * ebch
 
   //
   // Include my own bank
-  bk_init(pevent);
-  bk_create(pevent, "MYOW", TID_DWORD, &pdata);
-  for (i = 0; i < nfrag; i++) {
-    *pdata++ = ((EVENT_HEADER *) ebch[i].pfragment)->serial_number;
-    *pdata++ = ((EVENT_HEADER *) ebch[i].pfragment)->time_stamp;
+  //  bk_init(pevent);
+  //bk_create(pevent, "MYOW", TID_DWORD, &pdata);
+  //for (i = 0; i < nfrag; i++) {
+  //  *pdata++ = ((EVENT_HEADER *) ebch[i].pfragment)->serial_number;
+  //  *pdata++ = ((EVENT_HEADER *) ebch[i].pfragment)->time_stamp;
+  // }
+  //*dest_size = bk_close(pevent, pdata);
+  //pheader->data_size = *dest_size + sizeof(EVENT_HEADER);
+
+  //Extract the trigger_mask from the VMIC fragment and put it
+  //to the EB event
+  if(0) {
+    my_trigger_mask = ((EVENT_HEADER *) ebch[0].pfragment)->trigger_mask;
+    pheader-> trigger_mask = my_trigger_mask;
   }
-  *dest_size = bk_size(pevent) + sizeof(EVENT_HEADER);
-  pheader->data_size = bk_size(pevent);
+  //printf("Trig mask from VMIC 0x%x\n",my_trigger_mask);
 
-
-  //
   // Destination access
   // dest_serial = pheader->serial_number;
   // printf("DSer#:%d ", dest_serial);
@@ -231,12 +240,14 @@ INT eb_user(INT nfrag, BOOL mismatch, EBUILDER_CHANNEL * ebch
   // Loop over fragments.
   if (debug) {
     for (i = 0; i < nfrag; i++) {
-      if (ebset.preqfrag[i]) { // printf if channel enable
-        frag_size = ((EVENT_HEADER *) ebch[i].pfragment)->data_size;
-        serial = ((EVENT_HEADER *) ebch[i].pfragment)->serial_number;
-        printf("Frg#:%d Dsz:%d Ser:%d ", i + 1, frag_size, serial);
-        // For Data fragment Access.
-        psrcData = (DWORD *) (((EVENT_HEADER *) ebch[i].pfragment) + 1);
+      if (1) {
+	if (ebset.preqfrag[i]) { // printf if channel enable
+	  frag_size = ((EVENT_HEADER *) ebch[i].pfragment)->data_size;
+	  serial = ((EVENT_HEADER *) ebch[i].pfragment)->serial_number;
+	  printf("Frg#:%d Dsz:%d Ser:%d ", i, frag_size, serial);
+	  // For Data fragment Access.
+	  psrcData = (DWORD *) (((EVENT_HEADER *) ebch[i].pfragment) + 1);
+	}
       }
     }
     printf("\n");
