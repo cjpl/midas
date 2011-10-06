@@ -87,9 +87,9 @@ extern "C" {
 
    EQUIPMENT equipment[] = {
 
-      {"Trigger",               /* equipment name */
+      {"Eqp%0d",               /* equipment name */
        {2, 0,                    /* event ID, trigger mask */
-       "BUF",                   /* event buffer */
+       "BUF%0d",                   /* event buffer */
 #ifdef USE_INT
        EQ_INTERRUPT,            /* equipment type */
 #else
@@ -107,25 +107,6 @@ extern "C" {
 	   "", "", "",},
        read_trigger_event,      /* readout routine */
        },
-
-      {"Scaler",                /* equipment name */
-       {3, 0,                   /* event ID, trigger mask */
-       "BIF",                   /* event buffer */
-       EQ_PERIODIC | EQ_EB | 
-       EQ_MANUAL_TRIG,          /* equipment type */
-       0,                       /* event source */
-       "MIDAS",                 /* format */
-       TRUE,                    /* enabled */
-       RO_RUNNING | RO_TRANSITIONS |    /* read when running and on transitions */
-       RO_ODB,                  /* and update ODB */
-       10000,                   /* read every 10 sec */
-       0,                       /* stop run after this event limit */
-       0,                       /* number of sub events */
-       0,                       /* log history */
-	   "", "", "",},
-       read_scaler_event,       /* readout routine */
-       },
-
       {""}
    };
 
