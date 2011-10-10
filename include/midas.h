@@ -1926,6 +1926,7 @@ extern "C" {
    INT EXPRT al_trigger_class(const char *alarm_class, const char *alarm_message, BOOL first);
    INT EXPRT al_reset_alarm(const char *alarm_name);
    BOOL EXPRT al_evaluate_condition(const char *condition, char *value);
+   INT al_get_alarms(char *result, int result_size);
 
    /*---- frontend functions ----*/
    INT get_frontend_index();

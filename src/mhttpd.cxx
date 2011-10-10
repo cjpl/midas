@@ -6395,6 +6395,15 @@ void java_script_commands(const char *path, const char *cookie_cpwd)
       return;
    }
    
+   /* process "jalm" command */
+   if (equal_ustring(getparam("cmd"), "jalm")) {
+      
+      show_text_header();
+      al_get_alarms(str, sizeof(str));
+      rsputs(str);
+      return;
+   }
+   
    /* process "jrpc" command */
    if (equal_ustring(getparam("cmd"), "jrpc_rev0")) {
       do_jrpc_rev0();
@@ -14047,6 +14056,16 @@ const char *mhttpd_js =
 "   return request.responseText;\n"
 "}\n"
 "\n"
+"function ODBGetAlarms()\n"
+"{\n"
+"   var request = XMLHttpRequestGeneric();\n"
+"   request.open('GET', '?cmd=jalm', false);\n"
+"   request.send(null);\n"
+"   var a = request.responseText.split('\\n');\n"
+"   a.length = a.length-1;\n"
+"   return a;\n"
+"}\n"
+"\n"
 "function ODBEdit(path)\n"
 "{\n"
 "   var value = ODBGet(path);\n"
@@ -14281,6 +14300,7 @@ void interprete(const char *cookie_pwd, const char *cookie_wpwd, const char *coo
        equal_ustring(command, "jget") ||
        equal_ustring(command, "jkey") ||
        equal_ustring(command, "jmsg") ||
+       equal_ustring(command, "jalm") ||
        equal_ustring(command, "jgenmsg") ||
        equal_ustring(command, "jrpc_rev0") ||
        equal_ustring(command, "jrpc_rev1")) {

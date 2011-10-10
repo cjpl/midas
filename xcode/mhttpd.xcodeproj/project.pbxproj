@@ -7,7 +7,6 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		D516B33B1399C2E100FAA335 /* alarm.c in Sources */ = {isa = PBXBuildFile; fileRef = D516B3341399C2E100FAA335 /* alarm.c */; };
 		D516B33C1399C2E100FAA335 /* elog.c in Sources */ = {isa = PBXBuildFile; fileRef = D516B3351399C2E100FAA335 /* elog.c */; };
 		D516B33E1399C2E100FAA335 /* midas.c in Sources */ = {isa = PBXBuildFile; fileRef = D516B3371399C2E100FAA335 /* midas.c */; };
 		D516B33F1399C2E100FAA335 /* mrpc.c in Sources */ = {isa = PBXBuildFile; fileRef = D516B3381399C2E100FAA335 /* mrpc.c */; };
@@ -19,6 +18,7 @@
 		D516B3501399C5E800FAA335 /* history.c in Sources */ = {isa = PBXBuildFile; fileRef = D516B34F1399C5E800FAA335 /* history.c */; };
 		D516B3531399C66600FAA335 /* history_midas.cxx in Sources */ = {isa = PBXBuildFile; fileRef = D516B3511399C66600FAA335 /* history_midas.cxx */; };
 		D516B3541399C66600FAA335 /* history_sql.cxx in Sources */ = {isa = PBXBuildFile; fileRef = D516B3521399C66600FAA335 /* history_sql.cxx */; };
+		D5A0905E14433534005E1ACA /* alarm.c in Sources */ = {isa = PBXBuildFile; fileRef = D5A0905D14433534005E1ACA /* alarm.c */; };
 		D5A57204139D5A2800B65A0A /* mhttpd.cxx in Sources */ = {isa = PBXBuildFile; fileRef = D5A57203139D5A2800B65A0A /* mhttpd.cxx */; };
 /* End PBXBuildFile section */
 
@@ -36,23 +36,23 @@
 
 /* Begin PBXFileReference section */
 		D516B3281399C29000FAA335 /* mhttpd */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = mhttpd; sourceTree = BUILT_PRODUCTS_DIR; };
-		D516B3341399C2E100FAA335 /* alarm.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = alarm.c; path = ../../src/alarm.c; sourceTree = "<group>"; };
-		D516B3351399C2E100FAA335 /* elog.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = elog.c; path = ../../src/elog.c; sourceTree = "<group>"; };
-		D516B3371399C2E100FAA335 /* midas.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = midas.c; path = ../../src/midas.c; sourceTree = "<group>"; };
-		D516B3381399C2E100FAA335 /* mrpc.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = mrpc.c; path = ../../src/mrpc.c; sourceTree = "<group>"; };
-		D516B3391399C2E100FAA335 /* odb.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = odb.c; path = ../../src/odb.c; sourceTree = "<group>"; };
-		D516B33A1399C2E100FAA335 /* system.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = system.c; path = ../../src/system.c; sourceTree = "<group>"; };
-		D516B3431399C30C00FAA335 /* midas.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = midas.h; path = ../include/midas.h; sourceTree = "<group>"; };
-		D516B3441399C30C00FAA335 /* msystem.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = msystem.h; path = ../include/msystem.h; sourceTree = "<group>"; };
-		D516B3451399C31F00FAA335 /* mxml.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = mxml.c; path = ../../../mxml/mxml.c; sourceTree = "<group>"; };
+		D516B3351399C2E100FAA335 /* elog.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = elog.c; path = /midas/src/elog.c; sourceTree = "<absolute>"; };
+		D516B3371399C2E100FAA335 /* midas.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = midas.c; path = /midas/src/midas.c; sourceTree = "<absolute>"; };
+		D516B3381399C2E100FAA335 /* mrpc.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = mrpc.c; path = /midas/src/mrpc.c; sourceTree = "<absolute>"; };
+		D516B3391399C2E100FAA335 /* odb.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = odb.c; path = /midas/src/odb.c; sourceTree = "<absolute>"; };
+		D516B33A1399C2E100FAA335 /* system.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = system.c; path = /midas/src/system.c; sourceTree = "<absolute>"; };
+		D516B3431399C30C00FAA335 /* midas.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = midas.h; path = /midas/include/midas.h; sourceTree = "<absolute>"; };
+		D516B3441399C30C00FAA335 /* msystem.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = msystem.h; path = /midas/include/msystem.h; sourceTree = "<absolute>"; };
+		D516B3451399C31F00FAA335 /* mxml.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = mxml.c; path = /mxml/mxml.c; sourceTree = "<absolute>"; };
 		D516B3461399C31F00FAA335 /* mxml.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = mxml.h; path = /mxml/mxml.h; sourceTree = "<absolute>"; };
-		D516B3471399C31F00FAA335 /* strlcpy.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = strlcpy.c; path = ../../../mxml/strlcpy.c; sourceTree = "<group>"; };
+		D516B3471399C31F00FAA335 /* strlcpy.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = strlcpy.c; path = /mxml/strlcpy.c; sourceTree = "<absolute>"; };
 		D516B3481399C31F00FAA335 /* strlcpy.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = strlcpy.h; path = /mxml/strlcpy.h; sourceTree = "<absolute>"; };
-		D516B34D1399C5AC00FAA335 /* mgd.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = mgd.c; path = ../../src/mgd.c; sourceTree = "<group>"; };
-		D516B34F1399C5E800FAA335 /* history.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = history.c; path = ../../src/history.c; sourceTree = "<group>"; };
-		D516B3511399C66600FAA335 /* history_midas.cxx */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = history_midas.cxx; path = ../../src/history_midas.cxx; sourceTree = "<group>"; };
-		D516B3521399C66600FAA335 /* history_sql.cxx */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = history_sql.cxx; path = ../../src/history_sql.cxx; sourceTree = "<group>"; };
-		D5A57203139D5A2800B65A0A /* mhttpd.cxx */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = mhttpd.cxx; path = ../../src/mhttpd.cxx; sourceTree = "<group>"; };
+		D516B34D1399C5AC00FAA335 /* mgd.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = mgd.c; path = /midas/src/mgd.c; sourceTree = "<absolute>"; };
+		D516B34F1399C5E800FAA335 /* history.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = history.c; path = /midas/src/history.c; sourceTree = "<absolute>"; };
+		D516B3511399C66600FAA335 /* history_midas.cxx */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = history_midas.cxx; path = /midas/src/history_midas.cxx; sourceTree = "<absolute>"; };
+		D516B3521399C66600FAA335 /* history_sql.cxx */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = history_sql.cxx; path = /midas/src/history_sql.cxx; sourceTree = "<absolute>"; };
+		D5A0905D14433534005E1ACA /* alarm.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = alarm.c; path = /midas/src/alarm.c; sourceTree = "<absolute>"; };
+		D5A57203139D5A2800B65A0A /* mhttpd.cxx */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = mhttpd.cxx; path = /midas/src/mhttpd.cxx; sourceTree = "<absolute>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -73,7 +73,7 @@
 				D516B3421399C2EE00FAA335 /* Includ Files */,
 				D516B3291399C29000FAA335 /* Products */,
 			);
-			sourceTree = "<group>";
+			sourceTree = "<absolute>";
 		};
 		D516B3291399C29000FAA335 /* Products */ = {
 			isa = PBXGroup;
@@ -81,11 +81,12 @@
 				D516B3281399C29000FAA335 /* mhttpd */,
 			);
 			name = Products;
-			sourceTree = "<group>";
+			sourceTree = "<absolute>";
 		};
 		D516B32B1399C29000FAA335 /* Source Files */ = {
 			isa = PBXGroup;
 			children = (
+				D5A0905D14433534005E1ACA /* alarm.c */,
 				D5A57203139D5A2800B65A0A /* mhttpd.cxx */,
 				D516B3511399C66600FAA335 /* history_midas.cxx */,
 				D516B3521399C66600FAA335 /* history_sql.cxx */,
@@ -93,7 +94,6 @@
 				D516B34D1399C5AC00FAA335 /* mgd.c */,
 				D516B3451399C31F00FAA335 /* mxml.c */,
 				D516B3471399C31F00FAA335 /* strlcpy.c */,
-				D516B3341399C2E100FAA335 /* alarm.c */,
 				D516B3351399C2E100FAA335 /* elog.c */,
 				D516B3371399C2E100FAA335 /* midas.c */,
 				D516B3381399C2E100FAA335 /* mrpc.c */,
@@ -102,7 +102,7 @@
 			);
 			name = "Source Files";
 			path = mhttpd;
-			sourceTree = "<group>";
+			sourceTree = "<absolute>";
 		};
 		D516B3421399C2EE00FAA335 /* Includ Files */ = {
 			isa = PBXGroup;
@@ -113,7 +113,7 @@
 				D516B3441399C30C00FAA335 /* msystem.h */,
 			);
 			name = "Includ Files";
-			sourceTree = "<group>";
+			sourceTree = "<absolute>";
 		};
 /* End PBXGroup section */
 
@@ -165,7 +165,6 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				D516B33B1399C2E100FAA335 /* alarm.c in Sources */,
 				D516B33C1399C2E100FAA335 /* elog.c in Sources */,
 				D516B33E1399C2E100FAA335 /* midas.c in Sources */,
 				D516B33F1399C2E100FAA335 /* mrpc.c in Sources */,
@@ -178,6 +177,7 @@
 				D516B3531399C66600FAA335 /* history_midas.cxx in Sources */,
 				D516B3541399C66600FAA335 /* history_sql.cxx in Sources */,
 				D5A57204139D5A2800B65A0A /* mhttpd.cxx in Sources */,
+				D5A0905E14433534005E1ACA /* alarm.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

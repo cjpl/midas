@@ -706,6 +706,70 @@ INT al_check()
    return SUCCESS;
 }
 
+/********************************************************************/
+/**
+ Scan ODB for alarms.
+ @return AL_SUCCESS
+ */
+INT al_get_alarms(char *result, int result_size)
+{
+   HNDLE hDB, hkey, hsubkey;
+   int i, j, n, flag, size;
+   char alarm_class[32], msg[256], value_str[256], str[256];
+   
+   cm_get_experiment_database(&hDB, NULL);
+   result[0] = 0;
+   n = 0;
+   db_find_key(hDB, 0, "/Alarms/Alarms", &hkey);
+   if (hkey) {
+      /* check global alarm flag */
+      flag = TRUE;
+      size = sizeof(flag);
+      db_get_value(hDB, 0, "/Alarms/Alarm System active", &flag, &size, TID_BOOL, TRUE);
+      if (flag) {
+         for (i = 0;; i++) {
+            db_enum_link(hDB, hkey, i, &hsubkey);
+            
+            if (!hsubkey)
+               break;
+            
+            size = sizeof(flag);
+            db_get_value(hDB, hsubkey, "Triggered", &flag, &size, TID_INT, TRUE);
+            if (flag) {
+               n++;
+               
+               size = sizeof(alarm_class);
+               db_get_value(hDB, hsubkey, "Alarm Class", alarm_class, &size, TID_STRING,
+                            TRUE);
+               
+                              
+               size = sizeof(msg);
+               db_get_value(hDB, hsubkey, "Alarm Message", msg, &size, TID_STRING, TRUE);
+               
+               size = sizeof(j);
+               db_get_value(hDB, hsubkey, "Type", &j, &size, TID_INT, TRUE);
+               
+               if (j == AT_EVALUATED) {
+                  size = sizeof(str);
+                  db_get_value(hDB, hsubkey, "Condition", str, &size, TID_STRING, TRUE);
+                  
+                  /* retrieve value */
+                  al_evaluate_condition(str, value_str);
+                  sprintf(str, msg, value_str);
+               } else
+                  strlcpy(str, msg, sizeof(str));
+
+               strlcat(result, alarm_class, result_size);
+               strlcat(result, ": ", result_size);
+               strlcat(result, str, result_size);
+               strlcat(result, "\n", result_size);
+            }
+         }
+      }
+   }
+   
+   return n;
+}
 
 /**dox***************************************************************/
 /** @} *//* end of alfunctioncode */
