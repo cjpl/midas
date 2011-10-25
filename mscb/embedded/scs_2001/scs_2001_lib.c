@@ -972,7 +972,6 @@ unsigned long d;
 /*---- PT100/1000 via AD7718 two channels ------------------------*/
 
 static unsigned char xdata temp_cur_chn[N_PORT];
-static unsigned char xdata error_cur_chn[N_PORT];
 
 unsigned char dr_temp2(unsigned char id, unsigned char cmd, unsigned char addr, 
                        unsigned char port, unsigned char chn, void *pd) reentrant
@@ -989,9 +988,9 @@ unsigned long d;
 
       /* start first conversion */
       if (id == 0x77)
-         ad7718_write(AD7718_CONTROL, (1 << 7) | 0x08);  // Channel 1-2, +-20mV range
+         ad7718_write(AD7718_CONTROL, 0x88);  // Channel 1-2, +-20mV range
       else
-         ad7718_write(AD7718_CONTROL, (1 << 7) | 0x0C);  // Channel 1-2, +-320mV range
+         ad7718_write(AD7718_CONTROL, 0x8C);  // Channel 1-2, +-320mV range
       temp_cur_chn[addr*8+port] = 0;
    }
 
@@ -1017,19 +1016,16 @@ unsigned long d;
 
       /* start next conversion */
       if (id == 0x77) {
-         /* channel 0,1: voltage drop across sensor
-            channel 2,3: voltage drop across 100k resistor (open sensor indicator) */
-         temp_cur_chn[addr*8+port] = (temp_cur_chn[addr*8+port] + 1) % 4;
+         /* channel 0,1: first sensor
+            channel 2,3: second sensor */
+         temp_cur_chn[addr*8+port] = (temp_cur_chn[addr*8+port] + 1) % 2;
          
-         if (temp_cur_chn[addr*8+port] < 2)
-            ad7718_write(AD7718_CONTROL, (1 << 7) | (temp_cur_chn[addr*8+port] << 4) | 0x08);  // next chn pair, +-20mV range
+         if (temp_cur_chn[addr*8+port] == 0)
+            ad7718_write(AD7718_CONTROL, 0x88);  // AIN1-AIN2, +-20mV range
          else
-            ad7718_write(AD7718_CONTROL, (1 << 7) | (temp_cur_chn[addr*8+port] << 4) | 0x0C);  // next chn pair, +-320mV range
+            ad7718_write(AD7718_CONTROL, 0x98);  // AIN3-AIN4, +-20mV range
 
-         if (cur_chn == 0 || cur_chn == 1)
-            value = 0.020*((float)d / (1l<<24)); // +- 20mV range
-         else
-            value = 0.320*((float)d / (1l<<24)); // +- 320mV range
+         value = 0.020*((float)d / (1l<<24)); // +- 20mV range
       } else {
          temp_cur_chn[addr*8+port] = (temp_cur_chn[addr*8+port] + 1) % 2;
          ad7718_write(AD7718_CONTROL, (1 << 7) | (temp_cur_chn[addr*8+port] << 4) | 0x0C);  // next chn pair, +-320mV range
@@ -1052,33 +1048,30 @@ unsigned long d;
    
          /* convert to Celsius */
          value -= 273.15;
-      } else {
+      } else if (id == 0x77) {
          /* CERNOX resistors */
-
-         /* remember error condition (current != 1uA) */
-         if (cur_chn == 2 || cur_chn == 3) {
-            if (value < 0.08 || value > 0.12)
-               error_cur_chn[addr*8+port] |= (1 << chn);
-            else
-               error_cur_chn[addr*8+port] &= ~(1 << chn);
-            return 0;
-         }
 
          /* convert to Ohms (1uA excitation) */
          value *= 1E6;
 
-         /* convert to Kelvin, coefficients obtains from table fit (Lakeshore table for CX-1050-AA-4L) */
-         value = -0.479E-12 * value * value * value * value 
-                 -0.7873E-9 * value * value * value
-                 +16.11E-6  * value * value
-                 +36.5E-3   * value
-                 +0.07336;
+         /* convert to Kelvin, coefficients obtains from table fit (Lakeshore table for CX-1050) 
+         T[K]   R[Ohm]
+         4.2    3507
+         10     1314
+         20      693
+         30      483
+         77.35   206
+         300      59.5
+         400      46.8
+         */
+         value =  2.317E-12 * value * value * value * value 
+                 -1.629E-8  * value * value * value
+                 +3.156E-5  * value * value
+                 +5.773E-2 * value
+                 -2.3E-1;
 
          if (value != 0)
             value = 1000/value;
-
-         if ((error_cur_chn[addr*8+port] & (1 << chn)) > 0)
-            value = -999.9;
       }
 
       /* round result to two significant digits */
@@ -1087,7 +1080,7 @@ unsigned long d;
       if (value > 999.99)
          value = 999.99;
       if (value < -10)
-         value = -999.99;
+         value = -9.99;
 
       *((float *)pd) = value;
       return 4;

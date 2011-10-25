@@ -301,10 +301,10 @@
       <FileType>1</FileType>
       <tvExp>0</tvExp>
       <Focus>0</Focus>
-      <ColumnNumber>0</ColumnNumber>
+      <ColumnNumber>48</ColumnNumber>
       <tvExpOptDlg>0</tvExpOptDlg>
-      <TopLine>704</TopLine>
-      <CurrentLine>715</CurrentLine>
+      <TopLine>710</TopLine>
+      <CurrentLine>714</CurrentLine>
       <bDave2>0</bDave2>
       <PathWithFileName>.\scs_2001.c</PathWithFileName>
       <FilenameWithoutPath>scs_2001.c</FilenameWithoutPath>
@@ -315,10 +315,10 @@
       <FileType>1</FileType>
       <tvExp>0</tvExp>
       <Focus>0</Focus>
-      <ColumnNumber>0</ColumnNumber>
+      <ColumnNumber>13</ColumnNumber>
       <tvExpOptDlg>0</tvExpOptDlg>
-      <TopLine>1678</TopLine>
-      <CurrentLine>1698</CurrentLine>
+      <TopLine>1051</TopLine>
+      <CurrentLine>1082</CurrentLine>
       <bDave2>0</bDave2>
       <PathWithFileName>.\scs_2001_lib.c</PathWithFileName>
       <FilenameWithoutPath>scs_2001_lib.c</FilenameWithoutPath>
@@ -1799,12 +1799,12 @@
     <ActiveMDIGroup>0</ActiveMDIGroup>
     <MDIGroup>
       <Size>100</Size>
-      <ActiveTab>8</ActiveTab>
+      <ActiveTab>5</ActiveTab>
       <Documents>
         <Doc>
           <Name>CONFIG.H</Name>
           <ColumnNumber>28</ColumnNumber>
-          <TopLine>3</TopLine>
+          <TopLine>1</TopLine>
           <CurrentLine>8</CurrentLine>
         </Doc>
         <Doc>
@@ -1833,27 +1833,15 @@
         </Doc>
         <Doc>
           <Name>.\scs_2001_lib.c</Name>
-          <ColumnNumber>0</ColumnNumber>
-          <TopLine>1678</TopLine>
-          <CurrentLine>1698</CurrentLine>
-        </Doc>
-        <Doc>
-          <Name>SCS_2001.H</Name>
-          <ColumnNumber>67</ColumnNumber>
-          <TopLine>1</TopLine>
-          <CurrentLine>33</CurrentLine>
-        </Doc>
-        <Doc>
-          <Name>.\rtc.c</Name>
-          <ColumnNumber>17</ColumnNumber>
-          <TopLine>1</TopLine>
-          <CurrentLine>17</CurrentLine>
+          <ColumnNumber>13</ColumnNumber>
+          <TopLine>1051</TopLine>
+          <CurrentLine>1082</CurrentLine>
         </Doc>
         <Doc>
           <Name>.\scs_2001.c</Name>
-          <ColumnNumber>0</ColumnNumber>
-          <TopLine>704</TopLine>
-          <CurrentLine>715</CurrentLine>
+          <ColumnNumber>48</ColumnNumber>
+          <TopLine>710</TopLine>
+          <CurrentLine>714</CurrentLine>
         </Doc>
       </Documents>
     </MDIGroup>
