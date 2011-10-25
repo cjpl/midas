@@ -54,27 +54,25 @@ MVME_INTERFACE *myvme;
 /*---------------------------------------------------------------*/
 INLINE void cam16i(const int c, const int n, const int a, const int f, WORD * d)
 {
-  int ext, cmode;
-  mvme_get_dmode(myvme, &cmode);
+  int ext;
+  mvme_set_am(myvme, MVME_AM_A24_ND);
   mvme_set_dmode(myvme, MVME_DMODE_D16);
   ext = (CBDWL_D16 + (c << 16)  + (n << 11) + (a << 7) + (f << 2));
   *d = mvme_read_value(myvme, CBD8210_BASE + ext);
-  mvme_set_dmode(myvme, cmode);
 }
 
 /*---------------------------------------------------------------*/
 INLINE void cam24i(const int c, const int n, const int a, const int f, DWORD * d)
 {
-  int ext, cmode;
+  int ext;
   WORD dh, dl;
-  
-  mvme_get_dmode(myvme, &cmode);
+   
+  mvme_set_am(myvme, MVME_AM_A24_ND);
   mvme_set_dmode(myvme, MVME_DMODE_D16);
   ext = (CBDWL_D24 + (c << 16) + (n << 11) + (a << 7) + (f << 2));
   dh = mvme_read_value(myvme, CBD8210_BASE+ext);
   dl = mvme_read_value(myvme, CBD8210_BASE+ext+2);
   *d = ((dh << 16) | dl) & 0xffffff;
-  mvme_set_dmode(myvme, cmode);
 }
 
 /*---------------------------------------------------------------*/
@@ -209,30 +207,28 @@ INLINE void cami(const int c, const int n, const int a, const int f, WORD * d)
 /*---------------------------------------------------------------*/
 INLINE void cam16o(const int c, const int n, const int a, const int f, WORD d)
 {
-  int ext, cmode;
+  int ext;
   
-  mvme_get_dmode(myvme, &cmode);
+  mvme_set_am(myvme, MVME_AM_A24_ND);
   mvme_set_dmode(myvme, MVME_DMODE_D16);
   ext = (CBDWL_D16 + (c << 16)  + (n << 11) + (a << 7) + (f << 2));
   mvme_write_value(myvme, CBD8210_BASE+ext, d);
-  mvme_set_dmode(myvme, cmode);
 }
 
 /*---------------------------------------------------------------*/
 
 INLINE void cam24o(const int c, const int n, const int a, const int f, DWORD d)
 {
-  static int ext, cmode;
+  static int ext;
   static WORD dtemp;
   
-  mvme_get_dmode(myvme, &cmode);
+  mvme_set_am(myvme, MVME_AM_A24_ND);
   mvme_set_dmode(myvme, MVME_DMODE_D16);
   ext = (CBDWL_D24 + (c << 16)  + (n << 11) + (a << 7) + (f << 2));
   dtemp = (unsigned short) ((d >> 16) & 0xffff);
   mvme_write_value(myvme, CBD8210_BASE+ext, dtemp);
   dtemp = (unsigned short) (d & 0xffff);
   mvme_write_value(myvme, CBD8210_BASE+ext+2, dtemp);
-  mvme_set_dmode(myvme, cmode);
 }
 
 /*---------------------------------------------------------------*/
@@ -546,7 +542,7 @@ void gl(void)
    DWORD online;
 
    CAM_GLCHK(online);
-   printf("GLam     register 0x%6.6lx\n", online);
+   printf("GLam     register 0x%6.6ulx\n", online);
 }
 
 /*---------------------------------------------------------------*/
