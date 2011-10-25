@@ -15578,7 +15578,7 @@ int main(int argc, char *argv[])
    /* write PID file */
    FILE *f = fopen("/var/run/mhttpd.pid", "w");
    if (f != NULL) {
-      fprintf(f, "%d\r\n", ss_getpid());
+      fprintf(f, "%d", ss_getpid());
       fclose(f);
    }
 #endif
