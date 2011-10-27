@@ -52,12 +52,12 @@
 #define V1740_CONFIG_ROM                    0xF000      /* read  only; D32 */ 
 
 #define V1740_GROUP_THRESHOLD               0x1080      /* For channeln 0x1n80 */
-#define V1740_GROUP_OUTHRESHOLD             0x1084      /* For channel 0 */
 #define V1740_GROUP_STATUS                  0x1088      /* For channel 0 */
 #define V1740_GROUP_FW_REV                  0x108C      /* For channel 0 */
 #define V1740_GROUP_BUFFER_OCCUPANCY        0x1094      /* For channel 0 */
 #define V1740_GROUP_DAC                     0x1098      /* For channel 0 */
 #define V1740_GROUP_ADC_CONFIG              0x109C      /* For channel 0 */
+#define V1740_CH_TRG_MASK                   0x10A8      /* For channel 0 */
 #define V1740_GROUP_CH_TRG_MASK             0x10B0      /* For channel 0 */
 
 #define V1740_RUN_START                           1
