@@ -241,21 +241,28 @@ INT epics_ca_set_all(CA_INFO * info, INT channels, float value)
 
 INT epics_ca_set_label(CA_INFO * info, INT channels, char *label)
 {
-   int status;
-   char str[256];
-   chid chan_id;
-
-   sprintf(str, "%s.DESC", info->channel_names + CHN_NAME_LENGTH * channels);
-   status = ca_search(str, &chan_id);
-
-   status = ca_pend_io(0.5);
-   if (status != ECA_NORMAL)
-      printf("%s not found\n", str);
-
-   status = ca_put(ca_field_type(chan_id), chan_id, label);
-   ca_pend_event(0.01);
-
-   return FE_SUCCESS;
+  int status;
+  char str[256];
+  chid chan_id;
+  
+  printf("%s.DESC label:%s\n", info->channel_names + CHN_NAME_LENGTH * channels, label);
+  sprintf(str, "%s.DESC", info->channel_names + CHN_NAME_LENGTH * channels);
+  status = ca_search(str, &chan_id);
+  
+  status = ca_pend_io(0.8);
+  if (status != ECA_NORMAL) {
+    printf("%s not found\n", str);
+  }
+  
+  // Doesn't work maybe due to the ca_field_tpye which need a ca_pend_io()
+  //  status = ca_put(ca_field_type(chan_id), chan_id, label);
+  //  printf("ca_put status: %d\n", status);
+  
+  status = ca_put(DBR_STRING, chan_id, label);
+  if (status != ECA_NORMAL) {
+    printf("label setting failed (ca_put status: %d)\n", status);
+  }
+  return FE_SUCCESS;
 }
 
 /*----------------------------------------------------------------------------*/
