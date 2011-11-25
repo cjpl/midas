@@ -122,13 +122,12 @@ INT iseg_hv_mpod_init(HNDLE hkey, void **pinfo, INT channels, INT(*bd) (INT cmd,
       ss_sleep(5000);
    }
     
-   // reset any trip and clear all events
-   for (i=0; i<channels ; i++)
-      status = setChannelSwitch(info->crate, i+1, 10);
-       
+   // reset any trip and clear all events    --> don't do this, the ramping procedure will start the trip ramping for the tripped channels 
+   //for (i=0; i<channels ; i++)
+   //   status = setChannelSwitch(info->crate, i+1, 10);    
    // switch all channels on
-   for (i=0; i<channels ; i++)
-      status = setChannelSwitch(info->crate, i+1, 1); 
+   //for (i=0; i<channels ; i++)
+   //   status = setChannelSwitch(info->crate, i+1, 1); 
 
    /* read all values from HV devices */
    for (i=0; i<channels; i++) {
