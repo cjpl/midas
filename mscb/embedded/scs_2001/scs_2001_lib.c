@@ -76,10 +76,10 @@ MSCB_INFO_VAR code vars_lhe[] = {
    { 4, UNIT_AMPERE,  PRFX_MILLI, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "P%Excit", (void xdata *)0, 1, 0, 100,  1 },
    { 4, UNIT_PERCENT, 0,          0, MSCBF_FLOAT | MSCBF_HIDDEN, "P%LOfs",  (void xdata *)0, 2 },
    { 4, UNIT_FACTOR,  0,          0, MSCBF_FLOAT | MSCBF_HIDDEN, "P%LGain",  (void xdata *)0, 2 },
-   { 2, UNIT_SECOND,  0,          0, MSCBF_HIDDEN, "P%Toff",  (void xdata *)0, 0 },
-   { 2, UNIT_SECOND,  0,          0, MSCBF_HIDDEN, "P%Ton",   (void xdata *)0, 0 },
+   { 2, UNIT_SECOND,  0,          0, MSCBF_HIDDEN, "P%Toff", (void xdata *)0, 0 },
+   { 2, UNIT_SECOND,  0,          0, MSCBF_HIDDEN, "P%Ton",  (void xdata *)0, 0 },
 
-   { 4, UNIT_PERCENT, 0,          0, MSCBF_FLOAT, "P%Lin",  (void xdata *)0, 1 },
+   { 4, UNIT_PERCENT, 0,          0, MSCBF_FLOAT, "P%Lin",   (void xdata *)0, 1 },
 };
 
 MSCB_INFO_VAR code vars_din[] =
@@ -96,6 +96,12 @@ MSCB_INFO_VAR code vars_relais[] =
 
 MSCB_INFO_VAR code vars_optout[] =
    { 1, UNIT_BOOLEAN, 0,          0,           0, "P%Out#",  (void xdata *)4, 1,  0,  1,  1 };
+
+MSCB_INFO_VAR code vars_uout200[] = {
+   { 1, UNIT_VOLT,    0,          0, MSCBF_FLOAT, "P%UD#",   (void xdata *)8, 3,  0,  200,  1 },
+   { 1, UNIT_VOLT,    0,          0, MSCBF_FLOAT, "P%U#",    (void xdata *)8, 3,  0,  0 },
+   { 1, UNIT_AMPERE,  PRFX_MICRO, 0, MSCBF_FLOAT, "P%I#",    (void xdata *)8, 3,  0,  0 },
+};
 
 SCS_2001_MODULE code scs_2001_module[] = {
   /* 0x01-0x1F misc. */
@@ -142,6 +148,8 @@ SCS_2001_MODULE code scs_2001_module[] = {
   { 0x82, "IOut 0-2.5mA",    vars_iout,   1, dr_ltc2600     },
   { 0x83, "IOut 0-25mA",     vars_iout,   1, dr_ltc2600     },
   { 0x84, "Liq.He level",    vars_lhe,    6, dr_lhe         },
+
+  { 0x85, "UOut 200V",       vars_uout200, 3, dr_hv         },
 
   { 0 }
 };
@@ -726,6 +734,29 @@ void ad7718_write(unsigned char a, unsigned char d) reentrant
    OPT_STR = 0;
 
    /* write to selected data register */
+   for (i=0,m=0x80 ; i<8 ; i++) {
+      OPT_CLK   = 0;
+      OPT_DATAO = (d & m) > 0;
+      DELAY_CLK;
+      OPT_CLK   = 1;
+      DELAY_CLK;
+      m >>= 1;
+   }
+
+   OPT_ALE = 1;
+   OPT_DATAO = 0;
+   DELAY_CLK;
+}
+
+void ad7718_write1(unsigned char d) reentrant
+{
+   unsigned char i, m;
+
+   OPT_DATAO = 0;
+   OPT_ALE = 0;
+   DELAY_CLK;
+
+   /* write 8 bits */
    for (i=0,m=0x80 ; i<8 ; i++) {
       OPT_CLK   = 0;
       OPT_DATAO = (d & m) > 0;
@@ -1743,3 +1774,129 @@ unsigned char i;
 
    return 0;
 }
+
+/*---- 200V high voltage ----*/
+
+static unsigned char xdata hv_cur_chn1[N_PORT];
+static unsigned char xdata hv_cur_chn2[N_PORT];
+
+unsigned char dr_hv(unsigned char id, unsigned char cmd, unsigned char addr, 
+                    unsigned char port, unsigned char chn, void *pd) reentrant
+{
+float value;
+unsigned char status;
+unsigned long d;
+unsigned short s;
+unsigned char i, idx;
+
+   if (id || chn || pd); // suppress compiler warning
+
+   idx = addr*8 + port;
+
+   if (cmd == MC_INIT) {
+      /* configure serial interface to LT2600 and ADD7718s */
+      write_dir(addr, port, 0x78);  // bit0: input (/RDY1 AD7718 1 U) 
+                                    // bit1: input (/RDY2 AD7718 2 I) 
+                                    // bit2: 
+                                    // bit3: /CS1  (LT2600)
+                                    // bit4: /CS2  (AD7718 1 U)
+                                    // bit5: /CS3  (AD7718 2 I)
+                                    // bit6: /RST
+      write_port(addr, port, 0x78); // all high
+
+      /* configure both AD7718s */
+      write_port(addr, port, 0x78-((1<<4) | (1<<5))); // CS2
+
+      ad7718_write(AD7718_FILTER, 82);     // SF value for 50Hz rejection (2 Hz)
+      ad7718_write(AD7718_MODE, 3);        // continuous conversion
+      DELAY_US_REENTRANT(100);
+
+      /* start first conversion */
+
+      ad7718_write(AD7718_CONTROL, (0 << 4) | (0x07)); // Channel 0, Bipolar, +-2.56V range
+      hv_cur_chn1[addr*8+port] = 0;
+      hv_cur_chn2[addr*8+port] = 0;
+
+      write_port(addr, port, 0x78);        // remove CS
+   }
+
+   if (cmd == MC_WRITE) {
+      if (chn > 7)
+         return 0;
+
+      value = *((float *)pd);
+   
+      if (value < 0)
+         value = 0;
+      if (value > 200)
+         value = 200;
+
+      /* convert value to DAC counts */
+      s = value/200.0 * 65535; // 0-200V
+   
+      write_port(addr, port, 0x78-(1 << 3)); // CS1 active
+      address_port(addr, port, AM_RW_SERIAL);
+
+      /* EWEN command */
+      for (i=0 ; i<4 ; i++) {
+         OPT_DATAO = (i > 1);
+         CLOCK;
+      }
+   
+      for (i=0 ; i<4 ; i++) {
+         OPT_DATAO = (chn & 8) > 0;
+         CLOCK;
+         chn <<= 1;
+      }
+   
+      for (i=0 ; i<16 ; i++) {
+         OPT_DATAO = (d & 0x8000) > 0;
+         CLOCK;
+         d <<= 1;
+      }
+
+      write_port(addr, port, 0x78); // CS1 inactive
+   }
+
+   if (cmd == MC_READ) {
+
+      if (chn < 8 || chn > 15)
+         return 0;
+
+      /* return if ADC busy */
+      read_port(addr, port, &status);
+      if ((status & 1) > 0)
+         return 0;
+
+      /* return if not current channel */
+      if (chn != hv_cur_chn1[addr*8+port] + 8)
+         return 0;
+
+      write_port(addr, port, 0x1C - (1<<4)); // CS2 active
+      address_port1(addr, port, AM_RW_SERIAL, 1);
+    
+      /* read 24-bit data */
+      ad7718_read(AD7718_ADCDATA, &d);
+
+      /* start next conversion */
+      hv_cur_chn1[addr*8+port] = (hv_cur_chn1[addr*8+port] + 1) % 8;
+      ad7718_write(AD7718_CONTROL, (hv_cur_chn1[addr*8+port] << 4) | 0x07);
+
+      write_port(addr, port, 0x1C); // CS2 inactive
+
+      /* convert to volts */
+      value = 5.12*((float)d / (1l<<24))-2.56;
+
+      /* convert to HV */
+      value = value * 100.0; 
+
+      /* round result to significant digits */
+      value = ((long)(value*1E3+0.5))/1E3;
+
+      *((float *)pd) = value;
+      return 4;
+   }
+
+   return 1;
+}
+

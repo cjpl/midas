@@ -160,10 +160,10 @@
       <FileType>1</FileType>
       <tvExp>0</tvExp>
       <Focus>0</Focus>
-      <ColumnNumber>0</ColumnNumber>
+      <ColumnNumber>30</ColumnNumber>
       <tvExpOptDlg>0</tvExpOptDlg>
-      <TopLine>0</TopLine>
-      <CurrentLine>0</CurrentLine>
+      <TopLine>315</TopLine>
+      <CurrentLine>351</CurrentLine>
       <bDave2>0</bDave2>
       <PathWithFileName>.\hvr_500.c</PathWithFileName>
       <FilenameWithoutPath>hvr_500.c</FilenameWithoutPath>
@@ -1574,19 +1574,25 @@
     <ActiveMDIGroup>0</ActiveMDIGroup>
     <MDIGroup>
       <Size>100</Size>
-      <ActiveTab>0</ActiveTab>
+      <ActiveTab>2</ActiveTab>
       <Documents>
         <Doc>
-          <Name>CONFIG.H</Name>
+          <Name>.\config.h</Name>
           <ColumnNumber>15</ColumnNumber>
           <TopLine>1</TopLine>
           <CurrentLine>16</CurrentLine>
         </Doc>
         <Doc>
-          <Name>..\INCLUDE\MSCBEMB.H</Name>
+          <Name>..\include\mscbemb.h</Name>
           <ColumnNumber>0</ColumnNumber>
           <TopLine>199</TopLine>
           <CurrentLine>222</CurrentLine>
+        </Doc>
+        <Doc>
+          <Name>.\hvr_500.c</Name>
+          <ColumnNumber>30</ColumnNumber>
+          <TopLine>315</TopLine>
+          <CurrentLine>351</CurrentLine>
         </Doc>
       </Documents>
     </MDIGroup>
