@@ -1421,6 +1421,11 @@ int readout_thread(void *param)
 
 /*-- Receive event from readout thread or interrupt routine --------*/
 
+void set_event_rb(INT rb)
+{
+   rbh2 = rb;
+}
+
 int receive_trigger_event(EQUIPMENT *eq)
 {
    int status;
