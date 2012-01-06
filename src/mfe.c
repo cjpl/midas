@@ -2720,16 +2720,12 @@ int main(int argc, char *argv[])
    /* reset terminal */
    ss_getchar(TRUE);
 
-   /* switch off interrupts */
+   /* switch off interrupts and detach */
    if (interrupt_eq) {
       interrupt_configure(CMD_INTERRUPT_DISABLE, 0, 0);
       interrupt_configure(CMD_INTERRUPT_DETACH, 0, 0);
    }
-
-   /* detach interrupts */
-   if (interrupt_eq != NULL)
-      interrupt_configure(CMD_INTERRUPT_DETACH, interrupt_eq->info.source, 0);
-
+   
    /* call user exit function */
    frontend_exit();
 
