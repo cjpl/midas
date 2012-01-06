@@ -790,23 +790,17 @@ INT initialize_equipment(void)
 
          if (equipment[idx].status != FE_ERR_DISABLED) {
             if (eq_info->enabled) {
-               if (interrupt_eq) {
-                  equipment[idx].status = FE_ERR_DISABLED;
-                  cm_msg(MINFO, "initialize_equipment",
-                         "Defined more than one equipment with interrupt readout");
-               } else {
-                  interrupt_eq = &equipment[idx];
-
-                  /* create ring buffer for inter-thread data transfer */
-                  if (!rbh1) {
-                     rb_create(event_buffer_size, max_event_size, &rbh1);
-                     rbh2 = rbh1;
-                  }
-
-                  /* establish interrupt handler */
-                  interrupt_configure(CMD_INTERRUPT_ATTACH, eq_info->source,
-                                      (POINTER_T) interrupt_routine);
+               interrupt_eq = &equipment[idx];
+               
+               /* create ring buffer for inter-thread data transfer */
+               if (!rbh1) {
+                  rb_create(event_buffer_size, max_event_size, &rbh1);
+                  rbh2 = rbh1;
                }
+               
+               /* establish interrupt handler */
+               interrupt_configure(CMD_INTERRUPT_ATTACH, idx,
+                                   (POINTER_T) interrupt_routine);
             } else {
                equipment[idx].status = FE_ERR_DISABLED;
                cm_msg(MINFO, "initialize_equipment",
@@ -1453,6 +1447,11 @@ int receive_trigger_event(EQUIPMENT *eq)
    /* send event */
    if (pevent->data_size) {
       if (eq->buffer_handle) {
+         
+         /* save event in temporary buffer to push it to the ODB later */
+         if (eq->info.read_on & RO_ODB)
+            memcpy(event_buffer, pevent, pevent->data_size + sizeof(EVENT_HEADER));
+
          /* send first event to ODB if logger writes in root format */
          if (pevent->serial_number == 0)
             if (logger_root())
