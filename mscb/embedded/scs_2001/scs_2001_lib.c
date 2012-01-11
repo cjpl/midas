@@ -98,9 +98,9 @@ MSCB_INFO_VAR code vars_optout[] =
    { 1, UNIT_BOOLEAN, 0,          0,           0, "P%Out#",  (void xdata *)4, 1,  0,  1,  1 };
 
 MSCB_INFO_VAR code vars_uout200[] = {
-   { 1, UNIT_VOLT,    0,          0, MSCBF_FLOAT, "P%UD#",   (void xdata *)8, 3,  0,  200,  1 },
-   { 1, UNIT_VOLT,    0,          0, MSCBF_FLOAT, "P%U#",    (void xdata *)8, 3,  0,  0 },
-   { 1, UNIT_AMPERE,  PRFX_MICRO, 0, MSCBF_FLOAT, "P%I#",    (void xdata *)8, 3,  0,  0 },
+   { 4, UNIT_VOLT,    0,          0, MSCBF_FLOAT, "P%UD#",   (void xdata *)8, 3,  0,  200,  1 },
+   { 4, UNIT_VOLT,    0,          0, MSCBF_FLOAT, "P%U#",    (void xdata *)8, 3,  0,  0 },
+   { 4, UNIT_AMPERE,  PRFX_MICRO, 0, MSCBF_FLOAT, "P%I#",    (void xdata *)8, 3,  0,  0 },
 };
 
 SCS_2001_MODULE code scs_2001_module[] = {
@@ -149,7 +149,7 @@ SCS_2001_MODULE code scs_2001_module[] = {
   { 0x83, "IOut 0-25mA",     vars_iout,   1, dr_ltc2600     },
   { 0x84, "Liq.He level",    vars_lhe,    6, dr_lhe         },
 
-  { 0x85, "UOut 200V",       vars_uout200, 3, dr_hv         },
+  { 0x85, "UOut 200V",       vars_uout200,3, dr_hv          },
 
   { 0 }
 };
@@ -1779,15 +1779,57 @@ unsigned char i;
 
 static unsigned char xdata hv_cur_chn1[N_PORT];
 static unsigned char xdata hv_cur_chn2[N_PORT];
+static unsigned char code  hv_adc_map1[8] = { 5,4,3,2,1,0,6,7 };
+static unsigned char code  hv_adc_map2[8] = { 6,2,7,3,0,4,5,1 };
+static float xdata hv_set[N_PORT*8];
+static float xdata hv_dac[N_PORT*8];
+
+void dr_hv_dac(unsigned char addr, unsigned char port, unsigned char chn, float value)
+{
+unsigned short s;
+unsigned char i;
+
+  if (value < 0)
+     value = 0;
+  if (value > 200)
+     value = 200;
+
+  hv_dac[port*8+chn] = value;
+
+  /* convert value to DAC counts */
+  s = value/72.0/2.5 * 65535; // 72V/V gain, 2.5V DAC Ref.
+
+  write_port(addr, port, 0x40 | (1 << 3)); // CS1 active
+  address_port(addr, port, AM_RW_SERIAL);
+
+  /* EWEN command */
+  for (i=0 ; i<4 ; i++) {
+     OPT_DATAO = (i > 1);
+     CLOCK;
+  }
+
+  for (i=0 ; i<4 ; i++) {
+     OPT_DATAO = (chn & 8) > 0;
+     CLOCK;
+     chn <<= 1;
+  }
+
+  for (i=0 ; i<16 ; i++) {
+     OPT_DATAO = (s & 0x8000) > 0;
+     CLOCK;
+     s <<= 1;
+  }
+
+  write_port(addr, port, 0x40); // CS1 inactive
+}
 
 unsigned char dr_hv(unsigned char id, unsigned char cmd, unsigned char addr, 
                     unsigned char port, unsigned char chn, void *pd) reentrant
 {
-float value;
+float value, diff;
 unsigned char status;
 unsigned long d;
-unsigned short s;
-unsigned char i, idx;
+unsigned char idx;
 
    if (id || chn || pd); // suppress compiler warning
 
@@ -1798,26 +1840,29 @@ unsigned char i, idx;
       write_dir(addr, port, 0x78);  // bit0: input (/RDY1 AD7718 1 U) 
                                     // bit1: input (/RDY2 AD7718 2 I) 
                                     // bit2: 
-                                    // bit3: /CS1  (LT2600)
-                                    // bit4: /CS2  (AD7718 1 U)
-                                    // bit5: /CS3  (AD7718 2 I)
+                                    // bit3: CS1  (LT2600)
+                                    // bit4: CS2  (AD7718 1 U)
+                                    // bit5: CS3  (AD7718 2 I)
                                     // bit6: /RST
-      write_port(addr, port, 0x78); // all high
+      write_port(addr, port, 0x40); // /RST high
 
       /* configure both AD7718s */
-      write_port(addr, port, 0x78-((1<<4) | (1<<5))); // CS2
+      write_port(addr, port, 0x40 | (1<<4) | (1<<5)); // CS2 & CS3
+
+      address_port(addr, port, AM_RW_SERIAL);
 
       ad7718_write(AD7718_FILTER, 82);     // SF value for 50Hz rejection (2 Hz)
       ad7718_write(AD7718_MODE, 3);        // continuous conversion
+	  ad7718_write(AD7718_IOCONTROL, 0x11);// Turn P1 on
       DELAY_US_REENTRANT(100);
 
       /* start first conversion */
 
-      ad7718_write(AD7718_CONTROL, (0 << 4) | (0x07)); // Channel 0, Bipolar, +-2.56V range
+      ad7718_write(AD7718_CONTROL, (5 << 4) | (0x07)); // Channel 0, Bipolar, +-2.56V range
       hv_cur_chn1[addr*8+port] = 0;
       hv_cur_chn2[addr*8+port] = 0;
 
-      write_port(addr, port, 0x78);        // remove CS
+      write_port(addr, port, 0x40);        // remove CS
    }
 
    if (cmd == MC_WRITE) {
@@ -1825,76 +1870,83 @@ unsigned char i, idx;
          return 0;
 
       value = *((float *)pd);
-   
-      if (value < 0)
-         value = 0;
-      if (value > 200)
-         value = 200;
-
-      /* convert value to DAC counts */
-      s = value/200.0 * 65535; // 0-200V
-   
-      write_port(addr, port, 0x78-(1 << 3)); // CS1 active
-      address_port(addr, port, AM_RW_SERIAL);
-
-      /* EWEN command */
-      for (i=0 ; i<4 ; i++) {
-         OPT_DATAO = (i > 1);
-         CLOCK;
-      }
-   
-      for (i=0 ; i<4 ; i++) {
-         OPT_DATAO = (chn & 8) > 0;
-         CLOCK;
-         chn <<= 1;
-      }
-   
-      for (i=0 ; i<16 ; i++) {
-         OPT_DATAO = (d & 0x8000) > 0;
-         CLOCK;
-         d <<= 1;
-      }
-
-      write_port(addr, port, 0x78); // CS1 inactive
+	  hv_set[port*8+chn] = value;
    }
 
    if (cmd == MC_READ) {
 
-      if (chn < 8 || chn > 15)
+      if (chn < 8 || chn > 23)
          return 0;
 
       /* return if ADC busy */
       read_port(addr, port, &status);
-      if ((status & 1) > 0)
-         return 0;
+      if ((status & 1) == 0) {
 
-      /* return if not current channel */
-      if (chn != hv_cur_chn1[addr*8+port] + 8)
-         return 0;
+	      /* return if not current channel */
+	      if (chn != hv_cur_chn1[addr*8+port] + 8)
+	         return 0;
+	
+	      write_port(addr, port, 0x40 | (1<<4)); // CS2 active
+	      address_port1(addr, port, AM_RW_SERIAL, 1);
+	    
+	      /* read 24-bit data */
+	      ad7718_read(AD7718_ADCDATA, &d);
+	
+	      /* start next conversion */
+	      hv_cur_chn1[addr*8+port] = (hv_cur_chn1[addr*8+port] + 1) % 8;
+	      ad7718_write(AD7718_CONTROL, (hv_adc_map1[hv_cur_chn1[addr*8+port]] << 4) | 0x07);
+	
+	      write_port(addr, port, 0x40); // CS2 inactive
+	
+	      /* convert to volts */
+	      value = 5.12*((float)d / (1l<<24))-2.56;
+	
+	      /* convert to HV */
+	      value = value * 100.0; 
+	
+	      /* round result to significant digits */
+	      value = ((long)(value*1E3+0.5))/1E3;
+	
+	      *((float *)pd) = value;
 
-      write_port(addr, port, 0x1C - (1<<4)); // CS2 active
-      address_port1(addr, port, AM_RW_SERIAL, 1);
-    
-      /* read 24-bit data */
-      ad7718_read(AD7718_ADCDATA, &d);
+          /* correct DAC value */
+		  diff = value - hv_set[port*8+chn-8];
+		  if (fabs(diff) > 0.003)
+             dr_hv_dac(addr, port, chn-8, hv_dac[port*8+chn-8] - diff);
 
-      /* start next conversion */
-      hv_cur_chn1[addr*8+port] = (hv_cur_chn1[addr*8+port] + 1) % 8;
-      ad7718_write(AD7718_CONTROL, (hv_cur_chn1[addr*8+port] << 4) | 0x07);
+	      return 4;
 
-      write_port(addr, port, 0x1C); // CS2 inactive
+	  } else if ((status & 2) == 0) {
 
-      /* convert to volts */
-      value = 5.12*((float)d / (1l<<24))-2.56;
-
-      /* convert to HV */
-      value = value * 100.0; 
-
-      /* round result to significant digits */
-      value = ((long)(value*1E3+0.5))/1E3;
-
-      *((float *)pd) = value;
-      return 4;
+	      /* return if not current channel */
+	      if (chn != hv_cur_chn2[addr*8+port] + 16)
+	         return 0;
+	
+	      write_port(addr, port, 0x40 | (1<<5)); // CS3 active
+	      address_port1(addr, port, AM_RW_SERIAL, 1);
+	    
+	      /* read 24-bit data */
+	      ad7718_read(AD7718_ADCDATA, &d);
+	
+	      /* start next conversion */
+	      hv_cur_chn2[addr*8+port] = (hv_cur_chn2[addr*8+port] + 1) % 8;
+	      ad7718_write(AD7718_CONTROL, (hv_adc_map2[hv_cur_chn2[addr*8+port]] << 4) | 0x07);
+	
+	      write_port(addr, port, 0x40); // CS3 inactive
+	
+	      /* convert to volts */
+	      value = 5.12*((float)d / (1l<<24))-2.56;
+	
+	      /* convert to current in uA */
+	      value = value / 10000 * 1E6; 
+	
+	      /* round result to significant digits */
+	      value = ((long)(value*1E3+0.5))/1E3;
+	
+	      *((float *)pd) = value;
+	      return 4;
+	  } else
+	      return 0;
    }
 
    return 1;
