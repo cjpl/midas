@@ -1781,8 +1781,9 @@ static unsigned char xdata hv_cur_chn1[N_PORT];
 static unsigned char xdata hv_cur_chn2[N_PORT];
 static unsigned char code  hv_adc_map1[8] = { 5,4,3,2,1,0,6,7 };
 static unsigned char code  hv_adc_map2[8] = { 6,2,7,3,0,4,5,1 };
-static float xdata hv_set[N_PORT*8];
+static float * xdata hv_set[N_PORT];
 static float xdata hv_dac[N_PORT*8];
+static float * xdata hv_current[N_PORT];
 
 void dr_hv_dac(unsigned char addr, unsigned char port, unsigned char chn, float value)
 {
@@ -1869,8 +1870,11 @@ unsigned char idx;
       if (chn > 7)
          return 0;
 
+	  if (chn == 0)
+	     hv_set[port] = (float *)pd;
+
       value = *((float *)pd);
-	  hv_set[port*8+chn] = value;
+	  *(hv_set[port]+chn) = value;
    }
 
    if (cmd == MC_READ) {
@@ -1910,7 +1914,7 @@ unsigned char idx;
 	      *((float *)pd) = value;
 
           /* correct DAC value */
-		  diff = value - hv_set[port*8+chn-8];
+		  diff = value - *(hv_set[port]+chn-8);
 		  if (fabs(diff) > 0.003)
              dr_hv_dac(addr, port, chn-8, hv_dac[port*8+chn-8] - diff);
 
@@ -1943,6 +1947,11 @@ unsigned char idx;
 	      /* round result to significant digits */
 	      value = ((long)(value*1E3+0.5))/1E3;
 	
+	      if (chn == 16)
+		     hv_current[port] = (float *)pd;
+
+          *(hv_current[port]+chn-16) = value;
+
 	      *((float *)pd) = value;
 	      return 4;
 	  } else
