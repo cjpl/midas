@@ -3477,14 +3477,32 @@ INT cm_transition1(INT transition, INT run_number, char *errstr, INT errstr_size
 
    /* do detached transition via mtransition tool */
    if (async_flag == DETACH) {
-      char *args[100];
+      char *args[100], path[256];
       int iarg = 0;
       char debug_arg[256];
       char start_arg[256];
       char expt_name[256];
       extern RPC_SERVER_CONNECTION _server_connection;
 
-      args[iarg++] = "mtransition";
+      path[0] = 0;
+      if (getenv("MIDASSYS")) {
+         strlcpy(path, getenv("MIDASSYS"), sizeof(path));
+         strlcat(path, DIR_SEPARATOR_STR, sizeof(path));
+#ifdef OS_LINUX
+#ifdef OS_DARWIN
+         strlcat(path, "darwin/bin/", sizeof(path));
+#else
+         strlcat(path, "linux/bin/", sizeof(path));
+#endif
+#else
+#ifdef OS_WINNT
+         strlcat(path, "nt/bin/", sizeof(path));
+#endif
+#endif         
+      }
+      strlcat(path, "mtransition", sizeof(path));
+              
+      args[iarg++] = path;
 
       if (_server_connection.send_sock) {
          /* if connected to mserver, pass connection info to mtransition */
