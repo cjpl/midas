@@ -423,10 +423,10 @@ $(BIN_DIR)/odbedit: $(SRC_DIR)/odbedit.c $(SRC_DIR)/cmdedit.c
 
 
 ifdef NEED_MSCB
-$(BIN_DIR)/mhttpd: $(LIB_DIR)/mhttpd.o $(LIB_DIR)/mgd.o $(LIB_DIR)/mscb.o
+$(BIN_DIR)/mhttpd: $(LIB_DIR)/mhttpd.o $(LIB_DIR)/mgd.o $(LIB_DIR)/mscb.o $(LIB_DIR)/sequencer.o
 	$(CXX) $(CFLAGS) $(OSFLAGS) -o $@ $^ $(LIB) $(ODBC_LIBS) $(LIBS) -lm
 else
-$(BIN_DIR)/mhttpd: $(LIB_DIR)/mhttpd.o $(LIB_DIR)/mgd.o
+$(BIN_DIR)/mhttpd: $(LIB_DIR)/mhttpd.o $(LIB_DIR)/mgd.o $(LIB_DIR)/sequencer.o
 	$(CXX) $(CFLAGS) $(OSFLAGS) -o $@ $^ $(LIB) $(ODBC_LIBS) $(LIBS) -lm
 endif
 
