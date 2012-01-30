@@ -57,6 +57,10 @@ typedef struct {
    char  subdir[256];
    int   subdir_end_line;
    int   subdir_not_notify;
+   int   stack_index;
+   int   subroutine_end_line[4];
+   int   subroutine_return_line[4];
+   char  subroutine_param[4][256];
    int   wait_counter;
    int   wait_n;
    DWORD start_time;
@@ -65,13 +69,13 @@ typedef struct {
 
 #define SEQUENCER_STR(_name) const char *_name[] = {\
 "[.]",\
-"Path = STRING : [256] /online/",\
-"Filename = STRING : [256] xml/xmltest.xml",\
+"Path = STRING : [256] ",\
+"Filename = STRING : [256] ",\
 "Error = STRING : [256] ",\
 "Error line = INT : 0",\
 "Running = BOOL : n",\
 "Finished = BOOL : y",\
-"Current line number = INT : 12",\
+"Current line number = INT : 0",\
 "Stop after run = BOOL : n",\
 "Transition request = BOOL : n",\
 "Loop start line = INT[4] :",\
@@ -97,6 +101,22 @@ typedef struct {
 "Subdir = STRING : [256] ",\
 "Subdir end line = INT : 0",\
 "Subdir not notify = INT : 0",\
+"Stack index = INT : 0",\
+"Subroutine end line = INT[4] :",\
+"[0] 0",\
+"[1] 0",\
+"[2] 0",\
+"[3] 0",\
+"Subroutine return line = INT[4] :",\
+"[0] 0",\
+"[1] 0",\
+"[2] 0",\
+"[3] 0",\
+"Subroutine param = STRING[4] : ",\
+"[256] ",\
+"[256] ",\
+"[256] ",\
+"[256] ",\
 "Wait counter = INT : 0",\
 "Wait n = INT : 0",\
 "Start time = DWORD : 0",\
@@ -108,6 +128,8 @@ SEQUENCER_STR(sequencer_str);
 SEQUENCER seq;
 PMXML_NODE pnseq = NULL;
 
+/*------------------------------------------------------------------*/
+
 void init_sequencer()
 {
    int status, size;
@@ -116,19 +138,15 @@ void init_sequencer()
    char str[256];
    
    cm_get_experiment_database(&hDB, NULL);
-   status = db_check_record(hDB, 0, "/Sequencer", strcomb(sequencer_str), TRUE);
+   status = db_check_record(hDB, 0, "/Sequencer/State", strcomb(sequencer_str), TRUE);
    if (status == DB_STRUCT_MISMATCH) {
-      cm_msg(MERROR, "init_sequencer", "Aborting on mismatching /Sequencer structure");
+      cm_msg(MERROR, "init_sequencer", "Aborting on mismatching /Sequencer/State structure");
       cm_disconnect_experiment();
       abort();
    }
-   db_find_key(hDB, 0, "/Sequencer", &hKey);
+   db_find_key(hDB, 0, "/Sequencer/State", &hKey);
    size = sizeof(seq);
    db_open_record(hDB, hKey, &seq, sizeof(seq), MODE_READ, NULL, NULL);
-   if (seq.path[0] == 0) {
-      getcwd(seq.path, sizeof(seq.path));
-      strlcat(seq.path, DIR_SEPARATOR_STR, sizeof(seq.path));
-   }
    if (strlen(seq.path)>0 && seq.path[strlen(seq.path)-1] != DIR_SEPARATOR) {
       strlcat(seq.path, DIR_SEPARATOR_STR, sizeof(seq.path));
    }
@@ -151,6 +169,71 @@ void init_sequencer()
    
    db_set_record(hDB, hKey, &seq, sizeof(seq), 0);
 }
+/*------------------------------------------------------------------*/
+
+void seq_error(const char *str)
+{
+   HNDLE hDB, hKey;
+   
+   strlcpy(seq.error, str, sizeof(seq.error));
+   seq.error_line = seq.current_line_number;
+   seq.running = FALSE;
+   seq.transition_request = FALSE;
+
+   cm_get_experiment_database(&hDB, NULL);
+   db_find_key(hDB, 0, "/Sequencer/State", &hKey);
+   assert(hKey);
+   db_set_record(hDB, hKey, &seq, sizeof(seq), 0);
+   
+   cm_msg(MTALK, "sequencer", "Sequencer has stopped with error.");
+}
+
+/*------------------------------------------------------------------*/
+
+BOOL evaluate(char *result, const char *value)
+{
+   const char *p;
+   char *s;
+   char str[256];
+   int index, i;
+   
+   p = value;
+   
+   while (*p == ' ')
+      p++;
+   
+   if (*p == '$') {
+      p++;
+      if (atoi(p) > 0) {
+         index = atoi(p);
+         if (seq.stack_index > 0) {
+            strlcpy(str, seq.subroutine_param[seq.stack_index-1], sizeof(str));
+            s = strtok(str, ",");
+            if (s == NULL) {
+               if (index == 1) {
+                  strlcpy(result, str, 256);
+                  return TRUE;
+               } else
+                  goto error;
+            }
+            for (i=1; s != NULL && i<index; i++)
+               s = strtok(NULL, ",");
+            if (s != NULL) {
+               strlcpy(result, s, 256);
+               return TRUE;
+            }
+            else 
+               goto error;
+         } else
+            goto error;
+      }
+   }
+
+error:
+   sprintf(str, "Invalid parameter \"%s\"", value);
+   seq_error(str);
+   return FALSE;
+}
 
 /*------------------------------------------------------------------*/
 
@@ -169,7 +252,7 @@ void show_seq_page()
    KEY key;
    
    cm_get_experiment_database(&hDB, NULL);
-   db_find_key(hDB, 0, "/Sequencer", &hKey);
+   db_find_key(hDB, 0, "/Sequencer/State", &hKey);
    assert(hKey);
    
    /*---- load XML file ----*/
@@ -237,6 +320,7 @@ void show_seq_page()
             seq.loop_n[i] = 0;
          }
          seq.current_line_number = 1;
+         seq.stack_index = 0;
          seq.error[0] = 0;
          seq.error_line = 0;
          seq.subdir[0] = 0;
@@ -343,7 +427,7 @@ void show_seq_page()
    rsprintf("\n");
    rsprintf("function seq_refresh()\n");
    rsprintf("{\n");
-   rsprintf("   seq = ODBGetRecord('/Sequencer');\n");
+   rsprintf("   seq = ODBGetRecord('/Sequencer/State');\n");
    rsprintf("   var current_line = ODBExtractRecord(seq, 'Current line number');\n");
    rsprintf("   var error_line = ODBExtractRecord(seq, 'Error line');\n");
    rsprintf("   var wait_counter = ODBExtractRecord(seq, 'Wait counter');\n");
@@ -400,8 +484,10 @@ void show_seq_page()
    rsprintf("   if (wl != null) {\n");
    rsprintf("      if (start_time > 0)\n");
    rsprintf("         wl.innerHTML = 'Wait:&nbsp['+wait_counter+'/'+wait_n+'&nbsp;s]';\n");
-   rsprintf("      else\n");
+   rsprintf("      else if (wait_n > 0)\n");
    rsprintf("         wl.innerHTML = 'Run:&nbsp['+wait_counter+'/'+wait_n+'&nbsp;events]';\n");
+   rsprintf("      else\n");
+   rsprintf("         wl.innerHTML = '';\n");
    rsprintf("   }\n");
    rsprintf("   var rp = document.getElementById('runprgs');\n");
    rsprintf("   if (rp != null) {\n");
@@ -409,9 +495,6 @@ void show_seq_page()
    rsprintf("      if (width > 100)\n");
    rsprintf("         width = 100;\n");
    rsprintf("      rp.width = width+'%%';\n");
-   rsprintf("   }\n");
-   rsprintf("   if (finished == 'y' || error_line > 0) {\n");
-   rsprintf("      window.location.href = '.';\n");
    rsprintf("   }\n");
    rsprintf("   \n");
    rsprintf("   for (var i=0 ; i<4 ; i++) {\n");
@@ -432,6 +515,10 @@ void show_seq_page()
    rsprintf("         l.style.display = 'none';\n");
    rsprintf("   }\n");
    rsprintf("   \n");
+   rsprintf("   if (finished == 'y' || error_line > 0) {\n");
+   rsprintf("      window.location.href = '.';\n");
+   rsprintf("   }\n");
+   rsprintf("\n");
    rsprintf("   refreshID = setTimeout('seq_refresh()', 1000);\n");
    rsprintf("}\n");
    rsprintf("\n");
@@ -672,6 +759,11 @@ void show_seq_page()
                         rsprintf("<font id=\"line%d\" style=\"font-family:monospace;background-color:#80FF00\">", line);
                      else
                         rsprintf("<font id=\"line%d\" style=\"font-family:monospace\">", line);
+                     if (line < 10)
+                        rsprintf("&nbsp;");
+                     if (line < 100)
+                        rsprintf("&nbsp;");
+                     rsprintf("%d ", line);
                      strencode4(str);
                      rsprintf("</font>");
                   }
@@ -741,8 +833,9 @@ void show_seq_page()
 
 void sequencer()
 {
-   PMXML_NODE pn, pr;
+   PMXML_NODE pn, pr, pt;
    char odbpath[256], value[256], data[256], str[256];
+   const char *p;
    int i, n, status, size, index, last_line, state, run_number;
    HNDLE hDB, hKey, hKeySeq;
    KEY key;
@@ -752,7 +845,7 @@ void sequencer()
       return;
    
    cm_get_experiment_database(&hDB, NULL);
-   db_find_key(hDB, 0, "/Sequencer", &hKeySeq);
+   db_find_key(hDB, 0, "/Sequencer/State", &hKeySeq);
    if (!hKeySeq)
       return;
    
@@ -765,6 +858,14 @@ void sequencer()
       return;
    last_line = mxml_get_line_number_end(pr);
    
+   /* check for Subroutine end */
+   if (seq.stack_index > 0 && seq.current_line_number == seq.subroutine_end_line[seq.stack_index-1]) {
+      seq.subroutine_end_line[seq.stack_index-1] = 0;
+      seq.current_line_number = seq.subroutine_return_line[seq.stack_index-1];
+      seq.stack_index --;
+   }
+
+   /* check for last line of script */
    if (seq.current_line_number >= last_line) {
       seq.running = FALSE;
       seq.finished = TRUE;
@@ -820,10 +921,7 @@ void sequencer()
    /*---- ODBSubdir ----*/
    else if (equal_ustring(mxml_get_name(pn), "ODBSubdir")) {
       if (!mxml_get_attribute(pn, "path")) {
-         sprintf(seq.error, "Missing attribute \"path\"");
-         seq.error_line = seq.current_line_number;
-         seq.running = FALSE;
-         cm_msg(MTALK, "sequencer", "Sequencer has stopped with error.");
+         seq_error("Missing attribute \"path\"");
       } else {
          strlcpy(seq.subdir, mxml_get_attribute(pn, "path"), sizeof(seq.subdir));
          if (mxml_get_attribute(pn, "notify"))
@@ -837,10 +935,7 @@ void sequencer()
    /*---- ODBSet ----*/
    else if (equal_ustring(mxml_get_name(pn), "ODBSet")) {
       if (!mxml_get_attribute(pn, "path")) {
-         sprintf(seq.error, "Missing attribute \"path\"");
-         seq.error_line = seq.current_line_number;
-         seq.running = FALSE;
-         cm_msg(MTALK, "sequencer", "Sequencer has stopped with error.");
+         seq_error("Missing attribute \"path\"");
       } else {
          strlcpy(odbpath, seq.subdir, sizeof(odbpath));
          if (strlen(odbpath) > 0 && odbpath[strlen(odbpath)-1] != '/')
@@ -854,10 +949,9 @@ void sequencer()
          strlcpy(value, mxml_get_value(pn), sizeof(value));
          status = db_find_key(hDB, 0, odbpath, &hKey);
          if (status != DB_SUCCESS) {
-            sprintf(seq.error, "Cannot find ODB key \"%s\"", odbpath);
-            seq.error_line = seq.current_line_number;
-            seq.running = FALSE;
-            cm_msg(MTALK, "sequencer", "Sequencer has stopped with error.");
+            sprintf(str, "Cannot find ODB key \"%s\"", odbpath);
+            seq_error(str);
+            return;
          } else {
             db_get_key(hDB, hKey, &key);
             size = sizeof(data);
@@ -879,10 +973,7 @@ void sequencer()
    /*---- ODBInc ----*/
    else if (equal_ustring(mxml_get_name(pn), "ODBInc")) {
       if (!mxml_get_attribute(pn, "path")) {
-         sprintf(seq.error, "Missing attribute \"path\"");
-         seq.error_line = seq.current_line_number;
-         seq.running = FALSE;
-         cm_msg(MTALK, "sequencer", "Sequencer has stopped with error.");
+         seq_error("Missing attribute \"path\"");
       } else {
          strlcpy(odbpath, seq.subdir, sizeof(odbpath));
          if (strlen(odbpath) > 0 && odbpath[strlen(odbpath)-1] != '/')
@@ -896,10 +987,8 @@ void sequencer()
          strlcpy(value, mxml_get_value(pn), sizeof(value));
          status = db_find_key(hDB, 0, odbpath, &hKey);
          if (status != DB_SUCCESS) {
-            sprintf(seq.error, "Cannot find ODB key \"%s\"", odbpath);
-            seq.error_line = seq.current_line_number;
-            seq.running = FALSE;
-            cm_msg(MTALK, "sequencer", "Sequencer has stopped with error.");
+            sprintf(str, "Cannot find ODB key \"%s\"", odbpath);
+            seq_error(str);
          } else {
             db_get_key(hDB, hKey, &key);
             size = sizeof(data);
@@ -954,11 +1043,8 @@ void sequencer()
                db_get_value(hDB, 0, "/Runinfo/Run number", &run_number, &size, TID_INT, FALSE);
                status = cm_transition(TR_START, run_number+1, str, sizeof(str), DETACH, FALSE);
                if (status != CM_SUCCESS) {
-                  sprintf(seq.error, "Cannot start run: %s", str);
-                  seq.error_line = seq.current_line_number;
-                  seq.running = FALSE;
-                  seq.transition_request = FALSE;
-                  cm_msg(MTALK, "sequencer", "Sequencer has stopped with error.");
+                  sprintf(str, "Cannot start run: %s", str);
+                  seq_error(str);
                }
             }
          } else {
@@ -978,11 +1064,8 @@ void sequencer()
             if (state != STATE_STOPPED) {
                status = cm_transition(TR_STOP, 0, str, sizeof(str), DETACH, FALSE);
                if (status != CM_SUCCESS) {
-                  sprintf(seq.error, "Cannot stop run: %s", str);
-                  seq.error_line = seq.current_line_number;
-                  seq.running = FALSE;
-                  seq.transition_request = FALSE;
-                  cm_msg(MTALK, "sequencer", "Sequencer has stopped with error.");
+                  sprintf(str, "Cannot stop run: %s", str);
+                  seq_error(str);
                }
             }
          } else {
@@ -1004,11 +1087,9 @@ void sequencer()
             }
          }
       } else {
-         sprintf(seq.error, "Unknown transition \"%s\"", mxml_get_value(pn));
-         seq.error_line = seq.current_line_number;
-         seq.running = FALSE;
-         seq.transition_request = FALSE;
-         cm_msg(MTALK, "sequencer", "Sequencer has stopped with error.");
+         sprintf(str, "Invalid transition \"%s\"", mxml_get_value(pn));
+         seq_error(str);
+         return;
       }
       db_set_record(hDB, hKeySeq, &seq, sizeof(seq), 0);
    }
@@ -1016,7 +1097,9 @@ void sequencer()
    /*---- Wait ----*/
    else if (equal_ustring(mxml_get_name(pn), "Wait")) {
       if (equal_ustring(mxml_get_attribute(pn, "for"), "Events")) {
-         n = atoi(mxml_get_value(pn));
+         if (!evaluate(str, mxml_get_value(pn)))
+            return;
+         n = atoi(p);
          seq.wait_n = n;
          size = sizeof(d);
          db_get_value(hDB, 0, "/Equipment/Trigger/Statistics/Events sent", &d, &size, TID_DOUBLE, FALSE);
@@ -1028,10 +1111,8 @@ void sequencer()
          n = atoi(mxml_get_value(pn));
          seq.wait_n = n;
          if (!mxml_get_attribute(pn, "path")) {
-            sprintf(seq.error, "\"path\" must be given for ODB values");
-            seq.error_line = seq.current_line_number;
-            seq.running = FALSE;
-            cm_msg(MTALK, "sequencer", "Sequencer has stopped with error.");
+            seq_error("\"path\" must be given for ODB values");
+            return;
          } else {
             strlcpy(odbpath, mxml_get_attribute(pn, "path"), sizeof(odbpath));
             if (strchr(odbpath, '[')) {
@@ -1041,10 +1122,9 @@ void sequencer()
                index = 0;
             status = db_find_key(hDB, 0, odbpath, &hKey);
             if (status != DB_SUCCESS) {
-               sprintf(seq.error, "Cannot find ODB key \"%s\"", odbpath);
-               seq.error_line = seq.current_line_number;
-               seq.running = FALSE;
-               cm_msg(MTALK, "sequencer", "Sequencer has stopped with error.");
+               sprintf(str, "Cannot find ODB key \"%s\"", odbpath);
+               seq_error(str);
+               return;
             } else {
                db_get_key(hDB, hKey, &key);
                size = sizeof(data);
@@ -1056,7 +1136,9 @@ void sequencer()
             }
          }
       } else if (equal_ustring(mxml_get_attribute(pn, "for"), "Seconds")) {
-         n = atoi(mxml_get_value(pn));
+         if (!evaluate(str, mxml_get_value(pn)))
+            return;
+         n = atoi(str);
          seq.wait_n = n;
          if (seq.start_time == 0) {
             seq.start_time = ss_time();
@@ -1072,6 +1154,9 @@ void sequencer()
             seq.wait_n = 0;
             seq.wait_counter = 0;
          }
+      } else {
+         sprintf(str, "Invalid wait attribute \"%s\"", mxml_get_attribute(pn, "for"));
+         seq_error(str);
       }
       db_set_record(hDB, hKeySeq, &seq, sizeof(seq), 0);
    }
@@ -1082,10 +1167,8 @@ void sequencer()
          if (seq.loop_start_line[i] == 0)
             break;
       if (i == 4) {
-         sprintf(seq.error, "Maximum loop nesting exceeded");
-         seq.error_line = seq.current_line_number;
-         seq.running = FALSE;
-         cm_msg(MTALK, "sequencer", "Sequencer has stopped with error.");
+         seq_error("Maximum loop nesting exceeded");
+         return;
       }
       seq.loop_start_line[i] = seq.current_line_number;
       seq.loop_end_line[i] = mxml_get_line_number_end(pn);
@@ -1098,13 +1181,52 @@ void sequencer()
       db_set_record(hDB, hKeySeq, &seq, sizeof(seq), 0);
    }
    
+   /*---- Subroutine ----*/
+   else if (equal_ustring(mxml_get_name(pn), "Subroutine")) {
+      // simply skip subroutines
+      seq.current_line_number = mxml_get_line_number_end(pn);
+   }
+   
+   /*---- Call ----*/
+   else if (equal_ustring(mxml_get_name(pn), "Call")) {
+      if (seq.stack_index == 4) {
+         seq_error("Maximum subroutine level exceeded");
+         return;
+      } else {
+         // put current line number on stack
+         seq.subroutine_return_line[seq.stack_index] = mxml_get_line_number_end(pn)+1;
+         
+         // search subroutine
+         for (i=1 ; i<mxml_get_line_number_end(mxml_find_node(pnseq, "RunSequence")) ; i++) {
+            pt = mxml_get_node_at_line(pnseq, i);
+            if (pt) {
+               if (equal_ustring(mxml_get_name(pt), "Subroutine")) {
+                  if (equal_ustring(mxml_get_attribute(pt, "name"), mxml_get_attribute(pn, "name"))) {
+                     // put routine end line on end stack
+                     seq.subroutine_end_line[seq.stack_index] = mxml_get_line_number_end(pt); 
+                     // go to first line of subroutine
+                     seq.current_line_number = mxml_get_line_number_start(pt) + 1;
+                     // put parameter(s) on stack
+                     if (mxml_get_value(pn))
+                        strlcpy(seq.subroutine_param[seq.stack_index], mxml_get_value(pn), 256);
+                     // increment stack
+                     seq.stack_index ++;
+                     break;
+                  }
+               }
+            }
+         }
+         if (i == mxml_get_line_number_end(mxml_find_node(pnseq, "RunSequence"))) {
+            sprintf(str, "Subroutine '%s' not found", mxml_get_attribute(pn, "name"));
+            seq_error(str);
+         }
+      }
+   }
+   
    /*---- <unknown> ----*/   
    else {
-      sprintf(seq.error, "Unknown command \"%s\"", mxml_get_name(pn));
-      seq.error_line = seq.current_line_number;
-      seq.running = FALSE;
-      cm_msg(MTALK, "sequencer", "Sequencer has stopped with error.");
-      db_set_record(hDB, hKeySeq, &seq, sizeof(seq), 0);
+      sprintf(str, "Unknown command \"%s\"", mxml_get_name(pn));
+      seq_error(str);
    }
 }
 
