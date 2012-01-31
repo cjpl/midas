@@ -47,6 +47,7 @@ typedef struct {
    int   error_line;
    BOOL  running;
    BOOL  finished;
+   BOOL  paused;
    int   current_line_number;
    BOOL  stop_after_run;
    BOOL  transition_request;
@@ -61,9 +62,10 @@ typedef struct {
    int   subroutine_end_line[4];
    int   subroutine_return_line[4];
    char  subroutine_param[4][256];
-   int   wait_counter;
-   int   wait_n;
+   float wait_value;
+   float wait_limit;
    DWORD start_time;
+   char  wait_type[32];
    char  last_msg[10];
 } SEQUENCER;
 
@@ -75,6 +77,7 @@ typedef struct {
 "Error line = INT : 0",\
 "Running = BOOL : n",\
 "Finished = BOOL : y",\
+"Paused = BOOL : n",\
 "Current line number = INT : 0",\
 "Stop after run = BOOL : n",\
 "Transition request = BOOL : n",\
@@ -117,9 +120,10 @@ typedef struct {
 "[256] ",\
 "[256] ",\
 "[256] ",\
-"Wait counter = INT : 0",\
-"Wait n = INT : 0",\
+"Wait value = FLOAT : 0",\
+"Wait limit = FLOAT : 0",\
 "Start time = DWORD : 0",\
+"Wait type = STRING : [32] ",\
 "Last msg = STRING : [10] 00:00:00",\
 "",\
 NULL }
@@ -227,6 +231,9 @@ BOOL evaluate(char *result, const char *value)
          } else
             goto error;
       }
+   } else {
+      strlcpy(result, value, 256);
+      return TRUE;
    }
 
 error:
@@ -309,10 +316,12 @@ void show_seq_page()
          /* start sequencer */
          seq.running = TRUE;
          seq.finished = FALSE;
+         seq.paused = FALSE;
          seq.transition_request = FALSE;
-         seq.wait_counter = 0;
-         seq.wait_n = 0;
+         seq.wait_limit = 0;
+         seq.wait_value = 0;
          seq.start_time = 0;
+         seq.wait_type[0] = 0;
          for (i=0 ; i<4 ; i++) {
             seq.loop_start_line[i] = 0;
             seq.loop_end_line[i] = 0;
@@ -382,8 +391,10 @@ void show_seq_page()
    if (equal_ustring(getparam("cmd"), "Stop immediately")) {
       seq.running = FALSE;
       seq.finished = FALSE;
-      seq.wait_counter = 0;
-      seq.wait_n = 0;
+      seq.paused = FALSE;
+      seq.wait_limit = 0;
+      seq.wait_value = 0;
+      seq.wait_type[0] = 0;
       for (i=0 ; i<4 ; i++) {
          seq.loop_start_line[i] = 0;
          seq.loop_end_line[i] = 0;
@@ -405,6 +416,22 @@ void show_seq_page()
       return;
    }
    
+   /*---- pause script ----*/
+   if (equal_ustring(getparam("cmd"), "SPause")) {
+      seq.paused = TRUE;
+      db_set_record(hDB, hKey, &seq, sizeof(seq), 0);
+      redirect("");
+      return;
+   }
+   
+   /*---- resume script ----*/
+   if (equal_ustring(getparam("cmd"), "SResume")) {
+      seq.paused = FALSE;
+      db_set_record(hDB, hKey, &seq, sizeof(seq), 0);
+      redirect("");
+      return;
+   }
+
    /* header */
    rsprintf("HTTP/1.0 200 Document follows\r\n");
    rsprintf("Server: MIDAS HTTP %d\r\n", mhttpd_revision());
@@ -430,13 +457,15 @@ void show_seq_page()
    rsprintf("   seq = ODBGetRecord('/Sequencer/State');\n");
    rsprintf("   var current_line = ODBExtractRecord(seq, 'Current line number');\n");
    rsprintf("   var error_line = ODBExtractRecord(seq, 'Error line');\n");
-   rsprintf("   var wait_counter = ODBExtractRecord(seq, 'Wait counter');\n");
-   rsprintf("   var wait_n = ODBExtractRecord(seq, 'Wait n');\n");
+   rsprintf("   var wait_value = ODBExtractRecord(seq, 'Wait value');\n");
+   rsprintf("   var wait_limit = ODBExtractRecord(seq, 'Wait limit');\n");
+   rsprintf("   var wait_type = ODBExtractRecord(seq, 'Wait type');\n");
    rsprintf("   var loop_n = ODBExtractRecord(seq, 'Loop n');\n");
    rsprintf("   var loop_counter = ODBExtractRecord(seq, 'Loop counter');\n");
    rsprintf("   var loop_start_line = ODBExtractRecord(seq, 'Loop start line');\n");
    rsprintf("   var loop_end_line = ODBExtractRecord(seq, 'Loop end line');\n");
    rsprintf("   var finished = ODBExtractRecord(seq, 'Finished');\n");
+   rsprintf("   var paused = ODBExtractRecord(seq, 'Paused');\n");
    rsprintf("   var start_time = ODBExtractRecord(seq, 'Start time');\n");
    rsprintf("   var msg = ODBExtractRecord(seq, 'Last msg');\n");
    rsprintf("   \n");
@@ -482,16 +511,22 @@ void show_seq_page()
    rsprintf("   \n");
    rsprintf("   var wl = document.getElementById('wait_label');\n");
    rsprintf("   if (wl != null) {\n");
-   rsprintf("      if (start_time > 0)\n");
-   rsprintf("         wl.innerHTML = 'Wait:&nbsp['+wait_counter+'/'+wait_n+'&nbsp;s]';\n");
-   rsprintf("      else if (wait_n > 0)\n");
-   rsprintf("         wl.innerHTML = 'Run:&nbsp['+wait_counter+'/'+wait_n+'&nbsp;events]';\n");
-   rsprintf("      else\n");
+   rsprintf("      if (wait_type == 'Seconds')\n");
+   rsprintf("         wl.innerHTML = 'Wait:&nbsp['+wait_value+'/'+wait_limit+'&nbsp;s]';\n");
+   rsprintf("      else if (wait_type == 'Events')\n");
+   rsprintf("         wl.innerHTML = 'Run:&nbsp['+wait_value+'/'+wait_limit+'&nbsp;events]';\n");
+   rsprintf("      else if (wait_type.substr(0, 3) == 'ODB') {\n");
+   rsprintf("         op = wait_type.substr(3);\n");
+   rsprintf("         if (op == '')\n");
+   rsprintf("            op = '>=';\n");
+   rsprintf("         op = op.replace(/>/g, '&gt;').replace(/</g, '&lt;');\n");
+   rsprintf("         wl.innerHTML = 'ODB:&nbsp['+wait_value+'&nbsp;'+op+'&nbsp;'+wait_limit+']';\n");
+   rsprintf("      } else\n");
    rsprintf("         wl.innerHTML = '';\n");
    rsprintf("   }\n");
    rsprintf("   var rp = document.getElementById('runprgs');\n");
    rsprintf("   if (rp != null) {\n");
-   rsprintf("      var width = Math.round(100.0*wait_counter/wait_n);\n");
+   rsprintf("      var width = Math.round(100.0*wait_value/wait_limit);\n");
    rsprintf("      if (width > 100)\n");
    rsprintf("         width = 100;\n");
    rsprintf("      rp.width = width+'%%';\n");
@@ -582,6 +617,23 @@ void show_seq_page()
          rsprintf("//-->\n");
          rsprintf("</script>\n");
          rsprintf("<input type=button onClick=\"stop_immediately()\" value=\"Stop immediately\">");
+         
+         if (!seq.paused) {
+            rsprintf("<script type=\"text/javascript\">\n");
+            rsprintf("<!--\n");
+            rsprintf("function pause()\n");
+            rsprintf("{\n");
+            rsprintf("   flag = confirm('Are you sure to pause the script ?');\n");
+            rsprintf("   if (flag == true)\n");
+            rsprintf("      window.location.href = '?cmd=SPause';\n");
+            rsprintf("}\n");
+            rsprintf("//-->\n");
+            rsprintf("</script>\n");
+            rsprintf("<input type=button onClick=\"pause()\" value=\"Pause script\">");
+         } else {
+            rsprintf("<input type=button onClick=\"window.location.href=\'?cmd=SResume\';\" value=\"Resume script\">");
+         }
+         
       } else {
          rsprintf("<input type=submit name=cmd value=\"Load Script\">\n");
          rsprintf("<input type=submit name=cmd value=\"Start Script\">\n");
@@ -722,14 +774,18 @@ void show_seq_page()
             }
             if (seq.running) {
                rsprintf("<tr><td colspan=2>\n");
-               if (seq.wait_n <= 0)
+               if (seq.wait_value <= 0)
                   width = 0;
                else
-                  width = (int)(((double)seq.wait_counter/seq.wait_n)*100+0.5);
+                  width = (int)(((double)seq.wait_value/seq.wait_limit)*100+0.5);
                rsprintf("<table width=\"100%%\"><tr><td id=\"wait_label\">Run:</td>\n");
                rsprintf("<td width=\"100%%\"><table id=\"runprgs\" width=\"%d%%\" height=\"25\">\n", width);
                rsprintf("<tr><td style=\"background-color:#80FF80;border:2px solid #008000;border-top:2px solid #E0E0FF;border-left:2px solid #E0E0FF;\">&nbsp;\n");
                rsprintf("</td></tr></table></td></tr></table></td></tr>\n");
+            }
+            if (seq.paused) {
+               rsprintf("<tr><td align=\"center\" colspan=2 style=\"background-color:#FFFF80;\"><b>Sequencer is paused</b>\n");
+               rsprintf("</td></tr>\n");
             }
             if (seq.finished) {
                rsprintf("<tr><td colspan=2 style=\"background-color:#80FF80;\"><b>Sequence is finished</b>\n");
@@ -834,14 +890,14 @@ void show_seq_page()
 void sequencer()
 {
    PMXML_NODE pn, pr, pt;
-   char odbpath[256], value[256], data[256], str[256];
-   const char *p;
+   char odbpath[256], value[256], data[256], str[256], op[32];
    int i, n, status, size, index, last_line, state, run_number;
    HNDLE hDB, hKey, hKeySeq;
    KEY key;
    double d;
+   float v;
    
-   if (!seq.running || pnseq == NULL)
+   if (!seq.running || seq.paused || pnseq == NULL)
       return;
    
    cm_get_experiment_database(&hDB, NULL);
@@ -1099,17 +1155,19 @@ void sequencer()
       if (equal_ustring(mxml_get_attribute(pn, "for"), "Events")) {
          if (!evaluate(str, mxml_get_value(pn)))
             return;
-         n = atoi(p);
-         seq.wait_n = n;
+         n = atoi(str);
+         seq.wait_limit = n;
+         strcpy(seq.wait_type, "Events");
          size = sizeof(d);
          db_get_value(hDB, 0, "/Equipment/Trigger/Statistics/Events sent", &d, &size, TID_DOUBLE, FALSE);
-         seq.wait_counter = (int)d;
+         seq.wait_value = d;
          if (d >= n)
             seq.current_line_number++;
-         seq.wait_counter = (int)d;
+         seq.wait_value = d;
       } else  if (equal_ustring(mxml_get_attribute(pn, "for"), "ODBValue")) {
-         n = atoi(mxml_get_value(pn));
-         seq.wait_n = n;
+         v = atof(mxml_get_value(pn));
+         seq.wait_limit = v;
+         strcpy(seq.wait_type, "ODB");
          if (!mxml_get_attribute(pn, "path")) {
             seq_error("\"path\" must be given for ODB values");
             return;
@@ -1130,29 +1188,58 @@ void sequencer()
                size = sizeof(data);
                db_get_data_index(hDB, hKey, data, &size, index, key.type);
                db_sprintf(str, data, size, 0, key.type);
-               seq.wait_counter = atoi(str);
-               if (seq.wait_counter >= seq.wait_n)
-                  seq.current_line_number++;
+               seq.wait_value = atof(str);
+               if (mxml_get_attribute(pn, "op"))
+                  strlcpy(op, mxml_get_attribute(pn, "op"), sizeof(op));
+               else
+                  strcpy(op, ">=");
+               strlcat(seq.wait_type, op, sizeof(seq.wait_type));
+               
+               if (equal_ustring(op, ">=")) {
+                  if (seq.wait_value >= seq.wait_limit)
+                     seq.current_line_number++;
+               } else if (equal_ustring(op, ">")) { 
+                  if (seq.wait_value > seq.wait_limit)
+                     seq.current_line_number++;
+               } else if (equal_ustring(op, "<=")) {
+                  if (seq.wait_value <= seq.wait_limit)
+                     seq.current_line_number++;
+               } else if (equal_ustring(op, "<")) {
+                  if (seq.wait_value < seq.wait_limit)
+                     seq.current_line_number++;
+               } else if (equal_ustring(op, "==")) {
+                  if (seq.wait_value == seq.wait_limit)
+                     seq.current_line_number++;
+               } else if (equal_ustring(op, "!=")) {
+                  if (seq.wait_value != seq.wait_limit)
+                     seq.current_line_number++;
+               } else {
+                  sprintf(str, "Invalid comaprison \"%s\"", op);
+                  seq_error(str);
+                  return;
+               }
             }
          }
       } else if (equal_ustring(mxml_get_attribute(pn, "for"), "Seconds")) {
          if (!evaluate(str, mxml_get_value(pn)))
             return;
          n = atoi(str);
-         seq.wait_n = n;
+         seq.wait_limit = n;
+         strcpy(seq.wait_type, "Seconds");
          if (seq.start_time == 0) {
             seq.start_time = ss_time();
-            seq.wait_counter = 0;
+            seq.wait_value = 0;
          } else {
-            seq.wait_counter = ss_time() - seq.start_time;
-            if (seq.wait_counter > seq.wait_n)
-               seq.wait_counter = seq.wait_n;
+            seq.wait_value = ss_time() - seq.start_time;
+            if (seq.wait_value > seq.wait_limit)
+               seq.wait_value = seq.wait_limit;
          }
-         if (ss_time() - seq.start_time > (DWORD)seq.wait_n) {
+         if (ss_time() - seq.start_time > (DWORD)seq.wait_limit) {
             seq.current_line_number++;
             seq.start_time = 0;
-            seq.wait_n = 0;
-            seq.wait_counter = 0;
+            seq.wait_limit = 0;
+            seq.wait_value = 0;
+            seq.wait_type[0] = 0;
          }
       } else {
          sprintf(str, "Invalid wait attribute \"%s\"", mxml_get_attribute(pn, "for"));
