@@ -24,6 +24,8 @@ extern void rsprintf(const char *format, ...);
 extern int mhttpd_revision();
 extern void strencode(char *text);
 extern void strencode4(char *text);
+extern void show_header(HNDLE hDB, const char *title, const char *method, const char *path, int colspan,
+                        int refresh);
 
 /**dox***************************************************************/
 /** @file sequencer.cxx
@@ -194,13 +196,15 @@ void seq_error(const char *str)
 
 /*------------------------------------------------------------------*/
 
-BOOL evaluate(char *result, const char *value)
+BOOL evaluate(const char *value, char *result, int size)
 {
+   HNDLE hDB;
    const char *p;
    char *s;
    char str[256];
    int index, i;
    
+   cm_get_experiment_database(&hDB, NULL);
    p = value;
    
    while (*p == ' ')
@@ -215,7 +219,7 @@ BOOL evaluate(char *result, const char *value)
             s = strtok(str, ",");
             if (s == NULL) {
                if (index == 1) {
-                  strlcpy(result, str, 256);
+                  strlcpy(result, str, size);
                   return TRUE;
                } else
                   goto error;
@@ -223,16 +227,20 @@ BOOL evaluate(char *result, const char *value)
             for (i=1; s != NULL && i<index; i++)
                s = strtok(NULL, ",");
             if (s != NULL) {
-               strlcpy(result, s, 256);
+               strlcpy(result, s, size);
                return TRUE;
             }
             else 
                goto error;
          } else
             goto error;
+      } else {
+         sprintf(str, "/Sequencer/Variables/%s", value+1);
+         if (db_get_value(hDB, 0, str, result, &size, TID_STRING, FALSE) == DB_SUCCESS)
+            return TRUE;
       }
    } else {
-      strlcpy(result, value, 256);
+      strlcpy(result, value, size);
       return TRUE;
    }
 
@@ -244,13 +252,133 @@ error:
 
 /*------------------------------------------------------------------*/
 
+void seq_start_page()
+{
+   int i, j, n, size, last_line, status, maxlength;
+   HNDLE hDB, hkey, hsubkey, hkeycomm, hkeyc;
+   KEY key;
+   char data[1000], str[32], name[32];
+   char data_str[256], comment[1000];
+   MXML_NODE *pn;
+   
+   cm_get_experiment_database(&hDB, NULL);
+   
+   show_header(hDB, "Start sequence", "GET", "", 1, 0);
+   rsprintf("<tr><th bgcolor=#A0A0FF colspan=2>Start script</th>\n");
+   
+   /* run parameters from ODB */
+   db_find_key(hDB, 0, "/Experiment/Edit on sequence", &hkey);
+   db_find_key(hDB, 0, "/Experiment/Parameter Comments", &hkeycomm);
+   if (hkey) {
+      for (i = 0, n = 0;; i++) {
+         db_enum_link(hDB, hkey, i, &hsubkey);
+         
+         if (!hsubkey)
+            break;
+         
+         db_get_link(hDB, hsubkey, &key);
+         strlcpy(str, key.name, sizeof(str));
+         
+         if (equal_ustring(str, "Edit run number"))
+            continue;
+         
+         db_enum_key(hDB, hkey, i, &hsubkey);
+         db_get_key(hDB, hsubkey, &key);
+         
+         size = sizeof(data);
+         status = db_get_data(hDB, hsubkey, data, &size, key.type);
+         if (status != DB_SUCCESS)
+            continue;
+         
+         for (j = 0; j < key.num_values; j++) {
+            if (key.num_values > 1)
+               rsprintf("<tr><td>%s [%d]", str, j);
+            else
+               rsprintf("<tr><td>%s", str);
+            
+            if (j == 0 && hkeycomm) {
+               /* look for comment */
+               if (db_find_key(hDB, hkeycomm, key.name, &hkeyc) == DB_SUCCESS) {
+                  size = sizeof(comment);
+                  if (db_get_data(hDB, hkeyc, comment, &size, TID_STRING) == DB_SUCCESS)
+                     rsprintf("<br>%s\n", comment);
+               }
+            }
+            
+            db_sprintf(data_str, data, key.item_size, j, key.type);
+            
+            maxlength = 80;
+            if (key.type == TID_STRING)
+               maxlength = key.item_size;
+            
+            if (key.type == TID_BOOL) {
+               if (((DWORD*)data)[j])
+                  rsprintf("<td><input type=checkbox checked name=x%d value=1></td></tr>\n", n++);
+               else
+                  rsprintf("<td><input type=checkbox name=x%d value=1></td></tr>\n", n++);
+            } else
+               rsprintf("<td><input type=text size=%d maxlength=%d name=x%d value=\"%s\"></tr>\n",
+                        (maxlength<80)?maxlength:80, maxlength-1, n++, data_str);
+         }
+      }
+   }
+   
+   /* parameters from script */
+   pn = mxml_find_node(pnseq, "RunSequence");
+   if (pn) {
+      last_line = mxml_get_line_number_end(pn);
+      
+      for (i=1 ; i<last_line ; i++){
+         pn = mxml_get_node_at_line(pnseq, i);
+         if (!pn)
+            continue;
+            
+         if (equal_ustring(mxml_get_name(pn), "Param")) {
+            strlcpy(name, mxml_get_attribute(pn, "name"), sizeof(name));
+
+            rsprintf("<tr><td>%s", name);
+            if (mxml_get_attribute(pn, "comment"))
+               rsprintf("<br>%s\n", mxml_get_attribute(pn, "comment"));
+                     
+            size = sizeof(data_str);
+            sprintf(str, "/Sequencer/Variables/%s", name);
+            data_str[0] = 0;
+            db_get_value(hDB, 0, str, data_str, &size, TID_STRING, FALSE);
+            
+            if (mxml_get_attribute(pn, "type") && equal_ustring(mxml_get_attribute(pn, "type"), "bool")) {
+               if (data_str[0] == '1')
+                  rsprintf("<td><input type=checkbox checked name=x%d value=1></tr>\n", n++);
+               else
+                  rsprintf("<td><input type=checkbox name=x%d value=1></tr>\n", n++);
+            } else
+               rsprintf("<td><input type=text name=x%d value=\"%s\"></tr>\n", n++, data_str);
+         }
+         
+      }
+   }
+        
+   rsprintf("<tr><td align=center colspan=2>\n");
+   rsprintf("<input type=submit name=cmd value=\"Start Script\">\n");
+   rsprintf("<input type=hidden name=params value=1>\n");
+   rsprintf("<input type=submit name=cmd value=Cancel>\n");
+   rsprintf("</tr>\n");
+   rsprintf("</table>\n");
+   
+   if (isparam("redir"))
+      rsprintf("<input type=hidden name=\"redir\" value=\"%s\">\n", getparam("redir"));
+   
+   rsprintf("</body></html>\r\n");
+}
+
+/*------------------------------------------------------------------*/
+
 const char *bar_col[] = {"#B0B0FF", "#C0C0FF", "#D0D0FF", "#E0E0FF"};
 
 void show_seq_page()
 {
-   INT i, size, n, width, state, eob;
+   INT i, size, n, width, state, eob, last_line;
    HNDLE hDB;
-   char str[256], path[256], dir[256], error[256], comment[256], filename[256], data[256], buffer[10000], line[256];
+   char str[256], path[256], dir[256], error[256], comment[256], filename[256], data[256], buffer[10000], line[256], name[32];
    time_t now;
    char *flist = NULL, *pc, *pline;
    PMXML_NODE pn;
@@ -293,7 +421,7 @@ void show_seq_page()
    if (equal_ustring(getparam("cmd"), "Start Script")) {
       if (isparam("params")) {
          
-         /* set run parameters */
+         /* set parameters from ODB */
          db_find_key(hDB, 0, "/Experiment/Edit on sequence", &hparam);
          if (hparam) {
             for (i = 0, n = 0;; i++) {
@@ -310,6 +438,27 @@ void show_seq_page()
                   db_sscanf(getparam(str), data, &size, 0, key.type);
                   db_set_data_index(hDB, hsubkey, data, key.item_size, j, key.type);
                }
+            }
+         }
+         
+         /* set parameters from script */
+         pn = mxml_find_node(pnseq, "RunSequence");
+         if (pn) {
+            last_line = mxml_get_line_number_end(pn);
+            
+            for (i=1 ; i<last_line ; i++){
+               pn = mxml_get_node_at_line(pnseq, i);
+               if (!pn)
+                  continue;
+               
+               if (equal_ustring(mxml_get_name(pn), "Param")) {
+                  strlcpy(name, mxml_get_attribute(pn, "name"), sizeof(name));
+                  sprintf(str, "x%d", n++);
+                  strlcpy(buffer, getparam(str), sizeof(buffer));
+                  sprintf(str, "/Sequencer/Variables/%s", name);
+                  db_set_value(hDB, 0, str, buffer, strlen(buffer)+1, 1, TID_STRING);
+               }
+               
             }
          }
          
@@ -341,8 +490,8 @@ void show_seq_page()
          return;
          
       } else {
-         
-         show_start_page(TRUE);
+
+         seq_start_page();
          return;
       }
    }
@@ -521,8 +670,13 @@ void show_seq_page()
    rsprintf("            op = '>=';\n");
    rsprintf("         op = op.replace(/>/g, '&gt;').replace(/</g, '&lt;');\n");
    rsprintf("         wl.innerHTML = 'ODB:&nbsp['+wait_value+'&nbsp;'+op+'&nbsp;'+wait_limit+']';\n");
-   rsprintf("      } else\n");
+   rsprintf("      } else {\n");
    rsprintf("         wl.innerHTML = '';\n");
+   rsprintf("      }\n");
+   rsprintf("      if (wait_type == '')\n");
+   rsprintf("         document.getElementById('wait_row').style.display = 'none';\n");
+   rsprintf("      else\n");
+   rsprintf("         document.getElementById('wait_row').style.display = 'visible';\n");
    rsprintf("   }\n");
    rsprintf("   var rp = document.getElementById('runprgs');\n");
    rsprintf("   if (rp != null) {\n");
@@ -773,7 +927,7 @@ void show_seq_page()
                rsprintf("</td></tr></table></td></tr></table></td></tr>\n");
             }
             if (seq.running) {
-               rsprintf("<tr><td colspan=2>\n");
+               rsprintf("<tr id=\"wait_row\"><td colspan=2>\n");
                if (seq.wait_value <= 0)
                   width = 0;
                else
@@ -890,8 +1044,8 @@ void show_seq_page()
 void sequencer()
 {
    PMXML_NODE pn, pr, pt;
-   char odbpath[256], value[256], data[256], str[256], op[32];
-   int i, n, status, size, index, last_line, state, run_number;
+   char odbpath[256], value[256], data[256], str[256], name[32], op[32];
+   int i, n, status, size, index, last_line, state, run_number, cont;
    HNDLE hDB, hKey, hKeySeq;
    KEY key;
    double d;
@@ -1002,7 +1156,8 @@ void sequencer()
             *strchr(odbpath, '[') = 0;
          } else
             index = 0;
-         strlcpy(value, mxml_get_value(pn), sizeof(value));
+         if (!evaluate(mxml_get_value(pn), value, sizeof(value)))
+            return;
          status = db_find_key(hDB, 0, odbpath, &hKey);
          if (status != DB_SUCCESS) {
             sprintf(str, "Cannot find ODB key \"%s\"", odbpath);
@@ -1040,7 +1195,8 @@ void sequencer()
             *strchr(odbpath, '[') = 0;
          } else
             index = 0;
-         strlcpy(value, mxml_get_value(pn), sizeof(value));
+         if (!evaluate(mxml_get_value(pn), value, sizeof(value)))
+            return;
          status = db_find_key(hDB, 0, odbpath, &hKey);
          if (status != DB_SUCCESS) {
             sprintf(str, "Cannot find ODB key \"%s\"", odbpath);
@@ -1153,7 +1309,7 @@ void sequencer()
    /*---- Wait ----*/
    else if (equal_ustring(mxml_get_name(pn), "Wait")) {
       if (equal_ustring(mxml_get_attribute(pn, "for"), "Events")) {
-         if (!evaluate(str, mxml_get_value(pn)))
+         if (!evaluate(mxml_get_value(pn), str, sizeof(str)))
             return;
          n = atoi(str);
          seq.wait_limit = n;
@@ -1161,11 +1317,17 @@ void sequencer()
          size = sizeof(d);
          db_get_value(hDB, 0, "/Equipment/Trigger/Statistics/Events sent", &d, &size, TID_DOUBLE, FALSE);
          seq.wait_value = d;
-         if (d >= n)
-            seq.current_line_number++;
+         if (d >= n) {
+            seq.current_line_number = mxml_get_line_number_end(pn) + 1;
+            seq.wait_limit = 0;
+            seq.wait_value = 0;
+            seq.wait_type[0] = 0;
+         }
          seq.wait_value = d;
       } else  if (equal_ustring(mxml_get_attribute(pn, "for"), "ODBValue")) {
-         v = atof(mxml_get_value(pn));
+         if (!evaluate(mxml_get_value(pn), str, sizeof(str)))
+            return;
+         v = atof(str);
          seq.wait_limit = v;
          strcpy(seq.wait_type, "ODB");
          if (!mxml_get_attribute(pn, "path")) {
@@ -1195,33 +1357,35 @@ void sequencer()
                   strcpy(op, ">=");
                strlcat(seq.wait_type, op, sizeof(seq.wait_type));
                
+               cont = FALSE;
                if (equal_ustring(op, ">=")) {
-                  if (seq.wait_value >= seq.wait_limit)
-                     seq.current_line_number++;
+                  cont = (seq.wait_value >= seq.wait_limit);
                } else if (equal_ustring(op, ">")) { 
-                  if (seq.wait_value > seq.wait_limit)
-                     seq.current_line_number++;
+                  cont = (seq.wait_value > seq.wait_limit);
                } else if (equal_ustring(op, "<=")) {
-                  if (seq.wait_value <= seq.wait_limit)
-                     seq.current_line_number++;
+                  cont = (seq.wait_value >= seq.wait_limit);
                } else if (equal_ustring(op, "<")) {
-                  if (seq.wait_value < seq.wait_limit)
-                     seq.current_line_number++;
+                  cont = (seq.wait_value >= seq.wait_limit);
                } else if (equal_ustring(op, "==")) {
-                  if (seq.wait_value == seq.wait_limit)
-                     seq.current_line_number++;
+                  cont = (seq.wait_value >= seq.wait_limit);
                } else if (equal_ustring(op, "!=")) {
-                  if (seq.wait_value != seq.wait_limit)
-                     seq.current_line_number++;
+                  cont = (seq.wait_value >= seq.wait_limit);
                } else {
                   sprintf(str, "Invalid comaprison \"%s\"", op);
                   seq_error(str);
                   return;
                }
+               
+               if (cont) {
+                  seq.current_line_number = mxml_get_line_number_end(pn) + 1;
+                  seq.wait_limit = 0;
+                  seq.wait_value = 0;
+                  seq.wait_type[0] = 0;
+               }
             }
          }
       } else if (equal_ustring(mxml_get_attribute(pn, "for"), "Seconds")) {
-         if (!evaluate(str, mxml_get_value(pn)))
+         if (!evaluate(mxml_get_value(pn), str, sizeof(str)))
             return;
          n = atoi(str);
          seq.wait_limit = n;
@@ -1271,9 +1435,29 @@ void sequencer()
    /*---- Subroutine ----*/
    else if (equal_ustring(mxml_get_name(pn), "Subroutine")) {
       // simply skip subroutines
-      seq.current_line_number = mxml_get_line_number_end(pn);
+      seq.current_line_number = mxml_get_line_number_end(pn) + 1;
    }
-   
+
+   /*---- Param ----*/
+   else if (equal_ustring(mxml_get_name(pn), "Param")) {
+      // simply skip parameters
+      seq.current_line_number = mxml_get_line_number_end(pn) + 1;
+   }
+
+   /*---- Set ----*/
+   else if (equal_ustring(mxml_get_name(pn), "Set")) {
+      if (!mxml_get_attribute(pn, "name")) {
+         seq_error("Missing variable name");
+         return;
+      }
+      strlcpy(name, mxml_get_attribute(pn, "name"), sizeof(name));
+      strlcpy(value, mxml_get_value(pn), sizeof(value));
+      sprintf(str, "/Sequencer/Variables/%s", name);
+      db_set_value(hDB, 0, str, value, strlen(value)+1, 1, TID_STRING);
+      
+      seq.current_line_number = mxml_get_line_number_end(pn)+1;
+   }
+
    /*---- Call ----*/
    else if (equal_ustring(mxml_get_name(pn), "Call")) {
       if (seq.stack_index == 4) {
@@ -1312,7 +1496,7 @@ void sequencer()
    
    /*---- <unknown> ----*/   
    else {
-      sprintf(str, "Unknown command \"%s\"", mxml_get_name(pn));
+      sprintf(str, "Unknown statement \"%s\"", mxml_get_name(pn));
       seq_error(str);
    }
 }
