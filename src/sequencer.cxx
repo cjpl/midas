@@ -198,10 +198,11 @@ void seq_error(const char *str)
 
 BOOL evaluate(const char *value, char *result, int size)
 {
-   HNDLE hDB;
+   HNDLE hDB, hkey;
+   KEY key;
    const char *p;
    char *s;
-   char str[256];
+   char str[256], data[256];
    int index, i;
    
    cm_get_experiment_database(&hDB, NULL);
@@ -212,6 +213,9 @@ BOOL evaluate(const char *value, char *result, int size)
    
    if (*p == '$') {
       p++;
+      strcpy(str, p);
+      if (strchr(str, '('))
+         *(strchr(str, '(')+1) = 0;
       if (atoi(p) > 0) {
          index = atoi(p);
          if (seq.stack_index > 0) {
@@ -220,6 +224,10 @@ BOOL evaluate(const char *value, char *result, int size)
             if (s == NULL) {
                if (index == 1) {
                   strlcpy(result, str, size);
+                  if (result[0] == '$') {
+                     strlcpy(str, result, sizeof(str));
+                     return evaluate(str, result, size);
+                  }                  
                   return TRUE;
                } else
                   goto error;
@@ -228,12 +236,38 @@ BOOL evaluate(const char *value, char *result, int size)
                s = strtok(NULL, ",");
             if (s != NULL) {
                strlcpy(result, s, size);
+               if (result[0] == '$') {
+                  strlcpy(str, result, sizeof(str));
+                  return evaluate(str, result, size);
+               }                  
                return TRUE;
             }
             else 
                goto error;
          } else
             goto error;
+      } else if (equal_ustring(str, "ODB(")) {
+         strlcpy(str, p+4, sizeof(str));
+         if (strchr(str, ')') == NULL)
+            return FALSE;
+         *strchr(str, ')') = 0;
+         if (str[0] == '"' && str[strlen(str)-1] == '"') {
+            memmove(str, str+1, strlen(str));
+            str[strlen(str)-1] = 0;
+         }
+         index = 0;
+         if (strchr(str, '[')) {
+            index = atoi(strchr(str, '[')+1);
+            *strchr(str, '[') = 0;
+         }
+         if (!db_find_key(hDB, 0, str, &hkey))
+            return FALSE;
+         db_get_key(hDB, hkey, &key);
+         i = sizeof(data);
+         db_get_data(hDB, hkey, data, &i, key.type);
+         db_sprintf(result, data, sizeof(data), index, key.type);
+         return TRUE;
+         
       } else {
          sprintf(str, "/Sequencer/Variables/%s", value+1);
          if (db_get_value(hDB, 0, str, result, &size, TID_STRING, FALSE) == DB_SUCCESS)
@@ -248,6 +282,53 @@ error:
    sprintf(str, "Invalid parameter \"%s\"", value);
    seq_error(str);
    return FALSE;
+}
+
+/*------------------------------------------------------------------*/
+
+int concatenate(char *result, int size, char *value)
+{
+   char str[2000], res[2000], *p1, *p2, *pd;
+   int i;
+   
+   pd = res;
+   p1 = value;
+   while (*p1 == ' ') // skip spaces
+      p1++;
+   do {
+      while (*p1 == ' ')
+         p1++;
+      p2 = p1;
+      while (*p2 && *p2 != ',' && *p2 != '"')
+         p2++;
+      if (*p2 == '"') { // copy contents between "" directly
+         p2 ++;
+         while (*p2 && *p2 != '"')
+            *pd++ = *p2++;
+         p2++;
+         while (*p2 && *p2 != ',')
+            p2++;
+         if (*p2 == ',')
+            p2++;
+         p1 = p2;
+      } else if (*p2 == ',') {
+         for (i=0 ; p1 < p2; i++)
+            str[i] = *p1++;
+         str[i] = 0;
+         while (strlen(str) > 0 && str[strlen(str)-1] == ' ')
+            str[strlen(str)-1] = 0;
+         if (!evaluate(str, pd, size - (pd - res)))
+             return FALSE;
+         pd += strlen(pd);    
+         p1++;
+      } else
+         p1 = p2;
+      
+   } while (*p1);
+   *pd = 0;
+   
+   strlcpy(result, res, size);
+   return TRUE;   
 }
 
 /*------------------------------------------------------------------*/
@@ -1451,7 +1532,23 @@ void sequencer()
          return;
       }
       strlcpy(name, mxml_get_attribute(pn, "name"), sizeof(name));
-      strlcpy(value, mxml_get_value(pn), sizeof(value));
+      if (!evaluate(mxml_get_value(pn), value, sizeof(value)))
+         return;
+      sprintf(str, "/Sequencer/Variables/%s", name);
+      db_set_value(hDB, 0, str, value, strlen(value)+1, 1, TID_STRING);
+      
+      seq.current_line_number = mxml_get_line_number_end(pn)+1;
+   }
+
+   /*---- Cat ----*/
+   else if (equal_ustring(mxml_get_name(pn), "Cat")) {
+      if (!mxml_get_attribute(pn, "name")) {
+         seq_error("Missing variable name");
+         return;
+      }
+      strlcpy(name, mxml_get_attribute(pn, "name"), sizeof(name));
+      if (!concatenate(value, sizeof(value), mxml_get_value(pn)))
+         return;
       sprintf(str, "/Sequencer/Variables/%s", name);
       db_set_value(hDB, 0, str, value, strlen(value)+1, 1, TID_STRING);
       
