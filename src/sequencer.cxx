@@ -47,6 +47,7 @@ typedef struct {
    char  filename[256];
    char  error[256];
    int   error_line;
+   char  message[256];
    BOOL  running;
    BOOL  finished;
    BOOL  paused;
@@ -77,6 +78,7 @@ typedef struct {
 "Filename = STRING : [256] ",\
 "Error = STRING : [256] ",\
 "Error line = INT : 0",\
+"Message = STRING : [256] ",\
 "Running = BOOL : n",\
 "Finished = BOOL : y",\
 "Paused = BOOL : n",\
@@ -166,9 +168,7 @@ void init_sequencer()
          mxml_free_tree(pnseq);
          pnseq = NULL;
       }
-      pnseq = mxml_parse_file(str, seq.error, sizeof(seq.error));
-      if (seq.error[0])
-         seq.error_line = atoi(seq.error+21);
+      pnseq = mxml_parse_file(str, seq.error, sizeof(seq.error), &seq.error_line);
    }
    
    seq.transition_request = FALSE;
@@ -286,48 +286,97 @@ error:
 
 /*------------------------------------------------------------------*/
 
+int strbreak(char *str, char list[][NAME_LENGTH], int size, const char *brk, BOOL ignore_quotes)
+/* break comma-separated list into char array, stripping leading
+ and trailing blanks */
+{
+   int i, j;
+   char *p;
+   
+   memset(list, 0, size * NAME_LENGTH);
+   p = str;
+   if (!p || !*p)
+      return 0;
+   
+   while (*p == ' ')
+      p++;
+   
+   for (i = 0; *p && i < size; i++) {
+      if (*p == '"' && !ignore_quotes) {
+         p++;
+         j = 0;
+         memset(list[i], 0, NAME_LENGTH);
+         do {
+            /* convert two '"' to one */
+            if (*p == '"' && *(p + 1) == '"') {
+               list[i][j++] = '"';
+               p += 2;
+            } else if (*p == '"') {
+               break;
+            } else
+               list[i][j++] = *p++;
+            
+         } while (j < NAME_LENGTH - 1);
+         list[i][j] = 0;
+         
+         /* skip second '"' */
+         p++;
+         
+         /* skip blanks and break character */
+         while (*p == ' ')
+            p++;
+         if (*p && strchr(brk, *p))
+            p++;
+         while (*p == ' ')
+            p++;
+         
+      } else {
+         strlcpy(list[i], p, NAME_LENGTH);
+         
+         for (j = 0; j < (int) strlen(list[i]); j++)
+            if (strchr(brk, list[i][j])) {
+               list[i][j] = 0;
+               break;
+            }
+         
+         p += strlen(list[i]);
+         while (*p == ' ')
+            p++;
+         if (*p && strchr(brk, *p))
+            p++;
+         while (*p == ' ')
+            p++;
+      }
+      
+      while (list[i][strlen(list[i]) - 1] == ' ')
+         list[i][strlen(list[i]) - 1] = 0;
+      
+      if (!*p)
+         break;
+   }
+   
+   if (i == size)
+      return size;
+   
+   return i + 1;
+}
+
+/*------------------------------------------------------------------*/
+
 int concatenate(char *result, int size, char *value)
 {
-   char str[2000], res[2000], *p1, *p2, *pd;
-   int i;
+   char str[256], list[100][NAME_LENGTH];
+   int  i, n;
    
-   pd = res;
-   p1 = value;
-   while (*p1 == ' ') // skip spaces
-      p1++;
-   do {
-      while (*p1 == ' ')
-         p1++;
-      p2 = p1;
-      while (*p2 && *p2 != ',' && *p2 != '"')
-         p2++;
-      if (*p2 == '"') { // copy contents between "" directly
-         p2 ++;
-         while (*p2 && *p2 != '"')
-            *pd++ = *p2++;
-         p2++;
-         while (*p2 && *p2 != ',')
-            p2++;
-         if (*p2 == ',')
-            p2++;
-         p1 = p2;
-      } else if (*p2 == ',') {
-         for (i=0 ; p1 < p2; i++)
-            str[i] = *p1++;
-         str[i] = 0;
-         while (strlen(str) > 0 && str[strlen(str)-1] == ' ')
-            str[strlen(str)-1] = 0;
-         if (!evaluate(str, pd, size - (pd - res)))
-             return FALSE;
-         pd += strlen(pd);    
-         p1++;
-      } else
-         p1 = p2;
-      
-   } while (*p1);
-   *pd = 0;
+   n = strbreak(value, list, 100, ",", FALSE);
    
-   strlcpy(result, res, size);
+   result[0] = 0;
+   for (i=0 ; i<n ; i++) {
+      if (!evaluate(list[i], str, sizeof(str)))
+          return FALSE;
+      strlcat(result, str, size);
+   }
+   
    return TRUE;   
 }
 
@@ -335,11 +384,11 @@ int concatenate(char *result, int size, char *value)
 
 void seq_start_page()
 {
-   int i, j, n, size, last_line, status, maxlength;
+   int line, i, n, no, size, last_line, status, maxlength;
    HNDLE hDB, hkey, hsubkey, hkeycomm, hkeyc;
    KEY key;
-   char data[1000], str[32], name[32];
-   char data_str[256], comment[1000];
+   char data[1000], str[256], name[32];
+   char data_str[256], comment[1000], list[100][NAME_LENGTH];
    MXML_NODE *pn;
    
    cm_get_experiment_database(&hDB, NULL);
@@ -351,8 +400,8 @@ void seq_start_page()
    db_find_key(hDB, 0, "/Experiment/Edit on sequence", &hkey);
    db_find_key(hDB, 0, "/Experiment/Parameter Comments", &hkeycomm);
    if (hkey) {
-      for (i = 0, n = 0;; i++) {
-         db_enum_link(hDB, hkey, i, &hsubkey);
+      for (line = 0, n = 0;; line++) {
+         db_enum_link(hDB, hkey, line, &hsubkey);
          
          if (!hsubkey)
             break;
@@ -363,7 +412,7 @@ void seq_start_page()
          if (equal_ustring(str, "Edit run number"))
             continue;
          
-         db_enum_key(hDB, hkey, i, &hsubkey);
+         db_enum_key(hDB, hkey, line, &hsubkey);
          db_get_key(hDB, hsubkey, &key);
          
          size = sizeof(data);
@@ -371,13 +420,13 @@ void seq_start_page()
          if (status != DB_SUCCESS)
             continue;
          
-         for (j = 0; j < key.num_values; j++) {
+         for (i = 0; i < key.num_values; i++) {
             if (key.num_values > 1)
-               rsprintf("<tr><td>%s [%d]", str, j);
+               rsprintf("<tr><td>%s [%d]", str, i);
             else
                rsprintf("<tr><td>%s", str);
             
-            if (j == 0 && hkeycomm) {
+            if (i == 0 && hkeycomm) {
                /* look for comment */
                if (db_find_key(hDB, hkeycomm, key.name, &hkeyc) == DB_SUCCESS) {
                   size = sizeof(comment);
@@ -386,14 +435,14 @@ void seq_start_page()
                }
             }
             
-            db_sprintf(data_str, data, key.item_size, j, key.type);
+            db_sprintf(data_str, data, key.item_size, i, key.type);
             
             maxlength = 80;
             if (key.type == TID_STRING)
                maxlength = key.item_size;
             
             if (key.type == TID_BOOL) {
-               if (((DWORD*)data)[j])
+               if (((DWORD*)data)[i])
                   rsprintf("<td><input type=checkbox checked name=x%d value=1></td></tr>\n", n++);
                else
                   rsprintf("<td><input type=checkbox name=x%d value=1></td></tr>\n", n++);
@@ -409,8 +458,8 @@ void seq_start_page()
    if (pn) {
       last_line = mxml_get_line_number_end(pn);
       
-      for (i=1 ; i<last_line ; i++){
-         pn = mxml_get_node_at_line(pnseq, i);
+      for (line=1 ; line<last_line ; line++){
+         pn = mxml_get_node_at_line(pnseq, line);
          if (!pn)
             continue;
             
@@ -426,7 +475,14 @@ void seq_start_page()
             data_str[0] = 0;
             db_get_value(hDB, 0, str, data_str, &size, TID_STRING, FALSE);
             
-            if (mxml_get_attribute(pn, "type") && equal_ustring(mxml_get_attribute(pn, "type"), "bool")) {
+            if (mxml_get_attribute(pn, "options")) {
+               strlcpy(data, mxml_get_attribute(pn, "options"), sizeof(data));
+               no = strbreak(mxml_get_attribute(pn, "options"), list, 100, ",", FALSE);
+               rsprintf("<td><select name=x%d>\n", n++);
+               for (i=0 ; i<no ; i++)
+                  rsprintf("<option>%s</option>\n", list[i]);
+               rsprintf("</select></td></tr>\n");
+            } else if (mxml_get_attribute(pn, "type") && equal_ustring(mxml_get_attribute(pn, "type"), "bool")) {
                if (data_str[0] == '1')
                   rsprintf("<td><input type=checkbox checked name=x%d value=1></tr>\n", n++);
                else
@@ -457,7 +513,7 @@ const char *bar_col[] = {"#B0B0FF", "#C0C0FF", "#D0D0FF", "#E0E0FF"};
 
 void show_seq_page()
 {
-   INT i, size, n, width, state, eob, last_line;
+   INT i, size, n, width, state, eob, last_line, error_line;
    HNDLE hDB;
    char str[256], path[256], dir[256], error[256], comment[256], filename[256], data[256], buffer[10000], line[256], name[32];
    time_t now;
@@ -487,11 +543,7 @@ void show_seq_page()
          mxml_free_tree(pnseq);
          pnseq = NULL;
       }
-      pnseq = mxml_parse_file(str, seq.error, sizeof(seq.error));
-      if (seq.error[0])
-         seq.error_line = atoi(seq.error+21);
-      else
-         seq.error_line = 0;
+      pnseq = mxml_parse_file(str, seq.error, sizeof(seq.error), &seq.error_line);
       seq.finished = FALSE;
       db_set_record(hDB, hKey, &seq, sizeof(seq), 0);
       redirect("");
@@ -593,11 +645,8 @@ void show_seq_page()
          mxml_free_tree(pnseq);
          pnseq = NULL;
       }
-      pnseq = mxml_parse_file(str, seq.error, sizeof(seq.error));
-      if (seq.error[0])
-         seq.error_line = atoi(seq.error+21);
-      else
-         seq.error_line = -1;
+      seq.error_line = -1;
+      pnseq = mxml_parse_file(str, seq.error, sizeof(seq.error), &seq.error_line);
       db_set_record(hDB, hKey, &seq, sizeof(seq), 0);
       redirect("");
       return;
@@ -681,12 +730,14 @@ void show_seq_page()
    rsprintf("<!--\n");
    rsprintf("var show_all_lines = false;\n");
    rsprintf("var last_msg = null;\n");
+   rsprintf("var last_paused = null;\n");
    rsprintf("\n");
    rsprintf("function seq_refresh()\n");
    rsprintf("{\n");
    rsprintf("   seq = ODBGetRecord('/Sequencer/State');\n");
    rsprintf("   var current_line = ODBExtractRecord(seq, 'Current line number');\n");
    rsprintf("   var error_line = ODBExtractRecord(seq, 'Error line');\n");
+   rsprintf("   var message = ODBExtractRecord(seq, 'Message');\n");
    rsprintf("   var wait_value = ODBExtractRecord(seq, 'Wait value');\n");
    rsprintf("   var wait_limit = ODBExtractRecord(seq, 'Wait limit');\n");
    rsprintf("   var wait_type = ODBExtractRecord(seq, 'Wait type');\n");
@@ -704,6 +755,15 @@ void show_seq_page()
    rsprintf("   else if (last_msg != msg)\n");
    rsprintf("      window.location.href = '.';\n");
    rsprintf("   \n");
+   rsprintf("   if (last_paused == null)\n");
+   rsprintf("      last_paused = paused;\n");
+   rsprintf("   else if (last_paused != paused)\n");
+   rsprintf("      window.location.href = '.';\n");
+   rsprintf("   \n");
+   rsprintf("   if (message != '') {\n");
+   rsprintf("      alert(message);\n");
+   rsprintf("      ODBSet('/Sequencer/State/Message', '');\n");
+   rsprintf("   }\n");
    rsprintf("   for (var l=1 ; ; l++) {\n");
    rsprintf("      line = document.getElementById('line'+l);\n");
    rsprintf("      if (line == null) {\n");
@@ -754,10 +814,11 @@ void show_seq_page()
    rsprintf("      } else {\n");
    rsprintf("         wl.innerHTML = '';\n");
    rsprintf("      }\n");
+   rsprintf("      wr = document.getElementById('wait_row');\n"); 
    rsprintf("      if (wait_type == '')\n");
-   rsprintf("         document.getElementById('wait_row').style.display = 'none';\n");
+   rsprintf("         wr.style.display = 'none';\n");
    rsprintf("      else\n");
-   rsprintf("         document.getElementById('wait_row').style.display = 'visible';\n");
+   rsprintf("         wr.style.display = 'table-row';\n");
    rsprintf("   }\n");
    rsprintf("   var rp = document.getElementById('runprgs');\n");
    rsprintf("   if (rp != null) {\n");
@@ -931,7 +992,7 @@ void show_seq_page()
             mxml_free_tree(pnseq);
             pnseq = NULL;
          }
-         pnseq = mxml_parse_file(str, error, sizeof(error));
+         pnseq = mxml_parse_file(str, error, sizeof(error), &error_line);
          if (error[0])
             sprintf(comment, "Error in XML: %s", error);
          else {
@@ -1008,7 +1069,7 @@ void show_seq_page()
                rsprintf("</td></tr></table></td></tr></table></td></tr>\n");
             }
             if (seq.running) {
-               rsprintf("<tr id=\"wait_row\"><td colspan=2>\n");
+               rsprintf("<tr id=\"wait_row\" style=\"visible: none;\"><td colspan=2>\n");
                if (seq.wait_value <= 0)
                   width = 0;
                else
@@ -1256,6 +1317,13 @@ void sequencer()
                notify = atoi(mxml_get_attribute(pn, "notify"));
             
             status = db_set_data_index2(hDB, hKey, data, key.item_size, index, key.type, notify);
+            if (status != DB_SUCCESS) {
+               sprintf(str, "Cannot set ODB key \"%s\"", odbpath);
+               seq_error(str);
+               return;
+            }
+            size = sizeof(seq);
+            db_get_record(hDB, hKeySeq, &seq, &size, 0); // could have changed seq tree
             seq.current_line_number++;
          }
          db_set_record(hDB, hKeySeq, &seq, sizeof(seq), 0);
