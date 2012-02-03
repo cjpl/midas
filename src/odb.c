@@ -6341,7 +6341,7 @@ INT db_paste_xml(HNDLE hDB, HNDLE hKeyRoot, const char *buffer)
       db_find_key(hDB, hKeyRoot, "", &hKeyRoot);
 
    /* parse XML buffer */
-   tree = mxml_parse_buffer(buffer, error, sizeof(error));
+   tree = mxml_parse_buffer(buffer, error, sizeof(error), NULL);
    if (tree == NULL) {
       puts(error);
       return DB_TYPE_MISMATCH;
