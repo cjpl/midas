@@ -48,6 +48,7 @@ typedef struct {
    char  error[256];
    int   error_line;
    char  message[256];
+   BOOL  message_wait;
    BOOL  running;
    BOOL  finished;
    BOOL  paused;
@@ -79,6 +80,7 @@ typedef struct {
 "Error = STRING : [256] ",\
 "Error line = INT : 0",\
 "Message = STRING : [256] ",\
+"Message Wait = BOOL : n",\
 "Running = BOOL : n",\
 "Finished = BOOL : y",\
 "Paused = BOOL : n",\
@@ -154,7 +156,8 @@ void init_sequencer()
    }
    db_find_key(hDB, 0, "/Sequencer/State", &hKey);
    size = sizeof(seq);
-   db_open_record(hDB, hKey, &seq, sizeof(seq), MODE_READ, NULL, NULL);
+   status = db_open_record(hDB, hKey, &seq, sizeof(seq), MODE_READ, NULL, NULL);
+   assert(status == DB_SUCCESS);
    if (strlen(seq.path)>0 && seq.path[strlen(seq.path)-1] != DIR_SEPARATOR) {
       strlcat(seq.path, DIR_SEPARATOR_STR, sizeof(seq.path));
    }
@@ -196,7 +199,7 @@ void seq_error(const char *str)
 
 /*------------------------------------------------------------------*/
 
-BOOL evaluate(const char *value, char *result, int size)
+BOOL eval_var(const char *value, char *result, int size)
 {
    HNDLE hDB, hkey;
    KEY key;
@@ -226,7 +229,7 @@ BOOL evaluate(const char *value, char *result, int size)
                   strlcpy(result, str, size);
                   if (result[0] == '$') {
                      strlcpy(str, result, sizeof(str));
-                     return evaluate(str, result, size);
+                     return eval_var(str, result, size);
                   }                  
                   return TRUE;
                } else
@@ -238,7 +241,7 @@ BOOL evaluate(const char *value, char *result, int size)
                strlcpy(result, s, size);
                if (result[0] == '$') {
                   strlcpy(str, result, sizeof(str));
-                  return evaluate(str, result, size);
+                  return eval_var(str, result, size);
                }                  
                return TRUE;
             }
@@ -372,12 +375,66 @@ int concatenate(char *result, int size, char *value)
    
    result[0] = 0;
    for (i=0 ; i<n ; i++) {
-      if (!evaluate(list[i], str, sizeof(str)))
+      if (!eval_var(list[i], str, sizeof(str)))
           return FALSE;
       strlcat(result, str, size);
    }
    
    return TRUE;   
+}
+
+/*------------------------------------------------------------------*/
+
+int eval_condition(const char *condition)
+{
+   int i;
+   double value1, value2;
+   char value1_str[256], value2_str[256], value1_var[256], value2_var[256], str[256], op[3];
+   
+   strcpy(str, condition);
+   op[1] = op[2] = 0;
+   value1 = value2 = 0;
+   
+   /* find value and operator */
+   for (i = 0; i < strlen(str) ; i++)
+      if (strchr("<>=!&", str[i]) != NULL)
+         break;
+   strlcpy(value1_str, str, i+1);
+   while (value1_str[strlen(value1_str)-1] == ' ')
+      value1_str[strlen(value1_str)-1] = 0;
+   op[0] = str[i];
+   if (strchr("<>=!&", str[i+1]) != NULL)
+      op[1] = str[++i];
+
+   for (i++; str[i] == ' '; i++);
+   strlcpy(value2_str, str + i, sizeof(value2_str));
+   
+   if (!eval_var(value1_str, value1_var, sizeof(value1_var)))
+      return -1;
+   if (!eval_var(value2_str, value2_var, sizeof(value2_var)))
+      return -1;
+   value1 = atof(value1_var);
+   value2 = atof(value2_var);
+   
+   /* now do logical operation */
+   if (strcmp(op, "=") == 0)
+      if (value1 == value2) return 1;
+   if (strcmp(op, "==") == 0)
+      if (value1 == value2) return 1;
+   if (strcmp(op, "!=") == 0)
+      if (value1 != value2) return 1;
+   if (strcmp(op, "<") == 0)
+      if (value1 < value2) return 1;
+   if (strcmp(op, ">") == 0)
+      if (value1 > value2) return 1;
+   if (strcmp(op, "<=") == 0)
+      if (value1 <= value2) return 1;
+   if (strcmp(op, ">=") == 0)
+      if (value1 >= value2) return 1;
+   if (strcmp(op, "&") == 0)
+      if (((unsigned int)value1 & (unsigned int)value2) > 0) return 1;
+   
+   return 0;
 }
 
 /*------------------------------------------------------------------*/
@@ -642,9 +699,10 @@ void show_seq_page()
    if (equal_ustring(getparam("cmd"), "Save")) {
       strlcpy(str, seq.path, sizeof(str));
       strlcat(str, seq.filename, sizeof(str));
-      fh = open(str, O_RDWR | O_TEXT, 0644);
+      fh = open(str, O_RDWR | O_TRUNC | O_TEXT, 0644);
       if (fh > 0 && isparam("scripttext")) {
-         write(fh, getparam("scripttext"), strlen(getparam("scripttext")));
+         i = strlen(getparam("scripttext"));
+         write(fh, getparam("scripttext"), i);
          close(fh);
       }
       strlcpy(str, seq.path, sizeof(str));
@@ -772,6 +830,7 @@ void show_seq_page()
    rsprintf("   if (message != '') {\n");
    rsprintf("      alert(message);\n");
    rsprintf("      ODBSet('/Sequencer/State/Message', '');\n");
+   rsprintf("      window.location.href = '.';\n");
    rsprintf("   }\n");
    rsprintf("   for (var l=1 ; ; l++) {\n");
    rsprintf("      line = document.getElementById('line'+l);\n");
@@ -962,7 +1021,11 @@ void show_seq_page()
       else
          dir[0] = 0;
       strlcpy(path, seq.path, sizeof(path));
-      
+      if (strlen(path)>0 && path[strlen(path)-1] != DIR_SEPARATOR) {
+         strlcat(seq.path, DIR_SEPARATOR_STR, sizeof(seq.path));
+         strlcat(path, DIR_SEPARATOR_STR, sizeof(path));
+      }
+
       if (isparam("fs")) {
          strlcpy(str, getparam("fs"), sizeof(str));
          if (str[0] == '[') {
@@ -1272,7 +1335,7 @@ void sequencer()
                strlcpy(data, mxml_get_attribute(pn, "values"), sizeof(data));
                strbreak(data, list, 100, ",", FALSE);
                strlcpy(name, mxml_get_attribute(pn, "var"), sizeof(name));
-               if (!evaluate(list[seq.loop_counter[i]], value, sizeof(value)))
+               if (!eval_var(list[seq.loop_counter[i]], value, sizeof(value)))
                   return;
                sprintf(str, "/Sequencer/Variables/%s", name);
                db_set_value(hDB, 0, str, value, strlen(value)+1, 1, TID_STRING);
@@ -1336,7 +1399,7 @@ void sequencer()
             *strchr(odbpath, '[') = 0;
          } else
             index = 0;
-         if (!evaluate(mxml_get_value(pn), value, sizeof(value)))
+         if (!eval_var(mxml_get_value(pn), value, sizeof(value)))
             return;
          status = db_find_key(hDB, 0, odbpath, &hKey);
          if (status != DB_SUCCESS) {
@@ -1382,7 +1445,7 @@ void sequencer()
             *strchr(odbpath, '[') = 0;
          } else
             index = 0;
-         if (!evaluate(mxml_get_value(pn), value, sizeof(value)))
+         if (!eval_var(mxml_get_value(pn), value, sizeof(value)))
             return;
          status = db_find_key(hDB, 0, odbpath, &hKey);
          if (status != DB_SUCCESS) {
@@ -1496,7 +1559,7 @@ void sequencer()
    /*---- Wait ----*/
    else if (equal_ustring(mxml_get_name(pn), "Wait")) {
       if (equal_ustring(mxml_get_attribute(pn, "for"), "Events")) {
-         if (!evaluate(mxml_get_value(pn), str, sizeof(str)))
+         if (!eval_var(mxml_get_value(pn), str, sizeof(str)))
             return;
          n = atoi(str);
          seq.wait_limit = n;
@@ -1512,7 +1575,7 @@ void sequencer()
          }
          seq.wait_value = d;
       } else  if (equal_ustring(mxml_get_attribute(pn, "for"), "ODBValue")) {
-         if (!evaluate(mxml_get_value(pn), str, sizeof(str)))
+         if (!eval_var(mxml_get_value(pn), str, sizeof(str)))
             return;
          v = atof(str);
          seq.wait_limit = v;
@@ -1572,7 +1635,7 @@ void sequencer()
             }
          }
       } else if (equal_ustring(mxml_get_attribute(pn, "for"), "Seconds")) {
-         if (!evaluate(mxml_get_value(pn), str, sizeof(str)))
+         if (!eval_var(mxml_get_value(pn), str, sizeof(str)))
             return;
          n = atoi(str);
          seq.wait_limit = n;
@@ -1620,7 +1683,7 @@ void sequencer()
          seq.loop_n[i] = strbreak(data, list, 100, ",", FALSE);
          
          strlcpy(name, mxml_get_attribute(pn, "var"), sizeof(name));
-         if (!evaluate(list[0], value, sizeof(value)))
+         if (!eval_var(list[0], value, sizeof(value)))
             return;
          sprintf(str, "/Sequencer/Variables/%s", name);
          db_set_value(hDB, 0, str, value, strlen(value)+1, 1, TID_STRING);
@@ -1635,16 +1698,43 @@ void sequencer()
       db_set_record(hDB, hKeySeq, &seq, sizeof(seq), 0);
    }
    
+   /*---- If ----*/
+   else if (equal_ustring(mxml_get_name(pn), "If")) {
+      strlcpy(str, mxml_get_attribute(pn, "condition"), sizeof(str));
+      i = eval_condition(str);
+      if (i < 0)
+         return;
+      if (i == 1)
+         seq.current_line_number++;
+      else
+         seq.current_line_number = mxml_get_line_number_end(pn) + 1;
+      db_set_record(hDB, hKeySeq, &seq, sizeof(seq), 0);
+   }
+
+   /*---- Goto ----*/
+   else if (equal_ustring(mxml_get_name(pn), "Goto")) {
+      if (!mxml_get_attribute(pn, "line")) {
+         seq_error("Missing line number");
+         return;
+      }
+      if (!eval_var(mxml_get_attribute(pn, "line"), str, sizeof(str)))
+         return;
+      seq.current_line_number = atoi(str);
+      db_set_record(hDB, hKeySeq, &seq, sizeof(seq), 0);
+   }
+
    /*---- Subroutine ----*/
    else if (equal_ustring(mxml_get_name(pn), "Subroutine")) {
       // simply skip subroutines
       seq.current_line_number = mxml_get_line_number_end(pn) + 1;
+      db_set_record(hDB, hKeySeq, &seq, sizeof(seq), 0);
    }
 
    /*---- Param ----*/
    else if (equal_ustring(mxml_get_name(pn), "Param")) {
       // simply skip parameters
       seq.current_line_number = mxml_get_line_number_end(pn) + 1;
+      db_set_record(hDB, hKeySeq, &seq, sizeof(seq), 0);
    }
 
    /*---- Set ----*/
@@ -1654,12 +1744,32 @@ void sequencer()
          return;
       }
       strlcpy(name, mxml_get_attribute(pn, "name"), sizeof(name));
-      if (!evaluate(mxml_get_value(pn), value, sizeof(value)))
+      if (!eval_var(mxml_get_value(pn), value, sizeof(value)))
          return;
       sprintf(str, "/Sequencer/Variables/%s", name);
       db_set_value(hDB, 0, str, value, strlen(value)+1, 1, TID_STRING);
       
       seq.current_line_number = mxml_get_line_number_end(pn)+1;
+      db_set_record(hDB, hKeySeq, &seq, sizeof(seq), 0);
+   }
+
+   /*---- Message ----*/
+   else if (equal_ustring(mxml_get_name(pn), "Message")) {
+      if (!eval_var(mxml_get_value(pn), value, sizeof(value)))
+         return;
+      if (!seq.message_wait)
+         strlcpy(seq.message, value, sizeof(seq.message));
+      if (mxml_get_attribute(pn, "wait")) {
+         if (atoi(mxml_get_attribute(pn, "wait")) == 1) {
+            seq.message_wait = TRUE;
+            db_set_record(hDB, hKeySeq, &seq, sizeof(seq), 0);
+            if (seq.message[0] != 0)
+               return; // don't increment line number until message is cleared from within browser
+            seq.message_wait = FALSE;
+         }
+      }
+      seq.current_line_number = mxml_get_line_number_end(pn)+1;
+      db_set_record(hDB, hKeySeq, &seq, sizeof(seq), 0);
    }
 
    /*---- Cat ----*/
@@ -1675,6 +1785,7 @@ void sequencer()
       db_set_value(hDB, 0, str, value, strlen(value)+1, 1, TID_STRING);
       
       seq.current_line_number = mxml_get_line_number_end(pn)+1;
+      db_set_record(hDB, hKeySeq, &seq, sizeof(seq), 0);
    }
 
    /*---- Call ----*/
