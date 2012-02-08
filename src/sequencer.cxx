@@ -627,7 +627,7 @@ int eval_condition(const char *condition)
    value1 = value2 = 0;
    
    /* find value and operator */
-   for (i = 0; i < strlen(str) ; i++)
+   for (i = 0; i < (int)strlen(str) ; i++)
       if (strchr("<>=!&", str[i]) != NULL)
          break;
    strlcpy(value1_str, str, i+1);
@@ -644,15 +644,15 @@ int eval_condition(const char *condition)
       return -1;
    if (!eval_var(value2_str, value2_var, sizeof(value2_var)))
       return -1;
-   for (i=0 ; i<strlen(value1_var) ; i++)
+   for (i=0 ; i<(int)strlen(value1_var) ; i++)
       if (isdigit(value1_var[i]))
          break;
-   if (i == strlen(value1_var))
+   if (i == (int)strlen(value1_var))
       return -1;
-   for (i=0 ; i<strlen(value2_var) ; i++)
+   for (i=0 ; i<(int)strlen(value2_var) ; i++)
       if (isdigit(value2_var[i]))
          break;
-   if (i == strlen(value2_var))
+   if (i == (int)strlen(value2_var))
       return -1;
 
    value1 = atof(value1_var);
