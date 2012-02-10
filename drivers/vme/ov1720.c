@@ -243,7 +243,15 @@ CAENComm_ErrorCode ov1720_Status(int handle)
   sCAEN = CAENComm_Read32(handle, V1720_ACQUISITION_CONTROL, &reg);  
   printf("Acquisition control  : 0x%8.8x\n", reg);
   sCAEN = CAENComm_Read32(handle, V1720_ACQUISITION_STATUS, &reg);  
-  printf("Acquisition status   : 0x%8.8x\n", reg);
+  printf("Acquisition status         : 0x%8.8x\n", reg);
+  sCAEN = CAENComm_Read32(handle, V1720_CHANNEL_CONFIG, &reg);  
+  printf("Channel Configuration      : 0x%5.5x\n", reg);
+  sCAEN = CAENComm_Read32(handle, V1720_TRIG_SRCE_EN_MASK, &reg);  
+  printf("Trigger Source Enable Mask : 0x%8.8x\n", reg);
+  sCAEN = CAENComm_Read32(handle, V1720_VME_STATUS, &reg);  
+  printf("VME Status                 : 0x%x\n", reg);
+  sCAEN = CAENComm_Read32(handle, V1720_EVENT_STORED, &reg);  
+  printf("Event Stored               : 0x%8.8x\n", reg);
   printf("================================================\n");
   return sCAEN;
 }
@@ -298,6 +306,14 @@ CAENComm_ErrorCode  ov1720_Setup(int handle, int mode)
 /*-PAA- For test purpose only */
 #ifdef MAIN_ENABLE
 int main (int argc, char* argv[]) {
+
+  /* Lock the process to an arbitrary core (#3)
+  int mask = 0x04;
+  if( sched_setaffinity(0, sizeof(mask), &mask) < 0 )
+  {
+    printf("ERROR: affinity not set\n");
+  }
+  */
 
   CAENComm_ErrorCode sCAEN;
   int handle[2];
