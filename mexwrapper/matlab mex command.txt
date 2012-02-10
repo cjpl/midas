@@ -1,0 +1,1 @@
+mex mexwrapper.c msc.c mscb.c mscbrpc.c musbstd.c mxml.c strlcpy.c libusb.lib wsock32.lib -v
