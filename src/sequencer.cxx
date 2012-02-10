@@ -71,9 +71,9 @@ typedef struct {
    int   subdir_not_notify;
    int   stack_index;
    int   subroutine_end_line[4];
-   int   ssubroutine_end_line[4];
    int   subroutine_return_line[4];
-   int   ssubroutine_return_line[4];
+   int   subroutine_call_line[4];
+   int   ssubroutine_call_line[4];
    char  subroutine_param[4][256];
    float wait_value;
    float wait_limit;
@@ -137,17 +137,17 @@ typedef struct {
 "[1] 0",\
 "[2] 0",\
 "[3] 0",\
-"SSubroutine end line = INT[4] :",\
-"[0] 0",\
-"[1] 0",\
-"[2] 0",\
-"[3] 0",\
 "Subroutine return line = INT[4] :",\
 "[0] 0",\
 "[1] 0",\
 "[2] 0",\
 "[3] 0",\
-"SSubroutine return line = INT[4] :",\
+"Subroutine call line = INT[4] :",\
+"[0] 0",\
+"[1] 0",\
+"[2] 0",\
+"[3] 0",\
+"SSubroutine call line = INT[4] :",\
 "[0] 0",\
 "[1] 0",\
 "[2] 0",\
@@ -303,7 +303,7 @@ BOOL msl_parse(char *filename, char *error, int error_size, int *error_line)
 {
    char str[256], *buf, *pl, *pe;
    char list[100][NAME_LENGTH], list2[100][NAME_LENGTH], **lines;
-   int i, size, n_lines, endl, line, fhin, nest;
+   int i, size, n_lines, endl, line, fhin, nest, incl, library;
    FILE *fout;
    
    fhin = open(filename, O_RDONLY | O_TEXT);
@@ -321,37 +321,55 @@ BOOL msl_parse(char *filename, char *error, int error_size, int *error_line)
       buf[size] = 0;
       close(fhin);
 
-      fprintf(fout, "<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>\n");
-      fprintf(fout, "<!DOCTYPE RunSequence [\n");
-
       /* look for any includes */
       lines = (char **)malloc(sizeof(char *));
-      for (n_lines=0, pl=buf ; *pl ; n_lines++) {
+      incl = 0;
+      pl = buf;
+      library = FALSE;
+      for (n_lines=0 ; *pl ; n_lines++) {
          lines = (char **)realloc(lines, sizeof(char *)*n_lines+1);
          lines[n_lines] = pl;
-         if (strchr(pl, '\r')) {
-            pe = strchr(pl, '\r');
-            *pe++ = 0;
-            if (*pe == '\n')
-               pe++;
-         }
+         if (strchr(pl, '\n')) {
+            pe = strchr(pl, '\n');
+            *pe = 0;
+            if (*(pe-1) == '\r') {
+               *(pe-1) = 0;
+            }
+            pe++;
+         } else
+            pe = pl+strlen(pl);
          strlcpy(str, pl, sizeof(str));
          pl = pe;
          strbreak(str, list, 100, ", ", FALSE);
          if (equal_ustring(list[0], "include")) {
+            if (!incl) {
+               fprintf(fout, "<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>\n");
+               fprintf(fout, "<!DOCTYPE RunSequence [\n");
+               incl = 1;
+            }
             fprintf(fout, "  <!ENTITY %s SYSTEM \"%s.xml\">\n", list[1], list[1]); 
          }
+         if (equal_ustring(list[0], "library")) {
+            fprintf(fout, "<Library name=\"%s\">\n", list[1]);
+            library = TRUE;
+         }
       }
-      fprintf(fout, "]>\n");       
-      
+      if (incl)
+         fprintf(fout, "]>\n");
+      else if (!library)
+         fprintf(fout, "<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>\n");
+            
       /* parse rest of file */
-      fprintf(fout, "<RunSequence xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:noNamespaceSchemaLocation=\"\">\n");
+      if (!library)
+         fprintf(fout, "<RunSequence xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:noNamespaceSchemaLocation=\"\">\n");
       for (line=0 ; line<n_lines ; line++) {
          strbreak(lines[line], list, 100, ", ", FALSE);
          
-         if (equal_ustring(list[0], "include")) {
-            fprintf(fout, "&%s;\n", list[1]); 
-         
+         if (equal_ustring(list[0], "library")) {
+                     
+         } else if (equal_ustring(list[0], "include")) {
+               fprintf(fout, "&%s;\n", list[1]); 
+            
          } else if (equal_ustring(list[0], "call")) {
             fprintf(fout, "<Call l=\"%d\" name=\"%s\">", line+1, list[1]);
             for (i=2 ; i < 100 && list[i][0] ; i++) {
@@ -495,7 +513,10 @@ BOOL msl_parse(char *filename, char *error, int error_size, int *error_line)
 
       free(lines);
       free(buf);
-      fprintf(fout, "</RunSequence>\n");
+      if (library)
+         fprintf(fout, "\n</Library>\n");
+      else
+         fprintf(fout, "</RunSequence>\n");
       fclose(fout);
    } else {
       sprintf(error, "File error on \"%s\"", filename);
@@ -699,6 +720,9 @@ void init_sequencer()
    size = sizeof(seq);
    status = db_open_record(hDB, hKey, &seq, sizeof(seq), MODE_READ, NULL, NULL);
    assert(status == DB_SUCCESS);
+   
+   if (seq.path[0] == 0)
+      getcwd(seq.path, sizeof(seq.path)); 
    if (strlen(seq.path)>0 && seq.path[strlen(seq.path)-1] != DIR_SEPARATOR) {
       strlcat(seq.path, DIR_SEPARATOR_STR, sizeof(seq.path));
    }
@@ -864,6 +888,7 @@ void seq_start_page()
 /*------------------------------------------------------------------*/
 
 const char *bar_col[] = {"#B0B0FF", "#C0C0FF", "#D0D0FF", "#E0E0FF"};
+const char *call_col[] = {"#B0FFB0", "#C0FFC0", "#D0FFD0", "#E0FFE0"};
 
 void show_seq_page()
 {
@@ -955,7 +980,6 @@ void show_seq_page()
                   sprintf(str, "/Sequencer/Variables/%s", name);
                   db_set_value(hDB, 0, str, buffer, strlen(buffer)+1, 1, TID_STRING);
                }
-               
             }
          }
          
@@ -975,6 +999,13 @@ void show_seq_page()
             seq.sloop_end_line[i] = 0;
             seq.loop_counter[i] = 0;
             seq.loop_n[i] = 0;
+         }
+         for (i=0 ; i<4 ; i++) {
+            seq.subroutine_end_line[i] = 0;
+            seq.subroutine_return_line[i] = 0;
+            seq.subroutine_call_line[i] = 0;
+            seq.ssubroutine_call_line[i] = 0;
+            seq.subroutine_param[i][0] = 0;
          }
          seq.current_line_number = 1;
          seq.scurrent_line_number = 1;
@@ -1116,6 +1147,8 @@ void show_seq_page()
    rsprintf("   seq = ODBGetRecord('/Sequencer/State');\n");
    rsprintf("   var current_line = ODBExtractRecord(seq, 'Current line number');\n");
    rsprintf("   var scurrent_line = ODBExtractRecord(seq, 'SCurrent line number');\n");
+   rsprintf("   var subroutine_call_line = ODBExtractRecord(seq, 'Subroutine call line');\n");
+   rsprintf("   var ssubroutine_call_line = ODBExtractRecord(seq, 'SSubroutine call line');\n");
    rsprintf("   var error_line = ODBExtractRecord(seq, 'Error line');\n");
    rsprintf("   var serror_line = ODBExtractRecord(seq, 'SError line');\n");
    rsprintf("   var message = ODBExtractRecord(seq, 'Message');\n");
@@ -1161,6 +1194,14 @@ void show_seq_page()
    rsprintf("         sline.style.backgroundColor = '#FF0000';\n");
    rsprintf("      else if (sl == scurrent_line)\n");
    rsprintf("         sline.style.backgroundColor = '#80FF80';\n");
+   rsprintf("      else if (sl == ssubroutine_call_line[3])\n");
+   rsprintf("         sline.style.backgroundColor = '%s';\n", call_col[3]);
+   rsprintf("      else if (sl == ssubroutine_call_line[2])\n");
+   rsprintf("         sline.style.backgroundColor = '%s';\n", call_col[2]);
+   rsprintf("      else if (sl == ssubroutine_call_line[1])\n");
+   rsprintf("         sline.style.backgroundColor = '%s';\n", call_col[1]);
+   rsprintf("      else if (sl == ssubroutine_call_line[0])\n");
+   rsprintf("         sline.style.backgroundColor = '%s';\n", call_col[0]);
    rsprintf("      else if (sl >= sloop_start_line[3] && sl <= sloop_end_line[3])\n");
    rsprintf("         sline.style.backgroundColor = '%s';\n", bar_col[3]);
    rsprintf("      else if (sl >= sloop_start_line[2] && sl <= sloop_end_line[2])\n");
@@ -1190,6 +1231,14 @@ void show_seq_page()
    rsprintf("         line.style.backgroundColor = '#FF0000';\n");
    rsprintf("      else if (l == current_line)\n");
    rsprintf("         line.style.backgroundColor = '#80FF80';\n");
+   rsprintf("      else if (l == subroutine_call_line[3])\n");
+   rsprintf("         line.style.backgroundColor = '%s';\n", call_col[3]);
+   rsprintf("      else if (l == subroutine_call_line[2])\n");
+   rsprintf("         line.style.backgroundColor = '%s';\n", call_col[2]);
+   rsprintf("      else if (l == subroutine_call_line[1])\n");
+   rsprintf("         line.style.backgroundColor = '%s';\n", call_col[1]);
+   rsprintf("      else if (l == subroutine_call_line[0])\n");
+   rsprintf("         line.style.backgroundColor = '%s';\n", call_col[0]);
    rsprintf("      else if (l >= loop_start_line[3] && l <= loop_end_line[3])\n");
    rsprintf("         line.style.backgroundColor = '%s';\n", bar_col[3]);
    rsprintf("      else if (l >= loop_start_line[2] && l <= loop_end_line[2])\n");
@@ -1393,10 +1442,6 @@ void show_seq_page()
       else
          dir[0] = 0;
       strlcpy(path, seq.path, sizeof(path));
-      if (strlen(path)>0 && path[strlen(path)-1] != DIR_SEPARATOR) {
-         strlcat(seq.path, DIR_SEPARATOR_STR, sizeof(seq.path));
-         strlcat(path, DIR_SEPARATOR_STR, sizeof(path));
-      }
 
       if (isparam("fs")) {
          strlcpy(str, getparam("fs"), sizeof(str));
@@ -1570,75 +1615,82 @@ void show_seq_page()
                rsprintf("<tr><td colspan=2 style=\"background-color:#80FF80;\"><b>Sequence is finished</b>\n");
                rsprintf("</td></tr>\n");
             }
-               
+            
+            rsprintf("<tr><td colspan=2><table width=100%%><tr><td>Filename:<b>%s</b></td>", seq.filename);
+            if (stristr(seq.filename, ".msl"))
+               rsprintf("<td align=\"right\"><a onClick=\"toggle_xml();\" id=\"txml\" href=\"#\">Show XML</a></td>");
+            rsprintf("</td></tr></table></td></tr>\n");
+            
+            if (seq.error[0]) {
+               rsprintf("<tr><td bgcolor=red colspan=2><b>");
+               strencode(seq.error);
+               rsprintf("</b></td></tr>\n");
+            }
+   
+            rsprintf("<tr><td colspan=2><table width=100%%>");
+
             /*---- Left (MSL) pane ---- */
                
-            strlcpy(str, seq.path, sizeof(str));
-            strlcat(str, seq.filename, sizeof(str));
-            fh = open(str, O_RDONLY | O_TEXT, 0644);
-            if (fh > 0) {
-               size = (int)lseek(fh, 0, SEEK_END);
-               lseek(fh, 0, SEEK_SET);
-               buf = (char *)malloc(size+1);
-               size = (int)read(fh, buf, size);
-               buf[size] = 0;
-               close(fh);
-               
-               rsprintf("<tr><td colspan=2><table width=100%%><tr><td>Filename:<b>%s</b></td>", seq.filename);
-               rsprintf("<td align=\"right\"><a onClick=\"toggle_xml();\" id=\"txml\" href=\"#\">Show XML</a></td></td></tr></table></td></tr>\n");
-               
-               if (seq.error[0]) {
-                  rsprintf("<tr><td bgcolor=red colspan=2><b>");
-                  strencode(seq.error);
-                  rsprintf("</b></td></tr>\n");
-               }
-               
-               rsprintf("<tr><td colspan=2><table width=100%%>");
-               
-               
-               rsprintf("<tr><td colspan=2 valign=\"top\">\n");
-               rsprintf("<div onClick=\"sshow_lines();\" id=\"slinedots1\" style=\"display:none;\">...<br></div>\n");
-               
-               pline = buf;
-               for (int line=1 ; *pline ; line++) {
-                  strlcpy(str, pline, sizeof(str));
-                  if (strchr(str, '\n'))
-                     *(strchr(str, '\n')+1) = 0;
-                  if (str[0]) {
-                     if (line == seq.serror_line)
-                        rsprintf("<font id=\"sline%d\" style=\"font-family:monospace;background-color:red;\">", line);
-                     else if (seq.running && line == current_line_number)
-                        rsprintf("<font id=\"sline%d\" style=\"font-family:monospace;background-color:#80FF00\">", line);
+            if (stristr(seq.filename, ".msl")) {
+               strlcpy(str, seq.path, sizeof(str));
+               strlcat(str, seq.filename, sizeof(str));
+               fh = open(str, O_RDONLY | O_TEXT, 0644);
+               if (fh > 0) {
+                  size = (int)lseek(fh, 0, SEEK_END);
+                  lseek(fh, 0, SEEK_SET);
+                  buf = (char *)malloc(size+1);
+                  size = (int)read(fh, buf, size);
+                  buf[size] = 0;
+                  close(fh);
+                  
+                  rsprintf("<tr><td colspan=2 valign=\"top\">\n");
+                  rsprintf("<div onClick=\"sshow_lines();\" id=\"slinedots1\" style=\"display:none;\">...<br></div>\n");
+                  
+                  pline = buf;
+                  for (int line=1 ; *pline ; line++) {
+                     strlcpy(str, pline, sizeof(str));
+                     if (strchr(str, '\n'))
+                        *(strchr(str, '\n')+1) = 0;
+                     if (str[0]) {
+                        if (line == seq.serror_line)
+                           rsprintf("<font id=\"sline%d\" style=\"font-family:monospace;background-color:red;\">", line);
+                        else if (seq.running && line == current_line_number)
+                           rsprintf("<font id=\"sline%d\" style=\"font-family:monospace;background-color:#80FF00\">", line);
+                        else
+                           rsprintf("<font id=\"sline%d\" style=\"font-family:monospace\">", line);
+                        if (line < 10)
+                           rsprintf("&nbsp;");
+                        if (line < 100)
+                           rsprintf("&nbsp;");
+                        rsprintf("%d ", line);
+                        strencode4(str);
+                        rsprintf("</font>");
+                     }
+                     if (strchr(pline, '\n'))
+                        pline = strchr(pline, '\n')+1;
                      else
-                        rsprintf("<font id=\"sline%d\" style=\"font-family:monospace\">", line);
-                     if (line < 10)
-                        rsprintf("&nbsp;");
-                     if (line < 100)
-                        rsprintf("&nbsp;");
-                     rsprintf("%d ", line);
-                     strencode4(str);
-                     rsprintf("</font>");
+                        pline += strlen(pline);
+                     if (*pline == '\r')
+                        pline++;
                   }
-                  if (strchr(pline, '\n'))
-                     pline = strchr(pline, '\n')+1;
-                  else
-                     pline += strlen(pline);
-                  if (*pline == '\r')
-                     pline++;
-               }
-               rsprintf("<div onClick=\"sshow_lines();\" id=\"slinedots2\" style=\"display:none;\">...<br></div>\n");
-               rsprintf("</td>\n");
-               free(buf);
-               
-            } else {
-               if (str[0]) {
-                  rsprintf("<tr><td colspan=2><b>Cannot open file \"%s\"</td></tr>\n", str);
+                  rsprintf("<div onClick=\"sshow_lines();\" id=\"slinedots2\" style=\"display:none;\">...<br></div>\n");
+                  rsprintf("</td>\n");
+                  free(buf);
+                  
+               } else {
+                  if (str[0]) {
+                     rsprintf("<tr><td colspan=2><b>Cannot open file \"%s\"</td></tr>\n", str);
+                  }
                }
             }
-               
+            
             /*---- Right (XML) pane ----*/
             
-            rsprintf("<td id=\"xml_pane\" style=\"border-left-width:1px;border-left-style:solid;border-color:black;display:none;\">\n");
+            if (stristr(seq.filename, ".msl"))
+               rsprintf("<td id=\"xml_pane\" style=\"border-left-width:1px;border-left-style:solid;border-color:black;display:none;\">\n");
+            else
+               rsprintf("<td colspan=2 id=\"xml_pane\">\n");
+
             rsprintf("<div onClick=\"show_lines();\" id=\"linedots1\" style=\"display:none;\">...<br></div>\n");
             
             strlcpy(str, seq.path, sizeof(str));
@@ -2224,6 +2276,12 @@ void sequencer()
       }
    }
 
+   /*---- Library ----*/
+   else if (equal_ustring(mxml_get_name(pn), "Library")) {
+      // simply skip libraries
+      seq.current_line_number = mxml_get_line_number_end(pn) + 1;
+   }
+   
    /*---- Subroutine ----*/
    else if (equal_ustring(mxml_get_name(pn), "Subroutine")) {
       // simply skip subroutines
@@ -2291,6 +2349,8 @@ void sequencer()
          return;
       } else {
          // put current line number on stack
+         seq.subroutine_call_line[seq.stack_index] = mxml_get_line_number_end(pn);
+         seq.ssubroutine_call_line[seq.stack_index] = atoi(mxml_get_attribute(pn, "l"));
          seq.subroutine_return_line[seq.stack_index] = mxml_get_line_number_end(pn)+1;
          
          // search subroutine
@@ -2326,13 +2386,24 @@ void sequencer()
       seq_error(str);
    }
    
-   /* update current line number */
-   db_set_record(hDB, hKeySeq, &seq, sizeof(seq), 0);
-
    /* set MSL line from current element */
    pn = mxml_get_node_at_line(pnseq, seq.current_line_number);
-   if (pn && mxml_get_attribute(pn, "l"))
-      seq.scurrent_line_number = atoi(mxml_get_attribute(pn, "l"));
+   if (pn) { 
+      /* check if node belongs to library */
+      pt = mxml_get_parent(pn);
+      while (pt) {
+         if (equal_ustring(mxml_get_name(pt), "Library"))
+            break;
+         pt = mxml_get_parent(pt);
+      }
+      if (pt)
+         seq.scurrent_line_number = -1;
+      else if(mxml_get_attribute(pn, "l"))
+         seq.scurrent_line_number = atoi(mxml_get_attribute(pn, "l"));
+   }
+
+   /* update current line number */
+   db_set_record(hDB, hKeySeq, &seq, sizeof(seq), 0);
 }
 
 /**dox***************************************************************/
