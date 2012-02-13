@@ -1790,6 +1790,7 @@ extern "C" {
    INT EXPRT bk_locate(void *pbh, const char *name, void *pdata);
    INT EXPRT bk_iterate(void *pbh, BANK ** pbk, void *pdata);
    INT EXPRT bk_iterate32(void *pbh, BANK32 ** pbk, void *pdata);
+   INT EXPRT bk_copy(char * pevent, char * psrce, const char * bkname);
    INT EXPRT bk_swap(void *event, BOOL force);
    INT EXPRT bk_find(BANK_HEADER * pbkh, const char *name, DWORD * bklen,
                      DWORD * bktype, void **pdata);
