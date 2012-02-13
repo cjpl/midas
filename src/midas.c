@@ -13334,6 +13334,70 @@ void bk_create(void *event, const char *name, WORD type, void *pdata)
 #ifndef DOXYGEN_SHOULD_SKIP_THIS
 
 /********************************************************************/
+/**
+Copy a bank given by name if found from a buffer source to a destination buffer.
+@param * pevent pointing after the EVENT_HEADER (as in FE)
+@param * psrce  pointing to EVENT_HEADER in this case (for ebch[i].pfragment)
+@param bkname  Bank to be found and copied from psrce to pevent
+@return EB_SUCCESS if bank found, 0 if not found (pdest untouched)
+*/
+INT bk_copy(char * pevent, char * psrce, const char * bkname) {
+
+  INT status;
+  DWORD bklen, bktype, bksze;
+  BANK_HEADER * psBkh;
+  BANK * psbkh;
+  BANK32 *psbkh32;
+  char * pdest;
+  void * psdata;
+
+  // source pointing on the BANKxx
+  psBkh = (BANK_HEADER *) ((EVENT_HEADER *)psrce+1);
+  // Find requested bank
+  status = bk_find(psBkh, bkname, &bklen, &bktype, &psdata);
+  // Return 0 if not found
+  if (status != SUCCESS) return 0;
+
+  // Check bank type...
+  // You cannot mix BANK and BANK32 so make sure all the FE use either
+  // bk_init(pevent) or bk_init32(pevent).
+  if (bk_is32(psBkh)) {
+
+    // pointer to the source bank header
+    psbkh32 = ((BANK32 *)psdata -1);
+    // Data size in the bank
+    bksze = psbkh32->data_size;
+
+    // Get to the end of the event
+    pdest = (char *)(((BANK_HEADER *) pevent) + 1) + ((BANK_HEADER *)pevent)->data_size;
+    // Copy from BANK32 to end of Data
+    memcpy(pdest, (char *)psbkh32, ALIGN8(bksze) + sizeof(BANK32));
+    // Bring pointer to the next free location
+    pdest += ALIGN8(bksze) + sizeof(BANK32);
+
+  } else {
+
+    // pointer to the source bank header
+    psbkh = ((BANK *)psdata -1);
+    // Data size in the bank
+    bksze = psbkh->data_size;
+
+    // Get to the end of the event
+    pdest = (char *)(((BANK_HEADER *) pevent) + 1) + ((BANK_HEADER *)pevent)->data_size;
+    // Copy from BANK to end of Data
+    memcpy(pdest, (char *)psbkh, ALIGN8(bksze) + sizeof(BANK));
+    // Bring pointer to the next free location
+    pdest += ALIGN8(bksze) + sizeof(BANK);
+  }
+
+  // Close bank (adjust BANK_HEADER size)
+  bk_close(pevent, pdest);
+  // Adjust EVENT_HEADER size
+  ((EVENT_HEADER *)pevent-1)->data_size = ((BANK_HEADER *) pevent)->data_size + sizeof(BANK_HEADER);
+  return SUCCESS;
+}
+
+/********************************************************************/
 int bk_delete(void *event, const char *name)
 /********************************************************************\
 
