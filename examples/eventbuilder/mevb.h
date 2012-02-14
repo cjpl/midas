@@ -60,5 +60,6 @@ typedef struct {
 #define   EB_USER_ERROR         1002
 #define   EB_ABORTED            1003
 #define   EB_SKIP               1004
+#define   EB_BANK_NOT_FOUND        0
 #define   TIMEOUT              10000
 #define   MAX_CHANNELS           128
