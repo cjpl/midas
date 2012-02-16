@@ -55,8 +55,9 @@ LIBS  = -lusb
 endif
 
 ifeq ($(OSTYPE),darwin)
-CC   += -DOS_DARWIN -DOS_LINUX -DHAVE_USB
-LIBS  = -lIOKit /System/Library/Frameworks/CoreFoundation.framework/CoreFoundation
+CC   += -DOS_DARWIN -DOS_LINUX -DHAVE_USB -DHAVE_LIBUSB10
+FLAGS += -I/usr/local/include/libusb-1.0
+LIBS  = /usr/local/lib/libusb-1.0.a -framework IOKit -framework CoreFoundation
 STRLCPY       =
 endif
 
