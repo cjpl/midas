@@ -424,7 +424,7 @@ void load_nodes_xml(int fd, char *file_name, int flash)
    MSCB_INFO info;
    MSCB_INFO_VAR info_var;
 
-   root = mxml_parse_file(file_name, error, sizeof(error));
+   root = mxml_parse_file(file_name, error, sizeof(error), NULL);
    if (root == NULL) {
       printf("Error loading \"%s\": %s\n", file_name, error);
       return;
