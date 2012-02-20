@@ -455,10 +455,12 @@ BOOL msl_parse(char *filename, char *error, int error_size, int *error_line)
                fprintf(fout, "<Param l=\"%d\" name=\"%s\" />\n", line+1, list[1]);
             else if (!list[3][0] && equal_ustring(list[2], "bool")) {
                fprintf(fout, "<Param l=\"%d\" name=\"%s\" type=\"bool\" />\n", line+1, list[1]);
+            } else if (!list[3][0]) {
+               fprintf(fout, "<Param l=\"%d\" name=\"%s\" comment=\"%s\" />\n", line+1, list[1], list[2]);
             } else {
-               fprintf(fout, "<Param l=\"%d\" name=\"%s\" options=\"", line+1, list[1]);
-               for (i=2 ; i < 100 && list[i][0] ; i++) {
-                  if (i > 2)
+               fprintf(fout, "<Param l=\"%d\" name=\"%s\" comment=\"%s\" options=\"", line+1, list[1], list[2]);
+               for (i=3 ; i < 100 && list[i][0] ; i++) {
+                  if (i > 3)
                      fprintf(fout, ",");
                   fprintf(fout, "%s", list[i]);
                }
