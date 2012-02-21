@@ -7,7 +7,7 @@ void cmd_loop(int fd, char *cmd, unsigned short adr);
 
 void load_nodes_xml(int fd, char *file_name, int flash);
 
-int mainmsc(int argc, char *argv[], mxArray *plhs[ ], bool writeFlag);
+int mainmsc(int argc, char *argv[], mxArray *plhs[ ], bool writeFlag, bool scanFlag);
 
 int match(char *str, char *cmd);
 

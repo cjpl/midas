@@ -78,7 +78,6 @@
     <ClCompile Include="strlcpy.c" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="data.h" />
     <ClInclude Include="msc.h" />
     <ClInclude Include="mscb.h" />
     <ClInclude Include="mscbrpc.h" />

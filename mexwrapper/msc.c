@@ -39,25 +39,25 @@
 #include "strlcpy.h"
 
 #include "mex.h"
-#include "data.h"
 
 
 /*------------------------------------------------------------------*/
 //added
-
-dataTz mscData;
 mxArray** globalOutput;
-bool globalWriteFlag;
+bool globalWriteFlag;		//flag == true if matlab command is to write
+bool globalScanNodeFlag;	//flag == true if matlab command is to scan 
+int globalScanNodeNumer;	//index counter of the returning array of node type and node address
 
-void returnValueToMatlab(char regName[], unsigned long int val, int type)
+//return register name and register value to Matlab
+void returnValueToMatlab(char name[], unsigned long int val, int type)
 {
 	if(globalWriteFlag == false)
 	{
-		char* regNamePtr = regName;
+		char* namePtr = name;
 
 		double* numData;
 
-		globalOutput[0] = mxCreateString(regNamePtr);
+		globalOutput[0] = mxCreateString(namePtr);
 		globalOutput[1] = mxCreateDoubleMatrix(1,1,mxREAL);
     
 		numData = mxGetPr(globalOutput[1]);
@@ -74,6 +74,40 @@ void returnValueToMatlab(char regName[], unsigned long int val, int type)
 		{
 			numData[0] = (float)val;
 		}
+	}
+}
+
+//return arrays of node types and node addresses to Matlab
+void returnScannedNodeToMatlab(char name[], unsigned long int val)
+{
+	if(globalScanNodeFlag == true)
+	{
+		char* namePtr = name;
+
+		double* dataEnum;
+		double* numData;
+    
+		dataEnum = mxGetPr(globalOutput[0]);
+		numData = mxGetPr(globalOutput[1]);
+
+		if(strcmp(namePtr,"FEBRD") == 0)
+		{
+			dataEnum[globalScanNodeNumer] = 1;
+			numData[globalScanNodeNumer] = val;
+			globalScanNodeNumer++;
+		}
+		else if(strcmp(namePtr,"FEADC") == 0)
+		{
+			dataEnum[globalScanNodeNumer] = 2;
+			numData[globalScanNodeNumer] = val;
+			globalScanNodeNumer++;
+		}
+		else if(strcmp(namePtr,"FECHAN") == 0)
+		{
+			dataEnum[globalScanNodeNumer] = 3;
+			numData[globalScanNodeNumer] = val;
+			globalScanNodeNumer++;
+		}	
 	}
 }
 
@@ -811,7 +845,11 @@ void cmd_loop(int fd, char *cmd, unsigned short adr)
                          ("Found node \"%s\", NA %d (0x%04X), GA %d (0x%04X), Rev. %d      \n",
                           str, (unsigned short) i, (unsigned short) i, info.group_address,
                           info.group_address, info.svn_revision);
+					 //added 17-Feb-2012
 
+					 returnScannedNodeToMatlab(str,(unsigned long) i);
+
+					 //end add
                      mscb_get_version(lib, prot);
                      if (info.protocol_version != atoi(prot)) {
                         printf
@@ -1806,7 +1844,7 @@ void cmd_loop(int fd, char *cmd, unsigned short adr)
 
 /*------------------------------------------------------------------*/
 
-int mainmsc(int argc, char *argv[], mxArray *plhs[ ], bool writeFlag)
+int mainmsc(int argc, char *argv[], mxArray *plhs[ ], bool writeFlag, bool scanFlag)
 {
    int i, fd, server, scan;
    unsigned short adr;
@@ -1833,12 +1871,39 @@ int mainmsc(int argc, char *argv[], mxArray *plhs[ ], bool writeFlag)
    dimsVal[0] = 1;
 
 	//make returning data pointer visible to this file
+   //returns arrays of register name and register value
    if(writeFlag == false)
    {
 		globalOutput = plhs;
 		globalOutput[0] = mxCreateCellArray(1, dims);
 		globalOutput[1] = mxCreateCellArray(1, dims);
+		globalWriteFlag = false;
    }
+   else
+   {
+	   globalWriteFlag = true;
+   }
+   
+   //make returning data pointer visible to this file
+   //returns arrays of node type and node address
+   if(scanFlag == true)
+   {
+	    globalOutput = plhs;
+		
+		globalOutput[0] = mxCreateCellArray(1, dims);
+		globalOutput[1] = mxCreateCellArray(1, dims);
+		
+		globalOutput[0] = mxCreateDoubleMatrix(1,200,mxREAL);
+		globalOutput[1] = mxCreateDoubleMatrix(1,200,mxREAL);
+	    
+		globalScanNodeNumer = 0;
+		globalScanNodeFlag = true;
+   }
+   else
+   {
+	   globalScanNodeFlag = false;
+   }
+	
 //end add
 
    /* parse command line parameters */

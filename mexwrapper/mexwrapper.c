@@ -1,6 +1,5 @@
 #include "mex.h"
 #include "msc.h"
-#include "data.h"
 #include <string.h>
 
 #define STRINGNUM 7
@@ -16,6 +15,7 @@ void mexFunction(int nlhs, mxArray *plhs[ ],int nrhs, const mxArray *prhs[ ])
 	char *input_buf;
 	int status;
 	bool writeFlag = false;
+	bool scanFlag = false;
 
 	double* nodeAddrDouble;
 	double* rwAddrDouble;
@@ -40,6 +40,8 @@ void mexFunction(int nlhs, mxArray *plhs[ ],int nrhs, const mxArray *prhs[ ])
 	char space[] = " ";
 	char rwCmd_rwAddr_wVal[512];
 	
+	char scanCmd[256] = " ";
+
 	char* ipStringPtr = ipString;
 	char* rwCmdPtr = rwCmd;
 	char* nodeAddrPtr = nodeAddr;
@@ -47,8 +49,10 @@ void mexFunction(int nlhs, mxArray *plhs[ ],int nrhs, const mxArray *prhs[ ])
 	char* wValPtr = wVal;
 	char* rwCmd_rwAddr_wVal_Ptr = rwCmd_rwAddr_wVal;
 	char* spacePtr = space;
+
+	char* scanCmdPtr = scanCmd;
 	
-	if(nrhs == 4 || nrhs == 5)
+	if(nrhs == 3 || nrhs == 4 || nrhs == 5 || nrhs == 2)
 	{
 		for(count = 0; count < nrhs; count++)
 		{
@@ -82,7 +86,7 @@ void mexFunction(int nlhs, mxArray *plhs[ ],int nrhs, const mxArray *prhs[ ])
 							itoa(buflen,tempBufPtr,10);
 							//printf(tempBufPtr);
 							//printf("\n");
-							input_buf = mxCalloc(buflen + 1, sizeof(char));
+							input_buf = (char *) mxCalloc(buflen + 1, sizeof(char));
 							status = mxGetString(prhs[count], input_buf, buflen + 1);
 
 							if(count == 0)
@@ -92,10 +96,46 @@ void mexFunction(int nlhs, mxArray *plhs[ ],int nrhs, const mxArray *prhs[ ])
 							if(count == 2)
 							{
 								rwCmdPtr = input_buf;	
-								if(rwCmdPtr == "w")
+								
+								//check for right number of inputs
+								if( strcmp(rwCmdPtr,"w") == 0)
 								{
-									writeFlag = true;
+									if(nrhs == 5)
+									{
+										writeFlag = true;
+									}
+									else
+									{
+										validInput = false;
+									}
 								}
+								else if(strcmp(rwCmdPtr, "r") == 0)
+								{
+									if(nrhs == 4)
+									{
+										writeFlag = false;
+									}
+									else
+									{
+										validInput = false;
+									}
+								}
+								else if(strcmp(rwCmdPtr, "i") == 0)
+								{
+									if(nrhs == 3)
+									{
+										writeFlag = false;
+									}
+									else
+									{
+										validInput = false;
+									}
+								}
+								else
+								{
+									validInput = false;
+								}
+								
 							}
 							input_buf = NULL;
 						}
@@ -111,8 +151,35 @@ void mexFunction(int nlhs, mxArray *plhs[ ],int nrhs, const mxArray *prhs[ ])
 					//check numerical value exists
 					if(!mxIsNumeric(prhs[count]))
 					{
-						mexErrMsgTxt("Numerical type expected.");
-						validInput = false;
+						//check if command is to scan node
+						if(count == 1)
+						{
+							if(nrhs == 2)
+							{
+								printf("entered here!\n");
+
+								//get length of the char array
+								buflen = mxGetN(prhs[count]);
+								if(buflen > 0)
+								{
+									itoa(buflen,tempBufPtr,10);
+									input_buf = (char *) mxCalloc(buflen + 1, sizeof(char));
+									status = mxGetString(prhs[count], input_buf, buflen + 1);
+																
+									scanCmdPtr = input_buf;	
+
+									if(strcmp(scanCmdPtr, "sc") == 0)
+									{
+										scanFlag = true;
+									}
+								}	
+							}
+						}
+						else
+						{
+							mexErrMsgTxt("Numerical type expected.");
+							validInput = false;
+						}
 					}
 					else
 					{
@@ -159,7 +226,10 @@ void mexFunction(int nlhs, mxArray *plhs[ ],int nrhs, const mxArray *prhs[ ])
 	
 	if(validInput == false)
 	{
-		printf("input: [ip:string, node_addr:int, r/w:string, read_addr/write_addr:int, (write_val):int]\n");
+		printf("Function Input/Output:\n");
+		printf("read node info  -> input: [ip:string, node_addr:int, 'i']\n");
+		printf("read reg value  -> input: [ip:string, node_addr:int, 'r', read_addr:int]\n");
+		printf("write reg value -> input: [ip:string, node_addr:int, 'w', write_addr:int, write_val:int], output: [reg_name, reg_val] \n");
 	}
 	else
 	{
@@ -174,13 +244,27 @@ void mexFunction(int nlhs, mxArray *plhs[ ],int nrhs, const mxArray *prhs[ ])
 			strcat(rwCmd_rwAddr_wVal_Ptr, wValPtr); 
 		}
 		
-		StringPtr[0] = myString1;
-		StringPtr[1] = myString2;
-		StringPtr[2] = ipStringPtr;
-		StringPtr[3] = myString4;
-		StringPtr[4] = nodeAddrPtr;
-		StringPtr[5] = myString6;
-		StringPtr[6] = rwCmd_rwAddr_wVal_Ptr;
+		if(scanFlag == false)
+		{
+			StringPtr[0] = myString1;
+			StringPtr[1] = myString2;
+			StringPtr[2] = ipStringPtr;
+			StringPtr[3] = myString4;
+			StringPtr[4] = nodeAddrPtr;
+			StringPtr[5] = myString6;
+			StringPtr[6] = rwCmd_rwAddr_wVal_Ptr;
+		}
+		else
+		{
+			StringPtr[0] = myString1;
+			StringPtr[1] = myString2;
+			StringPtr[2] = ipStringPtr;
+			StringPtr[3] = "-c";
+			StringPtr[4] = "sc";
+			StringPtr[5] = " ";
+			StringPtr[6] = " ";
+		}
+
 
 		//printf("concatenate test: ");
 		//printf(rwCmd_rwAddr_wVal_Ptr);
@@ -193,7 +277,7 @@ void mexFunction(int nlhs, mxArray *plhs[ ],int nrhs, const mxArray *prhs[ ])
 		//	printf("\n");
 		//}
 
-		mainmsc(STRINGNUM,StringPtr,plhs, writeFlag);
+		mainmsc(STRINGNUM,StringPtr,plhs, writeFlag, scanFlag);
 	}
 
 }
