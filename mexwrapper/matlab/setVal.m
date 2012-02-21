@@ -1,7 +1,7 @@
 function result = setVal(nodeType, nodeAddr, regName, instance, val)
 %Set or get the value of the selected register
-%Usage 1 - write: setGain(nodeType, nodeAddr, 'regName',instance #, val)
-%Usage 2 - read: result = setGain(nodeType, nodeAddr, 'regName', instance #)
+%Usage 1 - write: setVal(nodeType, nodeAddr, 'regName',instance #, val)
+%Usage 2 - read: result = setVal(nodeType, nodeAddr, 'regName', instance #)
 %nodeType and nodeAddr can be updated by getNodeAddress function
 %List of register names
 %FE node:
