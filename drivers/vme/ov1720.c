@@ -328,6 +328,9 @@ int main (int argc, char* argv[]) {
   uint32_t pct=0, ct;
   struct timeval t1;
   int   dt1, savelcount=0;
+  // Added to test optivca communication (Alex 26/02/12)
+  int testCom    = 0;
+  uint32_t regRd = 0;
 
    /* get parameters */
    /* parse command line parameters */
@@ -336,6 +339,8 @@ int main (int argc, char* argv[]) {
       debug = 1;
     else if (strncmp(argv[i], "-s", 2) == 0)
       bshowData = 1;
+    else if (strncmp(argv[i], "-t", 2) == 0)
+      testCom = 1;
     else if (argv[i][0] == '-') {
       if (i + 1 >= argc || argv[i + 1][0] == '-')
 	goto usage;
@@ -359,7 +364,8 @@ int main (int argc, char* argv[]) {
       printf("              -c interface# (PCIe)\n");
       printf("              -d daisy#\n");
       printf("              -m modulo display\n");
-      printf("              -s show data\n\n");
+      printf("              -s show data\n");
+      printf("              -t test communication\n\n");
       return 0;
          }
   }
@@ -367,19 +373,64 @@ int main (int argc, char* argv[]) {
   //  printf("in ov1720, l %d, d %d, c %d\n", l, d, c);
   
 #if 1
+
+  // Test board communication (Alex 26/02/12)
+  if(testCom == 1) {
+    // Open devices
+    sCAEN = CAENComm_OpenDevice(CAENComm_PCIE_OpticalLink, l, d, c, &(handle[h])); 
+    if (sCAEN != CAENComm_Success) {
+      sCAEN = CAENComm_CloseDevice(handle[h]); 
+      printf("Com Test Fail Type One\n");
+      return -1;
+    }
+    else {
+      sCAEN = CAENComm_Read32(handle[h], V1720_BOARD_INFO, &regRd);
+      if((regRd & 0xffff) != 0x1003) {
+	sCAEN = CAENComm_CloseDevice(handle[h]); 
+	printf("Com Test Fail Type Two\n");
+	return -1;
+      }
+    }
+    printf("Com Test Success \n");
+    sCAEN = CAENComm_CloseDevice(handle[h]); 
+    return 0;
+  }
+
   //
   // Open devices
   sCAEN = CAENComm_OpenDevice(CAENComm_PCIE_OpticalLink, l, d, c, &(handle[h])); 
   if (sCAEN != CAENComm_Success) {
     handle[h] = -1;
-    printf("CAENComm_OpenDevice [l:%d, d:%d]: Error %d\n", l, d, sCAEN);
+    printf("1st CAENComm_OpenDevice [l:%d, d:%d]: Error %d\n", l, d, sCAEN);
   } else {
-    printf("Device found : Interface:%d Link:%d  Daisy:%d Handle[%d]:%d\n", c, l, d, h, handle[h]);
+    printf("1st Device found : Interface:%d Link:%d  Daisy:%d Handle[%d]:%d\n", c, l, d, h, handle[h]);
     sCAEN = ov1720_Status(handle[h]);
     h++;
   }
   Nh = h;
   printf("Handles opened (%d)\n", Nh);
+
+  CAENComm_CloseDevice(handle[0]); 
+  printf("Init Handles released\n");
+
+  //
+  // Open devices
+  h = 0;
+  sCAEN = CAENComm_OpenDevice(CAENComm_PCIE_OpticalLink, l, d, c, &(handle[h])); 
+  if (sCAEN != CAENComm_Success) {
+    handle[h] = -1;
+    printf("2nd CAENComm_OpenDevice [l:%d, d:%d]: Error %d\n", l, d, sCAEN);
+  } else {
+    printf("2nd Device found : Interface:%d Link:%d  Daisy:%d Handle[%d]:%d\n", c, l, d, h, handle[h]);
+    sCAEN = ov1720_Status(handle[h]);
+    h++;
+  }
+  Nh = h;
+  //sCAEN = ov1720_AcqCtl(handle[0], V1720_RUN_STOP);
+  //sCAEN = CAENComm_Write32(handle[0], V1720_SW_CLEAR, 0);
+    sCAEN = CAENComm_Write32(handle[0], V1720_SW_RESET, 0);
+  printf("Init After stop\n");
+
 #endif
 #if 0
   //
@@ -416,7 +467,7 @@ int main (int argc, char* argv[]) {
     sCAEN = CAENComm_Write32(handle[h], V1720_CHANNEL_CONFIG        , 0x10);
     sCAEN = CAENComm_Write32(handle[h], V1720_BUFFER_ORGANIZATION   , 0xa);
     sCAEN = CAENComm_Write32(handle[h], V1720_CHANNEL_EN_MASK       , 0x3);
-    sCAEN = CAENComm_Write32(handle[h], V1720_TRIG_SRCE_EN_MASK     , 0x40000003);
+    sCAEN = CAENComm_Write32(handle[h], V1720_TRIG_SRCE_EN_MASK     , 0x40000000);
     sCAEN = CAENComm_Write32(handle[h], V1720_MONITOR_MODE          , 0x3);  // buffer occupancy
     // 
     // Set Channel threshold
