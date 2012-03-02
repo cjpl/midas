@@ -318,7 +318,7 @@ int main (int argc, char* argv[]) {
   CAENComm_ErrorCode sCAEN;
   int handle[2];
   int nw, l=0, c=0, d=0, h=0, Nh;
-  uint32_t i, lcount, data[50000], temp, lam;
+  uint32_t i, lcount, data[50000], temp, lam, reg;
   int Nmodulo=10;
   int tcount=0, eloop=0;
   uint32_t   *pdata, eStored, eSize;
@@ -382,16 +382,23 @@ int main (int argc, char* argv[]) {
       sCAEN = CAENComm_CloseDevice(handle[h]); 
       printf("Com Test Fail Type One\n");
       return -1;
-    }
-    else {
+    } else {
       sCAEN = CAENComm_Read32(handle[h], V1720_BOARD_INFO, &regRd);
+      printf("O:%d B:%d Rev:0x%x FPGA-FW",l, d, regRd);
+      for (i=0;i<1;i++) {
+	reg = V1720_FPGA_FWREV | (i << 8);
+	sCAEN = CAENComm_Read32(handle[h], reg, &regRd);
+	printf("/0x%x", regRd);
+      }
+      printf(" Com Test Success \n");
+      /*
       if((regRd & 0xffff) != 0x1003) {
 	sCAEN = CAENComm_CloseDevice(handle[h]); 
 	printf("Com Test Fail Type Two\n");
 	return -1;
       }
+      */
     }
-    printf("Com Test Success \n");
     sCAEN = CAENComm_CloseDevice(handle[h]); 
     return 0;
   }
