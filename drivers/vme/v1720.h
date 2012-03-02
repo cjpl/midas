@@ -55,6 +55,7 @@
 #define V1720_CHANNEL_THRESHOLD               0x1080      /* For channel 0 */
 #define V1720_CHANNEL_OUTHRESHOLD             0x1084      /* For channel 0 */
 #define V1720_CHANNEL_STATUS                  0x1088      /* For channel 0 */
+#define V1720_FPGA_FWREV                      0x108C      /* For channel 0 */
 #define V1720_BUFFER_OCCUPANCY                0x1094      /* For channel 0 */
 #define V1720_CHANNEL_DAC                     0x1098      /* For channel 0 */
 
