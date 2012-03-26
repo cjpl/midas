@@ -1,6 +1,6 @@
 function result = setVal(nodeType, nodeAddr, regName, instance, val)
 %Set or get the value of the selected register
-%Usage 1 - write: setVal(nodeType, nodeAddr, 'regName',instance #, val)
+%Usage 1 - write: setVal(nodeType, nodeAddr, 'regName'/OffsetAddr,instance #, val)
 %Usage 2 - read: result = setVal(nodeType, nodeAddr, 'regName', instance #)
 %nodeType and nodeAddr can be updated by getNodeAddress function
 %List of register names
@@ -42,6 +42,8 @@ function result = setVal(nodeType, nodeAddr, regName, instance, val)
 %     'fsyntime'
 %     'fmaxhits'
 %     'fcntlreg'
+%
+% Update this list of neccessary
 regMap = {'FE',0,'V_board1';...
           'FE',1,'V_board2';...
           'FE',2,'T_int1';...
@@ -101,40 +103,50 @@ regMapped = 0;
 %obtained register address from regMap
 regAddr = 0;
 
-%search for matching register name and get register address
-for i = 1:size(regMap,1)
-   if(strcmp(regMap{i,3},regName) == 1)
-      regAddr = regMap{i,2};
-      regType = regMap{i,1};
-      regMapped = 1;
-      break; 
-   end
+%check if regName is character array
+if(ischar(regName))
+    %search for matching register name and get register address
+    for i = 1:size(regMap,1)
+       if(strcmp(regMap{i,3},regName) == 1)
+          regAddr = regMap{i,2};
+          regType = regMap{i,1};
+          regMapped = 1;
+          break; 
+       end
+    end
+%just assign register address if regName input is a number    
+elseif(isfinite(regName))
+    writeNodeAddr = regName;
+    regMapped = 1;
 end
 
 %error if no matching register found
 if(regMapped == 0)
-    error('register name not found');
+    error('register %s not found',regName);
 end
 
-%check if instance number of node is valid
+
+%check if instance number of node is valid for regName is char array
 %if valid, get the node address
-if(strcmp(regType,'FE') == 1)
-    if(instance < 1 || instance > size(FEBRD,2))
-       error('invalid FE number'); 
+if(ischar(regName))
+    if(strcmp(regType,'FE') == 1)
+        if(instance < 1 || instance > size(FEBRD,2))
+           error('invalid FE number: %d', instance); 
+        else
+           writeNodeAddr = FEBRD(instance);
+        end
+    elseif(strcmp(regType,'ADC') == 1)
+        if(instance < 1 || instance > size(FEADC,2))
+           error('invalid ADC number: %d', instance);
+        else
+           writeNodeAddr = FEADC(instance);
+        end
     else
-       writeNodeAddr = FEBRD(instance);
-    end
-elseif(strcmp(regType,'ADC') == 1)
-    if(instance < 1 || instance > size(FEADC,2))
-       error('invalid ADC number');
-    else
-       writeNodeAddr = FEADC(instance);
-    end
-else
-    if(instance < 1 || instance > size(FECHAN,2))
-       error('invalid Channel number');
-    else
-       writeNodeAddr = FECHAN(instance);
+        if(instance < 1 || instance > size(FECHAN,2))
+           error('invalid Channel number: %d', instance);
+        else
+           writeNodeAddr = FECHAN(instance);
+        end
     end
 end
 
