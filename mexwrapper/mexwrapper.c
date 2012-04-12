@@ -265,6 +265,12 @@ void mexFunction(int nlhs, mxArray *plhs[ ],int nrhs, const mxArray *prhs[ ])
 			StringPtr[6] = " ";
 		}
 
+		//check if it's usb mode
+		if(strcmp(ipStringPtr, "usb") == 0)
+		{
+			StringPtr[1] = "";
+			StringPtr[2] = "";
+		}
 
 		//printf("concatenate test: ");
 		//printf(rwCmd_rwAddr_wVal_Ptr);
