@@ -1038,6 +1038,7 @@ INT midas_write(LOG_CHN * log_chn, EVENT_HEADER * pevent, INT evt_size)
 {
    INT i, written, size_left;
    MIDAS_INFO *info;
+   static DWORD stat_last = 0;
 
    info = (MIDAS_INFO *) log_chn->format_info;
    written = 0;
@@ -1083,8 +1084,10 @@ INT midas_write(LOG_CHN * log_chn, EVENT_HEADER * pevent, INT evt_size)
    log_chn->statistics.bytes_written += written;
    log_chn->statistics.bytes_written_subrun += written;
    log_chn->statistics.bytes_written_total += written;
-   log_chn->statistics.disk_level = 1.0-ss_disk_free(log_chn->path)/ss_disk_size(log_chn->path);
-
+   if (ss_time() > stat_last+3) {
+      log_chn->statistics.disk_level = 1.0-ss_disk_free(log_chn->path)/ss_disk_size(log_chn->path);
+      stat_last = ss_time();
+   }
    return SS_SUCCESS;
 }
 
@@ -1386,6 +1389,7 @@ INT dump_write(LOG_CHN * log_chn, EVENT_HEADER * pevent, INT evt_size)
    KEY key;
    DWORD bkname;
    WORD bktype;
+   static DWORD stat_last = 0;
 
    event_def = db_get_event_definition(pevent->event_id);
    if (event_def == NULL)
@@ -1552,7 +1556,10 @@ INT dump_write(LOG_CHN * log_chn, EVENT_HEADER * pevent, INT evt_size)
    log_chn->statistics.events_written++;
    log_chn->statistics.bytes_written += size;
    log_chn->statistics.bytes_written_total += size;
-   log_chn->statistics.disk_level = 1.0-ss_disk_free(log_chn->path)/ss_disk_size(log_chn->path);
+   if (ss_time() > stat_last+3) {
+      log_chn->statistics.disk_level = 1.0-ss_disk_free(log_chn->path)/ss_disk_size(log_chn->path);
+      stat_last = ss_time();
+   }
 
    return status;
 }
@@ -1633,6 +1640,7 @@ INT ascii_write(LOG_CHN * log_chn, EVENT_HEADER * pevent, INT evt_size)
    static short int last_event_id = -1;
    DWORD bkname;
    WORD bktype;
+   static DWORD stat_last = 0;
 
    if (pevent->serial_number == 0)
       last_event_id = -1;
@@ -1772,7 +1780,10 @@ INT ascii_write(LOG_CHN * log_chn, EVENT_HEADER * pevent, INT evt_size)
    log_chn->statistics.events_written++;
    log_chn->statistics.bytes_written += size;
    log_chn->statistics.bytes_written_total += size;
-   log_chn->statistics.disk_level = 1.0-ss_disk_free(log_chn->path)/ss_disk_size(log_chn->path);
+   if (ss_time() > stat_last+3) {
+      log_chn->statistics.disk_level = 1.0-ss_disk_free(log_chn->path)/ss_disk_size(log_chn->path);
+      stat_last = ss_time();
+   }
 
    return status;
 }
@@ -2065,6 +2076,7 @@ INT root_write(LOG_CHN * log_chn, EVENT_HEADER * pevent, INT evt_size)
    DWORD bkname;
    WORD bktype;
    TBranch *branch;
+   static DWORD stat_last = 0;
 
    if (pevent->serial_number == 0)
       last_event_id = -1;
@@ -2168,7 +2180,10 @@ INT root_write(LOG_CHN * log_chn, EVENT_HEADER * pevent, INT evt_size)
    log_chn->statistics.events_written++;
    log_chn->statistics.bytes_written += size;
    log_chn->statistics.bytes_written_total += size;
-   log_chn->statistics.disk_level = 1.0-ss_disk_free(log_chn->path)/ss_disk_size(log_chn->path);
+   if (ss_time() > stat_last+3) {
+      log_chn->statistics.disk_level = 1.0-ss_disk_free(log_chn->path)/ss_disk_size(log_chn->path);
+      stat_last = ss_time();
+   }
 
    return SS_SUCCESS;
 }
