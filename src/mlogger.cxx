@@ -1008,7 +1008,7 @@ INT midas_flush_buffer(LOG_CHN * log_chn)
 
       s = (z_streamp) log_chn->gzfile;
       written = s->total_out;
-      i = gzwrite(log_chn->gzfile, info->buffer, size);
+      i = gzwrite((gzFile) log_chn->gzfile, info->buffer, size);
       if (i != size)
          return -1;
       written = s->total_out - written;
@@ -1197,7 +1197,7 @@ INT midas_log_open(LOG_CHN * log_chn, INT run_number)
             return SS_FILE_ERROR;
          }
 
-         gzsetparams(log_chn->gzfile, log_chn->compression, Z_DEFAULT_STRATEGY);
+         gzsetparams((gzFile)log_chn->gzfile, log_chn->compression, Z_DEFAULT_STRATEGY);
 #else
          cm_msg(MERROR, "midas_log_open", "Compression enabled but ZLIB support not compiled in");
          close(log_chn->handle);
