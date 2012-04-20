@@ -144,6 +144,7 @@
 		D5A57207139D63EF00B65A0A /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
+				LastUpgradeCheck = 0420;
 				ORGANIZATIONNAME = PSI;
 			};
 			buildConfigurationList = D5A5720A139D63EF00B65A0A /* Build configuration list for PBXProject "mlogger" */;
@@ -227,6 +228,7 @@
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_ENABLE_OBJC_EXCEPTIONS = YES;
 				GCC_PREPROCESSOR_DEFINITIONS = (
+					HAVE_ZLIB,
 					DEBUG,
 					OS_LINUX,
 					OS_DARWIN,
@@ -237,6 +239,7 @@
 					../../mxml,
 					../include,
 				);
+				OTHER_LDFLAGS = "-lz";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = Debug;
@@ -249,6 +252,7 @@
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				GCC_ENABLE_OBJC_EXCEPTIONS = YES;
 				GCC_PREPROCESSOR_DEFINITIONS = (
+					HAVE_ZLIB,
 					OS_LINUX,
 					OS_DARWIN,
 					USE_POSIX_SHM,
@@ -258,6 +262,7 @@
 					../../mxml,
 					../include,
 				);
+				OTHER_LDFLAGS = "-lz";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = Release;
