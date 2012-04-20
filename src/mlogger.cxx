@@ -50,6 +50,8 @@ void create_sql_tree();
 
 #define LOGGER_TIMEOUT 60000
 
+#define DISK_CHECK_INTERVAL 3   // number of seconds between calls to ss_disk_size to save CPU
+
 #define MAX_CHANNELS 10
 
 INT  local_state;
@@ -1084,7 +1086,7 @@ INT midas_write(LOG_CHN * log_chn, EVENT_HEADER * pevent, INT evt_size)
    log_chn->statistics.bytes_written += written;
    log_chn->statistics.bytes_written_subrun += written;
    log_chn->statistics.bytes_written_total += written;
-   if (ss_time() > stat_last+3) {
+   if (ss_time() > stat_last+DISK_CHECK_INTERVAL) {
       log_chn->statistics.disk_level = 1.0-ss_disk_free(log_chn->path)/ss_disk_size(log_chn->path);
       stat_last = ss_time();
    }
@@ -1556,7 +1558,7 @@ INT dump_write(LOG_CHN * log_chn, EVENT_HEADER * pevent, INT evt_size)
    log_chn->statistics.events_written++;
    log_chn->statistics.bytes_written += size;
    log_chn->statistics.bytes_written_total += size;
-   if (ss_time() > stat_last+3) {
+   if (ss_time() > stat_last+DISK_CHECK_INTERVAL) {
       log_chn->statistics.disk_level = 1.0-ss_disk_free(log_chn->path)/ss_disk_size(log_chn->path);
       stat_last = ss_time();
    }
@@ -1780,7 +1782,7 @@ INT ascii_write(LOG_CHN * log_chn, EVENT_HEADER * pevent, INT evt_size)
    log_chn->statistics.events_written++;
    log_chn->statistics.bytes_written += size;
    log_chn->statistics.bytes_written_total += size;
-   if (ss_time() > stat_last+3) {
+   if (ss_time() > stat_last+DISK_CHECK_INTERVAL) {
       log_chn->statistics.disk_level = 1.0-ss_disk_free(log_chn->path)/ss_disk_size(log_chn->path);
       stat_last = ss_time();
    }
@@ -2180,7 +2182,7 @@ INT root_write(LOG_CHN * log_chn, EVENT_HEADER * pevent, INT evt_size)
    log_chn->statistics.events_written++;
    log_chn->statistics.bytes_written += size;
    log_chn->statistics.bytes_written_total += size;
-   if (ss_time() > stat_last+3) {
+   if (ss_time() > stat_last+DISK_CHECK_INTERVAL) {
       log_chn->statistics.disk_level = 1.0-ss_disk_free(log_chn->path)/ss_disk_size(log_chn->path);
       stat_last = ss_time();
    }
