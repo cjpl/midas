@@ -63,26 +63,26 @@ MSCB_INFO_VAR code vars[] = {
    { 4, UNIT_VOLT,    0, 0, MSCBF_FLOAT, "ADC06",  &user_data.adc[6], 4 },                    
    { 4, UNIT_VOLT,    0, 0, MSCBF_FLOAT, "ADC07",  &user_data.adc[7], 4 },                    
                                                                                          
-   { 1, UNIT_BOOLEAN, 0, 0, 0,           "Dout0",  &user_data.dout[0], 0 },
-   { 1, UNIT_BOOLEAN, 0, 0, 0,           "Dout1",  &user_data.dout[1], 0 },
-   { 1, UNIT_BOOLEAN, 0, 0, 0,           "Dout2",  &user_data.dout[2], 0 },
-   { 1, UNIT_BOOLEAN, 0, 0, 0,           "Dout3",  &user_data.dout[3], 0 },
-   { 1, UNIT_BOOLEAN, 0, 0, 0,           "Dout4",  &user_data.dout[4], 0 },
-   { 1, UNIT_BOOLEAN, 0, 0, 0,           "Dout5",  &user_data.dout[5], 0 },
-   { 1, UNIT_BOOLEAN, 0, 0, 0,           "Dout6",  &user_data.dout[6], 0 },
-   { 1, UNIT_BOOLEAN, 0, 0, 0,           "Dout7",  &user_data.dout[7], 0 },
+   { 1, UNIT_BOOLEAN, 0, 0, 0,           "Dout0",  &user_data.dout[0], 0, 0, 1, 1 },
+   { 1, UNIT_BOOLEAN, 0, 0, 0,           "Dout1",  &user_data.dout[1], 0, 0, 1, 1 },
+   { 1, UNIT_BOOLEAN, 0, 0, 0,           "Dout2",  &user_data.dout[2], 0, 0, 1, 1 },
+   { 1, UNIT_BOOLEAN, 0, 0, 0,           "Dout3",  &user_data.dout[3], 0, 0, 1, 1 },
+   { 1, UNIT_BOOLEAN, 0, 0, 0,           "Dout4",  &user_data.dout[4], 0, 0, 1, 1 },
+   { 1, UNIT_BOOLEAN, 0, 0, 0,           "Dout5",  &user_data.dout[5], 0, 0, 1, 1 },
+   { 1, UNIT_BOOLEAN, 0, 0, 0,           "Dout6",  &user_data.dout[6], 0, 0, 1, 1 },
+   { 1, UNIT_BOOLEAN, 0, 0, 0,           "Dout7",  &user_data.dout[7], 0, 0, 1, 1 },
 
-   { 1, UNIT_BOOLEAN, 0, 0, 0,           "Rel0",   &user_data.rel[0], 0 },
-   { 1, UNIT_BOOLEAN, 0, 0, 0,           "Rel1",   &user_data.rel[1], 0 },
-   { 1, UNIT_BOOLEAN, 0, 0, 0,           "Rel2",   &user_data.rel[2], 0 },
-   { 1, UNIT_BOOLEAN, 0, 0, 0,           "Rel3",   &user_data.rel[3], 0 },
+   { 1, UNIT_BOOLEAN, 0, 0, 0,           "Rel0",   &user_data.rel[0], 0, 0, 1, 1 },
+   { 1, UNIT_BOOLEAN, 0, 0, 0,           "Rel1",   &user_data.rel[1], 0, 0, 1, 1 },
+   { 1, UNIT_BOOLEAN, 0, 0, 0,           "Rel2",   &user_data.rel[2], 0, 0, 1, 1 },
+   { 1, UNIT_BOOLEAN, 0, 0, 0,           "Rel3",   &user_data.rel[3], 0, 0, 1, 1 },
 
    { 1, UNIT_BOOLEAN, 0, 0, 0,           "Din0",   &user_data.din[0], 0 },
    { 1, UNIT_BOOLEAN, 0, 0, 0,           "Din1",   &user_data.din[1], 0 },
    { 1, UNIT_BOOLEAN, 0, 0, 0,           "Din2",   &user_data.din[2], 0 },
    { 1, UNIT_BOOLEAN, 0, 0, 0,           "Din3",   &user_data.din[3], 0 },
 
-   { 2, UNIT_SECOND,  0, 0, 0,           "Period", &user_data.period, 0 },
+   { 2, UNIT_SECOND,  0, 0, 0,           "Period", &user_data.period, 0, 0, 3600, 1 },
 
    { 0 }
 };
@@ -465,13 +465,13 @@ static unsigned long last = 0;
             update_data[16] = 0;
             flag = user_data.dout[0];
             dr_dout_bits(0x40, MC_WRITE, 0, 5, 0, &user_data.dout[0]); 
-      	   tlast = time();
+      	    tlast = time();
          }
-         if (user_data.dout[0] && time() >= tlast + user_data.period * 100) {
+         if (user_data.dout[0] && time() >= tlast + (unsigned long)user_data.period * 100l) {
             /* do periodic toggling */
             flag = !flag;
             dr_dout_bits(0x40, MC_WRITE, 0, 5, 0, &flag); 
-      	   tlast = time();
+      	    tlast = time();
          }
       } 
       
