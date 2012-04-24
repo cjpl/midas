@@ -393,6 +393,7 @@ unsigned char user_func(unsigned char *data_in, unsigned char *data_out)
 bit b0_old = 0, b1_old = 0, b2_old = 0, b3_old = 0;
 static unsigned char flag = 0;
 static unsigned long tlast = 0;
+static unsigned long ttogg = 0;
 
 unsigned char application_display(bit init)
 {
@@ -465,18 +466,31 @@ static unsigned long last = 0;
             update_data[16] = 0;
             flag = user_data.dout[0];
             dr_dout_bits(0x40, MC_WRITE, 0, 5, 0, &user_data.dout[0]);
-			user_data.dout[1] = user_data.dout[0]; 
-      	    tlast = time();
+			   user_data.dout[1] = user_data.dout[0]; 
+      	   tlast = time();
          }
          if (user_data.dout[0] && time() >= tlast + (unsigned long)user_data.period * 100l) {
             /* do periodic toggling */
             flag = !flag;
             dr_dout_bits(0x40, MC_WRITE, 0, 5, 0, &flag);
-			user_data.dout[1] = flag; 
-      	    tlast = time();
+   			user_data.dout[1] = flag; 
+            i = 1;
+            if (flag == 0)
+               dr_dout_bits(0x40, MC_WRITE, 0, 5, 1, &i);
+            else
+               dr_dout_bits(0x40, MC_WRITE, 0, 5, 2, &i);    
+      	   tlast = time();
+            ttogg = time();
          }
       } 
       
+      if (ttogg > 0 && time() >= ttogg+100) {
+         ttogg = 0;
+         i = 0;
+         dr_dout_bits(0x40, MC_WRITE, 0, 5, 1, &i);    
+         dr_dout_bits(0x40, MC_WRITE, 0, 5, 2, &i);    
+      }
+
       /* read temperatures */
       for (i=0 ; i<8 ; i++) {
          n = dr_ad590(0x74, MC_READ, 0, 0, i, &value);
