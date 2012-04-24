@@ -360,10 +360,10 @@
       <FileType>1</FileType>
       <tvExp>0</tvExp>
       <Focus>0</Focus>
-      <ColumnNumber>0</ColumnNumber>
+      <ColumnNumber>14</ColumnNumber>
       <tvExpOptDlg>0</tvExpOptDlg>
-      <TopLine>0</TopLine>
-      <CurrentLine>0</CurrentLine>
+      <TopLine>858</TopLine>
+      <CurrentLine>858</CurrentLine>
       <bDave2>0</bDave2>
       <PathWithFileName>..\..\scs_2001_lib.c</PathWithFileName>
       <FilenameWithoutPath>scs_2001_lib.c</FilenameWithoutPath>
@@ -402,10 +402,10 @@
       <FileType>1</FileType>
       <tvExp>0</tvExp>
       <Focus>0</Focus>
-      <ColumnNumber>4</ColumnNumber>
+      <ColumnNumber>27</ColumnNumber>
       <tvExpOptDlg>0</tvExpOptDlg>
-      <TopLine>467</TopLine>
-      <CurrentLine>497</CurrentLine>
+      <TopLine>477</TopLine>
+      <CurrentLine>503</CurrentLine>
       <bDave2>0</bDave2>
       <PathWithFileName>.\scs_2001_rfbeta.c</PathWithFileName>
       <FilenameWithoutPath>scs_2001_rfbeta.c</FilenameWithoutPath>
@@ -1806,15 +1806,21 @@
       <Documents>
         <Doc>
           <Name>.\scs_2001_rfbeta.c</Name>
-          <ColumnNumber>4</ColumnNumber>
-          <TopLine>467</TopLine>
-          <CurrentLine>497</CurrentLine>
+          <ColumnNumber>27</ColumnNumber>
+          <TopLine>477</TopLine>
+          <CurrentLine>503</CurrentLine>
         </Doc>
         <Doc>
           <Name>..\..\..\src\mscbmain.c</Name>
           <ColumnNumber>0</ColumnNumber>
           <TopLine>1036</TopLine>
           <CurrentLine>1036</CurrentLine>
+        </Doc>
+        <Doc>
+          <Name>..\..\scs_2001_lib.c</Name>
+          <ColumnNumber>14</ColumnNumber>
+          <TopLine>858</TopLine>
+          <CurrentLine>858</CurrentLine>
         </Doc>
       </Documents>
     </MDIGroup>

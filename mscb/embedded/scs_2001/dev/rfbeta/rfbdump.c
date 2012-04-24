@@ -31,7 +31,7 @@ void main()
 			mscb_read(fd, 1, 8+i, &v[i], &size);
 	
 		size = sizeof(state);
-		mscb_read(fd, 1, 16, &state, &size);
+		mscb_read(fd, 1, 17, &state, &size);
 
 		time(&now);
 		strcpy(str, ctime(&now));

@@ -500,7 +500,7 @@ static unsigned long last = 0;
       
       /* read ADCs */
       for (i=0 ; i<8 ; i++) {
-         n = dr_ad7718(0x61, MC_READ, 0, 1, i, &value);
+         n = dr_ad7718(0x60, MC_READ, 0, 1, i, &value);
          if (n > 0)
             set_float(&user_data.adc[i], value);
       }
