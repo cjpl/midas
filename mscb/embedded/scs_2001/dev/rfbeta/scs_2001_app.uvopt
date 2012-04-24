@@ -402,10 +402,10 @@
       <FileType>1</FileType>
       <tvExp>0</tvExp>
       <Focus>0</Focus>
-      <ColumnNumber>28</ColumnNumber>
+      <ColumnNumber>4</ColumnNumber>
       <tvExpOptDlg>0</tvExpOptDlg>
-      <TopLine>458</TopLine>
-      <CurrentLine>475</CurrentLine>
+      <TopLine>467</TopLine>
+      <CurrentLine>497</CurrentLine>
       <bDave2>0</bDave2>
       <PathWithFileName>.\scs_2001_rfbeta.c</PathWithFileName>
       <FilenameWithoutPath>scs_2001_rfbeta.c</FilenameWithoutPath>
@@ -1806,9 +1806,9 @@
       <Documents>
         <Doc>
           <Name>.\scs_2001_rfbeta.c</Name>
-          <ColumnNumber>28</ColumnNumber>
-          <TopLine>458</TopLine>
-          <CurrentLine>475</CurrentLine>
+          <ColumnNumber>4</ColumnNumber>
+          <TopLine>467</TopLine>
+          <CurrentLine>497</CurrentLine>
         </Doc>
         <Doc>
           <Name>..\..\..\src\mscbmain.c</Name>
