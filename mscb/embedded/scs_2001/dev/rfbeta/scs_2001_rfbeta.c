@@ -464,13 +464,15 @@ static unsigned long last = 0;
             /* start or end a cycle */
             update_data[16] = 0;
             flag = user_data.dout[0];
-            dr_dout_bits(0x40, MC_WRITE, 0, 5, 0, &user_data.dout[0]); 
+            dr_dout_bits(0x40, MC_WRITE, 0, 5, 0, &user_data.dout[0]);
+			user_data.dout[1] = user_data.dout[0]; 
       	    tlast = time();
          }
          if (user_data.dout[0] && time() >= tlast + (unsigned long)user_data.period * 100l) {
             /* do periodic toggling */
             flag = !flag;
-            dr_dout_bits(0x40, MC_WRITE, 0, 5, 0, &flag); 
+            dr_dout_bits(0x40, MC_WRITE, 0, 5, 0, &flag);
+			user_data.dout[1] = flag; 
       	    tlast = time();
          }
       } 
