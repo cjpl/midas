@@ -1252,9 +1252,9 @@ INT midas_log_close(LOG_CHN * log_chn, INT run_number)
 
          s = (z_streamp) log_chn->gzfile;
          written = s->total_out;
-         gzflush(log_chn->gzfile, Z_FULL_FLUSH);
+         gzflush((gzFile) log_chn->gzfile, Z_FULL_FLUSH);
          written = s->total_out - written;
-         gzclose(log_chn->gzfile);
+         gzclose((gzFile) log_chn->gzfile);
          log_chn->statistics.bytes_written += written;
          log_chn->statistics.bytes_written_total += written;
          log_chn->gzfile = NULL;
