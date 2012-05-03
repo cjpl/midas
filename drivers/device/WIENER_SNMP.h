@@ -93,3 +93,9 @@ double  snmpSetDouble(HSNMP m_sessp, const oid* parameter, size_t length, double
 double  snmpGetDouble(HSNMP m_sessp, const oid* parameter, size_t length);
 int  snmpSetInt(HSNMP m_sessp, const oid* parameter, size_t length, int value);
 int  snmpGetInt(HSNMP m_sessp, const oid* parameter, size_t length);
+
+//##SR
+void init_mib(void);
+void netsnmp_free(void *);
+struct tree *read_module(const char *);
+
