@@ -19,7 +19,6 @@
 #include "midas.h"
 #include "mscb.h"
 
-int netsnmp_free(void *);
 #include "WIENER_SNMP.h"
 
 #undef calloc
