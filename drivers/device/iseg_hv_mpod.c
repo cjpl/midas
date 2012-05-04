@@ -30,6 +30,7 @@ typedef struct {
    char pwd[NAME_LENGTH];
    BOOL debug;
    int  channels;
+   int  *chn_address;
 } ISEG_HV_MPOD_SETTINGS;
 
 typedef struct {
@@ -66,13 +67,16 @@ INT iseg_hv_mpod_get_current(ISEG_HV_MPOD_INFO * info, INT channel, float *pvalu
 INT iseg_hv_mpod_init(HNDLE hkey, void **pinfo, INT channels, INT(*bd) (INT cmd, ...))
 {
    int  i, status, size;
-   HNDLE hDB;
+   HNDLE hDB, hsubkey;
    ISEG_HV_MPOD_INFO *info;
    KEY key;
 
    /* allocate info structure */
    info = (ISEG_HV_MPOD_INFO *) calloc(1, sizeof(ISEG_HV_MPOD_INFO));
    info->chn_vars = (CHANNEL_VARS *) calloc(channels, sizeof(CHANNEL_VARS));
+   info->settings.chn_address = (int *) calloc(channels, sizeof(int));
+   for (i=0 ; i<channels ; i++)
+      info->settings.chn_address[i] = i+1;
    *pinfo = info;
 
    cm_get_experiment_database(&hDB, NULL);
@@ -92,6 +96,13 @@ INT iseg_hv_mpod_init(HNDLE hkey, void **pinfo, INT channels, INT(*bd) (INT cmd,
    status = db_get_value(hDB, hkey, "MPOD Pwd", &info->settings.pwd, &size, TID_STRING, TRUE);
    if (status != DB_SUCCESS)
       return FE_ERR_ODB;
+   
+   size = sizeof(INT) * channels;
+   db_get_value(hDB, hkey, "Channel Address", info->settings.chn_address, &size, TID_INT, TRUE);
+   db_find_key(hDB, hkey, "Channel Address", &hsubkey);
+   size = sizeof(INT) * channels;
+   db_set_data(hDB, hsubkey, info->settings.chn_address, size, channels, TID_INT);
+   db_open_record(hDB, hsubkey, info->settings.chn_address, size, MODE_READ, NULL, info);
 
    // open device on SNMP
    if (!SnmpInit()) {
@@ -144,9 +155,13 @@ INT iseg_hv_mpod_init(HNDLE hkey, void **pinfo, INT channels, INT(*bd) (INT cmd,
 
 INT iseg_hv_mpod_exit(ISEG_HV_MPOD_INFO * info)
 {
-   SnmpClose(info->crate);
-   SnmpCleanup();
-
+   if (info) {
+      SnmpClose(info->crate);
+      SnmpCleanup();
+      free(info->settings.chn_address);
+      free(info);
+   }
+   
    return FE_SUCCESS;
 }
 
@@ -158,8 +173,8 @@ INT iseg_hv_mpod_set(ISEG_HV_MPOD_INFO * info, INT channel, float value)
    
    // if value == 0, reset any trip
    if (value == 0) {
-      setChannelSwitch(info->crate, channel+1, 10);
-      setChannelSwitch(info->crate, channel+1, 1);
+      setChannelSwitch(info->crate, info->settings.chn_address[channel], 10);
+      setChannelSwitch(info->crate, info->settings.chn_address[channel], 1);
    }
 
    return FE_SUCCESS;
@@ -173,7 +188,7 @@ INT iseg_hv_mpod_get(ISEG_HV_MPOD_INFO * info, INT channel, float *pvalue)
    int i, status;
 
    for (i=0 ; i<10 ; i++) {
-      status = getChannelStatus(info->crate, channel+1);
+      status = getChannelStatus(info->crate, info->settings.chn_address[channel]);
       if (status == -1)
          ss_sleep(10);
       else
@@ -186,12 +201,14 @@ INT iseg_hv_mpod_get(ISEG_HV_MPOD_INFO * info, INT channel, float *pvalue)
    */
 
    for (i=0 ; i<10 ; i++) {
-      value = getOutputSenseMeasurement(info->crate, channel+1);
+      value = getOutputSenseMeasurement(info->crate, info->settings.chn_address[channel]);
       if (value == -1)
          ss_sleep(10);
       else
          break;
    }
+
+   printf("Get index %d channel %d value %1.1lf\n", channel, info->settings.chn_address[channel], value);
 
    if (value != -1) {
       /* round to 3 digites */
@@ -210,7 +227,7 @@ INT iseg_hv_mpod_get_current(ISEG_HV_MPOD_INFO * info, INT channel, float *pvalu
    int i; 
 
    for (i=0 ; i<10 ; i++) {
-      value = getCurrentMeasurement(info->crate, channel+1);
+      value = getCurrentMeasurement(info->crate, info->settings.chn_address[channel]);
       if (value == -1)
          ss_sleep(10);
       else
@@ -234,7 +251,7 @@ INT iseg_hv_mpod_get_trip(ISEG_HV_MPOD_INFO * info, INT channel, INT *pvalue)
    int i, status;
 
    for (i=0 ; i<10 ; i++) {
-      status = getChannelStatus(info->crate, channel+1);
+      status = getChannelStatus(info->crate, info->settings.chn_address[channel]);
       if (status == -1)
          ss_sleep(10);
       else
@@ -253,7 +270,7 @@ INT iseg_hv_mpod_get_trip(ISEG_HV_MPOD_INFO * info, INT channel, INT *pvalue)
 
 INT iseg_hv_mpod_get_demand(ISEG_HV_MPOD_INFO * info, INT channel, float *pvalue)
 {
-   *pvalue = (float)getOutputVoltage(info->crate, channel+1);
+   *pvalue = (float)getOutputVoltage(info->crate, info->settings.chn_address[channel]);
    return FE_SUCCESS;
 }
 
@@ -261,7 +278,7 @@ INT iseg_hv_mpod_get_demand(ISEG_HV_MPOD_INFO * info, INT channel, float *pvalue
 
 INT iseg_hv_mpod_set_current_limit(ISEG_HV_MPOD_INFO * info, int channel, float limit)
 {
-   setOutputCurrent(info->crate, channel+1, limit/1E6); // converto to A
+   setOutputCurrent(info->crate, info->settings.chn_address[channel], limit/1E6); // converto to A
    return FE_SUCCESS;
 }
 
@@ -269,7 +286,7 @@ INT iseg_hv_mpod_set_current_limit(ISEG_HV_MPOD_INFO * info, int channel, float 
 
 INT iseg_hv_mpod_get_current_limit(ISEG_HV_MPOD_INFO * info, int channel, float *pvalue)
 {
-   *pvalue = (float)(getOutputCurrent(info->crate, channel+1)*1E6); // converto to uA
+   *pvalue = (float)(getOutputCurrent(info->crate, info->settings.chn_address[channel])*1E6); // converto to uA
    return FE_SUCCESS;
 }
 
@@ -284,7 +301,7 @@ INT iseg_hv_mpod_set_voltage_limit(ISEG_HV_MPOD_INFO * info, int channel, float 
 
 INT iseg_hv_mpod_set_rampup(ISEG_HV_MPOD_INFO * info, int channel, float limit)
 {
-   setOutputRiseRate(info->crate, channel+1, limit);
+   setOutputRiseRate(info->crate, info->settings.chn_address[channel], limit);
    return FE_SUCCESS;
 }
 
@@ -292,7 +309,7 @@ INT iseg_hv_mpod_set_rampup(ISEG_HV_MPOD_INFO * info, int channel, float limit)
 
 INT iseg_hv_mpod_get_rampup(ISEG_HV_MPOD_INFO * info, int channel, float *pvalue)
 {
-   *pvalue = (float)getOutputRiseRate(info->crate, channel+1);
+   *pvalue = (float)getOutputRiseRate(info->crate, info->settings.chn_address[channel]);
    return FE_SUCCESS;
 }
 
@@ -300,7 +317,7 @@ INT iseg_hv_mpod_get_rampup(ISEG_HV_MPOD_INFO * info, int channel, float *pvalue
 
 INT iseg_hv_mpod_set_rampdown(ISEG_HV_MPOD_INFO * info, int channel, float limit)
 {
-   setOutputFallRate(info->crate, channel+1, limit);
+   setOutputFallRate(info->crate, info->settings.chn_address[channel], limit);
    return FE_SUCCESS;
 }
 
@@ -308,7 +325,7 @@ INT iseg_hv_mpod_set_rampdown(ISEG_HV_MPOD_INFO * info, int channel, float limit
 
 INT iseg_hv_mpod_get_rampdown(ISEG_HV_MPOD_INFO * info, int channel, float *pvalue)
 {
-   *pvalue = (float)getOutputFallRate(info->crate, channel+1);
+   *pvalue = (float)getOutputFallRate(info->crate, info->settings.chn_address[channel]);
    return FE_SUCCESS;
 }
 
