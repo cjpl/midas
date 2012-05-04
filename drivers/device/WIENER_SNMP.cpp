@@ -293,7 +293,7 @@ int SnmpInit(void) {
   int indexBase=0;
   int j=0;
 
-  for( int i = 0; i < 2; i++) {
+  for( int i = 0; i < 3; i++) {
 	//base = 32*i;  // original value
    base = 16*i;    // modified value SR
 	indexBase = 100*i;
