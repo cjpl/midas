@@ -208,8 +208,6 @@ INT iseg_hv_mpod_get(ISEG_HV_MPOD_INFO * info, INT channel, float *pvalue)
          break;
    }
 
-   printf("Get index %d channel %d value %1.1lf\n", channel, info->settings.chn_address[channel], value);
-
    if (value != -1) {
       /* round to 3 digites */
       *pvalue = (float)((int)(value*1e3+0.5)/1E3);
