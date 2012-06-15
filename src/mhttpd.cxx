@@ -9133,6 +9133,10 @@ int vaxis(gdImagePtr im, gdFont * font, int col, int gcol,
    if (ymax <= ymin || width <= 0)
       return 0;
 
+   // data type "double" only has about 15 significant digits, if difference between ymax and ymin is less than 10 significant digits, bailout! Otherwise code below goes into infinite loop
+   if (fabs(ymax - ymin) <= 1e-10)
+      return 0;
+
    if (logaxis) {
       dy = pow(10, floor(log(ymin) / LN10));
       label_dy = dy;
