@@ -291,6 +291,7 @@ void strsubst(char *string, int size, const char *pattern, const char *subst)
          strlcpy(p, subst, s);
          strlcat(p, tail, s);
          free(tail);
+         tail = NULL;
       }
       
       p += strlen(subst);
@@ -1543,6 +1544,7 @@ void show_seq_page()
       }
 
       free(flist);
+      flist = NULL;
       rsprintf("</select>\n");
       rsprintf("<input type=hidden name=dir value=\"%s\">", dir);
       rsprintf("</td></tr>\n");
@@ -1678,6 +1680,7 @@ void show_seq_page()
                   rsprintf("<div onClick=\"sshow_lines();\" id=\"slinedots2\" style=\"display:none;\">...<br></div>\n");
                   rsprintf("</td>\n");
                   free(buf);
+                  buf = NULL;
                   
                } else {
                   if (str[0]) {
@@ -1743,6 +1746,7 @@ void show_seq_page()
                rsprintf("<div onClick=\"show_lines();\" id=\"linedots2\" style=\"display:none;\">...<br></div>\n");
                rsprintf("</td>\n");
                free(buf);
+               buf = NULL;
             } else {
                if (str[0]) {
                   rsprintf("<tr><td colspan=2><b>Cannot open file \"%s\"</td></tr>\n", str);

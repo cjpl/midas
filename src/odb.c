@@ -5766,6 +5766,7 @@ INT db_copy(HNDLE hDB, HNDLE hKey, char *buffer, INT * buffer_size, char *path)
          *buffer_size -= strlen(line);
 
          free(data);
+         data = NULL;
       }
 
       if (!hSubkey)
@@ -5902,6 +5903,7 @@ INT db_copy(HNDLE hDB, HNDLE hKey, char *buffer, INT * buffer_size, char *path)
       }
 
       free(data);
+      data = NULL;
    }
 
    if (bWritten) {
@@ -6401,6 +6403,7 @@ INT db_copy_xml(HNDLE hDB, HNDLE hKey, char *buffer, INT * buffer_size)
       strlcpy(buffer, p, *buffer_size);
       len = strlen(p);
       free(p);
+      p = NULL;
       if (len > *buffer_size) {
          *buffer_size = 0;
          return DB_TRUNCATED;
@@ -6576,6 +6579,7 @@ INT db_save(HNDLE hDB, HNDLE hKey, const char *filename, BOOL bRemote)
          if (status != DB_TRUNCATED) {
             n = write(hfile, buffer, buffer_size - size);
             free(buffer);
+            buffer = NULL;
 
             if (n != buffer_size - size) {
                cm_msg(MERROR, "db_save", "cannot save .ODB file");
@@ -6587,6 +6591,7 @@ INT db_save(HNDLE hDB, HNDLE hKey, const char *filename, BOOL bRemote)
 
          /* increase buffer size if truncated */
          free(buffer);
+         buffer = NULL;
          buffer_size *= 2;
       } while (1);
 
@@ -6729,6 +6734,7 @@ INT db_save_xml_key(HNDLE hDB, HNDLE hKey, INT level, MXML_WRITER * writer)
       }
 
       free(data);
+      data = NULL;
    }
 
    return DB_SUCCESS;
@@ -6914,6 +6920,7 @@ INT db_save_string(HNDLE hDB, HNDLE hKey, const char *file_name, const char *str
 
       /* increase buffer size if truncated */
       free(buffer);
+      buffer = NULL;
       buffer_size *= 2;
    } while (1);
 
@@ -8146,6 +8153,7 @@ INT db_create_record(HNDLE hDB, HNDLE hKey, const char *orig_key_name, const cha
       db_delete_key(hDB, hKeyTmpO, FALSE);
 
       free(buffer);
+      buffer = NULL;
    } else if (status == DB_NO_KEY) {
       /* create fresh record */
       db_create_key(hDB, hKey, key_name, TID_KEY);
@@ -8638,11 +8646,15 @@ INT db_close_record(HNDLE hDB, HNDLE hKey)
       db_remove_open_record(hDB, hKey, TRUE);
 
       /* free local memory */
-      if (_record_list[i].access_mode & MODE_ALLOC)
+      if (_record_list[i].access_mode & MODE_ALLOC) {
          free(_record_list[i].data);
+         _record_list[i].data = NULL;
+      }
 
-      if (_record_list[i].access_mode & MODE_WRITE)
+      if (_record_list[i].access_mode & MODE_WRITE) {
          free(_record_list[i].copy);
+         _record_list[i].copy = NULL;
+      }
 
       memset(&_record_list[i], 0, sizeof(RECORD_LIST));
    }
@@ -8664,11 +8676,15 @@ INT db_close_all_records()
 
    for (i = 0; i < _record_list_entries; i++) {
       if (_record_list[i].handle) {
-         if (_record_list[i].access_mode & MODE_WRITE)
+         if (_record_list[i].access_mode & MODE_WRITE) {
             free(_record_list[i].copy);
+            _record_list[i].copy = NULL;
+         }
 
-         if (_record_list[i].access_mode & MODE_ALLOC)
+         if (_record_list[i].access_mode & MODE_ALLOC) {
             free(_record_list[i].data);
+            _record_list[i].data = NULL;
+         }
 
          memset(&_record_list[i], 0, sizeof(RECORD_LIST));
       }
@@ -8677,6 +8693,7 @@ INT db_close_all_records()
    if (_record_list_entries > 0) {
       _record_list_entries = 0;
       free(_record_list);
+      _record_list = NULL;
    }
 
    return DB_SUCCESS;

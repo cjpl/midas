@@ -3740,8 +3740,10 @@ void submit_elog()
    }
 
    for (i = 0; i < 3; i++)
-      if (buffer[i])
+      if (buffer[i]) {
          M_FREE(buffer[i]);
+         buffer[i] = NULL;
+      }
 
    rsprintf("HTTP/1.0 302 Found\r\n");
    rsprintf("Server: MIDAS HTTP %d\r\n", mhttpd_revision());
@@ -6493,6 +6495,7 @@ void show_custom_page(const char *path, const char *cookie_cpwd)
             return;
          }
          free(ctext);
+         ctext = NULL;
          size = lseek(fh, 0, SEEK_END) + 1;
          lseek(fh, 0, SEEK_SET);
          ctext = (char*)malloc(size);
@@ -6609,6 +6612,7 @@ void show_custom_page(const char *path, const char *cookie_cpwd)
       }
 
       free(ctext);
+      ctext = NULL;
    } else {
       show_error("Invalid custom page: Page not found in ODB");
       return;
@@ -10060,9 +10064,16 @@ void generate_hist_graph(const char *path, char *buffer, int *buffer_size,
       // free arrays in history data
       for (i=0 ; i<hsdata->nvars ; i++) {
          free(hsdata->event_names[i]);
+         hsdata->event_names[i] = NULL;
+
          free(hsdata->var_names[i]);
+         hsdata->var_names[i] = NULL;
+
          free(hsdata->t[i]);
+         hsdata->t[i] = NULL;
+
          free(hsdata->v[i]);
+         hsdata->v[i] = NULL;
       }
    }
 
@@ -10165,10 +10176,14 @@ void generate_hist_graph(const char *path, char *buffer, int *buffer_size,
 
          assert(n_point[i]<=MAX_POINTS);
 
-         if (times[i])
+         if (times[i]) {
             free(times[i]);
-         if (datas[i])
+            times[i] = NULL;
+         }
+         if (datas[i]) {
             free(datas[i]);
+            datas[i] = NULL;
+         }
       } // loop over variables
    }
 
@@ -10354,11 +10369,15 @@ void generate_hist_graph(const char *path, char *buffer, int *buffer_size,
       if (num_entries[0]) {
          free(tbuf[0]);
          free(dbuf[0]);
+         tbuf[0] = NULL;
+         dbuf[0] = NULL;
       }
 
       if (num_entries[1]) {
          free(tbuf[1]);
          free(dbuf[1]);
+         tbuf[1] = NULL;
+         dbuf[1] = NULL;
       }
    }
 

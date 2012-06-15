@@ -590,6 +590,7 @@ int sql_insert(MYSQL * db, char *database, char *table, HNDLE hKeyRoot, BOOL cre
    }
 
    free(sql_list);
+   sql_list = NULL;
    strlcat(query, ")", sizeof(query));
    if (mysql_query_debug(db, query)) {
 
@@ -652,6 +653,7 @@ int sql_update(MYSQL * db, char *database, char *table, HNDLE hKeyRoot, BOOL cre
          strcat(query, ", ");
    }
    free(sql_list);
+   sql_list = NULL;
 
    sprintf(query + strlen(query), " %s", where);
    if (mysql_query_debug(db, query)) {
@@ -787,6 +789,7 @@ void write_sql(BOOL bor)
    sql_get_columns(hKeyRoot, &sql_list);
    sprintf(where, "WHERE `%s`='%s'", sql_list[0].column_name, sql_list[0].data);
    free(sql_list);
+   sql_list = NULL;
 
    /* get BOR or EOR list */
    if (bor) {
@@ -1271,7 +1274,9 @@ INT midas_log_close(LOG_CHN * log_chn, INT run_number)
    }
 
    free(((MIDAS_INFO *) log_chn->format_info)->buffer);
+   ((MIDAS_INFO*)log_chn->format_info)->buffer = NULL;
    free(log_chn->format_info);
+   log_chn->format_info = NULL;
 
    return SS_SUCCESS;
 }
@@ -2276,7 +2281,9 @@ INT root_log_close(LOG_CHN * log_chn, INT run_number)
 
    /* delete event tree */
    free(ts->event_tree);
+   ts->event_tree = NULL;
    free(ts);
+   ts = NULL;
 
    log_chn->format_info = NULL;
 
@@ -3215,8 +3222,10 @@ INT open_history()
             count_events++;
          }
 
-         if (tag)
+         if (tag) {
             free(tag);
+            tag = NULL;
+         }
 
          /* remember maximum event id for later use with system events */
          if (eq_id > max_event_id)
@@ -3317,6 +3326,7 @@ INT open_history()
                return status;
 
             free(tag);
+            tag = NULL;
 
             count_events++;
             max_event_id++;
@@ -3351,6 +3361,7 @@ INT open_history()
 #endif
 
    free(tag);
+   tag = NULL;
 
    /* outcommented not to produce a log entry on every run
    cm_msg(MINFO, "open_history", "Configured history with %d events", count_events);
@@ -4254,7 +4265,9 @@ int main(int argc, char *argv[])
 
    /* free argument memory */
    free(rargv[0]);
+   rargv[0] = NULL;
    free(rargv);
+   rargv = NULL;
 
 #endif
 

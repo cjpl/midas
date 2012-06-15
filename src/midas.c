@@ -2570,17 +2570,20 @@ INT cm_disconnect_experiment(void)
    /* free memory buffers */
    if (_event_buffer_size > 0) {
       M_FREE(_event_buffer);
+      _event_buffer = NULL;
       _event_buffer_size = 0;
    }
 
    if (_net_recv_buffer_size > 0) {
       M_FREE(_net_recv_buffer);
+      _net_recv_buffer = NULL;
       _net_recv_buffer_size = 0;
       _net_recv_buffer_size_odb = 0;
    }
 
    if (_net_send_buffer_size > 0) {
       M_FREE(_net_send_buffer);
+      _net_send_buffer = NULL;
       _net_send_buffer_size = 0;
    }
 
@@ -4014,8 +4017,10 @@ INT cm_transition1(INT transition, INT run_number, char *errstr, INT errstr_size
       }
    }
 
-   if (tr_client)
+   if (tr_client) {
       free(tr_client);
+      tr_client = NULL;
+   }
 
    if (debug_flag == 1)
       printf("\n---- Transition %s finished ----\n", trname);
@@ -4900,10 +4905,14 @@ INT bm_close_buffer(INT buffer_handle)
       destroy_flag = (pheader->num_clients == 0);
 
       /* free cache */
-      if (_buffer[buffer_handle - 1].read_cache_size > 0)
+      if (_buffer[buffer_handle - 1].read_cache_size > 0) {
          M_FREE(_buffer[buffer_handle - 1].read_cache);
-      if (_buffer[buffer_handle - 1].write_cache_size > 0)
+         _buffer[buffer_handle - 1].read_cache = NULL;
+      }
+      if (_buffer[buffer_handle - 1].write_cache_size > 0) {
          M_FREE(_buffer[buffer_handle - 1].write_cache);
+         _buffer[buffer_handle - 1].write_cache = NULL;
+      }
 
       /* check if anyone is waiting and wake him up */
       pclient = pheader->client;
@@ -5836,8 +5845,10 @@ INT bm_set_cache_size(INT buffer_handle, INT read_size, INT write_size)
       /* manage read cache */
       pbuf = &_buffer[buffer_handle - 1];
 
-      if (pbuf->read_cache_size > 0)
+      if (pbuf->read_cache_size > 0) {
          M_FREE(pbuf->read_cache);
+         pbuf->read_cache = NULL;
+      }
 
       if (read_size > 0) {
          pbuf->read_cache = (char *) M_MALLOC(read_size);
@@ -5851,8 +5862,10 @@ INT bm_set_cache_size(INT buffer_handle, INT read_size, INT write_size)
       pbuf->read_cache_rp = pbuf->read_cache_wp = 0;
 
       /* manage write cache */
-      if (pbuf->write_cache_size > 0)
+      if (pbuf->write_cache_size > 0) {
          M_FREE(pbuf->write_cache);
+         pbuf->write_cache = NULL;
+      }
 
       if (write_size > 0) {
          pbuf->write_cache = (char *) M_MALLOC(write_size);
@@ -8087,6 +8100,7 @@ void bm_defragment_event(HNDLE buffer_handle, HNDLE request_id,
 
       if (i < MAX_DEFRAG_EVENTS) {
          free(defrag_buffer[i].pevent);
+         defrag_buffer[i].pevent = NULL;
          memset(&defrag_buffer[i].event_id, 0, sizeof(EVENT_DEFRAG_BUFFER));
          cm_msg(MERROR, "bm_defragement_event",
                 "Received new event with ID %d while old fragments were not completed",
@@ -8152,6 +8166,7 @@ void bm_defragment_event(HNDLE buffer_handle, HNDLE request_id,
    /* add fragment to buffer */
    if (pevent->data_size + defrag_buffer[i].received > defrag_buffer[i].data_size) {
       free(defrag_buffer[i].pevent);
+      defrag_buffer[i].pevent = NULL;
       memset(&defrag_buffer[i].event_id, 0, sizeof(EVENT_DEFRAG_BUFFER));
       cm_msg(MERROR, "bm_defragement_event",
              "Received fragments with more data (%d) than event size (%d)",
@@ -8171,6 +8186,7 @@ void bm_defragment_event(HNDLE buffer_handle, HNDLE request_id,
       /* event complete */
       dispatcher(buffer_handle, request_id, defrag_buffer[i].pevent, defrag_buffer[i].pevent + 1);
       free(defrag_buffer[i].pevent);
+      defrag_buffer[i].pevent = NULL;
       memset(&defrag_buffer[i].event_id, 0, sizeof(EVENT_DEFRAG_BUFFER));
    }
 }
@@ -14030,6 +14046,7 @@ int rb_delete(int handle)
       return DB_INVALID_HANDLE;
 
    M_FREE(rb[handle - 1].buffer);
+   rb[handle - 1].buffer = NULL;
    memset(&rb[handle - 1], 0, sizeof(RING_BUFFER));
 
    return DB_SUCCESS;
