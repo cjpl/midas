@@ -1233,7 +1233,7 @@ INT cm_msg_retrieve(INT n_message, char *message, INT buf_size)
       strlcat(message2, "\r\n", buf_size);
 
       memmove(message + strlen(message2), message, strlen(message) + 1);
-      memcpy(message, message2, strlen(message2));
+      memmove(message, message2, strlen(message2));
       free(message2);
       n += i;
    }
@@ -8487,7 +8487,7 @@ INT rpc_register_functions(const RPC_LIST * new_list, INT(*func) (INT, void **))
 
    /* append new functions */
    for (i = iold; i < iold + inew; i++) {
-      memcpy(rpc_list + i, new_list + i - iold, sizeof(RPC_LIST));
+      memmove(rpc_list + i, new_list + i - iold, sizeof(RPC_LIST));
 
       /* set default dispatcher */
       if (rpc_list[i].dispatch == NULL)
@@ -11634,10 +11634,10 @@ INT rpc_execute(INT sock, char *buffer, INT convert_flags)
             param_size = ALIGN8(param_size);
 
             /* move string ALIGN8(sizeof(INT)) left */
-            memcpy(out_param_ptr, out_param_ptr + ALIGN8(sizeof(INT)), param_size);
+            memmove(out_param_ptr, out_param_ptr + ALIGN8(sizeof(INT)), param_size);
 
             /* move remaining parameters to end of string */
-            memcpy(out_param_ptr + param_size,
+            memmove(out_param_ptr + param_size,
                    out_param_ptr + max_size + ALIGN8(sizeof(INT)),
                    (POINTER_T) last_param_ptr - ((POINTER_T) out_param_ptr + max_size + ALIGN8(sizeof(INT))));
          }
@@ -11655,7 +11655,7 @@ INT rpc_execute(INT sock, char *buffer, INT convert_flags)
             param_size = ALIGN8(param_size);
 
             /* move remaining parameters to end of array */
-            memcpy(out_param_ptr + param_size,
+            memmove(out_param_ptr + param_size,
                    out_param_ptr + max_size,
                    (POINTER_T) last_param_ptr - ((POINTER_T) out_param_ptr + max_size));
          }
@@ -13371,7 +13371,7 @@ INT bk_copy(char * pevent, char * psrce, const char * bkname) {
     // Get to the end of the event
     pdest = (char *)(((BANK_HEADER *) pevent) + 1) + ((BANK_HEADER *)pevent)->data_size;
     // Copy from BANK32 to end of Data
-    memcpy(pdest, (char *)psbkh32, ALIGN8(bksze) + sizeof(BANK32));
+    memmove(pdest, (char *)psbkh32, ALIGN8(bksze) + sizeof(BANK32));
     // Bring pointer to the next free location
     pdest += ALIGN8(bksze) + sizeof(BANK32);
 
@@ -13385,7 +13385,7 @@ INT bk_copy(char * pevent, char * psrce, const char * bkname) {
     // Get to the end of the event
     pdest = (char *)(((BANK_HEADER *) pevent) + 1) + ((BANK_HEADER *)pevent)->data_size;
     // Copy from BANK to end of Data
-    memcpy(pdest, (char *)psbkh, ALIGN8(bksze) + sizeof(BANK));
+    memmove(pdest, (char *)psbkh, ALIGN8(bksze) + sizeof(BANK));
     // Bring pointer to the next free location
     pdest += ALIGN8(bksze) + sizeof(BANK);
   }
@@ -13435,7 +13435,7 @@ int bk_delete(void *event, const char *name)
 
             /* copy remaining bytes */
             if (remaining > 0)
-               memcpy(pbk32, (char *) (pbk32 + 1) + ALIGN8(pbk32->data_size), remaining);
+               memmove(pbk32, (char *) (pbk32 + 1) + ALIGN8(pbk32->data_size), remaining);
             return CM_SUCCESS;
          }
 
@@ -13457,7 +13457,7 @@ int bk_delete(void *event, const char *name)
 
             /* copy remaining bytes */
             if (remaining > 0)
-               memcpy(pbk, (char *) (pbk + 1) + ALIGN8(pbk->data_size), remaining);
+               memmove(pbk, (char *) (pbk + 1) + ALIGN8(pbk->data_size), remaining);
             return CM_SUCCESS;
          }
 
