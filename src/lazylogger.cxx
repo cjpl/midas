@@ -1170,6 +1170,9 @@ Function value:
    BOOL watchdog_flag, exit_request = FALSE;
    char filename[256];
 
+   if (debug)
+      printf("lazy_copy %s to %s\n", infile, outfile);
+
    /* init copy variables */
    lazyst.cur_size = 0.0f;
    last_time = 0;
@@ -1312,6 +1315,175 @@ Function value:
       return (EXIT_REQUEST);
    return 0;
 
+}
+
+INT lazy_disk_copy(const char *outfile, const char *infile)
+/********************************************************************\
+Routine: lazy_disk_copy
+Purpose: backup file to backup device
+every 2 second will update the statistics and yield
+if condition requires no copy, every 5 second will yield
+Input:
+char * outfile   backup destination file
+char * infile    source file to be backed up
+Output:
+Function value:
+0           success
+\********************************************************************/
+{
+   int status;
+   int no_cpy_last_time = 0;
+   BOOL exit_request = FALSE;
+
+   if (debug)
+      printf("lazy_disk_copy %s to %s\n", infile, outfile);
+
+   /* init copy variables */
+   lazyst.cur_size = 0.0f;
+
+   /* run shell command if available */
+   if (lazy.commandBefore[0]) {
+      char cmd[256];
+      sprintf(cmd, "%s %s %i", lazy.commandBefore, infile, lazyst.nfiles);
+      cm_msg(MINFO, "Lazy", "Exec pre file write script:%s", cmd);
+      ss_system(cmd);
+   }
+
+   FILE *fpin = fopen(infile, "rb");
+   if (!fpin) {
+      cm_msg(MERROR, "Lazy_disk_copy", "Cannot read from \'%s\', errno %d (%s)", infile, errno, strerror(errno));
+      return FORCE_EXIT;
+   }
+
+   FILE *fptest = fopen(outfile, "rb");
+   if (fptest) {
+      fclose(fptest);
+      fptest = NULL;
+      cm_msg(MINFO, "Lazy_disk_copy", "Output file \'%s\' already exists, removing", outfile);
+      unlink(outfile);
+      //return FORCE_EXIT;
+   }
+
+   FILE *fpout = fopen(outfile, "wb");
+   if (!fpout) {
+      cm_msg(MERROR, "Lazy_disk_copy", "Cannot write to \'%s\', errno %d (%s)", outfile, errno, strerror(errno));
+      fclose(fpin);
+      return FORCE_EXIT;
+   }
+
+   setbuf(fpin, NULL);
+   setbuf(fpout, NULL);
+
+   {
+      char str[MAX_FILE_PATH];
+      sprintf(str, "Starting lazy_disk_copy \'%s\' to \'%s\'", infile, outfile);
+      if (msg_flag)
+         cm_msg(MTALK, "Lazy", str);
+      cm_msg(MINFO, "lazy_disk_copy", str);
+      cm_msg1(MINFO, "lazy_log_update", "lazy", str);
+   }
+
+   /* force a statistics update on the first loop */
+   int cpy_loop_time = -2000;
+
+   double cpy_start_time = ss_millitime();
+
+   /* infinite loop while copying */
+   while (1) {
+      if (copy_continue) {
+         const int kBufSize = 10*1024*1024;
+         char buf[kBufSize];
+         int rd = fread(buf, 1, kBufSize, fpin);
+         if (rd > 0) {
+            int wr = fwrite(buf, 1, rd, fpout);
+            if (wr != rd) {
+               cm_msg(MERROR, "Lazy_disk_copy", "Cannot write to \'%s\', errno %d (%s)", outfile, errno, strerror(errno));
+
+               fclose(fpin);
+               fclose(fpout);
+
+               //if (status == SS_NO_SPACE)
+               //   return status;
+               return FORCE_EXIT;
+            }
+
+            lazyst.cur_size += (double) wr;
+            lazyst.cur_dev_size += (double) wr;
+            if ((ss_millitime() - cpy_loop_time) > 2000) {
+               /* update statistics */
+               lazy_statistics_update(cpy_loop_time);
+
+               /* check conditions */
+               copy_continue = lazy_condition_check();
+
+               /* update check loop */
+               cpy_loop_time = ss_millitime();
+
+               /* yield quickly */
+               status = cm_yield(1);
+               if (status == RPC_SHUTDOWN || status == SS_ABORT || exit_request) {
+                  cm_msg(MINFO, "Lazy", "Copy aborted by cm_yield() status %d", status);
+                  exit_request = TRUE;
+
+                  fclose(fpin);
+                  fclose(fpout);
+
+                  return FORCE_EXIT;
+               }
+            }
+         } else if (rd == 0) {
+            // end of input file
+            break;
+         } else {
+            // read error
+            cm_msg(MERROR, "Lazy_disk_copy", "Cannot read from \'%s\', errno %d (%s)", infile, errno, strerror(errno));
+            
+            fclose(fpin);
+            fclose(fpout);
+
+            return FORCE_EXIT;
+         }
+      } /* copy_continue */
+      else {                    /* !copy_continue */
+         status = cm_yield(1000);
+         if (status == RPC_SHUTDOWN || status == SS_ABORT) {
+            fclose(fpin);
+            fclose(fpout);
+            return FORCE_EXIT;
+         }
+         if ((ss_millitime() - no_cpy_last_time) > 5000) {
+            copy_continue = lazy_condition_check();
+            no_cpy_last_time = ss_millitime();
+         }
+      }                         /* !copy_continue */
+   }                            /* while forever */
+
+   /* update for last the statistics */
+   lazy_statistics_update(0);
+
+   /* close input log device */
+   fclose(fpin);
+   fpin = NULL;
+
+   status = fclose(fpout);
+   if (status != 0) {
+      cm_msg(MERROR, "Lazy_disk_copy", "Cannot close \'%s\', errno %d (%s)", outfile, errno, strerror(errno));
+      //if (status == SS_NO_SPACE)
+      //   return status;
+      return FORCE_EXIT;
+   }
+
+   /* request exit */
+   if (exit_request)
+      return EXIT_REQUEST;
+
+   chmod(outfile, 0444);
+
+   double t = (ss_millitime() - cpy_start_time) / 1000.0;
+   double MiB = 1024*1024;
+   cm_msg(MINFO, "lazy_disk_copy", "Copy finished in %.1f sec, %.1f MiBytes at %.1f MiBytes/sec", t, lazyst.cur_size/MiB, lazyst.cur_size/t/MiB);
+
+   return 0;
 }
 
 /*------------------------------------------------------------------*/
@@ -1610,7 +1782,7 @@ Function value:
       return DB_NO_ACCESS;
    }
 
-   if (dev_type == LOG_TYPE_SCRIPT)
+   if ((dev_type == LOG_TYPE_SCRIPT) || (dev_type == LOG_TYPE_DISK))
       if (lazy.backlabel[0] == 0 || strcmp(lazy.backlabel, lazyinfo[channel].name) != 0) {
          strlcpy(lazy.backlabel, lazyinfo[channel].name, sizeof(lazy.backlabel));
          size = sizeof(lazy.backlabel);
@@ -1769,9 +1941,12 @@ Function value:
       return NOTHING_TODO;
    }
 
-   if (dev_type != LOG_TYPE_SCRIPT)
-      if (!haveTape)
+   if ((dev_type != LOG_TYPE_SCRIPT) && (dev_type != LOG_TYPE_DISK))
+      if (!haveTape) {
+         if (debug)
+            printf("haveTape: %d, nothing to do.\n", haveTape);
          return NOTHING_TODO;
+      }
 
    strlcpy(lazyst.backfile, dirlist[tobe_backup].filename.c_str(), sizeof(lazyst.backfile));
 
@@ -1890,6 +2065,8 @@ Function value:
 #else
          assert(!"lazy_script_copy not supported under Windows");
 #endif
+      } else if (dev_type == LOG_TYPE_DISK) {
+         status = lazy_disk_copy(outffile, inffile);
       } else {
          status = lazy_copy(outffile, inffile);
       }
