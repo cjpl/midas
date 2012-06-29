@@ -24,6 +24,8 @@ $Id$
 #define NOTHING_TODO  0
 #define FORCE_EXIT    1
 #define EXIT_REQUEST  2
+#define TRY_LATER     3
+
 #define NEW_FILE      1
 #define REMOVE_FILE   2
 #define REMOVE_ENTRY  3
@@ -329,9 +331,8 @@ INT lazy_log_update(INT action, INT run, const char *label, const char *file, DW
    else if (action == REMOVE_ENTRY)
       sprintf(str, "%s run#%i entry REMOVED", label, run);
 
-#ifdef WRITE_MIDAS_LOG
-   cm_msg(MINFO, "lazy_log_update", str);
-#endif
+   cm_msg(MINFO, "Lazy", str);
+
    /* Now add this info also to a special log file */
    cm_msg1(MINFO, "lazy", "lazy_log_update", str);
 
@@ -1317,6 +1318,73 @@ Function value:
 
 }
 
+
+int lazy_disk_copy_loop(const char *outfile, const char *infile, FILE* fpout, FILE* fpin)
+{
+   int status;
+   int no_cpy_last_time = 0;
+
+   /* force a statistics update on the first loop */
+   int cpy_loop_time = -2000;
+
+   /* infinite loop while copying */
+   while (1) {
+      if (copy_continue) {
+         const int kBufSize = 10*1024*1024;
+         char buf[kBufSize];
+         int rd = fread(buf, 1, kBufSize, fpin);
+         if (rd > 0) {
+            int wr = fwrite(buf, 1, rd, fpout);
+            if (wr != rd) {
+               cm_msg(MERROR, "Lazy_disk_copy", "Cannot write to \'%s\', errno %d (%s)", outfile, errno, strerror(errno));
+               //if (status == SS_NO_SPACE)
+               //   return status;
+               return TRY_LATER;
+            }
+
+            lazyst.cur_size += (double) wr;
+            lazyst.cur_dev_size += (double) wr;
+            if ((ss_millitime() - cpy_loop_time) > 2000) {
+               /* update statistics */
+               lazy_statistics_update(cpy_loop_time);
+
+               /* check conditions */
+               copy_continue = lazy_condition_check();
+
+               /* update check loop */
+               cpy_loop_time = ss_millitime();
+
+               /* yield quickly */
+               status = cm_yield(1);
+               if (status == RPC_SHUTDOWN || status == SS_ABORT) {
+                  cm_msg(MINFO, "Lazy", "Copy aborted by cm_yield() status %d", status);
+                  return FORCE_EXIT;
+               }
+            }
+         } else if (rd == 0) {
+            // end of input file
+            break;
+         } else {
+            // read error
+            cm_msg(MERROR, "Lazy_disk_copy", "Cannot read from \'%s\', errno %d (%s)", infile, errno, strerror(errno));
+            return FORCE_EXIT;
+         }
+      } /* copy_continue */
+      else {                    /* !copy_continue */
+         status = cm_yield(1000);
+         if (status == RPC_SHUTDOWN || status == SS_ABORT) {
+            return FORCE_EXIT;
+         }
+         if ((ss_millitime() - no_cpy_last_time) > 5000) {
+            copy_continue = lazy_condition_check();
+            no_cpy_last_time = ss_millitime();
+         }
+      }                         /* !copy_continue */
+   }                            /* while forever */
+
+   return 0;
+}
+
 INT lazy_disk_copy(const char *outfile, const char *infile)
 /********************************************************************\
 Routine: lazy_disk_copy
@@ -1332,11 +1400,17 @@ Function value:
 \********************************************************************/
 {
    int status;
-   int no_cpy_last_time = 0;
-   BOOL exit_request = FALSE;
+   DWORD watchdog_timeout;
+   BOOL watchdog_flag;
 
    if (debug)
       printf("lazy_disk_copy %s to %s\n", infile, outfile);
+
+   double MiB = 1024*1024;
+   double disk_size = ss_disk_size((char*)outfile);
+   double disk_free = ss_disk_free((char*)outfile);
+
+   printf("output disk size %.1f MiB, free %.1f MiB\n", disk_size/MiB, disk_free/MiB);
 
    /* init copy variables */
    lazyst.cur_size = 0.0f;
@@ -1368,7 +1442,7 @@ Function value:
    if (!fpout) {
       cm_msg(MERROR, "Lazy_disk_copy", "Cannot write to \'%s\', errno %d (%s)", outfile, errno, strerror(errno));
       fclose(fpin);
-      return FORCE_EXIT;
+      return TRY_LATER;
    }
 
    setbuf(fpin, NULL);
@@ -1383,80 +1457,14 @@ Function value:
       cm_msg1(MINFO, "lazy_log_update", "lazy", str);
    }
 
-   /* force a statistics update on the first loop */
-   int cpy_loop_time = -2000;
-
    double cpy_start_time = ss_millitime();
 
-   /* infinite loop while copying */
-   while (1) {
-      if (copy_continue) {
-         const int kBufSize = 10*1024*1024;
-         char buf[kBufSize];
-         int rd = fread(buf, 1, kBufSize, fpin);
-         if (rd > 0) {
-            int wr = fwrite(buf, 1, rd, fpout);
-            if (wr != rd) {
-               cm_msg(MERROR, "Lazy_disk_copy", "Cannot write to \'%s\', errno %d (%s)", outfile, errno, strerror(errno));
+   cm_get_watchdog_params(&watchdog_flag, &watchdog_timeout);
+   cm_set_watchdog_params(watchdog_flag, 10*60*1000); /* increase timeout in case of delays writing output file */
 
-               fclose(fpin);
-               fclose(fpout);
+   int copy_status = lazy_disk_copy_loop(outfile, infile, fpout, fpin);
 
-               //if (status == SS_NO_SPACE)
-               //   return status;
-               return FORCE_EXIT;
-            }
-
-            lazyst.cur_size += (double) wr;
-            lazyst.cur_dev_size += (double) wr;
-            if ((ss_millitime() - cpy_loop_time) > 2000) {
-               /* update statistics */
-               lazy_statistics_update(cpy_loop_time);
-
-               /* check conditions */
-               copy_continue = lazy_condition_check();
-
-               /* update check loop */
-               cpy_loop_time = ss_millitime();
-
-               /* yield quickly */
-               status = cm_yield(1);
-               if (status == RPC_SHUTDOWN || status == SS_ABORT || exit_request) {
-                  cm_msg(MINFO, "Lazy", "Copy aborted by cm_yield() status %d", status);
-                  exit_request = TRUE;
-
-                  fclose(fpin);
-                  fclose(fpout);
-
-                  return FORCE_EXIT;
-               }
-            }
-         } else if (rd == 0) {
-            // end of input file
-            break;
-         } else {
-            // read error
-            cm_msg(MERROR, "Lazy_disk_copy", "Cannot read from \'%s\', errno %d (%s)", infile, errno, strerror(errno));
-            
-            fclose(fpin);
-            fclose(fpout);
-
-            return FORCE_EXIT;
-         }
-      } /* copy_continue */
-      else {                    /* !copy_continue */
-         status = cm_yield(1000);
-         if (status == RPC_SHUTDOWN || status == SS_ABORT) {
-            fclose(fpin);
-            fclose(fpout);
-            return FORCE_EXIT;
-         }
-         if ((ss_millitime() - no_cpy_last_time) > 5000) {
-            copy_continue = lazy_condition_check();
-            no_cpy_last_time = ss_millitime();
-         }
-      }                         /* !copy_continue */
-   }                            /* while forever */
+   cm_set_watchdog_params(watchdog_flag, watchdog_timeout);
 
    /* update for last the statistics */
    lazy_statistics_update(0);
@@ -1470,17 +1478,17 @@ Function value:
       cm_msg(MERROR, "Lazy_disk_copy", "Cannot close \'%s\', errno %d (%s)", outfile, errno, strerror(errno));
       //if (status == SS_NO_SPACE)
       //   return status;
-      return FORCE_EXIT;
+      return TRY_LATER;
    }
 
-   /* request exit */
-   if (exit_request)
-      return EXIT_REQUEST;
+   if (copy_status) {
+      return copy_status;
+   }
 
    chmod(outfile, 0444);
 
    double t = (ss_millitime() - cpy_start_time) / 1000.0;
-   double MiB = 1024*1024;
+   //double MiB = 1024*1024;
    cm_msg(MINFO, "lazy_disk_copy", "Copy finished in %.1f sec, %.1f MiBytes at %.1f MiBytes/sec", t, lazyst.cur_size/MiB, lazyst.cur_size/t/MiB);
 
    return 0;
@@ -2079,6 +2087,8 @@ Function value:
          } else if (status == FORCE_EXIT)
             return status;
          cm_msg(MERROR, "Lazy", "copy failed -%s-%s-%i", lazy.path, lazyst.backfile, status);
+	 if (status == TRY_LATER)
+	   return status;
          return FORCE_EXIT;
       }
    } /* file exists */
@@ -2301,7 +2311,8 @@ int main(int argc, char **argv)
             i = atoi(ss_gets(str, 32));
             if ((i == 0) && ((strlen(str) == 0) || (strncmp(str, " ", 1) == 0))) {
                cm_msg(MERROR, "Lazy", "Please specify a valid channel name (%s)", str);
-               goto error;
+	       cm_disconnect_experiment();
+	       return 1;
             }
          } else {
             /* Skip the command prompt for serving the -c option */
@@ -2319,7 +2330,8 @@ int main(int argc, char **argv)
                   /* correct name => check active  */
                   if (lazyinfo[i].active) {
                      cm_msg(MERROR, "Lazy", "Lazy channel " "%s" " already running!", lazyinfo[i].name);
-                     goto error;
+		     cm_disconnect_experiment();
+		     return 1;
                   }
                   j = i;
                }
@@ -2357,7 +2369,10 @@ int main(int argc, char **argv)
             channel = -1;
       }
       
-      if (channel < 0) goto error;
+      if (channel < 0) {
+	cm_disconnect_experiment();
+	return 1;
+      }
       
       { /* creation of the lazy channel */
 	char str[128];
@@ -2383,9 +2398,11 @@ int main(int argc, char **argv)
      sprintf(str, "Lazy_%s", lazyinfo[channel].name);
      status = cm_connect_experiment1(host_name, expt_name, str, 0, DEFAULT_ODB_SIZE, WATCHDOG_TIMEOUT);
    }
-   if (status != CM_SUCCESS)
-     goto error;
-   
+   if (status != CM_SUCCESS) {
+     cm_disconnect_experiment();
+     return 1;
+   }
+
    cm_get_experiment_database(&hDB, &hKey);
    
    /* Remove temporary Lazy entry */
@@ -2473,9 +2490,10 @@ int main(int argc, char **argv)
    /* initialize ss_getchar() */
    ss_getchar(0);
 
+   DWORD period = lazy.period*1000;
+
    do {
       msg = cm_yield(2000);
-      DWORD period = lazy.period*1000;
       if (period < 1)
          period = 1;
       if ((ss_millitime() - mainlast_time) > period) {
@@ -2485,6 +2503,15 @@ int main(int argc, char **argv)
             break;
          }
          mainlast_time = ss_millitime();
+	 if (status == TRY_LATER) {
+	   period *= 2;
+	   DWORD max_period = 30*60*1000;
+	   if (period > max_period)
+	     period = max_period;
+	   cm_msg(MINFO, "lazy", "Will try again after %d seconds", period);
+	 } else {
+	   period = lazy.period*1000;
+	 }
       }
       ch = 0;
       while (ss_kbhit()) {
@@ -2496,7 +2523,6 @@ int main(int argc, char **argv)
       }
    } while (msg != RPC_SHUTDOWN && msg != SS_ABORT && ch != '!');
 
- error:
    cm_disconnect_experiment();
    return 1;
 }
