@@ -252,7 +252,7 @@ typedef struct {
    char data[256];
 } SQL_LIST;
 
-char *mname[] = {
+const char *mname[] = {
    "January",
    "February",
    "March",
@@ -2638,10 +2638,24 @@ INT log_write(LOG_CHN * log_chn, EVENT_HEADER * pevent)
    if (log_chn->type == LOG_TYPE_DISK && actual_time - last_checked > 10000) {
       last_checked = actual_time;
 
-      if (ss_disk_free(log_chn->path) < 1E7) {
-         stop_requested = TRUE;
-         cm_msg(MTALK, "log_write", "disk nearly full, stopping run");
+      double MiB = 1024*1024;
+      double disk_size = ss_disk_size(log_chn->path);
+      double disk_free = ss_disk_free(log_chn->path);
+      double limit = 10E6;
 
+      if (disk_size > 100E9) {
+         limit = 1000E6;
+      } else if (disk_size > 10E9) {
+         limit = 100E6;
+      }
+
+      //printf("disk_size %f, disk_free %f, limit %f\n", disk_size, disk_free, limit);
+
+      if (disk_free < limit) {
+         stop_requested = TRUE;
+         cm_msg(MTALK, "log_write", "disk nearly full, stopping the run");
+         cm_msg(MERROR, "log_write", "Disk \'%s\' is almost full: %.1f MiBytes free out of %.1f MiBytes, stopping the run", log_chn->path, disk_free/MiB, disk_size/MiB);
+         
          status = stop_the_run(0);
       }
    }
@@ -4464,3 +4478,10 @@ int main(int argc, char *argv[])
 
    return 0;
 }
+
+/* emacs
+ * Local Variables:
+ * tab-width: 8
+ * c-basic-offset: 3
+ * End:
+ */
