@@ -169,7 +169,7 @@ INT iseg_hv_mpod_exit(ISEG_HV_MPOD_INFO * info)
 
 INT iseg_hv_mpod_set(ISEG_HV_MPOD_INFO * info, INT channel, float value)
 {
-   setOutputVoltage(info->crate, channel+1, value);
+   setOutputVoltage(info->crate, info->settings.chn_address[channel], value);
    
    // if value == 0, reset any trip
    if (value == 0) {
