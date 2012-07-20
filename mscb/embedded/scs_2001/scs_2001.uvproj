@@ -386,6 +386,11 @@
               <FileType>1</FileType>
               <FilePath>.\monitor.c</FilePath>
             </File>
+            <File>
+              <FileName>lcd.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\lcd.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
@@ -789,6 +794,11 @@
               <FileName>monitor.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\monitor.c</FilePath>
+            </File>
+            <File>
+              <FileName>lcd.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\lcd.c</FilePath>
             </File>
           </Files>
         </Group>

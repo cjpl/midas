@@ -1827,7 +1827,8 @@ unsigned char i;
 unsigned char dr_hv(unsigned char id, unsigned char cmd, unsigned char addr, 
                     unsigned char port, unsigned char chn, void *pd) reentrant
 {
-float value, diff;
+float value;
+float diff;
 unsigned char status;
 unsigned long d;
 unsigned char idx;
@@ -1854,7 +1855,7 @@ unsigned char idx;
 
       ad7718_write(AD7718_FILTER, 82);     // SF value for 50Hz rejection (2 Hz)
       ad7718_write(AD7718_MODE, 3);        // continuous conversion
-	  ad7718_write(AD7718_IOCONTROL, 0x11);// Turn P1 on
+	   ad7718_write(AD7718_IOCONTROL, 0x11);// Turn P1 on
       DELAY_US_REENTRANT(100);
 
       /* start first conversion */
@@ -1873,8 +1874,8 @@ unsigned char idx;
 	  if (chn == 0)
 	     hv_set[port] = (float *)pd;
 
-      value = *((float *)pd);
-	  *(hv_set[port]+chn) = value;
+     value = *((float *)pd);
+	  dr_hv_dac(addr, port, chn, value);
    }
 
    if (cmd == MC_READ) {
@@ -1913,11 +1914,20 @@ unsigned char idx;
 	
 	      *((float *)pd) = value;
 
-          /* correct DAC value */
-		  diff = value - *(hv_set[port]+chn-8);
-		  if (fabs(diff) > 0.003)
-             dr_hv_dac(addr, port, chn-8, hv_dac[port*8+chn-8] - diff);
-
+         /* correct DAC value */
+         /*
+		   diff = value - *(hv_set[port]+(chn-8));
+		   if (fabs(diff) > 0.001 && fabs(diff) < 5) {
+            if (*(hv_set[port]+(chn-8)) > 10)
+               diff = diff;
+            if (diff > 2) // constrain to max +-2V
+               diff = 2;
+            if (diff < -2)
+               diff = -2;
+            dr_hv_dac(addr, port, chn-8, hv_dac[port*8+(chn-8)] - diff);
+         }
+         */
+         
 	      return 4;
 
 	  } else if ((status & 2) == 0) {
