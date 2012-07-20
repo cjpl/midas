@@ -327,7 +327,7 @@
             <CSection></CSection>
             <UserSection></UserSection>
             <CodeBaseAddress></CodeBaseAddress>
-            <XDataBaseAddress></XDataBaseAddress>
+            <XDataBaseAddress>0X0000-0X1FFF</XDataBaseAddress>
             <PDataBaseAddress></PDataBaseAddress>
             <BitBaseAddress></BitBaseAddress>
             <DataBaseAddress></DataBaseAddress>
@@ -352,11 +352,6 @@
               <FilePath>.\scs_3000.c</FilePath>
             </File>
             <File>
-              <FileName>scs_2001_lib.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\scs_2001_lib.c</FilePath>
-            </File>
-            <File>
               <FileName>mscbmain.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\src\mscbmain.c</FilePath>
@@ -372,11 +367,6 @@
               <FilePath>.\rtc.c</FilePath>
             </File>
             <File>
-              <FileName>lcd_menu.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\lcd_menu.c</FilePath>
-            </File>
-            <File>
               <FileName>STARTUP_VDDMON.A51</FileName>
               <FileType>2</FileType>
               <FilePath>..\src\STARTUP_VDDMON.A51</FilePath>
@@ -385,6 +375,21 @@
               <FileName>monitor.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\monitor.c</FilePath>
+            </File>
+            <File>
+              <FileName>scs_2001_lib.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\scs_2001\scs_2001_lib.c</FilePath>
+            </File>
+            <File>
+              <FileName>lcd_menu.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\lcd_menu.c</FilePath>
+            </File>
+            <File>
+              <FileName>lcd.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\lcd.c</FilePath>
             </File>
           </Files>
         </Group>
@@ -756,11 +761,6 @@
               <FilePath>.\scs_3000.c</FilePath>
             </File>
             <File>
-              <FileName>scs_2001_lib.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\scs_2001_lib.c</FilePath>
-            </File>
-            <File>
               <FileName>mscbmain.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\src\mscbmain.c</FilePath>
@@ -776,11 +776,6 @@
               <FilePath>.\rtc.c</FilePath>
             </File>
             <File>
-              <FileName>lcd_menu.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\lcd_menu.c</FilePath>
-            </File>
-            <File>
               <FileName>STARTUP_VDDMON.A51</FileName>
               <FileType>2</FileType>
               <FilePath>..\src\STARTUP_VDDMON.A51</FilePath>
@@ -789,6 +784,21 @@
               <FileName>monitor.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\monitor.c</FilePath>
+            </File>
+            <File>
+              <FileName>scs_2001_lib.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\scs_2001\scs_2001_lib.c</FilePath>
+            </File>
+            <File>
+              <FileName>lcd_menu.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\lcd_menu.c</FilePath>
+            </File>
+            <File>
+              <FileName>lcd.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\lcd.c</FilePath>
             </File>
           </Files>
         </Group>

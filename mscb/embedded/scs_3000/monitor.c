@@ -15,7 +15,7 @@
 #include <math.h>
 #include <intrins.h>
 #include "mscbemb.h"
-#include "scs_2001.h"
+#include "scs_3000.h"
 
 /*------------------------------------------------------------------*/
 

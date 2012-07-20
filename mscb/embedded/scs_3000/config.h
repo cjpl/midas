@@ -5,7 +5,7 @@
 
 
   Contents:     Configuration file for 
-                for SCS-2001 device
+                for SCS-3000 device
 
   $Id: scs_210.c 4906 2010-12-09 10:38:33Z ritt $
 
@@ -13,7 +13,7 @@
 
 /* Define device name. Used by various parts of the framwork to enable
    or disable device-specific features */
-#define SCS_2001
+#define SCS_3000
 
 /* define CPU type */
 #define CPU_C8051F120
@@ -41,8 +41,6 @@
 //#define EXT_WATCHDOG_PIN_DAC1          // external watchdog operated through DAC1
 
 /* switches to activate certain features in the framework */
-#define CFG_HAVE_LCD                   // 8-bit LCD is present
-#define CFG_LCD_8BIT
 #define CFG_DYN_VARIABLES              // variables are defined at run-time (plug-in boards)
 #define CFG_EXTENDED_VARIABLES         // remote variables on slave modules
 #define CFG_HAVE_RTC                   // real-time clock is present

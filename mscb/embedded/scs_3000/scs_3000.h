@@ -1,10 +1,10 @@
 /********************************************************************\
 
-  Name:         scs_2001.h
+  Name:         scs_3000.h
   Created by:   Stefan Ritt
 
 
-  Contents:     Header file for scs_2001 special functions
+  Contents:     Header file for scs_3000 special functions
 
   $Id: scs_2000.h 2874 2005-11-15 08:47:14Z ritt $
 

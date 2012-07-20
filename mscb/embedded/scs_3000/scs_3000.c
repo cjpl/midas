@@ -1,12 +1,12 @@
 /********************************************************************\
 
-  Name:         scs_2001.c
+  Name:         scs_3000.c
   Created by:   Stefan Ritt
 
 
-  Contents:     General-purpose framework for SCS-2001 control unit.
+  Contents:     General-purpose framework for SCS-3000 control unit.
 
-  $Id: scs_2001.c 4147 2008-03-31 13:35:08Z ritt@PSI.CH $
+  $Id: scs_3000.c 4147 2008-03-31 13:35:08Z ritt@PSI.CH $
 
 \********************************************************************/
 
@@ -15,13 +15,13 @@
 #include <math.h>
 #include <intrins.h>
 #include "mscbemb.h"
-#include "scs_2001.h"
+#include "scs_3000.h"
 
 extern bit FREEZE_MODE;
 extern bit DEBUG_MODE;
 
-char code node_name[] = "SCS-2001";
-char code svn_rev_2000[] = "$Rev: 4147 $";
+char code node_name[] = "SCS-3000";
+char code svn_rev_3000[] = "$Rev: 4147 $";
 extern char code svn_rev_main[];
 extern char code svn_rev_lib[];
 
@@ -138,7 +138,7 @@ void user_init(unsigned char init)
    else
       printf("     Slave mode ");
    lcd_goto(0, 2);
-   strncpy(str, svn_rev_2000 + 6, 6);
+   strncpy(str, svn_rev_3000 + 6, 6);
    *strchr(str, ' ') = 0;
    printf("  Revision:  %s", str);
    lcd_goto(0, 3);
