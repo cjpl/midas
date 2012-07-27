@@ -1780,7 +1780,7 @@ unsigned char i;
 static unsigned char xdata hv_cur_chn1[N_PORT];
 static unsigned char xdata hv_cur_chn2[N_PORT];
 static unsigned char code  hv_adc_map1[8] = { 5,4,3,2,1,0,6,7 };
-static unsigned char code  hv_adc_map2[8] = { 6,2,7,3,0,4,5,1 };
+static unsigned char code  hv_adc_map2[8] = { 4,7,1,3,5,6,0,2 };
 static float * xdata hv_set[N_PORT];
 static float xdata hv_dac[N_PORT*8];
 static float * xdata hv_current[N_PORT];
@@ -1828,7 +1828,7 @@ unsigned char dr_hv(unsigned char id, unsigned char cmd, unsigned char addr,
                     unsigned char port, unsigned char chn, void *pd) reentrant
 {
 float value;
-float diff;
+//float diff;
 unsigned char status;
 unsigned long d;
 unsigned char idx;
@@ -1944,23 +1944,23 @@ unsigned char idx;
 	
 	      /* start next conversion */
 	      hv_cur_chn2[addr*8+port] = (hv_cur_chn2[addr*8+port] + 1) % 8;
-	      ad7718_write(AD7718_CONTROL, (hv_adc_map2[hv_cur_chn2[addr*8+port]] << 4) | 0x07);
+	      ad7718_write(AD7718_CONTROL, (hv_adc_map2[hv_cur_chn2[addr*8+port]] << 4) | 0x03); // +-160 mV
 	
 	      write_port(addr, port, 0x40); // CS3 inactive
 	
 	      /* convert to volts */
-	      value = 5.12*((float)d / (1l<<24))-2.56;
+	      value = 0.320*((float)d / (1l<<24))-0.160;
 	
-	      /* convert to current in uA */
+	      /* convert to current in uA across a 1 kOhm resistor */
 	      value = value / 10000 * 1E6; 
 	
 	      /* round result to significant digits */
 	      value = ((long)(value*1E3+0.5))/1E3;
 	
 	      if (chn == 16)
-		     hv_current[port] = (float *)pd;
+		   hv_current[port] = (float *)pd;
 
-          *(hv_current[port]+chn-16) = value;
+         *(hv_current[port]+chn-16) = value;
 
 	      *((float *)pd) = value;
 	      return 4;
