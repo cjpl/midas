@@ -186,7 +186,9 @@ typedef INT midas_thread_t;
 #if defined( _MSC_VER )
 #define INLINE __inline
 #elif defined(__GNUC__)
+#ifndef INLINE
 #define INLINE __inline__
+#endif
 #else
 #define INLINE
 #endif
