@@ -320,10 +320,13 @@ int sc_thread(void *info)
 
    last_update = calloc(device_drv->channels, sizeof(int));
    last_time = ss_millitime();
+   
+   /* pass start command to device driver (neeeded for EPICS CA driver) */
+   status = device_drv->dd(CMD_START, device_drv->dd_info);
 
    do {
       /* read one channel from device */
-      for (cmd = CMD_GET_FIRST; cmd <= CMD_GET_LAST; cmd++) {
+      for (cmd = CMD_GET_FIRST; cmd <= CMD_GET_LAST ; cmd++) {
          value = (float)ss_nan();
          status = device_drv->dd(cmd, device_drv->dd_info, current_channel, &value);
 
@@ -333,6 +336,9 @@ int sc_thread(void *info)
          ss_semaphore_release(device_drv->semaphore);
 
          // printf("TID %d: channel %d, value %f\n", ss_gettid(), current_channel, value);
+         
+         if (device_drv->stop_thread)
+            break;
       }
 
       /* switch to next channel in next loop */
@@ -354,12 +360,18 @@ int sc_thread(void *info)
          current_priority_channel = i;
 
          for (cmd = CMD_GET_FIRST; cmd <= CMD_GET_LAST; cmd++) {
+            value = (float)ss_nan();
             status = device_drv->dd(cmd, device_drv->dd_info, i, &value);
 
             ss_semaphore_wait_for(device_drv->semaphore, 1000);
             device_drv->mt_buffer->channel[i].variable[cmd] = value;
             device_drv->mt_buffer->status = status;
             ss_semaphore_release(device_drv->semaphore);
+            
+            // printf("TID %d: channel %d, value %f\n", ss_gettid(), current_channel, value);
+
+            if (device_drv->stop_thread)
+               break;
          }
       }
 
@@ -377,6 +389,8 @@ int sc_thread(void *info)
                status = device_drv->dd(cmd, device_drv->dd_info, i, value);
                last_update[i] = ss_millitime();
             }
+            if (device_drv->stop_thread)
+               break;
          }
       }
 
@@ -390,6 +404,9 @@ int sc_thread(void *info)
          }
 
    } while (device_drv->stop_thread == 0);
+   
+   /* send stop command to device driver */
+   status = device_drv->dd(CMD_STOP, device_drv->dd_info);
 
    free(last_update);
 
@@ -428,9 +445,9 @@ INT device_driver(DEVICE_DRIVER * device_drv, INT cmd, ...)
             device_drv->mt_buffer->channel = (DD_MT_CHANNEL *) calloc(device_drv->channels, sizeof(DD_MT_CHANNEL));
             assert(device_drv->mt_buffer->channel);
 
-            /* set all set values to NaN */
+            /* set all set and get values to NaN */
             for (i=0 ; i<device_drv->channels ; i++)
-               for (j=CMD_SET_FIRST ; j<=CMD_SET_LAST ; j++)
+               for (j=CMD_SET_FIRST ; j<=CMD_GET_LAST ; j++)
                   device_drv->mt_buffer->channel[i].variable[j] = (float)ss_nan();
 
             /* get default names for this driver already now */
@@ -453,24 +470,25 @@ INT device_driver(DEVICE_DRIVER * device_drv, INT cmd, ...)
       break;
 
    case CMD_START:
-      if (device_drv->flags & DF_MULTITHREAD && device_drv->mt_buffer != NULL) {
+      if ((device_drv->flags & DF_MULTITHREAD) && device_drv->mt_buffer != NULL) {
          /* create dedicated thread for this device */
          device_drv->mt_buffer->thread_id = ss_thread_create(sc_thread, device_drv);
       }
       break;
 
    case CMD_STOP:
-      if (device_drv->flags & DF_MULTITHREAD && device_drv->mt_buffer != NULL) {
+      if ((device_drv->flags & DF_MULTITHREAD) && device_drv->mt_buffer != NULL) {
          device_drv->stop_thread = 1;
-         /* wait for max. 10 seconds until thread has gracefully stopped */
-         for (i = 0; i < 1000; i++) {
+
+         /* wait for max. 5 seconds until thread has gracefully stopped */
+         for (i = 0; i < 500; i++) {
             if (device_drv->stop_thread == 2)
                break;
             ss_sleep(10);
          }
 
          /* if timeout expired, kill thread */
-         if (i == 1000)
+         if (i == 500)
             ss_thread_kill(device_drv->mt_buffer->thread_id);
 
          ss_semaphore_delete(device_drv->semaphore, TRUE);
@@ -929,7 +947,8 @@ INT initialize_equipment(void)
                strcpy(str, "Driver error");
             else
                strcpy(str, "Error");
-
+            printf("%s\n", str);
+            
             if (equipment[idx].status == FE_SUCCESS)
                set_equipment_status(equipment[idx].name, str, "#00FF00");
             else {
@@ -2745,6 +2764,7 @@ int main(int argc, char *argv[])
          if (equipment[i].driver[j].name[0] && equipment[i].status == FE_SUCCESS)
             equipment[i].cd(CMD_STOP, &equipment[i]);   /* stop all threads */
       }
+   
    for (i = 0; equipment[i].name[0]; i++)
       if ((equipment[i].info.eq_type & EQ_SLOW) && equipment[i].status == FE_SUCCESS)
          equipment[i].cd(CMD_EXIT, &equipment[i]);      /* close physical connections */
