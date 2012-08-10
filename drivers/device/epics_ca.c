@@ -87,12 +87,8 @@ static void accessRightsCallback(struct access_rights_handler_args args)
 
 void epics_ca_callback(struct event_handler_args args)
 {
-  const char  *channel;
-  static char *noname = "unknown";
-  char    *pdata;
   CA_INFO *info;
   int i;
-  chid        chid = args.chid;
 
   /*
   if(args.status != ECA_NORMAL) {
