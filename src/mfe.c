@@ -947,7 +947,6 @@ INT initialize_equipment(void)
                strcpy(str, "Driver error");
             else
                strcpy(str, "Error");
-            printf("%s\n", str);
             
             if (equipment[idx].status == FE_SUCCESS)
                set_equipment_status(equipment[idx].name, str, "#00FF00");
