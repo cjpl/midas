@@ -92,8 +92,10 @@ INT gen_read(EQUIPMENT * pequipment, int channel)
    /* check for update measured */
    for (i = 0; i < gen_info->num_channels; i++) {
       /* update if change is more than update_threshold */
-      if (abs(gen_info->measured[i] - gen_info->measured_mirror[i]) >
-          gen_info->update_threshold[i]) {
+      if ((ss_isnan(gen_info->measured[i]) && !ss_isnan(gen_info->measured_mirror[i])) ||
+          (!ss_isnan(gen_info->measured[i]) && ss_isnan(gen_info->measured_mirror[i])) ||
+          (abs(gen_info->measured[i] - gen_info->measured_mirror[i]) >
+           gen_info->update_threshold[i])) {
          for (i = 0; i < gen_info->num_channels; i++)
             gen_info->measured_mirror[i] = gen_info->measured[i];
 
@@ -301,8 +303,8 @@ INT gen_init(EQUIPMENT * pequipment)
                  gen_info->measured, sizeof(float) * gen_info->num_channels,
                  gen_info->num_channels, TID_FLOAT);
    db_find_key(hDB, gen_info->hKeyRoot, "Variables/Measured", &gen_info->hKeyMeasured);
-   memcpy(gen_info->measured_mirror, gen_info->measured,
-          gen_info->num_channels * sizeof(float));
+   for (i=0 ; i<gen_info->num_channels ; i++)
+      gen_info->measured[i] = (float)ss_nan();
 
    /*---- get default names from device driver ----*/
    for (i = 0; i < gen_info->num_channels; i++) {
