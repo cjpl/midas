@@ -507,6 +507,10 @@ INT mscbhvr(INT cmd, ...)
       status = FE_SUCCESS;
       break;
 
+   case CMD_START:
+   case CMD_STOP:
+      break;
+
    default:
       cm_msg(MERROR, "mscbhvr device driver", "Received unknown command %d", cmd);
       status = FE_ERR_DRIVER;

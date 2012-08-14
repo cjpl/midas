@@ -496,6 +496,10 @@ INT iseg_hv_mpod(INT cmd, ...)
       status = iseg_hv_mpod_set_triptime(info, channel, value);
       break;
 
+   case CMD_START:
+   case CMD_STOP:
+      break;
+
    default:
       cm_msg(MERROR, "iseg_hv_mpod device driver", "Received unknown command %d", cmd);
       status = FE_ERR_DRIVER;
