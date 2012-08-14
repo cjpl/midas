@@ -232,7 +232,7 @@ INT psi_epics_beamline_set(CA_INFO * info, INT channel, float value)
 {
    if ((info->device_type[channel] & DT_READONLY) == 0) {
       if ((info->device_type[channel] & 0xFF) == DT_BEAMBLOCKER) 
-         ca_put(DBR_STRING, info->demand[channel].chan_id, value == 1 ? "open" : "close");
+         ca_put(DBR_STRING, info->demand[channel].chan_id, value == 1 ? "OPEN" : "CLOSE");
       else
          ca_put(DBR_FLOAT, info->demand[channel].chan_id, &value);
    }
@@ -269,7 +269,7 @@ INT psi_epics_beamline_get(CA_INFO * info, INT channel, float *pvalue)
       
       if ((info->device_type[channel] & 0xFF) == DT_BEAMBLOCKER) {
          /* bit0: open, bit1: closed, bit2: psa ok */
-         if ((d & 3) == 3)
+         if ((d & 3) == 0)
             *pvalue = 0.5;
          else if (d & 1)
             *pvalue = 1;
@@ -301,6 +301,7 @@ INT psi_epics_beamline_get(CA_INFO * info, INT channel, float *pvalue)
 INT psi_epics_beamline_get_demand(CA_INFO * info, INT channel, float *pvalue)
 {
    int status;
+   char str[80];
    
    /* return NAN for readonly channels */
    if (info->demand[channel].chan_id == NULL) {
@@ -308,10 +309,18 @@ INT psi_epics_beamline_get_demand(CA_INFO * info, INT channel, float *pvalue)
       return FE_SUCCESS;
    }
    
-   status = ca_get(DBR_FLOAT, info->demand[channel].chan_id, pvalue);
-   SEVCHK(status, "ca_array_get");
-   if (ca_pend_io(2.0) == ECA_TIMEOUT)
-      cm_msg(MERROR, "psi_epics_beamline_get_demand", "Timeout on EPICS channel %s", info->measured[channel].name);
+   if ((info->device_type[channel] & 0xFF) == DT_BEAMBLOCKER) {
+      status = ca_get(DBR_STRING, info->demand[channel].chan_id, str);
+      SEVCHK(status, "ca_get");
+      if (ca_pend_io(2.0) == ECA_TIMEOUT)
+         cm_msg(MERROR, "psi_epics_beamline_get_demand", "Timeout on EPICS channel %s", info->measured[channel].name);
+      *pvalue = (str[0] == 'O') ? 1 : 0;
+   } else {
+      status = ca_get(DBR_FLOAT, info->demand[channel].chan_id, pvalue);
+      SEVCHK(status, "ca_get");
+      if (ca_pend_io(2.0) == ECA_TIMEOUT)
+         cm_msg(MERROR, "psi_epics_beamline_get_demand", "Timeout on EPICS channel %s", info->measured[channel].name);
+   }
    
    return FE_SUCCESS;
 }
