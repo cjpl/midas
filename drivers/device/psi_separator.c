@@ -234,7 +234,7 @@ INT psi_separator_rall(PSI_SEPARATOR_INFO * info)
       // get strings and interprete them
       status = info->bd(CMD_GETS, info->bd_info, str, sizeof(str), "\n", 500);
 
-      if (strstr(str, "HVP")) {
+      if (strstr(str, "HVN")) {
          // skip name
          for (j = 0; j < (int) strlen(str) && str[j] != ' '; j++);
 
