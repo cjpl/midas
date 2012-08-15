@@ -5,7 +5,7 @@
 
   Contents:     Epics channel access device driver for PSI environment
 
-  $Id: psi_epics_beamline.c 5219 2011-11-10 23:51:08Z svn $
+  $Id: psi_epics.c 5219 2011-11-10 23:51:08Z svn $
 
 \********************************************************************/
 
@@ -51,6 +51,8 @@ typedef struct {
    CA_NODE *measured;
    INT     num_channels;
    char    *channel_name;
+   char    *demand_string;
+   char    *measured_string;
    INT     *device_type;
    DWORD   flags;
 } CA_INFO;
@@ -59,7 +61,7 @@ struct ca_client_context *ca_context;
 
 /*---- device driver routines --------------------------------------*/
 
-INT psi_epics_beamline_init(HNDLE hKey, void **pinfo, INT channels)
+INT psi_epics_init(HNDLE hKey, void **pinfo, INT channels)
 {
    int status, i, size;
    HNDLE hDB;
@@ -101,48 +103,27 @@ INT psi_epics_beamline_init(HNDLE hKey, void **pinfo, INT channels)
    db_merge_data(hDB, hKey, "Channel name",
                  info->channel_name, CHN_NAME_LENGTH * channels, channels, TID_STRING);
    
+   /* get demand strings */
+   info->demand_string = calloc(channels, CHN_NAME_LENGTH);
+   for (i=0; i<channels; i++)
+      sprintf(info->demand_string + CHN_NAME_LENGTH * i, "<Empty>%d", i);
+   db_merge_data(hDB, hKey, "Demand",
+                 info->demand_string, CHN_NAME_LENGTH * channels, channels, TID_STRING);
+
+   /* get measured strings */
+   info->measured_string = calloc(channels, CHN_NAME_LENGTH);
+   for (i=0; i<channels; i++)
+      sprintf(info->measured_string + CHN_NAME_LENGTH * i, "<Empty>%d", i);
+   db_merge_data(hDB, hKey, "Measured",
+                 info->measured_string, CHN_NAME_LENGTH * channels, channels, TID_STRING);
+
    /* get device types */
    info->device_type = calloc(channels, sizeof(INT));
    for (i=0; i<channels; i++)
-      info->device_type[i] = DT_MAGNET;
+      info->device_type[i] = DT_DEVICE;
    db_merge_data(hDB, hKey, "Device type",
                  info->device_type, sizeof(INT) * channels, channels, TID_INT);
 
-   /* add PSI specific qualifiers */
-   for (i=0 ; i<channels ; i++) {
-      /* read only channel */
-      if (info->device_type[i] & DT_READONLY) {
-         info->demand[i].name[0] = 0;
-         sprintf(info->measured[i].name, "%s:IST:2", info->channel_name + i*CHN_NAME_LENGTH);
-      
-      /* normal magnet */   
-      } else if ((info->device_type[i] & 0xFF) == DT_MAGNET) {
-         sprintf(info->demand[i].name, "%s:SOL:2", info->channel_name + i*CHN_NAME_LENGTH);
-         sprintf(info->measured[i].name, "%s:IST:2", info->channel_name + i*CHN_NAME_LENGTH);
-
-      /* slit */   
-      } else if ((info->device_type[i] & 0xFF) == DT_SLIT) {
-         sprintf(info->demand[i].name, "%s:SOL:2", info->channel_name + i*CHN_NAME_LENGTH);
-         sprintf(info->measured[i].name, "%s:POSA:2", info->channel_name + i*CHN_NAME_LENGTH);
-       
-      /* beamblocker */   
-      } else if ((info->device_type[i] & 0xFF) == DT_BEAMBLOCKER) {
-         sprintf(info->demand[i].name, "%s:COM:2", info->channel_name + i*CHN_NAME_LENGTH);
-         sprintf(info->measured[i].name, "%s:STA:1", info->channel_name + i*CHN_NAME_LENGTH);
-
-      /* PSA */   
-      } else if ((info->device_type[i] & 0xFF) == DT_PSA) {
-         info->demand[i].name[0] = 0;
-         sprintf(info->measured[i].name, "%s:STA:1", info->channel_name + i*CHN_NAME_LENGTH);
-
-      /* accelerator */   
-      } else if ((info->device_type[i] & 0xFF) == DT_ACCEL) {
-         info->demand[i].name[0] = 0; // unfortunately not ! ;-)
-         sprintf(info->measured[i].name, "%s:IST:2", info->channel_name + i*CHN_NAME_LENGTH);
-      }
-         
-   }
- 
    /* create context for multi-thread handling */
    SEVCHK(ca_context_create(ca_enable_preemptive_callback), "ca_context_create");
    ca_context = ca_current_context();
@@ -150,7 +131,7 @@ INT psi_epics_beamline_init(HNDLE hKey, void **pinfo, INT channels)
    /* initialize driver */
    status = ca_task_initialize();
    if (!(status & CA_M_SUCCESS)) {
-      cm_msg(MERROR, "psi_epics_beamline_init", "Unable to initialize");
+      cm_msg(MERROR, "psi_epics_init", "Unable to initialize");
       return FE_ERR_HW;
    }
    
@@ -163,11 +144,13 @@ INT psi_epics_beamline_init(HNDLE hKey, void **pinfo, INT channels)
    for (i = 0; i < channels; i++) {
 
       /* connect to demand channel */
-      if (info->demand[i].name[0]) {
+      if (*(info->demand_string + i*CHN_NAME_LENGTH)) {
+         strlcpy(info->demand[i].name, info->channel_name + i*CHN_NAME_LENGTH, CHN_NAME_LENGTH);
+         strlcat(info->demand[i].name, info->demand_string + i*CHN_NAME_LENGTH, CHN_NAME_LENGTH);
          status = ca_create_channel(info->demand[i].name, 0, 0, 0, &(info->demand[i].chan_id));
          SEVCHK(status, "ca_create_channel");
          if (ca_pend_io(5.0) == ECA_TIMEOUT) {
-            cm_msg(MERROR, "psi_epics_beamline_init", "Cannot connect to EPICS channel %s", info->demand[i].name);
+            cm_msg(MERROR, "psi_epics_init", "Cannot connect to EPICS channel %s", info->demand[i].name);
             status = FE_ERR_HW;
             break;
          }
@@ -176,12 +159,18 @@ INT psi_epics_beamline_init(HNDLE hKey, void **pinfo, INT channels)
       }
       
       /* connect to measured channel */
-      status = ca_create_channel(info->measured[i].name, 0, 0, 0, &(info->measured[i].chan_id));
-      SEVCHK(status, "ca_create_channel");
-      if (ca_pend_io(5.0) == ECA_TIMEOUT) {
-         cm_msg(MERROR, "psi_epics_beamline_init", "Cannot connect to EPICS channel %s", info->measured[i].name);
-         status = FE_ERR_HW;
-         break;
+      if (*(info->measured_string + i*CHN_NAME_LENGTH)) {
+         strlcpy(info->measured[i].name, info->channel_name + i*CHN_NAME_LENGTH, CHN_NAME_LENGTH);
+         strlcat(info->measured[i].name, info->measured_string + i*CHN_NAME_LENGTH, CHN_NAME_LENGTH);
+         status = ca_create_channel(info->measured[i].name, 0, 0, 0, &(info->measured[i].chan_id));
+         SEVCHK(status, "ca_create_channel");
+         if (ca_pend_io(5.0) == ECA_TIMEOUT) {
+            cm_msg(MERROR, "psi_epics_init", "Cannot connect to EPICS channel %s", info->measured[i].name);
+            status = FE_ERR_HW;
+            break;
+         }
+      } else {
+         info->measured[i].chan_id = NULL;
       }
    }
 
@@ -196,7 +185,7 @@ INT psi_epics_beamline_init(HNDLE hKey, void **pinfo, INT channels)
 
 /*----------------------------------------------------------------------------*/
 
-INT psi_epics_beamline_exit(CA_INFO * info)
+INT psi_epics_exit(CA_INFO * info)
 {
    int i;
    
@@ -228,13 +217,16 @@ INT psi_epics_beamline_exit(CA_INFO * info)
 
 /*----------------------------------------------------------------------------*/
 
-INT psi_epics_beamline_set(CA_INFO * info, INT channel, float value)
+INT psi_epics_set(CA_INFO * info, INT channel, float value)
 {
-   if ((info->device_type[channel] & DT_READONLY) == 0) {
-      if ((info->device_type[channel] & 0xFF) == DT_BEAMBLOCKER) 
-         ca_put(DBR_STRING, info->demand[channel].chan_id, value == 1 ? "OPEN" : "CLOSE");
+   int status;
+   
+   if (info->demand[channel].chan_id) {
+      if ((info->device_type[channel]) == DT_BEAMBLOCKER) 
+         status = ca_put(DBR_STRING, info->demand[channel].chan_id, value == 1 ? "OPEN" : "CLOSE");
       else
-         ca_put(DBR_FLOAT, info->demand[channel].chan_id, &value);
+         status = ca_put(DBR_FLOAT, info->demand[channel].chan_id, &value);
+      SEVCHK(status, "ca_put");
    }
 
    return FE_SUCCESS;
@@ -242,20 +234,7 @@ INT psi_epics_beamline_set(CA_INFO * info, INT channel, float value)
 
 /*----------------------------------------------------------------------------*/
 
-INT psi_epics_beamline_set_all(CA_INFO * info, INT channels, float value)
-{
-   INT i;
-
-   for (i = 0; i < MIN(info->num_channels, channels); i++)
-      if ((info->device_type[i] & DT_READONLY) == 0)
-         ca_put(DBR_FLOAT, info->demand[i].chan_id, &value);
-
-   return FE_SUCCESS;
-}
-
-/*----------------------------------------------------------------------------*/
-
-INT psi_epics_beamline_get(CA_INFO * info, INT channel, float *pvalue)
+INT psi_epics_get(CA_INFO * info, INT channel, float *pvalue)
 {
    int status, d;
    
@@ -263,9 +242,9 @@ INT psi_epics_beamline_get(CA_INFO * info, INT channel, float *pvalue)
        (info->device_type[channel] & 0xFF) == DT_PSA) {
 
       status = ca_get(DBR_LONG, info->measured[channel].chan_id, &d);
-      SEVCHK(status, "ca_array_get");
+      SEVCHK(status, "ca_get");
       if (ca_pend_io(2.0) == ECA_TIMEOUT)
-         cm_msg(MERROR, "psi_epics_beamline_get", "Timeout on EPICS channel %s", info->measured[channel].name);
+         cm_msg(MERROR, "psi_epics_get", "Timeout on EPICS channel %s", info->measured[channel].name);
       
       if ((info->device_type[channel] & 0xFF) == DT_BEAMBLOCKER) {
          /* bit0: open, bit1: closed, bit2: psa ok */
@@ -288,7 +267,7 @@ INT psi_epics_beamline_get(CA_INFO * info, INT channel, float *pvalue)
       status = ca_get(DBR_FLOAT, info->measured[channel].chan_id, pvalue);
       SEVCHK(status, "ca_array_get");
       if (ca_pend_io(2.0) == ECA_TIMEOUT)
-         cm_msg(MERROR, "psi_epics_beamline_get", "Timeout on EPICS channel %s", info->measured[channel].name);
+         cm_msg(MERROR, "psi_epics_get", "Timeout on EPICS channel %s", info->measured[channel].name);
    }
    
    //printf("%s %f\n", info->measured[channel].name, *pvalue);
@@ -298,7 +277,7 @@ INT psi_epics_beamline_get(CA_INFO * info, INT channel, float *pvalue)
 
 /*----------------------------------------------------------------------------*/
 
-INT psi_epics_beamline_get_demand(CA_INFO * info, INT channel, float *pvalue)
+INT psi_epics_get_demand(CA_INFO * info, INT channel, float *pvalue)
 {
    int status;
    char str[80];
@@ -309,17 +288,17 @@ INT psi_epics_beamline_get_demand(CA_INFO * info, INT channel, float *pvalue)
       return FE_SUCCESS;
    }
    
-   if ((info->device_type[channel] & 0xFF) == DT_BEAMBLOCKER) {
+   if (info->device_type[channel] == DT_BEAMBLOCKER) {
       status = ca_get(DBR_STRING, info->demand[channel].chan_id, str);
       SEVCHK(status, "ca_get");
       if (ca_pend_io(2.0) == ECA_TIMEOUT)
-         cm_msg(MERROR, "psi_epics_beamline_get_demand", "Timeout on EPICS channel %s", info->measured[channel].name);
+         cm_msg(MERROR, "psi_epics_get_demand", "Timeout on EPICS channel %s", info->measured[channel].name);
       *pvalue = (str[0] == 'O') ? 1 : 0;
    } else {
       status = ca_get(DBR_FLOAT, info->demand[channel].chan_id, pvalue);
       SEVCHK(status, "ca_get");
       if (ca_pend_io(2.0) == ECA_TIMEOUT)
-         cm_msg(MERROR, "psi_epics_beamline_get_demand", "Timeout on EPICS channel %s", info->measured[channel].name);
+         cm_msg(MERROR, "psi_epics_get_demand", "Timeout on EPICS channel %s", info->measured[channel].name);
    }
    
    return FE_SUCCESS;
@@ -327,7 +306,7 @@ INT psi_epics_beamline_get_demand(CA_INFO * info, INT channel, float *pvalue)
 
 /*---- device driver entry point -----------------------------------*/
 
-INT psi_epics_beamline(INT cmd, ...)
+INT psi_epics(INT cmd, ...)
 {
    va_list argptr;
    HNDLE hKey;
@@ -347,7 +326,7 @@ INT psi_epics_beamline(INT cmd, ...)
       pinfo = va_arg(argptr, void *);
       channel = va_arg(argptr, INT);
       flags = va_arg(argptr, DWORD);
-      status = psi_epics_beamline_init(hKey, pinfo, channel);
+      status = psi_epics_init(hKey, pinfo, channel);
       info = *(CA_INFO **) pinfo;
       info->flags = flags;
    } else {
@@ -359,7 +338,7 @@ INT psi_epics_beamline(INT cmd, ...)
             break;
             
          case CMD_EXIT:
-            status = psi_epics_beamline_exit(info);
+            status = psi_epics_exit(info);
             break;
             
          case CMD_START:
@@ -369,19 +348,19 @@ INT psi_epics_beamline(INT cmd, ...)
          case CMD_SET:
             channel = va_arg(argptr, INT);
             value = (float) va_arg(argptr, double);
-            status = psi_epics_beamline_set(info, channel, value);
+            status = psi_epics_set(info, channel, value);
             break;
             
          case CMD_GET:
             channel = va_arg(argptr, INT);
             pvalue = va_arg(argptr, float *);
-            status = psi_epics_beamline_get(info, channel, pvalue);
+            status = psi_epics_get(info, channel, pvalue);
             break;
             
          case CMD_GET_DEMAND:
             channel = va_arg(argptr, INT);
             pvalue = va_arg(argptr, float *);
-            status = psi_epics_beamline_get_demand(info, channel, pvalue);
+            status = psi_epics_get_demand(info, channel, pvalue);
             break;
 
          case CMD_GET_LABEL:

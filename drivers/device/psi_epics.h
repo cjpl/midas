@@ -9,12 +9,8 @@
 
 \********************************************************************/
 
-#define DT_MAGNET      1
-#define DT_SLIT        2
-#define DT_BEAMBLOCKER 3
-#define DT_PSA         4
-#define DT_ACCEL       5
+#define DT_DEVICE      1
+#define DT_BEAMBLOCKER 2
+#define DT_PSA         3
 
-#define DT_READONLY  128
-
-INT psi_epics_beamline(INT cmd, ...);
+INT psi_epics(INT cmd, ...);
