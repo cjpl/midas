@@ -49,6 +49,7 @@ typedef struct {
    CA_SETTINGS ca_settings;
    CA_NODE *demand;
    CA_NODE *measured;
+   CA_NODE *extra;
    INT     num_channels;
    char    *channel_name;
    char    *demand_string;
@@ -95,6 +96,7 @@ INT psi_epics_init(HNDLE hKey, void **pinfo, INT channels)
    /* allocate arrays */
    info->demand = calloc(channels, sizeof(CA_NODE));
    info->measured = calloc(channels, sizeof(CA_NODE));
+   info->extra = calloc(channels, sizeof(CA_NODE));
 
    /* get channel names */
    info->channel_name = calloc(channels, CHN_NAME_LENGTH);
@@ -135,8 +137,6 @@ INT psi_epics_init(HNDLE hKey, void **pinfo, INT channels)
       return FE_ERR_HW;
    }
    
-   printf("Magnets...");
-   
    /* search channels */
    info->num_channels = channels;
    
@@ -172,13 +172,21 @@ INT psi_epics_init(HNDLE hKey, void **pinfo, INT channels)
       } else {
          info->measured[i].chan_id = NULL;
       }
+      
+      /* connect command channel for separator */
+      if (info->device_type[i] == DT_SEPARATOR) {
+         strlcpy(info->extra[i].name, info->channel_name + i*CHN_NAME_LENGTH, CHN_NAME_LENGTH);
+         info->extra[i].name[strlen(info->extra[i].name)-1] = 0; // strip 'N' form SEP41VHVN
+         strlcat(info->extra[i].name, ":COM:2", CHN_NAME_LENGTH);
+         status = ca_create_channel(info->extra[i].name, 0, 0, 0, &(info->extra[i].chan_id));
+         SEVCHK(status, "ca_create_channel");
+         if (ca_pend_io(5.0) == ECA_TIMEOUT) {
+            cm_msg(MERROR, "psi_epics_init", "Cannot connect to EPICS channel %s", info->extra[i].name);
+            status = FE_ERR_HW;
+            break;
+         }
+      }
    }
-
-   if (status == FE_SUCCESS)
-      printf("ok\n");
-   else
-      printf("error\n");
-   
 
    return FE_SUCCESS;
 }
@@ -201,12 +209,24 @@ INT psi_epics_exit(CA_INFO * info)
            ca_clear_channel(info->measured[i].chan_id);
       free(info->measured);
    }
+   if (info->extra) {
+      for (i = 0; i < info->num_channels; i++)
+         if (info->extra[i].chan_id)
+            ca_clear_channel(info->extra[i].chan_id);
+      free(info->extra);
+   }
    
    ca_task_exit();
    
    if (info->channel_name)
       free(info->channel_name);
    
+   if (info->demand_string)
+      free(info->demand_string);
+
+   if (info->measured_string)
+      free(info->measured_string);
+
    if (info->device_type)
       free(info->device_type);
 
@@ -220,13 +240,24 @@ INT psi_epics_exit(CA_INFO * info)
 INT psi_epics_set(CA_INFO * info, INT channel, float value)
 {
    int status;
+   short int d;
    
    if (info->demand[channel].chan_id) {
       if ((info->device_type[channel]) == DT_BEAMBLOCKER) 
          status = ca_put(DBR_STRING, info->demand[channel].chan_id, value == 1 ? "OPEN" : "CLOSE");
-      else
+      
+      else if ((info->device_type[channel]) == DT_SEPARATOR) { 
          status = ca_put(DBR_FLOAT, info->demand[channel].chan_id, &value);
-      SEVCHK(status, "ca_put");
+         if (status != CA_M_SUCCESS)
+            cm_msg(MERROR, "psi_epics_set", "Cannot write to EPICS channel %s", info->demand[channel].name);
+         d = 3; // HVSET command
+         status = ca_put(DBR_SHORT, info->extra[channel].chan_id, &d);
+      
+      } else
+         status = ca_put(DBR_FLOAT, info->demand[channel].chan_id, &value);
+      
+      if (status != CA_M_SUCCESS)
+         cm_msg(MERROR, "psi_epics_set", "Cannot write to EPICS channel %s", info->demand[channel].name);
    }
 
    return FE_SUCCESS;

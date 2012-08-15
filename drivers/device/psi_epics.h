@@ -12,5 +12,6 @@
 #define DT_DEVICE      1
 #define DT_BEAMBLOCKER 2
 #define DT_PSA         3
+#define DT_SEPARATOR   4
 
 INT psi_epics(INT cmd, ...);
