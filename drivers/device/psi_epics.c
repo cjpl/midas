@@ -33,6 +33,8 @@
 
 #define CHN_NAME_LENGTH 32      /* length of channel names */
 
+#define CAGET_TIMEOUT 4.0
+
 typedef struct {
    char epics_gateway[256];
    int  gateway_port;
@@ -274,7 +276,7 @@ INT psi_epics_get(CA_INFO * info, INT channel, float *pvalue)
 
       status = ca_get(DBR_LONG, info->measured[channel].chan_id, &d);
       SEVCHK(status, "ca_get");
-      if (ca_pend_io(2.0) == ECA_TIMEOUT)
+      if (ca_pend_io(CAGET_TIMEOUT) == ECA_TIMEOUT)
          cm_msg(MERROR, "psi_epics_get", "Timeout on EPICS channel %s", info->measured[channel].name);
       
       if ((info->device_type[channel] & 0xFF) == DT_BEAMBLOCKER) {
@@ -297,7 +299,7 @@ INT psi_epics_get(CA_INFO * info, INT channel, float *pvalue)
    } else {
       status = ca_get(DBR_FLOAT, info->measured[channel].chan_id, pvalue);
       SEVCHK(status, "ca_array_get");
-      if (ca_pend_io(2.0) == ECA_TIMEOUT)
+      if (ca_pend_io(CAGET_TIMEOUT) == ECA_TIMEOUT)
          cm_msg(MERROR, "psi_epics_get", "Timeout on EPICS channel %s", info->measured[channel].name);
    }
    
@@ -322,13 +324,13 @@ INT psi_epics_get_demand(CA_INFO * info, INT channel, float *pvalue)
    if (info->device_type[channel] == DT_BEAMBLOCKER) {
       status = ca_get(DBR_STRING, info->demand[channel].chan_id, str);
       SEVCHK(status, "ca_get");
-      if (ca_pend_io(2.0) == ECA_TIMEOUT)
+      if (ca_pend_io(CAGET_TIMEOUT) == ECA_TIMEOUT)
          cm_msg(MERROR, "psi_epics_get_demand", "Timeout on EPICS channel %s", info->measured[channel].name);
       *pvalue = (str[0] == 'O') ? 1 : 0;
    } else {
       status = ca_get(DBR_FLOAT, info->demand[channel].chan_id, pvalue);
       SEVCHK(status, "ca_get");
-      if (ca_pend_io(2.0) == ECA_TIMEOUT)
+      if (ca_pend_io(CAGET_TIMEOUT) == ECA_TIMEOUT)
          cm_msg(MERROR, "psi_epics_get_demand", "Timeout on EPICS channel %s", info->measured[channel].name);
    }
    
