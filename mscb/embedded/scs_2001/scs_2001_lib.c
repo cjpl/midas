@@ -1780,10 +1780,10 @@ unsigned char i;
 static unsigned char xdata hv_cur_chn1[N_PORT];
 static unsigned char xdata hv_cur_chn2[N_PORT];
 static unsigned char code  hv_adc_map1[8] = { 5,4,3,2,1,0,6,7 };
-static unsigned char code  hv_adc_map2[8] = { 4,7,1,3,5,6,0,2 };
+static unsigned char code  hv_adc_map2[8] = { 6,2,7,3,0,4,5,1 };
 static float * xdata hv_set[N_PORT];
+static float xdata hv_cur[N_PORT*8];
 static float xdata hv_dac[N_PORT*8];
-static float * xdata hv_current[N_PORT];
 
 void dr_hv_dac(unsigned char addr, unsigned char port, unsigned char chn, float value)
 {
@@ -1792,8 +1792,8 @@ unsigned char i;
 
   if (value < 0)
      value = 0;
-  if (value > 200)
-     value = 200;
+  if (value > 180)
+     value = 180;
 
   hv_dac[port*8+chn] = value;
 
@@ -1828,10 +1828,11 @@ unsigned char dr_hv(unsigned char id, unsigned char cmd, unsigned char addr,
                     unsigned char port, unsigned char chn, void *pd) reentrant
 {
 float value;
-//float diff;
+float diff;
 unsigned char status;
 unsigned long d;
 unsigned char idx;
+static unsigned long last_written = 0;
 
    if (id || chn || pd); // suppress compiler warning
 
@@ -1865,17 +1866,21 @@ unsigned char idx;
       hv_cur_chn2[addr*8+port] = 0;
 
       write_port(addr, port, 0x40);        // remove CS
+
+      memset(hv_cur, 0, sizeof(hv_cur));
    }
 
    if (cmd == MC_WRITE) {
       if (chn > 7)
          return 0;
 
+     /* remember address of demand values in main program */
 	  if (chn == 0)
 	     hv_set[port] = (float *)pd;
 
      value = *((float *)pd);
 	  dr_hv_dac(addr, port, chn, value);
+     last_written = time();
    }
 
    if (cmd == MC_READ) {
@@ -1907,26 +1912,29 @@ unsigned char idx;
 	      value = 5.12*((float)d / (1l<<24))-2.56;
 	
 	      /* convert to HV */
-	      value = value * 100.0; 
+	      value = value * 101.0; 
 	
+         /* correct for voltage drop about 10k current sense resistor */
+         diff = hv_cur[port*8+(chn-8)];
+         if (diff != -1)
+            value -= 10000 * diff*1E-6;
+
 	      /* round result to significant digits */
 	      value = ((long)(value*1E3+0.5))/1E3;
 	
 	      *((float *)pd) = value;
 
          /* correct DAC value */
-         /*
-		   diff = value - *(hv_set[port]+(chn-8));
-		   if (fabs(diff) > 0.001 && fabs(diff) < 5) {
-            if (*(hv_set[port]+(chn-8)) > 10)
-               diff = diff;
-            if (diff > 2) // constrain to max +-2V
-               diff = 2;
-            if (diff < -2)
-               diff = -2;
-            dr_hv_dac(addr, port, chn-8, hv_dac[port*8+(chn-8)] - diff);
+         if (time() > last_written + 50) {
+		      diff = value - *(hv_set[port]+(chn-8));
+		      if (fabs(diff) > 0.001 && fabs(diff) < 5) {
+               if (diff > 2) // constrain to max +-2V
+                  diff = 2;
+               if (diff < -2)
+                  diff = -2;
+               dr_hv_dac(addr, port, chn-8, hv_dac[port*8+(chn-8)] - diff);
+            }
          }
-         */
          
 	      return 4;
 
@@ -1948,19 +1956,22 @@ unsigned char idx;
 	
 	      write_port(addr, port, 0x40); // CS3 inactive
 	
-	      /* convert to volts */
-	      value = 0.320*((float)d / (1l<<24))-0.160;
+         /* return -1 if Uout < 15 V where HV7800 is not working reliably */
+         if (*(hv_set[port]+(chn-16)) < 15.0) {
+            value = -1;
+         } else {
+	         /* convert to volts */
+	         value = 0.320*((float)d / (1l<<24))-0.160;
 	
-	      /* convert to current in uA across a 1 kOhm resistor */
-	      value = value / 10000 * 1E6; 
+	         /* convert to current in uA across a 1 kOhm resistor */
+	         value = value / 10000 * 1E6; 
 	
-	      /* round result to significant digits */
-	      value = ((long)(value*1E3+0.5))/1E3;
-	
-	      if (chn == 16)
-		   hv_current[port] = (float *)pd;
+	         /* round result to significant digits */
+	         value = ((long)(value*1E3+0.5))/1E3;
+         }
 
-         *(hv_current[port]+chn-16) = value;
+         /* remember current for later corrction */	
+         hv_cur[port*8+(chn-16)] = value;
 
 	      *((float *)pd) = value;
 	      return 4;
