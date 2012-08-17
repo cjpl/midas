@@ -34,7 +34,7 @@ MIDAS_BASE= ..
 INC_DIR= $(MIDAS_BASE)/include
 DRV_DIR= $(MIDAS_BASE)/drivers
 LIB_DIR= $(MIDAS_BASE)/linux/lib
-LIBS = $(LIB_DIR)/libmidas.a -lutil -lpthread
+LIBS = $(LIB_DIR)/libmidas.a -lutil -lpthread -lrt
 SYSBIN_DIR = /usr/local/bin
 #
 CC   = gcc
