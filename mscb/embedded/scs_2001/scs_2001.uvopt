@@ -130,13 +130,23 @@
           <Name>-S1 -B115200 -O1793 -J0 -K0 -L0 -M0 -A3 -P1 -T0 -UEC300002ED1</Name>
         </SetRegEntry>
       </TargetDriverDllRegistry>
-      <MemoryWindow1>
-        <Mm>
-          <WinNumber>1</WinNumber>
-          <SubType>262</SubType>
-          <ItemText>X:0x1B6F</ItemText>
-        </Mm>
-      </MemoryWindow1>
+      <Breakpoint>
+        <Bp>
+          <Number>0</Number>
+          <Type>0</Type>
+          <LineNumber>212</LineNumber>
+          <EnabledFlag>1</EnabledFlag>
+          <Address>-16749356</Address>
+          <ByteObject>0</ByteObject>
+          <ManyObjects>0</ManyObjects>
+          <SizeOfObject>0</SizeOfObject>
+          <BreakByAccess>0</BreakByAccess>
+          <BreakIfRCount>1</BreakIfRCount>
+          <Filename>MSCBMAIN.C</Filename>
+          <ExecCommand></ExecCommand>
+          <Expression></Expression>
+        </Bp>
+      </Breakpoint>
       <DebugFlag>
         <trace>0</trace>
         <periodic>0</periodic>
@@ -338,8 +348,8 @@
       <Focus>0</Focus>
       <ColumnNumber>0</ColumnNumber>
       <tvExpOptDlg>0</tvExpOptDlg>
-      <TopLine>1548</TopLine>
-      <CurrentLine>1567</CurrentLine>
+      <TopLine>197</TopLine>
+      <CurrentLine>212</CurrentLine>
       <bDave2>0</bDave2>
       <PathWithFileName>..\src\mscbmain.c</PathWithFileName>
       <FilenameWithoutPath>mscbmain.c</FilenameWithoutPath>
@@ -420,10 +430,10 @@
       <FileType>1</FileType>
       <tvExp>0</tvExp>
       <Focus>0</Focus>
-      <ColumnNumber>0</ColumnNumber>
+      <ColumnNumber>35</ColumnNumber>
       <tvExpOptDlg>0</tvExpOptDlg>
-      <TopLine>288</TopLine>
-      <CurrentLine>313</CurrentLine>
+      <TopLine>127</TopLine>
+      <CurrentLine>139</CurrentLine>
       <bDave2>0</bDave2>
       <PathWithFileName>.\lcd.c</PathWithFileName>
       <FilenameWithoutPath>lcd.c</FilenameWithoutPath>
@@ -1820,19 +1830,19 @@
     <ActiveMDIGroup>0</ActiveMDIGroup>
     <MDIGroup>
       <Size>100</Size>
-      <ActiveTab>4</ActiveTab>
+      <ActiveTab>1</ActiveTab>
       <Documents>
         <Doc>
           <Name>..\src\mscbmain.c</Name>
           <ColumnNumber>0</ColumnNumber>
-          <TopLine>1548</TopLine>
-          <CurrentLine>1567</CurrentLine>
+          <TopLine>197</TopLine>
+          <CurrentLine>212</CurrentLine>
         </Doc>
         <Doc>
           <Name>.\lcd.c</Name>
-          <ColumnNumber>0</ColumnNumber>
-          <TopLine>288</TopLine>
-          <CurrentLine>313</CurrentLine>
+          <ColumnNumber>35</ColumnNumber>
+          <TopLine>127</TopLine>
+          <CurrentLine>139</CurrentLine>
         </Doc>
         <Doc>
           <Name>.\lcd_menu.c</Name>

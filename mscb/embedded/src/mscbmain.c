@@ -15,6 +15,10 @@
 #include <stdlib.h>
 #include "mscbemb.h"
 
+#ifdef CFG_HAVE_LCD
+#include "lcd.h"
+#endif
+
 /* GET_INFO attributes */
 #define GET_INFO_GENERAL  0
 #define GET_INFO_VARIABLE 1
@@ -1147,10 +1151,10 @@ sbit led_0 = LED_0;
 
 void upgrade()
 {
-   unsigned char cmd, page, crc, j, k;
-   unsigned short i;
-   unsigned char xdata *pw;
-   unsigned char code *pr;
+   unsigned char idata cmd, page, crc, j, k;
+   unsigned short idata i;
+   unsigned char xdata * idata pw;
+   unsigned char code * idata pr;
 
    if (_flkey != 0xF1)
       return;
@@ -1474,8 +1478,9 @@ erase_ok:
    EA = 1;                      // re-enable interrupts
 }
 
-/* block regmainder of segment for linker */
-unsigned char code BLOCK_F000_REMAINGER[0x9F2] _at_ 0xF60D;
+/* block remainder of segment for linker */
+// unsigned char code BLOCK_F000_REMAINDER[0x9F2] _at_ 0xF60D; // for small model
+unsigned char code BLOCK_F000_REMAINDER[0x7AC] _at_ 0xF853; // for large model
 
 /*------------------------------------------------------------------*\
 

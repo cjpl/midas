@@ -99,7 +99,7 @@ char putchar1(char c);                   // putchar cannot be used with LCD supp
 
 #if defined(CLK_49MHZ)
 #define DELAY_US(_us) { \
-   unsigned char _i,_j; \
+   unsigned char data _i,_j; \
    for (_i = (unsigned char) _us; _i > 0; _i--) \
       for (_j=2 ; _j>0 ; _j--) \
          _nop_(); \
@@ -115,13 +115,13 @@ char putchar1(char c);                   // putchar cannot be used with LCD supp
 }
 #elif defined(CLK_98MHZ)
 #define DELAY_US(_us) { \
-   unsigned char _i,_j; \
+   unsigned char data _i,_j; \
    for (_i = (unsigned char) _us; _i > 0; _i--) \
       for (_j=19 ; _j>0 ; _j--) \
          _nop_(); \
 }
 #define DELAY_US_REENTRANT(_us) { \
-   unsigned char _i,_j; \
+   unsigned char data _i,_j; \
    for (_i = (unsigned char) _us; _i > 0; _i--) \
       for (_j=3 ; _j>0 ; _j--) \
          _nop_(); \
@@ -369,14 +369,6 @@ void delay_ms(unsigned int ms);
 unsigned char crc8(unsigned char *buffer, int len) reentrant;
 unsigned char crc8_add(unsigned char crc, unsigned int c);
 float nan(void);
-
-void lcd_setup();
-void lcd_clear();
-void lcd_cursor(unsigned char flag);
-void lcd_goto(char x, char y);
-void lcd_putc(char c);
-void lcd_puts(char *str);
-char scs_lcd1_read();
 
 char getchar_nowait(void) reentrant;
 unsigned char gets_wait(char *str, unsigned char size, unsigned char timeout);

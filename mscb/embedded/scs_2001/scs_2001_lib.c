@@ -23,6 +23,8 @@ char code svn_rev_lib[] = "$Rev: 4169 $";
 
 /*---- List of modules ---------------------------------------------*/
 
+#ifndef _NO_SCS2000_LIB
+
 MSCB_INFO_VAR code vars_bout[] =
    { 1, UNIT_BYTE,    0,          0,           0, "P%Out",   (void xdata *)1, 0, 0, 255, 1 };
 
@@ -153,6 +155,8 @@ SCS_2001_MODULE code scs_2001_module[] = {
 
   { 0 }
 };
+
+#endif // _NO_SCS2000_LIB
 
 /*---- Serial functions --------------------------------------------*/
 
@@ -444,6 +448,8 @@ unsigned short xdata t;
    }
 
 }
+
+#ifndef _NO_SCS2000_LIB
 
 /*---- Bitwise output/input ----------------------------------------*/
 
@@ -1982,3 +1988,12 @@ static unsigned long last_written = 0;
    return 1;
 }
 
+/*------------------------------------------------------------------*/
+
+#else // dummy list for library-less compilation
+
+SCS_2001_MODULE code scs_2001_module[] = {
+  { 0x01, "LED-Debug", NULL, 1, NULL },
+};
+
+#endif // _NO_SCS2000_LIB
