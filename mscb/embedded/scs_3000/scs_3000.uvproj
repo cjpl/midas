@@ -168,7 +168,7 @@
         </Utilities>
         <Target51>
           <Target51Misc>
-            <MemoryModel>0</MemoryModel>
+            <MemoryModel>1</MemoryModel>
             <RTOS>0</RTOS>
             <RomSize>2</RomSize>
             <DataHold>0</DataHold>
@@ -327,7 +327,7 @@
             <CSection></CSection>
             <UserSection></UserSection>
             <CodeBaseAddress></CodeBaseAddress>
-            <XDataBaseAddress>0X0000-0X1FFF</XDataBaseAddress>
+            <XDataBaseAddress></XDataBaseAddress>
             <PDataBaseAddress></PDataBaseAddress>
             <BitBaseAddress></BitBaseAddress>
             <DataBaseAddress></DataBaseAddress>
@@ -377,19 +377,14 @@
               <FilePath>.\monitor.c</FilePath>
             </File>
             <File>
-              <FileName>scs_2001_lib.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\scs_2001\scs_2001_lib.c</FilePath>
-            </File>
-            <File>
-              <FileName>lcd_menu.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\lcd_menu.c</FilePath>
-            </File>
-            <File>
               <FileName>lcd.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\lcd.c</FilePath>
+            </File>
+            <File>
+              <FileName>scs_2001_lib.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\scs_2001\scs_2001_lib.c</FilePath>
             </File>
           </Files>
         </Group>
@@ -410,6 +405,11 @@
               <FileName>config.h</FileName>
               <FileType>5</FileType>
               <FilePath>.\config.h</FilePath>
+            </File>
+            <File>
+              <FileName>lcd.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\lcd.h</FilePath>
             </File>
           </Files>
         </Group>
@@ -786,19 +786,14 @@
               <FilePath>.\monitor.c</FilePath>
             </File>
             <File>
-              <FileName>scs_2001_lib.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\scs_2001\scs_2001_lib.c</FilePath>
-            </File>
-            <File>
-              <FileName>lcd_menu.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\lcd_menu.c</FilePath>
-            </File>
-            <File>
               <FileName>lcd.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\lcd.c</FilePath>
+            </File>
+            <File>
+              <FileName>scs_2001_lib.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\scs_2001\scs_2001_lib.c</FilePath>
             </File>
           </Files>
         </Group>
@@ -819,6 +814,11 @@
               <FileName>config.h</FileName>
               <FileType>5</FileType>
               <FilePath>.\config.h</FilePath>
+            </File>
+            <File>
+              <FileName>lcd.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\lcd.h</FilePath>
             </File>
           </Files>
         </Group>

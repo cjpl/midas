@@ -25,8 +25,8 @@
 #define CLK_98MHZ
 
 /* ports for LED's */
-#define LED_0 P0 ^ 6
-#define LED_1 P0 ^ 7
+#define LED_0 P2 ^ 6
+#define LED_1 P2 ^ 7
 
 /* polarity of LED: "0" if a low level activates the LEDs, 
    "1" if a high level activates the LEDs */
@@ -46,3 +46,6 @@
 #define CFG_HAVE_RTC                   // real-time clock is present
 #define CFG_HAVE_EMIF                  // external RAM is present
 #define CFG_UART1_MSCB                 // external slave modules are connected via UART1
+#define CFG_HAVE_LCD                   // graphicsl LCD is present
+
+#define _NO_SCS2000_LIB                // no not link in device library

@@ -15,8 +15,14 @@
 #include <stdio.h>
 #include "mscbemb.h"
 
+#ifdef SCS_3000
+sbit RTC_CE  = P1 ^ 2;
+sbit RTC_IO  = P1 ^ 3;
+sbit RTC_CLK = P1 ^ 4;
+#else
 sbit RTC_IO  = P1 ^ 2;
 sbit RTC_CLK = P1 ^ 3;
+#endif
 
 /*------------------------------------------------------------------*/
 
@@ -201,7 +207,9 @@ void rtc_write(unsigned char d[6])
 {
    RTC_CLK = 0;
 
-#ifdef SCS_2000
+#ifdef SCS_3000
+   // TBD
+#elif defined(SCS_2000)
    SFRPAGE = DAC1_PAGE;
    DAC1L = 0xFF;
    DAC1H = 0x0F;
@@ -332,6 +340,10 @@ unsigned char rtc_present()
 
 void rtc_init()
 {
+#ifdef SCS_3000
+   RTC_CE = 1; 
+#endif
+
    /* remove write protection */
    rtc_write_byte(0x8E, 0);
 }

@@ -16,6 +16,7 @@
 #include <intrins.h>
 #include "mscbemb.h"
 #include "scs_3000.h"
+#include "lcd.h"
 
 extern bit FREEZE_MODE;
 extern bit DEBUG_MODE;
@@ -125,23 +126,21 @@ void user_init(unsigned char init)
    }
 
    /* display startup screen */
-   lcd_goto(0, 0);
-   for (i=0 ; i<7-strlen(sys_info.node_name)/2 ; i++)
-      puts(" ");
-   puts("** ");
-   puts(sys_info.node_name);
-   puts(" ** ");
+   lcd_font(6);
+   lcd_fontzoom(1, 1);
+   lcd_fontcolor(WHITE, BLUE);
+   lcd_text(272/2, 10, 'C', sys_info.node_name);
    
-   lcd_goto(0, 1);
+   lcd_goto(0, 3);
    if (master)
       printf("   Address:  %04X", sys_info.node_addr);
    else
       printf("     Slave mode ");
-   lcd_goto(0, 2);
+   lcd_goto(0, 4);
    strncpy(str, svn_rev_3000 + 6, 6);
    *strchr(str, ' ') = 0;
    printf("  Revision:  %s", str);
-   lcd_goto(0, 3);
+   lcd_goto(0, 5);
    strncpy(str, svn_rev_lib + 6, 6);
    *strchr(str, ' ') = 0;
    printf("  Rev. Lib:  %s", str);
@@ -151,36 +150,10 @@ void user_init(unsigned char init)
 
 /*---- Front panel button read -------------------------------------*/
 
-bit adc_init = 0;
-
 unsigned char button(unsigned char i)
 {
-unsigned short xdata value;
-
-   SFRPAGE = ADC0_PAGE;
-   if (!adc_init) {
-      adc_init = 1;
-      SFRPAGE = LEGACY_PAGE;
-      REF0CN  = 0x03;           // use internal voltage reference
-      AMX0CF  = 0x00;           // select single ended analog inputs
-      ADC0CF  = 0x98;           // ADC Clk 2.5 MHz @ 98 MHz, gain 1
-      ADC0CN  = 0x80;           // enable ADC 
-   }
-
-   AMX0SL  = (7-i) & 0x07;      // set multiplexer
-   DELAY_US(2);                 // wait for settling time
-
-   DISABLE_INTERRUPTS;
-  
-   AD0INT = 0;
-   AD0BUSY = 1;
-   while (!AD0INT);   // wait until conversion ready
-
-   ENABLE_INTERRUPTS;
-
-   value = (ADC0L | (ADC0H << 8));
-
-   return value < 1000;
+   if (i);
+   return 0;
 }
 
 /*---- Power management --------------------------------------------*/
@@ -292,24 +265,24 @@ void setup_variables(void)
 unsigned char xdata port, id, i, j, k, n_var, n_mod, n_var_mod, changed;
 char xdata * pvardata;
 
-   /* open drain(*) /push-pull: 
-      P0.0 TX1      P1.0 LCD_D1       P2.0 WATCHDOG     P3.0 OPT_CLK
-      P0.1*RX1      P1.1 LCD_D2       P2.1 LCD_E        P3.1 OPT_ALE
-      P0.2 TX2      P1.2 RTC_IO       P2.2 LCD_RW       P3.2 OPT_STR
-      P0.3*RX2      P1.3 RTC_CLK      P2.3 LCD_RS       P3.3 OPT_DATAO
+   /* open drain(*) / push-pull: 
+      P0.0 TX1         P1.0 CS1          P2.0*LCD_SBUF    P3.0 OPT_CLK
+      P0.1*RX1         P1.1 CS2          P2.1 LCD_CLK     P3.1 OPT_ALE
+      P0.2 TX2         P1.2 RTC_CE       P2.2*LCD_MISO    P3.2 OPT_STR
+      P0.3*RX2         P1.3 RTC_IO       P2.3 LCD_MOSI    P3.3 OPT_DATAO
                                                                       
-      P0.4 EN1      P1.4              P2.4 LCD_DB4      P3.4*OPT_DATAI
-      P0.5 EN2      P1.5              P2.5 LCD_DB5      P3.5*OPT_STAT
-      P0.6 LED1     P1.6              P2.6 LCD_DB6      P3.6*OPT_SPARE1
-      P0.7 LED2     P1.7 BUZZER       P2.7 LCD_DB7      P3.7*OPT_SPARE2
+      P0.4 EN1         P1.4 RTC_CLK      P2.4 LCD_SS      P3.4*OPT_DATAI
+      P0.5 EN0         P1.5 WATCHDOG     P2.5             P3.5*OPT_STAT
+      P0.6 EN_EXT/USB  P1.6              P2.6 LED0        P3.6*OPT_SPARE1
+      P0.7             P1.7              P2.7 LED1        P3.7*OPT_SPARE2
     */
    SFRPAGE = CONFIG_PAGE;
    P0MDOUT = 0xF5;
    P1MDOUT = 0xFF;
-   P2MDOUT = 0xFF;
+   P2MDOUT = 0xFA;
    P3MDOUT = 0x0F;
 
-   /* enable ADC & DAC */
+   /* enable ADC */
    SFRPAGE = ADC0_PAGE;
    AMX0CF  = 0x00;               // select single ended analog inputs
    ADC0CF  = 0x98;               // ADC Clk 2.5 MHz @ 98 MHz, gain 1
@@ -318,11 +291,6 @@ char xdata * pvardata;
 
    SFRPAGE = LEGACY_PAGE;
    REF0CN  = 0x03;               // select internal voltage reference
-
-   SFRPAGE = DAC0_PAGE;
-   DAC0CN  = 0x80;               // enable DAC0
-   SFRPAGE = DAC1_PAGE;
-   DAC1CN  = 0x80;               // enable DAC1
 
    /* initizlize real time clock */
    rtc_init();

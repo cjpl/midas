@@ -1,60 +1,324 @@
 /********************************************************************\
 
-  Name:         lcd.c
-  Created by:   Stefan Ritt
-
-  Contents:     LCD routines
-
-  $Id: mscbutil.c 5022 2011-05-04 14:22:33Z ritt $
-
-\********************************************************************/
-
-#include <intrins.h>
-#include <string.h>
-#include <stdio.h>
-#include "mscbemb.h"
-
-bit lcd_present;
-
-/********************************************************************\
-
   Routine: lcd_setup, lcd_clear, lcd_goto, lcd_puts, putchar
 
-  Purpose: LCD functions for HD44780/KS0066 compatible LCD displays
+  Purpose: LCD functions for EA eDIPTFT43-A LCD display
 
            Since putchar is used by printf, this function puts its
            output to the LCD as well
 
 \********************************************************************/
 
-#define LCD P2                  // LCD display connected to port2
+#include <intrins.h>
+#include <string.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdarg.h>
+#include "mscbemb.h"
+#include "lcd.h"
 
-#if defined (SCS_2000)  || defined(SCS_2001) || defined (SCS_3000)
-sbit LCD_RS  = P1 ^ 4;
-sbit LCD_R_W = P1 ^ 5;
-sbit LCD_E   = P1 ^ 6;
-sbit LCD_1D  = P1 ^ 0;
-sbit LCD_2D  = P1 ^ 1;
-#elif defined (SCS_900) || defined(SCS_1000) || defined (SCS_1001)
-sbit LCD_RS  = LCD ^ 3;
-sbit LCD_R_W = LCD ^ 2;
-sbit LCD_E   = LCD ^ 1;
-#else
-sbit LCD_RS  = LCD ^ 1;
-sbit LCD_R_W = LCD ^ 2;
-sbit LCD_E   = LCD ^ 3;
-#endif
+sbit LCD_SS   = P2 ^ 4;
+sbit LCD_MOSI = P2 ^ 3;
+sbit LCD_MISO = P2 ^ 2;
+sbit LCD_CLK  = P2 ^ 1;
+sbit LCD_SBUF = P2 ^ 0;
 
-sbit LCD_DB4 = LCD ^ 4;
-sbit LCD_DB5 = LCD ^ 5;
-sbit LCD_DB6 = LCD ^ 6;
-sbit LCD_DB7 = LCD ^ 7;
+bit lcd_present = 1;
 
-sbit LCD_CLK = LCD ^ 7;         // pins for 4021 shift register
-sbit LCD_P_W = LCD ^ 6;
-sbit LCD_SD  = LCD ^ 0;
+#define ACK 0x06
+#define NAK 0x15
+#define DC1 0x11
+#define ESC 0x1B
+
+unsigned char xdata _buf[16];
 
 /*------------------------------------------------------------------*/
+
+unsigned char lcd_io(unsigned char out)
+{
+   unsigned char idata i, in;
+
+   LCD_SS  = 0;
+
+   in = 0;
+   for (i=0 ; i<8 ; i++) {
+      LCD_CLK = 0;
+      LCD_MOSI = (out & 1);
+      out >>= 1;
+      delay_us(3);
+
+      in >>= 1;
+      if (LCD_MISO)
+      in |= 0x80;
+      LCD_CLK = 1;
+      delay_us(3);
+   }
+
+   LCD_SS = 1;
+   return in;
+}
+
+/*------------------------------------------------------------------*/
+
+void lcd_sendbuf(unsigned char *buf, unsigned char len)
+{
+   unsigned char idata i, cs;
+
+   lcd_io(DC1);
+   cs = DC1;
+
+   lcd_io(len+1); // add 1 for ESC
+   cs += len+1;
+
+   lcd_io(ESC);
+   cs += ESC;
+
+   for (i=0 ; i<len ; i++) {
+      lcd_io(buf[i]);
+      cs += buf[i];
+   }
+
+   lcd_io(cs);
+}
+
+/*------------------------------------------------------------------*/
+
+void lcd_send(unsigned char *buf, unsigned char len)
+{
+   unsigned char idata status, i;
+
+   for (i=0 ; i<10 ; i++) {
+      lcd_sendbuf(buf, len);
+      delay_us(6);
+      status = lcd_io(0xFF);
+      if (status == ACK)
+         break;
+      watchdog_refresh(0);
+      delay_us(10);
+   }
+}
+
+/*------------------------------------------------------------------*/
+
+void lcd_setup()
+{
+   /* open drain(*) / push-pull: 
+      P2.0*LCD_SBUF
+      P2.1 LCD_CLK 
+      P2.2*LCD_MISO
+      P2.3 LCD_MOSI
+                   
+      P2.4 LCD_SS  
+      P2.5         
+      P2.6 LED0    
+      P2.7 LED1    
+    */
+   SFRPAGE = CONFIG_PAGE;
+   P2MDOUT = 0xFA;
+
+   // stop all macros
+   lcd_send("MS", 3); 
+   lcd_clear();
+
+   // change display orientation
+   lcd_send("DO\01", 3);
+
+   // change default font and color
+   lcd_font(3);
+   lcd_fontcolor(WHITE, BLACK);
+   lcd_fontzoom(2, 2);
+}
+
+/*------------------------------------------------------------------*/
+
+void lcd_clear()
+{
+   lcd_send("DL", 2);
+}
+
+/*------------------------------------------------------------------*/
+
+void lcd_line(unsigned short x1, unsigned short y1, unsigned short x2, unsigned short y2)
+{
+   _buf[0]  = 'G';
+   _buf[1]  = 'D';
+
+   _buf[2]  = x1 & 0xFF;
+   _buf[3]  = x1 >> 8;
+   _buf[4]  = y1 & 0xFF;
+   _buf[5]  = y1 >> 8;
+
+   _buf[6] = x2 & 0xFF;
+   _buf[7] = x2 >> 8;
+   _buf[8] = y2 & 0xFF;
+   _buf[9] = y2 >> 8;
+
+   lcd_send(_buf, 10);
+}
+
+/*------------------------------------------------------------------*/
+
+unsigned short xdata _x = 0; 
+unsigned short xdata _y = 0; 
+unsigned char xdata _sx = 7;
+unsigned char xdata _sy = 12;
+unsigned char xdata _zx = 1;
+unsigned char xdata _zy = 1;
+
+//void lcd_goto(unsigned short x, unsigned short y)
+void lcd_goto(unsigned short x, unsigned short y)
+{
+   _x = x * _sx * _zx;
+   _y = y * _sy * _zy;
+}
+
+/*------------------------------------------------------------------*/
+
+void lcd_font(unsigned char f)
+{
+   if (f == 1) {
+      _sx = 4;
+      _sy = 6;
+   } else if (f == 2) {
+      _sx = 6;
+      _sy = 8;
+   } else if (f == 3) {
+      _sx = 7;
+      _sy = 12;
+   } else if (f == 4) {
+      _sx = 5;
+      _sy = 10;
+   } else if (f == 5) {
+      _sx = 7;
+      _sy = 14;
+   } else if (f == 6) {
+      _sx = 15;
+      _sy = 30;
+   }
+
+   _buf[03] = 'Z';
+   _buf[1] = 'F';
+   _buf[2] = f;
+   lcd_send(_buf, 3);
+}
+
+/*------------------------------------------------------------------*/
+
+void lcd_fontcolor(unsigned char fg, unsigned char bg)
+{
+   _buf[0] = 'F';
+   _buf[1] = 'Z';
+   _buf[2] = fg;
+   _buf[3] = bg;
+   lcd_send(_buf, 4);
+}
+
+/*------------------------------------------------------------------*/
+
+void lcd_fontzoom(unsigned char zx, unsigned char zy)
+{
+   _zx = zx;
+   _zy = zy;
+
+   _buf[0] = 'Z';
+   _buf[1] = 'Z';
+   _buf[2] = zx;
+   _buf[3] = zy;
+   lcd_send(_buf, 4);
+}
+
+/*------------------------------------------------------------------*/
+
+char putchar(char c)
+{
+   _buf[0] = 'Z';
+   _buf[1] = 'L';
+
+   _buf[2]  = _x & 0xFF;
+   _buf[3]  = _x >> 8;
+   _buf[4]  = _y & 0xFF;
+   _buf[5]  = _y >> 8;
+
+   _buf[6]  = c;
+   _buf[7] = 0;
+
+   lcd_send(_buf, 8);
+   _x += _sx * _zx;
+
+   return c;
+}
+
+/*------------------------------------------------------------------*/
+
+void lcd_puts(char *str)
+{            
+   while (*str)
+      putchar(*str++);
+}
+
+/*------------------------------------------------------------------*/
+
+void lcd_text(unsigned short x, unsigned short y, char align, char *str)
+{
+   unsigned char status, i, j, cs, len;
+
+   len = strlen(str);
+
+   for (j=0 ; j<10 ; j++) {
+
+      lcd_io(DC1);
+      cs = DC1;
+
+      lcd_io(len+8);
+      cs += len+8;
+
+      lcd_io(ESC);
+      cs += ESC;
+
+      lcd_io('Z');
+      cs += 'Z';
+
+      lcd_io(align);
+      cs += align;
+
+      lcd_io(x & 0xFF);
+      cs += (x & 0xFF);
+
+      lcd_io(x >> 8);
+      cs += (x >> 8);
+
+      lcd_io(y & 0xFF);
+      cs += (y & 0xFF);
+
+      lcd_io(y >> 8);
+      cs += (y >> 8);
+
+      for (i=0 ; i<len+1 ; i++) {
+         lcd_io(str[i]);
+         cs += str[i];
+      }
+
+      lcd_io(cs);
+
+      delay_us(6);
+      status = lcd_io(0xFF);
+      if (status == ACK)
+         break;
+      watchdog_refresh(0);
+      delay_us(10);
+   }
+}
+
+/*------------------------------------------------------------------*/
+
+void lcd_menu()
+{            
+}
+
+
+
+
+#if 0
 
 void lcd_out(unsigned char d, bit df)
 {
@@ -310,3 +574,5 @@ void lcd_puts(char *str)
    while (*str)
       lcd_out(*str++, 1);
 }
+
+#endif // if 0
