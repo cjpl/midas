@@ -63,14 +63,14 @@ all:    $(LIB_DIR) $(BIN_DIR) \
   $(BIN_DIR)/mhttpd.exe \
   $(BIN_DIR)/mcnaf.exe \
   $(BIN_DIR)/mlogger.exe \
-  $(BIN_DIR)/odbedit.exe \
   $(BIN_DIR)/mtransition.exe \
   $(BIN_DIR)/mtape.exe \
   $(BIN_DIR)/mhist.exe \
   $(BIN_DIR)/mstat.exe \
   $(BIN_DIR)/mdump.exe \
   $(BIN_DIR)/odbhist.exe \
-  $(BIN_DIR)/lazylogger.exe
+  $(BIN_DIR)/lazylogger.exe \
+  $(BIN_DIR)/odbedit.exe
 
 examples: $(EXAMPLES)
 
@@ -86,16 +86,16 @@ $(BIN_DIR):
 # main binaries
 $(BIN_DIR)/mserver.exe:  $(LIBRARY) $(SRC_DIR)/mserver.c
 	$(CC) $(CFLAGS) /Fe$(BIN_DIR)/mserver.exe $(SRC_DIR)/mserver.c $(LIBRARY) $(LIBS) wsock32.lib
-$(BIN_DIR)/mhttpd.exe:  $(LIBRARY) $(SRC_DIR)/mhttpd.c $(SRC_DIR)/mgd.c
-	$(CC) $(CFLAGS) /TP /Fe$(BIN_DIR)/mhttpd.exe $(SRC_DIR)/mhttpd.c $(SRC_DIR)/mgd.c $(LIBRARY) $(LIBS) wsock32.lib
-$(BIN_DIR)/mlogger.exe:  $(LIBRARY) $(SRC_DIR)/mlogger.c
-	$(CC) $(CFLAGS) /Fe$(BIN_DIR)/mlogger.exe /Tp$(SRC_DIR)/mlogger.c $(LIBRARY) $(LIBS)
-$(BIN_DIR)/odbedit.exe: $(LIBRARY) $(SRC_DIR)/odbedit.c $(SRC_DIR)/cmdedit.c
-	$(CC) $(CFLAGS) /Fe$(BIN_DIR)/odbedit.exe $(SRC_DIR)/cmdedit.c $(SRC_DIR)/odbedit.c $(LIBRARY) $(LIBS)
+$(BIN_DIR)/mhttpd.exe:  $(LIBRARY) $(SRC_DIR)/mhttpd.cxx $(SRC_DIR)/mgd.c
+	$(CC) $(CFLAGS) /EHs /Fe$(BIN_DIR)/mhttpd.exe /Tp$(SRC_DIR)/mhttpd.cxx /Tp$(SRC_DIR)/sequencer.cxx /Tp$(SRC_DIR)/history_midas.cxx $(SRC_DIR)/mgd.c $(LIB_DIR)/alarm.obj $(LIB_DIR)/mxml.obj $(LIBRARY) $(LIBS) wsock32.lib
+$(BIN_DIR)/mlogger.exe:  $(LIBRARY) $(SRC_DIR)/mlogger.cxx
+	$(CC) $(CFLAGS) /EHs /Fe$(BIN_DIR)/mlogger.exe /Tp$(SRC_DIR)/mlogger.cxx /Tp$(SRC_DIR)/history_midas.cxx $(LIBRARY) $(LIBS)
 $(BIN_DIR)/mtransition.exe: $(LIBRARY) $(SRC_DIR)/mtransition.cxx
 	$(CC) $(CFLAGS) /Fe$(BIN_DIR)/mtransition.exe $(SRC_DIR)/mtransition.cxx $(LIBRARY) $(LIBS)
-$(BIN_DIR)/lazylogger.exe: $(LIBRARY) $(SRC_DIR)/lazylogger.c
-	$(CC) $(CFLAGS) /Fe$(BIN_DIR)/lazylogger.exe $(SRC_DIR)/lazylogger.c $(LIBRARY) $(LIBS)
+$(BIN_DIR)/lazylogger.exe: $(LIBRARY) $(SRC_DIR)/lazylogger.cxx
+	$(CC) $(CFLAGS) /EHs /Fe$(BIN_DIR)/lazylogger.exe /Tp$(SRC_DIR)/lazylogger.cxx $(SRC_DIR)/mdsupport.c $(LIBRARY) $(LIBS)
+$(BIN_DIR)/odbedit.exe: $(LIBRARY) $(SRC_DIR)/odbedit.c $(SRC_DIR)/cmdedit.c
+	$(CC) $(CFLAGS) /Fe$(BIN_DIR)/odbedit.exe $(SRC_DIR)/odbedit.c $(SRC_DIR)/cmdedit.c $(LIBRARY) $(LIBS)
 
 # examples
 $(BIN_DIR)/consume.exe: $(LIBRARY) $(EXAM_DIR)/lowlevel/consume.c
@@ -150,7 +150,7 @@ $(LIB_DIR)/mana.obj: $(SRC_DIR)/mana.c $(INC_DIR)/msystem.h $(INC_DIR)/midas.h $
 
 # utilities
 $(BIN_DIR)/mdump.exe:	$(LIBRARY) $(UTL_DIR)/mdump.c
-	$(CC) $(CFLAGS) $(OSFLAGS) /Fe$(BIN_DIR)/mdump.exe $(UTL_DIR)/mdump.c $(LIBRARY) $(LIBS)
+	$(CC) $(CFLAGS) $(OSFLAGS) /Fe$(BIN_DIR)/mdump.exe $(UTL_DIR)/mdump.c $(SRC_DIR)/mdsupport.c $(LIBRARY) $(LIBS)
 $(BIN_DIR)/odbhist.exe:	$(LIBRARY) $(UTL_DIR)/odbhist.c
 	$(CC) $(CFLAGS) $(OSFLAGS) /Fe$(BIN_DIR)/odbhist.exe $(UTL_DIR)/odbhist.c $(LIBRARY) $(LIBS)
 $(BIN_DIR)/mtape.exe:  $(LIBRARY) $(UTL_DIR)/mtape.c
