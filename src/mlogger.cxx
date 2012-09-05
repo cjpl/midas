@@ -1020,6 +1020,17 @@ INT midas_flush_buffer(LOG_CHN * log_chn)
 #else
       assert(!"this cannot happen! support for ZLIB not compiled in");
 #endif
+   } else if (log_chn->pfile) {
+      written = fwrite(info->buffer, size, 1,log_chn->pfile);
+      if (errno == EPIPE){ 
+         cm_msg(MERROR, "midas_flush_buffer",
+                "pipe was broken for redirection of data stream, please check the command usage:\"%s\"\nYou can try to run mlogger in console in interactive mode(just \"mlogger\") to obtaine more detail error message",
+                log_chn->pipe_command);
+         log_chn->handle=0;
+      }
+      if (written !=1 ) 
+         return -1;
+      written = size;
    } else if (log_chn->handle) {
 #ifdef OS_WINNT
       WriteFile((HANDLE) log_chn->handle, info->buffer, size, (unsigned long *) &written, NULL);
@@ -1156,6 +1167,7 @@ INT midas_log_open(LOG_CHN * log_chn, INT run_number)
       }
 
       log_chn->gzfile = NULL;
+      log_chn->pfile = NULL;
       log_chn->handle = 0;
          
       /* check that compression level and file name match each other */
@@ -1170,7 +1182,7 @@ INT midas_log_open(LOG_CHN * log_chn, INT run_number)
             return SS_FILE_ERROR;
          }
 
-         if (log_chn->compression==0 && isgz) {
+         if (log_chn->compression==0 && isgz && log_chn->pipe_command[0] == 0) {
             cm_msg(MERROR, "midas_log_open",
                    "Output file name ends with '.gz', but compression level is zero");
             free(info->buffer);
@@ -1178,42 +1190,58 @@ INT midas_log_open(LOG_CHN * log_chn, INT run_number)
             return SS_FILE_ERROR;
          }
       }
-
+      
+      if (log_chn->pipe_command[0] != 0){
 #ifdef OS_WINNT
-      log_chn->handle = (int) CreateFile(log_chn->path, GENERIC_WRITE, FILE_SHARE_READ, NULL,
-                                         CREATE_ALWAYS,
-                                         FILE_ATTRIBUTE_NORMAL | FILE_FLAG_WRITE_THROUGH | FILE_FLAG_SEQUENTIAL_SCAN, 0);
-#else
-      log_chn->handle = open(log_chn->path, O_WRONLY | O_CREAT | O_TRUNC | O_BINARY | O_LARGEFILE, 0644);
-#endif
-      if (log_chn->handle < 0) {
-         free(info->buffer);
-         free(info);
-         log_chn->handle = 0;
+         cm_msg(MERROR, "midas_log_open", "Error: Pipe command not supported under Widnows");
          return SS_FILE_ERROR;
-      }
-
-      if (log_chn->compression > 0) {
-#ifdef HAVE_ZLIB
-         log_chn->gzfile = gzdopen(log_chn->handle, "wb");
-         if (log_chn->gzfile == NULL) {
-            cm_msg(MERROR, "midas_log_open",
-                   "Error: gzdopen() failed, cannot open compression stream");
+#else
+         log_chn->pfile = popen(log_chn->pipe_command, "w");
+         log_chn->handle = 1;
+         if (log_chn->pfile == NULL) {
+            cm_msg(MERROR, "midas_log_open", "Error: popen() failed, cannot open pipe stream");
             free(info->buffer);
             free(info);
             log_chn->handle = 0;
             return SS_FILE_ERROR;
          }
-
-         gzsetparams((gzFile)log_chn->gzfile, log_chn->compression, Z_DEFAULT_STRATEGY);
-#else
-         cm_msg(MERROR, "midas_log_open", "Compression enabled but ZLIB support not compiled in");
-         close(log_chn->handle);
-         free(info->buffer);
-         free(info);
-         log_chn->handle = 0;
-         return SS_FILE_ERROR;
 #endif
+      } else {
+#ifdef OS_WINNT
+         log_chn->handle = (int) CreateFile(log_chn->path, GENERIC_WRITE, FILE_SHARE_READ, NULL,
+                                            CREATE_ALWAYS,
+                                            FILE_ATTRIBUTE_NORMAL | FILE_FLAG_WRITE_THROUGH | FILE_FLAG_SEQUENTIAL_SCAN, 0);
+#else
+         log_chn->handle = open(log_chn->path, O_WRONLY | O_CREAT | O_TRUNC | O_BINARY | O_LARGEFILE, 0644);
+#endif
+         if (log_chn->handle < 0) {
+            free(info->buffer);
+            free(info);
+            log_chn->handle = 0;
+            return SS_FILE_ERROR;
+         }
+         
+         if (log_chn->compression > 0) {
+#ifdef HAVE_ZLIB
+            log_chn->gzfile = gzdopen(log_chn->handle, "wb");
+            if (log_chn->gzfile == NULL) {
+               cm_msg(MERROR, "midas_log_open", "Error: gzdopen() failed, cannot open compression stream");
+               free(info->buffer);
+               free(info);
+               log_chn->handle = 0;
+               return SS_FILE_ERROR;
+            }
+            
+            gzsetparams((gzFile)log_chn->gzfile, log_chn->compression, Z_DEFAULT_STRATEGY);
+#else
+            cm_msg(MERROR, "midas_log_open", "Compression enabled but ZLIB support not compiled in");
+            close(log_chn->handle);
+            free(info->buffer);
+            free(info);
+            log_chn->handle = 0;
+            return SS_FILE_ERROR;
+#endif
+         }
       }
    }
 
@@ -1268,7 +1296,12 @@ INT midas_log_close(LOG_CHN * log_chn, INT run_number)
 #ifdef OS_WINNT
       CloseHandle((HANDLE) log_chn->handle);
 #else
-      close(log_chn->handle);
+      if (log_chn->pfile) {
+         pclose(log_chn->pfile);
+         log_chn->pfile = NULL;
+      } else {
+         close(log_chn->handle);
+      }
 #endif
       log_chn->handle = 0;
    }
@@ -2638,7 +2671,7 @@ INT log_write(LOG_CHN * log_chn, EVENT_HEADER * pevent)
    if (log_chn->type == LOG_TYPE_DISK && actual_time - last_checked > 10000) {
       last_checked = actual_time;
 
-      double MiB = 1024*1024;
+      double MB = 1024*1024;
       double disk_size = ss_disk_size(log_chn->path);
       double disk_free = ss_disk_free(log_chn->path);
       double limit = 10E6;
@@ -2649,12 +2682,12 @@ INT log_write(LOG_CHN * log_chn, EVENT_HEADER * pevent)
          limit = 100E6;
       }
 
-      //printf("disk_size %f, disk_free %f, limit %f\n", disk_size, disk_free, limit);
+      // printf("disk_size %1.0lf MB, disk_free %1.0lf MB, limit %1.0f MB\n", disk_size/MB, disk_free/MB, limit/MB);
 
       if (disk_free < limit) {
          stop_requested = TRUE;
          cm_msg(MTALK, "log_write", "disk nearly full, stopping the run");
-         cm_msg(MERROR, "log_write", "Disk \'%s\' is almost full: %.1f MiBytes free out of %.1f MiBytes, stopping the run", log_chn->path, disk_free/MiB, disk_size/MiB);
+         cm_msg(MERROR, "log_write", "Disk \'%s\' is almost full: %1.0lf MBytes free out of %1.0f MBytes, stopping the run", log_chn->path, disk_free/MB, disk_size/MB);
          
          status = stop_the_run(0);
       }
@@ -3593,7 +3626,7 @@ INT log_callback(INT index, void *prpc_param[])
 int log_generate_file_name(LOG_CHN *log_chn)
 {
    INT size, status, run_number;
-   char str[256], path[256], dir[256], data_dir[256];
+   char str[256], path[256], dir[256], data_dir[256], *filename;
    CHN_SETTINGS *chn_settings;
    time_t now;
    struct tm *tms;
@@ -3605,8 +3638,24 @@ int log_generate_file_name(LOG_CHN *log_chn)
 
    data_dir[0] = 0;
 
+   filename = chn_settings->filename;
+   /* Check if data stream are throw pipe command */
+   log_chn->pipe_command[0] = 0;
+   bool ispipe = false;
+   if (log_chn->type == LOG_TYPE_DISK) {
+      if (chn_settings->filename[0] == '|' && strchr(chn_settings->filename, '>')) {
+         filename = strchr(chn_settings->filename,'>')+1;
+         if (filename[0] == '>') 
+            filename++;
+         ispipe = true;
+         size_t sizecommand = filename-chn_settings->filename-1;
+         strncpy(log_chn->pipe_command, chn_settings->filename+1, sizecommand);
+         log_chn->pipe_command[sizecommand] = 0;
+      }
+   }
+
    /* if disk, precede filename with directory if not already there */
-   if (log_chn->type == LOG_TYPE_DISK && chn_settings->filename[0] != DIR_SEPARATOR) {
+   if (log_chn->type == LOG_TYPE_DISK && filename[0] != DIR_SEPARATOR) {
       size = sizeof(data_dir);
       dir[0] = 0;
       db_get_value(hDB, 0, "/Logger/Data Dir", data_dir, &size, TID_STRING, TRUE);
@@ -3637,9 +3686,9 @@ int log_generate_file_name(LOG_CHN *log_chn)
          cm_msg(MERROR, "log_generate_file_name", "Cannot create subdirectory %s", str);
 #endif
 
-      strcat(str, chn_settings->filename);
+      strcat(str, filename);
    } else
-      strcpy(str, chn_settings->filename);
+      strcpy(str, filename);
 
    /* check if two "%" are present in filename */
    if (strchr(str, '%')) {
@@ -3655,6 +3704,23 @@ int log_generate_file_name(LOG_CHN *log_chn)
 
    strcpy(log_chn->path, path);
 
+   /* construct full pipe command */
+   if (ispipe) {
+      /* check if %d must be substitude by current run number in pipe command options */
+      if (strchr(log_chn->pipe_command, '%')) {
+         strcpy(str, log_chn->pipe_command);
+         if (strchr(strchr(str, '%')+1, '%')) {
+            /* substitude first "%d" by current run number, second "%d" by subrun number */
+            sprintf(log_chn->pipe_command, str, run_number, log_chn->subrun_number);
+         } else {
+            /* substitue "%d" by current run number */
+            sprintf(log_chn->pipe_command, str, run_number);
+         }
+      }
+      /* add generated filename to pipe command */      
+      strcat(log_chn->pipe_command, path);
+   }
+   
    /* write back current file name to ODB */
    if (strncmp(path, data_dir, strlen(data_dir)) == 0)
       strcpy(str, path + strlen(data_dir));
@@ -3681,7 +3747,7 @@ int close_channels(int run_number, BOOL* p_tape_flag)
    BOOL tape_flag = FALSE;
 
    for (i = 0; i < MAX_CHANNELS; i++) {
-      if (log_chn[i].handle || log_chn[i].ftp_con) {
+      if (log_chn[i].handle || log_chn[i].ftp_con|| log_chn[i].pfile) {
          /* generate MTALK message */
          if (log_chn[i].type == LOG_TYPE_TAPE && tape_message) {
             tape_flag = TRUE;

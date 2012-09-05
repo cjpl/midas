@@ -494,6 +494,7 @@ typedef struct {
 typedef struct {
    INT handle;
    char path[256];
+   char pipe_command[256];
    INT type;
    INT format;
    INT compression;
@@ -509,6 +510,7 @@ typedef struct {
    void **format_info;
    FTP_CON *ftp_con;
    void *gzfile;
+   FILE *pfile;
 } LOG_CHN;
 
 #define LOG_TYPE_DISK 1
