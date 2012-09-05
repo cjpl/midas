@@ -11861,7 +11861,7 @@ void show_hist_page(const char *path, int path_size, char *buffer, int *buffer_s
    char str[256], ref[256], ref2[256], paramstr[256], scalestr[256], hgroup[256],
        bgcolor[32], fgcolor[32], gridcolor[32], url[256], dir[256], file_name[256],
        back_path[256], panel[256];
-   char hurl[256];
+   char hurl[256], strwidth[256];
    const char *p;
    HNDLE hDB, hkey, hikeyp, hkeyp, hkeybutton;
    KEY key, ikey;
@@ -12483,6 +12483,10 @@ void show_hist_page(const char *path, int path_size, char *buffer, int *buffer_s
 
    /* check if whole group should be displayed */
    if (path[0] && !equal_ustring(path, "ALL") && strchr(path, '/') == NULL) {
+      strcpy(strwidth, "Small");
+      size = sizeof(strwidth);
+      db_get_value(hDB, 0, "/History/Display Settings/Width Gropup", strwidth, &size, TID_STRING, TRUE);
+      
       sprintf(str, "/History/Display/%s", path);
       db_find_key(hDB, 0, str, &hkey);
       if (hkey) {
@@ -12493,7 +12497,7 @@ void show_hist_page(const char *path, int path_size, char *buffer, int *buffer_s
                break;
 
             db_get_key(hDB, hikeyp, &key);
-            sprintf(ref, "%s%s/%s.gif?width=Small", hurl, path, key.name);
+            sprintf(ref, "%s%s/%s.gif?width=%s", hurl, path, key.name, strwidth);
             sprintf(ref2, "%s/%s", path, key.name);
 
             if (i % 2 == 0)
@@ -12556,6 +12560,12 @@ void show_hist_page(const char *path, int path_size, char *buffer, int *buffer_s
          sprintf(paramstr + strlen(paramstr), "&offset=%d", offset);
       if (pmag && *pmag)
          sprintf(paramstr + strlen(paramstr), "&width=%s", pmag);
+      else {
+         strlcpy(str, "640", sizeof(str));
+         size = sizeof(str);
+         db_get_value(hDB, 0, "/History/Display Settings/Width Individual", str, &size, TID_STRING, TRUE);
+         sprintf(paramstr + strlen(paramstr), "&width=%s", str);
+      }
 
       /* define image map */
       rsprintf("<map name=\"%s\">\r\n", path);
