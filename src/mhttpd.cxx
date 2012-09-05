@@ -12105,6 +12105,9 @@ void show_hist_page(const char *path, int path_size, char *buffer, int *buffer_s
          else if (equal_ustring(pmag, "Small"))
             generate_hist_graph(path, fbuffer, &fsize, 320, 200, scale, offset, index,
                               labels, bgcolor, fgcolor, gridcolor);
+         else if (atoi(pmag) > 0)
+            generate_hist_graph(path, fbuffer, &fsize, atoi(pmag), 200, scale, offset, index,
+                              labels, bgcolor, fgcolor, gridcolor);
          else
             generate_hist_graph(path, fbuffer, &fsize, 640, 400, scale, offset, index,
                               labels, bgcolor, fgcolor, gridcolor);
