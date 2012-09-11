@@ -926,8 +926,10 @@ void led_mode(unsigned char led, unsigned char flag) reentrant
 
 \********************************************************************/
 {
-   if (led < N_LED)
+   if (led < N_LED) {
       leds[led].mode = flag;
+      led_set(led, flag);
+   }
 }
 
 /*------------------------------------------------------------------*/
@@ -1302,6 +1304,7 @@ void delay_us(unsigned int us)
    unsigned char i, j;
    unsigned int remaining_us;
 
+   if (j);
    if (us <= 250) {
       for (i = (unsigned char) us; i > 0; i--) {
 #if defined(CLK_25MHZ)
