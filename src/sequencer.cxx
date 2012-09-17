@@ -304,7 +304,7 @@ BOOL msl_parse(char *filename, char *error, int error_size, int *error_line)
 {
    char str[256], *buf, *pl, *pe;
    char list[100][NAME_LENGTH], list2[100][NAME_LENGTH], **lines;
-   int i, size, n_lines, endl, line, fhin, nest, incl, library;
+   int i, j, n, size, n_lines, endl, line, fhin, nest, incl, library;
    FILE *fout;
    
    fhin = open(filename, O_RDONLY | O_TEXT);
@@ -364,7 +364,16 @@ BOOL msl_parse(char *filename, char *error, int error_size, int *error_line)
       if (!library)
          fprintf(fout, "<RunSequence xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:noNamespaceSchemaLocation=\"\">\n");
       for (line=0 ; line<n_lines ; line++) {
-         strbreak(lines[line], list, 100, ", ", FALSE);
+         n = strbreak(lines[line], list, 100, ", ", FALSE);
+         
+         /* remove any comment */
+         for (i=0 ; i<n ; i++) {
+            if (list[i][0] == '#') {
+               for (j=i ; j<n ; j++)
+                  list[j][0] = 0;
+               break;
+            }
+         }
          
          if (equal_ustring(list[0], "library")) {
                      
@@ -469,7 +478,7 @@ BOOL msl_parse(char *filename, char *error, int error_size, int *error_line)
             }
 
          } else if (equal_ustring(list[0], "rundescription")) {
-            fprintf(fout, "<RunDescription l=\"%d\">%s</Rundescription>\n", line+1, list[1]);
+            fprintf(fout, "<RunDescription l=\"%d\">%s</RunDescription>\n", line+1, list[1]);
             
          } else if (equal_ustring(list[0], "script")) {
             if (list[2][0] == 0)
@@ -1666,7 +1675,7 @@ void show_seq_page()
                            rsprintf("&nbsp;");
                         if (line < 100)
                            rsprintf("&nbsp;");
-                        rsprintf("%d ", line);
+                        rsprintf("%d&nbsp;", line);
                         strencode4(str);
                         rsprintf("</font>");
                      }
@@ -1732,7 +1741,7 @@ void show_seq_page()
                         rsprintf("&nbsp;");
                      if (line < 100)
                         rsprintf("&nbsp;");
-                     rsprintf("%d ", line);
+                     rsprintf("%d&nbsp;", line);
                      strencode4(str);
                      rsprintf("</font>");
                   }
