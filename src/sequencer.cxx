@@ -305,7 +305,7 @@ BOOL msl_parse(char *filename, char *error, int error_size, int *error_line)
    char str[256], *buf, *pl, *pe;
    char list[100][NAME_LENGTH], list2[100][NAME_LENGTH], **lines;
    int i, j, n, size, n_lines, endl, line, fhin, nest, incl, library;
-   FILE *fout;
+   FILE *fout = NULL;
    
    fhin = open(filename, O_RDONLY | O_TEXT);
    if (strchr(filename, '.')) {
@@ -789,8 +789,9 @@ void seq_start_page()
    /* run parameters from ODB */
    db_find_key(hDB, 0, "/Experiment/Edit on sequence", &hkey);
    db_find_key(hDB, 0, "/Experiment/Parameter Comments", &hkeycomm);
+   n = 0;
    if (hkey) {
-      for (line = 0, n = 0;; line++) {
+      for (line = 0 ;; line++) {
          db_enum_link(hDB, hkey, line, &hsubkey);
          
          if (!hsubkey)
@@ -904,7 +905,7 @@ const char *call_col[] = {"#B0FFB0", "#C0FFC0", "#D0FFD0", "#E0FFE0"};
 
 void show_seq_page()
 {
-   INT i, size, n, width, state, eob, last_line, error_line, current_line_number;
+   INT i, size, n,  width, state, eob, last_line, error_line, current_line_number;
    HNDLE hDB;
    char str[256], path[256], dir[256], error[256], comment[256], filename[256], data[256], buffer[10000], line[256], name[32];
    time_t now;
@@ -957,8 +958,9 @@ void show_seq_page()
          
          /* set parameters from ODB */
          db_find_key(hDB, 0, "/Experiment/Edit on sequence", &hparam);
+         n = 0;
          if (hparam) {
-            for (i = 0, n = 0;; i++) {
+            for (i = 0 ;; i++) {
                db_enum_key(hDB, hparam, i, &hsubkey);
                
                if (!hsubkey)
