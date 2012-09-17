@@ -1635,7 +1635,7 @@ void show_status_page(int refresh, const char *cookie_wpwd)
    sprintf(ref, "Logger/Auto restart?cmd=set");
 
    size = sizeof(flag);
-   db_get_value(hDB, 0, "/Sequencer/Running", &flag, &size, TID_BOOL, FALSE);
+   db_get_value(hDB, 0, "/Sequencer/State/Running", &flag, &size, TID_BOOL, FALSE);
    if (flag)
       rsprintf("<td bgcolor=#00FF00>Restart: Sequencer");
    else if (cm_exist("RunSubmit", FALSE) == CM_SUCCESS)
