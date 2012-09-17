@@ -905,7 +905,7 @@ const char *call_col[] = {"#B0FFB0", "#C0FFC0", "#D0FFD0", "#E0FFE0"};
 
 void show_seq_page()
 {
-   INT i, size, n,  width, state, eob, last_line, error_line, current_line_number;
+   INT i, size, n,  width, state, eob, last_line, error_line;
    HNDLE hDB;
    char str[256], path[256], dir[256], error[256], comment[256], filename[256], data[256], buffer[10000], line[256], name[32];
    time_t now;
@@ -1669,7 +1669,7 @@ void show_seq_page()
                      if (str[0]) {
                         if (line == seq.serror_line)
                            rsprintf("<font id=\"sline%d\" style=\"font-family:monospace;background-color:red;\">", line);
-                        else if (seq.running && line == current_line_number)
+                        else if (seq.running && line == seq.current_line_number)
                            rsprintf("<font id=\"sline%d\" style=\"font-family:monospace;background-color:#80FF00\">", line);
                         else
                            rsprintf("<font id=\"sline%d\" style=\"font-family:monospace\">", line);
