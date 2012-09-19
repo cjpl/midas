@@ -1486,6 +1486,7 @@ void show_seq_page()
       }
       
       /*---- go over XML files in sequencer directory ----*/
+      /*
       n = ss_file_find(path, (char *)"*.xml", &flist);
       for (i=0 ; i<n ; i++) {
          strlcpy(str, path, sizeof(str));
@@ -1514,6 +1515,7 @@ void show_seq_page()
          
          rsprintf("<option onClick=\"document.getElementById('cmnt').innerHTML='%s'\">%s</option>\n", comment, flist+i*MAX_STRING_LENGTH);
       }
+      */
       
       /*---- go over MSL files in sequencer directory ----*/
       n = ss_file_find(path, (char *)"*.msl", &flist);
