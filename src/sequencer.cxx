@@ -1479,10 +1479,10 @@ void show_seq_page()
       /*---- go over subdirectories ----*/
       n = ss_dir_find(path, (char *)"*", &flist);     
       if (dir[0])
-         rsprintf("<option onClick=\"document.form1.submit()\">[..]</option>\n");
+         rsprintf("<option onDblClick=\"document.form1.submit()\">[..]</option>\n");
       for (i=0 ; i<n ; i++) {
          if (flist[i*MAX_STRING_LENGTH] != '.')
-            rsprintf("<option onClick=\"document.form1.submit()\">[%s]</option>\n", flist+i*MAX_STRING_LENGTH);
+            rsprintf("<option onDblClick=\"document.form1.submit()\">[%s]</option>\n", flist+i*MAX_STRING_LENGTH);
       }
       
       /*---- go over XML files in sequencer directory ----*/
@@ -1553,7 +1553,8 @@ void show_seq_page()
             sprintf(comment, "Error in MSL: %s", error);
          
          strsubst(comment, sizeof(comment), "\"", "\\\'");
-         rsprintf("<option onClick=\"document.getElementById('cmnt').innerHTML='%s'\">%s</option>\n", comment, flist+i*MAX_STRING_LENGTH);
+         rsprintf("<option onClick=\"document.getElementById('cmnt').innerHTML='%s'\"", comment);
+         rsprintf(" onDblClick=\"load();\">%s</option>\n", flist+i*MAX_STRING_LENGTH);
       }
 
       free(flist);
