@@ -571,8 +571,9 @@ void setparam(const char *param, const char *value)
    if (i < MAX_PARAM) {
       strlcpy(_param[i], param, PARAM_LENGTH);
 
-      _value[i] = (char*)malloc(strlen(value)+1);
-      strlcpy(_value[i], value, strlen(value)+1);
+      int size = strlen(value)+1;
+      _value[i] = (char*)malloc(size);
+      strlcpy(_value[i], value, size);
       _value[i][strlen(value)] = 0;
 
    } else {
@@ -11745,15 +11746,15 @@ void export_hist(const char *path, int scale, int toffset, int index, int labels
    int n_run_number = 0;
    time_t* t_run_number = NULL;
    if (runmarker)
-      for (int i = 0; i < hsdata->nvars; i++)
+      for (int i = 0; i < hsdata->nvars; i++) {
          if (hsdata->odb_index[i] == -2) {
             n_run_number = hsdata->num_entries[i];
             t_run_number = hsdata->t[i];
             run_index = i;
-         }
-         else if (hsdata->odb_index[i] == -1) {
+         } else if (hsdata->odb_index[i] == -1) {
             state_index = i;
          }
+      }
 
    //printf("runmarker %d, state %d, run %d\n", runmarker, state_index, run_index);
 
@@ -12001,8 +12002,10 @@ void show_hist_page(const char *path, int path_size, char *buffer, int *buffer_s
       strlcpy(panel, getparam("panel"), sizeof(panel));
       
       /* strip leading/trailing spaces */
-      while (*panel == ' ')
-         strlcpy(panel, panel+1, sizeof(panel));
+      while (*panel == ' ') {
+         strlcpy(str, panel+1, sizeof(str));
+         strlcpy(panel, str, sizeof(panel));
+      }
       while (strlen(panel)> 1 && panel[strlen(panel)-1] == ' ')
          panel[strlen(panel)-1] = 0;
 
