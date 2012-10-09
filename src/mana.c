@@ -1987,7 +1987,7 @@ INT eor(INT run_number, char *error)
       } else {
 #ifdef HAVE_ZLIB
          if (out_gzip)
-            gzclose(out_file);
+            gzclose((gzFile)out_file);
          else
 #endif
             fclose(out_file);
@@ -2311,7 +2311,7 @@ INT write_event_ascii(FILE * file, EVENT_HEADER * pevent, ANALYZE_REQUEST * par)
    /* write record to device */
 #ifdef HAVE_ZLIB
    if (out_gzip)
-      status = gzwrite(file, buffer, size) == size ? SS_SUCCESS : SS_FILE_ERROR;
+      status = gzwrite((gzFile)file, buffer, size) == size ? SS_SUCCESS : SS_FILE_ERROR;
    else
 #endif
       status =
@@ -2430,7 +2430,7 @@ INT write_event_midas(FILE * file, EVENT_HEADER * pevent, ANALYZE_REQUEST * par)
    /* write record to device */
 #ifdef HAVE_ZLIB
    if (out_gzip)
-      status = gzwrite(file, pevent_copy, size) == size ? SUCCESS : SS_FILE_ERROR;
+      status = gzwrite((gzFile)file, pevent_copy, size) == size ? SUCCESS : SS_FILE_ERROR;
    else
 #endif
       status =
@@ -3913,7 +3913,7 @@ int ma_close(MA_FILE * file)
      assert(!"YBOS not supported anymore");
    else
 #ifdef HAVE_ZLIB
-      gzclose(file->gzfile);
+      gzclose((gzFile)file->gzfile);
 #else
       fclose(file->file);
 #endif
@@ -4119,7 +4119,7 @@ INT analyze_run(INT run_number, char *input_file_name, char *output_file_name)
             size = pevent->data_size + sizeof(EVENT_HEADER);
 #ifdef HAVE_ZLIB
             if (out_gzip)
-               status = gzwrite(out_file, pevent, size) == size ? SUCCESS : SS_FILE_ERROR;
+               status = gzwrite((gzFile)out_file, pevent, size) == size ? SUCCESS : SS_FILE_ERROR;
             else
 #endif
                status =
@@ -4390,7 +4390,7 @@ INT loop_runs_offline()
       } else {
 #ifdef HAVE_ZLIB
          if (out_gzip)
-            gzclose(out_file);
+            gzclose((gzFile)out_file);
          else
 #endif
             fclose(out_file);
