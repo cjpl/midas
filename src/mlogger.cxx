@@ -1052,9 +1052,10 @@ INT midas_flush_buffer(LOG_CHN * log_chn)
 
 INT midas_write(LOG_CHN * log_chn, EVENT_HEADER * pevent, INT evt_size)
 {
-   INT i, written, size_left;
+   INT i, written, size, size_left;
    MIDAS_INFO *info;
    static DWORD stat_last = 0;
+   char str[256];
 
    info = (MIDAS_INFO *) log_chn->format_info;
    written = 0;
@@ -1101,7 +1102,11 @@ INT midas_write(LOG_CHN * log_chn, EVENT_HEADER * pevent, INT evt_size)
    log_chn->statistics.bytes_written_subrun += written;
    log_chn->statistics.bytes_written_total += written;
    if (ss_time() > stat_last+DISK_CHECK_INTERVAL) {
-      log_chn->statistics.disk_level = 1.0-ss_disk_free(log_chn->path)/ss_disk_size(log_chn->path);
+      size = sizeof(str);
+      str[0] = 0;
+      db_get_value(hDB, 0, "/Logger/Data Dir", str, &size, TID_STRING, TRUE);
+
+      log_chn->statistics.disk_level = 1.0-ss_disk_free(str)/ss_disk_size(str);
       stat_last = ss_time();
    }
    return SS_SUCCESS;
@@ -2671,9 +2676,14 @@ INT log_write(LOG_CHN * log_chn, EVENT_HEADER * pevent)
    if (log_chn->type == LOG_TYPE_DISK && actual_time - last_checked > 10000) {
       last_checked = actual_time;
 
+      char str[256];
+      size = sizeof(str);
+      str[0] = 0;
+      db_get_value(hDB, 0, "/Logger/Data Dir", str, &size, TID_STRING, TRUE);
+
       double MB = 1024*1024;
-      double disk_size = ss_disk_size(log_chn->path);
-      double disk_free = ss_disk_free(log_chn->path);
+      double disk_size = ss_disk_size(str);
+      double disk_free = ss_disk_free(str);
       double limit = 10E6;
 
       if (disk_size > 100E9) {
