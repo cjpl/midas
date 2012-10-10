@@ -144,7 +144,7 @@
 		D5A57207139D63EF00B65A0A /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
-				LastUpgradeCheck = 0420;
+				LastUpgradeCheck = 0450;
 				ORGANIZATIONNAME = PSI;
 			};
 			buildConfigurationList = D5A5720A139D63EF00B65A0A /* Build configuration list for PBXProject "mlogger" */;
