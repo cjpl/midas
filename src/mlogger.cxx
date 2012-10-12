@@ -1102,10 +1102,9 @@ INT midas_write(LOG_CHN * log_chn, EVENT_HEADER * pevent, INT evt_size)
    log_chn->statistics.bytes_written_subrun += written;
    log_chn->statistics.bytes_written_total += written;
    if (ss_time() > stat_last+DISK_CHECK_INTERVAL) {
-      size = sizeof(str);
-      str[0] = 0;
-      db_get_value(hDB, 0, "/Logger/Data Dir", str, &size, TID_STRING, TRUE);
-
+      strlcpy(str, log_chn->path, sizeof(str));
+      if (strrchr(str, '/'))
+         *(strrchr(str, '/')+1) = 0; // strip filename for bzip2
       log_chn->statistics.disk_level = 1.0-ss_disk_free(str)/ss_disk_size(str);
       stat_last = ss_time();
    }
@@ -2677,10 +2676,10 @@ INT log_write(LOG_CHN * log_chn, EVENT_HEADER * pevent)
       last_checked = actual_time;
 
       char str[256];
-      size = sizeof(str);
-      str[0] = 0;
-      db_get_value(hDB, 0, "/Logger/Data Dir", str, &size, TID_STRING, TRUE);
-
+      strlcpy(str, log_chn->path, sizeof(str));
+      if (strrchr(str, '/'))
+         *(strrchr(str, '/')+1) = 0; // strip filename for bzip2
+      
       double MB = 1024*1024;
       double disk_size = ss_disk_size(str);
       double disk_free = ss_disk_free(str);
@@ -4028,10 +4027,9 @@ INT tr_start(INT run_number, char *error)
          }
 
          if (log_chn[index].type == LOG_TYPE_DISK) {
-            size = sizeof(str);
-            str[0] = 0;
-            db_get_value(hDB, 0, "/Logger/Data Dir", str, &size, TID_STRING, TRUE);
-
+            strlcpy(str, log_chn->path, sizeof(str));
+            if (strrchr(str, '/'))
+               *(strrchr(str, '/')+1) = 0; // strip filename for bzip2
             log_chn[index].statistics.disk_level = 1.0-ss_disk_free(str)/ss_disk_size(str);
          }
             
