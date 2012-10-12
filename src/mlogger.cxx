@@ -1052,7 +1052,7 @@ INT midas_flush_buffer(LOG_CHN * log_chn)
 
 INT midas_write(LOG_CHN * log_chn, EVENT_HEADER * pevent, INT evt_size)
 {
-   INT i, written, size, size_left;
+   INT i, written, size_left;
    MIDAS_INFO *info;
    static DWORD stat_last = 0;
    char str[256];
