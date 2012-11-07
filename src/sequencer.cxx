@@ -1827,8 +1827,8 @@ void sequencer()
 {
    PMXML_NODE pn, pr, pt;
    char odbpath[256], value[256], data[256], str[256], name[32], op[32];
-   char list[100][NAME_LENGTH];
-   int i, l, n, status, size, index, last_line, state, run_number, cont;
+   char list[100][NAME_LENGTH], *pc;
+   int i, l, n, status, size, index, index1, index2, last_line, state, run_number, cont;
    HNDLE hDB, hKey, hKeySeq;
    KEY key;
    double d;
@@ -1951,11 +1951,28 @@ void sequencer()
          if (strlen(odbpath) > 0 && odbpath[strlen(odbpath)-1] != '/')
             strlcat(odbpath, "/", sizeof(odbpath));
          strlcat(odbpath, mxml_get_attribute(pn, "path"), sizeof(odbpath));
-         if (strchr(odbpath, '[')) {
-            index = atoi(strchr(odbpath, '[')+1);
+         
+         /* check if index is supplied */
+         index1 = index2 = 0;
+         if (odbpath[strlen(odbpath) - 1] == ']') {
+            if (strchr(odbpath, '[')) {
+               if (*(strchr(odbpath, '[') + 1) == '*')
+                  index1 = -1;
+               else if (strchr((strchr(odbpath, '[') + 1), '.') ||
+                        strchr((strchr(odbpath, '[') + 1), '-')) {
+                  index1 = atoi(strchr(odbpath, '[') + 1);
+                  pc = strchr(odbpath, '[') + 1;
+                  while (*pc != '.' && *pc != '-')
+                     pc++;
+                  while (*pc == '.' || *pc == '-')
+                     pc++;
+                  index2 = atoi(pc);
+               } else
+                  index1 = atoi(strchr(odbpath, '[') + 1);
+            }
             *strchr(odbpath, '[') = 0;
-         } else
-            index = 0;
+         }
+
          if (!eval_var(mxml_get_value(pn), value, sizeof(value)))
             return;
          status = db_find_key(hDB, 0, odbpath, &hKey);
@@ -1973,8 +1990,16 @@ void sequencer()
                notify = FALSE;
             if (mxml_get_attribute(pn, "notify"))
                notify = atoi(mxml_get_attribute(pn, "notify"));
+
+            if (key.num_values > 1 && index1 == -1) {
+               for (i=0 ; i<key.num_values ; i++)
+                  status = db_set_data_index2(hDB, hKey, data, key.item_size, i, key.type, notify);
+            } else if (key.num_values > 1 && index2 > index1) {
+               for (i=index1; i<key.num_values && i<=index2; i++)
+                  status = db_set_data_index2(hDB, hKey, data, key.item_size, i, key.type, notify);
+            } else
+               status = db_set_data_index2(hDB, hKey, data, key.item_size, index1, key.type, notify);
             
-            status = db_set_data_index2(hDB, hKey, data, key.item_size, index, key.type, notify);
             if (status != DB_SUCCESS) {
                sprintf(str, "Cannot set ODB key \"%s\"", odbpath);
                seq_error(str);
