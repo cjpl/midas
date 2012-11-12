@@ -14,6 +14,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "mscbemb.h"
+#include "lcd.h"
 
 /*------------------------------------------------------------------*/
 

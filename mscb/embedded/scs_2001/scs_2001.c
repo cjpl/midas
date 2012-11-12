@@ -16,6 +16,7 @@
 #include <intrins.h>
 #include "mscbemb.h"
 #include "scs_2001.h"
+#include "lcd.h"
 
 extern bit FREEZE_MODE;
 extern bit DEBUG_MODE;

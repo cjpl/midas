@@ -13,6 +13,7 @@
 #include <string.h>
 #include <stdio.h>
 #include "mscbemb.h"
+#include "lcd.h"
 
 bit lcd_present;
 

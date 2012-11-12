@@ -27,7 +27,7 @@
     <TargetOption>
       <CLK51>100000000</CLK51>
       <OPTTT>
-        <gFlags>0</gFlags>
+        <gFlags>1</gFlags>
         <BeepAtEnd>1</BeepAtEnd>
         <RunSim>1</RunSim>
         <RunTarget>0</RunTarget>
@@ -301,10 +301,10 @@
       <FileType>1</FileType>
       <tvExp>0</tvExp>
       <Focus>0</Focus>
-      <ColumnNumber>15</ColumnNumber>
+      <ColumnNumber>0</ColumnNumber>
       <tvExpOptDlg>0</tvExpOptDlg>
-      <TopLine>1603</TopLine>
-      <CurrentLine>1651</CurrentLine>
+      <TopLine>134</TopLine>
+      <CurrentLine>154</CurrentLine>
       <bDave2>0</bDave2>
       <PathWithFileName>..\..\..\scs_2001\scs_2001_lib.c</PathWithFileName>
       <FilenameWithoutPath>scs_2001_lib.c</FilenameWithoutPath>
@@ -315,10 +315,10 @@
       <FileType>1</FileType>
       <tvExp>0</tvExp>
       <Focus>0</Focus>
-      <ColumnNumber>81</ColumnNumber>
+      <ColumnNumber>41</ColumnNumber>
       <tvExpOptDlg>0</tvExpOptDlg>
       <TopLine>1</TopLine>
-      <CurrentLine>22</CurrentLine>
+      <CurrentLine>41</CurrentLine>
       <bDave2>0</bDave2>
       <PathWithFileName>.\scs_2001_pump.c</PathWithFileName>
       <FilenameWithoutPath>scs_2001_pump.c</FilenameWithoutPath>
@@ -357,10 +357,10 @@
       <FileType>1</FileType>
       <tvExp>0</tvExp>
       <Focus>0</Focus>
-      <ColumnNumber>22</ColumnNumber>
+      <ColumnNumber>16</ColumnNumber>
       <tvExpOptDlg>0</tvExpOptDlg>
-      <TopLine>165</TopLine>
-      <CurrentLine>189</CurrentLine>
+      <TopLine>1</TopLine>
+      <CurrentLine>17</CurrentLine>
       <bDave2>0</bDave2>
       <PathWithFileName>.\lcd_menu.c</PathWithFileName>
       <FilenameWithoutPath>lcd_menu.c</FilenameWithoutPath>
@@ -393,6 +393,20 @@
       <PathWithFileName>.\monitor.c</PathWithFileName>
       <FilenameWithoutPath>monitor.c</FilenameWithoutPath>
     </File>
+    <File>
+      <GroupNumber>1</GroupNumber>
+      <FileNumber>8</FileNumber>
+      <FileType>1</FileType>
+      <tvExp>0</tvExp>
+      <Focus>0</Focus>
+      <ColumnNumber>0</ColumnNumber>
+      <tvExpOptDlg>0</tvExpOptDlg>
+      <TopLine>0</TopLine>
+      <CurrentLine>0</CurrentLine>
+      <bDave2>0</bDave2>
+      <PathWithFileName>..\..\..\scs_2001\lcd.c</PathWithFileName>
+      <FilenameWithoutPath>lcd.c</FilenameWithoutPath>
+    </File>
   </Group>
 
   <Group>
@@ -402,7 +416,7 @@
     <cbSel>0</cbSel>
     <File>
       <GroupNumber>2</GroupNumber>
-      <FileNumber>8</FileNumber>
+      <FileNumber>9</FileNumber>
       <FileType>5</FileType>
       <tvExp>0</tvExp>
       <Focus>0</Focus>
@@ -416,7 +430,7 @@
     </File>
     <File>
       <GroupNumber>2</GroupNumber>
-      <FileNumber>9</FileNumber>
+      <FileNumber>10</FileNumber>
       <FileType>5</FileType>
       <tvExp>0</tvExp>
       <Focus>0</Focus>
@@ -430,7 +444,7 @@
     </File>
     <File>
       <GroupNumber>2</GroupNumber>
-      <FileNumber>10</FileNumber>
+      <FileNumber>11</FileNumber>
       <FileType>5</FileType>
       <tvExp>0</tvExp>
       <Focus>0</Focus>
@@ -441,6 +455,20 @@
       <bDave2>0</bDave2>
       <PathWithFileName>.\scs_2001.h</PathWithFileName>
       <FilenameWithoutPath>scs_2001.h</FilenameWithoutPath>
+    </File>
+    <File>
+      <GroupNumber>2</GroupNumber>
+      <FileNumber>12</FileNumber>
+      <FileType>5</FileType>
+      <tvExp>0</tvExp>
+      <Focus>0</Focus>
+      <ColumnNumber>0</ColumnNumber>
+      <tvExpOptDlg>0</tvExpOptDlg>
+      <TopLine>0</TopLine>
+      <CurrentLine>0</CurrentLine>
+      <bDave2>0</bDave2>
+      <PathWithFileName>..\..\..\scs_2001\lcd.h</PathWithFileName>
+      <FilenameWithoutPath>lcd.h</FilenameWithoutPath>
     </File>
   </Group>
 
@@ -1827,15 +1855,15 @@
         </Doc>
         <Doc>
           <Name>..\..\..\scs_2001\scs_2001_lib.c</Name>
-          <ColumnNumber>15</ColumnNumber>
-          <TopLine>1603</TopLine>
-          <CurrentLine>1651</CurrentLine>
+          <ColumnNumber>0</ColumnNumber>
+          <TopLine>134</TopLine>
+          <CurrentLine>154</CurrentLine>
         </Doc>
         <Doc>
           <Name>.\scs_2001_pump.c</Name>
-          <ColumnNumber>81</ColumnNumber>
+          <ColumnNumber>41</ColumnNumber>
           <TopLine>1</TopLine>
-          <CurrentLine>22</CurrentLine>
+          <CurrentLine>41</CurrentLine>
         </Doc>
         <Doc>
           <Name>..\..\..\src\mscbmain.c</Name>
@@ -1845,15 +1873,15 @@
         </Doc>
         <Doc>
           <Name>.\lcd_menu.c</Name>
-          <ColumnNumber>22</ColumnNumber>
-          <TopLine>165</TopLine>
-          <CurrentLine>189</CurrentLine>
+          <ColumnNumber>16</ColumnNumber>
+          <TopLine>1</TopLine>
+          <CurrentLine>17</CurrentLine>
         </Doc>
         <Doc>
           <Name>\MIDAS\MSCB\EMBEDDED\INCLUDE\MSCBEMB.H</Name>
           <ColumnNumber>0</ColumnNumber>
-          <TopLine>337</TopLine>
-          <CurrentLine>372</CurrentLine>
+          <TopLine>1</TopLine>
+          <CurrentLine>1</CurrentLine>
         </Doc>
         <Doc>
           <Name>C:\midas\mscb\embedded\scs_210\scs_210.c</Name>
@@ -1866,6 +1894,12 @@
           <ColumnNumber>12</ColumnNumber>
           <TopLine>120</TopLine>
           <CurrentLine>144</CurrentLine>
+        </Doc>
+        <Doc>
+          <Name>SCS_2001.H</Name>
+          <ColumnNumber>19</ColumnNumber>
+          <TopLine>35</TopLine>
+          <CurrentLine>35</CurrentLine>
         </Doc>
       </Documents>
     </MDIGroup>

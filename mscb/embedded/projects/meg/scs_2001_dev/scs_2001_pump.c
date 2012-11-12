@@ -17,6 +17,7 @@
 #include <intrins.h>
 #include "mscbemb.h"
 #include "scs_2001.h"
+#include "lcd.h"
 
 char code node_name[] = "PUMP-STATION";
 char code svn_revision[] = "$Id$";
@@ -33,6 +34,11 @@ unsigned char button(unsigned char i);
 
 unsigned char tc600_read(unsigned short param, char *result);
 unsigned char tc600_write(unsigned short param, unsigned char len, unsigned long value);
+
+void set_forepump(unsigned char flag);
+void set_forevalve(unsigned char flag);
+void set_mainvalve(unsigned char flag);
+void set_bypassvalve(unsigned char flag);
 
 /*---- pump station states ----*/
 
@@ -257,6 +263,14 @@ void user_init(unsigned char init)
       user_data.hv_thresh = 1E-3;  // vacuum ok if < 10^-3 mbar
    }
 
+   /* initially the pump state is off */
+   user_data.pump_state = ST_OFF;
+
+   set_forevalve(0);
+   set_mainvalve(0);
+   set_bypassvalve(0);
+   set_forepump(0);
+
    /* write digital outputs */
    for (i=0 ; i<20 ; i++)
       user_write(i);
@@ -270,9 +284,6 @@ void user_init(unsigned char init)
 
    /* turn on turbo pump motor (not pump station) */
    tc600_write(23, 6, 111111);
-
-   /* initially the pump state is off */
-   user_data.pump_state = ST_OFF;
 
    /* display startup screen */
    lcd_goto(0, 0);

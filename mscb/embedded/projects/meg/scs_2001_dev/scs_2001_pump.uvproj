@@ -294,7 +294,7 @@
               <MiscControls></MiscControls>
               <Define></Define>
               <Undefine></Undefine>
-              <IncludePath>\midas\mscb\embedded\include</IncludePath>
+              <IncludePath>\midas\mscb\embedded\include;\midas\mscb\embedded\scs_2001</IncludePath>
             </VariousControls>
           </C51>
           <Ax51>
@@ -381,6 +381,11 @@
               <FileType>1</FileType>
               <FilePath>.\monitor.c</FilePath>
             </File>
+            <File>
+              <FileName>lcd.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\scs_2001\lcd.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
@@ -400,6 +405,11 @@
               <FileName>scs_2001.h</FileName>
               <FileType>5</FileType>
               <FilePath>.\scs_2001.h</FilePath>
+            </File>
+            <File>
+              <FileName>lcd.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\..\..\scs_2001\lcd.h</FilePath>
             </File>
           </Files>
         </Group>
@@ -780,6 +790,11 @@
               <FileType>1</FileType>
               <FilePath>.\monitor.c</FilePath>
             </File>
+            <File>
+              <FileName>lcd.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\scs_2001\lcd.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
@@ -799,6 +814,11 @@
               <FileName>scs_2001.h</FileName>
               <FileType>5</FileType>
               <FilePath>.\scs_2001.h</FilePath>
+            </File>
+            <File>
+              <FileName>lcd.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\..\..\scs_2001\lcd.h</FilePath>
             </File>
           </Files>
         </Group>
