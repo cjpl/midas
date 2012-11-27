@@ -135,6 +135,7 @@
 		D54515981399A2CA0037D7FB /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
+				LastUpgradeCheck = 0450;
 				ORGANIZATIONNAME = PSI;
 			};
 			buildConfigurationList = D545159B1399A2CA0037D7FB /* Build configuration list for PBXProject "odbedit" */;

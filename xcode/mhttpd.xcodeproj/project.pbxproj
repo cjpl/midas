@@ -144,7 +144,7 @@
 		D516B31F1399C29000FAA335 /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
-				LastUpgradeCheck = 0440;
+				LastUpgradeCheck = 0450;
 				ORGANIZATIONNAME = PSI;
 			};
 			buildConfigurationList = D516B3221399C29000FAA335 /* Build configuration list for PBXProject "mhttpd" */;
