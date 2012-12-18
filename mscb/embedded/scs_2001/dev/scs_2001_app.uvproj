@@ -381,6 +381,11 @@
               <FileType>1</FileType>
               <FilePath>..\..\src\mscbutil.c</FilePath>
             </File>
+            <File>
+              <FileName>lcd.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\lcd.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
@@ -779,6 +784,11 @@
               <FileName>mscbutil.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\..\src\mscbutil.c</FilePath>
+            </File>
+            <File>
+              <FileName>lcd.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\lcd.c</FilePath>
             </File>
           </Files>
         </Group>

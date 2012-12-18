@@ -14,6 +14,7 @@
 #include <string.h>
 #include <math.h>
 #include <intrins.h>
+#include "lcd.h"
 #include "mscbemb.h"
 #include "scs_2001.h"
 
