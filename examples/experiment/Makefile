@@ -33,7 +33,6 @@ OSTYPE = linux
 endif
 
 ifeq ($(OSTYPE),linux)
-
 OS_DIR = linux
 OSFLAGS = -DOS_LINUX -Dextname
 CFLAGS = -g -O2 -Wall
@@ -53,7 +52,7 @@ ifeq ($(OSTYPE),darwin)
 OS_DIR = darwin
 FF = cc
 OSFLAGS = -DOS_LINUX -DOS_DARWIN -DHAVE_STRLCPY -DAbsoftUNIXFortran -fPIC -Wno-unused-function
-LIBS = -lpthread
+LIBS = -lpthread -lz
 SPECIFIC_OS_PRG = $(BIN_DIR)/mlxspeaker
 NEED_STRLCPY=
 NEED_RANLIB=1
