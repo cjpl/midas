@@ -991,6 +991,7 @@ INT ftp_open(char *destination, FTP_CON ** con)
 INT midas_flush_buffer(LOG_CHN * log_chn)
 {
    INT size, written;
+   off_t n;
    MIDAS_INFO *info;
 
    info = (MIDAS_INFO *) log_chn->format_info;
@@ -1008,15 +1009,10 @@ INT midas_flush_buffer(LOG_CHN * log_chn)
                    size) == size ? SS_SUCCESS : SS_FILE_ERROR;
    else if (log_chn->gzfile) {
 #ifdef HAVE_ZLIB
-      z_streamp s;
-      INT i;
-
-      s = (z_streamp) log_chn->gzfile;
-      written = s->total_out;
-      i = gzwrite((gzFile) log_chn->gzfile, info->buffer, size);
-      if (i != size)
+      n = lseek(log_chn->handle, 0, SEEK_CUR);
+      if (gzwrite((gzFile) log_chn->gzfile, info->buffer, size) != size)
          return -1;
-      written = s->total_out - written;
+      written = lseek(log_chn->handle, 0, SEEK_CUR) - n;
 #else
       assert(!"this cannot happen! support for ZLIB not compiled in");
 #endif
@@ -1261,6 +1257,7 @@ INT midas_log_open(LOG_CHN * log_chn, INT run_number)
 INT midas_log_close(LOG_CHN * log_chn, INT run_number)
 {
    int written;
+   off_t n;
 
    /* write ODB dump */
    if (log_chn->settings.odb_dump)
@@ -1283,12 +1280,10 @@ INT midas_log_close(LOG_CHN * log_chn, INT run_number)
    } else {
       if (log_chn->gzfile) {
 #ifdef HAVE_ZLIB
-         z_streamp s;
-
-         s = (z_streamp) log_chn->gzfile;
-         written = s->total_out;
+         n = lseek(log_chn->handle, 0, SEEK_CUR);
          gzflush((gzFile) log_chn->gzfile, Z_FULL_FLUSH);
-         written = s->total_out - written;
+         written = lseek(log_chn->handle, 0, SEEK_CUR) - n;
+         written += 10; // trailer? Obtained experimentally
          gzclose((gzFile) log_chn->gzfile);
          log_chn->statistics.bytes_written += written;
          log_chn->statistics.bytes_written_total += written;
