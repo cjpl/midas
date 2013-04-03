@@ -14262,6 +14262,8 @@ void server_loop()
             else
                goto error;
 
+            printf("###Received %d bytes\n", i);
+            
             /* abort if connection got broken */
             if (i < 0)
                goto error;
@@ -14310,49 +14312,51 @@ void server_loop()
                   goto error;
             }
 
-            /* finish when empty line received */
-            if (strstr(net_buffer, "GET") != NULL && strstr(net_buffer, "POST") == NULL) {
-               if (len > 4 && strcmp(&net_buffer[len - 4], "\r\n\r\n") == 0)
-                  break;
-               if (len > 6 && strcmp(&net_buffer[len - 6], "\r\r\n\r\r\n") == 0)
-                  break;
-            } else if (strstr(net_buffer, "POST") != NULL) {
-               if (header_length == 0) {
-                  /* extract header and content length */
-                  if (strstr(net_buffer, "Content-Length:"))
-                     content_length = atoi(strstr(net_buffer, "Content-Length:") + 15);
-                  else if (strstr(net_buffer, "Content-length:"))
-                     content_length = atoi(strstr(net_buffer, "Content-length:") + 15);
-
-                  boundary[0] = 0;
-                  if (strstr(net_buffer, "boundary=")) {
-                     strlcpy(boundary, strstr(net_buffer, "boundary=") + 9,
-                             sizeof(boundary));
-                     if (strchr(boundary, '\r'))
-                        *strchr(boundary, '\r') = 0;
+            /* finish when empty line received (fragmented TCP packets) */
+            if (strstr(net_buffer, "\r\n\r\n")) {
+               if (strstr(net_buffer, "GET") != NULL && strstr(net_buffer, "POST") == NULL) {
+                  if (len > 4 && strcmp(&net_buffer[len - 4], "\r\n\r\n") == 0)
+                     break;
+                  if (len > 6 && strcmp(&net_buffer[len - 6], "\r\r\n\r\r\n") == 0)
+                     break;
+               } else if (strstr(net_buffer, "POST") != NULL) {
+                  if (header_length == 0) {
+                     /* extract header and content length */
+                     if (strstr(net_buffer, "Content-Length:"))
+                        content_length = atoi(strstr(net_buffer, "Content-Length:") + 15);
+                     else if (strstr(net_buffer, "Content-length:"))
+                        content_length = atoi(strstr(net_buffer, "Content-length:") + 15);
+                     
+                     boundary[0] = 0;
+                     if (strstr(net_buffer, "boundary=")) {
+                        strlcpy(boundary, strstr(net_buffer, "boundary=") + 9,
+                                sizeof(boundary));
+                        if (strchr(boundary, '\r'))
+                           *strchr(boundary, '\r') = 0;
+                     }
+                     
+                     if (strstr(net_buffer, "\r\n\r\n"))
+                        header_length =
+                        (POINTER_T) strstr(net_buffer,
+                                           "\r\n\r\n") - (POINTER_T) net_buffer + 4;
+                     
+                     if (strstr(net_buffer, "\r\r\n\r\r\n"))
+                        header_length =
+                        (POINTER_T) strstr(net_buffer,
+                                           "\r\r\n\r\r\n") - (POINTER_T) net_buffer + 6;
+                     
+                     if (header_length)
+                        net_buffer[header_length - 1] = 0;
                   }
-
-                  if (strstr(net_buffer, "\r\n\r\n"))
-                     header_length =
-                         (POINTER_T) strstr(net_buffer,
-                                            "\r\n\r\n") - (POINTER_T) net_buffer + 4;
-
-                  if (strstr(net_buffer, "\r\r\n\r\r\n"))
-                     header_length =
-                         (POINTER_T) strstr(net_buffer,
-                                            "\r\r\n\r\r\n") - (POINTER_T) net_buffer + 6;
-
-                  if (header_length)
-                     net_buffer[header_length - 1] = 0;
+                  
+                  if (header_length > 0 && (int) len >= header_length + content_length)
+                     break;
+               } else if (strstr(net_buffer, "OPTIONS") != NULL)
+                  goto error;
+               else {
+                  printf("%s", net_buffer);
+                  goto error;
                }
-
-               if (header_length > 0 && (int) len >= header_length + content_length)
-                  break;
-            } else if (strstr(net_buffer, "OPTIONS") != NULL)
-               goto error;
-            else {
-               printf("%s", net_buffer);
-               goto error;
             }
 
          } while (1);
