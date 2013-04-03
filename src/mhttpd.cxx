@@ -14262,8 +14262,6 @@ void server_loop()
             else
                goto error;
 
-            printf("###Received %d bytes\n", i);
-            
             /* abort if connection got broken */
             if (i < 0)
                goto error;
