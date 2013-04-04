@@ -315,10 +315,10 @@
       <FileType>1</FileType>
       <tvExp>0</tvExp>
       <Focus>0</Focus>
-      <ColumnNumber>41</ColumnNumber>
+      <ColumnNumber>22</ColumnNumber>
       <tvExpOptDlg>0</tvExpOptDlg>
       <TopLine>1</TopLine>
-      <CurrentLine>41</CurrentLine>
+      <CurrentLine>39</CurrentLine>
       <bDave2>0</bDave2>
       <PathWithFileName>.\scs_2001_pump.c</PathWithFileName>
       <FilenameWithoutPath>scs_2001_pump.c</FilenameWithoutPath>
@@ -1861,9 +1861,9 @@
         </Doc>
         <Doc>
           <Name>.\scs_2001_pump.c</Name>
-          <ColumnNumber>41</ColumnNumber>
+          <ColumnNumber>22</ColumnNumber>
           <TopLine>1</TopLine>
-          <CurrentLine>41</CurrentLine>
+          <CurrentLine>39</CurrentLine>
         </Doc>
         <Doc>
           <Name>..\..\..\src\mscbmain.c</Name>
