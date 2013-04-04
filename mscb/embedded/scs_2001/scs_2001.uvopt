@@ -332,10 +332,10 @@
       <FileType>1</FileType>
       <tvExp>0</tvExp>
       <Focus>0</Focus>
-      <ColumnNumber>15</ColumnNumber>
+      <ColumnNumber>0</ColumnNumber>
       <tvExpOptDlg>0</tvExpOptDlg>
-      <TopLine>1903</TopLine>
-      <CurrentLine>1919</CurrentLine>
+      <TopLine>1928</TopLine>
+      <CurrentLine>1960</CurrentLine>
       <bDave2>0</bDave2>
       <PathWithFileName>.\scs_2001_lib.c</PathWithFileName>
       <FilenameWithoutPath>scs_2001_lib.c</FilenameWithoutPath>
@@ -489,7 +489,7 @@
     </File>
     <File>
       <GroupNumber>2</GroupNumber>
-      <FileNumber>0</FileNumber>
+      <FileNumber>13</FileNumber>
       <FileType>5</FileType>
       <tvExp>0</tvExp>
       <Focus>0</Focus>
@@ -1844,7 +1844,7 @@
     <ActiveMDIGroup>0</ActiveMDIGroup>
     <MDIGroup>
       <Size>100</Size>
-      <ActiveTab>1</ActiveTab>
+      <ActiveTab>4</ActiveTab>
       <Documents>
         <Doc>
           <Name>..\src\mscbmain.c</Name>
@@ -1872,9 +1872,9 @@
         </Doc>
         <Doc>
           <Name>.\scs_2001_lib.c</Name>
-          <ColumnNumber>15</ColumnNumber>
-          <TopLine>1903</TopLine>
-          <CurrentLine>1919</CurrentLine>
+          <ColumnNumber>0</ColumnNumber>
+          <TopLine>1928</TopLine>
+          <CurrentLine>1960</CurrentLine>
         </Doc>
         <Doc>
           <Name>.\scs_2001.c</Name>
@@ -1885,7 +1885,7 @@
         <Doc>
           <Name>SCS_2001.H</Name>
           <ColumnNumber>8</ColumnNumber>
-          <TopLine>1</TopLine>
+          <TopLine>18</TopLine>
           <CurrentLine>58</CurrentLine>
         </Doc>
         <Doc>

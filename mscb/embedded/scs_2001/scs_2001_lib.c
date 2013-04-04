@@ -99,7 +99,7 @@ MSCB_INFO_VAR code vars_relais[] =
 MSCB_INFO_VAR code vars_optout[] =
    { 1, UNIT_BOOLEAN, 0,          0,           0, "P%Out#",  (void xdata *)4, 1,  0,  1,  1 };
 
-MSCB_INFO_VAR code vars_uout200[] = {
+MSCB_INFO_VAR code vars_uout_hv[] = {
    { 4, UNIT_VOLT,    0,          0, MSCBF_FLOAT, "P%UD#",   (void xdata *)8, 3,  0,  200,  1 },
    { 4, UNIT_VOLT,    0,          0, MSCBF_FLOAT, "P%U#",    (void xdata *)8, 3,  0,  0 },
    { 4, UNIT_AMPERE,  PRFX_MICRO, 0, MSCBF_FLOAT, "P%I#",    (void xdata *)8, 3,  0,  0 },
@@ -151,7 +151,8 @@ SCS_2001_MODULE code scs_2001_module[] = {
   { 0x83, "IOut 0-25mA",     vars_iout,   1, dr_ltc2600     },
   { 0x84, "Liq.He level",    vars_lhe,    6, dr_lhe         },
 
-  { 0x85, "UOut 200V",       vars_uout200,3, dr_hv          },
+  { 0x85, "UOut 200V",       vars_uout_hv,3, dr_hv          },
+  { 0x86, "UOut 300V",       vars_uout_hv,3, dr_hv          },
 
   { 0 }
 };
@@ -1791,20 +1792,28 @@ static float * xdata hv_set[N_PORT];
 static float xdata hv_cur[N_PORT*8];
 static float xdata hv_dac[N_PORT*8];
 
-void dr_hv_dac(unsigned char addr, unsigned char port, unsigned char chn, float value)
+void dr_hv_dac(unsigned char id, unsigned char addr, unsigned char port, unsigned char chn, float value)
 {
 unsigned short s;
 unsigned char i;
 
   if (value < 0)
      value = 0;
-  if (value > 180)
-     value = 180;
+  if (id == 0x85) {
+     if (value > 180)
+        value = 180;
+  } else if (id == 0x86) {
+     if (value > 280)
+        value = 280;
+  }
 
   hv_dac[port*8+chn] = value;
 
   /* convert value to DAC counts */
-  s = value/72.0/2.5 * 65535; // 72V/V gain, 2.5V DAC Ref.
+  if (id == 0x85)
+     s = value/72.0/2.5   * 65535; // 72V/V gain, 2.5V DAC Ref.
+  else
+     s = value/73.5/4.096 * 65535; // 72V/V gain (measured), 4.096V DAC Ref.
 
   write_port(addr, port, 0x40 | (1 << 3)); // CS1 active
   address_port(addr, port, AM_RW_SERIAL);
@@ -1853,6 +1862,8 @@ static unsigned long last_written = 0;
                                     // bit4: CS2  (AD7718 1 U)
                                     // bit5: CS3  (AD7718 2 I)
                                     // bit6: /RST
+      write_port(addr, port, 0x00); // /RST low
+      DELAY_US_REENTRANT(100);
       write_port(addr, port, 0x40); // /RST high
 
       /* configure both AD7718s */
@@ -1885,7 +1896,7 @@ static unsigned long last_written = 0;
 	     hv_set[port] = (float *)pd;
 
      value = *((float *)pd);
-	  dr_hv_dac(addr, port, chn, value);
+	  dr_hv_dac(id, addr, port, chn, value);
      last_written = time();
    }
 
@@ -1915,9 +1926,14 @@ static unsigned long last_written = 0;
 	      write_port(addr, port, 0x40); // CS2 inactive
 	
 	      /* convert to volts */
-	      value = 5.12*((float)d / (1l<<24))-2.56;
+         if (id == 0x85)
+	         value = 5.120 * ((float)d / (1l<<24))-2.560; // VREF = 2.5V
+         else if (id == 0x86)
+	         value = 8.389 * ((float)d / (1l<<24))-4.194; // VREF = 4.096V
+         else
+            value = 0;
 	
-	      /* convert to HV */
+	      /* convert to HV (1M-10k divider) */
 	      value = value * 101.0; 
 	
          /* correct for voltage drop about 10k current sense resistor */
@@ -1933,12 +1949,12 @@ static unsigned long last_written = 0;
          /* correct DAC value */
          if (time() > last_written + 50) {
 		      diff = value - *(hv_set[port]+(chn-8));
-		      if (fabs(diff) > 0.001 && fabs(diff) < 5) {
+		      if (fabs(diff) > 0.001 && fabs(diff) < 10) {
                if (diff > 2) // constrain to max +-2V
                   diff = 2;
                if (diff < -2)
                   diff = -2;
-               dr_hv_dac(addr, port, chn-8, hv_dac[port*8+(chn-8)] - diff);
+               dr_hv_dac(id, addr, port, chn-8, hv_dac[port*8+(chn-8)] - diff);
             }
          }
          
@@ -1967,7 +1983,12 @@ static unsigned long last_written = 0;
             value = -1;
          } else {
 	         /* convert to volts */
-	         value = 0.320*((float)d / (1l<<24))-0.160;
+            if (id == 0x85)
+	            value = 0.320*((float)d / (1l<<24))-0.160;
+            else if (id == 0x86)
+	            value = 0.524*((float)d / (1l<<24))-0.262;
+            else 
+               value = 0;
 	
 	         /* convert to current in uA across a 1 kOhm resistor */
 	         value = value / 10000 * 1E6; 
