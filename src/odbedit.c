@@ -2721,7 +2721,7 @@ int main(int argc, char *argv[])
    /* check for MIDASSYS */
    if (!getenv("MIDASSYS")) {
       puts("Please define environment variable 'MIDASSYS'");
-      puts("pointing to the midas installation directory.");
+      puts("pointing to the midas source installation directory.");
    }
 
    /* parse command line parameters */
