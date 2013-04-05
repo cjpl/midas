@@ -121,11 +121,12 @@ void print_help(char *command)
       printf("rewind [channel]        - rewind tapes in logger\n");
       printf("-- hit return for more --\r");
       getchar();
-      printf("save [-c -s -x -cs] <file>  - save database at current position\n");
+      printf("save [-c -s -x -j -cs] <file>  - save database at current position\n");
       printf("                          in ASCII format\n");
       printf("  -c                      as a C structure\n");
       printf("  -s                      as a #define'd string\n");
       printf("  -x                      as a XML file\n");
+      printf("  -j                      as a JSON file\n");
       printf("set <key> <value>       - set the value of a key\n");
       printf("set <key>[i] <value>    - set the value of index i\n");
       printf("set <key>[*] <value>    - set the value of all indices of a key\n");
@@ -1853,6 +1854,8 @@ int command_loop(char *host_name, char *exp_name, char *cmd, char *start_dir)
 
          if (strstr(param[1], ".xml") || strstr(param[1], ".XML"))
             db_save_xml(hDB, hKey, param[1]);
+         else if (strstr(param[1], ".json") || strstr(param[1], ".js"))
+            db_save_json(hDB, hKey, param[1]);
          else if (param[1][0] == '-') {
             if (param[1][1] == 'c' && param[1][2] == 's') {
                db_save_struct(hDB, hKey, param[2], NULL, FALSE);
@@ -1864,6 +1867,8 @@ int command_loop(char *host_name, char *exp_name, char *cmd, char *start_dir)
                db_save_string(hDB, hKey, param[2], NULL, FALSE);
             else if (param[1][1] == 'x')
                db_save_xml(hDB, hKey, param[2]);
+            else if (param[1][1] == 'j')
+               db_save_json(hDB, hKey, param[2]);
          } else
             db_save(hDB, hKey, param[1], FALSE);
       }
