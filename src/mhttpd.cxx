@@ -6226,7 +6226,7 @@ void output_key(HNDLE hkey, int index, const char *format)
 void java_script_commands(const char *path, const char *cookie_cpwd)
 {
    int size, i, index;
-   char str[TEXT_SIZE], ppath[256], format[256];
+   char str[TEXT_SIZE], ppath[256], format[256], *buf;
    HNDLE hDB, hkey;
    KEY key;
    char data[TEXT_SIZE];
@@ -6361,6 +6361,29 @@ void java_script_commands(const char *path, const char *cookie_cpwd)
       return;
    }
    
+   /* process "jcopy" command */
+   if (equal_ustring(getparam("cmd"), "jcopy")) {
+      
+      if (isparam("odb")) {
+         strlcpy(str, getparam("odb"), sizeof(str));
+
+         show_text_header();
+         
+         if (db_find_key(hDB, 0, str, &hkey) == DB_SUCCESS) {
+            size = WEB_BUFFER_SIZE;
+            buf = (char *)malloc(size);
+            if (isparam("format") && equal_ustring(getparam("format"), "xml"))
+               db_copy_xml(hDB, hkey, buf, &size);
+            else
+               db_copy(hDB, hkey, buf, &size, (char *)"");
+            rsputs(buf);
+            free(buf);
+         } else
+            rsputs("<DB_NO_KEY>");
+      }
+      return;
+   }
+
    /* process "jkey" command */
    if (equal_ustring(getparam("cmd"), "jkey")) {
       
@@ -12984,6 +13007,18 @@ const char *mhttpd_js =
 "   this.last_written = res[4];\n"
 "}\n"
 "\n"
+"function ODBCopy(path, format)\n"
+"{\n"
+"   var request = XMLHttpRequestGeneric();\n"
+"\n"
+"   var url = '?cmd=jcopy&odb=' + path;\n"
+"   if (format != undefined && format != '')\n"
+"      url += '&format=' + format;\n"
+"   request.open('GET', url, false);\n"
+"   request.send(null);\n"
+"   return request.responseText;\n"
+"}\n"
+"\n"
 "function ODBRpc_rev0(name, rpc, args)\n"
 "{\n"
 "   var request = XMLHttpRequestGeneric();\n"
@@ -13281,6 +13316,8 @@ void interprete(const char *cookie_pwd, const char *cookie_wpwd, const char *coo
    
    if (equal_ustring(command, "jset") ||
        equal_ustring(command, "jget") ||
+       equal_ustring(command, "jcopy") ||
+       equal_ustring(command, "jpaste") ||
        equal_ustring(command, "jkey") ||
        equal_ustring(command, "jmsg") ||
        equal_ustring(command, "jalm") ||
