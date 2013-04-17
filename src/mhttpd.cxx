@@ -6328,7 +6328,7 @@ void java_script_commands(const char *path, const char *cookie_cpwd)
          if (db_find_key(hDB, 0, str, &hkey) == DB_SUCCESS)
             output_key(hkey, index, getparam("format"));
          else
-            rsputs("<DB_NO_KEY>\n");
+            rsputs("<DB_NO_KEY>");
       }
       
       if (isparam("odb0")) {
@@ -6351,7 +6351,7 @@ void java_script_commands(const char *path, const char *cookie_cpwd)
                if (db_find_key(hDB, 0, str, &hkey) == DB_SUCCESS)
                   output_key(hkey, index, getparam(format));
                else
-                  rsputs("<DB_NO_KEY>\n");
+                  rsputs("<DB_NO_KEY>");
                
             } else
                break;
@@ -6371,7 +6371,8 @@ void java_script_commands(const char *path, const char *cookie_cpwd)
          rsprintf("%s\n", key.name);
          rsprintf("TID_%s\n", rpc_tid_name(key.type));
          rsprintf("%d\n", key.num_values);
-         rsprintf("%d", key.item_size);
+         rsprintf("%d\n", key.item_size);
+         rsprintf("%d", key.last_written);
       } else
          rsputs("<DB_NO_KEY>");
       
@@ -12879,7 +12880,7 @@ const char *mhttpd_js =
 "         request.send(null);\n"
 "         return defval;\n"
 "      }\n"
-"      return request.responseText;\n"
+"      return request.responseText.split('\\n')[0];\n"
 "   }\n"
 "}\n"
 "\n"
@@ -12901,8 +12902,11 @@ const char *mhttpd_js =
 "            if (request.status == 200) {\n"
 "               var array = request.responseText.split('$#----#$\\n');\n"
 "               for (var i=0 ; i<array.length ; i++)\n"
-"                  if (paths[i].match(/[*]/))\n"
+"                  if (paths[i].match(/[*]/)) {\n"
 "                     array[i] = array[i].split('\\n');\n"
+"                     array[i].length--;\n"
+"                  } else\n"
+"                     array[i] = array[i].split('\\n')[0];\n"
 "               callback(array);\n"
 "            }\n"
 "         }\n"
@@ -12914,9 +12918,13 @@ const char *mhttpd_js =
 "\n"   
 "   if (callback == undefined) {\n"
 "      var array = request.responseText.split('$#----#$\\n');\n"
-"      for (var i=0 ; i<array.length ; i++)\n"
-"         if (paths[i].match(/[*]/))\n"
+"      for (var i=0 ; i<array.length ; i++) {\n"
+"         if (paths[i].match(/[*]/)) {\n"
 "            array[i] = array[i].split('\\n');\n"
+"            array[i].length--;\n"
+"         } else\n"
+"            array[i] = array[i].split('\\n')[0];\n"
+"      }\n"
 "      return array;\n"
 "   }\n"
 "}\n"
@@ -12968,11 +12976,12 @@ const char *mhttpd_js =
 "   request.send(null);\n"
 "   if (request.responseText == null)\n"
 "      return null;\n"
-"   var key = request.responseText.split('\\n');\n"
-"   this.name = key[0];\n"
-"   this.type = key[1];\n"
-"   this.num_values = key[2];\n"
-"   this.item_size = key[3];\n"
+"   var res = request.responseText.split('\\n');\n"
+"   this.name = res[0];\n"
+"   this.type = res[1];\n"
+"   this.num_values = res[2];\n"
+"   this.item_size = res[3];\n"
+"   this.last_written = res[4];\n"
 "}\n"
 "\n"
 "function ODBRpc_rev0(name, rpc, args)\n"
@@ -14457,9 +14466,9 @@ void server_loop()
             i = send_tcp(_sock, return_buffer, return_length, 0x10000);
 
             if (verbose) {
-               if (return_length > 1000) {
-                  printf("--- Dumping first 1000 bytes only\n");
-                  return_buffer[1000] = 0;
+               if (return_length > 200) {
+                  printf("--- Dumping first 200 bytes only\n");
+                  return_buffer[200] = 0;
                }
                puts(return_buffer);
                printf("\n\n");
