@@ -9,98 +9,197 @@
   <body>
     <h1>Example MIDAS Javascript functions</h1>
 
+    <h2>List of mhttpd.js functions</h2>
+    <pre>
+ODBSet(path, value, pwdname);
+ODBGet(path, format, defval, len, type);
+ODBMGet(paths, callback, formats); --- doc incomplete - no example of callback() use
+ODBGetRecord(path);
+ODBExtractRecord(record, key);
+new ODBKey(path); --- doc incomplete, wrong - one has to use "new ODBKey" - last_used was added.
+ODBCopy(path, format); -- no doc
+ODBRpc_rev0(name, rpc, args); --- doc refer to example
+ODBRpc_rev1(name, rpc, max_reply_length, args); --- same
+ODBGetMsg(n);
+ODBGenerateMsg(m);
+ODBGetAlarms(); --- no doc
+ODBEdit(path); --- undoc - forces page reload
+</pre>
+
+    <h2>Example custom page starts here</h2>
+
     <p id="LastUpdated">Last updated: never</p>
 
-    <h2>Example of mhttpd &lt;odb&gt; tag</h2>
+    <ul>
+      <li>
+        <h2>mhttpd &lt;odb&gt; tag</h2>
 
-    <p>
-      <i>This data is updated by web page reload - press your web browser "reload" button</i>
-    </p>
-    <p>
-      Settings/Example_int: <odb src="/Equipment/RpcExample/Settings/Example_int"></odb>
-    </p>
-    <p>
-      Variables/SLOW[2]: <odb src="/Equipment/RpcExample/Variables/SLOW[2]" format="%.3f"></odb>
-    </p>
-    
-    <h2>Example javascript update function</h2>
+        <p>
+          <i>This data is updated by web page reload - press your web browser "reload" button</i>
+        </p>
+        <p>
+          Settings/Example_int: <odb src="/Equipment/RpcExample/Settings/Example_int"></odb>
+        </p>
+        <p>
+          Variables/SLOW[2]: <odb src="/Equipment/RpcExample/Variables/SLOW[2]" format="%.3f"></odb>
+        </p>
+        
+      <li>
+        <h2>javascript code to update the data on the page</h2>
 
-    <input type=button value='Update once' onClick='updatePeriod=0; update();'></input>
-    <input type=button value='Update every 1 sec' onClick='updatePeriod=1000; update();'></input>
-    <input type=button value='Update every 10 sec' onClick='updatePeriod=10000; update();'></input>
-      
-    <h2>Example of ODBGet() javascript function</h2>
+        <input type=button value='Update now' onClick='updatePeriod=0; update();'></input>
+        <input type=button value='Update every 1 sec' onClick='updatePeriod=1000; update();'></input>
+        <input type=button value='Update every 10 sec' onClick='updatePeriod=10000; update();'></input>
 
-    <p>
-      <i>This data is updated by the javascript update() function - press the "update" button</i>
-    </p>
-    <p>
-      Settings/Example_int: <tt id="example_int">not loaded yet</tt>
-    </p>
-    <p>
-      Variables/SLOW[2]: <tt id="slow_2">not loaded yet</tt>
-    </p>
+      <li>
+        <h2>ODBGet()</h2>
 
-    
-    <h2>Example of ODBSet() javascript function</h2>
-      
-    <p>
-      <i>Press these buttons to write new values to ODB. ODB variables of appropriate type have to be created before calling ODBSet(). Observe updated values in the section above.</i>
-    </p>
-    <p>
-      Set Settings/Example_int to:
-      <input type=button value='value 1' onClick='clearTimeout(updateTimerId); ODBSet("/Equipment/RpcExample/Settings/Example_int", "1"); update();'></input>
-      <input type=button value='value 2' onClick='clearTimeout(updateTimerId); ODBSet("/Equipment/RpcExample/Settings/Example_int", "2"); update();'></input>
-      <input type=button value='value 3' onClick='clearTimeout(updateTimerId); ODBSet("/Equipment/RpcExample/Settings/Example_int", "3"); update();'></input>
-    </p>
+        <p>
+          <i>This data is updated by the javascript update() function - press the "update now" button above</i>
+        </p>
+        <p>
+          Settings/Example_int: <tt id="example_int">not loaded yet</tt>
+        </p>
+        <p>
+          Variables/SLOW[2]: <tt id="slow_2">not loaded yet</tt>
+        </p>
 
-    <p>
-      Set Settings/Example_int to any value:
-      <input type=input size=5 value='200' onKeyPress='if (event.keyCode==13) { clearTimeout(updateTimerId); ODBSet("/Equipment/RpcExample/Settings/Example_int", this.value); update(); }'></input>
-      (type in any value and press Enter)
-    </p>
+      <li>
+        <h2>ODBMGet()</h2>
 
-    <h2>Example of ODBRpc_rev0() javascript function</h2>
-      
-    <p>
-      Call the rpc_callback function in our frontend program: 
-      <input type=button value='Push me' onClick='clearTimeout(updateTimerId); ODBRpc_rev0("fejrpc*", 101, "123", "arg2", "arg3"); update();'></input>
-    </p>
-    <p>
-      <i>Observe the output of our rpc handler in midas messages</i>
-    </p>
+        <p>
+          <i>This data is updated by the javascript update() function - press the "update now" button above</i>
+        </p>
+        <p>
+          Settings/Example_int: <tt id="mget_example_int">not loaded yet</tt>
+        </p>
+        <p>
+          Variables/SLOW[2]: <tt id="mget_slow_2">not loaded yet</tt>
+        </p>
 
-    <h2>Example of ODBRpc_rev1() javascript function</h2>
-      
-    <p>
-      Call the rpc_callback function in fejrpc.cxx: 
-      <input type=button value='Push me' onClick='clearTimeout(updateTimerId); var ret = ODBRpc_rev1("fejrpc*", 102, 0, "123", "arg2", "arg3"); process(ret); update();'></input>
-    </p>
+      <li>
+        <h2>ODBGetRecord() and ODBExtractRecord()</h2>
 
-    <p>
-      Data returned by the RPC call: <pre id="rpc_result"></pre>
-    </p>
-    <p>
-      <i>Observe the output of our rpc handler in midas messages</i>
-    </p>
-
-    <h2>Example of ODBGetMsg() javascript function</h2>
-      
-    <p>
-      <input type=button value='Get MIDAS messages' onClick='var data = ODBGetMsg(10); document.getElementById("getmsg_target").innerHTML = data.join("\n");'></input>
-    </p>
-    <pre id='getmsg_target'>
+        <p>
+          <input type=button value='Get /Equipment/RpcExample/Variables and Settings' onClick='clearTimeout(updateTimerId); getrecord_example(); update();'></input>
+        </p>
+        <pre id='getrecord1_target'>
 (empty)
-    </pre>
+        </pre>
+        <pre id='getrecord2_target'>
+(empty)
+        </pre>
+        <pre id='getrecord3_target'>
+(empty)
+        </pre>
 
-    <h2>Example of ODBGenerateMsg() javascript function</h2>
+      <li>
+        <h2>ODBKey()</h2>
+
+        <p>
+          <input type=button value='Get ODB key /Equipment/RpcExample/Variables/SLOW' onClick='clearTimeout(updateTimerId); getkey_example(); update();'></input>
+        </p>
+        <pre id='getkey_target'>
+(empty)
+        </pre>
+
+      <li>
+        <h2>ODBCopy()</h2>
+
+        <p>
+          <input type=button value='ODBCopy(/Equipment/RpcExample)' onClick='clearTimeout(updateTimerId); copy_example(); update();'></input>
+        </p>
+        <pre id='copy_target'>
+(empty)
+        </pre>
+
+      <li>
+        <h2>ODBSet()</h2>
       
-    <p>
-      <i>Type in a message and press Enter. To see the new message, press "Get MIDAS messages" above</i>
-    </p>
-    <p>
-      <input type=input size=40 value='' onKeyPress='if (event.keyCode==13) { ODBGenerateMsg(this.value); }'></input>
-    </p>
+        <p>
+          <i>Press these buttons to write new values to ODB. ODB variables of appropriate type have to be created before calling ODBSet(). Observe updated values in the ODBGet() section above.</i>
+        </p>
+        <p>
+          Set Settings/Example_int to:
+          <input type=button value='value 1' onClick='clearTimeout(updateTimerId); ODBSet("/Equipment/RpcExample/Settings/Example_int", "1"); update();'></input>
+          <input type=button value='value 2' onClick='clearTimeout(updateTimerId); ODBSet("/Equipment/RpcExample/Settings/Example_int", "2"); update();'></input>
+          <input type=button value='value 3' onClick='clearTimeout(updateTimerId); ODBSet("/Equipment/RpcExample/Settings/Example_int", "3"); update();'></input>
+        </p>
+        
+        <p>
+          Set Settings/Example_int to any value:
+          <input type=input size=5 value='200' onKeyPress='if (event.keyCode==13) { clearTimeout(updateTimerId); ODBSet("/Equipment/RpcExample/Settings/Example_int", this.value); update(); }'></input>
+          (type in any value and press Enter)
+        </p>
+
+      <li>
+        <h2>ODBEdit()</h2>
+      
+        <p>
+          <i>Observe updated values in the ODBGet() section above. (Hint: press the "update now" button above)</i>
+        </p>
+        <p>
+          <input type=button value='Edit /Equipment/RpcExample/Settings/Example_int' onClick='clearTimeout(updateTimerId); ODBEdit("/Equipment/RpcExample/Settings/Example_int"); update();'></input>
+        </p>
+
+      <li>
+        <h2>ODBRpc_rev0()</h2>
+      
+        <p>
+          Call the rpc_callback function in fejrpc.cxx: 
+          <input type=button value='Push me' onClick='clearTimeout(updateTimerId); ODBRpc_rev0("fejrpc*", 101, "123", "arg2", "arg3"); update();'></input>
+        </p>
+        <p>
+          <i>Observe the output of our rpc handler in midas messages or in the ODBGetMsg() section below</i>
+        </p>
+
+      <li>
+        <h2>ODBRpc_rev1()</h2>
+        
+        <p>
+          Call the rpc_callback function in fejrpc.cxx: 
+          <input type=button value='Push me' onClick='clearTimeout(updateTimerId); var ret = ODBRpc_rev1("fejrpc*", 102, 0, "123", "arg2", "arg3"); process(ret); update();'></input>
+        </p>
+        
+        <p>
+          Data returned by the RPC call: <pre id="rpc_result"></pre>
+      </p>
+        <p>
+          <i>Observe the output of our rpc handler in midas messages or in the ODBGetMsg() section below</i>
+        </p>
+
+      <li>
+        <h2>ODBGetMsg()</h2>
+      
+        <p>
+          <input type=button value='Get MIDAS messages' onClick='var data = ODBGetMsg(10); document.getElementById("getmsg_target").innerHTML = data.join("\n");'></input>
+        </p>
+        <pre id='getmsg_target'>
+(empty)
+        </pre>
+
+      <li>
+        <h2>ODBGenerateMsg()</h2>
+      
+        <p>
+          <i>Type in a message and press Enter. See the new message on the MIDAS "messages" page
+            or press "Get MIDAS messages" button in the ODBGetMsg() section above</i>
+        </p>
+        <p>
+          <input type=input size=40 value='' onKeyPress='if (event.keyCode==13) { ODBGenerateMsg(this.value); }'></input>
+        </p>
+
+      <li>
+        <h2>ODBGetAlarms()</h2>
+      
+        <p>
+          <input type=button value='Get MIDAS alarms' onClick='var data = ODBGetAlarms(); document.getElementById("getalarms_target").innerHTML = data.join("\n");'></input>
+        </p>
+        <pre id='getalarms_target'>
+(empty)
+        </pre>
+
+    </ul>
 
     <script type="text/javascript">
 
@@ -109,12 +208,46 @@
 
       var parser;
 
+      function getrecord_example()
+      {
+      var rec1 = ODBGetRecord("/Equipment/RpcExample/Variables");
+      document.getElementById('getrecord1_target').innerHTML = rec1;
+
+      var rec2 = ODBGetRecord("/Equipment/RpcExample/Settings");
+      document.getElementById('getrecord2_target').innerHTML = rec2;
+
+      document.getElementById('getrecord3_target').innerHTML = ODBExtractRecord(rec1, 'SLOW[2]');
+      }
+
+      function getkey_example()
+      {
+      var key = new ODBKey("/Equipment/RpcExample/Variables/SLOW");
+      document.getElementById('getkey_target').innerHTML = JSON.stringify(key);
+      }
+
+      function copy_example()
+      {
+      var data = ODBCopy("/Equipment/RpcExample");
+      document.getElementById('copy_target').innerHTML = JSON.stringify(data);
+      }
+
+      function callback(arg)
+      {
+      document.getElementById('mget_example_int').innerHTML = arg[0];
+      document.getElementById('mget_slow_2').innerHTML = arg[1];
+      }
+
       function load()
       {
       document.getElementById('LastUpdated').innerHTML = "Updating..." + new Date;
       
       document.getElementById('example_int').innerHTML = ODBGet('/Equipment/RpcExample/Settings/Example_int');
       document.getElementById('slow_2').innerHTML = ODBGet('/Equipment/RpcExample/Variables/SLOW[2]', '%.6f');
+
+      var paths = [ '/Equipment/RpcExample/Settings/Example_int', '/Equipment/RpcExample/Variables/SLOW[2]' ];
+      var formats = [ '', '%.6f' ];
+
+      ODBMGet(paths, callback, formats);
       
       document.getElementById('LastUpdated').innerHTML = "Last updated: " + new Date;
       }
@@ -148,7 +281,7 @@
     <address><a href="mailto:xxx@xxx">MIDAS Example</a></address>
 <!-- Created: Tue Sep 21 15:44:39 PDT 2010 -->
 <!-- hhmts start -->
-Last modified: Mon Feb 28 08:21:38 PST 2011
+Last modified: Tue May  7 10:30:33 PDT 2013
 <!-- hhmts end -->
   </body>
 </html>
