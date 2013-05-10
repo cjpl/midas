@@ -17,7 +17,7 @@ ODBMGet(paths, callback, formats); --- doc incomplete - no example of callback()
 ODBGetRecord(path);
 ODBExtractRecord(record, key);
 new ODBKey(path); --- doc incomplete, wrong - one has to use "new ODBKey" - last_used was added.
-ODBCopy(path, format); -- no doc
+ODBCopy(path, format); -- no doc. Format: "xml", "json", "" (traditional odb format)
 ODBRpc_rev0(name, rpc, args); --- doc refer to example
 ODBRpc_rev1(name, rpc, max_reply_length, args); --- same
 ODBGetMsg(n);
@@ -109,7 +109,16 @@ ODBEdit(path); --- undoc - forces page reload
         <p>
           <input type=button value='ODBCopy(/Equipment/RpcExample)' onClick='clearTimeout(updateTimerId); copy_example(); update();'></input>
         </p>
-        <pre id='copy_target'>
+        Data in ODB format:
+        <pre id='copy_target_odb'>
+(empty)
+        </pre>
+        Data in XML format:
+        <pre id='copy_target_xml'>
+(empty)
+        </pre>
+        Data in JSON format:
+        <pre id='copy_target_json'>
 (empty)
         </pre>
 
@@ -227,8 +236,17 @@ ODBEdit(path); --- undoc - forces page reload
 
       function copy_example()
       {
-      var data = ODBCopy("/Equipment/RpcExample");
-      document.getElementById('copy_target').innerHTML = JSON.stringify(data);
+      var data_odb = ODBCopy("/Equipment/RpcExample");
+      document.getElementById('copy_target_odb').innerHTML = data_odb;
+
+      var data_xml = ODBCopy("/Equipment/RpcExample", "xml");
+      // XML text contains angle brackets, need to escape them to see the XML text!
+      data_xml = data_xml.replace(/\</gm, '&lt;');
+      data_xml = data_xml.replace(/\>/gm, '&gt;');
+      document.getElementById('copy_target_xml').innerHTML = data_xml;
+
+      var data_json = ODBCopy("/Equipment/RpcExample", "json");
+      document.getElementById('copy_target_json').innerHTML = data_json;
       }
 
       function callback(arg)
@@ -281,7 +299,7 @@ ODBEdit(path); --- undoc - forces page reload
     <address><a href="mailto:xxx@xxx">MIDAS Example</a></address>
 <!-- Created: Tue Sep 21 15:44:39 PDT 2010 -->
 <!-- hhmts start -->
-Last modified: Tue May  7 10:30:33 PDT 2013
+Last modified: Fri May 10 10:16:10 PDT 2013
 <!-- hhmts end -->
   </body>
 </html>

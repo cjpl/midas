@@ -6226,7 +6226,7 @@ void output_key(HNDLE hkey, int index, const char *format)
 void java_script_commands(const char *path, const char *cookie_cpwd)
 {
    int size, i, index;
-   char str[TEXT_SIZE], ppath[256], format[256], *buf;
+   char str[TEXT_SIZE], ppath[256], format[256];
    HNDLE hDB, hkey;
    KEY key;
    char data[TEXT_SIZE];
@@ -6370,12 +6370,15 @@ void java_script_commands(const char *path, const char *cookie_cpwd)
          show_text_header();
          
          if (db_find_key(hDB, 0, str, &hkey) == DB_SUCCESS) {
-            size = WEB_BUFFER_SIZE;
-            buf = (char *)malloc(size);
+            int end = 0;
+            int bufsize = WEB_BUFFER_SIZE;
+            char* buf = (char *)malloc(size);
             if (isparam("format") && equal_ustring(getparam("format"), "xml"))
-               db_copy_xml(hDB, hkey, buf, &size);
+               db_copy_xml(hDB, hkey, buf, &bufsize);
+            else if (isparam("format") && equal_ustring(getparam("format"), "json"))
+               db_copy_json(hDB, hkey, &buf, &bufsize, &end, 1, 1);
             else
-               db_copy(hDB, hkey, buf, &size, (char *)"");
+               db_copy(hDB, hkey, buf, &bufsize, (char *)"");
             rsputs(buf);
             free(buf);
          } else
