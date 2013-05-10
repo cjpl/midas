@@ -359,6 +359,8 @@ INT al_trigger_class(const char *alarm_class, const char *alarm_message, BOOL fi
    ALARM_CLASS ac;
    DWORD now = ss_time();
 
+   tag[0] = 0;
+
    cm_get_experiment_database(&hDB, NULL);
 
    /* get alarm class */
@@ -391,7 +393,7 @@ INT al_trigger_class(const char *alarm_class, const char *alarm_message, BOOL fi
    if (ac.write_elog_message && first &&
        db_get_value(hDB, 0, "/Elog/URL", url, &size, TID_STRING, FALSE) != DB_SUCCESS)
       el_submit(0, "Alarm system", "Alarm", "General", alarm_class, str,
-                "", "plain", "", "", 0, "", "", 0, "", "", 0, tag, 32);
+                "", "plain", "", "", 0, "", "", 0, "", "", 0, tag, sizeof(tag));
 
    /* execute command */
    if (ac.execute_command[0] &&
