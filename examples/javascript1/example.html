@@ -4,6 +4,195 @@
     <title>Example MIDAS Javascript functions</title>
 
     <script src='mhttpd.js'></script>
+
+    <script type="text/javascript">
+
+      function ODBMCopy(paths, callback, format)
+      {
+      var request = XMLHttpRequestGeneric();
+      
+      var url = '?cmd=jcopy';
+      for (var i=0 ; i<paths.length ; i++) {
+      url += '&odb'+i+'='+paths[i];
+      }
+
+      if (format != undefined && format != '')
+      url += '&format=' + format;
+
+      if (callback != undefined) {
+      request.onreadystatechange = function() 
+      {
+      if (request.readyState == 4) {
+      if (request.status == 200) {
+      var array = request.responseText.split('$#----#$\n');
+      callback(request.responseText);
+      }
+      }
+      }
+      request.open('GET', url, true);
+      request.send(null);
+      return;
+      }
+
+      request.open('GET', url, false);
+      request.send(null);
+      return request.responseText;
+      }
+
+      function htmlize(text)
+      {
+      // Escape the angle brackets for display in HTML
+      text = text.replace(/\</gm, '&lt;');
+      text = text.replace(/\>/gm, '&gt;');
+      return text;
+      }
+
+      var updatePeriod = 0; // 10000; // in msec
+      var updateTimerId = 0;
+
+      function getrecord_example()
+      {
+      var rec1 = ODBGetRecord("/Equipment/RpcExample/Variables");
+      document.getElementById('getrecord1_target').innerHTML = rec1;
+
+      var rec2 = ODBGetRecord("/Equipment/RpcExample/Settings");
+      document.getElementById('getrecord2_target').innerHTML = rec2;
+
+      document.getElementById('getrecord3_target').innerHTML = ODBExtractRecord(rec1, 'SLOW[2]');
+      }
+
+      function getkey_example()
+      {
+      var key = new ODBKey("/Equipment/RpcExample/Variables/SLOW");
+      document.getElementById('getkey_target').innerHTML = JSON.stringify(key);
+      }
+
+      function copy_example()
+      {
+      var data_odb = ODBCopy("/Equipment/RpcExample");
+      document.getElementById('copy_target_odb').innerHTML = htmlize(data_odb);
+
+      var data_xml = ODBCopy("/Equipment/RpcExample", "xml");
+      document.getElementById('copy_target_xml').innerHTML = htmlize(data_xml);
+
+      var data_json = ODBCopy("/Equipment/RpcExample", "json");
+      document.getElementById('copy_target_json').innerHTML = htmlize(data_json);
+      }
+
+      function copy_json_example()
+      {
+      var data_json = ODBCopy("/Equipment/RpcExample/Variables", "json");
+      document.getElementById('json_data').innerHTML = data_json;
+      var now = new Date().getTime()/1000;
+      var obj = JSON.parse(data_json);
+      document.getElementById('json_data0').innerHTML = obj.Variables.SLOW[0];
+      document.getElementById('json_data1').innerHTML = obj.Variables.SLOW[1];
+      document.getElementById('json_data2').innerHTML = obj.Variables.SLOW[2];
+      document.getElementById('json_data_age').innerHTML = now - obj.Variables['SLOW/key'].last_written;
+      }
+
+      function jsonp_callback(obj)
+      {
+      document.getElementById('jsonp_data').innerHTML = JSON.stringify(obj);
+      var now = new Date().getTime()/1000;
+      document.getElementById('jsonp_data0').innerHTML = obj.Variables.SLOW[0];
+      document.getElementById('jsonp_data1').innerHTML = obj.Variables.SLOW[1];
+      document.getElementById('jsonp_data2').innerHTML = obj.Variables.SLOW[2];
+      document.getElementById('jsonp_data_age').innerHTML = now - obj.Variables['SLOW/key'].last_written;
+      }
+
+      function mcopy_jsonp_callback(obj)
+      {
+      document.getElementById('mcopy_jsonp_data').innerHTML = JSON.stringify(obj);
+      var now = new Date().getTime()/1000;
+      var runinfo = obj[0];
+      var runnumber = obj[1];
+      var error = obj[2];
+      var settings = obj[3];
+      var variables = obj[4];
+      document.getElementById('mcopy_jsonp_runstate').innerHTML = runinfo.Runinfo.State;
+      document.getElementById('mcopy_jsonp_runnumber').innerHTML = runnumber["Run number"];
+      document.getElementById('mcopy_jsonp_settings_example_int').innerHTML = settings.Settings.example_int;
+      document.getElementById('mcopy_jsonp_data0').innerHTML = variables.Variables.SLOW[0];
+      document.getElementById('mcopy_jsonp_data1').innerHTML = variables.Variables.SLOW[1];
+      document.getElementById('mcopy_jsonp_data2').innerHTML = variables.Variables.SLOW[2];
+      var lw;
+      if (variables.Variables['SLOW/key'])
+      lw = variables.Variables['SLOW/key'].last_written;
+      else
+      lw = variables.Variables['SLOW/last_written'];
+      document.getElementById('mcopy_jsonp_data_age').innerHTML = now - lw;
+      }
+
+      function mcopy_callback(data)
+      {
+      var obj = JSON.parse(data);
+      mcopy_jsonp_callback(obj);
+      }
+
+      function mcopy_example()
+      {
+      var paths = [ '/Runinfo', '/Runinfo/Run number', '/does-not-exist', '/Equipment/RpcExample/Settings', '/Equipment/RpcExample/Variables' ];
+
+      document.getElementById('mcopy_paths').innerHTML = JSON.stringify(paths);
+
+      var data_odb = ODBMCopy(paths, undefined, '');
+      document.getElementById('mcopy_target_odb').innerHTML = htmlize(data_odb);
+
+      var data_xml = ODBMCopy(paths, undefined, 'xml');
+      document.getElementById('mcopy_target_xml').innerHTML = htmlize(data_xml);
+
+      var data_json = ODBMCopy(paths, undefined, "json");
+      document.getElementById('mcopy_target_json').innerHTML = htmlize(data_json);
+
+      var data_jsonp = ODBMCopy(paths, undefined, "json-p");
+      document.getElementById('mcopy_target_jsonp').innerHTML = htmlize(data_jsonp);
+
+      var data_jsonp_nokeys = ODBMCopy(paths, undefined, "json-p-nokeys-nolastwritten");
+      document.getElementById('mcopy_target_jsonp_nokeys').innerHTML = htmlize(data_jsonp_nokeys);
+      }
+
+      function callback(arg)
+      {
+      document.getElementById('mget_example_int').innerHTML = arg[0];
+      document.getElementById('mget_slow_2').innerHTML = arg[1];
+      }
+
+      function load()
+      {
+      document.getElementById('LastUpdated').innerHTML = "Updating..." + new Date;
+      
+      document.getElementById('example_int').innerHTML = ODBGet('/Equipment/RpcExample/Settings/Example_int');
+      document.getElementById('slow_2').innerHTML = ODBGet('/Equipment/RpcExample/Variables/SLOW[2]', '%.6f');
+
+      var paths = [ '/Equipment/RpcExample/Settings/Example_int', '/Equipment/RpcExample/Variables/SLOW[2]' ];
+      var formats = [ '', '%.6f' ];
+
+      ODBMGet(paths, callback, formats);
+      
+      document.getElementById('LastUpdated').innerHTML = "Last updated: " + new Date;
+      }
+
+      function process(ret)
+      {
+      var rv = ret.slice(ret.indexOf(" || ") + 4);
+      document.getElementById("rpc_result").innerHTML = "[" + rv + "]";
+      }
+      
+      function update()
+      {
+      clearTimeout(updateTimerId);
+      load();
+      if (updatePeriod > 0)
+      updateTimerId = setTimeout('update()', updatePeriod);
+      }
+      
+      function main()
+      {
+      clearTimeout(updateTimerId);
+      }
+
+    </script>
   </head>
 
   <body>
@@ -18,6 +207,7 @@ ODBGetRecord(path);
 ODBExtractRecord(record, key);
 new ODBKey(path); --- doc incomplete, wrong - one has to use "new ODBKey" - last_used was added.
 ODBCopy(path, format); -- no doc. Format: "xml", "json", "" (traditional odb format)
+ODBMCopy(paths, callback, format); -- no doc
 ODBRpc_rev0(name, rpc, args); --- doc refer to example
 ODBRpc_rev1(name, rpc, max_reply_length, args); --- same
 ODBGetMsg(n);
@@ -47,7 +237,7 @@ ODBEdit(path); --- undoc - forces page reload
       <li>
         <h2>javascript code to update the data on the page</h2>
 
-        <input type=button value='Update now' onClick='updatePeriod=0; update();'></input>
+        <input type=button value='Update now once' onClick='updatePeriod=0; update();'></input>
         <input type=button value='Update every 1 sec' onClick='updatePeriod=1000; update();'></input>
         <input type=button value='Update every 10 sec' onClick='updatePeriod=10000; update();'></input>
 
@@ -121,6 +311,82 @@ ODBEdit(path); --- undoc - forces page reload
         <pre id='copy_target_json'>
 (empty)
         </pre>
+
+      <li>
+        <h2>Using JSON data from ODBCopy()</h2>
+
+        <p>
+          <input type=button value='Push me' onClick='clearTimeout(updateTimerId); copy_json_example(); update();'></input>
+        </p>
+        <ul>
+          <li>JSON data: <pre id='json_data'></pre>
+          <li>SLOW[0]: <tt id='json_data0'></tt>
+          <li>SLOW[1]: <tt id='json_data1'></tt>
+          <li>SLOW[2]: <tt id='json_data2'></tt>
+          <li>data age: <tt id='json_data_age'></tt>
+        </ul>
+
+      <li>
+        <h2>ODBCopy() through JSON-P</h2>
+
+        <ul>
+          <li>JSON data: <tt id='jsonp_data'></tt>
+          <li>SLOW[0]: <tt id='jsonp_data0'></tt>
+          <li>SLOW[1]: <tt id='jsonp_data1'></tt>
+          <li>SLOW[2]: <tt id='jsonp_data2'></tt>
+          <li>data age: <tt id='jsonp_data_age'></tt>
+        </ul>
+        <script src='?cmd=jcopy&odb=/Equipment/RpcExample/Variables&format=json-p&callback=jsonp_callback'></script>
+
+      <li>
+        <h2>ODBMCopy()</h2>
+
+        <p>
+          <input type=button value='Push me' onClick='clearTimeout(updateTimerId); mcopy_example(); update();'></input>
+        </p>
+        Paths:
+        <pre id='mcopy_paths'>
+(empty)
+        </pre>
+        Data in ODB format:
+        <pre id='mcopy_target_odb'>
+(empty)
+        </pre>
+        Data in XML format:
+        <pre id='mcopy_target_xml'>
+(empty)
+        </pre>
+        Data in JSON format:
+        <pre id='mcopy_target_json'>
+(empty)
+        </pre>
+        Data in JSON-P format:
+        <pre id='mcopy_target_jsonp'>
+(empty)
+        </pre>
+
+        Data in JSON-P format without KEY data:
+        <pre id='mcopy_target_jsonp_nokeys'>
+(empty)
+        </pre>
+
+      <li>
+        <h2>ODBMCopy() with callback or through JSON-P</h2>
+
+        <p>
+          <input type=button value='Push me' onClick='clearTimeout(updateTimerId); var paths = [ "/Runinfo", "/Runinfo/Run number", "/does-not-exist", "/Equipment/RpcExample/Settings", "/Equipment/RpcExample/Variables" ]; ODBMCopy(paths, mcopy_callback, "json-nokeys"); update();'></input>
+        </p>
+        <ul>
+          <li>JSON data: <tt id='mcopy_jsonp_data'></tt>
+          <li>Runinfo/State: <tt id='mcopy_jsonp_runstate'></tt>
+          <li>Run number: <tt id='mcopy_jsonp_runnumber'></tt>
+          <li>Settings/example_int: <tt id='mcopy_jsonp_settings_example_int'></tt>
+          <li>SLOW[0]: <tt id='mcopy_jsonp_data0'></tt>
+          <li>SLOW[1]: <tt id='mcopy_jsonp_data1'></tt>
+          <li>SLOW[2]: <tt id='mcopy_jsonp_data2'></tt>
+          <li>data age: <tt id='mcopy_jsonp_data_age'></tt>
+        </ul>
+        <script src='?cmd=jcopy&odb0=/Runinfo&odb1=/Runinfo/Run number&odb2=/does-not-exist&odb3=/Equipment/RpcExample/Settings&odb4=/Equipment/RpcExample/Variables&format=json-p&callback=mcopy_jsonp_callback'></script>
 
       <li>
         <h2>ODBSet()</h2>
@@ -211,95 +477,16 @@ ODBEdit(path); --- undoc - forces page reload
     </ul>
 
     <script type="text/javascript">
-
-      var updatePeriod = 0; // 10000; // in msec
-      var updateTimerId = 0;
-
-      var parser;
-
-      function getrecord_example()
-      {
-      var rec1 = ODBGetRecord("/Equipment/RpcExample/Variables");
-      document.getElementById('getrecord1_target').innerHTML = rec1;
-
-      var rec2 = ODBGetRecord("/Equipment/RpcExample/Settings");
-      document.getElementById('getrecord2_target').innerHTML = rec2;
-
-      document.getElementById('getrecord3_target').innerHTML = ODBExtractRecord(rec1, 'SLOW[2]');
-      }
-
-      function getkey_example()
-      {
-      var key = new ODBKey("/Equipment/RpcExample/Variables/SLOW");
-      document.getElementById('getkey_target').innerHTML = JSON.stringify(key);
-      }
-
-      function copy_example()
-      {
-      var data_odb = ODBCopy("/Equipment/RpcExample");
-      document.getElementById('copy_target_odb').innerHTML = data_odb;
-
-      var data_xml = ODBCopy("/Equipment/RpcExample", "xml");
-      // XML text contains angle brackets, need to escape them to see the XML text!
-      data_xml = data_xml.replace(/\</gm, '&lt;');
-      data_xml = data_xml.replace(/\>/gm, '&gt;');
-      document.getElementById('copy_target_xml').innerHTML = data_xml;
-
-      var data_json = ODBCopy("/Equipment/RpcExample", "json");
-      document.getElementById('copy_target_json').innerHTML = data_json;
-      }
-
-      function callback(arg)
-      {
-      document.getElementById('mget_example_int').innerHTML = arg[0];
-      document.getElementById('mget_slow_2').innerHTML = arg[1];
-      }
-
-      function load()
-      {
-      document.getElementById('LastUpdated').innerHTML = "Updating..." + new Date;
-      
-      document.getElementById('example_int').innerHTML = ODBGet('/Equipment/RpcExample/Settings/Example_int');
-      document.getElementById('slow_2').innerHTML = ODBGet('/Equipment/RpcExample/Variables/SLOW[2]', '%.6f');
-
-      var paths = [ '/Equipment/RpcExample/Settings/Example_int', '/Equipment/RpcExample/Variables/SLOW[2]' ];
-      var formats = [ '', '%.6f' ];
-
-      ODBMGet(paths, callback, formats);
-      
-      document.getElementById('LastUpdated').innerHTML = "Last updated: " + new Date;
-      }
-
-      function process(ret)
-      {
-      var rv = ret.slice(ret.indexOf(" || ") + 4);
-      document.getElementById("rpc_result").innerHTML = "[" + rv + "]";
-      }
-      
-      function update()
-      {
-      clearTimeout(updateTimerId);
-      load();
-      if (updatePeriod > 0)
-      updateTimerId = setTimeout('update()', updatePeriod);
-      }
-      
-      function main()
-      {
-      clearTimeout(updateTimerId);
-      }
-
       main();
       if (updatePeriod > 0)
       update();
-
     </script>
 
     <hr>
     <address><a href="mailto:xxx@xxx">MIDAS Example</a></address>
 <!-- Created: Tue Sep 21 15:44:39 PDT 2010 -->
 <!-- hhmts start -->
-Last modified: Fri May 10 10:16:10 PDT 2013
+Last modified: Fri May 17 09:00:21 PDT 2013
 <!-- hhmts end -->
   </body>
 </html>

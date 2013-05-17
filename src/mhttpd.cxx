@@ -6225,6 +6225,7 @@ void output_key(HNDLE hkey, int index, const char *format)
 
 void java_script_commands(const char *path, const char *cookie_cpwd)
 {
+   int status;
    int size, i, index;
    char str[TEXT_SIZE], ppath[256], format[256];
    HNDLE hDB, hkey;
@@ -6364,25 +6365,130 @@ void java_script_commands(const char *path, const char *cookie_cpwd)
    /* process "jcopy" command */
    if (equal_ustring(getparam("cmd"), "jcopy")) {
       
+      bool fmt_xml  = false;
+      bool fmt_json = false;
+      bool fmt_jsonp = false;
+      int follow_links = 1;
+      int save_keys = 1;
+      const char* fmt = NULL;
+      const char* jsonp_callback = "callback";
+      
+      if (isparam("format")) {
+         fmt = getparam("format");
+         fmt_xml = equal_ustring(fmt, "xml");
+         fmt_json = strstr(fmt, "json");
+         if (fmt_json)
+            fmt_jsonp = strstr(fmt, "-p");
+         if (fmt_jsonp && isparam("callback"))
+            jsonp_callback = getparam("callback");
+         if (fmt_json && strstr(fmt, "-nofollowlinks"))
+            follow_links = 0;
+         if (fmt_json && strstr(fmt, "-nokeys"))
+            save_keys = 2;
+         if (fmt_json && strstr(fmt, "-nolastwritten"))
+            save_keys = 0;
+      }
+      
       if (isparam("odb")) {
          strlcpy(str, getparam("odb"), sizeof(str));
 
          show_text_header();
-         
+
          if (db_find_key(hDB, 0, str, &hkey) == DB_SUCCESS) {
+            
+            if (fmt_jsonp) {
+               rsputs(jsonp_callback);
+               rsputs("(");
+            }
+            
             int end = 0;
             int bufsize = WEB_BUFFER_SIZE;
             char* buf = (char *)malloc(size);
-            if (isparam("format") && equal_ustring(getparam("format"), "xml"))
+            
+            if (fmt_xml)
                db_copy_xml(hDB, hkey, buf, &bufsize);
-            else if (isparam("format") && equal_ustring(getparam("format"), "json"))
-               db_copy_json(hDB, hkey, &buf, &bufsize, &end, 1, 1);
+            else if (fmt_json)
+               db_copy_json(hDB, hkey, &buf, &bufsize, &end, save_keys, follow_links);
             else
                db_copy(hDB, hkey, buf, &bufsize, (char *)"");
+            
             rsputs(buf);
             free(buf);
+            
+            if (fmt_jsonp) {
+               rsputs(");\n");
+            }
          } else
             rsputs("<DB_NO_KEY>");
+      }
+
+      if (isparam("odb0")) {
+         show_text_header();
+         if (fmt_jsonp) {
+            rsputs(jsonp_callback);
+            rsputs("(");
+         }
+         if (fmt_xml) {
+            rsputs("<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>\n");
+            rsputs("<xxx>\n");
+         } else if (fmt_json)
+            rsputs("[\n");
+         else
+            rsputs("");
+         for (int i=0 ; ; i++) {
+            char ppath[256];
+            sprintf(ppath, "odb%d", i);
+            if (!isparam(ppath))
+               break;
+            strlcpy(str, getparam(ppath), sizeof(str));
+
+            if (i > 0) {
+               if (fmt_xml)
+                  rsputs("</xxx>\n<xxx>\n");
+               else if (fmt_json)
+                  rsputs(",\n");
+               else
+                  rsputs("$#----#$\n");
+            }
+
+            status = db_find_key(hDB, 0, str, &hkey);
+            if (status != DB_SUCCESS) {
+               if (fmt_xml)
+                  rsputs("<DB_NO_KEY>\n");
+               else if (fmt_json) {
+                  char tmp[256];
+                  sprintf(tmp, "{ \"/error\" : %d }\n", status);
+                  rsputs(tmp);
+               } else
+                  rsputs("<DB_NO_KEY>\n");
+               continue;
+            }
+            
+            int end = 0;
+            int bufsize = WEB_BUFFER_SIZE;
+            char* buf = (char *)malloc(size);
+            
+            if (fmt_xml)
+               db_copy_xml(hDB, hkey, buf, &bufsize);
+            else if (fmt_json)
+               db_copy_json(hDB, hkey, &buf, &bufsize, &end, save_keys, follow_links);
+            else
+               db_copy(hDB, hkey, buf, &bufsize, (char *)"");
+            
+            rsputs(buf);
+            free(buf);
+         }
+
+         if (fmt_xml)
+            rsputs("</xxx>\n");
+         else if (fmt_json)
+            rsputs("]\n");
+         else
+            rsputs("");
+
+         if (fmt_jsonp) {
+            rsputs(");\n");
+         }
       }
       return;
    }
