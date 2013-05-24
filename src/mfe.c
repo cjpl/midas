@@ -81,7 +81,7 @@ void *frag_buffer = NULL;
 int *n_events;
 
 /* inter-thread communication */
-int rbh1=0, rbh2=0, rbh1_next=0, rbh2_next=0;
+int rbh1=0, rbh2=0, rbh[10], rbh1_next=0, rbh2_next=0;
 volatile int stop_all_threads = 0;
 int readout_thread(void *param);
 volatile int readout_thread_active = 0;
@@ -320,13 +320,10 @@ int sc_thread(void *info)
 
    last_update = calloc(device_drv->channels, sizeof(int));
    last_time = ss_millitime();
-   
-   /* pass start command to device driver (neeeded for EPICS CA driver) */
-   status = device_drv->dd(CMD_START, device_drv->dd_info);
 
    do {
       /* read one channel from device */
-      for (cmd = CMD_GET_FIRST; cmd <= CMD_GET_LAST ; cmd++) {
+      for (cmd = CMD_GET_FIRST; cmd <= CMD_GET_LAST; cmd++) {
          value = (float)ss_nan();
          status = device_drv->dd(cmd, device_drv->dd_info, current_channel, &value);
 
@@ -336,9 +333,6 @@ int sc_thread(void *info)
          ss_semaphore_release(device_drv->semaphore);
 
          // printf("TID %d: channel %d, value %f\n", ss_gettid(), current_channel, value);
-         
-         if (device_drv->stop_thread)
-            break;
       }
 
       /* switch to next channel in next loop */
@@ -360,18 +354,12 @@ int sc_thread(void *info)
          current_priority_channel = i;
 
          for (cmd = CMD_GET_FIRST; cmd <= CMD_GET_LAST; cmd++) {
-            value = (float)ss_nan();
             status = device_drv->dd(cmd, device_drv->dd_info, i, &value);
 
             ss_semaphore_wait_for(device_drv->semaphore, 1000);
             device_drv->mt_buffer->channel[i].variable[cmd] = value;
             device_drv->mt_buffer->status = status;
             ss_semaphore_release(device_drv->semaphore);
-            
-            // printf("TID %d: channel %d, value %f\n", ss_gettid(), current_channel, value);
-
-            if (device_drv->stop_thread)
-               break;
          }
       }
 
@@ -389,8 +377,6 @@ int sc_thread(void *info)
                status = device_drv->dd(cmd, device_drv->dd_info, i, value);
                last_update[i] = ss_millitime();
             }
-            if (device_drv->stop_thread)
-               break;
          }
       }
 
@@ -404,9 +390,6 @@ int sc_thread(void *info)
          }
 
    } while (device_drv->stop_thread == 0);
-   
-   /* send stop command to device driver */
-   status = device_drv->dd(CMD_STOP, device_drv->dd_info);
 
    free(last_update);
 
@@ -445,9 +428,9 @@ INT device_driver(DEVICE_DRIVER * device_drv, INT cmd, ...)
             device_drv->mt_buffer->channel = (DD_MT_CHANNEL *) calloc(device_drv->channels, sizeof(DD_MT_CHANNEL));
             assert(device_drv->mt_buffer->channel);
 
-            /* set all set and get values to NaN */
+            /* set all set values to NaN */
             for (i=0 ; i<device_drv->channels ; i++)
-               for (j=CMD_SET_FIRST ; j<=CMD_GET_LAST ; j++)
+               for (j=CMD_SET_FIRST ; j<=CMD_SET_LAST ; j++)
                   device_drv->mt_buffer->channel[i].variable[j] = (float)ss_nan();
 
             /* get default names for this driver already now */
@@ -470,25 +453,24 @@ INT device_driver(DEVICE_DRIVER * device_drv, INT cmd, ...)
       break;
 
    case CMD_START:
-      if ((device_drv->flags & DF_MULTITHREAD) && device_drv->mt_buffer != NULL) {
+      if (device_drv->flags & DF_MULTITHREAD && device_drv->mt_buffer != NULL) {
          /* create dedicated thread for this device */
          device_drv->mt_buffer->thread_id = ss_thread_create(sc_thread, device_drv);
       }
       break;
 
    case CMD_STOP:
-      if ((device_drv->flags & DF_MULTITHREAD) && device_drv->mt_buffer != NULL) {
+      if (device_drv->flags & DF_MULTITHREAD && device_drv->mt_buffer != NULL) {
          device_drv->stop_thread = 1;
-
-         /* wait for max. 5 seconds until thread has gracefully stopped */
-         for (i = 0; i < 500; i++) {
+         /* wait for max. 10 seconds until thread has gracefully stopped */
+         for (i = 0; i < 1000; i++) {
             if (device_drv->stop_thread == 2)
                break;
             ss_sleep(10);
          }
 
          /* if timeout expired, kill thread */
-         if (i == 500)
+         if (i == 1000)
             ss_thread_kill(device_drv->mt_buffer->thread_id);
 
          ss_semaphore_delete(device_drv->semaphore, TRUE);
@@ -947,7 +929,7 @@ INT initialize_equipment(void)
                strcpy(str, "Driver error");
             else
                strcpy(str, "Error");
-            
+
             if (equipment[idx].status == FE_SUCCESS)
                set_equipment_status(equipment[idx].name, str, "#00FF00");
             else {
@@ -1444,14 +1426,20 @@ void set_event_rb(INT rb)
    rbh2 = rb;
 }
 
+void set_event_rb_idx(INT rb, INT idx)
+{
+   rbh[idx] = rb;
+}
+
 int receive_trigger_event(EQUIPMENT *eq)
 {
-   int status;
+  int i, status;
    EVENT_HEADER *prb, *pevent;
    void *p;
    int nbytes;
 
-   if (0) {
+#if 0
+   {
       static int count = 0;
       if (((count++) % 100) == 0) {
          rb_get_buffer_level(rbh2, &nbytes);
@@ -1459,49 +1447,55 @@ int receive_trigger_event(EQUIPMENT *eq)
             printf("mfe: ring buffer contains %d bytes\n", nbytes);
       }
    }
-
-   status = rb_get_rp(rbh2, &p, 10);
-   prb = (EVENT_HEADER *)p;
-   if (status == DB_TIMEOUT)
-      return 0;
-
-   pevent = prb;
-
-   /* send event */
-   if (pevent->data_size) {
-      if (eq->buffer_handle) {
+#endif
+   
+   i=0;
+   while(rbh[i]) {
+     //     printf("rbh[%d]=%d\n",i, rbh[i]); 
+     status = rb_get_rp(rbh[i], &p, 10);
+     prb = (EVENT_HEADER *)p;
+     if (status == DB_TIMEOUT)
+       return 0;
+     
+     pevent = prb;
+     
+     /* send event */
+     if (pevent->data_size) {
+       if (eq->buffer_handle) {
          
          /* save event in temporary buffer to push it to the ODB later */
          if (eq->info.read_on & RO_ODB)
-            memcpy(event_buffer, pevent, pevent->data_size + sizeof(EVENT_HEADER));
-
+	   memcpy(event_buffer, pevent, pevent->data_size + sizeof(EVENT_HEADER));
+	 
          /* send first event to ODB if logger writes in root format */
          if (pevent->serial_number == 0)
-            if (logger_root())
-               update_odb(pevent, eq->hkey_variables, eq->format);
-
+	   if (logger_root())
+	     update_odb(pevent, eq->hkey_variables, eq->format);
+	 
          status = rpc_send_event(eq->buffer_handle, pevent,
                                  pevent->data_size + sizeof(EVENT_HEADER),
                                  SYNC, rpc_mode);
-
+	 
          if (status != SUCCESS) {
-            cm_msg(MERROR, "receive_trigger_event", "rpc_send_event error %d", status);
-            return -1;
+	   cm_msg(MERROR, "receive_trigger_event", "rpc_send_event error %d", status);
+	   return -1;
          }
-
+	 
          eq->bytes_sent += pevent->data_size + sizeof(EVENT_HEADER);
-
+	 
          if (eq->info.num_subevents)
-            eq->events_sent += eq->subevent_number;
+	   eq->events_sent += eq->subevent_number;
          else
-            eq->events_sent++;
-
+	   eq->events_sent++;
+	 
          rotate_wheel();
-      }
-   }
-
-   rb_increment_rp(rbh2, sizeof(EVENT_HEADER) + prb->data_size);
-
+       }
+     }
+     
+     rb_increment_rp(rbh[i], sizeof(EVENT_HEADER) + prb->data_size);
+     i++;
+   } // for rbh[]
+   
    return prb->data_size;
 }
 
@@ -2630,6 +2624,9 @@ int main(int argc, char *argv[])
    if (display_period)
       printf("OK\n");
 
+   // Reset the ring buffer handles for multiple thread per frontend
+   memset((char *)rbh, 0, sizeof(rbh));
+
    /* allocate buffer space */
    event_buffer = malloc(max_event_size);
    if (event_buffer == NULL) {
@@ -2763,7 +2760,6 @@ int main(int argc, char *argv[])
          if (equipment[i].driver[j].name[0] && equipment[i].status == FE_SUCCESS)
             equipment[i].cd(CMD_STOP, &equipment[i]);   /* stop all threads */
       }
-   
    for (i = 0; equipment[i].name[0]; i++)
       if ((equipment[i].info.eq_type & EQ_SLOW) && equipment[i].status == FE_SUCCESS)
          equipment[i].cd(CMD_EXIT, &equipment[i]);      /* close physical connections */

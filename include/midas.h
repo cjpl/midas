@@ -1940,6 +1940,7 @@ extern "C" {
    void mfe_set_error(void (*dispatcher) (const char *));
    int set_equipment_status(const char *name, const char *eq_status, const char *status_color);
    void set_event_rb(INT rb);
+   void set_event_rb_idx(INT rb, INT idx);
 
    /*---- analyzer functions ----*/
    void EXPRT test_register(ANA_TEST * t);

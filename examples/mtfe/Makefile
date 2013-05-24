@@ -36,7 +36,8 @@ ifeq ($(OSTYPE),linux)
 
 OS_DIR = linux
 OSFLAGS = -DOS_LINUX -Dextname
-CFLAGS = -g -O2 -Wall
+CFLAGS = -g -Wall
+#CFLAGS = -g -O2 -Wall
 # add to compile in 32-bit mode
 # OSFLAGS += -m32
 LIBS = -lm -lz -lutil -lnsl -lpthread -lrt
@@ -68,7 +69,7 @@ SRC_DIR   = $(MIDASSYS)/src
 # comment out the line and run your own frontend as follow:
 # gmake UFE=my_frontend
 #
-UFE = mtfe
+UFE = mtfe07
 
 ####################################################################
 # Lines below here should not be edited
@@ -88,7 +89,7 @@ all: $(UFE)
 $(UFE): $(LIB) $(LIB_DIR)/mfe.o $(UFE).o
 	$(CXX) $(CFLAGS) $(OSFLAGS) -o $(UFE) $(UFE).o $(LIB_DIR)/mfe.o $(LIB) $(LIBS)
 
-%.o: %.c
+%.o: %.cxx
 	$(CXX) $(USERFLAGS) $(CFLAGS) $(OSFLAGS) -o $@ -c $<
 
 clean::

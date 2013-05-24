@@ -116,7 +116,7 @@ MSCB_FD mscb_fd[MSCB_MAX_FD];
 int _debug_flag;         /* global debug flag */
 void debug_log(const char *format, int start, ...);
 
-/* RS485 flags for USB submaster */
+/* RS485 flags for USB submaster */ 
 #define RS485_FLAG_BIT9      (1<<0)
 #define RS485_FLAG_NO_ACK    (1<<1)
 #define RS485_FLAG_SHORT_TO  (1<<2)  /* 400us for ping */

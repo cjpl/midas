@@ -3,7 +3,7 @@
   Name:         v1720drv.h
   Created by:   K.Olchanski
 
-  Contents:     v1720 8-channel 200 MHz 12-bit ADC
+  Contents:     v1720 8-channel 250 MHz 12-bit ADC
 
   $Id$
                 

@@ -33,7 +33,9 @@
 #define V1720_SET_MONITOR_DAC                 0x8138      /* R/W       ; D32 */ 
 #define V1720_BOARD_INFO                      0x8140	  /* read  only; D32 */ 
 #define V1720_MONITOR_MODE                    0x8144      /* R/W       ; D32 */ 
-#define V1720_EVENT_SIZE                      0x814C	  /* read  only; D32 */ 
+#define V1720_EVENT_SIZE                      0x814C	  /* read  only; D32 */
+#define V1720_FP_LVDS_IO_CRTL                 0x81A0      /* R/W       ; D32 */
+#define V1720_ALMOST_FULL_LEVEL               0x816C      /* R/W       ; D32 */
 #define V1720_VME_CONTROL                     0xEF00      /* R/W       ; D32 */ 
 #define V1720_VME_STATUS                      0xEF04      /* read  only; D32 */ 
 #define V1720_BOARD_ID                        0xEF08      /* R/W       ; D32 */ 

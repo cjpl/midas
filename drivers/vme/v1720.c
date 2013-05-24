@@ -420,7 +420,7 @@ int main (int argc, char* argv[]) {
     printf("Acq Status2:0x%x\n", status);
   } while ((status & 0x8)==0);
   
-  n32read = v1720_dataRead(myvme, V1720_BASE, &(data[0]), n32word);
+  n32read = v1720_DataRead(myvme, V1720_BASE, &(data[0]), n32word);
   printf("n32read:%d\n", n32read);
   
   for (i=0; i<n32read;i+=4) {
