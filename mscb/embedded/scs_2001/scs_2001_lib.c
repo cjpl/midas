@@ -824,7 +824,26 @@ void ad7718_read(unsigned char a, unsigned long *d) reentrant
 
 unsigned char xdata ad7718_cur_chn[N_PORT];
 unsigned char xdata ad7718_range[N_PORT];
+unsigned long xdata ad7718_last[N_PORT];
 float code ad7718_full_range[] = { 0.02, 0.04, 0.08, 0.16, 0.32, 0.64, 1.28, 2.56 };
+
+void ad7718_init(unsigned char addr, unsigned char port, unsigned char range)
+{
+   address_port1(addr, port, AM_RW_SERIAL, 1);
+   ad7718_write(AD7718_FILTER, 82);                // SF value for 50Hz rejection (2 Hz)
+   //ad7718_write(AD7718_FILTER, 13);                // SF value for faster conversion (12 Hz)
+   ad7718_write(AD7718_MODE, 3);                   // continuous conversion
+   DELAY_US_REENTRANT(100);
+
+   /* default range */
+   ad7718_range[addr*8+port] = range;
+
+   /* start first conversion */
+   ad7718_write(AD7718_CONTROL, (0 << 4) | 0x08 | range);  // Channel 0, unipolar
+   ad7718_cur_chn[addr*8+port] = 0;
+
+   ad7718_last[addr*8+port] = time();
+}
 
 unsigned char dr_ad7718(unsigned char id, unsigned char cmd, unsigned char addr, 
                         unsigned char port, unsigned char chn, void *pd) reentrant
@@ -833,38 +852,29 @@ float value;
 unsigned long d;
 unsigned char status;
 
-   if (cmd == MC_INIT) {
-      address_port1(addr, port, AM_RW_SERIAL, 1);
-      ad7718_write(AD7718_FILTER, 82);                // SF value for 50Hz rejection (2 Hz)
-      //ad7718_write(AD7718_FILTER, 13);                // SF value for faster conversion (12 Hz)
-      ad7718_write(AD7718_MODE, 3);                   // continuous conversion
-      DELAY_US_REENTRANT(100);
+   if (cmd == MC_INIT)
+      ad7718_init(addr, port, 0x07); // +2.56V range
 
-      /* default range */
-      ad7718_range[addr*8+port] = 0x07;               // +2.56V range
-
-      /* start first conversion */
-      ad7718_write(AD7718_CONTROL, (0 << 4) | 0x08 | ad7718_range[addr*8+port]);  // Channel 0, unipolar
-      ad7718_cur_chn[addr*8+port] = 0;
-   }
-
-   if (cmd == MC_WRITE && chn == 8) {
+   if (cmd == MC_WRITE && chn == 8)
       ad7718_range[addr*8+port] = *((unsigned char *)pd);
-   }
 
    if (cmd == MC_READ) {
-
       if (chn > 7)
          return 0;
 
       /* return if ADC busy */
       read_port(addr, port, &status);
-      if ((status & 1) > 0)
+      if ((status & 1) > 0) {
+         if (time() > ad7718_last[addr*8+port] + 300) // reset ADC if inactive for 3 sec.
+            ad7718_init(addr, port, 0x07);
          return 0;
+      }
 
       /* return if not current channel */
       if (chn != ad7718_cur_chn[addr*8+port])
          return 0;
+
+      ad7718_last[addr*8+port] = time();
 
       address_port1(addr, port, AM_RW_SERIAL, 1);
     
@@ -912,7 +922,6 @@ unsigned char status;
 
 static float xdata exc_current[N_PORT];
 static float xdata temp_base_value[N_PORT];
-static unsigned char xdata temp_cur_chn[N_PORT];
 
 unsigned char dr_temp8(unsigned char id, unsigned char cmd, unsigned char addr, 
                        unsigned char port, unsigned char chn, void *pd) reentrant
@@ -922,15 +931,7 @@ unsigned char status;
 unsigned long d;
 
    if (cmd == MC_INIT) {
-      address_port1(addr, port, AM_RW_SERIAL, 1);
-      ad7718_write(AD7718_FILTER, 82);                // SF value for 50Hz rejection (2 Hz)
-      //ad7718_write(AD7718_FILTER, 13);                // SF value for faster conversion (12 Hz)
-      ad7718_write(AD7718_MODE, 3);                   // continuous conversion
-      DELAY_US_REENTRANT(100);
-
-      /* start first conversion */
-      ad7718_write(AD7718_CONTROL, (0 << 4) | 0x0F);  // Channel 0, +2.56V range
-      temp_cur_chn[addr*8+port] = 0;
+      ad7718_init(addr, port, 0x0F);  // +2.56V range
       exc_current[port] = 1;
    }
 
@@ -943,17 +944,19 @@ unsigned long d;
    }
 
    if (cmd == MC_READ) {
-
       if (chn > 7)
          return 0;
 
       /* return if ADC busy */
       read_port(addr, port, &status);
-      if ((status & 1) > 0)
+      if ((status & 1) > 0) {
+         if (time() > ad7718_last[addr*8+port] + 300) // reset ADC if inactive for 3 sec.
+            ad7718_init(addr, port, 0x0F);
          return 0;
+      }
 
       /* return if not current channel */
-      if (chn != temp_cur_chn[addr*8+port])
+      if (chn != ad7718_cur_chn[addr*8+port])
          return 0;
 
       address_port1(addr, port, AM_RW_SERIAL, 1);
@@ -962,8 +965,8 @@ unsigned long d;
       ad7718_read(AD7718_ADCDATA, &d);
 
       /* start next conversion */
-      temp_cur_chn[addr*8+port] = (temp_cur_chn[addr*8+port] + 1) % 8;
-      ad7718_write(AD7718_CONTROL, (temp_cur_chn[addr*8+port] << 4) | 0x0F);  // next chn, +2.56V range
+      ad7718_cur_chn[addr*8+port] = (ad7718_cur_chn[addr*8+port] + 1) % 8;
+      ad7718_write(AD7718_CONTROL, (ad7718_cur_chn[addr*8+port] << 4) | 0x0F);  // next chn, +2.56V range
 
       /* convert to volts */
       value = 2.56*((float)d / (1l<<24));
@@ -1009,8 +1012,6 @@ unsigned long d;
 
 /*---- PT100/1000 via AD7718 two channels ------------------------*/
 
-static unsigned char xdata temp_cur_chn[N_PORT];
-
 unsigned char dr_temp2(unsigned char id, unsigned char cmd, unsigned char addr, 
                        unsigned char port, unsigned char chn, void *pd) reentrant
 {
@@ -1019,17 +1020,12 @@ unsigned char status, cur_chn;
 unsigned long d;
 
    if (cmd == MC_INIT) {
-      address_port1(addr, port, AM_RW_SERIAL, 1);
-      ad7718_write(AD7718_FILTER, 82);                // SF value for 50Hz rejection (2 Hz)
-      ad7718_write(AD7718_MODE, 3);                   // continuous conversion
-      DELAY_US_REENTRANT(100);
-
       /* start first conversion */
       if (id == 0x77)
-         ad7718_write(AD7718_CONTROL, 0x88);  // Channel 1-2, +-20mV range
+         ad7718_init(addr, port, 0x88);  // Channel 1-2, +-20mV range
       else
-         ad7718_write(AD7718_CONTROL, 0x8C);  // Channel 1-2, +-320mV range
-      temp_cur_chn[addr*8+port] = 0;
+         ad7718_init(addr, port, 0x8C);  // Channel 1-2, +-320mV range
+      ad7718_cur_chn[addr*8+port] = 0;
    }
 
    if (cmd == MC_READ) {
@@ -1039,11 +1035,18 @@ unsigned long d;
 
       /* return if ADC busy */
       read_port(addr, port, &status);
-      if ((status & 1) > 0)
+      if ((status & 1) > 0) {
+         if (time() > ad7718_last[addr*8+port] + 300) { // reset ADC if inactive for 3 sec.
+            if (id == 0x77)
+               ad7718_init(addr, port, 0x88);  // Channel 1-2, +-20mV range
+            else
+               ad7718_init(addr, port, 0x8C);  // Channel 1-2, +-320mV range
+         }
          return 0;
+      }
 
       /* return if not current channel */
-      cur_chn = temp_cur_chn[addr*8+port];
+      cur_chn = ad7718_cur_chn[addr*8+port];
       if (chn != cur_chn % 2)
          return 0;
 
@@ -1056,17 +1059,17 @@ unsigned long d;
       if (id == 0x77) {
          /* channel 0,1: first sensor
             channel 2,3: second sensor */
-         temp_cur_chn[addr*8+port] = (temp_cur_chn[addr*8+port] + 1) % 2;
+         ad7718_cur_chn[addr*8+port] = (ad7718_cur_chn[addr*8+port] + 1) % 2;
          
-         if (temp_cur_chn[addr*8+port] == 0)
+         if (ad7718_cur_chn[addr*8+port] == 0)
             ad7718_write(AD7718_CONTROL, 0x88);  // AIN1-AIN2, +-20mV range
          else
             ad7718_write(AD7718_CONTROL, 0x98);  // AIN3-AIN4, +-20mV range
 
          value = 0.020*((float)d / (1l<<24)); // +- 20mV range
       } else {
-         temp_cur_chn[addr*8+port] = (temp_cur_chn[addr*8+port] + 1) % 2;
-         ad7718_write(AD7718_CONTROL, (1 << 7) | (temp_cur_chn[addr*8+port] << 4) | 0x0C);  // next chn pair, +-320mV range
+         ad7718_cur_chn[addr*8+port] = (ad7718_cur_chn[addr*8+port] + 1) % 2;
+         ad7718_write(AD7718_CONTROL, (1 << 7) | (ad7718_cur_chn[addr*8+port] << 4) | 0x0C);  // next chn pair, +-320mV range
          value = 0.320*((float)d / (1l<<24));
       }
 
@@ -1139,14 +1142,8 @@ unsigned long d;
    if (id);
 
    if (cmd == MC_INIT) {
-      address_port1(addr, port, AM_RW_SERIAL, 1);
-      ad7718_write(AD7718_FILTER, 82);                // SF value for 50Hz rejection
-      ad7718_write(AD7718_MODE, 3);                   // continuous conversion
-      DELAY_US_REENTRANT(100);
-
-      /* start first conversion */
-      ad7718_write(AD7718_CONTROL, (0 << 4) | 0x05);  // Channel 0, +-640mV range
-      temp_cur_chn[addr*8+port] = 0;
+      ad7718_init(addr, port, 0x05); // +-640mV range
+      ad7718_cur_chn[addr*8+port] = 0;
       exc_current[port] = 1;
    }
 
@@ -1157,11 +1154,14 @@ unsigned long d;
 
       /* return if ADC busy */
       read_port(addr, port, &status);
-      if ((status & 1) > 0)
+      if ((status & 1) > 0) {
+         if (time() > ad7718_last[addr*8+port] + 300) // reset ADC if inactive for 3 sec.
+            ad7718_init(addr, port, 0x05);
          return 0;
+      }
 
       /* return if not current channel */
-      if (chn != temp_cur_chn[addr*8+port])
+      if (chn != ad7718_cur_chn[addr*8+port])
          return 0;
 
       address_port1(addr, port, AM_RW_SERIAL, 1);
@@ -1170,8 +1170,8 @@ unsigned long d;
       ad7718_read(AD7718_ADCDATA, &d);
 
       /* start next conversion */
-      temp_cur_chn[addr*8+port] = (temp_cur_chn[addr*8+port] + 1) % 8;
-      ad7718_write(AD7718_CONTROL, (temp_cur_chn[addr*8+port] << 4) | 0x05);  // next chn, +-640mV range
+      ad7718_cur_chn[addr*8+port] = (ad7718_cur_chn[addr*8+port] + 1) % 8;
+      ad7718_write(AD7718_CONTROL, (ad7718_cur_chn[addr*8+port] << 4) | 0x05);  // next chn, +-640mV range
 
       /* convert to volts (negative input) */
       value = 0.64-1.28*((float)d / (1l<<24));
