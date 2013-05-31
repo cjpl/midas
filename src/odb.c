@@ -6910,9 +6910,10 @@ INT db_save_json_key(HNDLE hDB, HNDLE hKey, INT level, char **buffer, int* buffe
 
    if (key.type == TID_KEY) {
 
-      json_write(buffer, buffer_size, buffer_end, level, key.name, 1);
-
-      json_write(buffer, buffer_size, buffer_end, 0, " : {", 0);
+      if (level > 0) {
+         json_write(buffer, buffer_size, buffer_end, level, key.name, 1);
+         json_write(buffer, buffer_size, buffer_end, 0, " : {\n", 0);
+      }
 
       for (idx = 0;; idx++) {
          if (follow_links)
@@ -6924,10 +6925,8 @@ INT db_save_json_key(HNDLE hDB, HNDLE hKey, INT level, char **buffer, int* buffe
             break;
 
          if (idx != 0) {
-            json_write(buffer, buffer_size, buffer_end, 0, ",", 0);
+            json_write(buffer, buffer_size, buffer_end, 0, ",\n", 0);
          }
-
-         json_write(buffer, buffer_size, buffer_end, 0, "\n", 0);
 
          /* save subtree */
          status = db_save_json_key(hDB, hSubkey, level + 1, buffer, buffer_size, buffer_end, save_keys, follow_links);
@@ -6935,10 +6934,62 @@ INT db_save_json_key(HNDLE hDB, HNDLE hKey, INT level, char **buffer, int* buffe
             return status;
       }
 
-      json_write(buffer, buffer_size, buffer_end, 0, "\n", 0);
-      json_write(buffer, buffer_size, buffer_end, level, "}", 0);
+      if (level > 0) {
+         json_write(buffer, buffer_size, buffer_end, 0, "\n", 0);
+         json_write(buffer, buffer_size, buffer_end, level, "}", 0);
+      }
 
    } else {
+
+      /* save key value */
+      
+      if (save_keys == 1) {
+         char str[NAME_LENGTH+15];
+         sprintf(str, "%s/key", key.name);
+
+         json_write(buffer, buffer_size, buffer_end, level, str, 1);
+         json_write(buffer, buffer_size, buffer_end, 0, " : { ", 0);
+
+         sprintf(str, "\"type\" : %d", key.type);
+         json_write(buffer, buffer_size, buffer_end, 0, str, 0);
+
+         if (key.num_values > 1) {
+            json_write(buffer, buffer_size, buffer_end, 0, ", ", 0);
+
+            sprintf(str, "\"num_values\" : %d", key.num_values);
+            json_write(buffer, buffer_size, buffer_end, 0, str, 0);
+         }
+
+         if (key.type == TID_STRING || key.type == TID_LINK) {
+            json_write(buffer, buffer_size, buffer_end, 0, ", ", 0);
+
+            sprintf(str, "\"item_size\" : %d", key.item_size);
+            json_write(buffer, buffer_size, buffer_end, 0, str, 0);
+         }
+
+         json_write(buffer, buffer_size, buffer_end, 0, ", ", 0);
+
+         sprintf(str, "\"last_written\" : %d", key.last_written);
+         json_write(buffer, buffer_size, buffer_end, 0, str, 0);
+
+         json_write(buffer, buffer_size, buffer_end, 0, " ", 0);
+
+         json_write(buffer, buffer_size, buffer_end, 0, "}", 0);
+
+         json_write(buffer, buffer_size, buffer_end, 0, ",\n", 0);
+      }
+
+      if (save_keys == 2) {
+         char str[NAME_LENGTH+15];
+         sprintf(str, "%s/last_written", key.name);
+
+         json_write(buffer, buffer_size, buffer_end, level, str, 1);
+
+         sprintf(str, " : %d", key.last_written);
+         json_write(buffer, buffer_size, buffer_end, 0, str, 0);
+
+         json_write(buffer, buffer_size, buffer_end, 0, ",\n", 0);
+      }
 
       json_write(buffer, buffer_size, buffer_end, level, key.name, 1);
 
@@ -7065,56 +7116,6 @@ INT db_save_json_key(HNDLE hDB, HNDLE hKey, INT level, char **buffer, int* buffe
 
       free(data);
       data = NULL;
-
-      /* save key value */
-      
-      if (save_keys == 1) {
-         char str[NAME_LENGTH+15];
-         sprintf(str, "%s/key", key.name);
-
-         json_write(buffer, buffer_size, buffer_end, 0, ",\n", 0);
-
-         json_write(buffer, buffer_size, buffer_end, level, str, 1);
-         json_write(buffer, buffer_size, buffer_end, 0, " : { ", 0);
-
-         sprintf(str, "\"type\" : %d", key.type);
-         json_write(buffer, buffer_size, buffer_end, 0, str, 0);
-
-         if (key.num_values > 1) {
-            json_write(buffer, buffer_size, buffer_end, 0, ", ", 0);
-
-            sprintf(str, "\"num_values\" : %d", key.num_values);
-            json_write(buffer, buffer_size, buffer_end, 0, str, 0);
-         }
-
-         if (key.type == TID_STRING || key.type == TID_LINK) {
-            json_write(buffer, buffer_size, buffer_end, 0, ", ", 0);
-
-            sprintf(str, "\"item_size\" : %d", key.item_size);
-            json_write(buffer, buffer_size, buffer_end, 0, str, 0);
-         }
-
-         json_write(buffer, buffer_size, buffer_end, 0, ", ", 0);
-
-         sprintf(str, "\"last_written\" : %d", key.last_written);
-         json_write(buffer, buffer_size, buffer_end, 0, str, 0);
-
-         json_write(buffer, buffer_size, buffer_end, 0, " ", 0);
-
-         json_write(buffer, buffer_size, buffer_end, 0, "}", 0);
-      }
-
-      if (save_keys == 2) {
-         char str[NAME_LENGTH+15];
-         sprintf(str, "%s/last_written", key.name);
-
-         json_write(buffer, buffer_size, buffer_end, 0, ",\n", 0);
-
-         json_write(buffer, buffer_size, buffer_end, level, str, 1);
-
-         sprintf(str, " : %d", key.last_written);
-         json_write(buffer, buffer_size, buffer_end, 0, str, 0);
-      }
    }
 
    return DB_SUCCESS;
@@ -7135,7 +7136,7 @@ INT db_copy_json(HNDLE hDB, HNDLE hKey, char **buffer, int* buffer_size, int* bu
 {
    json_write(buffer, buffer_size, buffer_end, 0, "{\n", 0);
 
-   db_save_json_key(hDB, hKey, 1, buffer, buffer_size, buffer_end, save_keys, follow_links);
+   db_save_json_key(hDB, hKey, 0, buffer, buffer_size, buffer_end, save_keys, follow_links);
 
    json_write(buffer, buffer_size, buffer_end, 0, "\n}\n", 0);
    

@@ -85,20 +85,20 @@
       document.getElementById('json_data').innerHTML = data_json;
       var now = new Date().getTime()/1000;
       var obj = JSON.parse(data_json);
-      document.getElementById('json_data0').innerHTML = obj.Variables.SLOW[0];
-      document.getElementById('json_data1').innerHTML = obj.Variables.SLOW[1];
-      document.getElementById('json_data2').innerHTML = obj.Variables.SLOW[2];
-      document.getElementById('json_data_age').innerHTML = now - obj.Variables['SLOW/key'].last_written;
+      document.getElementById('json_data0').innerHTML = obj.SLOW[0];
+      document.getElementById('json_data1').innerHTML = obj.SLOW[1];
+      document.getElementById('json_data2').innerHTML = obj.SLOW[2];
+      document.getElementById('json_data_age').innerHTML = now - obj['SLOW/key'].last_written;
       }
 
       function jsonp_callback(obj)
       {
       document.getElementById('jsonp_data').innerHTML = JSON.stringify(obj);
       var now = new Date().getTime()/1000;
-      document.getElementById('jsonp_data0').innerHTML = obj.Variables.SLOW[0];
-      document.getElementById('jsonp_data1').innerHTML = obj.Variables.SLOW[1];
-      document.getElementById('jsonp_data2').innerHTML = obj.Variables.SLOW[2];
-      document.getElementById('jsonp_data_age').innerHTML = now - obj.Variables['SLOW/key'].last_written;
+      document.getElementById('jsonp_data0').innerHTML = obj.SLOW[0];
+      document.getElementById('jsonp_data1').innerHTML = obj.SLOW[1];
+      document.getElementById('jsonp_data2').innerHTML = obj.SLOW[2];
+      document.getElementById('jsonp_data_age').innerHTML = now - obj['SLOW/key'].last_written;
       }
 
       function mcopy_jsonp_callback(obj)
@@ -110,17 +110,17 @@
       var error = obj[2];
       var settings = obj[3];
       var variables = obj[4];
-      document.getElementById('mcopy_jsonp_runstate').innerHTML = runinfo.Runinfo.State;
+      document.getElementById('mcopy_jsonp_runstate').innerHTML = runinfo.State;
       document.getElementById('mcopy_jsonp_runnumber').innerHTML = runnumber["Run number"];
-      document.getElementById('mcopy_jsonp_settings_example_int').innerHTML = settings.Settings.example_int;
-      document.getElementById('mcopy_jsonp_data0').innerHTML = variables.Variables.SLOW[0];
-      document.getElementById('mcopy_jsonp_data1').innerHTML = variables.Variables.SLOW[1];
-      document.getElementById('mcopy_jsonp_data2').innerHTML = variables.Variables.SLOW[2];
+      document.getElementById('mcopy_jsonp_settings_example_int').innerHTML = settings.example_int;
+      document.getElementById('mcopy_jsonp_data0').innerHTML = variables.SLOW[0];
+      document.getElementById('mcopy_jsonp_data1').innerHTML = variables.SLOW[1];
+      document.getElementById('mcopy_jsonp_data2').innerHTML = variables.SLOW[2];
       var lw;
-      if (variables.Variables['SLOW/key'])
-      lw = variables.Variables['SLOW/key'].last_written;
+      if (variables['SLOW/key'])
+      lw = variables['SLOW/key'].last_written;
       else
-      lw = variables.Variables['SLOW/last_written'];
+      lw = variables['SLOW/last_written'];
       document.getElementById('mcopy_jsonp_data_age').innerHTML = now - lw;
       }
 
@@ -486,7 +486,7 @@ ODBEdit(path); --- undoc - forces page reload
     <address><a href="mailto:xxx@xxx">MIDAS Example</a></address>
 <!-- Created: Tue Sep 21 15:44:39 PDT 2010 -->
 <!-- hhmts start -->
-Last modified: Fri May 17 09:00:21 PDT 2013
+Last modified: Fri May 31 13:13:15 PDT 2013
 <!-- hhmts end -->
   </body>
 </html>
