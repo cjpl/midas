@@ -334,7 +334,7 @@
       <Focus>0</Focus>
       <ColumnNumber>54</ColumnNumber>
       <tvExpOptDlg>0</tvExpOptDlg>
-      <TopLine>1148</TopLine>
+      <TopLine>1127</TopLine>
       <CurrentLine>1158</CurrentLine>
       <bDave2>0</bDave2>
       <PathWithFileName>.\scs_2001_lib.c</PathWithFileName>
@@ -1873,7 +1873,7 @@
         <Doc>
           <Name>.\scs_2001_lib.c</Name>
           <ColumnNumber>54</ColumnNumber>
-          <TopLine>1148</TopLine>
+          <TopLine>1127</TopLine>
           <CurrentLine>1158</CurrentLine>
         </Doc>
         <Doc>

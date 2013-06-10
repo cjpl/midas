@@ -829,6 +829,10 @@ float code ad7718_full_range[] = { 0.02, 0.04, 0.08, 0.16, 0.32, 0.64, 1.28, 2.5
 
 void ad7718_init(unsigned char addr, unsigned char port, unsigned char range)
 {
+   write_dir(addr, port, 0x80);                    // first bit output (/RESET)
+   write_port(addr, port, 0x00);                   // issue /RESET
+   write_port(addr, port, 0x80);
+
    address_port1(addr, port, AM_RW_SERIAL, 1);
    ad7718_write(AD7718_FILTER, 82);                // SF value for 50Hz rejection (2 Hz)
    //ad7718_write(AD7718_FILTER, 13);                // SF value for faster conversion (12 Hz)
@@ -836,10 +840,10 @@ void ad7718_init(unsigned char addr, unsigned char port, unsigned char range)
    DELAY_US_REENTRANT(100);
 
    /* default range */
-   ad7718_range[addr*8+port] = range;
+   ad7718_range[addr*8+port] = (range & 0x07);
 
    /* start first conversion */
-   ad7718_write(AD7718_CONTROL, (0 << 4) | 0x08 | range);  // Channel 0, unipolar
+   ad7718_write(AD7718_CONTROL, range);            // Channel 0, selected range and polarity
    ad7718_cur_chn[addr*8+port] = 0;
 
    ad7718_last[addr*8+port] = time();
@@ -853,7 +857,7 @@ unsigned long d;
 unsigned char status;
 
    if (cmd == MC_INIT)
-      ad7718_init(addr, port, 0x07); // +2.56V range
+      ad7718_init(addr, port, 0x07); // +-2.56V range
 
    if (cmd == MC_WRITE && chn == 8)
       ad7718_range[addr*8+port] = *((unsigned char *)pd);
@@ -1574,13 +1578,7 @@ unsigned char i, idx;
       write_port(addr, port, 0x0E); // all high
 
       /* configure AD7718 */
-      address_port1(addr, port, AM_RW_SERIAL, 1);
-      ad7718_write(AD7718_FILTER, 82);                // SF value for 50Hz rejection (2 Hz)
-      ad7718_write(AD7718_MODE, 3);                   // continuous conversion
-      DELAY_US_REENTRANT(100);
-
-      /* start first conversion */
-      ad7718_write(AD7718_CONTROL, (0 << 4) | (0x07));  // Channel 0, Bipolar, +-2.56V range
+      ad7718_init(addr, port, 0x07);  // Channel 0, Bipolar, +-2.56V range
 
       lhe_on[idx] = 1;
       lhe_last[idx] = time();
@@ -1665,8 +1663,13 @@ unsigned char i, idx;
 
       /* return if ADC busy */
       read_port(addr, port, &status);
-      if ((status & 1) > 0)
+      if ((status & 1) > 0) {
+         if (time() > ad7718_last[addr*8+port] + 300) // reset ADC if inactive for 3 sec.
+            ad7718_init(addr, port, 0x05);
          return 0;
+      }
+
+      ad7718_last[addr*8+port] = time();
 
       address_port1(addr, port, AM_RW_SERIAL, 1);
     
