@@ -6,7 +6,7 @@
 
   Contents:     General-purpose framework for SCS-2001 control unit.
 
-  $Id: scs_2001.c 4147 2008-03-31 13:35:08Z ritt@PSI.CH $
+  $Id$
 
 \********************************************************************/
 
@@ -22,7 +22,7 @@ extern bit FREEZE_MODE;
 extern bit DEBUG_MODE;
 
 char code node_name[] = "SCS-2001";
-char code svn_rev_2000[] = "$Rev: 4147 $";
+char code svn_rev_2000[] = "$Rev$";
 extern char code svn_rev_main[];
 extern char code svn_rev_lib[];
 
