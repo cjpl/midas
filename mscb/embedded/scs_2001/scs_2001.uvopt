@@ -318,10 +318,10 @@
       <FileType>1</FileType>
       <tvExp>0</tvExp>
       <Focus>0</Focus>
-      <ColumnNumber>16</ColumnNumber>
+      <ColumnNumber>0</ColumnNumber>
       <tvExpOptDlg>0</tvExpOptDlg>
       <TopLine>1</TopLine>
-      <CurrentLine>19</CurrentLine>
+      <CurrentLine>27</CurrentLine>
       <bDave2>0</bDave2>
       <PathWithFileName>.\scs_2001.c</PathWithFileName>
       <FilenameWithoutPath>scs_2001.c</FilenameWithoutPath>
@@ -332,10 +332,10 @@
       <FileType>1</FileType>
       <tvExp>0</tvExp>
       <Focus>0</Focus>
-      <ColumnNumber>54</ColumnNumber>
+      <ColumnNumber>21</ColumnNumber>
       <tvExpOptDlg>0</tvExpOptDlg>
-      <TopLine>1127</TopLine>
-      <CurrentLine>1158</CurrentLine>
+      <TopLine>825</TopLine>
+      <CurrentLine>825</CurrentLine>
       <bDave2>0</bDave2>
       <PathWithFileName>.\scs_2001_lib.c</PathWithFileName>
       <FilenameWithoutPath>scs_2001_lib.c</FilenameWithoutPath>
@@ -348,8 +348,8 @@
       <Focus>0</Focus>
       <ColumnNumber>0</ColumnNumber>
       <tvExpOptDlg>0</tvExpOptDlg>
-      <TopLine>197</TopLine>
-      <CurrentLine>212</CurrentLine>
+      <TopLine>1</TopLine>
+      <CurrentLine>1</CurrentLine>
       <bDave2>0</bDave2>
       <PathWithFileName>..\src\mscbmain.c</PathWithFileName>
       <FilenameWithoutPath>mscbmain.c</FilenameWithoutPath>
@@ -1849,8 +1849,8 @@
         <Doc>
           <Name>..\src\mscbmain.c</Name>
           <ColumnNumber>0</ColumnNumber>
-          <TopLine>197</TopLine>
-          <CurrentLine>212</CurrentLine>
+          <TopLine>1</TopLine>
+          <CurrentLine>1</CurrentLine>
         </Doc>
         <Doc>
           <Name>.\lcd.c</Name>
@@ -1872,15 +1872,15 @@
         </Doc>
         <Doc>
           <Name>.\scs_2001_lib.c</Name>
-          <ColumnNumber>54</ColumnNumber>
-          <TopLine>1127</TopLine>
-          <CurrentLine>1158</CurrentLine>
+          <ColumnNumber>21</ColumnNumber>
+          <TopLine>825</TopLine>
+          <CurrentLine>825</CurrentLine>
         </Doc>
         <Doc>
           <Name>.\scs_2001.c</Name>
-          <ColumnNumber>16</ColumnNumber>
+          <ColumnNumber>0</ColumnNumber>
           <TopLine>1</TopLine>
-          <CurrentLine>19</CurrentLine>
+          <CurrentLine>27</CurrentLine>
         </Doc>
         <Doc>
           <Name>SCS_2001.H</Name>
