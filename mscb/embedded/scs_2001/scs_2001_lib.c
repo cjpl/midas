@@ -17,7 +17,7 @@
 #include "mscbemb.h"
 #include "scs_2001.h"
 
-char code svn_rev_lib[] = "$Rev: 4169 $";
+char code svn_rev_lib[] = "$Rev$";
 
 #define N_PORT 24 /* maximal one master and two slave modules */
 
