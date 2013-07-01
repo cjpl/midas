@@ -1578,7 +1578,13 @@ unsigned char i, idx;
       write_port(addr, port, 0x0E); // all high
 
       /* configure AD7718 */
-      ad7718_init(addr, port, 0x07);  // Channel 0, Bipolar, +-2.56V range
+      address_port1(addr, port, AM_RW_SERIAL, 1);
+      ad7718_write(AD7718_FILTER, 82);                // SF value for 50Hz rejection (2 Hz)
+      ad7718_write(AD7718_MODE, 3);                   // continuous conversion
+      DELAY_US_REENTRANT(100);
+
+      /* start first conversion */
+      ad7718_write(AD7718_CONTROL, (0 << 4) | (0x07));  // Channel 0, Bipolar, +-2.56V range
 
       lhe_on[idx] = 1;
       lhe_last[idx] = time();
@@ -1663,13 +1669,8 @@ unsigned char i, idx;
 
       /* return if ADC busy */
       read_port(addr, port, &status);
-      if ((status & 1) > 0) {
-         if (time() > ad7718_last[addr*8+port] + 300) // reset ADC if inactive for 3 sec.
-            ad7718_init(addr, port, 0x05);
+      if ((status & 1) > 0)
          return 0;
-      }
-
-      ad7718_last[addr*8+port] = time();
 
       address_port1(addr, port, AM_RW_SERIAL, 1);
     
