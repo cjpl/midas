@@ -829,9 +829,9 @@ float code ad7718_full_range[] = { 0.02, 0.04, 0.08, 0.16, 0.32, 0.64, 1.28, 2.5
 
 void ad7718_init(unsigned char addr, unsigned char port, unsigned char range)
 {
-   write_dir(addr, port, 0x80);                    // first bit output (/RESET)
+   write_dir(addr, port, 0x80);                    // highest bit output (/RESET)
    write_port(addr, port, 0x00);                   // issue /RESET
-   write_port(addr, port, 0x80);
+   write_port(addr, port, 0x80);                   // remove /RESET
 
    address_port1(addr, port, AM_RW_SERIAL, 1);
    ad7718_write(AD7718_FILTER, 82);                // SF value for 50Hz rejection (2 Hz)
