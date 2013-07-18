@@ -7323,10 +7323,6 @@ void show_mscb_page(char *path, int refresh)
    rsprintf("<td align=right width=10>");
    rsprintf("<input type=submit name=cmd value=Reload>\n");
    
-   //   rsprintf("<button type=\"button\" onClick=\"document.form1.submit()\">\n");
-   //rsprintf("<img alt=\"Reload page\" title=\"Reload page\" ");
-   //rsprintf("src=\"reload.png\"></button></td></tr></table></td></tr>\n\n");
-
    rsprintf("<tr><td bgcolor=#E0E0E0 colspan=\"2\" cellpadding=\"0\" cellspacing=\"0\">\r\n");
 
    status = db_find_key(hDB, 0, "MSCB/Submaster", &hKeySubm);
@@ -7369,7 +7365,9 @@ void show_mscb_page(char *path, int refresh)
 
    /*---- node list ----*/
    rsprintf("<td class=\"node\">\r\n");
-   rsprintf("Node<hr>\r\n");
+   rsprintf("Node ");
+   rsprintf("<input type=submit name=cmd value=\"Rescan\">");
+   rsprintf("<hr>\r\n");
 
    if (!hKeyCurSubm) {
       rsprintf("No submaster found in ODB\r\n");
