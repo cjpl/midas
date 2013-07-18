@@ -6403,7 +6403,7 @@ void java_script_commands(const char *path, const char *cookie_cpwd)
             
             int end = 0;
             int bufsize = WEB_BUFFER_SIZE;
-            char* buf = (char *)malloc(size);
+            char* buf = (char *)malloc(bufsize);
             
             if (fmt_xml)
                db_copy_xml(hDB, hkey, buf, &bufsize);
@@ -6466,7 +6466,7 @@ void java_script_commands(const char *path, const char *cookie_cpwd)
             
             int end = 0;
             int bufsize = WEB_BUFFER_SIZE;
-            char* buf = (char *)malloc(size);
+            char* buf = (char *)malloc(bufsize);
             
             if (fmt_xml)
                db_copy_xml(hDB, hkey, buf, &bufsize);
