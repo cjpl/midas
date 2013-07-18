@@ -1,9 +1,9 @@
 ########################################################
-#  Makefile for mscReadCurrent
+#  Makefile for msc executable under linux
 #
 #  If the environment variable MIDASSYS is defined,
 #  the mxml.c, strlcpy, and musbstd.c files are
-#  taken from there. Otherwise the files from the 
+#  taken from there. Otherweise the files from the 
 #  mxml/ and midas/ subdirectories below 
 #  the mscb directory are used.
 #
@@ -43,7 +43,7 @@ else
 USBDIR        = ../drivers/usb/
 endif
 
-OUTNAME       = msc
+OUTNAME       = msc 
 CC            = gcc -g -O0 -DHAVE_MRPC
 FLAGS         = -Wall -Wuninitialized -I$(MXMLDIR) -I$(MIDASINC)
 
@@ -61,18 +61,15 @@ LIBS  = /usr/local/lib/libusb-1.0.a -framework IOKit -framework CoreFoundation
 STRLCPY       =
 endif
 
-MSCB_OBJ      = mscb.o mscbrpc.o
+MSCB_OBJ      = msc.o mscb.o mscbrpc.o
 MXML_OBJ      = mxml.o $(STRLCPY)
 USB_OBJ       = musbstd.o
 OBJECTS       = $(MSCB_OBJ) $(MXML_OBJ) $(USB_OBJ)
 
-all: mscReadCurrent3
+all: $(OUTNAME)
 
-mscReadCurrent3: mscReadCurrent3.o $(OBJECTS)
-	$(CC) $(FLAGS) -o mscReadCurrent3 mscReadCurrent3.o $(OBJECTS) $(LIBS)
-
-mscReadCurrent3.o: mscReadCurrent3.c mscb.h
-	$(CC) $(FLAGS) -c mscReadCurrent3.c 
+$(OUTNAME): $(OBJECTS)
+	$(CC) $(FLAGS) $(OBJECTS) -o $(OUTNAME) $(LIBS)
 
 $(MSCB_OBJ): %.o: %.c
 	$(CC) $(FLAGS) -c $<
@@ -88,5 +85,4 @@ shared: $(OBJECTS)
 
 clean:
 	rm *.o $(OUTNAME)
-	rm mscReadCurrent2.o
 
