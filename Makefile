@@ -371,7 +371,7 @@ $(BIN_DIR):
 # put current GIT revision into header file to be included by programs
 #
 $(GIT_REVISION): $(SRC_DIR)/midas.c $(SRC_DIR)/odb.c $(SRC_DIR)/system.c
-	echo \#define GIT_REVISION \"`git describe --tags`\" > $(GIT_REVISION)
+	echo \#define GIT_REVISION \"`git log -n 1 --pretty=format:"%ad - %h"`\" > $(GIT_REVISION)
 
 #
 # main binaries
