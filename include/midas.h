@@ -41,7 +41,10 @@ The main include file
 #define DATABASE_VERSION 3      
 
 /* MIDAS version number which will be incremented for every release */
-#define MIDAS_VERSION "2.0.0"
+#define MIDAS_VERSION "2.1"
+
+/* include GIT version from file automatically created by make */
+#include "git-revision.h"
 
 /**dox***************************************************************/
 #ifndef DOXYGEN_SHOULD_SKIP_THIS
@@ -1588,7 +1591,7 @@ extern "C" {
    /*---- common routines ----*/
    INT EXPRT cm_get_error(INT code, char *string);
    char EXPRT *cm_get_version(void);
-   INT EXPRT cm_get_revision(void);
+   char EXPRT *cm_get_revision(void);
    INT EXPRT cm_get_experiment_name(char *name, int name_size);
    INT EXPRT cm_get_environment(char *host_name, int host_name_size,
                                 char *exp_name, int exp_name_size);

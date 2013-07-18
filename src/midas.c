@@ -15,12 +15,6 @@
 #include <assert.h>
 #include <signal.h>
 
-/* SVN revision number. This value will be changed by the Subversion
-   system automatically on every revision of midas.c. It will be
-   returned by cm_get_revision(), for example in the odbedit "ver"
-   command */
-char *svn_revision = "$Rev$";
-
 /**dox***************************************************************/
 /** @file midas.c
 The main core C-code for Midas.
@@ -1348,12 +1342,12 @@ char *cm_get_version()
 }
 
 /**
-Return svn revision number of current MIDAS library as a string
+Return git revision number of current MIDAS library as a string
 @return revision number
 */
-int cm_get_revision()
+char* cm_get_revision()
 {
-   return atoi(svn_revision + 6);
+   return GIT_REVISION;
 }
 
 /********************************************************************/

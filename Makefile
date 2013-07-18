@@ -262,6 +262,7 @@ BIN_DIR  = $(OS_DIR)/bin
 #
 # targets
 #
+GIT_REVISION = $(INC_DIR)/git-revision.h
 EXAMPLES = $(BIN_DIR)/consume $(BIN_DIR)/produce \
 	$(BIN_DIR)/rpc_test $(BIN_DIR)/msgdump $(BIN_DIR)/minife \
 	$(BIN_DIR)/minirc $(BIN_DIR)/odb_test
@@ -313,6 +314,7 @@ SHLIB   = $(LIB_DIR)/libmidas-shared.so
 VPATH = $(LIB_DIR):$(INC_DIR)
 
 all: check-mxml \
+	$(GIT_REVISION) \
 	$(OS_DIR) $(LIB_DIR) $(BIN_DIR) \
 	$(LIBNAME) $(SHLIB) \
 	$(ANALYZER) \
@@ -364,6 +366,12 @@ $(BIN_DIR):
            echo "Making directory $(BIN_DIR)" ; \
            mkdir $(BIN_DIR); \
         fi;
+
+#
+# put current GIT revision into header file to be included by programs
+#
+$(GIT_REVISION): $(SRC_DIR)/midas.c $(SRC_DIR)/odb.c $(SRC_DIR)/system.c
+	echo \#define GIT_REVISION \"`git describe --tags`\" > $(GIT_REVISION)
 
 #
 # main binaries
