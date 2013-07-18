@@ -7149,6 +7149,18 @@ void show_mscb_page(char *path, int refresh)
 
    if (strstr(path, "favicon") != NULL)
       return;
+   
+   if (isparam("cmd") && equal_ustring(getparam("cmd"), "Rescan") && isparam("subm")) {
+      /* perform MSCB rescan */
+      strlcpy(cur_subm_name, getparam("subm"), sizeof(cur_subm_name));
+      fd = mscb_init(cur_subm_name, 0, "", FALSE);
+      if (fd) {
+      } else {
+         sprintf(str, "Cannot talk to submaster \"%s\"", cur_subm_name);
+         show_error(str);
+         return;
+      }
+   }
 
    if (isparam("subm") && isparam("node")) {
       strlcpy(cur_subm_name, getparam("subm"), sizeof(cur_subm_name));
