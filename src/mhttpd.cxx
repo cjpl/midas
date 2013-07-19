@@ -5,8 +5,6 @@
 
   Contents:     Web server program for midas RPC calls
 
-  $Id$
-
 \********************************************************************/
 
 const char *mhttpd_svn_revision = "$Rev$";
@@ -7131,7 +7129,7 @@ void create_mscb_tree()
 
 void show_mscb_page(char *path, int refresh)
 {
-   int i, j, fi, fd, status, size, cur_subm_index, cur_node, adr, show_hidden;
+   int i, j, n, ind, fi, fd, status, size, n_addr, *addr, cur_subm_index, cur_node, adr, show_hidden;
    unsigned int uptime;
    float fvalue;
    char str[256], comment[256], *pd, dbuf[256], value[256], evalue[256], unit[256], cur_subm_name[256];
@@ -7140,6 +7138,7 @@ void show_mscb_page(char *path, int refresh)
    KEY key;
    MSCB_INFO info;
    MSCB_INFO_VAR info_var;
+   int ping_addr[0x10000];
 
    cm_get_experiment_database(&hDB, NULL);
 
@@ -7153,8 +7152,87 @@ void show_mscb_page(char *path, int refresh)
    if (isparam("cmd") && equal_ustring(getparam("cmd"), "Rescan") && isparam("subm")) {
       /* perform MSCB rescan */
       strlcpy(cur_subm_name, getparam("subm"), sizeof(cur_subm_name));
+      db_find_key(hDB, hKeySubm, cur_subm_name, &hKeyCurSubm);
+
+      /* create Pwd and Comment if not there */
+      size = 32;
+      str[0] = 0;
+      db_get_value(hDB, hKeyCurSubm, "Pwd", (void *)str, &size, TID_STRING, true);
+      str[0] = 0;
+      db_get_value(hDB, hKeyCurSubm, "Comment", (void *)str, &size, TID_STRING, true);
+
+      db_find_key(hDB, hKeyCurSubm, "Address", &hKeyAddr);
+      if (hKeyAddr) {
+         /* get current address array */
+         db_get_key(hDB, hKeyAddr, &key);
+         n_addr = key.num_values;
+         addr = (int *)malloc(sizeof(int)*n_addr);
+         size = sizeof(int)*n_addr;
+         db_get_data(hDB, hKeyAddr, addr, &size, TID_INT);
+      } else {
+         /* create new address array */
+         db_create_key(hDB, hKeyCurSubm, "Address", TID_INT);
+         db_find_key(hDB, hKeyCurSubm, "Address", &hKeyAddr);
+         n_addr = 0;
+         addr = (int *)malloc(sizeof(int));
+      }
+      
       fd = mscb_init(cur_subm_name, 0, "", FALSE);
-      if (fd) {
+      if (fd >= 0) {
+         /* fill table of possible addresses */
+         for (i=0 ; i<0x10000 ; i++)
+            ping_addr[i] = 0;
+         for (i=0 ; i<1000 ; i++)        // 0..999
+            ping_addr[i] = 1;
+         for (i=0 ; i<0x10000 ; i+=100)  // 100, 200, ...
+            ping_addr[i] = 1;
+         for (i=0 ; i<0x10000 ; i+= 0x100)
+            ping_addr[i] = 1;            // 256, 512, ...
+         for (i=0xFF00 ; i<0x10000 ; i++)
+            ping_addr[i] = 1;            // 0xFF00-0xFFFF
+
+         for (ind = n = 0; ind < 0x10000; ind++) {
+            if (!ping_addr[ind])
+               continue;
+            
+            printf("%d\r", ind);
+            status = mscb_ping(fd, (unsigned short) ind, 1);
+            
+            if (status == MSCB_SUCCESS) {
+               
+               /* node found, search next 100 as well */
+               for (j=ind; j<ind+100 && j<0x10000 ; j++)
+                  if (j >= 0)
+                     ping_addr[j] = 1;
+               
+               status = mscb_info(fd, (unsigned short) ind, &info);
+               strncpy(str, info.node_name, sizeof(info.node_name));
+               str[16] = 0;
+               
+               if (status == MSCB_SUCCESS) {
+                  /* check if node already in list */
+                  for (j=0 ; j<n_addr ; j++)
+                     if (addr[j] == ind)
+                        break;
+                  if (j == n_addr) {
+                     addr = (int *)realloc(addr, sizeof(int)*(n_addr+1));
+                     addr[n_addr] = ind;
+                     n_addr ++;
+                  }
+               }
+            }
+         }
+         
+         db_set_data(hDB, hKeyAddr, addr, n_addr*sizeof(int), n_addr, TID_INT);
+         free(addr);
+
+         if (path[0])
+            sprintf(str, "../%s", cur_subm_name);
+         else
+            sprintf(str, "%s", cur_subm_name);
+         redirect(str);
+         return;
+         
       } else {
          sprintf(str, "Cannot talk to submaster \"%s\"", cur_subm_name);
          show_error(str);
@@ -7166,12 +7244,13 @@ void show_mscb_page(char *path, int refresh)
       strlcpy(cur_subm_name, getparam("subm"), sizeof(cur_subm_name));
       cur_node = atoi(getparam("node"));
 
+      /* write data to node */
       if (isparam("idx") && isparam("value")) {
          i = atoi(getparam("idx"));
          strlcpy(value, getparam("value"), sizeof(value));
 
          fd = mscb_init(cur_subm_name, 0, "", FALSE);
-         if (fd) {
+         if (fd >= 0) {
             status = mscb_info_variable(fd, 
                        (unsigned short) cur_node, (unsigned char) i, &info_var);
             if (status == MSCB_SUCCESS) {
@@ -7386,42 +7465,35 @@ void show_mscb_page(char *path, int refresh)
       return;
    }
    
-   /* create entries if not present */
-   size = 32;
-   str[0] = 0;
-   db_get_value(hDB, hKeyCurSubm, "Pwd", (void *)str, &size, TID_STRING, true);
-   str[0] = 0;
-   db_get_value(hDB, hKeyCurSubm, "Comment", (void *)str, &size, TID_STRING, true);
-   size = sizeof(int);
-   i = 0;
-   db_get_value(hDB, hKeyCurSubm, "Address", &i, &size, TID_INT, true);
-
    rsprintf("<select name=\"node\" size=20 onChange=\"document.form1.submit();\">\r\n");
    db_find_key(hDB, hKeyCurSubm, "Address", &hKeyAddr);
-   assert(hKeyAddr);
-   db_get_key(hDB, hKeyAddr, &key);
-   size = sizeof(adr);
-
-   /* check if current node is in list */
-   for (i = 0; i<key.num_values ;i++) {
+   if (hKeyAddr) {
+      db_get_key(hDB, hKeyAddr, &key);
       size = sizeof(adr);
-      db_get_data_index(hDB, hKeyAddr, &adr, &size, i, TID_INT);
-      if (adr == cur_node)
-         break;
-   }
-   if (i == key.num_values) // if not found, use first one in list
-      db_get_data_index(hDB, hKeyAddr, &cur_node, &size, 0, TID_INT);
-
-   for (i = 0; i<key.num_values ;i++) {
-      size = sizeof(adr);
-      db_get_data_index(hDB, hKeyAddr, &adr, &size, i, TID_INT);
-      sprintf(str, "%d", adr);
-      if (cur_node == 0 && i == 0)
-         cur_node = adr;
-      if (adr == cur_node)
-         rsprintf("<option selected>%s</option>\r\n", str);
-      else
-         rsprintf("<option>%s</option>\r\n", str);
+      
+      /* check if current node is in list */
+      for (i = 0; i<key.num_values ;i++) {
+         size = sizeof(adr);
+         db_get_data_index(hDB, hKeyAddr, &adr, &size, i, TID_INT);
+         if (adr == cur_node)
+            break;
+      }
+      if (i == key.num_values) // if not found, use first one in list
+         db_get_data_index(hDB, hKeyAddr, &cur_node, &size, 0, TID_INT);
+      
+      for (i = 0; i<key.num_values ;i++) {
+         size = sizeof(adr);
+         db_get_data_index(hDB, hKeyAddr, &adr, &size, i, TID_INT);
+         if (adr != -1) {
+            sprintf(str, "%d", adr);
+            if (cur_node == 0 && i == 0)
+               cur_node = adr;
+            if (adr == cur_node)
+               rsprintf("<option selected>%s</option>\r\n", str);
+            else
+               rsprintf("<option>%s</option>\r\n", str);
+         }
+      }
    }
    rsprintf("</select>\r\n");
 
@@ -7432,7 +7504,7 @@ void show_mscb_page(char *path, int refresh)
    rsprintf("<tr><td colspan=3 align=center><b>%s:%d</b>", key.name, cur_node);
    rsprintf("<hr></td></tr>\r\n");
    str[0] = 0;
-   size = sizeof(str);
+   size = 32;
    db_get_value(hDB, hKeyCurSubm, "Pwd", str, &size, TID_STRING, TRUE);
 
    fd = mscb_init(key.name, 0, str, FALSE);
@@ -7440,7 +7512,7 @@ void show_mscb_page(char *path, int refresh)
       if (fd == EMSCB_WRONG_PASSWORD)
          rsprintf("<tr><td colspan=3><b>Invalid password</b></td>");
       else
-         rsprintf("<tr><td colspan=3><b>Communication problem</b></td>");
+         rsprintf("<tr><td colspan=3><b>Submaster does not respond</b></td>");
       goto mscb_error;
    }
    mscb_set_eth_max_retry(fd, 3);
