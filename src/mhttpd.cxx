@@ -7195,9 +7195,7 @@ void show_mscb_page(char *path, int refresh)
             if (!ping_addr[ind])
                continue;
             
-            printf("%d\r", ind);
             status = mscb_ping(fd, (unsigned short) ind, 1);
-            
             if (status == MSCB_SUCCESS) {
                
                /* node found, search next 100 as well */
@@ -7457,7 +7455,19 @@ void show_mscb_page(char *path, int refresh)
    /*---- node list ----*/
    rsprintf("<td class=\"node\">\r\n");
    rsprintf("Node ");
-   rsprintf("<input type=submit name=cmd value=\"Rescan\">");
+   
+   rsprintf("<script type=\"text/javascript\">\n");
+   rsprintf("<!--\n");
+   rsprintf("function rescan()\n");
+   rsprintf("{\n");
+   rsprintf("   flag = confirm('Rescan can take up to one minute.');\n");
+   rsprintf("   if (flag == true)\n");
+   rsprintf("      window.location.href = '?cmd=Rescan&subm=%s';\n", cur_subm_name);
+   rsprintf("}\n");
+   rsprintf("//-->\n");
+   rsprintf("</script>\n");
+   
+   rsprintf("<input type=button name=cmd value=\"Rescan\" onClick=\"rescan();\">");
    rsprintf("<hr>\r\n");
 
    if (!hKeyCurSubm) {
