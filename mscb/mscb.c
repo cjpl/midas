@@ -1246,6 +1246,7 @@ int mscb_init(char *device, int bufsize, const char *password, int debug)
       status = mscb_exchg(index + 1, buf, &n, 1, RS485_FLAG_CMD);
       
       if (status == MSCB_TIMEOUT || n < 2) {
+         mscb_exit(index+1);
          debug_log("return EMSCB_RPC_ERROR\n", 0);
          return EMSCB_RPC_ERROR;
       }
