@@ -1601,6 +1601,10 @@ void show_status_page(int refresh, const char *cookie_wpwd)
             /* discard wrong equipments (caused by analyzer) */
             if (size <= (int)sizeof(equipment))
                db_get_record(hDB, hkeytmp, &equipment, &size, 0);
+            
+            /* skip hidden equipments */
+            if (equipment.hidden)
+               continue;
          }
 
          db_find_key(hDB, hsubkey, "Statistics", &hkeytmp);
