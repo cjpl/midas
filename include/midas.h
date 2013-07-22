@@ -987,6 +987,7 @@ typedef struct {
    char frontend_file_name[256];      /**< Source file used for user FE      */
    char status[256];                  /**< Current status of equipment       */
    char status_color[NAME_LENGTH];    /**< Color to be used by mhttpd for status */
+   BOOL hidden;                       /**< Hidden flag                       */
 } EQUIPMENT_INFO;
 
 typedef struct {
