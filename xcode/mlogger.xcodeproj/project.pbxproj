@@ -36,24 +36,24 @@
 
 /* Begin PBXFileReference section */
 		D5A57210139D63EF00B65A0A /* mlogger */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = mlogger; sourceTree = BUILT_PRODUCTS_DIR; };
-		D5A5721C139D642A00B65A0A /* alarm.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = alarm.c; path = ../../src/alarm.c; sourceTree = "<group>"; };
-		D5A5721D139D642A00B65A0A /* elog.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = elog.c; path = ../../src/elog.c; sourceTree = "<group>"; };
-		D5A5721F139D642A00B65A0A /* mrpc.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = mrpc.c; path = ../../src/mrpc.c; sourceTree = "<group>"; };
-		D5A57220139D642A00B65A0A /* odb.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = odb.c; path = ../../src/odb.c; sourceTree = "<group>"; };
-		D5A57221139D642A00B65A0A /* system.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = system.c; path = ../../src/system.c; sourceTree = "<group>"; };
-		D5A57228139D645500B65A0A /* mxml.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = mxml.c; path = ../../../mxml/mxml.c; sourceTree = "<group>"; };
+		D5A5721C139D642A00B65A0A /* alarm.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = alarm.c; path = /midas/src/alarm.c; sourceTree = "<absolute>"; };
+		D5A5721D139D642A00B65A0A /* elog.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = elog.c; path = /midas/src/elog.c; sourceTree = "<absolute>"; };
+		D5A5721F139D642A00B65A0A /* mrpc.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = mrpc.c; path = /midas/src/mrpc.c; sourceTree = "<absolute>"; };
+		D5A57220139D642A00B65A0A /* odb.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = odb.c; path = /midas/src/odb.c; sourceTree = "<absolute>"; };
+		D5A57221139D642A00B65A0A /* system.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = system.c; path = /midas/src/system.c; sourceTree = "<absolute>"; };
+		D5A57228139D645500B65A0A /* mxml.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = mxml.c; path = /mxml/mxml.c; sourceTree = "<absolute>"; };
 		D5A57229139D645500B65A0A /* mxml.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = mxml.h; path = /mxml/mxml.h; sourceTree = "<absolute>"; };
-		D5A5722A139D645500B65A0A /* strlcpy.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = strlcpy.c; path = ../../../mxml/strlcpy.c; sourceTree = "<group>"; };
+		D5A5722A139D645500B65A0A /* strlcpy.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = strlcpy.c; path = /mxml/strlcpy.c; sourceTree = "<group>"; };
 		D5A5722B139D645500B65A0A /* strlcpy.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = strlcpy.h; path = /mxml/strlcpy.h; sourceTree = "<absolute>"; };
-		D5A5722F139D648900B65A0A /* midas.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = midas.h; path = ../../include/midas.h; sourceTree = "<group>"; };
-		D5A57230139D648900B65A0A /* midasinc.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = midasinc.h; path = ../../include/midasinc.h; sourceTree = "<group>"; };
-		D5A57231139D648900B65A0A /* msystem.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = msystem.h; path = ../../include/msystem.h; sourceTree = "<group>"; };
-		D5A57232139D662F00B65A0A /* mlogger.cxx */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = mlogger.cxx; path = ../../src/mlogger.cxx; sourceTree = "<group>"; };
-		D5A57234139D664F00B65A0A /* midas.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = midas.c; path = ../../src/midas.c; sourceTree = "<group>"; };
-		D5A57236139D668100B65A0A /* ftplib.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = ftplib.c; path = ../../src/ftplib.c; sourceTree = "<group>"; };
-		D5A57238139D669300B65A0A /* history_midas.cxx */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = history_midas.cxx; path = ../../src/history_midas.cxx; sourceTree = "<group>"; };
-		D5A57239139D669300B65A0A /* history_sql.cxx */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = history_sql.cxx; path = ../../src/history_sql.cxx; sourceTree = "<group>"; };
-		D5A5723A139D669300B65A0A /* history.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = history.c; path = ../../src/history.c; sourceTree = "<group>"; };
+		D5A5722F139D648900B65A0A /* midas.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = midas.h; path = /midas/include/midas.h; sourceTree = "<absolute>"; };
+		D5A57230139D648900B65A0A /* midasinc.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = midasinc.h; path = /midas/include/midasinc.h; sourceTree = "<absolute>"; };
+		D5A57231139D648900B65A0A /* msystem.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = msystem.h; path = /midas/include/msystem.h; sourceTree = "<absolute>"; };
+		D5A57232139D662F00B65A0A /* mlogger.cxx */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = mlogger.cxx; path = /midas/src/mlogger.cxx; sourceTree = "<absolute>"; };
+		D5A57234139D664F00B65A0A /* midas.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = midas.c; path = /midas/src/midas.c; sourceTree = "<absolute>"; };
+		D5A57236139D668100B65A0A /* ftplib.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = ftplib.c; path = /midas/src/ftplib.c; sourceTree = "<absolute>"; };
+		D5A57238139D669300B65A0A /* history_midas.cxx */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = history_midas.cxx; path = /midas/src/history_midas.cxx; sourceTree = "<absolute>"; };
+		D5A57239139D669300B65A0A /* history_sql.cxx */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = history_sql.cxx; path = /midas/src/history_sql.cxx; sourceTree = "<absolute>"; };
+		D5A5723A139D669300B65A0A /* history.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = history.c; path = /midas/src/history.c; sourceTree = "<absolute>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
