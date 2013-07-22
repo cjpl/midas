@@ -47,14 +47,14 @@
 		D5C1C9E813A6D2BB009B92EC /* strlcpy.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = strlcpy.c; path = /mxml/strlcpy.c; sourceTree = "<absolute>"; };
 		D5C1C9E913A6D2BB009B92EC /* alarm.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = alarm.c; path = /midas/src/alarm.c; sourceTree = "<absolute>"; };
 		D5C1C9EA13A6D2BB009B92EC /* elog.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = elog.c; path = /midas/src/elog.c; sourceTree = "<absolute>"; };
-		D5C1C9EB13A6D2BB009B92EC /* midas.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = midas.c; path = /midas//src/midas.c; sourceTree = "<absolute>"; };
+		D5C1C9EB13A6D2BB009B92EC /* midas.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = midas.c; path = "/midas//src/midas.c"; sourceTree = "<absolute>"; };
 		D5C1C9EC13A6D2BB009B92EC /* mrpc.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = mrpc.c; path = /midas/src/mrpc.c; sourceTree = "<absolute>"; };
 		D5C1C9ED13A6D2BB009B92EC /* odb.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = odb.c; path = /midas/src/odb.c; sourceTree = "<absolute>"; };
 		D5C1C9EE13A6D2BB009B92EC /* system.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = system.c; path = /midas/src/system.c; sourceTree = "<absolute>"; };
 		D5C1C9F913A6D2CC009B92EC /* frontend.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = frontend.c; path = /midas/examples/experiment/frontend.c; sourceTree = "<absolute>"; };
 		D5C1C9FB13A6D382009B92EC /* mfe.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = mfe.c; path = /midas/src/mfe.c; sourceTree = "<absolute>"; };
 		D5C1C9FD13A6D3FD009B92EC /* camacnul.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = camacnul.c; path = /midas/drivers/camac/camacnul.c; sourceTree = "<absolute>"; };
-		D5C1C9FF13A6D4AF009B92EC /* mcstd.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = mcstd.h; path = /midas//include/mcstd.h; sourceTree = "<absolute>"; };
+		D5C1C9FF13A6D4AF009B92EC /* mcstd.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = mcstd.h; path = "/midas//include/mcstd.h"; sourceTree = "<absolute>"; };
 		D5C1CA0213A6D5FD009B92EC /* cnaf_callback.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = cnaf_callback.c; path = /midas/src/cnaf_callback.c; sourceTree = "<absolute>"; };
 /* End PBXFileReference section */
 
@@ -147,7 +147,7 @@
 		D52CDD8D13A6D1FF0006630C /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
-				LastUpgradeCheck = 0420;
+				LastUpgradeCheck = 0460;
 				ORGANIZATIONNAME = PSI;
 			};
 			buildConfigurationList = D52CDD9013A6D1FF0006630C /* Build configuration list for PBXProject "frontend" */;
@@ -196,6 +196,10 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ARCHS = "$(ARCHS_STANDARD_32_64_BIT)";
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu99;
 				GCC_OPTIMIZATION_LEVEL = 0;
 				GCC_PREPROCESSOR_DEFINITIONS = (
@@ -208,6 +212,7 @@
 				GCC_VERSION = com.apple.compilers.llvm.clang.1_0;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 10.6;
 				ONLY_ACTIVE_ARCH = YES;
@@ -219,6 +224,10 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ARCHS = "$(ARCHS_STANDARD_32_64_BIT)";
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu99;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					DEBUG,
@@ -229,6 +238,7 @@
 				GCC_VERSION = com.apple.compilers.llvm.clang.1_0;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 10.6;
 				SDKROOT = macosx;

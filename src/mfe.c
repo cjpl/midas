@@ -1436,10 +1436,10 @@ int receive_trigger_event(EQUIPMENT *eq)
   int i, status;
    EVENT_HEADER *prb, *pevent;
    void *p;
-   int nbytes;
 
 #if 0
    {
+      int nbytes;
       static int count = 0;
       if (((count++) % 100) == 0) {
          rb_get_buffer_level(rbh2, &nbytes);
