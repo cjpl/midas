@@ -7150,11 +7150,21 @@ void show_mscb_page(char *path, int refresh)
    if (strstr(path, "favicon") != NULL)
       return;
    
-   if (isparam("cmd") && equal_ustring(getparam("cmd"), "Rescan") && isparam("subm")) {
-      /* perform MSCB rescan */
-      strlcpy(cur_subm_name, getparam("subm"), sizeof(cur_subm_name));
+   strlcpy(cur_subm_name, getparam("subm"), sizeof(cur_subm_name));
+   if (cur_subm_name[0] == 0) {
+      db_enum_key(hDB, hKeySubm, 0, &hKeyCurSubm);
+      if (!hKeyCurSubm) {
+         sprintf(str, "No submaster defined under /MSCB/Submaster");
+         show_error(str);
+         return;
+      }
+      db_get_key(hDB, hKeyCurSubm, &key);
+      strcpy(cur_subm_name, key.name);
+   } else
       db_find_key(hDB, hKeySubm, cur_subm_name, &hKeyCurSubm);
-
+   
+   /* perform MSCB rescan */
+   if (isparam("cmd") && equal_ustring(getparam("cmd"), "Rescan") && isparam("subm")) {
       /* create Pwd and Comment if not there */
       size = 32;
       str[0] = 0;
@@ -7183,10 +7193,10 @@ void show_mscb_page(char *path, int refresh)
          /* get current node comments */
          db_get_key(hDB, hKeyComm, &key);
          node_comment = (char *)malloc(32*key.num_values);
-         size = sizeof(int)*key.num_values;
-         db_get_data(hDB, hKeyComm, node_comment, &size, TID_INT);
+         size = 32*key.num_values;
+         db_get_data(hDB, hKeyComm, node_comment, &size, TID_STRING);
       } else {
-         /* create new address array */
+         /* create new comment array */
          db_create_key(hDB, hKeyCurSubm, "Node comment", TID_STRING);
          db_find_key(hDB, hKeyCurSubm, "Node comment", &hKeyComm);
          node_comment = (char *)malloc(32);
