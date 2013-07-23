@@ -12902,6 +12902,8 @@ void send_icon(const char *icon)
 
 /*------------------------------------------------------------------*/
 
+/* internal minimal CSS for better readable fonts */
+
 char mhttpd_css[] = "body {\
   margin:3px;\
   color:black;\
@@ -12920,10 +12922,12 @@ a:focus { color:#0000FF; text-decoration:underline }\
 
 void send_css()
 {
-   int length;
-   char str[256], format[256];
+   int length, fh, size;
+   char str[256], format[256], filename[256];
    time_t now;
    struct tm *gmt;
+   HNDLE hDB;
+   struct stat stat_buf;
 
    rsprintf("HTTP/1.1 200 Document follows\r\n");
    rsprintf("Server: MIDAS HTTP %d\r\n", mhttpd_revision());
@@ -12938,11 +12942,37 @@ void send_css()
    rsprintf("Expires: %s\r\n", str);
    rsprintf("Content-Type: text/css\r\n");
 
-   length = strlen(mhttpd_css);
-   rsprintf("Content-Length: %d\r\n\r\n", length);
-
-   return_length = strlen(return_buffer) + length;
-   memcpy(return_buffer + strlen(return_buffer), mhttpd_css, length);
+   /* look for external CSS file */
+   cm_get_experiment_database(&hDB, NULL);
+   size = sizeof(filename);
+   fh = 0;
+   str[0] = 0;
+   if (db_get_value(hDB, 0, "/Custom/Path", str, &size, TID_STRING, FALSE) == DB_SUCCESS) {
+      strlcpy(filename, str, sizeof(filename));
+      if (filename[strlen(filename)-1] != DIR_SEPARATOR)
+         strlcat(filename, DIR_SEPARATOR_STR, sizeof(filename));
+      strlcat(filename, "mhttpd.css", sizeof(filename));
+      fh = open(filename, O_RDONLY | O_BINARY);
+      if (fh > 0) {
+         fstat(fh, &stat_buf);
+         length = stat_buf.st_size;
+         rsprintf("Content-Length: %d\r\n\r\n", length);
+         
+         return_length = strlen(return_buffer) + length;
+         read(fh, return_buffer + strlen(return_buffer), length);
+         close(fh);
+      }
+   }
+   
+   if (!fh)  {
+      length = strlen(mhttpd_css);
+      rsprintf("Content-Length: %d\r\n\r\n", length);
+      
+      return_length = strlen(return_buffer) + length;
+      memcpy(return_buffer + strlen(return_buffer), mhttpd_css, length);
+   }
+   
+   
 }
 
 /*------------------------------------------------------------------*/
