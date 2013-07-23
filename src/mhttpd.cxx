@@ -12964,20 +12964,35 @@ void send_css()
       }
    }
    
-   if (!fh)  {
+   if (fh < 0)  {
       length = strlen(mhttpd_css);
       rsprintf("Content-Length: %d\r\n\r\n", length);
       
       return_length = strlen(return_buffer) + length;
       memcpy(return_buffer + strlen(return_buffer), mhttpd_css, length);
    }
-   
-   
 }
 
 /*------------------------------------------------------------------*/
 
-const char *mhttpd_js = 
+const char *mhttpd_js =
+"/* MIDAS type definitions */\n"
+"var TID_BYTE = 1;\n"
+"var TID_SBYTE = 2;\n"
+"var TID_CHAR = 3;\n"
+"var TID_WORD = 4;\n"
+"var TID_SHORT = 5;\n"
+"var TID_DWORD = 6;\n"
+"var TID_INT = 7;\n"
+"var TID_BOOL = 8;\n"
+"var TID_FLOAT = 9;\n"
+"var TID_DOUBLE = 10;\n"
+"var TID_BITFIELD = 11;\n"
+"var TID_STRING = 12;\n"
+"var TID_ARRAY = 13;\n"
+"var TID_STRUCT = 14;\n"
+"var TID_KEY = 15;\n"
+"var TID_LINK = 16;\n"
 "\n"
 "document.onmousemove = getMouseXY;\n"
 "\n"
@@ -13283,10 +13298,12 @@ const char *mhttpd_js =
 
 void send_js()
 {
-   int i, length;
-   char str[256], format[256], *buf;
+   int length, size, fh;
+   char str[256], format[256], filename[256];
    time_t now;
    struct tm *gmt;
+   HNDLE hDB;
+   struct stat stat_buf;
 
    rsprintf("HTTP/1.1 200 Document follows\r\n");
    rsprintf("Server: MIDAS HTTP %d\r\n", mhttpd_revision());
@@ -13301,21 +13318,35 @@ void send_js()
    rsprintf("Expires: %s\r\n", str);
    rsprintf("Content-Type: text/javascript\r\n");
 
-   buf = (char*)malloc(strlen(mhttpd_js)+10000);
-   strcpy(buf, mhttpd_js);
-   strcat(buf, "\n/* MIDAS type definitions */\n");
-   for (i=1 ; i<TID_LAST ; i++) {
-      sprintf(str, "var TID_%s = %d;\n", rpc_tid_name(i), i);
-      strcat(buf, str);
+   /* look for external CSS file */
+   cm_get_experiment_database(&hDB, NULL);
+   size = sizeof(filename);
+   fh = 0;
+   str[0] = 0;
+   if (db_get_value(hDB, 0, "/Custom/Path", str, &size, TID_STRING, FALSE) == DB_SUCCESS) {
+      strlcpy(filename, str, sizeof(filename));
+      if (filename[strlen(filename)-1] != DIR_SEPARATOR)
+         strlcat(filename, DIR_SEPARATOR_STR, sizeof(filename));
+      strlcat(filename, "mhttpd.js", sizeof(filename));
+      fh = open(filename, O_RDONLY | O_BINARY);
+      if (fh > 0) {
+         fstat(fh, &stat_buf);
+         length = stat_buf.st_size;
+         rsprintf("Content-Length: %d\r\n\r\n", length);
+         
+         return_length = strlen(return_buffer) + length;
+         read(fh, return_buffer + strlen(return_buffer), length);
+         close(fh);
+      }
    }
-
-   length = strlen(buf);
-   rsprintf("Content-Length: %d\r\n\r\n", length);
-
-   return_length = strlen(return_buffer) + length;
-   memcpy(return_buffer + strlen(return_buffer), buf, length);
-
-   free(buf);
+   
+   if (fh < 0)  {
+      length = strlen(mhttpd_js);
+      rsprintf("Content-Length: %d\r\n\r\n", length);
+      
+      return_length = strlen(return_buffer) + length;
+      memcpy(return_buffer + strlen(return_buffer), mhttpd_js, length);
+   }
 }
 
 /*------------------------------------------------------------------*/
