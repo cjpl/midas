@@ -64,6 +64,7 @@ char midas_expt[256];
 #define MAX_N_ALLOWED_HOSTS 10
 char allowed_host[MAX_N_ALLOWED_HOSTS][PARAM_LENGTH];
 int  n_allowed_hosts;
+BOOL expand_equipment;
 
 const char *mname[] = {
    "January",
@@ -1051,8 +1052,8 @@ int requested_old_state = 0;
 
 void show_status_page(int refresh, const char *cookie_wpwd)
 {
-   int i, j, k, h, m, s, status, size, type, n_alarm, n_items;
-   BOOL flag, first;
+   int i, j, k, h, m, s, status, size, type, n_alarm, n_items, n_hidden;
+   BOOL flag, first, expand;
    char str[1000], msg[256], name[32], ref[256], bgcol[32], fgcol[32], alarm_class[32],
       value_str[256], status_data[256], *p;
    const char *trans_name[] = { "Start", "Stop", "Pause", "Resume" };
@@ -1075,6 +1076,25 @@ void show_status_page(int refresh, const char *cookie_wpwd)
 
    cm_get_experiment_database(&hDB, NULL);
 
+   expand = FALSE;
+   if (isparam("expand")) {
+      expand = (BOOL)atoi(getparam("expand"));
+      rsprintf("HTTP/1.0 302 Found\r\n");
+      rsprintf("Server: MIDAS HTTP %d\r\n", mhttpd_revision());
+      
+      time(&now);
+      now += 3600 * 24;
+      gmt = gmtime(&now);
+      strftime(str, sizeof(str), "%A, %d-%b-%Y %H:00:00 GMT", gmt);
+      
+      if (expand)
+         rsprintf("Set-Cookie: expeq=1; path=/; expires=%s\r\n");
+      else
+         rsprintf("Set-Cookie: expeq=; path=/; expires=%s\r\n");
+      rsprintf("Location: ./\n\n<html>redir</html>\r\n");
+      return;
+   }
+   
    status = db_check_record(hDB, 0, "/Runinfo", strcomb(runinfo_str), FALSE);
    if (status == DB_STRUCT_MISMATCH) {
       cm_msg(MERROR, "show_status_page", "Aborting on mismatching /Runinfo structure");
@@ -1578,9 +1598,35 @@ void show_status_page(int refresh, const char *cookie_wpwd)
 
    /*---- Equipment list ----*/
 
+   /* count hidden equipments */
+   n_hidden = 0;
+   if (db_find_key(hDB, 0, "/equipment", &hkey) == DB_SUCCESS) {
+      for (i = 0 ;; i++) {
+         db_enum_key(hDB, hkey, i, &hsubkey);
+         if (!hsubkey)
+            break;
+         
+         db_get_key(hDB, hsubkey, &key);
+         db_find_key(hDB, hsubkey, "Common", &hkeytmp);
+         if (hkeytmp) {
+            size = sizeof(equipment);
+            db_get_record(hDB, hkeytmp, &equipment, &size, 0);
+            if (equipment.hidden)
+               n_hidden++;
+         }
+      }
+   }
+   
    rsprintf("<tr><td colspan=6><table border=1 width=100%%>\n");
 
-   rsprintf("<tr><th>Equipment<th>Status<th>Events");
+   rsprintf("<tr><th>Equipment");
+   if (n_hidden) {
+      if (expand_equipment)
+         rsprintf("&nbsp;<a href=\"?expand=0\">-</a>");
+      else
+         rsprintf("&nbsp;<a href=\"?expand=1\">+</a>");
+   }
+   rsprintf("<th>Status<th>Events");
    rsprintf("<th>Events[/s]<th>Data[MB/s]\n");
 
    if (db_find_key(hDB, 0, "/equipment", &hkey) == DB_SUCCESS) {
@@ -1603,7 +1649,7 @@ void show_status_page(int refresh, const char *cookie_wpwd)
                db_get_record(hDB, hkeytmp, &equipment, &size, 0);
             
             /* skip hidden equipments */
-            if (equipment.hidden)
+            if (equipment.hidden && !expand_equipment)
                continue;
          }
 
@@ -14541,6 +14587,11 @@ void server_loop()
             refresh = atoi(strstr(net_buffer, "midas_refr=") + 11);
          else
             refresh = DEFAULT_REFRESH;
+
+         if (strstr(net_buffer, "expeq=") != NULL)
+            expand_equipment = atoi(strstr(net_buffer, "expeq=") + 6);
+         else
+            expand_equipment = FALSE;
 
          /* extract referer */
          referer[0] = 0;
