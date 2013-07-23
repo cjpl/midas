@@ -1,0 +1,15 @@
+body {
+  margin:3px;
+  color:black;
+  background-color:white;
+  font-family:verdana,tahoma,sans-serif;
+}
+
+/* standard link colors and decorations */
+a:link { color:#0000FF; text-decoration:none }
+a:visited { color:#800080; text-decoration:none }
+a:hover { color:#0000FF; text-decoration:underline }
+a:active { color:#0000FF; text-decoration:underline }
+a:focus { color:#0000FF; text-decoration:underline }
+
+
