@@ -3062,7 +3062,9 @@ INT db_set_value(HNDLE hDB, HNDLE hKeyRoot, const char *key_name, const void *da
 
       status = db_find_key(hDB, hKeyRoot, key_name, &hKey);
       if (status == DB_NO_KEY) {
-         db_create_key(hDB, hKeyRoot, key_name, type);
+         status = db_create_key(hDB, hKeyRoot, key_name, type);
+         if (status != DB_SUCCESS && status != DB_CREATED)
+            return status;
          status = db_find_link(hDB, hKeyRoot, key_name, &hKey);
       }
 
