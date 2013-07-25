@@ -2756,7 +2756,8 @@ int main(int argc, char *argv[])
           usage:
             printf("usage: odbedit [-h Hostname] [-e Experiment] [-d ODB Subtree]\n");
             printf("               [-c Command] [-c @CommandFile] [-s size]\n");
-            printf("               [-g (debug)] [-C (connect to corrupted ODB)] [-R (reload ODB from .ODB.SHM)]\n\n");
+            printf("               [-g (debug)] [-C (connect to corrupted ODB)]\n");
+            printf("               [-R (reload ODB from .ODB.SHM)]\n\n");
             printf("For a list of valid commands start odbedit interactively\n");
             printf("and type \"help\".\n");
             return 0;
