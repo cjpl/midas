@@ -46,23 +46,10 @@ MUTEX_T *tm;
 INT thread(void *p)
 {
    int status;
-   /*
-   do {
-      ss_sleep(1000);
-      status = ss_mutex_wait_for(tm, 10000);
-      printf("%d in critical section, mutex lock status %d\n", ss_gettid(), status);
-      ss_sleep(3000);
-      printf("%d out of critical section\n", ss_gettid());
-      status = ss_mutex_release(tm);
-      if (status != SUCCESS)
-         printf("%d unlock status %d\n", ss_gettid(), status);
-   } while (1);
-   */
    char str[32];
    HNDLE hDB;
    cm_get_experiment_database(&hDB, NULL);
    do {
-      ss_sleep(1000);
       sprintf(str, "%d", ss_gettid());
       status = db_set_value(hDB, 0, "/Experiment/Name", str, sizeof(str), 1, TID_STRING);
    } while (1);

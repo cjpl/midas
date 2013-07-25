@@ -401,6 +401,7 @@ typedef struct {
    INT index;                   /* connection index / tid       */
    BOOL protect;                /* read/write protection        */
    MUTEX_T *mutex;              /* mutex for multi-thread access */
+   MUTEX_T *am;                 /* temporary access mutex       */
 
 } DATABASE;
 
