@@ -3261,6 +3261,28 @@ INT cm_set_transition_sequence(INT transition, INT sequence_number)
 
 }
 
+INT cm_set_run_state(INT state)
+{
+   INT status;
+   HNDLE hDB, hKey;
+   
+   cm_get_experiment_database(&hDB, &hKey);
+   
+   /* unlock database */
+   db_set_mode(hDB, hKey, MODE_READ | MODE_WRITE, TRUE);
+   
+   /* set value */
+   status = db_set_value(hDB, hKey, "Run state", &state, sizeof(INT), 1, TID_INT);
+   if (status != DB_SUCCESS)
+      return status;
+   
+   /* re-lock database */
+   db_set_mode(hDB, hKey, MODE_READ, TRUE);
+   
+   return CM_SUCCESS;
+   
+}
+
 /**dox***************************************************************/
 #ifndef DOXYGEN_SHOULD_SKIP_THIS
 
@@ -3382,10 +3404,11 @@ INT cm_check_deferred_transition()
 #endif                          /* DOXYGEN_SHOULD_SKIP_THIS */
 
 typedef struct {
-   int sequence_number;
-   char host_name[HOST_NAME_LENGTH];
-   char client_name[NAME_LENGTH];
-   int port;
+   int   sequence_number;
+   char  host_name[HOST_NAME_LENGTH];
+   char  client_name[NAME_LENGTH];
+   int   port;
+   HNDLE hKey;
 } TR_CLIENT;
 
 typedef struct {
@@ -3582,8 +3605,10 @@ INT cm_transition1(INT transition, INT run_number, char *errstr, INT errstr_size
       size = sizeof(i);
       db_get_value(hDB, 0, "/Runinfo/Transition in progress", &i, &size, TID_INT, TRUE);
       if (i == 1) {
-         sprintf(errstr, "Start/Stop transition %d already in progress, please try again later\n", i);
-         strlcat(errstr, "or set \"/Runinfo/Transition in progress\" manually to zero.\n", errstr_size);
+         if (errstr) {
+            sprintf(errstr, "Start/Stop transition %d already in progress, please try again later\n", i);
+            strlcat(errstr, "or set \"/Runinfo/Transition in progress\" manually to zero.\n", errstr_size);
+         }
          return CM_TRANSITION_IN_PROGRESS;
       }
    }
@@ -3829,8 +3854,10 @@ INT cm_transition1(INT transition, INT run_number, char *errstr, INT errstr_size
                if (hSubkey == hKeylocal) {
                   /* remember own client */
                   tr_client[n_tr_clients].port = 0;
+                  tr_client[n_tr_clients].hKey = hKeylocal;
                } else {
                   /* get client info */
+                  tr_client[n_tr_clients].hKey = hSubkey;
                   size = sizeof(client_name);
                   db_get_value(hDB, hSubkey, "Name", client_name, &size, TID_STRING, TRUE);
                   strcpy(tr_client[n_tr_clients].client_name, client_name);
@@ -4009,6 +4036,12 @@ INT cm_transition1(INT transition, INT run_number, char *errstr, INT errstr_size
                       (INT) strlen(error) + 1 < (INT) errstr_size ? (INT) strlen(error) + 1 : errstr_size);
          }
 
+         /* put error string into client entry in ODB */
+         db_set_mode(hDB, tr_client[idx].hKey, MODE_READ | MODE_WRITE, TRUE);
+         db_set_value(hDB, tr_client[idx].hKey, "Error", error, 256, 1, TID_STRING);
+         db_set_mode(hDB, tr_client[idx].hKey, MODE_READ, TRUE);
+
+         
          if (transition != TR_STOP && status != CM_SUCCESS) {
             /* indicate abort */
             i = 1;
