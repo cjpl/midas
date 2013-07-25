@@ -3388,9 +3388,20 @@ typedef struct {
    int port;
 } TR_CLIENT;
 
+typedef struct {
+   midas_thread_t thread;
+   int            tr_client_index;
+   BOOL           stop_thread;
+} TR_THREAD;
+
 int tr_compare(const void *arg1, const void *arg2)
 {
    return ((TR_CLIENT *) arg1)->sequence_number - ((TR_CLIENT *) arg2)->sequence_number;
+}
+
+int tr_thread(void *param)
+{
+   return 0;
 }
 
 /********************************************************************/
