@@ -131,6 +131,9 @@ Definition of implementation specific constants */
 #define YBOS_SUPPORT
 #endif
 
+/* flag to enable mutlti-threading support for ODB access */
+#define MULTI_THREAD_ENABLE
+
 /*------------------------------------------------------------------*/
 
 /* Mapping of function names for socket operations */
@@ -397,6 +400,7 @@ typedef struct {
    HNDLE shm_handle;            /* handle (id) to shared memory */
    INT index;                   /* connection index / tid       */
    BOOL protect;                /* read/write protection        */
+   MUTEX_T *mutex;              /* mutex for multi-thread access */
 
 } DATABASE;
 

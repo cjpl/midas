@@ -793,307 +793,314 @@ INT db_open_database(const char *xdatabase_name, INT database_size, HNDLE * hDB,
 
 #ifdef LOCAL_ROUTINES
    {
-      INT i, status;
-      HNDLE handle;
-      DATABASE_CLIENT *pclient;
-      BOOL shm_created;
-      HNDLE shm_handle;
-      DATABASE_HEADER *pheader;
-      KEY *pkey;
-      KEYLIST *pkeylist;
-      FREE_DESCRIP *pfree;
-      BOOL call_watchdog;
-      DWORD timeout;
-      char database_name[NAME_LENGTH];
-      void *p;
-
-      /* restrict name length */
-      strlcpy(database_name, xdatabase_name, NAME_LENGTH);
-
-      if (database_size < 0 || database_size > 10E7) {
-         cm_msg(MERROR, "db_open_database", "invalid database size");
-         return DB_INVALID_PARAM;
+   INT i, status;
+   HNDLE handle;
+   DATABASE_CLIENT *pclient;
+   BOOL shm_created;
+   HNDLE shm_handle;
+   DATABASE_HEADER *pheader;
+   KEY *pkey;
+   KEYLIST *pkeylist;
+   FREE_DESCRIP *pfree;
+   BOOL call_watchdog;
+   DWORD timeout;
+   char database_name[NAME_LENGTH];
+   void *p;
+   
+   /* restrict name length */
+   strlcpy(database_name, xdatabase_name, NAME_LENGTH);
+   
+   if (database_size < 0 || database_size > 10E7) {
+      cm_msg(MERROR, "db_open_database", "invalid database size");
+      return DB_INVALID_PARAM;
+   }
+   
+   if (strlen(client_name) >= NAME_LENGTH) {
+      cm_msg(MERROR, "db_open_database", "client name \'%s\' is longer than %d characters", client_name, NAME_LENGTH-1);
+      return DB_INVALID_PARAM;
+   }
+   
+   if (strchr(client_name, '/') != NULL) {
+      cm_msg(MERROR, "db_open_database", "client name \'%s\' should not contain the slash \'/\' character", client_name);
+      return DB_INVALID_PARAM;
+   }
+   
+   /* allocate new space for the new database descriptor */
+   if (_database_entries == 0) {
+      _database = (DATABASE *) malloc(sizeof(DATABASE));
+      memset(_database, 0, sizeof(DATABASE));
+      if (_database == NULL) {
+         *hDB = 0;
+         return DB_NO_MEMORY;
       }
-
-      if (strlen(client_name) >= NAME_LENGTH) {
-         cm_msg(MERROR, "db_open_database", "client name \'%s\' is longer than %d characters", client_name, NAME_LENGTH-1);
-         return DB_INVALID_PARAM;
-      }
-
-      if (strchr(client_name, '/') != NULL) {
-         cm_msg(MERROR, "db_open_database", "client name \'%s\' should not contain the slash \'/\' character", client_name);
-         return DB_INVALID_PARAM;
-      }
-
-      /* allocate new space for the new database descriptor */
-      if (_database_entries == 0) {
-         _database = (DATABASE *) malloc(sizeof(DATABASE));
-         memset(_database, 0, sizeof(DATABASE));
-         if (_database == NULL) {
-            *hDB = 0;
-            return DB_NO_MEMORY;
-         }
-
-         _database_entries = 1;
-         i = 0;
-      } else {
-         /* check if database already open */
-         for (i = 0; i < _database_entries; i++)
-            if (_database[i].attached && equal_ustring(_database[i].name, database_name)) {
-               /* check if database belongs to this thread */
-               if (rpc_get_server_option(RPC_OSERVER_TYPE) == ST_MTHREAD) {
-                  if (_database[i].index == ss_gettid()) {
-                     *hDB = i + 1;
-                     return DB_SUCCESS;
-                  }
-               } else {
+      
+      _database_entries = 1;
+      i = 0;
+   } else {
+      /* check if database already open */
+      for (i = 0; i < _database_entries; i++)
+         if (_database[i].attached && equal_ustring(_database[i].name, database_name)) {
+            /* check if database belongs to this thread */
+            if (rpc_get_server_option(RPC_OSERVER_TYPE) == ST_MTHREAD) {
+               if (_database[i].index == ss_gettid()) {
                   *hDB = i + 1;
                   return DB_SUCCESS;
                }
-            }
-
-         /* check for a deleted entry */
-         for (i = 0; i < _database_entries; i++)
-            if (!_database[i].attached)
-               break;
-
-         /* if not found, create new one */
-         if (i == _database_entries) {
-            _database = (DATABASE *) realloc(_database, sizeof(DATABASE) * (_database_entries + 1));
-            memset(&_database[_database_entries], 0, sizeof(DATABASE));
-
-            _database_entries++;
-            if (_database == NULL) {
-               _database_entries--;
-               *hDB = 0;
-               return DB_NO_MEMORY;
+            } else {
+               *hDB = i + 1;
+               return DB_SUCCESS;
             }
          }
+      
+      /* check for a deleted entry */
+      for (i = 0; i < _database_entries; i++)
+         if (!_database[i].attached)
+            break;
+      
+      /* if not found, create new one */
+      if (i == _database_entries) {
+         _database = (DATABASE *) realloc(_database, sizeof(DATABASE) * (_database_entries + 1));
+         memset(&_database[_database_entries], 0, sizeof(DATABASE));
+         
+         _database_entries++;
+         if (_database == NULL) {
+            _database_entries--;
+            *hDB = 0;
+            return DB_NO_MEMORY;
+         }
       }
-
-      handle = (HNDLE) i;
-
-      /* open shared memory region */
-      status = ss_shm_open(database_name,
-                           sizeof(DATABASE_HEADER) + 2 * ALIGN8(database_size / 2), &p, &shm_handle, TRUE);
-
-      _database[(INT) handle].database_header = (DATABASE_HEADER *) p;
-      if (status == SS_NO_MEMORY || status == SS_FILE_ERROR) {
-         *hDB = 0;
-         return DB_INVALID_NAME;
-      }
-
-      /* shortcut to header */
-      pheader = _database[handle].database_header;
-
-      /* save name */
-      strcpy(_database[handle].name, database_name);
-
-      shm_created = (status == SS_CREATED);
-
-      /* clear memeory for debugging */
-      /* memset(pheader, 0, sizeof(DATABASE_HEADER) + 2*ALIGN8(database_size/2)); */
-
-      if (shm_created && pheader->name[0] == 0) {
-         /* setup header info if database was created */
-         memset(pheader, 0, sizeof(DATABASE_HEADER) + 2 * ALIGN8(database_size / 2));
-
-         strcpy(pheader->name, database_name);
-         pheader->version = DATABASE_VERSION;
-         pheader->key_size = ALIGN8(database_size / 2);
-         pheader->data_size = ALIGN8(database_size / 2);
-         pheader->root_key = sizeof(DATABASE_HEADER);
-         pheader->first_free_key = sizeof(DATABASE_HEADER);
-         pheader->first_free_data = sizeof(DATABASE_HEADER) + pheader->key_size;
-
-         /* set up free list */
-         pfree = (FREE_DESCRIP *) ((char *) pheader + pheader->first_free_key);
-         pfree->size = pheader->key_size;
-         pfree->next_free = 0;
-
-         pfree = (FREE_DESCRIP *) ((char *) pheader + pheader->first_free_data);
-         pfree->size = pheader->data_size;
-         pfree->next_free = 0;
-
-         /* create root key */
-         pkey = (KEY *) malloc_key(pheader, sizeof(KEY));
-
-         /* set key properties */
-         pkey->type = TID_KEY;
-         pkey->num_values = 1;
-         pkey->access_mode = MODE_READ | MODE_WRITE | MODE_DELETE;
-         strcpy(pkey->name, "root");
-         pkey->parent_keylist = 0;
-
-         /* create keylist */
-         pkeylist = (KEYLIST *) malloc_key(pheader, sizeof(KEYLIST));
-
-         /* store keylist in data field */
-         pkey->data = (POINTER_T) pkeylist - (POINTER_T) pheader;
-         pkey->item_size = sizeof(KEYLIST);
-         pkey->total_size = sizeof(KEYLIST);
-
-         pkeylist->parent = (POINTER_T) pkey - (POINTER_T) pheader;
-         pkeylist->num_keys = 0;
-         pkeylist->first_key = 0;
-      }
-
-      /* check database version */
-      if (pheader->version != DATABASE_VERSION) {
-         cm_msg(MERROR, "db_open_database",
-                "Different database format: Shared memory is %d, program is %d", pheader->version, DATABASE_VERSION);
-         return DB_VERSION_MISMATCH;
-      }
-
-      /* create semaphore for the database */
-      status = ss_semaphore_create(database_name, &(_database[handle].semaphore));
-      if (status != SS_SUCCESS && status != SS_CREATED) {
-         *hDB = 0;
-         return DB_NO_SEMAPHORE;
-      }
-      _database[handle].lock_cnt = 0;
-
-      /* first lock database */
-      status = db_lock_database(handle + 1);
-      if (status != DB_SUCCESS)
-         return status;
-
-      /*
-         Now we have a DATABASE_HEADER, so let's setup a CLIENT
-         structure in that database. The information there can also
-         be seen by other processes.
-       */
-
-      /*
-         update the client count
-       */
-      pheader->num_clients = 0;
-      pheader->max_client_index = 0;
-      for (i = 0; i < MAX_CLIENTS; i++) {
-         if (pheader->client[i].pid == 0)
-            continue;
-         pheader->num_clients++;
-         pheader->max_client_index = i + 1;
-      }
-
-      /*fprintf(stderr,"num_clients: %d, max_client: %d\n",pheader->num_clients,pheader->max_client_index); */
-
-      /* remove dead clients */
-
+   }
+   
+   handle = (HNDLE) i;
+   
+   /* open shared memory region */
+   status = ss_shm_open(database_name,
+                        sizeof(DATABASE_HEADER) + 2 * ALIGN8(database_size / 2), &p, &shm_handle, TRUE);
+   
+   _database[(INT) handle].database_header = (DATABASE_HEADER *) p;
+   if (status == SS_NO_MEMORY || status == SS_FILE_ERROR) {
+      *hDB = 0;
+      return DB_INVALID_NAME;
+   }
+   
+   /* shortcut to header */
+   pheader = _database[handle].database_header;
+   
+   /* save name */
+   strcpy(_database[handle].name, database_name);
+   
+   shm_created = (status == SS_CREATED);
+   
+   /* clear memeory for debugging */
+   /* memset(pheader, 0, sizeof(DATABASE_HEADER) + 2*ALIGN8(database_size/2)); */
+   
+   if (shm_created && pheader->name[0] == 0) {
+      /* setup header info if database was created */
+      memset(pheader, 0, sizeof(DATABASE_HEADER) + 2 * ALIGN8(database_size / 2));
+      
+      strcpy(pheader->name, database_name);
+      pheader->version = DATABASE_VERSION;
+      pheader->key_size = ALIGN8(database_size / 2);
+      pheader->data_size = ALIGN8(database_size / 2);
+      pheader->root_key = sizeof(DATABASE_HEADER);
+      pheader->first_free_key = sizeof(DATABASE_HEADER);
+      pheader->first_free_data = sizeof(DATABASE_HEADER) + pheader->key_size;
+      
+      /* set up free list */
+      pfree = (FREE_DESCRIP *) ((char *) pheader + pheader->first_free_key);
+      pfree->size = pheader->key_size;
+      pfree->next_free = 0;
+      
+      pfree = (FREE_DESCRIP *) ((char *) pheader + pheader->first_free_data);
+      pfree->size = pheader->data_size;
+      pfree->next_free = 0;
+      
+      /* create root key */
+      pkey = (KEY *) malloc_key(pheader, sizeof(KEY));
+      
+      /* set key properties */
+      pkey->type = TID_KEY;
+      pkey->num_values = 1;
+      pkey->access_mode = MODE_READ | MODE_WRITE | MODE_DELETE;
+      strcpy(pkey->name, "root");
+      pkey->parent_keylist = 0;
+      
+      /* create keylist */
+      pkeylist = (KEYLIST *) malloc_key(pheader, sizeof(KEYLIST));
+      
+      /* store keylist in data field */
+      pkey->data = (POINTER_T) pkeylist - (POINTER_T) pheader;
+      pkey->item_size = sizeof(KEYLIST);
+      pkey->total_size = sizeof(KEYLIST);
+      
+      pkeylist->parent = (POINTER_T) pkey - (POINTER_T) pheader;
+      pkeylist->num_keys = 0;
+      pkeylist->first_key = 0;
+   }
+   
+   /* check database version */
+   if (pheader->version != DATABASE_VERSION) {
+      cm_msg(MERROR, "db_open_database",
+             "Different database format: Shared memory is %d, program is %d", pheader->version, DATABASE_VERSION);
+      return DB_VERSION_MISMATCH;
+   }
+   
+   /* create mutex for the database */
+   status = ss_mutex_create(&_database[handle].mutex);
+   if (status != SS_SUCCESS && status != SS_CREATED) {
+      *hDB = 0;
+      return DB_NO_SEMAPHORE;
+   }
+   
+   /* create semaphore for the database */
+   status = ss_semaphore_create(database_name, &(_database[handle].semaphore));
+   if (status != SS_SUCCESS && status != SS_CREATED) {
+      *hDB = 0;
+      return DB_NO_SEMAPHORE;
+   }
+   _database[handle].lock_cnt = 0;
+   
+   /* first lock database */
+   status = db_lock_database(handle + 1);
+   if (status != DB_SUCCESS)
+      return status;
+   
+   /*
+    Now we have a DATABASE_HEADER, so let's setup a CLIENT
+    structure in that database. The information there can also
+    be seen by other processes.
+    */
+   
+   /*
+    update the client count
+    */
+   pheader->num_clients = 0;
+   pheader->max_client_index = 0;
+   for (i = 0; i < MAX_CLIENTS; i++) {
+      if (pheader->client[i].pid == 0)
+         continue;
+      pheader->num_clients++;
+      pheader->max_client_index = i + 1;
+   }
+   
+   /*fprintf(stderr,"num_clients: %d, max_client: %d\n",pheader->num_clients,pheader->max_client_index); */
+   
+   /* remove dead clients */
+   
 #ifdef OS_UNIX
 #ifdef ESRCH
-      /* Only enable this for systems that define ESRCH and hope that
-         they also support kill(pid,0) */
-      for (i = 0; i < MAX_CLIENTS; i++) {
-         int k;
-
-         errno = 0;
-         kill(pheader->client[i].pid, 0);
-         if (errno == ESRCH) {
-	   char client_name_tmp[NAME_LENGTH];
-	   int client_pid;
-
-	   strlcpy(client_name_tmp, pheader->client[i].name, sizeof(client_name_tmp));
-	   client_pid = pheader->client[i].pid;
-
-            /* decrement notify_count for open records and clear exclusive mode */
-            for (k = 0; k < pheader->client[i].max_index; k++)
-               if (pheader->client[i].open_record[k].handle) {
-                  pkey = (KEY *) ((char *) pheader + pheader->client[i].open_record[k].handle);
-                  if (pkey->notify_count > 0)
-                     pkey->notify_count--;
-
-                  if (pheader->client[i].open_record[k].access_mode & MODE_WRITE)
-                     db_set_mode(handle + 1, pheader->client[i].open_record[k].handle,
-                                 (WORD) (pkey->access_mode & ~MODE_EXCLUSIVE), 2);
-               }
-
-            /* clear entry from client structure in database header */
-            memset(&(pheader->client[i]), 0, sizeof(DATABASE_CLIENT));
-
-            cm_msg(MERROR, "db_open_database", "Removed ODB client \'%s\', index %d because process pid %d does not exists", client_name_tmp, i, client_pid);
-         }
+   /* Only enable this for systems that define ESRCH and hope that
+    they also support kill(pid,0) */
+   for (i = 0; i < MAX_CLIENTS; i++) {
+      int k;
+      
+      errno = 0;
+      kill(pheader->client[i].pid, 0);
+      if (errno == ESRCH) {
+         char client_name_tmp[NAME_LENGTH];
+         int client_pid;
+         
+         strlcpy(client_name_tmp, pheader->client[i].name, sizeof(client_name_tmp));
+         client_pid = pheader->client[i].pid;
+         
+         /* decrement notify_count for open records and clear exclusive mode */
+         for (k = 0; k < pheader->client[i].max_index; k++)
+            if (pheader->client[i].open_record[k].handle) {
+               pkey = (KEY *) ((char *) pheader + pheader->client[i].open_record[k].handle);
+               if (pkey->notify_count > 0)
+                  pkey->notify_count--;
+               
+               if (pheader->client[i].open_record[k].access_mode & MODE_WRITE)
+                  db_set_mode(handle + 1, pheader->client[i].open_record[k].handle,
+                              (WORD) (pkey->access_mode & ~MODE_EXCLUSIVE), 2);
+            }
+         
+         /* clear entry from client structure in database header */
+         memset(&(pheader->client[i]), 0, sizeof(DATABASE_CLIENT));
+         
+         cm_msg(MERROR, "db_open_database", "Removed ODB client \'%s\', index %d because process pid %d does not exists", client_name_tmp, i, client_pid);
       }
+   }
 #endif
 #endif
-
-      /*
-         Look for empty client slot
-       */
-      for (i = 0; i < MAX_CLIENTS; i++)
-         if (pheader->client[i].pid == 0)
-            break;
-
-      if (i == MAX_CLIENTS) {
-         db_unlock_database(handle + 1);
-         *hDB = 0;
-         cm_msg(MERROR, "db_open_database", "maximum number of clients exceeded");
-         return DB_NO_SLOT;
-      }
-
-      /* store slot index in _database structure */
-      _database[handle].client_index = i;
-
-      /*
-         Save the index of the last client of that database so that later only
-         the clients 0..max_client_index-1 have to be searched through.
-       */
-      pheader->num_clients++;
-      if (i + 1 > pheader->max_client_index)
-         pheader->max_client_index = i + 1;
-
-      /* setup database header and client structure */
-      pclient = &pheader->client[i];
-
-      memset(pclient, 0, sizeof(DATABASE_CLIENT));
-      /* use client name previously set by bm_set_name */
-      strlcpy(pclient->name, client_name, sizeof(pclient->name));
-      pclient->pid = ss_getpid();
-      pclient->num_open_records = 0;
-
-      ss_suspend_get_port(&pclient->port);
-
-      pclient->last_activity = ss_millitime();
-
-      cm_get_watchdog_params(&call_watchdog, &timeout);
-      pclient->watchdog_timeout = timeout;
-
-      /* check ODB for corruption */
-      if (!db_validate_db(pheader)) {
-         /* do not treat corrupted odb as a fatal error- allow the user
-            to preceed at own risk- the database is already corrupted,
-            so no further harm can possibly be made. */
-         /*
-            db_unlock_database(handle + 1);
-            *hDB = 0;
-            return DB_CORRUPTED;
-          */
-      }
-
-      /* setup _database entry */
-      _database[handle].database_data = _database[handle].database_header + 1;
-      _database[handle].attached = TRUE;
-      _database[handle].shm_handle = shm_handle;
-      _database[handle].protect = FALSE;
-
-      /* remember to which connection acutal buffer belongs */
-      if (rpc_get_server_option(RPC_OSERVER_TYPE) == ST_SINGLE)
-         _database[handle].index = rpc_get_server_acception();
-      else
-         _database[handle].index = ss_gettid();
-
-      *hDB = (handle + 1);
-
-      /* setup dispatcher for updated records */
-      ss_suspend_set_dispatch(CH_IPC, 0, (int (*)(void)) cm_dispatch_ipc);
-
+   
+   /*
+    Look for empty client slot
+    */
+   for (i = 0; i < MAX_CLIENTS; i++)
+      if (pheader->client[i].pid == 0)
+         break;
+   
+   if (i == MAX_CLIENTS) {
       db_unlock_database(handle + 1);
-
-      if (shm_created)
-         return DB_CREATED;
+      *hDB = 0;
+      cm_msg(MERROR, "db_open_database", "maximum number of clients exceeded");
+      return DB_NO_SLOT;
+   }
+   
+   /* store slot index in _database structure */
+   _database[handle].client_index = i;
+   
+   /*
+    Save the index of the last client of that database so that later only
+    the clients 0..max_client_index-1 have to be searched through.
+    */
+   pheader->num_clients++;
+   if (i + 1 > pheader->max_client_index)
+      pheader->max_client_index = i + 1;
+   
+   /* setup database header and client structure */
+   pclient = &pheader->client[i];
+   
+   memset(pclient, 0, sizeof(DATABASE_CLIENT));
+   /* use client name previously set by bm_set_name */
+   strlcpy(pclient->name, client_name, sizeof(pclient->name));
+   pclient->pid = ss_getpid();
+   pclient->num_open_records = 0;
+   
+   ss_suspend_get_port(&pclient->port);
+   
+   pclient->last_activity = ss_millitime();
+   
+   cm_get_watchdog_params(&call_watchdog, &timeout);
+   pclient->watchdog_timeout = timeout;
+   
+   /* check ODB for corruption */
+   if (!db_validate_db(pheader)) {
+      /* do not treat corrupted odb as a fatal error- allow the user
+       to preceed at own risk- the database is already corrupted,
+       so no further harm can possibly be made. */
+      /*
+       db_unlock_database(handle + 1);
+       *hDB = 0;
+       return DB_CORRUPTED;
+       */
+   }
+   
+   /* setup _database entry */
+   _database[handle].database_data = _database[handle].database_header + 1;
+   _database[handle].attached = TRUE;
+   _database[handle].shm_handle = shm_handle;
+   _database[handle].protect = FALSE;
+   
+   /* remember to which connection acutal buffer belongs */
+   if (rpc_get_server_option(RPC_OSERVER_TYPE) == ST_SINGLE)
+      _database[handle].index = rpc_get_server_acception();
+   else
+      _database[handle].index = ss_gettid();
+   
+   *hDB = (handle + 1);
+   
+   /* setup dispatcher for updated records */
+   ss_suspend_set_dispatch(CH_IPC, 0, (int (*)(void)) cm_dispatch_ipc);
+   
+   db_unlock_database(handle + 1);
+   
+   if (shm_created)
+      return DB_CREATED;
    }
 #endif                          /* LOCAL_ROUTINES */
-
+   
    return DB_SUCCESS;
 }
 
@@ -1101,7 +1108,7 @@ INT db_open_database(const char *xdatabase_name, INT database_size, HNDLE * hDB,
 /**
 Close a database
 @param   hDB          ODB handle obtained via cm_get_experiment_database().
-@return DB_SUCCESS, DB_INVALID_HANDLE, RPC_NET_ERROR 
+@return DB_SUCCESS, DB_INVALID_HANDLE, RPC_NET_ERROR
 */
 INT db_close_database(HNDLE hDB)
 {
@@ -1383,27 +1390,11 @@ Lock a database for exclusive access via system semaphore calls.
 @return DB_SUCCESS, DB_INVALID_HANDLE, DB_TIMEOUT
 */
 
-/* Define CHECK_THREAD_ID to enable thread checking. This ensures that
-   only the main thread does the locking/unlocking of the ODB. In multi-thread
-   applications (slow control front-end for example), unexpected behaviour can
-   occur if several threads lock/unlock the ODB at the same time, since the midas
-   API is not thread safe. */
-#ifdef CHECK_THREAD_ID
-static int _lock_tid = 0;
-#endif
-
 INT db_lock_database(HNDLE hDB)
 {
 #ifdef LOCAL_ROUTINES
    int status;
    void *p;
-
-#ifdef CHECK_THREAD_ID
-   if (_lock_tid == 0)
-      _lock_tid = ss_gettid();
-
-   assert(_lock_tid == ss_gettid());
-#endif
 
    if (hDB > _database_entries || hDB <= 0) {
       cm_msg(MERROR, "db_lock_database", "invalid database handle, aborting...");
@@ -1414,26 +1405,37 @@ INT db_lock_database(HNDLE hDB)
    if (_database[hDB - 1].protect && _database[hDB - 1].database_header != NULL) {
       cm_msg(MERROR, "db_lock_database", "internal error: DB already locked, aborting...");
       abort();
-      return DB_NO_SEMAPHORE;
    }
 
-   _database[hDB - 1].lock_cnt++;
+   if (_database[hDB - 1].lock_cnt == 0) {
 
-   if (_database[hDB - 1].lock_cnt == 1) {
+#ifdef MULTI_THREAD_ENABLE
+      /* obtain mutex in multi-thread applications */
+      //printf("%d Lock mutex...\n", ss_gettid());
+      if (ss_mutex_wait_for(_database[hDB - 1].mutex, 10000) != SS_SUCCESS) {
+         cm_msg(MERROR, "db_lock_database", "internal error: cannot obtain mutex, aborting...");
+         abort();
+      }
+      //printf("%d Mutex locked\n", ss_gettid());
+#endif
+
+      _database[hDB - 1].lock_cnt = 1;
+
       /* wait max. 5 minutes for semaphore (required if locking process is being debugged) */
       status = ss_semaphore_wait_for(_database[hDB - 1].semaphore, 5 * 60 * 1000);
       if (status == SS_TIMEOUT) {
          cm_msg(MERROR, "db_lock_database", "timeout obtaining lock for database, exiting...");
-         exit(1);
-         return DB_TIMEOUT;
+         abort();
       }
       if (status != SS_SUCCESS) {
          cm_msg(MERROR, "db_lock_database", "cannot lock database, ss_semaphore_wait_for() status %d, aborting...", status);
          abort();
-         return DB_NO_SEMAPHORE;
       }
-   }
-
+   } else
+      _database[hDB - 1].lock_cnt++; // we have already the lock (recursive call), so just increase counter
+   
+   //printf("%d incremented lock_cnt to %d\n", ss_gettid(), _database[hDB - 1].lock_cnt);
+   
 #ifdef CHECK_LOCK_COUNT
    {
       char str[256];
@@ -1461,15 +1463,7 @@ Unlock a database via system semaphore calls.
 */
 INT db_unlock_database(HNDLE hDB)
 {
-
 #ifdef LOCAL_ROUTINES
-
-#ifdef CHECK_THREAD_ID
-   if (_lock_tid == 0)
-      _lock_tid = ss_gettid();
-
-   assert(_lock_tid == ss_gettid());
-#endif
 
    if (hDB > _database_entries || hDB <= 0) {
       cm_msg(MERROR, "db_unlock_database", "invalid database handle");
@@ -1494,6 +1488,17 @@ INT db_unlock_database(HNDLE hDB)
 
    assert(_database[hDB - 1].lock_cnt > 0);
    _database[hDB - 1].lock_cnt--;
+   
+   //printf("%d decremented lock_cnt to %d\n", ss_gettid(), _database[hDB - 1].lock_cnt);
+   
+   /* release mutex for multi-thread applications */
+#ifdef MULTI_THREAD_ENABLE
+   if (_database[hDB - 1].lock_cnt == 0) {
+      //printf("%d Release mutex...\n", ss_gettid());
+      ss_mutex_release(_database[hDB - 1].mutex);
+      //printf("%d Mutex released.\n", ss_gettid());
+      }
+#endif
 
 #endif                          /* LOCAL_ROUTINES */
    return DB_SUCCESS;

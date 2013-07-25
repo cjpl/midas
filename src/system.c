@@ -2703,7 +2703,6 @@ INT ss_mutex_wait_for(MUTEX_T *mutex, INT timeout)
    if (status != 0) {
       fprintf(stderr, "ss_mutex_wait_for: pthread_mutex_trylock() returned errno %d (%s), aborting...\n", status, strerror(status));
       abort(); // does not return
-      return SS_NO_MUTEX;
    }
    
    return SS_SUCCESS;
@@ -2721,8 +2720,7 @@ INT ss_mutex_wait_for(MUTEX_T *mutex, INT timeout)
          return SS_TIMEOUT;
       if (status != 0) {
          fprintf(stderr, "ss_mutex_wait_for: pthread_mutex_timedlock() returned errno %d (%s), aborting...\n", status, strerror(status));
-         abort(); // does not return
-         return SS_NO_MUTEX;
+         abort();
       }
 
       return SS_SUCCESS;
