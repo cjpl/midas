@@ -2411,8 +2411,8 @@ INT scheduler(void)
 
       /*---- check network messages ----------------------------------*/
       if ((run_state == STATE_RUNNING && interrupt_eq == NULL) || slowcont_eq) {
-         /* only call yield once every 100ms when running */
-         if (actual_millitime - last_time_network > 100) {
+         /* only call yield once every 10ms when running */
+         if (actual_millitime - last_time_network > 10) {
             status = cm_yield(0);
             last_time_network = actual_millitime;
          } else
