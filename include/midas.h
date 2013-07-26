@@ -312,9 +312,10 @@ Data types Definition                         min      max    */
 
 /**
 Synchronous / Asynchronous flags */
-#define SYNC          0
-#define ASYNC         1
-#define DETACH        2
+#define SYNC          1
+#define ASYNC         2
+#define DETACH        4
+#define MTHREAD       8
 
 /**
 Access modes */

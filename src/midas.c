@@ -3428,6 +3428,93 @@ int tr_thread(void *param)
 }
 
 /********************************************************************/
+
+/* Perform a detached transition through teh externam "mtransition" program */
+int cm_transition_detach(INT transition, INT run_number, char *errstr, INT errstr_size, INT async_flag, INT debug_flag)
+{
+   HNDLE hDB;
+   char *args[100], path[256];
+   int  size, status, iarg = 0;
+   char debug_arg[256];
+   char start_arg[256];
+   char expt_name[256];
+   extern RPC_SERVER_CONNECTION _server_connection;
+   
+   cm_get_experiment_database(&hDB, NULL);
+   
+   path[0] = 0;
+   if (getenv("MIDASSYS")) {
+      strlcpy(path, getenv("MIDASSYS"), sizeof(path));
+      strlcat(path, DIR_SEPARATOR_STR, sizeof(path));
+#ifdef OS_LINUX
+#ifdef OS_DARWIN
+      strlcat(path, "darwin/bin/", sizeof(path));
+#else
+      strlcat(path, "linux/bin/", sizeof(path));
+#endif
+#else
+#ifdef OS_WINNT
+      strlcat(path, "nt/bin/", sizeof(path));
+#endif
+#endif
+   }
+   strlcat(path, "mtransition", sizeof(path));
+   
+   args[iarg++] = path;
+   
+   if (_server_connection.send_sock) {
+      /* if connected to mserver, pass connection info to mtransition */
+      args[iarg++] = "-h";
+      args[iarg++] = _server_connection.host_name;
+      args[iarg++] = "-e";
+      args[iarg++] = _server_connection.exp_name;
+   } else {
+      /* get experiment name from ODB */
+      size = sizeof(expt_name);
+      db_get_value(hDB, 0, "/Experiment/Name", expt_name, &size, TID_STRING, FALSE);
+      
+      args[iarg++] = "-e";
+      args[iarg++] = expt_name;
+   }
+   
+   if (debug_flag) {
+      args[iarg++] = "-d";
+      
+      sprintf(debug_arg, "%d", debug_flag);
+      args[iarg++] = debug_arg;
+   }
+   
+   if (transition == TR_STOP)
+      args[iarg++] = "STOP";
+   else if (transition == TR_PAUSE)
+      args[iarg++] = "PAUSE";
+   else if (transition == TR_RESUME)
+      args[iarg++] = "RESUME";
+   else if (transition == TR_START) {
+      args[iarg++] = "START";
+      
+      sprintf(start_arg, "%d", run_number);
+      args[iarg++] = start_arg;
+   }
+   
+   args[iarg++] = NULL;
+#if 0
+      for (iarg = 0; args[iarg] != NULL; iarg++)
+         printf("arg[%d] [%s]\n", iarg, args[iarg]);
+#endif
+   
+   status = ss_spawnv(P_DETACH, args[0], args);
+   
+   if (status != SUCCESS) {
+      if (errstr != NULL)
+         sprintf(errstr, "Cannot execute mtransition, ss_spawnvp() returned %d", status);
+      return CM_SET_ERROR;
+   }
+   
+   return CM_SUCCESS;
+}
+
+/********************************************************************/
 /**
 Performs a run transition (Start/Stop/Pause/Resume).
 
@@ -3467,8 +3554,7 @@ tapes.
 @param debug_flag If 1 output debugging information, if 2 output via cm_msg().
 @return CM_SUCCESS, \<error\> error code from remote client
 */
-INT cm_transition1(INT transition, INT run_number, char *errstr, INT errstr_size, INT async_flag,
-                   INT debug_flag)
+INT cm_transition2(INT transition, INT run_number, char *errstr, INT errstr_size, INT async_flag, INT debug_flag)
 {
    INT i, j, status, idx, size, sequence_number, port, state, old_timeout, n_tr_clients;
    HNDLE hDB, hRootKey, hSubkey, hKey, hKeylocal, hConn, hKeyTrans;
@@ -3495,6 +3581,10 @@ INT cm_transition1(INT transition, INT run_number, char *errstr, INT errstr_size
       return CM_INVALID_TRANSITION;
    }
 
+   /* do detached transition via mtransition tool */
+   if (async_flag & DETACH)
+      return cm_transition_detach(transition, run_number, errstr, errstr_size, async_flag, debug_flag);
+
    /* get key of local client */
    cm_get_experiment_database(&hDB, &hKeylocal);
 
@@ -3504,87 +3594,6 @@ INT cm_transition1(INT transition, INT run_number, char *errstr, INT errstr_size
    if (debug_flag == 0) {
       size = sizeof(i);
       db_get_value(hDB, 0, "/Experiment/Transition debug flag", &debug_flag, &size, TID_INT, TRUE);
-   }
-
-   /* do detached transition via mtransition tool */
-   if (async_flag == DETACH) {
-      char *args[100], path[256];
-      int iarg = 0;
-      char debug_arg[256];
-      char start_arg[256];
-      char expt_name[256];
-      extern RPC_SERVER_CONNECTION _server_connection;
-
-      path[0] = 0;
-      if (getenv("MIDASSYS")) {
-         strlcpy(path, getenv("MIDASSYS"), sizeof(path));
-         strlcat(path, DIR_SEPARATOR_STR, sizeof(path));
-#ifdef OS_LINUX
-#ifdef OS_DARWIN
-         strlcat(path, "darwin/bin/", sizeof(path));
-#else
-         strlcat(path, "linux/bin/", sizeof(path));
-#endif
-#else
-#ifdef OS_WINNT
-         strlcat(path, "nt/bin/", sizeof(path));
-#endif
-#endif         
-      }
-      strlcat(path, "mtransition", sizeof(path));
-              
-      args[iarg++] = path;
-
-      if (_server_connection.send_sock) {
-         /* if connected to mserver, pass connection info to mtransition */
-         args[iarg++] = "-h";
-         args[iarg++] = _server_connection.host_name;
-         args[iarg++] = "-e";
-         args[iarg++] = _server_connection.exp_name;
-      } else {
-         /* get experiment name from ODB */
-         size = sizeof(expt_name);
-         db_get_value(hDB, 0, "/Experiment/Name", expt_name, &size, TID_STRING, FALSE);
-
-         args[iarg++] = "-e";
-         args[iarg++] = expt_name;
-      }
-
-      if (debug_flag) {
-         args[iarg++] = "-d";
-
-         sprintf(debug_arg, "%d", debug_flag);
-         args[iarg++] = debug_arg;
-      }
-
-      if (transition == TR_STOP)
-         args[iarg++] = "STOP";
-      else if (transition == TR_PAUSE)
-         args[iarg++] = "PAUSE";
-      else if (transition == TR_RESUME)
-         args[iarg++] = "RESUME";
-      else if (transition == TR_START) {
-         args[iarg++] = "START";
-
-         sprintf(start_arg, "%d", run_number);
-         args[iarg++] = start_arg;
-      }
-
-      args[iarg++] = NULL;
-
-      if (0)
-         for (iarg = 0; args[iarg] != NULL; iarg++)
-            printf("arg[%d] [%s]\n", iarg, args[iarg]);
-
-      status = ss_spawnv(P_DETACH, args[0], args);
-
-      if (status != SUCCESS) {
-         if (errstr != NULL)
-            sprintf(errstr, "Cannot execute mtransition, ss_spawnvp() returned %d", status);
-         return CM_SET_ERROR;
-      }
-
-      return CM_SUCCESS;
    }
 
    /* if no run number is given, get it from DB */
@@ -3994,7 +4003,7 @@ INT cm_transition1(INT transition, INT run_number, char *errstr, INT errstr_size
          rpc_set_option(hConn, RPC_OTIMEOUT, timeout);
 
          /* set FTPC protocol if in async mode */
-         if (async_flag == ASYNC)
+         if (async_flag & ASYNC)
             rpc_set_option(hConn, RPC_OTRANSPORT, RPC_FTCP);
 
          if (debug_flag == 1)
@@ -4016,7 +4025,7 @@ INT cm_transition1(INT transition, INT run_number, char *errstr, INT errstr_size
          rpc_set_option(hConn, RPC_OTIMEOUT, old_timeout);
 
          /* reset protocol */
-         if (async_flag == ASYNC)
+         if (async_flag & ASYNC)
             rpc_set_option(hConn, RPC_OTRANSPORT, RPC_TCP);
 
          if (debug_flag == 1)
@@ -4157,23 +4166,84 @@ INT cm_transition1(INT transition, INT run_number, char *errstr, INT errstr_size
    return CM_SUCCESS;
 }
 
-INT cm_transition(INT transition, INT run_number, char *errstr, INT errstr_size, INT async_flag,
-                  INT debug_flag)
+/*------------------------------------------------------------------*/
+
+typedef struct {
+   INT  transition;
+   INT  run_number;
+   char *errstr;
+   INT  errstr_size;
+   INT  async_flag;
+   INT  debug_flag;
+   INT  status;
+   BOOL finished;
+} TR_PARAM;
+
+TR_PARAM _trp;
+
+/*------------------------------------------------------------------*/
+
+/* wrapper around cm_transition2() to send a TR_STARTABORT in case of failure */
+INT cm_transition1(INT transition, INT run_number, char *errstr, INT errstr_size, INT async_flag,
+                   INT debug_flag)
 {
    int status;
-
-   status = cm_transition1(transition, run_number, errstr, errstr_size, async_flag, debug_flag);
-
+   
+   status = cm_transition2(transition, run_number, errstr, errstr_size, async_flag, debug_flag);
+   
    if (transition == TR_START && status != CM_SUCCESS) {
       cm_msg(MERROR, "cm_transition", "Could not start a run: cm_transition() status %d, message \'%s\'",
              status, errstr);
-      cm_transition1(TR_STARTABORT, run_number, NULL, 0, async_flag, debug_flag);
+      cm_transition2(TR_STARTABORT, run_number, NULL, 0, async_flag, debug_flag);
    }
-
+   
    return status;
 }
 
+/*------------------------------------------------------------------*/
 
+INT tr_main_thread(void *param)
+{
+   INT status;
+   
+   status = cm_transition1(_trp.transition, _trp.run_number, _trp.errstr, _trp.errstr_size, _trp.async_flag, _trp.debug_flag);
+   
+   _trp.status = status;
+   _trp.finished = TRUE;
+   return 0;
+}
+
+/* wrapper around cm_transition1() for detached multi-threaded transitions */
+INT cm_transition(INT transition, INT run_number, char *errstr, INT errstr_size, INT async_flag, INT debug_flag)
+{
+   int status = 0;
+   midas_thread_t tr_main;
+   
+   if (async_flag & MTHREAD) {
+      _trp.transition = transition;
+      _trp.run_number = run_number;
+      _trp.errstr = errstr;
+      _trp.errstr_size = errstr_size;
+      _trp.async_flag = async_flag;
+      _trp.debug_flag = debug_flag;
+      _trp.status = 0;
+      _trp.finished = FALSE;
+      
+      tr_main = ss_thread_create(tr_main_thread, NULL);
+      if (async_flag & SYNC) {
+         
+         /* wait until main thread has finished */
+         do {
+            ss_sleep(10);
+         } while (!_trp.finished);
+         
+         return _trp.status;
+      }
+   } else
+      return cm_transition1(transition, run_number, errstr, errstr_size, async_flag, debug_flag);
+   
+   return status;
+}
 
 /**dox***************************************************************/
 #ifndef DOXYGEN_SHOULD_SKIP_THIS
