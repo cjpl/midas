@@ -2322,9 +2322,8 @@ int command_loop(char *host_name, char *exp_name, char *cmd, char *start_dir)
 
                assert(new_run_number > 0);
 
-               status =
-                   cm_transition(TR_START, new_run_number, str, sizeof(str), SYNC,
-                                 debug_flag);
+               status = cm_transition(TR_START, new_run_number, str,
+                                      sizeof(str), SYNC, debug_flag);
                if (status != CM_SUCCESS) {
                   /* in case of error, reset run number */
                   status =
