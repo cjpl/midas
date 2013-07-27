@@ -3404,18 +3404,16 @@ INT cm_check_deferred_transition()
 #endif                          /* DOXYGEN_SHOULD_SKIP_THIS */
 
 typedef struct {
+   int   transition;
+   int   run_number;
+   int   async_flag;
+   int   debug_flag;
    int   sequence_number;
    char  host_name[HOST_NAME_LENGTH];
    char  client_name[NAME_LENGTH];
    int   port;
    HNDLE hKey;
 } TR_CLIENT;
-
-typedef struct {
-   midas_thread_t thread;
-   int            tr_client_index;
-   BOOL           stop_thread;
-} TR_THREAD;
 
 int tr_compare(const void *arg1, const void *arg2)
 {
@@ -3517,8 +3515,7 @@ int cm_transition_detach(INT transition, INT run_number, char *errstr, INT errst
 /*------------------------------------------------------------------*/
 
 /* contact a client via RPC and execute the remote transition */
-int cm_transition_call(TR_CLIENT *tr_client, int idx, int transition, int run_number,
-                       int debug_flag)
+int cm_transition_call(TR_CLIENT *tr_client, int idx)
 {
    INT old_timeout, status, i, t1, t0, size;
    HNDLE hDB, hConn;
@@ -3529,10 +3526,10 @@ int cm_transition_call(TR_CLIENT *tr_client, int idx, int transition, int run_nu
    cm_get_experiment_database(&hDB, NULL);
    
    /* contact client if transition mask set */
-   if (debug_flag == 1)
+   if (tr_client[idx].debug_flag == 1)
       printf("Connecting to client \"%s\" on host %s...\n", tr_client[idx].client_name,
              tr_client[idx].host_name);
-   if (debug_flag == 2)
+   if (tr_client[idx].debug_flag == 2)
       cm_msg(MINFO, "cm_transition",
              "cm_transition: Connecting to client \"%s\" on host %s...",
              tr_client[idx].client_name, tr_client[idx].host_name);
@@ -3574,7 +3571,7 @@ int cm_transition_call(TR_CLIENT *tr_client, int idx, int transition, int run_nu
       cm_shutdown(tr_client[idx].client_name, TRUE);
       cm_cleanup(tr_client[idx].client_name, TRUE);
       
-      if (transition != TR_STOP) {
+      if (tr_client[idx].transition != TR_STOP) {
          /* indicate abort */
          i = 1;
          db_set_value(hDB, 0, "/Runinfo/Start abort", &i, sizeof(INT), 1, TID_INT);
@@ -3587,10 +3584,10 @@ int cm_transition_call(TR_CLIENT *tr_client, int idx, int transition, int run_nu
       return status;
    }
    
-   if (debug_flag == 1)
+   if (tr_client[idx].debug_flag == 1)
       printf("Connection established to client \"%s\" on host %s\n",
              tr_client[idx].client_name, tr_client[idx].host_name);
-   if (debug_flag == 2)
+   if (tr_client[idx].debug_flag == 2)
       cm_msg(MINFO, "cm_transition",
              "cm_transition: Connection established to client \"%s\" on host %s",
              tr_client[idx].client_name, tr_client[idx].host_name);
@@ -3599,28 +3596,28 @@ int cm_transition_call(TR_CLIENT *tr_client, int idx, int transition, int run_nu
    old_timeout = rpc_get_option(hConn, RPC_OTIMEOUT);
    rpc_set_option(hConn, RPC_OTIMEOUT, timeout);
    
-   if (debug_flag == 1)
+   if (tr_client[idx].debug_flag == 1)
       printf("Executing RPC transition client \"%s\" on host %s...\n",
              tr_client[idx].client_name, tr_client[idx].host_name);
-   if (debug_flag == 2)
+   if (tr_client[idx].debug_flag == 2)
       cm_msg(MINFO, "cm_transition",
              "cm_transition: Executing RPC transition client \"%s\" on host %s...",
              tr_client[idx].client_name, tr_client[idx].host_name);
    
    t0 = ss_millitime();
    
-   status = rpc_client_call(hConn, RPC_RC_TRANSITION, transition,
-                            run_number, errorstr, sizeof(errorstr), tr_client[idx].sequence_number);
+   status = rpc_client_call(hConn, RPC_RC_TRANSITION, tr_client[idx].transition,
+                            tr_client[idx].run_number, errorstr, sizeof(errorstr), tr_client[idx].sequence_number);
    
    t1 = ss_millitime();
    
    /* reset timeout */
    rpc_set_option(hConn, RPC_OTIMEOUT, old_timeout);
       
-   if (debug_flag == 1)
+   if (tr_client[idx].debug_flag == 1)
       printf("RPC transition finished client \"%s\" on host %s in %d ms with status %d\n",
              tr_client[idx].client_name, tr_client[idx].host_name, t1 - t0, status);
-   if (debug_flag == 2)
+   if (tr_client[idx].debug_flag == 2)
       cm_msg(MINFO, "cm_transition",
              "cm_transition: RPC transition finished client \"%s\" on host %s in %d ms with status %d",
              tr_client[idx].client_name, tr_client[idx].host_name, t1 - t0, status);
@@ -3633,19 +3630,46 @@ int cm_transition_call(TR_CLIENT *tr_client, int idx, int transition, int run_nu
    db_set_mode(hDB, tr_client[idx].hKey, MODE_READ | MODE_WRITE, TRUE);
    db_set_value(hDB, tr_client[idx].hKey, "Error", errorstr, 256, 1, TID_STRING);
    db_set_mode(hDB, tr_client[idx].hKey, MODE_READ, TRUE);
-   
-   if (transition != TR_STOP && status != CM_SUCCESS) {
-      /* indicate abort */
-      i = 1;
-      db_set_value(hDB, 0, "/Runinfo/Start abort", &i, sizeof(INT), 1, TID_INT);
-      i = 0;
-      db_set_value(hDB, 0, "/Runinfo/Transition in progress", &i, sizeof(INT), 1, TID_INT);
-      
-      free(tr_client);
-      return status;
-   }
-   
+
    return CM_SUCCESS;
+}
+
+/*------------------------------------------------------------------*/
+
+int cm_transition_call_direct(TR_CLIENT *tr_client, int idx)
+{
+   char errorstr[256];
+   int i, status;
+   HNDLE hDB;
+   
+   cm_get_experiment_database(&hDB, NULL);
+   
+   for (i = 0; _trans_table[i].transition; i++)
+      if (_trans_table[i].transition == tr_client[idx].transition)
+         break;
+   
+   /* call registered function */
+   if (_trans_table[i].transition == tr_client[idx].transition && _trans_table[i].func) {
+      if (tr_client[idx].debug_flag == 1)
+         printf("Calling local transition callback\n");
+      if (tr_client[idx].debug_flag == 2)
+         cm_msg(MINFO, "cm_transition", "cm_transition: Calling local transition callback");
+      
+      status = _trans_table[i].func(tr_client[idx].run_number, errorstr);
+      
+      if (tr_client[idx].debug_flag == 1)
+         printf("Local transition callback finished\n");
+      if (tr_client[idx].debug_flag == 2)
+         cm_msg(MINFO, "cm_transition", "cm_transition: Local transition callback finished");
+   } else
+      status = CM_SUCCESS;
+   
+   /* put error string into client entry in ODB */
+   db_set_mode(hDB, tr_client[idx].hKey, MODE_READ | MODE_WRITE, TRUE);
+   db_set_value(hDB, tr_client[idx].hKey, "Error", errorstr, 256, 1, TID_STRING);
+   db_set_mode(hDB, tr_client[idx].hKey, MODE_READ, TRUE);
+
+   return status;
 }
 
 /********************************************************************/
@@ -3975,6 +3999,10 @@ INT cm_transition2(INT transition, INT run_number, char *errstr, INT errstr_size
                   tr_client = (TR_CLIENT *) realloc(tr_client, sizeof(TR_CLIENT) * (n_tr_clients + 1));
                assert(tr_client);
 
+               tr_client[n_tr_clients].transition = transition;
+               tr_client[n_tr_clients].run_number = run_number;
+               tr_client[n_tr_clients].async_flag = async_flag;
+               tr_client[n_tr_clients].debug_flag = debug_flag;
                tr_client[n_tr_clients].sequence_number = sequence_number;
 
                if (hSubkey == hKeylocal) {
@@ -4020,46 +4048,27 @@ INT cm_transition2(INT transition, INT run_number, char *errstr, INT errstr_size
                 "cm_transition: ==== Found client \"%s\" with sequence number %d",
                 tr_client[idx].client_name, tr_client[idx].sequence_number);
 
-      /* if own client call transition callback directly */
       if (tr_client[idx].port == 0) {
-         for (i = 0; _trans_table[i].transition; i++)
-            if (_trans_table[i].transition == transition)
-               break;
-
-         /* call registered function */
-         if (_trans_table[i].transition == transition && _trans_table[i].func) {
-            if (debug_flag == 1)
-               printf("Calling local transition callback\n");
-            if (debug_flag == 2)
-               cm_msg(MINFO, "cm_transition", "cm_transition: Calling local transition callback");
-
-            status = _trans_table[i].func(run_number, error);
-
-            if (debug_flag == 1)
-               printf("Local transition callback finished\n");
-            if (debug_flag == 2)
-               cm_msg(MINFO, "cm_transition", "cm_transition: Local transition callback finished");
-         } else
-            status = CM_SUCCESS;
-
-         if (errstr != NULL)
-            memcpy(errstr, error,
-                   (INT) strlen(error) + 1 < errstr_size ? (INT) strlen(error) + 1 : errstr_size);
-
-         if (status != CM_SUCCESS) {
-            /* indicate abort */
-            i = 1;
-            db_set_value(hDB, 0, "/Runinfo/Start abort", &i, sizeof(INT), 1, TID_INT);
-            i = 0;
-            db_set_value(hDB, 0, "/Runinfo/Transition in progress", &i, sizeof(INT), 1, TID_INT);
-
-            free(tr_client);
-            return status;
-         }
-
+         /* if own client call transition callback directly */
+         status = cm_transition_call_direct(tr_client, idx);
       } else {
-         status = cm_transition_call(tr_client, idx, transition, run_number, debug_flag);
+         /* if other client call transition via RPC layer */
+         status = cm_transition_call(tr_client, idx);
       }
+      
+      if (status != CM_SUCCESS)
+         break;
+   }
+
+   if (transition != TR_STOP && status != CM_SUCCESS) {
+      /* indicate abort */
+      i = 1;
+      db_set_value(hDB, 0, "/Runinfo/Start abort", &i, sizeof(INT), 1, TID_INT);
+      i = 0;
+      db_set_value(hDB, 0, "/Runinfo/Transition in progress", &i, sizeof(INT), 1, TID_INT);
+      
+      free(tr_client);
+      return status;
    }
 
    if (tr_client) {
