@@ -1279,7 +1279,7 @@ int command_loop(char *host_name, char *exp_name, char *cmd, char *start_dir)
    char param[10][2000];
    char str[2000], str2[80], old_dir[256], cwd[256], name[256], *pc, data_str[256];
    char old_password[32], new_password[32];
-   INT nparam, flags, index1, index2, debug_flag;
+   INT nparam, flags, index1, index2, debug_flag, mthread_flag;
    WORD mode;
    HNDLE hDB, hKey, hKeyClient, hSubkey, hRootKey;
    KEY key;
@@ -2236,8 +2236,12 @@ int command_loop(char *host_name, char *exp_name, char *cmd, char *start_dir)
 
       /* start */
       else if (param[0][0] == 's' && param[0][1] == 't' && param[0][2] == 'a') {
-         debug_flag = ((param[1][0] == '-' && param[1][1] == 'v') ||
-                       (param[2][0] == '-' && param[2][1] == 'v'));
+         debug_flag =   ((param[1][0] == '-' && param[1][1] == 'v') ||
+                         (param[2][0] == '-' && param[2][1] == 'v') ||
+                         (param[3][0] == '-' && param[3][1] == 'v'));
+         mthread_flag = ((param[1][0] == '-' && param[1][1] == 'm') ||
+                         (param[2][0] == '-' && param[2][1] == 'm') ||
+                         (param[3][0] == '-' && param[3][1] == 'm'));
 
          /* check if run is already started */
          size = sizeof(i);
@@ -2323,7 +2327,7 @@ int command_loop(char *host_name, char *exp_name, char *cmd, char *start_dir)
                assert(new_run_number > 0);
 
                status = cm_transition(TR_START, new_run_number, str,
-                                      sizeof(str), SYNC, debug_flag);
+                                      sizeof(str), mthread_flag?MTHREAD|SYNC:SYNC, debug_flag);
                if (status != CM_SUCCESS) {
                   /* in case of error, reset run number */
                   status =
@@ -2339,8 +2343,12 @@ int command_loop(char *host_name, char *exp_name, char *cmd, char *start_dir)
 
       /* stop */
       else if (param[0][0] == 's' && param[0][1] == 't' && param[0][2] == 'o') {
-         debug_flag = ((param[1][0] == '-' && param[1][1] == 'v') ||
-                       (param[2][0] == '-' && param[2][1] == 'v'));
+         debug_flag =   ((param[1][0] == '-' && param[1][1] == 'v') ||
+                         (param[2][0] == '-' && param[2][1] == 'v') ||
+                         (param[3][0] == '-' && param[3][1] == 'v'));
+         mthread_flag = ((param[1][0] == '-' && param[1][1] == 'm') ||
+                         (param[2][0] == '-' && param[2][1] == 'm') ||
+                         (param[3][0] == '-' && param[3][1] == 'm'));
 
          /* check if run is stopped */
          state = STATE_STOPPED;
@@ -2354,10 +2362,9 @@ int command_loop(char *host_name, char *exp_name, char *cmd, char *start_dir)
          if (str[0] == 'y' || state != STATE_STOPPED || cmd_mode) {
             if (param[1][0] == 'n')
                status =
-                   cm_transition(TR_STOP | TR_DEFERRED, 0, str, sizeof(str), SYNC,
-                                 debug_flag);
+               cm_transition(TR_STOP | TR_DEFERRED, 0, str, sizeof(str), mthread_flag?MTHREAD|SYNC:SYNC, debug_flag);
             else
-               status = cm_transition(TR_STOP, 0, str, sizeof(str), SYNC, debug_flag);
+               status = cm_transition(TR_STOP, 0, str, sizeof(str), mthread_flag?MTHREAD|SYNC:SYNC, debug_flag);
 
             if (status == CM_DEFERRED_TRANSITION)
                printf("%s\n", str);
