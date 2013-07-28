@@ -637,10 +637,9 @@ int main(int argc, char **argv)
   
   start_time = 0;
   if (speed == 1)
-    printf("-%d -- Enter <!> to Exit ------- Midas Dump in Speed test mode ---\n",
-	   cm_get_revision());
+    printf("- MIDAS revision: %s -- Enter <!> to Exit ------- Midas Dump in Speed test mode ---\n", cm_get_revision());
   else
-    printf("-%d -- Enter <!> to Exit ------- Midas Dump ---\n", cm_get_revision());
+    printf("- MIDAS revision: %s -- Enter <!> to Exit ------- Midas Dump ---\n", cm_get_revision());
   
   /* connect to the database */
   cm_get_experiment_database(&hDB, &hKey);

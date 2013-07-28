@@ -122,13 +122,9 @@ void compose_status(HNDLE hDB, HNDLE hKey)
       strcpy(str, ctime(&full_time));
       str[24] = 0;
       if (active_flag)
-         sprintf(&(ststr[j++][0]),
-                 "*-v%d- MIDAS status -- Alarm Checker active-------%s-*",
-                 cm_get_revision(), str);
+         sprintf(&(ststr[j++][0]), "*- MIDAS revision: %s - MIDAS status -- Alarm Checker active-------%s-*", cm_get_revision(), str);
       else
-         sprintf(&(ststr[j++][0]),
-                 "*-v%d- MIDAS status page -------------------------%s-*",
-                 cm_get_revision(), str);
+         sprintf(&(ststr[j++][0]), "*- MIDAS revision: %s - MIDAS status page -------------------------%s-*", cm_get_revision(), str);
 
       sprintf(&(ststr[j][0]), "Experiment:%s", ex);
       sprintf(&(ststr[j][23]), "Run#:%d", rn);
