@@ -371,8 +371,8 @@ Write message to logging file. Called by cm_msg.
 INT cm_msg_log(INT message_type, const char *message)
 {
    char dir[256];
-   char filename[256];
-   char path[256];
+   char filename[256], linkname[256];
+   char path[256], lpath[256];
    char str[256];
    INT status, size, fh, semaphore;
    HNDLE hDB, hKey;
@@ -385,6 +385,7 @@ INT cm_msg_log(INT message_type, const char *message)
 
       if (hDB) {
 
+         linkname[0] = lpath[0] = 0;
          strcpy(filename, "midas.log");
          size = sizeof(filename);
          db_get_value(hDB, 0, "/Logger/Message file", filename, &size, TID_STRING, TRUE);
@@ -398,6 +399,14 @@ INT cm_msg_log(INT message_type, const char *message)
             time(&now);
             tms = localtime(&now);
 
+            strlcpy(linkname, filename, sizeof(linkname));
+            if (strchr(linkname, '%'))
+               *strchr(linkname, '%') = 0;
+            if (strchr(linkname, '_'))
+               *strchr(linkname, '_') = 0;
+            if (strchr(linkname, '.') == NULL && strchr(filename, '.'))
+               strlcat(linkname, strchr(filename, '.'), sizeof(linkname));
+            
             strftime(str, sizeof(str), filename, tms);
             strlcpy(filename, str, sizeof(filename));
          }
@@ -414,6 +423,10 @@ INT cm_msg_log(INT message_type, const char *message)
 
                strcpy(path, dir);
                strcat(path, filename);
+               if (linkname[0]) {
+                  strcpy(lpath, dir);
+                  strcat(lpath, linkname);
+               }
             } else {
                cm_get_path(dir);
                if (dir[0] != 0)
@@ -422,9 +435,15 @@ INT cm_msg_log(INT message_type, const char *message)
 
                strcpy(path, dir);
                strcat(path, "midas.log");
+               if (linkname[0]) {
+                  strcpy(lpath, dir);
+                  strcat(lpath, linkname);
+               }
             }
          } else {
             strcpy(path, filename);
+            if (linkname[0])
+               strcpy(lpath, linkname);
          }
       } else
          strcpy(path, "midas.log");
@@ -443,6 +462,11 @@ INT cm_msg_log(INT message_type, const char *message)
          write(fh, message, strlen(message));
          write(fh, "\n", 1);
          close(fh);
+         
+#ifdef OS_LINUX
+         if (lpath[0])
+            symlink(path, lpath);
+#endif
 
          ss_semaphore_release(semaphore);
       }
