@@ -7181,6 +7181,7 @@ void show_mscb_page(char *path, int refresh)
 {
    int i, j, n, ind, fi, fd, status, size, n_addr, *addr, cur_subm_index, cur_node, adr, show_hidden;
    unsigned int uptime;
+   BOOL comment_created;
    float fvalue;
    char str[256], comment[256], *pd, dbuf[256], value[256], evalue[256], unit[256], cur_subm_name[256];
    time_t now;
@@ -7238,6 +7239,7 @@ void show_mscb_page(char *path, int refresh)
          addr = (int *)malloc(sizeof(int));
       }
       
+      comment_created = FALSE;
       db_find_key(hDB, hKeyCurSubm, "Node comment", &hKeyComm);
       if (hKeyComm) {
          /* get current node comments */
@@ -7250,6 +7252,7 @@ void show_mscb_page(char *path, int refresh)
          db_create_key(hDB, hKeyCurSubm, "Node comment", TID_STRING);
          db_find_key(hDB, hKeyCurSubm, "Node comment", &hKeyComm);
          node_comment = (char *)malloc(32);
+         comment_created = TRUE;
       }
 
       fd = mscb_init(cur_subm_name, 0, "", FALSE);
@@ -7294,6 +7297,10 @@ void show_mscb_page(char *path, int refresh)
                      /* use node name as default comment */
                      strncpy(node_comment+n_addr*32, info.node_name, 32);
                      n_addr ++;
+                  } else if (comment_created) {
+                     node_comment = (char *)realloc(node_comment, 32*n_addr);
+                     /* use node name as default comment */
+                     strncpy(node_comment+j*32, info.node_name, 32);
                   }
                }
             }
