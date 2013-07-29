@@ -184,7 +184,7 @@ int pvm_distribute(ANALYZE_REQUEST * par, EVENT_HEADER * pevent);
 
 BOOL pvm_master = FALSE, pvm_slave = FALSE;
 
-char *bstr = " ";
+const char *bstr = " ";
 
 /*------------------------------------------------------------------*/
 
@@ -3422,7 +3422,7 @@ TCutG *cut_book(const char *name)
 
 //------------------------------------------------------------------------------
 
-   open_subfolder("cuts");
+   open_subfolder((char *)"cuts");
 
    TFolder *folder(gHistoFolderStack->Last()? (TFolder *) gHistoFolderStack->
                    Last() : gManaHistosFolder);
@@ -3859,7 +3859,7 @@ MA_FILE *ma_open(char *file_name)
       while (*ext_str != '.')
          ext_str--;
    } else
-      ext_str = "";
+      ext_str = (char *)"";
 
    if (strncmp(ext_str, ".gz", 3) == 0) {
 #ifdef HAVE_ZLIB
@@ -5276,7 +5276,7 @@ THREADTYPE root_socket_server(void *arg)
 
       // printf("Established connection to %s\n", sock->GetInetAddress().GetHostName());
 
-#if defined ( __linux__ )
+#if defined ( OS_LINUX )
       TThread *thread = new TThread("Server", root_server_thread, sock);
       thread->Run();
 #endif
@@ -5294,7 +5294,7 @@ THREADTYPE root_socket_server(void *arg)
 void start_root_socket_server(int port)
 {
    static int pport = port;
-#if defined ( __linux__ )
+#if defined ( OS_LINUX )
    TThread *thread = new TThread("server_loop", root_socket_server, &pport);
    thread->Run();
 #endif

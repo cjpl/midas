@@ -4342,7 +4342,7 @@ int main(int argc, char *argv[])
    rargc++;
 
    /* append argument "-b" for batch mode without graphics */
-   rargv[rargc++] = "-b";
+   rargv[rargc++] = (char *)"-b";
 
    TApplication theApp("mlogger", &rargc, rargv);
 
