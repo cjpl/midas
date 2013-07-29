@@ -3411,7 +3411,8 @@ typedef struct tr_client {
    int   async_flag;
    int   debug_flag;
    int   sequence_number;
-   PTR_CLIENT pred;
+   PTR_CLIENT *pred;
+   int   n_pred;
    char  host_name[HOST_NAME_LENGTH];
    char  client_name[NAME_LENGTH];
    int   port;
@@ -3521,7 +3522,7 @@ int cm_transition_detach(INT transition, INT run_number, char *errstr, INT errst
 /* contact a client via RPC and execute the remote transition */
 int cm_transition_call(void *param)
 {
-   INT old_timeout, status, i, t1, t0, size;
+   INT old_timeout, status, i, t1, t0, size, n_wait;
    HNDLE hDB, hConn;
    char errorstr[256];
    int connect_timeout = 10000;
@@ -3534,12 +3535,16 @@ int cm_transition_call(void *param)
    /* wait for predecessor if set */
    if (tr_client->async_flag & MTHREAD && tr_client->pred) {
       do {
-         if (tr_client->pred->status == 0) {
-            ss_sleep(100);
-            if (tr_client->debug_flag == 1)
-               printf("Client \"%s\" waits for client \"%s\"\n", tr_client->client_name, tr_client->pred->client_name);
+         n_wait = 0;
+         for (i=0 ; i<tr_client->n_pred ; i++) {
+            if (tr_client->pred[i]->status == 0) {
+               n_wait++;
+               if (tr_client->debug_flag == 1)
+                  printf("Client \"%s\" waits for client \"%s\"\n", tr_client->client_name, tr_client->pred[i]->client_name);
+               ss_sleep(100);
+            }
          }
-      } while (tr_client->pred->status == 0);
+      } while (n_wait > 0);
    }
    
    /* contact client if transition mask set */
@@ -4024,6 +4029,8 @@ INT cm_transition2(INT transition, INT run_number, char *errstr, INT errstr_size
                tr_client[n_tr_clients].debug_flag = debug_flag;
                tr_client[n_tr_clients].sequence_number = sequence_number;
                tr_client[n_tr_clients].status = 0;
+               tr_client[n_tr_clients].n_pred  = 0;
+               tr_client[n_tr_clients].pred = NULL;
 
                if (hSubkey == hKeylocal) {
                   /* remember own client */
@@ -4058,16 +4065,22 @@ INT cm_transition2(INT transition, INT run_number, char *errstr, INT errstr_size
    /* set predecessor for multi-threaded transitions */
    for (idx = 0; idx < n_tr_clients; idx++) {
       if (tr_client[idx].sequence_number == 0)
-         tr_client[idx].pred = NULL; // sequence number 0 means "don't care"
+         tr_client[idx].n_pred = 0; // sequence number 0 means "don't care"
       else {
-         /* find first client with smaller sequence number */
-         for (i = idx-1 ; i >= 0 ; i--)
-            if (tr_client[i].sequence_number < tr_client[idx].sequence_number)
-               break;
-         if (i >= 0 && tr_client[i].sequence_number > 0)
-            tr_client[idx].pred = &tr_client[i];
-         else
-            tr_client[idx].pred = NULL;
+         /* find clients with smaller sequence number */
+         tr_client[idx].n_pred = 0;
+         for (i = idx-1 ; i >= 0 ; i--) {
+            if (tr_client[i].sequence_number < tr_client[idx].sequence_number) {
+               if (i >= 0 && tr_client[i].sequence_number > 0) {
+                  if (tr_client[idx].n_pred == 0)
+                     tr_client[idx].pred = malloc(sizeof(PTR_CLIENT));
+                  else
+                     tr_client[idx].pred = realloc(tr_client[idx].pred, (tr_client[idx].n_pred+1)*sizeof(PTR_CLIENT));
+                  tr_client[idx].pred[tr_client[idx].n_pred] = &tr_client[i];
+                  tr_client[idx].n_pred ++;
+               }
+            }
+         }
       }
    }
    
@@ -4131,6 +4144,9 @@ INT cm_transition2(INT transition, INT run_number, char *errstr, INT errstr_size
    }
 
    if (tr_client) {
+      for (i=0 ; i<n_tr_clients ; i++)
+         if (tr_client[i].pred)
+            free(tr_client[i].pred);
       free(tr_client);
       tr_client = NULL;
    }
