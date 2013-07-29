@@ -180,6 +180,7 @@ INT tr_start(INT rn, char *error)
       readout_enable(TRUE);
    }
 
+   cm_set_run_state(run_state);
    return status;
 }
 
@@ -242,7 +243,7 @@ INT tr_stop(INT rn, char *error)
    }
 
    db_send_changed_records();
-
+   cm_set_run_state(run_state);
    return status;
 }
 
@@ -268,6 +269,7 @@ INT tr_pause(INT rn, char *error)
    } else
       readout_enable(TRUE);
 
+   cm_set_run_state(run_state);
    return status;
 }
 
@@ -292,6 +294,7 @@ INT tr_resume(INT rn, char *error)
       readout_enable(TRUE);
    }
 
+   cm_set_run_state(run_state);
    return status;
 }
 
@@ -2408,8 +2411,8 @@ INT scheduler(void)
 
       /*---- check network messages ----------------------------------*/
       if ((run_state == STATE_RUNNING && interrupt_eq == NULL) || slowcont_eq) {
-         /* only call yield once every 100ms when running */
-         if (actual_millitime - last_time_network > 100) {
+         /* only call yield once every 10ms when running */
+         if (actual_millitime - last_time_network > 10) {
             status = cm_yield(0);
             last_time_network = actual_millitime;
          } else
@@ -2659,6 +2662,7 @@ int main(int argc, char *argv[])
       ss_sleep(5000);
       return 1;
    }
+   cm_set_run_state(run_state);
 
    cm_get_experiment_database(&hDB, &status);
    /* set time from server */

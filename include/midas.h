@@ -312,9 +312,10 @@ Data types Definition                         min      max    */
 
 /**
 Synchronous / Asynchronous flags */
-#define SYNC          0
-#define ASYNC         1
-#define DETACH        2
+#define SYNC          1
+#define ASYNC         2
+#define DETACH        4
+#define MTHREAD       8
 
 /**
 Access modes */
@@ -1610,6 +1611,7 @@ extern "C" {
                                     int sequence_number);
    INT EXPRT cm_deregister_transition(INT transition);
    INT EXPRT cm_set_transition_sequence(INT transition, INT sequence_number);
+   INT EXPRT cm_set_run_state(INT state);
    INT EXPRT cm_query_transition(int *transition, int *run_number, int *trans_time);
    INT EXPRT cm_register_deferred_transition(INT transition, BOOL(*func) (INT, BOOL));
    INT EXPRT cm_check_deferred_transition(void);
