@@ -1437,67 +1437,67 @@ void set_event_rb_idx(INT rb, INT idx)
 
 int receive_trigger_event(EQUIPMENT *eq)
 {
-  int i, status;
-   EVENT_HEADER *prb, *pevent;
+   int i, status;
+   EVENT_HEADER *prb = NULL, *pevent;
    void *p;
-
+   
 #if 0
    {
-      int nbytes;
-      static int count = 0;
-      if (((count++) % 100) == 0) {
-         rb_get_buffer_level(rbh2, &nbytes);
-         if (nbytes != 0)
-            printf("mfe: ring buffer contains %d bytes\n", nbytes);
-      }
+   int nbytes;
+   static int count = 0;
+   if (((count++) % 100) == 0) {
+      rb_get_buffer_level(rbh2, &nbytes);
+      if (nbytes != 0)
+         printf("mfe: ring buffer contains %d bytes\n", nbytes);
+   }
    }
 #endif
    
    i=0;
    while(rbh[i]) {
-     //     printf("rbh[%d]=%d\n",i, rbh[i]); 
-     status = rb_get_rp(rbh[i], &p, 10);
-     prb = (EVENT_HEADER *)p;
-     if (status == DB_TIMEOUT)
-       return 0;
-     
-     pevent = prb;
-     
-     /* send event */
-     if (pevent->data_size) {
-       if (eq->buffer_handle) {
-         
-         /* save event in temporary buffer to push it to the ODB later */
-         if (eq->info.read_on & RO_ODB)
-	   memcpy(event_buffer, pevent, pevent->data_size + sizeof(EVENT_HEADER));
-	 
-         /* send first event to ODB if logger writes in root format */
-         if (pevent->serial_number == 0)
-	   if (logger_root())
-	     update_odb(pevent, eq->hkey_variables, eq->format);
-	 
-         status = rpc_send_event(eq->buffer_handle, pevent,
-                                 pevent->data_size + sizeof(EVENT_HEADER),
-                                 SYNC, rpc_mode);
-	 
-         if (status != SUCCESS) {
-	   cm_msg(MERROR, "receive_trigger_event", "rpc_send_event error %d", status);
-	   return -1;
+      //     printf("rbh[%d]=%d\n",i, rbh[i]);
+      status = rb_get_rp(rbh[i], &p, 10);
+      prb = (EVENT_HEADER *)p;
+      if (status == DB_TIMEOUT)
+         return 0;
+      
+      pevent = prb;
+      
+      /* send event */
+      if (pevent->data_size) {
+         if (eq->buffer_handle) {
+            
+            /* save event in temporary buffer to push it to the ODB later */
+            if (eq->info.read_on & RO_ODB)
+               memcpy(event_buffer, pevent, pevent->data_size + sizeof(EVENT_HEADER));
+            
+            /* send first event to ODB if logger writes in root format */
+            if (pevent->serial_number == 0)
+               if (logger_root())
+                  update_odb(pevent, eq->hkey_variables, eq->format);
+            
+            status = rpc_send_event(eq->buffer_handle, pevent,
+                                    pevent->data_size + sizeof(EVENT_HEADER),
+                                    SYNC, rpc_mode);
+            
+            if (status != SUCCESS) {
+               cm_msg(MERROR, "receive_trigger_event", "rpc_send_event error %d", status);
+               return -1;
+            }
+            
+            eq->bytes_sent += pevent->data_size + sizeof(EVENT_HEADER);
+            
+            if (eq->info.num_subevents)
+               eq->events_sent += eq->subevent_number;
+            else
+               eq->events_sent++;
+            
+            rotate_wheel();
          }
-	 
-         eq->bytes_sent += pevent->data_size + sizeof(EVENT_HEADER);
-	 
-         if (eq->info.num_subevents)
-	   eq->events_sent += eq->subevent_number;
-         else
-	   eq->events_sent++;
-	 
-         rotate_wheel();
-       }
-     }
-     
-     rb_increment_rp(rbh[i], sizeof(EVENT_HEADER) + prb->data_size);
-     i++;
+      }
+      
+      rb_increment_rp(rbh[i], sizeof(EVENT_HEADER) + prb->data_size);
+      i++;
    } // for rbh[]
    
    return prb->data_size;
