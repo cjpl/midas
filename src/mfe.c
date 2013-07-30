@@ -1500,6 +1500,9 @@ int receive_trigger_event(EQUIPMENT *eq)
       i++;
    } // for rbh[]
    
+   if (prb == NULL)
+      return 0;
+   
    return prb->data_size;
 }
 
