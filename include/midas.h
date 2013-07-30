@@ -695,6 +695,7 @@ Alarm error code */
 #define AL_INVALID_NAME            1002   /**< - */
 #define AL_ERROR_ODB               1003   /**< - */
 #define AL_RESET                   1004   /**< - */
+#define AL_TRIGGERED               1005   /**< - */
 
 /** 
 Slow control device driver commands */

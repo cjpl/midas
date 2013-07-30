@@ -3576,8 +3576,8 @@ int cm_transition_call(void *param)
       printf("Connecting to client \"%s\" on host %s...\n", tr_client->client_name,
              tr_client->host_name);
    if (tr_client->debug_flag == 2)
-      cm_msg(MINFO, "cm_transition",
-             "cm_transition: Connecting to client \"%s\" on host %s...",
+      cm_msg(MINFO, "cm_transition_call",
+             "cm_transition_call: Connecting to client \"%s\" on host %s...",
              tr_client->client_name, tr_client->host_name);
    
    /* get transition timeout for rpc connect */
@@ -3606,7 +3606,7 @@ int cm_transition_call(void *param)
    rpc_set_option(-2, RPC_OTIMEOUT, old_timeout);
    
    if (status != RPC_SUCCESS) {
-      cm_msg(MERROR, "cm_transition",
+      cm_msg(MERROR, "cm_transition_call",
              "cannot connect to client \"%s\" on host %s, port %d, status %d",
              tr_client->client_name, tr_client->host_name, tr_client->port, status);
       strlcpy(errorstr, "Cannot connect to client \'", sizeof(errorstr));
@@ -3635,7 +3635,7 @@ int cm_transition_call(void *param)
       printf("Connection established to client \"%s\" on host %s\n",
              tr_client->client_name, tr_client->host_name);
    if (tr_client->debug_flag == 2)
-      cm_msg(MINFO, "cm_transition",
+      cm_msg(MINFO, "cm_transition_call",
              "cm_transition: Connection established to client \"%s\" on host %s",
              tr_client->client_name, tr_client->host_name);
    
@@ -3647,7 +3647,7 @@ int cm_transition_call(void *param)
       printf("Executing RPC transition client \"%s\" on host %s...\n",
              tr_client->client_name, tr_client->host_name);
    if (tr_client->debug_flag == 2)
-      cm_msg(MINFO, "cm_transition",
+      cm_msg(MINFO, "cm_transition_call",
              "cm_transition: Executing RPC transition client \"%s\" on host %s...",
              tr_client->client_name, tr_client->host_name);
    
@@ -3665,7 +3665,7 @@ int cm_transition_call(void *param)
       printf("RPC transition finished client \"%s\" on host %s in %d ms with status %d\n",
              tr_client->client_name, tr_client->host_name, t1 - t0, status);
    if (tr_client->debug_flag == 2)
-      cm_msg(MINFO, "cm_transition",
+      cm_msg(MINFO, "cm_transition_call",
              "cm_transition: RPC transition finished client \"%s\" on host %s in %d ms with status %d",
              tr_client->client_name, tr_client->host_name, t1 - t0, status);
    
@@ -3701,14 +3701,14 @@ int cm_transition_call_direct(TR_CLIENT *tr_client)
       if (tr_client->debug_flag == 1)
          printf("Calling local transition callback\n");
       if (tr_client->debug_flag == 2)
-         cm_msg(MINFO, "cm_transition", "cm_transition: Calling local transition callback");
+         cm_msg(MINFO, "cm_transition_call_direct", "cm_transition: Calling local transition callback");
       
       status = _trans_table[i].func(tr_client->run_number, errorstr);
       
       if (tr_client->debug_flag == 1)
          printf("Local transition callback finished\n");
       if (tr_client->debug_flag == 2)
-         cm_msg(MINFO, "cm_transition", "cm_transition: Local transition callback finished");
+         cm_msg(MINFO, "cm_transition_call_direct", "cm_transition: Local transition callback finished");
    } else
       status = CM_SUCCESS;
    
@@ -3772,6 +3772,9 @@ INT cm_transition2(INT transition, INT run_number, char *errstr, INT errstr_size
    PROGRAM_INFO program_info;
    TR_CLIENT *tr_client;
 
+   /* get key of local client */
+   cm_get_experiment_database(&hDB, &hKeylocal);
+
    deferred = (transition & TR_DEFERRED) > 0;
    transition &= ~TR_DEFERRED;
 
@@ -3784,12 +3787,64 @@ INT cm_transition2(INT transition, INT run_number, char *errstr, INT errstr_size
       return CM_INVALID_TRANSITION;
    }
 
+   /* check for alarms */
+   i = 0;
+   size = sizeof(i);
+   db_get_value(hDB, 0, "/Experiment/Prevent start on alarms", &i, &size, TID_BOOL, TRUE);
+   if (i == TRUE && transition == TR_START) {
+      al_check();
+      if (al_get_alarms(str, sizeof(str)) > 0) {
+         cm_msg(MERROR, "cm_transition", "Run start abort due to %s", str);
+         strlcpy(errstr, str, errstr_size);
+         return AL_TRIGGERED;
+      }
+   }
+   
+   /* check for required programs */
+   i = 0;
+   size = sizeof(i);
+   db_get_value(hDB, 0, "/Experiment/Prevent start on required progs", &i, &size, TID_BOOL, TRUE);
+   if (i == TRUE && transition == TR_START) {
+      
+      HNDLE hkeyroot, hkey;
+      
+      /* check /programs alarms */
+      db_find_key(hDB, 0, "/Programs", &hkeyroot);
+      if (hkeyroot) {
+         for (i = 0;; i++) {
+            status = db_enum_key(hDB, hkeyroot, i, &hkey);
+            if (status == DB_NO_MORE_SUBKEYS)
+               break;
+            
+            db_get_key(hDB, hkey, &key);
+            
+            /* don't check "execute on xxx" */
+            if (key.type != TID_KEY)
+               continue;
+            
+            size = sizeof(program_info);
+            status = db_get_record(hDB, hkey, &program_info, &size, 0);
+            if (status != DB_SUCCESS) {
+               cm_msg(MERROR, "cm_transition", "Cannot get program info record");
+               continue;
+            }
+            
+            if (program_info.required) {
+               rpc_get_name(str);
+               str[strlen(key.name)] = 0;
+               if (!equal_ustring(str, key.name) && cm_exist(key.name, FALSE) == CM_NO_CLIENT) {
+                  cm_msg(MERROR, "cm_transition", "Run start abort due to program %s not running", key.name);
+                  sprintf(errstr, "Run start abort due to program %s not running", key.name);
+                  return AL_TRIGGERED;
+               }
+            }
+         }
+      }
+   }
+
    /* do detached transition via mtransition tool */
    if (async_flag & DETACH)
       return cm_transition_detach(transition, run_number, errstr, errstr_size, async_flag, debug_flag);
-
-   /* get key of local client */
-   cm_get_experiment_database(&hDB, &hKeylocal);
 
    if (errstr != NULL)
       strlcpy(errstr, "Unknown error", errstr_size);
