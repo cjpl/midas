@@ -804,7 +804,7 @@ INT search_callback(HNDLE hDB, HNDLE hKey, KEY * key, INT level, void *info)
 
       if (key->type == TID_KEY || key->type == TID_LINK) {
          /* for keys, don't display data value */
-         rsprintf("<tr><td bgcolor=#FFD000><a href=\"%s\">%s</a></tr>\n", str1, path);
+         rsprintf("<tr><td><a href=\"%s\">%s</a></tr>\n", str1, path);
       } else {
          /* strip variable name from path */
          p = path + strlen(path) - 1;
@@ -824,14 +824,14 @@ INT search_callback(HNDLE hDB, HNDLE hKey, KEY * key, INT level, void *info)
 
             sprintf(ref, "%s?cmd=Set", str1);
 
-            rsprintf("<tr><td bgcolor=#FFFF00>");
+            rsprintf("<tr><td class=\"yellowLight\">");
 
             rsprintf("<a href=\"%s\">%s</a>/%s", path, path, key->name);
 
             rsprintf("<td><a href=\"%s\">%s</a></tr>\n", ref, data_str);
          } else {
             /* display first value */
-            rsprintf("<tr><td rowspan=%d bgcolor=#FFFF00>%s\n", key->num_values, path);
+            rsprintf("<tr><td rowspan=%d class=\"yellowLight\">%s\n", key->num_values, path);
 
             for (i = 0; i < key->num_values; i++) {
                size = sizeof(data);
@@ -853,6 +853,23 @@ INT search_callback(HNDLE hDB, HNDLE hKey, KEY * key, INT level, void *info)
 }
 
 /*------------------------------------------------------------------*/
+
+void page_footer()  //wraps up body wrapper and inserts page footer
+{
+   /*---- spacer for footer ----*/
+   rsprintf("<div class=\"push\"></div>\n");
+   rsprintf("</div>\n"); //ends body wrapper
+
+   /*---- footer div ----*/
+   rsprintf("<div class=\"footerDiv\">\n");
+   rsprintf("MIDAS 2013 - Check us out on <a href=\"https://bitbucket.org/tmidas/midas\">Bitbucket</a>");
+   rsprintf("</div>\n");
+
+   /*---- top level form ----*/
+   rsprintf("</form>\n");
+
+   rsprintf("</body></html>\r\n");   
+}
 
 void show_help_page()
 {
@@ -937,15 +954,20 @@ void show_header(HNDLE hDB, const char *title, const char *method, const char *p
    db_get_value(hDB, 0, "/Experiment/Name", str, &size, TID_STRING, TRUE);
    time(&now);
 
-   rsprintf("<table border=3 cellpadding=2>\n");
-   rsprintf("<tr><th colspan=%d bgcolor=\"#A0A0FF\">MIDAS experiment \"%s\"", colspan,
+   /*---- body needs wrapper div to pin footer ----*/
+   rsprintf("<div class=\"wrapper\">\n");
+
+   /*---- begin page header ----*/
+   rsprintf("<table class=\"headerTable\">\n");
+
+   rsprintf("<tr><th colspan=%d>MIDAS experiment \"%s\"", colspan,
             str);
 
    if (refresh > 0)
-      rsprintf("<th colspan=%d bgcolor=\"#A0A0FF\">%s &nbsp;&nbsp;Refr:%d</tr>\n",
+      rsprintf("<th colspan=%d>%s &nbsp;&nbsp;Refr:%d</tr>\n",
                colspan, ctime(&now), refresh);
    else
-      rsprintf("<th colspan=%d bgcolor=\"#A0A0FF\">%s</tr>\n", colspan, ctime(&now));
+      rsprintf("<th colspan=%d>%s</tr>\n", colspan, ctime(&now));
 }
 
 /*------------------------------------------------------------------*/
@@ -1182,17 +1204,17 @@ void show_status_page(int refresh, const char *cookie_wpwd)
       rsprintf("<embed src=\"alarm.mid\" autostart=\"true\" loop=\"false\" hidden=\"true\" height=\"0\" width=\"0\">\n");
    }
 
-   rsprintf("<table border=3 cellpadding=2>\n");
+   rsprintf("<div class=\"wrapper\">\n");  //body's wrapper div
+   /*---- page header ----*/
+   rsprintf("<table class=\"headerTable\">\n");
 
    /*---- title row ----*/
 
-   rsprintf("<tr><th colspan=3 bgcolor=#A0A0FF>MIDAS experiment \"%s\"", str);
-   rsprintf("<th colspan=3 bgcolor=#A0A0FF>%s &nbsp;&nbsp;Refr:%d</tr>\n", ctime(&now),
-            refresh);
+   rsprintf("<tr><th id=\"experimentTitle\" colspan=3>MIDAS experiment \"%s\"", str);
+   rsprintf("<th id=\"masterTime\" colspan=3>%s &nbsp;&nbsp;Refr:%d</tr>\n", ctime(&now), refresh);
 
+   rsprintf("<tr><td colspan=6>\n");
    /*---- menu buttons ----*/
-
-   rsprintf("<tr><td colspan=6 bgcolor=#C0C0C0>\n");
 
 #ifdef HAVE_MSCB
    strlcpy(str, "Start, Pause, ODB, Messages, ELog, Alarms, Programs, History, MSCB, Sequencer, Config, Help", sizeof(str));
@@ -1264,7 +1286,7 @@ void show_status_page(int refresh, const char *cookie_wpwd)
 
    status = db_find_key(hDB, 0, "Script", &hkey);
    if (status == DB_SUCCESS) {
-      rsprintf("<tr><td colspan=6 bgcolor=#E0FFFF>\n");
+      rsprintf("<tr><td colspan=6>\n");
 
       for (i = 0;; i++) {
          db_enum_link(hDB, hkey, i, &hsubkey);
@@ -1295,7 +1317,7 @@ void show_status_page(int refresh, const char *cookie_wpwd)
             db_get_value(hDB, hkeytmp, "Type", &type, &size, TID_INT, TRUE);
             if (type & EQ_MANUAL_TRIG) {
                if (first)
-                  rsprintf("<tr><td colspan=6 bgcolor=#E0FFE0>\n");
+                  rsprintf("<tr><td colspan=6>\n");
 
                first = FALSE;
 
@@ -1315,7 +1337,7 @@ void show_status_page(int refresh, const char *cookie_wpwd)
    db_find_key(hDB, 0, "/Alias", &hkey);
    if (hkey) {
       if (first) {
-         rsprintf("<tr><td colspan=6 bgcolor=#E0E0FF>\n");
+         rsprintf("<tr><td colspan=6>\n");
          first = FALSE;
       }
       for (i = 0;; i++) {
@@ -1376,7 +1398,7 @@ void show_status_page(int refresh, const char *cookie_wpwd)
             continue;
 
          if (first) {
-            rsprintf("<tr><td colspan=6 bgcolor=#E0E0FF>\n");
+            rsprintf("<tr><td colspan=6>\n");
             first = FALSE;
          }
 
@@ -1392,7 +1414,10 @@ void show_status_page(int refresh, const char *cookie_wpwd)
             rsprintf("<button type=\"button\" onclick=\"document.location.href='%s';\">%s</button>\n", ref, name);
        }
    }
+   rsprintf("</table>\n");   
 
+   /*---- begin main status reporting ----*/
+   rsprintf("<table id=\"statusTable\">\n");
    /*---- alarms ----*/
 
    /* go through all triggered alarms */
@@ -1444,7 +1469,7 @@ void show_status_page(int refresh, const char *cookie_wpwd)
 
 
                db_get_key(hDB, hsubkey, &key);
-               rsprintf("<tr><td colspan=6 bgcolor=\"%s\" align=center>", bgcol);
+               rsprintf("<tr><td colspan=6 style=\"background-color:%s\" align=center>", bgcol);
                rsprintf("<table width=\"100%%\"><tr><td align=center width=\"99%%\"><font color=\"%s\" size=+3>%s: %s</font></td>\n", fgcol,
                         alarm_class, str);
                rsprintf("<td width=\"1%%\"><button type=\"button\" onclick=\"document.location.href='?cmd=alrst&name=%s'\"n\">Reset</button></td></tr></table></td></tr>\n", key.name);
@@ -1453,18 +1478,35 @@ void show_status_page(int refresh, const char *cookie_wpwd)
       }
    }
 
-   /*---- run info ----*/
+   /*---- Summary Table ----*/
+   rsprintf("<tr><td colspan=6><table class=\"subStatusTable\" width=100%%>\n");
 
-   rsprintf("<tr align=center><td>Run #%d", runinfo.run_number);
+   rsprintf("<tr><th colspan=6 class=\"subStatusTitle\">Run Status</th></tr>\n");
+   rsprintf("<tr align=center><td rowspan=4 id=\"runNumberCell\">Run<br>%d", runinfo.run_number);
+
+   /*---- time ----*/
+   rsprintf("<td colspan=2>Start: %s", runinfo.start_time);
+
+   difftime = (DWORD) (now - runinfo.start_time_binary);
+   h = difftime / 3600;
+   m = difftime % 3600 / 60;
+   s = difftime % 60;
 
    if (runinfo.state == STATE_STOPPED)
-      rsprintf("<td colspan=1 bgcolor=#FF0000>Stopped");
-   else if (runinfo.state == STATE_PAUSED)
-      rsprintf("<td colspan=1 bgcolor=#FFFF00>Paused");
-   else if (runinfo.state == STATE_RUNNING)
-      rsprintf("<td colspan=1 bgcolor=#00FF00>Running");
+      rsprintf("<td colspan=2>Stop: %s</tr>\n", runinfo.stop_time);
    else
-      rsprintf("<td colspan=1 bgcolor=#FFFFFF>Unknown");
+      rsprintf("<td colspan=2>Running time: %dh%02dm%02ds</tr>\n", h, m, s);
+
+   /*---- run info ----*/
+   
+   if (runinfo.state == STATE_STOPPED)
+      rsprintf("<tr><td colspan=1 class=\"redLight\">Stopped");
+   else if (runinfo.state == STATE_PAUSED)
+      rsprintf("<td colspan=1 class=\"yellowLight\">Paused");
+   else if (runinfo.state == STATE_RUNNING)
+      rsprintf("<td colspan=1 class=\"greenLight\">Running");
+   else
+      rsprintf("<td colspan=1>Run State Unknown");
 
    if (runinfo.transition_in_progress)
       requested_transition = 0;
@@ -1505,8 +1547,8 @@ void show_status_page(int refresh, const char *cookie_wpwd)
 
    size = sizeof(flag);
    db_get_value(hDB, 0, "Alarms/Alarm system active", &flag, &size, TID_BOOL, TRUE);
-   strlcpy(str, flag ? "00FF00" : "FFC0C0", sizeof(str));
-   rsprintf("<td bgcolor=#%s><a href=\"%s\">Alarms: %s</a>", str, ref,
+   strlcpy(str, flag ? "class=\"greenLight\"" : "class=\"redLight\"", sizeof(str));
+   rsprintf("<td %s><a href=\"%s\">Alarms: %s</a>", str, ref,
             flag ? "On" : "Off");
 
    sprintf(ref, "Logger/Auto restart?cmd=set");
@@ -1514,59 +1556,45 @@ void show_status_page(int refresh, const char *cookie_wpwd)
    size = sizeof(flag);
    db_get_value(hDB, 0, "/Sequencer/State/Running", &flag, &size, TID_BOOL, FALSE);
    if (flag)
-      rsprintf("<td bgcolor=#00FF00>Restart: Sequencer");
+      rsprintf("<td class=\"greenLight\">Restart: Sequencer");
    else if (cm_exist("RunSubmit", FALSE) == CM_SUCCESS)
-      rsprintf("<td bgcolor=#00FF00>Restart: RunSubmit");
+      rsprintf("<td class=\"greenLight\">Restart: RunSubmit");
    else {
      size = sizeof(flag);
      db_get_value(hDB, 0, "Logger/Auto restart", &flag, &size, TID_BOOL, TRUE);
-     strlcpy(str, flag ? "00FF00" : "FFFF00", sizeof(str));
-     rsprintf("<td bgcolor=#%s><a href=\"%s\">Restart: %s</a>", str, ref,
+     strlcpy(str, flag ? "greenLight" : "yellowLight", sizeof(str));
+     rsprintf("<td class=%s><a href=\"%s\">Restart: %s</a>", str, ref,
               flag ? "Yes" : "No");
    }
 
    if (cm_exist("Logger", FALSE) != CM_SUCCESS && cm_exist("FAL", FALSE) != CM_SUCCESS)
-      rsprintf("<td colspan=2 bgcolor=#FF0000>Logger not running</tr>\n");
+      rsprintf("<td colspan=2 class=\"redLight\">Logger not running</tr>\n");
    else {
       /* write data flag */
       size = sizeof(flag);
       db_get_value(hDB, 0, "/Logger/Write data", &flag, &size, TID_BOOL, TRUE);
 
       if (!flag)
-         rsprintf("<td colspan=2 bgcolor=#FFFF00>Logging disabled</tr>\n");
+         rsprintf("<td colspan=2 class=\"yellowLight\">Logging disabled</tr>\n");
       else {
          size = sizeof(str);
          db_get_value(hDB, 0, "/Logger/Data dir", str, &size, TID_STRING, TRUE);
 
-         rsprintf("<td colspan=3>Data dir: %s</tr>\n", str);
+         rsprintf("<td colspan=2>Data dir: %s</tr>\n", str);
       }
    }
-
-   /*---- time ----*/
-
-   rsprintf("<tr align=center><td colspan=3>Start: %s", runinfo.start_time);
-
-   difftime = (DWORD) (now - runinfo.start_time_binary);
-   h = difftime / 3600;
-   m = difftime % 3600 / 60;
-   s = difftime % 60;
-
-   if (runinfo.state == STATE_STOPPED)
-      rsprintf("<td colspan=3>Stop: %s</tr>\n", runinfo.stop_time);
-   else
-      rsprintf("<td colspan=3>Running time: %dh%02dm%02ds</tr>\n", h, m, s);
 
    /*---- run comment ----*/ 
  
    size = sizeof(str); 
    if (db_get_value(hDB, 0, "/Experiment/Run parameters/Comment", str, 
                     &size, TID_STRING, FALSE) == DB_SUCCESS) 
-      rsprintf("<tr align=center><td colspan=6 bgcolor=#E0E0FF><b>%s</b></td></tr>\n", 
+      rsprintf("<tr align=center><td colspan=5><b>%s</b></td></tr>\n", 
                str); 
    size = sizeof(str); 
    if (db_get_value(hDB, 0, "/Experiment/Run parameters/Run Description", str, 
                     &size, TID_STRING, FALSE) == DB_SUCCESS) 
-      rsprintf("<tr align=center><td colspan=6 bgcolor=#E0E0FF><b>%s</b></td></tr>\n", 
+      rsprintf("<tr align=center><td colspan=5><b>%s</b></td></tr>\n", 
                str); 
  
    /*---- Status items ----*/
@@ -1582,7 +1610,7 @@ void show_status_page(int refresh, const char *cookie_wpwd)
             rsprintf("<tr><td colspan=6><table width=100%%>\n");
 
          db_get_key(hDB, hsubkey, &key);
-         rsprintf("<tr><td align=right width=30%% bgcolor=\"#E0E0FF\">%s:</td>", key.name);
+         rsprintf("<tr><td align=right width=30%%>%s:</td>", key.name);
          
          db_enum_key(hDB, hkey, i, &hsubkey);
          db_get_key(hDB, hsubkey, &key);
@@ -1595,6 +1623,22 @@ void show_status_page(int refresh, const char *cookie_wpwd)
       if (n_items)
          rsprintf("</table></td></tr>\n");
    }
+
+   /*---- Messages ----*/
+
+   rsprintf("<tr><td colspan=6 class=msgService>");
+
+   if (message_buffer[0]) {
+      if (strstr(message_buffer, ",ERROR]"))
+         rsprintf("<span style=\"color:#EEEEEE;background-color:#c0392b\"><b>%s</b></span>",
+                  message_buffer);
+      else
+         rsprintf("<b>%s</b>", message_buffer);
+   }
+
+   rsprintf("</tr>");
+
+   rsprintf("</table></td></tr>\n");  //end summary table
 
    /*---- Equipment list ----*/
 
@@ -1617,9 +1661,10 @@ void show_status_page(int refresh, const char *cookie_wpwd)
       }
    }
    
-   rsprintf("<tr><td colspan=6><table border=1 width=100%%>\n");
+   rsprintf("<tr><td colspan=6><table class=\"subStatusTable\" width=100%%>\n");
+   rsprintf("<tr><th colspan=6 class=\"subStatusTitle\">Equipment</th><tr>\n");
 
-   rsprintf("<tr><th>Equipment");
+   rsprintf("<tr class=\"titleRow\"><th>Equipment");
    if (n_hidden) {
       if (expand_equipment)
          rsprintf("&nbsp;<a href=\"?expand=0\">-</a>");
@@ -1667,16 +1712,16 @@ void show_status_page(int refresh, const char *cookie_wpwd)
          if (cm_exist(equipment.frontend_name, TRUE) != CM_SUCCESS
              && cm_exist("FAL", TRUE) != CM_SUCCESS)
             rsprintf
-                ("<tr><td><a href=\"%s\">%s</a><td align=center bgcolor=#FF0000>(frontend stopped)",
+                ("<tr><td><a href=\"%s\">%s</a><td align=center class=\"redLight\">(frontend stopped)",
                  ref, key.name);
          else {
             if (equipment.enabled) {
                if (equipment.status[0] == 0)
-                  rsprintf("<tr><td><a href=\"%s\">%s</a><td align=center bgcolor=\"%s\">%s@%s", ref, key.name, "#00FF00", equipment.frontend_name, equipment.frontend_host);
+                  rsprintf("<tr><td><a href=\"%s\">%s</a><td align=center class=\"greenLight\">%s@%s", ref, key.name, equipment.frontend_name, equipment.frontend_host);
                else
-                  rsprintf("<tr><td><a href=\"%s\">%s</a><td align=center bgcolor=\"%s\">%s", ref, key.name, equipment.status_color, equipment.status);
+                  rsprintf("<tr><td><a href=\"%s\">%s</a><td align=center class=\"%s\">%s", ref, key.name, ( !strcmp(equipment.status_color, "#00FF00") )? "greenLight" : ( (!strcmp(equipment.status_color, "#FF0000")? "redLight" : "yellowLight" ) ) /*equipment.status_color*/, equipment.status);
             } else
-               rsprintf("<tr><td><a href=\"%s\">%s</a><td align=center bgcolor=#FFFF00>(disabled)", ref, key.name);
+               rsprintf("<tr><td><a href=\"%s\">%s</a><td align=center class=\"yellowLight\">(disabled)", ref, key.name);
          }
 
          /* event statistics */
@@ -1693,12 +1738,16 @@ void show_status_page(int refresh, const char *cookie_wpwd)
       }
    }
 
-   rsprintf("</table></td></tr>\n");
+   rsprintf("</table></td></tr>\n"); //end equipment table
+
+   /*---- Logging Table ----*/
+   rsprintf("<tr><td colspan=6><table class=\"subStatusTable\" width=100%%>\n");
+   rsprintf("<tr><th colspan=6 class=\"subStatusTitle\">Logging Channels</th><tr>\n");
 
    /*---- Logging channels ----*/
 
    rsprintf
-       ("<tr><th colspan=2>Channel<th>Events<th>MB written<th>Compression<th width=\"150px\">Disk level</tr>\n");
+       ("<tr class=\"titleRow\"><th colspan=2>Channel<th>Events<th>MB written<th>Compression<th width=\"150px\">Disk level</tr>\n");
 
    if (db_find_key(hDB, 0, "/Logger/Channels", &hkey) == DB_SUCCESS) {
       for (i = 0;; i++) {
@@ -1751,13 +1800,13 @@ void show_status_page(int refresh, const char *cookie_wpwd)
 
          if (cm_exist("Logger", FALSE) != CM_SUCCESS
              && cm_exist("FAL", FALSE) != CM_SUCCESS)
-            rsprintf("<tr><td colspan=2 bgcolor=\"FF0000\">");
+            rsprintf("<tr><td colspan=2 class=\"redLight\">");
          else if (!flag)
-            rsprintf("<tr><td colspan=2 bgcolor=\"FFFF00\">");
+            rsprintf("<tr><td colspan=2 class=\"yellowLight\">");
          else if (chn_settings.active)
-            rsprintf("<tr><td colspan=2 bgcolor=\"00FF00\">");
+            rsprintf("<tr><td colspan=2 class=\"greenLight\">");
          else
-            rsprintf("<tr><td colspan=2 bgcolor=\"FFFF00\">");
+            rsprintf("<tr><td colspan=2 class=\"yellowLight\">");
 
          rsprintf("<B><a href=\"%s\">#%s:</a></B>&nbsp;&nbsp;%s", ref, key.name, str);
 
@@ -1782,13 +1831,13 @@ void show_status_page(int refresh, const char *cookie_wpwd)
 
          char col[80];
          if (chn_stats.disk_level >= 0.9)
-            strcpy(col, "red");
+            strcpy(col, "#c0392b");
          else if (chn_stats.disk_level >= 0.7)
-            strcpy(col, "yellow");
+            strcpy(col, "#f1c40f");
          else
-            strcpy(col, "#00FF00");
+            strcpy(col, "#00E600");
          
-         rsprintf("<td style=\"padding:0;\">\n");
+         rsprintf("<td class=\"meterCell\">\n");
          rsprintf("<div style=\"background-color:%s;width:%dpx;height:23px;\">\n", col, (int)(chn_stats.disk_level*150));
          rsprintf("<div style=\"position:relative;top:2px;left:15px\">%1.1lf&nbsp;%%</div>\n", chn_stats.disk_level*100);
          rsprintf("</td></tr>\n");
@@ -1888,30 +1937,23 @@ void show_status_page(int refresh, const char *cookie_wpwd)
       rsprintf("</tr>\n");
    }
 
-   /*---- Messages ----*/
-
-   rsprintf("<tr><td colspan=6>");
-
-   if (message_buffer[0]) {
-      if (strstr(message_buffer, ",ERROR]"))
-         rsprintf("<span style=\"color:white;background-color:red\"><b>%s</b></span>",
-                  message_buffer);
-      else
-         rsprintf("<b>%s</b>", message_buffer);
-   }
-
-   rsprintf("</tr>");
+   rsprintf("</table></td></tr>\n"); //end logging table
 
    /*---- Clients ----*/
 
    if (db_find_key(hDB, 0, "/System/Clients", &hkey) == DB_SUCCESS) {
+
+      /*---- Client Table ----*/
+      rsprintf("<tr><td colspan=6><table class=\"subStatusTable\" width=100%%>\n");
+      rsprintf("<tr><th colspan=6 class=\"subStatusTitle\">Clients</th><tr>\n");
+
       for (i = 0;; i++) {
          db_enum_key(hDB, hkey, i, &hsubkey);
          if (!hsubkey)
             break;
 
          if (i % 3 == 0)
-            rsprintf("<tr bgcolor=#E0E0FF>");
+            rsprintf("<tr>");
 
          size = sizeof(name);
          db_get_value(hDB, hsubkey, "Name", name, &size, TID_STRING, TRUE);
@@ -1926,10 +1968,14 @@ void show_status_page(int refresh, const char *cookie_wpwd)
 
       if (i % 3 != 0)
          rsprintf("</tr>\n");
+
+      rsprintf("</table></td></tr>\n"); //end client table
    }
 
    rsprintf("</table>\n");
-   rsprintf("</body></html>\r\n");
+
+   page_footer();
+
 }
 
 /*------------------------------------------------------------------*/
@@ -1961,7 +2007,11 @@ void show_messages_page(int refresh, int n_message)
    rsprintf("<title>MIDAS messages</title></head>\n");
    rsprintf("<body><form method=\"GET\" action=\".\">\n");
 
-   rsprintf("<table columns=2 border=3 cellpadding=2>\n");
+   /*---- body needs wrapper div to pin footer ----*/
+   rsprintf("<div class=\"wrapper\">\n");
+
+   /*---- begin page header ----*/
+   rsprintf("<table class=\"headerTable\">\n");
 
    /*---- title row ----*/
 
@@ -1970,31 +2020,31 @@ void show_messages_page(int refresh, int n_message)
    db_get_value(hDB, 0, "/Experiment/Name", str, &size, TID_STRING, TRUE);
    time(&now);
 
-   rsprintf("<tr><th bgcolor=#A0A0FF>MIDAS experiment \"%s\"", str);
-   rsprintf("<th bgcolor=#A0A0FF>%s</tr>\n", ctime(&now));
+   rsprintf("<tr><th>MIDAS experiment \"%s\"", str);
+   rsprintf("<th>%s</tr>\n", ctime(&now));
 
    /*---- menu buttons ----*/
 
-   rsprintf("<tr><td colspan=2 bgcolor=#C0C0C0>\n");
+   rsprintf("<tr><td colspan=2>\n");
 
    rsprintf("<input type=submit name=cmd value=ODB>\n");
    rsprintf("<input type=submit name=cmd value=Status>\n");
    rsprintf("<input type=submit name=cmd value=Config>\n");
    rsprintf("<input type=submit name=cmd value=Help>\n");
-   rsprintf("</tr>\n\n");
+   rsprintf("</tr>\n");
+
+   //end header table
+   rsprintf("</table>\n");   
 
    /*---- messages ----*/
-
-   rsprintf("<tr><td colspan=2>\n");
-
    /* more button */
    if (n_message == 20)
       more = 100;
    else
       more = n_message + 100;
 
-   rsprintf("<input type=submit name=cmd value=More%d><p>\n", more);
-
+   rsprintf("<input type=submit style=\"margin-top:1em;\" name=cmd value=\"%d More\"><div class=\"messageBox\">\n", more);
+   rsprintf("<h1 class=\"subStatusTitle\">Messages</h1>");
    buffer = (char *)malloc(1000000);
    cm_msg_retrieve(n_message, buffer, 1000000);
 
@@ -2017,15 +2067,13 @@ void show_messages_page(int refresh, int n_message)
 
       /* check for error */
       if (strstr(line, ",ERROR]"))
-         rsprintf("<span style=\"color:white;background-color:red\">%s</span>", line);
+         rsprintf("<span style=\"color:white;background-color:red\">%s</span><br>", line);
       else
-         rsprintf("%s", line);
-
-      rsprintf("<br>\n");
+         rsprintf("%s<br>", line);
    } while (!eob && *pline);
 
-   rsprintf("</tr></table>\n");
-   rsprintf("</body></html>\r\n");
+   rsprintf("</div>\n");
+   page_footer();
    free(buffer);
 }
 
@@ -2201,37 +2249,47 @@ void show_elog_new(const char *path, BOOL bedit, const char *odb_att, const char
    rsprintf
        ("<body><form method=\"POST\" action=\"%s\" enctype=\"multipart/form-data\">\n", action_path);
 
-   rsprintf("<table border=3 cellpadding=5>\n");
+   /*---- body needs wrapper div to pin footer ----*/
+   rsprintf("<div class=\"wrapper\">\n");
+   /*---- begin page header ----*/
+   rsprintf("<table class=\"headerTable\">\n");
 
-  /*---- title row ----*/
+   /*---- title row ----*/
 
    size = sizeof(str);
    str[0] = 0;
    db_get_value(hDB, 0, "/Experiment/Name", str, &size, TID_STRING, TRUE);
 
-   rsprintf("<tr><th bgcolor=#A0A0FF>MIDAS Electronic Logbook");
+   rsprintf("<tr><th>MIDAS Electronic Logbook");
    if (elog_mode)
-      rsprintf("<th bgcolor=#A0A0FF>Logbook \"%s\"</tr>\n", str);
+      rsprintf("<th>Logbook \"%s\"</tr>\n", str);
    else
-      rsprintf("<th bgcolor=#A0A0FF>Experiment \"%s\"</tr>\n", str);
+      rsprintf("<th>Experiment \"%s\"</tr>\n", str);
 
-  /*---- menu buttons ----*/
+   //end header
+   rsprintf("</table>");
 
-   rsprintf("<tr><td colspan=2 bgcolor=#C0C0C0>\n");
+   //main table
+   rsprintf("<table class=\"dialogTable\">");
+   /*---- menu buttons ----*/
+
+   rsprintf("<tr><td colspan=2 class=\"subStatusTitle\">Create E-Log</td></tr>");
+
+   rsprintf("<tr><td colspan=2>\n");
 
    rsprintf("<input type=submit name=cmd value=Submit>\n");
    rsprintf("</tr>\n\n");
 
-  /*---- entry form ----*/
+   /*---- entry form ----*/
 
    if (display_run_number) {
       if (bedit) {
-         rsprintf("<tr><td bgcolor=#FFFF00>Entry date: %s<br>", date);
+         rsprintf("<tr><td>Entry date: %s<br>", date);
          time(&now);
          rsprintf("Revision date: %s", ctime(&now));
       } else {
          time(&now);
-         rsprintf("<tr><td bgcolor=#FFFF00>Entry date: %s", ctime(&now));
+         rsprintf("<tr><td>Entry date: %s", ctime(&now));
       }
 
       if (!bedit) {
@@ -2249,17 +2307,17 @@ void show_elog_new(const char *path, BOOL bedit, const char *odb_att, const char
          abort();
       }
 
-      rsprintf("<td bgcolor=#FFFF00>Run number: ");
+      rsprintf("<td>Run number: ");
       rsprintf("<input type=\"text\" size=10 maxlength=10 name=\"run\" value=\"%d\"</tr>",
                run_number);
    } else {
       if (bedit) {
-         rsprintf("<tr><td colspan=2 bgcolor=#FFFF00>Entry date: %s<br>", date);
+         rsprintf("<tr><td colspan=2>Entry date: %s<br>", date);
          time(&now);
          rsprintf("Revision date: %s", ctime(&now));
       } else {
          time(&now);
-         rsprintf("<tr><td colspan=2 bgcolor=#FFFF00>Entry date: %s", ctime(&now));
+         rsprintf("<tr><td colspan=2>Entry date: %s", ctime(&now));
       }
    }
 
@@ -2271,7 +2329,7 @@ void show_elog_new(const char *path, BOOL bedit, const char *odb_att, const char
       str[0] = 0;
 
    rsprintf
-       ("<tr><td bgcolor=#FFA0A0>Author: <input type=\"text\" size=\"15\" maxlength=\"80\" name=\"Author\" value=\"%s\">\n",
+       ("<tr><td>Author: <input type=\"text\" size=\"15\" maxlength=\"80\" name=\"Author\" value=\"%s\">\n",
         str);
 
    /* get type list from ODB */
@@ -2307,7 +2365,7 @@ void show_elog_new(const char *path, BOOL bedit, const char *odb_att, const char
    sprintf(ref, "/ELog/");
 
    rsprintf
-       ("<td bgcolor=#FFA0A0><a href=\"%s\" target=\"_blank\">Type:</a> <select name=\"type\">\n",
+       ("<td><a href=\"%s\" target=\"_blank\">Type:</a> <select name=\"type\">\n",
         ref);
    for (i = 0; i < 20 && type_list[i][0]; i++)
       if ((path && !bedit && equal_ustring(type_list[i], "reply")) ||
@@ -2318,7 +2376,7 @@ void show_elog_new(const char *path, BOOL bedit, const char *odb_att, const char
    rsprintf("</select></tr>\n");
 
    rsprintf
-       ("<tr><td bgcolor=#A0FFA0><a href=\"%s\" target=\"_blank\">  System:</a> <select name=\"system\">\n",
+       ("<tr><td><a href=\"%s\" target=\"_blank\">  System:</a> <select name=\"system\">\n",
         ref);
    for (i = 0; i < 20 && system_list[i][0]; i++)
       if (path && equal_ustring(system_list[i], system))
@@ -2333,7 +2391,7 @@ void show_elog_new(const char *path, BOOL bedit, const char *odb_att, const char
    else
       sprintf(str, "%s", subject);
    rsprintf
-       ("<td bgcolor=#A0FFA0>Subject: <input type=text size=20 maxlength=\"80\" name=Subject value=\"%s\"></tr>\n",
+       ("<td>Subject: <input type=text size=20 maxlength=\"80\" name=Subject value=\"%s\"></tr>\n",
         str);
 
    if (path) {
@@ -2382,7 +2440,7 @@ void show_elog_new(const char *path, BOOL bedit, const char *odb_att, const char
 
    if (bedit && att1[0])
       rsprintf
-          ("<tr><td colspan=2 align=center bgcolor=#8080FF>If no attachment are resubmitted, the original ones are kept</tr>\n");
+          ("<tr><td colspan=2 align=center>If no attachment are resubmitted, the original ones are kept</tr>\n");
 
    /* attachment */
    rsprintf
@@ -2394,22 +2452,22 @@ void show_elog_new(const char *path, BOOL bedit, const char *odb_att, const char
          strlcpy(str, "\\", sizeof(str));
       strlcat(str, odb_att, sizeof(str));
       rsprintf
-          ("<tr><td colspan=2>Attachment1: <input type=hidden name=attachment0 value=\"%s\"><b>%s</b></tr>\n",
+          ("<tr><td colspan=2>Attachment 1: <input type=hidden name=attachment0 value=\"%s\"><b>%s</b></tr>\n",
            str, str);
    } else
       rsprintf
-          ("<tr><td colspan=2>Attachment1: <input type=\"file\" size=\"60\" maxlength=\"256\" name=\"attfile1\" value=\"%s\" accept=\"filetype/*\"></tr>\n",
+          ("<tr><td colspan=2>Attachment 1: <input type=\"file\" size=\"60\" maxlength=\"256\" name=\"attfile1\" value=\"%s\" accept=\"filetype/*\"></tr>\n",
            att1);
 
    rsprintf
-       ("<tr><td colspan=2>Attachment2: <input type=\"file\" size=\"60\" maxlength=\"256\" name=\"attfile2\" value=\"%s\" accept=\"filetype/*\"></tr>\n",
+       ("<tr><td colspan=2>Attachment 2: <input type=\"file\" size=\"60\" maxlength=\"256\" name=\"attfile2\" value=\"%s\" accept=\"filetype/*\"></tr>\n",
         att2);
    rsprintf
-       ("<tr><td colspan=2>Attachment3: <input type=\"file\" size=\"60\" maxlength=\"256\" name=\"attfile3\" value=\"%s\" accept=\"filetype/*\"></tr>\n",
+       ("<tr><td colspan=2>Attachment 3: <input type=\"file\" size=\"60\" maxlength=\"256\" name=\"attfile3\" value=\"%s\" accept=\"filetype/*\"></tr>\n",
         att3);
 
    rsprintf("</table>\n");
-   rsprintf("</body></html>\r\n");
+   page_footer();
 }
 
 /*------------------------------------------------------------------*/
@@ -2442,7 +2500,10 @@ void show_elog_query()
    rsprintf("<title>MIDAS ELog</title></head>\n");
    rsprintf("<body><form method=\"GET\" action=\"./\">\n");
 
-   rsprintf("<table border=3 cellpadding=5>\n");
+   /*---- body needs wrapper div to pin footer ----*/
+   rsprintf("<div class=\"wrapper\">\n");
+   /*---- begin page header ----*/
+   rsprintf("<table class=\"headerTable\">\n");
 
   /*---- title row ----*/
 
@@ -2450,15 +2511,20 @@ void show_elog_query()
    str[0] = 0;
    db_get_value(hDB, 0, "/Experiment/Name", str, &size, TID_STRING, TRUE);
 
-   rsprintf("<tr><th colspan=2 bgcolor=#A0A0FF>MIDAS Electronic Logbook");
+   rsprintf("<tr><th colspan=2>MIDAS Electronic Logbook");
    if (elog_mode)
-      rsprintf("<th colspan=2 bgcolor=#A0A0FF>Logbook \"%s\"</tr>\n", str);
+      rsprintf("<th colspan=2>Logbook \"%s\"</tr>\n", str);
    else
-      rsprintf("<th colspan=2 bgcolor=#A0A0FF>Experiment \"%s\"</tr>\n", str);
+      rsprintf("<th colspan=2>Experiment \"%s\"</tr>\n", str);
+   //end header
+   rsprintf("</table>");
 
+   //main table
+   rsprintf("<table class=\"dialogTable\">");
+   rsprintf("<tr><td colspan=4 class=\"subStatusTitle\">E-Log Query</td></tr>");
   /*---- menu buttons ----*/
 
-   rsprintf("<tr><td colspan=4 bgcolor=#C0C0C0>\n");
+   rsprintf("<tr><td colspan=4>\n");
 
    rsprintf("<input type=submit name=cmd value=\"Submit Query\">\n");
    rsprintf("<input type=reset value=\"Reset Form\">\n");
@@ -2466,9 +2532,9 @@ void show_elog_query()
 
   /*---- entry form ----*/
 
-   rsprintf("<tr><td colspan=2 bgcolor=#C0C000>");
+   rsprintf("<tr><td colspan=2>");
    rsprintf("<input type=checkbox name=mode value=\"summary\">Summary only\n");
-   rsprintf("<td colspan=2 bgcolor=#C0C000>");
+   rsprintf("<td colspan=2>");
    rsprintf("<input type=checkbox name=attach value=1>Show attachments</tr>\n");
 
    time(&now);
@@ -2476,8 +2542,8 @@ void show_elog_query()
    tms = localtime(&now);
    tms->tm_year += 1900;
 
-   rsprintf("<tr><td bgcolor=#FFFF00>Start date: ");
-   rsprintf("<td colspan=3 bgcolor=#FFFF00><select name=\"m1\">\n");
+   rsprintf("<tr><td>Start date: ");
+   rsprintf("<td colspan=3><select name=\"m1\">\n");
 
    for (i = 0; i < 12; i++)
       if (i == tms->tm_mon)
@@ -2498,8 +2564,8 @@ void show_elog_query()
             tms->tm_year);
    rsprintf("</tr>\n");
 
-   rsprintf("<tr><td bgcolor=#FFFF00>End date: ");
-   rsprintf("<td colspan=3 bgcolor=#FFFF00><select name=\"m2\" value=\"%s\">\n",
+   rsprintf("<tr><td>End date: ");
+   rsprintf("<td colspan=3><select name=\"m2\" value=\"%s\">\n",
             mname[tms->tm_mon]);
 
    rsprintf("<option value=\"\">\n");
@@ -2517,12 +2583,10 @@ void show_elog_query()
    rsprintf("</tr>\n");
 
    if (display_run_number) {
-      rsprintf("<tr><td bgcolor=#A0FFFF>Start run: ");
-      rsprintf
-          ("<td bgcolor=#A0FFFF><input type=\"text\" size=\"10\" maxlength=\"10\" name=\"r1\">\n");
-      rsprintf("<td bgcolor=#A0FFFF>End run: ");
-      rsprintf
-          ("<td bgcolor=#A0FFFF><input type=\"text\" size=\"10\" maxlength=\"10\" name=\"r2\">\n");
+      rsprintf("<tr><td>Start run: ");
+      rsprintf("<td><input type=\"text\" size=\"10\" maxlength=\"10\" name=\"r1\">\n");
+      rsprintf("<td>End run: ");
+      rsprintf("<td><input type=\"text\" size=\"10\" maxlength=\"10\" name=\"r2\">\n");
       rsprintf("</tr>\n");
    }
 
@@ -2543,10 +2607,10 @@ void show_elog_query()
    if (hkey)
       db_get_data(hDB, hkey, system_list, &size, TID_STRING);
 
-   rsprintf("<tr><td colspan=2 bgcolor=#FFA0A0>Author: ");
+   rsprintf("<tr><td colspan=2>Author: ");
    rsprintf("<input type=\"test\" size=\"15\" maxlength=\"80\" name=\"author\">\n");
 
-   rsprintf("<td colspan=2 bgcolor=#FFA0A0>Type: ");
+   rsprintf("<td colspan=2>Type: ");
    rsprintf("<select name=\"type\">\n");
    rsprintf("<option value=\"\">\n");
    for (i = 0; i < 20 && type_list[i][0]; i++)
@@ -2563,22 +2627,22 @@ void show_elog_query()
       }
    rsprintf("</select></tr>\n");
 
-   rsprintf("<tr><td colspan=2 bgcolor=#A0FFA0>System: ");
+   rsprintf("<tr><td colspan=2>System: ");
    rsprintf("<select name=\"system\">\n");
    rsprintf("<option value=\"\">\n");
    for (i = 0; i < 20 && system_list[i][0]; i++)
       rsprintf("<option value=\"%s\">%s\n", system_list[i], system_list[i]);
    rsprintf("</select>\n");
 
-   rsprintf("<td colspan=2 bgcolor=#A0FFA0>Subject: ");
+   rsprintf("<td colspan=2>Subject: ");
    rsprintf("<input type=\"text\" size=\"15\" maxlength=\"80\" name=\"subject\"></tr>\n");
 
-   rsprintf("<tr><td colspan=4 bgcolor=#FFA0FF>Text: ");
+   rsprintf("<tr><td colspan=4>Text: ");
    rsprintf("<input type=\"text\" size=\"15\" maxlength=\"80\" name=\"subtext\">\n");
    rsprintf("<i>(case insensitive substring)</i><tr>\n");
 
    rsprintf("</tr></table>\n");
-   rsprintf("</body></html>\r\n");
+   page_footer();
 }
 
 /*------------------------------------------------------------------*/
@@ -2607,16 +2671,19 @@ void show_elog_delete(char *path)
    /* header */
    sprintf(str, "../EL/%s", path);
    show_header(hDB, "Delete ELog entry", "GET", str, 1, 0);
+   rsprintf("</table>"); //end header
+
+   rsprintf("<table class=\"dialogTable\">"); //main table
 
    if (!allow_delete) {
       rsprintf
-          ("<tr><td colspan=2 bgcolor=#FF8080 align=center><h1>Message deletion disabled in ODB</h1>\n");
+          ("<tr><td colspan=2 class=\"redLight\" align=center><h1>Message deletion disabled in ODB</h1>\n");
    } else {
       if (getparam("confirm") && *getparam("confirm")) {
          if (strcmp(getparam("confirm"), "Yes") == 0) {
             /* delete message */
             status = el_delete_message(path);
-            rsprintf("<tr><td colspan=2 bgcolor=#80FF80 align=center>");
+            rsprintf("<tr><td colspan=2 class=\"greenLight\" align=center>");
             if (status == EL_SUCCESS)
                rsprintf("<b>Message successfully deleted</b></tr>\n");
             else
@@ -2630,7 +2697,7 @@ void show_elog_delete(char *path)
          /* define hidden field for command */
          rsprintf("<input type=hidden name=cmd value=delete>\n");
 
-         rsprintf("<tr><td colspan=2 bgcolor=#FF8080 align=center>");
+         rsprintf("<tr><td colspan=2 class=\"redLight\" align=center>");
          rsprintf("<b>Are you sure to delete this message?</b></tr>\n");
 
          rsprintf("<tr><td align=center><input type=submit name=confirm value=Yes>\n");
@@ -2640,7 +2707,7 @@ void show_elog_delete(char *path)
    }
 
    rsprintf("</table>\n");
-   rsprintf("</body></html>\r\n");
+   page_footer();
 }
 
 /*------------------------------------------------------------------*/
@@ -2675,7 +2742,10 @@ void show_elog_submit_query(INT last_n)
    rsprintf("<title>MIDAS ELog</title></head>\n");
    rsprintf("<body><form method=\"GET\" action=\"./\">\n");
 
-   rsprintf("<table border=3 cellpadding=2 width=\"100%%\">\n");
+   /*---- body needs wrapper div to pin footer ----*/
+   rsprintf("<div class=\"wrapper\">\n");
+   /*---- begin page header ----*/
+   rsprintf("<table class=\"headerTable\">\n");
 
    /* get mode */
    if (last_n) {
@@ -2696,17 +2766,17 @@ void show_elog_submit_query(INT last_n)
    if (!display_run_number)
       colspan--;
 
-   rsprintf("<tr><th colspan=3 bgcolor=#A0A0FF>MIDAS Electronic Logbook");
+   rsprintf("<tr><th colspan=3>MIDAS Electronic Logbook");
    if (elog_mode)
-      rsprintf("<th colspan=%d bgcolor=#A0A0FF>Logbook \"%s\"</tr>\n", colspan, str);
+      rsprintf("<th colspan=%d>Logbook \"%s\"</tr>\n", colspan, str);
    else
-      rsprintf("<th colspan=%d bgcolor=#A0A0FF>Experiment \"%s\"</tr>\n", colspan, str);
+      rsprintf("<th colspan=%d>Experiment \"%s\"</tr>\n", colspan, str);
 
    /*---- menu buttons ----*/
 
    if (!full) {
       colspan = display_run_number ? 7 : 6;
-      rsprintf("<tr><td colspan=%d bgcolor=#C0C0C0>\n", colspan);
+      rsprintf("<tr><td colspan=%d>\n", colspan);
 
       rsprintf("<input type=submit name=cmd value=\"Query\">\n");
       rsprintf("<input type=submit name=cmd value=\"ELog\">\n");
@@ -2767,21 +2837,26 @@ void show_elog_submit_query(INT last_n)
       colspan--;
 
    /* menu buttons */
-   rsprintf("<tr><td colspan=%d bgcolor=#C0C0C0>\n", colspan);
+   rsprintf("<tr><td colspan=%d>\n", colspan);
    rsprintf("<input type=submit name=cmd value=Query>\n");
    rsprintf("<input type=submit name=cmd value=Last>\n");
    if (!elog_mode)
       rsprintf("<input type=submit name=cmd value=Status>\n");
    rsprintf("</tr>\n");
 
+   rsprintf("</table>");  //end header
+
+   rsprintf("<table class=\"dialogTable\">");  //main table
+   rsprintf("<tr><th class=\"subStatusTitle\" colspan=6>E-Log</th><tr>");
+
    if (*getparam("r1")) {
       if (*getparam("r2"))
          rsprintf
-             ("<tr><td colspan=%d bgcolor=#FFFF00><b>Query result between runs %s and %s</b></tr>\n",
+             ("<tr><td colspan=%d class=\"yellowLight\"><b>Query result between runs %s and %s</b></tr>\n",
               colspan, getparam("r1"), getparam("r2"));
       else
          rsprintf
-             ("<tr><td colspan=%d bgcolor=#FFFF00><b>Query result between run %s and today</b></tr>\n",
+             ("<tr><td colspan=%d class=\"yellowLight\"><b>Query result between run %s and today</b></tr>\n",
               colspan, getparam("r1"));
    } else {
       if (last_n) {
@@ -2789,20 +2864,20 @@ void show_elog_submit_query(INT last_n)
             rsprintf("<tr><td colspan=6><a href=\"last%d\">Last %d hours</a></tr>\n",
                         last_n * 2, last_n * 2);
 
-            rsprintf("<tr><td colspan=6 bgcolor=#FFFF00><b>Last %d hours</b></tr>\n",
+            rsprintf("<tr><td colspan=6 class=\"yellowLight\"><b>Last %d hours</b></tr>\n",
                      last_n);
          } else {
             rsprintf("<tr><td colspan=6><a href=\"last%d\">Last %d days</a></tr>\n",
                         last_n * 2, last_n / 24 * 2);
 
-            rsprintf("<tr><td colspan=6 bgcolor=#FFFF00><b>Last %d days</b></tr>\n",
+            rsprintf("<tr><td colspan=6 class=\"yellowLight\"><b>Last %d days</b></tr>\n",
                      last_n / 24);
          }
       }
 
       else if (*getparam("m2") || *getparam("y2") || *getparam("d2"))
          rsprintf
-             ("<tr><td colspan=%d bgcolor=#FFFF00><b>Query result between %s %s %s and %s %d %d</b></tr>\n",
+             ("<tr><td colspan=%d class=\"yellowLight\"><b>Query result between %s %s %s and %s %d %d</b></tr>\n",
               colspan, getparam("m1"), getparam("d1"), getparam("y1"), mname[m2], d2, y2);
       else {
          time(&now);
@@ -2810,15 +2885,15 @@ void show_elog_submit_query(INT last_n)
          ptms->tm_year += 1900;
 
          rsprintf
-             ("<tr><td colspan=%d bgcolor=#FFFF00><b>Query result between %s %s %s and %s %d %d</b></tr>\n",
+             ("<tr><td colspan=%d class=\"yellowLight\"><b>Query result between %s %s %s and %s %d %d</b></tr>\n",
               colspan, getparam("m1"), getparam("d1"), getparam("y1"),
               mname[ptms->tm_mon], ptms->tm_mday, ptms->tm_year);
       }
    }
 
-   rsprintf("</tr>\n<tr>");
+   rsprintf("</tr>\n<tr class=\"titleRow\">");
 
-   rsprintf("<td colspan=%d bgcolor=#FFA0A0>\n", colspan);
+   //rsprintf("<td colspan=%d bgcolor=#FFA0A0>\n", colspan);
 
    if (*getparam("author"))
       rsprintf("Author: <b>%s</b>   ", getparam("author"));
@@ -2841,15 +2916,15 @@ void show_elog_submit_query(INT last_n)
 
    if (display_run_number) {
       if (full)
-         rsprintf("<tr><th>Date<th>Run<th>Author<th>Type<th>System<th>Subject</tr>\n");
+         rsprintf("<tr class=\"titleRow\"><th>Date<th>Run<th>Author<th>Type<th>System<th>Subject</tr>\n");
       else
          rsprintf
-             ("<tr><th>Date<th>Run<th>Author<th>Type<th>System<th>Subject<th>Text</tr>\n");
+             ("<tr class=\"titleRow\"><th>Date<th>Run<th>Author<th>Type<th>System<th>Subject<th>Text</tr>\n");
    } else {
       if (full)
-         rsprintf("<tr><th>Date<th>Author<th>Type<th>System<th>Subject</tr>\n");
+         rsprintf("<tr class=\"titleRow\"><th>Date<th>Author<th>Type<th>System<th>Subject</tr>\n");
       else
-         rsprintf("<tr><th>Date<th>Author<th>Type<th>System<th>Subject<th>Text</tr>\n");
+         rsprintf("<tr class=\"titleRow\"><th>Date<th>Author<th>Type<th>System<th>Subject<th>Text</tr>\n");
    }
 
   /*---- do query ----*/
@@ -3012,7 +3087,7 @@ void show_elog_submit_query(INT last_n)
                            rsprintf("<img src=\"%s\"></tr>", ref);
                      } else {
                         rsprintf
-                            ("<tr><td colspan=%d bgcolor=#C0C0FF>Attachment: <a href=\"%s\"><b>%s</b></a>\n",
+                            ("<tr><td colspan=%d>Attachment: <a href=\"%s\"><b>%s</b></a>\n",
                              colspan, ref, attachment[index] + 14);
 
                         if ((strstr(str, ".TXT") ||
@@ -3074,7 +3149,7 @@ void show_elog_submit_query(INT last_n)
    } while (status == EL_SUCCESS);
 
    rsprintf("</table>\n");
-   rsprintf("</body></html>\r\n");
+   page_footer();
 }
 
 /*------------------------------------------------------------------*/
@@ -3109,7 +3184,10 @@ void show_rawfile(char *path)
 
    rsprintf("<input type=hidden name=lines value=%d>\n", lines);
 
-   rsprintf("<table border=3 cellpadding=1 width=\"100%%\">\n");
+   /*---- body needs wrapper div to pin footer ----*/
+   rsprintf("<div class=\"wrapper\">\n");
+   /*---- begin page header ----*/
+   rsprintf("<table class=\"headerTable\">\n");
 
    /*---- title row ----*/
 
@@ -3117,23 +3195,23 @@ void show_rawfile(char *path)
    str[0] = 0;
    db_get_value(hDB, 0, "/Experiment/Name", str, &size, TID_STRING, TRUE);
 
-   rsprintf("<tr><th bgcolor=#A0A0FF>MIDAS File Display <code>\"%s\"</code>", path);
+   rsprintf("<tr><th>MIDAS File Display <code>\"%s\"</code>", path);
    if (elog_mode)
-      rsprintf("<th bgcolor=#A0A0FF>Logbook \"%s\"</tr>\n", str);
+      rsprintf("<th>Logbook \"%s\"</tr>\n", str);
    else
-      rsprintf("<th bgcolor=#A0A0FF>Experiment \"%s\"</tr>\n", str);
-
-   /*---- menu buttons ----*/
-
-   rsprintf("<tr><td colspan=2 bgcolor=#C0C0C0>\n");
-
-   rsprintf("<input type=submit name=cmd value=\"ELog\">\n");
+      rsprintf("<th>Experiment \"%s\"</tr>\n", str);
    if (!elog_mode)
-      rsprintf("<input type=submit name=cmd value=\"Status\">\n");
+      rsprintf("<tr><td colspan=2><input type=submit name=cmd value=\"Status\"></td></tr>");
+   //end header
+   rsprintf("</table>");
 
+   //main table:
+   rsprintf("<table class=\"dialogTable\">");
+   /*---- menu buttons ----*/
+   rsprintf("<tr><td colspan=2>\n");
+   rsprintf("<input type=submit name=cmd value=\"ELog\">\n");
    rsprintf("<input type=submit name=cmd value=\"More lines\">\n");
-
-   rsprintf("</tr>\n\n");
+   rsprintf("</tr>\n");
 
    /*---- open file ----*/
 
@@ -3151,8 +3229,9 @@ void show_rawfile(char *path)
 
    f = fopen(file_name, "r");
    if (f == NULL) {
-      rsprintf("<h3>Cannot find file \"%s\"</h3>\n", file_name);
-      rsprintf("</body></html>\n");
+      rsprintf("<tr><td><h3>Cannot find file \"%s\"</h3></td></tr>\n", file_name);
+      rsprintf("</table>\n");
+      page_footer();
       return;
    }
 
@@ -3212,7 +3291,8 @@ void show_rawfile(char *path)
 
    rsprintf("</pre>\n");
 
-   rsprintf("</td></tr></table></body></html>\r\n");
+   rsprintf("</td></tr></table>\r\n");
+   page_footer();
 }
 
 /*------------------------------------------------------------------*/
@@ -3244,16 +3324,22 @@ void show_form_query()
    /* hidden field for form */
    rsprintf("<input type=hidden name=form value=\"%s\">\n", getparam("form"));
 
-   rsprintf("<table border=3 cellpadding=1>\n");
+   /*---- body needs wrapper div to pin footer ----*/
+   rsprintf("<div class=\"wrapper\">\n");
+   /*---- begin page header ----*/
+   rsprintf("<table class=\"headerTable\">\n");
 
    /*---- title row ----*/
 
-   rsprintf("<tr><th colspan=2 bgcolor=#A0A0FF>MIDAS Electronic Logbook");
-   rsprintf("<th colspan=2 bgcolor=#A0A0FF>Form \"%s\"</tr>\n", getparam("form"));
+   rsprintf("<tr><th colspan=2>MIDAS Electronic Logbook");
+   rsprintf("<th colspan=2>Form \"%s\"</tr>\n", getparam("form"));
+
+   rsprintf("</table>");  //close header
+   rsprintf("<table class=\"dialogTable\">");  //main table
 
    /*---- menu buttons ----*/
 
-   rsprintf("<tr><td colspan=4 bgcolor=#C0C0C0>\n");
+   rsprintf("<tr><td colspan=4>\n");
 
    rsprintf("<input type=submit name=cmd value=\"Submit\">\n");
    rsprintf("<input type=reset value=\"Reset Form\">\n");
@@ -3262,7 +3348,7 @@ void show_form_query()
    /*---- entry form ----*/
 
    time(&now);
-   rsprintf("<tr><td colspan=2 bgcolor=#FFFF00>Entry date: %s", ctime(&now));
+   rsprintf("<tr><td colspan=2 class=\"yellowLight\">Entry date: %s", ctime(&now));
 
    run_number = 0;
    size = sizeof(run_number);
@@ -3276,15 +3362,15 @@ void show_form_query()
       abort();
    }
 
-   rsprintf("<td bgcolor=#FFFF00>Run number: ");
+   rsprintf("<td class=\"yellowLight\">Run number: ");
    rsprintf("<input type=\"text\" size=10 maxlength=10 name=\"run\" value=\"%d\"</tr>",
             run_number);
 
    rsprintf
-       ("<tr><td colspan=2 bgcolor=#FFA0A0>Author: <input type=\"text\" size=\"15\" maxlength=\"80\" name=\"Author\">\n");
+       ("<tr><td colspan=2>Author: <input type=\"text\" size=\"15\" maxlength=\"80\" name=\"Author\">\n");
 
    rsprintf
-       ("<tr><th bgcolor=#A0FFA0>Item<th bgcolor=#FFFF00>Checked<th bgcolor=#A0A0FF colspan=2>Comment</tr>\n");
+       ("<tr><th>Item<th>Checked<th colspan=2>Comment</tr>\n");
 
    sprintf(str, "/Elog/Forms/%s", getparam("form"));
    db_find_key(hDB, 0, str, &hkeyroot);
@@ -3303,18 +3389,18 @@ void show_form_query()
          if (equal_ustring(str, "attachment")) {
             size = sizeof(str);
             db_get_data(hDB, hkey, str, &size, TID_STRING);
-            rsprintf("<tr><td colspan=2 align=center bgcolor=#FFFFFF><b>%s:</b>",
+            rsprintf("<tr><td colspan=2 align=center><b>%s:</b>",
                      key.name);
             rsprintf
-                ("<td bgcolor=#A0A0FF colspan=2><input type=text size=30 maxlength=255 name=c%d value=\"%s\"></tr>\n",
+                ("<td colspan=2><input type=text size=30 maxlength=255 name=c%d value=\"%s\"></tr>\n",
                  i, str);
          } else {
-            rsprintf("<tr><td bgcolor=#A0FFA0>%d <b>%s</b>", i + 1, key.name);
+            rsprintf("<tr><td>%d <b>%s</b>", i + 1, key.name);
             rsprintf
-                ("<td bgcolor=#FFFF00 align=center><input type=checkbox name=x%d value=1>",
+                ("<td align=center><input type=checkbox name=x%d value=1>",
                  i);
             rsprintf
-                ("<td bgcolor=#A0A0FF colspan=2><input type=text size=30 maxlength=255 name=c%d></tr>\n",
+                ("<td colspan=2><input type=text size=30 maxlength=255 name=c%d></tr>\n",
                  i);
          }
       }
@@ -3323,14 +3409,14 @@ void show_form_query()
    /*---- menu buttons at bottom ----*/
 
    if (i > 10) {
-      rsprintf("<tr><td colspan=4 bgcolor=#C0C0C0>\n");
+      rsprintf("<tr><td colspan=4>\n");
 
       rsprintf("<input type=submit name=cmd value=\"Submit\">\n");
       rsprintf("</tr>\n\n");
    }
 
    rsprintf("</tr></table>\n");
-   rsprintf("</body></html>\r\n");
+   page_footer();
 }
 
 /*------------------------------------------------------------------*/
@@ -3354,9 +3440,9 @@ void gen_odb_attachment(char *path, char *b)
    db_get_value(hDB, 0, "/Experiment/Name", str, &size, TID_STRING, TRUE);
    time(&now);
 
-   sprintf(b, "<table border=3 cellpadding=1>\n");
-   sprintf(b + strlen(b), "<tr><th colspan=2 bgcolor=#A0A0FF>%s</tr>\n", ctime(&now));
-   sprintf(b + strlen(b), "<tr><th colspan=2 bgcolor=#FFA0A0>%s</tr>\n", path);
+   sprintf(b, "<table border=3 cellpadding=1 class=\"dialogTable\">\n");
+   sprintf(b + strlen(b), "<tr><th colspan=2>%s</tr>\n", ctime(&now));
+   sprintf(b + strlen(b), "<tr><th colspan=2>%s</tr>\n", path);
 
    /* enumerate subkeys */
    for (i = 0;; i++) {
@@ -3373,7 +3459,7 @@ void gen_odb_attachment(char *path, char *b)
 
       if (key.type == TID_KEY) {
          /* for keys, don't display data value */
-         sprintf(b + strlen(b), "<tr><td colspan=2 bgcolor=#FFD000>%s</td></tr>\n",
+         sprintf(b + strlen(b), "<tr><td colspan=2>%s</td></tr>\n",
                  key.name);
       } else {
          /* display single value */
@@ -3390,17 +3476,17 @@ void gen_odb_attachment(char *path, char *b)
 
             if (strcmp(data_str, hex_str) != 0 && hex_str[0])
                sprintf(b + strlen(b),
-                       "<tr><td bgcolor=#FFFF00>%s</td><td bgcolor=#FFFFFF>%s (%s)</td></tr>\n",
+                       "<tr><td>%s</td><td>%s (%s)</td></tr>\n",
                        key.name, data_str, hex_str);
             else {
                sprintf(b + strlen(b),
-                       "<tr><td bgcolor=#FFFF00>%s</td><td bgcolor=#FFFFFF>", key.name);
+                       "<tr><td>%s</td><td>", key.name);
                strencode2(b + strlen(b), data_str);
                sprintf(b + strlen(b), "</td></tr>\n");
             }
          } else {
             /* display first value */
-            sprintf(b + strlen(b), "<tr><td  bgcolor=#FFFF00 rowspan=%d>%s</td>\n",
+            sprintf(b + strlen(b), "<tr><td rowspan=%d>%s</td>\n",
                     key.num_values, key.name);
 
             for (j = 0; j < key.num_values; j++) {
@@ -3419,10 +3505,10 @@ void gen_odb_attachment(char *path, char *b)
 
                if (strcmp(data_str, hex_str) != 0 && hex_str[0])
                   sprintf(b + strlen(b),
-                          "<td bgcolor=#FFFFFF>[%d] %s (%s)<br></td></tr>\n", j, data_str,
+                          "<td>[%d] %s (%s)<br></td></tr>\n", j, data_str,
                           hex_str);
                else
-                  sprintf(b + strlen(b), "<td bgcolor=#FFFFFF>[%d] %s<br></td></tr>\n", j,
+                  sprintf(b + strlen(b), "<td>[%d] %s<br></td></tr>\n", j,
                           data_str);
             }
          }
@@ -4084,7 +4170,11 @@ void show_elog_page(char *path, int path_size)
    rsprintf("<title>MIDAS ELog - %s</title></head>\n", subject);
    rsprintf("<body><form method=\"GET\" action=\"../EL/%s\">\n", str);
 
-   rsprintf("<table cols=2 border=2 cellpadding=2>\n");
+   /*---- body needs wrapper div to pin footer ----*/
+   rsprintf("<div class=\"wrapper\">\n");
+
+   /*---- begin page header ----*/
+   rsprintf("<table class=\"headerTable\">\n");
 
    /*---- title row ----*/
 
@@ -4092,22 +4182,14 @@ void show_elog_page(char *path, int path_size)
    str[0] = 0;
    db_get_value(hDB, 0, "/Experiment/Name", str, &size, TID_STRING, TRUE);
 
-   rsprintf("<tr><th bgcolor=#A0A0FF>MIDAS Electronic Logbook");
+   rsprintf("<tr><th>MIDAS Electronic Logbook");
    if (elog_mode)
-      rsprintf("<th bgcolor=#A0A0FF>Logbook \"%s\"</tr>\n", str);
+      rsprintf("<th>Logbook \"%s\"</tr>\n", str);
    else
-      rsprintf("<th bgcolor=#A0A0FF>Experiment \"%s\"</tr>\n", str);
+      rsprintf("<th>Experiment \"%s\"</tr>\n", str);
 
    /*---- menu buttons ----*/
-
-   rsprintf("<tr><td colspan=2 bgcolor=#C0C0C0>\n");
-   rsprintf("<input type=submit name=cmd value=New>\n");
-   rsprintf("<input type=submit name=cmd value=Edit>\n");
-   if (allow_delete)
-      rsprintf("<input type=submit name=cmd value=Delete>\n");
-   rsprintf("<input type=submit name=cmd value=Reply>\n");
-   rsprintf("<input type=submit name=cmd value=Query>\n");
-
+   rsprintf("<tr><td colspan=2>\n");
    /* check forms from ODB */
    db_find_key(hDB, 0, "/Elog/Forms", &hkeyroot);
    if (hkeyroot)
@@ -4120,15 +4202,13 @@ void show_elog_page(char *path, int path_size)
 
          rsprintf("<input type=submit name=form value=\"%s\">\n", key.name);
       }
-
    rsprintf("<input type=submit name=cmd value=Runlog>\n");
-
    if (!elog_mode)
       rsprintf("<input type=submit name=cmd value=Status>\n");
    rsprintf("</tr>\n");
 
    /* "last x" button row */
-   rsprintf("<tr><td colspan=2 bgcolor=#D0D0D0>\n");
+   //rsprintf("<tr><td colspan=2>\n");
 
    db_find_key(hDB, 0, "/Elog/Buttons", &hkeybutton);
    if (hkeybutton == 0) {
@@ -4141,23 +4221,37 @@ void show_elog_page(char *path, int path_size)
 
    db_get_key(hDB, hkeybutton, &key);
 
+   //rsprintf("</tr>\n");
+   rsprintf("</table>\n"); //ends header table
+
+   rsprintf("<table class=\"dialogTable\">\n"); //main table
+   rsprintf("<tr><th class=\"subStatusTitle\">E-Log</th></tr>");
+
+   //local buttons
+   rsprintf("<tr><td colspan=2>\n");
+   rsprintf("<input type=submit name=cmd value=New>\n");
+   rsprintf("<input type=submit name=cmd value=Edit>\n");
+   if (allow_delete)
+      rsprintf("<input type=submit name=cmd value=Delete>\n");
+   rsprintf("<input type=submit name=cmd value=Reply>\n");
+   rsprintf("<input type=submit name=cmd value=Query></td></tr>\n");
+
+   //period buttons
+   rsprintf("<tr><td colspan=2>");
    for (i = 0; i < key.num_values; i++) {
       size = sizeof(str);
       db_get_data_index(hDB, hkeybutton, str, &size, i, TID_STRING);
       rsprintf("<input type=submit name=cmd value=\"Last %s\">\n", str);
    }
 
-   rsprintf("</tr>\n");
-
-   rsprintf("<tr><td colspan=2 bgcolor=#E0E0E0>");
-   rsprintf("<input type=submit name=cmd value=Next>\n");
+   rsprintf("<tr><td colspan=2><i>Check a category to browse only entries from that category</i></td>");
+   rsprintf("<tr><td colspan=2><input type=submit name=cmd value=Next>\n");
    rsprintf("<input type=submit name=cmd value=Previous>\n");
    rsprintf("<input type=submit name=cmd value=Last>\n");
-   rsprintf("<i>Check a category to browse only entries from that category</i>\n");
-   rsprintf("</tr>\n\n");
+   rsprintf("</td></tr>\n\n");
 
    if (msg_status != EL_FILE_ERROR && (reply_tag[0] || orig_tag[0])) {
-      rsprintf("<tr><td colspan=2 bgcolor=#F0F0F0>");
+      rsprintf("<tr><td colspan=2>");
       if (orig_tag[0]) {
          sprintf(ref, "/EL/%s", orig_tag);
          rsprintf("  <a href=\"%s\">Original message</a>  ", ref);
@@ -4173,22 +4267,22 @@ void show_elog_page(char *path, int path_size)
 
    if (msg_status == EL_FILE_ERROR)
       rsprintf
-          ("<tr><td bgcolor=#FF0000 colspan=2 align=center><h1>No message available</h1></tr>\n");
+          ("<tr><td class='redLight' colspan=2 align=center><h1>No message available</h1></tr>\n");
    else {
       if (last_message)
          rsprintf
-             ("<tr><td bgcolor=#FF0000 colspan=2 align=center><b>This is the last message in the ELog</b></tr>\n");
+             ("<tr><td class='redLight' colspan=2 align=center><b>This is the last message in the ELog</b></tr>\n");
 
       if (first_message)
          rsprintf
-             ("<tr><td bgcolor=#FF0000 colspan=2 align=center><b>This is the first message in the ELog</b></tr>\n");
+             ("<tr><td class='redLight' colspan=2 align=center><b>This is the first message in the ELog</b></tr>\n");
 
       /* check for mail submissions */
       for (i = 0;; i++) {
          sprintf(str, "mail%d", i);
          if (*getparam(str)) {
             if (i == 0)
-               rsprintf("<tr><td colspan=2 bgcolor=#FFC020>");
+               rsprintf("<tr><td colspan=2>");
             rsprintf("Mail sent to <b>%s</b><br>\n", getparam(str));
          } else
             break;
@@ -4198,11 +4292,11 @@ void show_elog_page(char *path, int path_size)
 
 
       if (display_run_number) {
-         rsprintf("<tr><td bgcolor=#FFFF00>Entry date: <b>%s</b>", date);
+         rsprintf("<tr><td>Entry date: <b>%s</b>", date);
 
-         rsprintf("<td bgcolor=#FFFF00>Run number: <b>%d</b></tr>\n\n", run);
+         rsprintf("<td>Run number: <b>%d</b></tr>\n\n", run);
       } else
-         rsprintf("<tr><td colspan=2 bgcolor=#FFFF00>Entry date: <b>%s</b></tr>\n\n",
+         rsprintf("<tr><td colspan=2>Entry date: <b>%s</b></tr>\n\n",
                   date);
 
 
@@ -4217,35 +4311,35 @@ void show_elog_page(char *path, int path_size)
 
       if (*getparam("lauthor") == '1')
          rsprintf
-             ("<tr><td bgcolor=#FFA0A0><input type=\"checkbox\" checked name=\"lauthor\" value=\"1\">");
+             ("<tr><td><input type=\"checkbox\" checked name=\"lauthor\" value=\"1\">");
       else
          rsprintf
-             ("<tr><td bgcolor=#FFA0A0><input type=\"checkbox\" name=\"lauthor\" value=\"1\">");
+             ("<tr><td><input type=\"checkbox\" name=\"lauthor\" value=\"1\">");
       rsprintf("  Author: <b>%s</b>\n", author);
 
       if (*getparam("ltype") == '1')
          rsprintf
-             ("<td bgcolor=#FFA0A0><input type=\"checkbox\" checked name=\"ltype\" value=\"1\">");
+             ("<td><input type=\"checkbox\" checked name=\"ltype\" value=\"1\">");
       else
          rsprintf
-             ("<td bgcolor=#FFA0A0><input type=\"checkbox\" name=\"ltype\" value=\"1\">");
+             ("<td><input type=\"checkbox\" name=\"ltype\" value=\"1\">");
       rsprintf("  Type: <b>%s</b></tr>\n", type);
 
       if (*getparam("lsystem") == '1')
          rsprintf
-             ("<tr><td bgcolor=#A0FFA0><input type=\"checkbox\" checked name=\"lsystem\" value=\"1\">");
+             ("<tr><td><input type=\"checkbox\" checked name=\"lsystem\" value=\"1\">");
       else
          rsprintf
-             ("<tr><td bgcolor=#A0FFA0><input type=\"checkbox\" name=\"lsystem\" value=\"1\">");
+             ("<tr><td><input type=\"checkbox\" name=\"lsystem\" value=\"1\">");
 
       rsprintf("  System: <b>%s</b>\n", system);
 
       if (*getparam("lsubject") == '1')
          rsprintf
-             ("<td bgcolor=#A0FFA0><input type=\"checkbox\" checked name=\"lsubject\" value=\"1\">");
+             ("<td><input type=\"checkbox\" checked name=\"lsubject\" value=\"1\">");
       else
          rsprintf
-             ("<td bgcolor=#A0FFA0><input type=\"checkbox\" name=\"lsubject\" value=\"1\">");
+             ("<td><input type=\"checkbox\" name=\"lsubject\" value=\"1\">");
       rsprintf("  Subject: <b>%s</b></tr>\n", subject);
 
 
@@ -4279,7 +4373,7 @@ void show_elog_page(char *path, int path_size)
                rsprintf("<img src=\"%s\"></tr>", ref);
             } else {
                rsprintf
-                   ("<tr><td colspan=2 bgcolor=#C0C0FF>Attachment: <a href=\"%s\"><b>%s</b></a>\n",
+                   ("<tr><td colspan=2>Attachment: <a href=\"%s\"><b>%s</b></a>\n",
                     ref, attachment[index] + 14);
                if (strstr(att, ".TXT") || strstr(att, ".ASC") || strchr(att, '.') == NULL) {
                   /* display attachment */
@@ -4321,7 +4415,7 @@ void show_elog_page(char *path, int path_size)
    }
 
    rsprintf("</table>\n");
-   rsprintf("</body></html>\r\n");
+   page_footer();
 }
 
 /*------------------------------------------------------------------*/
@@ -4447,7 +4541,7 @@ void show_sc_page(char *path, int refresh)
 
    /*---- menu buttons ----*/
 
-   rsprintf("<tr><td colspan=15 bgcolor=#C0C0C0>\n");
+   rsprintf("<tr><td colspan=15>\n");
 
    if (equal_ustring(getparam("cmd"), "Edit"))
       rsprintf("<input type=submit name=cmd value=Set>\n");
@@ -4460,7 +4554,7 @@ void show_sc_page(char *path, int refresh)
 
    /*---- enumerate SC equipment ----*/
 
-   rsprintf("<tr><td colspan=15 bgcolor=#FFFF00><i>Equipment:</i> &nbsp;&nbsp;\n");
+   rsprintf("<tr><td colspan=15><i>Equipment:</i> &nbsp;&nbsp;\n");
 
    db_find_key(hDB, 0, "/Equipment", &hkey);
    if (hkey)
@@ -4510,7 +4604,7 @@ void show_sc_page(char *path, int refresh)
    if (hkey) {
 
       /*---- single name array ----*/
-      rsprintf("<tr><td colspan=15 bgcolor=#FFFFA0><i>Groups:</i> &nbsp;&nbsp;");
+      rsprintf("<tr><td colspan=15><i>Groups:</i> &nbsp;&nbsp;");
 
       /* "all" group */
       if (equal_ustring(group, "All"))
@@ -4676,7 +4770,7 @@ void show_sc_page(char *path, int refresh)
       }
    } else {
       /*---- multiple name arrays ----*/
-      rsprintf("<tr><td colspan=15 bgcolor=#FFFFA0><i>Groups:</i> ");
+      rsprintf("<tr><td colspan=15><i>Groups:</i> ");
 
       /* "all" group */
       if (equal_ustring(group, "All"))
@@ -6718,14 +6812,14 @@ void show_cnaf_page()
    db_get_value(hDB, 0, "/Experiment/Name", str, &size, TID_STRING, TRUE);
 
    rsprintf("<table border=3 cellpadding=1>\n");
-   rsprintf("<tr><th colspan=3 bgcolor=#A0A0FF>MIDAS experiment \"%s\"", str);
+   rsprintf("<tr><th colspan=3>MIDAS experiment \"%s\"", str);
 
    if (client_name[0] == 0)
-      rsprintf("<th colspan=3 bgcolor=#FF0000>No CAMAC server running</tr>\n");
+      rsprintf("<th colspan=3 class=\"redLight\">No CAMAC server running</tr>\n");
    else if (hconn == 0)
-      rsprintf("<th colspan=3 bgcolor=#FF0000>Cannot connect to %s</tr>\n", client_name);
+      rsprintf("<th colspan=3 class=\"redLight\">Cannot connect to %s</tr>\n", client_name);
    else
-      rsprintf("<th colspan=3 bgcolor=#A0A0FF>CAMAC server: %s</tr>\n", client_name);
+      rsprintf("<th colspan=3>CAMAC server: %s</tr>\n", client_name);
 
    /* default values */
    c = n = 1;
@@ -6735,20 +6829,20 @@ void show_cnaf_page()
 
    /*---- menu buttons ----*/
 
-   rsprintf("<tr><td colspan=3 bgcolor=#C0C0C0>\n");
+   rsprintf("<tr><td colspan=3>\n");
    rsprintf("<input type=submit name=cmd value=Execute>\n");
 
-   rsprintf("<td colspan=3 bgcolor=#C0C0C0>\n");
+   rsprintf("<td colspan=3>\n");
    rsprintf("<input type=submit name=cmd value=ODB>\n");
    rsprintf("<input type=submit name=cmd value=Status>\n");
    rsprintf("<input type=submit name=cmd value=Help>\n");
    rsprintf("</tr>\n\n");
 
    /* header */
-   rsprintf("<tr><th bgcolor=#FFFF00>N");
-   rsprintf("<th bgcolor=#FF8000>A");
-   rsprintf("<th bgcolor=#00FF00>F");
-   rsprintf("<th colspan=3 bgcolor=#8080FF>Data");
+   rsprintf("<tr><th>N");
+   rsprintf("<th>A");
+   rsprintf("<th>F");
+   rsprintf("<th colspan=3>Data");
 
    /* execute commands */
    size = sizeof(d);
@@ -6758,24 +6852,24 @@ void show_cnaf_page()
       rpc_client_call(hconn, RPC_CNAF16, CNAF_CRATE_CLEAR, 0, 0, 0, 0, 0, &d, &size, &x,
                       &q);
 
-      rsprintf("<tr><td colspan=6 bgcolor=#00FF00>C cycle executed sucessfully</tr>\n");
+      rsprintf("<tr><td colspan=6 class=\"greenLight\">C cycle executed sucessfully</tr>\n");
    } else if (equal_ustring(cmd, "Z cycle")) {
       rpc_client_call(hconn, RPC_CNAF16, CNAF_CRATE_ZINIT, 0, 0, 0, 0, 0, &d, &size, &x,
                       &q);
 
-      rsprintf("<tr><td colspan=6 bgcolor=#00FF00>Z cycle executed sucessfully</tr>\n");
+      rsprintf("<tr><td colspan=6 class=\"greenLight\">Z cycle executed sucessfully</tr>\n");
    } else if (equal_ustring(cmd, "Clear inhibit")) {
       rpc_client_call(hconn, RPC_CNAF16, CNAF_INHIBIT_CLEAR, 0, 0, 0, 0, 0, &d, &size, &x,
                       &q);
 
       rsprintf
-          ("<tr><td colspan=6 bgcolor=#00FF00>Clear inhibit executed sucessfully</tr>\n");
+          ("<tr><td colspan=6 class=\"greenLight\">Clear inhibit executed sucessfully</tr>\n");
    } else if (equal_ustring(cmd, "Set inhibit")) {
       rpc_client_call(hconn, RPC_CNAF16, CNAF_INHIBIT_SET, 0, 0, 0, 0, 0, &d, &size, &x,
                       &q);
 
       rsprintf
-          ("<tr><td colspan=6 bgcolor=#00FF00>Set inhibit executed sucessfully</tr>\n");
+          ("<tr><td colspan=6 class=\"greenLight\">Set inhibit executed sucessfully</tr>\n");
    } else if (equal_ustring(cmd, "Execute")) {
       c = atoi(getparam("C"));
       n = atoi(getparam("N"));
@@ -6827,13 +6921,13 @@ void show_cnaf_page()
 
          if (status != SUCCESS) {
             rsprintf
-                ("<tr><td colspan=6 bgcolor=#FF0000>Error executing function, code = %d</tr>",
+                ("<tr><td colspan=6 class=\"redLight\">Error executing function, code = %d</tr>",
                  status);
          } else {
-            rsprintf("<tr align=center><td bgcolor=#FFFF00>%d", n);
-            rsprintf("<td bgcolor=#FF8000>%d", a);
-            rsprintf("<td bgcolor=#00FF00>%d", f);
-            rsprintf("<td colspan=3 bgcolor=#8080FF>%d / 0x%04X  Q%d X%d", d, d, q, x);
+            rsprintf("<tr align=center><td>%d", n);
+            rsprintf("<td>%d", a);
+            rsprintf("<td>%d", f);
+            rsprintf("<td colspan=3>%d / 0x%04X  Q%d X%d", d, d, q, x);
          }
 
          d += id;
@@ -6846,40 +6940,40 @@ void show_cnaf_page()
 
    /* input fields */
    rsprintf
-       ("<tr align=center><td bgcolor=#FFFF00><input type=text size=3 name=N value=%d>\n",
+       ("<tr align=center><td><input type=text size=3 name=N value=%d>\n",
         n);
-   rsprintf("<td bgcolor=#FF8000><input type=text size=3 name=A value=%d>\n", a);
-   rsprintf("<td bgcolor=#00FF00><input type=text size=3 name=F value=%d>\n", f);
+   rsprintf("<td><input type=text size=3 name=A value=%d>\n", a);
+   rsprintf("<td><input type=text size=3 name=F value=%d>\n", f);
    rsprintf
-       ("<td bgcolor=#8080FF colspan=3><input type=text size=8 name=D value=%d></tr>\n",
+       ("<td colspan=3><input type=text size=8 name=D value=%d></tr>\n",
         d);
 
    /* control fields */
-   rsprintf("<tr><td colspan=2 bgcolor=#FF8080>Repeat");
-   rsprintf("<td bgcolor=#FF8080><input type=text size=3 name=R value=%d>\n", r);
+   rsprintf("<tr><td colspan=2>Repeat");
+   rsprintf("<td><input type=text size=3 name=R value=%d>\n", r);
 
    rsprintf
-       ("<td align=center colspan=3 bgcolor=#FF0000><input type=submit name=cmd value=\"C cycle\">\n");
+       ("<td align=center colspan=3><input type=submit name=cmd value=\"C cycle\">\n");
    rsprintf("<input type=submit name=cmd value=\"Z cycle\">\n");
 
-   rsprintf("<tr><td colspan=2 bgcolor=#FF8080>Repeat delay [ms]");
-   rsprintf("<td bgcolor=#FF8080><input type=text size=3 name=W value=%d>\n", w);
+   rsprintf("<tr><td colspan=2>Repeat delay [ms]");
+   rsprintf("<td><input type=text size=3 name=W value=%d>\n", w);
 
    rsprintf
-       ("<td align=center colspan=3 bgcolor=#FF0000><input type=submit name=cmd value=\"Set inhibit\">\n");
+       ("<td align=center colspan=3><input type=submit name=cmd value=\"Set inhibit\">\n");
    rsprintf("<input type=submit name=cmd value=\"Clear inhibit\">\n");
 
-   rsprintf("<tr><td colspan=2 bgcolor=#FF8080>Data increment");
-   rsprintf("<td bgcolor=#FF8080><input type=text size=3 name=ID value=%d>\n", id);
+   rsprintf("<tr><td colspan=2>Data increment");
+   rsprintf("<td><input type=text size=3 name=ID value=%d>\n", id);
 
    rsprintf
-       ("<td colspan=3 align=center bgcolor=#FFFF80>Branch <input type=text size=3 name=B value=0>\n");
+       ("<td colspan=3 align=center>Branch <input type=text size=3 name=B value=0>\n");
 
-   rsprintf("<tr><td colspan=2 bgcolor=#FF8080>A increment");
-   rsprintf("<td bgcolor=#FF8080><input type=text size=3 name=IA value=%d>\n", ia);
+   rsprintf("<tr><td colspan=2>A increment");
+   rsprintf("<td><input type=text size=3 name=IA value=%d>\n", ia);
 
    rsprintf
-       ("<td colspan=3 align=center bgcolor=#FFFF80>Crate <input type=text size=3 name=C value=%d>\n",
+       ("<td colspan=3 align=center>Crate <input type=text size=3 name=C value=%d>\n",
         c);
 
    rsprintf("</table></body>\r\n");
@@ -7478,28 +7572,33 @@ void show_mscb_page(char *path, int refresh)
    db_get_value(hDB, 0, "/Experiment/Name", str, &size, TID_STRING, TRUE);
    time(&now);
 
-   rsprintf("<table border=3 cellpadding=2>\n");
-   rsprintf("<tr><th bgcolor=\"#A0A0FF\">MIDAS experiment \"%s\"", str);
+   /*---- body needs wrapper div to pin footer ----*/
+   rsprintf("<div class=\"wrapper\">\n");
+   /*---- begin page header ----*/
+   rsprintf("<table class=\"headerTable\">\n");
+   rsprintf("<tr><th>MIDAS experiment \"%s\"", str);
+   rsprintf("<th>%s  &nbsp;&nbsp;Refr:%d</tr>\n", ctime(&now), refresh);
+   rsprintf("<tr><td colspan=2><input type=submit name=cmd value=ODB> <input type=submit name=cmd value=Status> </td></tr>");
+   rsprintf("</table>");  //close header
 
-   rsprintf("<th bgcolor=\"#A0A0FF\">%s  &nbsp;&nbsp;Refr:%d</tr>\n", ctime(&now), refresh);
-
+   rsprintf("<table class=\"dialogTable\">");  //main table
+   rsprintf("<tr><th class=\"subStatusTitle\" colspan=2>MSCB</th><tr>");
    /*---- menu buttons ----*/
 
-   rsprintf("<tr><td colspan=2 bgcolor=#C0C0C0>\n");
-   rsprintf("<table width=100%%><tr><td>\n");
-   rsprintf("<input type=submit name=cmd value=ODB>\n");
-   rsprintf("<input type=submit name=cmd value=Status>\n");
-   rsprintf("</td>\n");
-   rsprintf("<td align=right width=10>");
-   rsprintf("<input type=submit name=cmd value=Reload>\n");
+   rsprintf("<tr><td colspan=2>\n");
+   rsprintf("<table width=100%%><tr>\n");
+   rsprintf("<td><input type=submit name=cmd value=Reload></td>\n");
    
-   rsprintf("<tr><td bgcolor=#E0E0E0 colspan=\"2\" cellpadding=\"0\" cellspacing=\"0\">\r\n");
+   rsprintf("<tr><td colspan=\"2\" cellpadding=\"0\" cellspacing=\"0\">\r\n");
 
    status = db_find_key(hDB, 0, "MSCB/Submaster", &hKeySubm);
    if (status != DB_SUCCESS) {
       rsprintf("<h1>No MSCB Submasters defined in ODB</h1>\r\n");
       rsprintf("</td></tr>\r\n");
-      rsprintf("</table></body></html>\r\n");
+      rsprintf("</table>\r\n"); //submaster table
+      rsprintf("</td></tr>\r\n");  
+      rsprintf("</table>\r\n");  //main table      
+      page_footer();
       return;
    }
 
@@ -7553,6 +7652,13 @@ void show_mscb_page(char *path, int refresh)
 
    if (!hKeyCurSubm) {
       rsprintf("No submaster found in ODB\r\n");
+      rsprintf("</td></tr>\r\n");
+      rsprintf("</table>\r\n");  //inner submaster table
+      rsprintf("</td></tr>\r\n");
+      rsprintf("</table>\r\n");  //submaster table
+      rsprintf("</td></tr>\r\n");
+      rsprintf("</table>\r\n"); //main table
+      page_footer();
       return;
    }
    
@@ -7696,8 +7802,10 @@ void show_mscb_page(char *path, int refresh)
 
 mscb_error:
    rsprintf("</tr></table>\r\n");
-   rsprintf("</td></tr>\r\n");
-   rsprintf("</table></body></html>\r\n");
+   rsprintf("</td></tr></table>\r\n");
+   rsprintf("</td></tr></table>\r\n");
+   rsprintf("</td></tr></table>\r\n");
+   page_footer();
 }
 
 #endif // HAVE_MSCB
@@ -7721,18 +7829,22 @@ void show_password_page(const char *password, const char *experiment)
    if (experiment[0])
       rsprintf("<input type=hidden name=exp value=\"%s\">\n", experiment);
 
-   rsprintf("<table border=1 cellpadding=5>");
+   /*---- body needs wrapper div to pin footer ----*/
+   rsprintf("<div class=\"wrapper\">\n");
+   /*---- page header ----*/
+   rsprintf("<table class=\"headerTable\"><tr><td></td><tr></table>\n");
 
+   rsprintf("<table class=\"dialogTable\">\n");  //main table
    if (password[0])
-      rsprintf("<tr><th bgcolor=#FF0000>Wrong password!</tr>\n");
+      rsprintf("<tr><th class=\"redLight\">Wrong password!</tr>\n");
 
-   rsprintf("<tr><th bgcolor=#A0A0FF>Please enter password</tr>\n");
+   rsprintf("<tr><th>Please enter password</tr>\n");
    rsprintf("<tr><td align=center><input type=password name=pwd></tr>\n");
    rsprintf("<tr><td align=center><input type=submit value=Submit></tr>");
 
    rsprintf("</table>\n");
 
-   rsprintf("</body></html>\r\n");
+   page_footer();
 }
 
 /*------------------------------------------------------------------*/
@@ -7771,19 +7883,24 @@ BOOL check_web_password(const char *password, const char *redir, const char *exp
       if (redir[0])
          rsprintf("<input type=hidden name=redir value=\"%s\">\n", redir);
 
-      rsprintf("<table border=1 cellpadding=5>");
+      /*---- body needs wrapper div to pin footer ----*/
+      rsprintf("<div class=\"wrapper\">\n");
+      /*---- page header ----*/
+      rsprintf("<table class=\"headerTable\"><tr><td></td><tr></table>\n");
+
+      rsprintf("<table class=\"dialogTable\">\n");  //main table
 
       if (password[0])
-         rsprintf("<tr><th bgcolor=#FF0000>Wrong password!</tr>\n");
+         rsprintf("<tr><th class=\"redLight\">Wrong password!</tr>\n");
 
       rsprintf
-          ("<tr><th bgcolor=#A0A0FF>Please enter password to obtain write access</tr>\n");
+          ("<tr><th>Please enter password to obtain write access</tr>\n");
       rsprintf("<tr><td align=center><input type=password name=wpwd></tr>\n");
       rsprintf("<tr><td align=center><input type=submit value=Submit></tr>");
 
       rsprintf("</table>\n");
 
-      rsprintf("</body></html>\r\n");
+      page_footer();
 
       return FALSE;
    } else
@@ -7804,11 +7921,18 @@ void show_start_page(int script)
 
    if (script) {
       show_header(hDB, "Start sequence", "GET", "", 1, 0);
-      rsprintf("<tr><th bgcolor=#A0A0FF colspan=2>Start script</th>\n");
+      //end header table
+      rsprintf("</table>\n");
+      //begin start menu dialog table:
+      rsprintf("<table class=\"dialogTable\">\n");
+      rsprintf("<tr><th colspan=2>Start script</th>\n");
    } else {
       show_header(hDB, "Start run", "GET", "", 1, 0);
-
-      rsprintf("<tr><th bgcolor=#A0A0FF colspan=2>Start new run</tr>\n");
+      //end header table
+      rsprintf("</table>\n");
+      //begin start menu dialog table:
+      rsprintf("<table class=\"dialogTable\">\n");
+      rsprintf("<tr><th colspan=2 class=\"subStatusTitle\">Start new run</tr>\n");
       rsprintf("<tr><td>Run number");
       
       /* run number */
@@ -7903,7 +8027,8 @@ void show_start_page(int script)
    if (isparam("redir"))
       rsprintf("<input type=hidden name=\"redir\" value=\"%s\">\n", getparam("redir"));
 
-   rsprintf("</body></html>\r\n");
+   page_footer();
+
 }
 
 /*------------------------------------------------------------------*/
@@ -7962,23 +8087,33 @@ void show_odb_page(char *enc_path, int enc_path_size, char *dec_path)
 
    /*---- menu buttons ----*/
 
-   rsprintf("<tr><td colspan=2 bgcolor=#A0A0A0>\n");
+   rsprintf("<tr><td colspan=2>\n");
    if (elog_mode) {
       rsprintf("<input type=submit name=cmd value=ELog>\n");
       rsprintf("</tr>\n");
    } else {
-      rsprintf("<input type=submit name=cmd value=Find>\n");
-      rsprintf("<input type=submit name=cmd value=Create>\n");
-      rsprintf("<input type=submit name=cmd value=Delete>\n");
       rsprintf("<input type=submit name=cmd value=Alarms>\n");
       rsprintf("<input type=submit name=cmd value=Programs>\n");
       rsprintf("<input type=submit name=cmd value=Status>\n");
       rsprintf("<input type=submit name=cmd value=Help>\n");
       rsprintf("</tr>\n");
 
-      rsprintf("<tr><td colspan=2 bgcolor=#A0A0A0>\n");
+      rsprintf("<tr><td colspan=2>\n");
       rsprintf("<input type=submit name=cmd value=\"Create Elog from this page\">\n");
       rsprintf("</tr>\n");
+   }
+   /*---- end page header ----*/
+   rsprintf("</table>\n");
+
+   /*---- begin ODB directory table ----*/
+   rsprintf("<table class=\"ODBtable\">\n");
+   rsprintf("<tr><th colspan=2 class=\"subStatusTitle\">Online Database Browser</tr>\n");
+   //buttons:
+   if(!elog_mode){
+      rsprintf("<tr><td colspan=2>\n");
+      rsprintf("<input type=submit name=cmd value=Find>\n");
+      rsprintf("<input type=submit name=cmd value=Create>\n");
+      rsprintf("<input type=submit name=cmd value=Delete></td></tr>\n");
    }
 
    /*---- ODB display -----------------------------------------------*/
@@ -7994,7 +8129,7 @@ void show_odb_page(char *enc_path, int enc_path_size, char *dec_path)
       p++;
 
    /* display root key */
-   rsprintf("<tr><td colspan=2 align=center><b>");
+   rsprintf("<tr><td colspan=2 class='ODBpath'><b>");
    rsprintf("<a href=\"%sroot\">/</a> \n", tmp_path);
    strlcpy(root_path, tmp_path, sizeof(root_path));
 
@@ -8017,7 +8152,7 @@ void show_odb_page(char *enc_path, int enc_path_size, char *dec_path)
    }
    rsprintf("</b></tr>\n");
 
-   rsprintf("<tr><th>Key<th>Value</tr>\n");
+   rsprintf("<tr><th class=\"ODBkey\">Key<th class=\"ODBvalue\">Value</tr>\n");
 
    /* enumerate subkeys */
    for (i = 0;; i++) {
@@ -8057,13 +8192,13 @@ void show_odb_page(char *enc_path, int enc_path_size, char *dec_path)
          sprintf(ref, "%s?cmd=Set", full_path);
 
       if (status != DB_SUCCESS) {
-         rsprintf("<tr><td bgcolor=#FFFF00>");
+         rsprintf("<tr><td class=\"yellowLight\">");
          rsprintf("%s <i>-> <a href=\"%s\">%s</a></i><td><b><font color=\"red\">&lt;cannot resolve link&gt;</font><b></tr>\n",
               keyname, link_ref, link_name);
       } else {
          if (key.type == TID_KEY) {
             /* for keys, don't display data value */
-            rsprintf("<tr><td colspan=2 bgcolor=#FFD000><a href=\"%s\">%s</a><br></tr>\n",
+            rsprintf("<tr><td colspan=2 class=\"ODBdirectory\"><a href=\"%s\">./%s</a><br></tr>\n",
                     full_path, keyname);
          } else {
             /* display single value */
@@ -8084,21 +8219,21 @@ void show_odb_page(char *enc_path, int enc_path_size, char *dec_path)
 
                if (strcmp(data_str, hex_str) != 0 && hex_str[0]) {
                   if (link_name[0]) {
-                     rsprintf("<tr><td bgcolor=#FFFF00>");
-                     rsprintf("%s <i>-> <a href=\"%s\">%s</a></i><td><a href=\"%s\">%s (%s)</a><br></tr>\n",
+                     rsprintf("<tr><td class=\"ODBkey\">");
+                     rsprintf("%s <i>-> <a href=\"%s\">%s</a></i><td class=\"ODBvalue\"><a href=\"%s\">%s (%s)</a><br></tr>\n",
                           keyname, link_ref, link_name, ref, data_str, hex_str);
                   } else {
-                     rsprintf("<tr><td bgcolor=#FFFF00>");
-                     rsprintf("%s<td><a href=\"%s\">%s (%s)</a><br></tr>\n",
+                     rsprintf("<tr><td class=\"ODBkey\">");
+                     rsprintf("%s<td class=\"ODBvalue\"><a href=\"%s\">%s (%s)</a><br></tr>\n",
                               keyname, ref, data_str, hex_str);
                   }
                } else {
                   if (strchr(data_str, '\n')) {
                      if (link_name[0]) {
-                        rsprintf("<tr><td bgcolor=#FFFF00>");
-                        rsprintf("%s <i>-> <a href=\"%s\">%s</a></i><td>", keyname, link_ref, link_name);
+                        rsprintf("<tr><td class=\"ODBkey\">");
+                        rsprintf("%s <i>-> <a href=\"%s\">%s</a></i><td class=\"ODBvalue\">", keyname, link_ref, link_name);
                      } else
-                        rsprintf("<tr><td bgcolor=#FFFF00>%s<td>", keyname);
+                        rsprintf("<tr><td class=\"ODBkey\">%s<td class=\"ODBvalue\">", keyname);
                      rsprintf("\n<pre>");
                      strencode3(data_str);
                      rsprintf("</pre>");
@@ -8108,11 +8243,11 @@ void show_odb_page(char *enc_path, int enc_path_size, char *dec_path)
                      rsprintf("<a href=\"%s\">Edit</a></tr>\n", ref);
                   } else {
                      if (link_name[0]) {
-                        rsprintf("<tr><td bgcolor=#FFFF00>");
-                        rsprintf("%s <i>-> <a href=\"%s\">%s</a></i><td><a href=\"%s\">",
+                        rsprintf("<tr><td class=\"ODBkey\">");
+                        rsprintf("%s <i>-> <a href=\"%s\">%s</a></i><td class=\"ODBvalue\"><a href=\"%s\">",
                              keyname, link_ref, link_name, ref);
                      } else
-                        rsprintf("<tr><td bgcolor=#FFFF00>%s<td><a href=\"%s\">", keyname,
+                        rsprintf("<tr><td class=\"ODBkey\">%s<td class=\"ODBvalue\"><a href=\"%s\">", keyname,
                                  ref);
                      strencode(data_str);
                      rsprintf("</a><br></tr>\n");
@@ -8121,15 +8256,15 @@ void show_odb_page(char *enc_path, int enc_path_size, char *dec_path)
             } else {
                /* check for exceeding length */
                if (key.num_values > 1000)
-                  rsprintf("<tr><td bgcolor=#FFFF00>%s<td><i>... %d values ...</i>\n",
+                  rsprintf("<tr><td class=\"ODBkey\">%s<td class=\"ODBvalue\"><i>... %d values ...</i>\n",
                            keyname, key.num_values);
                else {
                   /* display first value */
                   if (link_name[0])
-                     rsprintf("<tr><td  bgcolor=#FFFF00 rowspan=%d>%s<br><i>-> %s</i>\n",
+                     rsprintf("<tr><td class=\"ODBkey\" rowspan=%d>%s<br><i>-> %s</i>\n",
                               key.num_values, keyname, link_name);
                   else
-                     rsprintf("<tr><td  bgcolor=#FFFF00 rowspan=%d>%s\n", key.num_values,
+                     rsprintf("<tr><td class=\"ODBkey\" rowspan=%d>%s\n", key.num_values,
                               keyname);
 
                   for (j = 0; j < key.num_values; j++) {
@@ -8149,10 +8284,10 @@ void show_odb_page(char *enc_path, int enc_path_size, char *dec_path)
                         rsprintf("<tr>");
 
                      if (strcmp(data_str, hex_str) != 0 && hex_str[0])
-                        rsprintf("<td><a href=\"%s\">[%d] %s (%s)</a><br></tr>\n", ref, j,
+                        rsprintf("<td class=\"ODBvalue\"><a href=\"%s\">[%d] %s (%s)</a><br></tr>\n", ref, j,
                                  data_str, hex_str);
                      else
-                        rsprintf("<td><a href=\"%s\">[%d] %s</a><br></tr>\n", ref, j,
+                        rsprintf("<td class=\"ODBvalue\"><a href=\"%s\">[%d] %s</a><br></tr>\n", ref, j,
                                  data_str);
                   }
                }
@@ -8162,7 +8297,7 @@ void show_odb_page(char *enc_path, int enc_path_size, char *dec_path)
    }
 
    rsprintf("</table>\n");
-   rsprintf("</body></html>\r\n");
+   page_footer();
 }
 
 /*------------------------------------------------------------------*/
@@ -8191,6 +8326,11 @@ void show_set_page(char *enc_path, int enc_path_size, char *dec_path, const char
       if (strrchr(str, '/'))
          strlcpy(str, strrchr(str, '/')+1, sizeof(str));
       show_header(hDB, "Set value", "POST", str, 1, 0);
+      //close header:
+      rsprintf("</table>");
+
+      //main table:
+      rsprintf("<table class=\"dialogTable\">");
 
       if (index > 0)
          rsprintf("<input type=hidden name=index value=\"%d\">\n", index);
@@ -8209,9 +8349,9 @@ void show_set_page(char *enc_path, int enc_path_size, char *dec_path, const char
       } else
          strlcpy(str, dec_path, sizeof(str));
 
-      rsprintf("<tr><th bgcolor=#A0A0FF colspan=2>Set new value - type = %s</tr>\n",
+      rsprintf("<tr><th colspan=2>Set new value - type = %s</tr>\n",
                data_str);
-      rsprintf("<tr><td bgcolor=#FFFF00>%s<td>\n", str);
+      rsprintf("<tr><td>%s<td>\n", str);
 
       /* set current value as default */
       size = sizeof(data);
@@ -8247,7 +8387,7 @@ void show_set_page(char *enc_path, int enc_path_size, char *dec_path, const char
 
       rsprintf("<input type=hidden name=cmd value=Set>\n");
 
-      rsprintf("</body></html>\r\n");
+      page_footer();
       return;
    } else {
       /* set value */
@@ -8335,7 +8475,13 @@ void show_find_page(const char *enc_path, const char *value)
             strlcat(str, "../", sizeof(str));
       show_header(hDB, "Find value", "GET", str, 1, 0);
 
-      rsprintf("<tr><th bgcolor=#A0A0FF colspan=2>Find string in Online Database</tr>\n");
+      //end header:
+      rsprintf("</table>");
+
+      //find dialog:
+      rsprintf("<table class=\"dialogTable\">");      
+
+      rsprintf("<tr><th colspan=2>Find string in Online Database</tr>\n");
       rsprintf("<tr><td>Enter substring (case insensitive)\n");
 
       rsprintf("<td><input type=\"text\" size=\"20\" maxlength=\"80\" name=\"value\">\n");
@@ -8349,20 +8495,20 @@ void show_find_page(const char *enc_path, const char *value)
 
       rsprintf("<input type=hidden name=cmd value=Find>");
 
-      rsprintf("</body></html>\r\n");
+      page_footer();
    } else {
       strlcpy(str, enc_path, sizeof(str));
       if (strrchr(str, '/'))
          strlcpy(str, strrchr(str, '/')+1, sizeof(str));
       show_header(hDB, "Search results", "GET", str, 1, 0);
 
-      rsprintf("<tr><td colspan=2 bgcolor=#A0A0A0>\n");
+      rsprintf("<tr><td colspan=2>\n");
       rsprintf("<input type=submit name=cmd value=Find>\n");
       rsprintf("<input type=submit name=cmd value=ODB>\n");
       rsprintf("<input type=submit name=cmd value=Help>\n");
       rsprintf("</tr>\n\n");
 
-      rsprintf("<tr><th bgcolor=#A0A0FF colspan=2>");
+      rsprintf("<tr><th colspan=2>");
       rsprintf("Results of search for substring \"%s\"</tr>\n", value);
       rsprintf("<tr><th>Key<th>Value</tr>\n");
 
@@ -8374,7 +8520,7 @@ void show_find_page(const char *enc_path, const char *value)
       db_scan_tree(hDB, hkey, 0, search_callback, (void *) value);
 
       rsprintf("</table>");
-      rsprintf("</body></html>\r\n");
+      page_footer();
    }
 }
 
@@ -8397,8 +8543,11 @@ void show_create_page(const char *enc_path, const char *dec_path, const char *va
       if (strrchr(str, '/'))
          strlcpy(str, strrchr(str, '/')+1, sizeof(str));
       show_header(hDB, "Create ODB entry", "GET", str, 1, 0);
+      //close header:
+      rsprintf("</table>");      
 
-      rsprintf("<tr><th bgcolor=#A0A0FF colspan=2>Create ODB entry</tr>\n");
+      rsprintf("<table class=\"dialogTable\">");      
+      rsprintf("<tr><th colspan=2>Create ODB entry</tr>\n");
 
       rsprintf("<tr><td>Type");
       rsprintf("<td><select type=text size=1 name=type>\n");
@@ -8435,7 +8584,7 @@ void show_create_page(const char *enc_path, const char *dec_path, const char *va
       rsprintf("</tr>");
       rsprintf("</table>");
 
-      rsprintf("</body></html>\r\n");
+      page_footer();
    } else {
       if (type == TID_LINK) {
          /* check if destination exists */
@@ -8530,14 +8679,17 @@ void show_delete_page(const char *enc_path, const char *dec_path, const char *va
       if (strrchr(str, '/'))
          strlcpy(str, strrchr(str, '/')+1, sizeof(str));
       show_header(hDB, "Delete ODB entry", "GET", str, 1, 0);
+      //close header
+      rsprintf("</table>");      
 
-      rsprintf("<tr><th bgcolor=#A0A0FF colspan=2>Delete ODB entry</tr>\n");
+      rsprintf("<table class=\"dialogTable\">");
+      rsprintf("<tr><th colspan=2>Delete ODB entry</tr>\n");
 
       /* find key via from */
       status = db_find_key(hDB, 0, dec_path, &hkeyroot);
       if (status != DB_SUCCESS) {
          rsprintf("Error: cannot find key %s<P>\n", dec_path);
-         rsprintf("</body></html>\r\n");
+         page_footer();
          return;
       }
 
@@ -8568,7 +8720,7 @@ void show_delete_page(const char *enc_path, const char *dec_path, const char *va
       rsprintf("</tr>");
       rsprintf("</table>");
 
-      rsprintf("</body></html>\r\n");
+      page_footer();
    } else {
       strlcpy(str, dec_path, sizeof(str));
       if (str[strlen(str) - 1] != '/')
@@ -8627,31 +8779,36 @@ void show_alarm_page()
    db_get_value(hDB, 0, "/Experiment/Name", str, &size, TID_STRING, TRUE);
    time(&now);
 
-   rsprintf("<form method=\"GET\" action=\".\">\n");
+   /*---- body needs wrapper div to pin footer ----*/
+   rsprintf("<div class=\"wrapper\">\n");
 
-   rsprintf("<table border=3 cellpadding=2>\n");
-   rsprintf("<tr><th colspan=4 bgcolor=#A0A0FF>MIDAS experiment \"%s\"", str);
-   rsprintf("<th colspan=3 bgcolor=#A0A0FF>%s</tr>\n", ctime(&now));
+   rsprintf("<form method=\"GET\" style=\"height:auto;\" action=\".\">\n"); //form inside wrapper this time, since this form doesn't wrap the whole page.
+
+   /*---- page header ----*/
+   rsprintf("<table class=\"headerTable\">\n");
+   rsprintf("<tr><th colspan=4>MIDAS experiment \"%s\"", str);
+   rsprintf("<th colspan=3>%s</tr>\n", ctime(&now));
+   rsprintf("<tr><td colspan=7><input type=submit name=cmd value=Status></td></tr>\n");
+   rsprintf("</table>"); //end header
 
    /*---- menu buttons ----*/
-
+   rsprintf("<table style=\"margin-top:1em;\">");   //main table
    rsprintf("<tr>\n");
-   rsprintf("<td colspan=7 bgcolor=#C0C0C0>\n");
+   rsprintf("<td colspan=7 style=\"margin:0px; padding:0px;\">\n");
 
    rsprintf("<input type=submit name=cmd value=\"Reset all alarms\">\n");
    rsprintf("<input type=submit name=cmd value=\"Alarms on/off\">\n");
-   rsprintf("<input type=submit name=cmd value=Status>\n");
 
-   rsprintf("</tr></form>\n\n");
+   rsprintf("</tr></table></form>\n\n");
 
    /*---- global flag ----*/
-
    active = TRUE;
+   rsprintf("<table id=\"statusTable\" style=\"padding-top:0px;\">\n");   
    size = sizeof(active);
    db_get_value(hDB, 0, "/Alarms/Alarm System active", &active, &size, TID_BOOL, TRUE);
    if (!active) {
       sprintf(ref, "Alarms/Alarm System active?cmd=set");
-      rsprintf("<tr><td align=center colspan=7 bgcolor=#FFC0C0><a href=\"%s\"><h1>Alarm system disabled</h1></a></tr>",
+      rsprintf("<tr><td align=center colspan=7 class=\"redLight\"><a href=\"%s\"><h1>Alarm system disabled</h1></a></tr>",
            ref);
    }
 
@@ -8661,24 +8818,17 @@ void show_alarm_page()
       index = al_list[ai];
 
       if (index == AT_EVALUATED) {
-         rsprintf
-             ("<tr><th align=center colspan=7 bgcolor=#C0C0C0>Evaluated alarms</tr>\n");
-         rsprintf
-             ("<tr><th>Alarm<th>State<th>First triggered<th>Class<th>Condition<th>Current value<th></tr>\n");
+         rsprintf("<tr><td colspan=7><table class=\"subStatusTable\" width=100%%><tr><th align=center colspan=7 class=\"subStatusTitle\">Evaluated alarms</tr>\n");
+         rsprintf("<tr class=\"titleRow\"><th>Alarm<th>State<th>First triggered<th>Class<th>Condition<th>Current value<th></tr>\n");
       } else if (index == AT_PROGRAM) {
-         rsprintf("<tr><th align=center colspan=7 bgcolor=#C0C0C0>Program alarms</tr>\n");
-         rsprintf
-             ("<tr><th>Alarm<th>State<th>First triggered<th>Class<th colspan=2>Condition<th></tr>\n");
+         rsprintf("<tr><td colspan=7><table class=\"subStatusTable\" width=100%%><tr><th align=center colspan=7 class=\"subStatusTitle\">Program alarms</tr>\n");
+         rsprintf("<tr class=\"titleRow\"><th>Alarm<th>State<th>First triggered<th>Class<th colspan=2>Condition<th></tr>\n");
       } else if (index == AT_INTERNAL) {
-         rsprintf
-             ("<tr><th align=center colspan=7 bgcolor=#C0C0C0>Internal alarms</tr>\n");
-         rsprintf
-             ("<tr><th>Alarm<th>State<th>First triggered<th>Class<th colspan=2>Condition/Message<th></tr>\n");
+         rsprintf("<tr><td colspan=7><table class=\"subStatusTable\" width=100%%><tr><th align=center colspan=7 class=\"subStatusTitle\">Internal alarms</tr>\n");
+         rsprintf("<tr class=\"titleRow\"><th>Alarm<th>State<th>First triggered<th>Class<th colspan=2>Condition/Message<th></tr>\n");
       } else if (index == AT_PERIODIC) {
-         rsprintf
-             ("<tr><th align=center colspan=7 bgcolor=#C0C0C0>Periodic alarms</tr>\n");
-         rsprintf
-             ("<tr><th>Alarm<th>State<th>First triggered<th>Class<th colspan=2>Time/Message<th></tr>\n");
+         rsprintf("<tr><td colspan=7><table class=\"subStatusTable\" width=100%%><tr><th align=center colspan=7 class=\"subStatusTitle\">Periodic alarms</tr>\n");
+         rsprintf("<tr class=\"titleRow\"><th>Alarm<th>State<th>First triggered<th>Class<th colspan=2>Time/Message<th></tr>\n");
       }
 
       /* go through all alarms */
@@ -8705,7 +8855,7 @@ void show_alarm_page()
 
             /* alarm name */
             sprintf(ref, "Alarms/Alarms/%s", key.name);
-            rsprintf("<tr><td bgcolor=#C0C0FF><a href=\"%s\"><b>%s</b></a>", ref,
+            rsprintf("<tr><td><a href=\"%s\"><b>%s</b></a>", ref,
                      key.name);
 
             /* state */
@@ -8714,12 +8864,12 @@ void show_alarm_page()
             size = sizeof(INT);
             db_get_value(hDB, hkey, "Triggered", &triggered, &size, TID_INT, TRUE);
             if (!active)
-               rsprintf("<td bgcolor=#FFFF00 align=center>Disabled");
+               rsprintf("<td class=\"yellowLight\" align=center>Disabled");
             else {
                if (!triggered)
-                  rsprintf("<td bgcolor=#00FF00 align=center>OK");
+                  rsprintf("<td class=\"greenLight\" align=center>OK");
                else
-                  rsprintf("<td bgcolor=#FF0000 align=center>Triggered");
+                  rsprintf("<td class=\"redLight\" align=center>Triggered");
             }
 
             /* time */
@@ -8747,7 +8897,7 @@ void show_alarm_page()
 
                /* retrieve value */
                al_evaluate_condition(condition, value);
-               rsprintf("<td align=center bgcolor=#C0C0FF>%s", value);
+               rsprintf("<td align=center>%s", value);
             } else if (index == AT_PROGRAM) {
                /* print condition */
                rsprintf("<td colspan=2>");
@@ -8797,12 +8947,14 @@ void show_alarm_page()
 
             rsprintf("</tr>\n");
             rsprintf("</form>\n");
+            
          }
+         rsprintf("</table></td></tr>\n"); //closes subTables
       }
    }
 
-   rsprintf("</table>\n");
-   rsprintf("</body></html>\r\n");
+   rsprintf("</table>\n"); //closes main table
+   page_footer();
 }
 
 /*------------------------------------------------------------------*/
@@ -8863,17 +9015,20 @@ void show_programs_page()
 
    /*---- menu buttons ----*/
 
-   rsprintf("<tr><td colspan=6 bgcolor=#C0C0C0>\n");
+   rsprintf("<tr><td colspan=6>\n");
 
    rsprintf("<input type=submit name=cmd value=Alarms>\n");
    rsprintf("<input type=submit name=cmd value=Status>\n");
    rsprintf("</tr>\n\n");
 
+   //end header table
+   rsprintf("</table>");
+
    rsprintf("<input type=hidden name=cmd value=Programs>\n");
 
    /*---- programs ----*/
-
-   rsprintf("<tr><th>Program<th>Running on host<th>Alarm class<th>Autorestart</tr>\n");
+   rsprintf("<table class=\"genericTable\"><tr><td colspan=5 class=\"subStatusTitle\">Programs</td></tr>");
+   rsprintf("<tr class=\"titleRow\"><th>Program<th>Running on host<th>Alarm class<th>Autorestart</tr>\n");
 
    /* go through all programs */
    db_find_key(hDB, 0, "/Programs", &hkeyroot);
@@ -8933,9 +9088,9 @@ void show_programs_page()
                   db_get_value(hDB, hkeycl, "Host", str, &size, TID_STRING, TRUE);
 
                   if (first) {
-                     rsprintf("<tr><td bgcolor=#C0C0FF><a href=\"%s\"><b>%s</b></a>", ref,
+                     rsprintf("<tr><td><a href=\"%s\"><b>%s</b></a>", ref,
                               key.name);
-                     rsprintf("<td align=center bgcolor=#00FF00>");
+                     rsprintf("<td align=center class=\"greenLight\">");
                   }
                   if (!first)
                      rsprintf("<br>");
@@ -8948,9 +9103,9 @@ void show_programs_page()
          }
 
          if (count == 0 && required) {
-            rsprintf("<tr><td bgcolor=#C0C0FF><a href=\"%s\"><b>%s</b></a>", ref,
+            rsprintf("<tr><td><a href=\"%s\"><b>%s</b></a>", ref,
                      key.name);
-            rsprintf("<td align=center bgcolor=#FF0000>Not running");
+            rsprintf("<td align=center class=\"redLight\">Not running");
          }
 
          /* dont display non-running programs which are not required */
@@ -8962,7 +9117,7 @@ void show_programs_page()
          db_get_value(hDB, hkey, "Alarm Class", str, &size, TID_STRING, TRUE);
          if (str[0]) {
             sprintf(ref, "Alarms/Classes/%s", str);
-            rsprintf("<td bgcolor=#FFFF00 align=center><a href=\"%s\">%s</a>", ref, str);
+            rsprintf("<td class=\"yellowLight\" align=center><a href=\"%s\">%s</a>", ref, str);
          } else
             rsprintf("<td align=center>-");
 
@@ -8996,7 +9151,7 @@ void show_programs_page()
 
 
    rsprintf("</table>\n");
-   rsprintf("</body></html>\r\n");
+   page_footer();
 }
 
 /*------------------------------------------------------------------*/
@@ -9009,10 +9164,14 @@ void show_config_page(int refresh)
    cm_get_experiment_database(&hDB, NULL);
 
    show_header(hDB, "Configure", "GET", "", 1, 0);
+   //close header
+   rsprintf("</table>");
 
-   rsprintf("<tr><th bgcolor=#A0A0FF colspan=2>Configure</tr>\n");
+   //main table
+   rsprintf("<table class=\"dialogTable\">");
+   rsprintf("<tr><th colspan=2 class=\"subStatusTitle\">Configure</tr>\n");
 
-   rsprintf("<tr><td bgcolor=#FFFF00>Update period\n");
+   rsprintf("<tr><td>Update period\n");
 
    sprintf(str, "5");
    rsprintf("<td><input type=text size=5 maxlength=5 name=refr value=%d>\n", refresh);
@@ -9025,7 +9184,7 @@ void show_config_page(int refresh)
    rsprintf("</tr>\n");
    rsprintf("</table>\n");
 
-   rsprintf("</body></html>\r\n");
+   page_footer();
 }
 
 /*------------------------------------------------------------------*/
@@ -10845,20 +11004,23 @@ void show_query_page(const char *path)
    show_header(hDB, "History", "GET", str, 1, 0);
 
    /* menu buttons */
-   rsprintf("<tr><td colspan=2 bgcolor=#C0C0C0>\n");
+   rsprintf("<tr><td colspan=2>\n");
    rsprintf("<input type=submit name=cmd value=Query>\n");
    rsprintf("<input type=submit name=cmd value=History>\n");
    rsprintf("<input type=submit name=cmd value=Status></tr>\n");
    rsprintf("</tr>\n\n");
+   rsprintf("</table>");  //end header
+
+   rsprintf("<table class=\"dialogTable\">");  //main table
 
    time(&now);
    now -= 3600 * 24;
    ptms = localtime(&now);
    ptms->tm_year += 1900;
 
-   rsprintf("<tr><td nowrap bgcolor=#CCCCFF>Start date:</td>", "Start date");
+   rsprintf("<tr><td nowrap>Start date:</td>", "Start date");
 
-   rsprintf("<td bgcolor=#DDEEBB>Month: <select name=\"m1\">\n");
+   rsprintf("<td>Month: <select name=\"m1\">\n");
    rsprintf("<option value=\"\">\n");
    for (i = 0; i < 12; i++)
       if (i == ptms->tm_mon)
@@ -10881,12 +11043,12 @@ void show_query_page(const char *path)
         ptms->tm_year);
    rsprintf("</td></tr>\n");
 
-   rsprintf("<tr><td nowrap bgcolor=#CCCCFF>End date:</td>");
+   rsprintf("<tr><td nowrap>End date:</td>");
    time(&now);
    ptms = localtime(&now);
    ptms->tm_year += 1900;
 
-   rsprintf("<td bgcolor=#DDEEBB>Month: <select name=\"m2\">\n");
+   rsprintf("<td>Month: <select name=\"m2\">\n");
    rsprintf("<option value=\"\">\n");
    for (i = 0; i < 12; i++)
       if (i == ptms->tm_mon)
@@ -10910,7 +11072,7 @@ void show_query_page(const char *path)
    rsprintf("</td></tr>\n");
 
    rsprintf("</table>\n");
-   rsprintf("</body></html>\r\n");
+   page_footer();
 }
 
 /*------------------------------------------------------------------*/
@@ -11407,9 +11569,12 @@ void show_hist_config_page(const char *path, const char *hgroup, const char *pan
          strlcpy(str, strrchr(str, '/')+1, sizeof(str));
    }
    show_header(hDB, "History Config", "GET", str, 4, 0);
+   rsprintf("</table>");  //close header table
+
+   rsprintf("<table class=\"dialogTable\">"); //open main table
 
    /* menu buttons */
-   rsprintf("<tr><td colspan=8 bgcolor=\"#C0C0C0\">\n");
+   rsprintf("<tr><td colspan=8>\n");
    rsprintf("<input type=submit name=cmd value=Save>\n");
    rsprintf("<input type=submit name=cmd value=Cancel>\n");
    rsprintf("<input type=submit name=cmd value=Refresh>\n");
@@ -11417,7 +11582,7 @@ void show_hist_config_page(const char *path, const char *hgroup, const char *pan
    rsprintf("<input type=submit name=cmd value=\"Delete Panel\">\n");
    rsprintf("</td></tr>\n");
 
-   rsprintf("<tr><td colspan=8 bgcolor=\"#FFFF00\" align=center><b>Panel \"%s / %s\"</b>\n",
+   rsprintf("<tr><td colspan=8 align=center><b>Panel \"%s / %s\"</b>\n",
             hgroup, panel);
 
    /* hidden command for refresh */
@@ -11434,7 +11599,7 @@ void show_hist_config_page(const char *path, const char *hgroup, const char *pan
       size = NAME_LENGTH;
       db_get_value(hDB, 0, ref, str, &size, TID_STRING, TRUE);
    }
-   rsprintf("<tr><td bgcolor=\"#E0E0E0\" colspan=8>Time scale: &nbsp;&nbsp;");
+   rsprintf("<tr><td colspan=8>Time scale: &nbsp;&nbsp;");
    rsprintf("<input type=text name=timescale value=%s></td></tr>\n", str);
 
    /* ylow_zero */
@@ -11447,11 +11612,11 @@ void show_hist_config_page(const char *path, const char *hgroup, const char *pan
    }
    if (flag)
       rsprintf
-          ("<tr><td bgcolor=\"#E0E0E0\" colspan=8><input type=checkbox checked name=zero_ylow value=1>",
+          ("<tr><td colspan=8><input type=checkbox checked name=zero_ylow value=1>",
            str);
    else
       rsprintf
-          ("<tr><td bgcolor=\"#E0E0E0\" colspan=8><input type=checkbox name=zero_ylow value=1>",
+          ("<tr><td colspan=8><input type=checkbox name=zero_ylow value=1>",
            str);
    rsprintf("&nbsp;&nbsp;Zero Ylow</td></tr>\n");
 
@@ -11465,7 +11630,7 @@ void show_hist_config_page(const char *path, const char *hgroup, const char *pan
       db_get_value(hDB, 0, ref, &xxminimum, &size, TID_FLOAT, TRUE);
       sprintf(str, "%f", xxminimum);
    }
-   rsprintf("<tr><td bgcolor=\"#E0E0E0\" colspan=8>Minimum: &nbsp;&nbsp;");
+   rsprintf("<tr><td colspan=8>Minimum: &nbsp;&nbsp;");
    rsprintf("<input type=text name=minimum value=%s></td></tr>\n", str);
 
    /* maximum */
@@ -11478,7 +11643,7 @@ void show_hist_config_page(const char *path, const char *hgroup, const char *pan
       db_get_value(hDB, 0, ref, &xxmaximum, &size, TID_FLOAT, TRUE);
       sprintf(str, "%f", xxmaximum);
    }
-   rsprintf("<tr><td bgcolor=\"#E0E0E0\" colspan=8>Maximum: &nbsp;&nbsp;");
+   rsprintf("<tr><td colspan=8>Maximum: &nbsp;&nbsp;");
    rsprintf("<input type=text name=maximum value=%s></td></tr>\n", str);
 
    /* log_axis */
@@ -11491,11 +11656,11 @@ void show_hist_config_page(const char *path, const char *hgroup, const char *pan
    }
    if (flag)
       rsprintf
-          ("<tr><td bgcolor=\"#E0E0E0\" colspan=8><input type=checkbox checked name=log_axis value=1>",
+          ("<tr><td colspan=8><input type=checkbox checked name=log_axis value=1>",
            str);
    else
       rsprintf
-          ("<tr><td bgcolor=\"#E0E0E0\" colspan=8><input type=checkbox name=log_axis value=1>",
+          ("<tr><td colspan=8><input type=checkbox name=log_axis value=1>",
            str);
    rsprintf("&nbsp;&nbsp;Logarithmic Y axis</td></tr>\n");
 
@@ -11509,11 +11674,11 @@ void show_hist_config_page(const char *path, const char *hgroup, const char *pan
    }
    if (flag)
       rsprintf
-          ("<tr><td bgcolor=\"#E0E0E0\" colspan=8><input type=checkbox checked name=run_markers value=1>",
+          ("<tr><td colspan=8><input type=checkbox checked name=run_markers value=1>",
            str);
    else
       rsprintf
-          ("<tr><td bgcolor=\"#E0E0E0\" colspan=8><input type=checkbox name=run_markers value=1>",
+          ("<tr><td colspan=8><input type=checkbox name=run_markers value=1>",
            str);
    rsprintf("&nbsp;&nbsp;Show run markers</td></tr>\n");
 
@@ -11528,11 +11693,11 @@ void show_hist_config_page(const char *path, const char *hgroup, const char *pan
    }
    if (flag)
       rsprintf
-          ("<tr><td bgcolor=\"#E0E0E0\" colspan=8><input type=checkbox checked name=show_values value=1>",
+          ("<tr><td colspan=8><input type=checkbox checked name=show_values value=1>",
            str);
    else
       rsprintf
-          ("<tr><td bgcolor=\"#E0E0E0\" colspan=8><input type=checkbox name=show_values value=1>",
+          ("<tr><td colspan=8><input type=checkbox name=show_values value=1>",
            str);
    rsprintf("&nbsp;&nbsp;Show values of variables</td></tr>\n");
 
@@ -11547,11 +11712,11 @@ void show_hist_config_page(const char *path, const char *hgroup, const char *pan
    }
    if (sort_vars)
       rsprintf
-          ("<tr><td bgcolor=\"#E0E0E0\" colspan=8><input type=checkbox checked name=sort_vars value=1>",
+          ("<tr><td colspan=8><input type=checkbox checked name=sort_vars value=1>",
            str);
    else
       rsprintf
-          ("<tr><td bgcolor=\"#E0E0E0\" colspan=8><input type=checkbox name=sort_vars value=1>",
+          ("<tr><td colspan=8><input type=checkbox name=sort_vars value=1>",
            str);
    rsprintf("&nbsp;&nbsp;Sort variable names (\"Save\" or \"Refresh\" to update the list)</td></tr>\n");
 
@@ -11702,7 +11867,7 @@ void show_hist_config_page(const char *path, const char *hgroup, const char *pan
       if (!vars[index].hist_col[0])
          strlcpy(vars[index].hist_col, "#808080", NAME_LENGTH);
 
-      rsprintf("<tr><td bgcolor=\"%s\">&nbsp;<td>\n", vars[index].hist_col);
+      rsprintf("<tr><td style=\"background-color:%s\">&nbsp;<td>\n", vars[index].hist_col);
 
       /* event and variable selection */
 
@@ -11836,8 +12001,9 @@ void show_hist_config_page(const char *path, const char *hgroup, const char *pan
          break;
    }
 
-   rsprintf("</table></form>\n");
-   rsprintf("</body></html>\r\n");
+   rsprintf("</table>\n");
+   //rsprintf("</form>\n");
+   page_footer();
 }
 
 /*------------------------------------------------------------------*/
@@ -12130,8 +12296,11 @@ void show_hist_page(const char *path, int path_size, char *buffer, int *buffer_s
       if (strrchr(str, '/'))
          strlcpy(str, strrchr(str, '/')+1, sizeof(str));
       show_header(hDB, "History", "GET", str, 1, 0);
+      rsprintf("</table>"); //end header
 
-      rsprintf("<tr><td align=center bgcolor=\"#FFFF80\" colspan=2>\n");
+      rsprintf("<table class=\"dialogTable\">");
+      rsprintf("<tr><th class=\"subStatusTitle\" colspan=2>New History Item</th><tr>");
+      rsprintf("<tr><td align=center colspan=2>\n");
       rsprintf("Select group: &nbsp;&nbsp;");
       rsprintf("<select name=\"group\">\n");
 
@@ -12158,7 +12327,7 @@ void show_hist_page(const char *path, int path_size, char *buffer, int *buffer_s
       rsprintf("Or enter new group name: &nbsp;&nbsp;");
       rsprintf("<input type=text size=15 maxlength=31 name=new_group>\n");
 
-      rsprintf("<tr><td align=center bgcolor=\"#FFFF00\" colspan=2>\n");
+      rsprintf("<tr><td align=center colspan=2>\n");
       rsprintf("<br>Panel name: &nbsp;&nbsp;");
       rsprintf("<input type=text size=15 maxlength=31 name=panel><br><br>\n");
       rsprintf("</td></tr>\n");
@@ -12168,7 +12337,7 @@ void show_hist_page(const char *path, int path_size, char *buffer, int *buffer_s
       rsprintf("</td></tr>\n");
 
       rsprintf("</table>\r\n");
-      rsprintf("</body></html>\r\n");
+      page_footer();
       return;
    }
 
@@ -12425,18 +12594,23 @@ void show_hist_page(const char *path, int path_size, char *buffer, int *buffer_s
    show_header(hDB, str, "GET", str, 1, offset == 0 ? refresh : 0);
 
    /* menu buttons */
-   rsprintf("<tr><td colspan=2 bgcolor=\"#C0C0C0\">\n");
+   rsprintf("<tr><td colspan=2>\n");
    rsprintf("<input type=submit name=cmd value=ODB>\n");
    rsprintf("<input type=submit name=cmd value=Alarms>\n");
    rsprintf("<input type=submit name=cmd value=Status>\n");
    rsprintf("<input type=submit name=cmd value=History>\n");
+   rsprintf("</table>");  //end header menu
+
+   rsprintf("<table class=\"dialogTable\">");
+   rsprintf("<tr><th class=\"subStatusTitle\" colspan=2>History</th><tr>");
 
    /* check if panel exists */
    sprintf(str, "/History/Display/%s", path);
    status = db_find_key(hDB, 0, str, &hkey);
    if (status != DB_SUCCESS && !equal_ustring(path, "All") && !equal_ustring(path,"")) {
       rsprintf("<h1>Error: History panel \"%s\" does not exist</h1>\n", path);
-      rsprintf("</table></form></body></html>\r\n");
+      rsprintf("</table>\r\n");
+      page_footer();
       return;
    }
 
@@ -12480,7 +12654,7 @@ void show_hist_page(const char *path, int path_size, char *buffer, int *buffer_s
       /* show big selection page */
 
       /* links for history panels */
-      rsprintf("<tr><td colspan=2 bgcolor=\"#FFFFA0\">\n");
+      rsprintf("<tr><td colspan=2>\n");
       if (!path[0])
          rsprintf("<b>Please select panel:</b><br>\n");
 
@@ -12581,7 +12755,7 @@ void show_hist_page(const char *path, int path_size, char *buffer, int *buffer_s
       int found = 0;
 
       /* show drop-down selectors */
-      rsprintf("<tr><td colspan=2 bgcolor=\"#FFFFA0\">\n");
+      rsprintf("<tr><td colspan=2>\n");
 
       rsprintf("Group:\n");
 
@@ -12705,7 +12879,7 @@ void show_hist_page(const char *path, int path_size, char *buffer, int *buffer_s
    /* image panel */
    else if (path[0] && !equal_ustring(path, "All")) {
       /* navigation links */
-      rsprintf("<tr><td bgcolor=\"#A0FFA0\">\n");
+      rsprintf("<tr><td>\n");
 
       sprintf(str, "/History/Display/%s/Buttons", path);
       db_find_key(hDB, 0, str, &hkeybutton);
@@ -12733,7 +12907,7 @@ void show_hist_page(const char *path, int path_size, char *buffer, int *buffer_s
          rsprintf("<input type=submit name=shift value=\">>\">\n");
       }
 
-      rsprintf("<td bgcolor=\"#A0FFA0\">\n");
+      rsprintf("<td>\n");
       rsprintf("<input type=submit name=width value=Large>\n");
       rsprintf("<input type=submit name=width value=Small>\n");
       rsprintf("<input type=submit name=cmd value=\"Create ELog\">\n");
@@ -12842,7 +13016,8 @@ void show_hist_page(const char *path, int path_size, char *buffer, int *buffer_s
          }                      // Groups loop
    }                            // All
    rsprintf("</table>\r\n");
-   rsprintf("</form></body></html>\r\n");
+   //rsprintf("</form>\r\n");
+   page_footer();
 }
 
 

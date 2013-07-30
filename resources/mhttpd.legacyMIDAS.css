@@ -1,0 +1,72 @@
+/*legacy CSS to mimic classic MIDAS*/
+
+body {  
+	margin:3px;  
+	color:black;  
+	background-color:white;  
+	font-family:verdana,tahoma,sans-serif;
+}
+
+table{
+	border-collapse:collapse;	
+	border:1px solid #000000;
+	border-collapse: separate;
+	border-spacing: 2px;
+}
+
+table td{
+	border:1px solid #000000;
+}
+
+/* standard link colors and decorations */
+a:link { color:#0000FF; text-decoration:none }
+a:visited { color:#800080; text-decoration:none }
+a:hover { color:#0000FF; text-decoration:underline }
+a:active { color:#0000FF; text-decoration:underline }
+a:focus { color:#0000FF; text-decoration:underline }
+
+div.footerDiv{
+	display:none;
+}
+
+/*experiment title*/
+#experimentTitle{
+	background-color: #A0A0FF;
+}
+
+/*status page time*/
+#masterTime{
+	background-color: #A0A0FF;
+}
+
+table.headerTable{
+	background-color: #A0A0A0;
+}
+
+.greenLight{
+	background-color: #00FF00;
+}
+
+.redLight{
+	background-color: #FF0000;
+}
+
+.yellowLight{
+	background-color: #FFFF00;
+}
+
+.headerTable th{
+	background-color: #A0A0FF;
+}
+
+.ODBkey{
+	background-color: #FFFF00;
+}
+
+.ODBdirectory{
+	background-color: #FFD000;
+}
+
+.subStatusTitle{
+	background-color: #C0C0C0;
+}
