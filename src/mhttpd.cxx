@@ -13347,7 +13347,7 @@ void send_js()
       }
    }
    
-   if (fh < 0)  {
+   if (fh <= 0)  {
       length = strlen(mhttpd_js);
       rsprintf("Content-Length: %d\r\n\r\n", length);
       
