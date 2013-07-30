@@ -12971,7 +12971,7 @@ void send_css()
       }
    }
    
-   if (fh < 0)  {
+   if (fh <= 0)  {
       length = strlen(mhttpd_css);
       rsprintf("Content-Length: %d\r\n\r\n", length);
       
