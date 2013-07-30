@@ -2687,21 +2687,25 @@ INT ss_mutex_wait_for(MUTEX_T *mutex, INT timeout)
 
 #if defined(OS_DARWIN)
    
-   // status = pthread_mutex_lock(mutex);
-   // emulate pthread_mutex_timedlock under OS_DARWIN
-   DWORD wait = 0;
-   do {
-      status = pthread_mutex_trylock(mutex);
-      if (status == EBUSY) {
-         ss_sleep(10);
-         wait += 10;
-      } else
-         break;
+   if (timeout > 0) {
+      // emulate pthread_mutex_timedlock under OS_DARWIN
+      DWORD wait = 0;
+      do {
+         status = pthread_mutex_trylock(mutex);
+         if (status == EBUSY) {
+            ss_sleep(10);
+            wait += 10;
+         } else
+            break;
+         
+      } while (timeout == 0 || wait < timeout);
       
-   } while (timeout == 0 || wait < timeout);
-   
+   } else {
+      status = pthread_mutex_lock(mutex);
+   }
+
    if (status != 0) {
-      fprintf(stderr, "ss_mutex_wait_for: pthread_mutex_trylock() returned errno %d (%s), aborting...\n", status, strerror(status));
+      fprintf(stderr, "ss_mutex_wait_for: pthread_mutex_lock() returned errno %d (%s), aborting...\n", status, strerror(status));
       abort(); // does not return
    }
    
@@ -2718,12 +2722,15 @@ INT ss_mutex_wait_for(MUTEX_T *mutex, INT timeout)
       status = pthread_mutex_timedlock(mutex, &st);
       if (status == ETIMEDOUT)
          return SS_TIMEOUT;
-      if (status != 0) {
-         fprintf(stderr, "ss_mutex_wait_for: pthread_mutex_timedlock() returned errno %d (%s), aborting...\n", status, strerror(status));
-         abort();
-      }
 
       return SS_SUCCESS;
+   } else {
+      status = pthread_mutex_lock(mutex);
+   }
+
+   if (status != 0) {
+      fprintf(stderr, "ss_mutex_wait_for: pthread_mutex_lock() returned errno %d (%s), aborting...\n", status, strerror(status));
+      abort();
    }
 #endif
 
