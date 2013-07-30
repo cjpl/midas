@@ -13128,18 +13128,27 @@ void send_css()
          strlcat(filename, DIR_SEPARATOR_STR, sizeof(filename));
       strlcat(filename, "mhttpd.css", sizeof(filename));
       fh = open(filename, O_RDONLY | O_BINARY);
-      if (fh > 0) {
-         fstat(fh, &stat_buf);
-         length = stat_buf.st_size;
-         rsprintf("Content-Length: %d\r\n\r\n", length);
-         
-         return_length = strlen(return_buffer) + length;
-         read(fh, return_buffer + strlen(return_buffer), length);
-         close(fh);
-      }
+   }
+
+   if (fh <= 0 && getenv("MIDASSYS")) {
+      strlcpy(filename, getenv("MIDASSYS"), sizeof(filename));
+      if (filename[strlen(filename)-1] != DIR_SEPARATOR)
+         strlcat(filename, DIR_SEPARATOR_STR, sizeof(filename));
+      strlcat(filename, "resources/mhttpd.css", sizeof(filename));
+      fh = open(filename, O_RDONLY | O_BINARY);
    }
    
-   if (fh < 0)  {
+   if (fh > 0) {
+      fstat(fh, &stat_buf);
+      length = stat_buf.st_size;
+      rsprintf("Content-Length: %d\r\n\r\n", length);
+      
+      return_length = strlen(return_buffer) + length;
+      read(fh, return_buffer + strlen(return_buffer), length);
+      close(fh);
+   }
+
+   if (fh <= 0)  {
       length = strlen(mhttpd_css);
       rsprintf("Content-Length: %d\r\n\r\n", length);
       
