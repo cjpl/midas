@@ -2732,6 +2732,8 @@ INT ss_mutex_wait_for(MUTEX_T *mutex, INT timeout)
       fprintf(stderr, "ss_mutex_wait_for: pthread_mutex_lock() returned errno %d (%s), aborting...\n", status, strerror(status));
       abort();
    }
+   
+   return SS_SUCCESS;
 #endif
 
 #endif /* OS_UNIX */
