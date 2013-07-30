@@ -13,6 +13,7 @@
 		D5A13A3B16C14A9D00EBACDE /* musbstd.c in Sources */ = {isa = PBXBuildFile; fileRef = D5A13A3A16C14A9D00EBACDE /* musbstd.c */; };
 		D5A13A4116C1507D00EBACDE /* mxml.c in Sources */ = {isa = PBXBuildFile; fileRef = D5A13A3F16C1507D00EBACDE /* mxml.c */; };
 		D5A13A4216C1507D00EBACDE /* strlcpy.c in Sources */ = {isa = PBXBuildFile; fileRef = D5A13A4016C1507D00EBACDE /* strlcpy.c */; };
+		D5F675D717A8565900959CB7 /* cmdedit.c in Sources */ = {isa = PBXBuildFile; fileRef = D5F675D617A8565900959CB7 /* cmdedit.c */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -29,14 +30,15 @@
 
 /* Begin PBXFileReference section */
 		D5A13A2616C14A3900EBACDE /* msc */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = msc; sourceTree = BUILT_PRODUCTS_DIR; };
-		D5A13A3216C14A7800EBACDE /* msc.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = msc.c; path = ../../../msc.c; sourceTree = "<group>"; };
-		D5A13A3316C14A7800EBACDE /* mscb.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = mscb.c; path = ../../../mscb.c; sourceTree = "<group>"; };
-		D5A13A3416C14A7800EBACDE /* mscb.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = mscb.h; path = ../../../mscb.h; sourceTree = "<group>"; };
-		D5A13A3516C14A7800EBACDE /* mscbrpc.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = mscbrpc.c; path = ../../../mscbrpc.c; sourceTree = "<group>"; };
-		D5A13A3616C14A7800EBACDE /* mscbrpc.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = mscbrpc.h; path = ../../../mscbrpc.h; sourceTree = "<group>"; };
-		D5A13A3A16C14A9D00EBACDE /* musbstd.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = musbstd.c; path = ../../../../drivers/usb/musbstd.c; sourceTree = "<group>"; };
-		D5A13A3F16C1507D00EBACDE /* mxml.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = mxml.c; path = ../../../../../mxml/mxml.c; sourceTree = "<group>"; };
-		D5A13A4016C1507D00EBACDE /* strlcpy.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = strlcpy.c; path = ../../../../../mxml/strlcpy.c; sourceTree = "<group>"; };
+		D5A13A3216C14A7800EBACDE /* msc.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = msc.c; path = /midas/mscb/msc.c; sourceTree = "<absolute>"; };
+		D5A13A3316C14A7800EBACDE /* mscb.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = mscb.c; path = "/midas/mscb//mscb.c"; sourceTree = "<absolute>"; };
+		D5A13A3416C14A7800EBACDE /* mscb.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = mscb.h; path = /midas/mscb/mscb.h; sourceTree = "<absolute>"; };
+		D5A13A3516C14A7800EBACDE /* mscbrpc.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = mscbrpc.c; path = "/midas/mscb//mscbrpc.c"; sourceTree = "<absolute>"; };
+		D5A13A3616C14A7800EBACDE /* mscbrpc.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = mscbrpc.h; path = /midas/mscb/mscbrpc.h; sourceTree = "<absolute>"; };
+		D5A13A3A16C14A9D00EBACDE /* musbstd.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = musbstd.c; path = /midas/drivers/usb/musbstd.c; sourceTree = "<absolute>"; };
+		D5A13A3F16C1507D00EBACDE /* mxml.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = mxml.c; path = /mxml/mxml.c; sourceTree = "<absolute>"; };
+		D5A13A4016C1507D00EBACDE /* strlcpy.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = strlcpy.c; path = /mxml/strlcpy.c; sourceTree = "<absolute>"; };
+		D5F675D617A8565900959CB7 /* cmdedit.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = cmdedit.c; path = /midas/src/cmdedit.c; sourceTree = "<absolute>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -69,6 +71,7 @@
 		D5A13A2816C14A3900EBACDE /* msc */ = {
 			isa = PBXGroup;
 			children = (
+				D5F675D617A8565900959CB7 /* cmdedit.c */,
 				D5A13A3F16C1507D00EBACDE /* mxml.c */,
 				D5A13A4016C1507D00EBACDE /* strlcpy.c */,
 				D5A13A3A16C14A9D00EBACDE /* musbstd.c */,
@@ -138,6 +141,7 @@
 				D5A13A3B16C14A9D00EBACDE /* musbstd.c in Sources */,
 				D5A13A4116C1507D00EBACDE /* mxml.c in Sources */,
 				D5A13A4216C1507D00EBACDE /* strlcpy.c in Sources */,
+				D5F675D717A8565900959CB7 /* cmdedit.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -241,6 +245,14 @@
 		D5A13A3016C14A3900EBACDE /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				OTHER_LDFLAGS = (
+					"/usr/local/lib/libusb-1.0.a",
+					"-lobjc",
+					"-framework",
+					Carbon,
+					"-framework",
+					IOKit,
+				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = Debug;
@@ -248,6 +260,14 @@
 		D5A13A3116C14A3900EBACDE /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				OTHER_LDFLAGS = (
+					"/usr/local/lib/libusb-1.0.a",
+					"-lobjc",
+					"-framework",
+					Carbon,
+					"-framework",
+					IOKit,
+				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = Release;
@@ -271,6 +291,7 @@
 				D5A13A3116C14A3900EBACDE /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 	};
