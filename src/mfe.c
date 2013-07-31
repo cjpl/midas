@@ -81,7 +81,8 @@ void *frag_buffer = NULL;
 int *n_events;
 
 /* inter-thread communication */
-int rbh1=0, rbh2=0, rbh[10], rbh1_next=0, rbh2_next=0;
+int rbh[10];
+int rbh_mteq = 0; // index of the ring buffer used by the EQ_MULTITHREAD equipment
 volatile int stop_all_threads = 0;
 int readout_thread(void *param);
 volatile int readout_thread_active = 0;
@@ -797,9 +798,8 @@ INT initialize_equipment(void)
                interrupt_eq = &equipment[idx];
                
                /* create ring buffer for inter-thread data transfer */
-               if (!rbh1) {
-                  rb_create(event_buffer_size, max_event_size, &rbh1);
-                  rbh2 = rbh1;
+               if (!rbh[rbh_mteq]) {
+                  rb_create(event_buffer_size, max_event_size, &rbh[rbh_mteq]);
                }
                
                /* establish interrupt handler */
@@ -881,9 +881,8 @@ INT initialize_equipment(void)
                   multithread_eq = &equipment[idx];
 
                   /* create ring buffer for inter-thread data transfer */
-                  if (!rbh1) {
-                     rb_create(event_buffer_size, max_event_size, &rbh1);
-                     rbh2 = rbh1;
+                  if (!rbh[rbh_mteq]) {
+                     rb_create(event_buffer_size, max_event_size, &rbh[rbh_mteq]);
                   }
 
                   /* create hardware reading thread */
@@ -1315,7 +1314,7 @@ void interrupt_routine(void)
 
    /* get pointer for upcoming event.
       This is a blocking call if no space available */
-   status = rb_get_wp(rbh1, &p, 100000);
+   status = rb_get_wp(rbh[rbh_mteq], &p, 100000);
 
    if (status == DB_SUCCESS) {
       pevent = (EVENT_HEADER *)p;
@@ -1334,7 +1333,7 @@ void interrupt_routine(void)
       if (pevent->data_size) {
 
          /* put event into ring buffer */
-         rb_increment_wp(rbh1, sizeof(EVENT_HEADER) + pevent->data_size);
+         rb_increment_wp(rbh[rbh_mteq], sizeof(EVENT_HEADER) + pevent->data_size);
 
       } else
          interrupt_eq->serial_number--;
@@ -1352,10 +1351,8 @@ int readout_thread(void *param)
    p = param; /* avoid compiler warning */
    while (!stop_all_threads) {
       /* obtain buffer space */
-      if (rbh1_next) // if set by user code, use it
-         rbh1 = rbh1_next;
 
-      status = rb_get_wp(rbh1, &p, 0);
+      status = rb_get_wp(rbh[rbh_mteq], &p, 0);
       if (stop_all_threads)
          break;
       if (status == DB_TIMEOUT) {
@@ -1406,7 +1403,7 @@ int readout_thread(void *param)
 
             if (pevent->data_size > 0) {
                /* put event into ring buffer */
-               rb_increment_wp(rbh1, sizeof(EVENT_HEADER) + pevent->data_size);
+               rb_increment_wp(rbh[rbh_mteq], sizeof(EVENT_HEADER) + pevent->data_size);
             } else
                multithread_eq->serial_number--;
          }
@@ -1425,11 +1422,6 @@ int readout_thread(void *param)
 
 /*-- Receive event from readout thread or interrupt routine --------*/
 
-void set_event_rb(INT rb)
-{
-   rbh2 = rb;
-}
-
 void set_event_rb_idx(INT rb, INT idx)
 {
    rbh[idx] = rb;
@@ -1440,18 +1432,16 @@ int receive_trigger_event(EQUIPMENT *eq)
    int i, status;
    EVENT_HEADER *prb = NULL, *pevent;
    void *p;
-   
-#if 0
-   {
-   int nbytes;
-   static int count = 0;
-   if (((count++) % 100) == 0) {
-      rb_get_buffer_level(rbh2, &nbytes);
-      if (nbytes != 0)
-         printf("mfe: ring buffer contains %d bytes\n", nbytes);
+
+   if (0) {
+      int nbytes;
+      static int count = 0;
+      if (((count++) % 100) == 0) {
+         rb_get_buffer_level(rbh[0], &nbytes);
+         if (nbytes != 0)
+            printf("mfe: ring buffer contains %d bytes\n", nbytes);
+      }
    }
-   }
-#endif
    
    i=0;
    while(rbh[i]) {
@@ -1499,7 +1489,7 @@ int receive_trigger_event(EQUIPMENT *eq)
       rb_increment_rp(rbh[i], sizeof(EVENT_HEADER) + prb->data_size);
       i++;
    } // for rbh[]
-   
+
    if (prb == NULL)
       return 0;
    
