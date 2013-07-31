@@ -259,13 +259,13 @@ table.dialogTable td{
 .greenLight{
 	background-color: #00E600;
 	border-radius: 5px;
-	border: 1px solid #000000;
+	border: 1px solid #000000 !important;
 }
 
 .redLight{
 	background-color: #c0392b;
 	border-radius: 5px;
-	border: 1px solid #000000;
+	border: 1px solid #000000 !important;
 	color: #EEEEEE;
 
 	animation-name: pulse;
@@ -313,7 +313,7 @@ table.dialogTable td{
 .yellowLight{
 	background-color: #f1c40f;
 	border-radius: 5px;
-	border: 1px solid #000000;
+	border: 1px solid #000000 !important;
 }
 
 .msgService{
@@ -340,12 +340,16 @@ table.dialogTable td{
 	margin-bottom:1em;
 }
 
-.ODBtable tr:nth-child(odd){
+.ODBtable tr:nth-child(odd), #equipmentList tr:nth-child(even){
 	background-color: #CCCCCC;
 }
 
-.ODBtable tr:nth-child(even){
-	background-color: #EEEEEE;
+#equipmentList{
+	border-spacing: 0px 1px;
+}
+
+#equipmentList td{
+	border:none;
 }
 
 table.ODBtable td{

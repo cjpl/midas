@@ -1676,7 +1676,7 @@ void show_status_page(int refresh, const char *cookie_wpwd)
       }
    }
    
-   rsprintf("<tr><td colspan=6><table class=\"subStatusTable\" width=100%%>\n");
+   rsprintf("<tr><td colspan=6><table class=\"subStatusTable\" id=\"equipmentList\" width=100%%>\n");
    rsprintf("<tr><th colspan=6 class=\"subStatusTitle\">Equipment</th><tr>\n");
 
    rsprintf("<tr class=\"titleRow\"><th>Equipment");
