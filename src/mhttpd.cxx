@@ -7516,7 +7516,16 @@ void show_mscb_page(char *path, int refresh)
    rsprintf("<tr><td class=\"subm\">\r\n");
    rsprintf("Submaster<hr>\r\n");
 
-   rsprintf("<select name=\"subm\" size=20 onChange=\"document.form1.submit();\">\r\n");
+   /* count submasters */
+   for (i = 0;;i++) {
+      db_enum_key(hDB, hKeySubm, i, &hKey);
+      if (!hKey)
+         break;
+   }
+   if (i<2)
+      i = 2;
+   
+   rsprintf("<select name=\"subm\" size=%d onChange=\"document.form1.submit();\">\r\n", i);
    hKeyCurSubm = 0;
    for (i = 0;;i++) {
       db_enum_key(hDB, hKeySubm, i, &hKey);
@@ -7563,9 +7572,18 @@ void show_mscb_page(char *path, int refresh)
       return;
    }
    
-   rsprintf("<select name=\"node\" size=20 onChange=\"document.form1.submit();\">\r\n");
    db_find_key(hDB, hKeyCurSubm, "Address", &hKeyAddr);
    db_find_key(hDB, hKeyCurSubm, "Node comment", &hKeyComm);
+
+   i = 10;
+   if (hKeyAddr) {
+      db_get_key(hDB, hKeyAddr, &key);
+      i = key.num_values;
+   }
+   if (i < 2)
+      i = 2;
+   rsprintf("<select name=\"node\" size=%d onChange=\"document.form1.submit();\">\r\n", i);
+
    if (hKeyAddr) {
       db_get_key(hDB, hKeyAddr, &key);
       size = sizeof(adr);
