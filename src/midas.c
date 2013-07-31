@@ -4164,6 +4164,7 @@ INT cm_transition2(INT transition, INT run_number, char *errstr, INT errstr_size
    }
    
    /* contact ordered clients for transition -----------------------*/
+   status = CM_SUCCESS;
    for (idx = 0; idx < n_tr_clients; idx++) {
       /* erase error string */
       error[0] = 0;
@@ -4377,9 +4378,9 @@ INT tr_main_thread(void *param)
 /* wrapper around cm_transition1() for detached multi-threaded transitions */
 INT cm_transition(INT transition, INT run_number, char *errstr, INT errstr_size, INT async_flag, INT debug_flag)
 {
-   int status = 0;
+   int status = CM_SUCCESS;
    midas_thread_t tr_main;
-   TR_PARAM trp;
+   static TR_PARAM trp;
 
    if (async_flag & MTHREAD) {
       trp.transition = transition;
