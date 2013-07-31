@@ -1604,12 +1604,12 @@ void show_status_page(int refresh, const char *cookie_wpwd)
    size = sizeof(str); 
    if (db_get_value(hDB, 0, "/Experiment/Run parameters/Comment", str, 
                     &size, TID_STRING, FALSE) == DB_SUCCESS) 
-      rsprintf("<tr align=center><td colspan=5><b>%s</b></td></tr>\n", 
+      rsprintf("<tr align=center class=\"titleRow\"><td colspan=5><b>%s</b></td></tr>\n", 
                str); 
    size = sizeof(str); 
    if (db_get_value(hDB, 0, "/Experiment/Run parameters/Run Description", str, 
                     &size, TID_STRING, FALSE) == DB_SUCCESS) 
-      rsprintf("<tr align=center><td colspan=5><b>%s</b></td></tr>\n", 
+      rsprintf("<tr align=center class=\"titleRow\"><td colspan=5><b>%s</b></td></tr>\n", 
                str); 
  
    /*---- Status items ----*/
@@ -1625,7 +1625,7 @@ void show_status_page(int refresh, const char *cookie_wpwd)
             rsprintf("<tr><td colspan=6><table width=100%%>\n");
 
          db_get_key(hDB, hsubkey, &key);
-         rsprintf("<tr><td align=right width=30%% style=\"background-color:#DDDDDD;\">%s:</td>", key.name);
+         rsprintf("<tr><td align=right width=30%% style=\"background-color:#CCCCCC;\">%s:</td>", key.name);
          
          db_enum_key(hDB, hkey, i, &hsubkey);
          db_get_key(hDB, hsubkey, &key);

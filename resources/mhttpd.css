@@ -341,7 +341,7 @@ table.dialogTable td{
 }
 
 .ODBtable tr:nth-child(odd){
-	background-color: #DDDDDD;
+	background-color: #CCCCCC;
 }
 
 .ODBtable tr:nth-child(even){
