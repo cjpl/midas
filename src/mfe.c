@@ -2488,6 +2488,17 @@ void mfe_error_check(void)
 
 /*------------------------------------------------------------------*/
 
+int _argc;
+char **_argv;
+
+void mfe_get_args(int *argc, char ***argv)
+{
+   *argc = _argc;
+   *argv = _argv;
+}
+
+/*------------------------------------------------------------------*/
+
 #ifdef OS_VXWORKS
 int mfe(char *ahost_name, char *aexp_name, BOOL adebug)
 #else
@@ -2521,6 +2532,13 @@ int main(int argc, char *argv[])
    /* get default from environment */
    cm_get_environment(host_name, sizeof(host_name), exp_name, sizeof(exp_name));
 
+   /* store arguments for user use */
+   _argc = argc;
+   _argv = (char **)malloc(sizeof(char *)*argc);
+   for (i=0 ; i<argc ; i++) {
+      _argv[i] = argv[i];
+   }
+   
    /* parse command line parameters */
    for (i = 1; i < argc; i++) {
       if (argv[i][0] == '-' && argv[i][1] == 'd')
@@ -2538,7 +2556,7 @@ int main(int argc, char *argv[])
             strcpy(host_name, argv[++i]);
          else if (argv[i][1] == 'i')
             frontend_index = atoi(argv[++i]);
-         else {
+         else if (argv[i][1] == '-') {
           usage:
             printf
                 ("usage: frontend [-h Hostname] [-e Experiment] [-d] [-D] [-O] [-i n]\n");

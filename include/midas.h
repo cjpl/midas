@@ -1942,6 +1942,7 @@ extern "C" {
 
    /*---- frontend functions ----*/
    INT get_frontend_index();
+   void mfe_get_args(int *argc, char ***argv);
    void register_cnaf_callback(int debug);
    void mfe_error(const char *error);
    void mfe_set_error(void (*dispatcher) (const char *));
