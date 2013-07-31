@@ -2720,10 +2720,11 @@ INT ss_mutex_wait_for(MUTEX_T *mutex, INT timeout)
       st.tv_sec += timeout / 1000;
       st.tv_nsec += (timeout % 1000) * 1E6;
       status = pthread_mutex_timedlock(mutex, &st);
-      if (status == ETIMEDOUT)
-         return SS_TIMEOUT;
 
-      return SS_SUCCESS;
+      // Make linux timeout do same as MacOS timeout: abort() the program
+      //if (status == ETIMEDOUT)
+      //   return SS_TIMEOUT;
+      //return SS_SUCCESS;
    } else {
       status = pthread_mutex_lock(mutex);
    }
