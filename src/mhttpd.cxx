@@ -872,7 +872,7 @@ void page_footer()  //wraps up body wrapper and inserts page footer
    cm_get_experiment_database(&hDB, NULL);
    db_get_value(hDB, 0, "/Experiment/Name", str, &size, TID_STRING, TRUE);
    rsprintf("<div style=\"display:inline; float:left;\">MIDAS Experiment %s</div>", str);
-   rsprintf("<div style=\"display:inline;\">MIDAS 2013 - Check us out on <a href=\"https://bitbucket.org/tmidas/midas\">Bitbucket</a></div>");
+   rsprintf("<div style=\"display:inline;\">MIDAS 2013 - <a href=\"https://midas.triumf.ca/MidasWiki/index.php/Main_Page\" > Documentation</a> - <a href=\"https://bitbucket.org/tmidas/midas\">Code</a></div>");
    time(&now);
    rsprintf("<div style=\"display:inline; float:right;\">%s</div>", ctime(&now));
    rsprintf("</div>\n");
