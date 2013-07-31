@@ -33,10 +33,18 @@
 #include <fcntl.h>
 #include <time.h>
 #include <sys/timeb.h>
+#include <sys/termios.h>
 #include "mscb.h"
 #include "mscbrpc.h"
 #include "mxml.h"
 #include "strlcpy.h"
+
+extern int cmd_edit(char *prompt, char *cmd, int(*dir) (char *, int *), int(*idle) ());
+
+int cmd_dir(char *line, int * cursor)
+{
+   return FALSE;
+}
 
 /*------------------------------------------------------------------*/
 
@@ -95,6 +103,272 @@ NAME_TABLE unit_table[] = {
    {UNIT_FACTOR, "factor",},
    {0}
 };
+
+/*------------------------------------------------------------------*/
+
+/* special characters */
+#define CH_BS             8
+#define CH_TAB            9
+#define CH_CR            13
+
+#define CH_EXT 0x100
+
+#define CH_HOME   (CH_EXT+0)
+#define CH_INSERT (CH_EXT+1)
+#define CH_DELETE (CH_EXT+2)
+#define CH_END    (CH_EXT+3)
+#define CH_PUP    (CH_EXT+4)
+#define CH_PDOWN  (CH_EXT+5)
+#define CH_UP     (CH_EXT+6)
+#define CH_DOWN   (CH_EXT+7)
+#define CH_RIGHT  (CH_EXT+8)
+#define CH_LEFT   (CH_EXT+9)
+
+int ss_getchar(int reset)
+{
+#ifdef OS_LINUX
+   
+   static int init = FALSE;
+   static struct termios save_termios;
+   struct termios buf;
+   int i, fd;
+   char c[3];
+   
+   fd = fileno(stdin);
+   
+   if (reset) {
+      if (init)
+         tcsetattr(fd, TCSAFLUSH, &save_termios);
+      init = FALSE;
+      return 0;
+   }
+   
+   if (!init) {
+      tcgetattr(fd, &save_termios);
+      memcpy(&buf, &save_termios, sizeof(buf));
+      
+      buf.c_lflag &= ~(ECHO | ICANON | IEXTEN);
+      
+      buf.c_iflag &= ~(ICRNL | INPCK | ISTRIP | IXON);
+      
+      buf.c_cflag &= ~(CSIZE | PARENB);
+      buf.c_cflag |= CS8;
+      /* buf.c_oflag &= ~(OPOST); */
+      buf.c_cc[VMIN] = 0;
+      buf.c_cc[VTIME] = 0;
+      
+      tcsetattr(fd, TCSAFLUSH, &buf);
+      init = TRUE;
+   }
+   
+   memset(c, 0, 3);
+   i = read(fd, c, 1);
+   
+   if (i == 0)
+      return 0;
+   
+   /* check if ESC */
+   if (c[0] == 27) {
+      i = read(fd, c, 2);
+      if (i == 0)               /* return if only ESC */
+         return 27;
+      
+      /* cursor keys return 2 chars, others 3 chars */
+      if (c[1] < 65)
+         read(fd, c, 1);
+      
+      /* convert ESC sequence to CH_xxx */
+      switch (c[1]) {
+         case 49:
+            return CH_HOME;
+         case 50:
+            return CH_INSERT;
+         case 51:
+            return CH_DELETE;
+         case 52:
+            return CH_END;
+         case 53:
+            return CH_PUP;
+         case 54:
+            return CH_PDOWN;
+         case 65:
+            return CH_UP;
+         case 66:
+            return CH_DOWN;
+         case 67:
+            return CH_RIGHT;
+         case 68:
+            return CH_LEFT;
+      }
+   }
+   
+   /* BS/DEL -> BS */
+   if (c[0] == 127)
+      return CH_BS;
+   
+   return c[0];
+   
+#elif defined(OS_WINNT)
+   
+   static BOOL init = FALSE;
+   static INT repeat_count = 0;
+   static INT repeat_char;
+   HANDLE hConsole;
+   DWORD nCharsRead;
+   INPUT_RECORD ir;
+   OSVERSIONINFO vi;
+   
+   /* find out if we are under W95 */
+   vi.dwOSVersionInfoSize = sizeof(OSVERSIONINFO);
+   GetVersionEx(&vi);
+   
+   if (vi.dwPlatformId != VER_PLATFORM_WIN32_NT) {
+      /* under W95, console doesn't work properly */
+      int c;
+      
+      if (!kbhit())
+         return 0;
+      
+      c = getch();
+      if (c == 224) {
+         c = getch();
+         switch (c) {
+            case 71:
+               return CH_HOME;
+            case 72:
+               return CH_UP;
+            case 73:
+               return CH_PUP;
+            case 75:
+               return CH_LEFT;
+            case 77:
+               return CH_RIGHT;
+            case 79:
+               return CH_END;
+            case 80:
+               return CH_DOWN;
+            case 81:
+               return CH_PDOWN;
+            case 82:
+               return CH_INSERT;
+            case 83:
+               return CH_DELETE;
+         }
+      }
+      return c;
+   }
+   
+   hConsole = GetStdHandle(STD_INPUT_HANDLE);
+   
+   if (reset) {
+      SetConsoleMode(hConsole, ENABLE_LINE_INPUT | ENABLE_ECHO_INPUT | ENABLE_PROCESSED_INPUT | ENABLE_MOUSE_INPUT);
+      init = FALSE;
+      return 0;
+   }
+   
+   if (!init) {
+      SetConsoleMode(hConsole, ENABLE_PROCESSED_INPUT);
+      init = TRUE;
+   }
+   
+   if (repeat_count) {
+      repeat_count--;
+      return repeat_char;
+   }
+   
+   PeekConsoleInput(hConsole, &ir, 1, &nCharsRead);
+   
+   if (nCharsRead == 0)
+      return 0;
+   
+   ReadConsoleInput(hConsole, &ir, 1, &nCharsRead);
+   
+   if (ir.EventType != KEY_EVENT)
+      return ss_getchar(0);
+   
+   if (!ir.Event.KeyEvent.bKeyDown)
+      return ss_getchar(0);
+   
+   if (ir.Event.KeyEvent.wRepeatCount > 1) {
+      repeat_count = ir.Event.KeyEvent.wRepeatCount - 1;
+      repeat_char = ir.Event.KeyEvent.uChar.AsciiChar;
+      return repeat_char;
+   }
+   
+   if (ir.Event.KeyEvent.uChar.AsciiChar)
+      return ir.Event.KeyEvent.uChar.AsciiChar;
+   
+   if (ir.Event.KeyEvent.dwControlKeyState & (ENHANCED_KEY)) {
+      switch (ir.Event.KeyEvent.wVirtualKeyCode) {
+         case 33:
+            return CH_PUP;
+         case 34:
+            return CH_PDOWN;
+         case 35:
+            return CH_END;
+         case 36:
+            return CH_HOME;
+         case 37:
+            return CH_LEFT;
+         case 38:
+            return CH_UP;
+         case 39:
+            return CH_RIGHT;
+         case 40:
+            return CH_DOWN;
+         case 45:
+            return CH_INSERT;
+         case 46:
+            return CH_DELETE;
+      }
+      
+      return ir.Event.KeyEvent.wVirtualKeyCode;
+   }
+   
+   return ss_getchar(0);
+   
+#endif
+   return -1;
+}
+
+/*------------------------------------------------------------------*/
+
+unsigned int ss_millitime()
+{
+#ifdef OS_WINNT
+   
+   return (int) GetTickCount();
+   
+#endif                          /* OS_WINNT */
+#ifdef OS_LINUX
+   {
+   struct timeval tv;
+   
+   gettimeofday(&tv, NULL);
+   
+   return tv.tv_sec * 1000 + tv.tv_usec / 1000;
+   }
+   
+#endif                          /* OS_LINUX */
+   return 0;
+}
+
+/*------------------------------------------------------------------*/
+
+char *ss_gets(char *string, int size)
+{
+   char *p;
+   
+   do {
+      p = fgets(string, size, stdin);
+   } while (p == NULL);
+   
+   
+   if (strlen(p) > 0 && p[strlen(p) - 1] == '\n')
+      p[strlen(p) - 1] = 0;
+   
+   return p;
+}
 
 /*------------------------------------------------------------------*/
 
@@ -576,7 +850,7 @@ void cmd_loop(int fd, char *cmd, unsigned short adr)
    unsigned char c;
    float value;
    char str[256], line[256], dbuf[100 * 1024], param[10][100], *pc, *buffer, lib[32],
-       prot[32], *pdata, dbuf2[256];
+       prot[32], *pdata, dbuf2[256], prompt[256];
    FILE *cmd_file = NULL;
    MSCB_INFO info;
    MSCB_INFO_VAR info_var_array[256];
@@ -625,15 +899,17 @@ void cmd_loop(int fd, char *cmd, unsigned short adr)
       /* print prompt */
       if (!cmd[0]) {
          if (current_addr >= 0)
-            printf("node%d(0x%X)> ", current_addr, current_addr);
+            sprintf(prompt, "node%d(0x%X)> ", current_addr, current_addr);
          else if (current_group >= 0)
-            printf("group%d> ", current_group);
+            sprintf(prompt, "group%d> ", current_group);
          else if (broadcast)
-            printf("all> ");
+            sprintf(prompt, "all> ");
          else
-            printf("> ");
+            sprintf(prompt, "> ");
          memset(line, 0, sizeof(line));
-         fgets(line, sizeof(line), stdin);
+         
+         cmd_edit(prompt, line, cmd_dir, NULL);
+         
       } else if (cmd[0] != '@')
          strcpy(line, cmd);
       else {

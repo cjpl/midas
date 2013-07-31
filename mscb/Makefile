@@ -62,9 +62,10 @@ STRLCPY       =
 endif
 
 MSCB_OBJ      = msc.o mscb.o mscbrpc.o
+MIDAS_OBJ     = cmdedit.o
 MXML_OBJ      = mxml.o $(STRLCPY)
 USB_OBJ       = musbstd.o
-OBJECTS       = $(MSCB_OBJ) $(MXML_OBJ) $(USB_OBJ)
+OBJECTS       = $(MSCB_OBJ) $(MXML_OBJ) $(USB_OBJ) $(MIDAS_OBJ)
 
 all: $(OUTNAME)
 
@@ -75,6 +76,9 @@ $(MSCB_OBJ): %.o: %.c
 	$(CC) $(FLAGS) -c $<
 
 $(MXML_OBJ): %.o: $(MXMLDIR)%.c
+	$(CC) $(FLAGS) -c $<
+
+$(MIDAS_OBJ): %.o: $(MIDASSYS)/src/%.c
 	$(CC) $(FLAGS) -c $<
 
 $(USB_OBJ): %.o: $(USBDIR)%.c
