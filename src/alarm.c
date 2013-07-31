@@ -533,175 +533,175 @@ INT al_check()
 
 #ifdef LOCAL_ROUTINES
    {
-      INT i, status, size, semaphore;
-      HNDLE hDB, hkeyroot, hkey;
-      KEY key;
-      ALARM a;
-      char str[256], value[256];
-      time_t now;
-      PROGRAM_INFO program_info;
-      BOOL flag;
-
-      ALARM_CLASS_STR(alarm_class_str);
-      ALARM_ODB_STR(alarm_odb_str);
-      ALARM_PERIODIC_STR(alarm_periodic_str);
-
-      cm_get_experiment_database(&hDB, NULL);
-
-      if (hDB == 0)
-         return AL_SUCCESS;     /* called from server not yet connected */
-
-      /* check online mode */
-      flag = TRUE;
-      size = sizeof(flag);
-      db_get_value(hDB, 0, "/Runinfo/Online Mode", &flag, &size, TID_INT, TRUE);
-      if (!flag)
-         return AL_SUCCESS;
-
-      /* check global alarm flag */
-      flag = TRUE;
-      size = sizeof(flag);
-      db_get_value(hDB, 0, "/Alarms/Alarm system active", &flag, &size, TID_BOOL, TRUE);
-      if (!flag)
-         return AL_SUCCESS;
-
-      /* request semaphore */
-      cm_get_experiment_semaphore(&semaphore, NULL, NULL, NULL);
-      status = ss_semaphore_wait_for(semaphore, 100);
-      if (status != SS_SUCCESS)
-         return SUCCESS;        /* someone else is doing alarm business */
-
-      /* check ODB alarms */
+   INT i, status, size, semaphore;
+   HNDLE hDB, hkeyroot, hkey;
+   KEY key;
+   ALARM a;
+   char str[256], value[256];
+   time_t now;
+   PROGRAM_INFO program_info;
+   BOOL flag;
+   
+   ALARM_CLASS_STR(alarm_class_str);
+   ALARM_ODB_STR(alarm_odb_str);
+   ALARM_PERIODIC_STR(alarm_periodic_str);
+   
+   cm_get_experiment_database(&hDB, NULL);
+   
+   if (hDB == 0)
+      return AL_SUCCESS;     /* called from server not yet connected */
+   
+   /* check online mode */
+   flag = TRUE;
+   size = sizeof(flag);
+   db_get_value(hDB, 0, "/Runinfo/Online Mode", &flag, &size, TID_INT, TRUE);
+   if (!flag)
+      return AL_SUCCESS;
+   
+   /* check global alarm flag */
+   flag = TRUE;
+   size = sizeof(flag);
+   db_get_value(hDB, 0, "/Alarms/Alarm system active", &flag, &size, TID_BOOL, TRUE);
+   if (!flag)
+      return AL_SUCCESS;
+   
+   /* request semaphore */
+   cm_get_experiment_semaphore(&semaphore, NULL, NULL, NULL);
+   status = ss_semaphore_wait_for(semaphore, 100);
+   if (status != SS_SUCCESS)
+      return AL_SUCCESS;        /* someone else is doing alarm business */
+   
+   /* check ODB alarms */
+   db_find_key(hDB, 0, "/Alarms/Alarms", &hkeyroot);
+   if (!hkeyroot) {
+      /* create default ODB alarm */
+      status = db_create_record(hDB, 0, "/Alarms/Alarms/Demo ODB", strcomb(alarm_odb_str));
       db_find_key(hDB, 0, "/Alarms/Alarms", &hkeyroot);
       if (!hkeyroot) {
-         /* create default ODB alarm */
-         status = db_create_record(hDB, 0, "/Alarms/Alarms/Demo ODB", strcomb(alarm_odb_str));
-         db_find_key(hDB, 0, "/Alarms/Alarms", &hkeyroot);
-         if (!hkeyroot) {
-            ss_semaphore_release(semaphore);
-            return SUCCESS;
-         }
-
-         status = db_create_record(hDB, 0, "/Alarms/Alarms/Demo periodic", strcomb(alarm_periodic_str));
-         db_find_key(hDB, 0, "/Alarms/Alarms", &hkeyroot);
-         if (!hkeyroot) {
-            ss_semaphore_release(semaphore);
-            return SUCCESS;
-         }
-
-         /* create default alarm classes */
-         status = db_create_record(hDB, 0, "/Alarms/Classes/Alarm", strcomb(alarm_class_str));
-         status = db_create_record(hDB, 0, "/Alarms/Classes/Warning", strcomb(alarm_class_str));
-         if (status != DB_SUCCESS) {
-            ss_semaphore_release(semaphore);
-            return SUCCESS;
+         ss_semaphore_release(semaphore);
+         return AL_SUCCESS;
+      }
+      
+      status = db_create_record(hDB, 0, "/Alarms/Alarms/Demo periodic", strcomb(alarm_periodic_str));
+      db_find_key(hDB, 0, "/Alarms/Alarms", &hkeyroot);
+      if (!hkeyroot) {
+         ss_semaphore_release(semaphore);
+         return AL_SUCCESS;
+      }
+      
+      /* create default alarm classes */
+      status = db_create_record(hDB, 0, "/Alarms/Classes/Alarm", strcomb(alarm_class_str));
+      status = db_create_record(hDB, 0, "/Alarms/Classes/Warning", strcomb(alarm_class_str));
+      if (status != DB_SUCCESS) {
+         ss_semaphore_release(semaphore);
+         return AL_SUCCESS;
+      }
+   }
+   
+   for (i = 0;; i++) {
+      status = db_enum_key(hDB, hkeyroot, i, &hkey);
+      if (status == DB_NO_MORE_SUBKEYS)
+         break;
+      
+      db_get_key(hDB, hkey, &key);
+      
+      size = sizeof(a);
+      status = db_get_record(hDB, hkey, &a, &size, 0);
+      if (status != DB_SUCCESS || a.type < 1 || a.type > AT_LAST) {
+         /* make sure alarm record has right structure */
+         db_check_record(hDB, hkey, "", strcomb(alarm_odb_str), TRUE);
+         size = sizeof(a);
+         status = db_get_record(hDB, hkey, &a, &size, 0);
+         if (status != DB_SUCCESS || a.type < 1 || a.type > AT_LAST) {
+            cm_msg(MERROR, "al_check", "Cannot get alarm record");
+            continue;
          }
       }
-
+      
+      /* check periodic alarm only when active */
+      if (a.active &&
+          a.type == AT_PERIODIC &&
+          a.check_interval > 0 && (INT) ss_time() - (INT) a.checked_last > a.check_interval) {
+         /* if checked_last has not been set, set it to current time */
+         if (a.checked_last == 0) {
+            a.checked_last = ss_time();
+            db_set_record(hDB, hkey, &a, size, 0);
+         } else
+            al_trigger_alarm(key.name, a.alarm_message, a.alarm_class, "", AT_PERIODIC);
+      }
+      
+      /* check alarm only when active and not internal */
+      if (a.active &&
+          a.type == AT_EVALUATED &&
+          a.check_interval > 0 && (INT) ss_time() - (INT) a.checked_last > a.check_interval) {
+         /* if condition is true, trigger alarm */
+         if (al_evaluate_condition(a.condition, value)) {
+            sprintf(str, a.alarm_message, value);
+            al_trigger_alarm(key.name, str, a.alarm_class, "", AT_EVALUATED);
+         } else {
+            a.checked_last = ss_time();
+            status = db_set_record(hDB, hkey, &a, sizeof(a), 0);
+            if (status != DB_SUCCESS) {
+               cm_msg(MERROR, "al_check", "Cannot write back alarm record");
+               continue;
+            }
+         }
+      }
+   }
+   
+   /* check /programs alarms */
+   db_find_key(hDB, 0, "/Programs", &hkeyroot);
+   if (hkeyroot) {
       for (i = 0;; i++) {
          status = db_enum_key(hDB, hkeyroot, i, &hkey);
          if (status == DB_NO_MORE_SUBKEYS)
             break;
-
+         
          db_get_key(hDB, hkey, &key);
-
-         size = sizeof(a);
-         status = db_get_record(hDB, hkey, &a, &size, 0);
-         if (status != DB_SUCCESS || a.type < 1 || a.type > AT_LAST) {
-            /* make sure alarm record has right structure */
-            db_check_record(hDB, hkey, "", strcomb(alarm_odb_str), TRUE);
-            size = sizeof(a);
-            status = db_get_record(hDB, hkey, &a, &size, 0);
-            if (status != DB_SUCCESS || a.type < 1 || a.type > AT_LAST) {
-               cm_msg(MERROR, "al_check", "Cannot get alarm record");
-               continue;
-            }
+         
+         /* don't check "execute on xxx" */
+         if (key.type != TID_KEY)
+            continue;
+         
+         size = sizeof(program_info);
+         status = db_get_record(hDB, hkey, &program_info, &size, 0);
+         if (status != DB_SUCCESS) {
+            cm_msg(MERROR, "al_check", "Cannot get program info record");
+            continue;
          }
-
-         /* check periodic alarm only when active */
-         if (a.active &&
-             a.type == AT_PERIODIC &&
-             a.check_interval > 0 && (INT) ss_time() - (INT) a.checked_last > a.check_interval) {
-            /* if checked_last has not been set, set it to current time */
-            if (a.checked_last == 0) {
-               a.checked_last = ss_time();
-               db_set_record(hDB, hkey, &a, size, 0);
-            } else
-               al_trigger_alarm(key.name, a.alarm_message, a.alarm_class, "", AT_PERIODIC);
-         }
-
-         /* check alarm only when active and not internal */
-         if (a.active &&
-             a.type == AT_EVALUATED &&
-             a.check_interval > 0 && (INT) ss_time() - (INT) a.checked_last > a.check_interval) {
-            /* if condition is true, trigger alarm */
-            if (al_evaluate_condition(a.condition, value)) {
-               sprintf(str, a.alarm_message, value);
-               al_trigger_alarm(key.name, str, a.alarm_class, "", AT_EVALUATED);
-            } else {
-               a.checked_last = ss_time();
-               status = db_set_record(hDB, hkey, &a, sizeof(a), 0);
-               if (status != DB_SUCCESS) {
-                  cm_msg(MERROR, "al_check", "Cannot write back alarm record");
-                  continue;
+         
+         now = ss_time();
+         
+         rpc_get_name(str);
+         str[strlen(key.name)] = 0;
+         if (!equal_ustring(str, key.name) && cm_exist(key.name, FALSE) == CM_NO_CLIENT) {
+            if (program_info.first_failed == 0)
+               program_info.first_failed = (DWORD) now;
+            
+            /* fire alarm when not running for more than what specified in check interval */
+            if (now - program_info.first_failed >= program_info.check_interval / 1000) {
+               /* if not running and alarm calss defined, trigger alarm */
+               if (program_info.alarm_class[0]) {
+                  sprintf(str, "Program %s is not running", key.name);
+                  al_trigger_alarm(key.name, str, program_info.alarm_class,
+                                   "Program not running", AT_PROGRAM);
+               }
+               
+               /* auto restart program */
+               if (program_info.auto_restart && program_info.start_command[0]) {
+                  ss_system(program_info.start_command);
+                  program_info.first_failed = 0;
+                  cm_msg(MTALK, "al_check", "Program %s restarted", key.name);
                }
             }
-         }
+         } else
+            program_info.first_failed = 0;
+         
+         db_set_record(hDB, hkey, &program_info, sizeof(program_info), 0);
       }
-
-      /* check /programs alarms */
-      db_find_key(hDB, 0, "/Programs", &hkeyroot);
-      if (hkeyroot) {
-         for (i = 0;; i++) {
-            status = db_enum_key(hDB, hkeyroot, i, &hkey);
-            if (status == DB_NO_MORE_SUBKEYS)
-               break;
-
-            db_get_key(hDB, hkey, &key);
-
-            /* don't check "execute on xxx" */
-            if (key.type != TID_KEY)
-               continue;
-
-            size = sizeof(program_info);
-            status = db_get_record(hDB, hkey, &program_info, &size, 0);
-            if (status != DB_SUCCESS) {
-               cm_msg(MERROR, "al_check", "Cannot get program info record");
-               continue;
-            }
-
-            now = ss_time();
-
-            rpc_get_name(str);
-            str[strlen(key.name)] = 0;
-            if (!equal_ustring(str, key.name) && cm_exist(key.name, FALSE) == CM_NO_CLIENT) {
-               if (program_info.first_failed == 0)
-                  program_info.first_failed = (DWORD) now;
-
-               /* fire alarm when not running for more than what specified in check interval */
-               if (now - program_info.first_failed >= program_info.check_interval / 1000) {
-                  /* if not running and alarm calss defined, trigger alarm */
-                  if (program_info.alarm_class[0]) {
-                     sprintf(str, "Program %s is not running", key.name);
-                     al_trigger_alarm(key.name, str, program_info.alarm_class,
-                                      "Program not running", AT_PROGRAM);
-                  }
-
-                  /* auto restart program */
-                  if (program_info.auto_restart && program_info.start_command[0]) {
-                     ss_system(program_info.start_command);
-                     program_info.first_failed = 0;
-                     cm_msg(MTALK, "al_check", "Program %s restarted", key.name);
-                  }
-               }
-            } else
-               program_info.first_failed = 0;
-
-            db_set_record(hDB, hkey, &program_info, sizeof(program_info), 0);
-         }
-      }
-
-      ss_semaphore_release(semaphore);
+   }
+   
+   ss_semaphore_release(semaphore);
    }
 #endif                          /* LOCAL_COUTINES */
 
