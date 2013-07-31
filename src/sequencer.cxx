@@ -1400,8 +1400,8 @@ void show_seq_page()
    rsprintf("<div class=\"wrapper\">\n");
    /*---- begin page header ----*/
    rsprintf("<table class=\"headerTable\">\n");
-   rsprintf("<tr><th>MIDAS experiment \"%s\"", str);
-   rsprintf("<th>%s</tr>\n", ctime(&now));
+   //rsprintf("<tr><th>MIDAS experiment \"%s\"", str);
+   //rsprintf("<th>%s</tr>\n", ctime(&now));
    rsprintf("<tr><td colspan=2><input type=submit name=cmd value=Status></td></tr>\n");
    rsprintf("</table>"); //end header  
 

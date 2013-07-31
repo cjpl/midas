@@ -104,6 +104,10 @@ th, h1, h3{
 	padding:0.25em;	
 }
 
+p{
+	line-height: 1.5em;
+}
+
 /*generic button style*/
 button, input[type=button], input[type=submit], input[type=reset], td.ODBdirectory{
 	background-color: #00B26B;
@@ -133,7 +137,7 @@ table.headerTable{
 	width:100%;
 	color:#EEEEEE;
 	background-color: #2c3e50;
-	border: 0.5em solid #2c3e50;
+	border: 1em solid #2c3e50;
 	border-left: 1em solid #2c3e50;
 	border-right: 1em solid #2c3e50;
 	border-collapse: collapse;
@@ -150,11 +154,11 @@ div.footerDiv{
 	padding:1em;
 	color:#EEEEEE;
 
-	height:2em;
+	height:3em;
 }
 
 div.push{
-	height:2em;
+	height:3em;
 }
 
 div.footerDiv a{
@@ -165,7 +169,7 @@ div.wrapper{
     min-height: 100%;
     height: auto !important;
     height: 100%;
-    margin: 0 auto -2em;
+    margin: 0 auto -3em;
 }
 
 .dialogTable, .messageBox, .genericTable{
@@ -185,6 +189,7 @@ table.dialogTable td{
 .ODBpath{
 	text-align: center;
 	font-size: 120%;
+	background-color: #EEEEEE;
 }
 
 /*Status page objects/////////////////////////////////////////////////*/
@@ -333,6 +338,14 @@ table.dialogTable td{
 	padding:0.5em;
 	margin-top: 1em;
 	margin-bottom:1em;
+}
+
+.ODBtable tr:nth-child(odd){
+	background-color: #DDDDDD;
+}
+
+.ODBtable tr:nth-child(even){
+	background-color: #EEEEEE;
 }
 
 table.ODBtable td{

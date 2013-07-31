@@ -856,13 +856,25 @@ INT search_callback(HNDLE hDB, HNDLE hKey, KEY * key, INT level, void *info)
 
 void page_footer()  //wraps up body wrapper and inserts page footer
 {
+   time_t now;
+   int size;
+   char str[1000];
+   HNDLE hDB;
+
    /*---- spacer for footer ----*/
    rsprintf("<div class=\"push\"></div>\n");
    rsprintf("</div>\n"); //ends body wrapper
 
    /*---- footer div ----*/
    rsprintf("<div class=\"footerDiv\">\n");
-   rsprintf("MIDAS 2013 - Check us out on <a href=\"https://bitbucket.org/tmidas/midas\">Bitbucket</a>");
+   size = sizeof(str);
+   str[0] = 0;
+   cm_get_experiment_database(&hDB, NULL);
+   db_get_value(hDB, 0, "/Experiment/Name", str, &size, TID_STRING, TRUE);
+   rsprintf("<div style=\"display:inline; float:left;\">MIDAS Experiment %s</div>", str);
+   rsprintf("<div style=\"display:inline;\">MIDAS 2013 - Check us out on <a href=\"https://bitbucket.org/tmidas/midas\">Bitbucket</a></div>");
+   time(&now);
+   rsprintf("<div style=\"display:inline; float:right;\">%s</div>", ctime(&now));
    rsprintf("</div>\n");
 
    /*---- top level form ----*/
@@ -959,7 +971,9 @@ void show_header(HNDLE hDB, const char *title, const char *method, const char *p
 
    /*---- begin page header ----*/
    rsprintf("<table class=\"headerTable\">\n");
+   rsprintf("<tr><td></td></tr>");
 
+/*
    rsprintf("<tr><th colspan=%d>MIDAS experiment \"%s\"", colspan,
             str);
 
@@ -968,6 +982,7 @@ void show_header(HNDLE hDB, const char *title, const char *method, const char *p
                colspan, ctime(&now), refresh);
    else
       rsprintf("<th colspan=%d>%s</tr>\n", colspan, ctime(&now));
+*/
 }
 
 /*------------------------------------------------------------------*/
@@ -1210,8 +1225,8 @@ void show_status_page(int refresh, const char *cookie_wpwd)
 
    /*---- title row ----*/
 
-   rsprintf("<tr><th id=\"experimentTitle\" colspan=3>MIDAS experiment \"%s\"", str);
-   rsprintf("<th id=\"masterTime\" colspan=3>%s &nbsp;&nbsp;Refr:%d</tr>\n", ctime(&now), refresh);
+   //rsprintf("<tr><th id=\"experimentTitle\" colspan=3>MIDAS experiment \"%s\"", str);
+   //rsprintf("<th id=\"masterTime\" colspan=3>%s &nbsp;&nbsp;Refr:%d</tr>\n", ctime(&now), refresh);
 
    rsprintf("<tr><td colspan=6>\n");
    /*---- menu buttons ----*/
@@ -1610,14 +1625,14 @@ void show_status_page(int refresh, const char *cookie_wpwd)
             rsprintf("<tr><td colspan=6><table width=100%%>\n");
 
          db_get_key(hDB, hsubkey, &key);
-         rsprintf("<tr><td align=right width=30%%>%s:</td>", key.name);
+         rsprintf("<tr><td align=right width=30%% style=\"background-color:#DDDDDD;\">%s:</td>", key.name);
          
          db_enum_key(hDB, hkey, i, &hsubkey);
          db_get_key(hDB, hsubkey, &key);
          size = sizeof(status_data);
          if (db_get_data(hDB, hsubkey, status_data, &size, key.type) == DB_SUCCESS) {
             db_sprintf(str, status_data, key.item_size, 0, key.type);
-            rsprintf("<td >%s</td></tr>\n", str);
+            rsprintf("<td style=\"text-align:left;\">%s</td></tr>\n", str);
          }
       }
       if (n_items)
@@ -2020,8 +2035,8 @@ void show_messages_page(int refresh, int n_message)
    db_get_value(hDB, 0, "/Experiment/Name", str, &size, TID_STRING, TRUE);
    time(&now);
 
-   rsprintf("<tr><th>MIDAS experiment \"%s\"", str);
-   rsprintf("<th>%s</tr>\n", ctime(&now));
+   //rsprintf("<tr><th>MIDAS experiment \"%s\"", str);
+   //rsprintf("<th>%s</tr>\n", ctime(&now));
 
    /*---- menu buttons ----*/
 
@@ -2043,7 +2058,8 @@ void show_messages_page(int refresh, int n_message)
    else
       more = n_message + 100;
 
-   rsprintf("<input type=submit style=\"margin-top:1em;\" name=cmd value=\"%d More\"><div class=\"messageBox\">\n", more);
+   //rsprintf("<input type=submit style=\"margin-top:1em;\" name=cmd value=\"More%d\"><div class=\"messageBox\">\n", more);
+   rsprintf("<button type=submit style=\"margin-top:1em;\" name=cmd value=\"More%d\">%d More</button><div class=\"messageBox\">\n", more, more);
    rsprintf("<h1 class=\"subStatusTitle\">Messages</h1>");
    buffer = (char *)malloc(1000000);
    cm_msg_retrieve(n_message, buffer, 1000000);
@@ -2067,9 +2083,9 @@ void show_messages_page(int refresh, int n_message)
 
       /* check for error */
       if (strstr(line, ",ERROR]"))
-         rsprintf("<span style=\"color:white;background-color:red\">%s</span><br>", line);
+         rsprintf("<p style=\"color:white;background-color:red; padding:0.5em\">%s</p>", line);
       else
-         rsprintf("%s<br>", line);
+         rsprintf("<p style=\"padding:0.5em\">%s</p>", line);
    } while (!eob && *pline);
 
    rsprintf("</div>\n");
@@ -2259,13 +2275,14 @@ void show_elog_new(const char *path, BOOL bedit, const char *odb_att, const char
    size = sizeof(str);
    str[0] = 0;
    db_get_value(hDB, 0, "/Experiment/Name", str, &size, TID_STRING, TRUE);
-
+   rsprintf("<tr><td></td></tr>\n");
+/*
    rsprintf("<tr><th>MIDAS Electronic Logbook");
    if (elog_mode)
       rsprintf("<th>Logbook \"%s\"</tr>\n", str);
    else
       rsprintf("<th>Experiment \"%s\"</tr>\n", str);
-
+*/
    //end header
    rsprintf("</table>");
 
@@ -2510,12 +2527,14 @@ void show_elog_query()
    size = sizeof(str);
    str[0] = 0;
    db_get_value(hDB, 0, "/Experiment/Name", str, &size, TID_STRING, TRUE);
-
+   rsprintf("<tr><td></td></tr>\n");
+/*
    rsprintf("<tr><th colspan=2>MIDAS Electronic Logbook");
    if (elog_mode)
       rsprintf("<th colspan=2>Logbook \"%s\"</tr>\n", str);
    else
       rsprintf("<th colspan=2>Experiment \"%s\"</tr>\n", str);
+*/
    //end header
    rsprintf("</table>");
 
@@ -2765,13 +2784,14 @@ void show_elog_submit_query(INT last_n)
    colspan = full ? 3 : 4;
    if (!display_run_number)
       colspan--;
-
+   rsprintf("<tr><td></td></tr>\n");
+/*
    rsprintf("<tr><th colspan=3>MIDAS Electronic Logbook");
    if (elog_mode)
       rsprintf("<th colspan=%d>Logbook \"%s\"</tr>\n", colspan, str);
    else
       rsprintf("<th colspan=%d>Experiment \"%s\"</tr>\n", colspan, str);
-
+*/
    /*---- menu buttons ----*/
 
    if (!full) {
@@ -3195,13 +3215,17 @@ void show_rawfile(char *path)
    str[0] = 0;
    db_get_value(hDB, 0, "/Experiment/Name", str, &size, TID_STRING, TRUE);
 
+/*
    rsprintf("<tr><th>MIDAS File Display <code>\"%s\"</code>", path);
    if (elog_mode)
       rsprintf("<th>Logbook \"%s\"</tr>\n", str);
    else
       rsprintf("<th>Experiment \"%s\"</tr>\n", str);
+*/
    if (!elog_mode)
       rsprintf("<tr><td colspan=2><input type=submit name=cmd value=\"Status\"></td></tr>");
+   else
+      rsprintf("<tr><td></td></tr>\n");
    //end header
    rsprintf("</table>");
 
@@ -3330,9 +3354,9 @@ void show_form_query()
    rsprintf("<table class=\"headerTable\">\n");
 
    /*---- title row ----*/
-
-   rsprintf("<tr><th colspan=2>MIDAS Electronic Logbook");
-   rsprintf("<th colspan=2>Form \"%s\"</tr>\n", getparam("form"));
+   rsprintf("<tr><td></td></tr>\n");
+   //rsprintf("<tr><th colspan=2>MIDAS Electronic Logbook");
+   //rsprintf("<th colspan=2>Form \"%s\"</tr>\n", getparam("form"));
 
    rsprintf("</table>");  //close header
    rsprintf("<table class=\"dialogTable\">");  //main table
@@ -4181,13 +4205,13 @@ void show_elog_page(char *path, int path_size)
    size = sizeof(str);
    str[0] = 0;
    db_get_value(hDB, 0, "/Experiment/Name", str, &size, TID_STRING, TRUE);
-
+/*
    rsprintf("<tr><th>MIDAS Electronic Logbook");
    if (elog_mode)
       rsprintf("<th>Logbook \"%s\"</tr>\n", str);
    else
       rsprintf("<th>Experiment \"%s\"</tr>\n", str);
-
+*/
    /*---- menu buttons ----*/
    rsprintf("<tr><td colspan=2>\n");
    /* check forms from ODB */
@@ -7583,8 +7607,8 @@ void show_mscb_page(char *path, int refresh)
    rsprintf("<div class=\"wrapper\">\n");
    /*---- begin page header ----*/
    rsprintf("<table class=\"headerTable\">\n");
-   rsprintf("<tr><th>MIDAS experiment \"%s\"", str);
-   rsprintf("<th>%s  &nbsp;&nbsp;Refr:%d</tr>\n", ctime(&now), refresh);
+   //rsprintf("<tr><th>MIDAS experiment \"%s\"", str);
+   //rsprintf("<th>%s  &nbsp;&nbsp;Refr:%d</tr>\n", ctime(&now), refresh);
    rsprintf("<tr><td colspan=2><input type=submit name=cmd value=ODB> <input type=submit name=cmd value=Status> </td></tr>");
    rsprintf("</table>");  //close header
 
@@ -8113,7 +8137,7 @@ void show_odb_page(char *enc_path, int enc_path_size, char *dec_path)
    rsprintf("</table>\n");
 
    /*---- begin ODB directory table ----*/
-   rsprintf("<table class=\"ODBtable\">\n");
+   rsprintf("<table class=\"ODBtable\" style=\"border-spacing:0px;\">\n");
    rsprintf("<tr><th colspan=2 class=\"subStatusTitle\">Online Database Browser</tr>\n");
    //buttons:
    if(!elog_mode){
@@ -8159,7 +8183,7 @@ void show_odb_page(char *enc_path, int enc_path_size, char *dec_path)
    }
    rsprintf("</b></tr>\n");
 
-   rsprintf("<tr><th class=\"ODBkey\">Key<th class=\"ODBvalue\">Value</tr>\n");
+   rsprintf("<tr class=\"titleRow\"><th class=\"ODBkey\">Key<th class=\"ODBvalue\">Value</tr>\n");
 
    /* enumerate subkeys */
    for (i = 0;; i++) {
@@ -8793,8 +8817,8 @@ void show_alarm_page()
 
    /*---- page header ----*/
    rsprintf("<table class=\"headerTable\">\n");
-   rsprintf("<tr><th colspan=4>MIDAS experiment \"%s\"", str);
-   rsprintf("<th colspan=3>%s</tr>\n", ctime(&now));
+   //rsprintf("<tr><th colspan=4>MIDAS experiment \"%s\"", str);
+   //rsprintf("<th colspan=3>%s</tr>\n", ctime(&now));
    rsprintf("<tr><td colspan=7><input type=submit name=cmd value=Status></td></tr>\n");
    rsprintf("</table>"); //end header
 
@@ -12666,7 +12690,7 @@ void show_hist_page(const char *path, int path_size, char *buffer, int *buffer_s
          rsprintf("<b>Please select panel:</b><br>\n");
 
       /* table for panel selection */
-      rsprintf("<table border=1 cellpadding=3 style='text-align: left;'>");
+      rsprintf("<table border=1 cellpadding=3 style=\"text-align: left;\">");
 
       /* "All" link */
       rsprintf("<tr><td colspan=2>\n");
@@ -12726,7 +12750,7 @@ void show_hist_page(const char *path, int path_size, char *buffer, int *buffer_s
             if (equal_ustring(str, key.name))
                rsprintf("<tr><td><b>%s</b></td>\n<td>", key.name);
             else
-               rsprintf("<tr><td><b><a href=\"%s%s\">%s</a></b></td>\n<td>",
+               rsprintf("<tr><td style=\"background-color:#DDDDDD\"><b><a href=\"%s%s\">%s</a></b></td>\n<td>",
                          back_path, key.name, key.name);
 
             for (j = 0;; j++) {
